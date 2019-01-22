@@ -262,7 +262,7 @@ static struct fp_cb *search_and_hold_track_table(struct sk_buff *skb)
 			}
 		} else {
 			if (unlikely
-			(time_after(jiffies, (fp_track.table[i].jiffies + 100))
+			(time_after(jiffies, (fp_track.table[i].jiffies + msecs_to_jiffies(10)))
 			 && (fp_track.table[i].ref_count == 0))) {
 				fp_printk(K_DEBUG, "%s: skb[%p] is timeout, remove entry, index[%d].\n",
 							__func__, skb, i);
@@ -1025,7 +1025,6 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 {
 	unsigned char *offset2 = skb->data;
 	struct fp_cb *cb;
-	unsigned long flags;
 
 	fp_printk(K_DEBUG, "%s: post-routing, add rule, skb[%p].\n", __func__, skb);
 
@@ -1050,29 +1049,35 @@ void fastpath_out_nf(int iface, struct sk_buff *skb, struct net_device *out)
 	}
 
 	if (cb->flag & DESC_FLAG_TRACK_NAT) {
-		if (IPC_HDR_IS_V4(offset2))
+		if (IPC_HDR_IS_V4(offset2)) {
 			fastpath_out_nf_ipv4(iface, skb, out, offset2, cb);
-		else
+			return;
+
+		} else {
 			fp_printk(K_ERR, "%s: Wrong IPv4 version[%d], offset[%p], flag[%x], skb[%p].\n",
 						 __func__, IPC_HDR_IS_V4(offset2), offset2, cb->flag, skb);
+		}
 
 
 	} else if (cb->flag & DESC_FLAG_TRACK_ROUTER) {
 		int l3_off = 0;
 
-		if (cb->flag & DESC_FLAG_IPV6)
+		if (cb->flag & DESC_FLAG_IPV6) {
 			fastpath_out_nf_ipv6(iface, skb, out, cb, l3_off);
-		else
+			return;
+
+		} else {
 			fp_printk(K_ERR, "%s: Invalid IPv6 flag[%x], skb[%p].\n", __func__, cb->flag, skb);
+		}
 
 	} else {
 		fp_printk(K_DEBUG, "%s: No need to track, skb[%p], cb->flag[%x].\n", __func__, skb, cb->flag);
 	}
 
 out:
-	TRACK_TABLE_LOCK(fp_track, flags);
-	fp_track.table[cb->index].ref_count = 0;
-	TRACK_TABLE_UNLOCK(fp_track, flags);
+#ifdef FASTPATH_NO_KERNEL_SUPPORT
+	put_track_table(skb);
+#endif
 }
 EXPORT_SYMBOL(fastpath_out_nf);
 
