@@ -2,6 +2,7 @@ config MTK_ICCS_SUPPORT
 	bool "Enable MediaTek Inter-Cluster Cache Sharing"
 	default n
 	help
-	  MediaTek Inter Cluster Cache Sharing is a feature to enhance
-	  system performance, which enables the cache sharing capability
-	  between clusters for better cache utilization.
+	  MediaTek Inter Cluster Cache Sharing is a feature
+	  to enhance system performance, which enables the
+	  cache sharing capability between clusters for
+	  better cache utilization.
