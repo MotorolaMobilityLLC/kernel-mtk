@@ -316,6 +316,8 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 #if CFG_SUPPORT_NVRAM
 	struct file *fd;
 	int retLen = -1;
+	loff_t pos;
+	char __user *p;
 
 	mm_segment_t old_fs = get_fs();
 
@@ -329,8 +331,8 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 	}
 
 	do {
-		if ((fd->f_op == NULL) || (fd->f_op->read == NULL)) {
-			DBGLOG(INIT, INFO, "[nvram_read] : file can not be read!!\n");
+		if (fd->f_op == NULL) {
+			DBGLOG(INIT, INFO, "[nvram_read] : f_op is NULL!!\n");
 			break;
 		}
 
@@ -345,8 +347,12 @@ static int nvram_read(char *filename, char *buf, ssize_t len, int offset)
 			}
 		}
 
-		retLen = fd->f_op->read(fd, buf, len, &fd->f_pos);
+		p = (__force char __user *)buf;
+		pos = (loff_t)offset;
 
+		retLen = __vfs_read(fd, p, len, &pos);
+		if (retLen < 0)
+			DBGLOG(INIT, ERROR, "[nvram_read] : read failed!! Error code: %d\n", retLen);
 	} while (FALSE);
 
 	filp_close(fd, NULL);
@@ -380,6 +386,8 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 #if CFG_SUPPORT_NVRAM
 	struct file *fd;
 	int retLen = -1;
+	loff_t pos;
+	char __user *p;
 
 	mm_segment_t old_fs = get_fs();
 
@@ -393,8 +401,8 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 	}
 
 	do {
-		if ((fd->f_op == NULL) || (fd->f_op->write == NULL)) {
-			DBGLOG(INIT, INFO, "[nvram_write] : file can not be write!!\n");
+		if (fd->f_op == NULL) {
+			DBGLOG(INIT, INFO, "[nvram_write] : f_op is NULL!!\n");
 			break;
 		}
 		/* End of if */
@@ -409,8 +417,12 @@ static int nvram_write(char *filename, char *buf, ssize_t len, int offset)
 			}
 		}
 
-		retLen = fd->f_op->write(fd, buf, len, &fd->f_pos);
+		p = (__force char __user *)buf;
+		pos = (loff_t)offset;
 
+		retLen = __vfs_write(fd, p, len, &pos);
+		if (retLen < 0)
+			DBGLOG(INIT, ERROR, "[nvram_write] : write failed!! Error code: %d\n", retLen);
 	} while (FALSE);
 
 	filp_close(fd, NULL);
