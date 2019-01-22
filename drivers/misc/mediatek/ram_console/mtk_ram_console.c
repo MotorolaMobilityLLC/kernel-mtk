@@ -66,6 +66,15 @@ struct last_reboot_reason {
 	uint8_t hotplug_cpu_event;
 	uint8_t hotplug_cb_index;
 	uint64_t hotplug_cb_fp;
+	uint32_t cpu_caller;
+	uint32_t cpu_callee;
+	uint64_t cpu_up_prepare_ktime;
+	uint64_t cpu_starting_ktime;
+	uint64_t cpu_online_ktime;
+	uint64_t cpu_down_prepare_ktime;
+	uint64_t cpu_dying_ktime;
+	uint64_t cpu_dead_ktime;
+	uint64_t cpu_post_dead_ktime;
 
 	uint32_t mcdi_wfi;
 	uint32_t mcdi_r15;
@@ -783,6 +792,68 @@ void aee_rr_rec_hotplug_cb_fp(unsigned long val)
 	LAST_RR_SET(hotplug_cb_fp, val);
 }
 
+void aee_rr_rec_cpu_caller(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_caller, val);
+}
+
+void aee_rr_rec_cpu_callee(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_callee, val);
+}
+
+void aee_rr_rec_cpu_up_prepare_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_up_prepare_ktime, val);
+}
+
+void aee_rr_rec_cpu_starting_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_starting_ktime, val);
+}
+
+void aee_rr_rec_cpu_online_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_online_ktime, val);
+}
+
+void aee_rr_rec_cpu_down_prepare_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_down_prepare_ktime, val);
+}
+
+void aee_rr_rec_cpu_dying_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_dying_ktime, val);
+}
+
+void aee_rr_rec_cpu_dead_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_dead_ktime, val);
+}
+
+void aee_rr_rec_cpu_post_dead_ktime(u64 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(cpu_post_dead_ktime, val);
+}
 void aee_rr_rec_clk(int id, u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1846,11 +1917,53 @@ void aee_rr_show_hotplug_footprint(struct seq_file *m, int cpu)
 
 void aee_rr_show_hotplug_status(struct seq_file *m)
 {
-	seq_printf(m, "CPU hotplug status:\n notifier: %d, %d, 0x%llx\n",
+	seq_printf(m, "CPU notifier status: %d, %d, 0x%llx\n",
 		   LAST_RRR_VAL(hotplug_cpu_event),
-		   LAST_RRR_VAL(hotplug_cb_index), LAST_RRR_VAL(hotplug_cb_fp));
+		   LAST_RRR_VAL(hotplug_cb_index),
+		   LAST_RRR_VAL(hotplug_cb_fp));
 }
 
+void aee_rr_show_hotplug_caller_callee_status(struct seq_file *m)
+{
+	seq_printf(m, "CPU Hotplug: caller CPU%d, callee CPU%d\n",
+		   LAST_RRR_VAL(cpu_caller),
+		   LAST_RRR_VAL(cpu_callee));
+}
+
+void aee_rr_show_hotplug_up_prepare_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_UP_PREPARE: %lld\n", LAST_RRR_VAL(cpu_up_prepare_ktime));
+}
+
+void aee_rr_show_hotplug_starting_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_STARTING: %lld\n", LAST_RRR_VAL(cpu_starting_ktime));
+}
+
+void aee_rr_show_hotplug_online_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_ONLINE: %lld\n", LAST_RRR_VAL(cpu_online_ktime));
+}
+
+void aee_rr_show_hotplug_down_prepare_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_DOWN_PREPARE: %lld\n", LAST_RRR_VAL(cpu_down_prepare_ktime));
+}
+
+void aee_rr_show_hotplug_dying_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_DYING: %lld\n", LAST_RRR_VAL(cpu_dying_ktime));
+}
+
+void aee_rr_show_hotplug_dead_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_DEAD: %lld\n", LAST_RRR_VAL(cpu_dead_ktime));
+}
+
+void aee_rr_show_hotplug_post_dead_ktime(struct seq_file *m)
+{
+	seq_printf(m, "CPU_POST_DEAD: %lld\n", LAST_RRR_VAL(cpu_post_dead_ktime));
+}
 
 void aee_rr_show_mcdi(struct seq_file *m)
 {
@@ -2588,7 +2701,15 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_ocp_2_enable,
 	aee_rr_show_scp_pc,
 	aee_rr_show_scp_lr,
-	aee_rr_show_hotplug_status
+	aee_rr_show_hotplug_status,
+	aee_rr_show_hotplug_caller_callee_status,
+	aee_rr_show_hotplug_up_prepare_ktime,
+	aee_rr_show_hotplug_starting_ktime,
+	aee_rr_show_hotplug_online_ktime,
+	aee_rr_show_hotplug_down_prepare_ktime,
+	aee_rr_show_hotplug_dying_ktime,
+	aee_rr_show_hotplug_dead_ktime,
+	aee_rr_show_hotplug_post_dead_ktime
 
 };
 
