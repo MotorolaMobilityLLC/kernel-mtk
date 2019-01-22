@@ -734,7 +734,7 @@ wake_reason_t spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	/* for gps only case */
 	if (spm_for_gps_flag) {
 		spm_crit2("spm_for_gps_flag %d\n", spm_for_gps_flag);
-		pwrctrl->pcm_flags |= SPM_FLAG_DIS_MCDI_FLOW;
+		pwrctrl->pcm_flags |= SPM_FLAG_DIS_ULPOSC_OFF;
 	}
 
 #if SPM_PWAKE_EN
