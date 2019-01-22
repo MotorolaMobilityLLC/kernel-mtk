@@ -114,7 +114,6 @@ typedef	uint32_t kal_uint32;
 typedef	int32_t kal_int32;
 typedef	uint64_t kal_uint64;
 typedef	int64_t kal_int64;
-typedef bool kal_bool;
 
 static const kal_uint32 btsco_PacketValidMask[6][6] = {
 		{0x1, 0x1 << 1, 0x1 << 2, 0x1 << 3, 0x1 << 4, 0x1 << 5 }, /* 30 */
@@ -163,26 +162,26 @@ static const unsigned int bt_supported_sample_rates[13] = {
 };
 
 
-typedef enum {
-		BT_SCO_TXSTATE_IDLE = 0x0,
-		BT_SCO_TXSTATE_INIT,
-		BT_SCO_TXSTATE_READY,
-		BT_SCO_TXSTATE_RUNNING,
-		BT_SCO_TXSTATE_ENDING,
-		BT_SCO_RXSTATE_IDLE = 0x10,
-		BT_SCO_RXSTATE_INIT,
-		BT_SCO_RXSTATE_READY,
-		BT_SCO_RXSTATE_RUNNING,
-		BT_SCO_RXSTATE_ENDING,
-		BT_SCO_TXSTATE_DIRECT_LOOPBACK
-} CVSD_STATE;
+enum btcvsd_state {
+	BT_SCO_TXSTATE_IDLE = 0x0,
+	BT_SCO_TXSTATE_INIT,
+	BT_SCO_TXSTATE_READY,
+	BT_SCO_TXSTATE_RUNNING,
+	BT_SCO_TXSTATE_ENDING,
+	BT_SCO_RXSTATE_IDLE = 0x10,
+	BT_SCO_RXSTATE_INIT,
+	BT_SCO_RXSTATE_READY,
+	BT_SCO_RXSTATE_RUNNING,
+	BT_SCO_RXSTATE_ENDING,
+	BT_SCO_TXSTATE_DIRECT_LOOPBACK
+};
 
-typedef enum {
+enum btsco_direct {
 		BT_SCO_DIRECT_BT2ARM,
 		BT_SCO_DIRECT_ARM2BT
-} BT_SCO_DIRECT;
+};
 
-typedef enum {
+enum bt_sco_packet_len {
 		BT_SCO_CVSD_30 = 0,
 		BT_SCO_CVSD_60 = 1,
 		BT_SCO_CVSD_90 = 2,
@@ -190,7 +189,7 @@ typedef enum {
 		BT_SCO_CVSD_10 = 4,
 		BT_SCO_CVSD_20 = 5,
 		BT_SCO_CVSD_MAX = 6
-} BT_SCO_PACKET_LEN;
+};
 
 enum BT_SCO_BAND {
 	BT_SCO_NB,
@@ -209,60 +208,60 @@ struct time_buffer_info {
 	uint64 timestamp_us;
 };
 
-typedef struct {
-		dma_addr_t pucTXPhysBufAddr;
-		dma_addr_t pucRXPhysBufAddr;
-		kal_uint8 *pucTXVirtBufAddr;
-		kal_uint8 *pucRXVirtBufAddr;
-		kal_int32 u4TXBufferSize;
-		kal_int32 u4RXBufferSize;
-		struct snd_pcm_substream *TX_substream;
-		struct snd_pcm_substream *RX_substream;
-		struct snd_dma_buffer TX_btcvsd_dma_buf;
-		struct snd_dma_buffer RX_btcvsd_dma_buf;
-} CVSD_MEMBLOCK_T;
+struct cvsd_memblock {
+	dma_addr_t pucTXPhysBufAddr;
+	dma_addr_t pucRXPhysBufAddr;
+	kal_uint8 *pucTXVirtBufAddr;
+	kal_uint8 *pucRXVirtBufAddr;
+	kal_int32 u4TXBufferSize;
+	kal_int32 u4RXBufferSize;
+	struct snd_pcm_substream *TX_substream;
+	struct snd_pcm_substream *RX_substream;
+	struct snd_dma_buffer TX_btcvsd_dma_buf;
+	struct snd_dma_buffer RX_btcvsd_dma_buf;
+};
 
 
-typedef struct {
-		kal_uint8
-		PacketBuf[SCO_RX_PACKER_BUF_NUM][SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE];
-		kal_bool                PacketValid[SCO_RX_PACKER_BUF_NUM];
-		int   iPacket_w;
-		int   iPacket_r;
-		kal_uint8         TempPacketBuf[BT_SCO_PACKET_180];
-		kal_bool          fOverflow;
-		kal_uint32      u4BufferSize;   /* RX packetbuf size */
-} BT_SCO_RX_T;
+struct btsco_rx {
+	kal_uint8
+	PacketBuf[SCO_RX_PACKER_BUF_NUM][SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE];
+	bool PacketValid[SCO_RX_PACKER_BUF_NUM];
+	int   iPacket_w;
+	int   iPacket_r;
+	kal_uint8         TempPacketBuf[BT_SCO_PACKET_180];
+	bool fOverflow;
+	kal_uint32      u4BufferSize;   /* RX packetbuf size */
+};
 
-typedef struct {
+struct btsco_tx {
 	kal_uint8 PacketBuf[SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE];
 	kal_int32 iPacket_w;
 	kal_int32 iPacket_r;
 	kal_uint8 TempPacketBuf[BT_SCO_PACKET_180];
-	kal_bool fUnderflow;
+	bool fUnderflow;
 	kal_uint32 u4BufferSize; /* TX packetbuf size */
 	struct btcvsd_tx_buffer_info buffer_info;
 	bool mute;
-} BT_SCO_TX_T;
+};
 
-typedef struct {
-		BT_SCO_TX_T *pTX;
-		BT_SCO_RX_T *pRX;
-		kal_uint8 *pStructMemory;
-		kal_uint8 *pWorkingMemory;
-		kal_uint16 uAudId;
-		CVSD_STATE uTXState;
-		CVSD_STATE uRXState;
-		kal_bool  fIsStructMemoryOnMED;
-		enum BT_SCO_BAND band;
-} BT_SCO_T;
+struct btsco {
+	struct btsco_tx *pTX;
+	struct btsco_rx *pRX;
+	kal_uint8 *pStructMemory;
+	kal_uint8 *pWorkingMemory;
+	kal_uint16 uAudId;
+	enum btcvsd_state uTXState;
+	enum btcvsd_state uRXState;
+	bool  fIsStructMemoryOnMED;
+	enum BT_SCO_BAND band;
+};
 
-extern BT_SCO_T btsco;
+extern struct btsco btsco;
 
-extern volatile kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
-extern volatile kal_uint32 *bt_hw_REG_CONTROL;
+extern kal_uint32 *bt_hw_REG_PACKET_W, *bt_hw_REG_PACKET_R;
+extern kal_uint32 *bt_hw_REG_CONTROL;
 
-extern CVSD_MEMBLOCK_T BT_CVSD_Mem;
+extern struct cvsd_memblock BT_CVSD_Mem;
 
 extern kal_uint32 disableBTirq;
 
@@ -271,14 +270,18 @@ extern bool isProbeDone;
 /*****************************************************************************
  *    BT SCO Internal Function
 *****************************************************************************/
-void AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT uDir, kal_uint8 *pSrc,
-					kal_uint8 *pDst, kal_uint32 uBlockSize, kal_uint32 uBlockNum,
-					CVSD_STATE uState);
-void AudDrv_BTCVSD_ReadFromBT(BT_SCO_PACKET_LEN uLen,
-					kal_uint32 uPacketLength, kal_uint32 uPacketNumber, kal_uint32 uBlockSize,
-					kal_uint32 uControl);
-void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
-					kal_uint32 uPacketLength, kal_uint32 uPacketNumber, kal_uint32 uBlockSize);
+void AudDrv_BTCVSD_DataTransfer(enum btsco_direct uDir, kal_uint8 *pSrc,
+				kal_uint8 *pDst, kal_uint32 uBlockSize,
+				kal_uint32 uBlockNum, enum btcvsd_state uState);
+void AudDrv_BTCVSD_ReadFromBT(enum bt_sco_packet_len uLen,
+			      kal_uint32 uPacketLength,
+			      kal_uint32 uPacketNumber,
+			      kal_uint32 uBlockSize,
+			      kal_uint32 uControl);
+void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
+			     kal_uint32 uPacketLength,
+			     kal_uint32 uPacketNumber,
+			     kal_uint32 uBlockSize);
 bool Register_BTCVSD_Irq(void *dev, unsigned int irq_number);
 int AudDrv_BTCVSD_IRQ_handler(void);
 int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX);
@@ -310,30 +313,10 @@ void get_rx_timestamp(struct time_buffer_info *timestamp);
 
 
 /* here is temp address for ioremap BT hardware register */
-extern volatile void *BTSYS_PKV_BASE_ADDRESS;
-extern volatile void *BTSYS_SRAM_BANK2_BASE_ADDRESS;
-extern volatile void *AUDIO_INFRA_BASE_VIRTUAL;
+extern void *BTSYS_PKV_BASE_ADDRESS;
+extern void *BTSYS_SRAM_BANK2_BASE_ADDRESS;
+extern void *AUDIO_INFRA_BASE_VIRTUAL;
 
-
-#ifdef CONFIG_OF
-static volatile unsigned long btsys_pkv_physical_base;
-static volatile unsigned long btsys_sram_bank2_physical_base;
-static volatile unsigned long infra_base;
-static volatile unsigned long infra_misc_offset;
-static volatile unsigned long conn_bt_cvsd_mask;
-static volatile unsigned long cvsd_mcu_read_offset;
-static volatile unsigned long cvsd_mcu_write_offset;
-static volatile unsigned long cvsd_packet_indicator;
-#else
-#define AUDIO_BTSYS_PKV_PHYSICAL_BASE  (0x18000000)
-#define AUDIO_BTSYS_SRAM_BANK2_PHYSICAL_BASE  (0x18080000)
-#define AUDIO_INFRA_BASE_PHYSICAL (0x10000000)
-#define INFRA_MISC_OFFSET (0x0700)   /* INFRA_MISC address=AUDIO_INFRA_BASE_PHYSICAL + INFRA_MISC_OFFSET */
-#define conn_bt_cvsd_mask (0x00000800)   /* bit 11 of INFRA_MISC */
-#define CVSD_MCU_READ_OFFSET (0xFD0)
-#define CVSD_MCU_WRITE_OFFSET (0xFD4)
-#define CVSD_PACKET_INDICATOR (0xFD8)
-#endif
 #define AP_BT_CVSD_IRQ_LINE (260)
 extern u32 btcvsd_irq_number;
 

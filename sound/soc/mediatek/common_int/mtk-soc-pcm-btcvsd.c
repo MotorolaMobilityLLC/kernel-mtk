@@ -51,10 +51,10 @@
 
 #include "mtk-soc-pcm-btcvsd.h"
 
-CVSD_MEMBLOCK_T BT_CVSD_Mem;
+struct cvsd_memblock BT_CVSD_Mem;
 struct device *mDev_btcvsd_rx;
 struct device *mDev_btcvsd_tx;
-BT_SCO_T btsco;
+struct btsco btsco;
 bool isProbeDone;
 static kal_uint32 BTCVSD_write_wait_queue_flag;
 static kal_uint32 BTCVSD_read_wait_queue_flag;
@@ -88,9 +88,9 @@ void get_rx_timestamp(struct time_buffer_info *timestamp)
 	timestamp->data_count_equi_time = bt_rx_bufdata_equivalent_time;
 }
 
-void AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT uDir, kal_uint8 *pSrc,
-										kal_uint8 *pDst, kal_uint32 uBlockSize,
-										kal_uint32 uBlockNum, CVSD_STATE uState)
+void AudDrv_BTCVSD_DataTransfer(enum btsco_direct uDir, kal_uint8 *pSrc,
+				kal_uint8 *pDst, kal_uint32 uBlockSize,
+				kal_uint32 uBlockNum, enum btcvsd_state uState)
 {
 	kal_int32 i, j;
 
@@ -116,11 +116,11 @@ void AudDrv_BTCVSD_DataTransfer(BT_SCO_DIRECT uDir, kal_uint8 *pSrc,
 	}
 }
 
-void AudDrv_BTCVSD_ReadFromBT(BT_SCO_PACKET_LEN uLen,
-											kal_uint32 uPacketLength,
-											kal_uint32 uPacketNumber,
-											kal_uint32 uBlockSize,
-											kal_uint32 uControl)
+void AudDrv_BTCVSD_ReadFromBT(enum bt_sco_packet_len uLen,
+			      kal_uint32 uPacketLength,
+			      kal_uint32 uPacketNumber,
+			      kal_uint32 uBlockSize,
+			      kal_uint32 uControl)
 {
 	kal_int32 i;
 	kal_uint16 pv;
@@ -179,10 +179,10 @@ void AudDrv_BTCVSD_ReadFromBT(BT_SCO_PACKET_LEN uLen,
 	LOGBT("%s(-) btsco.pRX->iPacket_w=%d\n", __func__, btsco.pRX->iPacket_w);
 }
 
-void AudDrv_BTCVSD_WriteToBT(BT_SCO_PACKET_LEN uLen,
-											kal_uint32 uPacketLength,
-											kal_uint32 uPacketNumber,
-											kal_uint32 uBlockSize)
+void AudDrv_BTCVSD_WriteToBT(enum bt_sco_packet_len uLen,
+			     kal_uint32 uPacketLength,
+			     kal_uint32 uPacketNumber,
+			     kal_uint32 uBlockSize)
 {
 	kal_int32 i;
 	unsigned long flags;
@@ -250,7 +250,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 		readFromBT_cnt = 0;
 		rx_timeout = false;
 
-		BT_CVSD_Mem.u4RXBufferSize = sizeof(BT_SCO_RX_T);
+		BT_CVSD_Mem.u4RXBufferSize = sizeof(struct btsco_rx);
 
 		if ((BT_CVSD_Mem.pucRXVirtBufAddr == NULL)
 				&& (BT_CVSD_Mem.pucRXPhysBufAddr == 0)) {
@@ -269,7 +269,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 						  BT_CVSD_Mem.pucRXVirtBufAddr,
 						  &BT_CVSD_Mem.pucRXPhysBufAddr);
 
-			btsco.pRX = (BT_SCO_RX_T *)(BT_CVSD_Mem.pucRXVirtBufAddr);
+			btsco.pRX = (struct btsco_rx *)(BT_CVSD_Mem.pucRXVirtBufAddr);
 			btsco.pRX->u4BufferSize = SCO_RX_PACKER_BUF_NUM *
 							(SCO_RX_PLC_SIZE + BTSCO_CVSD_PACKET_VALID_SIZE);
 
@@ -282,7 +282,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 		writeToBT_cnt = 0;
 		tx_timeout = false;
 
-		BT_CVSD_Mem.u4TXBufferSize = sizeof(BT_SCO_TX_T);
+		BT_CVSD_Mem.u4TXBufferSize = sizeof(struct btsco_tx);
 		if ((BT_CVSD_Mem.pucTXVirtBufAddr == NULL)
 				&& (BT_CVSD_Mem.pucTXPhysBufAddr == 0)) {
 			BT_CVSD_Mem.pucTXVirtBufAddr = dma_alloc_coherent(mDev_btcvsd_tx,
@@ -299,7 +299,7 @@ int AudDrv_btcvsd_Allocate_Buffer(kal_uint8 isRX)
 						  BT_CVSD_Mem.pucTXVirtBufAddr,
 						  &BT_CVSD_Mem.pucTXPhysBufAddr);
 
-			btsco.pTX = (BT_SCO_TX_T *)(BT_CVSD_Mem.pucTXVirtBufAddr);
+			btsco.pTX = (struct btsco_tx *)(BT_CVSD_Mem.pucTXVirtBufAddr);
 			btsco.pTX->u4BufferSize = SCO_TX_PACKER_BUF_NUM * SCO_TX_ENCODE_SIZE;
 
 			/* AudDrv_Allocate_mem_Buffer */

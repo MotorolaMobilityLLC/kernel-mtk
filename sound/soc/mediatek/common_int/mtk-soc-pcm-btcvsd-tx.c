@@ -389,7 +389,7 @@ static int mtk_btcvsd_tx_probe(struct platform_device *pdev)
 
 	/* init */
 	if (!isProbeDone) {
-		memset((void *)&BT_CVSD_Mem, 0, sizeof(CVSD_MEMBLOCK_T));
+		memset((void *)&BT_CVSD_Mem, 0, sizeof(struct cvsd_memblock));
 		isProbeDone = 1;
 	}
 
