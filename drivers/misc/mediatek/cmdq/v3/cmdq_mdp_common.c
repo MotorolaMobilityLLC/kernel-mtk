@@ -400,7 +400,7 @@ static void cmdq_mdp_isp_begin_task_virtual(struct TaskStruct *cmdq_task, struct
 	struct mdp_pmqos_record *pmqos_curr_record;
 	struct timeval curr_time;
 	int32_t diff;
-	uint32_t thread_id = cmdq_task->thread - CMDQ_DYNAMIC_THREAD_ID_START;
+	uint32_t thread_id = cmdq_task->thread - MDP_THREAD_START;
 	uint32_t max_throughput = 0;
 	uint32_t curr_bandwidth = 0;
 
@@ -473,7 +473,7 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 	struct timeval curr_time;
 	int32_t numerator;
 	int32_t denominator;
-	uint32_t thread_id = cmdq_task->thread - CMDQ_DYNAMIC_THREAD_ID_START;
+	uint32_t thread_id = cmdq_task->thread - MDP_THREAD_START;
 	uint32_t max_throughput = 0;
 	uint32_t isp_curr_bandwidth = 0;
 	uint32_t isp_data_size = 0;
@@ -704,7 +704,7 @@ static void cmdq_mdp_isp_end_task_virtual(struct TaskStruct *cmdq_task, struct T
 {
 #ifdef CONFIG_MTK_QOS_SUPPORT
 	struct mdp_pmqos *isp_curr_pmqos;
-	uint32_t thread_id = cmdq_task->thread - CMDQ_DYNAMIC_THREAD_ID_START;
+	uint32_t thread_id = cmdq_task->thread - MDP_THREAD_START;
 
 	if (!(cmdq_task->engineFlag & (1LL << CMDQ_ENG_ISP_IMGI) &&
 		cmdq_task->engineFlag & (1LL << CMDQ_ENG_ISP_IMG2O))) {
@@ -737,7 +737,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 	s32 i = 0;
 	struct timeval curr_time;
 	int32_t denominator;
-	uint32_t thread_id = cmdq_task->thread - CMDQ_DYNAMIC_THREAD_ID_START;
+	uint32_t thread_id = cmdq_task->thread - MDP_THREAD_START;
 	uint32_t max_throughput = 0;
 	uint32_t pre_throughput = 0;
 	bool trigger = false;
@@ -758,7 +758,7 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 	do_gettimeofday(&curr_time);
 	CMDQ_MSG("enter %s with task:0x%p engine:0x%llx\n", __func__, cmdq_task, cmdq_task->engineFlag);
 
-	if (!cmdq_task->prop_addr)
+	if (!cmdq_task->prop_addr || !cmdq_task->user_private)
 		return;
 
 	mdp_curr_pmqos = (struct mdp_pmqos *)cmdq_task->prop_addr;

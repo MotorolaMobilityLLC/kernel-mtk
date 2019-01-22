@@ -1209,6 +1209,11 @@ extern "C" {
 	void cmdq_core_set_cmdq_device(struct device *cmdq_dev);
 	int cmdq_core_runtime_suspend(struct device *dev);
 	int cmdq_core_runtime_resume(struct device *dev);
+	void cmdq_core_group_begin_task(struct TaskStruct *task,
+		struct TaskStruct *task_list[], u32 size);
+	s32 cmdq_core_get_pmqos_task_list(struct TaskStruct *pTask,
+		struct ThreadStruct *pThread, struct TaskStruct **task_list_out,
+		u32 *task_list_count_out, u32 task_list_max_size);
 #ifdef __cplusplus
 }
 #endif
