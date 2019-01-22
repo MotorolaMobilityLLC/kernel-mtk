@@ -48,7 +48,6 @@ void cmdq_dev_enable_gce_clock(bool enable);
 bool cmdq_dev_gce_clock_is_enable(void);
 /* virtual address */
 long cmdq_dev_get_module_base_VA_GCE(void);
-long cmdq_dev_get_module_base_VA_MMSYS_CONFIG(void);
 unsigned long cmdq_dev_alloc_reference_VA_by_name(const char *ref_name);
 /* Other modules information */
 void cmdq_dev_free_module_base_VA(const long VA);

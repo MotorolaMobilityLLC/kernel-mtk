@@ -369,6 +369,22 @@ static struct cmdq_event_table cmdq_events[] = {
 	/* 6771 New Event */
 	DECLAR_EVENT(CMDQ_EVENT_SPE_B_FRAME_DONE, spe_b_frame_done)
 
+	/* 6775 New Event */
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR_SOF, mdp_ccorr_sof)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_CCORR_FRAME_DONE, mdp_ccorr_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_MDP_AAL_FRAME_DONE, mdp_aal_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_WPE_B_FRAME_DONE, wpe_b_frame_done)
+	DECLAR_EVENT(CMDQ_EVENT_MFB_DONE, mfb_done)
+	DECLAR_EVENT(CMDQ_EVENT_OCC_DONE, occ_done)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_0, ipu_done_1_0)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_1, ipu_done_1_1)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_2, ipu_done_1_2)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_1_3, ipu_done_1_3)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_0, ipu_done_2_0)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_1, ipu_done_2_1)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_2, ipu_done_2_2)
+	DECLAR_EVENT(CMDQ_EVENT_IPU_DONE_2_3, ipu_done_2_3)
+
 	/* Keep this at the end of HW events */
 	DECLAR_EVENT(CMDQ_MAX_HW_EVENT_COUNT, hw_event_conunt)
 
