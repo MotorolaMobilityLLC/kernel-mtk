@@ -50,7 +50,7 @@ typedef struct {
 } st_cmd_head;
 #pragma pack()
 st_cmd_head cmd_head;
-struct mutex rw_mutex;
+static DEFINE_MUTEX(rw_mutex);
 
 s32 DATA_LENGTH = 0;
 s8 IC_TYPE[16] = "GT9XX";
