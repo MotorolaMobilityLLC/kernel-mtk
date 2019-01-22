@@ -166,6 +166,33 @@ err:
 	return -EINVAL;
 }
 
+#ifdef CONFIG_ZONE_MOVABLE_CMA
+void cma_resize_front(struct cma *cma, unsigned long nr_pfn)
+{
+	cma->base_pfn += nr_pfn;
+	cma->count    -= nr_pfn;
+}
+
+int cma_alloc_range_ok(struct cma *cma, int count, int align)
+{
+	unsigned long mask, offset;
+	unsigned long bitmap_maxno, bitmap_no, bitmap_count;
+
+	mask = cma_bitmap_aligned_mask(cma, align);
+	offset = cma_bitmap_aligned_offset(cma, align);
+	bitmap_maxno = cma_bitmap_maxno(cma);
+	bitmap_count = cma_bitmap_pages_to_bits(cma, count);
+
+	bitmap_no = bitmap_find_next_zero_area_off(cma->bitmap,
+			bitmap_maxno, 0, bitmap_count, mask,
+			offset);
+
+	if (bitmap_no >= bitmap_maxno)
+		return false;
+	return true;
+}
+#endif
+
 static int __init cma_init_reserved_areas(void)
 {
 	int i;
