@@ -2502,7 +2502,7 @@ static int m4u_probe(struct platform_device *pdev)
 			unsigned int mva;
 
 			pMvaInfo = m4u_alloc_buf_info();
-			if (!pMvaInfo) {
+			if (pMvaInfo != NULL) {
 				pMvaInfo->port = M4U_PORT_UNKNOWN;
 				pMvaInfo->size = M4U_NONSEC_MVA_START - 0x100000;
 			}
@@ -2519,7 +2519,7 @@ static int m4u_probe(struct platform_device *pdev)
 			unsigned int mva;
 
 			pMvaInfo = m4u_alloc_buf_info();
-			if (!pMvaInfo) {
+			if (pMvaInfo != NULL) {
 				pMvaInfo->port = M4U_PORT_VPU;
 				pMvaInfo->size = 0x50000000 - 0x0;
 			}
