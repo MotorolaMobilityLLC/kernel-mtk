@@ -32,6 +32,7 @@
 #include <linux/of_reserved_mem.h>
 #include <linux/pstore.h>
 #include <linux/io.h>
+#include <mt-plat/aee.h>
 #include "ram_console.h"
 
 #define RAM_CONSOLE_HEADER_STR_LEN 1024
@@ -54,15 +55,15 @@ struct last_reboot_reason {
 	uint32_t exp_type;	/* 0xaeedeadX: X=1 (HWT), X=2 (KE), X=3 (nested panic) */
 	uint32_t reboot_mode;
 
-	uint32_t last_irq_enter[NR_CPUS];
-	uint64_t jiffies_last_irq_enter[NR_CPUS];
+	uint32_t last_irq_enter[AEE_MTK_CPU_NUMS];
+	uint64_t jiffies_last_irq_enter[AEE_MTK_CPU_NUMS];
 
-	uint32_t last_irq_exit[NR_CPUS];
-	uint64_t jiffies_last_irq_exit[NR_CPUS];
+	uint32_t last_irq_exit[AEE_MTK_CPU_NUMS];
+	uint64_t jiffies_last_irq_exit[AEE_MTK_CPU_NUMS];
 
-	uint64_t jiffies_last_sched[NR_CPUS];
-	char last_sched_comm[NR_CPUS][TASK_COMM_LEN];
-	uint8_t hotplug_footprint[NR_CPUS];
+	uint64_t jiffies_last_sched[AEE_MTK_CPU_NUMS];
+	char last_sched_comm[AEE_MTK_CPU_NUMS][TASK_COMM_LEN];
+	uint8_t hotplug_footprint[AEE_MTK_CPU_NUMS];
 	uint8_t hotplug_cpu_event;
 	uint8_t hotplug_cb_index;
 	uint64_t hotplug_cb_fp;
@@ -89,8 +90,8 @@ struct last_reboot_reason {
 	uint32_t mcsodi_data;
 	uint32_t spm_suspend_data;
 	uint32_t spm_common_scenario_data;
-	uint32_t mtk_cpuidle_footprint[NR_CPUS];
-	uint32_t mcdi_footprint[NR_CPUS];
+	uint32_t mtk_cpuidle_footprint[AEE_MTK_CPU_NUMS];
+	uint32_t mcdi_footprint[AEE_MTK_CPU_NUMS];
 	uint32_t clk_data[8];
 	uint32_t suspend_debug_flag;
 	uint32_t fiq_cache_step;
