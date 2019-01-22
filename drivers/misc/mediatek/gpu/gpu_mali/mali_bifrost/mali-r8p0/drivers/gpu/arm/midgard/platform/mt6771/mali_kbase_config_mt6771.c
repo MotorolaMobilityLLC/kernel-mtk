@@ -123,7 +123,7 @@ static void _mtk_pm_callback_power_off(void)
 	mt_gpufreq_disable_CG();
 
 	/* Turn off GPU MTCMOS by sequence */
-	mt_gpufreq_disable_MTCMOS();
+	/* mt_gpufreq_disable_MTCMOS(); */
 
 	/* Turn off GPU PMIC Buck */
 	/* mt_gpufreq_voltage_enable_set(0); */
@@ -145,7 +145,7 @@ static int _mtk_pm_callback_power_on(void)
 	mt_gpufreq_voltage_enable_set(1);
 
 	/* Turn on GPU MTCMOS by sequence */
-	mt_gpufreq_enable_MTCMOS();
+	/* mt_gpufreq_enable_MTCMOS(); */
 
 	/* Enable clock gating */
 	mt_gpufreq_enable_CG();
