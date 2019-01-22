@@ -2566,13 +2566,13 @@ void Auddrv_DL1_Interrupt_Handler(void)
 	spin_unlock_irqrestore(&Mem_Block->substream_lock, flags);
 }
 
-void Auddrv_DL1_Data2_Interrupt_Handler(void)
+void Auddrv_DL1_Data2_Interrupt_Handler(enum soc_aud_digital_block mem_block)
 {
 	/* irq6 ISR handler */
-	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1_DATA2];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[mem_block];
 	unsigned long flags;
 
-	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1_DATA2)) {
+	if (GetMemoryPathEnable(mem_block)) {
 		if (Mem_Block->substreamL != NULL) {
 			if (Mem_Block->substreamL->substream != NULL) {
 				spin_lock_irqsave(&Mem_Block->substream_lock, flags);

@@ -192,7 +192,7 @@ void Auddrv_DAI_Interrupt_Handler(void);
 void Auddrv_HDMI_Interrupt_Handler(void);
 void Auddrv_UL2_Interrupt_Handler(void);
 void Auddrv_MOD_DAI_Interrupt_Handler(void);
-void Auddrv_DL1_Data2_Interrupt_Handler(void);
+void Auddrv_DL1_Data2_Interrupt_Handler(enum soc_aud_digital_block mem_block);
 void Auddrv_VUL2_Interrupt_Handler(void);
 kal_uint32 Get_Mem_CopySizeByStream(enum soc_aud_digital_block MemBlock,
 				    struct snd_pcm_substream *substream);
