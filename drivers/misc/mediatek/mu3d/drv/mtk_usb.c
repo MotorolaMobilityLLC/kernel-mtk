@@ -372,12 +372,16 @@ ssize_t musb_cmode_store(struct device *dev, struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
 	unsigned int cmode;
-	struct musb *musb = dev_to_musb(dev);
+	struct musb *musb;
 
 	if (!dev) {
 		os_printk(K_ERR, "dev is null!!\n");
 		return count;
-	} else if (sscanf(buf, "%ud", &cmode) == 1) {
+	}
+
+	musb = dev_to_musb(dev);
+
+	if (sscanf(buf, "%ud", &cmode) == 1) {
 		os_printk(K_INFO, "%s %s --> %s\n", __func__, usb_mode_str[cable_mode],
 			  usb_mode_str[cmode]);
 
