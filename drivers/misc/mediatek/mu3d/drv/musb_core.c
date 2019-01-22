@@ -2954,7 +2954,7 @@ static struct kernel_param_ops mu3d_force_on_param_ops = {
 	.set = set_mu3d_force_on,
 	.get = param_get_int,
 };
-module_param_cb(mu3d_force_on, &mu3d_force_on_param_ops, &mu3d_force_on, 0400);
+module_param_cb(mu3d_force_on, &mu3d_force_on_param_ops, &mu3d_force_on, 0644);
 
 /*-------------------------------------------------------------------------*/
 #ifdef CONFIG_USBIF_COMPLIANCE
