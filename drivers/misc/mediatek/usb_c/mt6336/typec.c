@@ -442,7 +442,7 @@ void trigger_driver(struct typec_hba *hba, int type, int stat, int dir)
 			typec->device_driver->disable(typec->device_driver->priv_data);
 			typec->device_driver->on = DISABLE;
 			dev_err(hba->dev, "%s disable device", __func__);
-		} else if (typec->host_driver && typec->device_driver->on == ENABLE) {
+		} else if (typec->host_driver && typec->host_driver->on == ENABLE) {
 			typec->host_driver->disable(typec->host_driver->priv_data);
 			typec->host_driver->on = DISABLE;
 			dev_err(hba->dev, "%s disable host", __func__);
@@ -1071,6 +1071,23 @@ skip:
 #endif
 
 #if SUPPORT_PD
+void control_ldo(struct typec_hba *hba, uint8_t on)
+{
+	uint8_t val = 0;
+	/* set to GPIO mode GPIO_MODE5[0:2] = 0*/
+	val = typec_read8(hba, 0x731);
+	typec_write8(hba, val & ~0x7, 0x731);
+
+	/* set to OUTPUT mode GPIO_DIR1_SET[2] = 1*/
+	typec_write8(hba, 0x4, 0x704);
+
+	/* output high / low*/
+	if (on) /* GPIO_DOUT1_SET[2] = 1 */
+		typec_write8(hba, 0x4, 0x71C);
+	else /* GPIO_DOUT1_CLR[2] = 1*/
+		typec_write8(hba, 0x4, 0x71D);
+}
+
 void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
 {
 	/*TEST:read ro_type_c_drive_vconn_capable@TYPE_C_PWR_STATUS*/
@@ -1078,12 +1095,16 @@ void typec_drive_vconn(struct typec_hba *hba, uint8_t on)
 		dev_err(hba->dev, "VCONN CAPABLE = %d",
 			(typec_readw(hba, TYPE_C_PWR_STATUS) & RO_TYPE_C_DRIVE_VCONN_CAPABLE));
 
-	/*TODO:Enable 5v Boost*/
-	/*1.Use jumper959 to pull high EN pin by Vsys. Always provide Vconn to MT6336*/
-	/*2.Usb EINT12 to control EN pin*/
+	/*Use MT6336 GPIO6 to control outside LDO*/
+	if (on)
+		control_ldo(hba, on);
 
 	typec_writew_msk(hba, TYPE_C_SW_DA_DRIVE_VCONN_EN,
 		((on) ? TYPE_C_SW_DA_DRIVE_VCONN_EN : 0), TYPE_C_CC_SW_CTRL);
+
+	/*Use MT6336 GPIO6 to control outside LDO*/
+	if (!on)
+		control_ldo(hba, !on);
 
 	if ((hba->dbg_lvl >= TYPEC_DBG_LVL_2) && (hba->vconn_en != on))
 		dev_err(hba->dev, "VCONN %s", (on ? "ON" : "OFF"));
@@ -1572,12 +1593,10 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	/*serve interrupts according to power role*/
 	if (cc_is0 & (TYPE_C_CC_ENT_DISABLE_INTR | toggle)) {
 
-#if SUPPORT_PD
-		/* Move trigger host/device driver to pd_task */
-#else
-		if (hba->cc > DONT_CARE)
+		/*Move trigger host/device driver to pd_task, if support PD*/
+		if ((hba->mode == 1) && (hba->cc > DONT_CARE))
 			trigger_driver(hba, DONT_CARE_TYPE, DISABLE, DONT_CARE);
-#endif
+
 		hba->cc = DONT_CARE;
 
 		/*ignore SNK<->SRC & SNK<->ACC*/
@@ -1614,11 +1633,10 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SNK_INTR) {
 		typec_show_routed_cc(hba);
 
-#if SUPPORT_PD
-		/*Move trigger host/device driver to pd_task*/
-#else
-		trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
-#endif
+		/*Move trigger host/device driver to pd_task, if support PD*/
+		if (hba->mode == 1)
+			trigger_driver(hba, DEVICE_TYPE, ENABLE, hba->cc);
+
 		/* At Attached.SNK, continue checking vSafe5V is presented or not?
 		 * If Vbus is removed, set TYPE_C_SW_VBUS_PRESENT@TYPE_C_CC_SW_CTRL(0xA) as 0
 		 * to notify MAC layer.
@@ -1632,11 +1650,9 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 	if (cc_is0 & TYPE_C_CC_ENT_ATTACH_SRC_INTR) {
 		typec_show_routed_cc(hba);
 
-#if SUPPORT_PD
-		/*Move trigger host/device driver to pd_task*/
-#else
-		trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
-#endif
+		/*Move trigger host/device driver to pd_task, if support PD*/
+		if (hba->mode == 1)
+			trigger_driver(hba, HOST_TYPE, ENABLE, hba->cc);
 
 		/* At Attached.SRC, continue checking Vbus is vSafe0V or not?
 		 * If Vbus stays at 0v, turn on Vbus to vSafe5V.
@@ -1837,6 +1853,10 @@ void parse_dts(struct device_node *np, struct typec_hba *hba)
 
 	if (get_u32(np, "vbus_off_polling", &hba->vbus_off_polling) != 0)
 		hba->vbus_off_polling = 500;
+
+	if (get_u32(np, "discover_vmd", &hba->discover_vmd) != 0)
+		hba->discover_vmd = 0;
+
 }
 
 int typec_init(struct device *dev, struct typec_hba **hba_handle,
@@ -1893,6 +1913,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	INIT_WORK(&hba->auxadc_voltage_mon_attached_snk, typec_auxadc_voltage_mon_attached_snk);
 	#endif
 
+	if (hba->mode == 0)
+		goto next;
 
 	/*register IRQ*/
 #if FPGA_PLATFORM
@@ -1985,11 +2007,11 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	init_completion(&hba->auxadc_event);
 #endif
 
-	#if SUPPORT_PD
+#if SUPPORT_PD
 	/*initialize PD*/
 	if (hba->mode == 2)
 		pd_init(hba);
-	#endif
+#endif
 
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	mt_dual_role_phy_init(hba);
@@ -2006,7 +2028,7 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	} else {
 		typec_enable(hba, 0);
 	}
-
+next:
 	return 0;
 
 out_error:

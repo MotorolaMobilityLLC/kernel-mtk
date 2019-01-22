@@ -519,8 +519,6 @@ void pd_set_msg_id(struct typec_hba *hba, uint8_t msg_id)
 	}
 }
 
-#define MS_TO_KTIME(ms) ktime_set(ms/1000, (ms%1000)*1000000)
-
 inline void set_state_timeout(struct typec_hba *hba,
 	unsigned long ms_timeout, enum pd_states timeout_state)
 {
@@ -563,7 +561,7 @@ inline void set_state_timeout(struct typec_hba *hba,
 			dev_err(hba->dev, "Set timeout=%lu state=%s\n", ms_timeout,
 					pd_state_mapping[hba->timeout_state].name);
 
-		hrtimer_start(&hba->timeout_timer, MS_TO_KTIME(ms_timeout), HRTIMER_MODE_REL);
+		hrtimer_start(&hba->timeout_timer, ms_to_ktime(ms_timeout), HRTIMER_MODE_REL);
 	}
 #endif /* FPGA_PLATFORM */
 }
@@ -2333,14 +2331,12 @@ int pd_task(void *data)
 #endif
 
 			/* Send discovery SVDMs last */
-			if (hba->data_role == PD_ROLE_DFP &&
-			    (hba->flags & PD_FLAGS_DATA_SWAPPED)) {
-#ifndef CONFIG_USB_PD_SIMPLE_DFP
-#ifdef VDM_MODE
+			if ((hba->discover_vmd == 1) &&
+			     (hba->data_role == PD_ROLE_DFP) &&
+			     (hba->flags & PD_FLAGS_DATA_SWAPPED)) {
 				pd_send_vdm(hba, USB_SID_PD,
 					    CMD_DISCOVER_IDENT, NULL, 0);
-#endif
-#endif
+
 				hba->flags &= ~PD_FLAGS_DATA_SWAPPED;
 
 				/*Kick FSM to enter the next stat earlier.*/
@@ -2707,12 +2703,13 @@ int pd_task(void *data)
 #endif
 
 			/* If DFP, send discovery SVDMs */
-			if (hba->data_role == PD_ROLE_DFP &&
+			if ((hba->discover_vmd == 1) &&
+			     (hba->data_role == PD_ROLE_DFP) &&
 			     (hba->flags & PD_FLAGS_DATA_SWAPPED)) {
-#ifdef VDM_MODE
+
 				pd_send_vdm(hba, USB_SID_PD,
 					    CMD_DISCOVER_IDENT, NULL, 0);
-#endif
+
 				hba->flags &= ~PD_FLAGS_DATA_SWAPPED;
 				break;
 			}
