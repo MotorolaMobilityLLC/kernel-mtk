@@ -223,6 +223,7 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 /* VC_Num, VC_PixelNum, ModeSelect, EXPO_Ratio, ODValue, RG_STATSMODE */
 /* VC0_ID, VC0_DataType, VC0_SIZEH, VC0_SIZE, VC1_ID, VC1_DataType, VC1_SIZEH, VC1_SIZEV */
 /* VC2_ID, VC2_DataType, VC2_SIZEH, VC2_SIZE, VC3_ID, VC3_DataType, VC3_SIZEH, VC3_SIZEV */
+/* VC wsize in bytes */
 static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[10] = {
 	/* Preview mode setting */
 	{
@@ -234,7 +235,7 @@ static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[10] = {
 	{
 		0x02, 0x0A, 0x00, 0x08, 0x40, 0x00,
 		0x00, 0x2B, 0x1080, 0x0C40, 0x00, 0x00, 0x0000, 0x0000,
-		0x01, 0x2B, 0x0100, 0x0300, 0x00, 0x00, 0x0000, 0x0000
+		0x01, 0x2B, 0x0140, 0x0300, 0x00, 0x00, 0x0000, 0x0000
 	},
 	/* Video mode setting */
 	{
