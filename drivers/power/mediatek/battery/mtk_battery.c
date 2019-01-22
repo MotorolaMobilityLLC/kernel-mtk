@@ -80,7 +80,7 @@
 static struct hrtimer fg_drv_thread_hrtimer;
 #endif
 static DECLARE_WAIT_QUEUE_HEAD(fg_update_wq);
-PMU_ChargerStruct BMT_status;
+struct PMU_ChargerStruct BMT_status;
 struct gauge_hw_status FG_status;
 struct BAT_EC_Struct Bat_EC_ctrl;
 
@@ -1377,6 +1377,15 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get CAR_TUNE_VALUE failed\n");
 	}
 
+	if (!of_property_read_u32(np, "FG_METER_RESISTANCE", &val)) {
+		fg_cust_data.fg_meter_resistance = (int)val;
+		bm_debug("Get FG_METER_RESISTANCE: %d\n",
+			 fg_cust_data.fg_meter_resistance);
+	} else {
+		bm_err("Get FG_METER_RESISTANCE failed\n");
+	}
+
+
 		switch (bat_id) {
 		case 0:
 			ret0 = !of_property_read_u32(np, "battery0_profile_t0_num", &val_0);
@@ -1620,8 +1629,8 @@ unsigned int TempToBattVolt(int temp, int update)
 	int vbif28 = RBAT_PULL_UP_VOLT;
 	static int fg_current_temp;
 	static bool fg_current_state;
-	int fg_r_value = R_FG_VALUE;
-	int	fg_meter_res_value = FG_METER_RESISTANCE;
+	int fg_r_value = fg_cust_data.r_fg_value;
+	int	fg_meter_res_value = fg_cust_data.fg_meter_resistance;
 
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
 	vbif28 = pmic_get_vbif28_volt();
@@ -1646,7 +1655,7 @@ unsigned int TempToBattVolt(int temp, int update)
 	return (unsigned int) V_IR_comp;
 }
 
-int BattVoltToTemp(int dwVolt)
+int BattVoltToTemp(int dwVolt, int volt_cali)
 {
 	long long TRes_temp;
 	long long TRes;
@@ -1660,7 +1669,7 @@ int BattVoltToTemp(int dwVolt)
 
 	TRes_temp = (RBAT_PULL_UP_R * (long long) dwVolt);
 #ifdef RBAT_PULL_UP_VOLT_BY_BIF
-	vbif28 = pmic_get_vbif28_volt();
+	vbif28 = pmic_get_vbif28_volt() + volt_cali;
 	delta_v = abs(vbif28 - dwVolt);
 	if (delta_v == 0)
 		delta_v = 1;
@@ -1689,7 +1698,7 @@ int BattVoltToTemp(int dwVolt)
 	else
 		sBaTTMP = BattThermistorConverTemp((int)TRes - BIF_NTC_R);
 
-	bm_trace("[BattVoltToTemp] %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28);
+	bm_notice("[BattVoltToTemp] %d %d %d %d\n", dwVolt, RBAT_PULL_UP_R, vbif28, volt_cali);
 	return sBaTTMP;
 }
 
@@ -1703,6 +1712,7 @@ int force_get_tbat_internal(bool update)
 	int fg_current_temp = 0;
 	bool fg_current_state = false;
 	int bat_temperature_volt_temp = 0;
+	int vol_cali = 0;
 
 	static int pre_bat_temperature_volt_temp, pre_bat_temperature_volt;
 	static int pre_fg_current_temp;
@@ -1727,8 +1737,8 @@ int force_get_tbat_internal(bool update)
 		bat_temperature_volt = pmic_get_v_bat_temp();
 
 		if (bat_temperature_volt != 0) {
-			fg_r_value = R_FG_VALUE;
-			fg_meter_res_value = FG_METER_RESISTANCE;
+			fg_r_value = fg_cust_data.r_fg_value;
+			fg_meter_res_value = fg_cust_data.fg_meter_resistance;
 
 
 			gauge_dev_get_current(gauge_dev, &fg_current_state, &fg_current_temp);
@@ -1738,20 +1748,23 @@ int force_get_tbat_internal(bool update)
 				bat_temperature_volt_temp = bat_temperature_volt;
 				bat_temperature_volt =
 				bat_temperature_volt - ((fg_current_temp * (fg_meter_res_value + fg_r_value)) / 10000);
+				vol_cali = -((fg_current_temp * (fg_meter_res_value + fg_r_value)) / 10000);
 			} else {
 				bat_temperature_volt_temp = bat_temperature_volt;
 				bat_temperature_volt =
 				bat_temperature_volt + ((fg_current_temp * (fg_meter_res_value + fg_r_value)) / 10000);
+				vol_cali = ((fg_current_temp * (fg_meter_res_value + fg_r_value)) / 10000);
 			}
-			bat_temperature_val = BattVoltToTemp(bat_temperature_volt);
+
+			bat_temperature_val = BattVoltToTemp(bat_temperature_volt, vol_cali);
 		}
 
 #ifdef CONFIG_MTK_BIF_SUPPORT
 		/*	battery_charging_control(CHARGING_CMD_GET_BIF_TBAT, &bat_temperature_val); */
 #endif
-		bm_trace("[force_get_tbat] %d,%d,%d,%d,%d,%d\n",
+		bm_notice("[force_get_tbat] %d,%d,%d,%d,%d,%d r:%d %d\n",
 		bat_temperature_volt_temp, bat_temperature_volt, fg_current_state, fg_current_temp,
-		fg_r_value, bat_temperature_val);
+		fg_r_value, bat_temperature_val, fg_meter_res_value, fg_r_value);
 
 		if (pre_bat_temperature_val2 == 0) {
 			pre_bat_temperature_volt_temp = bat_temperature_volt_temp;
@@ -4634,6 +4647,7 @@ static int __init battery_probe(struct platform_device *dev)
 	bm_err("disable GM 3.0\n");
 	disable_fg();
 #endif
+	is_init_done = true;
 
 	return 0;
 }
@@ -4737,7 +4751,6 @@ static int __init battery_init(void)
 	ret = platform_driver_register(&battery_driver_probe);
 	ret = platform_driver_register(&battery_dts_driver_probe);
 
-	is_init_done = true;
 	bm_err("[battery_init] Initialization : DONE\n");
 
 	return 0;
