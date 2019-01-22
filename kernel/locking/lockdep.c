@@ -54,6 +54,10 @@
 
 #include "lockdep_internals.h"
 
+#ifdef CONFIG_MTK_LOCK_DEBUG
+#include "sched.h"
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/lock.h>
 #ifdef CONFIG_PREEMPT_MONITOR
@@ -79,9 +83,17 @@ static void lockdep_aee(void)
 {
 #ifdef CONFIG_MTK_LOCK_DEBUG
 	char aee_str[40];
+	int cpu;
+	struct rq *rq;
 
-	snprintf(aee_str, 40, "[%s]LockProve Warning", current->comm);
-	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE, aee_str, "LockProve Debug\n");
+	cpu = smp_processor_id();
+	rq = cpu_rq(cpu);
+
+	if (!raw_spin_is_locked(&rq->lock)) {
+		snprintf(aee_str, 40, "[%s]LockProve Warning", current->comm);
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
+			aee_str, "LockProve Debug\n");
+	}
 #else
 	return;
 #endif
