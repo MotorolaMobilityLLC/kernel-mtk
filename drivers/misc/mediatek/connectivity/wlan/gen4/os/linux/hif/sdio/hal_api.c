@@ -439,6 +439,9 @@ BOOLEAN halSetDriverOwn(IN P_ADAPTER_T prAdapter)
 		if (i == 0x77889901) {
 			/* fgIsWakeupFromDeepSleep */
 			wlanSendDummyCmd(prAdapter, FALSE);
+
+			/* Workaround for dummy command which is not count in Tx done count */
+			prAdapter->prGlueInfo->rHifInfo.au4PendingTxDoneCount[TC4_INDEX]--;
 		}
 	}
 #endif
@@ -737,6 +740,7 @@ BOOLEAN halTxReleaseResource(IN P_ADAPTER_T prAdapter, IN PUINT_16 au2TxRlsCnt)
 	UINT_32 i;
 	P_SDIO_STAT_COUNTER_T prStatCnt;
 	UINT_16 au2TxDoneCnt[HIF_TX_NUM] = { 0 };
+	UINT_16 u2ReturnCnt;
 
 	KAL_SPIN_LOCK_DECLARATION();
 
@@ -751,8 +755,11 @@ BOOLEAN halTxReleaseResource(IN P_ADAPTER_T prAdapter, IN PUINT_16 au2TxRlsCnt)
 
 	/* Return free Tc page count */
 	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
-	for (i = TC0_INDEX; i < TC5_INDEX; i++)
-		nicTxReleaseResource(prAdapter, i, au2TxDoneCnt[nicTxGetTxQByTc(prAdapter, i)], FALSE);
+	for (i = TC0_INDEX; i < TC5_INDEX; i++) {
+		u2ReturnCnt = au2TxDoneCnt[nicTxGetTxQByTc(prAdapter, i)];
+		nicTxReleaseResource(prAdapter, i, u2ReturnCnt, FALSE);
+		prAdapter->prGlueInfo->rHifInfo.au4PendingTxDoneCount[i] -= u2ReturnCnt;
+	}
 	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
 	bStatus = TRUE;
 
@@ -1410,6 +1417,14 @@ UINT_32 halDumpHifStatus(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32
 		DIV2INT(prStatCnt->u4PktReadCnt[1], prStatCnt->u4PortReadCnt[1]),
 		DIV2DEC(prStatCnt->u4PktReadCnt[1], prStatCnt->u4PortReadCnt[1]));
 
+	LOGBUF(pucBuf, u4Max, u4Len, "Tx done pending cnt TC00~05[%u, %u, %u, %u, %u, %u]\n",
+		prHifInfo->au4PendingTxDoneCount[TC0_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC1_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC2_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC3_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC4_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC5_INDEX]);
+
 	LOGBUF(pucBuf, u4Max, u4Len, "Tx done counter/int:\n");
 	LOGBUF(pucBuf, u4Max, u4Len, "AC00~03[%u.%u, %u.%u, %u.%u, %u.%u]\n",
 		DIV2INT(prStatCnt->u4TxDoneCnt[0], prStatCnt->u4TxDoneIntCnt[0]),
@@ -1947,5 +1962,39 @@ VOID halPollDbgCr(IN P_ADAPTER_T prAdapter, IN UINT_32 u4LoopCount)
 		HAL_MCR_RD(prAdapter, MCR_SWPCDBGR, &u4Data);
 		DBGLOG(INIT, WARN, "SWPCDBGR 0x%08X\n", u4Data);
 	}
+}
+
+VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
+{
+	P_GL_HIF_INFO_T prHifInfo = &prAdapter->prGlueInfo->rHifInfo;
+	UINT_32 i;
+	P_TX_CTRL_T prTxCtrl = &prAdapter->rTxCtrl;
+
+	KAL_SPIN_LOCK_DECLARATION();
+
+	/* Restore Tx resource */
+	KAL_ACQUIRE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+
+	DBGLOG(HAL, WARN, "Tx done pending cnt TC00~05[%u, %u, %u, %u, %u, %u]\n",
+		prHifInfo->au4PendingTxDoneCount[TC0_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC1_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC2_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC3_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC4_INDEX],
+		prHifInfo->au4PendingTxDoneCount[TC5_INDEX]);
+
+	for (i = TC0_INDEX; i <= TC5_INDEX; i++) {
+		DBGLOG(HAL, WARN, "TC%u ResCount: Max[%02u/%03u] Free[%02u/%03u] PreUsed[%03u]\n",
+			i, prTxCtrl->rTc.au4MaxNumOfBuffer[i], prTxCtrl->rTc.au4MaxNumOfPage[i],
+			prTxCtrl->rTc.au4FreeBufferCount[i], prTxCtrl->rTc.au4FreePageCount[i],
+			prTxCtrl->rTc.au4PreUsedPageCount[i]);
+		nicTxReleaseResource(prAdapter, i, prHifInfo->au4PendingTxDoneCount[i], FALSE);
+		prHifInfo->au4PendingTxDoneCount[i] = 0;
+	}
+	KAL_RELEASE_SPIN_LOCK(prAdapter, SPIN_LOCK_TX_RESOURCE);
+
+	/* Clear interrupt status from Rx interrupt enhance mode */
+	prHifInfo->fgIsPendingInt = FALSE;
+	kalMemZero(prHifInfo->prSDIOCtrl, sizeof(ENHANCE_MODE_DATA_STRUCT_T));
 }
 

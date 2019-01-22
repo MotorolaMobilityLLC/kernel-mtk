@@ -231,6 +231,8 @@ typedef struct _GL_HIF_INFO_T {
 	QUE_T rFreeQueue;
 	BOOLEAN fgIsPendingInt;
 
+	UINT_32 au4PendingTxDoneCount[6];
+
 	/* Statistic counter */
 	SDIO_STAT_COUNTER_T rStatCounter;
 

@@ -8674,3 +8674,84 @@ wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
 }				/* wlanoidQueryLteSafeChannel */
 #endif
 
+UINT_8
+wlanGetSpeIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
+{
+	UINT_8 ucRetValSpeIdx = 0;
+#if CFG_SISO_SW_DEVELOP
+	P_BSS_INFO_T prBssInfo;
+	ENUM_BAND_T eBand = BAND_NULL;
+
+	if (ucBssIndex > MAX_BSS_INDEX) {
+		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
+		return ucRetValSpeIdx;
+	}
+	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
+	/*
+	* if DBDC enable return 0, else depend 2.4G/5G & support WF path
+	* retrun accurate value
+	*/
+	if (!prAdapter->rWifiVar.fgDbDcModeEn) {
+		if (prBssInfo->fgIsGranted)
+			eBand = prBssInfo->eBandGranted;
+		else
+			eBand = prBssInfo->eBand;
+
+		if (eBand == BAND_2G4) {
+			if (IS_WIFI_2G4_SISO(prAdapter)) {
+				if (IS_WIFI_2G4_WF0_SUPPORT(prAdapter))
+					ucRetValSpeIdx = ANTENNA_WF0;
+				else
+					ucRetValSpeIdx = ANTENNA_WF1;
+			} else
+				ucRetValSpeIdx = 0x18;
+		} else if (eBand == BAND_5G) {
+			if (IS_WIFI_5G_SISO(prAdapter)) {
+				if (IS_WIFI_5G_WF0_SUPPORT(prAdapter))
+					ucRetValSpeIdx = ANTENNA_WF0;
+				else
+					ucRetValSpeIdx = ANTENNA_WF1;
+			} else
+				ucRetValSpeIdx = 0x18;
+		} else
+			ucRetValSpeIdx = 0x18;
+	}
+	DBGLOG(INIT, INFO, "SpeIdx:%d,D:%d,G=%d,B=%d,Bss=%d\n",
+						ucRetValSpeIdx, prAdapter->rWifiVar.fgDbDcModeEn,
+						prBssInfo->fgIsGranted, eBand, ucBssIndex);
+#endif
+	return ucRetValSpeIdx;
+}
+
+UINT_8
+wlanGetSupportNss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
+{
+	UINT_8 ucRetValNss = prAdapter->rWifiVar.ucNSS;
+#if CFG_SISO_SW_DEVELOP
+	P_BSS_INFO_T prBssInfo;
+	ENUM_BAND_T eBand = BAND_NULL;
+
+	if (ucBssIndex > MAX_BSS_INDEX) {
+		DBGLOG(SW4, INFO, "Invalid BssInfo index[%u], skip dump!\n", ucBssIndex);
+		return ucRetValNss;
+	}
+	prBssInfo = GET_BSS_INFO_BY_INDEX(prAdapter, ucBssIndex);
+	/*
+	* depend 2.4G/5G support SISO/MIMO
+	* retrun accurate value
+	*/
+	if (prBssInfo->fgIsGranted)
+		eBand = prBssInfo->eBandGranted;
+	else
+		eBand = prBssInfo->eBand;
+
+	if ((eBand == BAND_2G4) && IS_WIFI_2G4_SISO(prAdapter))
+		ucRetValNss = 1;
+	else if ((eBand == BAND_5G) && IS_WIFI_5G_SISO(prAdapter))
+		ucRetValNss = 1;
+	DBGLOG(INIT, INFO, "Nss=%d,G=%d,B=%d,Bss=%d\n",
+				ucRetValNss, prBssInfo->fgIsGranted, eBand, ucBssIndex);
+#endif
+	return ucRetValNss;
+}
+

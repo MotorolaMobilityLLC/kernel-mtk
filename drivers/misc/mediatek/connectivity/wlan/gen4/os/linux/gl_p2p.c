@@ -1259,7 +1259,13 @@ static int p2pStop(IN struct net_device *prDev)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
 	P_ADAPTER_T prAdapter = NULL;
+	P_GL_P2P_DEV_INFO_T prP2pGlueDevInfo = (P_GL_P2P_DEV_INFO_T) NULL;
+	UINT_8 ucRoleIdx = 0;
+	struct net_device *prTargetDev = NULL;
+	struct cfg80211_scan_request *prScanRequest = NULL;
 /* P_MSG_P2P_FUNCTION_SWITCH_T prFuncSwitch; */
+
+	GLUE_SPIN_LOCK_DECLARATION();
 
 	ASSERT(prDev);
 
@@ -1268,6 +1274,30 @@ static int p2pStop(IN struct net_device *prDev)
 
 	prAdapter = prGlueInfo->prAdapter;
 	ASSERT(prAdapter);
+
+	prP2pGlueDevInfo = prGlueInfo->prP2PDevInfo;
+	ASSERT(prP2pGlueDevInfo);
+
+	/* 0. Do the scan done and set parameter to abort if the scan pending */
+	/* Default : P2P dev */
+	prTargetDev = prGlueInfo->prP2PInfo[0]->prDevHandler;
+	if (mtk_Netdev_To_RoleIdx(prGlueInfo, prDev, &ucRoleIdx) != 0)
+		prTargetDev = prGlueInfo->prP2PInfo[ucRoleIdx]->aprRoleHandler;
+
+	/*DBGLOG(INIT, INFO, "p2pStop and ucRoleIdx = %u\n", ucRoleIdx);*/
+
+	GLUE_ACQUIRE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+	if ((prP2pGlueDevInfo->prScanRequest != NULL) &&
+		(prP2pGlueDevInfo->prScanRequest->wdev == prTargetDev->ieee80211_ptr)) {
+		prScanRequest = prP2pGlueDevInfo->prScanRequest;
+		prP2pGlueDevInfo->prScanRequest = NULL;
+	}
+	GLUE_RELEASE_SPIN_LOCK(prGlueInfo, SPIN_LOCK_NET_DEV);
+
+	if (prScanRequest) {
+		DBGLOG(INIT, INFO, "p2pStop and abort scan!!\n");
+		cfg80211_scan_done(prScanRequest, TRUE);
+	}
 
 	/* 1. stop TX queue */
 	netif_tx_stop_all_queues(prDev);

@@ -151,6 +151,15 @@
 #define WLAN_TX_STATS_LOG_TIMEOUT                   30000
 #define WLAN_TX_STATS_LOG_DURATION                  1500
 
+/* Define for wifi path usage */
+#define WLAN_FLAG_2G4_WF0					BIT(0)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_5G_WF0					BIT(1)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_2G4_WF1					BIT(2)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_5G_WF1					BIT(3)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_2G4_COANT_SUPPORT			BIT(4)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_2G4_COANT_PATH			BIT(5)	/*1: WF1, 0:WF0 */
+#define WLAN_FLAG_5G_COANT_SUPPORT			BIT(6)	/*1: support, 0: NOT support */
+#define WLAN_FLAG_5G_COANT_PATH				BIT(7)	/*1: WF1, 0:WF0 */
 
 #if CFG_SUPPORT_EASY_DEBUG
 
@@ -672,6 +681,14 @@ typedef struct _MIB_INFO_STAT_T {
 	UINT_32 u4RxFifoFull;
 	UINT_32 u4AmpduTxSfCnt;
 	UINT_32 u4AmpduTxAckSfCnt;
+	UINT_16 u2TxRange1AmpduCnt;
+	UINT_16 u2TxRange2AmpduCnt;
+	UINT_16 u2TxRange3AmpduCnt;
+	UINT_16 u2TxRange4AmpduCnt;
+	UINT_16 u2TxRange5AmpduCnt;
+	UINT_16 u2TxRange6AmpduCnt;
+	UINT_16 u2TxRange7AmpduCnt;
+	UINT_16 u2TxRange8AmpduCnt;
 } MIB_INFO_STAT_T, *P_MIB_INFO_STAT_T;
 
 typedef struct _PARAM_GET_STA_STATISTICS {
@@ -1289,3 +1306,12 @@ VOID wlanSetChipEcoInfo(IN P_ADAPTER_T prAdapter);
 VOID wlanNotifyFwSuspend(P_GLUE_INFO_T prGlueInfo, struct net_device *prDev, BOOLEAN fgSuspend);
 
 VOID wlanClearPendingInterrupt(IN P_ADAPTER_T prAdapter);
+
+#if (MTK_WCN_HIF_SDIO && CFG_WMT_WIFI_PATH_SUPPORT)
+extern INT_32 mtk_wcn_wmt_wifi_fem_cfg_report(PVOID pvInfoBuf);
+#endif
+
+UINT_8 wlanGetSpeIdx(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex);
+
+UINT_8 wlanGetSupportNss(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex);
+

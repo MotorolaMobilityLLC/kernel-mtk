@@ -129,6 +129,10 @@ static WLANDEV_INFO_T arWlanDevInfo[CFG_MAX_WLAN_DEVICES] = { {0} };
 
 static UINT_32 u4WlanDevNum;	/* How many NICs coexist now */
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+BOOLEAN	g_fgIsCalDataBackuped = FALSE;
+#endif
+
 /**20150205 added work queue for sched_scan to avoid cfg80211 stop schedule scan dead loack**/
 struct delayed_work sched_workq;
 
@@ -2047,6 +2051,9 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 	INT_32 i4Status = 0;
 	BOOL bRet = FALSE;
 	P_REG_INFO_T prRegInfo;
+#if (MTK_WCN_HIF_SDIO && CFG_WMT_WIFI_PATH_SUPPORT)
+	INT_32 i4RetVal = 0;
+#endif
 
 #if 0
 		PUINT_8 pucConfigBuf = NULL, pucCfgBuf = NULL;
@@ -2111,7 +2118,21 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 #if CFG_SUPPORT_CFG_FILE
 		wlanGetConfig(prAdapter);
 #endif
+		/* Default support 2.4/5G MIMO */
+		prAdapter->rWifiFemCfg.u2WifiPath =
+				(WLAN_FLAG_2G4_WF0 | WLAN_FLAG_5G_WF0 | WLAN_FLAG_2G4_WF1 | WLAN_FLAG_5G_WF1);
 
+		DBGLOG(INIT, INFO, "WifiPath Init=0x%x\n", prAdapter->rWifiFemCfg.u2WifiPath);
+
+#if (MTK_WCN_HIF_SDIO && CFG_WMT_WIFI_PATH_SUPPORT)
+		i4RetVal = mtk_wcn_wmt_wifi_fem_cfg_report((PVOID)&prAdapter->rWifiFemCfg);
+
+		if (i4RetVal)
+			DBGLOG(INIT, WARN, "Get WifiPath from WMT drv FAIL\n");
+		else
+			DBGLOG(INIT, INFO, "Get WifiPath from WMT drv Success WifiPath=0x%x\n",
+					prAdapter->rWifiFemCfg.u2WifiPath);
+#endif
 		/* 4 <5> Start Device */
 		prRegInfo = &prGlueInfo->rRegInfo;
 
@@ -2310,7 +2331,24 @@ static INT_32 wlanProbe(PVOID pvData, PVOID pvDriverData)
 			DBGLOG(INIT, ERROR, "MET_TAG_INIT error!\n");
 #endif
 
-		DBGLOG(INIT, INFO, "wlanProbe: probe success\n");
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+		/* Calibration Backup Flow */
+		if (!g_fgIsCalDataBackuped) {
+			if (rlmTriggerCalBackup(prGlueInfo->prAdapter, g_fgIsCalDataBackuped) == WLAN_STATUS_FAILURE) {
+				DBGLOG(RFTEST, INFO, "Error : Boot Time Wi-Fi Enable Fail........\n");
+				return -1;
+			}
+
+			g_fgIsCalDataBackuped = TRUE;
+		} else {
+			if (rlmTriggerCalBackup(prGlueInfo->prAdapter, g_fgIsCalDataBackuped) == WLAN_STATUS_FAILURE) {
+				DBGLOG(RFTEST, INFO, "Error : Normal Wi-Fi Enable Fail........\n");
+				return -1;
+			}
+		}
+#endif
+
+		DBGLOG(INIT, LOUD, "wlanProbe: probe success\n");
 	} else {
 		DBGLOG(INIT, ERROR, "wlanProbe: probe failed, reason:%d\n", eFailReason);
 		switch (eFailReason) {

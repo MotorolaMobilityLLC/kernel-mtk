@@ -134,6 +134,11 @@
 
 #define PARAM_MEM_DUMP_MAX_SIZE         1536
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+#define PARAM_CAL_DATA_DUMP_MAX_SIZE	1200
+#define PARAM_CAL_DATA_DUMP_MAX_NUM		300
+#endif
+
 #define BT_PROFILE_PARAM_LEN        8
 
 #if CFG_SUPPORT_BUFFER_MODE
@@ -556,6 +561,56 @@ typedef struct _PARAM_CUSTOM_MCR_RW_STRUCT_T {
 	UINT_32 u4McrOffset;
 	UINT_32 u4McrData;
 } PARAM_CUSTOM_MCR_RW_STRUCT_T, *P_PARAM_CUSTOM_MCR_RW_STRUCT_T;
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+/*
+ * Description of Each Parameters :
+ * ucReason :
+ * 0 : Query Information of Thermal or Cal Data Length
+ * 1 : Trigger FW do or don't All Cal
+ * 2 : Dump Data to Host
+ * 3 : Send Backupped Cal Data to FW
+ * 4 : For Debug Use, Tell FW Print Cal Data (Rom or Ram)
+ * ucAction :
+ * 0 : Read Thermal Value
+ * 1 : Ask the Cal Data Total Length (Rom and Ram)
+ * 2 : Tell FW do All Cal
+ * 3 : Tell FW don't do Cal
+ * 4 : Dump Data to Host (Rom or Ram)
+ * 5 : Send Backupped Cal Data to FW (Rom or Ram)
+ * 6 : For Debug Use, Tell FW Print Cal Data (Rom or Ram)
+ * ucNeedResp :
+ * 0 : FW No Need to Response an EVENT
+ * 1 : FW Need to Response an EVENT
+ * ucFragNum :
+ * Sequence Number
+ * ucRomRam :
+ * 0 : Operation for Rom Cal Data
+ * 1 : Operation for Ram Cal Data
+ * u4ThermalValue :
+ * Field for filling the Thermal Value in FW
+ * u4Address :
+ * Dumpped Starting Address
+ * Used for Dump and Send Cal Data Between Driver and FW
+ * u4Length :
+ * Memory Size need to allocated in Driver or Data Size in an EVENT
+ * Used for Dump and Send Cal Data Between Driver and FW
+ * u4RemainLength :
+ * Remain Length need to Dump
+ * Used for Dump and Send Cal Data Between Driver and FW
+ */
+typedef struct _PARAM_CAL_BACKUP_STRUCT_V2_T {
+	UINT_8	ucReason;
+	UINT_8	ucAction;
+	UINT_8	ucNeedResp;
+	UINT_8	ucFragNum;
+	UINT_8	ucRomRam;
+	UINT_32	u4ThermalValue;
+	UINT_32 u4Address;
+	UINT_32	u4Length;
+	UINT_32	u4RemainLength;
+} PARAM_CAL_BACKUP_STRUCT_V2_T, *P_PARAM_CAL_BACKUP_STRUCT_V2_T;
+#endif
 
 #if CFG_SUPPORT_QA_TOOL
 #if CFG_SUPPORT_BUFFER_MODE
@@ -2126,6 +2181,19 @@ WLAN_STATUS wlanoidStaRecBFUpdate(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer
 				  OUT PUINT_32 pu4SetInfoLen);
 #endif /* CFG_SUPPORT_TX_BF */
 #endif /* CFG_SUPPORT_QA_TOOL */
+
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+WLAN_STATUS
+wlanoidSendCalBackupV2Cmd(IN P_ADAPTER_T prAdapter, IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen);
+
+WLAN_STATUS
+wlanoidSetCalBackup(IN P_ADAPTER_T prAdapter,
+		   IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+WLAN_STATUS
+wlanoidQueryCalBackupV2(IN P_ADAPTER_T prAdapter,
+		    IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
+#endif
 
 WLAN_STATUS
 wlanoidQueryMcrRead(IN P_ADAPTER_T prAdapter,

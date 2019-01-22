@@ -790,6 +790,10 @@ WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 	return WLAN_STATUS_SUCCESS;
 }
 
+VOID halSerHifReset(IN P_ADAPTER_T prAdapter)
+{
+}
+
 VOID halRxPCIeReceiveRFBs(IN P_ADAPTER_T prAdapter, UINT_32 u4Port)
 {
 	P_RX_CTRL_T prRxCtrl;

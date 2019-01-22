@@ -315,7 +315,7 @@ VOID aisFsmInit(IN P_ADAPTER_T prAdapter)
 	prAisBssInfo->eBand = BAND_2G4;
 	prAisBssInfo->ucPrimaryChannel = 1;
 	prAisBssInfo->prStaRecOfAP = (P_STA_RECORD_T) NULL;
-	prAisBssInfo->ucNss = prAdapter->rWifiVar.ucNSS;
+	prAisBssInfo->ucNss = wlanGetSupportNss(prAdapter, prAisBssInfo->ucBssIndex);
 	prAisBssInfo->eDBDCBand = ENUM_BAND_0;
 	prAisBssInfo->ucWmmQueSet = 0;
 
@@ -1005,7 +1005,7 @@ VOID aisFsmSteps(IN P_ADAPTER_T prAdapter, ENUM_AIS_STATE_T eNextState)
 					cnmDbdcEnableDecision(prAdapter, prAisBssInfo->ucBssIndex, prBssDesc->eBand);
 					cnmGetDbdcCapability(prAdapter, prAisBssInfo->ucBssIndex,
 						prBssDesc->eBand, prBssDesc->ucChannelNum,
-						prAdapter->rWifiVar.ucNSS, &rDbdcCap);
+						wlanGetSupportNss(prAdapter, prAisBssInfo->ucBssIndex), &rDbdcCap);
 
 					prAisBssInfo->eDBDCBand = rDbdcCap.ucDbdcBandIndex;
 					prAisBssInfo->ucNss = rDbdcCap.ucNss;
@@ -3338,6 +3338,14 @@ VOID aisFsmRunEventChGrant(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 	if (prAisBssInfo->eDBDCBand == ENUM_BAND_AUTO)
 		prAisBssInfo->eDBDCBand = prMsgChGrant->eDBDCBand;
 #endif
+
+#if CFG_SISO_SW_DEVELOP
+	/* Driver record granted CH in BSS info */
+	prAisBssInfo->fgIsGranted = TRUE;
+	prAisBssInfo->eBandGranted = prMsgChGrant->eRfBand;
+	prAisBssInfo->ucPrimaryChannelGranted = prMsgChGrant->ucPrimaryChannel;
+#endif
+
 	/* 1. free message */
 	cnmMemFree(prAdapter, prMsgHdr);
 

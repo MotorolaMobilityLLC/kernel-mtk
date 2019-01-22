@@ -488,3 +488,144 @@ BOOLEAN tkipMicDecapsulate(IN P_SW_RFB_T prSwRfb, IN PUINT_8 pucMicKey)
 	return fgStatus;
 
 }				/* tkipMicDecapsulate */
+
+
+/*----------------------------------------------------------------------------*/
+/*!
+* \brief This function decapsulate MSDU frame body (with MIC) according
+*        to IEEE 802.11i TKIP sepcification.
+*
+* \param[in]  prAdapter Pointer to the adapter object data area.
+* \param[in]  prMacHeader Pointer to frame MAC header
+* \param[in]  pucFrameBody Pointer to frame body
+* \param[in]  u4FrameBodyLen Length of frame body (in bytes), include
+*                            length of ICV and MIC
+* \param[in]  pucMickey Pointer to MIC key
+* \param[out] pu4ResultFrameBodyLen Pointer to put the result frame body length.
+*
+* \retval FALSE(TKIP_MIC_ERR), if this MSDU is not decapsulatable, i.e. MIC
+*         verification is failure.
+*         TRUE(TKIP_DECAPSULATE_SUCCESS), if this TKIP MSDU is decapsulated
+*         successfully, i.e. MIC verification is successful.
+*
+* \note 1  If return TRUE, result frame body length
+*          is only equal to data payload legth, and the result frame
+*          body's format is MSDU
+*       2. If return FALSE, result frame body length is equal
+*          to data payload legth plus MIC and MIC', and the result
+*          frame body's format is: MSDU + MIC
+*/
+/*----------------------------------------------------------------------------*/
+BOOLEAN tkipMicDecapsulateInRxHdrTransMode(IN P_SW_RFB_T prSwRfb, IN PUINT_8 pucMicKey)
+{
+	PUCHAR pucMic1;		/* MIC  */
+	UCHAR aucMic2[8];	/* MIC' */
+	BOOLEAN fgStatus = FALSE;
+	/* PUCHAR              pucMickey; */
+	PUCHAR pucFrameBody;
+	UINT_16 u2FrameBodyLen;
+	struct sk_buff *prSkb = NULL;
+#if 0
+	P_WLAN_MAC_HEADER_T prMacHeader;
+	PUCHAR pucSa, pucDa;
+	UCHAR ucPriority;
+	UCHAR aucDA[6];
+	UCHAR aucSA[6];
+	UCHAR aucType[2];
+#endif
+
+	DEBUGFUNC("tkipMicDecapsulateInRxHdrTransMode");
+
+	ASSERT(prSwRfb);
+	ASSERT(pucMicKey);
+
+	/* prRxStatus = prSwRfb->prRxStatus; */
+	pucFrameBody = prSwRfb->pucPayload;
+	u2FrameBodyLen = prSwRfb->u2PayloadLength;
+
+	/* if ((prRxStatus->ucKIdxSecMode & BITS(0,3)) != CIPHER_SUITE_TKIP_WO_MIC){ */
+	/* return TRUE; */
+	/* } */
+
+	DBGLOG(RSN, LOUD, "Before TKIP MSDU Decapsulate:\n");
+	DBGLOG(RSN, LOUD, "MIC key:\n");
+	/* DBGLOG_MEM8(RSN, LOUD, pucMicKey, 8); */
+
+	prSkb = dev_alloc_skb(u2FrameBodyLen + ETHERNET_HEADER_SZ*4);
+	if (prSkb) {
+		/* copy to etherhdr + payload to skb data */
+		kalMemCopy(prSkb->data, prSwRfb->pvHeader, u2FrameBodyLen + ETHERNET_HEADER_SZ);
+		*(prSkb->data+6) = ETH_LLC_DSAP_SNAP;
+		*(prSkb->data+7) = ETH_LLC_SSAP_SNAP;
+		*(prSkb->data+8) = ETH_LLC_CONTROL_UNNUMBERED_INFORMATION;
+		*(prSkb->data+9) = 0x00;
+		*(prSkb->data+10) = 0x00;
+		*(prSkb->data+11) = 0x00;
+		*(prSkb->data+12) = *(PUCHAR)(prSwRfb->pvHeader + 12);
+		*(prSkb->data+13) = *(PUCHAR)(prSwRfb->pvHeader + 13);
+
+		tkipMicGen(pucMicKey,
+			   prSkb->data + 6,
+			   u2FrameBodyLen - WLAN_MAC_MIC_LEN + 8,
+			   prSwRfb->pvHeader + 6,
+			   prSwRfb->pvHeader,
+			   prSwRfb->ucTid, aucMic2);
+
+		if (prSkb)
+			kfree_skb((struct sk_buff *)prSkb);
+	} else {
+		DBGLOG(RX, ERROR, "MIC SW DEC1\n");
+		return fgStatus;
+	}
+
+
+	/* verify MIC and MIC' */
+	pucMic1 = &pucFrameBody[u2FrameBodyLen - WLAN_MAC_MIC_LEN];
+	if (pucMic1[0] == aucMic2[0] && pucMic1[1] == aucMic2[1] &&
+	    pucMic1[2] == aucMic2[2] && pucMic1[3] == aucMic2[3] &&
+	    pucMic1[4] == aucMic2[4] && pucMic1[5] == aucMic2[5] &&
+	    pucMic1[6] == aucMic2[6] && pucMic1[7] == aucMic2[7]) {
+		u2FrameBodyLen -= WLAN_MAC_MIC_LEN;
+		fgStatus = TRUE;
+	} else {
+		fgStatus = FALSE;
+		DBGLOG(RX, ERROR, "MIC SW DEC2\n");
+	}
+
+#if 0
+	/* perform header transfer for tkip defragment frame, if receiving 802.11 pkt */
+	if (fgStatus == TRUE) {
+		/* reassign payload address */
+		prSwRfb->pucPayload += (ETH_LLC_LEN + ETH_SNAP_LEN);
+
+		/* reassign payload length */
+		u2FrameBodyLen -= (ETH_LLC_LEN + ETH_SNAP_LEN);
+
+		prSwRfb->pvHeader = prSwRfb->pucPayload - (ETHERNET_HEADER_SZ);
+
+		kalMemCopy(&aucDA[0], pucDa, MAC_ADDR_LEN);
+		kalMemCopy(&aucSA[0], pucSa, MAC_ADDR_LEN);
+		kalMemCopy(&aucType[0], prSwRfb->pucPayload - 2, 2);
+
+		kalMemCopy(prSwRfb->pvHeader, &aucDA[0], MAC_ADDR_LEN);
+		kalMemCopy(prSwRfb->pvHeader + MAC_ADDR_LEN, &aucSA[0], MAC_ADDR_LEN);
+		kalMemCopy(prSwRfb->pvHeader + MAC_ADDR_LEN + 2, &aucType[0], 2);
+
+		prSwRfb->u2HeaderLen = ETHERNET_HEADER_SZ;
+	}
+#endif
+
+	/* DBGLOG(RSN, LOUD, ("TKIP MIC:\n")); */
+	/* DBGLOG_MEM8(RSN, LOUD, pucMic1, 8); */
+	/* DBGLOG(RSN, LOUD, ("TKIP MIC':\n")); */
+	/* DBGLOG_MEM8(RSN, LOUD, aucMic2, 8); */
+
+	prSwRfb->u2PayloadLength = u2FrameBodyLen;
+
+	DBGLOG(RSN, LOUD, "After TKIP MSDU Decapsulate:\n");
+	DBGLOG(RSN, LOUD, "Frame body: (length = %u)\n", u2FrameBodyLen);
+	/* DBGLOG_MEM8(RSN, LOUD, pucFrameBody, u2FrameBodyLen); */
+
+	return fgStatus;
+
+}				/* tkipMicDecapsulate */

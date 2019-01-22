@@ -2292,6 +2292,10 @@ reqExtSetAcpiDevicePowerState(IN P_GLUE_INFO_T prGlueInfo,
 
 #define CMD_SET_DBDC			"SET_DBDC"
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+#define CMD_SET_CALBACKUP_TEST_DRV_FW		"SET_CALBACKUP_TEST_DRV_FW"
+#endif
+
 static UINT_8 g_ucMiracastMode = MIRACAST_MODE_OFF;
 
 typedef struct cmd_tlv {
@@ -3953,7 +3957,6 @@ INT_32 priv_driver_tx_vector_info(IN char *pcCommand, IN int i4TotalLen,
 
 static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcCommand, IN int i4TotalLen,
 	P_PARAM_HW_WLAN_INFO_T prHwWlanInfo, P_PARAM_GET_STA_STATISTICS prQueryStaStatistics,
-	P_PARAM_HW_MIB_INFO_T prHwMibInfo, P_PARAM_HW_MIB_INFO_T prHwMibInfo1,
 	BOOLEAN fgResetCnt)
 {
 	INT_32 i4BytesWritten = 0;
@@ -3999,19 +4002,13 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 					(0) : (prQueryStaStatistics->ucPer);
 	}
 
-	au4RxMpduCnt[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxMpduCnt;
-	au4FcsError[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxFcsErrCnt;
-	au4RxFifoCnt[ENUM_BAND_0] += prHwMibInfo->rHwMibCnt.u4RxFifoFullCnt;
-	au4AmpduTxSfCnt[ENUM_BAND_0] += prHwMibInfo->rHwTxAmpduMts.u4TxSfCnt;
-	au4AmpduTxAckSfCnt[ENUM_BAND_0] += prHwMibInfo->rHwTxAmpduMts.u4TxAckSfCnt;
-
-	au4RxMpduCnt[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxMpduCnt;
-	au4FcsError[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxFcsErrCnt;
-	au4RxFifoCnt[ENUM_BAND_1] += prHwMibInfo1->rHwMibCnt.u4RxFifoFullCnt;
-	au4AmpduTxSfCnt[ENUM_BAND_1] += prHwMibInfo1->rHwTxAmpduMts.u4TxSfCnt;
-	au4AmpduTxAckSfCnt[ENUM_BAND_1] += prHwMibInfo1->rHwTxAmpduMts.u4TxAckSfCnt;
-
 	for (ucDbdcIdx = 0; ucDbdcIdx < ENUM_BAND_NUM; ucDbdcIdx++) {
+		au4RxMpduCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4RxMpduCnt;
+		au4FcsError[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4FcsError;
+		au4RxFifoCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4RxFifoFull;
+		au4AmpduTxSfCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4AmpduTxSfCnt;
+		au4AmpduTxAckSfCnt[ucDbdcIdx] += prQueryStaStatistics->rMibInfo[ucDbdcIdx].u4AmpduTxAckSfCnt;
+
 		u4RxPer[ucDbdcIdx] = ((au4RxMpduCnt[ucDbdcIdx] + au4FcsError[ucDbdcIdx]) == 0) ?
 							(0) : (1000 * au4FcsError[ucDbdcIdx] /
 							(au4RxMpduCnt[ucDbdcIdx] + au4FcsError[ucDbdcIdx]));
@@ -4075,7 +4072,7 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 
 		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 			"%-20s%s%d\n", "RX drop FIFO full", " = ", au4RxFifoCnt[ucDbdcIdx]);
-
+#if 0
 		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 			"%-20s%s%d\n", "AMPDU Tx success", " = ", au4AmpduTxSfCnt[ucDbdcIdx]);
 
@@ -4083,6 +4080,7 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 			"%-20s%s%d, PER = %d.%1d%%\n", "AMPDU Tx fail count", " = ",
 			(au4AmpduTxSfCnt[ucDbdcIdx] - au4AmpduTxAckSfCnt[ucDbdcIdx]),
 			u4AmpduPer[ucDbdcIdx]/10, u4AmpduPer[ucDbdcIdx]%10);
+#endif
 	}
 
 	if (fgResetCnt) {
@@ -4288,24 +4286,21 @@ static INT_32 priv_driver_dump_stat_info(P_ADAPTER_T prAdapter, IN char *pcComma
 	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
 		"%-12s%s", "Range:", "1     2~5     6~15    16~22    23~33    34~49    50~57    58~64\n");
 
-	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-		"DBDC0:");
-	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-		"%7d%8d%9d%9d%9d%9d%9d%9d\n",
-		prHwMibInfo->rHwTxAmpduMts.u2TxRange1AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange2AmpduCnt,
-		prHwMibInfo->rHwTxAmpduMts.u2TxRange3AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange4AmpduCnt,
-		prHwMibInfo->rHwTxAmpduMts.u2TxRange5AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange6AmpduCnt,
-		prHwMibInfo->rHwTxAmpduMts.u2TxRange7AmpduCnt, prHwMibInfo->rHwTxAmpduMts.u2TxRange8AmpduCnt);
-#if 0
-	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-		"DBDC1:");
-	i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
-		"%7d%8d%9d%9d%9d%9d%9d%9d\n",
-		prHwMibInfo1->rHwTxAmpduMts.u2TxRange1AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange2AmpduCnt,
-		prHwMibInfo1->rHwTxAmpduMts.u2TxRange3AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange4AmpduCnt,
-		prHwMibInfo1->rHwTxAmpduMts.u2TxRange5AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange6AmpduCnt,
-		prHwMibInfo1->rHwTxAmpduMts.u2TxRange7AmpduCnt, prHwMibInfo1->rHwTxAmpduMts.u2TxRange8AmpduCnt);
-#endif
+	for (ucDbdcIdx = 0; ucDbdcIdx < ENUM_BAND_NUM; ucDbdcIdx++) {
+		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+			"DBDC%d:", ucDbdcIdx);
+		i4BytesWritten += kalSnprintf(pcCommand + i4BytesWritten, i4TotalLen - i4BytesWritten,
+			"%7d%8d%9d%9d%9d%9d%9d%9d\n",
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange1AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange2AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange3AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange4AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange5AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange6AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange7AmpduCnt,
+			prQueryStaStatistics->rMibInfo[ucDbdcIdx].u2TxRange8AmpduCnt);
+	}
+
 	return i4BytesWritten;
 }
 
@@ -4322,8 +4317,6 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 	UINT_8 ucWlanIndex;
 	PUINT_8 pucMacAddr = NULL;
 	P_PARAM_HW_WLAN_INFO_T prHwWlanInfo;
-	P_PARAM_HW_MIB_INFO_T prHwMibInfo;
-	P_PARAM_HW_MIB_INFO_T prHwMibInfo1;
 	P_PARAM_GET_STA_STATISTICS prQueryStaStatistics;
 	BOOLEAN fgResetCnt = FALSE;
 
@@ -4383,36 +4376,6 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 		return -1;
 	}
 
-	prHwMibInfo = (P_PARAM_HW_MIB_INFO_T)kalMemAlloc(sizeof(PARAM_HW_MIB_INFO_T), VIR_MEM_TYPE);
-	if (!prHwMibInfo)
-		return -1;
-
-	prHwMibInfo->u4Index = 0;
-
-	/* Get MIB info */
-	rStatus = kalIoctl(prGlueInfo, wlanoidQueryMibInfo,
-		prHwMibInfo, sizeof(PARAM_HW_MIB_INFO_T), TRUE, TRUE, TRUE, &u4BufLen);
-
-	if (rStatus != WLAN_STATUS_SUCCESS) {
-		kalMemFree(prHwMibInfo, VIR_MEM_TYPE, sizeof(PARAM_HW_MIB_INFO_T));
-		return -1;
-	}
-
-	prHwMibInfo1 = (P_PARAM_HW_MIB_INFO_T)kalMemAlloc(sizeof(PARAM_HW_MIB_INFO_T), VIR_MEM_TYPE);
-	if (!prHwMibInfo1)
-		return -1;
-
-	prHwMibInfo1->u4Index = 1;
-
-	/* Get MIB info */
-	rStatus = kalIoctl(prGlueInfo, wlanoidQueryMibInfo,
-		prHwMibInfo1, sizeof(PARAM_HW_MIB_INFO_T), TRUE, TRUE, TRUE, &u4BufLen);
-
-	if (rStatus != WLAN_STATUS_SUCCESS) {
-		kalMemFree(prHwMibInfo1, VIR_MEM_TYPE, sizeof(PARAM_HW_MIB_INFO_T));
-		return -1;
-	}
-
 	/* Get Statistics info */
 	prQueryStaStatistics =
 		(P_PARAM_GET_STA_STATISTICS)kalMemAlloc(sizeof(PARAM_GET_STA_STA_STATISTICS), VIR_MEM_TYPE);
@@ -4436,7 +4399,7 @@ static int priv_driver_get_sta_stat(IN struct net_device *prNetDev, IN char *pcC
 
 	if (pucMacAddr) {
 		i4BytesWritten = priv_driver_dump_stat_info(prAdapter, pcCommand, i4TotalLen,
-			prHwWlanInfo, prQueryStaStatistics, prHwMibInfo, prHwMibInfo1, fgResetCnt);
+			prHwWlanInfo, prQueryStaStatistics, fgResetCnt);
 	}
 	DBGLOG(REQ, INFO, "%s: command result is %s\n", __func__, pcCommand);
 
@@ -5457,6 +5420,171 @@ int priv_driver_set_miracast(IN struct net_device *prNetDev, IN char *pcCommand,
 	return i4BytesWritten;
 }
 
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+/*
+ * Memo
+ * 00 : Reset All Cal Data in Driver
+ * 01 : Trigger All Cal Function
+ * 02 : Get Thermal Temp from FW
+ * 03 : Get Cal Data Size from FW
+ * 04 : Get Cal Data from FW (Rom)
+ * 05 : Get Cal Data from FW (Ram)
+ * 06 : Print Cal Data in Driver (Rom)
+ * 07 : Print Cal Data in Driver (Ram)
+ * 08 : Print Cal Data in FW (Rom)
+ * 09 : Print Cal Data in FW (Ram)
+ * 10 : Send Cal Data to FW (Rom)
+ * 11 : Send Cal Data to FW (Ram)
+ */
+static int priv_driver_set_calbackup_test_drv_fw(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
+{
+	P_GLUE_INFO_T prGlueInfo = NULL;
+	WLAN_STATUS rStatus = WLAN_STATUS_SUCCESS;
+	INT_32 i4BytesWritten = 0;
+	INT_32 i4Argc = 0;
+	PCHAR apcArgv[WLAN_CFG_ARGV_MAX];
+	UINT_32 u4Ret, u4GetInput;
+	INT_32 i4ArgNum = 2;
+
+	ASSERT(prNetDev);
+	if (GLUE_CHK_PR2(prNetDev, pcCommand) == FALSE)
+		return -1;
+	prGlueInfo = *((P_GLUE_INFO_T *) netdev_priv(prNetDev));
+
+	DBGLOG(RFTEST, INFO, "%s\r\n", __func__);
+
+	DBGLOG(REQ, LOUD, "command is %s\n", pcCommand);
+	wlanCfgParseArgument(pcCommand, &i4Argc, apcArgv);
+	DBGLOG(REQ, LOUD, "argc is %i\n", i4Argc);
+
+	if (i4Argc >= i4ArgNum) {
+		u4Ret = kalkStrtou32(apcArgv[1], 0, &u4GetInput);
+		if (u4Ret)
+			DBGLOG(RFTEST, INFO, "priv_driver_set_calbackup_test_drv_fw Parsing Fail\n");
+
+		if (u4GetInput == 0) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#0 : Reset All Cal Data in Driver.\n");
+			/* (New Flow 20160720) Step 0 : Reset All Cal Data Structure */
+			memset(&g_rBackupCalDataAllV2, 1, sizeof(RLM_CAL_RESULT_ALL_V2_T));
+			g_rBackupCalDataAllV2.u4MagicNum1 = 6632;
+			g_rBackupCalDataAllV2.u4MagicNum2 = 6632;
+		} else if (u4GetInput == 1) {
+			DBGLOG(RFTEST, INFO, "CMD#1 : Trigger FW Do All Cal.\n");
+			/* Step 1 : Trigger All Cal Function */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 1, 2, 0);
+			DBGLOG(RFTEST, INFO, "Trigger FW Do All Cal, rStatus = 0x%08x\n", rStatus);
+		} else if (u4GetInput == 2) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#2 : Get Thermal Temp from FW.\n");
+			/* (New Flow 20160720) Step 2 : Get Thermal Temp from FW */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 0, 0, 0);
+			DBGLOG(RFTEST, INFO, "Get Thermal Temp from FW, rStatus = 0x%08x\n", rStatus);
+
+		} else if (u4GetInput == 3) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#3 : Get Cal Data Size from FW.\n");
+			/* (New Flow 20160720) Step 3 : Get Cal Data Size from FW */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 0, 1, 0);
+			DBGLOG(RFTEST, INFO, "Get Rom Cal Data Size, rStatus = 0x%08x\n", rStatus);
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 0, 1, 1);
+			DBGLOG(RFTEST, INFO, "Get Ram Cal Data Size, rStatus = 0x%08x\n", rStatus);
+
+		} else if (u4GetInput == 4) {
+#if 1
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#4 : Print Cal Data in FW (Ram) (Part 1 - [0]~[3327]).\n");
+			/* Debug Use : Print Cal Data in FW (Ram) */
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 4, 6, 1);
+			DBGLOG(RFTEST, INFO, "Print Cal Data in FW (Ram), rStatus = 0x%08x\n", rStatus);
+#else		/* For Temp Use this Index */
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#4 : Get Cal Data from FW (Rom). Start!!!!!!!!!!!\n");
+			DBGLOG(RFTEST, INFO, "Thermal Temp = %d\n", g_rBackupCalDataAllV2.u4ThermalInfo);
+			DBGLOG(RFTEST, INFO, "Total Length (Rom) = %d\n",
+				g_rBackupCalDataAllV2.u4ValidRomCalDataLength);
+			/* (New Flow 20160720) Step 3 : Get Cal Data from FW */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 2, 4, 0);
+			DBGLOG(RFTEST, INFO, "Get Cal Data from FW (Rom), rStatus = 0x%08x\n", rStatus);
+#endif
+		} else if (u4GetInput == 5) {
+#if 1
+			DBGLOG(RFTEST, INFO,
+				"(New Flow) CMD#5 : Print RAM Cal Data in Driver (Part 1 - [0]~[3327]).\n");
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			/* RFTEST_INFO_LOGDUMP32(&(g_rBackupCalDataAllV2.au4RamCalData[0]), 3328*sizeof(UINT_32)); */
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			DBGLOG(RFTEST, INFO, "Dumped Ram Cal Data Szie : %d bytes\n", 3328*sizeof(UINT_32));
+			DBGLOG(RFTEST, INFO, "Total Ram Cal Data Szie : %d bytes\n",
+				g_rBackupCalDataAllV2.u4ValidRamCalDataLength);
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+#else		/* For Temp Use this Index */
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#5 : Get Cal Data from FW (Ram). Start!!!!!!!!!!!\n");
+			DBGLOG(RFTEST, INFO, "Thermal Temp = %d\n", g_rBackupCalDataAllV2.u4ThermalInfo);
+			DBGLOG(RFTEST, INFO, "Total Length (Ram) = %d\n",
+				g_rBackupCalDataAllV2.u4ValidRamCalDataLength);
+			/* (New Flow 20160720) Step 3 : Get Cal Data from FW */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 2, 4, 1);
+			DBGLOG(RFTEST, INFO, "Get Cal Data from FW (Ram), rStatus = 0x%08x\n", rStatus);
+#endif
+		} else if (u4GetInput == 6) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#6 : Print ROM Cal Data in Driver.\n");
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			/* RFTEST_INFO_LOGDUMP32(&(g_rBackupCalDataAllV2.au4RomCalData[0]), */
+			/* g_rBackupCalDataAllV2.u4ValidRomCalDataLength); */
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			DBGLOG(RFTEST, INFO, "Total Rom Cal Data Szie : %d bytes\n",
+				g_rBackupCalDataAllV2.u4ValidRomCalDataLength);
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+		} else if (u4GetInput == 7) {
+			DBGLOG(RFTEST, INFO,
+				"(New Flow) CMD#7 : Print RAM Cal Data in Driver (Part 2 - [3328]~[6662]).\n");
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			/* RFTEST_INFO_LOGDUMP32(&(g_rBackupCalDataAllV2.au4RamCalData[3328]), */
+			/*(g_rBackupCalDataAllV2.u4ValidRamCalDataLength - 3328*sizeof(UINT_32))); */
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+			DBGLOG(RFTEST, INFO, "Dumped Ram Cal Data Szie : %d bytes\n",
+				(g_rBackupCalDataAllV2.u4ValidRamCalDataLength - 3328*sizeof(UINT_32)));
+			DBGLOG(RFTEST, INFO, "Total Ram Cal Data Szie : %d bytes\n",
+				g_rBackupCalDataAllV2.u4ValidRamCalDataLength);
+			DBGLOG(RFTEST, INFO, "==================================================================\n");
+		} else if (u4GetInput == 8) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#8 : Print Cal Data in FW (Rom).\n");
+			/* Debug Use : Print Cal Data in FW (Rom) */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 4, 6, 0);
+			DBGLOG(RFTEST, INFO, "Print Cal Data in FW (Rom), rStatus = 0x%08x\n", rStatus);
+
+		} else if (u4GetInput == 9) {
+			DBGLOG(RFTEST, INFO,
+				"(New Flow) CMD#9 : Print Cal Data in FW (Ram) (Part 2 - [3328]~[6662]).\n");
+			/* Debug Use : Print Cal Data in FW (Ram) */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 4, 6, 2);
+			DBGLOG(RFTEST, INFO, "Print Cal Data in FW (Ram), rStatus = 0x%08x\n", rStatus);
+
+		} else if (u4GetInput == 10) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#10 : Send Cal Data to FW (Rom).\n");
+			/* Send Cal Data to FW (Rom) */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 3, 5, 0);
+			DBGLOG(RFTEST, INFO, "Send Cal Data to FW (Rom), rStatus = 0x%08x\n", rStatus);
+
+		} else if (u4GetInput == 11) {
+			DBGLOG(RFTEST, INFO, "(New Flow) CMD#11 : Send Cal Data to FW (Ram).\n");
+			/* Send Cal Data to FW (Ram) */
+
+			rStatus = rlmCalBackup(prGlueInfo->prAdapter, 3, 5, 1);
+			DBGLOG(RFTEST, INFO, "Send Cal Data to FW (Ram), rStatus = 0x%08x\n", rStatus);
+
+		}
+	}
+
+	return i4BytesWritten;
+}				/* priv_driver_set_calbackup_test_drv_fw */
+#endif
+
 #if CFG_WOW_SUPPORT
 static int priv_driver_set_wow_enable(IN struct net_device *prNetDev, IN char *pcCommand, IN int i4TotalLen)
 {
@@ -6063,6 +6191,11 @@ INT_32 priv_driver_cmds(IN struct net_device *prNetDev, IN PCHAR pcCommand, IN I
 		} else if (strnicmp(pcCommand, CMD_GET_STA_STAT, strlen(CMD_GET_STA_STAT)) == 0) {
 			i4BytesWritten = priv_driver_get_sta_stat(prNetDev, pcCommand, i4TotalLen);
 		}
+#if CFG_SUPPORT_CAL_RESULT_BACKUP_TO_HOST
+		else if (strnicmp(pcCommand,
+			CMD_SET_CALBACKUP_TEST_DRV_FW, strlen(CMD_SET_CALBACKUP_TEST_DRV_FW)) == 0)
+			i4BytesWritten = priv_driver_set_calbackup_test_drv_fw(prNetDev, pcCommand, i4TotalLen);
+#endif
 #if CFG_WOW_SUPPORT
 		else if (strnicmp(pcCommand, CMD_SET_WOW_ENABLE, strlen(CMD_SET_WOW_ENABLE)) == 0)
 			i4BytesWritten = priv_driver_set_wow_enable(prNetDev, pcCommand, i4TotalLen);
