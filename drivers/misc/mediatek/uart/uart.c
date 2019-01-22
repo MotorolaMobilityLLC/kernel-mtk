@@ -1678,7 +1678,7 @@ static irqreturn_t mtk_uart_irq(int irq, void *dev_id)
 	struct mtk_uart *uart = (struct mtk_uart *)dev_id;
 
 #ifndef CONFIG_FIQ_DEBUGGER
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 	unsigned long base;
 

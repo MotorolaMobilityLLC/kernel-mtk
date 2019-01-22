@@ -110,7 +110,7 @@ static inline bool cpus_have_cap(unsigned int num)
 static inline void cpus_set_cap(unsigned int num)
 {
 	if (num >= ARM64_NCAPS)
-		pr_warn("Attempt to set an illegal CPU capability (%d >= %d)\n",
+		printk(KERN_WARNING"Attempt to set an illegal CPU capability (%d >= %d)\n",
 			num, ARM64_NCAPS);
 	else
 		__set_bit(num, cpu_hwcaps);
