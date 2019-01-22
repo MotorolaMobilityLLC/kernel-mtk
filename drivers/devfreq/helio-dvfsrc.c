@@ -23,15 +23,16 @@
 #include <linux/slab.h>
 
 #include "governor.h"
-#include "helio-dvfsrc.h"
-#include "mtk_dvfsrc_reg.h"
-#include "mtk_spm_vcore_dvfs.h"
-#include <mtk_eem.h>
+
+#include <helio-dvfsrc.h>
+#include <helio-dvfsrc-opp.h>
+#include <mtk_dvfsrc_reg.h>
+#include <mtk_spm_vcore_dvfs.h>
 
 __weak void helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc) { }
 __weak void spm_check_status_before_dvfs(void) { }
 __weak int spm_dvfs_flag_init(void) { return 0; }
-__weak unsigned int mt_eem_vcorefs_set_volt(void) { return 0; }
+__weak int vcore_opp_init(void) { return 0; }
 
 static struct opp_profile opp_table[NUM_OPP] __nosavedata;
 static struct helio_dvfsrc *dvfsrc;
@@ -89,7 +90,7 @@ void dvfsrc_init_opp_table(void)
 								opp_ctrl_table[opp].ddr_khz);
 	}
 
-	mt_eem_vcorefs_set_volt();
+	spm_vcorefs_pwarp_cmd();
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
@@ -395,6 +396,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 						 &helio_devfreq_profile,
 						 "helio_dvfsrc",
 						 NULL);
+	vcore_opp_init();
 	dvfsrc_init_opp_table();
 	spm_check_status_before_dvfs();
 

@@ -34,6 +34,8 @@
 #include <mtk_eem.h>
 #include "mmdvfs_mgr.h"
 
+#include <helio-dvfsrc-opp.h>
+
 __weak unsigned int get_dram_data_rate(void)
 {
 	return 0;
@@ -319,10 +321,10 @@ int vcorefs_get_curr_ddr(void)
 
 int vcorefs_get_vcore_by_steps(u32 opp)
 {
-#if 1
-	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
+#if defined(CONFIG_MACH_MT6775)
+	return vcore_pmic_to_uv(get_vcore_opp_volt(opp));
 #else
-	return 0;
+	return vcore_pmic_to_uv(get_vcore_ptp_volt(opp));
 #endif
 }
 
@@ -575,7 +577,11 @@ void vcorefs_init_opp_table(void)
 								opp_ctrl_table[opp].ddr_khz);
 	}
 
+#if defined(CONFIG_MACH_MT6775)
+	spm_vcorefs_pwarp_cmd();
+#else
 	mt_eem_vcorefs_set_volt();
+#endif
 	mutex_unlock(&governor_mutex);
 }
 

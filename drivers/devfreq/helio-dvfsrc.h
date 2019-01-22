@@ -17,9 +17,7 @@
 #include <linux/devfreq.h>
 #include <linux/io.h>
 
-#if defined(CONFIG_MACH_MT6763)
-#include <helio-dvfsrc-mt6763.h>
-#elif defined(CONFIG_MACH_MT6775)
+#if defined(CONFIG_MACH_MT6775)
 #include <helio-dvfsrc-mt6775.h>
 #endif
 
@@ -65,7 +63,6 @@ extern spinlock_t helio_dvfsrc_lock;
 
 extern int helio_dvfsrc_add_interface(struct device *dev);
 extern void helio_dvfsrc_remove_interface(struct device *dev);
-extern void spm_dvfsfw_init(int curr_opp);
 extern void helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc);
 extern void spm_check_status_before_dvfs(void);
 extern int dvfsrc_transfer_to_dram_level(int data);
