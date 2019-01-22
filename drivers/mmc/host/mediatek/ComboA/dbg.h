@@ -44,9 +44,6 @@ enum {
 	SDIO_AUTOK_RESULT = 30,
 	MMC_CMDQ_STATUS = 31,
 	SD_TOOL_TOP_REG_ACCESS = 32,
-
-	/* for DB dump, do not change index */
-	MMC_HANG_DETECT_DUMP = 256,
 };
 
 /* Debug message event */
