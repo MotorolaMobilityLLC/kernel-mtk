@@ -717,7 +717,7 @@ static int mtk_voice_usb_start(struct snd_pcm_substream *substream)
 	SetMemoryPathEnable(usb_mem_blk[stream], true);
 	/* fill some buffer fisrt, or need wait 2 irq period at first read*/
 	if (stream == SNDRV_PCM_STREAM_CAPTURE)
-		udelay(100);
+		udelay(300);
 
 	/* here to set interrupt */
 	irq_add_user(substream,
