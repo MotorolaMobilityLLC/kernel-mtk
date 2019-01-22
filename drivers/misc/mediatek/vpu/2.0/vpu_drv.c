@@ -788,6 +788,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		ret = put_user(req->status, &u_req->status);
 		ret |= put_user(req->occupied_core, &u_req->occupied_core);
+		ret |= put_user(req->frame_magic, &u_req->frame_magic);
 		if (ret)
 			LOG_ERR("[DEQUE] update status failed, ret=%d\n", ret);
 
@@ -1245,6 +1246,11 @@ static int vpu_remove(struct platform_device *pDev)
 
 static int vpu_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
+	int i = 0;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++)
+		vpu_quick_suspend(i);
+
 	return 0;
 }
 
