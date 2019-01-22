@@ -167,6 +167,8 @@ struct aee_kernel_api {
 		     const int *phy, int phy_size, const char *detail, const int db_opt);
 	void (*scp_exception)(const char *assert_type, const int *log, int log_size,
 		     const int *phy, int phy_size, const char *detail, const int db_opt);
+	void (*common_exception)(const char *assert_type, const int *log, int log_size,
+		     const int *phy, int phy_size, const char *detail, const int db_opt);
 };
 
 void aee_sram_printk(const char *fmt, ...);
@@ -247,6 +249,8 @@ void aee_oops_free(struct aee_oops *oops);
 	aed_scp_exception_api(log, log_size, phy, phy_size, detail, DB_OPT_DEFAULT)
 #define aed_combo_exception(log, log_size, phy, phy_size, detail)	\
 	aed_combo_exception_api(log, log_size, phy, phy_size, detail, DB_OPT_DEFAULT)
+#define aed_common_exception(assert_type, log, log_size, phy, phy_size, detail)	\
+	aed_common_exception_api(assert_type, log, log_size, phy, phy_size, detail, DB_OPT_DEFAULT)
 
 void aee_kernel_exception_api(const char *file, const int line, const int db_opt,
 			      const char *module, const char *msg, ...);
@@ -264,6 +268,8 @@ void aed_scp_exception_api(const int *log, int log_size, const int *phy, int phy
 			    const char *detail, const int db_opt);
 void aed_combo_exception_api(const int *log, int log_size, const int *phy, int phy_size,
 			     const char *detail, const int db_opt);
+void aed_common_exception_api(const char *assert_type, const int *log, int log_size, const int *phy,
+			     int phy_size, const char *detail, const int db_opt);
 
 void aee_kernel_wdt_kick_Powkey_api(const char *module, int msg);
 int aee_kernel_wdt_kick_api(int kinterval);
