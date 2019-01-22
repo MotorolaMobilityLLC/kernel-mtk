@@ -27,7 +27,7 @@
 
 #include <mt-plat/mtk_boot.h>
 #if defined(CONFIG_MTK_SYS_CIRQ)
-#include <mt-plat/mt_cirq.h>
+#include <mt-plat/mtk_cirq.h>
 #endif
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_io.h>

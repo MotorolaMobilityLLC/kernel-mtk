@@ -282,7 +282,7 @@ menu "Other Peripherals"
 
 source "drivers/misc/mediatek/accdet/Kconfig"
 source "drivers/misc/mediatek/auxadc/Kconfig"
-#source "drivers/misc/mediatek/cirq/Kconfig"
+source "drivers/misc/mediatek/cirq/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
 #source "drivers/misc/mediatek/debug_tracer/Kconfig"
 source "drivers/misc/mediatek/devapc/Kconfig"
