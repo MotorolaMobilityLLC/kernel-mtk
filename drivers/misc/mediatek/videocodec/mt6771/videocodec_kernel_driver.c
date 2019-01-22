@@ -3019,10 +3019,10 @@ static int vcodec_suspend_notifier(struct notifier_block *nb, unsigned long acti
 		is_entering_suspend = 1;
 		while (grVcodecDecHWLock.pvHandle != 0 || grVcodecEncHWLock.pvHandle != 0) {
 			wait_cnt++;
-			if (wait_cnt > 100000) {
+			if (wait_cnt > 90) {
 				MODULE_MFV_LOGD("vcodec_pm_suspend waiting for vcodec inactive %p %p",
 						grVcodecDecHWLock.pvHandle, grVcodecEncHWLock.pvHandle);
-				wait_cnt = 0;
+				return NOTIFY_DONE;
 			}
 			msleep(1);
 		}
