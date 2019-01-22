@@ -407,6 +407,12 @@ p2pRoleFsmRunEventDeauthTxDone(IN P_ADAPTER_T prAdapter,
 		}
 
 		prP2pBssInfo = prAdapter->aprBssInfo[prMsduInfo->ucBssIndex];
+
+		if (prP2pBssInfo->eCurrentOPMode == OP_MODE_ACCESS_POINT &&
+			prStaRec->eAuthAssocState == AAA_STATE_SEND_AUTH2) {
+			DBGLOG(P2P, INFO, "Do not delete STA_REC when wait assoc request\n");
+			break;
+		}
 		/* Change station state. */
 		cnmStaRecChangeState(prAdapter, prStaRec, STA_STATE_1);
 
