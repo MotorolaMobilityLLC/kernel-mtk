@@ -1063,10 +1063,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc00aa2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0x8032a2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0x800aa2);
 		}
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
@@ -1098,10 +1098,10 @@ void spm_dvfsrc_set_channel_bw(enum dvfsrc_channel channel)
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
 			/* E1 C+G jump level*/
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc00aa2);
 		} else {
 			/* E2 C+G jump level */
-			spm_write(DVFSRC_SIGNAL_CTRL, 0xc032a2);
+			spm_write(DVFSRC_SIGNAL_CTRL, 0xc00aa2);
 		}
 
 		if (plat_chip_ver == CHIP_SW_VER_01) {
