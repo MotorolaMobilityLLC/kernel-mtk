@@ -64,7 +64,7 @@ void rtc_busy_wait(void)
 	unsigned long long timeout = sched_clock() + 500000000;
 
 	do {
-		if (rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY)
+		if ((rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY) == 0)
 			break;
 		else if (sched_clock() > timeout) {
 			pr_err("%s, wait cbusy timeout, %x, %x, %x\n", __func__,
