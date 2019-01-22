@@ -1032,7 +1032,7 @@ int spm_golden_setting_cmp(bool en)
 		ddrphy_setting = ddrphy_setting_lp4_2ch;
 		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
 		break;
-	case SPMFW_LP3_1CH:
+	case SPMFW_LP3_1CH_1866:
 		ddrphy_setting = ddrphy_setting_lp3_1ch;
 		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp3_1ch);
 		break;
