@@ -478,7 +478,11 @@ static void disp_aal_multiple_pipe_hist_update(enum DISP_MODULE_ENUM module)
 	unsigned int is_hist_available = 0;
 	const int index = index_of_aal(module);
 	const int offset = aal_get_offset(module);
+#if defined(CONFIG_MACH_MT6799)
 	const int color_offset = (module == AAL0_MODULE_NAMING) ? 0 : (DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE);
+#else
+	const int color_offset = 0;
+#endif
 	int getlock;
 
 	do {
