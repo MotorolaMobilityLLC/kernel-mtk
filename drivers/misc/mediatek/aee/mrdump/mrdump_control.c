@@ -131,7 +131,11 @@ static void mrdump_cblock_kallsyms_init(struct mrdump_ksyms_param *kparam)
 	default:
 		BUILD_BUG();
 	}
+#if defined(KIMAGE_VADDR)
 	kparam->start_addr = start_addr - KIMAGE_VADDR + PHYS_OFFSET;
+#else
+	kparam->start_addr = __pa(start_addr);
+#endif
 	kparam->size = (unsigned long)&kallsyms_token_index - start_addr + 512;
 	kparam->crc = crc32(0, (unsigned char *)start_addr, kparam->size);
 	kparam->addresses_off = (unsigned long)&kallsyms_addresses - start_addr;
