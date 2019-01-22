@@ -109,8 +109,8 @@ static uint32_t tlc_get_cmd_param_len(tciCommandId_t cmd_id)
 	uint32_t len = 0;
 
 	switch (cmd_id) {
-	case CMD_CRYS_FIPS_GET_TEE_ERROR:
-		len = sizeof(TL_PARAM_CRYS_FIPS_GET_TEE_ERROR);
+	case CMD_CRYS_FIPS_GET_TEE_STATUS:
+		len = sizeof(TL_PARAM_CRYS_FIPS_GET_TEE_STATUS);
 		break;
 	case CMD_CRYS_FIPS_SET_REE_STATUS:
 		len = sizeof(TL_PARAM_CRYS_FIPS_SET_REE_STATUS);
@@ -221,19 +221,19 @@ enum ssi_fips_error ssi_fips_ext_get_tee_error(void)
 		goto exit2;
 	}
 
-	ret = tlcExecuteCmd(CMD_CRYS_FIPS_GET_TEE_ERROR);
+	ret = tlcExecuteCmd(CMD_CRYS_FIPS_GET_TEE_STATUS);
 	if (ret != TLC_FIPS_OK) {
-		SSI_LOG_ERR("ExecuteCMD(%d) failed: %u\n", CMD_CRYS_FIPS_GET_TEE_ERROR, ret);
+		SSI_LOG_ERR("ExecuteCMD(%d) failed: %u\n", CMD_CRYS_FIPS_GET_TEE_STATUS, ret);
 		goto exit3;
 	}
 
-	ret = tciMessage->param_fips_get_tee_error.ret;
+	ret = tciMessage->param_fips_get_tee_status.ret;
 	if (ret != SASI_OK) {
-		SSI_LOG_ERR("Get TEE FIPS error failed: %u\n", ret);
+		SSI_LOG_ERR("Get TEE FIPS status failed: %u\n", ret);
 		goto exit3;
 	}
 
-	tee_error = tciMessage->param_fips_get_tee_error.tee_error;
+	tee_error = tciMessage->param_fips_get_tee_status.tee_status;
 exit3:
 	result = mc_close_session(&session_handle);
 	if (result != MC_DRV_OK)
@@ -311,9 +311,9 @@ void ssi_fips_ext_update_tee_upon_ree_status(void)
 		goto exit3;
 	}
 
-	ret = tciMessage->param_fips_get_tee_error.ret;
+	ret = tciMessage->param_fips_set_ree_status.ret;
 	if (ret != SASI_OK) {
-		SSI_LOG_ERR("Get TEE FIPS error failed: %u\n", ret);
+		SSI_LOG_ERR("Set TEE FIPS status failed: %u\n", ret);
 		goto exit3;
 	}
 exit3:

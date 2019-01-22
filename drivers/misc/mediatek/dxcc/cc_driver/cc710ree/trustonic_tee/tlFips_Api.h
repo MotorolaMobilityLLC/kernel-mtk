@@ -21,44 +21,50 @@
  * -> Trusted Application (TA).
  */
 
-#define CMD_SASI_LIB_INIT                 (0)
-#define CMD_SASI_LIB_FINI                 (1)
-#define CMD_SASI_AES_INIT                 (2)
-#define CMD_SASI_AES_SETKEY               (3)
-#define CMD_SASI_AES_SETIV                (4)
-#define CMD_SASI_AES_BLOCK                (5)
-#define CMD_SASI_AES_FINISH               (6)
-#define CMD_CRYS_AESCCM                   (7)
-#define CMD_CRYS_DES                      (8)
-#define CMD_CRYS_HASH                     (9)
-#define CMD_CRYS_HMAC                     (10)
-#define CMD_CRYS_KDF                      (11)
-#define CMD_CRYS_RSA_KEY_GEN              (12)
-#define CMD_CRYS_RSA_BUILD_PUBK           (13)
-#define CMD_SASI_RSA_VERIFY               (14)
-#define CMD_SASI_RSA_SIGN                 (15)
-#define CMD_SASI_RSA_GET_PUBK             (16)
-#define CMD_CRYS_ECPKI_KEY_GEN            (17)
-#define CMD_CRYS_ECPKI_EXPORT_PUBK        (18)
-#define CMD_CRYS_CONVERT_ENDIAN           (19)
-#define CMD_CRYS_ECPKI_BUILD_PUBK         (20)
-#define CMD_CRYS_ECDSA_VERIFY             (21)
-#define CMD_CRYS_ECDSA_GET_DOMAIN         (22)
-#define CMD_CRYS_ECDSA_SIGN               (23)
-#define CMD_CRYS_RND_ADD_ADDITIONAL_INPUT (24)
-#define CMD_CRYS_RND_INSTANTIATION        (25)
-#define CMD_CRYS_RND_RESEEDING            (26)
-#define CMD_CRYS_RND_GENERATE_VECTOR      (27)
-#define CMD_CRYS_RND_ENTER_KAT_MODE       (28)
-#define CMD_CRYS_RND_UNINSTANTIATION      (29)
-#define CMD_SASI_UTIL_KDF                 (30)
-#define CMD_ECDH_SVDP_DH                  (31)
-#define CMD_CRYS_FIPS_GET_TEE_ERROR       (32)
-#define CMD_CRYS_FIPS_SET_REE_STATUS      (33)
+#define CMD_SASI_LIB_INIT                       (0)
+#define CMD_SASI_LIB_FINI                       (1)
+#define CMD_SASI_AES_INIT                       (2)
+#define CMD_SASI_AES_SETKEY                     (3)
+#define CMD_SASI_AES_SETIV                      (4)
+#define CMD_SASI_AES_BLOCK                      (5)
+#define CMD_SASI_AES_FINISH                     (6)
+#define CMD_CRYS_AESCCM                         (7)
+#define CMD_CRYS_DES                            (8)
+#define CMD_CRYS_HASH                           (9)
+#define CMD_CRYS_HMAC                           (10)
+#define CMD_CRYS_KDF                            (11)
+#define CMD_CRYS_RSA_KEY_GEN                    (12)
+#define CMD_CRYS_RSA_BUILD_PUBK                 (13)
+#define CMD_SASI_RSA_VERIFY                     (14)
+#define CMD_SASI_RSA_SIGN                       (15)
+#define CMD_SASI_RSA_GET_PUBK                   (16)
+#define CMD_CRYS_ECPKI_KEY_GEN                  (17)
+#define CMD_CRYS_ECPKI_EXPORT_PUBK              (18)
+#define CMD_CRYS_CONVERT_ENDIAN                 (19)
+#define CMD_CRYS_ECPKI_BUILD_PUBK               (20)
+#define CMD_CRYS_ECDSA_VERIFY                   (21)
+#define CMD_CRYS_ECDSA_GET_DOMAIN               (22)
+#define CMD_CRYS_ECDSA_SIGN                     (23)
+#define CMD_CRYS_RND_ADD_ADDITIONAL_INPUT       (24)
+#define CMD_CRYS_RND_INSTANTIATION              (25)
+#define CMD_CRYS_RND_RESEEDING                  (26)
+#define CMD_CRYS_RND_GENERATE_VECTOR            (27)
+#define CMD_CRYS_RND_ENTER_KAT_MODE             (28)
+#define CMD_CRYS_RND_DISABLE_KAT_MODE           (29)
+#define CMD_CRYS_RND_UNINSTANTIATION            (30)
+#define CMD_SASI_UTIL_KDF                       (31)
+#define CMD_ECDH_SVDP_DH                        (32)
+#define CMD_DX_DH_GENERATE_PUBPRV               (33)
+#define CMD_CRYS_DH_CHECK_PUBK                  (34)
+#define CMD_CRYS_DH_GET_SECRET_KEY              (35)
+#define CMD_CRYS_DH_X942_HYBRID_GET_SECRET_DATA (36)
+#define CMD_CRYS_DH_X942_GET_SECRET_DATA        (37)
+#define CMD_CRYS_FIPS_GET_TEE_STATUS            (38)
+#define CMD_CRYS_FIPS_SET_REE_STATUS            (39)
 
 /* sample cmd */
-#define CMD_SAMPLE_ROT13_CIPHER           (34)
-#define CMD_SAMPLE_ROT13_UNWRAP           (35)
+#define CMD_SAMPLE_ROT13_CIPHER                 (50)
+#define CMD_SAMPLE_ROT13_UNWRAP                 (51)
 
 typedef struct {
 	uint32_t                    ret;
@@ -383,6 +389,11 @@ typedef struct {
 } TL_PARAM_CRYS_RND_ENTER_KAT_MODE;
 
 typedef struct {
+	uint32_t                    rnd_ctx_off;
+	uint32_t                    rnd_ctx_sz;
+} TL_PARAM_CRYS_RND_DISABLE_KAT_MODE;
+
+typedef struct {
 	uint32_t                    ret;
 	uint32_t                    rnd_ctx_off;
 	uint32_t                    rnd_ctx_sz;
@@ -415,8 +426,98 @@ typedef struct {
 
 typedef struct {
 	uint32_t                    ret;
-	uint32_t                    tee_error;
-} TL_PARAM_CRYS_FIPS_GET_TEE_ERROR;
+	uint32_t                    rnd_ctx_off;
+	uint32_t                    rnd_ctx_sz;
+	uint32_t                    generator_off;
+	uint32_t                    generator_sz;
+	uint32_t                    prime_off;
+	uint32_t                    prime_sz;
+	uint32_t                    l;
+	uint32_t                    q_off;
+	uint32_t                    q_sz;
+	uint32_t                    mode;
+	uint32_t                    tmp_pubk_off;
+	uint32_t                    tmp_pubk_sz;
+	uint32_t                    prime_data_off;
+	uint32_t                    prime_data_sz;
+	uint32_t                    client_prvk_off;
+	uint32_t                    client_prvk_sz;
+	uint32_t                    client_pubk_off;
+	uint32_t                    client_pubk_sz;
+} TL_PARAM_DX_DH_GENERATE_PUBPRV;
+
+typedef struct {
+	uint32_t                    ret;
+	uint32_t                    modp_off;
+	uint32_t                    modp_sz;
+	uint32_t                    orderq_off;
+	uint32_t                    orderq_sz;
+	uint32_t                    pubk_off;
+	uint32_t                    pubk_sz;
+	uint32_t                    tmpbuf_off;
+	uint32_t                    tmpbuf_sz;
+} TL_PARAM_DH_CHECK_PUBK;
+
+typedef struct {
+	uint32_t                    ret;
+	uint32_t                    client_prvk_off;
+	uint32_t                    client_prvk_sz;
+	uint32_t                    server_pubk_off;
+	uint32_t                    server_pubk_sz;
+	uint32_t                    prime_off;
+	uint32_t                    prime_sz;
+	uint32_t                    tmp_pubk_off;
+	uint32_t                    tmp_pubk_sz;
+	uint32_t                    tmp_prime_data_off;
+	uint32_t                    tmp_prime_data_sz;
+	uint32_t                    secret_key_off;
+	uint32_t                    secret_key_sz;
+} TL_PARAM_DH_GET_SECRET_KEY;
+
+typedef struct {
+	uint32_t                    ret;
+	uint32_t                    client_prvk1_off;
+	uint32_t                    client_prvk1_sz;
+	uint32_t                    client_prvk2_off;
+	uint32_t                    client_prvk2_sz;
+	uint32_t                    server_prvk1_off;
+	uint32_t                    server_prvk1_sz;
+	uint32_t                    server_prvk2_off;
+	uint32_t                    server_prvk2_sz;
+	uint32_t                    prime_off;
+	uint32_t                    prime_sz;
+	uint32_t                    otherinfo_off;
+	uint32_t                    otherinfo_sz;
+	uint32_t                    hash_mode;
+	uint32_t                    deriv_func_mode;
+	uint32_t                    tmp_dh_hybr_off;
+	uint32_t                    tmp_dh_hybr_sz;
+	uint32_t                    secret_keying_data_off;
+	uint32_t                    secret_keying_data_sz;
+} TL_PARAM_DH_X942_HYBRID_GET_SECRET_DATA;
+
+typedef struct {
+	uint32_t                    ret;
+	uint32_t                    client_prvk_off;
+	uint32_t                    client_prvk_sz;
+	uint32_t                    server_pubk_off;
+	uint32_t                    server_pubk_sz;
+	uint32_t                    prime_off;
+	uint32_t                    prime_sz;
+	uint32_t                    otherinfo_off;
+	uint32_t                    otherinfo_sz;
+	uint32_t                    hash_mode;
+	uint32_t                    deriv_func_mode;
+	uint32_t                    tmp_buf_off;
+	uint32_t                    tmp_buf_sz;
+	uint32_t                    secret_keying_data_off;
+	uint32_t                    secret_keying_data_sz;
+} TL_PARAM_DH_X942_GET_SECRET_DATA;
+
+typedef struct {
+	uint32_t                    ret;
+	uint32_t                    tee_status;
+} TL_PARAM_CRYS_FIPS_GET_TEE_STATUS;
 
 typedef struct {
 	uint32_t                    ret;
@@ -477,41 +578,47 @@ typedef struct {
 	};
 	/**< Clear/Cipher text  or Wrap/Unwrap Data container */
 	union {
-		TL_PARAM_SASI_LIB_INIT                 param_sasi_lib_init;
-		TL_PARAM_SASI_LIB_FINISH               param_sasi_lib_finish;
-		TL_PARAM_SASI_AES_INIT                 param_sasi_aes_init;
-		TL_PARAM_SASI_AES_SETKEY               param_sasi_aes_setkey;
-		TL_PARAM_SASI_AES_SETIV                param_sasi_aes_setiv;
-		TL_PARAM_SASI_AES_BLOCK                param_sasi_aes_block;
-		TL_PARAM_SASI_AES_FINISH               param_sasi_aes_finish;
-		TL_PARAM_CRYS_AESCCM                   param_aesccm;
-		TL_PARAM_CRYS_DES                      param_des;
-		TL_PARAM_CRYS_HASH                     param_hash;
-		TL_PARAM_CRYS_HMAC                     param_hmac;
-		TL_PARAM_CRYS_KDF                      param_kdf;
-		TL_PARAM_CRYS_RSA_KEY_GEN              param_rsa_key_gen;
-		TL_PARAM_CRYS_RSA_BUILD_PUBK           param_rsa_build_pubk;
-		TL_PARAM_SASI_RSA_VERIFY               param_rsa_verify;
-		TL_PARAM_SASI_RSA_SIGN                 param_rsa_sign;
-		TL_PARAM_SASI_RSA_GET_PUBK             param_rsa_get_pubk;
-		TL_PARAM_CRYS_ECPKI_KEY_GEN            param_ecpki_key_gen;
-		TL_PARAM_CRYS_ECPKI_EXPORT_PUBK        param_ecpki_export_pubk;
-		TL_PARAM_CRYS_CONVERT_ENDIAN           param_convert_endian;
-		TL_PARAM_CRYS_ECPKI_BUILD_PUBK         param_ecpki_build_pubk;
-		TL_PARAM_CRYS_ECDSA_VERIFY             param_ecdsa_verify;
-		TL_PARAM_CRYS_ECDSA_GET_DOMAIN         param_ecdsa_get_domain;
-		TL_PARAM_CRYS_ECDSA_SIGN               param_ecdsa_sign;
-		TL_PARAM_CRYS_RND_ADD_ADDITIONAL_INPUT param_rnd_add_additional_input;
-		TL_PARAM_CRYS_RND_INSTANTIATION        param_rnd_instantiation;
-		TL_PARAM_CRYS_RND_RESEEDING            param_rnd_reseeding;
-		TL_PARAM_CRYS_RND_GENERATE_VECTOR      param_rnd_generate_vector;
-		TL_PARAM_CRYS_RND_ENTER_KAT_MODE       param_rnd_enter_kat_mode;
-		TL_PARAM_CRYS_RND_UNINSTANTIATION      param_rnd_uninstantiation;
-		TL_PARAM_SASI_UTIL_KDF                 param_sasi_util_kdf;
-		TL_PARAM_ECDH_SVDP_DH                  param_ecdh_svdp_dh;
-		TL_PARAM_CRYS_FIPS_GET_TEE_ERROR       param_fips_get_tee_error;
-		TL_PARAM_CRYS_FIPS_SET_REE_STATUS      param_fips_set_ree_status;
-		uint8_t                                param[MAX_PARAM_LEN];
+		TL_PARAM_SASI_LIB_INIT                  param_sasi_lib_init;
+		TL_PARAM_SASI_LIB_FINISH                param_sasi_lib_finish;
+		TL_PARAM_SASI_AES_INIT                  param_sasi_aes_init;
+		TL_PARAM_SASI_AES_SETKEY                param_sasi_aes_setkey;
+		TL_PARAM_SASI_AES_SETIV                 param_sasi_aes_setiv;
+		TL_PARAM_SASI_AES_BLOCK                 param_sasi_aes_block;
+		TL_PARAM_SASI_AES_FINISH                param_sasi_aes_finish;
+		TL_PARAM_CRYS_AESCCM                    param_aesccm;
+		TL_PARAM_CRYS_DES                       param_des;
+		TL_PARAM_CRYS_HASH                      param_hash;
+		TL_PARAM_CRYS_HMAC                      param_hmac;
+		TL_PARAM_CRYS_KDF                       param_kdf;
+		TL_PARAM_CRYS_RSA_KEY_GEN               param_rsa_key_gen;
+		TL_PARAM_CRYS_RSA_BUILD_PUBK            param_rsa_build_pubk;
+		TL_PARAM_SASI_RSA_VERIFY                param_rsa_verify;
+		TL_PARAM_SASI_RSA_SIGN                  param_rsa_sign;
+		TL_PARAM_SASI_RSA_GET_PUBK              param_rsa_get_pubk;
+		TL_PARAM_CRYS_ECPKI_KEY_GEN             param_ecpki_key_gen;
+		TL_PARAM_CRYS_ECPKI_EXPORT_PUBK         param_ecpki_export_pubk;
+		TL_PARAM_CRYS_CONVERT_ENDIAN            param_convert_endian;
+		TL_PARAM_CRYS_ECPKI_BUILD_PUBK          param_ecpki_build_pubk;
+		TL_PARAM_CRYS_ECDSA_VERIFY              param_ecdsa_verify;
+		TL_PARAM_CRYS_ECDSA_GET_DOMAIN          param_ecdsa_get_domain;
+		TL_PARAM_CRYS_ECDSA_SIGN                param_ecdsa_sign;
+		TL_PARAM_CRYS_RND_ADD_ADDITIONAL_INPUT  param_rnd_add_additional_input;
+		TL_PARAM_CRYS_RND_INSTANTIATION         param_rnd_instantiation;
+		TL_PARAM_CRYS_RND_RESEEDING             param_rnd_reseeding;
+		TL_PARAM_CRYS_RND_GENERATE_VECTOR       param_rnd_generate_vector;
+		TL_PARAM_CRYS_RND_ENTER_KAT_MODE        param_rnd_enter_kat_mode;
+		TL_PARAM_CRYS_RND_DISABLE_KAT_MODE      param_rnd_disable_kat_mode;
+		TL_PARAM_CRYS_RND_UNINSTANTIATION       param_rnd_uninstantiation;
+		TL_PARAM_SASI_UTIL_KDF                  param_sasi_util_kdf;
+		TL_PARAM_ECDH_SVDP_DH                   param_ecdh_svdp_dh;
+		TL_PARAM_DX_DH_GENERATE_PUBPRV          param_dx_dh_generate_pubprv;
+		TL_PARAM_DH_CHECK_PUBK                  param_dh_check_pubk;
+		TL_PARAM_DH_GET_SECRET_KEY              param_dh_get_secret_key;
+		TL_PARAM_DH_X942_HYBRID_GET_SECRET_DATA param_dh_x942_hybrid_get_secret_data;
+		TL_PARAM_DH_X942_GET_SECRET_DATA        param_dh_x942_get_secret_data;
+		TL_PARAM_CRYS_FIPS_GET_TEE_STATUS       param_fips_get_tee_status;
+		TL_PARAM_CRYS_FIPS_SET_REE_STATUS       param_fips_set_ree_status;
+		uint8_t                                 param[MAX_PARAM_LEN];
 	};
 	uint8_t data[MAX_DATA_LEN];
 } tciMessage_t;
