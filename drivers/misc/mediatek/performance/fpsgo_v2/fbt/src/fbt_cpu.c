@@ -505,7 +505,7 @@ static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld, int jerkid)
 
 	for (cluster = 0 ; cluster < cluster_num; cluster++) {
 		pld[cluster].min = -1;
-		if (bypass_flag == 0 && suppress_ceiling) {
+		if (suppress_ceiling) {
 			pld[cluster].max =
 				cpu_dvfs[cluster].power[max((int)(base_opp[cluster] - rescue_opp_c), 0)];
 		} else
@@ -891,7 +891,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 
 		pld[cluster].min = -1;
 
-		if (bypass_flag == 0 && suppress_ceiling) {
+		if (suppress_ceiling) {
 			pld[cluster].max =
 				max(mbhr, cpu_dvfs[cluster].power[mbhr_opp]);
 
@@ -910,8 +910,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 
 	fbt_set_boost_value(blc_wt);
 
-	if (bypass_flag == 0)
-		update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
 
 	kfree(pld);
 	kfree(clus_opp);
@@ -1474,10 +1473,6 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr, unsigned long long t
 		fbt_clear_boost_value();
 		fpsgo_systrace_c_fbt(thr->pid, 0, "perf idx");
 
-		fbt_free_bhr();
-		fpsgo_systrace_c_fbt(thr->pid, -1, "cluster%d ceiling_freq", 0);
-		fpsgo_systrace_c_fbt(thr->pid, -1, "cluster%d ceiling_freq", 1);
-
 		if (bypass_flag == 0)
 			fbt_set_idleprefer_locked(0);
 		fbt_filter_ppm_log_locked(0);
@@ -1618,7 +1613,6 @@ void fpsgo_comp2fbt_bypass_enq(void)
 
 	if (!bypass_flag) {
 		bypass_flag = 1;
-		fbt_free_bhr();
 		fbt_set_walt_locked(1);
 		fbt_set_idleprefer_locked(1);
 
@@ -1639,7 +1633,6 @@ void fpsgo_base2fbt_set_bypass(int has_bypass)
 	if (bypass_flag != has_bypass) {
 		if (unlikely(has_bypass)) {
 			/*should not enter here*/
-			fbt_free_bhr();
 			fbt_set_walt_locked(1);
 		} else
 			fbt_set_walt_locked(0);
@@ -1649,6 +1642,7 @@ void fpsgo_base2fbt_set_bypass(int has_bypass)
 	}
 	mutex_unlock(&fbt_mlock);
 }
+
 
 void fpsgo_comp2fbt_bypass_disconnect(void)
 {
