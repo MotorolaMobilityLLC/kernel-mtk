@@ -222,10 +222,10 @@ int check_reserved_region_integrity(unsigned int start, unsigned int nr)
 void m4u_mvaGraph_dump(void)
 {
 	unsigned int start = 0, end = 0, size = 0;
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	int i, max_bit, is_busy, is_reserve, integrity = 0;
 	short frag[12] = { 0 };
-	short nr_free = 0, nr_alloc = 0;
+	unsigned short nr_free = 0, nr_alloc = 0;
 	unsigned long irq_flags;
 
 	M4ULOG_HIGH("[M4U_2.4] mva allocation info dump:====================>\n");
@@ -290,7 +290,7 @@ void m4u_mvaGraph_dump(void)
 void *mva_get_priv_ext(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
@@ -314,7 +314,7 @@ void *mva_get_priv_ext(unsigned int mva)
 
 int mva_foreach_priv(mva_buf_fn_t *fn, void *data)
 {
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	unsigned int mva;
 	void *priv;
 	unsigned long irq_flags;
@@ -339,7 +339,7 @@ int mva_foreach_priv(mva_buf_fn_t *fn, void *data)
 
 unsigned int get_first_valid_mva(void)
 {
-	short index = 1, nr = 0;
+	unsigned short index = 1, nr = 0;
 	unsigned int mva;
 	void *priv;
 	unsigned long irq_flags;
@@ -363,7 +363,7 @@ unsigned int get_first_valid_mva(void)
 void *mva_get_priv(unsigned int mva)
 {
 	void *priv = NULL;
-	int index;
+	unsigned int index;
 	unsigned long irq_flags;
 
 	index = MVAGRAPH_INDEX(mva);
@@ -435,9 +435,9 @@ int m4u_check_mva_region(unsigned int startIdx, unsigned int nr, void *priv)
  */
 unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 {
-	short s, end;
-	short new_start, new_end;
-	short nr = 0;
+	unsigned short s, end;
+	unsigned short new_start, new_end;
+	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
@@ -575,12 +575,12 @@ unsigned int m4u_do_mva_alloc_fix(unsigned long va,
 						unsigned int size,
 						void *priv)
 {
-	short nr = 0;
+	unsigned short nr = 0;
 	unsigned int startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short endIdx;
-	short region_start, region_end;
+	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short endIdx;
+	unsigned short region_start, region_end;
 	int   requeired_mva_status = 0, is_in_vpu_region = 0;
 
 	if (size == 0) {
@@ -689,14 +689,14 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 							unsigned int size,
 							void *priv)
 {
-	short s = 0, end;
-	short new_start, new_end;
-	short nr = 0;
+	unsigned short s = 0, end;
+	unsigned short new_start, new_end;
+	unsigned short nr = 0;
 	unsigned int mvaRegionStart;
 	unsigned long startRequire, endRequire, sizeRequire;
 	unsigned long irq_flags;
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short region_start, region_end, next_region_start = 0;
+	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short region_start, region_end, next_region_start = 0;
 	int   requeired_mva_status = 0, is_in_vpu_region = 0;
 
 	if (size == 0) {
@@ -887,20 +887,31 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned long va,
 #define RightWrong(x) ((x) ? "correct" : "error")
 int m4u_do_mva_free(unsigned int mva, unsigned int size)
 {
-	short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
-	short nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
-	short endIdx = startIdx + nr - 1;
+	unsigned short startIdx = mva >> MVA_BLOCK_SIZE_ORDER;
+	unsigned short nr;
+	unsigned short endIdx;
 	unsigned int startRequire, endRequire, sizeRequire;
-	short nrRequire, nr_tmp = 0;
+	unsigned short nrRequire, nr_tmp = 0;
 	unsigned long irq_flags;
 	int   requeired_mva_status, is_in_vpu_region_flag = 0;
 	int ret = 0;
+
+	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
+	if (startIdx == 0 || startIdx > MVA_MAX_BLOCK_NR) {
+		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
+
+		M4UMSG("mvaGraph index is 0. mva=0x%x\n", mva);
+		return -1;
+	}
+	nr = mvaGraph[startIdx] & MVA_BLOCK_NR_MASK;
+	endIdx = startIdx + nr - 1;
 
 	/*if nr == 0, it means the mva has been freed, Or mvaGraph is corruptted.*/
 	if (nr == 0) {
 		M4UMSG("%s error: the nr of mva which will be freed is 0.\n", __func__);
 		return -1;
 	}
+
 	requeired_mva_status = m4u_check_mva_region(startIdx, nr, (void *)mvaInfoGraph[startIdx]);
 	if (requeired_mva_status == -1) {
 		M4UMSG("m4u_check_mva_region[0x%x - 0x%x] error when free mva\n",
