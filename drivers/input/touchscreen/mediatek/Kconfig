@@ -53,6 +53,19 @@ config TOUCHSCREEN_MTK_GT911
 
 source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
 
+config TOUCHSCREEN_FT5X26
+	bool "FT5X26 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have FT5X26 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/FT5X26/Kconfig"
+
 config TOUCHSCREEN_MTK_GSLX680
 	bool "gslX680 for Mediatek package"
 	help
