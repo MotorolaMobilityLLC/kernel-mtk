@@ -710,7 +710,7 @@ s32 gtp_read_version(struct i2c_client *client, u16 *version)
 	if (version)
 		*version = (buf[7] << 8) | buf[6];
 
-	tpd_info.vid = *version;
+	tpd_info.vid = (buf[7] << 8) | buf[6];
 	tpd_info.pid = 0x00;
 
 	/* for gt9xx series */
