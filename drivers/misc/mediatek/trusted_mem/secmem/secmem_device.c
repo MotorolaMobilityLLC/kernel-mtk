@@ -80,7 +80,8 @@ static int __init secmem_init(void)
 	get_tee_peer_ops(&t_device->peer_ops);
 	get_tee_peer_priv_data(TEE_MEM_SVP, &t_device->peer_priv);
 
-	sprintf(t_device->name, "%s", SECMEM_SVP_DEVICE_NAME);
+	snprintf(t_device->name, MAX_DEVICE_NAME_LEN, "%s",
+		 SECMEM_SVP_DEVICE_NAME);
 #if defined(CONFIG_MTK_SSMR) || (defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP))
 	t_device->ssmr_feature_id = SSMR_FEAT_SVP;
 #endif
