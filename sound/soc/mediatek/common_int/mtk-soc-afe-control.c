@@ -3434,6 +3434,8 @@ int memif_lpbk_enable(struct memif_lpbk *memif_lpbk)
 		 delay_us,
 		 mem_size);
 
+	AudDrv_Clk_On();
+
 	/* allocate memory */
 	memif_lpbk->dma_bytes = mem_size;
 	if (AllocateAudioSram(&memif_lpbk->dma_addr,
@@ -3448,13 +3450,13 @@ int memif_lpbk_enable(struct memif_lpbk *memif_lpbk)
 							  GFP_KERNEL | GFP_DMA);
 		if (!memif_lpbk->dma_area) {
 			pr_err("%s(), dma_alloc_coherent fail\n", __func__);
+			AudDrv_Clk_Off();
 			return -ENOMEM;
 		}
 		memif_lpbk->use_dram = true;
 		AudDrv_Emi_Clk_On();
 	}
 
-	AudDrv_Clk_On();
 	memset_io(memif_lpbk->dma_area, 0, memif_lpbk->dma_bytes);
 
 	/* setup memif */
@@ -3794,15 +3796,19 @@ int mtk_audio_request_sram(dma_addr_t *phys_addr,
 
 	pr_debug("%s(), user = %p, length = %d, count = %d\n",
 		 __func__, user, length, request_sram_count);
+
+	AudDrv_Clk_On();
+
 	ret = AllocateAudioSram(phys_addr, virt_addr, length, user,
 				SNDRV_PCM_FORMAT_S32_LE, true);
 	if (ret) {
 		pr_warn("%s(), allocate sram fail, ret %d\n", __func__, ret);
+		AudDrv_Clk_Off();
 		return ret;
 	}
 
 	request_sram_count++;
-	AudDrv_Clk_On();
+
 
 	pr_debug("%s(), return 0, count = %d\n", __func__, request_sram_count);
 	return 0;
