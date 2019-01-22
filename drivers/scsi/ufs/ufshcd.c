@@ -187,6 +187,9 @@ const int ufs_pm_lvl_states_size = ARRAY_SIZE(ufs_pm_lvl_states);
 
 #ifdef CONFIG_MTK_UFS_DEBUG
 struct ufs_hba *g_ufs_hba_p;	/* for debugging only */
+static int ufs_trace_en = 1;
+#else
+static int ufs_trace_en;
 #endif
 
 static inline enum ufs_dev_pwr_mode
@@ -242,6 +245,78 @@ static inline void ufshcd_disable_irq(struct ufs_hba *hba)
 		hba->is_irq_enabled = false;
 	}
 }
+
+#ifdef CONFIG_MTK_UFS_DEBUG
+static void ufshcd_add_command_trace(struct ufs_hba *hba,
+		unsigned int tag, enum ufs_trace_event event)
+{
+	sector_t lba = -1;
+	u8 opcode = 0;
+	u8 lun = -1;
+	struct ufshcd_lrb *lrbp;
+	int transfer_len = -1;
+	struct ufs_query_req *request;
+
+	if (event == UFS_TRACE_TM_SEND ||
+		event == UFS_TRACE_TM_COMPLETED) {
+
+		transfer_len = tag; /* keep origianl "tag" */
+
+		lun = (tag >> 24) & 0xFF;
+		opcode = (tag >> 16) & 0xFF; /* tm_function */
+		tag = tag & 0xFF; /* tag of targeted requeset: task_id */
+
+		ufs_mtk_dbg_add_trace(event, tag, lun, transfer_len, lba, opcode);
+
+	} else {
+
+		lrbp = &hba->lrb[tag];
+
+		if (lrbp->cmd) { /* data phase exists */
+			opcode = (u8)(*lrbp->cmd->cmnd);
+			if ((opcode == READ_10) || (opcode == WRITE_10)) {
+				/*
+				 * Currently we only fully trace read(10) and write(10)
+				 * commands
+				 */
+				if (lrbp->cmd->request && lrbp->cmd->request->bio)
+					lba = lrbp->cmd->request->bio->bi_iter.bi_sector >> 3;
+
+				transfer_len = be32_to_cpu(
+					lrbp->ucd_req_ptr->sc.exp_data_transfer_len);
+
+				lun = ufshcd_scsi_to_upiu_lun(lrbp->cmd->device->lun);
+			} else if (opcode == UNMAP) {
+				lun = lrbp->lun;
+				transfer_len = lrbp->cmd->request->__data_len;
+				lba = lrbp->cmd->request->__sector;
+			}
+		} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) { /* device command */
+			request = &hba->dev_cmd.query.request;
+
+			opcode = request->upiu_req.opcode;
+
+			lba = request->upiu_req.idn |
+				(request->upiu_req.index << 8) |
+				(request->upiu_req.selector << 16);
+		}
+
+		ufs_mtk_dbg_add_trace(event, tag, lun, transfer_len, lba, opcode);
+	}
+}
+
+static inline void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
+					unsigned int tag, enum ufs_trace_event event)
+{
+	if (ufs_trace_en)
+		ufshcd_add_command_trace(hba, tag, event);
+}
+#else
+static inline void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
+					unsigned int tag, enum ufs_trace_event event)
+{
+}
+#endif
 
 static void ufshcd_print_clk_freqs(struct ufs_hba *hba)
 {
@@ -319,7 +394,7 @@ void ufshcd_print_trs(struct ufs_hba *hba, unsigned long bitmap, bool pr_prdt)
 	}
 }
 
-static void ufshcd_print_host_state(struct ufs_hba *hba)
+void ufshcd_print_host_state(struct ufs_hba *hba, u32 mphy_info)
 {
 	int err = 0;
 	u32 val;
@@ -347,11 +422,13 @@ static void ufshcd_print_host_state(struct ufs_hba *hba)
 	dev_info(hba->dev, "quirks=0x%x, dev. quirks=0x%x\n", hba->quirks,
 		hba->dev_quirks);
 
-	err = ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_FSM_STATE, 0), &val);
-	if (err)
-		dev_info(hba->dev, "get TX_FSM_STATE fail\n");
-	else
-		dev_info(hba->dev, "TX_FSM_STATE: %u\n", val);
+	if (mphy_info) {
+		err = ufshcd_dme_get(hba, UIC_ARG_MIB_SEL(TX_FSM_STATE, 0), &val);
+		if (err)
+			dev_info(hba->dev, "get TX_FSM_STATE fail\n");
+		else
+			dev_info(hba->dev, "TX_FSM_STATE: %u\n", val);
+	}
 }
 
 /**
@@ -983,6 +1060,11 @@ void ufshcd_send_command(struct ufs_hba *hba, unsigned int task_tag)
 	__set_bit(task_tag, &hba->outstanding_reqs);
 	ufs_mtk_biolog_check(hba->outstanding_reqs);
 	ufshcd_writel(hba, 1 << task_tag, REG_UTP_TRANSFER_REQ_DOOR_BELL);
+
+	if (hba->lrb[task_tag].cmd)
+		ufshcd_cond_add_cmd_trace(hba, task_tag, UFS_TRACE_SEND);
+	else
+		ufshcd_cond_add_cmd_trace(hba, task_tag, UFS_TRACE_DEV_SEND);
 }
 
 /**
@@ -3576,7 +3658,7 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 		lrbp = &hba->lrb[index];
 		cmd = lrbp->cmd;
 		if (cmd) {
-
+			ufshcd_cond_add_cmd_trace(hba, index, UFS_TRACE_COMPLETED);
 			/* MTK Patch: handler of performance heuristic */
 			ufs_mtk_perf_heurisic_req_done(hba, cmd);
 			ufs_mtk_biolog_transfer_req_compl(index);
@@ -3609,8 +3691,11 @@ static void ufshcd_transfer_req_compl(struct ufs_hba *hba)
 			__ufshcd_release(hba);
 			ufs_mtk_biolog_scsi_done_end(index);
 		} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
-			if (hba->dev_cmd.complete)
+			if (hba->dev_cmd.complete) {
+				ufshcd_cond_add_cmd_trace(hba, index,
+						UFS_TRACE_DEV_COMPLETED);
 				complete(hba->dev_cmd.complete);
+			}
 		}
 	}
 
@@ -4274,6 +4359,10 @@ static int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 	__set_bit(free_slot, &hba->outstanding_tasks);
 	ufshcd_writel(hba, 1 << free_slot, REG_UTP_TASK_REQ_DOOR_BELL);
 
+	ufshcd_cond_add_cmd_trace(
+		hba,
+		task_id | (task_tag << 8) | (tm_function << 16) | (lun_id << 24),
+		UFS_TRACE_TM_SEND);
 	spin_unlock_irqrestore(host->host_lock, flags);
 
 	/* wait until the task management command is completed */
@@ -4290,6 +4379,15 @@ static int ufshcd_issue_tm_cmd(struct ufs_hba *hba, int lun_id, int task_id,
 	} else {
 		err = ufshcd_task_req_compl(hba, free_slot, tm_response);
 	}
+
+	/* get response for cmd trace */
+	if (tm_response)
+		task_id = *tm_response;
+
+	ufshcd_cond_add_cmd_trace(
+		hba,
+		task_id | (task_tag << 8) | (tm_function << 16) | (lun_id << 24),
+		UFS_TRACE_TM_COMPLETED);
 
 	clear_bit(free_slot, &hba->tm_condition);
 	ufshcd_put_tm_slot(hba, free_slot);
@@ -4387,10 +4485,6 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	u8 resp = 0xF;
 	struct ufshcd_lrb *lrbp;
 	u32 reg;
-	/* MTK patch to dump debug info */
-	u32 lba = 0;
-	u32 blk_cnt;
-	u32 fua, flush;
 
 	host = cmd->device->host;
 	hba = shost_priv(host);
@@ -4417,55 +4511,12 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 		__func__, tag);
 	}
 
-	/* MTK patch to dump debug info */
-	ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].timestamp = sched_clock();
-	if (ufs_mtk_is_data_cmd(cmd->cmnd[0])) {
-
-		lba = cmd->cmnd[5] | (cmd->cmnd[4] << 8) | (cmd->cmnd[3] << 16) | (cmd->cmnd[2] << 24);
-		blk_cnt = cmd->cmnd[8] | (cmd->cmnd[7] << 8);
-		fua = (cmd->cmnd[1] & 0x8) ? 1 : 0;
-		flush = (cmd->request->cmd_flags & REQ_FUA) ? 1 : 0;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].lun = ufshcd_scsi_to_upiu_lun(cmd->device->lun);
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].tag = cmd->request->tag;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].cmd = cmd->cmnd[0];
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].lba = lba;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].blk_cnt = blk_cnt;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].fua = fua;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].flush = flush;
-
-#ifdef CONFIG_MTK_HW_FDE
-		if (cmd->request->bio && cmd->request->bio->bi_hw_fde) {
-			ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].is_fde = 1;
-			dev_info(hba->dev, "[Abort]QCMD(C),L:%x,T:%d,0x%x,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
-				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
-				lba, blk_cnt, fua, flush);
-
-		} else
-#endif
-		{
-			dev_info(hba->dev, "[Abort]QCMD,L:%x,T:%d,0x%x,LBA:%d,BCNT:%d,FUA:%d,FLUSH:%d\n",
-				ufshcd_scsi_to_upiu_lun(cmd->device->lun), cmd->request->tag, cmd->cmnd[0],
-				lba, blk_cnt, fua, flush);
-		}
-	} else {
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].lun = ufshcd_scsi_to_upiu_lun(cmd->device->lun);
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].tag = cmd->request->tag;
-		ufs_mtk_aborted_cmd[ufs_mtk_aborted_cmd_idx].cmd = cmd->cmnd[0];
-		dev_info(hba->dev, "[Abort]QCMD,L:%x,T:%d,0x%x\n",
-		ufshcd_scsi_to_upiu_lun(cmd->device->lun),
-			cmd->request->tag, cmd->cmnd[0]);
-	}
-
-	ufs_mtk_aborted_cmd_cnt++;
-	ufs_mtk_aborted_cmd_idx++;
-
-	if (ufs_mtk_aborted_cmd_idx >= 20)
-		ufs_mtk_aborted_cmd_idx = 0;
-
 	lrbp = &hba->lrb[tag];
 
 	/* Print Transfer Request of aborted task */
 	dev_info(hba->dev, "%s: Device abort task at tag %d", __func__, tag);
+
+	ufshcd_cond_add_cmd_trace(hba, tag, UFS_TRACE_ABORTING);
 
 	/*
 	 * Print detailed info about aborted request.
@@ -4477,7 +4528,7 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 	scsi_print_command(cmd);
 	if (!hba->req_abort_count) {
 		ufshcd_print_host_regs(hba);
-		ufshcd_print_host_state(hba);
+		ufshcd_print_host_state(hba, 1);
 		ufshcd_print_pwr_info(hba);
 		ufshcd_print_trs(hba, 1 << tag, true);
 		ufs_mtk_dbg_dump_scsi_cmd(hba, cmd, UFSHCD_DBG_PRINT_ABORT_CMD_EN);

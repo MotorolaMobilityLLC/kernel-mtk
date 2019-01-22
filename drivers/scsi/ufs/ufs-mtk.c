@@ -46,10 +46,8 @@ bool ufs_mtk_host_deep_stall_enable;
 bool ufs_mtk_host_scramble_enable;
 bool ufs_mtk_tr_cn_used;
 struct ufs_hba *ufs_mtk_hba;
-struct ufs_aborted_cmd_struct ufs_mtk_aborted_cmd[20];
-u32 ufs_mtk_aborted_cmd_idx;
-u32 ufs_mtk_aborted_cmd_cnt;
 
+static bool ufs_mtk_is_data_cmd(char cmd_op);
 static bool ufs_mtk_is_data_write_cmd(char cmd_op);
 
 void ufs_mtk_dump_reg(struct ufs_hba *hba)
@@ -339,8 +337,6 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_host_deep_stall_enable = 0;
 	ufs_mtk_host_scramble_enable = 0;
 	ufs_mtk_tr_cn_used = 0;
-	ufs_mtk_aborted_cmd_idx = 0;
-	ufs_mtk_aborted_cmd_cnt = 0;
 	ufs_mtk_hba = hba;
 	hba->hwfde_key_idx = -1;
 
@@ -1810,6 +1806,140 @@ void ufs_mtk_dbg_dump_scsi_cmd(struct ufs_hba *hba, struct scsi_cmnd *cmd, u32 f
 			ufs_mtk_cmd_str_tbl[ufs_mtk_get_cmd_str_idx(cmd->cmnd[0])].str);
 	}
 }
+
+#ifdef CONFIG_MTK_UFS_DEBUG
+#define MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT (500)
+
+struct ufs_mtk_trace_cmd_hlist_struct ufs_mtk_trace_cmd_hlist[MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT];
+int ufs_mtk_trace_cmd_ptr = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT - 1;
+int ufs_mtk_trace_cnt;
+
+void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
+	u8 lun, u32 transfer_len, sector_t lba, u8 opcode)
+{
+	int ptr;
+
+	ufs_mtk_trace_cmd_ptr++;
+
+	if (ufs_mtk_trace_cmd_ptr >= MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT)
+		ufs_mtk_trace_cmd_ptr = 0;
+
+	ptr = ufs_mtk_trace_cmd_ptr;
+
+	ufs_mtk_trace_cmd_hlist[ptr].event = event;
+	ufs_mtk_trace_cmd_hlist[ptr].tag = tag;
+	ufs_mtk_trace_cmd_hlist[ptr].transfer_len = transfer_len;
+	ufs_mtk_trace_cmd_hlist[ptr].lun = lun;
+	ufs_mtk_trace_cmd_hlist[ptr].lba = lba;
+	ufs_mtk_trace_cmd_hlist[ptr].opcode = opcode;
+	ufs_mtk_trace_cmd_hlist[ptr].time = sched_clock();
+
+	ufs_mtk_trace_cnt++;
+
+	/*
+	 * pr_info("[ufs]%d,%d,op=0x%x,lun=%u,t=%d,lba=%llu,len=%u,time=%llu\n",
+	 * ptr, event, opcode, lun, tag, (u64)(lba >> 3), transfer_len, sched_clock());
+	 */
+}
+
+void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
+{
+	int ptr;
+	int dump_cnt;
+
+	if (ufs_mtk_trace_cnt > MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT)
+		dump_cnt = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT;
+	else
+		dump_cnt = ufs_mtk_trace_cnt;
+
+	if (latest_cnt)
+		dump_cnt = min_t(u32, latest_cnt, dump_cnt);
+
+	ptr = ufs_mtk_trace_cmd_ptr;
+
+	pr_info("[ufs]cmd history:req_cnt=%d,real_cnt=%d,ptr=%d\n",
+		latest_cnt, dump_cnt, ptr);
+
+	while (dump_cnt > 0) {
+
+		if (ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_TM_SEND ||
+			ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_TM_COMPLETED) {
+
+			pr_info("[ufs]%d-t,%d,tm=0x%x,t=%d,lun=0x%x,data=0x%x,%llu\n",
+				ptr,
+				ufs_mtk_trace_cmd_hlist[ptr].event,
+				ufs_mtk_trace_cmd_hlist[ptr].opcode,
+				ufs_mtk_trace_cmd_hlist[ptr].tag,
+				ufs_mtk_trace_cmd_hlist[ptr].lun,
+				ufs_mtk_trace_cmd_hlist[ptr].transfer_len,
+				(u64)ufs_mtk_trace_cmd_hlist[ptr].time
+				);
+
+		} else if (ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_DEV_SEND ||
+			ufs_mtk_trace_cmd_hlist[ptr].event == UFS_TRACE_DEV_COMPLETED) {
+
+			pr_info("[ufs]%d-d,%d,0x%x,t=%d,lun=0x%x,idn=0x%x,idx=0x%x,sel=0x%x,%llu\n",
+				ptr,
+				ufs_mtk_trace_cmd_hlist[ptr].event,
+				ufs_mtk_trace_cmd_hlist[ptr].opcode,
+				ufs_mtk_trace_cmd_hlist[ptr].tag,
+				ufs_mtk_trace_cmd_hlist[ptr].lun,
+				(u8)ufs_mtk_trace_cmd_hlist[ptr].lba & 0xFF,
+				(u8)(ufs_mtk_trace_cmd_hlist[ptr].lba >> 8) & 0xFF,
+				(u8)(ufs_mtk_trace_cmd_hlist[ptr].lba >> 16) & 0xFF,
+				(u64)ufs_mtk_trace_cmd_hlist[ptr].time
+				);
+
+		} else {
+
+			pr_info("[ufs]%d-r,%d,0x%x,t=%d,lun=0x%x,lba=%lld,len=%d,%llu\n",
+				ptr,
+				ufs_mtk_trace_cmd_hlist[ptr].event,
+				ufs_mtk_trace_cmd_hlist[ptr].opcode,
+				ufs_mtk_trace_cmd_hlist[ptr].tag,
+				ufs_mtk_trace_cmd_hlist[ptr].lun,
+				(long long int)ufs_mtk_trace_cmd_hlist[ptr].lba,
+				ufs_mtk_trace_cmd_hlist[ptr].transfer_len,
+				(u64)ufs_mtk_trace_cmd_hlist[ptr].time
+				);
+		}
+
+		dump_cnt--;
+
+		ptr--;
+
+		if (ptr < 0)
+			ptr = MAX_UFS_MTK_TRACE_CMD_HLIST_ENTRY_CNT - 1;
+	}
+}
+
+void ufs_mtk_dbg_hang_detect_dump(void)
+{
+	/*
+	 * do not touch host to get unipro or mphy information via
+	 * dme commands during exception handling since interrupt
+	 * or preemption may be disabled.
+	 */
+	ufshcd_print_host_state(ufs_mtk_hba, 0);
+
+	ufs_mtk_dbg_dump_trace(ufs_mtk_hba->nutrs + ufs_mtk_hba->nutrs / 2);
+}
+
+#else
+void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
+	u8 lun, u32 transfer_len, sector_t lba, u8 opcode)
+{
+}
+
+void ufs_mtk_dbg_dump_trace(u32 latest_cnt)
+{
+}
+
+void ufs_mtk_dbg_hang_detect_dump(void)
+{
+}
+
+#endif
 
 /**
  * struct ufs_hba_mtk_vops - UFS MTK specific variant operations
