@@ -23,6 +23,7 @@
 
 #include <linux/delay.h>
 #include <linux/uaccess.h>
+#include <linux/compat.h>
 #include <linux/atomic.h>
 #include <linux/sched.h>
 #include <linux/mm.h>
@@ -157,6 +158,8 @@ static int vpu_release(struct inode *inode, struct file *flip);
 
 static int vpu_mmap(struct file *flip, struct vm_area_struct *vma);
 
+static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long arg);
+
 static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg);
 
 static const struct file_operations vpu_fops = {
@@ -164,6 +167,7 @@ static const struct file_operations vpu_fops = {
 	.open = vpu_open,
 	.release = vpu_release,
 	.mmap = vpu_mmap,
+	.compat_ioctl = vpu_compat_ioctl,
 	.unlocked_ioctl = vpu_ioctl
 };
 
@@ -370,12 +374,10 @@ int vpu_set_power(struct vpu_power *power)
 	return 0;
 }
 
-
 int vpu_write_register(struct vpu_reg_values regs)
 {
 	return 0;
 }
-
 
 static int vpu_open(struct inode *inode, struct file *flip)
 {
@@ -394,18 +396,32 @@ static int vpu_open(struct inode *inode, struct file *flip)
 	return ret;
 }
 
+static long vpu_compat_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case VPU_IOCTL_SET_POWER:
+	case VPU_IOCTL_ENQUE_REQUEST:
+	case VPU_IOCTL_DEQUE_REQUEST:
+	case VPU_IOCTL_GET_ALGO_INFO:
+	case VPU_IOCTL_REG_WRITE:
+	case VPU_IOCTL_REG_READ:
+	case VPU_IOCTL_LOAD_ALG:
+	{
+		void *ptr = compat_ptr(arg);
+
+		return vpu_ioctl(flip, cmd, (unsigned long) ptr);
+	}
+	case VPU_IOCTL_LOCK:
+	case VPU_IOCTL_UNLOCK:
+	default:
+		return vpu_ioctl(flip, cmd, arg);
+	}
+}
+
 static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
 	struct vpu_user *user = flip->private_data;
-
-#define VPU_ASSERT(condition, fmt, args...) \
-	do { \
-		if (!(condition)) { \
-			LOG_ERR(fmt, ##args);\
-			return -EFAULT; \
-		} \
-	} while (0)
 
 	switch (cmd) {
 	case VPU_IOCTL_SET_POWER:
@@ -413,49 +429,69 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_power power;
 
 		ret = copy_from_user(&power, (void *) arg, sizeof(struct vpu_power));
-		VPU_ASSERT(ret == 0, "[SET_POWER] copy_from_user failed, ret=%d\n", ret);
+		CHECK_RET("[SET_POWER] copy 'struct power' failed, ret=%d\n", ret);
+
 		ret = vpu_set_power(&power);
+		CHECK_RET("[SET_POWER] set power failed, ret=%d\n", ret);
+
 		break;
 	}
 	case VPU_IOCTL_ENQUE_REQUEST:
 	{
 		struct vpu_request *req;
+		struct vpu_request *u_req;
 
-		vpu_alloc_request(&req);
-		ret = copy_from_user(req, (void *) arg, sizeof(struct vpu_request));
-		if (ret) {
-			vpu_free_request(req);
-			LOG_ERR("[ENQUE_REQUEST] copy_from_user failed, ret=%d\n", ret);
-			return -EFAULT;
-		}
+		ret = vpu_alloc_request(&req);
+		CHECK_RET("[ENQUE alloc request failed, ret=%d\n", ret);
 
-		ret = vpu_push_request_to_queue(user, req);
-		if (ret) {
-			vpu_free_request(req);
-			LOG_ERR("[ENQUE_REQUEST] push to user's queue failed, ret=%d\n", ret);
-			return -EFAULT;
-		}
+		u_req = (struct vpu_request *) arg;
+		ret = get_user(req->algo_id, &u_req->algo_id);
+		ret |= get_user(req->status, &u_req->status);
+		ret |= get_user(req->buffer_count, &u_req->buffer_count);
+		ret |= get_user(req->sett_ptr, &u_req->sett_ptr);
+		ret |= get_user(req->sett_length, &u_req->sett_length);
+		ret |= get_user(req->priv, &u_req->priv);
+
+		if (ret)
+			LOG_ERR("[ENQUE] get params failed, ret=%d\n", ret);
+		else if (req->buffer_count > VPU_MAX_NUM_PORTS)
+			LOG_ERR("[ENQUE] wrong buffer count, count=%d\n", req->buffer_count);
+		else if (copy_from_user(req->buffers, u_req->buffers,
+				req->buffer_count * sizeof(struct vpu_buffer)))
+			LOG_ERR("[ENQUE] copy 'struct buffer' failed, ret=%d\n", ret);
+		else if (vpu_push_request_to_queue(user, req))
+			LOG_ERR("[ENQUE] push to user's queue failed, ret=%d\n", ret);
+		else
+			break;
+
+		/* free the request, error happened here*/
+		vpu_free_request(req);
+		ret = -EFAULT;
 		break;
 	}
 	case VPU_IOCTL_DEQUE_REQUEST:
 	{
 		struct vpu_request *req;
+		struct vpu_request *u_req;
+
+		u_req = (struct vpu_request *) arg;
 
 		ret = vpu_pop_request_from_queue(user, &req);
-		VPU_ASSERT(ret == 0, "[DEQUE_REQUEST] pop request failed, ret=%d\n", ret);
+		CHECK_RET("[DEQUE] pop request failed, ret=%d\n", ret);
 
-		ret = copy_to_user((void *) arg, req,  sizeof(struct vpu_request));
-		VPU_ASSERT(ret == 0, "[DEQUE_REQUEST] copy_to_user failed, ret=%d\n", ret);
+		ret = put_user(req->status, &u_req->status);
+		if (ret)
+			LOG_ERR("[DEQUE] update status failed, ret=%d\n", ret);
 
 		ret = vpu_free_request(req);
-		VPU_ASSERT(ret == 0, "[DEQUE_REQUEST] free request, ret=%d\n", ret);
+		CHECK_RET("[DEQUE] free request, ret=%d\n", ret);
 
 		break;
 	}
 	case VPU_IOCTL_FLUSH_REQUEST:
 	{
 		ret = vpu_flush_requests_from_queue(user);
-		VPU_ASSERT(ret == 0, "[FLUSH_REQUEST] flush request failed, ret=%d\n", ret);
+		CHECK_RET("[FLUSH] flush request failed, ret=%d\n", ret);
 
 		break;
 	}
@@ -469,55 +505,57 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		u_algo = (struct vpu_algo *) arg;
 		ret = copy_from_user(name, u_algo->name, sizeof(vpu_name_t));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] copy_from_user failed, ret=%d\n", ret);
+		CHECK_RET("[GET_ALGO] copy 'name' failed, ret=%d\n", ret);
 		name[sizeof(vpu_name_t) - 1] = '\0';
 
 		/* 1. find algo by name */
 		ret = vpu_find_algo_by_name(name, &algo);
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] can not find algo, name=%s\n", u_algo->name);
+		CHECK_RET("[GET_ALGO] can not find algo, name=%s\n", u_algo->name);
 
 		/* 2. write data to user */
 		/* 2-1. write port */
-		ret = copy_to_user(
-				&u_algo->port_count, &algo->port_count,
-				sizeof(uint8_t) + sizeof(struct vpu_port) * algo->port_count);
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] update ports failed, ret=%d\n", ret);
+		ret = put_user(algo->port_count, &u_algo->port_count);
+		ret |= copy_to_user(u_algo->ports, algo->ports,
+				sizeof(struct vpu_port) * algo->port_count);
+		CHECK_RET("[GET_ALGO] update ports failed, ret=%d\n", ret);
 
 		/* 2-2. write id */
-		ret = copy_to_user(&u_algo->id, &algo->id, sizeof(vpu_id_t));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] update id failed, ret=%d\n", ret);
+		ret = put_user(algo->id, &u_algo->id);
+		CHECK_RET("[GET_ALGO] update id failed, ret=%d\n", ret);
 
 		/* 2-3. write setting desc */
-		ret = copy_to_user(
-				&u_algo->sett_desc_count, &algo->sett_desc_count,
-				sizeof(uint8_t) + algo->sett_desc_count * sizeof(struct vpu_prop_desc));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] update setting desc failed, ret=%d\n", ret);
+		ret = put_user(algo->sett_desc_count, &u_algo->sett_desc_count);
+		ret |= copy_to_user(u_algo->sett_descs, algo->sett_descs,
+				algo->sett_desc_count * sizeof(struct vpu_prop_desc));
+		CHECK_RET("[GET_ALGO] update setting desc failed, ret=%d\n", ret);
 
 		/* 2-4. write info desc */
-		ret = copy_to_user(
-				&u_algo->info_desc_count, &algo->info_desc_count,
-				sizeof(uint8_t) + algo->info_desc_count * sizeof(struct vpu_prop_desc));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] update info desc failed, ret=%d\n", ret);
+		ret = put_user(algo->info_desc_count, &u_algo->info_desc_count);
+		ret |= copy_to_user(u_algo->info_descs, algo->info_descs,
+				algo->info_desc_count * sizeof(struct vpu_prop_desc));
+		CHECK_RET("[GET_ALGO] update info desc failed, ret=%d\n", ret);
 
 		/* 2-5. write info data */
-		ret = copy_from_user(&u_info_ptr, &u_algo->info_ptr, sizeof(uint64_t));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] get info ptr failed, ret=%d\n", ret);
-		ret = copy_from_user(&u_info_length, &u_algo->info_length, sizeof(uint32_t));
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] get info length failed, ret=%d\n", ret);
-		VPU_ASSERT(u_info_length >= algo->info_length, "[GET_ALGO_INFO] the size of info data is not enough!");
+		ret = get_user(u_info_ptr, &u_algo->info_ptr);
+		ret |= get_user(u_info_length, &u_algo->info_length);
+		CHECK_RET("[GET_ALGO] get info ptr/length failed, ret=%d\n", ret);
+		ret = (u_info_length < algo->info_length) ? -EINVAL : 0;
+		CHECK_RET("[GET_ALGO] the size of info data is not enough!");
 		ret = copy_to_user((void *) (u_info_ptr), (void *) algo->info_ptr, algo->info_length);
-		VPU_ASSERT(ret == 0, "[GET_ALGO_INFO] update info data failed, ret=%d\n", ret);
+		CHECK_RET("[GET_ALGO] update info data failed, ret=%d\n", ret);
+
 		break;
 	}
 	case VPU_IOCTL_REG_WRITE:
-	case VPU_IOCTL_REG_READ:
 	{
 		struct vpu_reg_values regs;
 
 		ret = copy_from_user(&regs, (void *) arg, sizeof(struct vpu_reg_values));
-		VPU_ASSERT(ret == 0, "VPU_IOCTL_REG_WRITE, copy_from_user failed,%d\n", ret);
+		CHECK_RET("[REG] copy 'struct reg' failed,%d\n", ret);
 
 		ret = vpu_write_register(regs);
+		CHECK_RET("[REG] write reg failed,%d\n", ret);
+
 		break;
 	}
 	case VPU_IOCTL_LOCK:
@@ -537,16 +575,16 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		if (!user->locked)
 			ret = -ENOTBLK;
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] should lock device");
+		CHECK_RET("[LOAD_ALGO] should lock device");
 
 		ret = copy_from_user(&id, (void *) arg, sizeof(vpu_id_t));
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] copy_from_user failed, ret=%d\n", ret);
+		CHECK_RET("[LOAD_ALGO] copy_from_user failed, ret=%d\n", ret);
 
 		ret = vpu_find_algo_by_id(id, &algo);
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] can not find algo, id=%d\n", id);
+		CHECK_RET("[LOAD_ALGO] can not find algo, id=%d\n", id);
 
 		ret = vpu_hw_load_algo(algo);
-		VPU_ASSERT(ret == 0, "[LOAD_ALGO] fail to load kernel, id=%d\n", id);
+		CHECK_RET("[LOAD_ALGO] fail to load kernel, id=%d\n", id);
 
 		break;
 	}
@@ -556,13 +594,14 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		break;
 	}
 
-	if (ret != 0) {
+out:
+	if (ret) {
 		LOG_ERR("fail, cmd(%d), pid(%d), (process, pid, tgid)=(%s, %d, %d)\n",
 				cmd, user->open_pid,
 				current->comm,
 				current->pid, current->tgid);
 	}
-#undef VPU_ASSERT
+
 	return ret;
 }
 

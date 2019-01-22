@@ -19,6 +19,6 @@ subdir-ccflags-y += -DMTK_VPU_DVT
 
 ifdef CONFIG_MTK_FPGA
 	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
-elif CONFIG_FPGA_EARLY_PORTING
+else ifdef CONFIG_FPGA_EARLY_PORTING
 	subdir-ccflags-y += -DMTK_VPU_FPGA_PORTING
 endif
