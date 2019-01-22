@@ -190,6 +190,8 @@ static int __cache_sync_by_range(struct ion_client *client, enum ION_CACHE_SYNC_
 		__ion_cache_mmp_start(sync_type, 0, 0);
 		smp_inner_dcache_flush_all();
 		__ion_cache_mmp_end(sync_type, 0);
+		ion_aee_print("pid(%d) client(%s) cache sync not by range(%d)\n",
+			      (unsigned int)current->pid, client->dbg_name, sync_type);
 	}
 
 	return ret;
