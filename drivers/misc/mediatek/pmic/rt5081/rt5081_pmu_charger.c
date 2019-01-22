@@ -33,7 +33,7 @@
 #include "inc/rt5081_pmu_charger.h"
 #include "inc/rt5081_pmu.h"
 
-#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.5_MTK"
+#define RT5081_PMU_CHARGER_DRV_VERSION	"1.1.6_MTK"
 
 /* ======================= */
 /* RT5081 Charger Variable */
@@ -50,6 +50,16 @@ enum rt5081_pmu_charger_irqidx {
 	RT5081_CHG_IRQIDX_DICHGIRQ7,
 	RT5081_CHG_IRQIDX_OVPCTRLIRQ,
 	RT5081_CHG_IRQIDX_MAX,
+};
+
+enum rt5081_pmu_chg_type {
+	RT5081_CHG_TYPE_NOVBUS = 0,
+	RT5081_CHG_TYPE_UNDER_GOING,
+	RT5081_CHG_TYPE_SDP,
+	RT5081_CHG_TYPE_SDPNSTD,
+	RT5081_CHG_TYPE_DCP,
+	RT5081_CHG_TYPE_CDP,
+	RT5081_CHG_TYPE_MAX,
 };
 
 struct rt5081_pmu_charger_desc {
@@ -2073,11 +2083,6 @@ static int rt5081_plug_out(struct charger_device *chg_dev)
 	/* Reset AICR limit */
 	chg_data->aicr_limit = -1;
 
-	/* Enable ILIM_EN */
-	ret = rt5081_enable_ilim(chg_data, true);
-	if (ret < 0)
-		dev_err(chg_data->dev, "%s: en ilim failed\n", __func__);
-
 	/* Disable charger */
 	ret = rt5081_enable_charging(chg_dev, false);
 	if (ret < 0) {
@@ -2130,7 +2135,7 @@ static int rt5081_plug_in(struct charger_device *chg_dev)
 static int rt5081_dump_register(struct charger_device *chg_dev)
 {
 	int i = 0, ret = 0;
-	u32 ichg = 0, aicr = 0, mivr = 0, ieoc = 0;
+	u32 ichg = 0, aicr = 0, mivr = 0, ieoc = 0, cv = 0;
 	bool chg_en = 0;
 	int adc_vsys = 0, adc_vbat = 0, adc_ibat = 0, adc_ibus = 0;
 	enum rt5081_charging_status chg_status = RT5081_CHG_STATUS_READY;
@@ -2142,6 +2147,7 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	ret = rt5081_get_charging_status(chg_data, &chg_status);
 	ret = rt5081_get_ieoc(chg_data, &ieoc);
 	ret = rt5081_get_mivr(chg_data, &mivr);
+	ret = rt5081_get_cv(chg_dev, &cv);
 	ret = rt5081_is_charging_enable(chg_data, &chg_en);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_VSYS, &adc_vsys);
 	ret = rt5081_get_adc(chg_data, RT5081_ADC_VBAT, &adc_vbat);
@@ -2161,8 +2167,8 @@ static int rt5081_dump_register(struct charger_device *chg_dev)
 	}
 
 	dev_info(chg_data->dev,
-		"%s: ICHG = %dmA, AICR = %dmA, MIVR = %dmV, IEOC = %dmA\n",
-		__func__, ichg / 1000, aicr / 1000, mivr / 1000, ieoc / 1000);
+		"%s: ICHG = %dmA, AICR = %dmA, MIVR = %dmV, IEOC = %dmA, CV = %dmV\n",
+		__func__, ichg / 1000, aicr / 1000, mivr / 1000, ieoc / 1000, cv / 1000);
 
 	dev_info(chg_data->dev,
 		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA\n",
@@ -2188,6 +2194,12 @@ static int rt5081_enable_chg_type_det(struct charger_device *chg_dev, bool en)
 
 	/* TypeC detach */
 	if (!en) {
+		/* Enable ILIM_EN */
+		ret = rt5081_enable_ilim(chg_data, true);
+		if (ret < 0)
+			dev_err(chg_data->dev, "%s: en ilim failed\n",
+				__func__);
+
 		chg_data->chg_online = false;
 		chg_data->chg_type = CHARGER_UNKNOWN;
 		rt5081_inform_psy_changed(chg_data);
@@ -2686,26 +2698,37 @@ static irqreturn_t rt5081_pmu_bst_olpi_irq_handler(int irq, void *data)
 static irqreturn_t rt5081_pmu_attachi_irq_handler(int irq, void *data)
 {
 	int ret = 0;
+	u8 usb_status = 0;
 	struct rt5081_pmu_charger_data *chg_data =
 		(struct rt5081_pmu_charger_data *)data;
 
 	dev_info(chg_data->dev, "%s\n", __func__);
-	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_DEVICETYPE);
+	ret = rt5081_pmu_reg_read(chg_data->chip, RT5081_PMU_REG_USBSTATUS1);
 	if (ret < 0) {
 		dev_err(chg_data->dev, "%s: read charger type failed\n",
 			__func__);
 		return IRQ_HANDLED;
 	}
+	usb_status = (ret & RT5081_MASK_USB_STATUS) >> RT5081_SHIFT_USB_STATUS;
 
 	chg_data->chg_online = true;
-	if (ret & RT5081_MASK_DCPSTD)
-		chg_data->chg_type = STANDARD_CHARGER;
-	else if (ret & RT5081_MASK_CDP)
-		chg_data->chg_type = CHARGING_HOST;
-	else if (ret & RT5081_MASK_SDP)
+	switch (usb_status) {
+	case RT5081_CHG_TYPE_SDP:
 		chg_data->chg_type = STANDARD_HOST;
-	else
+		break;
+	case RT5081_CHG_TYPE_SDPNSTD:
+		chg_data->chg_type = NONSTANDARD_CHARGER;
+		break;
+	case RT5081_CHG_TYPE_CDP:
+		chg_data->chg_type = CHARGING_HOST;
+		break;
+	case RT5081_CHG_TYPE_DCP:
+		chg_data->chg_type = STANDARD_CHARGER;
+		break;
+	default:
 		chg_data->chg_type = CHARGER_UNKNOWN;
+		break;
+	}
 
 #if 0
 	ret = rt5081_detect_apple_samsung_ta(chg_data);
@@ -3413,6 +3436,11 @@ MODULE_VERSION(RT5081_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.6_MTK
+ * (1) Read USB STATUS(0x27) instead of device type(0x22)
+ *     to check charger type
+ * (2) Show CV value in dump_register
+ *
  * 1.1.5_MTK
  * (1) Modify probe sequence
  * (2) Change ADC log from ratelimited to normal one for debug
