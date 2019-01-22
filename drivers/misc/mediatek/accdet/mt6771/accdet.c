@@ -816,6 +816,8 @@ static inline void enable_accdet(u32 state_swctrl)
 	/* enable clock */
 	/* pmic_pwrap_write(TOP_CKPDN_CLR, RG_ACCDET_CLK_CLR); */
 	/* Enable PWM */
+	pmic_pwrap_write(AUDENC_ANA_CON10,
+			pmic_pwrap_read(AUDENC_ANA_CON10)|RG_AUD_MICBIAS1_LOWP_EN);
 
 	pmic_pwrap_write(ACCDET_CON02, pmic_pwrap_read(ACCDET_CON02) | state_swctrl | ACCDET_SWCTRL_ACCDET_EN);
 	/* enable ACCDET unit */
@@ -1781,7 +1783,8 @@ void accdet_init_once(int init_flag)
 		/* ACC&DCC mode: 0x239C [0][4] = 0 [5][6] =1 */
 		reg_val = pmic_pwrap_read(AUDENC_ANA_CON10);
 		reg_val &= 0xFF8E;
-		pmic_pwrap_write(AUDENC_ANA_CON10, reg_val|(headset_dts_data.mic_bias_vol<<4));
+		pmic_pwrap_write(AUDENC_ANA_CON10,
+			reg_val|(headset_dts_data.mic_bias_vol<<4)|RG_AUD_MICBIAS1_LOWP_EN);
 
 		reg_val = pmic_pwrap_read(AUDENC_ANA_CON11);
 		/* ACC mode: 0x239E [0:2] = 111b   [7]=0
