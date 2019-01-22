@@ -27,7 +27,14 @@ enum {
 	IPI_EEM_DEBUG_PROC_WRITE,
 	IPI_EEM_VCORE_INIT,
 	IPI_EEM_VCORE_UPDATE_PROC_WRITE,
+
+	#ifdef EEM_CUR_VOLT_PROC_SHOW
 	IPI_EEM_CUR_VOLT_PROC_SHOW,
+	#endif
+
+	#ifdef EEM_OFFSET
+	IPI_EEM_OFFSET_PROC_WRITE,
+	#endif
 
 	#ifdef EEM_LOG_TIMER
 	IPI_EEM_LOGEN_PROC_SHOW,
@@ -35,8 +42,6 @@ enum {
 	#endif
 	/* IPI_EEM_VCORE_GET_VOLT,*/
 	/* IPI_EEM_GPU_DVFS_GET_STATUS,*/
-	/* IPI_EEM_OFFSET_PROC_SHOW, */
-	/* IPI_EEM_OFFSET_PROC_WRITE, */
 	NR_EEM_IPI,
 };
 
@@ -99,7 +104,7 @@ struct eem_det {
 
 	unsigned char volt_tbl[NR_FREQ]; /* pmic value */
 
-	unsigned char volt_tbl_init2[NR_FREQ]; /* pmic value */
+	/*unsigned char volt_tbl_init2[NR_FREQ];*/ /* pmic value */
 	unsigned short volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	/*unsigned int volt_tbl_bin[NR_FREQ];*/
 
@@ -124,7 +129,9 @@ struct eem_det {
 	const char *name;
 	unsigned char set_volt_to_upower; /*only when init2, eem need to set volt to upower*/
 
-	/* char volt_offset; */
+	#ifdef EEM_OFFSET
+	char volt_offset;
+	#endif
 	/* char pi_offset; */
 };
 

@@ -17,7 +17,7 @@
 /* CONFIG (SW related) */
 #define CONFIG_EEM_SHOWLOG (0)
 #define EN_ISR_LOG         (1)
-#define EN_DEBUG_LOG       (0) /* enable eem_debug */
+#define EN_DEBUG_LOG       (1) /* enable eem_debug */
 #define EN_SHORT_LOG       (0)
 #define DVT                (0)
 #define EEM_BANK_SOC       (1)
@@ -28,10 +28,10 @@
 #define UPDATE_TO_UPOWER   (0)
 #define EEM_LOCKTIME_LIMIT (3000)
 /* #define EEM_CUR_VOLT_PROC_SHOW */
-/* #define SET_VOLT */
+/* #define EEM_OFFSET */
 /* #define EEM_LOG_TIMER */
 /* #define EEM_LOCK_TOO_LONG */
-/*  #define EEM_VCORE_IN_SSPM */
+/* #define EEM_VCORE_IN_SSPM */
 
 /* for early porting */
 /* #define EARLY_PORTING_GPU */
