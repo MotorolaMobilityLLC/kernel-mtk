@@ -1510,8 +1510,10 @@ void fpsgo_comp2fbt_enq_start(struct render_info *thr, unsigned long long ts)
 
 	spin_lock_irqsave(&loading_slock, flags);
 	if (thr->pLoading) {
-		loading_result = fbt_est_loading(new_ts, thr->pLoading->last_cb_ts, temp_obv);
-		atomic_add_return(loading_result, &thr->pLoading->loading);
+		if (atomic_read(&thr->pLoading->skip_loading) == 0) {
+			loading_result = fbt_est_loading(new_ts, thr->pLoading->last_cb_ts, temp_obv);
+			atomic_add_return(loading_result, &thr->pLoading->loading);
+		}
 		atomic_set(&thr->pLoading->last_cb_ts, new_ts);
 		atomic_set(&thr->pLoading->skip_loading, 1);
 		fpsgo_systrace_c_fbt_gm(thr->pid, atomic_read(&thr->pLoading->loading), "loading");
@@ -1540,8 +1542,10 @@ void fpsgo_comp2fbt_enq_end(struct render_info *thr, unsigned long long ts)
 
 	spin_lock_irqsave(&loading_slock, flags);
 	if (thr->pLoading) {
+		if (thr->frame_type != VSYNC_ALIGNED_TYPE)
+			atomic_set(&thr->pLoading->skip_loading, 0);
+
 		atomic_set(&thr->pLoading->last_cb_ts, new_ts);
-		atomic_set(&thr->pLoading->skip_loading, 0);
 		fpsgo_systrace_c_fbt_gm(thr->pid, atomic_read(&thr->pLoading->last_cb_ts), "last_cb_ts");
 	}
 	spin_unlock_irqrestore(&loading_slock, flags);
