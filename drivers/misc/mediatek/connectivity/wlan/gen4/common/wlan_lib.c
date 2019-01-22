@@ -4304,7 +4304,6 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 		/* Save the value of Priority Parameter */
 		GLUE_SET_PKT_TID(prPacket, rTxPacketInfo.ucPriorityParam);
 
-#if 1
 		if (rTxPacketInfo.u2Flag) {
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_1X)) {
 				P_STA_RECORD_T prStaRec;
@@ -4345,34 +4344,17 @@ BOOLEAN wlanProcessTxFrame(IN P_ADAPTER_T prAdapter, IN P_NATIVE_PACKET prPacket
 
 			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ARP))
 				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_ICMP))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ICMP);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_TDLS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_TDLS);
+
+			if (rTxPacketInfo.u2Flag & BIT(ENUM_PKT_DNS))
+				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DNS);
+
 		}
-#else
-		if (rTxPacketInfo.fgIs1X) {
-			P_STA_RECORD_T prStaRec;
-
-			DBGLOG(RSN, INFO, "T1X len=%d\n", rTxPacketInfo.u4PacketLen);
-
-			prStaRec = cnmGetStaRecByAddress(prAdapter,
-							 GLUE_GET_PKT_BSS_IDX(prPacket), rTxPacketInfo.aucEthDestAddr);
-
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_1X);
-
-			if (secIsProtected1xFrame(prAdapter, prStaRec))
-				GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_PROTECTED_1X);
-		}
-
-		if (rTxPacketInfo.fgIs802_3)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_802_3);
-
-		if (rTxPacketInfo.fgIsVlanExists)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_VLAN_EXIST);
-
-		if (rTxPacketInfo.fgIsDhcp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_DHCP);
-
-		if (rTxPacketInfo.fgIsArp)
-			GLUE_SET_PKT_FLAG(prPacket, ENUM_PKT_ARP);
-#endif
 
 		ucMacHeaderLen = ETHER_HEADER_LEN;
 
@@ -8526,16 +8508,49 @@ WLAN_STATUS wlanTriggerStatsLog(IN P_ADAPTER_T prAdapter, IN UINT_32 u4DurationI
 WLAN_STATUS
 wlanDhcpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "DHCP PKT[0x%08x] WIDX:PID[%u:%u] Status[%u]\n",
-	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+	DBGLOG(TX, INFO, "DHCP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+	       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
 
 WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "ARP PKT[0x%08x] WIDX:PID[%u:%u] Status[%u]\n",
-	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+	DBGLOG(TX, INFO, "ARP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+	       prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+	       prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanIcmpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(TX, INFO, "ICMP PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanTdlsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo, IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(TX, INFO, "TDLS PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
+
+	return WLAN_STATUS_SUCCESS;
+}
+
+WLAN_STATUS
+wlanDnsTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
+		IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
+{
+	DBGLOG(TX, INFO, "DNS PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+			prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+			prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }
@@ -8543,8 +8558,9 @@ WLAN_STATUS wlanArpTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 WLAN_STATUS wlan1xTxDone(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo,
 	IN ENUM_TX_RESULT_CODE_T rTxDoneStatus)
 {
-	DBGLOG(SW4, INFO, "1x PKT[0x%08x] WIDX:PID[%u:%u] Status[%u]\n",
-		prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex, prMsduInfo->ucPID, rTxDoneStatus);
+	DBGLOG(TX, INFO, "1x PKT TX DONE [0x%08x] WIDX:PID[%u:%u] Status[%u], SeqNo: %d\n",
+		prMsduInfo->u4TxDoneTag, prMsduInfo->ucWlanIndex,
+		prMsduInfo->ucPID, rTxDoneStatus, prMsduInfo->ucTxSeqNum);
 
 	return WLAN_STATUS_SUCCESS;
 }

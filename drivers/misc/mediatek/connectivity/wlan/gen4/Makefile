@@ -184,6 +184,10 @@ MGMT_OBJS := $(MGMT_DIR)ais_fsm.o \
              $(MGMT_DIR)tkip_mic.o \
              $(MGMT_DIR)hs20.o \
              $(MGMT_DIR)tdls.o
+# ---------------------------------------------------
+# STATS Objects List
+# ---------------------------------------------------
+MGMT_OBJS += $(MGMT_DIR)stats.o
 
 CHIPS_OBJS := $(CHIPS)mt6632.o \
 			  $(CHIPS)mt7668.o
