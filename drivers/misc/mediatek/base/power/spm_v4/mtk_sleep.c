@@ -201,7 +201,8 @@ static u32 slp_spm_deepidle_flags1;
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
 #if defined(CONFIG_MACH_MT6739) \
-	|| defined(CONFIG_MACH_MT6763)
+	|| defined(CONFIG_MACH_MT6763) \
+	|| defined(CONFIG_MACH_MT6771)
 	return state == PM_SUSPEND_MEM;
 #else
 	return false;
