@@ -1,40 +1,13 @@
 /*
- * Id: @(#) gl_rst.c@@
- */
-
-/*
- * ! \file   gl_rst.c
- *  \brief  Main routines for supporintg MT6620 whole-chip reset mechanism
- *
- *   This file contains the support routines of Linux driver for MediaTek Inc. 802.11
- *   Wireless LAN Adapters.
- */
-
-/*
- * Log: gl_rst.c
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 04 22 2011 cp.wu
- * [WCXRP00000598] [MT6620 Wi-Fi][Driver] Implementation of interface for communicating with user space process for
- * RESET_START and RESET_END events
- * skip power-off handshaking when RESET indication is received.
- *
- * 04 14 2011 cp.wu
- * [WCXRP00000598] [MT6620 Wi-Fi][Driver] Implementation of interface for communicating with user space process for
- * RESET_START and RESET_END events
- * 1. add code to put whole-chip resetting trigger when abnormal firmware assertion is detected
- * 2. add dummy function for both Win32 and Linux part.
- *
- * 03 30 2011 cp.wu
- * [WCXRP00000598] [MT6620 Wi-Fi][Driver] Implementation of interface for communicating with user space process for
- * RESET_START and RESET_END events
- * use netlink unicast instead of broadcast
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S

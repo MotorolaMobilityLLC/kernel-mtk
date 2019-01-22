@@ -1,53 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/link.h#1
- */
-
-/*
- * ! \file   link.h
- * \brief  Definition for simple doubly linked list operations.
- *
- *  In this file we define the simple doubly linked list data structure and its
- * operation MACROs and INLINE functions.
- */
-
-/*
- * Log: link.h
- *
- * 08 05 2010 yuche.tsai
- * NULL
- * Modify a MACRO of LINK_FOR_EACH_SAFE for compile error.
- *
- * 07 19 2010 cm.chang
- *
- * Set RLM parameters and enable CNM channel manager
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * [WPD00003833] [MT6620 and MT5931] Driver migration
- * .
- *
- *
- *
- *
- * May 4 2009 mtk01084
- * [BORA00000018] Integrate WIFI part into BORA for the 1st time
- * add WIFI to BORA source control
- *  \main\maintrunk.MT5921\8 2008-10-16 15:57:11 GMT mtk01461
- *  Update driver to fix lint warning
- *  \main\maintrunk.MT5921\7 2008-08-10 18:47:53 GMT mtk01461
- *  Update for Driver Review
- *  \main\maintrunk.MT5921\6 2007-12-11 00:09:00 GMT mtk01461
- *  Add macro for checking valid list
- *  \main\maintrunk.MT5921\5 2007-11-13 14:27:01 GMT mtk01461
- *  Add LINK_IS_INVALID macro
- * Revision 1.1.1.1  2007/06/22 08:09:05  MTK01461
- * no message
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _LINK_H
 #define _LINK_H

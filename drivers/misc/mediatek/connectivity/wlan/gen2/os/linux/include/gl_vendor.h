@@ -1,19 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_vendor.h#1
- */
-
-/*
- * ! \file   gl_vendor.h
- *   \brief  This file is for Portable Driver linux gl_vendor support.
- */
-
-/*
- * Log: gl_vendor.h
- *
- * 10 14 2014
- * add vendor declaration
- *
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _GL_VENDOR_H
 #define _GL_VENDOR_H

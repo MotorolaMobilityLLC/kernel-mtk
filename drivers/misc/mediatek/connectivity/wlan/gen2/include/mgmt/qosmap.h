@@ -1,16 +1,13 @@
 /*
-** Id: qosmap.h#1
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
-/*
- * ! \file  qosmap.h
- *  \brief This file contains the IEEE 802.11 family related 802.11v network management
- *  for MediaTek 802.11 Wireless LAN Adapters.
- */
-
-/*
- * Log: qosmap.h
- */
 
 #ifndef _QOSMAP_H
 #define _QOSMAP_H

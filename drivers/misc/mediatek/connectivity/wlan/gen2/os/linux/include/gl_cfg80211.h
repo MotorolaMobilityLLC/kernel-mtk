@@ -1,26 +1,13 @@
 /*
- * Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/os/linux/include/gl_cfg80211.h#1
- */
-
-/*
- * ! \file   gl_cfg80211.h
- *  \brief  This file is for Portable Driver linux cfg80211 support.
- */
-
-/*
- * Log: gl_cfg80211.h
- *
- * 09 03 2013 cp.wu
- * add path for reassociation
- *
- * 09 12 2012 wcpadmin
- * [ALPS00276400] Remove MTK copyright and legal header on GPL/LGPL related packages
- * .
- *
- * 08 30 2012 chinglan.wang
- * [ALPS00349664] [6577JB][WIFI] Phone can not connect to AP secured with AES via WPS in 802.11n Only
- * .
- */
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
 
 #ifndef _GL_CFG80211_H
 #define _GL_CFG80211_H

@@ -1,28 +1,13 @@
 /*
-* Copyright (C) 2011-2014 MediaTek Inc.
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
 *
-* This program is free software: you can redistribute it and/or modify it under the terms of the
-* GNU General Public License version 2 as published by the Free Software Foundation.
-*
-* This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-* without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-* See the GNU General Public License for more details.
-*
-* You should have received a copy of the GNU General Public License along with this program.
-* If not, see <http://www.gnu.org/licenses/>.
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 */
-
-/*
-** Id: @(#) gl_p2p_init.c@@
-*/
-
-/*
- * ! \file   gl_p2p_init.c
- *  \brief  init and exit routines of Linux driver interface for Wi-Fi Direct
- *
- *   This file contains the main routines of Linux driver for MediaTek Inc. 802.11
- *   Wireless LAN Adapters.
- */
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
