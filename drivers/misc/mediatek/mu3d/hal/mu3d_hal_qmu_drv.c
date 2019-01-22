@@ -1305,8 +1305,6 @@ void mu3d_hal_restart_qmu(DEV_INT32 q_num, USB_DIR dir)
  */
 void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 {
-	TGPD *gpd_current;
-
 	qmu_printk(K_INFO, "%s flush QMU %s-EP[%d]\n", __func__, ((dir == USB_TX) ? "TX" : "RX"),
 		   Q_num);
 
@@ -1314,34 +1312,8 @@ void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		/*Stop QMU */
 		mu3d_hal_stop_qmu(Q_num, USB_TX);
 
-		/*Get TX Queue Current Pointer Register */
-		/* QMU GPD address --> CPU DMA address */
-		gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_TQCPR(Q_num)));
-
-		/*If gpd_current = 0, it means QMU has not yet to execute GPD in QMU. */
-		if (!gpd_current) {
-			/*Get TX Queue Starting Address Register */
-			/* QMU GPD address --> CPU DMA address */
-			gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_TQSAR(Q_num)));
-		}
-
-		/*
-		 * Even if the GPD pointer got from SAR is corrupted. We should use the head of GPD list.
-		 * We know that Tx_gpd_head[Q_num] is always correct.
-		 */
-		if (!gpd_current) {
-			gpd_current = Tx_gpd_head[Q_num];
-			qmu_printk(K_INFO, "gpd is null, so use the head of GPD list %p\n",
-				   gpd_current);
-		} else {
-			/*Switch physical to virtual address */
-			qmu_printk(K_INFO, "gpd_current(P) %p\n", gpd_current);
-			gpd_current = gpd_phys_to_virt((void *)gpd_current, USB_TX, Q_num);
-			qmu_printk(K_INFO, "gpd_current(V) %p\n", (void *)gpd_current);
-		}
-
 		/*Reset the TX GPD list state */
-		Tx_gpd_end[Q_num] = Tx_gpd_last[Q_num] = gpd_current;
+		Tx_gpd_end[Q_num] = Tx_gpd_last[Q_num] = Tx_gpd_head[Q_num];
 		gpd_ptr_align(dir, Q_num, Tx_gpd_end[Q_num]);
 		free_gpd(dir, Q_num);
 
@@ -1353,32 +1325,8 @@ void _ex_mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		/*Stop QMU */
 		mu3d_hal_stop_qmu(Q_num, USB_RX);
 
-		/*Get RX Queue Current Pointer Register */
-		/* QMU GPD address --> CPU DMA address */
-		gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_RQCPR(Q_num)));
-		if (!gpd_current) {
-			/*Get RX Queue Starting Address Register */
-			/* QMU GPD address --> CPU DMA address */
-			gpd_current = (TGPD *) (uintptr_t) (os_readl(USB_QMU_RQSAR(Q_num)));
-		}
-
-		/*
-		 * Even if the GPD pointer got from SAR is corrupted. We should use the head of GPD list.
-		 * We know that Rx_gpd_head[Q_num] is always correct.
-		 */
-		if (!gpd_current) {
-			gpd_current = Rx_gpd_head[Q_num];
-			qmu_printk(K_CRIT, "gpd is null, so use the head of GPD list %p\n",
-				   gpd_current);
-		} else {
-			/*Switch physical to virtual address */
-			qmu_printk(K_INFO, "gpd_current(P) %p\n", gpd_current);
-			gpd_current = gpd_phys_to_virt((void *)gpd_current, USB_RX, Q_num);
-			qmu_printk(K_INFO, "gpd_current(V) %p\n", (void *)gpd_current);
-		}
-
 		/*Reset the RX GPD list state */
-		Rx_gpd_end[Q_num] = Rx_gpd_last[Q_num] = gpd_current;
+		Rx_gpd_end[Q_num] = Rx_gpd_last[Q_num] = Rx_gpd_head[Q_num];
 		gpd_ptr_align(dir, Q_num, Rx_gpd_end[Q_num]);
 		free_gpd(dir, Q_num);
 
@@ -1457,6 +1405,42 @@ void mu3d_hal_flush_qmu(DEV_INT32 Q_num, USB_DIR dir)
 		os_printk(K_INFO, "USB_QMU_RQSAR %x\n", os_readl(USB_QMU_RQSAR(Q_num)));
 		req->complete = true;
 		/* os_printk(K_ERR,"RxQ %d Flush Now!\n", Q_num); */
+	}
+}
+
+void mu3d_reset_gpd_resource(void)
+{
+	DEV_UINT32 i;
+
+	/* TX reset */
+	for (i = 1; i <= MAX_QMU_EP; i++) {
+
+		mu3d_hal_stop_qmu(i, USB_TX);
+
+		/*Reset the TX GPD list state */
+		Tx_gpd_end[i] = Tx_gpd_last[i] = Tx_gpd_head[i];
+		gpd_ptr_align(USB_TX, i, Tx_gpd_end[i]);
+		free_gpd(USB_TX, i);
+
+		/*FIXME: Do not know why... */
+		os_writel(USB_QMU_TQSAR(i),
+				mu3d_hal_gpd_virt_to_phys(Tx_gpd_last[i], USB_TX, i));
+		qmu_printk(K_INFO, "USB_QMU_TQSAR %x\n", os_readl(USB_QMU_TQSAR(i)));
+	}
+
+	/* RX reset */
+	for (i = 1; i <= MAX_QMU_EP; i++) {
+		mu3d_hal_stop_qmu(i, USB_RX);
+
+		/*Reset the RX GPD list state */
+		Rx_gpd_end[i] = Rx_gpd_last[i] = Rx_gpd_head[i];
+		gpd_ptr_align(USB_RX, i, Rx_gpd_end[i]);
+		free_gpd(USB_RX, i);
+
+		/*FIXME: Do not know why... */
+		os_writel(USB_QMU_RQSAR(i),
+				mu3d_hal_gpd_virt_to_phys(Rx_gpd_end[i], USB_RX, i));
+		qmu_printk(K_INFO, "USB_QMU_RQSAR %x\n", os_readl(USB_QMU_RQSAR(i)));
 	}
 }
 
