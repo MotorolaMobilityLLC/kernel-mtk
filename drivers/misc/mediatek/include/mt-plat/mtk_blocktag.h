@@ -108,7 +108,7 @@ struct mtk_btag_ringtrace {
 	int max;
 };
 
-typedef size_t (*mtk_btag_seq_f) (struct seq_file *);
+typedef size_t (*mtk_btag_seq_f) (char **, unsigned long *, struct seq_file *);
 
 /* BlockTag */
 struct mtk_blocktag {
