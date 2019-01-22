@@ -1066,3 +1066,4 @@ CONFIG_DEBUG_OBJECTS_TIMERS,USER,stanley.chu,new config in this commit 9fb8ecd5d
 CONFIG_TASKSTATS,COMMON,,,y,y,y,y,y,y
 CONFIG_TASK_XACCT,COMMON,,,y,y,y,y,y,y
 CONFIG_TASK_IO_ACCOUNTING,COMMON,,,y,y,y,y,y,y
+CONFIG_MTK_TIMER_TIMESYNC,PLATFORM,stanley.chu,new config in this commit 59a62d14e9bca322dd0498b6da8fdad698e7733a,X,X,X,y,X,X
