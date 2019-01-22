@@ -202,6 +202,7 @@ static int nop_set_host(struct usb_otg *otg, struct usb_bus *host)
 	return 0;
 }
 
+#define MYDBG(fmt, args...) pr_warn("USB_FIXME, <%s(), %d> " fmt, __func__, __LINE__, ## args)
 int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
 		struct usb_phy_generic_platform_data *pdata)
 {
@@ -218,15 +219,21 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
 			clk_rate = 0;
 
 		needs_vcc = of_property_read_bool(node, "vcc-supply");
+#if 0
 		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset",
 							   GPIOD_ASIS);
 		err = PTR_ERR_OR_ZERO(nop->gpiod_reset);
 		if (!err) {
+			MYDBG("ORG\n");
 			nop->gpiod_vbus = devm_gpiod_get_optional(dev,
 							 "vbus-detect",
 							 GPIOD_ASIS);
 			err = PTR_ERR_OR_ZERO(nop->gpiod_vbus);
 		}
+		MYDBG("ORG, err<%d>\n", err);
+#else
+		MYDBG("SKIP\n");
+#endif
 	} else if (pdata) {
 		type = pdata->type;
 		clk_rate = pdata->clk_rate;
@@ -242,8 +249,9 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
 		nop->gpiod_vbus = pdata->gpiod_vbus;
 	}
 
-	if (err == -EPROBE_DEFER)
+	if (err == -EPROBE_DEFER) {
 		return -EPROBE_DEFER;
+	}
 	if (err) {
 		dev_err(dev, "Error requesting RESET or VBUS GPIO\n");
 		return err;
