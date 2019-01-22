@@ -163,9 +163,10 @@ int get_scp_semaphore(int flag)
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
-
+	scp_awake_lock(SCP_A_ID);
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
+
 	flag = (flag * 2) + 1;
 
 	read_back = (readl(SCP_SEMAPHORE) >> flag) & 0x1;
@@ -192,6 +193,7 @@ int get_scp_semaphore(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+	scp_awake_unlock(SCP_A_ID);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_scp_semaphore);
@@ -211,7 +213,7 @@ int release_scp_semaphore(int flag)
 	/* return 1 to prevent from access when driver not ready */
 	if (!driver_init_done)
 		return -1;
-
+	scp_awake_lock(SCP_A_ID);
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
@@ -231,6 +233,7 @@ int release_scp_semaphore(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+	scp_awake_unlock(SCP_A_ID);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(release_scp_semaphore);
@@ -257,7 +260,7 @@ int scp_get_semaphore_3way(int flag)
 		pr_err("[SCP] get sema. 3way flag=%d > total numbers ERROR\n", flag);
 		return ret;
 	}
-
+	scp_awake_lock(SCP_A_ID);
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 4) + 2;
@@ -284,6 +287,7 @@ int scp_get_semaphore_3way(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+	scp_awake_unlock(SCP_A_ID);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_get_semaphore_3way);
@@ -304,7 +308,7 @@ int scp_release_semaphore_3way(int flag)
 		pr_err("[SCP] release sema. 3way flag = %d > total numbers ERROR\n", flag);
 		return ret;
 	}
-
+	scp_awake_lock(SCP_A_ID);
 	/* spinlock context safe*/
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	flag = (flag * 4) + 2;
@@ -323,6 +327,7 @@ int scp_release_semaphore_3way(int flag)
 	}
 
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+	scp_awake_unlock(SCP_A_ID);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_release_semaphore_3way);
