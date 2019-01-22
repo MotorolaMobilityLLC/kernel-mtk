@@ -244,3 +244,11 @@ config MTK_IRQ_NEW_DESIGN_DEBUG
 	  Support for debugging feature for MediaTek new interrupt design.
 	  With this feature enabled, system would assert when an error occurs rather than
 	  output warning messages.
+
+config MTK_SYSIRQ
+	bool
+	help
+	  GIC only support IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_EDGE_RISING,
+	  so this driver is designed for polarity configuration
+	  in order to make GIC driver support various trigger type
+	  including IRQ_TYPE_LEVEL_LOW and IRQ_TYPE_EDGE_FALLING.
