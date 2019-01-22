@@ -21,16 +21,6 @@
 
 static void mrdump_hw_enable(bool enabled)
 {
-#ifndef CONFIG_MTK_LASTPC_V2
-	int res;
-	struct wd_api *wd_api = NULL;
-
-	res = get_wd_api(&wd_api);
-	if (res < 0)
-		pr_alert("wd_ddr_reserved_mode, get wd api error %d\n", res);
-	else
-		wd_api->wd_dram_reserved_mode(enabled);
-#endif
 }
 
 static void mrdump_reboot(void)
