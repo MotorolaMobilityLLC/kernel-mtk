@@ -881,4 +881,10 @@ int lcm_vgp_supply_enable(void);
 int lcm_vgp_supply_disable(void);
 extern LCM_DSI_MODE_CON lcm_dsi_mode;
 
+extern int display_bias_enable(void);
+extern int display_bias_disable(void);
+extern int display_bias_regulator_init(void);
+
+
+
 #endif /* __LCM_DRV_H__ */
