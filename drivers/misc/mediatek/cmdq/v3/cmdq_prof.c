@@ -53,6 +53,10 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 	uint32_t maskEn = 0;
 
 	switch (op) {
+	case CMDQ_CODE_WRITE_S:
+		return CMDQ_STA_WRI;
+	case CMDQ_CODE_WRITE_S_W_MASK:
+		return CMDQ_STA_WRI_WITH_MASK;
 	case CMDQ_CODE_WRITE:
 		/* check address */
 		if (arg_a & (1 << 23)) {
@@ -74,6 +78,7 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 			return CMDQ_STA_SYNC;
 
 	case CMDQ_CODE_READ:
+	case CMDQ_CODE_READ_S:
 		return CMDQ_STA_READ;
 
 	case CMDQ_CODE_MOVE:
@@ -86,6 +91,8 @@ uint32_t cmdq_prof_get_statistic_id(const uint32_t *pCmd)
 		return CMDQ_STA_JUMP;
 
 	case CMDQ_CODE_EOC:
+	case CMDQ_CODE_LOGIC:
+	case CMDQ_CODE_JUMP_C_RELATIVE:
 		return CMDQ_STA_EOC;
 	default:
 		CMDQ_ERR("unknown op, arg_a: 0x%08x\n", arg_a);
