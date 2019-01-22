@@ -158,4 +158,5 @@ endif
 obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_NR.o
 endif
