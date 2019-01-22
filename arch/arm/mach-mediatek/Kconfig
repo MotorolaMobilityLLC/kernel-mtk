@@ -65,6 +65,9 @@ config MACH_MT6757
 	select ARM_ERRATA_855873
 	select MTK_SEC_DEINT_SUPPORT
 	select MTK_BOUNCING_CHECK
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek Helio P20 - MT6757
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -103,6 +106,9 @@ config MACH_MT6763
 	select MTK_SYSTRACKER_V2
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6763
 	  Support for arm Architecture
@@ -137,6 +143,9 @@ config MACH_MT6739
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_SYSIRQ
 	select FAST_CIRQ_CLONE_FLUSH
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6739
 	  Support for arm Architecture
@@ -177,6 +186,9 @@ config MACH_MT8167
 	select KERNEL_MODE_NEON
 	select HAVE_FUTEX_CMPXCHG
 	select HIGHMEM
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT8167
 	  Support for arm Architecture
