@@ -21,6 +21,7 @@
 #include <linux/printk.h>
 #include <linux/memblock.h>
 #include <linux/page-isolation.h>
+#include <linux/kernel.h>
 
 #include "mt-plat/mtk_meminfo.h"
 #include "single_cma.h"
@@ -122,8 +123,22 @@ static int __init zmc_memory_init(struct reserved_mem *rmem)
 	int ret;
 	int order, i;
 	int cma_area_count = 0;
-	phys_addr_t zmc_size = rmem->size;
+	phys_addr_t zmc_size;
 	phys_addr_t total_phys_size = memblock_phys_mem_size();
+
+#ifdef CONFIG_KASAN
+#define ZMC_SEG_SIZE (512 * 1024 * 1024)
+	phys_addr_t kasan_shadow_size = total_phys_size / 8;
+
+	kasan_shadow_size = roundup(kasan_shadow_size, ZMC_SEG_SIZE);
+	memblock_free(rmem->base, kasan_shadow_size);
+	memblock_add(rmem->base, kasan_shadow_size);
+	rmem->base += kasan_shadow_size;
+	rmem->size -= kasan_shadow_size;
+	pr_info("zmc: Modify zmc size because KASAN enabled\n");
+#undef ZMC_SEG_SIZE
+#endif
+	zmc_size = rmem->size;
 
 	pr_alert("%s, name: %s, base: %pa, size: %pa\n", __func__,
 			rmem->name, &rmem->base, &rmem->size);
