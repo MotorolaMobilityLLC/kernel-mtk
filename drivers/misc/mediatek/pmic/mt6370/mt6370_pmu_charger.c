@@ -1933,6 +1933,12 @@ static int mt6370_enable_otg(struct charger_device *chg_dev, bool en)
 		goto out;
 	}
 
+	ret = mt6370_pmu_reg_read(chg_data->chip, MT6370_PMU_REG_LG_CONTROL);
+	if (ret < 0)
+		dev_info(chg_data->dev, "%s: read reg0x33 failed\n", __func__);
+	else
+		dev_info(chg_data->dev, "%s: reg0x33 = 0x%02X\n", __func__, ret);
+
 	/* Turn off USB charger detection/Enable WDT */
 	if (en) {
 #if 0
