@@ -22,7 +22,7 @@
 #define PMIC6355_E3_CID_CODE    0x5530
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-/*#define IPIMB*/
+#define IPIMB
 #endif
 
 extern unsigned int pmic_ipi_test_code(void);
