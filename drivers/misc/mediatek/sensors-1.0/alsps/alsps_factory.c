@@ -136,8 +136,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 		}
 		return 0;
 	case ALSPS_GET_PS_THRESHOLD_HIGH:
-		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threashold != NULL) {
-			err = alsps_factory.fops->ps_get_threashold(threshold_data);
+		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threshold != NULL) {
+			err = alsps_factory.fops->ps_get_threshold(threshold_data);
 			if (err < 0) {
 				ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
 				return -EINVAL;
@@ -150,8 +150,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 			return -EFAULT;
 		return 0;
 	case ALSPS_GET_PS_THRESHOLD_LOW:
-		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threashold != NULL) {
-			err = alsps_factory.fops->ps_get_threashold(threshold_data);
+		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_get_threshold != NULL) {
+			err = alsps_factory.fops->ps_get_threshold(threshold_data);
 			if (err < 0) {
 				ALSPS_PR_ERR("ALSPS_GET_PS_THRESHOLD_HIGH read data fail!\n");
 				return -EINVAL;
@@ -166,8 +166,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	case ALSPS_SET_PS_THRESHOLD:
 		if (copy_from_user(threshold_data, ptr, sizeof(threshold_data)))
 			return -EFAULT;
-		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_set_threashold != NULL) {
-			err = alsps_factory.fops->ps_set_threashold(threshold_data);
+		if (alsps_factory.fops != NULL && alsps_factory.fops->ps_set_threshold != NULL) {
+			err = alsps_factory.fops->ps_set_threshold(threshold_data);
 			if (err < 0) {
 				ALSPS_PR_ERR("ALSPS_SET_PS_THRESHOLD read data fail!\n");
 				return -EINVAL;

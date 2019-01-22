@@ -89,6 +89,7 @@ struct ps_control_path {
 	int (*flush)(void);/* open data rerport to HAL */
 	int (*access_data_fifo)(void);/* version2.used for flush operate */
 	int (*ps_calibration)(int type, int value);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	int (*ps_threshold_setting)(int type, int value[2]);
 	bool is_report_input_direct;
 	bool is_support_batch;/* version2.used for batch mode support flag */
@@ -187,6 +188,7 @@ extern int alsps_driver_add(struct alsps_init_info *obj);
 extern int ps_report_interrupt_data(int value);
 extern int ps_flush_report(void);
 extern int als_data_report(int value, int status);
+extern int ps_cali_report(int *value);
 extern int als_flush_report(void);
 extern int rgbw_data_report(int value[4]);
 extern int rgbw_flush_report(void);
