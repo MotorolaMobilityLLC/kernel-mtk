@@ -13,7 +13,7 @@
 
 #include <linux/kconfig.h>
 #include <linux/module.h>
-#ifdef CONFIG_MTK_WATCHDOG
+#ifdef CONFIG_MTK_WD_KICKER
 #include <mach/wd_api.h>
 static int __init mrdump_key_init(void)
 {
