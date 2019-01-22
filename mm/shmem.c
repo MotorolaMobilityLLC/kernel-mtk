@@ -2075,7 +2075,9 @@ static long shmem_fallocate(struct file *file, int mode, loff_t offset,
 	if (mode & ~(FALLOC_FL_KEEP_SIZE | FALLOC_FL_PUNCH_HOLE))
 		return -EOPNOTSUPP;
 
+	lockdep_off();
 	mutex_lock(&inode->i_mutex);
+	lockdep_on();
 
 	if (mode & FALLOC_FL_PUNCH_HOLE) {
 		struct address_space *mapping = file->f_mapping;
@@ -2190,7 +2192,9 @@ undone:
 	inode->i_private = NULL;
 	spin_unlock(&inode->i_lock);
 out:
+	lockdep_off();
 	mutex_unlock(&inode->i_mutex);
+	lockdep_on();
 	return error;
 }
 
