@@ -197,7 +197,7 @@ endif
 #obj-$(CONFIG_MTK_DYNAMIC_BOOST) += dynamic_boost/
 
 #obj-$(CONFIG_MTK_DISPLAY_120HZ_SUPPORT)	+= rrc/
-#obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
+obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 # Crypto performance tools (disable by default)
 obj-n += crypto/
 
@@ -212,5 +212,4 @@ endif
 #obj-$(CONFIG_MTK_VOW_SUPPORT)	+= vow/
 #obj-$(CONFIG_USB)	+= usb_boost/
 #obj-$(CONFIG_RT_REGMAP) += rt-regmap/
-
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= cmo/
