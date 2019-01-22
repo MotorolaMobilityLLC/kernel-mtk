@@ -1039,6 +1039,10 @@ static bool g_config_cboost_en = true;
 static bool g_config_cboost_en;
 #endif
 
+#if defined(CONFIG_MACH_MT6757)
+static bool g_config_color30;
+#endif
+
 void disp_color_set_window(unsigned int sat_upper, unsigned int sat_lower,
 			   unsigned int hue_upper, unsigned int hue_lower)
 {
@@ -2076,7 +2080,15 @@ static unsigned long color_pa2va(unsigned int addr)
 
 	return 0;
 }
-
+#if defined(CONFIG_MACH_MT6757)
+static unsigned int color_get_chip_ver(void)
+{
+	if (g_config_color30 == true)
+		return MIRAVISION_HW_P_VERSION;
+	else
+		return MIRAVISION_HW_VERSION;
+}
+#endif
 static unsigned int color_read_sw_reg(unsigned int reg_id)
 {
 	unsigned int ret = 0;
@@ -2372,8 +2384,10 @@ static int _color_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
 #if defined(CONFIG_MACH_MT6757)
-	if (mt_get_chip_hw_ver() >= 0xCB00)
+	if (mt_get_chip_hw_ver() >= 0xCB00) {
 		g_config_cboost_en = true;
+		g_config_color30 = true;
+	}
 #endif
 	return 0;
 }
