@@ -2864,7 +2864,7 @@ void cmdq_core_invalidate_hw_fetched_buffer(int32_t thread)
  */
 static void cmdq_core_invalid_hw_thread(s32 thread)
 {
-	u32 status = cmdq_core_suspend_HW_thread(thread, __LINE__);
+	s32 status = cmdq_core_suspend_HW_thread(thread, __LINE__);
 
 	if (status < 0)
 		CMDQ_ERR("fail to invalid in runtime, still do resume\n");
@@ -2897,7 +2897,7 @@ bool cmdq_core_is_request_from_user_space(const enum CMDQ_SCENARIO_ENUM scenario
 
 static int32_t cmdq_core_extend_cmd_buffer(struct TaskStruct *pTask)
 {
-	uint32_t status = 0;
+	s32 status = 0;
 	struct CmdBufferStruct *buffer_entry = NULL;
 	uint32_t *va = NULL;
 
@@ -3347,7 +3347,7 @@ static int32_t cmdq_core_copy_buffer_impl(void *dst, void *src, const uint32_t s
 int32_t cmdq_core_copy_cmd_to_task_impl(struct TaskStruct *pTask, void *src, const uint32_t size,
 		const bool is_copy_from_user)
 {
-	uint32_t status = 0;
+	s32 status = 0;
 	uint32_t remaind_cmd_size = size;
 	uint32_t copy_size = 0;
 
