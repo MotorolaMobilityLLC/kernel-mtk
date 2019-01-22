@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2016 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -136,8 +136,8 @@ static int tee_scheduler(void *arg)
 			} else {
 				bool infinite_timeout = timeout_ms < 0;
 
-				if ((timeout_ms < 0) ||
-				    (timeout_ms > DEFAULT_TIMEOUT_MS))
+				if (timeout_ms < 0 ||
+				    timeout_ms > DEFAULT_TIMEOUT_MS)
 					timeout_ms = DEFAULT_TIMEOUT_MS;
 
 				if (!wait_for_completion_timeout(
