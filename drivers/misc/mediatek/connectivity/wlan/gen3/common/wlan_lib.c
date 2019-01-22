@@ -690,7 +690,7 @@ wlanAdapterStart(IN P_ADAPTER_T prAdapter,
 			/* System Service Uninitialization */
 			nicUninitSystemService(prAdapter);
 			nicReleaseAdapterMemory(prAdapter);
-			wlanPollingCpupcr(4, 5);
+			wlanPollingCpupcr(20, 1);
 			break;
 		case INIT_ADAPTER_FAIL:
 			nicReleaseAdapterMemory(prAdapter);

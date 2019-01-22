@@ -262,9 +262,11 @@ BOOLEAN glResetTrigger(P_ADAPTER_T prAdapter)
 	return fgResult;
 }
 
+#endif /* CFG_CHIP_RESET_SUPPORT */
+
 UINT32 wlanPollingCpupcr(UINT32 u4Times, UINT32 u4Sleep)
 {
-#if defined(MT6797)
+#if defined(MT6631)
 	UINT32 u4Count;
 
 	for (u4Count = 0; u4Count < u4Times; u4Count++) {
@@ -276,4 +278,3 @@ UINT32 wlanPollingCpupcr(UINT32 u4Times, UINT32 u4Sleep)
 #endif
 	return 0;
 }
-#endif /* CFG_CHIP_RESET_SUPPORT */
