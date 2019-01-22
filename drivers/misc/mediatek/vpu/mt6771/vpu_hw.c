@@ -128,10 +128,10 @@ static struct my_struct_t power_counter_work[MTK_VPU_CORE];
 /*static DECLARE_DELAYED_WORK(power_counter_work, vpu_power_counter_routine);*/
 
 /* power */
-static struct mutex power_mutex;
+static struct mutex power_mutex[MTK_VPU_CORE];
 static bool is_power_debug_lock;
 static bool is_power_dynamic = true;
-static struct mutex power_counter_mutex;
+static struct mutex power_counter_mutex[MTK_VPU_CORE];
 static int power_counter[MTK_VPU_CORE];
 
 
@@ -287,6 +287,7 @@ static int vpu_enable_regulator_and_clock(int core)
 {
 	int ret = 0;
 
+	LOG_INF("[vpu_%d] en_rc +\n", core);
 	vpu_trace_begin("vpu_enable_regulator_and_clock");
 #if 0
 	vpu_trace_begin("vcore:request");
@@ -328,7 +329,7 @@ static int vpu_enable_regulator_and_clock(int core)
 	ENABLE_VPU_CLK(clk_mmsys_gals_comm0);
 	ENABLE_VPU_CLK(clk_mmsys_gals_comm1);
 	ENABLE_VPU_CLK(clk_mmsys_smi_common);
-	/*ENABLE_VPU_CLK(clk_ipu_adl_cabgen);*/
+	ENABLE_VPU_CLK(clk_ipu_adl_cabgen);
 	ENABLE_VPU_CLK(clk_ipu_conn_dap_rx_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_apb2axi_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_apb2ahb_cg);
@@ -341,18 +342,18 @@ static int vpu_enable_regulator_and_clock(int core)
 	ENABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	/*ENABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
-	/*ENABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
-	/*ENABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
+	ENABLE_VPU_CLK(clk_ipu_conn_isp_cg);
+	ENABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
+	ENABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
 	switch (core) {
 	case 0:
 	default:
-		/*ENABLE_VPU_CLK(clk_ipu_core0_jtag_cg);*/
+		ENABLE_VPU_CLK(clk_ipu_core0_jtag_cg);
 		ENABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
 		ENABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
 		break;
 	case 1:
-		/*ENABLE_VPU_CLK(clk_ipu_core1_jtag_cg);*/
+		ENABLE_VPU_CLK(clk_ipu_core1_jtag_cg);
 		ENABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
 		ENABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
 		break;
@@ -369,6 +370,7 @@ static int vpu_enable_regulator_and_clock(int core)
 out:
 #endif
 	vpu_trace_end();
+	LOG_INF("[vpu_%d] en_rc -\n", core);
 	return ret;
 }
 
@@ -378,6 +380,7 @@ static int vpu_disable_regulator_and_clock(int core)
 {
 	int ret = 0;
 
+	LOG_INF("[vpu_%d] dis_rc +\n", core);
 #define DISABLE_VPU_CLK(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -390,17 +393,17 @@ static int vpu_disable_regulator_and_clock(int core)
 	switch (core) {
 	case 0:
 	default:
-		/*DISABLE_VPU_CLK(clk_ipu_core0_jtag_cg);*/
+		DISABLE_VPU_CLK(clk_ipu_core0_jtag_cg);
 		DISABLE_VPU_CLK(clk_ipu_core0_axi_m_cg);
 		DISABLE_VPU_CLK(clk_ipu_core0_ipu_cg);
 		break;
 	case 1:
-		/*DISABLE_VPU_CLK(clk_ipu_core1_jtag_cg);*/
+		DISABLE_VPU_CLK(clk_ipu_core1_jtag_cg);
 		DISABLE_VPU_CLK(clk_ipu_core1_axi_m_cg);
 		DISABLE_VPU_CLK(clk_ipu_core1_ipu_cg);
 		break;
 	}
-	/*DISABLE_VPU_CLK(clk_ipu_adl_cabgen);*/
+	DISABLE_VPU_CLK(clk_ipu_adl_cabgen);
 	DISABLE_VPU_CLK(clk_ipu_conn_dap_rx_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_apb2axi_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_apb2ahb_cg);
@@ -412,14 +415,15 @@ static int vpu_disable_regulator_and_clock(int core)
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to1_slice);
 	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
 	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	/*DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
-	/*DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
+	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu12mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm0);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm1);
 	DISABLE_VPU_CLK(clk_mmsys_smi_common);
+	LOG_INF("[vpu_%d] dis_rc flag4\n", core);
 #undef DISABLE_VPU_CLK
 
 #define DISABLE_VPU_MTCMOS(clk) \
@@ -431,16 +435,21 @@ static int vpu_disable_regulator_and_clock(int core)
 		} \
 	}
 
-	DISABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
 	DISABLE_VPU_MTCMOS(mtcmos_vpu_core1_shutdown);
+	LOG_INF("[vpu_%d] dis_rc flag4.1\n", core);
+	DISABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
+	LOG_INF("[vpu_%d] dis_rc flag4.2\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_vpu_top);
+	LOG_INF("[vpu_%d] dis_rc flag4.3\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_dis);
+	LOG_INF("[vpu_%d] dis_rc flag4.4\n", core);
 #undef DISABLE_VPU_MTCMOS
 #if 0
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_UNREQUEST);
 	CHECK_RET("fail to unrequest vcore!\n");
 out:
 #endif
+	LOG_INF("[vpu_%d] dis_rc -\n", core);
 	return ret;
 
 }
@@ -776,22 +785,22 @@ static int vpu_get_power(int core)
 	int ret = 0;
 
 	LOG_INF("[vpu_%d/%d] gp +\n", core, power_counter[core]);
-	mutex_lock(&power_counter_mutex);
+	mutex_lock(&power_counter_mutex[core]);
 	power_counter[core]++;
 	ret = vpu_boot_up(core);
-	mutex_unlock(&power_counter_mutex);
-	LOG_DBG("[vpu_%d/%d] gp -\n", core, power_counter[core]);
+	mutex_unlock(&power_counter_mutex[core]);
+	LOG_INF("[vpu_%d/%d] gp -\n", core, power_counter[core]);
 	return ret;
 }
 
 static void vpu_put_power(int core)
 {
 	LOG_INF("[vpu_%d/%d] pp +\n", core, power_counter[core]);
-	mutex_lock(&power_counter_mutex);
+	mutex_lock(&power_counter_mutex[core]);
 	if (--power_counter[core] == 0)
 		mod_delayed_work(wq, &(power_counter_work[core].my_work), msecs_to_jiffies(PWR_KEEP_TIME_MS));
-	mutex_unlock(&power_counter_mutex);
-	LOG_DBG("[vpu_%d/%d] pp -\n", core, power_counter[core]);
+	mutex_unlock(&power_counter_mutex[core]);
+	LOG_INF("[vpu_%d/%d] pp -\n", core, power_counter[core]);
 }
 
 static void vpu_power_counter_routine(struct work_struct *work)
@@ -802,11 +811,11 @@ static void vpu_power_counter_routine(struct work_struct *work)
 	core = my_work_core->core;
 	LOG_INF("vpu_%d counterR +", core);
 
-	mutex_lock(&power_counter_mutex);
+	mutex_lock(&power_counter_mutex[core]);
 	if (power_counter[core] == 0)
 		vpu_shut_down(core);
-	mutex_unlock(&power_counter_mutex);
-	LOG_DBG("vpu_%d counterR -", core);
+	mutex_unlock(&power_counter_mutex[core]);
+	LOG_INF("vpu_%d counterR -", core);
 }
 
 int vpu_init_hw(int core, struct vpu_device *device)
@@ -840,14 +849,14 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		init_waitqueue_head(&cmd_wait);
 		mutex_init(&lock_mutex);
 		init_waitqueue_head(&lock_wait);
-		mutex_init(&power_mutex);
-		mutex_init(&power_counter_mutex);
 		vpu_dev = device;
 
 		for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 			power_counter[i] = 0;
 			INIT_DELAYED_WORK(&(power_counter_work[i].my_work), vpu_power_counter_routine);
 			power_counter_work[i].core = i;
+			mutex_init(&(power_mutex[i]));
+			mutex_init(&(power_counter_mutex[i]));
 
 			vpu_service_cores[i].vpu_service_task =
 				(struct task_struct *)kmalloc(sizeof(struct task_struct), GFP_KERNEL);
@@ -1108,7 +1117,7 @@ int vpu_hw_boot_sequence(int core)
 	unsigned int reg_value = 0;
 
 	vpu_trace_begin("vpu_hw_boot_sequence");
-	LOG_DBG("boot-up core(%d)", core);
+	LOG_INF("boot-seq core(%d)", core);
 	LOG_DBG("CTRL(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x110));
 	LOG_DBG("XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x114));
 	LOG_DBG("CTL_XTENSA_INT(0x%x)", vpu_read_reg32(vpu_service_cores[core].vpu_base, CTRL_BASE_OFFSET + 0x118));
@@ -1185,6 +1194,7 @@ int vpu_hw_boot_sequence(int core)
 
 	VPU_CLR_BIT(ptr_ctrl, 23);      /* RUN_STALL pull down */
 
+
 	/* 3. wait until done */
 	ret = wait_command(core);
 	vpu_trace_end();
@@ -1201,7 +1211,7 @@ int vpu_hw_boot_sequence(int core)
 out:
 	unlock_command(core);
 	vpu_trace_end();
-	LOG_DBG("vpu_hw_boot_sequence -");
+	LOG_INF("vpu_hw_boot_sequence -");
 	return ret;
 }
 
@@ -1336,12 +1346,13 @@ int vpu_boot_up(int core)
 {
 	int ret;
 
-	LOG_DBG("[vpu_%d] vpu_boot_up +\n", core);
-	mutex_lock(&power_mutex);
+	LOG_INF("[vpu_%d] boot_up +\n", core);
+	mutex_lock(&power_mutex[core]);
 	if (vpu_service_cores[core].is_running) {
-		mutex_unlock(&power_mutex);
+		mutex_unlock(&power_mutex[core]);
 		return 0;
 	}
+	LOG_INF("[vpu_%d] boot_up flag2\n", core);
 
 	vpu_trace_begin("vpu_boot_up");
 
@@ -1366,7 +1377,7 @@ out:
 	}
 
 	vpu_trace_end();
-	mutex_unlock(&power_mutex);
+	mutex_unlock(&power_mutex[core]);
 	return ret;
 }
 
@@ -1374,9 +1385,10 @@ int vpu_shut_down(int core)
 {
 	int ret;
 
-	mutex_lock(&power_mutex);
+	LOG_INF("[vpu_%d] shutdown +\n", core);
+	mutex_lock(&power_mutex[core]);
 	if (!vpu_service_cores[core].is_running) {
-		mutex_unlock(&power_mutex);
+		mutex_unlock(&power_mutex[core]);
 		return 0;
 	}
 
@@ -1390,7 +1402,8 @@ int vpu_shut_down(int core)
 
 out:
 	vpu_trace_end();
-	mutex_unlock(&power_mutex);
+	mutex_unlock(&power_mutex[core]);
+	LOG_INF("[vpu_%d] shutdown -\n", core);
 	return ret;
 }
 
