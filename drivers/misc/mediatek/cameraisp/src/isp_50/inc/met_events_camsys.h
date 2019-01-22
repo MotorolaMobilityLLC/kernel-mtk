@@ -108,7 +108,7 @@ TRACE_EVENT(ISP__Pass1_CAM_leave,
 		__entry->hw_module = hw_module;
 		__entry->dummy  = dummy;
 	),
-	TP_printk("hw_module=%d", __entry->hw_module)
+	TP_printk("_id=%d", __entry->hw_module)
 );
 
 
