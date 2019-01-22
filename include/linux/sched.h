@@ -62,6 +62,7 @@ struct sched_entity;
 #include <linux/gfp.h>
 #include <linux/magic.h>
 #include <linux/cgroup-defs.h>
+#include <linux/stacktrace.h>
 
 #include <asm/processor.h>
 
@@ -2112,6 +2113,16 @@ struct task_struct {
 	/* number of pages to reclaim on returning to userland */
 	unsigned int memcg_nr_pages_over_high;
 #endif
+
+#ifdef CONFIG_MTK_ENG_BUILD
+#ifdef CONFIG_STACKTRACE
+#define TASK_ADDRS_COUNT 16
+	spinlock_t stack_trace_lock;
+	struct stack_trace stack_trace;
+	unsigned long addrs[TASK_ADDRS_COUNT];
+#endif
+#endif
+
 #ifdef CONFIG_UPROBES
 	struct uprobe_task *utask;
 #endif
@@ -2349,6 +2360,21 @@ extern void __put_task_struct(struct task_struct *t);
 
 static inline void put_task_struct(struct task_struct *t)
 {
+#ifdef CONFIG_MTK_ENG_BUILD
+#ifdef CONFIG_STACKTRACE
+#define TASK_ADDRS_COUNT 16
+	unsigned long flags;
+
+	spin_lock_irqsave(&t->stack_trace_lock, flags);
+	t->stack_trace.nr_entries = 0;
+	t->stack_trace.max_entries = TASK_ADDRS_COUNT;
+	t->stack_trace.entries = t->addrs;
+	t->stack_trace.skip = 1;
+
+	save_stack_trace(&t->stack_trace);
+	spin_unlock_irqrestore(&t->stack_trace_lock, flags);
+#endif
+#endif
 	if (atomic_dec_and_test(&t->usage))
 		__put_task_struct(t);
 }
