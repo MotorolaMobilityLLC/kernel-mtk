@@ -15,7 +15,7 @@
 #include "flashlight-core.h"
 
 #if defined(mt6739)
-#if defined(tb8765ap1_64_bsp)
+#if defined(tb8765ap1_64_bsp) || defined(tb8765ap1_bsp_1g)
 	const struct flashlight_device_id flashlight_id[] = {
 		/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 		{0, 0, 0, "flashlights_led191", 0, 0},
