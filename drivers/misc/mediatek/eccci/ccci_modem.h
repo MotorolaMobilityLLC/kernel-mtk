@@ -50,7 +50,7 @@ struct ccci_modem_ops {
 	/* must-have */
 	int (*init)(struct ccci_modem *md);
 	int (*start)(struct ccci_modem *md);
-	int (*pre_stop)(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops);
+	int (*pre_stop)(struct ccci_modem *md, unsigned int stop_type);
 	int (*stop)(struct ccci_modem *md, unsigned int stop_type);
 	int (*soft_start)(struct ccci_modem *md, unsigned int mode);
 	int (*soft_stop)(struct ccci_modem *md, unsigned int mode);
@@ -110,7 +110,6 @@ struct ccci_modem {
 	unsigned int is_force_asserted;
 	phys_addr_t invalid_remap_base;
 	volatile struct ccci_modem_cfg config;
-	struct timer_list bootup_timer;
 	unsigned short heart_beat_counter;
 #if PACKET_HISTORY_DEPTH
 	struct ccci_log tx_history[MAX_TXQ_NUM][PACKET_HISTORY_DEPTH];
@@ -132,13 +131,13 @@ struct ccci_modem {
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	struct work_struct scp_md_state_sync_work;
 #endif
+	struct ccci_fsm_ctl fsm;
 };
 /****************************************************************************************************************/
 /* API Region called by sub-modem class, reuseable API */
 /****************************************************************************************************************/
 struct ccci_modem *ccci_md_alloc(int private_size);
 int ccci_md_register(struct ccci_modem *modem);
-int ccci_md_wdt_handler(struct ccci_modem *md);
 int ccci_md_force_assert(struct ccci_modem *md, MD_FORCE_ASSERT_TYPE type, char *param, int len);
 int ccci_md_send_msg_to_user(struct ccci_modem *md, CCCI_CH ch, CCCI_MD_MSG msg, u32 resv);
 int ccci_send_msg_to_md(struct ccci_modem *md, CCCI_CH ch, u32 msg, u32 resv, int blocking);
@@ -244,7 +243,7 @@ int ccci_md_store_load_type(struct ccci_modem *md, int type);
 int ccci_md_prepare_runtime_data(struct ccci_modem *md, struct sk_buff *skb);
 struct ccci_runtime_feature *ccci_md_get_rt_feature_by_id(struct ccci_modem *md, u8 feature_id, u8 ap_query_md);
 int ccci_md_parse_rt_feature(struct ccci_modem *md, struct ccci_runtime_feature *rt_feature, void *data, u32 data_len);
-
+void ccci_md_boot_fail_func(struct ccci_modem *md);
 int ccci_md_get_ex_type(struct ccci_modem *md);
 
 static inline struct port_proxy *ccci_md_get_port_proxy_by_id(int md_id)
@@ -261,26 +260,14 @@ static inline int ccci_md_is_in_debug(struct ccci_modem *md)
 	return 0;
 }
 
-static inline void ccci_md_start_bootup_timer(struct ccci_modem *md, int second)
-{
-	mod_timer(&md->bootup_timer, jiffies + second * HZ);
-}
-
-static inline void ccci_md_stop_bootup_timer(struct ccci_modem *md)
-{
-	del_timer(&md->bootup_timer);
-}
-
 static inline int ccci_md_send_ccb_tx_notify(struct ccci_modem *md, int core_id)
 {
 	return md->ops->send_ccb_tx_notify(md, core_id);
 }
 
-static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
+static inline int ccci_md_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 {
-	/*WDT happened at bootup, need stop timer*/
-	ccci_md_stop_bootup_timer(md);
-	return md->ops->pre_stop(md, stop_type, other_ops);
+	return md->ops->pre_stop(md, stop_type);
 }
 
 static inline int ccci_md_stop(struct ccci_modem *md, unsigned int stop_type)
@@ -309,12 +296,7 @@ static inline int ccci_md_soft_start(struct ccci_modem *md, unsigned int sim_mod
 static inline int ccci_md_send_runtime_data(struct ccci_modem *md, unsigned int tx_ch,
 		unsigned int txqno, int skb_from_pool)
 {
-	int ret = 0;
-
-	ret = md->ops->send_runtime_data(md, tx_ch, txqno, skb_from_pool);
-	if (ret == 0 && !ccci_md_is_in_debug(md))
-		ccci_md_start_bootup_timer(md, BOOT_TIMER_HS2);
-	return ret;
+	return md->ops->send_runtime_data(md, tx_ch, txqno, skb_from_pool);
 }
 
 static inline int ccci_md_send_skb(struct ccci_modem *md, int qno,

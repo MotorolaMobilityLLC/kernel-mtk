@@ -625,14 +625,6 @@ int md_ccif_op_is_epon_set(struct ccci_modem *md)
 {
 	return (*((int *)(md->mem_layout.smem_region_vir + CCCI_SMEM_OFFSET_EPON)) == 0xBAEBAE10);
 }
-static void md_ccif_wdt_work(struct work_struct *work)
-{
-	struct md_ccif_ctrl *md_ctrl = container_of(work, struct md_ccif_ctrl, wdt_work);
-	struct ccci_modem *md = md_ctrl->rxq[0].modem;
-
-	CCCI_NORMAL_LOG(md->index, TAG, "md_ccif_wdt_work\n");
-	ccci_md_wdt_handler(md);
-}
 
 static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 {
@@ -649,8 +641,9 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 #endif
 	CCCI_NORMAL_LOG(md->index, TAG, "MD WDT IRQ\n");
 	ccci_event_log("md%d: MD WDT IRQ\n", md->index);
-	schedule_work(&md_ctrl->wdt_work);
 
+	wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
+	ccci_fsm_append_command(md, CCCI_COMMAND_WDT, 0);
 	return IRQ_HANDLED;
 }
 
@@ -1015,7 +1008,7 @@ static int md_ccif_op_stop(struct ccci_modem *md, unsigned int stop_type)
 	return 0;
 }
 
-static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type, OTHER_MD_OPS other_ops)
+static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 {
 	struct md_ccif_ctrl *md_ctrl = (struct md_ccif_ctrl *)md->private_data;
 
@@ -1029,22 +1022,7 @@ static int md_ccif_op_pre_stop(struct ccci_modem *md, unsigned int stop_type, OT
 	/*2. disable IRQ (use nosync) */
 	disable_irq_nosync(md_ctrl->md_wdt_irq_id);
 
-	ccci_md_check_ee_done(md, 0);
-
 	ccci_md_broadcast_state(md, WAITING_TO_STOP);	/*to block char's write operation */
-
-	switch (other_ops) {
-	case OTHER_MD_RESET:
-		if (md->index == MD_SYS3)
-			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_RESET_MD, NULL, 0);
-		break;
-	case OTHER_MD_STOP:
-		if (md->index == MD_SYS3)
-			exec_ccci_kern_func_by_md_id(MD_SYS1, ID_STOP_MD, NULL, 0);
-		break;
-	default:
-		break;
-	}
 	return 0;
 }
 
@@ -1609,7 +1587,6 @@ static int md_ccif_probe(struct platform_device *dev)
 	wake_lock_init(&md_ctrl->trm_wake_lock, WAKE_LOCK_SUSPEND, md_ctrl->wakelock_name);
 	tasklet_init(&md_ctrl->ccif_irq_task, md_ccif_irq_tasklet, (unsigned long)md);
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
-	INIT_WORK(&md_ctrl->wdt_work, md_ccif_wdt_work);
 	init_timer(&md_ctrl->traffic_monitor);
 	md_ctrl->traffic_monitor.function = md_ccif_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md;

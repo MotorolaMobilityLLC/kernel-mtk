@@ -66,14 +66,7 @@ void mdee_bootup_timeout_handler(struct md_ee *mdee)
 	CCCI_NORMAL_LOG(md_id, KERN, "Dump MD ee boot failed info\n");
 	mdee_dump_ee_info(mdee, MDEE_DUMP_LEVEL_BOOT_FAIL, 0);
 }
-int mdee_reset(struct ccci_port *port)
-{
-	struct md_ee *mdee = port_proxy_get_mdee(port->port_proxy);
 
-	del_timer(&mdee->ex_monitor);
-	del_timer(&mdee->ex_monitor2);
-	return 0;
-}
 int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 {
 	int md_id = port->md_id;
@@ -90,11 +83,9 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 			spin_lock_irqsave(&mdee->ctrl_lock, flags);
 			mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_MSG_GET | MD_STATE_UPDATE | MD_EE_TIME_OUT_SET);
 			spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
-			if (!ccci_md_is_in_debug(mdee->md_obj))
-				mod_timer(&mdee->ex_monitor, jiffies + EX_TIMER_MD_EX * HZ);
 			ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
-			port_proxy_send_msg_to_user(port->port_proxy, CCCI_MONITOR_CH, CCCI_MD_MSG_EXCEPTION, 0);
 			port_proxy_send_msg_to_md(port->port_proxy, CCCI_CONTROL_TX, MD_EX, MD_EX_CHK_ID, 1);
+			port_proxy_append_fsm_event(port->port_proxy, CCCI_EVENT_MD_EX, NULL, 0);
 		}
 	} else if (ccci_h->data[1] == MD_EX_REC_OK) {
 		if (unlikely
@@ -119,14 +110,14 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 			mdee_set_ee_pkg(mdee, skb_pull(skb, sizeof(struct ccci_header)),
 				skb->len - sizeof(struct ccci_header));
 
-			mod_timer(&mdee->ex_monitor, jiffies);
+			port_proxy_append_fsm_event(port->port_proxy, CCCI_EVENT_MD_EX_REC_OK, NULL, 0);
 		}
 	} else if (ccci_h->data[1] == MD_EX_PASS) {
 		spin_lock_irqsave(&mdee->ctrl_lock, flags);
 		mdee->ee_info_flag |= MD_EE_PASS_MSG_GET;
 		/* dump share memory again to let MD check exception flow */
-		mod_timer(&mdee->ex_monitor2, jiffies);
 		spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
+		port_proxy_append_fsm_event(port->port_proxy, CCCI_EVENT_MD_EX_PASS, NULL, 0);
 	} else if (ccci_h->data[1] == CCCI_DRV_VER_ERROR) {
 		CCCI_ERROR_LOG(md_id, KERN, "AP/MD driver version mis-match\n");
 #if defined(CONFIG_MTK_AEE_FEATURE)
@@ -140,13 +131,12 @@ int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb)
 	return ret;
 }
 
-static void mdee_monitor_func(unsigned long data)
+void mdee_monitor_func(struct md_ee *mdee)
 {
 	int ee_case;
 	unsigned long flags;
 	unsigned int ee_info_flag = 0;
 	unsigned int md_dump_flag = 0;
-	struct md_ee *mdee = (struct md_ee *)data;
 	int md_id = mdee->md_id;
 	struct ccci_smem_layout *smem_layout = ccci_md_get_smem(mdee->md_obj);
 	struct ccci_mem_layout *mem_layout = ccci_md_get_mem(mdee->md_obj);
@@ -222,19 +212,14 @@ static void mdee_monitor_func(unsigned long data)
 	spin_lock_irqsave(&mdee->ctrl_lock, flags);
 	if (MD_EE_PASS_MSG_GET & mdee->ee_info_flag)
 		CCCI_ERROR_LOG(md_id, KERN, "MD exception timer 2 has been set!\n");
-	else if (ee_case == MD_EE_CASE_WDT && md_id == MD_SYS3)
-		mod_timer(&mdee->ex_monitor2, jiffies);
-	else
-		mod_timer(&mdee->ex_monitor2, jiffies + EX_TIMER_MD_EX_REC_OK * HZ);
 	spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
 	CCCI_ERROR_LOG(md_id, KERN, "MD exception timer 1:end\n");
  _dump_done:
 	return;
 }
 
-static void mdee_monitor2_func(unsigned long data)
+void mdee_monitor2_func(struct md_ee *mdee)
 {
-	struct md_ee *mdee = (struct md_ee *)data;
 	int md_id = mdee->md_id;
 	unsigned long flags;
 	int md_wdt_ee = 0;
@@ -306,34 +291,32 @@ void mdee_state_notify(struct md_ee *mdee, MD_EX_STAGE stage)
 	mdee->ex_stage = stage;
 	switch (mdee->ex_stage) {
 	case EX_INIT:
-		del_timer(&mdee->ex_monitor2);
+		ccci_md_ee_callback(mdee->md_obj, EE_FLAG_DISABLE_WDT);
+		ccci_fsm_append_command(mdee->md_obj, CCCI_COMMAND_EE, 0);
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_SWINT_GET);
 		ccci_md_broadcast_state(mdee->md_obj, EXCEPTION);
 		break;
 	case EX_DHL_DL_RDY:
 		break;
 	case EX_INIT_DONE:
-		if (!MD_IN_DEBUG(mdee->md_obj))
-			mod_timer(&mdee->ex_monitor, jiffies + EX_TIMER_SWINT * HZ);
 		ccci_reset_seq_num(mdee->md_obj);
 		break;
 	case MD_NO_RESPONSE:
 		/* don't broadcast exception state, only dump */
 		CCCI_ERROR_LOG(md_id, KERN, "MD long time no response\n");
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_PENDING_TOO_LONG | MD_STATE_UPDATE);
-		mod_timer(&mdee->ex_monitor, jiffies);
 		break;
 	case MD_WDT:
 		mdee->ee_info_flag |= (MD_EE_FLOW_START | MD_EE_WDT_GET | MD_STATE_UPDATE);
-		mod_timer(&mdee->ex_monitor, jiffies);
+		break;
+	case MD_BOOT_TIMEOUT:
+		mdee_bootup_timeout_handler(mdee);
 		break;
 	default:
 		break;
 	};
 	spin_unlock_irqrestore(&mdee->ctrl_lock, flags);
 
-	if (stage == MD_BOOT_TIMEOUT)
-		mdee_bootup_timeout_handler(mdee);
 }
 
 struct md_ee *mdee_alloc(int md_id, void *md_obj)
@@ -358,13 +341,6 @@ struct md_ee *mdee_alloc(int md_id, void *md_obj)
 	} else if (md_id == MD_SYS3) {
 		ret = mdee_dumper_v1_alloc(mdee);
 	}
-
-	init_timer(&mdee->ex_monitor);
-	mdee->ex_monitor.function = mdee_monitor_func;
-	mdee->ex_monitor.data = (unsigned long)mdee;
-	init_timer(&mdee->ex_monitor2);
-	mdee->ex_monitor2.function = mdee_monitor2_func;
-	mdee->ex_monitor2.data = (unsigned long)mdee;
 
 	spin_lock_init(&mdee->ctrl_lock);
 

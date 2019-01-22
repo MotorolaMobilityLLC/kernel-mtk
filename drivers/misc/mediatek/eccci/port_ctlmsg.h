@@ -19,6 +19,5 @@
 /****************************************************************************************************************/
 /* External API Region called by port ctl object */
 /****************************************************************************************************************/
-extern int mdee_reset(struct ccci_port *port);
 extern int mdee_ctlmsg_handler(struct ccci_port *port, struct sk_buff *skb);
 #endif	/* __PORT_CTLMSG_H__ */

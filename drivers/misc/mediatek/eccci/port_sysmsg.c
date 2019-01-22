@@ -126,7 +126,7 @@ static void sys_msg_handler(struct ccci_port *port, struct sk_buff *skb)
 		break;
 #ifdef CONFIG_MTK_SIM_LOCK_POWER_ON_WRITE_PROTECT
 	case MD_RESET_AP:
-		port_proxy_send_msg_to_user(port->port_proxy, CCCI_MONITOR_CH, 0xFAF51234, 0);
+		port_proxy_send_msg_to_user(port->port_proxy, CCCI_MONITOR_CH, CCCI_MD_MSG_RANDOM_PATTERN, 0);
 		break;
 #endif
 	case MD_SIM_TYPE:
