@@ -528,53 +528,34 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 DEFINE_SPINLOCK(smi_mon_act_cnt_spinlock);
 void smi_larb_mon_act_cnt(void)
 {
-	unsigned long comm_base = get_common_base_addr(), mmsys_base = (unsigned long)mmsys_config_reg, cam2mm;
-	unsigned long larb0_base = get_larb_base_addr(0), larb6_base = get_larb_base_addr(6);
-	unsigned long comm_val = 0, larb0_val = 0, larb6_val = 0;
+	unsigned long comm_base = get_common_base_addr(), larb0_base = get_larb_base_addr(0);
+	unsigned long comm_val = 0, larb0_val = 0;
 
 	spin_lock(&smi_mon_act_cnt_spinlock);
-	cam2mm = M4U_ReadReg32(mmsys_base, 0x100) & 0x100; /* bit 8 */
 	/* DIS_EN */
 	comm_val = M4U_ReadReg32(comm_base, 0x1a0);
 	M4U_WriteReg32(comm_base, 0x1a0, comm_val | 0x0);
 	larb0_val = M4U_ReadReg32(larb0_base, 0x400);
 	M4U_WriteReg32(larb0_base, 0x400, larb0_val | 0x0);
-	if (likely(!cam2mm)) {
-		larb6_val = M4U_ReadReg32(larb6_base, 0x400);
-		M4U_WriteReg32(larb6_base, 0x400, larb6_val | 0x0);
-	}
 	/* MON_ACT_CNT */
 	comm_val = M4U_ReadReg32(comm_base, 0x1c0);
 	larb0_val = M4U_ReadReg32(larb0_base, 0x410);
-	if (likely(!cam2mm))
-		larb6_val = M4U_ReadReg32(larb6_base, 0x410);
 
 	if (((comm_val > larb0_val) && (comm_val - larb0_val > 0x400)) ||
-		((larb0_val > comm_val) && (larb0_val - comm_val > 0x400))) {
-		pr_notice("active count: comm=%#lx, larb0=%#lx, larb6=%#lx(%s)\n",
-			comm_val, larb0_val, larb6_val, cam2mm ? "OFF" : "ON");
-	} else if (cam2mm && (larb0_val > larb6_val)) {
-		pr_notice("active count: comm=%#lx, larb0=%#lx, larb6=%#lx(%s)\n",
-			comm_val, larb0_val, larb6_val, cam2mm ? "OFF" : "ON");
-	}
+		((larb0_val > comm_val) && (larb0_val - comm_val > 0x400)))
+		pr_notice("active count: comm=%#lx, larb0=%#lx\n",
+			comm_val, larb0_val);
 	/* CLR */
 	comm_val = M4U_ReadReg32(comm_base, 0x1a4);
 	M4U_WriteReg32(comm_base, 0x1a4, comm_val | 0x1);
 	larb0_val = M4U_ReadReg32(larb0_base, 0x404);
 	M4U_WriteReg32(larb0_base, 0x404, larb0_val | 0x1);
-	if (likely(!cam2mm)) {
-		larb6_val = M4U_ReadReg32(larb6_base, 0x404);
-		M4U_WriteReg32(larb6_base, 0x404, larb6_val | 0x1);
-	}
 	/* EN */
 	comm_val = M4U_ReadReg32(comm_base, 0x1a0);
 	M4U_WriteReg32(comm_base, 0x1a0, comm_val | 0x1);
 	larb0_val = M4U_ReadReg32(larb0_base, 0x400);
 	M4U_WriteReg32(larb0_base, 0x400, larb0_val | 0x1);
-	if (likely(!cam2mm)) {
-		larb6_val = M4U_ReadReg32(larb6_base, 0x400);
-		M4U_WriteReg32(larb6_base, 0x400, larb6_val | 0x1);
-	}
+
 	spin_unlock(&smi_mon_act_cnt_spinlock);
 }
 #endif
