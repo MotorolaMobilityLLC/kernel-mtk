@@ -182,6 +182,7 @@ typedef struct PVRSRV_BRIDGE_IN_RGXKICKRS_TAG
 	IMG_UINT32 ui32FrameContext;
 	IMG_UINT32 ui32PDumpFlags;
 	IMG_UINT32 ui32ExtJobRef;
+	IMG_DEV_VIRTADDR sRobustnessResetReason;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_RGXKICKRS;
 
 /* Bridge out structure for RGXKickRS */
@@ -219,6 +220,7 @@ typedef struct PVRSRV_BRIDGE_IN_RGXKICKVRDM_TAG
 	IMG_BYTE * psDMCmd;
 	IMG_UINT32 ui32PDumpFlags;
 	IMG_UINT32 ui32ExtJobRef;
+	IMG_DEV_VIRTADDR sRobustnessResetReason;
 } __attribute__((packed)) PVRSRV_BRIDGE_IN_RGXKICKVRDM;
 
 /* Bridge out structure for RGXKickVRDM */

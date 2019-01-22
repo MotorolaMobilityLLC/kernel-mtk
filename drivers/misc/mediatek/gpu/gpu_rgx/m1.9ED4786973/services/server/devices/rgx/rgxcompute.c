@@ -313,7 +313,8 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 								IMG_UINT32					ui32CmdSize,
 								IMG_PBYTE					pui8DMCmd,
 								IMG_UINT32					ui32PDumpFlags,
-								IMG_UINT32					ui32ExtJobRef)
+								IMG_UINT32					ui32ExtJobRef,
+								IMG_DEV_VIRTADDR			sRobustnessResetReason)
 {
 	RGXFWIF_KCCB_CMD		sCmpKCCBCmd;
 	RGX_CCB_CMD_HELPER_DATA	asCmdHelperData[1];
@@ -691,7 +692,8 @@ PVRSRV_ERROR PVRSRVRGXKickCDMKM(RGX_SERVER_COMPUTE_CONTEXT	*psComputeContext,
 	                                ui32PDumpFlags,
 	                                NULL,
 	                                "Compute",
-	                                asCmdHelperData);
+	                                asCmdHelperData,
+									sRobustnessResetReason);
 	if (eError != PVRSRV_OK)
 	{
 		goto fail_cmdinit;

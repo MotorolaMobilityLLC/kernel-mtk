@@ -2474,7 +2474,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 								IMG_PBYTE					pui8FCDMCmd,
 								IMG_UINT32					ui32FrameContextID,
 								IMG_UINT32					ui32PDumpFlags,
-								IMG_UINT32					ui32ExtJobRef)
+								IMG_UINT32					ui32ExtJobRef,
+								IMG_DEV_VIRTADDR			sRobustnessResetReason)
 {
 	RGXFWIF_KCCB_CMD		sRSKCCBCmd;
 	RGX_CCB_CMD_HELPER_DATA	asRSCmdHelperData[1] = {{0}};
@@ -2844,7 +2845,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	                                ui32PDumpFlags,
 	                                NULL,
 	                                "FC",
-	                                asFCCmdHelperData);
+	                                asFCCmdHelperData,
+									sRobustnessResetReason);
 	}
 	else
 	{
@@ -2870,7 +2872,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	                                ui32PDumpFlags,
 	                                NULL,
 	                                "FC",
-	                                asFCCmdHelperData);
+	                                asFCCmdHelperData,
+									sRobustnessResetReason);
 
 	}
 
@@ -2924,7 +2927,8 @@ PVRSRV_ERROR PVRSRVRGXKickRSKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	                                 ui32PDumpFlags,
 	                                 NULL,
 	                                 "RS",
-	                                 asRSCmdHelperData);
+	                                 asRSCmdHelperData,
+									 sRobustnessResetReason);
 	if (eError1 != PVRSRV_OK)
 	{
 		goto PVRSRVRGXKickRSKM_Exit;
@@ -3174,7 +3178,8 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 								 IMG_UINT32					ui32CmdSize,
 								 IMG_PBYTE					pui8DMCmd,
 								 IMG_UINT32					ui32PDumpFlags,
-								 IMG_UINT32					ui32ExtJobRef)
+								 IMG_UINT32					ui32ExtJobRef,
+								 IMG_DEV_VIRTADDR			sRobustnessResetReason)
 {
 	RGXFWIF_KCCB_CMD		sSHKCCBCmd;
 	RGX_CCB_CMD_HELPER_DATA	sCmdHelperData;
@@ -3537,7 +3542,8 @@ PVRSRV_ERROR PVRSRVRGXKickVRDMKM(RGX_SERVER_RAY_CONTEXT		*psRayContext,
 	                                ui32PDumpFlags,
 	                                NULL,
 	                                "SH",
-	                                &sCmdHelperData);
+	                                &sCmdHelperData,
+									sRobustnessResetReason);
 
 	if (eError != PVRSRV_OK)
 	{

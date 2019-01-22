@@ -977,7 +977,8 @@ PVRSRV_ERROR RGXCmdHelperInitCmdCCB(RGX_CLIENT_CCB            *psClientCCB,
                                     IMG_UINT32                ui32PDumpFlags,
                                     RGXFWIF_WORKEST_KICK_DATA *psWorkEstKickData,
                                     IMG_CHAR                  *pszCommandName,
-                                    RGX_CCB_CMD_HELPER_DATA   *psCmdHelperData)
+                                    RGX_CCB_CMD_HELPER_DATA   *psCmdHelperData,
+									IMG_DEV_VIRTADDR		  sRobustnessResetReason)
 {
 	IMG_UINT32 ui32FenceCount;
 	IMG_UINT32 ui32UpdateCount;
@@ -1010,6 +1011,9 @@ PVRSRV_ERROR RGXCmdHelperInitCmdCCB(RGX_CLIENT_CCB            *psClientCCB,
 	psCmdHelperData->ui32CmdSize = ui32CmdSize;
 	psCmdHelperData->pui8DMCmd = pui8DMCmd;
 	psCmdHelperData->eType = eType;
+
+	/* Robustness reset reason address */
+	psCmdHelperData->sRobustnessResetReason = sRobustnessResetReason;
 
 	PDUMPCOMMENTWITHFLAGS(ui32PDumpFlags,
 			"%s Command Server Init on FWCtx %08x", pszCommandName,
@@ -1294,6 +1298,9 @@ PVRSRV_ERROR RGXCmdHelperAcquireCmdCCB(IMG_UINT32 ui32CmdCount,
 				psHeader->sWorkEstKickData.ui64CyclesPrediction = 0;
 			}
 #endif
+
+			psHeader->sRobustnessResetReason = psCmdHelperData->sRobustnessResetReason;
+
 			pui8CmdPtr += sizeof(RGXFWIF_CCB_CMD_HEADER);
 
 			/* The buffer is write-combine, so no special device memory treatment required. */

@@ -453,7 +453,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 								 IMG_UINT32					ui32NumberOfDrawCalls,
 								 IMG_UINT32					ui32NumberOfIndices,
 								 IMG_UINT32					ui32NumberOfMRTs,
-								 IMG_UINT64					ui64DeadlineInus);
+								 IMG_UINT64					ui64DeadlineInus,
+								 IMG_DEV_VIRTADDR			sRobustnessResetReason);
 
 
 PVRSRV_ERROR PVRSRVRGXSetRenderContextPriorityKM(CONNECTION_DATA *psConnection,

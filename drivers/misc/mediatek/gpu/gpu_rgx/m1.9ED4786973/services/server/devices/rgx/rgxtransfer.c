@@ -577,6 +577,8 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 	struct pvr_buffer_sync_append_data *psAppendData = NULL;
 #endif
 
+	IMG_DEV_VIRTADDR sRobustnessResetReason = {0};
+
 #if defined(SUPPORT_NATIVE_FENCE_SYNC) || defined(SUPPORT_FALLBACK_FENCE_SYNC)
 	if (iUpdateTimeline >= 0 && !piUpdateFence)
 	{
@@ -1140,7 +1142,8 @@ PVRSRV_ERROR PVRSRVRGXSubmitTransferKM(RGX_SERVER_TQ_CONTEXT	*psTransferContext,
 		                                ui32PDumpFlags,
 		                                NULL,
 		                                pszCommandName,
-		                                psCmdHelper);
+		                                psCmdHelper,
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			goto fail_initcmd;

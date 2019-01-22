@@ -2981,7 +2981,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 								 IMG_UINT32			ui32NumberOfDrawCalls,
 								 IMG_UINT32			ui32NumberOfIndices,
 								 IMG_UINT32			ui32NumberOfMRTs,
-								 IMG_UINT64			ui64DeadlineInus)
+								 IMG_UINT64			ui64DeadlineInus,
+								 IMG_DEV_VIRTADDR	sRobustnessResetReason)
 {
 #if defined(PVRSRV_USE_BRIDGE_LOCK)
 	/* if the bridge lock is present then we use the singular/global helper structures */
@@ -3985,7 +3986,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										NULL,
 #endif
 		                                "TA",
-		                                pasTACmdHelperData);
+		                                pasTACmdHelperData,
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			CHKPT_DBG((PVR_DBG_ERROR, "%s: Failed, eError=%d, Line", __FUNCTION__, eError));
@@ -4050,7 +4052,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										ui32PDumpFlags,
 										NULL,
 										"3D-PR-Fence",
-										&pas3DCmdHelperData[ui323DCmdCount++]);
+										&pas3DCmdHelperData[ui323DCmdCount++],
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			CHKPT_DBG((PVR_DBG_ERROR, "%s: Failed, eError=%d, Line", __FUNCTION__, eError));
@@ -4092,7 +4095,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										ui32PDumpFlags,
 										NULL,
 										"3D-PR",
-										&pas3DCmdHelperData[ui323DCmdCount++]);
+										&pas3DCmdHelperData[ui323DCmdCount++],
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			CHKPT_DBG((PVR_DBG_ERROR, "%s: Failed, eError=%d, Line", __FUNCTION__, eError));
@@ -4143,7 +4147,8 @@ PVRSRV_ERROR PVRSRVRGXKickTA3DKM(RGX_SERVER_RENDER_CONTEXT	*psRenderContext,
 										NULL,
 #endif
 										"3D",
-										&pas3DCmdHelperData[ui323DCmdCount++]);
+										&pas3DCmdHelperData[ui323DCmdCount++],
+										sRobustnessResetReason);
 		if (eError != PVRSRV_OK)
 		{
 			CHKPT_DBG((PVR_DBG_ERROR, "%s: Failed, eError=%d, Line", __FUNCTION__, eError));

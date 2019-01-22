@@ -2307,7 +2307,8 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 					psRGXKickTA3DIN->ui32NumberOfDrawCalls,
 					psRGXKickTA3DIN->ui32NumberOfIndices,
 					psRGXKickTA3DIN->ui32NumberOfMRTs,
-					psRGXKickTA3DIN->ui64Deadline);
+					psRGXKickTA3DIN->ui64Deadline,
+					psRGXKickTA3DIN->sRobustnessResetReason);
 
 
 
