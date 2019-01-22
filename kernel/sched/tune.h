@@ -21,6 +21,8 @@ extern int stune_task_threshold;
 void show_ste_info(void);
 void show_pwr_info(void);
 
+extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
+
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 
 int schedtune_cpu_boost(int cpu);

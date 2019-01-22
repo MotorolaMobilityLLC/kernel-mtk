@@ -957,6 +957,63 @@ TRACE_EVENT(energy_aware_wake_cpu,
 			)
 );
 
+#ifdef CONFIG_SCHED_TUNE
+TRACE_EVENT(sched_cpufreq_fastpath_request,
+		TP_PROTO(int cpu, unsigned long req_cap, unsigned long util, unsigned long boosted, int rt),
+
+		TP_ARGS(cpu, req_cap, util, boosted, rt),
+
+		TP_STRUCT__entry(
+			__field(int, cpu)
+			__field(unsigned long, req_cap)
+			__field(unsigned long, util)
+			__field(unsigned long, boosted)
+			__field(int, rt)
+			),
+
+		TP_fast_assign(
+			__entry->cpu              = cpu;
+			__entry->req_cap          = req_cap;
+			__entry->util             = util;
+			__entry->boosted          = boosted;
+			__entry->rt               = rt;
+			),
+
+		TP_printk("cpu=%d req_cap=%lu util=%lu boosted=%lu rt=%d",
+			__entry->cpu,
+			__entry->req_cap,
+			__entry->util,
+			__entry->boosted,
+			__entry->rt
+			)
+);
+
+TRACE_EVENT(sched_cpufreq_fastpath,
+		TP_PROTO(int cid, unsigned long req_cap, int freq_new),
+
+		TP_ARGS(cid, req_cap, freq_new),
+
+		TP_STRUCT__entry(
+			__field(int, cid)
+			__field(unsigned long, req_cap)
+			__field(int, freq_new)
+			),
+
+		TP_fast_assign(
+			__entry->cid              = cid;
+			__entry->req_cap          = req_cap;
+			__entry->freq_new         = freq_new;
+			),
+
+		TP_printk("cid=%d req_cap=%lu freq_new=%dKHZ",
+			__entry->cid,
+			__entry->req_cap,
+			__entry->freq_new
+			)
+
+);
+#endif
+
 TRACE_EVENT(sched_heavy_task,
 		TP_PROTO(const char *s),
 		TP_ARGS(s),
