@@ -16,9 +16,6 @@
 
 #include "val_types_public.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* #define __EARLY_PORTING__ */
 
@@ -241,8 +238,5 @@ typedef struct _VAL_INIT_HANDLE {
 	int i4DriverType;
 	int i4VENCLivePhoto;
 } VAL_INIT_HANDLE;
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* #ifndef _VAL_TYPES_PRIVATE_H_ */
