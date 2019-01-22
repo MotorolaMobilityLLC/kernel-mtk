@@ -12,12 +12,13 @@
 #
 
 MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
-# ccflags-y += -Idrivers/misc/mediatek/aee/aed/
+ccflags-y += -Idrivers/misc/mediatek/aee/aed/
 ccflags-y += -Idrivers/misc/mediatek/log_store/
-# LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
+ccflags-y += -Idrivers/misc/mediatek/include\mt-plat
+LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 
 obj-y := bootprof.o common.o mtprof.o
-# obj-y += sched_monitor.o monitor_debug_out.o
+obj-$(CONFIG_MT_SCHED_MONITOR) += sched_monitor.o monitor_debug_out.o
 # obj-$(CONFIG_MT_LOCK_DEBUG) += lockprof.o
 obj-$(CONFIG_MTK_WQ_DEBUG) += mt_wq_debug.o
 mtprof-y += prof_main.o
