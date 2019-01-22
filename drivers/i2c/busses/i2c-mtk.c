@@ -1635,7 +1635,6 @@ static irqreturn_t mt_i2c_irq(int irqno, void *dev_id)
 	else {	/* dump regs info for hw trig i2c if ACK err */
 		if (i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR)) {
 			dev_err(i2c->dev, "addr: %x, transfer ACK error\n", i2c->addr);
-			i2c_dump_info(i2c);
 			mt_i2c_init_hw(i2c);
 		}
 	}
