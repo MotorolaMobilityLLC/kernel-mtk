@@ -217,13 +217,13 @@ static unsigned int ccci_rat_str_to_bitmap(char str[])
 }
 
 static const unsigned int ubin_convert_table_src[] = {
-	(MD_CAP_GSM_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD),
-	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_CDMA2000_AT_MD)
+	(MD_CAP_GSM|MD_CAP_TDD_LTE|MD_CAP_FDD_LTE|MD_CAP_CDMA2000),
+	(MD_CAP_GSM|MD_CAP_WCDMA|MD_CAP_CDMA2000)
 };
 
 static const unsigned int ubin_convert_table_des[] = {
-	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD),
-	(MD_CAP_GSM_AT_MD|MD_CAP_WCDMA_AT_MD|MD_CAP_TDD_LTE_AT_MD|MD_CAP_FDD_LTE_AT_MD|MD_CAP_CDMA2000_AT_MD)
+	(MD_CAP_GSM|MD_CAP_WCDMA|MD_CAP_TDD_LTE|MD_CAP_FDD_LTE|MD_CAP_CDMA2000),
+	(MD_CAP_GSM|MD_CAP_WCDMA|MD_CAP_TDD_LTE|MD_CAP_FDD_LTE|MD_CAP_CDMA2000)
 };
 
 static unsigned int compatible_convert(unsigned int src_rat)
@@ -262,8 +262,6 @@ static unsigned int ap_rat_bitmap_to_md_bitmap(unsigned int rat_cfg)
 	/* CMMA2000 */
 	if (rat_cfg & MD_CAP_CDMA2000)
 		md_rat_cfg |= MD_CAP_CDMA2000_AT_MD;
-
-	md_rat_cfg = compatible_convert(md_rat_cfg);
 
 	return md_rat_cfg;
 }
@@ -1414,6 +1412,7 @@ unsigned int get_wm_bitmap_for_ubin(void)
 
 _get_wm_id_done:
 
+	rat_cfg = compatible_convert(rat_cfg);
 	return ap_rat_bitmap_to_md_bitmap(rat_cfg);
 }
 
@@ -1474,6 +1473,7 @@ int get_legacy_md_type(int md_id)
 	val = (unsigned int)get_modem_support_cap(md_id);
 	if ((val & MD_CAP_ENHANCE) == MD_CAP_ENHANCE) {
 		val &= MD_CAP_MASK;
+		val = compatible_convert(val);
 		for (i = 0; i < (sizeof(legacy_ubin_rat_map)/sizeof(unsigned int)); i++) {
 			if (val == legacy_ubin_rat_map[i])
 				return LEGACY_UBIN_START_ID + i;
