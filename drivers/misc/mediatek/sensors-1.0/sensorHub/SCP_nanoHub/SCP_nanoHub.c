@@ -72,7 +72,7 @@ struct curr_wp_queue {
 };
 
 struct SCP_sensorHub_data {
-	struct work_struct power_up_work;
+	/* struct work_struct power_up_work; */
 
 	struct sensorHub_hw *hw;
 	struct work_struct direct_push_work;
@@ -92,7 +92,9 @@ static struct SensorState mSensorState[ID_SENSOR_MAX_HANDLE + 1];
 static DEFINE_MUTEX(mSensorState_mtx);
 static atomic_t power_status = ATOMIC_INIT(SENSOR_POWER_DOWN);
 static DECLARE_WAIT_QUEUE_HEAD(chre_kthread_wait);
+static DECLARE_WAIT_QUEUE_HEAD(power_reset_wait);
 static uint8_t chre_kthread_wait_condition;
+static uint8_t power_reset_wait_condition;
 static struct SCP_sensorHub_data *obj_data;
 #define SCP_TAG                  "[sensorHub] "
 #define SCP_FUN(f)               pr_debug(SCP_TAG"%s\n", __func__)
@@ -620,7 +622,7 @@ static void SCP_sensorHub_moving_average(SCP_SENSOR_HUB_DATA_P rsp)
 }
 static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 {
-	struct SCP_sensorHub_data *obj = obj_data;
+	/* struct SCP_sensorHub_data *obj = obj_data; */
 #if 0
 	struct data_unit_t *event;
 	int handle = 0;
@@ -661,7 +663,9 @@ static void SCP_sensorHub_notify_cmd(SCP_SENSOR_HUB_DATA_P rsp, int rx_len)
 	case SCP_INIT_DONE:
 		atomic_set(&power_status, SENSOR_POWER_UP);
 		scp_power_monitor_notify(SENSOR_POWER_UP, NULL);
-		schedule_work(&obj->power_up_work);
+		/* schedule_work(&obj->power_up_work); */
+		WRITE_ONCE(power_reset_wait_condition, true);
+		wake_up(&power_reset_wait);
 		break;
 #endif
 	default:
@@ -1814,12 +1818,17 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 	return err;
 }
 
-static void sensorHub_power_up_work(struct work_struct *work)
+static int sensorHub_power_up_work(void *data)
 {
 	int ret = 0;
 	int handle = 0, flush_cnt = 0;
 	struct ConfigCmd cmd;
 	struct SCP_sensorHub_data *obj = obj_data;
+
+
+	for (;;) {
+		wait_event(power_reset_wait, READ_ONCE(power_reset_wait_condition));
+		WRITE_ONCE(power_reset_wait_condition, false);
 
 	/* firstly we should update dram information */
 	/* 1. reset wp queue head and tail */
@@ -1831,7 +1840,8 @@ static void sensorHub_power_up_work(struct work_struct *work)
 	obj->SCP_sensorFIFO->wp = 0;
 	obj->SCP_sensorFIFO->rp = 0;
 	obj->SCP_sensorFIFO->FIFOSize =
-		(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) / SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
+			(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) /
+			SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
 	SCP_LOG("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
 		obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);
 #ifndef CHRE_POWER_RESET_NOTIFY
@@ -1876,7 +1886,9 @@ static int sensorHub_ready_event(struct notifier_block *this, unsigned long even
 	if (event == SCP_EVENT_READY) {
 		atomic_set(&power_status, SENSOR_POWER_UP);
 		scp_power_monitor_notify(SENSOR_POWER_UP, ptr);
-		schedule_work(&obj->power_up_work);
+		/* schedule_work(&obj->power_up_work); */
+		WRITE_ONCE(power_reset_wait_condition, true);
+		wake_up(&power_reset_wait);
 	}
 #endif
 	return NOTIFY_DONE;
@@ -1890,6 +1902,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 	struct SCP_sensorHub_data *obj;
 	int err = 0, index;
 	struct task_struct *task = NULL;
+	struct task_struct *task_power_reset = NULL;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	SCP_FUN();
@@ -1948,7 +1961,12 @@ static int sensorHub_probe(struct platform_device *pdev)
 	/* this call back can get scp power down status */
 	scp_A_register_notify(&sensorHub_ready_notifier);
 	/* this call back can get scp power UP status */
-	INIT_WORK(&obj->power_up_work, sensorHub_power_up_work);
+	/* INIT_WORK(&obj->power_up_work, sensorHub_power_up_work); */
+	task_power_reset = kthread_run(sensorHub_power_up_work, NULL, "scp_power_reset");
+	if (IS_ERR(task_power_reset)) {
+		SCP_PR_ERR("sensorHub_power_up_work create fail!\n");
+		goto exit;
+	}
 
 	SCP_sensorHub_init_flag = 0;
 	SCP_LOG("init done, data_unit_t size: %d, SCP_SENSOR_HUB_DATA size:%d\n",
