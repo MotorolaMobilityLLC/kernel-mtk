@@ -322,7 +322,7 @@ int cmdq_mdp_loop_reset(enum CMDQ_ENG_ENUM engine,
 	if (cmdq_mdp_get_func()->mdpClockIsOn(engine)) {
 		CMDQ_PROF_START(current->pid, __func__);
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->MDP_reset,
-			      MMProfileFlagStart, resetReg, resetStateReg);
+			      MMPROFILE_FLAG_START, resetReg, resetStateReg);
 
 
 		/* loop reset */
@@ -341,7 +341,7 @@ int cmdq_mdp_loop_reset(enum CMDQ_ENG_ENUM engine,
 		}
 
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->MDP_reset,
-			      MMProfileFlagEnd, resetReg, resetStateReg);
+			      MMPROFILE_FLAG_END, resetReg, resetStateReg);
 		CMDQ_PROF_END(current->pid, __func__);
 
 		/* retrun failed if loop failed */
