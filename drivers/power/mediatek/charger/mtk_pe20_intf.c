@@ -467,6 +467,9 @@ int mtk_pe20_check_charger(struct charger_manager *pinfo)
 	int ret = 0;
 	struct mtk_pe20 *pe20 = &pinfo->pe2;
 
+	if (pinfo->enable_pe_2 != true)
+		return -ENOTSUPP;
+
 	if (!pe20->is_enabled) {
 		pr_err("%s: stop, PE+20 is disabled\n",
 			__func__);
