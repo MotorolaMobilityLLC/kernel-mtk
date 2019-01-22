@@ -118,10 +118,10 @@ static void pm_callback_power_off(struct kbase_device *kbdev)
 	mt_gpufreq_disable_CG();
 
 	/* Turn off GPU MTCMOS by sequence */
-	/* mt_gpufreq_disable_MTCMOS(); */
+	mt_gpufreq_disable_MTCMOS();
 
 	/* Turn off GPU PMIC Buck */
-	/* mt_gpufreq_voltage_enable_set(0); */
+	mt_gpufreq_voltage_enable_set(0);
 
 	MFG_DEBUG("[MALI] power off successfully\n");
 
