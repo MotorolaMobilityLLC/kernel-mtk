@@ -1089,7 +1089,7 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	struct ufs_ioctl_ffu_data *idata = NULL;
 	struct ufs_ioctl_ffu_data *idata_user = NULL;
 	int err = 0;
-	u32 attr;
+	u32 attr = 0;
 
 	idata = kzalloc(sizeof(struct ufs_ioctl_ffu_data), GFP_KERNEL);
 	if (!idata) {
@@ -1187,7 +1187,7 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 	int length = 0;
 	void *data_ptr;
 	bool flag;
-	u32 att;
+	u32 att = 0;
 	u8 *desc = NULL;
 	u8 read_desc, read_attr, write_attr, read_flag;
 
