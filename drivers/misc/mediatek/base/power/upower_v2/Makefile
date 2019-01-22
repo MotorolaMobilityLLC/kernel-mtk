@@ -1,5 +1,5 @@
 
-# Copyright (C) 2016 MediaTek Inc.
+# Copyright (C) 2017 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -28,3 +28,4 @@ obj-y += mtk_unified_power_api.o
 obj-$(CONFIG_MACH_MT6759) += mtk_unified_power_mt6759.o
 obj-$(CONFIG_MACH_MT6763) += mtk_unified_power_mt6763.o
 obj-$(CONFIG_MACH_MT6758) += mtk_unified_power_mt6758.o
+obj-$(CONFIG_MACH_MT6739) += mtk_unified_power_mt6739.o
