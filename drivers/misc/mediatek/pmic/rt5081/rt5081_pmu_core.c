@@ -2,10 +2,14 @@
  *  Copyright (C) 2016 Richtek Technology Corp.
  *  cy_huang <cy_huang@richtek.com>
  *
- * This program is free software; you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  */
 
 #include <linux/module.h>
@@ -23,16 +27,25 @@ struct rt5081_pmu_core_data {
 
 static irqreturn_t rt5081_pmu_otp_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_core_data *core_data = data;
+
+	dev_err(core_data->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_vdda_ovp_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_core_data *core_data = data;
+
+	dev_err(core_data->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
 static irqreturn_t rt5081_pmu_vdda_uv_irq_handler(int irq, void *data)
 {
+	struct rt5081_pmu_core_data *core_data = data;
+
+	dev_err(core_data->dev, "%s\n", __func__);
 	return IRQ_HANDLED;
 }
 
