@@ -123,11 +123,8 @@ static size_t scp_A_get_last_log(size_t b_len)
 	}
 
 	/*SCP keep awake */
-	if (scp_awake_lock(SCP_A_ID) == -1) {
+	if (scp_awake_lock(SCP_A_ID) == -1)
 		pr_debug("scp_A_get_last_log: awake scp fail\n");
-		return 0;
-	}
-
 
 	log_start_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_start_addr_last));
 	log_end_idx = readl((void __iomem *)(SCP_TCM + scp_A_log_end_addr_last));
@@ -578,8 +575,11 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 	/*enable logger flag*/
 	if (ret == SCP_IPI_DONE)
 		SCP_A_log_ctl->enable = 1;
-	else
+	else {
+		/*scp logger ipi init fail but still let logger dump*/
+		SCP_A_log_ctl->enable = 1;
 		pr_err("[SCP]logger initial fail, ipi ret=%d\n", ret);
+	}
 
 }
 
