@@ -70,8 +70,13 @@ struct governor_profile {
 };
 
 static struct governor_profile governor_ctrl = {
+#if defined(CONFIG_MACH_MT6759)
+	.vcore_dvs = 0,
+	.ddr_dfs = 0,
+#else
 	.vcore_dvs = SPM_VCORE_DVS_EN,
 	.ddr_dfs = SPM_DDR_DFS_EN,
+#endif
 	.isr_debug = 0,
 
 	.late_init_opp = LATE_INIT_OPP,
