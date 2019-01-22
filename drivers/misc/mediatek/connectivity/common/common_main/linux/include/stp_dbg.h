@@ -26,8 +26,8 @@
 #define STP_DMP_SZ 2048
 #define STP_PKT_NO 2048
 
-#define STP_DBG_LOG_ENTRY_NUM 1024
-#define STP_DBG_LOG_ENTRY_SZ  2048
+#define STP_DBG_LOG_ENTRY_NUM	1024
+#define STP_DBG_LOG_ENTRY_SZ	2048
 
 #else
 
