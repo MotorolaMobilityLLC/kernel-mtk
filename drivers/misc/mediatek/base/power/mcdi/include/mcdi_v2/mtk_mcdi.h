@@ -34,6 +34,7 @@ void mcdi_mbox_write(void __iomem *id, unsigned int val);
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask);
 bool is_cpu_pwr_on_event_pending(void);
 int mcdi_get_mcdi_idle_state(int idx);
+unsigned int mcdi_get_buck_ctrl_mask(void);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
 unsigned int get_pwr_stat_check_map(int type, int idx);
