@@ -75,7 +75,6 @@ unsigned long create_fp_fdrv(int buff_size)
 	msg_body.fdrv_phy_addr = virt_to_phys(temp_addr);
 	msg_body.fdrv_size = buff_size;
 
-	//local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -92,8 +91,6 @@ unsigned long create_fp_fdrv(int buff_size)
 	Invalidate_Dcache_By_Area((unsigned long)message_buff, (unsigned long)message_buff + MESSAGE_SIZE);
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
-
-	//local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_FDRV)) {
@@ -192,10 +189,8 @@ int send_fp_command(unsigned long share_memory_size)
 	wmb();
 
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_send_fp_command, (void *)(&fp_command_entry), 1);
-	put_online_cpus();
 
 #else
 	Flush_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
@@ -213,7 +208,6 @@ int send_fp_command(unsigned long share_memory_size)
 	rmb();
 
 	Invalidate_Dcache_By_Area((unsigned long)fp_buff_addr, fp_buff_addr + FP_BUFF_SIZE);
-	Invalidate_Dcache_By_Area((unsigned long)&fdrv_ent, (unsigned long)&fdrv_ent + sizeof(struct fdrv_call_struct));
 
 	ut_pm_mutex_unlock(&pm_mutex);
 	up(&fdrv_lock);

@@ -83,21 +83,16 @@ void invoke_fastcall(void)
 {
 	int cpu_id = 0;
 	forward_call_flag = GLSCH_LOW;
-	/* get_online_cpus(); */
 
 #if 1
 
 	add_work_entry(INVOKE_FASTCALL, NULL);
 
 #else
-
 	cpu_id = get_current_cpuid();
-
 	smp_call_function_single(cpu_id, secondary_invoke_fastcall, NULL, 1);
-
 #endif
 
-	/* put_online_cpus(); */
 }
 
 static long register_shared_param_buf(struct service_handler *handler)
@@ -142,7 +137,6 @@ static long register_shared_param_buf(struct service_handler *handler)
 	msg_body.vdrv_phy_addr = virt_to_phys(handler->param_buf);
 	msg_body.vdrv_size = handler->size;
 
-	//local_irq_save(irq_flag);
 
 	/* Notify the T_OS that there is ctl_buffer to be created. */
 	memcpy(message_buff, &msg_head, sizeof(struct message_head));
@@ -159,7 +153,6 @@ static long register_shared_param_buf(struct service_handler *handler)
 	memcpy(&msg_head, message_buff, sizeof(struct message_head));
 	memcpy(&msg_ack, message_buff + sizeof(struct message_head), sizeof(struct ack_fast_call_struct));
 
-	//local_irq_restore(irq_flag);
 
 	/* Check the response from T_OS. */
 	if ((msg_head.message_type == FAST_CALL_TYPE) && (msg_head.child_type == FAST_ACK_CREAT_VDRV)) {
@@ -212,7 +205,6 @@ int __reetime_handle(struct service_handler *handler)
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
 
 	n_ack_t_invoke_drv(&smc_type, 0, 0);
 	while (smc_type == 1) {
@@ -255,10 +247,8 @@ static int reetime_handle(struct service_handler *handler)
 	wmb();
 
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_reetime_handle, (void *)(&reetime_handle_entry), 1);
-	put_online_cpus();
 #else
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)reetime_bdrv_ent);
 	if (retVal != 0) {
@@ -318,7 +308,6 @@ int __vfs_handle(struct service_handler *handler) /*! invoke handler */
 	Flush_Dcache_By_Area((unsigned long)handler->param_buf, (unsigned long)handler->param_buf + handler->size);
 
 	set_ack_vdrv_cmd(handler->sysno);
-	teei_vfs_flag = 0;
 
 	n_ack_t_invoke_drv(&smc_type, 0, 0);
 
@@ -362,10 +351,8 @@ static int vfs_handle(struct service_handler *handler)
 	/* with a wmb() */
 	wmb();
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_vfs_handle, (void *)(&vfs_handle_entry), 1);
-	put_online_cpus();
 #else
 	Flush_Dcache_By_Area((unsigned long)vfs_bdrv_ent, (unsigned long)vfs_bdrv_ent + sizeof(struct bdrv_call_struct));
 	retVal = add_work_entry(BDRV_CALL, (unsigned long)vfs_bdrv_ent);

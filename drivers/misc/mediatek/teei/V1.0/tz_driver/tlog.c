@@ -17,10 +17,13 @@
 #include <linux/semaphore.h>
 #include <linux/irq.h>
 #include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include "sched_status.h"
 #include "tlog.h"
 #include "teei_id.h"
+
+#define MESSAGE_LENGTH	0x1000
 
 /********************************************
                 LOG IRQ handler
@@ -135,6 +138,7 @@ int tlog_print(unsigned long log_start)
 		pr_info("[UT_LOG] %s\n", tlog_line);
 		tlog_line_len = 0;
 		tlog_line[0] = 0;
+		msleep(1);
 	} else {
 		tlog_line[tlog_line_len] = entry->context;
 		tlog_line[tlog_line_len + 1] = 0;
@@ -287,6 +291,7 @@ int utgate_log_print(unsigned long log_start)
 		pr_info("[uTgate LOG] %s\n", utgate_log_line);
 		utgate_log_len = 0;
 		utgate_log_line[0] = 0;
+		msleep(1);
 	} else {
 		utgate_log_line[utgate_log_len] = *((char *)log_start);
 		utgate_log_line[utgate_log_len + 1] = 0;
@@ -327,6 +332,7 @@ int utgate_log_worker(void *p)
 	}
 
 	while (!kthread_should_stop()) {
+		Invalidate_Dcache_By_Area(utgate_log_buff, utgate_log_buff + MESSAGE_LENGTH * 64);
 		if (((struct utgate_log_head *)utgate_log_buff)->write_pos == utgate_log_pos) {
 			schedule_timeout_interruptible(1 * HZ);
 			continue;

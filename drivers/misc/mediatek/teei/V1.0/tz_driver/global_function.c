@@ -43,10 +43,8 @@ void nt_sched_t_call(void)
 {
 	int cpu_id = 0;
 #if 0
-	get_online_cpus();
 	cpu_id = get_current_cpuid();
 	smp_call_function_single(cpu_id, secondary_nt_sched_t, NULL, 1);
-	put_online_cpus();
 #else
 	int retVal = 0;
 
