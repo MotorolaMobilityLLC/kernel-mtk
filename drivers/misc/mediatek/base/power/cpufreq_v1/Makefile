@@ -13,5 +13,6 @@
 
 export CPUFREQ_ROOT_DIR ?= $(srctree)/drivers/misc/mediatek/base/power/cpufreq_v1
 
-#obj-$(CONFIG_MTK_PMIC_CHIP_MT6335) += src/
+ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-y += src/
+endif
