@@ -143,7 +143,7 @@ endif
 endif
 
 obj-$(CONFIG_MTK_COMBO) += connectivity/
-#obj-$(CONFIG_MTK_BTIF) += btif/
+obj-$(CONFIG_MTK_BTIF) += btif/
 #obj-$(CONFIG_MTK_CONN_MD) += conn_md/
 
 #obj-$(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) += gcpu/
