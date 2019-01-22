@@ -48,9 +48,7 @@ enum {
 	REG_UFS_VERSION				= 0x08,
 	REG_CONTROLLER_DEV_ID			= 0x10,
 	REG_CONTROLLER_PROD_ID			= 0x14,
-#ifdef CONFIG_MTK_UFS_BOOTING
 	REG_AHIT				= 0x18,
-#endif
 	REG_INTERRUPT_STATUS			= 0x20,
 	REG_INTERRUPT_ENABLE			= 0x24,
 	REG_CONTROLLER_STATUS			= 0x30,
@@ -66,9 +64,7 @@ enum {
 	REG_UTP_TRANSFER_REQ_DOOR_BELL		= 0x58,
 	REG_UTP_TRANSFER_REQ_LIST_CLEAR		= 0x5C,
 	REG_UTP_TRANSFER_REQ_LIST_RUN_STOP	= 0x60,
-#ifdef CONFIG_MTK_UFS_BOOTING
 	REG_UTP_TRANSFER_REQ_LIST_COMP_NOTIFY	= 0x64,
-#endif
 	REG_UTP_TASK_REQ_LIST_BASE_L		= 0x70,
 	REG_UTP_TASK_REQ_LIST_BASE_H		= 0x74,
 	REG_UTP_TASK_REQ_DOOR_BELL		= 0x78,
@@ -78,7 +74,8 @@ enum {
 	REG_UIC_COMMAND_ARG_1			= 0x94,
 	REG_UIC_COMMAND_ARG_2			= 0x98,
 	REG_UIC_COMMAND_ARG_3			= 0x9C,
-#ifdef CONFIG_MTK_UFS_BOOTING
+
+	/* MTK vendor-specific registers */
 	REG_UMABA				= 0xB0, /* not used */
 	REG_UMABAU				= 0xB4, /* not used */
 	REG_UMAOMAX				= 0xB8, /* not used */
@@ -97,7 +94,6 @@ enum {
 	REG_MTK_AUTO_DEEP_STALL			= 0x2210,
 	REG_UFS_MTK_HW_VER			= 0x2240,
 	REG_UFS_MTK_OCS_ERR_STATUS		= 0x2244,
-#endif
 };
 
 /* Controller capability masks */
@@ -117,9 +113,8 @@ enum {
 enum {
 	UFSHCI_VERSION_10 = 0x00010000,
 	UFSHCI_VERSION_11 = 0x00010100,
-#ifdef CONFIG_MTK_UFS_BOOTING
-	UFSHCI_VERSION_20 = 0x00000200, /* MTK fix: for UFS 2.0 capability */
-#endif
+	/* MTK FIX: for UFS 2.0 capability */
+	UFSHCI_VERSION_20 = 0x00000200,
 };
 
 /*
@@ -227,18 +222,6 @@ enum {
 /* UICCMD - UIC Command */
 #define COMMAND_OPCODE_MASK		0xFF
 #define GEN_SELECTOR_INDEX_MASK		0xFFFF
-
-#ifdef CONFIG_MTK_UFS_BOOTING
-/* CDACFG */
-#define CDARXALIGN (0x1<<29)
-#define CDAEN (0x1<<28)
-#define CDAEOM (0x1<<16)
-
-/* CDASTA */
-#define FLAG_CDARES (0x3 << 20)
-#define FLAG_CDABUSY (0x1 << 19)
-#define FLAG_CDASTA (0x1 << 18)
-#endif
 
 #define MIB_ATTRIBUTE_MASK		UFS_MASK(0xFFFF, 16)
 #define RESET_LEVEL			0xFF
