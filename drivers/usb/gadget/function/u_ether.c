@@ -61,47 +61,6 @@
 static struct workqueue_struct	*uether_wq;
 static struct workqueue_struct	*uether_wq1;
 
-struct eth_dev {
-	/* lock is held while accessing port_usb
-	 */
-	spinlock_t		lock;
-	struct gether		*port_usb;
-
-	struct net_device	*net;
-	struct usb_gadget	*gadget;
-
-	spinlock_t		req_lock;	/* guard {rx,tx}_reqs */
-	struct list_head	tx_reqs, rx_reqs;
-	atomic_t		tx_qlen;
-/* Minimum number of TX USB request queued to UDC */
-#define TX_REQ_THRESHOLD	5
-	int			no_tx_req_used;
-	int			tx_skb_hold_count;
-	u32			tx_req_bufsize;
-
-	struct sk_buff_head	rx_frames;
-
-	unsigned		qmult;
-
-	unsigned		header_len;
-	unsigned		ul_max_pkts_per_xfer;
-	unsigned		dl_max_pkts_per_xfer;
-	struct sk_buff		*(*wrap)(struct gether *, struct sk_buff *skb);
-	int			(*unwrap)(struct gether *,
-						struct sk_buff *skb,
-						struct sk_buff_head *list);
-
-	struct work_struct	work;
-	struct work_struct	rx_work;
-
-	unsigned long		todo;
-#define	WORK_RX_MEMORY		0
-
-	bool			zlp;
-	u8			host_mac[ETH_ALEN];
-	u8			dev_mac[ETH_ALEN];
-};
-
 /*-------------------------------------------------------------------------*/
 
 #define RX_EXTRA	20	/* bytes guarding against rx overflows */
