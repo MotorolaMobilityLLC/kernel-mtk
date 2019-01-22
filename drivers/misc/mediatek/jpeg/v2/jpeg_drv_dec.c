@@ -507,7 +507,7 @@ unsigned int jpeg_drv_dec_set_dma_group(unsigned int McuInGroup, unsigned int Gr
 
 
 
-kal_uint32 jpeg_drv_dec_set_sampling_factor(unsigned int compNum, unsigned int u4Y_H, unsigned int u4Y_V,
+unsigned int jpeg_drv_dec_set_sampling_factor(unsigned int compNum, unsigned int u4Y_H, unsigned int u4Y_V,
 				      unsigned int u4U_H, unsigned int u4U_V, unsigned int u4V_H,
 				      unsigned int u4V_V)
 {

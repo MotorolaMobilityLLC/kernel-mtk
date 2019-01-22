@@ -124,7 +124,7 @@
 /* #define FPGA_VERSION */
 #include "jpeg_drv_reg.h"
 
-#ifdef JPEG_DRV_MT6799
+#ifdef SMI_CG_SUPPORT
 #include "smi_public.h"
 #endif
 
@@ -269,7 +269,7 @@ void jpeg_drv_dec_power_on(void)
 		if (clk_prepare_enable(gJpegClk.clk_venc_jpgDec))
 			JPEG_ERR("enable clk_venc_jpgDec fail!");
 	#else
-		#ifdef JPEG_DRV_MT6799
+		#ifdef SMI_CG_SUPPORT
 			smi_bus_enable(SMI_LARB_VENCSYS, "JPEG");
 			if (clk_prepare_enable(gJpegClk.clk_venc_jpgDec))
 				JPEG_ERR("enable clk_venc_jpgDec fail!");
@@ -304,7 +304,7 @@ void jpeg_drv_dec_power_off(void)
 		clk_disable_unprepare(gJpegClk.clk_venc_jpgDec);
 		mtk_smi_larb_clock_off(3, true);
 	#else
-		#ifdef JPEG_DRV_MT6799
+		#ifdef SMI_CG_SUPPORT
 			clk_disable_unprepare(gJpegClk.clk_venc_jpgDec);
 			smi_bus_disable(SMI_LARB_VENCSYS, "JPEG");
 		#else
@@ -336,7 +336,7 @@ void jpeg_drv_enc_power_on(void)
 		if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 			JPEG_ERR("enable clk_venc_jpgEnc fail!");
 	#else
-		#ifdef JPEG_DRV_MT6799
+		#ifdef SMI_CG_SUPPORT
 			smi_bus_enable(SMI_LARB_VENCSYS, "JPEG");
 			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 				JPEG_ERR("enable clk_venc_jpgDec fail!");
@@ -377,7 +377,7 @@ void jpeg_drv_enc_power_off(void)
 		clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
 		mtk_smi_larb_clock_off(3, true);
 	#else
-		#ifdef JPEG_DRV_MT6799
+		#ifdef SMI_CG_SUPPORT
 			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
 			smi_bus_disable(SMI_LARB_VENCSYS, "JPEG");
 		#else
@@ -914,6 +914,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			JPEG_WRN("Permission Denied! This process can not access encoder");
 			return -EFAULT;
 		}
+
 		if (enc_status == 0 || enc_ready == 0) {
 			JPEG_WRN("Encoder status is unavailable, HOW COULD THIS HAPPEN ??");
 			*pStatus = 0;
@@ -928,6 +929,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 			JPEG_WRN("Permission Denied! This process can not access encoder");
 			return -EFAULT;
 		}
+
 		if (enc_status == 0 || enc_ready == 0) {
 			JPEG_WRN("Encoder status is unavailable, HOW COULD THIS HAPPEN ??");
 			*pStatus = 0;
@@ -1263,6 +1265,18 @@ static ssize_t jpeg_read(struct file *file, char __user *data, size_t len, loff_
 
 static int jpeg_release(struct inode *inode, struct file *file)
 {
+	if (enc_status != 0) {
+		JPEG_WRN("Error! Enable error handling for jpeg encoder");
+		jpeg_drv_enc_deinit();
+	}
+
+#ifdef JPEG_DEC_DRIVER
+	if (dec_status != 0) {
+		JPEG_WRN("Error! Enable error handling for jpeg decoder");
+		jpeg_drv_dec_deinit();
+	}
+#endif
+
 	if (file->private_data != NULL) {
 		kfree(file->private_data);
 		file->private_data = NULL;
@@ -1354,7 +1368,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		#ifdef JPEG_PM_DOMAIN_ENABLE
 			pjenc_dev = pdev;
 		#else
-			#ifndef JPEG_DRV_MT6799
+			#ifndef SMI_CG_SUPPORT
 				/* venc-mtcmos lead to disp power scpsys SCP_SYS_DISP */
 				gJpegClk.clk_scp_sys_mm0 = of_clk_get_by_name(node, "MT_CG_SCP_SYS_MM0");
 				if (IS_ERR(gJpegClk.clk_scp_sys_mm0))
@@ -1422,6 +1436,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	proc_create("mtk_jpeg", 0, NULL, &jpeg_fops);
 #endif
 }
+
 	spin_lock_init(&jpeg_enc_lock);
 
 	/* initial codec, register codec ISR */
@@ -1485,9 +1500,12 @@ static void jpeg_shutdown(struct platform_device *pdev)
 static int jpeg_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
 #ifdef JPEG_DEC_DRIVER
-	jpeg_drv_dec_deinit();
+	if (dec_status != 0)
+		jpeg_drv_dec_deinit();
 #endif
-	jpeg_drv_enc_deinit();
+
+	if (enc_status != 0)
+		jpeg_drv_enc_deinit();
 	return 0;
 }
 
