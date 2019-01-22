@@ -174,6 +174,7 @@ bool is_fg_disable(void)
 
 
 static int Enable_BATDRV_LOG = 3;	/* Todo: charging.h use it, should removed */
+static int loglevel_count;
 
 static bool is_init_done;
 
@@ -2844,7 +2845,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		ret_msg->fgd_data_len += sizeof(iavg_valid);
 		memcpy(ret_msg->fgd_data, &iavg_valid, sizeof(iavg_valid));
-		bm_err("[fg_res] FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID = %d\n", iavg_valid);
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID = %d\n", iavg_valid);
 	}
 	break;
 
@@ -4142,7 +4143,10 @@ static DEVICE_ATTR(disable_nafg, 0664, show_FG_nafg_disable, store_FG_nafg_disab
 static ssize_t show_FG_daemon_log_level(struct device *dev, struct device_attribute *attr,
 					char *buf)
 {
-	bm_err("[FG] show FG_daemon_log_level : %d\n", gFG_daemon_log_level);
+	loglevel_count++;
+	if (loglevel_count % 5 == 0)
+		bm_err("[FG] show FG_daemon_log_level : %d\n", gFG_daemon_log_level);
+
 	return sprintf(buf, "%d\n", gFG_daemon_log_level);
 }
 
@@ -4942,7 +4946,7 @@ MODULE_DEVICE_TABLE(of, mtk_bat_of_match);
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
-	bm_err("******** battery_suspend!! iavg=%d ********\n", FG_status.iavg_intr_flag);
+	bm_debug("******** battery_suspend!! iavg=%d ********\n", FG_status.iavg_intr_flag);
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 		if (gauge_dev->fg_hw_info.iavg_lt > 0)
@@ -4953,7 +4957,7 @@ static int battery_suspend(struct platform_device *dev, pm_message_t state)
 
 static int battery_resume(struct platform_device *dev)
 {
-	bm_err("******** battery_resume!! iavg=%d ********\n", FG_status.iavg_intr_flag);
+	bm_debug("******** battery_resume!! iavg=%d ********\n", FG_status.iavg_intr_flag);
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000 && FG_status.iavg_intr_flag == 1) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 		if (gauge_dev->fg_hw_info.iavg_lt > 0)
