@@ -198,6 +198,30 @@ static int rsz_check_params(struct RSZ_CONFIG_STRUCT *rsz_config)
 	return 0;
 }
 
+static int disp_rsz_set_color_format(enum RSZ_COLOR_FORMAT fmt)
+{
+	u32 reg_val = 0;
+
+	switch (fmt) {
+	case ARGB8101010:
+		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x0);
+		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x0);
+		break;
+	case RGB999:
+		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x1);
+		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x0);
+		break;
+	case RGB888:
+		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x1);
+		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x1);
+		break;
+	default:
+		DDPMSG("unknown resize color format\n");
+		break;
+	}
+	return reg_val;
+}
+
 static int rsz_config(enum DISP_MODULE_ENUM module,
 		      struct disp_ddp_path_config *pconfig, void *qhandle)
 {
@@ -253,24 +277,8 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_CONTROL_1, reg_val);
 	DDPDBG("%s:CONTROL_1:0x%x\n", __func__, reg_val);
 
-	reg_val = 0;
-	switch (fmt) {
-	case ARGB8101010:
-		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x0);
-		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x0);
-		break;
-	case RGB999:
-		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x1);
-		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x0);
-		break;
-	case RGB888:
-		reg_val = REG_FLD_VAL(FLD_RSZ_POWER_SAVING, 0x1);
-		reg_val |= REG_FLD_VAL(FLD_RSZ_RGB_BIT_MODE, 0x1);
-		break;
-	default:
-		DDPMSG("unknown resize color format\n");
-		break;
-	}
+	reg_val = disp_rsz_set_color_format(fmt);
+
 	DISP_REG_SET(qhandle, rsz_base + DISP_REG_RSZ_CONTROL_2, reg_val);
 	DDPDBG("%s:CONTROL_2:0x%x\n", __func__, reg_val);
 
