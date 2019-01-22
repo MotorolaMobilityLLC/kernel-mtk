@@ -561,35 +561,18 @@ VOID p2pFsmRunEventChannelRequest(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsg
 
 		DBGLOG(P2P, TRACE, "p2pFsmRunEventChannelRequest\n");
 
-		/* Special case of time renewing for same frequency. */
-		if ((prP2pFsmInfo->eCurrentState == P2P_STATE_CHNL_ON_HAND) &&
-		    (prChnlReqInfo->ucReqChnlNum == prP2pChnlReqMsg->rChannelInfo.ucChannelNum) &&
-		    (prChnlReqInfo->eBand == prP2pChnlReqMsg->rChannelInfo.eBand) &&
-		    (prChnlReqInfo->eChnlSco == prP2pChnlReqMsg->eChnlSco)) {
+		/* Make sure the state is in IDLE state. */
+		p2pFsmRunEventAbort(prAdapter, prP2pFsmInfo);
 
-			ASSERT(prChnlReqInfo->fgIsChannelRequested == TRUE);
-			ASSERT(prChnlReqInfo->eChannelReqType == CHANNEL_REQ_TYPE_REMAIN_ON_CHANNEL);
+		/* Cookie can only be assign after abort.(for indication) */
+		prChnlReqInfo->u8Cookie = prP2pChnlReqMsg->u8Cookie;
+		prChnlReqInfo->ucReqChnlNum = prP2pChnlReqMsg->rChannelInfo.ucChannelNum;
+		prChnlReqInfo->eBand = prP2pChnlReqMsg->rChannelInfo.eBand;
+		prChnlReqInfo->eChnlSco = prP2pChnlReqMsg->eChnlSco;
+		prChnlReqInfo->u4MaxInterval = prP2pChnlReqMsg->u4Duration;
+		prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_REMAIN_ON_CHANNEL;
 
-			prChnlReqInfo->u8Cookie = prP2pChnlReqMsg->u8Cookie;
-			prChnlReqInfo->u4MaxInterval = prP2pChnlReqMsg->u4Duration;
-
-			/* Re-enter the state. */
-			eNextState = P2P_STATE_CHNL_ON_HAND;
-		} else {
-
-			/* Make sure the state is in IDLE state. */
-			p2pFsmRunEventAbort(prAdapter, prP2pFsmInfo);
-
-			/* Cookie can only be assign after abort.(for indication) */
-			prChnlReqInfo->u8Cookie = prP2pChnlReqMsg->u8Cookie;
-			prChnlReqInfo->ucReqChnlNum = prP2pChnlReqMsg->rChannelInfo.ucChannelNum;
-			prChnlReqInfo->eBand = prP2pChnlReqMsg->rChannelInfo.eBand;
-			prChnlReqInfo->eChnlSco = prP2pChnlReqMsg->eChnlSco;
-			prChnlReqInfo->u4MaxInterval = prP2pChnlReqMsg->u4Duration;
-			prChnlReqInfo->eChannelReqType = CHANNEL_REQ_TYPE_REMAIN_ON_CHANNEL;
-
-			eNextState = P2P_STATE_REQING_CHANNEL;
-		}
+		eNextState = P2P_STATE_REQING_CHANNEL;
 
 		p2pFsmStateTransition(prAdapter, prP2pFsmInfo, eNextState);
 
