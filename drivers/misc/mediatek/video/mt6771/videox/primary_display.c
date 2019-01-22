@@ -723,12 +723,14 @@ static void add_layer_info_for_debug(void)
 		int full_layer_height = primary_display_get_height();
 		int full_layer_size = full_layer_width * full_layer_height * 4;
 
-		layer_size_low = do_div(layer_size_high, full_layer_size);
-		layer_size_low *= 10;
-		do_div(layer_size_low, full_layer_size);
-
-		snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", layer_size_high,
-			layer_size_low);
+		if (full_layer_size != 0) {
+			layer_size_low = do_div(layer_size_high, full_layer_size);
+			layer_size_low *= 10;
+			do_div(layer_size_low, full_layer_size);
+			snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ", layer_size_high,
+				layer_size_low);
+		} else
+			snprintf(p, sizeof(disp_tmp), "Lsize:unknown ");
 		j = strlen(p);
 		p = p + j;
 		layer_size_high = 0;
