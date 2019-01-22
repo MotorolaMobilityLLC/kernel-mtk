@@ -1690,7 +1690,8 @@ static signed int OWE_ReadReg(struct OWE_REG_IO_STRUCT *pRegIo)
 	if (copy_from_user(pData, (void *)pRegIo->pData, (pRegIo->Count) * sizeof(struct OWE_REG_STRUCT)) == 0) {
 		for (i = 0; i < pRegIo->Count; i++) {
 			if ((ISP_OWE_BASE + pData->Addr >= ISP_OWE_BASE)
-			    && (ISP_OWE_BASE + pData->Addr < (ISP_OWE_BASE + OWE_REG_RANGE))) {
+			    && (ISP_OWE_BASE + pData->Addr < (ISP_OWE_BASE + OWE_REG_RANGE))
+			    && ((pData->Addr & 0x3) == 0)) {
 				pData->Val = OWE_RD32(ISP_OWE_BASE + pData->Addr);
 			} else {
 				LOG_ERR("Wrong address(0x%p)", (ISP_OWE_BASE + pData->Addr));
@@ -1747,7 +1748,8 @@ static signed int OWE_WriteRegToHw(struct OWE_REG_STRUCT *pReg, unsigned int Cou
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (((ISP_OWE_BASE + pReg[i].Addr) < (ISP_OWE_BASE + OWE_REG_RANGE))) {
+		if (((ISP_OWE_BASE + pReg[i].Addr) < (ISP_OWE_BASE + OWE_REG_RANGE))
+			&& ((pReg[i].Addr & 0x3) == 0)) {
 			OWE_WR32(ISP_OWE_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			LOG_ERR("wrong address(0x%lx)\n",
@@ -3607,7 +3609,8 @@ static ssize_t owe_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= OWE_BASE_HW) && (addr <= OWE_DMA_RDY_STATUS_HW)) {
+		if ((addr >= OWE_BASE_HW) && (addr <= OWE_DMA_RDY_STATUS_HW)
+			&& ((addr & 0x3) == 0)) {
 			LOG_INF("Write Request - addr:0x%x, value:0x%x\n", addr, val);
 			OWE_WR32((ISP_OWE_BASE + (addr - OWE_BASE_HW)), val);
 		} else {
@@ -3632,7 +3635,8 @@ static ssize_t owe_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= OWE_BASE_HW) && (addr <= OWE_DMA_RDY_STATUS_HW)) {
+		if ((addr >= OWE_BASE_HW) && (addr <= OWE_DMA_RDY_STATUS_HW)
+			&& ((addr & 0x3) == 0)) {
 			val = OWE_RD32((ISP_OWE_BASE + (addr - OWE_BASE_HW)));
 			LOG_INF("Read Request - addr:0x%x,value:0x%x\n", addr, val);
 		} else {

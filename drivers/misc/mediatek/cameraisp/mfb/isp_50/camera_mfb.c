@@ -1738,7 +1738,8 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 		/* pData++; */
 		/*  */
 		if ((ISP_MFB_BASE + reg.Addr >= ISP_MFB_BASE)
-		    && (reg.Addr < MFB_REG_RANGE)) {
+		    && (reg.Addr < MFB_REG_RANGE)
+			&& ((reg.Addr & 0x3) == 0)) {
 			reg.Val = MFB_RD32(ISP_MFB_BASE + reg.Addr);
 		} else {
 			log_err("Wrong address(0x%p), MFB_BASE(0x%p), Addr(0x%lx)",
@@ -1791,7 +1792,7 @@ static signed int MFB_WriteRegToHw(MFB_REG_STRUCT *pReg, unsigned int Count)
 				(unsigned int) (pReg[i].Val));
 		}
 
-		if (pReg[i].Addr < MFB_REG_RANGE) {
+		if ((pReg[i].Addr < MFB_REG_RANGE) && ((pReg[i].Addr & 0x3) == 0)) {
 			MFB_WR32(ISP_MFB_BASE + pReg[i].Addr, pReg[i].Val);
 		} else {
 			log_err("wrong address(0x%p), MFB_BASE(0x%p), Addr(0x%lx)\n",
@@ -3652,7 +3653,8 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)) {
+		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)
+			&& ((addr & 0x3) == 0)) {
 			log_inf("Write Request - addr:0x%x, value:0x%x\n", addr, val);
 			MFB_WR32((ISP_MFB_BASE + (addr - MFB_BASE_HW)), val);
 		} else {
@@ -3677,7 +3679,8 @@ static ssize_t mfb_reg_write(struct file *file, const char __user *buffer, size_
 			}
 		}
 
-		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)) {
+		if ((addr >= MFB_BASE_HW) && (addr <= CRSP_CROP_Y_HW)
+			&& ((addr & 0x3) == 0)) {
 			val = MFB_RD32((ISP_MFB_BASE + (addr - MFB_BASE_HW)));
 			log_inf("Read Request - addr:0x%x,value:0x%x\n", addr, val);
 		} else {
