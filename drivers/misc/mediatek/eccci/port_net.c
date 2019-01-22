@@ -447,7 +447,7 @@ static int port_net_recv_skb(struct ccci_port *port, struct sk_buff *skb)
 
 static void port_net_md_state_notice(struct ccci_port *port, MD_STATE state)
 {
-	int dir = state & 0x10000000;
+	int dir = (state & (1 << 31)) >> 31;
 	int qno = (state & 0x00FF0000) >> 16;
 
 	state = state & 0x0000FFFF;
