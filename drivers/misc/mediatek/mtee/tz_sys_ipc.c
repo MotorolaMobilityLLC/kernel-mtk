@@ -28,7 +28,7 @@
 TZ_RESULT KREE_ServMutexCreate(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 {
 	struct mutex *mutex;
-	unsigned long *out;
+	u64 *out;
 
 	mutex = kmalloc(sizeof(struct mutex), GFP_KERNEL);
 	if (mutex == NULL)
@@ -36,8 +36,8 @@ TZ_RESULT KREE_ServMutexCreate(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 
 	mutex_init(mutex);
 
-	out = (unsigned long *) &param[0];
-	*out = (unsigned long) mutex;
+	out = (u64 *) &param[0];
+	*out = (u64)(unsigned long)mutex;
 
 	return TZ_RESULT_SUCCESS;
 }
@@ -123,7 +123,7 @@ TZ_RESULT KREE_ServMutexIslock(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 TZ_RESULT KREE_ServSemaphoreCreate(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 {
 	struct semaphore *sema;
-	unsigned long *out;
+	u64 *out;
 	int *val;
 
 	val = (int *)&param[0];
@@ -134,8 +134,8 @@ TZ_RESULT KREE_ServSemaphoreCreate(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 
 	sema_init(sema, *val);
 
-	out = (unsigned long *) &param[0];
-	*out = (unsigned long) sema;
+	out = (u64 *) &param[0];
+	*out = (u64)(unsigned long)sema;
 
 	return TZ_RESULT_SUCCESS;
 }
@@ -186,13 +186,13 @@ TZ_RESULT KREE_ServSemaphoreDownTimeout(u32 op,
 					u8 param[REE_SERVICE_BUFFER_SIZE])
 {
 	struct semaphore *sema;
-	unsigned long *in;
+	u64 *in;
 	long jiffies;
 	int *out;
 	int ret;
 
-	in = (unsigned long *) &param[0];
-	sema = (struct semaphore *)in[0];
+	in = (u64 *) &param[0];
+	sema = (struct semaphore *)(unsigned long)in[0];
 	jiffies = (long)in[1];
 
 	ret = down_timeout(sema, jiffies);
