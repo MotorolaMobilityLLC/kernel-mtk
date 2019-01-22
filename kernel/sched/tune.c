@@ -893,6 +893,22 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
 	}
 
+	if (!cap_min) {
+		ct = allocated_group[idx];
+		if (ct) {
+			rcu_read_lock();
+			ct->capacity_min = 0;
+			/* Update CPU capacity_min */
+			schedtune_boostgroup_update_capacity_min(ct->idx, ct->capacity_min);
+			rcu_read_unlock();
+
+			/* top-app */
+			if (ct->idx == 3)
+				met_tag_oneshot(0, "sched_boost_top_capacity_min",
+						ct->capacity_min);
+		}
+	}
+
 	/* bypass change boost */
 	if (ctl_no == 4)
 		return 0;
@@ -1252,6 +1268,20 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
 		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
+	}
+
+	if (!cap_min) {
+		rcu_read_lock();
+		st->capacity_min = 0;
+
+		/* Update CPU capacity_min */
+		schedtune_boostgroup_update_capacity_min(st->idx, st->capacity_min);
+		rcu_read_unlock();
+
+		/* top-app */
+		if (st->idx == 3)
+			met_tag_oneshot(0, "sched_boost_user_top_capacity_min",
+					st->capacity_min);
 	}
 
 	/* bypass change boost */
