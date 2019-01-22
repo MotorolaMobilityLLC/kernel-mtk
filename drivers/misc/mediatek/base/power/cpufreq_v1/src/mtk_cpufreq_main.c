@@ -1589,10 +1589,6 @@ static int __init _mt_cpufreq_tbl_init(void)
 	struct opp_tbl_info *opp_tbl_info;
 	struct cpufreq_frequency_table *table;
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	return 0;
-#endif
-
 	/* Prepare OPP table for EEM */
 	for_each_cpu_dvfs(j, p) {
 		opp_tbl_info = &opp_tbls[j][CPU_LV_TO_OPP_IDX(lv)];
@@ -1626,20 +1622,20 @@ static int __init _mt_cpufreq_pdrv_init(void)
 	unsigned int cluster_num;
 	int i;
 
-#ifdef CONFIG_HYBRID_CPU_DVFS
-	return 0;
-#endif
-
 	FUNC_ENTER(FUNC_LV_MODULE);
 
 	mt_cpufreq_dts_map();
 
 	cluster_num = (unsigned int)arch_get_nr_clusters();
+
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	cluster_num = 3;
+#endif
+
 	for (i = 0; i < cluster_num; i++) {
 		arch_get_cluster_cpus(&cpu_mask, i);
 		cpu_dvfs[i].cpu_id = cpumask_first(&cpu_mask);
-		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n",
-	       i, cpu_dvfs[i].cpu_id);
+		cpufreq_dbg("cluster_id = %d, cluster_cpuid = %d\n", i, cpu_dvfs[i].cpu_id);
 	}
 
 #ifdef CONFIG_HYBRID_CPU_DVFS	/* before platform_driver_register */
