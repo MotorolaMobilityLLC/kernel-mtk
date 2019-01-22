@@ -72,8 +72,5 @@ int mtk_calculate_impedance_formula(int pcm_offset, int aux_diff);
 
 void SetAnalogSuspend(bool bEnable);
 void OpenTrimBufferHardware(bool bEnable);
-
-bool hasHpDepopHw(void);
-bool hasHp33Ohm(void);
 #endif
 
