@@ -761,12 +761,16 @@ DEVICE_ATTR(wdt_reset, 0200, NULL, scp_wdt_trigger);
 static ssize_t scp_reset_trigger(struct device *dev
 		, struct device_attribute *attr, const char *buf, size_t count)
 {
+	unsigned int value = 0;
+
 	pr_debug("scp_reset_trigger: %s\n", buf);
-
 	/* scp reset by cmdm set flag =1 */
-	scp_reset_by_cmd = 1;
-	scp_wdt_reset(SCP_A_ID);
-
+	if (kstrtouint(buf, 10, &value) == 0) {
+		if (value == 666) {
+			scp_reset_by_cmd = 1;
+			scp_wdt_reset(SCP_A_ID);
+		}
+	}
 	return count;
 }
 
