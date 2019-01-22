@@ -276,6 +276,9 @@ void check_cm_mgr_status(unsigned int freq_idx, unsigned int cluster)
 		for_each_online_cpu(cpu) {
 			int tmp;
 
+			if (cpu >= CM_MGR_CPU_COUNT)
+				break;
+
 			tmp = mt_cpufreq_get_cur_phy_freq_no_lock(cpu / 4) / 100000;
 			sched_get_percpu_load2(cpu, 1, &rel_load, &abs_load);
 			cm_mgr_abs_load += abs_load * tmp;
@@ -817,7 +820,6 @@ static struct device cm_mgr_device = {
 static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 					 const char __user *buffer, size_t count, loff_t *pos)
 {
-
 	int ret;
 	char *buf = (char *) __get_free_page(GFP_USER);
 	char cmd[64];
@@ -863,22 +865,22 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_loop_count")) {
 		cm_mgr_loop_count = val_1;
 	} else if (!strcmp(cmd, "cpu_power_ratio_up")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			cpu_power_ratio_up[val_1] = val_2;
 	} else if (!strcmp(cmd, "cpu_power_ratio_down")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			cpu_power_ratio_down[val_1] = val_2;
 	} else if (!strcmp(cmd, "vcore_power_ratio_up")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			vcore_power_ratio_up[val_1] = val_2;
 	} else if (!strcmp(cmd, "vcore_power_ratio_down")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			vcore_power_ratio_down[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_up_adb")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			debounce_times_up_adb[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_down_adb")) {
-		if (val_1 >= 0 && val_1 <= CM_MGR_EMI_OPP)
+		if (val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			debounce_times_down_adb[val_1] = val_2;
 	} else if (!strcmp(cmd, "debounce_times_reset_adb")) {
 		debounce_times_reset_adb = val_1;
@@ -915,7 +917,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize vcore_power_gain_lp4 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&vcore_power_gain_lp4, fw->data, copy_size);
 
@@ -925,7 +927,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize vcore_power_gain_lp3 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&vcore_power_gain_lp3, fw->data + offset, copy_size);
 
@@ -936,7 +938,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_up_low_1 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_up_low_1, fw->data + offset, copy_size);
 
@@ -946,7 +948,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_down_low_1 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_down_low_1, fw->data + offset, copy_size);
 
@@ -956,7 +958,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_up_high_1 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_up_high_1, fw->data + offset, copy_size);
 
@@ -966,7 +968,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_down_high_1 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_down_high_1, fw->data + offset, copy_size);
 
@@ -976,7 +978,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_up_low_2 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_up_low_2, fw->data + offset, copy_size);
 
@@ -986,7 +988,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_down_low_2 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_down_low_2, fw->data + offset, copy_size);
 
@@ -996,7 +998,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_up_high_2 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_up_high_2, fw->data + offset, copy_size);
 
@@ -1006,7 +1008,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize cpu_power_gain_down_high_2 0x%x, 0x%x",
 					(int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&cpu_power_gain_down_high_2, fw->data + offset, copy_size);
 #endif
@@ -1016,18 +1018,22 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 			pr_info("offset 0x%x, copy_size 0x%x\n", offset, copy_size);
 			if (fw->size < (copy_size + offset)) {
 				pr_info("oversize _v2f_all 0x%x, 0x%x", (int)fw->size, copy_size + offset);
-				goto out;
+				goto out_fw;
 			}
 			memcpy(&_v2f_all, fw->data + offset, copy_size);
 
 			release_firmware(fw);
+			fw = NULL;
 		}
+out_fw:
+		if (fw)
+			release_firmware(fw);
 	}
 
 out:
 	free_page((unsigned long)buf);
 
-	return (ret < 0) ? ret : count;
+	return count;
 }
 MODULE_FIRMWARE(CPU_FW_FILE);
 

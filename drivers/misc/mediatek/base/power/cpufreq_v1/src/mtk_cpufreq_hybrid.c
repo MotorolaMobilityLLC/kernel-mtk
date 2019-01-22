@@ -775,7 +775,8 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 	trace_sched_update(cluster, csram_read(OFFS_SCHED_S + (cluster * 4)));
 
 #if defined(CONFIG_MACH_MT6763) && defined(CONFIG_MTK_CM_MGR)
-	check_cm_mgr_status(freq_idx, cluster);
+	if (cluster < 2)
+		check_cm_mgr_status(freq_idx, cluster);
 #endif
 
 	return 0;
