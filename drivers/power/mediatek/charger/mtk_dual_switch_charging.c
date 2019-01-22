@@ -460,7 +460,7 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 
 		if ((mtk_pe20_get_is_enable(info) && mtk_pe20_get_is_connect(info))
 		    || (mtk_pe_get_is_enable(info) && mtk_pe_get_is_connect(info))
-		    || mtk_pe_get_is_connect(info)) {
+		    || mtk_pe40_get_is_connect(info)) {
 			if (info->chg2_data.input_current_limit == 0 ||
 			    info->chg2_data.charging_current_limit == 0) {
 				chg2_enable = false;
@@ -784,7 +784,6 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 	struct dual_switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg2, ichg2_min;
 	bool chg_en = false;
-	int ret;
 	bool chg2_chip_enabled = false;
 
 	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
@@ -792,11 +791,7 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 	chr_err("charger_dev_event %ld\n", event);
 
 	if (event == CHARGER_DEV_NOTIFY_EOC) {
-		ret = charger_dev_is_enabled(info->chg2_dev, &chg_en);
-		if (ret < 0) {
-			chr_err("is_enabled callback is not registered\n");
-			return NOTIFY_DONE;
-		}
+		charger_dev_is_enabled(info->chg2_dev, &chg_en);
 
 		if (!chg_en || !chg2_chip_enabled) {
 			swchgalg->state = CHR_BATFULL;
@@ -857,8 +852,8 @@ int dual_charger_dev_event(struct notifier_block *nb, unsigned long event, void 
 		return NOTIFY_DONE;
 	}
 
-		if (info->chg1_dev->is_polling_mode == false)
-			_wake_up_charger(info);
+	if (info->chg1_dev->is_polling_mode == false)
+		_wake_up_charger(info);
 
 	return NOTIFY_DONE;
 }
