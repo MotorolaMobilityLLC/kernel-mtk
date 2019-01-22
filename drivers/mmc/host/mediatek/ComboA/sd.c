@@ -1848,15 +1848,18 @@ static unsigned int msdc_cmdq_command_start(struct msdc_host *host,
 
 	tmo = jiffies + timeout;
 
+	spin_unlock(&host->lock);
 	while (sdc_is_cmd_busy()) {
 		if (time_after(jiffies, tmo) && sdc_is_cmd_busy()) {
 			ERR_MSG("[%s]: XXX cmd_busy timeout: before CMD<%d>",
 				__func__, cmd->opcode);
+			spin_lock(&host->lock);
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			msdc_reset_hw(host->id);
 			return cmd->error;
 		}
 	}
+	spin_lock(&host->lock);
 
 	host->cmd = cmd;
 	host->cmd_rsp = RESP_R1;
@@ -1875,8 +1878,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 	unsigned long timeout)
 {
 	void __iomem *base = host->base;
-	u32 intsts;
-	u32 resp;
+	u32 intsts, resp;
 	unsigned long tmo;
 	u32 cmdsts = MSDC_INT_CMDRDY | MSDC_INT_RSPCRCERR | MSDC_INT_CMDTMO;
 
@@ -1884,6 +1886,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 
 	/* polling */
 	tmo = jiffies + timeout;
+	spin_unlock(&host->lock);
 	while (1) {
 		intsts = MSDC_READ32(MSDC_INT);
 		if ((intsts & cmdsts) != 0) {
@@ -1896,12 +1899,14 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 		if (time_after(jiffies, tmo) && ((MSDC_READ32(MSDC_INT) & cmdsts) == 0)) {
 			pr_notice("[%s]: msdc%d CMD<%d> polling_for_completion timeout ARG<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
+			spin_lock(&host->lock);
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			host->sw_timeout++;
 			msdc_dump_info(host->id);
 			goto out;
 		}
 	}
+	spin_lock(&host->lock);
 
 	/* command interrupts */
 	if (intsts & cmdsts) {
