@@ -2092,6 +2092,12 @@ static ssize_t atm_sspm_write(struct file *file, const char __user *buffer, size
 		} else if (t_enabled == 1) {
 			int ret = 0;
 
+			/* Fix the problem that mMc mMg not updated when trip point is not reached. */
+			MINIMUM_CPU_POWER = MINIMUM_CPU_POWERS[0];
+			MAXIMUM_CPU_POWER = MAXIMUM_CPU_POWERS[0];
+			MINIMUM_GPU_POWER = MINIMUM_GPU_POWERS[0];
+			MAXIMUM_GPU_POWER = MAXIMUM_GPU_POWERS[0];
+
 			ret = atm_update_atm_param_to_sspm();
 			if (ret == -2) {
 				tscpu_printk("%s atm in sspm not supported!\n", __func__);
