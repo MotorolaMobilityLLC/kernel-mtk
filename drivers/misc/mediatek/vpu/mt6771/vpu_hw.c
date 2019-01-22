@@ -49,6 +49,11 @@
 #include "met_vpusys_events.h"
 #endif
 
+/* #define ENABLE_PMQOS */
+#ifdef ENABLE_PMQOS
+#include "helio-dvfsrc-opp.h"
+#endif
+
 #define CMD_WAIT_TIME_MS    (3 * 1000)
 #define OPP_WAIT_TIME_MS    (30)
 #define PWR_KEEP_TIME_MS    (500)
@@ -179,11 +184,10 @@ static uint8_t max_dsp_freq;
 
 /* dvfs */
 static struct vpu_dvfs_opps opps;
-/* #define ENABLE_PMQOS */
 #ifdef ENABLE_PMQOS
-static struct pm_qos_request vpu_qos_request;
+static struct pm_qos_request vpu_qos_bw_request;
+static struct pm_qos_request vpu_qos_vcore_request;
 #endif
-static struct mutex pmqos_mutex;
 
 /* jtag */
 static bool is_jtag_enabled;
@@ -458,7 +462,19 @@ static bool vpu_change_opp(int core, int type)
 		wait_to_do_change_vcore_opp();
 		LOG_INF("[vpu_%d] to do vcore opp change", core);
 		vpu_trace_begin("vcore:request");
+		#ifdef ENABLE_PMQOS
+		switch (opps.vcore.index) {
+		case 0:
+			pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_0);
+			break;
+		case 1:
+		default:
+			pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_1);
+			break;
+		}
+		#else
 		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
+		#endif
 		vpu_trace_end();
 		CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
 		LOG_INF("[vpu_%d] cgopp vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
@@ -647,14 +663,25 @@ static int vpu_enable_regulator_and_clock(int core)
 	LOG_DBG("[vpu_%d] en_rc wait for changing vcore opp", core);
 	wait_to_do_change_vcore_opp();
 	LOG_DBG("[vpu_%d] en_rc to do vcore opp change", core);
-#if 1
 	vpu_trace_begin("vcore:request");
+#ifdef ENABLE_PMQOS
+	switch (opps.vcore.index) {
+	case 0:
+		pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_0);
+		break;
+	case 1:
+	default:
+		pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_1);
+		break;
+	}
+#else
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, opps.vcore.index);
+#endif
 	vpu_trace_end();
 	CHECK_RET("fail to request vcore, step=%d\n", opps.vcore.index);
 	LOG_INF("[vpu_%d] result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 	LOG_DBG("[vpu_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
-#endif
+
 #define ENABLE_VPU_MTCMOS(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -827,7 +854,11 @@ static int vpu_disable_regulator_and_clock(int core)
 
 #undef DISABLE_VPU_MTCMOS
 #undef DISABLE_VPU_CLK
+#ifdef ENABLE_PMQOS
+	pm_qos_update_request(&vpu_qos_vcore_request, VCORE_OPP_UNREQ);
+#else
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_UNREQUEST);
+#endif
 	CHECK_RET("fail to unrequest vcore!\n");
 	LOG_DBG("[vpu_%d] disable result vcore=%d, ddr=%d\n", core, vcorefs_get_curr_vcore(), vcorefs_get_curr_ddr());
 out:
@@ -1334,7 +1365,6 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		mutex_init(&opp_mutex);
 		init_waitqueue_head(&waitq_change_vcore);
 		init_waitqueue_head(&waitq_do_core_executing);
-		mutex_init(&pmqos_mutex);
 		max_vcore_opp = 0;
 		max_dsp_freq = 0;
 		vpu_dev = device;
@@ -1486,7 +1516,8 @@ int vpu_init_hw(int core, struct vpu_device *device)
 
 		/* pmqos  */
 		#ifdef ENABLE_PMQOS
-		pm_qos_add_request(&vpu_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		pm_qos_add_request(&vpu_qos_bw_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		pm_qos_add_request(&vpu_qos_vcore_request, PM_QOS_VCORE_OPP, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
 		#endif
 
 	}
@@ -1525,6 +1556,11 @@ int vpu_uninit_hw(void)
 			vpu_service_cores[i].work_buf = NULL;
 		}
 	}
+	/* pmqos  */
+	#ifdef ENABLE_PMQOS
+	pm_qos_remove_request(&vpu_qos_bw_request);
+	pm_qos_remove_request(&vpu_qos_vcore_request);
+	#endif
 
 	vpu_unprepare_regulator_and_clock();
 
@@ -2058,7 +2094,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	/* 2. trigger interrupt */
 	#ifdef ENABLE_PMQOS
 	/* pmqos, 10880 Mbytes per second */
-	pm_qos_update_request(&vpu_qos_request, 10880);
+	pm_qos_update_request(&vpu_qos_bw_request, request->power_param.bw);/*max 10880*/
 	#endif
 	vpu_trace_begin("dsp:running");
 	LOG_DBG("[vpu] vpu_hw_enque_request running... ");
@@ -2072,7 +2108,7 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	ret = wait_command(core);
 	#ifdef ENABLE_PMQOS
 	/* pmqos, release request after d2d done */
-	pm_qos_update_request(&vpu_qos_request, 0);
+	pm_qos_update_request(&vpu_qos_bw_request, PM_QOS_DEFAULT_VALUE);
 	#endif
 	vpu_trace_end();
 	#if defined(VPU_MET_READY)
