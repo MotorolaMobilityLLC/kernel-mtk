@@ -498,6 +498,12 @@ int governor_debug_store(const char *buf)
 			gvrctrl->i_hwpath = !!val;
 #if defined(CONFIG_MACH_MT6771)
 			dvfsrc_hw_policy_mask(gvrctrl->i_hwpath);
+		} else if (!strcmp(cmd, "lt_opp_feature")) {
+			vcorefs_set_lt_opp_feature(!!val);
+		} else if (!strcmp(cmd, "lt_opp_enter_temp")) {
+			vcorefs_set_lt_opp_enter_temp(val);
+		} else if (!strcmp(cmd, "lt_opp_leave_temp")) {
+			vcorefs_set_lt_opp_leave_temp(val);
 #endif
 		} else {
 			r = -EPERM;
