@@ -2136,9 +2136,49 @@ static ssize_t state_show(struct device *pdev, struct device_attribute *attr,
 		state = "CONFIGURED";
 	else if (dev->connected)
 		state = "CONNECTED";
+	pr_warn("[USB]%s, state:%s\n", __func__, state);
 	spin_unlock_irqrestore(&cdev->lock, flags);
 out:
 	return sprintf(buf, "%s\n", state);
+}
+
+#define LOG_BUG_SZ 2048
+static char log_buf[LOG_BUG_SZ];
+static int log_buf_idx;
+static ssize_t
+log_show(struct device *pdev, struct device_attribute *attr, char *buf)
+{
+	struct android_dev *dev = dev_get_drvdata(pdev);
+
+	mutex_lock(&dev->mutex);
+
+	memcpy(buf, log_buf, log_buf_idx);
+
+	mutex_unlock(&dev->mutex);
+	return log_buf_idx;
+}
+
+static ssize_t
+log_store(struct device *pdev, struct device_attribute *attr,
+			       const char *buff, size_t size)
+{
+	struct android_dev *dev = dev_get_drvdata(pdev);
+	char buf[256], n;
+
+	mutex_lock(&dev->mutex);
+
+	n = strlcpy(buf, buff, sizeof(buf));
+
+	if ((log_buf_idx + (n + 1)) > LOG_BUG_SZ)
+		log_buf_idx = 0;
+
+	memcpy(log_buf + log_buf_idx, buf, n);
+	log_buf_idx += n;
+	log_buf[log_buf_idx++] = ' ';
+	pr_warn("[USB]%s, <%s>, n:%d, log_buf_idx:%d\n", __func__, buf, n, log_buf_idx);
+
+	mutex_unlock(&dev->mutex);
+	return size;
 }
 
 #define DESCRIPTOR_ATTR(field, format_string)				\
@@ -2193,6 +2233,8 @@ static DEVICE_ATTR(functions, S_IRUGO | S_IWUSR, functions_show,
 						 functions_store);
 static DEVICE_ATTR(enable, S_IRUGO | S_IWUSR, enable_show, enable_store);
 static DEVICE_ATTR(state, S_IRUGO, state_show, NULL);
+static DEVICE_ATTR(log, S_IRUGO | S_IWUSR, log_show,
+						 log_store);
 
 static struct device_attribute *android_usb_attributes[] = {
 	&dev_attr_idVendor,
@@ -2207,6 +2249,7 @@ static struct device_attribute *android_usb_attributes[] = {
 	&dev_attr_functions,
 	&dev_attr_enable,
 	&dev_attr_state,
+	&dev_attr_log,
 	NULL
 };
 
