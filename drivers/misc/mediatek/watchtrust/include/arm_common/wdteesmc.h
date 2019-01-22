@@ -13,9 +13,11 @@
 
 #ifndef __WDTEESMC_H__
 #define __WDTEESMC_H__
+#include <linux/version.h>
 /*
  ** wd tz_driver smc cmd
  */
+
 #define TEESMC_RV(func_num) \
 	((1 << 31) | \
 	 ((0) << 30) | \
