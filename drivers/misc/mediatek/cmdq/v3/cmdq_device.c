@@ -359,10 +359,15 @@ void cmdq_dev_test_dts_correctness(void)
 
 void cmdq_dev_get_dts_setting(struct cmdq_dts_setting *dts_setting)
 {
-	of_property_read_u32(gCmdqDev.pDev->of_node,
+	s32 ret = -1;
+
+	ret = of_property_read_u32(gCmdqDev.pDev->of_node,
 		"max_prefetch_cnt", &dts_setting->prefetch_thread_count);
-	of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
-		dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
+	if (ret == 0) {
+		/* read prefetch array base on count */
+		of_property_read_u32_array(gCmdqDev.pDev->of_node, "prefetch_size",
+			dts_setting->prefetch_size, dts_setting->prefetch_thread_count);
+	}
 	of_property_read_u32(gCmdqDev.pDev->of_node,
 		"ctl_int0", &dts_setting->ctl_int0);
 }
