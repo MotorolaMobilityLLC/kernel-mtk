@@ -16,6 +16,7 @@
 #include <linux/export.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/math64.h>
 
 #include "mtk_spower_data.h"
 #include "mtk_common_static_power.h"
@@ -37,14 +38,14 @@ static sptbl_t sptab[MTK_SPOWER_MAX];
 
 int interpolate(int x1, int x2, int x3, int y1, int y2)
 {
-	long long temp;
-
 	if (x1 == x2)
 		return (y1+y2)/2;
 
-	/* translated type to long long to avoid overflow */
-	temp = (long long)(x3 - x1) * (long long)(y2 - y1) / (long long)(x2 - x1) + y1;
-	return temp;
+#if defined(__LP64__) || defined(_LP64)
+	return (long long)(x3 - x1) * (long long)(y2 - y1) / (long long)(x2 - x1) + y1;
+#else
+	return div64_s64((long long)(x3 - x1) * (long long)(y2 - y1), (long long)(x2 - x1)) + y1;
+#endif
 }
 
 int interpolate_2d(sptbl_t *tab, int v1, int v2, int t1, int t2, int voltage, int degree)
