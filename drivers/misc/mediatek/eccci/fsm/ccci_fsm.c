@@ -307,8 +307,6 @@ success:
 	ctl->last_state = ctl->curr_state;
 	ctl->curr_state = CCCI_FSM_READY;
 	ccci_md_post_start(ctl->md_id);
-	/*wakeup fsm poller*/
-	wake_up(&ctl->poller_ctl.status_rx_wq);
 	fsm_finish_command(ctl, cmd, 1);
 	wake_unlock(&ctl->wakelock);
 	wake_lock_timeout(&ctl->wakelock, 10 * HZ);
@@ -339,6 +337,9 @@ static void fsm_routine_stop(struct ccci_fsm_ctl *ctl, struct ccci_fsm_command *
 		fsm_check_ee_done(&ctl->ee_ctl, EE_DONE_TIMEOUT);
 	}
 	fsm_broadcast_state(ctl, WAITING_TO_STOP); /* to block port's write operation, must after EE flow done */
+	/*reset fsm poller*/
+	ctl->poller_ctl.poller_state = FSM_POLLER_RECEIVED_RESPONSE;
+	wake_up(&ctl->poller_ctl.status_rx_wq);
 	/* 4. hardware stop */
 	ccci_md_stop(ctl->md_id, cmd->flag & FSM_CMD_FLAG_FLIGHT_MODE ? MD_FLIGHT_MODE_ENTER : MD_FLIGHT_MODE_NONE);
 	/* 5. clear event queue */
