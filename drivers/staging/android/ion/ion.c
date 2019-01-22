@@ -915,14 +915,12 @@ void ion_client_destroy(struct ion_client *client)
 		struct ion_sec_buffer_info *pbufferinfo = (struct ion_sec_buffer_info *)buffer->priv_virt;
 
 		mutex_lock(&client->lock);
-		IONMSG("warning: release handle @ client destroy:\n");
-		IONMSG("hdl=%p, buf=%p, ref=%d, sz=%zu, kmap=%d, client %s, disp %s, dbg %s, comm %s, sec hdl 0x%lx\n",
+		IONMSG("warn destroy: hdl=%p, buf=%p, ref=%d, sz=%zu, kmp=%d, client %s, disp %s, dbg %s, sec 0x%lx\n",
 		       handle, handle->buffer, atomic_read(&handle->buffer->ref.refcount),
 				handle->buffer->size,  handle->buffer->kmap_cnt,
 				client->name ? client->name : NULL,
 				client->display_name ? client->display_name : NULL,
 				client->dbg_name ? client->dbg_name : NULL,
-				current->comm,
 				(unsigned long)(pbufferinfo->priv_phys));
 		ion_handle_destroy(&handle->ref);
 		mutex_unlock(&client->lock);
