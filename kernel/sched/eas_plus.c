@@ -202,6 +202,7 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 {
 	int target_max_cap = INT_MAX;
 	int target_cpu = task_cpu(p);
+	int prev_cpu;
 	int i, cpu;
 	bool is_tiny = false;
 	int nrg_diff = 0;
@@ -254,9 +255,31 @@ static int select_energy_cpu_plus(struct task_struct *p, int target, bool prefer
 	/* Find cpu with sufficient capacity */
 	target_cpu = select_max_spare_capacity_cpu(p, best_cpu);
 
+	prev_cpu = task_cpu(p);
 	/* no need energy calculation if the same domain */
-	if (is_intra_domain(task_cpu(p), target_cpu) && target_cpu != l_plus_cpu)
+	if (is_intra_domain(prev_cpu, target_cpu) && target_cpu != l_plus_cpu) {
+
+		if (idle_cpu(prev_cpu) && idle_cpu(target_cpu)) {
+			struct rq *prev_rq, *target_rq;
+			int prev_idle_idx;
+			int target_idle_idx;
+
+			prev_rq = cpu_rq(prev_cpu);
+			target_rq = cpu_rq(target_cpu);
+
+			rcu_read_lock();
+			prev_idle_idx = idle_get_state_idx(prev_rq);
+			target_idle_idx = idle_get_state_idx(target_rq);
+			rcu_read_unlock();
+
+			/* favoring shallowest idle states */
+			if ((prev_idle_idx <= target_idle_idx) ||
+					target_idle_idx == -1)
+				target_cpu = prev_cpu;
+		}
+
 		return target_cpu;
+	}
 
 	if (task_util(p) <= 0)
 		return target_cpu;
