@@ -159,7 +159,7 @@ static int mt6370_verify_level(int level)
 static int mt6370_enable(void)
 {
 	int ret = 0;
-	flashlight_mode_t mode = FLASHLIGHT_MODE_TORCH;
+	enum flashlight_mode mode = FLASHLIGHT_MODE_TORCH;
 
 	if (!flashlight_dev_ch1 || !flashlight_dev_ch2) {
 		pr_err("Failed to enable since no flashlight device.\n");

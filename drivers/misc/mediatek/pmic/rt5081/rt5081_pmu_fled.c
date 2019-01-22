@@ -35,7 +35,7 @@ enum {
 };
 
 struct rt5081_pmu_fled_data {
-	rt_fled_dev_t base;
+	struct rt_fled_dev base;
 	struct rt5081_pmu_chip *chip;
 	struct device *dev;
 	struct platform_device *rt_flash_dev;
@@ -278,7 +278,7 @@ static int rt5081_fled_resume(struct rt_fled_dev *info)
 }
 
 static int rt5081_fled_set_mode(struct rt_fled_dev *info,
-					flashlight_mode_t mode)
+					enum flashlight_mode mode)
 {
 	struct rt5081_pmu_fled_data *fi = (struct rt5081_pmu_fled_data *)info;
 	int ret = 0;
@@ -558,32 +558,39 @@ static int rt5081_fled_is_ready(struct rt_fled_dev *info)
 }
 
 static struct rt_fled_hal rt5081_fled_hal = {
-	.fled_init = rt5081_fled_init,
-	.fled_suspend = rt5081_fled_suspend,
-	.fled_resume = rt5081_fled_resume,
-	.fled_set_mode = rt5081_fled_set_mode,
-	.fled_get_mode = rt5081_fled_get_mode,
-	.fled_strobe = rt5081_fled_strobe,
-	.fled_get_is_ready = rt5081_fled_is_ready,
-	.fled_troch_current_list = rt5081_fled_torch_current_list,
-	.fled_strobe_current_list = rt5081_fled_strobe_current_list,
-	.fled_timeout_level_list = rt5081_fled_timeout_level_list,
-	/* .fled_lv_protection_list = rt5081_fled_lv_protection_list, */
-	.fled_strobe_timeout_list = rt5081_fled_strobe_timeout_list,
+	.rt_hal_fled_init = rt5081_fled_init,
+	.rt_hal_fled_suspend = rt5081_fled_suspend,
+	.rt_hal_fled_resume = rt5081_fled_resume,
+	.rt_hal_fled_set_mode = rt5081_fled_set_mode,
+	.rt_hal_fled_get_mode = rt5081_fled_get_mode,
+	.rt_hal_fled_strobe = rt5081_fled_strobe,
+	.rt_hal_fled_get_is_ready = rt5081_fled_is_ready,
+	.rt_hal_fled_torch_current_list = rt5081_fled_torch_current_list,
+	.rt_hal_fled_strobe_current_list = rt5081_fled_strobe_current_list,
+	.rt_hal_fled_timeout_level_list = rt5081_fled_timeout_level_list,
+	/* .rt_hal_fled_lv_protection_list = rt5081_fled_lv_protection_list, */
+	.rt_hal_fled_strobe_timeout_list = rt5081_fled_strobe_timeout_list,
 	/* method to set */
-	.fled_set_torch_current_sel = rt5081_fled_set_torch_current_sel,
-	.fled_set_strobe_current_sel = rt5081_fled_set_strobe_current_sel,
-	.fled_set_timeout_level_sel = rt5081_fled_set_timeout_level_sel,
-
-	.fled_set_strobe_timeout_sel = rt5081_fled_set_strobe_timeout_sel,
+	.rt_hal_fled_set_torch_current_sel =
+					rt5081_fled_set_torch_current_sel,
+	.rt_hal_fled_set_strobe_current_sel =
+					rt5081_fled_set_strobe_current_sel,
+	.rt_hal_fled_set_timeout_level_sel =
+					rt5081_fled_set_timeout_level_sel,
+	.rt_hal_fled_set_strobe_timeout_sel =
+					rt5081_fled_set_strobe_timeout_sel,
 
 	/* method to get */
-	.fled_get_torch_current_sel = rt5081_fled_get_torch_current_sel,
-	.fled_get_strobe_current_sel = rt5081_fled_get_strobe_current_sel,
-	.fled_get_timeout_level_sel = rt5081_fled_get_timeout_level_sel,
-	.fled_get_strobe_timeout_sel = rt5081_fled_get_strobe_timeout_sel,
+	.rt_hal_fled_get_torch_current_sel =
+					rt5081_fled_get_torch_current_sel,
+	.rt_hal_fled_get_strobe_current_sel =
+					rt5081_fled_get_strobe_current_sel,
+	.rt_hal_fled_get_timeout_level_sel =
+					rt5081_fled_get_timeout_level_sel,
+	.rt_hal_fled_get_strobe_timeout_sel =
+					rt5081_fled_get_strobe_timeout_sel,
 	/* PM shutdown, optional */
-	.fled_shutdown = rt5081_fled_shutdown,
+	.rt_hal_fled_shutdown = rt5081_fled_shutdown,
 };
 
 #define RT5081_FLED_TOR_CUR0	RT5081_PMU_REG_FLED1TORCTRL
