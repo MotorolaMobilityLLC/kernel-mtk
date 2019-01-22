@@ -279,6 +279,7 @@ struct fsg_common {
 	int			cmnd_size;
 	u8			cmnd[MAX_COMMAND_SIZE];
 
+	unsigned int		nluns;
 	unsigned int		lun;
 	struct fsg_lun		*luns[FSG_MAX_LUNS];
 	struct fsg_lun		*curlun;
@@ -316,8 +317,11 @@ struct fsg_common {
 	 * hexadecimal digits) and NUL byte
 	 */
 	char inquiry_string[8 + 16 + 4 + 1];
+    /* LUN name for sysfs purpose */
+	char name[FSG_MAX_LUNS][LUN_NAME_LEN];
 
 	struct kref		ref;
+	u8 bicr;
 };
 
 struct fsg_dev {
@@ -873,7 +877,7 @@ static int do_write(struct fsg_common *common)
 		if (bh->state == BUF_STATE_EMPTY && !get_some_more)
 			break;			/* We stopped early */
 		if (bh->state == BUF_STATE_FULL) {
-			smp_rmb();
+			smp_rmb();	/*avoid context switch and race condiction*/
 			common->next_buffhd_to_drain = bh->next;
 			bh->state = BUF_STATE_EMPTY;
 
@@ -964,7 +968,8 @@ static int do_synchronize_cache(struct fsg_common *common)
 	int		rc;
 
 	/* We ignore the requested LBA and write out all file's
-	 * dirty data buffers. */
+	 * dirty data buffers.
+	 */
 	rc = fsg_lun_fsync_sub(curlun);
 	if (rc)
 		curlun->sense_data = SS_WRITE_ERROR;
@@ -1479,7 +1484,7 @@ static int throw_away_data(struct fsg_common *common)
 
 		/* Throw away the data in a filled buffer */
 		if (bh->state == BUF_STATE_FULL) {
-			smp_rmb();
+			smp_rmb();	/* avoid context switch and race condiction */
 			bh->state = BUF_STATE_EMPTY;
 			common->next_buffhd_to_drain = bh->next;
 
@@ -1744,8 +1749,7 @@ static int check_command(struct fsg_common *common, int cmnd_size,
 		 * be 6 as well.
 		 */
 		if (cmnd_size <= common->cmnd_size) {
-			DBG(common, "%s is buggy! Expected length %d "
-			    "but we got %d\n", name,
+			DBG(common, "%s is buggy! Expected length %d but we got %d\n", name,
 			    cmnd_size, common->cmnd_size);
 			cmnd_size = common->cmnd_size;
 		} else {
@@ -1804,7 +1808,8 @@ static int check_command(struct fsg_common *common, int cmnd_size,
 	}
 
 	/* If the medium isn't mounted and the command needs to access
-	 * it, return an error. */
+	 * it, return an error.
+	 */
 	if (curlun && !fsg_lun_is_open(curlun) && needs_medium) {
 		curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
 		return -EINVAL;
@@ -2208,7 +2213,7 @@ static int get_next_command(struct fsg_common *common)
 		if (rc)
 			return rc;
 	}
-	smp_rmb();
+	smp_rmb(); /* avoid context switch and race condiction */
 	rc = fsg_is_set(common) ? received_cbw(common->fsg, bh) : -EIO;
 	bh->state = BUF_STATE_EMPTY;
 
@@ -2328,6 +2333,7 @@ reset:
 static int fsg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 {
 	struct fsg_dev *fsg = fsg_from_func(f);
+
 	fsg->common->new_fsg = fsg;
 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
 	return USB_GADGET_DELAYED_STATUS;
@@ -2336,6 +2342,7 @@ static int fsg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
 static void fsg_disable(struct usb_function *f)
 {
 	struct fsg_dev *fsg = fsg_from_func(f);
+
 	fsg->common->new_fsg = NULL;
 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
 }
@@ -2357,6 +2364,7 @@ static void handle_exception(struct fsg_common *common)
 	 */
 	for (;;) {
 		int sig = kernel_dequeue_signal(NULL);
+
 		if (!sig)
 			break;
 		if (sig != SIGUSR1) {
@@ -2380,6 +2388,7 @@ static void handle_exception(struct fsg_common *common)
 		/* Wait until everything is idle */
 		for (;;) {
 			int num_active = 0;
+
 			for (i = 0; i < common->fsg_num_buffers; ++i) {
 				bh = &common->buffhds[i];
 				num_active += bh->inreq_busy + bh->outreq_busy;
@@ -2563,6 +2572,7 @@ static int fsg_main_thread(void *common_)
 		down_write(&common->filesem);
 		for (i = 0; i < ARRAY_SIZE(common->luns); --i) {
 			struct fsg_lun *curlun = common->luns[i];
+
 			if (!curlun || !fsg_lun_is_open(curlun))
 				continue;
 
@@ -2698,6 +2708,7 @@ static void _fsg_common_free_buffers(struct fsg_buffhd *buffhds, unsigned n)
 {
 	if (buffhds) {
 		struct fsg_buffhd *bh = buffhds;
+
 		while (n--) {
 			kfree(bh->buf);
 			++bh;
@@ -2960,6 +2971,45 @@ fail:
 }
 EXPORT_SYMBOL_GPL(fsg_common_create_luns);
 
+void fsg_common_free_luns(struct fsg_common *common)
+{
+	unsigned long flags;
+
+	fsg_common_remove_luns(common);
+	spin_lock_irqsave(&common->lock, flags);
+	kfree(common->luns);
+	/* common->luns = NULL;  FIXME */
+	common->nluns = 0;
+	spin_unlock_irqrestore(&common->lock, flags);
+}
+EXPORT_SYMBOL_GPL(fsg_common_free_luns);
+
+int fsg_common_set_nluns(struct fsg_common *common, int nluns)
+{
+	struct fsg_lun **curlun;
+
+	/* Find out how many LUNs there should be */
+	if (nluns < 1 || nluns > FSG_MAX_LUNS) {
+		pr_err("invalid number of LUNs: %u\n", nluns);
+		return -EINVAL;
+	}
+
+	curlun = kcalloc(nluns, sizeof(*curlun), GFP_KERNEL);
+	if (unlikely(!curlun))
+		return -ENOMEM;
+
+	if (common->luns)
+		fsg_common_free_luns(common);
+
+	/* common->luns = curlun;  FIXME */
+	common->nluns = nluns;
+
+	pr_info("Number of LUNs=%d\n", common->nluns);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(fsg_common_set_nluns);
+
 void fsg_common_set_inquiry_string(struct fsg_common *common, const char *vn,
 				   const char *pn)
 {
@@ -3009,6 +3059,7 @@ static void fsg_common_release(struct kref *ref)
 
 	for (i = 0; i < ARRAY_SIZE(common->luns); ++i) {
 		struct fsg_lun *lun = common->luns[i];
+
 		if (!lun)
 			continue;
 		fsg_lun_close(lun);
@@ -3022,6 +3073,45 @@ static void fsg_common_release(struct kref *ref)
 		kfree(common);
 }
 
+ssize_t fsg_inquiry_show(struct fsg_common *common, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", common->inquiry_string);
+}
+ssize_t fsg_inquiry_store(struct fsg_common *common, const char *buf, size_t size)
+{
+	if (size >= sizeof(common->inquiry_string))
+		return -EINVAL;
+
+	if (sscanf(buf, "%28s", common->inquiry_string) != 1)
+		return -EINVAL;
+	return size;
+}
+
+ssize_t fsg_bicr_show(struct fsg_common *common, char *buf)
+{
+	return 1;
+    /* return sprintf(buf, "%d\n", common->bicr); */
+}
+ssize_t fsg_bicr_store(struct fsg_common *common, const char *buf, size_t size)
+{
+	int ret;
+
+	ret = kstrtou8(buf, 10, &common->bicr);
+	if (ret)
+		return -EINVAL;
+
+	/* Set Lun[0] is a CDROM when enable bicr.*/
+	if (!strcmp(buf, "1"))
+		common->luns[0]->cdrom = 1;
+	else {
+		common->luns[0]->cdrom = 0;
+		common->luns[0]->blkbits = 0;
+		common->luns[0]->blksize = 0;
+		common->luns[0]->num_sectors = 0;
+	}
+
+	return size;
+}
 
 /*-------------------------------------------------------------------------*/
 
@@ -3349,6 +3439,43 @@ static ssize_t fsg_opts_stall_show(struct config_item *item, char *page)
 	mutex_unlock(&opts->lock);
 
 	return result;
+}
+
+int fsg_sysfs_update(struct fsg_common *common, struct device *dev, bool create)
+{
+	int ret = 0, i;
+
+	pr_debug("%s(): common->nluns:%d\n", __func__, common->nluns);
+	if (create) {
+		for (i = 0; i < common->nluns; i++) {
+			if (i == 0)
+				snprintf(common->name[i], 8, "lun");
+			else
+				snprintf(common->name[i], 8, "lun%d", i-1);
+			ret = sysfs_create_link(&dev->kobj,
+					&common->luns[i]->dev.kobj,
+					common->name[i]);
+			if (ret) {
+				pr_err("%s(): failed creating sysfs:%d %s)\n",
+						__func__, i, common->name[i]);
+				goto remove_sysfs;
+			}
+		}
+	} else {
+		i = common->nluns;
+		goto remove_sysfs;
+	}
+
+	return 0;
+
+remove_sysfs:
+	for (; i > 0; i--) {
+		pr_debug("%s(): delete sysfs for lun(id:%d)(name:%s)\n",
+					__func__, i, common->name[i-1]);
+		sysfs_remove_link(&dev->kobj, common->name[i-1]);
+	}
+
+	return ret;
 }
 
 static ssize_t fsg_opts_stall_store(struct config_item *item, const char *page,
