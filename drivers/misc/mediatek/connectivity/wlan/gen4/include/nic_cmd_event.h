@@ -2065,8 +2065,9 @@ typedef struct _EVENT_SCAN_DONE_T {
 	/* 1: first bytes: idle time(8ms) 2nd byte: dwell time(8ms) */
 	/* 2: dwell time (16us) */
 	UINT_16 au2ChannelIdleTime[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
-	/* B0: Active/Passive B3-B1: Idle format  */
-	UINT_8 aucChannelFlag[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
+	/* Beacon and Probe Response Count in each Channel  */
+	UINT_8 aucChannelBAndPCnt[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
+	/* Mdrdy Count in each Channel  */
 	UINT_8 aucChannelMDRDYCnt[EVENT_SCAN_DONE_CHANNEL_NUM_MAX];
 
 } EVENT_SCAN_DONE, *P_EVENT_SCAN_DONE;
