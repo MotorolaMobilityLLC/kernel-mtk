@@ -537,7 +537,7 @@ int sched_get_nr_heavy_running_avg(int cluster_id, int *avg)
 		if (ack_cap)
 			tmp_avg += per_cpu(nr_heavy, cpu) * (curr_time - per_cpu(last_heavy_time, cpu));
 
-		trace_sched_avg_heavy_nr("hps_main", per_cpu(nr_heavy, cpu),
+		trace_sched_avg_heavy_nr(5, per_cpu(nr_heavy, cpu),
 				(curr_time - per_cpu(last_heavy_time, cpu)), ack_cap, cpu);
 #else
 		ack_cap = -1;
@@ -899,7 +899,7 @@ int get_overutil_stats(char *buf, int buf_size)
 }
 
 
-void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p, int cpu, int heavy_nr_inc, bool ack_cap_req)
+void sched_update_nr_heavy_prod(int invoker, struct task_struct *p, int cpu, int heavy_nr_inc, bool ack_cap_req)
 {
 	s64 diff;
 	u64 curr_time;
@@ -978,7 +978,7 @@ void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p, int 
 			trace_sched_avg_heavy_nr(invoker, prev_heavy_nr, diff, ack_cap, cpu);
 		}
 
-		mt_sched_printf(sched_log, "[hvytsk_avg] %s(%s): nr=%ld diff=%llu cpu=%d ac=%d pid=%d load=%ld w=%ld",
+		mt_sched_printf(sched_log, "[hvytsk] %d(%s): nr=%ld diff=%llu cpu=%d ac=%d pid=%d load=%ld w=%ld",
 				invoker,
 				(heavy_nr_inc >= 0)?"+":"-",
 				(long)per_cpu(nr_heavy, cpu),

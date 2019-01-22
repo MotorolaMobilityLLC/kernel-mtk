@@ -1403,7 +1403,7 @@ extern void sched_max_util_task(int *cpu, int *pid, int *util, int *boost);
 #endif
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-extern int inc_nr_heavy_running(const char *invoker, struct task_struct *p, int inc, bool ack_cap);
+extern int inc_nr_heavy_running(int invoker, struct task_struct *p, int inc, bool ack_cap);
 
 #ifdef CONFIG_MTK_SCHED_CPULOAD
 extern void cal_cpu_load(int cpu);

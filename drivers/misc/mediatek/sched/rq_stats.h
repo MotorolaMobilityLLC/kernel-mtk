@@ -36,7 +36,7 @@ extern struct workqueue_struct *rq_wq;
 
 /* For heavy task detection */
 extern int sched_get_nr_heavy_running_avg(int cid, int *avg);
-extern void sched_update_nr_heavy_prod(const char *invoker, struct task_struct *p,
+extern void sched_update_nr_heavy_prod(int invoker, struct task_struct *p,
 			int cpu, int heavy_nr_inc, bool ack_cap);
 extern int reset_heavy_task_stats(int cpu);
 extern int is_ack_curcap(int cpu);
