@@ -1295,18 +1295,6 @@ static ssize_t jpeg_read(struct file *file, char __user *data, size_t len, loff_
 
 static int jpeg_release(struct inode *inode, struct file *file)
 {
-	if (enc_status != 0) {
-		JPEG_WRN("Error! Enable error handling for jpeg encoder");
-		jpeg_drv_enc_deinit();
-	}
-
-#ifdef JPEG_DEC_DRIVER
-	if (dec_status != 0) {
-		JPEG_WRN("Error! Enable error handling for jpeg decoder");
-		jpeg_drv_dec_deinit();
-	}
-#endif
-
 	if (file->private_data != NULL) {
 		kfree(file->private_data);
 		file->private_data = NULL;
