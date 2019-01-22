@@ -40,6 +40,7 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)/
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/auxadc/
 subdir-ccflags-y += -Werror -I$(srctree)/sound/soc/codecs
 
 # Common include path
