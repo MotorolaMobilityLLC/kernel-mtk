@@ -35,7 +35,7 @@
 #define TSF_DEV_MAJOR_NUMBER    251
 #define TSF_MAGIC               't'
 #define TSF_REG_RANGE           (0x1000)
-#define TSF_BASE_HW             0x180b1000
+#define TSF_BASE_HW             0x1a0b1c00
 /**
 * CAM interrupt status
 */

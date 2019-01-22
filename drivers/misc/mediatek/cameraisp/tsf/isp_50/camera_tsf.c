@@ -138,12 +138,12 @@ struct TSF_CLK_STRUCT TSF_clk;
 #define LOG_VRB(format,	args...)    pr_debug(MyTag format, ##args)
 
 #ifdef TSF_DEBUG_USE
-#define LOG_DBG(format, args...)    pr_debug(MyTag format, ##args)
+#define LOG_DBG(format, args...)    pr_info(MyTag format, ##args)
 #else
 #define LOG_DBG(format, args...)
 #endif
 #define LOG_ERR(format, args...)    pr_info(MyTag format,  ##args)
-#define LOG_INF(format, args...)    pr_debug(MyTag format,  ##args)
+#define LOG_INF(format, args...)    pr_info(MyTag format,  ##args)
 #define LOG_NOTICE(format, args...) pr_notice(MyTag format,  ##args)
 
 
@@ -778,7 +778,6 @@ static void TSF_EnableClock(bool En)
 		g_u4EnableClockCount++;
 		spin_unlock(&(TSFInfo.SpinLockTSF));
 	} else {		/* Disable clock. */
-
 		/* LOG_DBG("TSF clock disabled. g_u4EnableClockCount: %d.", g_u4EnableClockCount); */
 		spin_lock(&(TSFInfo.SpinLockTSF));
 		g_u4EnableClockCount--;
@@ -2202,7 +2201,6 @@ static signed int __init TSF_Init(void)
 	struct proc_dir_entry *proc_entry;
 	struct proc_dir_entry *isp_TSF_dir;
 
-
 	int i;
 	/*  */
 	LOG_DBG("- E.");
@@ -2361,5 +2359,5 @@ static void ISP_TaskletFunc_TSF(unsigned long data)
 module_init(TSF_Init);
 module_exit(TSF_Exit);
 MODULE_DESCRIPTION("Camera TSF driver");
-MODULE_AUTHOR("ME8");
+MODULE_AUTHOR("MM3/SW5");
 MODULE_LICENSE("GPL");
