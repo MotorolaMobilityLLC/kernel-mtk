@@ -16,6 +16,7 @@
 #include <linux/poll.h>
 #include <linux/ratelimit.h>
 
+#define ACCELEROMETER_BUF_SIZE		4096
 #define CONTINUE_SENSOR_BUF_SIZE	2048
 #define BIO_SENSOR_BUF_SIZE	0x20000 /* ((512 + 1024 + 1024) * 60) */
 #define OTHER_SENSOR_BUF_SIZE	16
