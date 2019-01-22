@@ -15,6 +15,7 @@
 #define __CUST_GYRO_H__
 
 #include <linux/types.h>
+#include <linux/of.h>
 
 #define GYRO_CUST_I2C_ADDR_NUM 2
 
@@ -32,5 +33,5 @@ struct gyro_hw {
 	bool is_batch_supported;
 };
 
-struct gyro_hw *get_gyro_dts_func(const char *, struct gyro_hw*);
+struct gyro_hw *get_gyro_dts_func(struct device_node *node, struct gyro_hw*);
 #endif

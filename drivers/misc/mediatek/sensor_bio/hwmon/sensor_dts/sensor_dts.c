@@ -26,7 +26,7 @@
 #define SENSOR_ERR(fmt, args...)	pr_err(SENSOR_TAG fmt, ##args)
 #define SENSOR_LOG(fmt, args...)	pr_debug(SENSOR_TAG fmt, ##args)
 
-struct acc_hw *get_accel_dts_func(const char *name, struct acc_hw *hw)
+struct acc_hw *get_accel_dts_func(struct device_node *node, struct acc_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -36,13 +36,8 @@ struct acc_hw *get_accel_dts_func(const char *name, struct acc_hw *hw)
 	u32 power_vol[] = {0};
 	u32 firlen[] = {0};
 	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get accel info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
 		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 		if (ret == 0)
@@ -87,7 +82,7 @@ struct acc_hw *get_accel_dts_func(const char *name, struct acc_hw *hw)
 }
 
 
-struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
+struct alsps_hw *get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -102,13 +97,8 @@ struct alsps_hw *get_alsps_dts_func(const char *name, struct alsps_hw *hw)
 	u32 ps_threshold_low[] = {0};
 	u32 is_batch_supported_ps[] = {0};
 	u32 is_batch_supported_als[] = {0};
-	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get alsps info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
 		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 	if (ret == 0)
@@ -230,7 +220,7 @@ struct mag_hw *get_mag_dts_func(const char *name, struct mag_hw *hw)
 	return hw;
 }
 
-struct gyro_hw *get_gyro_dts_func(const char *name, struct gyro_hw *hw)
+struct gyro_hw *get_gyro_dts_func(struct device_node *node, struct gyro_hw *hw)
 {
 	int i, ret;
 	u32 i2c_num[] = {0};
@@ -240,13 +230,8 @@ struct gyro_hw *get_gyro_dts_func(const char *name, struct gyro_hw *hw)
 	u32 power_vol[] = {0};
 	u32 firlen[] = {0};
 	u32 is_batch_supported[] = {0};
-	struct device_node *node = NULL;
 
 	SENSOR_LOG("Device Tree get gyro info!\n");
-	if (name == NULL)
-		return NULL;
-
-	node = of_find_compatible_node(NULL, NULL, name);
 	if (node) {
 		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 		if (ret == 0)

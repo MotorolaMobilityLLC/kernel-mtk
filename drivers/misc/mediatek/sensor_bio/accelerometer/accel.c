@@ -708,7 +708,7 @@ int acc_register_control_path(struct acc_control_path *ctl)
 	cxt->acc_ctl.is_support_batch = ctl->is_support_batch;
 	cxt->acc_ctl.is_report_input_direct = ctl->is_report_input_direct;
 
-	if (NULL == cxt->acc_ctl.set_delay || NULL == cxt->acc_ctl.open_report_data
+	if (NULL == cxt->acc_ctl.batch || NULL == cxt->acc_ctl.open_report_data
 	    || NULL == cxt->acc_ctl.enable_nodata) {
 		ACC_LOG("acc register control path fail\n");
 		return -1;
