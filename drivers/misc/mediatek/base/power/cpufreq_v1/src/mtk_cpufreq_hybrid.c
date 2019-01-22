@@ -381,6 +381,8 @@ static void __iomem *csram_base;
 #define OFFS_WFI_S		0x037c
 #define OFFS_WFI_E		0x03a0
 
+#define OFFS_STRESS_EN	0x035c
+
 #define NR_FREQ       16
 
 static u32 dbg_repo_bak[DBG_REPO_NUM];
@@ -458,6 +460,12 @@ int cpuhvfs_set_cluster_on_off(int cluster_id, int state)
 
 int cpuhvfs_set_mix_max(int cluster_id, int base, int limit)
 {
+	return 0;
+}
+
+int cpuhvfs_set_dvfs_stress(unsigned int en)
+{
+	csram_write(OFFS_STRESS_EN, en);
 	return 0;
 }
 

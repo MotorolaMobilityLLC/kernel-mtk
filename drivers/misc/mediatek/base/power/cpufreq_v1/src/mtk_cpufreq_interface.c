@@ -146,8 +146,12 @@ static ssize_t cpufreq_stress_test_proc_write(struct file *file, const char __us
 	rc = kstrtoint(buf, 10, &do_stress);
 	if (rc < 0)
 		cpufreq_err("echo 0/1 > /proc/cpufreq/cpufreq_stress_test\n");
-	else
+	else {
 		do_dvfs_stress_test = do_stress;
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		cpuhvfs_set_dvfs_stress(do_stress);
+#endif
+	}
 
 	free_page((unsigned long)buf);
 	return count;
@@ -348,8 +352,13 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file, const char __use
 	rc = kstrtoint(buf, 10, &turbo_mode);
 	if (rc < 0)
 		cpufreq_err("echo 0/1 > /proc/cpufreq/%s/cpufreq_turbo_mode\n", p->name);
-	else
+	else {
 		p->turbo_mode = turbo_mode;
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		if (turbo_mode == 0)
+			cpuhvfs_set_turbo_mode(0, 0, 0);
+#endif
+	}
 
 	free_page((unsigned long)buf);
 
