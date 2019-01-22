@@ -19,10 +19,6 @@
 
 #include "wmt_detect.h"
 
-#if MTK_HIF_SDIO_AUTOK_ENABLED
-#include <mt_boot.h>
-#endif
-
 unsigned int gComboChipId = -1;
 struct sdio_func *g_func;
 
@@ -175,44 +171,8 @@ int sdio_detect_query_chipid(int waitFlag)
 int sdio_detect_do_autok(int chipId)
 {
 	int i_ret = 0;
-
-#if MTK_HIF_SDIO_AUTOK_ENABLED
-#if 0
-	BOOTMODE boot_mode;
-
-	boot_mode = get_boot_mode();
-
-	if (boot_mode == META_BOOT) {
-		WMT_DETECT_INFO_FUNC("omit autok in meta mode\n");
-		return 0;
-	}
-#endif
-	if (0x6630 == chipId || 0x6632 == chipId) {
-#ifdef CONFIG_SDIOAUTOK_SUPPORT
-		if (g_func != NULL) {
-			WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready++\n");
-			i_ret = wait_sdio_autok_ready(g_func->card->host);
-			WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready--\n");
-			if (i_ret == 0) {
-				WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready return success\n");
-			} else {
-				WMT_DETECT_INFO_FUNC("wait_sdio_autok_ready return fail, i_ret:%d\n", i_ret);
-				gComboChipId = -1;
-			}
-		} else {
-			WMT_DETECT_INFO_FUNC("g_func NULL, omit autok\n");
-		}
-#else
-		i_ret = 0;
-		WMT_DETECT_INFO_FUNC("MTK_SDIOAUTOK_SUPPORT not defined\n");
-#endif
-	} else {
-		WMT_DETECT_INFO_FUNC("MT%x does not support SDIO3.0 autoK is not needed\n", chipId);
-	}
-#else
-	i_ret = 0;
+	/*reserve this function is in order to compatible native code*/
 	WMT_DETECT_INFO_FUNC("MTK_HIF_SDIO_AUTOK_ENABLED is not defined\n");
-#endif
 	return i_ret;
 }
 
