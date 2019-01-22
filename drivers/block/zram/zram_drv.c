@@ -635,8 +635,8 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 
 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 	if (size == PAGE_SIZE)
-#ifndef CONFIG_MTK_ENG_BUILD
 		memcpy(mem, cmem, PAGE_SIZE);
+#ifndef CONFIG_MTK_ENG_BUILD
 	else
 		ret = zcomp_decompress(zram->comp, cmem, size, mem);
 #else
