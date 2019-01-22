@@ -102,7 +102,7 @@ void set_memory_lowpower_aligned(int aligned)
 		return;
 
 	/* Check whether size is a multiple of num */
-	size = (memory_lowpower_cma_size() >> PAGE_SHIFT);
+	size = (memory_lowpower_size() >> PAGE_SHIFT);
 	num = size >> aligned;
 	if (size != (num << aligned))
 		return;
@@ -264,8 +264,8 @@ static void memory_range(int which, unsigned long *spfn, unsigned long *epfn)
 	/* Range of full allocation */
 	if (cma_aligned_pages == NULL) {
 		if (get_cma_num == 1) {
-			*spfn = __phys_to_pfn(memory_lowpower_cma_base());
-			*epfn = __phys_to_pfn(memory_lowpower_cma_base() + memory_lowpower_cma_size());
+			*spfn = __phys_to_pfn(memory_lowpower_base());
+			*epfn = __phys_to_pfn(memory_lowpower_base() + memory_lowpower_size());
 		}
 		goto out;
 	}
