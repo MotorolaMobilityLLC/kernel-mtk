@@ -145,7 +145,7 @@ static struct_SENSOR_WINSIZE_INFO _imgsensor_winsize_info_m2_v2[5] =            
 }
 
 #define _SET_MODE2_V2_SENSOR_INFO_AND_WINSIZE_ do {                                                     \
-	memcpy((void *)&imgsensor_info, (void *)&_imgsensor_info_m2_v2, sizeof(imgsensor_info_struct)); \
+	memcpy((void *)&imgsensor_info, (void *)&_imgsensor_info_m2_v2, sizeof(struct imgsensor_info_struct)); \
 	memcpy((void *)&imgsensor_winsize_info, (void *)&_imgsensor_winsize_info_m2_v2,                 \
 	       sizeof(SENSOR_WINSIZE_INFO_STRUCT)*5);                                                   \
 } while (0)
