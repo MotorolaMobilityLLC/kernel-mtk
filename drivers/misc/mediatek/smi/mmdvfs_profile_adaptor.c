@@ -323,13 +323,21 @@ static void mmdvfs_profile_dump(struct mmdvfs_adaptor *self)
 
 	struct mmdvfs_step_to_profile_mapping *profile_mapping =
 	self->step_profile_mappings;
+
+	if (profile_mapping == NULL) {
+		MMDVFSMSG(
+		"mmdvfs_profile_dump: step_profile_mappings can't be NULL\n");
+		return;
+	}
+
+	MMDVFSDEBUG("MMDVFS DUMP (%d):\n", profile_mapping->mmdvfs_step);
+
 	if (profile_mapping == NULL)
 		MMDVFSDEBUG(
 		"mmdvfs_profile_dump: step_profile_mappings can't be NULL\n");
 	MMDVFSDEBUG("MMDVFS DUMP (%d):\n", profile_mapping->mmdvfs_step);
 	for (i = 0; i < profile_mapping->total_profiles; i++) {
 		struct mmdvfs_profile *profile = profile_mapping->profiles + i;
-
 		mmdvfs_single_profile_dump(profile);
 	}
 }
@@ -400,9 +408,11 @@ struct mmdvfs_video_property *codec_setting)
 	self->step_profile_mappings;
 	const int opp_max_num = self->step_num;
 
-	if (profile_mappings == NULL)
+	if (profile_mappings == NULL) {
 		MMDVFSMSG(
 		"mmdvfs_mmdvfs_step: step_profile_mappings can't be NULL\n");
+		return MMDVFS_FINE_STEP_UNREQUEST;
+	}
 
 	for (opp_index = 0; opp_index < opp_max_num; opp_index++) {
 		struct mmdvfs_step_to_profile_mapping *mapping_ptr =
@@ -431,7 +441,7 @@ struct mmdvfs_video_property *codec_setting)
 	}
 
 	/* If there is no profile matched, return -1 (no dvfs request)*/
-	return -1;
+	return MMDVFS_FINE_STEP_UNREQUEST;
 }
 
 /* Show each setting of opp */
@@ -585,11 +595,10 @@ struct mmdvfs_step_util *self, int mmclk_step)
 		step_ret = -1;
 	} else {
 		int *step_ptr = self->mmclk_oop_to_legacy_step + mmclk_step;
+		step_ret = -1;
 
 		if (step_ptr != NULL)
 			step_ret = *step_ptr;
-		else
-			step_ret = -1;
 	}
 	return step_ret;
 }
