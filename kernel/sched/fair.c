@@ -7095,6 +7095,7 @@ static unsigned long scale_rt_capacity(int cpu)
 	 */
 	age_stamp = READ_ONCE(rq->age_stamp);
 	avg = READ_ONCE(rq->rt_avg);
+	avg += READ_ONCE(rq->dl_avg);
 	delta = __rq_clock_broken(rq) - age_stamp;
 
 	if (unlikely(delta < 0))
