@@ -215,8 +215,8 @@ int rt4505_uninit(void)
 /******************************************************************************
  * Timer and work queue
  *****************************************************************************/
-static struct hrtimer fl_timer;
-static unsigned int fl_timeout_ms;
+static struct hrtimer rt4505_timer;
+static unsigned int rt4505_timeout_ms;
 
 static void rt4505_work_disable(struct work_struct *data)
 {
@@ -224,7 +224,7 @@ static void rt4505_work_disable(struct work_struct *data)
 	rt4505_disable();
 }
 
-static enum hrtimer_restart fl_timer_func(struct hrtimer *timer)
+static enum hrtimer_restart rt4505_timer_func(struct hrtimer *timer)
 {
 	schedule_work(&rt4505_work);
 	return HRTIMER_NORESTART;
@@ -236,53 +236,44 @@ static enum hrtimer_restart fl_timer_func(struct hrtimer *timer)
  *****************************************************************************/
 static int rt4505_ioctl(unsigned int cmd, unsigned long arg)
 {
-	struct flashlight_user_arg *fl_arg;
-	int ct_index;
+	struct flashlight_dev_arg *fl_arg;
+	int channel;
 	ktime_t ktime;
 
-	fl_arg = (struct flashlight_user_arg *)arg;
-	ct_index = fl_get_ct_index(fl_arg->ct_id);
-	if (flashlight_ct_index_verify(ct_index)) {
-		fl_err("Failed with error index\n");
-		return -EINVAL;
-	}
+	fl_arg = (struct flashlight_dev_arg *)arg;
+	channel = fl_arg->channel;
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
 		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
-		fl_timeout_ms = fl_arg->arg;
+				channel, (int)fl_arg->arg);
+		rt4505_timeout_ms = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
 		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
+				channel, (int)fl_arg->arg);
 		rt4505_set_level(fl_arg->arg);
-		break;
-
-	case FLASH_IOC_SET_STEP:
-		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
 		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
-				ct_index, (int)fl_arg->arg);
+				channel, (int)fl_arg->arg);
 		if (fl_arg->arg == 1) {
-			if (fl_timeout_ms) {
-				ktime = ktime_set(fl_timeout_ms / 1000,
-						(fl_timeout_ms % 1000) * 1000000);
-				hrtimer_start(&fl_timer, ktime, HRTIMER_MODE_REL);
+			if (rt4505_timeout_ms) {
+				ktime = ktime_set(rt4505_timeout_ms / 1000,
+						(rt4505_timeout_ms % 1000) * 1000000);
+				hrtimer_start(&rt4505_timer, ktime, HRTIMER_MODE_REL);
 			}
 			rt4505_enable();
 		} else {
 			rt4505_disable();
-			hrtimer_cancel(&fl_timer);
+			hrtimer_cancel(&rt4505_timer);
 		}
 		break;
 	default:
 		fl_info("No such command and arg(%d): (%d, %d)\n",
-				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
+				channel, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -403,9 +394,9 @@ static int rt4505_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	INIT_WORK(&rt4505_work, rt4505_work_disable);
 
 	/* init timer */
-	hrtimer_init(&fl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	fl_timer.function = fl_timer_func;
-	fl_timeout_ms = 100;
+	hrtimer_init(&rt4505_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	rt4505_timer.function = rt4505_timer_func;
+	rt4505_timeout_ms = 100;
 
 	/* init chip hw */
 	rt4505_chip_init(chip);
