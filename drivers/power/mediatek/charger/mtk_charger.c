@@ -1484,9 +1484,8 @@ void mtk_charger_stop_timer(struct charger_manager *info)
 static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
-	static int i;
 	unsigned long flags;
-	bool curr_sign, is_charger_on;
+	bool is_charger_on;
 	int bat_current, chg_current;
 
 	while (1) {
@@ -1499,13 +1498,10 @@ static int charger_routine_thread(void *arg)
 		spin_unlock_irqrestore(&info->slock, flags);
 
 		info->charger_thread_timeout = false;
-		i++;
-		curr_sign = battery_get_bat_current_sign();
 		bat_current = battery_get_bat_current();
 		chg_current = pmic_get_charging_current();
 		chr_err("Vbat=%d,Ibat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
-			battery_get_bat_voltage(),
-			curr_sign ? bat_current : -1 * bat_current, chg_current,
+			battery_get_bat_voltage(), bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type, info->enable_hv_charging,
