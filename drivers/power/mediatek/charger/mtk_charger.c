@@ -78,9 +78,9 @@ static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
 
-bool __attribute__((weak)) is_disable_charger(void)
+bool is_disable_charger(void)
 {
-	if (pinfo->disable_charger == true)
+	if (pinfo->disable_charger == true || IS_ENABLED(CONFIG_POWER_EXT))
 		return true;
 	else
 		return false;
