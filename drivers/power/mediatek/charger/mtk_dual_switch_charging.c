@@ -164,6 +164,12 @@ static void dual_swchg_select_charging_current_limit(struct charger_manager *inf
 			pdata->input_current_limit = 3000000;
 			pdata->charging_current_limit = 3000000;
 		}
+	} else if (info->pd_type == PD_CONNECT_TYPEC_ONLY_SNK &&
+		tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 3000) {
+		pdata->input_current_limit = 3000000;
+		pdata->charging_current_limit = 3000000;
+		chr_err("type-C:%d current:%d\n",
+			info->pd_type, tcpm_inquire_typec_remote_rp_curr(info->tcpc));
 	} else if (mtk_pdc_check_charger(info) == true) {
 		int vbus = 0, cur = 0, idx = 0;
 
