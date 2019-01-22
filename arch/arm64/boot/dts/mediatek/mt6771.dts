@@ -1667,6 +1667,10 @@
 		#clock-cells = <1>;
 	};
 
+	touch: touch {
+		compatible = "mediatek,mt6771-touch";
+	};
+
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
 	};
