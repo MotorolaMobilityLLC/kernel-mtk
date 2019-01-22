@@ -1328,7 +1328,6 @@ static struct android_usb_function mbim_function = {
 #endif
 
 
-#if 0
 struct mass_storage_function_config {
 	struct usb_function *f_ms;
 	struct usb_function_instance *f_ms_inst;
@@ -1384,11 +1383,6 @@ static int mass_storage_function_init(struct android_usb_function *f,
 	fsg_config_from_params(&m_config, &fsg_mod_data, fsg_num_buffers);
 	fsg_opts = fsg_opts_from_func_inst(config->f_ms_inst);
 
-	ret = fsg_common_set_nluns(fsg_opts->common, m_config.nluns);
-	if (ret) {
-		pr_err("%s(): error(%d) for fsg_common_set_nluns\n",
-						__func__, ret);
-	}
 
 	/* note this is important for sysfs manipulation and this will be override when fsg_main_thread be created*/
 	ret = fsg_common_set_cdev(fsg_opts->common, cdev,
@@ -1411,13 +1405,12 @@ static int mass_storage_function_init(struct android_usb_function *f,
 							m_config.product_name);
 
 	/* SYSFS create */
-	/* fsg_sysfs_update(fsg_opts->common, f->dev, true); */
+	fsg_sysfs_update(fsg_opts->common, f->dev, true);
 
 	/* invoke thread */
-	/* ret = fsg_common_run_thread(fsg_opts->common);
-	*if (ret)
-	*	return ret;
-	 */
+	ret = fsg_common_run_thread(fsg_opts->common);
+	if (ret)
+		return ret;
 
 	/* setup this to avoid create fsg thread in fsg_bind again */
 	fsg_opts->no_configfs = true;
@@ -1442,7 +1435,6 @@ static void mass_storage_function_cleanup(struct android_usb_function *f)
 
 	fsg_opts = fsg_opts_from_func_inst(config->f_ms_inst);
 	fsg_sysfs_update(fsg_opts->common, f->dev, false);
-	fsg_common_free_luns(fsg_opts->common);
 
 	usb_put_function(config->f_ms);
 	usb_put_function_instance(config->f_ms_inst);
@@ -1536,7 +1528,6 @@ static struct android_usb_function mass_storage_function = {
 	.bind_config	= mass_storage_function_bind_config,
 	.attributes	= mass_storage_function_attributes,
 };
-#endif
 
 #if 0
 static int accessory_function_init(struct android_usb_function *f,
@@ -1776,7 +1767,7 @@ static struct android_usb_function *supported_functions[] = {
 	/* &eem_function, */
 	/* &serial_function, */
 	/* &rndis_function, */
-	/* &mass_storage_function, */
+	&mass_storage_function,
 	/* &accessory_function, */
 	/* &audio_source_function, */
 #ifdef CONFIG_SND_RAWMIDI

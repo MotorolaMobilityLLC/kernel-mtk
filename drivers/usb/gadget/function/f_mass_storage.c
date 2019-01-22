@@ -279,7 +279,6 @@ struct fsg_common {
 	int			cmnd_size;
 	u8			cmnd[MAX_COMMAND_SIZE];
 
-	unsigned int		nluns;
 	unsigned int		lun;
 	struct fsg_lun		*luns[FSG_MAX_LUNS];
 	struct fsg_lun		*curlun;
@@ -316,7 +315,7 @@ struct fsg_common {
 	 * Vendor (8 chars), product (16 chars), release (4
 	 * hexadecimal digits) and NUL byte
 	 */
-	char inquiry_string[8 + 16 + 4 + 1];
+	char inquiry_string[INQUIRY_MAX_LEN];
     /* LUN name for sysfs purpose */
 	char name[FSG_MAX_LUNS][LUN_NAME_LEN];
 
@@ -376,6 +375,9 @@ static void set_bulk_out_req_length(struct fsg_common *common,
 	if (rem > 0)
 		length += common->bulk_out_maxpacket - rem;
 	bh->outreq->length = length;
+
+	/* used by usb20 */
+	bh->outreq->short_not_ok = 1;
 }
 
 
@@ -546,7 +548,12 @@ static int fsg_setup(struct usb_function *f,
 				w_length != 1)
 			return -EDOM;
 		VDBG(fsg, "get max LUN\n");
-		*(u8 *)req->buf = _fsg_common_get_max_lun(fsg->common);
+		if (fsg->common->bicr) {
+			/*When enable bicr, only share ONE LUN.*/
+			*(u8 *)req->buf = 0;
+		} else {
+			*(u8 *)req->buf = _fsg_common_get_max_lun(fsg->common);
+		}
 
 		/* Respond with data/status */
 		req->length = min((u16)1, w_length);
@@ -1391,7 +1398,7 @@ static int do_prevent_allow(struct fsg_common *common)
 		return -EINVAL;
 	}
 
-	if (curlun->prevent_medium_removal && !prevent)
+	if (!curlun->nofua && curlun->prevent_medium_removal && !prevent)
 		fsg_lun_fsync_sub(curlun);
 	curlun->prevent_medium_removal = prevent;
 	return 0;
@@ -2324,6 +2331,7 @@ reset:
 		if (common->luns[i])
 			common->luns[i]->unit_attention_data =
 				SS_RESET_OCCURRED;
+
 	return rc;
 }
 
@@ -2810,6 +2818,7 @@ int fsg_common_set_cdev(struct fsg_common *common,
 	common->ep0 = cdev->gadget->ep0;
 	common->ep0req = cdev->req;
 	common->cdev = cdev;
+	common->bicr = 0;
 
 	us = usb_gstrings_attach(cdev, fsg_strings_array,
 				 ARRAY_SIZE(fsg_strings));
@@ -2971,45 +2980,6 @@ fail:
 }
 EXPORT_SYMBOL_GPL(fsg_common_create_luns);
 
-void fsg_common_free_luns(struct fsg_common *common)
-{
-	unsigned long flags;
-
-	fsg_common_remove_luns(common);
-	spin_lock_irqsave(&common->lock, flags);
-	kfree(common->luns);
-	/* common->luns = NULL;  FIXME */
-	common->nluns = 0;
-	spin_unlock_irqrestore(&common->lock, flags);
-}
-EXPORT_SYMBOL_GPL(fsg_common_free_luns);
-
-int fsg_common_set_nluns(struct fsg_common *common, int nluns)
-{
-	struct fsg_lun **curlun;
-
-	/* Find out how many LUNs there should be */
-	if (nluns < 1 || nluns > FSG_MAX_LUNS) {
-		pr_err("invalid number of LUNs: %u\n", nluns);
-		return -EINVAL;
-	}
-
-	curlun = kcalloc(nluns, sizeof(*curlun), GFP_KERNEL);
-	if (unlikely(!curlun))
-		return -ENOMEM;
-
-	if (common->luns)
-		fsg_common_free_luns(common);
-
-	/* common->luns = curlun;  FIXME */
-	common->nluns = nluns;
-
-	pr_info("Number of LUNs=%d\n", common->nluns);
-
-	return 0;
-}
-EXPORT_SYMBOL_GPL(fsg_common_set_nluns);
-
 void fsg_common_set_inquiry_string(struct fsg_common *common, const char *vn,
 				   const char *pn)
 {
@@ -3089,8 +3059,7 @@ ssize_t fsg_inquiry_store(struct fsg_common *common, const char *buf, size_t siz
 
 ssize_t fsg_bicr_show(struct fsg_common *common, char *buf)
 {
-	return 1;
-    /* return sprintf(buf, "%d\n", common->bicr); */
+	return sprintf(buf, "%d\n", common->bicr);
 }
 ssize_t fsg_bicr_store(struct fsg_common *common, const char *buf, size_t size)
 {
@@ -3443,11 +3412,13 @@ static ssize_t fsg_opts_stall_show(struct config_item *item, char *page)
 
 int fsg_sysfs_update(struct fsg_common *common, struct device *dev, bool create)
 {
-	int ret = 0, i;
+	int ret = 0, i, nluns;
 
-	pr_debug("%s(): common->nluns:%d\n", __func__, common->nluns);
+	nluns = _fsg_common_get_max_lun(common) + 1;
+
+	pr_warn("%s(): nluns:%d\n", __func__, nluns);
 	if (create) {
-		for (i = 0; i < common->nluns; i++) {
+		for (i = 0; i < nluns; i++) {
 			if (i == 0)
 				snprintf(common->name[i], 8, "lun");
 			else
@@ -3462,7 +3433,7 @@ int fsg_sysfs_update(struct fsg_common *common, struct device *dev, bool create)
 			}
 		}
 	} else {
-		i = common->nluns;
+		i = nluns;
 		goto remove_sysfs;
 	}
 
@@ -3470,7 +3441,7 @@ int fsg_sysfs_update(struct fsg_common *common, struct device *dev, bool create)
 
 remove_sysfs:
 	for (; i > 0; i--) {
-		pr_debug("%s(): delete sysfs for lun(id:%d)(name:%s)\n",
+		pr_warn("%s(): delete sysfs for lun(id:%d)(name:%s)\n",
 					__func__, i, common->name[i-1]);
 		sysfs_remove_link(&dev->kobj, common->name[i-1]);
 	}
@@ -3690,6 +3661,8 @@ void fsg_config_from_params(struct fsg_config *cfg,
 		lun->ro = !!params->ro[i];
 		lun->cdrom = !!params->cdrom[i];
 		lun->removable = !!params->removable[i];
+		/* add nofua flag support */
+		lun->nofua = !!params->nofua[i];
 		lun->filename =
 			params->file_count > i && params->file[i][0]
 			? params->file[i]
