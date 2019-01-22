@@ -384,13 +384,13 @@ static int memory_region_offline(struct SSVP_Region *region,
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
 
-		aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+		aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
 				| DB_OPT_LOW_MEMORY_KILLER
 				| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 				| DB_OPT_PROCESS_COREDUMP
 				| DB_OPT_PAGETYPE_INFO
 				| DB_OPT_DUMPSYS_PROCSTATS,
-				"SSVP unmapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+				"\nCRDISPATCH_KEY:SVP_SS1\n",
 				"[unmapping fail]: virt:0x%lx, size:0x%lx",
 				(unsigned long)__va((page_to_phys(page))),
 				region->count << PAGE_SHIFT);
@@ -426,12 +426,13 @@ static int memory_region_online(struct SSVP_Region *region)
 					(unsigned long)__va((page_to_phys(region->page))),
 					region->count << PAGE_SHIFT);
 
-			aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+			aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT
+					|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 					| DB_OPT_PID_MEMORY_INFO /* for smaps and hprof */
 					| DB_OPT_PROCESS_COREDUMP
 					| DB_OPT_PAGETYPE_INFO
 					| DB_OPT_DUMPSYS_PROCSTATS,
-					"SSVP remapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+					"\nCRDISPATCH_KEY:SVP_SS1\n",
 					"[remapping fail]: virt:0x%lx, size:0x%lx",
 					(unsigned long)__va((page_to_phys(region->page))),
 					region->count << PAGE_SHIFT);
@@ -537,14 +538,14 @@ static int _svp_wdt_kthread_func(void *data)
 	pr_alert("[COUNT DOWN FAIL]\n");
 
 	pr_alert("Shareable SVP trigger kernel warnin");
-	aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY|DB_OPT_LOW_MEMORY_KILLER
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 			| DB_OPT_PROCESS_COREDUMP
 			| DB_OPT_DUMPSYS_SURFACEFLINGER
 			| DB_OPT_DUMPSYS_GFXINFO
 			| DB_OPT_DUMPSYS_PROCSTATS,
-			"SVP wdt: SSVP online Failed\nCRDISPATCH_KEY:SVP_SS1",
-			"please contact SS memory module owner\n");
+			"\nCRDISPATCH_KEY:SVP_SS1\n",
+			"[SSVP ONLINE FAIL]: online timeout due to none free memory region.\n");
 
 	return 0;
 }
@@ -789,11 +790,11 @@ static int ssvp_sanity(void)
 	return 0;
 
 out:
-	aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+	aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
 			| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 			| DB_OPT_DUMPSYS_PROCSTATS,
-			err_msg,
-			"please contact SS memory module owner\n");
+			"\nCRDISPATCH_KEY:SVP_SS1\n",
+			err_msg);
 	return -1;
 }
 
@@ -831,13 +832,13 @@ void memory_ssvp_init_region(char *name, int size, struct SSVP_Region *region,
 						(unsigned long)__va((page_to_phys(page))),
 						region->count << PAGE_SHIFT);
 
-				aee_kernel_warning_api("SVP", 0, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
+				aee_kernel_warning_api(__FILE__, __LINE__, DB_OPT_DEFAULT|DB_OPT_DUMPSYS_ACTIVITY
 						| DB_OPT_LOW_MEMORY_KILLER
 						| DB_OPT_PID_MEMORY_INFO /*for smaps and hprof*/
 						| DB_OPT_PROCESS_COREDUMP
 						| DB_OPT_PAGETYPE_INFO
 						| DB_OPT_DUMPSYS_PROCSTATS,
-						"SSVP unmapping fail:\nCRDISPATCH_KEY:SVP_SS1",
+						"\nCRDISPATCH_KEY:SVP_SS1\n",
 						"[unmapping fail]: virt:0x%lx, size:0x%lx",
 						(unsigned long)__va((page_to_phys(page))),
 						region->count << PAGE_SHIFT);
