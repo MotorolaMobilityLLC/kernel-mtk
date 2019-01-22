@@ -790,4 +790,6 @@ extern void set_shutdown_vbat_lt(int, int);
 
 extern void notify_fg_dlpt_sd(void);
 extern void fg_charger_in_handler(void);
+extern bool is_battery_init_done(void);
+
 #endif /* End of _FUEL_GAUGE_GM_30_H */
