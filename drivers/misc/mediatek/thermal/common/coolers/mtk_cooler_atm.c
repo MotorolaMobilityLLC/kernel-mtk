@@ -244,9 +244,28 @@ static int CATMP_STEADY_TTJ_DELTA = 10000; /* magic number decided by experience
 #endif	/* end of CPT_ADAPTIVE_AP_COOLER */
 
 #ifdef FAST_RESPONSE_ATM
+#define KRTATM_HR	(1)
+#define KRTATM_NORMAL	(2)
+#define KRTATM_TIMER	KRTATM_NORMAL
+
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
-static struct hrtimer atm_hrtimer;
-static unsigned long atm_hrtimer_polling_delay = TS_MS_TO_NS(CLATM_INIT_HRTIMER_POLLING_DELAY);
+#if KRTATM_TIMER == KRTATM_HR
+	static struct hrtimer atm_hrtimer;
+	static unsigned long atm_hrtimer_polling_delay = TS_MS_TO_NS(CLATM_INIT_HRTIMER_POLLING_DELAY);
+#elif KRTATM_TIMER == KRTATM_NORMAL
+	static struct timer_list atm_timer;
+	static unsigned long atm_timer_polling_delay = CLATM_INIT_HRTIMER_POLLING_DELAY;
+	/**
+	 * If curr_temp >= polling_trip_temp1, use interval
+	 * else if cur_temp >= polling_trip_temp2 && curr_temp < polling_trip_temp1,
+	 * use interval*polling_factor1
+	 * else, use interval*polling_factor2
+	 */
+	static int polling_trip_temp1 = 65000;
+	static int polling_trip_temp2 = 40000;
+	static int polling_factor1 = 2;
+	static int polling_factor2 = 4;
+#endif
 static int atm_curr_maxtj;
 static int atm_prev_maxtj;
 static int krtatm_curr_maxtj;
@@ -2342,6 +2361,8 @@ static void tscpu_cooler_create_fs(void)
 }
 
 #ifdef FAST_RESPONSE_ATM
+
+#if KRTATM_TIMER == KRTATM_HR
 void atm_cancel_hrtimer(void)
 {
 	hrtimer_try_to_cancel(&atm_hrtimer);
@@ -2377,15 +2398,50 @@ static unsigned long atm_get_timeout_time(int curr_temp)
 #endif
 }
 
+#elif KRTATM_TIMER == KRTATM_NORMAL
+
+void atm_cancel_hrtimer(void)
+{
+}
+
+void atm_restart_hrtimer(void)
+{
+}
+
+static unsigned long atm_get_timeout_time(int curr_temp)
+{
+
+#ifdef ATM_CFG_PROFILING
+	return atm_timer_polling_delay;
+#else
+
+	if (curr_temp >= polling_trip_temp1)
+		return atm_timer_polling_delay;
+	else if (curr_temp < polling_trip_temp2)
+		return atm_timer_polling_delay * polling_factor2;
+	else
+		return atm_timer_polling_delay * polling_factor1;
+#endif
+}
+#endif
+
+
+#if KRTATM_TIMER == KRTATM_HR
 static enum hrtimer_restart atm_loop(struct hrtimer *timer)
 {
 	ktime_t ktime;
+#elif KRTATM_TIMER == KRTATM_NORMAL
+static int atm_loop(void)
+{
+#endif
 	int temp;
 	static int hasDisabled;
 	char buffer[128];
 	unsigned long polling_time;
+#if KRTATM_TIMER == KRTATM_HR
 	unsigned long polling_time_s;
 	unsigned long polling_time_ns;
+#endif
 
 	tscpu_workqueue_start_timer();
 
@@ -2449,6 +2505,8 @@ exit:
 
 	polling_time = atm_get_timeout_time(atm_curr_maxtj);
 
+#if KRTATM_TIMER == KRTATM_HR
+
 	/*avoid overflow*/
 	if (polling_time > (1000000000-1)) {
 		polling_time_s = polling_time / 1000000000;
@@ -2462,8 +2520,17 @@ exit:
 	hrtimer_forward_now(timer, ktime);
 
 	return HRTIMER_RESTART;
+#elif KRTATM_TIMER == KRTATM_NORMAL
+
+	atm_timer.expires = jiffies + msecs_to_jiffies(polling_time);
+	add_timer(&atm_timer);
+
+	return 0;
+#endif
+
 }
 
+#if KRTATM_TIMER == KRTATM_HR
 static void atm_hrtimer_init(void)
 {
 	ktime_t ktime;
@@ -2481,6 +2548,23 @@ static void atm_hrtimer_init(void)
 	atm_hrtimer.function = atm_loop;
 	hrtimer_start(&atm_hrtimer, ktime, HRTIMER_MODE_REL);
 }
+#elif KRTATM_TIMER == KRTATM_NORMAL
+
+static void atm_timer_init(void)
+{
+	tscpu_dprintk("%s\n", __func__);
+
+	/*polling delay can't larger than 100ms*/
+	atm_timer_polling_delay = (atm_timer_polling_delay < 100) ?
+		atm_timer_polling_delay : 100;
+
+	init_timer_deferrable(&atm_timer);
+	atm_timer.function = (void *)&atm_loop;
+	atm_timer.data = (unsigned long)&atm_timer;
+	atm_timer.expires = jiffies + msecs_to_jiffies(atm_timer_polling_delay);
+	add_timer(&atm_timer);
+}
+#endif
 
 #define KRTATM_RT	(1)
 #define KRTATM_CFS	(2)
@@ -2602,7 +2686,12 @@ static int __init mtk_cooler_atm_init(void)
 	tscpu_cooler_create_fs();
 
 #ifdef FAST_RESPONSE_ATM
+
+#if KRTATM_TIMER == KRTATM_HR
 	atm_hrtimer_init();
+#elif KRTATM_SCH == KRTATM_NORMAL
+	atm_timer_init();
+#endif
 
 	tscpu_dprintk("%s creates krtatm\n", __func__);
 	krtatm_thread_handle = kthread_create(krtatm_thread, (void *)NULL, "krtatm");
@@ -2622,7 +2711,12 @@ static int __init mtk_cooler_atm_init(void)
 static void __exit mtk_cooler_atm_exit(void)
 {
 #ifdef FAST_RESPONSE_ATM
+
+#if KRTATM_TIMER == KRTATM_HR
 	hrtimer_cancel(&atm_hrtimer);
+#elif KRTATM_SCH == KRTATM_NORMAL
+	del_timer(&atm_timer);
+#endif
 
 	if (krtatm_thread_handle)
 		kthread_stop(krtatm_thread_handle);
