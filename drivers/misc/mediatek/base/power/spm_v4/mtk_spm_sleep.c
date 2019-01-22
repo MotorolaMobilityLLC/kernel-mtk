@@ -340,6 +340,17 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 #endif
 	pwrctrl->timer_val = sec * 32768;
 
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_PCM_WDT, 1, 30);
+
+#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+	wd_ret = get_wd_api(&wd_api);
+	if (!wd_ret) {
+		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
+		wd_api->wd_suspend_notify();
+	} else
+		spm_crit2("FAILED TO GET WD API\n");
+#endif
+
 	spin_lock_irqsave(&__spm_lock, flags);
 
 #if defined(CONFIG_MTK_GIC_V3_EXT)
@@ -370,26 +381,7 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_WFI);
 
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	wd_ret = get_wd_api(&wd_api);
-	if (!wd_ret) {
-		wd_api->wd_spmwdt_mode_config(WD_REQ_EN, WD_REQ_RST_MODE);
-		wd_api->wd_suspend_notify();
-	} else
-		spm_crit2("FAILED TO GET WD API\n");
-#endif
-
 	spm_trigger_wfi_for_sleep(pwrctrl);
-
-#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
-	if (!wd_ret) {
-		if (!pwrctrl->wdt_disable)
-			wd_api->wd_resume_notify();
-		else
-			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
-		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
-	}
-#endif
 
 	spm_suspend_footprint(SPM_SUSPEND_LEAVE_WFI);
 
@@ -417,6 +409,18 @@ RESTORE_IRQ:
 #endif
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
+
+#if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
+	if (!wd_ret) {
+		if (!pwrctrl->wdt_disable)
+			wd_api->wd_resume_notify();
+		else
+			spm_crit2("pwrctrl->wdt_disable %d\n", pwrctrl->wdt_disable);
+		wd_api->wd_spmwdt_mode_config(WD_REQ_DIS, WD_REQ_RST_MODE);
+	}
+#endif
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_PCM_WDT, 0, 0);
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode())
