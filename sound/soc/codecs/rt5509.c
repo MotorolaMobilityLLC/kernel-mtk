@@ -2320,6 +2320,7 @@ MODULE_DEVICE_TABLE(i2c, rt5509_i2c_id);
 
 #ifdef CONFIG_OF
 static const struct of_device_id rt5509_match_table[] = {
+	{.compatible = "richtek,rt5509",},
 	{.compatible = "mediatek,speaker_amp",},
 	{},
 };
