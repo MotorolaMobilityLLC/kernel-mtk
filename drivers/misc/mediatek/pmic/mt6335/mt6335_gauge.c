@@ -2235,85 +2235,14 @@ int fgauge_enable_bat_plugout_interrupt(struct gauge_device *gauge_dev, int en)
 	return 0;
 }
 
-int fgauge_enable_iavg_interrupt(struct gauge_device *gauge_dev, int iavg_gap)
+int fgauge_enable_iavg_interrupt(struct gauge_device *gauge_dev, bool ht_en, int ht_th,
+	bool lt_en, int lt_th)
 {
-	int iavg;
-	long long iavg_ht, iavg_lt;
-	int ret;
-	int sign_bit_ht, sign_bit_lt;
-	long long fg_iavg_reg_ht, fg_iavg_reg_lt;
-	int fg_iavg_lth_28_16, fg_iavg_lth_15_00;
-	int fg_iavg_hth_28_16, fg_iavg_hth_15_00;
-
-/* fg_iavg_ma = fg_iavg_reg * UNIT_FG_IAVG * fg_cust_data.car_tune_value */
-/* fg_iavg_ma = fg_iavg_ma / 1000 / 1000 / fg_cust_data.r_fg_value; */
-
-	ret = fg_get_current_iavg(gauge_dev, &iavg);
-
-	iavg_ht = abs(iavg) + iavg_gap;
-	iavg_lt = abs(iavg) - iavg_gap;
-	if (iavg_lt <= 0)
-		iavg_lt = 0;
-
-	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 * gauge_dev->fg_cust_data->r_fg_value;
-	if (fg_iavg_reg_ht < 0) {
-		sign_bit_ht = 1;
-		fg_iavg_reg_ht = 0x1fffffff - fg_iavg_reg_ht + 1;
-	} else
-		sign_bit_ht = 0;
-
-	do_div(fg_iavg_reg_ht, UNIT_FG_IAVG);
-	do_div(fg_iavg_reg_ht, gauge_dev->fg_cust_data->car_tune_value);
-	if (sign_bit_ht == 1)
-		fg_iavg_reg_ht = fg_iavg_reg_ht - (fg_iavg_reg_ht * 2);
-
-	fg_iavg_reg_lt = iavg_lt * 1000 * 1000 * gauge_dev->fg_cust_data->r_fg_value;
-	if (fg_iavg_reg_lt < 0) {
-		sign_bit_lt = 1;
-		fg_iavg_reg_lt = 0x1fffffff - fg_iavg_reg_lt + 1;
-	} else
-		sign_bit_lt = 0;
-
-	do_div(fg_iavg_reg_lt, UNIT_FG_IAVG);
-	do_div(fg_iavg_reg_lt, gauge_dev->fg_cust_data->car_tune_value);
-	if (sign_bit_lt == 1)
-		fg_iavg_reg_lt = fg_iavg_reg_lt - (fg_iavg_reg_lt * 2);
-
-
-
-	fg_iavg_lth_28_16 = (fg_iavg_reg_lt & 0x1fff0000) >> 16;
-	fg_iavg_lth_15_00 = fg_iavg_reg_lt & 0xffff;
-	fg_iavg_hth_28_16 = (fg_iavg_reg_ht & 0x1fff0000) >> 16;
-	fg_iavg_hth_15_00 = fg_iavg_reg_ht & 0xffff;
-
-	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
-	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
-
-	pmic_set_register_value(PMIC_FG_IAVG_LTH_28_16, fg_iavg_lth_28_16);
-	pmic_set_register_value(PMIC_FG_IAVG_LTH_15_00, fg_iavg_lth_15_00);
-	pmic_set_register_value(PMIC_FG_IAVG_HTH_28_16, fg_iavg_hth_28_16);
-	pmic_set_register_value(PMIC_FG_IAVG_HTH_15_00, fg_iavg_hth_15_00);
-
-	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
-	if (iavg_lt > 0)
-		pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
-	else
-		pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
-
-	bm_debug("[FG_IAVG_INT][fg_set_iavg_intr] iavg %d iavg_gap %d iavg_ht %lld iavg_lt %lld fg_iavg_reg_ht %lld fg_iavg_reg_lt %lld\n",
-			iavg, iavg_gap, iavg_ht, iavg_lt, fg_iavg_reg_ht, fg_iavg_reg_lt);
-	bm_debug("[FG_IAVG_INT][fg_set_iavg_intr] lt_28_16 0x%x lt_15_00 0x%x ht_28_16 0x%x ht_15_00 0x%x\n",
-			fg_iavg_lth_28_16, fg_iavg_lth_15_00, fg_iavg_hth_28_16, fg_iavg_hth_15_00);
-
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 1);
-	if (iavg_lt > 0)
-		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 1);
-	else
-		pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, ht_en);
+	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, lt_en);
 
 	return 0;
 }
-
 
 int fgauge_enable_vbat_low_interrupt(struct gauge_device *gauge_dev, int en)
 {

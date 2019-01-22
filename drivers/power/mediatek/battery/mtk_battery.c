@@ -408,6 +408,13 @@ int gauge_set_vbat_high_threshold(int threshold)
 	return 0;
 }
 
+int gauge_enable_iavg_interrupt(bool ht_en, int ht_th,
+	bool lt_en, int lt_th)
+{
+	return gauge_dev_enable_iavg_interrupt(gauge_dev, ht_en, ht_th, lt_en, lt_th);
+}
+
+
 /* ============================================================ */
 /* external interface */
 /* ============================================================ */
@@ -2618,13 +2625,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_SET_IAVG_INTR:
 	{
-		int fg_iavg_thr;
-
-		memcpy(&fg_iavg_thr, &msg->fgd_data[0], sizeof(fg_iavg_thr));
-
-		gauge_dev_enable_iavg_interrupt(gauge_dev, fg_iavg_thr);
-
-		bm_debug("[fg_res] BATTERY_METER_CMD_SET_SET_IAVG_INTR = %d\n", fg_iavg_thr);
+		bm_debug("[fg_res] FG_DAEMON_CMD_SET_IAVG_INTR is removed\n");
 	}
 	break;
 
@@ -3412,8 +3413,7 @@ void fg_drv_update_hw_status(void)
 void fg_iavg_int_ht_handler(void)
 {
 	FG_status.iavg_intr_flag = 0;
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 0);
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+	gauge_enable_iavg_interrupt(false, 0, false, 0);
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 	bm_err("[FGADC_intr_end][fg_iavg_int_ht_handler] iavg_intr_flag %d\n",
@@ -3427,8 +3427,7 @@ void fg_iavg_int_ht_handler(void)
 void fg_iavg_int_lt_handler(void)
 {
 	FG_status.iavg_intr_flag = 0;
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_H, 0);
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_IAVG_L, 0);
+	gauge_enable_iavg_interrupt(false, 0, false, 0);
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
 	bm_err("[FGADC_intr_end][fg_iavg_int_lt_handler] iavg_intr_flag %d\n",
@@ -3560,11 +3559,6 @@ void fg_zcv_int_handler(void)
 		zcv_intr_en = 0;
 		gauge_set_zcv_interrupt_en(zcv_intr_en);
 	}
-
-	bm_debug("[fg_zcv_int_handler] DET_IV %d 15_00 0x%x 30_16 0x%x\n",
-		pmic_get_register_value(PMIC_FG_ZCV_DET_IV),
-		pmic_get_register_value(PMIC_FG_ZCV_CAR_TH_15_00),
-		pmic_get_register_value(PMIC_FG_ZCV_CAR_TH_30_16));
 
 	fg_bat_temp_int_sw_check();
 }
@@ -4852,16 +4846,20 @@ MODULE_DEVICE_TABLE(of, mtk_bat_of_match);
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
 	bm_err("******** battery_suspend!! ********\n");
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 0, "GM30");
+	}
 	return 0;
 }
 
 static int battery_resume(struct platform_device *dev)
 {
 	bm_err("******** battery_resume!! ********\n");
+	if (gauge_get_hw_version() >= GAUGE_HW_V2000) {
 	pmic_enable_interrupt(FG_IAVG_H_NO, 1, "GM30");
 	pmic_enable_interrupt(FG_IAVG_L_NO, 1, "GM30");
+	}
 	fg_update_sw_iavg();
 	return 0;
 }

@@ -542,7 +542,8 @@ int gauge_dev_enable_bat_plugout_interrupt(struct gauge_device *gauge_dev, int e
 	return ret;
 }
 
-int gauge_dev_enable_iavg_interrupt(struct gauge_device *gauge_dev, int iavg_gap)
+int gauge_dev_enable_iavg_interrupt(struct gauge_device *gauge_dev, bool ht_en, int ht_th,
+	bool lt_en, int lt_th)
 {
 	int ret = -ENOTSUPP;
 
@@ -551,7 +552,7 @@ int gauge_dev_enable_iavg_interrupt(struct gauge_device *gauge_dev, int iavg_gap
 
 	gauge_lock(gauge_dev);
 	if (gauge_dev != NULL && gauge_dev->ops != NULL && gauge_dev->ops->gauge_enable_iavg_interrupt)
-		ret = gauge_dev->ops->gauge_enable_iavg_interrupt(gauge_dev, iavg_gap);
+		ret = gauge_dev->ops->gauge_enable_iavg_interrupt(gauge_dev, ht_en, ht_th, lt_en, lt_th);
 	gauge_unlock(gauge_dev);
 
 	return ret;
