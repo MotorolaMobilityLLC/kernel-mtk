@@ -1360,16 +1360,16 @@ static int mtk_chip_info_init(struct mtk_nand_chip_info *chip_info)
 			page_per_block/MTK_TLC_DIV;
 		chip_info->log_block_size =
 			chip_info->data_block_size/MTK_TLC_DIV;
-		chip_info->data_block_num =
-			chip_info->data_block_num*(MTK_TLC_DIV<<1)/(MTK_TLC_DIV<<1);
+		if (devinfo.advancedmode & MULTI_PLANE)
+			chip_info->data_block_num &= (int)(~0x1);
 	} else {
 
 		chip_info->log_page_num =
 			page_per_block/MTK_MLC_DIV;
 		chip_info->log_block_size =
 			chip_info->data_block_size/MTK_MLC_DIV;
-		chip_info->data_block_num =
-			chip_info->data_block_num*(MTK_MLC_DIV<<1)/(MTK_MLC_DIV<<1);
+		if (devinfo.advancedmode & MULTI_PLANE)
+			chip_info->data_block_num &= (int)(~0x1);
 	}
 
 	chip_info->log_block_num =
