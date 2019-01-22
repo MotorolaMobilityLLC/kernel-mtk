@@ -33,6 +33,11 @@
 #include <linux/of_address.h>
 
 #include <m4u.h>
+
+#include <ion.h>
+#include <mtk/ion_drv.h>
+#include <mtk/mtk_ion.h>
+
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
 #include "vpu_dbg.h"
@@ -51,6 +56,7 @@
 
 static struct vpu_device *vpu_device;
 static struct wakeup_source vpu_wake_lock;
+struct ion_client *my_ion_client;
 unsigned int efuse_data;
 
 static int vpu_probe(struct platform_device *dev);
@@ -178,6 +184,7 @@ static int vpu_num_users;
 int vpu_create_user(struct vpu_user **user)
 {
 	struct vpu_user *u;
+	int i = 0;
 
 	u = kzalloc(sizeof(vlist_type(struct vpu_user)), GFP_KERNEL);
 	if (!u)
@@ -191,7 +198,12 @@ int vpu_create_user(struct vpu_user **user)
 	INIT_LIST_HEAD(&u->enque_list);
 	INIT_LIST_HEAD(&u->deque_list);
 	init_waitqueue_head(&u->deque_wait);
+	init_waitqueue_head(&u->delete_wait);
 
+	for (i = 0 ; i < MTK_VPU_CORE ; i++)
+		u->running[i] = false;
+
+	u->deleting = false;
 	u->power_mode = VPU_POWER_MODE_DYNAMIC;
 	u->power_opp = VPU_POWER_OPP_UNREQUEST;
 
@@ -206,6 +218,32 @@ int vpu_create_user(struct vpu_user **user)
 static int vpu_write_register(struct vpu_reg_values *regs)
 {
 	return 0;
+}
+
+struct ion_handle *vpu_hw_ion_import_handle(struct ion_client *client, int fd)
+{
+	struct ion_handle *handle = NULL;
+
+	if (!client) {
+		LOG_WRN("[vpu] invalid ion client!\n");
+		return handle;
+	}
+	if (fd == -1) {
+		LOG_WRN("[vpu] invalid ion fd!\n");
+		return handle;
+	}
+	LOG_DBG("[vpu] ion_import_handle +\n");
+	handle = ion_import_dma_buf(client, fd);
+
+	if (IS_ERR(handle)) {
+		LOG_WRN("[vpu] import ion handle failed!\n");
+		return NULL;
+	}
+
+	if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
+		LOG_INF("[vpu] ion_import_handle(0x%p)\n", handle);
+
+	return handle;
 }
 
 int vpu_push_request_to_queue(struct vpu_user *user, struct vpu_request *req)
@@ -232,6 +270,8 @@ int vpu_push_request_to_queue(struct vpu_user *user, struct vpu_request *req)
 int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 {
 	int i = 0, request_core_index = -1;
+	int j = 0, cnt = 0;
+	struct ion_handle *handle = NULL;
 
 	if (!user) {
 		LOG_ERR("empty user\n");
@@ -242,11 +282,24 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 		LOG_WRN("push a request while deleting the user\n");
 		return -ENONET;
 	}
-	#if 0
-	LOG_DBG("[vpu] push request to euque 0x%lx/0x%lx\n", (unsigned long)req->user_id,
-		(unsigned long)&(req->user_id));
-	LOG_DBG("[vpu] push request to euque CORE_IDNEX (0x%x)...\n", req->requested_core);
-	#endif
+	if (!my_ion_client)
+		my_ion_client = ion_client_create(g_ion_device, "vpu_drv");
+	for (i = 0 ; i < req->buffer_count; i++) {
+		for (j = 0 ; j < req->buffers[i].plane_count; j++) {
+			handle = NULL;
+			LOG_DBG("[vpu] (%d) FD.0x%lx\n", cnt, (unsigned long)(uintptr_t)(req->buf_ion_infos[cnt]));
+			handle = ion_import_dma_buf(my_ion_client, req->buf_ion_infos[cnt]);
+			if (IS_ERR(handle)) {
+				LOG_WRN("[vpu_drv] import ion handle failed!\n");
+			} else {
+				if (g_vpu_log_level > VpuLogThre_STATE_MACHINE)
+					LOG_INF("[vpu_drv] (cnt_%d) ion_import_dma_buf handle(0x%p)!\n", cnt, handle);
+				/* import fd to handle for buffer ref count + 1 */
+				req->buf_ion_infos[cnt] = (uint64_t)(uintptr_t)handle;
+			}
+			cnt++;
+		}
+	}
 
 	/* CHRISTODO, specific vpu */
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
@@ -290,9 +343,26 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 	return 0;
 }
 
+bool vpu_user_is_running(struct vpu_user *user)
+{
+	bool running = false;
+	int i = 0;
+
+	mutex_lock(&user->data_mutex);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (user->running[i]) {
+			running = true;
+			break;
+		}
+	}
+	mutex_unlock(&user->data_mutex);
+
+	return running;
+}
 
 int vpu_flush_requests_from_queue(struct vpu_user *user)
 {
+#if 0
 	struct list_head *head, *temp;
 	struct vpu_request *req;
 
@@ -325,7 +395,7 @@ int vpu_flush_requests_from_queue(struct vpu_user *user)
 	LOG_DBG("flushed queue, user:%d\n", user->id);
 
 	mutex_unlock(&user->data_mutex);
-
+#endif
 	return 0;
 }
 
@@ -460,14 +530,26 @@ int vpu_delete_user(struct vpu_user *user)
 {
 	struct list_head *head, *temp;
 	struct vpu_request *req;
+	int ret = 0;
 
 	if (!user) {
 		LOG_ERR("delete empty user!\n");
 		return -EINVAL;
 	}
-
+	mutex_lock(&user->data_mutex);
 	user->deleting = true;
-	vpu_flush_requests_from_queue(user);
+	mutex_unlock(&user->data_mutex);
+
+	/*vpu_flush_requests_from_queue(user);*/
+
+	ret = wait_event_interruptible(
+			user->delete_wait,
+			!vpu_user_is_running(user));
+	if (ret < 0) {
+		LOG_WRN("[vpu]interrupt by signal, ret=%d, wait delete user again\n", ret);
+		wait_event_interruptible(user->delete_wait,
+			!vpu_user_is_running(user));
+	}
 
 	/* clear the list of deque */
 	mutex_lock(&user->data_mutex);
@@ -663,6 +745,9 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		else if (copy_from_user(req->buffers, u_req->buffers,
 				req->buffer_count * sizeof(struct vpu_buffer)))
 			LOG_ERR("[ENQUE] copy 'struct buffer' failed, ret=%d\n", ret);
+		else if (copy_from_user(req->buf_ion_infos, u_req->buf_ion_infos,
+				req->buffer_count * 3 * sizeof(uint64_t)))
+			LOG_ERR("[ENQUE] copy 'buf_share_fds' failed, ret=%d\n", ret);
 		else if (vpu_put_request_to_pool(user, req))
 			LOG_ERR("[ENQUE] push to user's queue failed, ret=%d\n", ret);
 		else
@@ -1073,6 +1158,8 @@ static int vpu_probe(struct platform_device *pdev)
 		vpu_init_profile(core, vpu_device);
 		LOG_DBG("[probe] [%d] vpu_init_profile done\n", core);
 #endif
+		if (!my_ion_client)
+			my_ion_client = ion_client_create(g_ion_device, "vpu_drv");
 #ifdef MTK_VPU_FPGA_PORTING
 	}
 	LOG_DBG("probe 2, vpu_syscfg_base: 0x%lx, vpu_adlctrl_base: 0x%lx vpu_vcorecfg_base: 0x%lx\n",
@@ -1128,6 +1215,10 @@ static int vpu_remove(struct platform_device *pDev)
 #ifdef MET_POLLING_MODE
 	vpu_uninit_profile();
 #endif
+	if (my_ion_client) {
+		ion_client_destroy(my_ion_client);
+		my_ion_client = NULL;
+	}
 	/* */
 	LOG_DBG("remove vpu driver");
 	/* unregister char driver. */

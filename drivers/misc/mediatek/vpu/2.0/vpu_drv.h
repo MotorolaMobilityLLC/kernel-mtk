@@ -20,6 +20,7 @@
 #define VPU_MAX_NUM_PROPS 32
 #define VPU_MAX_NUM_CORES 3
 extern unsigned int efuse_data;
+extern struct ion_client *my_ion_client;
 
 typedef uint8_t vpu_id_t;
 
@@ -327,6 +328,8 @@ struct vpu_request {
 	uint64_t sett_ptr;       /* pointer to the request setting */
 	uint64_t priv;           /* reserved for user */
 	struct vpu_buffer buffers[VPU_MAX_NUM_PORTS];
+	/* driver usage only, fd in user space / ion handle in kernel */
+	uint64_t buf_ion_infos[VPU_MAX_NUM_PORTS * 3];
 	struct vpu_power power_param;
 };
 
