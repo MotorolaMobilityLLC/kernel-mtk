@@ -38,6 +38,8 @@
 /*******************************************************************************
 *
 ********************************************************************************/
+/*I2C Channel offset*/
+#define I2C_BASE_OFS_CH1 (0x200)
 #define MAX_I2C_CMD_LEN 255
 #define CCU_I2C_APDMA_TXLEN 128
 #define CCU_I2C_MAIN_HW_DRVNAME  "ccu_i2c_main_hwtrg"
@@ -51,8 +53,6 @@ static int ccu_i2c_remove(struct i2c_client *client);
 /*ccu i2c operation*/
 static struct i2c_client *get_ccu_i2c_client(enum CCU_I2C_CHANNEL i2c_controller_id);
 static void ccu_i2c_dump_info(struct mt_i2c *i2c);
-static int ccu_i2c_seize_controller(enum CCU_I2C_CHANNEL i2c_controller_id);
-static int ccu_i2c_release_controller(enum CCU_I2C_CHANNEL i2c_controller_id);
 static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int enable);
 static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id,
 							void **va, uint32_t *pa_h, uint32_t *pa_l, uint32_t *i2c_id);
@@ -184,14 +184,11 @@ int ccu_i2c_controller_init(enum CCU_I2C_CHANNEL i2c_controller_id)
 	if (ccu_i2c_initialized[i2c_controller_id] == MTRUE) {
 		/*if not first time init, release mutex first to avoid deadlock*/
 		LOG_DBG_MUST("reinit, temporily release mutex.\n");
-		ccu_i2c_release_controller(i2c_controller_id);
 	}
 	if (ccu_i2c_controller_en(i2c_controller_id, 1) == -1) {
 		LOG_DBG("ccu_i2c_controller_en 1 fail\n");
 		return -1;
 	}
-
-	ccu_i2c_seize_controller(i2c_controller_id);
 
 	LOG_DBG_MUST("ccu_i2c_controller_init done.\n");
 
@@ -218,8 +215,7 @@ int ccu_get_i2c_dma_buf_addr(struct ccu_i2c_buf_mva_ioarg *ioarg)
 	void *va;
 
 	ret = i2c_query_dma_buffer_addr(ioarg->i2c_controller_id, &va, &ioarg->pa_h, &ioarg->pa_l, &ioarg->i2c_id);
-	LOG_DBG_MUST("got i2c buf pa: %d, %d\n", ioarg->pa_l, ioarg->pa_h);
-	LOG_DBG_MUST("got i2c controller id: %d\n", ioarg->i2c_id);
+
 	if (ret != 0)
 		return ret;
 
@@ -284,49 +280,7 @@ static int i2c_query_dma_buffer_addr(enum CCU_I2C_CHANNEL i2c_controller_id, voi
 	*pa_l = i2c->dma_buf.paddr;
 	*pa_h = (i2c->dma_buf.paddr >> 32);
 	*i2c_id = i2c->id;
-	LOG_DBG("got i2c buf va: %p\n", *va);
-
-	return 0;
-}
-
-static int ccu_i2c_seize_controller(enum CCU_I2C_CHANNEL i2c_controller_id)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c = NULL;
-
-	pClient = get_ccu_i2c_client(i2c_controller_id);
-
-	LOG_DBG("pClient: %p\n", pClient);
-
-	if (pClient == NULL) {
-		LOG_ERR("i2c client is null");
-		return -1;
-	}
-
-	i2c = i2c_get_adapdata(pClient->adapter);
-	mutex_lock(&i2c->i2c_mutex);
-	disable_irq(i2c->irqnr);
-
-	return 0;
-}
-
-static int ccu_i2c_release_controller(enum CCU_I2C_CHANNEL i2c_controller_id)
-{
-	struct i2c_client *pClient = NULL;
-	struct mt_i2c *i2c = NULL;
-
-	pClient = get_ccu_i2c_client(i2c_controller_id);
-
-	LOG_DBG("pClient: %p\n", pClient);
-
-	if (pClient == NULL) {
-		LOG_ERR("i2c client is null");
-		return -1;
-	}
-
-	i2c = i2c_get_adapdata(pClient->adapter);
-	enable_irq(i2c->irqnr);
-	mutex_unlock(&i2c->i2c_mutex);
+	LOG_DBG_MUST("pa(%lld), va(%d), i2c-id(%d)\n", i2c->dma_buf.paddr, *(i2c->dma_buf.vaddr), (uint32_t)i2c->id);
 
 	return 0;
 }
@@ -350,9 +304,9 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int ena
 
 	if (enable) {
 		if (ccu_i2c_initialized[i2c_controller_id] == MFALSE) {
-			ret = hw_trig_i2c_enable(pClient->adapter);
+			ret = i2c_ccu_enable(pClient->adapter, I2C_BASE_OFS_CH1);
 			ccu_i2c_initialized[i2c_controller_id] = MTRUE;
-			LOG_INF_MUST("hw_trig_i2c_enable done.\n");
+			LOG_INF_MUST("i2c_ccu_enable done.\n");
 
 			/*dump controller status*/
 			i2c = i2c_get_adapdata(pClient->adapter);
@@ -360,9 +314,9 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int ena
 		}
 	} else {
 		if (ccu_i2c_initialized[i2c_controller_id] == MTRUE) {
-			ret = hw_trig_i2c_disable(pClient->adapter);
+			ret = i2c_ccu_disable(pClient->adapter);
 			ccu_i2c_initialized[i2c_controller_id] = MFALSE;
-			LOG_INF_MUST("hw_trig_i2c_disable done.\n");
+			LOG_INF_MUST("i2c_ccu_disable done.\n");
 		}
 	}
 	return ret;
@@ -370,8 +324,6 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL i2c_controller_id, int ena
 
 static int ccu_i2c_controller_uninit(enum CCU_I2C_CHANNEL i2c_controller_id)
 {
-	ccu_i2c_release_controller(i2c_controller_id);
-
 	if (ccu_i2c_controller_en(i2c_controller_id, 0) == -1) {
 		LOG_DBG("ccu_i2c_controller_en 0 fail\n");
 		return -1;
