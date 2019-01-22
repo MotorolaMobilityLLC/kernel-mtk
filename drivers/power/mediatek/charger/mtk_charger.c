@@ -995,7 +995,7 @@ static int charger_routine_thread(void *arg)
 	struct charger_manager *info = arg;
 	static int i;
 	unsigned long flags;
-	bool curr_sign;
+	bool curr_sign, is_charger_on;
 
 	while (1) {
 		pr_err("charger_routine_thread [%s]\n", info->chg1_dev->props.alias_name);
@@ -1011,10 +1011,12 @@ static int charger_routine_thread(void *arg)
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc());
 
+		is_charger_on = mtk_is_charger_on(info);
+
 		charger_update_data(info);
 		charger_check_status(info);
 
-		if (mtk_is_charger_on(info) == true) {
+		if (is_charger_on == true) {
 			if (info->do_algorithm)
 				info->do_algorithm(info);
 		}
