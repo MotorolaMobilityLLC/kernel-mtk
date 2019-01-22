@@ -31,6 +31,41 @@ struct charger_manager;
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
 
+extern int charger_get_debug_level(void);
+extern void charger_log(const char *fmt, ...);
+extern void charger_log_flash(const char *fmt, ...);
+#define CHRLOG_ERROR_LEVEL   1
+#define CHRLOG_DEBUG_LEVEL   2
+
+
+#define chr_err(fmt, args...)   \
+		do {									\
+			if (charger_get_debug_level() >= CHRLOG_ERROR_LEVEL) {			\
+				charger_log_flash(fmt, ##args); \
+			}								   \
+		} while (0)
+
+#define chr_debug(fmt, args...)   \
+		do {									\
+			if (charger_get_debug_level() >= CHRLOG_DEBUG_LEVEL) {		\
+				charger_log_flash(fmt, ##args); \
+			}								   \
+		} while (0)
+
+#define chr_err_batch(fmt, args...)   \
+		do {									\
+			if (charger_get_debug_level() >= CHRLOG_ERROR_LEVEL) {			\
+				charger_log(fmt, ##args); \
+			}								   \
+		} while (0)
+
+#define chr_debug_batch(fmt, args...)   \
+		do {									\
+			if (charger_get_debug_level() >= CHRLOG_DEBUG_LEVEL) {		\
+				charger_log(fmt, ##args); \
+			}								   \
+		} while (0)
+
 /*
  * Define this to poll status for eoc/recharge as workaround
  * if not defined, interrupt is used for eoc/recharge
