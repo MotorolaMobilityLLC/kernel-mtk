@@ -1103,6 +1103,12 @@ UINT_8 kalGetEapolKeyType(P_NATIVE_PACKET prPacket);
 BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter);
 #endif
 
+INT_32 kalHaltLock(UINT_32 waitMs);
+INT_32 kalHaltTryLock(VOID);
+VOID kalHaltUnlock(VOID);
+VOID kalSetHalted(BOOLEAN fgHalt);
+BOOLEAN kalIsHalted(VOID);
+
 VOID kalFreeTxMsduWorker(struct work_struct *work);
 VOID kalFreeTxMsdu(P_ADAPTER_T prAdapter, P_MSDU_INFO_T prMsduInfo);
 VOID nicConfigProcSetCamCfgWrite(BOOLEAN enabled);
@@ -1116,6 +1122,8 @@ INT_32 kalPerMonDestroy(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalPerMonHandler(IN P_ADAPTER_T prAdapter, ULONG ulParam);
 UINT_32 kalPerMonGetInfo(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucBuf, IN UINT_32 u4Max);
 INT_32 kalBoostCpu(IN P_ADAPTER_T prAdapter, IN UINT_32 u4TarPerfLevel, IN UINT_32 u4BoostCpuTh);
+INT_32 kalSetCpuNumFreq(UINT_32 u4CoreNum, UINT_32 u4Freq);
+INT_32 kalPerMonSetForceEnableFlag(UINT_8 uFlag);
 INT_32 kalFbNotifierReg(IN P_GLUE_INFO_T prGlueInfo);
 VOID kalFbNotifierUnReg(VOID);
 #endif /* _GL_KAL_H */

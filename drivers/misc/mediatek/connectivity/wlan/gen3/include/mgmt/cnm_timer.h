@@ -66,6 +66,13 @@
 #error WAKE_LOCK_MAX_TIME is too large
 #endif
 
+enum ENUM_TIMER_WAKELOCK_TYPE_T {
+	TIMER_WAKELOCK_AUTO,
+	TIMER_WAKELOCK_NONE,
+	TIMER_WAKELOCK_REQUEST,
+	TIMER_WAKELOCK_NUM
+};
+
 /*******************************************************************************
 *                             D A T A   T Y P E S
 ********************************************************************************
@@ -79,6 +86,7 @@ typedef struct _TIMER_T {
 	UINT_16 u2Reserved;
 	ULONG ulDataPtr;
 	PFN_MGMT_TIMEOUT_FUNC pfMgmtTimeOutFunc;
+	enum ENUM_TIMER_WAKELOCK_TYPE_T eType;
 } TIMER_T, *P_TIMER_T;
 
 /*******************************************************************************
@@ -173,8 +181,11 @@ VOID cnmTimerInitialize(IN P_ADAPTER_T prAdapter);
 
 VOID cnmTimerDestroy(IN P_ADAPTER_T prAdapter);
 
-VOID
-cnmTimerInitTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer, IN PFN_MGMT_TIMEOUT_FUNC pfFunc, IN ULONG ulDataPtr);
+VOID cnmTimerInitTimerOption(IN P_ADAPTER_T prAdapter,
+			     IN P_TIMER_T prTimer,
+			     IN PFN_MGMT_TIMEOUT_FUNC pfFunc,
+			     IN ULONG ulDataPtr,
+			     IN enum ENUM_TIMER_WAKELOCK_TYPE_T eType);
 
 VOID cnmTimerStopTimer(IN P_ADAPTER_T prAdapter, IN P_TIMER_T prTimer);
 
@@ -191,6 +202,14 @@ static __KAL_INLINE__ INT_32 timerPendingTimer(IN P_TIMER_T prTimer)
 	ASSERT(prTimer);
 
 	return prTimer->rLinkEntry.prNext != NULL;
+}
+
+static __KAL_INLINE__ VOID cnmTimerInitTimer(IN P_ADAPTER_T prAdapter,
+					     IN P_TIMER_T prTimer,
+					     IN PFN_MGMT_TIMEOUT_FUNC pfFunc,
+					     IN ULONG ulDataPtr)
+{
+	cnmTimerInitTimerOption(prAdapter, prTimer, pfFunc, ulDataPtr, TIMER_WAKELOCK_AUTO);
 }
 
 #endif /* _CNM_TIMER_H */
