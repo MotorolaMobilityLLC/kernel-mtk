@@ -284,17 +284,9 @@ static const char *const typec_attach_name[] = {
 	"AUDIO",
 	"DEBUG",
 
-#ifdef CONFIG_TYPEC_CAP_DBGACC_SNK
 	"DBGACC_SNK",
-#endif	/* CONFIG_TYPEC_CAP_DBGACC_SNK */
-
-#ifdef CONFIG_TYPEC_CAP_CUSTOM_SRC
 	"CUSTOM_SRC",
-#endif	/* CONFIG_TYPEC_CAP_CUSTOM_SRC */
-
-#ifdef CONFIG_TYPEC_CAP_NORP_SRC
 	"NORP_SRC",
-#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
 
 };
 
