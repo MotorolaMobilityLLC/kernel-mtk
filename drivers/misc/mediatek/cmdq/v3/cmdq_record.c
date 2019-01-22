@@ -2118,7 +2118,6 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 	u32 wait_tpr_index = 0;
 	u32 wait_tpr_arg_a = 0;
 	u32 replace_overwrite_index[5] = {0};
-	u32 replace_debug_index = 0;
 	CMDQ_VARIABLE arg_delay_cpr_start, arg_delay_set_cpr_start;
 	CMDQ_VARIABLE arg_delay_set_start, arg_delay_set_duration, arg_delay_set_result;
 	CMDQ_VARIABLE temp_cpr = CMDQ_ARG_CPR_START + CMDQ_DELAY_THREAD_ID * CMDQ_THR_CPR_MAX;
@@ -2212,10 +2211,6 @@ s32 cmdq_task_create_delay_thread_sram(void **pp_delay_thread_buffer, u32 *buffe
 		cmdq_op_replace_overwrite_cpr(handle, replace_overwrite_index[i],
 			CMDQ_CPR_STRAT_ID + *cpr_offset + wait_tpr_arg_a, -1, -1);
 	}
-
-	if (replace_debug_index > 0)
-		cmdq_op_replace_overwrite_cpr(handle, replace_debug_index,
-			-1, CMDQ_CPR_STRAT_ID + *cpr_offset + wait_tpr_arg_a, -1);
 
 	cmdq_task_dump_command(handle);
 
