@@ -212,13 +212,15 @@ GED_ERROR ged_frr_fence2context_table_get_cid(int pid, void *fid, uint64_t *cid)
 
 int ged_frr_get_fps(int targetPid, uint64_t targetCid)
 {
-	int fps, mode;
+	int fps = -1;
+#ifdef CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT
+	int mode;
 
 	dfrc_get_frr_setting(targetPid, targetCid, &fps, &mode);
 
 	if (mode != DFRC_DRV_MODE_FRR)
 		fps = 60;
-
+#endif
 	return fps;
 }
 
