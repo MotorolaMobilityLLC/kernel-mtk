@@ -346,22 +346,16 @@ void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	PMICLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
-	/*
-	 *case INT_VCAMA1_OC:
-	 *case INT_VCAMA2_OC:
-	 *case INT_VCAMD1_OC:
-	 *case INT_VCAMD2_OC:
-	 *case INT_VCAMIO_OC:
-	 */
+	case INT_VPA_OC:
 		/* keep OC interrupt and keep tracking */
-		/*pr_err(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);*/
-		/*break;*/
+		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
+		break;
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		/* TBD: dump_exception_reg */
 		aee_kernel_warning("PMIC OC", "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s", int_name);
 		pmic_enable_interrupt(intNo, 0, "PMIC");
-		pr_err(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
+		pr_notice(PMICTAG "[PMIC_INT] disable OC interrupt: %s\n", int_name);
 		break;
 	}
 }
