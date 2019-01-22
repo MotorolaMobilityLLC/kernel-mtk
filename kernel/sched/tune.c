@@ -824,6 +824,9 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 				met_tag_oneshot(0, "sched_boost_top_capacity_min", ct->capacity_min);
 		}
 
+		/* boost4xxx: no boost only capacity_min */
+		boost_value = 0;
+
 		stune_task_threshold = default_stune_threshold;
 		break;
 	case 3:
@@ -908,10 +911,6 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 						ct->capacity_min);
 		}
 	}
-
-	/* bypass change boost */
-	if (ctl_no == 4)
-		return 0;
 #endif
 
 	if (boost_value < 0)
@@ -1204,6 +1203,9 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		if (st->idx == 3)
 			met_tag_oneshot(0, "sched_boost_user_top_capacity_min", st->capacity_min);
 
+		/* boost4xxx: no boost only capacity_min */
+		boost = 0;
+
 		stune_task_threshold = default_stune_threshold;
 		break;
 	case 3:
@@ -1283,10 +1285,6 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 			met_tag_oneshot(0, "sched_boost_user_top_capacity_min",
 					st->capacity_min);
 	}
-
-	/* bypass change boost */
-	if (ctl_no == 4)
-		return 0;
 #endif
 
 	global_negative_flag = false;
