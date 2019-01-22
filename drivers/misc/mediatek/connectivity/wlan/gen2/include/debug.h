@@ -379,6 +379,9 @@ VOID wlanDumpTcResAndTxedCmd(PUINT_8 pucBuf, UINT_32 maxLen);
 
 VOID wlanDumpCommandFwStatus(VOID);
 
+VOID wlanDebugScanTargetBSSRecord(P_ADAPTER_T prAdapter, P_BSS_DESC_T prBssDesc);
+VOID wlanDebugScanTargetBSSDump(P_ADAPTER_T prAdapter);
+
 VOID wlanPktDebugDumpInfo(P_ADAPTER_T prAdapter);
 VOID wlanPktDebugTraceInfoIP(UINT_8 status, UINT_8 eventType, UINT_8 ucIpProto, UINT_16 u2IpId);
 VOID wlanPktDebugTraceInfoARP(UINT_8 status, UINT_8 eventType, UINT_16 u2ArpOpCode);
