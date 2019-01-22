@@ -1675,7 +1675,7 @@ static void mt_battery_update_EM(struct battery_data *bat_data)
 	bat_data->status_smb = g_status_smb;
 	bat_data->capacity_smb = g_capacity_smb;
 	bat_data->present_smb = g_present_smb;
-	pr_debug("status_smb = %d, capacity_smb = %d, present_smb = %d\n",
+	battery_log(BAT_LOG_FULL, "status_smb = %d, capacity_smb = %d, present_smb = %d\n",
 		    bat_data->status_smb, bat_data->capacity_smb, bat_data->present_smb);
 	if ((BMT_status.UI_SOC == 100) && (BMT_status.charger_exist == KAL_TRUE))
 		bat_data->BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
@@ -3119,7 +3119,7 @@ void do_chrdet_int_task(void)
 
 irqreturn_t ops_chrdet_int_handler(int irq, void *dev_id)
 {
-	pr_debug("[Power/Battery][chrdet_bat_int_handler]....\n");
+	battery_log(BAT_LOG_FULL, "[Power/Battery][chrdet_bat_int_handler]....\n");
 
 	do_chrdet_int_task();
 
@@ -4983,7 +4983,7 @@ static int __init battery_init(void)
 {
 	int ret;
 
-	pr_debug("battery_init\n");
+	battery_log(BAT_LOG_FULL, "battery_init\n");
 
 #ifdef CONFIG_OF
 	/*  */
@@ -5028,7 +5028,7 @@ static int __init battery_init(void)
 #endif
 	ret = register_pm_notifier(&battery_pm_notifier_block);
 	if (ret)
-		pr_debug("[%s] failed to register PM notifier %d\n", __func__, ret);
+		battery_log(BAT_LOG_FULL, "[%s] failed to register PM notifier %d\n", __func__, ret);
 
 	battery_log(BAT_LOG_CRTI, "****[battery_driver] Initialization : DONE !!\n");
 	return 0;
