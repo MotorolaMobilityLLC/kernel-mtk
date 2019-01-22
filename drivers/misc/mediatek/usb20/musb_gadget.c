@@ -2154,10 +2154,12 @@ static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 		} else {
 			if (!suspend) {
 				DBG(0, "MUSB: gadget pull up %d & suspend = %d\n", is_on, suspend);
+				#ifdef CONFIG_USB_G_ANDROID
 				/*When phy enter suspend status*/
 				/*we need resume it when do device function switch*/
 				USBPHY_SET8(0x68, 0x08);
 				USBPHY_SET8(0x6a, 0x04);
+				#endif
 			}
 			power &= ~MUSB_POWER_SOFTCONN;
 		}
