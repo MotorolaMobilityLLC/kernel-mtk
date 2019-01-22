@@ -14,9 +14,13 @@
 #ifndef __ICCS_H__
 #define __ICCS_H__
 
-#define ICCS_GOV_NAME_LEN        16
-#define ICCS_MIN_SAMPLING_RATE   40ULL
-#define MS_TO_NS(msec)           ((msec) * 1000 * 1000ULL)
+#define ICCS_GOV_NAME_LEN	16
+#define ICCS_MIN_SAMPLING_RATE	40ULL
+#define MS_TO_NS(msec)		((msec) * 1000 * 1000ULL)
+
+#define ICCS_GET_CURR_STATE	1
+#define ICCS_GET_TARGET_STATE	2
+#define ICCS_SET_TARGET_STATE	3
 
 enum transition {
 	ONDEMAND = 0,
@@ -35,6 +39,7 @@ typedef enum {
 
 struct iccs_governor {
 	unsigned int enabled;
+	unsigned int enabled_before_suspend;
 	unsigned int nr_cluster;
 	unsigned int shared_cluster_freq;
 	unsigned long dram_bw_threshold;
@@ -52,7 +57,7 @@ struct iccs_cluster_info {
 	iccs_state state;
 };
 
-/* Governor API*/
+/* Governor API */
 int governor_activation(struct iccs_governor *gov);
 void policy_update(struct iccs_governor *gov, enum transition new_policy);
 void sampling_update(struct iccs_governor *gov, unsigned long long rate);
