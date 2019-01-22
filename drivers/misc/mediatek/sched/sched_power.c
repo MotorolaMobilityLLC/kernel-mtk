@@ -626,6 +626,8 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 
 	len += snprintf(buf+len, max_len - len, "foreground boost=%d\n", group_boost_read(1));
 
+	len += snprintf(buf+len, max_len - len, "top-app boost=%d\n", group_boost_read(3));
+
 
 	return len;
 }

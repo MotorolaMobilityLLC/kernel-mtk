@@ -648,9 +648,12 @@ int boost_value_for_GED_idx(int group_idx, int boost_value)
 			rcu_read_unlock();
 
 #if MET_STUNE_DEBUG
-			/* GED: foreground */
+			/* foreground */
 			if (ct->idx == 1)
-				met_tag_oneshot(0, "sched_boost_ged", ct->boost);
+				met_tag_oneshot(0, "sched_boost_fg", ct->boost);
+			/* top-app */
+			if (ct->idx == 3)
+				met_tag_oneshot(0, "sched_boost_top", ct->boost);
 #endif
 
 			if (!global_negative_flag)
