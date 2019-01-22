@@ -1373,7 +1373,8 @@ void scp_send_reset_wq(enum SCP_RESET_TYPE type)
 {
 	scp_sys_reset_work.flags = (unsigned int) type;
 	scp_sys_reset_work.id = SCP_A_ID;
-	scp_schedule_reset_work(&scp_sys_reset_work);
+	if (scp_ee_enable != 3646633)
+		scp_schedule_reset_work(&scp_sys_reset_work);
 }
 #endif
 
