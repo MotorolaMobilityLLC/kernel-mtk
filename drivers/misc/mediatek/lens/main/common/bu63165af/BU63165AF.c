@@ -115,7 +115,7 @@ int s4AF_ReadReg_BU63165AF(u16 i2c_id, u8 *a_pSendData, u16 a_sizeSendData, u8 *
 	msg[1].len = a_sizeRecvData;
 	msg[1].buf = a_pRecvData;
 
-	i4RetValue = i2c_transfer(g_pstAF_I2Cclient->adapter, msg, sizeof(msg)/sizeof(msg[0]));
+	i4RetValue = i2c_transfer(g_pstAF_I2Cclient->adapter, msg, ARRAY_SIZE(msg));
 
 	if (i4RetValue != 2) {
 		g_u4CheckDrvStatus++;
@@ -201,7 +201,7 @@ static inline int setAFPara(__user struct stAF_MotorCmd *pstMotorCmd)
 {
 	struct stAF_MotorCmd stMotorCmd;
 
-	if (copy_from_user(&stMotorCmd , pstMotorCmd, sizeof(stMotorCmd)))
+	if (copy_from_user(&stMotorCmd, pstMotorCmd, sizeof(stMotorCmd)))
 		LOG_INF("copy to user failed when getting motor command\n");
 
 	LOG_INF("Motor CmdID : %x\n", stMotorCmd.u4CmdID);
