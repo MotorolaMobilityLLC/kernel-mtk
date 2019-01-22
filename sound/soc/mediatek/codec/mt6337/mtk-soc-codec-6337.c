@@ -3833,14 +3833,14 @@ static void VOW_GPIO_Enable(bool enable)
 		/*Enable VOW_DAT_MISO*/
 		AudDrv_GPIO_Request(true, Soc_Aud_Digital_Block_ADDA_VOW);
 		/*set PMIC side GPIO*/
-		Ana_Set_Reg(GPIO_MODE1, 0x3449, 0x0E00); /* 0x9C28 GPIO8 Set to VOW data pin */
+		Ana_Set_Reg(GPIO_MODE1, 0x1449, 0x0E00); /* 0x9C28 GPIO8 Set to VOW data pin */
 	} else {
 		/* set AP side GPIO */
 		/*Disable VOW_CLK_MISO*/
 		/*Disable VOW_DAT_MISO*/
 		AudDrv_GPIO_Request(false, Soc_Aud_Digital_Block_ADDA_VOW);
 		/*set PMIC GPIO*/
-		Ana_Set_Reg(GPIO_MODE1, 0x3649, 0x0E00); /* 0x9C28 GPIO8 Set to default */
+		Ana_Set_Reg(GPIO_MODE1, 0x1249, 0x0E00); /* 0x9C28 GPIO8 Set to default */
 	}
 }
 
