@@ -428,6 +428,9 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf, unsigned
 		port_proxy_send_msg_to_user(md->port_proxy_obj,
 				CCCI_MONITOR_CH, CCCI_MD_MSG_FLIGHT_START_REQUEST, 0);
 		break;
+	case ID_LWA_CONTROL_MSG:
+		ret = ccci_send_msg_to_md(md, CCCI_SYSTEM_TX, LWA_CONTROL_MSG, *((int *)buf), 1);
+		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;
 		break;

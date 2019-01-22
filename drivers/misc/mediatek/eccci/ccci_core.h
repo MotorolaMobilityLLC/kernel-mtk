@@ -192,6 +192,11 @@ struct ccci_mem_layout {	/* all from AP view, AP has no haredware remap after MT
 	void __iomem *ccci_raw_dhl_base_vir;
 	phys_addr_t ccci_raw_dhl_base_phy;
 	unsigned int ccci_raw_dhl_size;
+
+	/* LWA */
+	void __iomem *ccci_lwa_smem_base_vir;
+	phys_addr_t ccci_lwa_smem_base_phy;
+	unsigned int ccci_lwa_smem_size;
 };
 
 struct ccci_smem_layout {
@@ -367,6 +372,7 @@ typedef enum{
 	MISC_INFO_CUSTOMER_VAL = 21,
 	CCCI_FAST_HEADER = 22,
 	MISC_INFO_C2K_MEID = 24,
+	LWA_SHARE_MEMORY = 25,
 	AUDIO_RAW_SHARE_MEMORY = 26,
 	MULTI_MD_MPU = 27,
 	MD_RUNTIME_FEATURE_ID_MAX,
@@ -861,71 +867,6 @@ typedef enum {
 	CCCI_MD_MSG_CFG_UPDATE,
 	CCCI_MD_MSG_RANDOM_PATTERN,
 } CCCI_MD_MSG;
-
-/* AP<->MD messages on control or system channel */
-enum {
-	/* Control channel, MD->AP */
-	MD_INIT_START_BOOT = 0x0,
-	MD_NORMAL_BOOT = 0x0,
-	MD_NORMAL_BOOT_READY = 0x1, /* not using */
-	MD_META_BOOT_READY = 0x2, /* not using */
-	MD_RESET = 0x3, /* not using */
-	MD_EX = 0x4,
-	CCCI_DRV_VER_ERROR = 0x5,
-	MD_EX_REC_OK = 0x6,
-	MD_EX_RESUME = 0x7, /* not using */
-	MD_EX_PASS = 0x8,
-	MD_INIT_CHK_ID = 0x5555FFFF,
-	MD_EX_CHK_ID = 0x45584350,
-	MD_EX_REC_OK_CHK_ID = 0x45524543,
-
-	/* System channel, AP->MD || AP<-->MD message start from 0x100 */
-	MD_DORMANT_NOTIFY = 0x100,
-	MD_SLP_REQUEST = 0x101,
-	MD_TX_POWER = 0x102,
-	MD_RF_TEMPERATURE = 0x103,
-	MD_RF_TEMPERATURE_3G = 0x104,
-	MD_GET_BATTERY_INFO = 0x105,
-
-	MD_SIM_TYPE = 0x107,
-	MD_ICUSB_NOTIFY = 0x108,
-	/* 0x109 for md legacy use to crystal_thermal_change */
-	MD_LOW_BATTERY_LEVEL = 0x10A,
-	/* 0x10B-0x10C occupied by EEMCS */
-	MD_PAUSE_LTE = 0x10D,
-	MD_RESET_AP = 0x118,
-	/* swtp */
-	MD_SW_MD1_TX_POWER = 0x10E,
-	MD_SW_MD2_TX_POWER = 0x10F,
-	MD_SW_MD1_TX_POWER_REQ = 0x110,
-	MD_SW_MD2_TX_POWER_REQ = 0x111,
-	MD_THROTTLING = 0x112, /* SW throughput throttling */
-	/* TEST_MESSAGE for IT only */
-	TEST_MSG_ID_MD2AP = 0x114,
-	TEST_MSG_ID_AP2MD = 0x115,
-	TEST_MSG_ID_L1CORE_MD2AP = 0x116,
-	TEST_MSG_ID_L1CORE_AP2MD = 0x117,
-
-	CCISM_SHM_INIT = 0x119,
-	CCISM_SHM_INIT_ACK = 0x11A,
-	CCISM_SHM_INIT_DONE = 0x11B,
-	PMIC_INTR_MODEM_BUCK_OC = 0x11C,
-	MD_AP_MPU_ACK_MD = 0x11D,
-
-	/*c2k ctrl msg start from 0x200*/
-	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */
-	C2K_STATUS_QUERY_MSG = 0x202, /* for usb bypass */
-	C2K_FLOW_CTRL_MSG = 0x205,
-	C2K_HB_MSG = 0x207,
-	C2K_CCISM_SHM_INIT = 0x209,
-	C2K_CCISM_SHM_INIT_ACK = 0x20A,
-	C2K_CCISM_SHM_INIT_DONE = 0x20B,
-
-	/* System channel, MD->AP message start from 0x1000 */
-	MD_WDT_MONITOR = 0x1000,
-	/* System channel, AP->MD message */
-	MD_WAKEN_UP = 0x10000,
-};
 
 #define NORMAL_BOOT_ID 0
 #define META_BOOT_ID 1

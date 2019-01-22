@@ -15,7 +15,7 @@
 #include "ccci_modem.h"
 #include "port_proxy.h"
 #define TAG "smem"
-/* FIXME, global structures are indexed by SMEM_USER_ID */
+/* FIXME, global structures are indexed by SMEM_USER_ID, this array must aligns with md1_ccci_ports[] */
 static struct ccci_smem_port md1_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c, this must be 1st element, user need this condition. */
 	{SMEM_USER_CCB_DHL, TYPE_CCB, }, /* CCB DHL */
@@ -23,6 +23,7 @@ static struct ccci_smem_port md1_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* for direct tethering */
 	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* for derect tethering */
 	{SMEM_USER_RAW_AUDIO, TYPE_RAW, }, /* for speech */
+	{SMEM_USER_RAW_LWA, TYPE_RAW, }, /* for LWA Wi-FI driver */
 };
 static struct ccci_smem_port md3_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_DBM, TYPE_RAW, }, /* mt_pbm.c */
@@ -31,6 +32,7 @@ static struct ccci_smem_port md3_ccci_smem_ports[] = {
 	{SMEM_USER_RAW_NETD, TYPE_RAW, }, /* dummy */
 	{SMEM_USER_RAW_USB, TYPE_RAW, }, /* dummy */
 	{SMEM_USER_RAW_AUDIO, TYPE_RAW, }, /* for speech */
+	{SMEM_USER_RAW_LWA, TYPE_RAW, }, /* dummy */
 };
 struct tx_notify_task md1_tx_notify_tasks[SMEM_USER_MAX];
 
@@ -172,6 +174,11 @@ int port_smem_cfg(struct ccci_modem *md)
 		md1_ccci_smem_ports[SMEM_USER_RAW_DHL].length = md->mem_layout.ccci_raw_dhl_size;
 		CCCI_NORMAL_LOG(-1, "smem", "CCB addr_phy=%llx, size=%d\n", md->mem_layout.ccci_ccb_data_base_phy,
 				md->mem_layout.ccci_ccb_data_size);
+#ifdef FEATURE_LWA
+		md1_ccci_smem_ports[SMEM_USER_RAW_LWA].addr_vir = md->mem_layout.ccci_lwa_smem_base_vir;
+		md1_ccci_smem_ports[SMEM_USER_RAW_LWA].addr_phy = md->mem_layout.ccci_lwa_smem_base_phy;
+		md1_ccci_smem_ports[SMEM_USER_RAW_LWA].length = md->mem_layout.ccci_lwa_smem_size;
+#endif
 #endif
 
 #ifdef FEATURE_DBM_SUPPORT
