@@ -520,14 +520,10 @@ static int mtk_governor_select(struct cpuidle_driver *drv, struct cpuidle_device
 	/* Get result of MENU governor */
 	menu_select_state = menu_select(drv, dev);
 
-	if (select_state < 0)
-		goto done;
-
 	mtk_gov_select_state = mtk_idle_select_base_on_menu_gov(cpu, menu_select_state);
 
 	select_state = mtk_gov_select_state;
 
-done:
 	return select_state;
 }
 #else
