@@ -287,6 +287,8 @@ int dvt_module_action(enum PATH_TYPE test_path, enum ACTION action)
 int dvt_init_OVL_param(unsigned int mode)
 {
 	memset(&extd_ovl_params, 0, sizeof(extd_ovl_params));
+	extd_ovl_params.p_golden_setting_context = get_golden_setting_pgc();
+	memcpy(&temp_golden, extd_ovl_params.p_golden_setting_context, sizeof(temp_golden));
 	if (mode == RDMA_MODE_DIRECT_LINK) {
 		extd_ovl_params.ovl_layer_scanned = 0;
 		extd_ovl_params.dst_dirty = 1;
@@ -1747,14 +1749,14 @@ int dvt_start_rdma1_to_dpi(unsigned int resolution, unsigned int timeS, unsigned
 		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 1), DISPSYS_DPI_BASE + 0x010, 1);
 		break;
 	case 2:
-		ret = dvt_allocate_buffer(HDMI_VIDEO_1280x720p_60Hz, M4U_FOR_RDMA1);
-		dvt_init_RDMA_param(RDMA_MODE_MEMORY, HDMI_VIDEO_1280x720p_60Hz);
+		ret = dvt_allocate_buffer(HDMI_VIDEO_720x480p_60Hz, M4U_FOR_RDMA1);
+		dvt_init_RDMA_param(RDMA_MODE_MEMORY, HDMI_VIDEO_720x480p_60Hz);
 		/* set background left right top bottom, and enable background*/
 		DISP_REG_SET_FIELD(NULL, REG_FLD(1, 0), DISPSYS_DPI_BASE + 0x010, 1);
-		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 16), DISPSYS_DPI_BASE + 0x030, 0x140);
-		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 0), DISPSYS_DPI_BASE + 0x030, 0x140);
-		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 16), DISPSYS_DPI_BASE + 0x034, 0xB4);
-		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 0), DISPSYS_DPI_BASE + 0x034, 0xB4);
+		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 16), DISPSYS_DPI_BASE + 0x030, 280);
+		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 0), DISPSYS_DPI_BASE + 0x030, 280);
+		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 16), DISPSYS_DPI_BASE + 0x034, 120);
+		DISP_REG_SET_FIELD(NULL, REG_FLD(13, 0), DISPSYS_DPI_BASE + 0x034, 120);
 		DISP_REG_SET_FIELD(NULL, REG_FLD(24, 0), DISPSYS_DPI_BASE + 0x038, 0x3ebcca);
 		break;
 	case 4:
@@ -1978,10 +1980,10 @@ static int dpi_dvt_testcase_2_BG(unsigned int resolution)
 	}
 
 	dpi_dvt_parameters(resolution);
-	extd_dpi_params.dispif_config.dpi.width = 1280;
-	extd_dpi_params.dispif_config.dpi.height = 720;
-	extd_dpi_params.dispif_config.dpi.bg_width = 640;
-	extd_dpi_params.dispif_config.dpi.bg_height = 360;
+	extd_dpi_params.dispif_config.dpi.width = 720;
+	extd_dpi_params.dispif_config.dpi.height = 480;
+	extd_dpi_params.dispif_config.dpi.bg_width = 560;
+	extd_dpi_params.dispif_config.dpi.bg_height = 240;
 	dvt_dump_ext_dpi_parameters();
 	dvt_start_rdma1_to_dpi(resolution, 20, 0x2);
 
@@ -2228,14 +2230,14 @@ int dpi_dvt_run_cases(unsigned int caseNum)
 #ifdef DPI_DVT_TEST_SUPPORT
 	case 1:
 		{
-			dpi_dvt_parameters(HDMI_VIDEO_1920x1080p_30Hz);
+			dpi_dvt_parameters(HDMI_VIDEO_1280x720p_60Hz);
 			dvt_dump_ext_dpi_parameters();
-			dvt_start_rdma1_to_dpi(HDMI_VIDEO_1920x1080p_30Hz, 20, 0x1);
+			dvt_start_rdma1_to_dpi(HDMI_VIDEO_1280x720p_60Hz, 20, 0x1);
 			break;
 		}
 	case 2:
 		{
-			dpi_dvt_testcase_2_BG(HDMI_VIDEO_1920x1080p_30Hz);
+			dpi_dvt_testcase_2_BG(HDMI_VIDEO_1280x720p_60Hz);
 			msleep(500);
 			break;
 		}
@@ -2261,14 +2263,14 @@ int dpi_dvt_run_cases(unsigned int caseNum)
 		}
 	case 6:
 		{
-			dpi_dvt_testcase_6_yuv(HDMI_VIDEO_1920x1080p_30Hz, acsYCbCr444);
+			dpi_dvt_testcase_6_yuv(HDMI_VIDEO_1280x720p_60Hz, acsYCbCr444);
 			msleep(500);
 			break;
 		}
 	case 10:
 		{
 /* dpi_dvt_testcase_10_checkSum(HDMI_VIDEO_2160p_DSC_30Hz); */
-			dpi_dvt_testcase_10_checkSum(HDMI_VIDEO_1920x1080p_30Hz);
+			dpi_dvt_testcase_10_checkSum(HDMI_VIDEO_1280x720p_60Hz);
 
 			msleep(500);
 			break;
