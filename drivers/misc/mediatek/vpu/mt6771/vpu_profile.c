@@ -17,6 +17,7 @@
 #include <mt-plat/met_drv.h>
 #include "vpu_cmn.h"
 #include "vpu_reg.h"
+#include "vpu_profile.h"
 
 /* MET: define to enable MET */
 #if defined(VPU_MET_READY)
@@ -25,7 +26,7 @@
 #endif
 
 
-#define DEFAULT_POLLING_PERIOD_NS (5000000)
+#define DEFAULT_POLLING_PERIOD_NS (1000000)
 #define COUNTER_PID (0) /*(65535)*/ /*task_pid_nr(current)*/
 #define BEGINEND_PID (0) /*(65535)*/ /*task_pid_nr(current)*/
 #define ASYNCBEGINEND_PID (0) /*(65535)*/ /*task_pid_nr(current)*/
@@ -39,6 +40,7 @@ static bool vpu_on[MTK_VPU_CORE];
 static struct mutex profile_mutex;
 static int profiling_counter;
 static int stop_result;
+static int vpu_counter[MTK_VPU_CORE][4];
 /*
  * mini trace system
  * [KATRACE] mini trace system
@@ -121,11 +123,10 @@ void katrace_async_end_body(const char *name, int32_t cookie)
 /*
 * VPU event based MET funcs
 */
-void vpu_met_event_enter(int core, int algo_id, int vcore_opp,
-	int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq)
+void vpu_met_event_enter(int core, int algo_id, int dsp_freq)
 {
 	#if defined(VPU_MET_READY)
-	trace_VPU__D2D_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+	trace_VPU__D2D_enter(core, algo_id, dsp_freq);
 	#endif
 }
 
@@ -136,36 +137,48 @@ void vpu_met_event_leave(int core, int algo_id)
 	#endif
 }
 
+void vpu_met_packet(long long wclk, char action, int core, int pid,
+	int sessid, char *str_desc, int val)
+{
+	#if defined(VPU_MET_READY)
+	trace___MET_PACKET__(wclk, action, core, pid, sessid, str_desc, val);
+	#endif
+}
+
+/*
+* VPU event based MET funcs
+*/
+void vpu_met_event_dvfs(int vcore_opp,
+	int dsp_freq, int ipu_if_freq, int dsp1_freq, int dsp2_freq)
+{
+	#if defined(VPU_MET_READY)
+	trace_VPU__DVFS(vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+	#endif
+}
 
 /*
  * VPU counter reader
  */
 static void vpu_profile_core_read(int core)
 {
-	uint64_t ptr_ctrl;
-	uint64_t ptr_axi_2;
-	int value1 = 0, value2 = 0, value3 = 0, value4 = 0;
-
-	ptr_ctrl = vpu_base[core] + g_vpu_reg_descs[REG_CTRL].offset;
-	ptr_axi_2 = vpu_base[core] + g_vpu_reg_descs[REG_AXI_DEFAULT2].offset;
-
-	/* enable */
-	VPU_SET_BIT(ptr_axi_2, 0);
-	VPU_SET_BIT(ptr_axi_2, 1);
-	VPU_SET_BIT(ptr_axi_2, 2);
-	VPU_SET_BIT(ptr_axi_2, 3);
-	/* the following two are set after vpu boot-up */
-	/*VPU_SET_BIT(ptr_ctrl, 31);*/
-	/*VPU_SET_BIT(ptr_ctrl, 26);*/
+	int i;
+	uint32_t value[4];
 
 	/* read register and send to met */
-	value1 = vpu_read_reg32(vpu_base[core], DEBUG_BASE_OFFSET + 0x80);
-	value2 = vpu_read_reg32(vpu_base[core], DEBUG_BASE_OFFSET + 0x84);
-	value3 = vpu_read_reg32(vpu_base[core], DEBUG_BASE_OFFSET + 0x88);
-	value4 = vpu_read_reg32(vpu_base[core], DEBUG_BASE_OFFSET + 0x8C);
+	for (i = 0; i < 4; i++) {
+		uint32_t counter;
+
+		counter = vpu_read_reg32(vpu_base[core],
+					 DEBUG_BASE_OFFSET + 0x1080 + i * 4);
+		value[i] = (counter - vpu_counter[core][i]);
+		vpu_counter[core][i] = counter;
+	}
+	LOG_DBG("[vpu_profile_%d] read %d/%d/%d/%d\n",
+		core, value[0], value[1], value[2], value[3]);
+
 	LOG_DBG("[vpu_profile_%d] read %d/%d/%d/%d\n", core, value1, value2, value3, value4);
 	#if defined(VPU_MET_READY)
-	trace_VPU__polling(core, value1, value2, value3, value4);
+	trace_VPU__polling(core, value[0], value[1], value[2], value[3]);
 	#endif
 }
 
@@ -219,11 +232,61 @@ static int vpu_profile_timer_stop(void)
 	return 0;
 }
 
+static uint32_t make_pm_ctrl(uint32_t selector, uint32_t mask)
+{
+	uint32_t ctrl = PERF_PMCTRL_TRACELEVEL;
 
-static int vpu_profile_start(void)
+	ctrl |= selector << PERF_PMCTRL_SELECT_SHIFT;
+	ctrl |= mask << PERF_PMCTRL_MASK_SHIFT;
+	return ctrl;
+}
+
+static void vpu_profile_core_start(int core)
+{
+	uint64_t ptr_axi_2;
+	uint64_t ptr_pmg, ptr_pmctrl0, ptr_pmstat0, ptr_pmcounter0;
+	uint32_t ctrl[4];
+	int i;
+
+	ptr_axi_2 = vpu_base[core] + g_vpu_reg_descs[REG_AXI_DEFAULT2].offset;
+	ptr_pmg   = vpu_base[core] + DEBUG_BASE_OFFSET + 0x1000;
+
+	ptr_pmcounter0 = vpu_base[core] + DEBUG_BASE_OFFSET + 0x1080;
+	ptr_pmctrl0    = vpu_base[core] + DEBUG_BASE_OFFSET + 0x1100;
+	ptr_pmstat0    = vpu_base[core] + DEBUG_BASE_OFFSET + 0x1180;
+	/* enable */
+	VPU_SET_BIT(ptr_axi_2, 0);
+	VPU_SET_BIT(ptr_axi_2, 1);
+	VPU_SET_BIT(ptr_axi_2, 2);
+	VPU_SET_BIT(ptr_axi_2, 3);
+
+	ctrl[0] = make_pm_ctrl(XTPERF_CNT_INSN, XTPERF_MASK_INSN_ALL);
+	ctrl[1] = make_pm_ctrl(XTPERF_CNT_IDMA, XTPERF_MASK_IDMA_ACTIVE_CYCLES);
+	ctrl[2] = make_pm_ctrl(XTPERF_CNT_D_STALL, XTPERF_MASK_D_STALL_UNCACHED_LOAD);
+	ctrl[3] = make_pm_ctrl(XTPERF_CNT_I_STALL, XTPERF_MASK_I_STALL_CACHE_MISS);
+
+	/* ctrl[2] = make_pm_ctrl(XTPERF_CNT_EXR, XTPERF_MASK_EXR_ALL);*/
+	/* ctrl[3] = make_pm_ctrl(XTPERF_CNT_BUBBLES, XTPERF_MASK_BUBBLES_ALL);*/
+
+	/* read register and send to met */
+	for (i = 0; i < 4; i++) {
+		vpu_write_reg32(ptr_pmctrl0, i * 4, ctrl[i]);
+		vpu_write_reg32(ptr_pmstat0, i * 4, 0);
+		vpu_write_reg32(ptr_pmcounter0, i * 4, 0);
+		vpu_counter[core][i] = 0;
+	}
+
+	/* 0: PERF_PMG_ENABLE */
+	VPU_SET_BIT(ptr_pmg, 0);
+}
+
+static int vpu_profile_start(int core)
 {
 	LOG_DBG("vpu_profile_start +\n");
-	vpu_profile_timer_start();
+
+	if (vpu_on[core])
+		vpu_profile_core_start(core);
+
 	LOG_DBG("vpu_profile_start -\n");
 	return 0;
 }
@@ -264,13 +327,12 @@ int vpu_profile_state_set(int core, int val)
 		vpu_on[core] = true;
 		LOG_INF("[vpu_profile_%d->%d] (start) counter(%d, %d)\n",
 			core, vpu_on[core], m_vpu_profile_state, profiling_counter);
-		if (profiling_counter == 1 && m_vpu_profile_state == 0) {
-			m_vpu_profile_state = val;
-			mutex_unlock(&profile_mutex);
-			vpu_profile_start();
-		} else {
-			mutex_unlock(&profile_mutex);
-		}
+		m_vpu_profile_state = val;
+		mutex_unlock(&profile_mutex);
+		vpu_profile_start(core);
+
+		if (profiling_counter == 1)
+			vpu_profile_timer_start();
 		break;
 	default:
 		/*unsupported command*/

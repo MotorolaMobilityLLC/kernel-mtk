@@ -54,6 +54,8 @@ enum {
 	VPU_CMD_DO_PASS2_DL     = 0x11,
 	VPU_CMD_DO_D2D          = 0x22,
 	VPU_CMD_SET_DEBUG       = 0x40,
+	VPU_CMD_SET_MPU         = 0x41,
+	VPU_CMD_SET_FTRACE_LOG  = 0x42,
 	VPU_CMD_GET_SWVER       = 0x81,
 	VPU_CMD_GET_ALGO        = 0x82,
 
@@ -70,6 +72,11 @@ enum {
 	VPU_STATE_TERMINATED    = 0x10
 };
 
+enum {
+	VPU_REQ_DO_CHECK_STATE     = 0x100,
+	VPU_REQ_DO_DUMP_LOG        = 0x101,
+	VPU_REQ_DO_CLOSED_FILE     = 0x102
+};
 
 enum vpu_reg {
 	/* module vpu */

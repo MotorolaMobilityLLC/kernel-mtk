@@ -80,7 +80,7 @@ struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
 #define POWER_ON_MAGIC		(2)
 #define OPPTYPE_VCORE		(0)
 #define OPPTYPE_DSPFREQ		(1)
-#define HOST_VERSION		(0x18032300) /* 20180323, 00:00 : exception isr handle */
+#define HOST_VERSION	(0x18070300) /* 20180703, 00:00 : vpu log mechanism */
 
 /* ion & m4u */
 static m4u_client_t *m4u_client;
@@ -345,21 +345,30 @@ static inline int Map_DSP_Freq_Table(int freq_opp)
 * Add MET ftrace event for power profilling.
 ********************************************************************************/
 #if defined(VPU_MET_READY)
-void MET_Events_Trace(bool enter, int core, int algo_id)
+void MET_Events_DVFS_Trace(void)
 {
 	int vcore_opp = 0;
 	int dsp_freq = 0, ipu_if_freq = 0, dsp1_freq = 0, dsp2_freq = 0;
 
+	mutex_lock(&opp_mutex);
+	vcore_opp = opps.vcore.index;
+	dsp_freq = Map_DSP_Freq_Table(opps.dsp.index);
+	ipu_if_freq = Map_DSP_Freq_Table(opps.ipu_if.index);
+	dsp1_freq = Map_DSP_Freq_Table(opps.dspcore[0].index);
+	dsp2_freq = Map_DSP_Freq_Table(opps.dspcore[1].index);
+	mutex_unlock(&opp_mutex);
+	vpu_met_event_dvfs(vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+}
+
+void MET_Events_Trace(bool enter, int core, int algo_id)
+{
 	if (enter) {
-		/* only read for debug purpose*/
-		/*mutex_lock(&opp_mutex);*/
-		vcore_opp = opps.vcore.index;
-		dsp_freq = Map_DSP_Freq_Table(opps.dsp.index);
-		ipu_if_freq = Map_DSP_Freq_Table(opps.ipu_if.index);
-		dsp1_freq = Map_DSP_Freq_Table(opps.dspcore[0].index);
-		dsp2_freq = Map_DSP_Freq_Table(opps.dspcore[1].index);
-		/*mutex_unlock(&opp_mutex);*/
-		vpu_met_event_enter(core, algo_id, vcore_opp, dsp_freq, ipu_if_freq, dsp1_freq, dsp2_freq);
+		int dsp_freq = 0;
+
+		mutex_lock(&opp_mutex);
+		dsp_freq = Map_DSP_Freq_Table(opps.dspcore[core].index);
+		mutex_unlock(&opp_mutex);
+		vpu_met_event_enter(core, algo_id, dsp_freq);
 	} else {
 		vpu_met_event_leave(core, algo_id);
 	}
@@ -767,6 +776,10 @@ static bool vpu_change_opp(int core, int type)
 	}
 
 out:
+#if defined(VPU_MET_READY)
+	MET_Events_DVFS_Trace();
+#endif
+
 	return true;
 }
 
@@ -1300,25 +1313,430 @@ static void vpu_unprepare_regulator_and_clock(void)
 }
 #endif
 
+#define MET_VPU_LOG
+#ifdef MET_VPU_LOG
+/* log format */
+#define VPUBUF_MARKER		(0xBEEF)
+#define VPULOG_START_MARKER	(0x55AA)
+#define VPULOG_END_MARKER	(0xAA55)
+#define MX_LEN_STR_DESC		(128)
+
+#pragma pack(push)
+#pragma pack(2)
+struct vpulog_format_head_t {
+	unsigned short start_mark;
+	unsigned char desc_len;
+	unsigned char action_id;
+	unsigned int sys_timer_h;
+	unsigned int sys_timer_l;
+	unsigned short sessid;
+};
+#pragma pack(pop)
+
+struct vpu_log_reader_t {
+	struct list_head list;
+	int core;
+	unsigned int buf_addr;
+	unsigned int buf_size;
+	void *ptr;
+};
+
+struct my_ftworkQ_struct_t {
+	struct list_head list;
+	spinlock_t my_lock;
+	int pid;
+	struct work_struct my_work;
+};
+
+static struct my_ftworkQ_struct_t ftrace_dump_work[MTK_VPU_CORE];
+static void vpu_dump_ftrace_workqueue(struct work_struct *);
+static int vpu_check_postcond(int core);
+
+static void __MET_PACKET__(int vpu_core, unsigned long long wclk,
+	 unsigned char action_id, char *str_desc, unsigned int sessid)
+{
+	char action = 'Z';
+	char null_str[] = "null";
+	char *__str_desc = str_desc;
+	int val = 0;
+
+	switch (action_id) {
+	/* For Sync Maker Begin/End */
+	case 0x01:
+		action = 'B';
+		break;
+	case 0x02:
+		action = 'E';
+		break;
+	/* For Counter Maker */
+	case 0x03:
+		action = 'C';
+		/* counter type: */
+		/* bit 0~11: string desc */
+		/* bit 12~15: count val */
+		val = *(unsigned int *)(str_desc + 12);
+		break;
+	/* for Async Marker Start/Finish */
+	case 0x04:
+		action = 'S';
+		break;
+	case 0x05:
+		action = 'F';
+		break;
+	}
+	if (str_desc[0] == '\0') {
+		/* null string handle */
+		__str_desc =  null_str;
+	}
+
+	vpu_met_packet(wclk, action, vpu_core, ftrace_dump_work[vpu_core].pid,
+		sessid + 0x8000 * vpu_core, __str_desc, val);
+}
+
+static void dump_buf(void *ptr, int leng)
+{
+	int idx = 0;
+	unsigned short *usaddr;
+
+	for (idx = 0; idx < leng; idx += 16) {
+		usaddr = (unsigned short *)(ptr + idx);
+		vpu_trace_dump("%08x: %04x%04x %04x%04x %04x%04x %04x%04x,",
+			idx,
+			usaddr[0], usaddr[1], usaddr[2], usaddr[3],
+			usaddr[4], usaddr[5], usaddr[6], usaddr[7]
+		);
+	}
+
+}
+
+static int vpulog_clone_buffer(int core, unsigned int addr, unsigned int size,
+	 void *ptr)
+{
+	int idx = 0;
+
+	for (idx = 0; idx < size; idx += 4) {
+		/* read 4 bytes from VPU DMEM */
+		*((unsigned int *)(ptr + idx)) = vpu_read_reg32(vpu_service_cores[core].vpu_base, addr + idx);
+	}
+	/* notify VPU buffer copy is finish */
+	vpu_write_field(core, FLD_XTENSA_INFO18, 0x00000000);
+	return 0;
+}
+
+static bool vpulog_check_buff_ready(void *buf, int buf_len)
+{
+	if (VPUBUF_MARKER != *(unsigned short *)buf) {
+		/* front marker is invalid*/
+		vpu_trace_dump("Error front maker: %04x", *(unsigned short *)buf);
+		return false;
+	}
+	if (VPUBUF_MARKER != *(unsigned short *)(buf + buf_len - 2)) {
+		vpu_trace_dump("Error end maker: %04x",
+			*(unsigned short *)(buf + buf_len - 2));
+		return false;
+	}
+	return true;
+}
+
+static bool vpulog_check_packet_valid(struct vpulog_format_head_t *lft)
+{
+	if (lft->start_mark != VPULOG_START_MARKER) {
+		vpu_trace_dump("Error lft->start_mark: %02x", lft->start_mark);
+		return false;
+	}
+	if (lft->desc_len > 0x10) {
+		vpu_trace_dump("Error lft->desc_len: %02x", lft->desc_len);
+		return false;
+	}
+	return true;
+}
+
+static void vpu_log_parser(int vpu_core, void *ptr, int buf_leng)
+{
+	int idx = 0;
+	void *start_ptr = ptr;
+	int valid_len = 0;
+	struct vpulog_format_head_t *lft;
+	char trace_data[MX_LEN_STR_DESC];
+	int vpulog_format_header_size = sizeof(struct vpulog_format_head_t);
+
+	/*check buffer status*/
+	if (false == vpulog_check_buff_ready(start_ptr, buf_leng)) {
+		vpu_trace_dump("vpulog_check_buff_ready fail: %p %d", ptr, buf_leng);
+		dump_buf(start_ptr, buf_leng);
+		return;
+	}
+
+	/* get valid length*/
+	valid_len = *(unsigned short *)(start_ptr + 2);
+	if (valid_len >= buf_leng) {
+		vpu_trace_dump("valid_len: %d large than buf_leng: %d", valid_len,
+			buf_leng);
+		return;
+	}
+	/*data offset start after Marker,Length*/
+	idx += 4;
+
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+		vpu_trace_begin("vpu_log_parser|vpu%d|@%p/%d", vpu_core, ptr,
+			buf_leng);
+	while (1) {
+		unsigned long long sys_t;
+		int packet_size = 0;
+		void *data_ptr;
+
+		if (idx >= valid_len)
+			break;
+
+		lft = (struct vpulog_format_head_t *)(start_ptr + idx);
+		data_ptr = (start_ptr + idx) + vpulog_format_header_size;
+		if (false == vpulog_check_packet_valid(lft)) {
+			vpu_trace_dump("vpulog_check_packet_valid fail");
+			dump_buf(start_ptr, buf_leng);
+			break;
+		}
+
+		/*calculate packet size: header + data + end_mark*/
+		packet_size = vpulog_format_header_size + lft->desc_len + 2;
+		if (idx + packet_size > valid_len) {
+			vpu_trace_dump("error length (idx: %d, packet_size: %d)",
+				idx, packet_size);
+			vpu_trace_dump("out of bound: valid_len: %d", valid_len);
+			dump_buf(start_ptr, buf_leng);
+			break;
+		}
+
+		if (lft->desc_len > MX_LEN_STR_DESC) {
+			vpu_trace_dump("lft->desc_len(%d) > MX_LEN_STR_DESC(%d)",
+				lft->desc_len, MX_LEN_STR_DESC);
+			dump_buf(start_ptr, buf_leng);
+			break;
+		}
+		memset(trace_data, 0x00, MX_LEN_STR_DESC);
+		if (lft->desc_len > 0) {
+			/*copy data buffer*/
+			memcpy(trace_data, data_ptr, lft->desc_len);
+		}
+		sys_t = lft->sys_timer_h;
+		sys_t = (sys_t << 32) + (lft->sys_timer_l & 0xFFFFFFFF);
+
+		__MET_PACKET__(
+			vpu_core,
+			sys_t,
+			lft->action_id,
+			trace_data,
+			lft->sessid
+		);
+		idx += packet_size;
+	}
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+		vpu_trace_end();
+}
+static unsigned int addr_tran_vpu2apmcu(int core, unsigned int buf_addr)
+{
+	unsigned int apmcu_log_buf = 0x0;
+	unsigned int apmcu_log_buf_ofst = 0xFFFFFFFF;
+
+	switch (core) {
+	case 0:
+		apmcu_log_buf = ((buf_addr & 0x000fffff) | 0x19100000);
+		apmcu_log_buf_ofst = apmcu_log_buf - 0x19100000;
+		break;
+	case 1:
+		apmcu_log_buf = ((buf_addr & 0x000fffff) | 0x19200000);
+		apmcu_log_buf_ofst = apmcu_log_buf - 0x19200000;
+		break;
+	default:
+		LOG_ERR("wrong core(%d)\n", core);
+		goto out;
+	}
+out:
+	return apmcu_log_buf_ofst;
+}
+static void vpu_dump_ftrace_workqueue(struct work_struct *work)
+{
+	unsigned int log_buf_size = 0x0;
+	struct my_ftworkQ_struct_t *my_work_core = container_of(work,
+		struct my_ftworkQ_struct_t, my_work);
+	struct list_head *entry;
+	struct vpu_log_reader_t *vlr;
+	void *ptr;
+	int vpu_core;
+
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+		vpu_trace_begin("VPU_LOG_ISR_BOTTOM_HALF");
+	/* protect area start */
+list_rescan:
+	spin_lock_irq(&(my_work_core->my_lock));
+	list_for_each(entry, &(my_work_core->list)) {
+		vlr = list_entry(entry, struct vpu_log_reader_t, list);
+		log_buf_size = vlr->buf_size;
+		vpu_core = vlr->core;
+		if (vlr != NULL) {
+			vpu_trace_dump("%s %d addr/size/ptr: %08x/%08x/%p",
+				__func__, __LINE__, vlr->buf_addr,
+				vlr->buf_size, vlr->ptr);
+		} else {
+			vpu_trace_dump("%s %d [%d] vlr is null",
+				__func__, __LINE__, vpu_core);
+		}
+
+		ptr = vlr->ptr;
+		if (ptr) {
+			vpu_log_parser(vpu_core, ptr, log_buf_size);
+			kfree(ptr);
+			vlr->ptr = NULL;
+		} else {
+			vpu_trace_dump("my_work_core->ptr is NULL");
+		}
+		list_del(entry);
+		kfree(vlr);
+		spin_unlock_irq(&(my_work_core->my_lock));
+		goto list_rescan;
+	}
+	spin_unlock_irq(&(my_work_core->my_lock));
+	/* protect area end */
+	if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+		vpu_trace_end();
+}
+
+static int isr_common_handler(int core)
+{
+	int req_cmd = 0;
+	int req_dump = 0;
+	unsigned int apmcu_log_buf_ofst;
+	unsigned int log_buf_addr = 0x0;
+	unsigned int log_buf_size = 0x0;
+	struct vpu_log_reader_t *vpu_log_reader;
+	void *ptr;
+
+	LOG_DBG("vpu %d received a interrupt\n", core);
+
+	/* INFO 17 was used to reply command done */
+	req_cmd = vpu_read_field(core, FLD_XTENSA_INFO17);
+	LOG_DBG("INFO17=0x%08x\n", req_cmd);
+	vpu_trace_dump("VPU%d_ISR_RECV|INFO17=0x%08x", core, req_cmd);
+	switch (req_cmd) {
+	case 0:
+		break;
+	case VPU_REQ_DO_CHECK_STATE:
+	default:
+		if (vpu_check_postcond(core) == -EBUSY) {
+			/* host may receive isr to dump ftrace log while d2d is stilling running */
+			/* but the info17 is set as 0x100 */
+			/* in this case, we do nothing for cmd state control flow while device status is busy */
+			vpu_trace_dump("VPU%d VPU_REQ_DO_CHECK_STATE BUSY", core);
+		} else {
+			/* other normal cases for cmd state control flow */
+			vpu_service_cores[core].is_cmd_done = true;
+			wake_up_interruptible(&cmd_wait);
+			vpu_trace_dump("VPU%d VPU_REQ_DO_CHECK_STATE OK", core);
+		}
+		break;
+	}
+
+
+	/* INFO18 was used to dump MET Log */
+	req_dump = vpu_read_field(core, FLD_XTENSA_INFO18);
+	LOG_DBG("INFO18=0x%08x\n", req_dump);
+	vpu_trace_dump("VPU%d_ISR_RECV|INFO18=0x%08x", core, req_dump);
+	/* dispatch interrupt by INFO18 */
+	switch (req_dump) {
+	case 0:
+		break;
+	case VPU_REQ_DO_DUMP_LOG:
+		/* handle output log */
+		if (g_func_mask & VFM_ROUTINE_PRT_SYSLOG) {
+			log_buf_addr = vpu_read_field(core, FLD_XTENSA_INFO05);
+			log_buf_size = vpu_read_field(core, FLD_XTENSA_INFO06);
+
+			/*translate vpu address to apmcu*/
+			apmcu_log_buf_ofst = addr_tran_vpu2apmcu(core, log_buf_addr);
+			if (g_vpu_log_level > VpuLogThre_PERFORMANCE) {
+				vpu_trace_dump("[vpu_%d] log buf/size(0x%08x/0x%08x) -> log_apmcu offset(0x%08x)",
+					core,
+					log_buf_addr,
+					log_buf_size,
+					apmcu_log_buf_ofst
+				);
+			}
+			if (apmcu_log_buf_ofst == 0xFFFFFFFF) {
+				LOG_ERR("addr_tran_vpu2apmcu translate fail!\n");
+				goto info18_out;
+			}
+			/* in ISR we need use ATOMIC flag to alloc memory */
+			ptr = kmalloc(log_buf_size, GFP_ATOMIC);
+			if (ptr) {
+				if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+					vpu_trace_begin("VPULOG_ISR_TOPHALF|VPU%d", core);
+				vpu_log_reader = kmalloc(sizeof(struct vpu_log_reader_t), GFP_ATOMIC);
+				if (vpu_log_reader) {
+					/*fill vpu_log reader's information*/
+					vpu_log_reader->core = core;
+					vpu_log_reader->buf_addr = log_buf_addr;
+					vpu_log_reader->buf_size = log_buf_size;
+					vpu_log_reader->ptr = ptr;
+
+					LOG_DBG("%s %d [vpu_%d] addr/size/ptr: %08x/%08x/%p\n",
+						__func__, __LINE__,
+						core,
+						log_buf_addr,
+						log_buf_size,
+						ptr);
+					/* clone buffer in isr*/
+					if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+						vpu_trace_begin("VPULOG_CLONE_BUFFER|VPU%d|%08x/%u->%p",
+							core,
+							log_buf_addr,
+							log_buf_size,
+							ptr);
+					vpulog_clone_buffer(core, apmcu_log_buf_ofst, log_buf_size, ptr);
+					if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+						vpu_trace_end();
+					/* dump_buf(ptr, log_buf_size); */
+
+					/* protect area start */
+					spin_lock(&(ftrace_dump_work[core].my_lock));
+					list_add_tail(&(vpu_log_reader->list), &(ftrace_dump_work[core].list));
+					spin_unlock(&(ftrace_dump_work[core].my_lock));
+					/* protect area end */
+
+					/* dump log to ftrace on BottomHalf */
+					schedule_work(&(ftrace_dump_work[core].my_work));
+				} else {
+					LOG_ERR("vpu_log_reader alloc fail");
+				}
+				if (g_vpu_log_level > VpuLogThre_PERFORMANCE)
+					vpu_trace_end();
+			} else {
+				LOG_ERR("vpu buffer alloc fail");
+			}
+		}
+		break;
+	case VPU_REQ_DO_CLOSED_FILE:
+		break;
+	default:
+		LOG_ERR("vpu %d not support cmd..(%d)\n", core,
+			req_dump);
+		break;
+	}
+
+info18_out:
+	/* clear int */
+	vpu_write_field(core, FLD_APMCU_INT, 1);
+	return IRQ_HANDLED;
+}
+
 irqreturn_t vpu0_isr_handler(int irq, void *dev_id)
 {
-	LOG_DBG("vpu 0 received a interrupt\n");
-	vpu_service_cores[0].is_cmd_done = true;
-	wake_up_interruptible(&cmd_wait);
-	vpu_write_field(0, FLD_APMCU_INT, 1);                   /* clear int */
-
-	return IRQ_HANDLED;
+	return isr_common_handler(0);
 }
+
 irqreturn_t vpu1_isr_handler(int irq, void *dev_id)
 {
-	LOG_DBG("vpu 1 received a interrupt\n");
-	vpu_service_cores[1].is_cmd_done = true;
-	wake_up_interruptible(&cmd_wait);
-	vpu_write_field(1, FLD_APMCU_INT, 1);                   /* clear int */
-
-	return IRQ_HANDLED;
+	return isr_common_handler(1);
 }
-
+#endif
 static bool service_pool_is_empty(int core)
 {
 	bool is_empty = true;
@@ -2007,6 +2425,12 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			change_freq_first[i] = false;
 			exception_isr_check[i] = false;
 			INIT_DELAYED_WORK(&(power_counter_work[i].my_work), vpu_power_counter_routine);
+#ifdef MET_VPU_LOG
+			/* Init ftrace dumpwork information */
+			spin_lock_init(&(ftrace_dump_work[i].my_lock));
+			INIT_LIST_HEAD(&(ftrace_dump_work[i].list));
+			INIT_WORK(&(ftrace_dump_work[i].my_work), vpu_dump_ftrace_workqueue);
+#endif
 			#ifdef CONFIG_PM_WAKELOCKS
 			if (i == 0)
 				wakeup_source_init(&(vpu_wake_lock[i]), "vpu_wakelock_0");
@@ -2038,6 +2462,10 @@ int vpu_init_hw(int core, struct vpu_device *device)
 					ret = PTR_ERR(vpu_service_cores[i].vpu_service_task);
 					goto out;
 				}
+#ifdef MET_VPU_LOG
+				/* to save correct pid */
+				ftrace_dump_work[i].pid = vpu_service_cores[i].vpu_service_task->pid;
+#endif
 			} else {
 				LOG_ERR("allocate enque task(%d) fail", i);
 				goto out;
@@ -2425,6 +2853,39 @@ out:
 	return ret;
 }
 
+#ifdef MET_VPU_LOG
+static int vpu_hw_set_log_option(int core)
+{
+	int ret;
+
+	/* update log enable and mpu enable */
+	lock_command(core);
+	/* set vpu internal log enable,disable */
+	if (g_func_mask & VFM_ROUTINE_PRT_SYSLOG) {
+		vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_SET_FTRACE_LOG);
+		vpu_write_field(core, FLD_XTENSA_INFO05, 1);
+	} else {
+		vpu_write_field(core, FLD_XTENSA_INFO01, VPU_CMD_SET_FTRACE_LOG);
+		vpu_write_field(core, FLD_XTENSA_INFO05, 0);
+	}
+	/* set vpu internal log level */
+	vpu_write_field(core, FLD_XTENSA_INFO06, g_vpu_internal_log_level);
+	/* clear info18 */
+	vpu_write_field(core, FLD_XTENSA_INFO18, 0);
+	vpu_write_field(core, FLD_RUN_STALL, 0);      /* RUN_STALL pull down */
+	vpu_write_field(core, FLD_CTL_INT, 1);
+	ret = wait_command(core);
+	vpu_write_field(core, FLD_RUN_STALL, 1);      /* RUN_STALL pull up to avoid fake cmd */
+
+	/* 4. check the result */
+	ret = vpu_check_postcond(core);
+	CHECK_RET("[vpu_%d]fail to set debug!\n", core);
+out:
+	unlock_command(core);
+	return ret;
+}
+#endif
+
 int vpu_hw_set_debug(int core)
 {
 	int ret;
@@ -2491,6 +2952,10 @@ int vpu_hw_set_debug(int core)
 
 out:
 	unlock_command(core);
+#ifdef MET_VPU_LOG
+	/* to set vpu ftrace log */
+	ret = vpu_hw_set_log_option(core);
+#endif
 	vpu_trace_end();
 	LOG_INF("[vpu_%d] hw_set_debug - version check(0x%x/0x%x)\n", core,
 		vpu_read_field(core, FLD_XTENSA_INFO20), vpu_read_field(core, FLD_XTENSA_INFO29));
@@ -2625,8 +3090,10 @@ int vpu_boot_up(int core)
 	LOG_DBG("[vpu_%d] vpu_hw_set_debug done\n", core);
 
 #ifdef MET_POLLING_MODE
-	ret = vpu_profile_state_set(core, 1);
-	CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 1\n", core);
+	if (g_func_mask & VFM_ROUTINE_PRT_SYSLOG) {
+		ret = vpu_profile_state_set(core, 1);
+		CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 1\n", core);
+	}
 #endif
 
 out:
@@ -2692,8 +3159,10 @@ int vpu_shut_down(int core)
 	#endif
 
 #ifdef MET_POLLING_MODE
-	ret = vpu_profile_state_set(core, 0);
-	CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 0\n", core);
+	if (g_func_mask & VFM_ROUTINE_PRT_SYSLOG) {
+		ret = vpu_profile_state_set(core, 0);
+		CHECK_RET("[vpu_%d] fail to vpu_profile_state_set 0\n", core);
+	}
 #endif
 
 	vpu_trace_begin("vpu_shut_down");
