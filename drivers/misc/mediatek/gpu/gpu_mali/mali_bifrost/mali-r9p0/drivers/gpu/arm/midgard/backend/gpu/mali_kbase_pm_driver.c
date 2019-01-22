@@ -37,7 +37,7 @@
 #include <backend/gpu/mali_kbase_device_internal.h>
 #include <backend/gpu/mali_kbase_irq_internal.h>
 #include <backend/gpu/mali_kbase_pm_internal.h>
-
+#include <backend/gpu/mali_kbase_jm_internal.h>
 #include <linux/of.h>
 
 #if MALI_MOCK_TEST
@@ -1399,6 +1399,9 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 
 	KBASE_TLSTREAM_JD_GPU_SOFT_RESET(kbdev);
 
+	GPULOG("dump_gpu_debug_reg, before issue GPU_COMMAND_SOFT_RESET");
+	kbase_try_dump_gpu_debug_info(kbdev);
+
 	kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND),
 						GPU_COMMAND_SOFT_RESET, NULL);
 
@@ -1438,6 +1441,9 @@ static int kbase_pm_do_reset(struct kbase_device *kbdev)
 		destroy_hrtimer_on_stack(&rtdata.timer);
 		return -EINVAL;
 	}
+
+	GPULOG("dump_gpu_debug_reg, before issue GPU_COMMAND_HARD_RESET");
+	kbase_try_dump_gpu_debug_info(kbdev);
 
 	/* The GPU doesn't seem to be responding to the reset so try a hard
 	 * reset */

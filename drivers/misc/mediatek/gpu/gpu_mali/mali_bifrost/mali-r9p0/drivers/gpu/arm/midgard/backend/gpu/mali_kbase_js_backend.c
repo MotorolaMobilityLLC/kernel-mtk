@@ -79,6 +79,7 @@ static inline bool timer_callback_should_run(struct kbase_device *kbdev)
 	}
 }
 
+
 static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 {
 	unsigned long flags;
@@ -183,14 +184,22 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 					 * now. Hard stop the slot.
 					 */
 #if !KBASE_DISABLE_SCHEDULING_HARD_STOPS
-					int ms =
-						js_devdata->scheduling_period_ns
-								/ 1000000u;
+					int ms = js_devdata->scheduling_period_ns / 1000000u;
 					dev_warn(kbdev->dev, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)",
 							(unsigned long)ticks,
 							(unsigned long)ms);
-					kbase_job_slot_hardstop(atom->kctx, s,
-									atom);
+
+					/* 1.try dump information before hard-stop command issue */
+					GPULOG("hard-stop trigger, +dump_gpu_info_before_COMMAND_HARD_STOP");
+					kbase_try_dump_gpu_debug_info(kbdev);
+					GPULOG("hard-stop trigger, -dump_gpu_info_before_COMMAND_HARD_STOP");
+
+					kbase_job_slot_hardstop(atom->kctx, s, atom);
+
+					/* 2.try dump information again after hard-stop command issue */
+					GPULOG("hard-stop trigger, +dump_gpu_info_after_COMMAND_HARD_STOP");
+					kbase_try_dump_gpu_debug_info(kbdev);
+					GPULOG("hard-stop trigger, -dump_gpu_info_after_COMMAND_HARD_STOP");
 #endif
 				} else if (ticks == gpu_reset_ticks) {
 					/* Job has been scheduled for at least

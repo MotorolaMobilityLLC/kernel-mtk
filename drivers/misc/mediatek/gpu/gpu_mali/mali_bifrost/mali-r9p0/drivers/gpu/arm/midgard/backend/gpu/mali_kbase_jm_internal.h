@@ -30,6 +30,7 @@
 
 #include <backend/gpu/mali_kbase_jm_rb.h>
 
+void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev);
 /**
  * kbase_job_submit_nolock() - Submit a job to a certain job-slot
  * @kbdev:	Device pointer

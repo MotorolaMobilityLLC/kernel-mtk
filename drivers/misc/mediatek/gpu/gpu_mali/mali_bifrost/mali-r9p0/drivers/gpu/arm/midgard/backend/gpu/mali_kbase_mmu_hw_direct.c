@@ -23,6 +23,7 @@
 #include <mali_kbase_tlstream.h>
 #include <backend/gpu/mali_kbase_device_internal.h>
 #include <mali_kbase_as_fault_debugfs.h>
+#include <backend/gpu/mali_kbase_jm_internal.h>
 
 #ifdef ENABLE_MTK_DEBUG
 #include <mtk_gpufreq.h>
@@ -83,6 +84,9 @@ static int wait_ready(struct kbase_device *kbdev,
 		mt_gpufreq_dump_reg();
 		mt_gpufreq_set_MMU_AS_ACTIVE(1);
 #endif
+		GPULOG("+wait_mmu_cmd_ready....");
+		kbase_try_dump_gpu_debug_info(kbdev);
+		GPULOG("-wait_mmu_cmd_ready....");
 		return -1;
 	}
 

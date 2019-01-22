@@ -54,30 +54,26 @@ static enum hrtimer_restart kbasep_reset_timer_callback(struct hrtimer *timer);
 static unsigned int need_reset_MFG_wrapper;
 #endif
 
-#ifdef ENABLE_MTK_DEBUG
-static inline void debug_cmd(struct kbase_device *kbdev, u32 completion_code)
+/**/
+void kbase_try_dump_gpu_debug_info(struct kbase_device *kbdev)
 {
-	/* DEBUG ONLY! Send debug command to GPU and get relavant status */
+		/*DEBUG ONLY! Send debug command to GPU and get relavant status*/
 #define DBG_SEND_L2_GROUP 0xDEB00760
 #define DBG_ACTIVE_BIT (1 << 31)
 #define GPU_DBG_LO 0x0FE8
 #define GPU_DBG_HI 0x0FEC
+		unsigned int dbg_lo, dbg_hi;
 
-	if (completion_code == BASE_JD_EVENT_TERMINATED) {
-		u32 dbg_lo, dbg_hi;
+		GPULOG("Send debug command to GPU and get relavant status....\n");
 
-		kbase_reg_write(kbdev,
-				GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
-
+		kbase_reg_write(kbdev, GPU_CONTROL_REG(GPU_COMMAND), DBG_SEND_L2_GROUP, NULL);
 		while ((kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_STATUS), NULL) & DBG_ACTIVE_BIT))
 			;
 		dbg_lo = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_LO), NULL);
 		dbg_hi = kbase_reg_read(kbdev, GPU_CONTROL_REG(GPU_DBG_HI), NULL);
 
-		GPULOG("DEBUG INFO :LO %08x, HI %08x", dbg_lo, dbg_hi);
-	}
+		GPULOG("DEBUG INFO :LO 0x%x, HI 0x%x\n", dbg_lo, dbg_hi);
 }
-#endif
 
 static inline int kbasep_jm_is_js_free(struct kbase_device *kbdev, int js,
 						struct kbase_context *kctx)
@@ -346,9 +342,7 @@ void kbase_job_done(struct kbase_device *kbdev, u32 done)
 							kbase_exception_name
 							(kbdev,
 							completion_code));
-#ifdef ENABLE_MTK_DEBUG
-					debug_cmd(kbdev, completion_code);
-#endif
+					kbase_try_dump_gpu_debug_info(kbdev);
 				}
 
 				kbase_gpu_irq_evict(kbdev, i);
