@@ -4375,7 +4375,10 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 		Ana_Set_Reg(AFE_VOW_CFG3, reg_AFE_VOW_CFG3, 0xffff);   /*alhpa and beta K value setting 0xDBAC*/
 		Ana_Set_Reg(AFE_VOW_CFG4, reg_AFE_VOW_CFG4, 0x000f);   /*gamma K value setting 0x029E*/
 		Ana_Set_Reg(AFE_VOW_CFG5, reg_AFE_VOW_CFG5, 0xffff);   /*N mini value setting 0x0000*/
-		Ana_Set_Reg(AFE_VOW_CFG6, reg_AFE_VOW_CFG6, 0x0700);   /*N mini value setting 0x0000*/
+		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01)
+			Ana_Set_Reg(AFE_VOW_CFG6, reg_AFE_VOW_CFG6, 0x0000);   /* FLR value setting 0x0000 */
+		else
+			Ana_Set_Reg(AFE_VOW_CFG6, reg_AFE_VOW_CFG6, 0x0700);   /* FLR value setting 0x0000 */
 
 		if (MicType == AUDIO_VOW_MIC_TYPE_Handset_DMIC_VENDOR01) {
 			/* 16K */
