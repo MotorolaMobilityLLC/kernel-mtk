@@ -1591,6 +1591,8 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 
 			StatsEnvTxTime2Hif(prAdapter, prMsduInfo);
 
+			prNextMsduInfo = (P_MSDU_INFO_T) QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
+
 			/* Free MSDU_INFO */
 			if (prMsduInfo->eSrc == TX_PACKET_MGMT) {
 				GLUE_DEC_REF_CNT(prTxCtrl->i4TxMgmtPendingNum);
@@ -1616,8 +1618,6 @@ WLAN_STATUS nicTxMsduQueue(IN P_ADAPTER_T prAdapter, UINT_8 ucPortIdx, P_QUE_T p
 				else
 					QUEUE_INSERT_TAIL(prFreeQueue, (P_QUE_ENTRY_T) prMsduInfo);
 			}
-
-			prNextMsduInfo = (P_MSDU_INFO_T)QUEUE_GET_NEXT_ENTRY(&prMsduInfo->rQueEntry);
 
 #if (CFG_SDIO_TX_AGG == 0)
 			ASSERT(u4TotalLength <= u4ValidBufSize);
