@@ -235,6 +235,7 @@ int musb_hub_control(struct usb_hcd *hcd,
 	bool usb_active = true;
 
 	if (!mtk_usb_power) {
+		wake_lock(&musb->usb_lock);
 		musb_platform_enable(musb);
 		usb_active = false;
 		DBG(1, "musb was in-active!!!\n");
@@ -429,8 +430,11 @@ error:
 	}
 	spin_unlock_irqrestore(&musb->lock, flags);
 	#ifdef CONFIG_MTK_MUSB_PORT0_LOWPOWER_MODE
-	if (!usb_active)
+	if (!usb_active) {
 		musb_platform_disable(musb);
+		if (wake_lock_active(&musb->usb_lock))
+			wake_unlock(&musb->usb_lock);
+	}
 	#endif
 	return retval;
 }
