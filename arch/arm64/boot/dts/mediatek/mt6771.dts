@@ -504,6 +504,7 @@
 			 <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "main", "dma";
 		clock-div = <5>;
+		scp-ch = <0>;
 	};
 
 	i2c9: i2c@11008000 {
@@ -543,6 +544,7 @@
 			 <&infracfg_ao INFRACFG_AO_I2C5_ARBITER_CG>;
 		clock-names = "main", "dma", "arb";
 		clock-div = <5>;
+		scp-ch = <1>;
 	};
 
 	sspm@10440000 {

@@ -308,6 +308,7 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 
 static int i2c_get_semaphore(struct mt_i2c *i2c)
 {
+	int id;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	int count = 100;
 #endif
@@ -332,8 +333,12 @@ static int i2c_get_semaphore(struct mt_i2c *i2c)
 		}
 	}
 #endif
+	if (i2c->have_scp)
+		id = (int)i2c->scp_ch;
+	else
+		id = i2c->id;
 
-	switch (i2c->id) {
+	switch (id) {
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	case 0:
 		while ((get_scp_semaphore(SEMAPHORE_I2C0) != 1) && count > 0)
@@ -1396,6 +1401,7 @@ static const struct i2c_algorithm mt_i2c_algorithm = {
 
 static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 {
+	int ret = 0;
 	i2c->speed_hz = I2C_DEFAUT_SPEED;
 	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
 	of_property_read_u32(np, "clock-div", &i2c->clk_src_div);
@@ -1403,6 +1409,10 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 	of_property_read_u32(np, "ch_offset_default", &i2c->ch_offset_default);
 	of_property_read_u32(np, "dma_ch_offset_default", &i2c->dma_ch_offset_default);
 	of_property_read_u32(np, "aed", &i2c->aed);
+	ret = of_property_read_u32(np, "scp-ch", &i2c->scp_ch);
+	if (ret >= 0)
+		i2c->have_scp = true;
+
 	i2c->have_pmic = of_property_read_bool(np, "mediatek,have-pmic");
 	i2c->have_dcm = of_property_read_bool(np, "mediatek,have-dcm");
 	i2c->use_push_pull = of_property_read_bool(np, "mediatek,use-push-pull");
