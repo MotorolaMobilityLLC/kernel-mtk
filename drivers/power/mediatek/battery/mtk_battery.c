@@ -1418,7 +1418,11 @@ static void nl_data_handler(struct sk_buff *skb)
 
 	size = fgd_msg->fgd_ret_data_len + FGD_NL_MSG_T_HDR_LEN;
 
-	fgd_ret_msg = vmalloc(size);
+	if (size > (PAGE_SIZE << 1))
+		fgd_ret_msg = vmalloc(size);
+	else
+		fgd_ret_msg = kmalloc(size, GFP_KERNEL);
+
 	if (!fgd_ret_msg)
 		return;
 
@@ -1427,7 +1431,7 @@ static void nl_data_handler(struct sk_buff *skb)
 	bmd_ctrl_cmd_from_user(data, fgd_ret_msg);
 	nl_send_to_user(pid, seq, fgd_ret_msg);
 
-	vfree(fgd_ret_msg);
+	kvfree(fgd_ret_msg);
 }
 
 int wakeup_fg_algo(unsigned int flow_state)
@@ -1450,7 +1454,11 @@ int wakeup_fg_algo(unsigned int flow_state)
 		struct fgd_nl_msg_t *fgd_msg;
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
-		fgd_msg = vmalloc(size);
+		if (size > (PAGE_SIZE << 1))
+			fgd_msg = vmalloc(size);
+		else
+			fgd_msg = kmalloc(size, GFP_KERNEL);
+
 		if (!fgd_msg) {
 /* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
 			return -1;
@@ -1464,7 +1472,9 @@ int wakeup_fg_algo(unsigned int flow_state)
 		memcpy(fgd_msg->fgd_data, &flow_state, sizeof(flow_state));
 		fgd_msg->fgd_data_len += sizeof(flow_state);
 		nl_send_to_user(gm.g_fgd_pid, 0, fgd_msg);
-		vfree(fgd_msg);
+
+		kvfree(fgd_msg);
+
 		return 0;
 	} else {
 		return -1;
@@ -1491,7 +1501,11 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 		struct fgd_nl_msg_t *fgd_msg;
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
-		fgd_msg = vmalloc(size);
+		if (size > (PAGE_SIZE << 1))
+			fgd_msg = vmalloc(size);
+		else
+			fgd_msg = kmalloc(size, GFP_KERNEL);
+
 		if (!fgd_msg) {
 /* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
 			return -1;
@@ -1507,7 +1521,9 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 		memcpy(fgd_msg->fgd_data, &flow_state, sizeof(flow_state));
 		fgd_msg->fgd_data_len += sizeof(flow_state);
 		nl_send_to_user(gm.g_fgd_pid, 0, fgd_msg);
-		vfree(fgd_msg);
+
+		kvfree(fgd_msg);
+
 		return 0;
 	} else {
 		return -1;
