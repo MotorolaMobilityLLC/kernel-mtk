@@ -590,22 +590,22 @@ static int bmg_set_range(struct i2c_client *client, enum BMG_RANGE_ENUM range)
 			/* bitnum: 16bit */
 			switch (range) {
 				case BMG_RANGE_2000:
-					obj->sensitivity = 16;
+					obj->sensitivity = BMI160_FS_2000_LSB; /* 16; */
 				break;
 				case BMG_RANGE_1000:
-					obj->sensitivity = 33;
+					obj->sensitivity = BMI160_FS_1000_LSB; /* 33; */
 				break;
 				case BMG_RANGE_500:
-					obj->sensitivity = 66;
+					obj->sensitivity = BMI160_FS_500_LSB; /* 66; */
 				break;
 				case BMG_RANGE_250:
-					obj->sensitivity = 131;
+					obj->sensitivity = BMI160_FS_250_LSB; /* 131; */
 				break;
 				case BMG_RANGE_125:
-					obj->sensitivity = 262;
+					obj->sensitivity = BMI160_FS_125_LSB; /* 262; */
 				break;
 				default:
-					obj->sensitivity = 16;
+					obj->sensitivity = BMI160_FS_2000_LSB; /* 16; */
 				break;
 			}
 		}
@@ -719,9 +719,9 @@ static int bmg_read_sensor_data(struct i2c_client *client,
 			obj->cvt.sign[BMG_AXIS_Z]*databuf[BMG_AXIS_Z];
 
 		/* convert: LSB -> degree/second(o/s) */
-		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] / obj->sensitivity;
-		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] / obj->sensitivity;
-		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] / obj->sensitivity;
+		gyro[BMG_AXIS_X] = gyro[BMG_AXIS_X] * BMI160_FS_250_LSB / obj->sensitivity;
+		gyro[BMG_AXIS_Y] = gyro[BMG_AXIS_Y] * BMI160_FS_250_LSB / obj->sensitivity;
+		gyro[BMG_AXIS_Z] = gyro[BMG_AXIS_Z] * BMI160_FS_250_LSB / obj->sensitivity;
 
 		sprintf(buf, "%04x %04x %04x",
 			gyro[BMG_AXIS_X], gyro[BMG_AXIS_Y], gyro[BMG_AXIS_Z]);
@@ -1236,9 +1236,9 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 				err = -EINVAL;
 			} else {
 				/* convert: degree/second -> LSB */
-				cali[BMG_AXIS_X] = sensor_data.x * obj->sensitivity;
-				cali[BMG_AXIS_Y] = sensor_data.y * obj->sensitivity;
-				cali[BMG_AXIS_Z] = sensor_data.z * obj->sensitivity;
+				cali[BMG_AXIS_X] = sensor_data.x * obj->sensitivity / BMI160_FS_250_LSB;
+				cali[BMG_AXIS_Y] = sensor_data.y * obj->sensitivity / BMI160_FS_250_LSB;
+				cali[BMG_AXIS_Z] = sensor_data.z * obj->sensitivity / BMI160_FS_250_LSB;
 				err = bmg_write_calibration(client, cali);
 			}
 			break;
@@ -1255,9 +1255,9 @@ static long bmg_unlocked_ioctl(struct file *file, unsigned int cmd,
 			if (err)
 				break;
 
-			sensor_data.x = cali[BMG_AXIS_X] * obj->sensitivity;
-			sensor_data.y = cali[BMG_AXIS_Y] * obj->sensitivity;
-			sensor_data.z = cali[BMG_AXIS_Z] * obj->sensitivity;
+			sensor_data.x = cali[BMG_AXIS_X] * BMI160_FS_250_LSB / obj->sensitivity;
+			sensor_data.y = cali[BMG_AXIS_Y] * BMI160_FS_250_LSB / obj->sensitivity;
+			sensor_data.z = cali[BMG_AXIS_Z] * BMI160_FS_250_LSB / obj->sensitivity;
 			if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
 				err = -EFAULT;
 				break;
@@ -1445,6 +1445,9 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	struct bmg_i2c_data *obj;
 	struct gyro_control_path ctl = {0};
 	struct gyro_data_path data = {0};
+
+	pr_debug("%s\n", __func__);
+
 	obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	if (!obj) {
 		err = -ENOMEM;
