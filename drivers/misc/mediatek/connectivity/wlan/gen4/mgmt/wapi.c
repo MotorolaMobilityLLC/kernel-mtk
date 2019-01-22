@@ -405,10 +405,10 @@ BOOLEAN wapiPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prB
 		prBssWapiInfo = &prBss->rIEWAPI;
 	} else {
 		if (prAdapter->rWifiVar.rConnSettings.fgWapiMode == FALSE) {
-			DBGLOG(SEC, TRACE, "-- No Protected BSS\n");
+			DBGLOG(SEC, WARN, "-- No Protected BSS\n");
 			return TRUE;
 		}
-		DBGLOG(SEC, TRACE, "WAPI Information Element does not exist.\n");
+		DBGLOG(SEC, WARN, "WAPI Information Element does not exist.\n");
 		return FALSE;
 	}
 
@@ -427,7 +427,7 @@ BOOLEAN wapiPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prB
 	 *  BSS, do not check the supported AKM suites.
 	 */
 	if (u4PairwiseCipher == 0 || u4GroupCipher == 0) {
-		DBGLOG(SEC, TRACE, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
+		DBGLOG(SEC, WARN, "Failed to select pairwise/group cipher (0x%08lx/0x%08lx)\n",
 		       u4PairwiseCipher, u4GroupCipher);
 		return FALSE;
 	}
@@ -445,7 +445,7 @@ BOOLEAN wapiPerformPolicySelection(IN P_ADAPTER_T prAdapter, IN P_BSS_DESC_T prB
 	}
 
 	if (u4AkmSuite == 0) {
-		DBGLOG(SEC, TRACE, "Cannot support any AKM suites\n");
+		DBGLOG(SEC, WARN, "Cannot support any AKM suites\n");
 		return FALSE;
 	}
 
