@@ -420,7 +420,7 @@
  */
 #define CFG_ENABLE_FULL_PM                      1
 #define CFG_ENABLE_WAKEUP_ON_LAN                0
-#define CFG_SUPPORT_WAKEUP_REASON_DEBUG         0	/* debug which packet wake up host */
+#define CFG_SUPPORT_WAKEUP_REASON_DEBUG         1	/* debug which packet wake up host */
 #define CFG_INIT_POWER_SAVE_PROF                    ENUM_PSP_FAST_SWITCH
 
 #define CFG_INIT_ENABLE_PATTERN_FILTER_ARP                    0

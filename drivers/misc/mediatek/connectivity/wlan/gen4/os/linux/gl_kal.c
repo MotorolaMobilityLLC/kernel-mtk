@@ -5014,18 +5014,7 @@ BOOLEAN kalIsWakeupByWlan(P_ADAPTER_T  prAdapter)
 	*/
 	if (test_and_clear_bit(SUSPEND_FLAG_FOR_WAKEUP_REASON, &prAdapter->ulSuspendFlag) == 0)
 		return FALSE;
-	/*
-	* if slp_get_wake_reason or spm_get_last_wakeup_src is NULL, it means SPM module didn't implement
-	* it. then we should return FALSE always. otherwise,  if slp_get_wake_reason returns WR_WAKE_SRC,
-	* then it means the host is suspend successfully.
-	*/
-	if (slp_get_wake_reason() != WR_WAKE_SRC)
-		return FALSE;
-	/*
-	* spm_get_last_wakeup_src will returns the last wakeup source,
-	*  WAKE_SRC_CONN2AP is connsys
-	*/
-	return spm_check_wakesrc();
+	return TRUE;
 }
 #endif
 
