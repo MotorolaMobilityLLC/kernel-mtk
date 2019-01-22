@@ -525,7 +525,8 @@ pr_err("Lomen 1\n");
 	#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION
 	if (strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "90", 2) == 0
 		|| strncmp(CONFIG_MTK_LCM_PHYSICAL_ROTATION, "270", 3) == 0) {
-#ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
+/*Fix build errors,as some projects  cannot support these apis while bring up*/
+#if defined(CONFIG_MTK_FB) && defined(CONFIG_MTK_LCM)
 		TPD_RES_Y = DISP_GetScreenWidth();
 		TPD_RES_X = DISP_GetScreenHeight();
 #endif
@@ -534,7 +535,8 @@ pr_err("Lomen 1\n");
 	{
 #ifdef CONFIG_CUSTOM_LCM_X
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#ifdef CONFIG_MTK_FB	/*Fix build errors,as some projects  cannot support these apis while bring up*/
+/*Fix build errors,as some projects  cannot support these apis while bring up*/
+#if defined(CONFIG_MTK_FB) && defined(CONFIG_MTK_LCM)
 		TPD_RES_X = DISP_GetScreenWidth();
 		TPD_RES_Y = DISP_GetScreenHeight();
 #else/*for some projects, we do not use mtk framebuffer*/
