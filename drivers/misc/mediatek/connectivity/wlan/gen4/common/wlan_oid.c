@@ -10247,9 +10247,9 @@ wlanoidSetCountryCode(IN P_ADAPTER_T prAdapter,
 
 	prAdapter->rWifiVar.rConnSettings.u2CountryCode = (((UINT_16) pucCountry[0]) << 8) | ((UINT_16) pucCountry[1]);
 
-	/* Force to re-search country code in country domains */
+	/* Force to re-search country code in regulatory domains */
 	prAdapter->prDomainInfo = NULL;
-	rlmDomainSendCmd(prAdapter, FALSE);
+	rlmDomainSendCmd(prAdapter);
 
 	/* Update supported channel list in channel table based on current country domain */
 	wlanUpdateChannelTable(prAdapter->prGlueInfo);
