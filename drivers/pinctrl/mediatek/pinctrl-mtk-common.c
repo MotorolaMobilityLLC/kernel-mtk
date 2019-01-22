@@ -1158,7 +1158,7 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned offset)
 		return !mtk_pinctrl_get_gpio_direction(pctl, offset);
 
 	if (pctl->devdata->mt_get_gpio_dir) {
-		/* Used by smartphone projects */
+		/* Used by smartphone projects with MTK GPIO driver */
 		dir = pctl->devdata->mt_get_gpio_dir(offset | 0x80000000);
 		return dir;
 	}
