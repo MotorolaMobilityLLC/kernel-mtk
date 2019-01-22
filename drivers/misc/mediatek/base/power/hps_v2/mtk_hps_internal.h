@@ -139,7 +139,9 @@ typedef enum {
 	HPS_FUNC_CTRL_HPS,	/* bit  0, 0x0001 */
 	HPS_FUNC_CTRL_RUSH,	/* bit  1, 0x0002 */
 	HPS_FUNC_CTRL_HVY_TSK,	/* bit  2, 0x0004 */
-	HPS_FUNC_CTRL_EFUSE,	/* big  3, 0x0008 */
+	HPS_FUNC_CTRL_PPM_INIT,	/* big  3, 0x0008 */
+	HPS_FUNC_CTRL_EFUSE,	/* big  4, 0x0010 */
+	HPS_FUNC_CTRL_SMART,	/* bit  5, 0x0020 */
 	HPS_FUNC_CTRL_COUNT
 } hps_ctxt_func_ctrl_e;
 
@@ -174,6 +176,8 @@ typedef struct hps_sys_struct {
 	unsigned int is_set_root_cluster;
 	unsigned int root_cluster_id;
 	unsigned int ppm_root_cluster;
+	unsigned int smart_dect_hint;
+	unsigned int ppm_smart_dect;
 	unsigned int turbo_core_supp;
 	unsigned int total_online_cores;
 	unsigned int tlp_avg;
