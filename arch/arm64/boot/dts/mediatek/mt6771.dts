@@ -3264,6 +3264,29 @@
 
 	tcpc_pd: mt6370_pd_eint {
 	};
+
+	scp_dvfs {
+		compatible = "mediatek,scp_dvfs";
+		clocks =
+			<&topckgen TOP_MUX_SCP>,
+			<&clk26m>,
+			<&topckgen TOP_UNIVPLL_D2_D8>,
+			<&topckgen TOP_SYSPLL_D5>,
+			<&topckgen TOP_SYSPLL_D2_D2>,
+			<&topckgen TOP_UNIVPLL_D2_D2>,
+			<&topckgen TOP_SYSPLL_D3>,
+			<&topckgen TOP_UNIVPLL_D3>;
+
+		clock-names =
+			"clk_mux",
+			"clk_pll_0",
+			"clk_pll_1",
+			"clk_pll_2",
+			"clk_pll_3",
+			"clk_pll_4",
+			"clk_pll_5",
+			"clk_pll_6";
+	};
 };
 
 #include "mt6358.dtsi"
