@@ -60,7 +60,7 @@
 #include "mtk-soc-pcm-platform.h"
 
 
-static AFE_MEM_CONTROL_T *pI2s0MemControl;
+static struct afe_mem_control_t *pI2s0MemControl;
 
 static struct device *mDev;
 
@@ -374,7 +374,7 @@ static struct snd_pcm_hardware mtk_i2s0_hardware = {
 
 static int mtk_pcm_i2s0_stop(struct snd_pcm_substream *substream)
 {
-	AFE_BLOCK_T *Afe_Block = &(pI2s0MemControl->rBlock);
+	struct afe_block_t *Afe_Block = &(pI2s0MemControl->rBlock);
 
 	pr_debug("mtk_pcm_i2s0_stop\n");
 	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));

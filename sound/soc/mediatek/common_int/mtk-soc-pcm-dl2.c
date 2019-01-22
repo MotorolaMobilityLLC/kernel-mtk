@@ -59,7 +59,7 @@
 #include "mtk-soc-pcm-platform.h"
 #include <linux/ftrace.h>
 
-static AFE_MEM_CONTROL_T *pMemControl;
+static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer *Dl2_Playback_dma_buf;
 
 static uint32 UnderflowTime;
@@ -70,7 +70,7 @@ static unsigned long NowTime;
 
 #ifdef AUDIO_DL2_ISR_COPY_SUPPORT
 static const int ISRCopyMaxSize = 256*2*4;     /* 256 frames, stereo, 32bit */
-static AFE_DL_ISR_COPY_T ISRCopyBuffer = {0};
+static struct afe_dl_isr_copy_t ISRCopyBuffer = {0};
 #endif
 
 static int dataTransfer(void *dest, const void *src, uint32_t size);
@@ -132,7 +132,7 @@ static int mtk_pcm_dl2_stop(struct snd_pcm_substream *substream)
 
 	StartCheckTime = false;
 	if (unlikely(get_LowLatencyDebug())) {
-		AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
+		struct afe_block_t *Afe_Block = &pMemControl->rBlock;
 
 		if (Afe_Block->u4DataRemained < 0) {
 			pr_warn("%s, dl2 underflow\n", __func__);
@@ -163,7 +163,7 @@ static snd_pcm_uframes_t mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream
 	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_uint32 Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
-	AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
+	struct afe_block_t *Afe_Block = &pMemControl->rBlock;
 	unsigned long flags;
 
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
@@ -458,7 +458,7 @@ static int mtk_pcm_dl2_trigger(struct snd_pcm_substream *substream, int cmd)
 	return -EINVAL;
 }
 
-static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, AFE_BLOCK_T *Afe_Block, bool bCopy)
+static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size, struct afe_block_t *Afe_Block, bool bCopy)
 {
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	unsigned long flags;
@@ -649,7 +649,7 @@ exit:
 
 void mtk_dl2_copy_l(void)
 {
-	AFE_BLOCK_T Afe_Block = pMemControl->rBlock;
+	struct afe_block_t Afe_Block = pMemControl->rBlock;
 	snd_pcm_uframes_t count = ISRCopyBuffer.u4BufferSize;
 
 	if (unlikely(!ISRCopyBuffer.u4BufferSize || !ISRCopyBuffer.pBufferIndx))
@@ -669,7 +669,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 			int channel, snd_pcm_uframes_t pos,
 			void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
+	struct afe_block_t *Afe_Block = &pMemControl->rBlock;
 	int remainCount = 0;
 	int ret = 0;
 	int retryCount = 0;
@@ -765,7 +765,7 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream,
 			int channel, snd_pcm_uframes_t pos,
 			void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_BLOCK_T *Afe_Block = &pMemControl->rBlock;
+	struct afe_block_t *Afe_Block = &pMemControl->rBlock;
 
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);

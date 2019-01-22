@@ -81,7 +81,7 @@ struct wake_lock scp_spk_suspend_lock;
 #define MAX_PARLOAD_SIZE (10)
 #define DEFAULT_PAYLOAD_SIZE (40)
 
-static AFE_MEM_CONTROL_T *pdl1spkMemControl;
+static struct afe_mem_control_t *pdl1spkMemControl;
 
 typedef struct SPK_PROTECT_SERVICE {
 	bool ipiwait;
@@ -279,7 +279,7 @@ static snd_pcm_uframes_t mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substr
 	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_uint32 Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
-	AFE_BLOCK_T *Afe_Block = &pdl1spkMemControl->rBlock;
+	struct afe_block_t *Afe_Block = &pdl1spkMemControl->rBlock;
 	unsigned long flags;
 
 	if (pdl1spkMemControl == NULL) {
@@ -440,7 +440,7 @@ static int dl1spk_allocate_feedback_buffer(struct snd_pcm_substream *substream, 
 static void set_dl1_spkbuffer(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *hw_params)
 {
-	AFE_BLOCK_T *pblock = &pdl1spkMemControl->rBlock;
+	struct afe_block_t *pblock = &pdl1spkMemControl->rBlock;
 
 	pblock->pucPhysBufAddr = (kal_uint32)PlatformBuffer.addr;
 	pblock->pucVirtBufAddr = (kal_uint8 *)PlatformBuffer.area;

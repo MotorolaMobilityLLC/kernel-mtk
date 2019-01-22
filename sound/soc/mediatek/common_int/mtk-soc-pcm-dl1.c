@@ -102,7 +102,7 @@
 
 #endif
 
-static AFE_MEM_CONTROL_T *pMemControl;
+static struct afe_mem_control_t *pMemControl;
 static unsigned int mPlaybackDramState;
 static struct snd_dma_buffer *Dl1_Playback_dma_buf;
 
@@ -364,7 +364,7 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream,
 			int channel, snd_pcm_uframes_t pos,
 			void __user *dst, snd_pcm_uframes_t count)
 {
-	AFE_BLOCK_T *Afe_Block = NULL;
+	struct afe_block_t *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	unsigned long flags;
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */

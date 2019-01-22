@@ -63,7 +63,7 @@
 #include "mtk-soc-pcm-platform.h"
 
 
-static AFE_MEM_CONTROL_T *pMemControl;
+static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer *FMTX_Playback_dma_buf;
 static unsigned int mPlaybackDramState;
 static struct device *mDev;
@@ -162,7 +162,7 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
-	/* AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock); */
+	/* struct afe_block_t *Afe_Block = &(pMemControl->rBlock); */
 	PRINTK_AUD_FMTX("mtk_pcm_fmtx_stop\n");
 
 	irq_remove_user(substream, irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));

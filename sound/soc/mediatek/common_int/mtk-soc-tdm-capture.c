@@ -73,7 +73,7 @@
 #include <sound/jack.h>
 
 /* information about */
-AFE_MEM_CONTROL_T  *TDM_VUL_Control_context;
+struct afe_mem_control_t  *TDM_VUL_Control_context;
 static struct snd_dma_buffer *Capture_dma_buf;
 static AudioDigtalI2S *mAudioDigitalI2S;
 static bool mCaptureUseSram;
@@ -189,7 +189,7 @@ static int mtk_capture_pcm_prepare(struct snd_pcm_substream *substream)
 
 static int mtk_capture_alsa_stop(struct snd_pcm_substream *substream)
 {
-	AFE_BLOCK_T *Vul_Block = &(TDM_VUL_Control_context->rBlock);
+	struct afe_block_t *Vul_Block = &(TDM_VUL_Control_context->rBlock);
 
 	pr_debug("mtk_capture_alsa_stop\n");
 	StopAudioCaptureHardware(substream);

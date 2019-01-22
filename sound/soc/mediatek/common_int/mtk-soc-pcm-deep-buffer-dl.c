@@ -69,7 +69,7 @@
 #endif
 
 
-static AFE_MEM_CONTROL_T *pMemControl;
+static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer deep_buffer_dl_dma_buf;
 static unsigned int mPlaybackDramState;
 
@@ -189,7 +189,7 @@ static struct snd_pcm_hardware mtk_deep_buffer_dl_hardware = {
 
 static int mtk_deep_buffer_dl_stop(struct snd_pcm_substream *substream)
 {
-	/* AFE_BLOCK_T *Afe_Block = &(pMemControl->rBlock); */
+	/* struct afe_block_t *Afe_Block = &(pMemControl->rBlock); */
 
 	pr_debug("%s\n", __func__);
 

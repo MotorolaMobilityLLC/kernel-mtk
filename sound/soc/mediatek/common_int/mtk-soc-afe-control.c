@@ -117,12 +117,12 @@ static AudioHdmi *mHDMIOutput;
 static AudioMrgIf *mAudioMrg;
 static AudioDigitalDAIBT *AudioDaiBt;
 
-static AFE_MEM_CONTROL_T *AFE_Mem_Control_context[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
+static struct afe_mem_control_t *AFE_Mem_Control_context[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
 static struct snd_dma_buffer *Audio_dma_buf[Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE] = { NULL };
 
 static AudioMemIFAttribute *mAudioMEMIF[Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK] = { NULL };
 
-AFE_DL_ABNORMAL_CONTROL_T AFE_dL_Abnormal_context;
+struct afe_dl_abnormal_control_t AFE_dL_Abnormal_context;
 
 /* static AudioAfeRegCache mAudioRegCache; */
 static AudioSramManager mAudioSramManager;
@@ -362,14 +362,14 @@ bool InitAfeControl(struct device *pDev)
 			mAudioMEMIF[i] = kzalloc(sizeof(AudioMemIFAttribute), GFP_KERNEL);
 
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++) {
-			AFE_Mem_Control_context[i] = kzalloc(sizeof(AFE_MEM_CONTROL_T), GFP_KERNEL);
+			AFE_Mem_Control_context[i] = kzalloc(sizeof(struct afe_mem_control_t), GFP_KERNEL);
 			AFE_Mem_Control_context[i]->substreamL = NULL;
 			spin_lock_init(&AFE_Mem_Control_context[i]->substream_lock);
 		}
 
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
 			Audio_dma_buf[i] = kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
-		memset((void *)&AFE_dL_Abnormal_context, 0, sizeof(AFE_DL_ABNORMAL_CONTROL_T));
+		memset((void *)&AFE_dL_Abnormal_context, 0, sizeof(struct afe_dl_abnormal_control_t));
 		memset((void *)&mtk_dais, 0, sizeof(mtk_dais));
 	}
 
@@ -409,7 +409,7 @@ bool ResetAfeControl(void)
 		memset((void *)(mAudioMEMIF[i]), 0, sizeof(AudioMemIFAttribute));
 
 	for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
-		memset((void *)(AFE_Mem_Control_context[i]), 0, sizeof(AFE_MEM_CONTROL_T));
+		memset((void *)(AFE_Mem_Control_context[i]), 0, sizeof(struct afe_mem_control_t));
 
 	AfeControlMutexUnLock();
 
@@ -1727,7 +1727,7 @@ int set_memif_pbuf_size(int aud_blk, enum memif_pbuf_size pbuf_size)
 int AudDrv_Allocate_DL1_Buffer(struct device *pDev, kal_uint32 Afe_Buf_Length,
 	dma_addr_t dma_addr, unsigned char *dma_area)
 {
-	AFE_BLOCK_T *pblock;
+	struct afe_block_t *pblock;
 
 	pblock = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	pblock->u4BufferSize = Afe_Buf_Length;
@@ -1807,7 +1807,7 @@ int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlo
 }
 
 
-AFE_MEM_CONTROL_T *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock)
+struct afe_mem_control_t *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock)
 {
 	if (MemBlock >= 0 && MemBlock < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE)
 		return AFE_Mem_Control_context[MemBlock];
@@ -1819,8 +1819,8 @@ AFE_MEM_CONTROL_T *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock)
 
 bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream)
 {
-	substreamList *head;
-	substreamList *temp = NULL;
+	struct substream_list *head;
+	struct substream_list *temp = NULL;
 	unsigned long flags;
 
 	pr_aud("+%s MemBlock = %d substream = %p\n", __func__, MemBlock, substream);
@@ -1828,7 +1828,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
 	if (head == NULL) {	/* frst item is NULL */
 		/* pr_debug("%s head == NULL\n ", __func__); */
-		temp = kzalloc(sizeof(substreamList), GFP_ATOMIC);
+		temp = kzalloc(sizeof(struct substream_list), GFP_ATOMIC);
 		temp->substream = substream;
 		temp->next = NULL;
 		AFE_Mem_Control_context[MemBlock]->substreamL = temp;
@@ -1837,7 +1837,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 			head = head->next;
 
 		/* head->next is NULL */
-		temp = kzalloc(sizeof(substreamList), GFP_ATOMIC);
+		temp = kzalloc(sizeof(struct substream_list), GFP_ATOMIC);
 		temp->substream = substream;
 		temp->next = NULL;
 		head->next = temp;
@@ -1855,7 +1855,7 @@ bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream 
 bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 {
 	if (MemBlock >= 0 && MemBlock < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE) {
-		AFE_BLOCK_T *pBlock = &AFE_Mem_Control_context[MemBlock]->rBlock;
+		struct afe_block_t *pBlock = &AFE_Mem_Control_context[MemBlock]->rBlock;
 
 		pBlock->u4WriteIdx = 0;
 		pBlock->u4DMAReadIdx = 0;
@@ -1873,8 +1873,8 @@ bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock)
 #define MEM_TIMEOUT_CNT 4
 bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream)
 {
-	substreamList *head;
-	substreamList *temp = NULL;
+	struct substream_list *head;
+	struct substream_list *temp = NULL;
 	unsigned long flags;
 	int i;
 
@@ -1963,12 +1963,12 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 {
 #ifdef CONFIG_MTK_HDMI_TDM
 
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI];
 	kal_int32 Afe_consumed_bytes = 0;
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
 	unsigned long flags;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->rBlock);
+	struct afe_block_t *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_HDMI]->rBlock);
 
 	if (Mem_Block == NULL) {
 		pr_warn("-%s()Mem_Block == NULL\n", __func__);
@@ -2056,12 +2056,12 @@ void Auddrv_HDMI_Interrupt_Handler(void)
 
 void Auddrv_AWB_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_AWB];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_AWB];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_uint32 MaxCopySize = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	substreamList *temp = NULL;
-	AFE_BLOCK_T *mBlock = NULL;
+	struct substream_list *temp = NULL;
+	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 	kal_uint32 temp_cnt = 0;
 
@@ -2162,10 +2162,10 @@ void Auddrv_AWB_Interrupt_Handler(void)
 
 void Auddrv_DAI_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DAI];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DAI];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	AFE_BLOCK_T *mBlock = NULL;
+	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 
 	if (Mem_Block == NULL)
@@ -2232,12 +2232,12 @@ void Auddrv_DAI_Interrupt_Handler(void)
 
 void Auddrv_VUL2_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL2];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL2];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_uint32 MaxCopySize = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	substreamList *temp = NULL;
-	AFE_BLOCK_T *mBlock = NULL;
+	struct substream_list *temp = NULL;
+	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 	kal_uint32 temp_cnt = 0;
 
@@ -2338,11 +2338,11 @@ void Auddrv_VUL2_Interrupt_Handler(void)
 void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 {
 	/* irq1 ISR handler */
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
 	kal_int32 Afe_consumed_bytes = 0;
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
+	struct afe_block_t *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	unsigned long flags;
 
 	if (Mem_Block == NULL)
@@ -2440,11 +2440,11 @@ void Auddrv_DSP_DL1_Interrupt_Handler(void *PrivateData)
 void Auddrv_DL1_Interrupt_Handler(void)
 {
 	/* irq1 ISR handler */
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1];
 	kal_int32 Afe_consumed_bytes = 0;
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
-	AFE_BLOCK_T *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
+	struct afe_block_t *Afe_Block = &(AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1]->rBlock);
 	unsigned long flags;
 
 	if (Mem_Block == NULL)
@@ -2542,7 +2542,7 @@ void Auddrv_DL1_Interrupt_Handler(void)
 void Auddrv_DL1_Data2_Interrupt_Handler(void)
 {
 	/* irq6 ISR handler */
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1_DATA2];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL1_DATA2];
 	unsigned long flags;
 
 	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_DL1_DATA2)) {
@@ -2568,7 +2568,7 @@ void Auddrv_DL1_Data2_Interrupt_Handler(void)
 void Auddrv_DL2_Interrupt_Handler(void)
 {
 	/* irq2 ISR handler */
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_DL2];
 	unsigned long flags;
 
 	if (Mem_Block == NULL)
@@ -2639,10 +2639,10 @@ struct snd_dma_buffer *Get_Mem_Buffer(Soc_Aud_Digital_Block MemBlock)
 
 void Auddrv_UL1_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	AFE_BLOCK_T *mBlock = NULL;
+	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 	struct snd_pcm_substream *temp_substream = NULL;
 
@@ -2713,7 +2713,7 @@ void Auddrv_UL1_Interrupt_Handler(void)
 
 static void Clear_Mem_CopySize(Soc_Aud_Digital_Block MemBlock)
 {
-	substreamList *head;
+	struct substream_list *head;
 	/* unsigned long flags; */
 	/* spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags); */
 	head = AFE_Mem_Control_context[MemBlock]->substreamL;
@@ -2731,7 +2731,7 @@ static void Clear_Mem_CopySize(Soc_Aud_Digital_Block MemBlock)
 kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 				    struct snd_pcm_substream *substream)
 {
-	substreamList *head;
+	struct substream_list *head;
 	unsigned long flags;
 	kal_uint32 MaxCopySize;
 
@@ -2756,7 +2756,7 @@ kal_uint32 Get_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 
 static kal_uint32 Get_Mem_MaxCopySize(Soc_Aud_Digital_Block MemBlock)
 {
-	substreamList *head;
+	struct substream_list *head;
 
 	/* unsigned long flags; */
 	kal_uint32 MaxCopySize;
@@ -2779,7 +2779,7 @@ static kal_uint32 Get_Mem_MaxCopySize(Soc_Aud_Digital_Block MemBlock)
 void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 			      struct snd_pcm_substream *substream, uint32 size)
 {
-	substreamList *head;
+	struct substream_list *head;
 	unsigned long flags;
 
 	spin_lock_irqsave(&AFE_Mem_Control_context[MemBlock]->substream_lock, flags);
@@ -2799,10 +2799,10 @@ void Set_Mem_CopySizeByStream(Soc_Aud_Digital_Block MemBlock,
 
 void Auddrv_UL2_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL_DATA2];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_VUL_DATA2];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	AFE_BLOCK_T *mBlock = NULL;
+	struct afe_block_t *mBlock = NULL;
 	unsigned long flags;
 
 	PRINTK_AUD_UL2("Auddrv_UL2_Interrupt_Handler\n ");
@@ -2871,10 +2871,10 @@ void Auddrv_UL2_Interrupt_Handler(void)
 
 void Auddrv_MOD_DAI_Interrupt_Handler(void)
 {
-	AFE_MEM_CONTROL_T *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_MOD_DAI];
+	struct afe_mem_control_t *Mem_Block = AFE_Mem_Control_context[Soc_Aud_Digital_Block_MEM_MOD_DAI];
 	kal_uint32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
-	AFE_BLOCK_T  *mBlock = NULL;
+	struct afe_block_t  *mBlock = NULL;
 	unsigned long flags;
 
 	if (Mem_Block == NULL)
@@ -2942,12 +2942,12 @@ unsigned int word_size_align(unsigned int in_size)
 void AudDrv_checkDLISRStatus(void)
 {
 	unsigned long flags1;
-	AFE_DL_ABNORMAL_CONTROL_T localctl;
+	struct afe_dl_abnormal_control_t localctl;
 	bool dumplog = false;
 
 	spin_lock_irqsave(&afe_dl_abnormal_context_lock, flags1);
 	if (AFE_dL_Abnormal_context.IrqDelayCnt || AFE_dL_Abnormal_context.u4UnderflowCnt) {
-		memcpy((void *)&localctl, (void *)&AFE_dL_Abnormal_context, sizeof(AFE_DL_ABNORMAL_CONTROL_T));
+		memcpy((void *)&localctl, (void *)&AFE_dL_Abnormal_context, sizeof(struct afe_dl_abnormal_control_t));
 		dumplog = true;
 		if (AFE_dL_Abnormal_context.IrqDelayCnt > 0)
 			AFE_dL_Abnormal_context.IrqDelayCnt = 0;
@@ -3983,13 +3983,13 @@ void mtk_audio_free_sram(void *user)
 EXPORT_SYMBOL(mtk_audio_free_sram);
 
 static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substream,
-	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block)
+	struct afe_mem_control_t *afe_mem_control, Soc_Aud_Digital_Block mem_block)
 {
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
 	unsigned long Frameidx = 0;
 	kal_int32 Afe_consumed_bytes = 0;
-	AFE_BLOCK_T *Afe_Block = &afe_mem_control->rBlock;
+	struct afe_block_t *Afe_Block = &afe_mem_control->rBlock;
 	unsigned long flags;
 
 	if (afe_mem_control == NULL) {
@@ -4052,14 +4052,14 @@ static snd_pcm_uframes_t get_dlmem_frame_index(struct snd_pcm_substream *substre
 }
 
 static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substream,
-	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block)
+	struct afe_mem_control_t *afe_mem_control, Soc_Aud_Digital_Block mem_block)
 {
 	kal_int32 HW_memory_index = 0;
 	kal_int32 HW_Cur_ReadIdx = 0;
 	kal_int32 Hw_Get_bytes = 0;
 	bool bIsOverflow = false;
 	unsigned long flags;
-	AFE_BLOCK_T *UL1_Block = &(afe_mem_control->rBlock);
+	struct afe_block_t *UL1_Block = &(afe_mem_control->rBlock);
 
 	PRINTK_AUD_UL1("%s Awb_Block->u4WriteIdx;= 0x%x\n", __func__, UL1_Block->u4WriteIdx);
 	mem_blk_spinlock(mem_block);
@@ -4142,7 +4142,7 @@ static snd_pcm_uframes_t get_ulmem_frame_index(struct snd_pcm_substream *substre
 }
 
 snd_pcm_uframes_t get_mem_frame_index(struct snd_pcm_substream *substream,
-	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block)
+	struct afe_mem_control_t *afe_mem_control, Soc_Aud_Digital_Block mem_block)
 {
 	switch (mem_block) {
 	case Soc_Aud_Digital_Block_MEM_DL1:
@@ -4242,9 +4242,9 @@ void mem_blk_spinunlock(Soc_Aud_Digital_Block mem_blk)
 
 static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
-				AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
+				struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk)
 {
-	AFE_BLOCK_T  *Afe_Block = NULL;
+	struct afe_block_t  *Afe_Block = NULL;
 	int copy_size = 0, Afe_WriteIdx_tmp;
 	char *data_w_ptr = (char *)dst;
 
@@ -4388,10 +4388,10 @@ static bool CheckNullPointer(void *pointer)
 
 static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
-				AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
+				struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk)
 {
-	AFE_MEM_CONTROL_T *pVUL_MEM_ConTrol = NULL;
-	AFE_BLOCK_T  *Vul_Block = NULL;
+	struct afe_mem_control_t *pVUL_MEM_ConTrol = NULL;
+	struct afe_block_t  *Vul_Block = NULL;
 	char *Read_Data_Ptr = (char *)dst;
 	ssize_t DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	 struct snd_pcm_runtime *runtime = substream->runtime;
@@ -4540,7 +4540,7 @@ static int mtk_mem_ulblk_copy(struct snd_pcm_substream *substream,
 
 int mtk_memblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
-				AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
+				struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk)
 {
 	if (pMemControl == NULL)
 		return 0;
@@ -4619,10 +4619,10 @@ int set_memif_addr(int mem_blk, dma_addr_t addr, size_t size)
 }
 
 int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
-	AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk)
+	struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
-	AFE_BLOCK_T *pblock = &pMemControl->rBlock;
+	struct afe_block_t *pblock = &pMemControl->rBlock;
 
 	pblock->pucPhysBufAddr = runtime->dma_addr;
 	pblock->pucVirtBufAddr = runtime->dma_area;

@@ -165,7 +165,7 @@ void DisableAPLLTunerbySampleRate(uint32 SampleRate);
 
 int AudDrv_Allocate_mem_Buffer(struct device *pDev, Soc_Aud_Digital_Block MemBlock,
 			       uint32 Buffer_length);
-AFE_MEM_CONTROL_T *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock);
+struct afe_mem_control_t *Get_Mem_ControlT(Soc_Aud_Digital_Block MemBlock);
 bool SetMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream);
 bool RemoveMemifSubStream(Soc_Aud_Digital_Block MemBlock, struct snd_pcm_substream *substream);
 bool ClearMemBlock(Soc_Aud_Digital_Block MemBlock);
@@ -334,16 +334,16 @@ void set_mem_blk_ops(struct mtk_mem_blk_ops *ops);
 
 /* sould return current frame index  with memblock*/
 snd_pcm_uframes_t get_mem_frame_index(struct snd_pcm_substream *substream,
-	AFE_MEM_CONTROL_T *afe_mem_control, Soc_Aud_Digital_Block mem_block);
+	struct afe_mem_control_t *afe_mem_control, Soc_Aud_Digital_Block mem_block);
 void mem_blk_spinlock(Soc_Aud_Digital_Block mem_blk);
 void mem_blk_spinunlock(Soc_Aud_Digital_Block mem_blk);
 int mtk_memblk_copy(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos, void __user *dst, snd_pcm_uframes_t count,
-				AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
+				struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk);
 
 int set_memif_addr(int mem_blk, dma_addr_t addr, size_t size);
 int set_mem_block(struct snd_pcm_substream *substream, struct snd_pcm_hw_params *hw_params,
-	AFE_MEM_CONTROL_T *pMemControl, Soc_Aud_Digital_Block mem_blk);
+	struct afe_mem_control_t *pMemControl, Soc_Aud_Digital_Block mem_blk);
 void init_afe_ops(void);
 void set_afe_platform_ops(struct mtk_afe_platform_ops *ops);
 struct mtk_afe_platform_ops *get_afe_platform_ops(void);

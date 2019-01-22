@@ -66,7 +66,7 @@
 
 /* #define SUPPORT_GOOGLE_LINEOUT */
 
-static AFE_MEM_CONTROL_T *pHp_impedance_MemControl;
+static struct afe_mem_control_t *pHp_impedance_MemControl;
 
 static struct snd_dma_buffer *Dl1_Hp_Playback_dma_buf;
 
