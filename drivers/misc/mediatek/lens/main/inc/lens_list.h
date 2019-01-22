@@ -110,6 +110,14 @@ extern int LC898212XDAF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient, spinloc
 extern long LC898212XDAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
 extern int LC898212XDAF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+#define LC898212XD_TVC700_SetI2Cclient LC898212XD_TVC700_SetI2Cclient_Main
+#define LC898212XD_TVC700_Ioctl LC898212XD_TVC700_Ioctl_Main
+#define LC898212XD_TVC700_Release LC898212XD_TVC700_Release_Main
+extern int LC898212XD_TVC700_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+					spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long LC898212XD_TVC700_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param);
+extern int LC898212XD_TVC700_Release(struct inode *a_pstInode, struct file *a_pstFile);
+
 #define LC898214AF_SetI2Cclient LC898214AF_SetI2Cclient_Main
 #define LC898214AF_Ioctl LC898214AF_Ioctl_Main
 #define LC898214AF_Release LC898214AF_Release_Main
