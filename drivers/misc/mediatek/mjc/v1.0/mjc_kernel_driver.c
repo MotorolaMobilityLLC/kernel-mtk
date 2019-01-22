@@ -74,7 +74,7 @@
 #endif
 
 #define MJC_WriteReg32(addr, data)  mt_reg_sync_writel(data, addr)
-#define MJC_Reg32(addr)             (*(volatile unsigned int *)(addr))
+#define MJC_Reg32(addr)             (readl((void *)addr) & 0xFFFFFFFF)
 
 /* Define */
 
@@ -85,8 +85,8 @@
 /* variable */
 static DEFINE_SPINLOCK(ContextLock);
 static DEFINE_SPINLOCK(HWLock);
-static MJC_CONTEXT_T grContext;	/* spinlock : ContextLock */
-static MJC_CONTEXT_T grHWLockContext;	/* spinlock : HWLock */
+static struct MJC_CONTEXT_T grContext;	/* spinlock : ContextLock */
+static struct MJC_CONTEXT_T grHWLockContext;	/* spinlock : HWLock */
 
 static dev_t mjc_devno = MKDEV(MTK_MJC_DEV_MAJOR_NUMBER, 0);
 static struct cdev *g_mjc_cdev;
@@ -107,7 +107,7 @@ static struct clk *clk_TOP_UNIVPLL_D3;
 
 unsigned long gulRegister, gu1PaReg, gu1PaSize, gulCGRegister;
 int gi4IrqID;
-MJC_WRITE_REG_T gfWriteReg[MJC_FORCE_REG_NUM];
+struct MJC_WRITE_REG_T gfWriteReg[MJC_FORCE_REG_NUM];
 
 
 /*****************************************************************************
@@ -120,7 +120,7 @@ MJC_WRITE_REG_T gfWriteReg[MJC_FORCE_REG_NUM];
  * RETURNS
  *    None.
  ****************************************************************************/
-static int _mjc_CreateEvent(MJC_EVENT_T *a_prParam)
+static int _mjc_CreateEvent(struct MJC_EVENT_T *a_prParam)
 {
 	wait_queue_head_t *prWaitQueue;
 	unsigned char *pu1Flag;
@@ -155,7 +155,7 @@ static int _mjc_CreateEvent(MJC_EVENT_T *a_prParam)
  * RETURNS
  *    None.
  ****************************************************************************/
-static int _mjc_CloseEvent(MJC_EVENT_T *a_prParam)
+static int _mjc_CloseEvent(struct MJC_EVENT_T *a_prParam)
 {
 	wait_queue_head_t *prWaitQueue;
 	unsigned char *pu1Flag;
@@ -181,7 +181,7 @@ static int _mjc_CloseEvent(MJC_EVENT_T *a_prParam)
  * RETURNS
  *    None.
  ****************************************************************************/
-static int _mjc_WaitEvent(MJC_EVENT_T *a_prParam)
+static int _mjc_WaitEvent(struct MJC_EVENT_T *a_prParam)
 {
 	wait_queue_head_t *prWaitQueue;
 	long timeout_jiff;
@@ -214,7 +214,7 @@ static int _mjc_WaitEvent(MJC_EVENT_T *a_prParam)
  * RETURNS
  *    None.
  ****************************************************************************/
-static int _mjc_SetEvent(MJC_EVENT_T *a_prParam)
+static int _mjc_SetEvent(struct MJC_EVENT_T *a_prParam)
 {
 	wait_queue_head_t *prWaitQueue;
 
@@ -499,12 +499,12 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 	unsigned long ulAdd;
 	unsigned long ulFlags;
 
-	MJC_IOCTL_LOCK_HW_T rLockHW;
-	MJC_IOCTL_ISR_T rIsr;
-	MJC_READ_REG_T rReadReg;
-	MJC_WRITE_REG_T rWriteReg;
-	MJC_IOCTL_SRC_CLK_T rSrcClk;
-	MJC_IOCTL_REG_INFO_T rRegInfo;
+	struct MJC_IOCTL_LOCK_HW_T rLockHW;
+	struct MJC_IOCTL_ISR_T rIsr;
+	struct MJC_READ_REG_T rReadReg;
+	struct MJC_WRITE_REG_T rWriteReg;
+	struct MJC_IOCTL_SRC_CLK_T rSrcClk;
+	struct MJC_IOCTL_REG_INFO_T rRegInfo;
 
 	int cnt = 0;
 
@@ -516,15 +516,15 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			MJCDBG("+ mjc_ioctl() MJC_LOCKHW + tid = %d\n", current->pid);
 
 			if (copy_from_user
-			    (&rLockHW, (void __user *)u4arg, sizeof(MJC_IOCTL_LOCK_HW_T))) {
+			    (&rLockHW, (void __user *)u4arg, sizeof(struct MJC_IOCTL_LOCK_HW_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_LOCKHW copy_from_user fail\n");
 				return -1;
 			}
 
-			if (sizeof(MJC_IOCTL_LOCK_HW_T) != rLockHW.u4StructSize) {
+			if (sizeof(struct MJC_IOCTL_LOCK_HW_T) != rLockHW.u4StructSize) {
 				MJCMSG
 				    ("[ERROR] mjc_ioctl() MJC_LOCKHW context size mismatch (user:%d, kernel:%zu)\n",
-				     rLockHW.u4StructSize, sizeof(MJC_IOCTL_LOCK_HW_T));
+				     rLockHW.u4StructSize, sizeof(struct MJC_IOCTL_LOCK_HW_T));
 				return -1;
 			}
 
@@ -569,15 +569,15 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 		{
 			MJCDBG("mjc_ioctl() MJC_WAITISR + tid = %d\n", current->pid);
 
-			if (copy_from_user(&rIsr, (void __user *)u4arg, sizeof(MJC_IOCTL_ISR_T))) {
+			if (copy_from_user(&rIsr, (void __user *)u4arg, sizeof(struct MJC_IOCTL_ISR_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_WAITISR copy_from_user fail\n");
 				return -1;
 			}
 
-			if (sizeof(MJC_IOCTL_ISR_T) != rIsr.u4StructSize) {
+			if (sizeof(struct MJC_IOCTL_ISR_T) != rIsr.u4StructSize) {
 				MJCMSG
 				    ("[ERROR] mjc_ioctl() MJC_WAITISR context size mismatch (user:%d, kernel:%zu)\n",
-				     rIsr.u4StructSize, sizeof(MJC_IOCTL_ISR_T));
+				     rIsr.u4StructSize, sizeof(struct MJC_IOCTL_ISR_T));
 				return -1;
 			}
 
@@ -608,7 +608,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 		{
 			MJCDBG("mjc_ioctl() MJC_READ_REG + tid = %d\n", current->pid);
 
-			if (copy_from_user(&rReadReg, (void __user *)u4arg, sizeof(MJC_READ_REG_T))) {
+			if (copy_from_user(&rReadReg, (void __user *)u4arg, sizeof(struct MJC_READ_REG_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_READ_REG copy_from_user failed\n");
 				return -1;
 			}
@@ -626,7 +626,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			MJCDBG("read 0x%lx (0x%lx)= 0x%x (0x%x)\n", rReadReg.reg, ulAdd,
 			       rReadReg.val, rReadReg.mask);
 
-			if (copy_to_user((void __user *)u4arg, &rReadReg, sizeof(MJC_READ_REG_T))) {
+			if (copy_to_user((void __user *)u4arg, &rReadReg, sizeof(struct MJC_READ_REG_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_READ_REG, copy_to_user failed\n");
 				return -1;
 			}
@@ -638,7 +638,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			MJCDBG("mjc_ioctl() MJC_WRITE_REG + tid = %d\n", current->pid);
 
 			if (copy_from_user
-			    (&rWriteReg, (void __user *)u4arg, sizeof(MJC_WRITE_REG_T))) {
+			    (&rWriteReg, (void __user *)u4arg, sizeof(struct MJC_WRITE_REG_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_WRITE_REG copy_from_user failed\n");
 				return -1;
 			}
@@ -702,15 +702,15 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			MJCDBG("mjc_ioctl() MJC_SOURCE_CLK + tid = %d\n", current->pid);
 
 			if (copy_from_user
-			    (&rSrcClk, (void __user *)u4arg, sizeof(MJC_IOCTL_SRC_CLK_T))) {
+			    (&rSrcClk, (void __user *)u4arg, sizeof(struct MJC_IOCTL_SRC_CLK_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_SOURCE_CLK copy_from_user fail\n");
 				return -1;
 			}
 
-			if (sizeof(MJC_IOCTL_SRC_CLK_T) != rSrcClk.u4StructSize) {
+			if (sizeof(struct MJC_IOCTL_SRC_CLK_T) != rSrcClk.u4StructSize) {
 				MJCMSG
 				    ("[ERROR] mjc_ioctl() MJC_SOURCE_CLK context size mismatch (user:%d, kernel:%zu)\n",
-				     rSrcClk.u4StructSize, sizeof(MJC_IOCTL_SRC_CLK_T));
+				     rSrcClk.u4StructSize, sizeof(struct MJC_IOCTL_SRC_CLK_T));
 				return -1;
 			}
 
@@ -763,15 +763,15 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			MJCDBG("mjc_ioctl() MJC_REG_INFO + tid = %d\n", current->pid);
 
 			if (copy_from_user
-			    (&rRegInfo, (void __user *)u4arg, sizeof(MJC_IOCTL_REG_INFO_T))) {
+			    (&rRegInfo, (void __user *)u4arg, sizeof(struct MJC_IOCTL_REG_INFO_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_REG_INFO copy_from_user fail\n");
 				return -1;
 			}
 
-			if (sizeof(MJC_IOCTL_REG_INFO_T) != rRegInfo.u4StructSize) {
+			if (sizeof(struct MJC_IOCTL_REG_INFO_T) != rRegInfo.u4StructSize) {
 				MJCMSG
 				    ("[ERROR] mjc_ioctl() MJC_REG_INFO context size mismatch (user:%d, kernel:%zu)\n",
-				     rRegInfo.u4StructSize, sizeof(MJC_IOCTL_REG_INFO_T));
+				     rRegInfo.u4StructSize, sizeof(struct MJC_IOCTL_REG_INFO_T));
 				return -1;
 			}
 
@@ -782,7 +782,7 @@ static long mjc_ioctl(struct file *pfile, unsigned int u4cmd, unsigned long u4ar
 			       rRegInfo.ulRegPSize);
 
 			if (copy_to_user
-			    ((void __user *)u4arg, &rRegInfo, sizeof(MJC_IOCTL_REG_INFO_T))) {
+			    ((void __user *)u4arg, &rRegInfo, sizeof(struct MJC_IOCTL_REG_INFO_T))) {
 				MJCMSG("[ERROR] mjc_ioctl() MJC_REG_INFO copy_to_user fail\n");
 				return -1;
 			}
