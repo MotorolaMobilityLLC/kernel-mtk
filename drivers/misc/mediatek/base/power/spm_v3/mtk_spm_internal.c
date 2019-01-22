@@ -351,12 +351,12 @@ wake_reason_t __spm_output_wake_reason(const struct wake_status *wakesta,
 	log_size += sprintf(log_buf, "wake up by %s, timer_out = %u, r13 = 0x%x, debug_flag = 0x%x, ch = %u\n",
 		  buf, wakesta->timer_out, wakesta->r13, wakesta->debug_flag, wakesta->dcs_ch);
 
-	log_size += sprintf(log_buf,
+	log_size += sprintf(log_buf + log_size,
 		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, idle_sta = 0x%x, event_reg = 0x%x, isr = 0x%x\n",
 		  wakesta->r12, wakesta->r12_ext, wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->event_reg, wakesta->isr);
 
-	log_size += sprintf(log_buf,
+	log_size += sprintf(log_buf + log_size,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, pcm_flag = 0x%x 0x%x 0x%x, req = 0x%x, resource = 0x%x\n",
 		wakesta->raw_ext_sta,
 		wakesta->wake_misc,
