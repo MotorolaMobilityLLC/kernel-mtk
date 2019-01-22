@@ -143,25 +143,26 @@ VOID p2pSetSuspendMode(P_GLUE_INFO_T prGlueInfo, BOOLEAN fgEnable)
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
-*       run p2p init procedure, include register pointer to wlan
-*                                                     glue register p2p
-*                                                     set p2p registered flag
+*       run p2p init procedure, glue register p2p and set p2p registered flag
+*
 * \retval 1     Success
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pLaunch(P_GLUE_INFO_T prGlueInfo)
 {
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == TRUE) {
-		DBGLOG(P2P, INFO, "p2p already registered\n");
+		DBGLOG(P2P, INFO, "p2p is already registered\n");
 		return FALSE;
-	} else if (glRegisterP2P(prGlueInfo, ifname, (BOOLEAN) mode)) {
-		prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
-
-		DBGLOG(P2P, INFO, "Launch success, fgIsP2PRegistered TRUE.\n");
-		return TRUE;
 	}
-	DBGLOG(P2P, ERROR, "Launch Fail\n");
-	return FALSE;
+
+	if (!glRegisterP2P(prGlueInfo, ifname, (BOOLEAN) mode)) {
+		DBGLOG(P2P, ERROR, "Launch failed\n");
+		return FALSE;
+	}
+
+	prGlueInfo->prAdapter->fgIsP2PRegistered = TRUE;
+	DBGLOG(P2P, INFO, "Launch success, fgIsP2PRegistered TRUE\n");
+	return TRUE;
 }
 
 VOID p2pSetMode(IN BOOLEAN fgIsAPMOde)
@@ -179,25 +180,22 @@ VOID p2pSetMode(IN BOOLEAN fgIsAPMOde)
 /*----------------------------------------------------------------------------*/
 /*!
 * \brief
-*       run p2p exit procedure, include unregister pointer to wlan
-*                                                     glue unregister p2p
-*                                                     set p2p registered flag
-
+*       run p2p exit procedure, glue unregister p2p and set p2p registered flag
+*
 * \retval 1     Success
 */
 /*----------------------------------------------------------------------------*/
 BOOLEAN p2pRemove(P_GLUE_INFO_T prGlueInfo)
 {
 	if (prGlueInfo->prAdapter->fgIsP2PRegistered == FALSE) {
-		DBGLOG(P2P, INFO, "p2p is not Registered.\n");
-	} else {
-		prGlueInfo->prAdapter->fgIsP2PRegistered = FALSE;
-		glUnregisterP2P(prGlueInfo);
-		/*p2p is removed successfully */
-		return TRUE;
+		DBGLOG(P2P, INFO, "p2p is not registered\n");
+		return FALSE;
 	}
 
-	return FALSE;
+	DBGLOG(P2P, INFO, "fgIsP2PRegistered FALSE\n");
+	prGlueInfo->prAdapter->fgIsP2PRegistered = FALSE;
+	glUnregisterP2P(prGlueInfo);
+	return TRUE;
 }
 
 #if 0

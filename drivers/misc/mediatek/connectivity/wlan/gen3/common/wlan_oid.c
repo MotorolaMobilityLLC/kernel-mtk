@@ -8313,16 +8313,16 @@ wlanoidSetWiFiWmmPsTest(IN P_ADAPTER_T prAdapter,
 #endif
 
 	rStatus = wlanSendSetQueryCmd(prAdapter,
-									CMD_ID_SET_WMM_PS_TEST_PARMS,
-									TRUE,
-									FALSE,
-									TRUE,
-									nicCmdEventSetCommon,
-									nicCmdTimeoutCommon,
-									u2CmdBufLen,
-									(PUINT_8) (&rSetWmmPsTestParam),
-									NULL,
-									0);
+				      CMD_ID_SET_WMM_PS_TEST_PARMS,
+				      TRUE,
+				      FALSE,
+				      TRUE,
+				      nicCmdEventSetCommon,
+				      nicOidCmdTimeoutCommon,
+				      u2CmdBufLen,
+				      (PUINT_8) (&rSetWmmPsTestParam),
+				      NULL,
+				      0);
 	return rStatus;
 }				/* wlanoidSetWiFiWmmPsTest */
 
@@ -9579,8 +9579,6 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 {
 	WLAN_STATUS status = WLAN_STATUS_SUCCESS;
 	P_PARAM_CUSTOM_P2P_SET_STRUCT_T prSetP2P = (P_PARAM_CUSTOM_P2P_SET_STRUCT_T) NULL;
-	/* P_MSG_P2P_NETDEV_REGISTER_T prP2pNetdevRegMsg = (P_MSG_P2P_NETDEV_REGISTER_T)NULL; */
-	DEBUGFUNC("wlanoidSetP2pMode");
 
 	ASSERT(prAdapter);
 	ASSERT(pu4SetInfoLen);
@@ -9593,49 +9591,26 @@ wlanoidSetP2pMode(IN P_ADAPTER_T prAdapter, IN PVOID pvSetBuffer, IN UINT_32 u4S
 
 	prSetP2P = (P_PARAM_CUSTOM_P2P_SET_STRUCT_T) pvSetBuffer;
 
-	DBGLOG(P2P, INFO, "Set P2P enable %p [%u] mode[%u]\n", prSetP2P, prSetP2P->u4Enable, prSetP2P->u4Mode);
+	DBGLOG(P2P, INFO, "Set P2P enable[%u] mode[%u]\n", prSetP2P->u4Enable, prSetP2P->u4Mode);
 
 	/*
 	 *    enable = 1, mode = 0  => init P2P network
 	 *    enable = 1, mode = 1  => init Soft AP network
-	 *    enable = 0            => uninit P2P/AP network
+	 *    enable = 0  => uninit P2P/AP network
 	 */
 
 	if (prSetP2P->u4Enable) {
 		p2pSetMode((prSetP2P->u4Mode == 1) ? TRUE : FALSE);
 
 		if (p2pLaunch(prAdapter->prGlueInfo)) {
-			/* ToDo:: ASSERT */
 			ASSERT(prAdapter->fgIsP2PRegistered);
-		} else {
+		} else
 			status = WLAN_STATUS_FAILURE;
-		}
 
 	} else {
-		if (prAdapter->fgIsP2PRegistered) {
-			DBGLOG(P2P, INFO, "p2pRemove\n");
+		if (prAdapter->fgIsP2PRegistered)
 			p2pRemove(prAdapter->prGlueInfo);
-		}
-
 	}
-
-#if 0
-	prP2pNetdevRegMsg = (P_MSG_P2P_NETDEV_REGISTER_T) cnmMemAlloc(prAdapter,
-								      RAM_TYPE_MSG,
-								      (sizeof(MSG_P2P_NETDEV_REGISTER_T)));
-
-	if (prP2pNetdevRegMsg == NULL) {
-		ASSERT(FALSE);
-		status = WLAN_STATUS_RESOURCES;
-		return status;
-	}
-
-	prP2pNetdevRegMsg->rMsgHdr.eMsgId = MID_MNY_P2P_NET_DEV_REGISTER;
-	prP2pNetdevRegMsg->fgIsEnable = (prSetP2P->u4Enable == 1) ? TRUE : FALSE;
-	prP2pNetdevRegMsg->ucMode = (UINT_8) prSetP2P->u4Mode;
-
-	mboxSendMsg(prAdapter, MBOX_ID_0, (P_MSG_HDR_T) prP2pNetdevRegMsg, MSG_SEND_METHOD_BUF);
-#endif
 
 	return status;
 
@@ -11081,7 +11056,7 @@ WLAN_STATUS wlanoidQueryCfgRead(IN P_ADAPTER_T prAdapter,
 			TRUE,
 			TRUE,
 			nicCmdEventQueryCfgRead,
-			nicCmdTimeoutCommon,
+			nicOidCmdTimeoutCommon,
 			sizeof(struct _CMD_HEADER_T),
 			(PUINT_8) &cmdV1Header,
 			pvQueryBuffer,
