@@ -33,7 +33,8 @@
 
 void __iomem *SLEEP_BASE_ADDR;
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MTK_DRAMC_PASR)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MTK_DRAMC_PASR) || \
+	defined(SW_ZQCS) || defined(SW_TX_TRACKING) || defined(DRAMC_MEMTEST_DEBUG_SUPPORT)
 static DEFINE_SPINLOCK(dramc_lock);
 int acquire_dram_ctrl(void)
 {

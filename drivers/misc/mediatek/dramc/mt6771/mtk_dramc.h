@@ -21,6 +21,10 @@
 /* #define DVFS_READY */
 #define EMI_READY
 
+#if defined(CONFIG_MTK_ENG_BUILD)
+#define DRAMC_MEMTEST_DEBUG_SUPPORT
+#endif
+
 /* Registers define */
 #define PDEF_DRAMC0_CHA_REG_0E4	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x00e4))
 #define PDEF_DRAMC0_CHA_REG_010	IOMEM((DRAMC_AO_CHA_BASE_ADDR + 0x0010))
@@ -81,6 +85,12 @@ enum TX_RESULT {
 	TX_FAIL_VARIATION
 };
 
+extern void __iomem *mt_emi_base_get(void);
+unsigned int mt_dramc_chn_get(unsigned int emi_cona);
+unsigned int mt_dramc_chp_get(unsigned int emi_cona);
+phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
+unsigned int mt_dramc_ta_support_ranks(void);
+
 #ifdef LAST_DRAMC
 #define LAST_DRAMC_SRAM_MGR
 #define LAST_DRAMC_IP_BASED
@@ -93,14 +103,14 @@ enum TX_RESULT {
 #define STORAGE_READ_API_MASK		(0xf)
 #define ERR_PL_UPDATED			(0x4)
 
-extern void __iomem *mt_emi_base_get(void);
-unsigned int mt_dramc_chn_get(unsigned int emi_cona);
-unsigned int mt_dramc_chp_get(unsigned int emi_cona);
-phys_addr_t mt_dramc_rankbase_get(unsigned int rank);
-unsigned int mt_dramc_ta_support_ranks(void);
 phys_addr_t mt_dramc_ta_reserve_addr(unsigned int rank);
 #endif
 
+#ifdef DRAMC_MEMTEST_DEBUG_SUPPORT
+unsigned int read_dram_mode_reg_by_rank(
+		unsigned int mr_index, unsigned int *mr_value,
+		unsigned int rank, unsigned int channel);
+#endif
 /* Sysfs config */
 /*We use GPT to measurement how many clk pass in 100us*/
 
