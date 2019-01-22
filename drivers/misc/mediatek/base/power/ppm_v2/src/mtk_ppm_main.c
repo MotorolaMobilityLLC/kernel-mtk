@@ -85,8 +85,8 @@ struct ppm_data ppm_main_info = {
 	.is_5A_limit_enable = true,
 	.is_5A_limit_on = false,
 #endif
-#ifdef PPM_L_PLUS_SUPPORT
-	.has_L_plus = false,
+#ifdef PPM_TURBO_CORE_SUPPORT
+	.is_turbo_core = false,
 #endif
 	.dvfs_tbl_type = DVFS_TABLE_TYPE_FY,
 
@@ -1102,7 +1102,7 @@ static int ppm_main_data_init(void)
 #ifdef PPM_IC_SEGMENT_CHECK
 	ppm_main_info.fix_state_by_segment = ppm_check_fix_state_by_segment();
 #endif
-#ifdef PPM_L_PLUS_SUPPORT
+#ifdef PPM_TURBO_CORE_SUPPORT
 	/* Check HW has L plus CPU or not */
 	{
 		unsigned int segment = (get_devinfo_with_index(30) & 0x000000E0) >> 5;
@@ -1110,12 +1110,12 @@ static int ppm_main_data_init(void)
 		switch (segment) {
 		case 0x3:
 		case 0x7:
-			ppm_main_info.has_L_plus = true;
+			ppm_main_info.is_turbo_core = true;
 			break;
 		default:
 			break;
 		}
-		ppm_info("has_L_plus = %d, segment = 0x%x\n", ppm_main_info.has_L_plus, segment);
+		ppm_info("is_turbo_core = %d, segment = 0x%x\n", ppm_main_info.is_turbo_core, segment);
 	}
 #endif
 
