@@ -294,10 +294,17 @@ static ssize_t gt1x_tool_write(struct file *filp, const char __user *buff, size_
 		mutex_unlock(&rw_mutex);
 		return cmd_head.data_len + CMD_HEAD_LENGTH;
 	} else if (cmd_head.wr == 3) {	/*gt1x unused*/
+		u16 data_len;
 
-		memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len);
+		data_len = cmd_head.data_len > sizeof(IC_TYPE) ? sizeof(IC_TYPE) : cmd_head.data_len;
+		ret = copy_from_user(IC_TYPE, &buff[CMD_HEAD_LENGTH], data_len);
+		if (ret) {
+			GTP_ERROR("[%s:%d]copy_from_user failed.", __func__, __LINE__);
+			mutex_unlock(&rw_mutex);
+			return -1;
+		}
 		mutex_unlock(&rw_mutex);
-		return cmd_head.data_len + CMD_HEAD_LENGTH;
+		return data_len + CMD_HEAD_LENGTH;
 	} else if (cmd_head.wr == 5) {
 
 		/*memcpy(IC_TYPE, cmd_head.data, cmd_head.data_len);*/
