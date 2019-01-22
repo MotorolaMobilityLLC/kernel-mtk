@@ -41,8 +41,8 @@
 #include "ged_notify_sw_vsync.h"
 #include "ged_dvfs.h"
 #include "ged_kpi.h"
-
 #include "ged_ge.h"
+#include "ged_vsync.h"
 
 #define GED_DRIVER_DEVICE_NAME "ged"
 
@@ -160,6 +160,9 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
 				pFunc = (ged_bridge_func_type*)ged_bridge_event_notify;
 				break;
+			case GED_BRIDGE_COMMAND_WAIT_HW_VSYNC:
+				pFunc = (ged_bridge_func_type *)ged_bridge_wait_hw_vsync;
+			break;
 			case GED_BRIDGE_COMMAND_GE_ALLOC:
 				pFunc = (ged_bridge_func_type *)ged_bridge_ge_alloc;
 				break;

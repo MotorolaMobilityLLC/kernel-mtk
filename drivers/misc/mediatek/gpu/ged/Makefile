@@ -29,10 +29,10 @@ ccflags-y += \
 	     -I$(srctree)/include/ \
 	     -I$(MTK_TOP)/include/ \
 	     -I$(GED_TOP)/include/ \
-	     -I$(MTK_TOP)/base/power/$(subst ",,$(CONFIG_MTK_PLATFORM))/ \
+	     -I$(MTK_TOP)/base/power/$(MTK_PLATFORM)/ \
 	     -I$(srctree)/drivers/misc/mediatek/video/include \
-	     -I$(srctree)/drivers/misc/mediatek/video/$(subst ",,$(CONFIG_MTK_PLATFORM))/videox \
-	     -I$(srctree)/drivers/misc/mediatek/video/$(subst ",,$(CONFIG_MTK_PLATFORM))/dispsys \
+	     -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/videox \
+	     -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys \
 		 -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 
 ifeq ($(subst ",,$(CONFIG_MTK_PLATFORM)), mt6799)
@@ -88,5 +88,5 @@ ged-y += \
 	src/ged_thread.o \
 	src/ged_ge.o \
 	src/ged_kpi.o \
-	src/ged_dvfs.o
-
+	src/ged_dvfs.o \
+	src/ged_vsync.o

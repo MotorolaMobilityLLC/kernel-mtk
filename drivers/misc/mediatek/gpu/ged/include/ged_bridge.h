@@ -438,7 +438,6 @@ int ged_bridge_ge_set(
 		struct GED_BRIDGE_IN_GE_SET_TAG  *psSET_IN,
 		struct GED_BRIDGE_OUT_GE_SET_TAG *psSET_OUT);
 
-
 int ged_bridge_gpu_timestamp(
 	GED_BRIDGE_IN_GPU_TIMESTAMP * psGpuBeginINT,
 	GED_BRIDGE_OUT_GPU_TIMESTAMP *psGpuBeginOUT);
@@ -447,4 +446,5 @@ int ged_bridge_target_fps(
 	GED_BRIDGE_IN_TARGET_FPS * in,
 	GED_BRIDGE_OUT_TARGET_FPS *out);
 
+int ged_bridge_wait_hw_vsync(void);
 #endif
