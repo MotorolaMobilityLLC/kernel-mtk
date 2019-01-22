@@ -90,7 +90,7 @@ enum dcs_sysfs_mode {
 	DCS_SYSFS_NR_MODE,
 };
 
-enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_ALWAYS_NORMAL;
+enum dcs_sysfs_mode dcs_sysfs_mode = DCS_SYSFS_FREERUN;
 
 static char * const dcs_sysfs_mode_name[DCS_SYSFS_NR_MODE] = {
 	"always normal",
