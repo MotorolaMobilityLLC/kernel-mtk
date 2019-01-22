@@ -179,7 +179,7 @@ config CUSTOM_KERNEL_CAM_CAL_DRV
 
 config MTK_SEC_VIDEO_PATH_SUPPORT
 	bool "Enable MTK Secure Video Path Support"
-	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY)
+	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY) || (MICROTRUST_TEE_SUPPORT)
 	help
 	  This enable MTK Secure Video Path Support. (depending on
 	  MTK In-House TEE Support or Trustonic TEE Support)
@@ -195,7 +195,7 @@ config MTK_TEE_GP_SUPPORT
 
 config MTK_DRM_KEY_MNG_SUPPORT
 	bool "Enable MTK DRM Key Manager Support"
-	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY)
+	depends on (MTK_IN_HOUSE_TEE_SUPPORT) || (TRUSTONIC_TEE_SUPPORT) || (TRUSTY) || (MICROTRUST_TEE_SUPPORT)
 	help
 	  This enable MTK DRM Key Manager Support.
 	  depending on
