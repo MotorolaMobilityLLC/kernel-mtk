@@ -63,7 +63,7 @@
 
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-#include <audio_messenger_ipi.h>
+#include <audio_task_manager.h>
 #include <scp_helper.h>
 #endif
 
@@ -230,6 +230,8 @@ static int send_ipi_enable(bool enable)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 #define VOICE_ULTRA_ENABLE_ID 1
 #define VOICE_ULTRA_DISABLE_ID 0
+	ipi_msg_t ipi_msg;
+
 	pr_warn("%s(), enable = %d\n", __func__, enable);
 
 	if (enable) {
@@ -244,7 +246,7 @@ static int send_ipi_enable(bool enable)
 		register_feature(OPEN_DSP_FEATURE_ID);
 		request_freq();
 
-		audio_send_ipi_msg(TASK_SCENE_VOICE_ULTRASOUND,
+		audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOICE_ULTRASOUND, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
 				   AUDIO_IPI_PAYLOAD,
 				   AUDIO_IPI_MSG_BYPASS_ACK,
 				   VOICE_ULTRA_ENABLE_ID,
@@ -255,7 +257,7 @@ static int send_ipi_enable(bool enable)
 		/* change to wait ack when ready */
 		udelay(5 * 1000);
 	} else {
-		audio_send_ipi_msg(TASK_SCENE_VOICE_ULTRASOUND,
+		audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOICE_ULTRASOUND, AUDIO_IPI_LAYER_KERNEL_TO_SCP,
 				   AUDIO_IPI_MSG_ONLY,
 				   AUDIO_IPI_MSG_BYPASS_ACK,
 				   VOICE_ULTRA_DISABLE_ID,

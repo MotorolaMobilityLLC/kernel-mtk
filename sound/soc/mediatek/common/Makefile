@@ -26,10 +26,9 @@ obj-$(CONFIG_MTK_BTCVSD_ALSA) += mtk-soc-pcm-btcvsd.o mtk-soc-pcm-btcvsd-rx.o mt
 ifeq ($(CONFIG_MTK_SND_SOC_NEW_ARCH),y)
 
 # Feature support
-ifeq ($(CONFIG_MTK_TINYSYS_SCP_SUPPORT),y)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(MTK_PLATFORM)
-ccflags-y += -DMTK_AURISYS_PHONE_CALL_SUPPORT
-ccflags-y += -DMTK_AUDIO_TUNNELING_SUPPORT
+ifeq ($(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/mp3
 endif
 
 # Common object
