@@ -48,5 +48,7 @@ struct pmic_ipi_ret_datas {
 	unsigned int data[PMIC_IPI_ACK_SLOT_SIZE];
 };
 
+extern void aee_rr_rec_set_bit_pmic_ext_buck(int bit, int loc);
+
 #endif /* _PMIC_IPI_H_*/
 
