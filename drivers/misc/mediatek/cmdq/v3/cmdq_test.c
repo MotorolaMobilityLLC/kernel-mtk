@@ -134,6 +134,38 @@ static int32_t _test_submit_async(struct cmdqRecStruct *handle, struct TaskStruc
 	return cmdqCoreSubmitTaskAsync(&desc, NULL, 0, ppTask);
 }
 
+s32 _test_backup_instructions(struct TaskStruct *task, s32 **instructions_out)
+{
+	s32 *insts_buffer = NULL;
+	struct CmdBufferStruct *cmd_buffer = NULL;
+	u32 buffer_count = 0;
+
+	insts_buffer = vzalloc(task->bufferSize);
+	if (!insts_buffer)
+		return -ENOMEM;
+
+	list_for_each_entry(cmd_buffer, &task->cmd_buffer_list, listEntry) {
+		u32 buf_size = list_is_last(&cmd_buffer->listEntry, &task->cmd_buffer_list) ?
+			CMDQ_CMD_BUFFER_SIZE - task->buf_available_size : CMDQ_CMD_BUFFER_SIZE;
+
+		memcpy(insts_buffer + CMDQ_CMD_BUFFER_SIZE / sizeof(s32) * buffer_count,
+			cmd_buffer->pVABase, buf_size);
+		buffer_count++;
+	}
+
+	*instructions_out = insts_buffer;
+
+	return 0;
+}
+
+void _test_free_backup_instructions(s32 **instructions_out)
+{
+	if (*instructions_out)
+		vfree(*instructions_out);
+	*instructions_out = NULL;
+}
+
+
 static void testcase_scenario(void)
 {
 	struct cmdqRecStruct *hRec;
@@ -3782,10 +3814,12 @@ static void testcase_basic_jump_c(void)
 static void testcase_long_jump_c(void)
 {
 	struct cmdqRecStruct *handle = NULL;
-	const u32 init_val = 1, post_val = 3;
+	const u32 init_val = 1, post_val = 6;
 	u32 test_result, i;
 	CMDQ_VARIABLE cmdq_result;
 	cmdqBackupSlotHandle slot_handle;
+	struct TaskStruct *task = NULL;
+	s32 status = 0;
 
 	CMDQ_MSG("%s\n", __func__);
 
@@ -3807,14 +3841,18 @@ static void testcase_long_jump_c(void)
 		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
 	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
 
-	cmdq_task_flush_async(handle);
+	cmdq_op_finalize_command(handle, false);
+	status = _test_submit_async(handle, &task);
+	/* cmdqCoreDebugDumpCommand(task); */
+	cmdqCoreWaitAndReleaseTask(task, 500);
+
 	/* cmdq_task_dump_command(handle); */
 	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
 
-	if (test_result != init_val + post_val) {
+	if (status < 0 || test_result != init_val + post_val) {
 		/* test fail */
-		CMDQ_TEST_FAIL("%s jump_c if, value is 0x%08x, not 0x%08x\n",
-			__func__, test_result, init_val + 1);
+		CMDQ_TEST_FAIL("%s jump_c if, value is 0x%08x, not 0x%08x status: %d\n",
+			__func__, test_result, init_val + 1, status);
 	}
 
 	cmdq_task_destroy(handle);
@@ -3837,14 +3875,23 @@ static void testcase_long_jump_c(void)
 		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
 	cmdq_op_continue(handle);
 	cmdq_op_end_while(handle);
+	/* more instructions after end while */
+	for (i = 0; i < post_val; i++)
+		cmdq_op_add(handle, &cmdq_result, cmdq_result, 1);
 	cmdq_op_backup_CPR(handle, cmdq_result, slot_handle, 0);
-	cmdq_task_flush_async(handle);
+
+	cmdq_cpu_write_mem(slot_handle, 0, 0);
+	cmdq_op_finalize_command(handle, false);
+	status = _test_submit_async(handle, &task);
+	/* cmdqCoreDebugDumpCommand(task); */
+	cmdqCoreWaitAndReleaseTask(task, 500);
+
 	cmdq_cpu_read_mem(slot_handle, 0, &test_result);
 
-	if (test_result != init_val + post_val) {
+	if (status < 0 || test_result != init_val + post_val * 2) {
 		/* test fail */
-		CMDQ_TEST_FAIL("%s jump_c while and break, value is 0x%08x, not 0x%08x\n",
-			__func__, test_result, init_val + 1);
+		CMDQ_TEST_FAIL("%s jump_c while and break, value is 0x%08x, not 0x%08x status: %d\n",
+			__func__, test_result, init_val + 1, status);
 	}
 
 	cmdq_task_destroy(handle);
@@ -4861,6 +4908,18 @@ enum WAIT_POLICY_ENUM {
 	CMDQ_TESTCASE_WAITOP_BEFORE_END,
 };
 
+enum BRANCH_POLICY_ENUM {
+	CMDQ_TESTCASE_BRANCH_NONE = 0,
+	CMDQ_TESTCASE_BRANCH_CONTINUE,
+	CMDQ_TESTCASE_BRANCH_BREAK,
+	CMDQ_TESTCASE_BRANCH_MAX,
+};
+
+enum CONDITION_TEST_POLICY_ENUM {
+	CMDQ_TESTCASE_CONDITION_NONE,
+	CMDQ_TESTCASE_CONDITION_RANDOM,
+};
+
 struct thread_param {
 	struct completion cmplt;
 	atomic_t stop;
@@ -4868,6 +4927,7 @@ struct thread_param {
 	bool multi_task;
 	enum ENGINE_POLICY_ENUM engines_policy;
 	enum WAIT_POLICY_ENUM wait_policy;
+	enum CONDITION_TEST_POLICY_ENUM condition_policy;
 };
 
 struct random_data {
@@ -4890,47 +4950,53 @@ struct random_data {
 	u32 expect_result;
 	CMDQ_VARIABLE var_result;
 	bool may_wait;
+	u32 condition_count;
 };
 
-static void _append_op_read_mem_to_reg(struct cmdqRecStruct *handle,
-	struct random_data *data)
+static bool _append_op_read_mem_to_reg(struct cmdqRecStruct *handle,
+	struct random_data *data, u32 limit_size)
 {
 	u32 slot_idx = 0;
 
 	slot_idx = (get_random_int() % data->slot_count) + data->slot_reserve_count;
-	data->last_write = data->slot_expect_values[slot_idx];
 	cmdq_op_read_mem_to_reg(handle, data->slot, slot_idx, data->dummy_reg_pa);
+	data->last_write = data->slot_expect_values[slot_idx];
+	return true;
 }
 
-static void _append_op_read_reg_to_mem(struct cmdqRecStruct *handle,
-	struct random_data *data)
+static bool _append_op_read_reg_to_mem(struct cmdqRecStruct *handle,
+	struct random_data *data, u32 limit_size)
 {
 	u32 slot_idx = 0;
 
 	if (data->thread->multi_task)
-		return;
+		return true;
 
 	slot_idx = (get_random_int() % data->slot_count) + data->slot_reserve_count;
 	cmdq_op_read_reg_to_mem(handle, data->slot, slot_idx, data->dummy_reg_pa);
 	data->slot_expect_values[slot_idx] = data->last_write;
+	return true;
 }
 
-static void _append_op_write_reg(struct cmdqRecStruct *handle, struct random_data *data)
+static bool _append_op_write_reg(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size)
 {
 	u32 random_value = get_random_int();
 	bool use_mask = get_random_int() % 10;
 
 	if (use_mask) {
 		data->mask = get_random_int();
-		data->last_write = (data->last_write & ~data->mask) | (random_value & data->mask);
+		random_value = (data->last_write & ~data->mask) | (random_value & data->mask);
 	} else {
 		data->mask = ~0;
-		data->last_write = random_value;
 	}
 	cmdq_op_write_reg(handle, data->dummy_reg_pa, data->last_write, data->mask);
+	data->last_write = random_value;
+	return true;
 }
 
-static void _append_op_wait(struct cmdqRecStruct *handle, struct random_data *data)
+static bool _append_op_wait(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size)
 {
 	const u32 max_wait_count = 2;
 	const unsigned long tokens[] = {
@@ -4940,7 +5006,7 @@ static void _append_op_wait(struct cmdqRecStruct *handle, struct random_data *da
 	unsigned long token;
 
 	if (!data->may_wait || data->wait_count > max_wait_count)
-		return;
+		return true;
 
 	token = tokens[get_random_int() % 2];
 	data->wait_count++;
@@ -4948,12 +5014,229 @@ static void _append_op_wait(struct cmdqRecStruct *handle, struct random_data *da
 		cmdq_op_wait_no_clear(handle, token);
 	else
 		cmdq_op_wait(handle, token);
+	return true;
 }
 
-static void _append_op_add(struct cmdqRecStruct *handle, struct random_data *data)
+static bool _append_op_add(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size)
 {
-	data->expect_result++;
 	cmdq_op_add(handle, &data->var_result, data->var_result, 1);
+	data->expect_result++;
+	return true;
+}
+
+static bool _append_op_while(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size, u32 *op_result)
+{
+	/*
+	 * Pattern of generate op:
+	 * while (variable < condition_limit)
+	 *     variable = variable + 1  (1~N times)
+	 *     break/continue/empty
+	 *     variable = variable + 1  (0~N times)
+	 * end while
+	 */
+
+	const u32 min_op_count = 4;
+	u32 expect_result = 0;
+	u32 condition_limit, pre_op_count, post_op_count, i;
+	u32 remain_op_count = limit_size / CMDQ_INST_SIZE;
+	enum BRANCH_POLICY_ENUM branch_op;
+
+	if (remain_op_count <= min_op_count || data->expect_result > 0xFFFF || data->condition_count > 0)
+		return true;
+
+	/* condition value accept max 16 bit value */
+	condition_limit = get_random_int() % (0xFFFF - data->expect_result);
+	pre_op_count = get_random_int() % remain_op_count + 1;
+	post_op_count = remain_op_count > pre_op_count ?
+		get_random_int() % (remain_op_count - pre_op_count) : 0;
+	branch_op = get_random_int() % (u32)CMDQ_TESTCASE_BRANCH_MAX;
+
+	if (limit_size > 0xFFFF || pre_op_count > 0xFFFF || post_op_count >= 0xFFFF) {
+		CMDQ_ERR("%s start size: %u limit: %u pre/post: %u/%u op: %u current: %u condition: %u\n",
+			__func__, handle->blockSize, limit_size,
+			pre_op_count, post_op_count, branch_op,
+			data->expect_result, condition_limit);
+		return false;
+	}
+
+	CMDQ_MSG("%s start size: %u limit: %u pre/post: %u/%u op: %u current: %u condition: %u\n",
+		__func__, handle->blockSize, limit_size,
+		pre_op_count, post_op_count, branch_op,
+		data->expect_result, condition_limit);
+
+	cmdq_op_while(handle, data->var_result, CMDQ_LESS_THAN,
+		condition_limit + data->expect_result);
+	for (i = 0; i < pre_op_count; i++)
+		cmdq_op_add(handle, &data->var_result, data->var_result, 1);
+
+	switch (branch_op) {
+	case CMDQ_TESTCASE_BRANCH_CONTINUE:
+		cmdq_op_continue(handle);
+		while (expect_result < condition_limit)
+			expect_result += pre_op_count;
+		break;
+	case CMDQ_TESTCASE_BRANCH_BREAK:
+		cmdq_op_break(handle);
+		expect_result = pre_op_count;
+		break;
+	case CMDQ_TESTCASE_BRANCH_NONE:
+	default:
+		while (expect_result < condition_limit)
+			expect_result += pre_op_count + post_op_count;
+		break;
+	}
+
+	for (i = 0; i < post_op_count; i++)
+		cmdq_op_add(handle, &data->var_result, data->var_result, 1);
+	cmdq_op_end_while(handle);
+
+	*op_result = expect_result;
+	data->condition_count += 1;
+
+	CMDQ_MSG("%s result: %u size: %u\n", __func__, expect_result, handle->blockSize);
+	return true;
+}
+
+static bool _append_op_if(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size, u32 *op_result)
+{
+	/*
+	 * Pattern of generate op:
+	 * if (variable op condition_limit)
+	 *     variable = variable + 1  (1~N times)
+	 * else/empty
+	 *     variable = variable + 1  (1~N times)
+	 * end if
+	 */
+
+	const u32 min_op_count = 4;
+	u32 expect_result = 0;
+	u32 condition_limit, pre_op_count, post_op_count, i;
+	u32 remain_op_count = limit_size / CMDQ_INST_SIZE;
+	enum CMDQ_CONDITION_ENUM condition_op;
+	bool has_else = get_random_int() % 2;
+	bool match = true;
+
+	if (remain_op_count <= min_op_count || data->condition_count > 0)
+		return true;
+
+	/* condition value accept max 16 bit value */
+	condition_limit = get_random_int() % 0xFFFF;
+	pre_op_count = get_random_int() % remain_op_count + 1;
+	post_op_count = remain_op_count > pre_op_count ?
+		get_random_int() % (remain_op_count - pre_op_count) + 1 : 1;
+	condition_op = get_random_int() % (u32)CMDQ_CONDITION_MAX;
+
+	if (limit_size > 0xFFFF || pre_op_count > 0xFFFF || post_op_count > 0xFFFF) {
+		CMDQ_ERR("%s start size: %u limit: %u pre/post: %u/%u op: %u\n",
+			__func__, handle->blockSize, limit_size,
+			pre_op_count, post_op_count, condition_op);
+		return false;
+	}
+
+	CMDQ_MSG("%s start size: %u limit: %u pre/post: %u/%u op: %u\n",
+		__func__, handle->blockSize, limit_size,
+		pre_op_count, post_op_count, condition_op);
+
+	cmdq_op_if(handle, data->var_result, condition_op, condition_limit);
+	for (i = 0; i < pre_op_count; i++)
+		cmdq_op_add(handle, &data->var_result, data->var_result, 1);
+	if (has_else) {
+		cmdq_op_else(handle);
+		for (i = 0; i < post_op_count; i++)
+			cmdq_op_add(handle, &data->var_result, data->var_result, 1);
+	}
+	cmdq_op_end_if(handle);
+
+	switch (condition_op) {
+	case CMDQ_EQUAL:
+		match = (data->expect_result == condition_limit);
+		break;
+
+	case CMDQ_NOT_EQUAL:
+		match = (data->expect_result != condition_limit);
+		break;
+
+	case CMDQ_GREATER_THAN_AND_EQUAL:
+		match = (data->expect_result >= condition_limit);
+		break;
+
+	case CMDQ_LESS_THAN_AND_EQUAL:
+		match = (data->expect_result <= condition_limit);
+		break;
+
+	case CMDQ_GREATER_THAN:
+		match = (data->expect_result > condition_limit);
+		break;
+
+	case CMDQ_LESS_THAN:
+		match = (data->expect_result < condition_limit);
+		break;
+
+	default:
+		CMDQ_TEST_FAIL("%s cannot recognize IF condition: %u\n", __func__, (s32)condition_op);
+		return false;
+	}
+
+	if (match)
+		expect_result += pre_op_count;
+	else if (has_else)
+		expect_result += post_op_count;
+
+	*op_result = expect_result;
+	data->condition_count += 1;
+
+	CMDQ_MSG("%s result: %u size: %u\n", __func__, expect_result, handle->blockSize);
+	return true;
+}
+
+static bool _append_op_condition(struct cmdqRecStruct *handle, struct random_data *data,
+	u32 limit_size)
+{
+	typedef bool(*append_op_func)(struct cmdqRecStruct *handle, struct random_data *data,
+		u32 limit_size, u32 *result);
+	const append_op_func op_funcs[] = {
+		_append_op_while,
+		_append_op_if,
+	};
+	u32 op_result = 0;
+	u32 limit_op_count = get_random_int() % (limit_size / CMDQ_INST_SIZE);
+
+	if (data->thread->condition_policy == CMDQ_TESTCASE_CONDITION_NONE)
+		return true;
+
+	if (!op_funcs[get_random_int() % ARRAY_SIZE(op_funcs)](handle, data,
+		limit_op_count * CMDQ_INST_SIZE, &op_result))
+		return false;
+	data->expect_result += op_result;
+	return true;
+}
+
+static bool _append_random_instructions(struct cmdqRecStruct *handle,
+	struct random_data *random_context, u32 limit_size) {
+	typedef bool(*append_op_func)(struct cmdqRecStruct *handle, struct random_data *data,
+		u32 limit_size);
+	const append_op_func op_funcs[] = {
+		_append_op_read_mem_to_reg,
+		_append_op_read_reg_to_mem,
+		_append_op_write_reg,
+		_append_op_wait,
+
+		/* v3 instructions */
+		_append_op_add,
+		_append_op_condition,
+	};
+
+	while (handle->blockSize < limit_size) {
+		s32 op_idx = get_random_int() % ARRAY_SIZE(op_funcs);
+
+		if (!op_funcs[op_idx](handle, random_context, limit_size - handle->blockSize))
+			return false;
+	}
+
+	return true;
 }
 
 static void _testcase_release_work(struct work_struct *work_item)
@@ -4963,12 +5246,17 @@ static void _testcase_release_work(struct work_struct *work_item)
 	u32 result_val = 0, i = 0;
 	bool error_happen = false;
 	s32 status = 0;
+	s32 *insts_buffer = NULL;
+	s32 insts_buffer_size = 0;
 
 	do {
 		if (!random_context->task) {
 			CMDQ_TEST_FAIL("Task does not submit, round: %u\n", random_context->round);
 			break;
 		}
+
+		_test_backup_instructions(random_context->task, &insts_buffer);
+		insts_buffer_size = random_context->task->bufferSize;
 
 		status = cmdqCoreWaitAndReleaseTask(random_context->task, 500);
 		if (status == -ETIMEDOUT) {
@@ -5029,17 +5317,25 @@ static void _testcase_release_work(struct work_struct *work_item)
 
 	if (error_happen) {
 		atomic_set(&random_context->thread->stop, 1);
-		CMDQ_TEST_FAIL("round: %u wait: %d:%d multi: %d task: 0x%p engine use: %d status: %d\n",
+		CMDQ_TEST_FAIL(
+			"round: %u wait: %d:%d multi: %d task: 0x%p engine use: %d condition: %d conditions: %u status: %d\n",
 				random_context->round,
 				random_context->may_wait,
 				random_context->wait_count,
 				random_context->thread->multi_task,
 				random_context->task,
 				random_context->thread->engines_policy,
+				random_context->thread->condition_policy,
+				random_context->condition_count,
 				status);
-		cmdq_task_dump_command(random_context->handle);
+
+		if (insts_buffer && insts_buffer_size)
+			cmdqCoreDumpCommandMem(insts_buffer, insts_buffer_size);
+		else
+			cmdq_task_dump_command(random_context->handle);
 	}
 
+	_test_free_backup_instructions(&insts_buffer);
 	cmdq_task_destroy(random_context->handle);
 	cmdq_free_mem(random_context->slot);
 	atomic_dec(random_context->ref_count);
@@ -5061,23 +5357,17 @@ static int _testcase_gen_task_thread(void *data)
 {
 	const u64 dummy_reg_va = CMDQ_TEST_GCE_DUMMY_VA;
 	const u64 dummy_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
-	const u32 inst_count_pattern[] = {5, 6, 7, 8, 9, 10, 510, 511, 512, 513, 514};
+	const u32 inst_count_pattern[] = {
+		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+		254, 255, 256, 257, 258,
+		510, 511, 512, 513, 514,
+		1022, 1023, 1024, 1025, 1026};
 	const u32 reserve_slot_count = 2;
 	const u32 max_slot_count = 4;
 	const u32 total_slot = reserve_slot_count + max_slot_count;
 	const u32 max_muti_task = CMDQ_MAX_TASK_IN_THREAD + 1;
 	struct thread_param *thread_data = (struct thread_param *)data;
 	struct workqueue_struct *release_queue = create_singlethread_workqueue("cmdq_random_release");
-	typedef void(*append_op_func)(struct cmdqRecStruct *handle, struct random_data *data);
-	append_op_func op_funcs[] = {
-		_append_op_read_mem_to_reg,
-		_append_op_read_reg_to_mem,
-		_append_op_write_reg,
-		_append_op_wait,
-
-		/* v3 instructions */
-		_append_op_add,
-	};
 	u32 engines[] = {CMDQ_ENG_MDP_CAMIN, CMDQ_ENG_MDP_RDMA0, CMDQ_ENG_MDP_RDMA1,
 		CMDQ_ENG_MDP_WROT0, CMDQ_ENG_MDP_WROT1};
 	u32 task_count = 0;
@@ -5174,7 +5464,7 @@ static int _testcase_gen_task_thread(void *data)
 		 * TODO:
 		 * Add large memory policy, e.g., 32MB instruction buffer.
 		 */
-		for (i = 0; i < (get_random_int() % 3) + 1; i++)
+		for (i = 0; i < (get_random_int() % 4) + 1; i++)
 			random_context->inst_count +=
 				inst_count_pattern[get_random_int() % ARRAY_SIZE(inst_count_pattern)];
 
@@ -5198,10 +5488,13 @@ static int _testcase_gen_task_thread(void *data)
 		cmdq_op_assign(handle, &random_context->var_result, 0);
 
 		/* append random instructions */
-		while (handle->blockSize < (random_context->inst_count - 2) * CMDQ_INST_SIZE) {
-			int32_t op_idx = get_random_int() % ARRAY_SIZE(op_funcs);
-
-			op_funcs[op_idx](handle, random_context);
+		if (random_context->inst_count > 4) {
+			if (!_append_random_instructions(handle, random_context,
+				(random_context->inst_count - 4) * CMDQ_INST_SIZE)) {
+				CMDQ_ERR("%s error during append random instructions\n", __func__);
+				atomic_set(&thread_data->stop, 1);
+				break;
+			}
 		}
 
 		if (!thread_data->multi_task) {
@@ -5214,13 +5507,14 @@ static int _testcase_gen_task_thread(void *data)
 
 		if (thread_data->wait_policy == CMDQ_TESTCASE_WAITOP_BEFORE_END) {
 			random_context->may_wait = true;
-			_append_op_wait(handle, random_context);
+			_append_op_wait(handle, random_context, 1);
 		}
 
 		cmdq_op_finalize_command(handle, false);
 		_test_submit_async(handle, &random_context->task);
-		CMDQ_LOG("Round: %u task: %p thread: %d start\n",
-			task_count, random_context->task, random_context->task->thread);
+		CMDQ_LOG("Round: %u task: %p thread: %d size: %u start\n",
+			task_count, random_context->task, random_context->task->thread,
+			random_context->task->bufferSize);
 
 		atomic_inc(&task_ref_count);
 		INIT_WORK(&random_context->release_work, _testcase_release_work);
@@ -5278,18 +5572,22 @@ static int _testcase_trigger_event_thread(void *data)
 
 static void testcase_gen_random_case(bool multi_task,
 	enum ENGINE_POLICY_ENUM engines_policy,
-	enum WAIT_POLICY_ENUM wait_policy)
+	enum WAIT_POLICY_ENUM wait_policy,
+	enum CONDITION_TEST_POLICY_ENUM condition_policy)
 {
 	struct task_struct *random_thread_handle;
 	struct task_struct *trigger_thread_handle;
 	struct thread_param random_thread = { {0} };
 	struct thread_param trigger_thread = { {0} };
 
-	CMDQ_MSG("%s\n", __func__);
+	CMDQ_LOG("%s start with multi-task: %s engine: %d wait: %d condition: %d\n",
+		__func__, multi_task ? "True" : "False", engines_policy,
+		wait_policy, condition_policy);
 
 	random_thread.multi_task = multi_task;
 	random_thread.engines_policy = engines_policy;
 	random_thread.wait_policy = wait_policy;
+	random_thread.condition_policy = condition_policy;
 
 	do {
 		init_completion(&random_thread.cmplt);
@@ -5342,20 +5640,35 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
-	case 300:
+	case 301:
 		testcase_gen_random_case(true,
-			CMDQ_TESTCASE_ENGINE_SAME,
-			CMDQ_TESTCASE_WAITOP_BEFORE_END);
-
-		msleep_interruptible(10);
-		testcase_gen_random_case(true,
-			CMDQ_TESTCASE_ENGINE_SAME,
-			CMDQ_TESTCASE_WAITOP_RANDOM);
+			CMDQ_TESTCASE_ENGINE_NOT_SET,
+			CMDQ_TESTCASE_WAITOP_NOT_SET,
+			CMDQ_TESTCASE_CONDITION_RANDOM);
 
 		msleep_interruptible(10);
 		testcase_gen_random_case(true,
 			CMDQ_TESTCASE_ENGINE_RANDOM,
-			CMDQ_TESTCASE_WAITOP_RANDOM);
+			CMDQ_TESTCASE_WAITOP_RANDOM,
+			CMDQ_TESTCASE_CONDITION_RANDOM);
+		break;
+	case 300:
+		testcase_gen_random_case(true,
+			CMDQ_TESTCASE_ENGINE_SAME,
+			CMDQ_TESTCASE_WAITOP_BEFORE_END,
+			CMDQ_TESTCASE_CONDITION_NONE);
+
+		msleep_interruptible(10);
+		testcase_gen_random_case(true,
+			CMDQ_TESTCASE_ENGINE_SAME,
+			CMDQ_TESTCASE_WAITOP_RANDOM,
+			CMDQ_TESTCASE_CONDITION_NONE);
+
+		msleep_interruptible(10);
+		testcase_gen_random_case(true,
+			CMDQ_TESTCASE_ENGINE_RANDOM,
+			CMDQ_TESTCASE_WAITOP_RANDOM,
+			CMDQ_TESTCASE_CONDITION_NONE);
 		break;
 	case 149:
 		testcase_global_variable();
