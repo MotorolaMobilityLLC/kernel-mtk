@@ -99,8 +99,8 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 		sram_offset[SCP_A_ID] = 0;
 		sram_offset[SCP_B_ID] = SCP_A_TCM_SIZE;
 	} else if (prev_run_state == 1 && scp_trace_run_flag == 0) {
-		value = MET_OP|MET_OP_STOP;
 		if (scp_trace_run_command & (1<<SCP_A_ID)) {
+			value = MET_OP|MET_OP_STOP;
 			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_A_ID);
 			udelay(1000);
 			value = MET_OP|MET_OP_EXTRACT;
@@ -108,6 +108,7 @@ static ssize_t scp_trace_run_store(struct device *dev, struct device_attribute *
 		}
 		udelay(1000);
 		if (scp_trace_run_command & (1<<SCP_B_ID)) {
+			value = MET_OP|MET_OP_STOP;
 			ret = scp_ipi_send(IPI_MET_SCP, &value, sizeof(value), 0, SCP_B_ID);
 			udelay(1000);
 			value = MET_OP|MET_OP_EXTRACT;
