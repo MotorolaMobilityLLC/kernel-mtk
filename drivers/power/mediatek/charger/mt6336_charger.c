@@ -487,17 +487,19 @@ static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 
 	if (en) {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
-
+#if 0
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+#endif
 	} else {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0);
-
+#if 0
 		mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
 		mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
 		mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
 		mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+#endif
 	}
 
 	/* enter low power mode */
@@ -710,16 +712,16 @@ int mt6336_set_pe20_efficiency_table(struct charger_device *chg_dev)
 	pinfo = charger_dev_get_drvdata(chg_dev);
 
 	if (pinfo != NULL) {
-		pinfo->pe2.profile[0].vchr = 8500000;
-		pinfo->pe2.profile[1].vchr = 8500000;
-		pinfo->pe2.profile[2].vchr = 8500000;
-		pinfo->pe2.profile[3].vchr = 9000000;
-		pinfo->pe2.profile[4].vchr = 9000000;
-		pinfo->pe2.profile[5].vchr = 9500000;
-		pinfo->pe2.profile[6].vchr = 9500000;
-		pinfo->pe2.profile[7].vchr = 9500000;
-		pinfo->pe2.profile[8].vchr = 10000000;
-		pinfo->pe2.profile[9].vchr = 10000000;
+		pinfo->pe2.profile[0].vchr = 8500;
+		pinfo->pe2.profile[1].vchr = 8500;
+		pinfo->pe2.profile[2].vchr = 8500;
+		pinfo->pe2.profile[3].vchr = 9000;
+		pinfo->pe2.profile[4].vchr = 9000;
+		pinfo->pe2.profile[5].vchr = 9500;
+		pinfo->pe2.profile[6].vchr = 9500;
+		pinfo->pe2.profile[7].vchr = 9500;
+		pinfo->pe2.profile[8].vchr = 10000;
+		pinfo->pe2.profile[9].vchr = 10000;
 		return 0;
 	}
 	return -1;

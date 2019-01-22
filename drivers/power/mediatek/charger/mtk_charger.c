@@ -991,6 +991,7 @@ static int charger_routine_thread(void *arg)
 	struct charger_manager *info = arg;
 	static int i;
 	unsigned long flags;
+	bool curr_sign;
 
 	while (1) {
 		pr_err("charger_routine_thread [%s]\n", info->chg1_dev->props.alias_name);
@@ -999,8 +1000,11 @@ static int charger_routine_thread(void *arg)
 		mutex_lock(&info->charger_lock);
 		info->charger_thread_timeout = false;
 		i++;
+		curr_sign = battery_get_bat_current_sign();
 		pr_err("Vbat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d\n", battery_get_bat_voltage(),
-			battery_get_bat_current(), battery_get_vbus(), battery_get_bat_temperature(),
+			curr_sign ? battery_get_bat_current() :
+					-1 * battery_get_bat_current(),
+			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc());
 
 		charger_update_data(info);
@@ -1458,7 +1462,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 
 #ifdef CONFIG_MTK_DUAL_CHARGER_SUPPORT
 	/* dual charger */
-	if (of_property_read_u32(np, "ta_ac_master_charging_current", &val) >= 0) {
+	if (of_property_read_u32(np, "chg1_ta_ac_charger_current", &val) >= 0) {
 		info->data.chg1_ta_ac_charger_current = val;
 	} else {
 		pr_err(
@@ -1467,7 +1471,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.chg1_ta_ac_charger_current = TA_AC_MASTER_CHARGING_CURRENT;
 	}
 
-	if (of_property_read_u32(np, "ta_ac_slave_charging_current", &val) >= 0) {
+	if (of_property_read_u32(np, "chg2_ta_ac_charger_current", &val) >= 0) {
 		info->data.chg2_ta_ac_charger_current = val;
 	} else {
 		pr_err(
