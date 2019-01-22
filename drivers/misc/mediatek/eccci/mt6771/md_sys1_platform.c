@@ -827,8 +827,8 @@ void md1_pll_init(struct ccci_modem *md)
 	ROr2W(map_addr, 0x0, 0x2);
 	udelay(100);
 
-	/* Default md_srclkena_ack settle time = 136T 32K */
-	cldma_write32(md_pll->md_top_Pll, 0x4, 0x02020E88);
+	/* Default md_srclkena_ack settle time = 147T 32K */
+	cldma_write32(md_pll->md_top_Pll, 0x4, 0x02020E93);
 
 	/* PLL init */
 	cldma_write32(md_pll->md_top_Pll, 0x60, 0x801713B1);
