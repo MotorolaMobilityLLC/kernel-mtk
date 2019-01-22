@@ -50,8 +50,8 @@ static unsigned long g_u4CurrPosition;
 #define Min_Pos		0
 #define Max_Pos		1023
 
-static signed short Hall_Max = 0x5800;
-static signed short Hall_Min = 0xA800;
+static signed short Hall_Max = 0x4500;
+static signed short Hall_Min = 0xBB00;
 
 static int s4EEPROM_ReadReg(u16 addr, u16 *data)
 {
