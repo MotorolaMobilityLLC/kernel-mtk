@@ -28,9 +28,9 @@ struct golden _golden;
 
 bool is_already_snap_shot;
 
-bool slp_chk_golden_suspend;
-bool slp_chk_golden_dpidle;
-bool slp_chk_golden_sodi3;
+bool slp_chk_golden_suspend = true;
+bool slp_chk_golden_dpidle = true;
+bool slp_chk_golden_sodi3 = true;
 
 void mt_power_gs_dump_suspend(void)
 {
