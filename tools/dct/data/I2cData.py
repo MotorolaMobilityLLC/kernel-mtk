@@ -21,7 +21,7 @@ class BusData:
 class I2cData:
     _i2c_count = 0
     _channel_count = 0
-    _busData = {}
+    _busList = []
 
     def __init__(self):
         self.__varname = ''

@@ -26,6 +26,7 @@ class GpioObj(ModuleObj):
         self.__filePinCtrl = 'pinctrl-mtk-%s.h' %(ModuleObj.get_chipId().lower())
         self.__fileScp = 'cust_scp_gpio_usage.h'
         self.__fileMap = 'cust_gpio_usage_mapping.dtsi'
+        self.__drvCur = False
 
     def get_cfgInfo(self):
         cp = ConfigParser.ConfigParser(allow_no_value=True)
@@ -83,6 +84,7 @@ class GpioObj(ModuleObj):
                 var2Node = node.getElementsByTagName('varName2')
                 smtNode = node.getElementsByTagName('smt')
                 iesNode = node.getElementsByTagName('ies')
+                drvCurNode = node.getElementsByTagName('drv_cur')
 
                 num = string.atoi(node.nodeName[4:])
                 if num >= len(ModuleObj.get_data(self)):
@@ -159,6 +161,10 @@ class GpioObj(ModuleObj):
                     if cmp(iesNode[0].childNodes[0].nodeValue, 'true') == 0:
                         flag = True
                     data.set_iesEn(flag)
+
+                if len(drvCurNode) != 0  and len(drvCurNode[0].childNodes) != 0:
+                    self.__drvCur = True
+                    data.set_drvCur(drvCurNode[0].childNodes[0].nodeValue)
 
                 ModuleObj.set_data(self, node.nodeName, data)
 
@@ -344,7 +350,15 @@ class GpioObj(ModuleObj):
             gen_str += '''#define %s_PULL\t\t\tGPIO_PULL_%s\n''' %(key.upper(), pull_sel)
             gen_str += '''#define %s_DATAOUT\t\tGPIO_OUT_%s\n''' %(key.upper(), out_high)
             gen_str += '''#define %s_SMT\t\t\tGPIO_SMT_%s\n''' %(key.upper(), smt_en)
-            gen_str += '''#define %s_IES\t\t\tGPIO_IES_%s\n\n''' %(key.upper(), ies_en)
+            gen_str += '''#define %s_IES\t\t\tGPIO_IES_%s\n''' %(key.upper(), ies_en)
+
+            if self.__drvCur:
+                drv_cur = 'DRV_UNSUPPORTED'
+                if value.get_drvCur() != '':
+                    drv_cur = value.get_drvCur()
+                gen_str += '''#define %s_DRV\t\t\tGPIO_%s\n''' %(key.upper(), drv_cur)
+
+            gen_str += '''\n'''
 
         return gen_str
 
