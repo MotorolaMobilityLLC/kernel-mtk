@@ -271,6 +271,17 @@ void typec_auxadc_register(struct typec_hba *hba)
 	typec_enable_auxadc_irq(hba);
 }
 
+void typec_auxadc_low_register(struct typec_hba *hba)
+{
+	uint8_t val = 0;
+
+	typec_writew(hba, AUXADC_INTERVAL_MS, AUXADC_TYPEC_L_DET_PRD_15_0_L);
+	typec_write8(hba, AUXADC_INTERVAL_MS, AUXADC_TYPEC_L_DEBT_MIN);
+
+	val = typec_read8(hba, AUXADC_TYPEC_L4_H);
+	typec_write8(hba, val | AUXADC_TYPEC_L_IRQ_EN_MIN, AUXADC_TYPEC_L4_H);
+}
+
 void typec_auxadc_unregister(struct typec_hba *hba)
 {
 	typec_disable_auxadc_irq(hba);
@@ -2078,8 +2089,9 @@ static void typec_intr(struct typec_hba *hba, uint16_t cc_is0, uint16_t cc_is2)
 
 		#if USE_AUXADC
 		if (hba->is_kpoc) {
-			typec_auxadc_register(hba);
-			typec_auxadc_set_state(hba, STATE_POWER_DEFAULT);
+			typec_auxadc_low_register(hba);
+			typec_auxadc_set_thresholds(hba, SNK_VRPUSB_AUXADC_MIN_VAL, 0);
+			mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
 		}
 		/*schedule_work(&hba->auxadc_voltage_mon_attached_snk);*/
 		#endif
@@ -2227,17 +2239,17 @@ void auxadc_detect_cableout_hanlder(void)
 	struct typec_hba *hba = get_hba();
 	uint16_t val;
 
-	typec_disable_auxadc_irq(hba);
-
 	val = typec_auxadc_get_value(hba, FLAGS_AUXADC_MIN);
 
 	dev_err(hba->dev, "ADC VAL=%d\n", val);
 
-	typec_disable_auxadc(hba, 1, 1);
+	typec_disable_auxadc(hba, 1, 0);
 
-	if (val < SNK_VRPUSB_AUXADC_MIN_VAL) {
+	if ((val < SNK_VRPUSB_AUXADC_MIN_VAL) && (typec_vbus(hba) < PD_VSAFE5V_LOW)) {
 		if (hba->charger_det_notify)
 			hba->charger_det_notify(0);
+	} else {
+		typec_enable_auxadc(hba, 1, 0);
 	}
 }
 
@@ -2397,24 +2409,10 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	INIT_DELAYED_WORK(&hba->usb_work, trigger_driver);
 
 #if USE_AUXADC
-#ifdef MT6336_E1
-	/*INT_STATUS5 4th*/
-#define TYPE_C_L_MIN (5*8+3)
-#else
-	/*INT_STATUS5 1th*/
-#define TYPE_C_L_MIN (5*8+0)
-#endif
 	/*mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");*/
 	/*mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_min_hanlder);*/
 	mt6336_register_interrupt_callback(TYPE_C_L_MIN, auxadc_detect_cableout_hanlder);
 
-#ifdef MT6336_E1
-	/*INT_STATUS5 7th*/
-#define TYPE_C_H_MAX (5*8+6)
-#else
-	/*INT_STATUS5 4th*/
-#define TYPE_C_H_MAX (5*8+3)
-#endif
 	/*mt6336_enable_interrupt(TYPE_C_H_MAX, "TYPE_C_H_MAX");*/
 	mt6336_register_interrupt_callback(TYPE_C_H_MAX, auxadc_max_hanlder);
 #endif
@@ -2526,12 +2524,8 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 		mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
 
-		if (hba->mode == 2) {
+		if (hba->mode == 2)
 			mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
-
-			if (hba->is_kpoc)
-				mt6336_enable_interrupt(TYPE_C_L_MIN, "TYPE_C_L_MIN");
-		}
 
 		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
