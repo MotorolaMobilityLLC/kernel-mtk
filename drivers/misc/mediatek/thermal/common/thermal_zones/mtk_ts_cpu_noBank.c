@@ -1631,8 +1631,12 @@ static int tscpu_read_ttpct(struct seq_file *m, void *v)
 	cpu_power = (cpu_power < max_cpu_pwr) ? cpu_power : max_cpu_pwr;
 	gpu_power = (gpu_power == 0x7FFFFFFF || gpu_power == 0) ? max_gpu_pwr:gpu_power;
 	gpu_power = (gpu_power < max_gpu_pwr) ? gpu_power : max_gpu_pwr;
-	cpu_power = (max_cpu_pwr - cpu_power)*100/max_cpu_pwr;
-	gpu_power = (max_gpu_pwr - gpu_power)*100/max_gpu_pwr;
+
+	if (max_cpu_pwr != 0)
+		cpu_power = (max_cpu_pwr - cpu_power)*100/max_cpu_pwr;
+	if (max_gpu_pwr != 0)
+		gpu_power = (max_gpu_pwr - gpu_power)*100/max_gpu_pwr;
+
 	seq_printf(m, "%d,%d\n", cpu_power, gpu_power);
 
 	return 0;
