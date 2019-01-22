@@ -262,7 +262,11 @@ static void cpufreq_sched_try_driver_target(int target_cpu, struct cpufreq_polic
 	 * try to apply requested frequency to platform.
 	 */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
 	mt_cpufreq_set_by_schedule_load_cluster(cid, freq);
+#else
+	mt_cpufreq_set_by_wfi_load_cluster(cid, freq);
+#endif
 #else
 	policy = cpufreq_cpu_get(gd->target_cpu);
 
