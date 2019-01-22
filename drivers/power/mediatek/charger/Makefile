@@ -15,10 +15,12 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/usb_c/mt6336
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6355)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6355
+subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6356)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336
