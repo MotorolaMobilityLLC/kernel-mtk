@@ -100,7 +100,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(0, 1);
 #endif
-				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0, 0);
+				/* mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0, 0); */
 			}
 		} else if ((cpu >= cpumask_weight(mtk_cpu_cluster0_mask)) &&
 			(cpu < (cpumask_weight(mtk_cpu_cluster0_mask) +
@@ -148,7 +148,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					/*6. Switch to HW mode*/
 					mp_enter_suspend(1, 1);
 #endif
-				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0);
+					/* mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0, 0); */
 			}
 		} else if ((cpu >= (cpumask_weight(mtk_cpu_cluster0_mask) +
 				cpumask_weight(mtk_cpu_cluster1_mask))) &&
@@ -177,7 +177,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				/*3. Switch to HW mode*/
 				mp_enter_suspend(2, 1);
 #endif
-				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0);
+				/* mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 2, 0, 0); */
 			}
 		}
 		break;
