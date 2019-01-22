@@ -39,6 +39,8 @@
 
 #include "musb_core.h"
 
+static int h_pre_disable = 1;
+module_param(h_pre_disable, int, 0644);
 
 static void musb_port_suspend(struct musb *musb, bool do_suspend)
 {
@@ -174,16 +176,19 @@ void musb_root_disconnect(struct musb *musb)
 	usb_hcd_poll_rh_status(musb_to_hcd(musb));
 	musb->is_active = 0;
 
-	/* when UMS device is detached, khubd need to wait for usb-storage
-	  * thread to stop, then it will disable all endpoints, and clean up pending
-	  * URBs. But if usb-storage is waiting for some URBs, it will never stop.
-	  * So there is a dead lock: khubd need to end usb-storage then flush URB,
-	  * but usb-storage need that URB to end itself. So we flush URB here first,
-	  * this will cause usb-storage quit waiting and end itself when khubd asks.
-	 */
-	spin_unlock(&musb->lock);
-	musb_h_pre_disable(musb);
-	spin_lock(&musb->lock);
+	if (h_pre_disable) {
+		/* when UMS device is detached, khubd need to wait for usb-storage
+		 * thread to stop, then it will disable all endpoints, and clean up pending
+		 * URBs. But if usb-storage is waiting for some URBs, it will never stop.
+		 * So there is a dead lock: khubd need to end usb-storage then flush URB,
+		 * but usb-storage need that URB to end itself. So we flush URB here first,
+		 * this will cause usb-storage quit waiting and end itself when khubd asks.
+		 */
+		spin_unlock(&musb->lock);
+		musb_h_pre_disable(musb);
+		spin_lock(&musb->lock);
+	} else
+		DBG(0, "SKIP musb_h_pre_disable\n");
 
 	DBG(0, "host disconnect (%s)\n", otg_state_string(musb->xceiv->otg->state));
 
