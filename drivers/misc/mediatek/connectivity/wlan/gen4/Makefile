@@ -52,7 +52,6 @@ else ifeq ($(CONFIG_MTK_COMBO_WIFI_HIF), usb)
 else
     $(error Unsuppoted HIF=$(CONFIG_MTK_COMBO_WIFI_HIF)!!)
 endif
-$(info HIF=$(CONFIG_MTK_COMBO_WIFI_HIF))
 
 ifeq ($(CONFIG_MTK_PASSPOINT_R2_SUPPORT), y)
     ccflags-y += -DCFG_SUPPORT_PASSPOINT=1
