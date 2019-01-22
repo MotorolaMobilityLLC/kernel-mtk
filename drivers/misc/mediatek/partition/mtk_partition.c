@@ -24,7 +24,7 @@ struct hd_struct *get_part(char *name)
 
 	if (!name)
 		return part;
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 	devt = blk_lookup_devt("sdc", 0);
 #else
 	devt = blk_lookup_devt("mmcblk0", 0);

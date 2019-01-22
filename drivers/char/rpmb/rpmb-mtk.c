@@ -550,7 +550,7 @@ free:
 	return ret;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 
 static struct rpmb_frame *rpmb_alloc_frames(unsigned int cnt)
 {
@@ -1860,7 +1860,7 @@ EXPORT_SYMBOL(ut_rpmb_req_write_data);
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #ifndef CONFIG_MTK_TEE_GP_SUPPORT
 static int rpmb_execute(u32 cmdId)
 {
@@ -2360,7 +2360,7 @@ static int rpmb_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;

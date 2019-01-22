@@ -20,7 +20,7 @@
 #include <mtk_spm.h>
 #include <mtk_clkbuf_ctl.h>
 #include <mtk_clkbuf_common.h>
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #include "ufs-mtk.h"
 #endif
 
@@ -364,7 +364,7 @@ u32 clk_buf_bblpm_enter_cond(void)
 		if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
 			bblpm_cond |= BBLPM_COND_NFC;
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 		if (ufs_mtk_deepidle_hibern8_check() < 0)
 			bblpm_cond |= BBLPM_COND_EXT;
 #endif
@@ -1478,7 +1478,7 @@ short is_clkbuf_bringup(void)
 
 void clk_buf_post_init(void)
 {
-#ifndef CONFIG_MTK_UFS_BOOTING
+#ifndef CONFIG_MTK_UFS_SUPPORT
 	/* no need to use XO_EXT if storage is emmc */
 	clk_buf_ctrl_internal(CLK_BUF_UFS, false);
 #endif

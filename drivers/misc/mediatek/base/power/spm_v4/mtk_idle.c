@@ -878,7 +878,7 @@ unsigned int ufs_cb_before_xxidle(void)
 	unsigned int op_cond = 0;
 	bool bblpm_check = false;
 
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 	bool ufs_in_hibernate = false;
 
 	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
@@ -893,7 +893,7 @@ unsigned int ufs_cb_before_xxidle(void)
 
 void ufs_cb_after_xxidle(void)
 {
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 	ufs_mtk_deepidle_leave();
 #endif
 }
@@ -1028,7 +1028,7 @@ int mtk_idle_select(int cpu)
 {
 	int i = NR_TYPES - 1;
 	int reason = NR_REASONS;
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 	unsigned long flags = 0;
 	unsigned int ufs_locked;
 #endif
@@ -1073,7 +1073,7 @@ int mtk_idle_select(int cpu)
 		goto get_idle_idx;
 	}
 
-#if defined(CONFIG_MTK_UFS_BOOTING)
+#if defined(CONFIG_MTK_UFS_SUPPORT)
 	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
 	ufs_locked = idle_ufs_lock;
 	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);

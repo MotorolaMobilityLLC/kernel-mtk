@@ -1017,7 +1017,7 @@ CONFIG_EXTBUCK_MT6311,PLATFORM,jeter.chen,,X,X,X,y,X,X,X,X,X,X
 CONFIG_SERIAL_MTK_EARLY_CONSOLE,PROJECT,Cool.Lee,,X,X,O,,,,,,,
 CONFIG_SCSI_UFSHCD,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,X,X,O,,,,,,,
 CONFIG_SCSI_UFSHCD_PLATFORM,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,X,X,O,,,,,,,
-CONFIG_MTK_UFS_BOOTING,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,X,X,O,,,,,,,
+CONFIG_MTK_UFS_SUPPORT,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,X,X,O,,,,,,,
 CONFIG_MTK_UNIFY_POWER,PLATFORM,irene.luo,,X,X,y,y,y,y,y,y,y,y
 CONFIG_MTK_WD_KICKER,PROJECT,stanley.chu,new config in this commit bef1322ef6b9288ce5727689a16fdfe19412cec3,X,X,X,,,,,,,
 CONFIG_MTK_BMI160_SPI,PROJECT,jy.lan,,y,y,y,,,,,,,

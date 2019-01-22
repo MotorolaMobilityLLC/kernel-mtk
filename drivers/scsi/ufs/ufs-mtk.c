@@ -405,7 +405,7 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	/* Get auto-hibern8 timeout from device tree */
 	ufs_mtk_parse_auto_hibern8_timer(hba);
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 	/* Rename device to unify device path for booting storage device */
 	device_rename(hba->dev, "bootdevice");
 #endif
