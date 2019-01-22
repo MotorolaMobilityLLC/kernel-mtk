@@ -257,7 +257,7 @@ static void mtk_platform_save_context(int cpu, int idx)
 
 static void mtk_platform_restore_context(int cpu, int idx)
 {
-	if (idx > MTK_MCDI_MODE)
+	if (idx > MTK_MCDI_CLUSTER_MODE)
 		mtk_spm_wakeup_src_restore();
 
 	mtk_dbg_save_restore(cpu, 0);
