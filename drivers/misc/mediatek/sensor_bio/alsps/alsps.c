@@ -452,6 +452,7 @@ static int ps_enable_and_batch(void)
 	if (cxt->ps_power == 1 && cxt->ps_enable == 0) {
 		ALSPS_LOG("PS disable\n");
 		/* stop polling firstly, if needed */
+#if 0
 		if (cxt->ps_ctl.is_report_input_direct == false
 			&& cxt->is_ps_polling_run == true) {
 			smp_mb();/* for memory barrier */
@@ -462,6 +463,7 @@ static int ps_enable_and_batch(void)
 			cxt->is_ps_polling_run = false;
 			ALSPS_LOG("ps stop polling done\n");
 		}
+#endif
 		/* turn off the ps_power */
 		err = cxt->ps_ctl.enable_nodata(0);
 		if (err) {
@@ -502,6 +504,7 @@ static int ps_enable_and_batch(void)
 		}
 		ALSPS_LOG("ps set ODR, fifo latency done\n");
 		/* start polling, if needed */
+#if 0
 		if (cxt->ps_ctl.is_report_input_direct == false) {
 			int mdelay = cxt->ps_delay_ns;
 
@@ -518,6 +521,8 @@ static int ps_enable_and_batch(void)
 			/* report an default value firstly */
 			ps_data_report(1, 3);
 		}
+#endif
+		ps_data_report(1, SENSOR_STATUS_ACCURACY_HIGH);
 		ALSPS_LOG("PS batch done\n");
 	}
 	/* just for debug, remove it when everything is ok */
