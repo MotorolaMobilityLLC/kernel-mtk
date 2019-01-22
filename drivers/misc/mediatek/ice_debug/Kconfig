@@ -1,0 +1,5 @@
+config MTK_ICE_DEBUG
+	bool "Enable ICE clock"
+	help
+	  CCF will disable CLK_TOP_DEBUGSYS by default,ICE can not connect to SOC.
+	  If you need ice,please select this item.
