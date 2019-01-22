@@ -78,6 +78,10 @@ struct vpu_shared_memory *core_shared_data; /* shared data for all cores */
 #ifndef MTK_VPU_FPGA_PORTING
 
 /* clock */
+static struct clk *clk_top_dsp_sel;
+static struct clk *clk_top_dsp1_sel;
+static struct clk *clk_top_dsp2_sel;
+static struct clk *clk_top_ipu_if_sel;
 static struct clk *clk_ipu_core0_jtag_cg;
 static struct clk *clk_ipu_core0_axi_m_cg;
 static struct clk *clk_ipu_core0_ipu_cg;
@@ -100,6 +104,14 @@ static struct clk *clk_ipu_conn_axi_cg;
 static struct clk *clk_ipu_conn_isp_cg;
 static struct clk *clk_ipu_conn_cam_adl_cg;
 static struct clk *clk_ipu_conn_img_adl_cg;
+static struct clk *clk_top_mmpll_d6;
+static struct clk *clk_top_mmpll_d7;
+static struct clk *clk_top_univpll_d3;
+static struct clk *clk_top_syspll_d3;
+static struct clk *clk_top_univpll_d2_d2;
+static struct clk *clk_top_syspll_d2_d2;
+static struct clk *clk_top_univpll_d3_d2;
+static struct clk *clk_top_syspll_d3_d2;
 
 /* mtcmos */
 static struct clk *mtcmos_dis;
@@ -244,14 +256,18 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 	PREPARE_VPU_CLK(clk_ipu_core1_jtag_cg);
 	PREPARE_VPU_CLK(clk_ipu_core1_axi_m_cg);
 	PREPARE_VPU_CLK(clk_ipu_core1_ipu_cg);
-	#if 0
 	PREPARE_VPU_CLK(clk_top_dsp_sel);
+	PREPARE_VPU_CLK(clk_top_dsp1_sel);
+	PREPARE_VPU_CLK(clk_top_dsp2_sel);
 	PREPARE_VPU_CLK(clk_top_ipu_if_sel);
-	PREPARE_VPU_CLK(clk_top_syspll_d2);
-	PREPARE_VPU_CLK(clk_top_univpll1_d4);
-	PREPARE_VPU_CLK(clk_top_syspll1_d2);
-	PREPARE_VPU_CLK(clk_top_univpll_d5);
-	#endif
+	PREPARE_VPU_CLK(clk_top_mmpll_d6);
+	PREPARE_VPU_CLK(clk_top_mmpll_d7);
+	PREPARE_VPU_CLK(clk_top_univpll_d3);
+	PREPARE_VPU_CLK(clk_top_syspll_d3);
+	PREPARE_VPU_CLK(clk_top_univpll_d2_d2);
+	PREPARE_VPU_CLK(clk_top_syspll_d2_d2);
+	PREPARE_VPU_CLK(clk_top_univpll_d3_d2);
+	PREPARE_VPU_CLK(clk_top_syspll_d3_d2);
 #undef PREPARE_VPU_CLK
 
 	return ret;
@@ -305,14 +321,6 @@ static int vpu_enable_regulator_and_clock(int core)
 		} \
 	}
 
-	vpu_trace_begin("mtcmos:enable");
-	ENABLE_VPU_MTCMOS(mtcmos_dis);
-	ENABLE_VPU_MTCMOS(mtcmos_vpu_top);
-	ENABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
-	ENABLE_VPU_MTCMOS(mtcmos_vpu_core1_shutdown);
-	vpu_trace_end();
-#undef ENABLE_VPU_MTCMOS
-
 #define ENABLE_VPU_CLK(clk) \
 	{ \
 		if (clk != NULL) { \
@@ -322,6 +330,22 @@ static int vpu_enable_regulator_and_clock(int core)
 			LOG_WRN("clk not existed: %s\n", #clk); \
 		} \
 	}
+
+	vpu_trace_begin("clock:enable_source");
+	ENABLE_VPU_CLK(clk_top_dsp_sel);
+	ENABLE_VPU_CLK(clk_top_ipu_if_sel);
+	ENABLE_VPU_CLK(clk_top_dsp1_sel);
+	ENABLE_VPU_CLK(clk_top_dsp2_sel);
+	vpu_trace_end();
+	LOG_INF("[vpu_%d] en_rc 1\n", core);
+
+	vpu_trace_begin("mtcmos:enable");
+	ENABLE_VPU_MTCMOS(mtcmos_dis);
+	ENABLE_VPU_MTCMOS(mtcmos_vpu_top);
+	ENABLE_VPU_MTCMOS(mtcmos_vpu_core0_shutdown);
+	ENABLE_VPU_MTCMOS(mtcmos_vpu_core1_shutdown);
+	LOG_INF("[vpu_%d] en_rc 2\n", core);
+	vpu_trace_end();
 
 	vpu_trace_begin("clock:enable");
 	ENABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
@@ -339,6 +363,8 @@ static int vpu_enable_regulator_and_clock(int core)
 	ENABLE_VPU_CLK(clk_ipu_conn_cab3to3);
 	ENABLE_VPU_CLK(clk_ipu_conn_cab2to1);
 	ENABLE_VPU_CLK(clk_ipu_conn_cab3to1_slice);
+	/* recommened by wendell, do not control */
+	/* it would be set on after enabling mtcmos*/
 	ENABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
 	ENABLE_VPU_CLK(clk_ipu_conn_axi_cg);
@@ -359,6 +385,8 @@ static int vpu_enable_regulator_and_clock(int core)
 		break;
 	}
 	vpu_trace_end();
+
+#undef ENABLE_VPU_MTCMOS
 #undef ENABLE_VPU_CLK
 #if 0
 	ret = vpu_set_clock_source(clk_top_dsp_sel, opps.dsp.index);
@@ -413,18 +441,18 @@ static int vpu_disable_regulator_and_clock(int core)
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to3);
 	DISABLE_VPU_CLK(clk_ipu_conn_cab2to1);
 	DISABLE_VPU_CLK(clk_ipu_conn_cab3to1_slice);
-	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
-	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
+	/*DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_ahb_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);*/
+	/*DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);*/
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu2mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_ipu12mm);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm0);
 	DISABLE_VPU_CLK(clk_mmsys_gals_comm1);
 	DISABLE_VPU_CLK(clk_mmsys_smi_common);
 	LOG_INF("[vpu_%d] dis_rc flag4\n", core);
-#undef DISABLE_VPU_CLK
 
 #define DISABLE_VPU_MTCMOS(clk) \
 	{ \
@@ -443,7 +471,24 @@ static int vpu_disable_regulator_and_clock(int core)
 	LOG_INF("[vpu_%d] dis_rc flag4.3\n", core);
 	DISABLE_VPU_MTCMOS(mtcmos_dis);
 	LOG_INF("[vpu_%d] dis_rc flag4.4\n", core);
+
+	DISABLE_VPU_CLK(clk_ipu_conn_ipu_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_ahb_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_axi_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_isp_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_cam_adl_cg);
+	DISABLE_VPU_CLK(clk_ipu_conn_img_adl_cg);
+
+	DISABLE_VPU_CLK(clk_top_dsp_sel);
+	LOG_INF("[vpu_%d] dis_rc test_5\n", core);
+	DISABLE_VPU_CLK(clk_top_ipu_if_sel);
+	LOG_INF("[vpu_%d] dis_rc test_5.1\n", core);
+	DISABLE_VPU_CLK(clk_top_dsp1_sel);
+	DISABLE_VPU_CLK(clk_top_dsp2_sel);
+	LOG_INF("[vpu_%d] dis_rc test_5.2\n", core);
+
 #undef DISABLE_VPU_MTCMOS
+#undef DISABLE_VPU_CLK
 #if 0
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL, MMDVFS_FINE_STEP_UNREQUEST);
 	CHECK_RET("fail to unrequest vcore!\n");
@@ -491,6 +536,18 @@ static void vpu_unprepare_regulator_and_clock(void)
 	UNPREPARE_VPU_CLK(clk_mmsys_gals_comm0);
 	UNPREPARE_VPU_CLK(clk_mmsys_gals_comm1);
 	UNPREPARE_VPU_CLK(clk_mmsys_smi_common);
+	UNPREPARE_VPU_CLK(clk_top_dsp_sel);
+	UNPREPARE_VPU_CLK(clk_top_dsp1_sel);
+	UNPREPARE_VPU_CLK(clk_top_dsp2_sel);
+	UNPREPARE_VPU_CLK(clk_top_ipu_if_sel);
+	UNPREPARE_VPU_CLK(clk_top_mmpll_d6);
+	UNPREPARE_VPU_CLK(clk_top_mmpll_d7);
+	UNPREPARE_VPU_CLK(clk_top_univpll_d3);
+	UNPREPARE_VPU_CLK(clk_top_syspll_d3);
+	UNPREPARE_VPU_CLK(clk_top_univpll_d2_d2);
+	UNPREPARE_VPU_CLK(clk_top_syspll_d2_d2);
+	UNPREPARE_VPU_CLK(clk_top_univpll_d3_d2);
+	UNPREPARE_VPU_CLK(clk_top_syspll_d3_d2);
 #undef UNPREPARE_VPU_CLK
 
 }
@@ -1132,7 +1189,7 @@ int vpu_hw_boot_sequence(int core)
 	/* 1. write register */
 	/* set specific address for reset vector in external boot */
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_DBG("vpu before FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
+	LOG_INF("vpu bf ALTRESETVEC (0x%x), RV(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 	switch (core) {
 	case 0:
@@ -1147,7 +1204,7 @@ int vpu_hw_boot_sequence(int core)
 		break;
 	}
 	reg_value = vpu_read_field(core, FLD_CORE_XTENSA_ALTRESETVEC);
-	LOG_DBG("vpu after FLD_CORE_XTENSA_ALTRESETVEC (0x%x), VPU_MVA_RESET_VECTOR(0x%x)\n",
+	LOG_INF("vpu af ALTRESETVEC (0x%x), RV(0x%x)\n",
 		reg_value, VPU_MVA_RESET_VECTOR);
 
 	VPU_SET_BIT(ptr_ctrl, 31);      /* csr_p_debug_enable */
