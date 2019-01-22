@@ -68,5 +68,3 @@ ifeq ($(CONFIG_MTK_PLATFORM), "mt8167")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt8167
 obj-y += mt8167/
 endif
-
-obj-$(CONFIG_MMC_MTK_PRO) += emmc_rpmb.o

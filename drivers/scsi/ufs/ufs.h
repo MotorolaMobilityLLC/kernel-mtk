@@ -188,9 +188,17 @@ enum ufs_desc_max_size {
 	 * of descriptor header.
 	 */
 	QUERY_DESC_STRING_MAX_SIZE		= 0xFE,
-	QUERY_DESC_GEOMETRY_MAZ_SIZE		= 0x44,
+
+	/* MTK FIX: Geometry Descriptor size shall be 0x48 since UFS 2.1 */
+	QUERY_DESC_GEOMETRY_MAX_SIZE	= 0x48,
 	QUERY_DESC_POWER_MAX_SIZE		= 0x62,
 	QUERY_DESC_RFU_MAX_SIZE			= 0x00,
+};
+
+enum geometry_desc_param_offset {
+	GEOMETRY_DESC_LEN		= 0x0,
+	GEOMETRY_DESC_TYPE		= 0x1,
+	GEOMETRY_DESC_RPMB_RW_SIZE	= 0x17,
 };
 
 /* Unit descriptor parameters offsets in bytes*/
