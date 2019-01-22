@@ -134,6 +134,12 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	if (isr & (ISRS_SW_INT0 | ISRS_PCM_RETURN))
 		spm_err("IRQ0 HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
 
+	if (isr & (ISRS_SW_INT1)) {
+		spm_err("IRQ0 (ISRS_SW_INT1) HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
+		spm_vcorefs_dump_dvfs_regs(NULL);
+		return IRQ_HANDLED;
+	}
+
 	return IRQ_HANDLED;
 }
 

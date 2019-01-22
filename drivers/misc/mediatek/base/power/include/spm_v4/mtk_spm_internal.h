@@ -94,6 +94,7 @@
 #define ISRS_TWAM		(1U << 2)
 #define ISRS_PCM_RETURN		(1U << 3)
 #define ISRS_SW_INT0		(1U << 4)
+#define ISRS_SW_INT1		(1U << 5)
 #define ISRC_TWAM		ISRS_TWAM
 #define ISRC_ALL_EXC_TWAM	ISRS_PCM_RETURN
 #define ISRC_ALL		(ISRC_ALL_EXC_TWAM | ISRC_TWAM)
