@@ -236,7 +236,9 @@ unsigned int m4u_do_mva_alloc(unsigned long va, unsigned int size, void *priv)
 	if (s > MVA_MAX_BLOCK_NR) {
 		spin_unlock_irqrestore(&gMvaGraph_lock, irq_flags);
 		M4UMSG("mva_alloc error: no available MVA region for %d blocks!\n", nr);
+#ifdef M4U_PROFILE
 		mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_M4U_ERROR], MMPROFILE_FLAG_PULSE, size, s);
+#endif
 
 		return 0;
 	}
