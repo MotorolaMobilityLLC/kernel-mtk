@@ -82,5 +82,6 @@ extern int charger_manager_enable_power_path(struct charger_consumer *consumer,
 extern int charger_manager_get_zcv(struct charger_consumer *consumer, int idx, u32 *uV);
 extern int charger_manager_enable_kpoc_shutdown(struct charger_consumer *consumer,
 	bool en);
+extern bool is_power_path_supported(void);
 
 #endif /* __MTK_CHARGER_H__ */

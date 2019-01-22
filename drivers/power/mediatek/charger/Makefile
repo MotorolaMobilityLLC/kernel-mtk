@@ -24,6 +24,7 @@ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6355)+= -I$(srctree)/drivers/misc/mediat
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6356)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6357)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6358)+= -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6358
+subdir-ccflags-y += -I$(srctree)/drivers/power/mediatek/misc/
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6336

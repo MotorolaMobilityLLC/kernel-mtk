@@ -49,6 +49,10 @@
 
 #include "mtk_charger_intf.h"
 
+void __attribute__((weak)) fg_charger_in_handler(void)
+{
+	pr_notice("%s not defined\n", __func__);
+}
 
 static CHARGER_TYPE g_chr_type;
 

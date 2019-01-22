@@ -82,7 +82,6 @@ extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_IM_current(void *data);
 extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
-extern unsigned int bat_get_ui_percentage(void);
 extern signed int fgauge_read_v_by_d(int d_val);
 extern signed int fgauge_read_r_bat_by_v(signed int voltage);
 extern void kpd_pwrkey_pmic_handler(unsigned long pressed);

@@ -71,12 +71,24 @@
 #include <mt-plat/mtk_boot.h>
 #include <musb_core.h>
 #include <pmic.h>
+#include <mtk_gauge_time_service.h>
 
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
 
 #define USE_FG_TIMER 1
+
+bool is_power_path_supported(void)
+{
+	if (pinfo == NULL)
+		return false;
+
+	if (pinfo->data.power_path_support == true)
+		return true;
+
+	return false;
+}
 
 bool is_disable_charger(void)
 {

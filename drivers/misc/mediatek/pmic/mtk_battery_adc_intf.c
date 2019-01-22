@@ -15,29 +15,26 @@
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_battery.h>
+
 #include <mt-plat/mtk_auxadc_intf.h>
+#include <mach/mtk_pmic.h>
 
 #include <mtk_battery_internal.h>
+#include <mach/mtk_charger_init.h>
+#include <mtk_charger.h>
+#include "include/pmic_auxadc.h"
 
 int pmic_get_battery_voltage(void)
 {
 	int bat = 0;
-	bool is_evb = is_evb_load();
 
-	if (is_evb) {
-		bat = 4201;
-		return bat;
-	}
-#if defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-	bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
-#else
-	bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-#endif
-
+	if (is_isense_supported() && is_power_path_supported())
+		bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+	else
+		bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
 	return bat;
 }
@@ -48,28 +45,31 @@ bool pmic_is_battery_exist(void)
 	bool is_bat_exist;
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6358)
-	temp = pmic_get_register_value(PMIC_AD_BATON_UNDET);
-#else
 	temp = pmic_get_register_value(PMIC_RGS_BATON_UNDET);
-#endif
+
 	if (temp == 0)
 		is_bat_exist = true;
 	else
 		is_bat_exist = false;
 
 
-	bm_debug("[fg_is_battery_exist] PMIC_RGS_BATON_UNDET or PMIC_AD_BATON_UNDET = %d\n", is_bat_exist);
+	bm_debug(
+		"[fg_is_battery_exist] PMIC_RGS_BATON_UNDET = %d\n",
+		is_bat_exist);
 
 	if (is_bat_exist == 0) {
 		if (hw_id == 0x3510) {
-			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 1);
 			mdelay(1);
-			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_WAKEUP_CLR, 0);
 		} else {
-			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 1);
 			mdelay(1);
-			pmic_set_register_value(PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
+			pmic_set_register_value(
+				PMIC_AUXADC_ADC_RDY_PWRON_CLR, 0);
 		}
 	}
 	return is_bat_exist;
@@ -80,13 +80,9 @@ bool pmic_is_battery_exist(void)
 int pmic_get_vbus(void)
 {
 	int vchr = 0;
-
-	bool is_evb = is_evb_load();
-
-	if (is_evb)
-		vchr = 5001;
-
-#if (CONFIG_MTK_GAUGE_VERSION != 30) || defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_POWER_EXT) || (CONFIG_MTK_GAUGE_VERSION != 30)
+	vchr = 5001;
+#elif defined(CONFIG_FPGA_EARLY_PORTING)
 	vchr = 5001;
 #else
 	vchr = pmic_get_auxadc_value(AUXADC_LIST_VCDT);
@@ -101,16 +97,15 @@ int pmic_get_vbus(void)
 
 int pmic_get_v_bat_temp(void)
 {
-	int adc = 0;
-	bool is_evb = is_evb_load();
-
-	if (is_evb)
-		return adc;
-
+	int adc;
+#if defined(CONFIG_POWER_EXT)
+	adc = 0;
+#else
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
 	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP_35);
 #else
 	adc = pmic_get_auxadc_value(AUXADC_LIST_BATTEMP);
+#endif
 #endif
 	return adc;
 }
@@ -122,55 +117,47 @@ int pmic_get_ibus(void)
 
 int pmic_get_charging_current(void)
 {
+#if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
+	return 0;
+#else
 	int v_batsns = 0, v_isense = 0;
-	bool is_evb = is_evb_load();
 
-	if (is_evb)
-		return 0;
+	if (is_isense_supported() && !is_power_path_supported()) {
+		v_isense = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+		v_batsns = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
-	v_batsns = 1;
-	v_isense = 1;
-#if defined(CONFIG_FPGA_EARLY_PORTING)
+		return (v_isense - v_batsns) * 1000 / R_SENSE;
+	}
+
 	return 0;
-#else
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
-	v_batsns = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
-	v_isense = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-
-	return (v_batsns - v_isense) * 1000 / R_SENSE;
-#else
-	return 0;
-#endif
-
 #endif
 }
 
 bool __attribute__ ((weak))
 	mtk_bif_is_hw_exist(void)
 {
-	bm_info("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return false;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_vbat(int *vbat)
 {
-	bm_info("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_tbat(int *tmp)
 {
-	bm_info("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_init(void)
 {
-	bm_info("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
@@ -194,3 +181,13 @@ int pmic_bif_init(void)
 	return mtk_bif_init();
 }
 
+int pmic_enable_hw_vbus_ovp(bool enable)
+{
+	int ret = 0;
+
+	ret = pmic_set_register_value(PMIC_RG_VCDT_HV_EN, enable);
+	if (ret != 0)
+		pr_notice("%s: failed, ret = %d\n", __func__, ret);
+
+	return ret;
+}
