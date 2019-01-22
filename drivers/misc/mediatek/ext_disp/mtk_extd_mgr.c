@@ -146,7 +146,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 	void __user *argp = (void __user *)arg;
 	int r = 0;
 
-	EXT_MGR_LOG("[EXTD]ioctl= %s(%d), arg = %lu\n", _extd_ioctl_spy(cmd), cmd & 0xff, arg);
+	/* EXT_MGR_LOG("[EXTD]ioctl= %s(%d), arg = %lu\n", _extd_ioctl_spy(cmd), cmd & 0xff, arg); */
 
 	switch (cmd) {
 	case MTK_HDMI_AUDIO_VIDEO_ENABLE:
@@ -328,7 +328,7 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		}
 	}
 
-	EXT_MGR_LOG("[EXTD]ioctl = %s(%d) done\n", _extd_ioctl_spy(cmd), cmd & 0x0ff);
+	/* EXT_MGR_LOG("[EXTD]ioctl = %s(%d) done\n", _extd_ioctl_spy(cmd), cmd & 0x0ff); */
 	return r;
 }
 
