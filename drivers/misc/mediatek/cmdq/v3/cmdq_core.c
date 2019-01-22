@@ -150,6 +150,8 @@ static DEFINE_SPINLOCK(gCmdqMemMonitorLock);
 static struct MemRecordStruct g_cmdq_mem_records[9];
 static struct MemMonitorStruct g_cmdq_mem_monitor;
 
+static struct StressContextStruct gStressContext;
+
 uint32_t cmdq_core_max_task_in_thread(int32_t thread)
 {
 	int32_t maxTaskNUM = CMDQ_MAX_TASK_IN_THREAD;
@@ -563,7 +565,7 @@ static void cmdq_core_replace_v3_instr(struct TaskStruct *pTask, int32_t thread)
 	thread_offset = CMDQ_CPR_STRAT_ID + CMDQ_THR_CPR_MAX * thread;
 
 	for (i = 0; i < pTask->replace_instr.number; i++) {
-		if ((p_instr_position[i]+1)*CMDQ_INST_SIZE > pTask->commandSize) {
+		if ((p_instr_position[i] + 1) * CMDQ_INST_SIZE > pTask->commandSize) {
 			CMDQ_ERR("Incorrect replace instruction position, index (%d), size (%d)\n",
 				p_instr_position[i], pTask->commandSize);
 			break;
@@ -7497,7 +7499,7 @@ static int32_t cmdq_core_wait_task_done(struct TaskStruct *pTask, long timeout_j
 				list_del_init(&(pTask->listEntry));
 
 				mutex_unlock(&gCmdqTaskMutex);
-				return -EINVAL;
+				return -ETIMEDOUT;
 			}
 
 			/* valid thread, so we keep going */
@@ -7883,6 +7885,9 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 		cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #else
 
+		if (gStressContext.exec_suspend)
+			gStressContext.exec_suspend(pTask, thread);
+
 		status = cmdq_core_suspend_HW_thread(thread, __LINE__);
 		if (status < 0) {
 			spin_unlock_irqrestore(&gCmdqExecLock, flags);
@@ -8003,7 +8008,9 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask, int32_t 
 				cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_APPEND_THR(thread));
 #endif
 				spin_unlock_irqrestore(&gCmdqExecLock, flags);
-				CMDQ_AEE("CMDQ", "Invalid task state for reorder.\n");
+				CMDQ_AEE(
+					"CMDQ", "Invalid task state for reorder, thread: %d status: %d task: 0x%p\n",
+					thread, status, pTask);
 				return status;
 			}
 
@@ -9805,3 +9812,14 @@ bool cmdq_core_is_feature_off(enum CMDQ_FEATURE_TYPE_ENUM featureOption)
 {
 	return cmdq_core_get_feature(featureOption) == CMDQ_FEATURE_OFF_VALUE;
 }
+
+struct StressContextStruct *cmdq_core_get_stress_context(void)
+{
+	return &gStressContext;
+}
+
+void cmdq_core_clean_stress_context(void)
+{
+	memset(&gStressContext, 0, sizeof(gStressContext));
+}
+
