@@ -1621,7 +1621,6 @@ void port_proxy_md_no_repsone_notify(struct port_proxy *proxy_p)
 {
 	ccci_md_dump_info(proxy_p->md_obj, DUMP_FLAG_QUEUE_0, NULL, 0);
 	ccci_md_exception_notify(proxy_p->md_obj, MD_NO_RESPONSE);
-	ccci_fsm_append_command(proxy_p->md_obj, CCCI_COMMAND_MD_HANG, 0);
 }
 
 void port_proxy_poll_md_fail_notify(struct port_proxy *proxy_p, u64 latest_poll_start_time)

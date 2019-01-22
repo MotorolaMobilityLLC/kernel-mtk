@@ -1761,7 +1761,7 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 #endif
 #endif
 	wake_lock_timeout(&md_ctrl->trm_wake_lock, 10 * HZ);
-	ccci_fsm_append_command(md, CCCI_COMMAND_WDT, 0);
+	ccci_md_exception_notify(md, MD_WDT);
 	return IRQ_HANDLED;
 }
 
