@@ -21,10 +21,12 @@
 #include <linux/err.h>
 #include <linux/init.h>
 #include <linux/io.h>
+#include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/platform_device.h>
 #include <linux/types.h>
 #include <linux/watchdog.h>
@@ -33,7 +35,7 @@
 #include <linux/delay.h>
 #include <linux/reset-controller.h>
 #include <linux/reset.h>
-
+#include <linux/sched.h>
 
 #define WDT_MAX_TIMEOUT		31
 #define WDT_MIN_TIMEOUT		1
@@ -54,6 +56,9 @@
 #define WDT_MODE_AUTO_START	(1 << 4)
 #define WDT_MODE_DUAL_EN	(1 << 6)
 #define WDT_MODE_KEY		0x22000000
+
+#define WDT_STATUS		0x0c
+#define WDT_NONRST_REG		0x20
 
 #define WDT_SWRST		0x14
 #define WDT_SWRST_KEY		0x1209
@@ -82,6 +87,7 @@ struct toprgu_reset {
 struct mtk_wdt_dev {
 	struct watchdog_device wdt_dev;
 	void __iomem *wdt_base;
+	int wdt_irq_id;
 	struct notifier_block restart_handler;
 	struct toprgu_reset reset_controller;
 };
@@ -166,9 +172,15 @@ static int mtk_reset_handler(struct notifier_block *this, unsigned long mode,
 {
 	struct mtk_wdt_dev *mtk_wdt;
 	void __iomem *wdt_base;
+	u32 reg;
 
 	mtk_wdt = container_of(this, struct mtk_wdt_dev, restart_handler);
 	wdt_base = mtk_wdt->wdt_base;
+
+	reg = ioread32(wdt_base + WDT_MODE);
+	reg &= ~(WDT_MODE_DUAL_EN | WDT_MODE_IRQ_EN | WDT_MODE_EN);
+	reg |= WDT_MODE_KEY;
+	iowrite32(reg, wdt_base + WDT_MODE);
 
 	while (1) {
 		writel(WDT_SWRST_KEY, wdt_base + WDT_SWRST);
@@ -235,7 +247,8 @@ static int mtk_wdt_start(struct watchdog_device *wdt_dev)
 		return ret;
 
 	reg = ioread32(wdt_base + WDT_MODE);
-	reg &= ~(WDT_MODE_IRQ_EN | WDT_MODE_DUAL_EN);
+	reg |= (WDT_MODE_DUAL_EN | WDT_MODE_IRQ_EN | WDT_MODE_EXRST_EN);
+	reg &= ~WDT_MODE_EXT_POL_HIGH;
 	reg |= (WDT_MODE_EN | WDT_MODE_KEY);
 	iowrite32(reg, wdt_base + WDT_MODE);
 
@@ -257,6 +270,42 @@ static const struct watchdog_ops mtk_wdt_ops = {
 	.set_timeout	= mtk_wdt_set_timeout,
 };
 
+static void wdt_report_info(void)
+{
+	struct task_struct *task;
+
+	task = &init_task;
+	pr_debug("Qwdt: -- watchdog time out\n");
+
+	for_each_process(task) {
+		if (task->state == 0) {
+			pr_debug("PID: %d, name: %s\n backtrace:\n", task->pid, task->comm);
+			show_stack(task, NULL);
+			pr_debug("\n");
+		}
+	}
+
+	pr_debug("backtrace of current task:\n");
+	show_stack(NULL, NULL);
+	pr_debug("Qwdt: -- watchdog time out\n");
+}
+
+static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
+{
+	unsigned int wdt_mode_val;
+	void __iomem *wdt_base = ((struct mtk_wdt_dev *)dev_id)->wdt_base;
+
+	wdt_mode_val = __raw_readl(wdt_base + WDT_STATUS);
+	writel(wdt_mode_val, wdt_base + WDT_NONRST_REG);
+
+	pr_err("fwq mtk_wdt_isr\n");
+
+	wdt_report_info();
+	WARN_ON(1);
+
+	return IRQ_HANDLED;
+}
+
 static int mtk_wdt_probe(struct platform_device *pdev)
 {
 	struct mtk_wdt_dev *mtk_wdt;
@@ -272,8 +321,23 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	mtk_wdt->wdt_base = devm_ioremap_resource(&pdev->dev, res);
+
+	pr_err("MTK_WDT_NONRST_REG(%x)\n", __raw_readl(mtk_wdt->wdt_base + WDT_NONRST_REG));
+
 	if (IS_ERR(mtk_wdt->wdt_base))
 		return PTR_ERR(mtk_wdt->wdt_base);
+
+	mtk_wdt->wdt_irq_id = irq_of_parse_and_map(pdev->dev.of_node, 0);
+	if (!mtk_wdt->wdt_irq_id) {
+		pr_err("RGU get IRQ ID failed\n");
+		return -ENODEV;
+	}
+
+	err = request_irq(mtk_wdt->wdt_irq_id, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, DRV_NAME, mtk_wdt);
+	if (err != 0) {
+		pr_err("mtk_wdt_probe : failed to request irq (%d)\n", err);
+		return err;
+	}
 
 	mtk_wdt->wdt_dev.info = &mtk_wdt_info;
 	mtk_wdt->wdt_dev.ops = &mtk_wdt_ops;
