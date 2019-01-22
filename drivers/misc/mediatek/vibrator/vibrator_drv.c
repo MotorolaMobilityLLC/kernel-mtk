@@ -27,7 +27,6 @@
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/workqueue.h>
-#include <linux/delay.h>
 
 #include "timed_output.h"
 
@@ -72,8 +71,6 @@ static int debug_enable_vib_hal = 1;
 
 #define DBG_EVT_ALL			0xffffffff
 
-#define OC_INTR_INIT_DELAY		(3)
-
 #define DBG_EVT_MASK		(DBG_EVT_TASKLET)
 
 #if 1
@@ -105,8 +102,6 @@ static int vibr_Enable(void)
 {
 	if (!ldo_state) {
 		vibr_Enable_HW();
-		mdelay(OC_INTR_INIT_DELAY);
-		pmic_enable_interrupt(INT_VIBR_OC, 1, "vibr");
 		ldo_state = 1;
 	}
 	return 0;
@@ -115,7 +110,6 @@ static int vibr_Enable(void)
 static int vibr_Disable(void)
 {
 	if (ldo_state) {
-		pmic_enable_interrupt(INT_VIBR_OC, 0, "vibr");
 		vibr_Disable_HW();
 		ldo_state = 0;
 	}
@@ -203,6 +197,7 @@ static const struct of_device_id vibr_of_ids[] = {
 
 static int vib_probe(struct platform_device *pdev)
 {
+	init_vibr_oc_handler(vibrator_oc_handler);
 	init_cust_vibrator_dtsi(pdev);
 	vibr_power_set();
 	return 0;
@@ -323,8 +318,6 @@ static int vib_mod_init(void)
 	ret = device_create_file(mtk_vibrator.dev, &dev_attr_vibr_on);
 	if (ret)
 		VIB_DEBUG("device_create_file vibr_on fail!\n");
-
-	pmic_register_interrupt_callback(INT_VIBR_OC, vibrator_oc_handler);
 
 	VIB_DEBUG("vib_mod_init Done\n");
 
