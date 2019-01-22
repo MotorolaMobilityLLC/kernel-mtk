@@ -25,13 +25,11 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 
-#include <mt-plat/charger_class.h>
-#include <mt-plat/mtk_charger.h>
-
 #ifdef CONFIG_RT_REGMAP
 #include <mt-plat/rt-regmap.h>
 #endif
 
+#include "mtk_charger_intf.h"
 #include "rt9465.h"
 #define I2C_ACCESS_MAX_RETRY	5
 
