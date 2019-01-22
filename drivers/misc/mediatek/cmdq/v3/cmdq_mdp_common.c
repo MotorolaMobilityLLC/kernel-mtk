@@ -695,6 +695,9 @@ static void cmdq_mdp_begin_task_virtual(struct TaskStruct *cmdq_task, struct Tas
 		mdp_curr_pmqos->mdpMetString = (unsigned long)addr2;
 	} while (0);
 #endif
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT) && IS_ENABLED(CONFIG_MACH_MT6771)
+	smi_larb_mon_act_cnt();
+#endif
 }
 
 static void cmdq_mdp_isp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskStruct *task_list[], u32 size)
@@ -749,6 +752,9 @@ static void cmdq_mdp_end_task_virtual(struct TaskStruct *cmdq_task, struct TaskS
 	bool update_isp_throughput = false;
 	bool update_isp_bandwidth = false;
 
+#if IS_ENABLED(CONFIG_MTK_SMI_EXT) && IS_ENABLED(CONFIG_MACH_MT6771)
+	smi_larb_mon_act_cnt();
+#endif
 	do_gettimeofday(&curr_time);
 	CMDQ_MSG("enter %s with task:0x%p engine:0x%llx\n", __func__, cmdq_task, cmdq_task->engineFlag);
 

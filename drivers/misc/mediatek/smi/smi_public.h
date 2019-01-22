@@ -39,5 +39,8 @@ extern void smi_common_ostd_setting(int enable);
 extern unsigned long get_larb_base_addr(int larb_id);
 extern unsigned long get_common_base_addr(void);
 extern unsigned int smi_clk_get_ref_count(const unsigned int reg_indx);
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+void smi_larb_mon_act_cnt(void);
+#endif
 #endif
 #endif

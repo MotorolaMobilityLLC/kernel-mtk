@@ -120,6 +120,8 @@ unsigned int *g_mmdvfs_scen_log_mask = &mmdvfs_scen_log_mask;
 #if defined(SMI_WHI)
 #define SMI_MMSYS_REG_INDX (SMI_COMMON_REG_INDX + 1)
 static unsigned long long mmsys_reg;
+#elif IS_ENABLED(CONFIG_MACH_MT6771)
+void __iomem *mmsys_config_reg;
 #endif
 
 #define SMI_MMIT_PORTING 0
@@ -460,7 +462,10 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 	const char *user_name, const bool enable_mtcmos)
 {
 	int i;
-
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+	unsigned int comm_ref_cnt, larb_ref_cnt;
+	unsigned long comm_val, larb_val;
+#endif
 	if (reg_indx >= SMI_REG_REGION_MAX) {
 		SMIMSG("Invalid reg_indx %d: smi_bus_disable_unprepare(%d, %s, %d)\n",
 			reg_indx, reg_indx, user_name, enable_mtcmos);
@@ -484,9 +489,79 @@ static int smi_bus_disable_unprepare(const unsigned int reg_indx,
 
 	SMIDBG(1, "smi_bus_disable_unprepare(%d, %s, %d): prepare=%d, enable=%d\n",
 		reg_indx, user_name, enable_mtcmos, smi_prepare_count, smi_enable_count);
+
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+	comm_ref_cnt = smi_clk_get_ref_count(SMI_COMMON_REG_INDX);
+	larb_ref_cnt = smi_clk_get_ref_count(reg_indx);
+	comm_val = M4U_ReadReg32(get_common_base_addr(), 0x440);
+	larb_val = M4U_ReadReg32(get_larb_base_addr(reg_indx), 0x0);
+
+	if (reg_indx != SMI_LARB0_REG_INDX && reg_indx != SMI_COMMON_REG_INDX
+		&& larb_ref_cnt == 0 && larb_val != 0x0) {
+		smi_debug_bus_hanging_detect_ext2(0x1ff, 1, 0, 1);
+		SMIERR("%s(%d, %s, %d): %s want turn off larb%d CG%s(%d) but larb%d is busy %#lx\n",
+			__func__, reg_indx, user_name, enable_mtcmos ? 1 : 0,
+			user_name, reg_indx, enable_mtcmos ? "/MTCMOS" : "", larb_ref_cnt, reg_indx, larb_val);
+	}
+#endif
 	return 0;
 }
 #endif /* defined(SMI_INTERNAL_CCF_SUPPORT) */
+
+#if IS_ENABLED(CONFIG_MACH_MT6771)
+DEFINE_SPINLOCK(smi_mon_act_cnt_spinlock);
+void smi_larb_mon_act_cnt(void)
+{
+	unsigned long comm_base = get_common_base_addr(), mmsys_base = (unsigned long)mmsys_config_reg, cam2mm;
+	unsigned long larb0_base = get_larb_base_addr(0), larb6_base = get_larb_base_addr(6);
+	unsigned long comm_val = 0, larb0_val = 0, larb6_val = 0;
+
+	spin_lock(&smi_mon_act_cnt_spinlock);
+	cam2mm = M4U_ReadReg32(mmsys_base, 0x100) & 0x100; /* bit 8 */
+	/* DIS_EN */
+	comm_val = M4U_ReadReg32(comm_base, 0x1a0);
+	M4U_WriteReg32(comm_base, 0x1a0, comm_val | 0x0);
+	larb0_val = M4U_ReadReg32(larb0_base, 0x400);
+	M4U_WriteReg32(larb0_base, 0x400, larb0_val | 0x0);
+	if (likely(!cam2mm)) {
+		larb6_val = M4U_ReadReg32(larb6_base, 0x400);
+		M4U_WriteReg32(larb6_base, 0x400, larb6_val | 0x0);
+	}
+	/* MON_ACT_CNT */
+	comm_val = M4U_ReadReg32(comm_base, 0x1c0);
+	larb0_val = M4U_ReadReg32(larb0_base, 0x410);
+	if (likely(!cam2mm))
+		larb6_val = M4U_ReadReg32(larb6_base, 0x410);
+
+	if (((comm_val > larb0_val) && (comm_val - larb0_val > 0x400)) ||
+		((larb0_val > comm_val) && (larb0_val - comm_val > 0x400))) {
+		pr_notice("active count: comm=%#lx, larb0=%#lx, larb6=%#lx(%s)\n",
+			comm_val, larb0_val, larb6_val, cam2mm ? "OFF" : "ON");
+	} else if (cam2mm && (larb0_val > larb6_val)) {
+		pr_notice("active count: comm=%#lx, larb0=%#lx, larb6=%#lx(%s)\n",
+			comm_val, larb0_val, larb6_val, cam2mm ? "OFF" : "ON");
+	}
+	/* CLR */
+	comm_val = M4U_ReadReg32(comm_base, 0x1a4);
+	M4U_WriteReg32(comm_base, 0x1a4, comm_val | 0x1);
+	larb0_val = M4U_ReadReg32(larb0_base, 0x404);
+	M4U_WriteReg32(larb0_base, 0x404, larb0_val | 0x1);
+	if (likely(!cam2mm)) {
+		larb6_val = M4U_ReadReg32(larb6_base, 0x404);
+		M4U_WriteReg32(larb6_base, 0x404, larb6_val | 0x1);
+	}
+	/* EN */
+	comm_val = M4U_ReadReg32(comm_base, 0x1a0);
+	M4U_WriteReg32(comm_base, 0x1a0, comm_val | 0x1);
+	larb0_val = M4U_ReadReg32(larb0_base, 0x400);
+	M4U_WriteReg32(larb0_base, 0x400, larb0_val | 0x1);
+	if (likely(!cam2mm)) {
+		larb6_val = M4U_ReadReg32(larb6_base, 0x400);
+		M4U_WriteReg32(larb6_base, 0x400, larb6_val | 0x1);
+	}
+	spin_unlock(&smi_mon_act_cnt_spinlock);
+}
+#endif
 
 /*
  * prepare and enable CG/MTCMOS of specific LARB and COMMON
@@ -1388,6 +1463,14 @@ static int smi_probe(struct platform_device *pdev)
 		} else {
 			mmsys_reg = (unsigned long) smi_dev->mmsys;
 			SMIMSG("DT, mmsys_config, map_addr=0x%p, mmsys_reg=0x%llx\n", smi_dev->mmsys, mmsys_reg);
+		}
+#elif IS_ENABLED(CONFIG_MACH_MT6771)
+		of_node = of_parse_phandle(pdev->dev.of_node, "mmsys_config", 0);
+		mmsys_config_reg = (void *)of_iomap(of_node, 0);
+		of_node_put(of_node);
+		if (!mmsys_config_reg) {
+			SMIERR("Unable to iomap mmsys\n");
+			return -ENOMEM;
 		}
 #endif
 		smi_mmdvfs_clks_init();
