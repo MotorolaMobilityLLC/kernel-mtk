@@ -93,6 +93,7 @@ struct mtk_spi_compatible {
 	bool must_tx;
 	/* some IC design adjust register define */
 	bool adjust_reg;
+	/*some chip support 8GB DRAM access, there are two kinds solutions*/
 	bool dma_8gb_v1;
 	bool dma_8gb_v2;
 };
@@ -113,7 +114,7 @@ struct mtk_spi {
 };
 
 static const struct mtk_spi_compatible mtk_common_compat;
-static const struct mtk_spi_compatible mt6759_compat = {
+static const struct mtk_spi_compatible mt6758_compat = {
 	.need_pad_sel = true,
 	.adjust_reg = true,
 	.dma_8gb_v1 = true,
@@ -138,8 +139,8 @@ static const struct of_device_id mtk_spi_of_match[] = {
 	{ .compatible = "mediatek,mt6589-spi",
 		.data = (void *)&mtk_common_compat,
 	},
-	{ .compatible = "mediatek,mt6759-spi",
-		.data = (void *)&mt6759_compat,
+	{ .compatible = "mediatek,mt6758-spi",
+		.data = (void *)&mt6758_compat,
 	},
 	{ .compatible = "mediatek,mt8135-spi",
 		.data = (void *)&mtk_common_compat,
