@@ -19,7 +19,7 @@
 
 #include "spm_v4/mtk_idle_mcdi.h"
 
-#elif defined(CONFIG_MACH_MT6758)
+#elif defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT6775)
 
 #include "spm_v3/mtk_idle_mcdi.h"
 

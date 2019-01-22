@@ -21,6 +21,8 @@
  */
 #if defined(CONFIG_MACH_MT6799)
 #include "mtk_idle_mt6799.h"
+#elif defined(CONFIG_MACH_MT6775)
+#include "mtk_idle_mt6775.h"
 #elif defined(CONFIG_MACH_MT6759)
 #include "mtk_idle_mt6759.h"
 #elif defined(CONFIG_MACH_MT6758)
