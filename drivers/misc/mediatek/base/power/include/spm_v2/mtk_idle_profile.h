@@ -17,6 +17,8 @@
 #include "mtk_spm_internal.h"
 #include "mtk_idle_internal.h"
 
+#define SPM_MCSODI_PROFILE_RATIO (0)
+#define SPM_ALLWFI_PROFILE_RATIO (0)
 #define SPM_MET_TAGGING  0
 #define IDLE_LOG_BUF_LEN 512
 

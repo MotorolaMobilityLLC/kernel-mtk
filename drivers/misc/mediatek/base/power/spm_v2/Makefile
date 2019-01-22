@@ -35,11 +35,17 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/lcm/inc/
 ccflags-$(CONFIG_MTK_MET) += -DMET_USER_EVENT_SUPPORT
 
 ifeq ($(CONFIG_MACH_MT6757), y)
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cameraisp/src/$(MTK_PLATFORM)/inc/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/m4u/$(MTK_PLATFORM)/
+
+ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6355),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6355/
+endif
 
 obj-y += mtk_sleep.o
 obj-y += mtk_spm_init.o
@@ -56,11 +62,13 @@ obj-y += mtk_spm_dpidle_mt6757.o
 obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_sodi_cmdq.o
+obj-y += mtk_spm_mcsodi.o
 obj-y += mtk_spm_vcorefs_mt6757.o
 obj-y += mtk_spm_resource_req.o
 endif
 
 ifeq ($(CONFIG_MACH_KIBOPLUS), y)
+#ccflags-y += -I$(srctree)/sound/soc/mediatek/mt_soc_audio_6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/power_gs_v1/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/mt6757/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/
@@ -82,6 +90,7 @@ obj-y += mtk_spm_dpidle_mt6757.o
 obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_sodi_cmdq.o
+obj-y += mtk_spm_mcsodi.o
 obj-y += mtk_spm_vcorefs_mt6757.o
 obj-y += mtk_spm_resource_req.o
 endif

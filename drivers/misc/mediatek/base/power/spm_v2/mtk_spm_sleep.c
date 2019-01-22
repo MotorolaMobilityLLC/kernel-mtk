@@ -56,6 +56,14 @@
 
 #include <mtk_power_gs.h>
 
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+#include <mtk_pmic_api_buck.h>
+#endif
+#endif
+
+#include <linux/wakeup_reason.h>
+
 /**************************************
  * only for internal debug
  **************************************/
@@ -448,7 +456,11 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 	__spm_pmic_low_iq_mode(1);
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/* nothing, not need for MT6355 */
+#else
 	__spm_pmic_pg_force_on();
+#endif
 
 	spm_pmic_power_mode(PMIC_PWR_SUSPEND, 0, 0);
 
@@ -498,10 +510,22 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 
 		__spm_backup_pmic_ck_pdn();
 	}
+
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	wk_auxadc_bgd_ctrl(0);
+#endif
+#endif
 }
 
 static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	wk_auxadc_bgd_ctrl(1);
+#endif
+#endif
+
 	/* Do more low power setting when MD1/C2K/CONN off */
 	if (is_md_c2k_conn_power_off())
 		__spm_restore_pmic_ck_pdn();
@@ -513,7 +537,11 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 
 	__spm_pmic_low_iq_mode(0);
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6355)
+	/* nothing, not need for MT6355 */
+#else
 	__spm_pmic_pg_force_off();
+#endif
 }
 
 static void spm_set_sysclk_settle(void)
@@ -647,6 +675,9 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta, struct p
 		exec_ccci_kern_func_by_md_id(2, ID_GET_MD_WAKEUP_SRC, NULL, 0);
 #endif
 #endif
+
+	log_wakeup_reason(SPM_IRQ0_ID);
+
 	return wr;
 }
 

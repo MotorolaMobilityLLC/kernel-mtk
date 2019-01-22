@@ -24,6 +24,9 @@ extern int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on);
 
 extern unsigned int slp_get_wake_reason(void);
 extern bool slp_will_infra_pdn(void);
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+extern void slp_set_infra_on(bool infra_on);
+#endif
 extern void slp_pasr_en(bool en, u32 value);
 extern void slp_dpd_en(bool en);
 
