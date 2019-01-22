@@ -58,7 +58,7 @@ struct mrdump_platform {
 
 struct pt_regs;
 
-extern struct mrdump_control_block mrdump_cblock;
+extern struct mrdump_control_block *mrdump_cblock;
 extern const unsigned long kallsyms_addresses[] __weak;
 extern const u8 kallsyms_names[] __weak;
 extern const u8 kallsyms_token_table[] __weak;

@@ -158,22 +158,6 @@ SECTIONS
 # else
 	. = ALIGN(PAGE_SIZE);
 # endif
-#endif
-
-	_etext = .;			/* End of text and rodata section */
-
-#ifdef CONFIG_MTK_AEE_IPANIC
-	.mrdump ALIGN (0x400): {
-	}
-#endif
-
-
-#ifndef CONFIG_XIP_KERNEL
-# ifdef CONFIG_ARM_KERNMEM_PERMS
-	. = ALIGN(1<<SECTION_SHIFT);
-# else
-	. = ALIGN(PAGE_SIZE);
-# endif
 	__init_begin = .;
 #endif
 	/*
