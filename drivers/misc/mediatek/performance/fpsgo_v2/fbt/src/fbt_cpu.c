@@ -404,9 +404,6 @@ static int fbt_find_freerun(void)
 	}
 	mutex_unlock(&blc_mlock);
 
-	if (freerun)
-		xgf_trace("fteh freerun %d", freerun);
-
 	return freerun;
 }
 

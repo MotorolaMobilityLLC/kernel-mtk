@@ -259,12 +259,20 @@ static int fteh_update_dep_list_start(int pid)
 
 static int fteh_loading_monitor(int pid)
 {
+	int ret = 0;
+
 	if (g_load_valid_size <= 0 || !g_load_arr)
 		goto RESET;
 
 	fpsgo_fteh2minitop_query(g_load_valid_size, g_load_arr);
 
-	if (fteh_is_light_loading(enter_loading_th, 1)) {
+	ret = fteh_is_light_loading(enter_loading_th, 1);
+	if (ret == 2) {
+		fteh_update_dep_list_start(pid);
+		return FTEH_CORRECT;
+	}
+
+	if (ret) {
 		g_fteh_state = FTEH_ACTIVE;
 		fteh_update_dep_list_start(pid);
 		return FTEH_LESS_HEADROOM;
