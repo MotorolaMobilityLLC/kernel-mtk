@@ -373,6 +373,7 @@ int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
 	/* Set default & extended ops */
 	mreg_desc->rdesc.ops = &mreg_desc->rops;
 	mreg_desc->mreg_ext_ops = mreg_ext_ops;
+	mreg_desc->mreg_adv_ops = mreg_adv_ops;
 	_mtk_simple_regulator_init_ops(&mreg_desc->rops, mreg_ext_ops);
 
 	/* Register regulator */
@@ -383,7 +384,7 @@ int mtk_simple_regulator_register(struct mtk_simple_regulator_desc *mreg_desc,
 	/* Register MTK regulator device */
 	if (rdev) {
 		mreg_desc->mreg_dev = mtk_simple_regulator_device_register(
-			init_data->constraints.name, dev, mreg_adv_ops);
+			init_data->constraints.name, dev, mreg_desc);
 		if (IS_ERR(mreg_desc->mreg_dev)) {
 			pr_info("%s: (%s) unable to register mreg device\n",
 				__func__, init_data->constraints.name);

@@ -20,7 +20,7 @@
 #include <linux/regulator/mediatek/mtk_regulator.h>
 #include <linux/mutex.h>
 
-#define MTK_SIMPLE_REGULATOR_VERSION "0.0.3_MTK"
+#define MTK_SIMPLE_REGULATOR_VERSION "0.0.4_MTK"
 
 typedef uint8_t mreg_reg_t;
 typedef struct mutex mreg_mutex_t;
@@ -57,6 +57,15 @@ struct mtk_simple_regulator_ext_ops {
 	int (*set_suspend_disable)(struct mtk_simple_regulator_desc *);
 };
 
+struct mtk_simple_regulator_adv_ops {
+	int (*set_property)(struct mtk_simple_regulator_desc *mreg_desc,
+		enum mtk_simple_regulator_property prop,
+		union mtk_simple_regulator_propval *val);
+	int (*get_property)(struct mtk_simple_regulator_desc *mreg_desc,
+		enum mtk_simple_regulator_property prop,
+		union mtk_simple_regulator_propval *val);
+};
+
 struct mtk_simple_regulator_desc {
 	struct regulator_desc rdesc;
 	struct regulator_ops rops;
@@ -65,6 +74,7 @@ struct mtk_simple_regulator_desc {
 
 	struct mtk_simple_regulator_control_ops *mreg_ctrl_ops;
 	const struct mtk_simple_regulator_ext_ops *mreg_ext_ops;
+	const struct mtk_simple_regulator_adv_ops *mreg_adv_ops;
 	struct mtk_simple_regulator_device *mreg_dev;
 
 	void *client;
@@ -151,6 +161,10 @@ static inline void mtk_simple_regulator_mutex_destroy(mreg_mutex_t *lock)
 
 /*
  * Version Info
+ * 0.0.4_MTK
+ * (1) Modify architecture of advance ops,
+ * let driver owner can have mtk_simple_regulator_desc as parameter
+ *
  * 0.0.3_MTK
  * (1) Fix KE problem of mtk_regulator_get
  * (2) Use constraint->name to register mtk regulator class

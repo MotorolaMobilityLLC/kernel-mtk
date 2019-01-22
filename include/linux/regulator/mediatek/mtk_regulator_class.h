@@ -24,6 +24,16 @@ struct mtk_simple_regulator_device {
 	struct device dev;
 };
 
+enum mtk_simple_regulator_property {
+	MREG_PROP_SET_RAMP_DELAY = 0,
+};
+
+union mtk_simple_regulator_propval {
+	int32_t intval;
+	uint32_t uintval;
+	const char *strval;
+};
+
 extern struct mtk_simple_regulator_device *
 mtk_simple_regulator_device_register(const char *name, struct device *parent,
 	void *drvdata);
