@@ -333,9 +333,18 @@ struct isp_device {
 	int irq;
 };
 
+struct isp_sec_dapc_reg {
+	unsigned int CAM_REG_CTL_EN[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_DMA_EN[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_SEL[ISP_DEV_NODE_NUM];
+	unsigned int CAM_REG_CTL_EN2[ISP_DEV_NODE_NUM];
+};
+
 static struct isp_device *isp_devs;
 static int nr_isp_devs;
 static unsigned int m_CurrentPPB;
+static struct isp_sec_dapc_reg lock_reg;
+static unsigned int sec_on;
 
 #ifdef CONFIG_PM_WAKELOCKS
 struct wakeup_source isp_wake_lock;
@@ -864,9 +873,16 @@ void CAMSYS_MET_Events_Trace(bool enter, u32 reg_module, enum ISP_IRQ_TYPE_ENUM 
 		u32 ctl_dma_en, rrz_in, rrz_out;
 		u32 ctl_en, ctl_en2;
 
-		ctl_dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
-		ctl_en = ISP_RD32(CAM_REG_CTL_EN(reg_module));
-		ctl_en2 = ISP_RD32(CAM_REG_CTL_EN2(reg_module));
+		if (sec_on) {
+			ctl_dma_en = lock_reg.CAM_REG_CTL_DMA_EN[reg_module];
+			ctl_en = lock_reg.CAM_REG_CTL_EN[reg_module];
+			ctl_en2 = lock_reg.CAM_REG_CTL_EN2[reg_module];
+		} else {
+			ctl_dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+			ctl_en = ISP_RD32(CAM_REG_CTL_EN(reg_module));
+			ctl_en2 = ISP_RD32(CAM_REG_CTL_EN2(reg_module));
+		}
+
 		rrz_in = ISP_RD32(CAM_REG_RRZ_IN_IMG(reg_module));
 		rrz_out = ISP_RD32(CAM_REG_RRZ_OUT_IMG(reg_module));
 		imgo_en = ctl_dma_en & 0x1;
@@ -2294,6 +2310,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	int Ret = 0;
 	/*  */
 	unsigned int DebugFlag[3] = {0};
+	unsigned int Dapc_Reg[6] = {0};
 	struct ISP_REG_IO_STRUCT       RegIo;
 	struct ISP_WAIT_IRQ_STRUCT     IrqInfo;
 	struct ISP_CLEAR_IRQ_STRUCT    ClearIrq;
@@ -2617,9 +2634,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 			switch (DebugFlag[0]) {
 			case 1: {
-				cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(DebugFlag[1]));
+				if (sec_on)
+					cam_dmao = lock_reg.CAM_REG_CTL_DMA_EN[DebugFlag[1]];
+				else
+					cam_dmao = ISP_RD32(CAM_REG_CTL_DMA_EN(DebugFlag[1]));
 
-				LOG_INF("CAM_%d viewFinder is ON\n", module);
+				LOG_INF("CAM_%d viewFinder is ON (SecOn:0x%x)\n", module, sec_on);
 
 				if (vf & 0x1)
 					LOG_NOTICE("CAM_%d: vf already enabled\n", module);
@@ -3319,6 +3339,21 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	#endif
+	case ISP_SET_SEC_DAPC_REG:
+		if (copy_from_user(Dapc_Reg, (void *)Param, sizeof(unsigned int) * 6) != 0) {
+			LOG_NOTICE("get ISP_SET_SEC_DAPC_REG from user fail\n");
+			Ret = -EFAULT;
+		} else {
+			sec_on = Dapc_Reg[1];
+			lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]] = Dapc_Reg[2];
+			lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]] = Dapc_Reg[3];
+			lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]] = Dapc_Reg[4];
+			lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]] = Dapc_Reg[5];
+			LOG_INF("[DAPC]CAM_CTL_EN:0x%x CAM_CTL_DMA_EN:0x%x CAM_CTL_SEL:0x%x CAM_CTL_EN2:0x%x",
+				lock_reg.CAM_REG_CTL_EN[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_DMA_EN[Dapc_Reg[0]],
+				lock_reg.CAM_REG_CTL_SEL[Dapc_Reg[0]], lock_reg.CAM_REG_CTL_EN2[Dapc_Reg[0]]);
+		}
+		break;
 	default:
 	{
 		LOG_NOTICE("Unknown Cmd(%d)\n", Cmd);
@@ -3628,6 +3663,7 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd, unsigned long 
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
 	case ISP_GET_INT_ERR:
+	case ISP_SET_SEC_DAPC_REG:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
@@ -4043,10 +4079,11 @@ static int ISP_release(
 		/* Reson: If twin is enabled, the twin module's DMX_SEL will be set to 1.
 		*	  It will encounter err when run single path and other module dmx_sel = 1
 		*/
-		Reg = ISP_RD32(CAM_REG_CTL_SEL(i));
-		Reg &= 0xfffffff8;/* set dmx to 0 */
-		ISP_WR32(CAM_REG_CTL_SEL(i), Reg);
-
+		if (!sec_on) {
+			Reg = ISP_RD32(CAM_REG_CTL_SEL(i));
+			Reg &= 0xfffffff8;/* set dmx to 0 */
+			ISP_WR32(CAM_REG_CTL_SEL(i), Reg);
+		}
 		/* Reset Twin status.
 		*  If previous camera run in twin mode,
 		*  then mediaserver died, no one clear this status.
@@ -4089,6 +4126,12 @@ static int ISP_release(
 
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
+
+	/* reset secure cam info*/
+	if (sec_on) {
+		memset(&lock_reg, 0, sizeof(struct isp_sec_dapc_reg));
+		sec_on = 0;
+	}
 
 	/*  */
 #ifdef ENABLE_KEEP_ION_HANDLE
@@ -5287,7 +5330,10 @@ enum CAM_FrameST Irq_CAM_FrameStatus(
 		return CAM_FST_DROP_FRAME;
 	}
 
-	dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
+	if (sec_on)
+		dma_en = lock_reg.CAM_REG_CTL_DMA_EN[module];
+	else
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
 
 	if (dma_en & 0x1) {
 		fbc_ctrl1[dma_arry_map[_imgo_]].Raw = ISP_RD32(CAM_REG_FBC_IMGO_CTL1(module));
@@ -5447,7 +5493,12 @@ enum CAM_FrameST Irq_CAM_FrameStatus(
 #if (TIMESTAMP_QUEUE_EN == 1)
 static void ISP_GetDmaPortsStatus(enum ISP_DEV_NODE_ENUM reg_module, unsigned int *DmaPortsStats)
 {
-	unsigned int dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
+	unsigned int dma_en = 0;
+
+	if (sec_on)
+		dma_en = lock_reg.CAM_REG_CTL_DMA_EN[reg_module];
+	else
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(reg_module));
 
 	DmaPortsStats[_imgo_] = ((dma_en & 0x01) ? 1 : 0);
 	DmaPortsStats[_ufeo_] = ((dma_en & 0x02) ? 1 : 0);
@@ -5514,7 +5565,10 @@ static enum CAM_FrameST Irq_CAM_SttFrameStatus(
 	fbc_ctrl1.Raw = 0x0;
 	fbc_ctrl2.Raw = 0x0;
 
-	dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
+	if (sec_on)
+		dma_en = lock_reg.CAM_REG_CTL_DMA_EN[module];
+	else
+		dma_en = ISP_RD32(CAM_REG_CTL_DMA_EN(module));
 
 	if (_aao_ == dma_id) {
 		if (dma_en & 0x20) {
