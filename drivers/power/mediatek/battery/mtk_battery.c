@@ -571,7 +571,7 @@ static void disable_fg(void)
 
 bool fg_interrupt_check(void)
 {
-	if (gDisableGM30) {
+	if (gDisableGM30 || (is_evb_load() == true)) {
 		disable_fg();
 		return false;
 	}
@@ -3435,6 +3435,9 @@ void fg_nafg_int_handler(void)
 	signed int nafg_dltv = 0;
 	signed int nafg_c_dltv = 0;
 
+	if (fg_interrupt_check() == false)
+		return;
+
 	/* 1. Get SW Car value */
 	gauge_dev_get_nag_cnt(gauge_dev, &nafg_cnt);
 	gauge_dev_get_nag_dltv(gauge_dev, &nafg_dltv);
@@ -3532,12 +3535,18 @@ void fg_bat_temp_int_internal(void)
 
 void fg_bat_temp_int_l_handler(void)
 {
+	if (fg_interrupt_check() == false)
+		return;
+
 	bm_err("[fg_bat_temp_int_l_handler]\n");
 	fg_bat_temp_int_internal();
 }
 
 void fg_bat_temp_int_h_handler(void)
 {
+	if (fg_interrupt_check() == false)
+		return;
+
 	bm_err("[fg_bat_temp_int_h_handler]\n");
 	fg_bat_temp_int_internal();
 }
@@ -3838,6 +3847,9 @@ void fg_zcv_int_handler(void)
 	int zcv_intr_curr = 0;
 	int zcv;
 
+	if (fg_interrupt_check() == false)
+		return;
+
 	fg_coulomb = gauge_get_coulomb();
 	gauge_get_zcv_current(&zcv_intr_curr);
 	gauge_get_zcv(&zcv);
@@ -3855,6 +3867,9 @@ void fg_zcv_int_handler(void)
 void fg_bat_plugout_int_handler(void)
 {
 	int is_bat_exist;
+
+	if (fg_interrupt_check() == false)
+		return;
 
 	bm_err("[fg_bat_plugout_int_handler]\n");
 	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
@@ -3891,6 +3906,8 @@ void fg_vbat2_l_int_handler(void)
 {
 	int lt_ht_en = 0;
 
+	if (fg_interrupt_check() == false)
+		return;
 	bm_err("[fg_vbat2_l_int_handler]\n");
 	gauge_enable_vbat_high_interrupt(lt_ht_en);
 	gauge_enable_vbat_low_interrupt(lt_ht_en);
@@ -3903,6 +3920,8 @@ void fg_vbat2_h_int_handler(void)
 {
 	int lt_ht_en = 0;
 
+	if (fg_interrupt_check() == false)
+		return;
 	bm_err("[fg_vbat2_h_int_handler]\n");
 	gauge_enable_vbat_high_interrupt(lt_ht_en);
 	gauge_enable_vbat_low_interrupt(lt_ht_en);
