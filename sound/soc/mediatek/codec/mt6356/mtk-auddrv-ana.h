@@ -248,6 +248,8 @@ typedef	int64 kal_int64;
 
 #define DCXO_CW14           ((UINT32)(PMIC_REG_BASE + 0x9ea))
 
+#define AUXADC_CON10        ((UINT32)(PMIC_REG_BASE + 0x816))
+
 #if 1
 /* register number */
 
