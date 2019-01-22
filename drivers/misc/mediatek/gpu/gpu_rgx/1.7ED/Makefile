@@ -232,6 +232,9 @@ ccflags-y += \
  -I$(RGX_TOP)/services/system/rgx_$(MTK_PLATFORM)
 
 ifeq ($(MTK_PLATFORM),mt6799)
+pvrsrvkm-y += \
+ services/system/rgx_$(MTK_PLATFORM)/mtk_mfg_counter.o
+
 ccflags-y += \
  -I$(RGX_TOP)/generated/rgxsignals_bridge
 endif
