@@ -241,6 +241,7 @@ void ccci_md_config(struct ccci_modem *md)
 {
 	phys_addr_t md_resv_mem_addr = 0, md_resv_smem_addr = 0, md1_md3_smem_phy = 0;
 	unsigned int md_resv_mem_size = 0, md_resv_smem_size = 0, md1_md3_smem_size = 0;
+	phys_addr_t base_ap_view_phy;
 	int ret;
 
 	/* setup config */
@@ -258,8 +259,14 @@ void ccci_md_config(struct ccci_modem *md)
 	md->mem_layout.md_bank0.base_ap_view_phy = md_resv_mem_addr;
 	md->mem_layout.md_bank0.size = md_resv_mem_size;
 	/* do not remap whole region, consume too much vmalloc space */
-	md->mem_layout.md_bank0.base_ap_view_vir =
-		ioremap_nocache(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
+	base_ap_view_phy = md->mem_layout.md_bank0.base_ap_view_phy;
+	base_ap_view_phy &= PAGE_MASK;
+	if (!pfn_valid(__phys_to_pfn(base_ap_view_phy)))
+		md->mem_layout.md_bank0.base_ap_view_vir =
+			ioremap_nocache(md->mem_layout.md_bank0.base_ap_view_phy, MD_IMG_DUMP_SIZE);
+	else
+		md->mem_layout.md_bank0.base_ap_view_vir =
+			(void __iomem *)phys_to_virt(md->mem_layout.md_bank0.base_ap_view_phy);
 	/* Share memory */
 	/*
 	 * MD bank4 is remap to nearest 32M aligned address
