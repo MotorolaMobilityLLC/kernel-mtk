@@ -1002,7 +1002,13 @@ static int vpu_service_routine(void *arg)
 				(int)(req->algo_id[service_core]), vpu_service_cores[service_core].current_algo,
 				req->power_param.opp_step, opps.vcore.index,
 				req->power_param.freq_step, opps.dspcore[service_core].index);
+
+			/*  prevent the worker shutdown vpu first, and current enque use the same algo_id */
+			mutex_lock(&(vpu_service_cores[service_core].state_mutex));
+			vpu_service_cores[service_core].state = VCT_EXECUTING;
 			if (req->algo_id[service_core] != vpu_service_cores[service_core].current_algo) {
+				mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
+
 				if (vpu_find_algo_by_id(service_core, req->algo_id[service_core], &algo)) {
 					req->status = VPU_REQ_STATUS_INVALID;
 						LOG_ERR("can not find the algo, id=%d\n", req->algo_id[service_core]);
@@ -1014,8 +1020,6 @@ static int vpu_service_routine(void *arg)
 					goto out;
 				}
 			} else {
-				mutex_lock(&(vpu_service_cores[service_core].state_mutex));
-				vpu_service_cores[service_core].state = VCT_EXECUTING;
 				mutex_unlock(&(vpu_service_cores[service_core].state_mutex));
 			}
 			LOG_DBG("[vpu] flag - 4: hw_enque_request\n");
@@ -1224,34 +1228,17 @@ static void vpu_put_power(int core)
 
 static void vpu_power_counter_routine(struct work_struct *work)
 {
-	int core = 0, i = 0;
+	int core = 0;
 	struct my_struct_t *my_work_core = container_of(work, struct my_struct_t, my_work.work);
 
 	core = my_work_core->core;
 	LOG_INF("vpu_%d counterR +", core);
-
-	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-		mutex_lock(&(vpu_service_cores[i].state_mutex));
-		switch (vpu_service_cores[i].state) {
-		case VCT_SHUTDOWN:
-		case VCT_IDLE:
-		case VCT_NONE:
-			break;
-		case VCT_BOOTUP:
-		case VCT_EXECUTING:
-			mutex_unlock(&(vpu_service_cores[i].state_mutex));
-			goto out;
-			/*break;*/
-		}
-		mutex_unlock(&(vpu_service_cores[i].state_mutex));
-	}
 
 	mutex_lock(&power_counter_mutex[core]);
 	if (power_counter[core] == 0)
 		vpu_shut_down(core);
 	mutex_unlock(&power_counter_mutex[core]);
 
-out:
 	LOG_INF("vpu_%d counterR -", core);
 }
 
@@ -1846,6 +1833,7 @@ out:
 int vpu_shut_down(int core)
 {
 	int ret;
+	int i = 0;
 
 	LOG_DBG("[vpu_%d] shutdown +\n", core);
 	mutex_lock(&power_mutex[core]);
@@ -1854,14 +1842,27 @@ int vpu_shut_down(int core)
 		return 0;
 	}
 
-	vpu_trace_begin("vpu_shut_down");
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		mutex_lock(&(vpu_service_cores[i].state_mutex));
+		switch (vpu_service_cores[i].state) {
+		case VCT_SHUTDOWN:
+		case VCT_IDLE:
+		case VCT_NONE:
+			vpu_service_cores[core].current_algo = 0;
+			vpu_service_cores[core].state = VCT_SHUTDOWN;
+			break;
+		case VCT_BOOTUP:
+		case VCT_EXECUTING:
+			mutex_unlock(&(vpu_service_cores[i].state_mutex));
+			goto out;
+			/*break;*/
+		}
+		mutex_unlock(&(vpu_service_cores[i].state_mutex));
+	}
 
+	vpu_trace_begin("vpu_shut_down");
 	ret = vpu_disable_regulator_and_clock(core);
 	CHECK_RET("fail to disable regulator and clock\n");
-
-	vpu_service_cores[core].current_algo = 0;
-	vpu_service_cores[core].state = VCT_SHUTDOWN;
-
 out:
 	vpu_trace_end();
 	mutex_unlock(&power_mutex[core]);
@@ -1879,9 +1880,9 @@ int vpu_hw_load_algo(int core, struct vpu_algo *algo)
 		return 0;
 
 	wait_to_do_vpu_running();
-	mutex_lock(&(vpu_service_cores[core].state_mutex));
-	vpu_service_cores[core].state = VCT_EXECUTING;
-	mutex_unlock(&(vpu_service_cores[core].state_mutex));
+	/*mutex_lock(&(vpu_service_cores[core].state_mutex));*/
+	/*vpu_service_cores[core].state = VCT_EXECUTING;*/
+	/*mutex_unlock(&(vpu_service_cores[core].state_mutex));*/
 
 	vpu_trace_begin("vpu_hw_load_algo(%d)", algo->id[core]);
 	ret = vpu_get_power(core);
