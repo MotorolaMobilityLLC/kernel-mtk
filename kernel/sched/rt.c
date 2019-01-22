@@ -4,13 +4,13 @@
  */
 
 #include "sched.h"
-#if defined(CONFIG_MT_SCHED_TRACE)
+#if defined(CONFIG_MTK_SCHED_TRACE)
 #include <trace/events/sched.h>
 #endif
 
 #include <linux/slab.h>
 #include <linux/irq_work.h>
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 #include "mtk_rt_mon.h"
 #endif
 int sched_rr_timeslice = RR_TIMESLICE;
@@ -904,7 +904,7 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 				mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 						rq_cpu(rq), rq->rt.rt_throttled);
 				enqueue = 1;
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 				if (rt_rq->rt_time != 0) {
 					mt_rt_mon_switch(MON_RESET, i);
 					mt_rt_mon_switch(MON_START, i);
@@ -1020,7 +1020,7 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
 			per_cpu(rt_throttling_start, cpu) = rq_clock_task(rt_rq->rq);
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 			/* sched:rt throttle monitor */
 			mt_rt_mon_switch(MON_STOP, cpu);
 			mt_rt_mon_print_task(cpu);
@@ -1054,7 +1054,7 @@ static void update_curr_rt(struct rq *rq)
 	struct sched_rt_entity *rt_se = &curr->rt;
 	u64 delta_exec;
 	int cpu = rq_cpu(rq);
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 	struct rt_rq *cpu_rt_rq;
 	u64 runtime;
 	u64 old_exec_start;
@@ -1095,7 +1095,7 @@ static void update_curr_rt(struct rq *rq)
 	if (!rt_bandwidth_enabled())
 		return;
 
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 	cpu_rt_rq = rt_rq_of_se(rt_se);
 	runtime = sched_rt_runtime(cpu_rt_rq);
 	if (cpu_rt_rq->rt_time == 0 && !(cpu_rt_rq->rt_throttled)) {
@@ -1499,7 +1499,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	 * This test is optimistic, if we get it wrong the load-balancer
 	 * will have to sort it out.
 	 */
-#if defined(CONFIG_MT_SCHED_TRACE)
+#if defined(CONFIG_MTK_SCHED_TRACE)
 	if (curr) {
 		mt_sched_printf(sched_rt_info,
 				"1 select_task_rq_rt cpu=%d p=%d:%s:prio=%d:0x%x curr=%d:%s:prio=%d:0x%x",

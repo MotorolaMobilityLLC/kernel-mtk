@@ -22,4 +22,4 @@ obj-$(CONFIG_MTK_SCHED_MONITOR) += sched_monitor.o monitor_debug_out.o
 # obj-$(CONFIG_MT_LOCK_DEBUG) += lockprof.o
 obj-$(CONFIG_MTK_WQ_DEBUG) += mtk_wq_debug.o
 mtprof-y += prof_main.o
-# obj-$(CONFIG_MT_RT_THROTTLE_MON) += rt_monitor.o
+# obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o

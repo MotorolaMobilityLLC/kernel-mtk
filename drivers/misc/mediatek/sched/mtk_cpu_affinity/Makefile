@@ -11,7 +11,7 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MT_CPU_AFFINITY) += mtk_sched.o mtk_compat_sched.o
+obj-$(CONFIG_MTK_CPU_AFFINITY) += mtk_sched.o mtk_compat_sched.o
 #KVERSION=$(shell uname -r)
 #all:
 #	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules

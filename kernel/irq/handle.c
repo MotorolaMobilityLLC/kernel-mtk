@@ -20,7 +20,7 @@
 
 #include "internals.h"
 
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 #include "mtk_rt_mon.h"
 #endif
 /**
@@ -135,7 +135,7 @@ void __irq_wake_thread(struct irq_desc *desc, struct irqaction *action)
 	wake_up_process(action->thread);
 }
 
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 static void save_isr_info(unsigned int irq, struct irqaction *action,
 			  unsigned long long start, unsigned long long end)
 {
@@ -156,7 +156,7 @@ irqreturn_t handle_irq_event_percpu(struct irq_desc *desc)
 	irqreturn_t retval = IRQ_NONE;
 	unsigned int flags = 0, irq = desc->irq_data.irq;
 	struct irqaction *action = desc->action;
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 	unsigned long long t1, t2;
 #endif
 
@@ -165,11 +165,11 @@ irqreturn_t handle_irq_event_percpu(struct irq_desc *desc)
 		irqreturn_t res;
 
 		trace_irq_handler_entry(irq, action);
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 		t1 = sched_clock();
 #endif
 		res = action->handler(irq, action->dev_id);
-#ifdef CONFIG_MT_RT_THROTTLE_MON
+#ifdef CONFIG_MTK_RT_THROTTLE_MON
 		t2 = sched_clock();
 		save_isr_info(irq, action, t1, t2);
 #endif

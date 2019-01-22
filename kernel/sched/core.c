@@ -2962,7 +2962,7 @@ notrace unsigned long get_parent_ip(unsigned long addr)
 #if defined(CONFIG_PREEMPT) && (defined(CONFIG_DEBUG_PREEMPT) || \
 				defined(CONFIG_PREEMPT_TRACER))
 
-#ifdef CONFIG_MT_DEBUG_PREEMPT
+#ifdef CONFIG_MTK_DEBUG_PREEMPT
 #define ADD_PREEMPT     0
 #define SUB_PREEMPT     1
 void preempt_dump_backtrace(int type)
@@ -3011,7 +3011,7 @@ void preempt_count_add(int val)
 		return;
 #endif
 	__preempt_count_add(val);
-#ifdef CONFIG_MT_DEBUG_PREEMPT
+#ifdef CONFIG_MTK_DEBUG_PREEMPT
 	preempt_dump_backtrace(ADD_PREEMPT);
 #endif
 
@@ -3052,7 +3052,7 @@ void preempt_count_sub(int val)
 		return;
 #endif
 
-#ifdef CONFIG_MT_DEBUG_PREEMPT
+#ifdef CONFIG_MTK_DEBUG_PREEMPT
 	preempt_dump_backtrace(SUB_PREEMPT);
 #endif
 

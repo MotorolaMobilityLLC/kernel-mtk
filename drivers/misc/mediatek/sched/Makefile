@@ -22,8 +22,8 @@ obj-$(CONFIG_MTK_SCHED_RQAVG_US) += rq_stats.o
 obj-$(CONFIG_MTK_SCHED_RQAVG_KS) += sched_avg.o
 
 # For Enhance CPU affinity in hotplug
-obj-$(CONFIG_MT_CPU_AFFINITY) += mtk_cpu_affinity/
-obj-$(CONFIG_MT_RT_THROTTLE_MON) += rt_monitor.o
+obj-$(CONFIG_MTK_CPU_AFFINITY) += mtk_cpu_affinity/
+obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
 
 # For CPU topology to user space
 obj-y += cputopo.o
