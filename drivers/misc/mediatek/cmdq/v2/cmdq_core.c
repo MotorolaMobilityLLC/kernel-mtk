@@ -10,8 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#define CMDQ_MDP_MET_STATUS
-#define CMDQ_MET_READY
+/* unmark after met ready */
+/* #define CMDQ_MDP_MET_STATUS */
+/* #define CMDQ_MET_READY */
 
 
 #include "cmdq_core.h"
@@ -1633,7 +1634,7 @@ static int32_t cmdq_core_task_realloc_buffer_size(struct TaskStruct *pTask, uint
 
 		/* allocate new buffer, try if we can alloc without reclaim */
 		pNewBuffer = cmdq_core_alloc_hw_buffer(cmdq_dev_get(), size,
-						&newMVABase, (GFP_KERNEL & ~__GFP_WAIT) | __GFP_NO_KSWAPD);
+						&newMVABase, GFP_NOWAIT);
 
 		CMDQ_INC_TIME_IN_US(startTime, sched_clock(), pTask->durAlloc);
 
@@ -4985,7 +4986,8 @@ static void cmdq_core_dump_error_buffer(const struct TaskStruct *pTask, uint32_t
 	}
 }
 
-static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const struct TaskStruct *pNGTask, uint32_t thread)
+static void cmdq_core_dump_error_task(const struct TaskStruct *pTask, const struct TaskStruct *pNGTask,
+	uint32_t thread, bool short_log)
 {
 	struct CmdqCBkStruct *pCallback = NULL;
 	struct ThreadStruct *pThread;
@@ -5136,6 +5138,7 @@ static void cmdq_core_attach_error_task(const struct TaskStruct *pTask, int32_t 
 	const struct TaskStruct *pNGTask = NULL;
 	uint64_t engFlag = 0;
 	int32_t index = 0;
+	bool short_log = false;
 
 	if (pTask == NULL) {
 		CMDQ_ERR("attach error failed since pTask is NULL");

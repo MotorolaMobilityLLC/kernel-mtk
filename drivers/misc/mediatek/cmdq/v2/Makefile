@@ -32,11 +32,6 @@ ifneq ($(TARGET_BUILD_VARIANT),user)
 ccflags-y += -D_CMDQ_TEST_PROC_
 endif
 
-# Common Clock Framework
-ifneq ($(CONFIG_MTK_CLKMGR),y)
-ccflags-y += -DCMDQ_USE_CCF
-endif
-
 # secure path
 ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
 ifeq ($(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)),y)
@@ -59,7 +54,7 @@ ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
 ccflags-y += -DCMDQ_LARGE_MAX_FIRSTERROR_BUFFER
 ccflags-y += -DCMDQ_SPECIAL_ESD_PRIORITY
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
-ccflags-y += -DCMDQ_PROFILE_MMP
+# ccflags-y += -DCMDQ_PROFILE_MMP
 
 # driver module
 obj-y += cmdq_record.o
@@ -67,7 +62,7 @@ obj-y += cmdq_core.o
 obj-y += cmdq_virtual.o
 obj-y += cmdq_device.o
 obj-y += cmdq_driver.o
-obj-y += cmdq_mmp.o
+# obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
 obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
