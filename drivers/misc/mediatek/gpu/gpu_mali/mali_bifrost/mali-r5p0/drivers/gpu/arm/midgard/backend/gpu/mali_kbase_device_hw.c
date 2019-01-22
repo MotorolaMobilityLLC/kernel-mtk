@@ -24,6 +24,7 @@
 #include <backend/gpu/mali_kbase_pm_internal.h>
 
 #include <backend/gpu/mali_kbase_device_internal.h>
+#include "platform/mtk_platform_common.h"
 
 #if !defined(CONFIG_MALI_NO_MALI)
 
@@ -163,7 +164,8 @@ void kbase_reg_write(struct kbase_device *kbdev, u16 offset, u32 value,
 		kbase_io_history_add(&kbdev->io_history, kbdev->reg + offset,
 				value, 1);
 #endif /* CONFIG_DEBUG_FS */
-	dev_dbg(kbdev->dev, "w: reg %04x val %08x", offset, value);
+	if (mtk_kbase_gpu_debug_log()) /* Add by MTK to reduce useless log */
+		dev_dbg(kbdev->dev, "w: reg %04x val %08x", offset, value);
 
 	if (kctx && kctx->jctx.tb)
 		kbase_device_trace_register_access(kctx, REG_WRITE, offset,
@@ -187,7 +189,8 @@ u32 kbase_reg_read(struct kbase_device *kbdev, u16 offset,
 		kbase_io_history_add(&kbdev->io_history, kbdev->reg + offset,
 				val, 0);
 #endif /* CONFIG_DEBUG_FS */
-	dev_dbg(kbdev->dev, "r: reg %04x val %08x", offset, val);
+	if (mtk_kbase_gpu_debug_log()) /* Add by MTK to reduce useless log */
+		dev_dbg(kbdev->dev, "r: reg %04x val %08x", offset, val);
 
 	if (kctx && kctx->jctx.tb)
 		kbase_device_trace_register_access(kctx, REG_READ, offset, val);
