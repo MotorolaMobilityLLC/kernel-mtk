@@ -139,7 +139,7 @@ static const flashdev_info_t gen_FlashTable_p[] = {
 	  {RAND_TYPE_SAMSUNG, {0x2D2D, 1, 1, 1, 1, 1} } },
 	  NAND_FLASH_TLC, {FALSE, FALSE, TRUE, TRUE, 0xA2, 0xFF, TRUE, 68, 8, 0}, false },
 	{{0x45, 0xDE, 0x94, 0x93, 0x76, 0x51}, 6, 5, IO_8BIT, 0x800000, 4096, 16384, 1280, 0x10804222,
-	 0xC03222, 0x101, 80, VEND_SANDISK, 1024, "SDTNSGAMA008G ", 0,
+	 0xC03222, 0x101, 80, VEND_SANDISK, 1024, "SDTNSGAMA008G ", MULTI_PLANE,
 	 {SANDISK_16K,
 	  {0xEF, 0xEE, 0x5D, 33, 0x11, 0, 0xFFFFFFFE, RTYPE_SANDISK, {0x80, 0x00}, {0x80, 0x01} },
 	  {RAND_TYPE_SAMSUNG, {0x2D2D, 1, 1, 1, 1, 1} } },
@@ -5580,9 +5580,12 @@ int mtk_nand_exec_write_page_hw(struct mtd_info *mtd, u32 u4RowAddr, u32 u4PageS
 #endif
 		if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_MLC_HYBER) {
 			if ((devinfo.two_phyplane || (devinfo.advancedmode & MULTI_PLANE))
-			    && (!tlc_snd_phyplane))
-				mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
-			else if (tlc_cache_program)
+			    && (!tlc_snd_phyplane)) {
+				if ((devinfo.tlcControl.slcopmodeEn) && (devinfo.advancedmode & MULTI_PLANE))
+					mtk_nand_set_command(NAND_CMD_PAGEPROG);
+				else
+					mtk_nand_set_command(PROGRAM_LEFT_PLANE_CMD);
+			} else if (tlc_cache_program)
 				mtk_nand_set_command(NAND_CMD_CACHEDPROG);
 			else
 				mtk_nand_set_command(NAND_CMD_PAGEPROG);
