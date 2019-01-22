@@ -662,7 +662,8 @@ static inline INT32 _stp_btm_do_fw_assert(MTKSTP_BTM_T *stp_btm)
 			status = 0;
 			break;
 		}
-		stp_dbg_poll_cpupcr(5, 1, 1);
+		if ((j >= 10) && (j%10 == 0))
+			stp_dbg_poll_cpupcr(5, 1, 1);
 		j++;
 		STP_BTM_INFO_FUNC("Wait for assert message (%d)\n", j);
 		osal_sleep_ms(20);

@@ -1220,11 +1220,12 @@ INT32 stp_dbg_dmp_print(MTKSTP_DBG_T *stp_dbg)
 		len = stp_dbg->logsys->queue[outIndex].len - sizeof(STP_DBG_HDR_T);
 		len = len > STP_PKT_SZ ? STP_PKT_SZ : len;
 		if (wmt_detect_get_chip_type() == WMT_CHIP_TYPE_COMBO)
-			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
+			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d), time[%llu.%06lu]\n",
 					pHdr->sec,
 					pHdr->usec,
 					pHdr->dir == PKT_DIR_TX ? "Tx" : "Rx",
-					comboStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq, pHdr->ack);
+					comboStpDbgType[pHdr->type], pHdr->no, pHdr->len, pHdr->seq,
+					pHdr->ack, pHdr->l_sec, pHdr->l_nsec);
 		else
 			pr_warn("STP-DBG:%d.%ds, %s:pT%sn(%d)l(%d)s(%d)a(%d)\n",
 					pHdr->sec,
@@ -1293,6 +1294,8 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 {
 
 	struct timeval now;
+	UINT64 ts;
+	ULONG nsec;
 
 	if (!hdr) {
 		STP_DBG_ERR_FUNC("function invalid\n");
@@ -1300,6 +1303,7 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 	}
 
 	do_gettimeofday(&now);
+	osal_get_local_time(&ts, &nsec);
 	hdr->last_dbg_type = gStpDbgDumpType;
 	gStpDbgDumpType = dbg_type;
 	hdr->dbg_type = dbg_type;
@@ -1312,7 +1316,8 @@ static _osal_inline_ INT32 stp_dbg_fill_hdr(STP_DBG_HDR_T *hdr, INT32 type, INT3
 	hdr->dmy = 0xffffffff;
 	hdr->len = len;
 	hdr->type = type;
-
+	hdr->l_sec = ts;
+	hdr->l_nsec = nsec;
 	return 0;
 }
 

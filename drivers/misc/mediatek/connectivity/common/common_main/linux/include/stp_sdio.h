@@ -108,6 +108,11 @@
 #define STP_SDIO_TX_PKT_MAX_CNT (7)	/* Max outstanding tx pkt count, as defined in TX_COMPLETE_COUNT */
 #define STP_SDIO_HDR_SIZE (4)	/* hw,fw,sw follow the same format: 2 bytes length + 2 bytes reserved */
 
+#define STP_SDIO_DBG_SUPPORT 1
+#define STP_SDIO_RXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
+#define STP_SDIO_TXDBG 1	/* depends on STP_SDIO_DBG_SUPPORT */
+#define STP_TXDBG 0
+
 /* sdio bus settings */
 #define STP_SDIO_BLK_SIZE (512UL)
 
@@ -285,6 +290,10 @@ extern MTK_WCN_STP_SDIO_HIF_INFO g_stp_sdio_host_info;
  */
 extern INT32 mtk_wcn_hif_sdio_client_reg(const MTK_WCN_HIF_SDIO_CLTINFO *pinfo);
 extern INT32 stp_sdio_reg_rw(INT32 func_num, INT32 direction,  UINT32 offset, UINT32 value);
+
+#if STP_SDIO_DBG_SUPPORT && (STP_SDIO_TXDBG || STP_SDIO_TXPERFDBG)
+VOID stp_sdio_txdbg_dump(VOID);
+#endif
 
 extern INT32 mtk_wcn_stp_sdio_do_own_clr(VOID);
 #ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT

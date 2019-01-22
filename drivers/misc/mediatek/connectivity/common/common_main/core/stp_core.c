@@ -2481,8 +2481,11 @@ INT32 mtk_wcn_stp_dbg_dump_package(VOID)
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_LOG);
 				mtk_wcn_consys_stp_btif_logger_ctrl(BTIF_DUMP_BTIF_REG);
 				stp_dbg_dmp_print(g_mtkstp_dbg);
-			} else
+			} else {
 				stp_dbg_dmp_print(g_mtkstp_dbg);
+				STP_INFO_FUNC("STP_SDIO TX data dump start\n");
+				stp_sdio_txdbg_dump();
+			}
 		} else
 			STP_INFO_FUNC("assert start flag is set, disable packet dump function\n");
 	}

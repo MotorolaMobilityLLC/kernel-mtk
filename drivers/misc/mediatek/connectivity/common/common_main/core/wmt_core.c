@@ -362,7 +362,6 @@ INT32 wmt_core_rx(PUINT8 pBuf, UINT32 bufLen, PUINT32 readSize)
 	if (iRet) {
 		/* ERROR */
 		WMT_ERR_FUNC("WMT-CORE: wmt_core_ctrl failed: WMT_CTRL_RX, iRet:%d\n", iRet);
-		mtk_wcn_stp_dbg_dump_package();
 		osal_assert(0);
 	}
 	return iRet;
@@ -436,7 +435,6 @@ INT32 wmt_core_func_ctrl_cmd(ENUM_WMTDRV_TYPE_T type, MTK_WCN_BOOL fgEn)
 				ctrlPa1 = type;
 				ctrlPa2 = 32;
 				wmt_core_set_coredump_state(DRV_STS_FUNC_ON);
-				wmt_lib_stp_dbg_poll_cpupcr(5, 1, 1);
 				wmt_core_ctrl(WMT_CTRL_EVT_ERR_TRG_ASSERT, &ctrlPa1, &ctrlPa2);
 			}
 			break;
@@ -599,6 +597,7 @@ INT32 wmt_core_reg_rw_raw(UINT32 isWrite, UINT32 offset, PUINT32 pVal, UINT32 ma
 	iRet = wmt_core_rx(evtBuf, evtLen, &u4Res);
 	if ((iRet) || (u4Res != evtLen)) {
 		WMT_ERR_FUNC("Rx REG_EVT fail!(%d) len(%d, %d)\n", iRet, u4Res, evtLen);
+		mtk_wcn_stp_dbg_dump_package();
 		return -3;
 	}
 
@@ -2438,6 +2437,7 @@ static INT32 opfunc_set_mcu_clk(P_WMT_OP pWmtOp)
 		iRet = wmt_core_rx(evt_buffer, osal_sizeof(WMT_SET_MCU_CLK_EVT), &u4ReadSize);
 		if (iRet || (u4ReadSize != osal_sizeof(WMT_SET_MCU_CLK_EVT))) {
 			WMT_ERR_FUNC("WMT_SET_MCU_CLK_EVT fail(%d),size(%d)\n", iRet, u4ReadSize);
+			mtk_wcn_stp_dbg_dump_package();
 			break;
 		}
 

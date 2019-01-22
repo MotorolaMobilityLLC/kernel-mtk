@@ -347,6 +347,7 @@ INT32 osal_test_and_set_bit(UINT32 bitOffset, P_OSAL_BIT_OP_VAR pData);
 
 INT32 osal_gettimeofday(PINT32 sec, PINT32 usec);
 INT32 osal_printtimeofday(const PUINT8 prefix);
+VOID osal_get_local_time(PUINT64 sec, PULONG nsec);
 
 VOID osal_buffer_dump(const PUINT8 buf, const PUINT8 title, UINT32 len, UINT32 limit);
 
