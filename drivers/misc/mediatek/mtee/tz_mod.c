@@ -800,7 +800,7 @@ static long tz_client_tee_service(struct file *file, unsigned long arg,
 	struct kree_tee_service_cmd_param cparam;
 	unsigned long cret;
 	uint32_t tmpTypes;
-	MTEEC_PARAM param[4], oparam[4];
+	union MTEEC_PARAM param[4], oparam[4];
 	int i;
 	TZ_RESULT ret;
 	KREE_SESSION_HANDLE handle;
@@ -1465,7 +1465,7 @@ static TZ_RESULT KREE_IsTeeChunkmemPoolReleasable(int *releasable)
 {
 	TZ_RESULT ret;
 	KREE_SESSION_HANDLE mem_session;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 
 	if (releasable == NULL)
 		return TZ_RESULT_ERROR_BAD_FORMAT;

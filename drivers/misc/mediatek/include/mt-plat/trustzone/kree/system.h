@@ -70,7 +70,7 @@ TZ_RESULT KREE_CloseSession(KREE_SESSION_HANDLE handle);
  * @return            Return value from TEE service.
  */
 TZ_RESULT KREE_TeeServiceCall(KREE_SESSION_HANDLE handle, uint32_t command,
-			      uint32_t paramTypes, MTEEC_PARAM param[4]);
+			      uint32_t paramTypes, union MTEEC_PARAM param[4]);
 
 #endif	/* CONFIG_MTK_IN_HOUSE_TEE_SUPPORT || CONFIG_TRUSTY */
 #endif	/* __KREE_H__ */

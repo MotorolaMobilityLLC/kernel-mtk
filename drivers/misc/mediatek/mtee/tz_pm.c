@@ -37,7 +37,7 @@ void kree_pm_init(void)
 #ifndef CONFIG_ARM64
 void kree_pm_cpu_lowpower(int *ppen_release, int logical_cpuid)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].mem.buffer = (void *)ppen_release;
@@ -53,7 +53,7 @@ void kree_pm_cpu_lowpower(int *ppen_release, int logical_cpuid)
 
 int kree_pm_cpu_dormant(int mode)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = mode;
@@ -67,7 +67,7 @@ int kree_pm_cpu_dormant(int mode)
 
 int kree_pm_cpu_dormant_workaround_wake(int workaround_wake)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = workaround_wake;
@@ -82,7 +82,7 @@ int kree_pm_cpu_dormant_workaround_wake(int workaround_wake)
 
 int kree_pm_device_ops(int state)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	TZ_RESULT ret;
 
 	param[0].value.a = (uint32_t) state;

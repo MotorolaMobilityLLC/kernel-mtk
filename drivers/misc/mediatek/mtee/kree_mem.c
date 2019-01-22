@@ -25,7 +25,7 @@ static inline TZ_RESULT _allocFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 				uint32_t *mem_handle, uint32_t alignment,
 				uint32_t size, char *dbg, const char *tag)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 	int handle;
 
@@ -77,7 +77,7 @@ static inline TZ_RESULT _allocFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 static inline TZ_RESULT _handleOpFunc(uint32_t cmd, KREE_SESSION_HANDLE session,
 				      uint32_t mem_handle, char *dbg)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	if ((session == 0) || (mem_handle == 0))
@@ -99,7 +99,7 @@ static inline TZ_RESULT _handleOpFunc_1(uint32_t cmd,
 					uint32_t mem_handle, uint32_t *count,
 					char *dbg)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	if ((session == 0) || (mem_handle == 0) || (count == NULL))
@@ -127,7 +127,7 @@ TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 					void *start, uint32_t size, void *map_p,
 					const char *tag)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 	struct shm_buffer_s shmbuf;
 
@@ -164,7 +164,7 @@ TZ_RESULT kree_register_sharedmem(KREE_SESSION_HANDLE session,
 TZ_RESULT kree_unregister_sharedmem(KREE_SESSION_HANDLE session,
 					KREE_SHAREDMEM_HANDLE mem_handle)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	p[0].value.a = (uint32_t) mem_handle;
@@ -387,7 +387,7 @@ TZ_RESULT KREE_UnreferenceSecurechunkmem(KREE_SESSION_HANDLE session,
 TZ_RESULT KREE_ReadSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 					uint32_t size, void *buffer)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	if ((session == 0) || (size == 0))
@@ -413,7 +413,7 @@ TZ_RESULT KREE_ReadSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 TZ_RESULT KREE_WriteSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 					uint32_t size, void *buffer)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	if ((session == 0) || (size == 0))
@@ -440,7 +440,7 @@ TZ_RESULT KREE_WriteSecurechunkmem(KREE_SESSION_HANDLE session, uint32_t offset,
 TZ_RESULT KREE_GetSecurechunkReleaseSize(KREE_SESSION_HANDLE session,
 						uint32_t *size)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	ret =
@@ -459,7 +459,7 @@ TZ_RESULT KREE_GetSecurechunkReleaseSize(KREE_SESSION_HANDLE session,
 
 TZ_RESULT KREE_GetTEETotalSize(KREE_SESSION_HANDLE session, uint32_t *size)
 {
-	MTEEC_PARAM p[4];
+	union MTEEC_PARAM p[4];
 	TZ_RESULT ret;
 
 	ret = KREE_TeeServiceCall(session, TZCMD_MEM_TOTAL_SIZE,

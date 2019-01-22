@@ -17,7 +17,7 @@
 
 uint32_t TEE_update_pr_time_intee(KREE_SESSION_HANDLE session)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	uint32_t file_result = PR_TIME_FILE_OK_SIGN;
@@ -103,7 +103,7 @@ err_open:
 
 uint32_t TEE_update_pr_time_infile(KREE_SESSION_HANDLE session)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	struct file *file = NULL;
@@ -140,7 +140,7 @@ tz_error:
 
 uint32_t TEE_Icnt_pr_time(KREE_SESSION_HANDLE session)
 {
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t paramTypes;
 	TZ_RESULT ret = TZ_RESULT_SUCCESS;
 	unsigned long time_count = 1392967151;

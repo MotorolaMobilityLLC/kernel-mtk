@@ -43,7 +43,7 @@ int entropy_thread(void *arg)
 	KREE_SESSION_HANDLE mem_session;
 	KREE_SHAREDMEM_HANDLE shm_handle;
 	struct KREE_SHAREDMEM_PARAM shm_param;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint8_t *ptr;
 
 	ptr = kmalloc(NDBG_REE_ENTROPY_SZ, GFP_KERNEL);
@@ -141,7 +141,7 @@ int test_random_thread(void *arg)
 	KREE_SESSION_HANDLE mem_session;
 	KREE_SHAREDMEM_HANDLE shm_handle;
 	struct KREE_SHAREDMEM_PARAM shm_param;
-	MTEEC_PARAM param[4];
+	union MTEEC_PARAM param[4];
 	uint32_t *ptr;
 	int size = 32;
 
