@@ -51,6 +51,10 @@ static char *pwr_ctrl_str[PWR_MAX_COUNT] = {
 	[PWR_PCM_FLAGS_CUST] = "pcm_flags_cust",
 	[PWR_PCM_FLAGS_CUST_SET] = "pcm_flags_cust_set",
 	[PWR_PCM_FLAGS_CUST_CLR] = "pcm_flags_cust_clr",
+	[PWR_PCM_FLAGS1] = "pcm_flags1",
+	[PWR_PCM_FLAGS1_CUST] = "pcm_flags1_cust",
+	[PWR_PCM_FLAGS1_CUST_SET] = "pcm_flags1_cust_set",
+	[PWR_PCM_FLAGS1_CUST_CLR] = "pcm_flags1_cust_clr",
 	[PWR_TIMER_VAL] = "timer_val",
 	[PWR_TIMER_VAL_CUST] = "timer_val_cust",
 	[PWR_TIMER_VAL_RAMP_EN] = "timer_val_ramp_en",
@@ -189,6 +193,18 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, 0));
+	p += sprintf(p, "pcm_flags1 = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1, 0));
+	p += sprintf(p, "pcm_flags1_cust = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST, 0));
+	p += sprintf(p, "pcm_flags1_cust_set = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_SET, 0));
+	p += sprintf(p, "pcm_flags1_cust_clr = 0x%x\n",
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_CLR, 0));
 	p += sprintf(p, "timer_val = 0x%x\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_TIMER_VAL, 0));
@@ -283,6 +299,22 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl, const char *buf,
 		pwrctrl->pcm_flags_cust_clr = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
 				id, PWR_PCM_FLAGS_CUST_CLR, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1])) {
+		pwrctrl->pcm_flags1 = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST])) {
+		pwrctrl->pcm_flags1_cust = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_SET])) {
+		pwrctrl->pcm_flags1_cust_set = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_SET, val);
+	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_PCM_FLAGS1_CUST_CLR])) {
+		pwrctrl->pcm_flags1_cust_clr = val;
+		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,
+				id, PWR_PCM_FLAGS1_CUST_CLR, val);
 	} else if (!strcmp(cmd, pwr_ctrl_str[PWR_TIMER_VAL])) {
 		pwrctrl->timer_val = val;
 		mt_secure_call(MTK_SIP_KERNEL_SPM_PWR_CTRL_ARGS,

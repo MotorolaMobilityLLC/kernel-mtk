@@ -20,7 +20,8 @@
 #include <linux/atomic.h>
 #include <mtk_spm_idle.h>
 #include <mt-plat/upmu_common.h>
-#include "include/pmic_api_buck.h"
+#include <mtk_pmic_api_buck.h>
+#include <upmu_sw.h>
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #include <mtk_spm_vcore_dvfs.h>
 #endif /* CONFIG_FPGA_EARLY_PORTING */
@@ -372,6 +373,7 @@ int __init spm_module_init(void)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifdef CONFIG_MTK_DRAMC
+	/* FIXME: */
 #if 0
 	if (spm_golden_setting_cmp(1) != 0)
 		aee_kernel_warning("SPM Warring", "dram golden setting mismach");
@@ -411,7 +413,10 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, 0, 0);
+	/* FIXME: */
+#ifdef CONFIG_MTK_PMIC
+	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, 0, is_mt6311_exist());
+#endif /* CONFIG_MTK_PMIC */
 
 	spm_vcorefs_init();
 
@@ -584,8 +589,7 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 	if (force == 0 && mode == prev_mode)
 		return;
 
-	/* FIXME: */
-#if 0
+#ifdef CONFIG_MTK_PMIC
 	switch (mode) {
 	case PMIC_PWR_NORMAL:
 		/* nothing */
@@ -594,19 +598,58 @@ void spm_pmic_power_mode(int mode, int force, int lock)
 		/* nothing */
 		break;
 	case PMIC_PWR_SODI3:
+		if (!is_mt6311_exist())
+			pmic_buck_vproc_lp(SRCLKEN0, 1, HW_LP);
+
+		pmic_ldo_vsram_proc_lp(SRCLKEN0, 1, HW_LP);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 0, HW_LP);
 		pmic_ldo_vldo28_lp(SW, 1, SW_ON);
+		/* VCORE */
+		pmic_config_interface(PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_ADDR, 0x20,
+				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_MASK,
+				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x5,
+				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
+				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+		/* VSRAM_OTHERS */
+		pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x30,
+				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x4,
+				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 		break;
 	case PMIC_PWR_SODI:
 		/* nothing */
 		break;
 	case PMIC_PWR_SUSPEND:
+		if (!is_mt6311_exist()) {
+			pmic_buck_vproc_lp(SRCLKEN0, 0, HW_LP);
+			pmic_buck_vproc_lp(SW, 1, SW_OFF);
+		}
+
+		pmic_ldo_vsram_proc_lp(SRCLKEN0, 0, HW_LP);
+		pmic_ldo_vsram_proc_lp(SW, 1, SW_OFF);
 		pmic_ldo_vldo28_lp(SRCLKEN0, 1, HW_LP);
+		/* VCORE */
+		pmic_config_interface(PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_ADDR, 0x8,
+				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_MASK,
+				PMIC_RG_BUCK_VPROC_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_VCORE_SLEEP_VOLTAGE_ADDR, 0x1,
+				PMIC_RG_VCORE_SLEEP_VOLTAGE_MASK,
+				PMIC_RG_VCORE_SLEEP_VOLTAGE_SHIFT);
+		/* VSRAM_OTHERS */
+		pmic_config_interface(PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_ADDR, 0x10,
+				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_MASK,
+				PMIC_RG_LDO_VSRAM_OTHERS_VOSEL_SLEEP_SHIFT);
+		pmic_config_interface(PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_ADDR, 0x1,
+				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_MASK,
+				PMIC_RG_VSRAM_OTHERS_SLEEP_VOLTAGE_SHIFT);
 		break;
 	default:
 		pr_debug("spm pmic power mode (%d) is not configured\n", mode);
 	}
-#endif
+#endif /* CONFIG_MTK_PMIC */
 
 	prev_mode = mode;
 }

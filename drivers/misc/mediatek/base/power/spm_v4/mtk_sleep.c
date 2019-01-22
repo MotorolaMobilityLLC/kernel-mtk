@@ -93,7 +93,6 @@ static u32 slp_spm_deepidle_flags = {
 u32 slp_spm_data;
 
 
-#if 1
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
 	/* FIXME: */
@@ -260,7 +259,6 @@ static const struct platform_suspend_ops slp_suspend_ops = {
 	.finish = slp_suspend_ops_finish,
 	.end = slp_suspend_ops_end,
 };
-#endif
 
 __attribute__ ((weak))
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
