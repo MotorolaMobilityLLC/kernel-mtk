@@ -64,7 +64,10 @@ struct ufs_mtk_bio_context {
 	uint64_t busy_start_t;
 	uint64_t period_start_t;
 	uint64_t period_end_t;
-	uint64_t period_usage;
+	uint64_t period_busy;
+	uint64_t period_end_since_start_t;
+	uint64_t period_end_in_window_t;
+	uint64_t period_start_in_window_t;
 	struct ufs_mtk_bio_context_task task[UFS_BIOLOG_CONTEXT_TASKS];
 	struct mtk_btag_workload workload;
 	struct mtk_btag_throughput throughput;
