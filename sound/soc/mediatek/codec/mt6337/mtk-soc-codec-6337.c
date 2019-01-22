@@ -139,7 +139,7 @@ static const int DC1unit_in_uv = 19184;	/* in uv with 0DB */
 static const int DC1devider = 8;	/* in uv */
 
 static int ANC_enabled;
-
+static int low_power_mode;
 /* DPD efuse variable and table */
 static unsigned int dpd_lch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
 static unsigned int dpd_rch[DPD_IMPEDANCE_MAX][DPD_HARMONIC_MAX];
@@ -182,7 +182,6 @@ static int Speaker_mode = AUDIO_SPEAKER_MODE_AB;
 static unsigned int Speaker_pga_gain = 1;	/* default 0Db. */
 static bool mSpeaker_Ocflag;
 #endif
-static int mAdc_Power_Mode;
 static unsigned int dAuxAdcChannel = 16;
 static const int mDcOffsetTrimChannel = 9;
 static bool mInitCodec;
@@ -1892,10 +1891,12 @@ static void HeadsetVoloumeSet(void)
 static void hp_main_output_ramp(bool up)
 {
 	int i = 0, stage = 0;
+	int target = 0;
 
 	/* Enable/Reduce HPP/N main output stage step by step */
-	for (i = 0; i < 8; i++) {
-		stage = up ? i : 7 - i;
+	target = (low_power_mode == 1) ? 3 : 7;
+	for (i = 0; i <= target; i++) {
+		stage = up ? i : target - i;
 		Ana_Set_Reg(AUDDEC_ANA_CON1, stage << 8, 0x7 << 8);
 		usleep_range(100, 150);
 	}
@@ -1995,7 +1996,12 @@ static void Audio_Amp_Change(int channels, bool enable, bool is_anc)
 			Ana_Set_Reg(AUDDEC_ANA_CON0, 0x3000, 0xffff);
 			/* Disable headphone short-ckt protection. */
 			Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A80, 0xff80);
-			Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xff80);
+			if (low_power_mode == 0) {
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4900, 0xff80);
+			} else {
+				Ana_Set_Reg(AUDDEC_ANA_CON10, 0x4880, 0xff80);
+				Ana_Set_Reg(AUDDEC_ANA_CON11, 0x2A00, 0xff80);
+			}
 			/* Enable IBIST */
 			/* Set HP DR bias and HP & ZCD bias current optimization */
 			Ana_Set_Reg(AUDDEC_ANA_CON2, 0x001A, 0x003f);
@@ -2192,20 +2198,6 @@ static int Audio_AmpR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_val
 		Audio_Amp_Change(AUDIO_ANALOG_CHANNELS_RIGHT1, false, false);
 	}
 	mutex_unlock(&Ana_Ctrl_Mutex);
-	return 0;
-}
-
-static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s() not support\n", __func__);
-
-	return 0;
-}
-
-static int PMIC_REG_CLEAR_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s(), not support\n", __func__);
-
 	return 0;
 }
 
@@ -3011,6 +3003,7 @@ static const struct snd_kcontrol_new Audio_snd_auxadc_controls[] = {
 
 static const char *const amp_function[] = { "Off", "On" };
 static const char *const aud_clk_buf_function[] = { "Off", "On" };
+static const char *const audio_power_mode[] = { "Hifi", "Low_Power" };
 
 /* static const char *DAC_SampleRate_function[] = {"8000", "11025", "16000", "24000", "32000", "44100", "48000"}; */
 static const char *const DAC_DL_PGA_Headset_GAIN[] = {
@@ -3288,61 +3281,72 @@ static int Audio_ANC_Set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int audio_power_mode_get(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = low_power_mode;
+	return 0;
+}
+
+static int audio_power_mode_set(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(audio_power_mode)) {
+		pr_err("return -EINVAL\n");
+		return -EINVAL;
+	}
+	low_power_mode = ucontrol->value.integer.value[0];
+	pr_debug("%s() audio_power_mode = %d\n", __func__, low_power_mode);
+	return 0;
+}
+
+
 static const struct soc_enum Audio_DL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
 	/* here comes pga gain setting */
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN),
-			    DAC_DL_PGA_Headset_GAIN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_PGA_Headset_GAIN),
 			    DAC_DL_PGA_Headset_GAIN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_PGA_Handset_GAIN),
 			    DAC_DL_PGA_Handset_GAIN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN),
 			    DAC_DL_PGA_Speaker_GAIN),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN),
-			    DAC_DL_PGA_Speaker_GAIN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(aud_clk_buf_function),
 			    aud_clk_buf_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(amp_function), amp_function),
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_power_mode), audio_power_mode),
 };
 
 static const struct snd_kcontrol_new mt6331_snd_controls[] = {
 	SOC_ENUM_EXT("Audio_Amp_R_Switch", Audio_DL_Enum[0], Audio_AmpR_Get,
 		     Audio_AmpR_Set),
-	SOC_ENUM_EXT("Audio_Amp_L_Switch", Audio_DL_Enum[1], Audio_AmpL_Get,
+	SOC_ENUM_EXT("Audio_Amp_L_Switch", Audio_DL_Enum[0], Audio_AmpL_Get,
 		     Audio_AmpL_Set),
-	SOC_ENUM_EXT("Voice_Amp_Switch", Audio_DL_Enum[2], Voice_Amp_Get,
+	SOC_ENUM_EXT("Voice_Amp_Switch", Audio_DL_Enum[0], Voice_Amp_Get,
 		     Voice_Amp_Set),
-	SOC_ENUM_EXT("Speaker_Amp_Switch", Audio_DL_Enum[3],
+	SOC_ENUM_EXT("Speaker_Amp_Switch", Audio_DL_Enum[0],
 		     Speaker_Amp_Get, Speaker_Amp_Set),
-	SOC_ENUM_EXT("Headset_Speaker_Amp_Switch", Audio_DL_Enum[4],
+	SOC_ENUM_EXT("Headset_Speaker_Amp_Switch", Audio_DL_Enum[0],
 		     Headset_Speaker_Amp_Get,
 		     Headset_Speaker_Amp_Set),
-	SOC_ENUM_EXT("Headset_PGAL_GAIN", Audio_DL_Enum[5],
+	SOC_ENUM_EXT("Headset_PGAL_GAIN", Audio_DL_Enum[1],
 		     Headset_PGAL_Get, Headset_PGAL_Set),
-	SOC_ENUM_EXT("Headset_PGAR_GAIN", Audio_DL_Enum[6],
+	SOC_ENUM_EXT("Headset_PGAR_GAIN", Audio_DL_Enum[1],
 		     Headset_PGAR_Get, Headset_PGAR_Set),
-	SOC_ENUM_EXT("Handset_PGA_GAIN", Audio_DL_Enum[7], Handset_PGA_Get,
+	SOC_ENUM_EXT("Handset_PGA_GAIN", Audio_DL_Enum[2], Handset_PGA_Get,
 		     Handset_PGA_Set),
-	SOC_ENUM_EXT("Lineout_PGAR_GAIN", Audio_DL_Enum[8],
+	SOC_ENUM_EXT("Lineout_PGAR_GAIN", Audio_DL_Enum[3],
 		     Lineout_PGAR_Get, Lineout_PGAR_Set),
-	SOC_ENUM_EXT("Lineout_PGAL_GAIN", Audio_DL_Enum[9],
+	SOC_ENUM_EXT("Lineout_PGAL_GAIN", Audio_DL_Enum[3],
 		     Lineout_PGAL_Get, Lineout_PGAL_Set),
-	SOC_ENUM_EXT("AUD_CLK_BUF_Switch", Audio_DL_Enum[10],
+	SOC_ENUM_EXT("AUD_CLK_BUF_Switch", Audio_DL_Enum[4],
 		     Aud_Clk_Buf_Get, Aud_Clk_Buf_Set),
-	SOC_ENUM_EXT("Ext_Speaker_Amp_Switch", Audio_DL_Enum[11],
+	SOC_ENUM_EXT("Ext_Speaker_Amp_Switch", Audio_DL_Enum[0],
 		     Ext_Speaker_Amp_Get,
 		     Ext_Speaker_Amp_Set),
-	SOC_ENUM_EXT("Receiver_Speaker_Switch", Audio_DL_Enum[11],
+	SOC_ENUM_EXT("Receiver_Speaker_Switch", Audio_DL_Enum[0],
 		     Receiver_Speaker_Switch_Get,
 		     Receiver_Speaker_Switch_Set),
-	SOC_ENUM_EXT("PMIC_REG_CLEAR", Audio_DL_Enum[12], PMIC_REG_CLEAR_Get, PMIC_REG_CLEAR_Set),
 	SOC_ENUM_EXT("Audio_ANC_Switch", Audio_DL_Enum[0], Audio_ANC_Get, Audio_ANC_Set),
+	SOC_ENUM_EXT("Audio_Power_Mode", Audio_DL_Enum[5], audio_power_mode_get, audio_power_mode_set),
 };
 
 static const struct snd_kcontrol_new mt6331_Voice_Switch[] = {
@@ -4248,7 +4252,6 @@ static bool TurnOnVOWADcPower(int MicType, bool enable)
 
 /* here start uplink power function */
 static const char *const ADC_function[] = { "Off", "On" };
-static const char *const ADC_power_mode[] = { "normal", "lowpower" };
 
 /* OPEN:0, IN_ADC1: 1, IN_ADC2:2, IN_ADC3:3 */
 static const char *const ADC_UL_PGA_GAIN[] = {"0Db", "6Db", "12Db", "18Db", "24Db"};
@@ -4284,7 +4287,6 @@ static const struct soc_enum Audio_UL_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc4_mic_source), audio_adc4_mic_source),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_UL_PGA_GAIN), ADC_UL_PGA_GAIN),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(audio_adc_mic_mode), audio_adc_mic_mode),
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(ADC_power_mode), ADC_power_mode),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_ADC_Function),
 			    Audio_VOW_ADC_Function),
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(Audio_VOW_Digital_Function),
@@ -5514,28 +5516,6 @@ static int audio_ul2_rch_in_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int Audio_Adc_Power_Mode_Get(struct snd_kcontrol *kcontrol,
-				    struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s()  = %d\n", __func__, mAdc_Power_Mode);
-	ucontrol->value.integer.value[0] = mAdc_Power_Mode;
-	return 0;
-}
-
-static int Audio_Adc_Power_Mode_Set(struct snd_kcontrol *kcontrol,
-				    struct snd_ctl_elem_value *ucontrol)
-{
-	pr_warn("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(ADC_power_mode)) {
-		pr_err("return -EINVAL\n");
-		return -EINVAL;
-	}
-	mAdc_Power_Mode = ucontrol->value.integer.value[0];
-	pr_warn("%s() mAdc_Power_Mode = %d\n", __func__, mAdc_Power_Mode);
-	return 0;
-}
-
-
 static int Audio_Vow_ADC_Func_Switch_Get(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
@@ -6142,16 +6122,13 @@ static const struct snd_kcontrol_new mt6331_UL_Codec_controls[] = {
 		     audio_adc3_mic_mode_get, audio_adc3_mic_mode_set),
 	SOC_ENUM_EXT("Audio_MIC4_Mode_Select", Audio_UL_Enum[7],
 		     audio_adc4_mic_mode_get, audio_adc4_mic_mode_set),
-	SOC_ENUM_EXT("Audio_Mic_Power_Mode", Audio_UL_Enum[8],
-		     Audio_Adc_Power_Mode_Get,
-		     Audio_Adc_Power_Mode_Set),
-	SOC_ENUM_EXT("Audio_Vow_ADC_Func_Switch", Audio_UL_Enum[9],
+	SOC_ENUM_EXT("Audio_Vow_ADC_Func_Switch", Audio_UL_Enum[8],
 		     Audio_Vow_ADC_Func_Switch_Get,
 		     Audio_Vow_ADC_Func_Switch_Set),
-	SOC_ENUM_EXT("Audio_Vow_Digital_Func_Switch", Audio_UL_Enum[10],
+	SOC_ENUM_EXT("Audio_Vow_Digital_Func_Switch", Audio_UL_Enum[9],
 		     Audio_Vow_Digital_Func_Switch_Get,
 		     Audio_Vow_Digital_Func_Switch_Set),
-	SOC_ENUM_EXT("Audio_Vow_MIC_Type_Select", Audio_UL_Enum[11],
+	SOC_ENUM_EXT("Audio_Vow_MIC_Type_Select", Audio_UL_Enum[10],
 		     Audio_Vow_MIC_Type_Select_Get,
 		     Audio_Vow_MIC_Type_Select_Set),
 	SOC_SINGLE_EXT("Audio VOWCFG0 Data", SND_SOC_NOPM, 0, 0x80000, 0,
@@ -7064,7 +7041,6 @@ static void InitGlobalVarDefault(void)
 	mAudio_Vow_Analog_Func_Enable = false;
 	mAudio_Vow_Digital_Func_Enable = false;
 	mIsVOWOn = false;
-	mAdc_Power_Mode = 0;
 	mInitCodec = false;
 	mAnaSuspend = false;
 	audck_buf_Count = 0;
@@ -7186,10 +7162,18 @@ static int mtk_mt6331_codec_dev_probe(struct platform_device *pdev)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 
-	if (pdev->dev.of_node)
+	if (pdev->dev.of_node) {
 		dev_set_name(&pdev->dev, "%s", MT_SOC_CODEC_NAME);
-	else
+
+		/* check if use UL 260k flow */
+		of_property_read_u32(pdev->dev.of_node,
+				     "use_low_power_mode",
+				     &low_power_mode);
+
+		pr_warn("%s(), use_low_power_mode = %d\n", __func__, low_power_mode);
+	} else {
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
+	}
 
 
 	pr_warn("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
