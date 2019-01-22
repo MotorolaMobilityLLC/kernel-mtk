@@ -21,8 +21,8 @@
 
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
-#include <gz/tz_cross/trustzone.h>
-#include <gz/tz_cross/gz_version.h>
+#include <tz_cross/trustzone.h>
+#include <tz_cross/gz_version.h>
 #include "system.h"
 
 #define KREE_SESSION_HANDLE_NULL	((KREE_SESSION_HANDLE)0)

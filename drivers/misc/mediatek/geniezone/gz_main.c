@@ -31,13 +31,13 @@
 #include <linux/trusty/trusty.h>
 
 #include <linux/trusty/trusty_ipc.h>
-#include <gz/tz_cross/trustzone.h>
-#include <gz/tz_cross/ta_test.h>
-#include <gz/tz_cross/ta_system.h>
-#include <gz/tz_cross/ta_fbc.h> /* FPS GO cmd header */
-#include <gz/kree/system.h>
-#include <gz/kree/mem.h>
-#include <gz/kree/tz_mod.h>
+#include <tz_cross/trustzone.h>
+#include <tz_cross/ta_test.h>
+#include <tz_cross/ta_system.h>
+#include <tz_cross/ta_fbc.h> /* FPS GO cmd header */
+#include <kree/system.h>
+#include <kree/mem.h>
+#include <kree/tz_mod.h>
 #include "unittest.h"
 
 #include "gz_main.h"

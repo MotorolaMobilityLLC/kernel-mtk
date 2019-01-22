@@ -12,9 +12,9 @@
  */
 
 
-#include <gz/kree/mem.h>
-#include <gz/kree/system.h>
-#include <gz/tz_cross/ta_mem.h>
+#include <kree/mem.h>
+#include <kree/system.h>
+#include <tz_cross/ta_mem.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
 #include <linux/mutex.h>

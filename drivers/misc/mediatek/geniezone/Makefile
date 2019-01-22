@@ -16,6 +16,7 @@ GZ_SEC_STORAGE_UT := y
 
 obj-y += gz_main.o gz_ut.o
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/geniezone/include
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/geniezone/public
 
 obj-y += mtee-kree/
 

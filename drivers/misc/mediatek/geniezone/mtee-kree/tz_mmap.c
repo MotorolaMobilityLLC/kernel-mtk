@@ -14,7 +14,7 @@
 #include <linux/pagemap.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
-#include <gz/kree/tz_mod.h>
+#include <kree/tz_mod.h>
 
 /* map user space pages */
 /* control -> 0 = write, 1 = read only memory */
