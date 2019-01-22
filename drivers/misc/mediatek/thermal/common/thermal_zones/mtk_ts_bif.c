@@ -42,6 +42,7 @@
  *Macro
  *=============================================================
  */
+static int doing_tz_unregister;
 #define MTKTS_BIF_TEMP_CRIT 60000	/* 60.000 degree Celsius */
 
 #define mtkts_bif_dprintk(fmt, args...)   \
@@ -348,7 +349,7 @@ static void mtkts_bif_cancel_thermal_timer(void)
 
 	/* stop thermal framework polling when entering deep idle */
 
-	if (thz_dev)
+	if (thz_dev && !doing_tz_unregister)
 		cancel_delayed_work(&(thz_dev->poll_queue));
 }
 
@@ -358,7 +359,7 @@ static void mtkts_bif_start_thermal_timer(void)
 
 	/* resume thermal framework polling when leaving deep idle */
 
-	if (thz_dev != NULL && interval != 0)
+	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
 }
 
@@ -379,8 +380,10 @@ static void mtkts_bif_unregister_thermal(void)
 	mtkts_bif_dprintk("[%s]\n", __func__);
 
 	if (thz_dev) {
+		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
+		doing_tz_unregister = 0;
 	}
 }
 

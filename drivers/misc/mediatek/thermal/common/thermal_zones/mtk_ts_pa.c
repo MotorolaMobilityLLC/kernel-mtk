@@ -43,6 +43,7 @@
 #include <linux/timer.h>
 #endif
 
+static int doing_tz_unregister;
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 
@@ -594,7 +595,7 @@ static void mtkts_pa_cancel_thermal_timer(void)
 	/* pr_debug("mtkts_pa_cancel_thermal_timer\n"); */
 
 	/* stop thermal framework polling when entering deep idle */
-	if (thz_dev)
+	if (thz_dev && !doing_tz_unregister)
 		cancel_delayed_work(&(thz_dev->poll_queue));
 }
 
@@ -603,7 +604,7 @@ static void mtkts_pa_start_thermal_timer(void)
 {
 	/* pr_debug("mtkts_pa_start_thermal_timer\n"); */
 	/* resume thermal framework polling when leaving deep idle */
-	if (thz_dev != NULL && interval != 0)
+	if (thz_dev != NULL && interval != 0 && !doing_tz_unregister)
 		mod_delayed_work(system_freezable_wq, &(thz_dev->poll_queue), round_jiffies(msecs_to_jiffies(3000)));
 }
 
@@ -642,8 +643,10 @@ static void mtktspa_unregister_thermal(void)
 	mtktspa_dprintk("[mtktspa_unregister_thermal]\n");
 
 	if (thz_dev) {
+		doing_tz_unregister = 1;
 		mtk_thermal_zone_device_unregister(thz_dev);
 		thz_dev = NULL;
+		doing_tz_unregister = 0;
 	}
 }
 
