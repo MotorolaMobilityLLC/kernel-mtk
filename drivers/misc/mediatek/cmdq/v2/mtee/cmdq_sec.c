@@ -87,9 +87,9 @@ void cmdq_sec_unlock_secure_path(void)
 int32_t cmdq_sec_create_shared_memory(struct cmdqSecSharedMemoryStruct **pHandle, const uint32_t size)
 {
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
-	cmdqSecSharedMemoryStruct *handle = NULL;
+	struct cmdqSecSharedMemoryStruct *handle = NULL;
 
-	handle = kzalloc(sizeof(uint8_t *) * sizeof(cmdqSecSharedMemoryStruct), GFP_KERNEL);
+	handle = kzalloc(sizeof(uint8_t *) * sizeof(struct cmdqSecSharedMemoryStruct), GFP_KERNEL);
 	if (handle == NULL)
 		return -ENOMEM;
 
@@ -181,7 +181,7 @@ static int32_t cmdq_sec_setup_context_session(struct cmdqSecContextStruct *handl
 	if (handle->iwcMessage == NULL) {
 #endif
 		/* alloc message bufer */
-		handle->iwcMessage = kmalloc(sizeof(iwcCmdqMessage_t), GFP_KERNEL);
+		handle->iwcMessage = kmalloc(sizeof(struct iwcCmdqMessage_t), GFP_KERNEL);
 		if (handle->iwcMessage == NULL) {
 			CMDQ_ERR("handle->iwcMessage kmalloc failed!\n");
 			return -ENOMEM;
@@ -226,16 +226,16 @@ static void cmdq_sec_deinit_session_unlocked(struct cmdqSecContextStruct *handle
 #endif
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
-static int32_t cmdq_sec_fill_iwc_command_basic_unlocked(iwcCmdqMessage_t *_pIwc,
+static int32_t cmdq_sec_fill_iwc_command_basic_unlocked(struct iwcCmdqMessage_t *_pIwc,
 							uint32_t iwcCommand,
 							struct TaskStruct *_pTask, int32_t thread)
 {
-	iwcCmdqMessage_t *pIwc;
+	struct iwcCmdqMessage_t *pIwc;
 
-	pIwc = (iwcCmdqMessage_t *) _pIwc;
+	pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	/* specify command id only, don't care other other */
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 
 	/* medatada: debug config */
@@ -248,19 +248,19 @@ static int32_t cmdq_sec_fill_iwc_command_basic_unlocked(iwcCmdqMessage_t *_pIwc,
 #endif
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
-static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(iwcCmdqMessage_t *_pIwc,
+static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(struct iwcCmdqMessage_t *_pIwc,
 						     uint32_t iwcCommand,
 						     struct TaskStruct *_pTask, int32_t thread)
 {
 	const struct TaskStruct *pTask = (struct TaskStruct *)_pTask;
-	iwcCmdqMessage_t *pIwc = (iwcCmdqMessage_t *) _pIwc;
+	struct iwcCmdqMessage_t *pIwc = (struct iwcCmdqMessage_t *) _pIwc;
 
 	if ((pIwc == NULL) || (pTask == NULL)) {
 		CMDQ_ERR("%s invalid param\n", __func__);
 		return -1;
 	}
 
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 	pIwc->cancelTask.waitCookie = pTask->secData.waitCookie;
 	pIwc->cancelTask.thread = thread;
@@ -276,7 +276,7 @@ static int32_t cmdq_sec_fill_iwc_cancel_msg_unlocked(iwcCmdqMessage_t *_pIwc,
 #endif
 
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
-static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(iwcCmdqMessage_t *pIwc,
+static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(struct iwcCmdqMessage_t *pIwc,
 						      uint32_t iwcCommand,
 						      struct TaskStruct *pTask, int32_t thread)
 {
@@ -303,7 +303,7 @@ static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(iwcCmdqMessage_t *pIwc,
 	CMDQ_MSG("[SEC]-->SESSION_MSG: cmdId[%d]\n", iwcCommand);
 
 	/* fill message buffer for inter world communication */
-	memset(pIwc, 0x0, sizeof(iwcCmdqMessage_t));
+	memset(pIwc, 0x0, sizeof(struct iwcCmdqMessage_t));
 	pIwc->cmd = iwcCommand;
 	/* metadata */
 	pIwc->command.metadata.enginesNeedDAPC = pTask->secData.enginesNeedDAPC;
@@ -356,7 +356,7 @@ static int32_t cmdq_sec_fill_iwc_command_msg_unlocked(iwcCmdqMessage_t *pIwc,
 			pIwc->command.metadata.addrListLength = pTask->secData.addrMetadataCount;
 			memcpy((pIwc->command.metadata.addrList),
 			       CMDQ_U32_PTR(pTask->secData.addrMetadatas),
-			       (pTask->secData.addrMetadataCount) * sizeof(iwcCmdqAddrMetadata_t));
+			       (pTask->secData.addrMetadataCount) * sizeof(struct iwcCmdqAddrMetadata_t));
 
 /*
  *			pIwc->command.metadata.srcHandle = pTask->secData.srcHandle;
@@ -414,11 +414,11 @@ static int32_t cmdq_sec_execute_session_unlocked(struct cmdqSecContextStruct *ha
 		MTEEC_PARAM cmdq_param[4];
 		unsigned int paramTypes;
 		KREE_SHAREDMEM_HANDLE cmdq_share_handle = 0;
-		KREE_SHAREDMEM_PARAM cmdq_shared_param;
+		struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
 #if 1
 		/* allocate path init for shared cookie */
 		if (CMD_CMDQ_TL_INIT_SHARED_MEMORY ==
-		    ((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd) {
+		    ((struct iwcCmdqMessage_t *) (handle->iwcMessage))->cmd) {
 			cmdq_shared_param.buffer = cmdq_core_get_cmdqcontext()->hSecSharedMem->pVABase;
 			cmdq_shared_param.size = cmdq_core_get_cmdqcontext()->hSecSharedMem->size;
 			CMDQ_MSG("cmdq_shared_param.buffer %p\n", cmdq_shared_param.buffer);
@@ -453,7 +453,7 @@ static int32_t cmdq_sec_execute_session_unlocked(struct cmdqSecContextStruct *ha
 		}
 #endif
 		cmdq_shared_param.buffer = handle->iwcMessage;
-		cmdq_shared_param.size = (sizeof(iwcCmdqMessage_t));
+		cmdq_shared_param.size = (sizeof(struct iwcCmdqMessage_t));
 		CMDQ_MSG("cmdq_shared_param.buffer %p\n", cmdq_shared_param.buffer);
 		/* dump_message((iwcCmdqMessage_t *) handle->iwcMessage); */
 
@@ -483,16 +483,16 @@ static int32_t cmdq_sec_execute_session_unlocked(struct cmdqSecContextStruct *ha
 		cmdq_param[0].memref.size = cmdq_shared_param.size;
 		paramTypes = TZ_ParamTypes1(TZPT_MEMREF_INPUT);
 
-		CMDQ_MSG("commandID:%d\n", ((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd);
+		CMDQ_MSG("commandID:%d\n", ((struct iwcCmdqMessage_t *) (handle->iwcMessage))->cmd);
 		CMDQ_MSG("handle->sessionHandle:%x\n", handle->sessionHandle);
 		CMDQ_MSG("start to enter Secure World\n");
 
 		if (CMD_CMDQ_TL_SUBMIT_TASK ==
-		    ((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd)
+		    ((struct iwcCmdqMessage_t *) (handle->iwcMessage))->cmd)
 			gSubmitTaskCount++;
 		tzRes =
 		    KREE_TeeServiceCall(handle->sessionHandle,
-					((iwcCmdqMessage_t *) (handle->iwcMessage))->cmd,
+					((struct iwcCmdqMessage_t *) (handle->iwcMessage))->cmd,
 					paramTypes, cmdq_param);
 		if (tzRes != TZ_RESULT_SUCCESS) {
 			CMDQ_ERR("leave secure world KREE_TeeServiceCall fail, ret=0x%x\n", tzRes);
@@ -564,10 +564,10 @@ int32_t cmdq_sec_send_context_session_message(struct cmdqSecContextStruct *handl
 
 		/* fill message bufer */
 		/*debug level */
-		((iwcCmdqMessage_t *) (handle->iwcMessage))->debug.logLevel =
+		((struct iwcCmdqMessage_t *) (handle->iwcMessage))->debug.logLevel =
 		    cmdq_sec_get_sec_print_count() ? LOG_LEVEL_MSG : cmdq_sec_get_log_level();
 		status =
-		    icwcFillCB((iwcCmdqMessage_ptr) (handle->iwcMessage), iwcCommand, pTask,
+		    icwcFillCB((struct iwcCmdqMessage_t *) (handle->iwcMessage), iwcCommand, pTask,
 			       thread);
 		if (status < 0)
 			break;
@@ -972,7 +972,7 @@ struct cmdqSecContextStruct *cmdq_sec_context_handle_create(uint32_t tgid)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	struct cmdqSecContextStruct *handle = NULL;
 
-	handle = kmalloc(sizeof(uint8_t *) * sizeof(cmdqSecContextStruct), GFP_ATOMIC);
+	handle = kmalloc(sizeof(uint8_t *) * sizeof(struct cmdqSecContextStruct), GFP_ATOMIC);
 	if (handle) {
 		handle->iwcMessage = NULL;
 		handle->tgid = tgid;
@@ -1108,7 +1108,7 @@ int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
-	KREE_SHAREDMEM_PARAM cmdq_shared_param;
+	struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
 	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
 
 	do {

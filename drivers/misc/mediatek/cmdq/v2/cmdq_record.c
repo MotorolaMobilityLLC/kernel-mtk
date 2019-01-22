@@ -622,7 +622,7 @@ int32_t cmdq_op_write_reg_secure_mask(struct cmdqRecStruct *handle, uint32_t add
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status;
 	int32_t writeInstrIndex;
-	cmdqSecAddrMetadataStruct metadata;
+	struct cmdqSecAddrMetadataStruct metadata;
 	/* const uint32_t mask = 0xFFFFFFFF; */
 
 	/* append command */
@@ -634,7 +634,7 @@ int32_t cmdq_op_write_reg_secure_mask(struct cmdqRecStruct *handle, uint32_t add
 	/* append to metadata list */
 	writeInstrIndex = (handle->blockSize) / CMDQ_INST_SIZE - 1;	/* start from 0 */
 
-	memset(&metadata, 0, sizeof(cmdqSecAddrMetadataStruct));
+	memset(&metadata, 0, sizeof(struct cmdqSecAddrMetadataStruct));
 	metadata.instrIndex = writeInstrIndex;
 	metadata.type = type;
 	metadata.baseHandle = value;

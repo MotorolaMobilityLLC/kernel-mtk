@@ -20,8 +20,8 @@
 extern "C" {
 #endif
 
-	int32_t cmdq_append_command(struct cmdqRecStruct *handle, enum CMDQ_CODE_ENUM code, uint32_t arg_a,
-				    uint32_t arg_b);
+	int32_t cmdq_append_command(struct cmdqRecStruct *handle, enum CMDQ_CODE_ENUM code,
+					uint32_t arg_a, uint32_t arg_b, uint32_t arg_a_type, uint32_t arg_b_type);
 	int32_t cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop);
 
 	int32_t cmdq_setup_sec_data_of_command_desc_by_rec_handle(struct cmdqCommandStruct *pDesc,
