@@ -56,6 +56,10 @@ class EintData:
         return EintData._map_table
 
     @staticmethod
+    def get_internalEint():
+        return EintData._int_eint
+
+    @staticmethod
     def get_modeName(gpio_num, mode_idx):
         key = 'gpio%s' %(gpio_num)
 
