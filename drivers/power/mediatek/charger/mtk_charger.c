@@ -80,6 +80,9 @@ static DEFINE_MUTEX(consumer_mutex);
 
 bool is_disable_charger(void)
 {
+	if (pinfo == NULL)
+		return true;
+
 	if (pinfo->disable_charger == true || IS_ENABLED(CONFIG_POWER_EXT))
 		return true;
 	else
