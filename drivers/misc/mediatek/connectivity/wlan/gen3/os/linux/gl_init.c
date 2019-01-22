@@ -770,6 +770,9 @@
 #endif
 #include "gl_vendor.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -2617,6 +2620,7 @@ static INT_32 wlanProbe(PVOID pvData)
 #endif
 
 #if CFG_SUPPORT_CFG_FILE
+#ifdef ENABLED_IN_ENGUSERDEBUG
 		{
 			PUINT_8 pucConfigBuf;
 			UINT_32 u4ConfigReadLen;
@@ -2638,6 +2642,7 @@ static INT_32 wlanProbe(PVOID pvData)
 				kalMemFree(pucConfigBuf, VIR_MEM_TYPE, WLAN_CFG_FILE_BUF_SIZE);
 			}	/* pucConfigBuf */
 		}
+#endif
 #endif
 
 		/* 4 <5> Start Device */
@@ -2756,6 +2761,18 @@ bailout:
 			}
 		}
 
+#ifdef FW_CFG_SUPPORT
+		{
+			if (wlanFwArrayCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, TRACE, "FW Array Cfg done!");
+		}
+#ifdef ENABLED_IN_ENGUSERDEBUG
+		{
+			if (wlanFwFileCfg(prAdapter) != WLAN_STATUS_FAILURE)
+				DBGLOG(INIT, TRACE, "FW File Cfg done!");
+		}
+#endif
+#endif
 #if CFG_TCP_IP_CHKSUM_OFFLOAD
 		/* set HW checksum offload */
 		{
@@ -2794,6 +2811,14 @@ bailout:
 		if (i4Status < 0) {
 			DBGLOG(INIT, ERROR, "wlanProbe: init procfs failed\n");
 			eFailReason = PROC_INIT_FAIL;
+			break;
+		}
+#endif /* WLAN_INCLUDE_PROC */
+
+#ifdef FW_CFG_SUPPORT
+		i4Status = cfgCreateProcEntry(prGlueInfo);
+		if (i4Status < 0) {
+			DBGLOG(INIT, ERROR, "fw cfg proc failed\n");
 			break;
 		}
 #endif /* WLAN_INCLUDE_PROC */
@@ -2912,6 +2937,9 @@ static VOID wlanRemove(VOID)
 		free_netdev(prDev);
 		return;
 	}
+#ifdef FW_CFG_SUPPORT
+	cfgRemoveProcEntry();
+#endif
 #ifdef WLAN_INCLUDE_PROC
 	procRemoveProcfs();
 #endif /* WLAN_INCLUDE_PROC */

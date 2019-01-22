@@ -400,6 +400,9 @@
 */
 #include "precomp.h"
 
+#ifdef FW_CFG_SUPPORT
+#include "fwcfg.h"
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -1775,6 +1778,27 @@ VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdI
 				       prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
 			}
 		}
+}
+#endif
+
+#ifdef FW_CFG_SUPPORT
+VOID nicCmdEventQueryCfgRead(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+{
+	UINT_32 u4QueryInfoLen;
+	struct _CMD_HEADER_T *prInCfgHeader;
+	P_GLUE_INFO_T prGlueInfo;
+	struct _CMD_HEADER_T *prOutCfgHeader;
+
+	ASSERT(prAdapter);
+	ASSERT(prCmdInfo);
+	ASSERT(pucEventBuf);
+
+	if (prCmdInfo->fgIsOid) {
+		prGlueInfo = prAdapter->prGlueInfo;
+		prInCfgHeader = (struct _CMD_HEADER_T *) pucEventBuf;
+		u4QueryInfoLen = sizeof(struct _CMD_HEADER_T);
+		prOutCfgHeader = (struct _CMD_HEADER_T *) prCmdInfo->pvInformationBuffer;
+		kalMemCopy(prOutCfgHeader, prInCfgHeader, sizeof(struct _CMD_HEADER_T));
 
 		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
 	}
