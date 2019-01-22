@@ -33,11 +33,6 @@
 #include "mmdvfs_mgr.h"
 
 #if defined(CONFIG_MACH_MT6758) /* TODO: 6758 EP */
-__weak int get_ddr_type(void)
-{
-	return 0;
-}
-
 __weak unsigned int get_dram_data_rate(void)
 {
 	return 0;

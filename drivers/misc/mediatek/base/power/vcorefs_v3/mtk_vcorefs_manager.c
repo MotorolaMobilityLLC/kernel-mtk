@@ -63,7 +63,7 @@ struct vcorefs_profile {
 static struct vcorefs_profile vcorefs_ctrl = {
 	.plat_init_opp	= 0,
 	.init_done	= 0,
-#if defined(CONFIG_MACH_MT6759)
+#if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758)
 	.autok_finish   = 1,
 #else
 	.autok_finish   = 0,
@@ -124,7 +124,7 @@ int vcorefs_each_kicker_request(enum dvfs_kicker kicker)
 
 int spm_msdc_dvfs_setting(int msdc, bool enable)
 {
-#if !defined(CONFIG_MACH_MT6759) /* TODO: 6759 EP */
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6759)
 	struct vcorefs_profile *pwrctrl = &vcorefs_ctrl;
 	struct mmdvfs_prepare_action_event evt_from_vcore = {MMDVFS_EVENT_PREPARE_CALIBRATION_END};
 
