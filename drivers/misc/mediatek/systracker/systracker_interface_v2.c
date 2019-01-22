@@ -280,6 +280,7 @@ irqreturn_t systracker_isr(void)
 
 static int systracker_watchpoint_enable_default(void)
 {
+#if 0
 	if (!is_systracker_irq_registered) {
 		if (request_irq(systracker_irq, (irq_handler_t)systracker_isr, IRQF_TRIGGER_LOW, "SYSTRACKER", NULL)) {
 			pr_err("SYSTRACKER IRQ LINE NOT AVAILABLE!!\n");
@@ -289,11 +290,11 @@ static int systracker_watchpoint_enable_default(void)
 		is_systracker_irq_registered = 1;
 
 	}
-
+#endif
 	track_config.enable_wp = 1;
 	writel(track_config.wp_phy_address, IOMEM(BUS_DBG_WP));
-	writel(0x0000000F, IOMEM(BUS_DBG_WP_MASK));
-	writel(readl(IOMEM(BUS_DBG_CON_INFRA)) | BUS_DBG_CON_WP_EN, IOMEM(BUS_DBG_CON_INFRA));
+	/* writel(0x0000000F, IOMEM(BUS_DBG_WP_MASK)); */
+	writel(0x00000000, IOMEM(BUS_DBG_WP_MASK));
 	mb();
 
 	return 0;
@@ -816,6 +817,8 @@ static ssize_t tracker_last_status_show(struct device_driver *driver, char *buf)
 		return snprintf(buf, PAGE_SIZE, "0\n");
 }
 
+
+
 static ssize_t tracker_last_status_store(struct device_driver *driver, const char *buf, size_t count)
 {
 	return count;
@@ -865,5 +868,5 @@ static void __exit systracker_exit(void)
 {
 }
 
-module_init(systracker_init);
+arch_initcall_sync(systracker_init);
 module_exit(systracker_exit);

@@ -19,26 +19,93 @@
 #include <asm/stacktrace.h>
 #include <asm/system_misc.h>
 #include <mtk_ram_console.h>
+#include <linux/ftrace.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include "systracker_v2.h"
+#include <mt-plat/sync_write.h>
 
-static inline void aee_print_ip_sym(unsigned long ip)
+#ifdef CONFIG_ARM64
+#define IOMEM(a)	((void __force __iomem *)((a)))
+#endif
+
+unsigned int times;
+
+struct sys_bt {
+	unsigned int times;
+	unsigned long long t1;
+	unsigned int cpu;
+	unsigned long fp0;
+	unsigned long fp1;
+	unsigned long fp2;
+	unsigned long fp3;
+	unsigned long fp4;
+	unsigned long fp5;
+	unsigned long fp6;
+};
+
+struct sys_bt tracker_bt;
+static inline void aee_print_ip_sym(unsigned long ip, unsigned long long time_stamp, unsigned int cpu, unsigned int t);
+
+
+void save_sys_bt(unsigned long long time_stamp, unsigned int cpu, unsigned int t)
+{
+	char buf[256];
+	char dbg_st[128];
+
+	memset(&tracker_bt, 0, sizeof(struct sys_bt));
+	tracker_bt.t1 = time_stamp;
+	tracker_bt.cpu = cpu;
+	tracker_bt.times = t;
+	tracker_bt.fp0 = CALLER_ADDR0;
+	tracker_bt.fp1 = CALLER_ADDR1;
+	tracker_bt.fp2 = CALLER_ADDR2;
+	tracker_bt.fp3 = CALLER_ADDR3;
+	tracker_bt.fp4 = CALLER_ADDR4;
+	tracker_bt.fp5 = CALLER_ADDR5;
+	tracker_bt.fp6 = CALLER_ADDR6;
+	snprintf(buf, sizeof(buf), "CPU%d extra_dump_%d, ts=%lld\n", cpu, t, time_stamp);
+	aee_sram_fiq_log(buf);
+	aee_print_ip_sym(tracker_bt.fp0, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp1, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp2, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp3, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp4, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp5, time_stamp, cpu, t);
+	aee_print_ip_sym(tracker_bt.fp6, time_stamp, cpu, t);
+	snprintf(dbg_st, sizeof(dbg_st), "CPU%d BUS_DBG_CON=0x%x - (%d)<%d>[%lld]\n",
+		tracker_bt.cpu, readl(IOMEM(BUS_DBG_CON)), cpu, t, time_stamp);
+	aee_sram_fiq_log(dbg_st);
+	snprintf(dbg_st, sizeof(dbg_st), "END - (%d)<%d>[%lld]\n\n", cpu, t, time_stamp);
+	aee_sram_fiq_log(dbg_st);
+}
+
+
+static inline void aee_print_ip_sym(unsigned long ip, unsigned long long time_stamp, unsigned int cpu, unsigned int t)
 {
 	char buf[256];
 
-	snprintf(buf, sizeof(buf), "[<%p>] %pS\n", (void *)ip, (void *)ip);
+	snprintf(buf, sizeof(buf), "[<%p>] %pS - (%d)<%d>[%lld]\n", (void *)ip, (void *)ip, cpu, t, time_stamp);
 	aee_sram_fiq_log(buf);
 }
 
-static void dump_backtrace_entry(unsigned long where, unsigned long stack)
+static void dump_backtrace_entry(unsigned long where, unsigned long stack,
+	unsigned long long time_stamp, unsigned int cpu, unsigned int t)
 {
-	aee_print_ip_sym(where);
+	aee_print_ip_sym(where, time_stamp, cpu, t);
 }
 
 void aee_dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 {
 	struct stackframe frame;
-
+	unsigned int cpuid;
 	const register unsigned long current_sp asm("sp");
+	unsigned long long ts;
+	char buf[256];
 
+	times++;
+	ts = sched_clock();
+	cpuid = smp_processor_id();
 	pr_debug("%s(regs = %p tsk = %p)\n", __func__, regs, tsk);
 
 	if (!tsk)
@@ -61,7 +128,8 @@ void aee_dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		frame.pc = thread_saved_pc(tsk);
 	}
 
-	aee_sram_fiq_log("Call trace:\n");
+	snprintf(buf, sizeof(buf), "CPU%d trace_dump_%d, ts=%lld\n", cpuid, times, ts);
+	aee_sram_fiq_log(buf);
 	while (1) {
 		unsigned long where = frame.pc;
 		int ret;
@@ -69,6 +137,7 @@ void aee_dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		ret = unwind_frame(tsk, &frame);
 		if (ret < 0)
 			break;
-		dump_backtrace_entry(where, frame.sp);
+		dump_backtrace_entry(where, frame.sp, ts, cpuid, times);
 	}
+	save_sys_bt(ts, cpuid, times);
 }
