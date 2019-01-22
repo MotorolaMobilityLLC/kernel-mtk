@@ -42,4 +42,8 @@ ifeq ($(CONFIG_MTK_FPSGO), y)
         endif
 endif
 
+ifeq ($(CONFIG_MACH_MT6771), y)
+      obj-y += src/platform/mt6771/eas_ctrl_extend.o
+endif
+
 obj-y += src/eas_controller.o

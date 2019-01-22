@@ -528,6 +528,57 @@ static const struct file_operations perfmgr_debug_ta_boost_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+
+/*************************************************************************************/
+static int ext_launch_state;
+static ssize_t perfmgr_perfserv_ext_launch_mon_write(struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
+{
+	int data;
+	char buf[128];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+	buf[cnt] = 0;
+
+	if (kstrtoint(buf, 10, &data))
+		return -1;
+
+	if (!data) {
+		ext_launch_start();
+		ext_launch_state = 1;
+	} else {
+		ext_launch_cond(2);
+		ext_launch_state = 0;
+	}
+
+	pr_debug("perfmgr_perfserv_ext_launch_mon");
+	return cnt;
+}
+
+static int perfmgr_perfserv_ext_launch_mon_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", ext_launch_state);
+
+	return 0;
+}
+
+static int perfmgr_perfserv_ext_launch_mon_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_perfserv_ext_launch_mon_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_perfserv_ext_launch_mon_fops = {
+	.open = perfmgr_perfserv_ext_launch_mon_open,
+	.write = perfmgr_perfserv_ext_launch_mon_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 /*************************************************************************************/
 #if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 static ssize_t perfmgr_cpi_thres_write(struct file *filp, const char *ubuf,
@@ -631,6 +682,8 @@ void perfmgr_eas_boost_init(void)
 	proc_create("perfserv_ta_boost", 0644, boost_dir, &perfmgr_perfserv_ta_boost_fops);
 	proc_create("current_ta_boost", 0644, boost_dir, &perfmgr_current_ta_boost_fops);
 	proc_create("debug_ta_boost", 0644, boost_dir, &perfmgr_debug_ta_boost_fops);
+	/*--ext_launch--*/
+	proc_create("perfserv_ext_launch_mon", 0644, boost_dir, &perfmgr_perfserv_ext_launch_mon_fops);
 
 #if defined(CONFIG_MTK_FPSGO) && !defined(CONFIG_MTK_CM_MGR)
 	proc_create("vcore_high", 0644, boost_dir, &perfmgr_vcore_high_fops);
@@ -648,6 +701,9 @@ void perfmgr_eas_boost_init(void)
 
 	/*update pwr table for CPI monitor*/
 	update_pwd_tbl();
+
+	/*init timer*/
+	ext_launch_notify_init();
 }
 
 void init_perfmgr_eas_controller(void)
