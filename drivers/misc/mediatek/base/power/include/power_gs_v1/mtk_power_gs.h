@@ -86,8 +86,15 @@ struct base_remap {
 	struct phys_to_virt_table *table;
 };
 
+struct pmic_manual_dump {
+	unsigned int array_pos;
+	unsigned int array_size;
+	unsigned int *addr_array;
+};
+
 unsigned int golden_read_reg(unsigned int addr);
 int snapshot_golden_setting(const char *func, const unsigned int line);
+void mt_power_gs_pmic_manual_dump(void);
 void mt_power_gs_compare(char *scenario, char *pmic_name,
 			 const unsigned int *pmic_gs, unsigned int pmic_gs_len);
 unsigned int _golden_read_reg(unsigned int addr);
