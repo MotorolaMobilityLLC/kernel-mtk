@@ -246,7 +246,7 @@ static VOID wmt_pwr_on_off_handler(struct work_struct *work)
 		if (currentLpbkStatus != lpbk_req_onoff)
 			currentLpbkStatus = wmt_lpbk_handler(lpbk_req_onoff, retryCounter);
 		else
-			WMT_INFO_FUNC("drop wmt start to run, lpbk_seq %d\n", g_es_lr_flag_for_lpbk_onoff);
+			WMT_DBG_FUNC("drop wmt start to run\n");
 	}
 }
 
