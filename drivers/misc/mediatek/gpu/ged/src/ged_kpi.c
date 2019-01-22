@@ -1027,7 +1027,7 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 			psHead->i32Count -= 1;
 			list_del(&psKPI->sList);
 
-			if (psHead->i32Count < 1) {
+			if (psHead->i32Count < 1 && (psHead->sList.next == &(psHead->sList))) {
 				if (psHead == main_head)
 					main_head = NULL;
 				ged_hashtable_remove(gs_hashtable, ulID);
