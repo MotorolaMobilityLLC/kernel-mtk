@@ -142,6 +142,7 @@ struct device *wmt_dev;
 
 
 /*LCM on/off ctrl for wmt varabile*/
+UINT32 hif_info;
 static struct work_struct gPwrOnOffWork;
 UINT32 g_es_lr_flag_for_quick_sleep = 1;	/* for ctrl quick sleep flag */
 UINT32 g_es_lr_flag_for_lpbk_onoff;	/* for ctrl lpbk on off */
@@ -217,6 +218,8 @@ static INT32 wmt_fb_notifier_callback(struct notifier_block *self, ULONG event, 
 		g_es_lr_flag_for_lpbk_onoff = 1;
 		osal_unlock_sleepable_lock(&g_es_lr_lock);
 		WMT_WARN_FUNC("@@@@@@@@@@wmt enter UNBLANK @@@@@@@@@@@@@@\n");
+		if (hif_info == 0)
+			break;
 		schedule_work(&gPwrOnOffWork);
 		break;
 	case FB_BLANK_POWERDOWN:
@@ -400,146 +403,36 @@ INT32 wmt_dev_rx_timeout(P_OSAL_EVENT pEvent)
 	return lRet;
 }
 
-INT32 wmt_dev_read_file(PUINT8 pName, const PPUINT8 ppBufPtr, INT32 offset, INT32 padSzBuf)
-{
-	INT32 iRet = -1;
-	struct file *fd;
-	/* ssize_t iRet; */
-	INT32 file_len;
-	INT32 read_len;
-	PVOID pBuf;
-	char __user *p = NULL;
-	loff_t pos = 0;
-
-	/* struct cred *cred = get_task_cred(current); */
-	const struct cred *cred = get_current_cred();
-
-	if (!ppBufPtr) {
-		WMT_ERR_FUNC("invalid ppBufptr!\n");
-		return -1;
-	}
-	*ppBufPtr = NULL;
-
-	fd = filp_open(pName, O_RDONLY, 0);
-	if (IS_ERR(fd)) {
-		WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-		WMT_ERR_FUNC("failed to open or read!(0x%p, %d, %d, %d)\n",
-				fd, PTR_ERR(fd), cred->fsuid, cred->fsgid);
-		return -1;
-	}
-	if (!fd->f_op) {
-		WMT_ERR_FUNC("%s %d\n", __func__, __LINE__);
-		return -2;
-	}
-
-	file_len = fd->f_path.dentry->d_inode->i_size;
-	pBuf = vmalloc((file_len + BCNT_PATCH_BUF_HEADROOM + 3) & ~0x3UL);
-	if (!pBuf) {
-		WMT_ERR_FUNC("failed to vmalloc(%d)\n", (INT32) ((file_len + 3) & ~0x3UL));
-		goto read_file_done;
-	}
-
-	do {
-		if (fd->f_pos != offset) {
-			if (fd->f_op->llseek) {
-				if (fd->f_op->llseek(fd, offset, 0) != offset) {
-					WMT_ERR_FUNC("failed to seek!!\n");
-					goto read_file_done;
-				}
-			} else
-				fd->f_pos = offset;
-		}
-		p = (__force void __user *)pBuf;
-		/*read_len = fd->f_op->read(fd, pBuf + padSzBuf, file_len, &fd->f_pos);*/
-		read_len = __vfs_read(fd, p + padSzBuf, file_len, &pos);
-		if (read_len != file_len)
-			WMT_WARN_FUNC("read abnormal: read_len(%d), file_len(%d)\n", read_len, file_len);
-	} while (false);
-
-	iRet = 0;
-	*ppBufPtr = pBuf;
-
-read_file_done:
-	if (iRet) {
-		if (pBuf)
-			vfree(pBuf);
-	}
-
-	filp_close(fd, NULL);
-
-	return (iRet) ? iRet : read_len;
-}
-
 /* TODO: [ChangeFeature][George] refine this function name for general filesystem read operation, not patch only. */
 INT32 wmt_dev_patch_get(PUINT8 pPatchName, osal_firmware **ppPatch, INT32 padSzBuf)
 {
 	INT32 iRet = -1;
-	osal_firmware *pfw;
-	uid_t orig_uid;
-	gid_t orig_gid;
+	osal_firmware *fw = NULL;
 
-	/* struct cred *cred = get_task_cred(current); */
-	struct cred *cred = (struct cred *)get_current_cred();
-
-	mm_segment_t orig_fs = get_fs();
-
-	if (*ppPatch) {
-		WMT_WARN_FUNC("f/w patch already exists\n");
-		if ((*ppPatch)->data)
-			vfree((*ppPatch)->data);
-
-		kfree(*ppPatch);
-		*ppPatch = NULL;
-	}
-
-	if (!osal_strlen(pPatchName)) {
-		WMT_ERR_FUNC("empty f/w name\n");
-		osal_assert((osal_strlen(pPatchName) > 0));
+	if (!ppPatch) {
+		WMT_ERR_FUNC("invalid ppBufptr!\n");
 		return -1;
 	}
-
-	pfw = kzalloc(sizeof(osal_firmware), /*GFP_KERNEL */ GFP_ATOMIC);
-	if (!pfw) {
-		WMT_ERR_FUNC("kzalloc(%d) fail\n", sizeof(osal_firmware));
-		return -2;
-	}
-
-	orig_uid = cred->fsuid.val;
-	orig_gid = cred->fsgid.val;
-	cred->fsuid.val = cred->fsgid.val = 0;
-
-	set_fs(get_ds());
-
-	/* load patch file from fs */
-	iRet = wmt_dev_read_file(pPatchName, (const PPUINT8)&pfw->data, 0, padSzBuf);
-	set_fs(orig_fs);
-
-	cred->fsuid.val = orig_uid;
-	cred->fsgid.val = orig_gid;
-
-	if (iRet > 0) {
-		pfw->size = iRet;
-		*ppPatch = pfw;
-		WMT_DBG_FUNC("load (%s) to addr(0x%p) success\n", pPatchName, pfw->data);
-		return 0;
-	}
-
-	kfree(pfw);
 	*ppPatch = NULL;
-	WMT_ERR_FUNC("load file (%s) fail, iRet(%d)\n", pPatchName, iRet);
+	iRet = request_firmware((const struct firmware **)&fw, pPatchName, NULL);
+	if (iRet != 0) {
+		WMT_ERR_FUNC("failed to open or read!(%s)\n", pPatchName);
+		return -1;
+	}
+	WMT_INFO_FUNC("loader firmware %s  ok!!\n", pPatchName);
+	iRet = 0;
+	*ppPatch = fw;
+	gDevWmt.pPatch = fw;
 
-	return -1;
+	return iRet;
 }
 
 INT32 wmt_dev_patch_put(osal_firmware **ppPatch)
 {
 	if (*ppPatch != NULL) {
-		if ((*ppPatch)->data)
-			vfree((*ppPatch)->data);
-		kfree(*ppPatch);
+		release_firmware((const struct firmware *)*ppPatch);
 		*ppPatch = NULL;
 	}
-
 	return 0;
 }
 
@@ -551,10 +444,8 @@ VOID wmt_dev_patch_info_free(VOID)
 
 MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
 {
-	struct file *fd = NULL;
-	/* ssize_t iRet; */
-	INT32 fileLen = -1;
-	const struct cred *cred = get_current_cred();
+	INT32 iRet = 0;
+	osal_firmware *fw = NULL;
 
 	if (pFileName == NULL) {
 		WMT_ERR_FUNC("invalid file name pointer(%p)\n", pFileName);
@@ -565,25 +456,13 @@ MTK_WCN_BOOL wmt_dev_is_file_exist(PUINT8 pFileName)
 		WMT_ERR_FUNC("invalid file name(%s)\n", pFileName);
 		return MTK_WCN_BOOL_FALSE;
 	}
-	/* struct cred *cred = get_task_cred(current); */
 
-	fd = filp_open(pFileName, O_RDONLY, 0);
-	if (!fd || IS_ERR(fd) || !fd->f_op || !fd->f_op->read) {
-		WMT_ERR_FUNC("failed to open or read(%s)!(0x%p, %d, %d)\n", pFileName, fd, cred->fsuid,
-				cred->fsgid);
+	iRet = request_firmware((const struct firmware **)&fw, pFileName, NULL);
+	if (iRet != 0) {
+		WMT_ERR_FUNC("failed to open or read!(%s)\n", pFileName);
 		return MTK_WCN_BOOL_FALSE;
 	}
-
-	fileLen = fd->f_path.dentry->d_inode->i_size;
-	filp_close(fd, NULL);
-	fd = NULL;
-	if (fileLen <= 0) {
-		WMT_ERR_FUNC("invalid file(%s), length(%d)\n", pFileName, fileLen);
-		return MTK_WCN_BOOL_FALSE;
-	}
-
-	WMT_ERR_FUNC("valid file(%s), length(%d)\n", pFileName, fileLen);
-
+	release_firmware(fw);
 	return true;
 }
 
@@ -918,6 +797,8 @@ LONG WMT_unlocked_ioctl(struct file *filp, UINT32 cmd, ULONG arg)
 			bRet = wmt_lib_put_act_op(pOp);
 			WMT_DBG_FUNC("WMT_OPID_HIF_CONF result(%d)\n", bRet);
 			iRet = (bRet == MTK_WCN_BOOL_FALSE) ? -EFAULT : 0;
+			if (iRet == 0)
+				hif_info = 1;
 		} while (0);
 		break;
 	case WMT_IOCTL_FUNC_ONOFF_CTRL:	/* test turn on/off func */
