@@ -16,7 +16,7 @@
 
 #include "mtk_static_power.h"
 
-typedef struct spower_raw_s {
+struct spower_raw_t {
 	int vsize;
 	int tsize;
 	int table_size;
@@ -26,7 +26,7 @@ typedef struct spower_raw_s {
 	unsigned int leakage_id;
 	unsigned int instance;
 	bool print_leakage;
-} spower_raw_t;
+};
 
 #if defined(CONFIG_MACH_MT6759)
 #include "mtk_spower_data_mt6759.h"
@@ -40,32 +40,31 @@ typedef struct spower_raw_s {
 #include "mtk_spower_data_mt6758.h"
 #endif
 
-typedef struct voltage_row_s {
+struct voltage_row_s {
 	int mV[VSIZE];
-} vrow_t;
+};
 
-typedef struct temperature_row_s {
+struct temperature_row_s {
 	int deg;
 	int mA[VSIZE];
-} trow_t;
+};
 
-
-typedef struct sptab_s {
+struct sptab_s {
 	int vsize;
 	int tsize;
 	int *data;	/* array[VSIZE + TSIZE + (VSIZE*TSIZE)] */
-	vrow_t *vrow;	/* pointer to voltage row of data */
-	trow_t *trow;	/* pointer to temperature row of data */
+	struct voltage_row_s *vrow;	/* pointer to voltage row of data */
+	struct temperature_row_s *trow;	/* pointer to temperature row of data */
 	unsigned int devinfo_domain;
 	unsigned int spower_id;
 	unsigned int leakage_id;
 	unsigned int instance;
 	bool print_leakage;
-} sptbl_t;
+};
 
-typedef struct sptab_list {
-	sptbl_t tab_raw[MAX_TABLE_SIZE];
-} sptbl_list;
+struct sptab_list {
+	struct sptab_s tab_raw[MAX_TABLE_SIZE];
+};
 
 #define trow(tab, ti)		((tab)->trow[ti])
 #define mA(tab, vi, ti)		((tab)->trow[ti].mA[vi])
@@ -75,17 +74,17 @@ typedef struct sptab_list {
 #define tsize(tab)		((tab)->tsize)
 #define tab_validate(tab)	(!!(tab) && (tab)->data != NULL)
 
-static inline void spower_tab_construct(sptbl_t *tab, spower_raw_t *raw, unsigned int id)
+static inline void spower_tab_construct(struct sptab_s *tab, struct spower_raw_t *raw, unsigned int id)
 {
 	int i;
-	sptbl_t *ptab = (sptbl_t *)tab;
+	struct sptab_s *ptab = (struct sptab_s *)tab;
 
 	for (i = 0; i < raw->table_size; i++) {
 		ptab->vsize = raw->vsize;
 		ptab->tsize = raw->tsize;
 		ptab->data = raw->table[i];
-		ptab->vrow = (vrow_t *)ptab->data;
-		ptab->trow = (trow_t *)(ptab->data + ptab->vsize);
+		ptab->vrow = (struct voltage_row_s *)ptab->data;
+		ptab->trow = (struct temperature_row_s *)(ptab->data + ptab->vsize);
 		ptab->devinfo_domain = raw->devinfo_domain;
 		ptab->spower_id = id;
 		ptab->leakage_id = raw->leakage_id;
