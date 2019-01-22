@@ -215,20 +215,6 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_dump(INT32 dump_sink)
 		osal_memcpy_fromio(&g_paged_dump_buffer[0], dump_vir_addr, dump_len);
 		/*stp_dbg_soc_emi_dump_buffer(&g_paged_dump_buffer[0], dump_len);*/
 
-		if (page_counter == 0) {
-			/* do fw assert infor paser in first paged dump */
-			if (stp_dbg_get_host_trigger_assert() == 1)
-				issue_type = STP_HOST_TRIGGER_FW_ASSERT;
-
-			ret = stp_dbg_set_fw_info(&g_paged_dump_buffer[0], 512, issue_type);
-			if (ret) {
-				STP_DBG_ERR_FUNC("set fw issue infor fail(%d),maybe fw warm reset...\n",
-						ret);
-				stp_dbg_set_fw_info("Fw Warm reset", osal_strlen("Fw Warm reset"),
-						STP_FW_WARM_RST_ISSUE);
-			}
-		}
-
 		if (dump_len <= 32 * 1024) {
 			pr_err("coredump mode: %d!\n", dump_sink);
 			switch (dump_sink) {
@@ -393,8 +379,6 @@ static _osal_inline_ INT32 stp_dbg_soc_paged_trace(VOID)
 				pr_warn("%s", str);
 			}
 		} while (0);
-		/*move parser fw assert infor to paged dump in the one paged dump */
-		/* ret = stp_dbg_set_fw_info(&g_paged_trace_buffer[0], g_paged_trace_len, issue_type); */
 		ret = 0;
 	} while (0);
 	mtk_wcn_stp_ctx_restore();
