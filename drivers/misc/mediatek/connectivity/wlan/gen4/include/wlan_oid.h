@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/wlan_oid.h#4
 */
@@ -7,253 +58,6 @@
 *	   of Windows driver for MediaTek Inc. 802.11 Wireless LAN Adapters.
 */
 
-/*
-** Log: wlan_oid.h
-**
-** 08 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Add GTK re-key driver handle function
-**
-** 08 15 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** enlarge  match_ssid_num to 16 for PNO support
-**
-** 08 09 2013 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** update ICAP support code
-**
-** 08 09 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** 1. integrate scheduled scan functionality
-** 2. condition compilation for linux-3.4 & linux-3.8 compatibility
-** 3. correct CMD queue access to reduce lock scope
-**
-** 07 23 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Modify some security code for 11w and p2p
-**
-** 07 01 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Add some debug code, fixed some compiling warning
-**
-** 03 20 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Add the security code for wlan table assign operation
-**
-** 03 07 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add wlan_p2p.c, but still need to FIX many place.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 01 05 2012 wh.su
- * [WCXRP00001153] [MT6620 Wi-Fi][Driver] Adding the get_ch_list and set_tx_power proto type function
- * Adding the related ioctl / wlan oid function to set the Tx power cfg.
- *
- * 07 18 2011 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000612] [MT6620 Wi-Fi] [FW] CSD update SWRDD algorithm
- * Add CMD/Event for RDD and BWCS.
- *
- * 03 22 2011 george.huang
- * [WCXRP00000504] [MT6620 Wi-Fi][FW] Support Sigma CAPI for power saving related command
- * link with supplicant commands
- *
- * 03 17 2011 chinglan.wang
- * [WCXRP00000570] [MT6620 Wi-Fi][Driver] Add Wi-Fi Protected Setup v2.0 feature
- * .
- *
- * 03 02 2011 george.huang
- * [WCXRP00000504] [MT6620 Wi-Fi][FW] Support Sigma CAPI for power saving related command
- * Support UAPSD/OppPS/NoA parameter setting
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Add Oid for sw control debug command
- *
- * 12 07 2010 cm.chang
- * [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
- * 1. Country code is from NVRAM or supplicant
- * 2. Change band definition in CMD/EVENT.
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * [WCXRP00000086] [MT6620 Wi-Fi][Driver] The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 10 08 2010 cp.wu
- * [WCXRP00000084] [MT6620 Wi-Fi][Driver][FW] Add fixed rate support for distance test
- * adding fixed rate support for distance test. (from registry setting)
- *
- * 09 23 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation with Version Check
- * add skeleton for NVRAM integration
- *
- * 09 08 2010 cp.wu
- * NULL
- * use static memory pool for storing IEs of scanning result.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 29 2010 yuche.tsai
- * NULL
- * Finish SLT TX/RX & Rate Changing Support.
- *
- * 08 04 2010 cp.wu
- * NULL
- * revert changelist #15371, efuse read/write access will be done by RF test approach
- *
- * 08 04 2010 cp.wu
- * NULL
- * add OID definitions for EFUSE read/write access.
- *
- * 08 04 2010 yarco.yang
- * NULL
- * Add TX_AMPDU and ADDBA_REJECT command
- *
- * 08 02 2010 george.huang
- * NULL
- * add WMM-PS test related OID/ CMD handlers
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 22 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) add command warpper for STA-REC/BSS-INFO sync.
- * 2) enhance command packet sending procedure for non-oid part
- * 3) add command packet definitions for STA-REC/BSS-INFO sync.
- *
- * 06 18 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * migration from MT6620 firmware.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge wlan_def.h.
- *
- * 06 07 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * merge wifi_var.h, precomp.h, cnm_timer.h (data type only)
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 06 03 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * move timer callback to glue layer.
- *
- * 05 20 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) integrate OID_GEN_NETWORK_LAYER_ADDRESSES with CMD_ID_SET_IP_ADDRESS
- * 2) buffer statistics data for 2 seconds
- * 3) use default value for adhoc parameters instead of 0
- *
- * 05 18 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement Wakeup-on-LAN except firmware integration part
- *
- * 05 17 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * MT6620 is not supporting NDIS_PACKET_TYPE_PROMISCUOUS.
- *
-
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * 1) add timeout handler mechanism for pending command packets
- * 2) add p2p add/removal key
- *
- * 05 13 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * add NULL OID implementation for WOL-related OIDs.
- *
- * 04 22 2010 cp.wu
- * [WPD00003830]add OID_802_11_PRIVACY_FILTER support
- * enable RX filter OID
- *
- * 04 14 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * information buffer for query oid/ioctl is now buffered in prCmdInfo
- *  *  *  *  * instead of glue-layer variable to improve multiple oid/ioctl capability
- *
- * 03 31 2010 wh.su
- * [WPD00003816][MT6620 Wi-Fi] Adding the security support
- * modify the wapi related code for new driver's design.
- *
- * 03 26 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * indicate media stream mode after set is done
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
- *
- * 03 03 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement custom OID: EEPROM read/write access
- *
- * 02 09 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. Permanent and current MAC address are now retrieved by CMD/EVENT packets instead of hard-coded address
- *  *  *  *  *  * 2. follow MSDN defined behavior when associates to another AP
- *  *  *  *  *  * 3. for firmware download, packet size could be up to 2048 bytes
- *
- * 01 27 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) implement timeout mechanism when OID is pending for longer than 1 second
- *  *  * 2) allow OID_802_11_CONFIGURATION to be executed when RF test mode is turned on
- *
- * 01 27 2010 wh.su
- * [WPD00003816][MT6620 Wi-Fi] Adding the security support
- * .
- *
- * 01 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement following 802.11 OIDs:
- *  *  *  * OID_802_11_RSSI,
- *  *  *  * OID_802_11_RSSI_TRIGGER,
- *  *  *  * OID_802_11_STATISTICS,
- *  *  *  * OID_802_11_DISASSOCIATE,
- *  *  *  * OID_802_11_POWER_MODE
- *
- * 01 21 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement OID_802_11_MEDIA_STREAM_MODE
- *
- * 01 21 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement OID_802_11_SUPPORTED_RATES / OID_802_11_DESIRED_RATES
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-12-08 11:38:11 GMT mtk02752
-**  add declares for RF test related APIs
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-11-24 22:41:53 GMT mtk02752
-**  remove u4SysTime, MSDN 10-second will be implemented in FW side
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-11-23 20:30:13 GMT mtk02752
-**  add u4SysTime field in PARAM_BSSID_EX_T
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-11-12 19:48:35 GMT mtk02752
-**  allow upper layer to set a packet filter with PROMISCUOUS mode
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:12:12 GMT mtk01426
-**  Init for develop
-**
-*/
 
 #ifndef _WLAN_OID_H
 #define _WLAN_OID_H
@@ -337,13 +141,14 @@
 /* For MT7668 */
 #define EFUSE_CONTENT_BUFFER_START        0x03A
 #define EFUSE_CONTENT_BUFFER_END          0x1D9
-#define EFUSE_CONTENT_SIZE_1			      (EFUSE_CONTENT_BUFFER_END - EFUSE_CONTENT_BUFFER_START + 1)
+#define EFUSE_CONTENT_BUFFER_SIZE		  (EFUSE_CONTENT_BUFFER_END - EFUSE_CONTENT_BUFFER_START + 1)
 
 /* For MT6632 */
 #define EFUSE_CONTENT_SIZE			16
 
 #define EFUSE_BLOCK_SIZE 16
 #define EEPROM_SIZE 1184
+#define MAX_EEPROM_BUFFER_SIZE	1200
 #endif /* CFG_SUPPORT_BUFFER_MODE */
 
 #if CFG_SUPPORT_TX_BF
@@ -434,14 +239,10 @@ typedef enum _ENUM_PARAM_PHY_TYPE_T {
 typedef enum _ENUM_PARAM_OP_MODE_T {
 	NET_TYPE_IBSS = 0,	/*!< Try to merge/establish an AdHoc, do periodic SCAN for merging. */
 	NET_TYPE_INFRA,		/*!< Try to join an Infrastructure, do periodic SCAN for joining. */
-	/*!< Try to join an Infrastructure, if fail then try to merge or
-	*  establish an AdHoc, do periodic SCAN for joining or merging.
-	*/
-	NET_TYPE_AUTO_SWITCH,
-	/*!< Try to merge an AdHoc first,
-	* if fail then establish AdHoc permanently, no more SCAN.
-	*/
-	NET_TYPE_DEDICATED_IBSS,
+	NET_TYPE_AUTO_SWITCH,	/*!< Try to join an Infrastructure, if fail then try to merge or */
+				/*  establish an AdHoc, do periodic SCAN for joining or merging. */
+	NET_TYPE_DEDICATED_IBSS,	/*!< Try to merge an AdHoc first, */
+					/* if fail then establish AdHoc permanently, no more SCAN. */
 	NET_TYPE_NUM		/* 4 */
 } ENUM_PARAM_OP_MODE_T, *P_ENUM_PARAM_OP_MODE_T;
 
@@ -767,18 +568,10 @@ typedef struct _BIN_CONTENT_T {
 typedef struct _PARAM_CUSTOM_EFUSE_BUFFER_MODE_T {
 	UINT_8 ucSourceMode;
 	UINT_8 ucCount;
-	UINT_8 ucReserved[2];
-	BIN_CONTENT_T aBinContent[EFUSE_CONTENT_SIZE];
-} PARAM_CUSTOM_EFUSE_BUFFER_MODE_T, *P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_T;
-
-typedef struct _PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T {
-	UINT_8 ucSourceMode;
-	UINT_8 ucCount;
 	UINT_8 ucCmdType;
 	UINT_8 ucReserved;
-	UINT_8 aBinContent[EFUSE_CONTENT_SIZE_1];
-} PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T, *P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_1_T;
-
+	UINT_8 aBinContent[MAX_EEPROM_BUFFER_SIZE];
+} PARAM_CUSTOM_EFUSE_BUFFER_MODE_T, *P_PARAM_CUSTOM_EFUSE_BUFFER_MODE_T;
 
 /*#if (CFG_EEPROM_PAGE_ACCESS == 1)*/
 typedef struct _PARAM_CUSTOM_ACCESS_EFUSE_T {
@@ -1154,12 +947,12 @@ typedef struct _CMD_STAREC_BF {
 
 /* QA tool: maunal assoc */
 typedef struct _CMD_MANUAL_ASSOC_STRUCT_T {
-#if 0
-	UINT_8              ucBssIndex;
-	UINT_8              ucWlanIdx;
-	UINT_16             u2TotalElementNum;
-	UINT_32             u4Reserve;
-#endif
+/*
+*	UINT_8              ucBssIndex;
+*	UINT_8              ucWlanIdx;
+*	UINT_16             u2TotalElementNum;
+*	UINT_32             u4Reserve;
+*/
 	/* extension */
 	UINT_16 u2Tag;		/* Tag = 0x05 */
 	UINT_16 u2Length;
@@ -1670,12 +1463,10 @@ typedef struct _PARAM_MTK_SLT_INITIAL_STRUCT_T {
 
 typedef struct _PARAM_MTK_SLT_TEST_STRUCT_T {
 	ENUM_MTK_SLT_FUNC_IDX_T rSltFuncIdx;
-	UINT_32 u4Length;	/* Length of structure,
-				* including myself
-				*/
-	UINT_32 u4FuncInfoLen;	/* Include following content
-				* field and myself
-				*/
+	UINT_32 u4Length;	/* Length of structure, */
+				/* including myself */
+	UINT_32 u4FuncInfoLen;	/* Include following content */
+				/* field and myself */
 	union {
 		PARAM_MTK_SLT_INITIAL_STRUCT_T rMtkInitTest;
 		PARAM_MTK_SLT_LP_TEST_STRUCT_T rMtkLpTest;
@@ -2041,6 +1832,36 @@ typedef struct _PARAM_CUSTOM_MONITOR_SET_STRUCT_T {
 	UINT_8 aucResv[9];
 } PARAM_CUSTOM_MONITOR_SET_STRUCT_T, *P_PARAM_CUSTOM_MONITOR_SET_STRUCT_T;
 #endif
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+/*--------------------------------------------------------------*/
+/*! \brief MTK Auto Channel Selection related Container         */
+/*--------------------------------------------------------------*/
+typedef struct _LTE_SAFE_CHN_INFO_T {
+	UINT_32 au4SafeChannelBitmask[5]; /* NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_MAX */
+} LTE_SAFE_CHN_INFO_T, *P_CMD_LTE_SAFE_CHN_INFO_T;
+
+typedef struct _PARAM_CHN_LOAD_INFO {
+	/* Per-CHN Load */
+	UINT_8 ucChannel;
+	UINT_16 u2APNum;
+	UINT_8 ucReserved;
+} PARAM_CHN_LOAD_INFO, *P_PARAM_CHN_LOAD_INFO;
+
+typedef struct _PARAM_GET_CHN_INFO {
+	LTE_SAFE_CHN_INFO_T rLteSafeChnList;
+	PARAM_CHN_LOAD_INFO rEachChnLoad[MAX_CHN_NUM];
+	BOOLEAN fgDataReadyBit;
+	UINT_8 aucReserved[3];
+} PARAM_GET_CHN_INFO, *P_PARAM_GET_CHN_INFO;
+
+typedef struct _PARAM_PREFER_CHN_INFO {
+	UINT_8 ucChannel;
+	UINT_16 u2APNumScore;
+	UINT_8 ucReserved;
+} PARAM_PREFER_CHN_INFO, *P_PARAM_PREFER_CHN_INFO;
+#endif
+
 
 /*******************************************************************************
 *                            P U B L I C   D A T A
@@ -2755,6 +2576,12 @@ wlanoidSetDbdcEnable(
 WLAN_STATUS
 wlanoidQuerySetTxTargetPower(IN P_ADAPTER_T prAdapter,
 			IN PVOID pvSetBuffer, IN UINT_32 u4SetBufferLen, OUT PUINT_32 pu4SetInfoLen);
+
+#if CFG_AUTO_CHANNEL_SEL_SUPPORT
+WLAN_STATUS
+wlanoidQueryLteSafeChannel(IN P_ADAPTER_T prAdapter,
+			   IN PVOID pvQueryBuffer, IN UINT_32 u4QueryBufferLen, OUT PUINT_32 pu4QueryInfoLen);
+#endif
 
 /*******************************************************************************
 *                              F U N C T I O N S

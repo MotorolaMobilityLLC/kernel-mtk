@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: tdls.c#1
 */
@@ -6,13 +57,6 @@
 *    \brief This file includes IEEE802.11z TDLS support.
 */
 
-/*
-** Log: tdls.c
- *
- * 11 13 2013 vend_samp.lin
- * NULL
- * Initial version.
- */
 
 /*******************************************************************************
  *						C O M P I L E R	 F L A G S
@@ -656,11 +700,9 @@ TdlsDataFrameSend_SETUP_REQ(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -872,11 +914,9 @@ TdlsDataFrameSend_SETUP_RSP(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -1038,11 +1078,9 @@ TdlsDataFrameSend_CONFIRM(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -1222,16 +1260,13 @@ TdlsDataFrameSend_DISCOVERY_REQ(ADAPTER_T *prAdapter,
 	if (ucActionCode != TDLS_FRM_ACTION_TEARDOWN) {
 		/*
 		 *  Capability
-		 *
 		 *  Support Rates
 		 *  Extended Support Rates
 		 *  Supported Channels
 		 *  HT Capabilities
 		 *  WMM Information Element
-		 *
 		 *  Extended Capabilities
 		 *  Link Identifier
-		 *
 		 *  RSNIE
 		 *  FTIE
 		 *  Timeout Interval
@@ -1246,7 +1281,6 @@ TdlsDataFrameSend_DISCOVERY_REQ(ADAPTER_T *prAdapter,
 			/*
 			 *  TODO check HT: prAdapter->rWifiVar.rConnSettings.uc2G4BandwidthMode
 			 *  must be CONFIG_BW_20_40M.
-			 *
 			 *  TODO check HT: HT_CAP_INFO_40M_INTOLERANT must be clear if
 			 *  Tdls 20/40 is enabled.
 			 */
@@ -1296,11 +1330,9 @@ TdlsDataFrameSend_DISCOVERY_REQ(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -1506,16 +1538,13 @@ TdlsDataFrameSend_DISCOVERY_RSP(ADAPTER_T *prAdapter,
 	if (ucActionCode != TDLS_FRM_ACTION_TEARDOWN) {
 		/*
 		 *  Capability
-		 *
 		 *  Support Rates
 		 *  Extended Support Rates
 		 *  Supported Channels
 		 *  HT Capabilities
 		 *  WMM Information Element
-		 *
 		 *  Extended Capabilities
 		 *  Link Identifier
-		 *
 		 *  RSNIE
 		 *  FTIE
 		 *  Timeout Interval
@@ -1530,7 +1559,6 @@ TdlsDataFrameSend_DISCOVERY_RSP(ADAPTER_T *prAdapter,
 			/*
 			 *  TODO check HT: prAdapter->rWifiVar.rConnSettings.uc2G4BandwidthMode
 			 *  must be CONFIG_BW_20_40M.
-			 *
 			 *  TODO check HT: HT_CAP_INFO_40M_INTOLERANT must be clear if
 			 *  Tdls 20/40 is enabled.
 			 */
@@ -1580,11 +1608,9 @@ TdlsDataFrameSend_DISCOVERY_RSP(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -1661,11 +1687,9 @@ TdlsDataFrameSend_DISCOVERY_RSP(ADAPTER_T *prAdapter,
 		 *  transmitting STA is requesting the recipient to transmit a 20/40 BSS
 		 *  Coexistence Management frame with the transmitting STA as the
 		 *  recipient.
-		 *
 		 *  bit1 = 0: The Forty MHz Intolerant field is set to 1 to prohibit an AP
 		 *  that receives this information or reports of this information from
 		 *  operating a 20/40 MHz BSS.
-		 *
 		 *  bit2 = 0: The 20 MHz BSS Width Request field is set to 1 to prohibit
 		 *  a receiving AP from operating its BSS as a 20/40 MHz BSS.
 		 */
@@ -1977,7 +2001,6 @@ VOID TdlsBssExtCapParse(P_STA_RECORD_T prStaRec, P_UINT_8 pucIE)
 
 	/*
 	 *  from bit0 ~
-	 *
 	 *  bit 38: TDLS Prohibited
 	 *  The TDLS Prohibited subfield indicates whether the use of TDLS is prohibited. The
 	 *  field is set to 1 to indicate that TDLS is prohibited and to 0 to indicate that TDLS is

@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/nic/nic_cmd_event.c#3
 */
@@ -9,384 +60,6 @@
 *    a command packet.
 */
 
-/*
-** Log: nic_cmd_event.c
-**
-** 06 12 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch]
-**	update BLBIST dump burst mode
-**
-**	Review: http://mtksap20:8080/go?page=NewReview&reviewid=110351
-**
-** 04 08 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch]
-** add for BLBIST dump index
-**
-** 01 15 2014 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** Merging
-**
-**	//ALPS_SW/DEV/ALPS.JB2.MT6630.DEV/alps/mediatek/kernel/drivers/combo/drv_wlan/mt6630/wlan/...
-**
-**	to //ALPS_SW/TRUNK/KK/alps/mediatek/kernel/drivers/combo/drv_wlan/mt6630/wlan/...
-**
-** 12 27 2013 eason.tsai
-** [ALPS01070904] [Need Patch] [Volunteer Patch][MT6630][Driver]MT6630 Wi-Fi Patch
-** update code for ICAP & nvram
-**
-** 08 20 2013 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** Icap function
-**
-** 08 20 2013 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** ICAP part for win32
-**
-** 08 09 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** 1. integrate scheduled scan functionality
-** 2. condition compilation for linux-3.4 & linux-3.8 compatibility
-** 3. correct CMD queue access to reduce lock scope
-**
-** 06 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** update MAC address handling logic
-**
-** 06 18 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Get MAC address by NIC_CAPABILITY command
-**
-** 06 18 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update for 1st connection
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** enable build for nic_rx.c & nic_cmd_event.c
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 10 25 2012 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** sync with MT6630 HIFSYS update.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 09 04 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** sync RSSI ignoring when BSS is disconnected
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 04 10 2012 yuche.tsai
- * NULL
- * Update address for wifi direct connection issue.
- *
- * 06 15 2011 cm.chang
- * [WCXRP00000785] [MT6620 Wi-Fi][Driver][FW] P2P/BOW MAC address is XOR with AIS MAC address
- * P2P/BOW mac address XOR with local bit instead of OR
- *
- * 03 05 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * add the code to get the check rsponse and indicate to app.
- *
- * 03 02 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * Add security check code.
- *
- * 02 24 2011 cp.wu
- * [WCXRP00000493] [MT6620 Wi-Fi][Driver] Do not indicate redundant
- * disconnection to host when entering into RF test mode
- * only indicate DISCONNECTION to host when entering RF test if necessary (connected -> disconnected cases)
- *
- * 01 20 2011 eddie.chen
- * [WCXRP00000374] [MT6620 Wi-Fi][DRV] SW debug control
- * Add Oid for sw control debug command
- *
- * 12 31 2010 cp.wu
- * [WCXRP00000335] [MT6620 Wi-Fi][Driver] change to use milliseconds sleep
- * instead of delay to avoid blocking to system scheduling
- * change to use msleep() and shorten waiting interval to reduce
- * blocking to other task while Wi-Fi driver is being loaded
- *
- * 12 01 2010 cp.wu
- * [WCXRP00000223] MT6620 Wi-Fi][Driver][FW] Adopt NVRAM parameters when enter/exit RF test mode
- * reload NVRAM settings before entering RF test mode and leaving from RF test mode.
- *
- * 11 01 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation
- * with Version Check[WCXRP00000150] [MT6620 Wi-Fi][Driver] Add
- * implementation for querying current TX rate from firmware auto rate module
- * 1) Query link speed (TX rate) from firmware directly with buffering mechanism to reduce overhead
- * 2) Remove CNM CH-RECOVER event handling
- * 3) cfg read/write API renamed with kal prefix for unified naming rules.
- *
- * 10 20 2010 cp.wu
- * [WCXRP00000117] [MT6620 Wi-Fi][Driver] Add logic for suspending driver when MT6620 is not responding anymore
- * use OID_CUSTOM_TEST_MODE as indication for driver reset
- * by dropping pending TX packets
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000056] [MT6620 Wi-Fi][Driver] NVRAM implementation
- * with Version Check[WCXRP00000086] [MT6620 Wi-Fi][Driver] The mac address is all zero at android
- * complete implementation of Android NVRAM access
- *
- * 09 21 2010 cp.wu
- * [WCXRP00000053] [MT6620 Wi-Fi][Driver] Reset incomplete
- * and might leads to BSOD when entering RF test with AIS associated
- * Do a complete reset with STA-REC null checking for RF test re-entry
- *
- * 09 15 2010 yuche.tsai
- * NULL
- * Start to test AT GO only when P2P state is not IDLE.
- *
- * 09 09 2010 yuche.tsai
- * NULL
- * Add AT GO Test mode after MAC address available.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 16 2010 cp.wu
- * NULL
- * Replace CFG_SUPPORT_BOW by CFG_ENABLE_BT_OVER_WIFI.
- * There is no CFG_SUPPORT_BOW in driver domain source.
- *
- * 08 12 2010 cp.wu
- * NULL
- * [AIS-FSM] honor registry setting for adhoc running mode. (A/B/G)
- *
- * 08 11 2010 yuche.tsai
- * NULL
- * Add support for P2P Device Address query from FW.
- *
- * 08 03 2010 cp.wu
- * NULL
- * Centralize mgmt/system service procedures into independent calls.
- *
- * 08 02 2010 cp.wu
- * NULL
- * reset FSMs before entering RF test mode.
- *
- * 07 22 2010 cp.wu
- *
- * 1) refine AIS-FSM indent.
- * 2) when entering RF Test mode, flush 802.1X frames as well
- * 3) when entering D3 state, flush 802.1X frames as well
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 05 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) change fake BSS_DESC from channel 6 to channel 1 due to channel switching is not done yet.
- * 2) after MAC address is queried from firmware, all related variables in driver domain should be updated as well
- *
- * 06 21 2010 wh.su
- * [WPD00003840][MT6620 5931] Security migration
- * remove duplicate variable for migration.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 29 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * change upon request: indicate as disconnected in driver domain when leaving from RF test mode
- *
- * 05 24 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * do not clear scanning list array after disassociation
- *
- * 05 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) disable NETWORK_LAYER_ADDRESSES handling temporally.
- * 2) finish statistics OIDs
- *
- * 05 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * change OID behavior to meet WHQL requirement.
- *
- * 05 20 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) integrate OID_GEN_NETWORK_LAYER_ADDRESSES with CMD_ID_SET_IP_ADDRESS
- * 2) buffer statistics data for 2 seconds
- * 3) use default value for adhoc parameters instead of 0
- *
- * 05 19 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) do not take timeout mechanism for power mode oids
- * 2) retrieve network type from connection status
- * 3) after disassciation, set radio state to off
- * 4) TCP option over IPv6 is supported
- *
- * 05 17 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * correct OID_802_11_DISASSOCIATE handling.
- *
- * 05 17 2010 cp.wu
- * [WPD00003831][MT6620 Wi-Fi] Add framework for Wi-Fi Direct support
- * 1) add timeout handler mechanism for pending command packets
- * 2) add p2p add/removal key
- *
- * 04 16 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * treat BUS access failure as kind of card removal.
- *
- * 04 14 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * information buffer for query oid/ioctl is now buffered in prCmdInfo
- *  *  *  *  *  * instead of glue-layer variable to improve multiple oid/ioctl capability
- *
- * 04 13 2010 cp.wu
- * [WPD00003823][MT6620 Wi-Fi] Add Bluetooth-over-Wi-Fi support
- * add framework for BT-over-Wi-Fi support.
- *  *  *  *  *  *  *  *  *  *  *  *  *  * 1) prPendingCmdInfo is replaced by queue for multiple handler capability
- *  *  *  *  *  *  *  *  *  *  *  *  *  * 2) command sequence number is now increased atomically
- *  *  *  *  *  *  *  *  *  *  *  *  *  * 3) private data could be hold and taken use for other purpose
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * accessing to firmware load/start address, and access to OID handling information
- * are now handled in glue layer
- *
- * 04 07 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * rWlanInfo should be placed at adapter rather than glue due to most operations
- *  *  *  * are done in adapter layer.
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * add KAL API: kalFlushPendingTxPackets(), and take use of the API
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access to prGlueInfo->rWlanInfo.eLinkAttr.ucMediaStreamMode from non-glue layer.
- *
- * 04 06 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * improve none-glude code portability
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * sync statistics data structure definition with firmware implementation
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * code refine: fgTestMode should be at adapter rather than glue due to the device/fw is also involved
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access for prGlueInfo->fgIsCardRemoved in non-glue layer
- *
- * 03 30 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * statistics information OIDs are now handled by querying from firmware domain
- *
- * 03 26 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * indicate media stream mode after set is done
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
- *
- * 03 03 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement custom OID: EEPROM read/write access
- *
- * 03 03 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement OID_802_3_MULTICAST_LIST oid handling
- *
- * 02 25 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * limit RSSI return value to microsoft defined range.
- *
- * 02 09 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. Permanent and current MAC address are now retrieved by CMD/EVENT packets instead of hard-coded address
- *  *  *  *  *  *  * 2. follow MSDN defined behavior when associates to another AP
- *  *  *  *  *  *  * 3. for firmware download, packet size could be up to 2048 bytes
- *
- * 01 29 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * block until firmware finished RF test enter/leave then indicate completion to upper layer
- *
- * 01 29 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * when entering RF test mode and leaving from RF test mode,
- * wait for W_FUNC_RDY bit to be asserted forever until it is set or card is removed.
- *
- * 01 27 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. eliminate improper variable in rHifInfo
- *  *  *  *  *  *  *  * 2. block TX/ordinary OID when RF test mode is engaged
- *  *  *  *  *  *  *  * 3. wait until firmware finish operation when entering into and leaving from RF test mode
- *  *  *  *  *  *  *  * 4. correct some HAL implementation
- *
- * 01 26 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * Under WinXP with SDIO, use prGlueInfo->rHifInfo.pvInformationBuffer instead of prGlueInfo->pvInformationBuffer
- *
- * 01 22 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement following 802.11 OIDs:
- *  *  *  *  * OID_802_11_RSSI,
- *  *  *  *  * OID_802_11_RSSI_TRIGGER,
- *  *  *  *  * OID_802_11_STATISTICS,
- *  *  *  *  * OID_802_11_DISASSOCIATE,
- *  *  *  *  * OID_802_11_POWER_MODE
- *
- * 01 21 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * implement OID_802_11_MEDIA_STREAM_MODE
- *
- * 12 30 2009 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1) According to CMD/EVENT documentation v0.8,
- *  *  *  *  *  *  *  * OID_CUSTOM_TEST_RX_STATUS & OID_CUSTOM_TEST_TX_STATUS is no longer used,
- *  *  *  *  *  *  *  * and result is retrieved by get ATInfo instead
- *  *  *  *  *  *  *  * 2) add 4 counter for recording aggregation statistics
-**  \main\maintrunk.MT6620WiFiDriver_Prj\10 2009-12-10 16:47:47 GMT mtk02752
-**  only handle MCR read when accessing FW domain register
-**  \main\maintrunk.MT6620WiFiDriver_Prj\9 2009-12-08 17:37:28 GMT mtk02752
-**  * refine nicCmdEventQueryMcrRead
-**  + add TxStatus/RxStatus for RF test QueryInformation OIDs
-**  \main\maintrunk.MT6620WiFiDriver_Prj\8 2009-12-02 22:05:45 GMT mtk02752
-**  kalOidComplete() will decrease i4OidPendingCount
-**  \main\maintrunk.MT6620WiFiDriver_Prj\7 2009-12-01 23:02:57 GMT mtk02752
-**  remove unnecessary spin locks
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-12-01 22:51:18 GMT mtk02752
-**  maintein i4OidPendingCount
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-11-30 10:55:03 GMT mtk02752
-**  modify for compatibility
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-11-23 14:46:32 GMT mtk02752
-**  add another version of command-done handler upon new event structure
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-04-29 15:42:33 GMT mtk01461
-**  Add comment
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-04-21 19:32:42 GMT mtk01461
-**  Add nicCmdEventSetCommon() for general set OID
-**  \main\maintrunk.MT6620WiFiDriver_Prj\1 2009-04-21 01:40:35 GMT mtk01461
-**  Command Done Handler
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -1710,6 +1383,7 @@ INT_32 GetIQData(INT_32 **prIQAry, UINT_32 *prDataLen, UINT_32 u4IQ, UINT_32 u4G
 
 	/* sprintf(aucPath, "/pattern.txt");             // CSD's Pattern */
 	sprintf(aucPath, "/dump_out_%05ld_WF%d.txt", (g_u2DumpIndex - 1), u4GetWf1);
+	DBGLOG(INIT, INFO, "iCap Read Dump File dump_out_%05ld_WF%d.txt\n", (g_u2DumpIndex - 1), u4GetWf1);
 
 	file = kalFileOpen(aucPath, O_RDONLY, 0);
 
@@ -1798,13 +1472,29 @@ UINT_32 TsfRawData2IqFmt(P_EVENT_DUMP_MEM_T prEventDumpMem)
 		if (kalCheckPath(aucPathWF0) == -1) {
 			kalMemSet(aucPathWF0, 0x00, 256);
 			sprintf(aucPathWF0, "/data/dump_out_%05ld_WF0.txt", g_u2DumpIndex);
-		}
+		} else
+			kalTrunkPath(aucPathWF0);
+
 		if (kalCheckPath(aucPathWF1) == -1) {
 			kalMemSet(aucPathWF1, 0x00, 256);
 			sprintf(aucPathWF1, "/data/dump_out_%05ld_WF1.txt", g_u2DumpIndex);
-		}
+		} else
+			kalTrunkPath(aucPathWF1);
+
 		sprintf(aucPathRAWWF0, "/dump_RAW_%05ld_WF0.txt", g_u2DumpIndex);
 		sprintf(aucPathRAWWF1, "/dump_RAW_%05ld_WF1.txt", g_u2DumpIndex);
+		if (kalCheckPath(aucPathRAWWF0) == -1) {
+			kalMemSet(aucPathRAWWF0, 0x00, 256);
+			sprintf(aucPathRAWWF0, "/data/dump_RAW_%05ld_WF0.txt", g_u2DumpIndex);
+		} else
+			kalTrunkPath(aucPathRAWWF0);
+
+		if (kalCheckPath(aucPathRAWWF1) == -1) {
+			kalMemSet(aucPathRAWWF1, 0x00, 256);
+			sprintf(aucPathRAWWF1, "/data/dump_RAW_%05ld_WF1.txt", g_u2DumpIndex);
+		} else
+			kalTrunkPath(aucPathRAWWF1);
+
 #else
 		kal_sprintf_ddk(aucPathWF0, sizeof(aucPathWF0),
 				u4CurTimeTick,
@@ -1817,8 +1507,8 @@ UINT_32 TsfRawData2IqFmt(P_EVENT_DUMP_MEM_T prEventDumpMem)
 	}
 
 	ptr = (PUINT_32)(&prEventDumpMem->aucBuffer[0]);
-	DBGLOG(INIT, INFO, ": ==> (prEventDumpMem = %08x %08x %08x)\n", *(ptr), *(ptr + 4), *(ptr + 8));
-	DBGLOG(INIT, INFO, ": ==> (prEventDumpMem->eIcapContent = %x)\n", prEventDumpMem->eIcapContent);
+	/*DBGLOG(INIT, INFO, ": ==> (prEventDumpMem = %08x %08x %08x)\n", *(ptr), *(ptr + 4), *(ptr + 8));*/
+	/*DBGLOG(INIT, INFO, ": ==> (prEventDumpMem->eIcapContent = %x)\n", prEventDumpMem->eIcapContent);*/
 
 	for (u4SrcOffset = 0, u4RemainByte = prEventDumpMem->u4Length; u4RemainByte > 0;) {
 		u4FmtLen =
@@ -1984,7 +1674,7 @@ VOID nicEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN PUINT_8 pucEventBuf)
 	TsfRawData2IqFmt(prEventDumpMem);
 #endif /* CFG_SUPPORT_QA_TOOL */
 	DBGLOG(INIT, INFO,
-	       ": ==> (u4RemainLength = %x, u4Address=%x )\n", prEventDumpMem->u4RemainLength,
+	       "iCap : ==> (u4RemainLength = %x, u4Address=%x )\n", prEventDumpMem->u4RemainLength,
 	       prEventDumpMem->u4Address);
 
 	if (prEventDumpMem->u4RemainLength == 0 || prEventDumpMem->u4Address == 0xFFFFFFFF) {
@@ -2048,42 +1738,26 @@ VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 
 		u4QueryInfoLen = sizeof(P_PARAM_CUSTOM_MEM_DUMP_STRUCT_T);
 
-#if 0
-		do {
-			UINT_32 i = 0;
-
-			DBGLOG(REQ, TRACE, "Rx dump address 0x%X, Length %d, FragNum %d, remain %d\n",
-			       prEventDumpMem->u4Address,
-			       prEventDumpMem->u4Length, prEventDumpMem->ucFragNum, prEventDumpMem->u4RemainLength);
-#if 0
-			for (i = 0; i < prEventDumpMem->u4Length; i++) {
-				DBGLOG(REQ, TRACE, "%02X ", prEventDumpMem->aucBuffer[i]);
-				if (i % 32 == 31)
-					DBGLOG(REQ, TRACE, "\n");
-			}
-#endif
-		} while (FALSE);
-#endif
-
 		if (prEventDumpMem->ucFragNum == 1) {
 			/* Store memory dump into sdcard,
 			 * path /sdcard/dump_<current  system tick>_<memory address>_<memory length>.hex
 			 */
 			u4CurTimeTick = kalGetTimeTick();
 #if defined(LINUX)
-#if 0
-			sprintf(aucPath, "/sdcard/dump_%ld_0x%08lX_%ld.hex",
-				u4CurTimeTick,
-				prEventDumpMem->u4Address, prEventDumpMem->u4Length + prEventDumpMem->u4RemainLength);
-#else
+
+			/* PeiHsuan add for avoiding out of memory 20160801 */
+			if (g_u2DumpIndex >= 20)
+				g_u2DumpIndex = 0;
 
 			/*if blbist mkdir undre /data/blbist, the dump files wouls put on it */
 			sprintf(aucPath, "/dump_%05ld.hex", g_u2DumpIndex);
 			if (kalCheckPath(aucPath) == -1) {
 				kalMemSet(aucPath, 0x00, 256);
-				sprintf(aucPath, "/dump_%05ld.hex", g_u2DumpIndex);
-			}
-#endif
+				sprintf(aucPath, "/data/dump_%05ld.hex", g_u2DumpIndex);
+			} else
+				kalTrunkPath(aucPath);
+
+			DBGLOG(INIT, INFO, "iCap Create New Dump File dump_%05ld.hex\n", g_u2DumpIndex);
 #else
 			kal_sprintf_ddk(aucPath, sizeof(aucPath),
 					u4CurTimeTick,
@@ -2116,15 +1790,7 @@ VOID nicCmdEventQueryMemDump(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo
 			g_bIcapEnable = FALSE;
 			g_bCaptureDone = TRUE;
 #if defined(LINUX)
-#if 0
-			sprintf(aucPath_done, "/data/blbist/file_dump_done.txt");
-			if (kalCheckPath(aucPath_done) == -1) {
-				kalMemSet(aucPath_done, 0x00, 256);
-				sprintf(aucPath_done, "/data/file_dump_done.txt");
-			}
-			DBGLOG(INIT, INFO, ": ==> gen done_file\n");
-			kalWriteToFile(aucPath_done, FALSE, aucPath_done, sizeof(aucPath_done));
-#endif
+
 			g_u2DumpIndex++;
 
 #else
@@ -2351,12 +2017,9 @@ VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 }
 
 #if CFG_AUTO_CHANNEL_SEL_SUPPORT
-
-/* 4  Auto Channel Selection */
-
 /*----------------------------------------------------------------------------*/
 /*!
-* @brief This function is called when event for query STA link status
+* @brief This function is called when event for query LTE safe channels
 *        has been retrieved
 *
 * @param prAdapter          Pointer to the Adapter structure.
@@ -2364,82 +2027,46 @@ VOID nicCmdEventQueryStaStatistics(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prC
 * @param pucEventBuf        Pointer to the event buffer
 *
 * @return none
-*
 */
 /*----------------------------------------------------------------------------*/
-VOID nicCmdEventQueryChannelLoad(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
+VOID nicCmdEventQueryLteSafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
 {
 	UINT_32 u4QueryInfoLen;
-	P_EVENT_CHN_LOAD_T prEvent;
+	P_EVENT_LTE_SAFE_CHN_T prEvent;
 	P_GLUE_INFO_T prGlueInfo;
-	P_PARAM_GET_CHN_LOAD prChnLoad;
+	P_PARAM_GET_CHN_INFO prLteSafeChnInfo;
+	UINT_8 ucIdx = 0;
 
-	ASSERT(prAdapter);
-	ASSERT(prCmdInfo);
-	ASSERT(pucEventBuf);
-	ASSERT(prCmdInfo->pvInformationBuffer);
-
-	if (prCmdInfo->fgIsOid) {
-		prGlueInfo = prAdapter->prGlueInfo;
-		prEvent = (P_EVENT_CHN_LOAD_T) pucEventBuf;	/* 4 The firmware responsed data */
-		/* 4 Fill the firmware data in and send it back to host */
-		prChnLoad = (P_PARAM_GET_CHN_LOAD) prCmdInfo->pvInformationBuffer;
-
-		u4QueryInfoLen = sizeof(PARAM_GET_CHN_LOAD);
-
-		/* Statistics from FW is valid */
-		if (prEvent->u4Flags & BIT(0)) {
-			prChnLoad->rEachChnLoad[0].ucChannel = prEvent->ucChannel;
-			prChnLoad->rEachChnLoad[0].u2ChannelLoad = prEvent->u2ChannelLoad;
-			DBGLOG(P2P, INFO, "CHN[%d]=%d\n", prEvent->ucChannel, prEvent->u2ChannelLoad);
-
-		}
-
-		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
+	if ((prAdapter == NULL)
+		|| (prCmdInfo == NULL)
+		|| (pucEventBuf == NULL)
+		|| (prCmdInfo->pvInformationBuffer == NULL)) {
+		ASSERT(FALSE);
+		return;
 	}
 
-}
-
-VOID nicCmdEventQueryLTESafeChn(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo, IN PUINT_8 pucEventBuf)
-{
-	UINT_32 u4QueryInfoLen;
-	P_EVENT_LTE_MODE_T prEvent;
-	P_GLUE_INFO_T prGlueInfo;
-	P_PARAM_GET_CHN_LOAD prLteSafeChnInfo;
-
-	ASSERT(prAdapter);
-	ASSERT(prCmdInfo);
-	ASSERT(pucEventBuf);
-	ASSERT(prCmdInfo->pvInformationBuffer);
 	if (prCmdInfo->fgIsOid) {
 		prGlueInfo = prAdapter->prGlueInfo;
-		prEvent = (P_EVENT_LTE_MODE_T) pucEventBuf;	/* 4 The firmware responsed data */
+		prEvent = (P_EVENT_LTE_SAFE_CHN_T) pucEventBuf;	/* FW responsed data */
 
-		prLteSafeChnInfo = (P_PARAM_GET_CHN_LOAD) prCmdInfo->pvInformationBuffer;
+		prLteSafeChnInfo = (P_PARAM_GET_CHN_INFO) prCmdInfo->pvInformationBuffer;
 
-		u4QueryInfoLen = sizeof(PARAM_GET_CHN_LOAD);
+		u4QueryInfoLen = sizeof(PARAM_GET_CHN_INFO);
 
 		/* Statistics from FW is valid */
 		if (prEvent->u4Flags & BIT(0)) {
-			/* prLteSafeChnInfo->rLteSafeChnList.ucChannelHigh= prEvent->rLteSafeChn.ucChannelHigh; */
-			/* prLteSafeChnInfo->rLteSafeChnList.ucChannelLow= prEvent->rLteSafeChn.ucChannelLow; */
-			prLteSafeChnInfo->rLteSafeChnList.u4SafeChannelBitmask[0] =
-			    prEvent->rLteSafeChn.u4SafeChannelBitmask[0];
-			if (prEvent->ucVersion != 0) {
-				prLteSafeChnInfo->rLteSafeChnList.u4SafeChannelBitmask[1] =
-				    prEvent->rLteSafeChn.u4SafeChannelBitmask[1];
-				prLteSafeChnInfo->rLteSafeChnList.u4SafeChannelBitmask[2] =
-				    prEvent->rLteSafeChn.u4SafeChannelBitmask[2];
-				prLteSafeChnInfo->rLteSafeChnList.u4SafeChannelBitmask[3] =
-				    prEvent->rLteSafeChn.u4SafeChannelBitmask[3];
+			for (ucIdx = 0; ucIdx < NL80211_TESTMODE_AVAILABLE_CHAN_ATTR_MAX; ucIdx++) {
+				prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx] =
+					prEvent->rLteSafeChn.au4SafeChannelBitmask[ucIdx];
+
+				DBGLOG(P2P, INFO,
+				       "[ACS]LTE safe channels[%d]=0x%08x\n", ucIdx,
+				       prLteSafeChnInfo->rLteSafeChnList.au4SafeChannelBitmask[ucIdx]);
 			}
-			DBGLOG(P2P, INFO,
-			       "[Query-info Auto Channel]LTE safe channels 0x%08x\n",
-			       prLteSafeChnInfo->rLteSafeChnList.u4SafeChannelBitmask[0]);
 		}
+
 		kalOidComplete(prGlueInfo, prCmdInfo->fgSetQuery, u4QueryInfoLen, WLAN_STATUS_SUCCESS);
 	}
-
 }
 #endif
 
@@ -3080,19 +2707,6 @@ VOID nicEventRoamingStatus(IN P_ADAPTER_T prAdapter, IN P_WIFI_EVENT_T prEvent)
 	P_CMD_ROAMING_TRANSIT_T prTransit;
 
 	prTransit = (P_CMD_ROAMING_TRANSIT_T) (prEvent->aucBuffer);
-
-	/*[ tzufan 20160218]For roaming event compatibility, to remove afterward*/
-	if (prTransit->u2Event == ROAMING_EVENT_DISCOVERY) {
-		if ((prEvent->u2PacketLength - 12) < sizeof(CMD_ROAMING_TRANSIT_T))
-			DBGLOG(ROAMING, WARN, "Old FW, only u2Event and u2Data(RCPI) in roaming event are valid\n");
-		else if ((prEvent->u2PacketLength - 12) == sizeof(CMD_ROAMING_TRANSIT_T))
-			/*[TODO]move to roamingFsmProcessEvent*/
-			DBGLOG(ROAMING, INFO, "RX ROAMING_EVENT_DISCOVERY RCPI[%d] Thr[%d] Reason[%d] Time[%ld]\n",
-				prTransit->u2Data,
-				prTransit->u2RcpiLowThreshold,
-				prTransit->eReason,
-				prTransit->u4RoamingTriggerTime);
-	}
 
 	roamingFsmProcessEvent(prAdapter, prTransit);
 #endif /* CFG_SUPPORT_ROAMING */

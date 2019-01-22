@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 #include "precomp.h"
 
 APPEND_VAR_ATTRI_ENTRY_T txAssocRspAttributesTable[] = {
@@ -1156,9 +1207,8 @@ p2pFuncDisassoc(IN P_ADAPTER_T prAdapter,
 					if ((UINT_32) prCliStaRec == (UINT_32) prLinkEntry) {
 						LINK_REMOVE_KNOWN_ENTRY(prStaRecOfClientList, &prCliStaRec->rLinkEntry);
 						fgIsStaFound = TRUE;
-						/* p2pFuncDisconnect(prAdapter, prCliStaRec,
-						*  fgSendDisassoc, u2ReasonCode);
-						*/
+						/* p2pFuncDisconnect(prAdapter, prCliStaRec, */
+						/* fgSendDisassoc, u2ReasonCode); */
 						break;
 					}
 				}
@@ -1218,9 +1268,16 @@ p2pFuncDissolve(IN P_ADAPTER_T prAdapter,
 		case OP_MODE_INFRASTRUCTURE:
 			/* Reset station record status. */
 			if (prP2pBssInfo->prStaRecOfAP) {
+#if CFG_WPS_DISCONNECT
+				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
+								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL, NULL, 0,
+								 REASON_CODE_DEAUTH_LEAVING_BSS,
+								 WLAN_STATUS_MEDIA_DISCONNECT);
+#else
 				kalP2PGCIndicateConnectionStatus(prAdapter->prGlueInfo,
 								 (UINT_8) prP2pBssInfo->u4PrivateData, NULL, NULL, 0,
 								 REASON_CODE_DEAUTH_LEAVING_BSS);
+#endif
 
 				/* 2012/02/14 frog: After formation before join group, prStaRecOfAP is NULL. */
 				p2pFuncDisconnect(prAdapter,
@@ -1754,16 +1811,20 @@ p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter,
 			OUT PUINT_32 pu4ControlFlags, IN BOOLEAN fgIsDevInterface, IN UINT_8 ucRoleIdx)
 {
 	BOOLEAN fgIsReplyProbeRsp = FALSE;
-
+	P_P2P_ROLE_FSM_INFO_T prP2pRoleFsmInfo = (P_P2P_ROLE_FSM_INFO_T) NULL;
 	DEBUGFUNC("p2pFuncValidateProbeReq");
 
 	do {
 
 		ASSERT_BREAK((prAdapter != NULL) && (prSwRfb != NULL));
 
+		prP2pRoleFsmInfo = prAdapter->rWifiVar.aprP2pRoleFsmInfo[ucRoleIdx];
 		/* TODO: */
 
-		if (prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ) {
+		if ((fgIsDevInterface &&
+			(prAdapter->u4OsPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ))
+			|| (!fgIsDevInterface &&
+			(prP2pRoleFsmInfo->u4P2pPacketFilter & PARAM_PACKET_FILTER_PROBE_REQ))) {
 			/* Leave the probe response to p2p_supplicant. */
 			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, fgIsDevInterface, ucRoleIdx);
 		}
@@ -1788,7 +1849,7 @@ p2pFuncValidateProbeReq(IN P_ADAPTER_T prAdapter,
 * @retval FALSE     Don't reply the Probe Response
 */
 /*----------------------------------------------------------------------------*/
-VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb,
+VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRfb, IN BOOLEAN fgIsDevInterface,
 					IN UINT_8 ucRoleIdx)
 {
 	DEBUGFUNC("p2pFuncValidateRxActionFrame");
@@ -1801,7 +1862,7 @@ VOID p2pFuncValidateRxActionFrame(IN P_ADAPTER_T prAdapter, IN P_SW_RFB_T prSwRf
 
 		if (PARAM_PACKET_FILTER_ACTION_FRAME) {
 			/* Leave the probe response to p2p_supplicant. */
-			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, TRUE, ucRoleIdx);
+			kalP2PIndicateRxMgmtFrame(prAdapter->prGlueInfo, prSwRfb, fgIsDevInterface, ucRoleIdx);
 		}
 
 	} while (FALSE);
@@ -2001,9 +2062,7 @@ p2pFuncParseBeaconContent(IN P_ADAPTER_T prAdapter,
 				}
 				break;
 			case ELEM_ID_EXTENDED_SUP_RATES:	/* 50 *//* V */
-				/* Be attention,
-				 * ELEM_ID_SUP_RATES should be placed before ELEM_ID_EXTENDED_SUP_RATES.
-				 */
+				/* ELEM_ID_SUP_RATES should be placed before ELEM_ID_EXTENDED_SUP_RATES. */
 				DBGLOG(P2P, TRACE, "Ex Support Rate IE\n");
 				kalMemCopy(&
 					   (prP2pBssInfo->aucAllSupportedRates[prP2pBssInfo->ucAllSupportedRatesLen]),

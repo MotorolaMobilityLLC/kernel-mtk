@@ -1,4 +1,55 @@
 /******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
+/******************************************************************************
 *[File]             sdio.c
 *[Version]          v1.0
 *[Revision Date]    2010-03-01
@@ -9,150 +60,6 @@
 *    Copyright (C) 2010 MediaTek Incorporation. All Rights Reserved.
 ******************************************************************************/
 
-/*
-** Log: sdio.c
-**
-** 07 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Avoid large packet Tx issue
-**
-** 02 01 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. eliminate MT5931/MT6620/MT6628 logic
-** 2. add firmware download control sequence
-**
-** 11 21 2012 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** [Driver] Fix linux drvier build error.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 04 12 2012 terry.wu
- * NULL
- * Add AEE message support
- * 1) Show AEE warning(red screen) if SDIO access error occurs
-
- *
- * 02 14 2012 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * include correct header file upon setting.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 09 20 2011 cp.wu
- * [WCXRP00000994] [MT6620 Wi-Fi][Driver] dump message for bus error and reset bus error flag while re-initialized
- * 1. always show error message for SDIO bus errors.
- * 2. reset bus error flag when re-initialization
- *
- * 08 17 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * add MT6628 related definitions for Linux/Android driver.
- *
- * 05 18 2011 cp.wu
- * [WCXRP00000702] [MT5931][Driver] Modify initialization sequence for E1 ASIC
- * add device ID for MT5931.
- *
- * 04 08 2011 pat.lu
- * [WCXRP00000623] [MT6620 Wi-Fi][Driver] use ARCH define to distinguish PC Linux driver
- * Use CONFIG_X86 instead of PC_LINUX_DRIVER_USE option to have proper compile setting for PC Linux driver
- *
- * 03 22 2011 pat.lu
- * [WCXRP00000592] [MT6620 Wi-Fi][Driver] Support PC Linux Environment Driver Build
- * Add a compiler option "PC_LINUX_DRIVER_USE" for building driver in PC Linux environment.
- *
- * 03 18 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into a single one
- * to reduce physically continuous memory consumption
- * deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK.
- *
- * 03 15 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into a single
- * one to reduce physically continuous memory consumption
- * 1. deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK
- * 2. Use common coalescing buffer for both TX/RX directions
- *
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 11 15 2010 jeffrey.chang
- * [WCXRP00000181] [MT6620 Wi-Fi][Driver] fix the driver message "GLUE_FLAG_HALT skip INT" during unloading
- * Fix GLUE_FALG_HALT message which cause driver to hang
- *
- * 11 08 2010 cp.wu
- * [WCXRP00000166] [MT6620 Wi-Fi][Driver] use SDIO CMD52 for enabling/disabling interrupt to reduce transaction period
- * correct typo
- *
- * 11 08 2010 cp.wu
- * [WCXRP00000166] [MT6620 Wi-Fi][Driver] use SDIO CMD52 for enabling/disabling interrupt to reduce transaction period
- * change to use CMD52 for enabling/disabling interrupt to reduce SDIO transaction time
- *
- * 11 01 2010 yarco.yang
- * [WCXRP00000149] [MT6620 WI-Fi][Driver]Fine tune performance on MT6516 platform
- * Add code to run WlanIST in SDIO callback.
- *
- * 10 19 2010 cp.wu
- * [WCXRP00000122] [MT6620 Wi-Fi][Driver] Preparation for YuSu source tree integration
- * remove HIF_SDIO_ONE flags because the settings could be merged for runtime detection instead of compile-time.
- *
- * 10 19 2010 jeffrey.chang
- * [WCXRP00000120] [MT6620 Wi-Fi][Driver] Refine linux kernel module to the license
- * of MTK propietary and enable MTK HIF by default
- * Refine linux kernel module to the license of MTK and enable MTK HIF
- *
- * 08 21 2010 jeffrey.chang
- * NULL
- * 1) add sdio two setting
- * 2) bug fix of sdio glue
- *
- * 08 18 2010 jeffrey.chang
- * NULL
- * support multi-function sdio
- *
- * 08 18 2010 cp.wu
- * NULL
- * #if defined(__X86__) is not working, change to use #ifdef CONFIG_X86.
- *
- * 08 17 2010 cp.wu
- * NULL
- * add ENE SDIO host workaround for x86 linux platform.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 07 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Fix hotplug bug
- *
- * 03 28 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * clear sdio interrupt
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -324,9 +231,6 @@ static INT_32 mtk_sdio_interrupt(MTK_WCN_HIF_SDIO_CLTCTX cltCtx)
 }
 
 #else
-
-static unsigned int in_interrupt;
-
 static void mtk_sdio_interrupt(struct sdio_func *func)
 {
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -810,15 +714,9 @@ BOOL kalDevRegRead(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Register, OUT PUINT
 #if MTK_WCN_HIF_SDIO
 		ret = mtk_wcn_hif_sdio_readl(prGlueInfo->rHifInfo.cltCtx, u4Register, (PUINT_32) pu4Value);
 #else
-		UINT_32 ucIntContext = in_interrupt;
-
-		if (!ucIntContext)
-			sdio_claim_host(prGlueInfo->rHifInfo.func);
-
+		sdio_claim_host(prGlueInfo->rHifInfo.func);
 		*pu4Value = sdio_readl(prGlueInfo->rHifInfo.func, u4Register, &ret);
-
-		if (!ucIntContext)
-			sdio_release_host(prGlueInfo->rHifInfo.func);
+		sdio_release_host(prGlueInfo->rHifInfo.func);
 #endif
 
 		if (ret || ucRetryCount) {
@@ -937,15 +835,9 @@ BOOL kalDevRegWrite(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Register, IN UINT_
 #if MTK_WCN_HIF_SDIO
 		ret = mtk_wcn_hif_sdio_writel(prGlueInfo->rHifInfo.cltCtx, u4Register, u4Value);
 #else
-		UINT_32 ucIntContext = in_interrupt;
-
-		if (!ucIntContext)
-			sdio_claim_host(prGlueInfo->rHifInfo.func);
-
+		sdio_claim_host(prGlueInfo->rHifInfo.func);
 		sdio_writel(prGlueInfo->rHifInfo.func, u4Value, u4Register, &ret);
-
-		if (!ucIntContext)
-			sdio_release_host(prGlueInfo->rHifInfo.func);
+		sdio_release_host(prGlueInfo->rHifInfo.func);
 #endif
 
 		if (ret || ucRetryCount) {
@@ -1081,8 +973,7 @@ kalDevPortRead(IN P_GLUE_INFO_T prGlueInfo,
 
 	ASSERT(prSdioFunc->cur_blksize > 0);
 
-	if (!in_interrupt)
-		sdio_claim_host(prSdioFunc);
+	sdio_claim_host(prSdioFunc);
 
 	/* Split buffer into multiple single block to workaround hifsys */
 	while (count >= prSdioFunc->cur_blksize) {
@@ -1108,8 +999,7 @@ kalDevPortRead(IN P_GLUE_INFO_T prGlueInfo,
 		ret = sdio_readsb(prSdioFunc, pucDst, u2Port, count);
 	}
 
-	if (!in_interrupt)
-		sdio_release_host(prSdioFunc);
+	sdio_release_host(prSdioFunc);
 #else
 
 	/* Split buffer into multiple single block to workaround hifsys */
@@ -1181,8 +1071,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T prGlueInfo,
 	prSdioFunc = prHifInfo->func;
 	ASSERT(prSdioFunc->cur_blksize > 0);
 
-	if (!in_interrupt)
-		sdio_claim_host(prSdioFunc);
+	sdio_claim_host(prSdioFunc);
 
 	/* Split buffer into multiple single block to workaround hifsys */
 	while (count >= prSdioFunc->cur_blksize) {
@@ -1209,8 +1098,7 @@ kalDevPortWrite(IN P_GLUE_INFO_T prGlueInfo,
 		ret = sdio_writesb(prSdioFunc, u2Port, pucSrc, count);
 	}
 
-	if (!in_interrupt)
-		sdio_release_host(prSdioFunc);
+	sdio_release_host(prSdioFunc);
 #else
 	/* Split buffer into multiple single block to workaround hifsys */
 	while (count >= ((prGlueInfo->rHifInfo).prFuncInfo->blk_sz)) {
@@ -1317,13 +1205,9 @@ BOOL kalDevWriteWithSdioCmd52(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 u4Addr, IN
 	int ret = 0;
 
 #if (MTK_WCN_HIF_SDIO == 0)
-	if (!in_interrupt)
-		sdio_claim_host(prGlueInfo->rHifInfo.func);
-
+	sdio_claim_host(prGlueInfo->rHifInfo.func);
 	sdio_writeb(prGlueInfo->rHifInfo.func, ucData, u4Addr, &ret);
-
-	if (!in_interrupt)
-		sdio_release_host(prGlueInfo->rHifInfo.func);
+	sdio_release_host(prGlueInfo->rHifInfo.func);
 #else
 	ret = mtk_wcn_hif_sdio_writeb(prGlueInfo->rHifInfo.cltCtx, u4Addr, ucData);
 #endif

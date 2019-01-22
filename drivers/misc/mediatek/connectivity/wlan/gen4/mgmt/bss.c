@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/mgmt/bss.c#7
 */
@@ -10,527 +61,6 @@
 *    the Probe Response Frame for received Probe Request Frame.
 */
 
-/*
-** Log: bss.c
-**
-** 08 28 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** Bug fix for P2P Device interface scan.
-**
-** 08 22 2013 yuche.tsai
-** [BORA00002761] [MT6630][Wi-Fi Direct][Driver] Group Interface formation
-** [BORA00000779] [MT6620] Emulation For TX Code Check In
-**	Make P2P group interface formation success.
-**
-** 08 13 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Remove unused code
-**
-** 08 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add SW rate definition
-** 2. Add HW default rate selection logic from FW
-**
-** 07 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Update VHT IE composing function
-** 2. disable bow
-** 3. Exchange bss/sta rec update sequence for temp solution
-**
-** 03 12 2013 tsaiyuan.hsu
-** [BORA00002222] MT6630 unified MAC RXM
-** remove hif_rx_hdr usage.
-**
-** 03 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update Tx utility function for management frame
-**
-** 03 08 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Remove non-used compiling flag and code
-**
-** 03 08 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** Modify code for security design
-**
-** 03 06 2013 wh.su
-** [BORA00002446] [MT6630] [Wi-Fi] [Driver] Update the security function code
-** submit some code related with security.
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** take use of GET_BSS_INFO_BY_INDEX() and MAX_BSS_INDEX macros
-** for correctly indexing of BSS-INFO pointers
-**
-** 02 18 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modify bssClearClientList() to bssInitializeClientList()
-**
-** 01 28 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Sync CMD format
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 11 06 2012 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** .
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 09 04 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** sync for NVRAM warning scan result generation for CFG80211.
-**
-** 08 31 2012 chinglan.wang
-** NULL
-** Phone can not connect to AP secured with AES via WAPI in 802.11n Only.
-**
-** 07 24 2012 yuche.tsai
-** NULL
-** Bug fix for JB.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Let netdev bring up.
- *
- * 07 17 2012 yuche.tsai
- * NULL
- * Compile no error before trial run.
- *
- * 06 14 2012 chinglan.wang
- * NULL
- * Fix the losing of the HT IE in assoc request..
- *
- * 06 13 2012 yuche.tsai
- * NULL
- * Update maintrunk driver.
- * Add support for driver compose assoc request frame.
- *
- * 03 08 2012 yuche.tsai
- * NULL
- * Fix FW assert when start Hot-Spot.
- *
- * 03 02 2012 terry.wu
- * NULL
- * Snc CFG80211 modification for ICS migration from branch 2.2.
- *
- * 01 20 2012 chinglan.wang
- * 03 02 2012 terry.wu
- * NULL
- * Fix the WPA-PSK TKIP and WPA2-PSK AES security mode bug.
- *
- * NULL
- * Sync CFG80211 modification from branch 2,2.
- *
- * 01 15 2012 yuche.tsai
- * NULL
- * Fix wrong basic rate issue.
- *
- * 01 13 2012 yuche.tsai
- * NULL
- * WiFi Hot Spot Tethering for ICS ALPHA testing version.
- *
- * 11 03 2011 cm.chang
- * [WCXRP00000997] [MT6620 Wi-Fi][Driver][FW] Handle change of BSS preamble type and slot time
- * Always set short slot time to TRUE initially in AP mode
- *
- * 11 03 2011 wh.su
- * [WCXRP00001078] [MT6620 Wi-Fi][Driver] Adding the mediatek log improment support : XLOG
- * change the DBGLOG for "\n" and "\r\n". LABEL to LOUD for XLOG
- *
- * 09 14 2011 yuche.tsai
- * NULL
- * Add P2P IE in assoc response.
- *
- * 04 18 2011 terry.wu
- * [WCXRP00000660] [MT6620 Wi-Fi][Driver] Remove flag CFG_WIFI_DIRECT_MOVED
- * Remove flag CFG_WIFI_DIRECT_MOVED.
- *
- * 04 12 2011 eddie.chen
- * [WCXRP00000617] [MT6620 Wi-Fi][DRV/FW] Fix for sigma
- * Fix the sta index in processing security frame
- * Simple flow control for TC4 to avoid mgt frames for PS STA to occupy the TC4
- * Add debug message.
- *
- * 04 08 2011 eddie.chen
- * [WCXRP00000617] [MT6620 Wi-Fi][DRV/FW] Fix for sigma
- * Fix for sigma
- *
- * 03 29 2011 eddie.chen
- * [WCXRP00000608] [MT6620 Wi-Fi][DRV] Change wmm parameters in beacon
- * Change wmm parameters in beacon.
- *
- * 03 29 2011 yuche.tsai
- * [WCXRP00000607] [Volunteer Patch][MT6620][Driver] Coding Style Fix for klocwork scan.
- * Fix klocwork issue.
- *
- * 03 19 2011 yuche.tsai
- * [WCXRP00000581] [Volunteer Patch][MT6620][Driver] P2P IE in Assoc Req Issue
- * Make assoc req to append P2P IE if wifi direct is enabled.
- *
- * 03 11 2011 chinglan.wang
- * [WCXRP00000537] [MT6620 Wi-Fi][Driver] Can not connect to 802.11b/g/n mixed AP with WEP security.
- * .
- *
- * 03 03 2011 george.huang
- * [WCXRP00000508] [MT6620 Wi-Fi][Driver] aware of beacon MSDU will be free, after BSS deactivated
- * .
- *
- * 03 03 2011 george.huang
- * [WCXRP00000508] [MT6620 Wi-Fi][Driver] aware of beacon MSDU will be free, after BSS deactivated
- * modify to handle if beacon MSDU been released when BSS deactivated
- *
- * 03 02 2011 wh.su
- * [WCXRP00000506] [MT6620 Wi-Fi][Driver][FW] Add Security check related code
- * add code to let the beacon and probe response for Auto GO WSC .
- *
- * 03 02 2011 wh.su
- * [WCXRP00000448] [MT6620 Wi-Fi][Driver] Fixed WSC IE not send out at probe request
- * Add code to send beacon and probe response WSC IE at Auto GO.
- *
- * 02 17 2011 eddie.chen
- * [WCXRP00000458] [MT6620 Wi-Fi][Driver] BOW Concurrent - ProbeResp was exist in other channel
- * 1) Change GetFrameAction decision when BSS is absent.
- * 2) Check channel and resource in processing ProbeRequest
- *
- * 02 12 2011 yuche.tsai
- * [WCXRP00000441] [Volunteer Patch][MT6620][Driver] BoW can not create desired station type when Hot Spot is enabled.
- * bss should create station record type according to callers input.
- *
- * 02 11 2011 terry.wu
- * [WCXRP00000383] [MT6620 Wi-Fi][Driver] Separate WiFi and P2P driver into two modules
- * In p2p link function, check networktype before calling p2p function.
- *
- * 02 11 2011 terry.wu
- * [WCXRP00000383] [MT6620 Wi-Fi][Driver] Separate WiFi and P2P driver into two modules
- * Modify p2p link function to avoid assert.
- *
- * 01 26 2011 cm.chang
- * [WCXRP00000395] [MT6620 Wi-Fi][Driver][FW] Search STA_REC with additional net type index argument
- * .
- *
- * 01 25 2011 yuche.tsai
- * [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
- * Change Station Type in Station Record, Modify MACRO definition for getting station type & network type index & Role.
- *
- * 01 25 2011 eddie.chen
- * [WCXRP00000385] [MT6620 Wi-Fi][DRV] Add destination decision for forwarding packets
- * Fix the compile error in windows.
- *
- * 01 24 2011 eddie.chen
- * [WCXRP00000385] [MT6620 Wi-Fi][DRV] Add destination decision for forwarding packets
- * Add destination decision in AP mode.
- *
- * 01 24 2011 terry.wu
- * [WCXRP00000383] [MT6620 Wi-Fi][Driver] Separate WiFi and P2P driver into two modules
- * .Fix typo and missing entry
- *
- * 12 30 2010 eddie.chen
- * [WCXRP00000322] Add WMM IE in beacon,
-
-Add per station flow control when STA is in PS
-
- * Fix  prBssInfo->aucCWminLog to  prBssInfo->aucCWminLogForBcast
- *
- * 12 29 2010 eddie.chen
- * [WCXRP00000322] Add WMM IE in beacon,
-
-Add per station flow control when STA is in PS
-
- * Add WMM parameter for broadcast.
- *
- * 12 29 2010 eddie.chen
- * [WCXRP00000322] Add WMM IE in beacon,
-Add per station flow control when STA is in PS
-
- * 1) PS flow control event
- *
- * 2) WMM IE in beacon, assoc resp, probe resp
- *
- * 11 29 2010 cp.wu
- *
- * update ucRcpi of STA_RECORD_T for AIS when
- * 1) Beacons for IBSS merge is received
- * 2) Associate Response for a connecting peer is received
- *
- * 10 18 2010 cp.wu
- * [WCXRP00000052] [MT6620 Wi-Fi][Driver] Eliminate Linux Compile Warning
- * use definition macro to replace hard-coded constant
- *
- * 10 08 2010 wh.su
- * [WCXRP00000085] [MT6620 Wif-Fi] [Driver] update the modified p2p state machine
- * update the frog's new p2p state machine.
- *
- * 09 28 2010 wh.su
- * NULL
- * [WCXRP00000069][MT6620 Wi-Fi][Driver] Fix some code for phase 1 P2P Demo.
- *
- * 09 27 2010 chinghwa.yu
- * [WCXRP00000063] Update BCM CoEx design and settings[WCXRP00000065] Update BoW design and settings
- * Update BCM/BoW design and settings.
- *
- * 09 16 2010 cm.chang
- * NULL
- * Change conditional compiling options for BOW
- *
- * 09 10 2010 cm.chang
- * NULL
- * Always update Beacon content if FW sync OBSS info
- *
- * 09 07 2010 wh.su
- * NULL
- * adding the code for beacon/probe req/ probe rsp wsc ie at p2p.
- *
- * 09 03 2010 kevin.huang
- * NULL
- * Refine #include sequence and solve recursive/nested #include issue
- *
- * 08 31 2010 kevin.huang
- * NULL
- * Use LINK LIST operation to process SCAN result
- *
- * 08 30 2010 cp.wu
- * NULL
- * eliminate klockwork errors
- *
- * 08 29 2010 yuche.tsai
- * NULL
- * Finish SLT TX/RX & Rate Changing Support.
- *
- * 08 24 2010 cm.chang
- * NULL
- * Support RLM initail channel of Ad-hoc, P2P and BOW
- *
- * 08 16 2010 yuche.tsai
- * NULL
- * Before composing Beacon IE, assign network type index for msdu info,
- * this information is needed by RLM module while composing some RLM related IE field.
- *
- * 08 16 2010 cp.wu
- * NULL
- * Replace CFG_SUPPORT_BOW by CFG_ENABLE_BT_OVER_WIFI.
- * There is no CFG_SUPPORT_BOW in driver domain source.
- *
- * 08 16 2010 kevin.huang
- * NULL
- * Refine AAA functions
- *
- * 08 12 2010 kevin.huang
- * NULL
- * Fix undefined pucDestAddr in bssUpdateBeaconContent()
- *
- * 08 12 2010 kevin.huang
- * NULL
- * Refine bssProcessProbeRequest() and bssSendBeaconProbeResponse()
- *
- * 08 11 2010 cp.wu
- * NULL
- * 1) do not use in-stack variable for beacon updating. (for MAUI porting)
- * 2) extending scanning result to 64 instead of 48
- *
- * 08 02 2010 yuche.tsai
- * NULL
- * P2P Group Negotiation Code Check in.
- *
- * 08 02 2010 george.huang
- * NULL
- * add WMM-PS test related OID/ CMD handlers
- *
- * 07 26 2010 yuche.tsai
- *
- * Add support to RX probe response for P2P.
- *
- * 07 20 2010 cp.wu
- *
- * 1) bugfix: do not stop timer for join after switched into normal_tr state, for providing chance for DHCP handshasking
- * 2) modify rsnPerformPolicySelection() invoking
- *
- * 07 19 2010 wh.su
- *
- * update for security supporting.
- *
- * 07 19 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * when IBSS is being merged-in, send command packet to PM for connected indication
- *
- * 07 19 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration.
- * Add Ad-Hoc support to AIS-FSM
- *
- * 07 14 2010 yarco.yang
- *
- * 1. Remove CFG_MQM_MIGRATION
- * 2. Add CMD_UPDATE_WMM_PARMS command
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 07 06 2010 george.huang
- * [WPD00001556]Basic power managemenet function
- * Update arguments for nicUpdateBeaconIETemplate()
- *
- * 06 29 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * 1) sync to. CMD/EVENT document v0.03
- * 2) simplify DTIM period parsing in scan.c only, bss.c no longer parses it again.
- * 3) send command packet to indicate FW-PM after
- *     a) 1st beacon is received after AIS has connected to an AP
- *     b) IBSS-ALONE has been created
- *     c) IBSS-MERGE has occurred
- *
- * 06 28 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * send MMPDU in basic rate.
- *
- * 06 25 2010 george.huang
- * [WPD00001556]Basic power managemenet function
- * Create beacon update path, with expose bssUpdateBeaconContent()
- *
- * 06 21 2010 yuche.tsai
- * [WPD00003839][MT6620 5931][P2P] Feature migration
- * Fix compile error while enable WIFI_DIRECT support.
- *
- * 06 21 2010 yarco.yang
- * [WPD00003837][MT6620]Data Path Refine
- * Support CFG_MQM_MIGRATION flag
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * enable RX management frame handling.
- *
- * 06 21 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * specify correct value for management frames.
- *
- * 06 18 2010 cm.chang
- * [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
- * Provide cnmMgtPktAlloc() and alloc/free function of msg/buf
- *
- * 06 15 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * correct when ADHOC support is turned on.
- *
- * 06 15 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add scan.c.
- *
- * 06 14 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add management dispatching function table.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * auth.c is migrated.
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * fix compilation error when WIFI_DIRECT is turned on
- *
- * 06 11 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * add bss.c.
- *
- * 06 04 2010 george.huang
- * [BORA00000678][MT6620]WiFi LP integration
- * [PM] Support U-APSD for STA mode
- *
- * 05 28 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add ClientList handling API - bssClearClientList, bssAddStaRecToClientList
- *
- * 05 24 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Update bssProcessProbeRequest() to avoid redundant SSID IE {0,0} for IOT.
- *
- * 05 21 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Refine txmInitWtblTxRateTable() - set TX initial rate according to AP's operation rate set
- *
- * 05 18 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * Ad-hoc Beacon should not carry HT OP and OBSS IEs
- *
- * 05 14 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Use TX MGMT Frame API for sending PS NULL frame to avoid the TX Burst Mechanism in TX FW Frame API
- *
- * 05 14 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Separate Beacon and ProbeResp IE array
- *
- * 05 12 2010 kevin.huang
- * [BORA00000794][WIFISYS][New Feature]Power Management Support
- * Add Power Management - Legacy PS-POLL support.
- *
- * 04 28 2010 tehuang.liu
- * [BORA00000605][WIFISYS] Phase3 Integration
- * Removed the use of compiling flag MQM_WMM_PARSING
- *
- * 04 27 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add Set Slot Time and Beacon Timeout Support for AdHoc Mode
- *
- * 04 24 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * g_aprBssInfo[] depends on CFG_SUPPORT_P2P and CFG_SUPPORT_BOW
- *
- * 04 22 2010 cm.chang
- * [BORA00000018]Integrate WIFI part into BORA for the 1st time
- * First draft code to support protection in AP mode
- *
- * 04 20 2010 kevin.huang
- * [BORA00000714][WIFISYS][New Feature]Beacon Timeout Support
- * Fix restart Beacon Timeout Func after connection diagnosis
- *
- * 04 19 2010 kevin.huang
- * [BORA00000714][WIFISYS][New Feature]Beacon Timeout Support
- * Add Beacon Timeout Support and will send Null frame to diagnose connection
- *
- * 04 16 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
- * adding the wpa-none for ibss beacon.
- *
- * 04 15 2010 wh.su
- * [BORA00000680][MT6620] Support the statistic for Microsoft os query
- * fixed the protected bit at cap info for ad-hoc.
- *
- * 03 18 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Rename the CFG flags
- *
- * 03 16 2010 kevin.huang
- * [BORA00000663][WIFISYS][New Feature] AdHoc Mode Support
- * Add AdHoc Mode
- *
- * 02 26 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Update outgoing beacon's TX data rate
- *
- * 02 23 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add DTIM count update while TX Beacon
- *
- * 02 05 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Modify code due to define - BAND_24G and specific BSS_INFO_T was changed
- *
- * 02 05 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Revise data structure to share the same BSS_INFO_T for avoiding coding error
- *
- * 02 04 2010 kevin.huang
- * [BORA00000603][WIFISYS] [New Feature] AAA Module Support
- * Add AAA Module Support, Revise Net Type to Net Type Index for array lookup
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -2904,6 +2434,10 @@ VOID bssDumpBssInfo(IN P_ADAPTER_T prAdapter, IN UINT_8 ucBssIndex)
 	DBGLOG(SW4, INFO, "(OBSS) ProtectMode HT[%u] ERP[%u], OperationMode GF[%u] RIFS[%u]\n",
 	       prBssInfo->eObssHtProtectMode,
 	       prBssInfo->fgObssErpProtectMode, prBssInfo->eObssGfOperationMode, prBssInfo->fgObssRifsOperationMode);
+
+	DBGLOG(SW4, INFO, "VhtChannelWidth[%u] OpChangeChannelWidth[%u], IsOpChangeChannelWidth[%u]\n",
+	       prBssInfo->ucVhtChannelWidth,
+	       prBssInfo->ucOpChangeChannelWidth, prBssInfo->fgIsOpChangeChannelWidth);
 
 	DBGLOG(SW4, INFO, "======== Dump Connected Client ========\n");
 

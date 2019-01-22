@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/wlan_def.h#1
 */
@@ -7,255 +58,6 @@
  *
  */
 
-/*
-** Log: wlan_def.h
-**
-** 07 25 2014 eason.tsai
-** AOSP
-**
-** 08 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add SW rate definition
-** 2. Add HW default rate selection logic from FW
-**
-** 07 31 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Fix NetDev binding issue
-**
-** 07 30 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Driver update for Hot-Spot mode.
-**
-** 07 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Add 11ac to AIS desired PHY config
-** 2. Extend PHY type set to 11ac/11anac/11abgnac
-**
-** 07 12 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Update VHT IE composing function
-** 2. disable bow
-** 3. Exchange bss/sta rec update sequence for temp solution
-**
-** 06 26 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** Update VHT rate definition
-**
-** 06 14 2013 eddie.chen
-** [BORA00002450] [WIFISYS][MT6630] New design for mt6630
-** Add full mcsset. Add more vht info in sta update
-**
-** 02 27 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** Add new code, fix compile warning.
-**
-** 02 25 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** <saved by Perforce>
-**
-** 02 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** enable AIS related management modules building under Android/Linux
-**
-** 02 18 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** New feature to remove all sta records by BssIndex
-**
-** 02 06 2013 yuche.tsai
-** [BORA00002398] [MT6630][Volunteer Patch] P2P Driver Re-Design for Multiple BSS support
-** MT6630 code update.
-**
-** 01 22 2013 cp.wu
-** [BORA00002253] [MT6630 Wi-Fi][Driver][Firmware] Add NLO and timeout mechanism to SCN module
-** modification for ucBssIndex migration
-**
-** 01 21 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** 1. Create rP2pDevInfo structure
-** 2. Support 80/160 MHz channel bandwidth for channel privilege
-**
-** 01 17 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Use ucBssIndex to replace eNetworkTypeIndex
-**
-** 11 06 2012 eason.tsai
-** [BORA00002255] [MT6630 Wi-Fi][Driver] develop
-** .
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-*
-* 12 05 2011 cp.wu
-* [WCXRP00001131] [MT6620 Wi-Fi][Driver][AIS] Implement connect-by-BSSID path
-* add CONNECT_BY_BSSID policy
-*
-* 10 12 2011 wh.su
-* [WCXRP00001036] [MT6620 Wi-Fi][Driver][FW] Adding the 802.11w code for MFP
-* adding the 802.11w related function and define .
-*
-* 06 22 2011 wh.su
-* [WCXRP00000806] [MT6620 Wi-Fi][Driver] Move the WPA/RSN IE and WAPI IE structure to mac.h and let the sw structure not
-*align at byte
-* Move the WAPI/RSN IE to mac.h and SW structure not align to byte,
-* Notice needed update P2P.ko.
-*
-* 04 08 2011 eddie.chen
-* [WCXRP00000617] [MT6620 Wi-Fi][DRV/FW] Fix for sigma
-* Fix for sigma
-*
-* 03 17 2011 yuche.tsai
-* NULL
-* Resize the Secondary Device Type array when WiFi Direct is enabled.
-*
-* 01 25 2011 yuche.tsai
-* [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
-* Change Station Type in Station Record, Modify MACRO definition for getting station type & network type index & Role.
-*
-* 01 25 2011 yuche.tsai
-* [WCXRP00000388] [Volunteer Patch][MT6620][Driver/Fw] change Station Type in station record.
-* Add new station type MACRO.
-*
-* 12 07 2010 cm.chang
-* [WCXRP00000238] MT6620 Wi-Fi][Driver][FW] Support regulation domain setting from NVRAM and supplicant
-* 1. Country code is from NVRAM or supplicant
-* 2. Change band definition in CMD/EVENT.
-*
-* 10 11 2010 kevin.huang
-* [WCXRP00000068] [MT6620 Wi-Fi][Driver][FW] Fix STA RECORD sync issue and remove unused code
-* Update ENUM_STA_ROLE_INDEX_T by using a fixed base value
-*
-* 10 04 2010 cp.wu
-* [WCXRP00000077] [MT6620 Wi-Fi][Driver][FW] Eliminate use of ENUM_NETWORK_TYPE_T and replaced by
-*ENUM_NETWORK_TYPE_INDEX_T only
-* remove ENUM_NETWORK_TYPE_T definitions
-*
-* 09 14 2010 chinghwa.yu
-* NULL
-* Update OP_MODE_BOW and include bow_fsm.h.
-*
-* 09 03 2010 kevin.huang
-* NULL
-* Refine #include sequence and solve recursive/nested #include issue
-*
-* 08 31 2010 kevin.huang
-* NULL
-* Use LINK LIST operation to process SCAN result
-*
-* 08 29 2010 yuche.tsai
-* NULL
-* Change P2P Descriptor List to a pointer and allocate it dynamically to avoid structure corrupt by BssDescriptor free.
-*
-* 08 16 2010 kevin.huang
-* NULL
-* Refine AAA functions
-*
-* 08 12 2010 kevin.huang
-* NULL
-* Refine bssProcessProbeRequest() and bssSendBeaconProbeResponse()
-*
-* 08 12 2010 yuche.tsai
-* NULL
-* Add a pointer in BSS Descriptor for P2P Descriptor.
-*
-* 08 11 2010 yuche.tsai
-* NULL
-* Add an Interface in BSS Descriptor.
-*
-* 08 05 2010 yuche.tsai
-* NULL
-* Modify data structure for P2P Scan result.
-*
-* 07 26 2010 yuche.tsai
-*
-* Add an operation mode for P2P device.
-*
-* 07 23 2010 cp.wu
-*
-* P2P/RSN/WAPI IEs need to be declared with compact structure.
-*
-* 07 21 2010 yuche.tsai
-*
-* Add for P2P Scan Result Parsing & Saving.
-*
-* 07 20 2010 wh.su
-*
-* adding the wapi code.
-*
-* 07 09 2010 cp.wu
-*
-* 1) separate AIS_FSM state for two kinds of scanning. (OID triggered scan, and scan-for-connection)
-* 2) eliminate PRE_BSS_DESC_T, Beacon/PrebResp is now parsed in single pass
-* 3) implment DRV-SCN module, currently only accepts single scan request, other request will be directly dropped by
-*returning BUSY
-*
-* 07 08 2010 cp.wu
-*
-* [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
-*
-* 06 28 2010 cm.chang
-* [WPD00003841][LITE Driver] Migrate RLM/CNM to host driver
-* 1st draft code for RLM module
-*
-* 06 25 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* modify Beacon/ProbeResp to complete parsing,
-* because host software has looser memory usage restriction
-*
-* 06 21 2010 yuche.tsai
-* [WPD00003839][MT6620 5931][P2P] Feature migration
-* Add P2P present boolean flag in BSS & Pre-BSS descriptor.
-*
-* 06 18 2010 wh.su
-* [WPD00003840][MT6620 5931] Security migration
-* migration the security related function from firmware.
-*
-* 06 11 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* auth.c is migrated.
-*
-* 06 11 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* 1) migrate assoc.c.
-* 2) add ucTxSeqNum for tracking frames which needs TX-DONE awareness
-* 3) add configuration options for CNM_MEM and RSN modules
-* 4) add data path for management frames
-* 5) eliminate rPacketInfo of MSDU_INFO_T
-*
-* 06 10 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* add buildable & linkable ais_fsm.c
-*
-* related reference are still waiting to be resolved
-*
-* 06 09 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* add definitions for module migration.
-*
-* 06 07 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* move bss related data types to wlan_def.h to avoid recursive dependency.
-*
-* 06 07 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* merge wlan_def.h.
-*
-* 06 07 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* merge cnm_scan.h and hem_mbox.h
-*
-* 06 07 2010 cp.wu
-* [WPD00003833][MT6620 and MT5931] Driver migration
-* merge wifi_var.h, precomp.h, cnm_timer.h (data type only)
-*
-* 06 06 2010 kevin.huang
-* [WPD00003832][MT6620 5931] Create driver base
-* [MT6620 5931] Create driver base
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:16:40 GMT mtk01426
-**  Init for develop
-**
-*/
 
 #ifndef _WLAN_DEF_H
 #define _WLAN_DEF_H
@@ -892,15 +694,9 @@ typedef enum _ENUM_PARAM_PHY_CONFIG_T {
 					 **/
 	PHY_CONFIG_802_11BG,	/*!< Can associated with 802_11bg AP, Scan single band and not report 5G BSSs.
 				 **/
-	PHY_CONFIG_802_11G,	/*!< Can associated with 802_11g only AP, Scan single band and not report 5G
-				*BSSs.
-				*/
-	PHY_CONFIG_802_11A,	/*!< Can associated with 802_11a only AP, Scan single band and not report 2.4G
-				*  BSSs.
-				*/
-	PHY_CONFIG_802_11B,	/*!< Can associated with 802_11b only AP, Scan single band and not report 5G
-				* BSSs.
-				*/
+	PHY_CONFIG_802_11G,	/*!< Can associated with 802_11g only AP, Scan single band and not report 5G BSSs. */
+	PHY_CONFIG_802_11A,	/*!< Can associated with 802_11a only AP, Scan single band and not report 2.4G BSSs. */
+	PHY_CONFIG_802_11B,	/*!< Can associated with 802_11b only AP, Scan single band and not report 5G BSSs. */
 	PHY_CONFIG_802_11ABGN,	/*!< Can associated with 802.11abgn AP, Scan dual band. */
 	PHY_CONFIG_802_11BGN,	/*!< Can associated with 802_11bgn AP, Scan single band and not report 5G BSSs.
 				 **/
@@ -1060,9 +856,7 @@ typedef struct _P2P_DEVICE_DESC_T {
  *                                 M A C R O S
  ********************************************************************************
  */
-/* Macros to get and set the wireless LAN frame fields those are 16/32 bits in
- * length.
- */
+/* Macros to get and set the wireless LAN frame fields those are 16/32 bits in length. */
 #define WLAN_GET_FIELD_16(_memAddr_p, _value_p) \
 	{ \
 		PUINT_8 __cp = (PUINT_8)(_memAddr_p); \

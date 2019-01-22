@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
  ***************************************************************************
  * MediaTek Inc.
@@ -34,44 +85,6 @@
 #define RX_BUFFER_AGGRESIZE			3840
 #define RX_BUFFER_NORMSIZE			3840
 #define TX_BUFFER_NORMSIZE			3840
-
-/* Client context provided by hif_pci driver for the following function call */
-typedef UINT_32 MTK_HIF_PCI_CLTCTX;
-
-#define PCICLTCTX_CID(ctx) (((ctx) >> 16) & 0xFFFF)
-
-/* Function info provided by client driver */
-typedef struct _MTK_HIF_PCI_FUNCINFO {
-	UINT_16 vendor_id;	/* Vendor ID */
-	UINT_16 device_id;	/* Device ID */
-	UINT_16 func_num;	/* Function Number */
-} MTK_HIF_PCI_FUNCINFO;
-
-
-/* New device inserted */
-typedef INT_32 (*MTK_HIF_PCI_PROBE)(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *dev);
-/* Device removed (NULL if not a hot-plug capable driver) */
-typedef VOID (*MTK_HIF_PCI_REMOVE)(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *dev);
-/* Device suspended */
-typedef INT_32 (*MTK_HIF_PCI_SUSPEND)(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *dev, pm_message_t state);
-/* Device woken up */
-typedef INT_32 (*MTK_HIF_PCI_RESUME)(MTK_HIF_PCI_CLTCTX ctx, struct pci_dev *dev);
-/* Device irq handler */
-typedef irqreturn_t (*MTK_HIF_PCI_IRQ)(MTK_HIF_PCI_CLTCTX ctx, INT_32 irq, struct pci_dev *dev);
-
-
-/* Client info provided by client driver */
-typedef struct _MTK_HIF_PCI_CLTINFO {
-	const MTK_HIF_PCI_FUNCINFO *func_tbl;	/* supported function info table */
-	UINT_32 func_tbl_size;			/* supported function table info element number */
-	MTK_HIF_PCI_PROBE hif_clt_probe;	/* callback function for probing */
-	MTK_HIF_PCI_REMOVE hif_clt_remove;	/* callback function for removing */
-	MTK_HIF_PCI_SUSPEND hif_clt_suspend;	/* callback function for suspend */
-	MTK_HIF_PCI_RESUME hif_clt_resume;	/* callback function for resume */
-	MTK_HIF_PCI_IRQ hif_clt_irq;		/* callback function for irq */
-} MTK_HIF_PCI_CLTINFO;
-
-
 
 #define INC_RING_INDEX(_idx, _RingSize) \
 { \
@@ -235,8 +248,5 @@ typedef struct _PCIE_CHIP_CR_MAPPING {
 	UINT_32 u4Range;
 } PCIE_CHIP_CR_MAPPING, *P_PCIE_CHIP_CR_MAPPING;
 
-extern PVOID mtk_hif_pci_get_drvdata(MTK_HIF_PCI_CLTCTX ctx);
-extern VOID mtk_hif_pci_set_drvdata(MTK_HIF_PCI_CLTCTX ctx, PVOID private_data_p);
-extern INT_32 mtk_hif_pci_client_reg(const MTK_HIF_PCI_CLTINFO *pinfo);
-extern INT_32 mtk_hif_pci_client_unreg(const MTK_HIF_PCI_CLTINFO *pinfo);
-#endif /* __HIF_PCI_H__ */
+
+#endif /* HIF_PCI_H__ */

@@ -1,4 +1,55 @@
 /******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
+/******************************************************************************
 *[File]             sdio.c
 *[Version]          v1.0
 *[Revision Date]    2010-03-01
@@ -9,245 +60,6 @@
 *    Copyright (C) 2010 MediaTek Incorporation. All Rights Reserved.
 ******************************************************************************/
 
-/*
-** 10 14 2015 zd.hu
-** [BORA00005104] [MT6632 Wi-Fi] Fix coding style.
-** 1) Purpose:
-** Fix typos.
-** 2) Changed function name:
-** Files under include/, os/linux/hif and os/linux/include
-** 3) Code change description brief:
-** Fix typos.
-** 4) Unit Test Result:
-** build pass, scan OK and connect to a AP OK on kernel 3.11.
-**
-** 09 30 2015 th3.huang
-** [BORA00005104] [MT6632 Wi-Fi] Fix coding style.
-** 1 fixed coding style issue by auto tool.
-**
-** 09 24 2015 litien.chang
-** [BORA00005127] MT6632
-** [WiFi] usb/sdio/pcie 3 interface integration
-**
-** 09 10 2015 terry.wu
-** [BORA00004513] [MT6632 Wi-Fi] Development
-** 1. Increase USB Tx urb buffer size to 32k
-** 2. Increase Tx resource data type from 16 bits to 32 bits
-** 3. Add USB urb buffer check function
-**
-** 09 04 2015 terry.wu
-** [BORA00004513] [MT6632 Wi-Fi] Development
-** 1. Add USB sending command cancel mechanism
-** 2. Refine CMD allocation for USB
-**
-** 08 17 2015 terry.wu
-** 1. Reduce USB vendor request retry count & timeout
-** 2. Refine WIFI_CUNC_READY
-**
-** 08 12 2015 terry.wu
-** 1. Remove MT6630 definitation
-** 2. Add successful return value to Wi-Fi function ready check
-**
-** 08 07 2015 terry.wu
-** 1. Remove unused code
-**
-** 08 06 2015 terry.wu
-** 1. Fix some build error
-** 2. Add QA tool chip ID check workaround for USB
-**
-** 08 06 2015 terry.wu
-** 1. use defined(_HIF_USB) instead of _HIF_USB
-** 2. enable QA tool
-** 3. rename register header file to MT6632
-**
-** 07 16 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** Redesign USB TX aggregation to support multiple URB submitted simultaneously
-**
-** 07 08 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** 1. Add USB TX aggregation support (CFG_USB_TX_AGG)
-** 2. Add USB RX aggregation support (in nicUSBInit())
-** 3. Refine USB URB management
-**
-** 06 23 2015 litien.chang
-** [BORA00004481] [MT6632]
-** [WIFI] add one more urb for RX data path
-**
-** 06 02 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** 1. Fix rmmod crash issue (may still have memory leak problem)
-** 2. Add checking WiFi task state before FW download
-**
-** 05 29 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** 1. Remove all USB code in SDIO files.
-** 2. Move zeroing CMD TXD+header to cmdBufAllocateCmdInfo
-**
-** 05 19 2015 litien.chang
-** [BORA00004481] [MT6632]
-** [USB] Add RX data path with URB
-**
-** 05 11 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** 1. Support sending CMD & receiving EVENT using URB.
-** 2. Clean up some code.
-**
-** 05 08 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** Clean up some code
-**
-** 05 07 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** Support N9+CR4 FW download
-**
-** 05 05 2015 desmond.lin
-** [BORA00004078] [USB][HostDriver]
-** 1. insmod module OK.
-** 2. USB probe OK
-** 3. Add USB read/write CR (HAL_MCR_RD/HAL_MCR_WR)
-**
-** 07 05 2013 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** 1. Avoid large packet Tx issue
-**
-** 02 01 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** 1. eliminate MT5931/MT6620/MT6628 logic
-** 2. add firmware download control sequence
-**
-** 11 21 2012 terry.wu
-** [BORA00002207] [MT6630 Wi-Fi] TXM & MQM Implementation
-** [Driver] Fix linux drvier build error.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** .
-**
-** 08 24 2012 cp.wu
-** [WCXRP00001269] [MT6620 Wi-Fi][Driver] cfg80211 porting merge back to DaVinci
-** cfg80211 support merge back from ALPS.JB to DaVinci - MT6620 Driver v2.3 branch.
- *
- * 04 12 2012 terry.wu
- * NULL
- * Add AEE message support
- * 1) Show AEE warning(red screen) if SDIO access error occurs
-
- *
- * 02 14 2012 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * include correct header file upon setting.
- *
- * 11 10 2011 cp.wu
- * [WCXRP00001098] [MT6620 Wi-Fi][Driver] Replace printk by DBG LOG macros in linux porting layer
- * 1. eliminaite direct calls to printk in porting layer.
- * 2. replaced by DBGLOG, which would be XLOG on ALPS platforms.
- *
- * 09 20 2011 cp.wu
- * [WCXRP00000994] [MT6620 Wi-Fi][Driver] dump message for bus error and reset bus error flag while re-initialized
- * 1. always show error message for SDIO bus errors.
- * 2. reset bus error flag when re-initialization
- *
- * 08 17 2011 cp.wu
- * [WCXRP00000851] [MT6628 Wi-Fi][Driver] Add HIFSYS related definition to driver source tree
- * add MT6628 related definitions for Linux/Android driver.
- *
- * 05 18 2011 cp.wu
- * [WCXRP00000702] [MT5931][Driver] Modify initialization sequence for E1 ASIC
- * add device ID for MT5931.
- *
- * 04 08 2011 pat.lu
- * [WCXRP00000623] [MT6620 Wi-Fi][Driver] use ARCH define to distinguish PC Linux driver
- * Use CONFIG_X86 instead of PC_LINUX_DRIVER_USE option to have proper compile setting for PC Linux driver
- *
- * 03 22 2011 pat.lu
- * [WCXRP00000592] [MT6620 Wi-Fi][Driver] Support PC Linux Environment Driver Build
- * Add a compiler option "PC_LINUX_DRIVER_USE" for building driver in PC Linux environment.
- *
- * 03 18 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into
- * a single one to reduce physically continuous memory consumption
- * deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK.
- *
- * 03 15 2011 cp.wu
- * [WCXRP00000559] [MT6620 Wi-Fi][Driver] Combine TX/RX DMA buffers into
- * a single one to reduce physically continuous memory consumption
- * 1. deprecate CFG_HANDLE_IST_IN_SDIO_CALLBACK
- * 2. Use common coalescing buffer for both TX/RX directions
- *
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 11 15 2010 jeffrey.chang
- * [WCXRP00000181] [MT6620 Wi-Fi][Driver] fix the driver message "GLUE_FLAG_HALT skip INT" during unloading
- * Fix GLUE_FALG_HALT message which cause driver to hang
- *
- * 11 08 2010 cp.wu
- * [WCXRP00000166] [MT6620 Wi-Fi][Driver] use SDIO CMD52 for enabling/disabling interrupt to reduce transaction period
- * correct typo
- *
- * 11 08 2010 cp.wu
- * [WCXRP00000166] [MT6620 Wi-Fi][Driver] use SDIO CMD52 for enabling/disabling interrupt to reduce transaction period
- * change to use CMD52 for enabling/disabling interrupt to reduce SDIO transaction time
- *
- * 11 01 2010 yarco.yang
- * [WCXRP00000149] [MT6620 WI-Fi][Driver]Fine tune performance on MT6516 platform
- * Add code to run WlanIST in SDIO callback.
- *
- * 10 19 2010 cp.wu
- * [WCXRP00000122] [MT6620 Wi-Fi][Driver] Preparation for YuSu source tree integration
- * remove HIF_SDIO_ONE flags because the settings could be merged for runtime detection instead of compile-time.
- *
- * 10 19 2010 jeffrey.chang
- * [WCXRP00000120] [MT6620 Wi-Fi][Driver] Refine linux kernel module
- * to the license of MTK propietary and enable MTK HIF by default
- * Refine linux kernel module to the license of MTK and enable MTK HIF
- *
- * 08 21 2010 jeffrey.chang
- * NULL
- * 1) add sdio two setting
- * 2) bug fix of sdio glue
- *
- * 08 18 2010 jeffrey.chang
- * NULL
- * support multi-function sdio
- *
- * 08 18 2010 cp.wu
- * NULL
- * #if defined(__X86__) is not working, change to use #ifdef CONFIG_X86.
- *
- * 08 17 2010 cp.wu
- * NULL
- * add ENE SDIO host workaround for x86 linux platform.
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 05 07 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * Fix hotplug bug
- *
- * 03 28 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * clear sdio interrupt
- *
- * 03 24 2010 jeffrey.chang
- * [WPD00003826]Initial import for Linux port
- * initial import for Linux port
-**
-*/
 
 /*******************************************************************************
 *                         C O M P I L E R   F L A G S
@@ -373,7 +185,7 @@ static int mtk_usb_probe(struct usb_interface *intf, const struct usb_device_id 
 	int ret = 0;
 	struct usb_device *dev;
 
-	DBGLOG(HAL, INFO, "mtk_usb_probe()\n");
+	DBGLOG(HAL, EVENT, "mtk_usb_probe()\n");
 
 	ASSERT(intf);
 	ASSERT(id);
@@ -411,7 +223,7 @@ static int mtk_usb_probe(struct usb_interface *intf, const struct usb_device_id 
 #endif
 
 #if 1
-	DBGLOG(HAL, INFO, "wlan_probe()\n");
+	DBGLOG(HAL, EVENT, "wlan_probe()\n");
 	if (pfWlanProbe((PVOID) intf, (PVOID) id->driver_info) != WLAN_STATUS_SUCCESS) {
 		/* printk(KERN_WARNING DRV_NAME"pfWlanProbe fail!call pfWlanRemove()\n"); */
 		pfWlanRemove();
@@ -438,7 +250,7 @@ static void mtk_usb_disconnect(struct usb_interface *intf)
 {
 	P_GLUE_INFO_T prGlueInfo;
 
-	DBGLOG(HAL, INFO, "mtk_usb_disconnect()\n");
+	DBGLOG(HAL, STATE, "mtk_usb_disconnect()\n");
 
 	ASSERT(intf);
 	prGlueInfo  = (P_GLUE_INFO_T)usb_get_intfdata(intf);
@@ -453,7 +265,7 @@ static void mtk_usb_disconnect(struct usb_interface *intf)
 
 	g_fgDriverProbed = FALSE;
 
-	DBGLOG(HAL, INFO, "mtk_usb_disconnect() done\n");
+	DBGLOG(HAL, STATE, "mtk_usb_disconnect() done\n");
 }
 
 int mtk_usb_suspend(struct usb_interface *intf, pm_message_t message)
@@ -461,10 +273,10 @@ int mtk_usb_suspend(struct usb_interface *intf, pm_message_t message)
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)usb_get_intfdata(intf);
 	UINT_8 count = 0;
 
-	DBGLOG(HAL, INFO, "mtk_usb_suspend()\n");
+	DBGLOG(HAL, STATE, "mtk_usb_suspend()\n");
 
 	if (prGlueInfo->prAdapter->rWifiVar.ucWow) {
-		DBGLOG(HAL, INFO, "enter WOW flow\n");
+		DBGLOG(HAL, EVENT, "enter WOW flow\n");
 		kalWowProcess(prGlueInfo, TRUE);
 	}
 
@@ -481,8 +293,9 @@ int mtk_usb_suspend(struct usb_interface *intf, pm_message_t message)
 
 	prGlueInfo->rHifInfo.state = USB_STATE_SUSPEND;
 	halDisableInterrupt(prGlueInfo->prAdapter);
+	halTxCancelAllSending(prGlueInfo->prAdapter);
 
-	DBGLOG(HAL, INFO, "mtk_usb_suspend() done!\n");
+	DBGLOG(HAL, STATE, "mtk_usb_suspend() done!\n");
 
 	/* TODO */
 	return 0;
@@ -490,9 +303,18 @@ int mtk_usb_suspend(struct usb_interface *intf, pm_message_t message)
 
 int mtk_usb_resume(struct usb_interface *intf)
 {
+	int ret = 0;
 	P_GLUE_INFO_T prGlueInfo = (P_GLUE_INFO_T)usb_get_intfdata(intf);
 
-	DBGLOG(HAL, INFO, "mtk_usb_resume()\n");
+	DBGLOG(HAL, STATE, "mtk_usb_resume()\n");
+
+	/* NOTE: USB bus may not really do suspend and resume*/
+	ret = usb_control_msg(prGlueInfo->rHifInfo.udev,
+			      usb_sndctrlpipe(prGlueInfo->rHifInfo.udev, 0), VND_REQ_FEATURE_SET,
+			      DEVICE_VENDOR_REQUEST_OUT, FEATURE_SET_WVALUE_RESUME, 0, NULL, 0,
+			      VENDOR_TIMEOUT_MS);
+	if (ret)
+		DBGLOG(HAL, ERROR, "VendorRequest FeatureSetResume ERROR: %x\n", (unsigned int)ret);
 
 	prGlueInfo->rHifInfo.state = USB_STATE_PRE_RESUME;
 	/* To trigger CR4 path */
@@ -502,11 +324,11 @@ int mtk_usb_resume(struct usb_interface *intf)
 	halEnableInterrupt(prGlueInfo->prAdapter);
 
 	if (prGlueInfo->prAdapter->rWifiVar.ucWow) {
-		DBGLOG(HAL, INFO, "leave WOW flow\n");
+		DBGLOG(HAL, EVENT, "leave WOW flow\n");
 		kalWowProcess(prGlueInfo, FALSE);
 	}
 
-	DBGLOG(HAL, INFO, "mtk_usb_resume() done!\n");
+	DBGLOG(HAL, STATE, "mtk_usb_resume() done!\n");
 
 	/* TODO */
 	return 0;
@@ -514,11 +336,11 @@ int mtk_usb_resume(struct usb_interface *intf)
 
 int mtk_usb_reset_resume(struct usb_interface *intf)
 {
-	DBGLOG(HAL, INFO, "mtk_usb_reset_resume()\n");
+	DBGLOG(HAL, STATE, "mtk_usb_reset_resume()\n");
 
 	mtk_usb_resume(intf);
 
-	DBGLOG(HAL, INFO, "mtk_usb_reset_resume done!()\n");
+	DBGLOG(HAL, STATE, "mtk_usb_reset_resume done!()\n");
 
 	/* TODO */
 	return 0;
@@ -615,14 +437,48 @@ int mtk_usb_bulk_in_msg(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 len, OUT UCHAR *
 	mutex_unlock(&prGlueInfo->rHifInfo.vendor_req_sem);
 
 	if (!ret) {
+#if 0 /* maximize buff len for usb in */
 		if (count != len) {
-			DBGLOG(HAL, ERROR, "usb_bulk_msg(IN=%d) Fail. Data is not completed. (receive %u/%u)\n", InEp,
-			       count, len);
+			DBGLOG(HAL, WARN, "usb_bulk_msg(IN=%d) Warning. Data is not completed. (receive %u/%u)\n",
+			       InEp, count, len);
 		}
+#endif
 		return count;
 	}
 
 	DBGLOG(HAL, ERROR, "usb_bulk_msg(IN=%d) Fail. Error code = %d.\n", InEp, ret);
+	return ret;
+}
+
+int mtk_usb_intr_in_msg(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 len, OUT UCHAR * buffer, int InEp)
+{
+	int ret = 0;
+	UINT_32 count;
+
+	if (in_interrupt()) {
+		DBGLOG(REQ, ERROR, "BUG: mtk_usb_intr_in_msg is called from invalid context\n");
+		return FALSE;
+	}
+
+	mutex_lock(&prGlueInfo->rHifInfo.vendor_req_sem);
+
+	/* do a blocking interrupt read to get data from the device */
+	ret = usb_interrupt_msg(prGlueInfo->rHifInfo.udev,
+			   usb_rcvintpipe(prGlueInfo->rHifInfo.udev, InEp), buffer, len, &count, INTERRUPT_TIMEOUT_MS);
+
+	mutex_unlock(&prGlueInfo->rHifInfo.vendor_req_sem);
+
+	if (!ret) {
+#if 0 /* maximize buff len for usb in */
+		if (count != len) {
+			DBGLOG(HAL, WARN, "usb_interrupt_msg(IN=%d) Warning. Data is not completed. (receive %u/%u)\n",
+			       InEp, count, len);
+		}
+#endif
+		return count;
+	}
+
+	DBGLOG(HAL, ERROR, "usb_interrupt_msg(IN=%d) Fail. Error code = %d.\n", InEp, ret);
 	return ret;
 }
 
@@ -658,7 +514,7 @@ int mtk_usb_bulk_out_msg(IN P_GLUE_INFO_T prGlueInfo, IN UINT_32 len, IN UCHAR *
 
 	if (!ret) {
 		if (count != len) {
-			DBGLOG(HAL, ERROR, "usb_bulk_msg(OUT=%d) Fail. Data is not completed. (send %u/%u)\n", OutEp,
+			DBGLOG(HAL, ERROR, "usb_bulk_msg(OUT=%d) Warning. Data is not completed. (send %u/%u)\n", OutEp,
 			       count, len);
 		}
 		return ret;
@@ -797,13 +653,44 @@ P_USB_REQ_T glUsbDequeueReq(P_GL_HIF_INFO_T prHifInfo, struct list_head *prHead)
 /*----------------------------------------------------------------------------*/
 VOID glSetHifInfo(P_GLUE_INFO_T prGlueInfo, ULONG ulCookie)
 {
+	struct usb_host_interface *alts;
+	struct usb_host_endpoint *ep;
+	struct usb_endpoint_descriptor *ep_desc;
 	P_GL_HIF_INFO_T prHifInfo = &prGlueInfo->rHifInfo;
 	P_USB_REQ_T prUsbReq, prUsbReqNext;
 	UINT_32 i;
+#if CFG_USB_TX_AGG
 	UINT_8 ucTc;
+#endif
+
+	prHifInfo->eEventEpType = EVENT_EP_TYPE_UNKONW;
 
 	prHifInfo->intf = (struct usb_interface *)ulCookie;
 	prHifInfo->udev = interface_to_usbdev(prHifInfo->intf);
+
+	alts = prHifInfo->intf->cur_altsetting;
+	DBGLOG(HAL, STATE, "USB Device speed: %x [%u]\n",
+		prHifInfo->udev->speed, alts->endpoint[0].desc.wMaxPacketSize);
+
+	if (prHifInfo->eEventEpType == EVENT_EP_TYPE_UNKONW) {
+		for (i = 0; i < alts->desc.bNumEndpoints; ++i) {
+			ep = &alts->endpoint[i];
+			if (ep->desc.bEndpointAddress == USB_EVENT_EP_IN) {
+				ep_desc = &alts->endpoint[i].desc;
+				switch (ep_desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) {
+				case USB_ENDPOINT_XFER_INT:
+					prHifInfo->eEventEpType = EVENT_EP_TYPE_INTR;
+					break;
+				case USB_ENDPOINT_XFER_BULK:
+				default:
+					prHifInfo->eEventEpType = EVENT_EP_TYPE_BULK;
+					break;
+				}
+			}
+		}
+	}
+	ASSERT(prHifInfo->eEventEpType != EVENT_EP_TYPE_UNKONW);
+	DBGLOG(HAL, INFO, "Event EP Type: %x\n", prHifInfo->eEventEpType);
 
 	prHifInfo->prGlueInfo = prGlueInfo;
 	usb_set_intfdata(prHifInfo->intf, prGlueInfo);
@@ -951,10 +838,13 @@ VOID glClearHifInfo(P_GLUE_INFO_T prGlueInfo)
 	/* P_GL_HIF_INFO_T prHifInfo = NULL; */
 	/* ASSERT(prGlueInfo); */
 	/* prHifInfo = &prGlueInfo->rHifInfo; */
+#if CFG_USB_TX_AGG
 	UINT_8 ucTc;
+#endif
 	P_USB_REQ_T prUsbReq, prUsbReqNext;
 	P_GL_HIF_INFO_T prHifInfo = &prGlueInfo->rHifInfo;
 
+#if CFG_USB_TX_AGG
 	for (ucTc = 0; ucTc < USB_TC_NUM; ++ucTc) {
 		list_for_each_entry_safe(prUsbReq, prUsbReqNext, &prHifInfo->rTxDataFreeQ[ucTc], list) {
 #if CFG_USB_CONSISTENT_DMA
@@ -967,6 +857,17 @@ VOID glClearHifInfo(P_GLUE_INFO_T prGlueInfo)
 		}
 		kfree(prHifInfo->arTxDataReqHead[ucTc]);
 	}
+#else
+	list_for_each_entry_safe(prUsbReq, prUsbReqNext, &prHifInfo->rTxDataFreeQ, list) {
+#if CFG_USB_CONSISTENT_DMA
+		usb_free_coherent(prHifInfo->udev, USB_TX_DATA_BUFF_SIZE,
+			prUsbReq->prBufCtrl->pucBuf, prUsbReq->prUrb->transfer_dma);
+#else
+		kfree(prUsbReq->prBufCtrl->pucBuf);
+#endif
+		usb_free_urb(prUsbReq->prUrb);
+	}
+#endif
 
 	list_for_each_entry_safe(prUsbReq, prUsbReqNext, &prHifInfo->rTxCmdFreeQ, list) {
 #if CFG_USB_CONSISTENT_DMA
@@ -1273,8 +1174,22 @@ kalDevPortRead(IN P_GLUE_INFO_T prGlueInfo,
 	ASSERT(u4Len <= u4ValidOutBufSize);
 
 	u2Port &= MTK_USB_PORT_MASK;
-	if (u2Port >= MTK_USB_BULK_IN_MIN_EP && u2Port <= MTK_USB_BULK_IN_MAX_EP) {
-		ret = mtk_usb_bulk_in_msg(prGlueInfo, u4Len, pucDst, u2Port);
+	if (prGlueInfo->rHifInfo.eEventEpType == EVENT_EP_TYPE_INTR &&
+		u2Port == (USB_EVENT_EP_IN & USB_ENDPOINT_NUMBER_MASK)) {
+		/* maximize buff len for usb in */
+		ret = mtk_usb_intr_in_msg(prGlueInfo, u4ValidOutBufSize, pucDst, u2Port);
+		if (ret != u4Len) {
+			DBGLOG(HAL, WARN, "usb_interrupt_msg(IN=%d) Warning. Data is not completed. (receive %u/%u)\n",
+			       u2Port, ret, u4Len);
+		}
+		ret = ret >= 0 ? 0 : ret;
+	} else if (u2Port >= MTK_USB_BULK_IN_MIN_EP && u2Port <= MTK_USB_BULK_IN_MAX_EP) {
+		/* maximize buff len for usb in */
+		ret = mtk_usb_bulk_in_msg(prGlueInfo, u4ValidOutBufSize, pucDst, u2Port);
+		if (ret != u4Len) {
+			DBGLOG(HAL, WARN, "usb_bulk_msg(IN=%d) Warning. Data is not completed. (receive %u/%u)\n",
+			       u2Port, ret, u4Len);
+		}
 		ret = ret >= 0 ? 0 : ret;
 	} else {
 		DBGLOG(HAL, ERROR, "kalDevPortRead reports error: invalid port %x\n", u2Port);

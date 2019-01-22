@@ -1,3 +1,54 @@
+/******************************************************************************
+ *
+ * This file is provided under a dual license.  When you use or
+ * distribute this software, you may choose to be licensed under
+ * version 2 of the GNU General Public License ("GPLv2 License")
+ * or BSD License.
+ *
+ * GPLv2 License
+ *
+ * Copyright(C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(C) 2016 MediaTek Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in
+ *    the documentation and/or other materials provided with the
+ *    distribution.
+ *  * Neither the name of the copyright holder nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ *****************************************************************************/
 /*
 ** Id: //Department/DaVinci/BRANCHES/MT6620_WIFI_DRIVER_V2_3/include/nic/hal.h#1
 */
@@ -8,104 +59,6 @@
  *   N/A
 */
 
-/*
-** Log: hal.h
-**
-** 03 19 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** restore to max RX length = 16 because RTL has been configured to 16 instead of 64 in data sheet definition
-**
-** 03 18 2013 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** use RX default maximum length to 16 (max. 64)
-**
-** 01 22 2013 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Remove compiling warning about print argument of long format
-**
-** 10 25 2012 cp.wu
-** [BORA00002227] [MT6630 Wi-Fi][Driver] Update for Makefile and HIFSYS modifications
-** sync with MT6630 HIFSYS update.
-**
-** 09 17 2012 cm.chang
-** [BORA00002149] [MT6630 Wi-Fi] Initial software development
-** Duplicate source from MT6620 v2.3 driver branch
-** (Davinci label: MT6620_WIFI_Driver_V2_3_120913_1942_As_MT6630_Base)
- *
- * 04 01 2011 tsaiyuan.hsu
- * [WCXRP00000615] [MT 6620 Wi-Fi][Driver] Fix klocwork issues
- * fix the klocwork issues, 57500, 57501, 57502 and 57503.
- *
- * 03 21 2011 cp.wu
- * [WCXRP00000540] [MT5931][Driver] Add eHPI8/eHPI16 support to Linux Glue Layer
- * portability improvement
- *
- * 03 07 2011 terry.wu
- * [WCXRP00000521] [MT6620 Wi-Fi][Driver] Remove non-standard debug message
- * Toggle non-standard debug messages to comments.
- *
- * 11 08 2010 cp.wu
- * [WCXRP00000166] [MT6620 Wi-Fi][Driver] use SDIO CMD52 for enabling/disabling interrupt to reduce transaction period
- * change to use CMD52 for enabling/disabling interrupt to reduce SDIO transaction time
- *
- * 09 01 2010 cp.wu
- * NULL
- * move HIF CR initialization from where after sdioSetupCardFeature() to wlanAdapterStart()
- *
- * 07 08 2010 cp.wu
- *
- * [WPD00003833] [MT6620 and MT5931] Driver migration - move to new repository.
- *
- * 06 15 2010 cp.wu
- * [WPD00003833][MT6620 and MT5931] Driver migration
- * change zero-padding for TX port access to HAL.
- *
- * 06 06 2010 kevin.huang
- * [WPD00003832][MT6620 5931] Create driver base
- * [MT6620 5931] Create driver base
- *
- * 04 06 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * eliminate direct access for prGlueInfo->fgIsCardRemoved in non-glue layer
- *
- * 01 27 2010 cp.wu
- * [WPD00001943]Create WiFi test driver framework on WinXP
- * 1. eliminate improper variable in rHifInfo
- *  *  *  * 2. block TX/ordinary OID when RF test mode is engaged
- *  *  *  * 3. wait until firmware finish operation when entering into and leaving from RF test mode
- *  *  *  * 4. correct some HAL implementation
-**  \main\maintrunk.MT6620WiFiDriver_Prj\17 2009-12-16 18:02:26 GMT mtk02752
-**  include precomp.h
-**  \main\maintrunk.MT6620WiFiDriver_Prj\16 2009-12-10 16:43:16 GMT mtk02752
-**  code clean
-**  \main\maintrunk.MT6620WiFiDriver_Prj\15 2009-11-13 13:54:15 GMT mtk01084
-**  \main\maintrunk.MT6620WiFiDriver_Prj\14 2009-11-11 10:36:01 GMT mtk01084
-**  modify HAL functions
-**  \main\maintrunk.MT6620WiFiDriver_Prj\13 2009-11-09 22:56:28 GMT mtk01084
-**  modify HW access routines
-**  \main\maintrunk.MT6620WiFiDriver_Prj\12 2009-10-29 19:50:09 GMT mtk01084
-**  add new macro HAL_TX_PORT_WR
-**  \main\maintrunk.MT6620WiFiDriver_Prj\11 2009-10-23 16:08:10 GMT mtk01084
-**  \main\maintrunk.MT6620WiFiDriver_Prj\10 2009-10-13 21:58:50 GMT mtk01084
-**  update for new HW architecture design
-**  \main\maintrunk.MT6620WiFiDriver_Prj\9 2009-05-18 14:28:10 GMT mtk01084
-**  fix issue in HAL_DRIVER_OWN_BY_SDIO_CMD52()
-**  \main\maintrunk.MT6620WiFiDriver_Prj\8 2009-05-11 17:26:33 GMT mtk01084
-**  modify the bit definition to check driver own status
-**  \main\maintrunk.MT6620WiFiDriver_Prj\7 2009-04-28 10:30:22 GMT mtk01461
-**  Fix typo
-**  \main\maintrunk.MT6620WiFiDriver_Prj\6 2009-04-01 10:50:34 GMT mtk01461
-**  Redefine HAL_PORT_RD/WR macro for SW pre test
-**  \main\maintrunk.MT6620WiFiDriver_Prj\5 2009-03-24 09:46:49 GMT mtk01084
-**  fix LINT error
-**  \main\maintrunk.MT6620WiFiDriver_Prj\4 2009-03-23 16:53:38 GMT mtk01084
-**  add HAL_DRIVER_OWN_BY_SDIO_CMD52()
-**  \main\maintrunk.MT6620WiFiDriver_Prj\3 2009-03-18 20:53:13 GMT mtk01426
-**  Fixed lint warn
-**  \main\maintrunk.MT6620WiFiDriver_Prj\2 2009-03-10 20:16:20 GMT mtk01426
-**  Init for develop
-**
-*/
 
 #ifndef _HAL_H
 #define _HAL_H
@@ -404,13 +357,22 @@ do { \
 do { \
 	struct mt66xx_chip_info *prChipInfo; \
 	UINT_32 u4Value; \
+	BOOLEAN fgLpOwnResult; \
 	if (!_prAdapter->chip_info) \
 		ASSERT(0); \
 	*_pfgResult = FALSE; \
 	prChipInfo = _prAdapter->chip_info; \
 	HAL_MCR_RD(_prAdapter, prChipInfo->sw_sync0, &u4Value); \
-	if ((u4Value & (_checkItem << prChipInfo->sw_ready_bit_offset)) == 0) \
+	if ((u4Value & (_checkItem << prChipInfo->sw_ready_bit_offset)) == 0) { \
 		*_pfgResult = TRUE; \
+	} else { \
+		HAL_LP_OWN_RD(_prAdapter, &fgLpOwnResult); \
+		if (fgLpOwnResult == FALSE) { \
+			DBGLOG(INIT, INFO, "HAL_LP_OWN_RD %d\n", fgLpOwnResult); \
+			HAL_LP_OWN_SET(prAdapter, &fgLpOwnResult); \
+			DBGLOG(INIT, INFO, "HAL_LP_OWN_SET %d\n", fgLpOwnResult); \
+		} \
+	} \
 } while (0)
 
 #define HAL_WIFI_FUNC_GET_STATUS(_prAdapter, _u4Result) \
@@ -640,6 +602,7 @@ do { \
 	halGetMailbox(_prAdapter, 0, &u4MailBoxStatus0); \
 	halGetMailbox(_prAdapter, 1, &u4MailBoxStatus1); \
 	DBGLOG(HAL, INFO, "MailBox Status = 0x%08X, 0x%08X\n", u4MailBoxStatus0, u4MailBoxStatus1); \
+	halPollDbgCr(_prAdapter, LP_DBGCR_POLL_ROUND); \
 } while (0)
 
 #define HAL_WIFI_FUNC_GET_STATUS(_prAdapter, _u4Result) \
@@ -1063,6 +1026,7 @@ VOID halDevInit(IN P_ADAPTER_T prAdapter);
 VOID halEnableFWDownload(IN P_ADAPTER_T prAdapter, IN BOOL fgEnable);
 VOID halWakeUpWiFi(IN P_ADAPTER_T prAdapter);
 VOID halTxCancelSendingCmd(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCmdInfo);
+VOID halTxCancelAllSending(IN P_ADAPTER_T prAdapter);
 BOOLEAN halTxIsDataBufEnough(IN P_ADAPTER_T prAdapter, IN P_MSDU_INFO_T prMsduInfo);
 VOID halProcessTxInterrupt(IN P_ADAPTER_T prAdapter);
 WLAN_STATUS halTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC);

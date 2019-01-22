@@ -41,6 +41,7 @@ endif
 
 ifeq ($(CONFIG_MTK_COMBO_WIFI),y)
     ccflags-y += -DCFG_BUILT_IN_DRIVER=1
+	ccflags-y += -DCFG_WPS_DISCONNECT=1
 else
     ccflags-y += -DCFG_BUILT_IN_DRIVER=0
 endif
