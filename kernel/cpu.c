@@ -28,8 +28,8 @@
 
 #include "smpboot.h"
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 #ifdef CONFIG_SMP
@@ -478,7 +478,7 @@ static int _cpu_down(unsigned int cpu, int tasks_frozen)
 
 	TIMESTAMP_REC(hotplug_ts_rec, TIMESTAMP_FILTER, cpu, 0, 0, 0);
 
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_save_irq_counts(CPU_DOWN);
 #endif
 

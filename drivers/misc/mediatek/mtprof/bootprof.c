@@ -24,8 +24,8 @@
 #include <log_store_kernel.h>
 
 #include "internal.h"
-#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
+#include "mtk_sched_mon.h"
 #endif
 /* #include <mt_cpufreq.h> */
 
@@ -169,7 +169,7 @@ static void bootup_finish(void)
 #ifdef CONFIG_MT_PRINTK_UART_CONSOLE
 	mt_disable_uart();
 #endif
-#ifdef CONFIG_MT_SCHED_MON_DEFAULT_ENABLE
+#ifdef CONFIG_MTK_SCHED_MON_DEFAULT_ENABLE
 	mt_sched_monitor_switch(1);
 #endif
 	set_logtoomuch_enable(1);

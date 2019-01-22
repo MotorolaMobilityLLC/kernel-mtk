@@ -52,8 +52,8 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/ipi.h>
 
-#ifdef CONFIG_MT_SCHED_MONITOR
-#include "mt_sched_mon.h"
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
 #endif
 
 /*
@@ -640,7 +640,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	switch (ipinr) {
 	case IPI_WAKEUP:
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 		mt_trace_ISR_end(ipinr);
 #endif
@@ -649,11 +649,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 #ifdef CONFIG_GENERIC_CLOCKEVENTS_BROADCAST
 	case IPI_TIMER:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		tick_receive_broadcast();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -666,11 +666,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	case IPI_CALL_FUNC:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		generic_smp_call_function_interrupt();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -678,11 +678,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	case IPI_CALL_FUNC_SINGLE:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		generic_smp_call_function_single_interrupt();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -690,11 +690,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	case IPI_CPU_STOP:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		ipi_cpu_stop(cpu);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -703,11 +703,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 #ifdef CONFIG_IRQ_WORK
 	case IPI_IRQ_WORK:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		irq_work_run();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -716,11 +716,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	case IPI_COMPLETION:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		ipi_complete(cpu);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();
@@ -728,11 +728,11 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 
 	case IPI_CPU_BACKTRACE:
 		irq_enter();
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_start(ipinr);
 #endif
 		nmi_cpu_backtrace(regs);
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 		mt_trace_ISR_end(ipinr);
 #endif
 		irq_exit();

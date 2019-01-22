@@ -19,7 +19,7 @@
 #include <linux/module.h>
 #include <linux/pid.h>
 
-#include "mt_sched_mon.h"
+#include "mtk_sched_mon.h"
 
 #include <mt-plat/aee.h>
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -29,7 +29,7 @@
 #include <linux/stacktrace.h>
 #include "internal.h"
 
-#ifdef CONFIG_MT_SCHED_MONITOR
+#ifdef CONFIG_MTK_SCHED_MONITOR
 
 #define WDT_SCHED_MON_LOG_SIZE	120
 static char wdt_sched_mon_log_buf[WDT_SCHED_MON_LOG_SIZE];
