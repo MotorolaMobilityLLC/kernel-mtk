@@ -843,6 +843,9 @@ bool mcdi_task_pause(bool paused)
 {
 	bool ret = false;
 
+	if (!is_mcdi_working())
+		return ret;
+
 	/* TODO */
 #if 1
 	if (paused) {
@@ -875,7 +878,6 @@ bool mcdi_task_pause(bool paused)
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
 {
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
-	mcdi_update_async_wakeup_enable();
 }
 
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
@@ -890,7 +892,6 @@ void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
 		return;
 
 	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
-	mcdi_update_async_wakeup_enable();
 }
 
 bool is_cpu_pwr_on_event_pending(void)
