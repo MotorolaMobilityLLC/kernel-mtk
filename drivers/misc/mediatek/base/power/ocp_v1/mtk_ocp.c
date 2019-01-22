@@ -574,7 +574,7 @@ static int ocp_enable(enum ocp_cluster cluster, bool enable, enum ocp_mode mode)
 
 	/* notify SSPM */
 	data = ((int)enable << 8) | cluster;
-	ret = sspm_ipi_send_sync_new(IPI_ID_OCP, IPI_OPT_POLLING, &data, 1, &ack_data, 1);
+	ret = sspm_ipi_send_sync(IPI_ID_OCP, IPI_OPT_POLLING, &data, 1, &ack_data, 1);
 	if (ret != 0)
 		ocp_err("@%s: set IPI failed, ret=%d\n", __func__, ret);
 	else if (ack_data < 0) {

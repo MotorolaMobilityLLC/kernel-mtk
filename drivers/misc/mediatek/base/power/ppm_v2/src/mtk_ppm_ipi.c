@@ -37,7 +37,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 		ppm_dbg(IPI, "efuse_val = %d, cobra_tbl_addr = 0x%x, dvfs_tbl_type = %d\n",
 			data->u.init.efuse_val, data->u.init.cobra_tbl_addr, data->u.init.dvfs_tbl_type);
 
-		ret = sspm_ipi_send_sync_new(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -57,7 +57,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 				data->u.update_limit.cluster_limit[i].advise_cpufreq_idx);
 		}
 
-		ret = sspm_ipi_send_sync_new(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -71,7 +71,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 
 		ppm_dbg(IPI, "thermal test budget = %d\n", data->u.thermal_limit_test.budget);
 
-		ret = sspm_ipi_send_sync_new(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
@@ -85,7 +85,7 @@ static int ppm_ipi_to_sspm_command(unsigned char cmd, struct ppm_ipi_data *data)
 
 		ppm_dbg(IPI, "ptpod test activate = %d\n", data->u.ptpod_test.activate);
 
-		ret = sspm_ipi_send_sync_new(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
+		ret = sspm_ipi_send_sync(IPI_ID_PPM, opt, data, PPM_D_LEN, &ack_data, 1);
 		if (ret != 0)
 			ppm_err("@%s: sspm_ipi_send_sync failed, ret=%d\n", __func__, ret);
 		else if (ack_data < 0) {
