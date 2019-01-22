@@ -25,22 +25,22 @@ enum pmic_wrap_phase_id {
 
 /* IDX mapping */
 enum {
-	IDX_ALL_VSRAM_PWR_ON,            /* 0 *//* PMIC_WRAP_PHASE_ALLINONE */
-	IDX_ALL_VSRAM_SHUTDOWN,          /* 1 */
-	IDX_ALL_VSRAM_NORMAL,            /* 2 */
-	IDX_ALL_VSRAM_SLEEP,             /* 3 */
-	IDX_ALL_SRCCLKEN_IN2_NORMAL,     /* 4 */
-	IDX_ALL_SRCCLKEN_IN2_SLEEP,      /* 5 */
+	IDX_ALL_1_VSRAM_PWR_ON,          /* 0 *//* PMIC_WRAP_PHASE_ALLINONE */
+	IDX_ALL_1_VSRAM_SHUTDOWN,        /* 1 */
+	IDX_ALL_1_VSRAM_NORMAL,          /* 2 */
+	IDX_ALL_1_VSRAM_SLEEP,           /* 3 */
+	IDX_ALL_DPIDLE_LEAVE,            /* 4 */
+	IDX_ALL_DPIDLE_ENTER,            /* 5 */
 	IDX_ALL_RESERVE_6,               /* 6 */
-	IDX_ALL_RESERVE_7,               /* 7 */
+	IDX_ALL_VCORE_SUSPEND,           /* 7 */
 	IDX_ALL_VCORE_LEVEL0,            /* 8 */
 	IDX_ALL_VCORE_LEVEL1,            /* 9 */
 	IDX_ALL_VCORE_LEVEL2,            /* A */
 	IDX_ALL_VCORE_LEVEL3,            /* B */
-	IDX_ALL_RESERVE_C,               /* C */
-	IDX_ALL_RESERVE_D,               /* D */
-	IDX_ALL_RESERVE_E,               /* E */
-	IDX_ALL_RESERVE_F,               /* F */
+	IDX_ALL_2_VSRAM_PWR_ON,          /* C */
+	IDX_ALL_2_VSRAM_SHUTDOWN,        /* D */
+	IDX_ALL_2_VSRAM_NORMAL,          /* E */
+	IDX_ALL_2_VSRAM_SLEEP,           /* F */
 	NR_IDX_ALL,
 };
 
