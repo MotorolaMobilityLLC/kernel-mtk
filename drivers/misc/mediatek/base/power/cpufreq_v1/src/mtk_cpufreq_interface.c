@@ -171,9 +171,9 @@ static int cpufreq_oppidx_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "cpufreq_oppidx = %d\n", p->idx_opp_tbl);
 
 	for (j = 0; j < p->nr_opp_tbl; j++) {
-		seq_printf(m, "\tOP(%d, %d),\n",
-			   cpu_dvfs_get_freq_by_idx(p, j), cpu_dvfs_get_volt_by_idx(p, j)
-		    );
+		seq_printf(m, "\t%-2d (%u, %u)\n",
+			      j, cpu_dvfs_get_freq_by_idx(p, j),
+			      cpu_dvfs_get_volt_by_idx(p, j));
 	}
 	cpufreq_unlock(flags);
 
@@ -231,7 +231,7 @@ static int cpufreq_freq_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
-	int freq, i, found;
+	int freq, i, found = 0;
 	int rc;
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
@@ -250,7 +250,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 					    p->opp_tbl[p->nr_opp_tbl-1].cpufreq_khz);
 
 			p->dvfs_disable_by_procfs = false;
-			goto end;
 		} else {
 			for (i = 0; i < p->nr_opp_tbl; i++) {
 				if (freq == p->opp_tbl[i].cpufreq_khz) {
@@ -274,7 +273,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file, const char __user *buf
 		}
 	}
 
-end:
 	free_page((unsigned long)buf);
 
 	return count;
@@ -289,8 +287,8 @@ static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 	unsigned long flags;
 
 	cpufreq_lock(flags);
-	seq_printf(m, "Vproc: %d mv\n", vproc_p->buck_ops->get_cur_volt(vproc_p) / 100);	/* mv */
-	seq_printf(m, "Vsram: %d mv\n", vsram_p->buck_ops->get_cur_volt(vsram_p) / 100);	/* mv */
+	seq_printf(m, "Vproc: %d uV\n", vproc_p->buck_ops->get_cur_volt(vproc_p) * 10);
+	seq_printf(m, "Vsram: %d uV\n", vsram_p->buck_ops->get_cur_volt(vsram_p) * 10);
 	cpufreq_unlock(flags);
 
 	return 0;
@@ -299,27 +297,28 @@ static int cpufreq_volt_proc_show(struct seq_file *m, void *v)
 static ssize_t cpufreq_volt_proc_write(struct file *file, const char __user *buffer, size_t count, loff_t *pos)
 {
 	unsigned long flags;
-	/* struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file)); */
-#ifndef CONFIG_HYBRID_CPU_DVFS
 	struct mt_cpu_dvfs *p = (struct mt_cpu_dvfs *)PDE_DATA(file_inode(file));
+#ifndef CONFIG_HYBRID_CPU_DVFS
 	struct buck_ctrl_t *vproc_p = id_to_buck_ctrl(p->Vproc_buck_id);
 #endif
-	int mv;
+	int uv;
 	int rc;
 
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
 		return -EINVAL;
-	rc = kstrtoint(buf, 10, &mv);
+	rc = kstrtoint(buf, 10, &uv);
 	if (rc < 0) {
-		cpufreq_err("echo mv > /proc/cpufreq/cpufreq_volt\n");
+		p->dvfs_disable_by_procfs = false;
+		cpufreq_err("echo uV > /proc/cpufreq/cpufreq_volt\n");
 	} else {
+		p->dvfs_disable_by_procfs = true;
 		cpufreq_lock(flags);
 #ifdef CONFIG_HYBRID_CPU_DVFS
-		/* cpuhvfs_set_volt(arch_get_cluster_id(p->cpu_id), mv * 100); */
+		/* cpuhvfs_set_volt(arch_get_cluster_id(p->cpu_id), uv / 10); */
 #else
-		vproc_p->fix_volt = mv;
+		vproc_p->fix_volt = uv / 10;
 		set_cur_volt_wrapper(p, vproc_p->fix_volt);
 #endif
 		cpufreq_unlock(flags);
