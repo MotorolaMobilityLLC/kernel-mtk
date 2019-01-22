@@ -1410,7 +1410,7 @@ void fpsgo_comp2fbt_frame_start(struct render_info *thr, unsigned long long ts, 
 	if (!fbt_is_enable())
 		return;
 
-	fpsgo_systrace_c_fbt_gm(thr->pid, slptime, "sleep time");
+	fpsgo_systrace_c_fbt(thr->pid, slptime, "sleep time");
 	fpsgo_systrace_c_fbt(thr->pid, thr->Q2Q_time, "q2q time");
 	fpsgo_systrace_c_fbt_gm(thr->pid, thr->self_time, "self_time");
 
