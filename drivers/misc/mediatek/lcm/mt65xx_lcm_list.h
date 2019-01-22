@@ -279,6 +279,8 @@ extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_nt50358_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_720p_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv;
+extern LCM_DRIVER ili9881c_hdp_dsi_vdo_ilitek_rt5081_lcm_drv;
+extern LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv;
 
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
