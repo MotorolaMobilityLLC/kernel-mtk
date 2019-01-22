@@ -4852,6 +4852,7 @@ static int battery_dts_probe(struct platform_device *dev)
 			pr_err("%s: request_threaded_irq err = %d\n", __func__, ret);
 			return ret;
 		}
+		irq_set_irq_wake(chrdet_irq, 1);
 	}
 	battery_device.dev.of_node = dev->dev.of_node;
 	ret = platform_device_register(&battery_device);
