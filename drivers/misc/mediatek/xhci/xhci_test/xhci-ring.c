@@ -1783,7 +1783,7 @@ int port_status;
 			g_port_connect = true;
 			port->port_status = CONNECTED;
 			g_otg_wait_con = false;
-			mb();
+			mb();  /* */
 			pr_err("[OTG_H] handle_port_status, connected, g_port_connect is %d\n", g_port_connect);
 			if (!(port_status & USB_PORT_STAT_SUPER_SPEED)) {
 				if (g_hs_block_reset) {/*  USBIF OTG */
@@ -1825,14 +1825,14 @@ int port_status;
 					xhci_err(xhci, "port set: port_id %d, port_status %d, port_speed %d\n"
 						, port->port_id, port->port_status, port->port_speed);
 					g_port_reset = true;
-					mb();
+					mb();  /* */
 				} else {
 					xhci_err(xhci, "Super speed port enabled failed!!\n");
 					xhci_dbg(xhci, "temp & PORT_RESET 0x%x\n", (temp & PORT_RESET));
 					xhci_dbg(xhci, "temp & PORT_PE 0x%x\n", (temp & PORT_PE));
 					xhci_dbg(xhci, "temp & PORT_PLS 0x%x\n", (PORT_PLS(temp)));
 					g_port_reset = false;
-					mb();
+					mb();  /* */
 				}
 			}
 		} else {  /* port disconnect */
@@ -1848,7 +1848,7 @@ int port_status;
 			if (g_device_reconnect == 0)
 				g_device_reconnect = 1;
 
-			mb();
+			mb();  /* */
 			pr_err("[OTG_H] handle_port_status, disconnect, g_port_connect is %d\n", g_port_connect);
 #if TEST_OTG
 			temp2 = readl(SSUSB_OTG_STS);
@@ -1856,7 +1856,7 @@ int port_status;
 			/* TODO: */
 			/* xhci_err(xhci, "[OTG_H]SSUSB_OTG_STS is 0x%x\n", temp2); */
 			/*  USBIF, WARN */
-			mb();
+			mb();  /* */
 			if (g_otg_hnp_become_host) { /* fast switch back to device .. */
 				/* mtktest_disableXhciAllPortPower(xhci); */
 				/* xhci_err(xhci, "[OTG_H]suspend device done, SSUSB_OTG_STS is 0x%x\n",
@@ -1871,7 +1871,7 @@ int port_status;
 		}
 
 		g_otg_csc = true;  /*  move to final place to avoid race condition with g_port_connect */
-		mb();
+		mb();  /* */
 
 	}
 	if ((port_status & (USB_PORT_STAT_C_RESET << 16))
@@ -1900,10 +1900,10 @@ int port_status;
 			if (g_device_reconnect == 1)
 				g_device_reconnect = 2;
 			g_port_reset = true;
-			mb();
+			mb();  /* */
 		} else {
 			g_port_reset = false;
-			mb();
+			mb();  /* */
 		}
 	} else if ((port_status & (USB_PORT_STAT_C_RESET << 16)) && (port_status & (USB_PORT_STAT_CONNECTION))
 		&& (port_status & USB_PORT_STAT_SUPER_SPEED)) {
@@ -1923,7 +1923,7 @@ int port_status;
 			}
 		}
 		g_port_connect = false;
-		mb();
+		mb();  /* */
 		pr_err("[OTG_H] handle_port_status, USB_PORT_STAT_C_RESET, g_port_connect is %d\n", g_port_connect);
 	}
 	if (port_status & (USB_PORT_STAT_C_SUSPEND << 16)) {
@@ -1933,17 +1933,17 @@ int port_status;
 	if (port_status & (USB_PORT_STAT_C_OVERCURRENT << 16)) {
 		xhci_err(xhci, "port over current changed\n");
 		g_port_occ = true;
-		mb();
+		mb();  /* */
 	}
 	if ((temp & PORT_PLC) && (temp & PORT_PLS_MASK) == XDEV_RESUME) {
 		xhci_dbg(xhci, "Change resume\n");
 		g_port_resume = 1;
-		mb();
+		mb();  /* */
 	}
 	if ((temp & PORT_PLC)) {
 		xhci_dbg(xhci, "Change PLS(%d)\n", (temp & PORT_PLS_MASK) >> 5);
 		g_port_plc = 1;
-		mb();
+		mb();  /* */
 	}
 	rh_port_clear_change(xhci, port_id, temp);
 	/* Update event ring dequeue pointer before dropping the lock */
@@ -2443,7 +2443,7 @@ static int prepare_ring(struct xhci_hcd *xhci, struct xhci_ring *ep_ring,
 			else
 				next->link.control |= TRB_CHAIN;
 
-			wmb();
+			wmb();  /* */
 			next->link.control ^= (u32) TRB_CYCLE;
 
 			/* Toggle the cycle bit after the last ring segment. */

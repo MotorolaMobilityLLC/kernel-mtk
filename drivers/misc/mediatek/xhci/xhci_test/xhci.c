@@ -142,7 +142,7 @@ irqreturn_t mtktest_xhci_mtk_irq(struct usb_hcd *hcd)
 		g_otg_wait_con = true;
 		g_otg_hnp_become_dev = false;
 		g_otg_hnp_become_host = true;
-		mb();
+		mb(); /* */
 		writel(SSUSB_CHG_A_ROLE_A_CLR, SSUSB_OTG_STS_CLR);
 		/*set host sel*/
 		log_err("[OTG_H] going to set dma to host\n");
@@ -164,7 +164,7 @@ irqreturn_t mtktest_xhci_mtk_irq(struct usb_hcd *hcd)
 	if (temp3 & SSUSB_CHG_B_ROLE_A) {
 		log_notice("[OTG_H] get SSUSB_CHG_B_ROLE_A\n");
 		g_otg_hnp_become_dev = true;
-		mb();
+		mb();  /* */
 		writel(SSUSB_CHG_B_ROLE_A_CLR, SSUSB_OTG_STS_CLR);
 		spin_unlock(&xhci->lock);
 		return IRQ_HANDLED;
@@ -270,7 +270,7 @@ static irqreturn_t mtktest_xhci_eint_iddig_isr(int irqnum, void *data)
 		mtk_id_nxt_state = IDPIN_OUT;
 
 		g_otg_iddig = 0;
-		mb();
+		mb();  /* */
 
 		/* make id pin to detect the plug-out */
 		mtktest_set_iddig_out_detect();
@@ -285,7 +285,7 @@ static irqreturn_t mtktest_xhci_eint_iddig_isr(int irqnum, void *data)
 		mtk_id_nxt_state = IDPIN_IN;
 
 		g_otg_iddig = 1;
-		mb();
+		mb();  /* */
 		/* make id pin to detect the plug-in */
 		mtktest_set_iddig_in_detect();
 
@@ -689,7 +689,7 @@ int mtktest_xhci_mtk_run(struct usb_hcd *hcd)
 	mtktest_mtk_xhci_set(xhci);
 
 	#if TEST_OTG
-	mb();
+	mb();  /* */
 	if (!g_otg_test) {
 	#endif
 		mtktest_enableXhciAllPortPower(xhci);

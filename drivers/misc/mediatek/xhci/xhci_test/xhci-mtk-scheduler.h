@@ -42,20 +42,15 @@
 #define BREPEAT(p)  (((p) & 0x7fff) << 16)
 
 
-#if 1
-typedef unsigned int mtk_u32;
-typedef unsigned long long mtk_u64;
-#endif
-
 #define NULL ((void *)0)
 
 struct mtk_xhci_ep_ctx {
-	mtk_u32 ep_info;
-	mtk_u32 ep_info2;
-	mtk_u64 deq;
-	mtk_u32 tx_info;
+	unsigned int ep_info;
+	unsigned int ep_info2;
+	unsigned long long deq;
+	unsigned int tx_info;
 	/* offset 0x14 - 0x1f reserved for HC internal use */
-	mtk_u32 reserved[3];
+	unsigned int reserved[3];
 };
 
 
@@ -78,15 +73,15 @@ struct sch_ep {
 	int burst_mode;
 	/* other */
 	int bw_cost;  /* bandwidth cost in each repeat; including overhead */
-	mtk_u32 *ep;  /* address of usb_endpoint pointer */
+	unsigned int *ep;  /* address of usb_endpoint pointer */
 };
 
 
 int mtktest_mtk_xhci_scheduler_init(void);
 int mtktest_mtk_xhci_scheduler_add_ep(int dev_speed, int is_in, int isTT, int ep_type,
-	int maxp, int interval, int burst, int mult, mtk_u32 *ep, mtk_u32 *ep_ctx, struct sch_ep *sch_ep);
+	int maxp, int interval, int burst, int mult, unsigned int *ep, unsigned int *ep_ctx, struct sch_ep *sch_ep);
 
 struct sch_ep *mtktest_mtk_xhci_scheduler_remove_ep(int dev_speed, int is_in, int isTT,
-	int ep_type, mtk_u32 *ep);
+	int ep_type, unsigned int *ep);
 
 #endif

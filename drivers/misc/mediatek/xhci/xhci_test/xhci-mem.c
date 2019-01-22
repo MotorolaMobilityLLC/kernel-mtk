@@ -1326,8 +1326,8 @@ int mtktest_xhci_endpoint_init(struct xhci_hcd *xhci,
 	interval = (1 << ((ep_ctx->ep_info >> 16) & 0xff));
 	sch_ep = kmalloc(sizeof(struct sch_ep), GFP_KERNEL);
 	if (mtktest_mtk_xhci_scheduler_add_ep(udev->speed, usb_endpoint_dir_in(&ep->desc),
-		isTT, ep_type, maxp, interval, burst, mult, (mtk_u32 *)ep
-		, (mtk_u32 *)ep_ctx, sch_ep) != SCH_SUCCESS) {
+		isTT, ep_type, maxp, interval, burst, mult, (unsigned int *)ep
+		, (unsigned int *)ep_ctx, sch_ep) != SCH_SUCCESS) {
 		xhci_err(xhci, "[MTK] not enough bandwidth\n");
 		return -ENOSPC;
 	}

@@ -21,58 +21,58 @@
 #define USBIF_OTG_EVENT_HUB_NOT_SUPPORTED "HUB_NOT_SUPPORTED"
 #define USBIF_OTG_EVENT_DEV_NOT_SUPPORTED "DEV_NOT_SUPPORTED"
 
-typedef enum {
+enum USB_DIR {
 	USB_TX = 0,
 	USB_RX
-} USB_DIR;
+};
 
-typedef enum {
+enum USB_TEST_CASE {
 	Ctrol_Transfer = 0,
 	Bulk_Random,
 	Test_Loopback,
 	Test_End
-} USB_TEST_CASE;
+};
 
 /* CTRL, BULK, INTR, ISO endpoint */
-typedef enum {
+enum USB_TRANSFER_TYPE {
 	USB_CTRL = 0,
 	USB_BULK,
 	USB_INTR,
 	USB_ISO
-} USB_TRANSFER_TYPE;
+};
 
-typedef enum {
+enum USB_SPEED {
 	SPEED_HIGH = 0,
 	SPEED_FULL
-} USB_SPEED;
+};
 
-typedef enum {
+enum state {
 	BUSY = 0,
 	READY,
 	END
-} state;
+};
 
-typedef enum {
+enum status {
 	TRANSFER_SUCCESS = 0,
 	TRANSFER_FAIL
-} status;
+};
 
-typedef struct {
+struct usb_transfer {
 	unsigned char    type;
 	unsigned char    speed;
 	unsigned int     length;
 	unsigned short   maxp;
 	unsigned char    state;
 	unsigned char    status;
-} USB_TRANSFER;
+};
 
 
-typedef struct {
+struct USB_MSG {
 	unsigned short header;
 	unsigned char  testcase;
-	USB_TRANSFER   transfer;
+	struct usb_transfer  transfer;
 	unsigned short end;
-} USB_MSG;
+};
 
 extern int xhci_usbif_resource_get(void);
 /* USBIF , skip slew rate calibration ?*/
