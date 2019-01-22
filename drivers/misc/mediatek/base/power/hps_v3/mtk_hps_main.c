@@ -411,8 +411,7 @@ void hps_power_on_vproc2(void)
 	if (ret == 0) {
 		hps_warn("[%s]Vproc2 Status ==> Disable\n", __func__);
 		WARN_ON(1);
-	}
-	else
+	} else
 		hps_warn("[%s]Vproc2 Status ==> Enable\n", __func__);
 }
 #endif
@@ -444,13 +443,9 @@ static int hps_probe(struct platform_device *pdev)
  */
 static int hps_suspend(struct device *dev)
 {
-#if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
 	int cpu = 9;
-#endif
-	int ret = 0;
 
-	hps_warn("%s\n", __func__);
-
+/*	hps_warn("%s\n", __func__);*/
 	if (!hps_ctxt.suspend_enabled)
 		goto suspend_end;
 
@@ -458,12 +453,11 @@ suspend_end:
 	hps_ctxt.state = STATE_SUSPEND;
 #ifndef CONFIG_MTK_ACAO_SUPPORT
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_HR_TIMER)
-		ret = hps_del_timer();
+		hps_del_timer();
 #endif
-	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u, ret: %d\n",
-		 hps_ctxt.state, hps_ctxt.enabled,
-		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled, ret);
-#if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
+	hps_warn("%s state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 __func__, hps_ctxt.state, hps_ctxt.enabled,
+		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 	/* offline big cores only */
 	cpu_hotplug_enable();
 	for (cpu = 9; cpu >= 8; cpu--) {
@@ -471,7 +465,7 @@ suspend_end:
 			cpu_down(cpu);
 	}
 	cpu_hotplug_disable();
-#endif
+
 	return 0;
 }
 
@@ -480,7 +474,10 @@ suspend_end:
  */
 static int hps_resume(struct device *dev)
 {
-	hps_warn("%s\n", __func__);
+#if 0
+	int cpu = 0;
+#endif
+/*	hps_warn("%s\n", __func__);*/
 
 	if (!hps_ctxt.suspend_enabled)
 		goto resume_end;
@@ -505,8 +502,8 @@ resume_end:
 		hps_restart_timer();
 	}
 #endif
-	hps_warn("state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
-		 hps_ctxt.state, hps_ctxt.enabled,
+	hps_warn("%s state: %u, enabled: %u, suspend_enabled: %u, rush_boost_enabled: %u\n",
+		 __func__, hps_ctxt.state, hps_ctxt.enabled,
 		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled);
 
 

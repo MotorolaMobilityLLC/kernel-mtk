@@ -632,11 +632,11 @@ void hps_algo_main(void)
 			}
 		}
 	}
-/*
+#if 0
 	if (hps_ctxt.heavy_task_enabled)
 		if (hps_algo_heavytsk_det())
 			hps_sys.action_id = 0xE1;
-*/
+#endif
 
 	if (hps_ctxt.big_task_enabled)
 		if (hps_algo_big_task_det())
