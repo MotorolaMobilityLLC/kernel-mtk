@@ -1026,6 +1026,25 @@ TRACE_EVENT(sched_cpufreq_fastpath,
 
 );
 #endif
+TRACE_EVENT(sched_ctl_walt,
+		TP_PROTO(unsigned int user, int walted),
+
+		TP_ARGS(user, walted),
+
+		TP_STRUCT__entry(
+			__field(unsigned int, user)
+			__field(int, walted)
+			),
+		TP_fast_assign(
+			__entry->user		= user;
+			__entry->walted		= walted;
+			),
+
+		TP_printk("user_mask=0x%x walted=%d",
+			__entry->user,
+			__entry->walted
+		)
+);
 
 TRACE_EVENT(sched_heavy_task,
 		TP_PROTO(const char *s),
