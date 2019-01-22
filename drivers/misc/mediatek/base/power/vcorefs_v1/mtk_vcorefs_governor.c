@@ -303,6 +303,7 @@ int vcorefs_get_curr_vcore(void)
 
 	return vcore < VCORE_INVALID ? vcore_pmic_to_uv(vcore) : 0;
 }
+EXPORT_SYMBOL(vcorefs_get_curr_vcore);
 
 int vcorefs_get_curr_ddr(void)
 {
