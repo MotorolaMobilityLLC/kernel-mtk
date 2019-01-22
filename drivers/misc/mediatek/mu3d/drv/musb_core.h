@@ -774,6 +774,13 @@ static inline int musb_platform_exit(struct musb *musb)
 	return musb->ops->exit(musb);
 }
 
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+extern void mt_usb_dual_role_to_none(void);
+extern void mt_usb_dual_role_to_device(void);
+extern void mt_usb_dual_role_to_host(void);
+extern int mt_usb_dual_role_init(struct musb *musb);
+#endif
+
 extern bool usb_cable_connected(void);
 extern void usb_phy_savecurrent(unsigned int clk_on);
 extern void usb_phy_recover(unsigned int clk_on);

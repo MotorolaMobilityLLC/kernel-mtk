@@ -45,8 +45,10 @@ extern int mtk_xhci_driver_load(bool vbus_on);
 extern void mtk_xhci_driver_unload(bool vbus_off);
 extern void mtk_xhci_disable_vbus(void);
 extern void mtk_xhci_enable_vbus(void);
-
-
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+extern void mt_usb_dual_role_to_none(void);
+extern void mt_usb_dual_role_to_host(void);
+#endif
 
 extern bool mtk_is_host_mode(void);
 extern bool musb_check_ipo_state(void);
