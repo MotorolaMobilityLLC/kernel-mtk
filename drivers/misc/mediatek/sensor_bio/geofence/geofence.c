@@ -109,12 +109,12 @@ ssize_t geofence_write(struct file *filp, const char __user *buf, size_t count, 
 
 static unsigned int geofence_poll(struct file *file, poll_table *wait)
 {
-	unsigned int mask;
+	unsigned int mask = 0;
 
 	poll_wait(file, &geofence_wait, wait);
 	if (geofence_wait_status)
 		mask |= POLLIN | POLLRDNORM;
-	return 0;
+	return mask;
 }
 
 long geofence_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
