@@ -222,20 +222,14 @@ static int Audio_USB_MD_UL_Select_Ctl_Set(struct snd_kcontrol *kcontrol,
 		/* disconnect interconnection to primary mic */
 		if (usb_md_select) {
 			/* i3i4 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O08);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* i3i4 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O18);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		}
 
 		/* disable adda ul path */
@@ -245,21 +239,15 @@ static int Audio_USB_MD_UL_Select_Ctl_Set(struct snd_kcontrol *kcontrol,
 
 		/* connect between usb mic (dl2) with modem */
 		if (usb_md_select) {
-			/* i3i4 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O08);
+			/* i7i8 -> pcm1 o7o8 */
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
-			/* i3i4 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O18);
+			/* i7i8 -> pcm2 o17o28 */
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		}
 	}
 
@@ -292,20 +280,13 @@ static int Audio_USB_Lpbk_Set(struct snd_kcontrol *kcontrol,
 	usb_lpbk_enable = ucontrol->value.integer.value[0];
 	pr_warn("%s(), enable = %d\n", __func__, usb_lpbk_enable);
 	if (usb_lpbk_enable) {
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I07,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I08,
-			      Soc_Aud_InterConnectionOutput_O06);
-
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_MEM_DL2,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 	} else {
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I07,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I08,
-			      Soc_Aud_InterConnectionOutput_O06);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_MEM_DL2,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 	}
 	return 0;
 }
@@ -358,28 +339,19 @@ static void usb_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* connect */
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O18);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		} else {
 			/* dl2 i7i8 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O18);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		}
 		/* pcm2 i14i21 --> awb o5o6*/
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I14,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I14,
-			      Soc_Aud_InterConnectionOutput_O06);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		Voice1Pcm.mPcmModeWidebandSel =
 			(runtime->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
@@ -391,28 +363,19 @@ static void usb_md1_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* i3i4 -> pcm2 o17o28 */
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O18);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		} else {
 			/* dl2 i7i8 -> pcm2 o17o28 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O17);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O18);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_O);
 		}
 		/* pcm2 i14 --> awb o5o6 */
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I14,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I14,
-			      Soc_Aud_InterConnectionOutput_O06);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		SetModemPcmEnable(MODEM_1, false);
 	}
@@ -424,28 +387,19 @@ static void usb_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* connect */
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O08);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* dl2 i7i8 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_Connection,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O08);
+			SetIntfConnection(Soc_Aud_InterCon_Connection,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		}
 		/* pcm1 i9i22 --> awb o5o6 */
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I09,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_Connection,
-			      Soc_Aud_InterConnectionInput_I09,
-			      Soc_Aud_InterConnectionOutput_O06);
+		SetIntfConnection(Soc_Aud_InterCon_Connection,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		Voice2IntPcm.mPcmModeWidebandSel =
 			(runtime->rate == 8000) ? Soc_Aud_PCM_MODE_PCM_MODE_8K : Soc_Aud_PCM_MODE_PCM_MODE_16K;
@@ -457,28 +411,19 @@ static void usb_md2_enable(bool enable, struct snd_pcm_runtime *runtime)
 		/* i3i4 -> pcm1 o7o8 */
 		if (usb_ul_select == VOICE_UL_PRIMARY) {
 			/* i3i4 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I03,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I04,
-				      Soc_Aud_InterConnectionOutput_O08);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_I2S2_ADC,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		} else {
 			/* dl2 i7i8 -> pcm1 o7o8 */
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I07,
-				      Soc_Aud_InterConnectionOutput_O07);
-			SetConnection(Soc_Aud_InterCon_DisConnect,
-				      Soc_Aud_InterConnectionInput_I08,
-				      Soc_Aud_InterConnectionOutput_O08);
+			SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+					  Soc_Aud_AFE_IO_Block_MEM_DL2,
+					  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_O);
 		}
 		/* pcm1 i9i22 --> awb o5o6 */
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I09,
-			      Soc_Aud_InterConnectionOutput_O05);
-		SetConnection(Soc_Aud_InterCon_DisConnect,
-			      Soc_Aud_InterConnectionInput_I09,
-			      Soc_Aud_InterConnectionOutput_O06);
+		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
+				  Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
+				  Soc_Aud_AFE_IO_Block_MEM_AWB);
 
 		SetModemPcmEnable(MODEM_EXTERNAL, false);
 	}
@@ -517,6 +462,9 @@ static int mtk_voice_usb_close(struct snd_pcm_substream *substream)
 			    disconnect_debug_path) {
 				SetConnection(Soc_Aud_InterCon_DisConnect,
 					      Soc_Aud_InterConnectionInput_I07,
+					      Soc_Aud_InterConnectionOutput_O03);
+				SetConnection(Soc_Aud_InterCon_DisConnect,
+					      Soc_Aud_InterConnectionInput_I03,
 					      Soc_Aud_InterConnectionOutput_O03);
 				SetConnection(Soc_Aud_InterCon_DisConnect,
 					      Soc_Aud_InterConnectionInput_I05,
