@@ -11,7 +11,8 @@
 /*
  * Time out in seconds for disks and Magneto-opticals (which are slower).
  */
-#define SD_TIMEOUT		(30 * HZ)
+/* MTK PATCH: Max SCSI cmd timeout = 1.3s * 32QueueDepth ~= 39s */
+#define SD_TIMEOUT		(39 * HZ)
 #define SD_MOD_TIMEOUT		(75 * HZ)
 /*
  * Flush timeout is a multiplier over the standard device timeout which is
