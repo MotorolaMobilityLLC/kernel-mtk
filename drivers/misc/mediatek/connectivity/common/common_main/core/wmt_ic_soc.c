@@ -965,6 +965,8 @@ WMT_IC_OPS wmt_ic_ops_soc = {
 	.is_quick_sleep = mtk_wcn_soc_quick_sleep_flag_get,
 	.is_aee_dump_support = mtk_wcn_soc_aee_dump_flag_get,
 	.trigger_stp_assert = mtk_wcn_soc_trigger_assert,
+	.deep_sleep_ctrl = NULL,
+	.deep_sleep_flag_get = NULL,
 };
 
 /*******************************************************************************

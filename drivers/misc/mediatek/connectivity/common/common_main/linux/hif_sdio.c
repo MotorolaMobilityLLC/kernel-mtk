@@ -51,6 +51,11 @@
 
 #define mmc_power_up_ext(x)
 #define mmc_power_off_ext(x)
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_TRUE;
+#else
+MTK_WCN_BOOL g_hif_deep_sleep_flag = MTK_WCN_BOOL_FALSE;
+#endif
 /*******************************************************************************
 *                              C O N S T A N T S
 ********************************************************************************
@@ -238,7 +243,6 @@ MODULE_DESCRIPTION("MediaTek MT6620 HIF SDIO Driver");
 MODULE_DEVICE_TABLE(sdio, mtk_sdio_id_tbl);
 
 UINT32 gHifSdioDbgLvl = HIF_SDIO_LOG_INFO;
-
 
 /*******************************************************************************
 *                              F U N C T I O N S
@@ -458,6 +462,7 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 			gpio_get_value(gpio_ctrl_info.gpio_ctrl_state[GPIO_CHIP_DEEP_SLEEP_PIN].gpio_num);
 		osal_gettimeofday(&sec, &usec);
 		if (gpio_state == 1) {
+			HIF_SDIO_DBG_FUNC("wmt_gpio:Polling GPIO_CHIP_DEEP_SLEEP_PIN high success!\n");
 			if ((usec - usec_old) >= 6000)
 				HIF_SDIO_WARN_FUNC
 					("polling [GPIO_CHIP_DEEP_SLEEP_PIN] high success but over 6ms, time=(%d)us\n",
@@ -487,7 +492,13 @@ static INT32 _hif_sdio_wake_up_ctrl(VOID)
 
 	return ret;
 }
-
+#ifdef CONFIG_MTK_COMBO_CHIP_DEEP_SLEEP_SUPPORT
+INT32 mtk_wcn_hif_sdio_deep_sleep_flag_set(MTK_WCN_BOOL flag)
+{
+	g_hif_deep_sleep_flag = flag;
+	return 0;
+}
+#endif
 INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 {
 	UINT32 i = 0;
@@ -526,7 +537,11 @@ INT32 mtk_wcn_hif_sdio_wake_up_ctrl(MTK_WCN_HIF_SDIO_CLTCTX ctx)
 	p_ds_clt_info = &p_ds_info->clt_info[j];
 	HIF_SDIO_DBG_FUNC("mtk_wcn_hif_sdio_wake_up_ctrl, func_num:(%d), chid(%x)\n",
 		p_ds_clt_info->func_num, p_ds_info->chip_id);
-	ret = _hif_sdio_wake_up_ctrl();
+	if (g_hif_deep_sleep_flag) {
+		HIF_SDIO_DBG_FUNC("deep sleep feature is enable!\n");
+		ret = _hif_sdio_wake_up_ctrl();
+	} else
+		HIF_SDIO_DBG_FUNC("deep sleep feature is disable!\n");
 	mutex_unlock(&(g_hif_sdio_ds_info_list[i].lock));
 	return ret;
 }
