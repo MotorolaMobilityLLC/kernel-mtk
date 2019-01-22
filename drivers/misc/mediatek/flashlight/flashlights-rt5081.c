@@ -38,6 +38,7 @@
 #include <linux/leds.h>
 
 #include "richtek/rt-flashlight.h"
+#include "mtk_charger.h"
 
 #include "flashlight.h"
 #include "flashlight-dt.h"
@@ -84,6 +85,12 @@ struct flashlight_device *flashlight_dev_lt;
 #define RT_FLED_DEVICE_HT  "rt-flash-led1"
 #define RT_FLED_DEVICE_LT  "rt-flash-led2"
 
+/* define charger consumer */
+static struct charger_consumer *flashlight_charger_consumer;
+#define CHARGER_SUPPLY_NAME "charger_port1"
+
+/* is decrease voltage */
+static int has_decrease_voltage;
 
 /******************************************************************************
  * rt5081 operations
@@ -104,6 +111,15 @@ static int rt5081_en_ht;
 static int rt5081_en_lt;
 static int rt5081_level_ht;
 static int rt5081_level_lt;
+
+static int rt5081_is_charger_ready(void)
+{
+	if (flashlight_is_ready(flashlight_dev_ht) &&
+			flashlight_is_ready(flashlight_dev_ht))
+		return FLASHLIGHT_CHARGER_READY;
+	else
+		return FLASHLIGHT_CHARGER_NOT_READY;
+}
 
 static int rt5081_is_torch(int level)
 {
@@ -224,28 +240,21 @@ static int rt5081_set_level(int ct_index, int level)
 }
 
 /* flashlight init */
-static int rt5081_init(void)
+static int rt5081_init(int scenario)
 {
 	/* clear flashlight state */
 	rt5081_en_ht = RT5081_NONE;
 	rt5081_en_lt = RT5081_NONE;
 
-	/* get RTK flashlight handler */
-	flashlight_dev_ht = find_flashlight_by_name(RT_FLED_DEVICE_HT);
-	if (!flashlight_dev_ht) {
-		fl_err("Failed to get ht flashlight device.\n");
-		return -1;
-	}
-	flashlight_dev_lt = find_flashlight_by_name(RT_FLED_DEVICE_LT);
-	if (!flashlight_dev_lt) {
-		fl_err("Failed to get lt flashlight device.\n");
-		return -1;
-	}
-
-	/* setup strobe mode timeout */
-	if (flashlight_set_strobe_timeout(flashlight_dev_ht, 400, 600)) {
-		fl_err("Failed to set strobe timeout.\n");
-		return -1;
+	/* notify charger to decrease voltage */
+	if (scenario != FLASHLIGHT_SCENARIO_FLASHLIGHT) {
+		fl_info("Decrease voltage level.\n");
+		if (!flashlight_charger_consumer) {
+			fl_err("Failed with no charger consumer handler.\n");
+			return -1;
+		}
+		charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, false);
+		has_decrease_voltage = 1;
 	}
 
 	return 0;
@@ -257,6 +266,17 @@ static int rt5081_uninit(void)
 	/* clear flashlight state */
 	rt5081_en_ht = RT5081_NONE;
 	rt5081_en_lt = RT5081_NONE;
+
+	/* notify charger to increase voltage */
+	if (has_decrease_voltage) {
+		fl_info("Increase voltage level.\n");
+		if (!flashlight_charger_consumer) {
+			fl_err("Failed with no charger consumer handler.\n");
+			return -1;
+		}
+		charger_manager_enable_high_voltage_charging(flashlight_charger_consumer, true);
+		has_decrease_voltage = 0;
+	}
 
 	return rt5081_disable();
 }
@@ -355,7 +375,8 @@ static int rt5081_operate(int ct_index, int enable)
 				rt5081_timer_start(RT5081_CT_HT, ktime);
 			}
 			if (rt5081_timeout_ms[RT5081_CT_LT]) {
-				ktime = ktime_set(rt5081_timeout_ms[RT5081_CT_LT] / 1000,
+				ktime = ktime_set(
+						rt5081_timeout_ms[RT5081_CT_LT] / 1000,
 						(rt5081_timeout_ms[RT5081_CT_LT] % 1000) * 1000000);
 				rt5081_timer_start(RT5081_CT_LT, ktime);
 			}
@@ -379,32 +400,45 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 	int ct_index;
 
 	fl_arg = (struct flashlight_user_arg *)arg;
-	ct_index = fl_get_cl_index(fl_arg->ct_id);
+	ct_index = fl_get_ct_index(fl_arg->ct_id);
+	if (flashlight_ct_index_verify(ct_index)) {
+		fl_err("Failed with error index\n");
+		return -EINVAL;
+	}
 
 	switch (cmd) {
 	case FLASH_IOC_SET_TIME_OUT_TIME_MS:
-		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS: %d\n",
-				(int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_TIME_OUT_TIME_MS(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		rt5081_timeout_ms[ct_index] = fl_arg->arg;
 		break;
 
 	case FLASH_IOC_SET_DUTY:
-		fl_dbg("FLASH_IOC_SET_DUTY: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_DUTY(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		rt5081_set_level(ct_index, fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_STEP:
-		fl_dbg("FLASH_IOC_SET_STEP: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_STEP(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		break;
 
 	case FLASH_IOC_SET_ONOFF:
-		fl_dbg("FLASH_IOC_SET_ONOFF: %d\n", (int)fl_arg->arg);
+		fl_dbg("FLASH_IOC_SET_ONOFF(%d): %d\n",
+				ct_index, (int)fl_arg->arg);
 		rt5081_operate(ct_index, fl_arg->arg);
 		break;
 
+	case FLASH_IOC_IS_CHARGER_READY:
+		fl_dbg("FLASH_IOC_IS_CHARGER_READY(%d)\n", ct_index);
+		fl_arg->arg = rt5081_is_charger_ready();
+
+		break;
+
 	default:
-		fl_info("No such command and arg: (%d, %d)\n",
-				_IOC_NR(cmd), (int)fl_arg->arg);
+		fl_info("No such command and arg(%d): (%d, %d)\n",
+				ct_index, _IOC_NR(cmd), (int)fl_arg->arg);
 		return -ENOTTY;
 	}
 
@@ -413,19 +447,12 @@ static int rt5081_ioctl(unsigned int cmd, unsigned long arg)
 
 static int rt5081_open(void *pArg)
 {
-	fl_dbg("Open start\n");
-
 	/* Actual behavior move to set driver function since power saving issue */
-
-	fl_dbg("Open done.\n");
-
 	return 0;
 }
 
 static int rt5081_release(void *pArg)
 {
-	fl_dbg("Release start.\n");
-
 	/* uninit chip and clear usage count */
 	mutex_lock(&rt5081_mutex);
 	use_count--;
@@ -435,33 +462,31 @@ static int rt5081_release(void *pArg)
 		use_count = 0;
 	mutex_unlock(&rt5081_mutex);
 
-	fl_dbg("Release done. (%d)\n", use_count);
+	fl_dbg("Release: %d\n", use_count);
 
 	return 0;
 }
 
-static int rt5081_set_driver(void)
+static int rt5081_set_driver(int scenario)
 {
 	int ret = 0;
-
-	fl_dbg("Set driver start\n");
 
 	/* init chip and set usage count */
 	mutex_lock(&rt5081_mutex);
 	if (!use_count)
-		ret = rt5081_init();
+		ret = rt5081_init(scenario);
 	use_count++;
 	mutex_unlock(&rt5081_mutex);
 
-	fl_dbg("Set driver done. (%d)\n", use_count);
+	fl_dbg("Set driver: %d\n", use_count);
 
 	return ret;
 }
 
 static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 {
-#if 0
-	rt5081_set_driver();
+#if 1
+	rt5081_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
 	rt5081_set_level(arg.ct, arg.level);
 
 	if (arg.level < 0)
@@ -474,9 +499,10 @@ static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 	rt5081_release(NULL);
 #endif
 
+#if 0
 	int i;
 
-	rt5081_set_driver();
+	rt5081_set_driver(FLASHLIGHT_SCENARIO_CAMERA);
 	for (i = 0; i < RT5081_LEVEL_NUM; i++) {
 		rt5081_set_level(RT5081_CT_HT, i);
 		rt5081_set_level(RT5081_CT_LT, i);
@@ -488,6 +514,7 @@ static ssize_t rt5081_strobe_store(struct flashlight_arg arg)
 		msleep(200);
 	}
 	rt5081_release(NULL);
+#endif
 
 	return 0;
 }
@@ -524,12 +551,32 @@ static int rt5081_probe(struct platform_device *pdev)
 	if (flashlight_dev_register(RT5081_NAME, &rt5081_ops))
 		return -EFAULT;
 
-	/* clear usage count */
+	/* clear attributes */
 	use_count = 0;
+	has_decrease_voltage = 0;
 
-	/* clear RTK flashlight device */
-	flashlight_dev_ht = NULL;
-	flashlight_dev_lt = NULL;
+	/* get RTK flashlight handler */
+	flashlight_dev_ht = find_flashlight_by_name(RT_FLED_DEVICE_HT);
+	if (!flashlight_dev_ht) {
+		fl_err("Failed to get ht flashlight device.\n");
+		return -EFAULT;
+	}
+	flashlight_dev_lt = find_flashlight_by_name(RT_FLED_DEVICE_LT);
+	if (!flashlight_dev_lt) {
+		fl_err("Failed to get lt flashlight device.\n");
+		return -EFAULT;
+	}
+
+	/* setup strobe mode timeout */
+	if (flashlight_set_strobe_timeout(flashlight_dev_ht, 400, 600))
+		fl_err("Failed to set strobe timeout.\n");
+
+	/* get charger consumer manager */
+	flashlight_charger_consumer = charger_manager_get_by_name(&flashlight_dev_ht->dev, CHARGER_SUPPLY_NAME);
+	if (!flashlight_charger_consumer) {
+		fl_err("Failed to get charger manager.\n");
+		return -EFAULT;
+	}
 
 	fl_dbg("Probe done.\n");
 
@@ -546,6 +593,10 @@ static int rt5081_remove(struct platform_device *pdev)
 
 	/* unregister flashlight operations */
 	flashlight_dev_unregister(RT5081_NAME);
+
+	/* clear RTK flashlight device */
+	flashlight_dev_ht = NULL;
+	flashlight_dev_lt = NULL;
 
 	fl_dbg("Remove done.\n");
 
@@ -616,7 +667,8 @@ static void __exit flashlight_rt5081_exit(void)
 	fl_dbg("Exit done.\n");
 }
 
-module_init(flashlight_rt5081_init);
+/* replace module_init() since conflict in kernel init process */
+late_initcall(flashlight_rt5081_init);
 module_exit(flashlight_rt5081_exit);
 
 MODULE_LICENSE("GPL");

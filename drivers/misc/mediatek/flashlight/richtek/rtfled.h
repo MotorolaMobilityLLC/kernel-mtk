@@ -16,7 +16,7 @@
 
 #ifndef LINUX_LEDS_RTFLED_H
 #define LINUX_LEDS_RTFLED_H
-#include "flashlight.h"
+#include "rt-flashlight.h"
 
 struct rt_fled_dev;
 typedef int (*rt_hal_fled_init)(struct rt_fled_dev *fled_dev);
@@ -77,6 +77,10 @@ typedef int (*rt_hal_fled_get_strobe_current)(struct rt_fled_dev *fled_dev);
 typedef int (*rt_hal_fled_get_timeout_level)(struct rt_fled_dev *fled_dev);
 typedef int (*rt_hal_fled_get_lv_protection)(struct rt_fled_dev *fled_dev);
 typedef int (*rt_hal_fled_get_strobe_timeout)(struct rt_fled_dev *fled_dev);
+/* Return value : not ready, return 0, ready return 1,
+ * if failed, return -errno, see definitions in errno.h
+ */
+typedef int (*rt_hal_fled_get_is_ready)(struct rt_fled_dev *fled_dev);
 typedef void (*rt_hal_fled_shutdown)(struct rt_fled_dev *fled_dev);
 
 struct rt_fled_hal {
@@ -115,6 +119,7 @@ struct rt_fled_hal {
 	rt_hal_fled_get_timeout_level fled_get_timeout_level;
 	rt_hal_fled_get_lv_protection fled_get_lv_protection;
 	rt_hal_fled_get_strobe_timeout fled_get_strobe_timeout;
+	rt_hal_fled_get_is_ready fled_get_is_ready;
 	/* PM shutdown, optional */
 	rt_hal_fled_shutdown fled_shutdown;
 };

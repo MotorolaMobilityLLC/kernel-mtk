@@ -97,6 +97,13 @@ static int rtfled_strobe(struct flashlight_device *flashlight_dev)
 	return fled_dev->hal->fled_strobe(fled_dev);
 }
 
+static int rtfled_is_ready(struct flashlight_device *flashlight_dev)
+{
+	rt_fled_dev_t *fled_dev = flashlight_get_data(flashlight_dev);
+
+	return fled_dev->hal->fled_get_is_ready(fled_dev);
+}
+
 static int rtfled_set_color_temperature(struct flashlight_device
 					*flashlight_dev,
 					int color_temp)
@@ -137,6 +144,7 @@ static struct flashlight_ops rtfled_impl_ops = {
 	.list_strobe_timeout = rtfled_list_strobe_timeout,
 	.set_mode = rtfled_set_mode,
 	.strobe = rtfled_strobe,
+	.is_ready = rtfled_is_ready,
 	.set_color_temperature = rtfled_set_color_temperature,
 	.list_color_temperature = rtfled_list_color_temperature,
 	.suspend = rtfled_suspend,
@@ -291,6 +299,12 @@ static int rtled_impl_get_strobe_timeout(struct rt_fled_dev *fled_dev)
 	return fled_dev->hal->fled_strobe_timeout_list(fled_dev, sel);
 }
 
+static int rtled_impl_get_is_ready(struct rt_fled_dev *fled_dev)
+{
+	/* if not implemented, just return ready always */
+	return 1;
+}
+
 #define HAL_NOT_IMPLEMENTED(x) (hal->x == NULL)
 static inline int check_hal_implemented(void *x)
 {
@@ -321,6 +335,8 @@ static int rtfled_check_hal_implement(struct rt_fled_hal *hal)
 		hal->fled_get_lv_protection = rtled_impl_get_lv_protection;
 	if (HAL_NOT_IMPLEMENTED(fled_get_strobe_timeout))
 		hal->fled_get_strobe_timeout = rtled_impl_get_strobe_timeout;
+	if (HAL_NOT_IMPLEMENTED(fled_get_is_ready))
+		hal->fled_get_is_ready = rtled_impl_get_is_ready;
 	check_hal_implemented(hal->fled_set_mode);
 	check_hal_implemented(hal->fled_get_mode);
 	check_hal_implemented(hal->fled_strobe);
@@ -410,5 +426,5 @@ module_exit(rtfled_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Patrick Chang <patrick_chang@richtek.com");
-MODULE_VERSION("1.0.1_G");
+MODULE_VERSION("1.0.2_G");
 MODULE_DESCRIPTION("Richtek Flash LED Driver");

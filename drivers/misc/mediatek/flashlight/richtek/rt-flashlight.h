@@ -53,6 +53,7 @@ struct flashlight_ops {
 	int (*strobe_charge)(struct flashlight_device *,
 				flashlight_charge_event_cb, void *, int);
 	int (*strobe)(struct flashlight_device *);
+	int (*is_ready)(struct flashlight_device *);
 	int (*suspend)(struct flashlight_device *, pm_message_t);
 	int (*resume)(struct flashlight_device *);
 };
@@ -109,6 +110,13 @@ extern int flashlight_set_mode(
 			struct flashlight_device *flashlight_dev, int mode);
 
 extern int flashlight_strobe(struct flashlight_device *flashlight_dev);
+/* flashlight_is_ready(struct flashlight_device *flashlight_dev)
+ *
+ * description : use this to make sure the flashlight is really ready or not
+ * return : 0 means not ready, 1 means ready, otherwise, reutrn negative value,
+ *	    for the negative value, see definitions in errno.h
+ */
+extern int flashlight_is_ready(struct flashlight_device *flashlight_dev);
 
 /* flashlight_charge_event_cb(void *data, int remains)
  * description :

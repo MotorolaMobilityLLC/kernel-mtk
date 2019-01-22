@@ -35,7 +35,7 @@ config MTK_FLASHLIGHT_RT4505
 
 config MTK_FLASHLIGHT_RT5081
 	tristate "Mediatek flashlight with driver IC (Richtek RT5081)"
-	depends on MTK_FLASHLIGHT
+	depends on MTK_FLASHLIGHT && RT_FLASHLIGHT
 	default n
 	help
 		This is for the flashlight driver IC (Richtek RT5081).
@@ -46,7 +46,7 @@ config MTK_FLASHLIGHT_RT5081
 		Say M here if you want to compile this driver as a module.
 
 config MTK_FLASHLIGHT_MT6336
-	tristate "Mediatek flashlight with driver IC (Richtek MT6336)"
+	tristate "Mediatek flashlight with driver IC (Mediatek MT6336)"
 	depends on MTK_FLASHLIGHT
 	default n
 	help

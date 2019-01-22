@@ -36,11 +36,31 @@
 /* protocol version */
 #define FLASHLIGHT_PROTOCOL_VERSION 1
 
+/* scenario */
+#define FLASHLIGHT_SCENARIO_CAMERA 0
+#define FLASHLIGHT_SCENARIO_FLASHLIGHT 1
+#define FLASHLIGHT_SCENARIO_TEMP 2
+
 /* power throttling */
 #define PT_NOTIFY_NUM 3
 #define PT_NOTIFY_LOW_VOL  0
 #define PT_NOTIFY_LOW_BAT  1
 #define PT_NOTIFY_OVER_CUR 2
+
+/* charger status */
+#define FLASHLIGHT_CHARGER_NUM    4
+#define FLASHLIGHT_CHARGER_TYPE   0
+#define FLASHLIGHT_CHARGER_CT     1
+#define FLASHLIGHT_CHARGER_PART   2
+#define FLASHLIGHT_CHARGER_STATUS 3
+
+#define FLASHLIGHT_CHARGER_NOT_READY 0
+#define FLASHLIGHT_CHARGER_READY     1
+
+#define FLASHLIGHT_CHARGER_STATUS_TMPBUF_SIZE 9
+#define FLASHLIGHT_CHARGER_STATUS_BUF_SIZE \
+	(FLASHLIGHT_TYPE_MAX * FLASHLIGHT_CT_MAX * FLASHLIGHT_PART_MAX * \
+	 FLASHLIGHT_CHARGER_STATUS_TMPBUF_SIZE + 1)
 
 /* flashlight devices */
 #define FLASHLIGHT_NAME_SIZE 32 /* flashlight device name */
@@ -91,7 +111,7 @@ struct flashlight_operations {
 	int (*flashlight_release)(void *pArg);
 	int (*flashlight_ioctl)(unsigned int cmd, unsigned long arg);
 	ssize_t (*flashlight_strobe_store)(struct flashlight_arg arg);
-	int (*flashlight_set_driver)(void);
+	int (*flashlight_set_driver)(int scenario);
 };
 
 /* flashlight resiger */
@@ -103,8 +123,14 @@ int fl_get_type_id(int type_index);
 int fl_get_ct_id(int ct_index);
 int fl_get_part_id(int part_index);
 int fl_get_type_index(int type_id);
-int fl_get_cl_index(int ct_id);
+int fl_get_ct_index(int ct_id);
 int fl_get_part_index(int part_id);
+
+/* verify functionis */
+int flashlight_type_index_verify(int type_index);
+int flashlight_ct_index_verify(int ct_index);
+int flashlight_part_index_verify(int part_index);
+int flashlight_index_verify(int type_index, int ct_index, int part_index);
 
 /* flash type enum */
 typedef enum {
@@ -161,6 +187,9 @@ typedef enum {
 #define FLASH_IOC_IS_CHARGER_IN            _IOR(FLASHLIGHT_MAGIC, 195, int)
 #define FLASH_IOC_IS_OTG_USE               _IOR(FLASHLIGHT_MAGIC, 200, int)
 #define FLASH_IOC_GET_FLASH_DRIVER_NAME_ID _IOR(FLASHLIGHT_MAGIC, 205, int)
+
+/* ioctl protocol version 1.1 */
+#define FLASH_IOC_IS_CHARGER_READY         _IOR(FLASHLIGHT_MAGIC, 210, int)
 
 #endif /* _FLASHLIGHT_H */
 
