@@ -86,6 +86,7 @@ static void ged_sync_cb(struct sync_fence *fence, struct sync_fence_waiter *wait
 static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 {
 	GED_MONITOR_3D_FENCE *psMonitor;
+	int ret;
 
 #ifdef GED_DEBUG_MONITOR_3D_FENCE
 	ged_log_buf_print(ghLogBuf_GED, "ged_monitor_3D_fence_work_cb");
@@ -95,10 +96,10 @@ static void ged_monitor_3D_fence_work_cb(struct work_struct *psWork)
 	ged_dvfs_cal_gpu_utilization_force();
 #endif
 
-	atomic_sub_return(1, &g_i32Count);
+	ret = atomic_sub_return(1, &g_i32Count);
 
 	if (ged_monitor_3D_fence_debug > 0)
-		GED_LOGI("[-]3D fences count = %d\n", atomic_read(&g_i32Count));
+		GED_LOGI("[-]3D fences count = %d\n", ret);
 
 	psMonitor = GED_CONTAINER_OF(psWork, GED_MONITOR_3D_FENCE, sWork);
 	sync_fence_put(psMonitor->psSyncFence);
