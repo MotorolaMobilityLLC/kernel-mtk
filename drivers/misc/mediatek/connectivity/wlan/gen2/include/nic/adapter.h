@@ -353,6 +353,11 @@ struct _BSS_INFO_T {
 	BOOLEAN fgTdlsIsChSwProhibited;	/* TRUE: AP prohibits TDLS chan switch */
 #endif				/* CFG_SUPPORT_TDLS */
 
+#if CFG_SUPPORT_RN
+	OS_SYSTIME	rConnTime;
+	BOOLEAN		fgDisConnReassoc;
+#endif
+
 	UINT_8 ucRoamSkipTimes;
 	BOOLEAN fgGoodRcpiArea;
 	BOOLEAN fgPoorRcpiArea;

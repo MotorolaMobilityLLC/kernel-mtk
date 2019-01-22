@@ -249,14 +249,18 @@ WLAN_STATUS nicTxPollingResource(IN P_ADAPTER_T prAdapter, IN UINT_8 ucTC)
 				break;
 			}
 			kalMsleep(NIC_TX_RESOURCE_POLLING_DELAY_MSEC);
-
 		} else {
 			kalMsleep(NIC_TX_RESOURCE_POLLING_DELAY_MSEC);
+		}
+		if (i < NIC_TX_RESOURCE_POLLING_TIMEOUT - 30) {
+			wlanReadFwStatus(prAdapter);
+			wlanDumpCommandFwStatus();
 		}
 	}
 
 	if (i <= 0 && ucTC == TC4_INDEX) {
 		DBGLOG(TX, ERROR, "polling Tx resource for Tc4 timeout\n");
+		wlanDumpTcResAndTxedCmd(NULL, 0);
 		glDumpConnSysCpuInfo(prAdapter->prGlueInfo);
 	}
 #if DBG

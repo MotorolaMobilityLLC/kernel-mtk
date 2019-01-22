@@ -178,6 +178,8 @@ nicUpdateBeaconIETemplate(IN P_ADAPTER_T prAdapter,
 
 WLAN_STATUS nicQmUpdateWmmParms(IN P_ADAPTER_T prAdapter, IN ENUM_NETWORK_TYPE_INDEX_T eNetworkTypeIdx);
 
+WLAN_STATUS nicQmSetRxBASize(IN P_ADAPTER_T prAdapter, BOOLEAN enable, UINT32 size);
+
 WLAN_STATUS nicSetAutoTxPower(IN P_ADAPTER_T prAdapter, IN P_CMD_AUTO_POWER_PARAM_T prAutoPwrParam);
 
 /*----------------------------------------------------------------------------*/
