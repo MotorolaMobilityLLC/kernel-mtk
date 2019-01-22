@@ -1715,7 +1715,8 @@ typedef struct _CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T {
 	UINT_16 u2CountryCode;
 	UINT_8 ucCountryFlag; /*Not used in driver*/
 	UINT_8 ucNum; /*Numbers of channel to set power limit*/
-	UINT_8 aucReserved[4];
+	UINT_8 ucTempVersion; /*Temp use for 160nc power limit implementation*/
+	UINT_8 aucReserved[3];
 	CMD_CHANNEL_POWER_LIMIT rChannelPowerLimit[1]; /*Channel power limit entries to be set*/
 } CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T, *P_CMD_SET_COUNTRY_CHANNEL_POWER_LIMIT_T;
 
