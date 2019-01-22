@@ -105,7 +105,8 @@ void __attribute__((weak)) mt_power_gs_t_dump_dpidle(int count, ...)
 static inline void spm_dpidle_footprint(enum spm_deepidle_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_deepidle_val(step);
+#define CPU_FOOTPRINT_SHIFT	24
+	aee_rr_rec_deepidle_val(step | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 

@@ -380,9 +380,11 @@ static struct platform_device *pspmdev;
 
 int __init spm_module_init(void)
 {
+#if defined(CONFIG_MACH_MT6799)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct spm_data spm_d;
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#endif
 	int r = 0;
 	int ret = -1;
 
@@ -437,6 +439,7 @@ int __init spm_module_init(void)
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
+#if defined(CONFIG_MACH_MT6799)
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	memset(&spm_d, 0, sizeof(struct spm_data));
 
@@ -446,6 +449,7 @@ int __init spm_module_init(void)
 
 	mt_secure_call(MTK_SIP_KERNEL_SPM_ARGS, SPM_ARGS_SPMFW_IDX, ret, 0);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+#endif
 
 	spm_vcorefs_init();
 	return 0;
@@ -830,7 +834,6 @@ EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
 int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 {
 	unsigned int ret = 0;
-#if !defined(CONFIG_MACH_MT6775)
 
 	switch (cmd) {
 	case SPM_DPIDLE_ENTER:
@@ -848,14 +851,13 @@ int spm_to_sspm_command_async(u32 cmd, struct spm_data *spm_d)
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
+
 	return ret;
 }
 
 int spm_to_sspm_command_async_wait(u32 cmd)
 {
 	unsigned int ret = 0;
-#if !defined(CONFIG_MACH_MT6775)
 
 	int ack_data;
 
@@ -879,7 +881,7 @@ int spm_to_sspm_command_async_wait(u32 cmd)
 		pr_info("#@# %s(%d) cmd(%d) wrong!!!\n", __func__, __LINE__, cmd);
 		break;
 	}
-#endif
+
 	return ret;
 }
 

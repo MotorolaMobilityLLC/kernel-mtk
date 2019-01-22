@@ -138,6 +138,8 @@ enum spm_sodi_logout_reason {
 	SODI_LOGOUT_UNKNOWN = -1,
 };
 
+#define CPU_FOOTPRINT_SHIFT 24
+
 #if SPM_AEE_RR_REC
 void __attribute__((weak)) aee_rr_rec_sodi_val(u32 val)
 {
@@ -156,14 +158,14 @@ void __attribute__((weak)) mt_power_gs_t_dump_sodi3(int count, ...)
 static inline void spm_sodi_footprint(enum spm_sodi_step step)
 {
 #if SPM_AEE_RR_REC
-	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << step));
+	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | (1 << step) | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 
 static inline void spm_sodi_footprint_val(u32 val)
 {
 #if SPM_AEE_RR_REC
-		aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | val);
+	aee_rr_rec_sodi_val(aee_rr_curr_sodi_val() | val | (smp_processor_id() << CPU_FOOTPRINT_SHIFT));
 #endif
 }
 
