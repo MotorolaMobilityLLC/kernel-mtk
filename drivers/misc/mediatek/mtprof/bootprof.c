@@ -50,12 +50,13 @@ static struct log_t *bootprof[BUF_COUNT];
 static unsigned long log_count;
 static DEFINE_MUTEX(bootprof_lock);
 static bool enabled;
-static int bootprof_lk_t, bootprof_pl_t;
+static int bootprof_lk_t, bootprof_pl_t, bootprof_logo_t;
 static u64 timestamp_on, timestamp_off;
 bool boot_finish;
 
 module_param_named(pl_t, bootprof_pl_t, int, S_IRUGO | S_IWUSR);
 module_param_named(lk_t, bootprof_lk_t, int, S_IRUGO | S_IWUSR);
+module_param_named(logo_t, bootprof_logo_t, int, S_IRUGO | S_IWUSR);
 
 #define MSG_SIZE 128
 
@@ -241,6 +242,8 @@ static int mt_bootprof_show(struct seq_file *m, void *v)
 
 	if (bootprof_pl_t > 0 && bootprof_lk_t > 0) {
 		SEQ_printf(m, "%10d        : %s\n", bootprof_pl_t, "preloader");
+		if (bootprof_logo_t > 0)
+			SEQ_printf(m, "%10d        : %s\n", bootprof_logo_t, "first logo");
 		SEQ_printf(m, "%10d        : %s\n", bootprof_lk_t, "lk");
 		/* SEQ_printf(m, "%10d        : %s\n",
 		 * gpt_boot_time() - bootprof_pl_t - bootprof_lk_t, "lk->Kernel");
