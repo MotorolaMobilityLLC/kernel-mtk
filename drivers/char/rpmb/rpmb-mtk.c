@@ -569,6 +569,11 @@ int rpmb_req_get_wc(u8 *key, u32 *wc, u8 *frame)
 
 	rawdev_ufs_rpmb = ufs_mtk_rpmb_get_raw_dev();
 
+	if (strlen(key) != 32) {
+		MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
+		return RPMB_WC_ERROR;
+	}
+
 	do {
 		/*
 		 * Initial frame buffers
@@ -1170,6 +1175,11 @@ int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
 	int ret;
 
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (strlen(key) != 32) {
+		MSG(ERR, "%s, error rpmb key len = 0x%x\n", __func__, (unsigned int)strlen(key));
+		return RPMB_WC_ERROR;
+	}
 
 	do {
 		rpmb_frame = kzalloc(sizeof(struct s_rpmb), 0);
