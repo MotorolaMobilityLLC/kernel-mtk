@@ -164,6 +164,28 @@ int vcore_pmic_set_mode(unsigned char mode)
 	return (ret == mode) ? (0) : (-1);
 }
 
+int vproc_pmic_set_mode(unsigned char mode)
+{
+	unsigned char ret = 0;
+
+	pmic_set_register_value(PMIC_RG_VPROC11_FPWM, mode);
+
+	ret = pmic_get_register_value(PMIC_RG_VPROC11_FPWM);
+
+	return (ret == mode) ? (0) : (-1);
+}
+
+int vgpu_pmic_set_mode(unsigned char mode)
+{
+	unsigned char ret = 0;
+
+	pmic_set_register_value(PMIC_RG_VGPU_FPWM, mode);
+
+	ret = pmic_get_register_value(PMIC_RG_VGPU_FPWM);
+
+	return (ret == mode) ? (0) : (-1);
+}
+
 /* [Export API] */
 
 /* SCP set VCORE voltage, return 0 if success, otherwise return set voltage(uV) */
