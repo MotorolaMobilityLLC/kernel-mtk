@@ -363,7 +363,7 @@ static void xgf_timer_remove(const struct hrtimer * const timer,
 /**
  * xgf_igather_timer - called for intelligence gathering of timer
  */
-void xgf_igather_timer(const struct hrtimer * const timer, int fire)
+void xgf_igather_timer(const void * const timer, int fire)
 {
 	struct xgf_proc *iter;
 	pid_t tpid;
