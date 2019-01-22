@@ -70,6 +70,7 @@ extern struct single_cma_registration memory_ssvp_registration;
 #endif /* end CONFIG_MTK_MEMORY_LOWPOWER */
 
 #ifdef CONFIG_MTK_DCS
+#define DCS_SCREENOFF_ONLY_MODE
 enum dcs_status {
 	DCS_NORMAL,
 	DCS_LOWPOWER,
