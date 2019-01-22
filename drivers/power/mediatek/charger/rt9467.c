@@ -39,7 +39,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9467.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9467_DRV_VERSION	"1.0.16_MTK"
+#define RT9467_DRV_VERSION	"1.0.17_MTK"
 
 /* ======================= */
 /* RT9467 Parameter        */
@@ -288,6 +288,7 @@ struct rt9467_info {
 	bool pwr_rdy;
 	CHARGER_TYPE chg_type;
 	u32 ieoc;
+	u32 ichg;
 	bool ieoc_wkard;
 	struct work_struct init_work;
 	atomic_t bc12_sdp_cnt;
@@ -2153,14 +2154,49 @@ static inline int __rt9467_is_charging_enable(struct rt9467_info *info,
 		RT9467_SHIFT_CHG_EN, en);
 }
 
+static int __rt9467_get_ichg(struct rt9467_info *info, u32 *ichg)
+{
+	int ret = 0;
+	u8 reg_ichg = 0;
+
+	ret = rt9467_i2c_read_byte(info, RT9467_REG_CHG_CTRL7);
+	if (ret < 0)
+		return ret;
+
+	reg_ichg = (ret & RT9467_MASK_ICHG) >> RT9467_SHIFT_ICHG;
+	*ichg = rt9467_closest_value(RT9467_ICHG_MIN, RT9467_ICHG_MAX,
+		RT9467_ICHG_STEP, reg_ichg);
+
+	return ret;
+}
+
+static inline int rt9467_ichg_workaround(struct rt9467_info *info, u32 uA)
+{
+	int ret = 0;
+
+	/* Vsys short protection */
+	rt9467_enable_hidden_mode(info, true);
+
+	if (info->ichg >= 900000 && uA < 900000)
+		ret = rt9467_i2c_update_bits(info, RT9467_REG_CHG_HIDDEN_CTRL7,
+			0x00, 0x60);
+	else if (uA >= 900000 && info->ichg < 900000)
+		ret = rt9467_i2c_update_bits(info, RT9467_REG_CHG_HIDDEN_CTRL7,
+			0x40, 0x60);
+
+	rt9467_enable_hidden_mode(info, false);
+	return ret;
+}
+
 static int __rt9467_set_ichg(struct rt9467_info *info, u32 ichg)
 {
 	int ret = 0;
 	u8 reg_ichg = 0;
 
-	/* Workaround to keep ichg >= 900mA */
-	if (strcmp(info->desc->chg_dev_name, "primary_chg") == 0)
-		ichg = (ichg < 900000) ? 900000 : ichg;
+	if (strcmp(info->desc->chg_dev_name, "primary_chg") == 0) {
+		ichg = (ichg < 500000) ? 500000 : ichg;
+		rt9467_ichg_workaround(info, ichg);
+	}
 
 	reg_ichg = rt9467_closest_reg(RT9467_ICHG_MIN, RT9467_ICHG_MAX,
 		RT9467_ICHG_STEP, ichg);
@@ -2170,6 +2206,11 @@ static int __rt9467_set_ichg(struct rt9467_info *info, u32 ichg)
 
 	ret = rt9467_i2c_update_bits(info, RT9467_REG_CHG_CTRL7,
 		reg_ichg << RT9467_SHIFT_ICHG, RT9467_MASK_ICHG);
+	if (ret < 0)
+		return ret;
+
+	/* Store Ichg setting */
+	__rt9467_get_ichg(info, &info->ichg);
 
 	/* Workaround to make IEOC accurate */
 	if (ichg < 900000 && !info->ieoc_wkard) { /* 900mA */
@@ -2850,19 +2891,9 @@ out:
 
 static int rt9467_get_ichg(struct charger_device *chg_dev, u32 *ichg)
 {
-	int ret = 0;
-	u8 reg_ichg = 0;
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	ret = rt9467_i2c_read_byte(info, RT9467_REG_CHG_CTRL7);
-	if (ret < 0)
-		return ret;
-
-	reg_ichg = (ret & RT9467_MASK_ICHG) >> RT9467_SHIFT_ICHG;
-	*ichg = rt9467_closest_value(RT9467_ICHG_MIN, RT9467_ICHG_MAX,
-		RT9467_ICHG_STEP, reg_ichg);
-
-	return ret;
+	return __rt9467_get_ichg(info, ichg);
 }
 
 static int rt9467_get_aicr(struct charger_device *chg_dev, u32 *aicr)
@@ -3497,6 +3528,7 @@ static int rt9467_probe(struct i2c_client *client,
 	info->bc12_en = true;
 	info->ieoc_wkard = false;
 	info->ieoc = 250000; /* register default value 250mA */
+	info->ichg = 2000000; /* register default value 2000mA */
 	memcpy(info->irq_mask, rt9467_irq_maskall, RT9467_IRQIDX_MAX);
 
 	/* Init wait queue head */
@@ -3734,6 +3766,9 @@ MODULE_VERSION(RT9467_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.17
+ * (1) Add ichg workaround
+ *
  * 1.0.16
  * (1) Fix type error of enable_auto_sensing in sw_reset
  * (2) Move irq_mask to info structure
