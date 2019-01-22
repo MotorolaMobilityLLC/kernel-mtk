@@ -276,44 +276,44 @@ int vpu_put_request_to_pool(struct vpu_user *user, struct vpu_request *req)
 		return -ENONET;
 	}
 
-	LOG_INF("[vpu] push request to euque 0x%lx/0x%lx\n", (unsigned long)req->user_id,
+	LOG_DBG("[vpu] push request to euque 0x%lx/0x%lx\n", (unsigned long)req->user_id,
 		(unsigned long)&(req->user_id));
-	LOG_INF("[vpu] push request to euque CORE_IDNEX (0x%x)...\n", req->requested_core);
+	LOG_DBG("[vpu] push request to euque CORE_IDNEX (0x%x)...\n", req->requested_core);
 
 	/* CHRISTODO, specific vpu */
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
-		LOG_INF("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));
+		LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));
 		if (req->requested_core == (0x1 << i)) {
 			request_core_index = i;
 			break;
 		}
 	}
 
-	LOG_INF("[vpu] push request to euque CORE_IDNEX (0x%x/0x%x)...\n",
+	LOG_DBG("[vpu] push request to euque CORE_IDNEX (0x%x/0x%x)...\n",
 		req->requested_core, request_core_index);
 
 	if (request_core_index >= MTK_VPU_CORE)
 		LOG_ERR("wrong core index (0x%x/%d/%d)", req->requested_core, request_core_index, MTK_VPU_CORE);
 
 	if (request_core_index > -1 && request_core_index < MTK_VPU_CORE) {
-		LOG_INF("[vpu] push self pool, index(%d/0x%x)\n", request_core_index, req->requested_core);
+		LOG_DBG("[vpu] push self pool, index(%d/0x%x)\n", request_core_index, req->requested_core);
 		mutex_lock(&vpu_device->servicepool_mutex[request_core_index]);
 		list_add_tail(vlist_link(req, struct vpu_request), &vpu_device->servicepool_list[request_core_index]);
 		vpu_device->servicepool_list_size[request_core_index] += 1;
-		LOG_INF("[vpu] push self pool(%d) size (%d)\n", request_core_index,
+		LOG_DBG("[vpu] push self pool(%d) size (%d)\n", request_core_index,
 			vpu_device->servicepool_list_size[request_core_index]);
 		mutex_unlock(&vpu_device->servicepool_mutex[request_core_index]);
 	} else {
-		LOG_INF("[vpu] push common pool, index(%d,0x%x)\n", request_core_index, req->requested_core);
+		LOG_DBG("[vpu] push common pool, index(%d,0x%x)\n", request_core_index, req->requested_core);
 		mutex_lock(&vpu_device->commonpool_mutex);
 		list_add_tail(vlist_link(req, struct vpu_request), &vpu_device->commonpool_list);
 		vpu_device->commonpool_list_size += 1;
-		LOG_INF("[vpu] push common pool size (%d)\n", vpu_device->commonpool_list_size);
+		LOG_DBG("[vpu] push common pool size (%d)\n", vpu_device->commonpool_list_size);
 		mutex_unlock(&vpu_device->commonpool_mutex);
 	}
 
 	wake_up(&vpu_device->req_wait);
-	LOG_INF("[vpu] vpu_push_request_to_queue ---\n");
+	LOG_DBG("[vpu] vpu_push_request_to_queue ---\n");
 
 	return 0;
 }
@@ -426,15 +426,15 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 		list_for_each(head, &user->deque_list)
 		{
 			req = vlist_node_of(head, struct vpu_request);
-			LOG_INF("[vpu] req->request_id = 0x%lx\n", (unsigned long)req->request_id);
+			LOG_DBG("[vpu] req->request_id = 0x%lx\n", (unsigned long)req->request_id);
 			if ((unsigned long)req->request_id == (unsigned long)request_id) {
 				get = true;
-				LOG_INF("[vpu] get = true\n");
+				LOG_DBG("[vpu] get = true\n");
 				break;
 			}
 		}
 
-		LOG_INF("[vpu] testtest...\n");
+		LOG_DBG("[vpu] testtest...\n");
 
 		list_del_init(vlist_link(req, struct vpu_request));
 		mutex_unlock(&user->data_mutex);
@@ -460,7 +460,7 @@ int vpu_get_core_status(struct vpu_status *status)
 		mutex_unlock(&vpu_device->commonpool_mutex);
 	}
 
-	LOG_INF("[vpu]vpu_get_core_status idx(%d), available(%d), size(%d)\n", status->vpu_core_index,
+	LOG_DBG("[vpu]vpu_get_core_status idx(%d), available(%d), size(%d)\n", status->vpu_core_index,
 			status->vpu_core_available, status->pool_list_size);
 
 	return 0;
@@ -623,7 +623,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_request *req;
 		struct vpu_request *u_req;
 
-		LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST + ");
+		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST + ");
 
 		ret = vpu_alloc_request(&req);
 		CHECK_RET("[ENQUE alloc request failed, ret=%d\n", ret);
@@ -642,7 +642,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		req->user_id = (unsigned long *)user;
 		LOG_DBG("[vpu] enque test: user_id_0x%lx/0x%lx", (unsigned long)user, (unsigned long)(req->user_id));
 		LOG_DBG("[vpu] enque test: request_id_0x%lx\n", (unsigned long)req->request_id);
-		LOG_INF("[vpu] enque test: core_index_0x%x\n", req->requested_core);
+		LOG_DBG("[vpu] enque test: core_index_0x%x\n", req->requested_core);
 
 		if (ret)
 			LOG_ERR("[ENQUE] get params failed, ret=%d\n", ret);
@@ -658,7 +658,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		/* free the request, error happened here*/
 		vpu_free_request(req);
-		LOG_INF("[vpu] VPU_IOCTL_ENQUE_REQUEST - ");
+		LOG_DBG("[vpu] VPU_IOCTL_ENQUE_REQUEST - ");
 		ret = -EFAULT;
 		break;
 	}
@@ -667,10 +667,10 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		struct vpu_request *req;
 		struct vpu_request *u_req;
 
-		LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
+		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST + ");
 
 		u_req = (struct vpu_request *) arg;
-		LOG_INF("[vpu] deque test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
+		LOG_DBG("[vpu] deque test: user_id_0x%lx, request_id_0x%lx", (unsigned long)user,
 			(unsigned long)(u_req->request_id));
 
 		ret = vpu_get_request_from_queue(user, u_req->request_id, &req);
@@ -683,7 +683,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 
 		ret = vpu_free_request(req);
 		CHECK_RET("[DEQUE] free request, ret=%d\n", ret);
-		LOG_INF("[vpu] VPU_IOCTL_DEQUE_REQUEST - ");
+		LOG_DBG("[vpu] VPU_IOCTL_DEQUE_REQUEST - ");
 		break;
 	}
 	case VPU_IOCTL_FLUSH_REQUEST:
