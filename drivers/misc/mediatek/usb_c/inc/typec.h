@@ -11,10 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/*
- * This is used to for host and peripheral modes of the tyoec driver.
- */
-
+/* This is used to for host and peripheral modes of the typec driver. */
 #ifndef USB_TYPEC_H
 #define USB_TYPEC_H
 

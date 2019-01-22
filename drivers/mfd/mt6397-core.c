@@ -29,6 +29,9 @@
 #define MT6392_RTC_BASE		0x8000
 #define MT6397_RTC_SIZE		0x3e
 
+#define MT6392_TYPEC_BASE	0x800
+#define MT6392_TYPEC_SIZE	0x100
+
 #define MT6323_CID_CODE		0x23
 #define MT6391_CID_CODE		0x91
 #define MT6397_CID_CODE		0x97
@@ -68,6 +71,21 @@ static const struct resource mt6392_keys_resources[] = {
 		.flags = IORESOURCE_IRQ,
 	},
 };
+
+
+static const struct resource mt6392_typec_resources[] = {
+	{
+		.start = MT6392_TYPEC_BASE,
+		.end   = MT6392_TYPEC_BASE + MT6392_TYPEC_SIZE,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.start = MT6392_IRQ_STATUS_TYPE_C_CC,
+		.end   = MT6392_IRQ_STATUS_TYPE_C_CC,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 
 static const struct mfd_cell mt6323_devs[] = {
 	{
@@ -129,6 +147,12 @@ static const struct mfd_cell mt6392_devs[] = {
 	{
 		.name = "mt6392-thermal",
 		.of_compatible = "mediatek,mt6392-thermal"
+	},
+	{
+		.name = "mt6392-typec",
+		.num_resources = ARRAY_SIZE(mt6392_typec_resources),
+		.resources = mt6392_typec_resources,
+		.of_compatible = "mediatek,mt6392-typec",
 	},
 };
 
