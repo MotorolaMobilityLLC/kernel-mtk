@@ -38,10 +38,10 @@ struct sensor_event_client {
 	wait_queue_head_t wait;
 };
 struct sensor_event_obj {
-	struct sensor_event_client client[ID_SENSOR_MAX_HANDLE];
+	struct sensor_event_client client[ID_SENSOR_MAX_HANDLE + 1];
 };
 static struct sensor_event_obj *event_obj;
-static struct lock_class_key buffer_lock_key[ID_SENSOR_MAX_HANDLE];
+static struct lock_class_key buffer_lock_key[ID_SENSOR_MAX_HANDLE + 1];
 /*
  * sensor_input_event only support process context.
  */
