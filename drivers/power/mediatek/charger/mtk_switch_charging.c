@@ -158,13 +158,13 @@ done:
 		}
 	}
 	if (pdata->input_current_limit > 0 && pdata->charging_current_limit > 0)
-		charger_dev_enable(info->chg1_dev);
+		charger_dev_enable(info->chg1_dev, true);
 	mutex_unlock(&swchgalg->ichg_aicr_access_mutex);
 }
 
 static void swchg_select_cv(struct charger_manager *info)
 {
-	int constant_voltage;
+	u32 constant_voltage;
 
 	if (info->enable_sw_jeita)
 		if (info->sw_jeita.cv != 0) {
@@ -202,11 +202,7 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		}
 	}
 
-	if (charging_enable == true)
-		charger_dev_enable(info->chg1_dev);
-	else
-		charger_dev_disable(info->chg1_dev);
-
+	charger_dev_enable(info->chg1_dev, charging_enable);
 }
 
 static int mtk_switch_charging_plug_in(struct charger_manager *info)
@@ -247,6 +243,7 @@ static int mtk_switch_charging_do_charging(struct charger_manager *info, bool en
 
 static int mtk_switch_chr_cc(struct charger_manager *info)
 {
+	bool chg_done = false;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	/* check bif */
@@ -261,7 +258,8 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 
 	swchg_turn_on_charging(info);
 
-	if (charger_dev_get_charging_status(info->chg1_dev) == 1) {
+	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+	if (chg_done) {
 		swchgalg->state = CHR_BATFULL;
 		pr_err("battery full!\n");
 	}
@@ -295,7 +293,7 @@ int mtk_switch_chr_err(struct charger_manager *info)
 			swchgalg->state = CHR_CC;
 		}
 	}
-	charger_dev_disable(info->chg1_dev);
+	charger_dev_enable(info->chg1_dev, false);
 
 	if (mtk_is_pe30_running(info))
 		mtk_pe30_end(info, true);
@@ -311,6 +309,7 @@ int mtk_switch_chr_err(struct charger_manager *info)
 
 int mtk_switch_chr_full(struct charger_manager *info)
 {
+	bool chg_done = false;
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 
 	/* turn off LED */
@@ -321,7 +320,8 @@ int mtk_switch_chr_full(struct charger_manager *info)
 	 */
 	swchg_select_cv(info);
 
-	if (charger_dev_get_charging_status(info->chg1_dev) == 0) {
+	charger_dev_is_charging_done(info->chg1_dev, &chg_done);
+	if (!chg_done) {
 		swchgalg->state = CHR_CC;
 
 		mtk_pe20_set_to_check_chr_type(info, true);

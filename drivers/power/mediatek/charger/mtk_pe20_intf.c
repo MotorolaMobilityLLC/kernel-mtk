@@ -67,14 +67,10 @@ static int pe20_enable_hw_vbus_ovp(struct charger_manager *pinfo, bool enable)
 {
 	int ret = 0;
 
-	if (enable)
-		ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev);
-	else
-		ret = charger_dev_disable_vbus_ovp(pinfo->chg1_dev);
+	ret = charger_dev_enable_vbus_ovp(pinfo->chg1_dev, enable);
 
 	if (ret < 0)
-		pr_err("%s: failed, ret = %d\n",
-			__func__, ret);
+		pr_err("%s: failed, ret = %d\n", __func__, ret);
 
 	return ret;
 }
@@ -87,8 +83,7 @@ static int pe20_enable_vbus_ovp(struct charger_manager *pinfo, bool enable)
 	/* Enable/Disable HW(PMIC) OVP */
 	ret = pe20_enable_hw_vbus_ovp(pinfo, enable);
 	if (ret < 0) {
-		pr_err("%s: failed, ret = %d\n",
-			__func__, ret);
+		pr_err("%s: failed, ret = %d\n", __func__, ret);
 		return ret;
 	}
 

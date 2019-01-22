@@ -1043,24 +1043,14 @@ static int rt9750_enable_chip(struct charger_device *chg_dev, bool en)
 	return ret;
 }
 
-static int rt9750_enable_switch(struct charger_device *chg_dev)
+static int rt9750_enable_switch(struct charger_device *chg_dev, bool en)
 {
 	int ret = 0;
 	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
 
-	pr_info("%s\n", __func__);
-	ret = rt9750_set_bit(info, RT9750_REG_CONTROL, RT9750_MASK_CHG_EN);
-
-	return ret;
-}
-
-static int rt9750_disable_switch(struct charger_device *chg_dev)
-{
-	int ret = 0;
-	struct rt9750_info *info = dev_get_drvdata(&chg_dev->dev);
-
-	pr_info("%s\n", __func__);
-	ret = rt9750_clr_bit(info, RT9750_REG_CONTROL, RT9750_MASK_CHG_EN);
+	pr_info("%s, enable = %d\n", __func__, en);
+	ret = (en ? rt9750_set_bit : rt9750_clr_bit)
+		(info, RT9750_REG_CONTROL, RT9750_MASK_CHG_EN);
 
 	return ret;
 }
@@ -1163,7 +1153,6 @@ static int rt9750_get_tdie_adc(struct charger_device *chg_dev,
 static struct charger_ops rt9750_chg_ops = {
 	.enable_chip = rt9750_enable_chip,
 	.enable_direct_charging = rt9750_enable_switch,
-	.disable_direct_charging = rt9750_disable_switch,
 	.dump_registers = rt9750_dump_register,
 	.kick_direct_charging_wdt = rt9750_kick_wdt,
 	.set_direct_charging_ibusoc = rt9750_set_ibusoc,

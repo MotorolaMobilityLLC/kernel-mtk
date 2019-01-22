@@ -1096,10 +1096,10 @@ static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buff
 	if (sscanf(desc, "%d %d", &cmd_current_unlimited, &cmd_discharging) == 2) {
 		info->usb_unlimited = cmd_current_unlimited;
 		if (cmd_discharging == 1) {
-			charger_dev_disable(info->chg1_dev);
+			charger_dev_enable(info->chg1_dev, false);
 			/* adjust_power = -1; */
 		} else if (cmd_discharging == 0) {
-			charger_dev_enable(info->chg1_dev);
+			charger_dev_enable(info->chg1_dev, true);
 			/* adjust_power = -1; */
 		}
 
@@ -1115,9 +1115,9 @@ static ssize_t mtk_charger_current_cmd_write(struct file *file, const char *buff
 static int mtk_charger_en_power_path_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
-	int power_path_en;
+	bool power_path_en = true;
 
-	power_path_en = charger_dev_is_powerpath_enabled(pinfo->chg1_dev);
+	charger_dev_is_powerpath_enabled(pinfo->chg1_dev, &power_path_en);
 	seq_printf(m, "%d\n", power_path_en);
 
 	return 0;
@@ -1140,10 +1140,7 @@ static ssize_t mtk_charger_en_power_path_write(struct file *file, const char *bu
 
 	ret = kstrtou32(desc, 10, &enable);
 	if (ret == 0) {
-		if (enable)
-			charger_dev_enable_powerpath(info->chg1_dev);
-		else
-			charger_dev_disable_powerpath(info->chg1_dev);
+		charger_dev_enable_powerpath(info->chg1_dev, enable);
 		pr_debug("%s: enable power path = %d\n", __func__, enable);
 		return count;
 	}
@@ -1155,9 +1152,9 @@ static ssize_t mtk_charger_en_power_path_write(struct file *file, const char *bu
 static int mtk_charger_en_safety_timer_show(struct seq_file *m, void *data)
 {
 	struct charger_manager *pinfo = m->private;
-	int safety_timer_en;
+	bool safety_timer_en;
 
-	safety_timer_en = charger_dev_is_safety_timer_enabled(pinfo->chg1_dev);
+	charger_dev_is_safety_timer_enabled(pinfo->chg1_dev, &safety_timer_en);
 	seq_printf(m, "%d\n", safety_timer_en);
 
 	return 0;
@@ -1179,10 +1176,7 @@ static ssize_t mtk_charger_en_safety_timer_write(struct file *file, const char *
 
 	ret = kstrtou32(desc, 10, &enable);
 	if (ret == 0) {
-		if (enable)
-			charger_dev_enable_safety_timer(info->chg1_dev);
-		else
-			charger_dev_disable_safety_timer(info->chg1_dev);
+		charger_dev_enable_safety_timer(info->chg1_dev, enable);
 		pr_debug("%s: enable safety timer = %d\n", __func__, enable);
 		return count;
 	}
