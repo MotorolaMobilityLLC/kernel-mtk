@@ -106,6 +106,12 @@ enum pause_src {
 	NUM_PAUSE_SRC
 };
 
+enum power_mode {
+	POWER_NORMAL,
+	POWER_SPORTS,
+	NUM_POWER_MODE
+};
+
 struct init_sta {
 	unsigned int opp[NUM_CPU_CLUSTER];	/* SW index */
 	unsigned int freq[NUM_CPU_CLUSTER];	/* KHz */
@@ -213,10 +219,14 @@ static inline void cpuhvfs_dump_dvfsp_info(void)	{}
 #if defined(CONFIG_HYBRID_CPU_DVFS) && defined(CPUHVFS_HW_GOVERNOR)
 extern void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback);
 
+extern void cpuhvfs_set_power_mode(enum power_mode mode);
+
 extern int cpuhvfs_enable_hw_governor(struct init_sta *sta);
 extern int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta);
 #else
 static inline void cpuhvfs_register_dvfs_notify(dvfs_notify_t callback)	{}
+
+static inline void cpuhvfs_set_power_mode(enum power_mode mode)		{}
 
 static inline int cpuhvfs_enable_hw_governor(struct init_sta *sta)	{ return -EPERM; }
 static inline int cpuhvfs_disable_hw_governor(struct init_sta *ret_sta)	{ return 0; }
