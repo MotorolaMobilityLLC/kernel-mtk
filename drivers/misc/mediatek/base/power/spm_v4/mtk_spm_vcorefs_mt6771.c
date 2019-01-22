@@ -68,10 +68,6 @@
 void __iomem *dvfsrc_base;
 void __iomem *qos_sram_base;
 
-u32 plat_channel_num;
-u32 plat_chip_ver;
-u32 dram_issue;
-
 #ifdef CONFIG_MTK_SMI_EXT
 enum mmdvfs_lcd_size_enum plat_lcd_resolution;
 #else
@@ -120,8 +116,6 @@ static inline void spm_vcorefs_footprint(enum spm_vcorefs_step step)
 char *spm_vcorefs_dump_dvfs_regs(char *p)
 {
 	if (p) {
-		p += sprintf(p, "dram_issue: 0x%x\n", dram_issue);
-		/* p += sprintf(p, "(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
 		p += sprintf(p, "DVFSRC_RECORD_COUNT    : 0x%x\n", spm_read(DVFSRC_RECORD_COUNT));
@@ -191,7 +185,6 @@ char *spm_vcorefs_dump_dvfs_regs(char *p)
 		p += sprintf(p, "BW_TOTAL: %d (AVG: %d)\n", dvfsrc_get_bw(QOS_TOTAL), dvfsrc_get_bw(QOS_TOTAL_AVE));
 		#endif
 	} else {
-		/* spm_vcorefs_warn("(v:%d)(r:%d)(c:%d)\n", plat_chip_ver, plat_lcd_resolution, plat_channel_num); */
 		#if 1
 		/* DVFSRC */
 		spm_vcorefs_warn("DVFSRC_RECORD_COUNT    : 0x%x\n", spm_read(DVFSRC_RECORD_COUNT));
@@ -294,7 +287,7 @@ static void spm_dvfsfw_init(int curr_opp)
 
 	spin_lock_irqsave(&__spm_lock, flags);
 
-	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, dram_issue);
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS, VCOREFS_SMC_CMD_0, curr_opp, 0);
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
@@ -798,24 +791,6 @@ void spm_request_dvfs_opp(int id, enum dvfs_opp opp)
 
 static void plat_info_init(void)
 {
-#if 0
-	/* HW chip version */
-	plat_chip_ver = mt_get_chip_sw_ver();
-
-	/* lcd resolution */
-	#ifdef CONFIG_MTK_SMI_EXT
-	plat_lcd_resolution = mmdvfs_get_lcd_resolution();
-	#else
-	plat_lcd_resolution = 46;
-	#endif
-
-	spm_vcorefs_warn("chip_ver: %d, lcd_resolution: %d channel_num: %d\n",
-						plat_chip_ver, plat_lcd_resolution, plat_channel_num);
-#endif
-	dram_issue = get_devinfo_with_index(138);
-	dram_issue = (dram_issue & (1U << 8));
-
-	spm_vcorefs_warn("dram_issue: 0x%x\n", dram_issue);
 }
 
 #if 0
@@ -960,6 +935,12 @@ char *met_info_name[INFO_MAX] = {
 
 char *met_src_name[SRC_MAX] = {
 	"MD2SPM",
+	"QOS_EMI_LEVEL",
+	"QOS_VCORE_LEVEL",
+	"CM_MGR_LEVEL",
+	"QOS_BW_LEVEL1",
+	"QOS_BW_LEVEL2",
+	"SCP_VCORE_LEVEL",
 };
 
 /* met profile function */
@@ -1002,8 +983,23 @@ EXPORT_SYMBOL(vcorefs_get_opp_info);
 
 unsigned int *vcorefs_get_src_req(void)
 {
-	met_vcorefs_src[SRC_MD2SPM_IDX] = spm_read(MD2SPM_DVFS_CON);
+	u32 qos_total_bw = spm_read(DVFSRC_SW_BW_0) +
+			   spm_read(DVFSRC_SW_BW_1) +
+			   spm_read(DVFSRC_SW_BW_2) +
+			   spm_read(DVFSRC_SW_BW_3) +
+			   spm_read(DVFSRC_SW_BW_4);
 
+	u32 qos0_thres = spm_read(DVFSRC_EMI_QOS0);
+	u32 qos1_thres = spm_read(DVFSRC_EMI_QOS1);
+	met_vcorefs_src[SRC_MD2SPM_IDX] = spm_read(MD2SPM_DVFS_CON);
+	met_vcorefs_src[SRC_QOS_EMI_LEVEL_IDX] = spm_read(DVFSRC_SW_REQ) & 0x3;
+	met_vcorefs_src[SRC_QOS_VCORE_LEVEL_IDX] = (spm_read(DVFSRC_VCORE_REQUEST2) >> 24) & 0x3;
+
+	met_vcorefs_src[SRC_CM_MGR_LEVEL_IDX] = spm_read(DVFSRC_SW_REQ2) & 0x3;
+	met_vcorefs_src[SRC_QOS_BW_LEVEL1_IDX] = (qos_total_bw >= qos0_thres) ? 1 : 0;
+	met_vcorefs_src[SRC_QOS_BW_LEVEL2_IDX] = (qos_total_bw >= qos1_thres) ? 1 : 0;
+
+	met_vcorefs_src[SRC_SCP_VCORE_LEVEL_IDX] = (spm_read(DVFSRC_VCORE_REQUEST) >> 30) & 0x3;
 	return met_vcorefs_src;
 }
 EXPORT_SYMBOL(vcorefs_get_src_req);
