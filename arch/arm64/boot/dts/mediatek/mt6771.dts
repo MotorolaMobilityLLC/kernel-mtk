@@ -2000,8 +2000,14 @@
 		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>,
 			<&smi_larb3>, <&smi_larb4>, <&smi_larb5>, <&smi_larb6>;
 		clocks = <&scpsys SCP_SYS_DIS>, <&mmsys_config MMSYS_GALS_COMM0>,
-			<&mmsys_config MMSYS_GALS_COMM1>, <&mmsys_config MMSYS_SMI_COMMON>;
-		clock-names = "mtcmos-mm", "smi-common-gals-comm0", "smi-common-gals-comm1", "smi-common";
+			<&mmsys_config MMSYS_GALS_COMM1>, <&mmsys_config MMSYS_SMI_COMMON>,
+			<&topckgen TOP_MUX_MM>, <&topckgen TOP_MUX_CAM>, <&topckgen TOP_MUX_IMG>,
+			<&topckgen TOP_SYSPLL_D2>, <&topckgen TOP_SYSPLL_D3>,
+			<&topckgen TOP_MMPLL_D6>, <&topckgen TOP_MMPLL_D7>, <&topckgen TOP_UNIVPLL_D2_D2>;
+		clock-names = "mtcmos-mm", "smi-common-gals-comm0", "smi-common-gals-comm1", "smi-common",
+			"MMDVFS_CLK_MUX_TOP_MM_SEL", "MMDVFS_CLK_MUX_TOP_CAM_SEL", "MMDVFS_CLK_MUX_TOP_IMG_SEL",
+			"mmdvfs_clk_syspll_d2_ck", "mmdvfs_clk_syspll_d3_ck",
+			"mmdvfs_clk_mmpll_d6_ck", "mmdvfs_clk_mmpll_d7_ck", "mmdvfs_clk_univpll_d2_d2_ck";
 	};
 
 	disp_rsz@1401a000 {

@@ -35,6 +35,7 @@ obj-y += smi_configuration.o
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799"))
 ccflags-y += -DSMI_WHI
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -45,6 +46,7 @@ obj-y += smi_configuration.o
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759"))
 ccflags-y += -DSMI_ALA
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -57,6 +59,7 @@ else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
 ccflags-y += -DSMI_BIA
 ccflags-y += -DSMI_MMU_V2
 ccflags-y += -DSPECIAL_BW_CONFIG_MM
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -69,6 +72,7 @@ SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
 ccflags-y += -DSMI_VIN
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -80,6 +84,7 @@ SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6739"))
 ccflags-y += -DSMI_ZIO
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
@@ -101,10 +106,12 @@ SUPPORT_MET_SMI := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6771"))
 ccflags-y += -DSMI_SYL
 ccflags-y += -DSMI_MMU_V2
+ccflags-y += -DMMDVFS_HOOK
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
-obj-y += mmdvfs_mgr_default.o
+obj-y += mmdvfs_mgr_v3.o
+obj-y += mmdvfs_profile_adaptor.o
 obj-y += mtk-smi.o
 obj-y += smi_configuration_mt6771.o
 SUPPORT_MET_SMI := true
