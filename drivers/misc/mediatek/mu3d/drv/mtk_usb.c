@@ -967,7 +967,7 @@ int musb_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 {
 	int ret = 0;
 
-	os_printk(K_DEBUG, "%s\n", __func__);
+	os_printk(K_NOTICE, "%s\n", __func__);
 
 	if (req->mode == UFPM_FUNC_MODE_TETHER) {
 		/* Call AP Packet Tracking module's API */
@@ -995,7 +995,7 @@ int musb_deactivate_md_fast_path(ufpm_md_fast_path_common_req_t *req)
 		}
 	}
 
-	os_printk(K_DEBUG, "%s ret=%d\n", __func__, ret);
+	os_printk(K_NOTICE, "%s ret=%d\n", __func__, ret);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(musb_deactivate_md_fast_path);
