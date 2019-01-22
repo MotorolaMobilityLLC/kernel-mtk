@@ -39,7 +39,7 @@
 #include <linux/fb.h>
 #include <linux/debugfs.h>
 #include <m4u.h>
-#include "mt_smi.h"
+#include "mtk_smi.h"
 
 #include "smi_common.h"
 #include "smi_reg.h"
