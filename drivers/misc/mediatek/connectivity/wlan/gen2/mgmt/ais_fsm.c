@@ -4120,6 +4120,9 @@ VOID aisFsmRunEventJoinTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam)
 		if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_SCAN, TRUE) == TRUE) {
 			wlanClearScanningResult(prAdapter);
 			eNextState = AIS_STATE_ONLINE_SCAN;
+		} else if (aisFsmIsRequestPending(prAdapter, AIS_REQUEST_ROAMING_CONNECT, TRUE)) {
+			DBGLOG(AIS, INFO, "Upper layer trigger roaming, resume request!\n");
+			eNextState = AIS_STATE_COLLECT_ESS_INFO;
 		}
 
 		break;
