@@ -21,8 +21,8 @@
 /*W1C RCV_MSG_INTR clears RX buffer, choose method 1 or 2*/
 /*method 1: read RX buffer and W1C RCV_MSG_INTR in ISR*/
 /*mtthod 2: leave RCV_MSG_INTR untouched, read RX buffer and W1C it in main loop*/
-#define PD_SW_WORKAROUND1_1 0
-#define PD_SW_WORKAROUND1_2 1
+#define PD_SW_WORKAROUND1_1 1
+#define PD_SW_WORKAROUND1_2 0
 
 #define CONFIG_USB_PD_DUAL_ROLE
 #define CONFIG_USBC_VCONN
@@ -84,7 +84,7 @@
 	PD_TIMER0_TIMEOUT_INTR)
 
 /* Time to wait to complete transmit */
-#define PD_TX_TIMEOUT (100*1)
+#define PD_TX_TIMEOUT (30*1)
 
 #define PD_STRESS_DELAY 2500
 

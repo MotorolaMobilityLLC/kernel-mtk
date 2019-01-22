@@ -53,6 +53,7 @@
 #define VDM_MODE
 #define AUTO_SEND_HR
 #define SUPPORT_SOP_P
+#define BURST_READ
 
 /*enable SNK<->ACC, SRC<->ACC transitions*/
 #define ENABLE_ACC 1
@@ -503,7 +504,12 @@ extern void typec_writew(struct typec_hba *hba, uint16_t val, unsigned int reg);
 extern void typec_writedw(struct typec_hba *hba, uint32_t val, unsigned int reg);
 extern uint8_t typec_read8(struct typec_hba *hba, unsigned int reg);
 extern uint16_t typec_readw(struct typec_hba *hba, unsigned int reg);
+#ifdef BURST_READ
+extern uint32_t typec_readdw(struct typec_hba *hba, unsigned int reg);
+#endif
+extern void typec_write8_msk(struct typec_hba *hba, uint8_t msk, uint8_t val, unsigned int reg);
 extern void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigned int reg);
+extern void typec_set8(struct typec_hba *hba, uint8_t val, unsigned int reg);
 extern void typec_set(struct typec_hba *hba, uint16_t val, unsigned int reg);
 extern void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg);
 

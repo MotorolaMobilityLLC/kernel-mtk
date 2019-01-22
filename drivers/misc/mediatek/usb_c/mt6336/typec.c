@@ -321,6 +321,31 @@ uint8_t typec_read8(struct typec_hba *hba, unsigned int reg)
 	return val;
 }
 
+#ifdef BURST_READ
+uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
+{
+	uint16_t ret = 0;
+	uint8_t v[4];
+
+	mt6336_read_bytes(reg-2, v, 4);
+
+	ret = ((v[3] << 8) | v[2]);
+
+	return ret;
+}
+
+uint32_t typec_readdw(struct typec_hba *hba, unsigned int reg)
+{
+	uint8_t v[6];
+	uint32_t ret = 0;
+
+	mt6336_read_bytes(reg-2, v, 6);
+
+	ret = ((v[5] << 24) | (v[4] << 16) | (v[3] << 8) | v[2]);
+
+	return ret;
+}
+#else
 uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
 {
 	uint16_t ret = 0;
@@ -329,6 +354,7 @@ uint16_t typec_readw(struct typec_hba *hba, unsigned int reg)
 
 	return ret;
 }
+#endif
 
 void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigned int reg)
 {
@@ -348,6 +374,24 @@ void typec_writew_msk(struct typec_hba *hba, uint16_t msk, uint16_t val, unsigne
 
 }
 
+void typec_write8_msk(struct typec_hba *hba, uint8_t msk, uint8_t val, unsigned int reg)
+{
+	uint16_t tmp;
+	const int is_print = 0;
+
+	tmp = typec_read8(hba, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "%s 0x%03X=0x%X\n", __func__, reg, tmp);
+
+	tmp = (tmp & ~msk) | (val & msk);
+	typec_write8(hba, tmp, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_read8(hba, reg), tmp);
+
+}
+
 void typec_set(struct typec_hba *hba, uint16_t val, unsigned int reg)
 {
 	uint16_t tmp;
@@ -363,6 +407,23 @@ void typec_set(struct typec_hba *hba, uint16_t val, unsigned int reg)
 	if (is_print)
 		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_readw(hba, reg), (tmp | val));
 }
+
+void typec_set8(struct typec_hba *hba, uint8_t val, unsigned int reg)
+{
+	uint16_t tmp;
+	const int is_print = 0;
+
+	tmp = typec_read8(hba, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "%s 0x%03X=0x%X\n", __func__, reg, tmp);
+
+	typec_write8(hba, tmp | val, reg);
+
+	if (is_print)
+		dev_err(hba->dev, "0x%03X=0x%X Should be 0x%X\n", reg, typec_read8(hba, reg), (tmp | val));
+}
+
 
 void typec_clear(struct typec_hba *hba, uint16_t val, unsigned int reg)
 {
@@ -2039,7 +2100,8 @@ static irqreturn_t typec_top_intr(int irq, void *__hba)
 			typec_clear(hba, REG_PD_RX_RCV_MSG_INTR_EN, PD_INTR_EN_0);
 		typec_writew(hba, (pd_is0 & ~PD_RX_RCV_MSG_INTR), PD_INTR_0);
 #else
-		typec_writew(hba, pd_is0, PD_INTR_0);
+		/*typec_writew(hba, pd_is0, PD_INTR_0);*/
+		typec_writew(hba, (pd_is0 & ~PD_RX_RCV_MSG_INTR), PD_INTR_0);
 #endif
 		typec_writew(hba, pd_is1, PD_INTR_1);
 
@@ -2174,7 +2236,7 @@ void parse_dts(struct device_node *np, struct typec_hba *hba)
 		hba->discover_vmd = 0;
 
 	if (get_u32(np, "kpoc_delay", &hba->kpoc_delay) != 0)
-		hba->kpoc_delay = 25*1000;
+		hba->kpoc_delay = 15*1000;
 
 }
 

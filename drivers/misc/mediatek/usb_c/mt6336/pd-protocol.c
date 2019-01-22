@@ -362,8 +362,11 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 	pd_set_event(hba, pd_is0, pd_is1, cc_is0);
 
 #if PD_SW_WORKAROUND1_1
-	if (pd_is0 & PD_RX_RCV_MSG_INTR)
+	if (pd_is0 & PD_RX_RCV_MSG_INTR) {
+		hba->header = 0;
 		pd_get_message(hba, &hba->header, hba->payload);
+		typec_writew(hba, PD_RX_RCV_MSG_INTR, PD_INTR_0);
+	}
 #endif
 
 	/* event type */
@@ -380,6 +383,9 @@ void pd_intr(struct typec_hba *hba, uint16_t pd_is0, uint16_t pd_is1, uint16_t c
 
 	/* CC & RX & timer events */
 	if (cc_event || rx_event || timer_event) {
+		if (pd_is1 & PD_HR_RCV_DONE_INTR)
+			hba->tx_event = true;
+
 		hba->rx_event = true;
 		wake_up(&hba->wq);
 	}
@@ -476,7 +482,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	#endif
 
 	/*reception ordered set*/
-	typec_writew_msk(hba, REG_PD_TX_OS, (type<<REG_PD_TX_OS_OFST), PD_TX_CTRL);
+	typec_write8_msk(hba, REG_PD_TX_OS, (type<<REG_PD_TX_OS_OFST), PD_TX_CTRL);
 
 	/*prepare header*/
 	cnt = PD_HEADER_CNT(header);
@@ -485,7 +491,50 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	/*prepare data*/
 	if (cnt == 1)
 		typec_writedw(hba, *data, PD_TX_DATA_OBJECT0_0);
-	else {
+	else if (cnt == 3) {
+		uint8_t v[4*3];
+
+		v[0] = data[0] & 0xFF;
+		v[1] = (data[0] >> 8) & 0xFF;
+		v[2] = (data[0] >> 16) & 0xFF;
+		v[3] = (data[0] >> 24) & 0xFF;
+
+		v[4] = data[1] & 0xFF;
+		v[5] = (data[1] >> 8) & 0xFF;
+		v[6] = (data[1] >> 16) & 0xFF;
+		v[7] = (data[1] >> 24) & 0xFF;
+
+		v[8] = data[2] & 0xFF;
+		v[9] = (data[2] >> 8) & 0xFF;
+		v[10] = (data[2] >> 16) & 0xFF;
+		v[11] = (data[2] >> 24) & 0xFF;
+
+		mt6336_write_bytes(PD_TX_DATA_OBJECT0_0, v, 4*3);
+	} else if (cnt == 4) {
+		uint8_t v[4*4];
+
+		v[0] = data[0] & 0xFF;
+		v[1] = (data[0] >> 8) & 0xFF;
+		v[2] = (data[0] >> 16) & 0xFF;
+		v[3] = (data[0] >> 24) & 0xFF;
+
+		v[4] = data[1] & 0xFF;
+		v[5] = (data[1] >> 8) & 0xFF;
+		v[6] = (data[1] >> 16) & 0xFF;
+		v[7] = (data[1] >> 24) & 0xFF;
+
+		v[8] = data[2] & 0xFF;
+		v[9] = (data[2] >> 8) & 0xFF;
+		v[10] = (data[2] >> 16) & 0xFF;
+		v[11] = (data[2] >> 24) & 0xFF;
+
+		v[12] = data[3] & 0xFF;
+		v[13] = (data[3] >> 8) & 0xFF;
+		v[14] = (data[3] >> 16) & 0xFF;
+		v[15] = (data[3] >> 24) & 0xFF;
+
+		mt6336_write_bytes(PD_TX_DATA_OBJECT0_0, v, 4*4);
+	} else {
 		int i;
 
 		for (i = 0; i < cnt; i++)
@@ -495,7 +544,7 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 	hba->tx_event = false;
 
 	/*send message*/
-	typec_set(hba, PD_TX_START, PD_TX_CTRL);
+	typec_set8(hba, PD_TX_START, PD_TX_CTRL);
 
 	#ifdef PROFILING
 	end = ktime_get();
@@ -533,6 +582,10 @@ int pd_transmit(struct typec_hba *hba, enum pd_transmit_type type,
 			ret = 0;
 		else if ((pd_is0 & PD_TX_FAIL0) | (pd_is1 & PD_TX_FAIL1))
 			ret = 1;
+		else if (pd_is1 & PD_HR_RCV_DONE_INTR) {
+			ret = 0;
+			dev_err(hba->dev, "Receive HardReset");
+		}
 
 		if (pd_is0 & PD_TX_RCV_NEW_MSG_DISCARD_MSG_INTR)
 			dev_err(hba->dev, "Receive New Msg Discard Our Msg");
@@ -1667,8 +1720,12 @@ void pd_get_message(struct typec_hba *hba, uint16_t *header, uint32_t *payload)
 	/*data*/
 	cnt = PD_HEADER_CNT(*header);
 	for (i = 0; i < cnt; i++) {
+#ifdef BURST_READ
+		payload[i] = typec_readdw(hba, (PD_RX_DATA_OBJECT0_0 + i*4));
+#else
 		payload[i] = (typec_readw(hba, (PD_RX_DATA_OBJECT0_1+i*4)) << 16);
 		payload[i] |= typec_readw(hba, (PD_RX_DATA_OBJECT0_0+i*4));
+#endif
 	}
 
 	#if PD_SW_WORKAROUND1_2
@@ -1732,8 +1789,10 @@ end:
 
 int pd_task(void *data)
 {
+#if PD_SW_WORKAROUND1_2
 	uint16_t header;
 	uint32_t payload[7];
+#endif
 	unsigned long pre_timeout = ULONG_MAX;
 	unsigned long timeout = 10;
 
@@ -1854,8 +1913,10 @@ int pd_task(void *data)
 			incoming_packet = 1;
 
 			#if PD_SW_WORKAROUND1_1
+
 			if (hba->header && (hba->bist_mode != BDO_MODE_TEST_DATA))
 				handle_request(hba, hba->header, hba->payload);
+
 			#else
 
 			#ifdef PROFILING
