@@ -182,7 +182,8 @@ int vpu_create_user(struct vpu_user **user)
 		return -ENOMEM;
 
 	mutex_init(&u->data_mutex);
-	u->id = ++vpu_num_users;
+	vpu_num_users++;
+	u->id = NULL;
 	u->open_pid = current->pid;
 	u->open_tgid = current->tgid;
 	INIT_LIST_HEAD(&u->enque_list);
@@ -196,7 +197,6 @@ int vpu_create_user(struct vpu_user **user)
 	list_add_tail(vlist_link(u, struct vpu_user), &vpu_device->user_list);
 	mutex_unlock(&vpu_device->user_mutex);
 
-	LOG_DBG("created user[%d]\n", u->id);
 	*user = u;
 	return 0;
 }
@@ -365,6 +365,7 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 	struct list_head *head = NULL;
 	struct vpu_request *req;
 	bool get = false;
+	int retry = 0;
 
 	do {
 		/* wait until condition is true */
@@ -375,8 +376,14 @@ int vpu_get_request_from_queue(struct vpu_user *user, uint64_t request_id, struc
 		/* ret == -ERESTARTSYS, if signal interrupt */
 		if (ret < 0) {
 			LOG_ERR("interrupt by signal, while pop a request, ret=%d\n", ret);
-			*rreq = NULL;
-			return -EINTR;
+			if (retry < 3) {
+				LOG_ERR("retry=%d\n", retry);
+				retry += 1;
+			} else {
+				LOG_ERR("retry %d times fail, return FAIL\n", retry);
+				*rreq = NULL;
+				return -EINTR;
+			}
 		}
 
 		mutex_lock(&user->data_mutex);
@@ -461,10 +468,10 @@ int vpu_delete_user(struct vpu_user *user)
 		vpu_hw_unlock(user);
 
 	mutex_lock(&vpu_device->user_mutex);
+	LOG_INF("deleted user[0x%lx]\n", (unsigned long)(user->id));
 	list_del(vlist_link(user, struct vpu_user));
 	mutex_unlock(&vpu_device->user_mutex);
 
-	LOG_DBG("deleted user[%d]\n", user->id);
 	kfree(user);
 
 	return 0;
@@ -477,9 +484,9 @@ int vpu_dump_user(struct seq_file *s)
 	struct list_head *head_req;
 	uint32_t cnt_enq, cnt_deq;
 
-#define LINE_BAR "  +------+------+------+-------+-------+-------+-------+\n"
+#define LINE_BAR "  +------------------+------+------+-------+-------+-------+-------+\n"
 	vpu_print_seq(s, LINE_BAR);
-	vpu_print_seq(s, "  |%-6s|%-6s|%-6s|%-7s|%-7s|%-7s|%-7s|\n",
+	vpu_print_seq(s, "  |%-18s|%-6s|%-6s|%-7s|%-7s|%-7s|%-7s|\n",
 			"Id", "Pid", "Tid", "Enque", "Running", "Deque", "Locked");
 	vpu_print_seq(s, LINE_BAR);
 
@@ -499,8 +506,8 @@ int vpu_dump_user(struct seq_file *s)
 			cnt_deq++;
 		}
 
-		vpu_print_seq(s, "  |%-6d|%-6d|%-6d|%-7d|%-7d|%-7d|%-7d|\n",
-			      user->id,
+		vpu_print_seq(s, "  |0x%-16lx|%-6d|%-6d|%-7d|%-7d|%-7d|%-7d|\n",
+			      (unsigned long)(user->id),
 			      user->open_pid,
 			      user->open_tgid,
 			      cnt_enq,
@@ -537,6 +544,8 @@ static int vpu_open(struct inode *inode, struct file *flip)
 		return -ENOMEM;
 	}
 
+	user->id = (unsigned long *)user;
+	LOG_INF("vpu_open user->id : 0x%lx\n", (unsigned long)(user->id));
 	flip->private_data = user;
 
 	return ret;

@@ -54,7 +54,7 @@ struct vpu_device {
 struct vpu_user {
 	pid_t open_pid;
 	pid_t open_tgid;
-	uint32_t id;
+	unsigned long *id;
 	/* to enque/deque must have mutex protection */
 	struct mutex data_mutex;
 	bool running;

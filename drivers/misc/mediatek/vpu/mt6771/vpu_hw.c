@@ -941,8 +941,11 @@ static int vpu_service_routine(void *arg)
 	struct vpu_user *user = NULL;
 	struct vpu_request *req = NULL;
 	struct vpu_algo *algo = NULL;
+	struct vpu_user *user_in_list = NULL;
+	struct list_head *head = NULL;
 	int *d = (int *)arg;
 	int service_core = (*d);
+	bool get = false;
 
 	DEFINE_WAIT_FUNC(wait, woken_wake_function);
 
@@ -961,6 +964,9 @@ static int vpu_service_routine(void *arg)
 
 		/* consume the user's queue */
 		req = NULL;
+		user_in_list = NULL;
+		head = NULL;
+		get = false;
 
 		mutex_lock(&vpu_dev->servicepool_mutex[service_core]);
 		if (!(list_empty(&vpu_dev->servicepool_list[service_core]))) {
@@ -989,9 +995,29 @@ static int vpu_service_routine(void *arg)
 		if (req != NULL) {
 			LOG_DBG("[vpu] service core index...: %d/%d", service_core, (*d));
 			user = (struct vpu_user *)req->user_id;
-			LOG_DBG("[vpu] user...0x%lx/0x%lx/0x%lx/0x%lx\n", (unsigned long)user, (unsigned long)&user,
+			LOG_DBG("[vpu_%d] user...0x%lx/0x%lx/0x%lx/0x%lx\n", service_core,
+				(unsigned long)user, (unsigned long)&user,
 				(unsigned long)req->user_id, (unsigned long)&(req->user_id));
 			mutex_lock(&vpu_dev->user_mutex);
+			/* check to avoid user had been removed from list, and kernel vpu thread still do the request */
+			list_for_each(head, &vpu_dev->user_list)
+			{
+				user_in_list = vlist_node_of(head, struct vpu_user);
+				LOG_DBG("[vpu_%d] user->id = 0x%lx, 0x%lx\n", service_core,
+					(unsigned long)(user_in_list->id), (unsigned long)(user));
+				if ((unsigned long)(user_in_list->id) == (unsigned long)(user)) {
+					get = true;
+					LOG_DBG("[vpu_%d] get_0x%lx = true\n", service_core, (unsigned long)(user));
+					break;
+				}
+			}
+			if (!get) {
+				mutex_unlock(&vpu_dev->user_mutex);
+				LOG_WRN("[vpu_%d] get request that the original user(0x%lx) is deleted\n",
+					service_core, (unsigned long)(user));
+				continue;
+			}
+
 			user->running = true; /* for flush request from queue, DL usage */
 			/* unlock for avoiding long time locking */
 			mutex_unlock(&vpu_dev->user_mutex);
@@ -1034,13 +1060,30 @@ out:
 		/* if req is null, we should not do anything of following codes */
 		mutex_lock(&vpu_dev->user_mutex);
 		LOG_DBG("[vpu] flag - 5.5 : ....\n");
-		mutex_lock(&user->data_mutex);
-		LOG_DBG("[vpu] flag - 6: add to deque list\n");
-		req->occupied_core = (0x1 << service_core);
-		list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
-		LOG_INF("[vpu_0x%x] add to deque list done\n", req->occupied_core);
-		user->running = false;
-		mutex_unlock(&user->data_mutex);
+		/* check to avoid user had been removed from list, and kernel vpu thread finish the task */
+		get = false;
+		head = NULL;
+		user_in_list = NULL;
+		list_for_each(head, &vpu_dev->user_list)
+		{
+			user_in_list = vlist_node_of(head, struct vpu_user);
+			if ((unsigned long)(user_in_list->id) == (unsigned long)(user)) {
+				get = true;
+				break;
+			}
+		}
+		if (get) {
+			mutex_lock(&user->data_mutex);
+			LOG_DBG("[vpu] flag - 6: add to deque list\n");
+			req->occupied_core = (0x1 << service_core);
+			list_add_tail(vlist_link(req, struct vpu_request), &user->deque_list);
+			LOG_INF("[vpu_%d, 0x%x] add to deque list done\n", service_core, req->occupied_core);
+			user->running = false;
+			mutex_unlock(&user->data_mutex);
+		} else {
+			LOG_WRN("[vpu_%d]done request that the original user(0x%lx) is deleted\n",
+				service_core, (unsigned long)(user));
+		}
 		mutex_unlock(&vpu_dev->user_mutex);
 		mutex_lock(&(vpu_service_cores[service_core].state_mutex));
 		vpu_service_cores[service_core].state = VCT_IDLE;
