@@ -51,16 +51,14 @@ static const char OOB_SIGNATURE[] = "bmt";
 static struct mtd_info *mtd_bmt;
 static struct nand_chip *nand_chip_bmt;
 
-#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-#define BLOCK_SIZE_BMT		(devinfo.blocksize * 1024)
-#define PAGE_PER_SIZE_BMT	((devinfo.blocksize * 1024) / devinfo.pagesize)
+#define BLOCK_SIZE_BMT		((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ? \
+		(devinfo.blocksize * 1024) : (1 << nand_chip_bmt->phys_erase_shift))
+#define PAGE_PER_SIZE_BMT	((devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ? \
+	((devinfo.blocksize * 1024) / devinfo.pagesize) : \
+	(1 << (nand_chip_bmt->phys_erase_shift-nand_chip_bmt->page_shift)))
 #define PAGE_ADDR(block)	((block) * PAGE_PER_SIZE_BMT)
-#else
-#define BLOCK_SIZE_BMT          (1 << nand_chip_bmt->phys_erase_shift)
-#define PAGE_PER_SIZE_BMT       (1 << (nand_chip_bmt->phys_erase_shift-nand_chip_bmt->page_shift))
-#define OFFSET(block)       (((u64)block) * BLOCK_SIZE_BMT)
-#define PAGE_ADDR(block)    ((block) * PAGE_PER_SIZE_BMT)
-#endif
+#define OFFSET_MLC(block)       (((u64)block) * BLOCK_SIZE_BMT)
+
 #define PAGE_SIZE_BMT		(1 << nand_chip_bmt->page_shift)
 
 /*********************************************************************
@@ -397,9 +395,11 @@ static int find_available_block(bool start_from_end)
 		}
 
 		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-		if (!nand_erase_bmt(((u64)block) * (devinfo.blocksize * 1024))) {
-			pr_debug("Erase block 0x%x failed\n", block);
-			mark_block_bad_bmt(((u64)block) * (devinfo.blocksize * 1024));
+		if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) {
+			if (!nand_erase_bmt(((u64)block) * (devinfo.blocksize * 1024))) {
+				pr_debug("Erase block 0x%x failed\n", block);
+				mark_block_bad_bmt(((u64)block) * (devinfo.blocksize * 1024));
+			}
 		}
 		#endif
 		pr_debug("Find block 0x%x available\n", block);
@@ -491,11 +491,10 @@ static int migrate_from_bad(u64 offset, u8 *write_dat, u8 *write_oob)
 		bRet = mtk_nand_write_tlc_block_hw(mtd_bmt, nand_chip_bmt, write_dat, to_index);
 		if (bRet != 0) {
 			pr_debug("Write to page 0x%x fail\n", PAGE_ADDR(to_index) + error_page);
-	#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-			mark_block_bad_bmt(((u64)to_index) * (devinfo.blocksize * 1024));
-	#else
-			mark_block_bad_bmt(OFFSET(to_index));
-	#endif
+			if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+				mark_block_bad_bmt(((u64)to_index) * (devinfo.blocksize * 1024));
+			else
+				mark_block_bad_bmt(OFFSET_MLC(to_index));
 			return migrate_from_bad(offset, write_dat, write_oob);
 		}
 	} else
@@ -515,11 +514,10 @@ static int migrate_from_bad(u64 offset, u8 *write_dat, u8 *write_oob)
 
 		if (!nand_write_page_bmt(PAGE_ADDR(to_index) + error_page, write_dat, oob_buf)) {
 			pr_debug("Write to page 0x%x fail\n", PAGE_ADDR(to_index) + error_page);
-			#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+			if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 				mark_block_bad_bmt(((u64)to_index) * (devinfo.blocksize * 1024));
-			#else
-			mark_block_bad_bmt(OFFSET(to_index));
-			#endif
+			else
+				mark_block_bad_bmt(OFFSET_MLC(to_index));
 			return migrate_from_bad(offset, write_dat, write_oob);
 		}
 	}
@@ -536,11 +534,11 @@ static int migrate_from_bad(u64 offset, u8 *write_dat, u8 *write_oob)
 				(PAGE_ADDR(to_index) + page, dat_buf, oob_buf)) {
 				pr_debug("Write to page 0x%x fail\n",
 					PAGE_ADDR(to_index) + page);
-				#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-				mark_block_bad_bmt(((u64)to_index) * (devinfo.blocksize * 1024));
-				#else
-				mark_block_bad_bmt(OFFSET(to_index));
-				#endif
+					if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+						mark_block_bad_bmt(((u64)to_index) * (devinfo.blocksize * 1024));
+					else
+						mark_block_bad_bmt(OFFSET_MLC(to_index));
+
 				return migrate_from_bad(offset, write_dat, write_oob);
 				}
 			}
@@ -583,11 +581,10 @@ static bool write_bmt_to_flash(u8 *dat, u8 *oob)
 	if (need_erase) {
 		if (!nand_erase_bmt(((u64)bmt_block_index) * (devinfo.blocksize * 1024))) {
 			nand_pr_err("BMT block erase fail, mark bad: 0x%x", bmt_block_index);
-			#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
-			mark_block_bad_bmt(((u64)bmt_block_index) * (devinfo.blocksize * 1024));
-			#else
-			mark_block_bad_bmt(OFFSET(bmt_block_index));
-			#endif
+			if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
+				mark_block_bad_bmt(((u64)bmt_block_index) * (devinfo.blocksize * 1024));
+			else
+			mark_block_bad_bmt(OFFSET_MLC(bmt_block_index));
 
 			bmt_block_index = 0;
 			return write_bmt_to_flash(dat, oob);	/* recursive call */
@@ -596,11 +593,10 @@ static bool write_bmt_to_flash(u8 *dat, u8 *oob)
 
 	if (!nand_write_page_bmt(PAGE_ADDR(bmt_block_index), dat, oob)) {
 		nand_pr_err("Write BMT data fail, need to write again");
-		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		if (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC)
 		mark_block_bad_bmt(((u64)bmt_block_index) * (devinfo.blocksize * 1024));
-		#else
-		mark_block_bad_bmt(OFFSET(bmt_block_index));
-		#endif
+		else
+		mark_block_bad_bmt(OFFSET_MLC(bmt_block_index));
 		/* bmt.bad_count++; */
 
 		bmt_block_index = 0;
@@ -632,7 +628,8 @@ bmt_struct *reconstruct_bmt(bmt_struct *bmt)
 	memset(bmt->table, 0, bmt_block_count * sizeof(bmt_entry));
 
 	for (i = 0; i < bmt_block_count; i++, index++) {
-		if (nand_block_bad_bmt(OFFSET(index))) {
+		if (nand_block_bad_bmt(
+		    (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ? OFFSET(index):OFFSET_MLC(index))) {
 			pr_debug("Skip bad block: 0x%x\n", index);
 			/* bmt->bad_count++; */
 			continue;
@@ -651,10 +648,11 @@ bmt_struct *reconstruct_bmt(bmt_struct *bmt)
 
 		pr_debug("Block 0x%x is mapped to bad block: 0x%x\n", index, bad_index);
 
-		if (!nand_block_bad_bmt(OFFSET(bad_index))) {
-			pr_debug("\tbut block 0x%x is not marked as bad, invalid mapping\n",
-				bad_index);
-			continue;	/* no need to erase here, it will be erased later when trying to write BMT */
+		if (!nand_block_bad_bmt(
+		    (devinfo.NAND_FLASH_TYPE == NAND_FLASH_TLC) ? OFFSET(bad_index) : OFFSET_MLC(bad_index))) {
+			pr_debug("\tbut block 0x%x is not marked as bad, invalid mapping\n", bad_index);
+			continue;
+			/* no need to erase here, it will be erased later when trying to write BMT */
 		}
 		mapped = is_block_mapped(bad_index);
 		if (mapped >= 0) {
@@ -878,7 +876,6 @@ u16 get_mapping_block_index(int index)
 	}
 
 	return index;
-
 }
 EXPORT_SYMBOL(get_mapping_block_index);
 
