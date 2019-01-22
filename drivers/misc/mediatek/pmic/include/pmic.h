@@ -117,6 +117,7 @@ extern int PMIC_MD_INIT_SETTING_V1(void);
 extern void PMIC_PWROFF_SEQ_SETTING(void);
 extern int pmic_tracking_init(void);
 #endif
+extern unsigned int PMIC_CHIP_VER(void);
 /*---------------------------------------------------*/
 
 struct regulator;
