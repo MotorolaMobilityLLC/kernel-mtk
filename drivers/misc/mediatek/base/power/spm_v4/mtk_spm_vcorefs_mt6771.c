@@ -925,16 +925,18 @@ static struct notifier_block spm_vcorefs_fb_notif = {
 #if defined(CONFIG_MTK_QOS_SUPPORT)
 static void dvfsrc_init_qos_opp(void)
 {
-	u32 vcore_req[NUM_OPP] = {0x1, 0x1, 0x0, 0x0};
-	u32 emi_req[NUM_OPP] = {0x2, 0x1, 0x1, 0x0};
+	u32 vcore_req[VCORE_OPP_NUM] = {0x1, 0x0};
+	u32 emi_req[DDR_OPP_NUM] = {0x2, 0x1, 0x0};
 	int emi_opp, vcore_opp;
 
-	if (__spm_get_dram_type() == SPMFW_LP4X_2CH_3200) {
-		vcore_req[1] = 0x0;
-		emi_req[1] = 0x2;
-	}
 	emi_opp = pm_qos_request(PM_QOS_EMI_OPP);
 	vcore_opp = pm_qos_request(PM_QOS_VCORE_OPP);
+
+	if (emi_opp >= DDR_OPP_NUM)
+		emi_opp = DDR_OPP_NUM - 1;
+	if (vcore_opp >= VCORE_OPP_NUM)
+		vcore_opp = VCORE_OPP_NUM - 1;
+
 	spm_vcorefs_warn("pm_qos curr opp: emi = %d(req: %d), vcore = %d(req: %d)\n",
 			emi_opp, emi_req[emi_opp], vcore_opp, vcore_req[vcore_opp]);
 	/* set vcore_opp */
