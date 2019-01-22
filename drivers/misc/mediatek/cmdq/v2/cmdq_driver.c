@@ -864,6 +864,10 @@ static irqreturn_t cmdq_irq_handler(int IRQ, void *pDevice)
 	/* is called but GCE does not have IRQ flag. */
 	do {
 		if (cmdq_dev_get_irq_id() == IRQ) {
+			if (!cmdq_core_is_clock_enabled()) {
+				CMDQ_ERR("Got IRQ when clock is disabled\n");
+				break;
+			}
 			irqStatus = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS) & 0x0FFFF;
 			for (index = 0; (irqStatus != 0xFFFF) && index < CMDQ_MAX_THREAD_COUNT;
 			     index++) {

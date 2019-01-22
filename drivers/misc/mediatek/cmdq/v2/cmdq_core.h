@@ -1037,6 +1037,7 @@ extern "C" {
 	void cmdq_core_set_mem_monitor(bool enable);
 	void cmdq_core_dump_mem_monitor(void);
 	struct ContextStruct *cmdq_core_get_cmdqcontext(void);
+	bool cmdq_core_is_clock_enabled(void);
 #ifdef __cplusplus
 }
 #endif

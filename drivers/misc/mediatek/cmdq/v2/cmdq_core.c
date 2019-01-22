@@ -3259,6 +3259,11 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 	return pTask;
 }
 
+bool cmdq_core_is_clock_enabled(void)
+{
+	return (atomic_read(&gCmdqThreadUsage) > 0);
+}
+
 static void cmdq_core_enable_common_clock_locked(const bool enable,
 						 const uint64_t engineFlag,
 						 enum CMDQ_SCENARIO_ENUM scenario)
@@ -7214,8 +7219,9 @@ int32_t cmdqCoreSuspend(void)
 
 	pEngine = gCmdqContext.engine;
 
-	execThreads = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 	refCount = atomic_read(&gCmdqThreadUsage);
+	if (refCount)
+		execThreads = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 
 	if (cmdq_get_func()->moduleEntrySuspend(pEngine) < 0) {
 		CMDQ_ERR("[SUSPEND] MDP running, kill tasks. threads:0x%08x, ref:%d\n", execThreads,
