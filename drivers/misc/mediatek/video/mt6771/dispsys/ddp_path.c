@@ -16,6 +16,7 @@
 #include "ddp_log.h"
 
 #include <linux/types.h>
+#include <linux/delay.h>
 #include "ddp_clkmgr.h"
 #include "ddp_reg.h"
 
@@ -745,35 +746,60 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 }
 
 
-void ddp_check_smi_status(void)
+int ddp_check_smi_status(void)
 {
 	unsigned int reg_value;
+	int ret, i;
 	static char first_off = 1;
 
 	if (first_off) {
 		first_off = 0;
-		return;
+		return 0;
 	}
 
-	/* check LARB0 display port ostd*/
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280); /* ovl0 */
-	if (reg_value != 0)
-		DDPERR("smi larb0 ovl0 port ostd not 0\n");
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284); /* ovl0_2L */
-	if (reg_value != 0)
-		DDPERR("smi larb0 ovl0_2L port ostd not 0\n");
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288); /* ovl1_2L */
-	if (reg_value != 0)
-		DDPERR("smi larb0 ovl1_2L port ostd not 0\n");
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c); /* rdma0 */
-	if (reg_value != 0)
-		DDPERR("smi larb0 rdma0 port ostd not 0\n");
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290); /* rdma1 */
-	if (reg_value != 0)
-		DDPERR("smi larb0 rdma1 port ostd not 0\n");
-	reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294); /* wdma0 */
-	if (reg_value != 0)
-		DDPERR("smi larb0 wdma0 port ostd not 0\n");
+	for (i = 0; i < 2 ; ++i) {
+		ret = 0;
+		/* check LARB0 display port ostd*/
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x280); /* ovl0 */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 ovl0 port ostd not 0\n");
+			ret = -1;
+		}
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x284); /* ovl0_2L */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 ovl0_2L port ostd not 0\n");
+			ret = -1;
+		}
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x288); /* ovl1_2L */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 ovl1_2L port ostd not 0\n");
+			ret = -1;
+		}
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x28c); /* rdma0 */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 rdma0 port ostd not 0\n");
+			ret = -1;
+		}
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x290); /* rdma1 */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 rdma1 port ostd not 0\n");
+			ret = -1;
+		}
+		reg_value = DISP_REG_GET(DISPSYS_SMI_LARB0_BASE + 0x294); /* wdma0 */
+		if (reg_value != 0) {
+			DDPERR("smi larb0 wdma0 port ostd not 0\n");
+			ret = -1;
+		}
+
+		if ((ret != 0) && (i == 0))
+			mdelay(1);
+		else
+			break;
+
+		DDPERR("check smi status again\n");
+	}
+
+	return ret;
 }
 
 int ddp_check_engine_status(int mutexID)
