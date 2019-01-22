@@ -39,6 +39,7 @@
 #include <mtk_spm_resource_req.h>
 #include <mtk_spm_resource_req_internal.h>
 #include <mtk_spm_pmic_wrap.h>
+#include <mt6337_api.h>
 
 /**************************************
  * only for internal debug
@@ -295,6 +296,8 @@ static void spm_sodi_pre_process(struct pwr_ctrl *pwrctrl)
 
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
 	spm_pmic_power_mode(PMIC_PWR_SODI, 0, 0);
+
+	wk_mt6337_set_lp_setting();
 #endif
 }
 
@@ -302,6 +305,8 @@ static void spm_sodi_post_process(void)
 {
 #ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+
+	wk_mt6337_restore_lp_setting();
 #endif
 }
 

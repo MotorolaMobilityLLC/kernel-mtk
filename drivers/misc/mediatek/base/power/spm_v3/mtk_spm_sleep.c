@@ -38,6 +38,8 @@
 
 #include <mtk_spm_internal.h>
 #include <mtk_spm_pmic_wrap.h>
+#include <mtk_pmic_api_buck.h>
+#include <mt6337_api.h>
 
 #include <mt-plat/mtk_ccci_common.h>
 
@@ -438,6 +440,9 @@ static void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		1,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_MASK,
 		PMIC_RG_VSRAM_VCORE_HW0_OP_EN_SHIFT);
+
+	wk_auxadc_bgd_ctrl(0);
+	wk_mt6337_set_lp_setting();
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 
 	if (--mt_power_gs_dump_suspend_count >= 0)
@@ -448,6 +453,9 @@ static void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 {
 #if !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT))
 	mt_spm_pmic_wrap_set_phase(PMIC_WRAP_PHASE_ALLINONE);
+
+	wk_auxadc_bgd_ctrl(1);
+	wk_mt6337_restore_lp_setting();
 #endif /* !(defined(CONFIG_MTK_SPM_IN_ATF) && defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)) */
 }
 
