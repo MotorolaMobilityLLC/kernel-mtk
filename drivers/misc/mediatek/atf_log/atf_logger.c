@@ -28,6 +28,7 @@
 #include <linux/of.h>
 #include <linux/seq_file.h>
 #include <asm/setup.h>
+#include <linux/string.h>		/* memcpy() */
 #include <linux/interrupt.h>
 #include <linux/proc_fs.h>
 #include <linux/atomic.h>
@@ -54,20 +55,6 @@ static const struct of_device_id atf_logger_of_ids[] = {
 	{ .compatible = "mediatek,atf_logger", },
 	{}
 };
-
-#ifdef CONFIG_ARM64
-static void *_memcpy(void *dest, const void *src, size_t count)
-{
-	char *tmp = dest;
-	const char *s = src;
-
-	while (count--)
-		*tmp++ = *s++;
-	return dest;
-}
-
-#define memcpy _memcpy
-#endif
 
 union atf_log_ctl_t {
 	struct {
