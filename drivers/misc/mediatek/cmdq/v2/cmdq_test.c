@@ -1194,12 +1194,21 @@ static void testcase_write_from_data_reg(void)
 	uint32_t value;
 	const uint32_t PATTERN = 0xFFFFDEAD;
 	const uint32_t srcGprId = CMDQ_DATA_REG_DEBUG;
-	const uint32_t dstRegPA = CMDQ_TEST_GCE_DUMMY_PA;
+	uint32_t dstRegPA;
+	unsigned long dummy_va;
 
 	CMDQ_MSG("%s\n", __func__);
 
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dstRegPA = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dstRegPA = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
 	/* clean dst register value */
-	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0x0);
+	CMDQ_REG_SET32((void *)dummy_va, 0x0);
 
 	/* init GPR as value 0xFFFFDEAD */
 	CMDQ_REG_SET32(CMDQ_GPR_R32(srcGprId), PATTERN);
@@ -1221,7 +1230,7 @@ static void testcase_write_from_data_reg(void)
 	cmdq_task_destroy(handle);
 
 	/* verify */
-	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
+	value = CMDQ_REG_GET32((void *)dummy_va);
 	if (value != PATTERN) {
 		CMDQ_ERR("%s failed, dstReg value is not 0x%08x, value: 0x%08x\n", __func__,
 			 PATTERN, value);
@@ -1533,22 +1542,31 @@ static void testcase_write_with_mask(void)
 	const uint32_t MASK = (1 << 16);
 	const uint32_t EXPECT_RESULT = PATTERN & MASK;
 	uint32_t value = 0;
+	unsigned long dummy_va, dummy_pa;
 
 	CMDQ_MSG("%s\n", __func__);
 
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
 	/* set to 0x0 */
-	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0x0);
+	CMDQ_REG_SET32((void *)dummy_va, 0x0);
 
 	/* use CMDQ to set to PATTERN */
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
-	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, PATTERN, MASK);
+	cmdq_op_write_reg(handle, dummy_pa, PATTERN, MASK);
 	cmdq_task_flush(handle);
 	cmdq_task_destroy(handle);
 
 	/* value check */
-	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
+	value = CMDQ_REG_GET32((void *)dummy_va);
 	if (value != EXPECT_RESULT) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, EXPECT_RESULT);
@@ -1562,22 +1580,31 @@ static void testcase_write(void)
 	struct cmdqRecStruct *handle;
 	const uint32_t PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
 	uint32_t value = 0;
+	unsigned long dummy_va, dummy_pa;
 
 	CMDQ_MSG("%s\n", __func__);
 
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
 	/* set to 0xFFFFFFFF */
-	CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, ~0);
+	CMDQ_REG_SET32((void *)dummy_va, ~0);
 
 	/* use CMDQ to set to PATTERN */
 	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
 	cmdq_task_reset(handle);
 	cmdq_task_set_secure(handle, gCmdqTestSecure);
-	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, PATTERN, ~0);
+	cmdq_op_write_reg(handle, dummy_pa, PATTERN, ~0);
 	cmdq_task_flush(handle);
 	cmdq_task_destroy(handle);
 
 	/* value check */
-	value = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
+	value = CMDQ_REG_GET32((void *)dummy_va);
 	if (value != PATTERN) {
 		/* test fail */
 		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x, not 0x%08x\n", value, PATTERN);
@@ -3702,7 +3729,6 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 	CMDQ_LOG("[TESTCASE]CONFIG PARAMETER: [1]: %lld, [2]: %lld, [3]: %lld\n",
 		 gCmdqTestConfig[1], gCmdqTestConfig[2], gCmdqTestConfig[3]);
 	memcpy(testParameter, gCmdqTestConfig, sizeof(testParameter));
-	gCmdqTestSecure = false;
 	gCmdqTestConfig[0] = 0LL;
 	gCmdqTestConfig[1] = -1LL;
 	mutex_unlock(&gCmdqTestProcLock);

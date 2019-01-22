@@ -1119,7 +1119,9 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
 
-	if (atomic_read(&gCmdqSecPathResource) == 1) {
+	CMDQ_MSG("%s throwAEE: %s", __func__, throwAEE ? "true" : "false");
+
+	if (atomic_cmpxchg(&gCmdqSecPathResource, 0, 1) != 0) {
 		/* has allocated successfully */
 		return status;
 	}
@@ -1130,10 +1132,10 @@ int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE)
 							   throwAEE);
 	if (status < 0) {
 		/* Error status print */
-		CMDQ_ERR("%s[%d]\n", __func__, status);
-	} else {
-		/* Set resource successfully */
-		atomic_set(&gCmdqSecPathResource, 1);
+		CMDQ_ERR("%s[%d] reset context\n", __func__, status);
+
+		/* in fail case, we want function alloc again */
+		atomic_set(&gCmdqSecPathResource, 0);
 	}
 
 	return status;
