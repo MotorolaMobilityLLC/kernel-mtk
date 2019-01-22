@@ -1568,10 +1568,8 @@ void cldma_start(unsigned char hif_id)
 	}
 	/* wait write done */
 	wmb();
-	/* start all Tx and Rx queues */
-	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD, CLDMA_BM_ALL_QUEUE);
-	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_START_CMD);	/* dummy read */
-	md_ctrl->txq_started = 1;
+	/* start all Rx queues, Tx queue will be started on sending */
+	md_ctrl->txq_started = 0;
 	md_ctrl->txq_active |= CLDMA_BM_ALL_QUEUE;
 	cldma_write32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD, CLDMA_BM_ALL_QUEUE);
 	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_SO_START_CMD);	/* dummy read */
