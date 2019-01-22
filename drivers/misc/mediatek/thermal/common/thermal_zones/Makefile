@@ -204,7 +204,7 @@ endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
-#obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
+obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_buck.o
@@ -213,13 +213,13 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_pmic1.o
-#obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
+obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 ifneq ($(CONFIG_MTK_PMIC_CHIP_MT6353),y)
 #obj-$(CONFIG_THERMAL) += mtk_ts_tsx.o
 endif
 
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
-#    obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
+    obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 endif
 
 obj-$(CONFIG_THERMAL) += mtk_tsAll.o
