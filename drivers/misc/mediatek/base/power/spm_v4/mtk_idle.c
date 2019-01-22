@@ -176,6 +176,8 @@ void __attribute__((weak)) idle_refcnt_dec(void)
 
 static bool idle_by_pass_secure_cg;
 static unsigned int idle_block_mask[NR_TYPES][NF_CG_STA_RECORD];
+static bool clkmux_cond[NR_TYPES];
+static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
 
 /* DeepIdle */
 static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
@@ -869,6 +871,10 @@ static unsigned int dpidle_pre_process(int cpu)
 
 	dpidle_profile_time(DPIDLE_PROFILE_TIMER_DEL_END);
 
+	/* Check clkmux condition after */
+	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
+	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
+
 	return op_cond;
 }
 
@@ -1091,6 +1097,9 @@ int dpidle_enter(int cpu)
 			operation_cond |= DEEPIDLE_OPT_DUMP_LP_GOLDEN;
 		}
 	}
+
+	operation_cond |= dpidle_force_vcore_lp_mode ? DEEPIDLE_OPT_VCORE_LP_MODE :
+						(clkmux_cond[IDLE_TYPE_DP] ? DEEPIDLE_OPT_VCORE_LP_MODE : 0);
 
 	spm_go_to_dpidle(slp_spm_deepidle_flags, (u32)cpu, dpidle_dump_log, operation_cond);
 
