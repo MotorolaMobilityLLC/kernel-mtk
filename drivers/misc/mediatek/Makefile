@@ -85,7 +85,7 @@ endif
 #obj-$(CONFIG_MTK_VIDEOCODEC_DRIVER) += videocodec/
 #obj-$(CONFIG_MTK_JPEG)	+= jpeg/
 obj-$(CONFIG_MTK_RTC)	+= rtc/
-#obj-$(CONFIG_MTK_PMIC)	+= power/
+obj-$(CONFIG_MTK_PMIC)	+= power/
 #obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_PMIC_WRAP) += pmic_wrap/
 #obj-$(CONFIG_USB_MTK_HDRC) += usb20/
