@@ -180,7 +180,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 {
 	unsigned long flags;
 
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.start = idle_get_current_time_ms();
 
 	if (type < IDLE_TYPE_MC) {
@@ -199,7 +199,7 @@ void mtk_idle_ratio_calc_start(int type, int cpu)
 
 void mtk_idle_ratio_calc_stop(int type, int cpu)
 {
-	if (idle_ratio_en && type >= 0 && type < NR_TYPES && (cpu == 0 || cpu == 4))
+	if (idle_ratio_en && type >= 0 && type < NR_TYPES)
 		idle_prof[type].ratio.value += idle_get_current_time_ms() - idle_prof[type].ratio.start;
 
 	if (type < IDLE_TYPE_MC) {
@@ -231,6 +231,7 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 			ratio->value_so3 = (type == IDLE_TYPE_SO3) ? ratio->value : 0;
 			ratio->value_so = (type == IDLE_TYPE_SO) ? ratio->value : 0;
 		} else {
+#if defined(__LP64__) || defined(_LP64)
 			ratio->value = ((IDLE_RATIO_WINDOW_MS - interval) *
 							last_ratio / IDLE_RATIO_WINDOW_MS)
 							+ last_idle_time;
@@ -243,6 +244,20 @@ void mtk_idle_ratio_calc_stop(int type, int cpu)
 			ratio->value_so = ((IDLE_RATIO_WINDOW_MS - interval) *
 							last_ratio_so / IDLE_RATIO_WINDOW_MS)
 							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
+#else
+			ratio->value = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio, IDLE_RATIO_WINDOW_MS)
+							+ last_idle_time;
+			ratio->value_dp = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_dp, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_DP) ? last_idle_time : 0);
+			ratio->value_so3 = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so3, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO3) ? last_idle_time : 0);
+			ratio->value_so = div_s64((IDLE_RATIO_WINDOW_MS - interval) *
+							last_ratio_so, IDLE_RATIO_WINDOW_MS)
+							+ ((type == IDLE_TYPE_SO) ? last_idle_time : 0);
+#endif
 		}
 #if 0
 		idle_prof_pr_notice("XXIDLE %llu, %llu, %llu, %llu, %llu, %llu, %llu, %llu, %d\n",
@@ -296,6 +311,7 @@ static void mtk_idle_dump_cnt(int type)
 	bool enter_idle = false;
 	unsigned long idle_cnt;
 	int i;
+	unsigned long total_cnt = 0;
 
 	p_idle = &idle_prof[type].block;
 
@@ -314,11 +330,12 @@ static void mtk_idle_dump_cnt(int type)
 			idle_buf_append(buf, "[%d] = %lu, ", i, idle_cnt);
 			enter_idle = true;
 		}
+		total_cnt += idle_cnt;
 		p_idle->last_cnt[i] = p_idle->cnt[i];
 	}
 
 	if (enter_idle)
-		append_log("%s --- ", get_idle_buf(buf));
+		append_log("%s Total = %lu --- ", get_idle_buf(buf), total_cnt);
 	else
 		append_log("No enter --- ");
 }
