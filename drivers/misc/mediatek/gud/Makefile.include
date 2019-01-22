@@ -1,0 +1,4 @@
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+	ccflags-y += -I$(srctree)/drivers/misc/mediatek/gud/$(CONFIG_TRUSTONIC_TEE_VERSION)/gud/MobiCoreKernelApi/include \
+				 -I$(srctree)/drivers/misc/mediatek/gud/$(CONFIG_TRUSTONIC_TEE_VERSION)/gud/MobiCoreKernelApi/public
+endif

@@ -25,12 +25,12 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 #subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/hibcore
 obj-$(CONFIG_MMC_MTK_PRO) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 
-#ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
-#include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
-#ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb/public
-#ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb_gp/public
-#ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/tlrpmb/public
-#endif
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb/public
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/drrpmb_gp/public
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/rpmb/tlrpmb/public
+endif
 
 ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
