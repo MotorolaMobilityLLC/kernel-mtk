@@ -483,7 +483,7 @@ static void disp_aal_multiple_pipe_hist_update(enum DISP_MODULE_ENUM module)
 	int i;
 	unsigned long flags;
 	unsigned int hist_count;
-	unsigned int is_hist_available;
+	unsigned int is_hist_available = 0;
 	const int index = index_of_aal(module);
 	const int offset = aal_get_offset(module);
 	const int color_offset = (module == AAL0_MODULE_NAMING) ? 0 : (DISPSYS_COLOR1_BASE - DISPSYS_COLOR0_BASE);
