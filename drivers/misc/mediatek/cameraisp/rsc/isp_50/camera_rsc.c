@@ -61,7 +61,8 @@
 #include <smi_public.h>
 #include "../engine_request.h"
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+/*#define RSC_PMQOS_EN */
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 #include <linux/pm_qos.h>
 #endif
 
@@ -388,7 +389,7 @@ struct RSC_INFO_STRUCT {
 
 static struct RSC_INFO_STRUCT RSCInfo;
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 struct pm_qos_request rsc_pm_qos_request;
 #endif
 
@@ -1226,7 +1227,7 @@ signed int CmdqRSCHW(struct frame *frame)
 #if 1
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_RSC);
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && definedCONFIG_MTK_QOS_SUPPORT
 	unsigned int w_imgi, h_imgi, w_mvio, h_mvio, w_bvo, h_bvo;
 	unsigned int dma_bandwidth, trig_num;
 #endif
@@ -1299,7 +1300,7 @@ signed int CmdqRSCHW(struct frame *frame)
 	cmdqRecWait(handle, CMDQ_EVENT_RSC_EOF);
 	cmdqRecWrite(handle, RSC_START_HW, 0x0, CMDQ_REG_MASK);	/* RSC Interrupt read-clear mode */
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 	trig_num = (pRscConfig->RSC_CTRL & 0x00000F00) >> 8;
 	w_imgi = pRscConfig->RSC_SIZE & 0x000001FF;
 	h_imgi = (pRscConfig->RSC_SIZE & 0x01FF0000) >> 16;
@@ -1470,7 +1471,7 @@ static signed int ConfigRSCHW(struct RSC_Config *pRscConfig)
 }
 #endif
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 void cmdq_pm_qos_start(struct TaskStruct *task, struct TaskStruct *task_list[], u32 size)
 {
 	unsigned int dma_bandwidth;
@@ -3035,7 +3036,7 @@ static signed int RSC_open(struct inode *pInode, struct file *pFile)
 	set_engine_ops(&rsc_reqs, &rsc_ops);
 #endif
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 	pm_qos_add_request(&rsc_pm_qos_request, PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
 	cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_RSC, cmdq_pm_qos_start, cmdq_pm_qos_stop);
 #endif
@@ -3091,7 +3092,7 @@ static signed int RSC_release(struct inode *pInode, struct file *pFile)
 	unregister_requests(&rsc_reqs);
 #endif
 
-#ifdef CONFIG_MTK_QOS_SUPPORT
+#if defined(RSC_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
 	pm_qos_remove_request(&rsc_pm_qos_request);
 #endif
 
