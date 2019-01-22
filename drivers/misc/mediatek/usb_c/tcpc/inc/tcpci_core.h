@@ -77,7 +77,11 @@
 #define PE_EVT_INFO_VDM_DIS		0
 #define PE_DBG_RESET_VDM_DIS	1
 
+#ifdef CONFIG_PD_BEGUG_ON
 #define PD_BUG_ON(x)	WARN_ON(x)
+#else
+#define PD_BUG_ON(x)
+#endif
 
 struct tcpc_device;
 
