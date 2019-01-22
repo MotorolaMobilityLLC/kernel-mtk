@@ -817,8 +817,8 @@ static void fbt_check_var(long loading,
 
 	if (!(frame_info[pre_iter].target_fps)) {
 		frame_info[*f_iter].mips = loading;
-		xgf_trace("first frame frame_info[%d].mips=%d q2q_time=%llu",
-				*f_iter, frame_info[*f_iter].mips, frame_info[*f_iter].q2q_time);
+		xgf_trace("first frame frame_info[%d].mips=%d run_time=%llu",
+				*f_iter, frame_info[*f_iter].mips, frame_info[*f_iter].running_time);
 		(*f_iter)++;
 		*f_iter = *f_iter % WINDOW;
 		return;
@@ -836,7 +836,7 @@ static void fbt_check_var(long loading,
 		else
 			mips_diff = frame_info[pre_iter].mips;
 		mips_diff = clamp(mips_diff, 1LL, 100LL);
-		frame_time = frame_info[pre_iter].q2q_time + frame_info[*f_iter].q2q_time;
+		frame_time = frame_info[pre_iter].running_time + frame_info[*f_iter].running_time;
 		frame_time = div64_u64(frame_time, (unsigned long long)NSEC_PER_USEC);
 
 		frame_info[*f_iter].mips_diff = (int)mips_diff;
@@ -851,8 +851,8 @@ static void fbt_check_var(long loading,
 
 		*floor_count = *floor_count + frame_info[*f_iter].count - frame_info[next_iter].count;
 
-		xgf_trace("frame_info[%d].mips=%ld diff=%d q2q=%llu count=%d floor_count=%d",
-				*f_iter, frame_info[*f_iter].mips, mips_diff, frame_info[*f_iter].q2q_time,
+		xgf_trace("frame_info[%d].mips=%ld diff=%d run=%llu count=%d floor_count=%d",
+				*f_iter, frame_info[*f_iter].mips, mips_diff, frame_info[*f_iter].running_time,
 				frame_info[*f_iter].count, *floor_count);
 
 		if (*floor_count >= floor_bound) {
@@ -1527,9 +1527,9 @@ void fpsgo_comp2fbt_frame_start(struct render_info *thr, unsigned long long ts, 
 	}
 
 	boost = &(thr->boost_info);
-	boost->frame_info[boost->f_iter].q2q_time = thr->Q2Q_time;
 
 	runtime = thr->self_time - slptime;
+	boost->frame_info[boost->f_iter].running_time = runtime;
 
 	targetfps = fpsgo_fbt2fstb_query_fps(thr->pid);
 	if (!targetfps)
