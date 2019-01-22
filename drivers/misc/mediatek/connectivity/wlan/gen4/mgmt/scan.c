@@ -2981,7 +2981,7 @@ VOID scanGetCurrentEssChnlList(P_ADAPTER_T prAdapter)
 		LINK_REMOVE_KNOWN_ENTRY(prCurEssLink, &prBssDesc->rLinkEntryEss);
 	}
 	LINK_FOR_EACH_ENTRY(prBssDesc, prBSSDescList, rLinkEntry, BSS_DESC_T) {
-		if (prBssDesc->ucChannelNum > 216)
+		if (prBssDesc->ucChannelNum > 214)
 			continue;
 		/* Statistic AP num for each channel */
 		if (aucChnlApNum[prBssDesc->ucChannelNum] < 255)
