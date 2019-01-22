@@ -122,7 +122,7 @@ typedef struct _GL_HIF_INFO_T {
 #define MTK_CHIP_ID_8127    0x8127
 #define MTK_CHIP_ID_6752    0x6752
 #define MTK_CHIP_ID_8163    0x8163
-#define MTK_CHIP_ID_8160    0x8160
+#define MTK_CHIP_ID_8167    0x8167
 #define MTK_CHIP_ID_6735    0x6735
 #define MTK_CHIP_ID_6580    0x6580
 #define MTK_CHIP_ID_6755    0x6755
