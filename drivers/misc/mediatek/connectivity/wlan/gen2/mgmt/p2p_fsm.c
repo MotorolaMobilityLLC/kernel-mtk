@@ -980,7 +980,7 @@ VOID p2pFsmRunEventStartAP(IN P_ADAPTER_T prAdapter, IN P_MSG_HDR_T prMsgHdr)
 			prP2pBssInfo->ucSSIDLen = prP2pSpecificBssInfo->u2GroupSsidLen = prP2pStartAPMsg->u2SsidLen;
 		}
 
-		prP2pBssInfo->eHiddenSsidType = prP2pStartAPMsg->eHiddenSsidType;
+		prP2pBssInfo->eHiddenSsidType = prP2pStartAPMsg->ucHiddenSsidType;
 
 		/* TODO: JB */
 		/* Privacy & inactive timeout. */
