@@ -45,4 +45,5 @@ extern long bu64748af_Ioctl_Main2(struct file *a_pstFile, unsigned int a_u4Comma
 extern int bu64748af_Release_Main2(struct inode *a_pstInode, struct file *a_pstFile);
 extern int bu64748af_PowerDown_Main2(void);
 
+extern void AFRegulatorCtrl(int Stage);
 #endif
