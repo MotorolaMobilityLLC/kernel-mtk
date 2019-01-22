@@ -2433,6 +2433,13 @@ static int musb_init_controller(struct device *dev, int nIrq, void __iomem *ctrl
 
 	status = musb_gadget_setup(musb);
 
+	/* only enable on iddig mode */
+#ifndef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_DUAL_ROLE_USB_INTF
+	mt_usb_dual_role_init(musb);
+#endif
+#endif
+
 	/*initial done, turn off usb */
 	musb_platform_disable(musb);
 	musb_platform_unprepare_clk(musb);
