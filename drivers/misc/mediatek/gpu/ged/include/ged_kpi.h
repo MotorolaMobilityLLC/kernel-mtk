@@ -15,6 +15,8 @@
 #define __GED_KPI_H__
 
 #include "ged_type.h"
+#include <linux/sched.h>
+#include <linux/topology.h>
 
 GED_ERROR ged_kpi_queue_buffer_ts(int pid,
 								unsigned long long ullWdnd,
@@ -49,4 +51,7 @@ unsigned int ged_kpi_enabled(void);
 
 extern int boost_value_for_GED_idx(int group_idx, int boost_value);
 extern int linear_real_boost(int linear_boost);
+extern unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
+extern unsigned long arch_scale_get_max_freq(int cpu);
+
 #endif
