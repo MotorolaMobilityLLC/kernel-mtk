@@ -39,28 +39,18 @@
 #define BUFF_NOT_READY		0x100
 #define BUFF_READY		0x200
 #define BUFF_EARLY_PRINTK	0x400	/* pl or lk can printk the early printk information to uart cable */
-
-
-
-struct pl_lk_log {
-	u32 sig;	/* default 0xabcd1234 */
-	u32 buff_size;	/* total buf size */
-	u32 off_pl;	/* pl offset, sizeof(struct pl_lk_log) */
-	u32 sz_pl;	/* preloader size */
-	u32 pl_flag;	/* pl log flag */
-	u32 off_lk;	/* lk offset, sizeof((struct pl_lk_log) + sz_pl */
-	u32 sz_lk;	/* lk log size */
-	u32 lk_flag;	/* lk log flag */
-/*	u32 emmc_count;	 emmc save */
-/*	u32 emmc_time; */
-	u32 flag1;
-	u32 flag2;
-};
-
-
-
 #define	LOG_PL_LK  0x0	/* Preloader and lk log buff */
 
+struct pl_lk_log {
+	u32 sig;		/* default 0xabcd1234 */
+	u32 buff_size;		/* total buf size */
+	u32 off_pl;		/* pl offset, sizeof(struct pl_lk_log) */
+	u32 sz_pl;		/* preloader size */
+	u32 pl_flag;		/* pl log flag */
+	u32 off_lk;		/* lk offset, sizeof((struct pl_lk_log) + sz_pl */
+	u32 sz_lk;		/* lk log size */
+	u32 lk_flag;		/* lk log flag */
+};
 
 /* total 100 char size. u32 25 */
 struct dram_buf_header {
@@ -70,8 +60,12 @@ struct dram_buf_header {
 	u32 buf_size;
 	u32 buf_offsize;
 	u32 buf_point;
-	u32 reserve1[2];
-	u32 reserve2[17];
+	u32 mirror_header_addr;
+	u32 klog_addr;
+	u32 klog_size;
+	u32 atf_log_addr;
+	u32 atf_log_len;
+	u32 reserve2[14];
 };
 
 /* total 256 char size */
@@ -87,8 +81,6 @@ struct sram_log_header {
 void log_store_bootup(void);
 void store_log_to_emmc_enable(bool value);
 void disable_early_log(void);
-
-
 #else
 
 static inline void  log_store_bootup(void)
