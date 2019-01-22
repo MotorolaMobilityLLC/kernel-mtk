@@ -152,6 +152,7 @@ void aee_oops_free(struct aee_oops *oops)
 	kfree(oops->mmprofile);
 	kfree(oops->mini_rdump);
 	vfree(oops->userthread_stack.Userthread_Stack);
+	vfree(oops->userthread_maps.Userthread_maps);
 	kfree(oops);
 	pr_notice("aee_oops_free\n");
 }
