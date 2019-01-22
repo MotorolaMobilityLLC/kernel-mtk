@@ -771,7 +771,7 @@ DoTLStreamReserve(IMG_HANDLE hStream,
 		{
 			/* Caller should not try to use ppui8Data,
 			 * NULLify to give user a chance of avoiding memory corruption */
-			ppui8Data = NULL;
+			*ppui8Data = NULL;
 
 			/* This flag should not be inserted two consecutive times, so
 			 * check the last ui32 in case it was a packet drop packet. */

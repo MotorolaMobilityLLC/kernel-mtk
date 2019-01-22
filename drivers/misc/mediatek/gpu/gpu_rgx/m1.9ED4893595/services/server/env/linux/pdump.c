@@ -224,7 +224,7 @@ IMG_UINT32 PDumpOSBuflen(IMG_HANDLE hBuffer, IMG_UINT32 ui32BufferSizeMax)
 	IMG_CHAR* pszBuf = hBuffer;
 	IMG_UINT32 ui32Count = 0;
 
-	while ((pszBuf[ui32Count]!=0) && (ui32Count<ui32BufferSizeMax) )
+	while ((ui32Count<ui32BufferSizeMax) && (pszBuf[ui32Count]!=0))
 	{
 		ui32Count++;
 	}
