@@ -793,18 +793,22 @@ int dcs_full_init(void)
 
 static int __dcs_mpu_protection_enable(void)
 {
+	/*
 	emi_mpu_set_region_protection((unsigned long long)mpu_start,
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_FORBIDDEN);
+			*/
 
 	return 0;
 }
 
 static int __dcs_mpu_protection_disable(void)
 {
+	/*
 	emi_mpu_set_region_protection((unsigned long long)mpu_start,
 			(unsigned long long)mpu_end - 1, DCS_MPU_REGION,
 			MPU_ACCESS_PERMISSON_NO_PROTECTION);
+			*/
 	return 0;
 }
 
