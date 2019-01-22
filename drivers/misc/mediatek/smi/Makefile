@@ -109,9 +109,11 @@ else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6771"))
 ccflags-y += -DSMI_SYL
 ccflags-y += -DSMI_MMU_V2
 ccflags-y += -DMMDVFS_HOOK
+ccflags-y += -DMMDVFS_PMQOS
 ccflags-y += -I$(srctree)/drivers/clk/mediatek
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+obj-y += mmdvfs_pmqos.o
 obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_profile_adaptor.o
 obj-y += mtk-smi.o

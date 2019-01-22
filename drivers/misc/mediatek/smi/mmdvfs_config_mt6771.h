@@ -97,6 +97,14 @@ struct mmdvfs_clk_hw_map mt6771_mmdvfs_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = 
 		}
 };
 
+struct mmdvfs_profile_mask qos_apply_profiles[] = {
+#ifdef CONFIG_MTK_QOS_SUPPORT
+	{"DEBUG", 0, MMDVFS_FINE_STEP_UNREQUEST },	/* debug entry */
+#else
+	{"DEBUG", QOS_ALL_SCENARIO, 0 },	/* debug entry */
+#endif
+};
+
 /* Part II MMDVFS Scenario's Step Confuguration */
 
 #define MT6771_MMDVFS_SENSOR_MIN (25000000)
@@ -197,6 +205,13 @@ struct mmdvfs_profile mt6771_mmdvfs_opp3_profiles_lp3[MT6771_LP3_MMDVFS_OPP3_NUM
 /* Defined the smi scenarios whose DVFS is controlled by low-level driver */
 /* directly, not by BWC scenario change event */
 #define MT6771_MMDVFS_SMI_USER_CONTROL_SCEN_MASK (1 << SMI_BWC_SCEN_VP)
+
+struct mmdvfs_step_to_qos_step legacy_to_qos_step[MT6771_MMDVFS_OPP_MAX] = {
+	{0, 0},
+	{1, 1},
+	{2, 1},
+	{3, 1},
+};
 
 /* Part III Scenario and MMSVFS HW configuration mapping */
 /* 1. For a single mmdvfs step's profiles and associated hardware configuration */
