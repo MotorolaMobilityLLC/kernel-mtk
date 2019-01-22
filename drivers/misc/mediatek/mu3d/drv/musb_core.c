@@ -2230,14 +2230,12 @@ static int __init musb_init_controller(struct device *dev, int nIrq, void __iome
 	/* pm_runtime_get_sync(musb->controller); */
 
 	/* ideally this would be abstracted in platform setup */
-#if 0
 #ifdef USE_SSUSB_QMU
 	if (!is_dma_capable())
 #else
 	if (!is_dma_capable() || !musb->dma_controller)
 #endif
 		dev->dma_mask = NULL;
-#endif
 
 	/* be sure interrupts are disabled before connecting ISR */
 	musb_platform_disable(musb);

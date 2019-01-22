@@ -20,8 +20,6 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 
-#include "gadget_chips.h"
-
 /**
  * usb_ep_autoconfig_ss() - choose an endpoint matching the ep
  * descriptor and ep companion descriptor
@@ -66,176 +64,12 @@
  *
  * On failure, this returns a null endpoint descriptor.
  */
-static int
-ep_matches(
-	struct usb_gadget		*gadget,
-	struct usb_ep			*ep,
-	struct usb_endpoint_descriptor	*desc,
-	struct usb_ss_ep_comp_descriptor *ep_comp
-)
-{
-	u8		type;
-	const char	*tmp;
-	u16		max;
-
-	int		num_req_streams = 0;
-
-	/* endpoint already claimed? */
-	if (ep->driver_data != NULL)
-		return 0;
-
-	/* only support ep0 for portable CONTROL traffic */
-	type = usb_endpoint_type(desc);
-	if (type == USB_ENDPOINT_XFER_CONTROL)
-		return 0;
-
-	/* some other naming convention */
-	if ('e' != ep->name[0])
-		return 0;
-
-	/* type-restriction:  "-iso", "-bulk", or "-int".
-	 * direction-restriction:  "in", "out".
-	 */
-	if ('-' != ep->name[2]) {
-		tmp = strrchr(ep->name, '-');
-		if (tmp) {
-			switch (type) {
-			case USB_ENDPOINT_XFER_INT:
-				/* bulk endpoints handle interrupt transfers,
-				 * except the toggle-quirky iso-synch kind
-				 */
-				if ('s' == tmp[2])
-					return 0;
-				/* for now, avoid PXA "interrupt-in";
-				 * it's documented as never using DATA1.
-				 */
-				if (gadget_is_pxa(gadget)
-						&& 'i' == tmp[1])
-					return 0;
-				break;
-			case USB_ENDPOINT_XFER_BULK:
-				if ('b' != tmp[1])
-					return 0;
-				break;
-			case USB_ENDPOINT_XFER_ISOC:
-				if ('s' != tmp[2])
-					return 0;
-			}
-		} else {
-			tmp = ep->name + strlen(ep->name);
-		}
-
-		/* direction-restriction:  "..in-..", "out-.." */
-		tmp--;
-		if (!isdigit(*tmp)) {
-			if (desc->bEndpointAddress & USB_DIR_IN) {
-				if ('n' != *tmp)
-					return 0;
-			} else {
-				if ('t' != *tmp)
-					return 0;
-			}
-		}
-	}
-
-	/*
-	 * Get the number of required streams from the EP companion
-	 * descriptor and see if the EP matches it
-	 */
-	if (usb_endpoint_xfer_bulk(desc)) {
-		if (ep_comp && gadget->max_speed >= USB_SPEED_SUPER) {
-			num_req_streams = ep_comp->bmAttributes & 0x1f;
-			if (num_req_streams > ep->max_streams)
-				return 0;
-		}
-
-	}
-
-	/*
-	 * If the protocol driver hasn't yet decided on wMaxPacketSize
-	 * and wants to know the maximum possible, provide the info.
-	 */
-	if (desc->wMaxPacketSize == 0)
-		desc->wMaxPacketSize = cpu_to_le16(ep->maxpacket);
-
-	/* endpoint maxpacket size is an input parameter, except for bulk
-	 * where it's an output parameter representing the full speed limit.
-	 * the usb spec fixes high speed bulk maxpacket at 512 bytes.
-	 */
-	max = 0x7ff & usb_endpoint_maxp(desc);
-	switch (type) {
-	case USB_ENDPOINT_XFER_INT:
-		/* INT:  limit 64 bytes full speed, 1024 high/super speed */
-		if (!gadget_is_dualspeed(gadget) && max > 64)
-			return 0;
-		/* FALLTHROUGH */
-
-	case USB_ENDPOINT_XFER_ISOC:
-		/* ISO:  limit 1023 bytes full speed, 1024 high/super speed */
-		if (ep->maxpacket < max)
-			return 0;
-		if (!gadget_is_dualspeed(gadget) && max > 1023)
-			return 0;
-
-		/* BOTH:  "high bandwidth" works only at high speed */
-		if ((desc->wMaxPacketSize & cpu_to_le16(3<<11))) {
-			if (!gadget_is_dualspeed(gadget))
-				return 0;
-			/* configure your hardware with enough buffering!! */
-		}
-		break;
-	}
-
-	/* MATCH!! */
-
-	/* report address */
-	desc->bEndpointAddress &= USB_DIR_IN;
-	if (isdigit(ep->name[2])) {
-		u8	num = simple_strtoul(&ep->name[2], NULL, 10);
-
-		desc->bEndpointAddress |= num;
-	} else if (desc->bEndpointAddress & USB_DIR_IN) {
-		if (++gadget->in_epnum > 15)
-			return 0;
-		desc->bEndpointAddress = USB_DIR_IN | gadget->in_epnum;
-	} else {
-		if (++gadget->out_epnum > 15)
-			return 0;
-		desc->bEndpointAddress |= gadget->out_epnum;
-	}
-
-	/* report (variable) full speed bulk maxpacket */
-	if ((type == USB_ENDPOINT_XFER_BULK) && !ep_comp) {
-		int size = ep->maxpacket;
-
-		/* min() doesn't work on bitfields with gcc-3.5 */
-		if (size > 64)
-			size = 64;
-		desc->wMaxPacketSize = cpu_to_le16(size);
-	}
-	ep->address = desc->bEndpointAddress;
-	return 1;
-}
-
-static struct usb_ep *find_ep(
-struct usb_gadget *gadget, const char *name)
-{
-	struct usb_ep	*ep;
-
-	list_for_each_entry(ep, &gadget->ep_list, ep_list) {
-		if (strcmp(ep->name, name) == 0)
-			return ep;
-	}
-	return NULL;
-}
-
 struct usb_ep *usb_ep_autoconfig_ss(
 	struct usb_gadget		*gadget,
 	struct usb_endpoint_descriptor	*desc,
 	struct usb_ss_ep_comp_descriptor *ep_comp
 )
 {
-    #if 0
 	struct usb_ep	*ep;
 	u8		type;
 
@@ -293,72 +127,6 @@ found_ep:
 	ep->desc = NULL;
 	ep->comp_desc = NULL;
 	ep->claimed = true;
-	return ep;
-    #endif
-
-	struct usb_ep	*ep;
-	u8		type;
-
-	type = desc->bmAttributes & USB_ENDPOINT_XFERTYPE_MASK;
-
-	/* First, apply chip-specific "best usage" knowledge.
-	 * This might make a good usb_gadget_ops hook ...
-	 */
-	if (gadget_is_net2280(gadget) && type == USB_ENDPOINT_XFER_INT) {
-		/* ep-e, ep-f are PIO with only 64 byte fifos */
-		ep = find_ep(gadget, "ep-e");
-		if (ep && ep_matches(gadget, ep, desc, ep_comp))
-			goto found_ep;
-		ep = find_ep(gadget, "ep-f");
-		if (ep && ep_matches(gadget, ep, desc, ep_comp))
-			goto found_ep;
-
-	} else if (gadget_is_goku(gadget)) {
-		if (type == USB_ENDPOINT_XFER_INT) {
-			/* single buffering is enough */
-			ep = find_ep(gadget, "ep3-bulk");
-			if (ep && ep_matches(gadget, ep, desc, ep_comp))
-				goto found_ep;
-		} else if (type == USB_ENDPOINT_XFER_BULK
-				&& (USB_DIR_IN & desc->bEndpointAddress)) {
-			/* DMA may be available */
-			ep = find_ep(gadget, "ep2-bulk");
-			if (ep && ep_matches(gadget, ep, desc,
-					      ep_comp))
-				goto found_ep;
-		}
-
-#ifdef CONFIG_BLACKFIN
-	} else if (gadget_is_musbhdrc(gadget)) {
-		if ((type == USB_ENDPOINT_XFER_BULK) ||
-		    (type == USB_ENDPOINT_XFER_ISOC)) {
-			if (USB_DIR_IN & desc->bEndpointAddress)
-				ep = find_ep(gadget, "ep5in");
-			else
-				ep = find_ep(gadget, "ep6out");
-		} else if (type == USB_ENDPOINT_XFER_INT) {
-			if (USB_DIR_IN & desc->bEndpointAddress)
-				ep = find_ep(gadget, "ep1in");
-			else
-				ep = find_ep(gadget, "ep2out");
-		} else
-			ep = NULL;
-		if (ep && ep_matches(gadget, ep, desc, ep_comp))
-			goto found_ep;
-#endif
-	}
-
-	/* Second, look at endpoints until an unclaimed one looks usable */
-	list_for_each_entry(ep, &gadget->ep_list, ep_list) {
-		if (ep_matches(gadget, ep, desc, ep_comp))
-			goto found_ep;
-	}
-
-	/* Fail */
-	return NULL;
-found_ep:
-	ep->desc = NULL;
-	ep->comp_desc = NULL;
 	return ep;
 }
 EXPORT_SYMBOL_GPL(usb_ep_autoconfig_ss);
