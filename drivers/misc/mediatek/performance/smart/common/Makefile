@@ -11,8 +11,4 @@
 # GNU General Public License for more details.
 #
 
-ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/performance/smart/$(MTK_PLATFORM)/),)
-obj-y += $(MTK_PLATFORM)/
-else
-obj-y += common/
-endif
+obj-y += smart.o
