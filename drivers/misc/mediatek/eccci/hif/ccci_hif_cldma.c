@@ -394,7 +394,7 @@ static void cldma_timeout_timer_func(unsigned long data)
 
 	ccci_md_dump_port_status(md);
 	md_cd_traffic_monitor_func((unsigned long)md);
-	md->ops->dump_info(md, DUMP_FLAG_CLDMA, NULL, queue->index);
+	ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, queue->index);
 
 	CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "CLDMA no response, force assert md by CCIF_INTERRUPT\n");
 	md->ops->force_assert(md, MD_FORCE_ASSERT_BY_MD_NO_RESPONSE);
@@ -2053,7 +2053,7 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG, "get a Tx req on q%d free=%d, tx_bytes = %X\n",
 		qno, queue->budget, tx_bytes);
 	tx_req = queue->tx_xmit;
-	if (tx_req->skb == NULL) {
+	if (queue->budget > 0 && tx_req->skb == NULL) {
 		ccci_md_inc_tx_seq_num(md_ctrl->md_id, &md_ctrl->traffic_info, (struct ccci_header *)skb->data);
 		/* wait write done */
 		wmb();
