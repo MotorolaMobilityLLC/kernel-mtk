@@ -2331,7 +2331,7 @@ void parse_dts(struct device_node *np, struct typec_hba *hba)
 		hba->discover_vmd = 0;
 
 	if (get_u32(np, "kpoc_delay", &hba->kpoc_delay) != 0)
-		hba->kpoc_delay = 15*1000;
+		hba->kpoc_delay = 8*1000;
 
 }
 
