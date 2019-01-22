@@ -51,7 +51,11 @@
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
 #include "mtk_gpio.h"
+
+/* there is no this file on standardized GPIO platform */
+#ifndef CONFIG_MTK_GPIOLIB_STAND
 #include "mach/gpio_const.h"
+#endif
 
 #include "gf_spi_tee.h"
 
