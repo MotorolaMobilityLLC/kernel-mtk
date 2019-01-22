@@ -2264,6 +2264,13 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 	mt6336_ctrl_enable(hba->core_ctrl);
 	dev_err(hba->dev, "Disable LowQ\n");
 #endif
+	dev_err(hba->dev, "SW RESET CC&PD\n");
+	mt6336_set_flag_register_value(MT6336_RG_TYPE_C_CC_RST, 1);
+	mt6336_set_flag_register_value(MT6336_RG_TYPE_C_PD_RST, 1);
+
+	mt6336_set_flag_register_value(MT6336_RG_TYPE_C_CC_RST, 0);
+	mt6336_set_flag_register_value(MT6336_RG_TYPE_C_PD_RST, 0);
+
 	/*For bring-up, check the i2c communucation*/
 	/* PD*/
 	dev_err(hba->dev, "PD_TX_PARAMETER(16b)=0x%x Should be 0x732B\n",
@@ -2277,6 +2284,12 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 
 	/*initialize TYPEC*/
 	typec_set_default_param(hba);
+
+	dev_err(hba->dev, "TYPE_C_INTR_EN_0=0x%x\n",
+		typec_readw(hba, TYPE_C_INTR_EN_0));
+
+	dev_err(hba->dev, "TYPE_C_INTR_EN_2=0x%x\n",
+		typec_read8(hba, TYPE_C_INTR_EN_2));
 
 	hba->pd_rp_val = TYPEC_RP_15A;
 	hba->dbg_lvl = TYPEC_DBG_LVL_2;
@@ -2319,7 +2332,6 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		/*INT_STATUS5 5th*/
 #define TYPE_C_CC_IRQ_NUM (5*8+4)
 #endif
-		mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
 		mt6336_register_interrupt_callback(TYPE_C_CC_IRQ_NUM, typec_hanlder);
 
 #if SUPPORT_PD
@@ -2330,12 +2342,16 @@ int typec_init(struct device *dev, struct typec_hba **hba_handle,
 		/*INT_STATUS5 6th*/
 #define TYPE_C_PD_IRQ_NUM (5*8+5)
 #endif
-		mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
 		mt6336_register_interrupt_callback(TYPE_C_PD_IRQ_NUM, typec_hanlder);
 #endif
 
 	if (hba->mode > 0) {
 		typec_int_enable(hba, TYPE_C_INTR_EN_0_MSK, TYPE_C_INTR_EN_2_MSK);
+
+		mt6336_enable_interrupt(TYPE_C_CC_IRQ_NUM, "TYPE_C_CC_IRQ");
+
+		if (hba->mode == 2)
+			mt6336_enable_interrupt(TYPE_C_PD_IRQ_NUM, "TYPE_C_PD_IRQ");
 
 		/*Prefer Role 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
 		typec_set_mode(hba, hba->support_role, hba->rp_val, ((hba->prefer_role == 3)?1:0));
