@@ -200,6 +200,7 @@ static struct devfreq_dev_profile helio_devfreq_profile = {
 
 static int helio_dvfsrc_reg_config(struct helio_dvfsrc *dvfsrc, struct reg_config *config)
 {
+#if 0
 	int i;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
@@ -207,7 +208,7 @@ static int helio_dvfsrc_reg_config(struct helio_dvfsrc *dvfsrc, struct reg_confi
 		dvfsrc_write(dvfsrc, config[i].offset, config[i].val);
 
 	mutex_unlock(&dvfsrc->devfreq->lock);
-
+#endif
 	return 0;
 }
 
@@ -230,7 +231,6 @@ static int helio_governor_event_handler(struct devfreq *devfreq,
 	default:
 		break;
 	}
-
 	return 0;
 }
 

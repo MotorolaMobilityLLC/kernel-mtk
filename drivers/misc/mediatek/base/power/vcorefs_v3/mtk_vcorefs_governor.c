@@ -224,7 +224,9 @@ bool is_vcorefs_feature_enable(void)
 	}
 
 	if (!vcorefs_vcore_dvs_en() && !vcorefs_dram_dfs_en()) {
+#if !defined(CONFIG_MACH_MT6771)
 		vcorefs_err("DISABLE DVFS DUE TO BOTH DVS & DFS DISABLE\n");
+#endif
 		return false;
 	}
 	if (0) {
