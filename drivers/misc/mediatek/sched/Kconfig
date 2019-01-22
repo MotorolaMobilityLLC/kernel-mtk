@@ -1,13 +1,33 @@
-menu "MTK Cluster MultiProcessor Scheduler"
-config MTK_CPU_TOPOLOGY
-        bool "MTK cpu topology infrastructure"
-	depends on (64BIT && OF && SMP) || (ARM_CPU_TOPOLOGY && OF)
+menu "MT load balance and schedule enhancement"
+config MT_SCHED_TRACE
+	bool "mt scheduling trace, output mtk schedule trace into FTRACE"
 	default n
-        help
-          Say N if you want to build up another wheel
-          sched_init -> cmp_cputopo_domain_seutp()
-          rest_init -> fork kernel_init -> kernel_init_freeable ... -> parse_dt_topology
-          we focus to build up cpu topology and domain before scheduler runs.
+	help
+	   Provide RT info via ftrace,
+	   mt_sched_printf for scheduling module to output info and
+	   RT scheduling info to ftrace,
+	   including select_task_rq, check_preempt, find_lowest_rq.
+	   Say no if not sure.
 
+config MT_SCHED_DEBUG
+	bool "mt scheduling log, also output the scheduling log into Kernel log"
+	depends on MT_SCHED_TRACE
+	default n
+	help
+	   MTK scheduling log, add scheduling log into Kernel log.
+	   Including print scheduler debug information at KE and print load balance
+	   information at kernel log.
+	   Say no if not sure.
 endmenu
 
+menu "MTK Cluster MultiProcessor Scheduler"
+config MTK_CPU_TOPOLOGY
+	bool "MTK cpu topology infrastructure"
+	depends on (64BIT && OF && SMP) || (ARM_CPU_TOPOLOGY && OF)
+	default n
+	help
+	  Say N if you want to build up another wheel
+	  sched_init -> cmp_cputopo_domain_seutp()
+	  rest_init -> fork kernel_init -> kernel_init_freeable ... -> parse_dt_topology
+	  we focus to build up cpu topology and domain before scheduler runs.
+endmenu
