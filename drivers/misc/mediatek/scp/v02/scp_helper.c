@@ -313,7 +313,6 @@ int scp_awake_lock(scp_core_id scp_id)
 	int status_read_back;
 
 	struct mutex *scp_awake_mutex;
-	struct wake_lock *scp_wakelock;
 	int scp_semaphore_flag;
 	char *core_id;
 	unsigned int scp_ipi_awake_num;
@@ -329,7 +328,6 @@ int scp_awake_lock(scp_core_id scp_id)
 	}
 
 	scp_awake_mutex = &scp_awake_mutexs[scp_id];
-	scp_wakelock = &scp_awake_wakelock[scp_id];
 	scp_semaphore_flag = scp_semaphore_flags[scp_id];
 	scp_ipi_awake_num = scp_ipi_awake_number[scp_id];
 	scp_deep_sleep_bit = scp_deep_sleep_bits[scp_id];
@@ -347,17 +345,11 @@ int scp_awake_lock(scp_core_id scp_id)
 		return ret;
 	}
 
-	/* because we are waiting for scp to awake,
-	 * use wake lock to prevent AP from entering suspend state
-	 */
-	wake_lock(scp_wakelock);
-
 	/* get scp sema to keep scp awake*/
 	ret = get_scp_semaphore(scp_semaphore_flag);
 	if (ret == -1) {
 		*scp_awake_count = *scp_awake_count + 1;
 		pr_err("scp_awake_lock: %s already hold lock,%d\n", core_id, *scp_awake_count);
-		wake_unlock(scp_wakelock);
 		mutex_unlock(scp_awake_mutex);
 		return ret;
 	}
@@ -396,7 +388,6 @@ int scp_awake_lock(scp_core_id scp_id)
 
 	/* scp awake */
 	*scp_awake_count = *scp_awake_count + 1;
-	wake_unlock(scp_wakelock);
 	mutex_unlock(scp_awake_mutex);
 	/*pr_debug("scp_awake_lock: %s lock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
@@ -412,7 +403,6 @@ EXPORT_SYMBOL_GPL(scp_awake_lock);
 int scp_awake_unlock(scp_core_id scp_id)
 {
 	struct mutex *scp_awake_mutex;
-	struct wake_lock *scp_wakelock;
 	int scp_semaphore_flag;
 	int *scp_awake_count;
 	char *core_id;
@@ -424,7 +414,6 @@ int scp_awake_unlock(scp_core_id scp_id)
 	}
 
 	scp_awake_mutex = &scp_awake_mutexs[scp_id];
-	scp_wakelock = &scp_awake_wakelock[scp_id];
 	scp_semaphore_flag = scp_semaphore_flags[scp_id];
 	scp_awake_count = (int *)&scp_awake_counts[scp_id];
 	core_id = core_ids[scp_id];
@@ -443,12 +432,6 @@ int scp_awake_unlock(scp_core_id scp_id)
 	if (*scp_awake_count > 1)
 		pr_err("scp_awake_lock: %s awake count=%d, NOT sync!!\n", core_id, *scp_awake_count);
 
-
-	/* because we are waiting for scp to awake,
-	 * use wake lock to prevent AP from entering suspend state
-	 */
-	wake_lock(scp_wakelock);
-
 	/* get scp sema to keep scp awake*/
 	ret = release_scp_semaphore(scp_semaphore_flag);
 	if (ret == -1) {
@@ -456,7 +439,6 @@ int scp_awake_unlock(scp_core_id scp_id)
 			*scp_awake_count = *scp_awake_count - 1;
 
 		pr_err("scp_awake_lock: %s release sema. fail\n", core_id);
-		wake_unlock(scp_wakelock);
 		mutex_unlock(scp_awake_mutex);
 		WARN_ON(1);
 		return ret;
@@ -467,7 +449,6 @@ int scp_awake_unlock(scp_core_id scp_id)
 	if (*scp_awake_count > 0)
 		*scp_awake_count = *scp_awake_count - 1;
 
-	wake_unlock(scp_wakelock);
 	mutex_unlock(scp_awake_mutex);
 	/*pr_debug("scp_awake_unlock: %s unlock, count=%d\n", core_id, *scp_awake_count);*/
 	return ret;
