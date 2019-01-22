@@ -737,8 +737,8 @@ enum IMGSENSOR_MCLK{
 
 typedef struct {
 	MUINT8 on;
-	enum IMGSENSOR_MCLK freq;
-	enum IMGSENSOR_MCLK TG;
+	MUINT8 freq;
+	MUINT8 TG;
 } ACDK_SENSOR_MCLK_STRUCT;
 
 typedef struct {
