@@ -703,6 +703,63 @@ static const struct file_operations proc_CmdDebug_ops = {
 	.read = procCmdDebug,
 };
 
+static ssize_t procCountryRead(struct file *filp, char __user *buf, size_t count, loff_t *f_pos)
+{
+	UINT_32 u4CopySize;
+	UINT_16 u2CountryCode = 0;
+
+	/* if *f_pos > 0, it means has read successed last time, don't try again */
+	if (*f_pos > 0)
+		return 0;
+
+	if (g_prGlueInfo_proc && g_prGlueInfo_proc->prAdapter)
+		u2CountryCode = g_prGlueInfo_proc->prAdapter->rWifiVar.rConnSettings.u2CountryCode;
+
+	if (u2CountryCode)
+		kalSprintf(aucProcBuf, "Current Country Code: %c%c\n", (u2CountryCode>>8) & 0xff, u2CountryCode & 0xff);
+	else
+		kalStrCpy(aucProcBuf, "Current Country Code: NULL\n");
+
+	u4CopySize = kalStrLen(aucProcBuf);
+	if (copy_to_user(buf, aucProcBuf, u4CopySize)) {
+		pr_info("copy to user failed\n");
+		return -EFAULT;
+	}
+	*f_pos += u4CopySize;
+
+	return (INT_32)u4CopySize;
+}
+
+static ssize_t procCountryWrite(struct file *file, const char __user *buffer, size_t count, loff_t *data)
+{
+	UINT_32 u4BufLen = 0;
+	WLAN_STATUS rStatus;
+	UINT_32 u4CopySize = sizeof(aucProcBuf);
+
+	kalMemSet(aucProcBuf, 0, u4CopySize);
+	if (u4CopySize >= count+1)
+		u4CopySize = count;
+
+	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
+		pr_info("error of copy from user\n");
+		return -EFAULT;
+	}
+
+	aucProcBuf[u4CopySize] = '\0';
+	rStatus = kalIoctl(g_prGlueInfo_proc,
+				wlanoidSetCountryCode, &aucProcBuf[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
+	if (rStatus != WLAN_STATUS_SUCCESS) {
+		DBGLOG(INIT, INFO, "failed set country code: %s\n", aucProcBuf);
+		return -EINVAL;
+	}
+	return count;
+}
+
+static const struct file_operations country_ops = {
+	.owner = THIS_MODULE,
+	.read = procCountryRead,
+	.write = procCountryWrite,
+};
 
 /*----------------------------------------------------------------------------*/
 /*!
@@ -920,40 +977,6 @@ static ssize_t procfile_write(struct file *filp, const char __user *buffer, size
 		.write = procfile_write,
 	};
 #endif
-
-static ssize_t procCountryWrite(struct file *file, const char __user *buffer,
-										size_t count, loff_t *data)
-{
-	UINT_32 u4BufLen = 0;
-	WLAN_STATUS rStatus;
-	UINT_32 u4CopySize = sizeof(aucProcBuf);
-
-	kalMemSet(aucProcBuf, 0, u4CopySize);
-	if (u4CopySize >= count+1)
-		u4CopySize = count;
-
-	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
-		return -EFAULT;
-	}
-
-	aucProcBuf[u4CopySize] = '\0';
-
-	ASSERT(g_prGlueInfo_proc);
-	rStatus = kalIoctl(g_prGlueInfo_proc, wlanoidSetCountryCode,
-				&aucProcBuf[0], 2, FALSE, FALSE, TRUE, FALSE, &u4BufLen);
-	if (rStatus != WLAN_STATUS_SUCCESS) {
-		DBGLOG(INIT, INFO, "failed set country code: %s\n", aucProcBuf);
-		return -EINVAL;
-	}
-	return count;
-}
-
-static const struct file_operations country_ops = {
-	.owner = THIS_MODULE,
-	.write = procCountryWrite,
-};
-
 #if CFG_SUPPORT_SET_CAM_BY_PROC
 static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t count, loff_t *data)
 {
@@ -971,7 +994,7 @@ static ssize_t procSetCamCfgWrite(struct file *file, const char *buffer, size_t 
 		u4CopySize = count;
 
 	if (copy_from_user(aucProcBuf, buffer, u4CopySize)) {
-		pr_err("error of copy from user\n");
+		pr_info("error of copy from user\n");
 		return -EFAULT;
 	}
 	aucProcBuf[u4CopySize] = '\0';
@@ -1071,6 +1094,11 @@ INT_32 procUninitProcFs(VOID)
 			remove_proc_entry(PROC_AUTO_PERF_CFG, gprProcRoot);
 		else
 			DBGLOG(INIT, ERROR, "%s PROC_AUTO_PERF_CFG is null/n", __func__);
+
+		if (gprProcCfgEntry->prEntryCountry)
+			remove_proc_entry(PROC_COUNTRY, gprProcRoot);
+		else
+			DBGLOG(INIT, ERROR, "%s PROC_COUNTRY is null/n", __func__);
 
 		remove_proc_subtree(PROC_ROOT_NAME, init_net.proc_net);
 
