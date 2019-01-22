@@ -410,44 +410,44 @@ void init_md_section_level(enum pbm_kicker kicker)
 	pbm_crit("MD section level init, MD1: %d, MD3: %d\n", hpfmgr->md1_ccci_ready, hpfmgr->md3_ccci_ready);
 }
 
-static int is_scenario_hit(u32 *share_reg, int scenario)
+static int is_scenario_hit(u32 share_reg, int scenario)
 {
 	int hit = 0;
 
 	switch (scenario) {
 	case S_STANDBY:
 		/* if bit 2 to bit 11 are not asserted */
-		if ((*share_reg & _BITMASK_(11:2)) == 0)
+		if ((share_reg & _BITMASK_(11:2)) == 0)
 			hit = 1;
 		break;
 	case S_2G_TALKING_OR_DATALINK:
 		/* if bit 2 is asserted */
-		if ((*share_reg & _BIT_(2)) == 1)
+		if ((share_reg & _BIT_(2)) != 0)
 			hit = 1;
 		break;
 	case S_3G_TALKING:
 		/* if bit 3 is asserted */
-		if ((*share_reg & _BIT_(3)) == 1)
+		if ((share_reg & _BIT_(3)) != 0)
 			hit = 1;
 		break;
 	case S_3G_DATALINK:
 		/* if bit 4 is asserted */
-		if ((*share_reg & _BIT_(4)) == 1)
+		if ((share_reg & _BIT_(4)) != 0)
 			hit = 1;
 		break;
 	case S_4G_DL_1CC:
 		/* if bit 5 is asserted */
-		if ((*share_reg & _BIT_(5)) == 1)
+		if ((share_reg & _BIT_(5)) != 0)
 			hit = 1;
 		break;
 	case S_4G_DL_2CC:
 		/* if bit 6 or bit 7 is asserted */
-		if ((*share_reg & _BITMASK_(7:6)) != 0)
+		if ((share_reg & _BITMASK_(7:6)) != 0)
 			hit = 1;
 		break;
 	case S_4G_DL_3CC:
 		/* if bit 8 or bit 9 is asserted */
-		if ((*share_reg & _BITMASK_(9:8)) != 0)
+		if ((share_reg & _BITMASK_(9:8)) != 0)
 			hit = 1;
 		break;
 	default:
@@ -514,7 +514,7 @@ static int get_md1_scenario(void)
 
 	/* get scenario index when working & max power (bit4 and bit5 no use) */
 	for (i = 0; i < SCENARIO_NUM; i++) {
-		if (is_scenario_hit(&share_reg, i)) {
+		if (is_scenario_hit(share_reg, i)) {
 			if (md1_scenario_pwr[i] >= pw_scenario) {
 				pw_scenario = md1_scenario_pwr[i];
 				scenario = i;
@@ -541,7 +541,7 @@ static int get_md1_scenario(void)
 
 		/* get scenario index of working & max power (bit4 and bit5 no use) */
 		for (i = 0; i < SCENARIO_NUM; i++) {
-			if (is_scenario_hit(&share_reg, i)) {
+			if (is_scenario_hit(share_reg, i)) {
 				if (md1_scenario_pwr[i] >= pw_scenario) {
 					pw_scenario = md1_scenario_pwr[i];
 					scenario = i;
