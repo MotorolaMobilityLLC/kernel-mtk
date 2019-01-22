@@ -420,7 +420,7 @@ void rtc_lpsd_restore_al_mask(void)
 	rtc_write(RTC_BBPU, rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD);
 	rtc_write_trigger();
 	hal_rtc_xinfo("1st RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
-	rtc_write(RTC_AL_MASK, 0);
+	rtc_write(RTC_AL_MASK, RTC_AL_MASK_DOW);    /* mask DOW */
 	rtc_write_trigger();
 	hal_rtc_xinfo("2nd RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
 }
