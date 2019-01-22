@@ -65,12 +65,6 @@
 
 #include "mtk-soc-analog-type.h"
 #include "mtk-soc-codec-63xx.h"
-#ifdef _GIT318_READY
-#include <mtk_clkbuf_ctl.h>
-#endif
-#ifdef _GIT318_PMIC_READY
-#include <mach/mtk_pmic.h>
-#endif
 
 /* HP IMPEDANCE Current Calibration from EFUSE */
 /* #define EFUSE_HP_IMPEDANCE */
