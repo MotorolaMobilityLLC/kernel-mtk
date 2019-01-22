@@ -612,7 +612,11 @@ static int nand_block_markbad_lowlevel(struct mtd_info *mtd, loff_t ofs)
 		memset(&einfo, 0, sizeof(einfo));
 		einfo.mtd = mtd;
 		einfo.addr = ofs;
+		#if defined(CONFIG_MTK_TLC_NAND_SUPPORT)
+		einfo.len = mtd->erasesize;
+		#else
 		einfo.len = 1ULL << chip->phys_erase_shift;
+		#endif
 		nand_erase_nand(mtd, &einfo, 0);
 
 		/* Write bad block marker to OOB */
