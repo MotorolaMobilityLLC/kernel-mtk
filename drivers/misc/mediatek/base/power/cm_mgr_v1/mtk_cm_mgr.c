@@ -81,6 +81,7 @@ static unsigned int vcore_power_up;
 static unsigned int vcore_power_down;
 static int cpu_opp_cur[CM_MGR_CPU_CLUSTER];
 static int ratio_max[CM_MGR_CPU_CLUSTER];
+static int ratio[CM_MGR_CPU_COUNT];
 static int count[CM_MGR_CPU_CLUSTER];
 static int count_ack[CM_MGR_CPU_CLUSTER];
 static int vcore_dram_opp;
@@ -92,9 +93,36 @@ static int cps_valid;
 static int debounce_times_up;
 static int debounce_times_down;
 
+/******************** MET BEGIN ********************/
+typedef void (*cm_mgr_value_handler_t) (unsigned int cnt, unsigned int *value);
+
+static struct cm_mgr_met_data met_data;
+static cm_mgr_value_handler_t cm_mgr_power_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_count_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_opp_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_loading_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_ratio_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_bw_dbg_handler;
+static cm_mgr_value_handler_t cm_mgr_valid_dbg_handler;
+
+#define CM_MGR_MET_REG_FN_VALUE(name)				\
+	void cm_mgr_register_##name(cm_mgr_value_handler_t handler)	\
+{								\
+	name##_dbg_handler = handler;				\
+}								\
+EXPORT_SYMBOL(cm_mgr_register_##name)
+
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_power);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_count);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_opp);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_loading);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_ratio);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_bw);
+CM_MGR_MET_REG_FN_VALUE(cm_mgr_valid);
+/********************* MET END *********************/
+
 static void cm_mgr_update_met(void)
 {
-#ifdef CONFIG_MTK_MET
 	met_data.cm_mgr_power[0] = cpu_power_up_array[0];
 	met_data.cm_mgr_power[1] = cpu_power_up_array[1];
 	met_data.cm_mgr_power[2] = cpu_power_down_array[0];
@@ -127,6 +155,14 @@ static void cm_mgr_update_met(void)
 
 	met_data.cm_mgr_ratio[0] = ratio_max[0];
 	met_data.cm_mgr_ratio[1] = ratio_max[1];
+	met_data.cm_mgr_ratio[2] = ratio[0];
+	met_data.cm_mgr_ratio[3] = ratio[1];
+	met_data.cm_mgr_ratio[4] = ratio[2];
+	met_data.cm_mgr_ratio[5] = ratio[3];
+	met_data.cm_mgr_ratio[6] = ratio[4];
+	met_data.cm_mgr_ratio[7] = ratio[5];
+	met_data.cm_mgr_ratio[8] = ratio[6];
+	met_data.cm_mgr_ratio[9] = ratio[7];
 
 	met_data.cm_mgr_bw = total_bw;
 
@@ -146,7 +182,6 @@ static void cm_mgr_update_met(void)
 		cm_mgr_bw_dbg_handler(1, &met_data.cm_mgr_bw);
 	if (cm_mgr_valid_dbg_handler)
 		cm_mgr_valid_dbg_handler(1, &met_data.cm_mgr_valid);
-#endif
 }
 
 static void update_v2f(int update, int debug)
@@ -293,7 +328,8 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 		vcore_power_down = 0;
 
 		for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
-			cpu_ratio_idx[i] = cm_mgr_get_stall_ratio(i) / 5;
+			ratio[i] = cm_mgr_get_stall_ratio(i);
+			cpu_ratio_idx[i] = ratio[i] / 5;
 			if (cpu_ratio_idx[i] > RATIO_COUNT)
 				cpu_ratio_idx[i] = RATIO_COUNT;
 		}
@@ -645,7 +681,6 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	u32 val_1;
 	u32 val_2;
 
-
 	if (!buf)
 		return -ENOMEM;
 
@@ -900,7 +935,6 @@ int __init cm_mgr_module_init(void)
 
 	/* SW Governor Report */
 	spin_lock_init(&cm_mgr_lock);
-
 
 	r = cm_mgr_platform_init();
 	if (r) {
