@@ -35,7 +35,7 @@ struct scp_aed_cfg {
 	int *phy;
 	int phy_size;
 	char *detail;
-	MemoryDump *pMemoryDump;
+	struct MemoryDump *pMemoryDump;
 	int memory_dump_size;
 };
 
@@ -98,7 +98,7 @@ static uint8_t *storenote(struct memelfnote *men, uint8_t *bufp)
 	return bufp;
 }
 
-static uint8_t *core_write_cpu_note(int cpu, struct elf32_phdr *nhdr, uint8_t *bufp, scp_core_id id)
+static uint8_t *core_write_cpu_note(int cpu, struct elf32_phdr *nhdr, uint8_t *bufp, enum scp_core_id id)
 {
 	struct memelfnote notes;
 	struct elf32_prstatus prstatus;
@@ -120,18 +120,18 @@ static uint8_t *core_write_cpu_note(int cpu, struct elf32_phdr *nhdr, uint8_t *b
 
 
 	if (prstatus.pr_reg[15] == 0x0 && (id == SCP_A_ID))
-		prstatus.pr_reg[15] = SCP_A_DEBUG_PC_REG;
+		prstatus.pr_reg[15] = readl(SCP_A_DEBUG_PC_REG);
 	if (prstatus.pr_reg[14] == 0x0 && (id == SCP_A_ID))
-		prstatus.pr_reg[14] = SCP_A_DEBUG_LR_REG;
+		prstatus.pr_reg[14] = readl(SCP_A_DEBUG_LR_REG);
 	if (prstatus.pr_reg[13] == 0x0 && (id == SCP_A_ID))
-		prstatus.pr_reg[13] = SCP_A_DEBUG_PSP_REG;
+		prstatus.pr_reg[13] = readl(SCP_A_DEBUG_PSP_REG);
 
 
 	nhdr->p_filesz += notesize(&notes);
 	return storenote(&notes, bufp);
 }
 
-void exception_header_init(void *oldbufp, scp_core_id id)
+void exception_header_init(void *oldbufp, enum scp_core_id id)
 {
 	struct elf32_phdr *nhdr, *phdr;
 	struct elf32_hdr *elf;
@@ -234,7 +234,7 @@ void scp_reg_copy(void *bufp)
 uint32_t scp_dump_lr(void)
 {
 	if (is_scp_ready(SCP_A_ID))
-		return SCP_A_DEBUG_LR_REG;
+		return readl(SCP_A_DEBUG_LR_REG);
 	else
 		return 0xFFFFFFFF;
 }
@@ -244,7 +244,7 @@ uint32_t scp_dump_lr(void)
 uint32_t scp_dump_pc(void)
 {
 	if (is_scp_ready(SCP_A_ID))
-		return SCP_A_DEBUG_PC_REG;
+		return readl(SCP_A_DEBUG_PC_REG);
 	else
 		return 0xFFFFFFFF;
 }
@@ -255,10 +255,12 @@ void scp_A_dump_regs(void)
 {
 	if (is_scp_ready(SCP_A_ID)) {
 		pr_debug("[SCP] SCP ready PC:0x%x,LR:0x%x,PSP:0x%x,SP:0x%x\n"
-		, SCP_A_DEBUG_PC_REG, SCP_A_DEBUG_LR_REG, SCP_A_DEBUG_PSP_REG, SCP_A_DEBUG_SP_REG);
+		, readl(SCP_A_DEBUG_PC_REG), readl(SCP_A_DEBUG_LR_REG)
+		, readl(SCP_A_DEBUG_PSP_REG), readl(SCP_A_DEBUG_SP_REG));
 	} else {
 		pr_debug("[SCP] SCP not ready PC:0x%x,LR:0x%x,PSP:0x%x,SP:0x%x\n"
-		, SCP_A_DEBUG_PC_REG, SCP_A_DEBUG_LR_REG, SCP_A_DEBUG_PSP_REG, SCP_A_DEBUG_SP_REG);
+		, readl(SCP_A_DEBUG_PC_REG), readl(SCP_A_DEBUG_LR_REG)
+		, readl(SCP_A_DEBUG_PSP_REG), readl(SCP_A_DEBUG_SP_REG));
 	}
 }
 
@@ -270,12 +272,12 @@ void scp_aee_last_reg(void)
 {
 	pr_debug("scp_aee_last_reg\n");
 
-	scp_A_aee_status.pc = SCP_A_DEBUG_PC_REG;
-	scp_A_aee_status.lr = SCP_A_DEBUG_LR_REG;
-	scp_A_aee_status.psp = SCP_A_DEBUG_PSP_REG;
-	scp_A_aee_status.sp = SCP_A_DEBUG_SP_REG;
-	scp_A_aee_status.m2h = SCP_A_TO_HOST_REG;
-	scp_A_aee_status.h2m = GIPC_TO_SCP_REG;
+	scp_A_aee_status.pc = readl(SCP_A_DEBUG_PC_REG);
+	scp_A_aee_status.lr = readl(SCP_A_DEBUG_LR_REG);
+	scp_A_aee_status.psp = readl(SCP_A_DEBUG_PSP_REG);
+	scp_A_aee_status.sp = readl(SCP_A_DEBUG_SP_REG);
+	scp_A_aee_status.m2h = readl(SCP_A_TO_HOST_REG);
+	scp_A_aee_status.h2m = readl(SCP_GIPC_IN_REG);
 
 	pr_debug("scp_aee_last_reg end\n");
 }
@@ -287,7 +289,7 @@ void scp_aee_last_reg(void)
  * @param scp_core_id:  core id
  * @return:             scp dump size
  */
-static unsigned int scp_crash_dump(MemoryDump *pMemoryDump, scp_core_id id)
+static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump, enum scp_core_id id)
 {
 	unsigned int lock;
 	unsigned int *reg;
@@ -370,13 +372,13 @@ static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
  * @param aed:      struct to store argument for aee api
  * @param id:       identify scp core id
  */
-static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed, scp_core_id id)
+static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed, enum scp_core_id id)
 {
 	u8 *scp_detail;
 	u8 *scp_dump_ptr;
 
 	u32 memory_dump_size;
-	MemoryDump *pMemoryDump = NULL;
+	struct MemoryDump *pMemoryDump = NULL;
 
 	char *scp_A_log = NULL;
 
@@ -411,7 +413,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed, scp_cor
 		memory_dump_size = 0;
 	} else {
 		pr_debug("[SCP AEE]scp A dump ptr:0x%llx\n", (unsigned long long)scp_dump_ptr);
-		pMemoryDump = (MemoryDump *) scp_dump_ptr;
+		pMemoryDump = (struct MemoryDump *) scp_dump_ptr;
 		memset(pMemoryDump, 0x0, sizeof(*pMemoryDump));
 		memory_dump_size = scp_crash_dump(pMemoryDump, SCP_A_ID);
 	}
@@ -438,7 +440,7 @@ static void scp_prepare_aed_dump(char *aed_str, struct scp_aed_cfg *aed, scp_cor
  * generate an exception according to exception type
  * @param type: exception type
  */
-void scp_aed(scp_excep_id type, scp_core_id id)
+void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 {
 	struct scp_aed_cfg aed;
 	char *scp_aed_title;
@@ -502,7 +504,7 @@ void scp_aed(scp_excep_id type, scp_core_id id)
  * NOTE: this function may be blocked and should not be called in interrupt context
  * @param type: exception type
  */
-void scp_aed_reset_inplace(scp_excep_id type, scp_core_id id)
+void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 {
 	pr_debug("[SCP]scp_aed_reset_inplace\n");
 	scp_aed(type, id);
@@ -527,8 +529,8 @@ void scp_aed_reset_inplace(scp_excep_id type, scp_core_id id)
 static void scp_aed_reset_ws(struct work_struct *ws)
 {
 	struct scp_work_struct *sws = container_of(ws, struct scp_work_struct, work);
-	scp_excep_id type = (scp_excep_id) sws->flags;
-	scp_core_id id = (scp_core_id) sws->id;
+	enum scp_excep_id type = (enum scp_excep_id) sws->flags;
+	enum scp_core_id id = (enum scp_core_id) sws->id;
 
 	pr_debug("[SCP]scp_aed_reset_ws: scp_excep_id=%u scp_core_id=%u\n", type, id);
 	scp_aed_reset_inplace(type, id);
@@ -549,7 +551,7 @@ static void scp_A_ram_dump_ipi_handler(int id, void *data, unsigned int len)
  * schedule a work to generate an exception and reset scp
  * @param type: exception type
  */
-void scp_aed_reset(scp_excep_id type, scp_core_id id)
+void scp_aed_reset(enum scp_excep_id type, enum scp_core_id id)
 {
 	scp_aed_work.flags = (unsigned int) type;
 	scp_aed_work.id = (unsigned int) id;
@@ -603,11 +605,11 @@ int scp_excep_init(void)
 	if (!scp_A_detail_buffer)
 		return -1;
 
-	scp_A_dump_buffer = vmalloc(sizeof(MemoryDump));
+	scp_A_dump_buffer = vmalloc(sizeof(struct MemoryDump));
 	if (!scp_A_dump_buffer)
 		return -1;
 
-	scp_A_dump_buffer_last = vmalloc(sizeof(MemoryDump));
+	scp_A_dump_buffer_last = vmalloc(sizeof(struct MemoryDump));
 	if (!scp_A_dump_buffer_last)
 		return -1;
 

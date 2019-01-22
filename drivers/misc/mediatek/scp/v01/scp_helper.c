@@ -314,7 +314,7 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #ifdef CFG_RECOVERY_SUPPORT
 		scp_recovery_flag[SCP_A_ID] = SCP_A_RECOVERY_OK;
 #endif
-		SCP_TO_SPM_REG = 0xff; /* patch: clear SPM interrupt */
+		writel(0xff, SCP_TO_SPM_REG); /* patch: clear SPM interrupt */
 		mutex_lock(&scp_A_notify_mutex);
 		blocking_notifier_call_chain(&scp_A_notifier_list, SCP_EVENT_READY, NULL);
 		mutex_unlock(&scp_A_notify_mutex);
@@ -397,7 +397,7 @@ static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 /*
  * @return: 1 if scp is ready for running tasks
  */
-unsigned int is_scp_ready(scp_core_id id)
+unsigned int is_scp_ready(enum scp_core_id id)
 {
 	if (scp_ready[id])
 		return 1;
@@ -436,7 +436,7 @@ int reset_scp(int reset)
 		scp_pll_mux_set(PLL_ENABLE);
 #endif
 
-		reg = (unsigned int *)SCP_BASE;
+		reg = (unsigned int *)scpreg.cfg;
 		if (reset & 0x0f) { /* do reset */
 			/* make sure scp is in idle state */
 			int timeout = 50; /* max wait 1s */
@@ -444,7 +444,7 @@ int reset_scp(int reset)
 			while (--timeout) {
 #ifdef CFG_RECOVERY_SUPPORT
 				if (*(unsigned int *)SCP_GPR_CM4_A_REBOOT == 0x34) {
-					if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
+					if (readl(SCP_SLEEP_STATUS_REG) & SCP_A_IS_SLEEP) {
 						/* reset */
 						*(unsigned int *)reg = 0x0;
 						scp_ready[SCP_A_ID] = 0;
@@ -456,7 +456,7 @@ int reset_scp(int reset)
 					}
 				}
 #else
-				if (SCP_SLEEP_STATUS_REG & SCP_A_IS_SLEEP) {
+				if (readl(SCP_SLEEP_STATUS_REG) & SCP_A_IS_SLEEP) {
 					/* reset */
 					*(unsigned int *)reg = 0x0;
 					scp_ready[SCP_A_ID] = 0;
@@ -533,16 +533,26 @@ static inline ssize_t scp_A_reg_status_show(struct device *kobj, struct device_a
 	scp_A_dump_regs();
 
 	if (scp_ready[SCP_A_ID]) {
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG0:0x%x\n", SCP_A_GENERAL_REG0);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG1:0x%x\n", SCP_A_GENERAL_REG1);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG2:0x%x\n", SCP_A_GENERAL_REG2);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG3:0x%x\n", SCP_A_GENERAL_REG3);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG4:0x%x\n", SCP_A_GENERAL_REG4);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_A_GENERAL_REG5:0x%x\n", SCP_A_GENERAL_REG5);
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_DEBUG_PC_REG:0x%x\n", readl(SCP_A_DEBUG_PC_REG));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_DEBUG_LR_REG:0x%x\n", readl(SCP_A_DEBUG_LR_REG));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_DEBUG_PSP_REG:0x%x\n", readl(SCP_A_DEBUG_PSP_REG));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_DEBUG_SP_REG:0x%x\n", readl(SCP_A_DEBUG_SP_REG));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG0:0x%x\n", readl(SCP_A_GENERAL_REG0));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG1:0x%x\n", readl(SCP_A_GENERAL_REG1));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG2:0x%x\n", readl(SCP_A_GENERAL_REG2));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG3:0x%x\n", readl(SCP_A_GENERAL_REG3));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG4:0x%x\n", readl(SCP_A_GENERAL_REG4));
+		len += scnprintf(buf + len, PAGE_SIZE - len,
+			"[SCP] SCP_A_GENERAL_REG5:0x%x\n", readl(SCP_A_GENERAL_REG5));
 		return len;
 	} else
 		return scnprintf(buf, PAGE_SIZE, "SCP A is not ready\n");
@@ -568,6 +578,7 @@ static unsigned int pre_feature_req = 0xff;
 static ssize_t scp_vcore_request_store(struct device *kobj, struct device_attribute *attr, const char *buf, size_t n)
 {
 	unsigned int feature_req = 0;
+
 
 	if (kstrtouint(buf, 0, &feature_req) == 0) {
 		if (pre_feature_req == 4)
@@ -651,7 +662,7 @@ DEVICE_ATTR(scp_A_awake_unlock, 0444, scp_A_awake_unlock_show, NULL);
 static inline ssize_t scp_ipi_test_show(struct device *kobj, struct device_attribute *attr, char *buf)
 {
 	unsigned int value = 0x5A5A;
-	ipi_status ret;
+	enum scp_ipi_status ret;
 
 	if (scp_ready[SCP_A_ID]) {
 		scp_ipi_status_dump();
@@ -666,7 +677,7 @@ DEVICE_ATTR(scp_ipi_test, 0444, scp_ipi_test_show, NULL);
 #endif
 
 #ifdef CFG_RECOVERY_SUPPORT
-void scp_wdt_reset(scp_core_id cpu_id)
+void scp_wdt_reset(enum scp_core_id cpu_id)
 {
 	switch (cpu_id) {
 	case SCP_A_ID:
@@ -820,7 +831,7 @@ static int create_files(void)
 #define SCP_MEM_RESERVED_KEY "mediatek,reserve-memory-scp_share"
 int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 {
-	scp_reserve_mem_id_t id;
+	enum scp_reserve_mem_id_t id;
 	phys_addr_t accumlate_memory_size = 0;
 
 	scp_mem_base_phys = (phys_addr_t) rmem->base;
@@ -855,7 +866,7 @@ int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 RESERVEDMEM_OF_DECLARE(scp_reserve_mem_init, SCP_MEM_RESERVED_KEY, scp_reserve_mem_of_init);
 #endif
 #endif
-phys_addr_t scp_get_reserve_mem_phys(scp_reserve_mem_id_t id)
+phys_addr_t scp_get_reserve_mem_phys(enum scp_reserve_mem_id_t id)
 {
 	if (id >= NUMS_MEM_ID) {
 		pr_err("[SCP] no reserve memory for %d", id);
@@ -865,7 +876,7 @@ phys_addr_t scp_get_reserve_mem_phys(scp_reserve_mem_id_t id)
 }
 EXPORT_SYMBOL_GPL(scp_get_reserve_mem_phys);
 
-phys_addr_t scp_get_reserve_mem_virt(scp_reserve_mem_id_t id)
+phys_addr_t scp_get_reserve_mem_virt(enum scp_reserve_mem_id_t id)
 {
 	if (id >= NUMS_MEM_ID) {
 		pr_err("[SCP] no reserve memory for %d", id);
@@ -875,7 +886,7 @@ phys_addr_t scp_get_reserve_mem_virt(scp_reserve_mem_id_t id)
 }
 EXPORT_SYMBOL_GPL(scp_get_reserve_mem_virt);
 
-phys_addr_t scp_get_reserve_mem_size(scp_reserve_mem_id_t id)
+phys_addr_t scp_get_reserve_mem_size(enum scp_reserve_mem_id_t id)
 {
 	if (id >= NUMS_MEM_ID) {
 		pr_err("[SCP] no reserve memory for %d", id);
@@ -888,7 +899,7 @@ EXPORT_SYMBOL_GPL(scp_get_reserve_mem_size);
 #if SCP_RESERVED_MEM
 static int scp_reserve_memory_ioremap(void)
 {
-	scp_reserve_mem_id_t id;
+	enum scp_reserve_mem_id_t id;
 	phys_addr_t accumlate_memory_size;
 
 

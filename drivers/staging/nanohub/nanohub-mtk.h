@@ -15,7 +15,7 @@
 
 int __init nanohub_ipi_init(void);
 extern struct nanohub_data *g_nanohub_data_p;
-void scp_wdt_reset(scp_core_id cpu_id);
+void scp_wdt_reset(enum scp_core_id cpu_id);
 
 
 #endif
