@@ -29,6 +29,7 @@
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/sched.h>
 
 #include <mach/mtk_rtc_hal.h>
 #include <mtk_rtc_hw.h>
@@ -60,10 +61,17 @@ void rtc_write(u16 addr, u16 data)
 
 void rtc_busy_wait(void)
 {
+	unsigned long long timeout = sched_clock() + 500000000;
+
 	do {
-		while (rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY)
-			;
-	} while (0);
+		if (rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY)
+			break;
+		else if (sched_clock() > timeout) {
+			pr_err("%s, wait cbusy timeout, %x, %x, %x\n", __func__,
+				rtc_read(RTC_BBPU), rtc_read(RTC_POWERKEY1), rtc_read(RTC_POWERKEY2));
+			break;
+		}
+	} while (1);
 }
 
 void rtc_write_trigger(void)
