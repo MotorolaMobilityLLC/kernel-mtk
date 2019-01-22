@@ -1906,6 +1906,9 @@ EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_2);
 
 void (*ged_kpi_set_game_hint_value_fp_fbt)(int is_game_mode);
 EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_fbt);
+void (*ged_kpi_set_game_hint_value_fp_cmmgr)(int is_game_mode);
+EXPORT_SYMBOL(ged_kpi_set_game_hint_value_fp_cmmgr);
+
 
 bool ged_kpi_set_game_hint_value(int is_game_mode)
 {
@@ -1922,6 +1925,11 @@ bool ged_kpi_set_game_hint_value(int is_game_mode)
 
 	if (ged_kpi_set_game_hint_value_fp_fbt) {
 		ged_kpi_set_game_hint_value_fp_fbt(is_game_mode);
+		ret = true;
+	}
+
+	if (ged_kpi_set_game_hint_value_fp_cmmgr) {
+		ged_kpi_set_game_hint_value_fp_cmmgr(is_game_mode);
 		ret = true;
 	}
 
