@@ -591,9 +591,15 @@ static void alloc_tx_buffer(struct eth_dev *dev)
 
 	list_for_each(act, &dev->tx_reqs) {
 		req = container_of(act, struct usb_request, list);
-		if (!req->buf)
+		if (!req->buf) {
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+			req->buf = kmalloc(dev->tx_req_bufsize,
+						GFP_ATOMIC | GFP_DMA);
+#else
 			req->buf = kmalloc(dev->tx_req_bufsize,
 						GFP_ATOMIC);
+#endif
+		}
 	}
 }
 
