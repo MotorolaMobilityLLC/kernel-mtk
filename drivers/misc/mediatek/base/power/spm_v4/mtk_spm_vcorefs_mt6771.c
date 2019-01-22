@@ -591,8 +591,13 @@ out:
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
+static int scp_vcore_level;
 void dvfsrc_set_scp_vcore_request(unsigned int level)
 {
+	if (is_vcorefs_can_work() != 1) {
+		scp_vcore_level = level;
+		return;
+	}
 	dvfsrc_set_vcore_request(0x3, 30, (level & 0x3));
 }
 
@@ -919,6 +924,11 @@ void spm_vcorefs_init(void)
 		spm_go_to_vcorefs(flag);
 		dvfsrc_init();
 		vcorefs_late_init_dvfs();
+		if (scp_vcore_level) {
+			spm_vcorefs_warn("[%s] set_scp_vcore_req, level=%d\n", __func__, scp_vcore_level);
+			dvfsrc_set_scp_vcore_request(scp_vcore_level);
+			scp_vcore_level = 0;
+		}
 #if defined(CONFIG_MTK_QOS_SUPPORT)
 		dvfsrc_init_qos_opp();
 #endif
