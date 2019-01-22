@@ -29,11 +29,28 @@
 
 #include "dfrc_drv.h"
 
-extern void dfrc_fps_limit_cb(int fps_limit) __attribute__((weak));
+extern void __attribute__((weak)) dfrc_fps_limit_cb(int fps_limit)
+{
+}
 
-extern int primary_display_get_min_refresh_rate(void)  __attribute__((weak));
-extern int primary_display_get_max_refresh_rate(void)  __attribute__((weak));
-extern int primary_display_set_refresh_rate(unsigned int)  __attribute__((weak));
+extern int __attribute__((weak)) primary_display_get_min_refresh_rate(void)
+{
+	return 60;
+}
+extern int __attribute__((weak)) primary_display_get_max_refresh_rate(void)
+{
+	return 60;
+}
+
+extern int __attribute__((weak)) primary_display_set_refresh_rate(unsigned int fps)
+{
+	return 0;
+}
+
+extern int __attribute__((weak)) primary_display_force_vdo_mode(unsigned int force_on)
+{
+	return 0;
+}
 
 #define DFRC_DEVNAME "mtk_dfrc"
 
@@ -1442,15 +1459,25 @@ static void dfrc_adjust_vsync_locked(struct DFRC_DRV_EXPECTED_POLICY *expected_p
 		/*primary_display_arr20_set_refresh_rate(fps);*/
 	}
 #else
-	dfrc_rdump("fps:[%d|%d] mode[%d:%d]\n", fps, g_current_fps, hw_mode, g_current_hw_mode);
+	dfrc_rdump("fps:[%d|%d] mode[%d:%d] vdo[%d:%d]\n", fps, g_current_fps,
+			hw_mode, g_current_hw_mode,
+			use_video_mode, g_use_video_mode);
+	if (use_video_mode != 0 || hw_mode == DFRC_DRV_HW_MODE_ARR) {
+		dfrc_rdump("enable vdo mode\n");
+		primary_display_force_vdo_mode(true);
+	}
+
 	if (hw_mode != g_current_hw_mode && hw_mode == DFRC_DRV_HW_MODE_DEFAULT) {
 		dfrc_rdump("set arr to default: 60");
-		if (primary_display_set_refresh_rate)
-			primary_display_set_refresh_rate(60);
+		primary_display_set_refresh_rate(60);
 	} else if (hw_mode == DFRC_DRV_HW_MODE_ARR && fps != g_current_fps) {
 		dfrc_rdump("set arr with fps: %d\n", fps);
-		if (primary_display_set_refresh_rate)
-			primary_display_set_refresh_rate(fps);
+		primary_display_set_refresh_rate(fps);
+	}
+
+	if (use_video_mode == 0 && hw_mode == DFRC_DRV_HW_MODE_DEFAULT) {
+		dfrc_rdump("disable vdo mode\n");
+		primary_display_force_vdo_mode(false);
 	}
 #endif
 
@@ -1477,8 +1504,7 @@ static void dfrc_send_fps_info_to_other_module(void)
 	mutex_unlock(&g_mutex_data);
 
 	dfrc_find_pid_setting(pid, &fps, &mode);
-	if (dfrc_fps_limit_cb)
-		dfrc_fps_limit_cb(fps);
+	dfrc_fps_limit_cb(fps);
 }
 
 static int dfrc_make_policy_kthread_func(void *data)
@@ -1675,15 +1701,9 @@ static int dfrc_probe(struct platform_device *pdev)
 	g_fps_info.range[0].min_fps = primary_display_arr20_get_min_refresh_rate(0);
 	g_fps_info.range[0].max_fps = primary_display_arr20_get_max_refresh_rate(0);
 #else
-	if (primary_display_get_min_refresh_rate)
-		g_fps_info.range[0].min_fps = primary_display_get_min_refresh_rate();
-	else
-		g_fps_info.range[0].min_fps = 60;
+	g_fps_info.range[0].min_fps = primary_display_get_min_refresh_rate();
 
-	if (primary_display_get_max_refresh_rate)
-		g_fps_info.range[0].max_fps = primary_display_get_max_refresh_rate();
-	else
-		g_fps_info.range[0].max_fps = 60;
+	g_fps_info.range[0].max_fps = primary_display_get_max_refresh_rate();
 #endif
 
 	dfrc_init_kernel_policy();
