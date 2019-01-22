@@ -773,6 +773,15 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 				.priv = NULL,
 		},
 		{
+				.type = ION_HEAP_TYPE_MULTIMEDIA,
+				.id = ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA,
+				.name = "ion_mm_heap_for_va2mva",
+				.base = 0,
+				.size = 0,
+				.align = 0,
+				.priv = NULL,
+		},
+		{
 				.type = ION_HEAP_TYPE_CARVEOUT,
 				.id = ION_HEAP_TYPE_CARVEOUT,
 				.name = "ion_carveout_heap",

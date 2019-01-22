@@ -1536,9 +1536,10 @@ static size_t ion_debug_heap_total(struct ion_client *client,
 		struct ion_handle *handle = rb_entry(n,
 						     struct ion_handle,
 						     node);
-		if ((handle->buffer->heap->id == id)
-			|| ((id == ION_HEAP_TYPE_MULTIMEDIA)
-				&& (handle->buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)))
+		if ((handle->buffer->heap->id == id) ||
+		    ((id == ION_HEAP_TYPE_MULTIMEDIA) &&
+		     ((handle->buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA) ||
+		      (handle->buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))))
 			size += handle->buffer->size;
 	}
 	mutex_unlock(&client->lock);
@@ -1552,6 +1553,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	struct rb_node *n;
 	size_t total_size = 0;
 	size_t camera_total_size = 0;
+	size_t va2mva_total_size = 0;
 	size_t total_orphaned_size = 0;
 
 	seq_printf(s, "%16.s(%16.s) %16.s %16.s %s\n", "client", "dbg_name", "pid", "size", "address");
@@ -1588,6 +1590,9 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA)
 				&& (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA))
 				camera_total_size += buffer->size;
+			else if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA) &&
+				 (buffer->heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
+				va2mva_total_size += buffer->size;
 			else
 				continue;
 		}
@@ -1606,7 +1611,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 		   total_orphaned_size);
 	seq_printf(s, "%16.s %16zu\n", "total ", total_size);
 	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA)
-		seq_printf(s, "%16.s %16zu\n", "camera total ", camera_total_size);
+		seq_printf(s, "%16.s %16zu %16zu\n", "cam-va2mva total", camera_total_size, va2mva_total_size);
 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
 		seq_printf(s, "%16.s %16zu\n", "deferred free",
 				heap->free_list_size);

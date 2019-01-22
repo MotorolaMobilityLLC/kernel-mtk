@@ -32,6 +32,7 @@ typedef int M4U_PORT_ID;
 #define M4U_FLAGS_FIX_MVA   (1<<1)  /* fix allocation, we will use mva user specified. */
 #define M4U_FLAGS_SEC_SHAREABLE   (1<<2)  /* the mva will share in SWd */
 #define M4U_FLAGS_START_FROM   (1<<3)  /* the allocator will search free mva from user specified.  */
+#define M4U_FLAGS_SG_READY   (1<<4)  /* ion_alloc have allocated sg_table with m4u_create_sgtable. For va2mva ion case*/
 
 
 /* m4u internal flags (DO NOT use them for other purpers) */
@@ -95,6 +96,7 @@ typedef struct {
 
 typedef struct {
 	int eModuleID;
+	unsigned long va;
 	unsigned int BufSize;
 	int security;
 	int cache_coherent;
@@ -114,6 +116,8 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 					unsigned int *pMva);
 
 int m4u_dealloc_mva(m4u_client_t *client, M4U_PORT_ID port, unsigned int mva);
+
+struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size);
 
 int m4u_alloc_mva_sg(port_mva_info_t *port_info,
 				struct sg_table *sg_table);
