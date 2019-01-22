@@ -184,6 +184,7 @@ extern int vcorefs_get_hw_opp(void);
 extern int vcorefs_enable_debug_isr(bool enable);
 
 #if defined(CONFIG_MACH_MT6775) || defined(CONFIG_MACH_MT6771)
+extern int vcorefs_get_ddr_by_steps(u32 opp);
 extern int dvfsrc_get_bw(int type);
 extern int get_cur_vcore_dvfs_opp(void);
 

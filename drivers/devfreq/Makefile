@@ -20,10 +20,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)/
 
 ifeq ($(CONFIG_MTK_QOS_SUPPORT), y)
 #obj-$(CONFIG_MACH_MT6775)		+= helio-dvfsrc.o helio-dvfsrc-sysfs.o
-#obj-$(CONFIG_MACH_MT6771)		+= helio-dvfsrc.o helio-dvfsrc-sysfs.o
+obj-$(CONFIG_MACH_MT6771)		+= helio-dvfsrc.o helio-dvfsrc-sysfs.o
 
 #obj-$(CONFIG_MACH_MT6775)		+= helio-dvfsrc-mt6775.o
-#obj-$(CONFIG_MACH_MT6771)		+= helio-dvfsrc-mt6771.o
+obj-$(CONFIG_MACH_MT6771)		+= helio-dvfsrc-mt6771.o
 endif
 
 #obj-$(CONFIG_MACH_MT6775)		+= helio-dvfsrc-opp-mt6775.o

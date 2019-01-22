@@ -69,11 +69,14 @@ extern void helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc);
 extern void spm_check_status_before_dvfs(void);
 extern int dvfsrc_transfer_to_dram_level(int data);
 extern int dvfsrc_transfer_to_vcore_level(int data);
+
+#if !defined(CONFIG_MACH_MT6771)
 extern int vcorefs_get_curr_vcore(void);
 extern int vcorefs_get_curr_ddr(void);
 extern int dvfsrc_get_vcore_by_steps(u32 opp);
 extern int dvfsrc_get_ddr_by_steps(u32 opp);
-extern int is_vcorefs_can_work(void);
+#endif
+extern int is_qos_can_work(void);
 extern int spm_dvfs_flag_init(void);
 extern void dvfsrc_update_opp_table(void);
 extern char *dvfsrc_get_opp_table_info(char *p);
@@ -128,24 +131,6 @@ extern int get_cur_vcore_dvfs_opp(void);
 
 #define dvfsrc_sram_read(dvfsrc, offset) \
 	readl(DVFSRC_SRAM_REG(dvfsrc, offset))
-
-#define QOS_TOTAL_BW_BUF_SIZE 8
-
-#define QOS_TOTAL_BW_BUF(idx) (idx * 4)
-#define QOS_TOTAL_BW          (QOS_TOTAL_BW_BUF_SIZE * 4)
-#define QOS_CPU_BW            (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x4)
-#define QOS_MM_BW             (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x8)
-#define QOS_GPU_BW            (QOS_TOTAL_BW_BUF_SIZE * 4 + 0xC)
-#define QOS_MD_PERI_BW        (QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
-
-enum {
-	QOS_TOTAL = 0,
-	QOS_CPU,
-	QOS_MM,
-	QOS_GPU,
-	QOS_MD_PERI,
-	QOS_TOTAL_AVE
-};
 
 extern struct helio_dvfsrc *dvfsrc;
 
