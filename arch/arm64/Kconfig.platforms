@@ -46,6 +46,42 @@ config ARCH_MEDIATEK
 	help
 	  Support for Mediatek MT65xx & MT81xx ARMv8 SoCs
 
+config MACH_MT6757
+	bool "MediaTek MT6757"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6757
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_SYSTRACKER_V2
+	select MTK_GIC_V3_EXT
+	select MTK_CPU_STRESS
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select MTK_EIC_HISTORY_DUMP
+	select MTK_TIMER
+	select MTK_EIC
+	help
+	  This enables support for MediaTek Helio P20 - MT6757
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones. The MediaTek Helio P20 is built on a 16nm process
+	  node and offers 25% better power efficiency, higher processing performance
+	  and our most advanced camera/video features to date. Helio P20 also offers
+	  significant multitasking and multimedia improvements thanks to its new
+	  LPDDR4X memory support.
+
 config ARCH_QCOM
 	bool "Qualcomm Platforms"
 	select PINCTRL
