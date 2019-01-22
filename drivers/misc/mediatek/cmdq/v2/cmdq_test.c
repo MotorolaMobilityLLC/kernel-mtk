@@ -3931,6 +3931,38 @@ void testcase_reorder_last(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+static void testcase_timeout_secure_dapc(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	struct TaskStruct *pTask;
+	uint64_t engineFlag = (1LL << CMDQ_ENG_MDP_WROT1) | (1LL << CMDQ_ENG_MDP_WROT0);
+
+	CMDQ_MSG("%s\n", __func__);
+
+	/* clear token */
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
+
+	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdq_task_reset(handle);
+	cmdq_task_set_secure(handle, true);
+	handle->engineFlag = engineFlag;
+	cmdq_task_secure_enable_port_security(handle, engineFlag);
+	cmdq_task_secure_enable_dapc(handle,
+		(1LL << CMDQ_ENG_MDP_WROT1) | (1LL << CMDQ_ENG_MDP_WROT0));
+	cmdq_op_wait_no_clear(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handle, false);
+
+	_test_submit_async(handle, &pTask);
+
+	cmdq_task_flush(handle);
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+	/* Call wait to release first task */
+	cmdqCoreWaitAndReleaseTask(pTask, 500);
+	cmdq_task_destroy(handle);
+
+	CMDQ_MSG("%s END\n", __func__);
+}
+
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
 	CMDQ_TESTCASE_BASIC = 1,
@@ -3948,6 +3980,10 @@ static void testcase_general_handling(int32_t testID)
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
 	switch (testID) {
+	case 142:
+		testcase_timeout_secure_dapc();
+		testcase_secure_basic();
+		break;
 	case 141:
 		testcase_track_task_cb();
 		break;
