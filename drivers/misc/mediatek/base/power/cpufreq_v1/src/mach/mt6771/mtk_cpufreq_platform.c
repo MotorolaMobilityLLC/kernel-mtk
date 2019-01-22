@@ -599,7 +599,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	if (temp > 0x40) {
 		if (segcode == 1)
-			lv = CPU_LEVEL_6;	/* V6 */
+			lv = CPU_LEVEL_5;	/* V6 */
 		else {
 			if (bincode == 0)
 				lv = CPU_LEVEL_2;	/* V5_1 */
@@ -607,14 +607,12 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 				lv = CPU_LEVEL_3;	/* V5_2 */
 			else if (bincode == 2)
 				lv = CPU_LEVEL_4;	/* V5_3 */
-			else if (bincode == 3)
-				lv = CPU_LEVEL_5;	/* V5_4 */
 			else
-				lv = CPU_LEVEL_5;	/* V5_4 */
+				lv = CPU_LEVEL_4;	/* V5_3 */
 		}
 	} else if (temp == 0x40) {
 		if (segcode == 1)
-			lv = CPU_LEVEL_6;	/* V6 */
+			lv = CPU_LEVEL_5;	/* V6 */
 		else
 			lv = CPU_LEVEL_1;	/* V4 */
 	} else
