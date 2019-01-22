@@ -44,6 +44,19 @@ config TOUCHSCREEN_MTK_GT1151
 
 source "drivers/input/touchscreen/mediatek/GT1151/Kconfig"
 
+config TOUCHSCREEN_MTK_GT5688
+	bool "GT1151 for Mediatek package"
+	default n
+	help
+	  Say Y here if you have GT5688 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/GT5688/Kconfig"
+
 config TOUCHSCREEN_MTK_GT911
 	bool "GT911 for Mediatek package"
 	help
