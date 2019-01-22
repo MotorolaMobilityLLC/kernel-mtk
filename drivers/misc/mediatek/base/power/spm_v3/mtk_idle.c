@@ -1375,7 +1375,11 @@ static unsigned int dpidle_pre_process(int cpu)
 
 	op_cond = ufs_cb_before_xxidle();
 
+	profile_dp_start(PIDX_IDLE_NOTIFY_ENTER);
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_ENTER);
+	profile_dp_end(PIDX_IDLE_NOTIFY_ENTER);
+
+	profile_dp_start(PIDX_PRE_HANDLER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #ifndef CONFIG_MTK_ACAO_SUPPORT
@@ -1396,6 +1400,8 @@ static unsigned int dpidle_pre_process(int cpu)
 
 	timer_setting_before_wfi(false);
 
+	profile_dp_end(PIDX_PRE_HANDLER);
+
 	/* Check clkmux condition after */
 	memset(clkmux_block_mask[IDLE_TYPE_DP],	0, NF_CLK_CFG * sizeof(unsigned int));
 	clkmux_cond[IDLE_TYPE_DP] = mtk_idle_check_clkmux(IDLE_TYPE_DP, clkmux_block_mask);
@@ -1405,6 +1411,8 @@ static unsigned int dpidle_pre_process(int cpu)
 
 static void dpidle_post_process(int cpu, unsigned int op_cond)
 {
+	profile_dp_start(PIDX_POST_HANDLER);
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi(false);
 
@@ -1425,13 +1433,19 @@ static void dpidle_post_process(int cpu, unsigned int op_cond)
 #endif
 #endif
 
+	profile_dp_end(PIDX_POST_HANDLER);
+
+	profile_dp_start(PIDX_IDLE_NOTIFY_LEAVE);
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_LEAVE);
+	profile_dp_end(PIDX_IDLE_NOTIFY_LEAVE);
 
 	ufs_cb_after_xxidle();
 
+	profile_dp_start(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	spm_dpidle_notify_sspm_after_wfi_async_wait();
 #endif
+	profile_dp_end(PIDX_SSPM_AFTER_WFI_ASYNC_WAIT);
 
 	dpidle_cnt[cpu]++;
 }
@@ -1472,6 +1486,10 @@ int mtk_idle_select(int cpu)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int mtk_idle_switch;
 #endif
+
+	profile_dp_start(PIDX_SELECT_TO_ENTER);
+	profile_so_start(PIDX_SELECT_TO_ENTER);
+	profile_so3_start(PIDX_SELECT_TO_ENTER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	/* check if firmware loaded or not */
@@ -1627,6 +1645,10 @@ int dpidle_enter(int cpu)
 	/* don't check lock dependency */
 	lockdep_off();
 
+	profile_dp_end(PIDX_SELECT_TO_ENTER);
+
+	profile_dp_start(PIDX_ENTER_TOTAL);
+
 	mtk_idle_ratio_calc_start(IDLE_TYPE_DP, cpu);
 
 	operation_cond |= dpidle_pre_process(cpu);
@@ -1658,6 +1680,11 @@ int dpidle_enter(int cpu)
 	if (dpidle_run_once)
 		idle_switch[IDLE_TYPE_DP] = 0;
 
+	profile_dp_end(PIDX_LEAVE_TOTAL);
+
+	/* dump latency profiling result */
+	profile_dp_dump();
+
 	lockdep_on();
 
 	return ret;
@@ -1674,11 +1701,18 @@ int soidle3_enter(int cpu)
 	/* don't check lock dependency */
 	lockdep_off();
 
+	profile_so3_end(PIDX_SELECT_TO_ENTER);
+
+	profile_so3_start(PIDX_ENTER_TOTAL);
+
 	if (sodi3_flags & SODI_FLAG_RESIDENCY)
 		soidle3_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO3, cpu);
+
+	profile_so3_start(PIDX_IDLE_NOTIFY_ENTER);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE3_ENTER);
+	profile_so3_end(PIDX_IDLE_NOTIFY_ENTER);
 
 #ifdef CONFIG_MACH_MT6799
 	/* switch audio clock to allow vcore lp mode */
@@ -1688,7 +1722,9 @@ int soidle3_enter(int cpu)
 		clk_ufs_card_switch_backup();
 #endif
 
+	profile_so3_start(PIDX_PRE_HANDLER);
 	operation_cond |= soidle_pre_handler();
+	profile_so3_end(PIDX_PRE_HANDLER);
 
 	/* clkmux for sodi3 */
 	memset(clkmux_block_mask[IDLE_TYPE_SO3], 0, NF_CLK_CFG * sizeof(unsigned int));
@@ -1716,7 +1752,9 @@ int soidle3_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
+	profile_so3_start(PIDX_POST_HANDLER);
 	soidle_post_handler();
+	profile_so3_end(PIDX_POST_HANDLER);
 
 #ifdef CONFIG_MACH_MT6799
 	/* restore ufs_card_sel */
@@ -1725,13 +1763,21 @@ int soidle3_enter(int cpu)
 	faudintbus_sq2pll();
 #endif
 
+	profile_so3_start(PIDX_IDLE_NOTIFY_LEAVE);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE3_LEAVE);
+	profile_so3_end(PIDX_IDLE_NOTIFY_LEAVE);
+
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO3, cpu);
 
 	if (sodi3_flags & SODI_FLAG_RESIDENCY) {
 		soidle3_residency += idle_get_current_time_ms() - soidle3_time;
 		idle_pr_dbg("SO3: soidle3_residency = %llu\n", soidle3_residency);
 	}
+
+	profile_so3_end(PIDX_LEAVE_TOTAL);
+
+	/* dump latency profiling result */
+	profile_so3_dump();
 
 	lockdep_on();
 
@@ -1749,13 +1795,22 @@ int soidle_enter(int cpu)
 	/* don't check lock dependency */
 	lockdep_off();
 
+	profile_so_end(PIDX_SELECT_TO_ENTER);
+
+	profile_so_start(PIDX_ENTER_TOTAL);
+
 	if (sodi_flags & SODI_FLAG_RESIDENCY)
 		soidle_time = idle_get_current_time_ms();
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);
-	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE_ENTER);
 
+	profile_so_start(PIDX_IDLE_NOTIFY_ENTER);
+	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE_ENTER);
+	profile_so_end(PIDX_IDLE_NOTIFY_ENTER);
+
+	profile_so_start(PIDX_PRE_HANDLER);
 	operation_cond |= soidle_pre_handler();
+	profile_so_end(PIDX_PRE_HANDLER);
 
 #ifdef DEFAULT_MMP_ENABLE
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_START, 0, 0);
@@ -1774,15 +1829,25 @@ int soidle_enter(int cpu)
 	mmprofile_log_ex(sodi_mmp_get_events()->sodi_enable, MMPROFILE_FLAG_END, 0, spm_read(SPM_PASR_DPD_3));
 #endif /* DEFAULT_MMP_ENABLE */
 
+	profile_so_start(PIDX_POST_HANDLER);
 	soidle_post_handler();
+	profile_so_end(PIDX_POST_HANDLER);
 
+	profile_so_start(PIDX_IDLE_NOTIFY_LEAVE);
 	mtk_idle_notifier_call_chain(NOTIFY_SOIDLE_LEAVE);
+	profile_so_end(PIDX_IDLE_NOTIFY_LEAVE);
+
 	mtk_idle_ratio_calc_stop(IDLE_TYPE_SO, cpu);
 
 	if (sodi_flags & SODI_FLAG_RESIDENCY) {
 		soidle_residency += idle_get_current_time_ms() - soidle_time;
 		idle_pr_dbg("SO: soidle_residency = %llu\n", soidle_residency);
 	}
+
+	profile_so_end(PIDX_LEAVE_TOTAL);
+
+	/* dump latency profiling result */
+	profile_so_dump();
 
 	lockdep_on();
 
@@ -1891,6 +1956,7 @@ static ssize_t idle_state_read(struct file *filp,
 
 	mt_idle_log("\n");
 	mt_idle_log("idle_ratio_en = %u\n", mtk_idle_get_ratio_status());
+	mt_idle_log("idle_latency_en = %d\n", mtk_idle_latency_profile_is_on() ? 1 : 0);
 	mt_idle_log("twam_handler:%s (clk:%s)\n",
 					(mtk_idle_get_twam()->running)?"on":"off",
 					(mtk_idle_get_twam()->speed_mode)?"speed":"normal");
@@ -1901,6 +1967,7 @@ static ssize_t idle_state_read(struct file *filp,
 	mt_idle_log("status help:   cat /sys/kernel/debug/cpuidle/idle_state\n");
 	mt_idle_log("switch on/off: echo switch mask > /sys/kernel/debug/cpuidle/idle_state\n");
 	mt_idle_log("idle ratio profile: echo ratio 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
+	mt_idle_log("idle latency profile: echo latency 1/0 > /sys/kernel/debug/cpuidle/idle_state\n");
 
 	mt_idle_log("soidle3 help:  cat /sys/kernel/debug/cpuidle/soidle3_state\n");
 	mt_idle_log("soidle help:   cat /sys/kernel/debug/cpuidle/soidle_state\n");
@@ -1937,6 +2004,8 @@ static ssize_t idle_state_write(struct file *filp,
 				mtk_idle_enable_ratio_calc();
 			else
 				mtk_idle_disable_ratio_calc();
+		} else if (!strcmp(cmd, "latency")) {
+			mtk_idle_latency_profile_enable(param ? true : false);
 		} else if (!strcmp(cmd, "spmtwam_clk")) {
 			mtk_idle_get_twam()->speed_mode = param;
 		} else if (!strcmp(cmd, "spmtwam_sel")) {
