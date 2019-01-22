@@ -242,6 +242,8 @@ void kbase_destroy_context(struct kbase_context *kctx)
 	 * thread. */
 	kbase_pm_context_active(kbdev);
 
+	kbase_mem_pool_mark_dying(&kctx->mem_pool);
+
 	kbase_jd_zap_context(kctx);
 
 #ifdef CONFIG_DEBUG_FS

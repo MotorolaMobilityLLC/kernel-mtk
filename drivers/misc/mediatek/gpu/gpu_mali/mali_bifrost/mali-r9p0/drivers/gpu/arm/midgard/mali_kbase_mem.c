@@ -1433,9 +1433,8 @@ int kbase_update_region_flags(struct kbase_context *kctx,
 	return 0;
 }
 
-int kbase_alloc_phy_pages_helper(
-	struct kbase_mem_phy_alloc *alloc,
-	size_t nr_pages_requested)
+int kbase_alloc_phy_pages_helper(struct kbase_mem_phy_alloc *alloc,
+		size_t nr_pages_requested)
 {
 	int new_page_count __maybe_unused;
 	size_t old_page_count = alloc->nents;
@@ -1600,12 +1599,19 @@ done:
 
 alloc_failed:
 	/* rollback needed if got one or more 2MB but failed later */
-	if (nr_left != nr_pages_requested)
-		kbase_mem_pool_free_pages(&kctx->lp_mem_pool,
-				  nr_pages_requested - nr_left,
-				  alloc->pages + old_page_count,
-				  false,
-				  false);
+
+	if (nr_left != nr_pages_requested) {
+		size_t nr_pages_to_free = nr_pages_requested - nr_left;
+
+		alloc->nents += nr_pages_to_free;
+
+		kbase_process_page_usage_inc(kctx, nr_pages_to_free);
+		kbase_atomic_add_pages(nr_pages_to_free, &kctx->used_pages);
+		kbase_atomic_add_pages(nr_pages_to_free,
+			       &kctx->kbdev->memdev.used_pages);
+
+		kbase_free_phy_pages_helper(alloc, nr_pages_to_free);
+	}
 
 	kbase_process_page_usage_dec(kctx, nr_pages_requested);
 	kbase_atomic_sub_pages(nr_pages_requested, &kctx->used_pages);
@@ -1617,6 +1623,183 @@ alloc_failed:
 #endif /* ENABLE_MTK_MEMINFO */
 invalid_request:
 	return -ENOMEM;
+}
+
+struct tagged_addr *kbase_alloc_phy_pages_helper_locked(
+		struct kbase_mem_phy_alloc *alloc, struct kbase_mem_pool *pool,
+		size_t nr_pages_requested)
+{
+	int new_page_count __maybe_unused;
+	size_t nr_left = nr_pages_requested;
+	int res;
+	struct kbase_context *kctx;
+	struct tagged_addr *tp;
+	struct tagged_addr *new_pages = NULL;
+
+	KBASE_DEBUG_ASSERT(alloc->type == KBASE_MEM_TYPE_NATIVE);
+	KBASE_DEBUG_ASSERT(alloc->imported.kctx);
+
+	lockdep_assert_held(&pool->pool_lock);
+
+#if !defined(CONFIG_MALI_2MB_ALLOC)
+	WARN_ON(pool->order);
+#endif
+
+	if (alloc->reg) {
+		if (nr_pages_requested > alloc->reg->nr_pages - alloc->nents)
+			goto invalid_request;
+	}
+
+	kctx = alloc->imported.kctx;
+
+	lockdep_assert_held(&kctx->mem_partials_lock);
+
+	if (nr_pages_requested == 0)
+		goto done; /*nothing to do*/
+
+	new_page_count = kbase_atomic_add_pages(
+			nr_pages_requested, &kctx->used_pages);
+	kbase_atomic_add_pages(nr_pages_requested,
+			       &kctx->kbdev->memdev.used_pages);
+
+	/* Increase mm counters before we allocate pages so that this
+	 * allocation is visible to the OOM killer
+	 */
+	kbase_process_page_usage_inc(kctx, nr_pages_requested);
+
+	tp = alloc->pages + alloc->nents;
+	new_pages = tp;
+
+#ifdef CONFIG_MALI_2MB_ALLOC
+	if (pool->order) {
+		int nr_lp = nr_left / (SZ_2M / SZ_4K);
+
+		res = kbase_mem_pool_alloc_pages_locked(pool,
+						 nr_lp * (SZ_2M / SZ_4K),
+						 tp);
+
+		if (res > 0) {
+			nr_left -= res;
+			tp += res;
+		}
+
+		if (nr_left) {
+			struct kbase_sub_alloc *sa, *temp_sa;
+
+			list_for_each_entry_safe(sa, temp_sa,
+						 &kctx->mem_partials, link) {
+				int pidx = 0;
+
+				while (nr_left) {
+					pidx = find_next_zero_bit(sa->sub_pages,
+								  SZ_2M / SZ_4K,
+								  pidx);
+					bitmap_set(sa->sub_pages, pidx, 1);
+					*tp++ = as_tagged_tag(page_to_phys(
+							sa->page + pidx),
+							FROM_PARTIAL);
+					nr_left--;
+
+					if (bitmap_full(sa->sub_pages,
+							SZ_2M / SZ_4K)) {
+						/* unlink from partial list when
+						 * full
+						 */
+						list_del_init(&sa->link);
+						break;
+					}
+				}
+			}
+		}
+
+		/* only if we actually have a chunk left <512. If more it
+		 * indicates that we couldn't allocate a 2MB above, so no point
+		 * to retry here.
+		 */
+		if (nr_left > 0 && nr_left < (SZ_2M / SZ_4K)) {
+			/* create a new partial and suballocate the rest from it
+			 */
+			struct page *np = NULL;
+
+			np = kbase_mem_pool_alloc_locked(pool);
+
+			if (np) {
+				int i;
+				struct kbase_sub_alloc *sa;
+				struct page *p;
+
+				sa = kmalloc(sizeof(*sa), GFP_KERNEL);
+				if (!sa) {
+					kbase_mem_pool_free_locked(pool, np,
+							false);
+					goto alloc_failed;
+				}
+
+				/* store pointers back to the control struct */
+				np->lru.next = (void *)sa;
+				for (p = np; p < np + SZ_2M / SZ_4K; p++)
+					p->lru.prev = (void *)np;
+				INIT_LIST_HEAD(&sa->link);
+				bitmap_zero(sa->sub_pages, SZ_2M / SZ_4K);
+				sa->page = np;
+
+				for (i = 0; i < nr_left; i++)
+					*tp++ = as_tagged_tag(
+							page_to_phys(np + i),
+							FROM_PARTIAL);
+
+				bitmap_set(sa->sub_pages, 0, nr_left);
+				nr_left = 0;
+
+				/* expose for later use */
+				list_add(&sa->link, &kctx->mem_partials);
+			}
+		}
+		if (nr_left)
+			goto alloc_failed;
+	} else {
+#endif
+		res = kbase_mem_pool_alloc_pages_locked(pool,
+						 nr_left,
+						 tp);
+		if (res <= 0)
+			goto alloc_failed;
+
+		nr_left = 0;
+#ifdef CONFIG_MALI_2MB_ALLOC
+	}
+#endif
+
+	KBASE_TLSTREAM_AUX_PAGESALLOC(
+			kctx->id,
+			(u64)new_page_count);
+
+	alloc->nents += nr_pages_requested;
+done:
+	return new_pages;
+
+alloc_failed:
+	/* rollback needed if got one or more 2MB but failed later */
+	if (nr_left != nr_pages_requested) {
+		size_t nr_pages_to_free = nr_pages_requested - nr_left;
+
+		alloc->nents += nr_pages_to_free;
+
+		kbase_process_page_usage_inc(kctx, nr_pages_to_free);
+		kbase_atomic_add_pages(nr_pages_to_free, &kctx->used_pages);
+		kbase_atomic_add_pages(nr_pages_to_free,
+			       &kctx->kbdev->memdev.used_pages);
+
+		kbase_free_phy_pages_helper(alloc, nr_pages_to_free);
+	}
+
+	kbase_process_page_usage_dec(kctx, nr_pages_requested);
+	kbase_atomic_sub_pages(nr_pages_requested, &kctx->used_pages);
+	kbase_atomic_sub_pages(nr_pages_requested,
+			       &kctx->kbdev->memdev.used_pages);
+
+invalid_request:
+	return NULL;
 }
 
 static void free_partial(struct kbase_context *kctx, struct tagged_addr tp)
@@ -1741,6 +1924,124 @@ int kbase_free_phy_pages_helper(
 	}
 
 	return 0;
+}
+
+static void free_partial_locked(struct kbase_context *kctx,
+		struct kbase_mem_pool *pool, struct tagged_addr tp)
+{
+	struct page *p, *head_page;
+	struct kbase_sub_alloc *sa;
+
+	lockdep_assert_held(&pool->pool_lock);
+	lockdep_assert_held(&kctx->mem_partials_lock);
+
+	p = phys_to_page(as_phys_addr_t(tp));
+	head_page = (struct page *)p->lru.prev;
+	sa = (struct kbase_sub_alloc *)head_page->lru.next;
+	clear_bit(p - head_page, sa->sub_pages);
+	if (bitmap_empty(sa->sub_pages, SZ_2M / SZ_4K)) {
+		list_del(&sa->link);
+		kbase_mem_pool_free(pool, head_page, true);
+		kfree(sa);
+	} else if (bitmap_weight(sa->sub_pages, SZ_2M / SZ_4K) ==
+		   SZ_2M / SZ_4K - 1) {
+		/* expose the partial again */
+		list_add(&sa->link, &kctx->mem_partials);
+	}
+}
+
+void kbase_free_phy_pages_helper_locked(struct kbase_mem_phy_alloc *alloc,
+		struct kbase_mem_pool *pool, struct tagged_addr *pages,
+		size_t nr_pages_to_free)
+{
+	struct kbase_context *kctx = alloc->imported.kctx;
+	bool syncback;
+	bool reclaimed = (alloc->evicted != 0);
+	struct tagged_addr *start_free;
+	size_t freed = 0;
+
+	KBASE_DEBUG_ASSERT(alloc->type == KBASE_MEM_TYPE_NATIVE);
+	KBASE_DEBUG_ASSERT(alloc->imported.kctx);
+	KBASE_DEBUG_ASSERT(alloc->nents >= nr_pages_to_free);
+
+	lockdep_assert_held(&pool->pool_lock);
+	lockdep_assert_held(&kctx->mem_partials_lock);
+
+	/* early out if nothing to do */
+	if (!nr_pages_to_free)
+		return;
+
+	start_free = pages;
+
+	syncback = alloc->properties & KBASE_MEM_PHY_ALLOC_ACCESSED_CACHED;
+
+	/* pad start_free to a valid start location */
+	while (nr_pages_to_free && is_huge(*start_free) &&
+	       !is_huge_head(*start_free)) {
+		nr_pages_to_free--;
+		start_free++;
+	}
+
+	while (nr_pages_to_free) {
+		if (is_huge_head(*start_free)) {
+			/* This is a 2MB entry, so free all the 512 pages that
+			 * it points to
+			 */
+			WARN_ON(!pool->order);
+			kbase_mem_pool_free_pages_locked(pool,
+					512,
+					start_free,
+					syncback,
+					reclaimed);
+			nr_pages_to_free -= 512;
+			start_free += 512;
+			freed += 512;
+		} else if (is_partial(*start_free)) {
+			WARN_ON(!pool->order);
+			free_partial_locked(kctx, pool, *start_free);
+			nr_pages_to_free--;
+			start_free++;
+			freed++;
+		} else {
+			struct tagged_addr *local_end_free;
+
+			WARN_ON(pool->order);
+			local_end_free = start_free;
+			while (nr_pages_to_free &&
+			       !is_huge(*local_end_free) &&
+			       !is_partial(*local_end_free)) {
+				local_end_free++;
+				nr_pages_to_free--;
+			}
+			kbase_mem_pool_free_pages_locked(pool,
+					local_end_free - start_free,
+					start_free,
+					syncback,
+					reclaimed);
+			freed += local_end_free - start_free;
+			start_free += local_end_free - start_free;
+		}
+	}
+
+	alloc->nents -= freed;
+
+	/*
+	 * If the allocation was not evicted (i.e. evicted == 0) then
+	 * the page accounting needs to be done.
+	 */
+	if (!reclaimed) {
+		int new_page_count;
+
+		kbase_process_page_usage_dec(kctx, freed);
+		new_page_count = kbase_atomic_sub_pages(freed,
+							&kctx->used_pages);
+		kbase_atomic_sub_pages(freed,
+				       &kctx->kbdev->memdev.used_pages);
+
+		KBASE_TLSTREAM_AUX_PAGESALLOC(
+				kctx->id,
+				(u64)new_page_count);
+	}
 }
 
 void kbase_mem_kref_free(struct kref *kref)
@@ -2163,6 +2464,118 @@ int kbase_jit_init(struct kbase_context *kctx)
 	return 0;
 }
 
+static int kbase_jit_grow(struct kbase_context *kctx,
+		struct base_jit_alloc_info *info, struct kbase_va_region *reg)
+{
+	size_t delta;
+	size_t pages_required;
+	size_t old_size;
+	struct kbase_mem_pool *pool;
+	int ret = -ENOMEM;
+	struct tagged_addr *gpu_pages;
+
+	kbase_gpu_vm_lock(kctx);
+
+	/* Make the physical backing no longer reclaimable */
+	if (!kbase_mem_evictable_unmake(reg->gpu_alloc))
+		goto update_failed;
+
+	if (reg->gpu_alloc->nents >= info->commit_pages)
+		goto done;
+
+	/* Grow the backing */
+	old_size = reg->gpu_alloc->nents;
+
+	/* Allocate some more pages */
+	delta = info->commit_pages - reg->gpu_alloc->nents;
+	pages_required = delta;
+
+#ifdef CONFIG_MALI_2MB_ALLOC
+	if (pages_required >= (SZ_2M / SZ_4K)) {
+		pool = &kctx->lp_mem_pool;
+		/* Round up to number of 2 MB pages required */
+		pages_required += ((SZ_2M / SZ_4K) - 1);
+		pages_required /= (SZ_2M / SZ_4K);
+	} else {
+#endif
+		pool = &kctx->mem_pool;
+#ifdef CONFIG_MALI_2MB_ALLOC
+	}
+#endif
+
+	if (reg->cpu_alloc != reg->gpu_alloc)
+		pages_required *= 2;
+
+	mutex_lock(&kctx->mem_partials_lock);
+	kbase_mem_pool_lock(pool);
+
+	/* As we can not allocate memory from the kernel with the vm_lock held,
+	 * grow the pool to the required size with the lock dropped. We hold the
+	 * pool lock to prevent another thread from allocating from the pool
+	 * between the grow and allocation.
+	 */
+	while (kbase_mem_pool_size(pool) < pages_required) {
+		int pool_delta = pages_required - kbase_mem_pool_size(pool);
+
+		kbase_mem_pool_unlock(pool);
+		mutex_unlock(&kctx->mem_partials_lock);
+		kbase_gpu_vm_unlock(kctx);
+
+		if (kbase_mem_pool_grow(pool, pool_delta))
+			goto update_failed_unlocked;
+
+		kbase_gpu_vm_lock(kctx);
+		mutex_lock(&kctx->mem_partials_lock);
+		kbase_mem_pool_lock(pool);
+	}
+
+	gpu_pages = kbase_alloc_phy_pages_helper_locked(reg->gpu_alloc, pool,
+			delta);
+	if (!gpu_pages) {
+		kbase_mem_pool_unlock(pool);
+		mutex_unlock(&kctx->mem_partials_lock);
+		goto update_failed;
+	}
+
+	if (reg->cpu_alloc != reg->gpu_alloc) {
+		struct tagged_addr *cpu_pages;
+
+		cpu_pages = kbase_alloc_phy_pages_helper_locked(reg->cpu_alloc,
+				pool, delta);
+		if (!cpu_pages) {
+			kbase_free_phy_pages_helper_locked(reg->gpu_alloc,
+					pool, gpu_pages, delta);
+			kbase_mem_pool_unlock(pool);
+			mutex_unlock(&kctx->mem_partials_lock);
+			goto update_failed;
+		}
+	}
+	kbase_mem_pool_unlock(pool);
+	mutex_unlock(&kctx->mem_partials_lock);
+
+	ret = kbase_mem_grow_gpu_mapping(kctx, reg, info->commit_pages,
+			old_size);
+	/*
+	 * The grow failed so put the allocation back in the
+	 * pool and return failure.
+	 */
+	if (ret)
+		goto update_failed;
+
+done:
+	ret = 0;
+
+	/* Update attributes of JIT allocation taken from the pool */
+	/*conflict with trunk ddk. Get ride of this line? */
+	/*reg->initial_commit = info->commit_pages;*/
+	reg->extent = info->extent;
+
+update_failed:
+	kbase_gpu_vm_unlock(kctx);
+update_failed_unlocked:
+	return ret;
+}
+
 struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 		struct base_jit_alloc_info *info)
 {
@@ -2171,9 +2584,8 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 	struct kbase_va_region *temp;
 	size_t current_diff = SIZE_MAX;
 
-	int ret;
-
 	mutex_lock(&kctx->jit_evict_lock);
+
 	/*
 	 * Scan the pool for an existing allocation which meets our
 	 * requirements and remove it.
@@ -2220,42 +2632,15 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 		list_del_init(&reg->gpu_alloc->evict_node);
 		mutex_unlock(&kctx->jit_evict_lock);
 
-		kbase_gpu_vm_lock(kctx);
-
-		/* Make the physical backing no longer reclaimable */
-		if (!kbase_mem_evictable_unmake(reg->gpu_alloc))
-			goto update_failed;
-
-		/* Grow the backing if required */
-		if (reg->gpu_alloc->nents < info->commit_pages) {
-			size_t delta;
-			size_t old_size = reg->gpu_alloc->nents;
-
-			/* Allocate some more pages */
-			delta = info->commit_pages - reg->gpu_alloc->nents;
-			if (kbase_alloc_phy_pages_helper(reg->gpu_alloc, delta)
-					!= 0)
-				goto update_failed;
-
-			if (reg->cpu_alloc != reg->gpu_alloc) {
-				if (kbase_alloc_phy_pages_helper(
-						reg->cpu_alloc, delta) != 0) {
-					kbase_free_phy_pages_helper(
-							reg->gpu_alloc, delta);
-					goto update_failed;
-				}
-			}
-
-			ret = kbase_mem_grow_gpu_mapping(kctx, reg,
-					info->commit_pages, old_size);
+		if (kbase_jit_grow(kctx, info, reg) < 0) {
 			/*
-			 * The grow failed so put the allocation back in the
-			 * pool and return failure.
+			 * An update to an allocation from the pool failed,
+			 * chances are slim a new allocation would fair any
+			 * better so return the allocation to the pool and
+			 * return the function with failure.
 			 */
-			if (ret)
-				goto update_failed;
+			goto update_failed_unlocked;
 		}
-		kbase_gpu_vm_unlock(kctx);
 	} else {
 		/* No suitable JIT allocation was found so create a new one */
 		u64 flags = BASE_MEM_PROT_CPU_RD | BASE_MEM_PROT_GPU_RD |
@@ -2277,13 +2662,8 @@ struct kbase_va_region *kbase_jit_allocate(struct kbase_context *kctx,
 
 	return reg;
 
-update_failed:
-	/*
-	 * An update to an allocation from the pool failed, chances
-	 * are slim a new allocation would fair any better so return
-	 * the allocation to the pool and return the function with failure.
-	 */
 	kbase_gpu_vm_unlock(kctx);
+update_failed_unlocked:
 	mutex_lock(&kctx->jit_evict_lock);
 	list_move(&reg->jit_node, &kctx->jit_pool_head);
 	mutex_unlock(&kctx->jit_evict_lock);
