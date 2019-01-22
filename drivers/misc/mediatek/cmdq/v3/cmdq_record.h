@@ -76,6 +76,8 @@ struct cmdqRecStruct {
 
 	/* profile marker */
 	struct cmdqProfileMarkerStruct profileMarker;
+
+	struct CmdqRecExtend ext;
 };
 
 /* typedef dma_addr_t cmdqBackupSlotHandle; */

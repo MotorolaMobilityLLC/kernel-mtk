@@ -409,7 +409,7 @@ static long cmdq_driver_process_command_request(struct cmdqCommandStruct *pComma
 	/* scenario id fixup */
 	cmdq_core_fix_command_scenario_for_user_space(pCommand);
 
-	status = cmdqCoreSubmitTask(pCommand);
+	status = cmdqCoreSubmitTask(pCommand, NULL);
 	if (status < 0) {
 		CMDQ_ERR("Submit user commands for execution failed = %d\n", status);
 		cmdq_driver_destroy_secure_medadata(pCommand);
@@ -544,7 +544,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 		if (status != 0)
 			return status;
 
-		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, 0, &pTask);
+		status = cmdqCoreSubmitTaskAsync(&job.command, NULL, NULL, 0, &pTask);
 
 		/* store user space request count in TaskStruct */
 		/* for later retrieval */

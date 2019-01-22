@@ -72,7 +72,7 @@ mutex_lock(&lock);			\
 print_lock_cost = false;		\
 lock_cost_##tag = sched_clock() - lock_cost_##tag;	\
 if (lock_cost_##tag > CMDQ_PROFILE_LIMIT_2) {		\
-	CMDQ_LOG("[warn][%s]wait lock: %llu us > %ums\n",	\
+	CMDQ_MSG("[warn][%s]wait lock: %llu us > %ums\n",	\
 		#tag, div_s64(lock_cost_##tag, 1000),		\
 		CMDQ_PROFILE_LIMIT_2/1000000);		\
 }					\
@@ -84,11 +84,11 @@ cost_##lock = sched_clock();		\
 bool force_print_lock = print_lock_cost;	\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_1) {	\
-	CMDQ_LOG("[warn][%s]lock cost: %llu us > %ums\n",	\
+	CMDQ_MSG("[warn][%s]lock cost: %llu us > %ums\n",	\
 	#tag, div_s64(cost_##lock, 1000),		\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 } else if (force_print_lock) {			\
-	CMDQ_LOG("[%s]lock cost: %llu us < %ums\n",	\
+	CMDQ_MSG("[%s]lock cost: %llu us < %ums\n",	\
 	#tag, div_s64(cost_##lock, 1000),		\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 }						\
@@ -104,7 +104,7 @@ cost = sched_clock();			\
 {					\
 cost = sched_clock() - cost;		\
 if (cost > CMDQ_PROFILE_LIMIT_1) {	\
-	CMDQ_LOG("[warn][%s] t_cost %llu > %ums\n",	\
+	CMDQ_MSG("[warn][%s] t_cost %llu > %ums\n",	\
 		tag, div_s64(cost, 1000),			\
 		CMDQ_PROFILE_LIMIT_1/1000000);	\
 }					\
@@ -127,7 +127,7 @@ cost_##lock = sched_clock();			\
 {						\
 cost_##lock = sched_clock() - cost_##lock;	\
 if (cost_##lock > CMDQ_PROFILE_LIMIT_0) {	\
-CMDQ_LOG("[warn][%s]spin lock cost: %llu > %ums\n",	\
+CMDQ_MSG("[warn][%s]spin lock cost: %llu > %ums\n",	\
 	#tag, (u64)div_s64(cost_##lock, 1000),		\
 	(u32)(CMDQ_PROFILE_LIMIT_0/1000000));	\
 }						\
@@ -2723,6 +2723,22 @@ static void cmdq_core_release_buffer(struct TaskStruct *pTask)
 	CMDQ_MSG("cmdq_core_release_buffer end\n");
 }
 
+static void cmdq_core_enable_resource_clk_unlock(
+	u64 engine_flag, bool enable)
+{
+	struct ResourceUnitStruct *pResource = NULL;
+
+	CMDQ_VERBOSE("resource clock engine:0x%016llx enable:%s\n",
+		engine_flag, enable ? "true" : "false");
+
+	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
+		if (pResource->engine_flag & engine_flag) {
+			cmdq_mdp_get_func()->enableMdpClock(enable, pResource->engine_id);
+			break;
+		}
+	}
+}
+
 static void cmdq_core_release_task_unlocked(struct TaskStruct *pTask)
 {
 	CMDQ_MSG("cmdq_core_release_task_unlocked start\n");
@@ -3713,7 +3729,7 @@ static int32_t cmdq_core_insert_read_reg_command(struct TaskStruct *pTask,
 }
 
 static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pCommandDesc,
-					  CmdqInterruptCB loopCB, unsigned long loopData)
+	struct CmdqRecExtend *ext, CmdqInterruptCB loopCB, unsigned long loopData)
 {
 	struct TaskStruct *pTask = NULL;
 	void *p_metadatas = NULL;
@@ -3756,6 +3772,14 @@ static struct TaskStruct *cmdq_core_acquire_task(struct cmdqCommandStruct *pComm
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 		pTask->secStatus = NULL;
 #endif
+
+		if (ext) {
+			pTask->res_engine_flag_acquire = ext->res_engine_flag_acquire;
+			pTask->res_engine_flag_release = ext->res_engine_flag_release;
+		} else {
+			pTask->res_engine_flag_acquire = 0;
+			pTask->res_engine_flag_release = 0;
+		}
 
 		/* reset private data from desc */
 		desc_private = (struct TaskPrivateStruct *)CMDQ_U32_PTR(pCommandDesc->privateData);
@@ -4314,10 +4338,8 @@ static int32_t cmdq_core_find_a_free_HW_thread(uint64_t engineFlag,
 	return thread;
 }
 
-static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
-					enum CMDQ_HW_THREAD_PRIORITY_ENUM thread_prio,
-					enum CMDQ_SCENARIO_ENUM scenario, bool forceLog,
-					const bool is_secure)
+static int32_t cmdq_core_acquire_thread(struct TaskStruct *task,
+	enum CMDQ_HW_THREAD_PRIORITY_ENUM thread_prio, bool forceLog)
 {
 	unsigned long flags;
 	int32_t thread;
@@ -4330,26 +4352,31 @@ static int32_t cmdq_core_acquire_thread(uint64_t engineFlag,
 		CMDQ_PROF_SPIN_LOCK(gCmdqThreadLock, flags, acquire_thread);
 
 		thread =
-		    cmdq_core_find_a_free_HW_thread(engineFlag, thread_prio, scenario, forceLog,
-						    is_secure);
+		    cmdq_core_find_a_free_HW_thread(task->engineFlag,
+			    thread_prio, task->scenario, forceLog,
+			    task->secData.is_secure);
 
 		if (thread != CMDQ_INVALID_THREAD) {
 			/* get actual engine flag. Each bit represents a engine must enable clock. */
 			engineMustEnableClock =
-			    cmdq_core_get_actual_engine_flag_for_enable_clock(engineFlag, thread);
+			    cmdq_core_get_actual_engine_flag_for_enable_clock(task->engineFlag, thread);
 		}
 
-		if (thread == CMDQ_INVALID_THREAD && is_secure == true && scenario == CMDQ_SCENARIO_USER_MDP)
+		if (thread == CMDQ_INVALID_THREAD && task->secData.is_secure == true &&
+			task->scenario == CMDQ_SCENARIO_USER_MDP)
 			g_cmdq_consume_again = true;
 
 		CMDQ_PROF_SPIN_UNLOCK(gCmdqThreadLock, flags, acquire_thread);
 
 		if (thread != CMDQ_INVALID_THREAD) {
 			/* enable clock */
-			cmdq_core_enable_clock(engineFlag, thread, engineMustEnableClock, scenario);
+			cmdq_core_enable_clock(task->engineFlag, thread, engineMustEnableClock, task->scenario);
 			/* Start delay thread after first task is coming */
 			cmdq_delay_thread_start();
 		}
+
+		if (task->res_engine_flag_acquire)
+			cmdq_core_enable_resource_clk_unlock(task->res_engine_flag_acquire, true);
 
 		CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_thread_clock);
 	} while (0);
@@ -4491,6 +4518,9 @@ static void cmdq_core_release_thread(struct TaskStruct *pTask)
 	cmdq_core_disable_clock(engineFlag, engineNotUsed, pTask->scenario);
 	/* Delay release resource  */
 	cmdq_core_delay_check_unlock(engineFlag, engineNotUsed);
+
+	if (pTask->res_engine_flag_release)
+		cmdq_core_enable_resource_clk_unlock(pTask->res_engine_flag_release, false);
 
 	CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, release_thread_clock);
 }
@@ -8396,9 +8426,7 @@ static int32_t cmdq_core_consume_waiting_list(struct work_struct *_ignore)
 
 		/* Allocate hw thread */
 		CMDQ_PROF_TIME_END(consume_cost, "before_acquire_thread");
-		thread = cmdq_core_acquire_thread(pTask->engineFlag,
-						  thread_prio, pTask->scenario, needLog,
-						  pTask->secData.is_secure);
+		thread = cmdq_core_acquire_thread(pTask, thread_prio, needLog);
 		CMDQ_PROF_TIME_END(consume_cost, "after_acquire_thread");
 
 		if (thread == CMDQ_INVALID_THREAD) {
@@ -8498,8 +8526,8 @@ static void cmdqCoreConsumeWaitQueueItem(struct work_struct *_ignore)
 }
 
 int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
-				    CmdqInterruptCB loopCB,
-				    unsigned long loopData, struct TaskStruct **ppTaskOut)
+	struct CmdqRecExtend *ext, CmdqInterruptCB loopCB,
+	unsigned long loopData, struct TaskStruct **ppTaskOut)
 {
 	struct TaskStruct *pTask = NULL;
 	int32_t status = 0;
@@ -8524,7 +8552,7 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 
 	/* Allocate Task. This creates a new task */
 	/* and put into tail of waiting list */
-	pTask = cmdq_core_acquire_task(pCommandDesc, loopCB, loopData);
+	pTask = cmdq_core_acquire_task(pCommandDesc, ext, loopCB, loopData);
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task, MMPROFILE_FLAG_END, current->pid, pCommandDesc->blockSize/8);
 	alloc_cost = sched_clock() - alloc_cost;
@@ -8556,13 +8584,13 @@ int32_t cmdqCoreSubmitTaskAsyncImpl(struct cmdqCommandStruct *pCommandDesc,
 }
 
 int32_t cmdqCoreSubmitTaskAsync(struct cmdqCommandStruct *pCommandDesc,
-				CmdqInterruptCB loopCB,
-				unsigned long loopData, struct TaskStruct **ppTaskOut)
+	struct CmdqRecExtend *ext, CmdqInterruptCB loopCB,
+	unsigned long loopData, struct TaskStruct **ppTaskOut)
 {
 	int32_t status = 0;
 	struct TaskStruct *pTask = NULL;
 
-	status = cmdqCoreSubmitTaskAsyncImpl(pCommandDesc, loopCB, loopData, &pTask);
+	status = cmdqCoreSubmitTaskAsyncImpl(pCommandDesc, ext, loopCB, loopData, &pTask);
 	if (ppTaskOut != NULL)
 		*ppTaskOut = pTask;
 
@@ -8794,13 +8822,14 @@ int32_t cmdqCoreAutoReleaseTask(struct TaskStruct *pTask)
 	return 0;
 }
 
-int32_t cmdqCoreSubmitTask(struct cmdqCommandStruct *pCommandDesc)
+int32_t cmdqCoreSubmitTask(struct cmdqCommandStruct *pCommandDesc,
+	struct CmdqRecExtend *ext)
 {
 	int32_t status;
 	struct TaskStruct *pTask = NULL;
 
 	CMDQ_MSG("-->SUBMIT: SYNC cmd 0x%p begin\n", CMDQ_U32_PTR(pCommandDesc->pVABase));
-	status = cmdqCoreSubmitTaskAsync(pCommandDesc, NULL, 0, &pTask);
+	status = cmdqCoreSubmitTaskAsync(pCommandDesc, ext, NULL, 0, &pTask);
 
 	if (status >= 0) {
 		status = cmdqCoreWaitResultAndReleaseTask(pTask,
@@ -9807,14 +9836,8 @@ void cmdqCoreLockResource(uint64_t engineFlag, bool fromNotify)
 	}
 }
 
-static void cmdq_core_enable_resource_clk_unlock(
-	struct ResourceUnitStruct *resource, bool enable)
-{
-	cmdq_mdp_get_func()->enableMdpClock(enable, resource->engine_id);
-}
-
-
-bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
+bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent,
+	u64 *engine_flag_out)
 {
 	struct ResourceUnitStruct *pResource = NULL;
 	bool result = false;
@@ -9825,7 +9848,6 @@ bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 	CMDQ_MSG("[Res] Acquire resource with event: %d\n", resourceEvent);
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
-			CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_resource_clock);
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
 			result = !pResource->used;
@@ -9834,17 +9856,17 @@ bool cmdqCoreAcquireResource(enum CMDQ_EVENT_ENUM resourceEvent)
 				cmdqCoreClearEvent(resourceEvent);
 				pResource->acquire = sched_clock();
 				pResource->lend = true;
-				cmdq_core_enable_resource_clk_unlock(pResource, true);
+				*engine_flag_out |= pResource->engine_flag;
 			}
 			mutex_unlock(&gCmdqResourceMutex);
-			CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_resource_clock);
 			break;
 		}
 	}
 	return result;
 }
 
-void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent)
+void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent,
+	u64 *engine_flag_out)
 {
 	struct ResourceUnitStruct *pResource = NULL;
 
@@ -9854,16 +9876,14 @@ void cmdqCoreReleaseResource(enum CMDQ_EVENT_ENUM resourceEvent)
 	CMDQ_MSG("[Res] Release resource with event: %d\n", resourceEvent);
 	list_for_each_entry(pResource, &gCmdqContext.resourceList, list_entry) {
 		if (resourceEvent == pResource->lockEvent) {
-			CMDQ_PROF_MUTEX_LOCK(gCmdqClockMutex, acquire_resource_clock);
 			mutex_lock(&gCmdqResourceMutex);
 			/* find matched resource */
 			if (pResource->lend) {
 				pResource->release = sched_clock();
 				pResource->lend = false;
-				cmdq_core_enable_resource_clk_unlock(pResource, false);
+				*engine_flag_out |= pResource->engine_flag;
 			}
 			mutex_unlock(&gCmdqResourceMutex);
-			CMDQ_PROF_MUTEX_UNLOCK(gCmdqClockMutex, acquire_resource_clock);
 			break;
 		}
 	}
