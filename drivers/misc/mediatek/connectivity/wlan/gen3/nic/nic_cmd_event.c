@@ -538,7 +538,8 @@ VOID nicCmdEventQueryRfTestATInfo(IN P_ADAPTER_T prAdapter, IN P_CMD_INFO_T prCm
 		prGlueInfo = prAdapter->prGlueInfo;
 		prQueryBuffer = (P_EVENT_TEST_STATUS) prCmdInfo->pvInformationBuffer;
 
-		kalMemCopy(prQueryBuffer, prTestStatus, sizeof(EVENT_TEST_STATUS));
+		/* Memory copy length is depended on upper-layer */
+		kalMemCopy(prQueryBuffer, prTestStatus, prCmdInfo->u4InformationBufferLength);
 
 		u4QueryInfoLen = sizeof(EVENT_TEST_STATUS);
 
