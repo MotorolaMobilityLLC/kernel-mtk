@@ -1,6 +1,10 @@
 /*
  * Copyright (c) 2015-2016, Linaro Limited
  * All rights reserved.
+ * Copyright (c) 2017-2018, MICROTRUST
+ * All rights reserved.
+ * Copyright (c) 2017-2018, GNU General Public License
+ * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:

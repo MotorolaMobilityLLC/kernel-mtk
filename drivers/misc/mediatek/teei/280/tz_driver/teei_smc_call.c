@@ -105,6 +105,8 @@ int teei_forward_call(u32 cmd, unsigned long cmd_addr, int size)
 		.size = size,
 	};
 
+	ut_pm_mutex_lock(&pm_mutex);
+
 	mutex_lock(&capi_mutex);
 
 	down(&smc_lock);
@@ -120,6 +122,8 @@ int teei_forward_call(u32 cmd, unsigned long cmd_addr, int size)
 	wait_for_completion(&wait_completion);
 
 	mutex_unlock(&capi_mutex);
+
+	ut_pm_mutex_unlock(&pm_mutex);
 
 	return 0;
 }

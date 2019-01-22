@@ -378,12 +378,14 @@ void set_sch_load_img_cmd(void)
 
 int t_os_load_image(void)
 {
+	ut_pm_mutex_lock(&pm_mutex);
 	down(&smc_lock);
 	forward_call_flag = GLSCH_LOW;
 	set_sch_load_img_cmd();
 	load_tee();
 
 	down(&(boot_sema));
+	ut_pm_mutex_unlock(&pm_mutex);
 
 	return 0;
 }
