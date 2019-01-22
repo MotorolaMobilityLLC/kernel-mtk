@@ -29,6 +29,8 @@
 
 #include <mt-plat/met_drv.h>
 
+#define TLP_THRESHOLD 250
+
 /*
  * static
  */
@@ -124,8 +126,9 @@ static void hps_get_sysinfo(void)
 	unsigned int big_task_L, big_task_B;
 	/* sched-assist hotplug: */
 	int sched_util = 0;
-	int max_task_util;
 	unsigned int rel_load, abs_load;
+	static int prev_tlp;
+	int win_tlp;
 
 	hps_ctxt.cur_loads = 0;
 	str1_ptr = str1;
@@ -246,15 +249,27 @@ static void hps_get_sysinfo(void)
 	hps_sys.cluster_info[1].bigTsk_value = big_task_L;
 	hps_sys.cluster_info[2].bigTsk_value = big_task_B;
 #endif
+	/*Get sys TLP information */
+	scaled_tlp = hps_cpu_get_tlp(&avg_tlp, &hps_ctxt.cur_iowait);
+
+	/*
+	 * scaled_tlp: tasks number of the last pill, which X 100.
+	 * avg_tlp: average tasks number during the detection period.
+	 * To pick max of scaled_tlp and avg_tlp.
+	 */
+	hps_ctxt.cur_tlp = max_t(int, scaled_tlp, (int)avg_tlp);
+
 	/*
 	 * For EAS evaluation
 	 */
-	sched_max_util_task(NULL, NULL, &max_task_util, NULL);
+
+	/* consider TLP in 2 windows */
+	win_tlp = (hps_ctxt.cur_tlp + prev_tlp)/2;
 
 	/* LL: relative threshold */
-	if ((int)sched_util < sodi_limit || max_task_util < 10) {
+	if ((int)sched_util < sodi_limit && win_tlp < TLP_THRESHOLD) {
 		/*
-		 *  If CPU utilization in system is small or
+		 *  If CPU util && TLP in system is small or
 		 *  only tiny task is running, a few CPU for it.
 		 */
 		hps_sys.cluster_info[0].up_threshold = DEF_CPU_UP_THRESHOLD;
@@ -285,16 +300,7 @@ static void hps_get_sysinfo(void)
 		}
 	}
 
-	/*Get sys TLP information */
-	scaled_tlp = hps_cpu_get_tlp(&avg_tlp, &hps_ctxt.cur_iowait);
-
-	/*
-	 * scaled_tlp: tasks number of the last pill, which X 100.
-	 * avg_tlp: average tasks number during the detection period.
-	 * To pick max of scaled_tlp and avg_tlp.
-	 */
-	hps_ctxt.cur_tlp = max_t(int, scaled_tlp, (int)avg_tlp);
-
+	prev_tlp = hps_ctxt.cur_tlp;
 
 	/* [MET] debug for geekbench */
 	met_tag_oneshot(0, "sched_tlp_cur", hps_ctxt.cur_tlp);
