@@ -30,6 +30,6 @@ struct hmdy_hw {
 	bool is_batch_supported;
 };
 
-struct hmdy_hw *get_hmdy_dts_func(const char *name, struct hmdy_hw *hw);
+int get_hmdy_dts_func(const char *name, struct hmdy_hw *hw);
 
 #endif

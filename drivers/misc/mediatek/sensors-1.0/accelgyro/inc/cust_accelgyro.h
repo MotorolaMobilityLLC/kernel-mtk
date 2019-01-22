@@ -27,6 +27,6 @@ struct accelgyro_hw {
 	bool gyro_is_batch_supported;
 };
 
-struct accelgyro_hw *get_accelgyro_dts_func(struct device_node *node, struct accelgyro_hw*);
+int get_accelgyro_dts_func(struct device_node *node, struct accelgyro_hw*);
 
 #endif
