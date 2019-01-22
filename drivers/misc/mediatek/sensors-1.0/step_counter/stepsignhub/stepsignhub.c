@@ -351,7 +351,7 @@ static int step_chub_local_init(void)
 	ctl.floor_c_flush = floor_c_flush;
 	ctl.smd_batch = smd_batch;
 	ctl.smd_flush = smd_flush;
-	ctl.is_report_input_direct = false;
+	ctl.is_report_input_direct = true;
 	ctl.is_counter_support_batch = false;
 	ctl.is_detector_support_batch = true;
 	ctl.is_smd_support_batch = false;
