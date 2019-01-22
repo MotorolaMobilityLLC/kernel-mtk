@@ -17,19 +17,6 @@
 /*************************************************
 *
 **************************************************/
-/* In KERNEL mode,SHOULD be sync with mediatype.h */
-/* CHECK before remove or modify */
-/* #undef BOOL */
-/* #define BOOL signed int */
-#ifndef _MEDIA_TYPES_H
-typedef unsigned char MUINT8;
-typedef unsigned short MUINT16;
-typedef unsigned int MUINT32;
-typedef signed char MINT8;
-typedef signed short MINT16;
-typedef signed int MINT32;
-#endif
-
 struct KD_SENINF_MMAP {
 	MUINT32 map_addr;
 	MUINT32 map_length;
