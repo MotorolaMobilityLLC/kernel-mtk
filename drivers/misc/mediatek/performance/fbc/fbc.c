@@ -677,7 +677,7 @@ static ssize_t device_write(struct file *filp, const char *ubuf,
 		release_eas();
 		mutex_unlock(&notify_lock);
 	} else if (strncmp(cmd, "init", 4) == 0) {
-			touch_boost_value = arg;
+		touch_boost_value = arg;
 	} else if (strncmp(cmd, "twanted", 7) == 0) {
 		if (arg < 60) {
 			twanted_ms = arg;
@@ -836,8 +836,8 @@ static int __init init_fbc(void)
 {
 	struct proc_dir_entry *pe;
 	int i;
-
 	int ret_val = 0;
+
 	for (i = 0; i < 10; i++)
 		vip_group[i] = -1;
 
