@@ -467,6 +467,12 @@ void __attribute__ ((weak)) record_md_vosel(void)
 {
 }
 
+void __attribute__ ((weak)) pmic_enable_smart_reset(unsigned char smart_en,
+	unsigned char smart_sdn_en)
+{
+	pr_notice("[%s] smart reset not support!\n", __func__);
+}
+
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver probe!! ********\n");

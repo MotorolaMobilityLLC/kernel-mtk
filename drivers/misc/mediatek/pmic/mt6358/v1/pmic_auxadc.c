@@ -53,7 +53,8 @@
 
 #define AEE_DBG 0
 
-static int count_time_out = 100;
+static unsigned int count_time_out = 100;
+static unsigned int total_time_out;
 static int battmp;
 #if AEE_DBG
 static unsigned int aee_count;
@@ -305,7 +306,7 @@ static void mt6358_mts_reg_dump(void)
 
 void mt6358_auxadc_monitor_mts_regs(void)
 {
-	int count = 0;
+	unsigned int count = 0;
 	int mts_timestamp_cur = 0;
 	unsigned int mts_adc_tmp = 0;
 
@@ -368,30 +369,46 @@ void mt6358_auxadc_monitor_mts_regs(void)
 
 int mts_kthread(void *x)
 {
-	unsigned int i = 0;
+	unsigned int i = 0, j = 0;
 	unsigned int polling_cnt = 0;
 	unsigned int ktrhead_mts_adc = 0;
 
 	/* Run on a process content */
 	while (1) {
 		mutex_lock(&mts_monitor_mutex);
-		i = 0;
 		polling_cnt = 0;
 		ktrhead_mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
 		while (mts_adc == ktrhead_mts_adc) {
+			i = 0;
+			j = 0;
 			while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_MDRT) == 1) {
+				if (i > 1000) {
+					pr_notice("[MTS_ADC] no trigger\n");
+					break;
+				}
 				i++;
 				mdelay(1);
 			}
 			while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_MDRT) == 0) {
-				i++;
+				if (j > count_time_out) {
+					pr_notice("[MTS_ADC] no ready\n");
+					break;
+				}
+				j++;
 				mdelay(1);
 			}
 			ktrhead_mts_adc = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_MDRT);
 			if (polling_cnt % 20 == 0) {
-				pr_notice("[MTS_ADC] RDY=1 at %dms, AUXADC_ADC36=0x%x, MDRT_OUT=%d\n", i,
-					upmu_get_reg_value(MT6358_AUXADC_ADC36),
+				pr_notice("[MTS_ADC] (%d) Ready at %d(%d)ms, Reg_MDRT=0x%x, MDRT_OUT=%d\n",
+					polling_cnt, j, i,
+					upmu_get_reg_value(PMIC_AUXADC_ADC_OUT_MDRT_ADDR),
 					ktrhead_mts_adc);
+			}
+			if (polling_cnt == 156) { /* 156 * 32ms ~= 5s*/
+				pr_notice("[MTS_ADC] (%d) reset AUXADC\n",
+					polling_cnt);
+				pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+				pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
 			}
 			if (polling_cnt >= 312) { /* 312 * 32ms ~= 10s*/
 				mt6358_mts_reg_dump();
@@ -432,8 +449,10 @@ static void mt6358_auxadc_timeout_dump(unsigned short ch_num)
 static int get_device_adc_out(unsigned short channel,
 	struct pmic_auxadc_channel_new *auxadc_channel)
 {
-	int count = 0, tdet_tmp = 0;
+	int tdet_tmp = 0;
+	unsigned int count = 0;
 	unsigned short reg_val = 0;
+	bool is_timeout = false;
 
 	switch (channel) {
 	case AUXADC_LIST_VBIF:
@@ -453,8 +472,21 @@ static int get_device_adc_out(unsigned short channel,
 		usleep_range(1300, 1500);
 		if ((count++) > count_time_out) {
 			mt6358_auxadc_timeout_dump(auxadc_channel->ch_num);
+			is_timeout = true;
 			break;
 		}
+	}
+	if (is_timeout) {
+		total_time_out++;
+		if (total_time_out > 10 && total_time_out < 13) {
+			pmic_set_hk_reg_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
+			pr_notice("AUXADC timeout, enable DATA REUSE\n");
+			aee_kernel_warning("PMIC AUXADC:TIMEOUT", "");
+		}
+	} else if (total_time_out != 0) {
+		total_time_out = 0;
+		pr_notice("AUXADC timeout resolved, disable DATA REUSE\n");
+		pmic_set_hk_reg_value(PMIC_AUXADC_DATA_REUSE_EN, 0);
 	}
 
 	reg_val = pmic_get_register_value(auxadc_channel->channel_out);

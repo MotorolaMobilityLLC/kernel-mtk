@@ -61,15 +61,13 @@ void vmd1_pmic_setting_off(void)
 	PMICLOG("vmd1_pmic_setting_off\n");
 }
 
-int vcore_pmic_set_mode(unsigned char mode)
+void pmic_enable_smart_reset(unsigned char smart_en,
+	unsigned char smart_sdn_en)
 {
-	unsigned char ret = 0;
-
-	pmic_set_register_value(PMIC_RG_VCORE_FPWM, mode);
-
-	ret = pmic_get_register_value(PMIC_RG_VCORE_FPWM);
-
-	return (ret == mode) ? (0) : (-1);
+	pmic_set_register_value(PMIC_RG_SMART_RST_MODE, smart_en);
+	pmic_set_register_value(PMIC_RG_SMART_RST_SDN_EN, smart_sdn_en);
+	pr_info("[%s] smart_en:%d, smart_sdn_en:%d\n",
+		__func__, smart_en, smart_sdn_en);
 }
 
 static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
