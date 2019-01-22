@@ -313,8 +313,9 @@ void set_cur_freq_wrapper(struct mt_cpu_dvfs *p, unsigned int cur_khz, unsigned 
 		opp_tbl_m[TARGET_OPP_IDX].slot->pos_div);
 #else
 	aee_record_cpu_dvfs_step(7);
-	pll_p->pll_ops->set_freq_hopping(pll_p,
-		_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
+	if (idx >= 0)
+		pll_p->pll_ops->set_freq_hopping(pll_p,
+			_cpu_dds_calc(_search_for_vco_dds(p, idx, opp_tbl_m[TARGET_OPP_IDX].slot)));
 	aee_record_cpu_dvfs_step(8);
 #endif
 
@@ -1226,7 +1227,7 @@ static void ppm_limit_callback(struct ppm_client_req req)
 	unsigned long flags;
 	struct mt_cpu_dvfs *p;
 	unsigned int i;
-	return;
+
 	cpufreq_ver("get feedback from PPM module\n");
 
 	cpufreq_para_lock(flags);
