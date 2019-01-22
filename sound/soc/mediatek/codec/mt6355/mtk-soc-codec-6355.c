@@ -696,16 +696,37 @@ void vow_irq_handler(void)
 
 /*extern kal_uint32 upmu_get_reg_value(kal_uint32 reg);*/
 
+int max_efuse_value(int a3_l, int a3_r)
+{
+	if (a3_l < a3_r)
+		return a3_r;
+	else
+		return a3_l;
+}
+
 void read_efuse_dpd(void)
 {
+	uint32 a3_l_efuse_value = 0;
+	uint32 a3_r_efuse_value = 0;
+	uint32 a3_efuse = 0;
+
+	/* Get 32 ohm DPD parameter */
+	a3_l_efuse_value = (Ana_Get_Reg(OTP_DOUT_1136_1151) >> 8) & 0x3f;
+	a3_r_efuse_value = Ana_Get_Reg(OTP_DOUT_1136_1151) & 0x3f;
+	a3_efuse = max_efuse_value(a3_l_efuse_value, a3_r_efuse_value);
 	dpd_a3[DPD_CHANNEL_L][DPD_IMPEDANCE_32OHM] =
-			dpd_db_to_a3[DPD_IMPEDANCE_32OHM][((Ana_Get_Reg(OTP_DOUT_1136_1151) >> 8) & 0x3f)];
+			dpd_db_to_a3[DPD_IMPEDANCE_32OHM][a3_efuse];
 	dpd_a3[DPD_CHANNEL_R][DPD_IMPEDANCE_32OHM] =
-			dpd_db_to_a3[DPD_IMPEDANCE_32OHM][(Ana_Get_Reg(OTP_DOUT_1136_1151) & 0x3f)];
+			dpd_db_to_a3[DPD_IMPEDANCE_32OHM][a3_efuse];
+
+	/* Get 16 ohm DPD parameter */
+	a3_l_efuse_value = (Ana_Get_Reg(OTP_DOUT_1152_1167) >> 8) & 0x3f;
+	a3_r_efuse_value = Ana_Get_Reg(OTP_DOUT_1152_1167) & 0x3f;
+	a3_efuse = max_efuse_value(a3_l_efuse_value, a3_r_efuse_value);
 	dpd_a3[DPD_CHANNEL_L][DPD_IMPEDANCE_16OHM] =
-			dpd_db_to_a3[DPD_IMPEDANCE_16OHM][((Ana_Get_Reg(OTP_DOUT_1152_1167) >> 8) & 0x3f)];
+			dpd_db_to_a3[DPD_IMPEDANCE_16OHM][a3_efuse];
 	dpd_a3[DPD_CHANNEL_R][DPD_IMPEDANCE_16OHM] =
-			dpd_db_to_a3[DPD_IMPEDANCE_16OHM][(Ana_Get_Reg(OTP_DOUT_1152_1167) & 0x3f)];
+			dpd_db_to_a3[DPD_IMPEDANCE_16OHM][a3_efuse];
 
 	if (dpd_a3[DPD_CHANNEL_L][DPD_IMPEDANCE_32OHM] != INVALID_DPD_VALUE)
 		dpd_on = 1;
