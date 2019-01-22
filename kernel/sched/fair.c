@@ -160,7 +160,7 @@ unsigned long __weak arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
  */
 static bool system_overutil;
 
-static inline bool system_overutilized(int cpu)
+inline bool system_overutilized(int cpu)
 {
 	return system_overutil;
 }
