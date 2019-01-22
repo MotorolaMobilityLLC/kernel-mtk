@@ -534,9 +534,11 @@ static ssize_t wk_proc_cmd_write(struct file *file, const char *buf, size_t coun
 
 	if (enable == 1) {
 		mtk_wdt_start(wdt_dev);
+		set_bit(WDOG_ACTIVE, &wdt_dev->status);
 		pr_err("[WDK] enable wdt\n");
 	} else if (enable == 0) {
 		mtk_wdt_stop(wdt_dev);
+		clear_bit(WDOG_ACTIVE, &wdt_dev->status);
 		pr_err("[WDK] disable wdt\n");
 	}
 
