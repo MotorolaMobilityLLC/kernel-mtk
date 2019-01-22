@@ -925,16 +925,16 @@ static inline ssize_t scp_B_reg_status_show(struct device *kobj, struct device_a
 
 	scp_B_dump_regs();
 	if (scp_ready[SCP_B_ID]) {
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_A_DEBUG_PC_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_A_DEBUG_LR_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_A_DEBUG_PSP_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_A_DEBUG_SP_REG);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG0:0x%x\n", SCP_A_GENERAL_REG0);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG1:0x%x\n", SCP_A_GENERAL_REG1);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG2:0x%x\n", SCP_A_GENERAL_REG2);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG3:0x%x\n", SCP_A_GENERAL_REG3);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG4:0x%x\n", SCP_A_GENERAL_REG4);
-		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG5:0x%x\n", SCP_A_GENERAL_REG5);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PC_REG:0x%x\n", SCP_B_DEBUG_PC_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_LR_REG:0x%x\n", SCP_B_DEBUG_LR_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_PSP_REG:0x%x\n", SCP_B_DEBUG_PSP_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_DEBUG_SP_REG:0x%x\n", SCP_B_DEBUG_SP_REG);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG0:0x%x\n", SCP_B_GENERAL_REG0);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG1:0x%x\n", SCP_B_GENERAL_REG1);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG2:0x%x\n", SCP_B_GENERAL_REG2);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG3:0x%x\n", SCP_B_GENERAL_REG3);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG4:0x%x\n", SCP_B_GENERAL_REG4);
+		len += scnprintf(buf + len, PAGE_SIZE - len, "[SCP] SCP_B_GENERAL_REG5:0x%x\n", SCP_B_GENERAL_REG5);
 		return len;
 	} else
 		return scnprintf(buf, PAGE_SIZE, "SCP B is not ready\n");
