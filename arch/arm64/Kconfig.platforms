@@ -146,6 +146,7 @@ config MACH_MT6799
 	select PINCTRL
 	select PINCTRL_MT6799
 	select MFD_SYSCON
+	select MTK_BASE_POWER
 	select MTK_SYSTRACKER_V2
 	select MTK_GIC_V3_EXT
 	select MTK_CPU_STRESS
