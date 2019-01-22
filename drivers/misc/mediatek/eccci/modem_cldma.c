@@ -1042,6 +1042,7 @@ static void cldma_queue_switch_ring(struct md_cd_queue *queue)
 	struct ccci_modem *md = queue->modem;
 	struct md_cd_ctrl *md_ctrl = (struct md_cd_ctrl *)md->private_data;
 	struct cldma_request *req;
+	struct cldma_tgpd *tgpd;
 
 	if (queue->dir == OUT) {
 		if ((1 << queue->index) & NET_RX_QUEUE_MASK) {
@@ -1057,6 +1058,24 @@ static void cldma_queue_switch_ring(struct md_cd_queue *queue)
 		queue->tr_done = req;
 		queue->tx_xmit = req;
 		queue->budget = queue->tr_ring->length;
+		/*
+		 * clear ring buffer again. during MD exception, if some one send message right after HIF_EX_INIT
+		 * (this may happened as port layer's checking is quite un-reliable), the skb will stay in ringbuffer's
+		 * 1st slot, and after we reset queue->tx_xmit to 1st slot, tx_xmit will point to this dirty slot.
+		 * so next legal message would think ring buffer is full and start waiting, but no TX_DONE interrupt
+		 *  would come to rescue it...
+		 */
+		list_for_each_entry(req, &queue->tr_ring->gpd_ring, entry) {
+			tgpd = (struct cldma_tgpd *)req->gpd;
+			cldma_write8(&tgpd->gpd_flags, 0, cldma_read8(&tgpd->gpd_flags, 0) & ~0x1);
+			if (queue->tr_ring->type != RING_GPD_BD)
+				cldma_tgpd_set_data_ptr(tgpd, 0);
+			cldma_write16(&tgpd->data_buff_len, 0, 0);
+			if (req->skb) {
+				ccci_free_skb(req->skb);
+				req->skb = NULL;
+			}
+		}
 	} else if (queue->dir == IN) {
 		if ((1 << queue->index) & NET_RX_QUEUE_MASK) {
 			if (!md->is_in_ee_dump)	/* normal mode */
