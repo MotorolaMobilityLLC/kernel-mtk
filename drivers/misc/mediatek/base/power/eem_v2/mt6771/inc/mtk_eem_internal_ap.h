@@ -145,30 +145,30 @@ struct eem_devinfo {
 	unsigned int RSV2:16;
 
 	/* M_HW_RES1 */
-	unsigned int CPU_2L_BDES:8;
-	unsigned int CPU_2L_MDES:8;
-	unsigned int CPU_2L_DCBDET:8;
-	unsigned int CPU_2L_DCMDET:8;
+	unsigned int CPU_2L_LO_BDES:8;
+	unsigned int CPU_2L_LO_MDES:8;
+	unsigned int CPU_2L_LO_DCBDET:8;
+	unsigned int CPU_2L_LO_DCMDET:8;
 
 	/* M_HW_RES2 */
-	unsigned int CPU_L_MTDES:8;
-	unsigned int CPU_L_INITEN:1;
-	unsigned int CPU_L_MONEN:1;
-	unsigned int CPU_L_DVFS_LOW:2;
-	unsigned int CPU_L_RSV:1;
-	unsigned int CPU_L_SPEC:3;
-	unsigned int CPU_LL_MTDES:8;
-	unsigned int CPU_LL_INITEN:1;
-	unsigned int CPU_LL_MONEN:1;
-	unsigned int CPU_LL_DVFS_LOW:2;
-	unsigned int CPU_LL_RSV:1;
-	unsigned int CPU_LL_SPEC:3;
+	unsigned int CPU_L_LO_MTDES:8;
+	unsigned int CPU_L_LO_INITEN:1;
+	unsigned int CPU_L_LO_MONEN:1;
+	unsigned int CPU_L_LO_DVFS_LOW:2;
+	unsigned int CPU_L_LO_RSV:1;
+	unsigned int CPU_L_LO_SPEC:3;
+	unsigned int CPU_2L_LO_MTDES:8;
+	unsigned int CPU_2L_LO_INITEN:1;
+	unsigned int CPU_2L_LO_MONEN:1;
+	unsigned int CPU_2L_LO_DVFS_LOW:2;
+	unsigned int CPU_2L_LO_RSV:1;
+	unsigned int CPU_2L_LO_SPEC:3;
 
 	/* M_HW_RES3 */
-	unsigned int CPU_L_BDES:8;
-	unsigned int CPU_L_MDES:8;
-	unsigned int CPU_L_DCBDET:8;
-	unsigned int CPU_L_DCMDET:8;
+	unsigned int CPU_L_LO_BDES:8;
+	unsigned int CPU_L_LO_MDES:8;
+	unsigned int CPU_L_LO_DCBDET:8;
+	unsigned int CPU_L_LO_DCMDET:8;
 
 	/* M_HW_RES4 */
 	unsigned int CCI_BDES:8;
@@ -197,30 +197,56 @@ struct eem_devinfo {
 	unsigned int GPU_DCMDET:8;
 
 	/* M_HW_RES7 */
-	unsigned int CPU_LL_H_BDES:8;
-	unsigned int CPU_LL_H_MDES:8;
-	unsigned int CPU_LL_H_DCBDET:8;
-	unsigned int CPU_LL_H_DCMDET:8;
+	unsigned int CPU_2L_HI_BDES:8;
+	unsigned int CPU_2L_HI_MDES:8;
+	unsigned int CPU_2L_HI_DCBDET:8;
+	unsigned int CPU_2L_HI_DCMDET:8;
 
 	/* M_HW_RES8 */
-	unsigned int CPU_L_H_MTDES:8;
-	unsigned int CPU_L_H_INITEN:1;
-	unsigned int CPU_L_H_MONEN:1;
-	unsigned int CPU_L_H_DVFS_LOW:2;
-	unsigned int CPU_L_H_RSV:1;
-	unsigned int CPU_L_H_SPEC:3;
-	unsigned int CPU_LL_MTDES:8;
-	unsigned int CPU_LL_INITEN:1;
-	unsigned int CPU_LL_MONEN:1;
-	unsigned int CPU_LL_DVFS_LOW:2;
-	unsigned int CPU_LL_RSV:1;
-	unsigned int CPU_LL_SPEC:3;
+	unsigned int CPU_L_HI_MTDES:8;
+	unsigned int CPU_L_HI_INITEN:1;
+	unsigned int CPU_L_HI_MONEN:1;
+	unsigned int CPU_L_HI_DVFS_LOW:2;
+	unsigned int CPU_L_HI_RSV:1;
+	unsigned int CPU_L_HI_SPEC:3;
+	unsigned int CPU_2L_HI_MTDES:8;
+	unsigned int CPU_2L_HI_INITEN:1;
+	unsigned int CPU_2L_HI_MONEN:1;
+	unsigned int CPU_2L_HI_DVFS_LOW:2;
+	unsigned int CPU_2L_HI_RSV:1;
+	unsigned int CPU_2L_HI_SPEC:3;
 
 	/* M_HW_RES9 */
-	unsigned int CPU_L_H_BDES:8;
-	unsigned int CPU_L_H_MDES:8;
-	unsigned int CPU_L_H_DCBDET:8;
-	unsigned int CPU_L_H_DCMDET:8;
+	unsigned int CPU_L_HI_BDES:8;
+	unsigned int CPU_L_HI_MDES:8;
+	unsigned int CPU_L_HI_DCBDET:8;
+	unsigned int CPU_L_HI_DCMDET:8;
+
+	/* M_HW_RES16 */
+	unsigned int CPU_2L_BDES:8;
+	unsigned int CPU_2L_MDES:8;
+	unsigned int CPU_2L_DCBDET:8;
+	unsigned int CPU_2L_DCMDET:8;
+
+	/* M_HW_RES17 */
+	unsigned int CPU_L_MTDES:8;
+	unsigned int CPU_L_INITEN:1;
+	unsigned int CPU_L_MONEN:1;
+	unsigned int CPU_L_DVFS_LOW:2;
+	unsigned int CPU_L_RSV:1;
+	unsigned int CPU_L_SPEC:3;
+	unsigned int CPU_2L_MTDES:8;
+	unsigned int CPU_2L_INITEN:1;
+	unsigned int CPU_2L_MONEN:1;
+	unsigned int CPU_2L_DVFS_LOW:2;
+	unsigned int CPU_2L_RSV:1;
+	unsigned int CPU_2L_SPEC:3;
+
+	/* M_HW_RES18 */
+	unsigned int CPU_L_BDES:8;
+	unsigned int CPU_L_MDES:8;
+	unsigned int CPU_L_DCBDET:8;
+	unsigned int CPU_L_DCMDET:8;
 };
 
 /*********************************************
