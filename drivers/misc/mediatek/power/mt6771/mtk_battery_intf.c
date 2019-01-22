@@ -34,6 +34,19 @@ signed int battery_get_bat_current(void)
 	return curr_val;
 }
 
+signed int battery_get_bat_current_mA(void)
+{
+	int bat_current;
+	int bat_current_sign;
+
+	bat_current_sign = gauge_get_current(&bat_current);
+	if (bat_current_sign == 1)
+		return bat_current / 10;
+	else
+		return (0 - bat_current / 10);
+}
+
+
 signed int battery_get_bat_avg_current(void)
 {
 	bool valid;
