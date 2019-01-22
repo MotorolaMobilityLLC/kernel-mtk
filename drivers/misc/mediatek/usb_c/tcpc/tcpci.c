@@ -18,7 +18,7 @@
 
 static int tcpc_check_notify_time(struct timeval *begin, struct timeval *end)
 {
-	return (timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
+	return (int)(timeval_to_ns(end) - timeval_to_ns(begin))/1000/1000;
 }
 
 int tcpci_check_vbus_valid_from_ic(struct tcpc_device *tcpc)
