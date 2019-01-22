@@ -647,8 +647,17 @@ static void pmic_sp_irq_handler(unsigned int spNo, unsigned int sp_conNo, unsign
 		return; /* this subpack control has no interrupt triggered */
 
 	pr_err(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n", (sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+#if 0
 	/* clear interrupt status in this subpack control */
 	upmu_set_reg_value((sp_interrupts[spNo].status + 0x6 * sp_conNo), sp_int_status);
+#else /* prevent from MT6356 glitch problem */
+	/* clear interrupt status by CLR enable register */
+	upmu_set_reg_value((sp_interrupts[spNo].enable + 0x6 * sp_conNo) + 0x4, sp_int_status);
+	/* delay 3T~4T 32K clock (96us~128us) */
+	udelay(150);
+	/* restore enable register */
+	upmu_set_reg_value((sp_interrupts[spNo].enable + 0x6 * sp_conNo) + 0x2, sp_int_status);
+#endif
 	for (i = 0; i < PMIC_INT_WIDTH; i++) {
 		if (sp_int_status & (1 << i)) {
 			sp_irq = &(sp_interrupts[spNo].sp_irqs[sp_conNo][i]);
