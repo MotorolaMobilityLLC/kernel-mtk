@@ -206,10 +206,6 @@ long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 	 * so, these ioctl cannot use CCCI_SMEM_CH channel.
 	 */
 	switch (cmd) {
-	case CCCI_IOC_MB:
-		CCCI_DEBUG_LOG(md_id, TAG, "smp_mb() from userspace.\n");
-		smp_mb();
-		break;
 	case CCCI_IOC_CCB_CTRL_BASE:
 		ret = put_user((unsigned int)ccb_ctl->base_ap_view_phy, (unsigned int __user *)arg);
 		break;
@@ -291,9 +287,6 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 	ptr = NULL;
 
 	switch (cmd) {
-	case CCCI_IOC_MB:
-		smp_mb();
-		break;
 	case CCCI_IOC_GET_CCB_DEBUG_VAL:
 		if ((smem_port->addr_phy == 0) || (smem_port->length == 0)) {
 			ret = -EFAULT;
