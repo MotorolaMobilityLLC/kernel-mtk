@@ -70,7 +70,6 @@ int extbuck_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)
 	}
 	ret_val = ipi_ret;
 
-	pr_err("%s end\n", __func__);
 	return ret_val;
 }
 
@@ -162,7 +161,6 @@ int extbuck_ipi_enable(unsigned char buck_id, unsigned char en)
 	struct pmic_ipi_cmds send = { {0} };
 	struct pmic_ipi_ret_datas recv = { {0} };
 
-	pr_err("%s en = %d\n", __func__, en);
 	send.cmd[0] = en;
 
 	return extbuck_ipi_to_sspm(&send, &recv, 0);
