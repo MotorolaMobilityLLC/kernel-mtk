@@ -69,12 +69,8 @@ static bool slp_ck26m_on;
 bool slp_dump_gpio;
 
 static u32 slp_spm_flags = {
-	/* SPM_FLAG_DIS_CPU_PDN | */
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_PERI_PDN |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
@@ -84,12 +80,8 @@ static u32 slp_spm_flags = {
 #if SLP_SLEEP_DPIDLE_EN
 /* sync with mt_idle.c spm_deepidle_flags setting */
 static u32 slp_spm_deepidle_flags = {
-	/* SPM_FLAG_DIS_CPU_PDN | */
-	SPM_FLAG_DIS_INFRA_PDN |
-	SPM_FLAG_DIS_DDRPHY_PDN |
 	SPM_FLAG_DIS_VCORE_DVS |
 	SPM_FLAG_DIS_VCORE_DFS |
-	SPM_FLAG_DIS_PERI_PDN |
 	SPM_FLAG_KEEP_CSYSPWRUPACK_HIGH |
 	SPM_FLAG_DIS_SSPM_SRAM_SLEEP |
 	SPM_FLAG_DIS_CPU_VPROC_VSRAM_PDN |
