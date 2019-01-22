@@ -483,6 +483,14 @@ static int memory_lowpower_entry(void *p)
 	/* Call freezer_do_not_count to skip me */
 	freezer_do_not_count();
 
+	/*
+	 * Memory lowpower thread tries to collect memory and do page migration
+	 * for better power saving under some scenarios. Add PF_MEMALLOC_NOIO to
+	 * tell relateive flows to avoid possible I/O ops which will discount its
+	 * benefit and bring bad UX.
+	 */
+	memalloc_noio_save();
+
 	/* Start actions */
 	do {
 		/* Schedule me */

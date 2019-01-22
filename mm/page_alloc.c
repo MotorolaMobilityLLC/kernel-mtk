@@ -6806,7 +6806,7 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
 					unsigned long start, unsigned long end)
 {
 	/* This function is based on compact_zone() from compaction.c. */
-	unsigned long nr_reclaimed;
+	unsigned long nr_reclaimed = 0;
 	unsigned long pfn = start;
 	unsigned int tries = 0;
 	int ret = 0;
@@ -6832,8 +6832,14 @@ static int __alloc_contig_migrate_range(struct compact_control *cc,
 			break;
 		}
 
+		if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) &&
+				current->flags & PF_MEMALLOC_NOIO)
+			goto bypass_reclaim_clean_pages;
+
 		nr_reclaimed = reclaim_clean_pages_from_list(cc->zone,
 							&cc->migratepages);
+bypass_reclaim_clean_pages:
+
 		cc->nr_migratepages -= nr_reclaimed;
 
 		ret = migrate_pages(&cc->migratepages, alloc_migrate_target,
