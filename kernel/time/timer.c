@@ -43,6 +43,7 @@
 #include <linux/slab.h>
 #include <linux/compat.h>
 
+#include <asm/cacheflush.h>
 #include <asm/uaccess.h>
 #include <asm/unistd.h>
 #include <asm/div64.h>
@@ -1087,6 +1088,21 @@ int try_to_del_timer_sync(struct timer_list *timer)
 		ret = detach_if_pending(timer, base, true);
 	}
 	spin_unlock_irqrestore(&base->lock, flags);
+
+#if defined(CONFIG_SMP) && !defined(CONFIG_ARM64_LSE_ATOMICS)
+	/*
+	 * MTK PATCH to fix ARM v8.0 live spinlock issue.
+	 *
+	 * Flush lock value here if timer deletion is not finished.
+	 *
+	 * In this case, Other CPU may need to get cpu_base spinlock
+	 * to update running timer information. Flush lock value here
+	 * to promise that other CPU can see correct lock value to avoid
+	 * starvation or unfair spinlock competition.
+	 */
+	if (ret == -1 && irqs_disabled())
+		__flush_dcache_area(&base->lock, sizeof(spinlock_t));
+#endif
 
 	return ret;
 }
