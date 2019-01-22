@@ -144,8 +144,11 @@ static ssize_t resource_req_read(struct file *filp,
 	int i, len = 0;
 	char *p = dbg_buf;
 
+	p[0] = '\0';
+
 	for (i = 0; i < NF_SPM_RESOURCE; i++) {
-		p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "resource_req_bypass_stat[%s] = %x %x, usage %x %x\n",
+		p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
+			"resource_req_bypass_stat[%s] = %x %x, usage %x %x\n",
 						spm_resource_name[i],
 						~resc_desc[i].user_usage_mask[1],
 						~resc_desc[i].user_usage_mask[0],
@@ -153,13 +156,13 @@ static ssize_t resource_req_read(struct file *filp,
 						resc_desc[i].user_usage[1]);
 	}
 
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "enable:\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo enable [bit] > /d/spm/resource_req\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "bypass:\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo bypass [bit] > /d/spm/resource_req\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
-	p += snprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[5] CONN, [6] MSDC\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "enable:\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo enable [bit] > /d/spm/resource_req\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "bypass:\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "echo bypass [bit] > /d/spm/resource_req\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "\n");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
+	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf), "[5] CONN, [6] MSDC\n");
 
 	len = p - dbg_buf;
 
