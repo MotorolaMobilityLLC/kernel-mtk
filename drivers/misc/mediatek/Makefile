@@ -166,7 +166,7 @@ obj-$(CONFIG_RT_REGMAP) += rt-regmap/
 
 #obj-$(CONFIG_MTK_SVP) += memory-ssvp/
 
-#obj-y += performance/
+obj-y += performance/
 
 # gator driver is platform-independent
 ifneq ($(wildcard $(srctree)/$(src)/gator-driver/),)
