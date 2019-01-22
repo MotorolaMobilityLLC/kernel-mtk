@@ -622,6 +622,7 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	int i;
 	int ret;/* rc; */
 	struct cust_mt65xx_led *cust_led_list = mt_get_cust_led_list();
+
 	if (cust_led_list == NULL) {
 		LEDS_DRV_INFO("%s: get dts fail.\n", __func__);
 		return -1;
