@@ -1399,8 +1399,8 @@ SYSCALL_DEFINE3(bind, int, fd, struct sockaddr __user *, umyaddr, int, addrlen)
 						      &address, addrlen);
 #ifdef CONFIG_MTK_NET_LOGGING
 	if ((((struct sockaddr_in *)&address)->sin_family) != AF_UNIX)
-		pr_info("[mtk_net][socket] bind addr->sin_port:%d,err:%d\n",
-			htons(((struct sockaddr_in *)&address)->sin_port), err);
+		pr_debug("[mtk_net][socket] bind addr->sin_port:%d,err:%d\n",
+			 htons(((struct sockaddr_in *)&address)->sin_port), err);
 #endif
 		}
 		fput_light(sock->file, fput_needed);
