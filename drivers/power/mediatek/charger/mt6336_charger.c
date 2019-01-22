@@ -488,10 +488,8 @@ static int mt6336_enable_charging(struct charger_device *chg_dev, bool en)
 	if (en) {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 1);
 		mt6336_set_flag_register_value(MT6336_RG_A_LOOP_CLAMP_EN, 0);
-#if 0
 		mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 		mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
-#endif
 	} else {
 		mt6336_set_flag_register_value(MT6336_RG_EN_CHARGE, 0);
 #if 0
@@ -772,10 +770,14 @@ static int mt6336_set_ta20_reset(struct charger_device *chg_dev)
 {
 	unsigned int val;
 
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+
 	val = mt6336_get_flag_register_value(MT6336_RG_ICL);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, 0x0);
 	msleep(250);
 	mt6336_set_flag_register_value(MT6336_RG_ICL, val);
+
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
 
 	return 0;
 }
@@ -854,6 +856,38 @@ static int mt6336_enable_term(struct charger_device *chg_dev, bool en)
 	}
 
 	return 0;
+}
+
+void mt6336_buck_power_on_callback(void)
+{
+	pr_err("mt6336_buck_power_on_callback\n");
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 1);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+}
+
+void mt6336_buck_protect_callback(void)
+{
+	pr_err("mt6336_buck_protect_callback\n");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
+	usleep_range(2000, 3000);
+	mt6336_set_flag_register_value(MT6336_RG_A_EN_ITERM, 1);
+}
+
+void mt6336_chr_suspend_callback(void)
+{
+	pr_err("mt6336_chr_suspend_callback\n");
+#ifndef MTK_CHARGER_USE_POLLING
+	mt6336_disable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
+#endif
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_IRQ_EN, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_RECHARGE, 0);
+	mt6336_set_flag_register_value(MT6336_RG_EN_TERM, 0);
+	mt6336_set_flag_register_value(MT6336_AUXADC_VBAT_VTH_MODE_SEL, 0);
 }
 
 void mt6336_chr_iterm_callback(void)
@@ -1043,6 +1077,9 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_BAT_RECHG, mt6336_rechg_callback);
 #endif
 	mt6336_register_interrupt_callback(MT6336_INT_SAFETY_TIMEOUT, mt6336_safety_timeout_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_MODE, mt6336_buck_power_on_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, mt6336_buck_protect_callback);
+	mt6336_register_interrupt_callback(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, mt6336_chr_suspend_callback);
 	mt6336_register_interrupt_callback(MT6336_INT_CHR_ICHR_ITERM, mt6336_chr_iterm_callback);
 
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
@@ -1052,6 +1089,9 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	mt6336_unmask_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger");
 #endif
 	mt6336_unmask_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
+	mt6336_unmask_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
 	mt6336_unmask_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
 
 	mt6336_enable_interrupt(MT6336_INT_CHR_BAT_OVP, "mt6336 charger");
@@ -1061,6 +1101,9 @@ static int mt6336_charger_probe(struct platform_device *pdev)
 	/* mt6336_enable_interrupt(MT6336_INT_CHR_BAT_RECHG, "mt6336 charger"); */
 #endif
 	mt6336_enable_interrupt(MT6336_INT_SAFETY_TIMEOUT, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_MODE, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_BUCK_PROTECT_STATE, "mt6336 charger");
+	mt6336_enable_interrupt(MT6336_INT_DD_SWCHR_CHR_SUSPEND_STATE, "mt6336 charger");
 	mt6336_disable_interrupt(MT6336_INT_CHR_ICHR_ITERM, "mt6336 charger");
 
 	/* enter low power mode */
