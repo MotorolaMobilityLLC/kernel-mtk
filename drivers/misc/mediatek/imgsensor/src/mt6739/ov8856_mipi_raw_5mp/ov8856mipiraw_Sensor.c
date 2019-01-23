@@ -169,11 +169,11 @@ static struct imgsensor_struct imgsensor = {
 /* Sensor output window information*/
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 	/* Preview */
-	{ 3296, 2480, 0, 12, 3296, 2456, 1284, 964, 2,	2, 1280, 960, 0, 0, 1280, 960},
+	{ 3296, 2480, 0, 12, 3296, 2456, 1648, 1228, 2,	2, 1632, 1224, 0, 0, 1280, 960},
 	/* capture */
-	{ 3296, 2480, 0, 12, 3296, 2456, 2568, 1924, 4,	2, 2560, 1920, 0, 0, 2560, 1920},
+	{ 3296, 2480, 0, 12, 3296, 2456, 3296, 2456, 4,	2, 3264, 2448, 0, 0, 2560, 1920},
 	/* video*/
-	{ 3296, 2480, 0, 12, 3296, 2456, 2568, 1924, 4,	2, 2560, 1920, 0, 0, 2560, 1920},
+	{ 3296, 2480, 0, 12, 3296, 2456, 3296, 2456, 4,	2, 3264, 2448, 0, 0, 2560, 1920},
 	/*hight speed video */
 	{ 3296, 2480, 336, 272, 2624, 1936, 656, 484, 8, 2, 640, 480, 0, 0,  640,  480},
 	/* slim video  */
@@ -567,6 +567,7 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x3010, 0x00,
 	0x3015, 0x84,
 	0x3018, 0x72,
+	0x3021, 0x23,
 	0x3033, 0x24,
 	0x3500, 0x00,
 	0x3501, 0x4c,
@@ -588,7 +589,7 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x3610, 0xc5,
 	0x3611, 0x58,
 	0x3612, 0x5c,
-	0x3613, 0x5a,
+	0x3613, 0xca,
 	0x3614, 0x60,
 	0x3628, 0xff,
 	0x3629, 0xff,
@@ -602,7 +603,6 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x366e, 0x08,
 	0x3706, 0x86,
 	0x370b, 0x7e,
-	0x59f8, 0x3d,
 	0x3714, 0x27,
 	0x3730, 0x12,
 	0x3733, 0x10,
@@ -622,10 +622,10 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x37c2, 0x14,
 	0x37c3, 0xf1,
 	0x37c9, 0x80,
-	0x37cb, 0x03,
-	0x37cc, 0x0a,
+	0x37cb, 0x16,
+	0x37cc, 0x16,
 	0x37cd, 0x16,
-	0x37ce, 0x1f,
+	0x37ce, 0x16,
 	0x3800, 0x00,
 	0x3801, 0x00,
 	0x3802, 0x00,
@@ -668,6 +668,8 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x4003, 0x40,
 	0x4008, 0x00,
 	0x4009, 0x05,
+	0x400a, 0x00,
+	0x400b, 0x84,
 	0x400f, 0x80,
 	0x4010, 0xf0,
 	0x4011, 0xff,
@@ -692,10 +694,13 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x4317, 0x00,
 	0x4503, 0x08,
 	0x4601, 0x80,
+	0x4800, 0x44,
 	0x4816, 0x53,
 	0x481b, 0x58,
 	0x481f, 0x27,
 	0x4837, 0x16,
+	0x483c, 0x0f,
+	0x484b, 0x05,
 	0x5000, 0x77,
 	0x5001, 0x0a,
 	0x5004, 0x04,
@@ -735,6 +740,7 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 	0x5792, 0x00,
 	0x5793, 0x52,
 	0x5794, 0xa3,
+	0x59f8, 0x3d,
 	0x5a08, 0x02,
 	0x5b00, 0x02,
 	0x5b01, 0x10,
@@ -746,7 +752,7 @@ kal_uint16 addr_data_pair_init_ov8856[] = {
 
 static void sensor_init(void)
 {
-	LOG_INF("v2 E\n");
+	LOG_INF("v3 E\n");
 #if 1	/* MULTI_WRITE */
 	ov8856_table_write_cmos_sensor(addr_data_pair_init_ov8856,
 			   sizeof(addr_data_pair_init_ov8856) / sizeof(kal_uint16));
