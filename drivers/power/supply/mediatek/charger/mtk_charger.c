@@ -66,6 +66,14 @@
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
 
+static char atm_mode[10];
+int __init atm_mode_init(char *s)
+{
+	strlcpy(atm_mode, s, 10);
+	return 1;
+}
+__setup("androidboot.atm=", atm_mode_init);
+
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
 static DEFINE_MUTEX(consumer_mutex);
@@ -1389,9 +1397,12 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 
 	memset(&pinfo->sc.data, 0, sizeof(struct scd_cmd_param_t_1));
 	wakeup_sc_algo_cmd(&pinfo->sc.data, SC_EVENT_PLUG_OUT, 0);
-	charger_dev_set_input_current(info->chg1_dev, 100000);
+	charger_dev_set_input_current(info->chg1_dev, 500000);
 	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
 	charger_dev_plug_out(info->chg1_dev);
+	chr_err("lenovo mtk_charger_plug_out, atm_mode=%s\n", atm_mode);
+	if (!strcmp(atm_mode, "enable"))
+		kernel_power_off();
 	return 0;
 }
 
