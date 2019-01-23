@@ -65,7 +65,7 @@ struct SMI_SETTING_VALUE smi_basic_larb4_setting[SMI_BASIC_LARB4_SETTING_NUM] = 
 	{0x40, 0x1}, {0x70, 0xffff}
 };
 struct SMI_SETTING_VALUE smi_basic_larb5_setting[SMI_BASIC_LARB5_SETTING_NUM] = {
-	{0x40, 0x1}, {0x70, 0xfffffff}
+	{0x24, 0x300246}, {0x40, 0x1}, {0x70, 0xfffffff}
 };
 struct SMI_SETTING_VALUE smi_basic_larb6_setting[SMI_BASIC_LARB6_SETTING_NUM] = {
 	{0x40, 0x1}
