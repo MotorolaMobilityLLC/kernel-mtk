@@ -58,3 +58,5 @@ usb_f_mtp-y                     := f_mtp.o
 obj-$(CONFIG_USB_CONFIGFS_UEVENT)         += usb_f_mtp.o
 usb_f_ptp-y                     := f_ptp.o
 obj-$(CONFIG_USB_CONFIGFS_UEVENT)         += usb_f_ptp.o
+usb_f_usbnet-y			:= f_usbnet.o
+obj-$(CONFIG_USB_ANDROID_USBNET) += usb_f_usbnet.o
