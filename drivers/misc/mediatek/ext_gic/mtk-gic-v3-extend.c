@@ -599,9 +599,9 @@ static int gic_sched_pm_notifier(struct notifier_block *self,
 {
 	unsigned int cur_cpu = smp_processor_id();
 
-	if (cmd == CPU_PM_EXIT)
+	if (cmd == CPU_PM_ENTER)
 		remove_cpu_from_prefer_schedule_domain(cur_cpu);
-	else if (cmd == CPU_PM_ENTER)
+	else if (cmd == CPU_PM_EXIT)
 		add_cpu_to_prefer_schedule_domain(cur_cpu);
 
 	return NOTIFY_OK;
