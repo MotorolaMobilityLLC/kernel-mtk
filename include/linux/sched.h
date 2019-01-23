@@ -2231,8 +2231,8 @@ struct task_struct {
 	unsigned long preempt_dur;
 #endif
 
-#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
-    int below_aee;
+#ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
+    int disable_reserved_storage;
 #endif
 /* CPU-specific state of this task */
 	struct thread_struct thread;
