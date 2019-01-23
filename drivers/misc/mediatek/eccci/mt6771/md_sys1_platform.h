@@ -16,6 +16,7 @@
 
 #include <linux/skbuff.h>
 #include "ccif_hif_platform.h"
+#include <mt-plat/mtk_secure_api.h>
 
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 
@@ -191,6 +192,24 @@ struct cldma_hw_info {
 	unsigned int cldma_irq_id;
 	unsigned long cldma_irq_flags;
 };
+
+enum MD_REG_ID {
+	MD_REG_AP_MDSRC_REQ = 0,
+	MD_REG_PC_MONITOR,
+	MD_REG_PLL_REG,
+	MD_REG_BUS,
+	MD_REG_MDMCU_BUSMON,
+	MD_REG_MDINFRA_BUSMON,
+	MD_REG_ECT,
+	MD_REG_TOPSM_REG,
+	MD_REG_MD_RGU_REG,
+	MD_REG_OST_STATUS,
+	MD_REG_CSC_REG,
+	MD_REG_ELM_REG,
+};
+
+#define mdreg_write32(reg_id, value)	\
+	mt_secure_call(MTK_SIP_KERNEL_CCCI_GET_INFO, reg_id, value, 0)
 
 int ccci_modem_remove(struct platform_device *dev);
 void ccci_modem_shutdown(struct platform_device *dev);
