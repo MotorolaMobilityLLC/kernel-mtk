@@ -6364,7 +6364,7 @@ LOG_BYPASS:
 		case _imgo_d_:
 		case _rrzo_d_:
 			irqT = _IRQ_D;
-			irqT_Lock = _IRQ;
+			irqT_Lock = _IRQ_D;
 			break;
 		case _camsv_imgo_:
 			irqT_Lock = _CAMSV_IRQ;
