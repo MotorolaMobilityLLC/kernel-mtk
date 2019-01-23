@@ -547,11 +547,11 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
 
 #ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
 #define GLOBAL_SHELL_UID KUIDT_INIT(2000)
-#endif
+#define GLOBAL_NOBODY_UID KUIDT_INIT(9999)
 
 //this should only worked in debug mode.
+const char* disable_reserved_comm[] = {
 #ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
-const char* aee_comm[] = {
     "aee_aedv",
     "aee_archivev64",
     "aee",
@@ -567,40 +567,44 @@ const char* aee_comm[] = {
     "rttv",
     "aee_archivev",
     "aee_aed",
+#endif
     NULL
 };
-static bool if_below_aee(struct task_struct *tsk) {
+static bool if_disable_reserved_storage(struct task_struct *tsk) {
     int i = 0;
+    if(disable_reserved_comm[0] == NULL)
+        return false; // nothing in list
+
     if(tsk == NULL)  {
         return false; // not more tsk
-    } else if (tsk->below_aee != -1) {
+    } else if (tsk->disable_reserved_storage != -1) {
         //alreay checked
-        return tsk->below_aee;
+        return tsk->disable_reserved_storage;
     } else if (tsk->comm != NULL) {
-        for(i=0;aee_comm[i] != NULL;i++) {
-            if(strcmp(tsk->comm,aee_comm[i]) == 0) {
-                return true; // below aee
+        for(i=0;disable_reserved_comm[i] != NULL;i++) {
+            if(strcmp(tsk->comm,disable_reserved_comm[i]) == 0) {
+                return true; // in black list
             }
         }
     }
     if(tsk->parent != tsk) // not call it self
-        return if_below_aee(tsk->parent);
+        return if_disable_reserved_storage(tsk->parent);
     else
         return false; // parent is self
 }
-static bool if_current_below_aee() {
-    if(current->below_aee == -1) 
+static bool if_current_disable_reserved_storage(void) {
+    if(current->disable_reserved_storage == -1) 
     {
-        if(if_below_aee(current)) {
+        if(if_disable_reserved_storage(current)) {
             printk("%s below to aee , dont use reserved area\n",current->comm);
-            current->below_aee = 1;
+            current->disable_reserved_storage = 1;
         } else {
-            current->below_aee = 0;
+            current->disable_reserved_storage = 0;
         }
     }
 
     //check again after test aee
-    return current->below_aee == 1;
+    return current->disable_reserved_storage == 1;
 }
 #endif
 /**
@@ -619,7 +623,7 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	struct percpu_counter *fcc = &sbi->s_freeclusters_counter;
 	struct percpu_counter *dcc = &sbi->s_dirtyclusters_counter;
 #ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
-    bool below_aee = 0;
+    bool disable_reserved_storage = 0;
 #endif
 	free_clusters  = percpu_counter_read_positive(fcc);
 	dirty_clusters = percpu_counter_read_positive(dcc);
@@ -645,7 +649,7 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 
 	/* Hm, nope.  Are (enough) root reserved clusters available? */
 #ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
-    if(uid_gte(sbi->s_resuid, current_fsuid())) {
+    if(uid_gte(GLOBAL_NOBODY_UID, current_fsuid())) {
         if(uid_eq(sbi->s_resuid, GLOBAL_SHELL_UID)) {
             // shell unable use dd to fill the reserved storage.
         } else {
@@ -672,10 +676,10 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 #ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
         {
             //this will only run in very low storage.
-            below_aee = if_current_below_aee();
-        
-            if(!below_aee)
-    			return 1;            
+            disable_reserved_storage = if_current_disable_reserved_storage();
+
+            if(!disable_reserved_storage)
+                return 1;
         }
 #else
 			return 1;
