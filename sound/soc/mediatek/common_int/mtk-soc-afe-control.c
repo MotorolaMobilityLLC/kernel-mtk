@@ -1503,6 +1503,10 @@ bool SetI2SDacEnable(bool bEnable)
 		SetDLSrcEnable(false);
 		Afe_Set_Reg(AFE_I2S_CON1, bEnable, 0x1);
 		SetADDAEnable(false);
+
+		/* should delayed 1/fs(smallest is 8k) = 125us before afe off */
+		usleep_range(125, 150);
+
 #ifdef CONFIG_FPGA_EARLY_PORTING
 		pr_warn("%s(), disable fpga clock divide by 4", __func__);
 		Afe_Set_Reg(FPGA_CFG0, 0x0 << 1, 0x1 << 1);
