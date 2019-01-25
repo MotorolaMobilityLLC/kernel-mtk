@@ -398,7 +398,13 @@ void fg_custom_init_from_header(void)
 
 	fg_cust_data.pseudo1_en = PSEUDO1_EN;
 	fg_cust_data.pseudo100_en = PSEUDO100_EN;
+	
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_PROP
+	fg_cust_data.pseudo100_en_dis =  CUST_PSEUDO100_EN_DIS;
+#else
 	fg_cust_data.pseudo100_en_dis = PSEUDO100_EN_DIS;
+#endif
+
 	fg_cust_data.pseudo1_iq_offset = UNIT_TRANS_100 *
 		g_FG_PSEUDO1_OFFSET[gm.battery_id];
 
