@@ -52,7 +52,7 @@ extern bool check_sum_flag_lsc(void);
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H7YX_SUNWIN_P310_SENSOR_ID,
 
-	.checksum_value = 0xf16e8197,
+	.checksum_value = 0x138daa55,
 
 	.pre = {
 		.pclk = 280000000,				/* record different mode's pclk */
@@ -1552,7 +1552,25 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	if (enable) {
 		/* 0x5E00[8]: 1 enable,  0 disable */
 		/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
-		write_cmos_sensor_8(0x0601, 0x02);
+    write_cmos_sensor_8(0x3200, 0x00);
+    write_cmos_sensor_8(0x3462, 0x00);
+    write_cmos_sensor_8(0x3230, 0x01);
+    write_cmos_sensor_8(0x3290, 0x01);
+    write_cmos_sensor_8(0x3201, 0x01);
+    write_cmos_sensor_8(0x0b05, 0x00);
+    write_cmos_sensor_8(0x0b00, 0x00);
+    write_cmos_sensor_8(0x3400, 0x01);
+    write_cmos_sensor_8(0x3C0F, 0x01);
+    write_cmos_sensor_8(0x020E, 0x01);
+    write_cmos_sensor_8(0x020F, 0x00);
+    write_cmos_sensor_8(0x0210, 0x01);
+    write_cmos_sensor_8(0x0211, 0x00);
+    write_cmos_sensor_8(0x0212, 0x01);
+    write_cmos_sensor_8(0x0213, 0x00);
+    write_cmos_sensor_8(0x0214, 0x01);
+    write_cmos_sensor_8(0x0215, 0x00);
+    write_cmos_sensor_8(0x3c60, 0x00);
+    write_cmos_sensor_8(0x0601, 0x02);
 	} else {
 		/* 0x5E00[8]: 1 enable,  0 disable */
 		/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
