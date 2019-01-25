@@ -63,7 +63,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	/* IMX486MIPI_SENSOR_ID, sensor_id = 0x2680*/
 	.sensor_id = IMX486_SUNWIN_P310_SENSOR_ID,
 
-	.checksum_value = 0x38ebe79e, /* checksum value for Camera Auto Test */
+	.checksum_value = 0xa353fed, /* checksum value for Camera Auto Test */
 
 	.pre = {
 		.pclk = 168000000,	/* record different mode's pclk */
