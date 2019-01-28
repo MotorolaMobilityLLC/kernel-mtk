@@ -401,6 +401,9 @@ int mt_led_set_pwm(int pwm_num, struct nled_setting *led)
 	case NLED_OFF:
 	#ifdef CONFIG_MTK_LEDS_GPIO
 		pmic_config_interface (PMIC_CHRIND_EN_SEL_ADDR, 1, PMIC_CHRIND_EN_SEL_MASK, PMIC_CHRIND_EN_SEL_SHIFT);// sw contrl
+		printk("nled_off\n");
+		// pony.ma, DATE20190128, red led is always when low battery for PDBBBN-578, DATE20190128-01 LINE
+		Leds_Enable(0);
 	#endif
 		pwm_setting.PWM_MODE_OLD_REGS.THRESH = 0;
 		pwm_setting.clk_div = CLK_DIV1;
@@ -975,7 +978,8 @@ void mt_mt65xx_led_work(struct work_struct *work)
 	struct mt65xx_led_data *led_data =
 	    container_of(work, struct mt65xx_led_data, work);
 
-	LEDS_DEBUG("%s:%d\n", led_data->cust.name, led_data->level);
+//	LEDS_DEBUG("%s:%d\n", led_data->cust.name, led_data->level);
+	printk("%s:%d,mode=%d\n", led_data->cust.name, led_data->level,led_data->cust.mode);
 	mutex_lock(&leds_mutex);
 	mt_mt65xx_led_set_cust(&led_data->cust, led_data->level);
 	mutex_unlock(&leds_mutex);
