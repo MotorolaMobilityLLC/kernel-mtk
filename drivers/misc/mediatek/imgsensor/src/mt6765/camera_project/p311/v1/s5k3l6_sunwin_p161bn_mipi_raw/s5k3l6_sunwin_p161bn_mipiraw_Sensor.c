@@ -304,7 +304,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 		write_cmos_sensor_16_8(0x0100, 0x00);
 		for (i = 0; i < timeout; i++) {
 			mdelay(10);
-			framecnt = read_cmos_sensor(0x0005);
+			framecnt = read_cmos_sensor_16_8(0x0005);
 			if ( framecnt == 0xFF) {
 				LOG_INF(" Stream Off OK at i=%d.\n", i);
 				return ERROR_NONE;
