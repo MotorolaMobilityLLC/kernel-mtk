@@ -262,7 +262,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .pre = {
         .pclk = 36000000,            //record different mode's pclk
         .linelength = 947,            //record different mode's linelength
-        .framelength = 1234,            //record different mode's framelength
+        .framelength = 1267,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
         .starty = 0,                    //record different mode's starty of grabwindow
         .grabwindow_width = 1600,        //record different mode's width of grabwindow
@@ -270,12 +270,12 @@ static struct imgsensor_info_struct imgsensor_info = {
         /*     following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario    */
         .mipi_data_lp2hs_settle_dc = 85,//unit , ns
         /*     following for GetDefaultFramerateByScenario()    */
-        .max_framerate = 300,
+        .max_framerate = 300,	//30.003fps
     },
     .cap = {
         .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -286,7 +286,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .cap1 = {
         .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -297,7 +297,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .normal_video = {
          .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -308,7 +308,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .hs_video = {
          .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -319,7 +319,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .slim_video = {
         .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
 		.grabwindow_width = 1600,//4192,
@@ -330,7 +330,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .custom1= {
         .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -341,7 +341,7 @@ static struct imgsensor_info_struct imgsensor_info = {
     .custom2 = {
         .pclk = 36000000,
         .linelength = 947,
-        .framelength = 1234,
+        .framelength = 1267,
         .startx = 0,
         .starty = 0,
         .grabwindow_width = 1600,//4192,
@@ -352,7 +352,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
     
     .margin = 4,            //sensor framelength & shutter margin
-    .min_shutter = 1,        //min shutter
+    .min_shutter = 4,        //min shutter
     .max_frame_length = 0x7fff,//max framelength by sensor register's limitation
     .ae_shut_delay_frame = 0,    //shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
     .ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
@@ -405,7 +405,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[7]=
     {  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200}, // video 
     {  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200}, //hight speed video 
     {  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200},
-{  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200}, // custom1 2112*1558
+	{  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200}, // custom1 2112*1558
     {  1600, 1200,  0, 0, 1600, 1200, 1600, 1200, 0000, 0000, 1600, 1200,  0, 0, 1600, 1200}, // custom2 4206*3128
 }; // slim video
 
@@ -434,12 +434,12 @@ static kal_uint32 streaming_control(kal_bool enable)
 {
         LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
         if (enable) {
-                write_cmos_sensor(0x01,0x01);
-
+				write_cmos_sensor(0xfd,0x01);
+				write_cmos_sensor(0xac,0x01);
         } else {
-                write_cmos_sensor(0x01, 0x00);
+                write_cmos_sensor(0xfd, 0x01);
+				write_cmos_sensor(0xac, 0x00);
         }
-
         mdelay(10);
         return ERROR_NONE;
 }
@@ -641,15 +641,15 @@ static void set_shutter(kal_uint16 shutter)
 		else {
 		/* Extend frame length*/
 	write_cmos_sensor(0xfd, 0x01);
-	write_cmos_sensor(0x05, (imgsensor.frame_length-1234) >> 8);
-	write_cmos_sensor(0x06, (imgsensor.frame_length-1234) & 0xFF);
+	write_cmos_sensor(0x05, (imgsensor.frame_length-1224) >> 8);
+	write_cmos_sensor(0x06, (imgsensor.frame_length-1224) & 0xFF);
 	write_cmos_sensor(0x01, 0x01);
 		}
 	} else {
 		/* Extend frame length*/
 	write_cmos_sensor(0xfd, 0x01);
-	write_cmos_sensor(0x05, (imgsensor.frame_length-1234) >> 8);
-	write_cmos_sensor(0x06, (imgsensor.frame_length-1234) & 0xFF);
+	write_cmos_sensor(0x05, (imgsensor.frame_length-1224) >> 8);
+	write_cmos_sensor(0x06, (imgsensor.frame_length-1224) & 0xFF);
 	write_cmos_sensor(0x01, 0x01);
 	}
 
@@ -817,7 +817,7 @@ static void sensor_init(void)
     write_cmos_sensor(0x04,0x74);
     write_cmos_sensor(0x09,0x00);
     write_cmos_sensor(0x0a,0x02);
-    write_cmos_sensor(0x06,0x0a);
+    write_cmos_sensor(0x06,0x2b);	//0x0a
     write_cmos_sensor(0x24,0x20);
     write_cmos_sensor(0x01,0x01);
     write_cmos_sensor(0xfb,0x73);//9.29canshu 63u 63
@@ -861,7 +861,7 @@ static void sensor_init(void)
     write_cmos_sensor(0xae,0x00);
     write_cmos_sensor(0xaf,0x85);
     write_cmos_sensor(0xb1,0x01);
-    write_cmos_sensor(0xac,0x01);
+    //write_cmos_sensor(0xac,0x01);
     write_cmos_sensor(0xfd,0x01);
     write_cmos_sensor(0xf0,0xfd); //gb_suboffset
     write_cmos_sensor(0xf1,0xfd); //blue_suboffsetset
