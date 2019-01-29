@@ -14,13 +14,16 @@ LOCAL_PATH := $(call my-dir)
 ifeq ($(notdir $(LOCAL_PATH)),$(strip $(LINUX_KERNEL_VERSION)))
 ifneq ($(strip $(TARGET_NO_KERNEL)),true)
 include $(LOCAL_PATH)/kenv.mk
+include $(LOCAL_PATH)/defconfig.mk
 
 ifeq ($(wildcard $(TARGET_PREBUILT_KERNEL)),)
 # .config cannot be PHONY due to config_data.gz
 $(TARGET_KERNEL_CONFIG): $(KERNEL_CONFIG_FILE) $(LOCAL_PATH)/Android.mk
-$(TARGET_KERNEL_CONFIG): $(shell find $(KERNEL_DIR) -name "Kconfig*")
+$(TARGET_KERNEL_CONFIG): $(TARGET_DEFCONFIG) $(shell find $(KERNEL_DIR) -name "Kconfig*")
 	$(hide) mkdir -p $(dir $@)
-	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) $(KERNEL_DEFCONFIG)
+	$(hide) cp -f $(TARGET_DEFCONFIG) $@
+	$(MAKE) -C $(KERNEL_DIR) $(KERNEL_MAKE_OPTION) defoldconfig
+
 
 $(KERNEL_MODULES_DEPS): $(KERNEL_ZIMAGE_OUT) ;
 $(BUILT_DTB_OVERLAY_TARGET): $(KERNEL_ZIMAGE_OUT)
