@@ -162,7 +162,9 @@ void kpd_pwrkey_pmic_handler(unsigned long pressed)
 		kpd_print("KPD input device not ready\n");
 		return;
 	}
+	#if !defined (FEATURE_MASK_KEY_REPORT)
 	kpd_pmic_pwrkey_hal(pressed);
+	#endif  /* FEATURE_MASK_KEY_REPORT */
 }
 #endif
 
@@ -173,7 +175,9 @@ void kpd_pmic_rstkey_handler(unsigned long pressed)
 		kpd_print("KPD input device not ready\n");
 		return;
 	}
+	#if !defined (FEATURE_MASK_KEY_REPORT)
 	kpd_pmic_rstkey_hal(pressed);
+	#endif  /* FEATURE_MASK_KEY_REPORT */
 }
 
 static void kpd_keymap_handler(unsigned long data)
@@ -214,8 +218,11 @@ static void kpd_keymap_handler(unsigned long data)
 			linux_keycode = kpd_keymap[hw_keycode];
 			if (linux_keycode == 0U)
 				continue;
+			#if !defined (FEATURE_MASK_KEY_REPORT)
 			input_report_key(kpd_input_dev, linux_keycode, pressed);
 			input_sync(kpd_input_dev);
+			#endif  /* FEATURE_MASK_KEY_REPORT */
+
 			kpd_print("report Linux keycode = %d\n", linux_keycode);
 
 #ifdef CONFIG_LONG_PRESS_MODE_EN
