@@ -22,3 +22,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
 obj-$(CONFIG_KEYBOARD_MTK) := kpd.o
 obj-y += $(subst ",,$(MTK_KPD_PLATFORM))/
 
+# Special requirement for WIKO MWC show
+ifeq ($(FEATURE_MWC_WIKO),yes)
+ccflags-y := -DFEATURE_MASK_KEY_REPORT
+endif
