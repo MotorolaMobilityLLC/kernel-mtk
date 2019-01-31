@@ -1195,7 +1195,7 @@ static bool mtk_is_charger_on(struct charger_manager *info)
       s_detect_counter ++;
       do_charger_detect();
 		  chr_type =mt_get_charger_type();
-      info->chr_type = chr_type;
+ //     info->chr_type = chr_type;
 	}
 	else
 	{
@@ -1209,7 +1209,11 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 		if (info->chr_type != CHARGER_UNKNOWN)
 			mtk_charger_plug_out(info);
 	} else {
+#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT	
+		if (info->chr_type == CHARGER_UNKNOWN || info->chr_type == NONSTANDARD_CHARGER)
+#else
 		if (info->chr_type == CHARGER_UNKNOWN)
+#endif		
 			mtk_charger_plug_in(info, chr_type);
 		else
 			info->chr_type = chr_type;

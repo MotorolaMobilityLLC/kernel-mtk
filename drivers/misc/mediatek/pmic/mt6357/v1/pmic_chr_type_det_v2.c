@@ -355,10 +355,16 @@ void mtk_pmic_enable_chr_type_det(bool en)
 			g_chr_type = STANDARD_HOST;
 			chrdet_inform_psy_changed(g_chr_type, 1);
 		} else {
-			pr_info("charger type: charger IN\n");
-			g_chr_type = hw_charging_get_charger_type();
-			chrdet_inform_psy_changed(g_chr_type, 1);
-		}
+		    pr_info("charger type: charger IN type=%d\n", g_chr_type);
+			#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT
+		    if (g_chr_type == CHARGER_UNKNOWN || g_chr_type ==  NONSTANDARD_CHARGER){
+			#endif		
+		        g_chr_type = hw_charging_get_charger_type();
+		        chrdet_inform_psy_changed(g_chr_type, 1);
+			#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT			
+			}
+			#endif	
+	    }
 	} else {
 		pr_info("charger type: charger OUT\n");
 		g_chr_type = CHARGER_UNKNOWN;
