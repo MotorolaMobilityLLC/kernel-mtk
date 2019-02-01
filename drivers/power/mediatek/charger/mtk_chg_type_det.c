@@ -56,6 +56,7 @@ void __attribute__((weak)) fg_charger_in_handler(void)
 
 static enum charger_type g_chr_type;
 static bool ignore_usb;
+extern char atm_mode[10];
 
 #ifdef CONFIG_MTK_FPGA
 /*****************************************************************************
@@ -218,6 +219,10 @@ static int mt_ac_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
+		if (!strcmp(atm_mode, "enable")) {
+			val->intval = 0;
+			return 0;
+		}
 		val->intval = 0;
 		/* Force to 1 in all charger type */
 		if (mtk_chg->chg_type != CHARGER_UNKNOWN)
@@ -241,6 +246,10 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
+		if (!strcmp(atm_mode, "enable")) {
+			val->intval = 0;
+			return 0;
+		}
 		if ((mtk_chg->chg_type == STANDARD_HOST) ||
 			(mtk_chg->chg_type == CHARGING_HOST))
 			val->intval = 1;
