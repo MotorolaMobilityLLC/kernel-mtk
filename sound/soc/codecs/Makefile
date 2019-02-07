@@ -4,6 +4,14 @@ ifeq ($(CONFIG_MTK_AUXADC),y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/auxadc/
 endif
 
+ifeq ($(CONFIG_SND_SOC_CS35L35),y)
+ccflags-y += -I$(srctree)/sound/soc/mediatek/vendor/
+endif
+
+ifeq ($(CONFIG_SND_SOC_CS43130),y)
+ccflags-y += -I$(srctree)/sound/soc/mediatek/vendor/
+endif
+
 snd-soc-88pm860x-objs := 88pm860x-codec.o
 snd-soc-ab8500-codec-objs := ab8500-codec.o
 snd-soc-ac97-objs := ac97.o
@@ -40,6 +48,11 @@ snd-soc-ak5386-objs := ak5386.o
 snd-soc-arizona-objs := arizona.o
 snd-soc-cq93vc-objs := cq93vc.o
 snd-soc-cs35l32-objs := cs35l32.o
+snd-soc-cs35l35-objs := cs35l35.o
+snd-soc-cs35l36-objs := cs35l36.o cs35l36-tables.o
+snd-soc-cs35l41-objs := cs35l41.o
+snd-soc-cs35l41-spi-objs := cs35l41-spi.o cs35l41-tables.o
+snd-soc-cs35l41-i2c-objs := cs35l41-i2c.o cs35l41-tables.o
 snd-soc-cs42l51-objs := cs42l51.o
 snd-soc-cs42l51-i2c-objs := cs42l51-i2c.o
 snd-soc-cs42l52-objs := cs42l52.o
@@ -53,6 +66,9 @@ snd-soc-cs4271-spi-objs := cs4271-spi.o
 snd-soc-cs42xx8-objs := cs42xx8.o
 snd-soc-cs42xx8-i2c-objs := cs42xx8-i2c.o
 snd-soc-cs4349-objs := cs4349.o
+snd-soc-cs43130-objs := cs43130.o
+snd-soc-cs47l35-objs := cs47l35.o
+snd-soc-cs47l90-objs := cs47l90.o
 snd-soc-cx20442-objs := cx20442.o
 snd-soc-da7210-objs := da7210.o
 snd-soc-da7213-objs := da7213.o
@@ -71,6 +87,7 @@ snd-soc-jz4740-codec-objs := jz4740.o
 snd-soc-l3-objs := l3.o
 snd-soc-lm4857-objs := lm4857.o
 snd-soc-lm49453-objs := lm49453.o
+snd-soc-madera-objs := madera.o
 snd-soc-max9768-objs := max9768.o
 snd-soc-max98088-objs := max98088.o
 snd-soc-max98090-objs := max98090.o
@@ -138,6 +155,7 @@ snd-soc-uda134x-objs := uda134x.o
 snd-soc-uda1380-objs := uda1380.o
 snd-soc-wl1273-objs := wl1273.o
 snd-soc-wm-adsp-objs := wm_adsp.o
+snd-soc-aov-trigger-objs := aov_trigger.o
 snd-soc-wm0010-objs := wm0010.o
 snd-soc-wm1250-ev1-objs := wm1250-ev1.o
 snd-soc-wm2000-objs := wm2000.o
@@ -196,6 +214,7 @@ snd-soc-rt5509-objs := rt5509.o rt5509-regmap.o rt5509-calib.o
 snd-soc-mt8167-codec-objs := mt8167-codec.o mt8167-codec-utils.o
 snd-soc-mt6392-codec-objs := mt6392-codec.o
 
+obj-$(CONFIG_SND_SOC_AOV_TRIGGER) += snd-soc-aov-trigger.o
 # Amp
 snd-soc-max9877-objs := max9877.o
 snd-soc-tpa6130a2-objs := tpa6130a2.o
@@ -239,7 +258,12 @@ obj-$(CONFIG_SND_SOC_ALC5632)	+= snd-soc-alc5632.o
 obj-$(CONFIG_SND_SOC_ARIZONA)	+= snd-soc-arizona.o
 obj-$(CONFIG_SND_SOC_CQ0093VC) += snd-soc-cq93vc.o
 obj-$(CONFIG_SND_SOC_CS35L32)	+= snd-soc-cs35l32.o
+obj-$(CONFIG_SND_SOC_CS35L35)	+= snd-soc-cs35l35.o
+obj-$(CONFIG_SND_SOC_CS35L36)	+= snd-soc-cs35l36.o
 obj-$(CONFIG_SND_SOC_CS42L51)	+= snd-soc-cs42l51.o
+obj-$(CONFIG_SND_SOC_CS35L41)	+= snd-soc-cs35l41.o
+obj-$(CONFIG_SND_SOC_CS35L41_SPI)	+= snd-soc-cs35l41-spi.o
+obj-$(CONFIG_SND_SOC_CS35L41_I2C)	+= snd-soc-cs35l41-i2c.o
 obj-$(CONFIG_SND_SOC_CS42L51_I2C)	+= snd-soc-cs42l51-i2c.o
 obj-$(CONFIG_SND_SOC_CS42L52)	+= snd-soc-cs42l52.o
 obj-$(CONFIG_SND_SOC_CS42L56)	+= snd-soc-cs42l56.o
@@ -251,7 +275,10 @@ obj-$(CONFIG_SND_SOC_CS4271_I2C)	+= snd-soc-cs4271-i2c.o
 obj-$(CONFIG_SND_SOC_CS4271_SPI)	+= snd-soc-cs4271-spi.o
 obj-$(CONFIG_SND_SOC_CS42XX8)	+= snd-soc-cs42xx8.o
 obj-$(CONFIG_SND_SOC_CS42XX8_I2C) += snd-soc-cs42xx8-i2c.o
+obj-$(CONFIG_SND_SOC_CS43130)	+= snd-soc-cs43130.o
 obj-$(CONFIG_SND_SOC_CS4349)	+= snd-soc-cs4349.o
+obj-$(CONFIG_SND_SOC_CS47L35)	+= snd-soc-cs47l35.o
+obj-$(CONFIG_SND_SOC_CS47L90)	+= snd-soc-cs47l90.o
 obj-$(CONFIG_SND_SOC_CX20442)	+= snd-soc-cx20442.o
 obj-$(CONFIG_SND_SOC_DA7210)	+= snd-soc-da7210.o
 obj-$(CONFIG_SND_SOC_DA7213)	+= snd-soc-da7213.o
@@ -270,6 +297,7 @@ obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
 obj-$(CONFIG_SND_SOC_L3)	+= snd-soc-l3.o
 obj-$(CONFIG_SND_SOC_LM4857)	+= snd-soc-lm4857.o
 obj-$(CONFIG_SND_SOC_LM49453)   += snd-soc-lm49453.o
+obj-$(CONFIG_SND_SOC_MADERA)   += snd-soc-madera.o
 obj-$(CONFIG_SND_SOC_MAX9768)	+= snd-soc-max9768.o
 obj-$(CONFIG_SND_SOC_MAX98088)	+= snd-soc-max98088.o
 obj-$(CONFIG_SND_SOC_MAX98090)	+= snd-soc-max98090.o

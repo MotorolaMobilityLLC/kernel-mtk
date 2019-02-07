@@ -45,6 +45,11 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_ALC5632 if I2C
 	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
 	select SND_SOC_CS35L32 if I2C
+	select SND_SOC_CS35L35 if I2C
+	select SND_SOC_CS35L36 if I2C
+	select SND_SOC_CS35L41 if I2C
+	select SND_SOC_CS35L41_SPI if SPI_MASTER
+	select SND_SOC_CS35L41_I2C if I2C
 	select SND_SOC_CS42L51_I2C if I2C
 	select SND_SOC_CS42L52 if I2C && INPUT
 	select SND_SOC_CS42L56 if I2C && INPUT
@@ -54,7 +59,11 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_CS4271_I2C if I2C
 	select SND_SOC_CS4271_SPI if SPI_MASTER
 	select SND_SOC_CS42XX8_I2C if I2C
+	select SND_SOC_CS43130 if I2C
+	select SND_SOC_CS
 	select SND_SOC_CS4349 if I2C
+	select SND_SOC_CS47L35 if MFD_CS47L35
+	select SND_SOC_CS47L90 if MFD_CS47L90
 	select SND_SOC_CX20442 if TTY
 	select SND_SOC_DA7210 if SND_SOC_I2C_AND_SPI
 	select SND_SOC_DA7213 if I2C
@@ -213,12 +222,26 @@ config SND_SOC_WM_HUBS
 
 config SND_SOC_WM_ADSP
 	tristate
+	select SND_SOC_COMPRESS
+	default y if SND_SOC_MADERA=y
 	default y if SND_SOC_WM5102=y
 	default y if SND_SOC_WM5110=y
 	default y if SND_SOC_WM2200=y
+	default m if SND_SOC_MADERA=m
 	default m if SND_SOC_WM5102=m
 	default m if SND_SOC_WM5110=m
 	default m if SND_SOC_WM2200=m
+
+config SND_SOC_AOV_TRIGGER
+	tristate "AOV Trigger"
+	default n
+        help
+          Always-On-Audio trigger driver is needed to expose
+          audio DSP voice trigger events to user space. An app should
+          register to receive a trigger and rearm it each time after
+          reading a voice data from DSP.
+
+          If unsure select "N".
 
 config SND_SOC_AB8500_CODEC
 	tristate
@@ -357,6 +380,47 @@ config SND_SOC_CS35L32
 	tristate "Cirrus Logic CS35L32 CODEC"
 	depends on I2C
 
+config SND_SOC_CS35L35
+	tristate "Cirrus Logic CS35L35 SmartPA"
+	depends on I2C
+	help
+	  SND_SOC_CS35L35 is the kernel config of SmartPA designed by
+	  Cirrus, which is the switch of the SmartPA.
+	  It controls whether use the CS35L35 SmartPA and the setting
+	  of the switch.
+
+config SND_SOC_CS35L36
+	tristate "Cirrus Logic CS35L36"
+	depends on I2C
+
+config SND_SOC_CS35L36_TRIMMED
+	tristate "Support for Properly trimmed parts for A0 and B0"
+	depends on SND_SOC_CS35L36
+	help
+	  Say Y here if you have properly trimmed A0 and B0 parts
+	  to allow OPT errata workarounds.
+
+config SND_SOC_CS35L41
+	tristate "Cirrus Logic CS35L41"
+	depends on I2C
+	select SND_SOC_WM_ADSP
+
+config SND_SOC_CS35L41_SPI
+	tristate "Cirrus Logic CS35L41 CODEC (SPI)"
+	depends on SPI_MASTER
+	select SND_SOC_CS35L41
+	select REGMAP_SPI
+
+config SND_SOC_CS35L41_I2C
+	tristate "Cirrus Logic CS35L41 CODEC (I2C)"
+	depends on I2C
+	select SND_SOC_CS35L41
+	select REGMAP_I2C
+
+config SND_SOC_CS35L41_STEREO
+        tristate "Cirrus Logic CS35L41 STEREO"
+        depends on SND_SOC_CS35L41
+
 config SND_SOC_CS42L51
 	tristate
 
@@ -419,6 +483,15 @@ config SND_SOC_CS42XX8_I2C
 	select SND_SOC_CS42XX8
 	select REGMAP_I2C
 
+config SND_SOC_CS43130
+	tristate "Cirrus Logic CS43130 CODEC"
+	depends on I2C
+	help
+	  SND_SOC_CS43130 is the kernel config of SmartPA designed by
+	  Cirrus, which is the switch of the SmartPA.
+	  It controls whether use the CS35L35 SmartPA and the setting
+	  of the switch.
+
 # Cirrus Logic CS4349 HiFi DAC
 config SND_SOC_CS4349
 	tristate "Cirrus Logic CS4349 CODEC"
@@ -426,6 +499,12 @@ config SND_SOC_CS4349
 
 config SND_SOC_CS4382A
 	tristate
+
+config SND_SOC_CS47L35
+	tristate "Cirrus Logic CS47L35 CODEC"
+
+config SND_SOC_CS47L90
+	tristate "Cirrus Logic CS47L90 CODEC"
 
 config SND_SOC_CX20442
 	tristate
@@ -481,6 +560,13 @@ config SND_SOC_ISABELLE
 
 config SND_SOC_LM49453
 	tristate
+
+config SND_SOC_MADERA
+	tristate
+	default y if SND_SOC_CS47L35=y
+	default m if SND_SOC_CS47L35=y
+	default y if SND_SOC_CS47L90=y
+	default m if SND_SOC_CS47L90=y
 
 config SND_SOC_MAX98088
        tristate
