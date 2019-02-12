@@ -82,6 +82,11 @@ void long_press_reboot_function_setting(void)
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 
 #endif
+    #if defined (FEATURE_MASK_KEY_RESET)
+    kpd_info("disable normal mode LPRST\n");
+    pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
+    pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+    #endif  /* FEATURE_MASK_KEY_RESET */
 	} else {
 		kpd_info("Other Boot Mode long press reboot selection\n");
 #ifdef CONFIG_KPD_PMIC_LPRST_TD
