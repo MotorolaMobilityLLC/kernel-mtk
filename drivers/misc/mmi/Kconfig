@@ -1,0 +1,12 @@
+#
+# Motorola drivers
+# drivers (unitinfo, bootinfo, utag, etc.) and config defines
+#
+menu "Motorola mobile support drivers"
+config MMI_INFO
+	tristate "Motorola info driver"
+	default n
+	help
+	  Motorola boot/ram/storage/unit info
+
+endmenu
