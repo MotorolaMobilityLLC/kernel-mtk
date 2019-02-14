@@ -168,12 +168,16 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 {
 	enum IMGSENSOR_SENSOR_IDX sensor_idx = psensor->inst.sensor_idx;
 
+
 #if defined(CONFIG_IMGSENSOR_MAIN)  || \
 		defined(CONFIG_IMGSENSOR_SUB)   || \
 		defined(CONFIG_IMGSENSOR_MAIN2) || \
 		defined(CONFIG_IMGSENSOR_SUB2) || \
 		defined(CONFIG_IMGSENSOR_MAIN3)
 	char *pcustomize_sensor = NULL;
+
+	if (curr_sensor_name == NULL)
+		return IMGSENSOR_RETURN_ERROR;
 
 	switch (sensor_idx) {
 #ifdef CONFIG_IMGSENSOR_MAIN
@@ -209,6 +213,9 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	if (pcustomize_sensor != NULL &&
 		strlen(pcustomize_sensor) > 2 &&
 		!strstr(pcustomize_sensor, curr_sensor_name))
+		return IMGSENSOR_RETURN_ERROR;
+#else
+	if (curr_sensor_name == NULL)
 		return IMGSENSOR_RETURN_ERROR;
 #endif
 
