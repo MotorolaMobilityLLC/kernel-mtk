@@ -10,5 +10,13 @@
  * GNU General Public License for more details.
  */
 
-#include "mt6771-moto-common.dtsi"
+/dts-v1/;
+/plugin/;
+
+#include "mt6771-moto-overlay-bingo.dtsi"
+
+
+#include <bingo/cust.dtsi>
+/*End of this file, DO NOT ADD ANYTHING HERE*/
+
 
