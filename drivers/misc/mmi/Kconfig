@@ -9,4 +9,7 @@ config MMI_INFO
 	help
 	  Motorola boot/ram/storage/unit info
 
+config MOTO_MAIN_DTSI
+    string "Main dts Moto override dtsi name"
+
 endmenu
