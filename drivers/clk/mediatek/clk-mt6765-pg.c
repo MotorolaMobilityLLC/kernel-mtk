@@ -560,7 +560,7 @@ static void ram_console_update(void)
 
 	if (k > 5000 && print_once) {
 		enum subsys_id id =
-			(enum subsys_id)(DBG_ID - (DBG_ID_NUM / 2));
+			(enum subsys_id)(DBG_ID % (DBG_ID_NUM / 2));
 
 		print_once = false;
 		k = 0;
