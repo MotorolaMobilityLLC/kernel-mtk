@@ -521,6 +521,9 @@ static void ram_console_update(void)
 	}
 
 	if (k > 5000 && print_once) {
+		enum subsys_id id =
+			(enum subsys_id)(DBG_ID - (DBG_ID_NUM / 2));
+
 		print_once = false;
 		k = 0;
 		if (DBG_ID == DBG_ID_CONN_BUS) {
@@ -537,7 +540,7 @@ static void ram_console_update(void)
 		/* debug callback hook searching */
 		list_for_each_entry_reverse(pgcb, &pgcb_list, list) {
 			if (pgcb->debug_dump)
-				pgcb->debug_dump(DBG_ID);
+				pgcb->debug_dump(id);
 		}
 
 		if (DBG_ID == DBG_ID_CONN_BUS) {
