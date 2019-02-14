@@ -451,7 +451,9 @@ static inline int mt_parse_dt(struct device *dev)
 		pdata->max_bled_brightness = 1024;
 	else
 		pdata->max_bled_brightness = tmp;
-	of_property_read_string(np, "mt,bled_name", &(pdata->bled_name));
+	if (of_property_read_string(np, "mt,bled_name",
+			&(pdata->bled_name)) <	0)
+		pdata->bled_name = "mt6370_pmu_bled";
 	return 0;
 }
 
