@@ -135,6 +135,11 @@ s32 pwrap_write(u32 adr, u32 wdata)
 			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
 			return ret;
 		}
+	} else if ((adr == 0x170E) && (wdata & 0x80)) {
+		pr_notice("[PWRAP] Illegal write 0x170E bit 7 to 1\n");
+		pr_notice("[PWRAP] Error: %s, line: %d\n", __func__, __LINE__);
+		pr_notice("[PWRAP] addr: 0x%x, wdata: 0x%x\n", adr, wdata);
+		return -1;
 	} else {
 		ret = pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
 		if (ret != 0) {

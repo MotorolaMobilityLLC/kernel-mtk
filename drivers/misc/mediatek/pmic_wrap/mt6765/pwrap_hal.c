@@ -1705,12 +1705,14 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0x2000);
 		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(after)\n", int1_flg);
 
-		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(before)\n", rdata);
-		pwrap_write_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR
-				  , rdata | 0x2);
-		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(after)\n", rdata);
+		pwrap_read_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, &rdata);
+		pr_notice("[PWRAP]PMIC_RG_VCOREVPROC_TMDL_ADDR=0x%x(before)\n"
+			  , rdata);
+		rdata &= ~(0x80);
+		pwrap_write_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, rdata);
+		pwrap_read_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, &rdata);
+		pr_notice("[PWRAP]PMIC_RG_VCOREVPROC_TMDL_ADDR=0x%x(after)\n"
+			  , rdata);
 	}
 #endif
 
