@@ -15,6 +15,25 @@
 
 #include "mt6771-moto-overlay-bingo.dtsi"
 
+/* Board match root node */
+/ {
+	fragment@model {
+		target-path = "/";
+		__overlay__ {
+			mot,model = "bingo";
+			mot,board-id = <0x41 0xA100>;
+		};
+	};
+};
+
+/* Changes for Bingo EVT1 go here */
+
+
+
+
+
+
+
 
 #include <bingo/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
