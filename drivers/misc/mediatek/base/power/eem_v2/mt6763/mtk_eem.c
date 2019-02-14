@@ -342,6 +342,8 @@ static void get_vcore_opp(void)
 
 	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
 		vcore_opp = &vcore_opp_L4_2CH[0];
+	else if (ddr_type == TYPE_LPDDR4 && emi_ch_num == 2)
+		vcore_opp = &vcore_opp_L4_2CH[0];
 	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
 		vcore_opp = &vcore_opp_L3_1CH[0];
 	else {
