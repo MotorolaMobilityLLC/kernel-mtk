@@ -136,19 +136,23 @@ static int cm_mgr_check_dram_type(void)
 	int ddr_type = get_ddr_type();
 	int ddr_hz = dram_steps_freq(0);
 
-	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600) {
+	if ((ddr_type == TYPE_LPDDR4X || ddr_type == TYPE_LPDDR4)
+			&& ddr_hz == 3600) {
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3600;
 		vcore_power_ratio_up[0] = 100;
 		vcore_power_ratio_down[0] = 100;
-	} else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
+	} else if (ddr_type == TYPE_LPDDR4X || ddr_type == TYPE_LPDDR4)
 		cm_mgr_idx = CM_MGR_LP4X_2CH_3200;
-	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
+	else if (ddr_type == TYPE_LPDDR3)
 		cm_mgr_idx = CM_MGR_LP3_1CH_1866;
-	pr_info("#@# %s(%d) cm_mgr_idx 0x%x\n", __func__, __LINE__, cm_mgr_idx);
+	pr_info("#@# %s(%d) ddr_type 0x%x, ddr_hz %d, cm_mgr_idx 0x%x\n",
+			__func__, __LINE__, ddr_type, ddr_hz, cm_mgr_idx);
 #else
 	cm_mgr_idx = 0;
-	pr_info("#@# %s(%d) !!!! NO CONFIG_MTK_DRAMC !!! set cm_mgr_idx to 0x%x\n", __func__, __LINE__, cm_mgr_idx);
-#endif
+	pr_info("#@# %s(%d) NO CONFIG_MTK_DRAMC !!! set cm_mgr_idx to 0x%x\n",
+			__func__, __LINE__, cm_mgr_idx);
+#endif /* CONFIG_MTK_DRAMC */
+
 	return cm_mgr_idx;
 };
 
