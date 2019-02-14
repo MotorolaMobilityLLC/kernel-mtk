@@ -4239,3 +4239,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_TCPC_RT1711H
 #include "rt1711h.dtsi"
 #endif
+
+/* Motorola main dts override */
+#include CONFIG_MOTO_MAIN_DTSI
+/* DO NOT ADD MORE INCLUDES OR NODES BELOW MOTOROLA OVERRIDE */
