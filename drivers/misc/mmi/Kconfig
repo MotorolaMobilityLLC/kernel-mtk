@@ -9,6 +9,14 @@ config MMI_INFO
 	help
 	  Motorola boot/ram/storage/unit info
 
+config MOT_UTAG
+	tristate  "Motorola Configuration read/write support "
+	default n
+	help
+	  With this option you get read/write access to utag partition via procfs.
+	  Content of the entire partition can be checked, separate utags accessed
+	  and modified.
+
 config MOTO_MAIN_DTSI
     string "Main dts Moto override dtsi name"
 
