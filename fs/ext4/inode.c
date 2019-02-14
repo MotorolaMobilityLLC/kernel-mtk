@@ -3590,7 +3590,10 @@ static int __ext4_block_zero_page_range(handle_t *handle,
 
 	if (!buffer_uptodate(bh)) {
 		err = -EIO;
-		ll_rw_block(READ, 1, &bh);
+		if (ext4_using_hardware_encryption(inode))
+			ll_rw_block_crypt(inode, READ, 1, &bh);
+		else
+			ll_rw_block(READ, 1, &bh);
 		wait_on_buffer(bh);
 		/* Uhhuh. Read error. Complain and punt. */
 		if (!buffer_uptodate(bh))
