@@ -235,7 +235,7 @@ static short lowmem_amr_check(int *to_be_aggressive, int other_file)
 {
 #ifdef CONFIG_SWAP
 #ifdef CONFIG_64BIT
-#define ENABLE_AMR_RAMSIZE	(0x60000)	/* > 1.5GB */
+#define ENABLE_AMR_RAMSIZE	(0xFFFFFFFF)	/* > 1.5GB */ //dong.wang add disable swap control lowmemory adj
 #else
 #define ENABLE_AMR_RAMSIZE	(0x40000)	/* > 1GB */
 #endif
