@@ -975,21 +975,37 @@ unsigned int TempConverBattThermistor(int temp)
 	return TBatt_R_Value;
 }
 
+// pony.ma, DATE20190220, 68 dec poweroff, DATE20190220-01 START
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+extern struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[25];
+#else
+extern struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[21];
+#endif
+// pony.ma, DATE20190220-01 END
 int BattThermistorConverTemp(int Res)
 {
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
 	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
+	
+	// pony.ma, DATE20190220, 68 dec poweroff, DATE20190220-01 START
+	int table_size=0;
+	table_size=sizeof(Fg_Temperature_Table)/sizeof(Fg_Temperature_Table[0])-1;	
+	// pony.ma, DATE20190220-01 END
 
 	if (Res >= Fg_Temperature_Table[0].TemperatureR) {
-		TBatt_Value = -40;
-	} else if (Res <= Fg_Temperature_Table[20].TemperatureR) {
-		TBatt_Value = 60;
+		// pony.ma, DATE20190220, 68 dec poweroff,, DATE20190220-01 START
+		TBatt_Value = Fg_Temperature_Table[0].BatteryTemp;
+	} else if (Res <= Fg_Temperature_Table[table_size].TemperatureR) {
+		TBatt_Value = Fg_Temperature_Table[table_size].BatteryTemp;
+		// pony.ma, DATE20190220-01 END
+
 	} else {
 		RES1 = Fg_Temperature_Table[0].TemperatureR;
 		TMP1 = Fg_Temperature_Table[0].BatteryTemp;
 
-		for (i = 0; i <= 20; i++) {
+		// pony.ma, DATE20190220, 68 dec poweroff,, DATE20190220-01 LINE
+		for (i = 0; i <= table_size; i++) {
 			if (Res >= Fg_Temperature_Table[i].TemperatureR) {
 				RES2 = Fg_Temperature_Table[i].TemperatureR;
 				TMP2 = Fg_Temperature_Table[i].BatteryTemp;
