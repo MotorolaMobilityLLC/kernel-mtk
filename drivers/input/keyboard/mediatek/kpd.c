@@ -204,7 +204,7 @@ static const u16 kpd_auto_keymap[] = {
 };
 #endif
 /* for AEE manual dump */
-#define AEE_VOLUMEUP_BIT	0
+#define AEE_KEYPOWER_BIT	0
 #define AEE_VOLUMEDOWN_BIT	1
 #define AEE_DELAY_TIME		15
 /* enable volup + voldown was pressed 5~15 s Trigger aee manual dump */
@@ -214,7 +214,7 @@ static unsigned long aee_pressed_keys;
 static bool aee_timer_started;
 
 #if AEE_ENABLE_5_15
-#define AEE_DELAY_TIME_5S	5
+#define AEE_DELAY_TIME_5S	7
 static struct hrtimer aee_timer_5s;
 static bool aee_timer_5s_started;
 static bool flags_5s;
@@ -222,7 +222,7 @@ static bool flags_5s;
 
 static inline void kpd_update_aee_state(void)
 {
-	if (aee_pressed_keys == ((1 << AEE_VOLUMEUP_BIT) | (1 << AEE_VOLUMEDOWN_BIT))) {
+	if (aee_pressed_keys == ((1 << AEE_KEYPOWER_BIT) | (1 << AEE_VOLUMEDOWN_BIT))) {
 		/* if volumeup and volumedown was pressed the same time then start the time of ten seconds */
 		aee_timer_started = true;
 
@@ -277,16 +277,16 @@ static inline void kpd_update_aee_state(void)
 static void kpd_aee_handler(u32 keycode, u16 pressed)
 {
 	if (pressed) {
-		if (keycode == KEY_VOLUMEUP)
-			__set_bit(AEE_VOLUMEUP_BIT, &aee_pressed_keys);
+		if (keycode == KEY_POWER)
+			__set_bit(AEE_KEYPOWER_BIT, &aee_pressed_keys);
 		else if (keycode == KEY_VOLUMEDOWN)
 			__set_bit(AEE_VOLUMEDOWN_BIT, &aee_pressed_keys);
 		else
 			return;
 		kpd_update_aee_state();
 	} else {
-		if (keycode == KEY_VOLUMEUP)
-			__clear_bit(AEE_VOLUMEUP_BIT, &aee_pressed_keys);
+		if (keycode == KEY_POWER)
+			__clear_bit(AEE_KEYPOWER_BIT, &aee_pressed_keys);
 		else if (keycode == KEY_VOLUMEDOWN)
 			__clear_bit(AEE_VOLUMEDOWN_BIT, &aee_pressed_keys);
 		else
@@ -304,12 +304,26 @@ static enum hrtimer_restart aee_timer_func(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
+static bool secure_hardware = false;
+static int __init secure_hardware_setup(char *str)
+{
+	if (!strncmp(str, "1", 1))
+		secure_hardware = true;
+	else
+		secure_hardware = false;
+
+	return 1;
+}
+__setup("androidboot.secure_hardware=", secure_hardware_setup);
+
 #if AEE_ENABLE_5_15
 static enum hrtimer_restart aee_timer_5s_func(struct hrtimer *timer)
 {
 
 	/* kpd_info("kpd: vol up+vol down AEE manual dump timer 5s !\n"); */
 	flags_5s = true;
+	if (!secure_hardware)
+		BUG();
 	return HRTIMER_NORESTART;
 }
 #endif
@@ -366,6 +380,8 @@ void kpd_pwrkey_pmic_handler(unsigned long pressed)
 		return;
 	}
 	kpd_pmic_pwrkey_hal(pressed);
+	kpd_aee_handler(KEY_POWER, pressed);
+
 #if (defined(CONFIG_ARCH_MT8173) || defined(CONFIG_ARCH_MT8163))
 	if (pressed) /* keep the lock while the button in held pushed */
 		wake_lock(&pwrkey_lock);
