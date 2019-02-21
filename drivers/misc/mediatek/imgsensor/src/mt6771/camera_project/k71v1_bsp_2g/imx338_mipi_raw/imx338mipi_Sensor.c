@@ -49,7 +49,7 @@
 #include "imx338mipi_Sensor.h"
 
 /****************************Modify Following Strings for Debug****************************/
-#define PFX "IMX338_camera_sensor"
+#define PFX "IMX338_camera_sensor_13M"
 #define LOG_1 LOG_INF("IMX338,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2672*2008@30fps; video 5344*4016@30fps; capture 21M@24fps\n")
 /****************************   Modify end    *******************************************/
@@ -137,6 +137,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		.mipi_pixel_rate = 600000000,
 		.max_framerate = 240,
 		},
 	.cap1 = {		/*data rate 1499.20 Mbps/lane */
@@ -148,6 +149,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 .grabwindow_width = 4208,
 		 .grabwindow_height = 3120,
 		 .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		 .mipi_pixel_rate = 600000000,
 		 .max_framerate = 240,
 		 },
 
@@ -160,6 +162,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			 .grabwindow_width = 4208,
 			 .grabwindow_height = 3008,
 			 .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+			 .mipi_pixel_rate = 600000000,
 			 .max_framerate = 300,
 			 },
 	.hs_video = {		/*data rate 600 Mbps/lane */
@@ -4203,6 +4206,29 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
 		*feature_return_para_32 = imgsensor.current_ae_effective_frame;
 		break;
+
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+	{
+		kal_uint32 rate;
+
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			rate = imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			rate = imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			rate = imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			rate = imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
+		*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) = rate;
+	}
+	break;
 
 	default:
 		break;
