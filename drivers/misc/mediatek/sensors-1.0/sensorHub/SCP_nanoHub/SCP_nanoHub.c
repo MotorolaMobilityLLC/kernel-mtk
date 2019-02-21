@@ -857,7 +857,6 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[SENSOR_TYPE_RGBW].timestamp_filter = false;
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
-	mSensorState[SENSOR_TYPE_SAR].rate = SENSOR_RATE_ONCHANGE;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
 }
 
@@ -1553,6 +1552,12 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->floor_counter_t.accumulated_floor_count
 		    = data_t->floor_counter_t.accumulated_floor_count;
 		break;
+	case ID_SAR:
+		data->time_stamp = data_t->time_stamp;
+		data->sar_event.data[0] = data_t->sar_event.data[0];
+		data->sar_event.data[1] = data_t->sar_event.data[1];
+		data->sar_event.data[2] = data_t->sar_event.data[2];
+		break;
 	default:
 		err = -1;
 		break;
@@ -1854,6 +1859,20 @@ int sensor_set_cmd_to_hub(uint8_t sensorType, CUST_ACTION action, void *data)
 			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
 			    + sizeof(req.set_cust_req.showReg);
 			break;
+		case CUST_ACTION_GET_SENSOR_INFO:
+			req.set_cust_req.getInfo.action =
+				CUST_ACTION_GET_SENSOR_INFO;
+			len = offsetof(SCP_SENSOR_HUB_SET_CUST_REQ, custData)
+			    + sizeof(req.set_cust_req.getInfo);
+			break;
+		default:
+			return -1;
+		}
+		break;
+	case ID_SAR:
+		req.set_cust_req.sensorType = ID_SAR;
+		req.set_cust_req.action = SENSOR_HUB_SET_CUST;
+		switch (action) {
 		case CUST_ACTION_GET_SENSOR_INFO:
 			req.set_cust_req.getInfo.action =
 				CUST_ACTION_GET_SENSOR_INFO;

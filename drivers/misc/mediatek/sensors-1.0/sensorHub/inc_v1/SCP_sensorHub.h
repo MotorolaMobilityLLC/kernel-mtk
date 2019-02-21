@@ -193,6 +193,16 @@ typedef struct {
 	uint32_t state;  /* geofence [source, result, operation_mode] */
 } geofence_event_t;
 
+struct sar_event_t {
+	struct {
+		int32_t data[3];
+		int32_t x_bias;
+		int32_t y_bias;
+		int32_t z_bias;
+	};
+	uint32_t status;
+};
+
 typedef enum {
 	STILL,
 	STANDING,
@@ -249,6 +259,7 @@ struct data_unit_t {
 		tilt_event_t tilt_event;
 		in_pocket_event_t inpocket_event;
 		geofence_event_t geofence_data_t;
+		struct sar_event_t sar_event;
 		int32_t data[8];
 	};
 } __packed;

@@ -44,6 +44,7 @@ typedef enum {
 	device_orientation,
 	tilt_detector,
 	flat,
+	sar,
 	max_situation_support,
 } situation_index_table;
 
@@ -89,7 +90,10 @@ extern int situation_data_report(int handle, uint32_t one_sample_data);
 extern int situation_notify(int handle);
 extern int situation_flush_report(int handle);
 extern int situation_driver_add(struct situation_init_info *obj, int handle);
-extern int situation_register_control_path(struct situation_control_path *ctl, int handle);
-extern int situation_register_data_path(struct situation_data_path *data, int handle);
+extern int situation_register_control_path(
+	struct situation_control_path *ctl, int handle);
+extern int situation_register_data_path(struct situation_data_path *data,
+	int handle);
+extern int sar_data_report(int32_t value[3]);
 
 #endif
