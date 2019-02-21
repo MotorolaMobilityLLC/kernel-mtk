@@ -4149,6 +4149,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	subpmic_pmu_eint: mt6370_pmu_eint {
+        compatible = "mediatek,sw-charger";
 	};
 
 	tcpc_pd: mt6370_pd_eint {
@@ -4229,6 +4230,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #include "mt6358.dtsi"
 #include "cust_mt6771_msdc.dtsi"
 #include "mt6370.dtsi"
+#include "bq2560x.dtsi"
 #include "mt6370_pd.dtsi"
 #ifdef CONFIG_CHARGER_RT9467
 #include "rt9467.dtsi"
