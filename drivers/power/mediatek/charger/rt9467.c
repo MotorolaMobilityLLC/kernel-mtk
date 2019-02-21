@@ -1,6 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
- * ShuFanLee <shufan_lee@richtek.com>
+ * Copyright (C) 2019 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -27,6 +26,7 @@
 #include <linux/irq.h>
 #include <linux/switch.h>
 #include <linux/pm_runtime.h>
+#include <linux/power_supply.h>
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/charger_class.h>
@@ -39,7 +39,7 @@
 #include "mtk_charger_intf.h"
 #include "rt9467.h"
 #define I2C_ACCESS_MAX_RETRY	5
-#define RT9467_DRV_VERSION	"1.0.17_MTK"
+#define RT9467_DRV_VERSION	"1.0.18_MTK"
 
 /* ======================= */
 /* RT9467 Parameter        */
@@ -268,6 +268,7 @@ struct rt9467_info {
 	struct mutex hidden_mode_lock;
 	struct mutex bc12_access_lock;
 	struct mutex ieoc_lock;
+	struct mutex tchg_lock;
 	struct device *dev;
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
@@ -293,6 +294,7 @@ struct rt9467_info {
 	struct work_struct init_work;
 	atomic_t bc12_sdp_cnt;
 	atomic_t bc12_wkard;
+	int tchg;
 
 #ifdef CONFIG_TCPC_CLASS
 	atomic_t tcpc_usb_connected;
@@ -340,6 +342,10 @@ static const unsigned char rt9467_reg_addr[] = {
 	RT9467_REG_CHG_NTC,
 	RT9467_REG_ADC_DATA_H,
 	RT9467_REG_ADC_DATA_L,
+	RT9467_REG_ADC_DATA_TUNE_H,
+	RT9467_REG_ADC_DATA_TUNE_L,
+	RT9467_REG_ADC_DATA_ORG_H,
+	RT9467_REG_ADC_DATA_ORG_L,
 	RT9467_REG_CHG_STATC,
 	RT9467_REG_CHG_FAULT,
 	RT9467_REG_TS_STATC,
@@ -395,6 +401,10 @@ RT_REG_DECL(RT9467_REG_CHG_STAT, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_CHG_NTC, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_ADC_DATA_H, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_ADC_DATA_L, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9467_REG_ADC_DATA_TUNE_H, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9467_REG_ADC_DATA_TUNE_L, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9467_REG_ADC_DATA_ORG_H, 1, RT_VOLATILE, {});
+RT_REG_DECL(RT9467_REG_ADC_DATA_ORG_L, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_CHG_STATC, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_CHG_FAULT, 1, RT_VOLATILE, {});
 RT_REG_DECL(RT9467_REG_TS_STATC, 1, RT_VOLATILE, {});
@@ -448,6 +458,10 @@ static const rt_register_map_t rt9467_regmap_map[] = {
 	RT_REG(RT9467_REG_CHG_NTC),
 	RT_REG(RT9467_REG_ADC_DATA_H),
 	RT_REG(RT9467_REG_ADC_DATA_L),
+	RT_REG(RT9467_REG_ADC_DATA_TUNE_H),
+	RT_REG(RT9467_REG_ADC_DATA_TUNE_L),
+	RT_REG(RT9467_REG_ADC_DATA_ORG_H),
+	RT_REG(RT9467_REG_ADC_DATA_ORG_L),
 	RT_REG(RT9467_REG_CHG_STATC),
 	RT_REG(RT9467_REG_CHG_FAULT),
 	RT_REG(RT9467_REG_TS_STATC),
@@ -720,6 +734,7 @@ static int rt9467_set_ichg(struct charger_device *chg_dev, u32 aicr);
 static int rt9467_kick_wdt(struct charger_device *chg_dev);
 static int rt9467_enable_charging(struct charger_device *chg_dev, bool en);
 static int rt9467_get_ieoc(struct rt9467_info *info, u32 *ieoc);
+static int rt9467_enable_hidden_mode(struct rt9467_info *info, bool en);
 
 static inline void rt9467_irq_set_flag(struct rt9467_info *info, u8 *irq,
 	u8 mask)
@@ -811,11 +826,13 @@ static int rt9467_get_adc(struct rt9467_info *info,
 {
 	int ret = 0, i = 0;
 	const int max_wait_times = 6;
-	u8 adc_data[2] = {0, 0};
+	u8 adc_data[6] = {0};
 	u32 aicr = 0, ichg = 0;
 	bool adc_start = false;
 
 	mutex_lock(&info->adc_access_lock);
+
+	rt9467_enable_hidden_mode(info, true);
 
 	/* Select ADC to desired channel */
 	ret = rt9467_i2c_update_bits(info, RT9467_REG_CHG_ADC,
@@ -868,11 +885,14 @@ static int rt9467_get_adc(struct rt9467_info *info,
 	mdelay(1);
 
 	/* Read ADC data high/low byte */
-	ret = rt9467_i2c_block_read(info, RT9467_REG_ADC_DATA_H, 2, adc_data);
+	ret = rt9467_i2c_block_read(info, RT9467_REG_ADC_DATA_H, 6, adc_data);
 	if (ret < 0) {
 		dev_err(info->dev, "%s: read ADC data fail\n", __func__);
 		goto out_unlock_all;
 	}
+	dev_dbg(info->dev,
+		"%s: adc_tune = (0x%02X, 0x%02X), adc_org = (0x%02X, 0x%02X)\n",
+		__func__, adc_data[2], adc_data[3], adc_data[4], adc_data[5]);
 
 	/* Calculate ADC value */
 	*adc_val = ((adc_data[0] << 8) + adc_data[1]) * rt9467_adc_unit[adc_sel]
@@ -899,6 +919,7 @@ out_unlock_all:
 	}
 
 out:
+	rt9467_enable_hidden_mode(info, false);
 	mutex_unlock(&info->adc_access_lock);
 	return ret;
 }
@@ -2936,12 +2957,32 @@ static int rt9467_get_tchg(struct charger_device *chg_dev, int *tchg_min,
 	int *tchg_max)
 {
 	int ret = 0, adc_temp = 0;
+	u32 retry_cnt = 3;
 	struct rt9467_info *info = dev_get_drvdata(&chg_dev->dev);
 
 	/* Get value from ADC */
 	ret = rt9467_get_adc(info, RT9467_ADC_TEMP_JC, &adc_temp);
 	if (ret < 0)
 		return ret;
+
+	/* Check unusual temperature */
+	while (adc_temp >= 120 && retry_cnt > 0) {
+		dev_notice(info->dev,
+			   "%s: [WARNING] t = %d\n", __func__, adc_temp);
+		rt9467_get_adc(info, RT9467_ADC_VBAT, &adc_temp);
+		ret = rt9467_get_adc(info, RT9467_ADC_TEMP_JC, &adc_temp);
+		retry_cnt--;
+	}
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&info->tchg_lock);
+	/* Use previous one to prevent system from rebooting */
+	if (adc_temp >= 120)
+		adc_temp = info->tchg;
+	else
+		info->tchg = adc_temp;
+	mutex_unlock(&info->tchg_lock);
 
 	*tchg_min = adc_temp;
 	*tchg_max = adc_temp;
@@ -3519,6 +3560,7 @@ static int rt9467_probe(struct i2c_client *client,
 	mutex_init(&info->pe_access_lock);
 	mutex_init(&info->bc12_access_lock);
 	mutex_init(&info->ieoc_lock);
+	mutex_init(&info->tchg_lock);
 	atomic_set(&info->bc12_sdp_cnt, 0);
 	atomic_set(&info->bc12_wkard, 0);
 #ifdef CONFIG_TCPC_CLASS
@@ -3533,6 +3575,7 @@ static int rt9467_probe(struct i2c_client *client,
 	info->ieoc_wkard = false;
 	info->ieoc = 250000; /* register default value 250mA */
 	info->ichg = 2000000; /* register default value 2000mA */
+	info->tchg = 25;
 	memcpy(info->irq_mask, rt9467_irq_maskall, RT9467_IRQIDX_MAX);
 
 	/* Init wait queue head */
@@ -3636,6 +3679,7 @@ err_no_dev:
 	mutex_destroy(&info->pe_access_lock);
 	mutex_destroy(&info->bc12_access_lock);
 	mutex_destroy(&info->ieoc_lock);
+	mutex_destroy(&info->tchg_lock);
 	return ret;
 }
 
@@ -3660,6 +3704,7 @@ static int rt9467_remove(struct i2c_client *client)
 		mutex_destroy(&info->pe_access_lock);
 		mutex_destroy(&info->bc12_access_lock);
 		mutex_destroy(&info->ieoc_lock);
+		mutex_destroy(&info->tchg_lock);
 	}
 
 	return ret;
@@ -3770,6 +3815,9 @@ MODULE_VERSION(RT9467_DRV_VERSION);
 
 /*
  * Release Note
+ * 1.0.18
+ * (1) Check tchg 3 times if it >= 120 degree
+ *
  * 1.0.17
  * (1) Add ichg workaround
  *

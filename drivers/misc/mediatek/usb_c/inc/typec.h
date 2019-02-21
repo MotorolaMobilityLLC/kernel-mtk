@@ -169,9 +169,6 @@ struct usbtypc {
 	struct typec_switch_data *host_driver;
 	struct typec_switch_data *device_driver;
 };
-#elif defined(CONFIG_TCPC_RT1711H)
-struct usbtypc {
-};
 #else
 struct usbtypc {
 	struct pinctrl *pinctrl;

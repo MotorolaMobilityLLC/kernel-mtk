@@ -44,7 +44,7 @@
 
 /* #define DEBUG_GPIO	66 */
 
-#define RT1711H_DRV_VERSION	"2.0.1_MTK"
+#define RT1711H_DRV_VERSION	"2.0.2_MTK"
 
 #define RT1711H_IRQ_WAKE_TIME	(500) /* ms */
 
@@ -375,8 +375,8 @@ static int rt1711_regmap_init(struct rt1711_chip *chip)
 	if ((!props->name) || (!props->aliases))
 		return -ENOMEM;
 
-	strlcpy((char *)props->name, name, strlen(name)+1);
-	strlcpy((char *)props->aliases, name, strlen(name)+1);
+	strlcpy((char *)props->name, name, len + 1);
+	strlcpy((char *)props->aliases, name, len + 1);
 	props->io_log_en = 0;
 
 	chip->m_dev = rt_regmap_device_register(props,
@@ -942,7 +942,7 @@ static int rt1711_get_cc(struct tcpc_device *tcpc, int *cc1, int *cc2)
 static int rt1711_enable_vsafe0v_detect(
 	struct tcpc_device *tcpc, bool enable)
 {
-	int ret = rt1711_i2c_read8(tcpc, MT6370_REG_MT_MASK);
+	int ret = rt1711_i2c_read8(tcpc, RT1711H_REG_RT_MASK);
 
 	if (ret < 0)
 		return ret;
@@ -952,7 +952,7 @@ static int rt1711_enable_vsafe0v_detect(
 	else
 		ret &= ~RT1711H_REG_M_VBUS_80;
 
-	mt6370_i2c_write8(tcpc, RT1711H_REG_RT_MASK, (uint8_t) ret);
+	rt1711_i2c_write8(tcpc, RT1711H_REG_RT_MASK, (uint8_t) ret);
 	return ret;
 }
 
@@ -1062,13 +1062,13 @@ static int rt1711_set_low_power_mode(
 			data |= RT1711H_REG_BMCIO_LPRPRD;
 
 #ifdef CONFIG_TYPEC_CAP_NORP_SRC
-		data |= RT1711H_REG_VBUS_DET_EN;
-#endif	/* CONFIG_TYPEC_CAP_NORP_SRC */
-	} else
+		data |= RT1711H_REG_BMCIO_BG_EN | RT1711H_REG_VBUS_DET_EN;
+#endif
+	} else {
 		data = RT1711H_REG_BMCIO_BG_EN |
 			RT1711H_REG_VBUS_DET_EN | RT1711H_REG_BMCIO_OSC_EN;
-
 		rt1711_enable_vsafe0v_detect(tcpc_dev, true);
+	}
 
 	rv = rt1711_i2c_write8(tcpc_dev, RT1711H_REG_BMC_CTRL, data);
 	return rv;
@@ -1311,7 +1311,7 @@ static int rt_parse_dt(struct rt1711_chip *chip, struct device *dev)
 
 	np = of_find_node_by_name(NULL, "type_c_port0");
 	if (!np) {
-		pr_err("%s find node rt5081 fail\n", __func__);
+		pr_notice("%s find node type_c_port0 fail\n", __func__);
 		return -ENODEV;
 	}
 
@@ -1385,6 +1385,12 @@ static int rt1711_tcpcdev_init(struct rt1711_chip *chip, struct device *dev)
 	u32 val, len;
 	const char *name = "default";
 
+	np = of_find_node_by_name(NULL, "type_c_port0");
+	if (!np) {
+		pr_notice("%s find node type_c_port0 fail\n", __func__);
+		return -ENODEV;
+	}
+
 	desc = devm_kzalloc(dev, sizeof(*desc), GFP_KERNEL);
 	if (!desc)
 		return -ENOMEM;
@@ -1442,7 +1448,7 @@ static int rt1711_tcpcdev_init(struct rt1711_chip *chip, struct device *dev)
 	if (!desc->name)
 		return -ENOMEM;
 
-	strlcpy((char *)desc->name, name, strlen(name)+1);
+	strlcpy((char *)desc->name, name, len + 1);
 
 	chip->tcpc_desc = desc;
 
@@ -1669,11 +1675,13 @@ static const struct dev_pm_ops rt1711_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(
 			rt1711_i2c_suspend,
 			rt1711_i2c_resume)
+#ifdef CONFIG_PM_RUNTIME
 	SET_RUNTIME_PM_OPS(
 		rt1711_pm_suspend_runtime,
 		rt1711_pm_resume_runtime,
 		NULL
 	)
+#endif /* #ifdef CONFIG_PM_RUNTIME */
 };
 #define RT1711_PM_OPS	(&rt1711_pm_ops)
 #else
@@ -1733,6 +1741,10 @@ MODULE_DESCRIPTION("RT1711 TCPC Driver");
 MODULE_VERSION(RT1711H_DRV_VERSION);
 
 /**** Release Note ****
+ * 2.0.2_MTK
+ * (1) fix enable vsafe0v detect for 10k legacy cable workaround
+ * (2) fix code defect and coverity
+ *
  * 2.0.1_MTK
  *	First released PD3.0 Driver on MTK platform
  */
