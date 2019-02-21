@@ -625,8 +625,10 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	if (a_code == 1)
 		lv = CPU_LEVEL_7;	/* V5_4 */
 
+#if 0
 	if (turbocode == 1)
 		lv = CPU_LEVEL_6;	/* V5_T */
+#endif
 
 	turbo_flag = 0;
 
