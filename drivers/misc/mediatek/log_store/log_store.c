@@ -35,7 +35,7 @@ static int dram_log_store_status = BUFF_NOT_READY;
 static char *pbuff;
 static struct pl_lk_log *dram_curlog_header;
 static struct dram_buf_header *sram_dram_buff;
-static bool early_log_disable;
+static bool early_log_disable = false;
 
 #define EXPDB_PATH "/dev/block/platform/bootdevice/by-name/expdb"
 
