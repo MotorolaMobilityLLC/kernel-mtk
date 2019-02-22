@@ -4183,11 +4183,63 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
+static int pagpionum;
+
+static int Request_EXT_PA(void)
+{
+	struct device_node *node = NULL;
+	int ret = -1;
+
+	printk("[Simon]%s()++\n", __func__);
+
+	node = of_find_compatible_node(NULL, NULL,
+				       "mediatek,mt_soc_codec_63xx");
+
+	if (!node) {
+		printk("[Simon]%s(), cannot find dts node!\n", __func__);
+		return ret;
+	}
+
+	pagpionum = of_get_named_gpio(node, "ext_pa", 0);
+	if (pagpionum < 0) {
+		printk("[Simon]%s(), cannot find ext_pa node!\n", __func__);
+		return ret;
+	}
+
+	ret = gpio_request(pagpionum, "info");
+	if (ret) {
+		printk("[Simon]%s(), request ext_pa failed!\n", __func__);
+		return ret;
+	}
+
+	gpio_direction_output(pagpionum, 0);
+	return ret;
+}
+
+static int Set_EXT_PA(int enable)
+{
+	gpio_direction_output(pagpionum, enable);
+	printk("[Simon]%s(), Speaker ext_pa set:%d!\n", __func__,enable);
+
+	return 0;
+}
+
+static void Ext_Speaker_Amp_On(bool enable)
+{
+	if(enable){
+		Set_EXT_PA(1);
+	}else{
+		Set_EXT_PA(0);
+	}
+}
+
 static void Ext_Speaker_Amp_Change(bool enable)
 {
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 	if (enable) {
 		pr_debug("Ext_Speaker_Amp_Change ON+\n");
+
+		Ext_Speaker_Amp_On(1);
 
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 
@@ -4201,6 +4253,8 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		pr_debug("Ext_Speaker_Amp_Change ON-\n");
 	} else {
 		pr_debug("Ext_Speaker_Amp_Change OFF+\n");
+
+		Ext_Speaker_Amp_On(0);
 
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 
@@ -7679,6 +7733,8 @@ static int mtk_mt6358_codec_dev_probe(struct platform_device *pdev)
 	} else {
 		pr_warn("%s(), pdev->dev.of_node = NULL!!!\n", __func__);
 	}
+
+	Request_EXT_PA();
 
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_codec(&pdev->dev,
