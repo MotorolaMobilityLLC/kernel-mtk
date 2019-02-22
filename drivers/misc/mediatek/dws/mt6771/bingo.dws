@@ -139,13 +139,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint182>
-            <eint186>
-                <varName>SMART_PA</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint186>
         </module>
         <module name="gpio">
             <count>192</count>
@@ -1928,61 +1921,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio169>
-            <gpio170>
-                <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_I2S_BCK_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio170>
-            <gpio171>
-                <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_LRCK_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio171>
-            <gpio172>
-                <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_I2S_DOUT_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio172>
-            <gpio173>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_Smart_PA_EINT_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio173>
-            <gpio174>
-                <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_SMARTPA_I2S_DIN_PIN</varName0>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio174>
             <gpio175>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
@@ -2163,11 +2101,6 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x34</address>
             </device17>
-            <device18>
-                <varName>SPEAKER_AMP</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x34</address>
-            </device18>
             <device19>
                 <varName>SLAVE_CHARGER</varName>
                 <channel>I2C_CHANNEL_6</channel>
