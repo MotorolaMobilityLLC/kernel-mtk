@@ -236,7 +236,9 @@ static int otg_iddig_probe(struct platform_device *pdev)
 	pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(pinctrl)) {
 		dev_err(&pdev->dev, "Cannot find usb pinctrl!\n");
+        #ifdef MTK_BASE
 		return -1;
+	#endif
 	}
 
 	pinctrl_iddig_init = pinctrl_lookup_state(pinctrl, "iddig_init");
