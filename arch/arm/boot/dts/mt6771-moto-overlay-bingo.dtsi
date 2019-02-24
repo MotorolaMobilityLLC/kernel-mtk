@@ -107,4 +107,7 @@
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
 };
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+};
 
