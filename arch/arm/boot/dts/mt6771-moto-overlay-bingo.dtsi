@@ -12,8 +12,10 @@
 
 #include "mt6771-moto-overlay.dtsi"
 
-&otg_iddig {
+&odm {
+	otg_iddig:otg_iddig  {
 	compatible = "mediatek,usb_iddig_bi_eint";
+	};
 };
 &lk_charger {
 		max_charger_voltage = <6500000>;
