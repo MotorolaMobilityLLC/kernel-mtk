@@ -13,6 +13,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/pinctrl/mt6771-pinfunc.h>
+#include <dt-bindings/mmc/mt6771-msdc.h>
 
 /* chosen */
 &chosen {
