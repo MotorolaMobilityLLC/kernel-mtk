@@ -191,6 +191,6 @@
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
-/*&mt_soc_codec_name {
+&mt_soc_codec_name {
 		ext_pa =  <&pio 153 0>;
-};*/
+};
