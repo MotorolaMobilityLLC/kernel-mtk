@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.23.2019.16:01:52"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="02.25.2019.19:38:51"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -98,9 +98,9 @@
                 <debounce_en>Enable</debounce_en>
             </eint7>
             <eint9>
-                <varName>RT9465_SLAVE_CHR</varName>
+                <varName>SAR_IRQ</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
+                <polarity>High</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint9>
@@ -245,10 +245,10 @@
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
+                <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_RT9465_EINT_PIN</varName0>
+                <varName0>GPIO_SAR_IRQ_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio9>
@@ -2099,6 +2099,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x54</address>
             </device12>
+            <device13>
+                <varName>SAR</varName>
+                <channel>I2C_CHANNEL_3</channel>
+                <address>0x20</address>
+            </device13>
             <device16>
                 <varName>USB_TYPE_C</varName>
                 <channel>I2C_CHANNEL_5</channel>
