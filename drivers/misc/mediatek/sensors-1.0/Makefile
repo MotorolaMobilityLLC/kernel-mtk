@@ -22,3 +22,4 @@ obj-$(CONFIG_CUSTOM_KERNEL_BIOMETRIC_SENSOR) += biometric/
 else
 obj-y += dummy.o
 endif
+obj-$( CONFIG_SAR) += sar/

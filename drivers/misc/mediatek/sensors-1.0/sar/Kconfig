@@ -1,0 +1,8 @@
+config SAR
+	bool "MTK AUTO DETECT SAR Sensor"
+	help
+	to support different sar sensor.
+config ABOV_SAR
+	bool "MTK AUTO DETECT SAR Sensor"
+	help
+	  to support abov sar sensor.
