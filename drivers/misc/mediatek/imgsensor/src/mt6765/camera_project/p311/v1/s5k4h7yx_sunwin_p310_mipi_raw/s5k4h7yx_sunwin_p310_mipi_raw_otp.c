@@ -559,7 +559,7 @@ bool check_sum_flag_awb(void)
 	}
 	if(checksum == otp_data_info.awb_flag_sum){
                 printk("OTP 4h7 checksum awb ok\n");
-		apply_4h7_otp_awb();
+		//apply_4h7_otp_awb();
 	}
 	else{
 		printk("OTP 4h7 check awb flag sum fail!!!");
@@ -617,7 +617,7 @@ bool  check_sum_flag_lsc(void)
 	}
         #endif
 
-        apply_4h7_otp_enb_lsc();
+        //apply_4h7_otp_enb_lsc();
 	return  bresult;
 }
 

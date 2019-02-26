@@ -48,6 +48,8 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 extern bool update_otp(void);
 extern bool check_sum_flag_lsc(void);
+extern int apply_4h7_otp_awb(void);
+extern void apply_4h7_otp_enb_lsc(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H7YX_SUNWIN_P310_SENSOR_ID,
@@ -961,6 +963,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 
+			#if 1
+	           if (!(update_otp()))
+	              {
+		             LOG_INF("Demon_otp update_otp error!");
+	              }
+           #endif
+
 //add camera info for p311
 #ifdef CONFIG_TINNO_PRODUCT_INFO
          FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P310_SENSOR_ID, 1, "s5k4h7yx_sunwin_p311_mipi_raw", 
@@ -1031,12 +1040,15 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
-#if 1
+#if 0
 	if (!(update_otp()))
 	{
 		LOG_INF("Demon_otp update_otp error!");
 	}
 #endif
+	apply_4h7_otp_awb();
+	apply_4h7_otp_enb_lsc();
+
 	/* initail sequence write in  */
 	sensor_init();
 
