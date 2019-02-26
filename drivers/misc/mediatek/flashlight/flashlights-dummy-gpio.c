@@ -48,14 +48,30 @@ static struct work_struct dummy_work;
 
 /* define pinctrl */
 /* TODO: define pinctrl */
+
+#define DUMMY_PINCTRL_PIN_HWEN 0
+#define DUMMY_PINCTRL_PIN_STROBE 1
+
 #define DUMMY_PINCTRL_PIN_XXX 0
 #define DUMMY_PINCTRL_PINSTATE_LOW 0
 #define DUMMY_PINCTRL_PINSTATE_HIGH 1
 #define DUMMY_PINCTRL_STATE_XXX_HIGH "xxx_high"
 #define DUMMY_PINCTRL_STATE_XXX_LOW  "xxx_low"
 static struct pinctrl *dummy_pinctrl;
-static struct pinctrl_state *dummy_xxx_high;
-static struct pinctrl_state *dummy_xxx_low;
+//static struct pinctrl_state *dummy_xxx_high;
+//static struct pinctrl_state *dummy_xxx_low;
+
+#define DUMMY_PINCTRL_STATE_HWEN_HIGH "hwen_high"
+#define DUMMY_PINCTRL_STATE_HWEN_LOW  "hwen_low"
+#define DUMMY_PINCTRL_STATE_STROBE_HIGH "strobe_high" //High is flash mode
+#define DUMMY_PINCTRL_STATE_STROBE_LOW  "strobe_low" //Low is torch mode
+
+static struct pinctrl_state *dummy_hwen_high;
+static struct pinctrl_state *dummy_hwen_low;
+static struct pinctrl_state *dummy_strobe_high;
+static struct pinctrl_state *dummy_strobe_low;
+
+static int g_duty=-1;
 
 /* define usage count */
 static int use_count;
@@ -83,17 +99,26 @@ static int dummy_pinctrl_init(struct platform_device *pdev)
 	}
 
 	/* TODO: Flashlight XXX pin initialization */
-	dummy_xxx_high = pinctrl_lookup_state(
-			dummy_pinctrl, DUMMY_PINCTRL_STATE_XXX_HIGH);
-	if (IS_ERR(dummy_xxx_high)) {
-		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_HIGH);
-		ret = PTR_ERR(dummy_xxx_high);
+	/* TODO: Flashlight hwen pin initialization */
+	dummy_hwen_high = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_HWEN_HIGH);
+	if (IS_ERR(dummy_hwen_high)) {
+		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_HWEN_HIGH);
+		ret = PTR_ERR(dummy_hwen_high);
 	}
-	dummy_xxx_low = pinctrl_lookup_state(
-			dummy_pinctrl, DUMMY_PINCTRL_STATE_XXX_LOW);
-	if (IS_ERR(dummy_xxx_low)) {
-		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_XXX_LOW);
-		ret = PTR_ERR(dummy_xxx_low);
+	dummy_hwen_low = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_HWEN_LOW);
+	if (IS_ERR(dummy_hwen_low)) {
+		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_HWEN_LOW);
+		ret = PTR_ERR(dummy_hwen_low);
+	}
+	dummy_strobe_high = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_STROBE_HIGH);
+	if (IS_ERR(dummy_strobe_high)) {
+		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_STROBE_HIGH);
+		ret = PTR_ERR(dummy_strobe_high);
+	}
+	dummy_strobe_low = pinctrl_lookup_state(dummy_pinctrl, DUMMY_PINCTRL_STATE_STROBE_LOW);
+	if (IS_ERR(dummy_strobe_low)) {
+		pr_err("Failed to init (%s)\n", DUMMY_PINCTRL_STATE_STROBE_LOW);
+		ret = PTR_ERR(dummy_strobe_low);
 	}
 
 	return ret;
@@ -108,14 +133,22 @@ static int dummy_pinctrl_set(int pin, int state)
 		return -1;
 	}
 
+
 	switch (pin) {
-	case DUMMY_PINCTRL_PIN_XXX:
-		if (state == DUMMY_PINCTRL_PINSTATE_LOW &&
-				!IS_ERR(dummy_xxx_low))
-			pinctrl_select_state(dummy_pinctrl, dummy_xxx_low);
-		else if (state == DUMMY_PINCTRL_PINSTATE_HIGH &&
-				!IS_ERR(dummy_xxx_high))
-			pinctrl_select_state(dummy_pinctrl, dummy_xxx_high);
+	case DUMMY_PINCTRL_PIN_HWEN:
+
+		if (state == DUMMY_PINCTRL_PINSTATE_LOW && !IS_ERR(dummy_hwen_low))
+			pinctrl_select_state(dummy_pinctrl, dummy_hwen_low);
+		else if (state == DUMMY_PINCTRL_PINSTATE_HIGH && !IS_ERR(dummy_hwen_high))
+			pinctrl_select_state(dummy_pinctrl, dummy_hwen_high);
+		else
+			pr_err("set err, pin(%d) state(%d)\n", pin, state);
+		break;
+	case DUMMY_PINCTRL_PIN_STROBE:
+		if (state == DUMMY_PINCTRL_PINSTATE_LOW && !IS_ERR(dummy_strobe_low))
+			pinctrl_select_state(dummy_pinctrl, dummy_strobe_low);
+		else if (state == DUMMY_PINCTRL_PINSTATE_HIGH && !IS_ERR(dummy_strobe_high))
+			pinctrl_select_state(dummy_pinctrl, dummy_strobe_high);
 		else
 			pr_err("set err, pin(%d) state(%d)\n", pin, state);
 		break;
@@ -135,28 +168,40 @@ static int dummy_pinctrl_set(int pin, int state)
 /* flashlight enable function */
 static int dummy_enable(void)
 {
-	int pin = 0, state = 0;
+	//int pin = 0, state = 0;
 
 	/* TODO: wrap enable function */
-
-	return dummy_pinctrl_set(pin, state);
+	if(g_duty <= 1) //torch  = 0 video and pre mode = 1
+	{
+		dummy_pinctrl_set(0, 1);//hwen enable
+		dummy_pinctrl_set(1, 0);//torch enable
+	} else { // duty = 2/3 main flash mode
+		dummy_pinctrl_set(0, 1);//hwen enable  //short mode 220ms
+		dummy_pinctrl_set(1, 1);//flash enable
+		
+    }
+	pr_err("FL_enable torch g_duty=%d line=%d\n",g_duty,__LINE__);
+	pr_err("gepeng into dummy_enable ....\n");
+	return 0;
 }
 
 /* flashlight disable function */
 static int dummy_disable(void)
 {
-	int pin = 0, state = 0;
+	//int pin = 0, state = 0;
 
 	/* TODO: wrap disable function */
-
-	return dummy_pinctrl_set(pin, state);
+    dummy_pinctrl_set(0,0);
+	dummy_pinctrl_set(1,0);
+	
+	return 0;
 }
 
 /* set flashlight level */
 static int dummy_set_level(int level)
 {
 	int pin = 0, state = 0;
-
+     g_duty=level;
 	/* TODO: wrap set level function */
 
 	return dummy_pinctrl_set(pin, state);

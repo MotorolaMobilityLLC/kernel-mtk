@@ -14,6 +14,7 @@
 
 #include "flashlight-core.h"
 
+#if 0
 #if defined(mt6739)
 #if defined(tb8765ap1_64_bsp) || defined(tb8765ap1_bsp_1g) || defined(tb8765ap1_bsp)
 	const struct flashlight_device_id flashlight_id[] = {
@@ -80,9 +81,11 @@ const struct flashlight_device_id flashlight_id[] = {
 	{0, 0, 0, "flashlights-lm3642", 0, 0},
 };
 #else
+#endif
+#endif
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
-	{0, 0, 0, "flashlights-none", -1, 0},
+	{0, 0, 0, "flashlights-dummy-gpio", 0, 0},
 	{0, 1, 0, "flashlights-none", -1, 0},
 	{1, 0, 0, "flashlights-none", -1, 0},
 	{1, 1, 0, "flashlights-none", -1, 0},
@@ -91,7 +94,6 @@ const struct flashlight_device_id flashlight_id[] = {
 	{1, 0, 1, "flashlights-none", -1, 0},
 	{1, 1, 1, "flashlights-none", -1, 0},
 };
-#endif
 
 const int flashlight_device_num = sizeof(flashlight_id) / sizeof(struct flashlight_device_id);
 
