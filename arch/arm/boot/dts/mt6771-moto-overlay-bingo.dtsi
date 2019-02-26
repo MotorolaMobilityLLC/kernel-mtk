@@ -17,6 +17,10 @@
 	compatible = "mediatek,usb_iddig_bi_eint";
 	};
 };
+&touch {
+	tpd-resolution = <720 1520>;
+	tpd-filter-enable = <0>;
+};
 &lk_charger {
 		max_charger_voltage = <6500000>;
 		fast_charge_voltage = <2000000>;
