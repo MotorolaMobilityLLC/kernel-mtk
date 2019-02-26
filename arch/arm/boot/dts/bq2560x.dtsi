@@ -1,0 +1,23 @@
+/*
+Please set primary/secondary charger to corresponding I2C bus
+ADD BY LYQ 2019-01-23
+*/
+
+&i2c5 {
+		bq2560x@6B {
+		compatible = "ti,bq25601";
+		reg = <0x6B>;
+		ti,bq2560x,usb-vlim = <4600>;
+		ti,bq2560x,usb-ilim = <500>;
+		ti,bq2560x,usb-vreg = <4400>;
+		ti,bq2560x,usb-ichg = <500>;
+
+		ti,bq2560x,precharge-current = <256>;
+		ti,bq2560x,termination-current = <60>;
+		ti,bq2560x,boost-voltage = <4998>;
+		ti,bq2560x,boost-current = <1200>;
+		ti,bq2560x,enable_term;
+		ti,bq2560x,stat-pin-ctrl = <3>;
+		ti,bq2560x,vac-ovp-threshold = <6500>;
+		};
+};

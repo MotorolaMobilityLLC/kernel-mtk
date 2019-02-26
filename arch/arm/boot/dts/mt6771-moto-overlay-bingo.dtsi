@@ -11,7 +11,7 @@
  */
 
 #include "mt6771-moto-overlay.dtsi"
-
+#include "bq2560x.dtsi"
 &odm {
 	otg_iddig:otg_iddig  {
 	compatible = "mediatek,usb_iddig_bi_eint";
@@ -108,6 +108,9 @@
 		bif_threshold1 = <4250000>;
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
+};
+&subpmic_pmu_eint {
+	compatible = "mediatek,sw-charger";
 };
 &msdc1 {
 	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
