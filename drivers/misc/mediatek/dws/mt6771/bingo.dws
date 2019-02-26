@@ -1189,7 +1189,7 @@
             </gpio98>
             <gpio99>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1200,7 +1200,7 @@
             </gpio99>
             <gpio100>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1288,7 +1288,7 @@
             </gpio107>
             <gpio108>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1742,9 +1742,8 @@
                 <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_TORCH_EN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio150>
@@ -1755,7 +1754,6 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_FLASH_STROBE_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio151>
@@ -1822,6 +1820,17 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio159>
+            <gpio160>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_TORCH_EN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio160>
             <gpio161>
                 <eint_mode>false</eint_mode>
                 <def_mode>2</def_mode>
@@ -1949,7 +1958,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_FUSB340_USBTYPEC_SEL_PIN</varName0>
+                <varName0>GPIO_FLASH_STROBE_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio177>
@@ -2150,12 +2159,13 @@
             <pmic0>
                 <ldoVar>VCAMA1</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>SUB_CAMERA_POWER_A</varName0>
+                <varName0>MAIN_CAMERA_POWER_A</varName0>
+                <varName1>SUB_CAMERA_POWER_A</varName1>
             </pmic0>
             <pmic1>
                 <ldoVar>VCAMA2</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_POWER_A</varName0>
+                <varName0>MAIN_CAMERA_2_POWER_A</varName0>
             </pmic1>
             <pmic2>
                 <ldoVar>VSIM1</ldoVar>
