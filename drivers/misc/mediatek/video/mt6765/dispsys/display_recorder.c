@@ -1297,12 +1297,6 @@ void init_log_buffer(void)
 	pr_info("[DISP]%s success\n", __func__);
 	return;
 err:
-	err_buffer = 0;
-	fence_buffer = 0;
-	dbg_buffer = 0;
-	dump_buffer = 0;
-	debug_buffer = 0;
-	status_buffer = 0;
 	pr_info("[DISP]%s: log buffer allocation fail\n", __func__);
 }
 
