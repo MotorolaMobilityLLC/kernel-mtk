@@ -1162,25 +1162,31 @@ EXPORT_SYMBOL(lpDram_Register_Read);
  *************************************************/
 unsigned int get_dram_data_rate(void)
 {
-	unsigned int u4ShuLevel, u4SDM_PCW, u4PREDIV, u4POSDIV;
+	unsigned int u4PllIdx, u4ShuLevel, u4SDM_PCW, u4PREDIV, u4POSDIV;
 	unsigned int u4CKDIV4, u4VCOFreq, u4DataRate = 0;
+	unsigned int pcw_ofs[2] = { 0xd9c, 0xd94 };
+	unsigned int prepost_ofs[2] = { 0xda8, 0xda0 };
 	int channels;
 
 	channels = get_emi_ch_num();
 	u4ShuLevel = get_shuffle_status();
 
+	/* only CHA have this bit */
+	u4PllIdx = readl(
+		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0x510)) >> 31 & 0x00000001;
+
 	u4SDM_PCW = readl(
-		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xd94 + 0x500 * u4ShuLevel)) >>
-		16;
+		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + pcw_ofs[u4PllIdx] +
+			(0x500 * u4ShuLevel))) >> 16;
 	u4PREDIV = (readl(
-		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) &
-		0x000c0000) >> 18;
+		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + prepost_ofs[u4PllIdx] +
+			(0x500 * u4ShuLevel))) & 0x000c0000) >> 18;
 	u4POSDIV = readl(
-		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xda0 + 0x500 * u4ShuLevel)) &
-		0x00000007;
+		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + prepost_ofs[u4PllIdx] +
+			(0x500 * u4ShuLevel))) & 0x00000007;
 	u4CKDIV4 = (readl(
-		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xd18 + 0x500 * u4ShuLevel)) &
-		0x08000000) >> 27;
+		IOMEM(DDRPHY_AO_CHA_BASE_ADDR + 0xd18 +
+			(0x500 * u4ShuLevel))) & 0x08000000) >> 27;
 
 	u4VCOFreq = ((52>>u4PREDIV)*(u4SDM_PCW>>8))>>u4POSDIV;
 
@@ -1197,6 +1203,8 @@ unsigned int get_dram_data_rate(void)
 			u4DataRate = 1866;
 		else if (u4DataRate == 1599)
 			u4DataRate = 1600;
+		else if (u4DataRate == 1534)
+			u4DataRate = 1534;
 		else if (u4DataRate == 1196)
 			u4DataRate = 1200;
 		else
@@ -1204,10 +1212,14 @@ unsigned int get_dram_data_rate(void)
 	} else if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 		if (u4DataRate == 3198)
 			u4DataRate = 3200;
+		else if (u4DataRate == 3068)
+			u4DataRate = 3068;
 		else if (u4DataRate == 2392)
 			u4DataRate = 2400;
 		else if (u4DataRate == 1599)
 			u4DataRate = 1600;
+		else if (u4DataRate == 1534)
+			u4DataRate = 1534;
 		else
 			u4DataRate = 0;
 	} else
