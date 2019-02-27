@@ -74,7 +74,7 @@ static bool mPrepareDone;
 static int Audio_fm_i2s_Volume_Get(struct snd_kcontrol *kcontrol,
 				   struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("Audio_AmpR_Get = %d\n", mfm_i2s_Volume);
+	/* pr_debug("Audio_AmpR_Get = %d\n", mfm_i2s_Volume); */
 	ucontrol->value.integer.value[0] = mfm_i2s_Volume;
 	return 0;
 }
@@ -139,7 +139,7 @@ static int mtk_pcm_fm_i2s_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_fm_i2s_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("mtk_pcm_fm_i2s_hw_free\n");
+	/* pr_debug("mtk_pcm_fm_i2s_hw_free\n"); */
 	return snd_pcm_lib_free_pages(substream);
 }
 
@@ -175,7 +175,7 @@ static int mtk_pcm_fm_i2s_open(struct snd_pcm_substream *substream)
 	}
 
 	SetFMEnableFlag(true);
-	pr_debug("mtk_pcm_fm_i2s_open return\n");
+	/* pr_debug("mtk_pcm_fm_i2s_open return\n"); */
 	return 0;
 }
 

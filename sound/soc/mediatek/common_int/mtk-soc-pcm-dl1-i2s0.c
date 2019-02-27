@@ -259,8 +259,9 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		/* Enable I2S3 */
 		Set2ndI2SOutEnable(true);
 
-		pr_debug("%s(), Turn on. AFE_I2S_CON3=0x%x\n", __func__,
-			 Afe_Get_Reg(AFE_I2S_CON3));
+		/* pr_debug("%s(), Turn on. AFE_I2S_CON3=0x%x\n", __func__,
+		 * Afe_Get_Reg(AFE_I2S_CON3));
+		 */
 
 		EnableAfe(true);
 	} else {
