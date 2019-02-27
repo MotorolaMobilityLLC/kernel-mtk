@@ -1287,7 +1287,7 @@ int sensor_enable_to_hub(uint8_t sensorType, int enabledisable)
 		pr_err("invalid sensor %d\n", sensorType);
 		ret = -1;
 		mutex_unlock(&mSensorState_mtx);
-		return ret < 0 ? ret : 0;
+		return ret;
 	}
 	if (mSensorState[sensorType].sensorType ||
 		(sensorType == ID_ACCELEROMETER &&
