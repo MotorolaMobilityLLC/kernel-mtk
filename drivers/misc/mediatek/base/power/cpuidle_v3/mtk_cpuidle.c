@@ -31,7 +31,9 @@
 
 static ulong dbg_data[40];
 static int mtk_cpuidle_initialized;
+#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 static struct spm_wakeup_source spm_wakeup_src[MAX_SPM_WAKEUP_SRC];
+#endif
 
 #ifdef CPUIDLE_PROFILE
 
@@ -248,7 +250,7 @@ static inline void cpuidle_fp_reset(int cpu)
 
 #endif /* CONFIG_MTK_RAM_CONSOLE */
 
-
+#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 static void mtk_spm_wakeup_src_restore(void)
 {
 	int i;
@@ -313,6 +315,7 @@ fail:
 	of_node_put(np);
 	return 0;
 }
+#endif
 
 static void mtk_platform_save(int cpu)
 {
@@ -357,8 +360,10 @@ int mtk_enter_idle_state(int mode)
 
 		mtk_platform_restore(cpu);
 
+#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 		if (mode > MTK_MCDI_CLUSTER_MODE)
 			mtk_spm_wakeup_src_restore();
+#endif
 
 		cpu_pm_exit();
 
@@ -376,7 +381,9 @@ int mtk_cpuidle_init(void)
 	if (mtk_cpuidle_initialized == 1)
 		return 0;
 
+#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 	wakeup_source_lookup();
+#endif
 
 	/* cpuidle footprint init */
 	cpuidle_fp_init();
