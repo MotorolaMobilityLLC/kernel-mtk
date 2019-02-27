@@ -23,6 +23,7 @@
 #include <linux/mutex.h>
 #ifdef ION_TO_BE_IMPL
 #include <mmprofile.h>
+#include <mmprofile_function.h>
 #endif
 #include <linux/debugfs.h>
 #include <linux/kthread.h>

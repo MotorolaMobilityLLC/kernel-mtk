@@ -16,6 +16,7 @@
 
 #include <linux/types.h>
 #include "mmprofile.h"
+#include "mmprofile_function.h"
 #include "ddp_info.h"
 enum DPREC_EVENT {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,
