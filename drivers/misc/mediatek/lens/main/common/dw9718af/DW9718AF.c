@@ -50,13 +50,13 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 	char puReadCmd[1] = {(char)(a_u2Addr)};
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puReadCmd, 1);
-	if (i4RetValue != 2) {
+	if (i4RetValue < 0) {
 		LOG_INF(" I2C write failed!!\n");
 		return -1;
 	}
 
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, (char *)a_puBuff, 1);
-	if (i4RetValue != 1) {
+	if (i4RetValue < 0) {
 		LOG_INF(" I2C read failed!!\n");
 		return -1;
 	}
@@ -66,7 +66,7 @@ static int i2c_read(u8 a_u2Addr, u8 *a_puBuff)
 
 static u8 read_data(u8 addr)
 {
-	u8 get_byte = 0;
+	u8 get_byte = 0xFF;
 
 	i2c_read(addr, &get_byte);
 
@@ -127,17 +127,34 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 static int initdrv(void)
 {
 	int i4RetValue = 0;
+	char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
 	char puSendCmd2[2] = {0x01, 0x39};
 	char puSendCmd3[2] = {0x05, 0x65};
 
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x00 failed!!\n");
+		return -1;
+	}
+
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
-	if (i4RetValue < 0)
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x01 failed!!\n");
 		return -1;
+	}
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 
-	return i4RetValue;
+	if (i4RetValue < 0) {
+		LOG_INF("I2C send 0x05 failed!!\n");
+		return -1;
+	}
+
+	LOG_INF("driver init success!!\n");
+
+	return 0;
 }
 
 static inline int moveAF(unsigned long a_u4Position)
@@ -152,25 +169,24 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 
-		initdrv();
-		ret = s4DW9718AF_ReadReg(&InitPos);
+		ret = initdrv();
 
 		if (ret == 0) {
+			ret = s4DW9718AF_ReadReg(&InitPos);
 			LOG_INF("Init Pos %6d\n", InitPos);
 
 			spin_lock(g_pAF_SpinLock);
 			g_u4CurrPosition = (unsigned long)InitPos;
 			spin_unlock(g_pAF_SpinLock);
 
+			spin_lock(g_pAF_SpinLock);
+			*g_pAF_Opened = 2;
+			spin_unlock(g_pAF_SpinLock);
 		} else {
 			spin_lock(g_pAF_SpinLock);
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
@@ -250,8 +266,14 @@ int DW9718AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2)
-		LOG_INF("Wait\n");
+	if (*g_pAF_Opened == 2) {
+		int i4RetValue = 0;
+		char puSendCmd[2] = {0x00, 0x01};
+
+		LOG_INF("apply\n");
+
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
