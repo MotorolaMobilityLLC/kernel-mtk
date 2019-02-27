@@ -7077,6 +7077,12 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 		goto unlock;
 	if (tmp_target >= 0) {
 		target_cpu = tmp_target;
+
+		/* no need energy calculation if the same domain */
+		if (is_intra_domain(task_cpu(p), target_cpu) &&
+				target_cpu != l_plus_cpu)
+			goto unlock;
+
 		if ((boosted || prefer_idle) && idle_cpu(target_cpu)) {
 			schedstat_inc(p->se.statistics.nr_wakeups_secb_idle_bt);
 			schedstat_inc(this_rq()->eas_stats.secb_idle_bt);
@@ -9207,6 +9213,8 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 {
 	struct sg_lb_stats *local, *busiest;
 	struct sd_lb_stats sds;
+	int local_cpu = 0, busiest_cpu = 0, intra = 0;
+	struct cpumask *busiest_cpumask;
 
 	init_sd_lb_stats(&sds);
 
@@ -9216,7 +9224,19 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 	 */
 	update_sd_lb_stats(env, &sds);
 
-	if (energy_aware() && !env->dst_rq->rd->overutilized)
+	if (sds.busiest) {
+		busiest_cpumask = sched_group_cpus(sds.busiest);
+		local_cpu = env->dst_cpu;
+		busiest_cpu = group_first_cpu(sds.busiest);
+
+		intra = is_intra_domain(local_cpu, busiest_cpu);
+		mt_sched_printf(sched_lb,
+			"%s: local=%d, busiest=%d, busiest_mask=%lu, intra=%d",
+			 __func__, local_cpu, busiest_cpu,
+			busiest_cpumask->bits[0], intra);
+	}
+
+	if (energy_aware() && !env->dst_rq->rd->overutilized && !intra)
 		goto out_balanced;
 
 	local = &sds.local_stat;
