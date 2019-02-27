@@ -648,7 +648,7 @@ void notrace aee_wdt_atf_entry(void)
 	aee_rr_rec_exp_type(1);
 #endif
 #endif
-	__disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2();
+	dis_D_inner_fL1L2();
 
 	if (atf_aee_debug_virt_addr) {
 		regs = (void *)(atf_aee_debug_virt_addr +
