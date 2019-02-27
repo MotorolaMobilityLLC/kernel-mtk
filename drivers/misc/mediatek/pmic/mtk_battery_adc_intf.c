@@ -50,6 +50,11 @@ bool pmic_is_battery_exist(void)
 	bool is_bat_exist;
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
+#if defined(CONFIG_FPGA_EARLY_PORTING)
+	is_bat_exist = 0;
+	return is_bat_exist;
+#endif
+
 #if defined(CONFIG_MTK_PMIC_CHIP_MT6358) || defined(CONFIG_MTK_PMIC_CHIP_MT6359)
 	temp = pmic_get_register_value(PMIC_AD_BATON_UNDET);
 #else
