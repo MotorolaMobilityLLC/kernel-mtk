@@ -3128,7 +3128,6 @@ static int decouple_update_rdma_config(void)
 static int _ovl_fence_release_callback(unsigned long userdata)
 {
 	int i = 0;
-	unsigned int addr = 0;
 	int ret = 0;
 	int real_hrt_level = 0;
 
@@ -3201,9 +3200,13 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			MMPROFILE_FLAG_PULSE, i, fence_idx - subtractor);
 	}
 
-	addr = ddp_ovl_get_cur_addr(!_should_config_ovl_input(), 0);
-	if ((primary_display_is_decouple_mode() == 0))
-		update_frm_seq_info(addr, 0, 2, FRM_START);
+	if (disp_helper_get_option(DISP_OPT_PERFORMANCE_DEBUG)) {
+		unsigned int addr = 0;
+
+		addr = ddp_ovl_get_cur_addr(!_should_config_ovl_input(), 0);
+		if ((primary_display_is_decouple_mode() == 0))
+			update_frm_seq_info(addr, 0, 2, FRM_START);
+	}
 
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release,
 		MMPROFILE_FLAG_END, 1, userdata);
