@@ -263,6 +263,26 @@ static unsigned int idle_pll_block_mask_resource[NR_SPM_RES_LEVEL_TYPES];
 
 static unsigned int idle_pll_value;
 
+#if MTK_SPM_HARDWARE_CG_CHECK
+#define SPM_CG_CHECK_STA_BIT_0         (1U << 0)
+#define SPM_CG_CHECK_STA_BIT_1         (1U << 1)
+#define SPM_CG_CHECK_STA_BIT_2         (1U << 2)
+#define SPM_CG_CHECK_STA_BIT_3         (1U << 3)
+#define SPM_CG_CHECK_STA_BIT_ALL	(1U << 0 | 1U << 1 | 1U << 2 | 1U << 3)
+
+static unsigned int hwcg_mask_scenario[NR_IDLE_TYPES] = {
+	[IDLE_TYPE_DP] = SPM_CG_CHECK_STA_BIT_1,
+	[IDLE_TYPE_SO3] = SPM_CG_CHECK_STA_BIT_2,
+	[IDLE_TYPE_SO] = SPM_CG_CHECK_STA_BIT_3,
+};
+static unsigned int hwcg_mask_resource[NR_SPM_RES_LEVEL_TYPES] = {
+	[SPM_RES_LEVEL_DRAM] = SPM_CG_CHECK_STA_BIT_1,
+	[SPM_RES_LEVEL_SYSPLL] = SPM_CG_CHECK_STA_BIT_0,
+	[SPM_RES_LEVEL_BUS_26M] = SPM_CG_CHECK_STA_BIT_2 |
+				SPM_CG_CHECK_STA_BIT_3,
+};
+#endif
+
 unsigned int
 	clkmux_condition_mask[NF_CLKMUX][NF_VCORE][NF_CLKMUX_COND_SET] = {
 	/* CLK_CFG_0 1000_0020 */
@@ -954,6 +974,28 @@ const char *mtk_resource_level_id_string[] = {
 	"SPM_RES_LEVEL_PMIC_LP",
 };
 
+static int cgmon_sel = -1;
+#if MTK_SPM_HARDWARE_CG_CHECK
+static int enable_idle_cond_update;
+void mtk_idle_force_idle_cond_update(void)
+{
+	enable_idle_cond_update = 1;
+	mtk_idle_cond_update_state();
+	enable_idle_cond_update = ((cgmon_sel != -1) ? 1 : 0);
+}
+
+/* return 0/1/-1 : SPM HW CG check failed/succeed/invalid */
+static int spm_hwcg_check(unsigned int check_bit)
+{
+	u32 spm_cg_check_sta = idle_readl(SPM_CG_CHECK_STA);
+
+	if (check_bit > SPM_CG_CHECK_STA_BIT_ALL)
+		return -1;
+	else
+		return !!(spm_cg_check_sta & check_bit);
+}
+#endif
+
 void mtk_suspend_cond_info(void)
 {
 	int i, j;
@@ -962,6 +1004,13 @@ void mtk_suspend_cond_info(void)
 	/* scenario-orietned */
 	if (!spm_resource_arch)
 		return;
+
+#if MTK_SPM_HARDWARE_CG_CHECK
+	/* If SPM Hardware CG check failed, force update idle condition*/
+	/* for printing blocking suspend log */
+	if (!spm_hwcg_check(SPM_CG_CHECK_STA_BIT_ALL))
+		mtk_idle_force_idle_cond_update();
+#endif
 
 	/* resource-oriented */
 	for (j = 0; j < NR_SPM_RES_LEVEL_TYPES; j++) {
@@ -1008,6 +1057,10 @@ int mtk_idle_cond_append_info(
 		p += l; \
 		s -= l; \
 	} while (0)
+
+#if MTK_SPM_HARDWARE_CG_CHECK
+	mtk_idle_force_idle_cond_update();
+#endif
 
 	/* scenario-oriented */
 	if (!spm_resource_arch) {
@@ -1118,17 +1171,20 @@ void mtk_idle_cond_update_mask(
 	}
 }
 
-static int cgmon_sel = -1;
 static unsigned int cgmon_sta[NR_CG_GRPS + 1];
 static DEFINE_SPINLOCK(cgmon_spin_lock);
 
 /* dp/so3/so print cg change state to ftrace log */
+/* sel: -1/0/1/2 = off/dp/so3/so */
 void mtk_idle_cg_monitor(int sel)
 {
 	unsigned long flags;
 
 	spin_lock_irqsave(&cgmon_spin_lock, flags);
 	cgmon_sel = sel;
+#if MTK_SPM_HARDWARE_CG_CHECK
+	enable_idle_cond_update = ((cgmon_sel != -1) ? 1 : 0);
+#endif
 	memset(cgmon_sta, 0, sizeof(cgmon_sta));
 	spin_unlock_irqrestore(&cgmon_spin_lock, flags);
 }
@@ -1184,6 +1240,16 @@ static void mtk_spm_res_level_set(void)
 
 	spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_RELEASE);
 
+#if MTK_SPM_HARDWARE_CG_CHECK
+	if (!spm_hwcg_check(hwcg_mask_resource[SPM_RES_LEVEL_DRAM])) {
+		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_DRAM);
+	} else if (!spm_hwcg_check(hwcg_mask_resource[SPM_RES_LEVEL_SYSPLL])) {
+		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_MAINPLL);
+	} else if (!spm_hwcg_check(hwcg_mask_resource[SPM_RES_LEVEL_BUS_26M])) {
+		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_AXI_BUS);
+		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_CK_26M);
+	}
+#else
 	if (idle_block_mask_resource[SPM_RES_LEVEL_DRAM][NR_CG_GRPS]
 	    || idle_pll_block_mask[SPM_RES_LEVEL_DRAM]) {
 		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_DRAM);
@@ -1195,6 +1261,7 @@ static void mtk_spm_res_level_set(void)
 		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_AXI_BUS);
 		spm_resource_req(SPM_RESOURCE_USER_SPM, SPM_RESOURCE_CK_26M);
 	}
+#endif
 }
 
 /* update all idle condition state: mtcmos/pll/cg/secure_cg */
@@ -1202,6 +1269,11 @@ void mtk_idle_cond_update_state(void)
 {
 	int i, j;
 	unsigned int clk[NR_CG_GRPS];
+
+#if MTK_SPM_HARDWARE_CG_CHECK
+	if (enable_idle_cond_update == 0)
+		return;
+#endif
 
 	/* read all cg state (not including secure cg) */
 	for (i = 0; i < NR_CG_GRPS; i++) {
@@ -1260,28 +1332,87 @@ void mtk_idle_cond_update_state(void)
 	mtk_spm_res_level_set();
 }
 
+#if MTK_SPM_HARDWARE_CG_CHECK
+#define MMSYS_CG_INDEX 6
+void mtk_idle_cond_update_mmcg_state_sodi3(void)
+{
+	int i, j;
+	unsigned int clk[NR_CG_GRPS];
+
+	/* Only read MM cg state */
+	for (i = MMSYS_CG_INDEX; i < NR_CG_GRPS; i++) {
+		idle_value[i] = clk[i] = 0;
+		/* check mtcmos, if off set idle_value and clk to 0 disable */
+		if (!(idle_readl(SPM_PWR_STATUS) &
+			idle_cg_info[i].subsys_mask) &&
+			!(idle_readl(SPM_PWR_STATUS_2ND) &
+			idle_cg_info[i].subsys_mask))
+			continue;
+		/* check clkmux */
+		if (check_clkmux_pdn(idle_cg_info[i].clkmux_id))
+			continue;
+		idle_value[i] = clk[i] = idle_cg_info[i].bBitflip ?
+			~idle_readl(idle_cg_info[i].addr) :
+			idle_readl(idle_cg_info[i].addr);
+	}
+
+	/* update block mask for so3 */
+	idle_block_mask_scenario[IDLE_TYPE_SO3][NR_CG_GRPS] = 0;
+	for (j = MMSYS_CG_INDEX; j < NR_CG_GRPS; j++) {
+		idle_block_mask_scenario[IDLE_TYPE_SO3][j] =
+			idle_cond_mask_scenario[IDLE_TYPE_SO3][j] & clk[j];
+		idle_block_mask_scenario[IDLE_TYPE_SO3][NR_CG_GRPS] |=
+			idle_block_mask_scenario[IDLE_TYPE_SO3][j];
+	}
+}
+#endif
+
 /* return final idle condition check result for each idle type */
 bool mtk_idle_cond_check(int idle_type)
 {
 	bool ret = false;
-
 	/* scenario-oriented */
 	if (!spm_resource_arch) {
+#if MTK_SPM_HARDWARE_CG_CHECK
+		if (spm_hwcg_check(hwcg_mask_scenario[idle_type])) {
+			if (idle_type == IDLE_TYPE_SO3) {
+			/* SPM_CG_CHECK_STA_BIT_2 has no MMSYS CG check. */
+			/* Use SW check for MMSYS CG check. */
+				mtk_idle_cond_update_mmcg_state_sodi3();
+				if (!idle_block_mask_scenario
+					[IDLE_TYPE_SO3][NR_CG_GRPS])
+					ret = true;
+			} else {
+					ret = true;
+			}
+		}
+
+		if (ret == false)
+			mtk_idle_force_idle_cond_update();
+#else
 		/* check cg state */
 		ret = !(idle_block_mask_scenario
 			[idle_type][NR_CG_GRPS]);
 
 		/* check pll state */
 		ret = (ret && !idle_pll_block_mask[idle_type]);
-
+#endif
 	} else {
 	/* resource-oriented */
+#if MTK_SPM_HARDWARE_CG_CHECK
+		if (spm_hwcg_check(hwcg_mask_resource[SPM_RES_LEVEL_DRAM]))
+			ret = true;
+
+		if (ret == false)
+			mtk_idle_force_idle_cond_update();
+#else
 		/* check dram with cg state */
 		ret = !(idle_block_mask_resource
 			[SPM_RES_LEVEL_DRAM][NR_CG_GRPS]);
 
 		/* check dram with pll state */
 		ret = (ret && !idle_pll_block_mask[SPM_RES_LEVEL_DRAM]);
+#endif
 	}
 
 	return ret;
@@ -1385,6 +1516,12 @@ void mtk_spm_arch_type_set(bool type)
 		idle_pll_cond_mask = idle_pll_cond_mask_resource;
 		idle_pll_block_mask = idle_pll_block_mask_resource;
 	}
+
+#if MTK_SPM_HARDWARE_CG_CHECK
+	/* Enable SPM hardware CG check again*/
+	SMC_CALL(ARGS, SPM_ARGS_HARDWARE_CG_CHECK,
+		MTK_SPM_HARDWARE_CG_CHECK, spm_resource_arch);
+#endif
 }
 
 bool mtk_spm_arch_type_get(void)
