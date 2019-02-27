@@ -119,7 +119,6 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	int boot_mode = 0;
 
 	if (!mtk_chg->chg_online) {
@@ -130,7 +129,6 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 			kernel_power_off();
 		}
 	}
-#endif
 
 	return ret;
 }

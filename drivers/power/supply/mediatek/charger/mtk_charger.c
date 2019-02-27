@@ -1290,7 +1290,6 @@ stop_charging:
 
 static void kpoc_power_off_check(struct charger_manager *info)
 {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	unsigned int boot_mode = get_boot_mode();
 	int vbus = battery_get_vbus();
 
@@ -1303,7 +1302,6 @@ static void kpoc_power_off_check(struct charger_manager *info)
 			kernel_power_off();
 		}
 	}
-#endif
 }
 
 enum hrtimer_restart charger_kthread_hrtimer_func(struct hrtimer *timer)
