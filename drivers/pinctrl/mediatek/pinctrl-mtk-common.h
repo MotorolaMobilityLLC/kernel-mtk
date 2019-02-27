@@ -20,7 +20,7 @@
 #include <linux/pinctrl/pinconf-generic.h>
 
 /* just for bringpup, and will be revert after bringup */
-#define GPIO_BRINGUP
+/* #define GPIO_BRINGUP */
 
 
 #define NO_EINT_SUPPORT    255
