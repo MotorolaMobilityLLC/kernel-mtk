@@ -20,6 +20,8 @@
 #include <helio-dvfsrc-opp-mt6761.h>
 #elif defined(CONFIG_MACH_MT3967)
 #include <helio-dvfsrc-opp-mt3967.h>
+#elif defined(CONFIG_MACH_MT6779)
+#include <helio-dvfsrc-opp-mt6779.h>
 #else
 #include <helio-dvfsrc-opp-mt67xx.h>
 #endif
@@ -49,5 +51,8 @@ extern int get_vcore_uv_table(int vcore_opp);
 
 extern void set_pwrap_cmd(int vcore_opp, int pwrap_cmd);
 extern int get_pwrap_cmd(int vcore_opp);
+extern int get_opp_ddr_freq(int ddr_opp);
+extern void set_opp_ddr_freq(int ddr_opp, int ddr_freq);
+
 #endif /* __HELIO_DVFSRC_OPP_H */
 
