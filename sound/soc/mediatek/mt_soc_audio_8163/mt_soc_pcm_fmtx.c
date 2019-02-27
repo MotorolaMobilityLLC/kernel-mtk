@@ -497,8 +497,6 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 	}
 
 	copy_size = Align64ByteSize(copy_size);
-	pr_debug("copy_size = 0x%x, count = 0x%x\n", copy_size,
-		(unsigned int)count);
 
 	if (copy_size != 0) {
 		spin_lock_irqsave(&auddrv_FMTxCtl_lock, flags);
@@ -507,19 +505,10 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 
 		if (Afe_WriteIdx_tmp + copy_size < Afe_Block->u4BufferSize) {
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
-				pr_debug("[%s]w_ptr = 0x%x, size = %d",
-					__func__,
-					(kal_uint32)data_w_ptr,
-					copy_size);
 				pr_debug(" Size = %d, Remained = %d\n",
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
 			} else {
-				pr_debug
-				("%p, data_w_ptr=%p, copy_size=%x\n",
-				Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp,
-				data_w_ptr, copy_size);
-
 				if (copy_from_user((Afe_Block->pucVirtBufAddr +
 					Afe_WriteIdx_tmp),
 					data_w_ptr, copy_size)) {
@@ -536,13 +525,6 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 			spin_unlock_irqrestore(&auddrv_FMTxCtl_lock, flags);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
-			pr_debug
-				("[%s],%x,WIdx:%x,RIdx:%x,Remain:%x, cnt:%x\n",
-				__func__, copy_size, Afe_Block->u4WriteIdx,
-				Afe_Block->u4DMAReadIdx,
-				Afe_Block->u4DataRemained, count);
-
 		} else {	/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
 
@@ -554,16 +536,7 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 				pr_warn("[%s] data_w_ptr = %p, size_1 = %d",
 					__func__, data_w_ptr, size_1);
-				pr_warn(" Size = %d, u4DataRemained = %d\n",
-					Afe_Block->u4BufferSize,
-					Afe_Block->u4DataRemained);
 			} else {
-				pr_debug
-				("[%s] mcmcpy, %x, data_w_ptr=%p, size_1=%x\n",
-				__func__,
-				Afe_Block->pucVirtBufAddr + Afe_WriteIdx_tmp,
-				data_w_ptr, size_1);
-
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 					Afe_WriteIdx_tmp),
 					data_w_ptr, size_1))) {
@@ -583,15 +556,7 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 				size_2)) {
 				pr_warn("[%s]2 w_ptr = %p,size_1=%d,size_2=%d",
 					__func__, data_w_ptr, size_1, size_2);
-				pr_warn("Size = %d, Remained = %d\n",
-					Afe_Block->u4BufferSize,
-					Afe_Block->u4DataRemained);
 			} else {
-				pr_debug
-					("[%s] Addr+WIdx=%x,",
-					__func__,
-					Afe_Block->pucVirtBufAddr +
-					Afe_WriteIdx_tmp);
 				pr_debug
 					(" data_w_ptr+size_1=%p, size_2=%x\n",
 					data_w_ptr + size_1, size_2);
@@ -613,13 +578,6 @@ static int mtk_pcm_fmtx_copy(struct snd_pcm_substream *substream,
 			spin_unlock_irqrestore(&auddrv_FMTxCtl_lock, flags);
 			count -= copy_size;
 			data_w_ptr += copy_size;
-
-			pr_debug
-				("finish2,size:%x,WIdx:%x,RIdx:%x,Remain:%x\n",
-				copy_size,
-				Afe_Block->u4WriteIdx,
-				Afe_Block->u4DMAReadIdx,
-				Afe_Block->u4DataRemained);
 		}
 	}
 	return 0;

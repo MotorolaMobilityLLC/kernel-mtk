@@ -3314,7 +3314,7 @@ void Auddrv_DAI_Interrupt_Handler(void)
 	/* buffer overflow */
 	if (mBlock->u4DataRemained > mBlock->u4BufferSize) {
 		pr_debug
-		("%s overflow rp:%x, wp:%x, remained:%x, size:%x\n",
+		("overflow rp:%x, wp:%x, remained:%x, size:%x\n",
 		mBlock->u4DMAReadIdx, mBlock->u4WriteIdx,
 		mBlock->u4DataRemained,	mBlock->u4BufferSize);
 
