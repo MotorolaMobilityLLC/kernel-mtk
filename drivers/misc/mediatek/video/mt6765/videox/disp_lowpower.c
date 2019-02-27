@@ -1138,13 +1138,8 @@ void primary_display_sodi_rule_init(void)
 #ifdef MTK_FB_SPM_SUPPORT
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	if (primary_display_is_video_mode()) {
-		ddp_set_spm_mode(DDP_CG_MODE, NULL);
-		mtk_idle_disp_is_ready(true);
-	} else {
-		ddp_set_spm_mode(DDP_CG_MODE, NULL);
-		mtk_idle_disp_is_ready(true);
-	}
+	ddp_set_spm_mode(DDP_CG_MODE, NULL);
+	mtk_idle_disp_is_ready(true);
 #endif
 #endif
 }
