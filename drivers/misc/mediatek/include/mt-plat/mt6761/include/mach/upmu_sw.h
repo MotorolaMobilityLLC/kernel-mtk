@@ -375,5 +375,6 @@ extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
  *=============================================================================
  */
 extern unsigned int PMIC_LP_CHIP_VER(void);
+extern unsigned int is_pmic_mrv(void);
 
 #endif /* _MT_PMIC_UPMU_SW_MT6357_H_ */
