@@ -130,3 +130,27 @@ int mdla_ion_kunmap(unsigned long arg)
 	return 0;
 }
 
+void mdla_ion_sync(u64 hndl)
+{
+	struct ion_sys_data sys_data;
+	int ret;
+
+	sys_data.sys_cmd = ION_SYS_CACHE_SYNC;
+	sys_data.cache_sync_param.kernel_handle =
+		(struct ion_handle *)hndl;
+	sys_data.cache_sync_param.sync_type = ION_CACHE_FLUSH_BY_RANGE;
+
+	ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM,
+		(unsigned long)&sys_data);
+
+	// TODO: remove debug
+	mdla_debug("%s: ion_kernel_ioctl kernel_handle=%llx\n",
+		__func__, (unsigned long long)hndl);
+
+	if (ret) {
+		// TODO: remove debug
+		mdla_debug("%s: ion_kernel_ioctl(hndl=%llx): %d failed\n",
+			__func__, (unsigned long long)hndl, ret);
+	}
+}
+

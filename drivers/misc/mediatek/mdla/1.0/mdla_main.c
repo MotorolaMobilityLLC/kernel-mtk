@@ -91,10 +91,12 @@ struct mtk_mdla_local {
 };
 struct command_entry {
 	struct list_head list;
-	void *kva; /* Virtual Address for Kernel */
-	u32 mva;   /* Physical Address for Device */
+	void *kva;    /* Virtual Address for Kernel */
+	u32 mva;      /* Physical Address for Device */
 	u32 count;
 	u32 id;
+	u64 khandle;  /* ion kernel handle */
+	u8 type;      /* allocate memory type */
 };
 
 static int mdla_open(struct inode *, struct file *);
@@ -429,30 +431,22 @@ static void mdla_mark_command_id(struct command_entry *run_cmd_data)
 	 */
 
 	for (i = 0; i < count; i++) {
-		mdla_debug("%s: add command %d\n", __func__, cmd_id);
+		mdla_debug("%s: add command: %d\n", __func__, cmd_id);
 		cmd[84 + (i * 96)] = cmd_id++;
 	}
 
 	// TODO: remove debug logs
 	mdla_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=%p\n",
 			__func__,
-			(void *)run_cmd_data->kva,
+			run_cmd_data->kva,
 			run_cmd_data->mva,
 			phys_to_dma(mdlactlDevice, run_cmd_data->mva));
 
 #ifdef CONFIG_MTK_MDLA_ION
-	/* Skip dma sync for ION, since phy_to_dma() returns wrong address
-	 * for ION's mva.
-	 * When CONFIG_MTK_MDLA_ION is enabled, the memory is either GSM or ION.
-	 * If the mva was not GSM, it must be ION.
-	 */
-	/* Userspace need to sync the dma buffer for device through ioctl()
-	 * vfs_ioctl(ION_IOC_SYNC)
-	 * => ion_ioctl(ION_IOC_SYNC)
-	 * => ion_sync_for_device(...)
-	 */
-	if (!is_gsm_addr(run_cmd_data->mva))
+	if (run_cmd_data->khandle) {
+		mdla_ion_sync(run_cmd_data->khandle);
 		return;
+	}
 #endif
 	dma_sync_single_for_device(mdlactlDevice,
 			phys_to_dma(mdlactlDevice, run_cmd_data->mva),
@@ -486,13 +480,21 @@ static int mdla_run_command_async(struct ioctl_run_cmd *run_cmd_data)
 
 	if (is_gsm_addr(cmd->mva))
 		cmd->kva = gsm_mva_to_virt(cmd->mva);
-	else if (!cmd->kva) {
+	else if (!run_cmd_data->kva) {
 		cmd->kva = phys_to_virt(cmd->mva);
-		mdla_debug("%s: phys_to_virt(%u) = %p\n",
+		mdla_debug("%s: kva: phys_to_virt(mva:%u) = %p\n",
 			__func__, cmd->mva, cmd->kva);
+	} else {
+		cmd->kva = (void *)run_cmd_data->kva;
+		mdla_debug("%s: kva=%p, mva=0x%08x\n",
+				__func__,
+				cmd->kva,
+				cmd->mva);
 	}
 
 	cmd->count = run_cmd_data->count;
+	cmd->khandle = run_cmd_data->khandle;
+	cmd->type = run_cmd_data->type;
 
 	mutex_lock(&cmd_list_lock);
 
