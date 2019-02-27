@@ -1107,8 +1107,9 @@ static void musb_ep_program(struct musb *musb, u8 epnum,
 					    packet_sz) - 1) << 11);
 			else
 				musb_writew(epio, MUSB_TXMAXP,
-					    qh->maxpacket |
-					    ((qh->hb_mult - 1) << 11));
+					    qh->maxpacket
+					    | ((qh->hb_mult ?
+					    (qh->hb_mult - 1):0) << 11));
 			musb_writeb(epio, MUSB_TXINTERVAL, qh->intv_reg);
 		} else {
 			musb_writeb(epio, MUSB_NAKLIMIT0, qh->intv_reg);
@@ -1837,11 +1838,32 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 		 * "missed" TXPKTRDY interrupts and deal with double-buffered
 		 * FIFO mode too...
 		 */
-		if (tx_csr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY)) {
-			DBG(4,
-				"DMA complete but packet still in FIFO, CSR %04x\n"
-				, tx_csr);
-			return;
+		{
+			struct timeval tv_before, tv_after;
+			int timeout = 0;
+			u64 diff_ns;
+
+			do_gettimeofday(&tv_before);
+			while (1) {
+				if (tx_csr & (MUSB_TXCSR_FIFONOTEMPTY |
+							  MUSB_TXCSR_TXPKTRDY))
+					tx_csr = musb_readw(epio, MUSB_TXCSR);
+				else
+					break;
+
+				do_gettimeofday(&tv_after);
+
+				diff_ns = timeval_to_ns(&tv_after) -
+					timeval_to_ns(&tv_before);
+				/* 1 sec for timeout */
+				if (diff_ns >= 1000000000) {
+					timeout = 1;
+					break;
+				}
+			}
+			if (timeout)
+				DBG(0, "ERROR!packet still in FIFO, CSR %04x\n",
+					tx_csr);
 		}
 	}
 
@@ -2935,6 +2957,11 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 			qh->is_ready,
 			urb->urb_list.prev != &qh->hep->urb_list,
 			musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+#ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
+	/* abort HW transaction on this ep */
+	if (qh->is_use_qmu)
+		mtk_disable_q(musb, qh->hw_ep->epnum, is_in);
+#endif
 	/*
 	 * Any URB not actively programmed into endpoint hardware can be
 	 * immediately given back; that's any URB not at the head of an
