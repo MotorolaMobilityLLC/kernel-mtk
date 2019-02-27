@@ -178,6 +178,8 @@ static int get_devinfo(void)
 	val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
 	val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
 	val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
+	val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
+	val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
 
 #if EEM_FAKE_EFUSE
 	/* for verification */
@@ -188,6 +190,8 @@ static int get_devinfo(void)
 	val[4] = DEVINFO_4;
 	val[5] = DEVINFO_5;
 	val[6] = DEVINFO_6;
+	val[7] = DEVINFO_7;
+	val[8] = DEVINFO_8;
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
@@ -1080,25 +1084,25 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 
 	switch (det_id) {
 	case EEM_DET_L:
-		det->MDES	= devinfo->CPU_L_MDES;
-		det->BDES	= devinfo->CPU_L_BDES;
-		det->DCMDET	= devinfo->CPU_L_DCMDET;
-		det->DCBDET	= devinfo->CPU_L_DCBDET;
-		det->EEMINITEN	= devinfo->CPU_L_INITEN;
-		det->EEMMONEN	= devinfo->CPU_L_MONEN;
-		det->MTDES	= devinfo->CPU_L_MTDES;
-		det->SPEC	= devinfo->CPU_L_SPEC;
+		det->MDES	= devinfo->CPU_L_LOW_MDES;
+		det->BDES	= devinfo->CPU_L_LOW_BDES;
+		det->DCMDET	= devinfo->CPU_L_LOW_DCMDET;
+		det->DCBDET	= devinfo->CPU_L_LOW_DCBDET;
+		det->EEMINITEN	= devinfo->CPU_L_LOW_INITEN;
+		det->EEMMONEN	= devinfo->CPU_L_LOW_MONEN;
+		det->MTDES	= devinfo->CPU_L_LOW_MTDES;
+		det->SPEC	= devinfo->CPU_L_LOW_SPEC;
 		break;
 
 	case EEM_DET_2L:
-		det->MDES	= devinfo->CPU_2L_MDES;
-		det->BDES	= devinfo->CPU_2L_BDES;
-		det->DCMDET	= devinfo->CPU_2L_DCMDET;
-		det->DCBDET	= devinfo->CPU_2L_DCBDET;
-		det->EEMINITEN	= devinfo->CPU_2L_INITEN;
-		det->EEMMONEN	= devinfo->CPU_2L_MONEN;
-		det->MTDES	= devinfo->CPU_2L_MTDES;
-		det->SPEC	= devinfo->CPU_2L_SPEC;
+		det->MDES	= devinfo->CPU_2L_LOW_MDES;
+		det->BDES	= devinfo->CPU_2L_LOW_BDES;
+		det->DCMDET	= devinfo->CPU_2L_LOW_DCMDET;
+		det->DCBDET	= devinfo->CPU_2L_LOW_DCBDET;
+		det->EEMINITEN	= devinfo->CPU_2L_LOW_INITEN;
+		det->EEMMONEN	= devinfo->CPU_2L_LOW_MONEN;
+		det->MTDES	= devinfo->CPU_2L_LOW_MTDES;
+		det->SPEC	= devinfo->CPU_2L_LOW_SPEC;
 		break;
 
 	case EEM_DET_CCI:
@@ -1797,6 +1801,7 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
 			sizeof(det->volt_tbl));
 	}
 
+	/* Fix me */
 	eem_set_eem_volt(det);
 
 out:
