@@ -2372,7 +2372,6 @@ static struct musb *allocate_instance(struct device *dev,
 	musb->nIrq = -ENODEV;
 	musb->config = config;
 	musb->is_ready = false;
-	musb->in_ipo_off = false;
 	musb->st_wq = create_singlethread_workqueue("usb20_st_wq");
 
 	/*BUG_ON(musb->config->num_eps > MUSB_C_NUM_EPS);*/

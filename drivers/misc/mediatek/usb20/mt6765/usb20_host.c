@@ -26,7 +26,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #ifdef CONFIG_MTK_USB_TYPEC
-#include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
 #include <linux/workqueue.h>
@@ -340,43 +339,6 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 	}
 	return NOTIFY_OK;
 }
-#else
-static int typec_otg_enable(void *data)
-{
-	pr_info("typec_otg_enable\n");
-	musb_typec_host_connect(0);
-	return 0;
-}
-
-static int typec_otg_disable(void *data)
-{
-	pr_info("typec_otg_disable\n");
-	musb_typec_host_disconnect(0);
-	return 0;
-}
-
-static int typec_vbus_enable(void *data)
-{
-	pr_info("typec_vbus_enable\n");
-	_set_vbus(mtk_musb, 1);
-	return 0;
-}
-
-static int typec_vbus_disable(void *data)
-{
-	pr_info("typec_vbus_disable\n");
-	_set_vbus(mtk_musb, 0);
-	return 0;
-}
-
-static struct typec_switch_data typec_host_driver = {
-	.name = "usb20_host",
-	.type = HOST_TYPE,
-	.enable = typec_otg_enable,
-	.disable = typec_otg_disable,
-	.vbus_enable = typec_vbus_enable,
-	.vbus_disable = typec_vbus_disable,
-};
 #endif
 #endif
 
@@ -441,71 +403,6 @@ void switch_int_to_host(struct musb *musb)
 	DBG(0, "switch_int_to_host is done\n");
 }
 
-void musb_disable_host(struct musb *musb)
-{
-	if (musb && musb->is_host) {	/* shut down USB host for IPO */
-		if (musb->usb_lock.active)
-			__pm_relax(&musb->usb_lock);
-		mt_usb_set_vbus(mtk_musb, 0);
-		/* add sleep time to ensure vbus off
-		 * and disconnect irq processed.
-		 */
-		msleep(50);
-		musb_stop(musb);
-		MUSB_DEV_MODE(musb);
-		/* Think about IPO shutdown with A-cable,
-		 * then switch to B-cable and IPO bootup.
-		 * We need a point to clear session bit
-		 */
-		musb_writeb(musb->mregs, MUSB_DEVCTL,
-				(~MUSB_DEVCTL_SESSION) &
-				musb_readb(musb->mregs, MUSB_DEVCTL));
-
-		usb_prepare_clock(false);
-	}
-
-#ifdef CONFIG_TCPC_CLASS
-	if (!otg_tcpc_dev) {
-		DBG(0, "host not inited, directly return\n");
-		return;
-	}
-	DBG(0, "OTG <%p, %p>\n",
-			otg_tcpc_dev,
-			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
-	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_SNK);
-#else
-	if (!iddig_eint_num) {
-		DBG(0, "host not inited, directly return\n");
-		return;
-	}
-	DBG(0, "disable iddig<%d>\n", iddig_eint_num);
-	/* MASK IDDIG EVENT */
-	disable_irq(iddig_eint_num);
-#endif
-
-	DBG(0, "disable host done\n");
-}
-void musb_enable_host(struct musb *musb)
-{
-#ifdef CONFIG_TCPC_CLASS
-	if (!otg_tcpc_dev) {
-		DBG(0, "host not inited, directly return\n");
-		return;
-	}
-	DBG(0, "OTG <%p, %p>\n",
-			otg_tcpc_dev,
-			tcpc_dev_get_by_name(TCPC_OTG_DEV_NAME));
-	tcpm_typec_change_role(otg_tcpc_dev, TYPEC_ROLE_DRP);
-#else
-	if (!iddig_eint_num) {
-		DBG(0, "host not inited, directly return\n");
-		return;
-	}
-	DBG(0, "iddig_req_host to 0\n");
-	iddig_req_host = 0;
-	switch_int_to_host(mtk_musb);	/* resotre ID pin interrupt */
-#endif
-}
 static void do_host_plug_test_work(struct work_struct *data)
 {
 	static ktime_t ktime_begin, ktime_end;
@@ -620,11 +517,6 @@ static void musb_host_work(struct work_struct *data)
 	down(&mtk_musb->musb_lock);
 	DBG(0, "work start, is_host=%d\n", mtk_musb->is_host);
 
-	if (mtk_musb->in_ipo_off) {
-		DBG(0, "do nothing due to in_ipo_off\n");
-		goto out;
-	}
-
 	/* flip */
 	if (host_plug_test_triggered)
 		host_mode = !mtk_musb->is_host;
@@ -726,7 +618,6 @@ static void musb_host_work(struct work_struct *data)
 
 		usb_clk_state = ON_TO_OFF;
 	}
-out:
 	DBG(0, "work end, is_host=%d\n", mtk_musb->is_host);
 	up(&mtk_musb->musb_lock);
 
@@ -844,10 +735,6 @@ void mt_usb_otg_init(struct musb *musb)
 	INIT_WORK(&tcpc_otg_work, tcpc_otg_work_call);
 	INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
 	queue_delayed_work(mtk_musb->st_wq, &register_otg_work, 0);
-	vbus_control = 0;
-#else
-	typec_host_driver.priv_data = NULL;
-	register_typec_switch_callback(&typec_host_driver);
 	vbus_control = 0;
 #endif
 #else
@@ -1000,7 +887,5 @@ void mt_usb_set_vbus(struct musb *musb, int is_on) {}
 int mt_usb_get_vbus_status(struct musb *musb) {return 1; }
 void switch_int_to_device(struct musb *musb) {}
 void switch_int_to_host(struct musb *musb) {}
-void musb_disable_host(struct musb *musb) {}
-void musb_enable_host(struct musb *musb) {}
 void musb_session_restart(struct musb *musb) {}
 #endif
