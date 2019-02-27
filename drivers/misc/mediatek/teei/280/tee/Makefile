@@ -1,4 +1,4 @@
-# Copyright (c) 2015-2016 MICROTRUST Incorporated
+# Copyright (c) 2015-2017 MICROTRUST Incorporated
 # All Rights Reserved.
 #
 # This program is free software; you can redistribute it and/or
@@ -10,9 +10,14 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 
-ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT), y)
-VERSION := $(subst ",,$(CONFIG_MICROTRUST_TEE_VERSION))
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/$(VERSION)/common/include
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/$(VERSION)/public/
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/teei/$(VERSION)/tz_driver/include
+obj-y += tee.o
+tee-objs += tee_core.o
+tee-objs += tee_shm.o
+tee-objs += tee_shm_pool.o
+tee-objs += tee_client_api.o
+
+ifeq ($(CONFIG_MICROTRUST_TEST_DRIVERS),y)
+tee-objs += capi_proxy.o
 endif
+
+obj-y += soter/
