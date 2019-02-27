@@ -1650,94 +1650,162 @@ static const struct snd_kcontrol_new mt6779_afe_usb_controls[] = {
 };
 
 /* speech mixctrl instead property usage */
-static int mt6779_afe_speech_md_status_get(struct snd_kcontrol *kcontrol,
-					   struct snd_ctl_elem_value *ucontrol)
+static void *get_sph_property_by_name(struct mt6779_afe_private *afe_priv,
+				      const char *name)
 {
-	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-
-	ucontrol->value.integer.value[0] = afe_priv->speech_md_status;
-	return 0;
+	if (strcmp(name, "Speech_A2M_Msg_ID") == 0)
+		return &(afe_priv->speech_a2m_msg_id);
+	else if (strcmp(name, "Speech_MD_Status") == 0)
+		return &(afe_priv->speech_md_status);
+	else if (strcmp(name, "Speech_SCP_CALL_STATE") == 0)
+		return &(afe_priv->speech_adsp_status);
+	else if (strcmp(name, "Speech_Mic_Mute") == 0)
+		return &(afe_priv->speech_mic_mute);
+	else if (strcmp(name, "Speech_DL_Mute") == 0)
+		return &(afe_priv->speech_dl_mute);
+	else if (strcmp(name, "Speech_UL_Mute") == 0)
+		return &(afe_priv->speech_ul_mute);
+	else if (strcmp(name, "Speech_Phone1_MD_Idx") == 0)
+		return &(afe_priv->speech_phone1_md_idx);
+	else if (strcmp(name, "Speech_Phone2_MD_Idx") == 0)
+		return &(afe_priv->speech_phone2_md_idx);
+	else if (strcmp(name, "Speech_Phone_ID") == 0)
+		return &(afe_priv->speech_phone_id);
+	else if (strcmp(name, "Speech_MD_EPOF") == 0)
+		return &(afe_priv->speech_md_epof);
+	else if (strcmp(name, "Speech_BT_SCO_WB") == 0)
+		return &(afe_priv->speech_bt_sco_wb);
+	else if (strcmp(name, "Speech_SHM_Init") == 0)
+		return &(afe_priv->speech_shm_init);
+	else if (strcmp(name, "Speech_SHM_USIP") == 0)
+		return &(afe_priv->speech_shm_usip);
+	else if (strcmp(name, "Speech_SHM_Widx") == 0)
+		return &(afe_priv->speech_shm_widx);
+	else
+		return NULL;
 }
 
-static int mt6779_afe_speech_md_status_set(struct snd_kcontrol *kcontrol,
-					   struct snd_ctl_elem_value *ucontrol)
+static int speech_property_get(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
 	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+	int *sph_property;
 
-	afe_priv->speech_md_status = ucontrol->value.integer.value[0];
-	dev_info(afe->dev, "%s(), speech_md_status 0x%x\n", __func__,
-		 afe_priv->speech_md_status);
-	return 0;
-}
-
-static int mt6779_afe_speech_msg_id_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-
-	ucontrol->value.integer.value[0] = afe_priv->speech_a2m_msg_id;
-	return 0;
-}
-
-static int mt6779_afe_speech_msg_id_set(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-
-	afe_priv->speech_a2m_msg_id = ucontrol->value.integer.value[0];
-	dev_info(afe->dev, "%s(), speech_a2m_msg_id 0x%x\n", __func__,
-		 afe_priv->speech_a2m_msg_id);
-	return 0;
-}
-
-static int mt6779_afe_speech_mic_mute_get(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-
-	ucontrol->value.integer.value[0] = afe_priv->speech_mic_mute;
-	return 0;
-}
-
-static int mt6779_afe_speech_mic_mute_set(struct snd_kcontrol *kcontrol,
-					  struct snd_ctl_elem_value *ucontrol)
-{
-	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
-	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-
-	if (ucontrol->value.integer.value[0] > 1 ||
-	    ucontrol->value.integer.value[0] < 0) {
-		dev_info(afe->dev, "%s() wrong mute value 0x%x\n",
-			 __func__, ucontrol->value.integer.value[0]);
+	sph_property = (int *)get_sph_property_by_name(afe_priv,
+						       kcontrol->id.name);
+	if (!sph_property) {
+		dev_info(afe->dev, "%s(), sph_property == NULL\n", __func__);
 		return -EINVAL;
 	}
-	afe_priv->speech_mic_mute = ucontrol->value.integer.value[0];
-	dev_info(afe->dev, "%s(), speech_mic_mute_status 0x%x\n", __func__,
-		 afe_priv->speech_mic_mute);
+	ucontrol->value.integer.value[0] = *sph_property;
+
+	return 0;
+}
+
+static int speech_property_set(struct snd_kcontrol *kcontrol,
+			       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+	int *sph_property;
+
+	sph_property = (int *)get_sph_property_by_name(afe_priv,
+						       kcontrol->id.name);
+	if (!sph_property) {
+		dev_info(afe->dev, "%s(), sph_property == NULL\n", __func__);
+		return -EINVAL;
+	}
+	*sph_property = ucontrol->value.integer.value[0];
+
 	return 0;
 }
 
 static const struct snd_kcontrol_new mt6779_afe_speech_controls[] = {
-	SOC_SINGLE_EXT("Speech_A2M_Msg_ID", SND_SOC_NOPM, 0, 0xFFFF, 0,
-		       mt6779_afe_speech_msg_id_get,
-		       mt6779_afe_speech_msg_id_set),
-	SOC_SINGLE_EXT("Speech_MD_Status", SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
-		       mt6779_afe_speech_md_status_get,
-		       mt6779_afe_speech_md_status_set),
-	SOC_SINGLE_EXT("Speech_MIC_MUTE", SND_SOC_NOPM, 0, 0x1, 0,
-		       mt6779_afe_speech_mic_mute_get,
-		       mt6779_afe_speech_mic_mute_set),
+	SOC_SINGLE_EXT("Speech_A2M_Msg_ID",
+		       SND_SOC_NOPM, 0, 0xFFFF, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_MD_Status",
+		       SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_SCP_CALL_STATE",
+		       SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_Mic_Mute",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_DL_Mute",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_UL_Mute",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_Phone1_MD_Idx",
+		       SND_SOC_NOPM, 0, 0x2, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_Phone2_MD_Idx",
+		       SND_SOC_NOPM, 0, 0x2, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_Phone_ID",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_MD_EPOF",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_BT_SCO_WB",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_SHM_Init",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_SHM_USIP",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       speech_property_get, speech_property_set),
+	SOC_SINGLE_EXT("Speech_SHM_Widx",
+		       SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
+		       speech_property_get, speech_property_set),
+};
+
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+/* VOW barge in control */
+static int mt6779_afe_vow_bargein_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int id;
+
+	id = get_scp_vow_memif_id();
+	ucontrol->value.integer.value[0] = afe->memif[id].vow_bargein_enable;
+
+	return 0;
+}
+
+static int mt6779_afe_vow_bargein_set(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int id;
+
+	id = get_scp_vow_memif_id();
+	dev_info(afe->dev, "%s(), %d\n",
+		 __func__, ucontrol->value.integer.value[0]);
+
+	if (ucontrol->value.integer.value[0] > 0)
+		afe->memif[id].vow_bargein_enable = true;
+	else
+		afe->memif[id].vow_bargein_enable = false;
+
+	return 0;
+}
+
+static const struct snd_kcontrol_new mt6779_afe_bargein_controls[] = {
+	SOC_SINGLE_EXT("Vow_bargein_echo_ref", SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_afe_vow_bargein_get,
+		       mt6779_afe_vow_bargein_set),
 };
 
 int mt6779_add_misc_control(struct snd_soc_platform *platform)
