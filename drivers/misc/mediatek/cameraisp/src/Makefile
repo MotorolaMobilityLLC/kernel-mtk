@@ -11,8 +11,9 @@
 # GNU General Public License for more details.
 #
 
-#obj-y += dip/
-obj-y += src/
-#obj-y += owe/
-obj-y += rsc/
-#obj-y += wpe/
+obj-y := cameraisp_dummy.o
+
+ifeq ($(CONFIG_MACH_MT6758),y)
+  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+#  obj-y += fdvt/
+endif
