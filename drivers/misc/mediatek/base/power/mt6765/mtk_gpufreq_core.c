@@ -411,12 +411,10 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
 		/* ensure time interval of buck_on
 		 * -> buck_off is at least 1ms
 		 */
-		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		__mt_gpufreq_bucks_disable();
 		/* ensure time interval of buck_off
 		 * -> buck_on is at least 1ms
 		 */
-		udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 		g_volt_enable_state = false;
 		__mt_gpufreq_kick_pbm(0);
 		gpufreq_pr_debug("@%s: VGPU/VSRAM_GPU is off\n", __func__);
@@ -1383,15 +1381,16 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			g_opp_table[g_opp_springboard_idx].gpufreq_vsram,
 				vsram_volt_new);
 		} else
+#ifdef USE_STAND_ALONE_VGPU
 			__mt_gpufreq_volt_switch(volt_old, volt_new,
 				vsram_volt_old, vsram_volt_new);
-
+#else
 		__mt_gpufreq_vcore_volt_switch(volt_new);
+#endif
 		__mt_gpufreq_clock_switch(freq_new);
 	} else {
 		__mt_gpufreq_clock_switch(freq_new);
-		__mt_gpufreq_vcore_volt_switch(volt_new);
-
+#ifdef USE_STAND_ALONE_VGPU
 		if (vsram_volt_old > (volt_new + BUCK_VARIATION_MAX)) {
 			__mt_gpufreq_volt_switch(volt_old,
 			g_opp_table[g_opp_springboard_idx].gpufreq_volt,
@@ -1406,6 +1405,9 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			__mt_gpufreq_volt_switch(volt_old,
 				volt_new, vsram_volt_old, vsram_volt_new);
 		}
+#else
+		__mt_gpufreq_vcore_volt_switch(volt_new);
+#endif
 	}
 
 	gpufreq_pr_debug(
@@ -1628,7 +1630,7 @@ static void __mt_gpufreq_vgpu_volt_switch(enum g_volt_switch_enum switch_way,
 
 	regulator_set_voltage(g_pmic->reg_vgpu,
 		volt_new * 10, VGPU_MAX_VOLT * 10 + 125);
-	udelay(steps * sfchg_rate);
+	udelay(PMIC_SRCLKEN_HIGH_TIME_US);
 
 	gpufreq_pr_debug(
 		"@%s: udelay us(%d) = steps(%d) * sfchg_rate(%d)\n",
@@ -1752,10 +1754,13 @@ static void __mt_gpufreq_set_fixed_volt(int fixed_volt)
 	mt_gpufreq_voltage_enable_set(1);
 	gpufreq_pr_debug("@%s: now, g_fixed_freq = %d, g_fixed_volt = %d\n",
 			__func__, g_fixed_freq, g_fixed_volt);
-	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt,
-		g_fixed_volt);
+#ifdef USE_STAND_ALONE_VGPU
+	regulator_set_voltage(g_pmic->reg_vgpu, g_fixed_volt * 10,
+		g_fixed_volt * 10 + 125);
+#else
 	regulator_set_voltage(g_pmic->reg_vcore, g_fixed_volt * 10,
 		g_fixed_volt * 10 + 125);
+#endif
 
 	g_cur_opp_volt = g_fixed_volt;
 	g_cur_opp_vsram_volt =
@@ -2465,7 +2470,7 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	if (g_pmic == NULL)
 		return -ENOMEM;
 #ifdef USE_STAND_ALONE_VGPU
-	g_pmic->reg_vgpu = regulator_get(&pdev->dev, "vgpu");
+	g_pmic->reg_vgpu = regulator_get(&pdev->dev, "ext_buck_vgpu");
 	if (IS_ERR(g_pmic->reg_vgpu)) {
 		gpufreq_perr("@%s: cannot get VGPU\n", __func__);
 		return PTR_ERR(g_pmic->reg_vgpu);
@@ -2676,7 +2681,11 @@ static void __exit __mt_gpufreq_exit(void)
 	platform_driver_unregister(&g_gpufreq_pdrv);
 }
 
+#ifdef USE_STAND_ALONE_VGPU
+late_initcall(__mt_gpufreq_init);
+#else
 module_init(__mt_gpufreq_init);
+#endif
 module_exit(__mt_gpufreq_exit);
 
 MODULE_DEVICE_TABLE(of, g_gpufreq_of_match);

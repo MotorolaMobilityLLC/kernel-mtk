@@ -71,8 +71,8 @@
 /**************************************************
  * PMIC Setting
  **************************************************/
-#define VGPU_MAX_VOLT				(SEG1_GPU_DVFS_VOLT0)
-#define VSRAM_GPU_MAX_VOLT			(SEG1_GPU_DVFS_VSRAM0)
+#define VGPU_MAX_VOLT				(SEG3_GPU_DVFS_VOLT0)
+#define VSRAM_GPU_MAX_VOLT			(SEG3_GPU_DVFS_VSRAM0)
 #define DELAY_FACTOR				(625)
 #define PMIC_SRCLKEN_HIGH_TIME_US		(1000)	/* spec is 1(ms) */
 #define BUCK_VARIATION_MAX			(25000)	/* mV x 100 */
