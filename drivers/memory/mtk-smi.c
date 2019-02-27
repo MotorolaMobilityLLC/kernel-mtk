@@ -86,7 +86,10 @@ struct mtk_smi_dev **larbs;
 int mtk_smi_clk_ref_cnts_read(struct mtk_smi_dev *smi)
 {
 	/* check parameter */
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -101,7 +104,10 @@ int mtk_smi_dev_enable(struct mtk_smi_dev *smi)
 {
 	int	i, j, ret;
 	/* check parameter */
-	if (!smi || !smi->dev || !smi->clks) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev || !smi->clks) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -131,7 +137,10 @@ int mtk_smi_dev_disable(struct mtk_smi_dev *smi)
 {
 	int	i;
 	/* check parameter */
-	if (!smi || !smi->dev || !smi->clks) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev || !smi->clks) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -150,18 +159,22 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 {
 	struct property	*prop;
 	const char	*name, *clk_names = "clock-names";
-	int		i = 0, ret = 0;
+	int		nr_clks = 0, i = 0, ret = 0;
 	/* check parameter */
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
 		return -ENXIO;
 	}
 	/* count number of clocks */
-	smi->nr_clks = of_property_count_strings(smi->dev->of_node, clk_names);
-	if (!smi->nr_clks)
-		return ret;
+	nr_clks = of_property_count_strings(smi->dev->of_node, clk_names);
+	if (nr_clks <= 0)
+		return 0;
+	smi->nr_clks = nr_clks;
 #if IS_ENABLED(CONFIG_MACH_MT6758) || IS_ENABLED(CONFIG_MACH_MT6765)
 	/* workaround for mmdvfs at mt6758/mt6765 */
 	if (smi->index == common->index)
@@ -203,7 +216,10 @@ static int mtk_smi_config_get(struct mtk_smi_dev *smi)
 	const char	*name[2] = {"nr_config_pairs", "config_pairs"};
 	int		i = 0, ret;
 	/* check parameter */
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -245,7 +261,10 @@ int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 	unsigned int		nr_pairs;
 	int			i, ret = 0;
 	/* check parameter */
-	if (!smi || !smi->dev || !smi->config_pairs) {
+	if (!smi) {
+		pr_info("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev || !smi->config_pairs) {
 		pr_info("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -291,8 +310,6 @@ int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 		mmu += 1;
 
 	ret = smi_bus_disable_unprepare(smi->index, "MTK_SMI", mtcmos);
-	if (ret)
-		return ret;
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_smi_config_set);

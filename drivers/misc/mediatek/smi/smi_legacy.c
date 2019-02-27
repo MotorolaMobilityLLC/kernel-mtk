@@ -380,7 +380,6 @@ static char *smi_bwc_scen_name_get(enum MTK_SMI_BWC_SCEN scen)
 	default:
 		return "SMI_BWC_SCEN_UNKNOWN";
 	}
-	return "unknown";
 }
 
 static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *config)
@@ -430,8 +429,8 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *config)
 			config->b_on_off ? "ON" : "OFF", config->b_on_off);
 	else
 		flag = false;
-	smi_drv->scen = (enum MTK_SMI_BWC_SCEN)i;
-	smi_scen = smi_scen_map[i];
+	smi_drv->scen = (i > 0 ? (enum MTK_SMI_BWC_SCEN)i : 0);
+	smi_scen = smi_scen_map[smi_drv->scen];
 	spin_unlock(&(smi_drv->lock));
 #ifdef MMDVFS_HOOK
 	if (!SMI_PARAM_DISABLE_MMDVFS) {
@@ -512,18 +511,18 @@ static int smi_bwc_info_set(struct MTK_SMI_BWC_INFO_SET *config)
 
 static ssize_t smi_bwc_scen_show(struct device_driver *driver, char *buf)
 {
-	char *ptr = buf;
-	int i;
+	ssize_t ret = 0;
+	int i, max_len = 128;
 
 	smi_debug_dump_status(-1);
-	ptr += sprintf(ptr, "scenario=%s(%d, %d)\n",
+	ret += snprintf(buf, max_len, "scenario=%s(%d, %d)\n",
 		smi_bwc_scen_name_get(smi_drv->scen), smi_drv->scen,
 		smi_scen_map[smi_drv->scen]);
 
-	ptr += sprintf(ptr, "smi_bwc_scen table:");
+	ret += snprintf(buf + ret, max_len, "smi_bwc_scen table: ");
 	for (i = 0; i < SMI_BWC_SCEN_CNT; i++)
-		ptr += sprintf(ptr, " %d,", smi_drv->table[i]);
-	ptr += sprintf(ptr, "\n");
+		ret += snprintf(buf + ret, max_len, " %d,", smi_drv->table[i]);
+	ret += snprintf(buf + ret, max_len, "\n");
 	return strlen(buf);
 }
 
@@ -561,7 +560,10 @@ static int smi_debug_dumpper(struct mtk_smi_dev *smi, const bool gce,
 	char buffer[max_size + 1];
 	int i, j, ret;
 	/* check parameter */
-	if (!smi || !smi->base || !smi->debugs) {
+	if (!smi) {
+		SMIWRN(gce, "no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->base || !smi->debugs) {
 		SMIWRN(gce, "%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
@@ -678,7 +680,7 @@ int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
 	const bool gce, const bool m4u)
 {
 	unsigned int dump_time = 5, val;
-	int clk, i, j, ret;
+	int clk, i, j, ret = 0;
 	bool offset = false;
 	/* offset */
 	if (dump) {
@@ -1133,19 +1135,23 @@ static int smi_debug_offset_get(struct mtk_smi_dev *smi)
 	struct property *prop;
 	const __be32 *cur;
 	unsigned int val;
-	int i = 0;
+	int i = 0, ret = 0;
 	/* check parameter */
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		SMIDBG("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		SMIDBG("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
 		return -ENXIO;
 	}
 	/* number of debugs */
-	smi->nr_debugs = of_property_count_elems_of_size(smi->dev->of_node,
+	ret = of_property_count_elems_of_size(smi->dev->of_node,
 		name, sizeof(unsigned int));
-	if (smi->nr_debugs < 0)
-		return smi->nr_debugs;
+	if (ret < 0)
+		return ret;
+	smi->nr_debugs = ret;
 	/* allocate and get debugs */
 	smi->debugs = devm_kcalloc(smi->dev, smi->nr_debugs,
 		sizeof(*smi->debugs), GFP_KERNEL);
@@ -1167,7 +1173,10 @@ static int smi_scen_config_get(struct mtk_smi_dev *smi)
 	unsigned int val;
 	int i, j, ret;
 	/* check parameter */
-	if (!smi || !smi->dev) {
+	if (!smi) {
+		SMIDBG("no such device or address\n");
+		return -ENXIO;
+	} else if (!smi->dev) {
 		SMIDBG("%s %d no such device or address\n",
 			smi->index == common->index ? "common" : "larb",
 			smi->index);
