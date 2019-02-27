@@ -19,7 +19,7 @@
 #include <linux/pm_qos.h>
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
-#include <spm_v4/mtk_spm_vcore_dvfs_ipi_mt6771.h>
+#include <helio-dvfsrc-ipi.h>
 #include "mtk_gpufreq_core.h"
 #include "mtk_gpu_bw.h"
 
@@ -47,15 +47,15 @@ EXPORT_SYMBOL(mt_gpu_bw_qos_vcore);
 
 static int mt_gpu_bw_ap2sspm(unsigned int eCMD, int type)
 {
-	struct qos_data qos_d;
+	struct qos_ipi_data qos_d;
 	int md32Ret = -1;
 	int apDebug = -1;
 
 	qos_d.cmd = eCMD;
 
 
-	apDebug = sspm_ipi_send_sync(IPI_ID_QOS,
-		IPI_OPT_WAIT, &qos_d, 1, &md32Ret, 1);
+	apDebug = sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_POLLING,
+			&qos_d, 1, &md32Ret, 1);
 
 	if (apDebug < 0 || md32Ret < 0) {
 		dump_stack();
