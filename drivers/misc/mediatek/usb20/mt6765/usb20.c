@@ -56,11 +56,8 @@ static void issue_dpidle_timer(void);
 static void dpidle_timer_wakeup_func(unsigned long data)
 {
 	struct timer_list *timer = (struct timer_list *)data;
-	static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
 
-	if (__ratelimit(&ratelimit))
-		pr_debug("<ratelimit> dpidle_timer<%p> alive\n", timer);
-
+	DBG_LIMIT(1, "dpidle_timer<%p> alive", timer);
 	DBG(2, "dpidle_timer<%p> alive...\n", timer);
 
 	if (dpidle_status == USB_DPIDLE_TIMER)
@@ -96,45 +93,29 @@ static void usb_6765_dpidle_request(int mode)
 	switch (mode) {
 	case USB_DPIDLE_ALLOWED:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_RELEASE);
-
-		if (likely(!dpidle_debug)) {
-			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
-
-			if (__ratelimit(&ratelimit))
-				pr_debug("<ratelimit> USB_DPIDLE_ALLOWED\n");
-		} else {
-			pr_debug("USB_DPIDLE_ALLOWED\n");
-		}
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_ALLOWED");
+		else
+			DBG(0, "USB_DPIDLE_ALLOWED\n");
 		break;
 	case USB_DPIDLE_FORBIDDEN:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB, SPM_RESOURCE_ALL);
-
-		if (likely(!dpidle_debug)) {
-			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
-
-			if (__ratelimit(&ratelimit))
-				pr_debug("<ratelimit> USB_DPIDLE_FORBIDDEN\n");
-		} else {
-			pr_debug("USB_DPIDLE_FORBIDDEN\n");
-		}
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_FORBIDDEN");
+		else
+			DBG(0, "USB_DPIDLE_FORBIDDEN\n");
 		break;
 	case USB_DPIDLE_SRAM:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
-
-		if (likely(!dpidle_debug)) {
-			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 1);
-
-			if (__ratelimit(&ratelimit))
-				pr_debug("<ratelimit> USB_DPIDLE_SRAM\n");
-		} else {
-			pr_debug("USB_DPIDLE_SRAM\n");
-		}
+		if (likely(!dpidle_debug))
+			DBG_LIMIT(1, "USB_DPIDLE_SRAM");
+		else
+			DBG(0, "USB_DPIDLE_SRAM\n");
 		break;
 	case USB_DPIDLE_TIMER:
 		spm_resource_req(SPM_RESOURCE_USER_SSUSB,
 				SPM_RESOURCE_CK_26M | SPM_RESOURCE_MAINPLL);
-
 		DBG(0, "USB_DPIDLE_TIMER\n");
 		issue_dpidle_timer();
 		break;
@@ -442,16 +423,14 @@ void do_connection_work(struct work_struct *data)
 
 	if (!mtk_musb->is_ready) {
 		/* re issue work */
-		static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 3);
-
-			if (__ratelimit(&ratelimit))
-				pr_debug("<ratelimit> !is_ready, retrigger after %d ms, is_host<%d>, power<%d>\n",
-					CONN_WORK_DELAY,
-					mtk_musb->is_host,
-					mtk_musb->power);
-					queue_delayed_work(mtk_musb->st_wq,
-						&connection_work,
-					msecs_to_jiffies(CONN_WORK_DELAY));
+		DBG_LIMIT(3,
+			"!is_ready, retrigger after %d ms, is_host<%d>, power<%d>",
+			CONN_WORK_DELAY,
+			mtk_musb->is_host,
+			mtk_musb->power);
+		queue_delayed_work(mtk_musb->st_wq,
+			&connection_work,
+			msecs_to_jiffies(CONN_WORK_DELAY));
 		return;
 	} else if (!exceed_gap) {
 #ifndef FPGA_PLATFORM
@@ -467,14 +446,12 @@ void do_connection_work(struct work_struct *data)
 		if (get_boot_mode() == NORMAL_BOOT
 				&& diff_time < USB_PROPERTY_GAP_MS) {
 			/* re issue work */
-			static DEFINE_RATELIMIT_STATE(ratelimit, HZ, 3);
-
-			if (__ratelimit(&ratelimit))
-				pr_debug("<ratelimit> diff<%lld>, retrigger after %d ms, is_host<%d>, power<%d>\n",
-					diff_time,
-					CONN_WORK_DELAY,
-					mtk_musb->is_host,
-					mtk_musb->power);
+			DBG_LIMIT(3,
+				"diff<%lld>,retrigger after %d ms, is_host<%d>, power<%d>",
+				diff_time,
+				CONN_WORK_DELAY,
+				mtk_musb->is_host,
+				mtk_musb->power);
 			queue_delayed_work(mtk_musb->st_wq,
 				&connection_work,
 				msecs_to_jiffies(CONN_WORK_DELAY));
