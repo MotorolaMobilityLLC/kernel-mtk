@@ -533,11 +533,12 @@ void mt_power_off(void)
 			arch_reset(0, "charger");
 			break;
 		}
-#endif
+#else
 		if (count > 10) {
 			arch_reset(0, "charger");
 			break;
 		}
+#endif
 		count++;
 #endif
 	}
