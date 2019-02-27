@@ -42,6 +42,8 @@
 #include <linux/circ_buf.h>
 #include <linux/workqueue.h>
 
+#define UFSHPB_ERROR_INJECT
+
 /* Version info*/
 #define UFSHPB_VER				0x0103
 #define UFSHPB_DD_VER				0x0135
@@ -352,6 +354,9 @@ struct ufshpb_lu {
 	atomic64_t region_add;
 	atomic64_t region_evict;
 	atomic64_t rb_fail;
+#ifdef UFSHPB_ERROR_INJECT
+	bool err_inject;
+#endif
 };
 
 struct ufshpb_sysfs_entry {
