@@ -221,6 +221,51 @@ static struct pm_qos_object vcore_opp_pm_qos = {
 	.name = "vcore_opp",
 };
 
+static BLOCKING_NOTIFIER_HEAD(scp_vcore_req_notifier);
+static struct pm_qos_constraints scp_vcore_req_constraints = {
+	.req_list = LIST_HEAD_INIT(scp_vcore_req_constraints.req_list),
+	.list = PLIST_HEAD_INIT(scp_vcore_req_constraints.list),
+	.target_value = PM_QOS_SCP_VCORE_REQUEST_DEFAULT_VALUE,
+	.default_value = PM_QOS_SCP_VCORE_REQUEST_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_SCP_VCORE_REQUEST_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &scp_vcore_req_notifier,
+};
+static struct pm_qos_object scp_vcore_req_pm_qos = {
+	.constraints = &scp_vcore_req_constraints,
+	.name = "scp_vcore_req",
+};
+
+static BLOCKING_NOTIFIER_HEAD(power_model_ddr_req_notifier);
+static struct pm_qos_constraints power_model_ddr_req_constraints = {
+	.req_list = LIST_HEAD_INIT(power_model_ddr_req_constraints.req_list),
+	.list = PLIST_HEAD_INIT(power_model_ddr_req_constraints.list),
+	.target_value = PM_QOS_POWER_MODEL_DDR_REQUEST_DEFAULT_VALUE,
+	.default_value = PM_QOS_POWER_MODEL_DDR_REQUEST_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_POWER_MODEL_DDR_REQUEST_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &power_model_ddr_req_notifier,
+};
+static struct pm_qos_object power_model_ddr_req_pm_qos = {
+	.constraints = &power_model_ddr_req_constraints,
+	.name = "power_model_ddr_req",
+};
+
+static BLOCKING_NOTIFIER_HEAD(power_model_vcore_req_notifier);
+static struct pm_qos_constraints power_model_vcore_req_constraints = {
+	.req_list = LIST_HEAD_INIT(power_model_vcore_req_constraints.req_list),
+	.list = PLIST_HEAD_INIT(power_model_vcore_req_constraints.list),
+	.target_value = PM_QOS_POWER_MODEL_VCORE_REQUEST_DEFAULT_VALUE,
+	.default_value = PM_QOS_POWER_MODEL_VCORE_REQUEST_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_POWER_MODEL_VCORE_REQUEST_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.notifiers = &power_model_vcore_req_notifier,
+};
+static struct pm_qos_object power_model_vcore_req_pm_qos = {
+	.constraints = &power_model_vcore_req_constraints,
+	.name = "power_model_vcore_req",
+};
+
 static BLOCKING_NOTIFIER_HEAD(vcore_dvfs_force_opp_notifier);
 static struct pm_qos_constraints vcore_dvfs_force_opp_constraints = {
 	.req_list = LIST_HEAD_INIT(vcore_dvfs_force_opp_constraints.req_list),
@@ -250,6 +295,9 @@ static struct pm_qos_object *pm_qos_array[] = {
 
 	&ddr_opp_pm_qos,
 	&vcore_opp_pm_qos,
+	&scp_vcore_req_pm_qos,
+	&power_model_ddr_req_pm_qos,
+	&power_model_vcore_req_pm_qos,
 	&vcore_dvfs_force_opp_pm_qos,
 };
 
