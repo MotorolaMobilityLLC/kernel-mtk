@@ -61,6 +61,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct platform_device *gpsPVRCfgDev;
 #endif
 
+#if defined(CONFIG_MACH_MT6761)
+#include <linux/dma-mapping.h>
+#endif
+
 #define RGX_CR_ISP_GRIDOFFSET   (0x0FA0U)
 
 static RGX_TIMING_INFORMATION   gsRGXTimingInfo;
@@ -94,6 +98,9 @@ static const IMG_OPP asOPPTable[] = {
 #define LEVEL_COUNT (sizeof(asOPPTable) / sizeof(IMG_OPP))
 #endif
 
+#if defined(CONFIG_MACH_MT6761)
+#define SYSTEM_1G_ADDRESS_SHIFT 0x40000000ULL
+#endif
 
 /* CPU to Device physcial address translation */
 static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
@@ -104,16 +111,39 @@ static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
 	PVR_UNREFERENCED_PARAMETER(hPrivData);
 
 	/* Optimise common case */
+#if defined(CONFIG_MACH_MT6761)
+	if (psCpuPAddr[0].uiAddr >= SYSTEM_1G_ADDRESS_SHIFT)
+	{
+	    psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
+	}
+	else
+	{
 	psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr;
+	}
+#else
+	psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr;
+#endif
+
 	if (ui32NumOfAddr > 1) {
 		IMG_UINT32 ui32Idx;
 
 		for (ui32Idx = 1; ui32Idx < ui32NumOfAddr; ++ui32Idx)
+#if defined(CONFIG_MACH_MT6761)
+			if (psCpuPAddr[ui32Idx].uiAddr >= SYSTEM_1G_ADDRESS_SHIFT)
+			    psDevPAddr[ui32Idx].uiAddr = psCpuPAddr[ui32Idx].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
+#else
 			psDevPAddr[ui32Idx].uiAddr = psCpuPAddr[ui32Idx].uiAddr;
+#endif
 	}
 }
+#if defined(CONFIG_MACH_MT6761)
+#undef SYSTEM_1G_ADDRESS_SHIFT
+#endif
 
 /* Device to CPU physcial address translation */
+#if defined(CONFIG_MACH_MT6761)
+#define SYSTEM_1G_ADDRESS_SHIFT 0x40000000ULL
+#endif
 static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
 				   IMG_UINT32 ui32NumOfAddr,
 				   IMG_CPU_PHYADDR *psCpuPAddr,
@@ -122,14 +152,26 @@ static void UMAPhysHeapDevPAddrToCpuPAddr(IMG_HANDLE hPrivData,
 	PVR_UNREFERENCED_PARAMETER(hPrivData);
 
 	/* Optimise common case */
+#if defined(CONFIG_MACH_MT6761)
+	psCpuPAddr[0].uiAddr = psDevPAddr[0].uiAddr + SYSTEM_1G_ADDRESS_SHIFT;
+#else
 	psCpuPAddr[0].uiAddr = psDevPAddr[0].uiAddr;
+#endif
 	if (ui32NumOfAddr > 1) {
 		IMG_UINT32 ui32Idx;
 
 		for (ui32Idx = 1; ui32Idx < ui32NumOfAddr; ++ui32Idx)
+#if defined(CONFIG_MACH_MT6761)
+			psCpuPAddr[ui32Idx].uiAddr = psDevPAddr[ui32Idx].uiAddr + SYSTEM_1G_ADDRESS_SHIFT;
+#else
 			psCpuPAddr[ui32Idx].uiAddr = psDevPAddr[ui32Idx].uiAddr;
+#endif
 	}
 }
+
+#if defined(CONFIG_MACH_MT6761)
+#undef SYSTEM_1G_ADDRESS_SHIFT
+#endif
 
 #if defined(MTK_CONFIG_OF) && defined(CONFIG_OF)
 static int g32SysIrq = -1;
@@ -187,6 +229,10 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 	gsRGXTimingInfo.bEnableRDPowIsland = true;
 #else
 	gsRGXTimingInfo.bEnableRDPowIsland = false;
+#endif
+
+#if defined(CONFIG_MACH_MT6761)
+	dma_set_mask(pvOSDevice, DMA_BIT_MASK(32));
 #endif
 
 	/* Setup RGX specific data */

@@ -238,6 +238,11 @@ ccflags-y += \
 	-I$(RGX_TOP)/../m1.9ED4940716/include
 endif
 
+ifeq ($(MTK_PLATFORM),mt6761)
+ccflags-y += \
+	-I$(RGX_TOP)/../m1.9ED4940716/include
+endif
+
 ccflags-y += \
 	-I$(srctree)/drivers/staging/android/ion \
 	-I$(srctree)/drivers/staging/android/ion/mtk \

@@ -71,8 +71,8 @@
 /**************************************************
  * PMIC Setting
  **************************************************/
-#define VGPU_MAX_VOLT				(SEG3_GPU_DVFS_VOLT0)
-#define VSRAM_GPU_MAX_VOLT			(SEG3_GPU_DVFS_VSRAM0)
+#define VGPU_MAX_VOLT				(SEG1_GPU_DVFS_VOLT0)
+#define VSRAM_GPU_MAX_VOLT			(SEG1_GPU_DVFS_VSRAM0)
 #define DELAY_FACTOR				(625)
 #define PMIC_SRCLKEN_HIGH_TIME_US		(1000)	/* spec is 1(ms) */
 #define BUCK_VARIATION_MAX			(25000)	/* mV x 100 */
@@ -114,7 +114,7 @@
 #define GPU_ACT_REF_POWER			(1285)		/* mW  */
 #define GPU_ACT_REF_FREQ			(900000)	/* KHz */
 #define GPU_ACT_REF_VOLT			(90000)		/* mV x 100 */
-#define GPU_DVFS_PTPOD_DISABLE_VOLT		(65000)		/* mV x 100 */
+#define GPU_DVFS_PTPOD_DISABLE_VOLT		(80000)		/* mV x 100 */
 
 /**************************************************
  * Log Setting
@@ -133,7 +133,7 @@
  * Condition Setting
  **************************************************/
 #define MT_GPUFREQ_OPP_STRESS_TEST
-#define MT_GPUFREQ_STATIC_PWR_READY2USE
+/* #define MT_GPUFREQ_STATIC_PWR_READY2USE */
 #define MT_GPUFREQ_LOW_BATT_VOLT_PROTECT
 #define MT_GPUFREQ_BATT_PERCENT_PROTECT /* todo: disable it */
 #define MT_GPUFREQ_BATT_OC_PROTECT
