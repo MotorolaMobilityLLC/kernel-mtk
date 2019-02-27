@@ -588,10 +588,9 @@ static void night_mode(kal_bool enable)
 #define MULTI_WRITE 1
 
 #if MULTI_WRITE
-#define I2C_BUFFER_LEN 765	/* trans# max is 255, each 3 bytes */
+static const int I2C_BUFFER_LEN = 1020; /*trans# max is 255, each 4 bytes*/
 #else
-#define I2C_BUFFER_LEN 3
-
+static const int I2C_BUFFER_LEN = 4;
 #endif
 static kal_uint16 s5k3l8_table_write_cmos_sensor(
 	kal_uint16 *para, kal_uint32 len)
@@ -605,35 +604,31 @@ static kal_uint16 s5k3l8_table_write_cmos_sensor(
 
 	while (len > IDX) {
 		addr = para[IDX];
-
 		{
 			puSendCmd[tosend++] = (char)(addr >> 8);
 			puSendCmd[tosend++] = (char)(addr & 0xFF);
 			data = para[IDX + 1];
+			puSendCmd[tosend++] = (char)(data >> 8);
 			puSendCmd[tosend++] = (char)(data & 0xFF);
 			IDX += 2;
 			addr_last = addr;
 
 		}
+
 #if MULTI_WRITE
-
-		if ((I2C_BUFFER_LEN - tosend) < 3 ||
-		    len == IDX  ||
-		    addr != addr_last) {
-
-			iBurstWriteReg_multi(puSendCmd,
-				tosend,
-				imgsensor.i2c_write_id,
-				3,
-				imgsensor_info.i2c_speed);
+	if ((I2C_BUFFER_LEN - tosend) < 4 || IDX == len || addr != addr_last) {
+		iBurstWriteReg_multi(puSendCmd, tosend,
+			imgsensor.i2c_write_id, 4, imgsensor_info.i2c_speed);
 
 			tosend = 0;
-		}
+	}
 #else
-		iWriteRegI2C(puSendCmd, 3, imgsensor.i2c_write_id);
-		tosend = 0;
+		iWriteRegI2CTiming(puSendCmd, 4,
+			imgsensor.i2c_write_id, imgsensor_info.i2c_speed);
 
+		tosend = 0;
 #endif
+
 	}
 	return 0;
 }
