@@ -1576,8 +1576,8 @@ s32 cmdq_core_alloc_sram_buffer(size_t size,
 	}
 
 	if (cpr_offset + normalized_count > cmdq_dts.cpr_size) {
-		CMDQ_ERR(
-			"SRAM count is out of memory, start:%u want:%zu owner:%s\n",
+		CMDQ_LOG(
+			"[WARN]SRAM count is out of memory, start:%u want:%zu owner:%s\n",
 			cpr_offset, normalized_count, owner_name);
 		cmdq_core_dump_sram();
 		return -ENOMEM;
@@ -1675,7 +1675,7 @@ static s32 cmdq_delay_thread_init(void)
 	if (!sram_task_size) {
 		if (cmdq_task_create_delay_thread_sram(&p_delay_thread_buffer,
 			&sram_task_size, &cpr_offset) < 0) {
-			CMDQ_ERR(
+			CMDQ_LOG(
 				"[DelayThread]create delay thread in sram failed free:%u sram size:%u\n",
 				free_sram_size, sram_task_size);
 			use_sram = false;
@@ -2655,7 +2655,7 @@ u32 *cmdq_core_get_pc(const struct cmdqRecStruct *handle,
 		void *va = cmdq_pkt_get_first_va(handle);
 
 		inst_ptr = va + (curr_pc - handle->sram_base);
-	} else {
+	} else if (curr_pc) {
 		inst_ptr = cmdq_core_get_pc_va(curr_pc, handle);
 	}
 
