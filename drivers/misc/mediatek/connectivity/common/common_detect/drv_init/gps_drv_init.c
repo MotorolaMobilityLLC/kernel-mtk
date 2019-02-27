@@ -20,6 +20,14 @@
 #include "wmt_detect.h"
 #include "gps_drv_init.h"
 
+#ifdef CONFIG_MTK_COMBO_GPS
+int __attribute__((weak)) mtk_wcn_stpgps_drv_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_stpgps_drv_init\n");
+	return 0;
+}
+#endif
+
 int do_gps_drv_init(int chip_id)
 {
 	int i_ret = -1;
