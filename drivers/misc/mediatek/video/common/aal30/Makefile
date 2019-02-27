@@ -45,3 +45,7 @@ endif
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6771)))
     ccflags-y += -DLOAD_AAL_SUPPORT_FROM_DTS
 endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
+    ccflags-y += -DAMS_AAL_SUPPORT_KERNEL_API
+endif
