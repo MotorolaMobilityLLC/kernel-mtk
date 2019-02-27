@@ -406,7 +406,7 @@ static void fbt_free_bhr(void)
 
 	xgf_trace("fpsgo free bhr");
 
-	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FPSGO, cluster_num, pld);
 	kfree(pld);
 }
 
@@ -582,7 +582,7 @@ static void fbt_do_jerk(struct work_struct *work)
 					fpsgo_systrace_c_fbt(thr->pid, blc_wt,
 						"perf idx");
 
-					update_userlimit_cpu_freq(PPM_KIR_FBC,
+					update_userlimit_cpu_freq(PPM_KIR_FPSGO,
 							cluster_num, pld);
 					for (cluster = 0;
 						cluster < cluster_num;
@@ -941,7 +941,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 
 	fbt_set_boost_value(blc_wt);
 
-	update_userlimit_cpu_freq(PPM_KIR_FBC, cluster_num, pld);
+	update_userlimit_cpu_freq(PPM_KIR_FPSGO, cluster_num, pld);
 
 	kfree(pld);
 	kfree(clus_opp);
