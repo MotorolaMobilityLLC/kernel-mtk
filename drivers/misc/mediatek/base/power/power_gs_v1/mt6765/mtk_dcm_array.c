@@ -34,13 +34,23 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x1020066C, 0x00000003, 0x00000003,/* mcu_misc_dcm_ctrl */
 	0x10200740, 0x0000087F, 0x0000087F,/* MP_CCI_ADB400_DCM_CONFIG */
 	0x10200744, 0x00100401, 0x00100401,/* MP_SYNC_DCM_CONFIG */
-	0x1020074C, 0x00008080, 0x00008080,/* MP_SYNC_DCM_CLUSTER_CONFIG */
+	0x1020074C, 0x00009F9F, 0x00008C8C,/* MP_SYNC_DCM_CLUSTER_CONFIG */
 	0x10200758, 0x00000001, 0x00000001,/* gic_sync_dcm */
 	0x102007A0, 0x80000800, 0x80000800,/* mp0_pll_divider_cfg */
 	0x102007A4, 0x80000800, 0x80000800,/* mp1_pll_divider_cfg */
 	0x102007C0, 0x00000800, 0x00000800,/* bus_pll_divider_cfg */
 	0x10200B60, 0xFFFF0000, 0xFFFF0000,/* MCSIA_DCM_EN */
+	0x10228284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1022828C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102282A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
+	0x1022A038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
+	0x1022A03C, 0x80000000, 0x80000000,/* CLKAR */
 	0x1022D008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
+	0x10230284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1023028C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102302A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
+	0x10232038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
+	0x1023203C, 0x80000000, 0x80000000,/* CLKAR */
 	0x10235008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
 	0x102380F0, 0x0000FFFF, 0x0000FFFF,/* GCE_CTL_INT0 */
 	0x11220000, 0x60000000, 0x60000000,/* AUDIO_TOP_CON0 */
@@ -59,7 +69,7 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_data[] = {
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_dpidle =
 		AP_DCM_Golden_Setting_tcl_gs_dpidle_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 105;
+unsigned int AP_DCM_Golden_Setting_tcl_gs_dpidle_len = 135;
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 /*      Address     Mask        Golden Setting Value */
@@ -78,13 +88,23 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x1020066C, 0x00000003, 0x00000003,/* mcu_misc_dcm_ctrl */
 	0x10200740, 0x0000087F, 0x0000087F,/* MP_CCI_ADB400_DCM_CONFIG */
 	0x10200744, 0x00100401, 0x00100401,/* MP_SYNC_DCM_CONFIG */
-	0x1020074C, 0x00008080, 0x00008080,/* MP_SYNC_DCM_CLUSTER_CONFIG */
+	0x1020074C, 0x00009F9F, 0x00008C8C,/* MP_SYNC_DCM_CLUSTER_CONFIG */
 	0x10200758, 0x00000001, 0x00000001,/* gic_sync_dcm */
 	0x102007A0, 0x80000800, 0x80000800,/* mp0_pll_divider_cfg */
 	0x102007A4, 0x80000800, 0x80000800,/* mp1_pll_divider_cfg */
 	0x102007C0, 0x00000800, 0x00000800,/* bus_pll_divider_cfg */
 	0x10200B60, 0xFFFF0000, 0xFFFF0000,/* MCSIA_DCM_EN */
+	0x10228284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1022828C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102282A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
+	0x1022A038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
+	0x1022A03C, 0x80000000, 0x80000000,/* CLKAR */
 	0x1022D008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
+	0x10230284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1023028C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102302A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
+	0x10232038, 0xC4000007, 0xC0000007,/* DRAMC_PD_CTRL */
+	0x1023203C, 0x80000000, 0x80000000,/* CLKAR */
 	0x10235008, 0xFF000000, 0x00000000,/* CHN_EMI_CONB */
 	0x102380F0, 0x0000FFFF, 0x0000FFFF,/* GCE_CTL_INT0 */
 	0x11220000, 0x60000000, 0x60000000,/* AUDIO_TOP_CON0 */
@@ -105,11 +125,17 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_data[] = {
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_suspend =
 		AP_DCM_Golden_Setting_tcl_gs_suspend_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 111;
+unsigned int AP_DCM_Golden_Setting_tcl_gs_suspend_len = 141;
 
 const unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_data[] = {
 /*      Address     Mask        Golden Setting Value */
 	0x1001A208, 0x0000FFFF, 0x00000000,/* DXCC_NEW_HWDCM_CFG */
+	0x10228284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1022828C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102282A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
+	0x10230284, 0x000BFF00, 0x00000000,/* MISC_CG_CTRL0 */
+	0x1023028C, 0x07E000C0, 0x01000000,/* MISC_CG_CTRL2 */
+	0x102302A8, 0x0C000000, 0x00000000,/* MISC_CTRL3 */
 	0x11C50480, 0x00000007, 0x00000007,/* DCM_ON */
 	0x14000120, 0x3FFFFFFF, 0x00000000,/* MMSYS_HW_DCM_1ST_DIS0 */
 	0x14000130, 0x0003FFFF, 0x00000000,/* MMSYS_HW_DCM_2ND_DIS0 */
@@ -119,5 +145,5 @@ const unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_data[] = {
 const unsigned int *AP_DCM_Golden_Setting_tcl_gs_sodi =
 		AP_DCM_Golden_Setting_tcl_gs_sodi_data;
 
-unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_len = 15;
+unsigned int AP_DCM_Golden_Setting_tcl_gs_sodi_len = 33;
 

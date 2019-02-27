@@ -526,7 +526,7 @@ static ssize_t golden_test_proc_write(struct file *file,
 		_golden_write_reg(addr, 0xFFFFFFFF, golden_val);
 	/* set to dump pmic reg value */
 	else if (sscanf(buf, "set_pmic_manual_dump 0x%x", &addr) == 1) {
-		if (pmd.addr_array || pmd.array_pos < pmd.array_size) {
+		if (pmd.addr_array && pmd.array_pos < pmd.array_size) {
 			pmd.addr_array[pmd.array_pos++] = addr;
 			base  = (addr &
 				(~(unsigned long)REMAP_SIZE_MASK));
