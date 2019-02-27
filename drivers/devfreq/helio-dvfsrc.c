@@ -65,7 +65,8 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 
 	mutex_lock(&dvfsrc->devfreq->lock);
 
-	dvfsrc->enabled = dvfsrc_en;
+	dvfsrc->qos_enabled = 1;
+	dvfsrc->dvfsrc_enabled = dvfsrc_en;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
@@ -129,26 +130,26 @@ int dvfsrc_get_emi_bw(int type)
 
 int get_vcore_dvfs_level(void)
 {
-	int ret = 0;
+	return dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
+}
 
-	mutex_lock(&dvfsrc->devfreq->lock);
-	ret = dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
-	mutex_unlock(&dvfsrc->devfreq->lock);
-
-	return ret;
+int is_qos_enabled(void)
+{
+	if (dvfsrc)
+		return dvfsrc->qos_enabled == 1;
+	return 0;
 }
 
 int is_dvfsrc_enabled(void)
 {
 	if (dvfsrc)
-		return dvfsrc->enabled;
+		return dvfsrc->dvfsrc_enabled == 1;
 
 	return 0;
 }
 
 static void dvfsrc_set_sw_bw(int type, int data)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
 		dvfsrc_write(DVFSRC_SW_BW_0, data / 100);
@@ -168,53 +169,40 @@ static void dvfsrc_set_sw_bw(int type, int data)
 	default:
 		break;
 	}
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_sw_req(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_sw_req2(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ2, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_vcore_request(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_start(int data)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_write(DVFSRC_FORCE, data);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_end(void)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	/* dvfsrc_write(DVFSRC_FORCE, 0); */
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_release_force(void)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
 	dvfsrc_write(DVFSRC_FORCE, 0);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void get_pm_qos_info(char *p)
@@ -317,21 +305,15 @@ static void helio_dvfsrc_reg_config(struct reg_config *config)
 {
 	int idx = 0;
 
-	mutex_lock(&dvfsrc->devfreq->lock);
 	while (config[idx].offset != -1) {
 		dvfsrc_write(config[idx].offset, config[idx].val);
 		idx++;
 	}
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static int helio_governor_event_handler(struct devfreq *devfreq,
 					unsigned int event, void *data)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = dev_get_drvdata(devfreq->dev.parent);
-
 	switch (event) {
 	case DEVFREQ_GOV_SUSPEND:
 		break;
@@ -350,7 +332,7 @@ static struct devfreq_governor helio_dvfsrc_governor = {
 	.event_handler = helio_governor_event_handler,
 };
 
-static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
+static int commit_data(int type, int data)
 {
 	int ret = 0;
 	int level = 16, opp = 16;
@@ -441,11 +423,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 static int pm_qos_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_memory_bw_nb);
-
-	commit_data(dvfsrc, PM_QOS_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_MEMORY_BANDWIDTH, l);
 
 	return NOTIFY_OK;
 }
@@ -453,11 +431,7 @@ static int pm_qos_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_cpu_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_cpu_memory_bw_nb);
-
-	commit_data(dvfsrc, PM_QOS_CPU_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_CPU_MEMORY_BANDWIDTH, l);
 
 	return NOTIFY_OK;
 }
@@ -465,11 +439,7 @@ static int pm_qos_cpu_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_gpu_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_gpu_memory_bw_nb);
-
-	commit_data(dvfsrc, PM_QOS_GPU_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_GPU_MEMORY_BANDWIDTH, l);
 
 	return NOTIFY_OK;
 }
@@ -477,11 +447,7 @@ static int pm_qos_gpu_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_mm_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_mm_memory_bw_nb);
-
-	commit_data(dvfsrc, PM_QOS_MM_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_MM_MEMORY_BANDWIDTH, l);
 
 	return NOTIFY_OK;
 }
@@ -489,12 +455,7 @@ static int pm_qos_mm_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_other_memory_bw_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
-	dvfsrc = container_of(b,
-			struct helio_dvfsrc, pm_qos_other_memory_bw_nb);
-
-	commit_data(dvfsrc, PM_QOS_OTHER_MEMORY_BANDWIDTH, l);
+	commit_data(PM_QOS_OTHER_MEMORY_BANDWIDTH, l);
 
 	return NOTIFY_OK;
 }
@@ -502,14 +463,10 @@ static int pm_qos_other_memory_bw_notify(struct notifier_block *b,
 static int pm_qos_ddr_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= DDR_OPP_NUM)
 		l = DDR_OPP_NUM - 1;
 
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_ddr_opp_nb);
-
-	commit_data(dvfsrc, PM_QOS_DDR_OPP, l);
+	commit_data(PM_QOS_DDR_OPP, l);
 
 	return NOTIFY_OK;
 }
@@ -517,14 +474,10 @@ static int pm_qos_ddr_opp_notify(struct notifier_block *b,
 static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= VCORE_OPP_NUM)
 		l = VCORE_OPP_NUM - 1;
 
-	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_vcore_opp_nb);
-
-	commit_data(dvfsrc, PM_QOS_VCORE_OPP, l);
+	commit_data(PM_QOS_VCORE_OPP, l);
 
 	return NOTIFY_OK;
 }
@@ -532,15 +485,10 @@ static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 static int pm_qos_scp_vcore_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= VCORE_OPP_NUM)
 		l = 0;
 
-	dvfsrc = container_of(b, struct helio_dvfsrc,
-			pm_qos_scp_vcore_request_nb);
-
-	commit_data(dvfsrc, PM_QOS_SCP_VCORE_REQUEST, l);
+	commit_data(PM_QOS_SCP_VCORE_REQUEST, l);
 
 	return NOTIFY_OK;
 }
@@ -548,15 +496,10 @@ static int pm_qos_scp_vcore_request_notify(struct notifier_block *b,
 static int pm_qos_power_model_ddr_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= DDR_OPP_NUM)
 		l = 0;
 
-	dvfsrc = container_of(b, struct helio_dvfsrc,
-			pm_qos_power_model_ddr_request_nb);
-
-	commit_data(dvfsrc, PM_QOS_POWER_MODEL_DDR_REQUEST, l);
+	commit_data(PM_QOS_POWER_MODEL_DDR_REQUEST, l);
 
 	return NOTIFY_OK;
 }
@@ -564,15 +507,10 @@ static int pm_qos_power_model_ddr_request_notify(struct notifier_block *b,
 static int pm_qos_power_model_vcore_request_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= VCORE_OPP_NUM)
 		l = 0;
 
-	dvfsrc = container_of(b, struct helio_dvfsrc,
-			pm_qos_power_model_vcore_request_nb);
-
-	commit_data(dvfsrc, PM_QOS_POWER_MODEL_VCORE_REQUEST, l);
+	commit_data(PM_QOS_POWER_MODEL_VCORE_REQUEST, l);
 
 	return NOTIFY_OK;
 }
@@ -580,15 +518,10 @@ static int pm_qos_power_model_vcore_request_notify(struct notifier_block *b,
 static int pm_qos_vcore_dvfs_force_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
-	struct helio_dvfsrc *dvfsrc;
-
 	if (l >= VCORE_DVFS_OPP_NUM)
 		l = VCORE_DVFS_OPP_NUM;
 
-	dvfsrc = container_of(b,
-			struct helio_dvfsrc, pm_qos_vcore_dvfs_force_opp_nb);
-
-	commit_data(dvfsrc, PM_QOS_VCORE_DVFS_FORCE_OPP, l);
+	commit_data(PM_QOS_VCORE_DVFS_FORCE_OPP, l);
 
 	return NOTIFY_OK;
 }
@@ -707,7 +640,6 @@ MODULE_DEVICE_TABLE(of, helio_dvfsrc_of_match);
 
 static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 {
-	struct helio_dvfsrc *dvfsrc = dev_get_drvdata(dev);
 	int ret = 0;
 
 	ret = devfreq_suspend_device(dvfsrc->devfreq);
@@ -721,7 +653,6 @@ static __maybe_unused int helio_dvfsrc_suspend(struct device *dev)
 
 static __maybe_unused int helio_dvfsrc_resume(struct device *dev)
 {
-	struct helio_dvfsrc *dvfsrc = dev_get_drvdata(dev);
 	int ret = 0;
 
 	ret = devfreq_resume_device(dvfsrc->devfreq);

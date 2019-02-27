@@ -34,7 +34,8 @@ struct reg_config {
 struct helio_dvfsrc {
 	struct devfreq		*devfreq;
 
-	bool enabled;
+	bool qos_enabled;
+	bool dvfsrc_enabled;
 
 	void __iomem		*regs;
 	void __iomem		*sram_regs;
@@ -96,6 +97,7 @@ enum {
 	QOS_EMI_BW_NUM
 };
 
+extern int is_qos_enabled(void);
 extern int is_dvfsrc_enabled(void);
 extern int dvfsrc_get_emi_bw(int type);
 extern int get_vcore_dvfs_level(void);
@@ -117,6 +119,8 @@ extern void get_dvfsrc_record(char *p);
 extern void get_spm_reg(char *p);
 extern void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore);
 extern void helio_dvfsrc_platform_init(void);
+extern u32 spm_get_dvfs_level(void);
+extern u32 spm_get_pcm_reg9_data(void);
 
 #endif /* __HELIO_DVFSRC_H */
 
