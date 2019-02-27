@@ -340,6 +340,11 @@ firmware_class.path=/vendor/firmware";
 		compatible = "microtrust,tester-v1";
 	};
 
+	tkcore {
+	    compatible = "trustkernel,tkcore";
+	    interrupts = <GIC_SPI 250 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	plat_sram_flag@0011db00 {
 		compatible = "mediatek,plat_sram_flag";
 		reg = <0 0x0010e5f0 0 0x10>;
