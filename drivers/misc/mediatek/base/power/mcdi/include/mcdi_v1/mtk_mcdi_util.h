@@ -56,6 +56,12 @@ static const struct file_operations mcdi_ ## name ## _fops = {		\
 	.llseek	= seq_lseek,						\
 	.release = single_release,					\
 }
+#define PROC_CREATE_MCDI(parent, name)					\
+do {									\
+	if (!proc_create(#name, 0644, parent, &mcdi_ ## name ## _fops))	\
+		pr_notice("%s(), create /proc/mcdi/%s failed\n",	\
+			__func__, #name);				\
+} while (0)
 
 unsigned int mcdi_mbox_read(int id);
 void mcdi_mbox_write(int id, unsigned int val);

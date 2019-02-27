@@ -13,6 +13,7 @@
 #include <linux/bug.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/cpuidle.h>
 
 #include <mtk_mcdi_governor.h>
 #include <mtk_mcdi_util.h>
@@ -20,6 +21,7 @@
 
 void __iomem *cpc_base;
 
+static bool dt_init_sta;
 static const char mcdi_node_name[] = "mediatek,mt6779-mcdi";
 
 static int cpu_type_idx_map[NF_CPU] = {
@@ -92,11 +94,12 @@ int cpu_type_idx_get(int cpu)
 
 void mcdi_status_init(void)
 {
+	if (cpc_base)
+		set_mcdi_enable_status(dt_init_sta);
 }
 
 void mcdi_of_init(void **base)
 {
-	bool dt_init_sta;
 	struct device_node *node = NULL;
 
 	if (base == NULL)
@@ -105,8 +108,11 @@ void mcdi_of_init(void **base)
 	/* MCDI sysram base */
 	node = of_find_compatible_node(NULL, NULL, mcdi_node_name);
 
-	if (!node)
+	if (!node) {
 		pr_info("node '%s' not found!\n", mcdi_node_name);
+		cpc_base = NULL;
+		goto fail;
+	}
 
 	*base = of_iomap(node, 0);
 
@@ -123,5 +129,8 @@ void mcdi_of_init(void **base)
 			cpc_base);
 
 	dt_init_sta = of_property_read_bool(node, "mediatek,enabled");
-	set_mcdi_enable_status(dt_init_sta);
+
+fail:
+	if (cpc_base == NULL)
+		disable_cpuidle();
 }

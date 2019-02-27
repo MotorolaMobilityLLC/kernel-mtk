@@ -414,9 +414,7 @@ PROC_FOPS_MCDI(cpc);
 
 void mcdi_procfs_cpc_init(struct proc_dir_entry *mcdi_dir)
 {
-	if (!proc_create("cpc", 0644, mcdi_dir, &mcdi_cpc_fops))
-		pr_notice("%s(), create /proc/mcdi/%s failed\n",
-			__func__, "cpc");
+	PROC_CREATE_MCDI(mcdi_dir, cpc);
 }
 
 void mcdi_cpc_init(void)
