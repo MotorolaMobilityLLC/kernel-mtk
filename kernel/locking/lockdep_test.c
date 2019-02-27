@@ -21,6 +21,8 @@ static spinlock_t lockA;
 static spinlock_t lockB;
 static spinlock_t lockC;
 static spinlock_t lockD;
+static struct mutex mutexA;
+static struct rw_semaphore	rw_semA;
 static struct timer_list lockdep_timer;
 
 struct lockdep_test_rcu {
@@ -113,9 +115,17 @@ void lockdep_test_irq_lock_inversion(void)
 	add_timer(&lockdep_timer);
 }
 
+void lockdep_test_uninitialized(void)
+{
+	/* miss spin_lock_init */
+	spin_lock(&lockD);
+	spin_unlock(&lockD);
+}
+
 void lockdep_test_bad_magic(void)
 {
-	/* without spin_lock_init */
+	spin_lock_init(&lockD);
+	lockD.rlock.magic = 0xdeaddead;
 	spin_lock(&lockD);
 	spin_unlock(&lockD);
 }
@@ -145,6 +155,21 @@ void lockdep_test_held_lock_freed(void)
 	/* should do spin_unlock before free memory */
 }
 
+void lockdep_test_lock_monitor(void)
+{
+	mutex_lock(&mutexA);
+	down_read(&rw_semA);
+	rcu_read_lock();
+	spin_lock(&lockA);
+
+	mdelay(3000);
+
+	spin_unlock(&lockA);
+	rcu_read_unlock();
+	up_read(&rw_semA);
+	mutex_unlock(&mutexA);
+}
+
 struct lockdep_test_func {
 	char name[32];
 	void (*func)(void);
@@ -158,7 +183,9 @@ struct lockdep_test_func lockdep_test_list[] = {
 	{"inconsistent_lock_b", lockdep_test_inconsistent_lock_b},
 	{"irq_lock_inversion", lockdep_test_irq_lock_inversion},
 	{"bad_unlock_balance", lockdep_test_bad_unlock_balance},
+	{"lock_monitor", lockdep_test_lock_monitor},
 	/* KE */
+	{"uninitialized", lockdep_test_uninitialized},
 	{"bad_magic", lockdep_test_bad_magic},
 	{"wrong_owner_cpu", lockdep_test_wrong_owner_cpu},
 	{"held_lock_freed", lockdep_test_held_lock_freed},
@@ -199,6 +226,8 @@ void lockdep_test_init(void)
 	spin_lock_init(&lockA);
 	spin_lock_init(&lockB);
 	spin_lock_init(&lockC);
+	mutex_init(&mutexA);
+	init_rwsem(&rw_semA);
 
 	proc_create("lockdep_test", 0220, NULL, &proc_lockdep_test_fops);
 }
