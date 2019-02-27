@@ -364,15 +364,11 @@
 		reg = <0 0x11000880 0 0x80>,
 		      <0 0x11000900 0 0x80>,
 		      <0 0x11000980 0 0x80>,
-		      <0 0x11000A00 0 0x80>,
-		      <0 0x11000A80 0 0x80>,
-		      <0 0x11000B00 0 0x80>;
+		      <0 0x11000A00 0 0x80>;
 		interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_SPI 136 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 137 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 163 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 164 IRQ_TYPE_LEVEL_LOW>;
+			     <GIC_SPI 137 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "apdma";
 		#dma-cells = <1>;
@@ -397,17 +393,6 @@
 		clock-names = "baud", "bus";
 		dmas = <&apdma 2
 				&apdma 3>;
-		dma-names = "tx", "rx";
-	};
-
-	apuart2: serial@11004000 {
-		compatible = "mediatek,mt6577-uart";
-		reg = <0 0x11004000 0 0x1000>;
-		interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_LOW>;
-		clocks = <&clk26m>, <&infracfg_ao INFRACFG_AO_UART2_CG>;
-		clock-names = "baud", "bus";
-		dmas = <&apdma 4
-				&apdma 5>;
 		dma-names = "tx", "rx";
 	};
 
