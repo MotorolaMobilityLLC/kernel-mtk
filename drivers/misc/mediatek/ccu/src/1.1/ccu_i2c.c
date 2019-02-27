@@ -225,6 +225,7 @@ int ccu_i2c_buf_mode_en(int enable)
 			ret = i2c_ccu_enable(
 				pClient->adapter, I2C_BASE_OFS_CH1);
 			ccu_i2c_enabled = MTRUE;
+
 			LOG_DBG_MUST("i2c_ccu_enable done(%d).\n", ret);
 			i2c = i2c_get_adapdata(pClient->adapter);
 			i2c_writew(2, i2c, 0x240);
