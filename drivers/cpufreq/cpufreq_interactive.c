@@ -337,12 +337,11 @@ static unsigned int choose_freq(struct interactive_cpu *icpu,
 static u64 update_load(struct interactive_cpu *icpu, int cpu)
 {
 	struct interactive_tunables *tunables = icpu->ipolicy->tunables;
-	unsigned int delta_idle, delta_time;
-	u64 now_idle, now, active_time;
+	u64 now_idle, now, active_time, delta_idle, delta_time;
 
 	now_idle = get_cpu_idle_time(cpu, &now, tunables->io_is_busy);
-	delta_idle = (unsigned int)(now_idle - icpu->time_in_idle);
-	delta_time = (unsigned int)(now - icpu->time_in_idle_timestamp);
+	delta_idle = (now_idle - icpu->time_in_idle);
+	delta_time = (now - icpu->time_in_idle_timestamp);
 
 	if (delta_time <= delta_idle)
 		active_time = 0;
@@ -570,13 +569,15 @@ again:
 
 	for_each_cpu(cpu, &tmp_mask) {
 		struct interactive_cpu *icpu = &per_cpu(interactive_cpu, cpu);
-		struct cpufreq_policy *policy = icpu->ipolicy->policy;
+		struct cpufreq_policy *policy;
 
 		if (unlikely(!down_read_trylock(&icpu->enable_sem)))
 			continue;
 
-		if (likely(icpu->ipolicy))
+		if (likely(icpu->ipolicy)) {
+			policy = icpu->ipolicy->policy;
 			cpufreq_interactive_adjust_cpu(cpu, policy);
+		}
 
 		up_read(&icpu->enable_sem);
 	}
