@@ -1225,11 +1225,7 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id);
 
 	/* get cd_gpio and cd_level */
-#ifdef CONFIG_MTK_GPIOLIB_STAND
 	cd_gpio = of_get_named_gpio(np, "cd-gpios", 0);
-#else
-	of_property_read_u32_index(np, "cd-gpios", 1, &cd_gpio);
-#endif
 	if (of_property_read_u8(np, "cd_level", &host->hw->cd_level))
 		pr_notice("[msdc%d] cd_level isn't found in device tree\n",
 			host->id);

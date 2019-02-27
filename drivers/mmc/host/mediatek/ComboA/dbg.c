@@ -365,17 +365,7 @@ void msdc_dump_host_state(char **buff, unsigned long *size,
 		SPREAD_PRINTF(buff, size, m, "tuning_in_progress %d\n",
 			host->tuning_in_progress);
 
-	if ((host->core_clkon == 0) && host->stop_dma_time
-	&& (host->start_dma_time > host->stop_dma_time)) {
-		SPREAD_PRINTF(buff, size, m,
-		"DMA pending with clock gated: start %llu, stop %llu\n",
-			host->start_dma_time, host->stop_dma_time);
-		dbg_msdc_dump_clock_sts(m, host);
-		return;
-	}
-
-	if ((host->core_clkon == 1)
-	&& (host->start_dma_time > host->stop_dma_time)) {
+	if (host->start_dma_time > host->stop_dma_time) {
 		SPREAD_PRINTF(buff, size, m,
 		"DMA pending DMA_CFG_SATUS(%d): start %llu, stop %llu\n",
 			MSDC_READ32(MSDC_DMA_CFG) & MSDC_DMA_CFG_STS,

@@ -1190,12 +1190,12 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	cmdq_en = card->ext_csd.cmdq_mode_en;
 	if (cmdq_en) {
 		mmc_wait_cmdq_empty(card->host);
-		mmc_claim_host(card->host);
+		mmc_get_card(card);
 		err = mmc_blk_cmdq_switch(card, 0);
+		mmc_put_card(card);
 		if (err) {
 			pr_notice("MMC ioctl: %s disable cmdq error %d\n",
 				mmc_hostname(card->host), err);
-			mmc_release_host(card->host);
 			goto cmd_done;
 		}
 	}
@@ -1218,8 +1218,9 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (cmdq_en) {
+		mmc_get_card(card);
 		err = mmc_blk_cmdq_switch(card, 1);
-		mmc_release_host(card->host);
+		mmc_put_card(card);
 		if (err)
 			pr_notice("MMC ioctl: %s re-enable CMDQ error %d\n",
 				mmc_hostname(card->host), err);
