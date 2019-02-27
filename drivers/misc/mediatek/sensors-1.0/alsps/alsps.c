@@ -100,8 +100,6 @@ int rgbw_data_report(int *value)
 	event.word[2] = value[2];
 	event.word[3] = value[3];
 	err = sensor_input_event(cxt->als_mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("event buffer full, so drop this data\n");
 	return err;
 }
 
@@ -115,10 +113,7 @@ int rgbw_flush_report(void)
 	event.handle = ID_RGBW;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(alsps_context_obj->als_mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("event buffer full, so drop this data\n");
-	else
-		pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	return err;
 }
 
