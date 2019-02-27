@@ -321,6 +321,20 @@ source "drivers/misc/mediatek/performance/Kconfig"
 
 endmenu # Peripheral
 
+menu "Performance, Power, and Thermal"
+
+config MTK_FPSGO
+  bool "Support FPSGO framework"
+  default n
+  help
+    Support FPSGO framework for UX & Gaming FPS performance and
+    low power balance. As a perquisite to ensure FPS performance,
+    FPSGO persuades lowest power consumption for better DoU
+    endurance and gaming experience.
+    If you are not sure about this, set n.
+
+endmenu  # PPT
+
 menu "Misc configs"
 
 config MTK_MEM
