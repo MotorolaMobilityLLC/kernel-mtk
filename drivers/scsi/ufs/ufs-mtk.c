@@ -18,6 +18,7 @@
 #include <linux/rpmb.h>
 #include <linux/blkdev.h>
 #include <linux/blk_types.h>
+#include <linux/reboot.h>
 
 #include "ufshcd.h"
 #include "ufshcd-pltfrm.h"
@@ -1214,13 +1215,17 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	 * For reference only since UFS spec. said the status is valid after
 	 * device power cycle.
 	 */
-
 	err = ufshcd_query_attr(hba, UPIU_QUERY_OPCODE_READ_ATTR,
 		QUERY_ATTR_IDN_DEVICE_FFU_STATUS, 0, 0, &attr);
 
 	if (err) {
 		dev_err(hba->dev, "%s: query bDeviceFFUStatus failed, err %d\n",
 			__func__, err);
+		/*
+		 * UFS might not be used normally after FFU.
+		 * System will be rebooted automatically.
+		 */
+		kernel_restart(NULL);
 		goto out_release_mem;
 	}
 
