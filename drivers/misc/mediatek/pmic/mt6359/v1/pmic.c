@@ -66,6 +66,11 @@ void pmic_enable_smart_reset(unsigned char smart_en,
 		__func__, smart_en, smart_sdn_en);
 }
 
+void enable_bat_temp_det(bool en)
+{
+	pmic_set_register_value(PMIC_AUXADC_BAT_TEMP_EN, en);
+}
+
 static unsigned int pmic_scp_set_regulator(struct mtk_regulator mt_reg,
 	enum PMU_FLAGS_LIST vosel_reg, unsigned int voltage, bool is_sleep_vol)
 {

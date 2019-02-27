@@ -45,12 +45,6 @@
 #include <mach/mtk_battery_property.h>
 #include <linux/reboot.h>
 #include <mtk_battery_internal.h>
-#else
-#if 0 /* TBD */
-#include <mt-plat/battery_meter.h>
-#include <mt-plat/battery_common.h>
-#include <mach/mtk_battery_meter.h>
-#endif
 #endif
 
 /*****************************************************************************
@@ -259,12 +253,6 @@ int __attribute__ ((weak)) dlpt_check_power_off(void)
 #define bat_oc_h_thd(cur)   \
 (65535-(cur*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT* \
 	95*100/fg_cust_data.car_tune_value))
-
-#else /* CONFIG_MTK_GAUGE_VERSION != 30 */
-/* ex. Ireg = 65535 - (I * 950000uA / 2 / 158.122 / CAR_TUNE_VALUE * 100)*/
-/* (950000/2/158.122)*100~=300400*/
-#define bat_oc_h_thd(cur)   \
-(65535-((300400*cur/1000)/batt_meter_cust_data.car_tune_value))	/*ex: 4670mA*/
 
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
 
@@ -1000,9 +988,6 @@ int get_dlpt_imix(void)
 	pr_info("[%s] %d,%d,%d,%d,%d,%d,%d\n", __func__,
 		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix,
 		battery_get_soc(), battery_get_uisoc());
-#else
-	pr_info("[%s] %d,%d,%d,%d,%d,NA,NA\n", __func__,
-		volt_avg, curr_avg, g_lbatInt1, ptim_rac_val_avg, imix);
 #endif
 
 	if (imix < 0) {
@@ -1786,12 +1771,11 @@ static void pmic_uvlo_init(void)
 
 int pmic_throttling_dlpt_init(void)
 {
-#ifdef CONFIG_MTK_GAUGE_VERSION
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	struct device_node *np;
 	u32 val;
 	char *path;
 
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
 	path = "/bat_gm30";
 	np = of_find_node_by_path(path);
 	if (of_property_read_u32(np, "CAR_TUNE_VALUE", &val) == 0) {
@@ -1813,19 +1797,7 @@ int pmic_throttling_dlpt_init(void)
 			, fg_cust_data.r_fg_value);
 	}
 	pr_info("Get default UNIT_FGCURRENT= %d\n", UNIT_FGCURRENT);
-#elif (CONFIG_MTK_GAUGE_VERSION == 20)
-	path = "/bus/BAT_METTER";
-	np = of_find_node_by_path(path);
-	if (of_property_read_u32(np, "car_tune_value", &val) == 0) {
-		batt_meter_cust_data.car_tune_value = (int)val;
-		PMICLOG("Get car_tune_value from DT: %d\n"
-			, batt_meter_cust_data.car_tune_value);
-	} else {
-		batt_meter_cust_data.car_tune_value = CAR_TUNE_VALUE;
-		PMICLOG("Get car_tune_value from cust header\n");
-	}
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
-#endif /* end of #ifdef CONFIG_MTK_GAUGE_VERSION */
 
 	wakeup_source_init(&ptim_wake_lock, "PTIM_wakelock");
 	mutex_init(&ptim_mutex);
