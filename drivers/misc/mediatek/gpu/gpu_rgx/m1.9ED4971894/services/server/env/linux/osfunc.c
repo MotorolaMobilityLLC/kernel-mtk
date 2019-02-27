@@ -171,6 +171,15 @@ PVRSRV_ERROR OSPhyContigPagesAlloc(PVRSRV_DEVICE_NODE *psDevNode, size_t uiSize,
 	psMemHandle->ui32Order = ui32Order;
 	sCpuPAddr.uiAddr =  IMG_CAST_TO_CPUPHYADDR_UINT(page_to_phys(psPage));
 
+	if ((sCpuPAddr.uiAddr < 0x40000000) ||
+(sCpuPAddr.uiAddr >= 0xC0000000) ||
+((sCpuPAddr.uiAddr+uiSize) >= 0xC0000000))
+	ged_log_buf_print2(_mpu_ged_log, GED_LOG_ATTR_TIME,
+"OSPhyContigPagesAlloc sCpuPAddr.uiAddr=0x%llx out of range, uiSize=%llu, (sCpuPAddr.uiAddr+uiSize)=0x%llx",
+sCpuPAddr.uiAddr, (unsigned long long)uiSize,
+(unsigned long long)(sCpuPAddr.uiAddr+uiSize));
+
+
 	/*
 	 * Even when more pages are allocated as base MMU object we still need one single physical address because
 	 * they are physically contiguous.

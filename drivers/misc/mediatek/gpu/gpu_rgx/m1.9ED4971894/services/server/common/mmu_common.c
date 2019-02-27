@@ -2950,6 +2950,10 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 				HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 				HTBLOG_U64_BITS_HIGH(sDevPAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevPAddr.uiAddr));
 
+			if ((sDevPAddr.uiAddr < 0x40000000) ||
+(sDevPAddr.uiAddr > 0xc0000000 - 1))
+			ged_log_buf_print2(_mpu_ged_log,
+GED_LOG_ATTR_TIME, "[0]PAddr=0x%llx", sDevPAddr.uiAddr);
 
 			if ((sDevPAddr.uiAddr < get_phys_offset()) ||
 (sDevPAddr.uiAddr > get_phys_offset() + get_memory_size() - 1)) {
@@ -3376,6 +3380,10 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 			HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 			HTBLOG_U64_BITS_HIGH(psDevPAddr[i].uiAddr), HTBLOG_U64_BITS_LOW(psDevPAddr[i].uiAddr));
 
+		if ((psDevPAddr[i].uiAddr < 0x40000000) ||
+(psDevPAddr[i].uiAddr > 0xc0000000 - 1))
+			ged_log_buf_print2(_mpu_ged_log,
+GED_LOG_ATTR_TIME, "[1]PAddr=0x%llx", psDevPAddr[i].uiAddr);
 
 		if ((psDevPAddr[i].uiAddr < get_phys_offset()) ||
 (psDevPAddr[i].uiAddr > get_phys_offset() + get_memory_size() - 1)) {
