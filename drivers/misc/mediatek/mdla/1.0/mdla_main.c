@@ -79,6 +79,7 @@ static struct device *mdlactlDevice;
 static struct platform_device *mdlactlPlatformDevice;
 static u32 cmd_id;
 static u32 max_cmd_id;
+static u32 sw_max_cmd_id;
 static u32 cmd_list_len;
 struct work_struct mdla_queue;
 struct work_struct mdla_power_off_queue;
@@ -439,6 +440,7 @@ static void mdla_start_queue(struct work_struct *work)
 		}
 #endif
 	}
+	sw_max_cmd_id = max_cmd_id;
 	mutex_unlock(&cmd_list_lock);
 	wake_up_interruptible_all(&mdla_cmd_queue);
 	mdla_cmd_debug(
@@ -624,6 +626,7 @@ static int mdlactl_init(void)
 	numberOpens = 0;
 	cmd_id = 1;
 	max_cmd_id = 1;
+	sw_max_cmd_id = 0;
 	cmd_list_len = 0;
 	power_on = 0;
 
@@ -728,7 +731,7 @@ static int mdla_wait_command(struct ioctl_wait_cmd *wt)
 	mdla_cmd_debug("%s: enter id:[%d], eix:%d\n",
 		__func__, id, cnt);
 	// @suppress("Type cannot be resolved")
-	wait_event_interruptible(mdla_cmd_queue, max_cmd_id >= id);
+	wait_event_interruptible(mdla_cmd_queue, sw_max_cmd_id >= id);
 
 	mutex_lock(&cmd_list_lock);
 	while (!list_empty(&cmd_fin_list)) {
