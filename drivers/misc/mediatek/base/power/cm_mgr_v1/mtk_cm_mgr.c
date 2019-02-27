@@ -296,6 +296,7 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 	return 0;
 }
 
+int cm_mgr_perf_enable = 1;
 int cm_mgr_perf_timer_enable;
 int cm_mgr_perf_force_enable;
 struct timer_list cm_mgr_perf_timer;
@@ -324,6 +325,8 @@ void cm_mgr_perf_set_status(int enable)
 
 			expires = jiffies + USE_TIMER_PERF_CHECK_TIME;
 			mod_timer(&cm_mgr_perf_timer, expires);
+
+			check_cm_mgr_status_internal();
 		} else
 			del_timer(&cm_mgr_perf_timer);
 	}
@@ -703,6 +706,8 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 #endif /* USE_TIMER_CHECK */
 	seq_printf(m, "cm_mgr_ratio_timer_enable %d\n",
 			cm_mgr_ratio_timer_enable);
+	seq_printf(m, "cm_mgr_perf_enable %d\n",
+			cm_mgr_perf_enable);
 	seq_printf(m, "cm_mgr_perf_timer_enable %d\n",
 			cm_mgr_perf_timer_enable);
 	seq_printf(m, "cm_mgr_perf_force_enable %d\n",
@@ -756,6 +761,8 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 			debounce_times_reset_adb);
 	seq_printf(m, "debounce_times_perf_down %d\n",
 			debounce_times_perf_down);
+	seq_printf(m, "debounce_times_perf_force_down %d\n",
+			debounce_times_perf_force_down);
 	seq_printf(m, "update_v2f_table %d\n", update_v2f_table);
 	seq_printf(m, "update %d\n", update);
 
@@ -1023,6 +1030,8 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_ratio_timer_enable")) {
 		cm_mgr_ratio_timer_enable = val_1;
 		cm_mgr_ratio_timer_en(val_1);
+	} else if (!strcmp(cmd, "cm_mgr_perf_enable")) {
+		cm_mgr_perf_enable = val_1;
 	} else if (!strcmp(cmd, "cm_mgr_perf_timer_enable")) {
 		cm_mgr_perf_timer_enable = val_1;
 		cm_mgr_perf_set_status(val_1);
@@ -1103,6 +1112,8 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		debounce_times_reset_adb = val_1;
 	} else if (!strcmp(cmd, "debounce_times_perf_down")) {
 		debounce_times_perf_down = val_1;
+	} else if (!strcmp(cmd, "debounce_times_perf_force_down")) {
+		debounce_times_perf_force_down = val_1;
 	} else if (!strcmp(cmd, "update_v2f_table")) {
 		update_v2f_table = !!val_1;
 	} else if (!strcmp(cmd, "update")) {
