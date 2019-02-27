@@ -495,6 +495,7 @@ static int mmdvfs_probe(struct platform_device *pdev)
 			}
 			mmdvfs_get_step_node(&pdev->dev, name, mm_freq, count);
 			strncpy(ext_name, name, sizeof(ext_name));
+			ext_name[sizeof(ext_name)-1] = '\0';
 			strncat(ext_name, "_ext",
 				sizeof(ext_name)-strlen(name));
 			mmdvfs_get_step_node(&pdev->dev,
