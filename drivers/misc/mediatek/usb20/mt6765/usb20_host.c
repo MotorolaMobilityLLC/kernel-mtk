@@ -607,10 +607,6 @@ static void musb_host_work(struct work_struct *data)
 	/* clk_prepare_cnt +1 here */
 	usb_prepare_clock(true);
 
-	spin_lock_irqsave(&mtk_musb->lock, flags);
-	musb_generic_disable(mtk_musb);
-	spin_unlock_irqrestore(&mtk_musb->lock, flags);
-
 	down(&mtk_musb->musb_lock);
 	DBG(0, "work start, is_host=%d\n", mtk_musb->is_host);
 
@@ -625,10 +621,9 @@ static void musb_host_work(struct work_struct *data)
 	else
 		host_mode = musb_is_host();
 
-
 	DBG(0, "musb is as %s\n", host_mode?"host":"device");
 
-	if (host_mode) {
+	if (host_mode && !mtk_musb->is_host) {
 		/* switch to HOST state before turn on VBUS */
 		MUSB_HST_MODE(mtk_musb);
 
@@ -678,7 +673,8 @@ static void musb_host_work(struct work_struct *data)
 			queue_delayed_work(mtk_musb->st_wq,
 						&host_plug_test_work, 0);
 		usb_clk_state = OFF_TO_ON;
-	} else {
+	}  else if (!host_mode && mtk_musb->is_host) {
+		/* switch from host -> device */
 		/* for device no disconnect interrupt */
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		if (mtk_musb->is_active) {
