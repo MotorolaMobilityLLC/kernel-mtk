@@ -71,7 +71,7 @@ struct DumpFirstErrorStruct {
 	pid_t callerPid;
 	char callerName[TASK_COMM_LEN];
 	unsigned long long savetime;	/* epoch time of first error occur */
-	char cmdqString[CMDQ_MAX_FIRSTERROR];
+	char *cmdqString;
 	u32 cmdqCount;
 	s32 cmdqMaxSize;
 	bool flag;
