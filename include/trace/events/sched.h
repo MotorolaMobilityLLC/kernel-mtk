@@ -1878,11 +1878,50 @@ sched_trace(sched_rt_info);
 sched_trace(sched_lb);
 sched_trace(sched_lb_info);
 sched_trace(sched_eas_energy_calc);
-sched_trace(sched_dvfs);
 
 // mtk scheduling interopertion enhancement
 sched_trace(sched_interop);
 #endif
+
+/*
+ * Traceopint for dvfs governor
+ */
+TRACE_EVENT(sched_dvfs,
+		TP_PROTO(int cpu, int cid, int type, unsigned int cur_freq,
+			unsigned int new_freq, int thro_type,
+			long long thro_time),
+		TP_ARGS(cpu, cid, type, cur_freq, new_freq,
+			thro_type, thro_time),
+		TP_STRUCT__entry(
+			__field(int, cpu)
+			__field(int, cid)
+			__field(int, type)
+			__field(unsigned int, cur_freq)
+			__field(unsigned int, new_freq)
+			__field(int, thro_type)
+			__field(long long, thro_time)
+			),
+		TP_fast_assign(
+			__entry->cpu		= cpu;
+			__entry->cid		= cid;
+			__entry->type		= type;
+			__entry->cur_freq	= cur_freq;
+			__entry->new_freq	= new_freq;
+			__entry->thro_type	= thro_type;
+			__entry->thro_time	= thro_time;
+			),
+		TP_printk("cpu=%d cid=%d type=%d cur=%d new=%d thro_type=%d "
+				"thro_time=%lld",
+			__entry->cpu,
+			__entry->cid,
+			__entry->type,
+			__entry->cur_freq,
+			__entry->new_freq,
+			__entry->thro_type,
+			__entry->thro_time
+			)
+);
+
 
 /*
  * Tracepoint for walt debug info.
