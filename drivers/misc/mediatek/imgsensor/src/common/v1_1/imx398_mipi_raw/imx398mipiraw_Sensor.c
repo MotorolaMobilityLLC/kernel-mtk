@@ -133,7 +133,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 902,
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2216,
+		.grabwindow_width = 1476,
 		.grabwindow_height = 834,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 1200,
@@ -144,7 +144,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.framelength = 1444,	/* 1640, */
 		.startx = 0,
 		.starty = 0,
-		.grabwindow_width = 2216,
+		.grabwindow_width = 1476,
 		.grabwindow_height = 834,
 		.mipi_data_lp2hs_settle_dc = 30,
 		.max_framerate = 300,
@@ -338,10 +338,10 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* capture */
 	{4656, 3496, 0000, 0000, 4656, 3496, 4656, 3496,
 	 0000, 0000, 4656, 3496, 0000, 0000, 4656, 3496},/* video */
-	{4656, 3496, 0000, 648, 4656, 2199, 1922, 722,
-	 0000, 0000, 1922, 722, 0000, 0000, 1920, 720},/* hs video */
-	{4656, 3496, 0000, 492, 4656, 2500, 2216, 834,
-	 0000, 0000, 2216, 834, 0000, 0000, 1476, 834},/* slim video */
+	{4656, 3496, 0000,  492, 4656, 2500, 3104, 2500,
+	   56, 0000, 2216,  834,  370, 0000, 1476,  834},/* hs video */
+	{4656, 3496, 0000,  492, 4656, 2500, 3104, 2500,
+	   56, 0000, 2216,  834,  370, 0000, 1476,  834},/* slim video */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748,
 	 0000, 0000, 2328, 1748, 0000, 0000, 2328, 1748},/* Custom1 */
 	{4656, 3496, 0000, 0000, 4656, 3496, 2328, 1748,
