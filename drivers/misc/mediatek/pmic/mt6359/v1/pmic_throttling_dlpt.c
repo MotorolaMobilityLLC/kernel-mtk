@@ -426,7 +426,6 @@ void __attribute__ ((weak)) register_battery_oc_notify(
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
-static struct hrtimer bat_percent_notify_timer;
 static struct task_struct *bat_percent_notify_thread;
 static bool bat_percent_notify_flag;
 static DECLARE_WAIT_QUEUE_HEAD(bat_percent_notify_waiter);
@@ -449,6 +448,8 @@ struct battery_percent_callback_table bpcb_tb[] = {
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL},
 	{NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}, {NULL}
 };
+
+static struct notifier_block dlpt_nb = {0};
 
 void register_battery_percent_notify(
 	void (*battery_percent_callback)(enum BATTERY_PERCENT_LEVEL_TAG),
@@ -513,65 +514,68 @@ void exec_battery_percent_callback(
 
 int bat_percent_notify_handler(void *unused)
 {
-	ktime_t ktime;
-	int bat_per_val = 0;
-
 	do {
-		ktime = ktime_set(10, 0);
-
 		wait_event_interruptible(bat_percent_notify_waiter,
 					 (bat_percent_notify_flag == true));
 
 		__pm_stay_awake(&bat_percent_notify_lock);
 		mutex_lock(&bat_percent_notify_mutex);
 
-#if (CONFIG_MTK_GAUGE_VERSION == 30)
-		bat_per_val = battery_get_uisoc();
-#endif
-		if ((upmu_get_rgs_chrdet() == 0) &&
-		    (g_battery_percent_level == 0) &&
-		    (bat_per_val <= BAT_PERCENT_LINIT)) {
-			g_battery_percent_level = 1;
-			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_1);
-		} else if ((g_battery_percent_level == 1) &&
-			   (bat_per_val > BAT_PERCENT_LINIT)) {
-			g_battery_percent_level = 0;
-			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_0);
-		}
+		exec_battery_percent_callback(g_battery_percent_level);
 		bat_percent_notify_flag = false;
-
-		PMICLOG("bat_per_level=%d,bat_per_val=%d\n"
-			, g_battery_percent_level, bat_per_val);
+		PMICLOG("[%s] bat_per_level=%d\n", __func__,
+			g_battery_percent_level);
 
 		mutex_unlock(&bat_percent_notify_mutex);
 		__pm_relax(&bat_percent_notify_lock);
-
-		hrtimer_start(&bat_percent_notify_timer,
-			ktime, HRTIMER_MODE_REL);
-
 	} while (!kthread_should_stop());
 
 	return 0;
 }
 
-enum hrtimer_restart bat_percent_notify_task(struct hrtimer *timer)
+int dlpt_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 {
-	bat_percent_notify_flag = true;
-	wake_up_interruptible(&bat_percent_notify_waiter);
+	struct power_supply *psy = v;
+	union power_supply_propval val;
+	int ret = 0;
+	int uisoc = -1, bat_status = -1;
 
-	return HRTIMER_NORESTART;
+	if (strcmp(psy->desc->name, "battery") == 0) {
+		ret = power_supply_get_property(psy,
+			POWER_SUPPLY_PROP_CAPACITY, &val);
+		if (!ret)
+			uisoc = val.intval;
+
+		ret = power_supply_get_property(psy,
+			POWER_SUPPLY_PROP_STATUS, &val);
+		if (!ret)
+			bat_status = val.intval;
+
+		if ((bat_status != POWER_SUPPLY_STATUS_CHARGING &&
+			bat_status != -1) &&
+			(g_battery_percent_level == BATTERY_PERCENT_LEVEL_0) &&
+			(uisoc <= BAT_PERCENT_LINIT && uisoc > 0)) {
+			g_battery_percent_level = BATTERY_PERCENT_LEVEL_1;
+			bat_percent_notify_flag = true;
+			wake_up_interruptible(&bat_percent_notify_waiter);
+			PMICLOG("bat_percent_notify called, l=%d s=%d soc=%d\n",
+				g_battery_percent_level, bat_status, uisoc);
+		} else if ((bat_status != -1) &&
+			(g_battery_percent_level == BATTERY_PERCENT_LEVEL_1) &&
+			   (uisoc > BAT_PERCENT_LINIT)) {
+			g_battery_percent_level = BATTERY_PERCENT_LEVEL_0;
+			bat_percent_notify_flag = true;
+			wake_up_interruptible(&bat_percent_notify_waiter);
+			PMICLOG("bat_percent_notify called, l=%d s=%d soc=%d\n",
+				g_battery_percent_level, bat_status, uisoc);
+		}
+	}
+
+	return NOTIFY_DONE;
 }
 
 void bat_percent_notify_init(void)
 {
-	ktime_t ktime;
-
-	ktime = ktime_set(20, 0);
-	hrtimer_init(&bat_percent_notify_timer,
-		CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	bat_percent_notify_timer.function = bat_percent_notify_task;
-	hrtimer_start(&bat_percent_notify_timer, ktime, HRTIMER_MODE_REL);
-
 	wakeup_source_init(&bat_percent_notify_lock,
 		"bat_percent_notify_lock wakelock");
 
@@ -582,6 +586,9 @@ void bat_percent_notify_init(void)
 		pr_notice("Failed to create bat_percent_notify_thread\n");
 	else
 		pr_info("Create bat_percent_notify_thread : done\n");
+
+	dlpt_nb.notifier_call = dlpt_psy_event;
+	power_supply_reg_notifier(&dlpt_nb);
 }
 #else
 void __attribute__ ((weak)) register_battery_percent_notify(
