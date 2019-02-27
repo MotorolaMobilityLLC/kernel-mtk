@@ -432,7 +432,6 @@ config MTK_GMO_RAM_OPTIMIZE
 	default n
 	select MTK_ENABLE_GMO
 	select MTK_ENABLE_AGO
-	select DM_ANDROID_VERITY_AT_MOST_ONCE_DEFAULT_ENABLED
 	help
 	  Provide centeral config to use memory efficiently.
 	  GMO must set both in kernel & project config to prevent
@@ -483,6 +482,10 @@ config MTK_ENABLE_AGO
 	select HZ_300
 	select UID_CPUTIME
 	select SDCARD_FS
+	select F2FS_FS
+	select F2FS_FS_SECURITY
+	select F2FS_FS_ENCRYPTION
+	select DM_ANDROID_VERITY_AT_MOST_ONCE_DEFAULT_ENABLE
 	help
 	  Enable/Disable GMO related feautre
 	  Do not use this options in Kernel directly
