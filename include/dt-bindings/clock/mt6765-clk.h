@@ -31,7 +31,17 @@
 #define CLK_APMIXED_MPLL		9
 #define CLK_APMIXED_ULPOSC1		10
 #define CLK_APMIXED_ULPOSC2		11
-#define CLK_APMIXED_NR_CLK		12
+#define CLK_APMIXED_SSUSB26M		12
+#define CLK_APMIXED_APPLL26M		13
+#define CLK_APMIXED_MIPIC0_26M		14
+#define CLK_APMIXED_MDPLLGP26M		15
+#define CLK_APMIXED_MMSYS_F26M		16
+#define CLK_APMIXED_UFS26M		17
+#define CLK_APMIXED_MIPIC1_26M		18
+#define CLK_APMIXED_MEMPLL26M		19
+#define CLK_APMIXED_CLKSQ_LVPLL_26M	20
+#define CLK_APMIXED_MIPID0_26M		21
+#define CLK_APMIXED_NR_CLK		22
 
 /* TOPCKGEN */
 #define CLK_TOP_SYSPLL			0
@@ -364,17 +374,16 @@
 
 /* CAMSYS */
 
-#define CLK_CAM_LARB6			0
+#define CLK_CAM_LARB3			0
 #define CLK_CAM_DFP_VAD			1
-#define CLK_CAM_LARB3			2
-#define CLK_CAM				3
-#define CLK_CAMTG			4
-#define CLK_CAM_SENINF			5
-#define CLK_CAMSV0			6
-#define CLK_CAMSV1			7
-#define CLK_CAMSV2			8
-#define CLK_CAM_CCU			9
-#define CLK_CAM_NR_CLK			10
+#define CLK_CAM				2
+#define CLK_CAMTG			3
+#define CLK_CAM_SENINF			4
+#define CLK_CAMSV0			5
+#define CLK_CAMSV1			6
+#define CLK_CAMSV2			7
+#define CLK_CAM_CCU			8
+#define CLK_CAM_NR_CLK			9
 
 /* SCP_SYS */
 
