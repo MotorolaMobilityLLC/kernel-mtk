@@ -84,9 +84,9 @@ extern void mt_eint_print_status(void);
 extern void aee_rr_rec_spm_suspend_val(u32 val);
 #endif
 
-extern int request_uart_to_sleep(void);
-extern int request_uart_to_wakeup(void);
-extern void mtk_uart_restore(void);
+extern int mtk8250_request_to_sleep(void);
+extern int mtk8250_request_to_wakeup(void);
+extern void mtk8250_restore_dev(void);
 
 extern int spm_ap_mdsrc_req_cnt;
 extern struct wake_status spm_wakesta;
