@@ -72,9 +72,9 @@ static int tboost_thread(void *ptr)
 		core = perf_mgr_touch_core;
 		freq = perf_mgr_touch_freq;
 		spin_unlock_irqrestore(&tboost.touch_lock, flags);
-#ifdef MTK_BOOST_SUPPORT
+		pr_debug("tboost_thread\n");
 		perfmgr_boost(event, core, freq);
-#endif
+
 	}
 	return 0;
 }
@@ -232,7 +232,7 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 		return;
 
 	if ((type == EV_KEY) && (code == BTN_TOUCH)) {
-		pr_debug(TAG"input cb, type:%d, code:%d, value:%d\n",
+		pr_debug("input cb, type:%d, code:%d, value:%d\n",
 			 type, code, value);
 		spin_lock_irqsave(&tboost.touch_lock, flags);
 		tboost.touch_event = value;
@@ -302,19 +302,32 @@ static struct input_handler dbs_input_handler = {
 int init_perfmgr_touch(void)
 {
 	struct proc_dir_entry *touch_dir = NULL;
+	struct proc_dir_entry *tbe_dir, *tbc_dir, *tbf_dir;
 	int handle;
 
-#ifdef MTK_BOOST_SUPPORT
+	pr_debug("init_perfmgr_touch\n");
+
 	perf_mgr_touch_core = perfmgr_get_target_core();
 	perf_mgr_touch_freq = perfmgr_get_target_freq();
-#endif
 
 	touch_dir = proc_mkdir("perfmgr/touch", NULL);
 
+	if (!touch_dir)
+		pr_debug("touch_dir not create\n");
 	/* touch */
-	proc_create("tb_enable", 0644, touch_dir, &perfmgr_tb_enable_fops);
-	proc_create("tb_core", 0644, touch_dir, &perfmgr_tb_core_fops);
-	proc_create("tb_freq", 0644, touch_dir, &perfmgr_tb_freq_fops);
+	tbe_dir = proc_create("tb_enable", 0644, touch_dir,
+		 &perfmgr_tb_enable_fops);
+	if (!tbe_dir)
+		pr_debug("tbe_dir not create\n");
+	tbc_dir = proc_create("tb_core", 0644, touch_dir,
+		 &perfmgr_tb_core_fops);
+	if (!tbc_dir)
+		pr_debug("tbc_dir not create\n");
+
+	tbf_dir = proc_create("tb_freq", 0644, touch_dir,
+		 &perfmgr_tb_freq_fops);
+	if (!tbf_dir)
+		pr_debug("tbf_dir not create\n");
 
 	spin_lock_init(&tboost.touch_lock);
 	init_waitqueue_head(&tboost.wq);
@@ -332,9 +345,9 @@ int init_perfmgr_touch(void)
 int perfmgr_touch_suspend(void)
 {
 	/*pr_debug(TAG"perfmgr_touch_suspend\n");*/
-#ifdef MTK_BOOST_SUPPORT
+
 	perfmgr_boost(0, 0, 0);
-#endif
+
 	return 0;
 }
 
