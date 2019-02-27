@@ -86,6 +86,9 @@ static const struct mfd_cell mt6397_devs[] = {
 		.num_resources = ARRAY_SIZE(mt6397_rtc_resources),
 		.resources = mt6397_rtc_resources,
 		.of_compatible = "mediatek,mt6397-misc",
+	}, {
+		.name = "mt6397-thermal",
+		.of_compatible = "mediatek,mt6397-thermal"
 	},
 };
 
