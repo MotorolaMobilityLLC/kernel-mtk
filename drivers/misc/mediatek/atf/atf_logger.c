@@ -33,11 +33,12 @@
 #include <linux/atomic.h>
 #include <linux/irq.h>
 #include <linux/syscore_ops.h>
+#include <mt-plat/aee.h>
 #include <mt-plat/mtk_secure_api.h>
 
 /*#define ATF_LOGGER_DEBUG*/
 
-#define ATF_LOG_CTRL_BUF_SIZE 256
+#define ATF_LOG_CTRL_BUF_SIZE 512
 #define ATF_CRASH_MAGIC_NO	0xdead1abf
 #define ATF_LAST_MAGIC_NO	0x41544641
 
@@ -88,9 +89,12 @@ union atf_log_ctl_t {
 		unsigned int atf_crash_log_addr;
 		unsigned int atf_crash_log_size;
 		unsigned int atf_crash_flag;        /*  0x40 */
-		/* padding for next 8 bytes alignment variable */
-		unsigned int padding;
-		unsigned long long atf_except_write_pos_per_cpu[10]; /* 0x48 */
+		/* for FIQ/IRQ footprint, print in crash log*/
+		unsigned int atf_crash_write_pos;
+		unsigned long long except_write_pos_per_cpu[AEE_MTK_CPU_NUMS];
+		unsigned long long fiq_irq_enter_timestamp[AEE_MTK_CPU_NUMS];
+		unsigned long long fiq_irq_quit_timestamp[AEE_MTK_CPU_NUMS];
+		unsigned int irq_num[AEE_MTK_CPU_NUMS];
 	} info;
 	unsigned char data[ATF_LOG_CTRL_BUF_SIZE];
 };
