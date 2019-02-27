@@ -146,7 +146,7 @@ mt_reg_sync_writel(temp, REG);\
  * Integrate with NVRAM
  */
 #define AUXADC_CALI_DEVNAME    "mtk-adc-cali"
-#define TAG                    "AUXADC"
+#define TAG                    "[AUXADC]"
 #define TEST_ADC_CALI_PRINT _IO('k', 0)
 #define SET_ADC_CALI_Slop   _IOW('k', 1, int)
 #define SET_ADC_CALI_Offset _IOW('k', 2, int)
@@ -286,7 +286,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 {
 	unsigned int channel[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 				0, 0, 0, 0, 0 };
-	int idle_count = 0;
+	/* int idle_count = 0; */
 	int data_ready_count = 0;
 	int ret = 0;
 
@@ -307,25 +307,27 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 
 	if (dwChannel == PAD_AUX_XP || dwChannel == PAD_AUX_YM)
 		mt_auxadc_disable_penirq();
+
 	/* step1 check con2 if auxadc is busy */
+	/* Remove because hw/sw may access in the same time
 	while (AUXADC_DRV_ReadReg16((u16 *)AUXADC_CON2) & 0x01) {
 		mdelay(1);
 		idle_count++;
 		if (idle_count > 30) {
-			/* wait for idle time out */
 			pr_warn(TAG "wait for auxadc idle time out\n");
 			mutex_unlock(&mutex_get_cali_value);
 			return -1;
 		}
 	}
+	*/
+
 	/* step2 clear bit */
 	if (adc_auto_set == 0) {
 		/* clear bit */
-		AUXADC_DRV_ClearBits16((u16 *)AUXADC_CON1, (1 << dwChannel));
+		AUXADC_DRV_WriteReg16((u16 *)AUXADC_CON1_CLR, (1 << dwChannel));
 	}
 
-
-	/* step3  read channel and make sure old ready bit ==0 */
+	/* step3 read channel and make sure old ready bit == 0 */
 	while (AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel * 0x04) &
 			(1 << 12)) {
 		pr_debug(TAG "wait for channel[%d] ready\n", dwChannel);
@@ -340,11 +342,11 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 		}
 	}
 
-	/* step4 set bit  to trigger sample */
+	/* step4 set bit to trigger sample */
 	if (adc_auto_set == 0)
-		AUXADC_DRV_SetBits16((u16 *)AUXADC_CON1, (1 << dwChannel));
+		AUXADC_DRV_WriteReg16((u16 *)AUXADC_CON1_SET, (1 << dwChannel));
 
-	/* step5  read channel and make sure  ready bit ==1
+	/* step5 read channel and make sure ready bit == 1
 	 * we must dealay here for hw sample cahnnel data
 	 */
 	udelay(25);
@@ -361,8 +363,8 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 			return -3;
 		}
 	}
-	/* step6 read data */
 
+	/* step6 read data */
 	channel[dwChannel] = AUXADC_DRV_ReadReg16(AUXADC_DAT0 + dwChannel *
 			0x04) & 0x0FFF;
 
@@ -438,7 +440,7 @@ void mt_auxadc_hal_init(struct platform_device *dev)
 	if (!auxadc_base)
 		pr_err(TAG "base failed\n");
 
-#if defined(EFUSE_CALI)
+#if defined(EFUSE_CALI) && !defined(AUXADC_INDEX)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,efusec");
 	if (!node)
 		pr_err(TAG "find node failed\n");
@@ -1778,7 +1780,7 @@ static int mt_auxadc_probe(struct platform_device *dev)
 				"ADC_FDD_Rf_Params_Dynamic_Custom");
 			g_adc_info[used_channel_counter].channel_number =
 					of_value;
-			pr_info(TAG "find adc_fdd_rf node fail:%d\n", of_value);
+			pr_info(TAG "find adc_fdd_rf node:%d\n", of_value);
 			used_channel_counter++;
 		}
 		ret = of_property_read_u32_array(node, "mediatek,hf_mic",
