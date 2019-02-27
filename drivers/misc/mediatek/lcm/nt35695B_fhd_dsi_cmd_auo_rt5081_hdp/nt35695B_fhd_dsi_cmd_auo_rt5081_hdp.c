@@ -1630,7 +1630,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 	unsigned int x1, w, h;
 
 	x1 = 0;
-	w = FRAME_WIDTH;
+	w = VIRTUAL_WIDTH;
 
 	y1 = round_down(y1, 16);
 	h = y2 - y1 + 1;
@@ -1644,12 +1644,12 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 	h = round_up(h, 16);
 
 	/* check height again */
-	if (y1 >= FRAME_HEIGHT || y1 + h > FRAME_HEIGHT) {
+	if (y1 >= VIRTUAL_HEIGHT || y1 + h > VIRTUAL_HEIGHT) {
 		/* assign full screen roi */
 		pr_info("%s calc error,assign full roi:y=%d,h=%d\n",
 			__func__, *y, *height);
 		y1 = 0;
-		h = FRAME_HEIGHT;
+		h = VIRTUAL_HEIGHT;
 	}
 
 	*x = x1;
