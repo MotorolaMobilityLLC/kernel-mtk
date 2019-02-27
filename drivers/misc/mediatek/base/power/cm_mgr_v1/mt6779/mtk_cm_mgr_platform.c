@@ -179,17 +179,17 @@ void cm_mgr_update_met(void)
 
 #include <linux/cpu_pm.h>
 static int cm_mgr_idle_mask = CLUSTER0_MASK;
-void __iomem *spm_sleep_base;
 
 void __iomem *mcucfg_mp0_counter_base;
+void __iomem *cm_emi_reg_base;
 
 spinlock_t cm_mgr_cpu_mask_lock;
 
-#define diff_value_overflow(diff, a, b) do {\
+#define diff_value_overflow(diff, a, b) do { \
 	if ((a) >= (b)) \
-	diff = (a) - (b);\
+		diff = (a) - (b); \
 	else \
-	diff = 0xffffffff - (b) + (a); \
+		diff = 0xffffffff - (b) + (a); \
 } while (0) \
 
 #define CM_MGR_MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -296,10 +296,20 @@ int cm_mgr_get_cpu_count(int cluster)
 	return pstall_all->cpu_count[cluster];
 }
 
+static ktime_t cm_mgr_init_time;
+static int cm_mgr_init_flag;
+
 static unsigned int cm_mgr_read_stall(int cpu)
 {
 	unsigned int val = 0;
 	unsigned long spinlock_save_flags;
+
+	if (cm_mgr_init_flag) {
+		if (ktime_ms_delta(ktime_get(), cm_mgr_init_time) <
+				CM_MGR_INIT_DELAY_MS)
+			return val;
+		cm_mgr_init_flag = 0;
+	}
 
 	if (!spin_trylock_irqsave(&cm_mgr_cpu_mask_lock, spinlock_save_flags))
 		return val;
@@ -404,15 +414,19 @@ static void init_cpu_stall_counter(int cluster)
 	unsigned int val;
 	int i;
 
+	cm_mgr_init_time = ktime_get();
+	cm_mgr_init_flag = 1;
+
 	if (cluster == 0) {
 		for (i = 0; i < CM_MGR_CPU_COUNT; i++) {
 			if (i >= CM_MGR_CPU_LIMIT) {
-				val = cm_mgr_read(STALL_INFO_CONF(i));
-				val &= ~(0x1f << 6);
-				val |= STALL_INFO_GEN_CONF_REG;
+				val = CM_SET_NAME_VAL(
+						cm_mgr_read(STALL_INFO_CONF(i)),
+						CPU_STALL_CACHE_OPT, 8);
 				cm_mgr_write(STALL_INFO_CONF(i), val);
 			}
 
+			/* please check CM_MGR_INIT_DELAY_MS value */
 			val = RG_FMETER_EN;
 			val |= RG_MP0_AVG_STALL_PERIOD_1MS;
 			val |= RG_CPU_AVG_STALL_RATIO_EN |
@@ -612,7 +626,9 @@ void cm_mgr_ratio_timer_en(int enable)
 	}
 }
 
+static struct pm_qos_request ddr_opp_req;
 static int debounce_times_perf_down_local;
+static int pm_qos_update_request_status;
 void cm_mgr_perf_platform_set_status(int enable)
 {
 	if (enable) {
@@ -646,8 +662,6 @@ void cm_mgr_perf_platform_set_status(int enable)
 	}
 }
 
-static struct pm_qos_request ddr_opp_req;
-static int pm_qos_update_request_status;
 void cm_mgr_perf_platform_set_force_status(int enable)
 {
 	if (enable) {
@@ -692,12 +706,13 @@ int cm_mgr_register_init(void)
 		return -1;
 	}
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
+	node = of_find_compatible_node(NULL, NULL,
+			"mediatek,emi");
 	if (!node)
-		pr_info("find sleep node failed\n");
-	spm_sleep_base = of_iomap(node, 0);
-	if (!spm_sleep_base) {
-		pr_info("base spm_sleep_base failed\n");
+		pr_info("find mcucfg_mp0_counter node failed\n");
+	cm_emi_reg_base = of_iomap(node, 0);
+	if (!cm_emi_reg_base) {
+		pr_info("base cm_emi_reg_base failed\n");
 		return -1;
 	}
 
@@ -744,6 +759,8 @@ int cm_mgr_platform_init(void)
 	pm_qos_add_request(&ddr_opp_req, PM_QOS_DDR_OPP,
 			PM_QOS_DDR_OPP_DEFAULT_VALUE);
 
+	cm_mgr_emi_latency(1);
+
 	return r;
 }
 
@@ -780,4 +797,130 @@ int cm_mgr_get_dram_opp(void)
 	dram_opp_cur = get_cur_ddr_opp();
 
 	return phy_to_virt_dram_opp[dram_opp_cur];
+}
+
+void cm_mgr_emi_latency(int enable)
+{
+#if 0
+	if (enable) {
+		unsigned int val;
+
+		/* RD */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD4),
+				AP_LAT_TIMER_PRD_SHF, 2);
+		cm_mgr_write(EMI_THRO_PRD4, val);
+
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_CTRL1),
+				AP_IDLE_PRD, 2);
+		cm_mgr_write(EMI_THRO_CTRL1, val);
+
+		/* FIXME: AP_LAT_MARGIN */
+#if 0
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT57, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT58, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT59, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT60, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT61, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT62, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT63, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT64, val);
+#endif
+
+		/* 2ms for 0/1/2/3 */
+		val = CM_NAME_VAL(AP_LAT_BUDGET0, 400) |
+			CM_NAME_VAL(AP_LAT_BUDGET1, 600) |
+			CM_NAME_VAL(AP_LAT_BUDGET2, 800) |
+			CM_NAME_VAL(AP_LAT_BUDGET3, 400);
+		cm_mgr_write(EMI_THRO_LAT69, val);
+
+		/* 2ms for 4/5, 400ns for 6/7 */
+		val = CM_NAME_VAL(AP_LAT_BUDGET4, 600) |
+			CM_NAME_VAL(AP_LAT_BUDGET5, 800) |
+			CM_NAME_VAL(AP_LAT_BUDGET6, 186) |
+			CM_NAME_VAL(AP_LAT_BUDGET7, 124);
+		cm_mgr_write(EMI_THRO_LAT70, val);
+
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_CTRL1),
+				AP_LAT_DVFS_UP_THR, 3);
+		cm_mgr_write(EMI_THRO_CTRL1, val);
+
+		/* This is the last step for latency monitor */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_CTRL1),
+				AP_LAT_TIMER_PRD, 5);
+		cm_mgr_write(EMI_THRO_CTRL1, val);
+
+		/* WR */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD4),
+				AP_WR_LAT_TIMER_PRD_SHF, 2);
+		cm_mgr_write(EMI_THRO_PRD4, val);
+
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD3),
+				AP_WR_IDLE_PRD, 2);
+		cm_mgr_write(EMI_THRO_PRD3, val);
+
+		/* FIXME: AP_WR_LAT_MARGIN */
+#if 0
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT85, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT86, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT87, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT88, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT89, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT90, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT91, val);
+		val = 0;
+		cm_mgr_write(EMI_THRO_LAT92, val);
+#endif
+
+		/* 2ms for 0/1/2/3 */
+		val = CM_NAME_VAL(AP_WR_LAT_BUDGET0, 400) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET1, 600) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET2, 800) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET3, 400);
+		cm_mgr_write(EMI_THRO_LAT97, val);
+
+		/* 2ms for 4/5, 400ns for 6/7 */
+		val = CM_NAME_VAL(AP_WR_LAT_BUDGET4, 600) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET5, 800) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET6, 186) |
+			CM_NAME_VAL(AP_WR_LAT_BUDGET7, 124);
+		cm_mgr_write(EMI_THRO_LAT98, val);
+
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD3),
+				AP_WR_LAT_DVFS_UP_THR, 3);
+		cm_mgr_write(EMI_THRO_PRD3, val);
+
+		/* This is the last step for latency monitor */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD3),
+				AP_WR_LAT_TIMER_PRD, 5);
+		cm_mgr_write(EMI_THRO_PRD3, val);
+	} else {
+		/* RD */
+		/* This is the last step for latency monitor */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_CTRL1),
+				AP_LAT_TIMER_PRD, 0);
+		cm_mgr_write(EMI_THRO_CTRL1, val);
+
+
+		/* WR */
+		/* This is the last step for latency monitor */
+		val = CM_SET_NAME_VAL(cm_mgr_read(EMI_THRO_PRD3),
+				AP_WR_LAT_TIMER_PRD, 0);
+		cm_mgr_write(EMI_THRO_PRD3, val);
+	}
+#endif
 }

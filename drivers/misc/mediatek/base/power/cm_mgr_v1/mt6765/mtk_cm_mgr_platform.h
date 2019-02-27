@@ -40,11 +40,11 @@
 
 #define VCORE_ARRAY_SIZE CM_MGR_EMI_OPP
 #define CM_MGR_CPU_ARRAY_SIZE (CM_MGR_CPU_CLUSTER * CM_MGR_EMI_OPP)
-#define CM_MGR_GPU_ARRAY_SIZE CM_MGR_EMI_OPP
 #define RATIO_COUNT (100 / 5 - 1)
 #define IS_UP 1
 #define IS_DOWN 0
 #define USE_TIMER_CHECK_TIME msecs_to_jiffies(500)
+#define CM_MGR_INIT_DELAY_MS 1
 
 enum {
 	CM_MGR_LP4X_2CH_3200 = 0,
@@ -93,5 +93,6 @@ extern int cm_mgr_register_init(void);
 extern int cm_mgr_platform_init(void);
 extern void cm_mgr_set_dram_level(int level);
 extern int cm_mgr_get_dram_opp(void);
+extern void cm_mgr_emi_latency(int enable);
 
 #endif	/* __MTK_CM_MGR_PLATFORM_H__ */
