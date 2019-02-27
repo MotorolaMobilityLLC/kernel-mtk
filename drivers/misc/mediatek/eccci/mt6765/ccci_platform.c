@@ -96,8 +96,7 @@ static int ccci_md_low_power_notify(
 			CCCI_SYSTEM_TX, MD_LOW_BATTERY_LEVEL, reserve, 1);
 		if (ret)
 			CCCI_ERROR_LOG(md->index, TAG,
-				"send battery percent notification fail,
-				ret=%d\n", ret);
+			"send battery percent info fail, ret=%d\n", ret);
 		break;
 	default:
 		break;
