@@ -1284,7 +1284,7 @@ int dram_steps_freq(unsigned int step)
 		break;
 	case 1:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = 1600;
+			freq = 1534;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
 				(DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 2400;
@@ -1294,7 +1294,7 @@ int dram_steps_freq(unsigned int step)
 			freq = 1200;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
 				(DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 1600;
+			freq = 1534;
 		break;
 	default:
 		return -1;
