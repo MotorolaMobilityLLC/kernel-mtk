@@ -221,6 +221,16 @@
 			reg = <0 0x08000000 0 0x0010>;
 		};
 
+		mfg_async: mfgsys-async {
+			compatible = "mediatek,mt8173-mfg-async";
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_MFG_ASYNC>;
+		};
+
+		mfg_2d: mfgsys-2d {
+			compatible = "mediatek,mt8173-mfg-2d";
+			power-domains = <&scpsys MT8173_POWER_DOMAIN_MFG_2D>;
+		};
+
 		topckgen: clock-controller@10000000 {
 			compatible = "mediatek,mt8173-topckgen";
 			reg = <0 0x10000000 0 0x1000>;
@@ -827,6 +837,35 @@
 				#phy-cells = <1>;
 				status = "okay";
 			};
+		};
+
+		han: gpu@13000000 {
+			compatible = "mediatek,mt8173-han";
+			reg = <0 0x13000000 0 0x80000>,
+				<0 0x13fff000 0 0x1000>;
+			power-domains =  <&scpsys MT8173_POWER_DOMAIN_MFG>;
+			clocks = <&apmixedsys CLK_APMIXED_MMPLL>,
+				<&topckgen CLK_TOP_MEM_MFG_IN_SEL>,
+				<&topckgen CLK_TOP_AXI_MFG_IN_SEL>,
+				<&topckgen CLK_TOP_AXI_SEL>,
+				<&topckgen CLK_TOP_MEM_SEL>,
+				<&topckgen CLK_TOP_MFG_SEL>;
+
+			clock-names = "mmpll_clk",
+					"mfg_mem_in_sel",
+					"mfg_axi_in_sel",
+					"top_axi",
+					"top_mem",
+					"top_mfg";
+			interrupts = <GIC_SPI 217 IRQ_TYPE_LEVEL_LOW>;
+			interrupt-names = "RGX";
+			clock-frequency = <500000000>;
+		};
+
+		mfgsys: mfgsys@13fff000 {
+			compatible = "mediatek,mt8173-mfgsys";
+			reg = <0 0x13fff000 0 0x1000>;
+			#clock-cells = <1>;
 		};
 
 		mmsys: clock-controller@14000000 {
