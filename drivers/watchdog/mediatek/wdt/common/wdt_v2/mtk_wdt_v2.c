@@ -720,8 +720,11 @@ int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en)
 				MTK_WDT_SYSDBG_DEG_EN2);
 			tmp |= (MTK_WDT_REQ_MODE_SYSRST);
 		}
-		if (en == WD_REQ_DIS)
+		if (en == WD_REQ_DIS) {
+			mt_reg_sync_writel(0, MTK_WDT_SYSDBG_DEG_EN1);
+			mt_reg_sync_writel(0, MTK_WDT_SYSDBG_DEG_EN2);
 			tmp &= ~(MTK_WDT_REQ_MODE_SYSRST);
+		}
 	} else if (mark_bit == MTK_WDT_REQ_MODE_THERMAL) {
 		if (en == WD_REQ_EN)
 			tmp |= (MTK_WDT_REQ_MODE_THERMAL);
