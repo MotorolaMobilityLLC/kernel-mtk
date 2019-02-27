@@ -444,6 +444,7 @@ UINT32 DISP_GetActiveHeight(void);
 UINT32 DISP_GetActiveWidth(void);
 UINT32 DISP_GetActiveHeightUm(void);
 UINT32 DISP_GetActiveWidthUm(void);
+UINT32 DISP_GetDensity(void);
 unsigned long get_dim_layer_mva_addr(void);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,
 	unsigned long *va, unsigned long *mva);
