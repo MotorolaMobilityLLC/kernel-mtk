@@ -32,12 +32,11 @@
 	bootable;
 	status = "okay";
 
-#if 0
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
-
-	clocks = <&topckgen CLK_TOP_MSDC50_0_SEL>,
-		<&pericfg CLK_PERICFG_RG_MSDC0_AP_NORM>,
-		<&pericfg CLK_PERICFG_RG_UFS_AES_CORE>;
+	clocks = <&infracfg_ao CLK_IFR_MSDC0_SRC>,
+		<&infracfg_ao CLK_IFR_MSDC0>,
+		<&infracfg_ao CLK_IFR_FAES_FDE>;
 	clock-names = "msdc0-clock", "msdc0-hclock", "msdc0-aes-clock";
 #endif
 };
@@ -65,16 +64,16 @@
 	host_function = /bits/ 8 <MSDC_SD>;
 
 	cd_level = /bits/ 8 <MSDC_CD_LOW>;
-	cd-gpios = <&pio 2 0>;
+	cd-gpios = <&pio 1 0>;
 
 	status = "disable";
 
-#if 0
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	vmmc-supply = <&mt_pmic_vmch_ldo_reg>;
 	vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
 
-	clocks = <&pericfg CLK_PERICFG_RG_MSDC1>;
-	clock-names = "msdc1-clock";
+	clocks = <&infracfg_ao CLK_IFR_MSDC1_SRC>, <&infracfg_ao CLK_IFR_MSDC1>;
+	clock-names = "msdc1-clock", "msdc1-hclock";
 #endif
 };
 
@@ -89,19 +88,19 @@
 &pio {
 	msdc0_pins_default: msdc0@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_rst {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_ds {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
@@ -113,49 +112,49 @@
 
 	msdc1_pins_default: msdc1@default {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <4>;
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
 	msdc1_pins_sdr104: msdc1@sdr104 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
 	msdc1_pins_sdr50: msdc1@sdr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
 	msdc1_pins_ddr50: msdc1@ddr50 {
 		pins_cmd {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_dat {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 		pins_clk {
-			drive-strength = /bits/ 8 <3>;
+			drive-strength = /bits/ 8 <1>;
 		};
 	};
 
