@@ -1663,6 +1663,14 @@
 		mediatek,pwrap-regmap = <&pwrap>;
 	};
 
+	auxadc: auxadc@11001000 {
+		compatible = "mediatek,auxadc";
+		reg = <0 0x11001000 0 0x1000>;
+		interrupts = <GIC_SPI 64 IRQ_TYPE_EDGE_FALLING>;
+		clocks = <&infracfg_ao INFRACFG_AO_AUXADC_CG>;
+		clock-names = "auxadc-main";
+	};
+
 	sound: sound {
 		compatible = "mediatek,mt6779-mt6359-sound";
 		mediatek,audio-codec = <&mt6359_snd>;
