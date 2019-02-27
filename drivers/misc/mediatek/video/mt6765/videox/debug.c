@@ -915,7 +915,7 @@ static void process_dbg_opt(const char *opt)
 {
 	int ret;
 
-	DISPWARN("disp debug cmd %s\n", opt);
+	DISPMSG("disp debug cmd %s\n", opt);
 
 	if (strncmp(opt, "helper", 6) == 0) {
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
