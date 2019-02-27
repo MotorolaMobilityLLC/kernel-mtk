@@ -685,6 +685,11 @@ bool cmdq_core_should_full_error(void)
 	return logLevel;
 }
 
+bool cmdq_core_should_pmqos_log(void)
+{
+	return cmdq_ctx.logLevel & (1 << CMDQ_LOG_LEVEL_PMQOS);
+}
+
 bool cmdq_core_aee_enable(void)
 {
 	return cmdq_ctx.aee;
@@ -2448,7 +2453,7 @@ ssize_t cmdq_core_write_log_level(struct device *dev,
 		}
 
 		status = len;
-		if (value < 0 || value > 3)
+		if (value < 0 || value > CMDQ_LOG_LEVEL_MAX)
 			value = 0;
 
 		cmdq_core_set_log_level(value);
