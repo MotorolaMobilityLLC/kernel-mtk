@@ -37,8 +37,8 @@
 #include "sched.h"
 #include "tune.h"
 #include "walt.h"
+#include "eas_plus.h"
 #include "hmp.h"
-#include "eas_plus.c"
 
 int stune_task_threshold;
 
@@ -10172,6 +10172,8 @@ hinted_idle_pull:
 	/* We could not pull task to this_cpu when this_rq offline */
 	if (this_rq->online) {
 		if (!pulled_task)
+			pulled_task = aggressive_idle_pull(this_cpu);
+		if (should_hmp(this_cpu) && !pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
 	}
 
@@ -11361,7 +11363,7 @@ __init void init_sched_fair_class(void)
 	init_cpu_info();
 }
 
+#include "eas_plus.c"
 #include "sched_power.c"
-
 #include "hmp.c"
 
