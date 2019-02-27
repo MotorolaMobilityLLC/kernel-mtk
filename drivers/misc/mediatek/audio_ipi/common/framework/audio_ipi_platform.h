@@ -14,8 +14,19 @@
 #ifndef __AUDIO_IPI_PLATFORM_H__
 #define __AUDIO_IPI_PLATFORM_H__
 
+#include <linux/types.h>
 
-unsigned int audio_ipi_check_scp_status(void);
-unsigned int get_audio_ipi_scp_location(void);
+enum opendsp_id {
+	AUDIO_OPENDSP_USE_CM4_A, /* => SCP_A_ID */
+	AUDIO_OPENDSP_USE_CM4_B, /* => SCP_B_ID */
+	AUDIO_OPENDSP_USE_HIFI3, /* => ADSP_A_ID */
+	NUM_OPENDSP_TYPE,
+	AUDIO_OPENDSP_ID_INVALID
+};
+
+
+bool audio_opendsp_ready(const uint8_t task);
+uint32_t audio_get_opendsp_id(const uint8_t task);
+uint32_t audio_get_ipi_id(const uint8_t task);
 
 #endif /*__AUDIO_IPI_PLATFORM_H__ */

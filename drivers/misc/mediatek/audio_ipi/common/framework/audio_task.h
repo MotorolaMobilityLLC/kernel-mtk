@@ -17,18 +17,28 @@
 #include <linux/types.h>
 
 enum {
-	TASK_SCENE_PHONE_CALL = 0,
-	TASK_SCENE_VOICE_ULTRASOUND,
-	TASK_SCENE_PLAYBACK_MP3,
-	TASK_SCENE_RECORD,
-	TASK_SCENE_VOIP,
-	TASK_SCENE_SPEAKER_PROTECTION,
-	TASK_SCENE_VOW,
-	TASK_SCENE_SIZE, /* the size of tasks */
-	TASK_SCENE_CONTROLLER = 0xFF
+	/* scene for library */
+	TASK_SCENE_PHONE_CALL           = 0,
+	TASK_SCENE_VOICE_ULTRASOUND     = 1,
+	TASK_SCENE_PLAYBACK_MP3         = 2,
+	TASK_SCENE_RECORD               = 3,
+	TASK_SCENE_VOIP                 = 4,
+	TASK_SCENE_SPEAKER_PROTECTION   = 5,
+	TASK_SCENE_VOW                  = 6,
+	TASK_SCENE_PRIMARY              = 7,
+	TASK_SCENE_DEEPBUFFER           = 8,
+	TASK_SCENE_AUDPLAYBACK          = 9,
+	TASK_SCENE_AUD_SWMIXER1         = 10,
+	TASK_SCENE_AUD_SWMIXER2         = 11,
+
+
+	/* control for driver */
+	TASK_SCENE_AUD_DAEMON,
+	TASK_SCENE_AUDIO_CONTROLLER,
+	TASK_SCENE_SIZE,
+	TASK_SCENE_INVALID
 };
 
-typedef uint8_t task_scene_t;
 
 
 #endif /* end of AUDIO_TASK_H */
