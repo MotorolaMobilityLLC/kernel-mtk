@@ -27,14 +27,14 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 	size_t num_dai_drivers = 0, dai_idx = 0;
 	int i;
 
-	if (afe->sub_dais == NULL) {
+	if (!afe->sub_dais) {
 		dev_err(afe->dev, "%s(), sub_dais == NULL\n", __func__);
 		return -EINVAL;
 	}
 
-	/* calcualte sub_dais size */
+	/* calcualte total dai driver size */
 	for (i = 0; i < afe->num_sub_dais; i++) {
-		if (afe->sub_dais[i].dai_drivers != NULL &&
+		if (afe->sub_dais[i].dai_drivers &&
 		    afe->sub_dais[i].num_dai_drivers != 0)
 			num_dai_drivers += afe->sub_dais[i].num_dai_drivers;
 	}
@@ -51,7 +51,7 @@ int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
 		return -ENOMEM;
 
 	for (i = 0; i < afe->num_sub_dais; i++) {
-		if (afe->sub_dais[i].dai_drivers != NULL &&
+		if (afe->sub_dais[i].dai_drivers &&
 		    afe->sub_dais[i].num_dai_drivers != 0) {
 			sub_dai_drivers = afe->sub_dais[i].dai_drivers;
 			/* dai driver */
@@ -71,7 +71,7 @@ int mtk_afe_add_sub_dai_control(struct snd_soc_platform *platform)
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
 	int i;
 
-	if (afe->sub_dais == NULL) {
+	if (!afe->sub_dais) {
 		dev_err(afe->dev, "%s(), sub_dais == NULL\n", __func__);
 		return -EINVAL;
 	}
@@ -164,13 +164,13 @@ int mtk_afe_pcm_ack(struct snd_pcm_substream *substream)
 	return 0;
 }
 
-static const struct snd_pcm_ops mtk_afe_pcm_ops = {
+const struct snd_pcm_ops mtk_afe_pcm_ops = {
 	.ioctl = snd_pcm_lib_ioctl,
 	.pointer = mtk_afe_pcm_pointer,
 	.ack = mtk_afe_pcm_ack,
 };
 
-static int mtk_afe_pcm_new(struct snd_soc_pcm_runtime *rtd)
+int mtk_afe_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
 	size_t size;
 	struct snd_pcm *pcm = rtd->pcm;
@@ -182,7 +182,7 @@ static int mtk_afe_pcm_new(struct snd_soc_pcm_runtime *rtd)
 						     size, size);
 }
 
-static void mtk_afe_pcm_free(struct snd_pcm *pcm)
+void mtk_afe_pcm_free(struct snd_pcm *pcm)
 {
 	snd_pcm_lib_preallocate_free_for_all(pcm);
 }
