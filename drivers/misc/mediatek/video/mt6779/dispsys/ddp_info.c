@@ -286,9 +286,9 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 		DISP_MODULE_DBI,
 		DISP_T_DBI,
 		"dbi",
-		1,
+		0,
 		NULL,
-		{"mediatek,dbi", 0x1401d000, 300, 0, 0, 0}
+		{"mediatek,dbi", 0x1401d000, 0, 0, 0, 0}
 	},
 
 	[DISP_MODULE_DPI_VIRTUAL] = {
@@ -298,6 +298,15 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 		1,
 		NULL,
 		{reg_magic,}
+	},
+
+	[DISP_MODULE_POSTMASK] = {
+		DISP_MODULE_POSTMASK,
+		DISP_T_POSTMASK,
+		"postmask",
+		1,
+		&ddp_driver_postmask,
+		{"mediatek,disp_postmask0", 0x14021000, 300, 13, 0, 0}
 	},
 
 	[DISP_MODULE_UNKNOWN] = {

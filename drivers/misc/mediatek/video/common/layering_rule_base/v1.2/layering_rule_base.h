@@ -117,7 +117,9 @@ enum LYE_HELPER_OPT {
 	LYE_OPT_DUAL_PIPE,
 	LYE_OPT_EXT_LAYER,
 	LYE_OPT_RPO,
-
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	LYE_OPT_ROUND_CORNER,
+#endif
 	LYE_OPT_NUM
 };
 
@@ -203,5 +205,9 @@ bool is_gles_layer(struct disp_layer_info *disp_info,
 bool has_layer_cap(struct layer_config *layer_info, enum LAYERING_CAPS l_caps);
 void set_layering_opt(enum LYE_HELPER_OPT opt, int value);
 int get_layering_opt(enum LYE_HELPER_OPT opt);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+void set_round_corner_opt(enum LYE_HELPER_OPT opt, int value);
+int get_round_corner_opt(enum LYE_HELPER_OPT opt);
+#endif
 
 #endif

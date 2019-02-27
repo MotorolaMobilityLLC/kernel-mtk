@@ -414,6 +414,9 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.DSI_IRQ[1] =
 		mmprofile_register_event(DDP_MMP_Events.DSI_IRQ_Parent,
 					 "DSI_IRQ_1");
+	DDP_MMP_Events.POSTMASK_IRQ =
+		mmprofile_register_event(DDP_MMP_Events.DDP_IRQ,
+					 "POSTMASK_IRQ");
 	DDP_MMP_Events.primary_sw_mutex =
 		mmprofile_register_event(DDP_MMP_Events.DDP,
 					 "primary_sw_mutex");

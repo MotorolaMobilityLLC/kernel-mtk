@@ -116,6 +116,7 @@
 #define DISPSYS_MIPITX0_BASE	ddp_get_module_va(DISP_MODULE_MIPI0)
 #define DISPSYS_MIPITX1_BASE	ddp_get_module_va(DISP_MODULE_MIPI1)
 #define DISPSYS_RSZ0_BASE	ddp_get_module_va(DISP_MODULE_RSZ0)
+#define DISPSYS_POSTMASK_BASE	ddp_get_module_va(DISP_MODULE_POSTMASK)
 
 #ifdef INREG32
 #undef INREG32
@@ -267,5 +268,6 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 #include "ddp_reg_dma.h"
 #include "ddp_reg_dsi.h"
 #include "ddp_reg_mipi.h"
+#include "ddp_reg_postmask.h"
 
 #endif /* _DDP_REG_H_ */

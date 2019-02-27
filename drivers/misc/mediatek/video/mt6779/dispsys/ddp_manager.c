@@ -102,7 +102,7 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 	[DISP_MODULE_DPI] = 0,
 	[DISP_MODULE_DBI] = 0,
 	[DISP_MODULE_RSZ0] = 0,
-
+	[DISP_MODULE_POSTMASK] = 1,
 	[DISP_MODULE_UNKNOWN] = 0,
 };
 

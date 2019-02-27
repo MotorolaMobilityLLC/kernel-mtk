@@ -253,6 +253,7 @@ int primary_display_set_frame_buffer_address(unsigned long va,
 					unsigned long mva, unsigned long pa);
 unsigned long primary_display_get_frame_buffer_mva_address(void);
 unsigned long primary_display_get_frame_buffer_va_address(void);
+unsigned long primary_display_get_frame_buffer_pa_address(void);
 int primary_display_suspend(void);
 int primary_display_resume(void);
 int primary_display_ipoh_restore(void);
@@ -261,6 +262,12 @@ int primary_display_get_height(void);
 int primary_display_get_virtual_width(void);
 int primary_display_get_virtual_height(void);
 int primary_display_get_bpp(void);
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+int primary_display_get_lcm_corner_en(void);
+int primary_display_get_lcm_corner_mode(void);
+int primary_display_get_corner_pattern_width(void);
+int primary_display_get_corner_pattern_height(void);
+#endif
 int primary_display_get_pages(void);
 int primary_display_set_overlay_layer(struct primary_disp_input_config *input);
 int primary_display_is_alive(void);

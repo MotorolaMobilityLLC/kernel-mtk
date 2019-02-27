@@ -30,6 +30,7 @@
 #include "ddp_drv.h"
 #include "disp_helper.h"
 #include "ddp_dsi.h"
+#include "ddp_postmask.h"
 #include "disp_drv_log.h"
 
 /* IRQ log print kthread */
@@ -43,6 +44,8 @@ static unsigned int cnt_ovl_underflow[OVL_NUM];
 static unsigned int cnt_rdma_underflow[2];
 static unsigned int cnt_rdma_abnormal[2];
 static unsigned int cnt_wdma_underflow[2];
+static unsigned int cnt_postmask_abnormal;
+static unsigned int cnt_postmask_underflow;
 
 unsigned long long rdma_start_time[2] = { 0 };
 unsigned long long rdma_end_time[2] = { 0 };
@@ -453,6 +456,49 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDP_PR_ERR("PWM APB TX Error!\n");
 
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
+	} else if (irq == ddp_get_module_irq(DISP_MODULE_POSTMASK)) {
+		module = disp_irq_to_module(irq);
+		reg_val = DISP_REG_GET(DISP_REG_POSTMASK_INTSTA +
+				postmask_base_addr(module));
+
+		DDPIRQ("%s irq_status = 0x%x\n",
+			ddp_get_module_name(module), reg_val);
+
+		if (reg_val & (1 << 0))
+			DDPIRQ("IRQ: %s input frame end!\n",
+				ddp_get_module_name(module));
+
+		if (reg_val & (1 << 1))
+			DDPIRQ("IRQ: %s output frame end!\n",
+				ddp_get_module_name(module));
+
+		if (reg_val & (1 << 2))
+			DDPIRQ("IRQ: %s frame start!\n",
+				ddp_get_module_name(module));
+
+		if (reg_val & (1 << 4)) {
+			DDP_PR_ERR("IRQ: %s abnormal SOF! cnt=%d\n",
+					ddp_get_module_name(module),
+					cnt_postmask_abnormal);
+
+			cnt_postmask_abnormal++;
+		}
+
+		if (reg_val & (1 << 8)) {
+			DDP_PR_ERR("IRQ: %s frame underflow! cnt=%d\n",
+			       ddp_get_module_name(module),
+			       cnt_postmask_underflow);
+
+			cnt_postmask_underflow++;
+		}
+
+		DISP_CPU_REG_SET(DISP_REG_POSTMASK_INTSTA +
+					postmask_base_addr(module), ~reg_val);
+		mmprofile_log_ex(ddp_mmp_get_events()->POSTMASK_IRQ,
+					MMPROFILE_FLAG_PULSE, reg_val, 0);
+		if (reg_val & 0x110)
+			mmprofile_log_ex(ddp_mmp_get_events()->ddp_abnormal_irq,
+					 MMPROFILE_FLAG_PULSE, reg_val, module);
 	} else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;

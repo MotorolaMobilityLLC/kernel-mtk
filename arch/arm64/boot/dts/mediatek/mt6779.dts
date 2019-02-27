@@ -2168,12 +2168,6 @@
 		clock-names = "MDP_HDR";
 	};
 
-	dbi@1401d000 {
-		compatible = "mediatek,dbi";
-		reg = <0 0x1401d000 0 0x1000>;
-		interrupts = <GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	mdp_wrot1: mdp_wrot1@14020000 {
 		compatible = "mediatek,mdp_wrot1";
 		reg = <0 0x14020000 0 0x1000>;
