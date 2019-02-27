@@ -113,6 +113,14 @@ enum {
 	SPM_PWR_CTRL_VCOREFS,
 };
 
+enum vcorefs_smc_cmd {
+	VCOREFS_SMC_CMD_0,
+	VCOREFS_SMC_CMD_1,
+	VCOREFS_SMC_CMD_2,
+	VCOREFS_SMC_CMD_3,
+	NUM_VCOREFS_SMC_CMD,
+};
+
 enum {
 	WR_NONE = 0,
 	WR_UART_BUSY = 1,
@@ -297,6 +305,7 @@ void mtk_idle_cond_update_mask(
 int spm_dvfs_flag_init(void);
 void spm_go_to_vcorefs(int spm_flags);
 void spm_vcorefs_init(void);
+int spm_dvfs_flag_init(void);
 
 /***********************************************************
  * mtk_spm_fs.c

@@ -634,7 +634,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	dvfsrc@10012000 {
 		compatible = "mediatek,dvfsrc";
-		reg = <0 0x10012000 0 0x1000>;
+		reg = <0 0x10012000 0 0x1000>,
+		      <0 0x00110780 0 0x80>;
 	};
 
 	mbist_ao@10013000 {
