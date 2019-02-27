@@ -471,6 +471,8 @@ void __init init_cpu_topology(void)
 	/* Set scheduler topology descriptor */
 	set_sched_topology(arm_topology);
 	parse_dt_cpu_capacity();
+
+	init_sched_energy_costs();
 }
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
