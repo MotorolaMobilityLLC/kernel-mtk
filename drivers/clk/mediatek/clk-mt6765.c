@@ -430,7 +430,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG1		0x00000004
 #define INFRA_CG2		0x983fff00
 #define INFRA_CG3		0x86947E16
-#define INFRA_CG4		0x2ffc06dd
+#define INFRA_CG4		0x2ffc06d9
 #define INFRA_CG5		0x00020fe7
 
 #define MM_DISABLE_CG		0x0c840040 /* un-gating in preloader */
@@ -439,7 +439,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG1		0x00000004
 #define INFRA_CG2		0x98ffff7f
 #define INFRA_CG3		0x879c7f96
-#define INFRA_CG4		0x2ffc87d9
+#define INFRA_CG4		0x2ffc87dd
 #define INFRA_CG5		0x00038fff
 
 #define MM_DISABLE_CG		0x3fffffff /* un-gating in preloader */
