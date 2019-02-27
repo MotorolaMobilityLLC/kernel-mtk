@@ -57,7 +57,6 @@ int scp_awake_counts[SCP_CORE_TOTAL];
 int scp_awake_lock(enum scp_core_id scp_id)
 {
 	unsigned long spin_flags;
-	struct mutex *scp_awake_mutex;
 	char *core_id;
 	int *scp_awake_count;
 	int count = 0;
@@ -69,7 +68,6 @@ int scp_awake_lock(enum scp_core_id scp_id)
 		return ret;
 	}
 
-	scp_awake_mutex = &scp_awake_mutexs[scp_id];
 	scp_awake_count = (int *)&scp_awake_counts[scp_id];
 	core_id = core_ids[scp_id];
 
@@ -85,12 +83,6 @@ int scp_awake_lock(enum scp_core_id scp_id)
 		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 		return 0;
 	}
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	mutex_lock(scp_awake_mutex);
-
-	/* spinlock context safe */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 
 	/*set a direct IPI to awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
@@ -116,9 +108,6 @@ int scp_awake_lock(enum scp_core_id scp_id)
 	if (ret != -1)
 		*scp_awake_count = *scp_awake_count + 1;
 
-	/* spinlock context safe */
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
 	if (ret == -1) {
 		pr_notice("scp_awake_lock: awake %s fail..\n", core_id);
 		WARN_ON(1);
@@ -131,8 +120,8 @@ int scp_awake_lock(enum scp_core_id scp_id)
 #endif
 	}
 
-	/* scp awake */
-	mutex_unlock(scp_awake_mutex);
+	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
+
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_lock);
@@ -145,7 +134,6 @@ EXPORT_SYMBOL_GPL(scp_awake_lock);
  */
 int scp_awake_unlock(enum scp_core_id scp_id)
 {
-	struct mutex *scp_awake_mutex;
 	unsigned long spin_flags;
 	int *scp_awake_count;
 	char *core_id;
@@ -158,7 +146,6 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 		return -1;
 	}
 
-	scp_awake_mutex = &scp_awake_mutexs[scp_id];
 	scp_awake_count = (int *)&scp_awake_counts[scp_id];
 	core_id = core_ids[scp_id];
 
@@ -174,12 +161,6 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 		spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 		return 0;
 	}
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
-	mutex_lock(scp_awake_mutex);
-
-	/* spinlock context safe */
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 
 	/* WE1: set a direct IPI to release awake SCP */
 	/*pr_debug("scp_awake_lock: try to awake %s\n", core_id);*/
@@ -189,7 +170,7 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	while (++count != SCP_AWAKE_TIMEOUT) {
 		tmp = readl(INFRA_IRQ_SET);
 		if ((tmp & 0xf0) != 0xA0) {
-			pr_notice("scp_awake_unlock: INFRA_IRQ_SET %x\n", tmp);
+			pr_notice("scp_awake_unlock: INFRA7_IRQ_SET %x\n", tmp);
 			break;
 		}
 		if (!((tmp & 0x0f) & (1 << AP_AWAKE_UNLOCK))) {
@@ -214,7 +195,6 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	/* spinlock context safe */
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
-	mutex_unlock(scp_awake_mutex);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(scp_awake_unlock);
@@ -234,10 +214,6 @@ void scp_awake_init(void)
 	/* scp ready static flag initialise */
 	for (i = 0; i < SCP_CORE_TOTAL ; i++)
 		scp_awake_counts[i] = 0;
-
-	for (i = 0; i < SCP_CORE_TOTAL ; i++)
-		mutex_init(&scp_awake_mutexs[i]);
-
 }
 
 void scp_enable_sram(void)
