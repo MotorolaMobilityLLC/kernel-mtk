@@ -93,7 +93,8 @@ int mtk_infracfg_clear_bus_protection(struct regmap *infracfg, u32 mask)
  * @mask: The mask containing the protection bits to be enabled.
  * @reg_set: The register used to enable protection bits.
  * @reg_sta: The register used to check the protection bits are enabled.
- * @reg_en: The register used to enable protection bits when there doesn't exist reg_set.
+ * @reg_en: The register used to enable protection bits when there doesn't
+ *          exist reg_set.
  *
  * This function enables the bus protection bits for disabled power
  * domains so that the system does not hang when some unit accesses the
@@ -135,7 +136,8 @@ int mtk_infracfg_set_bus_protection_ext(struct regmap *infracfg, u32 mask,
  * @mask: The mask containing the protection bits to be disabled.
  * @reg_clr: The register used to disable protection bits.
  * @reg_sta: The register used to check the protection bits are disabled.
- * @reg_en: The register used to disable protection bits when there doesn't exist reg_clr.
+ * @reg_en: The register used to disable protection bits when there doesn't
+ *          exist reg_clr.
  *
  * This function disables the bus protection bits previously enabled with
  * mtk_infracfg_set_bus_protection.
