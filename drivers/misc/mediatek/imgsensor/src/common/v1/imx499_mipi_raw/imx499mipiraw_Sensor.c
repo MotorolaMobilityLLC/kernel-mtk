@@ -130,9 +130,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.linelength = 5120,
 		.framelength = 3670,
 		.startx = 0,
-		.starty = 0,
+		.starty = 2,
 		.grabwindow_width = 4656,
-		.grabwindow_height = 3496,
+		.grabwindow_height = 3492,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.mipi_pixel_rate = 676800000,/*OP Pixel rate*/
 		.max_framerate = 300,
@@ -264,7 +264,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	{4656, 3496, 0, 2, 4656, 3492, 2328, 1746,
 	0000, 0000, 2328, 1746, 0, 0, 2328, 1746},	/*Preview*/
 	{4656, 3496, 0, 0, 4656, 3496, 4656, 3496,
-	0000, 0000, 4656, 3496, 0, 0, 4656, 3496},	/*Capture*/
+	0000, 0000, 4656, 3496, 0, 2, 4656, 3492},	/*Capture*/
 	{4656, 3496, 0, 444, 4656, 2608, 4656, 2608,
 	0000, 0000, 4656, 2608, 0, 0, 4656, 2608},	/*Video*/
 	{4656, 3496, 1048, 1028, 2560, 1440, 1280, 720,
@@ -711,7 +711,7 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.i4BlockNumY = 104,
 	.i4LeFirst = 0,
 	.i4Crop = {
-		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0},
+		{0, 2}, {0, 2}, {0, 0}, {0, 0}, {0, 0},
 		{0, 0}, {0, 0}, {0, 0}, {0, 0}, {0, 0}
 	},
 #ifdef HV_MIRROR_FLIP
