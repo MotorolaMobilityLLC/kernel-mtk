@@ -23,6 +23,7 @@
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
 #include "ddp_rsz.h"
+#include "smi_public.h"
 
 static char *ddp_signal_0(int bit)
 {
@@ -144,21 +145,21 @@ static char *ddp_greq_name(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "OVL0";
+		return "OVL0 ";
 	case 1:
-		return "OVL0_2L";
+		return "OVL0_2L ";
 	case 2:
-		return "DISP_RDMA0";
+		return "DISP_RDMA0 ";
 	case 3:
-		return "DISP_WDMA0";
+		return "DISP_WDMA0 ";
 	case 4:
-		return "MDP_RDMA0";
+		return "MDP_RDMA0 ";
 	case 5:
-		return "MDP_WDMA0";
+		return "MDP_WDMA0 ";
 	case 6:
-		return "MDP_WROT0";
+		return "MDP_WROT0 ";
 	case 7:
-		return "DISP_FAKE";
+		return "DISP_FAKE ";
 	default:
 		return NULL;
 	}
@@ -884,6 +885,10 @@ static void mmsys_config_dump_analysis(void)
 		}
 	}
 	DDPDUMP("%s\n", clock_on);
+	/* dump SMI status, when maybe SMI hang */
+	if (greq)
+		smi_debug_bus_hang_detect(
+			SMI_PARAM_BUS_OPTIMIZATION, true, false, true);
 }
 
 static void gamma_dump_reg(enum DISP_MODULE_ENUM module)
