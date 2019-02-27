@@ -20,7 +20,7 @@
 #endif
 #include "ccci_fsm_internal.h"
 
-unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
+signed int __weak battery_get_bat_voltage(void)
 {
 	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return 0;
@@ -29,7 +29,7 @@ unsigned long __weak BAT_Get_Battery_Voltage(int polling_mode)
 static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0, retry;
-	unsigned int data;
+	int data;
 	char buffer[64];
 	unsigned int sim_slot_cfg[4];
 	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_id);
@@ -55,7 +55,7 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 #endif
 		break;
 	case CCCI_IOC_SEND_BATTERY_INFO:
-		data = (unsigned int)BAT_Get_Battery_Voltage(0);
+		data = (int)battery_get_bat_voltage();
 		CCCI_NORMAL_LOG(md_id, FSM, "get bat voltage %d\n", data);
 		ret = ccci_port_send_msg_to_md(md_id, CCCI_SYSTEM_TX,
 				MD_GET_BATTERY_INFO, data, 1);
