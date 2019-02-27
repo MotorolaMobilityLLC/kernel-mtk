@@ -3183,6 +3183,7 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 	if (md_ctrl->cldma_ap_pdn_base == NULL ||
 		md_ctrl->cldma_ap_ao_base == NULL) {
 		CCCI_ERROR_LOG(md_id, TAG, "no cldma register set in dts\n");
+		kfree(md_ctrl);
 		return -1;
 	}
 #endif
