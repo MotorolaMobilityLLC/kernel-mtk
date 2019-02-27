@@ -822,29 +822,8 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 
 	case MTK_IOC_SMI_DUMP_COMMON:
-	{
-		if (!common) {
-			SMIDBG("COMMON no such device or address\n");
-			ret = -ENXIO;
-		} else
-			ret = smi_debug_dumpper(common, NULL, false, false);
-		break;
-	}
-
 	case MTK_IOC_SMI_DUMP_LARB:
-	{
-		unsigned int index;
-
-		ret = copy_from_user(&index, (void *)arg, sizeof(unsigned int));
-		if (ret)
-			SMIWRN(0, "cmd %u copy_from_user fail: %d\n", cmd, ret);
-		else if (index >= SMI_LARB_NUM || !larbs[index])
-			SMIDBG("LARB%u no such device or address\n", index);
-		else
-			ret = smi_debug_dumpper(
-				larbs[index], NULL, false, false);
 		break;
-	}
 #ifdef MMDVFS_HOOK
 	case MTK_IOC_MMDVFS_CMD:
 	{
