@@ -71,9 +71,6 @@
 #include "mtk_eem_internal_ap.h"
 
 #include "mtk_eem_internal.h"
-#ifdef CONFIG_MTK_GPU_SUPPORT
-#include "mtk_gpufreq.h"
-#endif
 #include <mt-plat/mtk_devinfo.h>
 #include <regulator/consumer.h>
 #include "pmic_regulator.h"
@@ -181,8 +178,6 @@ static int get_devinfo(void)
 	val[4] = get_devinfo_with_index(DEVINFO_IDX_4);
 	val[5] = get_devinfo_with_index(DEVINFO_IDX_5);
 	val[6] = get_devinfo_with_index(DEVINFO_IDX_6);
-	val[7] = get_devinfo_with_index(DEVINFO_IDX_7);
-	val[8] = get_devinfo_with_index(DEVINFO_IDX_8);
 
 #if EEM_FAKE_EFUSE
 	/* for verification */
@@ -193,8 +188,6 @@ static int get_devinfo(void)
 	val[4] = DEVINFO_4;
 	val[5] = DEVINFO_5;
 	val[6] = DEVINFO_6;
-	val[7] = DEVINFO_7;
-	val[8] = DEVINFO_8;
 #endif
 
 #ifdef CONFIG_EEM_AEE_RR_REC
@@ -490,8 +483,6 @@ int base_ops_mon_mode(struct eem_det *det)
 		ts_bank = THERMAL_BANK1;
 	else if (det_to_id(det) == EEM_DET_CCI)
 		ts_bank = THERMAL_BANK2;
-	else if (det_to_id(det) == EEM_DET_GPU)
-		ts_bank = THERMAL_BANK3;
 	else
 		ts_bank = THERMAL_BANK0;
 
@@ -717,8 +708,6 @@ int base_ops_get_temp(struct eem_det *det)
 		ts_bank = THERMAL_BANK1;
 	else if (det_to_id(det) == EEM_DET_CCI)
 		ts_bank = THERMAL_BANK2;
-	else if (det_to_id(det) == EEM_DET_GPU)
-		ts_bank = THERMAL_BANK3;
 	else
 		ts_bank = THERMAL_BANK0;
 
@@ -901,12 +890,6 @@ static int eem_volt_thread_handler(void *data)
 				temp = EEM_CPU_CCI_IS_SET_VOLT;
 				break;
 
-			case EEM_CTRL_GPU:
-				aee_rr_rec_ptp_status(
-					aee_rr_curr_ptp_status() |
-					(1 << EEM_GPU_IS_SET_VOLT));
-				temp = EEM_GPU_IS_SET_VOLT;
-				break;
 			default:
 				eem_error
 ("eem_volt_thread_handler : incorrect det id %d\n", det->ctrl_id);
@@ -959,12 +942,9 @@ static int eem_init1stress_thread_handler(void *data)
 		eem_error("eem init1stress start\n");
 		testCnt = 0;
 
-		/* CPU/GPU pre-process */
+		/* CPU pre-process */
 		mt_ppm_ptpod_policy_activate();
 
-#ifdef CONFIG_MTK_GPU_SUPPORT
-		mt_gpufreq_disable_by_ptpod();
-#endif
 		eem_buck_set_mode(1);
 
 		while (eem_init1stress_en) {
@@ -1022,11 +1002,8 @@ timeout, out, final_init01_flag);
 			msleep(100);
 		}
 
-		/* CPU/GPU post-process */
+		/* CPU post-process */
 		eem_buck_set_mode(0);
-#ifdef CONFIG_MTK_GPU_SUPPORT
-		mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
-#endif
 
 		mt_ppm_ptpod_policy_deactivate();
 
@@ -1133,17 +1110,6 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->MTDES	= devinfo->CCI_MTDES;
 		det->SPEC       = devinfo->CCI_SPEC;
-		break;
-
-	case EEM_DET_GPU:
-		det->MDES	= devinfo->GPU_MDES;
-		det->BDES	= devinfo->GPU_BDES;
-		det->DCMDET	= devinfo->GPU_DCMDET;
-		det->DCBDET	= devinfo->GPU_DCBDET;
-		det->EEMINITEN	= devinfo->GPU_INITEN;
-		det->EEMMONEN	= devinfo->GPU_MONEN;
-		det->MTDES	= devinfo->GPU_MTDES;
-		det->SPEC       = devinfo->GPU_SPEC;
 		break;
 
 	default:
@@ -1282,16 +1248,6 @@ static void eem_set_eem_volt(struct eem_det *det)
 			break;
 
 		case EEM_CTRL_CCI:
-			det->volt_tbl_pmic[i] = min(
-			(unsigned int)(clamp(
-				det->ops->eem_2_pmic(det,
-		(det->volt_tbl[i] + det->volt_offset + low_temp_offset)),
-				det->ops->eem_2_pmic(det, det->VMIN),
-				det->ops->eem_2_pmic(det, det->VMAX))),
-				det->volt_tbl_orig[i]);
-			break;
-
-		case EEM_CTRL_GPU:
 			det->volt_tbl_pmic[i] = min(
 			(unsigned int)(clamp(
 				det->ops->eem_2_pmic(det,
@@ -1572,24 +1528,6 @@ static inline void handle_init02_isr(struct eem_det *det)
 			}
 			break;
 
-		case EEM_CTRL_GPU:
-			if (i < 8) {
-				aee_rr_rec_ptp_gpu_volt(
-		((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
-		(aee_rr_curr_ptp_gpu_volt() & ~
-		((unsigned long long)(0xFF) << (8 * i))
-					)
-				);
-			} else {
-				aee_rr_rec_ptp_gpu_volt_1(
-		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
-		(aee_rr_curr_ptp_gpu_volt_1() & ~
-		((unsigned long long)(0xFF) << (8 * (i - 8)))
-					)
-				);
-			}
-			break;
-
 		default:
 			break;
 		}
@@ -1662,11 +1600,10 @@ static inline void handle_mon_mode_isr(struct eem_det *det)
 	/* eem_debug("mode = mon %s-isr\n", ((char *)(det->name) + 8)); */
 
 #ifdef CONFIG_THERMAL
-	eem_debug("LL_temp=%d, L_temp=%d, CCI_temp=%d, GPU_temp=%d\n",
+	eem_debug("LL_temp=%d, L_temp=%d, CCI_temp=%d\n",
 		tscpu_get_temp_by_bank(THERMAL_BANK0),
 		tscpu_get_temp_by_bank(THERMAL_BANK1),
-		tscpu_get_temp_by_bank(THERMAL_BANK2),
-		tscpu_get_temp_by_bank(THERMAL_BANK3)
+		tscpu_get_temp_by_bank(THERMAL_BANK2)
 		);
 #endif
 
@@ -1722,24 +1659,6 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
 			temp_long << (8 * EEM_CPU_CCI_IS_SET_VOLT)|
 			(temp_cur & ~(0xFF <<
 			(8 * EEM_CPU_CCI_IS_SET_VOLT))));
-		}
-#endif
-		break;
-
-	case EEM_CTRL_GPU:
-#ifdef CONFIG_THERMAL
-#if defined(__LP64__) || defined(_LP64)
-		temp_long =
-(unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK3)/1000;
-#else
-		temp_long =
-div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK3), 1000);
-#endif
-		if (temp_long != 0) {
-			aee_rr_rec_ptp_temp(
-			temp_long << (8 * EEM_GPU_IS_SET_VOLT) |
-			(temp_cur & ~(0xFF <<
-			(8 * EEM_GPU_IS_SET_VOLT))));
 		}
 #endif
 		break;
@@ -1830,24 +1749,6 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK3), 1000);
 				aee_rr_rec_ptp_cpu_cci_volt_1(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
 		(aee_rr_curr_ptp_cpu_cci_volt_1() & ~
-		((unsigned long long)(0xFF) << (8 * (i - 8)))
-					)
-				);
-			}
-			break;
-
-		case EEM_CTRL_GPU:
-			if (i < 8) {
-				aee_rr_rec_ptp_gpu_volt(
-		((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
-		(aee_rr_curr_ptp_gpu_volt() & ~
-		((unsigned long long)(0xFF) << (8 * i))
-					)
-				);
-			} else {
-				aee_rr_rec_ptp_gpu_volt_1(
-		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
-		(aee_rr_curr_ptp_gpu_volt_1() & ~
 		((unsigned long long)(0xFF) << (8 * (i - 8)))
 					)
 				);
@@ -2140,11 +2041,8 @@ __func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
 		}
 	}
 
-	/* CPU/GPU post-process */
+	/* CPU post-process */
 	eem_buck_set_mode(0);
-#ifdef CONFIG_MTK_GPU_SUPPORT
-	mt_gpufreq_enable_by_ptpod(); /* enable gpu DVFS */
-#endif
 
 	mt_ppm_ptpod_policy_deactivate();
 
@@ -2225,12 +2123,8 @@ static int eem_probe(struct platform_device *pdev)
 	for_each_ctrl(ctrl)
 		eem_init_ctrl(ctrl);
 
-	/* CPU/GPU pre-process */
+	/* CPU pre-process */
 	mt_ppm_ptpod_policy_activate();
-
-#ifdef CONFIG_MTK_GPU_SUPPORT
-	mt_gpufreq_disable_by_ptpod();
-#endif
 
 	ret = eem_buck_get(pdev);
 	if (ret != 0)
@@ -2346,8 +2240,6 @@ void mt_eem_opp_status(enum eem_det_id id, unsigned int *temp,
 		*temp = tscpu_get_temp_by_bank(THERMAL_BANK1);
 	else if (id == EEM_DET_CCI)
 		*temp = tscpu_get_temp_by_bank(THERMAL_BANK2);
-	else if (id == EEM_DET_GPU)
-		*temp = tscpu_get_temp_by_bank(THERMAL_BANK3);
 	else
 		*temp = tscpu_get_temp_by_bank(THERMAL_BANK0);
 #else
