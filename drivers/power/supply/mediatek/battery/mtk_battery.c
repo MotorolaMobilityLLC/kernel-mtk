@@ -2851,7 +2851,12 @@ static long adc_cali_ioctl(
 			battery_meter_meta_tool_cali_car_tune(adc_in_data[1]);
 
 		/* return car_tune_value to meta tool in adc_out_data[0] */
-		fg_cust_data.car_tune_value = temp_car_tune;
+		if (temp_car_tune >= 900 && temp_car_tune <= 1100)
+			fg_cust_data.car_tune_value = temp_car_tune;
+		else
+			bm_err("car_tune_value invalid:%d\n",
+			temp_car_tune);
+
 		adc_out_data[0] = temp_car_tune;
 		ret = copy_to_user(user_data_addr, adc_out_data, 8);
 		bm_err("**** unlocked_ioctl Set_BAT_CAR_TUNE_VALUE[%d], result=%d, ret=%d\n",
