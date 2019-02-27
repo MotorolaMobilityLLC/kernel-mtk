@@ -15,7 +15,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/mu3d/drv \
              -I$(srctree)/drivers/misc/mediatek/mu3d/hal \
              -I$(srctree)/drivers/misc/mediatek/mu3phy \
              -I$(srctree)/drivers/misc/mediatek/mu3phy/$(CONFIG_MTK_PLATFORM) \
-             -I$(srctree)/drivers/misc/mediatek/usb_c/inc \
+             -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc \
              -I$(srctree)/drivers/misc/mediatek/include/mt-plat \
              -I$(srctree)/drivers/misc/mediatek/base/power/include/
 
