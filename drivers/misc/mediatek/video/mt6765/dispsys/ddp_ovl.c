@@ -2721,6 +2721,8 @@ int ovl_partial_update(enum DISP_MODULE_ENUM module, unsigned int bg_w,
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_ROI_SIZE,
 		bg_h << 16 | bg_w);
 
+	_store_roi(module, bg_w, bg_h);
+
 	return 0;
 }
 
