@@ -29,6 +29,10 @@ extern unsigned long fb_pa;
 extern int disp_layer_info_statistic(
 	struct disp_ddp_path_config *last_config, struct disp_frame_cfg_t *cfg);
 
+/* show hrt */
+extern int hrt_high, hrt_low;
+extern int hrt_show_flag;
+
 #ifdef MTKFB_DBG
 #include "disp_drv_log.h"
 

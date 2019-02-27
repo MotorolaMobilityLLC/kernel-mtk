@@ -1308,7 +1308,6 @@ int rdma_switch_to_nonsec(enum DISP_MODULE_ENUM module,
 
 		cmdqRecSetSecure(nonsec_switch_handle, 1);
 		/*
-		 * ugly workaround by kzhang !!
 		 * will remove when cmdq delete disable scenario.
 		 * To avoid translation fault like ovl (see notes in ovl.c)
 		 * check the mode now, bypass the frame during DL->DC(),

@@ -2090,6 +2090,7 @@ static int _DL_switch_to_DC_fast(int block)
 	/* move ovl config info from dl to dc */
 	memcpy(data_config_dc->ovl_config, data_config_dl->ovl_config,
 	       sizeof(data_config_dl->ovl_config));
+	data_config_dc->ovl_dirty = 1;
 	data_config_dc->p_golden_setting_context =
 		data_config_dl->p_golden_setting_context;
 	ret = dpmgr_path_config(pgc->ovl2mem_path_handle, data_config_dc,
@@ -2228,6 +2229,7 @@ static int _DC_switch_to_DL_fast(int block)
 	data_config_dl->rdma_config.security = DISP_NORMAL_BUFFER;
 	data_config_dl->rdma_dirty = 1;
 	data_config_dl->dst_dirty = 1;
+	data_config_dl->ovl_dirty = 1;
 
 	/* no need ioctl because of rdma_dirty */
 	set_is_dc(0);
@@ -2679,8 +2681,8 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst,
 	dst->dst_y = src->tgt_offset_y;
 
 	/* dst W/H should <= src W/H */
-	dst->dst_w = min(src->src_width, src->tgt_width);
-	dst->dst_h = min(src->src_height, src->tgt_height);
+	dst->dst_w = src->tgt_width;
+	dst->dst_h = src->tgt_height;
 
 	dst->keyEn = src->src_use_color_key;
 	dst->key = src->src_color_key;
@@ -5596,6 +5598,7 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config,
 	int total_layer = 0;
 	int i;
 	unsigned int w, h;
+	struct OVL_CONFIG_STRUCT *oc;
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	/* rdma doesn't support rotation */
@@ -5613,6 +5616,10 @@ static int can_bypass_ovl(struct disp_ddp_path_config *data_config,
 	}
 
 	if (total_layer != 1)
+		return 0;
+
+	oc = &data_config->ovl_config[*bypass_layer_id];
+	if (oc->src_w != oc->dst_w || oc->src_h != oc->dst_h)
 		return 0;
 
 	/* rdma cannot process dim layer */
@@ -5778,7 +5785,7 @@ void add_round_corner_layers(
 
 	input_ext = &(cfg->ovl_config[layer + 1]);
 	input_ext->ovl_index = module;
-	input_ext->layer = layer;
+	input_ext->layer = layer + 1;
 	input_ext->isDirty = 1;
 	input_ext->buff_idx = -1;
 	input_ext->layer_en = enable;
@@ -5806,7 +5813,7 @@ void add_round_corner_layers(
 	input_ext->security = 0;
 	input_ext->yuv_range = 0;
 	input_ext->ext_layer = 2;
-	input_ext->ext_sel_layer = 2;
+	input_ext->ext_sel_layer = phy_layer;
 	input_ext->phy_layer = phy_layer;
 
 	if (full_content) {
@@ -5817,6 +5824,39 @@ void add_round_corner_layers(
 	}
 }
 #endif
+
+static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
+{
+	int i = 0;
+	bool rsz = false;
+	int path = 0;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
+
+		if (!input_cfg->layer_enable)
+			continue;
+
+		if (input_cfg->src_width != input_cfg->tgt_width ||
+		    input_cfg->src_height != input_cfg->tgt_height) {
+			rsz = true;
+			break;
+		}
+	}
+
+	path = HRT_GET_PATH_ID(HRT_GET_PATH_SCENARIO(cfg->overlap_layer_num));
+	if ((path != 2 && path != 3) && (rsz == true)) {
+		struct disp_input_config *c = &cfg->input_cfg[i];
+
+		DISPERR("not RPO but L%d(%u,%u,%ux%u)->(%u,%u,%ux%u)\n",
+			i, c->src_offset_x, c->src_offset_y, c->src_width,
+			c->src_height, c->tgt_offset_x, c->tgt_offset_y,
+			c->tgt_width, c->tgt_height);
+	}
+
+	return rsz;
+}
+
 
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle,
@@ -5849,6 +5889,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			assign_full_lcm_roi(&total_dirty_roi);
 	}
 
+	if (disp_rsz_frame_has_rsz_layer(cfg))
+		assign_full_lcm_roi(&total_dirty_roi);
+
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
 		struct OVL_CONFIG_STRUCT *ovl_cfg;
@@ -5867,6 +5910,12 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		_convert_disp_input_to_ovl(ovl_cfg, input_cfg);
 
 		dprec_logger_start(DPREC_LOGGER_PRIMARY_CONFIG,
+			((ovl_cfg->src_x & 0xFFFF) << 16) |
+			(ovl_cfg->src_y & 0xFFFF),
+			((ovl_cfg->src_w & 0xFFFF) << 16) |
+			(ovl_cfg->src_h & 0xFFFF));
+		mmprofile_log_ex(ddp_mmp_get_events()->primary_config,
+			MMPROFILE_FLAG_PULSE,
 			((ovl_cfg->layer & 0xF) << 28) |
 			((ovl_cfg->layer_en & 0xF) << 24) |
 			((ovl_cfg->ext_layer & 0xF) << 20) |
@@ -6108,8 +6157,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				corner_pattern_height_bot,
 				corner_pattern_width,
 				top_mva, bottom_mva,
-				DISP_MODULE_OVL0_2L,
-				TOTAL_OVL_LAYER_NUM, 1, 1);
+				DISP_MODULE_OVL0,
+				TOTAL_OVL_LAYER_NUM, 3, 1);
 		else
 			add_round_corner_layers(data_config,
 				primary_display_get_width(),
@@ -6117,8 +6166,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 				corner_pattern_height_bot,
 				corner_pattern_width,
 				top_mva, bottom_mva,
-				DISP_MODULE_OVL0_2L,
-				TOTAL_OVL_LAYER_NUM, 1, 0);
+				DISP_MODULE_OVL0,
+				TOTAL_OVL_LAYER_NUM, 3, 0);
 	}
 #endif
 
