@@ -301,8 +301,9 @@ int cm_mgr_get_cpu_count(int cluster)
 static unsigned int cm_mgr_read_stall(int cpu)
 {
 	unsigned int val = 0;
+	unsigned long spinlock_save_flags;
 
-	if (!spin_trylock(&cm_mgr_cpu_mask_lock))
+	if (!spin_trylock_irqsave(&cm_mgr_cpu_mask_lock, spinlock_save_flags))
 		return val;
 
 	if (cpu < CM_MGR_CPU_LIMIT) {
@@ -313,7 +314,7 @@ static unsigned int cm_mgr_read_stall(int cpu)
 			val = cm_mgr_read(MP1_CPU0_STALL_COUNTER +
 					4 * (cpu - CM_MGR_CPU_LIMIT));
 	}
-	spin_unlock(&cm_mgr_cpu_mask_lock);
+	spin_unlock_irqrestore(&cm_mgr_cpu_mask_lock, spinlock_save_flags);
 
 	return val;
 }
