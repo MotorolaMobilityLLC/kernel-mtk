@@ -3635,7 +3635,6 @@ static int battery_resume(struct platform_device *dev)
 	/* reset nafg monitor time to avoid suspend for too long case */
 	get_monotonic_boottime(&gm.last_nafg_update_time);
 
-
 	fg_update_sw_iavg();
 	return 0;
 }
