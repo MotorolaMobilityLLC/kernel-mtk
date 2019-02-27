@@ -13,7 +13,7 @@
 
 #if !defined(__MRDUMP_MINI_H__)
 struct mrdump_mini_extra_misc {
-	void (*dump_func)(unsigned long *, unsigned long *);
+	void (*dump_func)(unsigned long *vaddr, unsigned long *size);
 	const char *dump_name;
 	unsigned long max_size;
 };

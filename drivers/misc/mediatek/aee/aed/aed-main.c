@@ -381,7 +381,7 @@ static void ke_gen_detail_msg(const struct AE_Msg *req_msg)
 	struct AE_Msg *rep_msg;
 	char *data;
 
-	LOGD("ke_gen_detail_msg is called\n");
+	LOGD("%s is called\n", __func__);
 	LOGD("%s req_msg arg:%d\n", __func__, req_msg->arg);
 
 	rep_msg = msg_create(&aed_dev.kerec.msg,
@@ -398,7 +398,7 @@ static void ke_gen_detail_msg(const struct AE_Msg *req_msg)
 				aed_dev.kerec.lastlog->detail_len);
 	data[aed_dev.kerec.lastlog->detail_len] = 0;
 
-	LOGD("ke_gen_detail_msg is return: %s\n", data);
+	LOGD("%s is return: %s\n", __func__, data);
 }
 
 static void ke_gen_process_msg(void)
@@ -792,7 +792,7 @@ static void ee_gen_process_msg(void)
 						eerec->fatal2);
 		}
 	} else {
-		LOGD("ee_gen_process_msg else\n");
+		LOGD("%s else\n", __func__);
 		n = snprintf(data, PROCESS_STRLEN, "%s", eerec->exp_filename);
 	}
 
@@ -1049,7 +1049,7 @@ static ssize_t aed_ee_read(struct file *filp, char __user *buf,
 						size_t count, loff_t *f_pos)
 {
 	if (aed_dev.eerec == NULL) {
-		LOGD("aed_ee_read fail for invalid kerec\n");
+		LOGD("%s fail for invalid kerec\n", __func__);
 		return 0;
 	}
 	return msg_copy_to_user(__func__, aed_dev.eerec->msg, buf, count,
@@ -2007,8 +2007,8 @@ static void kernel_reportAPI(const enum AE_DEFECT_ATTR attr, const int db_opt,
 
 void aee_kernel_dal_api(const char *file, const int line, const char *msg)
 {
-	LOGD("aee_kernel_dal_api has been phased out! caller info: <%s:%d> %s ",
-			file, line, msg);
+	LOGD("%s has been phased out! caller info: <%s:%d> %s ",
+			__func__, file, line, msg);
 }
 EXPORT_SYMBOL(aee_kernel_dal_api);
 
@@ -2100,7 +2100,7 @@ static void external_exception(const char *assert_type, const int *log,
 	}
 	eerec->db_opt = db_opt;
 	ee_queue_request(eerec);
-	LOGD("external_exception out\n");
+	LOGD("%s out\n", __func__);
 }
 
 static bool rr_reported;
