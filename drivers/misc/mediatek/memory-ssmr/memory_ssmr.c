@@ -440,6 +440,7 @@ bool memory_ssmr_inited(void)
 }
 
 #ifdef CONFIG_ARM64
+#ifdef CONFIG_DEBUG_PAGEALLOC
 static int change_page_range(pte_t *ptep, pgtable_t token, unsigned long addr,
 			void *data)
 {
@@ -484,6 +485,74 @@ static int set_memory_mapping(unsigned long start, phys_addr_t size, int map)
 	return ret;
 
 }
+#else
+static int set_memory_mapping(unsigned long start, phys_addr_t size, int map)
+{
+	unsigned long address = start;
+	pud_t *pud;
+	pmd_t *pmd;
+	pgd_t *pgd;
+	spinlock_t *plt;
+
+	if ((start != (start & PMD_MASK))
+			|| (size != (size & PMD_MASK))
+			|| !memblock_is_memory(virt_to_phys((void *)start))
+			|| !size || !start) {
+		pr_info("[invalid parameter]: start=0x%lx, size=%pa\n",
+				start, &size);
+		return -1;
+	}
+
+	pr_debug("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
+			start, &size, (void *)address, map);
+	while (address < (start + size)) {
+
+
+		pgd = pgd_offset_k(address);
+
+		if (pgd_none(*pgd) || pgd_bad(*pgd)) {
+			pr_info("bad pgd break\n");
+			goto fail;
+		}
+
+		pud = pud_offset(pgd, address);
+
+		if (pud_none(*pud) || pud_bad(*pud)) {
+			pr_info("bad pud break\n");
+			goto fail;
+		}
+
+		pmd = pmd_offset(pud, address);
+
+		if (pmd_none(*pmd)) {
+			pr_info("none ");
+			goto fail;
+		}
+
+		if (pmd_table(*pmd)) {
+			pr_info("pmd_table not set PMD\n");
+			goto fail;
+		}
+
+		plt = pmd_lock(&init_mm, pmd);
+		if (map)
+			set_pmd(pmd, __pmd(pmd_val(*pmd) | PMD_SECT_VALID));
+		else
+			set_pmd(pmd, __pmd(pmd_val(*pmd) & ~PMD_SECT_VALID));
+
+		spin_unlock(plt);
+		address += PMD_SIZE;
+	}
+
+	flush_tlb_all();
+	return 0;
+fail:
+	pr_info("start=0x%lx, size=%pa, address=0x%p, map=%d\n",
+			start, &size, (void *)address, map);
+	show_pte(NULL, address);
+	return -1;
+}
+#endif
 #else
 static inline int set_memory_mapping(unsigned long start, phys_addr_t size,
 					int map)
