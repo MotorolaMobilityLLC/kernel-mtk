@@ -3420,9 +3420,9 @@ static int msdc_cq_cmd_wait_xfr_done(struct msdc_host *host)
 
 static void msdc_cq_need_stop(struct msdc_host *host)
 {
-	if (atomic_read(&host->cq_err_need_stop)) {
+	if (atomic_read(&host->cq_error_need_stop)) {
 		(void)msdc_stop_and_wait_busy(host);
-		atomic_set(&host->cq_err_need_stop, 0);
+		atomic_set(&host->cq_error_need_stop, 0);
 	}
 }
 
