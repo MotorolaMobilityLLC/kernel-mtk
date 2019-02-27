@@ -1256,7 +1256,7 @@ static kal_uint16 imx338_table_write_cmos_sensor(
 		}
 #if MULTI_WRITE
 
-		if (tosend >= I2C_BUFFER_LEN ||
+		if ((I2C_BUFFER_LEN - tosend) < 3 ||
 		    len == IDX  ||
 		    addr != addr_last) {
 
