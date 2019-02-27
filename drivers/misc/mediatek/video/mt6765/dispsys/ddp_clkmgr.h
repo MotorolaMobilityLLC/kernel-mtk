@@ -43,10 +43,11 @@ enum DDP_CLK_ID {
 	CLK_DSI0_IF_CLK,
 	CLK_MM_26M,
 	CLK_DISP_RSZ0,
+	MIPI_26M,
 	/* PWM clk */
 	MUX_PWM,
 	DISP_PWM,
-	CLK26M, /*21*/
+	CLK26M, /*22*/
 	MAX_DISP_CLK_CNT
 };
 

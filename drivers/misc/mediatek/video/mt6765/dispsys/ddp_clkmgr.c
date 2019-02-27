@@ -60,6 +60,7 @@ static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 	{NULL, "MMSYS_DSI0_IF_CK", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "MMSYS_26M", 0, (1), DISP_MODULE_UNKNOWN},
 	{NULL, "MMSYS_DISP_RSZ0", 0, (1), DISP_MODULE_RSZ0},
+	{NULL, "APMIXED_MIPI_26M", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "TOP_MUX_DISP_PWM", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "DISP_PWM", 0, (1), DISP_MODULE_PWM0},
 	{NULL, "TOP_26M", 0, (0), DISP_MODULE_UNKNOWN},
@@ -195,6 +196,7 @@ int ddp_clk_set_parent(enum DDP_CLK_ID id, enum DDP_CLK_ID parent)
 
 static int __ddp_set_mipi26m(int idx, int en)
 {
+#if 0
 	if (en) {
 		DISP_REG_SET_FIELD(NULL, FLD_PLL_MIPI_DSI0_26M_CK_EN,
 			APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON0, 1);
@@ -204,7 +206,15 @@ static int __ddp_set_mipi26m(int idx, int en)
 			APMIXEDSYS_PLL_BASE + APMIXED_PLL_CON0, 0);
 		apmixed_refcnt--;
 	}
-
+#else
+	if (en) {
+		ddp_clk_prepare_enable(MIPI_26M);
+		apmixed_refcnt++;
+	} else {
+		ddp_clk_disable_unprepare(MIPI_26M);
+		apmixed_refcnt--;
+	}
+#endif
 	return 0;
 }
 
