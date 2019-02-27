@@ -571,11 +571,7 @@ static void mlog_meminfo(void)
 #endif
 
 	mlock = P2K(global_page_state(NR_MLOCK));
-#if defined(CONFIG_ZRAM) && defined(CONFIG_ZSMALLOC)
-	zram = zram_mlog();
-#else
 	zram = 0;
-#endif
 
 	active = P2K(global_node_page_state(NR_ACTIVE_ANON) +
 			global_node_page_state(NR_ACTIVE_FILE));
