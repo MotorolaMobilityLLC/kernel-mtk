@@ -29,6 +29,10 @@
 #include "audio_messenger_ipi.h"
 #include "audio_task.h"
 
+#ifdef CONFIG_SND_SOC_MTK_AUDIO_DSP
+#include <audio_playback_msg_id.h>
+#endif
+
 
 /*
  * =============================================================================
@@ -328,6 +332,10 @@ int send_message(
 		return -1;
 	}
 
+	/* send to scp directly (bypass audio queue, but still in IPC queue) */
+	if (p_ipi_msg->ack_type == AUDIO_IPI_MSG_DIRECT_SEND)
+		return send_message_to_scp(p_ipi_msg);
+
 
 	/* send message in queue */
 	msg_queue = (struct msg_queue_t *)handler->msg_queue;
@@ -446,6 +454,23 @@ int send_message_ack(
 	return 0;
 }
 
+static bool check_print_msg_info(const struct ipi_msg_t *p_ipi_msg)
+{
+	if (p_ipi_msg == NULL)
+		return false;
+
+#ifdef CONFIG_SND_SOC_MTK_AUDIO_DSP
+	if (p_ipi_msg->task_scene == TASK_SCENE_PRIMARY &&
+		p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
+		return false;
+
+	if (p_ipi_msg->task_scene == TASK_SCENE_DEEPBUFFER &&
+		p_ipi_msg->msg_id == AUDIO_DSP_TASK_DLCOPY)
+		return false;
+#endif
+
+	return true;
+}
 
 static int process_message_in_queue(
 	struct msg_queue_t *msg_queue,
@@ -511,18 +536,18 @@ static int process_message_in_queue(
 				retval = wait_event_interruptible_timeout(
 						 p_element->wq,
 						 ((p_ack->magic ==
-						  IPI_MSG_MAGIC_NUMBER) ||
-						 msg_queue->enable == false),
-					 HZ / 10); /* 100 ms */
+						   IPI_MSG_MAGIC_NUMBER) ||
+						  msg_queue->enable == false),
+						 HZ / 10); /* 100 ms */
 
 				if (retval == -ERESTARTSYS) {
-				print_msg_info(__func__, "-ERESTARTSYS",
-					       p_ipi_msg);
+					print_msg_info(__func__, "-ERESTARTSYS",
+						       p_ipi_msg);
 					retval = -EINTR;
 					mdelay(1);
 				} else if (msg_queue->enable == false) {
-				print_msg_info(__func__, "enable == false",
-					       p_ipi_msg);
+					print_msg_info(__func__, "enable == false",
+						       p_ipi_msg);
 					retval = -1;
 					break;
 				}
@@ -539,6 +564,7 @@ static int process_message_in_queue(
 					    p_ipi_msg, p_ack)) {
 					print_msg_info(__func__, "p_ipi_msg",
 						       p_ipi_msg);
+
 					print_msg_info(__func__, "p_ipi_msg_ack",
 						       p_ack);
 					AUD_ASSERT(
@@ -549,8 +575,10 @@ static int process_message_in_queue(
 					       sizeof(struct ipi_msg_t));
 					retval = -1;
 				} else {
-					print_msg_info(__func__, "ack back",
-						       p_ipi_msg);
+					if (check_print_msg_info(p_ipi_msg))
+						print_msg_info(__func__,
+							       "ack back",
+							       p_ipi_msg);
 					memcpy(p_ipi_msg,
 					       p_ack,
 					       sizeof(struct ipi_msg_t));
