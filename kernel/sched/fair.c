@@ -10005,6 +10005,11 @@ static int idle_balance(struct rq *this_rq)
 			update_next_balance(sd, &next_balance);
 		rcu_read_unlock();
 
+		if (!this_rq->rd->overload) {
+			raw_spin_unlock(&this_rq->lock);
+			goto hinted_idle_pull;
+		}
+
 		goto out;
 	}
 
@@ -10060,6 +10065,8 @@ static int idle_balance(struct rq *this_rq)
 	}
 	rcu_read_unlock();
 
+hinted_idle_pull:
+	/* We could not pull task to this_cpu when this_rq offline */
 	if (this_rq->online) {
 		if (!pulled_task)
 			pulled_task = hmp_idle_pull(this_cpu);
