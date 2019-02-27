@@ -23,6 +23,8 @@
 #include <linux/string.h>
 #include <linux/tick.h>
 #include <linux/uaccess.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include <mtk_cpuidle.h>
 #include <mtk_idle.h>
@@ -31,6 +33,7 @@
 #include <mtk_mcdi_governor.h>
 #include <mtk_mcdi_profile.h>
 #include <mtk_mcdi_util.h>
+#include <mtk_mcdi_cpc.h>
 
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
@@ -41,7 +44,6 @@
 
 #include <trace/events/mtk_idle_event.h>
 #include <linux/irqchip/mtk-gic-extend.h>
-/* #define USING_TICK_BROADCAST */
 
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
@@ -69,6 +71,10 @@ static unsigned long long mcdi_heart_beat_log_prev;
 static DEFINE_SPINLOCK(mcdi_heart_beat_spin_lock);
 
 static unsigned int mcdi_heart_beat_log_dump_thd = 5000;          /* 5 sec */
+
+static bool mcdi_stress_en;
+static unsigned int mcdi_stress_us = 10 * 1000;
+static struct task_struct *mcdi_stress_tsk[NF_CPU];
 
 int __attribute__((weak)) mtk_enter_idle_state(int mode)
 {
@@ -103,6 +109,16 @@ void __attribute__((weak)) mtk_idle_dump_cnt_in_interval(void)
 {
 }
 
+void __attribute__((weak))
+mcdi_set_state_lat(int cpu_type, int state, unsigned int val)
+{
+}
+
+void __attribute__((weak))
+mcdi_set_state_res(int cpu_type, int state, unsigned int val)
+{
+}
+
 void wakeup_all_cpu(void)
 {
 	int cpu = 0;
@@ -126,21 +142,48 @@ void mcdi_wakeup_all_cpu(void)
 	wait_until_all_cpu_powered_on();
 }
 
+static int mcdi_stress_task(void *arg)
+{
+	while (mcdi_stress_en)
+		usleep_range(mcdi_stress_us - 10, mcdi_stress_us + 10);
+
+	return 0;
+}
+
+static void mcdi_stress_start(void)
+{
+	int i;
+	char name[16] = {0};
+
+	if (mcdi_stress_en)
+		return;
+
+	mcdi_stress_en = true;
+
+	for (i = 0; i < NF_CPU; i++) {
+		snprintf(name, sizeof(name), "mcdi_stress_task%d", i);
+
+		mcdi_stress_tsk[i] =
+			kthread_create(mcdi_stress_task, NULL, name);
+
+		if (!IS_ERR(mcdi_stress_tsk[i])) {
+			kthread_bind(mcdi_stress_tsk[i], i);
+			wake_up_process(mcdi_stress_tsk[i]);
+		}
+	}
+}
+
+static void mcdi_stress_stop(void)
+{
+	mcdi_stress_en = false;
+	msleep(20);
+}
+
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
 
 /* mcdi_state */
-static int _mcdi_state_open(struct seq_file *s, void *data)
-{
-	return 0;
-}
-
-static int mcdi_state_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, _mcdi_state_open, inode->i_private);
-}
-
 static ssize_t mcdi_state_read(struct file *filp,
 		char __user *userbuf, size_t count, loff_t *f_pos)
 {
@@ -159,7 +202,6 @@ static ssize_t mcdi_state_read(struct file *filp,
 	mcdi_log("\tpause = %d\n", feature_stat.pause);
 	mcdi_log("\tmax s_state = %d\n", feature_stat.s_state);
 	mcdi_log("\tcluster_off = %d\n", feature_stat.cluster_off);
-	mcdi_log("\tbuck_off = %d\n", feature_stat.buck_off);
 	mcdi_log("\tany_core = %d\n", feature_stat.any_core);
 
 	mcdi_log("\n");
@@ -176,8 +218,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 
 	mcdi_log("mcdi_cnt_cluster: ");
 	for (i = 0; i < NF_CLUSTER; i++) {
-		mcdi_cnt_cluster[i] =
-				mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i);
+		mcdi_cnt_cluster[i] = mcdi_get_cluster_off_cnt(i);
 		mcdi_log("%lu ", mcdi_cnt_cluster[i]);
 	}
 	mcdi_log("\n");
@@ -237,9 +278,6 @@ static ssize_t mcdi_state_write(struct file *filp,
 	} else if (!strncmp(cmd_str, "s_state", sizeof("s_state"))) {
 		set_mcdi_s_state(param);
 		return count;
-	} else if (!strncmp(cmd_str, "buck_off", sizeof("buck_off"))) {
-		set_mcdi_buck_off_mask(param);
-		return count;
 	} else if (!strncmp(cmd_str, "hint", sizeof("hint"))) {
 		_system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST,
 								param != 0);
@@ -249,13 +287,162 @@ static ssize_t mcdi_state_write(struct file *filp,
 	}
 }
 
-static const struct file_operations mcdi_state_fops = {
-	.open = mcdi_state_open,
-	.read = mcdi_state_read,
-	.write = mcdi_state_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
+static ssize_t mcdi_info_read(struct file *filp,
+		char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	int len = 0;
+	int i, cpu;
+	char *p = dbg_buf;
+	struct cpuidle_driver *tbl = NULL;
+
+	mcdi_log("mcdi stress test: %s (timer:%dus)",
+			mcdi_stress_en ? "Enalbe" : "Disable",
+			mcdi_stress_us);
+
+	for (cpu = 0; cpu < NF_CPU; cpu++) {
+
+		if (tbl == mcdi_state_tbl_get(cpu)) {
+			mcdi_log(", %d", cpu);
+			continue;
+		}
+
+		mcdi_log("\n\n");
+
+		mcdi_log("%12s : %12s, %10s, %10s\n",
+				"idle state",
+				"name",
+				"latency",
+				"residency");
+
+		tbl = mcdi_state_tbl_get(cpu);
+		for (i = 0; i < tbl->state_count; i++) {
+			struct cpuidle_state *s = &tbl->states[i];
+
+			mcdi_log("%12d : %12s, %10u, %10u\n",
+					i,
+					s->name,
+					s->exit_latency,
+					s->target_residency);
+		}
+		mcdi_log("CPU Type = %d : cpu %d", cpu_type_idx_get(cpu), cpu);
+	}
+	mcdi_log("\n\n");
+
+	mcdi_log("==== usage ====\n");
+	mcdi_log("echo [%s] [%s] [%s] [%s] > /proc/mcdi/info\n",
+			"latency|residency",
+			"CPU Type",
+			"idle state",
+			"val(dec)");
+	mcdi_log("echo stress [0|1] > /proc/mcdi/info\n");
+	mcdi_log("echo timer [time_us(dec)] > /proc/mcdi/info\n");
+
+	len = p - dbg_buf;
+
+	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
+}
+
+static ssize_t mcdi_info_write(struct file *filp,
+		const char __user *userbuf, size_t count, loff_t *f_pos)
+{
+	int ret = 0;
+	unsigned long param_0 = 0;
+	unsigned long param_1 = 0;
+	unsigned long param_2 = 0;
+	unsigned long param_cnt = 1;
+	char *cmd_ptr = cmd_buf;
+	char *cmd_str = NULL;
+	char *param_0_str = NULL;
+	char *param_1_str = NULL;
+	char *param_2_str = NULL;
+
+	count = min(count, sizeof(cmd_buf) - 1);
+
+	if (copy_from_user(cmd_buf, userbuf, count))
+		return -EFAULT;
+
+	cmd_buf[count] = '\0';
+
+	cmd_str = strsep(&cmd_ptr, " ");
+
+	if (cmd_str == NULL)
+		return -EINVAL;
+
+	param_0_str = strsep(&cmd_ptr, " ");
+
+	if (param_0_str == NULL)
+		return -EINVAL;
+
+	ret = kstrtoul(param_0_str, 10, &param_0);
+
+	if (ret < 0)
+		return -EINVAL;
+
+	param_1_str = strsep(&cmd_ptr, " ");
+
+	if (param_1_str == NULL)
+		goto parse_cmd;
+
+	ret = kstrtoul(param_1_str, 10, &param_1);
+
+	if (ret < 0)
+		goto parse_cmd;
+
+	param_cnt++;
+
+	param_2_str = strsep(&cmd_ptr, " ");
+
+	if (param_2_str == NULL)
+		goto parse_cmd;
+
+	ret = kstrtoul(param_2_str, 10, &param_2);
+
+	if (ret < 0)
+		goto parse_cmd;
+
+	param_cnt++;
+
+parse_cmd:
+
+	if (!strncmp(cmd_str, "latency", sizeof("latency"))) {
+
+		if (param_cnt == 3)
+			mcdi_set_state_lat(param_0, param_1, param_2);
+
+		return count;
+
+	} else if (!strncmp(cmd_str, "residency", sizeof("residency"))) {
+
+		if (param_cnt == 3)
+			mcdi_set_state_res(param_0, param_1, param_2);
+
+		return count;
+
+	} else if (!strncmp(cmd_str, "stress", sizeof("stress"))) {
+
+		if (param_cnt == 1) {
+			if (param_0)
+				mcdi_stress_start();
+			else
+				mcdi_stress_stop();
+		}
+
+		return count;
+
+	} else if (!strncmp(cmd_str, "timer", sizeof("timer"))) {
+
+		if (param_cnt == 1)
+			mcdi_stress_us = clamp_val(param_0, 100, 20000);
+
+		return count;
+
+	} else {
+		return -EINVAL;
+	}
+}
+
+PROC_FOPS_MCDI(state);
+PROC_FOPS_MCDI(info);
 
 /* procfs entry */
 static const char mcdi_procfs_dir_name[] = "mcdi";
@@ -273,7 +460,12 @@ static int mcdi_procfs_init(void)
 		pr_notice("%s(), create /proc/mcdi/%s failed\n",
 			__func__, "state");
 
+	if (!proc_create("info", 0644, mcdi_dir, &mcdi_info_fops))
+		pr_notice("%s(), create /proc/mcdi/%s failed\n",
+			__func__, "info");
+
 	mcdi_procfs_profile_init(mcdi_dir);
+	mcdi_procfs_cpc_init(mcdi_dir);
 
 	return 0;
 }
@@ -281,79 +473,17 @@ static int mcdi_procfs_init(void)
 static void __go_to_wfi(int cpu)
 {
 	remove_cpu_from_prefer_schedule_domain(cpu);
+
 	trace_rgidle_rcuidle(cpu, 1);
+
 	isb();
 	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
+
 	trace_rgidle_rcuidle(cpu, 0);
+
 	add_cpu_to_prefer_schedule_domain(cpu);
-}
-
-void mcdi_cpu_off(int cpu)
-{
-	int state = 0;
-
-	state = get_residency_latency_result(cpu);
-
-	switch (state) {
-	case MCDI_STATE_CPU_OFF:
-
-#ifdef USING_TICK_BROADCAST
-		tick_broadcast_enter();
-#endif
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
-		mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
-
-#ifdef USING_TICK_BROADCAST
-		tick_broadcast_exit();
-#endif
-
-		break;
-	case MCDI_STATE_CLUSTER_OFF:
-	case MCDI_STATE_SODI:
-	case MCDI_STATE_DPIDLE:
-	case MCDI_STATE_SODI3:
-
-#ifdef USING_TICK_BROADCAST
-		tick_broadcast_enter();
-#endif
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
-		mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
-
-#ifdef USING_TICK_BROADCAST
-		tick_broadcast_exit();
-#endif
-
-		break;
-	default:
-		/* should NOT happened */
-		__go_to_wfi(cpu);
-
-		break;
-	}
-}
-
-void mcdi_cluster_off(int cpu)
-{
-	int cluster_idx = cluster_idx_get(cpu);
-
-	/* Notify SSPM: cluster can be OFF */
-	mcdi_mbox_write(MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF + cluster_idx, 1);
-
-	mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
-	mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
-
-	mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
 }
 
 void mcdi_heart_beat_log_dump(void)
@@ -401,11 +531,11 @@ void mcdi_heart_beat_log_dump(void)
 	mcdi_buf_append(buf, "cluster : ");
 
 	for (i = 0; i < NF_CLUSTER; i++) {
-		mcdi_cnt_cluster[i] =
-				mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + i);
+		mcdi_cnt_cluster[i] = mcdi_get_cluster_off_cnt(i);
 
 		mcdi_cnt = mcdi_cnt_cluster[i] - mcdi_cnt_cluster_last[i];
 		mcdi_buf_append(buf, "%lu, ", mcdi_cnt);
+
 		mcdi_cnt_cluster_last[i] = mcdi_cnt_cluster[i];
 	}
 
@@ -426,12 +556,11 @@ void mcdi_heart_beat_log_dump(void)
 
 	get_mcdi_feature_status(&feature_stat);
 
-	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d (buck_off = %d)",
+	mcdi_buf_append(buf, ", enabled = %d, max_s_state = %d",
 						feature_stat.enable,
-						feature_stat.s_state,
-						feature_stat.buck_off);
+						feature_stat.s_state);
 
-	mcdi_buf_append(buf, ", system_idle_hint = %08x\n",
+	mcdi_buf_append(buf, ", system_idle_hint = %08x",
 						system_idle_hint_result_raw());
 
 	pr_info("%s\n", get_mcdi_buf(buf));
@@ -441,11 +570,19 @@ int wfi_enter(int cpu)
 {
 	idle_refcnt_inc();
 
+	set_mcdi_idle_state(cpu, MCDI_STATE_WFI);
+
+	mcdi_usage_time_start(cpu);
+
 	__go_to_wfi(cpu);
+
+	mcdi_usage_time_stop(cpu);
 
 	idle_refcnt_dec();
 
 	mcdi_cnt_wfi[cpu]++;
+
+	mcdi_usage_calc(cpu);
 
 	return 0;
 }
@@ -464,20 +601,25 @@ int mcdi_enter(int cpu)
 	return 0;
 	#endif
 
+	mcdi_profile_ts(cpu, MCDI_PROFILE_ENTER);
+
 	idle_refcnt_inc();
-	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_ENTER);
 
 	if (likely(mcdi_fw_is_ready()))
 		state = mcdi_governor_select(cpu, cluster_idx);
 	else
 		state = MCDI_STATE_WFI;
 
-	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_LEAVE);
-
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF) {
 		mcdi_sta = &(mcdi_state_tbl_get(cpu)->states[state]);
 		sched_idle_set_state(mcdi_sta, state);
 	}
+
+	set_mcdi_idle_state(cpu, state);
+
+	mcdi_profile_ts(cpu, MCDI_PROFILE_CPU_DORMANT_ENTER);
+
+	mcdi_usage_time_start(cpu);
 
 	switch (state) {
 	case MCDI_STATE_WFI:
@@ -490,7 +632,7 @@ int mcdi_enter(int cpu)
 
 		aee_rr_rec_mcdi_val(cpu, 0xff);
 
-		mcdi_cpu_off(cpu);
+		mtk_enter_idle_state(MTK_MCDI_CPU_MODE);
 
 		aee_rr_rec_mcdi_val(cpu, 0x0);
 
@@ -505,7 +647,7 @@ int mcdi_enter(int cpu)
 
 		aee_rr_rec_mcdi_val(cpu, 0xff);
 
-		mcdi_cluster_off(cpu);
+		mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
 
 		aee_rr_rec_mcdi_val(cpu, 0x0);
 
@@ -516,32 +658,26 @@ int mcdi_enter(int cpu)
 		break;
 	case MCDI_STATE_SODI:
 
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
 		soidle_enter(cpu);
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
 
 		break;
 	case MCDI_STATE_DPIDLE:
 
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
 		dpidle_enter(cpu);
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
 
 		break;
 	case MCDI_STATE_SODI3:
 
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_ENTER);
-
 		soidle3_enter(cpu);
-
-		mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
 
 		break;
 	}
+
+	mcdi_usage_time_stop(cpu);
+
+	mcdi_profile_ts(cpu, MCDI_PROFILE_CPU_DORMANT_LEAVE);
+
+	mcdi_usage_calc(cpu);
 
 	if (state >= MCDI_STATE_WFI && state <= MCDI_STATE_CLUSTER_OFF)
 		sched_idle_set_state(NULL, -1);
@@ -549,46 +685,34 @@ int mcdi_enter(int cpu)
 	mcdi_governor_reflect(cpu, state);
 
 	idle_refcnt_dec();
-	mcdi_profile_ts(MCDI_PROFILE_LEAVE);
 
-	if (state == get_mcdi_profile_state())
-		mcdi_profile_calc();
+	mcdi_profile_ts(cpu, MCDI_PROFILE_LEAVE);
+	mcdi_profile_calc(cpu);
 
 	return 0;
 }
 
 bool __mcdi_pause(unsigned int id, bool paused)
 {
-	struct mcdi_feature_status feature_stat;
+	mcdi_state_pause(id, paused);
 
-	get_mcdi_feature_status(&feature_stat);
-
-	if (!feature_stat.enable)
+	if (!(get_mcdi_feature_stat()->enable))
 		return true;
 
 	if (!mcdi_get_boot_time_check())
 		return true;
 
-	if (paused) {
-		mcdi_state_pause(id, true);
+	if (paused)
 		mcdi_wakeup_all_cpu();
-
-	} else {
-		mcdi_state_pause(id, false);
-	}
 
 	return true;
 }
 
 bool _mcdi_task_pause(bool paused)
 {
-	bool ret = false;
-
 	if (!is_mcdi_working())
-		return ret;
+		return false;
 
-	/* TODO */
-#if 1
 	if (paused) {
 
 		trace_mcdi_task_pause_rcuidle(smp_processor_id(), true);
@@ -610,34 +734,12 @@ bool _mcdi_task_pause(bool paused)
 		trace_mcdi_task_pause_rcuidle(smp_processor_id(), 0);
 	}
 
-	ret = true;
-
-#endif
-	return ret;
+	return true;
 }
 
 void mcdi_avail_cpu_mask(unsigned int cpu_mask)
 {
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
-}
-
-void _mcdi_cpu_iso_mask(unsigned int iso_mask)
-{
-	iso_mask &= 0xff;
-
-	/*
-	 * If isolation bit of ALL CPU are set, means iso_mask is not reasonable
-	 * Do NOT update iso_mask to mcdi controller
-	 */
-	if (iso_mask == 0xff)
-		return;
-
-	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
-}
-
-bool is_cpu_pwr_on_event_pending(void)
-{
-	return (!(mcdi_mbox_read(MCDI_MBOX_PENDING_ON_EVENT) == 0));
 }
 
 /* Disable MCDI during cpu_up/cpu_down period */
@@ -717,6 +819,7 @@ static int __init mcdi_sysram_init(void)
 
 subsys_initcall(mcdi_sysram_init);
 
+
 static int __init mcdi_init(void)
 {
 	/* Activate MCDI after SMP */
@@ -728,12 +831,17 @@ static int __init mcdi_init(void)
 	/* procfs init */
 	mcdi_procfs_init();
 
+	/* CPC init */
+	mcdi_cpc_init();
+
 	/* MCDI governor init */
 	mcdi_governor_init();
 
 	mcdi_pm_qos_init();
 
-	_mcdi_cpu_iso_mask(0x0);
+	mcdi_cpu_iso_mask(0x0);
+
+	mcdi_prof_init();
 
 	return 0;
 }

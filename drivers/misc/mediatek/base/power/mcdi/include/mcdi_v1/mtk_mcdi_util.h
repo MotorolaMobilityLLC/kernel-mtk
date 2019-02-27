@@ -39,9 +39,35 @@ struct mtk_mcdi_buf {
 					LOG_BUF_LEN - strlen((mcdi).buf), \
 					fmt, ##args))
 
+#define PROC_FOPS_MCDI(name)						\
+static int _mcdi_ ## name ## _open(struct seq_file *s, void *data)	\
+{									\
+	return 0;							\
+}									\
+static int mcdi_ ## name ## _open(struct inode *inode, struct file *file)\
+{									\
+	return single_open(file, _mcdi_ ## name ## _open, inode->i_private);\
+}									\
+static const struct file_operations mcdi_ ## name ## _fops = {		\
+	.owner	= THIS_MODULE,						\
+	.open	= mcdi_ ## name ## _open,				\
+	.read	= mcdi_ ## name ## _read,				\
+	.write	= mcdi_ ## name ## _write,				\
+	.llseek	= seq_lseek,						\
+	.release = single_release,					\
+}
+
 unsigned int mcdi_mbox_read(int id);
 void mcdi_mbox_write(int id, unsigned int val);
 int mcdi_fw_is_ready(void);
+
+bool mcdi_is_cpc_mode(void);
+unsigned int mcdi_get_cluster_off_cnt(unsigned int cluster);
+void mcdi_notify_cluster_off(unsigned int cluster);
+unsigned int mcdi_get_raw_pwr_sta(void);
+
+void mcdi_set_cpu_iso_smc(unsigned int iso_mask);
+void mcdi_set_cpu_iso_mbox(unsigned int iso_mask);
 unsigned long long idle_get_current_time_us(void);
 
 #endif /* __MTK_MCDI_UTIL_H__ */

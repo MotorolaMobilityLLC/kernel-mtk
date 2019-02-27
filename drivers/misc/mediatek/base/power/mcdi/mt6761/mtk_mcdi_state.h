@@ -27,7 +27,9 @@ enum mcdi_s_state {
 	MCDI_STATE_CLUSTER_OFF,
 	MCDI_STATE_SODI,
 	MCDI_STATE_DPIDLE,
-	MCDI_STATE_SODI3
+	MCDI_STATE_SODI3,
+
+	NF_MCDI_STATE
 };
 
 int mcdi_get_mcdi_idle_state(int idx);

@@ -18,8 +18,6 @@
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_plat.h>
 
-#define USING_TICK_BROADCAST
-
 static int mcdi_idle_state_mapping[NR_TYPES] = {
 	MCDI_STATE_DPIDLE,		/* IDLE_TYPE_DP */
 	MCDI_STATE_SODI3,		/* IDLE_TYPE_SO3 */
@@ -58,9 +56,7 @@ static struct cpuidle_driver mtk_cpuidle_driver_set_0 = {
 		.enter			= mtk_mcidle_enter,
 		.exit_latency		= 300,
 		.target_residency	= 5000,
-#ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
-#endif
 		.name			= "mcdi",
 		.desc			= "mcdi",
 	},
@@ -124,17 +120,45 @@ static struct cpuidle_driver
 	}
 };
 
+#define invalid_type_and_state(type, state)			\
+	(state <= MCDI_STATE_WFI || state >= NF_MCDI_STATE	\
+		|| type != 0)					\
+
+#define __mcdi_set_state(type, i, member, val)                           \
+do {                                                                     \
+	mtk_acao_mcdi_state[type].states[i].member = val;                \
+	if (i == MCDI_STATE_CPU_OFF) {                                   \
+		mtk_cpuidle_driver_set_0.states[i].member = val;	 \
+	}                                                                \
+} while (0)
+
+void mcdi_set_state_lat(int cpu_type, int state, unsigned int val)
+{
+	if (invalid_type_and_state(cpu_type, state))
+		return;
+
+	__mcdi_set_state(cpu_type, state, exit_latency, val);
+}
+
+void mcdi_set_state_res(int cpu_type, int state, unsigned int val)
+{
+	if (invalid_type_and_state(cpu_type, state))
+		return;
+
+	__mcdi_set_state(cpu_type, state, target_residency, val);
+}
+
 static int mtk_rgidle_enter(struct cpuidle_device *dev,
 			      struct cpuidle_driver *drv, int index)
 {
-	wfi_enter(smp_processor_id());
+	wfi_enter(dev->cpu);
 	return index;
 }
 
 static int mtk_mcidle_enter(struct cpuidle_device *dev,
 			      struct cpuidle_driver *drv, int index)
 {
-	mcdi_enter(smp_processor_id());
+	mcdi_enter(dev->cpu);
 	return index;
 }
 

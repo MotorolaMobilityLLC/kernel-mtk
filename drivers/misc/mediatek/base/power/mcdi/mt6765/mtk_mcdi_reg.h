@@ -52,7 +52,7 @@ extern void __iomem *mcdi_sysram_base;
 /* MBOX */
 #define MCDI_MBOX                               3
 #define MCDI_MBOX_SLOT_OFFSET_START             0
-#define MCDI_MBOX_SLOT_OFFSET_END               17
+#define MCDI_MBOX_SLOT_OFFSET_END               18
 
 /* MBOX: AP write, SSPM read */
 #define MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF       0
@@ -73,6 +73,7 @@ extern void __iomem *mcdi_sysram_base;
 #define MCDI_MBOX_PENDING_ON_EVENT              14
 #define MCDI_MBOX_PROF_CMD                      15
 #define MCDI_MBOX_PROF_CLUSTER                  16
+#define MCDI_MBOX_AP_READY                      17
 
 /* MCDI_MBOX_ACTION_STAT */
 #define MCDI_ACTION_INIT                        0
