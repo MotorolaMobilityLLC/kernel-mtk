@@ -232,3 +232,13 @@ __weak int mtk_rgu_status_is_eintrst(void)
 {
 	return 0;
 }
+
+#ifndef CONFIG_MTK_AEE_MRDUMP
+__weak void mrdump_save_ctrlreg(void)
+{
+}
+
+__weak void mrdump_save_per_cpu_reg(int cpu, struct pt_regs *regs)
+{
+}
+#endif

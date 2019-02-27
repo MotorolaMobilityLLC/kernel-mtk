@@ -187,6 +187,7 @@ __init void mrdump_cblock_init(void)
 #if defined(KIMAGE_VADDR)
 	machdesc_p->kimage_vaddr = KIMAGE_VADDR;
 #endif
+	machdesc_p->kimage_vaddr += TEXT_OFFSET;
 	machdesc_p->kimage_init_begin = (uintptr_t)__init_begin;
 	machdesc_p->kimage_init_end = (uintptr_t)__init_end;
 	machdesc_p->kimage_stext = (uintptr_t)_text;
