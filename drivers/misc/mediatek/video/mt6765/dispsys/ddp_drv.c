@@ -72,7 +72,9 @@
 #endif
 #include "disp_helper.h"
 #include <linux/of_platform.h>
-
+#ifdef CONFIG_MTK_SMI_EXT
+#include "smi_public.h"
+#endif
 
 #define DISP_DEVNAME "DISPSYS"
 
@@ -629,9 +631,6 @@ static void disp_clk_init(struct platform_device *pdev)
 	}
 
 	DDPMSG("DT disp clk parse end\n");
-
-	/* disp-clk force on */
-	ddp_clk_force_on(1);
 #endif
 }
 
@@ -684,30 +683,6 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 }
 #endif
 
-static int disp_probe(struct platform_device *pdev)
-{
-	static unsigned int disp_probe_cnt;
-
-	if (disp_probe_cnt != 0)
-		return 0;
-
-	pr_info("disp driver(1) disp_probe begin\n");
-
-	/* save pdev for disp_probe_1 */
-	memcpy(&mydev, pdev, sizeof(mydev));
-
-	disp_helper_option_init();
-
-	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
-		disp_clk_init(pdev);
-
-	disp_probe_cnt++;
-
-	pr_info("disp driver(1) disp_probe end\n");
-
-	return 0;
-}
-
 /* begin for irq check */
 static inline unsigned int gic_irq(struct irq_data *d)
 {
@@ -729,7 +704,7 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 }
 /* end for irq check */
 
-static int __init disp_probe_1(void)
+static int disp_probe_1(void)
 {
 	int ret = 0;
 	int i;
@@ -875,6 +850,38 @@ static int __init disp_probe_1(void)
 	return ret;
 }
 
+static int disp_probe(struct platform_device *pdev)
+{
+	static unsigned int disp_probe_cnt;
+
+	pr_notice("%s: %d\n", __func__, smi_mm_clk_first_get());
+	if (!smi_mm_clk_first_get()) {
+		pr_notice("SMI not start probe\n");
+		return -EPROBE_DEFER;
+	}
+
+	if (disp_probe_cnt != 0)
+		return 0;
+
+	pr_info("disp driver(1) disp_probe begin\n");
+
+	/* save pdev for disp_probe_1 */
+	memcpy(&mydev, pdev, sizeof(mydev));
+
+	disp_helper_option_init();
+
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
+		disp_clk_init(pdev);
+
+	disp_probe_cnt++;
+
+	pr_info("disp driver(1) disp_probe end\n");
+
+	disp_probe_1();
+
+	return 0;
+}
+
 static int disp_remove(struct platform_device *pdev)
 {
 #if (defined(CONFIG_MTK_TEE_GP_SUPPORT) || \
@@ -967,8 +974,7 @@ static int __init disp_late(void)
 }
 
 #ifndef MTK_FB_DO_NOTHING
-arch_initcall(disp_init);
-module_init(disp_probe_1);
+module_init(disp_init);
 module_exit(disp_exit);
 late_initcall(disp_late);
 #endif
