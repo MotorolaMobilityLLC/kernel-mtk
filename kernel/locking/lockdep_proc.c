@@ -23,6 +23,10 @@
 
 #include "lockdep_internals.h"
 
+#ifdef CONFIG_MTK_BOOT
+#include <mt-plat/mtk_boot_common.h>
+#endif
+
 #ifdef MTK_ENHANCE_LOCKDEP_PROC
 static unsigned int lockdep_mode;
 
@@ -781,6 +785,10 @@ static const struct file_operations proc_lock_stat_operations = {
 
 static int __init lockdep_proc_init(void)
 {
+#ifdef CONFIG_MTK_BOOT
+	if (get_boot_mode() == META_BOOT)
+		debug_locks_off();
+#endif
 #ifdef MTK_ENHANCE_LOCKDEP_PROC
 	proc_create("lockdep", 0600, NULL, &proc_lockdep_operations);
 #else
