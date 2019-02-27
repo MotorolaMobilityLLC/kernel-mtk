@@ -115,7 +115,7 @@
 #define THERMAL_INIT_VALUE						(0xDA1)
 
 /* 1: mtk_tc.c supports LVTS; 0: o.w. */
-#define CFG_THERM_LVTS							(1)
+#define CFG_THERM_LVTS							(0)
 
 /*=============================================================
  * Chip related
