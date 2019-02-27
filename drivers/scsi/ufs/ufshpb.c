@@ -62,7 +62,7 @@
 
 #define HPB_DEBUG(hpb, msg, args...)			\
 	do { if (hpb->debug)				\
-		pr_debug("%s:%d " msg "\n",		\
+		pr_notice("%s:%d " msg "\n",		\
 		       __func__, __LINE__, ##args);	\
 	} while (0)
 
@@ -124,6 +124,27 @@ static void ufshpb_ppn_prep(struct ufshpb_lu *hpb,
 		struct ufshcd_lrb *lrbp, unsigned long long ppn)
 {
 	unsigned char cmd[16] = { 0 };
+#ifdef UFSHPB_ERROR_INJECT
+	static struct timeval tm_s = { 0 }, tm_e = { 0 };
+	int err_bit;
+
+	if (hpb->err_inject) {
+		if (tm_s.tv_sec == 0)
+			do_gettimeofday(&tm_s);
+
+		do_gettimeofday(&tm_e);
+
+		if ((tm_e.tv_sec - tm_s.tv_sec) >= 5) {
+			err_bit = jiffies & 0x3F;
+
+			SYSFS_INFO("hpb err_inject %d, %d, err bit:%d\n",
+				tm_e.tv_sec, tm_s.tv_sec, err_bit);
+			do_gettimeofday(&tm_s);
+
+			ppn ^= (1 << err_bit);
+		}
+	}
+#endif
 
 	cmd[0] = READ_16;
 	cmd[2] = lrbp->cmd->cmnd[2];
@@ -2915,6 +2936,33 @@ static ssize_t ufshpb_sysfs_active_group_show(struct ufshpb_lu *hpb, char *buf)
 		"%d\n",	is_region_active(hpb, global_region));
 }
 
+
+#ifdef UFSHPB_ERROR_INJECT
+static ssize_t ufshpb_sysfs_err_inject_store(struct ufshpb_lu *hpb,
+		const char *buf, size_t count)
+{
+	unsigned long debug;
+
+	if (kstrtoul(buf, 0, &debug))
+		return -EINVAL;
+
+	if (debug >= 1)
+		hpb->err_inject = 1;
+	else
+		hpb->err_inject = 0;
+
+	SYSFS_INFO("err_inject %d", hpb->err_inject);
+	return count;
+}
+
+static ssize_t ufshpb_sysfs_err_inject_show(struct ufshpb_lu *hpb, char *buf)
+{
+	SYSFS_INFO("err_inject %d", hpb->err_inject);
+
+	return snprintf(buf, PAGE_SIZE, "%d\n",	hpb->err_inject);
+}
+#endif
+
 static struct ufshpb_sysfs_entry ufshpb_sysfs_entries[] = {
 	__ATTR(is_active_group, 0444 | 0200,
 	       ufshpb_sysfs_active_group_show, ufshpb_sysfs_active_group_store),
@@ -2938,6 +2986,10 @@ static struct ufshpb_sysfs_entry ufshpb_sysfs_entries[] = {
 	__ATTR(map_req_count, 0444, ufshpb_sysfs_map_req_show, NULL),
 	__ATTR(get_info_from_lba, 0200, NULL, ufshpb_sysfs_info_lba_store),
 	__ATTR(release, 0200, NULL, ufshpb_sysfs_debug_release_store),
+#ifdef UFSHPB_ERROR_INJECT
+	__ATTR(err_inject, 0444 | 0200,
+	       ufshpb_sysfs_err_inject_show, ufshpb_sysfs_err_inject_store),
+#endif
 	__ATTR_NULL
 };
 
