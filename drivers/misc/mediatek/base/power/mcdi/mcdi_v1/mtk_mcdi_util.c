@@ -15,14 +15,20 @@
 #include <linux/kconfig.h>
 #include <linux/sched.h>
 
+#include <mtk_mcdi.h>
 #include <mtk_mcdi_util.h>
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
+
+#include <mt-plat/mtk_secure_api.h>
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_mbox.h>
 #endif
 
+/**
+ * MCU read/write interface
+ */
 static inline unsigned int mcdi_sspm_read(int id)
 {
 	unsigned int val = 0;
@@ -96,6 +102,90 @@ int mcdi_fw_is_ready(void)
 	return __mcdi_fw_is_ready();
 }
 
+/**
+ * SPMC related interface
+ */
+bool mcdi_is_cpc_mode(void)
+{
+#if defined(MCDI_CPC_MODE)
+	return true;
+#else
+	return false;
+#endif
+}
+
+#if defined(MCDI_CPC_MODE)
+unsigned int mcdi_get_raw_pwr_sta(void)
+{
+	return mcdi_read(CPC_SPMC_PWR_STATUS);
+}
+
+void mcdi_notify_cluster_off(unsigned int cluster)
+{
+}
+
+unsigned int mcdi_get_cluster_off_cnt(unsigned int cluster)
+{
+	unsigned int cnt = mcdi_read(CPC_DORMANT_COUNTER);
+
+	cnt = ((cnt >> 16) & 0xFFFF) + (cnt & 0xFFFF);
+	cnt += mcdi_read(SYSRAM_CPC_CLUSTER_CNT);
+
+	return cnt;
+}
+
+#else
+unsigned int mcdi_get_raw_pwr_sta(void)
+{
+	return mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+}
+
+void mcdi_notify_cluster_off(unsigned int cluster)
+{
+	mcdi_mbox_write(MCDI_MBOX_CLUSTER_0_CAN_POWER_OFF + cluster, 1);
+}
+
+unsigned int mcdi_get_cluster_off_cnt(unsigned int cluster)
+{
+	return mcdi_mbox_read(MCDI_MBOX_CLUSTER_0_CNT + cluster);
+}
+
+#endif
+
+void mcdi_set_cpu_iso_smc(unsigned int iso_mask)
+{
+	iso_mask &= 0xff;
+
+	/*
+	 * If isolation bit of ALL CPU are set, means iso_mask is not reasonable
+	 * Do NOT update iso_mask to mcdi controller
+	 */
+	if (iso_mask == 0xff)
+		return;
+
+	mt_secure_call(MTK_SIP_KERNEL_MCDI_ARGS,
+			MCDI_SMC_EVENT_ASYNC_WAKEUP_EN,
+			iso_mask,
+			0, 0);
+}
+
+void mcdi_set_cpu_iso_mbox(unsigned int iso_mask)
+{
+	iso_mask &= 0xff;
+
+	/*
+	 * If isolation bit of ALL CPU are set, means iso_mask is not reasonable
+	 * Do NOT update iso_mask to mcdi controller
+	 */
+	if (iso_mask == 0xff)
+		return;
+
+	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
+}
+
+/**
+ * MCDI utility function
+ */
 unsigned long long idle_get_current_time_us(void)
 {
 	unsigned long long idle_current_time = sched_clock();

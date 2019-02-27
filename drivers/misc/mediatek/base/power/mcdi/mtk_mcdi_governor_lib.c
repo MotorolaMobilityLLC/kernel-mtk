@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <linux/kernel.h>
+#include <linux/delay.h>
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
@@ -19,9 +20,107 @@
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
 
+#include <mt-plat/mtk_secure_api.h>
 #include <trace/events/mtk_idle_event.h>
 
-bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
+#ifdef MCDI_CPC_MODE
+
+#define CPC_RET_RETRY      0  /* 2'b00 */
+#define CPC_RET_SUCCESS    1  /* 2'b01 */
+#define CPC_RET_GIVE_UP    2  /* 2'b10 */
+
+#define udelay_and_update_wait_time(dur, t) \
+		{ udelay(t); (dur) += (t); }
+#define mdelay_and_update_wait_time(dur, t) \
+		{ mdelay(t); (dur) += (1000 * (t)); }
+
+static void __release_last_core_prot(void)
+{
+	mt_secure_call(MTK_SIP_KERNEL_MCDI_ARGS,
+			MCDI_SMC_EVENT_LAST_CORE_CLR,
+			0, 0, 0);
+}
+
+void release_last_core_prot(void)
+{
+	__release_last_core_prot();
+}
+
+void release_cluster_last_core_prot(void)
+{
+	/* Avoid the mask was not cleared while ATF abort */
+	if (mcdi_read(CPC_PWR_ON_MASK))
+		__release_last_core_prot();
+}
+
+int acquire_last_core_prot(int cpu)
+{
+	unsigned int ret;
+	unsigned int dur_us = 0;
+
+	do {
+		mt_secure_call(MTK_SIP_KERNEL_MCDI_ARGS,
+				MCDI_SMC_EVENT_LAST_CORE_REQ,
+				mcusys_last_core_req,
+				0, 0);
+
+		udelay_and_update_wait_time(dur_us, 2);
+
+		if (!is_last_core_in_mcusys(cpu) || dur_us > 1000) {
+			ret = CPC_RET_GIVE_UP;
+			break;
+		}
+
+		ret = get_mcusys_last_core_ack(
+				mcdi_read(CPC_MCUSYS_LAST_CORE_RESP));
+
+	} while (ret == CPC_RET_RETRY);
+
+	if (ret == CPC_RET_GIVE_UP)
+		any_core_cpu_cond_inc(MULTI_CORE_CNT);
+
+	return ret == CPC_RET_SUCCESS ? 0 : -1;
+}
+
+int acquire_cluster_last_core_prot(int cpu)
+{
+	unsigned int ret;
+	unsigned int dur_us = 0;
+
+	do {
+		mt_secure_call(MTK_SIP_KERNEL_MCDI_ARGS,
+				MCDI_SMC_EVENT_LAST_CORE_REQ,
+				cpusys_last_core_req,
+				0, 0);
+
+		udelay_and_update_wait_time(dur_us, 2);
+
+		if (!is_last_core_in_this_cluster(cpu) || dur_us > 1000) {
+			ret = CPC_RET_GIVE_UP;
+			break;
+		}
+
+		ret = get_cpusys_last_core_ack(
+				mcdi_read(CPC_CPUSYS_LAST_CORE_RESP));
+
+	} while (ret == CPC_RET_RETRY);
+
+	return ret == CPC_RET_SUCCESS ? 0 : -1;
+}
+
+void mcdi_ap_ready(void)
+{
+	mcdi_mbox_write(MCDI_MBOX_AP_READY, 1);
+}
+
+#else
+
+static bool is_cpu_pwr_on_event_pending(void)
+{
+	return (!(mcdi_mbox_read(MCDI_MBOX_PENDING_ON_EVENT) == 0));
+}
+
+static bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 {
 	bool ret = false;
 	unsigned int on_off_stat = 0;
@@ -33,7 +132,7 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
 	check_mask = (get_pwr_stat_check_map(CPU_CLUSTER, cpu)
 					& ((cluster_mask << 16) | cpu_mask));
 
-	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+	on_off_stat = mcdi_get_raw_pwr_sta();
 
 	if (on_off_stat == check_mask)
 		ret = true;
@@ -48,7 +147,7 @@ bool mcdi_cpu_cluster_on_off_stat_check(int cpu)
  * means other cluster can NOT powered OFF due to residency condition failed
  * Therefore we can skip checking any core dpidle/SODI conditions
  */
-bool other_cpu_off_but_cluster_on(int cpu)
+static bool other_cpu_off_but_cluster_on(int cpu)
 {
 	unsigned int on_off_stat = 0;
 	unsigned int other_cluster_check_mask;
@@ -64,7 +163,7 @@ bool other_cpu_off_but_cluster_on(int cpu)
 	cpu_check_mask =
 		get_pwr_stat_check_map(CPU_IN_OTHER_CLUSTER, cpu) & cpu_mask;
 
-	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+	on_off_stat = mcdi_get_raw_pwr_sta();
 
 	if (cpu_check_mask == 0 && other_cluster_check_mask == 0)
 		return false;
@@ -77,7 +176,7 @@ bool other_cpu_off_but_cluster_on(int cpu)
 	return false;
 }
 
-bool is_match_cpu_cluster_criteria(int cpu)
+static bool is_match_cpu_cluster_criteria(int cpu)
 {
 	bool match = true;
 
@@ -87,7 +186,7 @@ bool is_match_cpu_cluster_criteria(int cpu)
 	return match;
 }
 
-bool mcdi_controller_token_get_no_pause(int cpu)
+static bool mcdi_controller_token_get_no_pause(int cpu)
 {
 	bool token_get = false;
 	unsigned long long loop_delay_start_us = 0;
@@ -108,7 +207,7 @@ bool mcdi_controller_token_get_no_pause(int cpu)
 			break;
 		}
 
-		if (!is_last_core_in_mcusys()) {
+		if (!is_last_core_in_mcusys(cpu)) {
 			token_get = false;
 			break;
 		}
@@ -132,12 +231,12 @@ bool mcdi_controller_token_get_no_pause(int cpu)
 	return token_get;
 }
 
-bool mcdi_controller_token_get(int cpu)
+static bool mcdi_controller_token_get(int cpu)
 {
 	if (is_cpu_pwr_on_event_pending())
 		return false;
 
-	if (!is_last_core_in_mcusys())
+	if (!is_last_core_in_mcusys(cpu))
 		return false;
 
 	if (other_cpu_off_but_cluster_on(cpu))
@@ -149,7 +248,7 @@ bool mcdi_controller_token_get(int cpu)
 	return false;
 }
 
-void dump_multi_core_state_ftrace(int cpu)
+static void dump_multi_core_state_ftrace(int cpu)
 {
 	unsigned int on_off_stat  = 0;
 	unsigned int check_mask;
@@ -161,50 +260,19 @@ void dump_multi_core_state_ftrace(int cpu)
 	check_mask = (get_pwr_stat_check_map(CPU_CLUSTER, cpu)
 				& ((cluster_mask << 16) | cpu_mask));
 
-	on_off_stat = mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT);
+	on_off_stat = mcdi_get_raw_pwr_sta();
 
 	trace_mcdi_multi_core_rcuidle(cpu, on_off_stat, check_mask);
 }
 
-#ifdef MCDI_CPC_MODE
-
-#define CPC_RET_RETRY      0  /* 2'b00 */
-#define CPC_RET_SUCCESS    1  /* 2'b01 */
-#define CPC_RET_GIVE_UP    2  /* 2'b10 */
-
-int acquire_last_core_prot(int cpu)
-{
-	unsigned int ret;
-
-	mcdi_write(CPC_LAST_CORE_REQ, mcusys_last_core_req);
-
-	do {
-		ret = get_mcusys_last_core_ack(
-				mcdi_read(CPC_MCUSYS_LAST_CORE_RESP));
-	} while (ret == CPC_RET_RETRY);
-
-	return ret == CPC_RET_SUCCESS ? 0 : 1;
-}
-
 void release_last_core_prot(void)
 {
+	_mcdi_task_pause(false);
 }
 
-int cluster_last_core_prot(int cpu)
+void release_cluster_last_core_prot(void)
 {
-	unsigned int ret;
-
-	mcdi_write(CPC_LAST_CORE_REQ, cpusys_last_core_req);
-
-	do {
-		ret = get_cpusys_last_core_ack(
-				mcdi_read(CPC_CPUSYS_LAST_CORE_RESP));
-	} while (ret == CPC_RET_RETRY);
-
-	return ret == CPC_RET_SUCCESS ? 0 : 1;
 }
-
-#else
 
 int acquire_last_core_prot(int cpu)
 {
@@ -235,14 +303,15 @@ int acquire_last_core_prot(int cpu)
 
 	return -1;
 }
-void release_last_core_prot(void)
-{
-	_mcdi_task_pause(false);
-}
 
-int cluster_last_core_prot(int cpu)
+int acquire_cluster_last_core_prot(int cpu)
 {
 	return 0;
 }
+
+void mcdi_ap_ready(void)
+{
+}
+
 #endif /* MCDI_CPC_MODE */
 
