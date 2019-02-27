@@ -38,6 +38,7 @@ static struct layering_rule_info_t *l_rule_info;
 static struct layering_rule_ops *l_rule_ops;
 static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx);
 static unsigned int adaptive_dc_request;
+static unsigned int roll_gpu_for_idle;
 
 static struct {
 	enum LYE_HELPER_OPT opt;
@@ -45,7 +46,7 @@ static struct {
 	const char *desc;
 } help_info[] = {
 	{LYE_OPT_DUAL_PIPE, 0, "LYE_OPT_DUAL_PIPE"}, /* must enable */
-	{LYE_OPT_EXT_LAYER, 1, "LYE_OPT_EXTENDED_LAYER"},   /* must enable */
+	{LYE_OPT_EXT_LAYER, 0, "LYE_OPT_EXTENDED_LAYER"},   /* must enable */
 	{LYE_OPT_RPO, 0, "LYE_OPT_RPO"}, /* not use now */
 };
 
@@ -407,7 +408,7 @@ static void dump_disp_info(struct disp_layer_info *disp_info,
 	struct layer_config *layer_info;
 
 #define _HRT_FMT \
-	"HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/layer_tb:%d/bd_tb:%d/dc:%d\n"
+	"HRT hrt_num:0x%x/fps:%d/dal:%d/p:%d/r:%s/l_tb:%d/bd_tb:%d/dc:%d/i:%d\n"
 #define _L_FMT \
 	"L%d->%d/of(%d,%d)/swh(%d,%d)/dwh(%d,%d)/fmt:0x%x/ext:%d/caps:0x%x\n"
 
@@ -418,7 +419,8 @@ static void dump_disp_info(struct disp_layer_info *disp_info,
 			HRT_GET_PATH_ID(l_rule_info->disp_path),
 			get_scale_name(l_rule_info->scale_rate),
 			l_rule_info->layer_tb_idx, l_rule_info->bound_tb_idx,
-			HRT_GET_DC_FLAG(disp_info->hrt_num));
+			HRT_GET_DC_FLAG(disp_info->hrt_num),
+			roll_gpu_for_idle);
 
 		for (i = 0 ; i < 2 ; i++) {
 			if (disp_info->layer_num[i] <= 0)
@@ -453,7 +455,8 @@ static void dump_disp_info(struct disp_layer_info *disp_info,
 			get_scale_name(l_rule_info->scale_rate),
 			l_rule_info->layer_tb_idx,
 			l_rule_info->bound_tb_idx,
-			HRT_GET_DC_FLAG(disp_info->hrt_num));
+			HRT_GET_DC_FLAG(disp_info->hrt_num),
+			roll_gpu_for_idle);
 
 		for (i = 0 ; i < 2 ; i++) {
 			if (disp_info->layer_num[i] <= 0)
@@ -1762,6 +1765,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user,
 	int debug_mode)
 {
 	int ret;
+	roll_gpu_for_idle = 0;
 
 	if (l_rule_ops == NULL || l_rule_info == NULL) {
 		DISPWARN("Layering rule has not been initialize.\n");
@@ -1826,7 +1830,13 @@ int layering_rule_start(struct disp_layer_info *disp_info_user,
  * Fill layer id for each input layers.
  * All the gles layers set as same layer id.
  */
-	if (l_rule_ops->adaptive_dc_enabled == NULL ||
+
+	if (l_rule_ops->rollback_all_to_GPU_for_idle != NULL &&
+		l_rule_ops->rollback_all_to_GPU_for_idle()) {
+		roll_gpu_for_idle = 1;
+		rollback_all_to_GPU(&layering_info, HRT_PRIMARY);
+		layering_info.hrt_num = HRT_LEVEL_LEVEL0;
+	} else if (l_rule_ops->adaptive_dc_enabled == NULL ||
 	    !l_rule_ops->adaptive_dc_enabled() ||
 	    l_rule_info->dal_enable ||
 	    layering_info.hrt_num < HRT_LEVEL_NUM) {
