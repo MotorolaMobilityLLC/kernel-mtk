@@ -328,6 +328,7 @@
 				 <&topckgen CLK_TOP_VENC_LT_SEL>;
 			clock-names = "mfg", "mm", "venc", "venc_lt";
 			infracfg = <&infracfg>;
+			mediatek,pwrap-regmap = <&pwrap>;
 		};
 
 		watchdog: watchdog@10007000 {
