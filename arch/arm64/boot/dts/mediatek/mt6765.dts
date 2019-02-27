@@ -985,7 +985,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	eem_fsm@1100b000 {
 		compatible = "mediatek,eem_fsm";
 		reg = <0 0x1100b000 0 0x1000>;
-		interrupts = <GIC_SPI 157 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	dramc@1022a000 {
