@@ -168,6 +168,14 @@ void msdc_dump_ldo_sts(struct msdc_host *host)
 			MASK_VEMC_VOSEL_CAL, SHIFT_VEMC_VOSEL_CAL);
 		pr_notice(" VEMC_EN=0x%x, VEMC_VOL=0x%x [3b'011(3V)], VEMC_CAL=0x%x\n",
 			ldo_en, ldo_vol, ldo_cal);
+
+		pmic_read_interface_nolock(REG_VIO18_EN, &ldo_en, MASK_VIO18_EN,
+				SHIFT_VIO18_EN);
+		/* vio18 have no REG_VIO18_VOSEL, so not dump. */
+		pmic_read_interface_nolock(REG_VIO18_VOSEL_CAL, &ldo_cal,
+				MASK_VIO18_VOSEL_CAL, SHIFT_VIO18_VOSEL_CAL);
+		pr_notice(" VIO18_EN=0x%x, fix 1V8, VIO18_CAL=0x%x\n",
+				ldo_en, ldo_cal);
 		break;
 	case 1:
 		pmic_read_interface_nolock(REG_VMC_EN, &ldo_en, MASK_VMC_EN,
