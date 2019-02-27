@@ -21,9 +21,11 @@
  * Bridging from platform -> wmt_drv.ko
  ******************************************************************************/
 typedef int (*wmt_bridge_thermal_query_cb)(void);
+typedef void (*wmt_bridge_connsys_clock_fail_dump_cb)(void);
 
 struct wmt_platform_bridge {
 	wmt_bridge_thermal_query_cb thermal_query_cb;
+	wmt_bridge_connsys_clock_fail_dump_cb clock_fail_dump_cb;
 };
 
 void wmt_export_platform_bridge_register(struct wmt_platform_bridge *cb);

@@ -73,6 +73,7 @@ void wmt_export_platform_bridge_register(struct wmt_platform_bridge *cb)
 	if (unlikely(!cb))
 		return;
 	bridge.thermal_query_cb = cb->thermal_query_cb;
+	bridge.clock_fail_dump_cb = cb->clock_fail_dump_cb;
 	CONNADP_INFO_FUNC("\n");
 }
 EXPORT_SYMBOL(wmt_export_platform_bridge_register);
@@ -92,6 +93,15 @@ int mtk_wcn_cmb_stub_query_ctrl(void)
 		return -1;
 	} else
 		return bridge.thermal_query_cb();
+}
+
+void mtk_wcn_cmb_stub_clock_fail_dump(void)
+{
+	CONNADP_DBG_FUNC("\n");
+	if (unlikely(!bridge.clock_fail_dump_cb))
+		CONNADP_WARN_FUNC("Clock fail dump not registered\n");
+	else
+		bridge.clock_fail_dump_cb();
 }
 
 /*******************************************************************************
