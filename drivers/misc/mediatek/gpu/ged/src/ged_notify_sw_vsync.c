@@ -63,7 +63,7 @@ extern void (*mtk_gpu_sodi_exit_fp)(void);
 
 static struct workqueue_struct* g_psNotifyWorkQueue = NULL;
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
-|| defined(CONFIG_MACH_MT6739)
+|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 static struct workqueue_struct *g_psDumpFW;
 #endif
 
@@ -79,7 +79,7 @@ typedef struct GED_NOTIFY_SW_SYNC_TAG
 } GED_NOTIFY_SW_SYNC;
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
-|| defined(CONFIG_MACH_MT6739)
+|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 struct GED_DUMP_FW {
 	struct work_struct	sWork;
 };
@@ -573,7 +573,7 @@ void ged_sodi_stop(void)
 
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
-|| defined(CONFIG_MACH_MT6739)
+|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 static void ged_dump_fw_handle(struct work_struct *psWork)
 {
 	struct GED_DUMP_FW *psNotify
@@ -611,7 +611,7 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
 	}
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
-|| defined(CONFIG_MACH_MT6739)
+|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 	g_psDumpFW = NULL;
 	g_psDumpFW = create_workqueue("ged_dump_fw_log");
 
@@ -643,7 +643,7 @@ void ged_notify_sw_vsync_system_exit(void)
 	}
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
-|| defined(CONFIG_MACH_MT6739)
+|| defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 	if (g_psDumpFW != NULL) {
 		flush_workqueue(g_psDumpFW);
 
