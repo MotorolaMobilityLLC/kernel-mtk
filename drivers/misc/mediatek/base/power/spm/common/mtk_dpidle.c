@@ -13,12 +13,13 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h> /* copy_from_user / copy_to_user */
 
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_spm_internal.h> /* mtk_idle_cond_check */
 
-#include <mtk_idle_sysfs.h>
 
 static bool dpidle_feature_enable = MTK_IDLE_FEATURE_ENABLE_DPIDLE;
 static bool dpidle_bypass_idle_cond;
@@ -109,14 +110,28 @@ int dpidle_enter(int cpu)
 }
 EXPORT_SYMBOL(dpidle_enter);
 
-static ssize_t dpidle_state_read(char *ToUserBuf, size_t sz, void *priv)
+static int _dpidle_state_open(struct seq_file *s, void *data)
+{
+	return 0;
+}
+
+static int dpidle_state_open(struct inode *inode, struct file *filp)
+{
+	return single_open(filp, _dpidle_state_open, inode->i_private);
+}
+
+#define logbufsz	4096
+static char logbuf[logbufsz] = { 0 };
+
+static ssize_t dpidle_state_read(
+	struct file *filp, char __user *userbuf, size_t count, loff_t *f_pos)
 {
 	int i;
-	char *p = ToUserBuf;
+	char *p = logbuf;
 
 	#undef log
 	#define log(fmt, args...) ({\
-			p += scnprintf(p, sz - strlen(ToUserBuf)\
+			p += scnprintf(p, logbufsz - strlen(logbuf)\
 					, fmt, ##args); p; })
 
 	log("*************** dpidle state *********************\n");
@@ -128,7 +143,7 @@ static ssize_t dpidle_state_read(char *ToUserBuf, size_t sz, void *priv)
 	log("\n");
 
 	p += mtk_idle_cond_append_info(
-		false, IDLE_TYPE_DP, p, sz - strlen(ToUserBuf));
+		false, IDLE_TYPE_DP, p, logbufsz - strlen(logbuf));
 	log("\n");
 
 	log("*************** variable dump ********************\n");
@@ -148,19 +163,31 @@ static ssize_t dpidle_state_read(char *ToUserBuf, size_t sz, void *priv)
 	log("               [0] reduced [1] spm res usage [2] disable\n");
 	log("\n");
 
-	return p - ToUserBuf;
+	return simple_read_from_buffer(
+		userbuf, count, f_pos, logbuf, p - logbuf);
 }
 
-static ssize_t dpidle_state_write(char *FromUserBuf, size_t sz, void *priv)
+#define cmdbufsz	256
+static char cmdbuf[cmdbufsz] = { 0 };
+
+static ssize_t dpidle_state_write(
+	struct file *filp, const char __user *userbuf, size_t count,
+		loff_t *f_pos)
 {
 	char cmd[128];
 	int parm, parm1;
 
+	count = min(count, sizeof(cmdbuf) - 1);
 
-	if (sscanf(FromUserBuf, "%127s %x %x", cmd, &parm, &parm1) == 3) {
+	if (copy_from_user(cmdbuf, userbuf, count))
+		return -EFAULT;
+
+	cmdbuf[count] = '\0';
+
+	if (sscanf(cmdbuf, "%127s %x %x", cmd, &parm, &parm1) == 3) {
 		if (!strcmp(cmd, "mask"))
 			mtk_idle_cond_update_mask(IDLE_TYPE_DP, parm, parm1);
-	} else if (sscanf(FromUserBuf, "%127s %x", cmd, &parm) == 2) {
+	} else if (sscanf(cmdbuf, "%127s %x", cmd, &parm) == 2) {
 		if (!strcmp(cmd, "dpidle"))
 			dpidle_feature_enable = !!parm;
 		else if (!strcmp(cmd, "bypass"))
@@ -171,26 +198,29 @@ static ssize_t dpidle_state_write(char *FromUserBuf, size_t sz, void *priv)
 			mtk_idle_cg_monitor(parm ? IDLE_TYPE_DP : -1);
 		else if (!strcmp(cmd, "log"))
 			dpidle_flag = parm;
-		return sz;
-	} else if ((!kstrtoint(FromUserBuf, 10, &parm)) == 1) {
+		return count;
+	} else if ((!kstrtoint(cmdbuf, 10, &parm)) == 1) {
 		dpidle_feature_enable = !!parm;
-		return sz;
+		return count;
 	}
 
 	return -EINVAL;
 }
 
-static const struct mtk_idle_sysfs_op dpidle_state_fops = {
-	.fs_read = dpidle_state_read,
-	.fs_write = dpidle_state_write,
+static const struct file_operations dpidle_state_fops = {
+	.open = dpidle_state_open,
+	.read = dpidle_state_read,
+	.write = dpidle_state_write,
+	.llseek = seq_lseek,
+	.release = single_release,
 };
 
-void mtk_dpidle_init(void)
+void mtk_dpidle_init(struct dentry *root_entry)
 {
 	dpidle_bypass_idle_cond = false;
 	dpidle_force_vcore_lp_mode = false;
-	mtk_idle_sysfs_entry_node_add("dpidle_state"
-				, 0644, &dpidle_state_fops, NULL);
+	debugfs_create_file(
+		"dpidle_state", 0644, root_entry, NULL, &dpidle_state_fops);
 
 	mtk_idle_block_setting(IDLE_TYPE_DP, dp_cnt, dp_block_cnt);
 }
