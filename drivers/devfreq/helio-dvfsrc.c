@@ -111,13 +111,13 @@ static int helio_dvfsrc_common_init(void)
 	return 0;
 }
 
-int dvfsrc_get_bw(int type)
+int dvfsrc_get_emi_bw(int type)
 {
 	int ret = 0;
 	int i;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
-	if (type == QOS_TOTAL_AVE) {
+	if (type == QOS_EMI_BW_TOTAL_AVE) {
 		for (i = 0; i < QOS_TOTAL_BW_BUF_SIZE; i++)
 			ret += dvfsrc_sram_read(QOS_TOTAL_BW_BUF(i));
 		ret /= QOS_TOTAL_BW_BUF_SIZE;
@@ -173,48 +173,86 @@ static void dvfsrc_set_sw_bw(int type, int data)
 
 static void dvfsrc_set_sw_req(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_sw_req2(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ2, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_vcore_request(int data, int mask, int shift)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, data, mask, shift);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_start(int data)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_write(DVFSRC_FORCE, data);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_end(void)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_write(DVFSRC_FORCE, 0);
-	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_release_force(void)
 {
-	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
 	dvfsrc_write(DVFSRC_FORCE, 0);
-	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void get_pm_qos_info(char *p)
+{
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_MEMORY_BW",
+			pm_qos_request(PM_QOS_MEMORY_BANDWIDTH));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_CPU_MEMORY_BW",
+			pm_qos_request(PM_QOS_CPU_MEMORY_BANDWIDTH));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_GPU_MEMORY_BW",
+			pm_qos_request(PM_QOS_GPU_MEMORY_BANDWIDTH));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_MM_MEMORY_BW",
+			pm_qos_request(PM_QOS_MM_MEMORY_BANDWIDTH));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_OTHER_MEMORY_BW",
+			pm_qos_request(PM_QOS_OTHER_MEMORY_BANDWIDTH));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_DDR_OPP",
+			pm_qos_request(PM_QOS_DDR_OPP));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_VCORE_OPP",
+			pm_qos_request(PM_QOS_VCORE_OPP));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_SCP_VCORE_REQ",
+			pm_qos_request(PM_QOS_SCP_VCORE_REQUEST));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_PM_DDR_REQ",
+			pm_qos_request(PM_QOS_POWER_MODEL_DDR_REQUEST));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_PM_VCORE_REQ",
+			pm_qos_request(PM_QOS_POWER_MODEL_VCORE_REQUEST));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_FORCE_OPP",
+			pm_qos_request(PM_QOS_VCORE_DVFS_FORCE_OPP));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_TOTAL", dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_CPU", dvfsrc_get_emi_bw(QOS_EMI_BW_CPU));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_GPU", dvfsrc_get_emi_bw(QOS_EMI_BW_GPU));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_MM", dvfsrc_get_emi_bw(QOS_EMI_BW_MM));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_OTHER", dvfsrc_get_emi_bw(QOS_EMI_BW_OTHER));
+	p += sprintf(p, "%-24s: %d\n",
+			"EMI_BW_TOTAL_AVE",
+			dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL_AVE));
 }
 
 char *dvfsrc_dump_reg(char *ptr)
@@ -236,7 +274,21 @@ char *dvfsrc_dump_reg(char *ptr)
 		pr_info("%s\n", buf);
 
 	memset(buf, '\0', sizeof(buf));
+	get_dvfsrc_record(buf);
+	if (ptr)
+		ptr += sprintf(ptr, "%s\n", buf);
+	else
+		pr_info("%s\n", buf);
+
+	memset(buf, '\0', sizeof(buf));
 	get_spm_reg(buf);
+	if (ptr)
+		ptr += sprintf(ptr, "%s\n", buf);
+	else
+		pr_info("%s\n", buf);
+
+	memset(buf, '\0', sizeof(buf));
+	get_pm_qos_info(buf);
 	if (ptr)
 		ptr += sprintf(ptr, "%s\n", buf);
 	else

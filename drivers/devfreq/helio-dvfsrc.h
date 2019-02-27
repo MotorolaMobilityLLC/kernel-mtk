@@ -87,16 +87,17 @@ struct helio_dvfsrc {
 })
 
 enum {
-	QOS_TOTAL = 0,
-	QOS_CPU,
-	QOS_GPU,
-	QOS_MM,
-	QOS_OTHER,
-	QOS_TOTAL_AVE
+	QOS_EMI_BW_TOTAL = 0,
+	QOS_EMI_BW_CPU,
+	QOS_EMI_BW_GPU,
+	QOS_EMI_BW_MM,
+	QOS_EMI_BW_OTHER,
+	QOS_EMI_BW_TOTAL_AVE,
+	QOS_EMI_BW_NUM
 };
 
 extern int is_dvfsrc_enabled(void);
-extern int dvfsrc_get_bw(int type);
+extern int dvfsrc_get_emi_bw(int type);
 extern int get_vcore_dvfs_level(void);
 extern void mtk_spmfw_init(void);
 extern struct reg_config *dvfsrc_get_init_conf(void);
@@ -112,6 +113,7 @@ extern void dvfsrc_opp_level_mapping(void);
 extern void helio_dvfsrc_sspm_ipi_init(int dvfsrc_en);
 extern void get_opp_info(char *p);
 extern void get_dvfsrc_reg(char *p);
+extern void get_dvfsrc_record(char *p);
 extern void get_spm_reg(char *p);
 extern void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore);
 extern void helio_dvfsrc_platform_init(void);
