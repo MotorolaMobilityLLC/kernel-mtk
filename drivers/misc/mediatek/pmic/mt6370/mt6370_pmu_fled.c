@@ -16,6 +16,7 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
+#include <linux/delay.h>
 #include "../../flashlight/richtek/rtfled.h"
 
 #include "inc/mt6370_pmu.h"
@@ -302,10 +303,12 @@ static int mt6370_fled_set_mode(struct rt_fled_dev *info,
 	case FLASHLIGHT_MODE_FLASH:
 		ret = mt6370_pmu_reg_clr_bit(fi->chip,
 			MT6370_PMU_REG_FLEDEN, MT6370_STROBE_EN_MASK);
+		udelay(400);
 		ret |= mt6370_pmu_reg_set_bit(fi->chip, MT6370_PMU_REG_FLEDEN,
 			fi->id == MT6370_FLED1 ? 0x02 : 0x01);
 		ret |= mt6370_pmu_reg_set_bit(fi->chip,
 			MT6370_PMU_REG_FLEDEN, MT6370_STROBE_EN_MASK);
+		udelay(400);
 		dev_info(fi->dev, "set to flash mode\n");
 		mt6370_global_mode = mode;
 		if (fi->id == MT6370_FLED1)
