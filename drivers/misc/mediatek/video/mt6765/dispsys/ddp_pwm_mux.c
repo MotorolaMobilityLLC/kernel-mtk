@@ -21,6 +21,30 @@
 #include <linux/of_address.h>
 #include "ddp_reg.h"
 
+#define BYPASS_CLK_SELECT
+/*
+ *
+ * dummy function
+ *
+ */
+#ifdef BYPASS_CLK_SELECT
+int disp_pwm_set_pwmmux(unsigned int clk_req)
+{
+	return 0;
+}
+int disp_pwm_clksource_enable(int clk_req)
+{
+	return 0;
+}
+int disp_pwm_clksource_disable(int clk_req)
+{
+	return 0;
+}
+bool disp_pwm_mux_is_osc(void)
+{
+	return false;
+}
+#else
 /*
  *
  * variable for get clock node fromdts
@@ -347,4 +371,4 @@ bool disp_pwm_mux_is_osc(void)
 
 	return is_osc;
 }
-
+#endif		/* BYPASS_CLK_SELECT */
