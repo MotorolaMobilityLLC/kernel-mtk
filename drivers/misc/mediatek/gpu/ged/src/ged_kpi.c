@@ -984,7 +984,11 @@ typedef struct ged_kpi_miss_tag {
 	struct list_head sList;
 } GED_KPI_MISS_TAG;
 
+#define GED_KPI_MISS_TAG_COUNT 16
 static GED_KPI_MISS_TAG *miss_tag_head;
+GED_KPI_MISS_TAG gs_miss_tag[GED_KPI_MISS_TAG_COUNT];
+static int gs_miss_tag_idx;
+
 
 static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID
 	, GED_TIMESTAMP_TYPE eTimeStampType)
@@ -994,7 +998,12 @@ static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID
 	if (unlikely(miss_tag_head == NULL)) {
 		miss_tag_head = (GED_KPI_MISS_TAG *)ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG));
 		if (miss_tag_head) {
+			int i;
+
 			memset(miss_tag_head, 0, sizeof(GED_KPI_MISS_TAG));
+			memset(gs_miss_tag, 0, sizeof(gs_miss_tag));
+			for (i = 0; i < GED_KPI_MISS_TAG_COUNT; i++)
+				INIT_LIST_HEAD(&gs_miss_tag[i].sList);
 			INIT_LIST_HEAD(&miss_tag_head->sList);
 		} else {
 			GED_PR_DEBUG("[GED_KPI][Exception]");
@@ -1003,8 +1012,10 @@ static void ged_kpi_record_miss_tag(u64 ulID, int i32FrameID
 			return;
 		}
 	}
-
-	psMiss_tag = (GED_KPI_MISS_TAG *)ged_alloc_atomic(sizeof(GED_KPI_MISS_TAG));
+	psMiss_tag = &gs_miss_tag[gs_miss_tag_idx++];
+	if (gs_miss_tag_idx == GED_KPI_MISS_TAG_COUNT)
+		gs_miss_tag_idx = 0;
+	list_del(&psMiss_tag->sList);
 
 	if (unlikely(!psMiss_tag)) {
 		GED_PR_DEBUG("[GED_KPI][Exception]:");
@@ -1037,8 +1048,7 @@ static GED_BOOL ged_kpi_find_and_delete_miss_tag(u64 ulID, int i32FrameID
 				&& psMiss_tag->i32FrameID == i32FrameID
 				&& psMiss_tag->eTimeStampType == eTimeStampType) {
 				list_del(&psMiss_tag->sList);
-				if (psMiss_tag != miss_tag_head)
-					ged_free(psMiss_tag, sizeof(GED_KPI_MISS_TAG));
+				INIT_LIST_HEAD(&psMiss_tag->sList);
 				ret = GED_TRUE;
 				break;
 			}
