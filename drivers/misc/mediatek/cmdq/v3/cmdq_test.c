@@ -5600,6 +5600,66 @@ static void testcase_verify_cpr(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+static void testcase_timeout_and_write(void)
+{
+	struct cmdqRecStruct *handle, *handle_timeout;
+	const u32 PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
+	u32 value = 0;
+	unsigned long dummy_va, dummy_pa;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
+	/* set to 0xFFFFFFFF */
+	CMDQ_REG_SET32((void *)dummy_va, ~0);
+	cmdqCoreClearEvent(CMDQ_SYNC_TOKEN_USER_0);
+
+	/* create a task wait for event */
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle_timeout);
+	cmdq_task_reset(handle_timeout);
+	cmdq_task_set_secure(handle_timeout, gCmdqTestSecure);
+	cmdq_op_wait(handle_timeout, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_finalize_command(handle_timeout, false);
+	_test_flush_task_async(handle_timeout);
+
+	/* use CMDQ to set to PATTERN */
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_task_set_secure(handle, gCmdqTestSecure);
+	cmdq_op_write_reg(handle, dummy_pa, PATTERN, ~0);
+	cmdq_op_finalize_command(handle, false);
+	_test_flush_task_async(handle);
+
+	CMDQ_LOG("handle:0x%p(@%d) handle timeout:0x%p(@%d)\n",
+		handle, handle->thread,
+		handle_timeout, handle_timeout->thread);
+
+	_test_wait_task(handle_timeout);
+	_test_wait_task(handle);
+
+	/* value check */
+	value = CMDQ_REG_GET32((void *)dummy_va);
+	if (value != PATTERN) {
+		/* test fail */
+		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x not 0x%08x\n",
+			value, PATTERN);
+	}
+
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_task_destroy(handle_timeout);
+	cmdq_task_destroy(handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+
 /* CMDQ driver stress test */
 
 enum ENGINE_POLICY_ENUM {
@@ -6889,6 +6949,9 @@ static void testcase_general_handling(s32 testID)
 		break;
 	case 300:
 		testcase_stress_basic();
+		break;
+	case 159:
+		testcase_timeout_and_write();
 		break;
 	case 158:
 		testcase_verify_cpr();
