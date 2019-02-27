@@ -168,22 +168,6 @@ phys_addr_t get_max_DRAM_size(void)
 #endif /* end of CONFIG_OF */
 EXPORT_SYMBOL(get_max_DRAM_size);
 
-/*
- * Return the DRAM size used by Linux kernel.
- * In current stage, use phone DRAM size directly
- */
-phys_addr_t get_memory_size(void)
-{
-	return get_max_DRAM_size();
-}
-EXPORT_SYMBOL(get_memory_size);
-
-phys_addr_t get_phys_offset(void)
-{
-	return PHYS_OFFSET;
-}
-EXPORT_SYMBOL(get_phys_offset);
-
 phys_addr_t get_zone_movable_cma_base(void)
 {
 #ifdef CONFIG_MTK_MEMORY_LOWPOWER
