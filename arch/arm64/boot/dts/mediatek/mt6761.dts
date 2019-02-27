@@ -240,9 +240,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupt-parent = <&gic>;
 		interrupt-controller;
 		reg = <0 0x0c000000 0 0x40000>, // distributor
-		      <0 0x0c080000 0 0x200000>; // redistributor
+		      <0 0x0c080000 0 0x200000>, // redistributor
+		      <0 0x10200a80 0 0x50>; // intpol
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 	};
+
 	sysirq: intpol-controller@10200a80 {
 		compatible = "mediatek,mt6577-sysirq";
 		interrupt-controller;
@@ -692,6 +694,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	sys_cirq@10204000 {
 		compatible = "mediatek,sys_cirq";
 		reg = <0 0x10204000 0 0x1000>;
+		mediatek,cirq_num = <209>;
+		mediatek,spi_start_offset = <16>;
 		interrupts = <GIC_SPI 224 IRQ_TYPE_LEVEL_LOW>;
 	};
 
