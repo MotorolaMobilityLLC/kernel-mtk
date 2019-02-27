@@ -990,9 +990,10 @@ static int scp_reserve_memory_ioremap(void)
 			accumlate_memory_size;
 		accumlate_memory_size += scp_reserve_mblock[id].size;
 #ifdef DEBUG
-		pr_debug("[SCP] [region_%d] phys = 0x%llx, virt = 0x%llx\n",
+		pr_debug("[SCP] [%d] phys:0x%llx, virt:0x%llx, len:0x%llx\n",
 			id, (uint64_t)scp_reserve_mblock[id].start_phys,
-			(uint64_t)scp_reserve_mblock[id].start_virt);
+			(uint64_t)scp_reserve_mblock[id].start_virt,
+			(uint64_t)scp_reserve_mblock[id].size);
 #endif  // DEBUG
 	}
 	BUG_ON(accumlate_memory_size > scp_mem_size);
