@@ -1474,15 +1474,16 @@ static void mtkts_wmt_start_thermal_timer(void)
 	if (!isTimerCancelled)
 		return;
 
-	isTimerCancelled = 0;
 
 	if (down_trylock(&sem_mutex))
 		return;
 
-	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0)
+	if (p_linux_if->thz_dev != NULL && p_linux_if->interval != 0) {
 		mod_delayed_work(system_freezable_power_efficient_wq,
 					&(p_linux_if->thz_dev->poll_queue),
 					round_jiffies(msecs_to_jiffies(2000)));
+		isTimerCancelled = 0;
+	}
 	up(&sem_mutex);
 }
 
