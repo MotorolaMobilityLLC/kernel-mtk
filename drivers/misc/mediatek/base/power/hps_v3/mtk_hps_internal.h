@@ -23,11 +23,6 @@
 #include "mtk_ppm_api.h"
 #include <mtk_idle_profile.h>
 
-/* wait Shih-Te */
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-#define CONFIG_MTK_ACAO_SUPPORT 1
-#endif
-
 /*
  * CONFIG - compile time
  */

@@ -98,7 +98,7 @@ unsigned int hps_get_per_cpu_load(int cpu, int isReset)
 	spin_unlock(&load_info_lock);
 	return ret;
 }
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 static void hps_get_sysinfo(void)
 {
 	unsigned int cpu;
@@ -361,14 +361,14 @@ static void hps_get_sysinfo(void)
 static int _hps_task_main(void *data)
 {
 	int cnt = 0;
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	int idx;
 	unsigned int total_big_task = 0;
 	unsigned int total_hvy_task = 0;
 #endif
 	void (*algo_func_ptr)(void);
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+#if 1 /*removed : #ifdef CONFIG_MTK_ACAO_SUPPORT*/
 	unsigned int cpu, first_cpu, i;
 	ktime_t enter_ktime;
 
@@ -404,7 +404,7 @@ static int _hps_task_main(void *data)
 			goto HPS_WAIT_EVENT;
 		}
 #endif
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+#if 1 /*removed : #ifdef CONFIG_MTK_ACAO_SUPPORT*/
 ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(1);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
@@ -622,7 +622,7 @@ void hps_task_wakeup(void)
 static void ppm_limit_callback(struct ppm_client_req req)
 {
 	struct ppm_client_req *p = (struct ppm_client_req *)&req;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+#if 1 /*removed : #ifdef CONFIG_MTK_ACAO_SUPPORT*/
 #if 1
 	mutex_lock(&hps_ctxt.para_lock);
 	memcpy(&hps_ctxt.online_core_req, p->online_core,
@@ -703,7 +703,7 @@ int hps_core_init(void)
 {
 	int r = 0;
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	hps_warn("hps_core_init\n");
 	if (hps_ctxt.periodical_by == HPS_PERIODICAL_BY_TIMER) {
 		/*init timer */
