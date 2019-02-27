@@ -152,6 +152,7 @@
 /* end sensor ID */
 #define ID_SENSOR_MAX_HANDLE	(ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE)
 #define ID_NONE					(ID_SENSOR_MAX_HANDLE + 1)
+
 #define ID_OFFSET                       (1)
 #define ID_SCP_MAX_SENSOR_TYPE			(69)
 
