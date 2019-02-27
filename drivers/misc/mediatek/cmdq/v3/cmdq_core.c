@@ -7199,21 +7199,24 @@ static void cmdq_core_attach_error_task_detail(const struct TaskStruct *task,
 	cmdq_core_attach_cmdq_error(task, thread, &pc, &nginfo);
 	CMDQ_PROF_SPIN_UNLOCK(gCmdqExecLock, flags, attach_error_done);
 
-	if (ngtask_out && nginfo && nginfo->ngtask)
-		*ngtask_out = nginfo->ngtask;
+	if (nginfo) {
+		if (ngtask_out && nginfo->ngtask)
+			*ngtask_out = nginfo->ngtask;
 
-	if (module_out && irq_flag_out && inst_a_out && inst_b_out) {
-		*module_out = nginfo->module;
-		*irq_flag_out = nginfo->irq_flag;
-		*inst_a_out = nginfo->inst[1];
-		*inst_b_out = nginfo->inst[0];
-	}
+		if (module_out && irq_flag_out && inst_a_out && inst_b_out) {
+			*module_out = nginfo->module;
+			*irq_flag_out = nginfo->irq_flag;
+			*inst_a_out = nginfo->inst[1];
+			*inst_b_out = nginfo->inst[0];
+		}
 
-	/* skip internal testcase */
-	if (CMDQ_TASK_IS_INTERNAL(task)) {
-		cmdq_core_release_nginfo(nginfo);
-		CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex, dump_error_simple);
-		return;
+		/* skip internal testcase */
+		if (CMDQ_TASK_IS_INTERNAL(task)) {
+			cmdq_core_release_nginfo(nginfo);
+			CMDQ_PROF_MUTEX_UNLOCK(gCmdqErrMutex,
+				dump_error_simple);
+			return;
+		}
 	}
 
 	detail_log = error_num <= 2 || error_num % 16 == 0 ||
@@ -9730,9 +9733,6 @@ static void cmdq_core_auto_release_work(struct work_struct *workItem)
 	u32 *copy_ptr = NULL;
 
 	pTask = container_of(workItem, struct TaskStruct, autoReleaseWork);
-
-	if (!pTask)
-		return;
 
 	finishCallback = pTask->flushCallback;
 	user_data = pTask->flushData;
