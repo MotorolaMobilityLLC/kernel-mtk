@@ -10,6 +10,12 @@ struct target_nrg {
 	unsigned long min_power;
 	unsigned long max_power;
 	struct reciprocal_value rdiv;
+#ifdef CONFIG_MTK_UNIFY_POWER
+	unsigned long max_dyn_pwr[32];
+	unsigned long max_stc_pwr[32];
+#else
+	unsigned long max_pwr[32];
+#endif
 };
 
 #ifdef CONFIG_CGROUP_SCHEDTUNE

@@ -5952,21 +5952,24 @@ static inline int
 normalize_energy(int energy_diff)
 {
 	u32 normalized_nrg;
+	int max_delta;
 
 	/* during early setup, we don't know the extents */
 	if (unlikely(!schedtune_initialized))
 		return energy_diff < 0 ? -1 : 1 ;
 
-#ifdef CONFIG_SCHED_DEBUG
-	{
-	int max_delta;
-
 	/* Check for boundaries */
 	max_delta  = schedtune_target_nrg.max_power;
 	max_delta -= schedtune_target_nrg.min_power;
-	WARN_ON(abs(energy_diff) >= max_delta);
-	}
+
+	if (abs(energy_diff) >= max_delta) {
+		show_ste_info();
+		show_pwr_info();
+		printk_deferred("sched: energy_diff=%d error\n", energy_diff);
+#ifdef CONFIG_SCHED_DEBUG
+		WARN_ON(1);
 #endif
+	}
 
 	/* Do scaling using positive numbers to increase the range */
 	normalized_nrg = (energy_diff < 0) ? -energy_diff : energy_diff;
