@@ -24,12 +24,9 @@ config MTK_EINT_MULTI_TRIGGER_DESIGN
 	  save pins for assignments. Which EINT pin is actually occupied by a GPIO
 	  is described in *pins and it is decided in run time.
 
-if ARCH_MEDIATEK || COMPILE_TEST
-# For pintcrl command debug
 config PINCTRL_MTK_NO_UPSTREAM
-	bool "Mediatek pin control common debug"
+	bool "Mediatek pin control"
 	depends on OF
-	depends on COMPILE_TEST
 	select PINCTRL_MTK
 	help
 	  Say yes here to enable support for MediaTek pinctrl debug command.
@@ -39,6 +36,7 @@ config PINCTRL_MTK_NO_UPSTREAM
 	  We can use the command to debug gpio status issues.
 	  we also can use it in user space.
 
+if ARCH_MEDIATEK || COMPILE_TEST
 # For ARMv7 SoCs
 config PINCTRL_MT2701
 	bool "Mediatek MT2701 pin control" if COMPILE_TEST && !MACH_MT2701
