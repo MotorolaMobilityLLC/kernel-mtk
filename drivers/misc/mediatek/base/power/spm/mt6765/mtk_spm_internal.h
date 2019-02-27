@@ -292,9 +292,6 @@ extern bool mtk_idle_cond_check(int idle_type);
 /* check clkmux for vcore lp mode */
 extern bool mtk_idle_cond_vcore_lp_mode(int idle_type);
 
-/* initialize the idle condition related codes */
-extern void mtk_idle_cond_check_init(void);
-
 /* mask/unmask block mask */
 void mtk_idle_cond_update_mask(
 	int idle_type, unsigned int reg, unsigned int mask);

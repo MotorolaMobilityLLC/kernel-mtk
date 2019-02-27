@@ -188,7 +188,7 @@ static void spm_idle_pcm_setup_before_wfi(
 		0 : spm_get_resource_usage();
 
 	mt_secure_call(smc_id[idle_type], pwrctrl->pcm_flags,
-		resource_usage, pwrctrl->timer_val, 0);
+		pwrctrl->pcm_flags1, resource_usage, 0);
 
 	/* [sodi3]
 	 * ap wdt works fine without f26m and no need to enable pcm wdt

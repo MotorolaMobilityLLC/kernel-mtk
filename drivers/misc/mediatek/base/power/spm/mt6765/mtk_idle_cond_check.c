@@ -29,13 +29,15 @@
 /***********************************************************
  * Local definitions
  ***********************************************************/
-void __iomem *infrasys_base;    /* INFRA_REG, INFRA_SW_CG_x_STA */
-void __iomem *mmsys_base;       /* MM_REG, DISP_CG_CON_x */
-void __iomem *imgsys_base;      /* IMGSYS_REG, IMG_CG_CON */
-void __iomem *mfgsys_base;      /* MFGSYS_REG, MFG_CG_CON */
-void __iomem *vencsys_base;     /* VENCSYS_REG, VENCSYS_CG_CON */
-void __iomem *sleepsys_base;    /* SPM_REG */
-void __iomem *apmixedsys_base;     /* APMIXEDSYS */
+
+static void __iomem *infrasys_base;    /* INFRA_REG, INFRA_SW_CG_x_STA */
+static void __iomem *mmsys_base;       /* MM_REG, DISP_CG_CON_x */
+static void __iomem *imgsys_base;      /* IMGSYS_REG, IMG_CG_CON */
+static void __iomem *mfgsys_base;      /* MFGSYS_REG, MFG_CG_CON */
+static void __iomem *vencsys_base;     /* VENCSYS_REG, VENCSYS_CG_CON */
+static void __iomem *sleepsys_base;    /* SPM_REG */
+static void __iomem *topck_base;       /* TOPCK_REG */
+static void __iomem *apmixedsys_base;  /* APMIXEDSYS */
 
 #define idle_readl(addr)    __raw_readl(addr)
 
@@ -45,6 +47,7 @@ void __iomem *apmixedsys_base;     /* APMIXEDSYS */
 #define MFGSYS_REG(ofs)     (mfgsys_base + ofs)
 #define VENCSYS_REG(ofs)    (vencsys_base + ofs)
 #define SPM_REG(ofs)        (sleepsys_base + ofs)
+#define TOPCK_REG(ofs)      (topck_base + ofs)
 #define APMIXEDSYS(ofs)     (apmixedsys_base + ofs)
 
 #undef SPM_PWR_STATUS
@@ -57,6 +60,71 @@ void __iomem *apmixedsys_base;     /* APMIXEDSYS */
 
 
 /***********************************************************
+ * Check clkmux registers
+ ***********************************************************/
+#define CLK_CFG(id) TOPCK_REG(0x40+id*0x10)
+
+enum {
+	/* CLK_CFG_0 */
+	CK_AXI = 0,
+	CK_MEM,
+	CK_MM,
+	CK_SCP,
+	/* CLK_CFG_1 */
+	CK_MFG,
+	CK_ATB,
+	CK_CAMTG,
+	CK_CAMTG1,
+	/* CLK_CFG_2 */
+	CK_CAMTG2,
+	CK_CAMTG3,
+	CK_UART,
+	CK_SPI,
+	/* CLK_CFG_3 */
+	CK_MSDC50_0_HCLK,
+	CK_MSDC50_0,
+	CK_MSDC30_1,
+	CK_AUDIO,
+	/* CLK_CFG_4 */
+	CK_AUD_INTBUS,
+	CK_AUD_1,
+	CK_AUD_ENGINE1,
+	CK_DISP_PWM,
+	/* CLK_CFG_5 */
+	CK_SSPM,
+	CK_DXCC,
+	CK_USB_TOP,
+	CK_SPM,
+	/* CLK_CFG_6 */
+	CK_I2C,
+	CK_PWM,
+	CK_SENINF,
+	CK_FAES_UFSDE,
+	/* CLK_CFG_7 */
+	CK_FPWRAP_ULPOSC,
+	CK_CAMTM,
+};
+
+#define CLK_CHECK	(1 << 31)
+
+static bool check_clkmux_pdn(unsigned int clkmux_id)
+{
+	unsigned int reg, val, idx;
+
+	if (clkmux_id && CLK_CHECK) {
+		clkmux_id = (clkmux_id & ~CLK_CHECK);
+		reg = clkmux_id / 4;
+		val = idle_readl(CLK_CFG(reg));
+		idx = clkmux_id % 4;
+		val = (val >> (idx * 4)) & 0x80;
+
+		return val ? true : false;
+	}
+
+	return false;
+}
+
+/***********************************************************
  * Check cg idle condition for dp/sodi/sodi3
  ***********************************************************/
 /* Local definitions */
@@ -66,19 +134,21 @@ struct idle_cond_info {
 	/* cg name */
 	const char      *name;
 	/* cg address */
-	void __iomem	*addr;
+	void __iomem    *addr;
 	/* bitflip value from *addr ? */
 	bool            bBitflip;
+	/* check clkmux if bit 31 = 1, id is bit[30:0] */
+	unsigned int    clkmux_id;
 };
 
 /* NOTE: null address will be updated in mtk_idle_cond_check_init() */
 static struct idle_cond_info idle_cg_info[] = {
-	{ 0xffffffff, "MTCMOS", NULL, false },
-	{ 0x00000040, "INFRA0", NULL, true },
-	{ 0x00000040, "INFRA1", NULL, true },
-	{ 0x00000040, "INFRA2", NULL, true },
-	{ 0x00000008, "MMSYS0", NULL, true },
-	{ 0x00000008, "MMSYS1", NULL, true },
+	{ 0xffffffff, "MTCMOS", NULL, false, 0 },
+	{ 0x00000040, "INFRA0", NULL, true,  0 },
+	{ 0x00000040, "INFRA1", NULL, true,  0 },
+	{ 0x00000040, "INFRA2", NULL, true,  0 },
+	{ 0x00000008, "MMSYS0", NULL, true,  (CK_MM | CLK_CHECK) },
+	{ 0x00000008, "MMSYS1", NULL, true,  (CK_MM | CLK_CHECK) },
 };
 
 #define NR_CG_GRPS \
@@ -115,7 +185,6 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 
 static unsigned int idle_block_mask[NR_IDLE_TYPES][NR_CG_GRPS+1];
 static unsigned int idle_value[NR_CG_GRPS];
-
 
 /***********************************************************
  * Check pll idle condition for sodi3
@@ -272,11 +341,14 @@ void mtk_idle_cond_update_state(void)
 
 	/* read all cg state (not including secure cg) */
 	for (i = 0; i < NR_CG_GRPS; i++) {
-		clk[i] = 0;
-		if (idle_readl(SPM_PWR_STATUS) & idle_cg_info[i].subsys_mask)
+		idle_value[i] = clk[i] = 0;
+		if (idle_readl(SPM_PWR_STATUS) & idle_cg_info[i].subsys_mask) {
+			if (check_clkmux_pdn(idle_cg_info[i].clkmux_id))
+				continue;
 			idle_value[i] = clk[i] = idle_cg_info[i].bBitflip ?
 				~idle_readl(idle_cg_info[i].addr) :
 				idle_readl(idle_cg_info[i].addr);
+		}
 	}
 
 	/* update secure cg state */
@@ -351,7 +423,7 @@ static int get_base_from_node(
 	return 0;
 }
 
-void mtk_idle_cond_check_init(void)
+int __init mtk_idle_cond_check_init(void)
 {
 	get_base_from_node("mediatek,infracfg_ao", &infrasys_base, 0);
 	get_base_from_node("mediatek,mmsys_config", &mmsys_base, 0);
@@ -360,7 +432,11 @@ void mtk_idle_cond_check_init(void)
 	get_base_from_node("mediatek,venc_gcon", &vencsys_base, 0);
 	get_base_from_node("mediatek,apmixed", &apmixedsys_base, 0);
 	get_base_from_node("mediatek,sleep", &sleepsys_base, 0);
+	get_base_from_node("mediatek,topckgen", &topck_base, 0);
 	/* update cg address in idle_cg_info */
 	get_cg_addrs();
+
+	return 0;
 }
 
+late_initcall(mtk_idle_cond_check_init);
