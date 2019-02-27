@@ -2227,6 +2227,12 @@
 		compatible = "mediatek,imgsys", "syscon";
 		reg = <0 0x15020000 0 0x1000>;
 		#clock-cells = <1>;
+		clocks =
+				<&imgsys IMG_LARB5>,
+				<&imgsys IMG_DIP>;
+		clock-names =
+				"DIP_CG_IMG_LARB5",
+				"DIP_CG_IMG_DIP";
 	};
 
 	dip1@15021000 {
