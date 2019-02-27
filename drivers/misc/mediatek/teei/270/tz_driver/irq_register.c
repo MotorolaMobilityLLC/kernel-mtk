@@ -295,8 +295,8 @@ static irqreturn_t ut_drv_irq_handler(int irq, void *dev)
 		IMSG_ERROR("get undefine IRQ from secure OS!\n");
 	}
 
-	IMSG_DEBUG("%s: Dump TZ_LOG, irq_id 0x%x\n", __func__, irq_id);
-	atomic_notifier_call_chain(&s->notifier, TZ_CALL_RETURNED, NULL);
+	/* IMSG_DEBUG("%s: Dump TZ_LOG, irq_id 0x%x\n", __func__, irq_id); */
+	/* atomic_notifier_call_chain(&s->notifier, TZ_CALL_RETURNED, NULL); */
 
 	return retVal;
 }
