@@ -93,7 +93,7 @@ void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 	malloc_data->pa = gsm_virt_to_pa(malloc_data->kva);
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	/* avoid bus hang in fpga stage */
-	malloc_data->pa = (void *)((__u64) malloc_data->mva);
+	malloc_data->pa = (void *)((long) malloc_data->mva);
 #endif
 	mdla_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
 		malloc_data->kva, malloc_data->mva,

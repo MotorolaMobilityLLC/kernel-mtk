@@ -62,7 +62,7 @@ int mdla_ion_kmap(unsigned long arg)
 	hndl = ion_import_dma_buf_fd(ion_client, ion_data.fd);
 
 	if (IS_ERR_OR_NULL(hndl)) {
-		mdla_debug("%s: ion_import_dma_buf_fd(): failed: %d\n",
+		mdla_debug("%s: ion_import_dma_buf_fd(): failed: %ld\n",
 			__func__, PTR_ERR(hndl));
 		return -EINVAL;
 	}
