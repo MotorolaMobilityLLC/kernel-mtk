@@ -14,10 +14,6 @@
 #ifndef _HAL_TYPES_PUBLIC_H_
 #define _HAL_TYPES_PUBLIC_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "val_types_public.h"
 
 /**
@@ -61,9 +57,5 @@ struct HAL_ISR_T {
 	void *pvReserved;
 	unsigned int u4ReservedSize;
 };
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* #ifndef _HAL_TYPES_PUBLIC_H_ */
