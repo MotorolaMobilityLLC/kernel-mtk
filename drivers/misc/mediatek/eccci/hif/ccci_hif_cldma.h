@@ -247,6 +247,7 @@ struct md_cd_ctrl {
 	unsigned char hif_id;
 	struct ccci_hif_traffic traffic_info;
 	atomic_t wakeup_src;
+	unsigned int wakeup_count;
 
 #if TRAFFIC_MONITOR_INTERVAL
 	unsigned int tx_traffic_monitor[CLDMA_TXQ_NUM];

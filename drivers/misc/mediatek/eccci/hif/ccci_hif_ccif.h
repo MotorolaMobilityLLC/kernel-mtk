@@ -92,6 +92,7 @@ struct md_ccif_ctrl {
 	void __iomem *ccif_ap_base;
 	void __iomem *ccif_md_base;
 	atomic_t wakeup_src;
+	unsigned int wakeup_count;
 
 	struct work_struct wdt_work;
 	struct ccif_flow_control *flow_ctrl;
