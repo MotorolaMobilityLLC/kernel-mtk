@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/fb.h>
+#include <linux/notifier.h>
 #include <linux/string.h>
 
 #include <mtk_dramc.h>
@@ -91,6 +93,66 @@ struct reg_config *dvfsrc_get_init_conf(void)
 		spmfw_idx = ARRAY_SIZE(dvfsrc_init_configs) - 1;
 
 	return dvfsrc_init_configs[spmfw_idx];
+}
+
+void dvfsrc_update_md_scenario(bool blank)
+{
+	switch (spm_get_spmfw_idx()) {
+	case SPMFW_LP4X_2CH_3200:
+		if (blank) {
+			dvfsrc_write(DVFSRC_EMI_MD2SPM0_T, 0x0000003F);
+			dvfsrc_write(DVFSRC_EMI_MD2SPM1_T, 0x00000000);
+		} else {
+			dvfsrc_write(DVFSRC_EMI_MD2SPM0_T, 0x00000007);
+			dvfsrc_write(DVFSRC_EMI_MD2SPM1_T, 0x00000038);
+		}
+		break;
+	case SPMFW_LP3_1CH_1866:
+		if (blank) {
+			dvfsrc_write(DVFSRC_EMI_MD2SPM0_T, 0x0000003F);
+			dvfsrc_write(DVFSRC_EMI_MD2SPM1_T, 0x00000000);
+		} else {
+			dvfsrc_write(DVFSRC_EMI_MD2SPM0_T, 0x00000007);
+			dvfsrc_write(DVFSRC_EMI_MD2SPM1_T, 0x00000038);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+static int dvfsrc_fb_notifier_call(struct notifier_block *self,
+		unsigned long event, void *data)
+{
+	struct fb_event *evdata = data;
+	int blank;
+
+	if (event != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_UNBLANK:
+		dvfsrc_update_md_scenario(false);
+		break;
+	case FB_BLANK_POWERDOWN:
+		dvfsrc_update_md_scenario(true);
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block dvfsrc_fb_notifier = {
+	.notifier_call = dvfsrc_fb_notifier_call,
+};
+
+void helio_dvfsrc_platform_init(void)
+{
+	fb_register_client(&dvfsrc_fb_notifier);
 }
 
 void get_opp_info(char *p)
