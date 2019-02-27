@@ -453,6 +453,10 @@ static ssize_t ppm_sysboost_cluster_freqidx_limit_proc_write(struct file *file,
 		if (cl < 0 || cl >= NR_PPM_CLUSTERS)
 			goto end;
 
+		if (!ppm_main_info.cluster_info[cl].dvfs_tbl)
+			goto end;
+
+
 		min_freq = (min_freq_idx < 0 || min_freq_idx >= DVFS_OPP_NUM)
 			? -1
 			: p->cluster_info[cl].dvfs_tbl[min_freq_idx].frequency;
@@ -569,6 +573,7 @@ static int __init ppm_sysboost_policy_init(void)
 	ppm_info("@%s: register %s done!\n", __func__, sysboost_policy.name);
 
 out:
+	sysboost_policy.is_enabled = false;
 	FUNC_EXIT(FUNC_LV_POLICY);
 
 	return ret;
