@@ -376,6 +376,7 @@ static int initAF(void)
 static inline int moveAF(unsigned long a_u4Position)
 {
 	RamWriteA_LC898122AF(TCODEH, a_u4Position);
+	g_u4CurrPosition = a_u4Position;
 
 	return 0;
 }
