@@ -1950,7 +1950,7 @@ int spm_mtcmos_ctrl_vcodec_pwr(int state)
 	return err;
 }
 
-/* auto-gen end*/
+
 static int MD1_sys_prepare_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
@@ -1961,90 +1961,6 @@ static int MD1_sys_enable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_md1_pwr(STA_POWER_ON);
-}
-
-static int CONN_sys_prepare_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_conn_bus_prot(STA_POWER_ON);
-}
-
-static int CONN_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_conn_pwr(STA_POWER_ON);
-}
-
-static int DPY_sys_prepare_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_dpy_bus_prot(STA_POWER_ON);
-}
-
-static int DPY_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_dpy_pwr(STA_POWER_ON);
-}
-
-static int DIS_sys_prepare_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_dis_bus_prot(STA_POWER_ON);
-}
-
-static int DIS_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_dis_pwr(STA_POWER_ON);
-}
-
-static int MFG_sys_prepare_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_mfg_bus_prot(STA_POWER_ON);
-}
-
-static int MFG_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_mfg_pwr(STA_POWER_ON);
-}
-
-static int IFR_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_ifr_pwr(STA_POWER_ON);
-}
-
-static int MFG_CORE0_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_mfg_core0_pwr(STA_POWER_ON);
-}
-
-static int MFG_ASYNC_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_mfg_async_pwr(STA_POWER_ON);
-}
-
-static int CAM_sys_prepare_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_cam_bus_prot(STA_POWER_ON);
-}
-
-static int CAM_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_cam_pwr(STA_POWER_ON);
-}
-
-static int VCODEC_sys_enable_op(struct subsys *sys)
-{
-	/*pr_debug("[CCF] %s\r\n", __func__); */
-	return spm_mtcmos_ctrl_vcodec_pwr(STA_POWER_ON);
 }
 
 static int MD1_sys_unprepare_op(struct subsys *sys)
@@ -2059,6 +1975,18 @@ static int MD1_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_md1_pwr(STA_POWER_DOWN);
 }
 
+static int CONN_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_conn_bus_prot(STA_POWER_ON);
+}
+
+static int CONN_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_conn_pwr(STA_POWER_ON);
+}
+
 static int CONN_sys_unprepare_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
@@ -2069,6 +1997,18 @@ static int CONN_sys_disable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_conn_pwr(STA_POWER_DOWN);
+}
+
+static int DPY_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_dpy_bus_prot(STA_POWER_ON);
+}
+
+static int DPY_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_dpy_pwr(STA_POWER_ON);
 }
 
 static int DPY_sys_unprepare_op(struct subsys *sys)
@@ -2083,6 +2023,18 @@ static int DPY_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_dpy_pwr(STA_POWER_DOWN);
 }
 
+static int DIS_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_dis_bus_prot(STA_POWER_ON);
+}
+
+static int DIS_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_dis_pwr(STA_POWER_ON);
+}
+
 static int DIS_sys_unprepare_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
@@ -2093,6 +2045,18 @@ static int DIS_sys_disable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_dis_pwr(STA_POWER_DOWN);
+}
+
+static int MFG_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_bus_prot(STA_POWER_ON);
+}
+
+static int MFG_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_pwr(STA_POWER_ON);
 }
 
 static int MFG_sys_unprepare_op(struct subsys *sys)
@@ -2107,10 +2071,46 @@ static int MFG_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_mfg_pwr(STA_POWER_DOWN);
 }
 
+static int IFR_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_ifr_bus_prot(STA_POWER_ON);
+}
+
+static int IFR_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_ifr_pwr(STA_POWER_ON);
+}
+
+static int IFR_sys_unprepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_ifr_bus_prot(STA_POWER_DOWN);
+}
+
 static int IFR_sys_disable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_ifr_pwr(STA_POWER_DOWN);
+}
+
+static int MFG_CORE0_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_core0_bus_prot(STA_POWER_ON);
+}
+
+static int MFG_CORE0_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_core0_pwr(STA_POWER_ON);
+}
+
+static int MFG_CORE0_sys_unprepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_core0_bus_prot(STA_POWER_DOWN);
 }
 
 static int MFG_CORE0_sys_disable_op(struct subsys *sys)
@@ -2119,10 +2119,40 @@ static int MFG_CORE0_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_mfg_core0_pwr(STA_POWER_DOWN);
 }
 
+static int MFG_ASYNC_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_async_bus_prot(STA_POWER_ON);
+}
+
+static int MFG_ASYNC_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_async_pwr(STA_POWER_ON);
+}
+
+static int MFG_ASYNC_sys_unprepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_mfg_async_bus_prot(STA_POWER_DOWN);
+}
+
 static int MFG_ASYNC_sys_disable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_mfg_async_pwr(STA_POWER_DOWN);
+}
+
+static int CAM_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_cam_bus_prot(STA_POWER_ON);
+}
+
+static int CAM_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_cam_pwr(STA_POWER_ON);
 }
 
 static int CAM_sys_unprepare_op(struct subsys *sys)
@@ -2135,6 +2165,24 @@ static int CAM_sys_disable_op(struct subsys *sys)
 {
 	/*pr_debug("[CCF] %s\r\n", __func__); */
 	return spm_mtcmos_ctrl_cam_pwr(STA_POWER_DOWN);
+}
+
+static int VCODEC_sys_prepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_vcodec_bus_prot(STA_POWER_ON);
+}
+
+static int VCODEC_sys_enable_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_vcodec_pwr(STA_POWER_ON);
+}
+
+static int VCODEC_sys_unprepare_op(struct subsys *sys)
+{
+	/*pr_debug("[CCF] %s\r\n", __func__); */
+	return spm_mtcmos_ctrl_vcodec_bus_prot(STA_POWER_DOWN);
 }
 
 static int VCODEC_sys_disable_op(struct subsys *sys)
@@ -2151,98 +2199,78 @@ static int sys_get_state_op(struct subsys *sys)
 	return (sta & sys->sta_mask) && (sta_s & sys->sta_mask);
 }
 
-#if 0
-static int mfg_get_state_op(struct subsys *sys)
-{
-	if ((spm_read(MFG_PWR_CON) & PWR_ON) &&
-		(spm_read(MFG_PWR_CON) & PWR_ON_2ND))
-		return 1;
-	else
-		return 0;
-}
-#endif
-
 static struct subsys_ops MD1_sys_ops = {
 	.prepare =  MD1_sys_prepare_op,
 	.unprepare =  MD1_sys_unprepare_op,
-	.enable = MD1_sys_enable_op,
-	.disable = MD1_sys_disable_op,
+	.enable =  MD1_sys_enable_op,
+	.disable =  MD1_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops CONN_sys_ops = {
 	.prepare =  CONN_sys_prepare_op,
 	.unprepare =  CONN_sys_unprepare_op,
-	.enable = CONN_sys_enable_op,
-	.disable = CONN_sys_disable_op,
+	.enable =  CONN_sys_enable_op,
+	.disable =  CONN_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops DPY_sys_ops = {
 	.prepare =  DPY_sys_prepare_op,
 	.unprepare =  DPY_sys_unprepare_op,
-	.enable = DPY_sys_enable_op,
-	.disable = DPY_sys_disable_op,
+	.enable =  DPY_sys_enable_op,
+	.disable =  DPY_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops DIS_sys_ops = {
 	.prepare =  DIS_sys_prepare_op,
 	.unprepare =  DIS_sys_unprepare_op,
-	.enable = DIS_sys_enable_op,
-	.disable = DIS_sys_disable_op,
-	/*.get_state = sys_get_state_op,*/
+	.enable =  DIS_sys_enable_op,
+	.disable =  DIS_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops MFG_sys_ops = {
 	.prepare =  MFG_sys_prepare_op,
 	.unprepare =  MFG_sys_unprepare_op,
-	.enable = MFG_sys_enable_op,
-	.disable = MFG_sys_disable_op,
+	.enable =  MFG_sys_enable_op,
+	.disable =  MFG_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops IFR_sys_ops = {
-	.prepare =  NULL,
-	.unprepare =  NULL,
-	.enable = IFR_sys_enable_op,
-	.disable = IFR_sys_disable_op,
+	.prepare =  IFR_sys_prepare_op,
+	.unprepare =  IFR_sys_unprepare_op,
+	.enable =  IFR_sys_enable_op,
+	.disable =  IFR_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops MFG_CORE0_sys_ops = {
-	.prepare =  NULL,
-	.unprepare =  NULL,
-	.enable = MFG_CORE0_sys_enable_op,
-	.disable = MFG_CORE0_sys_disable_op,
+	.prepare =  MFG_CORE0_sys_prepare_op,
+	.unprepare =  MFG_CORE0_sys_unprepare_op,
+	.enable =  MFG_CORE0_sys_enable_op,
+	.disable =  MFG_CORE0_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops MFG_ASYNC_sys_ops = {
-	.prepare =  NULL,
-	.unprepare =  NULL,
-	.enable = MFG_ASYNC_sys_enable_op,
-	.disable = MFG_ASYNC_sys_disable_op,
+	.prepare =  MFG_ASYNC_sys_prepare_op,
+	.unprepare =  MFG_ASYNC_sys_unprepare_op,
+	.enable =  MFG_ASYNC_sys_enable_op,
+	.disable =  MFG_ASYNC_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops CAM_sys_ops = {
 	.prepare =  CAM_sys_prepare_op,
 	.unprepare =  CAM_sys_unprepare_op,
-	.enable = CAM_sys_enable_op,
-	.disable = CAM_sys_disable_op,
+	.enable =  CAM_sys_enable_op,
+	.disable =  CAM_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
-
 static struct subsys_ops VCODEC_sys_ops = {
-	.prepare =  NULL,
-	.unprepare =  NULL,
-	.enable = VCODEC_sys_enable_op,
-	.disable = VCODEC_sys_disable_op,
+	.prepare =  VCODEC_sys_prepare_op,
+	.unprepare =  VCODEC_sys_unprepare_op,
+	.enable =  VCODEC_sys_enable_op,
+	.disable =  VCODEC_sys_disable_op,
 	.get_state = sys_get_state_op,
 };
 
+/* auto-gen end*/
 static int subsys_is_on(enum subsys_id id)
 {
 	int r;
