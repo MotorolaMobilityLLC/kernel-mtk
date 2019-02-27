@@ -15,8 +15,10 @@
 #include <linux/cpu.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
+#include <linux/irqdomain.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_irq.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/string.h>
@@ -38,11 +40,6 @@ struct trusty_irq {
 	struct trusty_irq __percpu *percpu_ptr;
 };
 
-struct trusty_irq_work {
-	struct trusty_irq_state *is;
-	struct work_struct work;
-};
-
 struct trusty_irq_irqset {
 	struct hlist_head pending;
 	struct hlist_head inactive;
@@ -51,13 +48,14 @@ struct trusty_irq_irqset {
 struct trusty_irq_state {
 	struct device *dev;
 	struct device *trusty_dev;
-	struct trusty_irq_work __percpu *irq_work;
 	struct trusty_irq_irqset normal_irqs;
 	spinlock_t normal_irqs_lock;
 	struct trusty_irq_irqset __percpu *percpu_irqs;
 	struct notifier_block trusty_call_notifier;
-	struct notifier_block cpu_notifier;
+	struct hlist_node cpuhp_node;
 };
+
+static int trusty_irq_cpuhp_slot = -1;
 
 #ifdef CONFIG_TRUSTY_INTERRUPT_MAP
 static struct device_node *spi_node;
@@ -167,46 +165,10 @@ static int trusty_irq_call_notify(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
-
-static void trusty_irq_work_func_locked_nop(struct work_struct *work)
-{
-	int ret;
-	struct trusty_irq_state *is =
-		container_of(work, struct trusty_irq_work, work)->is;
-
-	dev_dbg(is->dev, "%s\n", __func__);
-
-	ret = trusty_std_call32(is->trusty_dev, SMC_SC_LOCKED_NOP, 0, 0, 0);
-	if (ret != 0)
-		dev_err(is->dev, "%s: SMC_SC_LOCKED_NOP failed %d",
-			__func__, ret);
-
-	dev_dbg(is->dev, "%s: done\n", __func__);
-}
-
-static void trusty_irq_work_func(struct work_struct *work)
-{
-	int ret;
-	struct trusty_irq_state *is =
-		container_of(work, struct trusty_irq_work, work)->is;
-
-	dev_dbg(is->dev, "%s\n", __func__);
-
-	do {
-		ret = trusty_std_call32(is->trusty_dev, SMC_SC_NOP, 0, 0, 0);
-	} while (ret == SM_ERR_NOP_INTERRUPTED);
-
-	if (ret != SM_ERR_NOP_DONE)
-		dev_err(is->dev, "%s: SMC_SC_NOP failed %d", __func__, ret);
-
-	dev_dbg(is->dev, "%s: done\n", __func__);
-}
-
 irqreturn_t trusty_irq_handler(int irq, void *data)
 {
 	struct trusty_irq *trusty_irq = data;
 	struct trusty_irq_state *is = trusty_irq->is;
-	struct trusty_irq_work *trusty_irq_work = this_cpu_ptr(is->irq_work);
 	struct trusty_irq_irqset *irqset;
 
 	dev_dbg(is->dev, "%s: irq %d, percpu %d, cpu %d, enable %d\n",
@@ -232,7 +194,7 @@ irqreturn_t trusty_irq_handler(int irq, void *data)
 	}
 	spin_unlock(&is->normal_irqs_lock);
 
-	schedule_work_on(raw_smp_processor_id(), &trusty_irq_work->work);
+	trusty_enqueue_nop(is->trusty_dev, NULL);
 
 	dev_dbg(is->dev, "%s: irq %d done\n", __func__, irq);
 
@@ -251,73 +213,135 @@ void handle_trusty_ipi(int ipinr)
 }
 #endif
 
-static void trusty_irq_cpu_up(void *info)
+static int trusty_irq_cpu_up(unsigned int cpu, struct hlist_node *node)
 {
 	unsigned long irq_flags;
-	struct trusty_irq_state *is = info;
+	struct trusty_irq_state *is;
 
-	dev_dbg(is->dev, "%s: cpu %d\n", __func__, smp_processor_id());
+	is = container_of(node, struct trusty_irq_state, cpuhp_node);
+	dev_dbg(is->dev, "%s: cpu %d\n", __func__, cpu);
 
 	local_irq_save(irq_flags);
 	trusty_irq_enable_irqset(is, this_cpu_ptr(is->percpu_irqs));
 	local_irq_restore(irq_flags);
+
+	return 0;
 }
 
-static void trusty_irq_cpu_down(void *info)
+static int trusty_irq_cpu_down(unsigned int cpu, struct hlist_node *node)
 {
 	unsigned long irq_flags;
-	struct trusty_irq_state *is = info;
+	struct trusty_irq_state *is;
 
-	dev_dbg(is->dev, "%s: cpu %d\n", __func__, smp_processor_id());
+	is = container_of(node, struct trusty_irq_state, cpuhp_node);
+	dev_dbg(is->dev, "%s: cpu %d\n", __func__, cpu);
 
 	local_irq_save(irq_flags);
 	trusty_irq_disable_irqset(is, this_cpu_ptr(is->percpu_irqs));
 	local_irq_restore(irq_flags);
+
+	return 0;
 }
 
-static void trusty_irq_cpu_dead(void *info)
-{
-	unsigned long irq_flags;
-	struct trusty_irq_state *is = info;
-
-	dev_dbg(is->dev, "%s: cpu %d\n", __func__, smp_processor_id());
-
-	local_irq_save(irq_flags);
-	schedule_work_on(smp_processor_id(), &(this_cpu_ptr(is->irq_work)->work));
-	local_irq_restore(irq_flags);
-}
-
-static int trusty_irq_cpu_notify(struct notifier_block *nb,
-				 unsigned long action, void *hcpu)
-{
-	struct trusty_irq_state *is;
-
-	is = container_of(nb, struct trusty_irq_state, cpu_notifier);
-
-	dev_dbg(is->dev, "%s: 0x%lx\n", __func__, action);
-
-	switch (action & ~CPU_TASKS_FROZEN) {
-	case CPU_STARTING:
-		trusty_irq_cpu_up(is);
-		break;
-	case CPU_DEAD:
-		trusty_irq_cpu_dead(is);
-		break;
-	case CPU_DYING:
-		trusty_irq_cpu_down(is);
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static int trusty_irq_init_normal_irq(struct trusty_irq_state *is, int irq)
+#if 0
+static int trusty_irq_create_irq_mapping(struct trusty_irq_state *is, int irq)
 {
 	int ret;
+	int index;
+	u32 irq_pos;
+	u32 templ_idx;
+	u32 range_base;
+	u32 range_end;
+	struct of_phandle_args oirq;
+
+	/* check if "interrupt-ranges" property is present */
+	if (!of_find_property(is->dev->of_node, "interrupt-ranges", NULL)) {
+		/* fallback to old behavior to be backward compatible with
+		 * systems that do not need IRQ domains.
+		 */
+		return irq;
+	}
+
+	/* find irq range */
+	for (index = 0;; index += 3) {
+		ret = of_property_read_u32_index(is->dev->of_node,
+						 "interrupt-ranges",
+						 index, &range_base);
+		if (ret)
+			return ret;
+
+		ret = of_property_read_u32_index(is->dev->of_node,
+						 "interrupt-ranges",
+						 index + 1, &range_end);
+		if (ret)
+			return ret;
+
+		if (irq >= range_base && irq <= range_end)
+			break;
+	}
+
+	/*  read the rest of range entry: template index and irq_pos */
+	ret = of_property_read_u32_index(is->dev->of_node,
+					 "interrupt-ranges",
+					 index + 2, &templ_idx);
+	if (ret)
+		return ret;
+
+	/* read irq template */
+	ret = of_parse_phandle_with_args(is->dev->of_node,
+					 "interrupt-templates",
+					 "#interrupt-cells",
+					 templ_idx, &oirq);
+	if (ret)
+		return ret;
+
+	WARN_ON(!oirq.np);
+	WARN_ON(!oirq.args_count);
+
+	/*
+	 * An IRQ template is a non empty array of u32 values describing group
+	 * of interrupts having common properties. The u32 entry with index
+	 * zero contains the position of irq_id in interrupt specifier array
+	 * followed by data representing interrupt specifier array with irq id
+	 * field omitted, so to convert irq template to interrupt specifier
+	 * array we have to move down one slot the first irq_pos entries and
+	 * replace the resulting gap with real irq id.
+	 */
+	irq_pos = oirq.args[0];
+
+	if (irq_pos >= oirq.args_count) {
+		dev_info(is->dev, "irq pos is out of range: %d\n", irq_pos);
+		return -EINVAL;
+	}
+
+	for (index = 1; index <= irq_pos; index++)
+		oirq.args[index - 1] = oirq.args[index];
+
+	oirq.args[irq_pos] = irq - range_base;
+
+	ret = irq_create_of_mapping(&oirq);
+
+	return (!ret) ? -EINVAL : ret;
+}
+#endif
+
+static int trusty_irq_init_normal_irq(struct trusty_irq_state *is, int tirq)
+{
+	int ret;
+	int irq = tirq;
 	unsigned long irq_flags;
 	struct trusty_irq *trusty_irq;
 
-	dev_dbg(is->dev, "%s: irq %d\n", __func__, irq);
+	dev_dbg(is->dev, "%s: irq %d\n", __func__, tirq);
+
+#if 0
+	irq = trusty_irq_create_irq_mapping(is, tirq);
+	if (irq < 0) {
+		dev_info(is->dev,
+			"trusty_irq_create_irq_mapping failed (%d)\n", irq);
+		return irq;
+	}
+#endif
 
 	trusty_irq = kzalloc(sizeof(*trusty_irq), GFP_KERNEL);
 	if (!trusty_irq)
@@ -371,13 +395,22 @@ err_request_irq:
 	return ret;
 }
 
-static int trusty_irq_init_per_cpu_irq(struct trusty_irq_state *is, int irq)
+static int trusty_irq_init_per_cpu_irq(struct trusty_irq_state *is, int tirq)
 {
 	int ret;
+	int irq = tirq;
 	unsigned int cpu;
 	struct trusty_irq __percpu *trusty_irq_handler_data;
 
-	dev_dbg(is->dev, "%s: irq %d\n", __func__, irq);
+	dev_dbg(is->dev, "%s: irq %d\n", __func__, tirq);
+#if 0
+	irq = trusty_irq_create_irq_mapping(is, tirq);
+	if (irq <= 0) {
+		dev_info(is->dev,
+			"trusty_irq_create_irq_mapping failed (%d)\n", irq);
+		return irq;
+	}
+#endif
 
 	trusty_irq_handler_data = alloc_percpu(struct trusty_irq);
 	if (!trusty_irq_handler_data)
@@ -540,10 +573,8 @@ static int trusty_irq_probe(struct platform_device *pdev)
 {
 	int ret;
 	int irq;
-	unsigned int cpu;
 	unsigned long irq_flags;
 	struct trusty_irq_state *is;
-	work_func_t work_func;
 
 	dev_dbg(&pdev->dev, "%s\n", __func__);
 #ifdef CONFIG_TRUSTY_INTERRUPT_MAP
@@ -558,11 +589,6 @@ static int trusty_irq_probe(struct platform_device *pdev)
 
 	is->dev = &pdev->dev;
 	is->trusty_dev = is->dev->parent;
-	is->irq_work = alloc_percpu(struct trusty_irq_work);
-	if (!is->irq_work) {
-		ret = -ENOMEM;
-		goto err_alloc_irq_work;
-	}
 	spin_lock_init(&is->normal_irqs_lock);
 	is->percpu_irqs = alloc_percpu(struct trusty_irq_irqset);
 	if (!is->percpu_irqs) {
@@ -581,42 +607,21 @@ static int trusty_irq_probe(struct platform_device *pdev)
 		goto err_trusty_call_notifier_register;
 	}
 
-	if (trusty_get_api_version(is->trusty_dev) < TRUSTY_API_VERSION_SMP)
-		work_func = trusty_irq_work_func_locked_nop;
-	else
-		work_func = trusty_irq_work_func;
-
-	for_each_possible_cpu(cpu) {
-		struct trusty_irq_work *trusty_irq_work;
-
-		trusty_irq_work = per_cpu_ptr(is->irq_work, cpu);
-		trusty_irq_work->is = is;
-		INIT_WORK(&trusty_irq_work->work, work_func);
-	}
-
 	for (irq = 0; irq >= 0;)
 		irq = trusty_irq_init_one(is, irq, true);
 	for (irq = 0; irq >= 0;)
 		irq = trusty_irq_init_one(is, irq, false);
 
-	is->cpu_notifier.notifier_call = trusty_irq_cpu_notify;
-	ret = register_hotcpu_notifier(&is->cpu_notifier);
-	if (ret) {
-		dev_err(&pdev->dev, "register_cpu_notifier failed %d\n", ret);
-		goto err_register_hotcpu_notifier;
-	}
-	ret = on_each_cpu(trusty_irq_cpu_up, is, 0);
-	if (ret) {
-		dev_err(&pdev->dev, "register_cpu_notifier failed %d\n", ret);
-		goto err_on_each_cpu;
+	ret = cpuhp_state_add_instance(trusty_irq_cpuhp_slot, &is->cpuhp_node);
+	if (ret < 0) {
+		dev_info(&pdev->dev, "cpuhp_state_add_instance failed %d\n",
+			ret);
+		goto err_add_cpuhp_instance;
 	}
 
 	return 0;
 
-err_on_each_cpu:
-	unregister_hotcpu_notifier(&is->cpu_notifier);
-	on_each_cpu(trusty_irq_cpu_down, is, 1);
-err_register_hotcpu_notifier:
+err_add_cpuhp_instance:
 	spin_lock_irqsave(&is->normal_irqs_lock, irq_flags);
 	trusty_irq_disable_irqset(is, &is->normal_irqs);
 	spin_unlock_irqrestore(&is->normal_irqs_lock, irq_flags);
@@ -626,14 +631,6 @@ err_register_hotcpu_notifier:
 err_trusty_call_notifier_register:
 	free_percpu(is->percpu_irqs);
 err_alloc_pending_percpu_irqs:
-	for_each_possible_cpu(cpu) {
-		struct trusty_irq_work *trusty_irq_work;
-
-		trusty_irq_work = per_cpu_ptr(is->irq_work, cpu);
-		flush_work(&trusty_irq_work->work);
-	}
-	free_percpu(is->irq_work);
-err_alloc_irq_work:
 	kfree(is);
 err_alloc_is:
 	return ret;
@@ -642,16 +639,16 @@ err_alloc_is:
 static int trusty_irq_remove(struct platform_device *pdev)
 {
 	int ret;
-	unsigned int cpu;
 	unsigned long irq_flags;
 	struct trusty_irq_state *is = platform_get_drvdata(pdev);
 
 	dev_dbg(&pdev->dev, "%s\n", __func__);
 
-	unregister_hotcpu_notifier(&is->cpu_notifier);
-	ret = on_each_cpu(trusty_irq_cpu_down, is, 1);
-	if (ret)
-		dev_err(&pdev->dev, "on_each_cpu failed %d\n", ret);
+	ret = cpuhp_state_remove_instance(trusty_irq_cpuhp_slot,
+					  &is->cpuhp_node);
+	if (WARN_ON(ret))
+		return ret;
+
 	spin_lock_irqsave(&is->normal_irqs_lock, irq_flags);
 	trusty_irq_disable_irqset(is, &is->normal_irqs);
 	spin_unlock_irqrestore(&is->normal_irqs_lock, irq_flags);
@@ -661,13 +658,6 @@ static int trusty_irq_remove(struct platform_device *pdev)
 	trusty_call_notifier_unregister(is->trusty_dev,
 					&is->trusty_call_notifier);
 	free_percpu(is->percpu_irqs);
-	for_each_possible_cpu(cpu) {
-		struct trusty_irq_work *trusty_irq_work;
-
-		trusty_irq_work = per_cpu_ptr(is->irq_work, cpu);
-		flush_work(&trusty_irq_work->work);
-	}
-	free_percpu(is->irq_work);
 	kfree(is);
 
 	return 0;
@@ -688,4 +678,40 @@ static struct platform_driver trusty_irq_driver = {
 	},
 };
 
-module_platform_driver(trusty_irq_driver);
+static int __init trusty_irq_driver_init(void)
+{
+	int ret;
+
+	/* allocate dynamic cpuhp state slot */
+	ret = cpuhp_setup_state_multi(CPUHP_AP_ONLINE_DYN,
+				      "trusty-irq:cpu:online",
+				      trusty_irq_cpu_up,
+				      trusty_irq_cpu_down);
+	if (ret < 0)
+		return ret;
+	trusty_irq_cpuhp_slot = ret;
+
+	/* Register platform driver */
+	ret = platform_driver_register(&trusty_irq_driver);
+	if (ret < 0)
+		goto err_driver_register;
+
+	return ret;
+
+err_driver_register:
+	/* undo cpuhp slot allocation */
+	cpuhp_remove_multi_state(trusty_irq_cpuhp_slot);
+	trusty_irq_cpuhp_slot = -1;
+
+	return ret;
+}
+
+static void __exit trusty_irq_driver_exit(void)
+{
+	platform_driver_unregister(&trusty_irq_driver);
+	cpuhp_remove_multi_state(trusty_irq_cpuhp_slot);
+	trusty_irq_cpuhp_slot = -1;
+}
+
+module_init(trusty_irq_driver_init);
+module_exit(trusty_irq_driver_exit);

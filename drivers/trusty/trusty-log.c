@@ -22,7 +22,7 @@
 #include <asm/page.h>
 #include "trusty-log.h"
 
-#define TRUSTY_LOG_SIZE (PAGE_SIZE * 32)
+#define TRUSTY_LOG_SIZE (PAGE_SIZE * 2)
 #define TRUSTY_LINE_BUFFER_SIZE 256
 
 struct trusty_log_state {
@@ -179,7 +179,7 @@ static int trusty_log_probe(struct platform_device *pdev)
 	s->dev = &pdev->dev;
 	s->trusty_dev = s->dev->parent;
 	s->get = 0;
-	s->log_pages = alloc_pages(GFP_KERNEL | __GFP_ZERO | GFP_DMA,
+	s->log_pages = alloc_pages(GFP_KERNEL | __GFP_ZERO,
 				   get_order(TRUSTY_LOG_SIZE));
 	if (!s->log_pages) {
 		result = -ENOMEM;
