@@ -24,7 +24,6 @@ static bool sodi_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI;
 static bool sodi_bypass_idle_cond;
 static bool sodi_bypass_dis_check;
 static bool sodi_disp_is_ready;
-static bool sodi_mempll_pwr_mode;
 static unsigned int sodi_flag = MTK_IDLE_LOG_REDUCE;
 
 unsigned long so_cnt[NR_CPUS] = {0};
@@ -74,11 +73,6 @@ bool mtk_sodi_disp_is_ready(void)
 	return sodi_disp_is_ready;
 }
 
-/* for display use, abandoned 'spm_sodi_mempll_pwr_mode' */
-void mtk_sodi_disp_mempll_pwr_mode(bool pwr_mode)
-{
-	sodi_mempll_pwr_mode = pwr_mode;
-}
 static int sodi_uptime_block_count;
 /* External weak function: implemented in disp driver */
 bool __attribute__((weak)) disp_pwm_is_osc(void) {return false; }
@@ -138,12 +132,6 @@ out:
 int soidle_enter(int cpu)
 {
 	unsigned int op_cond = 0;
-
-	/* Display driver indicates sodi dram cg/pdn mode */
-	if (sodi_mempll_pwr_mode)
-		op_cond |= MTK_IDLE_OPT_SODI_CG_MODE;   /* CG mode */
-	else
-		op_cond &= ~MTK_IDLE_OPT_SODI_CG_MODE;  /* PDN mode */
 
 	lockdep_off();
 	mtk_idle_ratio_calc_start(IDLE_TYPE_SO, cpu);

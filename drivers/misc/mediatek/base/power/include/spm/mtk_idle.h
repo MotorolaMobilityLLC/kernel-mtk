@@ -79,13 +79,10 @@ extern void idle_lock_by_ufs(unsigned int lock);
 extern bool mtk_dpidle_is_active(void);
 
 /* FIXME: SODI/SODI3 - Replace api for display */
-#define spm_sodi_set_vdo_mode(mode)
 #define spm_enable_sodi(enable) mtk_sodi_disp_ready(enable)
 #define spm_enable_sodi3(enable) mtk_sodi3_disp_ready(enable)
-#define spm_sodi_mempll_pwr_mode(mode) mtk_sodi_disp_mempll_pwr_mode(mode)
 extern void mtk_sodi_disp_ready(bool enable);
 extern void mtk_sodi3_disp_ready(bool enable);
-extern void mtk_sodi_disp_mempll_pwr_mode(bool pwr_mode);
 
 
 /* --------------------------------------------------------
