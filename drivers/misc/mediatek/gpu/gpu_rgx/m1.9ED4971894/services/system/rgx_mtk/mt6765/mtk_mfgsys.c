@@ -128,6 +128,7 @@ struct clk *mtcmos_mfg1;
 
 unsigned int _mtk_ged_log;
 unsigned int _track_ged_log;
+unsigned int _mpu_ged_log;
 
 #ifdef CONFIG_MTK_SEGMENT_TEST
 static IMG_UINT32 efuse_mfg_enable;
@@ -1462,6 +1463,9 @@ int MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 
 	_track_ged_log = ged_log_buf_alloc(32, 32 * 32,
 			GED_LOG_BUF_TYPE_RINGBUFFER, "RegStack", "RTrace");
+
+	_mpu_ged_log = ged_log_buf_alloc(32, 32 * 32,
+			GED_LOG_BUF_TYPE_RINGBUFFER, "GPUImport", "GImp");
 
 #ifdef MTK_GPU_DVFS
 	/* Only Enable buck to get cg & mtcmos */
