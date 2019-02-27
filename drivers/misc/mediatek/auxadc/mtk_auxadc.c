@@ -1380,7 +1380,7 @@ static ssize_t show_AUXADC_register(struct device *dev,
 static ssize_t store_AUXADC_register(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	pr_debug(TAG "[EM] Not Support store_AUXADC_register\n");
+	pr_debug(TAG "[EM] Not Support %s\n", __func__);
 	return size;
 }
 
