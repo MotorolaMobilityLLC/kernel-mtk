@@ -1766,14 +1766,13 @@ void fg_bat_plugout_int_handler(void)
 	int is_bat_exist;
 	int i;
 
-
-	if (fg_interrupt_check() == false)
-		return;
-
 	is_bat_exist = pmic_is_battery_exist();
 
 	bm_err("[fg_bat_plugout_int_handler]is_bat %d miss:%d\n",
 		is_bat_exist, gm.plug_miss_count);
+
+	if (fg_interrupt_check() == false)
+		return;
 
 	gauge_dev_dump(gm.gdev, NULL);
 
@@ -1799,6 +1798,7 @@ void fg_bat_plugout_int_handler(void)
 	}
 
 	if (is_bat_exist == 0) {
+		battery_notifier(EVENT_BATTERY_PLUG_OUT);
 		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 		battery_update(&battery_main);
@@ -3430,6 +3430,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 void mtk_battery_init(struct platform_device *dev)
 {
+	gm.ui_soc = -1;
 	gm.log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 	gm.d_log_level = BM_DAEMON_DEFAULT_LOG_LEVEL;
 
@@ -3515,6 +3516,14 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_cust_data.vbat2_det_counter,
 			fg_cust_data.vbat2_det_time * 1000,
 			fg_cust_data.vbat2_det_counter);
+
+			pmic_register_interrupt_callback(
+				INT_VBATON_UNDET,
+				fg_bat_plugout_int_handler);
+			pmic_enable_interrupt(
+				INT_VBATON_UNDET,
+				1,
+				"VBATON_UNDET");
 		}
 	}
 
