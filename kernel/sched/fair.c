@@ -770,6 +770,10 @@ void init_entity_runnable_average(struct sched_entity *se)
 		0;
 	sa->util_sum = 0;
 	/* when this task enqueue'ed, it will contribute to its cfs_rq's load_avg */
+
+	/* sched: add trace_sched */
+	if (entity_is_task(se))
+		trace_sched_task_entity_avg(0, task_of(se), &se->avg);
 }
 
 static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
@@ -3364,6 +3368,7 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 #ifdef CONFIG_SCHED_WALT
 		ptr = (void *)&(task_of(se)->ravg);
 #endif
+		trace_sched_task_entity_avg(1, task_of(se), &se->avg);
 		trace_sched_load_avg_task(task_of(se), &se->avg, ptr);
 	}
 
@@ -7207,6 +7212,34 @@ unlock:
 	return target_cpu;
 }
 
+#ifdef CONFIG_MTK_SCHED_TRACERS
+#define SELECT_TASK_RQ_FAIR __select_task_rq_fair
+static int
+SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
+		int sd_flag, int wake_flags);
+static inline int
+select_task_rq_fair(struct task_struct *p,
+		int prev_cpu, int sd_flag, int wake_flags)
+{
+	int result = 0;
+	int cpu;
+	bool prefer_idle = 0;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	prefer_idle = (schedtune_prefer_idle(p) > 0);
+#endif
+	result = SELECT_TASK_RQ_FAIR(p, prev_cpu, sd_flag, wake_flags);
+	cpu = (result & LB_CPU_MASK);
+
+	trace_sched_select_task_rq(p, result, prev_cpu, cpu,
+			task_util(p), boosted_task_util(p), prefer_idle);
+	return cpu;
+
+}
+#else
+#define SELECT_TASK_RQ_FAIR select_task_rq_fair
+#endif
+
 /*
  * select_task_rq_fair: Select target runqueue for the waking task in domains
  * that have the 'sd_flag' flag set. In practice, this is SD_BALANCE_WAKE,
@@ -7220,7 +7253,8 @@ unlock:
  * preempt must be disabled.
  */
 static int
-select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_flags)
+SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
+		int sd_flag, int wake_flags)
 {
 	struct sched_domain *tmp, *affine_sd = NULL, *sd = NULL;
 	int cpu = smp_processor_id();
@@ -7236,7 +7270,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 		hmp_cpu = hmp_fork_balance(p, prev_cpu);
 
 		if (hmp_cpu >= 0 && (hmp_cpu >= nr_cpu_ids))
-			return hmp_cpu;
+			return LB_FORK | hmp_cpu;
 	}
 
 	if (sd_flag & SD_BALANCE_WAKE) {
@@ -7246,7 +7280,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	}
 
 	if (energy_aware() && !system_overutilized(cpu))
-		return select_energy_cpu_brute(p, prev_cpu, sync);
+		return LB_EAS | select_energy_cpu_brute(p, prev_cpu, sync);
 
 	rcu_read_lock();
 	for_each_domain(cpu, tmp) {
@@ -7346,11 +7380,12 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			schedstat_inc(p->se.statistics.nr_wakeups_cas_count);
 			schedstat_inc(this_rq()->eas_stats.cas_count);
 		}
+		new_cpu |= LB_SMP;
 	}
 	rcu_read_unlock();
 
 	if (should_hmp(cpu))
-		new_cpu = hmp_select_task_rq_fair(sd_flag,
+		new_cpu = LB_HMP | hmp_select_task_rq_fair(sd_flag,
 				p, prev_cpu, new_cpu);
 
 	return new_cpu;
