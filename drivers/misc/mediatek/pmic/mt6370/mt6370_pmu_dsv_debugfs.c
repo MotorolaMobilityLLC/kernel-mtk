@@ -1,0 +1,168 @@
+/*
+ * Copyright (C) 2018 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+
+
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
+#include <linux/debugfs.h>
+#include "inc/mt6370_pmu.h"
+#include "inc/mt6370_pmu_dsv_debugfs.h"
+
+
+int irq_count[DSV_MODE_MAX];
+
+#define IRQ_COUNT_MAX 50
+#define MT6370_DB_VBST_MAX_V 0x2B	/*6.15v*/
+#define MT6370_PMU_REG_DB_VBST_MASK 0x3F
+
+
+int g_db_vbst;
+int g_vbst_adjustment;
+int g_irq_count_max;
+
+
+void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
+					enum dsv_dbg_mode_t mode)
+{
+	int db_vbst;
+
+	if (!g_vbst_adjustment)
+		return;
+
+	irq_count[mode] = irq_count[mode] + 1;
+
+	if (irq_count[mode] > g_irq_count_max) {
+		irq_count[mode] = 0;
+
+		g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
+		db_vbst = MT6370_PMU_REG_DB_VBST_MASK & g_db_vbst;
+
+		if (db_vbst < MT6370_DB_VBST_MAX_V) {
+			/*0.05V per step*/
+			mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVBST,
+				MT6370_PMU_REG_DB_VBST_MASK, db_vbst + 1);
+
+			pr_info("%s: set DB_VBST from 0x%x to 0x%x\n",
+			__func__, g_db_vbst,
+			mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST));
+		} else
+			pr_info_ratelimited("%s: fixed DB_VBST = 0x%x\n",
+				__func__, g_db_vbst);
+	}
+}
+
+
+static ssize_t mt6370_pmu_dsv_vbst_adjustment_write(struct file *file,
+	const char __user *buf, size_t size, loff_t *ppos)
+{
+	char lbuf[128];
+	char *b = &lbuf[0];
+	int flag = 0;
+	ssize_t res;
+	char *token;
+	unsigned int val;
+
+	res = simple_write_to_buffer(lbuf, sizeof(lbuf) - 1, ppos, buf, size);
+	if (res <= 0)
+		return -EFAULT;
+
+	lbuf[size] = '\0';
+
+	if (!strncmp(b, "vbst_adjustment ", strlen("vbst_adjustment "))) {
+		b += strlen("vbst_adjustment ");
+		flag = DSV_VAR_VBST_ADJUSTMENT;
+	} else if (!strncmp(b, "irq_count_max ", strlen("irq_count_max "))) {
+		b += strlen("irq_count_max ");
+		flag = DSV_VAR_IRQ_COUNT;
+	} else
+		return -EINVAL;
+
+	token = strsep(&b, " ");
+	if (token == NULL)
+		return -EINVAL;
+
+	if (kstrtouint(token, 0, &val))
+		return -EINVAL;
+
+	switch (flag) {
+	case DSV_VAR_VBST_ADJUSTMENT:
+		g_vbst_adjustment = val;
+		pr_info("[%s] set vbst_adjustment = 0x%x\n",
+					__func__, g_vbst_adjustment);
+		break;
+	case DSV_VAR_IRQ_COUNT:
+		g_irq_count_max = val;
+		pr_info("[%s] set irq_count_max = 0x%x\n",
+					__func__, g_irq_count_max);
+		break;
+	default:
+		pr_info("[%s] do nothing\n", __func__);
+		break;
+	}
+
+	return size;
+}
+
+static int mt6370_pmu_dsv_vbst_adjustment_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "vbst_adjustment = %d\n", g_vbst_adjustment);
+	seq_printf(s, "irq_count_max = %d\n", g_irq_count_max);
+	seq_printf(s, "db_vbst = 0x%x\n", g_db_vbst);
+
+	return 0;
+}
+
+static int mt6370_pmu_dsv_vbst_adjustment_open(struct inode *inode,
+						struct file *file)
+{
+	return single_open(file, mt6370_pmu_dsv_vbst_adjustment_show, NULL);
+}
+
+static const struct file_operations mt6370_pmu_dsv_vbst_adjustment_ops = {
+	.open    = mt6370_pmu_dsv_vbst_adjustment_open,
+	.read    = seq_read,
+	.write   = mt6370_pmu_dsv_vbst_adjustment_write,
+	.llseek  = seq_lseek,
+	.release = single_release,
+};
+
+
+int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
+{
+	struct dentry *mt6370_pmu_dir;
+
+	mt6370_pmu_dir = debugfs_create_dir("mt6370_pmu", NULL);
+	if (!mt6370_pmu_dir) {
+		pr_info("create /sys/kernel/debug/mt6370_pmu failed\n");
+		return -ENOMEM;
+	}
+
+	debugfs_create_file("mt6370_pmu_dsv", 0644,
+				mt6370_pmu_dir, NULL,
+				&mt6370_pmu_dsv_vbst_adjustment_ops);
+
+	g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
+	g_vbst_adjustment = 0;
+	g_irq_count_max = IRQ_COUNT_MAX;
+
+	return 0;
+}
+
+MODULE_AUTHOR("Wilma Wu");
+MODULE_DESCRIPTION("MT6370 Display Bias Debugfs Driver");
+MODULE_LICENSE("GPL");
+
