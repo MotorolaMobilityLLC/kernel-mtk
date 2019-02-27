@@ -40,6 +40,23 @@ enum {
 	PIDLOG_MODE_MM_FS
 };
 
+enum mtk_btag_dir_enum {
+	btag_dir_r = 0,
+	btag_dir_w,
+	btag_dir_all,
+	btag_dir_unknown = -1
+};
+
+enum mtk_btag_storage_type {
+	btag_storage_embedded = 0,
+	btag_storage_external
+};
+
+enum mtk_btag_req_status {
+	btag_req_start = 0,
+	btag_req_end
+};
+
 struct mtk_btag_workload {
 	__u64 period;  /* period time (ns) */
 	__u64 usage;   /* busy time (ns) */
@@ -56,6 +73,50 @@ struct mtk_btag_throughput_rw {
 struct mtk_btag_throughput {
 	struct mtk_btag_throughput_rw r;  /* read */
 	struct mtk_btag_throughput_rw w;  /* write */
+};
+
+struct mtk_btag_req_rw {
+	__u16 count;
+	__u32 size; /* bytes */
+};
+
+struct mtk_btag_req {
+	struct mtk_btag_req_rw r; /* read */
+	struct mtk_btag_req_rw w; /* write */
+};
+
+/*
+ * public structure to provide IO statistics
+ * in a period of time.
+ */
+struct mtk_btag_mictx_iostat_struct {
+	__u64 duration;  /* duration time for below performance data (ns) */
+	__u32 tp_req_r;  /* throughput (per-request): read  (KB/s) */
+	__u32 tp_req_w;  /* throughput (per-request): write (KB/s) */
+	__u32 tp_all_r;  /* throughput (overlapped) : read  (KB/s) */
+	__u32 tp_all_w;  /* throughput (overlapped) : write (KB/s) */
+	__u32 reqsize_r; /* request size : read  (Bytes) */
+	__u32 reqsize_w; /* request size : write (Bytes) */
+	__u32 reqcnt_r;  /* request count: read */
+	__u32 reqcnt_w;  /* request count: write */
+	__u16 wl;        /* storage device workload (%) */
+	__u16 q_depth;   /* storage cmdq queue depth */
+};
+
+/*
+ * mini context for integration with
+ * other performance analysis tools.
+ */
+struct mtk_btag_mictx_struct {
+	struct mtk_btag_throughput tp;
+	struct mtk_btag_req req;
+	__u64 window_begin;
+	__u64 tp_min_time;
+	__u64 tp_max_time;
+	__u64 idle_begin;
+	__u64 idle_total;
+	__u32 q_depth;
+	spinlock_t lock;
 };
 
 struct mtk_btag_vmstat {
@@ -178,12 +239,27 @@ void mtk_btag_pidlog_copy_pid(struct page *src, struct page *dst);
 void mtk_btag_pidlog_submit_bio(struct bio *bio);
 void mtk_btag_pidlog_set_pid(struct page *p);
 
+void mtk_btag_mictx_enable(int enable);
+void mtk_btag_mictx_eval_tp(
+	unsigned int rw, __u64 usage, __u32 size);
+void mtk_btag_mictx_eval_req(
+	unsigned int rw, __u32 cnt, __u32 size);
+int mtk_btag_mictx_get_data(
+	struct mtk_btag_mictx_iostat_struct *iostat);
+void mtk_btag_mictx_update_ctx(__u32 q_depth);
+
 #else
 
 #define mtk_btag_pidlog_copy_pid(...)
 #define mtk_btag_pidlog_map_sg(...)
 #define mtk_btag_pidlog_submit_bio(...)
 #define mtk_btag_pidlog_set_pid(...)
+
+#define mtk_btag_mictx_enable(...)
+#define mtk_btag_mictx_eval_tp(...)
+#define mtk_btag_mictx_eval_req(...)
+#define mtk_btag_mictx_get_data(...)
+#define mtk_btag_mictx_update_ctx(...)
 
 #endif
 
