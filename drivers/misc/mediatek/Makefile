@@ -48,3 +48,4 @@ obj-y += sspm/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
 obj-$(CONFIG_MTK_SMI_EXT)	+= smi/
 obj-$(CONFIG_MTK_USB_TYPEC) += typec/
+obj-$(CONFIG_MTK_RTC)	+= rtc/
