@@ -20,7 +20,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/delay.h>
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
 #endif
 #include <linux/proc_fs.h>
