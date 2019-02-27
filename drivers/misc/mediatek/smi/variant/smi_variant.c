@@ -838,17 +838,17 @@ static long smi_ioctl(struct file *pFile, unsigned int cmd, unsigned long param)
 #ifdef MMDVFS_ENABLE
 	case MTK_IOC_MMDVFS_CMD:
 		{
-			MTK_MMDVFS_CMD mmdvfs_cmd;
+			struct MTK_MMDVFS_CMD mmdvfs_cmd;
 
-			if (copy_from_user(&mmdvfs_cmd,
-					(void *)param, sizeof(MTK_MMDVFS_CMD)))
+			if (copy_from_user(&mmdvfs_cmd,	(void *)param,
+					sizeof(struct MTK_MMDVFS_CMD)))
 				return -EFAULT;
 
 			mmdvfs_handle_cmd(&mmdvfs_cmd);
 
 			if (copy_to_user((void *)param,
 					(void *)&mmdvfs_cmd,
-					sizeof(MTK_MMDVFS_CMD)))
+					sizeof(struct MTK_MMDVFS_CMD)))
 				return -EFAULT;
 
 			break;
@@ -1159,6 +1159,8 @@ static int mtk_smi_remove(struct platform_device *pdev);
 static const struct of_device_id mtk_smi_of_ids[] = {
 	{ .compatible = "mediatek,mt8173-smi-common",
 	  .data = &smi_mt8173_priv, },
+	{ .compatible = "mediatek,mt8163-smi",
+	  .data = &smi_mt8163_priv, },
 	{}
 };
 
@@ -1210,7 +1212,9 @@ static int mtk_smi_probe(struct platform_device *pdev)
 	smi_data->smi_priv = priv;
 
 	pm_runtime_enable(dev);
+	pm_runtime_get_sync(dev);
 	dev_set_drvdata(dev, smipriv);
+
 	return 0;
 }
 
@@ -1352,6 +1356,7 @@ static int __init smi_init_late(void)
 	pr_debug("%s\n", __func__);
 
 	smi_common_init();
+	pm_runtime_put_sync(smi_data->smicommon);
 
 	return 0;
 }
