@@ -159,6 +159,12 @@ spm_set_sleep_wakesrc(u32 wakesrc, bool enable, bool replace)
 	return 0;
 }
 
+bool __attribute__((weak)) spm_is_enable_sleep(void)
+{
+	pr_info("NO %s !!!\n", __func__);
+	return false;
+}
+
 unsigned int __attribute__((weak))
 spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 {
@@ -402,11 +408,7 @@ void slp_module_init(void)
 	struct mtk_idle_sysfs_handle pParent2ND;
 	struct mtk_idle_sysfs_handle *pParent = NULL;
 
-#if defined(CONFIG_MACH_MT6765)
-	slp_suspend_ops_valid_on = false;
-#else
-	slp_suspend_ops_valid_on = true;
-#endif
+	slp_suspend_ops_valid_on = spm_is_enable_sleep();
 
 	mtk_idle_sysfs_entry_create();
 	if (mtk_idle_sysfs_entry_root_get(&pParent) == 0) {
