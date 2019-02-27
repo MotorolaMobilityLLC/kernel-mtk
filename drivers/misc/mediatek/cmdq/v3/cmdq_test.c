@@ -7045,9 +7045,11 @@ static void testmbox_dma_access(void)
 	const u32 pattern = 0xabcdabcd;
 	const u32 pattern2 = 0xaabbccdd;
 	const u32 pat_default = 0xdeaddead;
+	const u32 pattern3 = 0xdeadbeef;
 	unsigned long dummy_va, dummy_pa;
-	dma_addr_t slot = 0;
+	dma_addr_t slot = 0, slot2;
 	u32 *va, value;
+	u32 mem_off = 0xabc;
 
 	if (gCmdqTestSecure) {
 		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
@@ -7078,6 +7080,8 @@ static void testmbox_dma_access(void)
 	cmdq_pkt_mem_move(pkt, clt_base, slot, slot + 4, CMDQ_THR_SPR_IDX1);
 	cmdq_pkt_mem_move(pkt, clt_base, slot + 8, dummy_pa, CMDQ_THR_SPR_IDX1);
 	cmdq_pkt_flush(clt, pkt);
+	cmdq_pkt_dump_buf(pkt, 0);
+	cmdq_pkt_destroy(pkt);
 
 	if (va[0] != pattern)
 		CMDQ_TEST_FAIL(
@@ -7092,6 +7096,31 @@ static void testmbox_dma_access(void)
 		CMDQ_TEST_FAIL(
 			"%s move pa to dram dummy:0x%08x pattern:0x%08x default:0x%08x\n",
 			__func__, value, pattern2, pat_default);
+
+	/* write pattern and read */
+	cmdq_pkt_cl_create(&pkt, clt);
+	cmdq_pkt_jump(pkt, 8);
+
+	va[mem_off / 4] = 0;
+	va[mem_off / 4 + 1] = 0;
+	slot2 = slot + mem_off;
+
+	cmdq_pkt_write_value_addr(pkt, slot2, 0xdeadbeef, ~0);
+	cmdq_pkt_read_addr(pkt, slot2, CMDQ_THR_SPR_IDX1);
+	cmdq_pkt_write_reg_addr(pkt, slot2 + 4, CMDQ_THR_SPR_IDX1, ~0);
+	cmdq_pkt_flush(clt, pkt);
+	cmdq_pkt_dump_buf(pkt, 0);
+	cmdq_pkt_destroy(pkt);
+
+	if (va[mem_off / 4] != va[mem_off / 4 + 1] ||
+		va[mem_off / 4 + 1] != pattern3) {
+		CMDQ_TEST_FAIL(
+			"pa:%pa va:0x%p pattern:0x%08x data:0x%08x 0x%08x\n",
+			&slot2, &va[mem_off / 4], pattern3,
+			va[mem_off / 4], va[mem_off / 4 + 1]);
+	}
+
+	cmdq_mbox_buf_free(clt->client.dev, va, slot);
 
 	CMDQ_LOG("%s END\n", __func__);
 }
@@ -7239,6 +7268,8 @@ static void testmbox_poll_run(u32 poll_value, u32 poll_mask,
 		dst_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
 	}
 
+	CMDQ_REG_SET32(dummy_va, 0);
+
 	CMDQ_LOG("%s poll value:0x%08x poll mask:0x%08x use mmsys:%s\n",
 		__func__, poll_value, poll_mask,
 		use_mmsys_dummy ? "true" : "false");
@@ -7371,6 +7402,237 @@ static void testmbox_dump_err(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+static void testmbox_poll_timeout_run(u32 poll_value, u32 poll_mask,
+	bool use_mmsys_dummy, bool timeout)
+{
+	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
+	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
+	struct cmdq_pkt *pkt;
+	struct cmdq_pkt_buffer *buf;
+	struct cmdq_flush_completion cmplt = {0};
+	u32 value = 0, dst_reg_pa, cost;
+	unsigned long dummy_va;
+	dma_addr_t out_pa;
+	u32 *out_va;
+	u64 cpu_cost;
+
+	if (gCmdqTestSecure || use_mmsys_dummy) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dst_reg_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dst_reg_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0x80000000);
+	CMDQ_REG_SET32(dummy_va, 0);
+
+	CMDQ_LOG("%s poll value:0x%08x poll mask:0x%08x use mmsys:%s\n",
+		__func__, poll_value, poll_mask,
+		use_mmsys_dummy ? "true" : "false");
+
+	cmdq_pkt_cl_create(&pkt, clt);
+	cmdq_pkt_wfe(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
+
+	buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+	/* use last 1024 as output buffer */
+	out_pa = buf->pa_base + 3096;
+	out_va = (u32 *)(buf->va_base + 3096);
+	*out_va = 0;
+	*(out_va + 1) = 0;
+
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa, CMDQ_CPR_STRAT_ID, ~0);
+	cmdq_pkt_poll_timeout(pkt, clt_base, poll_value, dst_reg_pa, poll_mask,
+		100, CMDQ_DATA_REG_DEBUG);
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa + 4,
+		CMDQ_CPR_STRAT_ID, ~0);
+	cmdq_pkt_set_event(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
+	init_completion(&cmplt.cmplt);
+	cmplt.pkt = pkt;
+
+	cpu_cost = sched_clock();
+	cmdq_pkt_flush_async(clt, pkt, testmbox_cmplt_cb, &cmplt);
+
+	if (!timeout) {
+		/* Set dummy register value after clock is on */
+		CMDQ_REG_SET32(dummy_va, poll_value);
+		value = CMDQ_REG_GET32(dummy_va);
+	}
+
+	wait_for_completion(&cmplt.cmplt);
+	cpu_cost = div_u64(sched_clock() - cpu_cost, 1000000);
+
+	cmdq_pkt_dump_buf(pkt, 0);
+
+	/* calculate cost */
+	if (*out_va <= *(out_va + 1))
+		cost = *(out_va + 1) - *out_va;
+	else
+		cost = (0xffffffff - *out_va) + *(out_va + 1);
+
+	/* wait 100 count and each time 5 tick, add 100 for buffer */
+	if (cost > 600 || cpu_cost > 10)
+		CMDQ_TEST_FAIL(
+			"target value is 0x%08x cost timed out:%d to 600 cpu:%llu to 10ms\n",
+			value, cost, cpu_cost);
+	else
+		CMDQ_LOG("target value is 0x%08x cost time:%d cpu:%llu\n",
+			value, cost, cpu_cost);
+	cmdq_pkt_destroy(pkt);
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testmbox_poll_timeout(void)
+{
+	testmbox_poll_timeout_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00,
+		false, false);
+	testmbox_poll_timeout_run(0xdada1818, 0xFFFFFFFF, false, false);
+	testmbox_poll_timeout_run(0xdada1818 & 0x0000FF00, 0x0000FF00,
+		false, false);
+	testmbox_poll_timeout_run(0x00001818, 0xFFFFFFFF, false, false);
+	testmbox_poll_timeout_run(0x1, 0xFFFFFFFF, false, true);
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	/* fpga may not ready mmsys */
+	testmbox_poll_timeout_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00, true,
+		false);
+	testmbox_poll_timeout_run(0xdada1818, 0xFFFFFFFF, true, false);
+	testmbox_poll_timeout_run(0xdada1818 & 0x0000FF00, 0x0000FF00, true,
+		false);
+	testmbox_poll_timeout_run(0x00001818, 0xFFFFFFFF, true, false);
+#endif
+}
+
+static void testmbox_gpr_timer(void)
+{
+#define CMDQ_TPR_TIMEOUT_EN		0xDC
+	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
+	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
+	struct cmdq_thread *thread = (struct cmdq_thread *)clt->chan->con_priv;
+	const u32 timeout_en = thread->gce_pa + CMDQ_TPR_TIMEOUT_EN;
+	struct cmdq_pkt *pkt;
+	struct cmdq_pkt_buffer *buf;
+	const u16 reg_gpr = CMDQ_DATA_REG_DEBUG;
+	const u32 tpr_en = 1 << reg_gpr;
+	const u16 event = (u16)GCE_TOKEN_GPR_TIMER + reg_gpr;
+	struct cmdq_operand lop = {.reg = true, .idx = CMDQ_TPR_ID};
+	struct cmdq_operand rop = {.reg = false, .value = 100};
+	u32 cost;
+	dma_addr_t out_pa;
+	u32 *out_va;
+	u64 cpu_cost;
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0x80000000);
+	CMDQ_REG_SET32(CMDQ_TPR_GPR_TIMER, tpr_en);
+
+	CMDQ_LOG("%s GCE PA:%pa\n", __func__, &thread->gce_pa);
+
+	cmdq_pkt_cl_create(&pkt, clt);
+	cmdq_pkt_write(pkt, clt_base, timeout_en, tpr_en, tpr_en);
+	cmdq_pkt_clear_event(pkt, event);
+	cmdq_pkt_logic_command(pkt, CMDQ_LOGIC_ADD, CMDQ_GPR_CNT_ID + reg_gpr,
+		&lop, &rop);
+	cmdq_pkt_wfe(pkt, event);
+
+	buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+	/* use last 1024 as output buffer */
+	out_pa = buf->pa_base + 3096;
+	out_va = (u32 *)(buf->va_base + 3096);
+	*out_va = 0;
+	*(out_va + 1) = 0;
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa, CMDQ_TPR_ID, ~0);
+
+	cpu_cost = sched_clock();
+	cmdq_pkt_flush(clt, pkt);
+	cpu_cost = div_u64(sched_clock() - cpu_cost, 1000000);
+
+	cmdq_pkt_dump_buf(pkt, 0);
+
+	/* calculate cost */
+	if (*out_va <= *(out_va + 1))
+		cost = *(out_va + 1) - *out_va;
+	else
+		cost = (0xffffffff - *out_va) + *(out_va + 1);
+
+	/* wait 100 count and each time 5 tick, add 100 for buffer */
+	if (cost > 600 || cpu_cost > 10000)
+		CMDQ_TEST_FAIL(
+			"%s sleep cost timedout:%u (%u) to 600 cpu:%lluus to 10ms\n",
+			__func__, cost, *out_va, cpu_cost);
+	else
+		CMDQ_LOG("%s sleep cost time:%u (%u) cpu:%llu\n",
+			__func__, cost, *out_va, cpu_cost);
+	cmdq_pkt_destroy(pkt);
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testmbox_sleep(void)
+{
+	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
+	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
+	struct cmdq_pkt *pkt;
+	struct cmdq_pkt_buffer *buf;
+	u32 cost;
+	dma_addr_t out_pa;
+	u32 *out_va;
+	u64 cpu_cost;
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0x80000000);
+	CMDQ_REG_SET32(CMDQ_TPR_GPR_TIMER,
+		1 << CMDQ_DATA_REG_DEBUG);
+
+	CMDQ_LOG("%s\n", __func__);
+
+	cmdq_pkt_cl_create(&pkt, clt);
+	cmdq_pkt_wfe(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
+
+	buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+	/* use last 1024 as output buffer */
+	out_pa = buf->pa_base + 3096;
+	out_va = (u32 *)(buf->va_base + 3096);
+	*out_va = 0;
+	*(out_va + 1) = 0;
+
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa, CMDQ_TPR_ID, ~0);
+	cmdq_pkt_sleep(pkt, clt_base, 100, CMDQ_DATA_REG_DEBUG);
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa + 4, CMDQ_TPR_ID, ~0);
+	cmdq_pkt_set_event(pkt, CMDQ_SYNC_TOKEN_GPR_SET_4);
+
+	cmdq_pkt_write_indriect(pkt, clt_base, out_pa + 8,
+		CMDQ_GPR_CNT_ID + CMDQ_DATA_REG_DEBUG, ~0);
+
+	cpu_cost = sched_clock();
+	cmdq_pkt_flush(clt, pkt);
+	cpu_cost = div_u64(sched_clock() - cpu_cost, 1000000);
+
+	cmdq_pkt_dump_buf(pkt, 0);
+
+	/* calculate cost */
+	if (*out_va <= *(out_va + 1))
+		cost = *(out_va + 1) - *out_va;
+	else
+		cost = (0xffffffff - *out_va) + *(out_va + 1);
+
+	/* wait 100 count and each time 5 tick, add 100 for buffer */
+	if (cost > 600 || cpu_cost > 10000)
+		CMDQ_TEST_FAIL(
+			"sleep cost timedout:%u (%u %u) to 600 cpu:%lluus to 10ms\n",
+			cost, *out_va, *(out_va + 1), cpu_cost);
+	else
+		CMDQ_LOG("sleep cost time:%u (%u %u) cpu:%llu\n",
+			cost, *out_va, *(out_va + 1), cpu_cost);
+	cmdq_pkt_destroy(pkt);
+
+	CMDQ_REG_SET32(CMDQ_TPR_MASK, 0);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
@@ -7390,6 +7652,13 @@ static void testcase_general_handling(s32 testID)
 	u32 i = 0;
 
 	switch (testID) {
+	case 510:
+		testmbox_gpr_timer();
+		testmbox_sleep();
+		break;
+	case 509:
+		testmbox_poll_timeout();
+		break;
 	case 508:
 		testmbox_dump_err();
 		break;
@@ -7793,6 +8062,8 @@ ssize_t cmdq_test_proc(struct file *fp, char __user *u, size_t s, loff_t *l)
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	/* Turn on GCE clock to make sure GPR is always alive */
 	cmdq_dev_enable_gce_clock(true);
+#else
+	cmdq_core_reset_gce();
 #endif
 
 	cmdq_get_func()->testSetup();

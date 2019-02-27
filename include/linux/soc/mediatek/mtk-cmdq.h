@@ -25,8 +25,15 @@
 #define CMDQ_THR_SPR_MAX		(4)
 
 #define CMDQ_TPR_ID			(56)
+#define CMDQ_GPR_CNT_ID			(32)
 #define CMDQ_CPR_STRAT_ID		(0x8000)
 #define CMDQ_EVENT_MAX			0x3FF
+
+/* GCE provide 26M timer, thus each tick 1/26M second,
+ * which is, 1 microsecond = 26 ticks
+ */
+#define CMDQ_MS_TO_TICK(_t)		(_t * 26)
+
 
 #if IS_ENABLED(CONFIG_MACH_MT6771) || IS_ENABLED(CONFIG_MACH_MT6765) || \
 	IS_ENABLED(CONFIG_MACH_MT6761) || IS_ENABLED(CONFIG_MACH_MT3967)
@@ -36,8 +43,6 @@
 #define CMDQ_REG_SHIFT_ADDR(addr)	((addr) >> 3)
 #define CMDQ_REG_REVERT_ADDR(addr)	((addr) << 3)
 #endif
-
-typedef u64 CMDQ_VARIABLE;
 
 /* GCE provide 32/64 bit General Purpose Register (GPR)
  * use as data cache or address register
@@ -75,6 +80,12 @@ enum cmdq_gpr {
 	CMDQ_GPR_P5 = 0x15,
 	CMDQ_GPR_P6 = 0x16,
 	CMDQ_GPR_P7 = 0x17,
+};
+
+/* Define GCE tokens which not change by platform */
+enum gce_event {
+	/* GPR timer token, 994 to 994+23 */
+	GCE_TOKEN_GPR_TIMER = 994,
 };
 
 struct cmdq_pkt;
@@ -217,12 +228,12 @@ s32 cmdq_pkt_append_command(struct cmdq_pkt *pkt, u16 arg_c, u16 arg_b,
 	enum cmdq_code code);
 
 s32 cmdq_pkt_read(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 src_addr, u16 dst_reg_idx);
+	dma_addr_t src_addr, u16 dst_reg_idx);
 
 s32 cmdq_pkt_read_reg(struct cmdq_pkt *pkt, u8 subsys, u16 offset,
 	u16 dst_reg_idx);
 
-s32 cmdq_pkt_read_addr(struct cmdq_pkt *pkt, u32 addr, u16 dst_reg_idx);
+s32 cmdq_pkt_read_addr(struct cmdq_pkt *pkt, dma_addr_t addr, u16 dst_reg_idx);
 
 s32 cmdq_pkt_write_reg(struct cmdq_pkt *pkt, u8 subsys,
 	u16 offset, u16 src_reg_idx, u32 mask);
@@ -230,20 +241,20 @@ s32 cmdq_pkt_write_reg(struct cmdq_pkt *pkt, u8 subsys,
 s32 cmdq_pkt_write_value(struct cmdq_pkt *pkt, u8 subsys,
 	u16 offset, u32 value, u32 mask);
 
-s32 cmdq_pkt_write_reg_addr(struct cmdq_pkt *pkt, u32 addr,
+s32 cmdq_pkt_write_reg_addr(struct cmdq_pkt *pkt, dma_addr_t addr,
 	u16 src_reg_idx, u32 mask);
 
-s32 cmdq_pkt_write_value_addr(struct cmdq_pkt *pkt, u32 addr,
+s32 cmdq_pkt_write_value_addr(struct cmdq_pkt *pkt, dma_addr_t addr,
 	u32 value, u32 mask);
 
 s32 cmdq_pkt_store_value(struct cmdq_pkt *pkt, u16 indirect_dst_reg_idx,
-	u32 value, u32 mask);
+	u16 dst_addr_low, u32 value, u32 mask);
 
 s32 cmdq_pkt_store_value_reg(struct cmdq_pkt *pkt, u16 indirect_dst_reg_idx,
-	u16 indirect_src_reg_idx, u32 mask);
+	u16 dst_addr_low, u16 indirect_src_reg_idx, u32 mask);
 
 s32 cmdq_pkt_write_indriect(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 addr, u16 src_reg_idx, u32 mask);
+	dma_addr_t addr, u16 src_reg_idx, u32 mask);
 
 /**
  * cmdq_pkt_write() - append write command to the CMDQ packet
@@ -256,10 +267,10 @@ s32 cmdq_pkt_write_indriect(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
  * Return: 0 for success; else the error code is returned
  */
 s32 cmdq_pkt_write(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 addr, u32 value, u32 mask);
+	dma_addr_t addr, u32 value, u32 mask);
 
 s32 cmdq_pkt_mem_move(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 src_addr, u32 dst_addr, u16 swap_reg_idx);
+	dma_addr_t src_addr, dma_addr_t dst_addr, u16 swap_reg_idx);
 
 s32 cmdq_pkt_assign_command(struct cmdq_pkt *pkt, u16 reg_idx, u32 value);
 
@@ -290,6 +301,20 @@ s32 cmdq_pkt_poll_reg(struct cmdq_pkt *pkt, u32 value, u8 subsys,
  */
 s32 cmdq_pkt_poll(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 	u32 value, u32 addr, u32 mask, u8 reg_gpr);
+
+/* cmdq_pkt_sleep() - append commands to wait a short time in microsecond
+ * @pkt:	the CMDQ packet
+ * @clt_base:	the CMDQ base
+ * @tick:	sleep time in tick, use CMDQ_MS_TO_TICK to translate into ms
+ * @reg_gpr:	GPR use to counting
+ *
+ * Return 0 for success; else the error code is returned
+ */
+s32 cmdq_pkt_sleep(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
+	u16 tick, u16 reg_gpr);
+
+s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
+	u32 value, u32 addr, u32 mask, u16 count, u16 reg_gpr);
 
 /**
  * cmdq_pkt_wfe() - append wait for event command to the CMDQ packet
