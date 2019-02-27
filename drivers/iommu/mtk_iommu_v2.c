@@ -119,19 +119,24 @@
 #define F_INT_MISS_TRANSACTION_FIFO_FAULT	BIT(5)
 #define F_INT_PRETETCH_TRANSATION_FIFO_FAULT	BIT(6)
 
+#define F_INT_MMU0_MAIN_MSK			F_MSK(6, 0)
+#define F_INT_MMU1_MAIN_MSK			F_MSK(13, 7)
+#define F_INT_MMU0_MAU_MSK			F_MSK(17, 14)
+#define F_INT_MMU1_MAU_MSK			F_MSK(21, 18)
+
 #define REG_MMU_CPE_DONE			0x12C
 
 #define REG_MMU_L2_FAULT_ST			0x130
 #define REG_MMU_FAULT_ST1			0x134
 
-#define REG_MMU_FAULT_VA			0x13c
-#define F_MMU_FAULT_VA_MSK			0xfffff000
-#define F_MMU_FAULT_VA_WRITE_BIT		BIT(1)
-#define F_MMU_FAULT_VA_LAYER_BIT		BIT(0)
+#define REG_MMU_FAULT_VA(mmu)			(0x13c+((mmu)<<3))
+#define F_MMU_FAULT_VA_MSK			F_MSK(31, 12)
+#define F_MMU_FAULT_VA_WRITE_BIT		F_BIT_SET(1)
+#define F_MMU_FAULT_VA_LAYER_BIT		F_BIT_SET(0)
 
-#define REG_MMU_INVLD_PA			0x140
-#define REG_MMU_INT_ID				0x150
-
+#define REG_MMU_INVLD_PA(mmu)			(0x140+((mmu)<<3))
+#define REG_MMU_INT_ID(mmu)			(0x150+((mmu)<<2))
+#define F_MMU0_INT_ID_TF_MSK			(~0x3)	/* only for MM iommu.*/
 
 inline void m4uHw_set_field_by_mask(void __iomem *M4UBase, unsigned int reg,
 					   unsigned long mask, unsigned int val)
@@ -317,18 +322,30 @@ static irqreturn_t mtk_iommu_isr(int irq, void *dev_id)
 	u32 int_state, regval, fault_iova, fault_pa;
 	unsigned int fault_larb, fault_port;
 	bool layer, write;
+	int slave_id = 0;
 
 	/* Read error info from registers */
 	regval = readl_relaxed(data->base + REG_MMU_L2_FAULT_ST);
 	int_state = readl_relaxed(data->base + REG_MMU_FAULT_ST1);
 
+	if (int_state & (F_INT_MMU0_MAIN_MSK | F_INT_MMU0_MAU_MSK))
+		slave_id = 0;
+	else if (int_state & (F_INT_MMU1_MAIN_MSK | F_INT_MMU1_MAU_MSK))
+		slave_id = 1;
+	else {
+		pr_info("m4u interrupt error: status = 0x%x\n", int_state);
+		m4uHw_set_field_by_mask(data->base, REG_MMU_INT_CONTROL0,
+				       F_INT_CLR_BIT, F_INT_CLR_BIT);
+		return 0;
+	}
+
 	pr_info("iommu L2 int sta=0x%x, main sta=0x%x\n", regval, int_state);
-	fault_iova = readl_relaxed(data->base + REG_MMU_FAULT_VA);
+	fault_iova = readl_relaxed(data->base + REG_MMU_FAULT_VA(slave_id));
 	layer = fault_iova & F_MMU_FAULT_VA_LAYER_BIT;
 	write = fault_iova & F_MMU_FAULT_VA_WRITE_BIT;
 	fault_iova &= F_MMU_FAULT_VA_MSK;
-	fault_pa = readl_relaxed(data->base + REG_MMU_INVLD_PA);
-	regval = readl_relaxed(data->base + REG_MMU_INT_ID);
+	fault_pa = readl_relaxed(data->base + REG_MMU_INVLD_PA(slave_id));
+	regval = readl_relaxed(data->base + REG_MMU_INT_ID(slave_id));
 	fault_larb = F_MMU0_INT_ID_LARB_ID(regval);
 	fault_port = F_MMU0_INT_ID_PORT_ID(regval);
 
