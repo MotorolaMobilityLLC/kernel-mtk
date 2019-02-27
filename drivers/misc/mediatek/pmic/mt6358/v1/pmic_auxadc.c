@@ -55,14 +55,20 @@ unsigned int pmic_get_vbif28_volt(void)
 
 bool is_isense_supported(void)
 {
-	/* PMIC MT6357 supports ISENSE */
-	return true;
+	/* PMIC MT6358 does not support ISENSE */
+	return false;
 }
 
 /* BAT_TEMP background control */
 void wk_auxadc_bgd_ctrl(unsigned char en)
 {
-/*--MT6357 not support Battmp BGD--*/
+	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MAX, en);
+	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_EN_MAX, en);
+	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_IRQ_EN_MIN, en);
+	pmic_set_hk_reg_value(PMIC_AUXADC_BAT_TEMP_EN_MIN, en);
+
+	pmic_set_hk_reg_value(PMIC_RG_INT_EN_BAT_TEMP_H, en);
+	pmic_set_hk_reg_value(PMIC_RG_INT_EN_BAT_TEMP_L, en);
 }
 
 void pmic_auxadc_suspend(void)
@@ -85,6 +91,167 @@ void lockadcch3(void)
 void unlockadcch3(void)
 {
 	mutex_unlock(&auxadc_ch3_mutex);
+}
+
+/*********************************
+ * PMIC AUXADC Calibration
+ *********************************/
+static unsigned int g_DEGC;
+static unsigned int g_O_VTS;
+static unsigned int g_O_SLOPE_SIGN;
+static unsigned int g_O_SLOPE;
+static unsigned int g_CALI_FROM_EFUSE_EN;
+static unsigned int g_GAIN_AUX;
+static unsigned int g_SIGN_AUX;
+static unsigned int g_GAIN_BGRL;
+static unsigned int g_SIGN_BGRL;
+static unsigned int g_TEMP_L_CALI;
+static unsigned int g_GAIN_BGRH;
+static unsigned int g_SIGN_BGRH;
+static unsigned int g_TEMP_H_CALI;
+static unsigned int g_AUXCALI_EN;
+static unsigned int g_BGRCALI_EN;
+
+static int wk_aux_cali(int T_curr, int vbat_out)
+{
+	signed long long coeff_gain_aux = 0;
+	signed long long vbat_cali = 0;
+
+	coeff_gain_aux = (317220 + 11960 * (signed long long)g_GAIN_AUX);
+	vbat_cali = div_s64((vbat_out * (T_curr - 250) * coeff_gain_aux), 255);
+	vbat_cali = div_s64(vbat_cali, 1000000000);
+	if (g_SIGN_AUX == 0)
+		vbat_out += vbat_cali;
+	else
+		vbat_out -= vbat_cali;
+	return vbat_out;
+}
+
+static int wk_bgr_cali(int T_curr, int vbat_out)
+{
+	signed long long coeff_gain_bgr = 0;
+	signed int T_L = -100 + g_TEMP_L_CALI * 25;
+	signed int T_H = 600 + g_TEMP_H_CALI * 25;
+
+	if (T_curr < T_L) {
+		coeff_gain_bgr = (127 + 8 * (signed long long)g_GAIN_BGRL);
+		if (g_SIGN_BGRL == 0)
+			vbat_out += div_s64((vbat_out * (T_curr - T_L) *
+					     coeff_gain_bgr), 127000000);
+		else
+			vbat_out -= div_s64((vbat_out * (T_curr - T_L) *
+					     coeff_gain_bgr), 127000000);
+	} else if (T_curr > T_H) {
+		coeff_gain_bgr = (127 + 8 * (signed long long)g_GAIN_BGRH);
+		if (g_SIGN_BGRH == 0)
+			vbat_out -= div_s64((vbat_out * (T_curr - T_H) *
+					     coeff_gain_bgr), 127000000);
+		else
+			vbat_out += div_s64((vbat_out * (T_curr - T_H) *
+					     coeff_gain_bgr), 127000000);
+	}
+
+	return vbat_out;
+}
+
+/* vbat_out unit is 0.1mV, vthr unit is mV */
+int wk_vbat_cali(int vbat_out, int precision_factor)
+{
+	int mV_diff = 0;
+	int T_curr = 0; /* unit: 0.1 degrees C*/
+	int vbat_out_old;
+	int vthr;
+
+	vthr = auxadc_priv_read_channel(AUXADC_CHIP_TEMP);
+	mV_diff = vthr - g_O_VTS * 1800 / 4096;
+	if (g_O_SLOPE_SIGN == 0)
+		T_curr = mV_diff * 10000 / (signed int)(1681 + g_O_SLOPE * 10);
+	else
+		T_curr = mV_diff * 10000 / (signed int)(1681 - g_O_SLOPE * 10);
+	T_curr = (g_DEGC * 10 / 2) - T_curr;
+	/*pr_info("%d\n", T_curr);*/
+
+	if (precision_factor > 1)
+		vbat_out *= precision_factor;
+	vbat_out_old = vbat_out;
+	if (g_AUXCALI_EN == 1) {
+		vbat_out = wk_aux_cali(T_curr, vbat_out);
+		/*pr_info("vbat_out_auxcali = %d\n", vbat_out);*/
+	}
+
+	if (g_BGRCALI_EN == 1) {
+		vbat_out = wk_bgr_cali(T_curr, vbat_out);
+		/*pr_info("vbat_out_bgrcali = %d\n", vbat_out);*/
+	}
+
+	if (abs(vbat_out - vbat_out_old) > 1000) {
+		pr_notice("vbat_out_old=%d, vthr=%d, T_curr=%d, vbat_out=%d\n",
+			vbat_out_old, vthr, T_curr, vbat_out);
+		pr_notice("%d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+			g_DEGC, g_O_VTS, g_O_SLOPE_SIGN, g_O_SLOPE,
+			g_SIGN_AUX, g_SIGN_BGRL, g_SIGN_BGRH,
+			g_AUXCALI_EN, g_BGRCALI_EN,
+			g_GAIN_AUX, g_GAIN_BGRL, g_GAIN_BGRH,
+			g_TEMP_L_CALI, g_TEMP_H_CALI);
+#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+		aee_kernel_warning("PMIC AUXADC CALI", "VBAT CALI");
+#endif
+	} else
+		pr_info("vbat_out_old=%d, vthr=%d, T_curr=%d, vbat_out=%d\n",
+			vbat_out_old, vthr, T_curr, vbat_out);
+
+	if (precision_factor > 1)
+		vbat_out = DIV_ROUND_CLOSEST(vbat_out, precision_factor);
+	return vbat_out;
+}
+
+static void auxadc_cali_init(void)
+{
+	unsigned int efuse = 0;
+
+	if (pmic_get_register_value(PMIC_AUXADC_EFUSE_ADC_CALI_EN) == 1) {
+		g_DEGC = pmic_get_register_value(PMIC_AUXADC_EFUSE_DEGC_CALI);
+		if (g_DEGC < 38 || g_DEGC > 60)
+			g_DEGC = 53;
+		g_O_VTS = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_VTS);
+		g_O_SLOPE_SIGN =
+			pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE_SIGN);
+		g_O_SLOPE = pmic_get_register_value(PMIC_AUXADC_EFUSE_O_SLOPE);
+	} else {
+		g_DEGC = 50;
+		g_O_VTS = 1600;
+	}
+
+	efuse = pmic_Read_Efuse_HPOffset(39);
+	g_CALI_FROM_EFUSE_EN = (efuse >> 2) & 0x1;
+	if (g_CALI_FROM_EFUSE_EN == 1) {
+		g_SIGN_AUX = (efuse >> 3) & 0x1;
+		g_AUXCALI_EN = (efuse >> 6) & 0x1;
+		g_GAIN_AUX = (efuse >> 8) & 0xFF;
+	} else {
+		g_SIGN_AUX = 0;
+		g_AUXCALI_EN = 1;
+		g_GAIN_AUX = 106;
+	}
+	g_SIGN_BGRL = (efuse >> 4) & 0x1;
+	g_SIGN_BGRH = (efuse >> 5) & 0x1;
+	g_BGRCALI_EN = (efuse >> 7) & 0x1;
+
+	efuse = pmic_Read_Efuse_HPOffset(40);
+	g_GAIN_BGRL = (efuse >> 9) & 0x7F;
+	efuse = pmic_Read_Efuse_HPOffset(41);
+	g_GAIN_BGRH = (efuse >> 9) & 0x7F;
+
+	efuse = pmic_Read_Efuse_HPOffset(42);
+	g_TEMP_L_CALI = (efuse >> 10) & 0x7;
+	g_TEMP_H_CALI = (efuse >> 13) & 0x7;
+
+	pr_info("%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d\n",
+		g_DEGC, g_O_VTS, g_O_SLOPE_SIGN, g_O_SLOPE,
+		g_CALI_FROM_EFUSE_EN, g_SIGN_AUX, g_SIGN_BGRL, g_SIGN_BGRH,
+		g_AUXCALI_EN, g_BGRCALI_EN,
+		g_GAIN_AUX, g_GAIN_BGRL, g_GAIN_BGRH,
+		g_TEMP_L_CALI, g_TEMP_H_CALI);
 }
 
 /*********************************
@@ -193,17 +360,19 @@ static void wk_auxadc_dbg_init(void)
 	unsigned int addr = 0x1000;
 
 	/* All of AUXADC */
-	for (i = 0; addr <= 0x1236; i++) {
+	for (i = 0; addr <= 0x1266; i++) {
 		adc_dbg_addr[i] = addr;
 		addr += 0x2;
 	}
 	/* Clock related */
-	adc_dbg_addr[i++] = MT6357_HK_TOP_CLK_CON0;
-	adc_dbg_addr[i++] = MT6357_HK_TOP_CLK_CON1;
+	adc_dbg_addr[i++] = MT6358_HK_TOP_CLK_CON0;
+	adc_dbg_addr[i++] = MT6358_HK_TOP_CLK_CON1;
 	/* RST related */
-	adc_dbg_addr[i++] = MT6357_HK_TOP_RST_CON0;
+	adc_dbg_addr[i++] = MT6358_HK_TOP_RST_CON0;
 	/* Others */
-	adc_dbg_addr[i++] = MT6357_BATON_ANA_CON0;
+	adc_dbg_addr[i++] = MT6358_BATON_ANA_CON0;
+	adc_dbg_addr[i++] = MT6358_PCHR_VREF_ELR_0;
+	adc_dbg_addr[i++] = MT6358_PCHR_VREF_ELR_1;
 }
 
 /*********************************
@@ -233,24 +402,24 @@ static void mdrt_reg_dump(void)
 #ifdef CONFIG_MTK_PMIC_WRAP_HAL
 	pwrap_dump_all_register();
 #endif
-	pr_notice("AUXADC_ADC16 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_ADC16));
-	pr_notice("AUXADC_ADC17 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_ADC17));
-	pr_notice("AUXADC_ADC18 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_ADC18));
-	pr_notice("AUXADC_ADC36 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_ADC36));
-	pr_notice("AUXADC_MDRT_0 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_MDRT_0));
-	pr_notice("AUXADC_MDRT_1 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_MDRT_1));
-	pr_notice("AUXADC_MDRT_2 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_MDRT_2));
-	pr_notice("AUXADC_MDRT_3 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_MDRT_3));
-	pr_notice("AUXADC_MDRT_4 = 0x%x\n"
-		  , upmu_get_reg_value(MT6357_AUXADC_MDRT_4));
+	pr_notice("AUXADC_ADC15 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_ADC15));
+	pr_notice("AUXADC_ADC16 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_ADC16));
+	pr_notice("AUXADC_ADC17 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_ADC17));
+	pr_notice("AUXADC_ADC31 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_ADC31));
+	pr_notice("AUXADC_MDRT_0 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_MDRT_0));
+	pr_notice("AUXADC_MDRT_1 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_MDRT_1));
+	pr_notice("AUXADC_MDRT_2 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_MDRT_2));
+	pr_notice("AUXADC_MDRT_3 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_MDRT_3));
+	pr_notice("AUXADC_MDRT_4 = 0x%x\n",
+		upmu_get_reg_value(MT6358_AUXADC_MDRT_4));
 	/*--AUXADC CLK--*/
 	pr_notice("RG_AUXADC_CK_PDN = 0x%x, RG_AUXADC_CK_PDN_HWEN = 0x%x\n",
 		pmic_get_register_value(PMIC_RG_AUXADC_CK_PDN),
@@ -406,9 +575,10 @@ static struct legacy_auxadc_t legacy_auxadc[] = {
 	LEGACY_AUXADC_GEN(ACCDET),
 	LEGACY_AUXADC_GEN(TSX_TEMP),
 	LEGACY_AUXADC_GEN(HPOFS_CAL),
-	LEGACY_AUXADC_GEN(ISENSE),
 	LEGACY_AUXADC_GEN(VCORE_TEMP),
 	LEGACY_AUXADC_GEN(VPROC_TEMP),
+	LEGACY_AUXADC_GEN(VGPU_TEMP),
+	LEGACY_AUXADC_GEN(VDCXO),
 };
 
 static void legacy_auxadc_init(struct device *dev)
@@ -477,20 +647,21 @@ static void auxadc_bat_temp_convert(unsigned char convert)
 		mutex_unlock(&auxadc_ch3_mutex);
 }
 
-static void auxadc_dcxo_temp_convert(unsigned char convert)
+static void auxadc_vdcxo_convert(unsigned char convert)
 {
+	/* Turn on CH6 measured switch, set AUXADC_ANA_CON0[7] = 1’b1 */
 	if (convert == 1)
-		pmic_set_hk_reg_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 1);
+		pmic_config_interface(MT6358_AUXADC_ANA_CON0, 0x1, 0x1, 7);
 	else if (convert == 0)
-		pmic_set_hk_reg_value(PMIC_AUXADC_DCXO_CH4_MUX_AP_SEL, 0);
+		pmic_config_interface(MT6358_AUXADC_ANA_CON0, 0x0, 0x1, 7);
 }
 
 static void auxadc_vbif_convert(unsigned char convert)
 {
 	if (convert == 1)
-		pmic_set_hk_reg_value(PMIC_BATON_TDET_EN, 0);
+		pmic_set_hk_reg_value(PMIC_RG_BATON_TDET_EN, 0);
 	else if (convert == 0)
-		pmic_set_hk_reg_value(PMIC_BATON_TDET_EN, 1);
+		pmic_set_hk_reg_value(PMIC_RG_BATON_TDET_EN, 1);
 }
 
 static int auxadc_bat_temp_cali(int bat_temp, int precision_factor)
@@ -542,14 +713,6 @@ static struct auxadc_regs_map pmic_auxadc_regs_map[] = {
 		},
 	},
 	{
-		.channel = AUXADC_ISENSE,
-		.regs = {
-			PMIC_AUXADC_RQST_CH1,
-			PMIC_AUXADC_ADC_RDY_CH1_BY_AP,
-			PMIC_AUXADC_ADC_OUT_CH1_BY_AP
-		},
-	},
-	{
 		.channel = AUXADC_VCDT,
 		.regs = {
 			PMIC_AUXADC_RQST_CH2,
@@ -590,11 +753,27 @@ static struct auxadc_regs_map pmic_auxadc_regs_map[] = {
 		},
 	},
 	{
+		.channel = AUXADC_VGPU_TEMP,
+		.regs = {
+			PMIC_AUXADC_RQST_CH4_BY_THR3,
+			PMIC_AUXADC_ADC_RDY_CH4_BY_THR3,
+			PMIC_AUXADC_ADC_OUT_CH4_BY_THR3
+		},
+	},
+	{
 		.channel = AUXADC_ACCDET,
 		.regs = {
 			PMIC_AUXADC_RQST_CH5,
 			PMIC_AUXADC_ADC_RDY_CH5,
 			PMIC_AUXADC_ADC_OUT_CH5
+		},
+	},
+	{
+		.channel = AUXADC_VDCXO,
+		.regs = {
+			PMIC_AUXADC_RQST_CH6,
+			PMIC_AUXADC_ADC_RDY_CH6,
+			PMIC_AUXADC_ADC_OUT_CH6
 		},
 	},
 	{
@@ -616,7 +795,7 @@ static struct auxadc_regs_map pmic_auxadc_regs_map[] = {
 	{
 		.channel = AUXADC_DCXO_TEMP,
 		.regs = {
-			PMIC_AUXADC_RQST_CH4,
+			PMIC_AUXADC_RQST_CH10,
 			PMIC_AUXADC_ADC_RDY_DCXO_BY_AP,
 			PMIC_AUXADC_ADC_OUT_DCXO_BY_AP
 		},
@@ -637,25 +816,37 @@ void pmic_auxadc_chip_timeout_handler(
 	static unsigned short timeout_times;
 
 	if (is_timeout == false) {
+		if (timeout_times > 10) {
+			pr_notice("timeout resolved, disable DATA REUSE\n");
+			pmic_set_hk_reg_value(PMIC_AUXADC_DATA_REUSE_EN, 0);
+		}
 		timeout_times = 0;
 		return;
 	}
 	timeout_times++;
 	dev_notice(dev, "(%d)Time out!STA0=0x%x,STA1=0x%x,STA2=0x%x\n",
 		ch_num,
-		upmu_get_reg_value(MT6357_AUXADC_STA0),
-		upmu_get_reg_value(MT6357_AUXADC_STA1),
-		upmu_get_reg_value(MT6357_AUXADC_STA2));
+		upmu_get_reg_value(MT6358_AUXADC_STA0),
+		upmu_get_reg_value(MT6358_AUXADC_STA1),
+		upmu_get_reg_value(MT6358_AUXADC_STA2));
 	dev_notice(dev, "RST: Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6357_STRUP_CON6,
-		upmu_get_reg_value(MT6357_STRUP_CON6),
-		MT6357_HK_TOP_RST_CON0,
-		upmu_get_reg_value(MT6357_HK_TOP_RST_CON0));
+		MT6358_STRUP_CON6,
+		upmu_get_reg_value(MT6358_STRUP_CON6),
+		MT6358_HK_TOP_RST_CON0,
+		upmu_get_reg_value(MT6358_HK_TOP_RST_CON0));
 	dev_notice(dev, "CLK: Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6357_HK_TOP_CLK_CON0,
-		upmu_get_reg_value(MT6357_HK_TOP_CLK_CON0),
-		MT6357_HK_TOP_CLK_CON1,
-		upmu_get_reg_value(MT6357_HK_TOP_CLK_CON1));
+		MT6358_HK_TOP_CLK_CON0,
+		upmu_get_reg_value(MT6358_HK_TOP_CLK_CON0),
+		MT6358_HK_TOP_CLK_CON1,
+		upmu_get_reg_value(MT6358_HK_TOP_CLK_CON1));
+
+	if (timeout_times > 10 && timeout_times < 13) {
+		pmic_set_hk_reg_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
+		pr_notice("AUXADC timeout, enable DATA REUSE\n");
+#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+		aee_kernel_warning("PMIC AUXADC:TIMEOUT", "");
+#endif
+	}
 }
 
 int pmic_auxadc_chip_init(struct device *dev)
@@ -673,13 +864,15 @@ int pmic_auxadc_chip_init(struct device *dev)
 	}
 	auxadc_set_convert_fn(AUXADC_BATADC, auxadc_batadc_convert);
 	auxadc_set_convert_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_convert);
-	auxadc_set_convert_fn(AUXADC_DCXO_TEMP, auxadc_dcxo_temp_convert);
+	auxadc_set_convert_fn(AUXADC_VDCXO, auxadc_vdcxo_convert);
 	auxadc_set_convert_fn(AUXADC_VBIF, auxadc_vbif_convert);
+	auxadc_set_cali_fn(AUXADC_BATADC, wk_vbat_cali);
 	auxadc_set_cali_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_cali);
 
 #if 1 /*TBD*/
 	legacy_auxadc_init(dev);
 #endif
+	auxadc_cali_init();
 
 	wk_auxadc_dbg_init();
 	mdrt_monitor_init();

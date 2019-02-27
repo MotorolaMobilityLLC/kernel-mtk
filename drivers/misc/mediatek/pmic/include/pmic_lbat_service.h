@@ -15,6 +15,7 @@
 #define __PMIC_LBAT_SERVICE_H__
 
 #include <linux/timer.h>
+#include <linux/workqueue.h>
 
 struct lbat_thd_t;
 
