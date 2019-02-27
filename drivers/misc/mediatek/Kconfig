@@ -62,6 +62,7 @@ source "drivers/misc/mediatek/ice_debug/Kconfig"
 source "drivers/misc/mediatek/udi/Kconfig"
 source "drivers/misc/mediatek/devapc/Kconfig"
 source "drivers/misc/mediatek/ext_gic/Kconfig"
+source "drivers/misc/mediatek/uart/Kconfig"
 
 endmenu # Peripheral
 
