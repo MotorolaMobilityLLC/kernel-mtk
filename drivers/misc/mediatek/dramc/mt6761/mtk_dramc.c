@@ -45,7 +45,7 @@
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/mtk_devinfo.h>
 
-static int enable_lp3_1200;
+static int enable_lp3_1333;
 
 void __iomem *SYS_TIMER_BASE_ADDR;
 void __iomem *DRAMC_AO_CHA_BASE_ADDR;
@@ -1204,6 +1204,8 @@ unsigned int get_dram_data_rate(void)
 			u4DataRate = 1600;
 		else if (u4DataRate == 1534)
 			u4DataRate = 1534;
+		else if (u4DataRate == 1469)
+			u4DataRate = 1466;
 		else if (u4DataRate == 1326)
 			u4DataRate = 1333;
 		else if (u4DataRate == 1196)
@@ -1292,7 +1294,7 @@ int dram_steps_freq(unsigned int step)
 		break;
 	case 2:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = (enable_lp3_1200) ? 1200 : 1333;
+			freq = (enable_lp3_1333) ? 1333 : 1466;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
 				(DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 1534;
@@ -1771,7 +1773,7 @@ static int dram_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	enable_lp3_1200 = get_devinfo_with_index(133) & 0x1;
+	enable_lp3_1333 = get_devinfo_with_index(133) & 0x1;
 
 	if (dram_can_support_fh())
 		dramc_info("dram can support DFS\n");
