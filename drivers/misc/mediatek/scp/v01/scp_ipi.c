@@ -388,3 +388,8 @@ void scp_ipi_status_dump(void)
 			scp_to_ap_ipi_count);
 }
 
+void mt_print_scp_ipi_id(void)
+{
+	pr_info("[SCP]scp_ipi = %x\n", scp_rcv_obj[0]->id);
+}
+

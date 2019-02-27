@@ -87,6 +87,10 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
 extern void mt_eint_print_status(void);
 #endif
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+extern void mt_print_scp_ipi_id(void);
+#endif
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_spm_suspend_val(u32 val);
 #endif
