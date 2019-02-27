@@ -24,6 +24,7 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/pmic/include	\
 	-I$(srctree)/drivers/misc/mediatek/pmic/extbuck \
 	-I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357	\
+	-I$(srctree)/drivers/misc/mediatek/freqhopping/$(CONFIG_MTK_PLATFORM)\
 	-I$(srctree)/include/linux/	\
 	-I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)	\
 	-I$(EEM_ROOT_DIR)/$(CONFIG_MTK_PLATFORM)/inc	\
