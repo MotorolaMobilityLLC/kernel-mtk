@@ -3094,7 +3094,8 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 	struct musb_qh *qh;
 	unsigned long flags;
 	int is_in = usb_pipein(urb->pipe);
-	int ret;
+	int ret, pos;
+	char info[256];
 
 
 	spin_lock_irqsave(&musb->lock, flags);
@@ -3110,15 +3111,23 @@ static int musb_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
 		goto done;
 	}
 
-	DBG(0, "urb<%p>,dev<%d>,ep<%d%s>,qh<%p>,rdy<%d>,prev<%d>,cur<%d>\n",
-			urb,
-			usb_pipedevice(urb->pipe),
-			usb_pipeendpoint(urb->pipe),
-			is_in ? "in" : "out",
-			qh,
-			qh->is_ready,
-			urb->urb_list.prev != &qh->hep->urb_list,
-			musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+	pos = snprintf(info, 256, "urb<%p>,dev<%d>,ep<%d%s>,qh<%p>",
+				urb,
+				usb_pipedevice(urb->pipe),
+				usb_pipeendpoint(urb->pipe),
+				is_in ? "in" : "out",
+				qh);
+
+	snprintf(info + pos, 256, ",rdy<%d>,prev<%d>,cur<%d>",
+				qh->is_ready,
+				urb->urb_list.prev != &qh->hep->urb_list,
+				musb_ep_get_qh(qh->hw_ep, is_in) == qh);
+
+	if (strstr(current->comm, "usb_call"))
+		DBG_LIMIT(5, "%s", info);
+	else
+		DBG(0, "%s\n", info);
+
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	/* abort HW transaction on this ep */
 	if (qh->is_use_qmu)
