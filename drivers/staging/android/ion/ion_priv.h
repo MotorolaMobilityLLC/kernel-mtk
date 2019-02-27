@@ -27,8 +27,11 @@
 #include <linux/shrinker.h>
 #include <linux/types.h>
 #include <linux/miscdevice.h>
+#include "mtk/ion_drv.h"
 
 #include "ion.h"
+
+struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
 
 /**
  * struct ion_buffer - metadata for a particular buffer
@@ -78,6 +81,7 @@ struct ion_buffer {
 	int handle_count;
 	char task_comm[TASK_COMM_LEN];
 	pid_t pid;
+	char alloc_dbg[ION_MM_DBG_NAME_LEN];
 };
 void ion_buffer_destroy(struct ion_buffer *buffer);
 
@@ -133,6 +137,12 @@ struct ion_client {
 	struct task_struct *task;
 	pid_t pid;
 	struct dentry *debug_root;
+	char dbg_name[ION_MM_DBG_NAME_LEN]; /* add by K for debug! */
+};
+
+struct ion_handle_debug {
+	int fd;
+	unsigned long long user_ts; /* alloc or import timestamp */
 };
 
 /**
@@ -154,6 +164,7 @@ struct ion_handle {
 	struct rb_node node;
 	unsigned int kmap_cnt;
 	int id;
+	struct ion_handle_debug dbg; /*add by K for debug */
 };
 
 /**
@@ -181,6 +192,9 @@ struct ion_heap_ops {
 	int (*map_user)(struct ion_heap *mapper, struct ion_buffer *buffer,
 			struct vm_area_struct *vma);
 	int (*shrink)(struct ion_heap *heap, gfp_t gfp_mask, int nr_to_scan);
+	int (*phys)(struct ion_heap *heap, struct ion_buffer *buffer,
+		    ion_phys_addr_t *addr, size_t *len);
+	int (*page_pool_total)(struct ion_heap *heap);
 };
 
 /**
@@ -469,5 +483,7 @@ struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
 int ion_handle_put(struct ion_handle *handle);
 
 int ion_query_heaps(struct ion_client *client, struct ion_heap_query *query);
+
+extern struct ion_device *g_ion_device;
 
 #endif /* _ION_PRIV_H */
