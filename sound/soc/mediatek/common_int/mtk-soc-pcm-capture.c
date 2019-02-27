@@ -362,12 +362,16 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 			      &substream->runtime->dma_area,
 			      substream->runtime->dma_bytes, substream,
 			      params_format(hw_params), false) == 0) {
+#if defined(AUD_DEBUG_LOG)
 		pr_debug("AllocateAudioSram success\n");
+#endif
 		SetHighAddr(cap_mem_blk, false, substream->runtime->dma_addr);
 	} else if (Capture_dma_buf->area) {
+#if defined(AUD_DEBUG_LOG)
 		pr_debug("buf = %p area = %p addr = 0x%lx\n",
 		       Capture_dma_buf, Capture_dma_buf->area,
 		       (long)Capture_dma_buf->addr);
+#endif
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
 		SetHighAddr(cap_mem_blk, true, runtime->dma_addr);
@@ -380,17 +384,20 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	set_mem_block(substream, hw_params, VUL_Control_context, cap_mem_blk);
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       __func__, substream->runtime->dma_bytes,
 	       substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
+#endif
 	return ret;
 }
 
 static int mtk_capture_pcm_hw_free(struct snd_pcm_substream *substream)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_capture_pcm_hw_free\n");
+#endif
 	if (Capture_dma_buf->area) {
 		if (mCaptureUseSram == true) {
 			AudDrv_Emi_Clk_Off();
@@ -438,8 +445,9 @@ static int mtk_capture_pcm_open(struct snd_pcm_substream *substream)
 		mtk_capture_pcm_close(substream);
 		return ret;
 	}
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_capture_pcm_open return\n");
+#endif
 	return 0;
 }
 
@@ -511,8 +519,9 @@ static int mtk_capture_alsa_start(struct snd_pcm_substream *substream)
 
 static int mtk_capture_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_capture_pcm_trigger cmd = %d\n", cmd);
-
+#endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:

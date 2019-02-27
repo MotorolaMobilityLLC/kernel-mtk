@@ -459,9 +459,9 @@ static int mtk_pcm_i2s0_hw_params(struct snd_pcm_substream *substream,
 				  struct snd_pcm_hw_params *hw_params)
 {
 	int ret = 0;
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_pcm_hw_params\n");
-
+#endif
 	/* runtime->dma_bytes has to be set manually to allow mmap */
 	substream->runtime->dma_bytes = params_buffer_bytes(hw_params);
 
@@ -476,11 +476,12 @@ static int mtk_pcm_i2s0_hw_params(struct snd_pcm_substream *substream,
 	AudDrv_Emi_Clk_On();
 
 	/* ------------------------------------------------------- */
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("1 dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		      substream->runtime->dma_bytes,
 		      substream->runtime->dma_area,
 		      (long)substream->runtime->dma_addr);
-
+#endif
 	return ret;
 }
 
