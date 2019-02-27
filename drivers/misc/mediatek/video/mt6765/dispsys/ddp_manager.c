@@ -748,9 +748,16 @@ int dpmgr_path_set_dst_module(disp_path_handle dp_handle,
 {
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	if (dp_handle == NULL) {
+		ASSERT(0);
+		return -1;
+	}
+
 	handle = (struct ddp_path_handle *)dp_handle;
-	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
+	if (!(handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX)) {
+		ASSERT(0);
+		return -1;
+	}
 	DDPDBG("set dst module on scenario %s, module %s\n",
 		ddp_get_scenario_name(handle->scenario),
 		ddp_get_module_name(dst_module));
@@ -771,9 +778,16 @@ enum DISP_MODULE_ENUM dpmgr_path_get_dst_module(disp_path_handle dp_handle)
 	struct ddp_path_handle *handle;
 	enum DISP_MODULE_ENUM dst_module;
 
-	ASSERT(dp_handle != NULL);
+	if (dp_handle == NULL) {
+		ASSERT(0);
+		return -1;
+	}
 	handle = (struct ddp_path_handle *)dp_handle;
-	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
+
+	if (!(handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX)) {
+		ASSERT(0);
+		return -1;
+	}
 	dst_module = ddp_get_dst_module(handle->scenario);
 
 	DISP_LOG_V("get dst module on scenario %s, module %s\n",
