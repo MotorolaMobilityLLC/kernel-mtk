@@ -359,8 +359,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			     <GIC_PPI 14 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_PPI 11 IRQ_TYPE_LEVEL_LOW>,
 			     <GIC_PPI 10 IRQ_TYPE_LEVEL_LOW>;
-		/* clock-frequency = <13000000>; */
-		clock-frequency = <150000000>;
+		clock-frequency = <13000000>;
 	};
 
 	clocks {
@@ -381,6 +380,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,apxgpt";
 		reg = <0 0x10008000 0 0x1000>;
 		interrupts = <GIC_SPI 170 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&clk32k>;
 	};
 
 	sej@1000a000 {
