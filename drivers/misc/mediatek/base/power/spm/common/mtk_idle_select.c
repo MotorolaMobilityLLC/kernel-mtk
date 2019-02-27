@@ -33,6 +33,14 @@ int __attribute__((weak)) spm_load_firmware_status(void) { return -1; }
 /* [ByChip] Internal weak functions: implemented in mtk_idle_cond_check.c */
 void __attribute__((weak)) mtk_idle_cond_update_state(void) {}
 
+/* [ByChip] Internal weak functions:
+ * If platform need to blocked idle task by specific define.
+ * Please implement it in platform folder
+ */
+int __attribute__((weak)) mtk_idle_plat_bootblock_check(void)
+{
+	return MTK_IDLE_PLAT_READY;
+}
 
 #if defined(MTK_IDLE_DVT_TEST_ONLY)
 
@@ -174,6 +182,16 @@ int mtk_idle_select(int cpu)
 	/* direct return if all mtk idle features are off */
 	if (!mtk_dpidle_enabled() &&
 		!mtk_sodi3_enabled() && !mtk_sodi_enabled()) {
+		return -1;
+	}
+
+	/* If kernel didn't enter system running state,
+	 *  idle task can't enter mtk idle.
+	 */
+	if (!((system_state == SYSTEM_RUNNING) &&
+		(mtk_idle_plat_bootblock_check() == MTK_IDLE_PLAT_READY))
+	) {
+		pr_notice("Power/swap %s blocked by boot time\n", __func__);
 		return -1;
 	}
 

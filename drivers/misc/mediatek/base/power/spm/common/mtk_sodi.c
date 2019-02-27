@@ -22,8 +22,6 @@
 
 static bool sodi_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI;
 static bool sodi_bypass_idle_cond;
-static bool sodi_bypass_dis_check;
-static bool mtk_disp_is_ready;
 static unsigned int sodi_flag = MTK_IDLE_LOG_REDUCE;
 
 unsigned long so_cnt[NR_CPUS] = {0};
@@ -32,7 +30,6 @@ static unsigned long so_block_cnt[NR_REASONS] = {0};
 /*SODI3 section*/
 static bool sodi3_feature_enable = MTK_IDLE_FEATURE_ENABLE_SODI3;
 static bool sodi3_bypass_idle_cond;
-static bool sodi3_bypass_dis_check;
 static bool sodi3_bypass_pwm_check;
 static bool sodi3_force_vcore_lp_mode;
 static unsigned int sodi3_flag = MTK_IDLE_LOG_REDUCE;
@@ -57,21 +54,12 @@ void mtk_sodi_disable(void)
 	sodi_feature_enable = 0;
 }
 
-static unsigned long get_uptime(void)
-{
-	struct timespec uptime;
-
-	get_monotonic_boottime(&uptime);
-	return (unsigned long)uptime.tv_sec;
-}
-
 /* for display use, abandoned 'spm_enable_sodi' */
 void mtk_idle_disp_is_ready(bool enable)
 {
-	mtk_disp_is_ready = enable;
+	pr_notice("Power/swap - %s not support anymore!\n", __func__);
 }
 
-static int sodi_uptime_block_count;
 /* External weak function: implemented in disp driver */
 bool __attribute__((weak)) disp_pwm_is_osc(void) {return false; }
 
@@ -86,7 +74,6 @@ void mtk_sodi3_disable(void)
 	sodi3_feature_enable = 0;
 }
 
-static int sodi3_uptime_block_count;
 bool sodi_can_enter(int reason)
 {
 	/* sodi is disabled */
@@ -100,25 +87,6 @@ bool sodi_can_enter(int reason)
 	if (!sodi_bypass_idle_cond && !mtk_idle_cond_check(IDLE_TYPE_SO)) {
 		reason = BY_CLK;
 		goto out;
-	}
-
-	/* display driver is ready ? */
-	if (!sodi_bypass_dis_check && !mtk_disp_is_ready) {
-		reason = BY_DIS;
-		goto out;
-	}
-
-	/* check current uptime > 20 ? */
-	if (sodi_uptime_block_count != -1) {
-		if (get_uptime() <= 20) {
-			sodi_uptime_block_count++;
-			reason = BY_BOOT;
-			goto out;
-		} else {
-			pr_notice("Power/swap SODI: blocked by uptime, count = %d\n",
-				sodi_uptime_block_count);
-			sodi_uptime_block_count = -1;
-		}
 	}
 
 	reason = NR_REASONS;
@@ -169,10 +137,9 @@ static ssize_t soidle_state_read(char *ToUserBuf, size_t sz, void *priv)
 	log("\n");
 
 	log("*************** variable dump ********************\n");
-	log("enable=%d bypass=%d bypass_dis=%d\n",
+	log("enable=%d bypass=%d\n",
 		sodi_feature_enable ? 1 : 0,
-		sodi_bypass_idle_cond ? 1 : 0,
-		sodi_bypass_dis_check ? 1 : 0);
+		sodi_bypass_idle_cond ? 1 : 0);
 	log("log_flag=0x%x\n", sodi_flag);
 	log("\n");
 
@@ -180,7 +147,6 @@ static ssize_t soidle_state_read(char *ToUserBuf, size_t sz, void *priv)
 	log("sodi state:    cat /d/cpuidle/soidle_state\n");
 	log("sodi on/off:   echo 1/0 > /d/cpuidle/soidle_state\n");
 	log("bypass cg/pll: echo bypass 1/0 > /d/cpuidle/soidle_state\n");
-	log("bypass dis:    echo bypass_dis 1/0 > /d/cpuidle/soidle_state\n");
 	log("cg monitor:    echo cgmon 1/0 > /d/cpuidle/soidle_state\n");
 	log("set log_flag:  echo log [hex] > /d/cpuidle/soidle_state\n");
 	log("               [0] reduced [1] spm res usage [2] disable\n");
@@ -206,8 +172,6 @@ static ssize_t soidle_state_write(char *FromUserBuf, size_t sz, void *priv)
 			sodi_feature_enable = !!parm;
 		else if (!strcmp(cmd, "bypass"))
 			sodi_bypass_idle_cond = !!parm;
-		else if (!strcmp(cmd, "bypass_dis"))
-			sodi_bypass_dis_check = !!parm;
 		else if (!strcmp(cmd, "cgmon"))
 			mtk_idle_cg_monitor(parm ? IDLE_TYPE_SO : -1);
 		else if (!strcmp(cmd, "log"))
@@ -240,29 +204,10 @@ bool sodi3_can_enter(int reason)
 		goto out;
 	}
 
-	/* display driver is ready ? */
-	if (!sodi3_bypass_dis_check && !mtk_disp_is_ready) {
-		reason = BY_DIS;
-		goto out;
-	}
-
 	/* pwm clock uses ulposc ? */
 	if (!disp_pwm_is_osc() && !sodi3_bypass_pwm_check) {
 		reason = BY_PWM;
 		goto out;
-	}
-
-	/* check current uptime > 30 ? */
-	if (sodi3_uptime_block_count != -1) {
-		if (get_uptime() <= 30) {
-			sodi3_uptime_block_count++;
-			reason = BY_BOOT;
-			goto out;
-		} else {
-			pr_notice("Power/swap SODI3: blocked by uptime, count = %d\n",
-				sodi3_uptime_block_count);
-			sodi3_uptime_block_count = -1;
-		}
 	}
 
 	reason = NR_REASONS;
@@ -316,10 +261,9 @@ static ssize_t soidle3_state_read(char *ToUserBuf, size_t sz, void *priv)
 
 
 	log("*************** variable dump ********************\n");
-	log("enable=%d bypass=%d bypass_dis=%d\n"
+	log("enable=%d bypass=%d\n"
 		, sodi3_feature_enable ? 1 : 0
-		, sodi3_bypass_idle_cond ? 1 : 0
-		, sodi3_bypass_dis_check ? 1 : 0);
+		, sodi3_bypass_idle_cond ? 1 : 0);
 
 	log("bypass_pwm=%d force_vcore_lp_mode=%d\n"
 			, sodi3_bypass_pwm_check ? 1 : 0
@@ -332,7 +276,6 @@ log("*************** sodi3 command ********************\n");
 log("sodi3 state:	cat /d/cpuidle/soidle3_state\n");
 log("sodi3 on/off:	echo 1/0 > /d/cpuidle/soidle3_state\n");
 log("bypass cg/pll: echo bypass 1/0 > /d/cpuidle/soidle3_state\n");
-log("bypass dis:	echo bypass_dis 1/0 > /d/cpuidle/soidle3_state\n");
 log("bypass pwm:	echo bypass_pwm 1/0 > /d/cpuidle/soidle3_state\n");
 log("cg monitor:	echo cgmon 1/0 > /d/cpuidle/soidle3_state\n");
 log("set log_flag:	echo log [hex_value] > /d/cpuidle/soidle3_state\n");
@@ -358,8 +301,6 @@ static ssize_t soidle3_state_write(char *FromUserBuf, size_t sz, void *priv)
 			sodi3_feature_enable = !!parm;
 		else if (!strcmp(cmd, "bypass"))
 			sodi3_bypass_idle_cond = !!parm;
-		else if (!strcmp(cmd, "bypass_dis"))
-			sodi3_bypass_dis_check = !!parm;
 		else if (!strcmp(cmd, "bypass_pwm"))
 			sodi3_bypass_pwm_check = !!parm;
 		else if (!strcmp(cmd, "force_vcore_lp_mode"))
@@ -391,10 +332,7 @@ void mtk_sodi_init(struct mtk_idle_init_data *pData)
 				GET_MTK_LP_DTS_VALUE_SODI(pData);
 		}
 	}
-	sodi_uptime_block_count = 0;
 	sodi_bypass_idle_cond = false;
-	sodi_bypass_dis_check = false;
-	mtk_disp_is_ready = false;
 
 	mtk_idle_sysfs_entry_node_add("soidle_state"
 			, 0644, &sodi_state_fops, NULL);
@@ -410,10 +348,8 @@ void mtk_sodi3_init(struct mtk_idle_init_data *pData)
 				GET_MTK_LP_DTS_VALUE_SODI3(pData);
 		}
 	}
-	sodi3_uptime_block_count = 0;
 
 	sodi3_bypass_idle_cond = false;
-	sodi3_bypass_dis_check = false;
 	sodi3_bypass_pwm_check = false;
 	sodi3_force_vcore_lp_mode = false;
 

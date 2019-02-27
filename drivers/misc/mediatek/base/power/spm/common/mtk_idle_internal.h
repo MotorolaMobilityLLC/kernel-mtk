@@ -63,11 +63,14 @@ enum {
 	BY_TEE,		/* TEEI not ready */
 	BY_DCS,		/* Blocked by DCS */
 	BY_CLK,		/* CG check fail */
-	BY_DIS,		/* Display not ready (SODI) */
 	BY_PWM,		/* Display pwm not ready (SODI3) */
 	BY_PLL,		/* PLL not off (SODI3) */
-	BY_BOOT,	/* Boot up time < 20/30 seconds (SODI/SODI3) */
 	NR_REASONS,
+};
+
+enum _MTK_IDLE_PLAT_STATUS_ {
+	MTK_IDLE_PLAT_BOOT_BLOCKED,
+	MTK_IDLE_PLAT_READY
 };
 
 #define MTK_OF_PROPERTY_STATUS_FOUND	(1<<0U)
