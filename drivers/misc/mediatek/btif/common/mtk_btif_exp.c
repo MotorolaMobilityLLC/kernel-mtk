@@ -472,7 +472,10 @@ int mtk_wcn_btif_dbg_ctrl(unsigned long u_id, enum _ENUM_BTIF_DBG_ID_ flag)
 		}
 		break;
 	case BTIF_DUMP_BTIF_REG:
-		 /*TBD*/ btif_dump_reg(p_btif);
+		btif_dump_reg(p_btif, REG_ALL);
+		break;
+	case BTIF_DUMP_BTIF_IRQ:
+		btif_dump_reg(p_btif, REG_IRQ);
 		break;
 	case BTIF_ENABLE_RT_LOG:
 		BTIF_INFO_FUNC
@@ -635,7 +638,10 @@ int btif_dbg_ctrl_no_id(enum _ENUM_BTIF_DBG_ID_ flag)
 		}
 		break;
 	case BTIF_DUMP_BTIF_REG:
-		 /*TBD*/ btif_dump_reg(p_btif);
+		btif_dump_reg(p_btif, REG_ALL);
+		break;
+	case BTIF_DUMP_BTIF_IRQ:
+		btif_dump_reg(p_btif, REG_IRQ);
 		break;
 	case BTIF_ENABLE_RT_LOG:
 		BTIF_INFO_FUNC
