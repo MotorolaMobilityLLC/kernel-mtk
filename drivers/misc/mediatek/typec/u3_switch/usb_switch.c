@@ -46,6 +46,7 @@
 
 static u32 debug_level = (255 - K_DEBUG);
 static struct usbtypc *g_exttypec;
+static struct dentry *root;
 
 static int usb3_switch_en(struct usbtypc *typec, int on)
 {
@@ -401,41 +402,39 @@ static int usb_check_cc_smt_status(void *data, u64 *val)
 #endif
 DEFINE_SIMPLE_ATTRIBUTE(usb_cc_smt_fops, usb_cc_smt_status, NULL, "%llu\n");
 
-static int usb_typec_init_debugfs(struct usbtypc *typec)
+static int usb_typec_pinctrl_debugfs(struct usbtypc *typec)
 {
-	struct dentry *root;
 	struct dentry *file;
-	int ret;
 
-	root = debugfs_create_dir("usb_c", NULL);
-	if (!root) {
-		ret = -ENOMEM;
-		goto err0;
-	}
+	if (!root)
+		return -ENOMEM;
 
 	file = debugfs_create_file("gpio", 0644, root,
 			typec, &usb_gpio_debugfs_fops);
-
 	file = debugfs_create_file("smt", 0200, root, typec,
 			&usb_debugfs_fops);
-	file = debugfs_create_file("smt_u2_cc_mode", 0400, root, typec,
-			&usb_cc_smt_fops);
-	if (!file) {
-		ret = -ENOMEM;
-		goto err1;
-	}
 
 	return 0;
-
-err1:
-	debugfs_remove_recursive(root);
-
-err0:
-	return ret;
 }
 
-static struct usbtypc *get_usbtypec(void)
+static int usb_typec_cc_debugfs(struct usbtypc *typec)
 {
+	struct dentry *file;
+
+	if (!root)
+		return -ENOMEM;
+
+	file = debugfs_create_file("smt_u2_cc_mode", 0400, root, typec,
+			&usb_cc_smt_fops);
+
+	return 0;
+}
+
+struct usbtypc *get_usbtypec(void)
+{
+	if (!g_exttypec)
+		g_exttypec = kzalloc(sizeof(struct usbtypc), GFP_KERNEL);
+
 	return g_exttypec;
 }
 
@@ -726,10 +725,7 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 	struct device_node *np;
 	struct device *dev = &pdev->dev;
 
-	typec = devm_kzalloc(dev, sizeof(struct usbtypc), GFP_KERNEL);
-
-	if (!typec)
-		return -EINVAL;
+	typec = get_usbtypec();
 
 	typec->pinctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(typec->pinctrl)) {
@@ -772,7 +768,7 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 	usb_redriver_init(typec);
 	usb3_switch_init(typec);
 
-	usb_typec_init_debugfs(typec);
+	usb_typec_pinctrl_debugfs(typec);
 	g_exttypec = typec;
 
 	return ret;
@@ -780,7 +776,6 @@ static int usbc_pinctrl_probe(struct platform_device *pdev)
 
 static const struct of_device_id usb_pinctrl_ids[] = {
 	{.compatible = "mediatek,usb_c_pinctrl",},
-	{.compatible = "mediatek,tusb542",},
 	{},
 };
 
@@ -797,6 +792,15 @@ static struct platform_driver usb_switch_pinctrl_driver = {
 int __init usbc_pinctrl_init(void)
 {
 	int ret = 0;
+	struct usbtypc *typec;
+
+	typec = get_usbtypec();
+
+	root = debugfs_create_dir("usb_c", NULL);
+	if (!root)
+		ret = -ENOMEM;
+
+	usb_typec_cc_debugfs(typec);
 
 	if (!platform_driver_register(&usb_switch_pinctrl_driver))
 		usbc_dbg(K_DEBUG, "register usbc pinctrl succeed!!\n");
