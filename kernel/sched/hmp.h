@@ -67,8 +67,6 @@ hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se);
 static inline void
 hmp_dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se);
 static inline void
-hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa);
-static inline void
 hmp_update_load_avg(unsigned int decayed, unsigned long weight,
 		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
 		u32 contrib, u64 scaled_delta, struct cfs_rq *cfs_rq);
@@ -88,8 +86,6 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 static void hmp_online_cpu(int cpu) {}
 static void hmp_offline_cpu(int cpu) {}
 static int hmp_idle_pull(int this_cpu) { return 0; }
-static inline void
-hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa) {}
 static void __init hmp_cpu_mask_setup(void) {}
 
 #endif /* CONFIG_SCHED_HMP */
