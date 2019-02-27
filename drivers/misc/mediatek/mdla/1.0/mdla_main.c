@@ -51,6 +51,12 @@
 #include "mdla_proc.h"
 #include "mdla_trace.h"
 
+// #define MTK_MDLA_ALWAYS_POWER_ON
+
+#ifdef MTK_MDLA_ALWAYS_POWER_ON
+u32 dbg_power_on;
+#endif
+
 #ifndef MTK_MDLA_FPGA_PORTING
 /*dvfs porting++*/
 #define ENABLE_PMQOS
@@ -643,6 +649,11 @@ static void mdla_start_queue(struct work_struct *work)
 	if (mdla_fifo_is_empty() && timer_pending(&mdla_timer)) {
 		mdla_debug("%s: del_timer().\n", __func__);
 		del_timer(&mdla_timer);
+#ifdef MTK_MDLA_ALWAYS_POWER_ON
+		// do nothing
+#else
+		mdla_shut_down(0);
+#endif
 	}
 	mutex_unlock(&cmd_list_lock);
 	wake_up_interruptible_all(&mdla_cmd_queue);
@@ -3597,6 +3608,9 @@ static int mdlactl_init(void)
 	cmd_id = 1;
 	max_cmd_id = 1;
 	cmd_list_len = 0;
+#ifdef MTK_MDLA_ALWAYS_POWER_ON
+	dbg_power_on = 0;
+#endif
 
 	// Try to dynamically allocate a major number for the device
 	//  more difficult but worth it
@@ -3769,6 +3783,10 @@ static int mdla_process_command(struct command_entry *ce)
 		(unsigned long)addr);
 
 #ifndef MTK_MDLA_FPGA_PORTING
+#ifdef MTK_MDLA_ALWAYS_POWER_ON
+	if (dbg_power_on)
+		goto skip_power;
+#endif
 		opp_step = mdla_boost_value_to_opp(ce->boost_value);
 		vmdla_opp_index = opps.vmdla.opp_map[opp_step];
 		dsp_freq_index = opps.mdlacore.opp_map[opp_step];
@@ -3788,7 +3806,12 @@ static int mdla_process_command(struct command_entry *ce)
 		LOG_ERR("[mdla] fail to get power!\n");
 		return ret;
 	}
+#ifdef MTK_MDLA_ALWAYS_POWER_ON
+	dbg_power_on = 1;
+skip_power:
 #endif
+#endif
+
 	if (mdla_timeout) {
 		mdla_debug("%s: mod_timer(), cmd id=%u, [%u]\n",
 			__func__, ce->id, cmd[84]);
