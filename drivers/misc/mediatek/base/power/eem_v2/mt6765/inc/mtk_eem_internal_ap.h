@@ -132,7 +132,7 @@ unsigned int reg_dump_data[ARRAY_SIZE(reg_dump_addr_off)][NR_EEM_PHASE];
 };
 
 struct eem_devinfo {
-	/* M_HW_RES0 0x11f1_0580 */
+	/* M_HW_RES0, 580 */
 	unsigned int BODYBIAS:1;
 	unsigned int PTPOD_T:1;
 	unsigned int EPS:1;
@@ -145,100 +145,68 @@ struct eem_devinfo {
 	unsigned int RSV2:16;
 
 	/* M_HW_RES1 */
-	unsigned int CPU_2L_LO_BDES:8;
-	unsigned int CPU_2L_LO_MDES:8;
-	unsigned int CPU_2L_LO_DCBDET:8;
-	unsigned int CPU_2L_LO_DCMDET:8;
+	unsigned int CPU_L_BDES:8;
+	unsigned int CPU_L_MDES:8;
+	unsigned int CPU_L_DCBDET:8;
+	unsigned int CPU_L_DCMDET:8;
 
 	/* M_HW_RES2 */
-	unsigned int CPU_L_LO_MTDES:8;
-	unsigned int CPU_L_LO_INITEN:1;
-	unsigned int CPU_L_LO_MONEN:1;
-	unsigned int CPU_L_LO_DVFS_LOW:3;
-	unsigned int CPU_L_LO_SPEC:3;
-	unsigned int CPU_2L_LO_MTDES:8;
-	unsigned int CPU_2L_LO_INITEN:1;
-	unsigned int CPU_2L_LO_MONEN:1;
-	unsigned int CPU_2L_LO_DVFS_LOW:3;
-	unsigned int CPU_2L_LO_SPEC:3;
+	unsigned int CPU_L_SPEC:3;
+	unsigned int CPU_L_TURBO:1;
+	unsigned int CPU_L_DVFS_LOW:2;
+	unsigned int CPU_L_INITEN:1;
+	unsigned int CPU_L_MONEN:1;
+	unsigned int CPU_L_LEAKAGE:8;
+	unsigned int CPU_L_MTDES:8;
+	unsigned int CPU_L_AGEDELTA:8;
 
 	/* M_HW_RES3 */
-	unsigned int CPU_L_LO_BDES:8;
-	unsigned int CPU_L_LO_MDES:8;
-	unsigned int CPU_L_LO_DCBDET:8;
-	unsigned int CPU_L_LO_DCMDET:8;
-
-	/* M_HW_RES4 */
-	unsigned int CCI_BDES:8;
-	unsigned int CCI_MDES:8;
-	unsigned int CCI_DCBDET:8;
-	unsigned int CCI_DCMDET:8;
-
-	/* M_HW_RES5 */
-	unsigned int GPU_MTDES:8;
-	unsigned int GPU_INITEN:1;
-	unsigned int GPU_MONEN:1;
-	unsigned int GPU_DVFS_LOW:3;
-	unsigned int GPU_SPEC:3;
-	unsigned int CCI_MTDES:8;
-	unsigned int CCI_INITEN:1;
-	unsigned int CCI_MONEN:1;
-	unsigned int CCI_DVFS_LOW:3;
-	unsigned int CCI_SPEC:3;
-
-	/* M_HW_RES6 */
-	unsigned int GPU_BDES:8;
-	unsigned int GPU_MDES:8;
-	unsigned int GPU_DCBDET:8;
-	unsigned int GPU_DCMDET:8;
-
-	/* M_HW_RES7 */
-	unsigned int CPU_2L_HI_BDES:8;
-	unsigned int CPU_2L_HI_MDES:8;
-	unsigned int CPU_2L_HI_DCBDET:8;
-	unsigned int CPU_2L_HI_DCMDET:8;
-
-	/* M_HW_RES8 */
-	unsigned int CPU_L_HI_MTDES:8;
-	unsigned int CPU_L_HI_INITEN:1;
-	unsigned int CPU_L_HI_MONEN:1;
-	unsigned int CPU_L_HI_DVFS_LOW:3;
-	unsigned int CPU_L_HI_SPEC:3;
-	unsigned int CPU_2L_HI_MTDES:8;
-	unsigned int CPU_2L_HI_INITEN:1;
-	unsigned int CPU_2L_HI_MONEN:1;
-	unsigned int CPU_2L_HI_DVFS_LOW:3;
-	unsigned int CPU_2L_HI_SPEC:3;
-
-	/* M_HW_RES9 */
-	unsigned int CPU_L_HI_BDES:8;
-	unsigned int CPU_L_HI_MDES:8;
-	unsigned int CPU_L_HI_DCBDET:8;
-	unsigned int CPU_L_HI_DCMDET:8;
-
-	/* M_HW_RES16 */
 	unsigned int CPU_2L_BDES:8;
 	unsigned int CPU_2L_MDES:8;
 	unsigned int CPU_2L_DCBDET:8;
 	unsigned int CPU_2L_DCMDET:8;
 
-	/* M_HW_RES17 */
-	unsigned int CPU_L_MTDES:8;
-	unsigned int CPU_L_INITEN:1;
-	unsigned int CPU_L_MONEN:1;
-	unsigned int CPU_L_DVFS_LOW:3;
-	unsigned int CPU_L_SPEC:3;
-	unsigned int CPU_2L_MTDES:8;
+	/* M_HW_RES4 */
+	unsigned int CPU_2L_SPEC:3;
+	unsigned int CPU_2L_TURBO:1;
+	unsigned int CPU_2L_DVFS_LOW:2;
 	unsigned int CPU_2L_INITEN:1;
 	unsigned int CPU_2L_MONEN:1;
-	unsigned int CPU_2L_DVFS_LOW:3;
-	unsigned int CPU_2L_SPEC:3;
+	unsigned int CPU_2L_LEAKAGE:8;
+	unsigned int CPU_2L_MTDES:8;
+	unsigned int CPU_2L_AGEDELTA:8;
 
-	/* M_HW_RES18 */
-	unsigned int CPU_L_BDES:8;
-	unsigned int CPU_L_MDES:8;
-	unsigned int CPU_L_DCBDET:8;
-	unsigned int CPU_L_DCMDET:8;
+	/* M_HW_RES5 */
+	unsigned int CCI_BDES:8;
+	unsigned int CCI_MDES:8;
+	unsigned int CCI_DCBDET:8;
+	unsigned int CCI_DCMDET:8;
+
+	/* M_HW_RES6 */
+	unsigned int CCI_SPEC:3;
+	unsigned int CCI_TURBO:1;
+	unsigned int CCI_DVFS_LOW:2;
+	unsigned int CCI_INITEN:1;
+	unsigned int CCI_MONEN:1;
+	unsigned int CCI_LEAKAGE:8;
+	unsigned int CCI_MTDES:8;
+	unsigned int CCI_AGEDELTA:8;
+
+	/* M_HW_RES7 */
+	unsigned int GPU_BDES:8;
+	unsigned int GPU_MDES:8;
+	unsigned int GPU_DCBDET:8;
+	unsigned int GPU_DCMDET:8;
+
+	/* M_HW_RES8 */
+	unsigned int GPU_SPEC:3;
+	unsigned int GPU_TURBO:1;
+	unsigned int GPU_DVFS_LOW:2;
+	unsigned int GPU_INITEN:1;
+	unsigned int GPU_MONEN:1;
+	unsigned int GPU_LEAKAGE:8;
+	unsigned int GPU_MTDES:8;
+	unsigned int GPU_AGEDELTA:8;
 };
 
 /*********************************************

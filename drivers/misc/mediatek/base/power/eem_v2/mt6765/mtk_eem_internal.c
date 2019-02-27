@@ -28,14 +28,14 @@
  * EEM controllers
  */
 struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
-	[EEM_CTRL_2L] = {
-		.name = __stringify(EEM_CTRL_2L),
-		.det_id = EEM_DET_2L,
-	},
-
 	[EEM_CTRL_L] = {
 		.name = __stringify(EEM_CTRL_L),
 		.det_id = EEM_DET_L,
+	},
+
+	[EEM_CTRL_2L] = {
+		.name = __stringify(EEM_CTRL_2L),
+		.det_id = EEM_DET_2L,
 	},
 
 	[EEM_CTRL_CCI] = {
@@ -47,13 +47,6 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 		.name = __stringify(EEM_CTRL_GPU),
 		.det_id = EEM_DET_GPU,
 	},
-
-#if ENABLE_LOO
-	[EEM_CTRL_2L_HI] = {
-		.name = __stringify(EEM_CTRL_2L_HI),
-		.det_id = EEM_DET_2L_HI,
-	},
-#endif
 };
 
 #define BASE_OP(fn)	.fn = base_ops_ ## fn
@@ -87,40 +80,38 @@ struct eem_det_ops eem_det_base_ops = {
 	BASE_OP(eem_2_pmic),
 };
 
-#if ENABLE_LOO
-struct eem_det eem_detector_cci = {
-		.name		= __stringify(EEM_DET_CCI),
-		.ops		= &cci_det_ops,
-#ifdef EEM_OFFSET_PROC_SHOW
-		.volt_offset = 0,
-#endif
-		.ctrl_id	= EEM_CTRL_CCI,
-		.features	= FEA_INIT01 | FEA_INIT02,
-		.max_freq_khz	= 1196000,
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW      = DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-#if ENABLE_EEMCTL0
-		.EEMCTL0	= EEM_CTL0_CCI,
-#endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
-};
-#endif
-
 struct eem_det eem_detectors[NR_EEM_DET] = {
+		[EEM_DET_L] = {
+			.name		= __stringify(EEM_DET_L),
+			.ops		= &cpu_det_ops,
+#ifdef EEM_OFFSET_PROC_SHOW
+			.volt_offset	= 0,
+#endif
+			.ctrl_id	= EEM_CTRL_L,
+			.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+			.max_freq_khz	= 2351000,
+			.VBOOT		= VBOOT_VAL, /* 10uV */
+			.VMAX		= VMAX_VAL,
+			.VMIN		= VMIN_VAL,
+			.eem_v_base = EEM_V_BASE,
+			.eem_step	= EEM_STEP,
+			.pmic_base	= CPU_PMIC_BASE_6357,
+			.pmic_step	= CPU_PMIC_STEP,
+			.DETWINDOW		= DETWINDOW_VAL,
+			.DTHI		= DTHI_VAL,
+			.DTLO		= DTLO_VAL,
+			.DETMAX		= DETMAX_VAL,
+			.AGECONFIG	= AGECONFIG_VAL,
+			.AGEM		= AGEM_VAL,
+			.DVTFIXED	= DVTFIXED_VAL,
+			.VCO		= VCO_VAL,
+			.DCCONFIG	= DCCONFIG_VAL,
+#if ENABLE_EEMCTL0
+			.EEMCTL0	= EEM_CTL0_L,
+#endif
+			.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
+		},
+
 	[EEM_DET_2L] = {
 		.name		= __stringify(EEM_DET_2L),
 		.ops		= &cpu_det_ops,
@@ -129,13 +120,13 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1989000,
+		.max_freq_khz	= 1701000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
+		.pmic_base	= CPU_PMIC_BASE_6357,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW	= DETWINDOW_VAL,
 		.DTHI		= DTHI_VAL,
@@ -152,69 +143,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
 
-	[EEM_DET_L] = {
-		.name		= __stringify(EEM_DET_L),
-		.ops		= &cpu_det_ops,
-#ifdef EEM_OFFSET_PROC_SHOW
-		.volt_offset	= 0,
-#endif
-		.ctrl_id	= EEM_CTRL_L,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1989000,
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW      = DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-#if ENABLE_EEMCTL0
-		.EEMCTL0	= EEM_CTL0_L,
-#endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
-	},
-
-#if ENABLE_LOO
-	[EEM_DET_L_HI] = {
-		.name		= __stringify(EEM_DET_L_HI),
-		.ops		= &cpu_det_ops,
-#ifdef EEM_OFFSET_PROC_SHOW
-		.volt_offset	= 0,
-#endif
-		.ctrl_id	= EEM_CTRL_L_HI,
-		.features	= FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1989000,
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW      = DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-#if ENABLE_EEMCTL0
-		.EEMCTL0	= EEM_CTL0_L,
-#endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
-	},
-#else
 	[EEM_DET_CCI] = {
 		.name		= __stringify(EEM_DET_CCI),
 		.ops		= &cci_det_ops,
@@ -223,13 +151,13 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_CCI,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1196000,
+		.max_freq_khz	= 1051000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
+		.pmic_base	= CPU_PMIC_BASE_6357,
 		.pmic_step	= CPU_PMIC_STEP,
 		.DETWINDOW      = DETWINDOW_VAL,
 		.DTHI		= DTHI_VAL,
@@ -245,7 +173,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
-#endif
 
 	[EEM_DET_GPU] = {
 		.name		= __stringify(EEM_DET_GPU),
@@ -255,7 +182,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_GPU,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 900000,/* MHz */
+		.max_freq_khz	= 680000, /* Normal, Pochao */
 		.VBOOT		= VBOOT_VAL_GPU, /* 10uV */
 		.VMAX		= VMAX_VAL_GPU,
 		.VMIN		= VMIN_VAL,
@@ -277,40 +204,6 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
-
-
-#if ENABLE_LOO
-	[EEM_DET_2L_HI] = {
-		.name		= __stringify(EEM_DET_2L_HI),
-		.ops		= &cpu_det_ops,
-#ifdef EEM_OFFSET_PROC_SHOW
-		.volt_offset	= 0,
-#endif
-		.ctrl_id	= EEM_CTRL_2L_HI,
-		.features	= FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1989000,
-		.VBOOT		= VBOOT_VAL, /* 10uV */
-		.VMAX		= VMAX_VAL,
-		.VMIN		= VMIN_VAL,
-		.eem_v_base	= EEM_V_BASE,
-		.eem_step	= EEM_STEP,
-		.pmic_base	= CPU_PMIC_BASE_6358,
-		.pmic_step	= CPU_PMIC_STEP,
-		.DETWINDOW	= DETWINDOW_VAL,
-		.DTHI		= DTHI_VAL,
-		.DTLO		= DTLO_VAL,
-		.DETMAX		= DETMAX_VAL,
-		.AGECONFIG	= AGECONFIG_VAL,
-		.AGEM		= AGEM_VAL,
-		.DVTFIXED	= DVTFIXED_VAL,
-		.VCO		= VCO_VAL,
-		.DCCONFIG	= DCCONFIG_VAL,
-#if ENABLE_EEMCTL0
-		.EEMCTL0	= EEM_CTL0_2L,
-#endif
-		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
-	},
-#endif
 };
 
 #if DUMP_DATA_TO_DE

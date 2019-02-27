@@ -62,23 +62,12 @@ static unsigned int detid_to_dvfsid(struct eem_det *det)
 	unsigned int cpudvfsindex;
 	enum eem_det_id detid = det_to_id(det);
 
-#if ENABLE_LOO
-	if ((detid == EEM_DET_2L) || (detid == EEM_DET_2L_HI))
-		cpudvfsindex = MT_CPU_DVFS_LL;
-	else if ((detid == EEM_DET_L) ||
-		((detid == EEM_DET_L_HI) && (det != &eem_detector_cci))
-		)
+	if (detid == EEM_DET_L)
 		cpudvfsindex = MT_CPU_DVFS_L;
+	else if (detid == EEM_DET_2L)
+		cpudvfsindex = MT_CPU_DVFS_LL;
 	else
 		cpudvfsindex = MT_CPU_DVFS_CCI;
-#else
-	if (detid == EEM_DET_2L)
-		cpudvfsindex = MT_CPU_DVFS_LL;
-	else if (detid == EEM_DET_L)
-		cpudvfsindex = MT_CPU_DVFS_L;
-	else
-		cpudvfsindex = MT_CPU_DVFS_CCI;
-#endif
 
 #if 0
 	eem_debug("[detid_to_dvfsid] id:%d, cpudvfsindex:%d\n",
@@ -175,14 +164,14 @@ void restore_default_volt_cpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	switch (det_to_id(det)) {
-	case EEM_DET_2L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL,
+	case EEM_DET_L:
+		value = mt_cpufreq_update_volt(MT_CPU_DVFS_L,
 			det->volt_tbl_orig,
 			det->num_freq_tbl);
 		break;
 
-	case EEM_DET_L:
-		value = mt_cpufreq_update_volt(MT_CPU_DVFS_L,
+	case EEM_DET_2L:
+		value = mt_cpufreq_update_volt(MT_CPU_DVFS_LL,
 			det->volt_tbl_orig,
 			det->num_freq_tbl);
 		break;
@@ -257,11 +246,6 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 #endif
 	}
 
-#if ENABLE_LOO
-	/* Use signoff volt */
-	memcpy(det->volt_tbl, det->volt_tbl_orig, sizeof(det->volt_tbl));
-	memcpy(det->volt_tbl_init2, det->volt_tbl_orig, sizeof(det->volt_tbl));
-#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 }
@@ -363,12 +347,6 @@ void get_orig_volt_table_gpu(struct eem_det *det)
 			det->volt_tbl_orig[i]);
 #endif
 	}
-
-#if ENABLE_LOO
-	/* Use signoff volt */
-	memcpy(det->volt_tbl, det->volt_tbl_orig, sizeof(det->volt_tbl));
-	memcpy(det->volt_tbl_init2, det->volt_tbl_orig, sizeof(det->volt_tbl));
-#endif
 
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
