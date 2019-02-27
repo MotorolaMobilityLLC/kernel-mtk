@@ -42,6 +42,8 @@ config ION_HISI
 
 source "drivers/staging/android/ion/hisilicon/Kconfig"
 
+source "drivers/staging/android/ion/mtk/Kconfig"
+
 config ION_OF
 	bool "Devicetree support for Ion"
 	depends on ION && OF_ADDRESS
