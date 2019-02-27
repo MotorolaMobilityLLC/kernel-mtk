@@ -550,7 +550,7 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	struct SCP_LOG_INFO *log_info = (struct SCP_LOG_INFO *)data;
 
 	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n",
-			scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
+		(uint64_t)scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
 	spin_lock_irqsave(&scp_A_log_buf_spinlock, flags);
 	/* sync scp last log information*/
 	last_log_info.scp_log_dram_addr = log_info->scp_log_dram_addr;

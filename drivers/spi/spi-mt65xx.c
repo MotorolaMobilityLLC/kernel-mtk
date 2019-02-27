@@ -492,7 +492,7 @@ static void mtk_spi_setup_dma_addr(struct spi_master *master,
 	struct mtk_spi *mdata = spi_master_get_devdata(master);
 
 	spi_debug("xfer->tx_dma:0x%llx,xfer->rx_dma:0x%llx\n",
-		xfer->tx_dma, xfer->rx_dma);
+		(uint64_t)xfer->tx_dma, (uint64_t)xfer->rx_dma);
 	if (mdata->dev_comp->dma8g_peri_ext) {
 		if (mdata->tx_sgl) {
 			addr_ext = readl(mdata->peri_regs +

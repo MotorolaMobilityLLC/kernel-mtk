@@ -1537,12 +1537,15 @@ choice
 	prompt "Timer frequency"
 
 config HZ_100
+	depends on !MTK_ENABLE_AGO
 	bool "100 Hz"
 
 config HZ_200
+	depends on !MTK_ENABLE_AGO
 	bool "200 Hz"
 
 config HZ_250
+	depends on !MTK_ENABLE_AGO
 	bool "250 Hz"
 
 config HZ_300
