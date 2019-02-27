@@ -80,11 +80,12 @@
 #define idlemgr_pgc		_get_idlemgr_context()
 #define golden_setting_pgc	_get_golden_setting_context()
 
-#define kick_dump_max_length (1024 * 16 * 4)
 #ifndef CONFIG_MTK_DISPLAY_LOW_MEMORY_DEBUG_SUPPORT
+#define kick_dump_max_length (1024 * 16 * 4)
 static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
-#endif
 static unsigned int kick_buf_length;
+#endif
+
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
