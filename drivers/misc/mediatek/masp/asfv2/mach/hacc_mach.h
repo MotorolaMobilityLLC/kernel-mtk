@@ -23,11 +23,7 @@
 /******************************************************************************
  * CHIP SELECTION
  ******************************************************************************/
-#ifdef CONFIG_ARM64
-extern unsigned long long hacc_base;
-#else
-extern unsigned int hacc_base;
-#endif
+extern void __iomem *hacc_base;
 
 /******************************************************************************
  * MACROS DEFINITIONS
