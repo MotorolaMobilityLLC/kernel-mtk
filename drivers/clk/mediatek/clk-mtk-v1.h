@@ -25,7 +25,7 @@
 
 #define CLK_DEBUG		0
 #define DUMMY_REG_TEST		0
-#define MT_CCF_DEBUG	1
+#define MT_CCF_DEBUG	0
 #define MT_CCF_BRINGUP	0 /* 1: only for bring up */
 
 
