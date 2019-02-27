@@ -413,10 +413,15 @@ static int rt5081_operate(int channel, int enable)
 
 	/* decouple mode */
 	if (rt5081_decouple_mode) {
-		if (channel == RT5081_CHANNEL_CH1)
+		if (channel == RT5081_CHANNEL_CH1) {
 			rt5081_en_ch2 = RT5081_DISABLE;
-		else if (channel == RT5081_CHANNEL_CH2)
+			rt5081_timeout_ms[RT5081_CHANNEL_CH2] = 0;
+		} else if (channel == RT5081_CHANNEL_CH2) {
 			rt5081_en_ch1 = RT5081_DISABLE;
+			rt5081_timeout_ms[RT5081_CHANNEL_CH1] = 0;
+		} else {
+			return -1;
+		}
 	}
 
 	/* operate flashlight and setup timer */

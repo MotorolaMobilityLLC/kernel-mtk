@@ -413,10 +413,15 @@ static int mt6370_operate(int channel, int enable)
 
 	/* decouple mode */
 	if (mt6370_decouple_mode) {
-		if (channel == MT6370_CHANNEL_CH1)
+		if (channel == MT6370_CHANNEL_CH1) {
 			mt6370_en_ch2 = MT6370_DISABLE;
-		else if (channel == MT6370_CHANNEL_CH2)
+			mt6370_timeout_ms[MT6370_CHANNEL_CH2] = 0;
+		} else if (channel == MT6370_CHANNEL_CH2) {
 			mt6370_en_ch1 = MT6370_DISABLE;
+			mt6370_timeout_ms[MT6370_CHANNEL_CH1] = 0;
+		} else {
+			return -1;
+		}
 	}
 
 	/* operate flashlight and setup timer */
