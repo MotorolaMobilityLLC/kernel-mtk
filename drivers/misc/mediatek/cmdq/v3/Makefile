@@ -28,13 +28,10 @@ endif
 # Enable AEE
 ccflags-y += -DCMDQ_AEE_READY
 
-ifeq ($(TARGET_BUILD_VARIANT),eng)
-ccflags-y += -DCMDQ_DEBUG
-endif
-
-ifneq ($(TARGET_BUILD_VARIANT),user)
-ccflags-y += -D_CMDQ_TEST_PROC_
+ifeq ($(CONFIG_MTK_ENG_BUILD),y)
+ccflags-y += -DCMDQ_TEST_PROC
 ccflags-y += -DCMDQ_PROFILE_LOCK
+ccflags-y += -DCMDQ_DEBUG_LOOP_IRQ
 endif
 
 # secure path
