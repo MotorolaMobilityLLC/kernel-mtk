@@ -224,7 +224,6 @@ config MTK_SCHED_CPULOAD
 
 config MTK_SCHED_SYSHINT
 	bool "Enable asynchronus hint for external modules to get loading change in time"
-	depends on MTK_ACAO_SUPPORT
 	help
 	  Support asynchronus hint for external modules
 	  to get loading change notification from scheduler
