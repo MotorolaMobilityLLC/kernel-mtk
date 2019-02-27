@@ -50,6 +50,9 @@ obj-$(CONFIG_MTK_FB) += video/
 obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
+ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met_drv/),)
+obj-y += met_drv/
+endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-y += sspm/
