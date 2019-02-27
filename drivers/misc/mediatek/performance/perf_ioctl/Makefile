@@ -1,3 +1,4 @@
+#
 # Copyright (C) 2017 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -10,12 +11,5 @@
 # GNU General Public License for more details.
 #
 
-obj-y += perfmgr/
-obj-y += eas_controller/
-ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
-	obj-$(CONFIG_MTK_BASE_POWER) += legacy_controller/
-	obj-$(CONFIG_MTK_BASE_POWER) += fliper/
-endif
+obj-y += perf_ioctl.o
 
-obj-y += perf_ioctl/
-obj-$(CONFIG_MTK_FPSGO) += fpsgo/
