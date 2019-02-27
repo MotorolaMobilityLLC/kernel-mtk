@@ -717,6 +717,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 					cxt->ps_latency_ns);
 	else
 		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, 0);
+	ps_data_report(1, SENSOR_STATUS_ACCURACY_HIGH);
 #else
 	err = ps_enable_and_batch();
 #endif
