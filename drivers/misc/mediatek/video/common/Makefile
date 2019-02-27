@@ -34,7 +34,8 @@
 # Common Source files for all chips
 ifneq (y, $(filter y, $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) \
 	$(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739) \
-	$(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761) $(CONFIG_MACH_MT3967)))
+	$(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761) $(CONFIG_MACH_MT3967) \
+	$(CONFIG_MACH_MT6779)))
 obj-$(CONFIG_MTK_FB) += mtkfb_fence.o \
 			fbconfig_kdebug.o
 endif
@@ -64,7 +65,9 @@ obj-y += wdma20/
 endif
 endif
 
+ifneq (y, $(filter y, $(CONFIG_MACH_MT6779)))
 obj-y += layering_rule_base/
+endif
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/video/include     \
 				-I$(srctree)/drivers/misc/mediatek/video/common/IPv1     \
