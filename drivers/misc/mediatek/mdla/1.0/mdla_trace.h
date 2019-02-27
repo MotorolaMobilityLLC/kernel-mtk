@@ -28,7 +28,7 @@ enum {
 
 int mdla_profile_init(void);
 int mdla_profile_exit(void);
-int mdla_profile_reset(void);
+int mdla_profile_reset(const char *str);
 int mdla_profile(const char *str);
 int mdla_profile_start(void);
 int mdla_profile_stop(int type);
@@ -46,7 +46,7 @@ static inline int mdla_profile_exit(void)
 {
 	return 0;
 }
-static inline int mdla_profile_reset(void)
+static inline int mdla_profile_reset(const char *str)
 {
 	return 0;
 }

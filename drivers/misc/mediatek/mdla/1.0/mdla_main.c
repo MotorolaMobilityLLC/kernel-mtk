@@ -50,6 +50,7 @@
 #include "mdla_ion.h"
 #include "mdla_proc.h"
 #include "mdla_trace.h"
+
 #ifndef MTK_MDLA_FPGA_PORTING
 /*dvfs porting++*/
 #define ENABLE_PMQOS
@@ -522,9 +523,36 @@ void mdla_reg_write(u32 value, u32 offset)
 	iowrite32(value, apu_mdla_cmde_mreg_top + offset);
 }
 
-static void mdla_reset(void)
+enum REASON_ENUM {
+	REASON_OTHERS = 0,
+	REASON_DRVINIT = 1,
+	REASON_TIMEOUT = 2,
+	REASON_POWERON = 3,
+	REASON_MAX
+};
+
+static const char *reason_str[REASON_MAX+1] = {
+	"others",
+	"driver_init",
+	"command_timeout",
+	"power_on",
+	"-"
+};
+
+static const char *mdla_get_reason_str(int res)
 {
-	pr_info("%s: MDLA RESET\n", __func__);
+	if ((res < 0) || (res > REASON_MAX))
+		res = REASON_MAX;
+
+	return reason_str[res];
+}
+
+static void mdla_reset(int res)
+{
+	const char *str = mdla_get_reason_str(res);
+
+	pr_info("%s: MDLA RESET: %s(%d)\n", __func__,
+		str, res);
 	mdla_cfg_write(0x03f, MDLA_SW_RST);
 	mdla_cfg_write(0x000, MDLA_SW_RST);
 	mdla_cfg_write(0xffffffff, MDLA_CG_CLR);
@@ -537,7 +565,7 @@ static void mdla_reset(void)
 #endif
 
 	pmu_init();
-	mdla_profile_reset();
+	mdla_profile_reset(str);
 }
 
 static void mdla_timeup(unsigned long data)
@@ -548,7 +576,7 @@ static void mdla_timeup(unsigned long data)
 		mdla_fifo_head_id(), mdla_fifo_tail_id());
 
 	mdla_dump_reg();
-	mdla_reset();
+	mdla_reset(REASON_TIMEOUT);
 
 	mdla_fifo_mark_fail();
 	max_cmd_id = mdla_fifo_tail_id();
@@ -2282,6 +2310,7 @@ static int mdla_get_power(int core)
 	mutex_lock(&power_counter_mutex[core]);
 	power_counter[core]++;
 	ret = mdla_boot_up(core);
+	mdla_reset(REASON_POWERON);
 	mutex_unlock(&power_counter_mutex[core]);
 	LOG_DBG("[mdla_%d/%d] gp + 2\n", core, power_counter[core]);
 	if (ret == POWER_ON_MAGIC) {
@@ -3612,7 +3641,7 @@ static int mdlactl_init(void)
 			pr_warn("MDLA: set DMA mask failed: %d\n", ret);
 	}
 
-	mdla_reset();
+	mdla_reset(REASON_DRVINIT);
 	mdla_dump_reg();
 
 	INIT_WORK(&mdla_queue, mdla_start_queue);
