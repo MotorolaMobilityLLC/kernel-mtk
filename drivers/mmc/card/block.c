@@ -1897,6 +1897,12 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
 
 	mqrq->mmc_active.mrq = &brq->mrq;
 	mqrq->mmc_active.err_check = mmc_blk_err_check;
+#ifdef CONFIG_MTK_HW_FDE
+	if (mqrq->req->bio) {
+		brq->mrq.bi_hw_fde = mqrq->req->bio->bi_hw_fde;
+		brq->mrq.bi_key_idx = mqrq->req->bio->bi_key_idx;
+	}
+#endif
 
 	mmc_queue_bounce_pre(mqrq);
 }
