@@ -16,7 +16,6 @@
 /*
  * XXX: virtual function for imcompleted function
  */
-#define sched_boost() (1 != 1)
 
 /* CPU cluster statistics for task migration control */
 #define HMP_GB (0x1000)
@@ -63,6 +62,16 @@ static void hmp_force_up_migration(int this_cpu);
 static void hmp_online_cpu(int cpu);
 static void hmp_offline_cpu(int cpu);
 static int __init hmp_cpu_mask_setup(void);
+static inline void
+hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se);
+static inline void
+hmp_dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se);
+static inline void
+hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa);
+static inline void
+hmp_update_load_avg(unsigned int decayed, unsigned long weight,
+		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
+		u32 contrib, u64 scaled_delta, struct cfs_rq *cfs_rq);
 
 #else
 #define se_load(se) 0
@@ -78,5 +87,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 static void hmp_online_cpu(int cpu) {}
 static void hmp_offline_cpu(int cpu) {}
 static int hmp_idle_pull(int this_cpu) { return this_cpu; }
+static inline void
+hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa) {}
 
 #endif /* CONFIG_SCHED_HMP */
