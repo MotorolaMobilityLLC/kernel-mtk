@@ -32,6 +32,7 @@
 #include <mtk_wd_api.h>
 #endif
 #include "mrdump_private.h"
+#include "mrdump_mini.h"
 
 int __weak ipanic_atflog_buffer(void *data, unsigned char *buffer,
 		size_t sz_buf)
@@ -215,6 +216,8 @@ static int __init mrdump_panic_init(void)
 {
 	mrdump_hw_init();
 	mrdump_cblock_init();
+	mrdump_mini_init();
+
 	mrdump_full_init();
 	mrdump_wdt_init();
 
