@@ -1215,13 +1215,14 @@ int __init cm_mgr_module_init(void)
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 	cm_mgr_to_sspm_command(IPI_CM_MGR_INIT, 0);
 
-	if (cm_mgr_sspm_enable)
-		cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
-				cm_mgr_sspm_enable);
+	cm_mgr_to_sspm_command(IPI_CM_MGR_ENABLE,
+			cm_mgr_enable);
 
-	if (cm_mgr_gpu_enable)
-		cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_ENABLE,
-				cm_mgr_gpu_enable);
+	cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
+			cm_mgr_sspm_enable);
+
+	cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_ENABLE,
+			cm_mgr_gpu_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	return 0;
