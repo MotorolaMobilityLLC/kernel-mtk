@@ -30,7 +30,7 @@
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
-#include "helio-dvfsrc_sspm_ipi.h"
+#include "helio-dvfsrc-ipi.h"
 #endif
 
 static struct helio_dvfsrc *dvfsrc;
@@ -38,15 +38,21 @@ static struct helio_dvfsrc *dvfsrc;
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
 
-#define dvfsrc_write(offset, val) \
-	writel(val, DVFSRC_REG(offset))
+void dvfsrc_write(u32 offset, u32 val)
+{
+	writel(val, DVFSRC_REG(offset));
+}
 
-#define dvfsrc_read(offset) \
-	readl(DVFSRC_REG(offset))
+u32 dvfsrc_read(u32 offset)
+{
+	return readl(DVFSRC_REG(offset));
+}
 
-#define dvfsrc_rmw(offset, data, mask, shift) \
+void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift)
+{
 	dvfsrc_write(offset, (dvfsrc_read(offset) & ~(mask << shift)) \
-			| (data << shift))
+			| (val << shift));
+}
 
 #define dvfsrc_sram_write(offset, val) \
 	writel(val, DVFSRC_SRAM_REG(offset))
@@ -79,12 +85,14 @@ void dvfsrc_update_sspm_ddr_opp_table(int opp, unsigned int ddr_khz)
 
 #endif
 
-void helio_dvfsrc_enable(int enable)
+void helio_dvfsrc_enable(int dvfsrc_en)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
-	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, enable,
+	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, dvfsrc_en,
 			DVFSRC_EN_MASK, DVFSRC_EN_SHIFT);
-	dvfsrc->enabled = 1;
+	dvfsrc->enabled = dvfsrc_en;
+
+	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
@@ -120,8 +128,6 @@ static void dvfsrc_opp_table_init(void)
 
 static int helio_dvfsrc_platform_init(void)
 {
-/* ToDo: Add SSPM IPI to trigger QoS Framework start in SSPM. */
-
 	vcore_volt_init();
 	dvfsrc_opp_table_init();
 
@@ -144,27 +150,128 @@ int dvfsrc_get_bw(int type)
 	int ret = 0;
 	int i;
 
+	mutex_lock(&dvfsrc->devfreq->lock);
 	if (type == QOS_TOTAL_AVE) {
 		for (i = 0; i < QOS_TOTAL_BW_BUF_SIZE; i++)
 			ret += dvfsrc_sram_read(QOS_TOTAL_BW_BUF(i));
 		ret /= QOS_TOTAL_BW_BUF_SIZE;
 	} else
 		ret = dvfsrc_sram_read(QOS_TOTAL_BW + 4 * type);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 
 	return ret;
 }
 
 int get_vcore_dvfs_level(void)
 {
-	return dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
+	int ret = 0;
+
+	mutex_lock(&dvfsrc->devfreq->lock);
+
+	ret = dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
+
+	mutex_unlock(&dvfsrc->devfreq->lock);
+	return ret;
 }
 
-int is_qos_enabled(void)
+int is_dvfsrc_enabled(void)
 {
 	if (dvfsrc)
 		return dvfsrc->enabled;
 
 	return 0;
+}
+
+static void dvfsrc_set_sw_bw(int type, int data)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	switch (type) {
+	case PM_QOS_MEMORY_BANDWIDTH:
+		dvfsrc_write(DVFSRC_SW_BW_0, data / 100);
+		break;
+	case PM_QOS_CPU_MEMORY_BANDWIDTH:
+		dvfsrc_write(DVFSRC_SW_BW_1, data / 100);
+		break;
+	case PM_QOS_GPU_MEMORY_BANDWIDTH:
+		dvfsrc_write(DVFSRC_SW_BW_2, data / 100);
+		break;
+	case PM_QOS_MM_MEMORY_BANDWIDTH:
+		dvfsrc_write(DVFSRC_SW_BW_3, data / 100);
+		break;
+	case PM_QOS_OTHER_MEMORY_BANDWIDTH:
+		dvfsrc_write(DVFSRC_SW_BW_4, data / 100);
+		break;
+	default:
+		break;
+	}
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_set_sw_req(int data, int mask, int shift)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	dvfsrc_rmw(DVFSRC_SW_REQ, data, mask, shift);
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_set_vcore_request2(int data, int mask, int shift)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	dvfsrc_rmw(DVFSRC_VCORE_REQUEST2, data, mask, shift);
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_release_force(void)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
+			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
+	dvfsrc_write(DVFSRC_FORCE, 0);
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_set_force_start(int data)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	dvfsrc_write(DVFSRC_FORCE, data);
+	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
+			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_set_force_end(void)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	/* dvfsrc_write(DVFSRC_FORCE, 0); */
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+char *dvfsrc_dump_reg(char *ptr)
+{
+	char buf[1024];
+
+	memset(buf, '\0', sizeof(buf));
+	get_opp_info(buf);
+	if (ptr)
+		ptr += sprintf(ptr, "%s\n", buf);
+	else
+		pr_info("%s\n", buf);
+
+	memset(buf, '\0', sizeof(buf));
+	get_dvfsrc_reg(buf);
+	if (ptr)
+		ptr += sprintf(ptr, "%s\n", buf);
+	else
+		pr_info("%s\n", buf);
+
+	memset(buf, '\0', sizeof(buf));
+	get_spm_reg(buf);
+	if (ptr)
+		ptr += sprintf(ptr, "%s\n", buf);
+	else
+		pr_info("%s\n", buf);
+
+	return ptr;
 }
 
 static struct devfreq_dev_profile helio_devfreq_profile = {
@@ -213,42 +320,31 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 	int ret = 0;
 	int level = 0;
 
-	mutex_lock(&dvfsrc->devfreq->lock);
-
 	if (!dvfsrc->enabled)
-		goto out;
+		return 0;
 
 	mtk_spmfw_init();
 
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
-		dvfsrc_write(DVFSRC_SW_BW_0, data / 100);
-		break;
 	case PM_QOS_CPU_MEMORY_BANDWIDTH:
-		dvfsrc_write(DVFSRC_SW_BW_1, data / 100);
-		break;
 	case PM_QOS_GPU_MEMORY_BANDWIDTH:
-		dvfsrc_write(DVFSRC_SW_BW_2, data / 100);
-		break;
 	case PM_QOS_MM_MEMORY_BANDWIDTH:
-		dvfsrc_write(DVFSRC_SW_BW_3, data / 100);
-		break;
 	case PM_QOS_OTHER_MEMORY_BANDWIDTH:
-		dvfsrc_write(DVFSRC_SW_BW_4, data / 100);
+		dvfsrc_set_sw_bw(type, data);
 		break;
 	case PM_QOS_DDR_OPP:
 		if (data >= DDR_OPP_NUM || data < 0)
 			data = DDR_OPP_NUM - 1;
 
 		level = DDR_OPP_NUM - data - 1;
-		dvfsrc_rmw(DVFSRC_SW_REQ, level,
-				EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
+		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
+
 		ret = wait_for_completion(get_cur_ddr_opp() <= data,
 				DVFSRC_TIMEOUT);
 		if (ret < 0) {
 			pr_err("DVFSRC ddr: 0x%x, data: 0x%x\n", type, data);
-			/* ToDo: Dump registers */
-			/* spm_vcorefs_dump_dvfs_regs(NULL); */
+			dvfsrc_dump_reg(NULL);
 			aee_kernel_warning("DVFSRC", "ddr_opp failed.");
 		}
 
@@ -258,7 +354,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 			data = VCORE_OPP_NUM - 1;
 
 		level = VCORE_OPP_NUM - data - 1;
-		dvfsrc_rmw(DVFSRC_VCORE_REQUEST2, level,
+		dvfsrc_set_vcore_request2(level,
 				VCORE_QOS_GEAR0_MASK, VCORE_QOS_GEAR0_SHIFT);
 
 		ret = wait_for_completion(get_cur_vcore_opp() <= data,
@@ -266,8 +362,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 
 		if (ret < 0) {
 			pr_err("DVFSRC vcore: 0x%x, data: 0x%x\n", type, data);
-			/* Dump registers */
-			/* spm_vcorefs_dump_dvfs_regs(NULL); */
+			dvfsrc_dump_reg(NULL);
 			aee_kernel_warning("DVFSRC", "vcore_opp failed.");
 		}
 		break;
@@ -276,35 +371,27 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 			data = VCORE_DVFS_OPP_NUM;
 
 		if (data == VCORE_DVFS_OPP_NUM) { /* relase opp */
-			dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
-					FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
-			dvfsrc_write(DVFSRC_FORCE, 0);
+			dvfsrc_release_force();
 			break;
 		}
 
 		/* force opp */
 		level = 1 << (VCORE_DVFS_OPP_NUM - data - 1);
-		dvfsrc_write(DVFSRC_FORCE, level);
-		dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
-				FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
+		dvfsrc_set_force_start(level);
 
 		ret = wait_for_completion(get_cur_vcore_dvfs_opp() == data,
 				DVFSRC_TIMEOUT);
 		if (ret < 0) {
 			pr_err("DVFSRC force: 0x%x, data: 0x%x\n", type, data);
-		/* Dump registers */
-		/* spm_vcorefs_dump_dvfs_regs(NULL); */
+			dvfsrc_dump_reg(NULL);
 			aee_kernel_exception("DVFSRC", "force failed.");
 		}
 
-		dvfsrc_write(DVFSRC_FORCE, 0);
+		dvfsrc_set_force_end();
 		break;
 	default:
 		break;
 	}
-
-out:
-	mutex_unlock(&dvfsrc->devfreq->lock);
 
 	return ret;
 }
@@ -323,8 +410,7 @@ void dvfsrc_set_vcore_request(unsigned int vcore_level,
 
 	ret = wait_for_completion(get_cur_vcore_opp() <= val, DVFSRC_TIMEOUT);
 	if (ret < 0) {
-			/* Dump registers */
-			/* spm_vcorefs_dump_dvfs_regs(NULL); */
+		dvfsrc_dump_reg(NULL);
 		aee_kernel_exception("DVFSRC", "%s failed.", __func__);
 	}
 
@@ -506,7 +592,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 
 	helio_dvfsrc_reg_config(dvfsrc->init_config);
 
-	/* helio_dvfsrc_enable(1); */
+	helio_dvfsrc_enable(1);
 
 	pr_info("%s: init done\n", __func__);
 
