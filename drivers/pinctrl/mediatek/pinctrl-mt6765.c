@@ -128,11 +128,11 @@ static int mtk_pinctrl_get_gpio_pullsel(struct mtk_pinctrl *pctl,
 	if (pull_sel == -EPERM) {
 		pull_sel = mtk_pinctrl_get_gpio_pu_pd(pctl, pin);
 		/*pull_sel = [pu,pd], 10 is pull up, 01 is pull down*/
-		if ((pull_sel == 0x02))
+		if (pull_sel == 0x02)
 			pull_sel = GPIO_PULL_UP;
-		else if ((pull_sel == 0x01))
+		else if (pull_sel == 0x01)
 			pull_sel = GPIO_PULL_DOWN;
-		else if ((pull_sel == -EPERM))
+		else if (pull_sel == -EPERM)
 			pull_sel = GPIO_PULL_UNSUPPORTED;
 		else
 			pull_sel = GPIO_NO_PULL;
