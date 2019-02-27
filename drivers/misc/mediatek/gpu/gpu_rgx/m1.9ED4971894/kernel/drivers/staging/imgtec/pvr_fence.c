@@ -427,8 +427,7 @@ pvr_fence_context_create(void *dev_cookie,
 #endif
 
 	fctx->fence_context = dma_fence_context_alloc(1);
-	strncpy(fctx->name, name, sizeof(fctx->name));
-	fctx->name[sizeof(fctx->name) - 1] = '\0';
+	strlcpy(fctx->name, name, sizeof(fctx->name));
 
 	fctx->fence_wq =
 		create_freezable_workqueue("pvr_fence_sync_workqueue");
