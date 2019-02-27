@@ -56,6 +56,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-common.h"
 #include "mtk-soc-pcm-platform.h"
+#include "mtk-auddrv-gpio.h"
 #include <linux/dma-mapping.h>
 
 static struct afe_mem_control_t *pI2s0MemControl;
@@ -109,6 +110,10 @@ static int Audio_i2s0_SideGen_Set(struct snd_kcontrol *kcontrol,
 		return -EINVAL;
 	}
 	mi2s0_sidegen_control = ucontrol->value.integer.value[0];
+
+	/* Config smart pa I2S pin */
+	AudDrv_GPIO_SMARTPA_Select(mi2s0_sidegen_control > 0 ? 1 : 0);
+
 	pr_debug(
 		"%s(), sidegen = %d, hdoutput = %d, extcodec_echoref = %d, always_hd = %d\n",
 		__func__, mi2s0_sidegen_control, hdoutput_control,
