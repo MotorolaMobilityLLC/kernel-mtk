@@ -1227,9 +1227,13 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x0c400000 0 0x40000>;
 	};
 
-	dfd@0c600000 {
+	dfd@10200b00 {
 		compatible = "mediatek,dfd";
-		reg = <0 0x0c600000 0 0x1000>;
+		reg = <0 0x10200b00 0 0x10000>;
+
+		mediatek,enabled = <1>;
+		mediatek,chain_length = <0xc350>;
+		mediatek,rg_dfd_timeout = <0xa0>;
 	};
 
 	dbg_cti@0d020000 {
