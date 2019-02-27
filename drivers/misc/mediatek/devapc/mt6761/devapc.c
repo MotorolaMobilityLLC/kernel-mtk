@@ -59,7 +59,7 @@
 #define DEVAPC_LOG_INFO        0x00000001
 #define DEVAPC_LOG_DBG         0x00000002
 
-#define DEVAPC_LOG_LEVEL      (DEVAPC_LOG_DBG)
+#define DEVAPC_LOG_LEVEL      (DEVAPC_LOG_INFO)
 
 #define DEVAPC_MSG(fmt, args...) \
 	do {    \
@@ -94,15 +94,6 @@ static unsigned int devapc_infra_irq;
 static void __iomem *devapc_pd_infra_base;
 
 static unsigned int enable_dynamic_one_core_violation_debug;
-
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-unsigned long long devapc_vio_first_trigger_time[DEVAPC_TOTAL_SLAVES];
-/* violation times */
-unsigned int devapc_vio_count[DEVAPC_TOTAL_SLAVES];
-/* show the status of whether AEE warning has been populated */
-unsigned int devapc_vio_aee_shown[DEVAPC_TOTAL_SLAVES];
-unsigned int devapc_vio_current_aee_trigger_times;
-#endif
 
 #if DEVAPC_TURN_ON
 static struct DEVICE_INFO devapc_infra_devices[] = {
@@ -160,8 +151,8 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"INFRASYS_DBG_TRACKER",                  true    },
 	{"INFRASYS_CCIF0_AP",                     true    },
 	{"INFRASYS_CCIF0_MD",                     true    },
-	{"INFRASYS_CCIF1_AP",                     true    },
 	{"INFRASYS_CCIF1_MD",                     true    },
+	{"INFRASYS_CLDMA_MD",                     true    },
 	{"INFRASYS_MBIST",                        true    },
 	{"INFRASYS_INFRA_PDN_REGISTER",           true    },
 	{"INFRASYS_TRNG",                         true    },
@@ -229,7 +220,7 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"PERISYS_UART2",                         true    },
 
 	/* 100 */
-	{"PERISYS_I2C6",                          true    },
+	{"PERISYS_UART3",                         true    },
 	{"PERISYS_PWM",                           true    },
 	{"PERISYS_I2C0",                          true    },
 	{"PERISYS_I2C1",                          true    },
@@ -271,14 +262,14 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"EAST_ CSI_TOP_AO",                      true    },
 	{"EAST_ RESERVE",                         true    },
 	{"EAST_ RESERVE",                         true    },
-	{"SOUTH_ RESERVE",                        true    },
+	{"SOUTH_MSDC1",                           true    },
 	{"SOUTH_EFUSE",                           true    },
 	{"SOUTH_RESERVE_1",                       true    },
 	{"SOUTH_RESERVE_2",                       true    },
 
 	/* 140 */
 	{"WEST_MIPI_TX_CONFIG",                   true    },
-	{"WEST_MSDC1",                            true    },
+	{"WEST_RESERVE_0",                        true    },
 	{"WEST_RESERVE_1",                        true    },
 	{"WEST_RESERVE_2",                        true    },
 	{"NORTH_USBSIF_TOP",                      true    },
@@ -286,13 +277,13 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 	{"NORTH_RESERVE_0",                       true    },
 	{"NORTH_RESERVE_1",                       true    },
 	{"PERISYS_CONN",                          true    },
-	{"PERISYS_MD1",                           true    },
+	{"PERISYS_RESERVE",                       true    },
 
 	/* 150 */
 	{"PERISYS_RESERVE",                       true    },
 	{"GPU",                                   true    },
+	{"GPU DVFS MON",                          true    },
 	{"GPU CONFIG",                            true    },
-	{"GPU RESERVE",                           true    },
 	{"MFG_OTHERS",                            true    },
 	{"MMSYS_CONFIG",                          true    },
 	{"DISP_MUTEX",                            true    },
@@ -326,72 +317,46 @@ static struct DEVICE_INFO devapc_infra_devices[] = {
 
 	/* 180 */
 	{"SMI_COMMON",                            true    },
-	{"IMGSYS_CONFIG",                         true    },
-	{"IMGSYS_SMI_LARB2",                      true    },
-	{"IMGSYS_DISP_A0",                        true    },
-	{"IMGSYS_DISP_A1",                        true    },
-	{"IMGSYS_DISP_A_NBC",                     true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_DPE",                            true    },
+	{"CAMSYS_CAMSYS_TOP",                     true    },
+	{"CAMSYS_LARB2",                          true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_MAIN",                           true    },
+	{"CAMSYS_LUT",                            true    },
+	{"CAMSYS_D",                              true    },
+	{"CAMSYS_DMA",                            true    },
+	{"CAMSYS_RESERVED",                       true    },
 
 	/* 190 */
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_FDVT",                           true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"IMGSYS_RESERVE",                        true    },
-	{"VCODESYS_VENC_GLOBAL_CON",              true    },
-	{"VCODESYS_SMI_LARB1",                    true    },
-	{"VCODESYS_VENC",                         true    },
-
-	/* 200 */
-	{"VCODESYS_JPGENC",                       true    },
-	{"VCODESYS_VDEC_FULL_TOP",                true    },
-	{"VCODESYS_MBIST_CTRL",                   true    },
-	{"CAMSYS_CAMSYS_TOP",                     true    },
-	{"CAMSYS_LARB3",                          true    },
-	{"CAMSYS_CAM_TOP",                        true    },
-	{"CAMSYS_CAM_A",                          true    },
-	{"CAMSYS_CAM_B",                          true    },
-	{"CAMSYS_CAM_TOP_SET",                    true    },
-	{"CAMSYS_CAM_A_SET",                      true    },
-
-	/* 210 */
-	{"CAMSYS_CAM_B_SET",                      true    },
-	{"CAMSYS_CAM_TOP_INNER",                  true    },
-	{"CAMSYS_CAM_A_INNER",                    true    },
-	{"CAMSYS_CAM_B_INNER",                    true    },
-	{"CAMSYS_CAM_TOP_CLR",                    true    },
-	{"CAMSYS_CAM_A_CLR",                      true    },
-	{"CAMSYS_CAM_B_CLR",                      true    },
-	{"CAMSYS_CAM_A_EXT",                      true    },
-	{"CAMSYS_CAM_B_EXT",                      true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_FDVT",                           true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"CAMSYS_MAIN_INNER",                     true    },
+	{"CAMSYS_D_INNER",                        true    },
+	{"CAMSYS_DMA_INNER",                      true    },
 	{"CAMSYS_SENINF_A",                       true    },
-
-	/* 220 */
 	{"CAMSYS_SENINF_B",                       true    },
 	{"CAMSYS_SENINF_C",                       true    },
+
+	/* 200 */
 	{"CAMSYS_SENINF_D",                       true    },
 	{"CAMSYS_SENINF_E",                       true    },
 	{"CAMSYS_SENINF_F",                       true    },
 	{"CAMSYS_SENINF_G",                       true    },
 	{"CAMSYS_SENINF_H",                       true    },
-	{"CAMSYS_CAMSV_A",                        true    },
-	{"CAMSYS_CAMSV_B",                        true    },
-	{"CAMSYS_CAMSV_C",                        true    },
-
-	/* 230 */
-	{"CAMSYS_CAMSV_D",                        true    },
-	{"CAMSYS_OTHERS_0",                       true    },
-	{"CAMSYS_MD32 DMEM",                      true    },
+	{"CAMSYS_CAMSV_TOP_0",                    true    },
+	{"CAMSYS_CAMSV_TOP_1",                    true    },
 	{"CAMSYS_RESERVED",                       true    },
-	{"CAMSYS_MD32 PMEM",                      true    },
-	{"CAMSYS_MD32 IP",                        true    },
-	{"CAMSYS_CCU_CTL",                        true    },
+	{"CAMSYS_RESERVED",                       true    },
+	{"VCODESYS_VENC_GLOBAL_CON",              true    },
+
+	/* 210 */
+	{"VCODESYS_SMI_LARB1",                    true    },
+	{"VCODESYS_VENC",                         true    },
+	{"VCODESYS_JPGENC",                       true    },
+	{"VCODESYS_VDEC_FULL_TOP",                true    },
+	{"VCODESYS_MBIST_CTRL",                   true    },
 
 };
 #endif
@@ -555,10 +520,6 @@ static void start_devapc(void)
 			readl(DEVAPC_PD_INFRA_VIO_STA(7)),
 			readl(DEVAPC_PD_INFRA_VIO_STA(8)));
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-	devapc_vio_current_aee_trigger_times = 0;
-#endif
-
 }
 
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
@@ -566,21 +527,20 @@ static void start_devapc(void)
 /* violation index corresponds to subsys */
 static const char *index_to_subsys(unsigned int index)
 {
-
 	if (index >= 151 && index <= 154)
 		return "MFGSYS";
-	else if (index == 155 || index == 156 || (index >= 166 && index <= 176))
+	else if (index == 155)
+		return "MMSYS";
+	else if (index == 156 || (index >= 166 && index <= 176))
 		return "MMSYS_DISP";
-	else if (index == 157 || index == 158 || index == 182 || index == 198
-		|| index == 204)
+	else if (index == 157 || index == 158 || index == 178 || index == 179
+			|| index == 180 || index == 210)
 		return "SMI";
 	else if (index >= 159 && index <= 165)
 		return "MMSYS_MDP";
-	else if (index == 181 || (index >= 183 && index <= 196))
-		return "IMGSYS";
-	else if (index >= 197 && index <= 202)
+	else if (index >= 209 && index <= 214)
 		return "VCODECSYS";
-	else if (index == 203 || (index >= 205 && index <= 236))
+	else if (index >= 181 && index <= 208)
 		return "CAMSYS";
 	else if (index < ARRAY_SIZE(devapc_infra_devices))
 		return devapc_infra_devices[index].device;
@@ -598,70 +558,27 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 	/* mask irq for module "i" */
 	mask_infra_module_irq(i);
 
-	/* Mark the flag for showing AEE (AEE should be shown only once) */
-	devapc_vio_aee_shown[i] = 1;
-	if (devapc_vio_current_aee_trigger_times <
-		DEVAPC_VIO_MAX_TOTAL_AEE_TRIGGER_TIMES) {
+	domain_id = (dbg0 & INFRA_VIO_DBG_DMNID)
+		>> INFRA_VIO_DBG_DMNID_START_BIT;
 
-		devapc_vio_current_aee_trigger_times++;
-		domain_id = (dbg0 & INFRA_VIO_DBG_DMNID)
-			>> INFRA_VIO_DBG_DMNID_START_BIT;
-		if (domain_id == 1) {
-			strncpy(subsys_str, "MD_SS", sizeof(subsys_str));
-		} else {
-			strncpy(subsys_str, index_to_subsys(i),
+	if (domain_id == 1) {
+		strncpy(subsys_str, "MD_SI", sizeof(subsys_str));
+	} else {
+		strncpy(subsys_str, index_to_subsys(i),
 				sizeof(subsys_str));
-		}
-		subsys_str[sizeof(subsys_str)-1] = '\0';
+	}
 
-		aee_kernel_exception("DEVAPC",
+	subsys_str[sizeof(subsys_str)-1] = '\0';
+	aee_kernel_exception("DEVAPC",
 			"%s %s, Vio Addr: 0x%x\n%s%s\n",
 			"[DEVAPC] Violation Slave:",
 			devapc_infra_devices[i].device,
 			dbg1,
 			"CRDISPATCH_KEY:Device APC Violation Issue/",
 			subsys_str
-			);
-	}
+	);
 }
-#ifndef DBG_ENABLE
-static void evaluate_aee_exception(unsigned int i, unsigned int dbg0,
-	unsigned int dbg1)
-{
-	unsigned long long current_time;
 
-	if (devapc_vio_aee_shown[i] == 0) {
-		if (devapc_vio_count[i] < DEVAPC_VIO_AEE_TRIGGER_TIMES) {
-			devapc_vio_count[i]++;
-			if (devapc_vio_count[i] == 1) {
-		/* this slave violation is triggered for the first time */
-		/* get current time from start-up in ns */
-				devapc_vio_first_trigger_time[i] =
-					sched_clock();
-				DEVAPC_VIO_MSG("%s %s %u\n",
-					"[DEVAPC]",
-					"devapc_vio_first_trigger_time:",
-					do_div(devapc_vio_first_trigger_time[i],
-						1000000)); /* ms */
-			}
-		}
-		if (devapc_vio_count[i] >= DEVAPC_VIO_AEE_TRIGGER_TIMES) {
-			/* get current time from start-up in ns */
-			current_time = sched_clock();
-			DEVAPC_VIO_MSG("[DEVAPC] current_time: %u\n",
-					do_div(current_time, 1000000)); /* ms */
-			DEVAPC_VIO_MSG("[DEVAPC] devapc_vio_count[%d]: %d\n",
-					i, devapc_vio_count[i]);
-			if (((current_time - devapc_vio_first_trigger_time[i])
-				/ 1000000) <= (unsigned long long)
-				DEVAPC_VIO_AEE_TRIGGER_FREQUENCY) {
-				/* diff time by ms */
-				execute_aee(i, dbg0, dbg1);
-			}
-		}
-	}
-}
-#endif // DBG_ENABLE
 #endif // AEE_FEATURE
 
 static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
@@ -806,12 +723,6 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
 	#ifdef DBG_ENABLE
 				execute_aee(i, dbg0, dbg1);
-	#else
-				/* Frequency-based Violation AEE Exception */
-				/* it will trigger AEE if violations occur
-				 * "10" times in "1000" ms
-				 */
-				evaluate_aee_exception(i, dbg0, dbg1);
 	#endif
 #endif
 			}
