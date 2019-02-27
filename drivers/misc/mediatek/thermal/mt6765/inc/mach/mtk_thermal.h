@@ -136,8 +136,8 @@ extern int get_cpu_target_tj(void);
 
 extern int get_cpu_target_offset(void);
 
-//mark for bring upextern int mtk_gpufreq_register
-//mark for bring up(struct mt_gpufreq_power_table_info *freqs, int num);
+extern int mtk_gpufreq_register
+(struct mt_gpufreq_power_table_info *freqs, int num);
 
 extern int get_target_tj(void);
 
