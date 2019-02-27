@@ -17,8 +17,31 @@
 #include <linux/cpumask.h>
 #include <linux/topology.h>
 #include <linux/suspend.h>
+#include <linux/of.h>
 
 #include "mtk_cpuhp_private.h"
+
+static int is_multi_cluster(void)
+{
+	struct device_node *cn, *map;
+
+	cn = of_find_node_by_path("/cpus");
+	if (!cn) {
+		pr_debug("No CPU information found in DT\n");
+		return 0;
+	}
+
+	map = of_get_child_by_name(cn, "virtual-cpu-map");
+	if (!map) {
+		map = of_get_child_by_name(cn, "cpu-map");
+		if (!map)
+			return 0;
+
+		return arch_get_nr_clusters() > 1 ? 1 : 0;
+	}
+
+	return 0;
+}
 
 static int get_cpu_topology(int cpu, int *isalone)
 {
@@ -31,7 +54,7 @@ static int get_cpu_topology(int cpu, int *isalone)
 	 * test this being hotplugged up/down CPU if the first/last core in
 	 * this cluster. It would affect each platform's buck control policy.
 	 */
-	if (arch_is_multi_cluster()) {
+	if (is_multi_cluster()) {
 		arch_get_cluster_cpus(&cpumask_this_cluster, cluster);
 		cpumask_and(&cpumask_this_cluster,
 			    &cpumask_this_cluster, cpu_online_mask);
