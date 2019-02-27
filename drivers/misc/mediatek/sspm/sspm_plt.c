@@ -44,8 +44,12 @@
 #include "sspm_excep.h"
 #include "sspm_reservedmem.h"
 #include "sspm_reservedmem_define.h"
+#if SSPM_LOGGER_SUPPORT
 #include "sspm_logger.h"
+#endif
+#if SSPM_TIMESYNC_SUPPORT
 #include "sspm_timesync.h"
+#endif
 #include "sspm_sysfs.h"
 
 #if SSPM_PLT_SERV_SUPPORT
