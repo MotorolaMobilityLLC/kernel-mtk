@@ -2805,6 +2805,10 @@ firmware_class.path=/vendor/firmware";
 		/* reserved for overlay by odm */
 	};
 
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
 	audio_snd_card {
 		compatible = "mediatek,audio_snd_card";
 	};
