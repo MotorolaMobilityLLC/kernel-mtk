@@ -101,12 +101,14 @@ static inline void *mb_get_data(struct tipc_msg_buf *mb, size_t len)
 }
 
 #ifdef CONFIG_GZ_V2_SUPPORT
-typedef void *tipc_k_handle;
-int tipc_k_connect(tipc_k_handle *h, const char *port);
-int tipc_k_disconnect(tipc_k_handle h);
-ssize_t tipc_k_read(tipc_k_handle h, void *buf, size_t buf_len,
+struct tipc_k_handle {
+	struct tipc_dn_chan *dn;
+};
+int tipc_k_connect(struct tipc_k_handle *h, const char *port);
+int tipc_k_disconnect(struct tipc_k_handle *h);
+ssize_t tipc_k_read(struct tipc_k_handle *h, void *buf, size_t buf_len,
 	unsigned int flags);
-ssize_t tipc_k_write(tipc_k_handle h, void *buf, size_t len,
+ssize_t tipc_k_write(struct tipc_k_handle *h, void *buf, size_t len,
 	unsigned int flags);
 #endif
 
