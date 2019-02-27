@@ -32,6 +32,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/uaccess.h>
+#include <linux/pm_qos.h>
 
 #include "mtk_devinfo.h"
 /* #define BRING_UP */
@@ -62,6 +63,8 @@
 #include "mtk_static_power.h"
 #include "mtk_static_power_mt6765.h"
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
+
+#include "helio-dvfsrc-opp.h"
 
 /**
  * ===============================================
@@ -943,6 +946,7 @@ static int mt_gpufreq_power_dump_proc_show(struct seq_file *m, void *v)
 /*
  * PROCFS : show important variables for debugging
  */
+static int g_cur_vcore_opp = VCORE_OPP_0;
 static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 {
 	int i;
@@ -959,6 +963,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 			__mt_gpufreq_get_cur_freq(),
 			__mt_gpufreq_get_cur_volt(),
 			__mt_gpufreq_get_cur_vsram_volt());
+	seq_printf(m, "current vcore opp = %d\n", g_cur_vcore_opp);
 	seq_printf(m, "clock freq = %d\n", mt_get_abist_freq(25));
 	seq_printf(m, "g_segment_id = %d\n", g_segment_id);
 	seq_printf(m, "g_volt_enable_state = %d\n", g_volt_enable_state);
@@ -1330,6 +1335,26 @@ static int __mt_gpufreq_create_procfs(void)
  */
 
 /*
+ * switch VGPU voltage via VCORE
+ */
+
+static void __mt_gpufreq_vcore_volt_switch(unsigned int volt_target)
+{
+	if (volt_target > 70000) {
+		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_0);
+		g_cur_vcore_opp = VCORE_OPP_0;
+	} else if (volt_target > 65000) {
+		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_1);
+		g_cur_vcore_opp = VCORE_OPP_1;
+	} else if (volt_target > 0) {
+		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_2);
+		g_cur_vcore_opp = VCORE_OPP_2;
+	} else /* UNREQUEST */
+		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_UNREQ);
+
+}
+
+/*
  * frequency ramp up/down handler
  * - frequency ramp up need to wait voltage settle
  * - frequency ramp down do not need to wait voltage settle
@@ -1358,9 +1383,11 @@ static void __mt_gpufreq_set(unsigned int freq_old, unsigned int freq_new,
 			__mt_gpufreq_volt_switch(volt_old, volt_new,
 				vsram_volt_old, vsram_volt_new);
 
+		__mt_gpufreq_vcore_volt_switch(volt_new);
 		__mt_gpufreq_clock_switch(freq_new);
 	} else {
 		__mt_gpufreq_clock_switch(freq_new);
+		__mt_gpufreq_vcore_volt_switch(volt_new);
 
 		if (vsram_volt_old > (volt_new + BUCK_VARIATION_MAX)) {
 			__mt_gpufreq_volt_switch(volt_old,
@@ -1635,9 +1662,7 @@ static void __mt_gpufreq_bucks_enable(void)
 	}
 	gpufreq_pr_debug("@%s: bucks is enabled\n", __func__);
 #else
-
-	/* To-Do VCoreAPI */;
-
+	__mt_gpufreq_vcore_volt_switch(g_cur_vcore_opp);
 #endif
 }
 
@@ -1658,11 +1683,7 @@ static void __mt_gpufreq_bucks_disable(void)
 		}
 	}
 #else
-	/* ret = vcorefs_request_dvfs_opp(KIR_GPU, OPP_UNREQ);*/
-	ret = 0;
-	if (ret)
-		gpufreq_pr_debug("@%s: vcorefs_request_dvfs_opp OPP_UNREQ fail!\n"
-		, __func__);
+	__mt_gpufreq_vcore_volt_switch(0);
 #endif
 #ifdef USE_STAND_ALONE_VSRAM
 	if (regulator_is_enabled(g_pmic->reg_vsram_gpu) > 0) {
@@ -1730,6 +1751,9 @@ static void __mt_gpufreq_set_fixed_volt(int fixed_volt)
 			__func__, g_fixed_freq, g_fixed_volt);
 	__mt_gpufreq_volt_switch_without_vsram_volt(g_cur_opp_volt,
 		g_fixed_volt);
+	regulator_set_voltage(g_pmic->reg_vcore, g_fixed_volt * 10,
+		g_fixed_volt * 10 + 125);
+
 	g_cur_opp_volt = g_fixed_volt;
 	g_cur_opp_vsram_volt =
 		__mt_gpufreq_get_vsram_volt_by_target_volt(g_fixed_volt);
@@ -1972,7 +1996,7 @@ static unsigned int __mt_gpufreq_get_cur_volt(void)
 		/* WARRNING: regulator_get_voltage prints uV */
 		volt = regulator_get_voltage(g_pmic->reg_vgpu) / 10;
 #else
-		/* To-Do add VCore query vold here */
+		volt = regulator_get_voltage(g_pmic->reg_vcore) / 10;
 #endif
 	}
 
@@ -2443,6 +2467,16 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 		gpufreq_perr("@%s: cannot get VGPU\n", __func__);
 		return PTR_ERR(g_pmic->reg_vgpu);
 	}
+#else
+	pm_qos_add_request(&g_pmic->pm_vgpu,
+	PM_QOS_VCORE_OPP, VCORE_OPP_0);
+
+	g_pmic->reg_vcore = regulator_get(&pdev->dev, "vcore");
+	if (IS_ERR(g_pmic->reg_vcore)) {
+		gpufreq_perr("@%s: cannot get VCORE\n", __func__);
+		return PTR_ERR(g_pmic->reg_vcore);
+	}
+
 #endif
 #ifdef USE_STAND_ALONE_VSRAM
 	g_pmic->reg_vsram_gpu = regulator_get(&pdev->dev, "vsram_gpu");
