@@ -449,7 +449,7 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(
 	desc[len] = '\0';
 
 	if (kstrtouint(desc, 10, &val) == 0) {
-		if (val >= 0  && val <= 3) {
+		if (val <= 3) {
 			if (val != scp_sleep_flag) {
 				scp_sleep_flag = val;
 				pr_info("scp_sleep_flag = %d\n",
@@ -629,7 +629,7 @@ static ssize_t mt_pmicw_mode_debug_proc_write(
 	desc[len] = '\0';
 
 	if (kstrtouint(desc, 10, &val) == 0) {
-		if (val >= 0  && val <= 2) {
+		if (val <= 2) {
 			if (val != pmicw_mode_debug_flag) {
 				pmicw_mode_debug_flag = val;
 				pr_info("pmicw_mode_debug_flag = %d\n",
@@ -727,7 +727,7 @@ static int mt_scp_dvfs_create_procfs(void)
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name,
-						0x0664,
+						0664,
 						dir,
 						entries[i].fops)) {
 			pr_err("ERROR: %s: create /proc/scp_dvfs/%s failed\n",
