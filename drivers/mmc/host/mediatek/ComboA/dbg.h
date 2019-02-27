@@ -139,6 +139,22 @@ do { \
 #define IRQ_MSG(fmt, args...)
 #endif
 
+#define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
+do { \
+	if (buff && size && *(size)) { \
+		unsigned long var = snprintf(*(buff), *(size), fmt, ##args); \
+		if (var > 0) { \
+			*(size) -= var; \
+			*(buff) += var; \
+		} \
+	} \
+	if (evt) \
+		seq_printf(evt, fmt, ##args); \
+	if (!buff && !evt) { \
+		pr_info(fmt, ##args); \
+	} \
+} while (0)
+
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);
@@ -153,8 +169,8 @@ void msdc_error_tune_debug2(struct msdc_host *host,
 int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
-void mmc_cmd_dump(struct mmc_host *mmc);
-void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m);
-
-void msdc_hang_detect_dump(u32 id);
+void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
+		struct mmc_host *mmc, u32 latest_cnt);
+void msdc_dump_host_state(char **buff, unsigned long *size,
+		struct seq_file *m, struct msdc_host *host);
 #endif

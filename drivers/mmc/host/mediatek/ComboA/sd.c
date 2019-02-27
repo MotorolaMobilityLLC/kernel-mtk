@@ -421,52 +421,6 @@ int msdc_get_dma_status(int host_id)
 }
 EXPORT_SYMBOL(msdc_get_dma_status);
 
-void msdc_hang_detect_dump(u32 id)
-{
-	struct msdc_host *host = mtk_msdc_host[id];
-	void __iomem *base;
-
-	if (host == NULL) {
-		pr_info("====== Null msdc%d, dump skipped ======\n", id);
-		return;
-	}
-
-	pr_info("====== msdc%d dump start ======\n", id);
-
-	pr_info("Accumulated dma cnt: %u\n", host->dma_cnt);
-	if (host->start_dma_time < host->stop_dma_time)
-		pr_info("No pending dma: last start %llu, last stop %llu\n",
-			host->start_dma_time, host->stop_dma_time);
-
-	if (host->tuning_in_progress)
-		pr_info("tuning_in_progress %d\n",
-			host->tuning_in_progress);
-
-	if ((host->core_clkon == 0)
-	 && host->stop_dma_time
-	 && (host->start_dma_time > host->stop_dma_time)) {
-		pr_info("DMA pending with clock gated: start %llu, stop %llu\n",
-			host->start_dma_time, host->stop_dma_time);
-		msdc_dump_clock_sts(host);
-		return;
-	}
-
-	base = host->base;
-
-	if ((host->core_clkon == 1)
-	 && (host->start_dma_time > host->stop_dma_time)) {
-		pr_info("DMA pending DMA_CFG_SATUS(%d): start %llu, stop %llu\n",
-			MSDC_READ32(MSDC_DMA_CFG) & MSDC_DMA_CFG_STS,
-			host->start_dma_time, host->stop_dma_time);
-	}
-
-	/* dump command history */
-	mmc_cmd_dump(host->mmc);
-
-	pr_info("======= msdc%d dump end =======\n", id);
-}
-EXPORT_SYMBOL(msdc_hang_detect_dump);
-
 void msdc_clr_fifo(unsigned int id)
 {
 	int retry = 3, cnt = 1000;
@@ -1659,7 +1613,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 		     (host->mmc->card && mmc_card_mmc(host->mmc->card)))
 		 && (cmd->opcode != 13 || g_emmc_mode_switch == 0)) {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-			mmc_cmd_dump(host->mmc);
+			mmc_cmd_dump(NULL, NULL, NULL, host->mmc, 50);
 #endif
 			msdc_dump_info(host->id);
 			/* Set clock to 50MHz */
@@ -1879,7 +1833,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 			cmd->error = (unsigned int)-ETIMEDOUT;
 			pr_notice("[%s]: msdc%d XXX CMD<%d> MSDC_INT_CMDTMO Arg<0x%.8x>",
 				__func__, host->id, cmd->opcode, cmd->arg);
-			mmc_cmd_dump(host->mmc);
+			mmc_cmd_dump(NULL, NULL, NULL, host->mmc, 50);
 			msdc_dump_info(host->id);
 		}
 	}
@@ -4364,7 +4318,8 @@ static void msdc_check_data_timeout(struct work_struct *work)
 
 	intsts = MSDC_READ32(MSDC_INT);
 
-	msdc_hang_detect_dump(host->id);
+	msdc_dump_host_state(NULL, NULL, NULL, host);
+	mmc_cmd_dump(NULL, NULL, NULL, host->mmc, 50);
 	msdc_dump_info(host->id);
 
 	/* MSDC have received int, but delay by system. Just print warning */
