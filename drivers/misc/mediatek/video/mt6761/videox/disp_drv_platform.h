@@ -85,4 +85,5 @@ enum DISP_SESSION_ENUM {
 
 /* define MET ready to use*/
 #define CONFIG_MTK_MET
+
 #endif				/* __DISP_DRV_PLATFORM_H__ */
