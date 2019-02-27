@@ -2842,6 +2842,8 @@ static int fgauge_get_hw_version(struct gauge_device *gauge_dev)
 {
 	int hw_id = pmic_get_register_value(PMIC_HWCID);
 
+	bm_debug("[%s]hw_id=%d", __func__, hw_id);
+
 	return GAUGE_HW_V2000;
 }
 
