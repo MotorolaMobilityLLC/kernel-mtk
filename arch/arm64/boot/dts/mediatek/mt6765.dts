@@ -788,6 +788,18 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x10227000 0 0x0>;
 	};
 
+	dvfsp@00110800 {
+		compatible = "mediatek,mt6765-dvfsp";
+		reg = <0 0x00110800 0 0x1400>,
+		      <0 0x00110800 0 0x1400>;
+	};
+
+	eem_fsm@1100b000 {
+		compatible = "mediatek,eem_fsm";
+		reg = <0 0x1100b000 0 0x1000>;
+		interrupts = <GIC_SPI 157 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	dramc_ch0_top0@10228000 {
 		compatible = "mediatek,dramc_ch0_top0";
 		reg = <0 0x10228000 0 0x0>;
