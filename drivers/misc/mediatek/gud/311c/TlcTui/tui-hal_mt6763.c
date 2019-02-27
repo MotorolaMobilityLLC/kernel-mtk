@@ -167,8 +167,11 @@ uint32_t hal_tui_alloc(
 		return TUI_DCI_ERR_INTERNAL_ERROR;
 	}
 #endif
-
+#if 1 /*support_64_bit*/
+	ret = tui_region_offline64(&pa, &size);
+#else
 	ret = tui_region_offline(&pa, &size);
+#endif
 	pr_debug("%s(%d): required size 0x%zx, acquired size=0x%lx\n",
 		 __func__, __LINE__, allocsize * number, size);
 
@@ -177,9 +180,9 @@ uint32_t hal_tui_alloc(
 		allocbuffer[0].pa = (uint64_t) pa;
 		allocbuffer[1].pa = (uint64_t) (pa + allocsize);
 		allocbuffer[2].pa = (uint64_t) (pa + allocsize*2);
-		pr_debug("%s(%d): buf_1 0x%llx, buf_2 0x%llx, buf_3 0x%llx\n",
-			__func__, __LINE__, allocbuffer[0].pa,
-			allocbuffer[1].pa, allocbuffer[2].pa);
+		pr_debug("%s: buf1=0x%llx buf2=0x%llx buf3=0x%llx ext=0x%x\n",
+			__func__, allocbuffer[0].pa, allocbuffer[1].pa,
+			allocbuffer[2].pa, TUI_EXTRA_MEM_SIZE);
 	} else {
 		pr_notice("%s(%d): tui_region_offline failed!\n",
 			 __func__, __LINE__);
@@ -307,6 +310,11 @@ uint32_t hal_tui_notif(void)
 void hal_tui_post_start(struct tlc_tui_response_t *rsp)
 {
 	pr_info("hal_tui_post_start\n");
+}
+
+int __weak tui_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return -1;
 }
 
 int __weak tui_region_offline(phys_addr_t *pa, unsigned long *size)

@@ -20,7 +20,7 @@
 #include <linux/version.h>
 #include "public/mc_linux_api.h"
 
-#include "platform.h"	/* DEBUGFS_CREATE_BOOL_TAKES_A_BOOL */
+#include "platform.h"	/* TBASE_CORE_SWITCHER */
 #include "main.h"
 #include "fastcall.h"
 #include "logging.h"

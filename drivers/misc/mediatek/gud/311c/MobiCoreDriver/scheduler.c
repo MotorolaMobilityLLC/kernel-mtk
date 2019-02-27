@@ -220,6 +220,7 @@ int mc_scheduler_start(void)
 		return PTR_ERR(sched_ctx.thread);
 	}
 
+	set_user_nice(sched_ctx.thread, -20);
 	mcp_register_scheduler(mc_dev_command);
 	complete(&sched_ctx.idle_complete);
 	return 0;

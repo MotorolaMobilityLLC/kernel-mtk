@@ -60,7 +60,10 @@ struct teec_session {
 };
 
 struct teec_shared_memory {
-	void			      *buffer;
+	union {
+		void		      *buffer;
+		int		      fd;
+	};
 	size_t			      size;
 	u32			      flags;
 	struct teec_shared_memory_imp imp;
@@ -100,6 +103,7 @@ struct teec_operation {
 
 #define TEEC_MEM_INPUT                      0x00000001
 #define TEEC_MEM_OUTPUT                     0x00000002
+#define TEEC_MEM_ION                        0x01000000
 
 #define TEEC_NONE                           0x0
 #define TEEC_VALUE_INPUT                    0x1

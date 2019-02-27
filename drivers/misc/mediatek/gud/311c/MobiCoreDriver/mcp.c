@@ -1390,6 +1390,7 @@ int mcp_start(void)
 		mc_dev_notice("irq_bh_worker thread creation failed\n");
 		return PTR_ERR(mcp_ctx.irq_bh_thread);
 	}
+	set_user_nice(mcp_ctx.irq_bh_thread, -20);
 	return request_irq(mcp_ctx.irq, irq_handler, IRQF_TRIGGER_RISING,
 			   "trustonic", NULL);
 }
