@@ -235,6 +235,17 @@ static atomic_t rc_in_fiq = ATOMIC_INIT(0);
 
 static void ram_console_init_val(void);
 
+#include "desc/desc_s.h"
+void aee_rr_get_desc_info(unsigned long *addr, unsigned long *size,
+		unsigned long *start)
+{
+	if (addr == NULL || size == NULL || start == NULL)
+		return;
+	*addr = IDESC_ADDR;
+	*size = IDESC_SIZE;
+	*start = IDESC_START_POS;
+}
+
 #ifdef __aarch64__
 static void *_memcpy(void *dest, const void *src, size_t count)
 {
@@ -565,6 +576,7 @@ static int __init ram_console_init(struct ram_console_buffer *buffer,
 	buffer->log_size = 0;
 	memset_io((void *)buffer + buffer->off_linux, 0,
 			buffer_size - buffer->off_linux);
+	ram_console_init_desc(buffer->off_linux);
 #ifndef CONFIG_PSTORE
 	register_console(&ram_console);
 #endif
