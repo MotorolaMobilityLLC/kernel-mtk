@@ -221,3 +221,14 @@ void connectivity_arch_setup_dma_ops(struct device *dev, u64 dma_base, u64 size,
 	arch_setup_dma_ops(dev, dma_base, size, iommu, coherent);
 }
 EXPORT_SYMBOL(connectivity_arch_setup_dma_ops);
+
+/******************************************************************************
+ * GPIO dump information
+ ******************************************************************************/
+#ifndef CONFIG_MTK_GPIO
+void connectivity_export_dump_gpio_info(int start, int end)
+{
+	gpio_dump_regs_range(start, end);
+}
+EXPORT_SYMBOL(connectivity_export_dump_gpio_info);
+#endif
