@@ -13,6 +13,9 @@
 
 #include "ccci_fsm_internal.h"
 #include "modem_sys.h"
+#if defined(CONFIG_MTK_AEE_FEATURE)
+#include <mt-plat/aee.h>
+#endif
 
 void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl,
 	unsigned int type, char *str)
