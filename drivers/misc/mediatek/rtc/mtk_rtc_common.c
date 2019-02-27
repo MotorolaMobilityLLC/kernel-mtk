@@ -752,6 +752,8 @@ static int rtc_pdrv_probe(struct platform_device *pdev)
 	/* only enable LPD interrupt in engineering build */
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_lp_irq();
+	/* lpsd */
+	rtc_lpsd_restore_al_mask();
 	spin_unlock_irqrestore(&rtc_lock, flags);
 
 	device_init_wakeup(&pdev->dev, 1);

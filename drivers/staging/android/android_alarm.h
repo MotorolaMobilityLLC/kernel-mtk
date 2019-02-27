@@ -20,8 +20,15 @@
 #include <linux/time.h>
 #include <linux/compat.h>
 
-void rtc_read_pwron_alarm(struct rtc_wkalrm *alm);
-int rtc_set_alarm_poweron(struct rtc_device *rtc, struct rtc_wkalrm *alarm);
+void __attribute__((weak)) rtc_read_pwron_alarm(struct rtc_wkalrm *alm)
+{
+}
+
+int __attribute__((weak))
+rtc_set_alarm_poweron(struct rtc_device *rtc, struct rtc_wkalrm *alarm)
+{
+	return -1;
+}
 
 enum android_alarm_type {
 	/* return code bit numbers or set alarm arg */

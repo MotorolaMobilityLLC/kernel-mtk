@@ -29,6 +29,7 @@
 #include <linux/platform_device.h>
 #include <linux/delay.h>
 #include <linux/types.h>
+#include <linux/sched.h>
 
 #include <mtk_rtc_hal.h>
 #include <mtk_rtc_hw.h>
@@ -53,10 +54,19 @@ void rtc_write(u16 addr, u16 data)
 
 void rtc_busy_wait(void)
 {
+	unsigned long long timeout = sched_clock() + 500000000;
+
 	do {
-		while (rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY)
-			;
-	} while (0);
+		if ((rtc_read(RTC_BBPU) & RTC_BBPU_CBUSY) == 0)
+			break;
+		else if (sched_clock() > timeout) {
+			pr_err("%s, wait cbusy timeout, %x, %x, %x, %d\n",
+				__func__,
+				rtc_read(RTC_BBPU), rtc_read(RTC_POWERKEY1),
+				rtc_read(RTC_POWERKEY2), rtc_read(RTC_TC_SEC));
+			break;
+		}
+	} while (1);
 }
 
 void rtc_write_trigger(void)
@@ -170,6 +180,7 @@ void hal_rtc_get_tick_time(struct rtc_time *tm)
 	rtc_get_tick(tm);
 	bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD;
 	rtc_write(RTC_BBPU, bbpu);
+	rtc_write_trigger();
 	if (rtc_read(RTC_INT_CNT) < tm->tm_cnt) {	/* SEC has carried */
 		rtc_get_tick(tm);
 	}
@@ -314,7 +325,7 @@ void rtc_lp_exception(void)
 	mdelay(2000);
 	sec2 = rtc_read(RTC_TC_SEC);
 
-	pr_warn("!!! 32K WAS STOPPED !!!\n"
+	pr_emerg("!!! 32K WAS STOPPED !!!\n"
 		"RTC_BBPU      = 0x%x\n"
 		"RTC_IRQ_STA   = 0x%x\n"
 		"RTC_IRQ_EN    = 0x%x\n"
