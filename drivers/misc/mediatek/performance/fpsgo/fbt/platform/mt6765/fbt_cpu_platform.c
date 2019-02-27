@@ -14,7 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eas_controller.h"
+#include "eas_ctrl.h"
 #include "fbt_cpu_platform.h"
 
 void fbt_set_boost_value(unsigned int base_blc)
