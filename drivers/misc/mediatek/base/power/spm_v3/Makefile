@@ -121,6 +121,5 @@ obj-y += mtk_spm_sleep.o
 obj-y += mtk_spm_sodi.o
 obj-y += mtk_spm_sodi3p0.o
 obj-y += mtk_spm_mcsodi.o
-#obj-y += mtk_spm_sodi_cmdq.o
 obj-y += mtk_spm_vcorefs_mt6758.o
 endif

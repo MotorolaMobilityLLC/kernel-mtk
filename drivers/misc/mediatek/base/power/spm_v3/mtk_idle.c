@@ -40,9 +40,7 @@
 #ifdef CONFIG_THERMAL
 #include <mach/mtk_thermal.h>
 #endif
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 #include <mtk_mcdi_api.h>
-#endif
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_idle_profile.h>
@@ -90,12 +88,7 @@
 #define log2buf(p, s, fmt, args...) \
 	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
-
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-static atomic_t is_in_hotplug = ATOMIC_INIT(0);
-#else
 #define USING_STD_TIMER_OPS
-#endif
 
 static bool mt_idle_chk_golden;
 static bool mt_dpidle_chk_golden;
@@ -276,7 +269,7 @@ static unsigned int clkmux_block_mask[NR_TYPES][NF_CLK_CFG];
 static unsigned int clkmux_addr[NF_CLK_CFG];
 
 /* DeepIdle */
-static unsigned int     dpidle_time_criteria = 26000; /* 2ms */
+static unsigned int     dpidle_time_criteria = 1200 * 13; /* 1200us */
 static unsigned long    dpidle_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_f26m_cnt[NR_CPUS] = {0};
 static unsigned long    dpidle_block_cnt[NR_REASONS] = {0};
@@ -291,7 +284,7 @@ static bool             dpidle_force_vcore_lp_mode;
 
 /* SODI3 */
 static unsigned int     soidle3_pll_block_mask[NR_PLLS] = {0x0};
-static unsigned int     soidle3_time_criteria = 65000; /* 5ms */
+static unsigned int     soidle3_time_criteria = 5000 * 13; /* 5000us */
 static unsigned long    soidle3_cnt[NR_CPUS] = {0};
 static unsigned long    soidle3_block_cnt[NR_REASONS] = {0};
 #define SODI3_UPTIME    30 /* ms */
@@ -304,7 +297,7 @@ static int              sodi3_by_uptime_count;
 static bool             sodi3_force_vcore_lp_mode;
 
 /* SODI */
-static unsigned int     soidle_time_criteria = 26000; /* 2ms */
+static unsigned int     soidle_time_criteria = 1200 * 13; /* 1200us */
 static unsigned long    soidle_cnt[NR_CPUS] = {0};
 static unsigned long    soidle_block_cnt[NR_REASONS] = {0};
 #define SODI_UPTIME    20 /* ms */
@@ -403,12 +396,7 @@ int idle_gpt_get_cmp(unsigned int id, unsigned int *ptr)
 }
 #endif
 
-#if defined(CONFIG_MTK_ACAO_SUPPORT)
-static bool next_timer_criteria_check(unsigned int timer_criteria)
-{
-	return true;
-}
-#elif defined(USING_STD_TIMER_OPS)
+#ifdef USING_STD_TIMER_OPS
 static bool next_timer_criteria_check(unsigned int timer_criteria)
 {
 	unsigned int timer_left;
@@ -427,25 +415,7 @@ static bool next_timer_criteria_check(unsigned int timer_criteria)
 #else
 static bool next_timer_criteria_check(unsigned int timer_criteria)
 {
-	unsigned int timer_left;
-	bool ret = true;
-
-#ifdef CONFIG_SMP
-	timer_left = localtimer_get_counter();
-
-	if ((int)timer_left < timer_criteria ||
-			((int)timer_left) < 0)
-		ret = false;
-#else
-	unsigned int timer_cmp = 0;
-
-	gpt_get_cnt(GPT1, &timer_left);
-	gpt_get_cmp(GPT1, &timer_cmp);
-	if ((timer_cmp - timer_left) < timer_criteria)
-		ret = false;
-#endif
-
-	return ret;
+	return true;
 }
 #endif
 
@@ -623,19 +593,6 @@ static void clk_ufs_card_switch_backup(void)
 static void clk_ufs_card_switch_restore(void)
 {
 	clk_writel(CLK_CFG_SET(13), clk_ufs_card_sel);
-}
-#endif
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-static bool mtk_idle_cpu_criteria(void)
-{
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	return ((atomic_read(&is_in_hotplug) == 1) ||
-		(num_online_cpus() != 1)) ? false : true;
-#else
-	/* single core check will be checked mcdi driver for acao case */
-	return true;
-#endif
 }
 #endif
 
@@ -1127,13 +1084,6 @@ static bool slidle_can_enter(int cpu, int reason)
 
 	reason = NR_REASONS;
 
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (!mtk_idle_cpu_criteria()) {
-		reason = BY_CPU;
-		goto out;
-	}
-	#endif
-
 out:
 	if (reason < NR_REASONS) {
 		slidle_block_cnt[reason]++;
@@ -1303,13 +1253,6 @@ static inline unsigned int soidle_pre_handler(void)
 
 	op_cond = ufs_cb_before_xxidle();
 
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	hps_del_timer();
-#endif
-#endif
-
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
 	mtkTTimer_cancel_timer();
@@ -1319,12 +1262,6 @@ static inline unsigned int soidle_pre_handler(void)
 
 static inline void soidle_post_handler(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	hps_restart_timer();
-#endif
-#endif
-
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
 	mtkTTimer_start_timer();
@@ -1342,9 +1279,6 @@ static unsigned int dpidle_pre_process(int cpu)
 	mtk_idle_notifier_call_chain(NOTIFY_DPIDLE_ENTER);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	hps_del_timer();
-#endif
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
@@ -1379,10 +1313,6 @@ static void dpidle_post_process(int cpu, unsigned int op_cond)
 
 	if (op_cond & DEEPIDLE_OPT_UFSCARD_MUX_SWITCH)
 		clk_ufs_card_switch_restore();
-#endif
-
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	hps_restart_timer();
 #endif
 
 #ifdef CONFIG_THERMAL
@@ -1443,24 +1373,6 @@ int mtk_idle_select(int cpu)
 	/* check if firmware loaded or not */
 	if (!spm_load_firmware_status()) {
 		reason = BY_FRM;
-		goto get_idle_idx_2;
-	}
-#endif
-
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifdef CONFIG_SMP
-	/* check cpu status */
-	if (!mtk_idle_cpu_criteria()) {
-		reason = BY_CPU;
-		goto get_idle_idx_2;
-	}
-#endif
-#endif
-
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	/* only check for non-acao case */
-	if (cpu % 4) {
-		reason = BY_CPU;
 		goto get_idle_idx_2;
 	}
 #endif
@@ -1800,10 +1712,8 @@ int rgidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_RG;
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	mtk_idle_dump_cnt_in_interval();
 	mcdi_heart_beat_log_dump();
-#endif
 
 	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
 
@@ -2680,46 +2590,6 @@ static int mtk_cpuidle_debugfs_init(void)
 	return 0;
 }
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-/* CPU hotplug notifier, for informing whether CPU hotplug is working */
-static int mtk_idle_cpu_callback(struct notifier_block *nfb,
-				   unsigned long action, void *hcpu)
-{
-	switch (action) {
-	case CPU_UP_PREPARE:
-	case CPU_UP_PREPARE_FROZEN:
-	case CPU_DOWN_PREPARE:
-	case CPU_DOWN_PREPARE_FROZEN:
-		atomic_inc(&is_in_hotplug);
-		break;
-
-	case CPU_ONLINE:
-	case CPU_ONLINE_FROZEN:
-	case CPU_UP_CANCELED:
-	case CPU_UP_CANCELED_FROZEN:
-	case CPU_DOWN_FAILED:
-	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_POST_DEAD:
-		atomic_dec(&is_in_hotplug);
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block mtk_idle_cpu_notifier = {
-	.notifier_call = mtk_idle_cpu_callback,
-	.priority   = INT_MAX,
-};
-
-static int mtk_idle_hotplug_cb_init(void)
-{
-	register_cpu_notifier(&mtk_idle_cpu_notifier);
-
-	return 0;
-}
-#endif
-
 void mtk_idle_gpt_init(void)
 {
 #ifndef USING_STD_TIMER_OPS
@@ -2778,10 +2648,6 @@ void __init mtk_cpuidle_framework_init(void)
 
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
-
-#ifndef CONFIG_MTK_ACAO_SUPPORT
-	mtk_idle_hotplug_cb_init();
-#endif
 
 	mtk_idle_gpt_init();
 
