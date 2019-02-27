@@ -13,14 +13,16 @@
 
 #include <mtk_ppm_api.h>
 
-#define PPM_KIR_PERF  0
-#define PPM_KIR_FBC   1
-#define PPM_KIR_WIFI  2
-#define PPM_KIR_BOOT  3
-#define PPM_KIR_TOUCH 4
-#define PPM_KIR_USB   5
-#define PPM_MAX_KIR   6
-
+enum {
+	PPM_KIR_PERF = 0,
+	PPM_KIR_FBC,
+	PPM_KIR_WIFI,
+	PPM_KIR_BOOT,
+	PPM_KIR_TOUCH,
+	PPM_KIR_PERFTOUCH,
+	PPM_KIR_USB,
+	PPM_MAX_KIR
+};
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 int update_userlimit_cpu_freq(int kicker, int num_cluster
 				, struct ppm_limit_data *freq_limit);

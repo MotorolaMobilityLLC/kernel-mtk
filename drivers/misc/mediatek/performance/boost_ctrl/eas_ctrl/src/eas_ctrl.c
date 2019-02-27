@@ -15,7 +15,7 @@
  */
 
 
-#define pr_fmt(fmt) "[Boost Controller]"fmt
+#define pr_fmt(fmt) "[EAS Controller]"fmt
 
 
 #include <linux/proc_fs.h>
@@ -548,7 +548,7 @@ void perfmgr_eas_boost_init(void)
 
 	mutex_init(&boost_eas);
 
-	boost_dir = proc_mkdir("perfmgr/eas", NULL);
+	boost_dir = proc_mkdir("perfmgr/boost_ctrl/eas_ctrl", NULL);
 	proc_create("perfserv_fg_boost", 0644, boost_dir,
 					 &perfmgr_perfserv_fg_boost_fops);
 	proc_create("current_fg_boost", 0644, boost_dir,

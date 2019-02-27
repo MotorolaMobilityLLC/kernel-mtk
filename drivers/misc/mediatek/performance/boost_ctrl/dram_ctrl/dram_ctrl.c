@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-
+#define pr_fmt(fmt) "[SOC DVFS DRAM]"fmt
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/kallsyms.h>
@@ -23,19 +23,10 @@
 
 #include <linux/platform_device.h>
 
-#define SEQ_printf(m, x...)\
-	do {\
-		if (m)\
-			seq_printf(m, x);\
-		else\
-			pr_debug(x);\
-	} while (0)
-#undef TAG
-#define TAG "[SOC DVFS FLIPER]"
 
-/* #if defined(CONFIG_MTK_QOS_SUPPORT) */
+/*if PM_DEVFREQ*/
 #define MTK_QOS_SUPPORT
-/* #endif */
+/*#endif # PM_DEVFREQ*/
 
 #if defined(MTK_QOS_SUPPORT)
 #include <linux/pm_qos.h>
@@ -45,11 +36,6 @@
 #if defined(CONFIG_MTK_DRAMC)
 #include "mtk_dramc.h"
 #endif
-
-
-/* for debug */
-static int fliper_debug;
-/* KIR_PERF */
 
 static int ddr_type;
 
@@ -61,21 +47,20 @@ static int ddr_type;
 #endif
 
 
-static int mt_fliper_show(struct seq_file *m, void *v)
+static int mt_dram_show(struct seq_file *m, void *v)
 {
-	SEQ_printf(m, "DEBUG: %d\n", fliper_debug);
-	SEQ_printf(m, "DDR_TYPE: %d\n", ddr_type);
+	seq_printf(m, "DDR_TYPE: %d\n", ddr_type);
 	return 0;
 }
 /*** Seq operation of mtprof ****/
-static int mt_fliper_open(struct inode *inode, struct file *file)
+static int mt_dram_open(struct inode *inode, struct file *file)
 {
-	return single_open(file, mt_fliper_show, inode->i_private);
+	return single_open(file, mt_dram_show, inode->i_private);
 }
 
 
-static const struct file_operations mt_fliper_fops = {
-	.open = mt_fliper_open,
+static const struct file_operations mt_dram_fops = {
+	.open = mt_dram_open,
 	.read = seq_read,
 	.llseek = seq_lseek,
 	.release = single_release,
@@ -88,11 +73,6 @@ static ssize_t mt_ddr_write(struct file *filp, const char *ubuf,
 	int val;
 	int ret;
 
-
-	if (fliper_debug) {
-		pr_debug("ddr_write fliper_debug\n");
-		return cnt;
-	}
 	if (cnt >= sizeof(buf)) {
 		pr_debug("ddr_write cnt >= sizeof\n");
 		return -EINVAL;
@@ -121,7 +101,7 @@ static ssize_t mt_ddr_write(struct file *filp, const char *ubuf,
 
 static int mt_ddr_show(struct seq_file *m, void *v)
 {
-	SEQ_printf(m, "%d\n", ddr_now);
+	seq_printf(m, "%d\n", ddr_now);
 	return 0;
 }
 /*** Seq operation of mtprof ****/
@@ -139,23 +119,23 @@ static const struct file_operations mt_ddr_fops = {
 #endif
 /*--------------------INIT------------------------*/
 
-static int __init init_fliper(void)
+static int __init init_dram(void)
 {
-	struct proc_dir_entry *fliperfs_dir;
-	struct proc_dir_entry *fliper_dir;
+	struct proc_dir_entry *drams_dir;
+	struct proc_dir_entry *dram_dir;
 #ifdef MTK_QOS_SUPPORT
 
 	struct proc_dir_entry *ddr_dir;
 #endif
-	pr_debug("init fliper driver start\n");
-	fliperfs_dir = proc_mkdir("fliperfs", NULL);
-	if (!fliperfs_dir) {
-		pr_debug("fliperfs_dir not create success\n");
+	pr_debug("init dram driver start\n");
+	drams_dir = proc_mkdir("perfmgr/boost_ctrl/dram_ctrl", NULL);
+	if (!drams_dir) {
+		pr_debug("drams_dir not create success\n");
 		return -ENOMEM;
 	}
-	fliper_dir = proc_create("fliper", 0644, fliperfs_dir, &mt_fliper_fops);
-	if (!fliper_dir) {
-		pr_debug("fliper_dir not create success\n");
+	dram_dir = proc_create("dram", 0644, drams_dir, &mt_dram_fops);
+	if (!dram_dir) {
+		pr_debug("dram_dir not create success\n");
 		return -ENOMEM;
 	}
 #ifdef MTK_QOS_SUPPORT
@@ -168,7 +148,7 @@ static int __init init_fliper(void)
 	} else {
 		pr_debug("hh: emi pm_qos already request\n");
 	}
-	ddr_dir = proc_create("emi", 0644, fliperfs_dir, &mt_ddr_fops);
+	ddr_dir = proc_create("emi", 0644, drams_dir, &mt_ddr_fops);
 	if (!ddr_dir) {
 		pr_debug("ddr_dir not create success\n");
 		return -ENOMEM;
@@ -176,7 +156,6 @@ static int __init init_fliper(void)
 	emi_opp = DDR_OPP_NUM - 1;
 #endif
 
-	fliper_debug = 0;
 
 #if defined(CONFIG_MTK_DRAMC)
 	ddr_type = get_ddr_type();
@@ -184,9 +163,9 @@ static int __init init_fliper(void)
 	ddr_type = -1;
 #endif
 
-	pr_debug("init fliper driver done\n");
+	pr_debug("init dram driver done\n");
 
 	return 0;
 }
-late_initcall(init_fliper);
+late_initcall(init_dram);
 
