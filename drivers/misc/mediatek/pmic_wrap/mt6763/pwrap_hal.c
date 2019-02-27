@@ -1613,10 +1613,7 @@ static signed int mt_pwrap_store_hal(const char *buf, size_t count)
 	unsigned int ut_test = 0;
 
 	if (!strncmp(buf, "-h", 2)) {
-		PWRAPREG
-		    ("PWRAP debug: [-dump_reg][-trace_wacs2][-init][-rdap]
-			[-wrap][-rdpmic][-wrpmic][-readtest][-writetest]\n");
-		PWRAPREG("PWRAP UT: [1][2]\n");
+		PWRAPLOG("PWRAP UT: [1][2]\n");
 	} else if (!strncmp(buf, "-dump_reg", 9)) {
 		pwrap_dump_all_register();
 	} else if (!strncmp(buf, "-trace_wacs2", 12)) {
@@ -1624,10 +1621,10 @@ static signed int mt_pwrap_store_hal(const char *buf, size_t count)
 	} else if (!strncmp(buf, "-init", 5)) {
 		return_value = pwrap_init();
 		if (return_value == 0)
-			PWRAPREG("pwrap_init pass,return_value=%d\n",
+			PWRAPLOG("pwrap_init pass,return_value=%d\n",
 				 return_value);
 		else
-			PWRAPREG("pwrap_init fail,return_value=%d\n",
+			PWRAPLOG("pwrap_init fail,return_value=%d\n",
 				 return_value);
 	} else if (!strncmp(buf, "-rdap", 5)
 		   && (sscanf(buf + 5, "%x", &reg_addr) == 1)) {
@@ -1651,7 +1648,7 @@ static signed int mt_pwrap_store_hal(const char *buf, size_t count)
 		   && (sscanf(buf + 3, "%d", &ut_test) == 1)) {
 		pwrap_ut(ut_test);
 	} else {
-		PWRAPREG("wrong parameter\n");
+		PWRAPLOG("wrong parameter\n");
 	}
 	return count;
 }
