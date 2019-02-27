@@ -359,6 +359,16 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 		return NULL;
 	}
 
+	for (i = 0; i < TCP_NOTIFY_IDX_NR; i++)
+		srcu_init_notifier_head(&tcpc->evt_nh[i]);
+
+	mutex_init(&tcpc->access_lock);
+	mutex_init(&tcpc->typec_lock);
+	mutex_init(&tcpc->timer_lock);
+	mutex_init(&tcpc->mr_lock);
+	sema_init(&tcpc->timer_enable_mask_lock, 1);
+	spin_lock_init(&tcpc->timer_tick_lock);
+
 	tcpc->dev.class = tcpc_class;
 	tcpc->dev.type = &tcpc_dev_type;
 	tcpc->dev.parent = parent;
@@ -380,17 +390,8 @@ struct tcpc_device *tcpc_device_register(struct device *parent,
 		return ERR_PTR(ret);
 	}
 
-	for (i = 0; i < TCP_NOTIFY_IDX_NR; i++)
-		srcu_init_notifier_head(&tcpc->evt_nh[i]);
 	INIT_DELAYED_WORK(&tcpc->init_work, tcpc_init_work);
 	INIT_DELAYED_WORK(&tcpc->event_init_work, tcpc_event_init_work);
-
-	mutex_init(&tcpc->access_lock);
-	mutex_init(&tcpc->typec_lock);
-	mutex_init(&tcpc->timer_lock);
-	mutex_init(&tcpc->mr_lock);
-	sema_init(&tcpc->timer_enable_mask_lock, 1);
-	spin_lock_init(&tcpc->timer_tick_lock);
 
 	/* If system support "WAKE_LOCK_IDLE",
 	 * please use it instead of "WAKE_LOCK_SUSPEND"
