@@ -355,8 +355,11 @@ unsigned int mtk_spm_read_register(int register_index)
 		return spm_read(MD1_PWR_CON);
 	else if (register_index == SPM_REG13)
 		return spm_read(PCM_REG13_DATA);
+/* TODO: FIX ME */
+#if 0
 	else if (register_index == SPM_SPARE_ACK_MASK)
 		return spm_read(SPARE_ACK_MASK);
+#endif
 	else
 		return 0;
 }

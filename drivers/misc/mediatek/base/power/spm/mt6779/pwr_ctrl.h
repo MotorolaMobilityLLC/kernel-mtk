@@ -53,6 +53,20 @@ struct pwr_ctrl {
 	u8 wdt_disable;
 	/* Auto-gen Start */
 
+	/* SPM_CLK_CON */
+	u8 reg_srcclken0_ctl;
+	u8 reg_srcclken1_ctl;
+	u8 reg_spm_lock_infra_dcm;
+	u8 reg_srcclken_mask;
+	u8 reg_md1_c32rm_en;
+	u8 reg_md2_c32rm_en;
+	u8 reg_clksq0_sel_ctrl;
+	u8 reg_clksq1_sel_ctrl;
+	u8 reg_srcclken0_en;
+	u8 reg_srcclken1_en;
+	u32 reg_sysclk0_src_mask_b;
+	u32 reg_sysclk1_src_mask_b;
+
 	/* SPM_AP_STANDBY_CON */
 	u8 reg_wfi_op;
 	u8 reg_wfi_type;
@@ -75,7 +89,6 @@ struct pwr_ctrl {
 	u8 reg_spm_sspm_mailbox_req;
 	u8 reg_spm_adsp_mailbox_req;
 	u8 reg_spm_scp_mailbox_req;
-	u8 reg_spm_xowcn_req;
 	u8 reg_spm_mcusys_pwr_event_req;
 	u8 cpu_md_dvfs_sop_force_on;
 
@@ -111,6 +124,7 @@ struct pwr_ctrl {
 	u8 reg_infrasys_ddr_en_mask_b;
 	u8 reg_infrasys_ddr_en2_mask_b;
 	u8 reg_md32_srcclkena_mask_b;
+	u8 reg_conn_vfe28_req_mask_b;
 
 	/* SPM_SRC2_MASK */
 	u8 reg_md32_infra_req_mask_b;
@@ -169,20 +183,61 @@ struct pwr_ctrl {
 	u8 reg_audio_dsp_ddr_en_mask_b;
 	u8 reg_audio_dsp_ddr_en2_mask_b;
 	u8 reg_mcusys_pwr_event_mask_b;
+	u8 reg_msdc0_srcclkena_mask_b;
+	u8 reg_msdc0_infra_req_mask_b;
+	u8 reg_msdc0_apsrc_req_mask_b;
+	u8 reg_msdc0_vrf18_req_mask_b;
+	u8 reg_msdc0_ddr_en_mask_b;
+	u8 reg_msdc0_ddr_en2_mask_b;
+	u8 reg_conn_srcclkenb2pwrap_mask_b;
 
 	/* SPM_SRC4_MASK */
 	u32 ccif_event_mask_b;
+	u8 reg_apu_core0_srcclkena_mask_b;
+	u8 reg_apu_core0_infra_req_mask_b;
+	u8 reg_apu_core0_apsrc_req_mask_b;
+	u8 reg_apu_core0_vrf18_req_mask_b;
+	u8 reg_apu_core0_ddr_en_mask_b;
+	u8 reg_apu_core1_srcclkena_mask_b;
+	u8 reg_apu_core1_infra_req_mask_b;
+	u8 reg_apu_core1_apsrc_req_mask_b;
+	u8 reg_apu_core1_vrf18_req_mask_b;
+	u8 reg_apu_core1_ddr_en_mask_b;
+	u8 reg_apu_core2_srcclkena_mask_b;
+	u8 reg_apu_core2_infra_req_mask_b;
+	u8 reg_apu_core2_apsrc_req_mask_b;
+	u8 reg_apu_core2_vrf18_req_mask_b;
+	u8 reg_apu_core2_ddr_en_mask_b;
+	u8 reg_apu_core2_ddr_en2_mask_b;
 
 	/* SPM_SRC5_MASK */
 	u32 reg_mcusys_merge_apsrc_req_mask_b;
 	u32 reg_mcusys_merge_ddr_en_mask_b;
 	u32 reg_mcusys_merge_ddr_en2_mask_b;
+	u8 reg_apu_core0_ddr_en2_mask_b;
+	u8 reg_apu_core1_ddr_en2_mask_b;
+	u8 reg_cg_check_ddr_en_mask_b;
+	u8 reg_cg_check_ddr_en2_mask_b;
 
 	/* SPM_WAKEUP_EVENT_MASK */
 	u32 reg_wakeup_event_mask;
 
 	/* SPM_WAKEUP_EVENT_EXT_MASK */
 	u32 reg_ext_wakeup_event_mask;
+
+	/* SPM_SRC6_MASK */
+	u8 reg_msdc1_srcclkena_mask_b;
+	u8 reg_msdc1_infra_req_mask_b;
+	u8 reg_msdc1_apsrc_req_mask_b;
+	u8 reg_msdc1_vrf18_req_mask_b;
+	u8 reg_msdc1_ddr_en_mask_b;
+	u8 reg_msdc1_ddr_en2_mask_b;
+	u8 reg_msdc1_srcclkena_ack_mask;
+	u8 reg_msdc1_infra_ack_mask;
+	u8 reg_msdc1_apsrc_ack_mask;
+	u8 reg_msdc1_vrf18_ack_mask;
+	u8 reg_msdc1_ddr_en_ack_mask;
+	u8 reg_msdc1_ddr_en2_ack_mask;
 
 	/* MP0_CPU0_WFI_EN */
 	u8 mp0_cpu0_wfi_en;
@@ -229,6 +284,18 @@ enum pwr_ctrl_enum {
 	PW_WAKE_SRC_CUST,
 	PW_WAKELOCK_TIMER_VAL,
 	PW_WDT_DISABLE,
+	PW_REG_SRCCLKEN0_CTL,
+	PW_REG_SRCCLKEN1_CTL,
+	PW_REG_SPM_LOCK_INFRA_DCM,
+	PW_REG_SRCCLKEN_MASK,
+	PW_REG_MD1_C32RM_EN,
+	PW_REG_MD2_C32RM_EN,
+	PW_REG_CLKSQ0_SEL_CTRL,
+	PW_REG_CLKSQ1_SEL_CTRL,
+	PW_REG_SRCCLKEN0_EN,
+	PW_REG_SRCCLKEN1_EN,
+	PW_REG_SYSCLK0_SRC_MASK_B,
+	PW_REG_SYSCLK1_SRC_MASK_B,
 	PW_REG_WFI_OP,
 	PW_REG_WFI_TYPE,
 	PW_REG_MP0_CPUTOP_IDLE_MASK,
@@ -248,7 +315,6 @@ enum pwr_ctrl_enum {
 	PW_REG_SPM_SSPM_MAILBOX_REQ,
 	PW_REG_SPM_ADSP_MAILBOX_REQ,
 	PW_REG_SPM_SCP_MAILBOX_REQ,
-	PW_REG_SPM_XOWCN_REQ,
 	PW_REG_SPM_MCUSYS_PWR_EVENT_REQ,
 	PW_CPU_MD_DVFS_SOP_FORCE_ON,
 	PW_REG_MD_SRCCLKENA_0_MASK_B,
@@ -282,6 +348,7 @@ enum pwr_ctrl_enum {
 	PW_REG_INFRASYS_DDR_EN_MASK_B,
 	PW_REG_INFRASYS_DDR_EN2_MASK_B,
 	PW_REG_MD32_SRCCLKENA_MASK_B,
+	PW_REG_CONN_VFE28_REQ_MASK_B,
 	PW_REG_MD32_INFRA_REQ_MASK_B,
 	PW_REG_MD32_APSRC_REQ_MASK_B,
 	PW_REG_MD32_VRF18_REQ_MASK_B,
@@ -336,12 +403,51 @@ enum pwr_ctrl_enum {
 	PW_REG_AUDIO_DSP_DDR_EN_MASK_B,
 	PW_REG_AUDIO_DSP_DDR_EN2_MASK_B,
 	PW_REG_MCUSYS_PWR_EVENT_MASK_B,
+	PW_REG_MSDC0_SRCCLKENA_MASK_B,
+	PW_REG_MSDC0_INFRA_REQ_MASK_B,
+	PW_REG_MSDC0_APSRC_REQ_MASK_B,
+	PW_REG_MSDC0_VRF18_REQ_MASK_B,
+	PW_REG_MSDC0_DDR_EN_MASK_B,
+	PW_REG_MSDC0_DDR_EN2_MASK_B,
+	PW_REG_CONN_SRCCLKENB2PWRAP_MASK_B,
 	PW_CCIF_EVENT_MASK_B,
+	PW_REG_APU_CORE0_SRCCLKENA_MASK_B,
+	PW_REG_APU_CORE0_INFRA_REQ_MASK_B,
+	PW_REG_APU_CORE0_APSRC_REQ_MASK_B,
+	PW_REG_APU_CORE0_VRF18_REQ_MASK_B,
+	PW_REG_APU_CORE0_DDR_EN_MASK_B,
+	PW_REG_APU_CORE1_SRCCLKENA_MASK_B,
+	PW_REG_APU_CORE1_INFRA_REQ_MASK_B,
+	PW_REG_APU_CORE1_APSRC_REQ_MASK_B,
+	PW_REG_APU_CORE1_VRF18_REQ_MASK_B,
+	PW_REG_APU_CORE1_DDR_EN_MASK_B,
+	PW_REG_APU_CORE2_SRCCLKENA_MASK_B,
+	PW_REG_APU_CORE2_INFRA_REQ_MASK_B,
+	PW_REG_APU_CORE2_APSRC_REQ_MASK_B,
+	PW_REG_APU_CORE2_VRF18_REQ_MASK_B,
+	PW_REG_APU_CORE2_DDR_EN_MASK_B,
+	PW_REG_APU_CORE2_DDR_EN2_MASK_B,
 	PW_REG_MCUSYS_MERGE_APSRC_REQ_MASK_B,
 	PW_REG_MCUSYS_MERGE_DDR_EN_MASK_B,
 	PW_REG_MCUSYS_MERGE_DDR_EN2_MASK_B,
+	PW_REG_APU_CORE0_DDR_EN2_MASK_B,
+	PW_REG_APU_CORE1_DDR_EN2_MASK_B,
+	PW_REG_CG_CHECK_DDR_EN_MASK_B,
+	PW_REG_CG_CHECK_DDR_EN2_MASK_B,
 	PW_REG_WAKEUP_EVENT_MASK,
 	PW_REG_EXT_WAKEUP_EVENT_MASK,
+	PW_REG_MSDC1_SRCCLKENA_MASK_B,
+	PW_REG_MSDC1_INFRA_REQ_MASK_B,
+	PW_REG_MSDC1_APSRC_REQ_MASK_B,
+	PW_REG_MSDC1_VRF18_REQ_MASK_B,
+	PW_REG_MSDC1_DDR_EN_MASK_B,
+	PW_REG_MSDC1_DDR_EN2_MASK_B,
+	PW_REG_MSDC1_SRCCLKENA_ACK_MASK,
+	PW_REG_MSDC1_INFRA_ACK_MASK,
+	PW_REG_MSDC1_APSRC_ACK_MASK,
+	PW_REG_MSDC1_VRF18_ACK_MASK,
+	PW_REG_MSDC1_DDR_EN_ACK_MASK,
+	PW_REG_MSDC1_DDR_EN2_ACK_MASK,
 	PW_MP0_CPU0_WFI_EN,
 	PW_MP0_CPU1_WFI_EN,
 	PW_MP0_CPU2_WFI_EN,
