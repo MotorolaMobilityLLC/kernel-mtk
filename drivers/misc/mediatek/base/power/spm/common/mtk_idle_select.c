@@ -16,7 +16,10 @@
 #include <linux/spinlock.h>
 
 #include <mt-plat/mtk_meminfo.h> /* dcs_get_dcs_status_trylock/unlock */
+
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 #include <teei_client_main.h> /* is_teei_ready */
+#endif
 
 #include <mtk_spm_resource_req.h>
 #include <mtk_idle.h>
