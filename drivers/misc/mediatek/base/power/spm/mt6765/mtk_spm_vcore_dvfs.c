@@ -25,6 +25,11 @@ int spm_dvfs_flag_init(void)
 	return SPM_FLAG_RUN_COMMON_SCENARIO;
 }
 
+u32 spm_vcorefs_get_MD_status(void)
+{
+	return spm_read(MD2SPM_DVFS_CON);
+}
+
 void get_spm_reg(char *p)
 {
 	p += sprintf(p, "%-24s: 0x%x\n",
