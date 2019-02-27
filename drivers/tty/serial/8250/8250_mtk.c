@@ -649,7 +649,8 @@ int mtk8250_request_to_sleep(void)
 			& MTK_UART_SLEEP_ACK_IDLE)) {
 			if (i++ >= MTK_UART_WAIT_ACK_TIMES) {
 				serial_out(up, MTK_UART_SLEEP_REQ, sleep_req);
-				pr_err("CANNOT GET UART%d SLEEP ACK\n", line);
+				pr_info_ratelimited("UART%d SLEEP ACK Fail\n",
+					line);
 				return -EBUSY;
 			}
 			udelay(10);
