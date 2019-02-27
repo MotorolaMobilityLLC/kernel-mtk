@@ -47,6 +47,27 @@ static ssize_t dvfsrc_enable_store(struct device *dev,
 static DEVICE_ATTR(dvfsrc_enable, 0644,
 		dvfsrc_enable_show, dvfsrc_enable_store);
 
+static ssize_t dvfsrc_enable_flag_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%x\n", helio_dvfsrc_flag_get());
+}
+static ssize_t dvfsrc_enable_flag_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	int val = 0;
+
+	if (kstrtoint(buf, 16, &val))
+		return -EINVAL;
+
+	helio_dvfsrc_flag_set(val);
+
+	return count;
+}
+
+static DEVICE_ATTR(dvfsrc_enable_flag, 0644,
+		dvfsrc_enable_flag_show, dvfsrc_enable_flag_store);
+
 static ssize_t dvfsrc_req_memory_bw_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t count)
 {
@@ -209,6 +230,7 @@ static DEVICE_ATTR(dvfsrc_dump, 0444, dvfsrc_dump_show, NULL);
 
 static struct attribute *helio_dvfsrc_attrs[] = {
 	&dev_attr_dvfsrc_enable.attr,
+	&dev_attr_dvfsrc_enable_flag.attr,
 	&dev_attr_dvfsrc_req_memory_bw.attr,
 	&dev_attr_dvfsrc_req_ddr_opp.attr,
 	&dev_attr_dvfsrc_req_vcore_opp.attr,
