@@ -172,3 +172,38 @@ int group_boost_read(int group_idx)
 	return boost;
 }
 EXPORT_SYMBOL(group_boost_read);
+
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+/* mtk: a linear boost value for tuning */
+int linear_real_boost(int linear_boost)
+{
+	int target_cpu, usage;
+	int boost;
+	int ta_org_cap;
+
+	sched_max_util_task(&target_cpu, NULL, &usage, NULL);
+
+	ta_org_cap = capacity_orig_of(target_cpu);
+
+	if (usage >= SCHED_CAPACITY_SCALE)
+		usage = SCHED_CAPACITY_SCALE;
+
+	/*
+	 * Conversion Formula of Linear Boost:
+	 *
+	 *   margin = (usage * linear_boost)/100;
+	 *   margin = (original_cap - usage) * boost/100;
+	 *   so
+	 *   boost = (usage * linear_boost) / (original_cap - usage)
+	 */
+	if (ta_org_cap <= usage) {
+		/* If target cpu is saturated, consider bigger one */
+		boost = (SCHED_CAPACITY_SCALE - usage) ?
+		   (usage * linear_boost)/(SCHED_CAPACITY_SCALE - usage) : 0;
+	} else
+		boost = (usage * linear_boost)/(ta_org_cap - usage);
+
+	return boost;
+}
+EXPORT_SYMBOL(linear_real_boost);
+#endif
