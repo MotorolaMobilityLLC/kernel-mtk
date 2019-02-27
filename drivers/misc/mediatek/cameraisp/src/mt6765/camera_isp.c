@@ -9482,11 +9482,13 @@ static signed int ISP_release(
 		}
 	} else {
 #ifdef AEE_DUMP_BY_USING_ION_MEMORY
-		isp_freebuf(&g_isp_p2_imem_buf);
-		g_isp_p2_imem_buf.handle = NULL;
-		g_isp_p2_imem_buf.ion_fd = 0;
-		g_isp_p2_imem_buf.va = 0;
-		g_isp_p2_imem_buf.pa = 0;
+		if (g_isp_p2_imem_buf.handle != NULL) {
+			isp_freebuf(&g_isp_p2_imem_buf);
+			g_isp_p2_imem_buf.handle = NULL;
+			g_isp_p2_imem_buf.ion_fd = 0;
+			g_isp_p2_imem_buf.va = 0;
+			g_isp_p2_imem_buf.pa = 0;
+		}
 		g_bIonBufferAllocated = MFALSE;
 		/* Navtive Exception */
 		g_pPhyISPBuffer = NULL;
