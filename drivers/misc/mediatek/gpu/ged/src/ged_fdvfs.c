@@ -300,7 +300,6 @@ static DEFINE_SPINLOCK(counter_info_lock);
 
 enum hrtimer_restart ged_fdvfs_debug_cb(struct hrtimer *timer)
 {
-	pr_info("(GED) FDVFS_5 ");
 	mt_do_systrace();
 
 	hrtimer_start(&g_HT_fdvfs_debug, ns_to_ktime(GED_FDVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
