@@ -24,6 +24,6 @@ ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
 
 obj-$(CONFIG_THERMAL) += mtk_tc.o
 #obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o
-obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6357buck1.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6357buck2.o
+#obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6357buck1.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6357buck2.o
