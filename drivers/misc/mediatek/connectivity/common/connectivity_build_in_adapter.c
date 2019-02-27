@@ -32,6 +32,7 @@
 #include <linux/of_reserved_mem.h>
 
 #include <linux/interrupt.h>
+#include <pinctrl-mtk-common.h>
 
 #ifdef CONFIG_MTK_MT6306_GPIO_SUPPORT
 #include <mtk_6306_gpio.h>
@@ -352,3 +353,9 @@ void connectivity_export_dump_thread_state(const char *name)
 	rcu_read_unlock();
 }
 EXPORT_SYMBOL(connectivity_export_dump_thread_state);
+
+int connectivity_export_gpio_get_tristate_input(unsigned int pin)
+{
+	return gpio_get_tristate_input(pin);
+}
+EXPORT_SYMBOL(connectivity_export_gpio_get_tristate_input);
