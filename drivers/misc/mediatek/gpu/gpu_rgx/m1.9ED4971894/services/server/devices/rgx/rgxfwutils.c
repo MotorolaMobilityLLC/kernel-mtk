@@ -4112,7 +4112,6 @@ void RGXCheckFirmwareCCB(PVRSRV_RGXDEV_INFO *psDevInfo)
 			{
 				RGXDumpDebugInfo(NULL,NULL,psDevInfo);
 				/* Notify the OS of an issue that triggered a debug dump */
-				MTKPP_TriggerAEE(0);
 				OSWarnOn(IMG_TRUE);
 				break;
 			}
