@@ -939,7 +939,7 @@ IMG_INTERNAL PVRSRV_ERROR SyncCheckpointContextDestroy(PSYNC_CHECKPOINT_CONTEXT 
 
 				/* Line below avoids build error in release builds (where PVR_DPF is not defined) */
 				PVR_UNREFERENCED_PARAMETER(bDeferredFree);
-				PVR_DPF((PVR_DBG_ERROR,
+				/*PVR_DPF((PVR_DBG_ERROR,
 						"%s syncCheckpoint<%p> ID=%d, %s, state=%s, enqCount:%d,FWCount:%d %s",
 						__FUNCTION__,
 						(void*)psSyncCheckpoint,
@@ -951,7 +951,7 @@ IMG_INTERNAL PVRSRV_ERROR SyncCheckpointContextDestroy(PSYNC_CHECKPOINT_CONTEXT 
 				        					 "PVRSRV_SYNC_CHECKPOINT_NOT_SIGNALLED" : "PVRSRV_SYNC_CHECKPOINT_ERRORED",
 				         OSAtomicRead(&psSyncCheckpoint->hEnqueuedCCBCount),
 				         psSyncCheckpoint->psSyncCheckpointFwObj->ui32FwRefCount,
-				         bDeferredFree ? "(deferred free)" : ""));
+			/* bDeferredFree ? "(deferred free)" : ""));*/
 
 				eError = PVRSRV_ERROR_UNABLE_TO_DESTROY_CONTEXT;
 			}
