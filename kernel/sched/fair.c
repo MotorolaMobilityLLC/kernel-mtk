@@ -11097,8 +11097,8 @@ __init void init_sched_fair_class(void)
 #endif /* SMP */
 	cmp_cputopo_domain_setup();
 
-	if (sched_feat(SCHED_HMP))
-		hmp_cpu_mask_setup();
+	arch_init_hmp_domains();
+	hmp_cpu_mask_setup();
 
 }
 
