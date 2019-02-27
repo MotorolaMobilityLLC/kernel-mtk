@@ -554,7 +554,7 @@ int mt_cpufreq_dts_map(void)
 
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
-	unsigned int lv = CPU_LEVEL_0;
+	unsigned int lv = CPU_LEVEL_3;
 	int val_0 = 0;
 	int val_2 = 0;
 
@@ -571,7 +571,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	else
 		lv = CPU_LEVEL_0;
 #else
-	lv = CPU_LEVEL_0;
+	lv = CPU_LEVEL_3;
 #endif
 
 	turbo_flag = 0;
