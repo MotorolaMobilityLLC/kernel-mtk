@@ -81,7 +81,9 @@
 #define golden_setting_pgc	_get_golden_setting_context()
 
 #define kick_dump_max_length (1024 * 16 * 4)
+#ifndef CONFIG_MTK_DISPLAY_LOW_MEMORY_DEBUG_SUPPORT
 static unsigned char kick_string_buffer_analysize[kick_dump_max_length] = { 0 };
+#endif
 static unsigned int kick_buf_length;
 static atomic_t idlemgr_task_wakeup = ATOMIC_INIT(1);
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
@@ -1093,6 +1095,8 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 	return 0;
 }
 
+#ifndef CONFIG_MTK_DISPLAY_LOW_MEMORY_DEBUG_SUPPORT
+
 void kick_logger_dump(char *string)
 {
 	if (kick_buf_length + strlen(string) >= kick_dump_max_length)
@@ -1119,6 +1123,29 @@ unsigned int get_kick_dump_size(void)
 {
 	return kick_buf_length;
 }
+
+#else
+
+void kick_logger_dump(char *string)
+{
+
+}
+
+void kick_logger_dump_reset(void)
+{
+
+}
+
+char *get_kick_dump(void)
+{
+	return NULL;
+}
+
+unsigned int get_kick_dump_size(void)
+{
+	return 0;
+}
+#endif
 
 /* API */
 /*****************************************************************************/

@@ -149,3 +149,13 @@ config MTK_DRE30_SUPPORT
 	  display visual enhancement ver.3.
 	  This feature requires the cowork of AAL user-space algorithm process.
 	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
+
+config MTK_DISPLAY_LOW_MEMORY_DEBUG_SUPPORT
+	bool "enable medietak display low memory debug"
+	default n
+	help
+	  define CONFIG_MTK_DISPLAY_LOW_MEMORY_DEBUG_SUPPORT
+	  to enable Mediatek display low memory debug on display for low memory project.
+	  If enable this option, display some debug buffer will be reduced or closed.
+	  If you want to use Meditek display low memory debug, please make sure it is Y in xxx_defconfig.mk.
+	  If unsure, set N.
