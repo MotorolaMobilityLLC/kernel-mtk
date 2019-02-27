@@ -22,6 +22,7 @@
 #include <linux/uaccess.h>
 
 #include "SCP_sensorHub.h"
+#include "sensor_list.h"
 #include "SCP_power_monitor.h"
 #include "hwmsensor.h"
 
