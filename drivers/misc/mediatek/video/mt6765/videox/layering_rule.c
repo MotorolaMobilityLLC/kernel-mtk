@@ -476,6 +476,21 @@ static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param)
 	}
 }
 
+int set_emi_bound_tb(int idx, int num, int *val)
+{
+	int i;
+
+	if (idx >= HRT_BOUND_NUM)
+		return -EINVAL;
+	if (num > HRT_LEVEL_NUM)
+		return -EINVAL;
+
+	for (i = 0; i < num; i++)
+		emi_bound_table[idx][i] = val[i];
+
+	return 0;
+}
+
 void layering_rule_init(void)
 {
 	l_rule_info.primary_fps = 60;
