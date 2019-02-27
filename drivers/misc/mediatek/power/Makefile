@@ -16,6 +16,11 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+obj-y += mt6765/
+else
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+endif
 
 obj-$(CONFIG_TCPC_CLASS) += rt_pd_manager.o
