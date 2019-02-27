@@ -68,6 +68,14 @@
 
 #include <ap_thermal_limit.h>
 
+#if !defined(CFG_THERM_LVTS)
+#define CFG_THERM_LVTS		0
+#endif
+
+#if !defined(CFG_LVTS_DOMINATOR)
+#define CFG_LVTS_DOMINATOR	0
+#endif
+
 /*=============================================================
  *Local variable definition
  *=============================================================
@@ -182,6 +190,7 @@ int Num_of_GPU_OPP;
  * Local function definition
  *=============================================================
  */
+
 #if (CONFIG_THERMAL_AEE_RR_REC == 1)
 static void _mt_thermal_aee_init(void)
 {
@@ -232,6 +241,13 @@ static void temp_valid_unlock(unsigned long *flags);
  *Weak functions
  *=============================================================
  */
+	unsigned int  __attribute__((weak))
+mt_gpufreq_get_max_power(void)
+{
+	pr_notice("E_WF: %s doesn't exist\n", __func__);
+	return 0;
+}
+
 	int __attribute__ ((weak))
 IMM_IsAdcInitReady(void)
 {
@@ -260,6 +276,7 @@ mtk_get_gpu_loading(unsigned int *pLoading)
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
+
 	void __attribute__ ((weak))
 mt_ptp_lock(unsigned long *flags)
 {
@@ -318,6 +335,7 @@ static void tscpu_fast_initial_sw_workaround(void)
 	temp_valid_unlock(&flags);
 }
 
+#if CFG_THERM_LVTS == (0)
 int tscpu_max_temperature(void)
 {
 	int i, j, max = 0;
@@ -338,6 +356,7 @@ int tscpu_max_temperature(void)
 
 	return max;
 }
+#endif
 
 void set_taklking_flag(bool flag)
 {
@@ -378,7 +397,13 @@ static int tscpu_bind
 
 	if (!strcmp(cdev->type, g_bind0)) {
 		table_val = 0;
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+		lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
+#else
 		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
 		/* tscpu_dprintk("tscpu_bind %s\n", cdev->type); */
 	} else if (!strcmp(cdev->type, g_bind1)) {
 		table_val = 1;
@@ -386,7 +411,13 @@ static int tscpu_bind
 		 * we set tc_mid_trip to trip_temp[1];
 		 */
 		tc_mid_trip = trip_temp[1];
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+		lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
+#else
 		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
 		/* tscpu_dprintk("tscpu_bind %s\n", cdev->type); */
 	} else if (!strcmp(cdev->type, g_bind2)) {
 		table_val = 2;
@@ -907,7 +938,11 @@ static int tscpu_read_log(struct seq_file *m, void *v)
 {
 
 	seq_printf(m, "[ tscpu_read_log] log = %d\n", tscpu_debug_log);
-
+#if CFG_THERM_LVTS
+	seq_printf(m, "[ lvts_debug_log] log = %d\n", lvts_debug_log);
+	seq_printf(m, "[ lvts_rawdata_debug_log] log = %d\n",
+						lvts_rawdata_debug_log);
+#endif
 
 	return 0;
 }
@@ -983,7 +1018,16 @@ static ssize_t tscpu_write_log
 		 */
 	{
 		tscpu_debug_log = log_switch;
-
+#if CFG_THERM_LVTS
+		/*
+		 * input value	debug_log
+		 *	case 0:	all disable
+		 *	case 1:	tscpu & lvts & lvts_rawdata
+		 *	case 2:	lvts_rawdata only
+		 */
+		lvts_debug_log = log_switch;
+		lvts_rawdata_debug_log = log_switch;
+#endif
 		return count;
 	}
 
@@ -1384,6 +1428,9 @@ static int tscpu_thermal_suspend
 			cnt++;
 		} while (temp != 0x0 && cnt < 50);
 #else
+#if CFG_THERM_LVTS
+		lvts_thermal_pause_all_periodoc_temp_sensing();
+#endif
 		thermal_pause_all_periodoc_temp_sensing(); /* TEMPMSRCTL1 */
 
 		do {
@@ -1395,7 +1442,9 @@ static int tscpu_thermal_suspend
 			udelay(2);
 			cnt++;
 		} while (temp != 0x0 && cnt < 50);
-
+#if CFG_THERM_LVTS
+		lvts_thermal_disable_all_periodoc_temp_sensing();
+#endif
 		/* disable periodic temp measurement on sensor 0~2 */
 		thermal_disable_all_periodoc_temp_sensing(); /* TEMPMONCTL0 */
 #endif
@@ -1462,6 +1511,12 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		 */
 		tscpu_fast_initial_sw_workaround();
 
+#if CFG_THERM_LVTS
+		lvts_device_identification();
+		lvts_Device_Enable_Init_all_Devices();
+		lvts_efuse_setting();
+#endif
+
 #if defined(CONFIG_ARCH_MT6797)
 		/* disable periodic temp measurement on sensor 0~2 */
 		thermal_disable_all_periodoc_temp_sensing(); /* TEMPMONCTL0 */
@@ -1497,8 +1552,22 @@ static int tscpu_thermal_resume(struct platform_device *dev)
 		thermal_release_all_periodoc_temp_sensing();
 
 		tscpu_clear_all_temp();
+#if CFG_THERM_LVTS
+		lvts_thermal_pause_all_periodoc_temp_sensing();
+		lvts_thermal_disable_all_periodoc_temp_sensing();
 
+		Enable_LVTS_CTRL_for_thermal_Data_Fetch();
+		lvts_tscpu_thermal_initial_all_tc();
+		lvts_thermal_release_all_periodoc_temp_sensing();
+#endif
+
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+		lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
+#else
 		tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
 	}
 
 	g_tc_resume = 2;	/* set "2", resume finish,can read temp */
@@ -1617,6 +1686,24 @@ int tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
 
 	return bank_T;
 }
+
+#if CFG_THERM_LVTS
+#if 0
+int lvts_tscpu_get_temp_by_bank(enum thermal_bank_name ts_bank)
+{
+	int bank_T = -127000;
+
+	tscpu_dprintk("lvts_tscpu_get_temp_by_bank %s, %d\n",
+						__func__, __LINE__);
+
+	if (ts_bank < THERMAL_BANK_NUM)
+		bank_T = lvts_max_temperature_in_bank[ts_bank]();
+	else
+		panic("Bank number out of range\n");
+	return bank_T;
+}
+#endif
+#endif
 
 #if THERMAL_GPIO_OUT_TOGGLE
 static int tscpu_GPIO_out(struct inode *inode, struct file *file)
@@ -1871,12 +1958,18 @@ int tscpu_is_temp_valid(void)
 
 static void read_all_tc_temperature(void)
 {
+#if CFG_THERM_LVTS
+	read_all_tc_tsmcu_temperature();
+	read_all_tc_lvts_temperature();
+	combine_lvts_tsmcu_temp();
+#else
 	int i = 0, j = 0;
 
 	for (i = 0; i < ARRAY_SIZE(tscpu_g_tc); i++)
 		for (j = 0; j < tscpu_g_tc[i].ts_number; j++)
 			tscpu_thermal_read_tc_temp(i, tscpu_g_tc[i].ts[j], j);
 
+#endif
 	tscpu_is_temp_valid();
 }
 
@@ -2027,6 +2120,13 @@ static void init_thermal(void)
 
 	tscpu_reset_thermal();
 
+#if CFG_THERM_LVTS
+	lvts_thermal_cal_prepare();
+	lvts_device_identification();
+	lvts_Device_Enable_Init_all_Devices();
+	lvts_efuse_setting();
+#endif
+
 	/*
 	 *  TS_CON1 default is 0x30, this is buffer off
 	 *  we should turn on this buffer berore we use thermal sensor,
@@ -2079,6 +2179,13 @@ static void init_thermal(void)
 	/* TEMPMSRCTL1 must release before start */
 	thermal_release_all_periodoc_temp_sensing();
 
+#if CFG_THERM_LVTS
+	lvts_thermal_pause_all_periodoc_temp_sensing();
+	lvts_thermal_disable_all_periodoc_temp_sensing();
+	Enable_LVTS_CTRL_for_thermal_Data_Fetch();
+	lvts_tscpu_thermal_initial_all_tc();
+	lvts_thermal_release_all_periodoc_temp_sensing();
+#endif
 	read_all_tc_temperature();
 }
 
@@ -2191,21 +2298,39 @@ static int tscpu_thermal_probe(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 	err = request_irq(thermal_irq_number,
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+				lvts_tscpu_thermal_all_tc_interrupt_handler,
+#endif /* CFG_THERM_LVTS */
+#else
 				tscpu_thermal_all_tc_interrupt_handler,
+#endif /* CFG_LVTS_DOMINATOR */
 				IRQF_TRIGGER_LOW, THERMAL_NAME, NULL);
 
 	if (err)
 		tscpu_warn("tscpu_init IRQ register fail\n");
 #else
 	err = request_irq(THERM_CTRL_IRQ_BIT_ID,
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+				lvts_tscpu_thermal_all_tc_interrupt_handler,
+#endif /* CFG_THERM_LVTS */
+#else
 				tscpu_thermal_all_tc_interrupt_handler,
+#endif /* CFG_LVTS_DOMINATOR */
 				IRQF_TRIGGER_LOW, THERMAL_NAME, NULL);
 
 	if (err)
 		tscpu_warn("tscpu_init IRQ register fail\n");
-#endif
+#endif /* CONFIG_OF */
 
+#if CFG_LVTS_DOMINATOR
+#if CFG_THERM_LVTS
+	lvts_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
+#else
 	tscpu_config_all_tc_hw_protect(trip_temp[0], tc_mid_trip);
+#endif
 
 #if THERMAL_GET_AHB_BUS_CLOCK
 	thermal_get_AHB_clk_info();
