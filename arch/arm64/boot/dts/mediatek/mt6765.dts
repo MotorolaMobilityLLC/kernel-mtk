@@ -217,10 +217,17 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x1000f000 0 0x0>;
 	};
 
-	kp@10010000 {
+	keypad: kp@10010000 {
 		compatible = "mediatek,kp";
-		reg = <0 0x10010000 0 0x0>;
+		reg = <0 0x10010000 0 0x1000>;
 		interrupts = <GIC_SPI 180 IRQ_TYPE_EDGE_FALLING>;
+	};
+
+	mrdump_ext_rst: mrdump_ext_rst {
+		compatible = "mediatek, mrdump_ext_rst-eint";
+		source = "EINT";
+		mode = "IRQ";
+		status = "okay";
 	};
 
 	topmisc@10011000 {
