@@ -158,8 +158,8 @@ int mtk_spk_update_dai_link(struct snd_soc_card *card,
 			   mtk_spk_i2s_out == MTK_SPK_I2S_3) {
 			spk_dai_link_idx = i;
 		} else if (spk_dai_link_idx < 0 &&
-			   strcmp(dai_link->cpu_dai_name, "I2S4") == 0 &&
-			   mtk_spk_i2s_out == MTK_SPK_I2S_4) {
+			   strcmp(dai_link->cpu_dai_name, "I2S5") == 0 &&
+			   mtk_spk_i2s_out == MTK_SPK_I2S_5) {
 			spk_dai_link_idx = i;
 		}
 

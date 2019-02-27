@@ -28,7 +28,7 @@ enum mtk_spk_i2s_type {
 	MTK_SPK_I2S_1,
 	MTK_SPK_I2S_2,
 	MTK_SPK_I2S_3,
-	MTK_SPK_I2S_4,
+	MTK_SPK_I2S_5,
 	MTK_SPK_I2S_TYPE_NUM
 };
 
