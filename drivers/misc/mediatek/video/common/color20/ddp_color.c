@@ -1125,13 +1125,12 @@ static bool g_get_va_flag;
 static unsigned long g_tdshp1_va;
 #elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || \
 	defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799) || \
-	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
-	defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6739)
 #define TDSHP_PA_BASE   0x14009000
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || \
 	defined(CONFIG_MACH_MT6758)
 #define TDSHP_PA_BASE   0x14007000
-#elif defined(CONFIG_MACH_MT6765)
+#elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 #define TDSHP_PA_BASE   0x1400A000
 #else
 #define TDSHP_PA_BASE   0x14006000
@@ -1143,7 +1142,7 @@ static unsigned long g_tdshp1_va;
 #define MDP_COLOR_PA_BASE 0x1400A000
 #elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #define MDP_COLOR_PA_BASE 0x1400E000
-#elif defined(CONFIG_MACH_MT6765)
+#elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 #define MDP_COLOR_PA_BASE 0x1400F000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
