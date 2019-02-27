@@ -3429,7 +3429,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		/* set_dummy(); */
+		set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		if (framerate == 0)
@@ -3448,41 +3448,49 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		/* set_dummy(); */
+		set_dummy();
 		break;
 
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-	if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) {
-		frame_length =
-		    imgsensor_info.cap1.pclk / framerate * 10 /
-		    imgsensor_info.cap1.linelength;
-			spin_lock(&imgsensor_drv_lock);
-		imgsensor.dummy_line =
-		    (frame_length > imgsensor_info.cap1.framelength)
-		    ? (frame_length - imgsensor_info.cap1.framelength) : 0;
-		imgsensor.frame_length =
-		    imgsensor_info.cap1.framelength + imgsensor.dummy_line;
-		imgsensor.min_frame_length = imgsensor.frame_length;
-		spin_unlock(&imgsensor_drv_lock);
-	} else {
-		if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-			pr_info(
-			"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
-			     framerate, imgsensor_info.cap.max_framerate / 10);
-		frame_length =
-		    imgsensor_info.cap.pclk / framerate * 10 /
-		    imgsensor_info.cap.linelength;
+		if (imgsensor.current_fps ==
+					imgsensor_info.cap1.max_framerate) {
+			frame_length =
+			    imgsensor_info.cap1.pclk / framerate * 10 /
+			    imgsensor_info.cap1.linelength;
+				spin_lock(&imgsensor_drv_lock);
+			imgsensor.dummy_line =
+			(frame_length > imgsensor_info.cap1.framelength)
+			? (frame_length - imgsensor_info.cap1.framelength) : 0;
 
-		spin_lock(&imgsensor_drv_lock);
-		imgsensor.dummy_line =
-		    (frame_length > imgsensor_info.cap.framelength) ?
-		    (frame_length - imgsensor_info.cap.framelength) : 0;
-		imgsensor.frame_length =
-		    imgsensor_info.cap.framelength + imgsensor.dummy_line;
-		imgsensor.min_frame_length = imgsensor.frame_length;
-		spin_unlock(&imgsensor_drv_lock);
-	}
-		/* set_dummy(); */
+			imgsensor.frame_length =
+		 imgsensor_info.cap1.framelength + imgsensor.dummy_line;
+
+			imgsensor.min_frame_length = imgsensor.frame_length;
+			spin_unlock(&imgsensor_drv_lock);
+		} else {
+			if (imgsensor.current_fps
+					!= imgsensor_info.cap.max_framerate)
+				pr_info(
+				"Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
+				framerate,
+				imgsensor_info.cap.max_framerate / 10);
+
+			frame_length =
+			    imgsensor_info.cap.pclk / framerate * 10 /
+			    imgsensor_info.cap.linelength;
+
+			spin_lock(&imgsensor_drv_lock);
+			imgsensor.dummy_line =
+			(frame_length > imgsensor_info.cap.framelength) ?
+			(frame_length - imgsensor_info.cap.framelength) : 0;
+
+			imgsensor.frame_length =
+			imgsensor_info.cap.framelength + imgsensor.dummy_line;
+
+			imgsensor.min_frame_length = imgsensor.frame_length;
+			spin_unlock(&imgsensor_drv_lock);
+		}
+		set_dummy();
 	break;
 
 	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -3500,7 +3508,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		/* set_dummy(); */
+		set_dummy();
 		break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		frame_length =
@@ -3516,7 +3524,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		/* set_dummy(); */
+		set_dummy();
 		break;
 	default:		/* coding with  preview scenario by default */
 		frame_length =
@@ -3532,7 +3540,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor_info.pre.framelength + imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-		/* set_dummy(); */
+		set_dummy();
 		pr_info("error scenario_id = %d, we use preview scenario\n",
 			scenario_id);
 		break;
@@ -3737,7 +3745,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				(kal_uint32) (*(feature_data + 2)));
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
-		set_test_pattern_mode((BOOL) *feature_data);
+		set_test_pattern_mode((BOOL) (*feature_data));
 		break;
 
 	/* for factory mode auto testing */
