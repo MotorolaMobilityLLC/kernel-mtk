@@ -40,6 +40,7 @@
 #include <linux/delay.h>
 #include "scp_feature_define.h"
 #include "scp_ipi.h"
+#include "scp_err_info.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
 #include "scp_dvfs.h"
@@ -426,8 +427,8 @@ static void scp_wait_ready_timeout(unsigned long data)
 	scp_timeout_work.id = SCP_A_ID;
 	scp_schedule_work(&scp_timeout_work);
 }
-
 #endif
+
 /*
  * handle notification from scp
  * mark scp is ready for running tasks
@@ -448,6 +449,46 @@ static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 					SCP_A_TCM_SIZE, scp_image_size);
 		WARN_ON(1);
 	}
+}
+
+
+// #define DUMMY_ERROR_REPORT_API
+#ifdef DUMMY_ERROR_REPORT_API
+/******************************************************************************
+ ******************************************************************************/
+void report_hub_dmd(uint32_t case_id, uint32_t sensor_id, char *context)
+{
+	pr_notice("[SCP] Error_info: case id: %u\n", case_id);
+	pr_notice("[SCP] Error_info: sensor id: %u\n", sensor_id);
+	pr_notiec("[SCP] Error_info: context: %s\n", context);
+}
+/******************************************************************************
+ ******************************************************************************/
+#endif  // DUMMY_ERROR_REPORT_API
+
+
+/*
+ * Handle notification from scp.
+ * Report error from SCP to other kernel driver.
+ * @param id:   ipi id
+ * @param data: ipi data
+ * @param len:  length of ipi data
+ */
+static void scp_err_info_handler(int id, void *data, unsigned int len)
+{
+	struct error_info *info = (struct error_info *)data;
+
+	if (sizeof(*info) != len) {
+		pr_notice("[SCP] error: incorrect size %d of error_info\n",
+				len);
+		WARN_ON(1);
+		return;
+	}
+
+	if (report_hub_dmd)
+		report_hub_dmd(info->case_id, info->sensor_id, info->context);
+	else
+		pr_debug("[SCP] warning: report_hub_dmd() not defined.\n");
 }
 
 
@@ -1662,6 +1703,9 @@ static int __init scp_init(void)
 
 	scp_ipi_registration(IPI_SCP_A_READY,
 			 scp_A_ready_ipi_handler, "scp_A_ready");
+
+	scp_ipi_registration(IPI_SCP_ERROR_INFO,
+			 scp_err_info_handler, "scp_err_info_handler");
 
 	/* scp ramdump initialise */
 	pr_debug("[SCP] ramdump init\n");
