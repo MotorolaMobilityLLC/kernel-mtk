@@ -13,12 +13,14 @@
 #include <linux/module.h>
 #include <linux/pm_qos.h>
 #include "mtk_ppm_api.h"
+#include "legacy_controller.h"
 #include "usb_boost.h"
 #include <mtk_vcorefs_manager.h>
 #include <helio-dvfsrc-opp.h>
 
 /* platform specific parameter here */
 #if defined(CONFIG_MACH_MT6758)
+#define CLUSTER_NUM 2
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
 static int dram_vcore_test_para[] = {1, 5, 500, 0};
@@ -28,6 +30,7 @@ struct act_arg_obj cpu_freq_test_arg = {2500000, -1, -1};
 struct act_arg_obj cpu_core_test_arg = {4, -1, -1};
 struct act_arg_obj dram_vcore_test_arg = {DDR_OPP_0, -1, -1};
 #elif defined(CONFIG_MACH_MT6765)
+#define CLUSTER_NUM 2
 static int cpu_freq_test_para[] = {1, 5, 500, 0};
 static int cpu_core_test_para[] = {1, 5, 500, 0};
 static int dram_vcore_test_para[] = {1, 5, 500, 0};
@@ -42,26 +45,41 @@ struct act_arg_obj dram_vcore_test_arg = {DDR_OPP_0, -1, -1};
 
 static struct pm_qos_request pm_qos_req;
 static struct pm_qos_request pm_qos_emi_req;
+static struct ppm_limit_data freq_to_set[CLUSTER_NUM];
 
 static int freq_hold(struct act_arg_obj *arg)
 {
+	int i;
+
 	USB_BOOST_DBG("\n");
-	mt_ppm_sysboost_freq(BOOST_BY_USB, arg->arg1);
+
+	for (i = 0; i < CLUSTER_NUM; i++) {
+		freq_to_set[i].min = arg->arg1;
+		freq_to_set[i].max = -1;
+	}
+
+	update_userlimit_cpu_freq(PPM_KIR_USB, CLUSTER_NUM, freq_to_set);
 	return 0;
 }
+
 static int freq_release(struct act_arg_obj *arg)
 {
+	int i;
+
 	USB_BOOST_DBG("\n");
-	mt_ppm_sysboost_freq(BOOST_BY_USB, 0);
+
+	for (i = 0; i < CLUSTER_NUM; i++) {
+		freq_to_set[i].min = -1;
+		freq_to_set[i].max = -1;
+	}
+
+	update_userlimit_cpu_freq(PPM_KIR_USB, CLUSTER_NUM, freq_to_set);
 	return 0;
 }
 
 static int core_hold(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
-
-	/*This API is deprecated*/
-	mt_ppm_sysboost_core(BOOST_BY_USB, arg->arg1);
 
 	/*Disable MCDI to save around 100us
 	 *"Power ON CPU -> CPU context restore"
@@ -74,9 +92,6 @@ static int core_hold(struct act_arg_obj *arg)
 static int core_release(struct act_arg_obj *arg)
 {
 	USB_BOOST_DBG("\n");
-
-	/*This API is deprecated*/
-	mt_ppm_sysboost_core(BOOST_BY_USB, 0);
 
 	/*Enable MCDI*/
 	pm_qos_update_request(&pm_qos_req, PM_QOS_DEFAULT_VALUE);
