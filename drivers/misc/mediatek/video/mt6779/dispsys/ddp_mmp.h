@@ -41,6 +41,7 @@ struct DDP_MMP_Events {
 	mmp_event DSI_IRQ[2];
 	mmp_event MutexParent;
 	mmp_event MUTEX_IRQ[5];
+	mmp_event POSTMASK_IRQ;
 	mmp_event primary_Parent;
 	mmp_event primary_display_switch_dst_mode;
 	mmp_event primary_trigger;

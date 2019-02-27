@@ -460,6 +460,8 @@ extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
 /* dpi */
 extern struct DDP_MODULE_DRIVER ddp_driver_dpi;
+/* postmask */
+extern struct DDP_MODULE_DRIVER ddp_driver_postmask;
 
 struct ddp_reg {
 	const char *reg_dt_name;

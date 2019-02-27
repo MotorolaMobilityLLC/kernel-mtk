@@ -34,6 +34,7 @@
 #include "disp_lowpower.h"
 #include "mtk_disp_mgr.h"
 #include "disp_rect.h"
+#include "lcm_drv.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
@@ -376,12 +377,25 @@ static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param)
 
 void layering_rule_init(void)
 {
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	unsigned int rc_mode =
+			disp_helper_get_option(DISP_OPT_ROUND_CORNER_MODE);
+	struct LCM_PARAMS *lcm_param = disp_lcm_get_params(primary_get_lcm());
+#endif
+
 	l_rule_info.primary_fps = 60;
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
 
 	set_layering_opt(LYE_OPT_RPO, disp_helper_get_option(DISP_OPT_RPO));
 	set_layering_opt(LYE_OPT_EXT_LAYER,
 			 disp_helper_get_option(DISP_OPT_OVL_EXT_LAYER));
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	set_round_corner_opt(LYE_OPT_ROUND_CORNER,
+			(disp_helper_get_option(DISP_OPT_ROUND_CORNER) & 0xFF) |
+			((rc_mode & 0xFF) << 8) |
+			((lcm_param->round_corner_en & 0xFF) << 16));
+#endif
 }
 
 static bool _adaptive_dc_enabled(void)

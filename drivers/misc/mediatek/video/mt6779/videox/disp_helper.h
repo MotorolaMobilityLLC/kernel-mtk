@@ -77,6 +77,10 @@ enum DISP_HELPER_OPT {
 	DISP_OPT_DUAL_PIPE,
 	/* DISP_WDMA0 sharing internally for primary and external display */
 	DISP_OPT_SHARE_WDMA0,
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	DISP_OPT_ROUND_CORNER,
+	DISP_OPT_ROUND_CORNER_MODE,
+#endif
 	DISP_OPT_FRAME_QUEUE,
 	DISP_OPT_DC_BY_HRT,
 	DISP_OPT_NUM
@@ -87,6 +91,13 @@ enum DISP_HELPER_STAGE {
 	DISP_HELPER_STAGE_BRING_UP,
 	DISP_HELPER_STAGE_NORMAL
 };
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+enum DISP_HELPER_ROUND_CORNER_MODE {
+	DISP_HELPER_SW_RC = 0,
+	DISP_HELPER_HW_RC = 1,
+};
+#endif
 
 void disp_helper_option_init(void);
 int disp_helper_get_option(enum DISP_HELPER_OPT option);

@@ -18,6 +18,10 @@
 #include <linux/kernel.h>
 #endif
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+#include "data_hw_roundedpattern.h"
+#endif
+
 #include "lcm_drv.h"
 
 
@@ -927,6 +931,20 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	params->round_corner_en = 1;
+	params->round_corner_mode = LCM_HW_ROUND_CORNER;
+	params->corner_pattern_width = FRAME_WIDTH;
+	params->corner_pattern_height = ROUND_CORNER_H;
+
+	params->round_corner_params.w = ROUND_CORNER_W;
+	params->round_corner_params.h = ROUND_CORNER_H;
+	params->round_corner_params.tp_size = sizeof(top_rc_pattern);
+	params->round_corner_params.lt_addr = (void *)top_rc_pattern;
+	params->round_corner_params.rt_addr = NULL;
+	params->round_corner_params.lb_addr = NULL;
+	params->round_corner_params.rb_addr = NULL;
+#endif
 }
 
 #ifdef BUILD_LK

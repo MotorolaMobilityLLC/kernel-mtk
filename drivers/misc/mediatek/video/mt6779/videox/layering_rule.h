@@ -15,6 +15,7 @@
 #define __LAYER_STRATEGY_EX__
 
 #include "layering_rule_base.h"
+#include "lcm_drv.h"
 
 #define MAX_PHY_OVL_CNT 12
 /* #define HAS_LARB_HRT */
