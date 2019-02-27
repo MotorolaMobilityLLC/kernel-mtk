@@ -339,7 +339,8 @@ void jpeg_drv_enc_power_on(void)
 			JPEG_ERR("enable clk_venc_jpgEnc fail!");
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
-			smi_bus_prepare_enable(SMI_LARB7_REG_INDX, "JPEG", true);
+			smi_bus_prepare_enable(SMI_LARB1_REG_INDX,
+				"JPEG", true);
 			if (clk_prepare_enable(gJpegClk.clk_venc_jpgEnc))
 				JPEG_ERR("enable clk_venc_jpgDec fail!");
 		#else
@@ -381,7 +382,8 @@ void jpeg_drv_enc_power_off(void)
 	#else
 		#ifdef CONFIG_MTK_SMI_EXT
 			clk_disable_unprepare(gJpegClk.clk_venc_jpgEnc);
-			smi_bus_disable_unprepare(SMI_LARB7_REG_INDX, "JPEG", true);
+			smi_bus_disable_unprepare(SMI_LARB1_REG_INDX,
+				"JPEG", true);
 		#else
 			#ifndef CONFIG_ARCH_MT6735M
 				clk_disable_unprepare(gJpegClk.clk_venc_larb);
