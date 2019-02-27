@@ -211,12 +211,8 @@ ssize_t scp_trace_read(char __user *data, size_t len)
 
 	pr_notice("[scp_trace] len:%d\n", (int) len);
 	scp_base = (unsigned int *) buf;
-	/*SCP keep awake */
-	scp_awake_lock(trace_data_selected_id);
 	/*memory copy from log buf*/
 	memcpy_from_scp(data, scp_base, len);
-	/*SCP leaave awake */
-	scp_awake_unlock(trace_data_selected_id);
 
 	trace_r_pos[trace_data_selected_id] = 0x4000;
 
