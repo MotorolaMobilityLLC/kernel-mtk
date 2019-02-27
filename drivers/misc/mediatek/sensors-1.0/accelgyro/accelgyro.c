@@ -328,7 +328,7 @@ static void accelgyro_comset_delay(int delay)
 		atomic_set(&obj->delay, delay / 1000 / 1000);
 	}
 }
-#ifndef CONFIG_NANOHUB
+
 static int acc_enable_and_batch(void)
 {
 	struct acc_context *cxt = acc_context_obj;
@@ -455,12 +455,11 @@ static int acc_enable_and_batch(void)
 	}
 	return 0;
 }
-#endif
+
 static ssize_t acc_store_enable_nodata(struct device *dev,
 				       struct device_attribute *attr,
 				       const char *buf, size_t count)
 {
-#if !defined(CONFIG_MTK_SCP_SENSORHUB_V1) && !defined(CONFIG_NANOHUB)
 	struct acc_context *cxt = acc_context_obj;
 	int err = 0;
 
@@ -481,7 +480,7 @@ static ssize_t acc_store_enable_nodata(struct device *dev,
 err_out:
 	mutex_unlock(&acc_context_obj->acc_op_mutex);
 	return err;
-#endif
+
 	return count;
 }
 
@@ -514,7 +513,7 @@ static ssize_t acc_store_active(struct device *dev,
 		err = -1;
 		goto err_out;
 	}
-#ifdef CONFIG_NANOHUB
+#if 0
 	if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 		err = cxt->acc_ctl.enable_nodata(1);
 		if (err) {
@@ -573,7 +572,7 @@ static ssize_t acc_store_batch(struct device *dev,
 	}
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
-#ifdef CONFIG_NANOHUB
+#if 0
 	if (cxt->acc_ctl.is_support_batch)
 		err = cxt->acc_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
 	else
@@ -655,7 +654,6 @@ static ssize_t acc_store_cali(struct device *dev, struct device_attribute *attr,
 	return count;
 }
 
-#ifndef CONFIG_NANOHUB
 static int gyro_enable_and_batch(void)
 {
 	struct gyro_context *cxt = gyro_context_obj;
@@ -791,7 +789,7 @@ static int gyro_enable_and_batch(void)
 	}
 	return 0;
 }
-#endif
+
 
 static ssize_t gyro_show_enable_nodata(struct device *dev,
 				       struct device_attribute *attr, char *buf)
@@ -848,7 +846,7 @@ static ssize_t gyro_store_active(struct device *dev,
 		err = -1;
 		goto err_out;
 	}
-#ifdef CONFIG_NANOHUB
+#if 0
 	if (true == cxt->is_active_data || true == cxt->is_active_nodata) {
 		err = cxt->gyro_ctl.enable_nodata(1);
 		if (err) {
@@ -904,7 +902,7 @@ static ssize_t gyro_store_batch(struct device *dev,
 	}
 
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
-#ifdef CONFIG_NANOHUB
+#if 0
 	if (cxt->gyro_ctl.is_support_batch)
 		err = cxt->gyro_ctl.batch(0, atomic_read(&t_obj->delay) * 1000 *
 						     1000,
