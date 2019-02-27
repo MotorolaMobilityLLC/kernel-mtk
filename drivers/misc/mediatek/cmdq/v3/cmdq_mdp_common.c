@@ -47,6 +47,14 @@ static struct pm_qos_request isp_clk_qos_request[MDP_TOTAL_THREAD];
 static u64 g_freq_steps[MAX_FREQ_STEP];
 static u32 step_size;
 
+#define CMDQ_LOG_PMQOS(string, args...) \
+do {			\
+if (cmdq_core_should_pmqos_log()) { \
+	pr_notice("[CMDQ][MDP]"string, ##args); \
+}			\
+} while (0)
+
+
 #define DP_TIMER_GET_DURATION_IN_US(start, end, duration)		\
 do {									\
 	u64 time1;							\
@@ -1808,7 +1816,7 @@ static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
 	pmqos_curr_record->end_tm.tv_sec = mdp_curr_pmqos->tv_sec;
 	pmqos_curr_record->end_tm.tv_usec = mdp_curr_pmqos->tv_usec;
 
-	CMDQ_MSG(
+	CMDQ_LOG_PMQOS(
 		"[MDP]mdp %d pixel, mdp %d byte, isp %d pixel, isp %d byte, submit %06ld us, end %06ld us\n",
 		mdp_curr_pmqos->mdp_total_pixel,
 		mdp_curr_pmqos->mdp_total_datasize,
