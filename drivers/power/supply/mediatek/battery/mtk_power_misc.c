@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#ifndef _DEA_MODIFY_
 #include <linux/errno.h>
 #include <linux/mutex.h>
 #include <linux/delay.h>
@@ -20,8 +21,12 @@
 #include <linux/platform_device.h>
 
 #include <mt-plat/charger_type.h>
-#include <mtk_gauge_time_service.h>
 #include <mt-plat/mtk_battery.h>
+#else
+#include <string.h>
+#include "simulator_kernel.h"
+#endif
+#include <mtk_gauge_time_service.h>
 #include "mtk_battery_internal.h"
 
 
