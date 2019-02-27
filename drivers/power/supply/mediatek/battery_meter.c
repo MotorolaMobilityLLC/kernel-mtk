@@ -75,7 +75,7 @@ BATTERY_METER_CONTROL battery_meter_ctrl;
 bool gFG_Is_Charging;
 signed int g_auxadc_solution;
 unsigned int g_spm_timer = 600;
-BOOL bat_spm_timeout;
+bool bat_spm_timeout;
 unsigned int _g_bat_sleep_total_time = NORMAL_WAKEUP_PERIOD;
 #ifdef MTK_ENABLE_AGING_ALGORITHM
 unsigned int suspend_time;
@@ -522,7 +522,7 @@ static void __batt_meter_parse_node(const struct device_node *np,
 
 static void __batt_meter_parse_table(const struct device_node *np,
 				const char *node_srting,
-				BATTERY_PROFILE_STRUCT_P profile_p)
+				struct battery_profile_struct *profile_p)
 {
 	int addr, val, idx, saddles;
 
@@ -1193,7 +1193,7 @@ int fgauge_get_saddles_r_table(void)
 	return sizeof(r_profile_temperature) / sizeof(R_PROFILE_STRUCT);
 }
 
-BATTERY_PROFILE_STRUCT_P fgauge_get_profile(unsigned int temperature)
+struct battery_profile_struct *fgauge_get_profile(unsigned int temperature)
 {
 	switch (temperature) {
 	case batt_meter_cust_data.temperature_t0:
@@ -1217,7 +1217,7 @@ BATTERY_PROFILE_STRUCT_P fgauge_get_profile(unsigned int temperature)
 	}
 }
 
-R_PROFILE_STRUCT_P fgauge_get_profile_r_table(unsigned int temperature)
+struct r_profile_struct *fgauge_get_profile_r_table(unsigned int temperature)
 {
 	switch (temperature) {
 	case batt_meter_cust_data.temperature_t0:
@@ -1251,7 +1251,7 @@ int fgauge_get_saddles_r_table(void)
 	return sizeof(r_profile_t2) / sizeof(R_PROFILE_STRUCT);
 }
 
-BATTERY_PROFILE_STRUCT_P fgauge_get_profile(unsigned int temperature)
+struct battery_profile_struct *fgauge_get_profile(unsigned int temperature)
 {
 	if (temperature == batt_meter_cust_data.temperature_t0)
 		return &battery_profile_t0[0];
@@ -1273,7 +1273,7 @@ BATTERY_PROFILE_STRUCT_P fgauge_get_profile(unsigned int temperature)
 
 }
 
-R_PROFILE_STRUCT_P fgauge_get_profile_r_table(unsigned int temperature)
+struct r_profile_struct *fgauge_get_profile_r_table(unsigned int temperature)
 {
 	if (temperature == batt_meter_cust_data.temperature_t0)
 		return &r_profile_t0[0];
@@ -1297,7 +1297,7 @@ R_PROFILE_STRUCT_P fgauge_get_profile_r_table(unsigned int temperature)
 signed int fgauge_read_capacity_by_v(signed int voltage)
 {
 	int i = 0, saddles = 0;
-	BATTERY_PROFILE_STRUCT_P profile_p;
+	struct battery_profile_struct *profile_p;
 	signed int ret_percent = 0;
 
 	profile_p = fgauge_get_profile(batt_meter_cust_data.temperature_t);
@@ -1338,7 +1338,7 @@ signed int fgauge_read_capacity_by_v(signed int voltage)
 signed int fgauge_read_v_by_capacity(int bat_capacity)
 {
 	int i = 0, saddles = 0;
-	BATTERY_PROFILE_STRUCT_P profile_p;
+	struct battery_profile_struct *profile_p;
 	signed int ret_volt = 0;
 
 	profile_p = fgauge_get_profile(batt_meter_cust_data.temperature_t);
@@ -1378,7 +1378,7 @@ signed int fgauge_read_v_by_capacity(int bat_capacity)
 signed int fgauge_read_d_by_v(signed int volt_bat)
 {
 	int i = 0, saddles = 0;
-	BATTERY_PROFILE_STRUCT_P profile_p;
+	struct battery_profile_struct *profile_p;
 	signed int ret_d = 0;
 
 	profile_p = fgauge_get_profile(batt_meter_cust_data.temperature_t);
@@ -1418,7 +1418,7 @@ signed int fgauge_read_d_by_v(signed int volt_bat)
 signed int fgauge_read_v_by_d(int d_val)
 {
 	int i = 0, saddles = 0;
-	BATTERY_PROFILE_STRUCT_P profile_p;
+	struct battery_profile_struct *profile_p;
 	signed int ret_volt = 0;
 
 	profile_p = fgauge_get_profile(batt_meter_cust_data.temperature_t);
@@ -1458,7 +1458,7 @@ signed int fgauge_read_v_by_d(int d_val)
 signed int fgauge_read_r_bat_by_v(signed int voltage)
 {
 	int i = 0, saddles = 0;
-	R_PROFILE_STRUCT_P profile_p;
+	struct r_profile_struct *profile_p;
 	signed int ret_r = 0;
 
 	profile_p = fgauge_get_profile_r_table(batt_meter_cust_data.temperature_t);
@@ -1495,7 +1495,8 @@ signed int fgauge_read_r_bat_by_v(signed int voltage)
 
 void fgauge_construct_battery_profile_init(void)
 {
-	BATTERY_PROFILE_STRUCT_P temp_profile_p, profile_p[PROFILE_SIZE];
+	struct battery_profile_struct *temp_profile_p;
+	struct battery_profile_struct *profile_p[PROFILE_SIZE];
 	int i, j, saddles, profile_index;
 	signed int low_p = 0, high_p = 0, now_p = 0, low_vol = 0, high_vol = 0;
 
@@ -1505,7 +1506,7 @@ void fgauge_construct_battery_profile_init(void)
 	profile_p[3] = fgauge_get_profile(batt_meter_cust_data.temperature_t3);
 	saddles = fgauge_get_saddles();
 	temp_profile_p =
-	    (BATTERY_PROFILE_STRUCT_P) kmalloc(51 * sizeof(*temp_profile_p), GFP_KERNEL);
+		kmalloc(51 * sizeof(*temp_profile_p), GFP_KERNEL);
 
 	if (temp_profile_p != NULL)
 		memset(temp_profile_p, 0, 51 * sizeof(*temp_profile_p));
@@ -1557,9 +1558,11 @@ void fgauge_construct_battery_profile_init(void)
 		kfree(temp_profile_p);
 }
 
-void fgauge_construct_battery_profile(signed int temperature, BATTERY_PROFILE_STRUCT_P temp_profile_p)
+void fgauge_construct_battery_profile(signed int temperature,
+		struct battery_profile_struct *temp_profile_p)
 {
-	BATTERY_PROFILE_STRUCT_P low_profile_p, high_profile_p;
+	struct battery_profile_struct *low_profile_p;
+	struct battery_profile_struct *high_profile_p;
 	signed int low_temperature, high_temperature;
 	int i, saddles;
 	signed int temp_v_1 = 0, temp_v_2 = 0;
@@ -1634,9 +1637,10 @@ void fgauge_construct_battery_profile(signed int temperature, BATTERY_PROFILE_ST
 }
 
 void fgauge_construct_r_table_profile(signed int temperature,
-		R_PROFILE_STRUCT_P temp_profile_p)
+		struct r_profile_struct *temp_profile_p)
 {
-	R_PROFILE_STRUCT_P low_profile_p, high_profile_p;
+	struct r_profile_struct *low_profile_p;
+	struct r_profile_struct *high_profile_p;
 	signed int low_temperature, high_temperature;
 	int i, saddles;
 	signed int temp_v_1 = 0, temp_v_2 = 0;
@@ -2381,8 +2385,8 @@ void oam_run(void)
 
 void table_init(void)
 {
-	BATTERY_PROFILE_STRUCT_P profile_p;
-	R_PROFILE_STRUCT_P profile_p_r_table;
+	struct battery_profile_struct *profile_p;
+	struct r_profile_struct *profile_p_r_table;
 
 	int temperature = force_get_tbat(false);
 
@@ -2516,8 +2520,8 @@ signed int fgauge_get_dod0(signed int voltage, signed int temperature, bool bOcv
 {
 	signed int dod0 = 0;
 	int i = 0, saddles = 0, jj = 0;
-	BATTERY_PROFILE_STRUCT_P profile_p;
-	R_PROFILE_STRUCT_P profile_p_r_table;
+	struct battery_profile_struct *profile_p;
+	struct r_profile_struct *profile_p_r_table;
 	int ret = 0;
 
 /* R-Table (First Time) */
@@ -4674,7 +4678,7 @@ static int battery_meter_resume(struct platform_device *dev)
 
 	/* try to calibrate D0 by HWOCV
 	if battery has no loading for more than 30mins */
-	if (sleep_interval > 1800 && bat_is_charger_exist() == KAL_FALSE) {
+	if (sleep_interval > 1800 && bat_is_charger_exist() == false) {
 
 		DOD_hwocv = fgauge_read_d_by_v(hw_ocv_after_sleep);
 
