@@ -493,6 +493,8 @@ static struct device_attribute rt5509_dev_attrs[] = {
 		rt_calib_dev_attr_store),
 	__ATTR(alphaspk, 0644, rt_calib_dev_attr_show,
 		rt_calib_dev_attr_store),
+	__ATTR(event_read, 0444, rt_calib_dev_attr_show,
+		rt_calib_dev_attr_store),
 	__ATTR_NULL,
 };
 
@@ -510,6 +512,7 @@ static struct attribute *rt5509_cal_dev_attrs[] = {
 	&rt5509_dev_attrs[10].attr,
 	&rt5509_dev_attrs[11].attr,
 	&rt5509_dev_attrs[12].attr,
+	&rt5509_dev_attrs[13].attr,
 	NULL,
 };
 
@@ -536,12 +539,89 @@ enum {
 	RT5509_CALIB_DEV_RSPKMIN,
 	RT5509_CALIB_DEV_RSPKMAX,
 	RT5509_CALIB_DEV_ALPHASPK,
+	RT5509_CALIB_DEV_EVENT_READ,
 	RT5509_CALIB_DEV_MAX,
 };
 
 static int calib_data_file_read(struct rt5509_chip *chip, char *buf)
 {
 	return -EINVAL;
+}
+
+static int rt_dev_event_read(struct rt5509_chip *chip, char *buf)
+{
+	struct snd_soc_codec *codec = chip->codec;
+	int i, index = 0, ret = 0;
+
+	ret = snd_soc_read(codec, RT5509_REG_CHIPEN);
+	if (ret < 0)
+		return ret;
+	if (!(ret & RT5509_SPKAMP_ENMASK)) {
+		dev_err(chip->dev, "amp not turn on\n");
+		return -EINVAL;
+	}
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "important reg dump ++\n");
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x03) -> 0x%02x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_CHIPREV);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x00) -> 0x%02x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_EVENTINFO);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x01) -> 0x%02x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_DMGFLAG);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x02) -> 0x%02x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_BST_MODE);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x1e) -> 0x%02x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_ISENSEGAIN);
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x46) -> 0x%06x\n", ret & 0xffffff);
+	ret = snd_soc_read(codec, RT5509_REG_CALIB_DCR);
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x4e) -> 0x%06x\n", ret & 0xffffff);
+	ret = snd_soc_read(codec, RT5509_REG_VTEMP_TRIM);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0xc4) -> 0x%04x\n", ret);
+	ret = snd_soc_read(codec, RT5509_REG_INTERRUPT);
+	if (ret < 0)
+		return ret;
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "events -> 0x%04x\n", ret);
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "important reg dump --\n");
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "impedance curve ++\n");
+	for (i = 0x10; i <= 0x1a; i++) {
+		ret = snd_soc_write(codec, RT5509_REG_SPKRPTSEL, i);
+		if (ret < 0)
+			return ret;
+		ret = snd_soc_read(codec, RT5509_REG_SPKRPT);
+		index += scnprintf(buf + index, PAGE_SIZE - index,
+				   "i(0x%02x) -> 0x%06x\n", i, ret & 0xffffff);
+	}
+	ret = snd_soc_write(codec, RT5509_REG_SPKRPTSEL, 0x0d);
+	if (ret < 0)
+		return ret;
+	ret = snd_soc_read(codec, RT5509_REG_SPKRPT);
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "i(0x0d) -> 0x%06x\n", ret & 0xffffff);
+	index += scnprintf(buf + index, PAGE_SIZE - index,
+			   "impedance curve --\n");
+	ret = index;
+	return ret;
 }
 
 static ssize_t rt_calib_dev_attr_show(struct device *dev,
@@ -593,6 +673,9 @@ static ssize_t rt_calib_dev_attr_show(struct device *dev,
 		break;
 	case RT5509_CALIB_DEV_ALPHASPK:
 		ret = scnprintf(buf, PAGE_SIZE, "%d\n", calib_dev->alphaspk);
+		break;
+	case RT5509_CALIB_DEV_EVENT_READ:
+		ret = rt_dev_event_read(chip, buf);
 		break;
 	default:
 		ret = -EINVAL;

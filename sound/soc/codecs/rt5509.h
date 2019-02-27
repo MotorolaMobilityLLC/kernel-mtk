@@ -22,7 +22,7 @@
 #include <mt-plat/rt-regmap.h>
 
 #define RT5509_DEVICE_NAME		"rt5509"
-#define RT5509_DRV_VER			"1.0.12_M"
+#define RT5509_DRV_VER			"1.0.13_M"
 
 #ifdef CONFIG_RT_REGMAP
 #define RT5509_SIMULATE_DEVICE	0
