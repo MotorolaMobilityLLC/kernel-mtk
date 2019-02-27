@@ -186,6 +186,15 @@
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
 
+#ifdef CONFIG_MICROTRUST_TEE_SUPPORT
+		soter-shared-mem {
+			compatible = "microtrust,shared_mem";
+			no-map;
+			size = <0 0x200000>;
+			alloc-ranges = <0 0x40000000 0 0x50000000>;
+		};
+#endif
+
 	};
 	/* ATF logger SW IRQ number 111 = 32 + 79 */
 	atf_logger {
@@ -197,6 +206,16 @@
 	mobicore {
 		compatible = "trustonic,mobicore";
 		interrupts = <GIC_SPI 89 IRQ_TYPE_EDGE_RISING>;
+	};
+
+	/* Microtrust SW IRQ number 91(123) ~ 95(127) 331(363) */
+	utos {
+		compatible = "microtrust,utos";
+		interrupts = <GIC_SPI 91 IRQ_TYPE_EDGE_RISING>,
+			<GIC_SPI 92 IRQ_TYPE_EDGE_RISING>;
+	};
+	utos_tester {
+		compatible = "microtrust,tester-v1";
 	};
 
 	mcdi@0011b000 {
