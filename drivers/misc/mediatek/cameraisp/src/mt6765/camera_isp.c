@@ -133,7 +133,7 @@ static u32 target_clk;
 #endif
 
 #define ISP_DEV_NAME           "camera-isp"
-#define SMI_LARB_MMU_CTL       (1)
+#define SMI_LARB_MMU_CTL       (0)
 
 /*#define ENABLE_WAITIRQ_LOG*/       /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/       /*show STT irq debug logs */
@@ -4386,6 +4386,11 @@ static signed int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 	/* unsigned char* pData = NULL; */
 	struct ISP_REG_STRUCT *pData = NULL;
 
+	if (pRegIo == NULL) {
+		pr_err("pRegIo null pointer");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (pRegIo->Count > 0xFFFFFFFF) {
 		pr_err("pRegIo->Count error");
 		Ret = -EFAULT;
@@ -7028,6 +7033,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	}
 	/*  */
 	pUserInfo = (struct ISP_USER_INFO_STRUCT *)(pFile->private_data);
+	memset((void *)&ispclks, 0, sizeof(ispclks));
 	/*  */
 	switch (Cmd) {
 	case ISP_WAKELOCK_CTRL:
