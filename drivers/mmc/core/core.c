@@ -468,7 +468,6 @@ int mmc_run_queue_thread(void *data)
 	struct mmc_request *done_mrq = NULL;
 	unsigned int task_id, areq_cnt_chk, tmo;
 	bool is_done = false;
-	bool io_boost_done = false;
 
 	int err;
 	u64 chk_time = 0;
@@ -480,10 +479,10 @@ int mmc_run_queue_thread(void *data)
 
 	pr_notice("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
-	while (1) {
 
-		mtk_io_boost_test_and_add_tid(current->pid,
-			&io_boost_done);
+	mtk_iobst_register_tid(current->pid);
+
+	while (1) {
 
 		set_current_state(TASK_RUNNING);
 		mt_biolog_cmdq_check();
