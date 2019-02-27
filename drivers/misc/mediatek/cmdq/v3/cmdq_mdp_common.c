@@ -31,7 +31,9 @@
 #include <linux/pm_qos.h>
 #include <linux/math64.h>
 #include "cmdq_mdp_pmqos.h"
+#ifdef CONFIG_MTK_SMI_EXT
 #include <mmdvfs_pmqos.h>
+#endif
 
 #include "cmdq_helper_ext.h"
 
@@ -44,8 +46,10 @@ static struct pm_qos_request mdp_bw_qos_request[MDP_TOTAL_THREAD];
 static struct pm_qos_request mdp_clk_qos_request[MDP_TOTAL_THREAD];
 static struct pm_qos_request isp_bw_qos_request[MDP_TOTAL_THREAD];
 static struct pm_qos_request isp_clk_qos_request[MDP_TOTAL_THREAD];
+#ifdef CONFIG_MTK_SMI_EXT
 static u64 g_freq_steps[MAX_FREQ_STEP];
 static u32 step_size;
+#endif
 
 #define CMDQ_LOG_PMQOS(string, args...) \
 do {			\
@@ -1296,6 +1300,7 @@ int cmdq_mdp_status_dump(struct notifier_block *nb,
 
 static void cmdq_mdp_init_pmqos(void)
 {
+#ifdef CONFIG_MTK_SMI_EXT
 	s32 i = 0;
 	s32 result = 0;
 	/* INIT_LIST_HEAD(&gCmdqMdpContext.mdp_tasks);*/
@@ -1326,6 +1331,7 @@ static void cmdq_mdp_init_pmqos(void)
 		g_freq_steps[0] = 457;
 	if (result < 0)
 		CMDQ_ERR("get MMDVFS freq steps failed, result: %d\n", result);
+#endif
 }
 
 void cmdq_mdp_init(void)
@@ -1735,6 +1741,7 @@ void cmdq_mdp_unmap_mmsys_VA(void)
 static void cmdq_mdp_isp_begin_task_virtual(struct cmdqRecStruct *handle,
 	struct cmdqRecStruct **handle_list, u32 size)
 {
+#ifdef CONFIG_MTK_SMI_EXT
 	struct mdp_pmqos *isp_curr_pmqos;
 	struct mdp_pmqos_record *pmqos_curr_record;
 	struct timeval curr_time;
@@ -1796,11 +1803,13 @@ static void cmdq_mdp_isp_begin_task_virtual(struct cmdqRecStruct *handle,
 	pm_qos_update_request(&isp_bw_qos_request[thread_id], curr_bandwidth);
 	/*update clock*/
 	pm_qos_update_request(&isp_clk_qos_request[thread_id], max_throughput);
+#endif
 }
 
 static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
 	struct cmdqRecStruct **handle_list, u32 size)
 {
+#ifdef CONFIG_MTK_SMI_EXT
 	struct mdp_pmqos *mdp_curr_pmqos;
 	struct mdp_pmqos *mdp_list_pmqos;
 	struct mdp_pmqos_record *pmqos_curr_record;
@@ -1990,11 +1999,13 @@ static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
 #if IS_ENABLED(CONFIG_MTK_SMI_EXT) && IS_ENABLED(CONFIG_MACH_MT6771)
 	smi_larb_mon_act_cnt();
 #endif
+#endif
 }
 
 static void cmdq_mdp_isp_end_task_virtual(struct cmdqRecStruct *handle,
 	struct cmdqRecStruct **handle_list, u32 size)
 {
+#ifdef CONFIG_MTK_SMI_EXT
 	struct mdp_pmqos *isp_curr_pmqos;
 	u32 thread_id = handle->thread - CMDQ_DYNAMIC_THREAD_ID_START;
 
@@ -2017,11 +2028,13 @@ static void cmdq_mdp_isp_end_task_virtual(struct cmdqRecStruct *handle,
 	/*update clock*/
 	if (isp_curr_pmqos->isp_total_pixel)
 		pm_qos_update_request(&isp_clk_qos_request[thread_id], 0);
+#endif
 }
 
 static void cmdq_mdp_end_task_virtual(struct cmdqRecStruct *handle,
 	struct cmdqRecStruct **handle_list, u32 size)
 {
+#ifdef CONFIG_MTK_SMI_EXT
 	struct mdp_pmqos *mdp_curr_pmqos;
 	struct mdp_pmqos *mdp_list_pmqos;
 	struct mdp_pmqos_record *pmqos_curr_record;
@@ -2249,6 +2262,7 @@ static void cmdq_mdp_end_task_virtual(struct cmdqRecStruct *handle,
 	if (mdp_curr_pmqos->mdp_total_pixel)
 		pm_qos_update_request(&mdp_clk_qos_request[thread_id],
 		max_throughput);
+#endif
 }
 
 static void cmdq_mdp_check_hw_status_virtual(struct cmdqRecStruct *handle)

@@ -18,6 +18,7 @@
 #include <linux/soc/mediatek/mtk-cmdq.h>
 
 #include "cmdq_subsys_common.h"
+#include "cmdq_event_common.h"
 
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
 
@@ -82,7 +83,7 @@
 #endif
 #define CMDQ_ARG_A_SUBSYS_MASK          (0x001F0000)
 
-#ifdef CONFIG_MTK_FPGA
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define CMDQ_DEFAULT_TIMEOUT_MS         (10000)
 #else
 #define CMDQ_DEFAULT_TIMEOUT_MS         (1000)
@@ -91,33 +92,28 @@
 #define CMDQ_ACQUIRE_THREAD_TIMEOUT_MS  (2000)
 #define CMDQ_PREDUMP_TIMEOUT_MS         (200)
 
-#ifndef CONFIG_MTK_FPGA
+#ifndef CONFIG_FPGA_EARLY_PORTING
 #define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
 #else
 #undef CMDQ_PWR_AWARE
 #endif
 
-typedef u64 CMDQ_VARIABLE;
 /*
  * SPR / CPR / VAR naming rule and number
  **********************************************
- *              <-  SPR    ->   <-            CPR            ->
- *           reserved              < FREE use >   <  delay >
- * VAR#     0    1    2    3    4    5    6    7    8    9    10
- * CPR#                            0    1    2    3    4    5    6
+ *    <-       SPR	 ->    <-     CPR    ->
+ *    <reserved><FREE use >    <   FREE use   >
+ * VAR#    0	1    2	  3    4    5	 6    7
+ * CPR#			       0    1	 2    3
  */
 
-#define CMDQ_SPR_FOR_TEMP		(0)
 #define CMDQ_SPR_FOR_LOOP_DEBUG		(1)
 #define CMDQ_THR_SPR_START		(2)
-#define CMDQ_THR_SPR_MAX		(4)
 #define CMDQ_THR_FREE_CPR_MAX		(4)
 #define CMDQ_THR_FREE_USR_VAR_MAX	(CMDQ_THR_SPR_MAX + \
 	CMDQ_THR_FREE_CPR_MAX)
 #define CMDQ_THR_CPR_MAX		(CMDQ_THR_FREE_CPR_MAX + 0)
 #define CMDQ_THR_VAR_MAX		(CMDQ_THR_SPR_MAX + CMDQ_THR_CPR_MAX)
-#define CMDQ_TPR_ID			(56)
-#define CMDQ_CPR_STRAT_ID		(0x8000)
 #define CMDQ_SRAM_STRAT_ADDR		(0x0)
 #define CMDQ_GPR_V3_OFFSET			(0x20)
 #define CMDQ_POLLING_TPR_MASK_BIT	(10)

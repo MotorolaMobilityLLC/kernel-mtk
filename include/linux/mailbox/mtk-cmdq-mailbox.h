@@ -18,18 +18,23 @@
 #include <linux/slab.h>
 #include <linux/types.h>
 
+/* see also gce platform binding header */
+#define CMDQ_NO_TIMEOUT			0xffffffff
+#define CMDQ_TIMEOUT_DEFAULT		1000
+
+#define CMDQ_THR_MAX_COUNT		24
 #define CMDQ_INST_SIZE			8 /* instruction is 64-bit */
 #define CMDQ_SUBSYS_SHIFT		16
 #define CMDQ_OP_CODE_SHIFT		24
-#define CMDQ_JUMP_PASS			CMDQ_INST_SIZE
+#define CMDQ_JUMP_PASS			(CMDQ_INST_SIZE)
 #define CMDQ_CMD_BUFFER_SIZE		(PAGE_SIZE - 32 * CMDQ_INST_SIZE)
+#define CMDQ_BUF_ALLOC_SIZE		(PAGE_SIZE)
+#define CMDQ_NUM_CMD(cmd_size)		((cmd_size) / CMDQ_INST_SIZE)
 
 #define CMDQ_WFE_UPDATE			BIT(31)
+#define CMDQ_WFE_UPDATE_VALUE		BIT(16)
 #define CMDQ_WFE_WAIT			BIT(15)
 #define CMDQ_WFE_WAIT_VALUE		0x1
-
-/* support allocate PAGE_SIZE buffer and connect each other in same pkt */
-#define CMDQ_MEMORY_JUMP
 
 /*
  * CMDQ_CODE_MASK:
@@ -92,31 +97,40 @@ struct cmdq_task_cb {
 	void			*data;
 };
 
-#ifdef CMDQ_MEMORY_JUMP
 struct cmdq_pkt_buffer {
 	struct list_head	list_entry;
 	void			*va_base;
 	dma_addr_t		pa_base;
 	bool			use_pool;
+	bool			map;
 };
-#endif
+
+typedef s32 (*cmdq_buf_cb)(struct cmdq_pkt_buffer *buf);
 
 struct cmdq_pkt {
-#ifdef CMDQ_MEMORY_JUMP
 	struct list_head	buf;
 	size_t			avail_buf_size; /* available buf size */
-#else
-	void			*va_base;
-	dma_addr_t		pa_base;
-#endif
 	size_t			cmd_buf_size; /* command occupied size */
 	size_t			buf_size; /* real buffer size */
 	u32			priority;
-	u32			hw_priority;
 	struct cmdq_task_cb	cb;
-	u32			timeout;
 	struct cmdq_task_cb	err_cb;
 	void			*user_data;
+	void			*priv;
+	struct device		*dev;
+	bool			loop;
+};
+
+struct cmdq_thread {
+	struct mbox_chan	*chan;
+	void __iomem		*base;
+	struct list_head	task_busy_list;
+	struct timer_list	timeout;
+	u32			timeout_ms;
+	struct work_struct	timeout_work;
+	u32			priority;
+	u32			idx;
+	bool			dirty;
 };
 
 extern int mtk_cmdq_log;
@@ -136,18 +150,17 @@ do { \
 #define cmdq_err(fmt, args...) \
 	pr_notice("[cmdq][err] "fmt" @%s,%u\n", ##args, __func__, __LINE__)
 
-void cmdq_stop_channel(void *chan);
-dma_addr_t cmdq_task_map_dma(struct device *dev, struct cmdq_pkt *pkt);
-void cmdq_thread_remove_task(struct mbox_chan *chan,
+#define cmdq_dump(fmt, args...) \
+	pr_notice("[cmdq][err] "fmt"\n", ##args)
+
+void cmdq_mbox_channel_stop(struct mbox_chan *chan);
+void cmdq_thread_dump_err(struct mbox_chan *chan);
+void cmdq_mbox_thread_remove_task(struct mbox_chan *chan,
 	struct cmdq_pkt *pkt);
-void cmdq_mbox_channel_stop(void *chan);
 s32 cmdq_mbox_thread_reset(void *chan);
 s32 cmdq_mbox_thread_suspend(void *chan);
 void cmdq_mbox_thread_disable(void *chan);
-s32 cmdq_mbox_get_task_pa(const struct cmdq_pkt *pkt,
-	struct mbox_chan *chan, dma_addr_t *pa_out);
-s32 cmdq_mbox_get_task_pa_unlock(const struct cmdq_pkt *pkt,
-	struct mbox_chan *chan,	dma_addr_t *pa_out);
+u32 cmdq_mbox_set_thread_timeout(void *chan, u32 timeout);
 s32 cmdq_task_get_thread_pc(struct mbox_chan *chan, dma_addr_t *pc_out);
 s32 cmdq_task_get_thread_irq(struct mbox_chan *chan, u32 *irq_out);
 s32 cmdq_task_get_thread_irq_en(struct mbox_chan *chan, u32 *irq_en_out);
@@ -155,8 +168,10 @@ s32 cmdq_task_get_thread_end_addr(struct mbox_chan *chan,
 	dma_addr_t *end_addr_out);
 s32 cmdq_task_get_task_info_from_thread_unlock(struct mbox_chan *chan,
 	struct list_head *task_list_out, u32 *task_num_out);
-
 s32 cmdq_task_get_pkt_from_thread(struct mbox_chan *chan,
 	struct cmdq_pkt **pkt_list_out, u32 pkt_list_size, u32 *pkt_count_out);
+void cmdq_set_event(void *chan, u16 event_id);
+void cmdq_clear_event(void *chan, u16 event_id);
+u32 cmdq_get_event(void *chan, u16 event_id);
 
 #endif /* __MTK_CMDQ_MAILBOX_H__ */
