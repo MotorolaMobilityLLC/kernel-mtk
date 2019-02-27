@@ -14,4 +14,8 @@ config MTK_TINYSYS_SSPM_PLT_SUPPORT
 	  SSPM is a MediaTek in-house hardware for power management based on platform.
 	  Set Y to enable this feature for specific platform.
 	  If unsure,
-	  Set N to stay with legancy feature.
+
+config MTK_MET_MEM_ALLOC
+	bool "Using dynamic allocate memory for MET"
+	default n
+
