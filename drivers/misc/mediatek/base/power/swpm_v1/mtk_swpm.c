@@ -181,8 +181,9 @@ static int enable_proc_show(struct seq_file *m, void *v)
 static ssize_t enable_proc_write(struct file *file,
 		const char __user *buffer, size_t count, loff_t *pos)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	int type, enable;
-
+#endif
 	char *buf = _copy_from_user_for_proc(buffer, count);
 
 	if (!buf)
