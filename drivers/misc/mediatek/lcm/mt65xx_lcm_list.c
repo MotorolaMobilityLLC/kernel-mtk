@@ -677,6 +677,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35521_HD720_DSI_VIDEO_TM)
 	&nt35521_hd720_tm_lcm_drv,
 #endif
+#if defined(NT35521_HD_DSI_VDO_TRULY_RT5081)
+	&nt35521_hd_dsi_vdo_truly_rt5081_lcm_drv,
+#endif
 #if defined(R69338_HD720_DSI_VDO_JDI_DW8755A)
 	&r69338_hd720_dsi_vdo_jdi_dw8755a_drv,
 #endif
@@ -1141,6 +1144,9 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(NT36380_WQHD_VDO_OK)
 	"nt36380_wqhd_vdo_lcm_drv",
+#endif
+#if defined(NT35521_HD_DSI_VDO_TRULY_RT5081)
+	"nt35521_hd_dsi_vdo_truly_rt5081_drv",
 #endif
 };
 
