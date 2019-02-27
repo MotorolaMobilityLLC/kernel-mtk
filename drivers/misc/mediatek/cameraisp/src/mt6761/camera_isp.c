@@ -3593,10 +3593,12 @@ static void ISP_BufWrite_Free(void)
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Write[i].pData != NULL) {
 			kfree(IspInfo.BufInfo.Write[i].pData);
 			IspInfo.BufInfo.Write[i].pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 	}
 }
 
@@ -3613,12 +3615,17 @@ static bool ISP_BufWrite_Alloc(void)
 
 	/*      */
 	for (i = 0; i < ISP_BUF_WRITE_AMOUNT; i++) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		IspInfo.BufInfo.Write[i].Status = ISP_BUF_STATUS_EMPTY;
 		IspInfo.BufInfo.Write[i].Size = 0;
 		IspInfo.BufInfo.Write[i].pData = kmalloc(
 			ISP_BUF_SIZE_WRITE * sizeof(unsigned char), GFP_ATOMIC);
-		if (IspInfo.BufInfo.Write[i].pData == NULL) {
+		if (IspInfo.BufInfo.Write[i].pData != NULL)
+			spin_unlock(&(IspInfo.SpinLockIspRef));
+		// if (IspInfo.BufInfo.Write[i].pData == NULL) {
+		else {
 			/* log_dbg("ERROR: i = %d, pData is NULL", i); */
+			spin_unlock(&(IspInfo.SpinLockIspRef));
 			ISP_BufWrite_Free();
 			return false;
 		}
@@ -13279,10 +13286,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 /*      */
 EXIT:
 	if (Ret < 0) {
+		spin_lock(&(IspInfo.SpinLockIspRef));
 		if (IspInfo.BufInfo.Read.pData != NULL) {
 			kfree(IspInfo.BufInfo.Read.pData);
 			IspInfo.BufInfo.Read.pData = NULL;
 		}
+		spin_unlock(&(IspInfo.SpinLockIspRef));
 		ISP_BufWrite_Free();
 	} else {
 		/* Enable clock.
@@ -13374,12 +13383,14 @@ static signed int ISP_release(struct inode *pInode, struct file *pFile)
 		       USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
+	spin_lock(&(IspInfo.SpinLockIspRef));
 	if (IspInfo.BufInfo.Read.pData != NULL) {
 		kfree(IspInfo.BufInfo.Read.pData);
 		IspInfo.BufInfo.Read.pData = NULL;
 		IspInfo.BufInfo.Read.Size = 0;
 		IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	}
+	spin_unlock(&(IspInfo.SpinLockIspRef));
 	/* Reset MCLK   */
 	mMclk1User = 0;
 	mMclk2User = 0;
