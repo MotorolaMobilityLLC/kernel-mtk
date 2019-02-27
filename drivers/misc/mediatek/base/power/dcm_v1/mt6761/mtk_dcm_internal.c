@@ -66,7 +66,7 @@ short is_dcm_bringup(void)
 
 #ifdef CONFIG_OF
 /* TODO: Fix base addresses. */
-int mt_dcm_dts_map(void)
+int __init mt_dcm_dts_map(void)
 {
 	struct device_node *node;
 	struct resource r;
@@ -151,7 +151,7 @@ int mt_dcm_dts_map(void)
 	return 0;
 }
 #else
-int mt_dcm_dts_map(void)
+int __init mt_dcm_dts_map(void)
 {
 	return 0;
 }

@@ -544,7 +544,7 @@ int conn_md_dmp_msg_logged(uint32 src_id, uint32 dst_id)
 	return conn_md_dmp_out(g_conn_md.p_msg_dmp_sys, src_id, dst_id);
 }
 
-static int conn_md_init(void)
+static int __init conn_md_init(void)
 {
 	int i_ret = -1;
 	struct conn_md_queue *p_queue = NULL;

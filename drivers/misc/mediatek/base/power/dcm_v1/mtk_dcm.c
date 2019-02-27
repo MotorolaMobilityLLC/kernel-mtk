@@ -456,7 +456,7 @@ static struct kobj_attribute dcm_state_attr = {
 };
 #endif /* #ifdef CONFIG_PM */
 
-int mt_dcm_init(void)
+int __init mt_dcm_init(void)
 {
 	if (is_dcm_bringup())
 		return 0;
