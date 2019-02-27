@@ -435,7 +435,7 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 			copy_size = CMDQ_CMD_BUFFER_SIZE;
 
 		new_buf = cmdq_pkt_alloc_buf(handle_new->pkt);
-		if (!new_buf || IS_ERR(new_buf)) {
+		if (IS_ERR(new_buf)) {
 			status = PTR_ERR(new_buf);
 			CMDQ_ERR("alloc buf in duplicate fail:%d\n",
 				status);
