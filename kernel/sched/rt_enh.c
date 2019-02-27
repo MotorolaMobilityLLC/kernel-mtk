@@ -31,6 +31,9 @@ static int find_lowest_rq_in_domain(struct cpumask *domain_cpu_mask,
 		if (!cpu_online(cpu))
 			continue;
 
+		if (cpu_isolated(cpu))
+			continue;
+
 		rq = cpu_rq(cpu);
 		prio = rq->rt.highest_prio.curr;
 
