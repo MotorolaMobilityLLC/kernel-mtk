@@ -32,8 +32,23 @@ endif
     obj-$(CONFIG_MTK_COMBO_BT) += bt/
     obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
     obj-$(CONFIG_MTK_COMBO_GPS) += gps/
-    obj-$(CONFIG_MTK_FMRADIO) += fmradio/
-    obj-n := dummy.o
+
+    # MINI PLATFORM VERSION = Android O
+    MINI_PLATFORM_VER = O
+
+    ifndef TARGET_PLATFORM_VERSION
+        $(warning TARGET_PLATFORM_VERSION is not set, define it as A)
+        TARGET_PLATFORM_VERSION = A
+    endif
+
+    # compare $(PLATFORM_VERSION)>=$(MINI_PLATFORM_VER)
+    ifeq ($(MINI_PLATFORM_VER), $(word 1, $(sort $(MINI_PLATFORM_VER) $(TARGET_PLATFORM_VERSION))))
+        # Do Nothing, move to standalone repo
+        $(warning Android($(TARGET_PLATFORM_VERSION) >= $(MINI_PLATFORM_VER)) ignore build-in)
+    else
+        $(warning Android($(TARGET_PLATFORM_VERSION) < $(MINI_PLATFORM_VER)) do build-in)
+        obj-$(CONFIG_MTK_FMRADIO) += fmradio/
+    endif
 
 # Otherwise we were called directly from the command line;
 # invoke the kernel build system.
