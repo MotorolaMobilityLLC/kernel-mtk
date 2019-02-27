@@ -941,7 +941,8 @@ void primary_display_idlemgr_leave_idle_nolock(void)
 		_cmd_mode_leave_idle();
 }
 
-int primary_display_request_dvfs_perf(int scenario, int req)
+int primary_display_request_dvfs_perf(
+	int scenario, int req, unsigned int freq_req)
 {
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	enum HRT_OPP_LEVEL opp_level = HRT_OPP_LEVEL_DEFAULT;
@@ -976,6 +977,9 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 			(opp_level >= HRT_OPP_LEVEL_DEFAULT) ?
 				PM_QOS_MM_FREQ_DEFAULT_VALUE :
 			layering_rule_get_mm_freq_table(opp_level);
+
+		/* If request freq > hrt_opp_freq, select request freq */
+		mm_freq = freq_req > mm_freq ? freq_req : mm_freq;
 
 		/*scenario:MMDVFS_SCEN_DISP(0x17),SMI_BWC_SCEN_UI_IDLE(0xb)*/
 		mmprofile_log_ex(ddp_mmp_get_events()->dvfs,
@@ -1060,7 +1064,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
-			HRT_LEVEL_LEVEL0);
+			HRT_LEVEL_LEVEL0, 0);
 #endif
 
 		primary_display_manual_unlock();
@@ -1071,7 +1075,8 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 		/* when leave screen idle: reset to default */
 		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
-			HRT_LEVEL_DEFAULT);
+			HRT_LEVEL_DEFAULT,
+			layering_rule_get_mm_freq_table(HRT_OPP_LEVEL_LEVEL0));
 #endif
 		if (kthread_should_stop())
 			break;
