@@ -154,6 +154,8 @@ enum DISP_MODE {
 	DISP_SESSION_DUAL_DIRECT_LINK_MODE,
 	DISP_SESSION_DUAL_DECOUPLE_MODE,
 	DISP_SESSION_DUAL_RDMA_MODE,
+	/* three session at same time */
+	DISP_SESSION_TRIPLE_DIRECT_LINK_MODE,
 	DISP_SESSION_MODE_NUM,
 
 };
@@ -406,6 +408,11 @@ struct disp_caps_info {
 	 *   portrait width first then height
 	 */
 	unsigned int rsz_in_res_list[RSZ_RES_LIST_NUM][2];
+	/* is_support_three_session:
+	 *  1: support three session at same time
+	 *  0: not support three session at same time
+	 */
+	int is_support_three_session;
 };
 
 struct disp_session_buf_info {
