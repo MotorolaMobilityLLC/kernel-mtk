@@ -2,6 +2,7 @@
 # Makefile for the linux kernel.
 #
 
+subdir-ccflags-y += -Werror
 ccflags-y := -fno-function-sections -fno-data-sections
 
 obj-y                          := main.o version.o mounts.o
