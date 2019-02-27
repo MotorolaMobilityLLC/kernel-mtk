@@ -50,6 +50,7 @@ static DEFINE_MUTEX(cmdq_res_mutex);
 static DEFINE_MUTEX(cmdq_err_mutex);
 static DEFINE_MUTEX(cmdq_handle_list_mutex);
 static DEFINE_MUTEX(cmdq_thread_mutex);
+
 static DEFINE_SPINLOCK(cmdq_write_addr_lock);
 static DEFINE_SPINLOCK(cmdq_record_lock);
 static DEFINE_SPINLOCK(cmdq_delay_thd_lock);
@@ -4814,11 +4815,89 @@ s32 cmdq_pkt_dump_command(struct cmdqRecStruct *handle)
 	return 0;
 }
 
+static void cmdq_core_group_begin_task(struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size)
+{
+	enum CMDQ_GROUP_ENUM group = 0;
+
+	for (group = 0; group < CMDQ_MAX_GROUP_COUNT; group++) {
+		if (!cmdq_group_cb[group].beginTask ||
+			!cmdq_core_is_group_flag(group, handle->engineFlag))
+			continue;
+		cmdq_group_cb[group].beginTask(handle, handle_list, size);
+	}
+}
+
+static void cmdq_core_group_end_task(struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_list, u32 size)
+{
+	enum CMDQ_GROUP_ENUM group = 0;
+
+	for (group = 0; group < CMDQ_MAX_GROUP_COUNT; group++) {
+		if (!cmdq_group_cb[group].endTask ||
+			!cmdq_core_is_group_flag(group, handle->engineFlag))
+			continue;
+		cmdq_group_cb[group].endTask(handle, handle_list, size);
+	}
+}
+
+static s32 cmdq_core_get_pmqos_handle_list(struct cmdqRecStruct *handle,
+	struct cmdqRecStruct **handle_out, u32 handle_list_size)
+{
+	struct cmdq_client *client;
+	struct cmdq_pkt **pkt_list = NULL;
+	u32 i;
+	u32 pkt_count;
+
+	if (!handle || !handle_out || !handle_list_size) {
+		if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+			CMDQ_MSG(
+				"leave %s since invalid param, handle=%p, handle_out=%p, handle_list_size=%d\n",
+				__func__, handle, handle_out,
+				handle_list_size);
+		return -EINVAL;
+	}
+
+	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+		CMDQ_MSG("enter %s, handle=%p, pkt=%p, expect list size=%d\n",
+			__func__, handle, handle->pkt, handle_list_size);
+
+	pkt_list = kcalloc(handle_list_size, sizeof(*pkt_list), GFP_KERNEL);
+	if (!pkt_list)
+		return -ENOMEM;
+
+	client = cmdq_clients[handle->thread];
+
+	cmdq_task_get_pkt_from_thread(client->chan, pkt_list,
+		handle_list_size, &pkt_count);
+
+	/* get handle from user_data */
+	for (i = 0; i < pkt_count; i++) {
+		if (!pkt_list[i])
+			continue;
+		handle_out[i] = pkt_list[i]->user_data;
+		if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+			CMDQ_MSG("handle_out[%d]=%p\n", i, handle_out[i]);
+	}
+
+	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+		CMDQ_MSG(
+			"leave %s, handle=%p, pkt=%p, expect list size=%d, actual list size=%d\n",
+			__func__, handle, handle->pkt,
+			handle_list_size, pkt_count);
+
+	kfree(pkt_list);
+	return 0;
+}
+
 s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 {
 	s32 waitq;
 	s32 status = 0;
 	u32 count = 0;
+	struct ContextStruct *ctx;
+	struct cmdqRecStruct **pmqos_handle_list = NULL;
+	u32 handle_count;
 
 	handle->beginWait = sched_clock();
 
@@ -4866,6 +4945,30 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	} while (1);
 
 	handle->wakedUp = sched_clock();
+
+	/* PMQoS Implement */
+	mutex_lock(&cmdq_thread_mutex);
+	ctx = cmdq_core_get_context();
+	handle_count = --ctx->thread[handle->thread].handle_count;
+
+	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+		CMDQ_MSG("%s, thread=%d, handle=%p, pkt=%p, handle_count=%d\n",
+			__func__, handle->thread, handle,
+			handle->pkt, handle_count);
+
+	if (handle_count) {
+		pmqos_handle_list = kcalloc(handle_count + 1,
+		sizeof(*pmqos_handle_list), GFP_KERNEL);
+
+		if (pmqos_handle_list)
+			cmdq_core_get_pmqos_handle_list(handle,
+				pmqos_handle_list, handle_count);
+	}
+
+	cmdq_core_group_end_task(handle, pmqos_handle_list, handle_count);
+
+	kfree(pmqos_handle_list);
+	mutex_unlock(&cmdq_thread_mutex);
 
 	/* set to timeout if state change to */
 	if (handle->state == TASK_STATE_TIMEOUT) {
@@ -4931,6 +5034,10 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 {
 	s32 err;
 	struct cmdq_client *client = NULL;
+	struct cmdqRecStruct **pmqos_handle_list = NULL;
+	struct ContextStruct *ctx;
+	u32 handle_count;
+	u32 i;
 
 	if (!handle->finalized) {
 		CMDQ_ERR("handle not finalized:0x%p scenario:%d\n",
@@ -4999,6 +5106,43 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 		}
 	}
 
+
+	/* PMQoS */
+	mutex_lock(&cmdq_thread_mutex);
+	ctx = cmdq_core_get_context();
+	handle_count = ctx->thread[handle->thread].handle_count;
+
+	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
+		CMDQ_MSG("%s, thread=%d, handle=%p, pkt=%p, handle_count=%d\n",
+			__func__, handle->thread, handle,
+			handle->pkt, handle_count);
+
+	pmqos_handle_list = kcalloc(handle_count + 1,
+		sizeof(*pmqos_handle_list), GFP_KERNEL);
+
+	if (pmqos_handle_list) {
+		if (handle_count)
+			cmdq_core_get_pmqos_handle_list(handle,
+				pmqos_handle_list, handle_count);
+
+		pmqos_handle_list[handle_count] = handle;
+	}
+
+	if (handle->scenario == CMDQ_SCENARIO_USER_MDP) {
+		CMDQ_MSG(
+			"%s dump pmqos_handle_list before call cmdq_core_group_begin_task\n",
+			__func__);
+		for (i = 0; i < handle_count + 1; i++)
+			CMDQ_MSG("%s, pmqos_handle_list[%d]=%p\n",
+				__func__, i, pmqos_handle_list[i]);
+	}
+
+	cmdq_core_group_begin_task(handle, pmqos_handle_list, handle_count + 1);
+
+	kfree(pmqos_handle_list);
+	ctx->thread[handle->thread].handle_count++;
+	mutex_unlock(&cmdq_thread_mutex);
+
 	cmdq_core_replace_v3_instr(handle, handle->thread);
 	err = cmdq_pkt_flush_async(client, handle->pkt, cmdq_pkt_flush_handler,
 		(void *)handle);
@@ -5008,6 +5152,9 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 			err, handle->pkt);
 		cmdq_core_track_handle_record(handle, handle->thread);
 		cmdq_pkt_release_handle(handle);
+		mutex_lock(&cmdq_thread_mutex);
+		ctx->thread[handle->thread].handle_count--;
+		mutex_unlock(&cmdq_thread_mutex);
 		return err;
 	}
 
@@ -5328,6 +5475,25 @@ void cmdq_core_deinitialize(void)
 	kfree(cmdq_wait_queue);
 	cmdq_wait_queue = NULL;
 	cmdq_core_destroy_buffer_pool();
+}
+
+/* PMQOS */
+s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
+	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask)
+{
+	struct CmdqCBkStruct *callback;
+
+	if (!cmdq_core_is_valid_group(group))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' callback begin:%pf end:%pf\n",
+		group, beginTask, endTask);
+
+	callback = &cmdq_group_cb[group];
+
+	callback->beginTask = beginTask;
+	callback->endTask = endTask;
+	return 0;
 }
 
 late_initcall(cmdq_core_late_init);

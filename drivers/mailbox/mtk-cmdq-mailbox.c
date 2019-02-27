@@ -1613,4 +1613,53 @@ s32 cmdq_task_get_task_info_from_thread_unlock(struct mbox_chan *chan,
 	return 0;
 }
 
+s32 cmdq_task_get_pkt_from_thread(struct mbox_chan *chan,
+	struct cmdq_pkt **pkt_list_out, u32 pkt_list_size, u32 *pkt_count_out)
+{
+	struct cmdq_thread *thread;
+	struct cmdq_task *task;
+	u32 pkt_num = 0;
+	u32 tmp_num = 0;
+	unsigned long flags;
+
+	if (!chan || !pkt_list_out || !pkt_count_out) {
+		if (chan) {
+			thread = chan->con_priv;
+			list_for_each_entry(task, &thread->task_busy_list,
+				list_entry) {
+				tmp_num++;
+			}
+
+		}
+
+		if (pkt_count_out)
+			*pkt_count_out = pkt_num;
+
+		return -EINVAL;
+	}
+
+	thread = chan->con_priv;
+
+	spin_lock_irqsave(&thread->chan->lock, flags);
+
+	if (list_empty(&thread->task_busy_list)) {
+		*pkt_count_out = pkt_num;
+		spin_unlock_irqrestore(&thread->chan->lock, flags);
+		return 0;
+	}
+
+	list_for_each_entry(task, &thread->task_busy_list, list_entry) {
+		if (pkt_list_size == pkt_num)
+			break;
+		pkt_list_out[pkt_num] = task->pkt;
+		pkt_num++;
+	}
+
+	spin_unlock_irqrestore(&thread->chan->lock, flags);
+
+	*pkt_count_out = pkt_num;
+
+	return 0;
+}
+
 arch_initcall(cmdq_init);
