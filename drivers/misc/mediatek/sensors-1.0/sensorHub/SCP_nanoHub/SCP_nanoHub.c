@@ -964,15 +964,16 @@ static int SCP_sensorHub_batch(int handle, int flag,
 {
 	struct ConfigCmd cmd;
 	int ret = 0;
-	int64_t rate = 1024000000000ULL;
+	uint64_t rate = 1024000000000ULL;
+	uint64_t samplingPeriodNs_t = (uint64_t)samplingPeriodNs;
 
 	if (mSensorState[handle].sensorType ||
 		(handle == ID_ACCELEROMETER &&
 		mSensorState[handle].sensorType == ID_ACCELEROMETER)) {
-		if (samplingPeriodNs > 0 &&
+		if (samplingPeriodNs_t > 0 &&
 			mSensorState[handle].rate != SENSOR_RATE_ONCHANGE &&
 			mSensorState[handle].rate != SENSOR_RATE_ONESHOT){
-			div_s64(rate, samplingPeriodNs);
+			do_div(rate, samplingPeriodNs_t);
 			mSensorState[handle].rate = rate;
 		}
 		mSensorState[handle].latency = maxBatchReportLatencyNs;
@@ -1024,6 +1025,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 	struct SCP_sensorHub_data *obj = obj_data;
 	int err = 0, sensor_type = 0;
 	int64_t timestamp_ms = 0;
+	uint64_t timestamp_ms_t = 0;
 	static int64_t last_timestamp_ms[ID_SENSOR_MAX_HANDLE + 1];
 	uint8_t alt = 0;
 	atomic_t *p_flush_count = NULL;
@@ -1066,9 +1068,10 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 		/* timestamp filter, drop which equal to each other at 1 ms */
 		timestamp_ms = (int64_t)(data_t->time_stamp +
 			data_t->time_stamp_gpt);
-		div_s64(timestamp_ms, 1000000);
-		if (last_timestamp_ms[sensor_type] != timestamp_ms) {
-			last_timestamp_ms[sensor_type] = timestamp_ms;
+		timestamp_ms_t = (uint64_t)timestamp_ms;
+		do_div(timestamp_ms_t, 1000000);
+		if (last_timestamp_ms[sensor_type] != timestamp_ms_t) {
+			last_timestamp_ms[sensor_type] = timestamp_ms_t;
 			need_send = true;
 		} else
 			need_send = false;
