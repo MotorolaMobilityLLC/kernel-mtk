@@ -989,6 +989,14 @@ static int scp_send_msg_to_scp(
 	case AUDIO_OPENDSP_USE_CM4_A:
 	case AUDIO_OPENDSP_USE_CM4_B:
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+		if (msg_queue->opendsp_id >= SCP_CORE_TOTAL) {
+			pr_info("%s(), opendsp_id %u/%u not support!!\n",
+				__func__,
+				msg_queue->opendsp_id, SCP_CORE_TOTAL);
+			retval = -ENODEV;
+			WARN_ON(1);
+			break;
+		}
 		for (try_count = 0; try_count < k_max_try_count; try_count++) {
 			retval = scp_ipi_send(
 					 p_scp_msg->ipi_id,
@@ -1071,9 +1079,8 @@ static int scp_process_msg_from_scp(
 		return -EFAULT;
 	}
 
-	if (p_scp_msg->buf == NULL || p_scp_msg->len == 0) {
-		pr_info("%s(), p_scp_msg->buf: %p, p_scp_msg->len: %u\n",
-			__func__, p_scp_msg->buf, p_scp_msg->len);
+	if (p_scp_msg->len == 0) {
+		pr_info("%s(), p_scp_msg->len: %u\n", __func__, p_scp_msg->len);
 		return -EFAULT;
 	}
 
