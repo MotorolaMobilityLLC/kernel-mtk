@@ -8,10 +8,6 @@
 
 /* chosen */
 &chosen {
-	bootargs = "console=tty0 console=ttyS0,921600n1\
-root=/dev/ram initrd=0x45000000,0x1000000 loglevel=8 \
-androidboot.selinux=permissive androidboot.hardware=mt6765 \
-initcall_debug=1 maxcpus=1";
 
 	/* fpga may has no lk, we need to specify display info here */
 	/* fb buffer is reserved using this dts by memory node above */

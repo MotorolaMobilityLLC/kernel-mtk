@@ -26,6 +26,13 @@
 	#address-cells = <2>;
 	#size-cells = <2>;
 
+	/* chosen */
+	chosen: chosen {
+	bootargs = "console=tty0 console=ttyMT0,921600n1 \
+earlycon=uart8250,mmio32,0x11002000 \
+androidboot.hardware=mt8173 \
+firmware_class.path=/vendor/firmware ";
+	};
 	aliases {
 		ovl0 = &ovl0;
 		ovl1 = &ovl1;
