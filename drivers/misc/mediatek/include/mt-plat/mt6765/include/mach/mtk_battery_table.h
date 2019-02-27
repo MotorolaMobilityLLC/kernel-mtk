@@ -32,6 +32,12 @@
 
 /* multiple battery profile compile options */
 /*#define MTK_GET_BATTERY_ID_BY_AUXADC*/
+
+
+/* if ACTIVE_TABLE == 0 && MULTI_BATTERY == 0
+ * load g_FG_PSEUDO100_Tx from dtsi
+ */
+#define MULTI_BATTERY 0
 #define BATTERY_ID_CHANNEL_NUM 1
 #define BATTERY_PROFILE_ID 0
 #define TOTAL_BATTERY_NUMBER 4
