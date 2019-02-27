@@ -16,7 +16,8 @@
 
 #if defined(CONFIG_MACH_MT6758) \
 	|| defined(CONFIG_MACH_MT6765) \
-	|| defined(CONFIG_MACH_MT6761)
+	|| defined(CONFIG_MACH_MT6761) \
+	|| defined(CONFIG_MACH_MT3967)
 #include "upower_v2/mtk_unified_power.h"
 #endif
 
