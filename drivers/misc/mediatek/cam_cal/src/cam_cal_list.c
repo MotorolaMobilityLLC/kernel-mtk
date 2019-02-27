@@ -43,6 +43,8 @@ unsigned int mtkCidList[MTK_MAX_CID_NUM] = {
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 /*Below is commom sensor */
+	{IMX230_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
+	{S5K2T7SP_SENSOR_ID, 0xA4, CMD_AUTO, cam_cal_check_double_eeprom},
 	{IMX338_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K4E6_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
 	{IMX386_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
@@ -59,9 +61,6 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{OV23850_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 	{OV23850_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K3M2_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
-/*39*/
-	{OV13870_SENSOR_ID, 0xA8, CMD_AUTO, cam_cal_check_mtk_cid},
-	{OV8856_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
 /*55*/
 	{S5K2P8_SENSOR_ID, 0xA2, CMD_AUTO, cam_cal_check_mtk_cid},
 	{S5K2P8_SENSOR_ID, 0xA0, CMD_AUTO, cam_cal_check_mtk_cid},
