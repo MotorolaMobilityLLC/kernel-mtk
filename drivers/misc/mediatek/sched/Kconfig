@@ -157,7 +157,7 @@ config HMP_FREQUENCY_INVARIANT_SCALE
 
 config HMP_TRACER
 	bool "(EXPERIMENTAL) Profile HMP scheduler"
-	default y
+	default n
 	depends on SCHED_HMP
 	help
 	  Profile HMP scheduler
