@@ -43,11 +43,13 @@ EXPORT_SYMBOL(spm_twam_set_window_length);
 
 void spm_twam_set_mon_type(struct twam_cfg *mon)
 {
-	if (mon) {
-		twamcfg.byte0.monitor_type = mon->byte0.monitor_type;
-		twamcfg.byte1.monitor_type = mon->byte1.monitor_type;
-		twamcfg.byte2.monitor_type = mon->byte2.monitor_type;
-		twamcfg.byte3.monitor_type = mon->byte3.monitor_type;
+	int index = 0;
+
+	for (index = 0; index < 4; index++) {
+		if (mon) {
+			twamcfg.byte[index].monitor_type =
+				 mon->byte[index].monitor_type;
+		}
 	}
 }
 EXPORT_SYMBOL(spm_twam_set_mon_type);
@@ -105,21 +107,21 @@ void spm_twam_enable_monitor(bool en_monitor,
 	spm_d.u.args.args1 = 1;
 	spm_d.u.args.args2 = ~ISRM_TWAM;
 
-	spm_d.u.args.args3 = (((twamcfg.byte0.monitor_type & 0x3) << 4) |
-			((twamcfg.byte1.monitor_type & 0x3) << 6) |
-			((twamcfg.byte2.monitor_type & 0x3) << 8) |
-			((twamcfg.byte3.monitor_type & 0x3) << 10) |
-			((twamcfg.byte0.id & 0x1f) << 12) |
-			((twamcfg.byte1.id & 0x1f) << 17) |
-			((twamcfg.byte2.id & 0x1f) << 22) |
-			((twamcfg.byte3.id & 0x1f) << 27) |
+	spm_d.u.args.args3 = (((twamcfg.byte[0].monitor_type & 0x3) << 4) |
+			((twamcfg.byte[1].monitor_type & 0x3) << 6) |
+			((twamcfg.byte[2].monitor_type & 0x3) << 8) |
+			((twamcfg.byte[3].monitor_type & 0x3) << 10) |
+			((twamcfg.byte[0].id & 0x1f) << 12) |
+			((twamcfg.byte[1].id & 0x1f) << 17) |
+			((twamcfg.byte[2].id & 0x1f) << 22) |
+			((twamcfg.byte[3].id & 0x1f) << 27) |
 			(twam_speed_mode ? TWAM_SPEED_MODE_ENABLE_LSB : 0) |
 				TWAM_ENABLE_LSB);
 
-	spm_d.u.args.args4 = (((twamcfg.byte0.signal & 0x3) << 0) |
-			((twamcfg.byte1.signal & 0x3) << 2) |
-			((twamcfg.byte2.signal & 0x3) << 4) |
-			((twamcfg.byte3.signal & 0x3) << 6));
+	spm_d.u.args.args4 = (((twamcfg.byte[0].signal & 0x3) << 0) |
+			((twamcfg.byte[1].signal & 0x3) << 2) |
+			((twamcfg.byte[2].signal & 0x3) << 4) |
+			((twamcfg.byte[3].signal & 0x3) << 6));
 
 	spm_d.u.args.args5 = twam_window_len;
 	ret = spm_to_sspm_command(SPM_TWAM_ENABLE, &spm_d);
@@ -127,8 +129,8 @@ void spm_twam_enable_monitor(bool en_monitor,
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	pr_info("[SPM] enable TWAM for signal %u, %u, %u, %u (%u)\n",
-		  twamcfg.byte0.id, twamcfg.byte1.id, twamcfg.byte2.id,
-		  twamcfg.byte3.id, twam_speed_mode);
+		  twamcfg.byte[0].id, twamcfg.byte[1].id, twamcfg.byte[2].id,
+		  twamcfg.byte[3].id, twam_speed_mode);
 }
 EXPORT_SYMBOL(spm_twam_enable_monitor);
 

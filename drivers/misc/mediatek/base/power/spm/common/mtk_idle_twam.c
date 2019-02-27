@@ -55,27 +55,16 @@ struct mtk_idle_twam *mtk_idle_get_twam(void)
 
 static void mtk_idle_twam_callback(struct twam_cfg *ts, struct twam_select *sel)
 {
+	int index = 0;
 
-	pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000, %d, %d\n",
-		sel->signal0, sel->id0,
-		(idle_twam.speed_mode) ? GET_EVENT_RATIO_SPEED(ts->byte0.id) :
-			GET_EVENT_RATIO_NORMAL(ts->byte0.id),
-			idle_twam.speed_mode, ts->byte0.id);
-	pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000, %d, %d\n",
-		sel->signal1, sel->id1,
-		(idle_twam.speed_mode) ? GET_EVENT_RATIO_SPEED(ts->byte1.id) :
-			GET_EVENT_RATIO_NORMAL(ts->byte1.id),
-			idle_twam.speed_mode, ts->byte1.id);
-	pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000, %d, %d\n",
-		sel->signal2, sel->id2,
-		(idle_twam.speed_mode) ? GET_EVENT_RATIO_SPEED(ts->byte2.id) :
-			GET_EVENT_RATIO_NORMAL(ts->byte2.id),
-			idle_twam.speed_mode, ts->byte2.id);
-	pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000, %d, %d\n",
-		sel->signal3, sel->id3,
-		(idle_twam.speed_mode) ? GET_EVENT_RATIO_SPEED(ts->byte3.id) :
-			GET_EVENT_RATIO_NORMAL(ts->byte3.id),
-			idle_twam.speed_mode, ts->byte3.id);
+	for (index = 0; index < 4; index++) {
+		pr_notice("Power/swap spm twam (sel%d: %d) ratio: %5u/1000, %d, %d\n",
+			sel->signal[index], sel->id[index],
+			(idle_twam.speed_mode) ?
+			GET_EVENT_RATIO_SPEED(ts->byte[index].id) :
+			GET_EVENT_RATIO_NORMAL(ts->byte[index].id),
+			idle_twam.speed_mode, ts->byte[index].id);
+	}
 }
 
 void mtk_idle_twam_disable(void)
@@ -88,6 +77,8 @@ void mtk_idle_twam_disable(void)
 
 void mtk_idle_twam_enable(unsigned int event)
 {
+	int index = 0;
+
 	if (idle_twam.event != event)
 		mtk_idle_twam_disable();
 
@@ -95,25 +86,10 @@ void mtk_idle_twam_enable(unsigned int event)
 		return;
 
 	idle_twam.event = (event < 32) ? event : 29;
-
-	if (idle_twam.sel == 0) {
-		twamsig.byte0.signal = idle_twam.sel;
-		twamsig.byte0.id = idle_twam.event;
-	} else if (idle_twam.sel == 1) {
-		twamsig.byte1.signal = idle_twam.sel;
-		twamsig.byte1.id = idle_twam.event;
-	} else if (idle_twam.sel == 2) {
-		twamsig.byte2.signal = idle_twam.sel;
-		twamsig.byte2.id = idle_twam.event;
-	} else if (idle_twam.sel == 3) {
-		twamsig.byte3.signal = idle_twam.sel;
-		twamsig.byte3.id = idle_twam.event;
-	}
-
-	twamsig.byte0.monitor_type = TRIGGER_TYPE;
-	twamsig.byte1.monitor_type = TRIGGER_TYPE;
-	twamsig.byte2.monitor_type = TRIGGER_TYPE;
-	twamsig.byte3.monitor_type = TRIGGER_TYPE;
+	twamsig.byte[idle_twam.sel].signal = idle_twam.sel;
+	twamsig.byte[idle_twam.sel].id = idle_twam.event;
+	for (index = 0; index < 4; index++)
+		twamsig.byte[index].monitor_type = TRIGGER_TYPE;
 
 	spm_twam_config_channel(&twamsig,
 		idle_twam.speed_mode,
