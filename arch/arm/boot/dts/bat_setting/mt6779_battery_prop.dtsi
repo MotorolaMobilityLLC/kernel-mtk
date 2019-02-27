@@ -59,5 +59,7 @@ bat_gm30: battery{
 	Q_MAX_SYS_VOLTAGE_BAT2 = <(3350)>;
 	/*	System shut down voltage.*/
 	Q_MAX_SYS_VOLTAGE_BAT3 = <(3350)>;
+	COM_FG_METER_RESISTANCE = <(0)>;
+	COM_R_FG_VALUE = <(0)>;
 #include "mt6779_battery_table.dtsi"
 };
