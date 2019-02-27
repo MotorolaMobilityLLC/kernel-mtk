@@ -509,6 +509,10 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	if (val == 0xCA00)
 		lv = CPU_LEVEL_2;
 
+#if defined(CONFIG_MTK_LP_OPP)
+		lv = CPU_LEVEL_0;
+#endif
+
 	turbo_flag = 0;
 	tag_pr_info("%d,%d,0x%x,%d,%d,%d,%d\n",
 		lv, turbo_flag, val,
