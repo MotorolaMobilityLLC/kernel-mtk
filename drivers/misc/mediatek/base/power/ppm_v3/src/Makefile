@@ -63,4 +63,3 @@ else
 obj-y := mtk_ppm_dummy.o
 endif
 endif
-
