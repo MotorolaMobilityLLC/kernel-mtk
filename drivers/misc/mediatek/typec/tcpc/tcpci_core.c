@@ -60,6 +60,7 @@ static struct device_attribute tcpc_device_attributes[] = {
 	TCPC_DEVICE_ATTR(info, 0444),
 	TCPC_DEVICE_ATTR(timer, 0664),
 	TCPC_DEVICE_ATTR(caps_info, 0444),
+	TCPC_DEVICE_ATTR(pe_ready, 0444),
 };
 
 enum {
@@ -69,6 +70,7 @@ enum {
 	TCPC_DESC_INFO,
 	TCPC_DESC_TIMER,
 	TCPC_DESC_CAP_INFO,
+	TCPC_DESC_PE_READY,
 };
 
 static struct attribute *__tcpc_attrs[ARRAY_SIZE(tcpc_device_attributes) + 1];
@@ -180,6 +182,15 @@ static ssize_t tcpc_show_property(struct device *dev,
 		else if (tcpc->typec_local_rp_level == TYPEC_CC_RP_3_0)
 			i += snprintf(buf + i, 256, "rplvl = %s\n", "3.0");
 		break;
+#ifdef CONFIG_USB_POWER_DELIVERY
+	case TCPC_DESC_PE_READY:
+		pd_port = &tcpc->pd_port;
+		if (pd_port->pe_data.pe_ready)
+			snprintf(buf, 256, "%s\n", "yes");
+		else
+			snprintf(buf, 256, "%s\n", "no");
+		break;
+#endif
 	default:
 		break;
 	}
