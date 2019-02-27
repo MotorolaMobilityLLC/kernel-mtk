@@ -490,4 +490,7 @@ config PHY_NS2_PCIE
 	help
 	  Enable this to support the Broadcom Northstar2 PCIe PHY.
 	  If unsure, say N.
+
+source "drivers/phy/mediatek/Kconfig"
+
 endmenu
