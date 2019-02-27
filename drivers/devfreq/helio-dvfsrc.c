@@ -61,11 +61,21 @@ void dvfsrc_write(u32 offset, u32 val)
 	dvfsrc_write(offset, (dvfsrc_read(offset) & ~(mask << shift)) \
 			| (val << shift))
 
-#define dvfsrc_sram_write(offset, val) \
-	writel(val, DVFSRC_SRAM_REG(offset))
+u32 dvfsrc_sram_read(u32 offset)
+{
+	if (!is_qos_enabled())
+		return -1;
 
-#define dvfsrc_sram_read(offset) \
-	readl(DVFSRC_SRAM_REG(offset))
+	return readl(DVFSRC_SRAM_REG(offset));
+}
+
+void dvfsrc_sram_write(u32 offset, u32 val)
+{
+	if (!is_qos_enabled())
+		return;
+
+	writel(val, DVFSRC_SRAM_REG(offset));
+}
 
 static void dvfsrc_set_sw_req(int data, int mask, int shift)
 {
@@ -268,15 +278,15 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 	if (dvfsrc_en > 1 || dvfsrc_en < 0)
 		return;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
+#endif
+
 	dvfsrc->qos_enabled = 1;
 	dvfsrc->dvfsrc_enabled = dvfsrc_en;
 	dvfsrc->opp_forced = 0;
 	sprintf(dvfsrc->force_start, "0");
 	sprintf(dvfsrc->force_end, "0");
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
-#endif
 
 	dvfsrc_restore();
 	if (dvfsrc_en)

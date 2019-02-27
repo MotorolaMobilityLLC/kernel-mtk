@@ -759,6 +759,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 9 IRQ_TYPE_LEVEL_LOW>;
 	};
 
+	mcucfg_mp0_counter@10200000 {
+		compatible = "mediatek,mcucfg_mp0_counter";
+		reg = <0 0x10200000 0 0x4000>;
+	};
+
 	m4u@10205000 {
 		cell-index = <0>;
 		compatible = "mediatek,m4u";
