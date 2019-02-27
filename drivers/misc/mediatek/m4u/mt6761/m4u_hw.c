@@ -315,25 +315,18 @@ int mau_dump_status(int m4u_id, int m4u_slave_id)
 	return 0;
 }
 
-int m4u_dump_reg(int m4u_index, unsigned int start)
+int m4u_dump_reg(int m4u_index, unsigned int start, unsigned int end)
 {
 	int i;
+	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
-	M4UINFO("Register Start =======\n");
-	for (i = 0; i < 400 / 4; i += 4) {
+	for (i = start; i < end; i += 16) {
 		M4UINFO("0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x, 0x%x=0x%x\n",
-			(start + 4 * i + 4 * 0), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 0),
-			(start + 4 * i + 4 * 1), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 1),
-			(start + 4 * i + 4 * 2), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 2),
-			(start + 4 * i + 4 * 3), M4U_ReadReg32(gM4UBaseAddr[m4u_index], start + 4 * i + 4 * 3));
+			(i + 4 * 0), M4U_ReadReg32(m4u_base, i + 4 * 0),
+			(i + 4 * 1), M4U_ReadReg32(m4u_base, i + 4 * 1),
+			(i + 4 * 2), M4U_ReadReg32(m4u_base, i + 4 * 2),
+			(i + 4 * 3), M4U_ReadReg32(m4u_base, i + 4 * 3));
 	}
-	M4UINFO("0xc00=0x%x, 0c04=0x%x, 0xc08=0x%x, 0xc0c=0x%x\n",
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc04),
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xc0c));
-	M4UINFO("0xb00=0x%x, 0xb04=0x%x, 0xb08=0x%x, 0xb0c=0x%x\n",
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb00), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb04),
-		M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb08), M4U_ReadReg32(gM4UBaseAddr[m4u_index], 0xb0c));
-	M4UINFO("Register End ==========\n");
 
 	return 0;
 }
@@ -2196,9 +2189,16 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		return 0;
 	}
 	M4UMSG("0x44 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x44));
-	m4u_dump_reg(0, 0);
+	m4u_dump_reg(0, 0, 400);
+	m4u_dump_reg(0, 0x500, 0x5fc);
+	m4u_dump_reg(0, 0xb00, 0xb0c);
+	m4u_dump_reg(0, 0xc00, 0xc0c);
+	m4u_dump_reg(0, 0x380, 0x3fc);
+	m4u_dump_reg(0, 0x680, 0x6fc);
+
 	m4u_print_perf_counter(0, 0, "m4u");
 	m4u_dump_rs_info(0, 0);
+	M4UMSG("====== dump m4u reg end =======>\n");
 
 	return 0;
 }
