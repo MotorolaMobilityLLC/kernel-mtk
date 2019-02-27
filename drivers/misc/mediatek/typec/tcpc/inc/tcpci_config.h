@@ -17,8 +17,6 @@
 #ifdef CONFIG_TCPC_CLASS
 /* default config */
 
-#define CONFIG_PD_DBG_INFO
-
 /* #define CONFIG_TYPEC_USE_DIS_VBUS_CTRL */
 #define CONFIG_TYPEC_POWER_CTRL_INIT
 
