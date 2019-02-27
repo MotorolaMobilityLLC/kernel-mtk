@@ -90,6 +90,7 @@ int situation_data_report(int handle, uint32_t one_sample_data)
 	struct sensor_event event;
 	struct situation_context *cxt = situation_context_obj;
 
+	memset(&event, 0, sizeof(struct sensor_event));
 	index = handle_to_index(handle);
 	if (index < 0) {
 		pr_err("[%s] invalid index\n", __func__);
@@ -120,6 +121,7 @@ int situation_flush_report(int handle)
 	struct sensor_event event;
 	int err = 0;
 
+	memset(&event, 0, sizeof(struct sensor_event));
 	pr_debug("flush, handle:%d\n", handle);
 	event.handle = handle;
 	event.flush_action = FLUSH_ACTION;

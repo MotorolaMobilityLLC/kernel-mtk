@@ -492,6 +492,7 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 	struct gyrohub_ipi_data *obj = obj_ipi_data;
 	struct gyro_data data;
 
+	memset(&data, 0, sizeof(struct gyro_data));
 	if (event->flush_action == DATA_ACTION &&
 		READ_ONCE(obj->android_enable) == true) {
 		if (READ_ONCE(obj->android_enable) == false)
