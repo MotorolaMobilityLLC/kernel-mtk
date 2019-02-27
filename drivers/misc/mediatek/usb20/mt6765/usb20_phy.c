@@ -162,8 +162,12 @@ int usb2jtag_usb_init(void)
 	struct device_node *node = NULL;
 	void __iomem *usb_phy_base;
 	u32 temp;
-
+#if defined(CONFIG_MACH_MT6765)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6765-usb20");
+#elif defined(CONFIG_MACH_MT6761)
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6761-usb20");
+#endif
+
 	if (!node) {
 		pr_err("[USB2JTAG] map node @ mediatek,USB0 failed\n");
 		return -1;
