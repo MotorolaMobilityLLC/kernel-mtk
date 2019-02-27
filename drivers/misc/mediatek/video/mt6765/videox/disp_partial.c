@@ -161,8 +161,8 @@ void assign_full_lcm_roi(struct disp_rect *roi)
 {
 	roi->x = 0;
 	roi->y = 0;
-	roi->width = primary_display_get_width();
-	roi->height = primary_display_get_height();
+	roi->width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	roi->height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
 }
 
 int is_equal_full_lcm(const struct disp_rect *roi)
