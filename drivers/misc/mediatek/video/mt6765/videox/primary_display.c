@@ -7914,7 +7914,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	int ret = 0;
 	struct ion_client *ion_display_client = NULL;
 	struct ion_handle *ion_display_handle = NULL;
-	unsigned int mva = 0;
+	unsigned long mva = 0;
 	unsigned int w_xres = primary_display_get_width();
 	unsigned int h_yres = primary_display_get_height();
 	unsigned int pixel_byte = primary_display_get_bpp() / 8;
@@ -7949,8 +7949,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	}
 
 	disp_ion_get_mva(ion_display_client, ion_display_handle,
-		(unsigned long *)&mva,
-		DISP_M4U_PORT_DISP_WDMA0);
+		&mva, DISP_M4U_PORT_DISP_WDMA0);
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
 		ION_CACHE_FLUSH_ALL);
 
@@ -7959,9 +7958,9 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 		after_eng = DISP_MODULE_OVL0;
 
 	if (primary_display_cmdq_enabled())
-		_screen_cap_by_cmdq(mva, ufmt, after_eng);
+		_screen_cap_by_cmdq((unsigned int)mva, ufmt, after_eng);
 	else
-		_screen_cap_by_cpu(mva, ufmt, after_eng);
+		_screen_cap_by_cpu((unsigned int)mva, ufmt, after_eng);
 
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
 		ION_CACHE_INVALID_BY_RANGE);

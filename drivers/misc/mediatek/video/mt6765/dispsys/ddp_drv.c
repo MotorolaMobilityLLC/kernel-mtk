@@ -120,8 +120,8 @@ static int _disp_get_cmdq_slots(cmdqBackupSlotHandle Slot,
 	return ret;
 }
 
-int disp_get_ovl_bandwidth(unsigned int in_fps,
-	unsigned int out_fps, unsigned long long *bandwidth)
+int disp_get_ovl_bandwidth(unsigned long long in_fps,
+	unsigned long long out_fps, unsigned long long *bandwidth)
 {
 	int ret = 0;
 	unsigned int is_dc;
@@ -145,10 +145,14 @@ int disp_get_ovl_bandwidth(unsigned int in_fps,
 	} else {
 		if (is_dc)
 			*bandwidth =
-				(((ovl0_bw + ovl0_2l_bw + wdma0_bw) * in_fps)
-				+ (rdma0_bw * out_fps)) * OCCUPIED_BW_RATIO;
+				((((unsigned long long)ovl0_bw +
+				(unsigned long long)ovl0_2l_bw +
+				(unsigned long long)wdma0_bw) * in_fps)
+				+ ((unsigned long long)rdma0_bw * out_fps))
+				* OCCUPIED_BW_RATIO;
 		else
-			*bandwidth = (ovl0_bw + ovl0_2l_bw) * out_fps
+			*bandwidth = ((unsigned long long)ovl0_bw +
+			(unsigned long long)ovl0_2l_bw) * out_fps
 				* OCCUPIED_BW_RATIO;
 
 		do_div(*bandwidth, 1000 * 1000);
@@ -157,7 +161,7 @@ int disp_get_ovl_bandwidth(unsigned int in_fps,
 	return ret;
 }
 
-int disp_get_rdma_bandwidth(unsigned int out_fps,
+int disp_get_rdma_bandwidth(unsigned long long out_fps,
 	unsigned long long *bandwidth)
 {
 	int ret = 0;
@@ -171,7 +175,8 @@ int disp_get_rdma_bandwidth(unsigned int out_fps,
 		DDPERR("DISP CMDQ get slot failed:%d\n", ret);
 		*bandwidth = 0;
 	} else {
-		*bandwidth = rdma0_bw * out_fps * OCCUPIED_BW_RATIO;
+		*bandwidth = (unsigned long long)rdma0_bw *
+			out_fps * OCCUPIED_BW_RATIO;
 
 		do_div(*bandwidth, 1000 * 1000);
 	}

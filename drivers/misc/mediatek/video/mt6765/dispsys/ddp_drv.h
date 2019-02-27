@@ -410,9 +410,10 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 #define DISP_IOCTL_SET_TPLAY_HANDLE \
 	_IOW(DISP_IOCTL_MAGIC, 200, unsigned int)
 
-int disp_get_ovl_bandwidth(unsigned int in_fps, unsigned int out_fps,
+int disp_get_ovl_bandwidth(unsigned long long in_fps,
+			unsigned long long out_fps,
 			unsigned long long *bandwidth);
-int disp_get_rdma_bandwidth(unsigned int out_fps,
+int disp_get_rdma_bandwidth(unsigned long long out_fps,
 			unsigned long long *bandwidth);
 
 #endif
