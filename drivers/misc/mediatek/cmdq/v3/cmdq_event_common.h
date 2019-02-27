@@ -396,6 +396,7 @@ enum CMDQ_EVENT_ENUM {
 	/* Keep this at the end of HW events */
 	CMDQ_MAX_HW_EVENT_COUNT = 400,
 
+#if 0
 	/* SW Sync Tokens (Pre-defined) */
 	/* Config thread notify trigger thread */
 	CMDQ_SYNC_TOKEN_CONFIG_DIRTY = 401,
@@ -544,6 +545,7 @@ enum CMDQ_EVENT_ENUM {
 	/* event id is 9 bit */
 	CMDQ_SYNC_TOKEN_MAX = 0x3FF,
 	CMDQ_SYNC_TOKEN_INVALID = -1,
+#endif
 };
 
 #endif

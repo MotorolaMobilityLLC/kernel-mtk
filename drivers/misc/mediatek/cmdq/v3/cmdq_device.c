@@ -172,7 +172,7 @@ u32 cmdq_dev_enable_device_clock(bool enable,
 	int result = 0;
 
 	if (IS_ERR(clk_module)) {
-		CMDQ_ERR("clock module does not support:%s\n", clkName);
+		CMDQ_LOG("[WARN]clock module does not support:%s\n", clkName);
 		return PTR_ERR(clk_module);
 	}
 
@@ -263,7 +263,7 @@ void cmdq_dev_get_subsys_by_name(struct device_node *node,
 	struct SubsysStruct *gceSubsysStruct = NULL;
 
 	do {
-		if (subsys < 0 || subsys >= CMDQ_SUBSYS_MAX_COUNT)
+		if (subsys < 0 || subsys >= (u32)CMDQ_SUBSYS_MAX_COUNT)
 			break;
 
 		gceSubsysStruct = cmdq_core_get_dts_data()->subsys;
@@ -319,7 +319,7 @@ void cmdq_dev_get_event_value_by_name(struct device_node *node,
 	s32 event_value = -1;
 
 	do {
-		if (event < 0 || event >= CMDQ_MAX_HW_EVENT_COUNT)
+		if (event < 0 || event >= (u32)CMDQ_MAX_HW_EVENT_COUNT)
 			break;
 
 		status = of_property_read_u32(node, dts_name, &event_value);
@@ -335,9 +335,9 @@ void cmdq_dev_test_event_correctness_impl(enum cmdq_event event,
 {
 	s32 eventValue = cmdq_core_get_event_value(event);
 
-	if (eventValue >= 0 && eventValue < CMDQ_SYNC_TOKEN_MAX) {
+	if (eventValue >= 0 && eventValue < (u32)CMDQ_SYNC_TOKEN_MAX) {
 		/* print event name from device tree */
-		if (event < CMDQ_MAX_HW_EVENT_COUNT)
+		if (event < (u32)CMDQ_MAX_HW_EVENT_COUNT)
 			CMDQ_LOG("%s = %d\n", dts_name, eventValue);
 		else
 			CMDQ_LOG("%s = %d\n", event_name, eventValue);
@@ -351,7 +351,7 @@ void cmdq_dev_init_event_table(struct device_node *node)
 	u32 i = 0;
 
 	for (i = 0; i < table_size; i++) {
-		if (events[i].event == CMDQ_MAX_HW_EVENT_COUNT)
+		if (events[i].event == (u32)CMDQ_MAX_HW_EVENT_COUNT)
 			break;
 		cmdq_dev_get_event_value_by_name(node, events[i].event,
 			events[i].dts_name);
