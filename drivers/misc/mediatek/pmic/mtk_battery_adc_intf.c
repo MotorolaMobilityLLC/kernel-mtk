@@ -180,3 +180,13 @@ int pmic_bif_init(void)
 	return mtk_bif_init();
 }
 
+int pmic_enable_hw_vbus_ovp(bool enable)
+{
+	int ret = 0;
+
+	ret = pmic_set_register_value(PMIC_RG_VCDT_HV_EN, enable);
+	if (ret != 0)
+		pr_notice("%s: failed, ret = %d\n", __func__, ret);
+
+	return ret;
+}
