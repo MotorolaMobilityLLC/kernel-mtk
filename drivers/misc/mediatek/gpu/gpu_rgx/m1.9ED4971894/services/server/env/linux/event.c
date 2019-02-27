@@ -290,7 +290,11 @@ static void _TryToFreeze(void)
 
 	/* Returns true if the thread was frozen, should we do anything with this
 	* information? What do we return? Which one is the error case? */
-	try_to_freeze();
+	if (!try_to_freeze())
+	{
+		PVR_DPF((PVR_DBG_ERROR, "%s: driver is suspending but freezer"
+			        " is not freezing", __func__));
+	}
 
 	LinuxBridgeNumActiveKernelThreadsIncrement();
 }
