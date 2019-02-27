@@ -364,6 +364,7 @@ source "drivers/misc/mediatek/timer/Kconfig"
 source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
+source "drivers/misc/mediatek/watchpoint/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
 
 config MTK_DM_VERITY_OFF
