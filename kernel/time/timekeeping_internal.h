@@ -26,6 +26,10 @@ static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
 #else
 static inline cycle_t clocksource_delta(cycle_t now, cycle_t last, cycle_t mask)
 {
+	if (now < last) {
+		pr_err("cycle last=%lld, now=%lld\n", last, now);
+		BUG_ON(1);
+	}
 	return (now - last) & mask;
 }
 #endif
