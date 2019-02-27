@@ -127,3 +127,4 @@ obj-$(CONFIG_MEDIATEK_SOLUTION) += cmo/
 obj-y += timer/
 obj-$(CONFIG_NFC_CHIP_SUPPORT) += nfc/
 obj-$(CONFIG_MTK_DRAMC) += dramc/
+obj-y += performance/
