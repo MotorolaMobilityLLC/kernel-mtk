@@ -476,3 +476,7 @@ CONFIG_MTK_PWM=y
 
 #jake.liang, DATE20171209, add for power debug
 CONFIG_TINNO_POWER_TRACE=y
+
+#bingqian.tang date20190227 add for DBBOMXA-255
+CONFIG_MTK_MD_SBP_CUSTOM_VALUE="0x70"
+#bingqian.tang end
