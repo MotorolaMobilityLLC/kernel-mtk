@@ -336,7 +336,7 @@ long ion_dma_op(struct ion_client *client, struct ion_dma_param *param,
 	kernel_handle = ion_drv_get_handle(client, param->handle,
 					   param->kernel_handle, from_kernel);
 	if (IS_ERR(kernel_handle)) {
-		IONMSG("ion cache sync fail!\n");
+		IONMSG("ion cache sync fail, user handle %d\n", param->handle);
 		return -EINVAL;
 	}
 
