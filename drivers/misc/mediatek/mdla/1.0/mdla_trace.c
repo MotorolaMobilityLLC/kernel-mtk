@@ -39,7 +39,15 @@ static int cfg_op_trace;
 static int cfg_cmd_trace;
 static int cfg_pmu_int;
 static int cfg_timer_en;
+static int cfg_power_mode;
 static int timer_started;
+
+/* modes for cfg_power_mode */
+enum {
+	P_ALWAYS_ON = 0,
+	P_SW_RESET = 1,
+	P_DVFS = 2,
+};
 
 static noinline int tracing_mark_write(const char *buf)
 {
@@ -127,6 +135,7 @@ void mdla_dump_prof(struct seq_file *s)
 	_SHOW_VAL(cmd_trace);
 	_SHOW_VAL(op_trace);
 	_SHOW_VAL(pmu_int);
+	_SHOW_VAL(power_mode);
 
 	pmu_counter_event_get_all(c);
 
@@ -142,7 +151,7 @@ static void mdla_profile_pmu_counter(int core)
 	u32 c[MDLA_PMU_COUNTERS];
 
 	pmu_counter_read_all(c);
-	mdla_debug("_id=c%d, c1=%u, c2=%u, c3=%u, c4=%u, c5=%u, c6=%u, c7=%u, c8=%u, c9=%u, c10=%u, c11=%u, c12=%u, c13=%u, c14=%u, c15=%u\n",
+	mdla_perf_debug("_id=c%d, c1=%u, c2=%u, c3=%u, c4=%u, c5=%u, c6=%u, c7=%u, c8=%u, c9=%u, c10=%u, c11=%u, c12=%u, c13=%u, c14=%u, c15=%u\n",
 		core,
 		c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7],
 		c[8], c[9], c[10], c[11], c[12], c[13], c[14]);
@@ -181,7 +190,7 @@ static int mdla_profile_timer_start(void)
 	hr_timer.function = mdla_profile_polling;
 	hrtimer_start(&hr_timer, ns_to_ktime(cfg_period * 1000),
 		HRTIMER_MODE_REL);
-	mdla_debug("%s: hrtimer_start()\n", __func__);
+	mdla_perf_debug("%s: hrtimer_start()\n", __func__);
 
 	return 0;
 }
@@ -192,10 +201,11 @@ static int mdla_profile_timer_stop(int wait)
 
 	if (wait) {
 		hrtimer_cancel(&hr_timer);
-		mdla_debug("%s: hrtimer_cancel()\n", __func__);
+		mdla_perf_debug("%s: hrtimer_cancel()\n", __func__);
 	} else {
 		ret = hrtimer_try_to_cancel(&hr_timer);
-		mdla_debug("%s: hrtimer_try_to_cancel(): %d\n", __func__, ret);
+		mdla_perf_debug("%s: hrtimer_try_to_cancel(): %d\n",
+			__func__, ret);
 	}
 	return ret;
 }
@@ -229,7 +239,7 @@ static int mdla_profile_set_handle(const char *tag, u32 val)
 {
 	int counter;
 
-	mdla_debug("%s: %s=0x%x\n", __func__, tag, val);
+	mdla_perf_debug("%s: %s=0x%x\n", __func__, tag, val);
 
 	if (sscanf(tag, "c%d", &counter) == 1) {
 		counter--;
@@ -244,21 +254,22 @@ static int mdla_profile_set_handle(const char *tag, u32 val)
 	_SET_VAL(cmd_trace);
 	_SET_VAL(op_trace);
 	_SET_VAL(period);
+	_SET_VAL(power_mode);
 
-	if (!strcmp("PMU_INT", tag)) {
+	if (!strcasecmp("PMU_INT", tag)) {
 		if (val) {
 			cfg_pmu_int = MDLA_TRACE_MODE_INT;
-			mdla_debug("%s: PMU_INT enable.\n", __func__);
+			mdla_perf_debug("%s: PMU_INT enable.\n", __func__);
 			mdla_reg_set(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP2);
 		} else {
 			cfg_pmu_int = MDLA_TRACE_MODE_CMD;
-			mdla_debug("%s: PMU_INT disable.\n", __func__);
+			mdla_perf_debug("%s: PMU_INT disable.\n", __func__);
 			mdla_reg_clear(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP2);
 		}
 		return 0;
 	}
 
-	mdla_debug("%s: invalid argument.\n", __func__);
+	mdla_perf_debug("%s: invalid argument.\n", __func__);
 
 	return -EINVAL;
 }
@@ -286,12 +297,32 @@ static int mdla_profile_set(const char *str)
 		}
 	}
 
-	mdla_debug("%s: ret = %d, %s=%d\n", __func__, ret, tag_pos, val);
+	mdla_perf_debug("%s: ret = %d, %s=%d\n", __func__, ret, tag_pos, val);
 
 	if (!ret)
 		mdla_profile_set_handle(tag_pos, val);
 
 	return ret;
+}
+
+/* dynamic power mode control
+ * returns:
+ * 0: need to call dvfs start/shutdown
+ * 1: skips dvfs start/shutdown
+ */
+int mdla_profile_power_mode(u32 *stat)
+{
+	if (cfg_power_mode == P_ALWAYS_ON) {
+		return 1;
+	} else if (cfg_power_mode == P_SW_RESET) {
+		mdla_reset(REASON_POWERON);
+		return 1;
+	} else if (cfg_power_mode == P_DVFS) {
+		if (stat)
+			*stat = 0;
+		return 0;
+	}
+	return 1;
 }
 
 int mdla_profile(const char *str)
@@ -333,6 +364,7 @@ int mdla_profile_init(void)
 	cfg_cmd_trace = 0;
 	cfg_pmu_int = MDLA_TRACE_MODE_CMD;
 	cfg_timer_en = 0;
+	cfg_power_mode = P_ALWAYS_ON;
 	timer_started = 0;
 
 	return 0;

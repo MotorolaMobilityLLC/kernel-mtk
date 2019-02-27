@@ -98,16 +98,24 @@ int mdla_dump_mdla(struct seq_file *s);
 int mdla_dump_device_dbg(struct seq_file *s);
 
 
+enum MDLA_DEBUG_MASK {
+	MDLA_DBG_DRV = 0x01,
+	MDLA_DBG_MEM = 0x02,
+	MDLA_DBG_CMD = 0x04,
+	MDLA_DBG_PMU = 0x08,
+	MDLA_DBG_PERF = 0x10,
+};
+
 #ifdef CONFIG_MTK_MDLA_DEBUG
 extern u32 mdla_klog;
-#define mdla_debug(...) do { if (mdla_klog) \
+#define mdla_debug(mask, ...) do { if (mdla_klog & mask) \
 		pr_debug(__VA_ARGS__); \
 	} while (0)
 void mdla_dump_reg(void);
 void mdla_debugfs_init(void);
 void mdla_debugfs_exit(void);
 #else
-#define mdla_debug(...)
+#define mdla_debug(mask, ...)
 static inline void mdla_dump_reg(void)
 {
 }
@@ -118,6 +126,12 @@ static inline void mdla_debugfs_exit(void)
 {
 }
 #endif
+
+#define mdla_drv_debug(...) mdla_debug(MDLA_DBG_DRV, __VA_ARGS__)
+#define mdla_mem_debug(...) mdla_debug(MDLA_DBG_MEM, __VA_ARGS__)
+#define mdla_cmd_debug(...) mdla_debug(MDLA_DBG_CMD, __VA_ARGS__)
+#define mdla_pmu_debug(...) mdla_debug(MDLA_DBG_PMU, __VA_ARGS__)
+#define mdla_perf_debug(...) mdla_debug(MDLA_DBG_PERF, __VA_ARGS__)
 
 #endif
 

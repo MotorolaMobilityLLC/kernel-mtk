@@ -933,10 +933,10 @@ void mdla_debugfs_exit(void)
 }
 
 #define dump_reg_top(name) \
-	mdla_debug("%s: %.8x\n", #name, mdla_reg_read(name))
+	mdla_drv_debug("%s: %.8x\n", #name, mdla_reg_read(name))
 
 #define dump_reg_cfg(name) \
-	mdla_debug("%s: %.8x\n", #name, mdla_cfg_read(name))
+	mdla_drv_debug("%s: %.8x\n", #name, mdla_cfg_read(name))
 
 void mdla_dump_reg(void)
 {
