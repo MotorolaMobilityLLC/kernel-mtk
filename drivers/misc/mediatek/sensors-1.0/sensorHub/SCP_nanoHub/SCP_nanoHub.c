@@ -865,6 +865,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[ID_RGBW].sensorType = ID_RGBW;
 	mSensorState[ID_RGBW].timestamp_filter = false;
+
+	mSensorState[ID_SAR].sensorType = ID_SAR;
+	mSensorState[ID_SAR].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[ID_SAR].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int handle)
@@ -1601,6 +1605,10 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->time_stamp = data_t->time_stamp;
 		data->floor_counter_t.accumulated_floor_count
 		    = data_t->floor_counter_t.accumulated_floor_count;
+		break;
+	case ID_SAR:
+		data->time_stamp = data_t->time_stamp;
+		data->sar_event.state = data_t->sar_event.state;
 		break;
 	default:
 		err = -1;

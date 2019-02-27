@@ -38,6 +38,7 @@ typedef enum {
 	device_orientation,
 	tilt_detector,
 	flat,
+	sar,
 	max_situation_support,
 } situation_index_table;
 
