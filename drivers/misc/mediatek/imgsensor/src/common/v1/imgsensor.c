@@ -180,6 +180,8 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 		/* turn on power */
 		IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
+		if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
+			pgimgsensor->imgsensor_oc_irq_enable(false);
 
 		ret = imgsensor_hw_power(&pgimgsensor->hw,
 		    psensor,
@@ -410,9 +412,6 @@ imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 			    psensor,
 			    psensor_inst->psensor_name,
 			    IMGSENSOR_HW_POWER_STATUS_OFF);
-			if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
-				pgimgsensor->imgsensor_oc_irq_enable(false);
-
 		}
 
 		imgsensor_mutex_unlock(psensor_inst);
@@ -2478,6 +2477,8 @@ static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 	atomic_dec(&pgimgsensor->imgsensor_open_cnt);
 	if (atomic_read(&pgimgsensor->imgsensor_open_cnt) == 0) {
 		imgsensor_clk_disable_all(&pgimgsensor->clk);
+		if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
+			pgimgsensor->imgsensor_oc_irq_enable(false);
 		imgsensor_hw_release_all(&pgimgsensor->hw);
 	}
 	pr_info(

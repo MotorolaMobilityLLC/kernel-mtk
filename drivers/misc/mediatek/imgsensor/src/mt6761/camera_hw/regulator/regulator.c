@@ -87,11 +87,11 @@ enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
 {
 	pr_debug("[regulator] %s %d\n", __func__, enable);
 
-	mdelay(5);
 
 	gimgsensor.status.oc = 0;
 
 	if (enable) {
+		mdelay(5);
 		/* enable interrupt after power on */
 		/* At least delay 3ms after power for recommendation */
 		pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
