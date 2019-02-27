@@ -21,7 +21,9 @@
 #define PMIC_WRAP_CTP            0
 
 #define PMIC_WRAP_DEBUG
+#define PMIC_WRAP_DEBUG_LOGGING
 #define PMIC_WRAP_SUPPORT
+#define PMIC_WRAP_CRC_SUPPORT
 /****** For BringUp. if BringUp doesn't had PMIC, need open this ***********/
 #if (PMIC_WRAP_PRELOADER)
 	#if CFG_FPGA_PLATFORM
@@ -39,7 +41,7 @@
 	#if defined(CONFIG_MTK_FPGA) || defined(CONFIG_FPGA_EARLY_PORTING)
 		#define PMIC_WRAP_NO_PMIC
 	#else
-		/* #define PWRAP_TIMEOUT */
+		#define PWRAP_TIMEOUT
 	#endif
 #elif (PMIC_WRAP_CTP)
 	#if defined(CONFIG_MTK_FPGA)
@@ -164,7 +166,7 @@ extern signed int pwrap_init(void);
 /**********************************************************/
 
 /***********  platform info, PMIC info ********************/
-#define PMIC_WRAP_REG_RANGE     (354)
+#define PMIC_WRAP_REG_RANGE     (250)
 #define CLK_26M_PRD            (3846)
 #define CLK_ULPOSC_PRD         (6400)
 
