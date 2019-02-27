@@ -51,6 +51,8 @@ void disp_ccorr_on_end_of_frame(void);
 void disp_pq_notify_backlight_changed(int bl_1024);
 int disp_ccorr_set_color_matrix(void *cmdq,
 	int32_t matrix[16], int32_t hint);
+int disp_ccorr_set_RGB_Gain(int r, int g, int b);
+
 
 #endif
 
