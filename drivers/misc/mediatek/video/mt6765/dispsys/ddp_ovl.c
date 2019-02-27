@@ -1565,7 +1565,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		tmp_bw *= 1250;
 		do_div(tmp_bw, fps * 1000);
 		ovl_bw = ovl_bw + tmp_bw;
-		DDPMSG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n",
+		DDPDBG("h:%u, w:%u, fps:%u, Bpp:%u, bw:%llu\n",
 			pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
