@@ -492,7 +492,7 @@ static long EEPROM_drv_compat_ioctl
 	case COMPAT_CAM_CALIOC_G_READ:{
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
-			if (data == NULL)
+			if (data == NULL || data32 == NULL)
 				return -EFAULT;
 
 			err = EEPROM_compat_get_info(data32, data);
@@ -513,7 +513,7 @@ static long EEPROM_drv_compat_ioctl
 				/*Note: Write Command is Unverified! */
 			data32 = compat_ptr(arg);
 			data = compat_alloc_user_space(sizeof(*data));
-			if (data == NULL)
+			if (data == NULL || data32 == NULL)
 				return -EFAULT;
 
 			err = EEPROM_compat_get_info(data32, data);
