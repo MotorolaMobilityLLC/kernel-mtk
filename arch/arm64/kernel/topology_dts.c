@@ -361,4 +361,19 @@ void __init arch_init_hmp_domains(void)
 
 }
 
+#ifdef CONFIG_MTK_SCHED_RQAVG_KS
+/* To add this function for sched_avg.c */
+unsigned long get_cpu_orig_capacity(unsigned int cpu)
+{
+	unsigned long capacity = cpu_capacity(cpu);
+
+	if (!capacity || !max_cpu_perf)
+		return 1024;
+
+	capacity *= SCHED_CAPACITY_SCALE;
+	capacity /= max_cpu_perf;
+
+	return capacity;
+}
+#endif
 
