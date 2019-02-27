@@ -459,7 +459,7 @@ static int __init lowmem_init(void)
 {
 	if (IS_ENABLED(CONFIG_ZRAM) &&
 	    IS_ENABLED(CONFIG_MTK_GMO_RAM_OPTIMIZE))
-		vm_swappiness = 150;
+		vm_swappiness = 100;
 
 	register_shrinker(&lowmem_shrinker);
 	return 0;
