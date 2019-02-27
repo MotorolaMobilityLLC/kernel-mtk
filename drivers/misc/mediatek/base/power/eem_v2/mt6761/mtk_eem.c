@@ -1456,8 +1456,10 @@ static void eem_set_eem_volt(struct eem_det *det)
 				det->ops->eem_2_pmic(det, det->VMAX))),
 				det->volt_tbl_orig[i]);
 #if IN_MP1
+#ifndef CONFIG_MTK_LP_OPP
 			if (det->volt_tbl_pmic[i] < 0x2D)
 				det->volt_tbl_pmic[i] = 0x2D;
+#endif
 #endif
 			break;
 #if 0
