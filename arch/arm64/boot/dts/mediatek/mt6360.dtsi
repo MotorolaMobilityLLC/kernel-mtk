@@ -130,6 +130,7 @@
 					  "vddaov_evt",
 					  "sysuv_evt";
 			mren = <1>;
+			apwdtrst_en = <1>;
 		};
 	};
 
@@ -203,13 +204,13 @@
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <3600000>;
 		};
-		ldo3 {
+		mt_pmic_vmc_ldo_reg: ldo3 {
 			regulator-compatible = "LDO3";
 			regulator-name = "VMC";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <3600000>;
 		};
-		ldo5 {
+		mt_pmic_vmch_ldo_reg: ldo5 {
 			regulator-compatible = "LDO5";
 			regulator-name = "VMCH";
 			regulator-min-microvolt = <2700000>;
