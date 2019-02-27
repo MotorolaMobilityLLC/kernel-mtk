@@ -1,0 +1,7 @@
+/*
+ * MT6771 Bingo main dts override
+ * Things can done here:
+ * 	Add nodes or properties to root node
+ * 	Delete nodes or properties
+*/
+
