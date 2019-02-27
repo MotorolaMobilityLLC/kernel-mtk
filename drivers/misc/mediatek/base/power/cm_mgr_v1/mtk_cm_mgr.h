@@ -40,6 +40,7 @@ struct cm_mgr_data {
 #define IPI_CM_MGR_DEBOUNCE_UP 11
 #define IPI_CM_MGR_DEBOUNCE_DOWN 12
 #define IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB 16
+#define IPI_CM_MGR_DRAM_LEVEL 17
 
 extern spinlock_t cm_mgr_lock;
 extern int cm_mgr_disable_fb;

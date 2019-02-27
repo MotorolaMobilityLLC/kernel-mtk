@@ -55,6 +55,7 @@
 
 static int light_load_cps = 1000;
 static int cm_mgr_loop_count;
+static int cm_mgr_dram_level;
 static int cm_mgr_loop;
 static int total_bw_value;
 int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};

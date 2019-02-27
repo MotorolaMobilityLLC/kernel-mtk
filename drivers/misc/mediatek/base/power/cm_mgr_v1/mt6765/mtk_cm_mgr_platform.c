@@ -563,7 +563,7 @@ static int cm_mgr_fb_notifier_callback(struct notifier_block *self,
 	case FB_BLANK_POWERDOWN:
 		pr_info("#@# %s(%d) SCREEN OFF\n", __func__, __LINE__);
 		cm_mgr_blank_status = 1;
-		dvfsrc_set_power_model_ddr_request(0);
+		cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 		cm_mgr_to_sspm_command(IPI_CM_MGR_BLANK, 1);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
@@ -777,3 +777,16 @@ int cm_mgr_platform_init(void)
 	return r;
 }
 
+void cm_mgr_set_dram_level(int level)
+{
+	dvfsrc_set_power_model_ddr_request(level);
+}
+
+int cm_mgr_get_dram_opp(void)
+{
+	int dram_opp_cur;
+
+	dram_opp_cur = get_cur_ddr_opp();
+
+	return dram_opp_cur;
+}
