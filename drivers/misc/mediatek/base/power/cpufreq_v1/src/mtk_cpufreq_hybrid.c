@@ -71,6 +71,7 @@ static void __iomem *csram_base;
 #define OFFS_TBL_E	0x0250
 #define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
 
+#define OFFS_CCI_TBL_USER	0x0F9C
 #define OFFS_CCI_TBL_S	0x0FA0
 #define OFFS_CCI_TBL_E	0x10A0
 #define PVT_CCI_TBL_SIZE    (OFFS_CCI_TBL_E - OFFS_CCI_TBL_S)
@@ -878,13 +879,25 @@ int cpuhvfs_set_set_cci_volt(unsigned int volt)
 	return 0;
 }
 
-
 u32 *recordRef;
 static unsigned int *recordTbl;
 
 #ifdef CCI_MAP_TBL_SUPPORT
 u8 *record_CCI_Ref;
 unsigned char *record_CCI_Tbl;
+
+unsigned int cpuhvfs_get_cci_result(unsigned int idx_1, unsigned int idx_2)
+{
+	return record_CCI_Ref[(idx_1 * 16) + idx_2];
+}
+
+void cpuhvfs_update_cci_map_tbl(unsigned int idx_1, unsigned int idx_2,
+	unsigned char result, unsigned int use_id)
+{
+	csram_write(OFFS_CCI_TBL_USER, use_id);
+	record_CCI_Ref[(idx_1 * 16) + idx_2] = result;
+	csram_write(OFFS_EEM_S, 1);
+}
 #endif
 
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,
