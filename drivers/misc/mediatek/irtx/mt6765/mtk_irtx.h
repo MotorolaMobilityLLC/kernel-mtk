@@ -42,4 +42,9 @@ struct irtx_config {
 #define IRTX_IOC_SET_CARRIER_FREQ   _IOW('R', 0, unsigned int)
 #define IRTX_IOC_GET_SOLUTTION_TYPE _IOR('R', 1, unsigned int)
 #define IRTX_IOC_SET_IRTX_LED_EN    _IOW('R', 10, unsigned int)
+#ifdef CONFIG_COMPAT
+#define COMPAT_IRTX_IOC_SET_CARRIER_FREQ   _IOW('R', 0, compat_uint_t)
+#define COMPAT_IRTX_IOC_GET_SOLUTTION_TYPE _IOR('R', 1, compat_uint_t)
+#define COMPAT_IRTX_IOC_SET_IRTX_LED_EN    _IOW('R', 10, compat_uint_t)
+#endif
 
