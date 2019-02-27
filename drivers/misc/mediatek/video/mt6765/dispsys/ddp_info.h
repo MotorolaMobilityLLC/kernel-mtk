@@ -156,6 +156,8 @@ struct sbch {
 	unsigned long pre_addr;
 	unsigned int height;
 	unsigned int width;
+	unsigned int src_x;
+	unsigned int src_y;
 	int phy_layer;
 	enum UNIFIED_COLOR_FMT fmt;
 };

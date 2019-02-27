@@ -1198,6 +1198,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	int cnst_en = 0;
 
 	data->pre_addr = cfg->addr;
+	data->src_x = cfg->src_x;
+	data->src_y = cfg->src_y;
 	data->height = cfg->src_h;
 	data->width = cfg->src_w;
 	data->fmt = cfg->fmt;
@@ -1229,7 +1231,7 @@ static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 	if (((phy_value != phy_bit_dbg[module]) ||
 		(ext_value != ext_bit_dbg[module])) &&
 		pConfig->sbch_enable) {
-		DDPWRN("sbch reg set fail phy:%x--%x, ext:%x--%x\n",
+		DDPDBG("sbch reg set fail phy:%x--%x, ext:%x--%x\n",
 			phy_value, phy_bit_dbg[module],
 			ext_value, ext_bit_dbg[module]);
 		mmprofile_log_ex(ddp_mmp_get_events()->sbch_set_error,
@@ -1243,7 +1245,8 @@ static void check_bch_reg(enum DISP_MODULE_ENUM module, int *phy_reg,
 	ext_bit_dbg[module] =
 		(ext_reg[UPDATE]|ext_reg[TRANS_EN]|ext_reg[CNST_EN]);
 
-	DDPDBG("set bch reg phy:%x -- %x, ext:%x -- %x\n",
+	DDPDBG("set bch%d reg phy:%x -- %x, ext:%x -- %x\n",
+				module,
 				phy_bit_dbg[module], phy_value,
 				ext_bit_dbg[module], ext_value);
 
@@ -1278,7 +1281,10 @@ static int get_ext_num(struct disp_ddp_path_config *pConfig, int layer)
 					&pConfig->ovl_config[layer + j + 1];
 
 		if (pConfig->ovl_config[layer].phy_layer ==
-			ext_cfg->ext_sel_layer && ext_cfg->ext_layer != -1)
+			ext_cfg->ext_sel_layer &&
+			ext_cfg->ext_layer != -1 &&
+			pConfig->ovl_config[layer].ovl_index ==
+			ext_cfg->ovl_index)
 			ext_num++;
 	}
 	return ext_num;
@@ -1293,7 +1299,9 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 		struct OVL_CONFIG_STRUCT *ext_cfg =
 					&pConfig->ovl_config[layer + j + 1];
 
-		if (sbch_data[layer + j + 1].height != ext_cfg->src_h ||
+		if (sbch_data[layer + j + 1].src_x != ext_cfg->src_x ||
+			sbch_data[layer + j + 1].src_y != ext_cfg->src_y ||
+			sbch_data[layer + j + 1].height != ext_cfg->src_h ||
 			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
 			(sbch_data[layer + j + 1].pre_addr != ext_cfg->addr) ||
 			(sbch_data[layer + j + 1].fmt != ext_cfg->fmt))
@@ -1424,6 +1432,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		 * maybe use BCH.
 		 */
 		if (sbch_data[i].pre_addr == ovl_cfg->addr &&
+			sbch_data[i].src_x == ovl_cfg->src_x &&
+			sbch_data[i].src_y == ovl_cfg->src_y &&
 			sbch_data[i].height == ovl_cfg->src_h &&
 			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&
