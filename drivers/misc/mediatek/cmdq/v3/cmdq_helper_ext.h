@@ -767,11 +767,6 @@ void cmdq_core_register_handle_cycle(cmdq_core_handle_begin begin,
 void cmdq_core_register_status_dump(struct notifier_block *notifier);
 void cmdq_core_remove_status_dump(struct notifier_block *notifier);
 
-/* file_node is a pointer to cmdqFileNodeStruct that is
- * created when opening the device file.
- */
-void cmdq_core_release_task_by_file_node(void *file_node);
-
 const char *cmdq_core_parse_op(u32 op_code);
 s32 cmdq_core_interpret_instruction(char *textBuf, s32 bufLen,
 	const u32 op, const u32 arg_a, const u32 arg_b);
@@ -790,6 +785,8 @@ s32 cmdq_core_reg_dump_end(u32 taskID, u32 regCount, u32 *regValues);
 
 int cmdq_core_print_record_seq(struct seq_file *m, void *v);
 int cmdq_core_print_status_seq(struct seq_file *m, void *v);
+
+void cmdq_core_dump_trigger_loop_thread(const char *tag);
 
 /* Save first error dump */
 void cmdq_core_turnon_first_dump(const struct cmdqRecStruct *task);
@@ -815,9 +812,9 @@ void cmdq_delay_dump_thread(bool dump_sram);
 u32 cmdq_core_get_delay_start_cpr(void);
 s32 cmdq_delay_get_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario);
 int cmdqCoreAllocWriteAddress(u32 count, dma_addr_t *paStart);
-int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
 u32 cmdqCoreReadWriteAddress(dma_addr_t pa);
 u32 cmdqCoreWriteWriteAddress(dma_addr_t pa, u32 value);
+int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
 
 /* Get and HW information from device tree */
 void cmdq_core_init_dts_data(void);
@@ -867,6 +864,8 @@ u32 *cmdq_core_get_pc(const struct cmdqRecStruct *handle,
 	s32 thread, u32 insts[2], u32 *pa_out);
 void cmdq_core_dump_handle_buffer(const struct cmdq_pkt *pkt,
 	const char *tag);
+u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
+	int thread, const char *tag);
 
 s32 cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, u64 engineFlag);
 s32 cmdq_core_acquire_thread(enum CMDQ_SCENARIO_ENUM scenario, bool exclusive);
@@ -877,7 +876,6 @@ s32 cmdq_core_suspend_hw_thread(s32 thread);
 u64 cmdq_core_get_gpr64(const enum cmdq_gpr_reg regID);
 void cmdq_core_set_gpr64(const enum cmdq_gpr_reg regID, const u64 value);
 
-void cmdq_core_release_handle_by_file_node(void *file_node);
 s32 cmdq_core_suspend(void);
 s32 cmdq_core_resume(void);
 s32 cmdq_core_resume_notifier(void);
@@ -885,6 +883,7 @@ s32 cmdq_core_resume_notifier(void);
 struct cmdq_dts_setting *cmdq_core_get_dts_setting(void);
 struct ContextStruct *cmdq_core_get_context(void);
 struct CmdqCBkStruct *cmdq_core_get_group_cb(void);
+void cmdq_core_release_handle_by_file_node(void *file_node);
 const struct cmdq_controller *cmdq_core_get_controller(void);
 
 
