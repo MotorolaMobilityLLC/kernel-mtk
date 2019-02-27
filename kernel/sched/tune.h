@@ -27,7 +27,7 @@ struct target_cap {
 extern unsigned long int min_boost_freq[3];
 extern unsigned long int cap_min_freq[3];
 extern void update_cpu_freq_quick(int cpu, int freq);
-#ifdef CONFIG_MTK_BASE_POWER
+#ifdef CONFIG_MTK_CPU_FREQ
 extern unsigned int
 mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern unsigned int
