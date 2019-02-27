@@ -96,6 +96,7 @@ static unsigned int skip_aee_once;
 DEFINE_PER_CPU(struct sched_block_event, ISR_mon);
 DEFINE_PER_CPU(struct sched_block_event, IPI_mon);
 DEFINE_PER_CPU(struct sched_block_event, SoftIRQ_mon);
+DEFINE_PER_CPU(struct sched_block_event, RCU_SoftIRQ_mon);
 DEFINE_PER_CPU(struct sched_block_event, tasklet_mon);
 DEFINE_PER_CPU(struct sched_block_event, hrt_mon);
 DEFINE_PER_CPU(struct sched_block_event, sft_mon);
@@ -176,10 +177,11 @@ static void event_duration_check(struct sched_block_event *b)
 	unsigned long long t_dur;
 	char buf[256];
 
-	t_dur = b->last_te - b->last_ts;
-
 	if (!sched_mon_enable)
 		return;
+
+	t_dur = b->last_te - b->last_ts;
+
 	switch (b->type) {
 	case evt_ISR:
 		if (t_dur > WARN_ISR_DUR) {
@@ -419,6 +421,34 @@ static void event_duration_check(struct sched_block_event *b)
 	}
 }
 
+static void softirq_event_duration_check(struct sched_block_event *b)
+{
+	unsigned long long t_dur;
+	char buf[256];
+
+	if (!sched_mon_enable)
+		return;
+
+	t_dur = b->last_te - b->last_ts;
+
+	switch (b->type) {
+	case RCU_SOFTIRQ:
+		if (t_dur > WARN_SOFTIRQ_DUR) {
+			if (sched_mon_warn_enable
+				|| t_dur > (AEE_WARN_DUR - TIME_10MS)) {
+				snprintf(buf, sizeof(buf),
+					"[RCU_SOFTIRQ DURATION WARN] func: %ps, dur:%llu ms (s:%llu,e:%llu)",
+					(void *)b->last_event,
+					msec_high(t_dur),
+					b->last_ts,
+					b->last_te);
+				sched_mon_msg(buf, TO_BOTH);
+			}
+		}
+		break;
+	}
+}
+
 static void reset_event_count(struct sched_block_event *b)
 {
 	b->last_count = b->cur_count;
@@ -648,6 +678,7 @@ void mt_trace_sft_end(void *func)
 	event_duration_check(b);
 }
 
+/* IRQ work monitor */
 void mt_trace_irq_work_start(void *func)
 {
 	struct sched_block_event *b;
@@ -671,6 +702,32 @@ void mt_trace_irq_work_end(void *func)
 	b->last_ts = b->cur_ts;
 	b->last_te = sched_clock();
 	event_duration_check(b);
+}
+
+/* RCU_SOFTIRQ monitor */
+void mt_trace_RCU_SoftIRQ_start(void *func)
+{
+	struct sched_block_event *b;
+
+	b = &__raw_get_cpu_var(RCU_SoftIRQ_mon);
+
+	b->cur_ts = sched_clock();
+	b->cur_event = (unsigned long)func;
+}
+
+void mt_trace_RCU_SoftIRQ_end(void)
+{
+	struct sched_block_event *b;
+
+	b = &__raw_get_cpu_var(RCU_SoftIRQ_mon);
+
+	/* do not check event in RCU_SOFTIRQ case */
+	b->last_event = b->cur_event;
+	b->last_ts = b->cur_ts;
+	b->last_te = sched_clock();
+	b->cur_event = 0;
+	b->cur_ts = 0;
+	softirq_event_duration_check(b);
 }
 
 /*IRQ Counts monitor & IRQ Burst monitor*/
@@ -1217,6 +1274,7 @@ static int __init init_mtsched_mon(void)
 		per_cpu(hrt_mon, cpu).type = evt_HRTIMER;
 		per_cpu(sft_mon, cpu).type = evt_STIMER;
 		per_cpu(irq_work_mon, cpu).type = evt_IRQWORK;
+		per_cpu(RCU_SoftIRQ_mon, cpu).type = RCU_SOFTIRQ;
 	}
 
 	if (!proc_mkdir("mtmon", NULL))
