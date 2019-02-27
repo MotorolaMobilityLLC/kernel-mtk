@@ -157,6 +157,7 @@ void smi_mtcmos_record(const unsigned int reg_indx, const char *user_name,
 	record->sec = sched_clock();
 	record->nsec = do_div(record->sec, 1000000000) / 1000;
 	strncpy(record->user, user_name, NAME_MAX);
+	record->user[sizeof(record->user) - 1] = '\0';
 }
 
 /* ********************************************************
