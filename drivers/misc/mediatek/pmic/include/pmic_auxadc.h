@@ -16,6 +16,7 @@
 
 #include <mach/upmu_hw.h>
 
+extern bool is_isense_supported(void);
 extern void pmic_auxadc_suspend(void);
 extern void pmic_auxadc_resume(void);
 extern unsigned short pmic_set_hk_reg_value(

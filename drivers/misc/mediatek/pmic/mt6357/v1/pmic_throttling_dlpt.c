@@ -30,7 +30,7 @@
 #include "include/pmic_auxadc.h"
 #include <pmic_lbat_service.h>
 #include <mtk_idle.h>
-#include <mach/mtk_charger_init.h> /* for defined(SWCHR_POWER_PATH) */
+#include <mt-plat/mtk_charger.h>
 
 
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
@@ -48,7 +48,6 @@
  * PMIC related define
  ******************************************************************************/
 #define PMIC_THROTTLING_DLPT_UT	0
-#define PMIC_ISENSE_SUPPORT	1
 
 /*****************************************************************************
  * PMIC PT and DLPT UT
@@ -607,18 +606,11 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 	unsigned int count_adc_imp = 0;
 	int ret = 0;
 
-	/* initial setting */
-#if PMIC_ISENSE_SUPPORT && defined(SWCHR_POWER_PATH)
-	/* For PMIC which supports ISENSE */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
-#else
-	/* For PMIC which do not support ISENSE */
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
-#endif
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
-	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
-
+	/* selection setting */
+	if (is_isense_supported() && is_power_path_supported())
+		pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 1);
+	else
+		pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CHSEL, 0);
 	/* enable setting */
 	pmic_set_hk_reg_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 1);
 	pmic_set_hk_reg_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
@@ -1028,13 +1020,11 @@ static int get_dlpt_imix_charging(void)
 	int zcv_val = 0;
 	int vsys_min_1_val = DLPT_VOLT_MIN;
 	int imix = 0;
-#if PMIC_ISENSE_SUPPORT && defined(SWCHR_POWER_PATH)
-	/* For PMIC which supports ISENSE */
-	zcv_val = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
-#else
-	/* For PMIC which do not support ISENSE */
-	zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-#endif
+
+	if (is_isense_supported() && is_power_path_supported())
+		zcv_val = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+	else
+		zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
 	imix = (zcv_val - vsys_min_1_val) * 1000 /
 				ptim_rac_val_avg * 9 / 10;
@@ -1831,6 +1821,11 @@ int pmic_throttling_dlpt_init(void)
 	}
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
 #endif /* end of #ifdef CONFIG_MTK_GAUGE_VERSION */
+
+	/* IMPEDANCE initial setting */
+	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_CNT, 1);
+	pmic_set_hk_reg_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
+	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
 
 	/* no need to depend on LOW_BATTERY_PROTECT */
 	lbat_service_init();
