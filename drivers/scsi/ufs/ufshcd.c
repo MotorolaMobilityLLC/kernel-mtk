@@ -1550,21 +1550,21 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 		/* crypto enable */
 		dword_0 |= (1 << UPIU_COMMAND_CRYPTO_EN_OFFSET);
 		dword_0 |= lrbp->crypto_cfgid;
-
-		req_desc->header.dword_1 = cpu_to_le32(lrbp->crypto_dunl);
-		req_desc->header.dword_3 = cpu_to_le32(lrbp->crypto_dunu);
 	}
 #endif
-
-	dword_0 = data_direction | (lrbp->command_type
-				<< UPIU_COMMAND_TYPE_OFFSET);
 	if (lrbp->intr_cmd)
 		dword_0 |= UTP_REQ_DESC_INT_CMD;
 
 	/* Transfer request descriptor header fields */
 	req_desc->header.dword_0 = cpu_to_le32(dword_0);
-	/* dword_1 is reserved, hence it is set to 0 */
-	req_desc->header.dword_1 = 0;
+
+	/* MTK PATCH: dword_1 is not reserved if crypto_en  */
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+	if (lrbp->crypto_en)
+		req_desc->header.dword_1 = cpu_to_le32(lrbp->crypto_dunl);
+	else
+#endif
+		req_desc->header.dword_1 = 0;
 	/*
 	 * assigning invalid value for command status. Controller
 	 * updates OCS on command completion, with the command
@@ -1572,8 +1572,14 @@ static void ufshcd_prepare_req_desc_hdr(struct ufs_hba *hba,
 	 */
 	req_desc->header.dword_2 =
 		cpu_to_le32(OCS_INVALID_COMMAND_STATUS);
-	/* dword_3 is reserved, hence it is set to 0 */
-	req_desc->header.dword_3 = 0;
+
+	/* MTK PATCH: dword_3 is not reserved if crypto_en */
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+	if (lrbp->crypto_en)
+		req_desc->header.dword_3 = cpu_to_le32(lrbp->crypto_dunu);
+	else
+#endif
+		req_desc->header.dword_3 = 0;
 
 	req_desc->prd_table_length = 0;
 }
