@@ -204,15 +204,13 @@ s32 cmdq_mdp_query_usage(s32 *counters)
 	return 0;
 }
 
-static void cmdq_mdp_clock_enable(u64 engine_flag,
-	const u64 engine_enable)
+static s32 cmdq_mdp_clock_enable(u64 engine_flag)
 {
-	s32 index;
-	s32 smi_ref;
+	s32 smi_ref, ret;
 
-	CMDQ_MSG(
-		"-->CLOCK: Enable engine clock 0x%llx engine enable 0x%llx\n",
-		engine_flag, engine_enable);
+	mutex_lock(&mdp_clock_mutex);
+
+	CMDQ_MSG("[CLOCK]%s engine:0x%llx\n", __func__, engine_flag);
 
 	smi_ref = atomic_inc_return(&mdp_ctx.mdp_smi_usage);
 	if (smi_ref == 1) {
@@ -220,68 +218,22 @@ static void cmdq_mdp_clock_enable(u64 engine_flag,
 		cmdq_mdp_get_func()->mdpEnableCommonClock(true);
 	}
 
-	/* ISP special check: Always call ISP on/off if this task */
-	/* involves ISP. Ignore the ISP HW flags. */
-	if (cmdq_core_is_group_flag(CMDQ_GROUP_ISP, engine_flag)) {
-		CMDQ_VERBOSE("[CLOCK]enable group %d clockOn\n",
-			CMDQ_GROUP_ISP);
-		cmdq_core_group_clk_enable(CMDQ_GROUP_ISP, engine_flag);
-	}
+	ret = cmdq_mdp_get_func()->mdpClockOn(engine_flag);
 
-	for (index = CMDQ_MAX_GROUP_COUNT - 1; index >= 0; index--) {
-		/* note that DISPSYS controls their own clock on/off */
-		if (index == CMDQ_GROUP_DISP)
-			continue;
+	mutex_unlock(&mdp_clock_mutex);
 
-		/* note that ISP is per-task on/off, not per HW flag */
-		if (index == CMDQ_GROUP_ISP)
-			continue;
+	CMDQ_MSG("[CLOCK]%s end ret:%d\n", __func__, ret);
 
-		if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM)index,
-			engine_enable))
-			cmdq_core_group_clk_enable(index, engine_flag);
-	}
-
-	CMDQ_MSG("<--CLOCK: Enable hardware clock end\n");
+	return ret;
 }
 
-static void cmdq_mdp_clock_disable(u64 engine_flag,
-	const u64 engine_not_use)
+static s32 cmdq_mdp_clock_disable(u64 engine_flag)
 {
-	s32 index;
-	s32 smi_ref;
+	s32 smi_ref, ret;
 
-	CMDQ_MSG(
-		"-->CLOCK: Disable engine clock 0x%llx engine not use 0x%llx\n",
-		engine_flag, engine_not_use);
+	CMDQ_MSG("[CLOCK]%s engine:0x%llx\n", __func__, engine_flag);
 
-	/* ISP special check: Always call ISP on/off if this task
-	 * involves ISP. Ignore the ISP HW flags ref count.
-	 */
-	if (cmdq_core_is_group_flag(CMDQ_GROUP_ISP, engine_flag)) {
-		CMDQ_VERBOSE("[CLOCK]disable group %d clockOff\n",
-			CMDQ_GROUP_ISP);
-		cmdq_core_group_clk_disable(CMDQ_GROUP_ISP, engine_flag);
-	}
-
-	/* Turn off unused engines */
-	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
-		/* note that DISPSYS controls their own clock on/off */
-		if (index == CMDQ_GROUP_DISP)
-			continue;
-
-		/* note that ISP is per-task on/off, not per HW flag */
-		if (index == CMDQ_GROUP_ISP)
-			continue;
-
-		if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM)index,
-			engine_not_use)) {
-			CMDQ_MSG(
-				"[CLOCK]Disable engine group %d flag:0x%llx clockOff\n",
-				index, engine_not_use);
-			cmdq_core_group_clk_disable(index, engine_not_use);
-		}
-	}
+	ret = cmdq_mdp_get_func()->mdpClockOff(engine_flag);
 
 	smi_ref = atomic_dec_return(&mdp_ctx.mdp_smi_usage);
 	if (smi_ref == 0) {
@@ -289,7 +241,9 @@ static void cmdq_mdp_clock_disable(u64 engine_flag,
 		cmdq_mdp_get_func()->mdpEnableCommonClock(false);
 	}
 
-	CMDQ_MSG("<--CLOCK: Disable hardware clock 0x%llx end\n", engine_flag);
+	CMDQ_MSG("[CLOCK]%s end ret:%d\n", __func__, ret);
+
+	return ret;
 }
 
 void cmdq_mdp_reset_resource(void)
@@ -530,7 +484,7 @@ void cmdq_mdp_set_resource_callback(enum cmdq_event res_event,
 	}
 }
 
-static u64 cmdq_mdp_get_actual_engine_flag_for_enable_clock(
+static u64 cmdq_mdp_get_engine_flag_for_enable_clock(
 	u64 engine_flag, s32 thread_id)
 {
 	struct EngineStruct *engine = mdp_ctx.engine;
@@ -586,14 +540,12 @@ static void cmdq_mdp_lock_thread(struct cmdqRecStruct *handle)
 {
 	u64 engine_flag = handle->engineFlag;
 	s32 thread = handle->thread;
-	u64 clock_engines;
 
 	CMDQ_PROF_START(current->pid, __func__);
 
-	mutex_lock(&mdp_clock_mutex);
 	mutex_lock(&mdp_thread_mutex);
 
-	clock_engines = cmdq_mdp_get_actual_engine_flag_for_enable_clock(
+	handle->engine_clk = cmdq_mdp_get_engine_flag_for_enable_clock(
 		engine_flag, thread);
 
 	/* make this thread can be dispath again */
@@ -601,11 +553,6 @@ static void cmdq_mdp_lock_thread(struct cmdqRecStruct *handle)
 	mdp_ctx.thread[thread].task_count++;
 
 	mutex_unlock(&mdp_thread_mutex);
-
-	/* enable clock */
-	cmdq_mdp_clock_enable(engine_flag, clock_engines);
-
-	mutex_unlock(&mdp_clock_mutex);
 
 	CMDQ_PROF_END(current->pid, __func__);
 }
@@ -639,13 +586,11 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 {
 	u64 engine_flag = handle->engineFlag;
 	s32 thread = handle->thread;
-	u32 clock_engines;
 
-	mutex_lock(&mdp_clock_mutex);
 	mutex_lock(&mdp_thread_mutex);
 
 	/* get not use engine using engine flag for disable clock. */
-	clock_engines = cmdq_mdp_get_not_used_engine(engine_flag);
+	handle->engine_clk = cmdq_mdp_get_not_used_engine(engine_flag);
 
 	mdp_ctx.thread[thread].task_count--;
 
@@ -656,13 +601,6 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 	}
 
 	mutex_unlock(&mdp_thread_mutex);
-
-	/* clock off */
-	cmdq_mdp_clock_disable(engine_flag, clock_engines);
-	/* Delay release resource  */
-	cmdq_mdp_delay_check_unlock(clock_engines);
-
-	mutex_unlock(&mdp_clock_mutex);
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -1269,7 +1207,23 @@ int cmdq_mdp_status_dump(struct notifier_block *nb,
 
 void cmdq_mdp_init(void)
 {
+	struct cmdqMDPFuncStruct *mdp_func = cmdq_mdp_get_func();
+
 	CMDQ_LOG("%s\n", __func__);
+
+	/* Register MDP callback */
+	cmdqCoreRegisterCB(CMDQ_GROUP_MDP, cmdq_mdp_clock_enable,
+		mdp_func->mdpDumpInfo, mdp_func->mdpResetEng,
+		cmdq_mdp_clock_disable);
+
+	cmdqCoreRegisterErrorResetCB(CMDQ_GROUP_MDP, mdp_func->errorReset);
+
+	/* Register module dispatch callback */
+	cmdqCoreRegisterDispatchModCB(CMDQ_GROUP_MDP,
+		mdp_func->dispatchModule);
+
+	/* Register restore task */
+	cmdqCoreRegisterTrackTaskCB(CMDQ_GROUP_MDP, mdp_func->trackTask);
 
 	init_waitqueue_head(&mdp_thread_dispatch);
 
