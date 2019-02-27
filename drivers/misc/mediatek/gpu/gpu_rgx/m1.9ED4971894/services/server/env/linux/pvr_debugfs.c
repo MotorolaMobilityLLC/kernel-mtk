@@ -360,6 +360,12 @@ static ssize_t _DebugFSFileWrite(struct file *psFile,
 		return -EIO;
 	}
 
+	if (uiCount == 0)
+	{
+		PVR_DPF((PVR_DEBUGFS_PVR_DPF_LEVEL, "%s: Called for file '%s', which uiCount is zero, returning -EINVAL(%d)", __FUNCTION__, psFile->f_path.dentry->d_iname, -EINVAL));
+		return -EINVAL;
+	}
+
 	return psPrivData->pfnWrite(pszBuffer, uiCount, puiPosition, psPrivData->pvData);
 }
 
