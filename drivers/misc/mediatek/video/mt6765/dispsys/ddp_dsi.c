@@ -468,7 +468,9 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 		}
 
 		DDPERR("%s:buffer underrun\n", ddp_get_module_name(module));
-		primary_display_diagnose();
+		/* Shang: fix print too much wrokaround */
+		/* Please Fix dsi underrun!!!!!!!!!!!*/
+		/* primary_display_diagnose(); */
 	}
 
 	if (status.INP_UNFINISH_INT_EN)
