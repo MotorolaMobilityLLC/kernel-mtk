@@ -67,6 +67,8 @@ static void cam_temperature_report_wq_routine(struct work_struct *);
 	struct delayed_work cam_temperature_wq;
 #endif
 
+#define FEATURE_CONTROL_MAX_DATA_SIZE 128000
+
 struct platform_device *gpimgsensor_hw_platform_device;
 struct device *gimgsensor_device;
 /* 81 is used for V4L driver */
@@ -181,7 +183,7 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 		if (ret != IMGSENSOR_RETURN_SUCCESS) {
 			pr_err("[%s]", __func__);
-			return ret ? -EIO : ret;
+			return -EIO;
 		}
 		/* wait for power stable */
 		mDELAY(5);
@@ -1227,6 +1229,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			pr_err(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}
+		if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE)
+			return -EINVAL;
 
 		pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
 		if (pFeaturePara == NULL)
