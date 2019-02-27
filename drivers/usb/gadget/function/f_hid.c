@@ -678,8 +678,12 @@ static int hidg_bind(struct usb_configuration *c, struct usb_function *f)
 
 	/* preallocate request and buffer */
 	status = -ENOMEM;
-	hidg->req = alloc_ep_req(hidg->in_ep, hidg->report_length);
+	hidg->req = usb_ep_alloc_request(hidg->in_ep, GFP_KERNEL);
 	if (!hidg->req)
+		goto fail;
+
+	hidg->req->buf = kmalloc(hidg->report_length, GFP_KERNEL);
+	if (!hidg->req->buf)
 		goto fail;
 
 	/* set descriptor dynamic values */
