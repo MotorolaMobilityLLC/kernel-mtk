@@ -1,9 +1,10 @@
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic_wrap/$(CONFIG_MTK_PLATFORM)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
-ccflags-y += -I$(srctree)/drivers/power/mediatek/battery
-ccflags-y += -I$(srctree)/drivers/power/mediatek/charger
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 
 ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
@@ -12,8 +13,8 @@ obj-y += pmic_ipi.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_gauge.o
-obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_charger.o
+	obj-$(CONFIG_MTK_SMART_BATTERY) += mt6357_gauge.o
+	obj-$(CONFIG_MTK_CHARGER) += mt6357_charger.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6357)	+= pmic.o pmic_common.o \
@@ -26,12 +27,10 @@ obj-$(CONFIG_MTK_PMIC_CHIP_MT6357)	+= pmic.o pmic_common.o \
 		regulator_codegen.o \
 		pmic_lp_api.o \
 		pmic_efuse.o \
-#		pmic_bif.o \
-
 
 # Charger Type Detection
+ifndef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-#       obj-$(CONFIG_MTK_PMIC_CHIP_MT6357) += pmic_chr_type_det_v2.o
-else
-#       obj-$(CONFIG_MTK_PMIC_CHIP_MT6357) += pmic_chr_type_det.o
+	obj-$(CONFIG_MTK_CHARGER) += pmic_chr_type_det_v2.o
+endif
 endif
