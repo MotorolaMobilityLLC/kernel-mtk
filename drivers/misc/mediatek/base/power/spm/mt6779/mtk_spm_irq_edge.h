@@ -27,8 +27,8 @@ struct edge_trigger_irq_list {
 
 static struct edge_trigger_irq_list list[] = {
 	//{ "mediatek,infracfg_ao",   0,	0 },
-	{ "mediatek,kp",		0,	STA1_KP_IRQ },
-	{ "mediatek,mddriver",		0,	STA1_MD_WDT }
+	{ "mediatek,kp",		0,	R12_KP_IRQ_B },
+	{ "mediatek,mddriver",		0,	R12_MD1_WDT_B }
 };
 
 #endif /* __MTK_SPM_IRQ_EDGE_H__ */

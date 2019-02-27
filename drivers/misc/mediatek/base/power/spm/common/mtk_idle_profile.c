@@ -17,7 +17,7 @@
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if defined(CONFIG_MTK_CPU_FREQ)
 #include <mtk_cpufreq_api.h>
 #endif
 
@@ -571,7 +571,7 @@ void mtk_idle_latency_profile_result(unsigned int idle_type)
 	data = &idle_profile[idle_type][0];
 	pdata = &g_pdata[idle_type];
 
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	#if defined(CONFIG_MTK_CPU_FREQ)
 	log("%s (cpu%d/%u),", mtk_idle_name(idle_type)
 		, smp_processor_id()
 		, mt_cpufreq_get_cur_freq(smp_processor_id()/4));
