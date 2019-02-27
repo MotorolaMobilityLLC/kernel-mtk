@@ -1454,7 +1454,7 @@ static void r63419_lcm_validate_roi(int *x, int *y, int *width, int *height)
 		}
 		h = y2 - y1 + 1;
 	}
-	/* LCD_DEBUG("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",*/
+	/* pr_debug("roi(%d,%d,%d,%d) to (%d,%d,%d,%d)\n",*/
 	/* *x, *y, *width, *height, x1, y1, w, h);	 */
 	*x = x1;
 	*y = y1;

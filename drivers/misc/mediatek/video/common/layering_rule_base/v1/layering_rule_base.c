@@ -293,7 +293,8 @@ static int get_ovl_idx_by_phy_layer(int layer_map_tb, int phy_layer_idx)
 	}
 
 	if (layer_idx == MAX_PHY_OVL_CNT) {
-		DISPPR_ERROR("%s fail, phy_layer_idx:%d\n", __func__, phy_layer_idx);
+		pr_info("[DISP]%s fail, phy_layer_idx:%d\n",
+			__func__, phy_layer_idx);
 		return -1;
 	}
 
@@ -555,7 +556,7 @@ static int _rollback_to_GPU_bottom_up(struct disp_layer_info *disp_info,
 	}
 
 	if (available_ovl_num < 0)
-		DISPPR_ERROR("%s available_ovl_num invalid:%d\n",
+		pr_info("[DISP]%s available_ovl_num invalid:%d\n",
 			__func__, available_ovl_num);
 
 	return available_ovl_num;
@@ -593,7 +594,7 @@ static int _rollback_to_GPU_top_down(struct disp_layer_info *disp_info,
 	}
 
 	if (available_ovl_num < 0)
-		DISPPR_ERROR("%s available_ovl_num invalid:%d\n",
+		pr_info("[DISP]%s available_ovl_num invalid:%d\n",
 			__func__, available_ovl_num);
 
 	return available_ovl_num;
@@ -723,7 +724,8 @@ static int ext_id_tunning(struct disp_layer_info *disp_info, int disp_idx)
 	_filter_by_ovl_cnt(disp_info, disp_idx);
 	phy_ovl_cnt = get_phy_ovl_layer_cnt(disp_info, disp_idx);
 	if (phy_ovl_cnt > MAX_PHY_OVL_CNT) {
-		DISPPR_ERROR("phy_ovl_cnt(%d) over OVL count limit\n", phy_ovl_cnt);
+		pr_info("[DISP]phy_ovl_cnt(%d) over OVL count limit\n",
+			phy_ovl_cnt);
 		phy_ovl_cnt = MAX_PHY_OVL_CNT;
 	}
 
@@ -1538,7 +1540,7 @@ static int check_layering_result(struct disp_layer_info *disp_info)
 			disp_info->input_config[disp_idx][layer_num - 1].ovl_id;
 
 		if (max_ovl_id >= ovl_layer_num) {
-			DISPPR_ERROR("Invalid ovl_id:%d, disp_idx:%d\n",
+			pr_info("[DISP]Invalid ovl_id:%d, disp_idx:%d\n",
 				max_ovl_id, disp_idx);
 			WARN_ON(1);
 		}
@@ -1551,7 +1553,7 @@ int check_disp_info(struct disp_layer_info *disp_info)
 	int disp_idx, ghead, gtail;
 
 	if (disp_info == NULL) {
-		DISPPR_ERROR("[HRT]disp_info is empty\n");
+		pr_info("[DISP][HRT]disp_info is empty\n");
 		return -1;
 	}
 
@@ -1559,7 +1561,7 @@ int check_disp_info(struct disp_layer_info *disp_info)
 
 		if (disp_info->layer_num[disp_idx] > 0 &&
 			disp_info->input_config[disp_idx] == NULL) {
-			DISPPR_ERROR("[HRT]Has input layer, but input config is empty, disp_idx:%d, layer_num:%d\n",
+			pr_info("[DISP][HRT]Has input layer, but input config is empty, disp_idx:%d, layer_num:%d\n",
 				disp_idx, disp_info->layer_num[disp_idx]);
 			return -1;
 		}
@@ -1568,7 +1570,7 @@ int check_disp_info(struct disp_layer_info *disp_info)
 		gtail = disp_info->gles_tail[disp_idx];
 		if ((ghead < 0 && gtail >= 0) || (gtail < 0 && ghead >= 0)) {
 			dump_disp_info(disp_info, DISP_DEBUG_LEVEL_ERR);
-			DISPPR_ERROR("[HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
+			pr_info("[DISP][HRT]gles layer invalid, disp_idx:%d, head:%d, tail:%d\n",
 				disp_idx, disp_info->gles_head[disp_idx],
 				disp_info->gles_tail[disp_idx]);
 			return -1;
@@ -1595,7 +1597,7 @@ static int _copy_layer_info_from_disp(struct disp_layer_info *disp_info_user,
 		kzalloc(layer_size, GFP_KERNEL);
 
 	if (l_info->input_config[disp_idx] == NULL) {
-		DISPPR_ERROR("[HRT]: alloc input config 0 fail, layer_num:%d\n",
+		pr_info("[DISP][HRT]: alloc input config 0 fail, layer_num:%d\n",
 			l_info->layer_num[disp_idx]);
 		return -EFAULT;
 	}
@@ -1608,7 +1610,7 @@ static int _copy_layer_info_from_disp(struct disp_layer_info *disp_info_user,
 		if (copy_from_user(l_info->input_config[disp_idx],
 				disp_info_user->input_config[disp_idx],
 				layer_size)) {
-			DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n",
+			pr_info("[DISP][FB]: copy_to_user failed! line:%d\n",
 				__LINE__);
 			return -EFAULT;
 		}
@@ -1650,7 +1652,7 @@ static int _copy_layer_info_by_disp(struct disp_layer_info *disp_info_user,
 	} else {
 		if (copy_to_user(disp_info_user->input_config[disp_idx],
 				l_info->input_config[disp_idx], layer_size)) {
-			DISPPR_ERROR("[FB]: copy_to_user failed! line:%d\n",
+			pr_info("[DISP][FB]: copy_to_user failed! line:%d\n",
 				__LINE__);
 			ret = -EFAULT;
 		}
@@ -1695,7 +1697,7 @@ int set_hrt_state(enum HRT_SYS_STATE sys_state, int en)
 			l_rule_info->hrt_sys_state &= ~(1 << sys_state);
 		break;
 	default:
-		DISPPR_ERROR("unknown hrt scenario\n");
+		pr_info("[DISP]unknown hrt scenario\n");
 	}
 
 	DISPMSG("Set hrt sys_state:%d, en:%d\n", sys_state, en);
@@ -1720,7 +1722,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user,
 	}
 
 	if (check_disp_info(disp_info_user) < 0) {
-		DISPPR_ERROR("check_disp_info fail\n");
+		pr_info("[DISP]check_disp_info fail\n");
 		return -EFAULT;
 	}
 	if (set_disp_info(disp_info_user, debug_mode))

@@ -36,5 +36,6 @@ else
 	obj-$(CONFIG_MACH_MT6759) += common/
 	obj-$(CONFIG_MACH_MT6758) += common/
 	obj-$(CONFIG_MACH_MT6739) += common/
+	obj-$(CONFIG_MACH_MT6765) += common/
 endif
 
