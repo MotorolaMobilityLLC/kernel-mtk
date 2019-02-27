@@ -3618,7 +3618,8 @@ start_tune:
 				host->id, ++host->reautok_times);
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 			/* CQ DAT tune in MMC layer, here tune CMD13 CRC */
-			if (host->mmc->card->ext_csd.cmdq_mode_en)
+			if (host->mmc->card
+				&& host->mmc->card->ext_csd.cmdq_mode_en)
 				emmc_execute_dvfs_autok(host, MMC_SEND_STATUS);
 			else
 #endif
