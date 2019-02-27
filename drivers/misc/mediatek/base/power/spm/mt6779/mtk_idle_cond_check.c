@@ -54,6 +54,7 @@ static void __iomem *apmixedsys_base;  /* APMIXEDSYS */
 #define SPM_PWR_STATUS      SPM_REG(0x016C)
 #undef SPM_PWR_STATUS_2ND
 #define SPM_PWR_STATUS_2ND  SPM_REG(0x0170)
+#define SPM_ULPOSC_CON      SPM_REG(0x0440)
 #define	INFRA_SW_CG_0_STA   INFRA_REG(0x0094)
 #define	INFRA_SW_CG_1_STA   INFRA_REG(0x0090)
 #define	INFRA_SW_CG_2_STA   INFRA_REG(0x00AC)
@@ -700,33 +701,16 @@ END:
 	return op_cond;
 }
 
-unsigned int mtk_idle_cond_vcore_low_volt(int idle_type)
+unsigned int mtk_idle_cond_vcore_ulposc_state(void)
 {
-	unsigned int op_cond = 0;
+	int op_cond = 0;
 
-	if (idle_force_vcore_lp_mode == IDLE_VCORE_BYPASS_CHECK_FOR_LP_MODE)
-		goto END;
+	if (!(idle_readl(SPM_ULPOSC_CON) & 0x1))
+		op_cond |= MTK_IDLE_OPT_VCORE_ULPOSC_OFF;
 
-	switch (idle_force_vcore_lp_mode) {
-	case IDLE_VCORE_CHECK_FOR_LP_MODE:
-		/* by vcore low volt check */
-		break;
-	case IDLE_VCORE_FORCE_LP_MODE:
-		/* enter LP mode */
-		op_cond |= DEEPIDLE_OPT_VCORE_LOW_VOLT;
-		break;
-	case IDLE_VCORE_FORCE_NORMAL_MODE:
-		/* no enter LP mode */
-		op_cond &= ~DEEPIDLE_OPT_VCORE_LOW_VOLT;
-		break;
-	default:
-		op_cond = 0;
-		break;
-	}
-
-END:
 	return op_cond;
 }
+
 
 /***********************************************************
  * Fundamental build up functions
