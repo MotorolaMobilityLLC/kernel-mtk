@@ -237,7 +237,6 @@ static int tcpci_alert_recv_hard_reset(struct tcpc_device *tcpc_dev)
 {
 	TCPC_INFO("HardResetAlert\r\n");
 	pd_put_recv_hard_reset_event(tcpc_dev);
-	tcpci_init_alert_mask(tcpc_dev);
 	return 0;
 }
 
