@@ -657,11 +657,6 @@ int mtk_wdt_request_en_set(int mark_bit, enum wk_req_en en)
 			tmp |= (MTK_WDT_REQ_MODE_SPM_SCPSYS);
 		if (en == WD_REQ_DIS)
 			tmp &=  ~(MTK_WDT_REQ_MODE_SPM_SCPSYS);
-	} else if (mark_bit == MTK_WDT_REQ_MODE_SPM_THERMAL) {
-		if (en == WD_REQ_EN)
-			tmp |= (MTK_WDT_REQ_MODE_SPM_THERMAL);
-		if (en == WD_REQ_DIS)
-			tmp &=  ~(MTK_WDT_REQ_MODE_SPM_THERMAL);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_EINT) {
 		if (en == WD_REQ_EN) {
 			if (ext_debugkey_io_eint != -1) {
@@ -727,11 +722,6 @@ int mtk_wdt_request_mode_set(int mark_bit, enum wk_req_mode mode)
 			tmp |= (MTK_WDT_REQ_IRQ_SPM_SCPSYS_EN);
 		if (mode == WD_REQ_RST_MODE)
 			tmp &=  ~(MTK_WDT_REQ_IRQ_SPM_SCPSYS_EN);
-	} else if (mark_bit == MTK_WDT_REQ_MODE_SPM_THERMAL) {
-		if (mode == WD_REQ_IRQ_MODE)
-			tmp |= (MTK_WDT_REQ_IRQ_SPM_THERMAL_EN);
-		if (mode == WD_REQ_RST_MODE)
-			tmp &=  ~(MTK_WDT_REQ_IRQ_SPM_THERMAL_EN);
 	} else if (mark_bit == MTK_WDT_REQ_MODE_EINT) {
 		if (mode == WD_REQ_IRQ_MODE)
 			tmp |= (MTK_WDT_REQ_IRQ_EINT_EN);
