@@ -11,7 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 #include <linux/cpu.h>
-#include <linux/debugfs.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <linux/module.h>
 #include <linux/notifier.h>
 #include <linux/of.h>
@@ -42,12 +43,10 @@
 #include <linux/irqchip/mtk-gic-extend.h>
 /* #define USING_TICK_BROADCAST */
 
-#define MCDI_CPU_OFF        1
-#define MCDI_CLUSTER_OFF    1
-
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
 
+static unsigned long mcdi_cnt_wfi[NF_CPU];
 static unsigned long mcdi_cnt_cpu[NF_CPU];
 static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 
@@ -167,6 +166,11 @@ static ssize_t mcdi_state_read(struct file *filp,
 
 	mcdi_log("\n");
 
+	mcdi_log("mcdi_cnt_wfi: ");
+	for (i = 0; i < NF_CPU; i++)
+		mcdi_log("%lu ", mcdi_cnt_wfi[i]);
+	mcdi_log("\n");
+
 	mcdi_log("mcdi_cnt_cpu: ");
 	for (i = 0; i < NF_CPU; i++)
 		mcdi_log("%lu ", mcdi_cnt_cpu[i]);
@@ -255,25 +259,23 @@ static const struct file_operations mcdi_state_fops = {
 	.release = single_release,
 };
 
-/* debugfs entry */
-static const char mcdi_debugfs_dir_name[] = "mcdi";
-static struct dentry *root_entry;
-
-static int mcdi_debugfs_init(void)
+/* procfs entry */
+static const char mcdi_procfs_dir_name[] = "mcdi";
+struct proc_dir_entry *mcdi_dir;
+static int mcdi_procfs_init(void)
 {
-	/* TODO: check if debugfs_create_file() failed */
-	/* Initialize debugfs */
-	root_entry = debugfs_create_dir(mcdi_debugfs_dir_name, NULL);
-	if (!root_entry) {
-		pr_info("Can not create debugfs dir `%s`\n",
-			mcdi_debugfs_dir_name);
-		return 1;
+	mcdi_dir = proc_mkdir(mcdi_procfs_dir_name, NULL);
+
+	if (!mcdi_dir) {
+		pr_notice("fail to create /proc/mcdi @ %s()\n", __func__);
+		return -ENOMEM;
 	}
 
-	debugfs_create_file("mcdi_state", 0644,
-				root_entry, NULL, &mcdi_state_fops);
+	if (!proc_create("state", 0644, mcdi_dir, &mcdi_state_fops))
+		pr_notice("%s(), create /proc/mcdi/%s failed\n",
+			__func__, "state");
 
-	mcdi_debugfs_profile_init(root_entry);
+	mcdi_procfs_profile_init(mcdi_dir);
 
 	return 0;
 }
@@ -291,7 +293,6 @@ static void __go_to_wfi(int cpu)
 
 void mcdi_cpu_off(int cpu)
 {
-#if MCDI_CPU_OFF
 	int state = 0;
 
 	state = get_residency_latency_result(cpu);
@@ -340,14 +341,10 @@ void mcdi_cpu_off(int cpu)
 
 		break;
 	}
-#else
-	__go_to_wfi(cpu);
-#endif
 }
 
 void mcdi_cluster_off(int cpu)
 {
-#if MCDI_CLUSTER_OFF
 	int cluster_idx = cluster_idx_get(cpu);
 
 	/* Notify SSPM: cluster can be OFF */
@@ -358,12 +355,6 @@ void mcdi_cluster_off(int cpu)
 	mtk_enter_idle_state(MTK_MCDI_CLUSTER_MODE);
 
 	mcdi_profile_ts(MCDI_PROFILE_CPU_DORMANT_LEAVE);
-
-#elif MCDI_CPU_OFF
-	mcdi_cpu_off(cpu);
-#else
-	__go_to_wfi(cpu);
-#endif
 }
 
 void mcdi_heart_beat_log_dump(void)
@@ -454,6 +445,8 @@ int wfi_enter(int cpu)
 	__go_to_wfi(cpu);
 
 	idle_refcnt_dec();
+
+	mcdi_cnt_wfi[cpu]++;
 
 	return 0;
 }
@@ -722,8 +715,8 @@ static int __init mcdi_init(void)
 	/* Register CPU up/down callbacks */
 	mcdi_hotplug_cb_init();
 
-	/* debugfs init */
-	mcdi_debugfs_init();
+	/* procfs init */
+	mcdi_procfs_init();
 
 	/* MCDI governor init */
 	mcdi_governor_init();

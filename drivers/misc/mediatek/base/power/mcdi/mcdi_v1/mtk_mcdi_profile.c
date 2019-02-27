@@ -10,7 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#include <linux/debugfs.h>
+
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 #include <linux/kernel.h>
 #include <linux/printk.h>
 #include <linux/tick.h>
@@ -443,8 +445,9 @@ static const struct file_operations mcdi_profile_fops = {
 	.release = single_release,
 };
 
-void mcdi_debugfs_profile_init(struct dentry *mcdu_dir)
+void mcdi_procfs_profile_init(struct proc_dir_entry *mcdi_dir)
 {
-	debugfs_create_file("mcdi_profile", 0644,
-				mcdu_dir, NULL, &mcdi_profile_fops);
+	if (!proc_create("profile", 0644, mcdi_dir, &mcdi_profile_fops))
+		pr_notice("%s(), create /proc/mcdi/%s failed\n",
+			__func__, "profile");
 }

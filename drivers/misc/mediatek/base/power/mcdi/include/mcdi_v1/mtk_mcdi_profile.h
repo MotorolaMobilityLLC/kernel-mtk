@@ -14,7 +14,7 @@
 #ifndef __MTK_MCDI_PROFILE_H__
 #define __MTK_MCDI_PROFILE_H__
 
-#include <linux/debugfs.h>
+#include <linux/proc_fs.h>
 #include <mtk_mcdi_plat.h>
 
 /* #define MCDI_PROFILE_BREAKDOWN */
@@ -95,5 +95,5 @@ unsigned int get_mcdi_profile_cnt(void);
 unsigned int get_mcdi_profile_sum_us(int idx);
 unsigned int get_mcdi_profile_state(void);
 
-void mcdi_debugfs_profile_init(struct dentry *mcdu_dir);
+void mcdi_procfs_profile_init(struct proc_dir_entry *mcdi_dir);
 #endif /* __MTK_MCDI_PROFILE_H__ */
