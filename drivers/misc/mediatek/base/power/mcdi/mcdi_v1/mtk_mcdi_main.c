@@ -53,8 +53,6 @@ static unsigned long mcdi_cnt_cluster[NF_CLUSTER];
 void __iomem *mcdi_sysram_base;
 #define MCDI_SYSRAM (mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET)
 
-/* #define WORST_LATENCY_DBG */
-
 static unsigned long mcdi_cnt_cpu_last[NF_CPU];
 static unsigned long mcdi_cnt_cluster_last[NF_CLUSTER];
 
