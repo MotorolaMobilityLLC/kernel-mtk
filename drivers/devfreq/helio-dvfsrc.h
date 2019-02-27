@@ -128,5 +128,13 @@ extern int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc);
 extern u32 spm_get_dvfs_level(void);
 extern u32 spm_get_pcm_reg9_data(void);
 extern void dvfsrc_set_power_model_ddr_request(unsigned int level);
+/* met profile function */
+extern int vcorefs_get_opp_info_num(void);
+extern char **vcorefs_get_opp_info_name(void);
+extern unsigned int *vcorefs_get_opp_info(void);
+extern int vcorefs_get_src_req_num(void);
+extern char **vcorefs_get_src_req_name(void);
+extern unsigned int *vcorefs_get_src_req(void);
+
 #endif /* __HELIO_DVFSRC_H */
 
