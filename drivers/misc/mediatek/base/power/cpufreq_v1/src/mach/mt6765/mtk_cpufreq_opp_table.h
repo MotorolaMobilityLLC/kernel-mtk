@@ -262,7 +262,7 @@
 #define CPU_DVFS_FREQ11_LL_C65T    745000    /* KHz */
 #define CPU_DVFS_FREQ12_LL_C65T    643000    /* KHz */
 #define CPU_DVFS_FREQ13_LL_C65T    542000    /* KHz */
-#define CPU_DVFS_FREQ14_LL_C65T    460000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_C65T    501000    /* KHz */
 #define CPU_DVFS_FREQ15_LL_C65T    400000    /* KHz */
 
 /* for DVFS OPP table CCI */
@@ -315,7 +315,7 @@
 #define CPU_DVFS_VOLT11_VPROC_LL_C65T    70625          /* 10uV */
 #define CPU_DVFS_VOLT12_VPROC_LL_C65T    67500          /* 10uV */
 #define CPU_DVFS_VOLT13_VPROC_LL_C65T    64375          /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC_LL_C65T    61875          /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_C65T    63125          /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_C65T    60000          /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C65T    111875          /* 10uV */
@@ -369,7 +369,7 @@
 #define CPU_DVFS_FREQ11_LL_C65    745000    /* KHz */
 #define CPU_DVFS_FREQ12_LL_C65    643000    /* KHz */
 #define CPU_DVFS_FREQ13_LL_C65    542000    /* KHz */
-#define CPU_DVFS_FREQ14_LL_C65    460000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_C65    501000    /* KHz */
 #define CPU_DVFS_FREQ15_LL_C65    400000    /* KHz */
 
 /* for DVFS OPP table CCI */
@@ -422,7 +422,7 @@
 #define CPU_DVFS_VOLT11_VPROC_LL_C65    70625          /* 10uV */
 #define CPU_DVFS_VOLT12_VPROC_LL_C65    67500          /* 10uV */
 #define CPU_DVFS_VOLT13_VPROC_LL_C65    64375          /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC_LL_C65    61875          /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_C65    63125          /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_C65    60000          /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C65    111875          /* 10uV */
@@ -476,7 +476,7 @@
 #define CPU_DVFS_FREQ11_LL_C62    745000    /* KHz */
 #define CPU_DVFS_FREQ12_LL_C62    643000    /* KHz */
 #define CPU_DVFS_FREQ13_LL_C62    542000    /* KHz */
-#define CPU_DVFS_FREQ14_LL_C62    460000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_C62    501000    /* KHz */
 #define CPU_DVFS_FREQ15_LL_C62    400000    /* KHz */
 
 /* for DVFS OPP table CCI */
@@ -529,7 +529,7 @@
 #define CPU_DVFS_VOLT11_VPROC_LL_C62    70625          /* 10uV */
 #define CPU_DVFS_VOLT12_VPROC_LL_C62    67500          /* 10uV */
 #define CPU_DVFS_VOLT13_VPROC_LL_C62    64375          /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC_LL_C62    61875          /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_C62    63125          /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_C62    60000          /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C62    111875          /* 10uV */
@@ -583,7 +583,7 @@
 #define CPU_DVFS_FREQ11_LL_C62LY    745000    /* KHz */
 #define CPU_DVFS_FREQ12_LL_C62LY    643000    /* KHz */
 #define CPU_DVFS_FREQ13_LL_C62LY    542000    /* KHz */
-#define CPU_DVFS_FREQ14_LL_C62LY    460000    /* KHz */
+#define CPU_DVFS_FREQ14_LL_C62LY    501000    /* KHz */
 #define CPU_DVFS_FREQ15_LL_C62LY    400000    /* KHz */
 
 /* for DVFS OPP table CCI */
@@ -636,7 +636,7 @@
 #define CPU_DVFS_VOLT11_VPROC_LL_C62LY    73750           /* 10uV */
 #define CPU_DVFS_VOLT12_VPROC_LL_C62LY    69375           /* 10uV */
 #define CPU_DVFS_VOLT13_VPROC_LL_C62LY    65625           /* 10uV */
-#define CPU_DVFS_VOLT14_VPROC_LL_C62LY    62500           /* 10uV */
+#define CPU_DVFS_VOLT14_VPROC_LL_C62LY    64375           /* 10uV */
 #define CPU_DVFS_VOLT15_VPROC_LL_C62LY    60000           /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C62LY    111875           /* 10uV */
@@ -926,7 +926,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C65T[] = {
 	FP(4,	1),
 	FP(4,	1),
 	FP(4,	1),
-	FP(4,	2),
+	FP(4,	1),
 	FP(4,	2),
 };
 
@@ -987,7 +987,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C65[] = {
 	FP(4,	1),
 	FP(4,	1),
 	FP(4,	1),
-	FP(4,	2),
+	FP(4,	1),
 	FP(4,	2),
 };
 
@@ -1048,7 +1048,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C62[] = {
 	FP(4,	1),
 	FP(4,	1),
 	FP(4,	1),
-	FP(4,	2),
+	FP(4,	1),
 	FP(4,	2),
 };
 
@@ -1109,7 +1109,7 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C62LY[] = {
 	FP(4,	1),
 	FP(4,	1),
 	FP(4,	1),
-	FP(4,	2),
+	FP(4,	1),
 	FP(4,	2),
 };
 
