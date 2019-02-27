@@ -30,6 +30,7 @@
 #define DCI_RPMB_CMD_READ_DATA      1
 #define DCI_RPMB_CMD_GET_WCNT       2
 #define DCI_RPMB_CMD_WRITE_DATA     3
+#define DCI_RPMB_CMD_PROGRAM_KEY    4
 
 
 /*... add more command ids when needed */
@@ -41,7 +42,7 @@
  * @param data Data to be processed
  */
 struct cmd_t {
-	dciCommandHeader_t  header;     /**< Command header */
+	struct dciCommandHeader_t header;     /**< Command header */
 	uint32_t            len;        /**< Length of data to process */
 };
 
@@ -49,7 +50,7 @@ struct cmd_t {
  * Response structure
  */
 struct rsp_t {
-	dciResponseHeader_t header;     /**< Response header */
+	struct dciResponseHeader_t header;     /**< Response header */
 	uint32_t            len;
 };
 
@@ -83,11 +84,11 @@ struct rpmb_req_t {
  */
 struct dciMessage_t {
 	union {
-		cmd_t     command;
-		rsp_t     response;
+		struct cmd_t  command;
+		struct rsp_t  response;
 	};
 
-	rpmb_req_t    request;
+	struct rpmb_req_t request;
 
 };
 
