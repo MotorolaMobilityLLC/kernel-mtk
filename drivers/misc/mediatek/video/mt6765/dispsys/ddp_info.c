@@ -247,8 +247,8 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 	 NULL,
 	 {"mediatek,disp_mutex0",
 	  0x14001000,
-	  0,
-	  0,
+	  210,
+	  21,
 	  0,
 	  0}
 	 },

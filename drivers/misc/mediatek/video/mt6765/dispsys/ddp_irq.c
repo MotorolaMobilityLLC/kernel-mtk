@@ -276,6 +276,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 13))
 			DDPERR("IRQ: %s abnormal SOF!\n",
 				ddp_get_module_name(module));
+		if (reg_val & (1 << 14))
+			DDPIRQ("IRQ: %s frame start!\n",
+				ddp_get_module_name(module));
 
 		DISP_CPU_REG_SET(
 			DISP_REG_OVL_INTSTA + ovl_base_addr(module), ~reg_val);
