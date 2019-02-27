@@ -71,19 +71,16 @@ void spm_set_sysclk_settle(void)
 }
 
 #if SPM_PMIC_DEBUG
-static void spm_dump_pmic_reg(void)
+static void spm_dump_power_gs_reg(void)
 {
-	unsigned int pmic_reg[] = {PMIC_RG_BUCK_VCORE_VOSEL_SLEEP_ADDR};
+	unsigned int power_gs_reg[] = {0x1000E118, 0x10001094};
 	unsigned int val = 0;
-	unsigned int ret = 0;
 	int i = 0;
 
-	for (i = 0; i < ARRAY_SIZE(pmic_reg); i++) {
-		ret = pmic_read_interface_nolock(pmic_reg[i], &val, 0xffff, 0);
-		aee_sram_printk("#@# %s(%d) pmic reg(0x%x) = 0x%x\n",
-			__func__, __LINE__, pmic_reg[i], val);
-		pr_info("[SPM] #@# %s(%d) pmic reg(0x%x) = 0x%x\n",
-			__func__, __LINE__, pmic_reg[i], val);
+	for (i = 0; i < ARRAY_SIZE(power_gs_reg); i++) {
+		val = _golden_read_reg(power_gs_reg[i]);
+		pr_info("[SPM] #@# %s(%d) power_gs_reg(0x%x) = 0x%x\n",
+			__func__, __LINE__, power_gs_reg[i], val);
 	}
 }
 #endif /* SPM_PMIC_DEBUG */
@@ -117,9 +114,6 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 		pr_info("[SPM] ret %d", ret);
 	}
 #endif
-#if SPM_PMIC_DEBUG
-	spm_dump_pmic_reg();
-#endif /* SPM_PMIC_DEBUG */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (slp_dump_golden_setting || --mt_power_gs_dump_suspend_count >= 0)
@@ -129,7 +123,7 @@ void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl)
 	/* dvfsrc_md_scenario_update(1); */
 
 #if SPM_PMIC_DEBUG
-	spm_dump_pmic_reg();
+	spm_dump_power_gs_reg();
 #endif /* SPM_PMIC_DEBUG */
 }
 
@@ -142,7 +136,7 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl)
 	/* dvfsrc_md_scenario_update(0); */
 
 #if SPM_PMIC_DEBUG
-	spm_dump_pmic_reg();
+	spm_dump_power_gs_reg();
 #endif /* SPM_PMIC_DEBUG */
 
 	memset(&spm_d, 0, sizeof(struct spm_data));
