@@ -22,12 +22,22 @@
 
 int spm_dvfs_flag_init(int dvfsrc_en)
 {
-	if (dvfsrc_en)
-		return SPM_FLAG_RUN_COMMON_SCENARIO;
+	int flag = SPM_FLAG_RUN_COMMON_SCENARIO;
+	int dvfsrc_flag = dvfsrc_en >> 1;
 
-	return SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS |
-		SPM_FLAG_DIS_VCORE_DFS;
+	if (dvfsrc_en & 1) {
+		if (dvfsrc_flag & 0x1)
+			flag |= SPM_FLAG_DIS_VCORE_DVS;
+
+		if (dvfsrc_flag & 0x2)
+			flag |= SPM_FLAG_DIS_VCORE_DFS;
+
+		return flag;
+	} else
+		return SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS |
+			SPM_FLAG_DIS_VCORE_DFS;
 }
+
 
 u32 spm_get_dvfs_level(void)
 {
