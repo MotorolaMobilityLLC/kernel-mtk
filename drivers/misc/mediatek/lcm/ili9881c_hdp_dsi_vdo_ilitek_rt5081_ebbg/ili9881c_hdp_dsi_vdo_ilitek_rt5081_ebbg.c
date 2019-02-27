@@ -694,45 +694,51 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #ifndef BUILD_LK
 	unsigned int ret = 0;
 	unsigned int x0 = FRAME_WIDTH / 4;
-	unsigned int x1 = FRAME_WIDTH * 3 / 4;
 
-	unsigned char x0_MSB = ((x0 >> 8) & 0xFF);
-	unsigned char x0_LSB = (x0 & 0xFF);
-	unsigned char x1_MSB = ((x1 >> 8) & 0xFF);
-	unsigned char x1_LSB = (x1 & 0xFF);
+	unsigned char x0_MSB = (x0 & 0xFF);
 
-	unsigned int data_array[3];
-	unsigned char read_buf[4];
+	unsigned int data_array[2];
+	unsigned char read_buf[2];
+	unsigned int num1 = 0, num2 = 0;
 
-	pr_debug("ATA check size = 0x%x,0x%x,0x%x,0x%x\n", x0_MSB, x0_LSB, x1_MSB, x1_LSB);
-	data_array[0] = 0x0005390A;	/* HS packet */
-	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
-	data_array[2] = (x1_LSB);
-	dsi_set_cmdq(data_array, 3, 1);
+	struct LCM_setting_table switch_table_page1[] = {
+		{ 0xFF, 0x03, {0x98, 0x81, 0x01} }
+	};
 
-	data_array[0] = 0x00043700;	/* read id return two byte,version and id */
+	struct LCM_setting_table switch_table_page0[] = {
+		{ 0xFF, 0x03, {0x98, 0x81, 0x00} }
+	};
+
+
+	MDELAY(20);
+
+	num1 = sizeof(switch_table_page1) / sizeof(struct LCM_setting_table);
+
+	push_table(NULL, switch_table_page1, num1, 1);
+	pr_debug("before read ATA check x0_MSB = 0x%x\n", x0_MSB);
+	pr_debug("before read ATA check read buff = 0x%x\n", read_buf[0]);
+
+	data_array[0] = 0x0002390A;	/* HS packet */
+	data_array[1] = x0_MSB << 8 | 0x55;
+	//data_array[2] = (x0_MSB);
+	dsi_set_cmdq(data_array, 2, 1);
+
+	data_array[0] = 0x00013700;
 	dsi_set_cmdq(data_array, 1, 1);
 
-	read_reg_v2(0x2A, read_buf, 4);
+	read_reg_v2(0x55, read_buf, 1);
 
-	if ((read_buf[0] == x0_MSB) && (read_buf[1] == x0_LSB)
-	    && (read_buf[2] == x1_MSB) && (read_buf[3] == x1_LSB))
+	pr_debug("after read ATA check size = 0x%x\n", read_buf[0]);
+
+	num2 = sizeof(switch_table_page0) / sizeof(struct LCM_setting_table);
+
+	push_table(NULL, switch_table_page0, num2, 1);
+
+	if (read_buf[0] == x0_MSB)
 		ret = 1;
 	else
 		ret = 0;
 
-	x0 = 0;
-	x1 = FRAME_WIDTH - 1;
-
-	x0_MSB = ((x0 >> 8) & 0xFF);
-	x0_LSB = (x0 & 0xFF);
-	x1_MSB = ((x1 >> 8) & 0xFF);
-	x1_LSB = (x1 & 0xFF);
-
-	data_array[0] = 0x0005390A;	/* HS packet */
-	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
-	data_array[2] = (x1_LSB);
-	dsi_set_cmdq(data_array, 3, 1);
 	return ret;
 #else
 	return 0;
