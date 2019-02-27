@@ -266,14 +266,11 @@ static u32 cmd_list_len;
 struct work_struct mdla_queue;
 
 #define UINT32_MAX (0xFFFFFFFF)
-static u32 last_cmd_id0 = UINT32_MAX;
-static u32 last_cmd_id1 = UINT32_MAX;
-static u32 fail_cmd_id0 = UINT32_MAX;
-static u32 fail_cmd_id1 = UINT32_MAX;
 
 DEFINE_MUTEX(cmd_list_lock);
 static DECLARE_WAIT_QUEUE_HEAD(mdla_cmd_queue);
 static LIST_HEAD(cmd_list);
+static LIST_HEAD(cmd_fin_list);
 
 struct mtk_mdla_local {
 	int irq;
@@ -281,6 +278,7 @@ struct mtk_mdla_local {
 	unsigned long mem_end;
 	void __iomem *base_addr;
 };
+
 struct command_entry {
 	struct list_head list;
 	void *kva;    /* Virtual Address for Kernel */
@@ -289,12 +287,165 @@ struct command_entry {
 	u32 id;
 	u64 khandle;  /* ion kernel handle */
 	u8 type;      /* allocate memory type */
+
+	u8 priority;     /* dvfs priority */
+	u8 boost_value;  /* dvfs boost value */
+	uint32_t bandwidth;
+
+	int result;
+	u64 queue_t;     /* time queued in list (ns) */
+	u64 req_start_t; /* request stant time (ns) */
+	u64 req_end_t;   /* request end time (ns) */
 };
+
+static inline void command_entry_end(struct command_entry *ce)
+{
+	if (ce && ce->id <= max_cmd_id)
+		ce->req_end_t = sched_clock();
+}
+
+static inline void command_entry_result(
+	struct command_entry *ce, int result)
+{
+	if (ce)
+		ce->result = result;
+}
+
+/* MDLA internal FIFO, protected by cmd_list_lock */
+#define MDLA_FIFO_SIZE 2
+
+#if (MDLA_FIFO_SIZE == 1)
+static u32 last_cmd_id = UINT32_MAX;
+static u32 fail_cmd_id = UINT32_MAX;
+static struct command_entry *last_cmd_ent;
+
+static inline u32 mdla_fifo_head_id(void)
+{
+	return last_cmd_id;
+}
+
+static inline u32 mdla_fifo_tail_id(void)
+{
+	return last_cmd_id;
+}
+
+static inline bool mdla_fifo_is_empty(void)
+{
+	return (cmd_list_len == 0);
+}
+
+static int mdla_fifo_in(u32 id, struct command_entry *ce)
+{
+	if (cmd_list_len == 0) {
+		mdla_debug("cmd_list_len == 0\n");
+		last_cmd_id = id;
+		last_cmd_ent = ce;
+		cmd_list_len++;
+		return 1;
+	}
+
+	mdla_debug("cmd_list_len == %d\n", cmd_list_len);
+	return 0;
+}
+
+static void mdla_fifo_out(void)
+{
+	// TODO: remove debug
+	if (!cmd_list_len)
+		mdla_debug("%s: MDLA FIFO is already empty\n", __func__);
+
+	cmd_list_len--;
+	last_cmd_id = UINT32_MAX;
+	last_cmd_ent = NULL;
+}
+
+static inline void mdla_fifo_mark_fail(void)
+{
+	command_entry_result(last_cmd_ent, MDLA_CMD_TIMEOUT);
+}
+
+static inline void mdla_fifo_mark_time(void)
+{
+	command_entry_end(last_cmd_ent);
+}
+
+#elif (MDLA_FIFO_SIZE == 2)
+static u32 last_cmd_id0 = UINT32_MAX;
+static u32 last_cmd_id1 = UINT32_MAX;
+static struct command_entry *last_cmd_ent0;
+static struct command_entry *last_cmd_ent1;
+
+static inline u32 mdla_fifo_head_id(void)
+{
+	return last_cmd_id0;
+}
+
+static inline u32 mdla_fifo_tail_id(void)
+{
+	return (last_cmd_id1 == UINT32_MAX) ?
+		last_cmd_id0 : last_cmd_id1;
+}
+
+static inline bool mdla_fifo_is_empty(void)
+{
+	return (cmd_list_len == 0);
+}
+
+static int mdla_fifo_in(u32 id, struct command_entry *ce)
+{
+	if (cmd_list_len == 0) {
+		mdla_debug("cmd_list_len == 0\n");
+		last_cmd_id0 = id;
+		last_cmd_id1 = UINT32_MAX;
+		last_cmd_ent0 = ce;
+		last_cmd_ent1 = NULL;
+		cmd_list_len++;
+		return 1;
+	}
+
+	if (cmd_list_len == 1) {
+		mdla_debug("cmd_list_len == 1\n");
+		last_cmd_id1 = id;
+		last_cmd_ent1 = ce;
+		cmd_list_len++;
+		return 2;
+	}
+
+	mdla_debug("cmd_list_len == %d\n", cmd_list_len);
+	return 0;
+}
+static void mdla_fifo_out(void)
+{
+	// TODO: remove debug
+	if (!cmd_list_len)
+		mdla_debug("%s: MDLA FIFO is already empty\n", __func__);
+
+	cmd_list_len--;
+	last_cmd_id0 = last_cmd_id1;
+	last_cmd_id1 = UINT32_MAX;
+	last_cmd_ent0 = last_cmd_ent1;
+	last_cmd_ent1 = NULL;
+}
+
+static inline void mdla_fifo_mark_fail(void)
+{
+	command_entry_result(last_cmd_ent0, MDLA_CMD_TIMEOUT);
+	command_entry_result(last_cmd_ent1, MDLA_CMD_TIMEOUT);
+}
+
+static inline void mdla_fifo_mark_time(void)
+{
+	command_entry_end(last_cmd_ent0);
+	command_entry_end(last_cmd_ent1);
+}
+#else
+#error "mdla: wrong FIFO size"
+#endif
 
 static int mdla_open(struct inode *, struct file *);
 static int mdla_release(struct inode *, struct file *);
 static long mdla_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
-static int mdla_wait_command(u32 id);
+static int mdla_wait_command(struct ioctl_wait_cmd *wt);
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
 static int mdla_process_command(struct command_entry *run_cmd_data);
 static void mdla_timeup(unsigned long data);
@@ -344,18 +495,16 @@ static void mdla_timeup(unsigned long data)
 {
 
 	// TODO: remove debug
-	mdla_debug("%s: MDLA Timeout: %u ms, max_cmd_id: %u, cmd_id0: %u, cmd_id1: %u\n",
-		__func__, mdla_timeout, max_cmd_id, last_cmd_id0, last_cmd_id1);
+	mdla_debug("%s: MDLA Timeout: %u ms, max_cmd_id: %u, fifo_head_id: %u, fifo_tail_id: %u\n",
+		__func__, mdla_timeout, max_cmd_id,
+		mdla_fifo_head_id(), mdla_fifo_tail_id());
+
 	mdla_dump_reg();
 	mdla_reset();
 
-	fail_cmd_id0 = last_cmd_id0;
-	fail_cmd_id1 = last_cmd_id1;
-
-	if (last_cmd_id1 == UINT32_MAX)
-		max_cmd_id = last_cmd_id0;
-	else
-		max_cmd_id = last_cmd_id1;
+	mdla_fifo_mark_fail();
+	max_cmd_id = mdla_fifo_tail_id();
+	mdla_fifo_mark_time();
 
 	/* wake up those who were waiting on id0 or id1. */
 	wake_up_interruptible_all(&mdla_cmd_queue);
@@ -385,21 +534,24 @@ static void mdla_start_queue(struct work_struct *work)
 
 	mutex_lock(&cmd_list_lock);
 
-	while (max_cmd_id >= last_cmd_id0) {
-		cmd_list_len--;
-		last_cmd_id0 = last_cmd_id1;
-		last_cmd_id1 = UINT32_MAX;
+	while (max_cmd_id >= mdla_fifo_head_id()) {
+		mdla_fifo_out();
 		if (!list_empty(&cmd_list)) {
 			run_cmd_data = list_first_entry(&cmd_list,
 					struct command_entry, list);
-			list_del(&run_cmd_data->list);
-			last_cmd_id1 = run_cmd_data->id + run_cmd_data->count
-					- 1;
-			mdla_process_command(run_cmd_data);
-			kfree(run_cmd_data);
+			if (mdla_fifo_in(
+				run_cmd_data->id + run_cmd_data->count - 1,
+				run_cmd_data)) {
+				list_del(&run_cmd_data->list);
+				mdla_process_command(run_cmd_data);
+			} else {
+				// TODO: remove debug
+				mdla_debug("%s: MDLA FIFO full\n", __func__);
+				break;
+			}
 		}
 	}
-	if ((cmd_list_len == 0) && timer_pending(&mdla_timer)) {
+	if (mdla_fifo_is_empty() && timer_pending(&mdla_timer)) {
 		// TODO: remove debug
 		mdla_debug("%s: del_timer().\n", __func__);
 		del_timer(&mdla_timer);
@@ -407,14 +559,15 @@ static void mdla_start_queue(struct work_struct *work)
 	mutex_unlock(&cmd_list_lock);
 	wake_up_interruptible_all(&mdla_cmd_queue);
 	mdla_debug(
-			"mdla_interrupt max_cmd_id: [%d] last_cmd_id0: [%d] last_cmd_id1: [%d]\n",
-			max_cmd_id, last_cmd_id0, last_cmd_id1);
+			"mdla_interrupt max_cmd_id: %d, fifo_head_id: %d, fifo_tail_id: %d\n",
+			max_cmd_id, mdla_fifo_head_id(), mdla_fifo_tail_id());
 }
 
 static irqreturn_t mdla_interrupt(int irq, void *dev_id)
 {
 	max_cmd_id = mdla_reg_read(MREG_TOP_G_FIN0);
 	mdla_reg_write(MDLA_IRQ_MASK, MREG_TOP_G_INTP0);
+	mdla_fifo_mark_time();
 	schedule_work(&mdla_queue);
 	return IRQ_HANDLED;
 }
@@ -2973,28 +3126,69 @@ static int mdla_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-static int mdla_wait_command(u32 id)
+static void exec_info_eval(struct command_entry *ce,
+	struct ioctl_wait_cmd *wt)
 {
+	wt->queue_time = ce->req_start_t - ce->queue_t;
+	wt->busy_time = ce->req_end_t - ce->req_start_t;
+	wt->result = ce->result;
+	wt->bandwidth = 0; // TODO: fill bandwidth
+}
+
+static int mdla_wait_command(struct ioctl_wait_cmd *wt)
+{
+	struct command_entry *ce;
+	struct ioctl_wait_cmd wc;
+	__u32 id = wt->id;
+	int ret = 0;
+
 	mdla_debug("%s: enter id:[%d]\n", __func__, id);
 	// @suppress("Type cannot be resolved")
 	wait_event_interruptible(mdla_cmd_queue, max_cmd_id >= id);
-	if ((id == fail_cmd_id0) ||	(id == fail_cmd_id1)) {
-		mdla_debug("mdla_wait_command exit <timeout> [%d]\n", id);
-		return -EIO;
+
+	mutex_lock(&cmd_list_lock);
+	while (!list_empty(&cmd_fin_list)) {
+		ce = list_first_entry(&cmd_fin_list,
+			struct command_entry, list);
+		if (max_cmd_id < ce->id)
+			break;
+
+		// TODO: remove debug
+		exec_info_eval(ce, &wc);
+
+		mdla_debug("%s: wait_id: %d, id: %u, queue: %llu, start: %llu, end: %llu, wait=%llu, busy=%llu, bandwidth=%u, result=%d\n",
+			__func__, id, ce->id,
+			(unsigned long long)ce->queue_t,
+			(unsigned long long)ce->req_start_t,
+			(unsigned long long)ce->req_end_t,
+			(unsigned long long)wc.queue_time,
+			(unsigned long long)wc.busy_time,
+			(unsigned long long)wc.bandwidth,
+			wc.result);
+
+		// TODO: match ID or accumulate time
+		exec_info_eval(ce, wt);
+
+		if (ce->result != MDLA_CMD_SUCCESS)
+			ret = -EIO;
+
+		list_del(&ce->list);
+		kfree(ce);
 	}
+	mutex_unlock(&cmd_list_lock);
 
-	mdla_debug("%s; exit\n", __func__);
+	mdla_debug("%s: exit (%s)\n", __func__, ret ? "timeout" : "success");
 
-	return 0;
+	return ret;
 }
 
-static void mdla_mark_command_id(struct command_entry *run_cmd_data)
+static void mdla_mark_command_id(struct command_entry *ce)
 {
 	int i;
-	u32 count = run_cmd_data->count;
-	u32 *cmd = run_cmd_data->kva;
+	u32 count = ce->count;
+	u32 *cmd = ce->kva;
 
-	run_cmd_data->id = cmd_id;
+	ce->id = cmd_id;
 
 	/* Patch Command buffer 0x150
 	 * CODA: 0x150,	mreg_cmd_swcmd_id, 32, 31, 0, mreg_cmd_swcmd_id,
@@ -3009,29 +3203,31 @@ static void mdla_mark_command_id(struct command_entry *run_cmd_data)
 	// TODO: remove debug logs
 	mdla_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=%p\n",
 			__func__,
-			run_cmd_data->kva,
-			run_cmd_data->mva,
-			phys_to_dma(mdlactlDevice, run_cmd_data->mva));
+			ce->kva,
+			ce->mva,
+			phys_to_dma(mdlactlDevice, ce->mva));
 
 #ifdef CONFIG_MTK_MDLA_ION
-	if (run_cmd_data->khandle) {
-		mdla_ion_sync(run_cmd_data->khandle);
+	if (ce->khandle) {
+		mdla_ion_sync(ce->khandle);
 		return;
 	}
 #endif
 	dma_sync_single_for_device(mdlactlDevice,
-			phys_to_dma(mdlactlDevice, run_cmd_data->mva),
+			phys_to_dma(mdlactlDevice, ce->mva),
 			count * 0x180, DMA_TO_DEVICE);
 }
 
-static int mdla_process_command(struct command_entry *run_cmd_data)
+static int mdla_process_command(struct command_entry *ce)
 {
-	dma_addr_t addr = run_cmd_data->mva;
-	u32 count = run_cmd_data->count;
-	u32 *cmd = (u32 *) run_cmd_data->kva;
+	dma_addr_t addr = ce->mva;
+	u32 count = ce->count;
+	u32 *cmd = (u32 *) ce->kva;
 	int ret = 0;
-	mdla_debug("%s: id: [%d], count: [%d]\n", cmd[84],
-		__func__, run_cmd_data->count);
+	mdla_debug("%s: id: %d, count: %d, addr: %lx\n",
+		__func__, cmd[84], ce->count,
+		(unsigned long)addr);
+
 #ifndef MTK_MDLA_FPGA_PORTING
 	/* step1, enable clocks and boot-up if needed */
 	ret = mdla_get_power(0);
@@ -3043,67 +3239,77 @@ static int mdla_process_command(struct command_entry *run_cmd_data)
 	if (mdla_timeout) {
 		// TODO: remove debug
 		mdla_debug("%s: mod_timer(), cmd id=%u, [%u]\n",
-			__func__, run_cmd_data->id, cmd[84]);
+			__func__, ce->id, cmd[84]);
 		mod_timer(&mdla_timer,
 			jiffies + msecs_to_jiffies(mdla_timeout));
 	}
 
+	ce->req_start_t = sched_clock();
+
 	/* Issue command */
 	mdla_reg_write(addr, MREG_TOP_G_CDMA1);
 	mdla_reg_write(count, MREG_TOP_G_CDMA2);
-	mdla_reg_write(run_cmd_data->id, MREG_TOP_G_CDMA3);
-/*Todo mdla_put_power after cmd end */
+	mdla_reg_write(ce->id, MREG_TOP_G_CDMA3);
+
+	list_add_tail(&ce->list, &cmd_fin_list);
+
 	return ret;
 }
 
-static int mdla_run_command_async(struct ioctl_run_cmd *run_cmd_data)
+static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 {
 	u32 id;
-	struct command_entry *cmd = kmalloc(sizeof(struct command_entry),
-	GFP_KERNEL);
+	struct command_entry *ce =
+		kmalloc(sizeof(struct command_entry), GFP_KERNEL);
 
-	cmd->mva = run_cmd_data->mva;
+	ce->mva = cd->buf.mva;
 
-	if (is_gsm_addr(cmd->mva))
-		cmd->kva = gsm_mva_to_virt(cmd->mva);
-	else if (run_cmd_data->khandle) {
-		cmd->kva = (void *)run_cmd_data->kva;
+	// TODO: Remove debug
+	mdla_debug("%s: mva=%08x, count: %u, priority: %u, boost: %u\n",
+			__func__,
+			ce->mva,
+			cd->count,
+			cd->priority,
+			cd->boost_value);
+
+	if (is_gsm_addr(ce->mva))
+		ce->kva = gsm_mva_to_virt(ce->mva);
+	else if (cd->buf.ion_khandle) {
+		ce->kva = (void *)cd->buf.kva;
 		mdla_debug("%s: <ion> kva=%p, mva=%08x\n",
 				__func__,
-				cmd->kva,
-				cmd->mva);
+				ce->kva,
+				ce->mva);
+		// TODO: get real kva/mva from run_cmd_data->buf.offset
 	} else {
-		cmd->kva = phys_to_virt(cmd->mva);
+		ce->kva = phys_to_virt(ce->mva);
 		mdla_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
-			__func__, cmd->mva, cmd->kva);
+			__func__, ce->mva, ce->kva);
+		// TODO: get real kva/mva from run_cmd_data->buf.offset
 	}
 
-	cmd->count = run_cmd_data->count;
-	cmd->khandle = run_cmd_data->khandle;
-	cmd->type = run_cmd_data->type;
+	ce->count = cd->count;
+	ce->khandle = cd->buf.ion_khandle;
+	ce->type = cd->buf.type;
+	ce->priority = cd->priority;
+	ce->boost_value = cd->boost_value;
+	ce->bandwidth = 0;
+	ce->result = MDLA_CMD_SUCCESS;
 
 	mutex_lock(&cmd_list_lock);
 
+	ce->queue_t = sched_clock();
+
 	/* Increate cmd_id*/
-	mdla_mark_command_id(cmd);
+	mdla_mark_command_id(ce);
 
 	id = cmd_id - 1;
-	if (cmd_list_len == 0) {
-		mdla_debug("cmd_list_len == 0\n");
-		last_cmd_id0 = id;
-		last_cmd_id1 = UINT32_MAX;
-		mdla_process_command(cmd);
-		kfree(cmd);
-	} else if (cmd_list_len == 1) {
-		mdla_debug("cmd_list_len == 1\n");
-		last_cmd_id1 = id;
-		mdla_process_command(cmd);
-		kfree(cmd);
-	} else {
-		mdla_debug("cmd_list_len == %d\n", cmd_list_len);
-		list_add_tail(&cmd->list, &cmd_list);
-	}
-	cmd_list_len++;
+
+	if (mdla_fifo_in(id, ce))
+		mdla_process_command(ce);
+	else
+		list_add_tail(&ce->list, &cmd_list);
+
 	mutex_unlock(&cmd_list_lock);
 
 	return id;
@@ -3148,7 +3354,6 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 {
 	long retval;
 	struct ioctl_malloc malloc_data;
-	struct ioctl_run_cmd run_cmd_data;
 	struct ioctl_perf perf_data;
 	u32 id;
 
@@ -3193,48 +3398,63 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 				malloc_data.kva);
 		break;
 	case IOCTL_RUN_CMD_SYNC:
-		if (copy_from_user(&run_cmd_data, (void *) arg,
-				sizeof(run_cmd_data))) {
+	{
+		struct ioctl_run_cmd_sync cmd_data;
+
+		if (copy_from_user(&cmd_data, (void *) arg,
+				sizeof(cmd_data))) {
 			retval = -EFAULT;
 			return retval;
 		}
-
 		mdla_debug("%s: RUN_CMD_SYNC: kva=%p, mva=0x%08x, phys_to_virt=%p\n",
 				__func__,
-				(void *)run_cmd_data.kva,
-				run_cmd_data.mva,
-				phys_to_virt(run_cmd_data.mva));
-		id = mdla_run_command_async(&run_cmd_data);
-		retval = mdla_wait_command(id);
-		return retval;
+				(void *)cmd_data.req.buf.kva,
+				cmd_data.req.buf.mva,
+				phys_to_virt(cmd_data.req.buf.mva));
+		id = mdla_run_command_async(&cmd_data.req);
+		cmd_data.res.id = cmd_data.req.id;
+		retval = mdla_wait_command(&cmd_data.res);
 
+		if (copy_to_user((void *) arg, &cmd_data, sizeof(cmd_data)))
+			return -EFAULT;
+
+		return retval;
+	}
 	case IOCTL_RUN_CMD_ASYNC:
-		if (copy_from_user(&run_cmd_data, (void *) arg,
-				sizeof(run_cmd_data))) {
+	{
+		struct ioctl_run_cmd cmd_data;
+
+		if (copy_from_user(&cmd_data, (void *) arg,
+				sizeof(cmd_data))) {
 			retval = -EFAULT;
 			return retval;
 		}
-
 		mdla_debug("%s: RUN_CMD_ASYNC: kva=%p, mva=0x%08x, phys_to_virt=%p\n",
 				__func__,
-				(void *)run_cmd_data.kva,
-				run_cmd_data.mva,
-				phys_to_virt(run_cmd_data.mva));
-		id = mdla_run_command_async(&run_cmd_data);
-		run_cmd_data.id = id;
-		if (copy_to_user((void *) arg, &run_cmd_data,
-			sizeof(run_cmd_data)))
+				(void *)cmd_data.buf.kva,
+				cmd_data.buf.mva,
+				phys_to_virt(cmd_data.buf.mva));
+		id = mdla_run_command_async(&cmd_data);
+		cmd_data.id = id;
+		if (copy_to_user((void *) arg, &cmd_data,
+			sizeof(cmd_data)))
 			return -EFAULT;
 		break;
+	}
 	case IOCTL_WAIT_CMD:
-		if (copy_from_user(&run_cmd_data, (void *) arg,
-				sizeof(run_cmd_data))) {
+	{
+		struct ioctl_wait_cmd wait_data;
+
+		if (copy_from_user(&wait_data, (void *) arg,
+				sizeof(wait_data))) {
 			retval = -EFAULT;
 			return retval;
 		}
-		retval = mdla_wait_command(run_cmd_data.id);
+		retval = mdla_wait_command(&wait_data);
+		if (copy_to_user((void *) arg, &wait_data, sizeof(wait_data)))
+			return -EFAULT;
 		return retval;
-
+	}
 	case IOCTL_PERF_SET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
