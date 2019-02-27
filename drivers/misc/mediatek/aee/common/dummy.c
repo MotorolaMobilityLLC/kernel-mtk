@@ -125,10 +125,6 @@ __weak int aee_in_nested_panic(void)
 	return 0;
 }
 
-__weak void aee_wdt_dump_info(void)
-{
-}
-
 __weak void aee_wdt_printf(const char *fmt, ...)
 {
 }

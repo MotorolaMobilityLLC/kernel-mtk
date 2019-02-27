@@ -71,7 +71,6 @@ static unsigned long
 wdt_percpu_stackframe[AEE_MTK_CPU_NUMS][MAX_EXCEPTION_FRAME];
 static int wdt_log_length;
 static atomic_t wdt_enter_fiq;
-static char printk_buf[PRINTK_BUFFER_SIZE];
 static char str_buf[AEE_MTK_CPU_NUMS][PRINTK_BUFFER_SIZE];
 
 #ifndef CONFIG_MTK_RAM_CONSOLE
@@ -119,103 +118,6 @@ int in_fiq_handler(void)
 
 /* debug EMI */
 __weak void dump_emi_outstanding(void) {}
-
-void aee_wdt_dump_info(void)
-{
-	struct task_struct *task;
-	int cpu, i;
-	char *log_buf_ptr;
-
-	task = &init_task;
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_INFO);
-#endif
-	if (wdt_log_length == 0) {
-		pr_notice("\n No log for WDT\n");
-#ifdef CONFIG_MTK_SCHED_MONITOR
-		mt_dump_sched_traces();
-#endif
-		return;
-	}
-
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_PERCPU);
-#endif
-	pr_info("==========================================\n");
-	for (cpu = 0; cpu < AEE_MTK_CPU_NUMS; cpu++) {
-		if ((wdt_percpu_log_buf[cpu]) && (wdt_percpu_log_length[cpu])) {
-			log_buf_ptr = wdt_percpu_log_buf[cpu];
-			while (wdt_percpu_log_length[cpu] > 0) {
-				if (wdt_percpu_log_length[cpu] >
-						(PRINTK_BUFFER_SIZE - 1)) {
-					i = PRINTK_BUFFER_SIZE - 1;
-					printk_buf[PRINTK_BUFFER_SIZE - 1] = 0;
-				} else {
-					i = wdt_percpu_log_length[cpu];
-					printk_buf[i] = 0;
-				}
-				memcpy(printk_buf, log_buf_ptr, i);
-				pr_info("%s", printk_buf);
-				log_buf_ptr += i;
-				wdt_percpu_log_length[cpu] -= i;
-			}
-
-			pr_info("Backtrace : ");
-			for (i = 0; i < MAX_EXCEPTION_FRAME; i++) {
-				if (wdt_percpu_stackframe[cpu][i] == 0)
-					break;
-#ifdef CONFIG_ARM64
-				pr_info("%016lx, ",
-						wdt_percpu_stackframe[cpu][i]);
-#else
-				pr_info("%08lx, ",
-						wdt_percpu_stackframe[cpu][i]);
-#endif
-			}
-			pr_info("\n==========================================\n");
-		}
-	}
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_LOG);
-#endif
-	/* pr_info( "==> wdt_log_length=%d ", wdt_log_length); */
-	/* printk temporary buffer only 1024,  */
-	log_buf_ptr = wdt_log_buf;
-	while (wdt_log_length > 0) {
-		if (wdt_log_length > (PRINTK_BUFFER_SIZE - 1)) {
-			i = PRINTK_BUFFER_SIZE - 1;
-			printk_buf[PRINTK_BUFFER_SIZE - 1] = 0;
-		} else {
-			i = wdt_log_length;
-			printk_buf[i] = 0;
-		}
-		memcpy(printk_buf, log_buf_ptr, i);
-		pr_info("%s", printk_buf);
-		log_buf_ptr += i;
-		wdt_log_length -= i;
-	}
-
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_SCHED_DEBUG);
-#endif
-
-	for_each_process(task) {
-		if (task->state == 0) {
-			pr_notice("PID: %d, name: %s\n", task->pid, task->comm);
-			show_stack(task, NULL);
-			pr_notice("\n");
-		}
-	}
-#ifdef CONFIG_MTK_EIC_HISTORY_DUMP
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_EINT_DEBUG);
-#endif
-	dump_eint_trigger_history();
-#endif
-#ifdef CONFIG_MTK_RAM_CONSOLE
-	aee_rr_rec_fiq_step(AEE_FIQ_STEP_KE_WDT_DONE);
-#endif
-}
 
 void aee_wdt_percpu_printf(int cpu, const char *fmt, ...)
 {
