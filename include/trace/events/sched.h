@@ -222,6 +222,8 @@ TRACE_EVENT(sched_switch,
 #if defined(CONFIG_MTK_SCHED_TRACERS) && defined(CONFIG_CGROUPS)
 		__field(int,	prev_cgrp_id)
 		__field(int,	next_cgrp_id)
+		__field(int,	prev_st_cgrp_id)
+		__field(int,	next_st_cgrp_id)
 #endif
 	),
 
@@ -241,13 +243,20 @@ TRACE_EVENT(sched_switch,
 		__entry->prev_cgrp_id	= 0;
 		__entry->next_cgrp_id	= 0;
 #endif
+#if defined(CONFIG_CGROUP_SCHEDTUNE)
+		__entry->prev_st_cgrp_id = prev->cgroups->subsys[3]->cgroup->id;
+		__entry->next_st_cgrp_id = next->cgroups->subsys[3]->cgroup->id;
+#else
+		__entry->prev_st_cgrp_id = 0;
+		__entry->next_st_cgrp_id = 0;
+#endif
 #endif
 	),
 
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	TP_printk(
 #if defined(CONFIG_CGROUPS)
-	"prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d%s%s prev->cgrp=%d next->cgrp=%d",
+	"prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d%s%s prev->cgrp=%d next->cgrp=%d prev->st=%d next->st=%d",
 #else
 	"prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d%s%s",
 #endif
@@ -277,8 +286,10 @@ TRACE_EVENT(sched_switch,
 #if defined(CONFIG_CGROUPS)
 				, __entry->prev_cgrp_id
 				, __entry->next_cgrp_id
+				, __entry->prev_st_cgrp_id
+				, __entry->next_st_cgrp_id
 #endif
-)
+	)
 #else
 	TP_printk("prev_comm=%s prev_pid=%d prev_prio=%d prev_state=%s%s ==> next_comm=%s next_pid=%d next_prio=%d",
 		__entry->prev_comm, __entry->prev_pid, __entry->prev_prio,
