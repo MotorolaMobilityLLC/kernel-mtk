@@ -480,7 +480,7 @@ int ovl_layer_switch(enum DISP_MODULE_ENUM module, unsigned int layer,
 }
 
 static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
-	unsigned int is_engine_sec, const struct OVL_CONFIG_STRUCT * const cfg,
+	unsigned int is_engine_sec, struct OVL_CONFIG_STRUCT * const cfg,
 	const struct disp_rect * const ovl_partial_roi,
 	const struct disp_rect * const layer_partial_roi,
 	void *handle)
@@ -652,9 +652,11 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 	else
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
 
+	cfg->real_addr = cfg->addr + offset;
+
 	if (!is_engine_sec) {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
-			cfg->addr + offset);
+			cfg->real_addr);
 	} else {
 		unsigned int size;
 		int m4u_port;
@@ -1197,9 +1199,7 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	int trans_en = 0;
 	int cnst_en = 0;
 
-	data->pre_addr = cfg->addr;
-	data->src_x = cfg->src_x;
-	data->src_y = cfg->src_y;
+	data->pre_addr = cfg->real_addr;
 	data->height = cfg->src_h;
 	data->width = cfg->src_w;
 	data->fmt = cfg->fmt;
@@ -1299,12 +1299,10 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 		struct OVL_CONFIG_STRUCT *ext_cfg =
 					&pConfig->ovl_config[layer + j + 1];
 
-		if (sbch_data[layer + j + 1].src_x != ext_cfg->src_x ||
-			sbch_data[layer + j + 1].src_y != ext_cfg->src_y ||
-			sbch_data[layer + j + 1].height != ext_cfg->src_h ||
+		if (sbch_data[layer + j + 1].height != ext_cfg->src_h ||
 			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
-			(sbch_data[layer + j + 1].pre_addr != ext_cfg->addr) ||
-			(sbch_data[layer + j + 1].fmt != ext_cfg->fmt))
+			sbch_data[layer + j + 1].fmt != ext_cfg->fmt ||
+			sbch_data[layer + j + 1].pre_addr != ext_cfg->real_addr)
 			return 1;
 	}
 	return 0;
@@ -1431,9 +1429,7 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		/* the layer address,height,fmt all don't change,
 		 * maybe use BCH.
 		 */
-		if (sbch_data[i].pre_addr == ovl_cfg->addr &&
-			sbch_data[i].src_x == ovl_cfg->src_x &&
-			sbch_data[i].src_y == ovl_cfg->src_y &&
+		if (sbch_data[i].pre_addr == ovl_cfg->real_addr &&
 			sbch_data[i].height == ovl_cfg->src_h &&
 			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&
@@ -1487,30 +1483,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		return 0;
 
 	ovl_layer_layout(module, pConfig);
-
-	if (disp_helper_get_option(DISP_OPT_OVL_SBCH)) {
-		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
-		int ovl_index = ovl_to_index(module);
-
-		if (!pConfig->sbch_enable || pConfig->ovl_partial_dirty) {
-
-			DISPINFO("sbch disable\n");
-			memset(sbch_info, 0, sizeof(sbch_info));
-			DISP_REG_SET(handle, ovl_base_addr(module) +
-					DISP_REG_OVL_SBCH, 0);
-			DISP_REG_SET(handle, ovl_base_addr(module) +
-					DISP_REG_OVL_SBCH_EXT, 0);
-		} else {
-			sbch_calc(module, sbch_info[ovl_index],
-					pConfig, handle);
-		}
-	} else {
-	/* if don't enable bch feature, set bch reg to default value(0) */
-		DISP_REG_SET(handle,
-			ovl_base_addr(module) + DISP_REG_OVL_SBCH, 0);
-		DISP_REG_SET(handle,
-			ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT, 0);
-	}
 
 	/* be careful, turn off all layers */
 	for (ovl_layer = 0; ovl_layer < ovl_layer_num(module); ovl_layer++) {
@@ -1612,6 +1584,29 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(handle,
 		ovl_base_addr(module) + DISP_REG_OVL_DATAPATH_EXT_CON,
 		enabled_ext_layers | ext_sel_layers);
+
+	if (disp_helper_get_option(DISP_OPT_OVL_SBCH)) {
+		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
+		int ovl_index = ovl_to_index(module);
+
+		if (!pConfig->sbch_enable) {
+			DISPINFO("sbch disable\n");
+			memset(sbch_info, 0, sizeof(sbch_info));
+			DISP_REG_SET(handle, ovl_base_addr(module) +
+					DISP_REG_OVL_SBCH, 0);
+			DISP_REG_SET(handle, ovl_base_addr(module) +
+					DISP_REG_OVL_SBCH_EXT, 0);
+		} else {
+			sbch_calc(module, sbch_info[ovl_index],
+					pConfig, handle);
+		}
+	} else {
+	/* if don't enable bch feature, set bch reg to default value(0) */
+		DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_SBCH, 0);
+		DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT, 0);
+	}
 
 	/* bandwidth report */
 	if (module == DISP_MODULE_OVL0) {
