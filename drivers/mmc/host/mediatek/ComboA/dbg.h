@@ -152,9 +152,7 @@ void msdc_error_tune_debug2(struct msdc_host *host,
 	struct mmc_command *stop, u32 *intsts);
 int multi_rw_compare(struct seq_file *m, int host_num,
 	uint address, int count, uint type, int multi_thread);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg);
-#endif
 void mmc_cmd_dump(struct mmc_host *mmc);
 void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m);
 
