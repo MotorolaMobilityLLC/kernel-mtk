@@ -2205,6 +2205,9 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	else/*default*/
 		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV;
 
+	sensor_info->SensorHorFOV = 63;
+	sensor_info->SensorVerFOV = 49;
+
 	sensor_info->HDR_Support = 0;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR */
 
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
