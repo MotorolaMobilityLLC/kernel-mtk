@@ -39,6 +39,10 @@ extern struct freed_reserved_memory freed_reserved_memory[MAX_FREE_RESERVED];
 extern int freed_reserved_memory_count;
 
 void mtk_memcfg_record_freed_reserved(phys_addr_t start, phys_addr_t end);
+#include <linux/memblock.h>
+extern int memblock_reserve_count;
+extern struct memblock_record memblock_record[MAX_MEMBLOCK_RECORD];
+extern struct memblock_stack_trace memblock_stack_trace[MAX_MEMBLOCK_RECORD];
 
 #ifdef CONFIG_SLUB_DEBUG
 extern int slabtrace_open(struct inode *inode, struct file *file);

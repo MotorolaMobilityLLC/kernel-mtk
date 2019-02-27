@@ -288,8 +288,14 @@ static int mtk_memcfg_reserve_memory_show(struct seq_file *m, void *v)
 
 	memtotal = get_memtotal();
 	dram_size = get_dram_size();
+#ifdef CONFIG_SPARSEMEM_VMEMMAP
 	vmemmap_actual = (unsigned long)virt_to_page(high_memory) -
 			 (unsigned long)phys_to_page(memblock_start_of_DRAM());
+#else
+#ifndef CONFIG_NEED_MULTIPLE_NODES
+	vmemmap_actual = mem_map_size;
+#endif
+#endif
 	kernel_other = dram_size - memtotal - non_kernel_reserve -
 		       kernel_reserve_meminfo.kernel_code -
 		       kernel_reserve_meminfo.rwdata -
