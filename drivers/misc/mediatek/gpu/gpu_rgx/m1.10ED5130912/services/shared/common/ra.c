@@ -154,6 +154,9 @@ struct _BT_
 	/* Flags to match on this span */
 	IMG_UINT32 uFlags;
 
+#ifdef __KERNEL__
+	IMG_CHAR pszStr[40];
+#endif
 };
 typedef struct _BT_ BT;
 
@@ -527,6 +530,10 @@ _BuildBT (RA_BASE_T base, RA_LENGTH_T uSize, RA_FLAGS_T uFlags)
 	pBT->uSize = uSize;
 	pBT->uFlags = uFlags;
 
+#ifdef __KERNEL__
+	OSStringCopy(pBT->pszStr, "unset");
+#endif
+
 	return pBT;
 }
 
@@ -582,6 +589,10 @@ _FreeListInsert (RA_ARENA *pArena, BT *pBT)
 	PVR_ASSERT (!_IsInFreeList(pArena, pBT));
 
 	pBT->type = btt_free;
+
+#ifdef __KERNEL__
+	OSStringCopy(pBT->pszStr, "unset");
+#endif
 
 	pArena->per_flags_buckets = PVRSRVSplay(pBT->uFlags, pArena->per_flags_buckets);
 	/* the flags item in the splay tree must have been created before-hand by
@@ -859,6 +870,9 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 					  IMG_UINT32 uFlags,
 					  RA_LENGTH_T uAlignment,
 					  RA_BASE_T *base,
+#ifdef __KERNEL__
+					  const IMG_CHAR *str,
+#endif
                       RA_PERISPAN_HANDLE *phPriv) /* this is the "per-import" private data */
 {
 
@@ -958,6 +972,11 @@ _AttemptAllocAligned (RA_ARENA *pArena,
 nosplit:
 	pBT->type = btt_live;
 
+#ifdef __KERNEL__
+	OSStringNCopy(pBT->pszStr, str, sizeof(pBT->pszStr) - 1);
+	pBT->pszStr[sizeof(pBT->pszStr) - 1] = '\0';
+#endif
+
 	if (!HASH_Insert_Extended (pArena->pSegmentHash, &pBT->base, (uintptr_t)pBT))
 	{
 		_FreeBT (pArena, pBT);
@@ -972,7 +991,35 @@ nosplit:
 	return IMG_TRUE;
 }
 
+#ifdef __KERNEL__
+void RA_Dump(RA_ARENA *arena)
+{
+	const BT *chunk;
 
+	PVR_DPF((PVR_DBG_ERROR, "RA arena name: %s", arena->name));
+	PVR_DPF((PVR_DBG_ERROR, "RA arena quantum: %" IMG_UINT64_FMTSPECx,
+	        arena->uQuantum));
+
+	OSLockAcquireNested(arena->hLock, arena->ui32LockClass);
+
+	for (chunk = arena->pHeadSegment; chunk != NULL; chunk = chunk->pNextSegment)
+	{
+		PVR_DPF((PVR_DBG_ERROR,
+		        "%" IMG_UINT64_FMTSPECx "@%-8" IMG_UINT64_FMTSPECx
+		        "%s "
+		        "c=%p p=%p n=%p "
+		        "flags=%08x "
+				"\"%s\"",
+		        chunk->base, chunk->uSize,
+		        chunk->type == btt_free ? "free" : "live",
+		        chunk, chunk->pPrevSegment, chunk->pNextSegment,
+		        chunk->uFlags,
+		        chunk->pszStr));
+	}
+
+	OSLockRelease(arena->hLock);
+}
+#endif
 
 /*************************************************************************/ /*!
 @Function       RA_Create
@@ -1239,7 +1286,11 @@ RA_Alloc (RA_ARENA *pArena,
 	/* if allocation failed then we might have an import source which
 	   can provide more resource, else we will have to fail the
 	   allocation to the caller. */
+#ifdef __KERNEL__
+	bResult = _AttemptAllocAligned (pArena, uSize, uFlags, uAlignment, base, pszAnnotation, phPriv);
+#else
 	bResult = _AttemptAllocAligned (pArena, uSize, uFlags, uAlignment, base, phPriv);
+#endif
 	if (!bResult)
 	{
 		IMG_HANDLE hPriv;
@@ -1294,7 +1345,11 @@ RA_Alloc (RA_ARENA *pArena,
 
 			pBT->hPriv = hPriv;
 
+#ifdef __KERNEL__
+			bResult = _AttemptAllocAligned(pArena, uSize, uFlags, uAlignment, base, pszAnnotation, phPriv);
+#else
 			bResult = _AttemptAllocAligned(pArena, uSize, uFlags, uAlignment, base, phPriv);
+#endif
 			if (!bResult)
 			{
 				PVR_DPF ((PVR_DBG_ERROR,

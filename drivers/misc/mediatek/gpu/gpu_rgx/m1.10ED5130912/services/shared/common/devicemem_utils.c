@@ -45,6 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "allocmem.h"
 #include "img_types.h"
 #include "pvrsrv_error.h"
+#include "pvr_debug.h"
 #include "ra.h"
 #include "devicemem_utils.h"
 #include "client_mm_bridge.h"
@@ -660,14 +661,27 @@ void _DevmemImportStructInit(DEVMEM_IMPORT *psImport,
 	OSAtomicWrite(&psImport->hRefCount, 1);
 }
 
-/*
-	Map an import to the device
- */
 IMG_INTERNAL
 PVRSRV_ERROR _DevmemImportStructDevMap(DEVMEM_HEAP *psHeap,
 		IMG_BOOL bMap,
 		DEVMEM_IMPORT *psImport,
 		IMG_UINT64 ui64OptionalMapAddress)
+#ifdef __KERNEL__
+{
+	return _DevmemImportStructDevMap2(psHeap, bMap, psImport,
+	                                  ui64OptionalMapAddress, "n/a");
+}
+
+/*
+	Map an import to the device
+ */
+IMG_INTERNAL
+PVRSRV_ERROR _DevmemImportStructDevMap2(DEVMEM_HEAP *psHeap,
+		IMG_BOOL bMap,
+		DEVMEM_IMPORT *psImport,
+		IMG_UINT64 ui64OptionalMapAddress,
+		const IMG_CHAR *pszStr)
+#endif
 {
 	DEVMEM_DEVICE_IMPORT *psDeviceImport;
 	RA_BASE_T uiAllocatedAddr;
@@ -735,13 +749,22 @@ PVRSRV_ERROR _DevmemImportStructDevMap(DEVMEM_HEAP *psHeap,
 					RA_NO_IMPORT_MULTIPLIER,
 					0, /* flags: this RA doesn't use flags*/
 					uiAlign,
+#ifdef __KERNEL__
+					pszStr,
+#else
 					"Virtual_Alloc",
+#endif
 					&uiAllocatedAddr,
 					&uiAllocatedSize,
 					NULL /* don't care about per-import priv data */
 			);
 			if (PVRSRV_OK != eError)
 			{
+#ifdef __KERNEL__
+				PVR_DPF((PVR_DBG_ERROR, "Error when allocating virtual space: %s",
+				        PVRSRVGetErrorStringKM(eError)));
+				RA_Dump(psHeap->psQuantizedVMRA);
+#endif
 				eError = PVRSRV_ERROR_DEVICEMEM_OUT_OF_DEVICE_VM;
 				goto failVMRAAlloc;
 			}
