@@ -139,6 +139,10 @@ static mmp_event dprec_mmp_event_spy(enum DPREC_LOGGER_ENUM l)
 		return ddp_mmp_get_events()->session_wait_vsync;
 	case DPREC_LOGGER_DISPMGR_CACHE_SYNC:
 		return ddp_mmp_get_events()->primary_cache_sync;
+	case DPREC_LOGGER_ESD_RECOVERY:
+		return ddp_mmp_get_events()->esd_recovery;
+	case DPREC_LOGGER_ESD_CMDQ:
+		return ddp_mmp_get_events()->esd_cmdq;
 /*	case DPREC_LOGGER_DSI_EXT_TE:
  *		return ddp_mmp_get_events()->dsi_te;
  */

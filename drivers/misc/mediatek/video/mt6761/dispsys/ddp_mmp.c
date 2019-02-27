@@ -265,6 +265,12 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.esd_recovery_t =
 	    mmprofile_register_event(DDP_MMP_Events.ESD_Parent,
 	    "ESD_Recovery");
+	DDP_MMP_Events.esd_recovery =
+	    mmprofile_register_event(DDP_MMP_Events.ESD_Parent,
+	    "ESD_Recovery_log");
+	DDP_MMP_Events.esd_cmdq =
+	    mmprofile_register_event(DDP_MMP_Events.ESD_Parent,
+	    "ESD_Check_CMDQ");
 	DDP_MMP_Events.esd_extte =
 	    mmprofile_register_event(DDP_MMP_Events.esd_check_t,
 	    "ESD_Check_EXT_TE");
