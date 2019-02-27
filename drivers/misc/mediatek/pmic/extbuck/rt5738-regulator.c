@@ -1,10 +1,10 @@
 /*
  * Copyright (C) 2017 MediaTek Inc.
- *
+
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
- *
+
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -26,6 +26,9 @@
 #include <mt-plat/rt-regmap.h>
 #endif /* CONFIG_RT_REGMAP */
 #include <mt-plat/upmu_common.h>
+#if defined(CONFIG_MACH_MT6775)
+#include <mach/mtk_pmic_ipi.h>
+#endif
 
 #define RT5738_DRV_VERSION	"1.0.0_MTK"
 
@@ -136,7 +139,7 @@ int rt5738_read_byte(void *client,
 
 	ret = rt5738_read_device(i2c, addr, 1, val);
 	if (ret < 0)
-		pr_notice("%s read 0x%02x fail\n", __func__, addr);
+		pr_err("%s read 0x%02x fail\n", __func__, addr);
 	return ret;
 }
 
@@ -148,7 +151,7 @@ int rt5738_write_byte(void *client,
 
 	ret = rt5738_write_device(i2c, addr, 1, &value);
 	if (ret < 0)
-		pr_notice("%s write 0x%02x fail\n", __func__, addr);
+		pr_err("%s write 0x%02x fail\n", __func__, addr);
 	return ret;
 }
 
@@ -164,7 +167,7 @@ int rt5738_assign_bit(void *client, uint32_t reg,
 	mutex_lock(&ri->io_lock);
 	ret = rt5738_read_byte(i2c, reg, &regval);
 	if (ret < 0) {
-		pr_notice("%s read fail reg0x%02x data0x%02x\n",
+		pr_err("%s read fail reg0x%02x data0x%02x\n",
 				__func__, reg, data);
 		goto OUT_ASSIGN;
 	}
@@ -173,7 +176,7 @@ int rt5738_assign_bit(void *client, uint32_t reg,
 	tmp |= (data & mask);
 	ret = rt5738_write_byte(i2c, reg, tmp);
 	if (ret < 0)
-		pr_notice("%s write fail reg0x%02x data0x%02x\n",
+		pr_err("%s write fail reg0x%02x data0x%02x\n",
 				__func__, reg, tmp);
 OUT_ASSIGN:
 	mutex_unlock(&ri->io_lock);
@@ -223,10 +226,17 @@ static struct regulator_chip rt5738_datas[] = {
 };
 
 static int rt5738_set_voltage(struct regulator_dev *rdev,
-				int min_uV, int max_uV, unsigned int *selector)
+				int min_uV, int max_uV, unsigned *selector)
 {
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
+
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
 
 	if (min_uV < 1300000)
 		*selector = (min_uV - 300000) / 5000;
@@ -245,9 +255,15 @@ static int rt5738_get_voltage(struct regulator_dev *rdev)
 	int ret;
 	uint32_t reg_val = 0;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 850000;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->vol_reg, &reg_val);
 	if (ret < 0) {
-		pr_notice("%s read voltage fail\n", __func__);
+		pr_err("%s read voltage fail\n", __func__);
 		return ret;
 	}
 
@@ -262,7 +278,14 @@ static int rt5738_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	struct regulator_chip *chip = info->reg_chip;
 	int ret;
 
-	/* TODO: after SB, add rt5738_ipi_set_mode */
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H) {
+		rt5738_ipi_set_mode(mode);
+		return 0;
+	}
+#endif
 	switch (mode) {
 	case REGULATOR_MODE_FAST: /* force pwm mode */
 		ret = rt5738_set_bit(info->i2c, chip->mode_reg, chip->mode_bit);
@@ -283,9 +306,15 @@ static unsigned int rt5738_get_mode(struct regulator_dev *rdev)
 	int ret;
 	uint32_t regval = 0;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 0;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->mode_reg, &regval);
 	if (ret < 0) {
-		pr_notice("%s read mode fail\n", __func__);
+		pr_err("%s read mode fail\n", __func__);
 		return ret;
 	}
 
@@ -299,6 +328,12 @@ static int rt5738_enable(struct regulator_dev *rdev)
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
 	return rt5738_set_bit(info->i2c, chip->enable_reg, chip->enable_bit);
 }
 
@@ -307,6 +342,17 @@ static int rt5738_disable(struct regulator_dev *rdev)
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return -1;
+#endif
+	if (rdev->use_count == 0) {
+		pr_info("ext_buck should not be disable (use_count=%d)\n"
+			, rdev->use_count);
+		return -1;
+	}
 	return rt5738_clr_bit(info->i2c, chip->enable_reg, chip->enable_bit);
 }
 
@@ -317,6 +363,12 @@ static int rt5738_is_enabled(struct regulator_dev *rdev)
 	int ret;
 	uint32_t reg_val;
 
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(CONFIG_MACH_MT6775)
+	/* pr_info("%s id:%d\n", __func__, info->id); */
+	/* for MT6775 RT5738 CPUL */
+	if (info->id == RT5738_H)
+		return 1;
+#endif
 	ret = rt5738_read_byte(info->i2c, chip->enable_reg, &reg_val);
 	if (ret < 0)
 		return ret;
@@ -356,7 +408,7 @@ static int rt5738_parse_dt(
 	int ret;
 
 	if (!np) {
-		pr_notice("%s cant find node (0x%02x)\n",
+		pr_err("%s cant find node (0x%02x)\n",
 				__func__, info->i2c->addr);
 		return 0;
 	}
@@ -366,7 +418,7 @@ static int rt5738_parse_dt(
 		pr_info("%s set vsel_pin(%x)\n", __func__, val);
 		info->pin_sel = val;
 	} else {
-		pr_notice("%s use chip default vsel_pin(0)\n", __func__);
+		pr_err("%s use chip default vsel_pin(0)\n", __func__);
 		info->pin_sel = 0;
 	}
 
@@ -374,10 +426,10 @@ static int rt5738_parse_dt(
 }
 
 struct regulator_dev *rt5738_regulator_register(
-	struct regulator_desc *desc,
-	struct device *dev,
-	struct regulator_init_data *init_data,
-	void *driver_data)
+					struct regulator_desc *desc,
+					struct device *dev,
+					struct regulator_init_data *init_data,
+					void *driver_data)
 {
 	struct regulator_config config = {
 		.dev = dev,
@@ -419,20 +471,22 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 		info->id = RT5738_H;
 		break;
 	default:
-		pr_notice("%s invalid Slave Addr\n", __func__);
+		pr_err("%s invalid Slave Addr\n", __func__);
 		return -ENODEV;
 	}
 
 	ret = rt5738_parse_dt(info, &i2c->dev);
 	if (ret < 0) {
-		pr_notice("%s parse dt (0x%02x) fail\n", __func__, i2c->addr);
+		pr_err("%s parse dt (0x%02x) fail\n", __func__, i2c->addr);
 		return -EINVAL;
 	}
 
-	init_data = of_get_regulator_init_data(&i2c->dev
-					       , i2c->dev.of_node, NULL);
+	init_data = of_get_regulator_init_data(&i2c->dev,
+					       i2c->dev.of_node,
+					       NULL);
 	if (init_data) {
-		dev_info(&i2c->dev, "regulator_name = %s, min_uV =%d, max_uV = %d\n"
+		dev_info(&i2c->dev,
+			 "regulator_name = %s, min_uV =%d, max_uV = %d\n"
 			 , init_data->constraints.name
 			 , init_data->constraints.min_uV
 			 , init_data->constraints.max_uV);
@@ -440,19 +494,6 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 			 , init_data->constraints.name
 			 , init_data->constraints.min_uV
 			 , init_data->constraints.max_uV);
-	} else {
-		dev_info(&i2c->dev, "%s: no init data\n", __func__);
-		return -EINVAL;
-	}
-
-	init_data = of_get_regulator_init_data(&i2c->dev
-					       , i2c->dev.of_node, NULL);
-	if (init_data) {
-		dev_info(&i2c->dev,
-			"regulator_name = %s, min_uV = %d, max_uV = %d\n",
-			init_data->constraints.name,
-			init_data->constraints.min_uV,
-			init_data->constraints.max_uV);
 	} else {
 		dev_info(&i2c->dev, "%s: no init data\n", __func__);
 		return -EINVAL;
@@ -468,15 +509,17 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 
 	ret = rt5738_regmap_init(info);
 	if (ret < 0) {
-		pr_notice("%s rt5738 regmap init fail\n", __func__);
+		pr_err("%s rt5738 regmap init fail\n", __func__);
 		return -EINVAL;
 	}
 
-	info->regulator = rt5738_regulator_register(info->desc
-						, &i2c->dev, init_data, info);
+	info->regulator = rt5738_regulator_register(info->desc,
+						    &i2c->dev,
+						    init_data,
+						    info);
 
 	if (!info->regulator) {
-		pr_notice("%s rt5738 register regulator fail\n", __func__);
+		pr_err("%s rt5738 register regulator fail\n", __func__);
 		return -EINVAL;
 	}
 

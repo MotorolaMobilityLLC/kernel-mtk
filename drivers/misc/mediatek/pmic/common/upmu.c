@@ -535,8 +535,6 @@ static int pmic_mt_probe(struct platform_device *dev)
 	if (IS_ENABLED(CONFIG_MTK_BIF_SUPPORT))
 		pmic_bif_init();
 
-	pmic_tracking_init();
-
 	return 0;
 }
 
