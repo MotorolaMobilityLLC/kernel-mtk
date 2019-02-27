@@ -271,8 +271,6 @@ extern struct ccci_ccb_config ccb_configs[];
 	_IOWR(CCCI_IOC_MAGIC, 64, struct ccci_ccb_config)
 #define CCCI_IOC_CCB_CTRL_OFFSET		\
 	_IOR(CCCI_IOC_MAGIC, 65, unsigned int)
-#define CCCI_IOC_MB				\
-	_IO(CCCI_IOC_MAGIC, 66)
 #define CCCI_IOC_GET_CCB_DEBUG_VAL		\
 	_IOWR(CCCI_IOC_MAGIC, 67, struct ccci_ccb_debug)
 
