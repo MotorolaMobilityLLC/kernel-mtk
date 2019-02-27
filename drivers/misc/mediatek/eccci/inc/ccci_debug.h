@@ -145,6 +145,14 @@ do { \
 		CCCI_DUMP_TIME_FLAG, fmt, ##args); \
 	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
 } while (0)
+#define CCCI_BUF_LOG_TAG(idx, buf_type, tag, fmt, args...) \
+do { \
+	ccci_dump_write(idx, buf_type, \
+		CCCI_DUMP_TIME_FLAG|CCCI_DUMP_CURR_FLAG,\
+		"[%d]" fmt, (idx+1), ##args); \
+	CCCI_LEGACY_DBG_LOG(idx, tag, fmt, ##args); \
+} while (0)
+
 /****************************************************************************
  ** CCCI dump log define end ****************
  ****************************************************************************/
