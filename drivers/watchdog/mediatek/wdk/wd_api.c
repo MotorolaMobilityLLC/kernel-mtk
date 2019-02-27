@@ -682,7 +682,7 @@ void arch_reset(char mode, const char *cmd)
 		rtc_mark_kpoc();
 #endif
 	} else {
-		reboot = 1;
+		reboot = WD_SW_RESET_BYPASS_PWR_KEY;
 	}
 
 	if (res)
