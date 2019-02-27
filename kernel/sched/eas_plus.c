@@ -161,3 +161,33 @@ static inline bool system_overutilized(int cpu)
 	return system_overutil;
 }
 
+static inline unsigned long
+__src_cpu_util(int cpu, int delta, unsigned long task_delta)
+{
+	unsigned long util = cpu_rq(cpu)->cfs.avg.util_avg;
+	unsigned long capacity = capacity_orig_of(cpu);
+
+#ifdef CONFIG_SCHED_WALT
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+		util = (cpu_rq(cpu)->prev_runnable_sum << SCHED_LOAD_SHIFT) /
+			walt_ravg_window;
+#endif
+	util = max(util, task_delta);
+	delta += util;
+	if (delta < 0)
+		return 0;
+
+	return (delta >= capacity) ? capacity : delta;
+}
+
+static unsigned long
+__src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta)
+{
+	int util = __src_cpu_util(cpu, delta, task_delta);
+
+	if (util >= capacity)
+		return SCHED_CAPACITY_SCALE;
+
+	return (util << SCHED_CAPACITY_SHIFT)/capacity;
+}
+
