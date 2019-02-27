@@ -22,9 +22,13 @@
 
 /* have 5 banks */
 enum eem_ctrl_id {
-	EEM_CTRL_L = 0,
-	EEM_CTRL_2L = 1,
-	EEM_CTRL_CCI = 2,
+	EEM_CTRL_L,
+	EEM_CTRL_2L,
+	EEM_CTRL_CCI,
+#if ENABLE_LOO
+	EEM_CTRL_L_HI,
+	EEM_CTRL_2L_HI,
+#endif
 
 	NR_EEM_CTRL,
 };
@@ -33,6 +37,10 @@ enum eem_det_id {
 	EEM_DET_L	=	EEM_CTRL_L,
 	EEM_DET_2L	=	EEM_CTRL_2L,
 	EEM_DET_CCI	=	EEM_CTRL_CCI,
+#if ENABLE_LOO
+	EEM_DET_L_HI	=	EEM_CTRL_L_HI,
+	EEM_DET_2L_HI	=	EEM_CTRL_2L_HI,
+#endif
 
 	NR_EEM_DET,
 };
@@ -83,9 +91,13 @@ extern const unsigned int reg_dump_addr_off[105];
 
 #ifdef CONFIG_EEM_AEE_RR_REC
 enum eem_state {
-	EEM_CPU_LITTLE_IS_SET_VOLT = 0,		/* L */
-	EEM_CPU_2_LITTLE_IS_SET_VOLT = 1,	/* 2L */
-	EEM_CPU_CCI_IS_SET_VOLT = 2,		/* CCI */
+	EEM_CPU_LITTLE_IS_SET_VOLT,		/* L */
+	EEM_CPU_2_LITTLE_IS_SET_VOLT,	/* 2L */
+	EEM_CPU_CCI_IS_SET_VOLT,		/* CCI */
+#if ENABLE_LOO
+	EEM_CPU_LITTLE_HI_IS_SET_VOLT,
+	EEM_CPU_2_LITTLE_HI_IS_SET_VOLT,
+#endif
 };
 
 extern void aee_rr_rec_ptp_devinfo_0(u32 val);

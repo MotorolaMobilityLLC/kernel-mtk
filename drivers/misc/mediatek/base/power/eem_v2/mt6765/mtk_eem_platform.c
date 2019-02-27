@@ -55,6 +55,12 @@ static unsigned int detid_to_dvfsid(struct eem_det *det)
 		cpudvfsindex = MT_CPU_DVFS_L;
 	else if (detid == EEM_DET_2L)
 		cpudvfsindex = MT_CPU_DVFS_LL;
+#if ENABLE_LOO
+	else if (detid == EEM_DET_L_HI)
+		cpudvfsindex = MT_CPU_DVFS_L;
+	else if (detid == EEM_DET_2L_HI)
+		cpudvfsindex = MT_CPU_DVFS_LL;
+#endif
 	else
 		cpudvfsindex = MT_CPU_DVFS_CCI;
 
@@ -235,6 +241,11 @@ void get_orig_volt_table_cpu(struct eem_det *det)
 #endif
 	}
 
+#if ENABLE_LOO
+	/* Use signoff volt */
+	memcpy(det->volt_tbl, det->volt_tbl_orig, sizeof(det->volt_tbl));
+	memcpy(det->volt_tbl_init2, det->volt_tbl_orig, sizeof(det->volt_tbl));
+#endif
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 }
