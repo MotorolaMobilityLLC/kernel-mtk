@@ -274,6 +274,16 @@ void scp_A_dump_regs(void)
 		, readl(SCP_A_DEBUG_PC_REG), readl(SCP_A_DEBUG_LR_REG)
 		, readl(SCP_A_DEBUG_PSP_REG), readl(SCP_A_DEBUG_SP_REG));
 	}
+	pr_debug("[SCP]GIPC     0x%x\n", readl(SCP_GIPC_IN_REG));
+	pr_debug("[SCP]BUS_CTRL 0x%x\n", readl(SCP_BUS_CTRL));
+	pr_debug("[SCP]SLEEP_STATUS 0x%x\n", readl(SCP_CPU_SLEEP_STATUS));
+	pr_debug("[SCP]INFRA_STATUS 0x%x\n", readl(INFRA_CTRL_STATUS));
+	pr_debug("[SCP]IRQ_STATUS 0x%x\n", readl(SCP_INTC_IRQ_STATUS));
+	pr_debug("[SCP]IRQ_ENABLE 0x%x\n", readl(SCP_INTC_IRQ_ENABLE));
+	pr_debug("[SCP]IRQ_SLEEP 0x%x\n", readl(SCP_INTC_IRQ_SLEEP));
+	pr_debug("[SCP]CLK_CTRL_SEL 0x%x\n", readl(SCP_CLK_SW_SEL));
+	pr_debug("[SCP]CLK_ENABLE  0x%x\n", readl(SCP_CLK_ENABLE));
+	pr_debug("[SCP]SLEEP_DEBUG 0x%x\n", readl(SCP_A_SLEEP_DEBUG_REG));
 }
 
 /*

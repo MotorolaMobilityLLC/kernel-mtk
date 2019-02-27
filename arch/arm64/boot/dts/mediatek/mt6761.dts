@@ -534,7 +534,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,scp";
 		status = "okay";
 		reg = <0 0x10500000 0 0x40000>,
-				<0 0x105c0000 0 0x1000>,
+				<0 0x105c0000 0 0x3000>,
 				<0 0x105c4000 0 0x1000>;
 		interrupts = <GIC_SPI 136 IRQ_TYPE_LEVEL_HIGH>;
 		core_1 = "enable";
