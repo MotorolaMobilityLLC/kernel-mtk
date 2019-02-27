@@ -81,6 +81,7 @@ static wait_queue_head_t esd_ext_te_wq;
 static atomic_t esd_ext_te_event = ATOMIC_INIT(0);
 static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
+unsigned int esd_checking;
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
@@ -194,12 +195,17 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 
 	/* 1.reset */
 	cmdqRecReset(qhandle);
-
+	/*set esd check read timeout 200ms*/
+	/*remove to dts*/
+	/*cmdq_task_set_timeout(qhandle, 200);*/
 	/* wait stream eof first */
 	/* cmdqRecWait(qhandle, CMDQ_EVENT_DISP_RDMA0_EOF); */
 	cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();
+
+	esd_checking = 1;
+
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_STOP_VDO_MODE, 0);
 
@@ -437,12 +443,12 @@ int primary_display_esd_check(void)
 
 	dprec_logger_start(DPREC_LOGGER_ESD_CHECK, 0, 0);
 	mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_START, 0, 0);
-	DISPINFO("[ESD]ESD check begin\n");
+	DISPCHECK("[ESD]ESD check begin\n");
 
 	primary_display_manual_lock();
 	if (primary_get_state() == DISP_SLEPT) {
 		mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 1, 0);
-		DISPINFO("[ESD]Primary DISP slept. Skip esd check\n");
+		DISPCHECK("[ESD]Primary DISP slept. Skip esd check\n");
 		primary_display_manual_unlock();
 		goto done;
 	}
@@ -459,15 +465,21 @@ int primary_display_esd_check(void)
 			DISPCHECK("[ESD]ESD check eint\n");
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 2, 0);
 			primary_display_switch_esd_mode(mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 3, 0);
 			ret = do_esd_check_eint();
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 4, 0);
 			mode = GPIO_DSI_MODE; /* used for mode switch */
 			primary_display_switch_esd_mode(mode);
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 5, 0);
 		} else if (mode == GPIO_DSI_MODE) {
 			mmprofile_log_ex(mmp_te, MMPROFILE_FLAG_PULSE,
 				primary_display_is_video_mode(), mode);
 			DISPCHECK("[ESD]ESD check read\n");
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 2, 1);
 			ret = do_esd_check_read();
+			mmprofile_log_ex(mmp_chk, MMPROFILE_FLAG_PULSE, 3, 1);
 			mode = GPIO_EINT_MODE; /* used for mode switch */
 		}
 
@@ -540,6 +552,18 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 			_primary_path_switch_dst_unlock();
 			continue;
 		}
+
+		primary_display_manual_lock();
+		/* thread relase CPU, when display is slept */
+		if (primary_get_state() == DISP_SLEPT) {
+			primary_display_manual_unlock();
+			_primary_path_switch_dst_unlock();
+			primary_display_wait_not_state(DISP_SLEPT,
+				MAX_SCHEDULE_TIMEOUT);
+			continue;
+		}
+		primary_display_manual_unlock();
+
 		i = 0; /* repeat */
 		do {
 			ret = primary_display_esd_check();
@@ -562,6 +586,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 			DISPCHECK("[ESD]esd recovery success\n");
 			recovery_done = 0;
 		}
+		esd_checking = 0;
 		_primary_path_switch_dst_unlock();
 
 		/* 2. other check & recovery */
