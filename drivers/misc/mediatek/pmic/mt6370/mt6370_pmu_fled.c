@@ -34,7 +34,7 @@ enum {
 };
 
 struct mt6370_pmu_fled_data {
-	rt_fled_dev_t base;
+	struct rt_fled_dev base;
 	struct mt6370_pmu_chip *chip;
 	struct device *dev;
 	struct platform_device *mt_flash_dev;
@@ -277,7 +277,7 @@ static int mt6370_fled_resume(struct rt_fled_dev *info)
 }
 
 static int mt6370_fled_set_mode(struct rt_fled_dev *info,
-					flashlight_mode_t mode)
+					enum flashlight_mode mode)
 {
 	struct mt6370_pmu_fled_data *fi = (struct mt6370_pmu_fled_data *)info;
 	int ret = 0;
@@ -557,32 +557,36 @@ static int mt6370_fled_is_ready(struct rt_fled_dev *info)
 }
 
 static struct rt_fled_hal mt6370_fled_hal = {
-	.fled_init = mt6370_fled_init,
-	.fled_suspend = mt6370_fled_suspend,
-	.fled_resume = mt6370_fled_resume,
-	.fled_set_mode = mt6370_fled_set_mode,
-	.fled_get_mode = mt6370_fled_get_mode,
-	.fled_strobe = mt6370_fled_strobe,
-	.fled_get_is_ready = mt6370_fled_is_ready,
-	.fled_troch_current_list = mt6370_fled_torch_current_list,
-	.fled_strobe_current_list = mt6370_fled_strobe_current_list,
-	.fled_timeout_level_list = mt6370_fled_timeout_level_list,
+	.rt_hal_fled_init = mt6370_fled_init,
+	.rt_hal_fled_suspend = mt6370_fled_suspend,
+	.rt_hal_fled_resume = mt6370_fled_resume,
+	.rt_hal_fled_set_mode = mt6370_fled_set_mode,
+	.rt_hal_fled_get_mode = mt6370_fled_get_mode,
+	.rt_hal_fled_strobe = mt6370_fled_strobe,
+	.rt_hal_fled_get_is_ready = mt6370_fled_is_ready,
+	.rt_hal_fled_torch_current_list = mt6370_fled_torch_current_list,
+	.rt_hal_fled_strobe_current_list = mt6370_fled_strobe_current_list,
+	.rt_hal_fled_timeout_level_list = mt6370_fled_timeout_level_list,
 	/* .fled_lv_protection_list = mt6370_fled_lv_protection_list, */
-	.fled_strobe_timeout_list = mt6370_fled_strobe_timeout_list,
+	.rt_hal_fled_strobe_timeout_list = mt6370_fled_strobe_timeout_list,
 	/* method to set */
-	.fled_set_torch_current_sel = mt6370_fled_set_torch_current_sel,
-	.fled_set_strobe_current_sel = mt6370_fled_set_strobe_current_sel,
-	.fled_set_timeout_level_sel = mt6370_fled_set_timeout_level_sel,
+	.rt_hal_fled_set_torch_current_sel = mt6370_fled_set_torch_current_sel,
+	.rt_hal_fled_set_strobe_current_sel =
+					mt6370_fled_set_strobe_current_sel,
+	.rt_hal_fled_set_timeout_level_sel = mt6370_fled_set_timeout_level_sel,
 
-	.fled_set_strobe_timeout_sel = mt6370_fled_set_strobe_timeout_sel,
+	.rt_hal_fled_set_strobe_timeout_sel =
+					mt6370_fled_set_strobe_timeout_sel,
 
 	/* method to get */
-	.fled_get_torch_current_sel = mt6370_fled_get_torch_current_sel,
-	.fled_get_strobe_current_sel = mt6370_fled_get_strobe_current_sel,
-	.fled_get_timeout_level_sel = mt6370_fled_get_timeout_level_sel,
-	.fled_get_strobe_timeout_sel = mt6370_fled_get_strobe_timeout_sel,
+	.rt_hal_fled_get_torch_current_sel = mt6370_fled_get_torch_current_sel,
+	.rt_hal_fled_get_strobe_current_sel =
+					mt6370_fled_get_strobe_current_sel,
+	.rt_hal_fled_get_timeout_level_sel = mt6370_fled_get_timeout_level_sel,
+	.rt_hal_fled_get_strobe_timeout_sel =
+					mt6370_fled_get_strobe_timeout_sel,
 	/* PM shutdown, optional */
-	.fled_shutdown = mt6370_fled_shutdown,
+	.rt_hal_fled_shutdown = mt6370_fled_shutdown,
 };
 
 #define MT6370_FLED_TOR_CUR0	MT6370_PMU_REG_FLED1TORCTRL
