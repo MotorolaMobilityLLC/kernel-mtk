@@ -2684,8 +2684,7 @@ static struct {
 } g_clks[] = {
 	{
 	.name = pg_md1}, {
-	.name = pg_vde}, {
-	.name = pg_ven}, {
+	.name = pg_vcodec}, {
 .name = pg_mfg},};
 
 static int test_pg_1(struct seq_file *s, void *v)
