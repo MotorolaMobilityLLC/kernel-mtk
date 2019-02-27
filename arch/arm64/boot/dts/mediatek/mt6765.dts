@@ -2017,9 +2017,16 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clocks = <&scpsys SCP_SYS_DIS>,
 			<&mmsys_config CLK_MM_SMI_COMM0>,
 			<&mmsys_config CLK_MM_SMI_COMM1>,
-			<&mmsys_config CLK_MM_SMI_COMMON>;
+			<&mmsys_config CLK_MM_SMI_COMMON>,
+			<&topckgen CLK_TOP_MM_SEL>,
+			<&topckgen CLK_TOP_MMPLL>,
+			<&topckgen CLK_TOP_UNIVPLL1_D2>,
+			<&topckgen CLK_TOP_MMPLL_D2>;
 		clock-names = "mtcmos-mm", "smi-common-gals-comm0",
-			"smi-common-gals-comm1", "smi-common";
+			"smi-common-gals-comm1", "smi-common",
+			"mmdvfs_clk_mm_sel_ck",
+			"mmdvfs_clk_mmpll_ck", "mmdvfs_clk_univpll1_d2_ck",
+			"mmdvfs_clk_mmpll_d2_ck";
 
 		nr_config_pairs = <8>;
 		config_pairs =
@@ -2037,6 +2044,29 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			0x404 0x408 0x40c 0x410 0x414 0x418 0x41c 0x430 0x434
 			0x440 0x444>;
 	};
+
+	mmdvfs_pmqos {
+		compatible = "mediatek,mmdvfs_pmqos";
+		mm_step0 = <457 1 0 1>;
+		mm_step1 = <312 1 0 2>;
+		mm_step2 = <228 1 0 3>;
+		vopp_steps = <0 1 3>;
+		disp_freq = "mm_step0", "mm_step1", "mm_step2";
+		mdp_freq = "mm_step0", "mm_step1", "mm_step2";
+		cam_freq = "mm_step0","mm_step1","mm_step2";
+		img_freq = "mm_step0","mm_step1","mm_step2";
+		vdec_freq = "mm_step0","mm_step1","mm_step2";
+		venc_freq = "mm_step0","mm_step1","mm_step2";
+		clocks = <&topckgen CLK_TOP_MM_SEL>,	/* 0 */
+			<&topckgen CLK_TOP_MMPLL>,			/* 1 */
+			<&topckgen CLK_TOP_UNIVPLL1_D2>,	/* 2 */
+			<&topckgen CLK_TOP_MMPLL_D2>;		/* 3 */
+		clock-names = "mmdvfs_clk_mm_sel_ck",	/* 0 */
+			"mmdvfs_clk_mmpll_ck",				/* 1 */
+			"mmdvfs_clk_univpll1_d2_ck",		/* 2 */
+			"mmdvfs_clk_mmpll_d2_ck";			/* 3 */
+	};
+
 
 	imgsys: imgsys@15020000 {
 		compatible = "mediatek,imgsys", "syscon";
