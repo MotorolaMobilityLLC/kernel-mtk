@@ -16,6 +16,16 @@
 #include <asm/opcodes-sec.h>
 #include <asm/opcodes-virt.h>
 #endif
+
+#if defined(CONFIG_ARM64)
+#define LOCAL_REG_SET_DECLARE \
+	register size_t reg0 __asm__("x0") = function_id; \
+	register size_t reg1 __asm__("x1") = arg0; \
+	register size_t reg2 __asm__("x2") = arg1; \
+	register size_t reg3 __asm__("x3") = arg2; \
+	register size_t reg4 __asm__("x4") = arg3; \
+	size_t ret
+#else
 #define LOCAL_REG_SET_DECLARE \
 	register size_t reg0 __asm__("r0") = function_id; \
 	register size_t reg1 __asm__("r1") = arg0; \
@@ -23,6 +33,7 @@
 	register size_t reg3 __asm__("r3") = arg2; \
 	register size_t reg4 __asm__("r4") = arg3; \
 	size_t ret
+#endif
 
 size_t mt_secure_call_all(size_t function_id,
 	size_t arg0, size_t arg1, size_t arg2,
