@@ -22,7 +22,7 @@
 	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
-	defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT3967)
 #include <disp_helper.h>
 #endif
 
@@ -34,7 +34,7 @@
 	defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
-	defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT3967)
 #include "ddp_clkmgr.h"
 #endif
 
@@ -56,7 +56,7 @@
 	defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765) || \
-	defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6761) || defined(CONFIG_MACH_MT3967)
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 
@@ -1128,7 +1128,7 @@ static unsigned long g_tdshp1_va;
 	defined(CONFIG_MACH_MT6739)
 #define TDSHP_PA_BASE   0x14009000
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || \
-	defined(CONFIG_MACH_MT6758)
+	defined(CONFIG_MACH_MT6758) || defined(CONFIG_MACH_MT3967)
 #define TDSHP_PA_BASE   0x14007000
 #elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 #define TDSHP_PA_BASE   0x1400A000
@@ -2589,6 +2589,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 #endif
 
 	/*Check if MDP color base address*/
+#if defined(NO_COLOR_SHARED)
 #if defined(DISP_MDP_COLOR_ON) || defined(MDP_COLOR_ON)
 	if ((addr >= g_mdp_color_va) && (addr < (g_mdp_color_va + 0x1000))) {
 		/* MDP COLOR */
@@ -2597,7 +2598,7 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 		return 2;
 	}
 #endif
-
+#endif
 
 	/*Check if MDP RSZ base address*/
 #if defined(SUPPORT_ULTRA_RESOLUTION)
@@ -3082,7 +3083,8 @@ static int _color_clock_on(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761) || \
+	defined(CONFIG_MACH_MT3967)
 	ddp_clk_prepare_enable(ddp_get_module_clk_id(module));
 	return 0;
 #else
@@ -3134,7 +3136,8 @@ static int _color_clock_off(enum DISP_MODULE_ENUM module, void *cmq_handle)
 
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
-	defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
+	defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761) || \
+	defined(CONFIG_MACH_MT3967)
 	ddp_clk_disable_unprepare(ddp_get_module_clk_id(module));
 	return 0;
 #else
