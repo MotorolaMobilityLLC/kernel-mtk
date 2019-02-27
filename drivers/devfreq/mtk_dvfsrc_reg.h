@@ -16,6 +16,8 @@
 
 #if defined(CONFIG_MACH_MT6765)
 #include <mtk_dvfsrc_reg_mt6765.h>
+#elif defined(CONFIG_MACH_MT6761)
+#include <mtk_dvfsrc_reg_mt6761.h>
 #else
 #include <mtk_dvfsrc_reg_mt67xx.h>
 #endif
