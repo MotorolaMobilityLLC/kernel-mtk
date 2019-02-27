@@ -2,7 +2,6 @@
 menuconfig MTK_SERIAL
 	tristate "MediaTek Serial Port Support"
 	select SERIAL_CORE
-	default y
 	---help---
 	  This selects MediaTek(R) internal UART driver.
 	  If you want to use MediaTek(R) internal UART driver, say Y or M here.
