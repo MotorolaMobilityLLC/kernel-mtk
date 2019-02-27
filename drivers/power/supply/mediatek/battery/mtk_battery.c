@@ -388,7 +388,10 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_TECHNOLOGY;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		val->intval = data->BAT_CAPACITY;
+		if (gm.fixed_uisoc != 0xffff)
+			val->intval = gm.fixed_uisoc;
+		else
+			val->intval = data->BAT_CAPACITY;
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -911,6 +914,37 @@ static ssize_t store_Battery_Temperature(
 static DEVICE_ATTR(Battery_Temperature, 0664, show_Battery_Temperature,
 		   store_Battery_Temperature);
 
+static ssize_t show_UI_SOC(
+	struct device *dev, struct device_attribute *attr,
+					       char *buf)
+{
+	bm_err("show_UI_SOC: %d %d\n",
+		gm.ui_soc, gm.fixed_uisoc);
+	return sprintf(buf, "%d\n", gm.fixed_uisoc);
+}
+
+static ssize_t store_UI_SOC(
+	struct device *dev, struct device_attribute *attr,
+						const char *buf, size_t size)
+{
+	signed int temp;
+
+	if (kstrtoint(buf, 10, &temp) == 0) {
+
+		gm.fixed_uisoc = temp;
+
+		bm_err("store_UI_SOC: %d %d\n",
+			gm.ui_soc, gm.fixed_uisoc);
+
+		battery_update(&battery_main);
+	}
+
+	return size;
+}
+
+static DEVICE_ATTR(UI_SOC, 0664, show_UI_SOC,
+		   store_UI_SOC);
+
 
 /* ============================================================ */
 /* Internal function */
@@ -1378,6 +1412,8 @@ static void nl_send_to_user(u32 pid, int seq, struct fgd_nl_msg_t *reply_msg)
 	void *data;
 	int ret;
 
+	reply_msg->identity = FGD_NL_MAGIC;
+
 	skb = alloc_skb(len, GFP_ATOMIC);
 	if (!skb)
 		return;
@@ -1416,6 +1452,22 @@ static void nl_data_handler(struct sk_buff *skb)
 	data = NLMSG_DATA(nlh);
 
 	fgd_msg = (struct fgd_nl_msg_t *)data;
+
+	if (fgd_msg->identity != FGD_NL_MAGIC) {
+		bm_err("[FGERR]not correct MTKFG netlink packet!%d\n",
+			fgd_msg->identity);
+		return;
+	}
+
+	if (gm.g_fgd_pid != pid &&
+		fgd_msg->fgd_cmd > FG_DAEMON_CMD_SET_DAEMON_PID) {
+		bm_err("drop rev netlink pid:%d:%d  cmd:%d:%d\n",
+			pid,
+			gm.g_fgd_pid,
+			fgd_msg->fgd_cmd,
+			FG_DAEMON_CMD_SET_DAEMON_PID);
+		return;
+	}
 
 	size = fgd_msg->fgd_ret_data_len + FGD_NL_MSG_T_HDR_LEN;
 
@@ -3246,6 +3298,7 @@ static int __init battery_probe(struct platform_device *dev)
 	bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
 #endif
 	ret = device_create_file(&(dev->dev), &dev_attr_Battery_Temperature);
+	ret = device_create_file(&(dev->dev), &dev_attr_UI_SOC);
 
 	/* sysfs node */
 	ret_device_file = device_create_file(&(dev->dev),

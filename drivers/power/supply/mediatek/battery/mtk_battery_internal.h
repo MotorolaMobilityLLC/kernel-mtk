@@ -29,7 +29,8 @@
 /* ============================================================ */
 /* Define Macro Value */
 /* ============================================================ */
-#define FGD_NL_MSG_T_HDR_LEN 24
+#define FGD_NL_MSG_T_HDR_LEN 28
+#define FGD_NL_MAGIC 2015060303
 #define FGD_NL_MSG_MAX_LEN 9200
 
 #define UNIT_TRANS_10	10
@@ -253,6 +254,7 @@ struct fgd_nl_msg_t {
 	unsigned int fgd_subcmd_para2;
 	unsigned int fgd_data_len;
 	unsigned int fgd_ret_data_len;
+	unsigned int identity;
 	char fgd_data[FGD_NL_MSG_MAX_LEN];
 };
 
@@ -632,6 +634,7 @@ struct mtk_battery {
 
 /* adb */
 	int fixed_bat_tmp;
+	int fixed_uisoc;
 
 	struct charger_consumer *pbat_consumer;
 	struct notifier_block bat_nb;
