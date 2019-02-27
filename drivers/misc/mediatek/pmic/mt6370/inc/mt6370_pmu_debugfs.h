@@ -25,6 +25,8 @@
 
 extern void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
 						enum dsv_dbg_mode_t mode);
+extern int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
+					enum dsv_dbg_mode_t mode);
 extern int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip);
 
 

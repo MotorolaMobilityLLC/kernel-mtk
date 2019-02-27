@@ -31,6 +31,7 @@ enum dsv_dbg_mode_t {
 enum {
 	DSV_VAR_VBST_ADJUSTMENT = 0x1,
 	DSV_VAR_IRQ_COUNT = 0x2,
+	DSV_VAR_IRQ_MASK = 0x3,
 	DSV_VAR_MAX,
 };
 
