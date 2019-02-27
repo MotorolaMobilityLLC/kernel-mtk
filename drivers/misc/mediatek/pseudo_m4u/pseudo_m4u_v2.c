@@ -1543,9 +1543,8 @@ int __pseudo_dealloc_mva(int port,
 		return -EINVAL;
 	}
 
-	M4U_MSG("module=0x%x, addr=0x%lx, size=0x%x, MVA=0x%x, mva_end=0x%x\n",
-		port,
-		BufAddr, size, MVA, MVA + size - 1);
+	M4U_DBG("module=0x%x, addr=0x%lx, size=0x%x, MVA=0x%x, mva_end=0x%x\n",
+		port, BufAddr, size, MVA, MVA + size - 1);
 
 	/* for ion sg alloc, we did not align the mva in allocation. */
 	/* if (!sg_table) */
@@ -1940,9 +1939,6 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 			va, size, page_num);
 		return ERR_PTR(-ENOMEM);
 	}
-
-	M4U_MSG("va=0x%lx,PAGE_OFFSET=0x%lx,VMALLOC_START=0x%lx,END=0x%lx\n",
-		va, PAGE_OFFSET, VMALLOC_START, VMALLOC_END);
 
 	if (va < PAGE_OFFSET) {	/* from user space */
 		if (va >= VMALLOC_START && va <= VMALLOC_END) {	/* vmalloc */
