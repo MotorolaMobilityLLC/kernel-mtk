@@ -156,9 +156,6 @@ int step_notify(STEP_NOTIFY_TYPE type)
 	cxt = step_c_context_obj;
 
 	if (type == TYPE_STEP_DETECTOR) {
-		pr_debug("fwq TYPE_STEP_DETECTOR notify\n");
-		/* cxt->step_c_data.get_data_step_d(&value); */
-		/* step_c_data_report(cxt->idev,value,3); */
 		event.flush_action = DATA_ACTION;
 		event.handle = ID_STEP_DETECTOR;
 		event.word[0] = 1;
@@ -953,8 +950,6 @@ int step_c_data_report(uint32_t new_counter, int status)
 		last_step_counter = new_counter;
 		err = sensor_input_event(step_c_context_obj->mdev.minor,
 			&event);
-		if (err < 0)
-			pr_err_ratelimited("event buffer full, drop data\n");
 	}
 	return 0;
 }
@@ -974,8 +969,6 @@ int floor_c_data_report(uint32_t new_counter, int status)
 		last_floor_counter = new_counter;
 		err = sensor_input_event(step_c_context_obj->mdev.minor,
 			&event);
-		if (err < 0)
-			pr_err_ratelimited("event buffer full, drop data\n");
 	}
 	return 0;
 }
@@ -990,10 +983,7 @@ int step_c_flush_report(void)
 	event.handle = ID_STEP_COUNTER;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("event buffer full, so drop this data\n");
-	else
-		pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	return err;
 }
 
@@ -1007,10 +997,7 @@ int step_d_flush_report(void)
 	event.handle = ID_STEP_DETECTOR;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("event buffer full, so drop this data\n");
-	else
-		pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	return err;
 }
 
@@ -1029,10 +1016,7 @@ int floor_c_flush_report(void)
 	event.handle = ID_FLOOR_COUNTER;
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(step_c_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("event buffer full, so drop this data\n");
-	else
-		pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	return err;
 }
 

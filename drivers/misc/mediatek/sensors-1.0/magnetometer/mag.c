@@ -709,8 +709,6 @@ int mag_data_report(struct mag_data *data)
 		mark_timestamp(ID_MAGNETIC, DATA_REPORT, ktime_get_boot_ns(),
 			       event.time_stamp);
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -728,8 +726,6 @@ int mag_bias_report(struct mag_data *data)
 	event.word[2] = data->z;
 
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -761,11 +757,9 @@ int mag_flush_report(void)
 
 	memset(&event, 0, sizeof(struct sensor_event));
 
-	pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(mag_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
