@@ -355,7 +355,7 @@ unsigned int mtk_spm_read_register(int register_index)
 		return spm_read(MD1_PWR_CON);
 	else if (register_index == SPM_REG13)
 		return spm_read(PCM_REG13_DATA);
-/* TODO: FIX ME */
+/* SPARE_ACK_MASK removed, srcclkeni can not ctrl xo_wcn at MT6779 */
 #if 0
 	else if (register_index == SPM_SPARE_ACK_MASK)
 		return spm_read(SPARE_ACK_MASK);

@@ -32,26 +32,26 @@ int spm_load_firmware_status(void)
 
 bool spm_is_md_sleep(void)
 {
-	return !((spm_read(PCM_REG13_DATA) & STA0_MD_SRCCLKENA_0) |
-		 (spm_read(PCM_REG13_DATA) & STA0_MD_SRCCLKENA_1));
+	return !((spm_read(PCM_REG13_DATA) & R12EXT_MD_SRCCLKENA_0) |
+		 (spm_read(PCM_REG13_DATA) & R12EXT_MD_SRCCLKENA_1));
 }
 EXPORT_SYMBOL(spm_is_md_sleep);
 
 bool spm_is_md1_sleep(void)
 {
-	return !(spm_read(PCM_REG13_DATA) & STA0_MD_SRCCLKENA_0);
+	return !(spm_read(PCM_REG13_DATA) & R12EXT_MD_SRCCLKENA_0);
 }
 EXPORT_SYMBOL(spm_is_md1_sleep);
 
 bool spm_is_md2_sleep(void)
 {
-	return !(spm_read(PCM_REG13_DATA) & STA0_MD_SRCCLKENA_1);
+	return !(spm_read(PCM_REG13_DATA) & R12EXT_MD_SRCCLKENA_1);
 }
 EXPORT_SYMBOL(spm_is_md2_sleep);
 
 bool spm_is_conn_sleep(void)
 {
-	return !(spm_read(PCM_REG13_DATA) & STA0_CONN_SRCCKENA);
+	return !(spm_read(PCM_REG13_DATA) & R12EXT_CONN_SRCCLKENA);
 }
 EXPORT_SYMBOL(spm_is_conn_sleep);
 
@@ -61,7 +61,7 @@ static void check_ap_mdsrc_ack(void)
 	u32 md_sleep = 0;
 
 	/* if md_apsrc_req = 1'b0, wait 26M settling time (3ms) */
-	if ((spm_read(PCM_REG13_DATA) & STA0_MD_APSRC_REQ_0) == 0) {
+	if ((spm_read(PCM_REG13_DATA) & R12EXT_MD_APSRC_REQ_0) == 0) {
 		md_sleep = 1;
 		mdelay(3);
 	}
@@ -118,6 +118,24 @@ void spm_ap_mdsrc_req(u8 set)
 	}
 }
 EXPORT_SYMBOL(spm_ap_mdsrc_req);
+
+void spm_adsp_mem_protect(void)
+{
+	SMC_CALL(ARGS,
+		 SPM_ARGS_SUSPEND_CALLBACK,
+		 SUSPEND_CALLBACK_USER_ADSP,
+		 SUSPEND_CALLBACK);
+}
+EXPORT_SYMBOL(spm_adsp_mem_protect);
+
+void spm_adsp_mem_unprotect(void)
+{
+	SMC_CALL(ARGS,
+		 SPM_ARGS_SUSPEND_CALLBACK,
+		 SUSPEND_CALLBACK_USER_ADSP,
+		 RESUME_CALLBACK);
+}
+EXPORT_SYMBOL(spm_adsp_mem_unprotect);
 
 ssize_t get_spm_sleep_count(char *ToUserBuf
 		, size_t sz, void *priv)
