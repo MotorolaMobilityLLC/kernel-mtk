@@ -10627,6 +10627,7 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_pKWVirISPBuffer[i+3]);
 		}
 	}
+	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ isp p2 ke dump debug ============\n");
 	pr_info("isp p2 ke dump end\n");
 #else
@@ -10667,7 +10668,6 @@ static int isp_p2_ke_dump_read(struct seq_file *m, void *v)
 		    DIP_A_BASE_HW+4*(i+2), (unsigned int)g_KWVirISPBuffer[i+2],
 		    DIP_A_BASE_HW+4*(i+3), (unsigned int)g_KWVirISPBuffer[i+3]);
 	}
-	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ isp p2 ke dump debug ============\n");
 #endif
 	return 0;
@@ -10773,6 +10773,7 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 					(unsigned int)g_pTuningBuffer[i+3]);
 		}
 	}
+	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ isp p2 ne dump debug ============\n");
 	pr_info("isp p2 ne dump end\n");
 #else
@@ -10848,7 +10849,6 @@ static int isp_p2_dump_read(struct seq_file *m, void *v)
 		    DIP_A_BASE_HW+4*(i+2), (unsigned int)g_KWVirISPBuffer[i+2],
 		    DIP_A_BASE_HW+4*(i+3), (unsigned int)g_KWVirISPBuffer[i+3]);
 	}
-	mutex_unlock(&gDipMutex);
 	seq_puts(m, "============ isp p2 ne dump debug ============\n");
 #endif
 	return 0;
