@@ -100,7 +100,8 @@ void connectivity_export_upmu_set_reg_value(unsigned int reg,
 #define KERNEL_mmc_io_rw_direct connectivity_export_mmc_io_rw_direct
 struct mmc_card;
 int connectivity_export_mmc_io_rw_direct(struct mmc_card *card, int write,
-						unsigned fn, unsigned addr,
+						unsigned int fn,
+						unsigned int addr,
 						u8 in, u8 *out);
 
 /*******************************************************************************
