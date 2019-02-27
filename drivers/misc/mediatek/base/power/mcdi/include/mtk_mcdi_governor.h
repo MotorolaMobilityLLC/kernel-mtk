@@ -19,6 +19,7 @@
 enum {
 	PAUSE_CNT	= 0,
 	MULTI_CORE_CNT,
+	LATENCY_CNT,
 	RESIDENCY_CNT,
 	LAST_CORE_CNT,
 	NF_ANY_CORE_CPU_COND_INFO
@@ -34,7 +35,7 @@ struct mcdi_feature_status {
 };
 
 struct mcdi_cluster_dev {
-	int cpu;
+	int owner;
 
 	bool chk_res_each_core;
 	bool use_max_remain;
@@ -64,7 +65,7 @@ void any_core_cpu_cond_get(unsigned long buf[NF_ANY_CORE_CPU_COND_INFO]);
 void any_core_cpu_cond_inc(int idx);
 bool is_mcdi_working(void);
 bool is_last_core_in_mcusys(int cpu);
-bool is_last_core_in_this_cluster(int cpu);
+bool is_last_core_in_cluster(int cpu);
 unsigned int mcdi_get_gov_data_num_mcusys(void);
 
 void idle_refcnt_inc(void);
