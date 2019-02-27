@@ -183,8 +183,9 @@ int mtk_idle_select(int cpu)
 
 	/* 1. spmfw firmware is loaded ? */
 	#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	/* return -1:not init, 0:not loaded, 1: loaded */
-	if (spm_load_firmware_status() < 1) {
+	/* return -1: not init, 0: not loaded, */
+	/* 1: loaded, 2: loaded and kicked */
+	if (spm_load_firmware_status() < 2) {
 		reason = BY_FRM;
 		goto get_idle_idx;
 	}
