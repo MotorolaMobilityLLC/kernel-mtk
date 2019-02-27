@@ -31,6 +31,7 @@
 #ifdef CONFIG_MTK_AEE_IPANIC
 #include <mt-plat/mtk_ram_console.h>
 #endif
+#include <linux/tick.h>
 #include <mt-plat/mtk_gpt.h>
 #include <ext_wd_drv.h>
 #include <mt-plat/mtk_wd_api.h>
@@ -357,6 +358,7 @@ void dump_wdk_bind_info(void)
 #endif
 
 	mt_gpt_clkevt_aee_dump();
+	tick_broadcast_mtk_aee_dump();
 }
 
 void kicker_cpu_bind(int cpu)
