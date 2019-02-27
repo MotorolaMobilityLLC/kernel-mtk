@@ -2,7 +2,8 @@
 config CUSTOM_KERNEL_SENSORHUB
 	bool "CUSTOM KERNEL SENSORHUB support"
 	help
-	  Kernel space sensor hub driver. Define project used all sensor hub
+	  Kernel space sensor hub driver.
+	  Define project used all sensor hub
 	  sensors. The value is combination of sensor hub driver(get data...etc)
 	  and sensor hub framework driver(transmit shf info)
 

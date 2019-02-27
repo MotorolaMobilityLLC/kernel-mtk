@@ -4,3 +4,6 @@ config MTK_ACTIVITYHUB
 	default n
 	help
 	  MTK sensor hub driver for activity sensor.
+	  If this option is set,
+	  it will support
+	  activityhub driver.
