@@ -175,6 +175,16 @@ int charger_dev_kick_direct_charging_wdt(struct charger_device *chg_dev)
 }
 EXPORT_SYMBOL(charger_dev_kick_direct_charging_wdt);
 
+int charger_dev_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->get_vbus_adc)
+		return chg_dev->ops->get_vbus_adc(chg_dev, vbus);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_vbus);
+
 int charger_dev_get_ibus(struct charger_device *chg_dev, u32 *ibus)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&

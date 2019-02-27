@@ -34,11 +34,13 @@
 #include "../inc/mt6360_pmu_chg.h"
 #include <mt-plat/charger_class.h>
 #include <mt-plat/charger_type.h>
-/* TODO : add notify vbusov, eoc, rechg... */
+/* add notify vbusov, eoc, rechg */
 #include <mtk_charger_intf.h>
-/* TODO : switch USB config */
+/* switch USB config */
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_boot.h>
+
+#define MT6360_PMU_CHG_DRV_VERSION	"1.0.1_MTK"
 
 enum mt6360_adc_channel {
 	MT6360_ADC_VBUSDIV5,
@@ -628,9 +630,17 @@ static int mt6360_charger_get_cv(struct charger_device *chg_dev, u32 *uV)
 static int mt6360_charger_set_aicr(struct charger_device *chg_dev, u32 uA)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	int ret = 0;
 	u8 data = 0;
 
 	dev_dbg(mpci->dev, "%s\n", __func__);
+	/* Disable sys drop improvement for download mode */
+	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CHG_CTRL20,
+				      MT6360_MASK_EN_SDI);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: disable en_sdi fail\n", __func__);
+		return ret;
+	}
 	data = mt6360_trans_aicr_sel(uA);
 	return mt6360_pmu_reg_update_bits(mpci->mpi,
 					  MT6360_PMU_CHG_CTRL3,
@@ -1024,7 +1034,7 @@ static int mt6360_charger_is_power_path_enabled(struct charger_device *chg_dev,
 	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_CTRL1);
 	if (ret < 0)
 		return ret;
-	*en = (ret & MT6360_MASK_FORCE_SLEEP) ? true : false;
+	*en = (ret & MT6360_MASK_FORCE_SLEEP) ? false : true;
 	return 0;
 }
 
@@ -1155,6 +1165,19 @@ out:
 	mutex_unlock(&mpci->chgdet_lock);
 #endif /* CONFIG_MT6360_PMU_CHARGER_TYPE_DETECT && CONFIG_TCPC_CLASS */
 	return ret;
+}
+
+static int mt6360_charger_get_vbus(struct charger_device *chg_dev, u32 *vbus)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	int ret = 0;
+
+	dev_dbg(mpci->dev, "%s\n", __func__);
+	ret = iio_read_channel_processed(mpci->channels[MT6360_ADC_VBUSDIV5],
+					 vbus);
+	if (ret < 0)
+		return ret;
+	return 0;
 }
 
 static int mt6360_charger_get_ibus(struct charger_device *chg_dev, u32 *ibus)
@@ -1472,6 +1495,7 @@ static const struct charger_ops mt6360_chg_ops = {
 	/* Charger type detection */
 	.enable_chg_type_det = mt6360_enable_chg_type_det,
 	/* ADC */
+	.get_vbus_adc = mt6360_charger_get_vbus,
 	.get_ibus_adc = mt6360_charger_get_ibus,
 	.get_tchg_adc = mt6360_charger_get_tchg,
 	/* kick wdt */
@@ -2134,13 +2158,27 @@ static int mt6360_chg_init_setting(struct mt6360_pmu_chg_info *mpci)
 		dev_err(mpci->dev, "%s: read zcv fail\n", __func__);
 		return ret;
 	}
-
 	/* enable AICC_EN if aicc_once = 0 */
 	if (!pdata->aicc_once) {
 		ret = mt6360_pmu_reg_set_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,
 					      MT6360_MASK_RG_EN_AICC);
 		if (ret < 0)
 			dev_err(mpci->dev, "%s: enable aicc fail\n", __func__);
+	}
+	/* Check BATSYSUV occurred last time boot-on */
+	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: read BATSYSUV fail\n", __func__);
+		return ret;
+	}
+	if (!(ret & MT6360_MASK_CHG_BATSYSUV)) {
+		dev_warn(mpci->dev, "%s: BATSYSUV occurred\n", __func__);
+		ret = mt6360_pmu_reg_set_bits(mpci->mpi, MT6360_PMU_CHG_STAT,
+					      MT6360_MASK_CHG_BATSYSUV);
+		if (ret < 0) {
+			dev_err(mpci->dev,
+				"%s: clear BATSYSUV fail\n", __func__);
+		}
 	}
 	return ret;
 }
@@ -2304,4 +2342,15 @@ module_platform_driver(mt6360_pmu_chg_driver);
 MODULE_AUTHOR("CY_Huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("MT6360 PMU CHG Driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("1.0.0");
+MODULE_VERSION(MT6360_PMU_CHG_DRV_VERSION);
+
+/*
+ * Version Note
+ * 1.0.1_MTK
+ * (1) fix dtsi parse attribute about en_te, en_wdt, aicc_once
+ * (2) add charger class get vbus adc interface
+ * (3) add initial setting about disable en_sdi, and check batsysuv.
+ *
+ * 1.0.0_MTK
+ * (1) Initial Release
+ */
