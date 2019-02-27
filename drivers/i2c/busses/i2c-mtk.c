@@ -1422,6 +1422,10 @@ static int mt_i2c_parse_dt(struct device_node *np, struct mt_i2c *i2c)
 		i2c->id, i2c->speed_hz, i2c->clk_src_div,
 		i2c->ch_offset_default,
 		i2c->dma_ch_offset_default);
+	if (i2c->id == 5) {
+		i2c->use_push_pull = 0;
+		i2c->speed_hz = 400000;
+	}
 	if (i2c->clk_src_div == 0)
 		return -EINVAL;
 	return 0;
