@@ -154,7 +154,7 @@ void msdc_ldo_power(u32 on, struct regulator *reg, int voltage_mv, u32 *status)
 void msdc_dump_ldo_sts(struct msdc_host *host)
 {
 #if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS) \
-	||defined(MTK_MSDC_BRINGUP_DEBUG)
+	|| defined(MTK_MSDC_BRINGUP_DEBUG)
 	u32 ldo_en = 0, ldo_vol = 0, ldo_cal = 0;
 	u32 id = host->id;
 

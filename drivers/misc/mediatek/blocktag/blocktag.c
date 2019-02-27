@@ -859,7 +859,7 @@ struct mtk_blocktag *mtk_btag_alloc(const char *name,
 		pr_warn(
 	"[BLOCK_TAG] %s: fail to create klog_enable at debugfs\n", name);
 
-	btag->dentry.dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO,
+	btag->dentry.dlog = debugfs_create_file("blockio", S_IFREG | 0444,
 		btag->dentry.droot, (void *)0, &mtk_btag_sub_fops);
 
 	if (IS_ERR(btag->dentry.dlog))
@@ -1008,7 +1008,7 @@ static void mtk_btag_init_debugfs(void)
 		return;
 	}
 
-	mtk_btag_dlog = debugfs_create_file("blockio", S_IFREG | S_IRUGO, NULL,
+	mtk_btag_dlog = debugfs_create_file("blockio", S_IFREG | 0444, NULL,
 		(void *)0, &mtk_btag_main_fops);
 	if (IS_ERR(mtk_btag_dlog))
 		pr_warn(
