@@ -114,10 +114,18 @@ int iterate_fd(struct files_struct *, unsigned,
 extern int __alloc_fd(struct files_struct *files,
 		      unsigned start, unsigned end, unsigned flags);
 extern void __fd_install(struct files_struct *files,
-		      unsigned int fd, struct file *file);
+		unsigned int fd, struct file *file);
 extern int __close_fd(struct files_struct *files,
-		      unsigned int fd);
+		unsigned int fd);
 
 extern struct kmem_cache *files_cachep;
+
+/*N: add fdleak debug log*/
+#define FD_OVER_CHECK
+
+#ifdef FD_OVER_CHECK
+extern void fd_show_open_files(pid_t pid,
+		struct files_struct *files, struct fdtable *fdt);
+#endif
 
 #endif /* __LINUX_FDTABLE_H */
