@@ -11,5 +11,6 @@
 # GNU General Public License for more details.
 
 ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT), y)
-obj-y += V1.0/
+$(info "CONFIG_MICROTRUST_TEE_VERSION=$(CONFIG_MICROTRUST_TEE_VERSION)")
+obj-y += $(subst ",,$(CONFIG_MICROTRUST_TEE_VERSION))/
 endif
