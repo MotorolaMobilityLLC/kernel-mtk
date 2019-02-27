@@ -592,7 +592,7 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 
 	helio_dvfsrc_reg_config(dvfsrc->init_config);
 
-	helio_dvfsrc_enable(1);
+	helio_dvfsrc_enable(0);
 
 	pr_info("%s: init done\n", __func__);
 
