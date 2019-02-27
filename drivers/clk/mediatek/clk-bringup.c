@@ -12,7 +12,10 @@
  * GNU General Public License for more details.
  */
 
+#define pr_fmt(fmt) "[clk-bringup] " fmt
+
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -31,14 +34,18 @@ static int bring_up_probe(struct platform_device *pdev)
 	const int NR_CLKS = 300;
 	char clk_name_buf[16];
 	struct clk *clk;
-	int i;
+	int i, r;
 
 	for (i = 0; i < NR_CLKS; i++) {
 		sprintf(clk_name_buf, "%d", i);
 
 		clk = devm_clk_get(&pdev->dev, clk_name_buf);
-		if (!IS_ERR(clk))
-			clk_prepare_enable(clk);
+		if (!IS_ERR(clk)) {
+			r = clk_prepare_enable(clk);
+			if (r)
+				pr_debug("clk_prepare_enable(%s): %d\n",
+					__clk_get_name(clk), r);
+		}
 	}
 
 	return 0;
