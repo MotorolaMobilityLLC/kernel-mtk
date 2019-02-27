@@ -71,7 +71,7 @@ static struct {
 	enum DISP_HELPER_OPT opt;
 	unsigned int val;
 	const char *desc;
-} help_info[] = { /* SHANG: Need modify */
+} help_info[] = {
 	{DISP_OPT_USE_CMDQ, 0, "DISP_OPT_USE_CMDQ"}, /* must enable */
 	{DISP_OPT_USE_M4U, 0, "DISP_OPT_USE_M4U"},   /* must enable */
 	{DISP_OPT_MIPITX_ON_CHIP, 0,

@@ -41,35 +41,28 @@
  *						3: virtual display
  *	enum DISP_MODULE_ENUM module_id;
  */
-static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = { /* SHANG: need modify */
-	{NULL, "CLK_MM_MTCMOS", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_SMI_COMMON", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_SMI_LARB0", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_SMI_LARB1", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_GALS_COMM0", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_GALS_COMM1", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_DISP_OVL0", 0, (1), DISP_MODULE_OVL0},
-	{NULL, "CLK_DISP_OVL0_2L", 0, (1|1<<2), DISP_MODULE_OVL0_2L},
-	{NULL, "CLK_DISP_OVL1_2L", 0, (0), DISP_MODULE_OVL1_2L},
-	{NULL, "CLK_DISP_RDMA0", 0, (1), DISP_MODULE_RDMA0},
-	{NULL, "CLK_DISP_RDMA1", 0, (1<<1), DISP_MODULE_RDMA1},
-	{NULL, "CLK_DISP_WDMA0", 0, (1|1<<2), DISP_MODULE_WDMA0},
-	{NULL, "CLK_DISP_COLOR0", 0, (1), DISP_MODULE_COLOR0},
-	{NULL, "CLK_DISP_CCORR0", 0, (1), DISP_MODULE_CCORR0},
-	{NULL, "CLK_DISP_AAL0", 0, (1), DISP_MODULE_AAL0},
-	{NULL, "CLK_DISP_GAMMA0", 0, (1), DISP_MODULE_GAMMA0},
-	{NULL, "CLK_DISP_DITHER0", 0, (1), DISP_MODULE_DITHER0},
-	{NULL, "CLK_DISP_RSZ0", 0, (1), DISP_MODULE_RSZ0},
-	{NULL, "CLK_DSI0_MM_CLK", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_DSI0_IF_CLK", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_MM_26M", 0, (1), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK_MDP_WROT0", 0, (0), DISP_MODULE_UNKNOWN},
+static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
+	{NULL, "MMSYS_MTCMOS", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_SMI_COMMON", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_SMI_LARB0", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_GALS_COMM0", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_GALS_COMM1", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_DISP_OVL0", 0, (1), DISP_MODULE_OVL0},
+	{NULL, "MMSYS_DISP_OVL0_2L", 0, (1|1<<2), DISP_MODULE_OVL0_2L},
+	{NULL, "MMSYS_DISP_RDMA0", 0, (1), DISP_MODULE_RDMA0},
+	{NULL, "MMSYS_DISP_WDMA0", 0, (1|1<<2), DISP_MODULE_WDMA0},
+	{NULL, "MMSYS_DISP_COLOR0", 0, (1), DISP_MODULE_COLOR0},
+	{NULL, "MMSYS_DISP_CCORR0", 0, (1), DISP_MODULE_CCORR0},
+	{NULL, "MMSYS_DISP_AAL0", 0, (1), DISP_MODULE_AAL0},
+	{NULL, "MMSYS_DISP_GAMMA0", 0, (1), DISP_MODULE_GAMMA0},
+	{NULL, "MMSYS_DISP_DITHER0", 0, (1), DISP_MODULE_DITHER0},
+	{NULL, "MMSYS_DSI0_MM_CK", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_DSI0_IF_CK", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_26M", 0, (1), DISP_MODULE_UNKNOWN},
+	{NULL, "MMSYS_DISP_RSZ0", 0, (1), DISP_MODULE_RSZ0},
+	{NULL, "TOP_MUX_DISP_PWM", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "DISP_PWM", 0, (1), DISP_MODULE_PWM0},
-	{NULL, "MUX_PWM", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "CLK26M", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D2", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "ULPOSC_D16", 0, (0), DISP_MODULE_UNKNOWN},
-	{NULL, "UNIVPLL1_D8", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "TOP_26M", 0, (0), DISP_MODULE_UNKNOWN},
 };
 
 static void __iomem *ddp_apmixed_base;
@@ -267,15 +260,6 @@ static unsigned int _is_main_module(struct ddp_clk *pclk)
 	return (pclk->belong_to & 0x1);
 }
 
-static unsigned int _is_ext_module(struct ddp_clk *pclk)
-{
-	return (pclk->belong_to & 0x2);
-}
-
-static unsigned int _is_ovl2mem_module(struct ddp_clk *pclk)
-{
-	return (pclk->belong_to & 0x4);
-}
 
 /*
  * ddp_main_modules_clk_on
@@ -283,7 +267,7 @@ static unsigned int _is_ovl2mem_module(struct ddp_clk *pclk)
  * success: ret = 0
  * error: ret = -1
  */
-int ddp_main_modules_clk_on(void) /* SHANG: need modify */
+int ddp_main_modules_clk_on(void)
 {
 	unsigned int i = 0;
 	int ret = 0;
@@ -297,8 +281,6 @@ int ddp_main_modules_clk_on(void) /* SHANG: need modify */
 	ddp_clk_prepare_enable(CLK_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_GALS_COMM1);
 	ddp_clk_prepare_enable(CLK_SMI_LARB0);
-	ddp_clk_prepare_enable(CLK_SMI_LARB1);
-
 	ddp_clk_prepare_enable(CLK_MM_26M);
 	/* --MODULE CLK-- */
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
@@ -327,94 +309,6 @@ int ddp_main_modules_clk_on(void) /* SHANG: need modify */
 		ret = -1;
 	else
 		ddp_get_module_driver(module)->power_on(module, NULL);
-
-	pr_info("CG0 0x%x, CG1 0x%x\n",
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	return ret;
-}
-
-int ddp_ext_modules_clk_on(void) /* SHANG: need modify */
-{
-	unsigned int i = 0;
-	int ret = 0;
-	enum DISP_MODULE_ENUM module;
-	struct DDP_MODULE_DRIVER *module_driver;
-
-	DISPFUNC();
-	/* --TOP CLK-- */
-	ddp_clk_prepare_enable(CLK_MM_MTCMOS);
-	ddp_clk_prepare_enable(CLK_SMI_COMMON);
-	ddp_clk_prepare_enable(CLK_GALS_COMM0);
-	ddp_clk_prepare_enable(CLK_GALS_COMM1);
-	ddp_clk_prepare_enable(CLK_SMI_LARB0);
-	ddp_clk_prepare_enable(CLK_SMI_LARB1);
-	ddp_clk_prepare_enable(CLK_MM_26M);
-
-	/* --MODULE CLK-- */
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		if (!_is_ext_module(&ddp_clks[i]))
-			continue;
-
-		module = ddp_clks[i].module_id;
-		module_driver = ddp_get_module_driver(module);
-		if (module != DISP_MODULE_UNKNOWN &&
-			module_driver != 0) {
-			/* module driver power on */
-			if (module_driver->power_on != 0 &&
-				module_driver->power_off != 0) {
-				module_driver->power_on(module, NULL);
-			} else {
-				DDPERR("[%s] %s no power on(off) function\n",
-					__func__, ddp_get_module_name(module));
-				ret = -1;
-			}
-		}
-	}
-
-	pr_info("CG0 0x%x, CG1 0x%x\n",
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	return ret;
-}
-
-int ddp_ovl2mem_modules_clk_on(void) /* SHANG: need modify */
-{
-	unsigned int i = 0;
-	int ret = 0;
-	enum DISP_MODULE_ENUM module;
-	struct DDP_MODULE_DRIVER *module_driver;
-
-	DISPFUNC();
-	/* --TOP CLK-- */
-	ddp_clk_prepare_enable(CLK_MM_MTCMOS);
-	ddp_clk_prepare_enable(CLK_SMI_COMMON);
-	ddp_clk_prepare_enable(CLK_GALS_COMM0);
-	ddp_clk_prepare_enable(CLK_GALS_COMM1);
-	ddp_clk_prepare_enable(CLK_SMI_LARB0);
-	ddp_clk_prepare_enable(CLK_SMI_LARB1);
-	ddp_clk_prepare_enable(CLK_MM_26M);
-
-	/* --MODULE CLK-- */
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		if (!_is_ovl2mem_module(&ddp_clks[i]))
-			continue;
-
-		module = ddp_clks[i].module_id;
-		module_driver = ddp_get_module_driver(module);
-		if (module != DISP_MODULE_UNKNOWN &&
-			module_driver != 0) {
-			/* module driver power on */
-			if (module_driver->power_on != 0 &&
-				module_driver->power_off != 0) {
-				module_driver->power_on(module, NULL);
-			} else {
-				DDPERR("[%s] %s no power on(off) function\n",
-					__func__, ddp_get_module_name(module));
-				ret = -1;
-			}
-		}
-	}
 
 	pr_info("CG0 0x%x, CG1 0x%x\n",
 		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
@@ -468,100 +362,6 @@ int ddp_main_modules_clk_off(void)
 
 	/* --TOP CLK-- */
 	ddp_clk_disable_unprepare(CLK_MM_26M);
-
-	ddp_clk_disable_unprepare(CLK_SMI_LARB1);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM0);
-	ddp_clk_disable_unprepare(CLK_SMI_COMMON);
-	ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
-
-	pr_info("CG0 0x%x, CG1 0x%x\n",
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	return ret;
-}
-
-int ddp_ext_modules_clk_off(void)
-{
-	unsigned int i = 0;
-	int ret = 0;
-	enum DISP_MODULE_ENUM module;
-	struct DDP_MODULE_DRIVER *module_driver;
-
-	DISPFUNC();
-	/* --MODULE CLK-- */
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		if (!_is_ext_module(&ddp_clks[i]))
-			continue;
-
-		module = ddp_clks[i].module_id;
-		if (module != DISP_MODULE_UNKNOWN &&
-			ddp_get_module_driver(module) != 0) {
-			/* module driver power off */
-			module_driver = ddp_get_module_driver(module);
-			if (module_driver->power_on != 0 &&
-				module_driver->power_off != 0) {
-				pr_info("%s power_off\n",
-					ddp_get_module_name(module));
-				module_driver->power_off(module, NULL);
-			} else {
-				DDPERR("[%s] %s no power on(off) function\n",
-					__func__, ddp_get_module_name(module));
-				ret = -1;
-			}
-		}
-	}
-
-	/* --TOP CLK-- */
-	ddp_clk_disable_unprepare(CLK_MM_26M);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB1);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
-	ddp_clk_disable_unprepare(CLK_GALS_COMM0);
-	ddp_clk_disable_unprepare(CLK_SMI_COMMON);
-	ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
-
-	pr_info("CG0 0x%x, CG1 0x%x\n",
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
-		clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
-	return ret;
-}
-
-int ddp_ovl2mem_modules_clk_off(void)
-{
-	unsigned int i = 0;
-	int ret = 0;
-	enum DISP_MODULE_ENUM module;
-	struct DDP_MODULE_DRIVER *module_driver;
-
-	DISPFUNC();
-	/* --MODULE CLK-- */
-	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
-		if (!_is_ovl2mem_module(&ddp_clks[i]))
-			continue;
-
-		module = ddp_clks[i].module_id;
-		if (module != DISP_MODULE_UNKNOWN &&
-			ddp_get_module_driver(module) != 0) {
-			module_driver = ddp_get_module_driver(module);
-			/* module driver power off */
-			if (module_driver->power_on != 0 &&
-				module_driver->power_off != 0) {
-				pr_info("%s power_off\n",
-					ddp_get_module_name(module));
-				module_driver->power_off(module, NULL);
-			} else {
-				DDPERR("[%s] %s no power on(off) function\n",
-					__func__, ddp_get_module_name(module));
-				ret = -1;
-			}
-		}
-	}
-
-	/* --TOP CLK-- */
-	ddp_clk_disable_unprepare(CLK_MM_26M);
-	ddp_clk_disable_unprepare(CLK_SMI_LARB1);
 	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
 	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
 	ddp_clk_disable_unprepare(CLK_GALS_COMM0);
@@ -630,7 +430,7 @@ enum DDP_CLK_ID ddp_get_module_clk_id(enum DISP_MODULE_ENUM module_id)
 	return MAX_DISP_CLK_CNT;
 }
 
-void ddp_clk_force_on(unsigned int on) /* SHANG: need modify */
+void ddp_clk_force_on(unsigned int on)
 {
 	if (on) {
 		ddp_clk_prepare_enable(CLK_MM_MTCMOS);
@@ -638,13 +438,11 @@ void ddp_clk_force_on(unsigned int on) /* SHANG: need modify */
 		ddp_clk_prepare_enable(CLK_GALS_COMM0);
 		ddp_clk_prepare_enable(CLK_GALS_COMM1);
 		ddp_clk_prepare_enable(CLK_SMI_LARB0);
-		ddp_clk_prepare_enable(CLK_SMI_LARB1);
 
 		ddp_clk_prepare_enable(CLK_MM_26M);
 	} else {
 		ddp_clk_disable_unprepare(CLK_MM_26M);
 
-		ddp_clk_disable_unprepare(CLK_SMI_LARB1);
 		ddp_clk_disable_unprepare(CLK_SMI_LARB0);
 		ddp_clk_disable_unprepare(CLK_GALS_COMM1);
 		ddp_clk_disable_unprepare(CLK_GALS_COMM0);
@@ -665,13 +463,13 @@ int ddp_clk_enable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_prepare_enable(CLK_DISP_OVL0_2L);
 		break;
 	case DISP_MODULE_OVL1_2L:
-		ddp_clk_prepare_enable(CLK_DISP_OVL1_2L);
+		;
 		break;
 	case DISP_MODULE_RDMA0:
 		ddp_clk_prepare_enable(CLK_DISP_RDMA0);
 		break;
 	case DISP_MODULE_RDMA1:
-		ddp_clk_prepare_enable(CLK_DISP_RDMA1);
+		;
 		break;
 	case DISP_MODULE_WDMA0:
 		ddp_clk_prepare_enable(CLK_DISP_WDMA0);
@@ -713,13 +511,13 @@ int ddp_clk_disable_by_module(enum DISP_MODULE_ENUM module)
 		ddp_clk_disable_unprepare(CLK_DISP_OVL0_2L);
 		break;
 	case DISP_MODULE_OVL1_2L:
-		ddp_clk_disable_unprepare(CLK_DISP_OVL1_2L);
+		;
 		break;
 	case DISP_MODULE_RDMA0:
 		ddp_clk_disable_unprepare(CLK_DISP_RDMA0);
 		break;
 	case DISP_MODULE_RDMA1:
-		ddp_clk_disable_unprepare(CLK_DISP_RDMA1);
+		;
 		break;
 	case DISP_MODULE_WDMA0:
 		ddp_clk_disable_unprepare(CLK_DISP_WDMA0);
