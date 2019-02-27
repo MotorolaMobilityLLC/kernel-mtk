@@ -14,33 +14,6 @@
 #ifndef _MDLA_DVFS_H_
 #define _MDLA_DVFS_H_
 
-/* Performance Measure */
-#ifdef MDLA_TRACE_ENABLED
-#include <linux/kallsyms.h>
-#include <linux/trace_events.h>
-#include <linux/preempt.h>
-static unsigned long __read_mostly mdla_tracing_writer;
-#define mdla_trace_begin(format, args...) \
-{ \
-	if (mdla_tracing_writer == 0) \
-		mdla_tracing_writer = \
-			kallsyms_lookup_name("tracing_mark_write"); \
-	preempt_disable(); \
-	event_trace_printk(mdla_tracing_writer, \
-			"B|%d|" format "\n", current->tgid, ##args); \
-	preempt_enable(); \
-}
-
-#define mdla_trace_end() \
-{ \
-	preempt_disable(); \
-	event_trace_printk(mdla_tracing_writer, "E\n"); \
-	preempt_enable(); \
-}
-#else
-#define mdla_trace_begin(...)
-#define mdla_trace_end()
-#endif
 
 /* ++++++++++++++++++++++++++++++++++*/
 /* |opp_index  |   mdla frequency  |        power             */
@@ -107,7 +80,7 @@ struct MDLA_OPP_INFO {
 #define MDLA_MAX_NUM_STEPS               (16)
 #define MDLA_MAX_NUM_OPPS                (16)
 //#define MTK_MDLA_CORE (1)
-#define MTK_VPU_CORE (2)
+#define MTK_VPU_CORE_NUM (2)
 struct mdla_dvfs_steps {
 	uint32_t values[MDLA_MAX_NUM_STEPS];
 	uint8_t count;
@@ -120,7 +93,7 @@ struct mdla_dvfs_opps {
 	struct mdla_dvfs_steps vvpu;
 	struct mdla_dvfs_steps vmdla;
 	struct mdla_dvfs_steps dsp;	/* ipu_conn */
-	struct mdla_dvfs_steps dspcore[MTK_VPU_CORE];	/* ipu_core# */
+	struct mdla_dvfs_steps dspcore[MTK_VPU_CORE_NUM];	/* ipu_core# */
 	struct mdla_dvfs_steps mdlacore;	/* ipu_core# */
 	struct mdla_dvfs_steps ipu_if;	/* ipusys_vcore, interface */
 	uint8_t index;
@@ -128,13 +101,13 @@ struct mdla_dvfs_opps {
 };
 enum mdlaPowerOnType {
 	/* power on previously by setPower */
-	VPT_PRE_ON		= 1,
+	MDLA_PRE_ON		= 1,
 
 	/* power on by enque */
-	VPT_ENQUE_ON	= 2,
+	MDLA_ENQUE_ON	= 2,
 
 	/* power on by enque, but want to immediately off(when exception) */
-	VPT_IMT_OFF		= 3,
+	MDLA_IMT_OFF		= 3,
 };
 
 

@@ -62,6 +62,9 @@
 #include <linux/regulator/consumer.h>
 #include "vpu_dvfs.h"
 #include <mtk_devinfo.h>
+#ifdef MTK_SWPM
+#include <mtk_swpm.h>
+#endif
 
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -582,7 +585,7 @@ static void mdla_start_queue(struct work_struct *work)
 		//struct command_entry *fh = mdla_fifo_head()
 		//if (fh != NULL)
 			//Put bandwidth to fh->bandwidth.
-		mdla_put_power(0, VPT_ENQUE_ON);
+		mdla_put_power(0, MDLA_ENQUE_ON);
 #endif
 		mdla_fifo_out();
 		if (!list_empty(&cmd_list)) {
@@ -840,7 +843,7 @@ static int mdla_get_hw_vcore_opp(int core)
 int mdla_get_opp(void)
 {
 	LOG_DBG("[mdla] mdlacore.index:%d\n", opps.mdlacore.index);
-	return opps.mdlacore.index;
+	return opps.dsp.index;
 }
 EXPORT_SYMBOL(mdla_get_opp);
 
@@ -871,7 +874,7 @@ int get_mdla_opp_to_freq(uint8_t step)
 	/* set dsp frequency - 8:364 MHz, 9:312 MHz, 10:273 MH, 11:208 MH*/
 	/* set dsp frequency - 12:137 MHz, 13:104 MHz, 14:52 MHz, 15:26 MHz*/
 
-	switch (freq) {
+	switch (step) {
 	case 0:
 		freq = 788;
 		break;
@@ -1023,8 +1026,11 @@ static int mdla_get_hw_vmdla_opp(int core)
 static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 {
 	uint8_t vvpu_opp;
-
+#ifdef MTK_VPU_SUPPORT
 	vvpu_opp = get_vpu_opp();
+#else
+	vvpu_opp = 15;
+#endif
 	switch (vmdla_index) {
 	case 0:
 		opps.dsp.index = 0;
@@ -1482,7 +1488,7 @@ static bool mdla_change_opp(int core, int type)
 		mutex_unlock(&(mdla_service_cores[core].state_mutex));
 #endif
 		mutex_lock(&opp_mutex);
-		mdla_trace_begin("vcore:request");
+		mdla_trace_tag_begin("vcore:request");
 		#ifdef ENABLE_PMQOS
 		switch (opps.vmdla.index) {
 		case 0:
@@ -1509,7 +1515,7 @@ static bool mdla_change_opp(int core, int type)
 		ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL,
 							opps.vcore.index);
 		#endif
-		mdla_trace_end();
+		mdla_trace_tag_end();
 #if 0
 		mutex_lock(&(mdla_service_cores[core].state_mutex));
 		mdla_service_cores[core].state = VCT_BOOTUP;
@@ -1816,7 +1822,7 @@ static int mdla_enable_regulator_and_clock(int core)
 	bool adjust_vmdla = false;
 
 	LOG_INF("[mdla_%d] en_rc + (%d)\n", core, is_power_debug_lock);
-	mdla_trace_begin("%s");
+	mdla_trace_tag_begin("%s");
 
 	if (is_power_debug_lock)
 		goto clk_on;
@@ -1827,6 +1833,7 @@ static int mdla_enable_regulator_and_clock(int core)
 #else
 	/*--enable regulator--*/
 	ret = regulator_enable(vmdla_reg_id);
+	udelay(200);
 	if (ret) {
 	LOG_ERR("regulator_enable vmdla_reg_id failed\n");
 	goto out;
@@ -1835,7 +1842,7 @@ static int mdla_enable_regulator_and_clock(int core)
 	if (opps.vmdla.index != get_vmdla_opp)
 		adjust_vmdla = true;
 #endif
-	mdla_trace_begin("vcore:request");
+	mdla_trace_tag_begin("vcore:request");
 	//if (adjust_vcore) {
 	if (adjust_vmdla) {
 		LOG_DBG("[mdla_%d] en_rc wait for changing vcore opp", core);
@@ -1883,7 +1890,7 @@ static int mdla_enable_regulator_and_clock(int core)
 							opps.vcore.index);
 #endif
 	}
-	mdla_trace_end();
+	mdla_trace_tag_end();
 	if (ret) {
 		LOG_ERR("[mdla_%d]fail to request vcore, step=%d\n",
 				core, opps.vcore.index);
@@ -1918,22 +1925,22 @@ clk_on:
 		} \
 	}
 
-	mdla_trace_begin("clock:enable_source");
+	mdla_trace_tag_begin("clock:enable_source");
 	ENABLE_MDLA_CLK(clk_top_dsp_sel);
 	ENABLE_MDLA_CLK(clk_top_ipu_if_sel);
 	ENABLE_MDLA_CLK(clk_top_dsp3_sel);
-	mdla_trace_end();
+	mdla_trace_tag_end();
 
-	mdla_trace_begin("mtcmos:enable");
+	mdla_trace_tag_begin("mtcmos:enable");
 	ENABLE_MDLA_MTCMOS(mtcmos_dis);
 	ENABLE_MDLA_MTCMOS(mtcmos_vpu_vcore_shutdown);
 	ENABLE_MDLA_MTCMOS(mtcmos_vpu_conn_shutdown);
 	ENABLE_MDLA_MTCMOS(mtcmos_vpu_core2_shutdown);
 
-	mdla_trace_end();
+	mdla_trace_tag_end();
 	udelay(500);
 
-	mdla_trace_begin("clock:enable");
+	mdla_trace_tag_begin("clock:enable");
 	ENABLE_MDLA_CLK(clk_mmsys_gals_ipu2mm);
 	ENABLE_MDLA_CLK(clk_mmsys_gals_ipu12mm);
 	ENABLE_MDLA_CLK(clk_mmsys_gals_comm0);
@@ -1984,7 +1991,7 @@ clk_on:
 		ENABLE_MDLA_CLK(clk_apu_mdla_cg_b12);
 		break;
 	}
-	mdla_trace_end();
+	mdla_trace_tag_end();
 
 #undef ENABLE_MDLA_MTCMOS
 #undef ENABLE_MDLA_CLK
@@ -2017,7 +2024,7 @@ clk_on:
 	}
 
 out:
-	mdla_trace_end();
+	mdla_trace_tag_end();
 	is_power_on[core] = true;
 	force_change_vcore_opp[core] = false;
 	force_change_vmdla_opp[core] = false;
@@ -2333,21 +2340,21 @@ static void mdla_put_power(int core, enum mdlaPowerOnType type)
 	mutex_lock(&power_counter_mutex[core]);
 	if (--power_counter[core] == 0) {
 		switch (type) {
-		case VPT_PRE_ON:
-			LOG_DBG("[mdla_%d] VPT_PRE_ON\n", core);
+		case MDLA_PRE_ON:
+			LOG_DBG("[mdla_%d] MDLA_PRE_ON\n", core);
 			mod_delayed_work(wq,
 				&(power_counter_work[core].my_work),
 				msecs_to_jiffies(10 * PWR_KEEP_TIME_MS));
 			break;
-		case VPT_IMT_OFF:
-			LOG_INF("[mdla_%d] VPT_IMT_OFF\n", core);
+		case MDLA_IMT_OFF:
+			LOG_INF("[mdla_%d] MDLA_IMT_OFF\n", core);
 			mod_delayed_work(wq,
 				&(power_counter_work[core].my_work),
 				msecs_to_jiffies(0));
 			break;
-		case VPT_ENQUE_ON:
+		case MDLA_ENQUE_ON:
 		default:
-			LOG_DBG("[mdla_%d] VPT_ENQUE_ON\n", core);
+			LOG_DBG("[mdla_%d] MDLA_ENQUE_ON\n", core);
 			mod_delayed_work(wq,
 				&(power_counter_work[core].my_work),
 				msecs_to_jiffies(PWR_KEEP_TIME_MS));
@@ -2384,7 +2391,7 @@ static int mdla_set_power(struct mdla_power *power)
 	mutex_unlock(&(mdla_service_cores[core].state_mutex));
 #endif
 	/* to avoid power leakage, power on/off need be paired */
-	mdla_put_power(0, VPT_PRE_ON);
+	mdla_put_power(0, MDLA_PRE_ON);
 	LOG_INF("[mdla] %s -\n", __func__);
 	return ret;
 }
@@ -2734,7 +2741,7 @@ static int mdla_init_hw(int core, struct platform_device *pdev)
 	lock_power[i][0].max_boost_value = 100;
 	lock_power[i][0].min_boost_value = 0;
 	lock_power[i][0].lock = false;
-	lock_power[i][0].priority = NORMAL;
+	lock_power[i][0].priority = MDLA_OPP_NORMAL;
 		}
 	for (j = 0 ; j < MTK_MDLA_CORE ; j++) {
 		min_opp[j] = MDLA_MAX_NUM_OPPS-1;
@@ -2821,11 +2828,14 @@ int mdla_boot_up(int core)
 		//mutex_unlock(&(mdla_service_cores[core].state_mutex));
 		//wake_up_interruptible(&waitq_change_vcore);
 		LOG_DBG("[mdla_%d] already power on\n", core);
+#ifdef MTK_SWPM
+		swpm_mdla_onoff_notify(1);
+#endif
 		return POWER_ON_MAGIC;
 	}
 	LOG_DBG("[mdla_%d] boot_up flag2\n", core);
 
-	mdla_trace_begin("%s", __func__);
+	mdla_trace_tag_begin("%s", __func__);
 	//mutex_lock(&(mdla_service_cores[core].state_mutex));
 	//mdla_service_cores[core].state = VCT_BOOTUP;
 	//mutex_unlock(&(mdla_service_cores[core].state_mutex));
@@ -2855,7 +2865,10 @@ out:
 		}
 	}
 #endif
-	mdla_trace_end();
+	mdla_trace_tag_end();
+#ifdef MTK_SWPM
+	swpm_mdla_onoff_notify(1);
+#endif
 	mutex_unlock(&power_mutex[core]);
 	return ret;
 }
@@ -2867,6 +2880,9 @@ int mdla_shut_down(int core)
 	LOG_DBG("[mdla_%d] shutdown +\n", core);
 	mutex_lock(&power_mutex[core]);
 	if (!is_power_on[core]) {
+#ifdef MTK_SWPM
+	swpm_mdla_onoff_notify(0);
+#endif
 		mutex_unlock(&power_mutex[core]);
 		return 0;
 	}
@@ -2901,7 +2917,7 @@ int mdla_shut_down(int core)
 	}
 #endif
 
-	mdla_trace_begin("%s", __func__);
+	mdla_trace_tag_begin("%s", __func__);
 	ret = mdla_disable_regulator_and_clock(core);
 	if (ret) {
 		LOG_ERR("[mdla_%d]fail to disable regulator and clock\n", core);
@@ -2910,7 +2926,10 @@ int mdla_shut_down(int core)
 
 	//wake_up_interruptible(&waitq_change_vcore);
 out:
-	mdla_trace_end();
+	mdla_trace_tag_end();
+#ifdef MTK_SWPM
+	swpm_mdla_onoff_notify(0);
+#endif
 	mutex_unlock(&power_mutex[core]);
 	LOG_DBG("[mdla_%d] shutdown -\n", core);
 	return ret;
@@ -3070,16 +3089,65 @@ out:
 static uint8_t mdla_boost_value_to_opp(uint8_t boost_value)
 {
 	int ret = 0;
-
+/* set dsp frequency - 0:788 MHz, 1:700 MHz, 2:606 MHz, 3:594 MHz*/
+/* set dsp frequency - 4:560 MHz, 5:525 MHz, 6:450 MHz, 7:416 MHz*/
+/* set dsp frequency - 8:364 MHz, 9:312 MHz, 10:273 MH, 11:208 MH*/
+/* set dsp frequency - 12:137 MHz, 13:104 MHz, 14:52 MHz, 15:26 MHz*/
+	uint32_t freq = 0;
+	uint32_t freq0 = opps.mdlacore.values[0];
+	uint32_t freq1 = opps.mdlacore.values[1];
+	uint32_t freq2 = opps.mdlacore.values[2];
+	uint32_t freq3 = opps.mdlacore.values[3];
+	uint32_t freq4 = opps.mdlacore.values[4];
+	uint32_t freq5 = opps.mdlacore.values[5];
+	uint32_t freq6 = opps.mdlacore.values[6];
+	uint32_t freq7 = opps.mdlacore.values[7];
+	uint32_t freq8 = opps.mdlacore.values[8];
+	uint32_t freq9 = opps.mdlacore.values[9];
+	uint32_t freq10 = opps.mdlacore.values[10];
+	uint32_t freq11 = opps.mdlacore.values[11];
+	uint32_t freq12 = opps.mdlacore.values[12];
+	uint32_t freq13 = opps.mdlacore.values[13];
+	uint32_t freq14 = opps.mdlacore.values[14];
+	uint32_t freq15 = opps.mdlacore.values[15];
 	if ((boost_value <= 100) && (boost_value >= 0))
-		ret = (100-boost_value)*(MDLA_MAX_NUM_OPPS-1)/100;
+		freq = boost_value * freq0 / 100;
 	else
-		ret = MDLA_MAX_NUM_OPPS-1;
+		freq = freq0;
 
-	if (ret < 0)
+	if (freq <= freq0 && freq > freq1)
 		ret = 0;
-	if (ret > MDLA_MAX_NUM_OPPS-1)
-		ret = MDLA_MAX_NUM_OPPS-1;
+	else if (freq <= freq1 && freq > freq2)
+		ret = 1;
+	else if (freq <= freq2 && freq > freq3)
+		ret = 2;
+	else if (freq <= freq3 && freq > freq4)
+		ret = 3;
+	else if (freq <= freq4 && freq > freq5)
+		ret = 4;
+	else if (freq <= freq5 && freq > freq6)
+		ret = 5;
+	else if (freq <= freq6 && freq > freq7)
+		ret = 6;
+	else if (freq <= freq7 && freq > freq8)
+		ret = 7;
+	else if (freq <= freq8 && freq > freq9)
+		ret = 8;
+	else if (freq <= freq9 && freq > freq10)
+		ret = 9;
+	else if (freq <= freq10 && freq > freq11)
+		ret = 10;
+	else if (freq <= freq11 && freq > freq12)
+		ret = 11;
+	else if (freq <= freq12 && freq > freq13)
+		ret = 12;
+	else if (freq <= freq13 && freq > freq14)
+		ret = 13;
+	else if (freq <= freq14 && freq > freq15)
+		ret = 14;
+	else
+		ret = 15;
+
 	LOG_INF("%s opp %d\n", __func__, ret);
 	return ret;
 }
@@ -3171,7 +3239,7 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 {
 	bool ret = true;
 	int i, core = -1;
-	uint8_t first_priority = NORMAL;
+	uint8_t first_priority = MDLA_OPP_NORMAL;
 	uint8_t first_priority_max_boost_value = 100;
 	uint8_t first_priority_min_boost_value = 0;
 	uint8_t temp_max_boost_value = 100;
@@ -3179,7 +3247,7 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 	bool lock = false;
 	uint8_t max_boost = 100;
 	uint8_t min_boost = 0;
-	uint8_t priority = NORMAL;
+	uint8_t priority = MDLA_OPP_NORMAL;
 
 	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
@@ -3197,7 +3265,7 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 
 	for (i = 0 ; i < MDLA_OPP_PRIORIYY_NUM ; i++) {
 		if (lock_power[i][core].lock == true
-			&& lock_power[i][core].priority < NORMAL) {
+			&& lock_power[i][core].priority < MDLA_OPP_NORMAL) {
 			first_priority = i;
 			first_priority_max_boost_value =
 				lock_power[i][core].max_boost_value;
@@ -3215,7 +3283,7 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 		min_boost = lock_power[i][core].min_boost_value;
 		priority = lock_power[i][core].priority;
 		if (lock == true) {
-			if (lock_power[i][core].priority < NORMAL &&
+			if (priority < MDLA_OPP_NORMAL &&
 			(((max_boost <= temp_max_boost_value) &&
 			(max_boost >= temp_min_boost_value)) ||
 			((min_boost <= temp_max_boost_value) &&
@@ -4021,7 +4089,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		}
 
 		mdla_lock_power.lock = true;
-		mdla_lock_power.priority = EARA_QOS;
+		mdla_lock_power.priority = MDLA_OPP_EARA_QOS;
 LOG_INF("[mdla] IOCTL_EARA_LOCK_POWER +,maxboost:%d, minboost:%d\n",
 	mdla_lock_power.max_boost_value, mdla_lock_power.min_boost_value);
 		retval = mdla_lock_set_power(&mdla_lock_power);
@@ -4039,7 +4107,7 @@ LOG_INF("[mdla] IOCTL_EARA_LOCK_POWER +,maxboost:%d, minboost:%d\n",
 			return retval;
 			}
 		mdla_lock_power.lock = false;
-		mdla_lock_power.priority = EARA_QOS;
+		mdla_lock_power.priority = MDLA_OPP_EARA_QOS;
 		LOG_INF("[mdla] IOCTL_EARA_UNLOCK_POWER +\n");
 		retval = mdla_unlock_set_power(&mdla_lock_power);
 		return retval;
@@ -4056,7 +4124,7 @@ LOG_INF("[mdla] IOCTL_EARA_LOCK_POWER +,maxboost:%d, minboost:%d\n",
 			return retval;
 			}
 		mdla_lock_power.lock = true;
-		mdla_lock_power.priority = POWER_HAL;
+		mdla_lock_power.priority = MDLA_OPP_POWER_HAL;
 LOG_INF("[mdla] IOCTL_POWER_HAL_LOCK_POWER +, maxboost:%d, minboost:%d\n",
 	mdla_lock_power.max_boost_value, mdla_lock_power.min_boost_value);
 		retval = mdla_lock_set_power(&mdla_lock_power);
@@ -4074,7 +4142,7 @@ LOG_INF("[mdla] IOCTL_POWER_HAL_LOCK_POWER +, maxboost:%d, minboost:%d\n",
 			return retval;
 			}
 		mdla_lock_power.lock = false;
-		mdla_lock_power.priority = POWER_HAL;
+		mdla_lock_power.priority = MDLA_OPP_POWER_HAL;
 		LOG_INF("[mdla] IOCTL_POWER_HAL_UNLOCK_POWER +\n");
 		retval = mdla_unlock_set_power(&mdla_lock_power);
 		return retval;

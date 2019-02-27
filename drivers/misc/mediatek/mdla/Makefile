@@ -30,3 +30,13 @@ subdir-ccflags-y += -DMTK_MDLA_FPGA_PORTING
 else ifeq ($(CONFIG_FPGA_EARLY_PORTING),y)
 subdir-ccflags-y += -DMTK_MDLA_FPGA_PORTING
 endif
+
+# VPU support
+ifeq ($(CONFIG_MTK_VPU_SUPPORT),y)
+subdir-ccflags-y += -DMTK_VPU_SUPPORT
+endif
+
+# SWPM support
+ifeq ($(CONFIG_MTK_SWPM),y)
+subdir-ccflags-y += -DMTK_SWPM
+endif
