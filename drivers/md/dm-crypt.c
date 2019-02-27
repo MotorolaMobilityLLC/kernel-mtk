@@ -2018,6 +2018,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 			ti->error = "Invalid iv_offset sector";
 			goto bad;
 		}
+		cc->iv_offset = tmpll;
 	}
 
 	ret = dm_get_device(ti, argv[3], dm_table_get_mode(ti->table), &cc->dev);
