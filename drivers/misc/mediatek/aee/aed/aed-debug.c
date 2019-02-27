@@ -314,8 +314,10 @@ static noinline void buffer_over_flow(void)
 
 static noinline void access_null_pointer(void)
 {
+	void *p = NULL;
+
 	pr_info("test case : derefence Null pointer\n");
-	*((unsigned int *)0) = 0xDEAD;
+	*((unsigned int *)p) = 0xDEAD;
 }
 
 static noinline void double_free(void)
