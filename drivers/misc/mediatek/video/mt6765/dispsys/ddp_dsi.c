@@ -2243,6 +2243,297 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module,
 	return recv_data_cnt;
 }
 
+
+/* return value:  0 -- error; others -- the data length we got */
+UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq, char *out, struct dsi_cmd_desc *cmds,
+	unsigned int len)
+{
+	int d = 0;
+	UINT32 max_try_count = 5;
+	UINT32 recv_data_cnt = 0;
+	unsigned char packet_type;
+	struct DSI_RX_DATA_REG read_data0;
+	struct DSI_RX_DATA_REG read_data1;
+	struct DSI_RX_DATA_REG read_data2;
+	struct DSI_RX_DATA_REG read_data3;
+	struct DSI_T0_INS t0;
+	struct DSI_T0_INS t1;
+	static const long WAIT_TIMEOUT = 2 * HZ; /* 2 sec */
+	long ret;
+	unsigned int i;
+	struct t_condition_wq *waitq;
+	UINT8 cmd, buffer_size, *buffer;
+	unsigned char virtual_channel;
+
+	buffer = out;
+	buffer_size = (UINT8)len;
+	cmd = (UINT8)cmds->dtype;
+	virtual_channel = (unsigned char)cmds->vc;
+
+	virtual_channel = ((virtual_channel << 6) | 0x3F);
+
+	/* illegal parameters */
+	ASSERT(cmdq == NULL);
+	if (buffer == NULL || buffer_size == 0) {
+		DISPWARN("DSI Read Fail: buffer=%p and buffer_size=%d\n",
+			buffer, (unsigned int)buffer_size);
+		return 0;
+	}
+
+	if (module == DISP_MODULE_DSI0)
+		d = 0;
+	else if (module == DISP_MODULE_DSI1)
+		d = 1;
+	else if (module == DISP_MODULE_DSIDUAL)
+		d = 0;
+	else
+		return 0;
+
+	if (DSI_REG[d]->DSI_MODE_CTRL.MODE) {
+		/* only cmd mode can read */
+		DISPWARN("DSI Read Fail: DSI Mode is %d\n",
+			DSI_REG[d]->DSI_MODE_CTRL.MODE);
+		return 0;
+	}
+
+	do {
+
+		if (max_try_count == 0) {
+			DISPWARN("DSI Read Fail: try 5 times\n");
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
+				DSI_REG[d]->DSI_INTEN, RD_RDY, 0);
+			return 0;
+		}
+
+		max_try_count--;
+		recv_data_cnt = 0;
+
+		/* 1. wait dsi not busy => can't read if dsi busy */
+		dsi_wait_not_busy(module, NULL);
+
+		/* 2. Check rd_rdy & cmd_done irq */
+		if (DSI_REG[d]->DSI_INTEN.RD_RDY == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
+				      DSI_REG[d]->DSI_INTEN, RD_RDY, 1);
+		}
+
+		if (DSI_REG[d]->DSI_INTEN.CMD_DONE == 0) {
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
+				      DSI_REG[d]->DSI_INTEN, CMD_DONE, 1);
+		}
+
+		ASSERT(DSI_REG[d]->DSI_INTEN.RD_RDY == 1);
+		ASSERT(DSI_REG[d]->DSI_INTEN.CMD_DONE == 1);
+
+		/* dump cmdq & rxdata */
+		if (DSI_REG[d]->DSI_INTSTA.RD_RDY != 0 ||
+			DSI_REG[d]->DSI_INTSTA.CMD_DONE != 0) {
+			DISPERR("Last DSI Read Why not clear irq???\n");
+			DISPERR("DSI_CMDQ_SIZE  : %d\n",
+				AS_UINT32(&DSI_REG[d]->DSI_CMDQ_SIZE));
+			for (i = 0; i < DSI_REG[d]->DSI_CMDQ_SIZE.CMDQ_SIZE;
+				i++) {
+				DISPERR("DSI_CMDQ_DATA%d : 0x%08x\n", i,
+					AS_UINT32(&DSI_CMDQ_REG[d]->data[i]));
+			}
+			DISPERR("DSI_RX_DATA0   : 0x%08x\n",
+				  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA0));
+			DISPERR("DSI_RX_DATA1   : 0x%08x\n",
+				  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA1));
+			DISPERR("DSI_RX_DATA2   : 0x%08x\n",
+				  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA2));
+			DISPERR("DSI_RX_DATA3   : 0x%08x\n",
+				  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA3));
+
+			/* clear irq */
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG,
+				DSI_REG[d]->DSI_INTSTA, RD_RDY, 0);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_STATUS_REG,
+				DSI_REG[d]->DSI_INTSTA, CMD_DONE, 0);
+		}
+
+		/* 3. Send cmd */
+		t0.CONFG = 0x04; /* BTA */
+		t0.Data_ID = (cmd < 0xB0) ?
+			DSI_DCS_READ_PACKET_ID :
+			DSI_GERNERIC_READ_LONG_PACKET_ID;
+		t0.Data_ID = t0.Data_ID & virtual_channel;
+		t0.Data0 = cmd;
+		t0.Data1 = 0;
+
+		/* set max return size */
+		t1.CONFG = 0x00;
+		t1.Data_ID = 0x37;
+		t1.Data_ID = t1.Data_ID & virtual_channel;
+		t1.Data0 = buffer_size <= 10 ? buffer_size : 10;
+		t1.Data1 = 0;
+
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+			AS_UINT32(&t1));
+		DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[1],
+			AS_UINT32(&t0));
+		DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 2);
+
+		DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 0);
+		DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 1);
+
+		/*
+		 * the following code is to
+		 * 1: wait read ready
+		 * 2: read data
+		 * 3: ack read ready
+		 * 4: wait for CMDQ_DONE(interrupt handler do this op)
+		 */
+		waitq = &(_dsi_context[d].read_wq);
+		ret = wait_event_timeout(waitq->wq,
+			atomic_read(&(waitq->condition)), WAIT_TIMEOUT);
+		atomic_set(&(waitq->condition), 0);
+		if (ret == 0) {
+			/* wait read ready timeout */
+			DISPERR("DSI Read Fail: dsi wait read ready timeout\n");
+			DSI_DumpRegisters(module, 2);
+
+			/* do necessary reset here */
+			DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG,
+				DSI_REG[d]->DSI_RACK, DSI_RACK, 1);
+			DSI_Reset(module, NULL);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
+				DSI_REG[d]->DSI_INTEN, RD_RDY, 0);
+			return 0;
+		}
+
+		/* read data */
+		DSI_OUTREG32(cmdq, &read_data0,
+			AS_UINT32(&DSI_REG[d]->DSI_RX_DATA0));
+		DSI_OUTREG32(cmdq, &read_data1,
+			AS_UINT32(&DSI_REG[d]->DSI_RX_DATA1));
+		DSI_OUTREG32(cmdq, &read_data2,
+			AS_UINT32(&DSI_REG[d]->DSI_RX_DATA2));
+		DSI_OUTREG32(cmdq, &read_data3,
+			AS_UINT32(&DSI_REG[d]->DSI_RX_DATA3));
+
+		DSI_OUTREGBIT(cmdq, struct DSI_RACK_REG,
+			DSI_REG[d]->DSI_RACK, DSI_RACK, 1);
+		ret = wait_event_timeout(_dsi_context[d].cmddone_wq.wq,
+			!(DSI_REG[d]->DSI_INTSTA.BUSY), WAIT_TIMEOUT);
+		if (ret == 0) {
+			/* wait cmddone timeout */
+			DISPERR("DSI Read Fail: dsi wait cmddone timeout\n");
+			DSI_DumpRegisters(module, 2);
+			DSI_Reset(module, NULL);
+		}
+
+		DISPDBG("DSI read begin i = %d --------------------\n",
+			  5 - max_try_count);
+		DISPDBG("DSI_RX_STA     : 0x%08x\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_TRIG_STA));
+		DISPDBG("DSI_CMDQ_SIZE  : %d\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_CMDQ_SIZE));
+		for (i = 0; i < DSI_REG[d]->DSI_CMDQ_SIZE.CMDQ_SIZE; i++) {
+			DISPDBG("DSI_CMDQ_DATA%d : 0x%08x\n", i,
+				  AS_UINT32(&DSI_CMDQ_REG[d]->data[i]));
+		}
+		DISPDBG("DSI_RX_DATA0   : 0x%08x\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA0));
+		DISPDBG("DSI_RX_DATA1   : 0x%08x\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA1));
+		DISPDBG("DSI_RX_DATA2   : 0x%08x\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA2));
+		DISPDBG("DSI_RX_DATA3   : 0x%08x\n",
+			  AS_UINT32(&DSI_REG[d]->DSI_RX_DATA3));
+		DISPDBG("DSI read end ----------------------------\n");
+
+		packet_type = read_data0.byte0;
+
+		DISPCHECK("DSI read packet_type is 0x%x\n", packet_type);
+
+		/*
+		 * 0x02: acknowledge & error report
+		 * 0x11: generic short read response(1 byte return)
+		 * 0x12: generic short read response(2 byte return)
+		 * 0x1a: generic long read response
+		 * 0x1c: dcs long read response
+		 * 0x21: dcs short read response(1 byte return)
+		 * 0x22: dcs short read response(2 byte return)
+		 */
+		if (packet_type == 0x1A || packet_type == 0x1C) {
+			recv_data_cnt =
+				read_data0.byte1 + read_data0.byte2 * 16;
+			if (recv_data_cnt > 10) {
+				DISPCHECK(
+					"DSI read long packet data exceeds 10 bytes,size:%d\n",
+					recv_data_cnt);
+				recv_data_cnt = 10;
+			}
+
+			if (recv_data_cnt > buffer_size) {
+				DISPCHECK(
+					"DSI read long packet data exceeds buffer size,size:%d\n",
+					recv_data_cnt);
+				recv_data_cnt = buffer_size;
+			}
+			DISPCHECK("DSI read long packet size: %d\n",
+				recv_data_cnt);
+
+			if (recv_data_cnt <= 4) {
+				memcpy((void *)buffer,
+					(void *)&read_data1, recv_data_cnt);
+			} else if (recv_data_cnt <= 8) {
+				memcpy((void *)buffer,
+					(void *)&read_data1, 4);
+				memcpy((void *)buffer + 4,
+					(void *)&read_data2,
+				    recv_data_cnt - 4);
+			} else {
+				memcpy((void *)buffer,
+					(void *)&read_data1, 4);
+				memcpy((void *)buffer + 4,
+					(void *)&read_data2, 4);
+				memcpy((void *)buffer + 8, (void *)&read_data2,
+				    recv_data_cnt - 8);
+			}
+		} else if (packet_type == 0x11 || packet_type == 0x12 ||
+				packet_type == 0x21 || packet_type == 0x22) {
+			if (packet_type == 0x11 || packet_type == 0x21)
+				recv_data_cnt = 1;
+			else
+				recv_data_cnt = 2;
+
+			if (recv_data_cnt > buffer_size) {
+				DISPCHECK(
+					"DSI read short packet data exceeds buffer size:%d\n",
+					buffer_size);
+				recv_data_cnt = buffer_size;
+				memcpy((void *)buffer,
+					(void *)&read_data0.byte1,
+					recv_data_cnt);
+			} else {
+				memcpy((void *)buffer,
+					(void *)&read_data0.byte1,
+					recv_data_cnt);
+			}
+		} else if (packet_type == 0x02) {
+			DISPCHECK("read return type is 0x02, re-read\n");
+		} else {
+			DISPCHECK("read return type is non-recognite: 0x%x\n",
+				  packet_type);
+			DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG,
+				DSI_REG[d]->DSI_INTEN, RD_RDY, 0);
+			return 0;
+		}
+	} while (packet_type == 0x02);
+	/* here: we may receive a ACK packet which packet type is 0x02
+	 * (incdicates some error happened)
+	 * therefore we try re-read again until no ACK packet
+	 * But: if it is a good way to keep re-trying ???
+	 */
+
+	DSI_OUTREGBIT(cmdq, struct DSI_INT_ENABLE_REG, DSI_REG[d]->DSI_INTEN,
+		RD_RDY, 0);
+	return recv_data_cnt;
+}
+
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	unsigned int cmd, unsigned char count, unsigned char *para_list,
 	unsigned char force_update)
@@ -2654,6 +2945,321 @@ void DSI_set_cmdq_V3(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	} while (++index < size);
 }
 
+void DSI_set_cmdq_V4(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq,
+	struct dsi_cmd_desc *cmds)
+{
+	UINT32 i = 0;
+	int d = 0;
+	unsigned long goto_addr, mask_para, set_para;
+	unsigned int cmd;
+	unsigned char count;
+	unsigned char *para_list;
+	unsigned char virtual_channel;
+	struct DSI_T0_INS t0;
+	struct DSI_T2_INS t2;
+
+	memset(&t0, 0, sizeof(struct DSI_T0_INS));
+	memset(&t2, 0, sizeof(struct DSI_T2_INS));
+	if (module == DISP_MODULE_DSI0)
+		d = 0;
+	else if (module == DISP_MODULE_DSI1)
+		d = 1;
+	else if (module == DISP_MODULE_DSIDUAL)
+		d = 0;
+	else
+		return;
+
+	cmd = cmds->dtype;
+	count = (unsigned char)cmds->dlen;
+	para_list = cmds->payload;
+	virtual_channel = (unsigned char)cmds->vc;
+
+	virtual_channel = ((virtual_channel << 6) | 0x3F);
+
+	if (cmds->link_state == 0)
+		/* Switch to HS mode*/
+		DSI_clk_HS_mode(module, cmdq, TRUE);
+
+	if (DSI_REG[d]->DSI_MODE_CTRL.MODE) { /* vdo cmd */
+		struct DSI_VM_CMD_CON_REG vm_cmdq;
+		struct DSI_VM_CMDQ *vm_data;
+
+		memset(&vm_cmdq, 0, sizeof(struct DSI_VM_CMD_CON_REG));
+		vm_data = DSI_VM_CMD_REG[d]->data;
+		DSI_READREG32(struct DSI_VM_CMD_CON_REG *,
+			&vm_cmdq, &DSI_REG[d]->DSI_VM_CMD_CON);
+		if (cmd < 0xB0) {
+			if (count > 1) {
+				vm_cmdq.LONG_PKT = 1;
+				vm_cmdq.CM_DATA_ID = DSI_DCS_LONG_PACKET_ID;
+				vm_cmdq.CM_DATA_ID =
+					vm_cmdq.CM_DATA_ID &
+					virtual_channel;
+				vm_cmdq.CM_DATA_0 = count + 1;
+				DSI_OUTREG32(cmdq,
+					&DSI_REG[d]->DSI_VM_CMD_CON,
+					AS_UINT32(&vm_cmdq));
+
+				goto_addr =
+					(unsigned long)(&vm_data[0].byte0);
+				mask_para =
+					(0xFF << ((goto_addr & 0x3) * 8));
+				set_para =
+					(cmd << ((goto_addr & 0x3) * 8));
+				DSI_MASKREG32(cmdq,
+					goto_addr & (~0x3), mask_para,
+					set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+						(unsigned long)(
+						&vm_data[0].byte1) + i;
+					mask_para =
+						(0xFF <<
+						((goto_addr & 0x3) * 8));
+					set_para =
+						(para_list[i] <<
+						((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq, goto_addr & (~0x3),
+						mask_para, set_para);
+				}
+			} else {
+				vm_cmdq.LONG_PKT = 0;
+				vm_cmdq.CM_DATA_0 = cmd;
+				if (count) {
+					vm_cmdq.CM_DATA_ID =
+						DSI_DCS_SHORT_PACKET_ID_1;
+					vm_cmdq.CM_DATA_ID =
+						vm_cmdq.CM_DATA_ID &
+						virtual_channel;
+					vm_cmdq.CM_DATA_1 = para_list[0];
+				} else {
+					vm_cmdq.CM_DATA_ID =
+						DSI_DCS_SHORT_PACKET_ID_0;
+					vm_cmdq.CM_DATA_ID =
+						vm_cmdq.CM_DATA_ID &
+						virtual_channel;
+					vm_cmdq.CM_DATA_1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON,
+					     AS_UINT32(&vm_cmdq));
+			}
+		} else {
+			struct DSI_VM_CMDQ *vm_data;
+
+			vm_data = DSI_VM_CMD_REG[d]->data;
+			if (count > 1) {
+				vm_cmdq.LONG_PKT = 1;
+				vm_cmdq.CM_DATA_ID =
+					DSI_GERNERIC_LONG_PACKET_ID;
+				vm_cmdq.CM_DATA_ID =
+					vm_cmdq.CM_DATA_ID & virtual_channel;
+				vm_cmdq.CM_DATA_0 = count + 1;
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON,
+					     AS_UINT32(&vm_cmdq));
+
+				goto_addr =
+					(unsigned long)(&vm_data[0].byte0);
+				mask_para =
+					(0xFF << ((goto_addr & 0x3) * 8));
+				set_para =
+					(cmd << ((goto_addr & 0x3) * 8));
+				DSI_MASKREG32(cmdq, goto_addr & (~0x3),
+					mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+						(unsigned long)(
+						&vm_data[0].byte1) + i;
+					mask_para =
+						(0xFF <<
+						((goto_addr & 0x3) * 8));
+					set_para =
+						(para_list[i] <<
+						((goto_addr & 0x3) * 8));
+					DSI_MASKREG32(cmdq,
+						goto_addr & (~0x3),
+						mask_para, set_para);
+				}
+			} else {
+				vm_cmdq.LONG_PKT = 0;
+				vm_cmdq.CM_DATA_0 = cmd;
+				if (count) {
+					vm_cmdq.CM_DATA_ID =
+						DSI_GERNERIC_SHORT_PACKET_ID_2;
+					vm_cmdq.CM_DATA_ID =
+						vm_cmdq.CM_DATA_ID &
+						virtual_channel;
+					vm_cmdq.CM_DATA_1 = para_list[0];
+				} else {
+					vm_cmdq.CM_DATA_ID =
+						DSI_GERNERIC_SHORT_PACKET_ID_1;
+					vm_cmdq.CM_DATA_ID =
+						vm_cmdq.CM_DATA_ID &
+						virtual_channel;
+					vm_cmdq.CM_DATA_1 = 0;
+				}
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_VM_CMD_CON,
+					     AS_UINT32(&vm_cmdq));
+			}
+		}
+	} else { /* cmd mode */
+		dsi_wait_not_busy(module, cmdq);
+		if (cmd < 0xB0) {
+			struct DSI_CMDQ *cmdq_reg;
+
+			cmdq_reg = DSI_CMDQ_REG[d]->data;
+			if (count > 1) {
+				t2.CONFG = 2;
+				if (cmds->link_state == 0)
+					/* HS Tx transmission */
+					t2.CONFG = t2.CONFG | 0x08;
+				t2.Data_ID = DSI_DCS_LONG_PACKET_ID;
+				t2.Data_ID = t2.Data_ID & virtual_channel;
+				t2.WC16 = count + 1;
+
+				DSI_OUTREG32(cmdq, &cmdq_reg[0],
+					AS_UINT32(&t2));
+
+				goto_addr =
+					(unsigned long)(
+					&cmdq_reg[1].byte0);
+				mask_para =
+					(0xFFu <<
+					((goto_addr & 0x3u) * 8));
+				set_para =
+					(cmd <<
+					((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+					goto_addr & (~0x3UL),
+					mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+						(unsigned long)(
+						&cmdq_reg[1].byte1) + i;
+					mask_para =
+						(0xFFu <<
+						((goto_addr & 0x3u) * 8));
+					set_para =
+						(para_list[i] <<
+						((goto_addr & 0x3u) * 8));
+					DSI_MASKREG32(cmdq,
+						goto_addr & (~0x3UL),
+						mask_para, set_para);
+				}
+
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE,
+					     2 + (count) / 4);
+			} else {
+				t0.CONFG = 0;
+				if (cmds->link_state == 0)
+					/* HS Tx transmission */
+					t0.CONFG = t0.CONFG | 0x08;
+				t0.Data0 = cmd;
+				if (count) {
+					t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_1;
+					t0.Data_ID = t0.Data_ID &
+						virtual_channel;
+					t0.Data1 = para_list[0];
+				} else {
+					t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_0;
+					t0.Data_ID = t0.Data_ID &
+						virtual_channel;
+					t0.Data1 = 0;
+				}
+
+				DSI_OUTREG32(cmdq,
+					&DSI_CMDQ_REG[d]->data[0],
+					AS_UINT32(&t0));
+				DSI_OUTREG32(cmdq,
+					&DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+		} else {
+			struct DSI_CMDQ *cmdq_reg;
+
+			cmdq_reg = DSI_CMDQ_REG[d]->data;
+			if (count > 1) {
+				t2.CONFG = 2;
+				if (cmds->link_state == 0)
+					/* HS Tx transmission */
+					t2.CONFG = t2.CONFG | 0x08;
+				t2.Data_ID = DSI_GERNERIC_LONG_PACKET_ID;
+				t2.Data_ID = t2.Data_ID & virtual_channel;
+				t2.WC16 = count + 1;
+				DSI_OUTREG32(cmdq, &cmdq_reg[0],
+					AS_UINT32(&t2));
+				goto_addr =
+					(unsigned long)(&cmdq_reg[1].byte0);
+				mask_para =
+					(0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para =
+					(cmd << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+					goto_addr & ~0x3UL,
+					mask_para, set_para);
+
+				for (i = 0; i < count; i++) {
+					goto_addr =
+						(unsigned long)(
+						&cmdq_reg[1].byte1) + i;
+					mask_para =
+						(0xFFu <<
+						((goto_addr & 0x3u) * 8));
+					set_para =
+						(para_list[i] <<
+						((goto_addr & 0x3u) * 8));
+					DSI_MASKREG32(cmdq,
+						      goto_addr & (~0x3UL),
+						      mask_para, set_para);
+				}
+
+				DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE,
+					     2 + (count) / 4);
+			} else {
+				t0.CONFG = 0;
+				if (cmds->link_state == 0)
+					/* HS Tx transmission */
+					t0.CONFG = t0.CONFG | 0x08;
+				t0.Data0 = cmd;
+				if (count) {
+					t0.Data_ID =
+						DSI_GERNERIC_SHORT_PACKET_ID_2;
+					t0.Data_ID =
+						t0.Data_ID & virtual_channel;
+					t0.Data1 = para_list[0];
+				} else {
+					t0.Data_ID =
+						DSI_GERNERIC_SHORT_PACKET_ID_1;
+					t0.Data_ID =
+						t0.Data_ID & virtual_channel;
+					t0.Data1 = 0;
+				}
+				DSI_OUTREG32(cmdq,
+					&DSI_CMDQ_REG[d]->data[0],
+					AS_UINT32(&t0));
+				DSI_OUTREG32(cmdq,
+					&DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+		}
+	}
+
+	if (DSI_REG[d]->DSI_MODE_CTRL.MODE) { /* vdo mode */
+		/* start DSI VM CMDQ */
+		DSI_EnableVM_CMD(module, cmdq);
+	} else { /* cmd mode */
+		DSI_Start(module, cmdq);
+		dsi_wait_not_busy(module, cmdq);
+	}
+
+	/* Revert to LP mode */
+	if (cmds->link_state == 0)
+		/* Switch to HS mode*/
+		DSI_clk_HS_mode(module, cmdq, FALSE);
+
+}
+
 void DSI_set_cmdq(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
 	unsigned int *pdata, unsigned int queue_size,
 	unsigned char force_update)
@@ -2793,6 +3399,21 @@ void DSI_set_cmdq_V2_DSIDual(void *cmdq, unsigned int cmd, unsigned char count,
 		force_update);
 }
 
+void DSI_set_cmdq_V4_DSI0(void *cmdq, struct dsi_cmd_desc *cmds)
+{
+	DSI_set_cmdq_V4(DISP_MODULE_DSI0, cmdq, cmds);
+}
+
+void DSI_set_cmdq_V4_DSI1(void *cmdq, struct dsi_cmd_desc *cmds)
+{
+	DSI_set_cmdq_V4(DISP_MODULE_DSI1, cmdq, cmds);
+}
+
+void DSI_set_cmdq_V4_DSIDual(void *cmdq, struct dsi_cmd_desc *cmds)
+{
+	DSI_set_cmdq_V4(DISP_MODULE_DSIDUAL, cmdq, cmds);
+}
+
 void DSI_set_cmdq_V2_Wrapper_DSI0(unsigned int cmd, unsigned char count,
 	unsigned char *para_list, unsigned char force_update)
 {
@@ -2877,6 +3498,27 @@ unsigned int DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL(UINT8 cmd, UINT8 *buffer,
 		buffer, buffer_size);
 }
 
+unsigned int DSI_dcs_read_lcm_reg_v3_wrapper_DSI0(char *out,
+		struct dsi_cmd_desc *cmds, unsigned int len)
+{
+	return DSI_dcs_read_lcm_reg_v3(DISP_MODULE_DSI0, NULL,
+			out, cmds, len);
+}
+
+unsigned int DSI_dcs_read_lcm_reg_v3_wrapper_DSI1(char *out,
+		struct dsi_cmd_desc *cmds, unsigned int len)
+{
+	return DSI_dcs_read_lcm_reg_v3(DISP_MODULE_DSI1, NULL,
+			out, cmds, len);
+}
+
+unsigned int DSI_dcs_read_lcm_reg_v3_wrapper_DSIDUAL(char *out,
+		struct dsi_cmd_desc *cmds, unsigned int len)
+{
+	return DSI_dcs_read_lcm_reg_v3(DISP_MODULE_DSIDUAL, NULL,
+			out, cmds, len);
+}
+
 /* remove later */
 long lcd_enp_bias_setting(unsigned int value)
 {
@@ -2925,6 +3567,10 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 			DSI_set_cmdq_V11_wrapper_DSI0;
 		utils->dsi_set_cmdq_V23 =
 			DSI_set_cmdq_V2_DSI0;
+		utils->mipi_dsi_cmds_tx =
+			DSI_set_cmdq_V4_DSI0;
+		utils->mipi_dsi_cmds_rx =
+			DSI_dcs_read_lcm_reg_v3_wrapper_DSI0;
 	} else if (module == DISP_MODULE_DSI1) {
 		utils->set_reset_pin =
 			lcm1_set_reset_pin;
@@ -2944,6 +3590,10 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 			DSI_set_cmdq_V11_wrapper_DSI1;
 		utils->dsi_set_cmdq_V23 =
 			DSI_set_cmdq_V2_DSI1;
+		utils->mipi_dsi_cmds_tx =
+			DSI_set_cmdq_V4_DSI1;
+		utils->mipi_dsi_cmds_rx =
+			DSI_dcs_read_lcm_reg_v3_wrapper_DSI1;
 	} else if (module == DISP_MODULE_DSIDUAL) {
 		struct LCM_PARAMS lcm_param;
 
@@ -2962,6 +3612,10 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 				DSI_set_cmdq_V2_DSI0;
 			utils->dsi_set_cmdq_V23 =
 				DSI_set_cmdq_V2_DSI0;
+			utils->mipi_dsi_cmds_tx =
+				DSI_set_cmdq_V4_DSI0;
+			utils->mipi_dsi_cmds_rx =
+				DSI_dcs_read_lcm_reg_v3_wrapper_DSI0;
 		} else if (lcm_param.lcm_cmd_if == LCM_INTERFACE_DSI1) {
 			utils->dsi_set_cmdq =
 				DSI_set_cmdq_wrapper_DSI1;
@@ -2971,10 +3625,14 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 				DSI_set_cmdq_V3_Wrapper_DSI1;
 			utils->dsi_dcs_read_lcm_reg_v2 =
 				DSI_dcs_read_lcm_reg_v2_wrapper_DSI1;
-			utils->dsi_set_cmdq_V22	=
+			utils->dsi_set_cmdq_V22 =
 				DSI_set_cmdq_V2_DSI1;
 			utils->dsi_set_cmdq_V23 =
 				DSI_set_cmdq_V2_DSI1;
+			utils->mipi_dsi_cmds_tx =
+				DSI_set_cmdq_V4_DSI1;
+			utils->mipi_dsi_cmds_rx =
+				DSI_dcs_read_lcm_reg_v3_wrapper_DSI1;
 		} else {
 			utils->dsi_set_cmdq =
 				DSI_set_cmdq_wrapper_DSIDual;
@@ -2984,6 +3642,10 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 				DSI_dcs_read_lcm_reg_v2_wrapper_DSIDUAL;
 			utils->dsi_set_cmdq_V23 =
 				DSI_set_cmdq_V2_DSIDual;
+			utils->mipi_dsi_cmds_tx =
+				DSI_set_cmdq_V4_DSIDual;
+			utils->mipi_dsi_cmds_rx =
+				DSI_dcs_read_lcm_reg_v3_wrapper_DSIDUAL;
 		}
 	}
 
