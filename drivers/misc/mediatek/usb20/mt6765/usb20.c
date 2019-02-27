@@ -187,6 +187,7 @@ static struct musb_fifo_cfg fifo_cfg[] __initdata = {
 /*=======================================================================*/
 static const struct of_device_id apusb_of_ids[] = {
 	{.compatible = "mediatek,mt6765-usb20",},
+	{.compatible = "mediatek,mt6761-usb20",},
 	{},
 };
 
@@ -288,6 +289,47 @@ static void mt_usb_try_idle(struct musb *musb, unsigned long timeout)
 	mod_timer(&musb_idle_timer, timeout);
 }
 
+#ifdef CONFIG_MACH_MT6761
+static void __iomem *infra_mbist;
+#define USB_SRAM_SET 0x093cc01b
+
+/* setup sram, only for mt6761 */
+static void usb_sram_setup(void)
+{
+	if (infra_mbist)
+		writel(USB_SRAM_SET, infra_mbist + 0x2c);
+	else
+		DBG(0, "infra_mbist not init\n");
+
+	mdelay(1);
+}
+
+static int usb_sram_init(void)
+{
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL,
+					"mediatek,infra_mbist");
+	if (!node) {
+		DBG(0, "infra_mbist map node failed\n");
+		return -1;
+	}
+
+	infra_mbist = of_iomap(node, 0);
+	if (!infra_mbist) {
+		DBG(0, "iomap infra_mbist failed\n");
+		return -1;
+	}
+
+	/* usb20_top_bist */
+	writel(USB_SRAM_SET, infra_mbist + 0x2c);
+	/* wait stable */
+	mdelay(1);
+
+	return 0;
+}
+#endif
+
 static int real_enable = 0, real_disable;
 static int virt_enable = 0, virt_disable;
 static void mt_usb_enable(struct musb *musb)
@@ -317,7 +359,10 @@ static void mt_usb_enable(struct musb *musb)
 	#endif
 
 	flags = musb_readl(musb->mregs, USB_L1INTM);
-
+#ifdef CONFIG_MACH_MT6761
+	/* only for mt6761 */
+	usb_sram_setup();
+#endif
 	usb_phy_recover();
 
 	/* update musb->power & mtk_usb_power in the same time */
@@ -1617,7 +1662,10 @@ static int __init mt_usb_init(struct musb *musb)
 #ifdef CONFIG_USB_MTK_OTG
 	mt_usb_otg_init(musb);
 #endif
-
+#ifdef CONFIG_MACH_MT6761
+	/* only for mt6761 */
+	usb_sram_init();
+#endif
 	return 0;
 }
 

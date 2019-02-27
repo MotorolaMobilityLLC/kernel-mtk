@@ -22,11 +22,8 @@ endif
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
 #Platform
-obj-$(CONFIG_MACH_MT8167) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6765) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6769) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6739) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-obj-$(CONFIG_MACH_MT6761) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6761) += mt6765/
 
 #Driver
 obj-$(CONFIG_USB_MTK_HDRC) += musb_hdrc.o
