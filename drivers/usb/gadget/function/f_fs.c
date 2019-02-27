@@ -127,6 +127,7 @@ struct ffs_epfile {
 	/* Protects ep->ep and ep->req. */
 	struct mutex			mutex;
 	wait_queue_head_t		wait;
+	atomic_t			error;
 
 	struct ffs_data			*ffs;
 	struct ffs_ep			*ep;	/* P: ffs->eps_lock */
@@ -135,7 +136,7 @@ struct ffs_epfile {
 
 	/*
 	 * Buffer for holding data from partial reads which may happen since
-	 * we’re rounding user read requests to a multiple of a max packet size.
+	 * we?�re rounding user read requests to a multiple of a max packet size.
 	 *
 	 * The pointer is initialised with NULL value and may be set by
 	 * __ffs_epfile_read_data function to point to a temporary buffer.
@@ -159,34 +160,33 @@ struct ffs_epfile {
 	 *
 	 * == State transitions ==
 	 *
-	 * • ptr == NULL:  (initial state)
-	 *   ◦ __ffs_epfile_read_buffer_free: go to ptr == DROP
-	 *   ◦ __ffs_epfile_read_buffered:    nop
-	 *   ◦ __ffs_epfile_read_data allocates temp buffer: go to ptr == buf
-	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
-	 * • ptr == DROP:
-	 *   ◦ __ffs_epfile_read_buffer_free: nop
-	 *   ◦ __ffs_epfile_read_buffered:    go to ptr == NULL
-	 *   ◦ __ffs_epfile_read_data allocates temp buffer: free buf, nop
-	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
-	 * • ptr == buf:
-	 *   ◦ __ffs_epfile_read_buffer_free: free buf, go to ptr == DROP
-	 *   ◦ __ffs_epfile_read_buffered:    go to ptr == NULL and reading
-	 *   ◦ __ffs_epfile_read_data:        n/a, __ffs_epfile_read_buffered
+	 * ??ptr == NULL:  (initial state)
+	 *   ??__ffs_epfile_read_buffer_free: go to ptr == DROP
+	 *   ??__ffs_epfile_read_buffered:    nop
+	 *   ??__ffs_epfile_read_data allocates temp buffer: go to ptr == buf
+	 *   ??reading finishes:              n/a, not in ?�and reading??state
+	 * ??ptr == DROP:
+	 *   ??__ffs_epfile_read_buffer_free: nop
+	 *   ??__ffs_epfile_read_buffered:    go to ptr == NULL
+	 *   ??__ffs_epfile_read_data allocates temp buffer: free buf, nop
+	 *   ??reading finishes:              n/a, not in ?�and reading??state
+	 * ??ptr == buf:
+	 *   ??__ffs_epfile_read_buffer_free: free buf, go to ptr == DROP
+	 *   ??__ffs_epfile_read_buffered:    go to ptr == NULL and reading
+	 *   ??__ffs_epfile_read_data:        n/a, __ffs_epfile_read_buffered
 	 *                                    is always called first
-	 *   ◦ reading finishes:              n/a, not in ‘and reading’ state
-	 * • ptr == NULL and reading:
-	 *   ◦ __ffs_epfile_read_buffer_free: go to ptr == DROP and reading
-	 *   ◦ __ffs_epfile_read_buffered:    n/a, mutex is held
-	 *   ◦ __ffs_epfile_read_data:        n/a, mutex is held
-	 *   ◦ reading finishes and …
-	 *     … all data read:               free buf, go to ptr == NULL
-	 *     … otherwise:                   go to ptr == buf and reading
-	 * • ptr == DROP and reading:
-	 *   ◦ __ffs_epfile_read_buffer_free: nop
-	 *   ◦ __ffs_epfile_read_buffered:    n/a, mutex is held
-	 *   ◦ __ffs_epfile_read_data:        n/a, mutex is held
-	 *   ◦ reading finishes:              free buf, go to ptr == DROP
+	 *   ??reading finishes:              n/a, not in ?�and reading??state
+	 * ??ptr == NULL and reading:
+	 *   ??__ffs_epfile_read_buffer_free: go to ptr == DROP and reading
+	 *   ??__ffs_epfile_read_buffered:    n/a, mutex is held
+	 *   ??__ffs_epfile_read_data:        n/a, mutex is held
+	 *   ??reading finishes and ??	 *     ??all data read:               free buf, go to ptr == NULL
+	 *     ??otherwise:                   go to ptr == buf and reading
+	 * ??ptr == DROP and reading:
+	 *   ??__ffs_epfile_read_buffer_free: nop
+	 *   ??__ffs_epfile_read_buffered:    n/a, mutex is held
+	 *   ??__ffs_epfile_read_data:        n/a, mutex is held
+	 *   ??reading finishes:              free buf, go to ptr == DROP
 	 */
 	struct ffs_buffer		*read_buffer;
 #define READ_BUFFER_DROP ((struct ffs_buffer *)ERR_PTR(-ESHUTDOWN))
@@ -197,6 +197,7 @@ struct ffs_epfile {
 	unsigned char			isoc;	/* P: ffs->eps_lock */
 
 	unsigned char			_pad;
+	atomic_t			opened;
 };
 
 struct ffs_buffer {
@@ -562,7 +563,11 @@ static ssize_t ffs_ep0_read(struct file *file, char __user *buf,
 		spin_unlock_irq(&ffs->ev.waitq.lock);
 
 		if (likely(len)) {
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+			data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 			data = kmalloc(len, GFP_KERNEL);
+#endif
 			if (unlikely(!data)) {
 				ret = -ENOMEM;
 				goto done_mutex;
@@ -603,6 +608,11 @@ static int ffs_ep0_open(struct inode *inode, struct file *file)
 	ENTER();
 
 	if (unlikely(ffs->state == FFS_CLOSING))
+		return -EBUSY;
+
+	/* barrier before atomic */
+	smp_mb__before_atomic();
+	if (atomic_read(&ffs->opened))
 		return -EBUSY;
 
 	file->private_data = ffs;
@@ -699,8 +709,10 @@ static const struct file_operations ffs_ep0_operations = {
 
 static void ffs_epfile_io_complete(struct usb_ep *_ep, struct usb_request *req)
 {
+	struct ffs_ep *ep = _ep->driver_data;
 	ENTER();
-	if (likely(req->context)) {
+	/* req may be freed during unbind */
+	if (ep && ep->req && likely(req->context)) {
 		struct ffs_ep *ep = _ep->driver_data;
 		ep->status = req->status ? req->status : req->actual;
 		complete(req->context);
@@ -728,7 +740,7 @@ static ssize_t ffs_copy_to_iter(void *data, int data_len, struct iov_iter *iter)
 	 * internally uses a larger, aligned buffer so that such UDCs are happy.
 	 *
 	 * Unfortunately, this means that host may send more data than was
-	 * requested in read(2) system call.  f_fs doesn’t know what to do with
+	 * requested in read(2) system call.  f_fs doesn?�t know what to do with
 	 * that excess data so it simply drops it.
 	 *
 	 * Was the buffer aligned in the first place, no such problem would
@@ -736,7 +748,7 @@ static ssize_t ffs_copy_to_iter(void *data, int data_len, struct iov_iter *iter)
 	 *
 	 * Data may be dropped only in AIO reads.  Synchronous reads are handled
 	 * by splitting a request into multiple parts.  This splitting may still
-	 * be a problem though so it’s likely best to align the buffer
+	 * be a problem though so it?�s likely best to align the buffer
 	 * regardless of it being AIO or not..
 	 *
 	 * This only affects OUT endpoints, i.e. reading data with a read(2),
@@ -911,7 +923,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		/*
 		 * Do we have buffered data from previous partial read?  Check
 		 * that for synchronous case only because we do not have
-		 * facility to ‘wake up’ a pending asynchronous read and push
+		 * facility to ?�wake up??a pending asynchronous read and push
 		 * buffered data to it which we would need to make things behave
 		 * consistently.
 		 */
@@ -943,7 +955,11 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			data_len = usb_ep_align_maybe(gadget, ep->ep, data_len);
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		data = kmalloc(data_len, GFP_KERNEL | GFP_DMA);
+#else
 		data = kmalloc(data_len, GFP_KERNEL);
+#endif
 		if (unlikely(!data)) {
 			ret = -ENOMEM;
 			goto error_mutex;
@@ -2491,7 +2507,11 @@ static int __ffs_data_got_strings(struct ffs_data *ffs,
 		vla_item(d, struct usb_string, strings,
 			lang_count*(needed_count+1));
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 		char *vlabuf = kmalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 
 		if (unlikely(!vlabuf)) {
 			kfree(_data);
@@ -2987,7 +3007,11 @@ static int _ffs_func_bind(struct usb_configuration *c,
 		return -ENOTSUPP;
 
 	/* Allocate a single chunk, less management later on */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL | GFP_DMA);
+#else
 	vlabuf = kzalloc(vla_group_size(d), GFP_KERNEL);
+#endif
 	if (unlikely(!vlabuf))
 		return -ENOMEM;
 
@@ -3737,7 +3761,11 @@ static char *ffs_prepare_buffer(const char __user *buf, size_t len)
 	if (unlikely(!len))
 		return NULL;
 
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	data = kmalloc(len, GFP_KERNEL | GFP_DMA);
+#else
 	data = kmalloc(len, GFP_KERNEL);
+#endif
 	if (unlikely(!data))
 		return ERR_PTR(-ENOMEM);
 

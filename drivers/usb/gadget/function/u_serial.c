@@ -32,6 +32,7 @@
 
 #include "u_serial.h"
 
+#define ACM_LOG(fmt, args...) pr_notice("USB_ACM " fmt, ## args)
 
 /*
  * This component encapsulates the TTY layer glue needed to provide basic
