@@ -641,12 +641,14 @@ static PVRSRV_ERROR RGXBootldrDataInit(PVRSRV_DEVICE_NODE *psDeviceNode,
 
 	/* ... and then jump to the bootloader data offset within the page */
 	pui64BootConfig += RGXMIPSFW_GET_OFFSET_IN_QWORDS(RGXMIPSFW_BOOTLDR_CONF_OFFSET);
-
-
+#if defined(SUPPORT_ALT_REGBASE)
+	pui64BootConfig[RGXMIPSFW_ROGUE_REGS_BASE_PHYADDR_OFFSET] = psDeviceNode->psDevConfig->sAltRegsCpuPBase.uiAddr;
+#else
 	/* Rogue Registers physical address */
 	PhysHeapCpuPAddrToDevPAddr(psDevInfo->psDeviceNode->apsPhysHeap[PVRSRV_DEVICE_PHYS_HEAP_GPU_LOCAL],
 							   1, &sPhyAddr, &(psDeviceNode->psDevConfig->sRegsCpuPBase));
 	pui64BootConfig[RGXMIPSFW_ROGUE_REGS_BASE_PHYADDR_OFFSET] = sPhyAddr.uiAddr;
+#endif
 
 	/* MIPS Page Table physical address. There are 16 pages for a firmware heap of 32 MB */
 	MMU_AcquireBaseAddr(psDevInfo->psKernelMMUCtx, &sPhyAddr);
@@ -825,6 +827,9 @@ static PVRSRV_ERROR RGXSetPowerParams(PVRSRV_RGXDEV_INFO   *psDevInfo,
 		IMG_DEV_PHYADDR sPhyAddr;
 		IMG_BOOL bValid;
 
+#if defined(SUPPORT_ALT_REGBASE)
+		psDevInfo->sLayerParams.sGPURegAddr.uiAddr = psDevConfig->sAltRegsCpuPBase.uiAddr;
+#else
 		/* The physical address of the GPU registers needs to be translated
 		 * in case we are in a LMA scenario
 		 */
@@ -834,6 +839,7 @@ static PVRSRV_ERROR RGXSetPowerParams(PVRSRV_RGXDEV_INFO   *psDevInfo,
 		                           &(psDevConfig->sRegsCpuPBase));
 
 		psDevInfo->sLayerParams.sGPURegAddr = sPhyAddr;
+#endif
 
 		eError = RGXGetPhyAddr(psFWCodePMR,
 		                       &sPhyAddr,
