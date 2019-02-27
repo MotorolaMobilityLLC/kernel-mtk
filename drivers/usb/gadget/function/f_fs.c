@@ -902,7 +902,10 @@ void abortion(struct work_struct *data)
 	info.si_signo = SIGPOLL;
 	info.si_code = POLL_ERR;
 
+	rcu_read_lock();
 	t = find_task_by_vpid(tid);
+	rcu_read_unlock();
+
 	if (t != NULL) {
 		pr_info("%s, tid<%d>, comm<%s>\n", __func__, tid, t->comm);
 		send_sig_info(SIGKILL, &info, t);
