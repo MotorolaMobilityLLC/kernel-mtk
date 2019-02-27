@@ -30,6 +30,7 @@ extern "C" {
 /* #define UPOWER_NOT_READY (1) */ /* for bring up, remove for MP */
 /* #define EEM_NOT_SET_VOLT (1) */
 #define UPOWER_ENABLE (1)
+#define UPOWER_NUM_LARGER (1)
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	#define UPOWER_ENABLE_TINYSYS_SSPM (0)
@@ -48,7 +49,7 @@ extern "C" {
 /* #define UPOWER_UT */
 /* #define UPOWER_PROFILE_API_TIME */
 #define UPOWER_RCU_LOCK
-#define UPOWER_LOG (0)
+#define UPOWER_LOG (1)
 
 /* for unified power driver internal use */
 #define UPOWER_OPP_NUM 16
@@ -64,7 +65,7 @@ extern "C" {
 #define NR_UPOWER_CSTATES 2 /* only use c0, c1 */
 #define UPOWER_C1_VOLT 60000 /* 0.6v */
 #define UPOWER_C1_IDX 1 /* idx of c1 in idle_states[][idx] */
-#define NR_UPOWER_TBL_LIST 5 /* num of all tables */
+#define NR_UPOWER_TBL_LIST 2 /* num of all tables */
 /* upower banks */
 enum upower_bank {
 /*	UPOWER_BANK_L,*/
