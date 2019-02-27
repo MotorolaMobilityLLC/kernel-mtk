@@ -555,28 +555,26 @@ int mt_cpufreq_dts_map(void)
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_3;
-	int val_0 = 0;
-	int val_2 = 0;
+	int val = get_devinfo_with_index(30);
 
 #if 0
-	val_0 = _GET_BITS_VAL_(11:8, get_devinfo_with_index(4));
-	val_2 = _GET_BITS_VAL_(15:12, get_devinfo_with_index(4));
-
-	if ( (val_0 == 4) && (val_2 == 2) )
+	if ((val == 0x2) || (val == 0x5))
 		lv = CPU_LEVEL_2;
-	else if ( (val_0 == 1) && (val_2 == 1) )
-		lv = CPU_LEVEL_0;
-	else if ( (val_0 == 1) && (val_2 == 0) )
-		lv = CPU_LEVEL_1;
+	else if ((val == 0x4) || (val == 0x3))
+		lv = CPU_LEVEL_3;
+	else if ((val == 0x1) || (val == 0x7))
+		lv = CPU_LEVEL_4;
+	else if ((val == 0x8) || (val == 0xF))
+		lv = CPU_LEVEL_4;
 	else
-		lv = CPU_LEVEL_0;
+		lv = CPU_LEVEL_3;
 #else
 	lv = CPU_LEVEL_3;
 #endif
 
 	turbo_flag = 0;
-	tag_pr_info("%d, %d, %d, %d\n",
-		lv, turbo_flag, val_0, val_2);
+	tag_pr_info("%d, %d, %d\n",
+		lv, turbo_flag, val);
 
 	return lv;
 }
