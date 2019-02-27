@@ -80,10 +80,11 @@ struct dump_queue_t {
 	uint8_t idx_w;
 };
 
+static int spk_pcm_dump_split_kthread(void *data);
+static struct task_struct *spk_dump_split_task;
 
 static struct dump_queue_t *dump_queue;
 static DEFINE_SPINLOCK(dump_queue_lock);
-
 
 static struct dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
@@ -98,6 +99,7 @@ static uint32_t dump_data_routine_cnt_pass;
 
 static bool b_enable_dump;
 static int datasize;
+static bool split_dump_enable;
 
 #define FRAME_BUF_SIZE   (8192)
 
@@ -111,6 +113,49 @@ static struct file *file_spk_pcm;
 static struct file *file_spk_iv;
 static struct file *file_spk_debug;
 
+void spk_pcm_dump_split_task_enable(void)
+{
+	/* only enable when debug pcm dump on */
+	aud_wake_lock(&wakelock_scp_dump_lock);
+
+	if (dump_queue == NULL) {
+		dump_queue = kmalloc(sizeof(struct dump_queue_t), GFP_KERNEL);
+		if (dump_queue != NULL)
+			memset(dump_queue, 0, sizeof(struct dump_queue_t));
+	}
+
+	if (!spk_dump_split_task) {
+		spk_dump_split_task =
+			kthread_create(spk_pcm_dump_split_kthread,
+				       NULL,
+				       "spk_pcm_dump_split_kthread");
+		if (IS_ERR(spk_dump_split_task))
+			AUD_LOG_E(
+				"can not create spk_pcm_dump_split_kthread\n");
+
+		split_dump_enable = true;
+		wake_up_process(spk_dump_split_task);
+	}
+
+}
+
+void spk_pcm_dump_split_task_disable(void)
+{
+	if (split_dump_enable == false)
+		return;
+
+	split_dump_enable = false;
+
+	if (spk_dump_split_task) {
+		kthread_stop(spk_dump_split_task);
+		spk_dump_split_task = NULL;
+	}
+	AUD_LOG_D("%s(), dump_queue = %p\n", __func__, dump_queue);
+	kfree(dump_queue);
+	dump_queue = NULL;
+
+	aud_wake_unlock(&wakelock_scp_dump_lock);
+}
 
 void spkprotect_open_dump_file(void)
 {
@@ -141,7 +186,8 @@ void spkprotect_open_dump_file(void)
 	pr_debug("%s(), path_decode_pcm= %s\n", __func__, path_decode_pcm);
 	sprintf(path_decode_ivpcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_iv_pcm);
-	pr_debug("%s(), path_decode_iv_pcm= %s\n", __func__, path_decode_ivpcm);
+	pr_debug("%s(), path_decode_iv_pcm= %s\n",
+		 __func__, path_decode_ivpcm);
 	sprintf(path_decode_debugpcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_debug_pcm);
 	pr_debug("%s(), path_decode_debug_pcm= %s\n", __func__,
@@ -323,6 +369,201 @@ void spkprotect_dump_message(struct ipi_msg_t *ipi_msg)
 
 }
 
+static int spk_pcm_dump_split_kthread(void *data)
+{
+	unsigned long flags = 0;
+	int ret = 0;
+	int size = 0, writedata = 0;
+	uint8_t current_idx = 0;
+	struct pcm_dump_t *pcm_dump = NULL;
+	struct dump_package_t *dump_package = NULL;
+
+	/* RTPM_PRIO_AUDIO_PLAYBACK */
+	struct sched_param param = {.sched_priority = 85};
+
+	char spk_debug_pcm_str[16] = "spk_debug_dump";
+	char iv_pcm_str[16] = "spk_ivdump";
+	char spk_debug_pcm_path[64];
+	char spk_iv_pcm_path[64];
+	int debug_file_cnt = 0;
+	int iv_file_cnt = 0;
+	bool debug_file_open = false;
+	bool iv_file_open = false;
+	int iv_dump_cnt = 0;
+	int debug_dump_cnt = 0;
+	int blocks = 32; /* collect 32 buffer */
+
+	sched_setscheduler(current, SCHED_RR, &param);
+
+	AUD_LOG_D("%s(), dump_queue = %p\n", __func__, dump_queue);
+
+	while (split_dump_enable && !kthread_should_stop()) {
+
+		if (!debug_file_open) {
+			sprintf(spk_debug_pcm_path, "%s/%s_%d.pcm",
+				DUMP_SMARTPA_PCM_DATA_PATH,
+				spk_debug_pcm_str, debug_file_cnt);
+			file_spk_debug = filp_open(spk_debug_pcm_path,
+						   O_CREAT | O_WRONLY, 0);
+			if (IS_ERR(file_spk_debug)) {
+				AUD_LOG_W("%s(), %s file open error: %ld\n",
+					  __func__, spk_debug_pcm_path,
+					  PTR_ERR(file_spk_debug));
+				return -1;
+			}
+
+			debug_file_open = true;
+
+			if (debug_file_cnt < 100)
+				debug_file_cnt++;
+			else
+				debug_file_cnt = 0;
+		}
+
+		if (!iv_file_open) {
+			sprintf(spk_iv_pcm_path, "%s/%s_%d.pcm",
+				DUMP_SMARTPA_PCM_DATA_PATH,
+				iv_pcm_str, iv_file_cnt);
+			file_spk_iv = filp_open(spk_iv_pcm_path,
+						O_CREAT | O_WRONLY, 0);
+			if (IS_ERR(file_spk_iv)) {
+				AUD_LOG_W("%s(), %s file open error: %ld\n",
+					  __func__, spk_iv_pcm_path,
+					  PTR_ERR(file_spk_iv));
+				return -1;
+			}
+
+			iv_file_open = true;
+
+			if (iv_file_cnt < 100)
+				iv_file_cnt++;
+			else
+				iv_file_cnt = 0;
+		}
+
+		spin_lock_irqsave(&dump_queue_lock, flags);
+		if (dump_queue->idx_r != dump_queue->idx_w) {
+			current_idx = dump_queue->idx_r;
+			dump_queue->idx_r++;
+			spin_unlock_irqrestore(&dump_queue_lock, flags);
+		} else {
+			spin_unlock_irqrestore(&dump_queue_lock, flags);
+			ret = wait_event_interruptible(
+				wq_dump_pcm,
+				(dump_queue->idx_r != dump_queue->idx_w) ||
+				split_dump_enable == false);
+			if (ret == -ERESTARTSYS) {
+				ret = -EINTR;
+				break;
+			}
+			if (split_dump_enable == false)
+				break;
+
+			current_idx = dump_queue->idx_r;
+			dump_queue->idx_r++;
+		}
+
+		dump_package = &dump_queue->dump_package[current_idx];
+		switch (dump_package->dump_data_type) {
+		case DUMP_DEBUG_DATA:
+			size = datasize;
+			writedata = datasize;
+			pcm_dump =
+				(struct pcm_dump_t *)dump_package->data_addr;
+			AUD_LOG_V(
+				  "%s(), pcm_dump = %p datasize = %d current_idx = %d, dl_dump_cnt = %d\n",
+				  __func__, pcm_dump, datasize,
+				  current_idx, debug_dump_cnt);
+
+			while (size > 0) {
+				AUD_LOG_V("pcm_dump = %p writedata = %d\n",
+					  pcm_dump, writedata);
+				if (!IS_ERR(file_spk_debug)) {
+					ret = file_spk_debug->f_op->write(
+						      file_spk_debug,
+						      pcm_dump->decode_pcm,
+						      writedata,
+						      &file_spk_debug->f_pos);
+				}
+				size -= writedata;
+				pcm_dump++;
+			}
+			debug_dump_cnt++;
+			break;
+		case DUMP_IV_DATA:
+			size = datasize;
+			writedata = datasize;
+			pcm_dump = (struct pcm_dump_t *)dump_package->data_addr;
+			AUD_LOG_V(
+				  "%s(), pcm_dump = %p datasize = %d current_idx = %d, dl_dump_cnt = %d\n",
+				  __func__, pcm_dump, datasize,
+				  current_idx, debug_dump_cnt);
+
+			while (size > 0) {
+				AUD_LOG_V("pcm_dump = %p writedata = %d\n",
+					  pcm_dump, writedata);
+				if (!IS_ERR(file_spk_iv)) {
+					ret = file_spk_iv->f_op->write(
+						      file_spk_iv,
+						      pcm_dump->decode_pcm,
+						      writedata,
+						      &file_spk_iv->f_pos);
+				}
+				size -= writedata;
+				pcm_dump++;
+			}
+			iv_dump_cnt++;
+			break;
+		default:
+			AUD_LOG_V(
+				  "current_idx = %d, idx_r = %d, idx_w = %d, type = %d\n",
+				  current_idx, dump_queue->idx_r,
+				  dump_queue->idx_w,
+				  dump_package->dump_data_type);
+			break;
+		}
+
+		if (debug_file_open && debug_dump_cnt == blocks) {
+			debug_file_open = false;
+			debug_dump_cnt = 0;
+			if (!IS_ERR(file_spk_debug)) {
+				filp_close(file_spk_debug, NULL);
+				file_spk_debug = NULL;
+			}
+		}
+
+		if (iv_file_open && iv_dump_cnt == blocks) {
+			iv_file_open = false;
+			iv_dump_cnt = 0;
+			if (!IS_ERR(file_spk_iv)) {
+				filp_close(file_spk_iv, NULL);
+				file_spk_iv = NULL;
+			}
+		}
+	}
+
+	if (debug_file_open) {
+		debug_file_open = false;
+		debug_dump_cnt = 0;
+		if (!IS_ERR(file_spk_debug)) {
+			filp_close(file_spk_debug, NULL);
+			file_spk_debug = NULL;
+		}
+	}
+
+	if (iv_file_open) {
+		iv_file_open = false;
+		iv_dump_cnt = 0;
+		if (!IS_ERR(file_spk_iv)) {
+			filp_close(file_spk_iv, NULL);
+			file_spk_iv = NULL;
+		}
+	}
+
+	AUD_LOG_D("spkprotect_dump_kthread exit\n");
+	return 0;
+}
+
 static int spkprotect_dump_kthread(void *data)
 {
 	unsigned long flags = 0;
@@ -489,6 +730,9 @@ void audio_ipi_client_spkprotect_init(void)
 
 	speaker_dump_task = NULL;
 	dump_queue = NULL;
+
+	speaker_dump_task = NULL;
+	spk_dump_split_task = NULL;
 
 	/* TODO: ring buf */
 	p_resv_dram = get_reserved_dram();
