@@ -1240,6 +1240,7 @@ static ssize_t disksize_store(struct device *dev,
 	atomic_set(&zram->refcount, 1);
 	zram->meta = meta;
 	zram->comp = comp;
+	barrier();
 	zram->disksize = disksize;
 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
 	zram_revalidate_disk(zram);
