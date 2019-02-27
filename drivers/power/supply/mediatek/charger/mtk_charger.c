@@ -1289,6 +1289,9 @@ static void check_battery_exist(struct charger_manager *info)
 	int count = 0;
 	int boot_mode = get_boot_mode();
 
+	if (is_disable_charger())
+		return;
+
 	for (i = 0; i < 3; i++) {
 		if (pmic_is_battery_exist() == false)
 			count++;
