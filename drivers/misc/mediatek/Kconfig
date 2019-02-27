@@ -22,6 +22,14 @@ endmenu  # Storage
 
 menu "Power, PMIC, Battery & Low Power related configs"
 
+config MTK_BASE_POWER
+	bool "MediaTek power management"
+	help
+	  For MediaTek power management features, such as CPU idle,
+	  CPU suspend, CPU DVFS, GPU DVFS,
+	  Select if you want to enable MediaTek power
+	  management feature.
+
 config MTK_FREQ_HOPPING
 	bool "MediaTek FREQHOPPING SUPPORT"
 	help
@@ -30,6 +38,15 @@ config MTK_FREQ_HOPPING
 
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/power/Kconfig"
+
+config MTK_PSCI
+	bool "MediaTek PSCI boot method"
+	depends on ARM64
+	help
+	  For MediaTek PSCI wrapper feature, such as cpu_init,
+	  cpu_prepare, cpu_boot, cpu_disable, cpu_die, cpu_kill,
+	  cpu_init_idle, cpu_suspend, select if you want to enable
+	  PSCI boot method on MediaTek platform.
 
 endmenu  # Power
 
