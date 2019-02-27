@@ -247,10 +247,14 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	case TCP_NOTIFY_TYPEC_STATE:
 		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) {
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			charger_dev_enable_chg_type_det(primary_charger, true);
 #else
 			mtk_chr_enable_chr_type_det(true);
+#endif
+#else
+			mtk_pmic_enable_chr_type_det(true);
 #endif
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
@@ -285,13 +289,16 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			pr_notice("TCP_NOTIFY_SINK_VBUS=> plug out");
 #endif
 #endif
+#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
 			ret = charger_dev_enable_chg_type_det(primary_charger,
 				false);
 #else
 			ret = mtk_chr_enable_chr_type_det(false);
 #endif
-
+#else
+			mtk_pmic_enable_chr_type_det(false);
+#endif
 			boot_mode = get_boot_mode();
 			if (ret < 0) {
 				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
