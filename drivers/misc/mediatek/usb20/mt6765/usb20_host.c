@@ -31,21 +31,12 @@
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 static struct notifier_block otg_nb;
-static bool usbc_otg_attached;
 static struct tcpc_device *otg_tcpc_dev;
-static struct workqueue_struct *otg_tcpc_power_workq;
-static struct workqueue_struct *otg_tcpc_workq;
-static struct work_struct tcpc_otg_power_work;
-static struct work_struct tcpc_otg_work;
-static bool usbc_otg_power_enable;
-static bool usbc_otg_enable;
-static struct mutex tcpc_otg_lock;
-static struct mutex tcpc_otg_pwr_lock;
+static struct delayed_work register_otg_work;
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data);
-static struct delayed_work register_otg_work;
 #define TCPC_OTG_DEV_NAME "type_c_port0"
-void do_register_otg_work(struct work_struct *data)
+static void do_register_otg_work(struct work_struct *data)
 {
 #define REGISTER_OTG_WORK_DELAY 500
 	static int ret;
@@ -74,6 +65,10 @@ void do_register_otg_work(struct work_struct *data)
 }
 #endif
 #endif
+
+static void mt_usb_host_connect(int delay);
+static void mt_usb_host_disconnect(int delay);
+
 #ifdef CONFIG_MTK_CHARGER
 #if CONFIG_MTK_GAUGE_VERSION == 30
 #include <mt-plat/charger_class.h>
@@ -128,39 +123,32 @@ module_param(delay_time1, int, 0644);
 u32 iddig_cnt;
 module_param(iddig_cnt, int, 0644);
 
-void vbus_init(void)
-{
-	DBG(0, "+++\n");
-#ifdef CONFIG_MTK_CHARGER
-#if CONFIG_MTK_GAUGE_VERSION == 30
-	primary_charger = get_charger_by_name("primary_chg");
-	if (!primary_charger) {
-		pr_err("%s: get primary charger device failed\n", __func__);
-		return;
-	}
-#endif
-#endif
-	DBG(0, "---\n");
-
-}
-
 static bool vbus_on;
 module_param(vbus_on, bool, 0644);
 static int vbus_control;
 module_param(vbus_control, int, 0644);
+
 bool usb20_check_vbus_on(void)
 {
 	DBG(0, "vbus_on<%d>\n", vbus_on);
 	return vbus_on;
 }
-void _set_vbus(struct musb *musb, int is_on)
-{
-	static int vbus_inited;
 
-	if (!vbus_inited) {
-		vbus_init();
-		vbus_inited = 1;
+static void _set_vbus(int is_on)
+{
+#ifdef CONFIG_MTK_CHARGER
+#if CONFIG_MTK_GAUGE_VERSION == 30
+	if (!primary_charger) {
+		DBG(0, "vbus_init<%d>\n", vbus_on);
+
+		primary_charger = get_charger_by_name("primary_chg");
+		if (!primary_charger) {
+			DBG(0, "get primary charger device failed\n");
+			return;
 	}
+	}
+#endif
+#endif
 
 	DBG(0, "op<%d>, status<%d>\n", is_on, vbus_on);
 	if (is_on && !vbus_on) {
@@ -193,6 +181,54 @@ void _set_vbus(struct musb *musb, int is_on)
 	}
 }
 
+static void do_vbus_work(struct work_struct *data)
+{
+	struct mt_usb_work *work =
+		container_of(data, struct mt_usb_work, dwork.work);
+	bool vbus_on = (work->ops ==
+			VBUS_OPS_ON ? true : false);
+
+	_set_vbus(vbus_on);
+	/* free kfree */
+	kfree(work);
+}
+
+static void issue_vbus_work(int ops, int delay)
+{
+	struct mt_usb_work *work;
+
+	if (!mtk_musb) {
+		DBG(0, "mtk_musb = NULL\n");
+		return;
+	}
+	/* create and prepare worker */
+	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
+	if (!work) {
+		DBG(0, "work is NULL, directly return\n");
+		return;
+	}
+	work->ops = ops;
+	INIT_DELAYED_WORK(&work->dwork, do_vbus_work);
+
+	/* issue vbus work */
+	DBG(0, "issue work, ops<%d>, delay<%d>\n", ops, delay);
+
+	queue_delayed_work(mtk_musb->st_wq,
+				&work->dwork, msecs_to_jiffies(delay));
+}
+
+static void mt_usb_vbus_on(int delay)
+{
+	DBG(0, "vbus_on\n");
+	issue_vbus_work(VBUS_OPS_ON, delay);
+}
+
+static void mt_usb_vbus_off(int delay)
+{
+	DBG(0, "vbus_off\n");
+	issue_vbus_work(VBUS_OPS_OFF, delay);
+}
+
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
 #ifndef FPGA_PLATFORM
@@ -203,9 +239,9 @@ void mt_usb_set_vbus(struct musb *musb, int is_on)
 		return;
 
 	if (is_on)
-		_set_vbus(mtk_musb, 1);
+		_set_vbus(1);
 	else
-		_set_vbus(mtk_musb, 0);
+		_set_vbus(0);
 #endif
 }
 
@@ -284,48 +320,6 @@ void mt_usb_host_disconnect(int delay)
 }
 #ifdef CONFIG_MTK_USB_TYPEC
 #ifdef CONFIG_TCPC_CLASS
-int tcpc_otg_enable(void)
-{
-	if (!usbc_otg_attached) {
-		mt_usb_host_connect(0);
-		usbc_otg_attached = true;
-	}
-	return 0;
-}
-
-int tcpc_otg_disable(void)
-{
-	if (usbc_otg_attached) {
-		mt_usb_host_disconnect(0);
-		usbc_otg_attached = false;
-	}
-	return 0;
-}
-
-static void tcpc_otg_work_call(struct work_struct *work)
-{
-	bool enable;
-
-	mutex_lock(&tcpc_otg_lock);
-	enable = usbc_otg_enable;
-	mutex_unlock(&tcpc_otg_lock);
-
-	if (enable)
-		tcpc_otg_enable();
-	else
-		tcpc_otg_disable();
-}
-
-static void tcpc_otg_power_work_call(struct work_struct *work)
-{
-	mutex_lock(&tcpc_otg_pwr_lock);
-	if (usbc_otg_power_enable)
-		_set_vbus(mtk_musb, 1);
-	else
-		_set_vbus(mtk_musb, 0);
-	mutex_unlock(&tcpc_otg_pwr_lock);
-}
-
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data)
 {
@@ -333,36 +327,37 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VBUS:
-		pr_info("%s source vbus = %dmv\n",
-				__func__, noti->vbus_state.mv);
-		mutex_lock(&tcpc_otg_pwr_lock);
-		usbc_otg_power_enable = (noti->vbus_state.mv) ? true : false;
-		mutex_unlock(&tcpc_otg_pwr_lock);
-		queue_work(otg_tcpc_power_workq, &tcpc_otg_power_work);
+		DBG(0, "source vbus = %dmv\n", noti->vbus_state.mv);
+		if (noti->vbus_state.mv)
+			mt_usb_vbus_on(0);
+		else
+			mt_usb_vbus_off(0);
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
-			pr_info("%s OTG Plug in\n", __func__);
-			mutex_lock(&tcpc_otg_lock);
-			usbc_otg_enable = true;
-			mutex_unlock(&tcpc_otg_lock);
+		DBG(0, "TCP_NOTIFY_TYPEC_STATE, old_state=%d, new_state=%d\n",
+				noti->typec_state.old_state,
+				noti->swap_state.new_role);
+		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			DBG(0, "OTG Plug in\n");
+			mt_usb_host_connect(0);
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
-			noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			pr_info("%s OTG Plug out\n", __func__);
-			mutex_lock(&tcpc_otg_lock);
-			usbc_otg_enable = false;
-			mutex_unlock(&tcpc_otg_lock);
+			noti->typec_state.new_state != TYPEC_ATTACHED_SRC) {
+			DBG(0, "OTG Plug out\n");
+			mt_usb_host_disconnect(0);
 #ifdef CONFIG_MTK_UART_USB_SWITCH
-		} else if ((noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
-			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
-			noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) &&
-			in_uart_mode) {
+		} else if ((noti->typec_state.new_state ==
+					TYPEC_ATTACHED_SNK ||
+				noti->typec_state.new_state ==
+					TYPEC_ATTACHED_CUSTOM_SRC ||
+				noti->typec_state.new_state ==
+					TYPEC_ATTACHED_NORP_SRC) &&
+				in_uart_mode) {
 			pr_info("%s USB cable plugged-in in UART mode. "
 					"Switch to USB mode.\n", __func__);
 			usb_phy_switch_to_usb();
 #endif
 		}
-		queue_work(otg_tcpc_workq, &tcpc_otg_work);
 		break;
 	}
 	return NOTIFY_OK;
@@ -440,7 +435,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
-		DBG(0, "%s wake_lock_init\n", __func__);
+		DBG(0, "wake_lock_init\n");
 		wakeup_source_init(&host_test_wakelock,
 					"host.test.lock");
 		wake_lock_inited = 1;
@@ -470,7 +465,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 			ktime_begin = ktime_get();
 
 			/* simulate plug out */
-			_set_vbus(mtk_musb, 0);
+			_set_vbus(0);
 			udelay(host_test_vbus_off_time_us);
 
 			if (!host_test_vbus_only)
@@ -484,7 +479,7 @@ static void do_host_plug_test_work(struct work_struct *data)
 			if (!host_test_vbus_only)
 				issue_host_work(CONNECTION_OPS_CONN, 0, false);
 
-			_set_vbus(mtk_musb, 1);
+			_set_vbus(1);
 			msleep(100);
 
 		}
@@ -676,7 +671,6 @@ static irqreturn_t mt_usb_ext_iddig_int(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-
 static const struct of_device_id otg_iddig_of_match[] = {
 	{.compatible = "mediatek,usb_iddig_bi_eint"},
 	{},
@@ -756,14 +750,6 @@ void mt_usb_otg_init(struct musb *musb)
 	DBG(0, "host controlled by TYPEC\n");
 	typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS
-	mutex_init(&tcpc_otg_lock);
-	mutex_init(&tcpc_otg_pwr_lock);
-	otg_tcpc_workq =
-			create_singlethread_workqueue("tcpc_otg_workq");
-	otg_tcpc_power_workq =
-			create_singlethread_workqueue("tcpc_otg_power_workq");
-	INIT_WORK(&tcpc_otg_power_work, tcpc_otg_power_work_call);
-	INIT_WORK(&tcpc_otg_work, tcpc_otg_work_call);
 	INIT_DELAYED_WORK(&register_otg_work, do_register_otg_work);
 	queue_delayed_work(mtk_musb->st_wq, &register_otg_work, 0);
 	vbus_control = 0;
@@ -893,11 +879,11 @@ static int set_option(const char *val, const struct kernel_param *kp)
 		break;
 	case 9:
 		DBG(0, "case %d\n", local_option);
-		_set_vbus(mtk_musb, 1);
+		_set_vbus(1);
 		break;
 	case 10:
 		DBG(0, "case %d\n", local_option);
-		_set_vbus(mtk_musb, 0);
+		_set_vbus(0);
 		break;
 	default:
 		break;
