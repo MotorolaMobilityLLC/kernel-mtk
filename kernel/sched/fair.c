@@ -545,6 +545,8 @@ static void update_min_vruntime(struct cfs_rq *cfs_rq)
 	/* ensure we never gain time by being placed backwards. */
 	cfs_rq->min_vruntime = max_vruntime(cfs_rq->min_vruntime, vruntime);
 
+	cfs_rq->idx = (cfs_rq->idx+1)%5;
+	cfs_rq->old_min_vruntime[cfs_rq->idx] = cfs_rq->min_vruntime;
 	if ((s64)cfs_rq->min_vruntime < 0) {
 		printk_deferred("%s cfs_rq->min_runtime=0x%llx, vruntime=0x%llx",
 			__func__,  cfs_rq->min_vruntime,  vruntime);
@@ -865,25 +867,67 @@ static void update_tg_load_avg(struct cfs_rq *cfs_rq, int force)
 }
 #endif /* CONFIG_SMP */
 
-void check_vruntime(const char *func, struct sched_entity *se, u64 min_vruntime)
+void print_vruntime_debug(struct sched_entity *se)
+{
+	int cpu;
+
+	if (entity_is_task(se)) {
+		int i = 0;
+
+		printk_deferred("idx=%d\n", se->idx);
+		for (i = 0; i < 5; i++) {
+			printk_deferred("idx=%d reason=%d old_vruntime=0x%llx, cpu=%d old_minvruntime=0x%llx\n",
+				i, se->update_reason[i], se->old_vruntime[i],
+				se->old_cpu[i], se->old_min_vruntime[i]);
+		}
+	}
+
+	for_each_possible_cpu(cpu) {
+		struct rq *rq = cpu_rq(cpu);
+		struct cfs_rq *cfs_rq;
+
+		cfs_rq = &rq->cfs;
+
+		printk_deferred("cpu=%d idx=%d min_vruntime[0]=0x%llx [1]=0x%llx, [2]=0x%llx\n",
+			cpu, cfs_rq->idx, cfs_rq->old_min_vruntime[0],
+			cfs_rq->old_min_vruntime[1],
+			cfs_rq->old_min_vruntime[2]);
+
+		printk_deferred("[3]=0x%llx [4]=0x%llx\n",
+			cfs_rq->old_min_vruntime[3],
+			cfs_rq->old_min_vruntime[4]);
+	}
+
+}
+
+void check_vruntime(int reason, struct sched_entity *se, u64 min_vruntime)
 {
 	u64 vruntime = se->vruntime;
+	struct task_struct *p;
+	int cpu;
 
-	/* debug: old -vruntime > 20 day*/
-	/* debug: vruntime > 20 day*/
-	if (((abs(vruntime - se->old_vruntime) >= (u64) 1728000000000000) ||
-			((s64)vruntime > (s64)1728000000000000)) &&
-			entity_is_task(se)) {
-		struct task_struct *p = task_of(se);
+	if (!entity_is_task(se))
+		return;
 
-		printk_deferred("%s %d:%s ERR: vruntime=0x%llx old_vruntime=0x%llx, min_vruntime=0x%llx\n",
-			func, p->pid, p->comm, vruntime, se->old_vruntime,
-			min_vruntime);
-
+	p = task_of(se);
+	if ((abs(vruntime - se->old_vruntime[se->idx])
+			>= (u64) 1728000000000000) ||
+			((s64)vruntime > (s64)1728000000000000)) {
+		cpu = task_cpu(p);
+		printk_deferred("%d:%s reason=%d vruntime=0x%llx, cpu=%d min_vruntime=0x%llx\n",
+			p->pid, p->comm, reason, vruntime, cpu, min_vruntime);
+		print_vruntime_debug(se);
 		BUG_ON(1);
 	}
 
-	se->old_vruntime = se->vruntime;
+	/* debug: old -vruntime > 20 day*/
+	/* debug: vruntime > 20 day*/
+	se->idx = (se->idx+1)%5;
+	se->update_reason[se->idx] = reason;
+	se->old_vruntime[se->idx] = se->vruntime;
+	cpu = task_cpu(p);
+	se->old_cpu[se->idx] = cpu;
+	se->old_min_vruntime[se->idx] = min_vruntime;
 }
 
 /*
@@ -920,7 +964,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
 	schedstat_add(cfs_rq->exec_clock, delta_exec);
 
 	curr->vruntime += calc_delta_fair(delta_exec, curr);
-	check_vruntime(__func__, curr, cfs_rq->min_vruntime);
+	check_vruntime(1, curr, cfs_rq->min_vruntime);
 
 
 	update_min_vruntime(cfs_rq);
@@ -3642,9 +3686,11 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
 	/* ensure we never gain time by being placed backwards. */
 	se->vruntime = max_vruntime(se->vruntime, vruntime);
 	/* for debug */
-	if (initial)
-		se->old_vruntime = se->vruntime;
-	check_vruntime(__func__, se, cfs_rq->min_vruntime);
+	if (initial) {
+		se->idx = (se->idx+1)%5;
+		se->old_vruntime[se->idx] = se->vruntime;
+	}
+	check_vruntime(2, se, cfs_rq->min_vruntime);
 }
 
 static void check_enqueue_throttle(struct cfs_rq *cfs_rq);
@@ -3712,7 +3758,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 */
 	if (renorm && curr) {
 		se->vruntime += cfs_rq->min_vruntime;
-		check_vruntime(__func__, se, cfs_rq->min_vruntime);
+		check_vruntime(3, se, cfs_rq->min_vruntime);
 	}
 
 	update_curr(cfs_rq);
@@ -3725,7 +3771,7 @@ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 */
 	if (renorm && !curr) {
 		se->vruntime += cfs_rq->min_vruntime;
-		check_vruntime(__func__, se, cfs_rq->min_vruntime);
+		check_vruntime(4, se, cfs_rq->min_vruntime);
 	}
 
 	/*
@@ -3839,7 +3885,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
 	 * can move min_vruntime forward still more.
 	 */
 	if (!(flags & DEQUEUE_SLEEP)) {
-		check_vruntime(__func__, se, cfs_rq->min_vruntime);
+		check_vruntime(5, se, cfs_rq->min_vruntime);
 		se->vruntime -= cfs_rq->min_vruntime;
 	}
 
@@ -7536,7 +7582,7 @@ static void migrate_task_rq_fair(struct task_struct *p)
 		min_vruntime = cfs_rq->min_vruntime;
 #endif
 
-		check_vruntime(__func__, se, min_vruntime);
+		check_vruntime(6, se, min_vruntime);
 		se->vruntime -= min_vruntime;
 	}
 
@@ -10827,7 +10873,7 @@ static void task_fork_fair(struct task_struct *p)
 		resched_curr(rq);
 	}
 
-	check_vruntime(__func__, se, cfs_rq->min_vruntime);
+	check_vruntime(7, se, cfs_rq->min_vruntime);
 	se->vruntime -= cfs_rq->min_vruntime;
 	raw_spin_unlock(&rq->lock);
 }
@@ -10947,7 +10993,7 @@ static void detach_task_cfs_rq(struct task_struct *p)
 		 * cause 'unlimited' sleep bonus.
 		 */
 		place_entity(cfs_rq, se, 0);
-		check_vruntime(__func__, se, cfs_rq->min_vruntime);
+		check_vruntime(8, se, cfs_rq->min_vruntime);
 		se->vruntime -= cfs_rq->min_vruntime;
 	}
 
@@ -10963,7 +11009,7 @@ static void attach_task_cfs_rq(struct task_struct *p)
 
 	if (!vruntime_normalized(p)) {
 		se->vruntime += cfs_rq->min_vruntime;
-		check_vruntime(__func__, se, cfs_rq->min_vruntime);
+		check_vruntime(9, se, cfs_rq->min_vruntime);
 	}
 }
 
@@ -11009,6 +11055,12 @@ static void set_curr_task_fair(struct rq *rq)
 
 void init_cfs_rq(struct cfs_rq *cfs_rq)
 {
+	int i = 0;
+
+	cfs_rq->idx = -1;
+	for (i = 0; i < 5; i++)
+		cfs_rq->old_min_vruntime[i] = 0;
+
 	cfs_rq->tasks_timeline = RB_ROOT;
 	cfs_rq->min_vruntime = (u64)(-(1LL << 20));
 #ifndef CONFIG_64BIT
