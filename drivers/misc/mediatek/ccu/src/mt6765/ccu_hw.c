@@ -91,6 +91,7 @@ static  bool bWaitCond;
 static bool AFbWaitCond[2];
 static unsigned int g_LogBufIdx = 1;
 static unsigned int AFg_LogBufIdx[2] = {1, 1};
+static struct ccu_cmd_s *_fast_cmd_ack;
 
 static int _ccu_powerdown(void);
 static int _ccu_allocate_mva(uint32_t *mva, void *va,
@@ -460,6 +461,38 @@ static bool users_queue_is_empty(void)
 	return true;
 }
 
+int ccu_kenrel_fast_cmd_enque(struct ccu_cmd_s *cmd)
+{
+	ccu_lock_user_mutex();
+	LOG_DBG("%s +:fast command %d\n",
+		__func__, cmd->task.msg_id);
+
+	ccu_send_command(cmd);
+	_fast_cmd_ack = cmd;
+
+	LOG_DBG("%s -:fast command %d\n",
+		__func__, cmd->task.msg_id);
+	ccu_unlock_user_mutex();
+
+	return 0;
+}
+
+struct ccu_cmd_s *ccu_kenrel_fast_cmd_deque(void)
+{
+	struct ccu_cmd_s *deq_ptr;
+
+	if (_fast_cmd_ack != NULL)
+		LOG_DBG("%s +:fast command deq ok. %d\n",
+			__func__, _fast_cmd_ack->task.msg_id);
+	else
+		LOG_DBG("%s +:fast command deq none.\n",
+			__func__);
+
+	deq_ptr = _fast_cmd_ack;
+	_fast_cmd_ack = NULL;
+	return deq_ptr;
+}
+
 static int ccu_enque_cmd_loop(void *arg)
 {
 	struct list_head *head;
@@ -606,6 +639,7 @@ int ccu_init_hw(struct ccu_device_s *device)
 
 	set_user_nice(enque_task, -20);
 	wake_up_process(enque_task);
+	_fast_cmd_ack = NULL;
 
 out:
 	return ret;
