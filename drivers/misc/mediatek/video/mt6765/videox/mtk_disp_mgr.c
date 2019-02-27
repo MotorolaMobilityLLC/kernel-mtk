@@ -209,7 +209,8 @@ int disp_create_session(struct disp_session_config *config)
 #endif
 		DISPDBG("New session(0x%x)\n", session);
 	} else {
-		DISPERR("Invalid session creation request\n");
+		DISPERR("Invalid session creation request(0x%x)\n",
+			session);
 		ret = -1;
 	}
 done:
