@@ -59,6 +59,7 @@ obj-$(CONFIG_MACH_MT6765) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6761) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
 obj-$(CONFIG_MACH_MT6765) += udi_v1/
+obj-$(CONFIG_MACH_MT6761) += udi_v1/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6765) += mcdi/
 obj-$(CONFIG_MACH_MT6761) += mcdi/
