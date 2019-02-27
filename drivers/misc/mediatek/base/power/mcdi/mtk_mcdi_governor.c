@@ -35,7 +35,8 @@
 
 #define CHECK_CLUSTER_RESIDENCY     0
 
-#define ANY_CORE_DPIDLE_SODI
+/* TODO: need to enable it */
+/* #define ANY_CORE_DPIDLE_SODI */
 
 int last_core_token = -1;
 static int boot_time_check;
@@ -362,12 +363,11 @@ int any_core_deepidle_sodi_check(int cpu)
 	if (mtk_idle_state >= 0 && mtk_idle_state < NR_TYPES)
 		state = mcdi_get_mcdi_idle_state(mtk_idle_state);
 
-#endif
-
 	if (!is_anycore_dpidle_sodi_state(state)) {
 		release_last_core_prot();
 		trace_mtk_idle_select_rcuidle(cpu, mtk_idle_state);
 	}
+#endif
 
 	return state;
 }
@@ -561,7 +561,7 @@ void mcdi_avail_cpu_cluster_update(void)
 
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 
-	update_avail_cpu_mask_to_mcdi_controller(cpu_mask);
+	mcdi_avail_cpu_mask(cpu_mask);
 
 #if 0
 	pr_info("online = %d, avail: mcusys = %d, cluster[0] = %d ",
@@ -647,7 +647,7 @@ void set_mcdi_buck_off_mask(unsigned int buck_off_mask)
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 }
 
-bool mcdi_is_buck_off(int cluster_idx)
+bool _mcdi_is_buck_off(int cluster_idx)
 {
 	unsigned long flags;
 	unsigned int buck_off_mask;
