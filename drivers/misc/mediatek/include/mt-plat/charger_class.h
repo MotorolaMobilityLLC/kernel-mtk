@@ -40,98 +40,98 @@ struct charger_device {
 };
 
 struct charger_ops {
-	int (*suspend)(struct charger_device *, pm_message_t);
-	int (*resume)(struct charger_device *);
+	int (*suspend)(struct charger_device *dev, pm_message_t state);
+	int (*resume)(struct charger_device *dev);
 
 	/* cable plug in/out */
-	int (*plug_in)(struct charger_device *);
-	int (*plug_out)(struct charger_device *);
+	int (*plug_in)(struct charger_device *dev);
+	int (*plug_out)(struct charger_device *dev);
 
 	/* enable/disable charger */
-	int (*enable)(struct charger_device *, bool en);
+	int (*enable)(struct charger_device *dev, bool en);
 
-	int (*is_enabled)(struct charger_device *, bool *en);
+	int (*is_enabled)(struct charger_device *dev, bool *en);
 
 	/* enable/disable chip */
-	int (*enable_chip)(struct charger_device *, bool en);
-	int (*is_chip_enabled)(struct charger_device *, bool *en);
+	int (*enable_chip)(struct charger_device *dev, bool en);
+	int (*is_chip_enabled)(struct charger_device *dev, bool *en);
 
 	/* get/set charging current*/
-	int (*get_charging_current)(struct charger_device *, u32 *uA);
-	int (*set_charging_current)(struct charger_device *, u32 uA);
-	int (*get_min_charging_current)(struct charger_device *, u32 *uA);
+	int (*get_charging_current)(struct charger_device *dev, u32 *uA);
+	int (*set_charging_current)(struct charger_device *dev, u32 uA);
+	int (*get_min_charging_current)(struct charger_device *dev, u32 *uA);
 
 	/* set cv */
-	int (*set_constant_voltage)(struct charger_device *, u32 uV);
-	int (*get_constant_voltage)(struct charger_device *, u32 *uV);
+	int (*set_constant_voltage)(struct charger_device *dev, u32 uV);
+	int (*get_constant_voltage)(struct charger_device *dev, u32 *uV);
 
 	/* set input_current */
-	int (*get_input_current)(struct charger_device *, u32 *uA);
-	int (*set_input_current)(struct charger_device *, u32 uA);
-	int (*get_min_input_current)(struct charger_device *, u32 *uA);
+	int (*get_input_current)(struct charger_device *dev, u32 *uA);
+	int (*set_input_current)(struct charger_device *dev, u32 uA);
+	int (*get_min_input_current)(struct charger_device *dev, u32 *uA);
 
 	/* set termination current */
-	int (*get_eoc_current)(struct charger_device *, u32 *uA);
-	int (*set_eoc_current)(struct charger_device *, u32 uA);
+	int (*get_eoc_current)(struct charger_device *dev, u32 *uA);
+	int (*set_eoc_current)(struct charger_device *dev, u32 uA);
 
 	/* kick wdt */
-	int (*kick_wdt)(struct charger_device *);
+	int (*kick_wdt)(struct charger_device *dev);
 
-	int (*event)(struct charger_device *, u32 event, u32 args);
+	int (*event)(struct charger_device *dev, u32 event, u32 args);
 
 	/* PE+/PE+2.0 */
-	int (*send_ta_current_pattern)(struct charger_device *, bool is_inc);
-	int (*send_ta20_current_pattern)(struct charger_device *, u32 uV);
-	int (*reset_ta)(struct charger_device *);
-	int (*enable_cable_drop_comp)(struct charger_device *, bool en);
+	int (*send_ta_current_pattern)(struct charger_device *dev, bool is_inc);
+	int (*send_ta20_current_pattern)(struct charger_device *dev, u32 uV);
+	int (*reset_ta)(struct charger_device *dev);
+	int (*enable_cable_drop_comp)(struct charger_device *dev, bool en);
 
-	int (*set_mivr)(struct charger_device *, u32 uV);
-	int (*get_mivr_state)(struct charger_device *, bool *in_loop);
+	int (*set_mivr)(struct charger_device *dev, u32 uV);
+	int (*get_mivr_state)(struct charger_device *dev, bool *in_loop);
 
 	/* enable/disable powerpath */
-	int (*is_powerpath_enabled)(struct charger_device *, bool *en);
-	int (*enable_powerpath)(struct charger_device *, bool en);
+	int (*is_powerpath_enabled)(struct charger_device *dev, bool *en);
+	int (*enable_powerpath)(struct charger_device *dev, bool en);
 
 	/* enable/disable vbus ovp */
-	int (*enable_vbus_ovp)(struct charger_device *, bool en);
+	int (*enable_vbus_ovp)(struct charger_device *dev, bool en);
 
 	/* enable/disable charging safety timer */
-	int (*is_safety_timer_enabled)(struct charger_device *, bool *en);
-	int (*enable_safety_timer)(struct charger_device *, bool en);
+	int (*is_safety_timer_enabled)(struct charger_device *dev, bool *en);
+	int (*enable_safety_timer)(struct charger_device *dev, bool en);
 
 	/* enable term */
-	int (*enable_termination)(struct charger_device *, bool en);
+	int (*enable_termination)(struct charger_device *dev, bool en);
 
 	/* direct charging */
-	int (*enable_direct_charging)(struct charger_device *, bool en);
-	int (*kick_direct_charging_wdt)(struct charger_device *);
-	int (*set_direct_charging_ibusoc)(struct charger_device *, u32 uA);
-	int (*set_direct_charging_vbusov)(struct charger_device *, u32 uV);
+	int (*enable_direct_charging)(struct charger_device *dev, bool en);
+	int (*kick_direct_charging_wdt)(struct charger_device *dev);
+	int (*set_direct_charging_ibusoc)(struct charger_device *dev, u32 uA);
+	int (*set_direct_charging_vbusov)(struct charger_device *dev, u32 uV);
 
 	/* OTG */
-	int (*enable_otg)(struct charger_device *, bool en);
-	int (*enable_discharge)(struct charger_device *, bool en);
-	int (*set_boost_current_limit)(struct charger_device *, u32 uA);
+	int (*enable_otg)(struct charger_device *dev, bool en);
+	int (*enable_discharge)(struct charger_device *dev, bool en);
+	int (*set_boost_current_limit)(struct charger_device *dev, u32 uA);
 
 	/* charger type detection */
-	int (*enable_chg_type_det)(struct charger_device *, bool en);
+	int (*enable_chg_type_det)(struct charger_device *dev, bool en);
 
 	/* run AICL */
-	int (*run_aicl)(struct charger_device *, u32 *uA);
+	int (*run_aicl)(struct charger_device *dev, u32 *uA);
 
 	/* reset EOC state */
-	int (*reset_eoc_state)(struct charger_device *);
+	int (*reset_eoc_state)(struct charger_device *dev);
 
-	int (*safety_check)(struct charger_device *);
+	int (*safety_check)(struct charger_device *dev);
 
-	int (*is_charging_done)(struct charger_device *, bool *done);
-	int (*set_pe20_efficiency_table)(struct charger_device *);
-	int (*dump_registers)(struct charger_device *);
+	int (*is_charging_done)(struct charger_device *dev, bool *done);
+	int (*set_pe20_efficiency_table)(struct charger_device *dev);
+	int (*dump_registers)(struct charger_device *dev);
 
-	int (*get_ibus_adc)(struct charger_device *, u32 *ibus);
-	int (*get_tchg_adc)(struct charger_device *, int *tchg_min,
+	int (*get_ibus_adc)(struct charger_device *dev, u32 *ibus);
+	int (*get_tchg_adc)(struct charger_device *dev, int *tchg_min,
 		int *tchg_max);
-	int (*get_zcv)(struct charger_device *, u32 *uV);
+	int (*get_zcv)(struct charger_device *dev, u32 *uV);
 };
 
 static inline void *charger_dev_get_drvdata(
