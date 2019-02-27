@@ -620,6 +620,10 @@ static int simple_sd_ioctl_set_driving(struct msdc_ioctl *msdc_ctl)
 	void __iomem *base;
 	struct msdc_host *host;
 
+	/* cannot access ioctl except of Engineer Mode */
+	if (strcmp(current->comm, "em_svr"))
+		return -EINVAL;
+
 	host = mtk_msdc_host[msdc_ctl->host_num];
 	if (host == NULL)
 		return -EINVAL;
