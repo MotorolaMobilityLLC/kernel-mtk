@@ -42,6 +42,8 @@
 #include <linux/fs.h>
 #include <linux/atomic.h>
 #include <linux/types.h>
+#include <linux/slab.h>
+
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -1246,21 +1248,25 @@ static kal_uint16 imx338_table_write_cmos_sensor(
 
 
 
-	char puSendCmd[I2C_BUFFER_LEN];
+	char *puSendCmd = NULL;
 	kal_uint32 tosend, IDX;
 	kal_uint16 addr = 0, addr_last = 0, data;
 
 	tosend = 0;
 	IDX = 0;
+	puSendCmd = kmalloc(I2C_BUFFER_LEN, GFP_KERNEL);
 
 	while (len > IDX) {
 		addr = para[IDX];
 
 		{
-			puSendCmd[tosend++] = (char)(addr >> 8);
-			puSendCmd[tosend++] = (char)(addr & 0xFF);
+			*(puSendCmd + tosend) = (char)(addr >> 8);
+			tosend++;
+			*(puSendCmd + tosend) = (char)(addr & 0xFF);
+			tosend++;
 			data = para[IDX + 1];
-			puSendCmd[tosend++] = (char)(data & 0xFF);
+			*(puSendCmd + tosend) = (char)(data & 0xFF);
+			tosend++;
 			IDX += 2;
 			addr_last = addr;
 
@@ -1285,6 +1291,7 @@ static kal_uint16 imx338_table_write_cmos_sensor(
 
 #endif
 	}
+	kfree(puSendCmd);
 	return 0;
 }
 
