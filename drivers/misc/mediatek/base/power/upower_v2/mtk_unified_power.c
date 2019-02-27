@@ -331,6 +331,18 @@ static void upower_init_lkgidx(void)
 		upower_tbl_ref[i].lkg_idx = DEFAULT_LKG_IDX;
 }
 
+#ifdef UPOWER_USE_DEF_CCI_TBL
+static void upower_init_volt_cci(void)
+{
+	int j;
+	struct upower_tbl *tbl;
+
+	tbl = upower_tbl_infos[UPOWER_BANK_CCI].p_upower_tbl;
+	for (j = 0; j < UPOWER_OPP_NUM; j++)
+		upower_tbl_ref[UPOWER_BANK_CCI].row[j].volt = tbl->row[j].volt;
+}
+#endif
+
 static void upower_init_volt(void)
 {
 	int i, j;
@@ -613,6 +625,9 @@ static int __init upower_init(void)
 		upower_init_lkgidx();
 		upower_init_volt();
 	} else {
+#ifdef UPOWER_USE_DEF_CCI_TBL
+		upower_init_volt_cci();
+#endif
 		upower_wait_for_eem_volt_done();
 	}
 
