@@ -108,13 +108,16 @@ static void ppm_cpi_pmu_enable_locked(int cpu, int enable)
 	struct perf_event *i_event = per_cpu(inst_events, cpu);
 
 	if (enable) {
-		if (c_event)
+		if (c_event) {
 			perf_event_enable(c_event);
-		if (i_event)
+			per_cpu(cpu_cycle_count, cpu) =
+				perf_event_read_local(c_event);
+		}
+		if (i_event) {
 			perf_event_enable(i_event);
-
-		per_cpu(cpu_cycle_count, cpu) = perf_event_read_local(c_event);
-		per_cpu(inst_count, cpu) = perf_event_read_local(i_event);
+			per_cpu(inst_count, cpu) =
+				perf_event_read_local(i_event);
+		}
 	} else {
 		if (c_event)
 			perf_event_disable(c_event);
@@ -227,9 +230,12 @@ static struct notifier_block ppm_cpi_nb = {
 
 static int ppm_cpi_pmu_probe(void)
 {
-	int ret, cpu;
+	int ret = 0, cpu;
 
 	for_each_online_cpu(cpu) {
+		if (cpu >= num_possible_cpus())
+			break;
+
 		ret = ppm_cpi_pmu_probe_cpu(cpu);
 		if (ret)
 			break;
@@ -267,8 +273,11 @@ static void ppm_cpi_pmu_remove(void)
 
 	unregister_cpu_notifier(&ppm_cpi_nb);
 
-	for_each_online_cpu(cpu)
+	for_each_online_cpu(cpu) {
+		if (cpu >= num_possible_cpus())
+			break;
 		ppm_cpi_pmu_remove_cpu(cpu);
+	}
 }
 
 static unsigned int ppm_get_core_cpi_locked(unsigned int cpu)
