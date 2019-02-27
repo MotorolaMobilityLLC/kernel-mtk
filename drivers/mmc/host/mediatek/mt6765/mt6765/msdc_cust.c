@@ -576,7 +576,7 @@ static void msdc_dump_clock_sts_core(struct msdc_host *host, struct seq_file *m)
 
 	if (topckgen_base) {
 		buf_ptr += sprintf(buf_ptr,
-		" topckgen [0x%p]=0x%x(should bit[18:16]=001b, bit[23]=0, "
+		" topckgen [0x%p]=0x%x(should bit[18:16]=001b, bit[23]=0, ",
 			topckgen_base + 0x140,
 			MSDC_READ32(topckgen_base + 0x140));
 		buf_ptr += sprintf(buf_ptr, "bit[26:24]=001b, bit[31]=0)\n");
