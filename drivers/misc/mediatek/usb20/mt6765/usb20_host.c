@@ -48,7 +48,7 @@ static struct delayed_work register_otg_work;
 #define TCPC_OTG_DEV_NAME "type_c_port0"
 void do_register_otg_work(struct work_struct *data)
 {
-#define REGISTER_OTG_WORK_DELAY 1000
+#define REGISTER_OTG_WORK_DELAY 500
 	static int ret;
 
 	if (!otg_tcpc_dev)
