@@ -1952,7 +1952,7 @@ void fg_bat_plugout_int_handler(void)
 	if (fg_interrupt_check() == false)
 		return;
 
-	gauge_dev_dump(gm.gdev, NULL);
+	gauge_dev_dump(gm.gdev, NULL, 0);
 
 	/* avoid battery plug status mismatch case*/
 	if (is_bat_exist == 1) {
@@ -1964,7 +1964,7 @@ void fg_bat_plugout_int_handler(void)
 			is_bat_exist, gm.plug_miss_count);
 
 		for (i = 0 ; i < 20 ; i++)
-			gauge_dev_dump(gm.gdev, NULL);
+			gauge_dev_dump(gm.gdev, NULL, 0);
 
 		/* TODO debug purpose, remove it!!!!!! */
 		aee_kernel_warning("GAUGE", "BAT_PLUGOUT error!\n");
@@ -2230,7 +2230,7 @@ void fg_drv_update_hw_status(void)
 		gm.last_nafg_cnt, gm.is_nafg_broken, gm.disable_nafg_int);
 
 	if (cnt % 10 == 0)
-		gauge_dev_dump(gm.gdev, NULL);
+		gauge_dev_dump(gm.gdev, NULL, 0);
 	cnt++;
 
 	gm3_log_dump();
@@ -3493,6 +3493,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		bm_debug(
 			"[fr] FG_DAEMON_CMD_GET_NAFG_VBAT = %d\n",
 			nafg_vbat);
+		gauge_dev_dump(gm.gdev, NULL, 1);
 	}
 	break;
 
@@ -4151,9 +4152,10 @@ void gm3_log_dump(void)
 		gm.log.dlpt_sd_int,
 		gm.log.chr_in_int);
 
-	bm_err("GM3log1 %llu %d %d %d %d %d %d %d %d %d %d %d\n",
+	bm_err("GM3log1 %llu %d %d %d %d %d %d %d %d %d %d %d %d\n",
 		logtime,
 		battery_get_bat_voltage(),
+		gauge_get_nag_vbat(),
 		battery_get_bat_current(),
 		battery_get_bat_avg_current(),
 		UNIT_TRANS_10 * get_imix(),
@@ -4197,11 +4199,12 @@ void gm3_log_dump(void)
 		);
 
 	if (gm.gdev->fg_hw_info.hw_zcv != 0)
-		bm_err("GM3log5 %d %d %d %d\n",
+		bm_err("GM3log5 %d %d %d %d %d\n",
 			gm.gdev->fg_hw_info.pmic_zcv,
 			gm.gdev->fg_hw_info.pmic_zcv_rdy,
 			gm.gdev->fg_hw_info.charger_zcv,
-			gm.gdev->fg_hw_info.hw_zcv
+			gm.gdev->fg_hw_info.hw_zcv,
+			gm.hw_status.flag_hw_ocv_unreliable
 			);
 
 	bm_err("GM3 car:%d car_diff:%d\n",
