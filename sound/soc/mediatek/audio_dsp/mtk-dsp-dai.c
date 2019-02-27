@@ -92,6 +92,17 @@ static struct snd_soc_dai_driver mtk_dai_dsp_driver[] = {
 				.formats = MTK_I2S_FORMATS,
 			},
 	},
+	{
+		.name = "audio_task_capture_ul1_dai",
+		.id = AUDIO_TASK_CAPTURE_UL1_ID,
+		.capture = {
+				.stream_name = "DSP_Capture_Ul1",
+				.channels_min = 1,
+				.channels_max = 4,
+				.rates = MTK_I2S_RATES,
+				.formats = MTK_I2S_FORMATS,
+			},
+	},
 };
 
 int dai_dsp_register(struct platform_device *pdev, struct mtk_base_dsp *dsp)

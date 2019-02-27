@@ -63,4 +63,11 @@ struct mtk_base_dsp {
 	int dsp_dram_resource_counter;
 };
 
+struct mtk_adsp_task_attr {
+	int afe_memif_dl;
+	int afe_memif_ul;
+	int afe_memif_ref;
+	int adsp_feature_id;
+};
+
 #endif
