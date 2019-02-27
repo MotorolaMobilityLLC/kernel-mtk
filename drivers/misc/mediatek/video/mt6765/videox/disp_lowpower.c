@@ -27,11 +27,9 @@
 #include "disp_drv_platform.h"	/* must be at the top-most */
 #include "ion_drv.h"
 #include "mtk_ion.h"
-/* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
-/* #include "pcm_def.h" */ /* FIXME: tmp comment */
 #ifdef MTK_FB_SPM_SUPPORT
-#include "mtk_spm_idle.h"
+#include "spm/mtk_idle.h"
 #endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
 #include "mt-plat/mtk_smi.h"
@@ -1027,13 +1025,12 @@ void primary_display_sodi_rule_init(void)
 	ddp_sodi_smi_request_src_select(1, NULL);
 
 	if (primary_display_is_video_mode()) {
-		spm_sodi_set_vdo_mode(1);
 		ddp_sodi_power_down_mode(0, NULL);
-		spm_enable_sodi3(0);
-		spm_enable_sodi(1);
+		mtk_sodi3_disp_ready(0);
+		mtk_sodi_disp_ready(1);
 	} else {
-		spm_enable_sodi3(1);
-		spm_enable_sodi(1);
+		mtk_sodi3_disp_ready(1);
+		mtk_sodi_disp_ready(1);
 		/*enable CG mode*/
 		ddp_sodi_power_down_mode(0, NULL);
 	}

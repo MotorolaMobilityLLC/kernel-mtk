@@ -25,15 +25,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 #include <linux/pm_wakeup.h>
-//#include <linux/switch.h>
-/* #include "mtk_idle.h" */
-#ifdef MTK_FB_SPM_SUPPORT
-#include "mtk_spm.h"	/* for sodi reg addr define */
-#endif
-/* #include "mtk_spm_idle.h" */
-/* #include "mach/eint.h" */
-/* #include <cust_eint.h> */
-//#include "mt-plat/mtk_smi.h"
+
 #include "disp_drv_platform.h"
 #include "mtk_ion.h"
 #include "ion_drv.h"
@@ -87,9 +79,7 @@
 #include "mtk_vcorefs_governor.h"
 #include "mtk_vcorefs_manager.h"
 #endif
-#ifdef MTK_FB_SPM_SUPPORT
-#include "mtk_spm_idle.h"
-#endif
+
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
