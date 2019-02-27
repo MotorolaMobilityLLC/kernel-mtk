@@ -886,7 +886,7 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 	return id;
 }
 
-static void mdla_dram_alloc(struct ioctl_malloc *malloc_data)
+static int mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 {
 	dma_addr_t phyaddr = 0;
 
@@ -897,6 +897,8 @@ static void mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 
 	mdla_mem_debug("%s: kva:%p, mva:%x\n",
 		__func__, malloc_data->kva, malloc_data->mva);
+
+	return (malloc_data->kva) ? 0 : -ENOMEM;
 }
 
 static void mdla_dram_free(struct ioctl_malloc *malloc_data)
@@ -907,27 +909,66 @@ static void mdla_dram_free(struct ioctl_malloc *malloc_data)
 			(void *) malloc_data->kva, malloc_data->mva);
 }
 
+static long mdla_ioctl_config(unsigned long arg)
+{
+	long retval = 0;
+	struct ioctl_config cfg;
+
+	if (copy_from_user(&cfg, (void *) arg, sizeof(cfg)))
+		return -EFAULT;
+
+	switch (cfg.op) {
+	case MDLA_CFG_NONE:
+		break;
+	case MDLA_CFG_TIMEOUT_GET:
+		cfg.arg[0] = mdla_timeout;
+		cfg.arg_count = 1;
+		break;
+	case MDLA_CFG_TIMEOUT_SET:
+		if (cfg.arg_count == 1)
+			mdla_timeout = cfg.arg[0];
+		break;
+	case MDLA_CFG_FIFO_SZ_GET:
+		cfg.arg[0] = MDLA_FIFO_SIZE;
+		cfg.arg_count = 1;
+		break;
+	case MDLA_CFG_FIFO_SZ_SET:
+		return -EINVAL;
+	case MDLA_CFG_GSM_INFO:
+		cfg.arg[0] = GSM_SIZE;
+		cfg.arg[1] = GSM_MVA_BASE;
+		cfg.arg[2] = (unsigned long) apu_mdla_gsm_base;
+		cfg.arg[3] = (unsigned long) apu_mdla_gsm_top;
+		cfg.arg_count = 4;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	if (copy_to_user((void *) arg, &cfg, sizeof(cfg)))
+		return -EFAULT;
+
+	return retval;
+}
+
 static long mdla_ioctl(struct file *filp, unsigned int command,
 		unsigned long arg)
 {
-	long retval;
+	long retval = 0;
 	struct ioctl_malloc malloc_data;
 	struct ioctl_perf perf_data;
 	u32 id;
 
 	switch (command) {
 	case IOCTL_MALLOC:
-
 		if (copy_from_user(&malloc_data, (void *) arg,
 			sizeof(malloc_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
-
 		if (malloc_data.type == MEM_DRAM)
-			mdla_dram_alloc(&malloc_data);
+			retval = mdla_dram_alloc(&malloc_data);
 		else if (malloc_data.type == MEM_GSM)
-			mdla_gsm_alloc(&malloc_data);
+			retval = mdla_gsm_alloc(&malloc_data);
 
 		if (copy_to_user((void *) arg, &malloc_data,
 			sizeof(malloc_data)))
@@ -943,13 +984,10 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			return -ENOMEM;
 		break;
 	case IOCTL_FREE:
-
 		if (copy_from_user(&malloc_data, (void *) arg,
 				sizeof(malloc_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
-
 		if (malloc_data.type == MEM_DRAM)
 			mdla_dram_free(&malloc_data);
 		else if (malloc_data.type == MEM_GSM)
@@ -968,8 +1006,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 
 		if (copy_from_user(&cmd_data, (void *) arg,
 				sizeof(cmd_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		mdla_cmd_debug("%s: RUN_CMD_SYNC: kva=%p, mva=0x%08x, phys_to_virt=%p\n",
 			__func__,
@@ -982,8 +1019,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 
 		if (copy_to_user((void *) arg, &cmd_data, sizeof(cmd_data)))
 			return -EFAULT;
-
-		return retval;
+		break;
 	}
 	case IOCTL_RUN_CMD_ASYNC:
 	{
@@ -991,8 +1027,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 
 		if (copy_from_user(&cmd_data, (void *) arg,
 				sizeof(cmd_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		mdla_cmd_debug("%s: RUN_CMD_ASYNC: kva=%p, mva=0x%08x, phys_to_virt=%p\n",
 			__func__,
@@ -1012,19 +1047,17 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 
 		if (copy_from_user(&wait_data, (void *) arg,
 				sizeof(wait_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		retval = mdla_wait_command(&wait_data);
 		if (copy_to_user((void *) arg, &wait_data, sizeof(wait_data)))
 			return -EFAULT;
-		return retval;
+		break;
 	}
 	case IOCTL_PERF_SET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.handle = pmu_counter_alloc(
 			perf_data.interface, perf_data.event);
@@ -1034,8 +1067,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	case IOCTL_PERF_GET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.event = pmu_counter_event_get(perf_data.handle);
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
@@ -1044,28 +1076,24 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	case IOCTL_PERF_GET_CNT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.counter = pmu_counter_get(perf_data.handle);
 
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
 			return -EFAULT;
 		break;
-
 	case IOCTL_PERF_UNSET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		pmu_counter_free(perf_data.handle);
 		break;
 	case IOCTL_PERF_GET_START:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.start = pmu_get_perf_start();
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
@@ -1074,8 +1102,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	case IOCTL_PERF_GET_END:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.end = pmu_get_perf_end();
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
@@ -1084,8 +1111,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	case IOCTL_PERF_GET_CYCLE:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		perf_data.start = pmu_get_perf_cycle();
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
@@ -1100,8 +1126,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	case IOCTL_PERF_SET_MODE:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
-			retval = -EFAULT;
-			return retval;
+			return -EFAULT;
 		}
 		pmu_clr_mode_save(perf_data.mode);
 		break;
@@ -1109,6 +1134,8 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		return mdla_ion_kmap(arg);
 	case IOCTL_ION_KUNMAP:
 		return mdla_ion_kunmap(arg);
+	case IOCTL_CONFIG:
+		return mdla_ioctl_config(arg);
 	default:
 		if (command >= MDLA_DVFS_IOCTL_START &&
 			command <= MDLA_DVFS_IOCTL_END)
@@ -1116,7 +1143,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		else
 			return -EINVAL;
 	}
-	return 0;
+	return retval;
 }
 
 #ifdef CONFIG_COMPAT
