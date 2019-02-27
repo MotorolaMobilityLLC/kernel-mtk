@@ -281,12 +281,16 @@ phys_addr_t get_smem_phy_start_addr(int md_id,
 
 	if (smem_region) {
 		addr = smem_region->base_ap_view_phy;
-
-		if (size_o)
+		CCCI_NORMAL_LOG(md_id, TAG, "phy address: 0x%lx, ",
+			(unsigned long)addr);
+		if (size_o) {
 			*size_o = smem_region->size;
+			CCCI_NORMAL_LOG(md_id, TAG, "0x%x",
+				*size_o);
+		} else {
+			CCCI_NORMAL_LOG(md_id, TAG, "size_0 is NULL(invalid)");
+		}
 	}
-	CCCI_NORMAL_LOG(md_id, TAG, "phy address: 0x%lx, 0x%x",
-		(unsigned long)addr, *size_o);
 	return addr;
 }
 EXPORT_SYMBOL(get_smem_phy_start_addr);
