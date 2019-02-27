@@ -140,6 +140,7 @@ void ccci_reset_ccif_hw(unsigned char md_id,
 			int ccif_id, void __iomem *baseA, void __iomem *baseB)
 {
 	int i;
+	struct ccci_smem_region *region;
 
 	{
 		int reset_bit = -1;
@@ -175,6 +176,22 @@ void ccci_reset_ccif_hw(unsigned char md_id,
 		ccci_write32(baseA, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
 		ccci_write32(baseB, PCCIF_CHDATA+i*sizeof(unsigned int), 0);
 	}
+
+	/* extend from 36bytes to 72bytes in CCIF SRAM */
+	/* 0~60bytes for bootup trace,
+	 *last 12bytes for magic pattern,smem address and size
+	 */
+	region = ccci_md_get_smem_by_user_id(md_id,
+		SMEM_USER_RAW_MDSS_DBG);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - 3 * sizeof(u32),
+		0x7274626E);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - 2 * sizeof(u32),
+		region->base_md_view_phy);
+	ccci_write32(baseA,
+		PCCIF_CHDATA + PCCIF_SRAM_SIZE - sizeof(u32),
+		region->size);
 }
 
 int ccci_platform_init(struct ccci_modem *md)
