@@ -30,7 +30,7 @@
 #define AF_DEBUG
 #ifdef AF_DEBUG
 #define LOG_INF(format, args...)                                               \
-	pr_debug(AF_DRVNAME " [%s] " format, __func__, ##args)
+	pr_info(AF_DRVNAME " [%s] " format, __func__, ##args)
 #else
 #define LOG_INF(format, args...)
 #endif
@@ -284,9 +284,14 @@ int DW9718SAF_PowerDown(void)
 		int i4RetValue = 0;
 		char puSendCmd[2] = {0x00, 0x01};
 
-		LOG_INF("apply\n");
-
+		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+
+		LOG_INF("apply - %d\n", i4RetValue);
+
+		if (i4RetValue < 0)
+			return -1;
 	}
 	LOG_INF("-\n");
 
