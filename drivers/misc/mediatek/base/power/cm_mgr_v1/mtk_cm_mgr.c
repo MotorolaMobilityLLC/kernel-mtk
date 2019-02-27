@@ -172,7 +172,7 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			dvfsrc_set_power_model_ddr_request(
+			cm_mgr_set_dram_level(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 
@@ -182,7 +182,7 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 	idx = level;
 	vcore_power_up = vcore_power_gain(vcore_power_gain, total_bw, idx);
 #ifdef DEBUG_CM_MGR
-	pr_info("#@# vcore_power_up %d cpu_power_total %d\n",
+	pr_info("#@# vcore_power_up %d < cpu_power_total %d\n",
 			vcore_power_up, cpu_power_total);
 #endif /* DEBUG_CM_MGR */
 	if ((vcore_power_up * vcore_power_ratio_up[idx]) <
@@ -193,12 +193,15 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 				debounce_times_up = 0;
 			vcore_dram_opp = vcore_dram_opp_cur - 1;
 #ifdef DEBUG_CM_MGR
-			pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n",
+			pr_info("#@# %s(%d) vcore_dram_opp up %d->%d\n",
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			dvfsrc_set_power_model_ddr_request(
+			cm_mgr_set_dram_level(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
+		} else {
+			if (debounce_times_reset_adb)
+				debounce_times_up = 0;
 		}
 
 		return -1;
@@ -255,7 +258,7 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			dvfsrc_set_power_model_ddr_request(
+			cm_mgr_set_dram_level(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 
@@ -265,7 +268,7 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 	idx = level - 1;
 	vcore_power_down = vcore_power_gain(vcore_power_gain, total_bw, idx);
 #ifdef DEBUG_CM_MGR
-	pr_info("#@# vcore_power_down %d cpu_power_total %d\n",
+	pr_info("#@# vcore_power_down %d > cpu_power_total %d\n",
 			vcore_power_down, cpu_power_total);
 #endif /* DEBUG_CM_MGR */
 	if ((vcore_power_down * vcore_power_ratio_down[idx]) >
@@ -276,13 +279,18 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 				debounce_times_down = 0;
 			vcore_dram_opp = vcore_dram_opp_cur + 1;
 #ifdef DEBUG_CM_MGR
-			pr_info("#@# %s(%d) vcore_dram_opp %d->%d\n",
+			pr_info("#@# %s(%d) vcore_dram_opp down %d->%d\n",
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			dvfsrc_set_power_model_ddr_request(
+			cm_mgr_set_dram_level(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
+		} else {
+			if (debounce_times_reset_adb)
+				debounce_times_down = 0;
 		}
+
+		return -1;
 	}
 
 	return 0;
@@ -368,7 +376,7 @@ void check_cm_mgr_status_internal(void)
 #endif /* PER_CPU_STALL_RATIO */
 		int i;
 
-		vcore_dram_opp_cur = get_cur_ddr_opp();
+		vcore_dram_opp_cur = cm_mgr_get_dram_opp();
 		if (vcore_dram_opp_cur > CM_MGR_EMI_OPP) {
 			spin_unlock_irqrestore(&cm_mgr_lock, flags);
 			return;
@@ -534,6 +542,10 @@ void check_cm_mgr_status_internal(void)
 				goto cm_mgr_opp_end;
 		}
 
+		vcore_dram_opp = vcore_dram_opp_cur;
+		if (vcore_dram_opp == CM_MGR_EMI_OPP)
+			cm_mgr_set_dram_level(0);
+
 cm_mgr_opp_end:
 		cm_mgr_update_met();
 
@@ -622,6 +634,7 @@ int cm_mgr_to_sspm_command(u32 cmd, int val)
 	case IPI_CM_MGR_DEBOUNCE_UP:
 	case IPI_CM_MGR_DEBOUNCE_DOWN:
 	case IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB:
+	case IPI_CM_MGR_DRAM_LEVEL:
 		cm_mgr_d.cmd = cmd;
 		cm_mgr_d.arg = val;
 		ret = sspm_ipi_send_sync(IPI_ID_CM, IPI_OPT_POLLING,
@@ -698,6 +711,7 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "light_load_cps %d\n", light_load_cps);
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
 	seq_printf(m, "cm_mgr_loop_count %d\n", cm_mgr_loop_count);
+	seq_printf(m, "cm_mgr_dram_level %d\n", cm_mgr_dram_level);
 
 	seq_puts(m, "cpu_power_ratio_up");
 	for (i = 0; i < CM_MGR_EMI_OPP; i++)
@@ -976,7 +990,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	if (!strcmp(cmd, "cm_mgr_opp_enable")) {
 		cm_mgr_opp_enable = val_1;
 		if (!cm_mgr_opp_enable)
-			dvfsrc_set_power_model_ddr_request(0);
+			cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 		cm_mgr_to_sspm_command(IPI_CM_MGR_OPP_ENABLE,
 				cm_mgr_opp_enable);
@@ -984,7 +998,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_enable")) {
 		cm_mgr_enable = val_1;
 		if (!cm_mgr_enable)
-			dvfsrc_set_power_model_ddr_request(0);
+			cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 		cm_mgr_to_sspm_command(IPI_CM_MGR_ENABLE,
 				cm_mgr_enable);
@@ -1011,7 +1025,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
 		cm_mgr_disable_fb = val_1;
 		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
-			dvfsrc_set_power_model_ddr_request(0);
+			cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 		cm_mgr_to_sspm_command(IPI_CM_MGR_DISABLE_FB,
 				cm_mgr_disable_fb);
@@ -1022,6 +1036,13 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		total_bw_value = val_1;
 	} else if (!strcmp(cmd, "cm_mgr_loop_count")) {
 		cm_mgr_loop_count = val_1;
+	} else if (!strcmp(cmd, "cm_mgr_dram_level")) {
+		cm_mgr_dram_level = val_1;
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		cm_mgr_to_sspm_command(IPI_CM_MGR_DRAM_LEVEL, val_1);
+#else
+		cm_mgr_set_dram_level(val_1);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "cpu_power_ratio_up")) {
 		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			cpu_power_ratio_up[val_1] = val_2;
