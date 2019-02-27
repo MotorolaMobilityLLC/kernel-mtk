@@ -236,6 +236,7 @@ int devkmsg_sysctl_set_loglvl(struct ctl_table *table, int write,
 
 			/* ... and restore old setting. */
 			devkmsg_log = old;
+			memset(devkmsg_log_str, 0, sizeof(devkmsg_log_str));
 			strncpy(devkmsg_log_str, old_str, DEVKMSG_STR_MAX_SIZE);
 
 			return -EINVAL;
