@@ -173,7 +173,12 @@ extern void mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user,
 					   int min_freq, int max_freq);
 extern bool spm_resource_req(unsigned int user, unsigned int req_mask);
 #endif
+
+#ifdef CONFIG_ARM64
 extern void __flush_dcache_area(void *addr, size_t len);
+#else
+extern void v7_flush_kern_dcache_area(void *addr, size_t len);
+#endif
 
 void connectivity_export_show_stack(struct task_struct *tsk, unsigned long *sp);
 void connectivity_export_dump_thread_state(const char *name);
