@@ -197,7 +197,11 @@ __src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta)
 static int init_cpu_info(void)
 {
 	int i;
+	struct root_domain *rd = cpu_rq(smp_processor_id())->rd;
+	int min_cpu = 0;
+	int max_cpu = 0;
 
+	rcu_read_lock();
 	for (i = 0; i < nr_cpu_ids; i++) {
 		unsigned long capacity = SCHED_CAPACITY_SCALE;
 
@@ -208,7 +212,17 @@ static int init_cpu_info(void)
 		}
 
 		cpu_rq(i)->cpu_capacity_hw = capacity;
+
+		if (capacity > capacity_hw_of(max_cpu))
+			max_cpu = i;
+
+		if (capacity < capacity_hw_of(min_cpu))
+			min_cpu = i;
 	}
+
+	WRITE_ONCE(rd->max_cap_orig_cpu, max_cpu);
+	WRITE_ONCE(rd->min_cap_orig_cpu, min_cpu);
+	rcu_read_unlock();
 
 	return 0;
 }

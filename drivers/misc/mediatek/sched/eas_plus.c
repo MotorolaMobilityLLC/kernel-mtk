@@ -218,19 +218,20 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 	unsigned int max_len = 4096;
 	int max_cpu = -1, max_pid = 0, max_util = 0, boost = 0;
 	struct task_struct *task = NULL;
+	int cpu = smp_processor_id();
 
 	len += snprintf(buf, max_len, "version=%d.%d(%s)\n\n",
 		ver_major, ver_minor, module_name);
 	len += show_cpu_capacity(buf+len, max_len - len);
 
 	len += snprintf(buf+len, max_len - len, "max_cap_cpu=%d\n",
-		cpu_rq(0)->rd->max_cpu_capacity.cpu);
+		cpu_rq(cpu)->rd->max_cpu_capacity.cpu);
 
 	len += snprintf(buf+len, max_len - len, "max_cap_orig_cpu=%d\n",
-		cpu_rq(0)->rd->max_cap_orig_cpu);
+		cpu_rq(cpu)->rd->max_cap_orig_cpu);
 
 	len += snprintf(buf+len, max_len - len, "min_cap_orig_cpu=%d\n",
-		cpu_rq(0)->rd->min_cap_orig_cpu);
+		cpu_rq(cpu)->rd->min_cap_orig_cpu);
 
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n",
 		power_tuning.watershed);
