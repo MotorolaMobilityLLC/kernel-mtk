@@ -14,6 +14,7 @@
 obj-$(CONFIG_MACH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6758) += spm/
 obj-$(CONFIG_MACH_MT6765) += spm/
+obj-$(CONFIG_MACH_MT6761) += spm/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6765) += leakage_table_v2/
 obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
