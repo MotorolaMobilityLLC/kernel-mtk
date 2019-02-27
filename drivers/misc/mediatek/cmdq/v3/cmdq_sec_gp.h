@@ -15,7 +15,10 @@
 #define __CMDQ_SEC_GP_H__
 
 #include <linux/types.h>
+#include <linux/delay.h>
+
 #include "tee_client_api.h"
+#include "mobicore_driver_api.h"
 
 /* context for tee vendor */
 struct cmdq_sec_tee_context {
