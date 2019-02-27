@@ -1219,6 +1219,10 @@
 			clock-names = "apb", "smi";
 		};
 
+		accdet: accdet@ {
+			compatible = "mediatek,mt8173-accdet";
+		};
+
 		clkao: clkao {
 			compatible = "simple-bus";
 		};
