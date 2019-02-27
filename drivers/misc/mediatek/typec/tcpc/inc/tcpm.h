@@ -480,9 +480,8 @@ enum tcpm_power_cap_apdo_type {
 
 struct tcpm_power_cap_val {
 	uint8_t type;
-#ifdef CONFIG_USB_PD_REV30
 	uint8_t apdo_type;
-#endif	/* CONFIG_USB_PD_REV30 */
+	uint8_t pwr_limit;
 
 	int max_mv;
 	int min_mv;

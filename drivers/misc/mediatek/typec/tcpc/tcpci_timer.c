@@ -375,6 +375,8 @@ static inline void on_pe_timer_timeout(
 	pd_event.msg = timer_id;
 	pd_event.pd_msg = NULL;
 
+	tcpc_disable_timer(tcpc_dev, timer_id);
+
 	switch (timer_id) {
 	case PD_TIMER_VDM_MODE_ENTRY:
 	case PD_TIMER_VDM_MODE_EXIT:
@@ -429,8 +431,6 @@ static inline void on_pe_timer_timeout(
 		pd_put_event(tcpc_dev, &pd_event, false);
 		break;
 	}
-
-	tcpc_disable_timer(tcpc_dev, timer_id);
 }
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
