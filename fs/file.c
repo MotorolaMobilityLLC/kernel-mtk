@@ -23,6 +23,10 @@
 #include <linux/rcupdate.h>
 #include <linux/workqueue.h>
 
+#include <mt-plat/aee.h>
+#define MSG_SIZE_TO_AEE_f 70
+char msg_to_aee_f[MSG_SIZE_TO_AEE_f];
+
 unsigned int sysctl_nr_open __read_mostly = 1024*1024;
 unsigned int sysctl_nr_open_min = BITS_PER_LONG;
 /* our min() is unusable in constant expressions ;-/ */
@@ -613,7 +617,7 @@ void fd_show_open_files(pid_t pid,
 		if (lentry != NULL) {
 			num_of_entry = lentry->num_of_fd;
 			if (lentry->name != NULL)
-				pr_info("[FDLEAK]OverAllocFDError(PID:%d fileName:%s Num:%d)\n",
+				pr_info("[FDLEAK]OverAllocFDError(PID:%d  fileName:%s Num:%d)\n",
 						pid, lentry->name,
 						num_of_entry);
 			else
@@ -702,6 +706,24 @@ out:
 		/*}*/
 	}
 #endif
+
+	if (error >= 1023) {
+		dump_stack();
+		snprintf(msg_to_aee_f, MSG_SIZE_TO_AEE_f,
+			"[FDLEAK] [pid:%d] %s alloc_fd %d\n", current->pid,
+			current->comm, error);
+		aee_kernel_warning_api("FDLEAK_DEBUG", 0, DB_OPT_DEFAULT |
+			DB_OPT_LOW_MEMORY_KILLER |
+			DB_OPT_PID_MEMORY_INFO | /* smaps and hprof*/
+			DB_OPT_NATIVE_BACKTRACE |
+			DB_OPT_DUMPSYS_ACTIVITY |
+			DB_OPT_PROCESS_COREDUMP |
+			DB_OPT_DUMPSYS_SURFACEFLINGER |
+			DB_OPT_DUMPSYS_GFXINFO |
+			DB_OPT_DUMPSYS_PROCSTATS,
+			"show kernel & natvie backtace\n", msg_to_aee_f);
+	}
+
 	return error;
 }
 
