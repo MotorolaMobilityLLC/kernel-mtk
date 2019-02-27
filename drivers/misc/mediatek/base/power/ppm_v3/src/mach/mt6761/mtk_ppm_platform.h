@@ -66,7 +66,8 @@ extern "C" {
 #define PWRTHRO_LOW_BAT_LV2_MW	(600)
 
 #define DVFS_OPP_NUM		(16)
-
+#define get_cluster_cpu_core(id)	\
+		(id ? 0 : TOTAL_CORE_NUM)
 /*==============================================================*/
 /* Enum								*/
 /*==============================================================*/
