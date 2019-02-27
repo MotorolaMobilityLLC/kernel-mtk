@@ -1015,6 +1015,12 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
+	ret = device_create_bin_file(adsp_device.this_device,
+					&bin_attr_adsp_dump_ke);
+
+	if (unlikely(ret != 0))
+		return ret;
+
 	ret = device_create_file(adsp_device.this_device,
 				 &dev_attr_adsp_A_reg_status);
 
