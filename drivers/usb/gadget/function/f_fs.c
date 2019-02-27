@@ -2337,6 +2337,7 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
 	unsigned os_descs_count = 0, counts[3], flags;
 	int ret = -EINVAL, i;
 	struct ffs_desc_helper helper;
+	int skip_os_desc = 1;
 
 	ENTER();
 
@@ -2433,7 +2434,12 @@ static int __ffs_data_got_descs(struct ffs_data *ffs,
 		data += ret;
 		len  -= ret;
 	}
-	if (os_descs_count) {
+	if (skip_os_desc && os_descs_count) {
+		pr_notice("skip os descriptor, os_descs_count:%d, len:%d all to 0\n",
+			 (int)os_descs_count, (int)len);
+		os_descs_count = 0;
+		len = 0;  /* denote we've process all coming data */
+	} else if (os_descs_count) {
 		ret = ffs_do_os_descs(os_descs_count, data, len,
 				      __ffs_data_do_os_desc, ffs);
 		if (ret < 0)
