@@ -18,7 +18,6 @@
 #include <linux/proc_fs.h>
 #include <mach/mtk_pbm.h>
 #include "mtk_mdpm.h"
-#include <helio-dvfsrc.h>
 
 #if MD_POWER_METER_ENABLE
 #include "mtk_vcore_dvfs.h"
@@ -94,12 +93,7 @@ int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 	if (!md1_ccci_ready)
 		return MAX_MD1_POWER;
 
-#if 0 /* FIXME: bringup */
-	share_reg = spm_vcorefs_get_MD_status();
-	/*share_reg = get_dvfsrc_debug_sta0();*/
-#else
-	share_reg = 0;
-#endif
+	share_reg = get_md1_status_reg();
 #endif
 
 	scenario = get_md1_scenario(share_reg, power_type);
