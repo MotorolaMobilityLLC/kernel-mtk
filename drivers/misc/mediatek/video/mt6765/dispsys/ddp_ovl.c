@@ -1898,6 +1898,21 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	/* DISP_REG_OVL_DATAPATH_CON */
 	/* GCLAST_EN is set @ ovl_start() */
 
+	/* Configuration OVL block_ext_ultra/preultra depend on data path */
+	/* DL mode: set 0, OVL observe RDMA FIFO status */
+	/* DC mode: set 1, OVL don't observe RDMA FIFO status */
+	if (dst_mod_type == DST_MOD_REAL_TIME) {
+		DISP_REG_SET_FIELD(cmdq, EN_FLD_BLOCK_EXT_ULTRA,
+			ovl_base + DISP_REG_OVL_EN, 0);
+		DISP_REG_SET_FIELD(cmdq, EN_FLD_BLOCK_EXT_PREULTRA,
+			ovl_base + DISP_REG_OVL_EN, 0);
+	} else {
+		DISP_REG_SET_FIELD(cmdq, EN_FLD_BLOCK_EXT_ULTRA,
+			ovl_base + DISP_REG_OVL_EN, 1);
+		DISP_REG_SET_FIELD(cmdq, EN_FLD_BLOCK_EXT_PREULTRA,
+			ovl_base + DISP_REG_OVL_EN, 1);
+	}
+
 	return 0;
 }
 
