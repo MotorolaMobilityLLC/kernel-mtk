@@ -143,6 +143,8 @@ static int __init ccci_init(void)
 	return 0;
 }
 
+static unsigned int exec_count;
+
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 	unsigned int len)
 {
@@ -165,6 +167,10 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 #if (MD_GENERATION >= 6293)
 			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
 #endif
+		exec_count++;
+		CCCI_NORMAL_LOG(md_id, CORE,
+			"spm trigger execute function(%u)\n", exec_count);
+
 		if (md_id == MD_SYS3)
 			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
 		break;
