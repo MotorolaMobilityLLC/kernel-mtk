@@ -69,13 +69,13 @@ static int pmu_event_write(u32 handle, u32 val)
 	mask = 1 << (handle+17);
 
 	if (val == COUNTER_CLEAR) {
-		mdla_debug("%s: clear pmu counter[%d]\n",
+		mdla_pmu_debug("%s: clear pmu counter[%d]\n",
 			__func__, handle);
 		pmu_reg_write(0, PMU_EVENT_OFFSET +
 			(handle) * PMU_CNT_SHIFT);
 		pmu_reg_clear(mask, PMU_CFG_PMCR);
 	} else {
-		mdla_debug("%s: set pmu counter[%d] = 0x%x\n",
+		mdla_pmu_debug("%s: set pmu counter[%d] = 0x%x\n",
 			__func__, handle, val);
 		pmu_reg_write(val, PMU_EVENT_OFFSET +
 			(handle) * PMU_CNT_SHIFT);
@@ -190,7 +190,7 @@ u32 pmu_get_perf_cycle(void)
 
 static void pmu_reset_counter(void)
 {
-	mdla_debug("mdla: %s\n", __func__);
+	mdla_pmu_debug("mdla: %s\n", __func__);
 	pmu_reg_set(PMU_PMCR_CNT_RST, PMU_CFG_PMCR);
 	while (pmu_reg_read(PMU_CFG_PMCR) &
 		PMU_PMCR_CNT_RST) {
@@ -199,7 +199,7 @@ static void pmu_reset_counter(void)
 
 static void pmu_reset_cycle(void)
 {
-	mdla_debug("mdla: %s\n", __func__);
+	mdla_pmu_debug("mdla: %s\n", __func__);
 	pmu_reg_set((PMU_PMCR_CCNT_EN | PMU_PMCR_CCNT_RST), PMU_CFG_PMCR);
 	while (pmu_reg_read(PMU_CFG_PMCR) &
 		PMU_PMCR_CCNT_RST) {

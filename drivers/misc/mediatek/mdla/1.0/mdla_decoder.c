@@ -203,7 +203,7 @@ mdla_cmd_parse(u32 swid, u32 exec, int func_map[8], char *str, int size)
 	int remain = size;
 	int out;
 
-	mdla_debug("%s: %xh: cbl=%d sbl=%d conv=%d elw=%d acti=%d pool=%d ste=%d\n",
+	mdla_cmd_debug("%s: %xh: cbl=%d sbl=%d conv=%d elw=%d acti=%d pool=%d ste=%d\n",
 		__func__,
 		exec,
 		func_map[1],

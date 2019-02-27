@@ -32,6 +32,7 @@ int mdla_profile_reset(const char *str);
 int mdla_profile(const char *str);
 int mdla_profile_start(void);
 int mdla_profile_stop(int type);
+int mdla_profile_power_mode(u32 *stat);
 void mdla_dump_prof(struct seq_file *s);
 void mdla_trace_begin(const int cmd_num, void *cmd);
 void mdla_trace_end(u32 cmd_id, u64 end, int mode);
@@ -61,6 +62,11 @@ static inline int mdla_profile_start(void)
 static inline int mdla_profile_stop(int type)
 {
 	return 0;
+}
+static inline
+int mdla_profile_power_mode(u32 *stat)
+{
+	return 1;
 }
 static inline void mdla_dump_prof(struct seq_file *s)
 {

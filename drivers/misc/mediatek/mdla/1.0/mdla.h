@@ -62,9 +62,12 @@ struct command_entry {
 	uint32_t bandwidth;
 
 	int result;
+	u64 receive_t;   /* time of receive the request (ns) */
 	u64 queue_t;     /* time queued in list (ns) */
+	u64 poweron_t;   /* dvfs start time */
 	u64 req_start_t; /* request stant time (ns) */
 	u64 req_end_t;   /* request end time (ns) */
+	u64 wait_t;      /* time waited by user */
 };
 
 #endif

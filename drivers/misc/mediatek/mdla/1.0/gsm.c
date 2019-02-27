@@ -86,7 +86,7 @@ void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 {
 	if (malloc_data->size == GSM_MVA_INVALID) {
 		malloc_data->size = GSM_SIZE;
-		mdla_debug("%s: <exclusive mode>\n", __func__);
+		mdla_mem_debug("%s: <exclusive mode>\n", __func__);
 	}
 	malloc_data->kva = gsm_alloc(malloc_data->size);
 	malloc_data->mva = gsm_virt_to_mva(malloc_data->kva);
@@ -95,7 +95,7 @@ void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 	/* avoid bus hang in fpga stage */
 	malloc_data->pa = (void *)((long) malloc_data->mva);
 #endif
-	mdla_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
+	mdla_mem_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
 		malloc_data->kva, malloc_data->mva,
 		malloc_data->pa, malloc_data->size);
 }
@@ -104,7 +104,7 @@ void mdla_gsm_free(struct ioctl_malloc *malloc_data)
 {
 	if (malloc_data->kva)
 		gsm_release(malloc_data->kva, malloc_data->size);
-	mdla_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
+	mdla_mem_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
 		malloc_data->kva, malloc_data->mva,
 		malloc_data->pa, malloc_data->size);
 }

@@ -60,6 +60,8 @@ enum MDLA_PMU_MODE {
 	MDLA_PMU_INTERVAL_MODE = 0x1,
 };
 
+#define MDLA_IOC_MAGIC (0x3d1a632fULL)
+
 struct ioctl_malloc {
 	__u32 size;  /* [in] allocate size */
 	__u32 mva;   /* [out] modified virtual address */
@@ -95,6 +97,17 @@ enum MDLA_CMD_RESULT {
 	MDLA_CMD_SUCCESS = 0,
 	MDLA_CMD_TIMEOUT = 1,
 };
+
+#define MDLA_IOC_SET_ARRAY_CNT(n) \
+	((MDLA_IOC_MAGIC << 32) | ((n) & 0xFFFFFFFF))
+#define MDLA_IOC_GET_ARRAY_CNT(n) \
+	(((n >> 32) == MDLA_IOC_MAGIC) ? ((n) & 0xFFFFFFFF) : 0)
+#define MDLA_IOC_SET_ARRAY_PTR(a) \
+	((unsigned long)(a))
+#define MDLA_IOC_GET_ARRAY_PTR(a) \
+	((void *)((unsigned long)(a)))
+
+#define MDLA_WAIT_CMD_ARRAY_SIZE 6
 
 struct ioctl_wait_cmd {
 	__u32 id;              /* [in] command id */
