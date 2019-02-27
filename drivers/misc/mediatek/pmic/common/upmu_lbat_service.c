@@ -36,6 +36,13 @@
 
 #define LBAT_SERVICE_DBG 0
 
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
+#define PMIC_AUXADC_LBAT_EN_MAX		PMIC_AUXADC_LBAT_DET_MAX
+#define PMIC_AUXADC_LBAT_EN_MIN		PMIC_AUXADC_LBAT_DET_MIN
+#define PMIC_AUXADC_LBAT_DEBT_MAX	PMIC_AUXADC_LBAT_DEBT_MAX_SEL
+#define PMIC_AUXADC_LBAT_DEBT_MIN	PMIC_AUXADC_LBAT_DEBT_MIN_SEL
+#endif
+
 static DEFINE_MUTEX(lbat_mutex);
 static struct list_head lbat_hv_list = LIST_HEAD_INIT(lbat_hv_list);
 static struct list_head lbat_lv_list = LIST_HEAD_INIT(lbat_lv_list);
@@ -424,16 +431,26 @@ int lbat_service_init(void)
 	int ret = 0;
 
 	pr_info("[%s]", __func__);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
+	/* Selects debounce as 8 */
+	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MAX, 3);
+	/* Selects debounce as 1 */
+	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MIN, 0);
+	/* Set LBAT_PRD as 15ms */
+	pmic_set_register_value(PMIC_AUXADC_LBAT_DET_PRD_SEL, 0);
+#else
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MAX,
 		DEF_H_DEB / LBAT_PRD);
 	pmic_set_register_value(PMIC_AUXADC_LBAT_DEBT_MIN,
 		DEF_L_DEB / LBAT_PRD);
+
 	pmic_set_register_value(
 		PMIC_AUXADC_LBAT_DET_PRD_15_0,
 		LBAT_PRD);
 	pmic_set_register_value(
 		PMIC_AUXADC_LBAT_DET_PRD_19_16,
 		(LBAT_PRD & 0xF0000) >> 16);
+#endif
 
 	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
 	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
