@@ -21,6 +21,9 @@
 #include "mdla_trace.h"
 #include "met_mdlasys_events.h"
 #include "mdla_proc.h"
+#include <linux/kallsyms.h>
+//#include <linux/trace_events.h>
+#include <linux/preempt.h>
 
 #define DEFAULT_POLLING_PERIOD_NS (1000000)  // 1ms
 #define TRACE_LEN 128
@@ -131,4 +134,32 @@ int mdla_profile_stop(int wait)
 	mdla_profile_timer_stop(wait);
 	return 0;
 }
+
+void mdla_trace_tag_begin(const char *format, ...)
+{
+	char buf[TRACE_LEN];
+
+	int len = snprintf(buf, sizeof(buf),
+		"B|%d|%s", format, task_pid_nr(current));
+
+	if (len >= TRACE_LEN)
+		len = TRACE_LEN - 1;
+
+	tracing_mark_write(buf);
+}
+
+void mdla_trace_tag_end(void)
+{
+	char buf[TRACE_LEN];
+
+	int len = snprintf(buf, sizeof(buf), "E\n");
+
+
+	if (len >= TRACE_LEN)
+		len = TRACE_LEN - 1;
+
+	tracing_mark_write(buf);
+}
+
+
 

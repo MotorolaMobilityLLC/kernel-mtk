@@ -32,7 +32,7 @@ ssize_t prof_write(struct file *filp,
 {
 	int in;
 	char str[PROC_BUFSIZE], *p;
-	int type;
+	//int type;
 
 	in = (len >= PROC_BUFSIZE) ? PROC_BUFSIZE-1 : len;
 
