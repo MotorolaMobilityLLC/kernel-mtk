@@ -39,8 +39,10 @@ extern long calc_load_fold_active(struct rq *this_rq, long adjust);
 
 #ifdef CONFIG_SMP
 extern void cpu_load_update_active(struct rq *this_rq);
+extern void check_for_migration(struct rq *rq, struct task_struct *p);
 #else
 static inline void cpu_load_update_active(struct rq *this_rq) { }
+static inline void check_for_migration(struct rq *rq, struct task_struct *p) { }
 #endif
 
 #ifdef CONFIG_SCHED_SMT
@@ -612,6 +614,8 @@ struct root_domain {
 };
 
 extern struct root_domain def_root_domain;
+extern void sched_get_rd(struct root_domain *rd);
+extern void sched_put_rd(struct root_domain *rd);
 
 #ifdef HAVE_RT_PUSH_IPI
 extern void rto_push_irq_work_func(struct irq_work *work);
@@ -705,6 +709,7 @@ struct rq {
 	/* For active balancing */
 	int active_balance;
 	int push_cpu;
+	struct task_struct *push_task;
 	struct cpu_stop_work active_balance_work;
 #if defined(CONFIG_SCHED_HMP) || defined(CONFIG_MTK_IDLE_BALANCE_ENHANCEMENT)
 	struct task_struct *migrate_task;
@@ -725,18 +730,7 @@ struct rq {
 #endif
 
 #ifdef CONFIG_SCHED_WALT
-	/*
-	 * max_freq = user or thermal defined maximum
-	 * max_possible_freq = maximum supported by hardware
-	 */
-	unsigned int cur_freq, max_freq, min_freq, max_possible_freq;
-	struct cpumask freq_domain_cpumask;
-
 	u64 cumulative_runnable_avg;
-	int efficiency; /* Differentiate cpus with different IPC capability */
-	int load_scale_factor;
-	int capacity;
-	int max_possible_capacity;
 	u64 window_start;
 	u64 curr_runnable_sum;
 	u64 prev_runnable_sum;
@@ -745,6 +739,7 @@ struct rq {
 	u64 cur_irqload;
 	u64 avg_irqload;
 	u64 irqload_ts;
+	u64 cum_window_demand;
 #endif /* CONFIG_SCHED_WALT */
 
 
@@ -1624,6 +1619,26 @@ unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu)
 }
 #endif
 
+#ifndef arch_scale_max_freq_capacity
+static __always_inline
+unsigned long arch_scale_max_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	return SCHED_CAPACITY_SCALE;
+}
+#endif
+
+#ifndef arch_scale_min_freq_capacity
+static __always_inline
+unsigned long arch_scale_min_freq_capacity(struct sched_domain *sd, int cpu)
+{
+	/*
+	 * Multiplied with any capacity value, this scale factor will return
+	 * 0, which represents an un-capped state
+	 */
+	return 0;
+}
+#endif
+
 #ifndef arch_scale_cpu_capacity
 static __always_inline
 unsigned long arch_scale_cpu_capacity(struct sched_domain *sd, int cpu)
@@ -1653,7 +1668,7 @@ static inline unsigned long capacity_hw_of(int cpu)
 
 extern unsigned int sysctl_sched_use_walt_cpu_util;
 extern unsigned int walt_ravg_window;
-extern unsigned int walt_disabled;
+extern bool walt_disabled;
 
 /*
  * cpu_util returns the amount of capacity of a CPU that is used by CFS
@@ -1687,10 +1702,9 @@ static inline unsigned long __cpu_util(int cpu, int delta)
 	unsigned long capacity = capacity_orig_of(cpu);
 
 #ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_cpu_util) {
-		util = cpu_rq(cpu)->prev_runnable_sum << SCHED_CAPACITY_SHIFT;
-		util = div_u64(util, walt_ravg_window);
-	}
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util) 
+		util = div64_u64(cpu_rq(cpu)->cumulative_runnable_avg,
+			       walt_ravg_window >> SCHED_CAPACITY_SHIFT);
 #endif
 	delta += util;
 	if (delta < 0)
@@ -1748,6 +1762,10 @@ static inline bool sched_freq(void)
 	return static_key_false(&__sched_freq);
 }
 
+/*
+ * sched_capacity_reqs expects capacity requests to be normalised.
+ * All capacities should sum to the range of 0-1024.
+ */
 DECLARE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
 void update_cpu_capacity_request(int cpu, bool request, int type);
 
@@ -2161,6 +2179,17 @@ static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags)
 static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
 static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags) {}
 #endif /* CONFIG_CPU_FREQ */
+
+#ifdef CONFIG_SCHED_WALT
+
+static inline bool
+walt_task_in_cum_window_demand(struct rq *rq, struct task_struct *p)
+{
+	return cpu_of(rq) == task_cpu(p) &&
+	       (p->on_rq || p->last_sleep_ts >= rq->window_start);
+}
+
+#endif /* CONFIG_SCHED_WALT */
 
 #ifdef arch_scale_freq_capacity
 #ifndef arch_scale_freq_invariant

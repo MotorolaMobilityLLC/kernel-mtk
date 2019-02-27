@@ -696,6 +696,8 @@ struct ufs_hba {
 	int req_r_cnt;
 	int req_w_cnt;
 	unsigned long req_tag_map;
+	struct io_latency_state io_lat_read;
+	struct io_latency_state io_lat_write;
 };
 
 /**

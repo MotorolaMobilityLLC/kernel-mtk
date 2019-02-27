@@ -1664,41 +1664,6 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
 #endif
 }
 
-#ifdef CONFIG_SMP
-static void sched_rt_update_capacity_req(struct rq *rq)
-{
-	u64 total, used, age_stamp, avg;
-	s64 delta;
-
-	if (!sched_freq())
-		return;
-
-	sched_avg_update(rq);
-	/*
-	 * Since we're reading these variables without serialization make sure
-	 * we read them once before doing sanity checks on them.
-	 */
-	age_stamp = READ_ONCE(rq->age_stamp);
-	avg = READ_ONCE(rq->rt_avg);
-	delta = rq_clock(rq) - age_stamp;
-
-	if (unlikely(delta < 0))
-		delta = 0;
-
-	total = sched_avg_period() + delta;
-
-	used = div_u64(avg, total);
-	if (unlikely(used > SCHED_CAPACITY_SCALE))
-		used = SCHED_CAPACITY_SCALE;
-
-	set_rt_cpu_capacity(rq->cpu, true, (unsigned long)(used), SCHE_ONESHOT);
-}
-#else
-static inline void sched_rt_update_capacity_req(struct rq *rq)
-{ }
-
-#endif
-
 static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
 						   struct rt_rq *rt_rq)
 {
@@ -1769,10 +1734,8 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev, struct pin_cookie coo
 	if (prev->sched_class == &rt_sched_class)
 		update_curr_rt(rq);
 
-	if (!rt_rq->rt_queued) {
-		sched_rt_update_capacity_req(rq);
+	if (!rt_rq->rt_queued)
 		return NULL;
-	}
 
 	put_prev_task(rq, prev);
 
@@ -2159,7 +2122,9 @@ retry:
 	}
 
 	deactivate_task(rq, next_task, 0);
+	next_task->on_rq = TASK_ON_RQ_MIGRATING;
 	set_task_cpu(next_task, lowest_rq->cpu);
+	next_task->on_rq = TASK_ON_RQ_QUEUED;
 	activate_task(lowest_rq, next_task, 0);
 	ret = 1;
 
@@ -2306,8 +2271,11 @@ static void tell_cpu_to_push(struct rq *rq)
 
 	rto_start_unlock(&rq->rd->rto_loop_start);
 
-	if (cpu >= 0)
+	if (cpu >= 0) {
+		/* Make sure the rd does not get freed while pushing */
+		sched_get_rd(rq->rd);
 		irq_work_queue_on(&rq->rd->rto_push_work, cpu);
+	}
 }
 
 /* Called from hardirq context */
@@ -2337,8 +2305,10 @@ void rto_push_irq_work_func(struct irq_work *work)
 
 	raw_spin_unlock(&rd->rto_lock);
 
-	if (cpu < 0)
+	if (cpu < 0) {
+		sched_put_rd(rd);
 		return;
+	}
 
 	/* Try the next RT overloaded CPU */
 	irq_work_queue_on(&rd->rto_push_work, cpu);
@@ -2426,7 +2396,9 @@ static void pull_rt_task(struct rq *this_rq)
 			resched = true;
 
 			deactivate_task(src_rq, p, 0);
+			p->on_rq = TASK_ON_RQ_MIGRATING;
 			set_task_cpu(p, this_cpu);
+			p->on_rq = TASK_ON_RQ_QUEUED;
 			activate_task(this_rq, p, 0);
 			/*
 			 * We continue with the search, just in
@@ -2544,7 +2516,7 @@ static void switched_to_rt(struct rq *rq, struct task_struct *p)
 		if (tsk_nr_cpus_allowed(p) > 1 && rq->rt.overloaded)
 			queue_push_tasks(rq);
 #endif /* CONFIG_SMP */
-		if (p->prio < rq->curr->prio)
+		if (p->prio < rq->curr->prio && cpu_online(cpu_of(rq)))
 			resched_curr(rq);
 	}
 }
@@ -2617,9 +2589,6 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 	struct sched_rt_entity *rt_se = &p->rt;
 
 	update_curr_rt(rq);
-
-	if (rq->rt.rt_nr_running)
-		sched_rt_update_capacity_req(rq);
 
 	watchdog(rq, p);
 
