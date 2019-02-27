@@ -14,6 +14,7 @@
 ccflags-y += \
 	-I$(PPM_ROOT_DIR)/inc \
 	-I$(PPM_ROOT_DIR)/src/mach/$(CONFIG_MTK_PLATFORM) \
+	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/include	\
 	-I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM)	\
 
@@ -23,8 +24,7 @@ ccflags-y += \
 	-I$(srctree)/drivers/misc/mediatek/sspm/$(CONFIG_MTK_PLATFORM)
 endif
 
-#ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
-ifeq (0,1)
+ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 # main
 obj-y := mtk_ppm_main.o
 obj-y += mtk_ppm_interface.o
