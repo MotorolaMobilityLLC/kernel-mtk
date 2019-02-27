@@ -3037,8 +3037,10 @@ static inline void Prepare_Enable_ccf_clock(void)
 	 * enable through smi API : CG_IMG_LARB2_SMI, CG_MM_SMI_COMMON
 	 */
 	// before smi drv ready
-	// smi_bus_enable(SMI_LARB2, ISP_DEV_NAME);
+	smi_bus_prepare_enable(SMI_LARB2_REG_INDX, ISP_DEV_NAME, true);
 
+// smi_bus_enable would do following
+#if 0
 	ret = clk_prepare_enable(isp_clk.CG_SCP_SYS_DIS);
 	if (ret)
 		log_err("cannot get CG_SCP_SYS_DIS clock\n");
@@ -3051,6 +3053,7 @@ static inline void Prepare_Enable_ccf_clock(void)
 	ret = clk_prepare_enable(isp_clk.CG_CAM_LARB2);
 	if (ret)
 		log_err("cannot get CG_CAM_LARB2 clock\n");
+#endif
 
 
 	ret = clk_prepare_enable(isp_clk.CG_CAM);
@@ -3077,6 +3080,8 @@ static inline void Prepare_Enable_ccf_clock(void)
 	if (ret)
 		log_err("cannot get CG_CAMSV1 clock\n");
 
+// smi_bus_enable would do following
+#if 0
 	ret = clk_prepare_enable(isp_clk.CG_MM_SMI_COMM0);
 	if (ret)
 		log_err("cannot get CG_MM_SMI_COMM0 clock\n");
@@ -3088,6 +3093,7 @@ static inline void Prepare_Enable_ccf_clock(void)
 	ret = clk_prepare_enable(isp_clk.CG_MM_SMI_COMMON);
 	if (ret)
 		log_err("cannot get CG_MM_SMI_COMMON clock\n");
+#endif
 
 
 }
@@ -3097,20 +3103,29 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	/* must keep this clk close order: CG_SCP_SYS_CAM ->
 	 * CG_SCP_SYS_DIS
 	 */
-	clk_disable_unprepare(isp_clk.CG_MM_SMI_COMM0);
-	clk_disable_unprepare(isp_clk.CG_MM_SMI_COMM1);
-	clk_disable_unprepare(isp_clk.CG_MM_SMI_COMMON);
-	clk_disable_unprepare(isp_clk.CG_CAM_LARB2);
-	clk_disable_unprepare(isp_clk.CG_CAM);
-	clk_disable_unprepare(isp_clk.CG_CAMTG);
-	clk_disable_unprepare(isp_clk.CG_CAM_SENINF);
-	clk_disable_unprepare(isp_clk.CG_CAMSV0);
+
+// smi_bus_disable would do following
+#if 0
+	// clk_disable_unprepare(isp_clk.CG_MM_SMI_COMM0);
+	// clk_disable_unprepare(isp_clk.CG_MM_SMI_COMM1);
+	// clk_disable_unprepare(isp_clk.CG_MM_SMI_COMMON);
+#endif
 	clk_disable_unprepare(isp_clk.CG_CAMSV1);
-	clk_disable_unprepare(isp_clk.CG_SCP_SYS_CAM);
-	clk_disable_unprepare(isp_clk.CG_SCP_SYS_DIS);
+	clk_disable_unprepare(isp_clk.CG_CAMSV0);
+	clk_disable_unprepare(isp_clk.CG_CAM_SENINF);
+	clk_disable_unprepare(isp_clk.CG_CAMTG);
+	clk_disable_unprepare(isp_clk.CG_CAM);
+
+
 	/* disable through smi API : CG_IMG_LARB2_SMI, CG_MM_SMI_COMMON*/
 	// before smi drv ready
-	// smi_bus_disable(SMI_LARB2, ISP_DEV_NAME);
+// smi_bus_disable would do following
+#if 0
+	// clk_disable_unprepare(isp_clk.CG_CAM_LARB2);
+	clk_disable_unprepare(isp_clk.CG_SCP_SYS_CAM);
+	clk_disable_unprepare(isp_clk.CG_SCP_SYS_DIS);
+#endif
+	smi_bus_disable_unprepare(SMI_LARB2_REG_INDX, ISP_DEV_NAME, true);
 }
 
 #endif
