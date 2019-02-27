@@ -1684,6 +1684,7 @@ static int allocate_cmdlines_buffer(unsigned int val,
 	       val * sizeof(*s->map_cmdline_to_pid));
 	memset(s->map_cmdline_to_tgid, NO_CMDLINE_MAP,
 	       val * sizeof(*s->map_cmdline_to_tgid));
+
 	return 0;
 }
 
