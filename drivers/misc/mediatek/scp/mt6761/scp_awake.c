@@ -155,7 +155,7 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 
 	if (scp_id >= SCP_CORE_TOTAL) {
 		pr_notice("scp_awake_unlock: SCP ID >= SCP_CORE_TOTAL\n");
-		return ret;
+		return -1;
 	}
 
 	scp_awake_mutex = &scp_awake_mutexs[scp_id];
@@ -164,7 +164,7 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 
 	if (is_scp_ready(scp_id) == 0) {
 		pr_notice("scp_awake_unlock: %s not enabled\n", core_id);
-		return ret;
+		return -1;
 	}
 
 	/* scp unlock awake */
@@ -177,8 +177,6 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 
 	mutex_lock(scp_awake_mutex);
-
-	ret = 0;
 
 	/* spinlock context safe */
 	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
