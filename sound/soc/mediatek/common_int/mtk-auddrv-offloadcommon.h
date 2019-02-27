@@ -67,7 +67,7 @@
 #endif
 #include <audio_task_manager.h>
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
-#include "audio_mem_control.h"
+#include "mtk-dsp-mem-control.h"
 #include "mtk-base-dsp.h"
 #include "mtk-dsp-common.h"
 #include "mtk-dsp-platform-driver.h"

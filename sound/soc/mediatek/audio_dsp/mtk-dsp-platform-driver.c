@@ -16,7 +16,7 @@
 #include <scp_helper.h>
 #endif
 
-#include "audio_mem_control.h"
+#include "mtk-dsp-mem-control.h"
 #include "mtk-base-dsp.h"
 #include "mtk-dsp-common.h"
 #include "mtk-dsp-platform-driver.h"
@@ -28,7 +28,7 @@ static DEFINE_SPINLOCK(dsp_ringbuf_lock);
 //#define DEBUG_VERBOSE
 //#define DEBUG_VERBOSE_IRQ
 
-static const struct snd_kcontrol_new mt3967_dsp_kcontrols[] = {
+static const struct snd_kcontrol_new dsp_platform_kcontrols[] = {
 };
 
 static unsigned int dsp_word_size_align(unsigned int in_size)
@@ -533,7 +533,8 @@ static int mtk_dsp_pcm_hw_trigger(struct snd_pcm_substream *substream, int cmd)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct mtk_base_dsp *dsp = snd_soc_platform_get_drvdata(rtd->platform);
 
-	dev_info(dsp->dev, "%s cmd %d\n", __func__, cmd);
+	dev_info(dsp->dev, "%s cmd %d id = %d\n",
+		 __func__, cmd, rtd->cpu_dai->id);
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -710,8 +711,8 @@ static int mtk_dsp_pcm_new(struct snd_soc_pcm_runtime *rtd)
 	size = dsp->mtk_dsp_hardware->buffer_bytes_max;
 
 	snd_soc_add_platform_controls(rtd->platform,
-				      mt3967_dsp_kcontrols,
-				      ARRAY_SIZE(mt3967_dsp_kcontrols));
+				      dsp_platform_kcontrols,
+				      ARRAY_SIZE(dsp_platform_kcontrols));
 
 	for (id = 0; id < AUDIO_TASK_DAI_NUM; id++)
 		ret = audio_task_register_callback(get_dspscene_by_dspdaiid(id),
