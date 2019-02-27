@@ -2734,6 +2734,7 @@ static ssize_t store_FG_daemon_log_level(
 				val
 			);
 
+			gm.d_log_level = val;
 			gm.log_level = val;
 		}
 		if (val >= 7) {

@@ -52,6 +52,7 @@
 #include <linux/proc_fs.h>
 #include <linux/of_fdt.h>	/*of_dt API*/
 #include <linux/vmalloc.h>
+#include <linux/math64.h>
 
 #include <mt-plat/aee.h>
 #include <mt-plat/charger_type.h>
@@ -1512,6 +1513,8 @@ static void sw_iavg_init(void)
 		gm.sw_iavg = -bat_current;
 	gm.sw_iavg_ht = gm.sw_iavg + gm.sw_iavg_gap;
 	gm.sw_iavg_lt = gm.sw_iavg - gm.sw_iavg_gap;
+
+	bm_debug("sw_iavg_init %d\n", gm.sw_iavg);
 }
 
 void fg_update_sw_iavg(void)
@@ -2844,8 +2847,11 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		ret_msg->fgd_data_len += sizeof(voltage);
 		memcpy(ret_msg->fgd_data, &voltage, sizeof(voltage));
-
 		bm_debug("[fr] FG_DAEMON_CMD_GET_HW_OCV = %d\n", voltage);
+
+		gm.log.phone_state = 1;
+		gm3_log_dump();
+
 	}
 	break;
 
@@ -3957,8 +3963,6 @@ void mtk_battery_init(struct platform_device *dev)
 	gauge_dev_get_info(gm.gdev, GAUGE_2SEC_REBOOT, &gm.pl_two_sec_reboot);
 	gauge_dev_set_info(gm.gdev, GAUGE_2SEC_REBOOT, 0);
 
-	sw_iavg_init();
-
 #ifdef _DEA_MODIFY_
 	gm.wait_que.function = fg_drv_update_hw_status;
 	gm.wait_que.name = "fg_drv_update_hw_status thread";
@@ -3978,6 +3982,7 @@ void mtk_battery_last_init(struct platform_device *dev)
 			reg_VBATON_UNDET(fg_bat_plugout_int_handler_gm25);
 			en_intr_VBATON_UNDET(1);
 		}
+	sw_iavg_init();
 }
 
 
@@ -4045,11 +4050,16 @@ void gm3_log_dump(void)
 {
 	int system_time;
 	int car;
+	unsigned long long logtime;
+
 
 	if (bat_get_debug_level() < 7)
 		return;
-
-
+#if defined(__LP64__) || defined(_LP64)
+	logtime = sched_clock() / 1000000000;
+#else
+	logtime = div_u64(sched_clock(), 1000000000);
+#endif
 	system_time = fg_get_system_sec();
 
 	/* charger status need charger API */
@@ -4063,15 +4073,17 @@ void gm3_log_dump(void)
 
 	car = gauge_get_coulomb();
 
-	bm_err("GM3log int %d %d %d %d %d\n",
+	bm_err("GM3log int %llu %d %d %d %d %d %d\n",
+		logtime,
 		system_time,
+		gm.log.phone_state,
 		gm.log.bat_full_int,
 		gm.log.zcv_int,
 		gm.log.dlpt_sd_int,
 		gm.log.chr_in_int);
 
-	bm_err("GM3log1 %d %d %d %d %d %d %d %d %d %d %d %d\n",
-		system_time,
+	bm_err("GM3log1 %llu %d %d %d %d %d %d %d %d %d %d %d\n",
+		logtime,
 		battery_get_bat_voltage(),
 		battery_get_bat_current(),
 		battery_get_bat_avg_current(),
@@ -4084,8 +4096,8 @@ void gm3_log_dump(void)
 		gm.gdev->fg_hw_info.iavg_valid,
 		gm.log.chr_status);
 
-	bm_err("GM3log2 %d %d %d %d %d %d %d %d\n",
-		system_time,
+	bm_err("GM3log2 %llu %d %d %d %d %d %d %d\n",
+		logtime,
 		gm.log.zcv,
 		gm.log.zcv_current,
 		is_kernel_power_off_charging(),
@@ -4094,18 +4106,11 @@ void gm3_log_dump(void)
 		gm.log.ptim_is_charging,
 		pmic_get_vbus());
 
-	bm_err("GM3log3 %d %d %d %d %d %d %d %d %d %d %d\n",
-		system_time,
+	bm_err("GM3log3 %llu %d %d %d\n",
+		logtime,
 		gm.pl_shutdown_time,
 		gm.ptim_lk_v,
-		gm.ptim_lk_i,
-		gm.gdev->fg_hw_info.pmic_zcv,
-		gm.gdev->fg_hw_info.pmic_zcv_rdy,
-		gm.gdev->fg_hw_info.charger_zcv,
-		gm.gdev->fg_hw_info.hw_zcv,
-		gm.pl_two_sec_reboot,
-		gm.log.is_bat_plugout,
-		gm.log.bat_plugout_time
+		gm.ptim_lk_i
 		);
 
 	bm_err("GM3log4 %d %d %d %d %d %d %d %d %d %d %d\n",
@@ -4122,6 +4127,13 @@ void gm3_log_dump(void)
 		gm.log.con0_soc
 		);
 
+	if (gm.gdev->fg_hw_info.hw_zcv != 0)
+		bm_err("GM3log5 %d %d %d %d\n",
+			gm.gdev->fg_hw_info.pmic_zcv,
+			gm.gdev->fg_hw_info.pmic_zcv_rdy,
+			gm.gdev->fg_hw_info.charger_zcv,
+			gm.gdev->fg_hw_info.hw_zcv
+			);
 
 	bm_err("GM3 car:%d car_diff:%d\n",
 		car,
