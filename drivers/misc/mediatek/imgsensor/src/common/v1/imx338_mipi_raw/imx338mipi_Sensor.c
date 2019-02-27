@@ -1256,6 +1256,9 @@ static kal_uint16 imx338_table_write_cmos_sensor(
 	IDX = 0;
 	puSendCmd = kmalloc(I2C_BUFFER_LEN, GFP_KERNEL);
 
+	if (!puSendCmd)
+		return -1;
+
 	while (len > IDX) {
 		addr = para[IDX];
 
