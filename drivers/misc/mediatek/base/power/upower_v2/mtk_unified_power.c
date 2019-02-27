@@ -408,6 +408,11 @@ void upower_dump_data_ipi(void)
 
 static int __init upower_get_tbl_ref(void)
 {
+#if UPOWER_ENABLE_TINYSYS_SSPM
+	int i;
+	unsigned char *ptr;
+#endif
+
 #ifdef UPOWER_NOT_READY
 	return 0;
 #endif
@@ -423,6 +428,11 @@ static int __init upower_get_tbl_ref(void)
 	upower_debug("phy_addr = 0x%llx, virt_addr=0x%llx\n",
 				(unsigned long long)upower_data_phy_addr,
 				(unsigned long long)upower_data_virt_addr);
+
+	/* clear */
+	ptr = (unsigned char *)(uintptr_t)upower_data_virt_addr;
+	for (i = 0; i < upower_data_size; i++)
+		ptr[i] = 0x0;
 
 	upower_tbl_ref = (struct upower_tbl *)(uintptr_t)upower_data_virt_addr;
 
