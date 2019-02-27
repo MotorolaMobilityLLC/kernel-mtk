@@ -226,7 +226,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 };
 
 
-static imgsensor_struct imgsensor = {
+static struct imgsensor_struct imgsensor = {
 	.mirror = IMAGE_NORMAL,
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	.shutter = 0x200,
@@ -2523,12 +2523,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		}
 		break;
+#if 0 /* fix me */
 	case SENSOR_FEATURE_GET_PDAF_DATA:
 		pr_info("SENSOR_FEATURE_GET_PDAF_DATA\n");
 		S5K3L8_read_eeprom((kal_uint16)(*feature_data),
 			(char *)(uintptr_t)(*(feature_data+1)),
 			(kal_uint32)(*(feature_data+2)));
 		break;
+#endif
 /******************** PDAF END   <<< *********/
 	default:
 		break;
