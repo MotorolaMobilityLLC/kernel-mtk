@@ -209,9 +209,9 @@ static ssize_t spi_log_show(struct device *dev, struct device_attribute *attr,
 		return -EINVAL;
 	}
 
-	sprintf(buf_temp, "Now spi log %s.\n",
+	snprintf(buf_temp, sizeof(buf_temp), "Now spi log %s.\n",
 		(spi_log_status == LOG_CLOSE)?"disabled":"enabled");
-		strncat(buf, buf_temp, strlen(buf_temp));
+	strncat(buf, buf_temp, strlen(buf_temp));
 
 	return strlen(buf);
 }
