@@ -882,38 +882,32 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 	return 0;
 }
 
-/* ddp_sodi_smi_request_src_select */
-/* 0: depend on HW DISP_RDMA0 SMI request */
-/* 1: depend on SODI_REQ_VALUE */
-void ddp_sodi_smi_request_src_select(int sel, void *handle)
-{
-	if (sel == 1) {
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
-			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL, 0x3));
-		DDPDBG("SMI request depend on DISP_RDMA0\n");
-	} else if (sel == 0) {
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
-			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL, 0x0));
-		DDPDBG("SMI request depend on SODI_REQ_VALUE\n");
-	} else
-		DDPDBG("%s invalid, sel is %d\n", __func__, sel);
-}
-
-/* ddp_sodi_power_down_mode */
-/* 1: SODI can enter power down mode */
-/* 0: SODI can not enter power down mode */
+/* ddp_set_spm_mode */
+/* DDP_CG_MODE: SPM can enter CG mode */
+/* DDP_PD_MODE: SPM can enter PD mode */
 /* config must during mmsys clock on */
-void ddp_sodi_power_down_mode(int power_down, void *handle)
+void ddp_set_spm_mode(enum DDP_SPM_MODE mode, void *handle)
 {
-	if (power_down == 1) {
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
-			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL, 0x0));
-		DDPDBG("SODI can enter power down mode\n");
-	} else if (power_down == 0) {
-		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
-			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL, 0x3));
-		DDPDBG("SODI can not enter power down mode\n");
+	if (mode == DDP_CG_MODE) {
+		/* config disp0_arsrc_req = 1, and disp0_ddren depend on RDMA0*/
+		DISP_REG_SET_FIELD(handle, MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL,
+			DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x1);
+		DISP_REG_SET_FIELD(handle, MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL,
+			DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x1);
+		DDPDBG("SPM can enter CG mode\n");
+	} else if (mode == DDP_PD_MODE) {
+		/* config disp0_arsrc_req & disp0_ddren depend on RDMA0 */
+		/* register default value */
+		DISP_REG_SET_FIELD(handle, MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL,
+			DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x0);
+		DISP_REG_SET_FIELD(handle, MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL,
+			DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0xF);
+		DDPDBG("SPM can enter PD mode\n");
 	} else
-		DDPDBG("%s invalid, power_down is %d\n", __func__, power_down);
+		DDPDBG("%s invalid, forbid is %d\n", __func__, mode);
+/*
+ *	DDPDBG("DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK 0x%08x\n",
+ *		INREG32(DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK));
+ */
 }
 
