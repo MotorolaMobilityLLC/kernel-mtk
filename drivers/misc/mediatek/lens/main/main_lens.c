@@ -262,6 +262,20 @@ void AF_PowerDown(void)
 				       &g_s4AF_Opened);
 		BU63169AF_PowerDown();
 #endif
+
+#ifdef CONFIG_MACH_MT6765
+		LC898217AF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
+					&g_s4AF_Opened);
+		LC898217AF_PowerDown();
+
+		DW9718SAF_SetI2Cclient(g_pstAF_I2Cclient, &g_AF_SpinLock,
+				      &g_s4AF_Opened);
+		DW9718SAF_PowerDown();
+
+		bu64748af_SetI2Cclient_Main(g_pstAF_I2Cclient, &g_AF_SpinLock,
+				       &g_s4AF_Opened);
+		bu64748af_PowerDown_Main();
+#endif
 	}
 	MAIN2AF_PowerDown();
 }
