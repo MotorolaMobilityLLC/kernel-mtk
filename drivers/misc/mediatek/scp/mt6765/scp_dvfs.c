@@ -229,6 +229,10 @@ int scp_request_freq(void)
 			/* request SPM not to turn off mainpll */
 			spm_resource_req(SPM_RESOURCE_USER_SCP,
 							 SPM_RESOURCE_MAINPLL);
+		else if (scp_expected_freq == (unsigned int)CLK_OPP3)
+			/* request SPM not to turn off univpll/26M */
+			spm_resource_req(SPM_RESOURCE_USER_SCP,
+							 SPM_RESOURCE_CK_26M);
 		else
 			spm_resource_req(SPM_RESOURCE_USER_SCP,
 							 SPM_RESOURCE_RELEASE);
