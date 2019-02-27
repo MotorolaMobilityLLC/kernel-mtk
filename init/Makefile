@@ -28,6 +28,10 @@ mounts-$(CONFIG_BLK_DEV_INITRD)	+= do_mounts_initrd.o
 mounts-$(CONFIG_BLK_DEV_MD)	+= do_mounts_md.o
 mounts-$(CONFIG_BLK_DEV_DM)	+= do_mounts_dm.o
 
+ifeq (yes, $(strip $(MTK_BUILD_ROOT)))
+mounts-y			+= do_mounts_post.o
+endif
+
 # dependencies on generated files need to be listed explicitly
 $(obj)/version.o: include/generated/compile.h
 
