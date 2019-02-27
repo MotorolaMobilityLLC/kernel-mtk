@@ -1173,6 +1173,19 @@ config ARM_ERRATA_773022
 	  loop buffer may deliver incorrect instructions. This
 	  workaround disables the loop buffer to avoid the erratum.
 
+config ARM_ERRATA_814220
+	bool "ARM errata: L2 cache maintenance operation can overtake a L1 cache maintenance operation"
+	depends on CPU_V7
+	help
+	  This option enables the workaround for erratum 814220
+	  Code that intends to clean dirty data from L1 to L2 and then
+	  from L2 to L3 using set/way operations might not behave as
+	  expected. The L2 to L3 operation might happen first and
+	  result in dirty data remaining in L2 after the L1 to L2
+	  operation has completed.
+
+	  This workaround put a DSB before changing cache levels
+
 config ARM_ERRATA_818325_852422
 	bool "ARM errata: A12: some seqs of opposed cond code instrs => deadlock or corruption"
 	depends on CPU_V7
@@ -1226,6 +1239,24 @@ config ARM_ERRATA_852423
 	  This is identical to Cortex-A12 erratum 852422.  It is a separate
 	  config option from the A12 erratum due to the way errata are checked
 	  for and handled.
+
+config ARM_ERRATA_855873
+	bool "ARM errata: An eviction might overtake a cache clean operation"
+	help
+	  This option enables the workaround for the 855873 Cortex-A53
+	  (up to r0p4) erratum. Because of this erratum, the processor
+	  might issue an eviction and an L2 cache clean operation to
+	  the interconnect in the wrong order.
+
+config ARM_ERRATA_824069
+	bool "ARM errata: Cache line might not be marked as clean after a CleanShared snoop"
+	help
+	  This option enables the workaround for the 824069 Cortex-A53
+	  (up to r0p2) erratum. If a Cortex-A53 processor is executing
+	  a store or PLDW instruction at the same time as a processor
+	  in another cluster is executing a cache maintenance operation
+	  to the same address, then this erratum might cause
+	  a clean cache line to be incorrectly marked as dirty.
 
 endmenu
 
