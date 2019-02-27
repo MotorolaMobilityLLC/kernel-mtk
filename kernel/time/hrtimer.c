@@ -60,6 +60,8 @@
 #include "mtk_sched_mon.h"
 #endif
 
+#include <mt-plat/fpsgo_common.h>
+
 /*
  * The timer bases:
  *
@@ -1577,6 +1579,10 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
 
 	hrtimer_init_on_stack(&t.timer, clockid, mode);
 	hrtimer_set_expires_range_ns(&t.timer, timespec_to_ktime(*rqtp), slack);
+
+	/* MTK Patch: collect timer info for FPSGO */
+	xgf_igather_timer(&t.timer, 1);
+
 	if (do_nanosleep(&t, mode))
 		goto out;
 
@@ -1600,6 +1606,9 @@ long hrtimer_nanosleep(struct timespec *rqtp, struct timespec __user *rmtp,
 
 	ret = -ERESTART_RESTARTBLOCK;
 out:
+	/* MTK Patch: collect timer info for FPSGO */
+	xgf_igather_timer(&t.timer, 0);
+
 	destroy_hrtimer_on_stack(&t.timer);
 	return ret;
 }
