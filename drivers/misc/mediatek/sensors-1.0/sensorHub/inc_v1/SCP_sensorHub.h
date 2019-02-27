@@ -97,6 +97,9 @@ typedef struct {
 			int32_t x_bias;
 			int32_t y_bias;
 			int32_t z_bias;
+			int32_t reserved : 14;
+			int32_t temp_result : 2;
+			int32_t temperature : 16;
 		};
 		struct {
 			int32_t azimuth;
@@ -252,7 +255,7 @@ struct data_unit_t {
 		tilt_event_t tilt_event;
 		in_pocket_event_t inpocket_event;
 		geofence_event_t geofence_data_t;
-		int32_t data[7];
+		int32_t data[8];
 	};
 } __packed;
 
