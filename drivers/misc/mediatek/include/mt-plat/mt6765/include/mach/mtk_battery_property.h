@@ -19,7 +19,7 @@
 #define MTK_CHR_EXIST 1
 #define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
-#define EMBEDDED_SEL 1
+#define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
 #define CAR_TUNE_VALUE	100 /*1.00 */
@@ -33,7 +33,7 @@
 /* enable that uisoc = 1 and wait xmins then shutdown */
 #define SHUTDOWN_GAUGE1_XMINS 1
 /* define Xmins to shutdown*/
-#define SHUTDOWN_1_TIME	30
+#define SHUTDOWN_1_TIME	5
 
 #define SHUTDOWN_GAUGE1_VBAT_EN 1
 #define SHUTDOWN_GAUGE1_VBAT 34000
@@ -69,7 +69,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 34000
+#define PMIC_MIN_VOL 33500
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -83,7 +83,7 @@
 #define DISCHARGE_TRACKING_TIME 10
 #define CHARGE_TRACKING_TIME 60
 #define DIFFERENCE_FULLOCV_VTH	1000	/* 0.1mV */
-#define CHARGE_PSEUDO_FULL_LEVEL 9000
+#define CHARGE_PSEUDO_FULL_LEVEL 8000
 #define FULL_TRACKING_BAT_INT2_MULTIPLY 1
 
 /* pre tracking */
@@ -99,8 +99,8 @@
 #define CALI_CAR_TUNE_AVG_NUM	60
 
 /* Aging Compensation 1*/
-#define AGING_FACTOR_MIN 75
-#define AGING_FACTOR_DIFF 10
+#define AGING_FACTOR_MIN 10
+#define AGING_FACTOR_DIFF 90
 #define DIFFERENCE_VOLTAGE_UPDATE 50
 #define AGING_ONE_EN 1
 #define AGING1_UPDATE_SOC 30
@@ -123,9 +123,9 @@
 #define SWOCV_OLDOCV_DIFF	300
 #define SWOCV_OLDOCV_DIFF_CHR	800
 #define VBAT_OLDOCV_DIFF	1000
-#define SWOCV_OLDOCV_DIFF_EMB		1000	/* 100mV */
+#define SWOCV_OLDOCV_DIFF_EMB	1000	/* 100mV */
 
-#define VIR_OLDOCV_DIFF_EMB		10000	/* 1000mV */
+#define VIR_OLDOCV_DIFF_EMB	10000	/* 1000mV */
 #define VIR_OLDOCV_DIFF_EMB_LT	10000	/* 1000mV */
 #define VIR_OLDOCV_DIFF_EMB_TMP	5
 
@@ -139,8 +139,8 @@
 
 /* fgc & fgv threshold */
 #define DIFFERENCE_FGC_FGV_TH1 300
-#define DIFFERENCE_FGC_FGV_TH2 400
-#define DIFFERENCE_FGC_FGV_TH3 200
+#define DIFFERENCE_FGC_FGV_TH2 500
+#define DIFFERENCE_FGC_FGV_TH3 300
 #define DIFFERENCE_FGC_FGV_TH_SOC1 7000
 #define DIFFERENCE_FGC_FGV_TH_SOC2 3000
 #define NAFG_TIME_SETTING 10
@@ -158,7 +158,7 @@
 
 /* ZCV INTR */
 #define ZCV_SUSPEND_TIME 29
-#define SLEEP_CURRENT_AVG 100 /*0.1mA*/
+#define SLEEP_CURRENT_AVG 200 /*0.1mA*/
 #define ZCV_CAR_GAP_PERCENTAGE 5
 
 /* Additional battery table */
@@ -171,7 +171,7 @@
 
 #define PSEUDO1_SEL	2
 
-#define FG_TRACKING_CURRENT	15000	/* not implement */
+#define FG_TRACKING_CURRENT	30000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	0	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
@@ -229,22 +229,22 @@
 
 /* using voltage to limit uisoc in 1% case */
 /* UI_LOW_LIMIT_VTH0=36000 means 3.6v */
-#define UI_LOW_LIMIT_EN 0
+#define UI_LOW_LIMIT_EN 1
 
-#define UI_LOW_LIMIT_SOC0 500
-#define UI_LOW_LIMIT_VTH0 36000
+#define UI_LOW_LIMIT_SOC0 200
+#define UI_LOW_LIMIT_VTH0 34500
 
-#define UI_LOW_LIMIT_SOC1 400
-#define UI_LOW_LIMIT_VTH1 35500
+#define UI_LOW_LIMIT_SOC1 200
+#define UI_LOW_LIMIT_VTH1 34500
 
-#define UI_LOW_LIMIT_SOC2 300
-#define UI_LOW_LIMIT_VTH2 35000
+#define UI_LOW_LIMIT_SOC2 200
+#define UI_LOW_LIMIT_VTH2 34500
 
 #define UI_LOW_LIMIT_SOC3 200
 #define UI_LOW_LIMIT_VTH3 34500
 
-#define UI_LOW_LIMIT_SOC4 100
-#define UI_LOW_LIMIT_VTH4 34000
+#define UI_LOW_LIMIT_SOC4 200
+#define UI_LOW_LIMIT_VTH4 34500
 
 #define UI_LOW_LIMIT_TIME 99999
 
