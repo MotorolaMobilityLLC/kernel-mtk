@@ -46,6 +46,7 @@ void dvfsrc_opp_level_mapping(void)
 {
 	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv, vcore_opp_3_uv;
 	int is_vcore_ct = 0;
+	int info3 = get_devinfo_with_index(133);
 
 	set_pwrap_cmd(VCORE_OPP_0, 0);
 	set_pwrap_cmd(VCORE_OPP_1, 2);
@@ -66,6 +67,13 @@ void dvfsrc_opp_level_mapping(void)
 		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
 		pr_info("%s: vcore_opp_2: %d uv (MD VB:%d)\n", __func__,
 				vcore_opp_2_uv, get_vb_volt(VCORE_OPP_2));
+	}
+
+	if (spm_get_spmfw_idx() == SPMFW_LP3_1CH_1866) {
+		if ((info3 & 0x1) == 0) {
+			vcore_opp_2_uv = 700000;
+			vcore_opp_3_uv = 700000;
+		}
 	}
 
 	pr_info("%s: FINAL vcore_opp_uv [%d]: %d, %d, %d, %d\n",
