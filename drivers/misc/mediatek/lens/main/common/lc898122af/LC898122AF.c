@@ -179,7 +179,7 @@ void LC898prtvalue(unsigned short prtvalue)
 {
 	LOG_INF("printvalue ======%x\n", prtvalue);
 }
-
+#if 0
 static unsigned char s4LC898OTP_ReadReg(unsigned short RegAddr)
 {
 	int i4RetValue = 0;
@@ -202,7 +202,7 @@ static unsigned char s4LC898OTP_ReadReg(unsigned short RegAddr)
 	}
 	return RegData;
 }
-
+#endif
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
 	struct stAF_MotorInfo stMotorInfo;
@@ -233,12 +233,13 @@ static int initAF(void)
 
 	if (*g_pAF_Opened == 1) {
 
-	unsigned short addrotp;
-	unsigned long dataotp = 0;
+		/* unsigned short addrotp; */
+		/* unsigned long dataotp = 0; */
 
-	IniSetAf();
-	IniSet();
-	RamAccFixMod(ON); /* 16bit Fix mode */
+		IniSetAf();
+		IniSet();
+		RamAccFixMod(ON); /* 16bit Fix mode */
+#if 0
 	addrotp = 0x30;
 	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
 		  s4LC898OTP_ReadReg(addrotp + 1);
@@ -286,8 +287,9 @@ static int initAF(void)
 		  s4LC898OTP_ReadReg(addrotp + 1);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWriteA_LC898122AF(0x11D3,dataotp);  //Loop gain Y */
-
+#endif
 	RamAccFixMod(OFF); /* 32bit Float mode */
+#if 0
 	addrotp = 0x44;
 	dataotp = s4LC898OTP_ReadReg(addrotp);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
@@ -325,7 +327,7 @@ static int initAF(void)
 		  s4LC898OTP_ReadReg(addrotp + 3);
 	LOG_INF("[OTP]0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	/* RamWrite32A_LC898122AF(0x1120,dataotp);  //Gyro gain Y */
-
+#endif
 	RamWriteA_LC898122AF(TCODEH, 100); /* focus position */
 	RtnCen(0);
 	msleep(100);
@@ -334,7 +336,7 @@ static int initAF(void)
 	OisEna();
 	SetH1cMod(MOVMODE); /* movie mode */
 	/* SetH1cMod(0);          //still mode */
-
+#if 0
 	addrotp = 0x20;
 	dataotp = (s4LC898OTP_ReadReg(addrotp) << 8) +
 		  s4LC898OTP_ReadReg(addrotp + 1);
@@ -359,7 +361,7 @@ static int initAF(void)
 	LOG_INF("[OTP]AF Macro 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("[OTP]AF Macro 0x%x 0x%x\n", addrotp, (unsigned int)dataotp);
 	LOG_INF("LC898122AF_Open - End\n");
-
+#endif
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
