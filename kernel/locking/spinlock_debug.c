@@ -76,10 +76,25 @@ static void spin_dump(raw_spinlock_t *lock, const char *msg)
 
 static void spin_bug(raw_spinlock_t *lock, const char *msg)
 {
+	char aee_str[50];
+
 	if (!debug_locks_off())
 		return;
 
 	spin_dump(lock, msg);
+	snprintf(aee_str, 50, "%s: %s\n", current->comm, msg);
+	if (!strcmp(msg, "bad magic") || !strcmp(msg, "already unlocked")
+		|| !strcmp(msg, "wrong owner") || !strcmp(msg, "wrong CPU")) {
+		pr_info("%s\n", aee_str);
+		pr_info("maybe use an un-initial spin_lock or mem corrupt\n");
+		pr_info("maybe already unlocked or wrong owner or wrong CPU\n");
+		pr_info("maybe bad magic %08x, should be %08x\n",
+			lock->magic, SPINLOCK_MAGIC);
+		pr_info(">>>>>>>>>>>>>> Let's dump Kernel API <<<<<<<<<<<<<<\n");
+	}
+	aee_kernel_warning_api(__FILE__, __LINE__,
+		DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
+		aee_str, "spinlock debugger\n");
 }
 
 #define SPIN_BUG_ON(cond, lock, msg) if (unlikely(cond)) spin_bug(lock, msg)
@@ -172,10 +187,6 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 		/* if(sched_clock() - t2 < WARNING_TIME) continue; */
 		t2 = sched_clock();
 
-		if (oops_in_progress != 0)
-			/* in exception follow, printk maybe spinlock error */
-			continue;
-
 		/* lockup suspected: */
 		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
 			owner = lock->owner;
@@ -187,6 +198,10 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 		owner ? owner->comm : "<none>",
 		owner ? task_pid_nr(owner) : -1,
 		lock->owner_cpu);
+
+		if (oops_in_progress != 0)
+			/* in exception follow, printk maybe spinlock error */
+			continue;
 
 		if (print_once) {
 			print_once = 0;
