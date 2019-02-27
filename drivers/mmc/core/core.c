@@ -407,7 +407,7 @@ static int mmc_wait_tran(struct mmc_host *host)
 	do {
 		err = mmc_blk_status_check(host->card, &status);
 		if (err) {
-			pr_debug("[CQ] check card status error = %d\n", err);
+			pr_notice("[CQ] check card status error = %d\n", err);
 			return 1;
 		}
 
@@ -444,9 +444,9 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 			areq = host->areq_que[(mrq->cmd->arg >> 16) & 0x1f];
 			mq_rq = container_of(areq, struct mmc_queue_req,
 					mmc_active);
-			pr_notice("[%s]: data error = %d, status=0x%x, line:%d, addr:0x%x\n",
+			pr_notice("[%s]: data error = %d, status=0x%x, line:%d, block addr:0x%x\n",
 				__func__, mrq->data->error, status,
-				__LINE__, mq_rq->brq.que.arg << 9);
+				__LINE__, mq_rq->brq.que.arg);
 		}
 		mmc_wait_tran(host);
 		mrq->data->error = 0;
