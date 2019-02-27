@@ -57,11 +57,12 @@
 #endif
 
 static int pwm_dbg_en;
-#define PWM_ERR(fmt, arg...) pr_notice("[PWM] " fmt "\n", ##arg)
-#define PWM_NOTICE(fmt, arg...) pr_info("[PWM] " fmt "\n", ##arg)
-#define PWM_MSG(fmt, arg...) pr_debug("[PWM] " fmt "\n", ##arg)
+#define PWM_ERR(fmt, arg...) pr_notice("[PWM] %s: " fmt "\n", __func__, ##arg)
+#define PWM_NOTICE(fmt, arg...) pr_info("[PWM] %s: " fmt "\n", __func__, ##arg)
+#define PWM_MSG(fmt, arg...) pr_debug("[PWM] %s: " fmt "\n", __func__, ##arg)
 #define PWM_DBG(fmt, arg...) \
-	do { if (pwm_dbg_en) pr_debug("[PWM] " fmt "\n", ##arg); } while (0)
+	do { if (pwm_dbg_en) pr_debug("[PWM] %s: " fmt "\n", __func__, ##arg); \
+		} while (0)
 
 #define PWM_LOG_BUFFER_SIZE 8
 
@@ -393,7 +394,7 @@ static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq,
 		/* Always use CPU to config DISP_PWM EN */
 		/* to avoid race condition */
 		DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x1, 0x1);
-		PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x1");
+		PWM_MSG("PWN_EN (by CPU) = 0x1");
 
 		disp_pwm_set_drverIC_en(id, enabled);
 	} else {
@@ -409,7 +410,7 @@ static void disp_pwm_set_enabled(struct cmdqRecStruct *cmdq,
 		/* to avoid race condition */
 		DISP_REG_MASK(NULL, reg_base + DISP_PWM_EN_OFF, 0x0, 0x1);
 #endif
-		PWM_MSG("disp_pwm_set_enabled: PWN_EN (by CPU) = 0x0");
+		PWM_MSG("PWN_EN (by CPU) = 0x0");
 
 		disp_pwm_set_drverIC_en(id, enabled);
 	}
@@ -494,15 +495,14 @@ int disp_pwm_set_max_backlight(enum disp_pwm_id_t id, unsigned int level_1024)
 	int index;
 
 	if ((DISP_PWM_ALL & id) == 0) {
-		PWM_ERR("[ERROR] disp_pwm_set_backlight: invalid PWM ID = 0x%x",
+		PWM_ERR("[ERROR] invalid PWM ID = 0x%x",
 			id);
 		return -EFAULT;
 	}
 
 	index = index_of_pwm(id);
 	atomic_set(&g_pwm_max_backlight[index], level_1024);
-	PWM_MSG("disp_pwm_set_max_backlight(id = 0x%x, level = %u)",
-		id, level_1024);
+	PWM_MSG("(id = 0x%x, level = %u)", id, level_1024);
 
 	atomic_set(&g_pwm_is_change_state[index], 1);
 	disp_pwm_set_backlight(id, atomic_read(&g_pwm_backlight[index]));
@@ -533,7 +533,7 @@ int disp_pwm_set_backlight(enum disp_pwm_id_t id, int level_1024)
 	int ret;
 
 #ifdef MTK_DISP_IDLE_LP
-	disp_exit_idle_ex("disp_pwm_set_backlight");
+	disp_exit_idle_ex(__func__);
 #endif
 
 	/* Always write registers by CPU */
@@ -559,8 +559,7 @@ int disp_pwm_set_backlight_cmdq(enum disp_pwm_id_t id,
 	int max_level_1024;
 
 	if ((DISP_PWM_ALL & id) == 0) {
-		PWM_ERR("[ERROR] disp_pwm_set_backlight_cmdq:invalid id = 0x%x",
-			id);
+		PWM_ERR("[ERROR] invalid id = 0x%x", id);
 		return -EFAULT;
 	}
 
@@ -581,7 +580,6 @@ int disp_pwm_set_backlight_cmdq(enum disp_pwm_id_t id,
 		if ((old_pwm == 0 || level_1024 == 0 || abs_diff > 64) &&
 			old_pwm != level_1024) {
 			/* Print information if backlight is changed */
-			PWM_NOTICE("disp_pwm_set_backlight_cmdq");
 			PWM_NOTICE("(id = 0x%x, level_1024 = %d), old = %d",
 				id, level_1024, old_pwm);
 		}
@@ -951,7 +949,7 @@ void disp_pwm_test(const char *cmd, char *debug_output)
 	const unsigned long reg_base = pwm_get_reg_base(DISP_PWM0);
 
 	debug_output[0] = '\0';
-	PWM_NOTICE("disp_pwm_test(%s)", cmd);
+	PWM_NOTICE("test cmd(%s)", cmd);
 
 	if (strncmp(cmd, "src:", 4) == 0) {
 		disp_pwm_test_source(cmd + 4);
