@@ -44,6 +44,7 @@
 #include <linux/of_irq.h>
 #include <linux/of_platform.h>
 #include <mt-plat/sync_write.h> /* For mt65xx_reg_sync_writel(). */
+#include <asm/arch_timer.h>
 
 #ifdef CONFIG_MTK_M4U
 #include <m4u.h>
@@ -2195,62 +2196,53 @@ AF_EXIT:
 #if (ISP_RAW_D_SUPPORT == 1)
 	if (cam_tg2_vf_con & 0x01) {
 		unsigned int cam_af_con;	/*46B0 */
-		unsigned int cam_af_winx_1;     /*46B4 */
-		unsigned int cam_af_winx_2;     /*46B8 */
-		unsigned int cam_af_winx_3;     /*46BC */
-		unsigned int cam_af_winy_1;     /*46C0 */
-		unsigned int cam_af_winy_2;     /*46C4 */
-		unsigned int cam_af_winy_3;     /*46C8 */
 		unsigned int cam_af_size;       /*46CC */
-		unsigned int cam_af_flt_1;      /*46D4 */
-		unsigned int cam_af_flt_2;      /*46D8 */
-		unsigned int cam_af_flt_3;      /*46DC */
-		unsigned int cam_af_th;	 /*46E0 */
-		unsigned int cam_af_flo_win_1;  /*46E4 */
-		unsigned int cam_af_flo_size_1; /*46E8 */
-		unsigned int cam_af_flo_win_2;  /*46EC */
-		unsigned int cam_af_flo_size_2; /*46F0 */
-		unsigned int cam_af_flo_win_3;  /*46F4 */
-		unsigned int cam_af_flo_size_3; /*46F8 */
-		unsigned int cam_af_flo_th;     /*46FC */
-		unsigned int cam_af_image_size; /*4700 */
-		unsigned int AF_WIN_WD;
-		unsigned int AF_WIN_HT;
-		unsigned int AF_WINX_0;
-		unsigned int AF_WINX_1;
-		unsigned int AF_WINX_2;
-		unsigned int AF_WINX_3;
-		unsigned int AF_WINX_4;
-		unsigned int AF_WINX_5;
-		/*              unsigned int AF_WINX_6;*/
-
-		unsigned int AF_WINY_0;
-		unsigned int AF_WINY_1;
-		unsigned int AF_WINY_2;
-		unsigned int AF_WINY_3;
-		unsigned int AF_WINY_4;
-		unsigned int AF_WINY_5;
-		/*              unsigned int AF_WINY_6;*/
-
-		unsigned int AF_FLO_WINX_1;
-		unsigned int AF_FLO_WINY_1;
-		unsigned int AF_FLO_WINX_2;
-		unsigned int AF_FLO_WINY_2;
-		unsigned int AF_FLO_WINX_3;
-		unsigned int AF_FLO_WINY_3;
-
-		unsigned int AF_FLO_WD_1;
-		unsigned int AF_FLO_HT_1;
-		unsigned int AF_FLO_WD_2;
-		unsigned int AF_FLO_HT_2;
-		unsigned int AF_FLO_WD_3;
-		unsigned int AF_FLO_HT_3;
-
-		unsigned int AF_IMAGE_WD;
-		unsigned int AF_DECI;
-		unsigned int AF_InputWidth;
-
-		unsigned int AF_LeftOverWidth;
+		unsigned int cam_ctrl_en_p1_dma_d;
+		unsigned int tmp;
+		unsigned int rst;
+		unsigned int cam_tg_sen_mode;
+		unsigned int cam_rmx_crop;
+		unsigned int TG_W;
+		unsigned int TG_H;
+		unsigned int cam_af_vld;
+		unsigned int cam_af_blk_0;
+		unsigned int cam_af_blk_1;
+		unsigned int cam_af_th_2;
+		unsigned int afo_xsize;
+		unsigned int afo_ysize;
+		unsigned int AF_EN;
+		unsigned int AFO_EN;
+		unsigned int SGG1_EN;
+		unsigned int SGG5_EN;
+		unsigned int tg_w_pxl_e;
+		unsigned int tg_w_pxl_s;
+		unsigned int tg_h_lin_e;
+		unsigned int tg_h_lin_s;
+		unsigned int af_v_avg_lvl;
+		unsigned int af_v_gonly;
+		unsigned int dbl_data_bus;
+		unsigned int bmx_end_x;
+		unsigned int bmx_str_x;
+		unsigned int rmx_end_x;
+		unsigned int rmx_str_x;
+		unsigned int h_size;
+		unsigned int v_size;
+		unsigned int af_image_wd;
+		unsigned int af_vld_ystart;
+		unsigned int af_vld_xstart;
+		unsigned int af_blk_xnum;
+		unsigned int af_blk_ynum;
+		unsigned int af_blk_xsize;
+		unsigned int af_blk_ysize;
+		unsigned int af_ext_stat_en;
+		unsigned int af_blk_sz;
+		unsigned int af_h_gonly;
+		unsigned int xsize;
+		unsigned int ysize;
+		unsigned int af_sat_th0;
+		unsigned int af_sat_th1;
+		unsigned int af_sat_th2;
+		unsigned int af_sat_th3;
 
 		unsigned int cam_aao_xsize;   /*7554 */
 		unsigned int cam_aao_ysize;   /*7558 */
@@ -2271,184 +2263,256 @@ AF_EXIT:
 		unsigned int AWB_W_VPIT;
 		unsigned int AWB_W_HORG;
 		unsigned int AWB_W_VORG;
-		/*Check ISP_D AF_D. */
-		log_inf("ISP chk TG2");
+
+		/*Check AF setting */
+
+		// under twin case, sgg_sel won't be 0 , so , don't need to take
+		// into consideration at twin case
+		cam_ctrl_en_p1   = ISP_RD32(ISP_ADDR + 0x10);
+		cam_ctrl_en_p1_dma_d = ISP_RD32(ISP_ADDR + 0x14);
+		cam_af_con = ISP_RD32(ISP_ADDR + 0x26B0);
+		tmp = 0;
+		rst = 0;
+		cam_tg_sen_mode = ISP_RD32(ISP_ADDR + 0x2410);
+		cam_bmx_crop = ISP_RD32(ISP_ADDR + 0xE14);
+		cam_rmx_crop = ISP_RD32(ISP_ADDR + 0xE24);
+		TG_W = ISP_RD32(ISP_ADDR + 0x2418);
+		TG_H = ISP_RD32(ISP_ADDR + 0x241C);
+
+		cam_af_size = ISP_RD32(ISP_ADDR + 0x26E0);
+		cam_af_vld = ISP_RD32(ISP_ADDR + 0x26E4);
+		cam_af_blk_0 = ISP_RD32(ISP_ADDR + 0x26E8);
+		cam_af_blk_1 = ISP_RD32(ISP_ADDR + 0x26EC);
+		cam_af_th_2 = ISP_RD32(ISP_ADDR + 0x26F0);
+		// afo_d_xsize = ISP_RD32(ISP_ADDR + 0x3534);
+		// afo_d_ysize = ISP_RD32(ISP_ADDR + 0x353C);
+		afo_xsize = ISP_RD32(ISP_ADDR + 0x3538);
+		afo_ysize = ISP_RD32(ISP_ADDR + 0x353c);
+
+		AF_EN = (cam_ctrl_en_p1 >> 16) & 0x1;
+		AFO_EN = (cam_ctrl_en_p1_dma_d >> 3) & 0x1;
+		SGG1_EN = (cam_ctrl_en_p1 >> 15) & 0x1;
+		SGG5_EN = (cam_ctrl_en_p1 >> 27) & 0x1;
 
 		grab_width = ((cam_tg2_sen_grab_pxl >> 16) & 0x7fff) -
-			     (cam_tg2_sen_grab_pxl & 0x7fff);
+		(cam_tg2_sen_grab_pxl & 0x7fff);
 		grab_height = ((cam_tg2_sen_grab_lin >> 16) & 0x1fff) -
-			      (cam_tg2_sen_grab_lin & 0x1fff);
+		(cam_tg2_sen_grab_lin & 0x1fff);
 
-		cam_af_con = ISP_RD32(ISP_ADDR + 0x6B0);
-		cam_af_winx_1 = ISP_RD32(ISP_ADDR + 0x6B4);
-		cam_af_winx_2 = ISP_RD32(ISP_ADDR + 0x6B8);
-		cam_af_winx_3 = ISP_RD32(ISP_ADDR + 0x6BC);
-		cam_af_winy_1 = ISP_RD32(ISP_ADDR + 0x6C0);
-		cam_af_winy_2 = ISP_RD32(ISP_ADDR + 0x6C4);
-		cam_af_winy_3 = ISP_RD32(ISP_ADDR + 0x6C8);
-		cam_af_size = ISP_RD32(ISP_ADDR + 0x6CC);
 
-		cam_af_flt_1 = ISP_RD32(ISP_ADDR + 0x26D4);      /*66D4 */
-		cam_af_flt_2 = ISP_RD32(ISP_ADDR + 0x26D8);      /*66D8 */
-		cam_af_flt_3 = ISP_RD32(ISP_ADDR + 0x26DC);      /*66DC */
-		cam_af_th = ISP_RD32(ISP_ADDR + 0x26E0);	 /*66E0 */
-		cam_af_flo_win_1 = ISP_RD32(ISP_ADDR + 0x26E4);  /*66E4 */
-		cam_af_flo_size_1 = ISP_RD32(ISP_ADDR + 0x26E8); /*66E8 */
-		cam_af_flo_win_2 = ISP_RD32(ISP_ADDR + 0x26EC);  /*66EC */
-		cam_af_flo_size_2 = ISP_RD32(ISP_ADDR + 0x26F0); /*66F0 */
-		cam_af_flo_win_3 = ISP_RD32(ISP_ADDR + 0x26F4);  /*66F4 */
-		cam_af_flo_size_3 = ISP_RD32(ISP_ADDR + 0x26F8); /*66F8 */
-		cam_af_flo_th = ISP_RD32(ISP_ADDR + 0x26FC);     /*66FC */
-		cam_af_image_size = ISP_RD32(ISP_ADDR + 0x2700); /*6700 */
 
-		AF_WINX_0 = (cam_af_winx_1 & 0x1fff);
-		AF_WINX_1 = ((cam_af_winx_1 >> 16) & 0x1fff);
-		AF_WINX_2 = (cam_af_winx_2 & 0x1fff);
-		AF_WINX_3 = ((cam_af_winx_2 >> 16) & 0x1fff);
-		AF_WINX_4 = (cam_af_winx_3 & 0x1fff);
-		AF_WINX_5 = ((cam_af_winx_3 >> 16) & 0x1fff);
-
-		AF_WINY_0 = (cam_af_winy_1 & 0x1fff);
-		AF_WINY_1 = ((cam_af_winy_1 >> 16) & 0x1fff);
-		AF_WINY_2 = (cam_af_winy_2 & 0x1fff);
-		AF_WINY_3 = ((cam_af_winy_2 >> 16) & 0x1fff);
-		AF_WINY_4 = (cam_af_winy_3 & 0x1fff);
-		AF_WINY_5 = ((cam_af_winy_3 >> 16) & 0x1fff);
-
-		AF_FLO_WINX_1 = (cam_af_flo_win_1 & 0x1fff);
-		AF_FLO_WINY_1 = ((cam_af_flo_win_1 >> 16) & 0x1fff);
-		AF_FLO_WINX_2 = (cam_af_flo_win_2 & 0x1fff);
-		AF_FLO_WINY_2 = ((cam_af_flo_win_2 >> 16) & 0x1fff);
-		AF_FLO_WINX_3 = (cam_af_flo_win_3 & 0x1fff);
-		AF_FLO_WINY_3 = ((cam_af_flo_win_3 >> 16) & 0x1fff);
-
-		AF_FLO_WD_1 = (cam_af_flo_size_1 & 0xfff);
-		AF_FLO_HT_1 = ((cam_af_flo_size_1 >> 16) & 0xfff);
-		AF_FLO_WD_2 = (cam_af_flo_size_2 & 0xfff);
-		AF_FLO_HT_2 = ((cam_af_flo_size_2 >> 16) & 0xfff);
-		AF_FLO_WD_3 = (cam_af_flo_size_3 & 0xfff);
-		AF_FLO_HT_3 = ((cam_af_flo_size_3 >> 16) & 0xfff);
-
-		AF_IMAGE_WD = cam_af_image_size & 0x1fff;
-
-		AF_DECI = cam_af_con & 0x03;
-
-		/*1. The min horizontal window size is 8.
-		 * (AF_WIN_WD/AF_FLO_WD_x)
-		 *2. The min vertical window size is 4. (AF_WIN_HT/AF_FLO_HT_x)
-		 */
-		AF_WIN_WD = (cam_af_size & 0x7ff);
-		AF_WIN_HT = ((cam_af_size >> 16) & 0x7ff);
-		if ((AF_WIN_WD < 8) || (AF_FLO_WD_1 < 8) || (AF_FLO_WD_2 < 8) ||
-		    (AF_FLO_WD_3 < 8) || (AF_WIN_HT < 4) || (AF_FLO_HT_1 < 4) ||
-		    (AF_FLO_HT_2 < 4) || (AF_FLO_HT_3 < 4)) {
-			pr_info("HwRWCtrl:: AF_D Error: The min horizontal window size is 8. (AF_WIN_WD(%d), AF_FLO_WD_1(%d), AF_FLO_WD_2(%d), AF_FLO_WD_3(%d))!!",
-				AF_WIN_WD, AF_FLO_WD_1, AF_FLO_WD_2,
-				AF_FLO_WD_3);
-			pr_info("HwRWCtrl:: AF_D Error: The min vertical window size is 4.(AF_WIN_HT(%d), AF_FLO_HT_1(%d), AF_FLO_HT_2(%d), AF_FLO_HT_3(%d))!!",
-				AF_WIN_HT, AF_FLO_HT_1, AF_FLO_HT_2,
-				AF_FLO_HT_3);
-		}
-		/*3. The horizontal window start point and size must be
-		 *  multiples of 2
-		 *	(AF_WINX_x/AF_FLO_WINX_x/AF_WIN_WD/AF_FLO_WD_x)
-		 */
-		if (((AF_WINX_0 % 2) != 0) || ((AF_WINX_1 % 2) != 0) ||
-		    ((AF_WINX_2 % 2) != 0) || ((AF_WINX_3 % 2) != 0) ||
-		    ((AF_WINX_4 % 2) != 0) || ((AF_WINX_5 % 2) != 0) ||
-		    ((AF_WINY_0 % 2) != 0) || ((AF_WINY_1 % 2) != 0) ||
-		    ((AF_WINY_2 % 2) != 0) || ((AF_WINY_3 % 2) != 0) ||
-		    ((AF_WINY_4 % 2) != 0) || ((AF_WINY_5 % 2) != 0)) {
-			pr_info("HwRWCtrl:: AF_D Error: The horizontal window start point	and size must be multiples of 2 !!");
-			pr_info("HwRWCtrl:: AF_D Error: AF_WINX_0(%d)/AF_WINX_1(%d)/AF_WINX_2(%d)/AF_WINX_3(%d)/AF_WINX_4(%d)/AF_WINX_5(%d)!!",
-				AF_WINX_0, AF_WINX_1, AF_WINX_2, AF_WINX_3,
-				AF_WINX_4, AF_WINX_5);
-			pr_info("HwRWCtrl:: AF_D Error: AF_WINY_0(%d)/AF_WINY_1(%d)/AF_WINY_2(%d)/AF_WINY_3(%d)/AF_WINY_4(%d)/AF_WINY_5(%d)!!",
-				AF_WINY_0, AF_WINY_1, AF_WINY_2, AF_WINY_3,
-				AF_WINY_4, AF_WINY_5);
-		}
-		/*10. Horizontal start position of floating window must be
-		 * multiples of 2
-		 *11. Horizontal size of floating window must be multiples of 2
-		 */
-		if (((AF_FLO_WINX_1 % 2) != 0) || ((AF_FLO_WINX_2 % 2) != 0) ||
-		    ((AF_FLO_WINX_3 % 2) != 0) || ((AF_FLO_WINY_1 % 2) != 0) ||
-		    ((AF_FLO_WINY_2 % 2) != 0) || ((AF_FLO_WINY_3 % 2) != 0) ||
-		    ((AF_FLO_WD_1 % 2) != 0) || ((AF_FLO_WD_2 % 2) != 0) ||
-		    ((AF_FLO_WD_3 % 2) != 0) || ((AF_FLO_HT_1 % 2) != 0) ||
-		    ((AF_FLO_HT_2 % 2) != 0) || ((AF_FLO_HT_3 % 2) != 0)) {
-			pr_info("HwRWCtrl:: AF_D Error: Horizontal start position of floating window must be multiples of 2!!");
-			pr_info("HwRWCtrl:: AF_D Error: Horizontal size of floating window must be multiples of 2!!");
-			pr_info("HwRWCtrl:: AF_D Error: AF_FLO_WINX_1(%d)/AF_FLO_WINX_2(%d)/AF_FLO_WINX_3(%d)!!",
-				AF_FLO_WINX_1, AF_FLO_WINX_2, AF_FLO_WINX_3);
-			pr_info("HwRWCtrl:: AF_D Error: AF_FLO_WD_1(%d)/AF_FLO_WD_2(%d)/AF_FLO_WD_3(%d)!!",
-				AF_FLO_WD_1, AF_FLO_WD_2, AF_FLO_WD_3);
-			pr_info("HwRWCtrl:: AF_D Error: AF_FLO_HT_1(%d)/AF_FLO_HT_2(%d)/AF_FLO_HT_3(%d)!!",
-				AF_FLO_HT_1, AF_FLO_HT_2, AF_FLO_HT_3);
-		}
-		/*5. Horizontal size of each normal window is limited to 510*2
-		 * (AF_WIN_WD)
-		 *6. Vertical size of each normal window is limited to 511*2
-		 * (AF_WIN_HT)
-		 */
-		if ((AF_WIN_WD > 1020) || (AF_WIN_HT > 1022)) {
-			pr_info("HwRWCtrl:: AF_D Error: Horizontal size of each normal window is limited to 510*2 (AF_WIN_WD(%d))!!",
-				AF_WIN_WD);
-			pr_info("HwRWCtrl:: AF_D Error: Vertical size of each normal window is limited to 511*2 (AF_WIN_HT(%d))!!",
-				AF_WIN_HT);
+		//
+		if (AF_EN == 0) {
+			if (AFO_EN == 1) {
+				pr_info("DO NOT enable AFO_D without enable AF\n");
+				rst = MFALSE;
+				goto AF_D_EXIT;
+			} else
+				goto AF_D_EXIT;
 		}
 
-		/*12. Maximum floating widow size is 4094x4095 */
-		if ((AF_FLO_WD_1 > 4094) || (AF_FLO_WD_2 > 4094) ||
-		    (AF_FLO_WD_3 > 4094) || (AF_FLO_HT_1 > 4095) ||
-		    (AF_FLO_HT_2 > 4095) || (AF_FLO_HT_3 > 4095))
-			pr_info("HwRWCtrl:: AF_D Error: Maximum floating widow size is 4094x4095!!");
-
-		if (bmx_enable == MTRUE) {
-			if (sgg_sel == 1)
-				AF_InputWidth = bmx_width;
-			else
-				AF_InputWidth = grab_width;
-
-			/*18. If two_pixel mode, AF_DECI >= 1 */
-			if (AF_DECI != 0)
-				pr_info("HwRWCtrl:: AF_D Error: If two_pixel mode, AF_DECI >= 1!!");
-
-			/*Error */
-		} else
-			AF_InputWidth = grab_width;
-
-
-		/*15. AF_IMAGE_WD must be the same as input frame width */
-		if (AF_InputWidth != AF_IMAGE_WD) {
-			/*Error */
-			pr_info("HwRWCtrl:: AF_D Error: bmx_enable(%d), sgg_sel(%d), bmx_width(%d), grab_width(%d)!!",
-				bmx_enable, sgg_sel, bmx_width, grab_width);
-			pr_info("HwRWCtrl:: AF_D Error: AF_IMAGE_WD(%d) must be the same as input frame width(%d)!!",
-				AF_IMAGE_WD, AF_InputWidth);
+		//
+		tg_w_pxl_e = (TG_W >> 16) & 0x7fff;
+		tg_w_pxl_s = TG_W & 0x7fff;
+		tg_h_lin_e = (TG_H >> 16) & 0x7fff;
+		tg_h_lin_s = TG_H & 0x7fff;
+		if (tg_w_pxl_e - tg_w_pxl_s < 32) {
+			log_inf("tg width < 32, can't enable AF:0x%x\n",
+				(tg_w_pxl_e - tg_w_pxl_s));
+			rst = MFALSE;
 		}
-		/*16. "CAM_AF_WINX_x.AF_WINX_x + CAM_AF_SIZE.AF_WIN_WD <= input
-		 * frame width" for a valid window
-		 *17. "CAM_AF_WINY_x.AF_WINY_x + CAM_AF_SIZE.AF_WIN_HT <= input
-		 * frame height" for a valid window
 
-		 *14. If AF window is aligned to image left/right boundary,
-		 *  minimum horizontal size should be
-		 *	larger than 24*(1<<AF_DECI_1) for non-zero 24-tap FIR
-		 *  statistics result
-		 */
-		AF_LeftOverWidth = AF_IMAGE_WD - (AF_WINX_0 + 6 * AF_WIN_WD);
-		/*if ( (AF_WINX_0 < (24*(1<<AF_DECI))) || ((AF_LeftOverWidth) <
-		 * (24*(1<<AF_DECI))))
-		 */
-		if ((AF_WINX_0 < 16) || (AF_LeftOverWidth < 16)) {
-			if (AF_WIN_WD < (24 * (1 << AF_DECI))) {
-				pr_info("HwRWCtrl:: AF_D Error: minimum horizontal size should be larger than	24*(1<<AF_DECI_1) for non-zero 24-tap FIR statistics result!!");
-				pr_info("HwRWCtrl:: AF_D Error: AF_WINX_0(%d), AF_DECI(%d), AF_LeftOverWidth(%d), AF_IMAGE_WD(%d), AF_WIN_WD(%d)!!",
-					AF_WINX_0, AF_DECI, AF_LeftOverWidth,
-					AF_IMAGE_WD, AF_WIN_WD);
+		// AFO and AF relaterd module enable check
+		if ((AFO_EN == 0) || (SGG1_EN == 0)) {
+			pr_info("AF is enabled, MUST enable AFO/SGG1:0x%x_0x%x\n",
+				AFO_EN, SGG1_EN);
+			rst = MFALSE;
+		}
+
+		//
+		af_v_avg_lvl = (cam_af_con >> 20) & 0x3;
+		af_v_gonly = (cam_af_con >> 17) & 0x1;
+		dbl_data_bus = (cam_tg_sen_mode >> 1) & 0x1;
+		bmx_end_x = (cam_bmx_crop >> 16) & 0x1fff;
+		bmx_str_x = cam_bmx_crop & 0x1fff;
+		rmx_end_x = (cam_rmx_crop >> 16) & 0x1fff;
+		rmx_str_x = cam_rmx_crop & 0x1fff;
+		// AF image wd
+		switch (sgg_sel) {
+		case 0:
+			h_size = tg_w_pxl_e - tg_w_pxl_s;
+			v_size = tg_h_lin_e - tg_h_lin_s;
+			break;
+		case 1:
+			h_size = bmx_end_x - bmx_str_x + 1;
+			v_size = tg_h_lin_e - tg_h_lin_s;
+			break;
+		case 2:
+			h_size = rmx_end_x - rmx_str_x + 1;
+			v_size = tg_h_lin_e - tg_h_lin_s;
+			break;
+		default:
+			log_inf("unsupported sgg_sel:0x%x\n", sgg_sel);
+			return MFALSE;
+		}
+		af_image_wd = cam_af_size & 0x3fff;
+		if (h_size != af_image_wd) {
+			log_inf("AF input size mismatch:0x%x_0x%x\n",
+				af_image_wd, h_size);
+			rst = MFALSE;
+		}
+
+		// ofset
+		af_vld_ystart = (cam_af_vld >> 16) & 0x3fff;
+		af_vld_xstart = cam_af_vld & 0x3fff;
+		if ((af_vld_xstart & 0x1) || (af_vld_ystart & 0x1)) {
+			rst = MFALSE;
+			log_inf("AF vld start must be even:0x%x_0x%x\n",
+				af_vld_xstart, af_vld_ystart);
+		}
+
+		// window num
+		af_blk_xnum = cam_af_blk_1 & 0x1ff;
+		af_blk_ynum = (cam_af_blk_1 >> 16) & 0x1ff;
+	/* win_num_x =
+	 * CAM_READ_BITS(this->m_pDrv->getPhyObj(),CAM_AF_BLK_1,AF_BLK_XNUM);
+	 * win_num_y =
+	 * CAM_READ_BITS(this->m_pDrv->getPhyObj(),CAM_AF_BLK_1,AF_BLK_YNUM);
+	 */
+		if ((af_blk_xnum == 0) || (af_blk_xnum > 128)) {
+			rst = MFALSE;
+			log_inf("AF af_blk_xnum :0x%x[1~128]\n", af_blk_xnum);
+		}
+		if ((af_blk_ynum == 0) || (af_blk_ynum > 128)) {
+			rst = MFALSE;
+			log_inf("AF af_blk_ynum :0x%x[1~128]\n", af_blk_ynum);
+		}
+
+		// win size
+		af_blk_xsize = cam_af_blk_0 & 0xff;
+		af_blk_ysize = (cam_af_blk_0 >> 16) & 0xff;
+		// max
+		if (af_blk_xsize > 254) {
+			rst = MFALSE;
+			log_inf("af max h win size:254 cur:0x%x\n",
+				af_blk_xsize);
+		}
+		// min constraint
+		if ((af_v_avg_lvl == 3) && (af_v_gonly == 1))
+			tmp = 32;
+		else if ((af_v_avg_lvl == 3) && (af_v_gonly == 0))
+			tmp = 16;
+		else if ((af_v_avg_lvl == 2) && (af_v_gonly == 1))
+			tmp = 16;
+		else
+			tmp = 8;
+
+		if (af_blk_xsize < tmp) {
+			log_inf("af min h win size:0x%x cur:0x%x [0x%x_0x%x]\n",
+				tmp, af_blk_xsize, af_v_avg_lvl, af_v_gonly);
+			rst = MFALSE;
+		}
+
+		if (af_v_gonly == 1) {
+			if (af_blk_xsize & 0x3) {
+				log_inf("af min h win size 4 align:0x%x\n",
+					af_blk_xsize);
+				rst = MFALSE;
+			}
+		} else {
+			if (af_blk_xsize & 0x1) {
+				log_inf("af min h win size 2 align:0x%x\n",
+					af_blk_xsize);
+				rst = MFALSE;
 			}
 		}
+
+		if (af_blk_ysize > 255) {
+			rst = MFALSE;
+			log_inf("af max v win size:255 cur:0x%x\n",
+				af_blk_ysize);
+		}
+		// min constraint
+		if (af_blk_xsize < 1) {
+			log_inf("af min v win size:1, cur:0x%x\n",
+				af_blk_xsize);
+			rst = MFALSE;
+		}
+
+		af_ext_stat_en = (cam_af_con >> 22) & 0x1;
+		af_blk_sz = ((af_ext_stat_en == MTRUE) ? 32 : 16);
+		af_h_gonly = (cam_af_con >> 16) & 0x1;
+		if (af_ext_stat_en == 1) {
+			if (af_blk_xsize < 8) {
+				pr_info("AF_EXT_STAT_EN=1, af min h win size::8 cur:0x%x\n",
+					af_blk_xsize);
+				rst = MFALSE;
+			}
+			if ((SGG5_EN == 0) || (af_h_gonly != 0)) {
+				pr_info("AF_EXT_STAT_EN=1, MUST enable sgg5 & disable AF_H_GONLY:0x%x_0x%x\n",
+					SGG5_EN, af_h_gonly);
+				rst = MFALSE;
+			}
+		} else {
+			if (SGG5_EN == 1) {
+				pr_info("AF_EXT_STAT_EN=0, sgg5 must be disabled:0x%x\n",
+					SGG5_EN);
+				rst = MFALSE;
+			}
+		}
+
+		// check max afo size, 128*128*af_blk_sz
+		afo_xsize = afo_xsize & 0x3fff;
+		afo_ysize = afo_ysize & 0x1fff;
+		if (afo_xsize * afo_ysize > 128 * 128 * af_blk_sz) {
+			rst = MFALSE;
+			log_inf("afo max size out of range:0x%x_0x%x\n",
+				afo_xsize * afo_ysize,
+				128 * 128 * af_blk_sz);
+		}
+
+		// xsize/ysize
+		xsize = af_blk_xnum * af_blk_sz;
+		if (afo_xsize != (xsize - 1)) {
+			log_inf("afo xsize mismatch:0x%x_0x%x\n", af_blk_xsize,
+				(xsize - 1));
+			rst = MFALSE;
+		}
+		ysize = af_blk_ynum;
+		if (afo_ysize != (ysize - 1)) {
+			log_inf("afo ysize mismatch:0x%x_0x%x\n", afo_ysize,
+				(ysize - 1));
+			rst = MFALSE;
+		}
+
+		if ((af_vld_xstart + af_blk_xsize * af_blk_xnum) > h_size) {
+			rst = MFALSE;
+			log_inf("af h window out of range:0x%x_0x%x\n",
+				(af_vld_xstart + af_blk_xsize * af_blk_xnum),
+				h_size);
+		}
+		if ((af_vld_ystart + af_blk_ysize * af_blk_ynum) > v_size) {
+			rst = MFALSE;
+			log_inf("af v window out of range:0x%x_0x%x\n",
+				(af_vld_ystart + af_blk_ysize * af_blk_ynum),
+				v_size);
+		}
+
+		// AF_TH
+		af_sat_th0 = cam_af_th_2 & 0xff;
+		af_sat_th1 = (cam_af_th_2 >> 8) & 0xff;
+		af_sat_th2 = (cam_af_th_2 >> 16) & 0xff;
+		af_sat_th3 = (cam_af_th_2 >> 24) & 0xff;
+		if ((af_sat_th0 > af_sat_th1) || (af_sat_th1 > af_sat_th2) ||
+		    (af_sat_th2 > af_sat_th3)) {
+			pr_info("af sat th, MUST th3 >= th2 >= th1 >= th0:0x%x_0x%x_0x%x_0x%x\n",
+				af_sat_th3, af_sat_th2, af_sat_th1, af_sat_th0);
+			rst = MFALSE;
+		}
+
+AF_D_EXIT:
+		if (rst == MFALSE)
+			log_inf("af check fail:cur mux:0x%x\n", sgg_sel);
 
 /*Chek AE_D setting */
 #if 0
@@ -2482,9 +2546,9 @@ AF_EXIT:
 			if ((cam_aao_ysize + 1) != 1)
 				log_inf("Err HwRWCtrl::AAO_D_YSIZE(%d) != 1",
 					cam_aao_ysize);
-			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM * 5 +
+			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM * 7 +
 						(histogramen_num << 8)))
-				pr_info("Error HwRWCtrl::AAO_D_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*5 + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
+				pr_info("Error HwRWCtrl::AAO_D_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*7 + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
 					AAO_XSIZE, AWB_W_HNUM, AWB_W_VNUM,
 					histogramen_num);
 		}
@@ -10790,12 +10854,14 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 			g_ISPIntErr[_IRQ] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX];
 			ISP_chkModuleSetting();
+			log_err("tick=%u\n", (u32) arch_counter_get_cntvct());
 		}
 		if (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] & (~STATUSX_WARNING)) {
 			log_err("ISP INT ERR_P1_D 0x%x\n",
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X]);
 			g_ISPIntErr[_IRQ_D] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X];
+			log_err("tick=%u\n", (u32) arch_counter_get_cntvct());
 		}
 	}
 	/* log_inf("isp irq     status:0x%x_0x%x",
