@@ -79,7 +79,6 @@ struct PVRSRV_CLIENT_SYNC_PRIM;
  * has signalled
  * @cmd_complete_handle: handle for callback used to signal fences when fence
  * syncs are met
- * @signal_work: work item used to signal fences when fence syncs are met
  * @list_lock: protects the active and active foreign lists
  * @signal_list: list of fences waiting to be signalled
  * @fence_list: list of fences (used for debugging)
@@ -105,7 +104,6 @@ struct pvr_fence_context {
 	struct work_struct check_status_work;
 
 	void *cmd_complete_handle;
-	struct work_struct signal_work;
 
 	spinlock_t list_lock;
 	struct list_head signal_list;
