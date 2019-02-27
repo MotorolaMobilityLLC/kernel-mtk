@@ -158,8 +158,9 @@ static int mtk_pcm_fmtx_stop(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	/* struct afe_block_t *Afe_Block = &(pMemControl->rBlock); */
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("mtk_pcm_fmtx_stop\n");
-
+#endif
 	irq_remove_user(substream,
 			irq_request_number(Soc_Aud_Digital_Block_MEM_DL1));
 
@@ -277,7 +278,9 @@ static int mtk_pcm_fmtx_open(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_fmtx_close(struct snd_pcm_substream *substream)
 {
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	/* mtk_wcn_cmb_stub_audio_ctrl((CMB_STUB_AIF_X)CMB_STUB_AIF_0); */
 
 	AudDrv_Clk_Off();
@@ -368,7 +371,9 @@ static int mtk_pcm_fmtx_silence(struct snd_pcm_substream *substream,
 				int channel, snd_pcm_uframes_t pos,
 				snd_pcm_uframes_t count)
 {
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	return 0; /* do nothing */
 }
 
@@ -377,7 +382,9 @@ static void *dummy_page[2];
 static struct page *mtk_pcm_fmtx_page(struct snd_pcm_substream *substream,
 				      unsigned long offset)
 {
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
@@ -402,17 +409,18 @@ static struct snd_soc_platform_driver mtk_fmtx_soc_platform = {
 static int mtk_fmtx_probe(struct platform_device *pdev)
 {
 	/* int ret = 0; */
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_FM_MRGTX_PCM);
-
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
-
+#endif
 	mDev = &pdev->dev;
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_fmtx_soc_platform);
@@ -420,7 +428,9 @@ static int mtk_fmtx_probe(struct platform_device *pdev)
 
 static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform)
 {
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("mtk_afe_afe_probe\n");
+#endif
 	snd_soc_add_platform_controls(platform, Audio_snd_fmtx_controls,
 				      ARRAY_SIZE(Audio_snd_fmtx_controls));
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
@@ -432,7 +442,9 @@ static int mtk_afe_fmtx_probe(struct snd_soc_platform *platform)
 
 static int mtk_fmtx_remove(struct platform_device *pdev)
 {
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	snd_soc_unregister_platform(&pdev->dev);
 	return 0;
 }
@@ -465,8 +477,9 @@ static struct platform_device *soc_mtkfmtx_dev;
 static int __init mtk_soc_platform_init(void)
 {
 	int ret;
-
+#if defined(FMTX_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 #ifndef CONFIG_OF
 	soc_mtkfmtx_dev = platform_device_alloc(MT_SOC_FM_MRGTX_PCM, -1);
 	if (!soc_mtkfmtx_dev)

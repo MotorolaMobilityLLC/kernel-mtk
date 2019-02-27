@@ -224,13 +224,17 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 			      &substream->runtime->dma_area,
 			      substream->runtime->dma_bytes, substream,
 			      params_format(hw_params), false) == 0) {
+#if defined(AUD_DEBUG_LOG)
 		pr_debug("AllocateAudioSram success\n");
+#endif
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, false,
 			    substream->runtime->dma_addr);
 	} else if (Capture_dma_buf->area) {
+#if defined(AUD_DEBUG_LOG)
 		pr_debug("%s = %p dma_buf->area = %p dma_buf->addr = 0x%lx\n",
 		       __func__, Capture_dma_buf, Capture_dma_buf->area,
 		       (long)Capture_dma_buf->addr);
+#endif
 		runtime->dma_area = Capture_dma_buf->area;
 		runtime->dma_addr = Capture_dma_buf->addr;
 		SetHighAddr(Soc_Aud_Digital_Block_MEM_VUL, true,
@@ -245,11 +249,12 @@ static int mtk_capture_pcm_hw_params(struct snd_pcm_substream *substream,
 
 	set_mem_block(substream, hw_params, TDM_VUL_Control_context,
 		      Soc_Aud_Digital_Block_MEM_VUL);
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       __func__, substream->runtime->dma_bytes,
 	       substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
+#endif
 	return ret;
 }
 

@@ -287,16 +287,20 @@ static int mtk_pcm_dl2_params(struct snd_pcm_substream *substream,
 	set_mem_block(substream, hw_params, pMemControl,
 		      Soc_Aud_Digital_Block_MEM_DL2);
 
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		       substream->runtime->dma_bytes,
 		       substream->runtime->dma_area,
 		       (long)substream->runtime->dma_addr);
+#endif
 	return ret;
 }
 
 static int mtk_pcm_dl2_hw_free(struct snd_pcm_substream *substream)
 {
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("mtk_pcm_dl2_hw_free\n");
+#endif
 	return 0;
 }
 
@@ -314,9 +318,10 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 	mtk_pcm_dl2_hardware.buffer_bytes_max = GetPLaybackDramSize();
 	AudDrv_Emi_Clk_On();
-
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("mtk_pcm_dl2_hardware.buffer_bytes_max = %zu\n",
 		       mtk_pcm_dl2_hardware.buffer_bytes_max);
+#endif
 	runtime->hw = mtk_pcm_dl2_hardware;
 
 	AudDrv_Clk_On();
@@ -538,7 +543,9 @@ static int mtk_pcm_dl2_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_dl2_trigger(struct snd_pcm_substream *substream, int cmd)
 {
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("mtk_pcm_trigger cmd = %d\n", cmd);
+#endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -802,10 +809,12 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream, int channel,
 	int remainCount = 0;
 	int ret = 0;
 	int retryCount = 0;
+#if defined(DL2_DEBUG_LOG)
 	pr_debug(
 		"%s pos = %lu count = %lu, BufferSize %d, ConsumeSize %d\n",
 		__func__, pos, count, ISRCopyBuffer.u4BufferSize,
 		ISRCopyBuffer.u4IsrConsumeSize);
+#endif
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
 
@@ -889,15 +898,21 @@ static int dataTransfer(void *dest, const void *src, uint32_t size)
 	int ret = 0;
 
 	if (unlikely(!access_ok(VERIFY_READ, src, size))) {
+#if defined(DL2_DEBUG_LOG)
 		pr_debug(
 			"AudDrv_write 0ptr invalid data_w_ptr=%p, size=%d\n",
 			src, size);
+#endif
 	} else {
+#if defined(DL2_DEBUG_LOG)
 		pr_debug(
 			"memcpy VirtBufAddr+Afe_WriteIdx= %p,data_w_ptr = %p copy_size = 0x%x\n",
 			dest, src, size);
+#endif
 		if (unlikely(copy_from_user(dest, src, size))) {
+#if defined(DL2_DEBUG_LOG)
 			pr_debug("AudDrv_write Fail copy from user\n");
+#endif
 			ret = -1;
 		}
 	}
@@ -912,9 +927,9 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream, int channel,
 
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
-
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("mtk_pcm_dl2_copy+ pos = %lu count = %lu\n", pos, count);
-
+#endif
 	return mtk_pcm_dl2_copy_(dst, &count, Afe_Block, true);
 }
 
@@ -965,8 +980,9 @@ static const struct of_device_id mt_soc_pcm_dl2_of_ids[] = {
 
 static int mtk_soc_dl2_probe(struct platform_device *pdev)
 {
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
@@ -985,8 +1001,9 @@ static int mtk_soc_dl2_probe(struct platform_device *pdev)
 
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform)
 {
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("mtk_asoc_dl2_probe\n");
-
+#endif
 	snd_soc_add_platform_controls(platform, fast_dl_controls,
 				      ARRAY_SIZE(fast_dl_controls));
 
@@ -1024,9 +1041,9 @@ static struct platform_device *soc_mtkdl2_dev;
 static int __init mtk_dl2_soc_platform_init(void)
 {
 	int ret;
-
+#if defined(DL2_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 #ifndef CONFIG_OF
 	soc_mtkdl2_dev = platform_device_alloc(MT_SOC_DL2_PCM, -1);
 	if (!soc_mtkdl2_dev)

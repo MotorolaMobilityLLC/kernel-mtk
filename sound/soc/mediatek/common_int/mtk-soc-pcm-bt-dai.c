@@ -179,9 +179,11 @@ mtk_bt_dai_pcm_pointer(struct snd_pcm_substream *substream)
 	struct afe_block_t *Dai_Block = &(Bt_Dai_Control_context->rBlock);
 	kal_uint32 Frameidx = 0;
 
+#if defined(AUD_DEBUG_LOG)
 	pr_debug(
 		"mtk_bt_dai_pcm_pointer Dai_Block->u4DMAReadIdx;= 0x%x\n",
 		Dai_Block->u4WriteIdx);
+#endif
 	/* get total bytes to copy */
 	Frameidx = audio_bytes_to_frame(substream, Dai_Block->u4WriteIdx);
 	return Frameidx;
@@ -320,8 +322,9 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 	ssize_t DMA_Read_Ptr = 0, read_size = 0, read_count = 0;
 	unsigned long flags;
 
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s  pos = %lu count = %lu\n", __func__, pos, count);
-
+#endif
 	/* get total bytes to copy */
 	count = word_size_align(audio_frame_to_bytes(substream, count));
 
@@ -393,11 +396,12 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 
 		Read_Data_Ptr += read_size;
 		count -= read_size;
-
+#if defined(AUD_DEBUG_LOG)
 		pr_debug(
 			"%s f 1,size:%zd,RIdx:%x,WIdx:%x,Remain%x\n",
 			__func__, read_size, Dai_Block->u4DMAReadIdx,
 			Dai_Block->u4WriteIdx, Dai_Block->u4DataRemained);
+#endif
 	}
 
 	else {
@@ -429,11 +433,12 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 		DMA_Read_Ptr = Dai_Block->u4DMAReadIdx;
 		spin_unlock(&auddrv_BTDaiInCtl_lock);
 
+#if defined(AUD_DEBUG_LOG)
 		pr_debug(
 			"%s finish2, copy size_1:0x%x,u4DMAReadIdx:0x%x, u4WriteIdx:0x%x, Remained:0x%x \r\n",
 			__func__, size_1, Dai_Block->u4DMAReadIdx,
 			Dai_Block->u4WriteIdx, Dai_Block->u4DataRemained);
-
+#endif
 		if (DMA_Read_Ptr != Dai_Block->u4DMAReadIdx) {
 
 			pr_warn("%s 3, read_size2:%x,Remained:%x, Read_Ptr:%zu, ReadIdx:%x \r\n",
@@ -461,11 +466,12 @@ static int mtk_bt_dai_pcm_copy(struct snd_pcm_substream *substream, int channel,
 
 		count -= read_size;
 		Read_Data_Ptr += read_size;
-
+#if defined(AUD_DEBUG_LOG)
 		pr_debug(
 			"%s finish3, copy size_2:0x%x,ReadIdx:0x%x, WriteIdx:0x%x Remained:0x%x \r\n",
 			__func__, size_2, Dai_Block->u4DMAReadIdx,
 			Dai_Block->u4WriteIdx, Dai_Block->u4DataRemained);
+#endif
 	}
 
 	return audio_bytes_to_frame(substream, count);

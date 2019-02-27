@@ -112,17 +112,20 @@ static int mtk_pcm_hp_impedance_params(struct snd_pcm_substream *substream,
 		    substream->runtime->dma_addr);
 	set_mem_block(substream, hw_params, pHp_impedance_MemControl,
 		      Soc_Aud_Digital_Block_MEM_DL1);
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 	       __func__, substream->runtime->dma_bytes,
 	       substream->runtime->dma_area,
 	       (long)substream->runtime->dma_addr);
+#endif
 	return ret;
 }
 
 static int mtk_pcm_hp_impedance_hw_free(struct snd_pcm_substream *substream)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_pcm_hp_impedance_hw_free\n");
+#endif
 	return 0;
 }
 
@@ -136,8 +139,9 @@ static int mtk_pcm_hp_impedance_open(struct snd_pcm_substream *substream)
 {
 	int ret = 0;
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_pcm_hp_impedance_open\n");
+#endif
 	AudDrv_Clk_On();
 	AudDrv_Emi_Clk_On();
 	pHp_impedance_MemControl =
@@ -163,9 +167,10 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 {
 	bool mI2SWLen;
 	struct snd_pcm_runtime *runtime = substream->runtime;
-
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_pcm_hp_impedance_prepare, mPrepareDone %d\n",
 		mPrepareDone);
+#endif
 	if (mPrepareDone == false) {
 		if (runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
 		    runtime->format == SNDRV_PCM_FORMAT_U32_LE) {
@@ -210,7 +215,9 @@ static int mtk_pcm_hp_impedance_prepare(struct snd_pcm_substream *substream)
 static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 {
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	if (mPrepareDone == true) {
 		SetIntfConnection(Soc_Aud_InterCon_DisConnect,
 				  Soc_Aud_AFE_IO_Block_MEM_DL1,
@@ -232,7 +239,9 @@ static int mtk_soc_pcm_hp_impedance_close(struct snd_pcm_substream *substream)
 static int mtk_pcm_hp_impedance_trigger(struct snd_pcm_substream *substream,
 					int cmd)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_pcm_hp_impedance_trigger cmd = %d\n", cmd);
+#endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -286,21 +295,26 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 
 static int mtk_soc_hp_impedance_probe(struct platform_device *pdev)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 	if (!pdev->dev.dma_mask)
 		pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
 
 	if (pdev->dev.of_node)
 		dev_set_name(&pdev->dev, "%s", MT_SOC_HP_IMPEDANCE_PCM);
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
+#endif
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
 }
 
 static int mtk_asoc_dhp_impedance_probe(struct snd_soc_platform *platform)
 {
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("mtk_asoc_dhp_impedance_probe\n");
+#endif
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
@@ -344,7 +358,9 @@ static int __init mtk_soc_hp_impedance_platform_init(void)
 {
 	int ret;
 
+#if defined(AUD_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 #ifndef CONFIG_OF
 	soc_mtk_hp_impedance_dev =
 		platform_device_alloc(MT_SOC_HP_IMPEDANCE_PCM, -1);

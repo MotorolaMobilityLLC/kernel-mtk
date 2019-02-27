@@ -197,11 +197,12 @@ static int mtk_pcm_dl1_params(struct snd_pcm_substream *substream,
 
 	set_mem_block(substream, hw_params, pMemControl,
 		      Soc_Aud_Digital_Block_MEM_DL1);
-
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		      substream->runtime->dma_bytes,
 		      substream->runtime->dma_area,
 		      (long)substream->runtime->dma_addr);
+#endif
 	return ret;
 }
 
@@ -347,7 +348,9 @@ static int mtk_pcm_dl1_start(struct snd_pcm_substream *substream)
 
 static int mtk_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
 {
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("mtk_pcm_trigger cmd = %d\n", cmd);
+#endif
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
@@ -415,11 +418,13 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 		if (Afe_WriteIdx_tmp + copy_size < Afe_Block->u4BufferSize) {
 
 			if (!access_ok(VERIFY_READ, data_w_ptr, copy_size)) {
+#if defined(DL1_DEBUG_LOG)
 				pr_debug(
 					"AudDrv_write 0ptr invalid data_w_ptr=%p, size=%d u4BufferSize=%d, u4DataRemained=%d",
 					data_w_ptr, copy_size,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
+#endif
 			} else {
 #ifdef DL1_DEBUG_LOG
 				pr_debug(
@@ -431,8 +436,10 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 				if (copy_from_user((Afe_Block->pucVirtBufAddr +
 						    Afe_WriteIdx_tmp),
 						   data_w_ptr, copy_size)) {
+#if defined(DL1_DEBUG_LOG)
 					pr_debug(
 						"AudDrv_write Fail copy from user\n");
+#endif
 					return -1;
 				}
 			}
@@ -479,8 +486,10 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 						     Afe_WriteIdx_tmp),
 						    data_w_ptr,
 						    (unsigned int)size_1))) {
+#if defined(DL1_DEBUG_LOG)
 					pr_debug(
 						"AudDrv_write Fail 1 copy from user");
+#endif
 					return -1;
 				}
 			}
@@ -493,11 +502,13 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 
 			if (!access_ok(VERIFY_READ, data_w_ptr + size_1,
 				       size_2)) {
+#if defined(DL1_DEBUG_LOG)
 				pr_debug(
 					"AudDrv_write 2ptr invalid data_w_ptr=%p, size_1=%d, size_2=%d u4BufferSize=%d, u4DataRemained=%d",
 					data_w_ptr, size_1, size_2,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
+#endif
 			} else {
 #ifdef DL1_DEBUG_LOG
 				pr_debug(
@@ -511,8 +522,10 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 						     Afe_WriteIdx_tmp),
 						    (data_w_ptr + size_1),
 						    size_2))) {
+#if defined(DL1_DEBUG_LOG)
 					pr_debug(
 						"AudDrv_write Fail 2  copy from user");
+#endif
 					return -1;
 				}
 			}
@@ -540,7 +553,9 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 static int mtk_pcm_silence(struct snd_pcm_substream *substream, int channel,
 			   snd_pcm_uframes_t pos, snd_pcm_uframes_t count)
 {
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	return 0; /* do nothing */
 }
 
@@ -549,7 +564,9 @@ static void *dummy_page[2];
 static struct page *mtk_pcm_page(struct snd_pcm_substream *substream,
 				 unsigned long offset)
 {
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
+#endif
 	return virt_to_page(dummy_page[substream->stream]); /* the same page */
 }
 
@@ -573,7 +590,9 @@ static struct snd_soc_platform_driver mtk_soc_platform = {
 
 static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
 {
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("mtk_asoc_dl1_probe\n");
+#endif
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL1,
 				   Dl1_MAX_BUFFER_SIZE);
@@ -583,8 +602,9 @@ static int mtk_asoc_dl1_probe(struct snd_soc_platform *platform)
 
 static int mtk_afe_remove(struct platform_device *pdev)
 {
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	AudDrv_Clk_Deinit(&pdev->dev);
 
 	snd_soc_unregister_platform(&pdev->dev);
@@ -644,9 +664,9 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 	int ret = 0;
 
 	mDev = &pdev->dev;
-
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
 
 	if (!pdev->dev.dma_mask)
@@ -706,9 +726,9 @@ static struct platform_device *soc_mtkafe_dev;
 static int __init mtk_soc_platform_init(void)
 {
 	int ret;
-
+#if defined(DL1_DEBUG_LOG)
 	pr_debug("%s\n", __func__);
-
+#endif
 #ifndef CONFIG_OF
 
 	soc_mtkafe_dev = platform_device_alloc(MT_SOC_DL1_PCM, -1);
