@@ -67,7 +67,6 @@ void __iomem *img_base;
 void __iomem *ipe_base;
 void __iomem *mfgcfg_base;
 void __iomem *mmsys_config_base;
-void __iomem *pericfg_base;
 void __iomem *venc_gcon_base;
 void __iomem *vdec_gcon_base;
 void __iomem *apu_vcore_base;
@@ -80,9 +79,9 @@ void __iomem *apu_mdla_base;
 /* CKSYS */
 #define CLK_CFG_UPDATE		(cksys_base + 0x004)
 #define CLK_CFG_0		(cksys_base + 0x020)
-#define CLK_CFG_5		(cksys_base + 0x070)
-#define CLK_CFG_5_SET		(cksys_base + 0x074)
-#define CLK_CFG_5_CLR		(cksys_base + 0x078)
+#define CLK_CFG_6		(cksys_base + 0x080)
+#define CLK_CFG_6_SET		(cksys_base + 0x084)
+#define CLK_CFG_6_CLR		(cksys_base + 0x088)
 #define CLK_CFG_9		(cksys_base + 0x0B0)
 #define CLK_MISC_CFG_0		(cksys_base + 0x110)
 #define CLK_DBG_CFG		(cksys_base + 0x10C)
@@ -1690,6 +1689,10 @@ static void mtk_cg_disable_inv(struct clk_hw *hw)
 	mtk_cg_clr_bit(hw);
 }
 
+static void mtk_cg_disable_inv_dummy(struct clk_hw *hw)
+{
+}
+
 const struct clk_ops mtk_clk_gate_ops = {
 	.is_enabled	= mtk_cg_bit_is_cleared,
 	.enable		= mtk_cg_enable,
@@ -1706,6 +1709,18 @@ const struct clk_ops mtk_clk_gate_ops_inv = {
 	.is_enabled	= mtk_cg_bit_is_set,
 	.enable		= mtk_cg_enable_inv,
 	.disable	= mtk_cg_disable_inv,
+};
+
+const struct clk_ops mtk_clk_gate_ops_inv_dummy = {
+	.is_enabled	= mtk_cg_bit_is_set,
+	.enable		= mtk_cg_enable_inv,
+	.disable	= mtk_cg_disable_inv_dummy,
+};
+
+const struct clk_ops mtk_clk_gate_ops_setclr_inv_dummy = {
+	.is_enabled	= mtk_cg_bit_is_set,
+	.enable		= mtk_cg_enable_inv,
+	.disable	= mtk_cg_disable_inv_dummy,
 };
 
 static const struct mtk_gate_regs infra0_cg_regs = {
@@ -2298,8 +2313,40 @@ static const struct mtk_gate_regs apmixed_cg_regs = {
 		.ops = &mtk_clk_gate_ops_inv,		\
 	}
 
+#define GATE_APMIXED_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &apmixed_cg_regs,		\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_inv_dummy,	\
+	}
+
 static const struct mtk_gate apmixed_clks[] __initconst = {
-	/* AUDIO0 */
+#if MT_CCF_BRINGUP
+	GATE_APMIXED_DUMMY(APMIXED_SSUSB26M, "apmixed_ssusb26m", "f_f26m_ck",
+		4),
+	GATE_APMIXED_DUMMY(APMIXED_APPLL26M, "apmixed_appll26m", "f_f26m_ck",
+		5),
+	GATE_APMIXED_DUMMY(APMIXED_MIPIC0_26M, "apmixed_mipic026m", "f_f26m_ck",
+		6),
+	GATE_APMIXED_DUMMY(APMIXED_MDPLLGP26M, "apmixed_mdpll26m", "f_f26m_ck",
+		7),
+	GATE_APMIXED_DUMMY(APMIXED_MMSYS_F26M, "apmixed_mmsys26m", "f_f26m_ck",
+		8),
+	GATE_APMIXED_DUMMY(APMIXED_UFS26M, "apmixed_ufs26m", "f_f26m_ck",
+		9),
+	GATE_APMIXED_DUMMY(APMIXED_MIPIC1_26M, "apmixed_mipic126m", "f_f26m_ck",
+		11),
+	GATE_APMIXED_DUMMY(APMIXED_MEMPLL26M, "apmixed_mempll26m", "f_f26m_ck",
+		13),
+	GATE_APMIXED_DUMMY(APMIXED_CLKSQ_LVPLL_26M, "apmixed_lvpll26m",
+		"f_f26m_ck", 14),
+	GATE_APMIXED_DUMMY(APMIXED_MIPID0_26M, "apmixed_mipid026m", "f_f26m_ck",
+		16),
+	GATE_APMIXED_DUMMY(APMIXED_MIPID1_26M, "apmixed_mipid126m", "f_f26m_ck",
+		17),
+#else
 	GATE_APMIXED(APMIXED_SSUSB26M, "apmixed_ssusb26m", "f_f26m_ck",
 		4),
 	GATE_APMIXED(APMIXED_APPLL26M, "apmixed_appll26m", "f_f26m_ck",
@@ -2322,6 +2369,7 @@ static const struct mtk_gate apmixed_clks[] __initconst = {
 		16),
 	GATE_APMIXED(APMIXED_MIPID1_26M, "apmixed_mipid126m", "f_f26m_ck",
 		17),
+#endif
 };
 
 static const struct mtk_gate_regs audio0_cg_regs = {
@@ -2842,11 +2890,36 @@ static const struct mtk_gate_regs vdec1_cg_regs = {
 		.ops = &mtk_clk_gate_ops_setclr_inv,	\
 	}
 
+#define GATE_VDEC0_I_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &vdec0_cg_regs,			\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_setclr_inv_dummy,	\
+	}
+
+#define GATE_VDEC1_I_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,				\
+		.name = _name,				\
+		.parent_name = _parent,			\
+		.regs = &vdec1_cg_regs,			\
+		.shift = _shift,			\
+		.ops = &mtk_clk_gate_ops_setclr_inv_dummy,	\
+	}
+
 static const struct mtk_gate vdec_clks[] __initconst = {
+#if MT_CCF_BRINGUP
+	/* VDEC0 */
+	GATE_VDEC0_I_DUMMY(VDEC_VDEC, "vdec_cken", "vdec_sel", 0),
+	/* VDEC1 */
+	GATE_VDEC1_I_DUMMY(VDEC_LARB1, "vdec_larb1_cken", "vdec_sel", 0),
+#else
 	/* VDEC0 */
 	GATE_VDEC0_I(VDEC_VDEC, "vdec_cken", "vdec_sel", 0),
 	/* VDEC1 */
 	GATE_VDEC1_I(VDEC_LARB1, "vdec_larb1_cken", "vdec_sel", 0),
+#endif
 };
 
 static const struct mtk_gate_regs venc_global_con_cg_regs = {
@@ -2861,10 +2934,29 @@ static const struct mtk_gate_regs venc_global_con_cg_regs = {
 		.parent_name = _parent,				\
 		.regs = &venc_global_con_cg_regs,		\
 		.shift = _shift,				\
-		.ops = &mtk_clk_gate_ops_setclr_inv,			\
+		.ops = &mtk_clk_gate_ops_setclr_inv,		\
+	}
+
+#define GATE_VENC_GLOBAL_CON_DUMMY(_id, _name, _parent, _shift) {	\
+		.id = _id,					\
+		.name = _name,					\
+		.parent_name = _parent,				\
+		.regs = &venc_global_con_cg_regs,		\
+		.shift = _shift,				\
+		.ops = &mtk_clk_gate_ops_setclr_inv_dummy,	\
 	}
 
 static const struct mtk_gate venc_global_con_clks[] __initconst = {
+#if MT_CCF_BRINGUP
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_LARB, "venc_larb",
+		"venc_sel", 0),
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_VENC, "venc_venc",
+		"venc_sel", 4),
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_JPGENC, "venc_jpgenc",
+		"venc_sel", 8),
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_GALS, "venc_gals",
+		"venc_sel", 28),
+#else
 	GATE_VENC_GLOBAL_CON(VENC_GCON_LARB, "venc_larb",
 		"venc_sel", 0),
 	GATE_VENC_GLOBAL_CON(VENC_GCON_VENC, "venc_venc",
@@ -2873,6 +2965,7 @@ static const struct mtk_gate venc_global_con_clks[] __initconst = {
 		"venc_sel", 8),
 	GATE_VENC_GLOBAL_CON(VENC_GCON_GALS, "venc_gals",
 		"venc_sel", 28),
+#endif
 };
 
 static const struct mtk_gate_regs apu_conn_cg_regs = {
@@ -4200,9 +4293,9 @@ void check_cam_clk_sts(void)
 
 void aud_intbus_mux_sel(unsigned int aud_idx)
 {
-	clk_writel(CLK_CFG_5_CLR, 0x00000300);
-	clk_writel(CLK_CFG_5_SET, aud_idx << 8);
-	clk_writel(CLK_CFG_UPDATE, 0x00200000);
+	clk_writel(CLK_CFG_6_CLR, 0x00030000);/*[17:16]*/
+	clk_writel(CLK_CFG_6_SET, aud_idx << 16);
+	clk_writel(CLK_CFG_UPDATE, 0x04000000);/*[26]*/
 }
 
 static int __init clk_mt6779_init(void)
