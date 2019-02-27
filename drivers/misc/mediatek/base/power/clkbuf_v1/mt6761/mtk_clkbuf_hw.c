@@ -78,7 +78,7 @@ static void __iomem *pwrap_base;
 #define PMIC_CW15_INIT_VAL			0xA2AA
 
 /* TODO: marked this after driver is ready */
-/* #define CLKBUF_BRINGUP */
+#define CLKBUF_BRINGUP
 
 /* #define CLKBUF_CONN_SUPPORT_CTRL_FROM_I1 */
 
@@ -258,7 +258,11 @@ u32 clk_buf_bblpm_enter_cond(void)
 		return bblpm_cond;
 	}
 
+#ifdef CLKBUF_BRINGUP
 	pwr_sta = clkbuf_readl(PWR_STATUS);
+#else
+	pwr_sta = 0;
+#endif
 
 	if (pwr_sta & CLKBUF_PWR_STATUS_MD)
 		bblpm_cond |= BBLPM_COND_CEL;
@@ -912,12 +916,14 @@ static ssize_t clk_buf_ctrl_show(struct kobject *kobj,
 		"bblpm_switch=%u, bblpm_cnt=%u, bblpm_cond=0x%x\n",
 		bblpm_switch, bblpm_cnt, clk_buf_bblpm_enter_cond());
 
+#ifdef CLKBUF_BRINGUP /* FIXME: bringup */
 	len += snprintf(buf+len, PAGE_SIZE-len,
 			"MD1_PWR_CON=0x%x, PWR_STATUS=0x%x, PCM_REG13_DATA=0x%x, SPARE_ACK_MASK=0x%x\n",
 			clkbuf_readl(MD1_PWR_CON),
 			clkbuf_readl(PWR_STATUS),
 			clkbuf_readl(PCM_REG13_DATA),
 			clkbuf_readl(SPARE_ACK_MASK));
+#endif
 	return len;
 }
 
