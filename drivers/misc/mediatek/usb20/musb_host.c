@@ -108,15 +108,24 @@ int musb_host_alloc_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 	u16 free_uint = 0;
 	u8 found = 0;
 
+	if (!is_in)
+		host_tx_refcnt_reset(epnum);
+
 	if (qh->hb_mult)
 		maxpacket = qh->maxpacket * qh->hb_mult;
 	else
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
+		if (musb_host_db_enable && qh->type == USB_ENDPOINT_XFER_BULK) {
+			request_fifo_sz = 1024;
+			fifo_unit_nr = 2;
+			c_size = 6 | MUSB_FIFOSZ_DPB;
+		} else {
 		request_fifo_sz = 512;
 		fifo_unit_nr = 1;
 		c_size = 6;
+		}
 	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
@@ -203,14 +212,22 @@ void musb_host_free_ep_fifo(struct musb *musb, struct musb_qh *qh, u8 is_in)
 	u8 index, i;
 	u16 c_off = 0;
 
+	if (!is_in)
+		host_tx_refcnt_reset(epnum);
+
 	if (qh->hb_mult)
 		maxpacket = qh->maxpacket * qh->hb_mult;
 	else
 		maxpacket = qh->maxpacket;
 
 	if (maxpacket <= 512) {
-		request_fifo_sz = 512;
-		fifo_unit_nr = 1;
+		if (musb_host_db_enable && qh->type == USB_ENDPOINT_XFER_BULK) {
+			request_fifo_sz = 1024;
+			fifo_unit_nr = 2;
+		} else {
+			request_fifo_sz = 512;
+			fifo_unit_nr = 1;
+		}
 	} else if (maxpacket <= 1024) {
 		request_fifo_sz = 1024;
 		fifo_unit_nr = 2;
@@ -318,16 +335,68 @@ static void musb_h_ep0_flush_fifo(struct musb_hw_ep *ep)
  * Start transmit. Caller is responsible for locking shared resources.
  * musb must be locked.
  */
+void wait_tx_done(u8 epnum, int timeout_ns)
+{
+	u16 txcsr;
+	u16 int_tx;
+	void __iomem *mbase = mtk_musb->mregs;
+	int offset = MUSB_EP_OFFSET(epnum,
+			MUSB_TXCSR);
+	struct timeval tv_before, tv_after;
+	u64 diff_ns = 0;
+
+	musb_ep_select(mbase, epnum);
+
+	txcsr = musb_readw(mbase, offset);
+	do_gettimeofday(&tv_before);
+	while ((txcsr & (MUSB_TXCSR_FIFONOTEMPTY | MUSB_TXCSR_TXPKTRDY))
+			&& (diff_ns < timeout_ns)) {
+		txcsr = musb_readw(mbase, offset);
+		do_gettimeofday(&tv_after);
+		diff_ns = timeval_to_ns(&tv_after) - timeval_to_ns(&tv_before);
+	}
+	if (diff_ns >= timeout_ns)
+		DBG(0, "ERROR !!!, packet still in FIFO, CSR %04x\n", txcsr);
+
+	int_tx = musb_readw(mbase, MUSB_INTRTX);
+	while (!(int_tx & 1<<epnum) && (diff_ns < timeout_ns))
+		int_tx = musb_readw(mbase, MUSB_INTRTX);
+
+	if (diff_ns >= timeout_ns)
+		DBG(0, "ERROR !!!, not TX INTR <%x>\n", int_tx);
+
+	musb_host_db_delay_ns += diff_ns;
+}
+static int host_tx_refcnt[8 + 1];
+int host_tx_refcnt_inc(int epnum)
+{
+	host_tx_refcnt[epnum]++;
+	return host_tx_refcnt[epnum];
+}
+int host_tx_refcnt_dec(int epnum)
+{
+	host_tx_refcnt[epnum]--;
+	return host_tx_refcnt[epnum];
+}
+void host_tx_refcnt_reset(int epnum)
+{
+	host_tx_refcnt[epnum] = 0;
+}
 static inline void musb_h_tx_start(struct musb_hw_ep *ep)
 {
 	u16 txcsr;
 
 	/* NOTE: no locks here; caller should lock and select EP */
 	if (ep->epnum) {
+		host_tx_refcnt_inc(ep->epnum);
+
 		txcsr = musb_readw(ep->regs, MUSB_TXCSR);
 		txcsr |= MUSB_TXCSR_TXPKTRDY
 				| MUSB_TXCSR_H_WZC_BITS;
 		musb_writew(ep->regs, MUSB_TXCSR, txcsr);
+
+		if (musb_host_db_workaround)
+			wait_tx_done(ep->epnum, 1000000000);
 	} else {
 		txcsr = MUSB_CSR0_H_DIS_PING
 				| MUSB_CSR0_H_SETUPPKT
