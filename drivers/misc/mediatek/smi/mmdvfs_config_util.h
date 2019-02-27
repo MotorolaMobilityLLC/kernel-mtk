@@ -187,20 +187,9 @@ struct mmdvfs_step_util {
 	/* Record the currency status of each opps*/
 	int mmdvfs_concurrency[MMDVFS_OPP_NUM_LIMITATION];
 	int total_opps;
-	int *mmclk_oop_to_legacy_step;
-	int mmclk_oop_to_legacy_step_num;
-	int *legacy_step_to_oop;
-	int legacy_step_to_oop_num;
 	int wfd_vp_mix_step;
 	void (*init)(struct mmdvfs_step_util *self);
-	int (*get_legacy_step_from_opp)(
-	struct mmdvfs_step_util *self, int mmclk_step);
-	int (*get_opp_from_legacy_step)(struct mmdvfs_step_util *self,
-	int legacy_step);
 	int (*set_step)(struct mmdvfs_step_util *self, s32 step, u32 scenario);
-	int (*get_clients_clk_opp)(
-		struct mmdvfs_step_util *self, struct mmdvfs_adaptor *adaptor,
-	int clients_mask, int clk_id);
 };
 
 struct mmdvfs_vpu_dvfs_configurator {

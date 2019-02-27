@@ -171,28 +171,6 @@ static int mmdvfs_query(enum MTK_SMI_BWC_SCEN scenario,
 		g_mmdvfs_info->video_record_size[1], preview_size);
 }
 
-int mmdvfs_get_stable_isp_clk(void)
-{
-	int legacy_mm_step = MMSYS_CLK_LOW;
-	int cam_clk_opp =
-			g_mmdvfs_step_util->get_clients_clk_opp(
-			g_mmdvfs_step_util, g_mmdvfs_adaptor,
-			LEGACY_CAM_SCENS, MMDVFS_CLK_MUX_TOP_CAM_SEL);
-
-	if (cam_clk_opp != -1)
-		legacy_mm_step =
-			g_mmdvfs_step_util->get_legacy_step_from_opp(
-			g_mmdvfs_step_util,	cam_clk_opp);
-
-	if (legacy_mm_step < 0 || legacy_mm_step >= MMDVFS_MMSYS_CLK_COUNT) {
-		MMDVFSDEBUG(3,
-			"%s: invalid legacy mmclk return:%d\n",
-			__func__, legacy_mm_step);
-		legacy_mm_step = MMSYS_CLK_LOW;
-	}
-
-	return legacy_mm_step;
-}
 
 static void mmdvfs_update_cmd(struct MTK_MMDVFS_CMD *cmd)
 {
@@ -269,7 +247,6 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 {
 	int original_step = 0;
 	int final_step = MMDVFS_FINE_STEP_UNREQUEST;
-	int legacy_clk = -1;
 
 	if (!adaptor) {
 		MMDVFSMSG("%s: adaptor is NULL\n", __func__);
@@ -298,8 +275,6 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 	if (notify_clk_change)
 		notify_camsys_clk_change(original_step, final_step);
 
-	legacy_clk = mmdvfs_get_stable_isp_clk();
-
 	if ((mmdvfs_scen_log_mask_get() == (1 << MMDVFS_SCEN_COUNT)
 		&& original_step == final_step) ||
 		((1 << smi_scenario) & mmdvfs_scen_log_mask_get())) {
@@ -325,11 +300,11 @@ int mmdvfs_internal_set_fine_step(const char *adaptor_name,
 		step_util->mmdvfs_concurrency[1],
 		step_util->mmdvfs_concurrency[2],
 		step_util->mmdvfs_concurrency[3]);
-		MMDVFSMSG("%s,C(%d,%d,0x%x,%d),I(%d,%d),CLK:%d\n",
+		MMDVFSMSG("%s,C(%d,%d,0x%x,%d),I(%d,%d)\n",
 		adaptor_name, g_mmdvfs_cmd.sensor_size, g_mmdvfs_cmd.sensor_fps,
 		g_mmdvfs_cmd.camera_mode, g_mmdvfs_cmd.preview_size,
 		g_mmdvfs_info->video_record_size[0],
-		g_mmdvfs_info->video_record_size[1], legacy_clk);
+		g_mmdvfs_info->video_record_size[1]);
 	}
 	return 0;
 }
