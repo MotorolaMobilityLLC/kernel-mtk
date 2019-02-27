@@ -5156,7 +5156,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_ipe(STA_POWER_ON);
 #endif
-#if 1 /*avoid hang in bring up*/
+#if 0 /*avoid hang in bring up*/
 	spm_mtcmos_ctrl_vpu_vcore_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_conn_shut_down(STA_POWER_ON);
 	spm_mtcmos_ctrl_vpu_core0_shut_down(STA_POWER_ON);
