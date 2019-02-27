@@ -4256,7 +4256,7 @@ int primary_display_wait_for_vsync(void *config)
 	/* kick idle manager here to ensure sodi is disabled
 	 * when screen update begin(not 100% ensure)
 	 */
-	primary_display_idlemgr_kick(__func__, 1);
+	primary_display_idlemgr_kick(__func__, 0);
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	if (!primary_display_is_video_mode())
