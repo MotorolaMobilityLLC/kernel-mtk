@@ -70,6 +70,11 @@ static void __iomem *csram_base;
 #define OFFS_TBL_S	0x0010
 #define OFFS_TBL_E	0x0250
 #define PVT_TBL_SIZE    (OFFS_TBL_E - OFFS_TBL_S)
+
+#define OFFS_CCI_TBL_S	0x0FA0
+#define OFFS_CCI_TBL_E	0x10A0
+#define PVT_CCI_TBL_SIZE    (OFFS_CCI_TBL_E - OFFS_CCI_TBL_S)
+
 #define OFFS_DATA_S	0x02a0
 #define OFFS_LOG_S	0x03d0
 #define OFFS_LOG_E	(OFFS_LOG_S + DVFS_LOG_NUM * ENTRY_EACH_LOG * 4)
@@ -516,6 +521,12 @@ int dvfs_to_spm2_command(u32 cmd, struct cdvfs_data *cdvfs_d)
 #define REPO_GUARD0		0x55aa55aa
 #define REPO_GUARD1		0xaa55aa55
 
+#define DBG_REPO_CCI_TBL_S		(DBG_REPO_S + OFFS_CCI_TBL_S)
+#define DBG_REPO_CCI_TBL_E		(DBG_REPO_S + OFFS_CCI_TBL_E)
+
+/* CCI Volt Clamp */
+#define OFFS_CCI_VOLT_CLAMP (0x0250)   /* 148 */
+
 #define OFFS_TURBO_FREQ		0x02a4	/* 169 */
 #define OFFS_TURBO_VOLT		0x02a8	/* 170 */
 
@@ -860,8 +871,21 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 	return 0;
 }
 
+int cpuhvfs_set_set_cci_volt(unsigned int volt)
+{
+	csram_write(OFFS_CCI_VOLT_CLAMP, volt);
+
+	return 0;
+}
+
+
 u32 *recordRef;
 static unsigned int *recordTbl;
+
+#ifdef CCI_MAP_TBL_SUPPORT
+u8 *record_CCI_Ref;
+unsigned char *record_CCI_Tbl;
+#endif
 
 int cpuhvfs_update_volt(unsigned int cluster_id, unsigned int *volt_tbl,
 	char nr_volt_tbl)
@@ -895,6 +919,9 @@ void __init cpuhvfs_pvt_tbl_create(void)
 {
 	int i;
 	unsigned int lv = _mt_cpufreq_get_cpu_level();
+#ifdef CCI_MAP_TBL_SUPPORT
+	int j;
+#endif
 
 	recordRef = ioremap_nocache(DBG_REPO_TBL_S, PVT_TBL_SIZE);
 	tag_pr_info("DVFS - @(Record)%s----->(%p)\n", __func__, recordRef);
@@ -987,6 +1014,24 @@ void __init cpuhvfs_pvt_tbl_create(void)
 	recordRef[i*2+72] = 0xffffffff;
 	recordRef[i*2+108] = 0xffffffff;
 	mb(); /* SRAM writing */
+
+#ifdef CCI_MAP_TBL_SUPPORT
+	record_CCI_Ref = ioremap_nocache(DBG_REPO_CCI_TBL_S, PVT_CCI_TBL_SIZE);
+	tag_pr_info("DVFS - @(Record)%s----->(%p)\n", __func__, record_CCI_Ref);
+	memset_io((u8 *)record_CCI_Ref, 0x00, PVT_CCI_TBL_SIZE);
+
+	record_CCI_Tbl = xrecord_CCI_Tbl[lv];
+
+	for (i = 0; i < NR_FREQ; i++) {
+		for (j = 0; j < NR_FREQ; j++) {
+			record_CCI_Ref[(i * 16) + j] =
+				*(record_CCI_Tbl + (i * 16) + j);
+			/* pr_info("%d ", *(record_CCI_Tbl + (i * 16) + j)); */
+		}
+		/* pr_info("\n"); */
+	}
+	mb(); /* SRAM writing */
+#endif
 }
 
 static int dbg_repo_proc_show(struct seq_file *m, void *v)
