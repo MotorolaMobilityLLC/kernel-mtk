@@ -32,7 +32,7 @@
 
 #include "include/pmic_api_buck.h"
 #include <mt-plat/upmu_common.h>
-/*#include <mtk_spm_sleep.h>*/
+#include <mtk_spm_sleep.h>
 
 #ifdef CONFIG_MTK_QOS_SUPPORT
 #include <linux/pm_qos.h>
