@@ -132,6 +132,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()    */
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	/*data rate 1499.20 Mbps/lane */
@@ -145,6 +146,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 4016,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 240,
+		.mipi_pixel_rate = 600000000,
 	},
 
 	/*data rate 1499.20 Mbps/lane */
@@ -158,6 +160,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 4016,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 240,
+		.mipi_pixel_rate = 600000000,
 	},
 
 	/*data rate 1499.20 Mbps/lane */
@@ -171,6 +174,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3008,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 300,
+		.mipi_pixel_rate = 600000000,
 	},
 
 	/*data rate 600 Mbps/lane */
@@ -184,6 +188,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 736,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 1200,
+		.mipi_pixel_rate = 241000000,
 	},
 
 	/*data rate 792 Mbps/lane */
@@ -197,6 +202,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 736,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 596,
+		.mipi_pixel_rate = 317000000,
 	},
 
 	/*data rate 1099.20 Mbps/lane */
@@ -219,6 +225,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()    */
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	/*data rate 1099.20 Mbps/lane */
@@ -240,6 +247,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	/*data rate 1099.20 Mbps/lane */
@@ -261,6 +269,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	/*data rate 1099.20 Mbps/lane */
@@ -282,6 +291,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	/*data rate 1099.20 Mbps/lane */
@@ -303,6 +313,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/* following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 313000000,
 	},
 
 	.margin = 10,		/* sensor framelength & shutter margin */
@@ -4505,6 +4516,31 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		if (*feature_data != 0)
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
+		break;
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
 		break;
 	default:
 		break;
