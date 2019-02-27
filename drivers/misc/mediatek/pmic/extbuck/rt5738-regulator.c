@@ -226,7 +226,7 @@ static struct regulator_chip rt5738_datas[] = {
 };
 
 static int rt5738_set_voltage(struct regulator_dev *rdev,
-				int min_uV, int max_uV, unsigned *selector)
+				int min_uV, int max_uV, unsigned int *selector)
 {
 	struct rt5738_regulator_info *info = rdev_get_drvdata(rdev);
 	struct regulator_chip *chip = info->reg_chip;
