@@ -682,6 +682,9 @@ void arch_reset(char mode, const char *cmd)
 		reboot = WD_SW_RESET_BYPASS_PWR_KEY;
 	}
 
+	if (cmd && !strcmp(cmd, "ddr-reserve"))
+		reboot |= WD_SW_RESET_KEEP_DDR_RESERVE;
+
 	if (res)
 		pr_notice("arch_reset, get wd api error %d\n", res);
 	else
