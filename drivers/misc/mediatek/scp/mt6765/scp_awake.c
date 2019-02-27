@@ -219,6 +219,15 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 }
 EXPORT_SYMBOL_GPL(scp_awake_unlock);
 
+void scp_reset_awake_counts(void)
+{
+	int i = 0;
+
+	/* scp ready static flag initialise */
+	for (i = 0; i < SCP_CORE_TOTAL ; i++)
+		scp_awake_counts[i] = 0;
+}
+
 void scp_awake_init(void)
 {
 	int i = 0;
