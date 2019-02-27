@@ -863,31 +863,28 @@ static int tpd_i2c_detect(struct i2c_client *client, struct i2c_board_info *info
 	{
 		int ret;
 	
-		printk("focal:tpd_get_gpio_info_atmel\n");
+		
 		pinctrl3 = devm_pinctrl_get(&pdev->dev);
 		if (IS_ERR(pinctrl3)) {
 			ret = PTR_ERR(pinctrl3);
-			printk("focal Cannot find touch pinctrl1!\n");
+		
 			return ret;
 		}
-		printk("focal:tpd_get_gpio_info_atmel_1 begin\n");
 			focal_power_output0 = pinctrl_lookup_state(pinctrl3, "state_focal_power_output0");
 			if (IS_ERR(focal_power_output0)) {
 				ret = PTR_ERR(focal_power_output0);
-				printk( "mxt Cannot find touch pinctrl state_power_output0!\n");
 				return ret;
 			}
 			else
 				{
-				printk("success\n");
+				//printk("success\n");
 				}
 			focal_power_output1 = pinctrl_lookup_state(pinctrl3, "state_focal_power_output1");
 			if (IS_ERR(focal_power_output1)) {
 				ret = PTR_ERR(focal_power_output1);
-				printk("focal Cannot find touch pinctrl state_power_output1!\n");
 				return ret;
 			}
-		printk("[focal] mt_tpd_pinctr3----------\n");
+		
 		return 0;
 	}
 	
@@ -900,7 +897,6 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     struct fts_ts_data *ts_data;
 
     FTS_FUNC_ENTER();
-    printk("focal_tpd_probe start\n");
     ts_data = devm_kzalloc(&client->dev, sizeof(*ts_data), GFP_KERNEL);
     if (!ts_data) {
         FTS_ERROR("Failed to allocate memory for fts_data");
@@ -916,29 +912,23 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
         client->addr = FTS_I2C_SLAVE_ADDR;
         FTS_INFO("[TPD]i2c addr=0x%x\n", client->addr);
     }
-	printk("focal_tpd_probe start_1\n");
-
     ts_data->ts_workqueue = create_singlethread_workqueue("fts_wq");
     if (NULL == ts_data->ts_workqueue) {
         FTS_ERROR("failed to create fts workqueue");
     }
-	printk("focal_tpd_probe start_3\n");
+	
 	//add by cassy begin
 		tpd_get_gpio_info_focal(client);
 		//add by cassy end
-		printk("focal_tpd_probe start_4\n");
+		
 //add by allen start
 tpd_power_on(1);
 //add by allen end
     spin_lock_init(&ts_data->irq_lock);
     mutex_init(&ts_data->report_mutex);
-	printk("focal_tpd_probe start_5\n");
-
     /* Init I2C */
     fts_i2c_init();
-	printk("focal_tpd_probe start_6\n");
-
-    ret = fts_input_init(ts_data);
+	    ret = fts_input_init(ts_data);
     if (ret) {
         FTS_ERROR("fts input initialize fail");
         goto err_input_init;
@@ -946,21 +936,18 @@ tpd_power_on(1);
 
   fts_reset_proc(200);
 	
-	printk("focal_tpd_probe start_7\n");
     ret = fts_get_ic_information(ts_data);
     if (ret) {
         FTS_ERROR("not focal IC, unregister driver");
         goto err_input_init;
     }
-	printk("focal_tpd_probe start_8\n");
-
+	
 #if FTS_APK_NODE_EN////1
     ret = fts_create_apk_debug_channel(ts_data);
     if (ret) {
         FTS_ERROR("create apk debug node fail");
     }
 #endif
-printk("focal_tpd_probe start_9\n");
 
 #if FTS_SYSFS_NODE_EN////1
     ret = fts_create_sysfs(client);
@@ -968,7 +955,6 @@ printk("focal_tpd_probe start_9\n");
         FTS_ERROR("create sysfs node fail");
     }
 #endif
-printk("focal_tpd_probe start_10\n");
 
 #if FTS_POINT_REPORT_CHECK_EN///0
     ret = fts_point_report_check_init(ts_data);
@@ -976,8 +962,7 @@ printk("focal_tpd_probe start_10\n");
         FTS_ERROR("init point report check fail");
     }
 #endif
-	printk("focal_tpd_probe start_11\n");
-
+	
     ret = fts_ex_mode_init(client);
     if (ret) {
         FTS_ERROR("init glove/cover/charger fail");
@@ -1007,8 +992,7 @@ printk("focal_tpd_probe start_10\n");
         FTS_ERROR("init esd check fail");
     }
 #endif
-	printk("focal_tpd_probe start_12\n");
-
+	
     ts_data->thread_tpd = kthread_run(touch_event_handler, 0, TPD_DEVICE);
     if (IS_ERR(ts_data->thread_tpd)) {
         ret = PTR_ERR(ts_data->thread_tpd);
@@ -1127,7 +1111,6 @@ static int tpd_remove(struct i2c_client *client)
 void tpd_gpio_output_focal(int pin, int level)
 {
 	//mutex_lock(&tpd_set_gpio_mutex);
-	printk("[tpd]tpd_gpio_output pin = %d, level = %d\n", pin, level);
 	if (pin == 2) {
 		if (level)
 			pinctrl_select_state(pinctrl3, focal_power_output1);
@@ -1143,12 +1126,12 @@ static void tpd_power_on(int flag)
 {
 	if(flag)
 		{
-		 printk("focal_tpd_power_on_1!\n");
+		
 		tpd_gpio_output_focal(GTP_enable_power_PORT, 1);
 		}
 		else
 		{
-		printk("focal_tpd_power_on_0!\n");
+		
         tpd_gpio_output_focal(GTP_enable_power_PORT, 0);
 
 		}
@@ -1158,20 +1141,19 @@ static void tpd_power_on(int flag)
 
 static int tpd_local_init(void)
 {
-   printk("focal_tpd_local_init start\n");
     FTS_FUNC_ENTER();
 	//modify by cassy begin
 #if FTS_POWER_SOURCE_CUST_EN///1//modify by cassy from 0 to 1
-printk("focal touch power on start\n");
+
     if (fts_power_init() != 0)
         return -1;
 #else
-printk("tpd_power_on start\n");
+
 
 //tpd_power_on(1);
 #endif
 	//modify by cassy end
-	printk("focal_tpd_local_init start_1\n");
+	
 
     if (i2c_add_driver(&tpd_i2c_driver) != 0) {
         FTS_ERROR("[TPD]: Unable to add fts i2c driver!!");
@@ -1180,7 +1162,7 @@ printk("tpd_power_on start\n");
     }
 
     if (tpd_dts_data.use_tpd_button) {
-		printk("cassy_test_button event\n");
+		
         tpd_button_setting(tpd_dts_data.tpd_key_num, tpd_dts_data.tpd_key_local,
                            tpd_dts_data.tpd_key_dim_local);
     }
@@ -1358,8 +1340,7 @@ static struct tpd_driver_t tpd_device_driver = {
 *****************************************************************************/
 static int __init tpd_driver_init(void)
 {
-	printk("focal_tpd_driver_init start\n");
-
+	
     FTS_FUNC_ENTER();
     FTS_INFO("Driver version: %s", FTS_DRIVER_VERSION);
     tpd_get_dts_info();
