@@ -252,7 +252,8 @@ static int fgauge_initial(struct gauge_device *gauge_dev)
 	bat_plug_out_time = 31;	/*[12:8], 5 bits*/
 
 	fgauge_read_RTC_boot_status(gauge_dev);
-
+	gauge_dev->fg_hw_info.iavg_valid = 1;
+	get_mtk_battery()->log.fg_reset = 0;
 
 	return 0;
 }
@@ -797,6 +798,11 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 		zcv_tmp_1st = zcv_tmp;
 		zcv_1st_read = true;
 	}
+
+	gauge_dev->fg_hw_info.pmic_zcv = _hw_ocv_35_pon;
+	gauge_dev->fg_hw_info.pmic_zcv_rdy = _hw_ocv_35_pon_rdy;
+	gauge_dev->fg_hw_info.charger_zcv = _hw_ocv_chgin;
+	gauge_dev->fg_hw_info.hw_zcv = _hw_ocv;
 
 	bm_err("[read_hw_ocv] g_fg_is_charger_exist %d _hw_ocv_chgin_rdy %d\n",
 		g_fg_is_charger_exist, _hw_ocv_chgin_rdy);
