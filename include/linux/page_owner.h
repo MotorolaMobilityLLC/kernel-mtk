@@ -50,16 +50,6 @@ static inline void dump_page_owner(struct page *page)
 	if (static_branch_unlikely(&page_owner_inited))
 		__dump_page_owner(page);
 }
-
-#ifdef CONFIG_PAGE_OWNER_SLIM
-
-struct HandleCount {
-	depot_stack_handle_t handle;
-	size_t allocations;
-	struct hlist_node node;
-};
-
-#endif
 #else
 static inline void reset_page_owner(struct page *page, unsigned int order)
 {
