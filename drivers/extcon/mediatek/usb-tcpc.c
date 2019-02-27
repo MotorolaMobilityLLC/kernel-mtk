@@ -23,6 +23,10 @@
 #include <linux/workqueue.h>
 #include <linux/mutex.h>
 #include <extcon_usb.h>
+#ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
+#include "usb_switch.h"
+#include "typec.h"
+#endif
 
 static struct notifier_block otg_nb;
 static bool usbc_otg_attached;
@@ -97,18 +101,38 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&tcpc_otg_lock);
 			tcpc_role_call(true);
 			mutex_unlock(&tcpc_otg_lock);
-#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+#ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
+			usb3_switch_dps_en(false);
 			if (noti->typec_state.polarity == 0)
 				usb3_switch_ctrl_sel(CC2_SIDE);
 			else
 				usb3_switch_ctrl_sel(CC1_SIDE);
 #endif
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC
-			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+		  && noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			pr_info("%s OTG Plug out\n", __func__);
 			mutex_lock(&tcpc_otg_lock);
 			tcpc_role_call(false);
 			mutex_unlock(&tcpc_otg_lock);
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(true);
+#endif
+		}
+		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC) {
+#ifdef CONFIG_MTK_USB_TYPEC_U3_MUX
+			usb3_switch_dps_en(false);
+			if (noti->typec_state.polarity == 0)
+				usb3_switch_ctrl_sel(CC1_SIDE);
+			else
+				usb3_switch_ctrl_sel(CC2_SIDE);
+#endif
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+		  noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC) &&
+		  noti->typec_state.new_state == TYPEC_UNATTACHED) {
+#ifdef CONFIG_USB_C_SWITCH_U3_MUX
+			usb3_switch_dps_en(true);
+#endif
 		}
 		break;
 	}
