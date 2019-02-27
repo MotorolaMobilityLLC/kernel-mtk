@@ -32,7 +32,7 @@
 /* #include <mach/mt_typedefs.h> */
 #include <mt-plat/sync_write.h>
 /*#include "mt_clkmgr.h"*/
-#include "mt3967_clkmgr.h"
+#include "mt6779_clkmgr.h"
 /* #include <mach/mt_dcm.h> */
 /* #include <mach/mt_idvfs.h> */ /* Fix when idvfs ready */
 /*#include "mt_spm.h"*/
@@ -102,22 +102,22 @@ void __iomem *clk_mcucfg_base;
 #define ARMPLL_L_CON1           (clk_apmixed_base + 0x214)
 #define ARMPLL_L_PWR_CON0           (clk_apmixed_base + 0x21C)
 /*CCIPLL*/
-#define CCIPLL_CON0           (clk_apmixed_base + 0x290)
-#define CCIPLL_CON1           (clk_apmixed_base + 0x294)
-#define CCIPLL_PWR_CON0           (clk_apmixed_base + 0x29C)
+#define CCIPLL_CON0           (clk_apmixed_base + 0x2A0)
+#define CCIPLL_CON1           (clk_apmixed_base + 0x2A4)
+#define CCIPLL_PWR_CON0           (clk_apmixed_base + 0x2AC)
 /*MMPLL*/
-#define MMPLL_CON0           (clk_apmixed_base + 0x270)
-#define MMPLL_CON1           (clk_apmixed_base + 0x274)
-#define MMPLL_PWR_CON0           (clk_apmixed_base + 0x27C)
+#define MMPLL_CON0           (clk_apmixed_base + 0x280)
+#define MMPLL_CON1           (clk_apmixed_base + 0x284)
+#define MMPLL_PWR_CON0           (clk_apmixed_base + 0x28C)
 /*GPUPLL*/
-#define MFGPLL_CON0           (clk_apmixed_base + 0x240)
-#define MFGPLL_CON1           (clk_apmixed_base + 0x244)
-#define MFGPLL_PWR_CON0           (clk_apmixed_base + 0x24C)
+#define MFGPLL_CON0           (clk_apmixed_base + 0x250)
+#define MFGPLL_CON1           (clk_apmixed_base + 0x254)
+#define MFGPLL_PWR_CON0           (clk_apmixed_base + 0x25C)
 
 /* MCUCFG Register */
-#define MP0_PLL_DIV_CFG           (clk_mcucfg_base + 0x7A0) /*ARMPLL_LL*/
-#define MP1_PLL_DIV_CFG           (clk_mcucfg_base + 0x7A4) /*ARMPLL_L*/
-#define BUS_PLL_DIV_CFG           (clk_mcucfg_base + 0x7C0) /*CCIPLL*/
+#define MP0_PLL_DIV_CFG           (clk_mcucfg_base + 0xA2A0) /*ARMPLL_LL*/
+#define MP1_PLL_DIV_CFG           (clk_mcucfg_base + 0xA2A4) /*ARMPLL_L*/
+#define BUS_PLL_DIV_CFG           (clk_mcucfg_base + 0xA2E0) /*CCIPLL*/
 
 /************************************************
  **********         cg_clk part        **********
