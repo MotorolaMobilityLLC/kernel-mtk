@@ -268,7 +268,7 @@
 /* for DVFS OPP table CCI */
 #define CPU_DVFS_FREQ0_CCI_C65T    1101000    /* KHz */
 #define CPU_DVFS_FREQ1_CCI_C65T    1042000    /* KHz */
-#define CPU_DVFS_FREQ2_CCI_C65T     990000    /* KHz */
+#define CPU_DVFS_FREQ2_CCI_C65T    1005000    /* KHz */
 #define CPU_DVFS_FREQ3_CCI_C65T     946000    /* KHz */
 #define CPU_DVFS_FREQ4_CCI_C65T     902000    /* KHz */
 #define CPU_DVFS_FREQ5_CCI_C65T     857000    /* KHz */
@@ -320,7 +320,7 @@
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C65T    111875          /* 10uV */
 #define CPU_DVFS_VOLT1_VPROC_CCI_C65T    106875          /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC_CCI_C65T    102500          /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_CCI_C65T    103750          /* 10uV */
 #define CPU_DVFS_VOLT3_VPROC_CCI_C65T     98750          /* 10uV */
 #define CPU_DVFS_VOLT4_VPROC_CCI_C65T     95000          /* 10uV */
 #define CPU_DVFS_VOLT5_VPROC_CCI_C65T     91250          /* 10uV */
@@ -375,7 +375,7 @@
 /* for DVFS OPP table CCI */
 #define CPU_DVFS_FREQ0_CCI_C65    1051000    /* KHz */
 #define CPU_DVFS_FREQ1_CCI_C65    1000000    /* KHz */
-#define CPU_DVFS_FREQ2_CCI_C65     955000    /* KHz */
+#define CPU_DVFS_FREQ2_CCI_C65     949000    /* KHz */
 #define CPU_DVFS_FREQ3_CCI_C65     917000    /* KHz */
 #define CPU_DVFS_FREQ4_CCI_C65     878000    /* KHz */
 #define CPU_DVFS_FREQ5_CCI_C65     840000    /* KHz */
@@ -427,7 +427,7 @@
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C65    111875          /* 10uV */
 #define CPU_DVFS_VOLT1_VPROC_CCI_C65    106875          /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC_CCI_C65    102500          /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_CCI_C65    101875          /* 10uV */
 #define CPU_DVFS_VOLT3_VPROC_CCI_C65     98750          /* 10uV */
 #define CPU_DVFS_VOLT4_VPROC_CCI_C65     95000          /* 10uV */
 #define CPU_DVFS_VOLT5_VPROC_CCI_C65     91250          /* 10uV */
@@ -481,8 +481,8 @@
 
 /* for DVFS OPP table CCI */
 #define CPU_DVFS_FREQ0_CCI_C62    1048000    /* KHz */
-#define CPU_DVFS_FREQ1_CCI_C62     997000    /* KHz */
-#define CPU_DVFS_FREQ2_CCI_C62     953000    /* KHz */
+#define CPU_DVFS_FREQ1_CCI_C62    1004000    /* KHz */
+#define CPU_DVFS_FREQ2_CCI_C62     947000    /* KHz */
 #define CPU_DVFS_FREQ3_CCI_C62     915000    /* KHz */
 #define CPU_DVFS_FREQ4_CCI_C62     877000    /* KHz */
 #define CPU_DVFS_FREQ5_CCI_C62     839000    /* KHz */
@@ -533,8 +533,8 @@
 #define CPU_DVFS_VOLT15_VPROC_LL_C62    60000          /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C62    111875          /* 10uV */
-#define CPU_DVFS_VOLT1_VPROC_CCI_C62    106875          /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC_CCI_C62    102500          /* 10uV */
+#define CPU_DVFS_VOLT1_VPROC_CCI_C62    107500          /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_CCI_C62    101875          /* 10uV */
 #define CPU_DVFS_VOLT3_VPROC_CCI_C62     98750          /* 10uV */
 #define CPU_DVFS_VOLT4_VPROC_CCI_C62     95000          /* 10uV */
 #define CPU_DVFS_VOLT5_VPROC_CCI_C62     91250          /* 10uV */
@@ -588,8 +588,8 @@
 
 /* for DVFS OPP table CCI */
 #define CPU_DVFS_FREQ0_CCI_C62LY    1048000    /* KHz */
-#define CPU_DVFS_FREQ1_CCI_C62LY     997000    /* KHz */
-#define CPU_DVFS_FREQ2_CCI_C62LY     953000    /* KHz */
+#define CPU_DVFS_FREQ1_CCI_C62LY    1004000    /* KHz */
+#define CPU_DVFS_FREQ2_CCI_C62LY     947000    /* KHz */
 #define CPU_DVFS_FREQ3_CCI_C62LY     915000    /* KHz */
 #define CPU_DVFS_FREQ4_CCI_C62LY     877000    /* KHz */
 #define CPU_DVFS_FREQ5_CCI_C62LY     839000    /* KHz */
@@ -640,8 +640,8 @@
 #define CPU_DVFS_VOLT15_VPROC_LL_C62LY    60000           /* 10uV */
 
 #define CPU_DVFS_VOLT0_VPROC_CCI_C62LY    111875           /* 10uV */
-#define CPU_DVFS_VOLT1_VPROC_CCI_C62LY    108125           /* 10uV */
-#define CPU_DVFS_VOLT2_VPROC_CCI_C62LY    104375           /* 10uV */
+#define CPU_DVFS_VOLT1_VPROC_CCI_C62LY    108750           /* 10uV */
+#define CPU_DVFS_VOLT2_VPROC_CCI_C62LY    103750           /* 10uV */
 #define CPU_DVFS_VOLT3_VPROC_CCI_C62LY    101250           /* 10uV */
 #define CPU_DVFS_VOLT4_VPROC_CCI_C62LY     98125           /* 10uV */
 #define CPU_DVFS_VOLT5_VPROC_CCI_C62LY     95000           /* 10uV */
@@ -923,11 +923,11 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C65T[] = {
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_CCI_C65T[] = {
@@ -935,15 +935,15 @@ static struct mt_cpu_freq_method opp_tbl_method_CCI_C65T[] = {
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 	FP(4,	2),
 	FP(4,	2),
 	FP(4,	2),
@@ -984,27 +984,27 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C65[] = {
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_CCI_C65[] = {
 	/* POS,	CLK */
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 	FP(4,	2),
 	FP(4,	2),
 	FP(4,	2),
@@ -1045,27 +1045,27 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C62[] = {
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_CCI_C62[] = {
 	/* POS,	CLK */
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 	FP(4,	2),
 	FP(4,	2),
 	FP(4,	2),
@@ -1106,27 +1106,27 @@ static struct mt_cpu_freq_method opp_tbl_method_LL_C62LY[] = {
 	FP(2,	1),
 	FP(2,	1),
 	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	2),
-	FP(4,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 };
 
 static struct mt_cpu_freq_method opp_tbl_method_CCI_C62LY[] = {
 	/* POS,	CLK */
 	FP(2,	1),
 	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(2,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
-	FP(4,	1),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
+	FP(2,	2),
 	FP(4,	2),
 	FP(4,	2),
 	FP(4,	2),
