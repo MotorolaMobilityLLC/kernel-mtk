@@ -20,7 +20,31 @@
 #include <linux/kernel.h>
 #include <mtk_cpufreq_internal.h>
 
+struct cm_mgr_data {
+	unsigned int cmd;
+	unsigned int arg;
+};
+
+#define CM_MGR_D_LEN		(2)
+#define IPI_CM_MGR_INIT 0
+#define IPI_CM_MGR_ENABLE 1
+#define IPI_CM_MGR_OPP_ENABLE 2
+#define IPI_CM_MGR_SSPM_ENABLE 3
+#define IPI_CM_MGR_BLANK 4
+#define IPI_CM_MGR_DISABLE_FB 5
+#define IPI_CM_MGR_DRAM_TYPE 6
+#define IPI_CM_MGR_CPU_POWER_RATIO_UP 7
+#define IPI_CM_MGR_CPU_POWER_RATIO_DOWN 8
+#define IPI_CM_MGR_VCORE_POWER_RATIO_UP 9
+#define IPI_CM_MGR_VCORE_POWER_RATIO_DOWN 10
+#define IPI_CM_MGR_DEBOUNCE_UP 11
+#define IPI_CM_MGR_DEBOUNCE_DOWN 12
+#define IPI_CM_MGR_GPU_ENABLE 13
+#define IPI_CM_MGR_GPU_POWER_RATIO_UP 14
+#define IPI_CM_MGR_GPU_POWER_RATIO_DOWN 15
+
 extern spinlock_t cm_mgr_lock;
+extern int cm_mgr_gpu_enable;
 extern int cm_mgr_disable_fb;
 extern int cm_mgr_blank_status;
 extern int vcore_power_ratio_up[CM_MGR_EMI_OPP];
@@ -29,6 +53,7 @@ extern int cm_mgr_enable;
 
 extern void check_cm_mgr_status_internal(void);
 extern void check_cm_mgr_status(unsigned int cluster, unsigned int freq);
+extern int cm_mgr_to_sspm_command(u32 cmd, int val);
 
 enum mt_cpu_dvfs_id;
 
