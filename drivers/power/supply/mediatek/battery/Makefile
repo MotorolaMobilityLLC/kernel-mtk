@@ -20,5 +20,5 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-	obj-y += mtk_battery.o mtk_power_misc.o
+	obj-y += mtk_battery.o mtk_power_misc.o mtk_battery_recovery.o
 endif
