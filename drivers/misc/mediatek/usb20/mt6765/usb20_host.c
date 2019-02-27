@@ -337,7 +337,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 	case TCP_NOTIFY_TYPEC_STATE:
 		DBG(0, "TCP_NOTIFY_TYPEC_STATE, old_state=%d, new_state=%d\n",
 				noti->typec_state.old_state,
-				noti->swap_state.new_role);
+				noti->typec_state.new_state);
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			DBG(0, "OTG Plug in\n");
