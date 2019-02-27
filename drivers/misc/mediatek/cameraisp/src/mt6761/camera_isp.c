@@ -1562,6 +1562,8 @@ bool ISP_chkModuleSetting(void)
 		unsigned int cam_aao_ysize;   /*7394 */
 		unsigned int cam_awb_win_num; /*45BC */
 		unsigned int cam_ae_hst_ctl;  /*4650 */
+		unsigned int cam_ae_stat_en;  /*4698 */
+		unsigned int aa_size_per_blk;
 
 		unsigned int AAO_XSIZE;
 		unsigned int AWB_W_HNUM;
@@ -1977,6 +1979,7 @@ AF_EXIT:
 
 			cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x5BC);
 			cam_ae_hst_ctl = ISP_RD32(ISP_ADDR + 0x650);
+			cam_ae_stat_en = ISP_RD32(ISP_ADDR + 0x698);
 			cam_aao_xsize = ISP_RD32(ISP_ADDR + 0x3390);
 			cam_aao_ysize = ISP_RD32(ISP_ADDR + 0x3394);
 
@@ -1993,11 +1996,13 @@ AF_EXIT:
 			if ((cam_aao_ysize + 1) != 1)
 				log_inf("Err HwRWCtrl::AAO_YSIZE(%d) must be 1",
 					cam_aao_ysize);
-			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM * 7 +
-						(histogramen_num << 8)))
-				pr_info("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*7 + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
+			aa_size_per_blk = (cam_ae_stat_en) ? 7 : 5;
+			if ((AAO_XSIZE + 1) != (AWB_W_HNUM * AWB_W_VNUM *
+					aa_size_per_blk +
+					(histogramen_num << 8)))
+				pr_info("Error HwRWCtrl::AAO_XSIZE(%d) = AWB_W_HNUM(%d)*AWB_W_VNUM(%d)*(%d) + (how many histogram enable(%d)(AE_HST0/1/2/3_EN))*2*128 !!",
 					AAO_XSIZE, AWB_W_HNUM, AWB_W_VNUM,
-					histogramen_num);
+					aa_size_per_blk, histogramen_num);
 		}
 
 		/*Check AWB setting */
