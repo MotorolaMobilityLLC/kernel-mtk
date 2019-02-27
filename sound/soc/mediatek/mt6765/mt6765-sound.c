@@ -1017,21 +1017,19 @@ bool set_chip_dai_bt_enable(bool enable, struct audio_digital_dai_bt *dai_bt,
 	return true;
 }
 
-bool set_chip_hw_digital_gain_mode(unsigned int gain_type,
+bool set_chip_hw_digital_gain_mode(enum soc_aud_digital_block aud_block,
 				   unsigned int sample_rate,
 				   unsigned int sample_per_step)
 {
 	unsigned int value = 0;
-
 	value = (sample_per_step << 8) |
-		(SampleRateTransform(sample_rate,
-					Soc_Aud_Digital_Block_MEM_DL1) << 4);
+		(SampleRateTransform(sample_rate, aud_block) << 4);
 
-	switch (gain_type) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
+	switch (aud_block) {
+	case Soc_Aud_Digital_Block_HW_GAIN1:
 		Afe_Set_Reg(AFE_GAIN1_CON0, value, 0xfff0);
 		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
+	case Soc_Aud_Digital_Block_HW_GAIN2:
 		Afe_Set_Reg(AFE_GAIN2_CON0, value, 0xfff0);
 		break;
 	default:
@@ -1040,16 +1038,17 @@ bool set_chip_hw_digital_gain_mode(unsigned int gain_type,
 	return true;
 }
 
-bool set_chip_hw_digital_gain_enable(int gain_type, bool enable)
+bool set_chip_hw_digital_gain_enable(enum soc_aud_digital_block aud_block,
+				     bool enable)
 {
-	switch (gain_type) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
+	switch (aud_block) {
+	case Soc_Aud_Digital_Block_HW_GAIN1:
 		if (enable)
 			Afe_Set_Reg(AFE_GAIN1_CUR, 0, 0xFFFFFFFF);
 		/* Let current gain be 0 to ramp up */
 		Afe_Set_Reg(AFE_GAIN1_CON0, enable, 0x1);
 		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
+	case Soc_Aud_Digital_Block_HW_GAIN2:
 		if (enable)
 			Afe_Set_Reg(AFE_GAIN2_CUR, 0, 0xFFFFFFFF);
 		/* Let current gain be 0 to ramp up */
@@ -1062,13 +1061,14 @@ bool set_chip_hw_digital_gain_enable(int gain_type, bool enable)
 	return true;
 }
 
-bool set_chip_hw_digital_gain(unsigned int gain, int gain_type)
+bool set_chip_hw_digital_gain(enum soc_aud_digital_block aud_block,
+			      unsigned int gain)
 {
-	switch (gain_type) {
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
+	switch (aud_block) {
+	case Soc_Aud_Digital_Block_HW_GAIN1:
 		Afe_Set_Reg(AFE_GAIN1_CON1, gain, 0xffffffff);
 		break;
-	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN2:
+	case Soc_Aud_Digital_Block_HW_GAIN2:
 		Afe_Set_Reg(AFE_GAIN2_CON1, gain, 0xffffffff);
 		break;
 	default:
