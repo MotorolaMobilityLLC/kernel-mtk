@@ -169,9 +169,10 @@ mtk_pcm_dl2_pointer(struct snd_pcm_substream *substream)
 	unsigned long flags;
 
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
+#ifdef DL2_DEBUG_LOG
 	pr_debug(" %s Afe_Block->u4DMAReadIdx = 0x%x\n", __func__,
 		       Afe_Block->u4DMAReadIdx);
-
+#endif
 	spin_lock_irqsave(&pMemControl->substream_lock, flags);
 
 	/* get total bytes to copy */
@@ -492,11 +493,12 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size,
 	char *data_w_ptr = (char *)dst;
 
 	snd_pcm_uframes_t count = *size;
-
+#ifdef DL2_DEBUG_LOG
 	pr_debug(
 		"AudDrv_write WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
 		Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
 		Afe_Block->u4DataRemained);
+#endif
 
 	if (Afe_Block->u4BufferSize == 0) {
 		pr_err("AudDrv_write: u4BufferSize=0 Error");
@@ -538,11 +540,11 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size,
 		spin_lock_irqsave(&pMemControl->substream_lock, flags);
 		Afe_WriteIdx_tmp = Afe_Block->u4WriteIdx;
 		spin_unlock_irqrestore(&pMemControl->substream_lock, flags);
-
+#ifdef DL2_DEBUG_LOG
 		pr_debug(
 			"Afe_WriteIdx_tmp %d, copy_size %d, u4BufferSize %d\n",
 			Afe_WriteIdx_tmp, copy_size, Afe_Block->u4BufferSize);
-
+#endif
 		if (Afe_WriteIdx_tmp + copy_size <
 		    Afe_Block->u4BufferSize) { /* copy once */
 			if (bCopy) {
@@ -560,11 +562,12 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size,
 					       flags);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
+#ifdef DL2_DEBUG_LOG
 			PRINTK_DEBUG_LOG(
 				"AudDrv_write finish1, DataRemained:%d, ReadIdx=%d, WriteIdx:%d\r\n",
 				Afe_Block->u4DataRemained,
 				Afe_Block->u4DMAReadIdx, Afe_Block->u4WriteIdx);
+#endif
 
 		} else { /* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
@@ -577,8 +580,10 @@ static int mtk_pcm_dl2_copy_(void __user *dst, snd_pcm_uframes_t *size,
 			size_1 = Afe_Block->u4BufferSize - Afe_WriteIdx_tmp;
 			size_2 = copy_size - size_1;
 #endif
+#ifdef DL2_DEBUG_LOG
 			pr_debug("size_1=0x%x, size_2=0x%x\n", size_1,
 				       size_2);
+#endif
 			if (bCopy) {
 				if (dataTransfer((Afe_Block->pucVirtBufAddr +
 						  Afe_WriteIdx_tmp),
@@ -731,7 +736,6 @@ static int mtk_pcm_dl2_copy(struct snd_pcm_substream *substream, int channel,
 	int remainCount = 0;
 	int ret = 0;
 	int retryCount = 0;
-
 	pr_debug(
 		"%s pos = %lu count = %lu, BufferSize %d, ConsumeSize %d\n",
 		__func__, pos, count, ISRCopyBuffer.u4BufferSize,
