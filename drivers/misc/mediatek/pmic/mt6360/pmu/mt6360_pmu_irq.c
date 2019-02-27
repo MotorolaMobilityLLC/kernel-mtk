@@ -95,6 +95,12 @@ static void mt6360_pmu_irq_bus_sync_unlock(struct irq_data *data)
 					 mpi->cache_irq_mask);
 	if (ret < 0)
 		dev_err(mpi->dev, "%s: fail to write irq mask\n", __func__);
+	/* force clear disabled irq */
+	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_IRQ1,
+					 MT6360_PMU_IRQ_REGNUM,
+					 mpi->cache_irq_mask);
+	if (ret < 0)
+		dev_err(mpi->dev, "%s: fail to write clr irq\n", __func__);
 }
 
 static void mt6360_pmu_irq_enable(struct irq_data *data)
