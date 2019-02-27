@@ -45,7 +45,7 @@ get_bat_charging_current_level(void)
 	return 500;
 }
 
-	CHARGER_TYPE __attribute__ ((weak))
+	enum charger_type __attribute__ ((weak))
 mt_get_charger_type(void)
 {
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
