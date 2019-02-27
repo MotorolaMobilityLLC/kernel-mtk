@@ -1168,37 +1168,23 @@ int hal_btif_dump_reg(struct _MTK_BTIF_INFO_STR_ *p_btif,
 #endif
 	lsr = BTIF_READ32(BTIF_LSR(base));
 	dma_en = BTIF_READ32(BTIF_DMA_EN(base));
-	/*
-	 * here we omit 1st register which is THR/RBR register to avoid
-	 * Rx data read by this debug information accidently
-	 */
-	for (idx = 1; idx < sizeof(reg_map); idx++)
-		reg_map[idx] = BTIF_READ8(p_btif->base + (4 * idx));
 	/*spin_unlock_irqrestore(&(g_clk_cg_spinlock), irq_flag);*/
-	BTIF_INFO_FUNC("BTIF's clock is on\n");
 	BTIF_INFO_FUNC("base address: 0x%lx\n", base);
 	switch (flag) {
-	case REG_BTIF_ALL:
-#if 0
+	case REG_ALL:
+		/*
+		 * here we omit 1st register which is THR/RBR register to avoid
+		 * Rx data read by this debug information accidently
+		 */
+		for (idx = 1; idx < sizeof(reg_map); idx++)
+			reg_map[idx] = BTIF_READ8(p_btif->base + (4 * idx));
+
+		btif_dump_array("BTIF register", reg_map, sizeof(reg_map));
+		break;
+	case REG_IRQ:
 		BTIF_INFO_FUNC("BTIF_IER:0x%x\n", BTIF_READ32(BTIF_IER(base)));
 		BTIF_INFO_FUNC("BTIF_IIR:0x%x\n", BTIF_READ32(BTIF_IIR(base)));
-		BTIF_INFO_FUNC("BTIF_FAKELCR:0x%x\n",
-			       BTIF_READ32(BTIF_FAKELCR(base)));
-		BTIF_INFO_FUNC("BTIF_LSR:0x%x\n", BTIF_READ32(BTIF_LSR(base)));
-		BTIF_INFO_FUNC("BTIF_SLEEP_EN:0x%x\n",
-			       BTIF_READ32(BTIF_SLEEP_EN(base)));
-		BTIF_INFO_FUNC("BTIF_DMA_EN:0x%x\n",
-			       BTIF_READ32(BTIF_DMA_EN(base)));
-		BTIF_INFO_FUNC("BTIF_RTOCNT:0x%x\n",
-			       BTIF_READ32(BTIF_RTOCNT(base)));
-		BTIF_INFO_FUNC("BTIF_TRI_LVL:0x%x\n",
-			       BTIF_READ32(BTIF_TRI_LVL(base)));
-		BTIF_INFO_FUNC("BTIF_WAT_TIME:0x%x\n",
-			       BTIF_READ32(BTIF_WAT_TIME(base)));
-		BTIF_INFO_FUNC("BTIF_HANDSHAKE:0x%x\n",
-			       BTIF_READ32(BTIF_HANDSHAKE(base)));
-#endif
-		btif_dump_array("BTIF register", reg_map, sizeof(reg_map));
+		BTIF_INFO_FUNC("BTIF_LSR:0x%x\n", lsr);
 		break;
 	default:
 		break;
