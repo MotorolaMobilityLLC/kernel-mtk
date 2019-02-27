@@ -678,9 +678,7 @@ void arch_reset(char mode, const char *cmd)
 	} else if (cmd && !strcmp(cmd, "bootloader")) {
 		rtc_mark_fast();
 	} else if (cmd && !strcmp(cmd, "kpoc")) {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 		rtc_mark_kpoc();
-#endif
 	} else {
 		reboot = WD_SW_RESET_BYPASS_PWR_KEY;
 	}
