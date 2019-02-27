@@ -69,6 +69,9 @@ struct imgsensor_mode_struct {
 	/*     following for GetDefaultFramerateByScenario()    */
 	kal_uint16 max_framerate;
 
+	/* record mipi pixel rate */
+	kal_uint32 mipi_pixel_rate;
+
 };
 
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
