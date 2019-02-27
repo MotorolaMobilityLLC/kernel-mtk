@@ -2730,39 +2730,25 @@ static signed int ISP_DumpReg(void)
 		(unsigned int)(0x10215c30),
 		(unsigned int)ISP_RD32(ISP_MIPI_ANA_ADDR + 0xc30));
 
-	/* NSCI2 1 debug */
-	ISP_WR32((ISP_ADDR_SENINF + 0x0A18), 0x02);
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x0A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0A18));
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x0A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0A1C));
-	ISP_WR32((ISP_ADDR_SENINF + 0x0A18), 0x12);
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x0A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0A18));
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x0A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0A1C));
-	/* NSCI2 3 debug */
-	ISP_WR32((ISP_ADDR_SENINF + 0x2A18), 0x02);
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x2A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A18));
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x2A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A1C));
-	ISP_WR32((ISP_ADDR_SENINF + 0x2A18), 0x12);
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x2A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A18));
-	log_err("[0x%08X %08X]", (unsigned int)(SENINF_BASE_ADDR + 0x2A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A1C));
-
-	/* seninf1 */
+	/* seninf dump*/
 	log_err("[0x%08X %08X],[0x%08X %08X]",
 		(unsigned int)(SENINF_BASE_ADDR + 0x0008),
 		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0008),
-		(unsigned int)(SENINF_BASE_ADDR + 0x0200),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0200));
+		(unsigned int)(SENINF_BASE_ADDR + 0x0010),
+		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x0010));
 	RegDump_SENINF(0x0d00, 0x0d3c);
-	RegDump_SENINF(0x0a00, 0x0a44);
 	RegDump_SENINF(0x1d00, 0x1d3c);
-	RegDump_SENINF(0x1600, 0x1614);
+	RegDump_SENINF(0x2d00, 0x2d3c);
+	RegDump_SENINF(0x3d00, 0x3d3c);
+	RegDump_SENINF(0x4d00, 0x4d3c);
+	RegDump_SENINF(0x5d00, 0x5d3c);
+
+	RegDump_SENINF(0x0a00, 0x0a44);
+	RegDump_SENINF(0x1a00, 0x1a44);
+	RegDump_SENINF(0x2a00, 0x2a44);
+	RegDump_SENINF(0x3a00, 0x3a44);
+	RegDump_SENINF(0x4a00, 0x4a44);
+
 	/*RegDump(0x4760, 0x47f0);*/
 	/* LSC_D */
 	RegDump(0x2530, 0x2550);
@@ -2947,69 +2933,6 @@ static signed int ISP_DumpReg(void)
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x2444));
 	log_err("0x%08X	%08X", (unsigned int)(ISP_TPIPE_ADDR + 0x2448),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0x2448));
-
-	/* seninf3 */
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2200),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2200));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d00),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d00));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d04),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d04));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d08),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d08));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d0c),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d0c));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d10),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d10));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d14),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d14));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2d18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2d18));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A00),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A00));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A04),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A04));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A08),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A08));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A0C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A0C));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A10),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A10));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A14),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A14));
-	ISP_WR32((ISP_ADDR_SENINF + 0x2A18), 0x10);
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A18));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A1C));
-	ISP_WR32((ISP_ADDR_SENINF + 0x2A18), 0x11);
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A18));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A1C));
-	ISP_WR32((ISP_ADDR_SENINF + 0x2A18), 0x12);
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A18));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2A1C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2A1C));
-	/* seninf4 */
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x3200),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x3200));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D00),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D00));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D04),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D04));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D08),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D08));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D0C),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D0C));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D10),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D10));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D14),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D14));
-	log_err("0x%08X	%08X", (unsigned int)(SENINF_BASE_ADDR + 0x2D18),
-		(unsigned int)ISP_RD32(ISP_ADDR_SENINF + 0x2D18));
-
 
 	/*      */
 	log_err("0x%08X	%08X ", (unsigned int)ISP_ADDR_CAMINF,
