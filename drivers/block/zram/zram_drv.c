@@ -1886,7 +1886,6 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 		"NumWrites:      %8lu kB\n"
 		"InvalidIO:      %8lu kB\n"
 		"MaxUsedPages:   %8lu kB\n"
-		"PageMigrated:	 %8lu kB\n"
 		,
 		B2K(zram_devices->disksize),
 		P2K(atomic64_read(&zram_devices->stats.pages_stored)),
