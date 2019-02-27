@@ -167,7 +167,9 @@ int ged_bridge_gpu_timestamp(
 				ged_kpi_acquire_buffer_ts(psGpuBeginINT->pid,
 										psGpuBeginINT->ullWnd,
 										psGpuBeginINT->i32FrameID);
+		psGpuBeginOUT->is_ged_kpi_enabled = 1;
 	} else {
+		psGpuBeginOUT->is_ged_kpi_enabled = 0;
 		psGpuBeginOUT->eError = GED_OK;
 	}
 	return 0;
