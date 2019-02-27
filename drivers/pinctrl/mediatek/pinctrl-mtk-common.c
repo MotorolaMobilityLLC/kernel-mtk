@@ -1093,9 +1093,18 @@ static int mtk_gpio_get_direction(struct gpio_chip *chip, unsigned int offset)
 	struct mtk_pinctrl *pctl = gpiochip_get_data(chip);
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
-	if (pctl->devdata->pin_dir_grps)
+	const struct mtk_pin_info *spec_pin_info;
+
+	if (pctl->devdata->pin_dir_grps) {
+		spec_pin_info = mtk_pinctrl_get_gpio_array(offset,
+			pctl->devdata->n_pin_dir, pctl->devdata->pin_dir_grps);
+		if (spec_pin_info == NULL)
+			return 1;/* for virtual GPIO that return 1 */
 		/* need reverse the direction for gpiolib */
 		return !mtk_pinctrl_get_gpio_direction(pctl, offset);
+	} else {
+		pr_info("pinctrl direction array is NULL of phone\n");
+	}
 #endif
 
 	reg_addr =  mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
