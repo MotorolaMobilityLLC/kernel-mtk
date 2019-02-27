@@ -81,6 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 
 		/*     following for GetDefaultFramerateByScenario()    */
 		.max_framerate = 300,
+		.mipi_pixel_rate = 189000000,
 		},
 	.cap = {
 		.pclk = 597000000,
@@ -92,6 +93,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 4016,
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 240,
+		.mipi_pixel_rate = 565000000,
 		},
 	.cap1 = {
 		 .pclk = 375000000,
@@ -3845,6 +3847,30 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_return_para_i32 = get_sensor_temperature();
 		*feature_para_len = 4;
 		break;
+	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.normal_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.pre.mipi_pixel_rate;
+			break;
+		}
+
+		break;
+
 	default:
 		break;
 	}
