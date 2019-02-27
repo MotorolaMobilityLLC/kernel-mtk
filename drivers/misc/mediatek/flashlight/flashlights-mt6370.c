@@ -419,8 +419,6 @@ static int mt6370_operate(int channel, int enable)
 		} else if (channel == MT6370_CHANNEL_CH2) {
 			mt6370_en_ch1 = MT6370_DISABLE;
 			mt6370_timeout_ms[MT6370_CHANNEL_CH1] = 0;
-		} else {
-			return -1;
 		}
 	}
 
