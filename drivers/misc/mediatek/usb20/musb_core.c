@@ -158,8 +158,8 @@ int low_power_timer_mode2_option;
 int usb_on_sram;
 int audio_on_sram;
 int use_mtk_audio = 1;
-module_param(low_power_timer_total_trigger_cnt, int, 0644);
-module_param(low_power_timer_total_wake_cnt, int, 0644);
+module_param(low_power_timer_total_trigger_cnt, int, 0400);
+module_param(low_power_timer_total_wake_cnt, int, 0400);
 module_param(low_power_timer_mode, int, 0644);
 module_param(low_power_timer_mode2_option, int, 0644);
 module_param(usb_on_sram, int, 0644);
@@ -1219,6 +1219,12 @@ b_host:
 		} else {
 			DBG(2, "BUS RESET as %s\n",
 				otg_state_string(musb->xceiv->otg->state));
+			/*
+			 * Recover usb phy setting and allow it can be
+			 * enter suspend status
+			 */
+			USBPHY_CLR8(0x68, 0x08);
+			USBPHY_CLR8(0x6a, 0x04);
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 			musb_disable_q_all(musb);
 #endif
