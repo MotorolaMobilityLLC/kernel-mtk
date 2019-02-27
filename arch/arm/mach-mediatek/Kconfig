@@ -64,6 +64,7 @@ config MACH_MT6765
 	select MTK_DRAMC
 	select PM_DEVFREQ
 	select MTK_SYS_CIRQ
+	select ARM_ERRATA_855873
 	help
 	  This enables support for MediaTek MT6765
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
