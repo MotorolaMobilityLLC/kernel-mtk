@@ -238,6 +238,33 @@ enum CMDQ_SCENARIO_ENUM {
 	CMDQ_MAX_SCENARIO_COUNT	/* ALWAYS keep at the end */
 };
 
+/* General Purpose Register */
+enum cmdq_gpr_reg {
+	/* Value Reg, we use 32-bit
+	 * Address Reg, we use 64-bit
+	 * Note that R0-R15 and P0-P7 actullay share same memory
+	 * and R1 cannot be used.
+	 */
+
+	CMDQ_DATA_REG_JPEG = 0x00,	/* R0 */
+	CMDQ_DATA_REG_JPEG_DST = 0x11,	/* P1 */
+
+	CMDQ_DATA_REG_PQ_COLOR = 0x04,	/* R4 */
+	CMDQ_DATA_REG_PQ_COLOR_DST = 0x13,	/* P3 */
+
+	CMDQ_DATA_REG_2D_SHARPNESS_0 = 0x05,	/* R5 */
+	CMDQ_DATA_REG_2D_SHARPNESS_0_DST = 0x14,	/* P4 */
+
+	CMDQ_DATA_REG_2D_SHARPNESS_1 = 0x0a,	/* R10 */
+	CMDQ_DATA_REG_2D_SHARPNESS_1_DST = 0x16,	/* P6 */
+
+	CMDQ_DATA_REG_DEBUG = 0x0b,	/* R11 */
+	CMDQ_DATA_REG_DEBUG_DST = 0x17,	/* P7 */
+
+	/* sentinel value for invalid register ID */
+	CMDQ_DATA_REG_INVALID = -1,
+};
+
 enum CMDQ_MDP_PA_BASE_ENUM {
 	CMDQ_MDP_PA_BASE_MM_MUTEX,
 	CMDQ_MAX_MDP_PA_BASE_COUNT,	/* ALWAYS keep at the end */
