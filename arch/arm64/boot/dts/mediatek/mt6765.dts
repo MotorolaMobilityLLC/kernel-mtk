@@ -19,6 +19,9 @@
 #include <dt-bindings/mmc/mt6765-msdc.h>
 #include <dt-bindings/clock/mt6765-clk.h>
 #include <generated/autoconf.h>
+
+/dts-v1/;
+
 / {
 	model = "MT6765";
 	compatible = "mediatek,MT6765";
@@ -27,7 +30,7 @@
 	#size-cells = <2>;
 
 	/* chosen */
-	chosen {
+	chosen: chosen {
 	bootargs = "console=tty0 console=ttyMT0,921600n1 root=/dev/ram\
 initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
@@ -143,7 +146,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x40000000 0 0x20000000>;
 	};
 
-	reserved-memory {
+	reserved_memory: reserved-memory {
 		#address-cells = <2>;
 		#size-cells = <2>;
 		ranges;
@@ -2224,6 +2227,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,irtx-pwm";
 		pwm_ch = <0>;
 		pwm_data_invert = <0>;
+	};
+
+	odm: odm{
+		compatible = "simple-bus";
+		/* reserved for overlay by odm */
 	};
 
 	firmware {
