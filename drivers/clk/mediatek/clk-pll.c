@@ -213,16 +213,7 @@ static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
 {
 	return 0;
 }
-static unsigned long mtk_pll_recalc_rate_dummy(struct clk_hw *hw,
-		unsigned long parent_rate)
-{
-	return 0;
-}
-static long mtk_pll_round_rate_dummy(struct clk_hw *hw, unsigned long rate,
-		unsigned long *prate)
-{
-	return 0;
-}
+
 static int mtk_pll_prepare_dummy(struct clk_hw *hw)
 {
 	return 0;
@@ -257,7 +248,7 @@ static unsigned long mtk_pll_recalc_rate(struct clk_hw *hw,
 	pcw = readl(pll->pcw_addr) >> pll->data->pcw_shift;
 	pcw &= GENMASK(pll->data->pcwbits - 1, 0);
 
-	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv) / 4;
+	return __mtk_pll_recalc_rate(pll, parent_rate, pcw, postdiv);
 }
 
 static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
@@ -269,7 +260,7 @@ static long mtk_pll_round_rate(struct clk_hw *hw, unsigned long rate,
 
 	mtk_pll_calc_values(pll, &pcw, &postdiv, rate, *prate);
 
-	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv) / 4;
+	return __mtk_pll_recalc_rate(pll, *prate, pcw, postdiv);
 }
 
 #if (defined(CONFIG_MACH_MT6758))
@@ -413,8 +404,8 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	.is_enabled	= mtk_pll_is_prepared_dummy,
 	.enable		= mtk_pll_prepare_dummy,
 	.disable	= mtk_pll_unprepare_dummy,
-	.recalc_rate	= mtk_pll_recalc_rate_dummy,
-	.round_rate	= mtk_pll_round_rate_dummy,
+	.recalc_rate	= mtk_pll_recalc_rate,
+	.round_rate	= mtk_pll_round_rate,
 	.set_rate	= mtk_pll_set_rate_dummy,
 };
 

@@ -412,7 +412,7 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG0 0x80000000
 #define INFRA_CG1 0x00000004
 #define INFRA_CG2 0x98ffff7f
-#define INFRA_CG3 0x9f9c7f96
+#define INFRA_CG3 0x879c7f96
 #define INFRA_CG4 0x2ffc87dd
 #define INFRA_CG5 0x00038fff
 
@@ -486,6 +486,7 @@ enum {
 			| (0x1 << (CLK_ARMPLL_L + 4 * (CLK_NR_PLL_CON0))))
 
 static const struct mtk_fixed_clk fixed_clks[] __initconst = {
+	FIXED_CLK(CLK_TOP_F_FRTC, "f_frtc_ck", "clk32k", 32768),
 	FIXED_CLK(CLK_TOP_CLK26M, "f_f26m_ck", "clk26m", 26000000),
 };
 
@@ -554,6 +555,7 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 	FACTOR(CLK_TOP_F_FUART, "f_fuart_ck", "uart_sel", 1, 1),
 	FACTOR(CLK_TOP_SPI, "spi_ck", "spi_sel", 1, 1),
 	FACTOR(CLK_TOP_MSDC50_0, "msdc50_0_ck", "msdc50_0_sel", 1, 1),
+	FACTOR(CLK_TOP_MSDC30_1, "msdc30_1_ck", "msdc30_1_sel", 1, 1),
 	FACTOR(CLK_TOP_AUDIO, "audio_ck", "audio_sel", 1, 1),
 	FACTOR(CLK_TOP_AUD_1, "aud_1_ck", "aud_1_sel", 1, 1),
 	FACTOR(CLK_TOP_AUD_ENGEN1, "aud_engen1_ck", "aud_engen1_sel", 1, 1),
@@ -1099,10 +1101,10 @@ static const struct mtk_gate_regs top2_cg_regs = {
 
 static const struct mtk_gate top_clks[] __initconst = {
 	/* TOP0 */
-	GATE_TOP0(CLK_TOP_MD_32K, "md_32k", "clk32k", 8),
-	GATE_TOP0(CLK_TOP_MD_26M, "md_26m", "clk26m", 9),
-	GATE_TOP0(CLK_TOP_MD2_32K, "md2_32k", "clk32k", 10),
-	GATE_TOP0(CLK_TOP_MD2_26M, "md2_26m", "clk26m", 11),
+	GATE_TOP0(CLK_TOP_MD_32K, "md_32k", "f_frtc_ck", 8),
+	GATE_TOP0(CLK_TOP_MD_26M, "md_26m", "f_f26m_ck", 9),
+	GATE_TOP0(CLK_TOP_MD2_32K, "md2_32k", "f_frtc_ck", 10),
+	GATE_TOP0(CLK_TOP_MD2_26M, "md2_26m", "f_f26m_ck", 11),
 	/* TOP1 */
 	GATE_TOP1(CLK_TOP_ARMPLL_DIVIDER_PLL0_EN,
 		"arm_div_pll0_en", "arm_div_pll0", 3),
@@ -1115,7 +1117,7 @@ static const struct mtk_gate top_clks[] __initconst = {
 	GATE_TOP1(CLK_TOP_UNIVPLL_48M_EN, "univpll_48m_en", "univ_48m_div", 9),
 	GATE_TOP1(CLK_TOP_MPLL_104M_EN, "mpll_104m_en", "mpll_104m_div", 10),
 	GATE_TOP1(CLK_TOP_MPLL_52M_EN, "mpll_52m_en", "mpll_52m_div", 11),
-	GATE_TOP1(CLK_TOP_F_UFS_MP_SAP_CFG_EN, "ufs_sap", "clk26m", 12),
+	GATE_TOP1(CLK_TOP_F_UFS_MP_SAP_CFG_EN, "ufs_sap", "f_f26m_ck", 12),
 	GATE_TOP1(CLK_TOP_F_BIST2FPC_EN, "bist2fpc", "f_bist2fpc_ck", 16),
 	/* TOP2 */
 	GATE_TOP2(CLK_TOP_APLL12_DIV0, "apll12_div0", "aud_1_ck", 2),
@@ -1221,10 +1223,10 @@ static const struct mtk_gate ifr_clks[] __initconst = {
 	GATE_IFR1(CLK_IFR_PERI_DCM_RG_FORCE_CLKOFF,
 		"ifr_dcmforce", "axi_ck", 2),
 	/* INFRA mode 0 */
-	GATE_IFR2(CLK_IFR_PMIC_TMR, "ifr_pmic_tmr", "clk26m", 0),
-	GATE_IFR2(CLK_IFR_PMIC_AP, "ifr_pmic_ap", "clk26m", 1),
-	GATE_IFR2(CLK_IFR_PMIC_MD, "ifr_pmic_md", "clk26m", 2),
-	GATE_IFR2(CLK_IFR_PMIC_CONN, "ifr_pmic_conn", "clk26m", 3),
+	GATE_IFR2(CLK_IFR_PMIC_TMR, "ifr_pmic_tmr", "f_f26m_ck", 0),
+	GATE_IFR2(CLK_IFR_PMIC_AP, "ifr_pmic_ap", "f_f26m_ck", 1),
+	GATE_IFR2(CLK_IFR_PMIC_MD, "ifr_pmic_md", "f_f26m_ck", 2),
+	GATE_IFR2(CLK_IFR_PMIC_CONN, "ifr_pmic_conn", "f_f26m_ck", 3),
 	GATE_IFR2(CLK_IFR_SCP_CORE, "ifr_scp_core", "scp_ck", 4),
 	GATE_IFR2(CLK_IFR_SEJ, "ifr_sej", "axi_ck", 5),
 	GATE_IFR2(CLK_IFR_APXGPT, "ifr_apxgpt", "axi_ck", 6),
@@ -1244,21 +1246,21 @@ static const struct mtk_gate ifr_clks[] __initconst = {
 	GATE_IFR2(CLK_IFR_PWM, "ifr_pwm", "f_fpwm_ck", 21),
 	GATE_IFR2(CLK_IFR_UART0, "ifr_uart0", "f_fuart_ck", 22),
 	GATE_IFR2(CLK_IFR_UART1, "ifr_uart1", "f_fuart_ck", 23),
-	GATE_IFR2(CLK_IFR_GCE_26M, "ifr_gce_26m", "clk26m", 27),
+	GATE_IFR2(CLK_IFR_GCE_26M, "ifr_gce_26m", "f_f26m_ck", 27),
 	GATE_IFR2(CLK_IFR_CQ_DMA_FPC, "ifr_dma", "axi_ck", 28),
 	GATE_IFR2(CLK_IFR_BTIF, "ifr_btif", "axi_ck", 31),
 	/* INFRA mode 1 */
 	GATE_IFR3(CLK_IFR_SPI0, "ifr_spi0", "spi_ck", 1),
 	GATE_IFR3(CLK_IFR_MSDC0, "ifr_msdc0", "axi_ck", 2),
 	GATE_IFR3(CLK_IFR_MSDC1, "ifr_msdc1", "axi_ck", 4),
-	GATE_IFR3(CLK_IFR_DVFSRC, "ifr_dvfsrc", "clk26m", 7),
+	GATE_IFR3(CLK_IFR_DVFSRC, "ifr_dvfsrc", "f_f26m_ck", 7),
 	GATE_IFR3(CLK_IFR_GCPU, "ifr_gcpu", "axi_ck", 8),
 	GATE_IFR3(CLK_IFR_TRNG, "ifr_trng", "axi_ck", 9),
-	GATE_IFR3(CLK_IFR_AUXADC, "ifr_auxadc", "clk26m", 10),
+	GATE_IFR3(CLK_IFR_AUXADC, "ifr_auxadc", "f_f26m_ck", 10),
 	GATE_IFR3(CLK_IFR_CPUM, "ifr_cpum", "axi_ck", 11),
 	GATE_IFR3(CLK_IFR_CCIF1_AP, "ifr_ccif1_ap", "axi_ck", 12),
 	GATE_IFR3(CLK_IFR_CCIF1_MD, "ifr_ccif1_md", "axi_ck", 13),
-	GATE_IFR3(CLK_IFR_AUXADC_MD, "ifr_auxadc_md", "clk26m", 14),
+	GATE_IFR3(CLK_IFR_AUXADC_MD, "ifr_auxadc_md", "f_f26m_ck", 14),
 	GATE_IFR3(CLK_IFR_AP_DMA, "ifr_ap_dma", "axi_ck", 18),
 	GATE_IFR3(CLK_IFR_XIU, "ifr_xiu", "axi_ck", 19),
 	GATE_IFR3(CLK_IFR_DEVICE_APC, "ifr_dapc", "axi_ck", 20),
@@ -1268,15 +1270,15 @@ static const struct mtk_gate ifr_clks[] __initconst = {
 	GATE_IFR3(CLK_IFR_CCIF_MD, "ifr_ccif_md", "axi_ck", 26),
 	GATE_IFR3(CLK_IFR_DXCC_SEC_CORE, "ifr_secore", "dxcc_ck", 27),
 	GATE_IFR3(CLK_IFR_DXCC_AO, "ifr_dxcc_ao", "dxcc_ck", 28),
-	GATE_IFR3(CLK_IFR_DRAMC_F26M, "ifr_dramc26", "clk26m", 31),
+	GATE_IFR3(CLK_IFR_DRAMC_F26M, "ifr_dramc26", "f_f26m_ck", 31),
 	/* INFRA mode 2 */
-	GATE_IFR4(CLK_IFR_RG_PWM_FBCLK6, "ifr_pwmfb", "clk26m", 0),
+	GATE_IFR4(CLK_IFR_RG_PWM_FBCLK6, "ifr_pwmfb", "f_f26m_ck", 0),
 	GATE_IFR4(CLK_IFR_DISP_PWM, "ifr_disp_pwm", "f_fdisp_pwm_ck", 2),
 	GATE_IFR4(CLK_IFR_CLDMA_BCLK, "ifr_cldmabclk", "axi_ck", 3),
-	GATE_IFR4(CLK_IFR_AUDIO_26M_BCLK, "ifr_audio26m", "clk26m", 4),
+	GATE_IFR4(CLK_IFR_AUDIO_26M_BCLK, "ifr_audio26m", "f_f26m_ck", 4),
 	GATE_IFR4(CLK_IFR_SPI1, "ifr_spi1", "spi_ck", 6),
 	GATE_IFR4(CLK_IFR_I2C4, "ifr_i2c4", "i2c_ck", 7),
-	GATE_IFR4(CLK_IFR_MODEM_TEMP_SHARE, "ifr_mdtemp", "clk26m", 8),
+	GATE_IFR4(CLK_IFR_MODEM_TEMP_SHARE, "ifr_mdtemp", "f_f26m_ck", 8),
 	GATE_IFR4(CLK_IFR_SPI2, "ifr_spi2", "spi_ck", 9),
 	GATE_IFR4(CLK_IFR_SPI3, "ifr_spi3", "spi_ck", 10),
 	GATE_IFR4(CLK_IFR_SSPM, "ifr_hf_fsspm", "sspm_ck", 15),
@@ -1294,17 +1296,14 @@ static const struct mtk_gate ifr_clks[] __initconst = {
 	/* INFRA mode 3 */
 	GATE_IFR5(CLK_IFR_MSDC0_SELF, "ifr_msdc0sf", "msdc50_0_ck", 0),
 	GATE_IFR5(CLK_IFR_MSDC1_SELF, "ifr_msdc1sf", "msdc50_0_ck", 1),
-	GATE_IFR5(CLK_IFR_MSDC2_SELF, "ifr_msdc2sf", "msdc50_0_ck", 2),
-	GATE_IFR5(CLK_IFR_SSPM_26M_SELF, "ifr_sspm_26m", "msdc50_0_ck", 3),
-	GATE_IFR5(CLK_IFR_SSPM_32K_SELF, "ifr_sspm_32k", "msdc50_0_ck", 4),
-	GATE_IFR5(CLK_IFR_UFS_AXI, "ifr_ufs_axi", "msdc50_0_ck", 5),
-	GATE_IFR5(CLK_IFR_I2C6, "ifr_i2c6", "msdc50_0_ck", 6),
+	GATE_IFR5(CLK_IFR_SSPM_26M_SELF, "ifr_sspm_26m", "f_f26m_ck", 3),
+	GATE_IFR5(CLK_IFR_SSPM_32K_SELF, "ifr_sspm_32k", "f_frtc_ck", 4),
+	GATE_IFR5(CLK_IFR_I2C6, "ifr_i2c6", "i2c_ck", 6),
 	GATE_IFR5(CLK_IFR_AP_MSDC0, "ifr_ap_msdc0", "msdc50_0_ck", 7),
 	GATE_IFR5(CLK_IFR_MD_MSDC0, "ifr_md_msdc0", "msdc50_0_ck", 8),
 	GATE_IFR5(CLK_IFR_MSDC0_SRC, "ifr_msdc0_clk", "msdc50_0_ck", 9),
-	GATE_IFR5(CLK_IFR_MSDC1_SRC, "ifr_msdc1_clk", "msdc50_0_ck", 10),
-	GATE_IFR5(CLK_IFR_MSDC2_SRC, "ifr_msdc2_clk", "msdc50_0_ck", 11),
-	GATE_IFR5(CLK_IFR_SEJ_F13M, "ifr_sej_f13m", "clk26m", 15),
+	GATE_IFR5(CLK_IFR_MSDC1_SRC, "ifr_msdc1_clk", "msdc30_1_ck", 10),
+	GATE_IFR5(CLK_IFR_SEJ_F13M, "ifr_sej_f13m", "f_f26m_ck", 15),
 	GATE_IFR5(CLK_IFR_AES_TOP0_BCLK, "ifr_aes", "axi_ck", 16),
 	GATE_IFR5(CLK_IFR_MCU_PM_BCLK, "ifr_mcu_pm_bclk", "axi_ck", 17),
 	GATE_IFR5(CLK_IFR_CCIF2_AP, "ifr_ccif2_ap", "axi_ck", 18),
@@ -1508,7 +1507,7 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM(CLK_MM_IMG_DL_RELAY, "mm_img_dl_relay", "mm_ck", 26),
 	GATE_MM(CLK_MM_IMG_DL_ASYNC_TOP, "mm_imgdl_async", "mm_ck", 27),
 	GATE_MM(CLK_MM_DIG_DSI, "mm_dig_dsi_ck", "mm_ck", 28),
-	GATE_MM(CLK_MM_F26M_HRTWT, "mm_hrtwt", "clk26m", 29),
+	GATE_MM(CLK_MM_F26M_HRTWT, "mm_hrtwt", "f_f26m_ck", 29),
 };
 
 #if 1
@@ -1648,10 +1647,10 @@ static const struct mtk_gate_regs mfgcfg_cg_regs = {
 	}
 
 static const struct mtk_gate mfgcfg_clks[] __initconst = {
-	GATE_MFGCFG(CLK_MFGCFG_BAXI, "mfgcfg_baxi", "mfg_ck", 0),
-	GATE_MFGCFG(CLK_MFGCFG_BMEM, "mfgcfg_bmem", "mfg_ck", 1),
-	GATE_MFGCFG(CLK_MFGCFG_BG3D, "mfgcfg_bg3d", "mfg_ck", 2),
-	GATE_MFGCFG(CLK_MFGCFG_B26M, "mfgcfg_b26m", "mfg_ck", 3),
+	GATE_MFGCFG(CLK_MFGCFG_BAXI, "mfgcfg_baxi", "axi_ck", 0),
+	GATE_MFGCFG(CLK_MFGCFG_BMEM, "mfgcfg_bmem", "hf_fmem_ck", 1),
+	GATE_MFGCFG(CLK_MFGCFG_BG3D, "mfgcfg_bg3d", "f_f26m_ck", 2),
+	GATE_MFGCFG(CLK_MFGCFG_B26M, "mfgcfg_b26m", "f_f26m_ck", 3),
 };
 #endif
 static const struct mtk_gate_regs gce_cg_regs = {
