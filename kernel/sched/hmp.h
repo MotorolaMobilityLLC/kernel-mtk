@@ -11,8 +11,10 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifdef CONFIG_SCHED_HMP
+/* Heterogenous multi processor common utils */
+LIST_HEAD(hmp_domains);
 
+#ifdef CONFIG_SCHED_HMP
 /*
  * XXX: virtual function for imcompleted function
  */
@@ -61,7 +63,8 @@ static unsigned int hmp_idle_pull(int this_cpu);
 static void hmp_force_up_migration(int this_cpu);
 static void hmp_online_cpu(int cpu);
 static void hmp_offline_cpu(int cpu);
-static int __init hmp_cpu_mask_setup(void);
+
+static void __init hmp_cpu_mask_setup(void);
 static inline void
 hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se);
 static inline void
@@ -76,7 +79,6 @@ hmp_update_load_avg(unsigned int decayed, unsigned long weight,
 #else
 #define se_load(se) 0
 
-static int __init hmp_cpu_mask_setup(void) { return 1; }
 static inline int hmp_fork_balance(struct task_struct *p, int prev_cpu)
 {
 	return prev_cpu;
@@ -89,5 +91,6 @@ static void hmp_offline_cpu(int cpu) {}
 static int hmp_idle_pull(int this_cpu) { return this_cpu; }
 static inline void
 hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa) {}
+static void __init hmp_cpu_mask_setup(void) {}
 
 #endif /* CONFIG_SCHED_HMP */

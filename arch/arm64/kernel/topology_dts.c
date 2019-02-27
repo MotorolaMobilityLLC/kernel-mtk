@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/list_sort.h>
+
 struct cpu_efficiency {
 	const char *compatible;
 	unsigned long efficiency;
@@ -250,8 +252,61 @@ int arch_better_capacity(unsigned int cpu)
 	return cpu_capacity(cpu) > min_cpu_perf;
 }
 
-#ifdef CONFIG_SCHED_HMP
-void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
+/*
+ * Heterogenous CPU capacity compare function
+ * Only inspect lowest id of cpus in same domain.
+ * Assume CPUs in same domain has same capacity.
+ */
+struct cluster_info {
+	struct hmp_domain *hmpd;
+	int cpu;
+	bool is_big;
+	unsigned long cpu_perf;
+};
+
+static inline __init void fillin_cluster(struct cluster_info *cinfo,
+		struct hmp_domain *hmpd)
+{
+	int cpu;
+	unsigned long cpu_perf;
+
+	cinfo->hmpd = hmpd;
+	cinfo->cpu = cpumask_any(&cinfo->hmpd->possible_cpus);
+	cinfo->is_big = arch_cpu_is_big(cinfo->cpu);
+
+	for_each_cpu(cpu, &hmpd->possible_cpus) {
+		cpu_perf = cpu_capacity(cpu);
+		if (cpu_perf > 0)
+			break;
+	}
+	cinfo->cpu_perf = cpu_perf;
+
+	if (cpu_perf == 0)
+		pr_info("Uninitialized CPU performance (CPU mask: %lx)",
+				cpumask_bits(&hmpd->possible_cpus)[0]);
+}
+
+/*
+ * Negative, if @a should sort before @b
+ * Positive, if @a should sort after @b.
+ * Return 0, if ordering is to be preserved
+ */
+int __init hmp_compare(void *priv, struct list_head *a, struct list_head *b)
+{
+	struct cluster_info ca;
+	struct cluster_info cb;
+
+	fillin_cluster(&ca, list_entry(a, struct hmp_domain, hmp_domains));
+	fillin_cluster(&cb, list_entry(b, struct hmp_domain, hmp_domains));
+
+	/* Handle diff CPU type */
+	if (ca.is_big != cb.is_big)
+		return ca.is_big ? -1 : 1;
+
+	return (ca.cpu_perf > cb.cpu_perf) ? -1 : 1;
+}
+
+void __init arch_init_hmp_domains(void)
 {
 	struct hmp_domain *domain;
 	struct cpumask cpu_mask;
@@ -273,12 +328,15 @@ void __init arch_get_hmp_domains(struct list_head *hmp_domains_list)
 			cpumask_copy(&domain->possible_cpus, &cpu_mask);
 			cpumask_and(&domain->cpus, cpu_online_mask,
 				&domain->possible_cpus);
-			list_add(&domain->hmp_domains, hmp_domains_list);
+			list_add(&domain->hmp_domains, &hmp_domains);
 		}
 	}
+
+	/*
+	 * Sorting HMP domain by CPU capacity
+	 */
+	list_sort(NULL, &hmp_domains, &hmp_compare);
+
 }
-#else
-void __init arch_get_hmp_domains(struct list_head *hmp_domains_list) {}
-#endif /* CONFIG_SCHED_HMP */
 
 
