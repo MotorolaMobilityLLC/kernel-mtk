@@ -653,6 +653,7 @@ struct cmdqRecStruct {
 	const char *sram_owner_name;
 	u32 sram_base;	/* Original PA address of SRAM buffer content */
 	void *node_private;
+	void *user_private;
 
 	struct cmdqSecDataStruct secData;	/* secure execution data */
 

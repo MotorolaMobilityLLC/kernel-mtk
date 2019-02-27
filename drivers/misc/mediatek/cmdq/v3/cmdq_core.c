@@ -10372,6 +10372,9 @@ void cmdqCoreDeInitialize(void)
 
 	cmdq_core_destroy_buffer_pool();
 
+	/* Deinitialize MDP */
+	cmdq_mdp_deinit_pmqos();
+
 	kfree(g_dts_setting.prefetch_size);
 	g_dts_setting.prefetch_size = NULL;
 	kfree(gCmdqContext.thread);
