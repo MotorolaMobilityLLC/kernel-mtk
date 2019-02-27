@@ -321,7 +321,7 @@ static void adsp_A_notify_ws(struct work_struct *ws)
 #ifdef CFG_RECOVERY_SUPPORT
 		adsp_recovery_flag[ADSP_A_ID] = ADSP_A_RECOVERY_OK;
 #endif
-		writel(0xff, ADSP_TO_SPM_REG); /* patch: clear SPM interrupt */
+		writel(0x0, ADSP_TO_SPM_REG); /* patch: clear SPM interrupt */
 		mutex_lock(&adsp_A_notify_mutex);
 		blocking_notifier_call_chain(&adsp_A_notifier_list,
 					     ADSP_EVENT_READY, NULL);
