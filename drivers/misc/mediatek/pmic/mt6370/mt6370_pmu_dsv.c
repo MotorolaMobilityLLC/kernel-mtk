@@ -24,6 +24,7 @@
 #include "inc/mt6370_pmu_debugfs.h"
 #include "inc/mt6370_pmu_dsv_debugfs.h"
 
+
 struct mt6370_dsv_regulator_struct {
 	unsigned char vol_reg;
 	unsigned char vol_mask;
@@ -123,6 +124,9 @@ static irqreturn_t mt6370_pmu_dsv_vneg_ocp_irq_handler(int irq, void *data)
 
 	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VNEG_OCP);
 
+	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VNEG_OCP))
+		return IRQ_HANDLED;
+
 	pr_info("%s: IRQ triggered\n", __func__);
 	return IRQ_HANDLED;
 }
@@ -133,6 +137,9 @@ static irqreturn_t mt6370_pmu_dsv_vpos_ocp_irq_handler(int irq, void *data)
 
 	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VPOS_OCP);
 
+	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VPOS_OCP))
+		return IRQ_HANDLED;
+
 	pr_info("%s: IRQ triggered\n", __func__);
 	return IRQ_HANDLED;
 }
@@ -142,6 +149,9 @@ static irqreturn_t mt6370_pmu_dsv_bst_ocp_irq_handler(int irq, void *data)
 	struct mt6370_pmu_dsv_data *dsv_data = data;
 
 	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_BST_OCP);
+
+	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_BST_OCP))
+		return IRQ_HANDLED;
 
 	pr_info("%s: IRQ triggered\n", __func__);
 	return IRQ_HANDLED;
@@ -160,6 +170,9 @@ static irqreturn_t mt6370_pmu_dsv_vneg_scp_irq_handler(int irq, void *data)
 
 	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VNEG_SCP);
 
+	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VNEG_SCP))
+		return IRQ_HANDLED;
+
 	return IRQ_HANDLED;
 }
 
@@ -175,6 +188,9 @@ static irqreturn_t mt6370_pmu_dsv_vpos_scp_irq_handler(int irq, void *data)
 			dsv_data->dsvp->regulator, REGULATOR_EVENT_FAIL, NULL);
 
 	mt6370_pmu_dsv_auto_vbst_adjustment(dsv_data->chip, DSV_VPOS_SCP);
+
+	if (mt6370_pmu_dsv_scp_ocp_irq_debug(dsv_data->chip, DSV_VPOS_SCP))
+		return IRQ_HANDLED;
 
 	return IRQ_HANDLED;
 }

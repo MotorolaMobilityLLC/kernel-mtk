@@ -21,18 +21,57 @@
 #include <linux/debugfs.h>
 #include "inc/mt6370_pmu.h"
 #include "inc/mt6370_pmu_dsv_debugfs.h"
+#include <mt-plat/aee.h>
 
 
 int irq_count[DSV_MODE_MAX];
 
-#define IRQ_COUNT_MAX 50
+#define IRQ_COUNT_MAX 20
 #define MT6370_DB_VBST_MAX_V 0x2B	/*6.15v*/
 #define MT6370_PMU_REG_DB_VBST_MASK 0x3F
-
+#define DB_MASK_DEFAULT_SHIFT 0x3
 
 int g_db_vbst;
 int g_vbst_adjustment;
 int g_irq_count_max;
+int g_irq_mask;
+
+int mt6370_pmu_dsv_scp_ocp_irq_debug(struct mt6370_pmu_chip *chip,
+					enum dsv_dbg_mode_t mode)
+{
+	int ret = 0;
+	int dbvbst, dbvpos, dbvneg, dbmask;
+	char str[50] = "";
+
+	if (!g_irq_mask)
+		return ret;
+
+	irq_count[mode] = irq_count[mode] + 1;
+
+	if (irq_count[mode] > g_irq_count_max) {
+		irq_count[mode] = 0;
+
+		mt6370_pmu_reg_update_bits(chip, MT6370_PMU_DBMASK,
+				1 << (DB_MASK_DEFAULT_SHIFT + mode),
+				1 << (DB_MASK_DEFAULT_SHIFT + mode));
+
+		dbvbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
+		dbvpos = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVPOS);
+		dbvneg = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVNEG);
+		dbmask = mt6370_pmu_reg_read(chip, MT6370_PMU_DBMASK);
+		pr_info("%s: DB_VBST = 0x%x, DB_VPOS = 0x%x, DB_VNEG = 0x%x, DBMASK = 0x%x\n",
+			__func__, dbvbst, dbvpos, dbvneg, dbmask);
+
+		snprintf(str, 50, "Vbst=0x%x,Vpos=0x%x,Vneg=0x%x,mask=0x%x",
+			dbvbst, dbvpos, dbvneg, dbmask);
+
+		aee_kernel_warning("mt6370 dsv irq", "db irq type = %x %s\n",
+			mode, str);
+		ret = 1;
+	}
+
+	return ret;
+}
 
 
 void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
@@ -56,9 +95,15 @@ void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
 			mt6370_pmu_reg_update_bits(chip, MT6370_PMU_REG_DBVBST,
 				MT6370_PMU_REG_DB_VBST_MASK, db_vbst + 1);
 
+			db_vbst = mt6370_pmu_reg_read(chip,
+							MT6370_PMU_REG_DBVBST);
+
 			pr_info("%s: set DB_VBST from 0x%x to 0x%x\n",
-			__func__, g_db_vbst,
-			mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST));
+				__func__, g_db_vbst, db_vbst);
+
+			aee_kernel_warning("mt6370 dsv auto vbst ",
+					"set DB_VBST= 0x%x\n", db_vbst);
+
 		} else
 			pr_info_ratelimited("%s: fixed DB_VBST = 0x%x\n",
 				__func__, g_db_vbst);
@@ -66,7 +111,7 @@ void mt6370_pmu_dsv_auto_vbst_adjustment(struct mt6370_pmu_chip *chip,
 }
 
 
-static ssize_t mt6370_pmu_dsv_vbst_adjustment_write(struct file *file,
+static ssize_t mt6370_pmu_dsv_debug_write(struct file *file,
 	const char __user *buf, size_t size, loff_t *ppos)
 {
 	char lbuf[128];
@@ -88,6 +133,9 @@ static ssize_t mt6370_pmu_dsv_vbst_adjustment_write(struct file *file,
 	} else if (!strncmp(b, "irq_count_max ", strlen("irq_count_max "))) {
 		b += strlen("irq_count_max ");
 		flag = DSV_VAR_IRQ_COUNT;
+	} else if (!strncmp(b, "irq_mask ", strlen("irq_mask "))) {
+		b += strlen("irq_mask ");
+		flag = DSV_VAR_IRQ_MASK;
 	} else
 		return -EINVAL;
 
@@ -109,6 +157,11 @@ static ssize_t mt6370_pmu_dsv_vbst_adjustment_write(struct file *file,
 		pr_info("[%s] set irq_count_max = 0x%x\n",
 					__func__, g_irq_count_max);
 		break;
+	case DSV_VAR_IRQ_MASK:
+		g_irq_mask = val;
+		pr_info("[%s] set irq_mask = 0x%x\n",
+					__func__, g_irq_mask);
+		break;
 	default:
 		pr_info("[%s] do nothing\n", __func__);
 		break;
@@ -117,25 +170,25 @@ static ssize_t mt6370_pmu_dsv_vbst_adjustment_write(struct file *file,
 	return size;
 }
 
-static int mt6370_pmu_dsv_vbst_adjustment_show(struct seq_file *s, void *unused)
+static int mt6370_pmu_dsv_debug_show(struct seq_file *s, void *unused)
 {
 	seq_printf(s, "vbst_adjustment = %d\n", g_vbst_adjustment);
 	seq_printf(s, "irq_count_max = %d\n", g_irq_count_max);
-	seq_printf(s, "db_vbst = 0x%x\n", g_db_vbst);
+	seq_printf(s, "irq_mask = 0x%x\n", g_irq_mask);
 
 	return 0;
 }
 
-static int mt6370_pmu_dsv_vbst_adjustment_open(struct inode *inode,
+static int mt6370_pmu_dsv_debug_open(struct inode *inode,
 						struct file *file)
 {
-	return single_open(file, mt6370_pmu_dsv_vbst_adjustment_show, NULL);
+	return single_open(file, mt6370_pmu_dsv_debug_show, NULL);
 }
 
-static const struct file_operations mt6370_pmu_dsv_vbst_adjustment_ops = {
-	.open    = mt6370_pmu_dsv_vbst_adjustment_open,
+static const struct file_operations mt6370_pmu_dsv_debug_ops = {
+	.open    = mt6370_pmu_dsv_debug_open,
 	.read    = seq_read,
-	.write   = mt6370_pmu_dsv_vbst_adjustment_write,
+	.write   = mt6370_pmu_dsv_debug_write,
 	.llseek  = seq_lseek,
 	.release = single_release,
 };
@@ -153,11 +206,12 @@ int mt6370_pmu_dsv_debug_init(struct mt6370_pmu_chip *chip)
 
 	debugfs_create_file("mt6370_pmu_dsv", 0644,
 				mt6370_pmu_dir, NULL,
-				&mt6370_pmu_dsv_vbst_adjustment_ops);
+				&mt6370_pmu_dsv_debug_ops);
 
 	g_db_vbst = mt6370_pmu_reg_read(chip, MT6370_PMU_REG_DBVBST);
 	g_vbst_adjustment = 0;
 	g_irq_count_max = IRQ_COUNT_MAX;
+	g_irq_mask = 1;
 
 	return 0;
 }
