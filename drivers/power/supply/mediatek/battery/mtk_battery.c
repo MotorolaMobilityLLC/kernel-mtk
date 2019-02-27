@@ -255,11 +255,7 @@ static void disable_fg(void)
 
 	if (fgv >= GAUGE_HW_V1000
 	&& fgv < GAUGE_HW_V2000) {
-
-		pmic_enable_interrupt(
-			INT_VBATON_UNDET,
-			0,
-			"VBATON_UNDET");
+		en_intr_VBATON_UNDET(0);
 	}
 
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
@@ -1281,10 +1277,7 @@ int force_get_tbat(bool update)
 		fgv = gauge_get_hw_version();
 		if (fgv >= GAUGE_HW_V1000
 		&& fgv < GAUGE_HW_V2000) {
-			pmic_enable_interrupt(
-				INT_VBATON_UNDET,
-				0,
-				"VBATON_UNDET");
+			en_intr_VBATON_UNDET(0);
 		}
 
 		gm.ntc_disable_nafg = true;
@@ -1293,9 +1286,9 @@ int force_get_tbat(bool update)
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
 		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
-	} else
-		gm.ntc_disable_nafg = false;
+	}
 
+	gm.ntc_disable_nafg = false;
 	return bat_temperature_val;
 #endif
 }
