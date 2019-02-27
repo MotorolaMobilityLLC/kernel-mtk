@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -47,9 +47,10 @@
 #include "queue.h"
 #include "mtk_sd.h"
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #include "ufs-mtk.h"
 #endif
+#include <mt-plat/mtk_boot.h>
 
 /* #define __RPMB_MTK_DEBUG_MSG */
 /* #define __RPMB_MTK_DEBUG_HMAC_VERIFY */
@@ -543,6 +544,10 @@ int emmc_rpmb_req_set_key(struct mmc_card *card, u8 *key)
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
 	int ret;
+	u8 user_key;
+
+	if (get_user(user_key, key))
+		return -EFAULT;
 
 	MSG(INFO, "%s start!!!\n", __func__);
 
@@ -579,14 +584,13 @@ free:
 	return ret;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
-
+#ifdef CONFIG_MTK_UFS_SUPPORT
 static struct rpmb_frame *rpmb_alloc_frames(unsigned int cnt)
 {
 	return kzalloc(sizeof(struct rpmb_frame) * cnt, 0);
 }
 
-int rpmb_req_get_wc(u8 *key, u32 *wc, u8 *frame)
+int rpmb_req_get_wc_ufs(u8 *key, u32 *wc, u8 *frame)
 {
 	struct rpmb_data data;
 	struct rpmb_dev *rawdev_ufs_rpmb;
@@ -745,7 +749,7 @@ int rpmb_req_get_wc(u8 *key, u32 *wc, u8 *frame)
 	return ret;
 }
 
-int rpmb_req_read_data(u8 *frame, u32 blk_cnt)
+int rpmb_req_read_data_ufs(u8 *frame, u32 blk_cnt)
 {
 	struct rpmb_data data;
 	struct rpmb_dev *rawdev_ufs_rpmb;
@@ -781,7 +785,7 @@ int rpmb_req_read_data(u8 *frame, u32 blk_cnt)
 	return ret;
 }
 
-int rpmb_req_write_data(u8 *frame, u32 blk_cnt)
+int rpmb_req_write_data_ufs(u8 *frame, u32 blk_cnt)
 {
 	struct rpmb_data data;
 	struct rpmb_dev *rawdev_ufs_rpmb;
@@ -852,7 +856,7 @@ out:
 }
 
 
-int rpmb_req_ioctl_write_data(struct rpmb_ioc_param *param)
+int rpmb_req_ioctl_write_data_ufs(struct rpmb_ioc_param *param)
 {
 	struct rpmb_data data;
 	struct rpmb_dev *rawdev_ufs_rpmb;
@@ -906,9 +910,9 @@ int rpmb_req_ioctl_write_data(struct rpmb_ioc_param *param)
 		MSG(DBG_INFO, "%s, total_blkcnt = 0x%x, tran_blkcnt = 0x%x\n",
 			__func__, left_blkcnt, tran_blkcnt);
 
-		ret = rpmb_req_get_wc(param->key, &wc, NULL);
+		ret = rpmb_req_get_wc_ufs(param->key, &wc, NULL);
 		if (ret) {
-			MSG(ERR, "%s, rpmb_req_get_wc error!!!(0x%x)\n",
+			MSG(ERR, "%s, rpmb_req_get_wc_ufs error!!!(0x%x)\n",
 				__func__, ret);
 			return ret;
 		}
@@ -1069,7 +1073,7 @@ param->data + i * MAX_RPMB_TRANSFER_BLK * RPMB_SZ_DATA + (iCnt * RPMB_SZ_DATA),
 	return ret;
 }
 
-int rpmb_req_ioctl_read_data(struct rpmb_ioc_param *param)
+int rpmb_req_ioctl_read_data_ufs(struct rpmb_ioc_param *param)
 {
 	struct rpmb_data data;
 	struct rpmb_dev *rawdev_ufs_rpmb;
@@ -1263,10 +1267,9 @@ param->data + i * MAX_RPMB_TRANSFER_BLK * RPMB_SZ_DATA + (iCnt * RPMB_SZ_DATA),
 
 	return ret;
 }
+#endif
 
-#else
-
-int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
+int rpmb_req_get_wc_emmc(struct mmc_card *card, u8 *key, u32 *wc)
 {
 	struct emmc_rpmb_req rpmb_req;
 	struct s_rpmb *rpmb_frame;
@@ -1307,6 +1310,13 @@ int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
 		 * Authenticate response write counter frame.
 		 */
 		if (key) {
+			if (strlen(key) != 32) {
+				MSG(ERR, "%s, error rpmb key len = 0x%x\n",
+					 __func__, (unsigned int)strlen(key));
+				ret = RPMB_WC_ERROR;
+				break;
+			}
+
 			hmac_sha256(key, 32, rpmb_frame->data, 284, hmac);
 			if (memcmp(hmac, rpmb_frame->mac, RPMB_SZ_MAC) != 0) {
 				MSG(ERR, "%s, hmac compare error!!!\n",
@@ -1340,7 +1350,7 @@ int rpmb_req_get_wc(struct mmc_card *card, u8 *key, u32 *wc)
 	return ret;
 }
 
-int rpmb_req_ioctl_write_data(struct mmc_card *card,
+int rpmb_req_ioctl_write_data_emmc(struct mmc_card *card,
 	struct rpmb_ioc_param *param)
 {
 	struct emmc_rpmb_req rpmb_req;
@@ -1352,6 +1362,7 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card,
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
+	u8 user_param_data;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 	u8 write_blks_one_time = 0;
 	u32 size_for_hmac;
@@ -1359,6 +1370,12 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card,
 #endif
 
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
@@ -1395,9 +1412,9 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card,
 		MSG(INFO, "%s, total_blkcnt=%x, tran_blkcnt=%x\n",
 			__func__, left_blkcnt, tran_blkcnt);
 
-		ret = rpmb_req_get_wc(card, param->key, &wc);
+		ret = rpmb_req_get_wc_emmc(card, param->key, &wc);
 		if (ret) {
-			MSG(ERR, "%s, rpmb_req_get_wc error!!!(%x)\n",
+			MSG(ERR, "%s, rpmb_req_get_wc_emmc error!!!(%x)\n",
 				__func__, ret);
 			return ret;
 		}
@@ -1526,7 +1543,7 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card,
 
 	for (iCnt = 0; iCnt < total_blkcnt; iCnt++) {
 
-		ret = rpmb_req_get_wc(card, param->key, &wc);
+		ret = rpmb_req_get_wc_emmc(card, param->key, &wc);
 		if (ret)
 			break;
 
@@ -1604,7 +1621,7 @@ int rpmb_req_ioctl_write_data(struct mmc_card *card,
 	return ret;
 }
 
-int rpmb_req_ioctl_read_data(struct mmc_card *card,
+int rpmb_req_ioctl_read_data_emmc(struct mmc_card *card,
 	struct rpmb_ioc_param *param)
 {
 	struct emmc_rpmb_req rpmb_req;
@@ -1620,11 +1637,18 @@ int rpmb_req_ioctl_read_data(struct mmc_card *card,
 	u8 hmac[RPMB_SZ_MAC];
 	u8 *dataBuf, *dataBuf_start;
 	int i, ret = 0;
+	u8 user_param_data;
 #ifdef RPMB_MULTI_BLOCK_ACCESS
 	u32 size_for_hmac;
 	u8 *data_for_hmac;
 #endif
 	MSG(INFO, "%s start!!!\n", __func__);
+
+	if (get_user(user_param_data, param->data))
+		return -EFAULT;
+
+	if (get_user(user_param_data, param->key))
+		return -EFAULT;
 
 	i = 0;
 	tran_blkcnt = 0;
@@ -1847,8 +1871,6 @@ param->data + i * MAX_RPMB_TRANSFER_BLK * RPMB_SZ_DATA + (iCnt * RPMB_SZ_DATA),
 	return ret;
 }
 
-#endif
-
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 int ut_rpmb_req_get_max_wr_size(struct mmc_card *card,
 	unsigned int *max_wr_size)
@@ -1948,9 +1970,9 @@ EXPORT_SYMBOL(ut_rpmb_req_write_data);
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 
-#ifdef CONFIG_MTK_UFS_BOOTING
+#ifdef CONFIG_MTK_UFS_SUPPORT
 #ifndef CONFIG_MTK_TEE_GP_SUPPORT
-static int rpmb_execute(u32 cmdId)
+static int rpmb_execute_ufs(u32 cmdId)
 {
 	int ret;
 
@@ -1960,7 +1982,7 @@ static int rpmb_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_READ_DATA\n", __func__);
 
-		ret = rpmb_req_read_data(rpmb_dci->request.frame,
+		ret = rpmb_req_read_data_ufs(rpmb_dci->request.frame,
 						rpmb_dci->request.blks);
 
 		break;
@@ -1969,7 +1991,7 @@ static int rpmb_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_GET_WCNT\n", __func__);
 
-		ret = rpmb_req_get_wc(NULL, NULL, rpmb_dci->request.frame);
+		ret = rpmb_req_get_wc_ufs(NULL, NULL, rpmb_dci->request.frame);
 
 		break;
 
@@ -1977,7 +1999,7 @@ static int rpmb_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_WRITE_DATA\n", __func__);
 
-		ret = rpmb_req_write_data(rpmb_dci->request.frame,
+		ret = rpmb_req_write_data_ufs(rpmb_dci->request.frame,
 						rpmb_dci->request.blks);
 
 		break;
@@ -1992,7 +2014,7 @@ static int rpmb_execute(u32 cmdId)
 }
 #endif
 
-static int rpmb_gp_execute(u32 cmdId)
+static int rpmb_gp_execute_ufs(u32 cmdId)
 {
 	int ret;
 
@@ -2002,7 +2024,7 @@ static int rpmb_gp_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_READ_DATA\n", __func__);
 
-		ret = rpmb_req_read_data(rpmb_gp_dci->request.frame,
+		ret = rpmb_req_read_data_ufs(rpmb_gp_dci->request.frame,
 						rpmb_gp_dci->request.blks);
 
 		break;
@@ -2011,7 +2033,8 @@ static int rpmb_gp_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_GET_WCNT\n", __func__);
 
-		ret = rpmb_req_get_wc(NULL, NULL, rpmb_gp_dci->request.frame);
+		ret = rpmb_req_get_wc_ufs(NULL, NULL,
+						rpmb_gp_dci->request.frame);
 
 		break;
 
@@ -2019,7 +2042,7 @@ static int rpmb_gp_execute(u32 cmdId)
 
 		MSG(DBG_INFO, "%s: DCI_RPMB_CMD_WRITE_DATA\n", __func__);
 
-		ret = rpmb_req_write_data(rpmb_gp_dci->request.frame,
+		ret = rpmb_req_write_data_ufs(rpmb_gp_dci->request.frame,
 						rpmb_gp_dci->request.blks);
 
 		break;
@@ -2033,10 +2056,10 @@ static int rpmb_gp_execute(u32 cmdId)
 
 	return 0;
 }
+#endif
 
-#else
 #ifndef CONFIG_MTK_TEE_GP_SUPPORT
-static int rpmb_execute(u32 cmdId)
+static int rpmb_execute_emmc(u32 cmdId)
 {
 	int ret;
 
@@ -2055,7 +2078,7 @@ static int rpmb_execute(u32 cmdId)
 
 		ret = emmc_rpmb_req_handle(card, &rpmb_req);
 		if (ret)
-			MSG(ERR, "%s, rpmb_req_ioctl_read_data failed!!(%x)\n",
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n",
 				__func__, ret);
 
 		break;
@@ -2120,7 +2143,7 @@ static int rpmb_execute(u32 cmdId)
 }
 #endif
 
-static int rpmb_gp_execute(u32 cmdId)
+static int rpmb_gp_execute_emmc(u32 cmdId)
 {
 	int ret;
 
@@ -2139,7 +2162,7 @@ static int rpmb_gp_execute(u32 cmdId)
 
 		ret = emmc_rpmb_req_handle(card, &rpmb_req);
 		if (ret)
-			MSG(ERR, "%s, rpmb_req_ioctl_read_data failed!!(%x)\n",
+			MSG(ERR, "%s, emmc_rpmb_req_handle failed!!(%x)\n",
 				__func__, ret);
 
 		break;
@@ -2202,13 +2225,12 @@ static int rpmb_gp_execute(u32 cmdId)
 	return 0;
 }
 
-#endif
-
 #ifndef CONFIG_MTK_TEE_GP_SUPPORT
 int rpmb_listenDci(void *data)
 {
 	enum mc_result mc_ret;
 	u32 cmdId;
+	int boot_type;
 
 	MSG(INFO, "%s: DCI listener.\n", __func__);
 
@@ -2231,7 +2253,13 @@ int rpmb_listenDci(void *data)
 			__func__, cmdId);
 
 		/* Received exception. */
-		mc_ret = rpmb_execute(cmdId);
+		boot_type = get_boot_type();
+		if (boot_type == BOOTDEV_SDMMC)
+			mc_ret = rpmb_execute_emmc(cmdId);
+#ifdef CONFIG_MTK_UFS_SUPPORT
+		else if (boot_type == BOOTDEV_UFS)
+			mc_ret = rpmb_execute_ufs(cmdId);
+#endif
 
 		/* Notify the STH */
 		mc_ret = mc_notify(&rpmb_session);
@@ -2334,6 +2362,7 @@ int rpmb_gp_listenDci(void *data)
 {
 	enum mc_result mc_ret;
 	u32 cmdId;
+	int boot_type;
 
 	MSG(ERR, "%s: DCI listener.\n", __func__);
 
@@ -2356,7 +2385,13 @@ int rpmb_gp_listenDci(void *data)
 			__func__, cmdId);
 
 		/* Received exception. */
-		mc_ret = rpmb_gp_execute(cmdId);
+		boot_type = get_boot_type();
+		if (boot_type == BOOTDEV_SDMMC)
+			mc_ret = rpmb_gp_execute_emmc(cmdId);
+#ifdef CONFIG_MTK_UFS_SUPPORT
+		else if (boot_type == BOOTDEV_UFS)
+			mc_ret = rpmb_gp_execute_ufs(cmdId);
+#endif
 
 		/* Notify the STH*/
 		mc_ret = mc_notify(&rpmb_gp_session);
@@ -2488,8 +2523,8 @@ static int rpmb_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-#ifdef CONFIG_MTK_UFS_BOOTING
-long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+#ifdef CONFIG_MTK_UFS_SUPPORT
+long rpmb_ioctl_ufs(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int err = 0;
 	struct rpmb_ioc_param param;
@@ -2563,7 +2598,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_READ_DATA!!!!!!!!!!!!!!\n",
 			__func__);
 
-		err = rpmb_req_ioctl_read_data(&param);
+		err = rpmb_req_ioctl_read_data_ufs(&param);
 
 		if (err) {
 			MSG(ERR,
@@ -2587,7 +2622,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_WRITE_DATA!!!!!!!!!!!!!!\n",
 			__func__);
 
-		err = rpmb_req_ioctl_write_data(&param);
+		err = rpmb_req_ioctl_write_data_ufs(&param);
 
 		if (err)
 			MSG(ERR,
@@ -2602,7 +2637,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_WRITE_DATA\n",
 			__func__);
 
-		err = rpmb_req_write_data(rpmbinfor.data_frame,
+		err = rpmb_req_write_data_ufs(rpmbinfor.data_frame,
 					rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (err) {
@@ -2628,7 +2663,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_READ_DATA\n",
 			__func__);
 
-		err = rpmb_req_read_data(rpmbinfor.data_frame,
+		err = rpmb_req_read_data_ufs(rpmbinfor.data_frame,
 					rpmbinfor.size / RPMB_ONE_FRAME_SIZE);
 
 		if (err) {
@@ -2653,7 +2688,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_GET_CNT\n", __func__);
 
-		err = rpmb_req_get_wc(NULL, &arg_k, NULL);
+		err = rpmb_req_get_wc_ufs(NULL, &arg_k, NULL);
 		if (err) {
 			MSG(ERR,
 	"%s, Microtrust get rpmb write counter failed, error code (%x)\n",
@@ -2701,9 +2736,9 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return err;
 }
+#endif
 
-#else	/* eMMC */
-long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+long rpmb_ioctl_emmc(struct file *file, unsigned int cmd, unsigned long arg)
 {
 #if defined(RPMB_IOCTL_UT) || defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 	int err = 0;
@@ -2843,7 +2878,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(INFO, "%s, cmd = RPMB_IOCTL_READ_DATA!!!!!!!!!!!!!!\n",
 			__func__);
 
-		ret = rpmb_req_ioctl_read_data(card, &param);
+		ret = rpmb_req_ioctl_read_data_emmc(card, &param);
 
 		err = copy_to_user(udata, param.data, param.data_len);
 		if (err) {
@@ -2859,7 +2894,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		MSG(INFO, "%s, cmd = RPMB_IOCTL_WRITE_DATA!!!!!!!!!!!!!!\n",
 			__func__);
 
-		ret = rpmb_req_ioctl_write_data(card, &param);
+		ret = rpmb_req_ioctl_write_data_emmc(card, &param);
 
 		break;
 #endif
@@ -2971,7 +3006,6 @@ end:
 	return ret;
 }
 
-#endif
 
 static int rpmb_close(struct inode *inode, struct file *file)
 {
@@ -2986,11 +3020,22 @@ static int rpmb_close(struct inode *inode, struct file *file)
 	return ret;
 }
 
-static const struct file_operations rpmb_fops = {
+#ifdef CONFIG_MTK_UFS_SUPPORT
+static const struct file_operations rpmb_fops_ufs = {
 	.owner = THIS_MODULE,
 	.open = rpmb_open,
 	.release = rpmb_close,
-	.unlocked_ioctl = rpmb_ioctl,
+	.unlocked_ioctl = rpmb_ioctl_ufs,
+	.write = NULL,
+	.read = NULL,
+};
+#endif
+
+static const struct file_operations rpmb_fops_emmc = {
+	.owner = THIS_MODULE,
+	.open = rpmb_open,
+	.release = rpmb_close,
+	.unlocked_ioctl = rpmb_ioctl_emmc,
 	.write = NULL,
 	.read = NULL,
 };
@@ -3002,6 +3047,7 @@ static int __init rpmb_init(void)
 	int major;
 	dev_t dev;
 	struct device *device = NULL;
+	int boot_type;
 
 	MSG(INFO, "%s start\n", __func__);
 
@@ -3014,7 +3060,14 @@ static int __init rpmb_init(void)
 
 	major = MAJOR(dev);
 
-	cdev_init(&rpmb_dev, &rpmb_fops);
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_SDMMC)
+		cdev_init(&rpmb_dev, &rpmb_fops_emmc);
+#ifdef CONFIG_MTK_UFS_SUPPORT
+	else if (boot_type == BOOTDEV_UFS)
+		cdev_init(&rpmb_dev, &rpmb_fops_ufs);
+#endif
+
 	rpmb_dev.owner = THIS_MODULE;
 
 	cdev_ret = cdev_add(&rpmb_dev, MKDEV(major, 0), 1);

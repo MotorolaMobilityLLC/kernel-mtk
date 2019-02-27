@@ -803,7 +803,7 @@ CONFIG_MTK_TRUSTY_DEBUGFS,USER;PROJECT,vink.shen,,,,,,,
 CONFIG_MTK_UAC_POWER_SAVING,PROJECT,eddie.hung,,,,,,,
 CONFIG_MTK_UART_USB_SWITCH,PROJECT,yu-chang.wang,,,,,,,
 CONFIG_MTK_UFOZIP,PROJECT,Chinwen.Chang,,,,,,,
-CONFIG_MTK_UFS_BOOTING,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,,,,,,
+CONFIG_MTK_UFS_SUPPORT,PROJECT,chun-hung.wu,new config in this commit 6c0e95524c592fe1b6fe1b2b10a066b5b1406f50,,,,,,
 CONFIG_MTK_UNCALI_GYROHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,,,
 CONFIG_MTK_UNCALI_MAGHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,,,
 CONFIG_MTK_UNIFY_POWER,PLATFORM,irene.luo,,y,y,y,y,y,y

@@ -30,11 +30,18 @@ enum boot_mode_t {
 	UNKNOWN_BOOT
 };
 
+/* for boot type usage */
+#define BOOTDEV_NAND            (0)
+#define BOOTDEV_SDMMC           (1)
+#define BOOTDEV_UFS             (2)
+
 #define BOOT_DEV_NAME           "BOOT"
 #define BOOT_SYSFS              "boot"
-#define BOOT_SYSFS_ATTR         "boot_mode"
+#define BOOT_MODE_SYSFS_ATTR    "boot_mode"
+#define BOOT_TYPE_SYSFS_ATTR    "boot_type"
 
 extern enum boot_mode_t get_boot_mode(void);
+extern unsigned int get_boot_type(void);
 extern bool is_meta_mode(void);
 extern bool is_advanced_meta_mode(void);
 extern void set_boot_mode(unsigned int bm);
