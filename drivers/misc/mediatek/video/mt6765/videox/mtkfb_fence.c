@@ -1207,9 +1207,9 @@ struct mtkfb_fence_buf_info *disp_sync_prepare_buf(
 	ret = fence_create(layer_info->timeline, &data);
 	if (ret != 0) {
 		/* Does this really happened? */
-		DISPERR("%s%d,layer%d create Fence Object failed!\n",
+		DISPERR("%s%d,layer%d create Fence Object failed ret=%d!\n",
 			disp_session_mode_spy(session_id),
-			DISP_SESSION_DEV(session_id), timeline_id);
+			DISP_SESSION_DEV(session_id), timeline_id, ret);
 	}
 	buf_info->fence = data.fence;
 	buf_info->idx = data.value;

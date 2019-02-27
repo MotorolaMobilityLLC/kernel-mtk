@@ -20,6 +20,7 @@
 #include "primary_display.h"
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
+#include "ddp_mmp.h"
 
 #define PRIMARY_OVL_LAYER_NUM PRIMARY_SESSION_INPUT_LAYER_COUNT
 #define SECONDARY_OVL_LAYER_NUM EXTERNAL_SESSION_INPUT_LAYER_COUNT

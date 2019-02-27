@@ -28,6 +28,10 @@ struct DDP_MMP_Events {
 	mmp_event wdma_dump[2];
 	mmp_event rdma_dump[2];
 	mmp_event DDP_IRQ;
+	mmp_event DDP_event;
+	mmp_event event_wait;
+	mmp_event event_signal;
+	mmp_event event_error;
 	mmp_event OVL_IRQ_Parent;
 	mmp_event OVL_IRQ[OVL_NUM];
 	mmp_event WDMA_IRQ_Parent;
@@ -45,6 +49,7 @@ struct DDP_MMP_Events {
 	mmp_event primary_suspend;
 	mmp_event primary_resume;
 	mmp_event primary_config;
+	mmp_event primary_query_valid;
 	mmp_event primary_rdma_config;
 	mmp_event primary_wdma_config;
 	mmp_event primary_set_dirty;
