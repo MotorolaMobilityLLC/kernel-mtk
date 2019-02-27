@@ -962,7 +962,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 
 	mmc = host_ctl->mmc;
 
-	mmc_claim_host(mmc);
+	mmc_get_card(mmc->card);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	is_cmdq_en = false;
@@ -972,7 +972,7 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
 		if (ret) {
 			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
-			mmc_release_host(host_ctl->mmc);
+			mmc_put_card(host_ctl->mmc->card);
 			result = -1;
 			goto free;
 		} else
@@ -1062,7 +1062,7 @@ skip_check:
 	}
 #endif
 
-	mmc_release_host(host_ctl->mmc);
+	mmc_put_card(host_ctl->mmc->card);
 
 	if (msdc_cmd.error)
 		result = msdc_cmd.error;
@@ -1930,10 +1930,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			base = host->base_top;
 		}
 
-		msdc_clk_enable(host);
-
-		mmc_claim_host(host->mmc);
-
 		if (p1 == 0) {
 			if (offset > 0x1000) {
 				seq_puts(m, "invalid register offset\n");
@@ -1957,11 +1953,6 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		} else if (p1 == 5) {
 			msdc_dump_info(host->id);
 		}
-
-		mmc_release_host(host->mmc);
-
-		/* prevent clock off before device ready */
-		/*msdc_clk_disable(host);*/
 	} else if (cmd == SD_TOOL_SET_DRIVING) {
 		char *device_str, *get_set_str;
 
@@ -2115,9 +2106,9 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 		if (id >= HOST_MAX_NUM || id < 0)
 			goto invalid_host_id;
 		if (p1 == 1) {
-			mmc_claim_host(host->mmc);
+			mmc_get_card(host->mmc->card);
 			msdc_set_host_mode_speed(m, host->mmc, spd_mode);
-			mmc_release_host(host->mmc);
+			mmc_put_card(host->mmc->card);
 		}
 		msdc_get_host_mode_speed(m, host->mmc);
 	} else if (cmd == SD_TOOL_DMA_STATUS) {
