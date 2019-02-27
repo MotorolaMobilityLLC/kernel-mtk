@@ -208,8 +208,7 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 	return ret;
 }
 
-int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
-	const bool mtcmos)
+int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx)
 {
 	static int		mmu;
 	struct mtk_smi_pair	*pairs;
@@ -229,6 +228,11 @@ int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 			smi->index == common->index ? "common" : "larb",
 			smi->index, scen_indx, smi->nr_scens);
 		return -EINVAL;
+	} else if (!mtk_smi_clk_ref_cnts_read(smi)) {
+		dev_info(smi->dev, "%s %d without mtcmos\n",
+			smi->index == common->index ? "common" : "larb",
+			smi->index);
+		return ret;
 	}
 	/* nr_pairs and pairs */
 	nr_pairs = (scen_indx == smi->nr_scens) ?
@@ -242,10 +246,6 @@ int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 	if (!nr_pairs || !pairs)
 		return ret;
 	/* write configs */
-	ret = smi_bus_prepare_enable(smi->index, "MTK_SMI", mtcmos);
-	if (ret)
-		return ret;
-
 	for (i = 0; i < nr_pairs; i++) {
 		unsigned int prev, curr;
 
@@ -263,8 +263,6 @@ int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 	}
 	if (mmu <= common->index)
 		mmu += 1;
-
-	ret = smi_bus_disable_unprepare(smi->index, "MTK_SMI", mtcmos);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(mtk_smi_config_set);
