@@ -140,10 +140,8 @@ const char*
 		reason == BY_TEE ? GET_ENUM_STRING(BY_TEE) :
 		reason == BY_DCS ? GET_ENUM_STRING(BY_DCS) :
 		reason == BY_CLK ? GET_ENUM_STRING(BY_CLK) :
-		reason == BY_DIS ? GET_ENUM_STRING(BY_DIS) :
 		reason == BY_PWM ? GET_ENUM_STRING(BY_PWM) :
-		reason == BY_PLL ? GET_ENUM_STRING(BY_PLL) :
-		reason == BY_BOOT ? GET_ENUM_STRING(BY_BOOT) : "null";
+		reason == BY_PLL ? GET_ENUM_STRING(BY_PLL) : "null";
 }
 
 static unsigned int ufs_cb_before_idle(void)
