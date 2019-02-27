@@ -26,3 +26,4 @@ obj-y += mtk_unified_power.o
 obj-y += mtk_unified_power_internal.o
 obj-y += mtk_unified_power_api.o
 obj-$(CONFIG_MACH_MT6758) += mtk_unified_power_mt6758.o
+obj-$(CONFIG_MACH_MT6765) += mtk_unified_power_mt6765.o

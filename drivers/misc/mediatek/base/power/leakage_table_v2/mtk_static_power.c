@@ -421,6 +421,11 @@ int mt_spower_init(void)
 	/* Group FF,TT,SS tables of all the banks together */
 	struct sptab_list *tab[MTK_SPOWER_MAX];
 
+#ifdef SPOWER_NOT_READY
+	/* FIX ME */
+	return 0;
+#endif
+
 	for (i = 0; i < MTK_SPOWER_MAX; i++)
 		tab[i] = kmalloc(sizeof(struct sptab_list), GFP_KERNEL);
 
