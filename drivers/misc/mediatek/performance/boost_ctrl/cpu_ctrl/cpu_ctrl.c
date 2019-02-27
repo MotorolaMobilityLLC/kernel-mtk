@@ -76,6 +76,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 	len += snprintf(msg + len, sizeof(msg) - len, "[%d] ", kicker);
 	if (len < 0) {
 		perfmgr_trace_printk("cpu_ctrl", "return -EIO 1\n");
+		mutex_unlock(&boost_freq);
 		return -EIO;
 	}
 	for_each_perfmgr_clusters(i) {
@@ -88,6 +89,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 		freq_set[kicker][i].min, freq_set[kicker][i].max);
 		if (len < 0) {
 			perfmgr_trace_printk("cpu_ctrl", "return -EIO 2\n");
+			mutex_unlock(&boost_freq);
 			return -EIO;
 		}
 
@@ -101,6 +103,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 				"[0x %lx] ", policy_mask[i]);
 		if (len1 < 0) {
 			perfmgr_trace_printk("cpu_ctrl", "return -EIO 3\n");
+			mutex_unlock(&boost_freq);
 			return -EIO;
 		}
 	}
@@ -124,6 +127,7 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 				current_freq[i].min, current_freq[i].max);
 		if (len < 0) {
 			perfmgr_trace_printk("cpu_ctrl", "return -EIO 4\n");
+			mutex_unlock(&boost_freq);
 			return -EIO;
 		}
 	}
