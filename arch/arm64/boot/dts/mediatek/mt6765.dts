@@ -3047,6 +3047,10 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		iommus = <&iommu M4U_PORT_CAM_IMGO>,
 			 <&iommu M4U_PORT_CAM_RRZO>;
 	};
+
+	eas {
+		eff_turn_point = <467>;
+	};
 };
 
 #include "cust_mt6765_msdc.dtsi"
