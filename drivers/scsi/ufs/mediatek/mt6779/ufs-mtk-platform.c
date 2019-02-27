@@ -121,6 +121,34 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 }
 #endif
 
+int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
+{
+	u32 reg;
+
+	if (!ufs_mtk_mmio_base_pericfg)
+		return 1;
+
+	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+	reg = reg & ~(1 << REG_UFS_PERICFG_RST_N_BIT);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+
+	/*
+	 * The reset signal is active low.
+	 * The UFS device shall detect more than or equal to 1us of positive
+	 * or negative RST_n pulse width.
+	 * To be on safe side, keep the reset low for at least 10us.
+	 */
+	usleep_range(10, 15);
+
+	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
+	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+
+	/* same as assert, wait for at least 10us after deassert */
+	usleep_range(10, 15);
+
+	return 0;
+}
+
 /*
  * In early-porting stage, because of no bootrom,
  * something finished by bootrom shall be finished here instead.
