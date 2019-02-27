@@ -220,7 +220,8 @@ ssize_t scp_A_log_read(char __user *data, size_t len)
 	if (r_pos >= DRAM_BUF_LEN) {
 		pr_err("[SCP] %s(): r_pos >= DRAM_BUF_LEN,%x,%x\n",
 			__func__, r_pos_debug, log_ctl_debug);
-		return 0;
+		datalen = 0;
+		goto error;
 	}
 
 	buf = ((char *) SCP_A_log_ctl) + SCP_A_log_ctl->buff_ofs + r_pos;
