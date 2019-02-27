@@ -223,12 +223,9 @@ static void update_v2f(int update, int debug)
 
 #ifdef USE_TIMER_CHECK
 struct timer_list cm_mgr_timer;
-static int timer_is_running;
 
 static void cm_mgr_timer_fn(unsigned long data)
 {
-	timer_is_running = 0;
-
 	if (cm_mgr_timer_enable)
 		check_cm_mgr_status_internal();
 }
@@ -626,21 +623,13 @@ cm_mgr_opp_end:
 #ifdef USE_TIMER_CHECK
 		if (cm_mgr_timer_enable) {
 			if (vcore_dram_opp != CM_MGR_EMI_OPP) {
-				if (timer_is_running) {
-					unsigned long expires;
+				unsigned long expires;
 
-					expires = jiffies +
-						msecs_to_jiffies(1000);
-					mod_timer(&cm_mgr_timer, expires);
-				} else {
-					cm_mgr_timer.expires = jiffies +
-						msecs_to_jiffies(1000);
-					add_timer(&cm_mgr_timer);
-					timer_is_running = 1;
-				}
+				expires = jiffies +
+					USE_TIMER_CHECK_TIME;
+				mod_timer(&cm_mgr_timer, expires);
 			} else {
 				del_timer(&cm_mgr_timer);
-				timer_is_running = 0;
 			}
 		}
 #endif /* USE_TIMER_CHECK */
