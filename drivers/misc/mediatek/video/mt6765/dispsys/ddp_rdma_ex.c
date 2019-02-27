@@ -532,10 +532,10 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	unsigned int is_rsz_sram = 0;
 	unsigned int fifo_mode = 1;
 
-	unsigned int ultra_low_us = 10;
-	unsigned int ultra_high_us = 11;
+	unsigned int ultra_low_us = 4;
+	unsigned int ultra_high_us = 6;
 	unsigned int preultra_low_us = ultra_high_us;
-	unsigned int preultra_high_us = 12;
+	unsigned int preultra_high_us = 7;
 	unsigned int urgent_low_us = 40;  /* 10 times */
 	unsigned int urgent_high_us = 45;  /* 10 times */
 
