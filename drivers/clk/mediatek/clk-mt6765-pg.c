@@ -33,8 +33,8 @@
 #define IGNORE_MTCMOS_CHECK
 #endif
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
-#define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP	0
+#define MT_CCF_DEBUG	1
+#define MT_CCF_BRINGUP	1
 #define CONTROL_LIMIT	1
 #else
 #define CONTROL_LIMIT	0
@@ -68,7 +68,6 @@ while (0)
 #ifdef CONFIG_OF
 void __iomem *clk_mmsys_config_base;
 void __iomem *clk_imgsys_base;
-void __iomem *clk_vdec_gcon_base;
 void __iomem *clk_venc_gcon_base;
 void __iomem *clk_camsys_base;
 #endif
@@ -1921,9 +1920,6 @@ static int enable_subsys(enum subsys_id id)
 	case SYS_MD1:
 		spm_mtcmos_ctrl_md1(STA_POWER_ON);
 		break;
-	case SYS_C2K:
-		spm_mtcmos_ctrl_c2k(STA_POWER_ON);
-		break;
 	case SYS_CONN:
 		spm_mtcmos_ctrl_conn(STA_POWER_ON);
 		break;
@@ -1982,9 +1978,6 @@ static int disable_subsys(enum subsys_id id)
 	switch (id) {
 	case SYS_MD1:
 		spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-		break;
-	case SYS_C2K:
-		spm_mtcmos_ctrl_c2k(STA_POWER_DOWN);
 		break;
 	case SYS_CONN:
 		spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
@@ -2341,7 +2334,7 @@ void iomap_mm(void)
 	if (!clk_imgsys_base)
 		pr_debug("[CLK_IMGSYS_CONFIG] base failed\n");
 /*venc_gcon*/
-	node = of_find_compatible_node(NULL, NULL, "mediatek,venc_global_con");
+	node = of_find_compatible_node(NULL, NULL, "mediatek,venc_gcon");
 	if (!node)
 		pr_debug("[CLK_VENC_GCON] find node failed\n");
 	clk_venc_gcon_base = of_iomap(node, 0);
@@ -2513,7 +2506,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 #else				/*power on all subsys for bring up */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);/*do after ccif*/
-	spm_mtcmos_ctrl_conn(STA_POWER_ON);
+	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dpy(STA_POWER_ON);
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
@@ -2525,8 +2518,6 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_vcodec(STA_POWER_ON);
 #endif
 #endif				/* !MT_CCF_BRINGUP */
-	clk_writel(SPM_POWER_ON_VAL0, 0x10f80000);
-	clk_writel(SPM_POWER_ON_VAL1, 0x15830);
 }
 
 CLK_OF_DECLARE_DRIVER(mtk_pg_regs, "mediatek,scpsys", mt_scpsys_init);
