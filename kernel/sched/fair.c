@@ -6948,6 +6948,9 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 		return -1;
 	}
 
+	if (turning)
+		best_idle_min_cap_orig = target_capacity = 0;
+
 	/* Find SD for the start CPU */
 	sd = rcu_dereference(per_cpu(sd_ea, cpu));
 	if (!sd) {
