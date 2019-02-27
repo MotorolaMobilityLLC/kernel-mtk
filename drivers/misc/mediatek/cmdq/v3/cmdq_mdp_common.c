@@ -715,9 +715,8 @@ static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
 		return CMDQ_INVALID_THREAD;
 	}
 	/* same engine used in current thread, use it */
-	if (thread != CMDQ_INVALID_THREAD) {
+	if (thread != CMDQ_INVALID_THREAD)
 		return thread;
-	}
 
 	/* dispatch from free threads */
 	threads = mdp_ctx.thread;
@@ -980,6 +979,11 @@ s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle)
 	/* lock resource to make sure task own it after dispatch to hw */
 	cmdq_mdp_lock_resource(handle->engineFlag, false);
 
+	/* change state to waiting before insert to prevent
+	 * other thread consume immediately
+	 */
+	handle->state = TASK_STATE_WAITING;
+
 	/* assign handle into waiting list by priority */
 	mutex_lock(&mdp_task_mutex);
 	list_for_each_entry(entry, &mdp_ctx.tasks_wait, list_entry) {
@@ -990,7 +994,6 @@ s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle)
 	list_add(&handle->list_entry, insert_pos);
 	mutex_unlock(&mdp_task_mutex);
 
-	handle->state = TASK_STATE_WAITING;
 	/* run consume to run task in thread */
 	cmdq_mdp_consume_handle();
 

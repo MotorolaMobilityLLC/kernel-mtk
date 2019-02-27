@@ -126,9 +126,10 @@ do {			\
 }
 
 #define CMDQ_AEE(tag, string, args...) \
-{ \
-	CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
-}
+do { \
+	if (cmdq_core_aee_enable()) \
+		CMDQ_AEE_EX(DB_OPT_DUMP_DISPLAY, tag, string, ##args) \
+} while (0)
 
 #else
 #define CMDQ_AEE(tag, string, args...) \
@@ -552,7 +553,6 @@ struct ContextStruct {
 	struct list_head writeAddrList;
 
 	/* Basic information */
-	//struct EngineStruct engine[CMDQ_MAX_ENGINE_COUNT];
 	struct cmdq_core_thread thread[CMDQ_MAX_THREAD_COUNT];
 
 	/* auto-release workqueue per thread */
@@ -571,6 +571,7 @@ struct ContextStruct {
 	s32 logLevel;
 	s32 errNum;
 	struct ErrorStruct error[CMDQ_MAX_ERROR_COUNT];
+	bool aee;
 
 	/* SRAM manager information */
 	struct list_head sram_allocated_list;	/* all allocated SRAM chunk */
@@ -645,7 +646,6 @@ struct cmdqRecStruct {
 	bool use_sram_buffer;	/* use SRAM or not */
 	const char *sram_owner_name;
 	u32 sram_base;	/* Original PA address of SRAM buffer content */
-	bool error_pass;
 	void *node_private;
 
 	struct cmdqSecDataStruct secData;	/* secure execution data */
@@ -774,6 +774,8 @@ s32 cmdq_core_parse_instruction(const u32 *pCmd, char *textBuf, int bufLen);
 
 bool cmdq_core_should_print_msg(void);
 bool cmdq_core_should_full_error(void);
+bool cmdq_core_aee_enable(void);
+void cmdq_core_set_aee(bool enable);
 
 void cmdq_long_string_init(bool force, char *buf, u32 *offset, s32 *max_size);
 void cmdq_long_string(char *buf, u32 *offset, s32 *max_size,
