@@ -11,6 +11,9 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#define CPU_LOAD_AVG_DEFAULT_MS 20
+#define CPU_LOAD_AVG_TOLERANCE 2
+
 struct rq_data {
 	unsigned int rq_avg;
 	unsigned long rq_poll_jiffies;
@@ -49,3 +52,5 @@ extern int get_overutil_threshold(void);
 extern bool is_game_mode;
 #endif
 extern int show_btask(char *buf, int buf_size);
+extern void cal_cpu_load(int cpu);
+extern unsigned int sched_get_cpu_load(int cpu);

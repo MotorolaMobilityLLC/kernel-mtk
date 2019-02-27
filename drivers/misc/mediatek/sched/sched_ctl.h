@@ -25,4 +25,7 @@ extern void set_user_space_global_cpuset
 		(struct cpumask *global_cpus, int cgroup_id);
 extern void unset_user_space_global_cpuset(int cgroup_id);
 extern int sched_scheduler_switch(enum SCHED_LB_TYPE new_sched);
+int set_sched_boost(unsigned int val);
 #endif
+
+extern int display_set_wait_idle_time(unsigned int wait_idle_time);
