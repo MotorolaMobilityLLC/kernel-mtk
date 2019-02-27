@@ -58,7 +58,8 @@ static void imgsensor_oc_handler1(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.ptask != NULL)
+		force_sig(SIGKILL, reg_instance.ptask);
 }
 static void imgsensor_oc_handler2(void)
 {
@@ -67,7 +68,8 @@ static void imgsensor_oc_handler2(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.ptask != NULL)
+		force_sig(SIGKILL, reg_instance.ptask);
 }
 static void imgsensor_oc_handler3(void)
 {
@@ -76,7 +78,8 @@ static void imgsensor_oc_handler3(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	force_sig(SIGKILL, reg_instance.ptask);
+	if (reg_instance.ptask != NULL)
+		force_sig(SIGKILL, reg_instance.ptask);
 }
 
 
@@ -118,6 +121,7 @@ enum IMGSENSOR_RETURN imgsensor_oc_init(void)
 
 	gimgsensor.status.oc  = 0;
 	gimgsensor.imgsensor_oc_irq_enable = imgsensor_oc_interrupt;
+	reg_instance.ptask = NULL;
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }
