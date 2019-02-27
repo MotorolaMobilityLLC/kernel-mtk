@@ -37,6 +37,15 @@
 #include <linux/uaccess.h>
 /* #include     <mach/mt6593_pll.h>     */
 #include "inc/camera_isp.h"
+#include <mmdvfs_pmqos.h>
+#include <linux/pm_qos.h>
+/* Use this qos request to control camera dynamic frequency change */
+struct pm_qos_request isp_qos;
+struct pm_qos_request camsys_qos_request[ISP_PASS1_PATH_TYPE_AMOUNT];
+struct ISP_PM_QOS_STRUCT G_PM_QOS[ISP_PASS1_PATH_TYPE_AMOUNT];
+static u32 PMQoS_BW_value;
+
+
 /*#include <mach/irqs.h>*/
 /* For clock mgr APIS. enable_clock()/disable_clock(). */
 /*#include <mach/mt_clkmgr.h>*/
@@ -4868,6 +4877,7 @@ static signed int ISP_RTBC_DEQUE(signed int dma,
 static unsigned int m_LastMNum[_rt_dma_max_] = {0}; /* imgo/rrzo */
 
 #endif
+
 /* static long ISP_Buf_CTRL_FUNC(unsigned int Param) */
 static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 {
@@ -9094,6 +9104,80 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 	return ret;
 }
 
+static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
+{
+	#define bit 8
+
+	unsigned int bw_cal = 0;
+	unsigned long long cal = 0;
+	int Ret = 0;
+
+	switch (cmd) {
+	case 0: {
+		G_PM_QOS[module].bw_sum = 0;
+		G_PM_QOS[module].fps = 0;
+		G_PM_QOS[module].sof_flag = MTRUE;
+		G_PM_QOS[module].upd_flag = MTRUE;
+		break;
+	}
+	case 1: {
+		/* MByte/s 1.33 times */
+		cal = (G_PM_QOS[module].bw_sum * G_PM_QOS[module].fps);
+		do_div(cal, 1000000);
+		cal = cal * 133;
+		do_div(cal, 100);
+		bw_cal = (unsigned int)cal;
+		break;
+	}
+	default:
+		log_inf("unsupport cmd:%d", cmd);
+		Ret = -1;
+		break;
+	}
+
+	if (G_PM_QOS[module].upd_flag && G_PM_QOS[module].sof_flag) {
+		pm_qos_update_request(&camsys_qos_request[module], bw_cal);
+		G_PM_QOS[module].sof_flag = MFALSE;
+		G_PM_QOS[module].upd_flag = MFALSE;
+	}
+
+	if (PMQoS_BW_value != bw_cal) {
+		pr_info("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n",
+			module, cmd,
+			G_PM_QOS[module].bw_sum,
+			G_PM_QOS[module].fps,
+			bw_cal);
+		PMQoS_BW_value = bw_cal;
+	}
+	return Ret;
+}
+
+static bool ISP_PM_QOS_CTRL_FUNC(unsigned int bIsOn, unsigned int path)
+{
+	signed int Ret = 0;
+	static int bw_request[ISP_PASS1_PATH_TYPE_AMOUNT];
+
+	if (path != ISP_PASS1_PATH_TYPE_RAW &&
+		path != ISP_PASS1_PATH_TYPE_RAW_D) {
+		log_err("HW_module error:%d", path);
+		return MFALSE;
+	}
+	if (bIsOn == 1) {
+		if (++bw_request[path] == 1) {
+			pm_qos_add_request(&camsys_qos_request[path],
+			PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+		}
+		Ret = ISP_SetPMQOS(bIsOn, path);
+	} else {
+		if (bw_request[path] == 0)
+			return MFALSE;
+		Ret = ISP_SetPMQOS(bIsOn, path);
+		pm_qos_remove_request(&camsys_qos_request[path]);
+		bw_request[path] = 0;
+	}
+	return MTRUE;
+}
+
 /******************************************************************************
  *
  *****************************************************************************/
@@ -11013,6 +11097,8 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 		ktime_t time;
 		unsigned int z;
 
+		G_PM_QOS[ISP_PASS1_PATH_TYPE_RAW].sof_flag = MTRUE;
+
 		if (pstRTBuf->ring_buf[_imgo_].active) {
 			_dmaport = 0;
 			rt_dma = _imgo_;
@@ -11250,6 +11336,8 @@ if (bSlowMotion == MFALSE) {
 	    ISP_IRQ_P1_STATUS_D_PASS1_DON_ST) {
 		unsigned long long sec;
 		unsigned long usec;
+
+		G_PM_QOS[ISP_PASS1_PATH_TYPE_RAW_D].sof_flag = MTRUE;
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_IRQ_D, m_CurrentPPB, _LOG_INF,
@@ -11592,6 +11680,8 @@ static void ISP_TaskletFunc(unsigned long data)
 			 *  (sof_count[_PASS1]));
 			 */
 			IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
+			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW);
+
 			/*log_inf("tke_%d",
 			 *	(sof_count[_PASS1]) ? (sof_count[_PASS1] -
 			 *			       1) :
@@ -11605,6 +11695,7 @@ static void ISP_TaskletFunc(unsigned long data)
 			 *  (sof_count[_PASS1_D]));
 			 */
 			IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
+			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW_D);
 			/*log_inf("dtke_%d",
 			 *	(sof_count[_PASS1_D]) ? (sof_count[_PASS1_D] -
 			 *				 1) :
@@ -11977,6 +12068,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
+
 	case ISP_CLEAR_IRQ:
 		if (copy_from_user(&ClearIrq, (void *)Param,
 				   sizeof(struct ISP_CLEAR_IRQ_STRUCT)) == 0) {
@@ -12022,6 +12114,52 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		} else {
 			log_err("copy_from_user	failed");
 			Ret = -EFAULT;
+		}
+		break;
+
+		case ISP_SET_PM_QOS_INFO:
+		{
+			struct ISP_PM_QOS_INFO_STRUCT pm_qos_info;
+
+			if (copy_from_user(&pm_qos_info, (void *)Param,
+				sizeof(struct ISP_PM_QOS_INFO_STRUCT)) == 0) {
+
+				if ((pm_qos_info.module
+						!= ISP_PASS1_PATH_TYPE_RAW) &&
+					(pm_qos_info.module
+						!= ISP_PASS1_PATH_TYPE_RAW_D)) {
+					log_err("HW_module error:%d",
+						pm_qos_info.module);
+					Ret = -EFAULT;
+					break;
+				}
+				G_PM_QOS[pm_qos_info.module].bw_sum =
+					pm_qos_info.bw_value;
+				G_PM_QOS[pm_qos_info.module].fps =
+					pm_qos_info.fps;
+				G_PM_QOS[pm_qos_info.module].upd_flag =
+					MTRUE;
+				pr_info("ISP_SET_PM_QOS_INFO bw:(%d), fps:(%d), upd_flag:(%d), module:(%d)\n",
+					pm_qos_info.bw_value,
+					pm_qos_info.fps,
+					1,
+					pm_qos_info.module);
+			} else {
+				log_err("ISP_SET_PM_QOS_INFO copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
+		}
+		break;
+	case ISP_SET_PM_QOS:
+		{
+			if (copy_from_user(DebugFlag, (void *)Param,
+				sizeof(unsigned int) * 2) == 0) {
+				ISP_PM_QOS_CTRL_FUNC(DebugFlag[0],
+					DebugFlag[1]);
+			} else {
+				log_err("ISP_SET_PM_QOS copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
 		}
 		break;
 	/*      */
@@ -12956,6 +13094,8 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	 * int
 	 */
 	case ISP_SET_FPS:
+	case ISP_SET_PM_QOS:
+	case ISP_SET_PM_QOS_INFO:
 	case ISP_DUMP_ISR_LOG:
 	case ISP_WAKELOCK_CTRL:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
