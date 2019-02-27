@@ -22,6 +22,7 @@
 #include <linux/printk.h>
 #include <linux/perf_event.h>
 #include <linux/kthread.h>
+#include <asm/arch_timer.h>
 
 /******************************************************************************
  * Tracepoints
@@ -364,4 +365,10 @@ int met_smp_call_function_single(
 	return smp_call_function_single(cpu, func, info, wait);
 }
 EXPORT_SYMBOL(met_smp_call_function_single);
+
+u64 met_arch_counter_get_cntvct(void)
+{
+	return arch_counter_get_cntvct();
+}
+EXPORT_SYMBOL(met_arch_counter_get_cntvct);
 
