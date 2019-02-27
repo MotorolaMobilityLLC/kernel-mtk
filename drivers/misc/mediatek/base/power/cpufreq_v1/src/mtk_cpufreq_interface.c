@@ -473,11 +473,63 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file,
 	return count;
 }
 
+#ifdef CCI_MAP_TBL_SUPPORT
+/* cpufreq_cci_map_table */
+static int cpufreq_cci_map_table_proc_show(struct seq_file *m, void *v)
+{
+	int i, j;
+	unsigned int result;
+
+	for (i = 0; i < 16; i++) {
+		for (j = 0; j < 16; j++) {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+			result = cpuhvfs_get_cci_result(i, j);
+#endif
+			if (j == 0)
+				seq_printf(m, "{%d", result);
+			else if (j == 15)
+				seq_printf(m, ", %d},", result);
+			else
+				seq_printf(m, ", %d", result);
+		}
+		seq_puts(m, "\n");
+	}
+
+	return 0;
+}
+
+static ssize_t cpufreq_cci_map_table_proc_write(struct file *file,
+	const char __user *buffer, size_t count, loff_t *pos)
+{
+	unsigned int idx_1, idx_2, result;
+
+	char *buf = _copy_from_user_for_proc(buffer, count);
+
+	if (!buf)
+		return -EINVAL;
+
+	if (sscanf(buf, "%d %d %d", &idx_1, &idx_2, &result) == 3) {
+#ifdef CONFIG_HYBRID_CPU_DVFS
+		/* BY_PROC_FS */
+		cpuhvfs_update_cci_map_tbl(idx_1, idx_2, result, 0);
+#endif
+	} else
+		tag_pr_info("Usage: echo <idx_1> <idx_2> <result>\n");
+
+	free_page((unsigned long)buf);
+
+	return count;
+}
+#endif
+
 PROC_FOPS_RW(cpufreq_debug);
 PROC_FOPS_RW(cpufreq_stress_test);
 PROC_FOPS_RW(cpufreq_power_mode);
 PROC_FOPS_RW(cpufreq_sched_disable);
 PROC_FOPS_RW(cpufreq_dvfs_time_profile);
+#ifdef CCI_MAP_TBL_SUPPORT
+PROC_FOPS_RW(cpufreq_cci_map_table);
+#endif
 
 PROC_FOPS_RW(cpufreq_oppidx);
 PROC_FOPS_RW(cpufreq_freq);
@@ -502,6 +554,9 @@ int cpufreq_procfs_init(void)
 		PROC_ENTRY(cpufreq_power_mode),
 		PROC_ENTRY(cpufreq_sched_disable),
 		PROC_ENTRY(cpufreq_dvfs_time_profile),
+#ifdef CCI_MAP_TBL_SUPPORT
+		PROC_ENTRY(cpufreq_cci_map_table),
+#endif
 	};
 
 	const struct pentry cpu_entries[] = {
