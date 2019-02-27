@@ -340,16 +340,6 @@ static kal_uint16 is_RWB_sensor(void)
 }
 #endif
 
-static kal_uint16 read_cmos_sensor(kal_uint32 addr)
-{
-	kal_uint16 get_byte = 0;
-	char pusendcmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
-
-	iReadRegI2C(pusendcmd, 2, (u8 *) &get_byte, 2, imgsensor.i2c_write_id);
-	return ((get_byte << 8) & 0xff00) | ((get_byte >> 8) & 0x00ff);
-}
-
-
 static void write_cmos_sensor(kal_uint16 addr, kal_uint16 para)
 {
 	char pusendcmd[4] = {
@@ -1542,10 +1532,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = (
 		(read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 
-			pr_debug("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n",
-				read_cmos_sensor_8(0x0000),
-				read_cmos_sensor_8(0x0001),
-				read_cmos_sensor(0x0000));
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
 					imgsensor.i2c_write_id, *sensor_id);
@@ -1891,7 +1877,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 			   MSDK_SENSOR_INFO_STRUCT *sensor_info,
 			   MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
-	pr_debug("get_info -> scenario_id = %d\n", scenario_id);
+	/*pr_debug("get_info -> scenario_id = %d\n", scenario_id);*/
 
 	sensor_info->SensorClockPolarity = SENSOR_CLOCK_POLARITY_LOW;
 
@@ -2231,7 +2217,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 static kal_uint32 get_default_framerate_by_scenario(
 	enum MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
-	pr_debug("scenario_id = %d\n", scenario_id);
+	/*pr_debug("scenario_id = %d\n", scenario_id);*/
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2432,8 +2418,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		break;
 
 	case SENSOR_FEATURE_GET_CROP_INFO:
-		pr_debug("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%d\n",
-			(UINT32) *feature_data);
+		/* pr_debug("SENSOR_FEATURE_GET_CROP_INFO scenarioId:%d\n",
+		 *	(UINT32) *feature_data);
+		 */
 
 		wininfo =
 	(struct SENSOR_WINSIZE_INFO_STRUCT *) (uintptr_t) (*(feature_data + 1));

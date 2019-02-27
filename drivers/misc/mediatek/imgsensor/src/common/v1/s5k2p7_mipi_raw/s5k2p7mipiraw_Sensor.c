@@ -1661,11 +1661,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = (
 	      (read_cmos_sensor_8(0x0000) << 8) | read_cmos_sensor_8(0x0001));
 
-		    pr_debug("read_0x0000=0x%x, 0x0001=0x%x,0x0000_0001=0x%x\n",
-			read_cmos_sensor_8(0x0000),
-			read_cmos_sensor_8(0x0001),
-			read_cmos_sensor(0x0000));
-
 			if (*sensor_id == imgsensor_info.sensor_id) {
 
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",

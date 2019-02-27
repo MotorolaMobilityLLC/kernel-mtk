@@ -667,12 +667,12 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	return get_byte;
 }
 
-static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
+static int write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 {
 	char pu_send_cmd[3] = {
 		(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
-	iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
+	return iWriteRegI2C(pu_send_cmd, 3, imgsensor.i2c_write_id);
 }
 
 #if 0
@@ -758,7 +758,8 @@ static kal_uint32 return_sensor_id(void)
 	kal_uint8 tmph, tmpl;
 
 	pr_debug("Enter\n");
-	write_cmos_sensor(0x0A02, 0x1F);
+	if (write_cmos_sensor(0x0A02, 0x1F) < 0)
+		return 0;
 	write_cmos_sensor(0x0A00, 0x01);
 	mdelay(10);
 	tmph = 0x00;
