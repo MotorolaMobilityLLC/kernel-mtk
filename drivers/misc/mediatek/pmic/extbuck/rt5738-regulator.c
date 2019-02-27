@@ -502,6 +502,7 @@ static struct i2c_driver rt5738_i2c_driver = {
 
 static int __init rt5738_i2c_init(void)
 {
+	return 0;
 	pr_info("%s\n", __func__);
 	return i2c_add_driver(&rt5738_i2c_driver);
 }
@@ -509,6 +510,7 @@ subsys_initcall(rt5738_i2c_init);
 
 static void __exit rt5738_i2c_exit(void)
 {
+	return;
 	i2c_del_driver(&rt5738_i2c_driver);
 }
 module_exit(rt5738_i2c_exit);
