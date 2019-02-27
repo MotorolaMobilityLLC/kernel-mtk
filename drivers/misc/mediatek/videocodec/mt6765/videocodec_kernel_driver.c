@@ -1515,7 +1515,7 @@ static long vcodec_unlockhw(unsigned long arg)
 	enum VAL_RESULT_T eValRet;
 	long ret;
 #ifdef VCODEC_DVFS_V2
-	struct codec_job *cur_job;
+	struct codec_job *cur_job = 0;
 #endif
 
 	/* pr_debug("VCODEC_UNLOCKHW + tid = %d\n", current->pid); */
@@ -1545,7 +1545,9 @@ static long vcodec_unlockhw(unsigned long arg)
 #ifdef VCODEC_DVFS_V2
 			mutex_lock(&VcodecDVFSLock);
 			cur_job = codec_jobs;
-			if (cur_job->handle ==
+			if (cur_job == 0) {
+				pr_info("VDEC job is null when unlock, error");
+			} else if (cur_job->handle ==
 				CodecHWLock.pvHandle) {
 				cur_job->end = get_time_us();
 				update_hist(cur_job, &codec_hists);
@@ -1595,9 +1597,13 @@ static long vcodec_unlockhw(unsigned long arg)
 		if (CodecHWLock.pvHandle ==
 				(void *)pmem_user_v2p_video(handle)) {
 #ifdef VCODEC_DVFS_V2
+
+			if (rHWLock.eDriverType != VAL_DRIVER_TYPE_JPEG_ENC) {
 			mutex_lock(&VcodecDVFSLock);
 			cur_job = codec_jobs;
-			if (cur_job->handle ==
+			if (cur_job == 0) {
+				pr_info("VENC job is null when unlock, error");
+			} else if (cur_job->handle ==
 				CodecHWLock.pvHandle) {
 				cur_job->end = get_time_us();
 				update_hist(cur_job, &codec_hists);
@@ -1609,6 +1615,7 @@ static long vcodec_unlockhw(unsigned long arg)
 					CodecHWLock.pvHandle);
 			}
 			mutex_unlock(&VcodecDVFSLock);
+			}
 #endif
 			disable_irq(VENC_IRQ_ID);
 			/* turn venc power off */
