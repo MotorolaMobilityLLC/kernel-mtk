@@ -1581,7 +1581,7 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 				*(u32 *)(cc->key+(i*8)),
 				*(u32 *)(cc->key+(i*8)+4),
 				(cc->id & 0xff) << 24 |
-				(i & 0xff)<<16 | (cc->key_size & 0xffff));
+				(i & 0xff)<<16 | (cc->key_size & 0xffff), 0);
 		key_idx++;
 	} else
 #endif

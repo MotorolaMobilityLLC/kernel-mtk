@@ -17,6 +17,7 @@
 #include <linux/dcache.h>
 #include <crypto/skcipher.h>
 #include <uapi/linux/fs.h>
+#include <linux/hie.h>
 
 #define FS_KEY_DERIVATION_NONCE_SIZE		16
 #define FS_ENCRYPTION_CONTEXT_FORMAT_V1		1
@@ -34,6 +35,7 @@
 #define FS_ENCRYPTION_MODE_AES_256_GCM		2
 #define FS_ENCRYPTION_MODE_AES_256_CBC		3
 #define FS_ENCRYPTION_MODE_AES_256_CTS		4
+#define FS_ENCRYPTION_MODE_PRIVATE		127
 
 /**
  * Encryption context for inode
@@ -62,6 +64,7 @@ struct fscrypt_context {
 #define FS_AES_256_CBC_KEY_SIZE		32
 #define FS_AES_256_CTS_KEY_SIZE		32
 #define FS_AES_256_XTS_KEY_SIZE		64
+#define FS_PRIVATE_KEY_SIZE		64
 #define FS_MAX_KEY_SIZE			64
 
 #define FS_KEY_DESC_PREFIX		"fscrypt:"
@@ -79,6 +82,7 @@ struct fscrypt_info {
 	u8 ci_filename_mode;
 	u8 ci_flags;
 	struct crypto_skcipher *ci_ctfm;
+	struct key	*ci_keyring_key;
 	u8 ci_master_key[FS_KEY_DESCRIPTOR_SIZE];
 };
 
@@ -234,6 +238,33 @@ static inline void fscrypt_set_d_op(struct dentry *dentry)
 #endif
 }
 
+static inline int fscrypt_using_hardware_encryption(struct inode *inode)
+{
+#if IS_ENABLED(CONFIG_FS_ENCRYPTION)
+	struct fscrypt_info *ci = inode->i_crypt_info;
+
+	return S_ISREG(inode->i_mode) && ci &&
+		ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE;
+#else
+	return 0;
+#endif
+}
+
+static inline int fscrypt_using_software_encryption(struct inode *inode)
+{
+#if IS_ENABLED(CONFIG_FS_ENCRYPTION)
+	struct fscrypt_info *ci;
+
+	ci = inode->i_crypt_info;
+
+	return S_ISREG(inode->i_mode) && ci &&
+		ci->ci_data_mode != FS_ENCRYPTION_MODE_INVALID &&
+		ci->ci_data_mode != FS_ENCRYPTION_MODE_PRIVATE;
+#else
+	return 0;
+#endif
+}
+
 #if IS_ENABLED(CONFIG_FS_ENCRYPTION)
 /* crypto.c */
 extern struct kmem_cache *fscrypt_info_cachep;
@@ -248,6 +279,9 @@ extern void fscrypt_pullback_bio_page(struct page **, bool);
 extern void fscrypt_restore_control_page(struct page *);
 extern int fscrypt_zeroout_range(struct inode *, pgoff_t, sector_t,
 						unsigned int);
+extern int fscrypt_set_bio_crypt_context(struct inode *inode, struct bio *bio);
+extern int fscrypt_key_payload(struct bio_crypt_ctx *ctx, const char *data,
+	const unsigned char **key);
 /* policy.c */
 extern int fscrypt_process_policy(struct file *, const struct fscrypt_policy *);
 extern int fscrypt_get_policy(struct inode *, struct fscrypt_policy *);
@@ -257,6 +291,7 @@ extern int fscrypt_inherit_context(struct inode *, struct inode *,
 /* keyinfo.c */
 extern int fscrypt_get_encryption_info(struct inode *);
 extern void fscrypt_put_encryption_info(struct inode *, struct fscrypt_info *);
+extern int fscrypt_default_data_encryption_mode(void);
 
 /* fname.c */
 extern int fscrypt_setup_filename(struct inode *, const struct qstr *,

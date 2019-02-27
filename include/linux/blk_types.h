@@ -17,6 +17,18 @@ struct io_context;
 struct cgroup_subsys_state;
 typedef void (bio_end_io_t) (struct bio *);
 
+#define BC_MAX_ENCRYPTION_KEY_SIZE	64
+
+struct bio_crypt_ctx {
+	unsigned int	bc_flags;
+	unsigned int	bc_key_size;
+	unsigned long   bc_fs_type;
+	struct key	*bc_keyring_key;
+#ifdef CONFIG_HIE_DUMMY_CRYPT
+	u32			dummy_crypt_key;
+#endif
+};
+
 #ifdef CONFIG_BLOCK
 /*
  * main unit of I/O for the block layer and lower layers (ie drivers and
@@ -68,7 +80,7 @@ struct bio {
 
 	unsigned short		bi_vcnt;	/* how many bio_vec's */
 
-#ifdef CONFIG_MTK_HW_FDE
+#if defined(CONFIG_MTK_HW_FDE)
 	/*
 	 * MTK PATH:
 	 *
@@ -93,6 +105,9 @@ struct bio {
 	struct bio_vec		*bi_io_vec;	/* the actual vec list */
 
 	struct bio_set		*bi_pool;
+
+	/* Encryption context. May contain secret key material. */
+	struct bio_crypt_ctx	bi_crypt_ctx;
 
 	/*
 	 * We can inline a number of vecs at the end of the bio, to avoid
@@ -283,6 +298,34 @@ static inline unsigned int blk_qc_t_to_queue_num(blk_qc_t cookie)
 static inline unsigned int blk_qc_t_to_tag(blk_qc_t cookie)
 {
 	return cookie & ((1u << BLK_QC_T_SHIFT) - 1);
+}
+
+/*
+ * block crypt flags
+ */
+enum bc_flags_bits {
+	__BC_CRYPT,        /* marks the request needs crypt */
+	__BC_AES_128_XTS,  /* crypt algorithms */
+	__BC_AES_192_XTS,
+	__BC_AES_256_XTS,
+	__BC_AES_128_CBC,
+	__BC_AES_256_CBC,
+	__BC_AES_128_ECB,
+	__BC_AES_256_ECB,
+};
+
+#define BC_CRYPT		(1UL << __BC_CRYPT)
+#define BC_AES_128_XTS	(1UL << __BC_AES_128_XTS)
+#define BC_AES_192_XTS	(1UL << __BC_AES_192_XTS)
+#define BC_AES_256_XTS	(1UL << __BC_AES_256_XTS)
+#define BC_AES_128_CBC	(1UL << __BC_AES_128_CBC)
+#define BC_AES_256_CBC	(1UL << __BC_AES_256_CBC)
+#define BC_AES_128_ECB	(1UL << __BC_AES_128_ECB)
+#define BC_AES_256_ECB	(1UL << __BC_AES_256_ECB)
+
+static inline bool bio_encrypted(struct bio *bio)
+{
+	return bio ? (bio->bi_crypt_ctx.bc_flags & BC_CRYPT) : 0;
 }
 
 #endif /* __LINUX_BLK_TYPES_H */
