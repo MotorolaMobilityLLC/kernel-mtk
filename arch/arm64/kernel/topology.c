@@ -25,7 +25,20 @@
 #include <asm/cputype.h>
 #include <asm/topology.h>
 
+/*
+ * cpu capacity table
+ * This per cpu data structure describes the relative capacity of each core.
+ * On a heteregenous system, cores don't have the same computation capacity
+ * and we reflect that difference in the cpu_capacity field so the scheduler
+ * can take this difference into account during load balance. A per cpu
+ * structure is preferred because each CPU updates its own cpu_capacity field
+ * during the load balance except for idle cores. One idle core is selected
+ * to run the rebalance_domains for all idle cores and the cpu_capacity can be
+ * updated during this sequence.
+ */
 static DEFINE_PER_CPU(unsigned long, cpu_scale) = SCHED_CAPACITY_SCALE;
+
+#include "topology_dts.c"
 
 unsigned long scale_cpu_capacity(struct sched_domain *sd, int cpu)
 {
@@ -374,8 +387,14 @@ static void __init reset_cpu_topology(void)
 	}
 }
 
+/*
+ * init_cpu_topology is called at boot when only one cpu is running
+ * which prevent simultaneous write access to cpu_topology array
+ */
 void __init init_cpu_topology(void)
 {
+	if (cpu_topology_init)
+		return;
 	reset_cpu_topology();
 
 	/*
@@ -386,6 +405,8 @@ void __init init_cpu_topology(void)
 		reset_cpu_topology();
 	else
 		set_sched_topology(arm64_topology);
+
+	parse_dt_cpu_capacity();
 
 	init_sched_energy_costs();
 }
