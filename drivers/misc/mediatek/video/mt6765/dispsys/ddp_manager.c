@@ -1163,6 +1163,7 @@ struct disp_ddp_path_config *dpmgr_path_get_last_config(
 	handle->last_config.ovl_layer_dirty = 0;
 	handle->last_config.ovl_layer_scanned = 0;
 	handle->last_config.ovl_partial_dirty = 0;
+	handle->last_config.sbch_enable = 0;
 	return &handle->last_config;
 }
 

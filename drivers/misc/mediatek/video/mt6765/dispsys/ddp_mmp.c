@@ -154,6 +154,12 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.share_sram =
 	    mmprofile_register_event(DDP_MMP_Events.primary_Parent,
 	    "share_sram");
+	DDP_MMP_Events.sbch_set =
+	    mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+	    "sbch_set");
+	DDP_MMP_Events.sbch_set_error =
+	    mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+	    "sbch_set_error");
 	DDP_MMP_Events.sec =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
 		"sec");
