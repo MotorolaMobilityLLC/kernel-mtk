@@ -59,6 +59,7 @@ struct sched_lock_event {
 DECLARE_PER_CPU(struct sched_block_event, ISR_mon);
 DECLARE_PER_CPU(struct sched_block_event, IPI_mon);
 DECLARE_PER_CPU(struct sched_block_event, SoftIRQ_mon);
+DECLARE_PER_CPU(struct sched_block_event, RCU_SoftIRQ_mon);
 DECLARE_PER_CPU(struct sched_block_event, tasklet_mon);
 DECLARE_PER_CPU(struct sched_block_event, hrt_mon);
 DECLARE_PER_CPU(struct sched_block_event, sft_mon);
@@ -95,6 +96,8 @@ extern void mt_trace_rqlock_start(raw_spinlock_t *lock);
 extern void mt_trace_rqlock_end(raw_spinlock_t *lock);
 extern void mt_trace_irq_work_start(void *func);
 extern void mt_trace_irq_work_end(void *func);
+extern void mt_trace_RCU_SoftIRQ_start(void *func);
+extern void mt_trace_RCU_SoftIRQ_end(void);
 
 #ifdef CONFIG_PREEMPT_MONITOR
 extern void MT_trace_irq_on(void);
