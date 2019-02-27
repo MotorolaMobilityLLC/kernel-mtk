@@ -297,7 +297,8 @@
  * If the rx buffer isn't empty, postpone timer.
  */
 
-/* #define CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT */
+#define CONFIG_USB_PD_CHECK_RX_PENDING_IF_SRTOUT
+#define CONFIG_USB_PD_ONLY_PRINT_SYSTEM_BUSY
 
 /*
  * S/W patch for
