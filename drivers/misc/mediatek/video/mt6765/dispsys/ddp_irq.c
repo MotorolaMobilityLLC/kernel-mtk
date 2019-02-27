@@ -36,6 +36,7 @@
 #include "disp_lowpower.h"
 #include "layering_rule.h"
 
+#include <asm/arch_timer.h>
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -500,13 +501,17 @@ static void disp_irq_rdma_underflow_aee_trigger(void)
 			/* Should trigger AEE as */
 			/* more than 5 times continuous underflow happens */
 			/* TODO: need more precise data from test */
-			if (considerable_cnt >= 5) {
+			/*need trigger aee when RDMA underflow*/
+			/*trigger sspm to collect SMI, EMI debug info */
+			/*increase cnt to 20 to avoid too many underflow aee*/
+			if (considerable_cnt >= 20) {
 				primary_display_diagnose();
 #if 0	/*SHANG: TODO: wait smi offer this API */
 				smi_dumpDebugMsg();
 #endif
-				DDPAEE("RDMA0 underflow!cnt=%d\n",
-					cnt_rdma_underflow[0]);
+				DDPAEE("RDMA0 underflow!cnt=%d,sys_tim=%u\n",
+					cnt_rdma_underflow[0],
+					(u32)arch_counter_get_cntvct());
 				considerable_cnt = 0;
 			}
 			last_timer = sched_clock();

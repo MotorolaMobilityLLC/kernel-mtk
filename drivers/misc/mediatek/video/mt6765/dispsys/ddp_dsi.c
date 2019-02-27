@@ -45,6 +45,7 @@
 #include "ddp_clkmgr.h"
 #include "primary_display.h"
 
+#include <asm/arch_timer.h>
 /*****************************************************************************/
 enum MIPITX_PAD_VALUE {
 	PAD_D2P_V = 0,
@@ -460,8 +461,9 @@ static void _DSI_INTERNAL_IRQ_Handler(enum DISP_MODULE_ENUM module,
 	if (status.BUFFER_UNDERRUN_INT_EN) {
 		if (disp_helper_get_option(DISP_OPT_DSI_UNDERRUN_AEE)) {
 			if (dsi_underrun_trigger == 1) {
-				DDPAEE("%s:buffer underrun\n",
-					ddp_get_module_name(module));
+				DDPAEE("%s:buffer underrun,sys_time=%u\n",
+					ddp_get_module_name(module),
+					(u32)arch_counter_get_cntvct());
 				primary_display_diagnose();
 				dsi_underrun_trigger = 0;
 			}
