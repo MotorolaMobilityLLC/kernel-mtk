@@ -36,6 +36,10 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_M
 ccflags-y += -DGAMMA_LIGHT
 endif
 
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6765)))
+ccflags-y += -DGAMMA_ROUND_CORNER
+endif
+
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) \
                      $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_MT6765)))
 ccflags-y += -DCCORR_TRANSITION

@@ -1121,11 +1121,13 @@ static bool g_get_va_flag;
 static unsigned long g_tdshp1_va;
 #elif defined(CONFIG_MACH_MT6797) || defined(CONFIG_MACH_MT6757) || \
 	defined(CONFIG_MACH_KIBOPLUS) || defined(CONFIG_MACH_MT6799) || \
-	defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6765)
+	defined(CONFIG_MACH_MT6739)
 #define TDSHP_PA_BASE   0x14009000
 #elif defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6763) || \
 	defined(CONFIG_MACH_MT6758)
 #define TDSHP_PA_BASE   0x14007000
+#elif defined(CONFIG_MACH_MT6765)
+#define TDSHP_PA_BASE   0x1400A000
 #else
 #define TDSHP_PA_BASE   0x14006000
 #endif
@@ -1136,6 +1138,8 @@ static unsigned long g_tdshp1_va;
 #define MDP_COLOR_PA_BASE 0x1400A000
 #elif defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6758)
 #define MDP_COLOR_PA_BASE 0x1400E000
+#elif defined(CONFIG_MACH_MT6765)
+#define MDP_COLOR_PA_BASE 0x1400F000
 #else
 #define MDP_COLOR_PA_BASE 0x14007000
 #endif
@@ -1160,6 +1164,11 @@ static unsigned long g_mdp_rdma0_va;
 #define TRANSLATION(origin, shift) ((origin >= shift) ? (origin - shift) : 0)
 
 static unsigned long g_tdshp_va;
+
+#if defined(SUPPORT_WCG)
+#define MDP_CCORR0_PA_BASE 0x14005000
+static unsigned long g_mdp_ccorr0_va;
+#endif
 
 /* set cboost_en = 0 for projects before 6755 */
 /* in order to resolve contour in some special color pattern */
@@ -2404,6 +2413,20 @@ static unsigned long color_get_MDP_RDMA0_VA(void)
 }
 #endif
 
+#if defined(SUPPORT_WCG)
+static unsigned long color_get_MDP_CCORR0_VA(void)
+{
+	unsigned long VA;
+	struct device_node *node = NULL;
+
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mdp_ccorr0");
+	VA = (unsigned long)of_iomap(node, 0);
+	COLOR_DBG("MDP_CCORR0 VA: 0x%lx\n", VA);
+
+	return VA;
+}
+#endif
+
 static void _color_get_VA(void)
 {
 	/* check if va address initialized*/
@@ -2424,6 +2447,11 @@ static void _color_get_VA(void)
 #if defined(SUPPORT_HDR)
 		g_mdp_rdma0_va = color_get_MDP_RDMA0_VA();
 #endif
+
+#if defined(SUPPORT_WCG)
+		g_mdp_ccorr0_va = color_get_MDP_CCORR0_VA();
+#endif
+
 		g_get_va_flag = true;
 	}
 }
@@ -2511,6 +2539,16 @@ static unsigned int color_is_reg_addr_valid(unsigned long addr)
 	}
 #endif
 
+#if defined(SUPPORT_WCG)
+	/*Check if MDP CCORR base address*/
+	if ((addr >= g_mdp_ccorr0_va) &&
+		(addr < (g_mdp_ccorr0_va + 0x1000))) {
+		/* MDP CCORR0 */
+		COLOR_DBG("addr valid, addr=0x%lx, module=%s!\n", addr,
+			"MDP_CCORR0");
+		return 2;
+	}
+#endif
 
 	/* check if TDSHP base address */
 	if ((addr >= g_tdshp_va) && (addr < (g_tdshp_va + 0x1000))) {
@@ -2617,12 +2655,22 @@ static unsigned long color_pa2va(unsigned int addr)
 	}
 #endif
 
+#if defined(SUPPORT_WCG)
+	/* MDP_CCORR */
+	if ((addr >= MDP_CCORR0_PA_BASE) &&
+		(addr < (MDP_CCORR0_PA_BASE + 0x1000))) {
+		COLOR_DBG("MDP_CCORR0 PA:0x%x, PABase:0x%x, VABase:0x%lx",
+			addr, MDP_CCORR0_PA_BASE, g_mdp_ccorr0_va);
+		return g_mdp_ccorr0_va + (addr - MDP_CCORR0_PA_BASE);
+	}
+#endif
+
 #if defined(CONFIG_MACH_MT6759) || defined(CONFIG_MACH_MT6758) || \
 	defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6739) || \
 	defined(CONFIG_MACH_MT6765)
 	COLOR_ERR("NO FOUND VA!! PA:0x%x", addr);
 #else
-	COLOR_ERR("%NO FOUND VA!! PA:0x%x, PABase:0x%x, VABase:0x%lx",
+	COLOR_ERR("NO FOUND VA!! PA:0x%x, PABase:0x%x, VABase:0x%lx",
 		addr, (unsigned int)ddp_reg_pa_base[0], dispsys_reg[0]);
 #endif
 return 0;
