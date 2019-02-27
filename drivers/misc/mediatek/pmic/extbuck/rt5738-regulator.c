@@ -421,6 +421,10 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 			 , init_data->constraints.name
 			 , init_data->constraints.min_uV
 			 , init_data->constraints.max_uV);
+		pr_info("rt5738 regulator_name = %s, min_uV =%d, max_uV = %d\n"
+			 , init_data->constraints.name
+			 , init_data->constraints.min_uV
+			 , init_data->constraints.max_uV);
 	} else {
 		dev_info(&i2c->dev, "%s: no init data\n", __func__);
 		return -EINVAL;
@@ -440,20 +444,16 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 		return -EINVAL;
 	}
 
-	if (rt5738_read_byte(info->i2c, RT5738_REG_MONITOR, &ret) < 0) {
-		pr_notice("%s rt5738_read_byte fail\n", __func__);
-		return -ENODEV;
-	}
-
-
-#if defined(CONFIG_MACH_MT6765)
-	g_is_rt5738_exist = 1;
-#endif
-	pr_notice("i2c_addr=0x%x ret=0x%x g_is_rt5738_exist=%d\n"
+#if 1
+	g_is_rt5738_exist = 0;
+	if (rt5738_read_byte(info->i2c, RT5738_REG_MONITOR, &ret) >= 0)
+		g_is_rt5738_exist = 1;
+	pr_notice("i2c_addr=%d ret=%d g_is_rt5738_exist=%d\n"
 				, i2c->addr
 				, ret
 				, g_is_rt5738_exist);
-
+	return 0;
+#else
 	info->regulator = rt5738_regulator_register(info->desc,
 						    &i2c->dev,
 						    init_data,
@@ -472,6 +472,7 @@ static int rt5738_i2c_probe(struct i2c_client *i2c,
 	pr_info("%s Successfully\n", __func__);
 
 	return 0;
+#endif
 }
 
 static int rt5738_i2c_remove(struct i2c_client *i2c)
@@ -516,7 +517,6 @@ static struct i2c_driver rt5738_i2c_driver = {
 
 static int __init rt5738_i2c_init(void)
 {
-	g_is_rt5738_exist = 0;
 	pr_info("%s\n", __func__);
 	return i2c_add_driver(&rt5738_i2c_driver);
 }
