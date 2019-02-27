@@ -656,7 +656,7 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 	bio_set_op_attrs(bio, REQ_OP_READ, op_flag);
 
 	if (fscrypt_is_hw_encrypt(inode)) {
-		f2fs_wait_on_block_writeback(sbi, blkaddr);
+		f2fs_wait_on_block_writeback(inode, blkaddr);
 		return bio;
 	}
 
