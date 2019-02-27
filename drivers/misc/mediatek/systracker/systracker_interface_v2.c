@@ -213,6 +213,11 @@ void save_entry(void)
 		track_entry.aw_trans_tid[i] =
 			readl(IOMEM(BUS_DBG_AW_TRANS_TID(i)));
 	}
+
+	track_entry.w_track_data6 = readl(IOMEM(BUS_DBG_W_TRACK_DATA6));
+	track_entry.w_track_data7 = readl(IOMEM(BUS_DBG_W_TRACK_DATA7));
+	track_entry.w_track_data_valid =
+		readl(IOMEM(BUS_DBG_W_TRACK_DATA_VALID));
 }
 
 #ifdef SYSTRACKER_TEST_SUIT
@@ -228,6 +233,7 @@ static void tracker_print(void)
 	unsigned int reg_value;
 	int i;
 	unsigned int entry_valid;
+	unsigned int entry_secure;
 	unsigned int entry_tid;
 	unsigned int entry_id;
 	unsigned int entry_address;
@@ -237,15 +243,16 @@ static void tracker_print(void)
 	for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 		entry_address       = track_entry.ar_track_l[i];
 		reg_value           = track_entry.ar_track_h[i];
-		entry_valid         = extract_n2mbits(reg_value, 21, 21);
+		entry_valid         = extract_n2mbits(reg_value, 22, 22);
+		entry_secure        = extract_n2mbits(reg_value, 21, 21);
 		entry_id            = extract_n2mbits(reg_value, 8, 20);
 		entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 		entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 		entry_tid           = track_entry.ar_trans_tid[i];
 
 
-		pr_debug("read entry = %d, valid = 0x%x, tid = 0x%x,",
-				i, entry_valid, entry_tid);
+		pr_debug("read entry = %d, valid = 0x%x, secure = 0x%x,",
+				i, entry_valid, entry_secure);
 		pr_debug("read id = 0x%x, address = 0x%x, data_size = 0x%x,",
 				entry_id, entry_address, entry_data_size);
 		pr_debug("burst_length = 0x%x\n",
@@ -255,19 +262,27 @@ static void tracker_print(void)
 	for (i = 0; i < BUS_DBG_NUM_TRACKER; i++) {
 		entry_address       = track_entry.aw_track_l[i];
 		reg_value           = track_entry.aw_track_h[i];
-		entry_valid         = extract_n2mbits(reg_value, 21, 21);
+		entry_valid         = extract_n2mbits(reg_value, 22, 22);
+		entry_secure        = extract_n2mbits(reg_value, 21, 21);
 		entry_id            = extract_n2mbits(reg_value, 8, 20);
 		entry_data_size     = extract_n2mbits(reg_value, 4, 6);
 		entry_burst_length  = extract_n2mbits(reg_value, 0, 3);
 		entry_tid           = track_entry.aw_trans_tid[i];
 
-		pr_debug("write entry = %d, valid = 0x%x, tid = 0x%x,",
-			i, entry_valid, entry_tid);
+		pr_debug("write entry = %d, valid = 0x%x, secure = 0x%x,",
+			i, entry_valid, entry_secure);
 		pr_debug("read id = 0x%x, address = 0x%x, data_size = 0x%x, ",
 			entry_id, entry_address, entry_data_size);
 		pr_debug("burst_length = 0x%x\n",
 			entry_burst_length);
 	}
+
+	pr_debug("write entry ~ 6, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<6))>>6),
+			track_entry.w_track_data6);
+	pr_debug("write entry ~ 7, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<7))>>7),
+			track_entry.w_track_data7);
 }
 
 irqreturn_t systracker_isr(void)
@@ -526,6 +541,7 @@ int tracker_dump(char *buf)
 	unsigned int reg_value;
 	int i;
 	unsigned int entry_valid;
+	unsigned int entry_secure;
 	unsigned int entry_tid;
 	unsigned int entry_id;
 	unsigned int entry_address;
@@ -571,6 +587,8 @@ int tracker_dump(char *buf)
 			entry_address       = track_entry.ar_track_l[i];
 			reg_value           = track_entry.ar_track_h[i];
 			entry_valid         =
+				extract_n2mbits(reg_value, 22, 22);
+			entry_secure         =
 				extract_n2mbits(reg_value, 21, 21);
 			entry_id            =
 				extract_n2mbits(reg_value, 8, 20);
@@ -581,8 +599,8 @@ int tracker_dump(char *buf)
 			entry_tid           = track_entry.ar_trans_tid[i];
 
 			ptr += sprintf(ptr,
-				"read entry = %d, valid = 0x%x, tid = 0x%x,",
-				i, entry_valid, entry_tid);
+				"read entry = %d, valid = 0x%x, secure = 0x%x,",
+				i, entry_valid, entry_secure);
 			ptr += sprintf(ptr,
 				"read id = 0x%x, address = 0x%x, data_size = 0x%x,",
 				entry_id, entry_address, entry_data_size);
@@ -591,8 +609,8 @@ int tracker_dump(char *buf)
 
 #ifdef TRACKER_DEBUG
 			pr_debug(
-				"read entry = %d, valid = 0x%x, tid = 0x%x,",
-				i, entry_valid, entry_tid);
+				"read entry = %d, valid = 0x%x, secure = 0x%x,",
+				i, entry_valid, entry_secure);
 			pr_debug(
 				"read id = 0x%x, address = 0x%x, data_size = 0x%x,",
 				entry_id, entry_address, entry_data_size);
@@ -623,6 +641,8 @@ int tracker_dump(char *buf)
 			entry_address       = track_entry.aw_track_l[i];
 			reg_value           = track_entry.aw_track_h[i];
 			entry_valid         =
+				extract_n2mbits(reg_value, 22, 22);
+			entry_secure         =
 				extract_n2mbits(reg_value, 21, 21);
 			entry_id            =
 				extract_n2mbits(reg_value, 8, 20);
@@ -633,8 +653,8 @@ int tracker_dump(char *buf)
 			entry_tid           = track_entry.aw_trans_tid[i];
 
 			ptr += sprintf(ptr,
-				"write entry = %d, valid = 0x%x, tid = 0x%x,",
-				i, entry_valid, entry_tid);
+				"write entry = %d, valid = 0x%x, secure = 0x%x,",
+				i, entry_valid, entry_secure);
 			ptr += sprintf(ptr,
 				"read id = 0x%x, address = 0x%x, data_size = 0x%x, ",
 				entry_id, entry_address, entry_data_size);
@@ -644,8 +664,8 @@ int tracker_dump(char *buf)
 
 #ifdef TRACKER_DEBUG
 			pr_debug(
-				"write entry = %d, valid = 0x%x, tid = 0x%x,",
-				i, entry_valid, entry_tid);
+				"write entry = %d, valid = 0x%x, secure = 0x%x,",
+				i, entry_valid, entry_secure);
 			pr_debug(
 				"read id = 0x%x, address = 0x%x, data_size = 0x%x, ",
 				entry_id, entry_address, entry_data_size);
@@ -653,6 +673,24 @@ int tracker_dump(char *buf)
 				entry_burst_length);
 #endif
 		}
+
+		ptr += sprintf(ptr,
+			"write entry ~ 6, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<6))>>6),
+			track_entry.w_track_data6);
+		ptr += sprintf(ptr,
+			"write entry ~ 7, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<7))>>7),
+			track_entry.w_track_data7);
+
+#ifdef TRACKER_DEBUG
+		pr_debug("write entry ~ 6, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<6))>>6),
+			track_entry.w_track_data6);
+		pr_debug("write entry ~ 7, valid = 0x%x, data = 0x%x\n",
+			((track_entry.w_track_data_valid&(0x1<<7))>>7),
+			track_entry.w_track_data7);
+#endif
 
 		return strlen(buf);
 	}
