@@ -511,7 +511,9 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 	mmprofile_log_ex(ion_mmp_events[PROFILE_ALLOC], MMPROFILE_FLAG_END,
 			 (unsigned long)client, (unsigned long)handle);
 
+#ifdef CONFIG_MTK_ION
 	ion_history_count_kick(true, len);
+#endif
 
 	handle->dbg.user_ts = end;
 	do_div(handle->dbg.user_ts, 1000000);
@@ -529,7 +531,9 @@ void ion_free_nolock(struct ion_client *client,
 		return;
 	}
 	ion_handle_put_nolock(handle);
+#ifdef CONFIG_MTK_ION
 	ion_history_count_kick(false, 0);
+#endif
 }
 
 void ion_free(struct ion_client *client, struct ion_handle *handle)
@@ -1301,6 +1305,7 @@ int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
+#ifdef CONFIG_MTK_ION
 	if (buffer->heap->type != (int)ION_HEAP_TYPE_FB)
 		dma_sync_sg_for_device(g_ion_device->dev.this_device,
 				       buffer->sg_table->sgl,
@@ -1309,6 +1314,8 @@ int ion_sync_for_device(struct ion_client *client, int fd)
 	else
 		pr_err("%s: can not support heap type(%d) to sync\n",
 		       __func__, buffer->heap->type);
+#endif
+
 	dma_buf_put(dmabuf);
 	return 0;
 }
