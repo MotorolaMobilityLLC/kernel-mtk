@@ -41,6 +41,11 @@ bool mtk_dpidle_enabled(void)
 	return dpidle_feature_enable;
 }
 
+void mtk_dpidle_disable(void)
+{
+	dpidle_feature_enable = 0;
+}
+
 /* mtk_dpidle_is_active() for pmic_throttling_dlpt
  *   return 0 : entering dpidle recently ( > 1s)
  *                      => normal mode(dlpt 10s)
