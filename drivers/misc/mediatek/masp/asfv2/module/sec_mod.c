@@ -74,8 +74,6 @@
 
 #define TRACE_FUNC()                MSG_FUNC(SEC_DEV_NAME)
 
-
-
 /*************************************************************************
  *  GLOBAL VARIABLE
  **************************************************************************/
@@ -84,14 +82,7 @@ static struct cdev sec_dev;
 static struct class *sec_class;
 static struct device *sec_device;
 
-#ifdef CONFIG_ARM64
-unsigned long long hacc_base;
-/*unsigned long long es_base;*/
-#else
-unsigned int hacc_base;
-/*unsigned int es_base;*/
-#endif
-
+void __iomem *hacc_base;
 static const struct of_device_id masp_of_ids[] = {
 	{.compatible = "mediatek,hacc",},
 	{}
@@ -172,21 +163,17 @@ module_param(recovery_done, uint, 0644); /* rw-r--r-- */
 MODULE_PARM_DESC(recovery_done,
 		 "recovery_done status(0 = complete, 1 = on-going, 2 = error)");
 
-		 /* SEC DRIVER INIT */
-		 static int sec_init(struct platform_device *dev)
+/* SEC DRIVER INIT */
+static int sec_init(struct platform_device *dev)
 {
 	int ret = 0;
 	dev_t id;
 
 	pr_debug("[%s] sec_init (%d)\n", SEC_DEV_NAME, ret);
 
-#ifdef CONFIG_ARM64
-	hacc_base = (unsigned long long)of_iomap(dev->dev.of_node, 0);
-#else
-	hacc_base = (unsigned int)of_iomap(dev->dev.of_node, 0);
-#endif
+	hacc_base = of_iomap(dev->dev.of_node, 0);
 	if (!hacc_base) {
-		pr_notice("[%s] HACC register remapping failed\n",
+		pr_notice("[%s] hacc register remapping failed\n",
 			  SEC_DEV_NAME);
 		return -ENXIO;
 	}
@@ -285,12 +272,12 @@ int masp_probe(struct platform_device *dev)
 	return ret;
 }
 
+
 int masp_remove(struct platform_device *dev)
 {
 	sec_exit();
 	return 0;
 }
-
 
 static struct platform_driver masp_driver = {
 	.driver = {
