@@ -184,7 +184,8 @@ static unsigned int cm_mgr_read_stall(int cpu)
 			val = cm_mgr_read(MP0_CPU0_STALL_COUNTER + 4 * cpu);
 	} else {
 		if (cm_mgr_idle_mask & 0xf0)
-			val = cm_mgr_read(MP1_CPU0_STALL_COUNTER + 4 * cpu);
+			val = cm_mgr_read(MP1_CPU0_STALL_COUNTER +
+					4 * (cpu - 4));
 	}
 	spin_unlock(&cm_mgr_cpu_mask_lock);
 
