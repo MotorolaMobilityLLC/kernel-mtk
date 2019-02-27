@@ -80,10 +80,12 @@
 #endif
 
 int dither_dbg_en;
-#define DITHER_ERR(fmt, arg...) pr_notice("[DITHER] " fmt "\n", ##arg)
+#define DITHER_ERR(fmt, arg...) \
+	pr_notice("[DITHER] %s: " fmt "\n", __func__, ##arg)
 #define DITHER_DBG(fmt, arg...) \
 	do { if (dither_dbg_en) \
-		pr_debug("[DITHER] " fmt "\n", ##arg); } while (0)
+		pr_debug("[DITHER] %s: " fmt "\n",  __func__, ##arg); \
+		} while (0)
 
 #define DITHER_REG(reg_base, index) ((reg_base) + 0x100 + (index) * 4)
 
@@ -158,10 +160,8 @@ void disp_dither_init(enum DISP_MODULE_ENUM module, int width, int height,
 	}
 #endif
 
-	DITHER_DBG("Module(%d) disp_dither_init bpp = %d",
-		module, dither_bpp);
-	DITHER_DBG("Module(%d) disp_dither_init width = %d height = %d",
-	module, width, height);
+	DITHER_DBG("Module(%d) bpp = %d", module, dither_bpp);
+	DITHER_DBG("Module(%d) width = %d height = %d", module, width, height);
 
 }
 
@@ -192,8 +192,7 @@ static int disp_dither_bypass(enum DISP_MODULE_ENUM module, int bypass)
 	DISP_REG_MASK(NULL, DISP_REG_DITHER_CFG + dither_get_offset(module),
 		relay, 0x1);
 
-	DITHER_DBG("Module(%d) disp_dither_bypass(bypass = %d)", module,
-		bypass);
+	DITHER_DBG("Module(%d) (bypass = %d)", module, bypass);
 
 	return 0;
 }
@@ -361,7 +360,7 @@ void dither_test(const char *cmd, char *debug_output)
 #endif
 
 	debug_output[0] = '\0';
-	DITHER_DBG("dither_test(%s)", cmd);
+	DITHER_DBG("(%s)", cmd);
 
 	if (strncmp(cmd, "log:", 4) == 0) {
 		dither_dbg_en = (int)cmd[4];
