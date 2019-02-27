@@ -548,10 +548,11 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
 #ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
 #define GLOBAL_SHELL_UID KUIDT_INIT(2000)
 #define GLOBAL_NOBODY_UID KUIDT_INIT(9999)
+#endif
 
+#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
 //this should only worked in debug mode.
 const char* disable_reserved_comm[] = {
-#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
     "aee_aedv",
     "aee_archivev64",
     "aee",
@@ -567,7 +568,6 @@ const char* disable_reserved_comm[] = {
     "rttv",
     "aee_archivev",
     "aee_aed",
-#endif
     NULL
 };
 static bool if_disable_reserved_storage(struct task_struct *tsk) {
