@@ -485,6 +485,13 @@ static unsigned int mtk_sodi_output_log(
 			spm_resource_req_dump();
 	}
 
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#ifdef CONFIG_MTK_ECCCI_DRIVER
+	if (wakesta->r12 & WAKE_SRC_R12_CLDMA_EVENT_B)
+		exec_ccci_kern_func_by_md_id(0, ID_GET_MD_WAKEUP_SRC, NULL, 0);
+
+#endif
+#endif
 	return wr;
 }
 
