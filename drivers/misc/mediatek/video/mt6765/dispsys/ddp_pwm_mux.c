@@ -21,7 +21,7 @@
 #include <linux/of_address.h>
 #include "ddp_reg.h"
 
-#define BYPASS_CLK_SELECT
+/* #define BYPASS_CLK_SELECT */
 /*
  *
  * dummy function
@@ -53,13 +53,9 @@ bool disp_pwm_mux_is_osc(void)
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x110)
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0x80)
 #endif
-#ifdef HARD_CODE_CONFIG
-#ifndef MUX_UPDATE_ADDR /* disp pwm source clock update register address */
-#define MUX_UPDATE_ADDR (disp_pmw_mux_base + 0x4)
-#endif
-#endif
+
 #ifndef OSC_ULPOSC_ADDR /* rosc control register address */
 #define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
 #endif
@@ -82,13 +78,13 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = ULPOSC_D16;
+		clkid = ULPOSC1_D8;
 		break;
 	case 1:
-		clkid = ULPOSC_D2;
+		clkid = ULPOSC1_D2;
 		break;
 	case 2:
-		clkid = UNIVPLL1_D8;
+		clkid = UNIVPLL2_D4;
 		break;
 	case 3:
 		clkid = CLK26M; /* Bypass config:default 26M */
@@ -168,7 +164,7 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 	}
 
 	reg_after = disp_pwm_get_pwmmux();
-	g_pwm_mux_clock_source = (reg_after>>16) & 0x3;
+	g_pwm_mux_clock_source = (reg_after>>24) & 0x3;
 	pr_debug("[PWM]PWM_MUX %x->%x", reg_before, reg_after);
 
 	return 0;
@@ -242,33 +238,19 @@ static int ulposc_on(void)
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* pr_debug("[PWM]ULPOSC config : 0x%08x", regosc); */
 
-	/* OSC EN = 1 */
 	regosc = regosc | 0x1;
 	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* pr_debug("[PWM]ULPOSC config : 0x%08x after en", regosc); */
-	udelay(11);
+	udelay(150);
 
-	/* OSC RST	*/
-	regosc = regosc | 0x2;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	/* pr_debug("[PWM]ULPOSC config : 0x%08x after rst 1", regosc); */
-	udelay(40);
-	regosc = regosc & 0xfffffffd;
-	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	/* pr_debug("[PWM]ULPOSC config : 0x%08x after rst 0", regosc); */
-	udelay(130);
-
-	/* OSC CG_EN = 1 */
 	regosc = regosc | 0x4;
 	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
-	/* pr_debug("[PWM]ULPOSC config : 0x%08x after cg_en", regosc); */
+	/* udelay(150); */
+	/* regosc = clk_readl(OSC_ULPOSC_ADDR); */
+	/* pr_debug("[PWM]ULPOSC config : 0x%08x after rst 1", regosc); */
 
 	return 0;
-
 }
 
 static int ulposc_off(void)
@@ -280,18 +262,17 @@ static int ulposc_off(void)
 
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 
-	/* OSC CG_EN = 0 */
 	regosc = regosc & (~0x4);
 	clk_writel(OSC_ULPOSC_ADDR, regosc);
+
+	udelay(150);
 	regosc = clk_readl(OSC_ULPOSC_ADDR);
 	/* pr_debug("[PWM]ULPOSC config : 0x%08x after cg_en", regosc); */
 
-	udelay(40);
-
-	/* OSC EN = 0 */
 	regosc = regosc & (~0x1);
 	clk_writel(OSC_ULPOSC_ADDR, regosc);
-	regosc = clk_readl(OSC_ULPOSC_ADDR);
+	/* udelay(150); */
+	/* regosc = clk_readl(OSC_ULPOSC_ADDR); */
 	/* pr_debug("[PWM]ULPOSC config : 0x%08x after en", regosc); */
 
 	return 0;
@@ -326,8 +307,8 @@ int disp_pwm_clksource_enable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D16:
+	case ULPOSC1_D2:
+	case ULPOSC1_D8:
 		ulposc_enable(clkid);
 		break;
 	default:
@@ -345,8 +326,8 @@ int disp_pwm_clksource_disable(int clk_req)
 	clkid = disp_pwm_get_clkid(clk_req);
 
 	switch (clkid) {
-	case ULPOSC_D2:
-	case ULPOSC_D16:
+	case ULPOSC1_D2:
+	case ULPOSC1_D8:
 		ulposc_disable(clkid);
 		break;
 	default:
@@ -366,7 +347,7 @@ bool disp_pwm_mux_is_osc(void)
 {
 	bool is_osc = false;
 
-	if (g_pwm_mux_clock_source == 1 || g_pwm_mux_clock_source == 2)
+	if (g_pwm_mux_clock_source == 2 || g_pwm_mux_clock_source == 3)
 		is_osc = true;
 
 	return is_osc;
