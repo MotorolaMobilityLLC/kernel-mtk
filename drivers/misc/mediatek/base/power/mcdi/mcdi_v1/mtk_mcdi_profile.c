@@ -100,7 +100,7 @@ static void set_mcdi_profile_sampling(int en)
 				res = &mcdi_lat.section[i].result[j];
 
 				res->avg = curr->cnt ?
-						curr->sum / curr->cnt : 0;
+					div64_u64(curr->sum, curr->cnt) : 0;
 				res->max = curr->max;
 				res->cnt = curr->cnt;
 
@@ -594,6 +594,7 @@ static ssize_t mcdi_profile_write(struct file *filp,
 	} else {
 		return -EINVAL;
 	}
+
 	return count;
 }
 
@@ -606,6 +607,7 @@ static ssize_t mcdi_usage_read(struct file *filp,
 	char *p = dbg_buf;
 	unsigned long long ratio_raw = 0;
 	unsigned long long ratio_dur = 0;
+	unsigned long long ratio_rem = 0;
 	unsigned int ratio_int = 0;
 	unsigned int ratio_frac = 0;
 
@@ -632,11 +634,12 @@ static ssize_t mcdi_usage_read(struct file *filp,
 		for (state_idx = 0; state_idx < NF_MCDI_STATE; state_idx++) {
 			ratio_raw = 100 *
 				mcdi_usage_get_time(cpu, state_idx);
-			ratio_int = (unsigned int)div64_u64(
+			ratio_int = (unsigned int)div64_u64_rem(
 					ratio_raw,
-					ratio_dur);
+					ratio_dur,
+					&ratio_rem);
 			ratio_frac = (unsigned int)div64_u64(
-					1000 * (ratio_raw % ratio_dur),
+					1000 * ratio_rem,
 					ratio_dur);
 
 			mcdi_log("%7u.%03u%% ",
@@ -662,13 +665,14 @@ static ssize_t mcdi_usage_read(struct file *filp,
 						cpu, MCDI_STATE_CLUSTER_OFF);
 		}
 
-		ratio_int = (unsigned int)div64_u64(ratio_raw, ratio_dur);
+		ratio_int = (unsigned int)div64_u64_rem(ratio_raw,
+				ratio_dur, &ratio_rem);
 		ratio_frac = (unsigned int)div64_u64(
-				1000 * (ratio_raw % ratio_dur), ratio_dur);
+				1000 * ratio_rem, ratio_dur);
 
 		mcdi_log("\t%d: %3u.%03u%% (%llu)\n",
 			i, ratio_int,
-			ratio_frac, ratio_raw/100);
+			ratio_frac, div64_u64(ratio_raw, 100));
 	}
 
 	state_idx = MCDI_STATE_CLUSTER_OFF + 1;
@@ -685,12 +689,13 @@ static ssize_t mcdi_usage_read(struct file *filp,
 				mcdi_usage_get_time(cpu, state_idx);
 		}
 
-		ratio_int = (unsigned int)div64_u64(ratio_raw, ratio_dur);
+		ratio_int = (unsigned int)div64_u64_rem(ratio_raw,
+				ratio_dur, &ratio_rem);
 		ratio_frac = (unsigned int)div64_u64(
-				1000 * (ratio_raw % ratio_dur), ratio_dur);
+				1000 * ratio_rem, ratio_dur);
 
 		mcdi_log("\t%3u.%03u%% (%llu)\n",
-			ratio_int, ratio_frac, ratio_raw/100);
+			ratio_int, ratio_frac, div64_u64(ratio_raw, 100));
 	}
 	mcdi_log("\n");
 
