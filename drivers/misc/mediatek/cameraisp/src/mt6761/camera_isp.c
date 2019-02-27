@@ -698,7 +698,7 @@ static /*volatile*/ wait_queue_head_t WaitQueueHead_EDBuf_WaitFrame;
 static spinlock_t SpinLockEDBufQueList;
 #define _MAX_SUPPORT_P2_FRAME_NUM_ 512
 #define _MAX_SUPPORT_P2_BURSTQ_NUM_ 4
-static signed int P2_Support_BurstQNum = 1;
+static signed int P2_Support_BurstQNum = 2;
 #define _MAX_SUPPORT_P2_PACKAGE_NUM_                                           \
 	(_MAX_SUPPORT_P2_FRAME_NUM_ / _MAX_SUPPORT_P2_BURSTQ_NUM_)
 #define P2_EDBUF_MLIST_TAG 1
@@ -13335,7 +13335,7 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 	/* do wait queue head init when re-enter in camera */
 	EDBufQueRemainNodeCnt = 0;
 	spin_lock((spinlock_t *)(&SpinLockRegScen));
-	P2_Support_BurstQNum = 1;
+	P2_Support_BurstQNum = 2;
 	spin_unlock((spinlock_t *)(&SpinLockRegScen));
 
 	/*      */
