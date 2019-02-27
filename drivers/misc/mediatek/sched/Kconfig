@@ -27,3 +27,15 @@ config MTK_RT_THROTTLE_MON
 	  Say Y here to enable rt throttle monitor.
 	  If you are not sure about whether to enable it or not, please set n.
 endmenu
+menu "MTK Energy Aware Scheduler Plus"
+config MTK_SCHED_EAS_POWER_SUPPORT
+	bool "Enable MTK power calculation for EAS"
+	depends on MTK_UNIFY_POWER
+	default n
+	help
+	  Power calculation for mtk Soc.
+	  According to platform characters(share-buck..etc),
+	  return correct power of core and cluster for
+	  scheduler to refer.
+
+endmenu
