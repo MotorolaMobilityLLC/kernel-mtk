@@ -46,23 +46,21 @@ endif
 
 ifeq ($(CONFIG_MICROTRUST_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/teei/Makefile.include
-endif
+endif	# end of CONFIG_MICROTRUST_TEE_SUPPORT
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_dr \
              -I$(srctree)/drivers/misc/mediatek/cmdq/v3/inc/cmdq_sec_tl
 
 ccflags-y += -DCMDQ_SECURE_PATH_SUPPORT
-ccflags-y += -DCMDQ_SECURE_PATH_NORMAL_IRQ
 
 ifeq ($(strip $(CONFIG_MTK_TEE_GP_SUPPORT)),y)
 ccflags-y += -DCMDQ_GP_SUPPORT
 endif
 
 ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
-endif
+endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
 
 # platform dependent definition
-ccflags-$(CONFIG_MTK_SMI_EXT) += -DCMDQ_CONFIG_SMI
 ccflags-y += -DCMDQ_SPECIAL_ESD_PRIORITY
 ccflags-y += -D_CMDQ_DISABLE_MARKER_
 ccflags-y += -DCMDQ_PROFILE_MMP
@@ -73,18 +71,29 @@ endif
 
 # driver module
 obj-y += cmdq_record.o
-obj-y += cmdq_core.o
 obj-y += cmdq_virtual.o
 obj-y += cmdq_device.o
 obj-y += cmdq_driver.o
 obj-y += cmdq_mmp.o
 obj-y += cmdq_mdp_common.o
-obj-y += cmdq_prof.o
+#obj-y += cmdq_prof.o
 obj-y += cmdq_test.o
-obj-y += cmdq_sec.o
+#obj-y += cmdq_sec.o
 obj-y += cmdq_event_common.o
 obj-y += cmdq_subsys_common.o
+obj-y += cmdq_helper_ext.o
 
 ifeq ($(platformdir_exists), y)
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
+
+ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
+
+ifeq ($(strip $(CONFIG_MTK_TEE_GP_SUPPORT)),y)
+obj-y += cmdq_sec_gp.o
+else ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+obj-y += cmdq_sec_trustonic.o
+endif
+
+endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+

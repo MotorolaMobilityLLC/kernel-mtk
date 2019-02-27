@@ -21,7 +21,7 @@ extern "C" {
 #endif
 
 s32 cmdq_append_command(struct cmdqRecStruct *handle,
-	enum CMDQ_CODE_ENUM code,
+	enum cmdq_code code,
 	u32 arg_a, u32 arg_b, u32 arg_a_type, u32 arg_b_type);
 s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop);
 

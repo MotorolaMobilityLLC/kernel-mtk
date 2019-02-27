@@ -1124,7 +1124,7 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register call back first */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0,
+	cmdq_mdp_set_resource_callback(CMDQ_SYNC_RESOURCE_WROT0,
 		_acquire_wrot_resource, _release_wrot_resource);
 	register_share_sram = 1;
 	/* 2. try to allocate sram at the fisrt time */
@@ -1134,7 +1134,7 @@ void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister call back */
-	cmdqCoreSetResourceCallback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
+	cmdq_mdp_set_resource_callback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
 	register_share_sram = 1;
 	/* 2. try to release share sram */
 	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);

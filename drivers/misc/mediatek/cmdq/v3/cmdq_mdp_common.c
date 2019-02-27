@@ -12,8 +12,8 @@
  */
 
 #include "cmdq_mdp_common.h"
-#include "cmdq_core.h"
 #include "cmdq_device.h"
+#include "cmdq_record.h"
 #include "cmdq_reg.h"
 #ifdef CMDQ_PROFILE_MMP
 #include "cmdq_mmp.h"
@@ -26,11 +26,1284 @@
 #ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
 #endif
+#include "cmdq_helper_ext.h"
 
-static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
-static int gCmdqMDPTaskIndex;
-static long g_cmdq_mmsys_base;
-static struct cmdqMDPFuncStruct gMDPFunctionPointer;
+#include <linux/kernel.h>
+#include <linux/uaccess.h>
+#include <linux/iopoll.h>
+#include <linux/notifier.h>
+
+struct mdp_task {
+	char callerName[TASK_COMM_LEN];
+	char userDebugStr[DEBUG_STR_LEN];
+};
+static struct mdp_task mdp_tasks[MDP_MAX_TASK_NUM];
+static int mdp_tasks_idx;
+static struct cmdqMDPFuncStruct mdp_funcs;
+static long cmdq_mmsys_base;
+
+#define MDP_THREAD_COUNT ( \
+	CMDQ_MAX_THREAD_COUNT - CMDQ_DYNAMIC_THREAD_ID_START)
+
+struct mdp_thread {
+	u32 task_count;
+	u64 engine_flag;
+	bool acquired;
+	bool allow_dispatch;
+};
+
+struct mdp_context {
+	struct list_head tasks_wait;	/* task waiting for available thread */
+	struct mdp_thread thread[CMDQ_MAX_THREAD_COUNT];
+	struct EngineStruct engine[CMDQ_MAX_ENGINE_COUNT];
+
+	/* Resource manager information */
+	struct list_head resource_list;	/* all resource list */
+
+	/* delay resource check workqueue */
+	struct workqueue_struct *resource_check_queue;
+
+	/* consume task from wait list */
+	struct work_struct handle_consume_item;
+	struct workqueue_struct *handle_consume_queue;
+
+	/* smi clock usage */
+	atomic_t mdp_smi_usage;
+};
+static struct mdp_context mdp_ctx;
+
+static DEFINE_MUTEX(mdp_thread_mutex);
+static DEFINE_MUTEX(mdp_clock_mutex);
+static DEFINE_MUTEX(mdp_task_mutex);
+static DEFINE_MUTEX(mdp_resource_mutex);
+
+/* thread acquire notification */
+static wait_queue_head_t mdp_thread_dispatch;
+
+static struct notifier_block mdp_status_dump_notify;
+
+/* use to generate [CMDQ_ENGINE_ENUM_id and name] mapping for status print */
+#define CMDQ_FOREACH_MODULE_PRINT(ACTION)\
+{		\
+ACTION(CMDQ_ENG_ISP_IMGI,   ISP_IMGI)	\
+ACTION(CMDQ_ENG_MDP_RDMA0,  MDP_RDMA0)	\
+ACTION(CMDQ_ENG_MDP_RDMA1,  MDP_RDMA1)	\
+ACTION(CMDQ_ENG_MDP_RSZ0,   MDP_RSZ0)	\
+ACTION(CMDQ_ENG_MDP_RSZ1,   MDP_RSZ1)	\
+ACTION(CMDQ_ENG_MDP_RSZ2,   MDP_RSZ2)	\
+ACTION(CMDQ_ENG_MDP_TDSHP0, MDP_TDSHP0)	\
+ACTION(CMDQ_ENG_MDP_TDSHP1, MDP_TDSHP1)	\
+ACTION(CMDQ_ENG_MDP_COLOR0, MDP_COLOR0) \
+ACTION(CMDQ_ENG_MDP_WROT0,  MDP_WROT0)	\
+ACTION(CMDQ_ENG_MDP_WROT1,  MDP_WROT1)	\
+ACTION(CMDQ_ENG_MDP_WDMA,   MDP_WDMA)	\
+}
+
+/* MDP common kernel logic */
+
+struct EngineStruct *cmdq_mdp_get_engines(void)
+{
+	return mdp_ctx.engine;
+}
+
+static void cmdq_mdp_reset_engine_struct(void)
+{
+	int index;
+
+	/* Reset engine status */
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++)
+		mdp_ctx.engine[index].currOwner = CMDQ_INVALID_THREAD;
+}
+
+static void cmdq_mdp_reset_thread_struct(void)
+{
+	int index;
+
+	/* Reset thread status */
+	memset(mdp_ctx.thread, 0, sizeof(mdp_ctx.thread[0]) *
+		ARRAY_SIZE(mdp_ctx.thread));
+	for (index = 0; index < ARRAY_SIZE(mdp_ctx.thread); index++)
+		mdp_ctx.thread[index].allow_dispatch = true;
+}
+
+void cmdq_mdp_delay_check_unlock(const u64 engine_not_use)
+{
+	/* Check engine in enginesNotUsed */
+	struct ResourceUnitStruct *res = NULL;
+
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (!(engine_not_use & res->engine_flag))
+			continue;
+
+		mutex_lock(&mdp_resource_mutex);
+		/* find matched engine become not used*/
+		if (!res->used) {
+			/* resource is not used but we got engine is released!
+			 * log as error and still continue
+			 */
+			CMDQ_ERR(
+				"[Res]resource will delay but not used, engine:0x%llx\n",
+				res->engine_flag);
+		}
+		/* Cancel previous delay task if existed */
+		if (res->delaying) {
+			res->delaying = false;
+			cancel_delayed_work(&res->delayCheckWork);
+		}
+		/* Start a new delay task */
+		CMDQ_VERBOSE("[Res]queue delay unlock resource\n");
+		queue_delayed_work(mdp_ctx.resource_check_queue,
+			&res->delayCheckWork,
+			CMDQ_DELAY_RELEASE_RESOURCE_MS);
+		res->delay = sched_clock();
+		res->delaying = true;
+		mutex_unlock(&mdp_resource_mutex);
+	}
+}
+
+void cmdq_mdp_fix_command_scenario_for_user_space(
+	struct cmdqCommandStruct *command)
+{
+	if (command->scenario == CMDQ_SCENARIO_USER_DISP_COLOR ||
+		command->scenario == CMDQ_SCENARIO_USER_MDP) {
+		CMDQ_VERBOSE("user space request, scenario:%d\n",
+			command->scenario);
+	} else {
+		CMDQ_VERBOSE(
+			"[WARNING]fix user space request to CMDQ_SCENARIO_USER_SPACE\n");
+		command->scenario = CMDQ_SCENARIO_USER_SPACE;
+	}
+}
+
+bool cmdq_mdp_is_request_from_user_space(
+	const enum CMDQ_SCENARIO_ENUM scenario)
+{
+	switch (scenario) {
+	case CMDQ_SCENARIO_USER_DISP_COLOR:
+	case CMDQ_SCENARIO_USER_MDP:
+	case CMDQ_SCENARIO_USER_SPACE:	/* phased out */
+		return true;
+	default:
+		return false;
+	}
+	return false;
+}
+
+s32 cmdq_mdp_query_usage(s32 *counters)
+{
+	struct EngineStruct *engine;
+	s32 index;
+
+	engine = mdp_ctx.engine;
+
+	mutex_lock(&mdp_thread_mutex);
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++)
+		counters[index] = engine[index].userCount;
+	mutex_unlock(&mdp_thread_mutex);
+
+	return 0;
+}
+
+static void cmdq_mdp_clock_enable(u64 engine_flag,
+	const u64 engine_enable)
+{
+	s32 index;
+#if 0
+	s32 smi_ref;
+#endif
+
+	CMDQ_MSG(
+		"-->CLOCK: Enable engine clock 0x%llx engine enable 0x%llx\n",
+		engine_flag, engine_enable);
+
+#if 0
+	smi_ref = atomic_inc_return(&mdp_ctx.mdp_smi_usage);
+	if (smi_ref == 1) {
+		CMDQ_MSG("[CLOCK]MDP SMI clock enable %d\n", smi_ref);
+		cmdq_mdp_get_func()->mdpEnableCommonClock(true);
+	}
+#endif
+
+	/* ISP special check: Always call ISP on/off if this task */
+	/* involves ISP. Ignore the ISP HW flags. */
+	if (cmdq_core_is_group_flag(CMDQ_GROUP_ISP, engine_flag)) {
+		CMDQ_VERBOSE("[CLOCK]enable group %d clockOn\n",
+			CMDQ_GROUP_ISP);
+		cmdq_core_group_clk_enable(CMDQ_GROUP_ISP, engine_flag);
+	}
+
+	for (index = CMDQ_MAX_GROUP_COUNT - 1; index >= 0; index--) {
+		/* note that DISPSYS controls their own clock on/off */
+		if (index == CMDQ_GROUP_DISP)
+			continue;
+
+		/* note that ISP is per-task on/off, not per HW flag */
+		if (index == CMDQ_GROUP_ISP)
+			continue;
+
+		if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM)index,
+			engine_enable))
+			cmdq_core_group_clk_enable(index, engine_flag);
+	}
+
+	CMDQ_MSG("<--CLOCK: Enable hardware clock end\n");
+}
+
+static void cmdq_mdp_clock_disable(u64 engine_flag,
+	const u64 engine_not_use)
+{
+	s32 index;
+#if 0
+	s32 smi_ref;
+#endif
+
+	CMDQ_MSG(
+		"-->CLOCK: Disable engine clock 0x%llx engine not use 0x%llx\n",
+		engine_flag, engine_not_use);
+
+	/* ISP special check: Always call ISP on/off if this task
+	 * involves ISP. Ignore the ISP HW flags ref count.
+	 */
+	if (cmdq_core_is_group_flag(CMDQ_GROUP_ISP, engine_flag)) {
+		CMDQ_VERBOSE("[CLOCK]disable group %d clockOff\n",
+			CMDQ_GROUP_ISP);
+		cmdq_core_group_clk_disable(CMDQ_GROUP_ISP, engine_flag);
+	}
+
+	/* Turn off unused engines */
+	for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
+		/* note that DISPSYS controls their own clock on/off */
+		if (index == CMDQ_GROUP_DISP)
+			continue;
+
+		/* note that ISP is per-task on/off, not per HW flag */
+		if (index == CMDQ_GROUP_ISP)
+			continue;
+
+		if (cmdq_core_is_group_flag((enum CMDQ_GROUP_ENUM)index,
+			engine_not_use)) {
+			CMDQ_MSG(
+				"[CLOCK]Disable engine group %d flag:0x%llx clockOff\n",
+				index, engine_not_use);
+			cmdq_core_group_clk_disable(index, engine_not_use);
+		}
+	}
+
+#if 0
+	smi_ref = atomic_dec_return(&mdp_ctx.mdp_smi_usage);
+	if (smi_ref == 0) {
+		CMDQ_MSG("[CLOCK]MDP SMI clock disable %d\n", smi_ref);
+		cmdq_mdp_get_func()->mdpEnableCommonClock(false);
+	}
+#endif
+
+	CMDQ_MSG("<--CLOCK: Disable hardware clock 0x%llx end\n", engine_flag);
+}
+
+void cmdq_mdp_reset_resource(void)
+{
+	struct ResourceUnitStruct *resource;
+
+	list_for_each_entry(resource, &mdp_ctx.resource_list,
+		list_entry) {
+		mutex_lock(&mdp_resource_mutex);
+		if (resource->lend) {
+			CMDQ_LOG("[Res]Client is already lend, event:%d\n",
+				resource->lockEvent);
+			cmdqCoreClearEvent(resource->lockEvent);
+		}
+		mutex_unlock(&mdp_resource_mutex);
+	}
+}
+
+void cmdq_mdp_dump_resource(void)
+{
+	struct ResourceUnitStruct *resource;
+
+	CMDQ_LOG("SRAM Sharing config:\n");
+	list_for_each_entry(resource, &mdp_ctx.resource_list, list_entry) {
+		CMDQ_LOG("	Engine:0x%llx event:%d\n",
+			resource->engine_flag, resource->lockEvent);
+	}
+}
+
+/* Use CMDQ as Resource Manager */
+void cmdq_mdp_unlock_resource(struct work_struct *workItem)
+{
+	struct ResourceUnitStruct *res = NULL;
+	struct delayed_work *delayedWorkItem = NULL;
+	s32 status = 0;
+
+	delayedWorkItem = container_of(workItem, struct delayed_work, work);
+	res = container_of(delayedWorkItem, struct ResourceUnitStruct,
+		delayCheckWork);
+
+	mutex_lock(&mdp_resource_mutex);
+
+	CMDQ_MSG("[Res]unlock resource with engine:0x%llx\n",
+		res->engine_flag);
+	if (res->used && res->delaying) {
+		res->unlock = sched_clock();
+		res->used = false;
+		res->delaying = false;
+		/* delay time is reached and unlock resource */
+		if (!res->availableCB) {
+			/* print error message */
+			CMDQ_LOG("[Res]available CB func is NULL, event:%d\n",
+				res->lockEvent);
+		} else {
+			CmdqResourceAvailableCB cb_func = res->availableCB;
+
+			/* before call callback, release lock at first */
+			mutex_unlock(&mdp_resource_mutex);
+			status = cb_func(res->lockEvent);
+			mutex_lock(&mdp_resource_mutex);
+
+			if (status < 0) {
+				/* Error status print */
+				CMDQ_ERR("[Res]available CB %d fail:%d\n",
+					res->lockEvent, status);
+			}
+		}
+	}
+	mutex_unlock(&mdp_resource_mutex);
+}
+
+void cmdq_mdp_init_resource(u32 engine_id,
+	enum cmdq_event res_event)
+{
+	struct ResourceUnitStruct *res;
+
+	res = kzalloc(sizeof(struct ResourceUnitStruct), GFP_KERNEL);
+	if (!res) {
+		CMDQ_ERR("not enough mem for resource delay work\n");
+		return;
+	}
+
+	CMDQ_LOG("[Res]Init resource engine:%u event:%u\n",
+		engine_id, res_event);
+
+	res->engine_id = engine_id;
+	res->engine_flag = (1LL << engine_id);
+	res->lockEvent = res_event;
+	INIT_DELAYED_WORK(&res->delayCheckWork, cmdq_mdp_unlock_resource);
+	INIT_LIST_HEAD(&res->list_entry);
+	list_add_tail(&res->list_entry, &mdp_ctx.resource_list);
+}
+
+static void cmdq_mdp_enable_res(u64 engine_flag, bool enable)
+{
+	struct ResourceUnitStruct *res = NULL;
+
+	mutex_lock(&mdp_clock_mutex);
+
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (!(res->engine_flag & engine_flag))
+			continue;
+
+		CMDQ_LOG("[Res]resource clock engine:0x%llx enable:%s\n",
+			engine_flag, enable ? "true" : "false");
+		cmdq_mdp_get_func()->enableMdpClock(enable, res->engine_id);
+		break;
+	}
+
+	mutex_unlock(&mdp_clock_mutex);
+}
+
+static void cmdq_mdp_lock_res_impl(struct ResourceUnitStruct *res,
+	u64 engine_flag, bool from_notify)
+{
+	mutex_lock(&mdp_resource_mutex);
+
+	/* find matched engine */
+	if (from_notify)
+		res->notify = sched_clock();
+	else
+		res->lock = sched_clock();
+
+	if (!res->used) {
+		/* First time used */
+		s32 status;
+
+		CMDQ_MSG("[Res]Lock res engine:0x%llx notify:%d release\n",
+			engine_flag, from_notify);
+
+		res->used = true;
+		if (!res->releaseCB) {
+			CMDQ_LOG("[Res]release CB func is NULL, event:%d\n",
+				res->lockEvent);
+		} else {
+			CmdqResourceReleaseCB cb_func = res->releaseCB;
+
+			/* release mutex before callback */
+			mutex_unlock(&mdp_resource_mutex);
+			status = cb_func(res->lockEvent);
+			mutex_lock(&mdp_resource_mutex);
+
+			if (status < 0) {
+				/* Error status print */
+				CMDQ_ERR("[Res]release CB %d fail:%d\n",
+					res->lockEvent, status);
+			}
+		}
+	} else {
+		/* Cancel previous delay task if existed */
+		if (res->delaying) {
+			res->delaying = false;
+			cancel_delayed_work(&res->delayCheckWork);
+		}
+	}
+	mutex_unlock(&mdp_resource_mutex);
+}
+
+/* Use CMDQ as Resource Manager */
+void cmdq_mdp_lock_resource(u64 engine_flag, bool from_notify)
+{
+	struct ResourceUnitStruct *res = NULL;
+
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (engine_flag & res->engine_flag)
+			cmdq_mdp_lock_res_impl(res, engine_flag, from_notify);
+	}
+}
+
+bool cmdq_mdp_acquire_resource(enum cmdq_event res_event,
+	u64 *engine_flag_out)
+{
+	struct ResourceUnitStruct *res = NULL;
+	bool result = false;
+
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (res_event != res->lockEvent)
+			continue;
+
+		mutex_lock(&mdp_resource_mutex);
+		/* find matched resource */
+		result = !res->used;
+		if (result && !res->lend) {
+			CMDQ_MSG("[Res]Acquire successfully event:%d\n",
+				res_event);
+			cmdqCoreClearEvent(res_event);
+			res->acquire = sched_clock();
+			res->lend = true;
+			*engine_flag_out |= res->engine_flag;
+		}
+		mutex_unlock(&mdp_resource_mutex);
+		break;
+	}
+	return result;
+}
+
+void cmdq_mdp_release_resource(enum cmdq_event res_event,
+	u64 *engine_flag_out)
+{
+	struct ResourceUnitStruct *res = NULL;
+
+	CMDQ_MSG("[Res]Release resource with event:%d\n", res_event);
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (res_event != res->lockEvent)
+			continue;
+		mutex_lock(&mdp_resource_mutex);
+		/* find matched resource */
+		if (res->lend) {
+			res->release = sched_clock();
+			res->lend = false;
+			*engine_flag_out |= res->engine_flag;
+		}
+		mutex_unlock(&mdp_resource_mutex);
+		break;
+	}
+}
+
+void cmdq_mdp_set_resource_callback(enum cmdq_event res_event,
+	CmdqResourceAvailableCB res_available,
+	CmdqResourceReleaseCB res_release)
+{
+	struct ResourceUnitStruct *res = NULL;
+
+	CMDQ_VERBOSE(
+		"[Res]Set resource callback with event:%d available:%pf release:%pf\n",
+		res_event, res_available, res_release);
+	list_for_each_entry(res, &mdp_ctx.resource_list, list_entry) {
+		if (res_event != res->lockEvent)
+			continue;
+
+		CMDQ_MSG("[Res]Set resource callback ok!\n");
+		mutex_lock(&mdp_resource_mutex);
+		/* find matched resource */
+		res->availableCB = res_available;
+		res->releaseCB = res_release;
+		mutex_unlock(&mdp_resource_mutex);
+		break;
+	}
+}
+
+static u64 cmdq_mdp_get_actual_engine_flag_for_enable_clock(
+	u64 engine_flag, s32 thread_id)
+{
+	struct EngineStruct *engine = mdp_ctx.engine;
+	struct mdp_thread *thread = mdp_ctx.thread;
+	u64 engine_flag_clk = 0;
+	u32 index;
+
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
+		if (!(engine_flag & (1LL << index)))
+			continue;
+
+		if (engine[index].userCount <= 0) {
+			engine[index].currOwner = thread_id;
+			engine_flag_clk |= (1LL << index);
+			/* also assign engine flag into ThreadStruct */
+			thread[thread_id].engine_flag |= (1LL << index);
+		}
+
+		engine[index].userCount++;
+	}
+
+	return engine_flag_clk;
+}
+
+static void cmdq_mdp_handle_begin(struct cmdqRecStruct *handle)
+{
+	/* pass mdp process since we do most work in cmdq_mdp_lock_thread */
+
+	/* enable resource clock */
+	if (handle->res_flag_acquire)
+		cmdq_mdp_enable_res(handle->res_flag_acquire, true);
+}
+
+static void cmdq_mdp_handle_end(struct cmdqRecStruct *handle)
+{
+	/* unlock thread usage when cmdq ending this handle */
+	if (handle->thread != CMDQ_INVALID_THREAD) {
+		/* only handle if this handle run by mdp flush and thread */
+		if (mdp_ctx.thread[handle->thread].acquired)
+			cmdq_mdp_unlock_thread(handle);
+	} else {
+		/* not expect call without thread during ending */
+		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
+			handle, handle->engineFlag);
+	}
+
+	/* disable resource clock */
+	if (handle->res_flag_release)
+		cmdq_mdp_enable_res(handle->res_flag_release, false);
+}
+
+static void cmdq_mdp_lock_thread(struct cmdqRecStruct *handle)
+{
+	u64 engine_flag = handle->engineFlag;
+	s32 thread = handle->thread;
+	u64 clock_engines;
+
+	CMDQ_PROF_START(current->pid, __func__);
+
+	mutex_lock(&mdp_clock_mutex);
+	mutex_lock(&mdp_thread_mutex);
+
+	clock_engines = cmdq_mdp_get_actual_engine_flag_for_enable_clock(
+		engine_flag, thread);
+
+	/* make this thread can be dispath again */
+	mdp_ctx.thread[thread].allow_dispatch = true;
+	mdp_ctx.thread[thread].task_count++;
+
+	mutex_unlock(&mdp_thread_mutex);
+
+	/* enable clock */
+	cmdq_mdp_clock_enable(engine_flag, clock_engines);
+
+	mutex_unlock(&mdp_clock_mutex);
+
+	CMDQ_PROF_END(current->pid, __func__);
+}
+
+static u64 cmdq_mdp_get_not_used_engine(const u64 engine_flag)
+{
+	struct EngineStruct *engine = mdp_ctx.engine;
+	struct mdp_thread *thread = mdp_ctx.thread;
+	u64 engine_not_use = 0LL;
+	s32 index;
+	s32 owner_thd = CMDQ_INVALID_THREAD;
+
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
+		if (!(engine_flag & (1LL << index)))
+			continue;
+
+		engine[index].userCount--;
+		if (engine[index].userCount <= 0) {
+			engine_not_use |= (1LL << index);
+			owner_thd = engine[index].currOwner;
+			/* remove engine flag in assigned pThread */
+			thread[owner_thd].engine_flag &= ~(1LL << index);
+			engine[index].currOwner = CMDQ_INVALID_THREAD;
+		}
+	}
+	CMDQ_VERBOSE("%s engine not use:0x%llx\n", __func__, engine_not_use);
+	return engine_not_use;
+}
+
+void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
+{
+	u64 engine_flag = handle->engineFlag;
+	s32 thread = handle->thread;
+	u32 clock_engines;
+
+	mutex_lock(&mdp_clock_mutex);
+	mutex_lock(&mdp_thread_mutex);
+
+	/* get not use engine using engine flag for disable clock. */
+	clock_engines = cmdq_mdp_get_not_used_engine(engine_flag);
+
+	mdp_ctx.thread[thread].task_count--;
+
+	/* if no task on thread, release to cmdq core */
+	if (!mdp_ctx.thread[thread].task_count) {
+		cmdq_core_release_thread(handle->scenario, thread);
+		mdp_ctx.thread[thread].acquired = false;
+	}
+
+	mutex_unlock(&mdp_thread_mutex);
+
+	/* clock off */
+	cmdq_mdp_clock_disable(engine_flag, clock_engines);
+	/* Delay release resource  */
+	cmdq_mdp_delay_check_unlock(clock_engines);
+
+	mutex_unlock(&mdp_clock_mutex);
+}
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+static s32 cmdq_mdp_check_engine_waiting(struct cmdqRecStruct *handle)
+{
+	struct cmdqRecStruct *entry;
+	const u64 engine_flag = handle->engineFlag;
+	struct cmdqRecStruct *waiting_handle;
+	bool is_secure;
+
+	/* operation for tasks_wait list need task mutex */
+	mutex_lock(&mdp_task_mutex);
+
+	list_for_each_entry(entry, &mdp_ctx.tasks_wait, list_entry) {
+		if (engine_flag & entry->engineFlag) {
+			waiting_handle = entry;
+			is_secure = waiting_handle->secData.is_secure;
+			break;
+		}
+	}
+	mutex_unlock(&mdp_task_mutex);
+
+	/* same engine does not exist in waiting list */
+	if (!waiting_handle)
+		return 0;
+
+	/* same secure path, can be dispatch */
+	if (handle->secData.is_secure == is_secure)
+		return 0;
+
+	return -EBUSY;
+}
+#endif
+
+/* check if engine conflict when thread dispatch
+ * Parameter:
+ *	task: [IN] current check task with engine flag and secure flag.
+ *	forceLog: [IN] print debug log
+ *	*pThreadOut:
+ *         [IN] prefer thread. please pass CMDQ_INVALID_THREAD if no prefere
+ *         [OUT] dispatch thread result
+ * Return:
+ *     0 for success; else the error code is returned
+ */
+static bool cmdq_mdp_check_engine_conflict(
+	struct cmdqRecStruct *handle, s32 *thread_out)
+{
+	struct EngineStruct *engine_list = mdp_ctx.engine;
+	u32 free, i;
+	s32 thread;
+	u64 engine_flag;
+	bool conflict = false;
+
+	engine_flag = handle->engineFlag;
+	thread = *thread_out;
+	free = thread == CMDQ_INVALID_THREAD ?
+		0xFFFFFFFF : 0xFFFFFFFF & (~(0x1 << thread));
+
+	/* check if engine conflict */
+	for (i = 0; i < CMDQ_MAX_ENGINE_COUNT && engine_flag != 0; i++) {
+		if (!(engine_flag & (0x1LL << i)))
+			continue;
+
+		if (engine_list[i].currOwner == CMDQ_INVALID_THREAD) {
+			continue;
+		} else if (thread == CMDQ_INVALID_THREAD) {
+			thread = engine_list[i].currOwner;
+			free &= ~(0x1 << thread);
+		} else if (thread != engine_list[i].currOwner) {
+			/* Partial HW occupied by different threads,
+			 * we need to wait.
+			 */
+			conflict = true;
+			thread = CMDQ_INVALID_THREAD;
+			CMDQ_MSG(
+				"engine conflict handle:0x%p engine:0x%llx conflict engine idx:%u thd:0x%x free:0x%08x owner:%d\n",
+				handle, handle->engineFlag, i,
+				thread, free, engine_list[i].currOwner);
+			break;
+		}
+
+		engine_flag &= ~(0x1LL << i);
+	}
+
+	*thread_out = thread;
+	return conflict;
+}
+
+static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
+{
+	bool conflict;
+	s32 thread = CMDQ_INVALID_THREAD;
+	u32 index;
+	struct mdp_thread *threads;
+	const u32 max_thd = cmdq_dev_get_thread_count();
+
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (cmdq_mdp_check_engine_waiting(handle) < 0)
+		return CMDQ_INVALID_THREAD;
+#endif
+
+	/* operations for thread list need thread lock */
+	mutex_lock(&mdp_thread_mutex);
+
+	conflict = cmdq_mdp_check_engine_conflict(handle, &thread);
+	if (conflict) {
+		CMDQ_LOG(
+			"engine conflict handle:0x%p engine:0x%llx thread:%d\n",
+			handle, handle->engineFlag, thread);
+		mutex_unlock(&mdp_thread_mutex);
+		return CMDQ_INVALID_THREAD;
+	}
+	/* same engine used in current thread, use it */
+	if (thread != CMDQ_INVALID_THREAD) {
+		mutex_unlock(&mdp_thread_mutex);
+		return thread;
+	}
+
+	/* dispatch from free threads */
+	threads = mdp_ctx.thread;
+	for (index = CMDQ_DYNAMIC_THREAD_ID_START; index < max_thd; index++) {
+		if (!threads[index].acquired || threads[index].engine_flag ||
+			threads[index].task_count ||
+			!threads[index].allow_dispatch) {
+			CMDQ_MSG(
+				"thread not available:%d eng:0x%llx count:%u allow:%u\n",
+				index, threads[index].engine_flag,
+				threads[index].task_count,
+				threads[index].allow_dispatch);
+			continue;
+		}
+
+		thread = index;
+		threads[index].allow_dispatch = false;
+		CMDQ_ERR("got thread:%d handle:0x%p which is not possible\n",
+			index, handle);
+		break;
+	}
+
+	/* if we still not have thread, ask cmdq core to get new one */
+	if (thread == CMDQ_INVALID_THREAD) {
+		thread = cmdq_core_acquire_thread(handle->scenario, true);
+		if (thread != CMDQ_INVALID_THREAD) {
+			threads[thread].acquired = true;
+			threads[thread].allow_dispatch = false;
+		} else if (!handle->engineFlag) {
+			/* for engine flag empty, assign acquired thread */
+			for (index = CMDQ_DYNAMIC_THREAD_ID_START;
+				index < max_thd; index++) {
+				if (!threads[index].acquired) {
+					thread = index;
+					break;
+				}
+			}
+		}
+		CMDQ_MSG("acquire thread:%d\n", thread);
+	}
+
+	mutex_unlock(&mdp_thread_mutex);
+
+	return thread;
+}
+
+static s32 cmdq_mdp_consume_handle(void)
+{
+	s32 err;
+	struct cmdqRecStruct *handle, *temp;
+	u32 index;
+	bool acquired = false;
+	struct CmdqCBkStruct *callback = cmdq_core_get_group_cb();
+
+	/* operation for tasks_wait list need task mutex */
+	mutex_lock(&mdp_task_mutex);
+
+	/* loop waiting list for pending handles */
+	list_for_each_entry_safe(handle, temp, &mdp_ctx.tasks_wait,
+		list_entry) {
+		handle->thread = cmdq_mdp_find_free_thread(handle);
+		if (handle->thread == CMDQ_INVALID_THREAD) {
+			/* no available thread, keep wait */
+			CMDQ_MSG(
+				"fail to get thread handle:0x%p engine:0x%llx\n",
+				handle, handle->engineFlag);
+			continue;
+		}
+
+		/* remove from list */
+		list_del_init(&handle->list_entry);
+
+		CMDQ_MSG(
+			"dispatch thread:%d for handle:0x%p engine:0x%llx thread engine:0x%llx\n",
+			handle->thread, handle,
+			handle->engineFlag,
+			handle->thread >= 0 ?
+			mdp_ctx.thread[handle->thread].engine_flag : 0);
+
+		/* callback task for tracked group */
+		for (index = 0; index < CMDQ_MAX_GROUP_COUNT; ++index) {
+			if (!callback[index].trackTask)
+				continue;
+
+			CMDQ_MSG("track task group %d with task:0x%p\n",
+				index, handle);
+			if (!cmdq_core_is_group_flag(
+				(enum CMDQ_GROUP_ENUM)index,
+				handle->engineFlag))
+				continue;
+			CMDQ_MSG("track task group %d flag:0x%llx\n",
+				index, handle->engineFlag);
+			callback[index].trackTask(handle);
+		}
+
+		/* flush handle */
+		cmdq_mdp_lock_thread(handle);
+		err = cmdq_pkt_flush_async_ex(handle, 0, 0, false);
+		if (err < 0) {
+			/* change state so waiting thread may release it */
+			CMDQ_ERR("fail to flush handle:0x%p thread:%d\n",
+				handle, handle->thread);
+			continue;
+		}
+
+		/* some task is ready to run */
+		acquired = true;
+	}
+	mutex_unlock(&mdp_task_mutex);
+
+	if (acquired) {
+		/* notify some task's SW thread to change their waiting state.
+		 * (if they already called cmdq_mdp_wait)
+		 */
+		wake_up_all(&mdp_thread_dispatch);
+	}
+
+	return 0;
+}
+
+static void cmdq_mdp_consume_wait_item(struct work_struct *ignore)
+{
+	s32 err = cmdq_mdp_consume_handle();
+
+	if (err < 0)
+		CMDQ_ERR("consume handle in worker fail:%d\n", err);
+}
+
+void cmdq_mdp_add_consume_item(void)
+{
+	if (!work_pending(&mdp_ctx.handle_consume_item)) {
+		CMDQ_PROF_MMP(cmdq_mmp_get_event()->consume_add,
+			MMPROFILE_FLAG_PULSE, 0, 0);
+		queue_work(mdp_ctx.handle_consume_queue,
+			&mdp_ctx.handle_consume_item);
+	}
+}
+
+static s32 cmdq_mdp_copy_cmd_to_task(struct cmdqRecStruct *handle,
+	void *src, u32 size, bool user_space)
+{
+	return cmdq_pkt_copy_cmd(handle, src, size, user_space);
+}
+
+static void cmdq_mdp_store_debug(struct cmdqCommandStruct *desc,
+	struct cmdqRecStruct *handle)
+{
+	u32 len;
+
+	if (!desc->userDebugStr || !desc->userDebugStrLen)
+		return;
+
+	handle->user_debug_str = kzalloc(desc->userDebugStrLen + 1, GFP_KERNEL);
+	if (!handle->user_debug_str) {
+		CMDQ_ERR("allocate user debug memory failed, size:%d\n",
+			desc->userDebugStrLen);
+		return;
+	}
+
+	len = strncpy_from_user(handle->user_debug_str,
+		(const char *)(unsigned long)desc->userDebugStr,
+		desc->userDebugStrLen);
+	if (len < 0) {
+		CMDQ_ERR("copy user debug memory failed, size:%d\n",
+			desc->userDebugStrLen);
+		return;
+	}
+
+	CMDQ_MSG("user debug string:%s\n", handle->user_debug_str);
+}
+
+s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
+	struct cmdqRecStruct **handle_out)
+{
+	struct cmdqRecStruct *handle;
+	struct task_private *private;
+	s32 err;
+
+	cmdq_task_create(desc->scenario, &handle);
+
+	/* TODO: set secure data */
+
+	handle->engineFlag = desc->engineFlag;
+	handle->pkt->priority = desc->priority;
+	cmdq_mdp_store_debug(desc, handle);
+
+	private = (struct task_private *)CMDQ_U32_PTR(desc->privateData);
+	if (private)
+		handle->node_private = private->node_private_data;
+
+	if (desc->regRequest.count &&
+		desc->regRequest.count <= CMDQ_MAX_DUMP_REG_COUNT &&
+		desc->regRequest.regAddresses) {
+		u32 copy_size = desc->blockSize - 2 * CMDQ_INST_SIZE;
+
+		/* no need append other instruction, copy all */
+		if (copy_size > 0) {
+			err = cmdq_mdp_copy_cmd_to_task(handle,
+				(void *)(unsigned long)desc->pVABase,
+				copy_size, user_space);
+			if (err < 0) {
+				cmdq_task_destroy(handle);
+				return err;
+			}
+		}
+
+		err = cmdq_task_append_backup_reg(handle,
+			desc->regRequest.count,
+			(u32 *)(unsigned long)desc->regRequest.regAddresses);
+		if (err < 0) {
+			cmdq_task_destroy(handle);
+			return err;
+		}
+
+		err = cmdq_mdp_copy_cmd_to_task(handle,
+			(void *)(unsigned long)desc->pVABase + copy_size,
+			2 * CMDQ_INST_SIZE, user_space);
+		if (err < 0) {
+			cmdq_task_destroy(handle);
+			return err;
+		}
+	} else {
+		/* no need append other instruction, copy all */
+		err = cmdq_mdp_copy_cmd_to_task(handle,
+			(void *)(unsigned long)desc->pVABase,
+			desc->blockSize, user_space);
+		if (err < 0) {
+			cmdq_task_destroy(handle);
+			return err;
+		}
+	}
+
+	/* mark finalized since we copy it */
+	handle->finalized = true;
+
+	/* assign handle for mdp */
+	*handle_out = handle;
+
+	/* Dispatch handle to get correct thread or wait in list.
+	 * Task may flush directly if no engine conflict and no waiting task
+	 * holds same engines.
+	 */
+	cmdq_mdp_flush_async_impl(handle);
+
+	return 0;
+}
+
+s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle)
+{
+	struct list_head *insert_pos = &mdp_ctx.tasks_wait;
+	struct cmdqRecStruct *entry;
+
+	CMDQ_VERBOSE("dispatch handle:0x%p\n", handle);
+
+	/* lock resource to make sure task own it after dispatch to hw */
+	cmdq_mdp_lock_resource(handle->engineFlag, false);
+
+	/* assign handle into waiting list by priority */
+	mutex_lock(&mdp_task_mutex);
+	list_for_each_entry(entry, &mdp_ctx.tasks_wait, list_entry) {
+		if (entry->pkt->priority < handle->pkt->priority)
+			break;
+		insert_pos = &entry->list_entry;
+	}
+	list_add(&handle->list_entry, insert_pos);
+	mutex_unlock(&mdp_task_mutex);
+
+	/* run consume to run task in thread */
+	cmdq_mdp_consume_handle();
+
+	return 0;
+}
+
+struct cmdqRecStruct *cmdq_mdp_get_valid_handle(unsigned long job)
+{
+	struct cmdqRecStruct *handle = NULL, *entry;
+
+	mutex_lock(&mdp_task_mutex);
+	list_for_each_entry(entry, &mdp_ctx.tasks_wait, list_entry) {
+		if ((void *)job == entry) {
+			handle = entry;
+			break;
+		}
+	}
+
+	if (!handle)
+		handle = cmdq_core_get_valid_handle(job);
+
+	mutex_unlock(&mdp_task_mutex);
+
+	return handle;
+}
+
+s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
+	struct cmdqRegValueStruct *results)
+{
+	s32 status, waitq;
+	u32 i;
+
+	/* we have to wait handle has valid thread first */
+	if (handle->thread == CMDQ_INVALID_THREAD) {
+		CMDQ_LOG("pid:%d handle:0x%p wait for valid thread first\n",
+			current->pid, handle);
+
+		/* wait for acquire thread
+		 * (this is done by cmdq_mdp_consume_handle
+		 */
+		waitq = wait_event_timeout(mdp_thread_dispatch,
+			(handle->thread != CMDQ_INVALID_THREAD),
+			msecs_to_jiffies(CMDQ_ACQUIRE_THREAD_TIMEOUT_MS));
+
+		if (waitq == 0 || handle->thread == CMDQ_INVALID_THREAD) {
+			mutex_lock(&mdp_task_mutex);
+			/* it's possible that the task was just consumed now.
+			 * so check again.
+			 */
+			if (handle->thread == CMDQ_INVALID_THREAD) {
+				CMDQ_ERR(
+					"handle 0x%p timeout with invalid thread\n",
+					handle);
+				/* remove from waiting list,
+				 * so that it won't be consumed in the future
+				 */
+				list_del_init(&handle->list_entry);
+				mutex_unlock(&mdp_task_mutex);
+				return -ETIMEDOUT;
+			}
+			/* valid thread, so we keep going */
+			mutex_unlock(&mdp_task_mutex);
+		}
+	}
+
+	CMDQ_VERBOSE("wait handle:0x%p thread:%d\n", handle, handle->thread);
+
+	/* wait handle flush done */
+	status = cmdq_pkt_wait_flush_ex_result(handle);
+
+	if (results && results->count &&
+		results->count <= CMDQ_MAX_DUMP_REG_COUNT) {
+		/* clear results */
+		memset(CMDQ_U32_PTR(results->regValues), 0,
+			results->count * sizeof(CMDQ_U32_PTR(
+			results->regValues)[0]));
+
+		mutex_lock(&mdp_task_mutex);
+		for (i = 0; i < results->count && i < handle->reg_count; i++)
+			CMDQ_U32_PTR(results->regValues)[i] =
+				handle->reg_values[i];
+		mutex_unlock(&mdp_task_mutex);
+	}
+
+	/* consume again since maybe more conflict task in waiting */
+	cmdq_mdp_add_consume_item();
+
+	return status;
+}
+
+s32 cmdq_mdp_flush(struct cmdqCommandStruct *desc, bool user_space)
+{
+	struct cmdqRecStruct *handle;
+	s32 status;
+
+	status = cmdq_mdp_flush_async(desc, user_space, &handle);
+	if (!handle) {
+		CMDQ_ERR("mdp flush async failed:%d\n", status);
+		return status;
+	}
+
+	status = cmdq_mdp_wait(handle, &desc->regValue);
+	if (status < 0)
+		CMDQ_ERR("mdp flush wait failed:%d handle:0x%p thread:%d\n",
+			status, handle, handle->thread);
+	cmdq_task_destroy(handle);
+
+	return status;
+}
+
+void cmdq_mdp_suspend(void)
+{
+}
+
+void cmdq_mdp_resume(void)
+{
+	/* during suspending, there may be queued tasks.
+	 * we should process them if any.
+	 */
+	cmdq_mdp_add_consume_item();
+}
+
+void cmdq_mdp_release_task_by_file_node(void *file_node)
+{
+	struct cmdqRecStruct *handle;
+
+	/* Since the file node is closed, there is no way
+	 * user space can issue further "wait_and_close" request,
+	 * so we must auto-release running/waiting tasks
+	 * to prevent resource leakage
+	 */
+
+	/* walk through active and waiting lists and release them */
+	mutex_lock(&mdp_task_mutex);
+
+	list_for_each_entry(handle, &mdp_ctx.tasks_wait, list_entry) {
+		if (!(handle->state != TASK_STATE_IDLE &&
+			handle->node_private == file_node &&
+			cmdq_mdp_is_request_from_user_space(
+			handle->scenario)))
+			continue;
+		CMDQ_LOG(
+			"[warn]waiting handle 0x%p release because file node 0x%p closed\n",
+			handle, file_node);
+
+		/* since we already inside mutex,
+		 * and these WAITING tasks will not be consumed
+		 * (acquire thread / exec)
+		 * we can release them directly.
+		 * note that we use unlocked version since we already
+		 * hold mdp_task_mutex.
+		 */
+		list_del_init(&handle->list_entry);
+		cmdq_pkt_release_handle(handle);
+	}
+
+	/* ask core to auto release by file node
+	 * note the core may lock more mutex
+	 */
+	cmdq_core_release_handle_by_file_node(file_node);
+
+	mutex_unlock(&mdp_task_mutex);
+}
+
+static void cmdq_mdp_dump_engine_usage(struct seq_file *m)
+{
+	struct EngineStruct *engine;
+	const enum CMDQ_ENG_ENUM engine_enum[] =
+		CMDQ_FOREACH_MODULE_PRINT(GENERATE_ENUM);
+	static const char *const engine_names[] =
+		CMDQ_FOREACH_MODULE_PRINT(GENERATE_STRING);
+	u32 i;
+
+	seq_puts(m, "====== Engine Usage =======\n");
+	for (i = 0; i < ARRAY_SIZE(engine_enum); i++) {
+		engine = &mdp_ctx.engine[engine_enum[i]];
+		seq_printf(m, "%s: count:%d owner:%d fail:%d reset:%d\n",
+			engine_names[i], engine->userCount,
+			engine->currOwner, engine->failCount,
+			engine->resetCount);
+	}
+}
+
+static void cmdq_mdp_dump_resource_in_status(struct seq_file *m)
+{
+	struct ResourceUnitStruct *resource = NULL;
+
+	if (!m)
+		return;
+
+	mutex_lock(&mdp_resource_mutex);
+	list_for_each_entry(resource, &mdp_ctx.resource_list, list_entry) {
+		seq_printf(m, "[Res] Dump resource with event:%d\n",
+			resource->lockEvent);
+		seq_printf(m, "[Res]   notify:%llu delay:%lld\n",
+			resource->notify, resource->delay);
+		seq_printf(m, "[Res]   lock:%llu unlock:%lld\n",
+			resource->lock, resource->unlock);
+		seq_printf(m, "[Res]   acquire:%llu release:%lld\n",
+			resource->acquire, resource->release);
+		seq_printf(m, "[Res]   isUsed:%d isLend:%d isDelay:%d\n",
+			resource->used, resource->lend,
+			resource->delaying);
+		if (!resource->releaseCB)
+			seq_puts(m, "[Res] release CB func is NULL\n");
+	}
+	mutex_unlock(&mdp_resource_mutex);
+}
+
+int cmdq_mdp_status_dump(struct notifier_block *nb,
+	unsigned long action, void *data)
+{
+	struct seq_file *m = (struct seq_file *)data;
+
+	cmdq_mdp_dump_engine_usage(m);
+	cmdq_mdp_dump_resource_in_status(m);
+
+	return 0;
+}
+
+void cmdq_mdp_init(void)
+{
+	CMDQ_LOG("%s\n", __func__);
+
+	init_waitqueue_head(&mdp_thread_dispatch);
+
+	/* some fields has non-zero initial value */
+	cmdq_mdp_reset_engine_struct();
+	cmdq_mdp_reset_thread_struct();
+	cmdq_core_register_handle_cycle(cmdq_mdp_handle_begin,
+		cmdq_mdp_handle_end);
+
+	mdp_ctx.resource_check_queue =
+		create_singlethread_workqueue("cmdq_resource");
+	INIT_LIST_HEAD(&mdp_ctx.tasks_wait);
+	INIT_LIST_HEAD(&mdp_ctx.resource_list);
+	INIT_WORK(&mdp_ctx.handle_consume_item, cmdq_mdp_consume_wait_item);
+	mdp_ctx.handle_consume_queue =
+		create_singlethread_workqueue("cmdq_mdp_task");
+
+	mdp_status_dump_notify.notifier_call = cmdq_mdp_status_dump;
+	cmdq_core_register_status_dump(&mdp_status_dump_notify);
+
+	/* Initialize Resource via device tree */
+	cmdq_dev_init_resource(cmdq_mdp_init_resource);
+
+	/* MDP initialization setting */
+	cmdq_mdp_get_func()->mdpInitialSet();
+}
 
 /* Platform dependent function */
 
@@ -209,34 +1482,85 @@ const char *cmdq_mdp_dispatch_virtual(u64 engineFlag)
 	return "MDP";
 }
 
-void cmdq_mdp_trackTask_virtual(const struct TaskStruct *pTask)
+void cmdq_mdp_trackTask_virtual(const struct cmdqRecStruct *task)
 {
-	if (pTask) {
-		memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].callerName,
-			pTask->callerName, sizeof(pTask->callerName));
-		if (pTask->userDebugStr)
-			memcpy(gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr,
-				pTask->userDebugStr,
-				(u32)strlen(pTask->userDebugStr) + 1);
+	if (task) {
+		memcpy(mdp_tasks[mdp_tasks_idx].callerName,
+			task->caller_name, sizeof(task->caller_name));
+		if (task->user_debug_str)
+			memcpy(mdp_tasks[mdp_tasks_idx].userDebugStr,
+				task->user_debug_str,
+				(u32)strlen(task->user_debug_str) + 1);
 		else
-			gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr[0] = '\0';
+			mdp_tasks[mdp_tasks_idx].userDebugStr[0] = '\0';
 	} else {
-		gCmdqMDPTask[gCmdqMDPTaskIndex].callerName[0] = '\0';
-		gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr[0] = '\0';
+		mdp_tasks[mdp_tasks_idx].callerName[0] = '\0';
+		mdp_tasks[mdp_tasks_idx].userDebugStr[0] = '\0';
 	}
 
-	CMDQ_MSG("cmdq_mdp_trackTask: caller: %s\n",
-		gCmdqMDPTask[gCmdqMDPTaskIndex].callerName);
-	CMDQ_MSG("cmdq_mdp_trackTask: DebugStr: %s\n",
-		gCmdqMDPTask[gCmdqMDPTaskIndex].userDebugStr);
-	CMDQ_MSG("cmdq_mdp_trackTask: Index: %d\n",
-		gCmdqMDPTaskIndex);
+	CMDQ_MSG("[Track]caller: %s\n",
+		mdp_tasks[mdp_tasks_idx].callerName);
+	CMDQ_MSG("[Track]DebugStr: %s\n",
+		mdp_tasks[mdp_tasks_idx].userDebugStr);
+	CMDQ_MSG("[Track]Index: %d\n",
+		mdp_tasks_idx);
 
-	gCmdqMDPTaskIndex = (gCmdqMDPTaskIndex + 1) % MDP_MAX_TASK_NUM;
+	mdp_tasks_idx = (mdp_tasks_idx + 1) % MDP_MAX_TASK_NUM;
+}
+
+const char *cmdq_mdp_parse_handle_error_module_by_hwflag_virtual(
+	const struct cmdqRecStruct *handle)
+{
+	const char *module = NULL;
+	const u32 ISP_ONLY[2] = {
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O)),
+		((1LL << CMDQ_ENG_ISP_IMGI) | (1LL << CMDQ_ENG_ISP_IMG2O) |
+		 (1LL << CMDQ_ENG_ISP_IMGO))
+	};
+
+	/* common part for both normal and secure path
+	 * for JPEG scenario, use HW flag is sufficient
+	 */
+	if (handle->engineFlag & (1LL << CMDQ_ENG_JPEG_ENC))
+		module = "JPGENC";
+	else if (handle->engineFlag & (1LL << CMDQ_ENG_JPEG_DEC))
+		module = "JPGDEC";
+	else if ((ISP_ONLY[0] == handle->engineFlag) ||
+		(ISP_ONLY[1] == handle->engineFlag))
+		module = "DIP_ONLY";
+
+	/* for secure path, use HW flag is sufficient */
+	do {
+		if (module != NULL)
+			break;
+
+		if (!handle->secData.is_secure) {
+			/* normal path, need parse current running instruciton
+			 * for more detail
+			 */
+			break;
+		} else if (CMDQ_ENG_MDP_GROUP_FLAG(handle->engineFlag)) {
+			module = "MDP";
+			break;
+		} else if (CMDQ_ENG_DPE_GROUP_FLAG(handle->engineFlag)) {
+			module = "DPE";
+			break;
+		} else if (CMDQ_ENG_RSC_GROUP_FLAG(handle->engineFlag)) {
+			module = "RSC";
+			break;
+		} else if (CMDQ_ENG_GEPF_GROUP_FLAG(handle->engineFlag)) {
+			module = "GEPF";
+			break;
+		}
+
+		module = "CMDQ";
+	} while (0);
+
+	return module;
 }
 
 const char *cmdq_mdp_parse_error_module_by_hwflag_virtual(
-	const struct TaskStruct *task)
+	const struct cmdqRecStruct *task)
 {
 	const char *module = NULL;
 	const u32 ISP_ONLY[2] = {
@@ -297,7 +1621,7 @@ void cmdq_mdp_error_reset_virtual(u64 engineFlag)
 
 long cmdq_mdp_get_module_base_VA_MMSYS_CONFIG(void)
 {
-	return g_cmdq_mmsys_base;
+	return cmdq_mmsys_base;
 }
 
 static void cmdq_mdp_enable_common_clock_virtual(bool enable)
@@ -319,19 +1643,19 @@ static void cmdq_mdp_enable_common_clock_virtual(bool enable)
 
 void cmdq_mdp_map_mmsys_VA(void)
 {
-	g_cmdq_mmsys_base = cmdq_dev_alloc_reference_VA_by_name("mmsys_config");
+	cmdq_mmsys_base = cmdq_dev_alloc_reference_VA_by_name("mmsys_config");
 }
 
 void cmdq_mdp_unmap_mmsys_VA(void)
 {
-	cmdq_dev_free_module_base_VA(g_cmdq_mmsys_base);
+	cmdq_dev_free_module_base_VA(cmdq_mmsys_base);
 }
 
 void cmdq_mdp_virtual_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc;
 
-	pFunc = &(gMDPFunctionPointer);
+	pFunc = &mdp_funcs;
 
 	pFunc->dumpMMSYSConfig = cmdq_mdp_dump_mmsys_config_virtual;
 
@@ -367,6 +1691,8 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->trackTask = cmdq_mdp_trackTask_virtual;
 	pFunc->parseErrModByEngFlag =
 		cmdq_mdp_parse_error_module_by_hwflag_virtual;
+	pFunc->parseHandleErrModByEngFlag =
+		cmdq_mdp_parse_handle_error_module_by_hwflag_virtual;
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
 	pFunc->errorReset = cmdq_mdp_error_reset_virtual;
 	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock_virtual;
@@ -374,7 +1700,7 @@ void cmdq_mdp_virtual_function_setting(void)
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
 {
-	return &gMDPFunctionPointer;
+	return &mdp_funcs;
 }
 
 void cmdq_mdp_enable(u64 engineFlag, enum CMDQ_ENG_ENUM engine)
@@ -392,26 +1718,20 @@ int cmdq_mdp_loop_reset_impl(const unsigned long resetReg,
 	const u32 resetMask,
 	const u32 resetPollingValue, const s32 maxLoopCount)
 {
-	int loop = 0;
-
+	u32 poll_value = 0;
+	s32 ret;
 	CMDQ_REG_SET32(resetReg, resetWriteValue);
-	while (loop < maxLoopCount) {
-		if (resetPollingValue ==
-			(CMDQ_REG_GET32(resetStateReg) & resetMask))
-			break;
-
-		loop++;
-	}
-
+	/* polling with 10ms timeout */
+	ret = readl_poll_timeout_atomic((void *)resetStateReg, poll_value,
+		(poll_value & resetMask) == resetPollingValue, 0, 10000);
 	/* return polling result */
-	if (loop >= maxLoopCount) {
+	if (ret == -ETIMEDOUT) {
 		CMDQ_ERR(
-			"%s failed, Reg:0x%lx, writeValue:0x%08x, stateReg:0x%lx, mask:0x%08x, pollingValue:0x%08x\n",
+			"%s failed Reg:0x%lx writeValue:0x%08x stateReg:0x%lx mask:0x%08x pollingValue:0x%08x\n",
 			__func__, resetReg, resetWriteValue, resetStateReg,
 			resetMask, resetPollingValue);
 		return -EFAULT;
 	}
-
 	return 0;
 }
 
@@ -494,15 +1814,14 @@ void cmdq_mdp_loop_off(enum CMDQ_ENG_ENUM engine,
 			CMDQ_REG_SET32(resetReg, 0x0);
 		}
 
-		/* retrun failed if loop failed */
-		if ((resetStatus < 0) || (initStatus < 0)) {
-			CMDQ_AEE("MDP",
-				"Disable %ld engine failed, resetStatus:%d, initStatus:%d\n",
-				resetReg, resetStatus, initStatus);
-			return;
-		}
-
 		cmdq_mdp_get_func()->enableMdpClock(false, engine);
+
+		/* retrun failed if loop failed */
+		if (resetStatus < 0 || initStatus < 0) {
+			CMDQ_AEE("MDP",
+				"Disable 0x%lx engine failed resetStatus:%d initStatus:%d\n",
+				resetReg, resetStatus, initStatus);
+		}
 	}
 #endif
 }
@@ -997,7 +2316,7 @@ void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
 
 	/* search track task */
 	for (taskIndex = 0; taskIndex < MDP_MAX_TASK_NUM; taskIndex++) {
-		searchStr = strpbrk(gCmdqMDPTask[taskIndex].userDebugStr,
+		searchStr = strpbrk(mdp_tasks[taskIndex].userDebugStr,
 			bufInfoKey);
 		bufInfoIndex = 0;
 
@@ -1046,24 +2365,24 @@ void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
 	/* find TF task caller and return dispatch key */
 	if (findTFTask == true) {
 		CMDQ_ERR("[MDP] TF caller: %s\n",
-			gCmdqMDPTask[tfTaskIndex].callerName);
-		CMDQ_ERR("%s\n", gCmdqMDPTask[tfTaskIndex].userDebugStr);
+			mdp_tasks[tfTaskIndex].callerName);
+		CMDQ_ERR("%s\n", mdp_tasks[tfTaskIndex].userDebugStr);
 		strncat(module, "_", 1);
 
 		/* catch caller name only before - or _ */
-		callerNameStart = gCmdqMDPTask[tfTaskIndex].callerName;
-		callerNameEnd = strchr(gCmdqMDPTask[tfTaskIndex].callerName,
+		callerNameStart = mdp_tasks[tfTaskIndex].callerName;
+		callerNameEnd = strchr(mdp_tasks[tfTaskIndex].callerName,
 			'-');
 		if (callerNameEnd != NULL)
 			callerNameLen = callerNameEnd - callerNameStart;
 		else {
 			callerNameEnd = strchr(
-				gCmdqMDPTask[tfTaskIndex].callerName, '_');
+				mdp_tasks[tfTaskIndex].callerName, '_');
 			if (callerNameEnd != NULL)
 				callerNameLen = callerNameEnd -
 				callerNameStart;
 		}
-		strncat(module, gCmdqMDPTask[tfTaskIndex].callerName,
+		strncat(module, mdp_tasks[tfTaskIndex].callerName,
 			callerNameLen);
 	} else {
 		CMDQ_ERR("[MDP] TF Task not found\n");
@@ -1071,15 +2390,16 @@ void cmdq_mdp_check_TF_address(unsigned int mva, char *module)
 			taskIndex++) {
 			CMDQ_ERR("[MDP] Task%d:\n", taskIndex);
 			CMDQ_ERR("[MDP] Caller: %s\n",
-				gCmdqMDPTask[taskIndex].callerName);
-			CMDQ_ERR("%s\n", gCmdqMDPTask[taskIndex].userDebugStr);
+				mdp_tasks[taskIndex].callerName);
+			CMDQ_ERR("%s\n", mdp_tasks[taskIndex].userDebugStr);
 		}
 	}
 }
 
-const char *cmdq_mdp_parse_error_module_by_hwflag(const struct TaskStruct *task)
+const char *cmdq_mdp_parse_handle_error_module_by_hwflag(
+	const struct cmdqRecStruct *handle)
 {
-	return cmdq_mdp_get_func()->parseErrModByEngFlag(task);
+	return cmdq_mdp_get_func()->parseHandleErrModByEngFlag(handle);
 }
 
 #ifdef CMDQ_COMMON_ENG_SUPPORT

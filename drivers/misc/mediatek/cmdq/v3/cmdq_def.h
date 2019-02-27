@@ -15,8 +15,8 @@
 #define __CMDQ_DEF_H__
 
 #include <linux/kernel.h>
+#include <linux/soc/mediatek/mtk-cmdq.h>
 
-#include "cmdq_event_common.h"
 #include "cmdq_subsys_common.h"
 
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
@@ -36,13 +36,13 @@
 
 #define CMDQ_INVALID_THREAD		(-1)
 
-#define CMDQ_MAX_THREAD_COUNT		(16)
+#define CMDQ_MAX_THREAD_COUNT		(24)
 #define CMDQ_MAX_TASK_IN_THREAD		(16)
 #define CMDQ_MAX_READ_SLOT_COUNT	(4)
 #define CMDQ_INIT_FREE_TASK_COUNT	(8)
 
 /* Thread that are high-priority (display threads) */
-#define CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT (7)
+#define CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT (8)
 #define CMDQ_DELAY_THREAD_ID		CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT
 #define CMDQ_MIN_SECURE_THREAD_ID	(CMDQ_DELAY_THREAD_ID + 1)
 #define CMDQ_MAX_SECURE_THREAD_COUNT	(3)
@@ -65,9 +65,7 @@
 
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
 /* instruction is 64-bit */
-#define CMDQ_INST_SIZE                  (2 * sizeof(u32))
-#define CMDQ_CMD_BUFFER_SIZE		(PAGE_SIZE - 32 * CMDQ_INST_SIZE)
-#define CMDQ_DMA_POOL_COUNT		8
+#define CMDQ_DMA_POOL_COUNT		32
 
 #define CMDQ_MAX_LOOP_COUNT             (1000000)
 #define CMDQ_MAX_INST_CYCLE             (27)
@@ -97,10 +95,6 @@
 #define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
 #else
 #undef CMDQ_PWR_AWARE
-#endif
-
-#ifdef CMDQ_SECURE_PATH_HW_LOCK
-#undef CMDQ_SECURE_PATH_NORMAL_IRQ
 #endif
 
 typedef u64 CMDQ_VARIABLE;
@@ -242,33 +236,10 @@ enum CMDQ_SCENARIO_ENUM {
 	CMDQ_SCENARIO_MOVE = 40,
 	CMDQ_SCENARIO_SRAM_LOOP = 41,
 
+	/* debug scenario use mdp flush */
+	CMDQ_SCENARIO_DEBUG_MDP = 42,
+
 	CMDQ_MAX_SCENARIO_COUNT	/* ALWAYS keep at the end */
-};
-
-enum CMDQ_DATA_REGISTER_ENUM {
-	/* Value Reg, we use 32-bit
-	 * Address Reg, we use 64-bit
-	 * Note that R0-R15 and P0-P7 actullay share same memory
-	 * and R1 cannot be used.
-	 */
-
-	CMDQ_DATA_REG_JPEG = 0x00,	/* R0 */
-	CMDQ_DATA_REG_JPEG_DST = 0x11,	/* P1 */
-
-	CMDQ_DATA_REG_PQ_COLOR = 0x04,	/* R4 */
-	CMDQ_DATA_REG_PQ_COLOR_DST = 0x13,	/* P3 */
-
-	CMDQ_DATA_REG_2D_SHARPNESS_0 = 0x05,	/* R5 */
-	CMDQ_DATA_REG_2D_SHARPNESS_0_DST = 0x14,	/* P4 */
-
-	CMDQ_DATA_REG_2D_SHARPNESS_1 = 0x0a,	/* R10 */
-	CMDQ_DATA_REG_2D_SHARPNESS_1_DST = 0x16,	/* P6 */
-
-	CMDQ_DATA_REG_DEBUG = 0x0b,	/* R11 */
-	CMDQ_DATA_REG_DEBUG_DST = 0x17,	/* P7 */
-
-	/* sentinel value for invalid register ID */
-	CMDQ_DATA_REG_INVALID = -1,
 };
 
 enum CMDQ_MDP_PA_BASE_ENUM {

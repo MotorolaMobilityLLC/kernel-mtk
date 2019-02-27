@@ -14,6 +14,9 @@
 #ifndef __CMDQ_CORE_H__
 #define __CMDQ_CORE_H__
 
+#include "cmdq_helper_ext.h"
+
+#if 0
 #include <linux/list.h>
 #include <linux/time.h>
 #ifdef CMDQ_AEE_READY
@@ -1136,5 +1139,6 @@ u32 cmdq_subsys_get_size(void);
 
 #ifdef __cplusplus
 }
+#endif
 #endif
 #endif	/* __CMDQ_CORE_H__ */
