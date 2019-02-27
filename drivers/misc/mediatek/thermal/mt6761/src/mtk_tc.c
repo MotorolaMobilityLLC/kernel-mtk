@@ -1487,8 +1487,7 @@ int tscpu_get_curr_temp(void)
 	/* It is platform dependent which TS is better to
 	 * present CPU/GPU temperature
 	 */
-	tscpu_curr_cpu_temp = MAX(tscpu_ts_temp[TS_MCU1],
-					tscpu_ts_temp[TS_MCU2]);
+	tscpu_curr_cpu_temp = tscpu_ts_temp[TS_MCU1];
 
 	tscpu_curr_gpu_temp = tscpu_ts_temp[TS_MCU2];
 #endif
