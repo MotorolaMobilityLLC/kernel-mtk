@@ -44,10 +44,10 @@ static unsigned long mcucfg_base	= 0x10200000;
 #define CKDIV1_L_CFG      (mcucfg_base + 0x7a0)	/* MP0 */
 #define CKDIV1_CCI_CFG    (mcucfg_base + 0x7c0)	/* BUS */
 
-#define UP_VPROC_ST 1000
-#define DOWN_VPROC_ST 1000
-#define UP_VSRAM_ST 1000
-#define DOWN_VSRAM_ST 1000
+#define UP_VPROC_ST 833
+#define DOWN_VPROC_ST 833
+#define UP_VSRAM_ST 833
+#define DOWN_VSRAM_ST 833
 
 struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 	[MT_CPU_DVFS_L] = {
@@ -117,7 +117,7 @@ static unsigned int mt6357_transfer2volt(unsigned int val)
 static unsigned int mt6357_vproc_settletime(unsigned int old_volt,
 	unsigned int new_volt)
 {
-	/* UP:10mv/us DOWN:10mv/us */
+	/* UP:8.33mv/us DOWN:8.33mv/us *//* 10mV divided by 1.2 = 8.33mV */
 	if (new_volt > old_volt)
 		return ((new_volt - old_volt) + UP_VPROC_ST - 1) /
 		UP_VPROC_ST + PMIC_CMD_DELAY_TIME;
@@ -147,7 +147,7 @@ static unsigned int get_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p)
 static unsigned int mt6357_vsram_settletime(unsigned int old_volt,
 	unsigned int new_volt)
 {
-	/* UP:10mv/us DOWN:10mv/us */
+	/* UP:8.33mv/us DOWN:8.33mv/us *//* 10mV divided by 1.2 = 8.33mV */
 	if (new_volt > old_volt)
 		return ((new_volt - old_volt) + UP_VSRAM_ST - 1) /
 		UP_VSRAM_ST + PMIC_CMD_DELAY_TIME;
