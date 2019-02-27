@@ -55,6 +55,7 @@ struct fence_cb;
  * of the time.
  *
  * FENCE_FLAG_SIGNALED_BIT - fence is already signaled
+ * FENCE_FLAG_TIMESTAMP_BIT - timestamp recorded for fence signaling
  * FENCE_FLAG_ENABLE_SIGNAL_BIT - enable_signaling might have been called*
  * FENCE_FLAG_USER_BITS - start of the unused bits, can be used by the
  * implementer of the fence for its own purposes. Can be used in different
@@ -84,6 +85,7 @@ struct fence {
 
 enum fence_flag_bits {
 	FENCE_FLAG_SIGNALED_BIT,
+	FENCE_FLAG_TIMESTAMP_BIT,
 	FENCE_FLAG_ENABLE_SIGNAL_BIT,
 	FENCE_FLAG_USER_BITS, /* must always be last member */
 };
