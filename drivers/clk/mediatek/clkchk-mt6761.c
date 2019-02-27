@@ -382,7 +382,6 @@ static void print_enabled_clks(void)
 static void check_pll_off(void)
 {
 	static const char * const off_pll_names[] = {
-		"clk26m",
 		"univpll",
 		"apll1",
 		"mfgpll",
