@@ -1111,5 +1111,5 @@ core_initcall(register_cpufreq_notifier);
 late_initcall(cpufreq_sched_init);
 #else
 /* Try to make this the default governor */
-fs_initcall(cpufreq_sched_init);
+late_initcall(cpufreq_sched_init);
 #endif

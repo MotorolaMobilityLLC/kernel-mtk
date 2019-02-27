@@ -1704,6 +1704,19 @@ static inline unsigned long cpu_util(int cpu)
 	return __cpu_util(cpu, 0);
 }
 
+static inline unsigned long cpu_util_freq(int cpu)
+{
+	unsigned long util = cpu_rq(cpu)->cfs.avg.util_avg;
+	unsigned long capacity = capacity_orig_of(cpu);
+
+#ifdef CONFIG_SCHED_WALT
+	if (!walt_disabled && sysctl_sched_use_walt_cpu_util)
+		util = div64_u64(cpu_rq(cpu)->prev_runnable_sum,
+				walt_ravg_window >> SCHED_CAPACITY_SHIFT);
+#endif
+	return (util >= capacity) ? capacity : util;
+}
+
 #endif
 
 enum cpu_dvfs_sched_type {
@@ -1713,6 +1726,7 @@ enum cpu_dvfs_sched_type {
 	SCHE_IOWAIT,
 	SCHE_RT,
 	SCHE_DL,
+	SCHE_TICK,
 	NUM_SCHE_TYPE
 };
 
