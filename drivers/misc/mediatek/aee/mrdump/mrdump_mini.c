@@ -677,7 +677,7 @@ int mrdump_task_info(unsigned char *buffer, size_t sz_buf)
 __weak int save_modules(char *mbuf, int mbufsize)
 {
 	pr_notice("%s weak function\n", __func__);
-	return -1;
+	return 0;
 }
 
 int mrdump_modules_info(unsigned char *buffer, size_t sz_buf)
