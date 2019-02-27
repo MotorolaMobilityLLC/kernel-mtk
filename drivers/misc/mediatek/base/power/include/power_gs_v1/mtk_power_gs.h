@@ -61,9 +61,9 @@ struct golden {
 	unsigned int *buf;
 	unsigned int buf_size;
 
-	struct golden_setting *buf_golden_setting;
-	unsigned int nr_golden_setting;
-	unsigned int max_nr_golden_setting;
+	struct golden_setting *buf_gs;
+	unsigned int nr_gs;
+	unsigned int max_nr_gs;
 
 	struct snapshot *buf_snapshot;
 	unsigned int max_nr_snapshot;
@@ -76,8 +76,8 @@ struct golden {
 };
 
 struct phys_to_virt_table {
-	void __iomem *virt_base;
-	unsigned int phys_base;
+	void __iomem *va;
+	unsigned int pa;
 };
 
 struct base_remap {
@@ -116,7 +116,7 @@ unsigned int mt_power_gs_base_remap_init(char *scenario, char *pmic_name,
 void mt_power_gs_internal_init(void);
 void mt_power_gs_table_init(void);
 
-extern struct golden _golden;
+extern struct golden _g;
 extern bool slp_chk_golden_diff_mode;
 
 #endif
