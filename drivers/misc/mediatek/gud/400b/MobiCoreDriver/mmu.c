@@ -124,6 +124,23 @@ static inline long gup_local(struct mm_struct *mm, uintptr_t start,
 }
 #endif
 
+static inline long gup_local_repeat(struct mm_struct *mm, uintptr_t start,
+				    unsigned long nr_pages, int write,
+				    struct page **pages)
+{
+	int retries = 10;
+	long ret = 0;
+
+	while (retries--) {
+		ret = gup_local(mm, start, nr_pages, write, pages);
+
+		if (-EBUSY != ret)
+			break;
+	}
+
+	return ret;
+}
+
 /*
  * Fake L1 MMU table.
  */
@@ -507,11 +524,12 @@ struct tee_mmu *tee_mmu_create(struct mm_struct *mm,
 
 			/* Buffer was allocated in user space */
 			down_read(&mm->mmap_sem);
-			gup_ret = gup_local(mm, (uintptr_t)reader,
-					    pages_nr, 1, pages);
+			gup_ret = gup_local_repeat(mm, (uintptr_t)reader,
+						   pages_nr, 1, pages);
 			if ((gup_ret == -EFAULT) && !write) {
-				gup_ret = gup_local(mm, (uintptr_t)reader,
-						    pages_nr, 0, pages);
+				gup_ret = gup_local_repeat(mm,
+							   (uintptr_t)reader,
+							   pages_nr, 0, pages);
 			}
 			up_read(&mm->mmap_sem);
 			if (gup_ret < 0) {

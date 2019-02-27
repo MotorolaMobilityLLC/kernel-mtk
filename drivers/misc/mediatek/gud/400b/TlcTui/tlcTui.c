@@ -253,8 +253,11 @@ static void tlc_process_cmd(void)
 			TLC_TUI_CMD_START_ACTIVITY,
 			dci->cmd_nwd.payload.alloc_data.num_of_buff,
 			dci->cmd_nwd.payload.alloc_data.alloc_size);
-		if (ret != TUI_DCI_OK)
+		if (ret != TUI_DCI_OK) {
+			pr_debug("%s:%d return value is 0x%x.\n", __func__,
+				 __LINE__, ret);
 			break;
+		}
 
 /*****************************************************************************/
 
