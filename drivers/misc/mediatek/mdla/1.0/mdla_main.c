@@ -48,7 +48,6 @@
 #include "mdla_hw_reg.h"
 #include "mdla_ioctl.h"
 #include "mdla_ion.h"
-#include "mdla_proc.h"
 #include "mdla_trace.h"
 
 // #define MTK_MDLA_ALWAYS_POWER_ON
@@ -570,7 +569,7 @@ static void mdla_reset(int res)
 	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI1_CTRL);
 #endif
 
-	pmu_init();
+	pmu_reset();
 	mdla_profile_reset(str);
 }
 
@@ -647,6 +646,7 @@ static void mdla_start_queue(struct work_struct *work)
 		}
 	}
 	if (mdla_fifo_is_empty() && timer_pending(&mdla_timer)) {
+		mdla_profile_stop(1);
 		mdla_debug("%s: del_timer().\n", __func__);
 		del_timer(&mdla_timer);
 #ifdef MTK_MDLA_ALWAYS_POWER_ON
@@ -667,6 +667,7 @@ static irqreturn_t mdla_interrupt(int irq, void *dev_id)
 	max_cmd_id = mdla_reg_read(MREG_TOP_G_FIN0);
 	mdla_reg_write(MDLA_IRQ_MASK, MREG_TOP_G_INTP0);
 	mdla_fifo_mark_time();
+	pmu_reg_save();
 	schedule_work(&mdla_queue);
 	return IRQ_HANDLED;
 }
@@ -3659,9 +3660,9 @@ static int mdlactl_init(void)
 	mdla_dump_reg();
 
 	INIT_WORK(&mdla_queue, mdla_start_queue);
-	mdla_procfs_init();
 	mdla_debugfs_init();
 	mdla_profile_init();
+	pmu_init();
 
 	return 0;
 }
@@ -3819,6 +3820,7 @@ skip_power:
 			jiffies + msecs_to_jiffies(mdla_timeout));
 	}
 
+	mdla_profile_start();
 	mdla_trace_begin(count, cmd);
 	ce->req_start_t = sched_clock();
 
@@ -4030,7 +4032,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		perf_data.handle = pmu_set_perf_event(
+		perf_data.handle = pmu_counter_alloc(
 			perf_data.interface, perf_data.event);
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
 			return -EFAULT;
@@ -4041,7 +4043,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		perf_data.event = pmu_get_perf_event(perf_data.handle);
+		perf_data.event = pmu_counter_event_get(perf_data.handle);
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
 			return -EFAULT;
 		break;
@@ -4051,7 +4053,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		perf_data.counter = pmu_get_perf_counter(perf_data.handle);
+		perf_data.counter = pmu_counter_get(perf_data.handle);
 
 		if (copy_to_user((void *) arg, &perf_data, sizeof(perf_data)))
 			return -EFAULT;
@@ -4063,7 +4065,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		pmu_unset_perf_event(perf_data.handle);
+		pmu_counter_free(perf_data.handle);
 		break;
 	case IOCTL_PERF_GET_START:
 		if (copy_from_user(&perf_data, (void *) arg,
@@ -4096,10 +4098,10 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			return -EFAULT;
 		break;
 	case IOCTL_PERF_RESET_CNT:
-		pmu_reset_counter();
+		pmu_reset_saved_counter();
 		break;
 	case IOCTL_PERF_RESET_CYCLE:
-		pmu_reset_cycle();
+		pmu_reset_saved_cycle();
 		break;
 	case IOCTL_PERF_SET_MODE:
 		if (copy_from_user(&perf_data, (void *) arg,
@@ -4107,7 +4109,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		pmu_perf_set_mode(perf_data.mode);
+		pmu_clr_mode_save(perf_data.mode);
 		break;
 	case IOCTL_ION_KMAP:
 		return mdla_ion_kmap(arg);
@@ -4220,7 +4222,6 @@ static long mdla_compat_ioctl(struct file *file,
 static void mdlactl_exit(void)
 {
 	mdla_debugfs_exit();
-	mdla_procfs_exit();
 	platform_driver_unregister(&mdla_driver);
 	device_destroy(mdlactlClass, MKDEV(majorNumber, 0));
 	class_destroy(mdlactlClass);
