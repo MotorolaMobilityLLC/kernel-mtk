@@ -93,8 +93,20 @@ static unsigned int __chip_hw_ver(void)
 
 static unsigned int __chip_sw_ver(void)
 {
+	unsigned int val = 0x0;
+
 	init_chip_id(__LINE__);
-	return (APSW_VER) ? readl(IOMEM(APSW_VER)) : (C_UNKNOWN_CHIP_ID);
+
+	val = (APSW_VER) ? readl(IOMEM(APSW_VER)) : (C_UNKNOWN_CHIP_ID);
+#if defined(CONFIG_MACH_MT6761)
+	if ((val & 0xffff) == 0x0200)
+		return CHIP_SW_VER_02;
+	else
+		return val;
+
+#elif defined(CONFIG_MACH_MT6765)
+	return val;
+#endif
 }
 
 static unsigned int __chip_hw_subcode(void)
