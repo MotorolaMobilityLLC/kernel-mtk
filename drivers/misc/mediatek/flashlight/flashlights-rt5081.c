@@ -419,8 +419,6 @@ static int rt5081_operate(int channel, int enable)
 		} else if (channel == RT5081_CHANNEL_CH2) {
 			rt5081_en_ch1 = RT5081_DISABLE;
 			rt5081_timeout_ms[RT5081_CHANNEL_CH1] = 0;
-		} else {
-			return -1;
 		}
 	}
 
