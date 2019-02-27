@@ -48,12 +48,12 @@ struct FSTB_FRAME_INFO {
 	int connected_api;
 	unsigned long long bufid;
 	int asfc_flag;
+	int check_asfc;
 	int new_info;
 
 	unsigned long long queue_time_ts[FRAME_TIME_BUFFER_SIZE]; /*timestamp*/
 	int queue_time_begin;
 	int queue_time_end;
-	unsigned long long q2q_time[FRAME_TIME_BUFFER_SIZE];
 	unsigned long long weighted_cpu_time[FRAME_TIME_BUFFER_SIZE];
 	unsigned long long weighted_cpu_time_ts[FRAME_TIME_BUFFER_SIZE];
 	unsigned long long weighted_gpu_time[FRAME_TIME_BUFFER_SIZE];
