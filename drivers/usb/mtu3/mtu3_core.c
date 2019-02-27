@@ -892,7 +892,7 @@ int ssusb_gadget_init(struct ssusb_mtk *ssusb)
 	mtu->ssusb = ssusb;
 	mtu->max_speed = usb_get_maximum_speed(dev);
 
-	INIT_DELAYED_WORK(&mtu->check_ltssm_work, check_ltssm_work);
+	INIT_DELAYED_WORK(&mtu->check_ltssm_work, mtu3_check_ltssm_work);
 
 	/* check the max_speed parameter */
 	switch (mtu->max_speed) {
@@ -962,7 +962,7 @@ void ssusb_gadget_exit(struct ssusb_mtk *ssusb)
 	mtu3_hw_exit(mtu);
 }
 
-void check_ltssm_work(struct work_struct *data)
+void mtu3_check_ltssm_work(struct work_struct *data)
 {
 	struct mtu3 *mtu;
 
