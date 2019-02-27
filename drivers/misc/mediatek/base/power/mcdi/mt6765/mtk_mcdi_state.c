@@ -64,15 +64,15 @@ static struct cpuidle_driver mtk_cpuidle_driver_set_0 = {
 	},
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
-		.exit_latency		= 300,
-		.target_residency	= 1500,
+		.exit_latency		= 30000,
+		.target_residency	= 150000,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
 		.name			= "mcdi",
 		.desc			= "mcdi",
 	},
-	.state_count = 2,
+	.state_count = 1,
 	.safe_state_index = 0,
 };
 
@@ -89,15 +89,15 @@ static struct cpuidle_driver mtk_cpuidle_driver_set_1 = {
 
 	.states[1] = {
 		.enter			= mtk_mcidle_enter,
-		.exit_latency		= 300,
-		.target_residency	= 4500,
+		.exit_latency		= 30000,
+		.target_residency	= 450000,
 #ifdef USING_TICK_BROADCAST
 		.flags			= CPUIDLE_FLAG_TIMER_STOP,
 #endif
 		.name			= "mcdi",
 		.desc			= "mcdi",
 	},
-	.state_count = 2,
+	.state_count = 1,
 	.safe_state_index = 0,
 };
 
@@ -208,7 +208,7 @@ static struct cpuidle_driver
 static int mtk_rgidle_enter(struct cpuidle_device *dev,
 			      struct cpuidle_driver *drv, int index)
 {
-	wfi_enter(smp_processor_id());
+	//wfi_enter(smp_processor_id());
 	return index;
 }
 
