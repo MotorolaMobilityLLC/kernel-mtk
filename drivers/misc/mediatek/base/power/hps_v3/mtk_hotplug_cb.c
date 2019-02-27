@@ -110,7 +110,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 				mp_enter_suspend(0, 1);
 #endif
 
-#if !defined(CONFIG_MACH_MT6765)
+#if !(defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 0, 0,
 				0, 0);
 #endif
@@ -166,7 +166,7 @@ static int cpu_hotplug_cb_notifier(struct notifier_block *self,
 					mp_enter_suspend(1, 1);
 #endif
 
-#if !defined(CONFIG_MACH_MT6765)
+#if !(defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
 				mt_secure_call(MTK_SIP_POWER_UP_CLUSTER, 1, 0,
 				0, 0);
 #endif

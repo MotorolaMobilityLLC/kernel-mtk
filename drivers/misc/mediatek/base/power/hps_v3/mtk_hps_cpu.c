@@ -222,8 +222,12 @@ int hps_cpu_init(void)
 	hps_sys.cluster_info[0].down_threshold = DEF_EAS_DOWN_THRESHOLD_0;
 
 	/* L: absolute threshold */
-	hps_sys.cluster_info[1].up_threshold = DEF_EAS_UP_THRESHOLD_1;
-	hps_sys.cluster_info[1].down_threshold = DEF_EAS_DOWN_THRESHOLD_1;
+	if (hps_sys.cluster_num == 2) {
+		hps_sys.cluster_info[1].up_threshold = DEF_EAS_UP_THRESHOLD_1;
+		hps_sys.cluster_info[1].down_threshold =
+			DEF_EAS_DOWN_THRESHOLD_1;
+	}
+
 	if (hps_sys.cluster_num == 3) {
 		/* B: absolute threshold */
 		hps_sys.cluster_info[2].up_threshold = DEF_EAS_UP_THRESHOLD_2;
