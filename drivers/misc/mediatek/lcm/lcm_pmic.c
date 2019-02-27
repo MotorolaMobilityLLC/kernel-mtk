@@ -15,7 +15,7 @@
 #include <linux/string.h>
 #include <linux/kernel.h>
 
-#ifdef CONFIG_RT5081_PMU_DSV
+#if defined(CONFIG_RT5081_PMU_DSV) || defined(CONFIG_MT6370_PMU_DSV)
 static struct regulator *disp_bias_pos;
 static struct regulator *disp_bias_neg;
 static int regulator_inited;
