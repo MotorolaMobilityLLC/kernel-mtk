@@ -561,6 +561,34 @@ static int mt6370_fled_is_ready(struct rt_fled_dev *info)
 	return  ret & 0x08 ? 0 : 1;
 }
 
+static int mt6370_fled_get_irq1(struct rt_fled_dev *info)
+{
+	struct mt6370_pmu_fled_data *fi = (struct mt6370_pmu_fled_data *)info;
+	int ret = 0;
+
+	ret = mt6370_pmu_reg_read(fi->chip, MT6370_PMU_REG_FLEDIRQ1);
+	if (ret < 0) {
+		pr_info("%s get fled irq1 fail\n", __func__);
+		return ret;
+	}
+
+	return ret;
+}
+
+static int mt6370_fled_get_irq2(struct rt_fled_dev *info)
+{
+	struct mt6370_pmu_fled_data *fi = (struct mt6370_pmu_fled_data *)info;
+	int ret = 0;
+
+	ret = mt6370_pmu_reg_read(fi->chip, MT6370_PMU_REG_FLEDIRQ2);
+	if (ret < 0) {
+		pr_info("%s get fled irq2 fail\n", __func__);
+		return ret;
+	}
+
+	return ret;
+}
+
 static struct rt_fled_hal mt6370_fled_hal = {
 	.rt_hal_fled_init = mt6370_fled_init,
 	.rt_hal_fled_suspend = mt6370_fled_suspend,
@@ -592,6 +620,8 @@ static struct rt_fled_hal mt6370_fled_hal = {
 					mt6370_fled_get_strobe_timeout_sel,
 	/* PM shutdown, optional */
 	.rt_hal_fled_shutdown = mt6370_fled_shutdown,
+	.rt_hal_fled_get_irq1 = mt6370_fled_get_irq1,
+	.rt_hal_fled_get_irq2 = mt6370_fled_get_irq2,
 };
 
 #define MT6370_FLED_TOR_CUR0	MT6370_PMU_REG_FLED1TORCTRL
