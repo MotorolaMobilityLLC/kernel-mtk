@@ -269,8 +269,8 @@ static struct Block *get_buddy_removed_by_area(int area_num)
 		return NULL;
 	}
 
-	list_for_each_entry_safe(buddy, tmp,
-				 &memmgr_ctrl_info.areas[area_num].list, list) {
+	list_for_each_entry_safe(
+		buddy, tmp, &memmgr_ctrl_info.areas[area_num].list, list) {
 		break; /* find the first entry */
 	}
 

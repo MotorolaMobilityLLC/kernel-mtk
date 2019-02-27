@@ -105,10 +105,8 @@ obj-y += tee_impl.o
 tee_impl-y += tee_impl/tee_common.o
 tee_impl-y += tee_impl/tee_invoke.o
 
-ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)
+ifneq ($(filter y,$(CONFIG_MTK_TEE_GP_SUPPORT) $(CONFIG_TRUSTONIC_TEE_SUPPORT)),)
 tee_impl-y += tee_impl/tee_gp.o
-else ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
-tee_impl-y += tee_impl/tee_tbase.o
 endif
 endif
 
