@@ -84,4 +84,7 @@ enum met_src_index {
 	SRC_SCP_VCORE_LEVEL_IDX,
 	SRC_MAX
 };
+
+extern void dvfsrc_enable_dvfs_freq_hopping(int gps_on);
+extern int dvfsrc_get_dvfs_freq_hopping_status(void);
 #endif /* __HELIO_DVFSRC_MT6765_H */

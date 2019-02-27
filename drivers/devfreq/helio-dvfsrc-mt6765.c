@@ -570,3 +570,50 @@ unsigned int *vcorefs_get_src_req(void)
 }
 EXPORT_SYMBOL(vcorefs_get_src_req);
 
+/* gps workarund function */
+static int is_freq_hopping;
+
+void dvfsrc_enable_dvfs_freq_hopping(int gps_on)
+{
+	static struct pm_qos_request gps_vcore_req;
+	static struct pm_qos_request gps_ddr_req;
+
+	if (spm_get_spmfw_idx() == SPMFW_LP3_1CH_1866)
+		return;
+
+	if (!pm_qos_request_active(&gps_vcore_req))
+		pm_qos_add_request(&gps_vcore_req,
+			PM_QOS_VCORE_OPP, PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+
+	if (!pm_qos_request_active(&gps_ddr_req))
+		pm_qos_add_request(&gps_ddr_req,
+			PM_QOS_DDR_OPP, PM_QOS_DDR_OPP_DEFAULT_VALUE);
+
+	pm_qos_update_request(&gps_vcore_req, VCORE_OPP_0);
+	pm_qos_update_request(&gps_ddr_req, DDR_OPP_0);
+
+	pr_info("[before]gps_on: %d, vcore: %d ddr: %d dvfsrc_level: 0x%x\n",
+		gps_on,
+		vcore_pmic_to_uv(pmic_get_register_value(PMIC_VCORE_ADDR)),
+		get_dram_data_rate(),
+		dvfsrc_read(DVFSRC_LEVEL));
+
+	spm_freq_hopping_cmd(!!gps_on);
+
+	pm_qos_update_request(&gps_ddr_req, DDR_OPP_UNREQ);
+	pm_qos_update_request(&gps_vcore_req, VCORE_OPP_UNREQ);
+
+	is_freq_hopping = !!gps_on;
+	pr_info("[after]gps_on: %d, vcore: %d ddr: %d dvfsrc_level: 0x%x\n",
+		gps_on,
+		vcore_pmic_to_uv(pmic_get_register_value(PMIC_VCORE_ADDR)),
+		get_dram_data_rate(),
+		dvfsrc_read(DVFSRC_LEVEL));
+}
+EXPORT_SYMBOL(dvfsrc_enable_dvfs_freq_hopping);
+
+int dvfsrc_get_dvfs_freq_hopping_status(void)
+{
+	return is_freq_hopping;
+}
+

@@ -117,3 +117,14 @@ void get_spm_reg(char *p)
 			spm_read(PCM_IM_PTR), spm_read(PCM_IM_LEN));
 }
 
+void spm_freq_hopping_cmd(int gps_on)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&__spm_lock, flags);
+
+	mt_secure_call(MTK_SIP_KERNEL_SPM_VCOREFS_ARGS,
+			VCOREFS_SMC_CMD_4, gps_on, 0, 0);
+
+	spin_unlock_irqrestore(&__spm_lock, flags);
+}
