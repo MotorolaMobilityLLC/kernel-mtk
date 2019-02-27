@@ -725,8 +725,6 @@ int acc_data_report(struct acc_data *data)
 		mark_timestamp(ID_ACCELEROMETER, DATA_REPORT,
 			       ktime_get_boot_ns(), event.time_stamp);
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -743,8 +741,6 @@ int acc_bias_report(struct acc_data *data)
 	event.word[2] = data->z;
 	/* pr_err("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 
@@ -761,8 +757,6 @@ int acc_cali_report(struct acc_data *data)
 	event.word[2] = data->z;
 	/* pr_err("x:%d,y:%d,z:%d,time:%lld\n", x, y, z, nt); */
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err("failed due to event buffer full\n");
 	return err;
 }
 
@@ -773,11 +767,9 @@ int acc_flush_report(void)
 
 	memset(&event, 0, sizeof(struct sensor_event));
 
-	pr_debug("flush\n");
+	pr_debug_ratelimited("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
-	if (err < 0)
-		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
 static int acc_probe(void)
