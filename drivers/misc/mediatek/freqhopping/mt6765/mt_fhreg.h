@@ -95,6 +95,7 @@
 #define REG_FHCTL6_DVFS         REG_ADDR(0x00C0)
 #define REG_FHCTL6_MON          REG_ADDR(0x00C4)
 
+#if defined(CONFIG_MACH_MT6765)
 #define REG_FHCTL7_CFG          REG_ADDR(0x00C8)
 #define REG_FHCTL7_UPDNLMT      REG_ADDR(0x00CC)
 #define REG_FHCTL7_DDS          REG_ADDR(0x00D0)
@@ -106,6 +107,7 @@
 #define REG_FHCTL8_DDS          REG_ADDR(0x00E4)
 #define REG_FHCTL8_DVFS         REG_ADDR(0x00E8)
 #define REG_FHCTL8_MON          REG_ADDR(0x00EC)
+#endif
 
 /* ************************** ************************** */
 /* APMIXED CON0/CON1 Register */
@@ -113,6 +115,7 @@
 
 #define REG_PLL_NOT_SUPPORT 0xdeadbeef
 
+#if defined(CONFIG_MACH_MT6765)
 #define REG_FH_PLL0_CON0    REG_APMIX_ADDR(0x020C) /*ARMPLL */
 #define REG_FH_PLL1_CON0    REG_APMIX_ADDR(0x023C) /*MAINPLL */
 #define REG_FH_PLL2_CON0    REG_APMIX_ADDR(0x027C) /*MSDCPLL */
@@ -132,6 +135,23 @@
 #define REG_FH_PLL6_CON1    REG_APMIX_ADDR(0x0260) /*MMPLL */
 #define REG_FH_PLL7_CON1    REG_APMIX_ADDR(0x0220) /*ARMPLL_L */
 #define REG_FH_PLL8_CON1    REG_APMIX_ADDR(0x0230) /*CCIPLL */
+#else
+#define REG_FH_PLL0_CON0    REG_APMIX_ADDR(0x030C) /*ARMPLL */
+#define REG_FH_PLL1_CON0    REG_APMIX_ADDR(0x0228) /*MAINPLL */
+#define REG_FH_PLL2_CON0    REG_APMIX_ADDR(0x0350) /*MSDCPLL */
+#define REG_FH_PLL3_CON0    REG_APMIX_ADDR(0x0218) /*MFGPLL */
+#define REG_FH_PLL4_CON0    REG_PLL_NOT_SUPPORT    /*MEMPLL */
+#define REG_FH_PLL5_CON0    REG_APMIX_ADDR(0x0340) /*MPLL */
+#define REG_FH_PLL6_CON0    REG_APMIX_ADDR(0x0330) /*MMPLL */
+
+#define REG_FH_PLL0_CON1    REG_APMIX_ADDR(0x0310) /*ARMPLL */
+#define REG_FH_PLL1_CON1    REG_APMIX_ADDR(0x022C) /*MAINPLL */
+#define REG_FH_PLL2_CON1    REG_APMIX_ADDR(0x0354) /*MSDCPLL */
+#define REG_FH_PLL3_CON1    REG_APMIX_ADDR(0x021C) /*MFGPLL */
+#define REG_FH_PLL4_CON1    REG_PLL_NOT_SUPPORT    /*MEMPLL */
+#define REG_FH_PLL5_CON1    REG_APMIX_ADDR(0x0344) /*MPLL */
+#define REG_FH_PLL6_CON1    REG_APMIX_ADDR(0x0334) /*MMPLL */
+#endif
 
 /* **************************************************** */
 /* FHCTL Register mask */
