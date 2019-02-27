@@ -25,7 +25,7 @@ static int vcore_opp_to_pwrap_cmd[VCORE_OPP_NUM];
 /* ToDo: Copy Opp Table to AEE Dump */
 int get_cur_vcore_dvfs_opp(void)
 {
-	return VCORE_DVFS_OPP_NUM - __builtin_ffs(get_vcore_dvfs_level());
+	return VCORE_DVFS_OPP_NUM - __builtin_ffs(spm_get_dvfs_level());
 }
 
 void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
@@ -70,18 +70,28 @@ int get_vcore_uv(int opp)
 
 int get_cur_vcore_opp(void)
 {
-	int idx = get_cur_vcore_dvfs_opp();
+	int idx;
 
-	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+	if (!is_qos_enabled())
+		return VCORE_OPP_UNREQ;
+
+	idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM)
 		return VCORE_OPP_UNREQ;
 	return vcore_dvfs_to_vcore_opp[idx];
 }
 
 int get_cur_vcore_uv(void)
 {
-	int idx = get_cur_vcore_dvfs_opp();
+	int idx;
 
-	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+	if (!is_qos_enabled())
+		return 0;
+
+	idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM)
 		return 0;
 	return opp_table[idx].vcore_uv;
 }
@@ -112,18 +122,28 @@ int get_ddr_khz(int opp)
 
 int get_cur_ddr_opp(void)
 {
-	int idx = get_cur_vcore_dvfs_opp();
+	int idx;
 
-	if (idx >= VCORE_DVFS_OPP_NUM ||  is_dvfsrc_enabled() != 1)
+	if (!is_qos_enabled())
+		return DDR_OPP_UNREQ;
+
+	idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM)
 		return DDR_OPP_UNREQ;
 	return vcore_dvfs_to_ddr_opp[idx];
 }
 
 int get_cur_ddr_khz(void)
 {
-	int idx = get_cur_vcore_dvfs_opp();
+	int idx;
 
-	if (idx >= VCORE_DVFS_OPP_NUM || is_dvfsrc_enabled() != 1)
+	if (!is_qos_enabled())
+		return 0;
+
+	idx = get_cur_vcore_dvfs_opp();
+
+	if (idx >= VCORE_DVFS_OPP_NUM)
 		return 0;
 	return opp_table[idx].ddr_khz;
 }
