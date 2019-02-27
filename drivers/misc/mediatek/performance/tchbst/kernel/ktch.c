@@ -23,14 +23,14 @@
 
 #include "tchbst.h"
 #include "boost_ctrl.h"
+#include "mtk_perfmgr_internal.h"
+
+
 
 #define MAX_CORE (8)
 #define MAX_FREQ (20000000)
 #define TARGET_CORE (-1)
 #define TARGET_FREQ (1183000)
-
-static int nr_ppm_clusters;
-
 
 struct boost {
 	spinlock_t touch_lock;
@@ -62,12 +62,12 @@ int ktch_get_target_freq(void)
 
 void set_freq(int enable, int core, int freq)
 {
-	struct ppm_limit_data freq_to_set[nr_ppm_clusters];
+	struct ppm_limit_data freq_to_set[perfmgr_clusters];
 	int i, targetclu;
 
 	targetclu = get_min_clstr_cap();
 
-	for (i = 0 ; i < nr_ppm_clusters ; i++) {
+	for (i = 0 ; i < perfmgr_clusters ; i++) {
 		freq_to_set[i].min = -1;
 		freq_to_set[i].max = -1;
 	}
@@ -75,8 +75,8 @@ void set_freq(int enable, int core, int freq)
 	if (enable)
 		freq_to_set[targetclu].min = freq;
 
-	update_userlimit_cpu_freq(PPM_KIR_PERFTOUCH,
-	 nr_ppm_clusters, freq_to_set);
+	update_userlimit_cpu_freq(CPU_KIR_PERFTOUCH,
+			perfmgr_clusters, freq_to_set);
 }
 
 static int ktchboost_thread(void *ptr)
@@ -266,7 +266,7 @@ static const struct file_operations perfmgr_tb_clstr_fops = {
 	.release = single_release,
 };
 static void dbs_input_event(struct input_handle *handle, unsigned int type,
-			    unsigned int code, int value)
+		unsigned int code, int value)
 {
 	unsigned long flags;
 
@@ -275,7 +275,7 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 
 	if ((type == EV_KEY) && (code == BTN_TOUCH)) {
 		pr_debug("input cb, type:%d, code:%d, value:%d\n",
-			 type, code, value);
+				type, code, value);
 		spin_lock_irqsave(&ktchboost.touch_lock, flags);
 		ktchboost.touch_event = value;
 		spin_unlock_irqrestore(&ktchboost.touch_lock, flags);
@@ -286,8 +286,8 @@ static void dbs_input_event(struct input_handle *handle, unsigned int type,
 }
 
 static int dbs_input_connect(struct input_handler *handler,
-			     struct input_dev *dev,
-			     const struct input_device_id *id)
+		struct input_dev *dev,
+		const struct input_device_id *id)
 {
 	struct input_handle *handle;
 	int error;
@@ -312,9 +312,9 @@ static int dbs_input_connect(struct input_handler *handler,
 		goto err1;
 
 	return 0;
- err1:
+err1:
 	input_unregister_handle(handle);
- err2:
+err2:
 	kfree(handle);
 	return error;
 }
@@ -349,10 +349,9 @@ int init_ktch(struct proc_dir_entry *parent)
 
 	pr_debug("init_ktch_touch\n");
 
-	nr_ppm_clusters = arch_get_nr_clusters();
 	ktch_mgr_core = ktch_get_target_core();
 	ktch_mgr_freq = ktch_get_target_freq();
-	ktch_mgr_clstr = nr_ppm_clusters;
+	ktch_mgr_clstr = perfmgr_clusters;
 
 	/*create kernel touch root file*/
 	ktch_root = proc_mkdir("kernel", parent);
@@ -361,20 +360,20 @@ int init_ktch(struct proc_dir_entry *parent)
 		pr_debug("ktch_root not create\n");
 	/* touch */
 	tbe_dir = proc_create("tb_enable", 0644, ktch_root,
-		 &perfmgr_tb_enable_fops);
+			&perfmgr_tb_enable_fops);
 	if (!tbe_dir)
 		pr_debug("tbe_dir not create\n");
 	tbc_dir = proc_create("tb_core", 0644, ktch_root,
-		 &perfmgr_tb_core_fops);
+			&perfmgr_tb_core_fops);
 	if (!tbc_dir)
 		pr_debug("tbc_dir not create\n");
 
 	tbf_dir = proc_create("tb_freq", 0644, ktch_root,
-		 &perfmgr_tb_freq_fops);
+			&perfmgr_tb_freq_fops);
 	if (!tbf_dir)
 		pr_debug("tbf_dir not create\n");
 	tbclstr_dir = proc_create("tb_clstr", 0644, ktch_root,
-		 &perfmgr_tb_clstr_fops);
+			&perfmgr_tb_clstr_fops);
 	if (!tbclstr_dir)
 		pr_debug("tbclstr_dir not create\n");
 
@@ -382,7 +381,7 @@ int init_ktch(struct proc_dir_entry *parent)
 	init_waitqueue_head(&ktchboost.wq);
 	atomic_set(&ktchboost.event, 0);
 	ktchboost.thread = (struct task_struct *)kthread_run(ktchboost_thread,
-						 &ktchboost, "touch_boost");
+			&ktchboost, "touch_boost");
 	if (IS_ERR(ktchboost.thread))
 		return -EINVAL;
 
@@ -399,7 +398,3 @@ int ktch_suspend(void)
 
 	return 0;
 }
-
-/*MODULE_LICENSE("GPL");*/
-/*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The ktch function");*/

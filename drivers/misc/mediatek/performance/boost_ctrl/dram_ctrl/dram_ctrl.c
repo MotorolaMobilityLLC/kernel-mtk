@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#define pr_fmt(fmt) "[SOC DVFS DRAM]"fmt
+#define pr_fmt(fmt) "[dram_ctrl]"fmt
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
@@ -29,37 +29,25 @@
 #include "mtk_dramc.h"
 #endif
 
+#include "mtk_perfmgr_internal.h"
 #include "boost_ctrl.h"
 static int ddr_type;
 
 #ifdef MTK_QOS_SUPPORT
 /* QoS Method */
-	static int ddr_now;
-	static struct pm_qos_request emi_request;
-	static int emi_opp;
+static int ddr_now;
+static struct pm_qos_request emi_request;
+static int emi_opp;
 #endif
 
 
-static int mt_dram_show(struct seq_file *m, void *v)
+static int perfmgr_dram_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "DDR_TYPE: %d\n", ddr_type);
 	return 0;
 }
-/*** Seq operation of mtprof ****/
-static int mt_dram_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_dram_show, inode->i_private);
-}
-
-
-static const struct file_operations mt_dram_fops = {
-	.open = mt_dram_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
 #ifdef MTK_QOS_SUPPORT
-static ssize_t mt_ddr_write(struct file *filp, const char *ubuf,
+static ssize_t perfmgr_ddr_proc_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	char buf[64];
@@ -92,59 +80,60 @@ static ssize_t mt_ddr_write(struct file *filp, const char *ubuf,
 	return cnt;
 }
 
-static int mt_ddr_show(struct seq_file *m, void *v)
+static int perfmgr_ddr_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", ddr_now);
 	return 0;
 }
-/*** Seq operation of mtprof ****/
-static int mt_ddr_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, mt_ddr_show, inode->i_private);
-}
-static const struct file_operations mt_ddr_fops = {
-	.open = mt_ddr_open,
-	.write = mt_ddr_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
+PROC_FOPS_RW(ddr);
 #endif
+PROC_FOPS_RO(dram);
 /*--------------------INIT------------------------*/
 
 int dram_ctrl_init(struct proc_dir_entry *parent)
 {
+	int i, ret = 0;
 	struct proc_dir_entry *drams_dir;
-	struct proc_dir_entry *dram_dir;
-#ifdef MTK_QOS_SUPPORT
 
-	struct proc_dir_entry *ddr_dir;
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(dram),
+#ifdef MTK_QOS_SUPPORT
+		PROC_ENTRY(ddr),
 #endif
+	};
+
 	pr_debug("init dram driver start\n");
 	drams_dir = proc_mkdir("dram_ctrl", parent);
 	if (!drams_dir) {
 		pr_debug("drams_dir not create success\n");
 		return -ENOMEM;
 	}
-	dram_dir = proc_create("dram", 0644, drams_dir, &mt_dram_fops);
-	if (!dram_dir) {
-		pr_debug("dram_dir not create success\n");
-		return -ENOMEM;
+
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, 0644,
+					drams_dir, entries[i].fops)) {
+			pr_debug("%s(), create /dram_ctrl%s failed\n",
+					__func__, entries[i].name);
+			ret = -EINVAL;
+			goto out;
+		}
 	}
+
 #ifdef MTK_QOS_SUPPORT
-/* QoS Method */
+	/* QoS Method */
 	ddr_now = -1;
 	if (!pm_qos_request_active(&emi_request)) {
 		pr_debug("hh: emi pm_qos_add_request\n");
 		pm_qos_add_request(&emi_request, PM_QOS_DDR_OPP,
-					PM_QOS_DDR_OPP_DEFAULT_VALUE);
+				PM_QOS_DDR_OPP_DEFAULT_VALUE);
 	} else {
 		pr_debug("hh: emi pm_qos already request\n");
-	}
-	ddr_dir = proc_create("emi", 0644, drams_dir, &mt_ddr_fops);
-	if (!ddr_dir) {
-		pr_debug("ddr_dir not create success\n");
-		return -ENOMEM;
 	}
 	emi_opp = DDR_OPP_NUM - 1;
 #endif
@@ -155,8 +144,7 @@ int dram_ctrl_init(struct proc_dir_entry *parent)
 #else
 	ddr_type = -1;
 #endif
-
 	pr_debug("init dram driver done\n");
-
-	return 0;
+out:
+	return ret;
 }

@@ -59,7 +59,7 @@ static int freq_hold(struct act_arg_obj *arg)
 		freq_to_set[i].max = -1;
 	}
 
-	update_userlimit_cpu_freq(PPM_KIR_USB, cluster_num, freq_to_set);
+	update_userlimit_cpu_freq(CPU_KIR_USB, cluster_num, freq_to_set);
 	return 0;
 }
 
@@ -74,7 +74,7 @@ static int freq_release(struct act_arg_obj *arg)
 		freq_to_set[i].max = -1;
 	}
 
-	update_userlimit_cpu_freq(PPM_KIR_USB, cluster_num, freq_to_set);
+	update_userlimit_cpu_freq(CPU_KIR_USB, cluster_num, freq_to_set);
 	return 0;
 }
 
