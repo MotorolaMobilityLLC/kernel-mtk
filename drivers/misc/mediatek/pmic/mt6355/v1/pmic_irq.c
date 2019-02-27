@@ -682,15 +682,10 @@ static void register_irq_handlers(void)
 #endif
 #endif
 
-	/* pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler); */
-	/* pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler); */
-
-	/* pmic_register_interrupt_callback(INT_FG_CUR_H,
-	 * fg_cur_h_int_handler);
-	 */
-	/* pmic_register_interrupt_callback(INT_FG_CUR_L,
-	 * fg_cur_l_int_handler);
-	 */
+	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
+	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
+	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
+	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
 
 #if ENABLE_ALL_OC_IRQ
 	register_all_oc_interrupts();
