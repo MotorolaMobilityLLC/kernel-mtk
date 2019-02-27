@@ -513,6 +513,10 @@ static int g_ccorr_prev_matrix[3][3] = {
 	{1024, 0, 0},
 	{0, 1024, 0},
 	{0, 0, 1024} };
+static int g_rgb_matrix[3][3] = {
+	{1024, 0, 0},
+	{0, 1024, 0},
+	{0, 0, 1024} };
 static struct DISP_CCORR_COEF_T g_multiply_matrix_coef;
 static int g_disp_ccorr_without_gamma;
 
@@ -667,6 +671,7 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq,
 	int ret = 0;
 	struct DISP_CCORR_COEF_T *ccorr, *multiply_matrix;
 	unsigned int cfg_val;
+	unsigned int temp_matrix[3][3];
 
 	if (module < CCORR0_MODULE_NAMING ||
 		module >= CCORR0_MODULE_NAMING + CCORR_TOTAL_MODULE_NUM) {
@@ -687,6 +692,8 @@ static int disp_ccorr_write_coef_reg(struct cmdqRecStruct *cmdq,
 	if (id == 0) {
 		multiply_matrix = &g_multiply_matrix_coef;
 		disp_ccorr_multiply_3x3(ccorr->coef, g_ccorr_color_matrix,
+			temp_matrix);
+		disp_ccorr_multiply_3x3(temp_matrix, g_rgb_matrix,
 			multiply_matrix->coef);
 		ccorr = multiply_matrix;
 	}
@@ -994,6 +1001,22 @@ int disp_ccorr_set_color_matrix(void *cmdq, int32_t matrix[16], int32_t hint)
 
 	return ret;
 }
+
+int disp_ccorr_set_RGB_Gain(int r, int g, int b)
+{
+	int ret;
+
+	mutex_lock(&g_gamma_global_lock);
+	g_rgb_matrix[0][0] = r;
+	g_rgb_matrix[1][1] = g;
+	g_rgb_matrix[2][2] = b;
+
+	CCORR_DBG("r[%d], g[%d], b[%d]", r, g, b);
+	ret = disp_ccorr_write_coef_reg(NULL, CCORR0_MODULE_NAMING, 0, 0);
+	mutex_unlock(&g_gamma_global_lock);
+	return ret;
+}
+
 
 #ifdef CCORR_SUPPORT_PARTIAL_UPDATE
 static int _ccorr_partial_update(enum DISP_MODULE_ENUM module,
