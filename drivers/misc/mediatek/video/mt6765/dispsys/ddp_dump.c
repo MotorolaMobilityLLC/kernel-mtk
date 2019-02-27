@@ -28,69 +28,101 @@ static char *ddp_signal_0(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "disp_aal0__to__disp_gamma0";
+		return
+			"disp_aal0__to__disp_gamma0";
 	case 1:
-		return "disp_ccorr0__to__disp_aal0";
+		return
+			"disp_ccorr0__to__disp_aal0";
 	case 2:
-		return "disp_color0__to__disp_color0_out_sel_in0";
+		return
+			"disp_color0__to__disp_color0_out_sel_in0";
 	case 3:
-		return "disp_color_out_sel__to__disp_ccorr0";
+		return
+			"disp_color_out_sel__to__disp_ccorr0";
 	case 4:
-		return "disp_dither0__to__disp_dither0_mout";
+		return
+			"disp_dither0__to__disp_dither0_mout";
 	case 5:
-		return "disp_gamma0__to__disp_dither0";
+		return
+			"disp_gamma0__to__disp_dither0";
 	case 6:
-		return "disp_ovl0_2l__to__disp_ovl0_2l_mout";
+		return
+			"disp_ovl0_2l__to__disp_ovl0_2l_mout";
 	case 7:
-		return "disp_ovl0_2l_mout_out0__to__disp_path0_sel_in1";
+		return
+			"disp_ovl0_2l_mout_out0__to__disp_path0_sel_in1";
 	case 8:
-		return "disp_ovl0_2l_mout_out1__to__disp_wdma0_sel_in2";
+		return
+			"disp_ovl0_2l_mout_out1__to__disp_wdma0_sel_in2";
 	case 9:
-		return "disp_ovl0_2l_mout_out2__to__disp_rsz0_sel_in1";
+		return
+			"disp_ovl0_2l_mout_out2__to__disp_rsz0_sel_in1";
 	case 10:
-		return "disp_ovl0__to__disp_ovl0_mout";
+		return
+			"disp_ovl0__to__disp_ovl0_mout";
 	case 11:
-		return "disp_ovl0_mout_out0__to__disp_path0_sel_in0";
+		return
+			"disp_ovl0_mout_out0__to__disp_path0_sel_in0";
 	case 12:
-		return "disp_ovl0_mout_out1__to__disp_ovl_2l_in0";
+		return
+			"disp_ovl0_mout_out1__to__disp_ovl0_2l_in0";
 	case 13:
-		return "disp_ovl0_mout_out2__to__disp_wdma0_sel_in1";
+		return
+			"disp_ovl0_mout_out2__to__disp_wdma0_sel_in1";
 	case 14:
-		return "disp_ovl0_mout_out3__to__disp_rsz0_sel_in0";
+		return
+			"disp_ovl0_mout_out3__to__disp_rsz0_sel_in0";
 	case 15:
-		return "disp_path0_sel__to__disp_rdma0";
+		return
+			"disp_path0_sel__to__disp_rdma0";
 	case 16:
-		return "disp_rdma0__to__disp_rdma0_rsz0_in_sout";
+		return
+			"disp_rdma0__to__disp_rdma0_rsz0_in_sout";
 	case 17:
-		return "disp_rdma_rsz_in_sout_out0__to__disp_rdma_rsz_sel_in0";
+		return
+			"disp_rdma_rsz_in_sout_out0__to__disp_rdma_rsz_sel_in0";
 	case 18:
-		return "disp_rdma_rsz_in_sout_out1__to__disp_rsz0_sel_in2";
+		return
+			"disp_rdma_rsz_in_sout_out1__to__disp_rsz0_sel_in2";
 	case 19:
-		return "disp_rdma0_rsz0_sel__to__disp_rdma0_sout";
+		return
+			"disp_rdma0_rsz0_sel__to__disp_rdma0_sout";
 	case 20:
-		return "disp_rdma0_sout_out0__to__dsi0_sel_in0";
+		return
+			"disp_rdma0_sout_out0__to__dsi0_sel_in0";
 	case 21:
-		return "disp_rdma0_sout_out1__to__disp_color0";
+		return
+			"disp_rdma0_sout_out1__to__disp_color0";
 	case 22:
-		return "disp_rdma0_sout_out2__to__disp_color0_out_sel_in1";
+		return
+			"disp_rdma0_sout_out2__to__disp_color0_out_sel_in1";
 	case 23:
-		return "disp_rsz0__to__disp_rsz0_mout";
+		return
+			"disp_rsz0__to__disp_rsz0_mout";
 	case 24:
-		return "disp_rsz0_mout_out0__to__disp_path0_sel_in2";
+		return
+			"disp_rsz0_mout_out0__to__disp_path0_sel_in2";
 	case 25:
-		return "disp_rsz0_mout_out1__to__disp_ovl0_in2";
+		return
+			"disp_rsz0_mout_out1__to__disp_ovl0_in2";
 	case 26:
-		return "disp_rsz0_mout_out2__to__dsi1_ovl0_2l_in2";
+		return
+			"disp_rsz0_mout_out2__to__disp_ovl0_2l_in2";
 	case 27:
-		return "disp_rsz0_mout_out3__to__disp_rdma_rsz_sel_in1";
+		return
+			"disp_rsz0_mout_out3__to__disp_rdma0_rsz0_sel_in1";
 	case 28:
-		return "disp_rsz0_mout_out4__to__disp_wdma0_sel_in3";
+		return
+			"disp_rsz0_mout_out4__to__disp_wdma0_sel_in3";
 	case 29:
-		return "disp_rsz0_sel__to__disp_rsz0";
+		return
+			"disp_rsz0_sel__to__disp_rsz0";
 	case 30:
-		return "disp_wdma0_sel__to__disp_wdma0";
+		return
+			"disp_wdma0_sel__to__disp_wdma0";
 	case 31:
-		return "dither0_mout_out0__to__dsi0_sel_in1";
+		return
+			"dither0_mout_out0__to__dsi0_sel_in1";
 	default:
 		return NULL;
 	}
