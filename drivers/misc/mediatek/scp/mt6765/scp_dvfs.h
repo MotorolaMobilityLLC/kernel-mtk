@@ -14,8 +14,6 @@
 #ifndef __SCP_DVFS_H__
 #define __SCP_DVFS_H__
 
-#define SCP_DVFS_USE_PLL		0
-
 #define PLL_ENABLE				(1)
 #define PLL_DISABLE				(0)
 
@@ -47,9 +45,11 @@ enum {
 /*#ifdef CONFIG_PINCTRL_MT6797*/
 
 enum clk_opp_enum {
-	CLK_OPP0 = 82,
-	CLK_OPP1 = 250,
-	CLK_OPP2 = 328,
+	CLK_26M = 26,
+	CLK_OPP0 = 250,
+	CLK_OPP1 = 273,
+	CLK_OPP2 = 330,
+	CLK_OPP3 = 416,
 	CLK_INVALID_OPP,
 };
 
