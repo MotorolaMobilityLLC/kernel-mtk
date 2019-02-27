@@ -214,6 +214,7 @@ static const struct attribute_group *vibr_group[] = {
 	&activate_group,
 	&state_group,
 	&duration_group,
+	NULL
 };
 
 static struct led_classdev led_vibr = {
