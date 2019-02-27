@@ -165,7 +165,7 @@ int __init mt_dcm_dts_map(void)
 
 static int dcm_convert_stall_wr_del_sel(unsigned int val)
 {
-	if (val < 0 || val > MCUCFG_STALL_DCM_MPX_WR_SEL_MAX_VAL)
+	if (val > MCUCFG_STALL_DCM_MPX_WR_SEL_MAX_VAL)
 		return 0;
 	else
 		return val;
