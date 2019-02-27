@@ -782,16 +782,16 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	size_t count, loff_t *pos)
 {
 	struct mtp_dev *dev = fp->private_data;
-	struct usb_composite_dev *cdev = dev->cdev;
+	struct usb_composite_dev *cdev;
 	struct usb_request *req;
 	ssize_t r = count;
 	unsigned xfer;
 	int ret = 0;
 	size_t len = 0;
 
-	MTP_DBG_LIMIT(5, "in\n");
+	pr_debug("mtp_read(%zu)\n", count);
 
-	DBG(cdev, "mtp_read(%zu)\n", count);
+	MTP_DBG_LIMIT(5, "in\n");
 
 	if (true) {
 		set_cpus_allowed_ptr(current, &dev->cpu_mask);
@@ -802,7 +802,7 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 		return -EINVAL;
 
 	/* we will block until we're online */
-	DBG(cdev, "mtp_read: waiting for online state\n");
+	pr_debug("mtp_read: waiting for online state\n");
 	monitor_in(MTP_WAIT_EVENT_R1);
 	ret = wait_event_interruptible(dev->read_wq,
 		dev->state != STATE_OFFLINE);
@@ -811,6 +811,10 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 		r = ret;
 		goto done;
 	}
+
+	/* update cdev after online */
+	cdev = dev->cdev;
+
 	spin_lock_irq(&dev->lock);
 	if (dev->ep_out->desc) {
 		len = usb_ep_align_maybe(cdev->gadget, dev->ep_out, count);
@@ -893,7 +897,7 @@ done:
 		dev->state = STATE_READY;
 	spin_unlock_irq(&dev->lock);
 
-	DBG(cdev, "mtp_read returning %zd\n", r);
+	pr_debug("mtp_read returning %zd\n", r);
 	return r;
 }
 
