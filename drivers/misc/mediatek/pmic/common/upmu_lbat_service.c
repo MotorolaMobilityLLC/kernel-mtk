@@ -27,6 +27,8 @@
 #define VOLT_TO_THD(volt) ((volt) * 4096 / 5400)
 #define USER_SIZE 16
 
+#define LBAT_SERVICE_DBG 0
+
 static DEFINE_MUTEX(lbat_mutex);
 static struct list_head lbat_hv_list = LIST_HEAD_INIT(lbat_hv_list);
 static struct list_head lbat_lv_list = LIST_HEAD_INIT(lbat_lv_list);
@@ -190,8 +192,10 @@ static void bat_h_int_handler(void)
 			cur_lv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] lv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MIN,
 		VOLT_TO_THD(cur_lv_ptr->thd));
@@ -209,8 +213,10 @@ static void bat_h_int_handler(void)
 			cur_hv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] hv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MAX,
 		VOLT_TO_THD(cur_hv_ptr->thd));
@@ -250,8 +256,10 @@ static void bat_l_int_handler(void)
 			cur_hv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] hv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MAX,
 		VOLT_TO_THD(cur_hv_ptr->thd));
@@ -269,8 +277,10 @@ static void bat_l_int_handler(void)
 			cur_lv_ptr = thd_t;
 			is_set = true;
 		}
+#if LBAT_SERVICE_DBG
 		pr_info("[%s] lv_thd=%d, active=%d\n",
 			__func__, thd_t->thd, thd_t->active);
+#endif
 	}
 	pmic_set_register_value(PMIC_AUXADC_LBAT_VOLT_MIN,
 		VOLT_TO_THD(cur_lv_ptr->thd));
@@ -284,6 +294,14 @@ void lbat_suspend(void)
 {
 	lbat_min_en_setting(0);
 	lbat_max_en_setting(0);
+#if LBAT_SERVICE_DBG
+	pr_info("AUXADC_LBAT_VOLT_MAX = 0x%x, RG_INT_EN_BAT_H = %d\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX),
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_H));
+	pr_info("AUXADC_LBAT_VOLT_MIN = 0x%x, RG_INT_EN_BAT_L = %d\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN),
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
+#endif
 }
 
 void lbat_resume(void)
@@ -298,6 +316,14 @@ void lbat_resume(void)
 		if (cur_lv_ptr != NULL)
 			lbat_min_en_setting(1);
 	}
+#if LBAT_SERVICE_DBG
+	pr_info("AUXADC_LBAT_VOLT_MAX = 0x%x, RG_INT_EN_BAT_H = %d\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX),
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_H));
+	pr_info("AUXADC_LBAT_VOLT_MIN = 0x%x, RG_INT_EN_BAT_L = %d\n",
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN),
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
+#endif
 }
 
 int lbat_service_init(void)
@@ -322,15 +348,15 @@ int lbat_service_init(void)
 void lbat_dump_reg(void)
 {
 	pr_notice("AUXADC_LBAT_VOLT_MAX = 0x%x, AUXADC_LBAT_VOLT_MIN = 0x%x, RG_INT_EN_BAT_H = %d, RG_INT_EN_BAT_L = %d\n"
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX)
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN)
-		  , pmic_get_register_value(PMIC_RG_INT_EN_BAT_H)
-		  , pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX)
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN)
+		, pmic_get_register_value(PMIC_RG_INT_EN_BAT_H)
+		, pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
 	pr_notice("AUXADC_LBAT_EN_MAX = %d, AUXADC_LBAT_IRQ_EN_MAX = %d, AUXADC_LBAT_EN_MIN = %d, AUXADC_LBAT_IRQ_EN_MIN = %d\n"
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MAX)
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MAX)
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MIN)
-		  , pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MIN));
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MAX)
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MAX)
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MIN)
+		, pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MIN));
 }
 
 static void lbat_dump_thd_list(struct seq_file *s)
@@ -377,25 +403,25 @@ static void lbat_dbg_dump_reg(struct seq_file *s)
 {
 	lbat_dump_reg();
 	seq_printf(s, "AUXADC_LBAT_VOLT_MAX = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MAX));
 	seq_printf(s, "AUXADC_LBAT_VOLT_MIN = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_VOLT_MIN));
 	seq_printf(s, "RG_INT_EN_BAT_H = 0x%x\n",
-		   pmic_get_register_value(PMIC_RG_INT_EN_BAT_H));
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_H));
 	seq_printf(s, "RG_INT_EN_BAT_L = 0x%x\n",
-		   pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
+		pmic_get_register_value(PMIC_RG_INT_EN_BAT_L));
 	seq_printf(s, "AUXADC_LBAT_EN_MAX = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MAX));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MAX));
 	seq_printf(s, "AUXADC_LBAT_IRQ_EN_MAX = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MAX));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MAX));
 	seq_printf(s, "AUXADC_LBAT_EN_MIN = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MIN));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_EN_MIN));
 	seq_printf(s, "AUXADC_LBAT_IRQ_EN_MIN = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MIN));
+		pmic_get_register_value(PMIC_AUXADC_LBAT_IRQ_EN_MIN));
 	seq_printf(s, "AUXADC_ADC_RDY_LBAT = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_ADC_RDY_LBAT));
+		pmic_get_register_value(PMIC_AUXADC_ADC_RDY_LBAT));
 	seq_printf(s, "AUXADC_ADC_OUT_LBAT = 0x%x\n",
-		   pmic_get_register_value(PMIC_AUXADC_ADC_OUT_LBAT));
+		pmic_get_register_value(PMIC_AUXADC_ADC_OUT_LBAT));
 }
 
 static void lbat_dump_user_table(struct seq_file *s)
@@ -453,38 +479,6 @@ static int lbat_dbg_open(struct inode *inode, struct file *file)
 static ssize_t lbat_dbg_write(struct file *file,
 	const char __user *user_buffer, size_t count, loff_t *position)
 {
-#if 0
-	struct lbat_dbg_st *dbg_st = file->private_data;
-	char buf[10] = {0};
-	char *buf_ptr = NULL;
-	char *s_intNo;
-	char *s_state;
-	unsigned int intNo = 999, state = 2; /* initialize as invalid value */
-	int ret = 0;
-
-	simple_write_to_buffer(buf, sizeof(buf), position, user_buffer, count);
-	buf_ptr = (char *)buf;
-	s_intNo = strsep(&buf_ptr, " ");
-	s_state = strsep(&buf_ptr, " ");
-	if (s_intNo)
-		ret = kstrtou32(s_intNo, 10, (unsigned int *)&intNo);
-	if (s_state)
-		ret = kstrtou32(s_state, 10, (unsigned int *)&state);
-
-	switch (dbg_st->dbg_id) {
-	case PMIC_IRQ_DBG_ENABLE:
-		pmic_enable_interrupt(intNo, state, "pmic_irq_dbg");
-		break;
-	case PMIC_IRQ_DBG_MASK:
-		if (state == 1)
-			pmic_mask_interrupt(intNo, "pmic_irq_dbg");
-		else if (state == 0)
-			pmic_unmask_interrupt(intNo, "pmic_irq_dbg");
-		break;
-	default:
-		break;
-	}
-#endif
 	return count;
 }
 

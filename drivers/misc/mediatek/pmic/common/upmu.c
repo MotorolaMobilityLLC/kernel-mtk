@@ -277,16 +277,26 @@ unsigned short pmic_set_hk_reg_value(PMU_FLAGS_LIST_ENUM flagname,
 	unsigned int ret = 0;
 
 	if (pFlag->flagname != flagname) {
-		pr_info("[%s]pmic flag idx error\n", __func__);
+		pr_notice("[%s]pmic flag idx error\n", __func__);
 		return 1;
 	}
 
-	mutex_lock(&pmic_hk_mutex);
-	ret = pmic_write_device((unsigned int)(pFlag->offset), val,
-		(unsigned int)(pFlag->mask), (unsigned int)(pFlag->shift));
-	mutex_unlock(&pmic_hk_mutex);
+	if (preempt_count() > 0 || irqs_disabled() ||
+	    system_state != SYSTEM_RUNNING || oops_in_progress) {
+		ret = pmic_write_device(
+			(unsigned int)(pFlag->offset), val,
+			(unsigned int)(pFlag->mask),
+			(unsigned int)(pFlag->shift));
+	} else {
+		mutex_lock(&pmic_hk_mutex);
+		ret = pmic_write_device(
+			(unsigned int)(pFlag->offset), val,
+			(unsigned int)(pFlag->mask),
+			(unsigned int)(pFlag->shift));
+		mutex_unlock(&pmic_hk_mutex);
+	}
 	if (ret != 0) {
-		pr_info("[%s] error ret: %d when set Reg[0x%x]=0x%x\n",
+		pr_notice("[%s] error ret: %d when set Reg[0x%x]=0x%x\n",
 			__func__, ret, (pFlag->offset), val);
 		return ret;
 	}
@@ -479,6 +489,7 @@ void pmic_ftm_init(void)
 unsigned short is_battery_remove;
 unsigned short is_wdt_reboot_pmic;
 unsigned short is_wdt_reboot_pmic_chk;
+unsigned short g_vmodem_vosel;
 
 unsigned short is_battery_remove_pmic(void)
 {
@@ -500,11 +511,23 @@ void __attribute__ ((weak)) pmic_auxadc_resume(void)
 {
 }
 
+void __attribute__ ((weak)) record_md_vosel(void)
+{
+}
+
+void __attribute__ ((weak)) pmic_enable_smart_reset(unsigned char smart_en,
+	unsigned char smart_sdn_en)
+{
+	pr_notice("[%s] smart reset not support!\n", __func__);
+}
+
 static int pmic_mt_probe(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver probe!! ********\n");
 	/*get PMIC CID */
 	PMICLOG("PMIC CID = 0x%x\n", pmic_get_register_value(PMIC_SWCID));
+
+	record_md_vosel();
 
 	PMIC_INIT_SETTING_V1();
 	PMICLOG("[PMIC_INIT_SETTING_V1] Done\n");
