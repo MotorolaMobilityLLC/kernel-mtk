@@ -2833,7 +2833,11 @@ static int atm_loop(void)
 {
 #endif
 	int temp;
+#ifdef ENALBE_UART_LIMIT
+#if ENALBE_UART_LIMIT
 	static int hasDisabled;
+#endif
+#endif
 	char buffer[128];
 	unsigned long polling_time;
 #if KRTATM_TIMER == KRTATM_HR
