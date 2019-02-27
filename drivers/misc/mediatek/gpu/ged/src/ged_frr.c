@@ -25,6 +25,10 @@
 #include "dfrc.h"
 #include "dfrc_drv.h"
 
+#ifdef GED_LOGE
+#undef GED_LOGE
+#define GED_LOGE pr_debug
+#endif
 
 /* These module params are for developers to set specific fps and debug. */
 static char *ged_frr_debug_fence2context_table;
@@ -76,7 +80,7 @@ static GED_ERROR ged_frr_fence2context_table_create(void)
 		(GED_FRR_FENCE2CONTEXT_TABLE *)ged_alloc(fence2ContextTableSize * sizeof(GED_FRR_FENCE2CONTEXT_TABLE));
 
 	if (!fence2ContextTable) {
-		pr_info("[FRR] fence2ContextTable is NULL\n");
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
 		return GED_ERROR_OOM;
 	}
 
@@ -108,10 +112,11 @@ static GED_ERROR ged_frr_fence2context_table_add_item(int targetPid, uint64_t ta
 	int targetIndex;
 	unsigned long long leastCreateTime;
 
-	pr_info("[FRR] [+] add item: pid(%d), cid(%llu), fid(%p)\n", targetPid, targetCid, targetFid);
+	GED_LOGE("[FRR] [+] add item: pid(%d), cid(%llu), fid(%p)\n"
+		, targetPid, targetCid, targetFid);
 
 	if (!fence2ContextTable) {
-		pr_info("[FRR] [-] add item: fence2ContextTable is NULL\n");
+		GED_LOGE("[FRR] [-] add item: fence2ContextTable is NULL\n");
 		return GED_ERROR_FAIL;
 	}
 
@@ -134,7 +139,7 @@ static GED_ERROR ged_frr_fence2context_table_add_item(int targetPid, uint64_t ta
 	fence2ContextTable[targetIndex].fid = targetFid;
 	fence2ContextTable[targetIndex].createTime = ged_get_time();
 
-	pr_info("[FRR] [-] add item, targetIndex(%d)\n", targetIndex);
+	GED_LOGE("[FRR] [-] add item, targetIndex(%d)\n", targetIndex);
 
 	return GED_OK;
 }
@@ -156,12 +161,12 @@ GED_ERROR ged_frr_fence2context_table_update(int pid, uint64_t cid, int fenceFd)
 	void *fence;
 
 	if (!fence2ContextTable) {
-		pr_info("[FRR] fence2ContextTable is NULL\n");
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
 		return GED_ERROR_FAIL;
 	}
 
 	if (fenceFd < 0) {
-		/* pr_info("[FRR] fenceFd < 0\n");*/
+		/* GED_LOGE("[FRR] fenceFd < 0\n");*/
 		return GED_ERROR_INVALID_PARAMS;
 	}
 
@@ -192,7 +197,7 @@ GED_ERROR ged_frr_fence2context_table_get_cid(int pid, void *fid, uint64_t *cid)
 	int i;
 
 	if (!fence2ContextTable) {
-		pr_info("[FRR] fence2ContextTable is NULL\n");
+		GED_LOGE("[FRR] fence2ContextTable is NULL\n");
 		return GED_ERROR_FAIL;
 	}
 
@@ -227,7 +232,7 @@ GED_ERROR ged_frr_wait_hw_vsync(void)
 
 	/*ret = primary_display_wait_for_vsync(&vsync_config);*/
 	if (ret < 0) {
-		pr_info("[FRR] ged_frr_wait_hw_vsync, ret(%d)\n", ret);
+		GED_LOGE("[FRR] ged_frr_wait_hw_vsync, ret(%d)\n", ret);
 		return GED_ERROR_FAIL;
 	}
 	return GED_OK;

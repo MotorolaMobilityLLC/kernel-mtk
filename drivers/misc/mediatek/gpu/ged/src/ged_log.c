@@ -396,6 +396,12 @@ static int ged_log_buf_seq_show(struct seq_file *psSeqFile, void *pvData)
 	{
 		int i;
 
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+		if (strncmp(psGEDLogBuf->acName, "fw_trace", 8) == 0)
+			ged_dump_fw();
+#endif
+
 		spin_lock_irqsave(&psGEDLogBuf->sSpinLock, psGEDLogBuf->ulIRQFlags);
 
 		if (psGEDLogBuf->acName[0] != '\0')
@@ -1024,7 +1030,7 @@ static int ged_log_buf_dump(GED_LOG_BUF *psGEDLogBuf, int i)
 			t = line->time;
 			nanosec_rem = do_div(t, 1000000000);
 
-			pr_info("[%5llu.%06lu] ", t, nanosec_rem / 1000);
+			pr_debug("[%5llu.%06lu] ", t, nanosec_rem / 1000);
 		}
 
 		if (line->tattrs & GED_LOG_ATTR_TIME_TPT) {
@@ -1034,13 +1040,13 @@ static int ged_log_buf_dump(GED_LOG_BUF *psGEDLogBuf, int i)
 			local_time = line->time;
 			rtc_time_to_tm(local_time, &tm);
 
-			pr_info("%02d-%02d %02d:%02d:%02d.%06lu %5d %5d ",
+			pr_debug("%02d-%02d %02d:%02d:%02d.%06lu %5d %5d ",
 					/*tm.tm_year + 1900,*/ tm.tm_mon + 1, tm.tm_mday,
 					tm.tm_hour, tm.tm_min, tm.tm_sec,
 					line->time_usec, line->pid, line->tid);
 		}
 
-		pr_info("%s\n", psGEDLogBuf->pcBuffer + line->offset);
+		pr_debug("%s\n", psGEDLogBuf->pcBuffer + line->offset);
 	}
 
 	return err;
@@ -1056,7 +1062,7 @@ void ged_log_dump(GED_LOG_BUF_HANDLE hLogBuf)
 		spin_lock_irqsave(&psGEDLogBuf->sSpinLock, psGEDLogBuf->ulIRQFlags);
 
 		if (psGEDLogBuf->acName[0] != '\0')
-			pr_info("---------- %s (%d/%d) ----------\n",
+			pr_debug("---------- %s (%d/%d) ----------\n",
 					psGEDLogBuf->acName, psGEDLogBuf->i32BufferCurrent, psGEDLogBuf->i32BufferSize);
 
 		if (psGEDLogBuf->attrs & GED_LOG_ATTR_RINGBUFFER) {
@@ -1120,12 +1126,15 @@ void ged_log_trace_counter(char *name, int count)
 	}
 }
 EXPORT_SYMBOL(ged_log_trace_counter);
-void ged_log_perf_trace_counter(char *name, int count)
+void ged_log_perf_trace_counter(char *name, long long count, int pid,
+	unsigned long frameID)
 {
 	if (ged_log_perf_trace_enable) {
 		__mt_update_tracing_mark_write_addr();
 		preempt_disable();
-		event_trace_printk(tracing_mark_write_addr, "C|5566|%s|%d\n", name, count);
+		event_trace_printk(tracing_mark_write_addr,
+			"C|%d|%lu|%s|%lld\n", pid,
+			frameID, name, count);
 		preempt_enable();
 	}
 }

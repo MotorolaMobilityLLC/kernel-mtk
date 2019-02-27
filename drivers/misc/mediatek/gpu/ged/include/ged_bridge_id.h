@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2011-2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -17,12 +17,12 @@
 #include "ged_type.h"
 
 typedef struct _GED_BRIDGE_PACKAGE {
-	unsigned int ui32FunctionID;
-	int i32Size;
+	uint32_t ui32FunctionID;
+	int32_t i32Size;
 	void *pvParamIn;
-	int i32InBufferSize;
+	int32_t i32InBufferSize;
 	void *pvParamOut;
-	int i32OutBufferSize;
+	int32_t i32OutBufferSize;
 } GED_BRIDGE_PACKAGE;
 
 /*****************************************************************************
@@ -171,7 +171,7 @@ typedef struct GED_BRIDGE_IN_QUERY_INFO_TAG {
 
 /* Bridge out structure for QUERY INFO*/
 typedef struct GED_BRIDGE_OUT_QUERY_INFO_TAG {
-	unsigned long   retrieve;
+	uint64_t   retrieve;
 } GED_BRIDGE_OUT_QUERY_INFO;
 
 /*****************************************************************************
@@ -209,7 +209,7 @@ typedef struct GED_BRIDGE_OUT_DVFS_PROBE_TAG {
 
 /* Bridge in structure for DVFS_UM_RETURN */
 typedef struct GED_BRIDGE_IN_DVFS_UM_RETURN_TAG {
-	unsigned long gpu_tar_freq;
+	uint64_t gpu_tar_freq;
 	bool bFallback;
 } GED_BRIDGE_IN_DVFS_UM_RETURN;
 
@@ -254,8 +254,8 @@ typedef struct GED_BRIDGE_OUT_WAIT_HW_VSYNC_TAG {
 /* Bridge in structure for creation */
 typedef struct GED_BRIDGE_IN_GPU_TIMESTAMP_TAG {
 	int pid;
-	unsigned long long ullWnd;
-	int i32FrameID;
+	uint64_t ullWnd;
+	int32_t i32FrameID;
 	int fence_fd;
 	int QedBuffer_length;
 	int isSF;
@@ -300,6 +300,9 @@ typedef struct GED_BRIDGE_OUT_GE_ALLOC_TAG {
 typedef struct GED_BRIDGE_IN_GE_GET_TAG {
 	int ge_fd;
 	int region_id;
+	/* Here uint32_* means that the unit is 32bit.
+	 * For example: uint32_offset 1 => offset 4 bytes
+	 */
 	int uint32_offset;
 	int uint32_size;
 } GED_BRIDGE_IN_GE_GET;
@@ -314,6 +317,9 @@ typedef struct GED_BRIDGE_OUT_GE_GET_TAG {
 typedef struct GED_BRIDGE_IN_GE_SET_TAG {
 	int ge_fd;
 	int region_id;
+	/* Here uint32_* means that the unit is 32bit.
+	 * For example: uint32_offset 1 => offset 4 bytes
+	 */
 	int uint32_offset;
 	int uint32_size;
 	uint32_t data[0];

@@ -29,14 +29,30 @@
 #include "ged_monitor_3D_fence.h"
 #include "ged.h"
 
-#define GED_DVFS_TIMER_TIMEOUT 25000000
+#ifdef CONFIG_MTK_QOS_SUPPORT
+#include <mtk_gpu_bw.h>
+#endif
 
-#ifndef ENABLE_TIMER_BACKUP
-#undef GED_DVFS_TIMER_TIMEOUT
+#ifdef GED_ENABLE_FB_DVFS
+#define GED_DVFS_FB_TIMER_TIMEOUT 100000000
+#define GED_DVFS_TIMER_TIMEOUT g_fallback_time_out
+#else
 #define GED_DVFS_TIMER_TIMEOUT 25000000
 #endif
 
+#ifndef ENABLE_TIMER_BACKUP
+#undef GED_DVFS_TIMER_TIMEOUT
+#ifdef GED_ENABLE_FB_DVFS
+#define GED_DVFS_FB_TIMER_TIMEOUT 100000000
+#define GED_DVFS_TIMER_TIMEOUT g_fallback_time_out
+#else
+#define GED_DVFS_TIMER_TIMEOUT 25000000
+#endif
+#endif
 
+#ifdef GED_ENABLE_FB_DVFS
+static u64 g_fallback_time_out = GED_DVFS_FB_TIMER_TIMEOUT;
+#endif
 static struct hrtimer g_HT_hwvsync_emu;
 
 #include "ged_dvfs.h"
@@ -46,6 +62,10 @@ extern void (*mtk_gpu_sodi_exit_fp)(void);
 
 
 static struct workqueue_struct* g_psNotifyWorkQueue = NULL;
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+static struct workqueue_struct *g_psDumpFW;
+#endif
 
 static struct mutex gsVsyncStampLock;
 
@@ -57,6 +77,13 @@ typedef struct GED_NOTIFY_SW_SYNC_TAG
 	long phase;
 	unsigned long ul3DFenceDoneTime;
 } GED_NOTIFY_SW_SYNC;
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+struct GED_DUMP_FW {
+	struct work_struct	sWork;
+};
+#endif
 
 extern GED_LOG_BUF_HANDLE ghLogBuf_DVFS;
 int (*ged_sw_vsync_event_fp)(bool bMode) = NULL;
@@ -179,6 +206,43 @@ extern unsigned long g_ulCalResetTS_us; // calculate loading reset time stamp
 extern unsigned long g_ulPreCalResetTS_us; // previous calculate loading reset time stamp
 extern unsigned long g_ulWorkingPeriod_us; // last frame half, t0
 
+#ifdef GED_ENABLE_FB_DVFS
+void ged_set_backup_timer_timeout(u64 time_out)
+{
+	if (time_out != 0)
+		g_fallback_time_out = time_out;
+	else
+		g_fallback_time_out = GED_DVFS_FB_TIMER_TIMEOUT;
+}
+void ged_cancel_backup_timer(void)
+{
+	unsigned long long temp;
+
+	temp = ged_get_time();
+#ifdef ENABLE_TIMER_BACKUP
+	if (hrtimer_try_to_cancel(&g_HT_hwvsync_emu)) {
+		/* Timer is either queued or in cb
+		 * cancel it to ensure it is not bother any way
+		 */
+		hrtimer_cancel(&g_HT_hwvsync_emu);
+		hrtimer_start(&g_HT_hwvsync_emu,
+			ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
+		ged_log_buf_print(ghLogBuf_DVFS,
+			"[GED_K] Timer Restart (ts=%llu)", temp);
+	} else {
+		/*
+		 * Timer is not existed
+		 */
+		hrtimer_start(&g_HT_hwvsync_emu,
+			ns_to_ktime(GED_DVFS_TIMER_TIMEOUT), HRTIMER_MODE_REL);
+		ged_log_buf_print(ghLogBuf_DVFS,
+			"[GED_K] New Timer Start (ts=%llu)", temp);
+		timer_switch_locked(true);
+	}
+#endif			/*	#ifdef ENABLE_TIMER_BACKUP	*/
+}
+#endif
+
 GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQueryData)
 {
 	ged_notification(GED_NOTIFICATION_TYPE_SW_VSYNC);
@@ -186,13 +250,16 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	{
 #ifdef ENABLE_COMMON_DVFS
 
-	long long llDiff = 0;
-	bool bHWEventKick = false;
-	unsigned long long temp;
-
-	unsigned long t;
+#ifndef GED_ENABLE_FB_DVFS
 	long phase = 0;
+	unsigned long t;
+	bool bHWEventKick = false;
+	long long llDiff = 0;
+#endif
+
+	unsigned long long temp;
 	unsigned long ul3DFenceDoneTime;
+
 
 	psQueryData->bFirstBorn = ged_sw_vsync_event(true);
 
@@ -202,15 +269,20 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 	/*psQueryData->ulWorkingPeriod_us = g_ulWorkingPeriod_us;
 	psQueryData->ulPreCalResetTS_us = g_ulCalResetTS_us; // IMPORTANT*/
 
-	temp = ged_get_time();
+	hw_vsync_ts = temp = ged_get_time();
 
 
 	if(g_gpu_timer_based_emu)
 	{
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Vsync ignored (ts=%llu)", temp);
+#ifndef GED_ENABLE_FB_DVFS
 		return GED_ERROR_INTENTIONAL_BLOCK;
+#endif
 	}
 
+#ifdef GED_ENABLE_FB_DVFS
+	return GED_ERROR_INTENTIONAL_BLOCK;
+#else
 
 
 	/*critical session begin*/
@@ -297,7 +369,7 @@ GED_ERROR ged_notify_sw_vsync(GED_VSYNC_TYPE eType, GED_DVFS_UM_QUERY_PACK* psQu
 			ged_dvfs_run(0, 0, 0);
 		}
 	}
-
+#endif
 #else
 #if 0
 	GED_NOTIFY_SW_SYNC* psNotify;
@@ -412,6 +484,9 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 	if(bSwitch)
 	{				
 		ged_gpu_power_on_notified = true;
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		mt_gpu_bw_toggle(1);
+#endif
 		g_ns_gpu_on_ts = ged_get_time();
 		g_bGPUClock = true;
 		if( g_timer_on )
@@ -427,6 +502,9 @@ void ged_dvfs_gpu_clock_switch_notify(bool bSwitch)
 	}
 	else
 	{
+#ifdef CONFIG_MTK_QOS_SUPPORT
+		mt_gpu_bw_toggle(0);
+#endif
 		ged_gpu_power_off_notified = true;
 		g_bGPUClock = false;
 		ged_log_buf_print(ghLogBuf_DVFS, "[GED_K] Buck-off");
@@ -494,6 +572,35 @@ void ged_sodi_stop(void)
 }
 
 
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+static void ged_dump_fw_handle(struct work_struct *psWork)
+{
+	struct GED_DUMP_FW *psNotify
+		= GED_CONTAINER_OF(psWork, struct GED_DUMP_FW, sWork);
+
+	if (psNotify) {
+		MTKFWDump();
+		ged_free(psNotify, sizeof(struct GED_DUMP_FW));
+	}
+}
+
+void ged_dump_fw(void)
+{
+	struct GED_DUMP_FW *psNotify;
+
+	psNotify = (struct GED_DUMP_FW *)
+		ged_alloc_atomic(sizeof(struct GED_DUMP_FW));
+
+	if (psNotify) {
+		INIT_WORK(&psNotify->sWork, ged_dump_fw_handle);
+		queue_work(g_psDumpFW, &psNotify->sWork);
+	}
+}
+EXPORT_SYMBOL(ged_dump_fw);
+#endif
+
+
 GED_ERROR ged_notify_sw_vsync_system_init(void)
 {
 	g_psNotifyWorkQueue = create_workqueue("ged_notify_sw_vsync");
@@ -502,6 +609,16 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
 	{
 		return GED_ERROR_OOM;
 	}
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+	g_psDumpFW = NULL;
+	g_psDumpFW = create_workqueue("ged_dump_fw_log");
+
+	if (g_psDumpFW == NULL)
+		return GED_ERROR_OOM;
+#endif
+
 	mutex_init(&gsVsyncStampLock);
 	mutex_init(&gsVsyncModeLock);
 	
@@ -524,6 +641,17 @@ void ged_notify_sw_vsync_system_exit(void)
 
 		g_psNotifyWorkQueue = NULL;
 	}
+
+#if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
+|| defined(CONFIG_MACH_MT6739)
+	if (g_psDumpFW != NULL) {
+		flush_workqueue(g_psDumpFW);
+
+		destroy_workqueue(g_psDumpFW);
+
+		g_psDumpFW = NULL;
+	}
+#endif
 #ifdef ENABLE_COMMON_DVFS			 
 	hrtimer_cancel( &g_HT_hwvsync_emu );
 #endif	
