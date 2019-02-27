@@ -38,8 +38,6 @@
 #endif
 #define pr_fmt(fmt) "["KBUILD_MODNAME"]" fmt
 
-#define MFV_PR_INFO(...) pr_info(__VA_ARGS__)
-
 unsigned long pmem_user_v2p_video(unsigned long va)
 {
 	unsigned long pageOffset = (va & (PAGE_SIZE - 1));
@@ -50,31 +48,31 @@ unsigned long pmem_user_v2p_video(unsigned long va)
 	unsigned long pa;
 
 	if (current == NULL) {
-		MFV_PR_INFO("[ERROR] pmem_user_v2p_video, current is NULL!\n");
+		pr_info("[ERROR] pmem_user_v2p_video, current is NULL!\n");
 		return 0;
 	}
 
 	if (current->mm == NULL) {
-		MFV_PR_INFO("[ERROR] v2p, mm is NULL! tgid=0x%x, name=%s\n",
+		pr_info("[ERROR] v2p, mm is NULL! tgid=0x%x, name=%s\n",
 				current->tgid, current->comm);
 		return 0;
 	}
 
 	pgd = pgd_offset(current->mm, va);  /* what is tsk->mm */
 	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
-		MFV_PR_INFO("[ERROR] v2p, va=0x%lx, pgd invalid!\n", va);
+		pr_info("[ERROR] v2p, va=0x%lx, pgd invalid!\n", va);
 		return 0;
 	}
 
 	pud = pud_offset(pgd, va);
 	if (pud_none(*pud) || pud_bad(*pud)) {
-		MFV_PR_INFO("[ERROR] v2p, va=0x%lx, pud invalid!\n", va);
+		pr_info("[ERROR] v2p, va=0x%lx, pud invalid!\n", va);
 		return 0;
 	}
 
 	pmd = pmd_offset(pud, va);
 	if (pmd_none(*pmd) || pmd_bad(*pmd)) {
-		MFV_PR_INFO("[ERROR] v2p(), va=0x%lx, pmd invalid!\n", va);
+		pr_info("[ERROR] v2p(), va=0x%lx, pmd invalid!\n", va);
 		return 0;
 	}
 
@@ -85,7 +83,7 @@ unsigned long pmem_user_v2p_video(unsigned long va)
 		return pa;
 	}
 
-	MFV_PR_INFO("[ERROR] v2p, va=0x%lx, pte invalid!\n", va);
+	pr_info("[ERROR] v2p, va=0x%lx, pte invalid!\n", va);
 	return 0;
 }
 EXPORT_SYMBOL(pmem_user_v2p_video);

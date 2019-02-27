@@ -35,7 +35,7 @@ extern "C" {
 struct _HAL_POWER_T {
 	void *pvHandle;
 	unsigned int u4HandleSize;
-	VAL_DRIVER_TYPE_T eDriverType;
+	enum VAL_DRIVER_TYPE_T eDriverType;
 	char fgEnable;
 	void *pvReserved;
 	unsigned int u4ReservedSize;
@@ -56,7 +56,7 @@ struct _HAL_POWER_T {
 struct HAL_ISR_T {
 	void *pvHandle;
 	unsigned int u4HandleSize;
-	VAL_DRIVER_TYPE_T eDriverType;
+	enum VAL_DRIVER_TYPE_T eDriverType;
 	char fgRegister;
 	void *pvReserved;
 	unsigned int u4ReservedSize;

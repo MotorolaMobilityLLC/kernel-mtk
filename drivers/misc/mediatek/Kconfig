@@ -70,6 +70,23 @@ config MTK_PSCI
 endmenu  # Power
 
 menu "MultiMedia, Display, Camera related configs"
+config MTK_SVP
+	bool "Support Mediatek Shareable Secure Video Playback technology"
+	depends on CMA && ZONE_MOVABLE_CMA
+	help
+	  Mediatek Shareable SVP technology.
+	  It tries to save memory by switching
+	  different DRAM mode dynamically. It is a
+	  platform-dependent feature.
+
+config MTK_SEC_VIDEO_PATH_SUPPORT
+	bool "Enable MTK Secure Video Path Support"
+	depends on MTK_IN_HOUSE_TEE_SUPPORT || TRUSTONIC_TEE_SUPPORT || TRUSTY
+	help
+	  This enable MTK Secure Video Path Support. (depending on
+	  MTK In-House TEE Support or Trustonic TEE Support)
+
+source "drivers/misc/mediatek/videocodec/Kconfig"
 
 source "drivers/misc/mediatek/m4u/Kconfig"
 source "drivers/misc/mediatek/smi/Kconfig"
