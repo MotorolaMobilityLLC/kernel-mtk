@@ -159,6 +159,7 @@ struct imgsensor_info_struct {
 	 * only supprt 4must end with 0xff
 	 */
 	kal_uint8 i2c_addr_table[5];
+	kal_uint32 i2c_speed;
 };
 
 
@@ -173,6 +174,12 @@ extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
 extern void read_imx230_eeprom(void);
 extern void read_imx230_SPC(BYTE *data);
 extern void read_imx230_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size);
+int iBurstWriteReg_multi(
+	u8 *pData,
+	u32 bytes,
+	u16 i2cId,
+	u16 transfer_length,
+	u16 timing);
 
 
 #endif
