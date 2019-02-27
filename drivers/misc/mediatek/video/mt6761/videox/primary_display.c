@@ -8155,7 +8155,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 
 	ret = m4u_cache_sync(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf,
 			     buffer_size, mva, M4U_CACHE_INVALID_BY_RANGE);
-
+	msleep(20);
 out:
 	if (mva > 0)
 		m4u_dealloc_mva(m4uClient, DISP_M4U_PORT_DISP_WDMA0, mva);

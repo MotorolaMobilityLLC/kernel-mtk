@@ -171,6 +171,7 @@ unsigned long ext_fb_pa;
 unsigned int ext_lcd_fps = 6000;
 char ext_mtkfb_lcm_name[256] = { 0 };
 #endif
+static int slt_test;
 
 DEFINE_SEMAPHORE(sem_flipping);
 DEFINE_SEMAPHORE(sem_early_suspend);
@@ -306,6 +307,17 @@ static int mtkfb1_blank(int blank_mode, struct fb_info *info)
 	return 0;
 }
 #endif
+
+void set_slt_test(int enable)
+{
+	slt_test = enable;
+}
+
+int is_slt_test(void)
+{
+	return slt_test;
+}
+
 
 static int mtkfb_blank(int blank_mode, struct fb_info *info)
 {
@@ -1303,9 +1315,10 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 				__LINE__);
 			return -EFAULT;
 		}
-
+		set_slt_test(1);
 		r = primary_display_capture_framebuffer_ovl(
 				(unsigned long)src_pbuf, format);
+		set_slt_test(0);
 		if (r < 0)
 			DISPERR(
 			"primary display capture framebuffer failed!\n");
