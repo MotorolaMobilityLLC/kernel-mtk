@@ -83,8 +83,10 @@ static const char *g_pll_name[FH_PLL_NUM] = {
 	"NOTSUPPORT", /*tell EM MEMPLL cannot do hopping*/
 	"MPLL",
 	"MMPLL",
+#if defined(CONFIG_MACH_MT6765)
 	"ARMPLL_L",
 	"CCIPLL",
+#endif
 };
 
 /*********************************/
@@ -104,8 +106,10 @@ static int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL4 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL5 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL6 */
+#if defined(CONFIG_MACH_MT6765)
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL7 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL8 */
+#endif
 };
 
 static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
@@ -151,6 +155,7 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0% */
 	 },
 
+#if defined(CONFIG_MACH_MT6765)
 	/* FH PLL7 ARMPLL_L*/
 	{
 	 {0, 0, 0, 0, 0, 0},
@@ -162,6 +167,7 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	 {0, 0, 0, 0, 0, 0},
 	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0% */
 	 },
+#endif
 };
 
 
@@ -497,10 +503,12 @@ static void mt_fh_hal_default_conf(void)
 
 	FH_MSG_DEBUG("%s", __func__);
 
+#if defined(CONFIG_MACH_MT6765)
 	//Cervino: default enable MPLL SSC 0~-1% at LP3 DDR devices
 	if (get_ddr_type() == TYPE_LPDDR3) {
 		g_pll_ssc_init_tbl[FH_PLL5] = FH_SSC_DEF_ENABLE_SSC;
 	}
+#endif
 
 	/* According to setting to enable PLL SSC during init FHCTL. */
 	for (id = 0; id < FH_PLL_NUM; id++) {
@@ -551,7 +559,7 @@ static int mt_fh_hal_general_pll_dfs(enum FH_PLL_ID pll_id,
 		break;
 	}
 
-	FH_MSG("%s, [Pll_ID]:%d [current dds(CON1)]:0x%x, [target dds]:%d",
+	FH_MSG_DEBUG("%s, [Pll_ID]:%d [cur dds(CON1)]:0x%x, [target dds]:%d",
 	       __func__, pll_id,
 	       (fh_read32(g_reg_pll_con1[pll_id]) & FH_DDS_MASK),
 	       target_dds);
@@ -663,43 +671,64 @@ static void __reg_tbl_init(void)
 	const unsigned long reg_dds[] = {
 		REG_FHCTL0_DDS, REG_FHCTL1_DDS, REG_FHCTL2_DDS,
 		REG_FHCTL3_DDS, REG_FHCTL4_DDS, REG_FHCTL5_DDS,
-		REG_FHCTL6_DDS, REG_FHCTL7_DDS, REG_FHCTL8_DDS
+		REG_FHCTL6_DDS,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FHCTL7_DDS, REG_FHCTL8_DDS
+#endif
 	};
 
 	const unsigned long reg_cfg[] = {
 		REG_FHCTL0_CFG, REG_FHCTL1_CFG, REG_FHCTL2_CFG,
 		REG_FHCTL3_CFG, REG_FHCTL4_CFG, REG_FHCTL5_CFG,
-		REG_FHCTL6_CFG, REG_FHCTL7_CFG, REG_FHCTL8_CFG
+		REG_FHCTL6_CFG,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FHCTL7_CFG, REG_FHCTL8_CFG
+#endif
 	};
 
 	const unsigned long reg_updnlmt[] = {
 		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT,
 		REG_FHCTL3_UPDNLMT, REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT,
-		REG_FHCTL6_UPDNLMT, REG_FHCTL7_UPDNLMT, REG_FHCTL8_UPDNLMT
+		REG_FHCTL6_UPDNLMT,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FHCTL7_UPDNLMT, REG_FHCTL8_UPDNLMT
+#endif
 	};
 
 	const unsigned long reg_mon[] = {
 		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON,
 		REG_FHCTL3_MON, REG_FHCTL4_MON, REG_FHCTL5_MON,
-		REG_FHCTL6_MON, REG_FHCTL7_MON, REG_FHCTL8_MON
+		REG_FHCTL6_MON,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FHCTL7_MON, REG_FHCTL8_MON
+#endif
 	};
 
 	const unsigned long reg_dvfs[] = {
 		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS,
 		REG_FHCTL3_DVFS, REG_FHCTL4_DVFS, REG_FHCTL5_DVFS,
-		REG_FHCTL6_DVFS, REG_FHCTL7_DVFS, REG_FHCTL8_DVFS
+		REG_FHCTL6_DVFS,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FHCTL7_DVFS, REG_FHCTL8_DVFS
+#endif
 	};
 
 	const unsigned long reg_pll_con0[] = {
 		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0,
 		REG_FH_PLL3_CON0, REG_FH_PLL4_CON0, REG_FH_PLL5_CON0,
-		REG_FH_PLL6_CON0, REG_FH_PLL7_CON0, REG_FH_PLL8_CON0
+		REG_FH_PLL6_CON0,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FH_PLL7_CON0, REG_FH_PLL8_CON0
+#endif
 	};
 
 	const unsigned long reg_pll_con1[] = {
 		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1,
 		REG_FH_PLL3_CON1, REG_FH_PLL4_CON1, REG_FH_PLL5_CON1,
-		REG_FH_PLL6_CON1, REG_FH_PLL7_CON1, REG_FH_PLL8_CON1
+		REG_FH_PLL6_CON1,
+#if defined(CONFIG_MACH_MT6765)
+		REG_FH_PLL7_CON1, REG_FH_PLL8_CON1
+#endif
 	};
 
     /****************************************/
@@ -973,7 +1002,9 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 
 	switch (pll) {
 	case FH_PLL0:
+#if defined(CONFIG_MACH_MT6765)
 	case FH_PLL7:
+#endif
 		reg_cfg = g_reg_cfg[pll];
 		FH_MSG_DEBUG("(FHCTLx_CFG): 0x%x", fh_read32(g_reg_cfg[pll]));
 		break;
