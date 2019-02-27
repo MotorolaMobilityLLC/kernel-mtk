@@ -2290,26 +2290,39 @@ static kal_uint32 get_sensor_temperature(void)
 	return temperature_convert;
 }
 
-#define FOUR_CELL_SIZE 3072
+#define FOUR_CELL_SIZE 3072/*size = 3072 = 0xc00*/
+static int Is_Read_4Cell;
+static char Four_Cell_Array[FOUR_CELL_SIZE + 2];
 static void read_4cell_from_eeprom(char *data)
 {
-	int i = 0;
+	int ret;
 	int addr = 0x763;/*Start of 4 cell data*/
 	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
 
-	/*size = 3072 = 0xc00*/
-	data[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
-	data[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
+	pu_send_cmd[0] = (char)(addr >> 8);
+	pu_send_cmd[1] = (char)(addr & 0xFF);
 
-	for (i = 2; i < (FOUR_CELL_SIZE + 2); i++) {
-		pu_send_cmd[0] = (char)(addr >> 8);
-		pu_send_cmd[1] = (char)(addr & 0xFF);
-		iReadRegI2C(pu_send_cmd, 2, &data[i], 1, EEPROM_READ_ID);
-		addr++;
+	/* Check I2C is normal */
+	ret = iReadRegI2C(pu_send_cmd, 2, data, 1, EEPROM_READ_ID);
+	if (ret != 0) {
+		pr_debug("iReadRegI2C error");
+		return;
 	}
+
+	if (Is_Read_4Cell != 1) {
+		pr_debug("Need to read i2C");
+
+		Four_Cell_Array[0] = (FOUR_CELL_SIZE & 0xff);/*Low*/
+		Four_Cell_Array[1] = ((FOUR_CELL_SIZE >> 8) & 0xff);/*High*/
+
+		/*Multi-Read*/
+		iReadRegI2C(pu_send_cmd, 2, &Four_Cell_Array[2],
+					FOUR_CELL_SIZE, EEPROM_READ_ID);
+		Is_Read_4Cell = 1;
+	}
+
+	memcpy(data, Four_Cell_Array, FOUR_CELL_SIZE);
 }
-
-
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				  UINT8 *feature_para, UINT32 *feature_para_len)
@@ -2479,8 +2492,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		char *data = (char *)(uintptr_t)(*(feature_data+1));
 
 		if (type == FOUR_CELL_CAL_TYPE_XTALK_CAL) {
+			pr_debug("Read Cross Talk Start");
 			read_4cell_from_eeprom(data);
-			pr_debug("read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
+			pr_debug("Read Cross Talk = %02x %02x %02x %02x %02x %02x\n",
 				(UINT16)data[0], (UINT16)data[1],
 				(UINT16)data[2], (UINT16)data[3],
 				(UINT16)data[4], (UINT16)data[5]);
