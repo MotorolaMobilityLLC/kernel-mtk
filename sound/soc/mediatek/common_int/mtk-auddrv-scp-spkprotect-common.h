@@ -48,7 +48,6 @@
 #include <linux/kernel.h>
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
-#include <audio_dma_buf_control.h>
 #include <audio_ipi_client_spkprotect.h>
 #include <audio_task_manager.h>
 #endif
@@ -62,6 +61,12 @@ struct aud_spk_message {
 	uint32_t param1;
 	uint32_t param2;
 	char *payload;
+};
+
+struct audio_resv_dram_t {
+	char    *phy_addr;
+	char    *vir_addr;
+	uint32_t size;
 };
 
 void init_spkscp_reserved_dram(void);
