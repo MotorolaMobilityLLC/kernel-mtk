@@ -66,7 +66,12 @@ extern int walt_cpufreq_notifier_trans(unsigned int cpu, unsigned int new_freq);
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 extern unsigned long int min_boost_freq[3];
+extern unsigned long int cap_min_freq[3];
 extern void update_cpu_freq_quick(int cpu, int freq);
 #else
 static inline void update_cpu_freq_quick(int cpu, int freq) { return; }
+#endif
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+extern int schedtune_cpu_capacity_min(int cpu);
 #endif
