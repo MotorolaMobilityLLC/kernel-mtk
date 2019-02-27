@@ -44,7 +44,7 @@ int fbt_is_mips_different(void)
 
 int fbt_get_L_min_ceiling(void)
 {
-	return 1400000;
+	return 1100000;
 }
 
 int fbt_get_L_cluster_num(void)
