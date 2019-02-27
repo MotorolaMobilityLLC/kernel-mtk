@@ -286,8 +286,7 @@ menu "Security"
 config MTK_TEE_GP_SUPPORT
 	bool "Enable MTK GlobalPlatform support in TEE related modules"
 	default n
-	depends on (TRUSTONIC_TEE_SUPPORT) || (MICROTRUST_TEE_SUPPORT) || \
-	           (WATCHDATA_TEE_SUPPORT)
+	depends on (TRUSTONIC_TEE_SUPPORT) || (MICROTRUST_TEE_SUPPORT)
 	help
 	  GlobalPlatform defines common/consistent APIs and this option
 	  enables TEE related modules to use GPAPIs. (depending on
@@ -352,7 +351,6 @@ source "drivers/misc/mediatek/ccu/src/Kconfig"
 source "drivers/misc/mediatek/rtc/Kconfig"
 source "drivers/misc/mediatek/xo/Kconfig"
 source "drivers/misc/mediatek/teei/Kconfig"
-source "drivers/misc/mediatek/watchtrust/Kconfig"
 source "drivers/misc/mediatek/ram_console/Kconfig"
 source "drivers/misc/mediatek/aee/Kconfig"
 source "drivers/misc/mediatek/lens/Kconfig"
