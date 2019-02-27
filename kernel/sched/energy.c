@@ -125,4 +125,3 @@ out:
 }
 #endif
 
-#include "sched_power.c"

@@ -5469,29 +5469,6 @@ static inline bool energy_aware(void)
 	return sched_feat(ENERGY_AWARE);
 }
 
-struct energy_env {
-	struct sched_group	*sg_top;
-	struct sched_group	*sg_cap;
-	int			cap_idx;
-	int			util_delta;
-	int			src_cpu;
-	int			dst_cpu;
-	int			energy;
-	int			payoff;
-	struct task_struct	*task;
-	struct {
-		int before;
-		int after;
-		int delta;
-		int diff;
-	} nrg;
-	struct {
-		int before;
-		int after;
-		int delta;
-	} cap;
-};
-
 /*
  * __cpu_norm_util() returns the cpu util relative to a specific capacity,
  * i.e. it's busy ratio, in the range [0..SCHED_LOAD_SCALE] which is useful for
@@ -5661,6 +5638,9 @@ static int sched_group_energy(struct energy_env *eenv)
 	int cpu, total_energy = 0;
 	struct cpumask visit_cpus;
 	struct sched_group *sg;
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	int only_lv1_sd = 0;
+#endif
 
 	WARN_ON(!eenv->sg_top->sge);
 
@@ -5671,11 +5651,38 @@ static int sched_group_energy(struct energy_env *eenv)
 
 		cpu = cpumask_first(&visit_cpus);
 
+		sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
+		if (!sd) {
+			/* a corner racing with hotplug?
+			 * sd doesn't exist in this cpu.
+			 */
+
+			return -EINVAL;
+		}
+
 		/*
 		 * Is the group utilization affected by cpus outside this
 		 * sched_group?
 		 */
 		sd = rcu_dereference(per_cpu(sd_scs, cpu));
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+		/* Try to handle one CPU in this cluster by hotplug.
+		 * In it there is only lv-1 sched_domain exist which having
+		 * no share_cap_states.
+		 */
+		if (!sd) {
+			sd = rcu_dereference(per_cpu(sd_ea, cpu));
+			only_lv1_sd = 1;
+		}
+#endif
+		if (!sd) {
+			/*
+			 * We most probably raced with hotplug; returning a
+			 * wrong energy estimation is better than entering an
+			 * infinite loop.
+			 */
+			return -EINVAL;
+		}
 
 		if (sd && sd->parent)
 			sg_shared_cap = sd->parent->groups;
@@ -5718,10 +5725,28 @@ static int sched_group_energy(struct energy_env *eenv)
 				group_util = group_norm_util(eenv, sg);
 
 #ifdef CONFIG_MTK_UNIFY_POWER
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+				/*
+				 * To support power estimation for MTK soc.
+				 * Consider share buck for dynamic power and
+				 * SPARK/MCDI for static power.
+				 */
+				sg_busy_energy = (group_util *
+					sg->sge->busy_power(group_first_cpu(sg),
+						eenv, (sd->child) ? 1 : 0))
+							>> SCHED_CAPACITY_SHIFT;
+				sg_idle_energy =
+					((SCHED_CAPACITY_SCALE - group_util)*
+					sg->sge->idle_power(idle_idx,
+						group_first_cpu(sg), eenv,
+						(sd->child) ? 1 : 0))
+							>> SCHED_CAPACITY_SHIFT;
+#else
 				/* Power value had been separated to static + dynamic here */
 				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].dyn_pwr +
 						sg->sge->cap_states[cap_idx].lkg_pwr[sg->sge->lkg_idx]))
 								>> SCHED_CAPACITY_SHIFT;
+#endif
 #else
 				sg_busy_energy = (group_util * sg->sge->cap_states[cap_idx].power)
 								>> SCHED_CAPACITY_SHIFT;
@@ -5732,8 +5757,25 @@ static int sched_group_energy(struct energy_env *eenv)
 
 				total_energy += sg_busy_energy + sg_idle_energy;
 
+				mt_sched_printf(sched_eas_energy_calc,
+					"busy_energy=%d idle_eneryg=%d (cost=%d)",
+					sg_busy_energy, sg_idle_energy,
+					total_energy);
+
 				if (!sd->child)
 					cpumask_xor(&visit_cpus, &visit_cpus, sched_group_cpus(sg));
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+				/*
+				 * We try to get correct energy estimation
+				 * while racing with hotplug and
+				 * avoid entering a infinite loop.
+				 */
+				if (only_lv1_sd) {
+					eenv->energy = total_energy;
+					return 0;
+				}
+#endif
 
 				if (cpumask_equal(sched_group_cpus(sg), sched_group_cpus(eenv->sg_top)))
 					goto next_cpu;
@@ -5783,6 +5825,9 @@ static inline int __energy_diff(struct energy_env *eenv)
 		.nrg		= { 0, 0, 0, 0},
 		.cap		= { 0, 0, 0 },
 	};
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	int i;
+#endif
 
 	if (eenv->src_cpu == eenv->dst_cpu)
 		return 0;
@@ -5792,6 +5837,24 @@ static inline int __energy_diff(struct energy_env *eenv)
 
 	if (!sd)
 		return 0; /* Error */
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	/* To get max opp index of every cluster for power estimation of
+	 * share buck
+	 */
+	for (i = 0; i < arch_get_nr_clusters(); i++) {
+		/* for energy before */
+		eenv_before.opp_idx[i]  =
+			mtk_cluster_capacity_idx(i, &eenv_before);
+
+		/* for energy after */
+		eenv->opp_idx[i] = mtk_cluster_capacity_idx(i, eenv);
+
+		mt_sched_printf(sched_eas_energy_calc,
+			"cid=%d, before max_opp:%d, after max_opp:%d\n",
+			i, eenv_before.opp_idx[i], eenv->opp_idx[i]);
+	}
+#endif
 
 	sg = sd->groups;
 
@@ -10805,3 +10868,5 @@ __init void init_sched_fair_class(void)
 	cmp_cputopo_domain_setup();
 
 }
+
+#include "sched_power.c"
