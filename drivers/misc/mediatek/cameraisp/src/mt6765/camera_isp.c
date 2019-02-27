@@ -3852,21 +3852,21 @@ static inline void Disable_Unprepare_ccf_clock(void)
 	/* must keep this clk close order: ISP clk
 	 * -> CG_SCP_SYS_ISP/CAM -> CG_DISP0_SMI_COMMON -> CG_SCP_SYS_DIS
 	 */
-	clk_disable_unprepare(isp_clk.ISP_IMG_DIP);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMTG);
-	clk_disable_unprepare(isp_clk.ISP_CAM_SENINF);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV0);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV1);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV2);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV1);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV0);
+	clk_disable_unprepare(isp_clk.ISP_CAM_SENINF);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMTG);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
+	clk_disable_unprepare(isp_clk.ISP_IMG_DIP);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_CAM);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_ISP);
 	clk_disable_unprepare(isp_clk.ISP_SCP_SYS_DIS);
 
 	#ifndef EP_MARK_SMI
 	/* pr_info("disable CG/MTCMOS through SMI CLK API\n"); */
-	smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, ISP_DEV_NAME, true);
 	smi_bus_disable_unprepare(SMI_LARB2_REG_INDX, ISP_DEV_NAME, true);
+	smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, ISP_DEV_NAME, true);
 	#endif
 }
 
@@ -3913,14 +3913,15 @@ static inline void Prepare_Enable_cg_clock(void)
 
 static inline void Disable_Unprepare_cg_clock(void)
 {
-	clk_disable_unprepare(isp_clk.ISP_IMG_DIP);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
-/*	clk_disable_unprepare(isp_clk.ISP_CAM_CAMTG);
- *	clk_disable_unprepare(isp_clk.ISP_CAM_SENINF);
- */
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV0);
-	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV1);
 	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV2);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV1);
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSV0);
+	/*
+	 * clk_disable_unprepare(isp_clk.ISP_CAM_SENINF);
+	 * clk_disable_unprepare(isp_clk.ISP_CAM_CAMTG);
+	 */
+	clk_disable_unprepare(isp_clk.ISP_CAM_CAMSYS);
+	clk_disable_unprepare(isp_clk.ISP_IMG_DIP);
 
 	#ifndef EP_MARK_SMI
 	pr_info("disable CG through SMI CLK API\n");
@@ -7889,6 +7890,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		{
 			static unsigned int camsys_qos;
 			unsigned int dfs_ctrl;
+			unsigned int dfs_update = 457;
 
 			if (copy_from_user(&dfs_ctrl, (void *)Param,
 			    sizeof(unsigned int)) == 0) {
@@ -7898,8 +7900,13 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						  &isp_qos,
 						  MMDVFS_PM_QOS_SUB_SYS_CAMERA,
 						  0);
+						mmdvfs_pm_qos_update_request(
+						  &isp_qos,
+						  MMDVFS_PM_QOS_SUB_SYS_CAMERA,
+						  dfs_update);
 						pr_debug(
-							"CAMSYS PMQoS turn on");
+						  "CAMSYS PMQoS turn on(%d)",
+						  dfs_update);
 					}
 				} else {
 					if (--camsys_qos == 0) {
@@ -7916,6 +7923,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		}
 		break;
 	case ISP_DFS_UPDATE:
+		#if 0
 		{
 			unsigned int dfs_update;
 
@@ -7929,6 +7937,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
+		#endif
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 		/* To get how many clk levels this platform is supported */
