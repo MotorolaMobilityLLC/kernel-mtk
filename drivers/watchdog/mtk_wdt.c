@@ -324,6 +324,7 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 	aee_wdt_fiq_info(arg, regs, svc_sp);
 }
 #else
+#if 0
 static void wdt_report_info(void)
 {
 	struct task_struct *task;
@@ -354,6 +355,7 @@ static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 #endif
+#endif
 
 static int mtk_wdt_probe(struct platform_device *pdev)
 {
@@ -382,16 +384,19 @@ static int mtk_wdt_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#ifndef CONFIG_FIQ_GLUE
+#if 0
 	err = request_irq(mtk_wdt->wdt_irq_id, (irq_handler_t)mtk_wdt_isr, IRQF_TRIGGER_NONE, DRV_NAME, mtk_wdt);
-#else
+#endif
+
+#if 0
 	mtk_wdt->wdt_irq_id = get_hardware_irq(mtk_wdt->wdt_irq_id);
 	err = request_fiq(mtk_wdt->wdt_irq_id, wdt_fiq, IRQF_TRIGGER_FALLING, mtk_wdt);
-#endif
+
 	if (err != 0) {
 		pr_err("mtk_wdt_probe : failed to request irq (%d)\n", err);
 		return err;
 	}
+#endif
 
 	toprgu_base = mtk_wdt->wdt_base;
 	wdt_dev = &mtk_wdt->wdt_dev;
