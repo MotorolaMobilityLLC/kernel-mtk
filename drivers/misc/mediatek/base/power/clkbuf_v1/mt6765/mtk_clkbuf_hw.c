@@ -1170,19 +1170,27 @@ void clk_buf_init_pmic_swctrl(void)
 {
 	if (CLK_BUF1_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
 		pmic_clk_buf_swctrl[XO_SOC] = CLK_BUF_SW_DISABLE;
-	else if (CLK_BUF2_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
+
+	if (CLK_BUF2_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
 		clk_buf_ctrl_internal(CLK_BUF_CONN, false);
 		pmic_clk_buf_swctrl[XO_WCN] = CLK_BUF_SW_DISABLE;
-	} else if (CLK_BUF3_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
+	}
+
+	if (CLK_BUF3_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
 		clk_buf_ctrl_internal(CLK_BUF_NFC, false);
 		pmic_clk_buf_swctrl[XO_NFC] = CLK_BUF_SW_DISABLE;
-	} else if (CLK_BUF4_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
+	}
+
+	if (CLK_BUF4_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
 		pmic_clk_buf_swctrl[XO_CEL] = CLK_BUF_SW_DISABLE;
-	else if (CLK_BUF5_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
+
+	if (CLK_BUF5_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
 		pmic_clk_buf_swctrl[XO_AUD] = CLK_BUF_SW_DISABLE;
-	else if (CLK_BUF6_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
+
+	if (CLK_BUF6_STATUS_PMIC == CLOCK_BUFFER_DISABLE)
 		pmic_clk_buf_swctrl[XO_PD] = CLK_BUF_SW_DISABLE;
-	else if (CLK_BUF7_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
+
+	if (CLK_BUF7_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
 		clk_buf_ctrl_internal(CLK_BUF_UFS, false);
 		pmic_clk_buf_swctrl[XO_EXT] = CLK_BUF_SW_DISABLE;
 	}
