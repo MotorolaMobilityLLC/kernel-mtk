@@ -100,6 +100,7 @@ static unsigned int Dl1Spk_feedback_user;
 static unsigned int mspkPlaybackDramState;
 static unsigned int mspkPlaybackFeedbackDramState;
 static int mspkiv_meminterface_type;
+static int mspkiv_io_type;
 static bool vcore_dvfs_enable;
 
 static struct audio_resv_dram_t *p_resv_dram;
@@ -668,6 +669,13 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 			__func__);
 		mspkiv_meminterface_type = Soc_Aud_Digital_Block_MEM_VUL_DATA2;
 	}
+	mspkiv_io_type =
+		get_usage_digital_block_io(AUDIO_USAGE_SCP_SPK_IV_DATA);
+	if (mspkiv_io_type < 0) {
+		pr_info("%s io block err using VUL_Data2 as default\n",
+			__func__);
+		mspkiv_io_type = Soc_Aud_AFE_IO_Block_MEM_VUL_DATA2;
+	}
 
 #ifdef use_wake_lock
 	scp_spk_int_wakelock(true);
@@ -770,7 +778,7 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
 					    Soc_Aud_AFE_IO_Block_I2S3);
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_24BIT,
-					    mspkiv_meminterface_type);
+					    mspkiv_io_type);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_32BITS;
 		} else {
 			SetMemIfFetchFormatPerSample(
@@ -783,7 +791,7 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 					    Soc_Aud_AFE_IO_Block_I2S3);
 			mI2SWLen = Soc_Aud_I2S_WLEN_WLEN_16BITS;
 			SetConnectionFormat(OUTPUT_DATA_FORMAT_16BIT,
-					    mspkiv_meminterface_type);
+					    mspkiv_io_type);
 		}
 
 		/* I2S out Setting */
