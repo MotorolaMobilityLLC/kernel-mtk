@@ -188,6 +188,7 @@ enum tcpm_rx_cap_type {
 
 struct tcpc_ops {
 	int (*init)(struct tcpc_device *tcpc, bool sw_reset);
+	int (*init_alert_mask)(struct tcpc_device *tcpc);
 	int (*alert_status_clear)(struct tcpc_device *tcpc, uint32_t mask);
 	int (*fault_status_clear)(struct tcpc_device *tcpc, uint8_t status);
 	int (*get_alert_mask)(struct tcpc_device *tcpc, uint32_t *mask);
@@ -200,6 +201,22 @@ struct tcpc_ops {
 	int (*set_low_rp_duty)(struct tcpc_device *tcpc, bool low_rp);
 	int (*set_vconn)(struct tcpc_device *tcpc, int enable);
 	int (*deinit)(struct tcpc_device *tcpc);
+	int (*alert_vendor_defined_handler)(struct tcpc_device *tcpc);
+
+#ifdef CONFIG_TCPC_VSAFE0V_DETECT_IC
+	int (*is_vsafe0v)(struct tcpc_device *tcpc);
+#endif /* CONFIG_TCPC_VSAFE0V_DETECT_IC */
+
+#ifdef CONFIG_WATER_DETECTION
+	int (*is_water_detected)(struct tcpc_device *tcpc);
+	int (*enable_wd_oneshot)(struct tcpc_device *tcpc);
+	int (*set_water_protection)(struct tcpc_device *tcpc, bool en);
+#endif /* CONFIG_WATER_DETECTION */
+
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	int (*enable_fod_oneshot)(struct tcpc_device *tcpc, bool en);
+	int (*set_cc_hidet)(struct tcpc_device *tcpc, bool en);
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
 
 #ifdef CONFIG_TCPC_LOW_POWER_MODE
 	int (*is_low_power_mode)(struct tcpc_device *tcpc);
@@ -462,8 +479,19 @@ struct tcpc_device {
 #endif /* CONFIG_USB_PD_REV30 */
 #endif /* CONFIG_USB_POWER_DELIVERY */
 	u8 vbus_level:2;
+	bool vbus_safe0v;
+	bool vbus_present;
 	u8 irq_enabled:1;
 	u8 pd_inited_flag:1; /* MTK Only */
+#ifdef CONFIG_WATER_DETECTION
+	u32 wd_retry_cnt;
+#endif /* CONFIG_WATER_DETECTION */
+#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
+	enum tcpc_fod_status fod;
+#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
+#ifdef CONFIG_CABLE_TYPE_DETECTION
+	enum tcpc_cable_type cable_type;
+#endif /* CONFIG_CABLE_TYPE_DETECTION */
 };
 
 
