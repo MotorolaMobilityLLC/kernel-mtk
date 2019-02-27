@@ -42,6 +42,8 @@
  */
 static DEFINE_PER_CPU(unsigned long, cpu_scale) = SCHED_CAPACITY_SCALE;
 
+#include "topology_dts.c"
+
 unsigned long scale_cpu_capacity(struct sched_domain *sd, int cpu)
 {
 #ifdef CONFIG_CPU_FREQ
@@ -470,6 +472,9 @@ void __init init_cpu_topology(void)
 {
 	unsigned int cpu;
 
+	if (cpu_topology_init)
+		return;
+
 	/* init core mask and capacity */
 	for_each_possible_cpu(cpu) {
 		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
@@ -486,4 +491,5 @@ void __init init_cpu_topology(void)
 
 	/* Set scheduler topology descriptor */
 	set_sched_topology(arm_topology);
+	parse_dt_cpu_capacity();
 }
