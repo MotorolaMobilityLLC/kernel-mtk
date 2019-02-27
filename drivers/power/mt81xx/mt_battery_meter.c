@@ -2446,6 +2446,10 @@ s32 battery_meter_get_batteryR(void)
 #if defined(CONFIG_POWER_EXT)
 	return 0;
 #else
+
+	if (gFG_Is_Init == false)
+		return 0;
+
 	return gFG_resistance_bat + p_bat_meter_data->r_fg_value +
 	       p_bat_meter_data->fg_meter_resistance;
 #endif
