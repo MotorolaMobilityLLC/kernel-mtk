@@ -75,6 +75,7 @@ enum usb_state_enum {
 };
 
 /* USB phy and clock */
+extern bool usb_pre_clock(bool enable);
 extern void usb_phy_poweron(void);
 extern void usb_phy_recover(void);
 extern void usb_phy_savecurrent(void);
