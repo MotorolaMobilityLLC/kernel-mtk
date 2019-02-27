@@ -59,7 +59,6 @@ extern "C" {
 #endif
 
 /* other policy settings */
-#define LCMOFF_MIN_FREQ		(598000)
 #define PTPOD_FREQ_IDX		(8)
 #define PWRTHRO_BAT_PER_MW	(600)
 #define PWRTHRO_BAT_OC_MW	(600)
@@ -68,7 +67,6 @@ extern "C" {
 
 #define DVFS_OPP_NUM		(16)
 
-#define get_cluster_lcmoff_min_freq(id)		LCMOFF_MIN_FREQ
 #define get_cluster_ptpod_fix_freq_idx(id)	PTPOD_FREQ_IDX
 
 /*==============================================================*/
