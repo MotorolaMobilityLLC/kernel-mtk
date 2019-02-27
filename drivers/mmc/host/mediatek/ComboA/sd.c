@@ -3968,7 +3968,9 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	struct mmc_command *cmd;
 	struct mmc_data *data;
 	struct mmc_command *stop = NULL;
+#ifdef MTK_MMC_SDIO_DEBUG
 	struct timespec sdio_profile_start;
+#endif
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	int ret;
 #endif
@@ -3990,8 +3992,10 @@ static void msdc_ops_request_legacy(struct mmc_host *mmc,
 	if (data)
 		stop = data->stop;
 
+#ifdef MTK_MMC_SDIO_DEBUG
 	if (sdio_pro_enable)
 		sdio_get_time(mrq, &sdio_profile_start);
+#endif
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (check_mmc_cmd44(mrq->sbc)) {
@@ -4072,8 +4076,10 @@ cq_req_done:
 #endif
 		host->mrq = NULL;
 
+#ifdef MTK_MMC_SDIO_DEBUG
 	if (sdio_pro_enable)
 		sdio_calc_time(mrq, &sdio_profile_start);
+#endif
 
 	spin_unlock(&host->lock);
 

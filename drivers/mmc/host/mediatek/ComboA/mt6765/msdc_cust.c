@@ -35,19 +35,17 @@
 struct msdc_host *mtk_msdc_host[] = { NULL, NULL, NULL};
 EXPORT_SYMBOL(mtk_msdc_host);
 
-int g_dma_debug[HOST_MAX_NUM] = { 0, 0, 0};
-u32 latest_int_status[HOST_MAX_NUM] = { 0, 0, 0};
+int g_dma_debug[HOST_MAX_NUM] = { 0, 0};
+u32 latest_int_status[HOST_MAX_NUM] = { 0, 0};
 
 unsigned int msdc_latest_transfer_mode[HOST_MAX_NUM] = {
 	/* 0 for PIO; 1 for DMA; 3 for nothing */
 	MODE_NONE,
-	MODE_NONE,
-	MODE_NONE,
+	MODE_NONE
 };
 
 unsigned int msdc_latest_op[HOST_MAX_NUM] = {
 	/* 0 for read; 1 for write; 2 for nothing */
-	OPER_TYPE_NUM,
 	OPER_TYPE_NUM,
 	OPER_TYPE_NUM
 };
@@ -55,32 +53,27 @@ unsigned int msdc_latest_op[HOST_MAX_NUM] = {
 /* for debug zone */
 unsigned int sd_debug_zone[HOST_MAX_NUM] = {
 	0,
-	0,
 	0
 };
 /* for enable/disable register dump */
 unsigned int sd_register_zone[HOST_MAX_NUM] = {
-	1,
 	1,
 	1
 };
 /* mode select */
 u32 dma_size[HOST_MAX_NUM] = {
 	512,
-	512,
 	512
 };
 
 u32 drv_mode[HOST_MAX_NUM] = {
 	MODE_SIZE_DEP, /* using DMA or not depend on the size */
-	MODE_SIZE_DEP,
 	MODE_SIZE_DEP
 };
 
 int dma_force[HOST_MAX_NUM]; /* used for sd ioctrol */
 
 u8 msdc_clock_src[HOST_MAX_NUM] = {
-	0,
 	0,
 	0
 };
