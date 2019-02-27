@@ -206,8 +206,11 @@ bool is_recovery_mode(void)
 		return false;
 
 	bm_debug("mtk_battery boot mode =%d\n", boot_mode);
-	if (boot_mode == RECOVERY_BOOT)
+	if (boot_mode == RECOVERY_BOOT) {
+		gm.log_level = 7;
+		gm.d_log_level = 7;
 		return true;
+	}
 
 	return false;
 }

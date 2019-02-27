@@ -1918,12 +1918,23 @@ void fgr_dod_init(void)
 
 	if (rtc_ui_soc == 0 || con0_soc == 0) {
 		rtc_ui_soc = OCV_to_SOC_c(init_swocv);
-		ui_d0_soc = rtc_ui_soc;
 		fg_c_d0_soc = rtc_ui_soc;
-		bm_err("[dod_init_recovery]rtcui=0,init_swocv=%d,OCV_to_SOC=%d ui:%d con0_soc=%d\n",
-			init_swocv, rtc_ui_soc, ui_d0_soc, con0_soc);
+
+		if (rtc_ui_soc < 0) {
+			bm_err("[dod_init_recovery]rtcui<0,set to 0,rtc_ui_soc:%d fg_c_d0_soc:%d\n",
+				rtc_ui_soc, fg_c_d0_soc);
+
+			rtc_ui_soc = 0;
+		}
+
+		ui_d0_soc = rtc_ui_soc;
+		bm_err("[dod_init_recovery]rtcui=0 case,init_swocv=%d,OCV_to_SOC_c=%d ui:[%d %d] con0_soc=[%d %d]\n",
+			init_swocv, fg_c_d0_soc,
+			ui_d0_soc, rtc_ui_soc,
+			con0_soc, con0_uisoc);
+
 	} else {
-	ui_d0_soc = rtc_ui_soc;
+		ui_d0_soc = rtc_ui_soc;
 		fg_c_d0_soc = UNIT_TRANS_100 * con0_soc;
 	}
 
