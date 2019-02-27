@@ -176,6 +176,13 @@ static int dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
 static atomic_t delayed_trigger_kick = ATOMIC_INIT(0);
 static atomic_t od_trigger_kick = ATOMIC_INIT(0);
 
+/* record take mutex time */
+static unsigned long long mutex_time_start;
+static unsigned long long mutex_time_end;
+static unsigned long long mutex_time_end1;
+static long long mutex_time_period;
+static long long mutex_time_period1;
+
 /* hold the wakelock to make kernel awake when primary display is on*/
 struct wakeup_source pri_wk_lock;
 
@@ -199,13 +206,33 @@ void _primary_path_lock(const char *caller)
 {
 	dprec_logger_start(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 	disp_sw_mutex_lock(&(pgc->lock));
+	mutex_time_start = sched_clock();
 	pgc->mutex_locker = (char *)caller;
 }
 
 void _primary_path_unlock(const char *caller)
 {
 	pgc->mutex_locker = NULL;
+
+	mutex_time_end = sched_clock();
+	mutex_time_period = mutex_time_end - mutex_time_start;
+	if (mutex_time_period > 100000000) {
+		DISPCHECK("mutex_release_timeout1 <%lld ns>\n",
+			mutex_time_period);
+		dump_stack();
+	}
+
 	disp_sw_mutex_unlock(&(pgc->lock));
+
+	mutex_time_end1 = sched_clock();
+	mutex_time_period1 = mutex_time_end1 - mutex_time_start;
+	if ((mutex_time_period < 100000000 && mutex_time_period1 > 100000000) ||
+	   (mutex_time_period < 100000000 && mutex_time_period1 < 0)) {
+		DISPCHECK("mutex_release_timeout2 <%lld ns>,<%lld ns>\n",
+			mutex_time_period1, mutex_time_period);
+		dump_stack();
+	}
+
 	dprec_logger_done(DPREC_LOGGER_PRIMARY_MUTEX, 0, 0);
 }
 
@@ -1517,7 +1544,7 @@ void _cmdq_start_trigger_loop(void)
 		dprec_event_op(DPREC_EVENT_CMDQ_SET_EVENT_ALLOW);
 	}
 
-	DISPCHECK("primary display START cmdq trigger loop finished\n");
+	DISPINFO("primary display START cmdq trigger loop finished\n");
 
 }
 
@@ -1529,7 +1556,7 @@ void _cmdq_stop_trigger_loop(void)
 	 * trigger loop will never stop
 	 */
 	ret = cmdqRecStopLoop(pgc->cmdq_handle_trigger);
-	DISPCHECK("primary display STOP cmdq trigger loop finished\n");
+	DISPINFO("primary display STOP cmdq trigger loop finished\n");
 }
 
 static void _cmdq_set_config_handle_dirty(void)
@@ -3018,7 +3045,7 @@ static int _decouple_update_rdma_config_nolock(void)
 		unsigned int rdma_pitch_sec;
 		struct RDMA_CONFIG_STRUCT tmpConfig = decouple_rdma_config;
 
-		layer = disp_sync_get_output_timeline_id();
+		layer = disp_sync_get_output_interface_timeline_id();
 		cmdqBackupReadSlot(pgc->cur_config_fence, layer,
 			&interface_fence);
 
@@ -3392,17 +3419,22 @@ static int _present_fence_release_worker_thread(void *data)
 
 		wait_event_interruptible(primary_display_present_fence_wq,
 			atomic_read(&primary_display_pt_fence_update_event));
+		mmprofile_log_ex(ddp_mmp_get_events()->present_fence_release,
+			MMPROFILE_FLAG_PULSE, 0, 0);
 		atomic_set(&primary_display_pt_fence_update_event, 0);
 
 		if (!islcmconnected && !primary_display_is_video_mode()) {
 			DISPCHECK("LCM Not Connected && CMD Mode\n");
 			msleep(20);
 		} else if (disp_helper_get_option(DISP_OPT_ARR_PHASE_1)) {
-			dpmgr_wait_event(pgc->dpmgr_handle,
-				DISP_PATH_EVENT_FRAME_START);
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+				DISP_PATH_EVENT_FRAME_START, HZ/10);
 		} else {
-			dpmgr_wait_event(pgc->dpmgr_handle,
-				DISP_PATH_EVENT_IF_VSYNC);
+			dpmgr_wait_event_timeout(pgc->dpmgr_handle,
+				DISP_PATH_EVENT_IF_VSYNC, HZ/10);
+			mmprofile_log_ex(
+				ddp_mmp_get_events()->present_fence_release,
+				MMPROFILE_FLAG_PULSE, 1, 1);
 		}
 
 		timeline_id = disp_sync_get_present_timeline_id();
@@ -4385,6 +4417,15 @@ int primary_display_suspend(void)
 			pgc->session_id, 0, NULL, 1);
 	}
 
+	/* Should be DL(Ext) mode here */
+	if (pgc->session_mode == DISP_SESSION_DECOUPLE_MIRROR_MODE ||
+		pgc->session_mode == DISP_SESSION_DECOUPLE_MODE) {
+		DISPWARN("HWC DOES NOT set_mode DL before suspend!!!\n");
+		/* switch back to DL mode before suspend */
+		do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+			pgc->session_id, 0, NULL, 1);
+	}
+
 	/* restore to 60 fps */
 	_display_set_lcm_refresh_rate(60);
 
@@ -5001,6 +5042,8 @@ done:
 void primary_display_update_present_fence(unsigned int fence_idx)
 {
 	gPresentFenceIndex = fence_idx;
+	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_set,
+		MMPROFILE_FLAG_PULSE, fence_idx, 1);
 	atomic_set(&primary_display_pt_fence_update_event, 1);
 	if (disp_helper_get_option(DISP_OPT_PRESENT_FENCE))
 		wake_up_interruptible(&primary_display_present_fence_wq);
@@ -5582,6 +5625,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
 	data_config->overlap_layer_num = hrt_level;
 
+#if 0
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	/* TODO: Set Vcore Level here. */
 	if (hrt_level > HRT_LEVEL_NUM - 1)
@@ -5600,6 +5644,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		snprintf(msg, sizeof(msg), "HRT=%d,", hrt_level);
 		screen_logger_add_message("HRT", MESSAGE_REPLACE, msg);
 	}
+#endif
 
 	if (_should_wait_path_idle())
 		dpmgr_wait_event_timeout(disp_handle,
@@ -5671,6 +5716,38 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			data_config->rdma_config.pitch,
 			UFMT_GET_Bpp(data_config->rdma_config.inputFormat));
 	}
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (primary_display_is_decouple_mode() &&
+		primary_display_is_mirror_mode()) {
+		/* if DCMirror mode(WFD/ScreenRecord), */
+		/* forced set dvfs to opp0 */
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
+			HRT_LEVEL_LEVEL3);
+		dvfs_last_ovl_req = HRT_LEVEL_LEVEL3;
+	} else if (hrt_level > HRT_LEVEL_LEVEL2 &&
+		primary_display_is_directlink_mode()) {
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
+			HRT_LEVEL_LEVEL3);
+		dvfs_last_ovl_req = HRT_LEVEL_LEVEL3;
+	} else if (hrt_level > HRT_LEVEL_LEVEL1 &&
+		primary_display_is_directlink_mode()) {
+		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
+			HRT_LEVEL_LEVEL2);
+		dvfs_last_ovl_req = HRT_LEVEL_LEVEL2;
+	} else if (hrt_level > HRT_LEVEL_LEVEL0) {
+		dvfs_last_ovl_req = HRT_LEVEL_LEVEL1;
+	} else {
+		dvfs_last_ovl_req = HRT_LEVEL_LEVEL0;
+	}
+
+	if (disp_helper_get_option(DISP_OPT_SHOW_VISUAL_DEBUG_INFO)) {
+		char msg[10];
+
+		snprintf(msg, sizeof(msg), "HRT=%d,", hrt_level);
+		screen_logger_add_message("HRT", MESSAGE_REPLACE, msg);
+	}
+#endif
 
 	if (disp_helper_get_option(
 			DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK)) {
@@ -6300,7 +6377,8 @@ static int smart_ovl_try_switch_mode_nolock(void)
 	data_config = dpmgr_path_get_last_config(disp_handle);
 
 	/* calc wdma/rdma data size */
-	rdma_sz = data_config->dst_h * data_config->dst_w * 3;
+	rdma_sz = (unsigned long long)data_config->dst_h *
+					data_config->dst_w * 3;
 
 	/* calc ovl data size */
 	ovl_sz = 0;
@@ -6311,7 +6389,8 @@ static int smart_ovl_try_switch_mode_nolock(void)
 		if (ovl_cfg->layer_en) {
 			unsigned int Bpp = UFMT_GET_Bpp(ovl_cfg->fmt);
 
-			ovl_sz += ovl_cfg->dst_w * ovl_cfg->dst_h * Bpp;
+			ovl_sz += (unsigned long long)ovl_cfg->dst_w *
+						ovl_cfg->dst_h * Bpp;
 		}
 	}
 
@@ -7762,6 +7841,8 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 		DISPCHECK("[ESD]wait frame done ret:%d\n", ret);
 
 	dpmgr_path_reset(pgc->dpmgr_handle, CMDQ_DISABLE);
+	/*after dsi_stop, we should enable the DSI_TE/CMD_DONE.*/
+	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
 	if ((!strcmp(name, "PM_CLK")) || (!strcmp(name, "PM_SSC")))
 		Panel_Master_primary_display_config_dsi(name, *config_dsi);
 	else if (!strcmp(name, "PM_DDIC_CONFIG")) {
@@ -7776,10 +7857,6 @@ int Panel_Master_dsi_config_entry(const char *name, void *config_value)
 			ret = -1;
 		force_trigger_path = 1;
 	}
-
-	/* after dsi_stop, we should enable the DSI_TE. */
-	dsi_te_irq_enable(DISP_MODULE_DSI0, NULL, 1);
-
 	dpmgr_path_start(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (primary_display_is_video_mode()) {
 		/*

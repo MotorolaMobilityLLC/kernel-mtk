@@ -249,18 +249,6 @@ int disp_destroy_session(struct disp_session_config *config)
 			continue;
 
 		session_config[i] = 0;
-#if defined MTK_FB_SHARE_WDMA0_SUPPORT
-		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY,
-				DEV_WFD)) {
-			/*it need lock, if set_idlemgr.*/
-			if (idle_flag)
-				set_idlemgr(idle_flag, 1);
-			if (smartovl_flag)
-				disp_helper_set_option(DISP_OPT_SMART_OVL,
-					smartovl_flag);
-			has_memory_session = 0;
-		}
-#endif
 		ret = 0;
 		break;
 	}
@@ -275,9 +263,21 @@ int disp_destroy_session(struct disp_session_config *config)
 		release_session_buffer(config->session_id);
 
 	/* 2. Destroy this session */
-	if (ret == 0)
+	if (ret == 0) {
+#if defined MTK_FB_SHARE_WDMA0_SUPPORT
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY,
+				DEV_WFD)) {
+			/*it need lock, if set_idlemgr.*/
+			if (idle_flag)
+				set_idlemgr(idle_flag, 1);
+			if (smartovl_flag)
+				disp_helper_set_option(DISP_OPT_SMART_OVL,
+					smartovl_flag);
+			has_memory_session = 0;
+		}
+#endif
 		DISPMSG("Destroy session(0x%x)\n", session);
-	else
+	} else
 		DISPERR("session(0x%x) does not exists\n", session);
 
 
@@ -914,8 +914,9 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 	return 0;
 }
 
-static int _frame_queue_config(unsigned long arg)
+static long _frame_queue_config(unsigned long arg)
 {
+	void *ret_val = NULL;
 	struct frame_queue_head_t *head;
 	struct disp_frame_cfg_t *frame_cfg;
 	struct sync_fence *present_fence = NULL;
@@ -924,17 +925,25 @@ static int _frame_queue_config(unsigned long arg)
 
 	DISPMSG("%s\n", __func__);
 	frame_node = frame_queue_node_create();
-	if (IS_ERR_OR_NULL(frame_node))
-		return PTR_ERR(frame_node);
+	if (IS_ERR_OR_NULL(frame_node)) {
+		ret_val = ERR_PTR(-ENOMEM);
+		goto Error;
+	}
 
 	/* this is initialized correctly when get node from framequeue list */
 	frame_cfg = &frame_node->frame_cfg;
 
-	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg)))
-		return -EINVAL;
+	if (copy_from_user(frame_cfg, (void __user *)arg, sizeof(*frame_cfg))) {
+		ret_val = ERR_PTR(-EFAULT);
+		disp_aee_print(" copy_from_user failed! line:%d\n",
+			__LINE__);
+		goto Error;
+	}
 
-	if (disp_validate_ioctl_params(frame_cfg) != 0)
-		return -EINVAL;
+	if (disp_validate_ioctl_params(frame_cfg)) {
+		ret_val = ERR_PTR(-EINVAL);
+		goto Error;
+	}
 
 	head = get_frame_queue_head(frame_cfg->session_id);
 	if (!head) {
@@ -976,9 +985,13 @@ static int _frame_queue_config(unsigned long arg)
 			frame_cfg->present_fence_idx, 0);
 
 	return 0;
+
+Error:
+	frame_queue_node_destroy(frame_node);
+	return PTR_ERR(ret_val);
 }
 
-int _frame_config(unsigned long arg)
+long _frame_config(unsigned long arg)
 {
 	struct disp_frame_cfg_t *frame_cfg =
 		kzalloc(sizeof(struct disp_frame_cfg_t), GFP_KERNEL);
@@ -1026,7 +1039,7 @@ int _frame_config(unsigned long arg)
 	return 0;
 }
 
-static int _ioctl_frame_config(unsigned long arg)
+static long _ioctl_frame_config(unsigned long arg)
 {
 	if (disp_helper_get_option(DISP_OPT_FRAME_QUEUE))
 		return _frame_queue_config(arg);
@@ -1239,25 +1252,35 @@ int _ioctl_set_vsync(unsigned long arg)
 	return ret;
 }
 
-int _ioctl_query_valid_layer(unsigned long arg)
+static long _ioctl_query_valid_layer(unsigned long arg)
 {
-	int ret = 0;
 	struct disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
+	}
+	/* check data from userspace is legal */
+	if (disp_info_user.layer_num[0] < 0 ||
+		disp_info_user.layer_num[0] > 0x300 ||
+		disp_info_user.layer_num[1] < 0 ||
+		disp_info_user.layer_num[1] > 0x300) {
+		DISPERR(
+			"[FB]: disp_info_user.layer_num[0]= %d, disp_info_user.layer_num[1]= %d!\n",
+			disp_info_user.layer_num[0],
+			disp_info_user.layer_num[1]);
+		return -EINVAL;
 	}
 
-	ret = layering_rule_start(&disp_info_user, 0);
+	layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISPERR("[FB]: copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
-	return ret;
+	return 0;
 }
 
 int _ioctl_set_scenario(unsigned long arg)
