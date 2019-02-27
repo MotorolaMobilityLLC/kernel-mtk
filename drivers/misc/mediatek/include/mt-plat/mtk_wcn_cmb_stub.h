@@ -110,7 +110,7 @@ struct sdio_ops {
 	void (*sdio_register_pm)(pm_callback_t pm_cb, void *data);
 };
 
-struct CMB_STUB_CB {
+struct _CMB_STUB_CB_ {
 	unsigned int size;	/* structure size */
 	/*wmt_bgf_eirq_cb bgf_eirq_cb; *//* remove bgf_eirq_cb from stub. handle it in platform */
 	wmt_aif_ctrl_cb aif_ctrl_cb;
@@ -140,7 +140,7 @@ struct CMB_STUB_CB {
 
 extern struct sdio_ops mt_sdio_ops[4];
 
-extern int mtk_wcn_cmb_stub_reg(struct CMB_STUB_CB *p_stub_cb);
+extern int mtk_wcn_cmb_stub_reg(struct _CMB_STUB_CB_ *p_stub_cb);
 extern int mtk_wcn_cmb_stub_unreg(void);
 
 extern int mtk_wcn_cmb_stub_aif_ctrl(enum CMB_STUB_AIF_X state, enum CMB_STUB_AIF_CTRL ctrl);
