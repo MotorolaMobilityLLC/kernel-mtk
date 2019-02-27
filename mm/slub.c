@@ -41,9 +41,7 @@
 
 #ifdef CONFIG_ARM64
 #ifdef CONFIG_MTK_MEMCFG
-#ifndef CONFIG_RANDOMIZE_BASE
 #define MTK_COMPACT_SLUB_TRACK
-#endif
 #endif
 #endif
 
@@ -205,12 +203,7 @@ static inline bool kmem_cache_has_cpu_partial(struct kmem_cache *s)
 /*
  * Tracking user of a slab.
  */
-#ifdef CONFIG_RANDOMIZE_BASE
-#define TRACK_ADDRS_COUNT 4
-#else
 #define TRACK_ADDRS_COUNT 8
-#endif
-
 struct track {
 	unsigned long addr;	/* Called from address */
 #ifdef CONFIG_STACKTRACE
@@ -3734,7 +3727,6 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
 				     sizeof(long), GFP_ATOMIC);
 	if (!map)
 		return;
-	slab_err(s, page, text, s->name);
 	slab_lock(page);
 
 	get_map(s, page, map);
@@ -3747,6 +3739,7 @@ static void list_slab_objects(struct kmem_cache *s, struct page *page,
 	}
 	slab_unlock(page);
 	kfree(map);
+	slab_err(s, page, text, s->name);
 #endif
 }
 
