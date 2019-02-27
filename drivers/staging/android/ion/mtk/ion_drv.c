@@ -241,13 +241,6 @@ static long ion_sys_cache_sync(struct ion_client *client,
 			size = param->size;
 
 			ion_cache_sync_kernel(start, size, sync_type);
-
-#ifdef __ION_CACHE_SYNC_USER_VA_EN__
-			if (sync_type < ION_CACHE_CLEAN_BY_RANGE_USE_VA)
-#endif
-			{
-				ion_unmap_kernel(client, kernel_handle);
-			}
 		}
 
 		ion_drv_put_kernel_handle(kernel_handle);
