@@ -71,6 +71,7 @@ typedef union {
 typedef enum {
 	MD_EX_CLASS_ASSET,
 	MD_EX_CLASS_FATAL,
+	MD_EX_CLASS_CUSTOM,
 	MD_EX_CLASS_INVALID,
 } EXCEPTION_CLASS;
 
@@ -161,6 +162,8 @@ typedef enum {
 	ASSERT_FAIL_EXCEPTION = 0x50,
 	ASSERT_DUMP_EXTENDED_RECORD = 0x51,
 	ASSERT_FAIL_NATIVE = 0x52,
+	ASSERT_CUSTOM_ADDR = 0x53,
+	ASSERT_CUSTOM_MODID = 0x54,
 	ASSERT_FAIL_MAX_NUM,
 	/* cross core triggered */
 	CC_INVALID_EXCEPTION = 0x60,
@@ -188,6 +191,8 @@ typedef struct dump_info_fatal {
 	int err_code1;
 	int err_code2;
 	int err_code3;
+	unsigned int error_address;
+	unsigned int error_pc;
 	char *ExStr;
 	char *err_sec;
 	char offender[64];

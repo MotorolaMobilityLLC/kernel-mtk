@@ -135,6 +135,10 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 {
 	struct ccci_smem_port *smem_port =
 		(struct ccci_smem_port *)port->private_data;
+#ifdef DEBUG_FOR_CCB
+	struct buffer_header *buf = smem_port->ccb_vir_addr;
+	unsigned char idx;
+#endif
 	int md_state, ret;
 	unsigned long flags;
 	int md_id = port->md_id;
@@ -143,6 +147,31 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 		return -EFAULT;
 	CCCI_DEBUG_LOG(md_id, TAG,
 		"before wait event, bitmask=%x\n", user_data);
+#ifdef DEBUG_FOR_CCB
+	idx = smem_port->poll_save_idx;
+	smem_port->last_poll_time[idx] = local_clock();
+	smem_port->last_in[idx].al_id = buf[0].dl_alloc_index;
+	smem_port->last_in[idx].fr_id = buf[0].dl_free_index;
+	smem_port->last_in[idx].r_id = buf[0].dl_read_index;
+	smem_port->last_in[idx].w_id = buf[0].dl_write_index;
+	smem_port->last_in[idx + 1].al_id = buf[1].dl_alloc_index;
+	smem_port->last_in[idx + 1].fr_id = buf[1].dl_free_index;
+	smem_port->last_in[idx + 1].r_id = buf[1].dl_read_index;
+	smem_port->last_in[idx + 1].w_id = buf[1].dl_write_index;
+	smem_port->last_in[idx + 2].al_id = buf[2].dl_alloc_index;
+	smem_port->last_in[idx + 2].fr_id = buf[2].dl_free_index;
+	smem_port->last_in[idx + 2].r_id = buf[2].dl_read_index;
+	smem_port->last_in[idx + 2].w_id = buf[2].dl_write_index;
+	if (user_data == 0x01) {
+		atomic_set(&smem_port->poll_processing[0], 1);
+		smem_port->last_mask[0] = user_data;
+		smem_port->last_poll_time[idx + 1] = local_clock();
+	} else {
+		atomic_set(&smem_port->poll_processing[1], 1);
+		smem_port->last_mask[1] = user_data;
+		smem_port->last_poll_time[idx + 2] = local_clock();
+	}
+#endif
 	ret = wait_event_interruptible(smem_port->rx_wq,
 		smem_port->wakeup & user_data);
 	spin_lock_irqsave(&smem_port->write_lock, flags);
@@ -161,6 +190,36 @@ int port_smem_rx_poll(struct port_t *port, unsigned int user_data)
 			ret = -ENODEV;
 		}
 	}
+#ifdef DEBUG_FOR_CCB
+	smem_port->last_poll_t_exit[idx] = local_clock();
+
+	smem_port->last_out[idx].al_id = buf[0].dl_alloc_index;
+	smem_port->last_out[idx].fr_id = buf[0].dl_free_index;
+	smem_port->last_out[idx].r_id = buf[0].dl_read_index;
+	smem_port->last_out[idx].w_id = buf[0].dl_write_index;
+
+	smem_port->last_out[idx + 1].al_id = buf[1].dl_alloc_index;
+	smem_port->last_out[idx + 1].fr_id = buf[1].dl_free_index;
+	smem_port->last_out[idx + 1].r_id = buf[1].dl_read_index;
+	smem_port->last_out[idx + 1].w_id = buf[1].dl_write_index;
+
+	smem_port->last_out[idx + 2].al_id = buf[2].dl_alloc_index;
+	smem_port->last_out[idx + 2].fr_id = buf[2].dl_free_index;
+	smem_port->last_out[idx + 2].r_id = buf[2].dl_read_index;
+	smem_port->last_out[idx + 2].w_id = buf[2].dl_write_index;
+	if (user_data == 0x01) {
+		atomic_set(&smem_port->poll_processing[0], 0);
+		smem_port->last_poll_t_exit[idx + 1] = local_clock();
+	} else {
+		atomic_set(&smem_port->poll_processing[1], 0);
+		smem_port->last_poll_t_exit[idx + 2] = local_clock();
+	}
+	idx += 3;
+
+	if (idx >= CCB_POLL_PTR_MAX)
+		idx = 0;
+	smem_port->poll_save_idx = idx;
+#endif
 	return ret;
 }
 
@@ -184,6 +243,9 @@ int port_smem_rx_wakeup(struct port_t *port)
 
 	__pm_wakeup_event(&port->rx_wakelock, jiffies_to_msecs(HZ));
 	CCCI_DEBUG_LOG(md_id, TAG, "wakeup port.\n");
+#ifdef DEBUG_FOR_CCB
+	smem_port->last_rx_wk_time = local_clock();
+#endif
 	wake_up_all(&smem_port->rx_wq);
 	return 0;
 }
@@ -209,6 +271,25 @@ void __iomem *get_smem_start_addr(int md_id,
 	}
 	return addr;
 }
+
+phys_addr_t get_smem_phy_start_addr(int md_id,
+	enum SMEM_USER_ID user_id, int *size_o)
+{
+	phys_addr_t addr = 0;
+	struct ccci_smem_region *smem_region =
+		ccci_md_get_smem_by_user_id(md_id, user_id);
+
+	if (smem_region) {
+		addr = smem_region->base_ap_view_phy;
+
+		if (size_o)
+			*size_o = smem_region->size;
+	}
+	CCCI_NORMAL_LOG(md_id, TAG, "phy address: 0x%lx, 0x%x",
+		(unsigned long)addr, *size_o);
+	return addr;
+}
+EXPORT_SYMBOL(get_smem_phy_start_addr);
 
 static struct port_t *find_smem_port_by_user_id(int md_id, int user_id)
 {
@@ -635,7 +716,15 @@ int port_smem_init(struct port_t *port)
 		/* this may override addr_phy/vir and length */
 		collect_ccb_info(md_id, smem_port);
 	}
-
+#ifdef DEBUG_FOR_CCB
+{
+	struct ccci_smem_region *ccb_ctl =
+		ccci_md_get_smem_by_user_id(md_id, SMEM_USER_RAW_CCB_CTRL);
+	smem_port->ccb_vir_addr =
+		(struct buffer_header *)ccb_ctl->base_ap_view_vir;
+	smem_port->poll_save_idx = 0;
+}
+#endif
 	return 0;
 }
 
@@ -658,9 +747,79 @@ static void port_smem_queue_state_notify(struct port_t *port, int dir, int qno,
 	if (port->rx_ch == CCCI_SMEM_CH && qstate == RX_IRQ)
 		port_smem_rx_wakeup(port);
 }
+#ifdef DEBUG_FOR_CCB
+static void port_smem_dump_info(struct port_t *port, unsigned int flag)
+{
+	struct ccci_smem_port *smem_port =
+		(struct ccci_smem_port *)port->private_data;
+	unsigned long long ts = 0, ts_e = 0, ts_s = 0;
+	unsigned long nsec_rem = 0, nsec_rem_s = 0, nsec_rem_e = 0;
+	unsigned char idx;
+
+	if (smem_port->last_poll_time[0] == 0 &&
+		smem_port->last_poll_t_exit[0] == 0
+		/*&& smem_port->last_rx_wk_time ==0 */)
+		return;
+
+	ts = smem_port->last_rx_wk_time;
+	nsec_rem = do_div(ts, NSEC_PER_SEC);
+	CCCI_MEM_LOG_TAG(port->md_id, TAG,
+		"ccb port_smem(%d) poll history: last_wake<%llu.%06lu>, poll(%d/%d, 0x%x/0x%x)\n",
+		smem_port->user_id, ts, nsec_rem / 1000,
+		atomic_read(&smem_port->poll_processing[0]),
+		atomic_read(&smem_port->poll_processing[1]),
+		smem_port->last_mask[0], smem_port->last_mask[1]);
+	for (idx = 0; idx < CCB_POLL_PTR_MAX; idx++) {
+		ts_s = smem_port->last_poll_time[idx];
+		nsec_rem_s = do_div(ts_s, NSEC_PER_SEC);
+		ts_e = smem_port->last_poll_t_exit[idx];
+		nsec_rem_e = do_div(ts_e, NSEC_PER_SEC);
+		CCCI_MEM_LOG(port->md_id, TAG,
+			"<%llu.%06lu ~ %llu.%06lu> ",
+			ts_s, nsec_rem_s/1000, ts_e, nsec_rem_e/1000);
+	}
+	CCCI_MEM_LOG(port->md_id, TAG, "\n");
+	for (idx = 0; idx < CCB_POLL_PTR_MAX;) {
+		CCCI_MEM_LOG(port->md_id, TAG,
+			"0x%x, 0x%x, 0x%x, 0x%x; 0x%x, 0x%x, 0x%x, 0x%x; 0x%x, 0x%x, 0x%x, 0x%x",
+			smem_port->last_in[idx + 0].al_id,
+			smem_port->last_in[idx + 0].fr_id,
+			smem_port->last_in[idx + 0].r_id,
+			smem_port->last_in[idx + 0].w_id,
+			smem_port->last_in[idx + 1].al_id,
+			smem_port->last_in[idx + 1].fr_id,
+			smem_port->last_in[idx + 1].r_id,
+			smem_port->last_in[idx + 1].w_id,
+			smem_port->last_in[idx + 2].al_id,
+			smem_port->last_in[idx + 2].fr_id,
+			smem_port->last_in[idx + 2].r_id,
+			smem_port->last_in[idx + 2].w_id);
+		CCCI_MEM_LOG(port->md_id, TAG,
+			"  ~ 0x%x, 0x%x, 0x%x, 0x%x; 0x%x, 0x%x, 0x%x, 0x%x; 0x%x, 0x%x, 0x%x, 0x%x\n",
+			smem_port->last_out[idx + 0].al_id,
+			smem_port->last_out[idx + 0].fr_id,
+			smem_port->last_out[idx + 0].r_id,
+			smem_port->last_out[idx + 0].w_id,
+			smem_port->last_out[idx + 1].al_id,
+			smem_port->last_out[idx + 1].fr_id,
+			smem_port->last_out[idx + 1].r_id,
+			smem_port->last_out[idx + 1].w_id,
+			smem_port->last_out[idx + 2].al_id,
+			smem_port->last_out[idx + 2].fr_id,
+			smem_port->last_out[idx + 2].r_id,
+			smem_port->last_out[idx + 2].w_id);
+		idx += 3;
+	}
+}
+#endif
+
 struct port_ops smem_port_ops = {
 	.init = &port_smem_init,
 	.md_state_notify = &port_smem_md_state_notify,
 	.queue_state_notify = &port_smem_queue_state_notify,
+#ifdef DEBUG_FOR_CCB
+	.dump_info = port_smem_dump_info,
+#endif
+
 };
 

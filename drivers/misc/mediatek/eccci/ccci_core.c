@@ -143,7 +143,38 @@ static int __init ccci_init(void)
 	return 0;
 }
 
-static unsigned int exec_count;
+static void receive_wakeup_src_notify(int md_id, char *buf, unsigned int len)
+{
+	int tmp_data = 0;
+
+	if (len == 0) {
+		/* before spm add MD_WAKEUP_SOURCE parameter. */
+		if (md_id == MD_SYS1)
+			ccci_hif_set_wakeup_src(MD1_NET_HIF, 1);
+#if (MD_GENERATION >= 6293)
+			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
+#endif
+		if (md_id == MD_SYS3)
+			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
+		return;
+	}
+
+	/* after spm add MD_WAKEUP_SOURCE parameter. */
+	if (len > sizeof(tmp_data))
+		len = sizeof(tmp_data);
+	memcpy((void *)&tmp_data, buf, len);
+	switch (tmp_data) {
+	case WAKE_SRC_HIF_CCIF0:
+		ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
+		break;
+	case WAKE_SRC_HIF_CLDMA:
+	case WAKE_SRC_HIF_DPMAIF:
+		ccci_hif_set_wakeup_src(MD1_NET_HIF, 1);
+		break;
+	default:
+		break;
+	};
+}
 
 int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 	unsigned int len)
@@ -162,17 +193,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 		__builtin_return_address(0), id);
 	switch (id) {
 	case ID_GET_MD_WAKEUP_SRC:
-		if (md_id == MD_SYS1)
-			ccci_hif_set_wakeup_src(CLDMA_HIF_ID, 1);
-#if (MD_GENERATION >= 6293)
-			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
-#endif
-		exec_count++;
-		CCCI_NORMAL_LOG(md_id, CORE,
-			"spm trigger execute function(%u)\n", exec_count);
-
-		if (md_id == MD_SYS3)
-			ccci_hif_set_wakeup_src(CCIF_HIF_ID, 1);
+		receive_wakeup_src_notify(md_id, buf, len);
 		break;
 	case ID_GET_TXPOWER:
 		if (buf[0] == 0)

@@ -46,6 +46,21 @@ struct ccci_hif_traffic {
 		unsigned long long latest_isr_time;
 		unsigned long long latest_q_rx_isr_time[MAX_RXQ_NUM];
 		unsigned long long latest_q_rx_time[MAX_RXQ_NUM];
+#ifdef DPMAIF_DEBUG_LOG
+		unsigned long long isr_time_bak;
+		unsigned long long isr_cnt;
+		unsigned long long rx_done_isr_cnt[MAX_RXQ_NUM];
+		unsigned long long rx_other_isr_cnt[MAX_RXQ_NUM];
+		unsigned long long rx_full_cnt;
+		unsigned long long rx_tasket_cnt;
+		unsigned long long tx_done_isr_cnt[MAX_TXQ_NUM];
+		unsigned long long tx_other_isr_cnt[MAX_TXQ_NUM];
+#endif
+#ifdef DEBUG_FOR_CCB
+		unsigned long long latest_ccb_isr_time;
+		unsigned int last_ccif_r_ch;
+#endif
+		struct work_struct traffic_work_struct;
 };
 
 struct ccci_hif_ops {
@@ -61,6 +76,15 @@ struct ccci_hif_ops {
 	int (*broadcast_state)(unsigned char hif_id, enum MD_STATE state);
 	int (*dump_status)(unsigned char hif_id, MODEM_DUMP_FLAG dump_flag,
 		int length);
+	int (*suspend)(unsigned char hif_id);
+	int (*resume)(unsigned char hif_id);
+};
+
+enum RX_COLLECT_RESULT {
+	ONCE_MORE,
+	ALL_CLEAR,
+	LOW_MEMORY,
+	ERROR_STOP,
 };
 
 void ccci_md_dump_log_history(unsigned char md_id,

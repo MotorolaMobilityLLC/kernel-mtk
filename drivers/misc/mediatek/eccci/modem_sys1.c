@@ -45,7 +45,6 @@
 #include "ccci_bm.h"
 #include "ccci_platform.h"
 #include "md_sys1_platform.h"
-#include "cldma_reg.h"
 #include "modem_reg_base.h"
 #include "ccci_debug.h"
 #include "hif/ccci_hif_cldma.h"
@@ -110,13 +109,13 @@ static irqreturn_t md_cd_wdt_isr(int irq, void *data)
 #ifdef ENABLE_MD_WDT_DBG
 	unsigned int state;
 
-	state = cldma_read32(md->md_rgu_base, WDT_MD_STA);
-	cldma_write32(md->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
+	state = ccci_read32(md->md_rgu_base, WDT_MD_STA);
+	ccci_write32(md->md_rgu_base, WDT_MD_MODE, WDT_MD_MODE_KEY);
 	CCCI_NORMAL_LOG(md->index, TAG,
 		"WDT IRQ disabled for debug, state=%X\n", state);
 #ifdef L1_BASE_ADDR_L1RGU
-	state = cldma_read32(md->l1_rgu_base, REG_L1RSTCTL_WDT_STA);
-	cldma_write32(md->l1_rgu_base,
+	state = ccci_read32(md->l1_rgu_base, REG_L1RSTCTL_WDT_STA);
+	ccci_write32(md->l1_rgu_base,
 		REG_L1RSTCTL_WDT_MODE, L1_WDT_MD_MODE_KEY);
 	CCCI_NORMAL_LOG(md->index, TAG,
 		"WDT IRQ disabled for debug, L1 state=%X\n", state);
@@ -133,29 +132,35 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 	struct md_sys1_info *md_info =
 		(struct md_sys1_info *)md->private_data;
 
-	busy = ccci_read32(md_info->ap_ccif_base, APCCIF_BUSY);
+	busy = ccif_read32(md_info->ap_ccif_base, APCCIF_BUSY);
 	if (busy & (1 << channel_id))
 		return -1;
-	ccci_write32(md_info->ap_ccif_base, APCCIF_BUSY,
+	ccif_write32(md_info->ap_ccif_base, APCCIF_BUSY,
 		1 << channel_id);
-	ccci_write32(md_info->ap_ccif_base, APCCIF_TCHNUM,
+	ccif_write32(md_info->ap_ccif_base, APCCIF_TCHNUM,
 		channel_id);
 	return 0;
 }
 
 static void md_cd_ccif_delayed_work(struct ccci_modem *md)
 {
-	/* stop CLDMA, we don't want to get CLDMA IRQ when MD is
-	 * resetting CLDMA after it got cleaq_ack
-	 */
-	cldma_stop(CLDMA_HIF_ID);
-	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: stop cldma done\n");
-	/*dump rxq after cldma stop to avoid race condition*/
-	ccci_hif_dump_status(1 << CLDMA_HIF_ID, DUMP_FLAG_QUEUE_0_1, 1 << IN);
-	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: dump queue0-1 done\n");
-	md_cldma_hw_reset(md->index);
-	CCCI_NORMAL_LOG(md->index, TAG, "md_cd_ccif_delayed_work: hw reset done\n");
-	md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
+	if (md->hif_flag & (1<<CLDMA_HIF_ID))  {
+		/* stop CLDMA, we don't want to get CLDMA IRQ when MD is
+		 * resetting CLDMA after it got cleaq_ack
+		 */
+		cldma_stop(CLDMA_HIF_ID);
+		CCCI_NORMAL_LOG(md->index, TAG,
+			"md_cd_ccif_delayed_work: stop cldma done\n");
+		/*dump rxq after cldma stop to avoid race condition*/
+		ccci_hif_dump_status(1 << CLDMA_HIF_ID, DUMP_FLAG_QUEUE_0_1,
+			1 << IN);
+		CCCI_NORMAL_LOG(md->index, TAG,
+			"md_cd_ccif_delayed_work: dump queue0-1 done\n");
+		md_cldma_hw_reset(md->index);
+		CCCI_NORMAL_LOG(md->index, TAG,
+			"md_cd_ccif_delayed_work: hw reset done\n");
+		md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
+	}
 #if (MD_GENERATION >= 6293)
 	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
 	md_ccif_reset_queue(CCIF_HIF_ID, 0);
@@ -185,18 +190,18 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 			CCCI_SMEM_OFFSET_SEQERR)) != 0) {
 			CCCI_ERROR_LOG(md->index, TAG,
 				"MD found wrong sequence number\n");
-			ccci_hif_dump_status(1 << CLDMA_HIF_ID,
-				DUMP_FLAG_CLDMA, -1);
-		} else {
+		}
+		if (md->hif_flag & (1<<CLDMA_HIF_ID))  {
 			CCCI_ERROR_LOG(md->index, TAG,
 				"dump cldma on ccif hs0\n");
 			ccci_hif_dump_status(1 << CLDMA_HIF_ID,
 				DUMP_FLAG_CLDMA, -1);
+			/* disable CLDMA except un-stop queues */
+			cldma_stop_for_ee(CLDMA_HIF_ID);
+			/* purge Tx queue */
+			md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
 		}
-		/* disable CLDMA except un-stop queues */
-		cldma_stop_for_ee(CLDMA_HIF_ID);
-		/* purge Tx queue */
-		md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
+		ccci_hif_md_exception(md->hif_flag, stage);
 		/* Rx dispatch does NOT depend on queue index
 		 * in port structure, so it still can find right port.
 		 */
@@ -207,11 +212,14 @@ static void md_cd_exception(struct ccci_modem *md, HIF_EX_STAGE stage)
 	case HIF_EX_CLEARQ_DONE:
 		/* give DHL some time to flush data */
 		msleep(2000);
+		ccci_hif_md_exception(md->hif_flag, stage);
 		md_cd_ccif_delayed_work(md);
 		break;
 	case HIF_EX_ALLQ_RESET:
 		md->per_md_data.is_in_ee_dump = 1;
-		md_cd_ccif_allQreset_work(CLDMA_HIF_ID);
+		if (md->hif_flag & (1<<CLDMA_HIF_ID))
+			md_cd_ccif_allQreset_work(CLDMA_HIF_ID);
+		ccci_hif_md_exception(md->hif_flag, stage);
 		break;
 	default:
 		break;
@@ -267,12 +275,12 @@ static irqreturn_t md_cd_ccif_isr(int irq, void *data)
 		(struct md_sys1_info *)md->private_data;
 
 	/* must ack first, otherwise IRQ will rush in */
-	md_info->channel_id = cldma_read32(md_info->ap_ccif_base,
+	md_info->channel_id = ccif_read32(md_info->ap_ccif_base,
 		APCCIF_RCHNUM);
 	CCCI_DEBUG_LOG(md->index, TAG,
 		"MD CCIF IRQ 0x%X\n", md_info->channel_id);
 	/*don't ack data queue to avoid missing rx intr*/
-	cldma_write32(md_info->ap_ccif_base, APCCIF_ACK,
+	ccif_write32(md_info->ap_ccif_base, APCCIF_ACK,
 		md_info->channel_id & (0xFFFF << RINGQ_EXP_BASE));
 
 #if (MD_GENERATION <= 6292)
@@ -342,61 +350,95 @@ static inline int md_sys1_sw_init(struct ccci_modem *md)
 
 static int md_cd_init(struct ccci_modem *md)
 {
-	CCCI_INIT_LOG(md->index, TAG, "CLDMA modem is initializing\n");
+	CCCI_INIT_LOG(md->index, TAG, "CCCI: modem is initializing\n");
 
+	return 0;
+}
+
+/* Please delete this function once it can be deleted. */
+static int ccci_md_hif_start(struct ccci_modem *md, int stage)
+{
+	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
+
+	switch (stage) {
+	case 1:
+		/*enable clk: cldma & ccif */
+		ccci_set_clk_cg(md, 1);
+		if (md->hif_flag & (1 << CCIF_HIF_ID)) {
+#if (MD_GENERATION >= 6293)
+			md_ccif_sram_reset(CCIF_HIF_ID);
+			md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
+			md_ccif_reset_queue(CCIF_HIF_ID, 1);
+			md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_NORMAL);
+			md_ccif_reset_queue(CCIF_HIF_ID, 1);
+#endif
+
+			/* 3. enable MPU */
+
+			/* clear all ccif irq before enable it.*/
+			ccci_reset_ccif_hw(md->index, AP_MD1_CCIF,
+				md_info->ap_ccif_base, md_info->md_ccif_base);
+		}
+		if (md->hif_flag & (1 << CLDMA_HIF_ID)) {
+			/* 2. clearring buffer, just in case */
+			md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
+			md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
+			md_cldma_hw_reset(md->index);
+		}
+		break;
+	case 2:
+		if (md->hif_flag & (1 << CCIF_HIF_ID))
+			ccif_enable_irq(md);
+		if (md->hif_flag & (1 << CLDMA_HIF_ID)) {
+			/* 8. start CLDMA */
+			cldma_reset(CLDMA_HIF_ID);
+			cldma_start(CLDMA_HIF_ID);
+		}
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
+int __weak md_start_platform(struct ccci_modem *md)
+{
+	pr_debug("[ccci/dummy] %s is not supported!\n", __func__);
 	return 0;
 }
 
 static int md_cd_start(struct ccci_modem *md)
 {
-	struct md_sys1_info *md_info =
-		(struct md_sys1_info *)md->private_data;
 	int ret = 0;
-	struct ccci_smem_region *region;
-	int i;
-	long long *llptr;
 
 	if (md->per_md_data.config.setting & MD_SETTING_FIRST_BOOT) {
+		ret = md_start_platform(md);
+		if (ret) {
+			CCCI_BOOTUP_LOG(md->index, TAG,
+				"power on MD BROM fail %d\n", ret);
+			goto out;
+		}
 		md_cd_io_remap_md_side_register(md);
 		md_sys1_sw_init(md);
 
-		md_cd_late_init(CLDMA_HIF_ID);
-		CCCI_INIT_LOG(md->index, TAG, "MD_SETTING_FIRST_BOOT\n");
+		ccci_hif_late_init(md->index, md->hif_flag);
 		/* init security, as security depends on dummy_char,
 		 * which is ready very late.
 		 */
 		ccci_init_security();
-		/* MD will clear share memory itself after the first boot */
 		ccci_md_clear_smem(md->index, 1);
 #if (MD_GENERATION >= 6293)
 		md_ccif_ring_buf_init(CCIF_HIF_ID);
 #endif
 		md->per_md_data.config.setting &= ~MD_SETTING_FIRST_BOOT;
-	} else {
+	} else
 		ccci_md_clear_smem(md->index, 0);
-	}
-	region = ccci_md_get_smem_by_user_id(md->index, SMEM_USER_CCB_DHL);
-	if (region) {
-		/*clear ccb data smem*/
-		llptr = (long long *)(region->base_ap_view_vir);
 
-		/* ccb_data_size should be times of 8. */
-		for (i = 0; i < region->size/8; i++)
-			llptr[i] = 0;
-	}
-	region = ccci_md_get_smem_by_user_id(md->index, SMEM_USER_RAW_DHL);
-	if (region) {
-		/* clear first 1k bytes in dsp log buffer */
-		llptr = (long long *)(region->base_ap_view_vir);
-		for (i = 0; i < 128; i++)
-			llptr[i] = 0;
-	}
-
-	CCCI_BOOTUP_LOG(md->index, TAG, "CLDMA modem is starting\n");
+	CCCI_BOOTUP_LOG(md->index, TAG, "modem is starting\n");
 	/* 1. load modem image */
 
 	CCCI_BOOTUP_LOG(md->index, TAG,
-		"CLDMA modem image ready, bypass load\n");
+		"modem image ready, bypass load\n");
 	ret = ccci_get_md_check_hdr_inf(md->index,
 		&md->per_md_data.img_info[IMG_MD],
 		md->per_md_data.img_post_fix);
@@ -412,31 +454,8 @@ static int md_cd_start(struct ccci_modem *md)
 	ccci_set_bsi_bpi_SRAM_cfg(md, 1, MD_FLIGHT_MODE_NONE);
 #endif
 
-	/*enable cldma & ccif clk*/
-	ccci_set_clk_cg(md, 1);
-
-	/* 2. clearring buffer, just in case */
-#if 1
-	md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
-	md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
-#endif
-#if (MD_GENERATION >= 6293)
-	md_ccif_sram_reset(CCIF_HIF_ID);
-	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_EXP);
-	md_ccif_reset_queue(CCIF_HIF_ID, 1);
-	md_ccif_switch_ringbuf(CCIF_HIF_ID, RB_NORMAL);
-	md_ccif_reset_queue(CCIF_HIF_ID, 1);
-#endif
-
-	/* 3. enable MPU */
-
+	ccci_md_hif_start(md, 1);
 	/* 4. power on modem, do NOT touch MD register before this */
-	/* clear all ccif irq before enable it.*/
-	ccci_reset_ccif_hw(md->index, AP_MD1_CCIF,
-		md_info->ap_ccif_base, md_info->md_ccif_base);
-
-	md_cldma_hw_reset(md->index);
-
 	ret = md_cd_power_on(md);
 	if (ret) {
 		CCCI_BOOTUP_LOG(md->index, TAG,
@@ -454,18 +473,13 @@ static int md_cd_start(struct ccci_modem *md)
 	/* 7. let modem go */
 	md_cd_let_md_go(md);
 	wdt_enable_irq(md);
-	ccif_enable_irq(md);
-	/* 8. start CLDMA */
-	cldma_reset(CLDMA_HIF_ID);
+	ccci_md_hif_start(md, 2);
 
 	md->per_md_data.is_in_ee_dump = 0;
 	md->is_force_asserted = 0;
-
-	cldma_start(CLDMA_HIF_ID);
-
  out:
 	CCCI_BOOTUP_LOG(md->index, TAG,
-		"CLDMA modem started %d\n", ret);
+		"modem started %d\n", ret);
 	/* used for throttling feature - start */
 	/*ccci_modem_boot_count[md->index]++;*/
 	/* used for throttling feature - end */
@@ -534,7 +548,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 	}
 
 	CCCI_NORMAL_LOG(md->index, TAG,
-		"md_cd_pre_stop:CLDMA modem is resetting\n");
+		"md_cd_pre_stop: CCCI modem is resetting\n");
 	/* 2. disable WDT IRQ */
 	wdt_disable_irq(md);
 
@@ -615,7 +629,7 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
 
 	CCCI_NORMAL_LOG(md->index, TAG,
-		"CLDMA modem is power off, stop_type=%d\n", stop_type);
+		"modem is power off, stop_type=%d\n", stop_type);
 	ccif_disable_irq(md);
 
 	md_cd_check_emi_state(md, 1);	/* Check EMI before */
@@ -624,9 +638,9 @@ static int md_cd_stop(struct ccci_modem *md, unsigned int stop_type)
 	ret = md_cd_power_off(md,
 		stop_type == MD_FLIGHT_MODE_ENTER ? 100 : 0);
 	CCCI_NORMAL_LOG(md->index, TAG,
-		"CLDMA modem is power off done, %d\n", ret);
-
-	md_cldma_clear(CLDMA_HIF_ID);
+		"modem is power off done, %d\n", ret);
+	if (md->hif_flag & (1<<CLDMA_HIF_ID))
+		md_cldma_clear(CLDMA_HIF_ID);
 
 	/* ACK CCIF for MD. while entering flight mode,
 	 * we may send something after MD slept
@@ -948,40 +962,40 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_CON(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_CON,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_CON));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_CON));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_BUSY(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_BUSY,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_BUSY));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_BUSY));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_START(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_START,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_START));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_START));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_TCHNUM(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_TCHNUM,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_TCHNUM));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_TCHNUM));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_RCHNUM(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_RCHNUM,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_RCHNUM));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_RCHNUM));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "AP_ACK(%p)=%x\n",
 		md_info->ap_ccif_base + APCCIF_ACK,
-		cldma_read32(md_info->ap_ccif_base, APCCIF_ACK));
+		ccif_read32(md_info->ap_ccif_base, APCCIF_ACK));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_CON(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_CON,
-		cldma_read32(md_info->md_ccif_base, APCCIF_CON));
+		ccif_read32(md_info->md_ccif_base, APCCIF_CON));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_BUSY(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_BUSY,
-		cldma_read32(md_info->md_ccif_base, APCCIF_BUSY));
+		ccif_read32(md_info->md_ccif_base, APCCIF_BUSY));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_START(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_START,
-		cldma_read32(md_info->md_ccif_base, APCCIF_START));
+		ccif_read32(md_info->md_ccif_base, APCCIF_START));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_TCHNUM(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_TCHNUM,
-		cldma_read32(md_info->md_ccif_base, APCCIF_TCHNUM));
+		ccif_read32(md_info->md_ccif_base, APCCIF_TCHNUM));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_RCHNUM(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_RCHNUM,
-		cldma_read32(md_info->md_ccif_base, APCCIF_RCHNUM));
+		ccif_read32(md_info->md_ccif_base, APCCIF_RCHNUM));
 	CCCI_MEM_LOG_TAG(md->index, TAG, "MD_ACK(%p)=%x\n",
 		md_info->md_ccif_base + APCCIF_ACK,
-		cldma_read32(md_info->md_ccif_base, APCCIF_ACK));
+		ccif_read32(md_info->md_ccif_base, APCCIF_ACK));
 
 	for (idx = 0; idx < md->hw_info->sram_size / sizeof(u32);
 		idx += 4) {
@@ -989,13 +1003,13 @@ static void md_cd_dump_ccif_reg(struct ccci_modem *md)
 			"CHDATA(%p): %08X %08X %08X %08X\n",
 			md_info->ap_ccif_base + APCCIF_CHDATA +
 			idx * sizeof(u32),
-			cldma_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
+			ccif_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
 				(idx + 0) * sizeof(u32)),
-			cldma_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
+			ccif_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
 				(idx + 1) * sizeof(u32)),
-			cldma_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
+			ccif_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
 				(idx + 2) * sizeof(u32)),
-			cldma_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
+			ccif_read32(md_info->ap_ccif_base + APCCIF_CHDATA,
 				(idx + 3) * sizeof(u32)));
 	}
 }
@@ -1042,7 +1056,7 @@ static int md_cd_dump_info(struct ccci_modem *md,
 
 		for (i = 0; i < length / sizeof(unsigned int); i++) {
 			*(dest_buff + i) =
-				cldma_read32(md_info->ap_ccif_base,
+				ccif_read32(md_info->ap_ccif_base,
 				APCCIF_CHDATA + (sram_size - length) +
 				i * sizeof(unsigned int));
 		}
@@ -1050,6 +1064,9 @@ static int md_cd_dump_info(struct ccci_modem *md,
 			"Dump CCIF SRAM (last %d bytes)\n", length);
 		ccci_util_mem_dump(md->index,
 			CCCI_DUMP_MEM_DUMP, dest_buff, length);
+#ifdef DEBUG_FOR_CCB
+		ccci_hif_dump_status(1 << CCIF_HIF_ID, DUMP_FLAG_CCIF, 0);
+#endif
 	}
 
 	/*HIF related dump flag*/
@@ -1264,7 +1281,8 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md,
 		if (strncmp(buf, "ccif", count - 1) == 0)
 			ccci_hif_dump_status(1 << CCIF_HIF_ID,
 				DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
-		if (strncmp(buf, "cldma", count - 1) == 0)
+		if ((strncmp(buf, "cldma", count - 1) == 0) &&
+			(md->hif_flag&(1<<CLDMA_HIF_ID)))
 			ccci_hif_dump_status(1 << CLDMA_HIF_ID,
 				DUMP_FLAG_CLDMA, -1);
 		if (strncmp(buf, "register", count - 1) == 0)
@@ -1291,6 +1309,11 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md,
 			CCCI_ERROR_LOG(md->index, TAG, "dump ccif.\n");
 			mt_irq_dump_status(md_info->ap_ccif_irq_id);
 		}
+		if (strncmp(buf, "dpmaif", count - 1) == 0)
+			ccci_hif_dump_status(1<<DPMAIF_HIF_ID,
+				DUMP_FLAG_REG, -1);
+		if (strncmp(buf, "port", count - 1) == 0)
+			ccci_port_dump_status(md->index);
 	}
 	return count;
 }
@@ -1308,22 +1331,23 @@ static ssize_t md_cd_control_store(struct ccci_modem *md,
 	const char *buf, size_t count)
 {
 	int size = 0;
-
-	if (strncmp(buf, "cldma_reset", count - 1) == 0) {
-		CCCI_NORMAL_LOG(md->index, TAG, "reset CLDMA\n");
-		md_cd_lock_cldma_clock_src(1);
-		cldma_stop(CLDMA_HIF_ID);
-		md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
-		md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
-		cldma_reset(CLDMA_HIF_ID);
-		cldma_start(CLDMA_HIF_ID);
-		md_cd_lock_cldma_clock_src(0);
-	}
-	if (strncmp(buf, "cldma_stop", count - 1) == 0) {
-		CCCI_NORMAL_LOG(md->index, TAG, "stop CLDMA\n");
-		md_cd_lock_cldma_clock_src(1);
-		cldma_stop(CLDMA_HIF_ID);
-		md_cd_lock_cldma_clock_src(0);
+	if (md->hif_flag&(1<<CLDMA_HIF_ID)) {
+		if (strncmp(buf, "cldma_reset", count - 1) == 0) {
+			CCCI_NORMAL_LOG(md->index, TAG, "reset CLDMA\n");
+			md_cd_lock_cldma_clock_src(1);
+			cldma_stop(CLDMA_HIF_ID);
+			md_cd_clear_all_queue(CLDMA_HIF_ID, OUT);
+			md_cd_clear_all_queue(CLDMA_HIF_ID, IN);
+			cldma_reset(CLDMA_HIF_ID);
+			cldma_start(CLDMA_HIF_ID);
+			md_cd_lock_cldma_clock_src(0);
+		}
+		if (strncmp(buf, "cldma_stop", count - 1) == 0) {
+			CCCI_NORMAL_LOG(md->index, TAG, "stop CLDMA\n");
+			md_cd_lock_cldma_clock_src(1);
+			cldma_stop(CLDMA_HIF_ID);
+			md_cd_lock_cldma_clock_src(0);
+		}
 	}
 	if (strncmp(buf, "ccif_assert", count - 1) == 0) {
 		CCCI_NORMAL_LOG(md->index, TAG,
@@ -1425,7 +1449,7 @@ static void md_cd_sysfs_init(struct ccci_modem *md)
 			ccci_md_attr_parameter.attr.name, ret);
 }
 
-static struct syscore_ops md_cldma_sysops = {
+static struct syscore_ops ccci_modem_sysops = {
 	.suspend = ccci_modem_syssuspend,
 	.resume = ccci_modem_sysresume,
 };
@@ -1445,13 +1469,13 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md_hw = kzalloc(sizeof(struct md_hw_info), GFP_KERNEL);
 	if (md_hw == NULL) {
 		CCCI_ERROR_LOG(-1, TAG,
-			"md_cldma_probe:alloc md hw mem fail\n");
+			"ccci_modem_probe:alloc md hw mem fail\n");
 		return -1;
 	}
 	ret = md_cd_get_modem_hw_info(plat_dev, &dev_cfg, md_hw);
 	if (ret != 0) {
 		CCCI_ERROR_LOG(-1, TAG,
-			"md_cldma_probe:get hw info fail(%d)\n", ret);
+			"ccci_modem_probe:get hw info fail(%d)\n", ret);
 		kfree(md_hw);
 		md_hw = NULL;
 		return -1;
@@ -1461,7 +1485,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md = ccci_md_alloc(sizeof(struct md_sys1_info));
 	if (md == NULL) {
 		CCCI_ERROR_LOG(-1, TAG,
-			"md_cldma_probe:alloc modem ctrl mem fail\n");
+			"ccci_modem_probe:alloc modem ctrl mem fail\n");
 		kfree(md_hw);
 		md_hw = NULL;
 		return -1;
@@ -1475,7 +1499,7 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	md->plat_dev->dev.coherent_dma_mask = cldma_dmamask;
 	md->ops = &md_cd_ops;
 	CCCI_INIT_LOG(md_id, TAG,
-		"md_cldma_probe:md=%p,md->private_data=%p\n",
+		"ccci_modem_probe:md=%p,md->private_data=%p\n",
 		md, md->private_data);
 
 	/* register modem */
@@ -1509,15 +1533,14 @@ static int ccci_modem_probe(struct platform_device *plat_dev)
 	/* IRQ is default enabled after request_irq */
 	atomic_set(&md->wdt_enabled, 1);
 
-#if (MD_GENERATION <= 6292)
-	md->hif_flag = 1 << CLDMA_HIF_ID;
-#else
-	md->hif_flag = (1 << CLDMA_HIF_ID | 1 << CCIF_HIF_ID);
-#endif
+	ret = of_property_read_u32(plat_dev->dev.of_node,
+		"mediatek,mdhif_type", &md->hif_flag);
+	if (ret != 0)
+		md->hif_flag = (1 << MD1_NET_HIF | 1 << MD1_NORMAL_HIF);
 	ccci_hif_init(md->index, md->hif_flag);
 
 	/* register SYS CORE suspend resume call back */
-	register_syscore_ops(&md_cldma_sysops);
+	register_syscore_ops(&ccci_modem_sysops);
 
 	/* add sysfs entries */
 	md_cd_sysfs_init(md);
@@ -1538,18 +1561,25 @@ static const struct dev_pm_ops ccci_modem_pm_ops = {
 };
 
 #ifdef CONFIG_OF
-static const struct of_device_id mdcldma_of_ids[] = {
+#if (MD_GENERATION <= 6293)
+static const struct of_device_id ccci_modem_of_ids[] = {
 	{.compatible = "mediatek,mdcldma",},
 	{}
 };
+#else
+static const struct of_device_id ccci_modem_of_ids[] = {
+	{.compatible = "mediatek,mddriver",},
+	{}
+};
+#endif
 #endif
 
-static struct platform_driver modem_cldma_driver = {
+static struct platform_driver ccci_modem_driver = {
 
 	.driver = {
-		   .name = "cldma_modem",
+		   .name = "driver_modem",
 #ifdef CONFIG_OF
-		   .of_match_table = mdcldma_of_ids,
+		   .of_match_table = ccci_modem_of_ids,
 #endif
 
 #ifdef CONFIG_PM
@@ -1567,7 +1597,7 @@ static int __init modem_cd_init(void)
 {
 	int ret;
 
-	ret = platform_driver_register(&modem_cldma_driver);
+	ret = platform_driver_register(&ccci_modem_driver);
 	if (ret) {
 		CCCI_ERROR_LOG(-1, TAG,
 			"clmda modem platform driver register fail(%d)\n",
@@ -1580,5 +1610,5 @@ static int __init modem_cd_init(void)
 module_init(modem_cd_init);
 
 MODULE_AUTHOR("Xiao Wang <xiao.wang@mediatek.com>");
-MODULE_DESCRIPTION("CLDMA modem driver v0.1");
+MODULE_DESCRIPTION("CCCI modem driver v0.1");
 MODULE_LICENSE("GPL");

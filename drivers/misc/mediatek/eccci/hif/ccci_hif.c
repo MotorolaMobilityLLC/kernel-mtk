@@ -18,6 +18,7 @@
 #include "ccci_core.h"
 #include "ccci_hif_cldma.h"
 #include "ccci_hif_ccif.h"
+#include "ccci_hif_dpmaif.h"
 
 #define TAG "hif"
 
@@ -33,7 +34,31 @@ int ccci_hif_init(unsigned char md_id, unsigned int hif_flag)
 		ret = ccci_cldma_hif_init(CLDMA_HIF_ID, md_id);
 	if (hif_flag & (1 << CCIF_HIF_ID))
 		ret = ccci_ccif_hif_init(CCIF_HIF_ID, md_id);
+	if (hif_flag & (1 << DPMAIF_HIF_ID))
+		ret = ccci_dpmaif_hif_init(DPMAIF_HIF_ID, md_id);
 
+	return ret;
+}
+
+int ccci_hif_late_init(unsigned char md_id, unsigned int hif_flag)
+{
+	int ret = 0;
+
+	CCCI_INIT_LOG(-1, TAG, "ccci_hif_init flag = 0x%x\n", hif_flag);
+
+	if (hif_flag & (1 << CLDMA_HIF_ID))
+		ret = md_cd_late_init(CLDMA_HIF_ID);
+	if (ret)
+		return ret;
+	/*
+	 * if (hif_flag & (1 << CCIF_HIF_ID))
+	 *	ret = ccif_late_init(CCIF_HIF_ID);
+	 */
+	/*
+	 * if (hif_flag & (1 << DPMAIF_HIF_ID))
+	 *	ret = dpmaif_late_init(DPMAIF_HIF_ID);
+	 * ==> replaced by dpmaif_start
+	 */
 	return ret;
 }
 
@@ -48,6 +73,9 @@ int ccci_hif_dump_status(unsigned int hif_flag, MODEM_DUMP_FLAG dump_flag,
 	if (hif_flag & (1 << CCIF_HIF_ID))
 		ret = ccci_ccif_hif_dump_status(CCIF_HIF_ID,
 			dump_flag, length);
+	if (hif_flag & (1 << DPMAIF_HIF_ID))
+		ret = ccci_dpmaif_hif_dump_status(DPMAIF_HIF_ID,
+			dump_flag, length);
 
 	return ret;
 }
@@ -60,6 +88,8 @@ int ccci_hif_set_wakeup_src(unsigned char hif_id, int value)
 		ret = ccci_cldma_hif_set_wakeup_src(CLDMA_HIF_ID, value);
 	if (hif_id == CCIF_HIF_ID)
 		ret = ccci_ccif_hif_set_wakeup_src(CCIF_HIF_ID, value);
+	if (hif_id == DPMAIF_HIF_ID)
+		ret = ccci_dpmaif_hif_set_wakeup_src(DPMAIF_HIF_ID, value);
 
 	return ret;
 }
@@ -75,6 +105,9 @@ int ccci_hif_send_skb(unsigned char hif_id, int tx_qno, struct sk_buff *skb,
 	if (hif_id == CCIF_HIF_ID)
 		ret = ccci_ccif_hif_send_skb(CCIF_HIF_ID, tx_qno,
 			skb, from_pool, blocking);
+	if (hif_id == DPMAIF_HIF_ID)
+		ret = ccci_dpma_hif_send_skb(DPMAIF_HIF_ID, tx_qno,
+			skb, from_pool, blocking);
 
 	return ret;
 }
@@ -87,6 +120,8 @@ int ccci_hif_write_room(unsigned char hif_id, unsigned char qno)
 		ret = ccci_cldma_hif_write_room(CLDMA_HIF_ID, qno);
 	if (hif_id == CCIF_HIF_ID)
 		ret = ccci_ccif_hif_write_room(CCIF_HIF_ID, qno);
+	if (hif_id == DPMAIF_HIF_ID)
+		ret = ccci_dpma_hif_write_room(DPMAIF_HIF_ID, qno);
 
 	return ret;
 }
@@ -99,6 +134,8 @@ int ccci_hif_ask_more_request(unsigned char hif_id, int rx_qno)
 		ret = ccci_cldma_hif_give_more(CLDMA_HIF_ID, rx_qno);
 	if (hif_id == CCIF_HIF_ID)
 		ret = ccci_ccif_hif_give_more(CCIF_HIF_ID, rx_qno);
+	if (hif_id == DPMAIF_HIF_ID)
+		ret = ccci_dpma_hif_give_more(DPMAIF_HIF_ID, rx_qno);
 
 	return ret;
 }
@@ -173,43 +210,115 @@ void ccci_md_dump_log_history(unsigned char md_id,
 	int tx_queue_num, int rx_queue_num)
 {
 #ifdef PACKET_HISTORY_DEPTH
-	int i, j;
+	int i_tx, i_rx, j;
+	int tx_qno, rx_qno;
+
+	if (!dump_multi_rec && (tx_queue_num >= MAX_TXQ_NUM ||
+		rx_queue_num >= MAX_RXQ_NUM))
+		return;
 
 	if (dump_multi_rec) {
-		for (i = 0;
-			 i < ((tx_queue_num <= MAX_TXQ_NUM) ? tx_queue_num : MAX_TXQ_NUM);
-			 i++) {
-			CCCI_MEM_LOG_TAG(md_id, CORE,
-			"dump txq%d packet history, ptr=%d\n", i,
-			tinfo->tx_history_ptr[i]);
-			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
-				ccci_md_dump_log_rec(md_id,
-					&tinfo->tx_history[i][j]);
-		}
-		for (i = 0;
-			 i < ((rx_queue_num <= MAX_RXQ_NUM) ? rx_queue_num : MAX_RXQ_NUM);
-			 i++) {
-			CCCI_MEM_LOG_TAG(md_id, CORE,
-				"dump rxq%d packet history, ptr=%d\n", i,
-				tinfo->rx_history_ptr[i]);
-			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
-				ccci_md_dump_log_rec(md_id,
-					&tinfo->rx_history[i][j]);
-		}
+		tx_qno = ((tx_queue_num <= MAX_TXQ_NUM) ?
+			tx_queue_num : MAX_TXQ_NUM);
+		rx_qno = ((rx_queue_num <= MAX_RXQ_NUM) ?
+			rx_queue_num : MAX_RXQ_NUM);
+		i_tx = 0;
+		i_rx = 0;
 	} else {
-		CCCI_MEM_LOG_TAG(md_id, CORE,
-			"dump txq%d packet history, ptr=%d\n", tx_queue_num,
-			tinfo->tx_history_ptr[tx_queue_num]);
-		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
-			ccci_md_dump_log_rec(md_id,
-				&tinfo->tx_history[tx_queue_num][j]);
-		CCCI_MEM_LOG_TAG(md_id, CORE,
-			"dump rxq%d packet history, ptr=%d\n", rx_queue_num,
-			tinfo->rx_history_ptr[rx_queue_num]);
-		for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
-			ccci_md_dump_log_rec(md_id,
-				&tinfo->rx_history[rx_queue_num][j]);
+		tx_qno = tx_queue_num + 1;
+		rx_qno = rx_queue_num + 1;
+		i_tx = tx_queue_num;
+		i_rx = rx_queue_num;
 	}
+
+	if (rx_queue_num > 0)
+		for (; i_rx < rx_qno; i_rx++) {
+			CCCI_MEM_LOG_TAG(md_id, CORE,
+				"dump rxq%d packet history, ptr=%d\n", i_rx,
+			       tinfo->rx_history_ptr[i_rx]);
+			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+				ccci_md_dump_log_rec(md_id,
+				&tinfo->rx_history[i_rx][j]);
+		}
+	if (tx_queue_num > 0)
+		for (; i_tx < tx_qno; i_tx++) {
+			CCCI_MEM_LOG_TAG(md_id, CORE,
+				"dump txq%d packet history, ptr=%d\n", i_tx,
+			       tinfo->tx_history_ptr[i_tx]);
+			for (j = 0; j < PACKET_HISTORY_DEPTH; j++)
+				ccci_md_dump_log_rec(md_id,
+				&tinfo->tx_history[i_tx][j]);
+		}
 #endif
 }
 
+void ccci_hif_md_exception(unsigned int hif_flag, unsigned char stage)
+{
+	switch (stage) {
+	case HIF_EX_INIT:
+		/* eg. stop tx */
+		break;
+	case HIF_EX_CLEARQ_DONE:
+		/* eg. stop rx. */
+		break;
+	case HIF_EX_ALLQ_RESET:
+		/* maybe no used for dpmaif, for no used on exception mode. */
+		break;
+	default:
+		break;
+	};
+
+}
+
+int ccci_hif_state_notification(int md_id, unsigned char state)
+{
+	int ret = 0;
+
+	switch (state) {
+	case BOOT_WAITING_FOR_HS1:
+		if (ccci_hif[DPMAIF_HIF_ID] != NULL)
+			ret = dpmaif_start(DPMAIF_HIF_ID);
+		break;
+	case READY:
+		break;
+	case EXCEPTION:
+		/* maybe we can move here */
+		if (ccci_hif[DPMAIF_HIF_ID] != NULL) {
+			ccci_hif_dump_status(1 << DPMAIF_HIF_ID,
+				DUMP_FLAG_REG, -1);
+			dpmaif_stop_hw();
+		}
+		break;
+	case RESET:
+	case WAITING_TO_STOP:
+		break;
+	case GATED:
+		/* later than ccmni */
+		if (ccci_hif[DPMAIF_HIF_ID] != NULL)
+			ret = dpmaif_stop(DPMAIF_HIF_ID);
+		break;
+	default:
+		break;
+	}
+	return ret;
+}
+
+void ccci_hif_resume(unsigned char md_id, unsigned int hif_flag)
+{
+	if (hif_flag & (1 << DPMAIF_HIF_ID)) {
+		struct hif_dpmaif_ctrl *hif_ctrl =
+		(struct hif_dpmaif_ctrl *)ccci_hif_get_by_id(DPMAIF_HIF_ID);
+
+		hif_ctrl->ops->resume(DPMAIF_HIF_ID);
+	}
+}
+
+void ccci_hif_suspend(unsigned char md_id, unsigned int hif_flag)
+{
+	if (hif_flag & (1 << DPMAIF_HIF_ID)) {
+		struct hif_dpmaif_ctrl *hif_ctrl =
+		(struct hif_dpmaif_ctrl *)ccci_hif_get_by_id(DPMAIF_HIF_ID);
+
+		hif_ctrl->ops->suspend(DPMAIF_HIF_ID);
+	}
+}
