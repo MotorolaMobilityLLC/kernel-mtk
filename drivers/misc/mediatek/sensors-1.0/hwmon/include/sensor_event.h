@@ -25,6 +25,7 @@ enum flushAction {
 	BIAS_ACTION,
 	CALI_ACTION,
 	TEMP_ACTION,
+	TEST_ACTION,
 };
 struct sensor_event {
 	int64_t time_stamp;
