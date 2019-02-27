@@ -80,6 +80,14 @@ int tcpci_fault_status_clear(
 	return tcpc->ops->fault_status_clear(tcpc, status);
 }
 
+int tcpci_get_alert_mask(
+	struct tcpc_device *tcpc, uint32_t *mask)
+{
+	PD_BUG_ON(tcpc->ops->get_alert_mask == NULL);
+
+	return tcpc->ops->get_alert_mask(tcpc, mask);
+}
+
 int tcpci_get_alert_status(
 	struct tcpc_device *tcpc, uint32_t *alert)
 {
