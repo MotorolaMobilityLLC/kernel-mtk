@@ -19,8 +19,10 @@ subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
 subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
 
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
+ifeq ($(CONFIG_MTK_PMIC_COMMON),y)
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 	obj-y += battery/
+endif
 endif
 endif
 
