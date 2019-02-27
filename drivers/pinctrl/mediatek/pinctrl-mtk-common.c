@@ -1332,6 +1332,16 @@ unsigned int mtk_gpio_debounce_select(const unsigned int *dbnc_infos,
 	return dbnc;
 }
 
+static void mtk_eint_set_sw_debounce(struct irq_data *d,
+				     struct mtk_pinctrl *pctl,
+				     unsigned int debounce)
+{
+	unsigned int eint = d->hwirq;
+
+	pctl->eint_sw_debounce_en[eint] = 1;
+	pctl->eint_sw_debounce[eint] = debounce;
+}
+
 static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned int offset,
 	unsigned int debounce)
 {
@@ -1383,6 +1393,9 @@ static int mtk_gpio_set_debounce(struct gpio_chip *chip, unsigned int offset,
 	udelay(100);
 	if (unmask == 1)
 		mtk_eint_unmask(d);
+
+	if (d->hwirq >= pctl->devdata->db_cnt)
+		mtk_eint_set_sw_debounce(d, pctl, debounce);
 
 	return 0;
 }
@@ -2277,6 +2290,44 @@ void mt_eint_print_status(void)
 }
 EXPORT_SYMBOL(mt_eint_print_status);
 
+static void mtk_eint_sw_debounce_end(unsigned long data)
+{
+	unsigned long flags;
+	struct irq_data *d = (struct irq_data *)data;
+	struct mtk_pinctrl *pctl = irq_data_get_irq_chip_data(d);
+	const struct mtk_eint_offsets *eint_offsets =
+					&pctl->devdata->eint_offsets;
+	void __iomem *reg = mtk_eint_get_offset(pctl, d->hwirq,
+						eint_offsets->stat);
+	unsigned int status;
+
+	local_irq_save(flags);
+
+	mtk_eint_unmask(d);
+	status = readl(reg) & (1 << (d->hwirq%32));
+	if (status)
+		generic_handle_irq(d->irq);
+
+	local_irq_restore(flags);
+}
+
+static void mtk_eint_sw_debounce_start(struct mtk_pinctrl *pctl,
+				       struct irq_data *d,
+				       int index)
+{
+	struct timer_list *t = &pctl->eint_timers[index];
+	u32 debounce = pctl->eint_sw_debounce[index];
+
+	t->expires = jiffies + usecs_to_jiffies(debounce);
+	t->data = (unsigned long)d;
+	t->function = mtk_eint_sw_debounce_end;
+
+	if (!timer_pending(t)) {
+		init_timer(t);
+		add_timer(t);
+	}
+}
+
 static void mtk_eint_irq_handler(struct irq_desc *desc)
 {
 	struct irq_chip *chip = irq_desc_get_chip(desc);
@@ -2312,8 +2363,13 @@ static void mtk_eint_irq_handler(struct irq_desc *desc)
 				start_level = mtk_gpio_get(pctl->chip,
 							   pin->pin.number);
 			}
-
-			generic_handle_irq(virq);
+			if (pctl->eint_sw_debounce_en[index]) {
+				mtk_eint_mask(irq_get_irq_data(virq));
+				mtk_eint_sw_debounce_start(pctl,
+						irq_get_irq_data(virq),
+						index);
+			} else
+				generic_handle_irq(virq);
 
 			if (dual_edges) {
 				curr_level = mtk_eint_flip_edge(pctl, index);
@@ -2542,6 +2598,28 @@ int mtk_pctrl_init(struct platform_device *pdev,
 	pctl->eint_dual_edges = devm_kcalloc(&pdev->dev, pctl->devdata->ap_num,
 					     sizeof(int), GFP_KERNEL);
 	if (!pctl->eint_dual_edges) {
+		ret = -ENOMEM;
+		goto chip_error;
+	}
+
+	pctl->eint_timers = devm_kcalloc(&pdev->dev, pctl->devdata->ap_num,
+					 sizeof(struct timer_list), GFP_KERNEL);
+	if (!pctl->eint_timers) {
+		ret = -ENOMEM;
+		goto chip_error;
+	}
+
+	pctl->eint_sw_debounce_en = devm_kcalloc(&pdev->dev,
+						 pctl->devdata->ap_num,
+						 sizeof(int), GFP_KERNEL);
+	if (!pctl->eint_sw_debounce_en) {
+		ret = -ENOMEM;
+		goto chip_error;
+	}
+
+	pctl->eint_sw_debounce = devm_kcalloc(&pdev->dev, pctl->devdata->ap_num,
+					      sizeof(u32), GFP_KERNEL);
+	if (!pctl->eint_sw_debounce) {
 		ret = -ENOMEM;
 		goto chip_error;
 	}
