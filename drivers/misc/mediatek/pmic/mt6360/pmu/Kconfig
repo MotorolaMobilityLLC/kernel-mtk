@@ -31,8 +31,7 @@ config MT6360_PMU_CHARGER_TYPE_DETECT
 config MT6360_PMU_FLED
 	bool "MT6360 PMU FLED Part"
 	depends on LEDS_CLASS && MFD_MT6360_PMU
-	select FLASHLIGHT
-	select RT_FLASH_LED
+	select RT_FLASHLIGHT
 	help
 	  This selects for MT6360 PMU Flashlight LED driver.
 	  Support Normal/Strobe/Torch mode by camera.
