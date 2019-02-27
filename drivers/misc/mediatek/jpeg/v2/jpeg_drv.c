@@ -125,7 +125,6 @@
 #include "jpeg_drv_reg.h"
 
 #include "smi_public.h"
-#include "smi_debug.h"
 
 /* -------------------------------------------------------------------------- */
 /*  */
