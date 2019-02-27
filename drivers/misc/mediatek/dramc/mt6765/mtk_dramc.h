@@ -19,7 +19,9 @@
 #define SW_ZQCS
 #define SW_TX_TRACKING
 /* #define DVFS_READY */
+#ifdef CONFIG_MTK_EMI
 #define EMI_READY
+#endif
 #define PLAT_DBG_INFO_MANAGE
 
 #if defined(CONFIG_MTK_ENG_BUILD)
