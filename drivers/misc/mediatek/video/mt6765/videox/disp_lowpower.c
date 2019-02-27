@@ -829,10 +829,9 @@ void _cmd_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
-	/* enter PD mode */
-	/* config must before disable mmsys clock */
+	/*enter PD mode*/
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		ddp_sodi_power_down_mode(1, NULL);
+		ddp_set_spm_mode(DDP_PD_MODE, NULL);
 
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
@@ -846,10 +845,9 @@ void _cmd_mode_leave_idle(void)
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
 
-	/*Exit PD mode*/
-	/* config must after enable mmsys clock */
+	/*enter CG mode*/
 	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		ddp_sodi_power_down_mode(0, NULL);
+		ddp_set_spm_mode(DDP_CG_MODE, NULL);
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
@@ -1047,19 +1045,14 @@ void primary_display_sodi_rule_init(void)
 #ifdef MTK_FB_SPM_SUPPORT
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_FPGA_EARLY_PORTING
-	/* Set SODI SMI request denpen on SODI_REQ_VALUE */
-	/* SODI_REQ_VALUE default is 1, forbid SMI enter power down mode */
-	ddp_sodi_smi_request_src_select(1, NULL);
-
 	if (primary_display_is_video_mode()) {
-		ddp_sodi_power_down_mode(0, NULL);
+		ddp_set_spm_mode(DDP_CG_MODE, NULL);
 		mtk_sodi3_disp_ready(0);
 		mtk_sodi_disp_ready(1);
 	} else {
+		ddp_set_spm_mode(DDP_CG_MODE, NULL);
 		mtk_sodi3_disp_ready(1);
 		mtk_sodi_disp_ready(1);
-		/*enable CG mode*/
-		ddp_sodi_power_down_mode(0, NULL);
 	}
 #endif
 #endif
