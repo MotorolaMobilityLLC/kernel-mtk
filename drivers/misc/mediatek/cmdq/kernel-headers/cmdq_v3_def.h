@@ -15,153 +15,20 @@
 #define __CMDQ_DEF_H__
 
 #include <linux/kernel.h>
-#include <linux/soc/mediatek/mtk-cmdq.h>
 
-#include "cmdq_subsys_common.h"
-#include "cmdq_event_common.h"
+#include "cmdq_v3_event_common.h"
+#include "cmdq_v3_subsys_common.h"
 
 #define CMDQ_DRIVER_DEVICE_NAME         "mtk_cmdq"
 
 /* #define CMDQ_COMMON_ENG_SUPPORT */
-#ifdef CMDQ_COMMON_ENG_SUPPORT
-#include "cmdq_engine_common.h"
-#else
 #include "cmdq_engine.h"
-#endif
 
 #define CMDQ_SPECIAL_SUBSYS_ADDR (99)
 
-#define CMDQ_GPR_SUPPORT
-
 #define CMDQ_MAX_PROFILE_MARKER_IN_TASK (5)
 
-#define CMDQ_INVALID_THREAD		(-1)
-
-#define CMDQ_MAX_THREAD_COUNT		(24)
-#define CMDQ_MAX_TASK_IN_THREAD		(16)
-#define CMDQ_MAX_READ_SLOT_COUNT	(4)
-#define CMDQ_INIT_FREE_TASK_COUNT	(8)
-
-/* Thread that are high-priority (display threads) */
-#define CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT (8)
-#define CMDQ_DELAY_THREAD_ID		CMDQ_MAX_HIGH_PRIORITY_THREAD_COUNT
-#define CMDQ_MIN_SECURE_THREAD_ID	(CMDQ_DELAY_THREAD_ID + 1)
-#define CMDQ_MAX_SECURE_THREAD_COUNT	(3)
-
-#ifdef CMDQ_SECURE_PATH_SUPPORT
-#define CMDQ_DYNAMIC_THREAD_ID_START	(CMDQ_MIN_SECURE_THREAD_ID + \
-	CMDQ_MAX_SECURE_THREAD_COUNT)
-#else
-#define CMDQ_DYNAMIC_THREAD_ID_START	(CMDQ_DELAY_THREAD_ID + 1)
-#endif
-
-#define CMDQ_MAX_ERROR_COUNT            (2)
-#define CMDQ_MAX_RETRY_COUNT            (1)
-/* ram optimization related configuration */
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
-#define CMDQ_MAX_RECORD_COUNT           (64)
-#else
-#define CMDQ_MAX_RECORD_COUNT           (128)
-#endif
-
-#define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
-/* instruction is 64-bit */
-#define CMDQ_DMA_POOL_COUNT		32
-
-#define CMDQ_MAX_LOOP_COUNT             (1000000)
-#define CMDQ_MAX_INST_CYCLE             (27)
-#define CMDQ_MIN_AGE_VALUE              (5)
-#define CMDQ_MAX_ERROR_SIZE             (8 * 1024)
-
-#define CMDQ_MAX_TASK_IN_SECURE_THREAD	(10)
-
-/* max value of CMDQ_THR_EXEC_CMD_CNT (value starts from 0) */
-#ifdef CMDQ_USE_LARGE_MAX_COOKIE
-#define CMDQ_MAX_COOKIE_VALUE           (0xFFFFFFFF)
-#else
-#define CMDQ_MAX_COOKIE_VALUE           (0xFFFF)
-#endif
-#define CMDQ_ARG_A_SUBSYS_MASK          (0x001F0000)
-
-#ifdef CONFIG_FPGA_EARLY_PORTING
-#define CMDQ_DEFAULT_TIMEOUT_MS         (10000)
-#else
-#define CMDQ_DEFAULT_TIMEOUT_MS         (1000)
-#endif
-
-#define CMDQ_ACQUIRE_THREAD_TIMEOUT_MS  (2000)
-#define CMDQ_PREDUMP_TIMEOUT_MS         (200)
-
-#ifndef CONFIG_FPGA_EARLY_PORTING
-#define CMDQ_PWR_AWARE		/* FPGA does not have ClkMgr */
-#else
-#undef CMDQ_PWR_AWARE
-#endif
-
-/*
- * SPR / CPR / VAR naming rule and number
- **********************************************
- *    <-       SPR	 ->    <-     CPR    ->
- *    <reserved><FREE use >    <   FREE use   >
- * VAR#    0	1    2	  3    4    5	 6    7
- * CPR#			       0    1	 2    3
- */
-
-#define CMDQ_SPR_FOR_LOOP_DEBUG		(1)
-#define CMDQ_THR_SPR_START		(2)
-#define CMDQ_THR_FREE_CPR_MAX		(4)
-#define CMDQ_THR_FREE_USR_VAR_MAX	(CMDQ_THR_SPR_MAX + \
-	CMDQ_THR_FREE_CPR_MAX)
-#define CMDQ_THR_CPR_MAX		(CMDQ_THR_FREE_CPR_MAX + 0)
-#define CMDQ_THR_VAR_MAX		(CMDQ_THR_SPR_MAX + CMDQ_THR_CPR_MAX)
-#define CMDQ_SRAM_STRAT_ADDR		(0x0)
-#define CMDQ_GPR_V3_OFFSET			(0x20)
-#define CMDQ_POLLING_TPR_MASK_BIT	(10)
-#define CMDQ_SRAM_ADDR(CPR_OFFSRT)	\
-	(((CMDQ_SRAM_STRAT_ADDR + CPR_OFFSRT / 2) << 3) + 0x001)
-#define CMDQ_CPR_OFFSET(SRAM_ADDR)	\
-	(((SRAM_ADDR >> 3) - CMDQ_SRAM_STRAT_ADDR) * 2)
-#define CMDQ_INVALID_CPR_OFFSET		(0xFFFFFFFF)
-
 #define CMDQ_MAX_SRAM_OWNER_NAME	(32)
-
-#define CMDQ_DELAY_TPR_MASK_BIT		(11)
-#define CMDQ_DELAY_TPR_MASK_VALUE	(1 << 17 | 1 << 14 | 1 << 11)
-
-#define CMDQ_DELAY_MAX_SET		(3)
-#define CMDQ_DELAY_SET_START_CPR	(0)
-#define CMDQ_DELAY_SET_DURATION_CPR	(1)
-#define CMDQ_DELAY_SET_RESULT_CPR	(2)
-#define CMDQ_DELAY_SET_MAX_CPR		(3)
-#define CMDQ_DELAY_THD_SIZE		(64 * 64) /* delay inst in bytes */
-
-/* #define CMDQ_DUMP_GIC (0) */
-/* #define CMDQ_PROFILE_MMP (0) */
-
-#define CMDQ_DUMP_FIRSTERROR
-/* #define CMDQ_INSTRUCTION_COUNT */
-
-enum CMDQ_HW_THREAD_PRIORITY_ENUM {
-	CMDQ_THR_PRIO_SUPERLOW = 0,	/* low priority monitor loop */
-
-	CMDQ_THR_PRIO_NORMAL = 1,	/* nomral priority */
-	/* trigger loop (enables display mutex) */
-	CMDQ_THR_PRIO_DISPLAY_TRIGGER = 2,
-
-	/* display ESD check (every 2 secs) */
-#ifdef CMDQ_SPECIAL_ESD_PRIORITY
-	CMDQ_THR_PRIO_DISPLAY_ESD = 3,
-#else
-	CMDQ_THR_PRIO_DISPLAY_ESD = 4,
-#endif
-
-	/* display config (every frame) */
-	CMDQ_THR_PRIO_DISPLAY_CONFIG = 4,
-
-	CMDQ_THR_PRIO_SUPERHIGH = 5,	/* High priority monitor loop */
-
-	CMDQ_THR_PRIO_MAX = 7,	/* maximum possible priority */
-};
 
 enum CMDQ_SCENARIO_ENUM {
 	CMDQ_SCENARIO_JPEG_DEC = 0,
@@ -405,7 +272,7 @@ struct cmdqSecIspMeta {
 };
 
 struct cmdqSecDataStruct {
-	bool is_secure;		/* [IN]true for secure command */
+	bool isSecure;		/* [IN]true for secure command */
 
 	/* address metadata, used to translate secure buffer PA
 	 * related instruction in secure world
@@ -489,7 +356,6 @@ enum CMDQ_CAP_BITS {
 	 */
 	CMDQ_CAP_WFE = 0,
 };
-
 
 /* reply struct for cmdq_sec_cancel_error_task */
 struct cmdqSecCancelTaskResultStruct {
