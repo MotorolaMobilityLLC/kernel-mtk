@@ -701,6 +701,30 @@ unregister:
 }
 /* factory mode end */
 
+void mtk_charger_get_atm_mode(struct charger_manager *info)
+{
+	char atm_str[64];
+	char *ptr, *ptr_e;
+
+	memset(atm_str, 0x0, sizeof(atm_str));
+	ptr = strstr(saved_command_line, "androidboot.atm=");
+	if (ptr != 0) {
+		ptr_e = strstr(ptr, " ");
+
+		if (ptr_e != 0) {
+			strncpy(atm_str, ptr + 16, ptr_e - ptr - 16);
+			atm_str[ptr_e - ptr - 16] = '\0';
+		}
+
+		if (!strncmp(atm_str, "enable", strlen("enable")))
+			info->atm_enabled = true;
+		else
+			info->atm_enabled = false;
+	} else
+		info->atm_enabled = false;
+
+	pr_info("%s: atm_enabled = %d\n", __func__, info->atm_enabled);
+}
 
 /* internal algorithm common function */
 bool is_dual_charger_supported(struct charger_manager *info)
@@ -1060,10 +1084,9 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 	int ret;
 	int tmp = 0;
 
-	/* TODO: Need to sync with battery driver */
 	if (strcmp(psy->desc->name, "battery") == 0) {
 		ret = power_supply_get_property(psy,
-				POWER_SUPPLY_PROP_TEMP, &val);
+				POWER_SUPPLY_PROP_batt_temp, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
 			if (info->battery_temp != tmp
@@ -1257,6 +1280,29 @@ static void mtk_battery_notify_check(struct charger_manager *info)
 		mtk_battery_notify_VBatTemp_check(info);
 	} else {
 		mtk_battery_notify_UI_test(info);
+	}
+}
+
+static void check_battery_exist(struct charger_manager *info)
+{
+	unsigned int i = 0;
+	int count = 0;
+	int boot_mode = get_boot_mode();
+
+	for (i = 0; i < 3; i++) {
+		if (pmic_is_battery_exist() == false)
+			count++;
+	}
+
+	if (count >= 3) {
+		if (boot_mode == META_BOOT || boot_mode == ADVMETA_BOOT ||
+		    boot_mode == ATE_FACTORY_BOOT)
+			chr_info("boot_mode = %d, bypass battery check\n",
+				boot_mode);
+		else {
+			chr_err("battery doesn't exist, shutdown\n");
+			orderly_poweroff(true);
+		}
 	}
 }
 
@@ -1463,6 +1509,7 @@ static int charger_routine_thread(void *arg)
 			mtk_charger_start_timer(info);
 
 		charger_update_data(info);
+		check_battery_exist(info);
 		charger_check_status(info);
 		kpoc_power_off_check(info);
 
@@ -1542,6 +1589,13 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 		info->data.max_charger_voltage = V_CHARGER_MAX;
 	}
 	info->data.max_charger_voltage_setting = info->data.max_charger_voltage;
+
+	if (of_property_read_u32(np, "min_charger_voltage", &val) >= 0)
+		info->data.min_charger_voltage = val;
+	else {
+		chr_err("use default V_CHARGER_MIN:%d\n", V_CHARGER_MIN);
+		info->data.min_charger_voltage = V_CHARGER_MIN;
+	}
 
 	/* charging current */
 	if (of_property_read_u32(np, "usb_charger_current_suspend", &val) >= 0)
@@ -2560,6 +2614,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	mtk_pdc_init(info);
 	charger_ftm_init();
+	mtk_charger_get_atm_mode(info);
 
 #ifdef CONFIG_MTK_CHARGER_UNLIMITED
 	info->usb_unlimited = true;

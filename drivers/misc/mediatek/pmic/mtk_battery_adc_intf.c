@@ -22,6 +22,7 @@
 #include <mtk_battery_internal.h>
 #include <mach/mtk_charger_init.h>
 #include <mtk_charger.h>
+#include "include/pmic_auxadc.h"
 
 int pmic_get_battery_voltage(void)
 {
@@ -30,7 +31,7 @@ int pmic_get_battery_voltage(void)
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
-	if (is_power_path_supported())
+	if (is_isense_supported() && is_power_path_supported())
 		bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
 	else
 		bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
@@ -121,7 +122,7 @@ int pmic_get_charging_current(void)
 #else
 	int v_batsns = 0, v_isense = 0;
 
-	if (!is_power_path_supported()) {
+	if (is_isense_supported() && !is_power_path_supported()) {
 		v_isense = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
 		v_batsns = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
