@@ -1266,8 +1266,8 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
 	if (info->battery_temp >= info->thermal.max_charge_temp) {
 		info->notify_code |= 0x0002;
-		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
-			info->battery_temp);
+		chr_err("[BATTERY] bat_temp(%d) out of range%d(too high)\n",
+			info->battery_temp,info->thermal.max_charge_temp);
 	}
 
 	if (info->enable_sw_jeita == true) {
@@ -1621,6 +1621,11 @@ static int tinno_custom_charger_init(struct charger_manager *info)
 	info->data.battery_cv = CUSTOM_BATTERY_CV;
 	info->data.ac_charger_current = CUSTOM_AC_CHARGER_CURRENT;
 	info->data.ac_charger_input_current = CUSTOM_AC_CHARGER_INPUT_CURRENT;
+	
+	info->thermal.min_charge_temp = CUSTOM_MIN_CHARGE_TEMPERATURE;   //effect notify_code status when poweroff charge 
+	info->thermal.min_charge_temp_plus_x_degree = CUSTOM_MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
+	info->thermal.max_charge_temp = CUSTOM_MAX_CHARGE_TEMPERATURE;   //effect notify_code status when poweroff charge 
+	info->thermal.max_charge_temp_minus_x_degree = CUSTOM_MAX_CHARGE_TEMPERATURE_MINUS_X_DEGREE;
 
 	/*custom sw jeita setting*/
 	info->enable_sw_jeita = CUSTOM_ENABLE_JEITA;
@@ -1987,7 +1992,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 			MAX_CHARGE_TEMP);
 		info->thermal.max_charge_temp = MAX_CHARGE_TEMP;
 	}
-
+	
 	if (of_property_read_u32(np, "max_charge_temp_minus_x_degree", &val)
 	    >= 0) {
 		info->thermal.max_charge_temp_minus_x_degree = val;
