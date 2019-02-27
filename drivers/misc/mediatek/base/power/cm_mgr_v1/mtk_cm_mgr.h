@@ -54,6 +54,7 @@ extern int vcore_power_ratio_up[CM_MGR_EMI_OPP];
 extern int vcore_power_ratio_down[CM_MGR_EMI_OPP];
 extern int debounce_times_up_adb[CM_MGR_EMI_OPP];
 extern int debounce_times_down_adb[CM_MGR_EMI_OPP];
+extern int debounce_times_reset_adb;
 extern int debounce_times_perf_down;
 extern int debounce_times_perf_force_down;
 extern int cm_mgr_enable;
@@ -68,6 +69,7 @@ extern void cm_mgr_perf_set_status(int status);
 extern void cm_mgr_perf_set_force_status(int status);
 extern void check_cm_mgr_status_internal(void);
 extern void check_cm_mgr_status(unsigned int cluster, unsigned int freq);
+extern void cm_mgr_enable_fn(int enable);
 extern int cm_mgr_to_sspm_command(u32 cmd, int val);
 
 enum mt_cpu_dvfs_id;
