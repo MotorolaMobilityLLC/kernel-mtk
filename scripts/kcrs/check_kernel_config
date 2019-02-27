@@ -666,6 +666,8 @@ do
     fi
 done
 
+declare -A CHECK_CORRECT_TABLE_HASH
+
 # E. Check correct_config.csv format, if Correct Config file is modified
 # 1. Build Correct table hash
 # 2. if COMMON, all value should be the same
@@ -678,14 +680,14 @@ if [ "$GIT_MODIFY_CORRECT" != "" ]; then
         LINE=$(echo $LINE | sed 's/\r//g')
         MOD_LINE=$(echo $LINE | sed 's/^+//g')
         CONFIG=$(echo $MOD_LINE | awk -F, '{ print $1 }' | sed 's/ //g')
-        if [ "${CORRECT_TABLE_HASH[$CONFIG,CONFIG]}" == "" ]; then
-            CORRECT_TABLE_HASH[$CONFIG,CONFIG]="$CONFIG"
+        if [ "${CHECK_CORRECT_TABLE_HASH[$CONFIG,CONFIG]}" == "" ]; then
+            CHECK_CORRECT_TABLE_HASH[$CONFIG,CONFIG]="$CONFIG"
             TYPE=$(echo $MOD_LINE | awk -F, '{ print $2 }' | sed 's/ //g')
-            CORRECT_TABLE_HASH[$CONFIG,TYPE]="$TYPE"
+            CHECK_CORRECT_TABLE_HASH[$CONFIG,TYPE]="$TYPE"
             OWNER=$(echo $MOD_LINE | awk -F, '{ print $3 }' | sed 's/ //g')
-            CORRECT_TABLE_HASH[$CONFIG,OWNER]="$OWNER"
+            CHECK_CORRECT_TABLE_HASH[$CONFIG,OWNER]="$OWNER"
             NOTE=$(echo $MOD_LINE | awk -F, '{ print $4 }')
-            CORRECT_TABLE_HASH[$CONFIG,NOTE]="$NOTE"
+            CHECK_CORRECT_TABLE_HASH[$CONFIG,NOTE]="$NOTE"
 
             INDEX=5
             for PLATFORM in $CURRENT_PLATFORM_LIST
@@ -696,26 +698,26 @@ if [ "$GIT_MODIFY_CORRECT" != "" ]; then
                 else
                     VALUE=$(echo $MOD_LINE | awk -F, '{ print $'$INDEX' }')
                 fi
-                CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]="$VALUE"
+                CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]="$VALUE"
                 INDEX=$(($INDEX+1))
             done
         fi
 
         # 2. if COMMON, all value should be the same
-        if [ "${CORRECT_TABLE_HASH[$CONFIG,TYPE]}" == "COMMON" ]; then
+        if [ "${CHECK_CORRECT_TABLE_HASH[$CONFIG,TYPE]}" == "COMMON" ]; then
             SKIP="0"
             COMMON_VALUE=""
             for PLATFORM in $CURRENT_PLATFORM_LIST
             do
                 if [ "$SKIP" == "0" ]; then
                     COMMON_PLATFORM=$PLATFORM
-                    COMMON_VALUE=${CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}
+                    COMMON_VALUE=${CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}
                     SKIP="1"
                 else
-                    if [ "${CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" != "$COMMON_VALUE" ]; then
+                    if [ "${CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" != "$COMMON_VALUE" ]; then
                         echo "check_kernel_config fail" >> $TEMPFILE_PATH
-                        echo "$CORRECT_CONFIG_FILE set $CONFIG to ${CORRECT_TABLE_HASH[$CONFIG,TYPE]} is wrong(correct_config.csv format wrong)" >> $TEMPFILE_PATH
-                        echo "$COMMON_PLATFORM is $COMMON_VALUE , $PLATFORM is ${CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" >> $TEMPFILE_PATH
+                        echo "$CORRECT_CONFIG_FILE set $CONFIG to ${CHECK_CORRECT_TABLE_HASH[$CONFIG,TYPE]} is wrong(correct_config.csv format wrong)" >> $TEMPFILE_PATH
+                        echo "$COMMON_PLATFORM is $COMMON_VALUE , $PLATFORM is ${CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" >> $TEMPFILE_PATH
                         echo "all the platform value of COMMON type in correct_config.csv should be the same" >> $TEMPFILE_PATH
                         echo "your change in $CORRECT_CONFIG_FILE" >> $TEMPFILE_PATH
                         echo "$CORRECT_CONFIG_HEADER" >> $TEMPFILE_PATH
@@ -728,15 +730,15 @@ if [ "$GIT_MODIFY_CORRECT" != "" ]; then
                 fi
             done
         # 3. if USER;PLATFORM, each filed should have (SUB_VALUE)
-        elif [ "${CORRECT_TABLE_HASH[$CONFIG,TYPE]}" == "USER;PLATFORM" ]; then
+        elif [ "${CHECK_CORRECT_TABLE_HASH[$CONFIG,TYPE]}" == "USER;PLATFORM" ]; then
             COMMON_VALUE=""
             for PLATFORM in $CURRENT_PLATFORM_LIST
             do
                 USER_PLATFORM_SUBVALUE="(USER)$\|(PLATFORM)$"
-                if [ "$(echo ${CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]} | grep $USER_PLATFORM_SUBVALUE)" == "" ]; then
+                if [ "$(echo ${CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]} | grep $USER_PLATFORM_SUBVALUE)" == "" ]; then
                     echo "check_kernel_config fail" >> $TEMPFILE_PATH
-                    echo "$CORRECT_CONFIG_FILE set $CONFIG to ${CORRECT_TABLE_HASH[$CONFIG,TYPE]} is wrong(correct_config.csv format wrong)" >> $TEMPFILE_PATH
-                    echo "$PLATFORM set ${CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" >> $TEMPFILE_PATH
+                    echo "$CORRECT_CONFIG_FILE set $CONFIG to ${CHECK_CORRECT_TABLE_HASH[$CONFIG,TYPE]} is wrong(correct_config.csv format wrong)" >> $TEMPFILE_PATH
+                    echo "$PLATFORM set ${CHECK_CORRECT_TABLE_HASH[$CONFIG,$PLATFORM]}" >> $TEMPFILE_PATH
                     echo "all the platform value of USER;PLATFORM type in correct_config.csv should have subvalue (USER) or (PLATFORM)" >> $TEMPFILE_PATH
                     echo "your change in $CORRECT_CONFIG_FILE" >> $TEMPFILE_PATH
                     echo "$CORRECT_CONFIG_HEADER" >> $TEMPFILE_PATH
