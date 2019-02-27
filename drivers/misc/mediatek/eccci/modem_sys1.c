@@ -133,12 +133,12 @@ static int md_cd_ccif_send(struct ccci_modem *md, int channel_id)
 	struct md_sys1_info *md_info =
 		(struct md_sys1_info *)md->private_data;
 
-	busy = cldma_read32(md_info->ap_ccif_base, APCCIF_BUSY);
+	busy = ccci_read32(md_info->ap_ccif_base, APCCIF_BUSY);
 	if (busy & (1 << channel_id))
 		return -1;
-	cldma_write32(md_info->ap_ccif_base, APCCIF_BUSY,
+	ccci_write32(md_info->ap_ccif_base, APCCIF_BUSY,
 		1 << channel_id);
-	cldma_write32(md_info->ap_ccif_base, APCCIF_TCHNUM,
+	ccci_write32(md_info->ap_ccif_base, APCCIF_TCHNUM,
 		channel_id);
 	return 0;
 }
