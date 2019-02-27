@@ -2599,6 +2599,10 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		compatible = "mediatek,radio_md_cfg";
 	};
 
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
+
 	audio_snd_card {
 		compatible = "mediatek,audio_snd_card";
 	};
