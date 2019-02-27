@@ -19,6 +19,17 @@ config FPGA_EARLY_PORTING
 	  Used for FPGA early porting to separate code segments between FPGA
 	  platform and non-FPGA platform
 
+config MTK_LM_MODE
+	bool "MTK Large Memory mode"
+	select ARM_LPAE if !ARM64
+	select ARCH_PHYS_ADDR_T_64BIT
+	select ARCH_DMA_ADDR_T_64BIT
+	help
+	  Large Memory mode for supporting more than 4GB DRAM access
+	  It should only be enabled if hardware can support
+	  more than 4GB DRAM mapping.
+	  If you are not sure about this, set n
+
 config DMAUSER_PAGES
 	bool "allocate highuser movable pages from dma zone"
 	depends on MTK_LM_MODE && !MTK_MEMORY_LOWPOWER
@@ -53,6 +64,15 @@ config MTK_LDVT
 	bool "LDVT"
 	help
 	  Support LDVT or not
+
+config MTK_BOUNCING_CHECK
+	bool "Enable bouncing buffer check"
+	default n
+	help
+	  In order to avoid misusing the DMA_MASK, an auto-check detection
+	  is hooked in kernel to check whether the DMA_MASK value is correct.
+	  This config can only be enabled for platforms which support Large DRAM.
+	  Must not be enabled for those platforms which only support 4GB DRAM.
 
 endif
 
