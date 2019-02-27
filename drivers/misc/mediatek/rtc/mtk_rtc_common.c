@@ -273,7 +273,7 @@ void rtc_gpio_enable_32k(enum rtc_gpio_user_t user)
 {
 	unsigned long flags;
 
-	rtc_xinfo("rtc_gpio_enable_32k, user = %d\n", user);
+	rtc_xinfo("%s, user = %d\n", __func__, user);
 
 	if (user < RTC_GPIO_USER_WIFI || user > RTC_GPIO_USER_PMIC)
 		return;
@@ -288,7 +288,7 @@ void rtc_gpio_disable_32k(enum rtc_gpio_user_t user)
 {
 	unsigned long flags;
 
-	rtc_xinfo("rtc_gpio_disable_32k, user = %d\n", user);
+	rtc_xinfo("%s, user = %d\n", __func__, user);
 
 	if (user < RTC_GPIO_USER_WIFI || user > RTC_GPIO_USER_PMIC)
 		return;
@@ -356,7 +356,7 @@ void rtc_mark_recovery(void)
 	unsigned long flags;
 	struct rtc_time defaulttm;
 
-	rtc_xinfo("rtc_mark_recovery\n");
+	rtc_xinfo("%s\n", __func__);
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_spare_register(RTC_FAC_RESET, 0x1);
 	/* Clear alarm setting when doing factory recovery. */
@@ -385,7 +385,7 @@ void rtc_mark_fast(void)
 {
 	unsigned long flags;
 
-	rtc_xinfo("rtc_mark_fast\n");
+	rtc_xinfo("%s\n", __func__);
 	spin_lock_irqsave(&rtc_lock, flags);
 	hal_rtc_set_spare_register(RTC_FAST_BOOT, 0x1);
 	spin_unlock_irqrestore(&rtc_lock, flags);
@@ -490,7 +490,7 @@ void mt_power_off(void)
 #endif
 #endif
 
-	rtc_xinfo("mt_power_off\n");
+	rtc_xinfo("%s\n", __func__);
 	dump_stack();
 	/* pull PWRBB low */
 	rtc_bbpu_power_down();
@@ -783,18 +783,18 @@ static int rtc_ops_ioctl(struct device *dev, unsigned int cmd,
 			 unsigned long arg)
 {
 	/* dump_stack(); */
-	rtc_xinfo("rtc_ops_ioctl cmd=%d\n", cmd);
+	rtc_xinfo("%s cmd=%d\n", __func__, cmd);
 	switch (cmd) {
 	case RTC_AUTOBOOT_ON:
 		{
 			hal_rtc_set_spare_register(RTC_AUTOBOOT, AUTOBOOT_ON);
-			rtc_xinfo("rtc_ops_ioctl cmd=RTC_AUTOBOOT_ON\n");
+			rtc_xinfo("%s cmd=RTC_AUTOBOOT_ON\n", __func__);
 			return 0;
 		}
 	case RTC_AUTOBOOT_OFF:	/* IPO shutdown */
 		{
 			hal_rtc_set_spare_register(RTC_AUTOBOOT, AUTOBOOT_OFF);
-			rtc_xinfo("rtc_ops_ioctl cmd=RTC_AUTOBOOT_OFF\n");
+			rtc_xinfo("%s cmd=RTC_AUTOBOOT_OFF\n", __func__);
 			return 0;
 		}
 	default:
