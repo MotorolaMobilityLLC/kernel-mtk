@@ -278,6 +278,9 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 	if (dvfsrc_en > 1 || dvfsrc_en < 0)
 		return;
 
+	if (!spm_load_firmware_status())
+		return;
+
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
 #endif
@@ -668,32 +671,6 @@ static void pm_qos_notifier_register(void)
 			&dvfsrc->pm_qos_vcore_dvfs_force_opp_nb);
 }
 
-static void pm_qos_notifier_unregister(void)
-{
-	pm_qos_remove_notifier(PM_QOS_MEMORY_BANDWIDTH,
-			&dvfsrc->pm_qos_memory_bw_nb);
-	pm_qos_remove_notifier(PM_QOS_CPU_MEMORY_BANDWIDTH,
-			&dvfsrc->pm_qos_cpu_memory_bw_nb);
-	pm_qos_remove_notifier(PM_QOS_GPU_MEMORY_BANDWIDTH,
-			&dvfsrc->pm_qos_gpu_memory_bw_nb);
-	pm_qos_remove_notifier(PM_QOS_MM_MEMORY_BANDWIDTH,
-			&dvfsrc->pm_qos_mm_memory_bw_nb);
-	pm_qos_remove_notifier(PM_QOS_OTHER_MEMORY_BANDWIDTH,
-			&dvfsrc->pm_qos_other_memory_bw_nb);
-	pm_qos_remove_notifier(PM_QOS_DDR_OPP,
-			&dvfsrc->pm_qos_ddr_opp_nb);
-	pm_qos_remove_notifier(PM_QOS_VCORE_OPP,
-			&dvfsrc->pm_qos_vcore_opp_nb);
-	pm_qos_remove_notifier(PM_QOS_SCP_VCORE_REQUEST,
-			&dvfsrc->pm_qos_scp_vcore_request_nb);
-	pm_qos_remove_notifier(PM_QOS_POWER_MODEL_DDR_REQUEST,
-			&dvfsrc->pm_qos_power_model_ddr_request_nb);
-	pm_qos_remove_notifier(PM_QOS_POWER_MODEL_VCORE_REQUEST,
-			&dvfsrc->pm_qos_power_model_vcore_request_nb);
-	pm_qos_remove_notifier(PM_QOS_VCORE_DVFS_FORCE_OPP,
-			&dvfsrc->pm_qos_vcore_dvfs_force_opp_nb);
-}
-
 static int helio_dvfsrc_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -728,21 +705,13 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 
 	pm_qos_notifier_register();
 
-	ret = helio_dvfsrc_common_init();
-	if (ret)
-		goto remove_interface;
+	helio_dvfsrc_common_init();
 
 	helio_dvfsrc_platform_init(dvfsrc);
 
 	pr_info("%s: init done\n", __func__);
 
 	return 0;
-
-remove_interface:
-	helio_dvfsrc_remove_interface(&pdev->dev);
-	pm_qos_notifier_unregister();
-
-	return ret;
 }
 
 static int helio_dvfsrc_remove(struct platform_device *pdev)
