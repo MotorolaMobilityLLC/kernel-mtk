@@ -803,7 +803,6 @@ static const struct dev_pm_ops mtk8250_pm_ops = {
 };
 
 static const struct of_device_id mtk8250_of_match[] = {
-	{ .compatible = "mediatek,mt2712-uart" },
 	{ .compatible = "mediatek,mt6577-uart" },
 	{ /* Sentinel */ }
 };
@@ -811,7 +810,7 @@ MODULE_DEVICE_TABLE(of, mtk8250_of_match);
 
 static struct platform_driver mtk8250_platform_driver = {
 	.driver = {
-		.name		= "mt2712-uart",
+		.name		= "mt6577-uart",
 		.pm		= &mtk8250_pm_ops,
 		.of_match_table	= mtk8250_of_match,
 	},
@@ -832,7 +831,7 @@ static int __init early_mtk8250_setup(struct earlycon_device *device,
 	return early_serial8250_setup(device, NULL);
 }
 
-OF_EARLYCON_DECLARE(mtk8250, "mediatek,mt2712-uart", early_mtk8250_setup);
+OF_EARLYCON_DECLARE(mtk8250, "mediatek,mt6577-uart", early_mtk8250_setup);
 #endif
 
 MODULE_AUTHOR("Matthias Brugger");
