@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2018 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef __SF_AUTO_H__
 #define __SF_AUTO_H__
 
@@ -28,13 +41,13 @@
 #define SF_SPI_RW_EN                1
 #endif
 
-#if(SF_COMPATIBLE_SEL == SF_COMPATIBLE_NOF || SF_COMPATIBLE_SEL == SF_COMPATIBLE_NOF_BP_V2_7)
+#if (SF_COMPATIBLE_SEL == SF_COMPATIBLE_NOF || SF_COMPATIBLE_SEL == SF_COMPATIBLE_NOF_BP_V2_7)
 #define MULTI_HAL_COMPATIBLE        0
 #else
 #define MULTI_HAL_COMPATIBLE        1
 #endif
 
-/* check ree¡¢trustkernel¡¢beanpodV2 read chip ID by spi bus or not */
+/* check reeÂ¡Â¢trustkernelÂ¡Â¢beanpodV2 read chip ID by spi bus or not */
 #if ((SF_REE_PLATFORM) && (SF_COMPATIBLE_SEL == SF_COMPATIBLE_REE)) || \
     (((SF_PLATFORM_SEL == SF_TEE_TRUSTKERNEL)) && (SF_COMPATIBLE_SEL == SF_COMPATIBLE_TRUSTKERNEL)) || \
     (((SF_PLATFORM_SEL == SF_TEE_BEANPOD)) && (SF_COMPATIBLE_SEL == SF_COMPATIBLE_BEANPOD_V2)) || \

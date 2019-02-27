@@ -1,3 +1,16 @@
+/*
+ * Copyright (C) 2018 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #ifndef __SF_DEF_H__
 #define __SF_DEF_H__
 
@@ -5,18 +18,18 @@
 // platform lists
 //-----------------------------------------------------------------------------
 /*************************************************
-SF_REE_MTK          联发科平台，android6以上版本
-SF_REE_QUALCOMM     高通平台
-SF_REE_SPREAD       展讯平台
-SF_REE_HIKEY9600    华为麒麟960
-SF_REE_MTK_L5_X     联发科平台，android5版本
+SF_REE_MTK
+SF_REE_QUALCOMM
+SF_REE_SPREAD
+SF_REE_HIKEY9600
+SF_REE_MTK_L5_X
 
-SF_TEE_BEANPOD      豆荚TEE
-SF_TEE_TRUSTKERNEL  甁砵TEE
-SF_TEE_QSEE         高通TEE
+SF_TEE_BEANPOD
+SF_TEE_TRUSTKERNEL
+SF_TEE_QSEE
 SF_TEE_TRUSTONIC    trustonic TEE
-SF_TEE_RONGCARD     融卡TEE
-SF_TEE_TRUSTY       展讯TEE
+SF_TEE_RONGCARD
+SF_TEE_TRUSTY
 *************************************************/
 
 #define SF_REE_MTK                  1
