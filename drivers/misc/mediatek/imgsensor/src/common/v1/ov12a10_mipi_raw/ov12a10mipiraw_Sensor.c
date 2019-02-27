@@ -1365,7 +1365,7 @@ static kal_uint32 get_info(
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 /*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode*/
-	sensor_info->PDAF_Support = 1;
+	sensor_info->PDAF_Support = 0;
 
 //sensor_info->HDR_Support = 0; /*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR*/
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
