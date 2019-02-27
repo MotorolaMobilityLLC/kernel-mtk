@@ -44,6 +44,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/compat.h>
+#include <linux/ratelimit.h>
 
 #ifdef CONFIG_MTK_M4U
 #include "m4u.h"
@@ -1474,6 +1475,7 @@ const char *_session_ioctl_spy(unsigned int cmd)
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = -1;
+	static DEFINE_RATELIMIT_STATE(ioctl_ratelimit, 1 * HZ, 10);
 
 	switch (cmd) {
 	case DISP_IOCTL_CREATE_SESSION:
@@ -1580,7 +1582,9 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	}
 	default:
 	{
-		DISPWARN("[session]ioctl not supported, 0x%08x\n", cmd);
+		if (__ratelimit(&ioctl_ratelimit))
+			DISPWARN("[session]ioctl not supported, 0x%08x\n",
+				cmd);
 	}
 	}
 
