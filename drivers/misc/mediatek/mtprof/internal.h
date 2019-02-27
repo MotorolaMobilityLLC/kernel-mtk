@@ -25,7 +25,7 @@
 	} while (0)
 
 #define MT_DEBUG_ENTRY(name) \
-void mt_##name##_switch(int on) \
+void mt_##name##_switch(int on); \
 static int mt_##name##_show(struct seq_file *m, void *v);\
 static ssize_t mt_##name##_write(struct file *filp, const char *ubuf, \
 					size_t cnt, loff_t *data);\
