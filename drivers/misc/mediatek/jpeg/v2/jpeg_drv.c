@@ -788,7 +788,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	/* Support QoS */
 	unsigned int emi_bw = 0;
 	unsigned int picSize = 0;
-	unsigned int picPixel = 0;
+	unsigned int picCost = 0;
 
 	/* JpegDrvEncParam cfgEnc; */
 	JPEG_ENC_DRV_IN cfgEnc;
@@ -870,18 +870,22 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		/* BW = encode width x height x bpp x 1.6 */
 		/* Assume compress ratio is 0.6 */
 		if (cfgEnc.encFormat == 0x0 || cfgEnc.encFormat == 0x1)
-			picPixel = ((picSize * 2) * 8/5) + 1;
+			picCost = ((picSize * 2) * 8/5) + 1;
 		else
-			picPixel = ((picSize * 3/2) * 8/5) + 1;
+			picCost = ((picSize * 3/2) * 8/5) + 1;
 
 		/* considering FPS, 16MP = 14.5 FPS */
-		if ((picPixel * 20) < 2320) {
+		if ((picCost * 20) < 232) {
 			/* limiting FPS, Upper Bound FPS = 20 */
-			emi_bw = picPixel * 20;
+			emi_bw = picCost * 20;
 		} else {
-			emi_bw = 2320 / picPixel;
-			emi_bw = (emi_bw + 1) * picPixel;
+			emi_bw = 232 / picCost;
+			emi_bw = (emi_bw + 1) * picCost;
 		}
+
+		/* QoS requires Occupied BW */
+		/* Data BW x 1.33 */
+		emi_bw = emi_bw * 4/3;
 
 		/* update BW request before trigger HW */
 		pm_qos_update_request(&jpgenc_qos_request, emi_bw);
