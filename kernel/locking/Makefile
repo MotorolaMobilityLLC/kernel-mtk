@@ -12,7 +12,7 @@ CFLAGS_REMOVE_mutex-debug.o = $(CC_FLAGS_FTRACE)
 CFLAGS_REMOVE_rtmutex-debug.o = $(CC_FLAGS_FTRACE)
 endif
 
-ifeq ($(CONFIG_MTK_ENG_BUILD),y)
+ifeq ($(CONFIG_PROVE_LOCKING),y)
 ccflags-y += -DMTK_LOCK_DEBUG
 endif
 
