@@ -356,8 +356,8 @@ static kal_uint32 get_sensor_temperature(void)
 				temperature_convert);
 		temperature_convert = -64;
 	}
-
-	return temperature_convert;
+	return 20;
+	//return temperature_convert;
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -1943,7 +1943,6 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 
 UINT32 OV12A10_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 	{
-	pr_info("jack yan add\n");
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;
