@@ -679,7 +679,8 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	} else {
 		struct zcomp_strm *zstrm = zcomp_stream_get(zram->comp);
 		zram_check_guardbytes(cmem, true);
-		ret = zcomp_decompress(zstrm, cmem, size, mem);
+		ret = zcomp_decompress(zstrm, cmem += GUARD_BYTES_HALFLEN,
+				       size, mem);
 		zcomp_stream_put(zram->comp);
 		zram_check_guardbytes(cmem + size, false);
 	}
@@ -828,6 +829,11 @@ compress_again:
 		if (is_partial_io(bvec))
 			src = uncmem;
 	}
+
+#ifdef CONFIG_MTK_ENG_BUILD
+	if (!handle && clen != PAGE_SIZE)
+		clen += GUARD_BYTES_LENGTH;
+#endif
 
 	/*
 	 * handle allocation has 2 paths:
