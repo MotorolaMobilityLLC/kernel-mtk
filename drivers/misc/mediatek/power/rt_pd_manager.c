@@ -259,11 +259,13 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
-		if (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+			(noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
-		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) {
+		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
+			charger_ignore_usb(false);
 			mutex_lock(&pmi->chgdet_lock);
 			pmi->chgdet_en = true;
 			atomic_inc(&pmi->chgdet_cnt);
@@ -282,8 +284,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
-			&& (noti->typec_state.new_state == TYPEC_UNATTACHED ||
-			noti->typec_state.new_state == TYPEC_ATTACHED_SRC)) {
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			if (tcpc_kpoc) {
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
@@ -292,6 +293,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				break;
 			}
 			pr_info("%s USB Plug out\n", __func__);
+			charger_ignore_usb(false);
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 			mutex_lock(&pd_chr_mutex);
@@ -317,6 +319,24 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					kernel_power_off();
 				}
 			}
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
+			pr_info("%s Source_to_Sink\n", __func__);
+			charger_ignore_usb(true);
+			mutex_lock(&pmi->chgdet_lock);
+			pmi->chgdet_en = true;
+			atomic_inc(&pmi->chgdet_cnt);
+			wake_up(&pmi->waitq);
+			mutex_unlock(&pmi->chgdet_lock);
+		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
+			pr_info("%s Sink_to_Source\n", __func__);
+			charger_ignore_usb(true);
+			mutex_lock(&pmi->chgdet_lock);
+			pmi->chgdet_en = false;
+			atomic_inc(&pmi->chgdet_cnt);
+			wake_up(&pmi->waitq);
+			mutex_unlock(&pmi->chgdet_lock);
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
