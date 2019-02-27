@@ -20,6 +20,7 @@ class GpioData:
     _mapList = []
     _modeMap = {}
     _smtMap = {}
+    _map_table = {}
 
     def __init__(self):
         self.__defMode = 0
@@ -128,6 +129,10 @@ class GpioData:
             return 0
         else:
             return 1
+
+    @staticmethod
+    def set_eint_map_table(map_table):
+        GpioData._map_table = map_table;
 
     @staticmethod
     def get_modeName(key, idx):
