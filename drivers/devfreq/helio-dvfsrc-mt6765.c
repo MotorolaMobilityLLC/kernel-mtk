@@ -18,10 +18,13 @@
 #include <mtk_dramc.h>
 #include <mt-plat/upmu_common.h>
 #include <ext_wd_drv.h>
+#include <mt_emi_api.h>
 
 #include <helio-dvfsrc.h>
+#include <helio-dvfsrc-opp.h>
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_spm_internal.h>
+#include <spm/mtk_vcore_dvfs.h>
 
 static struct reg_config dvfsrc_init_configs[][128] = {
 	/* SPMFW_LP4X_2CH_3733 */
@@ -341,4 +344,113 @@ void get_dvfsrc_record(char *p)
 			"DVFSRC_RSRV_0",
 			dvfsrc_read(DVFSRC_RSRV_0));
 }
+
+/* met profile table */
+unsigned int met_vcorefs_info[INFO_MAX];
+unsigned int met_vcorefs_src[SRC_MAX];
+
+char *met_info_name[INFO_MAX] = {
+	"OPP",
+	"FREQ",
+	"VCORE",
+	"SPM_LEVEL",
+};
+
+char *met_src_name[SRC_MAX] = {
+	"MD2SPM",
+	"QOS_EMI_LEVEL",
+	"QOS_VCORE_LEVEL",
+	"CM_MGR_LEVEL",
+	"TOTAL_EMI_LEVEL_1",
+	"TOTAL_EMI_LEVEL_2",
+	"TOTAL_EMI_RESULT",
+	"QOS_BW_LEVEL1",
+	"QOS_BW_LEVEL2",
+	"QOS_BW_RESULT",
+	"SCP_VCORE_LEVEL",
+};
+
+/* met profile function */
+int vcorefs_get_opp_info_num(void)
+{
+	return INFO_MAX;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info_num);
+
+int vcorefs_get_src_req_num(void)
+{
+	return SRC_MAX;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req_num);
+
+char **vcorefs_get_opp_info_name(void)
+{
+	return met_info_name;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info_name);
+
+char **vcorefs_get_src_req_name(void)
+{
+	return met_src_name;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req_name);
+
+unsigned int *vcorefs_get_opp_info(void)
+{
+	met_vcorefs_info[INFO_OPP_IDX] = get_cur_vcore_dvfs_opp();
+	met_vcorefs_info[INFO_FREQ_IDX] = get_cur_ddr_khz();
+	met_vcorefs_info[INFO_VCORE_IDX] = get_cur_vcore_uv();
+	met_vcorefs_info[INFO_SPM_LEVEL_IDX] = spm_get_dvfs_level();
+
+	return met_vcorefs_info;
+}
+EXPORT_SYMBOL(vcorefs_get_opp_info);
+
+unsigned int *vcorefs_get_src_req(void)
+{
+	unsigned int qos_total_bw = dvfsrc_read(DVFSRC_SW_BW_0) +
+			   dvfsrc_read(DVFSRC_SW_BW_1) +
+			   dvfsrc_read(DVFSRC_SW_BW_2) +
+			   dvfsrc_read(DVFSRC_SW_BW_3) +
+			   dvfsrc_read(DVFSRC_SW_BW_4);
+	unsigned int total_bw_status = get_emi_bwst(0);
+	unsigned int total_bw_last = (get_emi_bwvl(0) & 0x7F) * 813;
+	unsigned int qos0_thres = dvfsrc_read(DVFSRC_EMI_QOS0);
+	unsigned int qos1_thres = dvfsrc_read(DVFSRC_EMI_QOS1);
+	unsigned int sw_req = dvfsrc_read(DVFSRC_SW_REQ);
+
+	met_vcorefs_src[SRC_MD2SPM_IDX] =
+		spm_vcorefs_get_MD_status();
+
+	met_vcorefs_src[SRC_QOS_EMI_LEVEL_IDX] =
+		(sw_req >> EMI_SW_AP_SHIFT) & EMI_SW_AP_MASK;
+
+	met_vcorefs_src[SRC_QOS_VCORE_LEVEL_IDX] =
+		(sw_req >> VCORE_SW_AP_SHIFT) & VCORE_SW_AP_MASK;
+
+	met_vcorefs_src[SRC_CM_MGR_LEVEL_IDX] =
+		(dvfsrc_read(DVFSRC_SW_REQ2) >> EMI_SW_AP2_SHIFT) &
+			EMI_SW_AP2_MASK;
+
+	met_vcorefs_src[SRC_TOTAL_EMI_LEVEL_1_IDX] =
+		total_bw_status & 0x1;
+	met_vcorefs_src[SRC_TOTAL_EMI_LEVEL_2_IDX] =
+		(total_bw_status >> 1) & 0x1;
+	met_vcorefs_src[SRC_TOTAL_EMI_RESULT_IDX] =
+		total_bw_last;
+
+	met_vcorefs_src[SRC_QOS_BW_LEVEL1_IDX] =
+		(qos_total_bw >= qos0_thres) ? 1 : 0;
+	met_vcorefs_src[SRC_QOS_BW_LEVEL2_IDX] =
+		(qos_total_bw >= qos1_thres) ? 1 : 0;
+	met_vcorefs_src[SRC_QOS_BW_RESUT_IDX] =
+		qos_total_bw * 100;
+
+	met_vcorefs_src[SRC_SCP_VCORE_LEVEL_IDX] =
+	(dvfsrc_read(DVFSRC_VCORE_REQUEST) >> VCORE_SCP_GEAR_SHIFT) &
+	VCORE_SCP_GEAR_MASK;
+
+	return met_vcorefs_src;
+}
+EXPORT_SYMBOL(vcorefs_get_src_req);
 
