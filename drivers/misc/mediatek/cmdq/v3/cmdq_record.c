@@ -2248,7 +2248,8 @@ s32 cmdq_resource_acquire(struct cmdqRecStruct *handle,
 	result = cmdq_mdp_acquire_resource(resourceEvent,
 		&handle->res_flag_acquire);
 	if (!result) {
-		CMDQ_MSG("Acquire resource (event:%d) failed, handle:0x%p\n",
+		CMDQ_MSG(
+			"[Res]Acquire resource (event:%d) failed, handle:0x%p\n",
 			resourceEvent, handle);
 		return -EFAULT;
 	}
@@ -2286,7 +2287,8 @@ s32 cmdq_resource_release_and_write(struct cmdqRecStruct *handle,
 	if (result >= 0)
 		return cmdq_op_set_event(handle, resourceEvent);
 
-	CMDQ_ERR("Write instruction fail and not release resource result:%d\n",
+	CMDQ_ERR(
+		"[Res]Write instruction fail and not release resource result:%d\n",
 		result);
 	return result;
 }
