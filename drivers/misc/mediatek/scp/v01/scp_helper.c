@@ -910,69 +910,8 @@ static int create_files(void)
 #define SCP_MEM_RESERVED_KEY "mediatek,reserve-memory-scp_share"
 int scp_reserve_mem_of_init(struct reserved_mem *rmem)
 {
-	enum scp_reserve_mem_id_t id;
-	phys_addr_t accumlate_memory_size = 0;
-	unsigned int num = 0;
-
-	scp_mem_base_phys = (phys_addr_t) 0;
-	scp_mem_size = (phys_addr_t) 0;
-
-	num = (unsigned int)(sizeof(scp_reserve_mblock)
-			/ sizeof(scp_reserve_mblock[0]));
-	if (num != NUMS_MEM_ID) {
-		pr_err("[SCP] number of entries of reserved memory %u / %u\n",
-			num,
-			NUMS_MEM_ID);
-
-		return -1;
-	}
-
-	for (id = 0; id < NUMS_MEM_ID; id++)
-		accumlate_memory_size += scp_reserve_mblock[id].size;
-
-	if (accumlate_memory_size > rmem->size) {
-		pr_err("[SCP] Error: (memory) Used / Total = %llu / %llu\n",
-			(unsigned long long)accumlate_memory_size,
-			(unsigned long long)rmem->size);
-
-		return -1;
-	}
-
 	scp_mem_base_phys = (phys_addr_t) rmem->base;
 	scp_mem_size = (phys_addr_t) rmem->size;
-	if ((scp_mem_base_phys >= (0x90000000ULL)) ||
-				 (scp_mem_base_phys <= 0x0)) {
-		/*The scp remap region is fixed, only
-		 * 0x4000_0000ULL~0x8FFF_FFFFULL
-		 * can be accessible
-		 */
-		pr_err("[SCP]allocated memory(0x%llx)is larger than expected\n",
-			    (uint64_t)scp_mem_base_phys);
-		/*should not call WARN_ON() here or there is no log, return -1
-		 * instead.
-		 */
-		return -1;
-	}
-
-	pr_debug("[SCP] phys:0x%llx - 0x%llx (0x%llx)\n",
-		(uint64_t)(phys_addr_t)rmem->base,
-		(uint64_t)((phys_addr_t)rmem->base +
-			(phys_addr_t)rmem->size),
-		(uint64_t)(phys_addr_t)rmem->size);
-
-	accumlate_memory_size = 0;
-	for (id = 0; id < NUMS_MEM_ID; id++) {
-		scp_reserve_mblock[id].start_phys = scp_mem_base_phys +
-							accumlate_memory_size;
-		accumlate_memory_size += scp_reserve_mblock[id].size;
-
-		pr_debug("[SCP][reserve_mem:%d]:phys:0x%llx - 0x%llx (0x%llx)\n",
-			id,
-			(uint64_t)scp_reserve_mblock[id].start_phys,
-			(uint64_t)(scp_reserve_mblock[id].start_phys +
-				scp_reserve_mblock[id].size),
-			(uint64_t)scp_reserve_mblock[id].size);
-	}
 
 	return 0;
 }
@@ -1014,53 +953,62 @@ EXPORT_SYMBOL_GPL(scp_get_reserve_mem_size);
 #if SCP_RESERVED_MEM
 static int scp_reserve_memory_ioremap(void)
 {
+	unsigned int num = (unsigned int)(sizeof(scp_reserve_mblock)
+			/ sizeof(scp_reserve_mblock[0]));
 	enum scp_reserve_mem_id_t id;
-	phys_addr_t accumlate_memory_size;
-
+	phys_addr_t accumlate_memory_size = 0;
 
 	if ((scp_mem_base_phys >= (0x90000000ULL)) ||
-				(scp_mem_base_phys <= 0x0)) {
-		/*The scp remap region is fixed, only
-		 * 0x4000_0000ULL~0x8FFF_FFFFULL
-		 * can be accessible
+			 (scp_mem_base_phys <= 0x0)) {
+		/* The scp remapped region is fixed, only
+		 * 0x4000_0000ULL ~ 0x8FFF_FFFFULL is accessible.
 		 */
-		pr_err("[SCP]allocated memory(0x%llx)is larger than expected\n",
-			(uint64_t)scp_mem_base_phys);
-		/*call WARN_ON() to assert the unexpected memory allocation
-		 */
-		WARN_ON(1);
+		pr_err("[SCP] Error: Wrong Address (0x%llx)\n",
+			    (uint64_t)scp_mem_base_phys);
+		BUG_ON(1);
 		return -1;
 	}
-	accumlate_memory_size = 0;
-	scp_mem_base_virt = (phys_addr_t)(size_t)ioremap_wc(scp_mem_base_phys
-							, scp_mem_size);
-	pr_debug("[SCP]reserve mem: virt:0x%llx - 0x%llx (0x%llx)\n",
-		(uint64_t)scp_mem_base_virt,
-		(uint64_t)scp_mem_base_virt + scp_mem_size,
-		(uint64_t)scp_mem_size);
+
+	if (num != NUMS_MEM_ID) {
+		pr_err("[SCP] number of entries of reserved memory %u / %u\n",
+			num, NUMS_MEM_ID);
+		BUG_ON(1);
+		return -1;
+	}
+
+	scp_mem_base_virt = (phys_addr_t)(size_t)ioremap_wc(scp_mem_base_phys,
+		scp_mem_size);
+	pr_debug("[SCP] rsrv_phy_base = 0x%llx, len:0x%llx\n",
+		(uint64_t)scp_mem_base_phys, (uint64_t)scp_mem_size);
+	pr_debug("[SCP] rsrv_vir_base = 0x%llx, len:0x%llx\n",
+		(uint64_t)scp_mem_base_virt, (uint64_t)scp_mem_size);
 
 	for (id = 0; id < NUMS_MEM_ID; id++) {
+		scp_reserve_mblock[id].start_phys = scp_mem_base_phys +
+			accumlate_memory_size;
 		scp_reserve_mblock[id].start_virt = scp_mem_base_virt +
-							accumlate_memory_size;
+			accumlate_memory_size;
 		accumlate_memory_size += scp_reserve_mblock[id].size;
+#ifdef DEBUG
+		pr_debug("[SCP] [region_%d] phys = 0x%llx, virt = 0x%llx\n",
+			id, (uint64_t)scp_reserve_mblock[id].start_phys,
+			(uint64_t)scp_reserve_mblock[id].start_virt);
+#endif  // DEBUG
 	}
-	/* the reserved memory should be larger then expected memory
-	 * or scp_reserve_mblock does not match dts
-	 */
-	WARN_ON(accumlate_memory_size > scp_mem_size);
+	BUG_ON(accumlate_memory_size > scp_mem_size);
+
 #ifdef DEBUG
 	for (id = 0; id < NUMS_MEM_ID; id++) {
-		pr_debug("[SCP][mem_reserve-%d] phys:0x%llx\n",
-			id,
-			(uint64_t)scp_get_reserve_mem_phys(id));
-		pr_debug("[SCP][mem_reserve-%d] virt:0x%llx\n",
-			id,
-			(uint64_t)scp_get_reserve_mem_virt(id));
-		pr_debug("[SCP][mem_reserve-%d] size:0x%llx\n",
-			id,
-			(uint64_t)scp_get_reserve_mem_size(id));
+		uint64_t start_phys = (uint64_t)scp_get_reserve_mem_phys(id);
+		uint64_t start_virt = (uint64_t)scp_get_reserve_mem_virt(id);
+		uint64_t len = (uint64_t)scp_get_reserve_mem_size(id);
+
+		pr_debug("[SCP][rsrv_mem-%d] phy:0x%llx - 0x%llx, len:0x%llx\n",
+			id, start_phys, start_phys + len - 1, len);
+		pr_debug("[SCP][rsrv_mem-%d] vir:0x%llx - 0x%llx, len:0x%llx\n",
+			id, start_virt, start_virt + len - 1, len);
 	}
-#endif
+#endif  // DEBUG
 	return 0;
 }
 #endif
