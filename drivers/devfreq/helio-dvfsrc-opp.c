@@ -30,7 +30,7 @@ int get_cur_vcore_dvfs_opp(void)
 
 void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED
 	struct qos_ipi_data qos_d;
 
 	qos_d.cmd = QOS_IPI_OPP_TABLE;
@@ -46,7 +46,7 @@ void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
 
 void set_vcore_opp(int vcore_dvfs_opp, int vcore_opp)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED
 	struct qos_ipi_data qos_d;
 
 	qos_d.cmd = QOS_IPI_VCORE_OPP;
@@ -98,7 +98,7 @@ int get_cur_vcore_uv(void)
 
 void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED
 	struct qos_ipi_data qos_d;
 
 	qos_d.cmd = QOS_IPI_DDR_OPP;
