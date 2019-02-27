@@ -33,7 +33,7 @@
 #include <linux/uidgid.h>
 #include <ap_thermal_limit.h>
 #ifdef ATM_USES_PPM
-#include "mtk_ppm_api.h"
+/*#include "mtk_ppm_api.h"*/
 #else
 #include "mt_cpufreq.h"
 #endif
