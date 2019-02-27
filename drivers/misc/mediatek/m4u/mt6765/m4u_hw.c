@@ -1800,18 +1800,21 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 	{
 		unsigned int IntrSrc = M4U_ReadReg32(m4u_base, REG_MMU_MAIN_FAULT_ST);
-		int m4u_slave_id;
+		int m4u_slave_id, larb_index = 0;
 		unsigned int regval;
 		int layer, write, m4u_port;
 		unsigned int fault_mva, fault_pa;
 
 		M4UMSG("m4u main interrupt happened: sta=0x%x\n", IntrSrc);
-
-		M4UMSG(" port normal 0x%x, sec 0x%x\n",
-			M4U_ReadReg32(gLarbBaseAddr[0], SMI_LARB_NON_SEC_CONx(0)),
-			M4U_ReadReg32(gLarbBaseAddr[0], SMI_LARB_SEC_CONx(0))
+		for (larb_index = 0; larb_index < SMI_LARB_NR; larb_index++) {
+			M4UMSG("larb%d: NON_SEC_CON:0x%x, SEC_CON:0x%x\n",
+			     larb_index,
+			     M4U_ReadReg32(gLarbBaseAddr[larb_index],
+			      SMI_LARB_NON_SEC_CONx(larb_index)),
+			     M4U_ReadReg32(gLarbBaseAddr[larb_index],
+			      SMI_LARB_SEC_CONx(larb_index))
 			);
-
+		}
 		if (IntrSrc & (F_INT_MMU0_MAIN_MSK | F_INT_MMU0_MAU_MSK))
 			m4u_slave_id = 0;
 		else if (IntrSrc & (F_INT_MMU1_MAIN_MSK | F_INT_MMU1_MAU_MSK))
@@ -1830,6 +1833,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 		fault_pa = M4U_ReadReg32(m4u_base, REG_MMU_INVLD_PA(m4u_slave_id));
 		regval = M4U_ReadReg32(m4u_base, REG_MMU_INT_ID(m4u_slave_id));
 		m4u_port = m4u_get_port_by_tf_id(m4u_index, regval);
+		larb_index = m4u_port_2_larbid(m4u_port);
 
 		/* dump something quickly */
 		///m4u_dump_rs_info(m4u_index, slave_id);
@@ -1843,9 +1847,11 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 			MMU_INT_REPORT(m4u_index, m4u_slave_id,
 				       F_INT_TRANSLATION_FAULT(m4u_slave_id));
-			M4UMSG("fault: port=%s, mva=0x%x, pa=0x%x, layer=%d, wr=%d, 0x%x\n",
-			       m4u_get_port_name(m4u_port), fault_mva, fault_pa, layer, write,
-			       regval);
+			M4UMSG("fault: port=%s, larb=%d, mva=0x%x, pa=0x%x\n",
+			       m4u_get_port_name(m4u_port),
+			       larb_index, fault_mva, fault_pa);
+			M4UMSG("fault: layer=%d, wr=%d, REG_MMU_INIT=0x%x\n",
+			       layer, write, regval);
 
 			if (m4u_port == M4U_PORT_DISP_OVL0) {
 				unsigned int valid_mva = 0;
