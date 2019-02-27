@@ -2184,6 +2184,13 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		if (framerate == 0)
@@ -2200,9 +2207,16 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-		if (framerate == 300) {
+		if (imgsensor.current_fps == imgsensor_info.cap.max_framerate) {
 		frame_length = imgsensor_info.cap.pclk / framerate * 10 /
 			imgsensor_info.cap.linelength;
 		spin_lock(&imgsensor_drv_lock);
@@ -2225,6 +2239,13 @@ static kal_uint32 set_max_framerate_by_scenario(
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
 		}
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		frame_length = imgsensor_info.hs_video.pclk / framerate * 10 /
@@ -2237,6 +2258,13 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 		frame_length = imgsensor_info.slim_video.pclk / framerate * 10 /
@@ -2249,6 +2277,13 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	case MSDK_SCENARIO_ID_CUSTOM1:
 	    frame_length = imgsensor_info.custom1.pclk / framerate * 10 /
@@ -2263,7 +2298,14 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	break;
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
+		break;
 	case MSDK_SCENARIO_ID_CUSTOM2:
 	    frame_length = imgsensor_info.custom2.pclk / framerate * 10 /
 			imgsensor_info.custom2.linelength;
@@ -2277,7 +2319,14 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	break;
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
+		break;
 	case MSDK_SCENARIO_ID_CUSTOM3:
 	    frame_length = imgsensor_info.custom3.pclk / framerate * 10 /
 			imgsensor_info.custom3.linelength;
@@ -2291,7 +2340,14 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	break;
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
+		break;
 	case MSDK_SCENARIO_ID_CUSTOM4:
 	    frame_length = imgsensor_info.custom4.pclk / framerate * 10 /
 			imgsensor_info.custom4.linelength;
@@ -2305,7 +2361,14 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	break;
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
+		break;
 	case MSDK_SCENARIO_ID_CUSTOM5:
 	    frame_length = imgsensor_info.custom5.pclk / framerate * 10 /
 			imgsensor_info.custom5.linelength;
@@ -2317,9 +2380,16 @@ static kal_uint32 set_max_framerate_by_scenario(
 		imgsensor.dummy_line = 0;
 	    imgsensor.frame_length = imgsensor_info.custom1.framelength +
 			imgsensor.dummy_line;
-			imgsensor.min_frame_length = imgsensor.frame_length;
-			spin_unlock(&imgsensor_drv_lock);
-			break;
+		imgsensor.min_frame_length = imgsensor.frame_length;
+		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
+		break;
 	default:  //coding with  preview scenario by default
 		frame_length = imgsensor_info.pre.pclk / framerate * 10 /
 			imgsensor_info.pre.linelength;
@@ -2333,6 +2403,13 @@ static kal_uint32 set_max_framerate_by_scenario(
 		spin_unlock(&imgsensor_drv_lock);
 		pr_info("error scenario_id = %d, we use preview scenario\n",
 			scenario_id);
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
+		else {
+			/*No need to set*/
+			pr_debug("frame_length %d < shutter %d",
+				imgsensor.frame_length, imgsensor.shutter);
+		}
 		break;
 	}
 	return ERROR_NONE;
