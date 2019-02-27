@@ -98,6 +98,8 @@
 #undef CMDQ_PWR_AWARE
 #endif
 
+typedef u64 CMDQ_VARIABLE;
+
 /*
  * SPR / CPR / VAR naming rule and number
  **********************************************

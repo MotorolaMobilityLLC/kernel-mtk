@@ -124,6 +124,7 @@ struct cmdq_pkt {
 struct cmdq_thread {
 	struct mbox_chan	*chan;
 	void __iomem		*base;
+	phys_addr_t		gce_pa;
 	struct list_head	task_busy_list;
 	struct timer_list	timeout;
 	u32			timeout_ms;

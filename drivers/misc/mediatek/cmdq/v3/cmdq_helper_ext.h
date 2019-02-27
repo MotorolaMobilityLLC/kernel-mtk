@@ -870,6 +870,7 @@ u32 cmdqCoreGetEvent(enum cmdq_event event);
 
 
 /* GCE capability */
+void cmdq_core_reset_gce(void);
 void cmdq_core_set_addon_subsys(u32 msb, s32 subsys_id, u32 mask);
 u32 cmdq_core_subsys_to_reg_addr(u32 arg_a);
 const char *cmdq_core_parse_subsys_from_reg_addr(u32 reg_addr);
