@@ -1649,6 +1649,97 @@ static const struct snd_kcontrol_new mt6779_afe_usb_controls[] = {
 		       mt6779_usb_echo_ref_get, mt6779_usb_echo_ref_set),
 };
 
+/* speech mixctrl instead property usage */
+static int mt6779_afe_speech_md_status_get(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->speech_md_status;
+	return 0;
+}
+
+static int mt6779_afe_speech_md_status_set(struct snd_kcontrol *kcontrol,
+					   struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	afe_priv->speech_md_status = ucontrol->value.integer.value[0];
+	dev_info(afe->dev, "%s(), speech_md_status 0x%x\n", __func__,
+		 afe_priv->speech_md_status);
+	return 0;
+}
+
+static int mt6779_afe_speech_msg_id_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->speech_a2m_msg_id;
+	return 0;
+}
+
+static int mt6779_afe_speech_msg_id_set(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	afe_priv->speech_a2m_msg_id = ucontrol->value.integer.value[0];
+	dev_info(afe->dev, "%s(), speech_a2m_msg_id 0x%x\n", __func__,
+		 afe_priv->speech_a2m_msg_id);
+	return 0;
+}
+
+static int mt6779_afe_speech_mic_mute_get(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->speech_mic_mute;
+	return 0;
+}
+
+static int mt6779_afe_speech_mic_mute_set(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	if (ucontrol->value.integer.value[0] > 1 ||
+	    ucontrol->value.integer.value[0] < 0) {
+		dev_info(afe->dev, "%s() wrong mute value 0x%x\n",
+			 __func__, ucontrol->value.integer.value[0]);
+		return -EINVAL;
+	}
+	afe_priv->speech_mic_mute = ucontrol->value.integer.value[0];
+	dev_info(afe->dev, "%s(), speech_mic_mute_status 0x%x\n", __func__,
+		 afe_priv->speech_mic_mute);
+	return 0;
+}
+
+static const struct snd_kcontrol_new mt6779_afe_speech_controls[] = {
+	SOC_SINGLE_EXT("Speech_A2M_Msg_ID", SND_SOC_NOPM, 0, 0xFFFF, 0,
+		       mt6779_afe_speech_msg_id_get,
+		       mt6779_afe_speech_msg_id_set),
+	SOC_SINGLE_EXT("Speech_MD_Status", SND_SOC_NOPM, 0, 0xFFFFFFFF, 0,
+		       mt6779_afe_speech_md_status_get,
+		       mt6779_afe_speech_md_status_set),
+	SOC_SINGLE_EXT("Speech_MIC_MUTE", SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_afe_speech_mic_mute_get,
+		       mt6779_afe_speech_mic_mute_set),
+};
+
 int mt6779_add_misc_control(struct snd_soc_platform *platform)
 {
 	dev_info(platform->dev, "%s()\n", __func__);
@@ -1664,5 +1755,10 @@ int mt6779_add_misc_control(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,
 				      mt6779_afe_usb_controls,
 				      ARRAY_SIZE(mt6779_afe_usb_controls));
+
+	snd_soc_add_platform_controls(platform,
+				      mt6779_afe_speech_controls,
+				      ARRAY_SIZE(mt6779_afe_speech_controls));
+
 	return 0;
 }

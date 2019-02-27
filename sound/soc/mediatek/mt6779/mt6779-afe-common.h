@@ -167,6 +167,11 @@ struct mt6779_afe_private {
 
 	/* mck */
 	int mck_rate[MT6779_MCK_NUM];
+
+	/* speech mixctrl instead property usage */
+	int speech_a2m_msg_id;
+	int speech_md_status;
+	int speech_mic_mute;
 };
 
 int mt6779_dai_adda_register(struct mtk_base_afe *afe);
