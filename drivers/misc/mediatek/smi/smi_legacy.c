@@ -217,7 +217,7 @@ int smi_bus_disable_unprepare(const unsigned int reg_indx,
 
 		ref_cnt = mtk_smi_clk_ref_cnts_read(larb);
 		val = readl(larb->base + SMI_LARB_STAT);
-		if (ref_cnt == 1 && val) {
+		if (reg_indx && ref_cnt == 1 && val) {
 			SMIWRN(1,
 				"%s turn off LARB%u(%d) but still busy %#lx\n",
 				user_name, reg_indx, mtcmos, val);
