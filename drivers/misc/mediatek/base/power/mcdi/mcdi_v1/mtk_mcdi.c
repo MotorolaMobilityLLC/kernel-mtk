@@ -261,7 +261,7 @@ static ssize_t mcdi_state_read(struct file *filp,
 	}
 	mcdi_log("\n");
 
-	ac_cpu_cond_get(ac_cpu_cond_info);
+	any_core_cpu_cond_get(ac_cpu_cond_info);
 
 	for (i = 0; i < NF_ANY_CORE_CPU_COND_INFO; i++) {
 		mcdi_log("%s = %lu\n",
@@ -548,7 +548,7 @@ static int mcdi_debugfs_init(void)
 	/* Initialize debugfs */
 	root_entry = debugfs_create_dir(mcdi_debugfs_dir_name, NULL);
 	if (!root_entry) {
-		pr_notify("Can not create debugfs dir `%s`\n",
+		pr_info("Can not create debugfs dir `%s`\n",
 			mcdi_debugfs_dir_name);
 		return 1;
 	}
@@ -563,14 +563,17 @@ static int mcdi_debugfs_init(void)
 
 static void __go_to_wfi(int cpu)
 {
+#ifdef OWEN_FIX_KERNEL49_FIX
 	trace_rgidle_rcuidle(cpu, 1);
+#endif
 
 	isb();
 	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
-
+#ifdef OWEN_FIX_KERNEL49_FIX
 	trace_rgidle_rcuidle(cpu, 0);
+#endif
 }
 
 unsigned int mcdi_mbox_read(int id)
@@ -723,7 +726,7 @@ void mcdi_heart_beat_log_dump(void)
 		mcdi_cnt_cluster_last[i] = mcdi_cnt_cluster[i];
 	}
 
-	ac_cpu_cond_get(ac_cpu_cond_info);
+	any_core_cpu_cond_get(ac_cpu_cond_info);
 
 	for (i = 0; i < NF_ANY_CORE_CPU_COND_INFO; i++) {
 		any_core_info =
@@ -748,7 +751,7 @@ void mcdi_heart_beat_log_dump(void)
 	mcdi_buf_append(buf, ", system_idle_hint = %08x\n",
 						system_idle_hint_result_raw());
 
-	pr_notify("%s\n", get_mcdi_buf(buf));
+	pr_info("%s\n", get_mcdi_buf(buf));
 }
 
 int mcdi_enter(int cpu)
@@ -777,13 +780,13 @@ int mcdi_enter(int cpu)
 	case MCDI_STATE_CPU_OFF:
 
 		trace_mcdi_rcuidle(cpu, 1);
-
+#ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_mcdi_val(cpu, 0xff);
-
+#endif
 		mcdi_cpu_off(cpu);
-
+#ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_mcdi_val(cpu, 0x0);
-
+#endif
 		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
@@ -792,13 +795,13 @@ int mcdi_enter(int cpu)
 	case MCDI_STATE_CLUSTER_OFF:
 
 		trace_mcdi_rcuidle(cpu, 1);
-
+#ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_mcdi_val(cpu, 0xff);
-
+#endif
 		mcdi_cluster_off(cpu);
-
+#ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_mcdi_val(cpu, 0x0);
-
+#endif
 		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
@@ -1009,7 +1012,7 @@ subsys_initcall(mcdi_sysram_init);
 static int __init mcdi_init(void)
 {
 	/* Activate MCDI after SMP */
-	pr_notify("mcdi_init\n");
+	pr_info("mcdi_init\n");
 
 	/* Register CPU up/down callbacks */
 	mcdi_hotplug_cb_init();

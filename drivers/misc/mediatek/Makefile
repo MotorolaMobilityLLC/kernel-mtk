@@ -20,6 +20,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLA
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
+obj-$(CONFIG_MTK_BASE_POWER) += base/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 obj-y	+= hwmon/
 obj-$(CONFIG_CUSTOM_KERNEL_ALSPS) += alsps/
