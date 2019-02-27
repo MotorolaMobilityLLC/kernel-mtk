@@ -21,20 +21,19 @@
 
 #include <mtk_battery_internal.h>
 #include <mtk_charger_init.h>
+#include <mtk_charger.h>
 
 int pmic_get_battery_voltage(void)
 {
 	int bat = 0;
+
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	bat = 4201;
 #else
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6356)
-	bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
-#else
-	bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-#endif
-
+	if (is_power_path_supported())
+		bat = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+	else
+		bat = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 #endif
 	return bat;
 }
@@ -120,46 +119,44 @@ int pmic_get_charging_current(void)
 #if defined(CONFIG_POWER_EXT) || defined(CONFIG_FPGA_EARLY_PORTING)
 	return 0;
 #else
-
-#if defined(CONFIG_MTK_PMIC_CHIP_MT6357)
 	int v_batsns = 0, v_isense = 0;
 
-	v_batsns = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
-	v_isense = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
+	if (!is_power_path_supported()) {
+		v_isense = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
+		v_batsns = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
 
-	return (v_batsns - v_isense) * 1000 / R_SENSE;
-#else
+		return (v_isense - v_batsns) * 1000 / R_SENSE;
+	}
+
 	return 0;
-#endif
-
 #endif
 }
 
 bool __attribute__ ((weak))
 	mtk_bif_is_hw_exist(void)
 {
-	pr_notice("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return false;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_vbat(int *vbat)
 {
-	pr_notice("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_get_tbat(int *tmp)
 {
-	pr_notice("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
 int __attribute__ ((weak))
 	mtk_bif_init(void)
 {
-	pr_notice("do not have bif driver");
+	pr_notice_once("%s: do not have bif driver\n", __func__);
 	return -ENOTSUPP;
 }
 
