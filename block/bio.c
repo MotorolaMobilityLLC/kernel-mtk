@@ -590,6 +590,14 @@ void __bio_clone_fast(struct bio *bio, struct bio *bio_src)
 	bio->bi_iter = bio_src->bi_iter;
 	bio->bi_io_vec = bio_src->bi_io_vec;
 
+#if defined(CONFIG_MTK_HW_FDE)
+	/*
+	 * MTK PATCH:
+	 * Also clone bi_hw_fde for HW FDE feature.
+	 */
+	bio->bi_hw_fde = bio_src->bi_hw_fde;
+#endif
+
 	bio_clone_blkcg_association(bio, bio_src);
 }
 EXPORT_SYMBOL(__bio_clone_fast);
