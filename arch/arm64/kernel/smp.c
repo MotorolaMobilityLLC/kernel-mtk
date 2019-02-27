@@ -306,7 +306,7 @@ int __cpu_disable(void)
 	if (ret)
 		return ret;
 
-#ifdef CONFIG_MTK_IRQ_NEW_DESIGN
+#ifdef CONFIG_MTK_GIC_TARGET_ALL
 	{
 		unsigned long flags;
 

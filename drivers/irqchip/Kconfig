@@ -280,7 +280,7 @@ config STM32_EXTI
 	bool
 	select IRQ_DOMAIN
 
-config MTK_IRQ_NEW_DESIGN
+config MTK_GIC_TARGET_ALL
 	bool
 	help
 	  Support for new interrupt distribution design for MediaTek solutions.

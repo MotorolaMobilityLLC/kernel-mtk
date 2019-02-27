@@ -402,7 +402,7 @@ static asmlinkage void __exception_irq_entry gic_handle_irq(struct pt_regs *regs
 static void __init gic_dist_init(void)
 {
 	unsigned int i;
-#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
+#ifndef CONFIG_MTK_GIC_TARGET_ALL
 	u64 affinity;
 #endif
 	void __iomem *base = gic_data.dist_base;
@@ -426,7 +426,7 @@ static void __init gic_dist_init(void)
 	writel_relaxed(GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1,
 		       base + GICD_CTLR);
 
-#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
+#ifndef CONFIG_MTK_GIC_TARGET_ALL
 	/*
 	 * Set all global interrupts to the boot CPU only. ARE must be
 	 * enabled.
@@ -688,7 +688,7 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	if (gic_irq_in_rdist(d))
 		return -EINVAL;
 
-#ifndef CONFIG_MTK_IRQ_NEW_DESIGN
+#ifndef CONFIG_MTK_GIC_TARGET_ALL
 
 	/* If interrupt was enabled, disable it first */
 	enabled = gic_peek_irq(d, GICD_ISENABLER);
