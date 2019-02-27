@@ -72,6 +72,7 @@ struct musb_qh {
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT
 	u8 is_use_qmu;
 #endif
+	bool db_used;
 };
 
 /* map from control or bulk queue head to the first qh on that ring */
