@@ -120,8 +120,6 @@
 #define PVR_ANDROID_ION_PRIV_HEADER "../drivers/staging/android/ion/ion_priv.h"
 #define PVR_ANDROID_ION_USE_SG_LENGTH 
 #define PVR_ANDROID_SYNC_HEADER "linux/sync.h"
-#define MTK_BRINGUP 
 #define MTK_DEBUG_PROC_PRINT 
 #define MTK_CONFIG_OF 
 #define ENABLE_COMMON_DVFS 
-
