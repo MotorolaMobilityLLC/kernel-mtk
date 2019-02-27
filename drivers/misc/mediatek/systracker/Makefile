@@ -20,7 +20,11 @@ else
   else
       obj-y += systracker_interface.o
   endif
-  obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+  ifeq ($(CONFIG_MACH_MT6761),y)
+    obj-y += mt6765/
+  else
+    obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+  endif
   ifeq ($(CONFIG_ARM64), y)
     obj-y += backtrace_64bit.o
   else
