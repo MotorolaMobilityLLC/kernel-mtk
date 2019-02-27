@@ -117,8 +117,8 @@ struct dpmaif_bat_skb_t {
 };
 
 #define MAX_BD_NUM (MAX_SKB_FRAGS + 1)
-#define DPMAIF_TRAFFIC_MONITOR_INTERVAL 50
-#define SKB_RX_QUEUE_MAX_LEN 200000
+#define DPMAIF_TRAFFIC_MONITOR_INTERVAL 10
+#define SKB_RX_LIST_MAX_LEN 0xFFFFFFFF
 
 struct dpmaif_bat_request {
 	void *bat_base;
