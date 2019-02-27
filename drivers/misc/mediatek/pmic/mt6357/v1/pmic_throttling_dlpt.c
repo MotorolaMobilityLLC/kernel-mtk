@@ -780,7 +780,7 @@ static DEFINE_MUTEX(dlpt_notify_mutex);
 #define DLPT_NUM 16
 
 struct dlpt_callback_table {
-	void (*dlpt_cb)(unsigned int);
+	void (*dlpt_cb)(unsigned int dlpt_val);
 };
 
 struct dlpt_callback_table dlpt_cb_tb[] = {
@@ -789,7 +789,7 @@ struct dlpt_callback_table dlpt_cb_tb[] = {
 };
 
 void register_dlpt_notify(
-	void (*dlpt_callback)(unsigned int),
+	void (*dlpt_callback)(unsigned int dlpt_val),
 	enum DLPT_PRIO_TAG prio_val)
 {
 	PMICLOG("[register_dlpt_notify] start\n");
