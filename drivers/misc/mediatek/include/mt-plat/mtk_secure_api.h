@@ -111,9 +111,11 @@
 
 /* EMI MPU */
 #define MTK_SIP_KERNEL_EMIMPU_SET \
-	(0x82000260 | MTK_SIP_SMC_AARCH_BIT)
+	(0x82000209 | MTK_SIP_SMC_AARCH_BIT)
 #define MTK_SIP_KERNEL_EMIMPU_CLEAR \
-	(0x82000261 | MTK_SIP_SMC_AARCH_BIT)
+	(0x8200020A | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_EMIMPU_WRITE (0x82000207 | MTK_SIP_SMC_AARCH_BIT)
+#define MTK_SIP_KERNEL_EMIMPU_READ  (0x82000208 | MTK_SIP_SMC_AARCH_BIT)
 
 /* SCP DVFS related SMC call */
 #define MTK_SIP_KERNEL_SCP_DVFS_CTRL \
@@ -136,3 +138,25 @@ extern size_t mt_secure_call_all(size_t function_id,
 	mt_secure_call_all(_fun_id, _arg0, _arg1, _arg2, _arg3, _r1, _r2, _r3)
 
 #endif				/* _MTK_SECURE_API_H_ */
+
+
+#define emi_mpu_smc_write(offset, val) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_WRITE, offset, val, 0, 0)
+
+#define emi_mpu_smc_read(offset) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_READ, offset, 0, 0, 0)
+
+#ifdef CONFIG_ARM64
+#define emi_mpu_smc_set(start, end, region_permission) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, region_permission, 0)
+#else
+#define emi_mpu_smc_set(start, end, apc8, apc0) \
+mt_secure_call_all(MTK_SIP_KERNEL_EMIMPU_SET,\
+start, end, apc8, apc0, 0, 0, 0, 0)
+#endif
+
+#define emi_mpu_smc_clear(region) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_CLEAR, region, 0, 0, 0)
+
+#define emi_mpu_smc_protect(start, end, apc) \
+mt_secure_call(MTK_SIP_KERNEL_EMIMPU_SET, start, end, apc, 0)
