@@ -21,6 +21,96 @@
 #include "mtk-afe-platform-driver.h"
 #include "mtk-base-afe.h"
 
+int mtk_afe_combine_sub_dai(struct mtk_base_afe *afe)
+{
+	struct snd_soc_dai_driver *sub_dai_drivers;
+	size_t num_dai_drivers = 0, dai_idx = 0;
+	int i;
+
+	if (afe->sub_dais == NULL) {
+		dev_err(afe->dev, "%s(), sub_dais == NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	/* calcualte sub_dais size */
+	for (i = 0; i < afe->num_sub_dais; i++) {
+		if (afe->sub_dais[i].dai_drivers != NULL &&
+		    afe->sub_dais[i].num_dai_drivers != 0)
+			num_dai_drivers += afe->sub_dais[i].num_dai_drivers;
+	}
+
+	dev_info(afe->dev, "%s(), num of dai %zd\n", __func__, num_dai_drivers);
+
+	/* combine sub_dais */
+	afe->num_dai_drivers = num_dai_drivers;
+	afe->dai_drivers = devm_kcalloc(afe->dev,
+					num_dai_drivers,
+					sizeof(struct snd_soc_dai_driver),
+					GFP_KERNEL);
+	if (!afe->dai_drivers)
+		return -ENOMEM;
+
+	for (i = 0; i < afe->num_sub_dais; i++) {
+		if (afe->sub_dais[i].dai_drivers != NULL &&
+		    afe->sub_dais[i].num_dai_drivers != 0) {
+			sub_dai_drivers = afe->sub_dais[i].dai_drivers;
+			/* dai driver */
+			memcpy(&afe->dai_drivers[dai_idx],
+			       sub_dai_drivers,
+			       afe->sub_dais[i].num_dai_drivers *
+			       sizeof(struct snd_soc_dai_driver));
+			dai_idx += afe->sub_dais[i].num_dai_drivers;
+		}
+	}
+
+	return 0;
+}
+
+int mtk_afe_add_sub_dai_control(struct snd_soc_platform *platform)
+{
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(platform);
+	int i;
+
+	if (afe->sub_dais == NULL) {
+		dev_err(afe->dev, "%s(), sub_dais == NULL\n", __func__);
+		return -EINVAL;
+	}
+
+	for (i = 0; i < afe->num_sub_dais; i++) {
+		if (afe->sub_dais[i].controls)
+			snd_soc_add_platform_controls(platform,
+				afe->sub_dais[i].controls,
+				afe->sub_dais[i].num_controls);
+
+		if (afe->sub_dais[i].dapm_widgets)
+			snd_soc_dapm_new_controls(&platform->component.dapm,
+				afe->sub_dais[i].dapm_widgets,
+				afe->sub_dais[i].num_dapm_widgets);
+
+		if (afe->sub_dais[i].dapm_routes)
+			snd_soc_dapm_add_routes(&platform->component.dapm,
+				afe->sub_dais[i].dapm_routes,
+				afe->sub_dais[i].num_dapm_routes);
+	}
+
+	snd_soc_dapm_new_widgets(platform->component.dapm.card);
+
+	return 0;
+
+}
+
+unsigned int word_size_align(unsigned int in_size)
+{
+	unsigned int align_size;
+
+	/* sram is device memory,need word size align,
+	 * 8 byte for 64 bit platform
+	 * [3:0] = 4'h0 for the convenience of the hardware implementation
+	 */
+	align_size = in_size & 0xFFFFFFF0;
+	return align_size;
+}
+
 static snd_pcm_uframes_t mtk_afe_pcm_pointer
 			 (struct snd_pcm_substream *substream)
 {
@@ -52,24 +142,44 @@ static snd_pcm_uframes_t mtk_afe_pcm_pointer
 	pcm_ptr_bytes = hw_ptr - hw_base;
 
 POINTER_RETURN_FRAMES:
+	pcm_ptr_bytes = word_size_align(pcm_ptr_bytes);
 	return bytes_to_frames(substream->runtime, pcm_ptr_bytes);
+}
+
+int mtk_afe_pcm_ack(struct snd_pcm_substream *substream)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
+	struct mtk_base_afe_memif *memif = &afe->memif[rtd->cpu_dai->id];
+
+	if (!memif->ack_enable)
+		return 0;
+
+	if (memif->ack)
+		memif->ack(substream);
+	else
+		dev_warn(afe->dev, "%s(), ack_enable but ack == NULL\n",
+			 __func__);
+
+	return 0;
 }
 
 static const struct snd_pcm_ops mtk_afe_pcm_ops = {
 	.ioctl = snd_pcm_lib_ioctl,
 	.pointer = mtk_afe_pcm_pointer,
+	.ack = mtk_afe_pcm_ack,
 };
 
 static int mtk_afe_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
 	size_t size;
-	struct snd_card *card = rtd->card->snd_card;
 	struct snd_pcm *pcm = rtd->pcm;
 	struct mtk_base_afe *afe = snd_soc_platform_get_drvdata(rtd->platform);
 
 	size = afe->mtk_afe_hardware->buffer_bytes_max;
 	return snd_pcm_lib_preallocate_pages_for_all(pcm, SNDRV_DMA_TYPE_DEV,
-						     card->dev, size, size);
+						     afe->dev,
+						     size, size);
 }
 
 static void mtk_afe_pcm_free(struct snd_pcm *pcm)
