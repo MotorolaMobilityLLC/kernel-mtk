@@ -14,6 +14,7 @@
 
 #include <linux/delay.h>
 #include <linux/time.h>
+#include <linux/platform_device.h>
 
 #include <asm/div64.h>
 
@@ -21,14 +22,16 @@
 
 #include <mach/mtk_battery_property.h>
 #include <mach/mtk_pmic.h>
+#include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/mtk_rtc.h>
 #include "include/pmic_throttling_dlpt.h"
 #include <linux/proc_fs.h>
 #include <linux/math64.h>
 
-#include "include/mtk_gauge_class.h"
+#include <mtk_gauge_class.h>
 #include <mtk_battery_internal.h>
 
 #define SWCHR_POWER_PATH
@@ -366,8 +369,8 @@ static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 	if (iavg_lt <= 0)
 		iavg_lt = 0;
 
-	gauge_dev->fg_hw_info.iavg_ht = iavg_ht;
-	gauge_dev->fg_hw_info.iavg_lt = iavg_lt;
+	get_mtk_battery()->hw_status.iavg_ht = iavg_ht;
+	get_mtk_battery()->hw_status.iavg_lt = iavg_lt;
 
 	fg_iavg_reg_ht = iavg_ht * 1000 * 1000 *
 		gauge_dev->fg_cust_data->r_fg_value;
@@ -1130,7 +1133,7 @@ int read_hw_ocv(struct gauge_device *gauge_dev, int *data)
 
 	g_fg_is_charger_exist = is_charger_exist();
 	_hw_ocv = _hw_ocv_55_pon;
-	_sw_ocv = get_sw_ocv();
+	_sw_ocv = get_mtk_battery()->hw_status.sw_ocv;
 	_hw_ocv_src = FROM_6355_PON_ON;
 	_prev_hw_ocv = _hw_ocv;
 	_prev_hw_ocv_src = FROM_6355_PON_ON;
@@ -1635,7 +1638,7 @@ static int fgauge_get_zcv(struct gauge_device *gauge_dev, int *zcv)
 	return 0;
 }
 
-static int fgauge_is_gauge_initialized
+static int fgauge_is_gauge_initialized(
 	struct gauge_device *gauge_dev, int *init)
 {
 	int fg_reset_status = pmic_get_register_value(PMIC_FG_RSTB_STATUS);

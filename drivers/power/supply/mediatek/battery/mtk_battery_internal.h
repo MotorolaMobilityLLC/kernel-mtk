@@ -15,6 +15,10 @@
 #define __MTK_BATTERY_INTF_H__
 
 #include <linux/power_supply.h>
+#include <mtk_gauge_time_service.h>
+#include <pmic_lbat_service.h>
+#include <mtk_gauge_class.h>
+
 
 /* ============================================================ */
 /* Define Macro Value */
@@ -509,35 +513,6 @@ struct fuel_gauge_table_custom_data {
 	struct FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
 };
 
-struct PMU_ChargerStruct {
-	bool bat_exist;
-	bool bat_full;
-	signed int bat_charging_state;
-	unsigned int bat_vol;
-	bool bat_in_recharging_state;
-	unsigned int Vsense;
-	bool charger_exist;
-	unsigned int charger_vol;
-	signed int charger_protect_status;
-	signed int ICharging;
-	signed int IBattery;
-	signed int temperature;
-	signed int temperatureR;
-	signed int temperatureV;
-	unsigned int total_charging_time;
-	unsigned int PRE_charging_time;
-	unsigned int CC_charging_time;
-	unsigned int TOPOFF_charging_time;
-	unsigned int POSTFULL_charging_time;
-	unsigned int charger_type;
-	signed int SOC;
-	signed int UI_SOC;
-	signed int UI_SOC2;
-	unsigned int nPercent_ZCV;
-	unsigned int nPrecent_UI_SOC_check_point;
-	unsigned int ZCV;
-};		/* BMT_status */
-
 struct battery_data {
 	struct power_supply_desc psd;
 	struct power_supply *psy;
@@ -586,6 +561,142 @@ struct BAT_EC_Struct {
 	int debug_uisoc_value;
 };
 
+struct battery_temperature_table {
+	int type;
+	unsigned int rbat_pull_up_r;
+	unsigned int rbat_pull_up_volt;
+	unsigned int bif_ntc_r;
+};
+
+struct mtk_battery {
+
+	struct gauge_device *gdev;
+
+/*linux driver related*/
+	wait_queue_head_t  wait_que;
+	unsigned int fg_update_flag;
+	struct hrtimer fg_hrtimer;
+	struct mutex fg_mutex;
+
+/*custom related*/
+	int battery_id;
+
+
+/*daemon related*/
+	struct sock *daemo_nl_sk;
+	u_int g_fgd_pid;
+
+/* gauge hw status
+ * exchange data between hw & sw
+ */
+	struct gauge_hw_status hw_status;
+
+/* log */
+	int log_level;
+	int d_log_level;
+
+/* for test */
+	struct BAT_EC_Struct Bat_EC_ctrl;
+	int BAT_EC_cmd;
+	int BAT_EC_param;
+
+/*battery status*/
+	int soc;
+	int ui_soc;
+
+/*battery flag*/
+	bool init_flag;
+	bool is_probe_done;
+	bool disable_nafg_int;
+	bool disableGM30;
+	bool disable_mtkbattery;
+	bool cmd_disable_nafg;
+	bool ntc_disable_nafg;
+
+/* adb */
+	int fixed_bat_tmp;
+
+	struct charger_consumer *pbat_consumer;
+	struct notifier_block bat_nb;
+
+/* ptim */
+	int ptim_vol;
+	int ptim_curr;
+
+/* proc */
+	int proc_cmd_id;
+	unsigned int proc_subcmd;
+	unsigned int proc_subcmd_para1;
+	char proc_log[4096];
+
+/*battery interrupt*/
+	int fg_bat_int1_gap;
+	int fg_bat_int1_ht;
+	int fg_bat_int1_lt;
+
+	int fg_bat_int2_ht;
+	int fg_bat_int2_lt;
+	int fg_bat_int2_ht_en;
+	int fg_bat_int2_lt_en;
+
+	int fg_bat_tmp_int_gap;
+	int fg_bat_tmp_c_int_gap;
+	int fg_bat_tmp_ht;
+	int fg_bat_tmp_lt;
+	int fg_bat_tmp_c_ht;
+	int fg_bat_tmp_c_lt;
+	int fg_bat_tmp_int_ht;
+	int fg_bat_tmp_int_lt;
+
+	bool is_reset_battery_cycle;
+	int bat_cycle_thr;
+
+	struct timespec uisoc_oldtime;
+
+	signed int ptim_lk_v;
+	signed int ptim_lk_i;
+	int pl_bat_vol;
+	int pl_shutdown_time;
+	u32 pl_two_sec_reboot;
+	int plug_miss_count;
+
+	struct gtimer tracking_timer;
+	struct gtimer one_percent_timer;
+
+	struct gauge_consumer coulomb_plus;
+	struct gauge_consumer coulomb_minus;
+	struct gauge_consumer soc_plus;
+	struct gauge_consumer soc_minus;
+
+	struct timespec chr_full_handler_time;
+
+	/*sw average current*/
+	struct timespec sw_iavg_time;
+	int sw_iavg_car;
+	int sw_iavg;
+	int sw_iavg_ht;
+	int sw_iavg_lt;
+	int sw_iavg_gap;
+
+	/*sw low battery interrupt*/
+	struct lbat_user lowbat_service;
+	int sw_low_battery_ht_en;
+	int sw_low_battery_ht_threshold;
+	int sw_low_battery_lt_en;
+	int sw_low_battery_lt_threshold;
+	struct mutex sw_low_battery_mutex;
+
+	/*nafg monitor */
+	int last_nafg_cnt;
+	struct timespec last_nafg_update_time;
+	bool is_nafg_broken;
+
+	/* battery temperature table */
+	struct battery_temperature_table rbat;
+
+};
+
+
 /* mtk_power_misc */
 enum {
 	NORMAL = 0,
@@ -597,10 +708,12 @@ enum {
 	SHUTDOWN_FACTOR_MAX
 };
 
+extern struct mtk_battery gm;
+extern struct battery_data battery_main;
 extern struct fuel_gauge_custom_data fg_cust_data;
 extern struct fuel_gauge_table_custom_data fg_table_cust_data;
-extern struct PMU_ChargerStruct BMT_status;
 extern struct gauge_hw_status FG_status;
+extern struct FUELGAUGE_TEMPERATURE Fg_Temperature_Table[];
 
 extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
 extern int wakeup_fg_algo(unsigned int flow_state);
@@ -621,16 +734,20 @@ extern bool is_battery_init_done(void);
 extern int force_get_tbat(bool update);
 extern int bat_get_debug_level(void);
 extern bool is_kernel_power_off_charging(void);
-extern bool is_fg_disable(void);
+extern bool is_fg_disabled(void);
 extern void notify_fg_dlpt_sd(void);
 extern bool fg_interrupt_check(void);
 extern void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg);
 extern int interpolation(int i1, int b1, int i2, int b2, int i);
-extern bool is_evb_load(void);
-extern int battery_get_charger_zcv(void);
+extern struct mtk_battery *get_mtk_battery(void);
+extern void battery_update_psd(struct battery_data *bat_data);
+extern int wakeup_fg_algo(unsigned int flow_state);
+extern int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1);
+extern int wakeup_fg_algo_atomic(unsigned int flow_state);
+extern unsigned int TempToBattVolt(int temp, int update);
 extern int fg_get_battery_temperature_for_zcv(void);
-extern int get_sw_ocv(void);
-extern void set_hw_ocv_unreliable(bool _flag_unreliable);
+extern int battery_get_charger_zcv(void);
+
 
 /* pmic */
 extern int pmic_get_battery_voltage(void);
@@ -655,6 +772,8 @@ extern int gauge_get_coulomb(void);
 extern bool gauge_get_current(int *bat_current);
 extern int gauge_set_coulomb_interrupt1_ht(int car);
 extern int gauge_set_coulomb_interrupt1_lt(int car);
+extern int gauge_get_hw_version(void);
+extern int gauge_set_nag_en(int nafg_zcv_en);
 
 /* mtk_battery_recovery.c */
 extern void battery_recovery_init(void);
@@ -665,6 +784,23 @@ extern int do_ptim_gauge(
 	bool isSuspend, unsigned int *bat, signed int *cur, bool *is_charging);
 extern int get_rac(void);
 extern int get_imix(void);
+
+/* functions for fg hal */
+extern void set_hw_ocv_unreliable(bool _flag_unreliable);
+
+
+/* mtk_battery_core.c */
+extern void mtk_battery_init(struct platform_device *dev);
+extern void fg_bat_temp_int_internal(void);
+extern void fgauge_get_profile_id(void);
+extern void battery_update(struct battery_data *bat_data);
+extern void fg_custom_init_from_header(void);
+extern void notify_fg_chr_full(void);
+extern void fg_update_sw_iavg(void);
+extern void fg_bat_temp_int_sw_check(void);
+
+/* query function , review */
+extern struct BAT_EC_Struct *get_ec(void);
 
 
 

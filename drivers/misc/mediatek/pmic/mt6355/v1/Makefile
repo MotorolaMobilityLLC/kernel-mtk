@@ -20,7 +20,10 @@ obj-y += pmic_ipi.o
 endif
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
-#obj-y += mt6355_gauge.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+obj-y += mt6355_gauge.o
 endif
 
 obj-$(CONFIG_MTK_PMIC_CHIP_MT6355)	+= pmic.o pmic_irq.o pmic_common.o \

@@ -63,7 +63,6 @@ void enable_fg_vbat2_l_int(int en);
 void set_fg_vbat2_h_th(int thr);
 void set_fg_vbat2_l_th(int thr);
 
-
 /* interrupt handler */
 void fg_set_int1(void);	/* Initialize */
 void fg_bat_int1_handler(void);	/* c_soc */
