@@ -27,6 +27,15 @@
 #define PT_NOTIFY_OVER_CUR 2
 #define PT_NOTIFY_STRICT   3
 
+/* sysfs - sw disable*/
+#define FLASHLIGHT_SW_DISABLE_NUM    2
+#define FLASHLIGHT_SW_DISABLE_TYPE   0
+#define FLASHLIGHT_SW_DISABLE_STATUS 1
+#define FLASHLIGHT_SW_DISABLE_STATUS_TMPBUF_SIZE 9
+#define FLASHLIGHT_SW_DISABLE_STATUS_BUF_SIZE \
+	(FLASHLIGHT_TYPE_MAX * FLASHLIGHT_CT_MAX * FLASHLIGHT_PART_MAX * \
+	 FLASHLIGHT_SW_DISABLE_STATUS_TMPBUF_SIZE + 1)
+
 /* sysfs - charger status */
 #define FLASHLIGHT_CHARGER_NUM    4
 #define FLASHLIGHT_CHARGER_TYPE   0
@@ -99,6 +108,7 @@ struct flashlight_dev {
 	int level;
 	int low_pt_level;
 	int charger_status;
+	int sw_disable_status;
 };
 
 /* device arguments */

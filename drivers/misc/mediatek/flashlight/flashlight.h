@@ -25,6 +25,8 @@
 #define FLASHLIGHT_SYSFS_CHARGER    "flashlight_charger"
 #define FLASHLIGHT_SYSFS_CURRENT    "flashlight_current"
 #define FLASHLIGHT_SYSFS_CAPABILITY "flashlight_capability"
+#define FLASHLIGHT_SYSFS_FAULT      "flashlight_fault"
+#define FLASHLIGHT_SYSFS_SW_DISABLE "flashlight_sw_disable"
 
 /* scenario */
 #define FLASHLIGHT_SCENARIO_CAMERA_MASK 1
@@ -37,6 +39,10 @@
 /* charger status */
 #define FLASHLIGHT_CHARGER_NOT_READY 0
 #define FLASHLIGHT_CHARGER_READY     1
+
+/* sw disable status*/
+#define FLASHLIGHT_SW_DISABLE_ON	1
+#define FLASHLIGHT_SW_DISABLE_OFF	0
 
 /* max duty number */
 #define FLASHLIGHT_MAX_DUTY_NUM 40
