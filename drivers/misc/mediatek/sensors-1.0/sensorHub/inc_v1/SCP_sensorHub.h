@@ -87,15 +87,6 @@ struct SensorState {
 #define    SCP_BATCH_TIMEOUT		3
 #define	   SCP_DIRECT_PUSH          4
 
-
-struct SCP_sensorData {
-	uint8_t dataLength;
-	uint8_t sensorType;
-	uint8_t reserve[2];
-	uint32_t timeStampH;
-	uint32_t timeStampL;
-	int16_t data[8];
-};
 typedef struct {
 	union {
 		struct {
@@ -229,8 +220,7 @@ struct data_unit_t {
 	uint8_t sensor_type;
 	uint8_t flush_action;
 	uint8_t reserve[2];
-	uint64_t time_stamp;	/* ms on CM4 time kick */
-	int64_t time_stamp_gpt;	/* ms for sensor GPT AP SCP sync time */
+	uint64_t time_stamp;
 	union {
 		sensor_vec_t accelerometer_t;
 		sensor_vec_t gyroscope_t;
@@ -266,8 +256,6 @@ struct data_unit_t {
 } __packed;
 
 struct sensorFIFO {
-/* volatile struct SCP_sensorData * volatile rp; */
-/* volatile struct SCP_sensorData * volatile wp; */
 	uint32_t rp;	/* use int for store DRAM FIFO LSB 32bit read pointer */
 	uint32_t wp;
 	uint32_t FIFOSize;

@@ -89,7 +89,7 @@ static int uncali_gyro_recv_data(struct data_unit_t *event, void *reserved)
 	if (event->flush_action == DATA_ACTION)
 		err = uncali_gyro_data_report(value,
 			event->uncalibrated_gyro_t.status,
-			(int64_t)(event->time_stamp + event->time_stamp_gpt));
+			(int64_t)event->time_stamp);
 	else if (event->flush_action == FLUSH_ACTION)
 		err = uncali_gyro_flush_report();
 

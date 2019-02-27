@@ -66,7 +66,6 @@ static int maghub_GetMData(char *buf, int size)
 	struct maghub_ipi_data *obj = mag_ipi_data;
 	struct data_unit_t data;
 	uint64_t time_stamp = 0;
-	uint64_t time_stamp_gpt = 0;
 	int mag_m[MAGHUB_AXES_NUM];
 	int err = 0;
 	unsigned int status = 0;
@@ -83,18 +82,10 @@ static int maghub_GetMData(char *buf, int size)
 	}
 
 	time_stamp				= data.time_stamp;
-	time_stamp_gpt			= data.time_stamp_gpt;
 	mag_m[MAGHUB_AXIS_X]	= data.magnetic_t.x;
 	mag_m[MAGHUB_AXIS_Y]	= data.magnetic_t.y;
 	mag_m[MAGHUB_AXIS_Z]	= data.magnetic_t.z;
 	status					= data.magnetic_t.status;
-
-	pr_debug("recv ipi:timestamp:%lld,timestamp_gpt:%lld,x:%d,y:%d,z:%d!\n",
-		time_stamp, time_stamp_gpt,
-		mag_m[MAGHUB_AXIS_X],
-		mag_m[MAGHUB_AXIS_Y],
-		mag_m[MAGHUB_AXIS_Z]);
-
 
 	sprintf(buf, "%04x %04x %04x %04x", mag_m[MAGHUB_AXIS_X],
 		mag_m[MAGHUB_AXIS_Y], mag_m[MAGHUB_AXIS_Z], status);
@@ -316,8 +307,7 @@ static int mag_recv_data(struct data_unit_t *event, void *reserved)
 		data.y = event->magnetic_t.y;
 		data.z = event->magnetic_t.z;
 		data.status = event->magnetic_t.status;
-		data.timestamp =
-			(int64_t)(event->time_stamp + event->time_stamp_gpt);
+		data.timestamp = (int64_t)event->time_stamp;
 		data.reserved[0] = event->reserve[0];
 
 	if (event->flush_action == DATA_ACTION &&
