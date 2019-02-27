@@ -5066,6 +5066,9 @@ s32 cmdq_pkt_stop(struct cmdqRecStruct *handle)
 {
 	struct cmdq_client *client = NULL;
 
+	CMDQ_LOG("%s handle:0x%p state:%d thread:%d\n",
+		__func__, handle, handle->state, handle->thread);
+
 	if (handle->thread == CMDQ_INVALID_THREAD) {
 		CMDQ_ERR("invalid thread to stop pkt handle:0x%p pkt:0x%p\n",
 			handle, handle->pkt);
