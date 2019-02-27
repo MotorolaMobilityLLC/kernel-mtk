@@ -44,3 +44,9 @@ config MTK_PLATFORM
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 endif
+
+menu "Other Peripherals"
+
+source "drivers/misc/mediatek/devapc/Kconfig"
+
+endmenu # Peripheral
