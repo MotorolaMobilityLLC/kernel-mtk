@@ -73,10 +73,10 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 
 		{ DVFSRC_QOS_EN,		0x0000407F },
 
-		{ DVFSRC_BASIC_CONTROL,		0x0000C07A },
+		{ DVFSRC_BASIC_CONTROL,		0x0000407B },
 
 		{ DVFSRC_FORCE,			0x00000000 },
-		{ DVFSRC_BASIC_CONTROL,		0x0000017A },
+		{ DVFSRC_BASIC_CONTROL,		0x0000017B },
 
 		{ -1, 0 },
 	},

@@ -39,14 +39,14 @@ void spm_go_to_vcorefs(int spm_flags)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
 
-void mtk_spmfw_init(void)
+void mtk_spmfw_init(int dvfsrc_en, int skip_check)
 {
-	if (spm_read(PCM_REG15_DATA) != 0x0)
+	if (spm_read(PCM_REG15_DATA) != 0x0 && !skip_check)
 		return;
 
 	spm_dvfsfw_init();
 
-	spm_go_to_vcorefs(spm_dvfs_flag_init());
+	spm_go_to_vcorefs(spm_dvfs_flag_init(dvfsrc_en));
 }
 
 void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore)
