@@ -227,7 +227,7 @@ static bool vow_IPICmd_Send(uint8_t data_type,
 	for (retry_cnt = 0; retry_cnt <= retry_time; retry_cnt++) {
 		ipi_result = audio_send_ipi_msg(&ipi_msg,
 						TASK_SCENE_VOW,
-						AUDIO_IPI_LAYER_KERNEL_TO_SCP,
+						AUDIO_IPI_LAYER_TO_DSP,
 						data_type,
 						ack_type,
 						msg_id,
@@ -713,7 +713,7 @@ int VowDrv_EnableHW(int status)
 	int ret = 0;
 	int pwr_status = 0;
 
-	/* VOWDRV_DEBUG("VowDrv_EnableHW:%x\n", status); */
+	VOWDRV_DEBUG("%s():%x\n", __func__, status);
 
 	if (!vow_check_scp_status()) {
 		VOWDRV_DEBUG("SCP is off, do not support VOW\n");
@@ -1186,6 +1186,20 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		VowDrv_ChangeStatus();
 		pr_debug("VOW_CHECK_STATUS(%lu)", arg);
 		break;
+	case VOW_RECOG_ENABLE:
+		pr_debug("+VOW_RECOG_ENABLE(%lu)+", arg);
+		VowDrv_SetMtkifType((unsigned int)arg);
+		VowDrv_EnableHW(1);
+		VowDrv_ChangeStatus();
+		pr_debug("-VOW_RECOG_ENABLE(%lu)-", arg);
+		break;
+	case VOW_RECOG_DISABLE:
+		pr_debug("+VOW_RECOG_DISABLE(%lu)+", arg);
+		VowDrv_SetMtkifType((unsigned int)arg);
+		VowDrv_EnableHW(0);
+		VowDrv_ChangeStatus();
+		pr_debug("-VOW_RECOG_DISABLE(%lu)-", arg);
+		break;
 	default:
 		VOWDRV_DEBUG("vow WrongParameter(%lu)", arg);
 		break;
@@ -1210,6 +1224,8 @@ static long VowDrv_compat_ioctl(struct file *fp,
 	case VOW_CLR_SPEAKER_MODEL:
 	case VOW_SET_CONTROL:
 	case VOW_CHECK_STATUS:
+	case VOW_RECOG_ENABLE:
+	case VOW_RECOG_DISABLE:
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, arg);
 		break;
 	case VOW_SET_SPEAKER_MODEL:
