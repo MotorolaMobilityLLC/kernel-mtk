@@ -643,6 +643,7 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 	struct device_node *larb_node[DISP_LARB_COUNT];
 	struct platform_device *larb_pdev[DISP_LARB_COUNT];
 	int larb_idx = 0;
+	struct device_node *np;
 
 	if (disp_iommu.inited)
 		return &disp_iommu;
@@ -668,7 +669,16 @@ struct disp_iommu_device *disp_get_iommu_dev(void)
 
 		disp_iommu.larb_pdev[larb_idx] = larb_pdev[larb_idx];
 	}
-
+	/* add for mmp dump mva->pa */
+	np = of_find_compatible_node(NULL, NULL, "mediatek,mt-pseudo_m4u-port");
+	if (np == NULL) {
+		DDPERR("DT,mediatek,mt-pseudo_m4u-port is not found\n");
+	} else {
+		disp_iommu.iommu_pdev = of_find_device_by_node(np);
+		of_node_put(np);
+		if (!disp_iommu.iommu_pdev)
+			DDPERR("get iommu device failed\n");
+	}
 	disp_iommu.inited = 1;
 	return &disp_iommu;
 }
