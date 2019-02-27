@@ -183,21 +183,36 @@ static inline cycle_t timekeeping_get_delta(struct tk_read_base *tkr)
 	struct timekeeper *tk = &tk_core.timekeeper;
 	cycle_t now, last, mask, max, delta;
 	unsigned int seq;
+	int retry = 50;
 
-	/*
-	 * Since we're called holding a seqlock, the data may shift
-	 * under us while we're doing the calculation. This can cause
-	 * false positives, since we'd note a problem but throw the
-	 * results away. So nest another seqlock here to atomically
-	 * grab the points we are checking with.
-	 */
 	do {
-		seq = read_seqcount_begin(&tk_core.seq);
-		now = tk_clock_read(tkr);
-		last = tkr->cycle_last;
-		mask = tkr->mask;
-		max = tkr->clock->max_cycles;
-	} while (read_seqcount_retry(&tk_core.seq, seq));
+		/*
+		 * Since we're called holding a seqlock, the data may shift
+		 * under us while we're doing the calculation. This can cause
+		 * false positives, since we'd note a problem but throw the
+		 * results away. So nest another seqlock here to atomically
+		 * grab the points we are checking with.
+		 */
+		do {
+			seq = read_seqcount_begin(&tk_core.seq);
+			now = tk_clock_read(tkr);
+			last = tkr->cycle_last;
+			mask = tkr->mask;
+			max = tkr->clock->max_cycles;
+		} while (read_seqcount_retry(&tk_core.seq, seq));
+
+		if (now < last)
+			pr_info("cycle last=%lld, now=%lld\n", last, now);
+		else
+			break;
+		retry--;
+	} while (retry);
+
+	if (now < last || (retry < 40)) {
+		pr_err("cycle last=%lld, now=%lld, retry=%d\n",
+			last, now, retry);
+		BUG_ON(1);
+	}
 
 	delta = clocksource_delta(now, last, mask);
 
