@@ -25,6 +25,7 @@
 #define DRAM_OFFSET	0x40000000
 
 unsigned int get_dram_type(void);
+unsigned int get_dram_mr(unsigned int index);
 unsigned int get_ch_num(void);
 unsigned int get_rk_num(void);
 unsigned int get_rank_size(unsigned int rank_index);

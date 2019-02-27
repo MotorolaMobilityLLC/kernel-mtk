@@ -1262,6 +1262,13 @@ int get_ddr_type(void)
 }
 EXPORT_SYMBOL(get_ddr_type);
 
+unsigned char get_ddr_mr(unsigned int index)
+{
+	return (unsigned char)get_dram_mr(index);
+
+}
+EXPORT_SYMBOL(get_ddr_mr);
+
 int get_emi_ch_num(void)
 {
 #ifdef EMI_READY
