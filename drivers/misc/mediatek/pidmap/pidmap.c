@@ -33,17 +33,20 @@
  * handling flow, e.g., hwt or hw reboot.
  */
 
-static char mtk_pidmap[PIDMAP_AEE_BUFFER_SIZE];
-static int  mtk_pidmap_task_name_len;
+static char mtk_pidmap[PIDMAP_AEE_BUF_SIZE];
 static int  mtk_pidmap_proc_dump_mode;
+static int  mtk_pidmap_max_pid;
 static char mtk_pidmap_proc_cmd_buf[PIDMAP_PROC_CMD_BUF_SIZE];
 static struct proc_dir_entry *mtk_pidmap_proc_entry;
 
-static void mtk_pidmap_init_task_len(void)
+static void mtk_pidmap_init_map(void)
 {
-	mtk_pidmap_task_name_len = min_t(int,
-		TASK_COMM_LEN,
-		PIDMAP_AEE_BUFFER_SIZE / PID_MAX_DEFAULT);
+	/*
+	 * now pidmap is designed for keeping
+	 * maximum 32768 pids in 512 KB buffer.
+	 */
+	mtk_pidmap_max_pid =
+		PIDMAP_AEE_BUF_SIZE / PIDMAP_ENTRY_SIZE;
 }
 
 /*
@@ -56,65 +59,90 @@ void mtk_pidmap_update(struct task_struct *task)
 {
 	char *name;
 	int len;
+	pid_t pid;
 
-	if (unlikely((task->pid < 1) || (task->pid > PID_MAX_DEFAULT)))
+	if (unlikely(!mtk_pidmap_max_pid))
+		mtk_pidmap_init_map();
+
+	pid = task->pid;
+
+	if (unlikely((pid < 1) || (pid > mtk_pidmap_max_pid)))
 		return;
 
-	if (unlikely(!mtk_pidmap_task_name_len))
-		mtk_pidmap_init_task_len();
-
 	/*
+	 * part 1, get current task's name.
+	 *
 	 * this could be lockless because the specific offset
 	 * will be updated by its task only.
 	 */
-	name = mtk_pidmap +
-			((task->pid - 1) * mtk_pidmap_task_name_len);
+	name = mtk_pidmap + ((pid - 1) * PIDMAP_ENTRY_SIZE);
 
-	/* get the latest task name */
-	memcpy(name, task->comm, mtk_pidmap_task_name_len);
+	/* copy task name */
+	memcpy(name, task->comm, PIDMAP_TASKNAME_SIZE);
+	*(name + PIDMAP_TASKNAME_SIZE) = '\0';
 
-	/* clear garbage chars in tail to help parsers */
+	/* clear garbage tail chars to help parsers */
 	len = strlen(name);
-	if (len > mtk_pidmap_task_name_len)
-		len = mtk_pidmap_task_name_len;
+	if (len > PIDMAP_TASKNAME_SIZE)
+		len = PIDMAP_TASKNAME_SIZE;
 
-	memset(name + len, 0, mtk_pidmap_task_name_len - len);
+	memset(name + len, 0, PIDMAP_TASKNAME_SIZE - len);
+
+	/* part 2, copy thread group ID as hex format */
+
+	name += PIDMAP_TASKNAME_SIZE;
+	*(name + 0) = (char)(task->tgid & 0xFF);
+	*(name + 1) = (char)(task->tgid >> 8);
 }
 
 static void mtk_pidmap_seq_dump_readable(char **buff, unsigned long *size,
 	struct seq_file *seq)
 {
-	int i, active_cnt;
+	int i, active_pid;
+	pid_t tgid;
 	char *name;
 	char name_tmp[TASK_COMM_LEN + 1] = {0};
 
 	seq_puts(seq, "<PID Map>\n");
-	seq_puts(seq, "pid\tname\n");
+	seq_puts(seq, "PID\tTGID\tTask Name\n");
 
 	/*
 	 * pid map shall be protected for dump, however
 	 * we ignore locking here to favor performance.
 	 */
-	name = mtk_pidmap;
-	active_cnt = 0;
+	active_pid = 0;
 
-	for (i = 0; i < PID_MAX_DEFAULT; i++) {
+	for (i = 0; i < PIDMAP_ENTRY_CNT; i++) {
+		name = &mtk_pidmap[i * PIDMAP_ENTRY_SIZE];
 		if (name[0]) {
-			memset(name_tmp, 0, mtk_pidmap_task_name_len);
-			memcpy(name_tmp, name, mtk_pidmap_task_name_len);
-			seq_printf(seq, "%d\t%s\n", i + 1, name_tmp);
-			active_cnt++;
-		}
+			/* get task name */
+			memset(name_tmp, 0, PIDMAP_TASKNAME_SIZE);
+			memcpy(name_tmp, name, PIDMAP_TASKNAME_SIZE);
 
-		name += mtk_pidmap_task_name_len;
+			/* get tgid */
+			name += PIDMAP_TASKNAME_SIZE;
+			tgid = (pid_t)name[0] +
+				((pid_t)name[1] << 8);
+
+			seq_printf(seq, "%d\t%d\t%s\n",
+				i + 1, tgid, name_tmp);
+
+			active_pid++;
+		}
 	}
 
 	seq_puts(seq, "\n<Information>\n");
-	seq_printf(seq, "Total PIDs: %d\n", active_cnt);
-	seq_printf(seq, "Task Name Length: %d chars\n",
-			mtk_pidmap_task_name_len);
-	seq_printf(seq, "Buffer Size: %d bytes\n",
-			PIDMAP_AEE_BUFFER_SIZE);
+	seq_printf(seq, "Total PIDs: %d\n", active_pid);
+	seq_printf(seq, "Entry size: %d bytes\n",
+			PIDMAP_ENTRY_SIZE);
+	seq_printf(seq, " - Task name size: %lu bytes\n",
+			PIDMAP_TASKNAME_SIZE);
+	seq_printf(seq, " - TGID size: %lu bytes\n",
+			PIDMAP_TGID_SIZE);
+	seq_printf(seq, "Total Buffer Size: %d bytes\n",
+			PIDMAP_AEE_BUF_SIZE + PIDMAP_PROC_CMD_BUF_SIZE);
+	seq_printf(seq, "mtk_pidmap address: 0x%p\n",
+			&mtk_pidmap[0]);
 
 	seq_puts(seq, "\n<Configuration>\n");
 	seq_puts(seq, "echo 0 > pidmap: Dump raw pidmap (default, for AEE DB)\n");
@@ -126,11 +154,20 @@ static void mtk_pidmap_seq_dump_readable(char **buff, unsigned long *size,
 static void mtk_pidmap_seq_dump_raw(struct seq_file *seq)
 {
 	int i;
+
 	/*
 	 * pid map shall be protected for dump, however
 	 * we ignore locking here to favor performance.
+	 *
+	 * Notice: be aware that you shall NOT read this seq_file
+	 * in Windows environment because Windows will automatically
+	 * add Carriage Return 0Dh ('\r') while you output 0Ah ('\n')
+	 * unexpectedly.
+	 *
+	 * 0Ah may be existed for TGID, and you'll get an incorrect
+	 * PID map outputs.
 	 */
-	for (i = 0; i < PIDMAP_AEE_BUFFER_SIZE; i++)
+	for (i = 0; i < PIDMAP_AEE_BUF_SIZE; i++)
 		seq_putc(seq, mtk_pidmap[i]);
 }
 
@@ -152,7 +189,7 @@ void get_pidmap_aee_buffer(unsigned long *vaddr, unsigned long *size)
 
 	/* return valid buffer size */
 	if (size)
-		*size = PIDMAP_AEE_BUFFER_SIZE;
+		*size = PIDMAP_AEE_BUF_SIZE;
 }
 EXPORT_SYMBOL(get_pidmap_aee_buffer);
 
@@ -227,7 +264,7 @@ static int mtk_pidmap_proc_init(void)
 
 static int __init mtk_pidmap_init(void)
 {
-	mtk_pidmap_init_task_len();
+	mtk_pidmap_init_map();
 	mtk_pidmap_proc_init();
 
 	return 0;
