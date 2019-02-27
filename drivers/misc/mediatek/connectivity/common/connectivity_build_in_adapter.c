@@ -99,6 +99,13 @@ void connectivity_export_tracing_record_cmdline(struct task_struct *tsk)
 EXPORT_SYMBOL(connectivity_export_tracing_record_cmdline);
 
 #ifdef CPU_BOOST
+bool connectivity_export_spm_resource_req(unsigned int user,
+					  unsigned int req_mask)
+{
+	return spm_resource_req(user, req_mask);
+}
+EXPORT_SYMBOL(connectivity_export_spm_resource_req);
+
 void connectivity_export_mt_ppm_sysboost_freq(enum ppm_sysboost_user user,
 					      unsigned int freq)
 {
