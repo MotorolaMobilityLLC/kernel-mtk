@@ -4112,6 +4112,7 @@ void RGXCheckFirmwareCCB(PVRSRV_RGXDEV_INFO *psDevInfo)
 			{
 				RGXDumpDebugInfo(NULL,NULL,psDevInfo);
 				/* Notify the OS of an issue that triggered a debug dump */
+				MTKPP_TriggerAEE(1);
 				OSWarnOn(IMG_TRUE);
 				break;
 			}
@@ -5226,7 +5227,7 @@ PVRSRV_ERROR RGXUpdateHealthStatus(PVRSRV_DEVICE_NODE* psDevNode,
 
 						if (dump == 0)
 						{
-							MTKPP_TriggerAEE();
+							MTKPP_TriggerAEE(0);
 							dump = 1;
 						}
 					}
