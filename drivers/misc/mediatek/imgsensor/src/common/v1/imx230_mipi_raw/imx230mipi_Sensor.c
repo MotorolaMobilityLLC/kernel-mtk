@@ -82,7 +82,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*     following for GetDefaultFramerateByScenario()    */
 		.max_framerate = 300,
 		.mipi_pixel_rate = 189000000,
-		},
+	},
 	.cap = {
 		.pclk = 597000000,
 		.linelength = 6024,
@@ -94,7 +94,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		.max_framerate = 240,
 		.mipi_pixel_rate = 565000000,
-		},
+	},
 	.cap1 = {
 		 .pclk = 375000000,
 		 .linelength = 6024,
@@ -105,40 +105,43 @@ static struct imgsensor_info_struct imgsensor_info = {
 		 .grabwindow_height = 4016,
 		 .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
 		 .max_framerate = 150,
-		 },
+	},
 	.normal_video = {
-			 .pclk = 564000000,
-			 .linelength = 6024,
-			 .framelength = 3120,
-			 .startx = 0,
-			 .starty = 0,
-			 .grabwindow_width = 5344,
-			 .grabwindow_height = 3004,
-			 .mipi_data_lp2hs_settle_dc = 85,/* unit , ns */
-			 .max_framerate = 300,
-			 },
+		.pclk = 564000000,
+		.linelength = 6024,
+		.framelength = 3120,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 5344,
+		.grabwindow_height = 3004,
+		.mipi_data_lp2hs_settle_dc = 85,/* unit , ns */
+		.max_framerate = 300,
+		.mipi_pixel_rate = 533000000,
+	},
 	.hs_video = {
-		     .pclk = 597000000,
-		     .linelength = 6024,
-		     .framelength = 824,
-		     .startx = 0,
-		     .starty = 0,
-		     .grabwindow_width = 1280,
-		     .grabwindow_height = 720,
-		     .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
-		     .max_framerate = 1200,
-		     },
+		.pclk = 597000000,
+		.linelength = 6024,
+		.framelength = 824,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1280,
+		.grabwindow_height = 720,
+		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		.max_framerate = 1200,
+		.mipi_pixel_rate = 161000000,
+	},
 	.slim_video = {
-		       .pclk = 201000000,
-		       .linelength = 6024,
-		       .framelength = 1112,
-		       .startx = 0,
-		       .starty = 0,
-		       .grabwindow_width = 1280,
-		       .grabwindow_height = 720,
-		       .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
-		       .max_framerate = 300,
-		       },
+		.pclk = 201000000,
+		.linelength = 6024,
+		.framelength = 1112,
+		.startx = 0,
+		.starty = 0,
+		.grabwindow_width = 1280,
+		.grabwindow_height = 720,
+		.mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
+		.max_framerate = 300,
+		.mipi_pixel_rate = 121000000,
+	},
 	.margin = 4,		/* sensor framelength & shutter margin */
 	.min_shutter = 1,	/* min shutter */
 
@@ -3907,6 +3910,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
 				imgsensor_info.hs_video.mipi_pixel_rate;
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.slim_video.mipi_pixel_rate;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
