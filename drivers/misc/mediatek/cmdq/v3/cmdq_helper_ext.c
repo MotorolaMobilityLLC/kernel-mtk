@@ -3069,7 +3069,10 @@ u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 	dma_addr_t curr_pc;
 	u32 tmp_insts[2] = { 0 };
 
-	if (handle && handle->timeout_info)
+	if (!handle)
+		return NULL;
+
+	if (handle->timeout_info)
 		curr_pc = handle->timeout_info->curr_pc;
 	else
 		curr_pc = CMDQ_AREG_TO_PHYS(CMDQ_REG_GET32(
