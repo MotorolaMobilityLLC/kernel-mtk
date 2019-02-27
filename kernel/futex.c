@@ -68,6 +68,8 @@
 
 #include <asm/futex.h>
 
+#include <mt-plat/fpsgo_common.h>
+
 #include "locking/rtmutex_common.h"
 
 /*
@@ -2422,6 +2424,7 @@ static int futex_wait(u32 __user *uaddr, unsigned int flags, u32 val,
 		hrtimer_init_sleeper(to, current);
 		hrtimer_set_expires_range_ns(&to->timer, *abs_time,
 					     current->timer_slack_ns);
+		xgf_igather_timer(&to->timer, 1);
 	}
 
 retry:
@@ -2468,6 +2471,7 @@ retry:
 
 out:
 	if (to) {
+		xgf_igather_timer(&to->timer, to->task ? -1 : 0);
 		hrtimer_cancel(&to->timer);
 		destroy_hrtimer_on_stack(&to->timer);
 	}
