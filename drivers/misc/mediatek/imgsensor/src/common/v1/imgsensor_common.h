@@ -29,6 +29,8 @@
 #define DEBUG_CAMERA_HW_K
 
 #define IMGSENSOR_LEGACY_COMPAT
+#define IMGSENSOR_TOSTRING(value)           #value
+#define IMGSENSOR_STRINGIZE(stringizedName) IMGSENSOR_TOSTRING(stringizedName)
 
 enum IMGSENSOR_ARCH {
 	IMGSENSOR_ARCH_V1 = 0,
