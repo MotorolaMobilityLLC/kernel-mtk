@@ -362,4 +362,5 @@ source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
+source "drivers/misc/mediatek/io_boost/Kconfig"
 endmenu    # Misc
