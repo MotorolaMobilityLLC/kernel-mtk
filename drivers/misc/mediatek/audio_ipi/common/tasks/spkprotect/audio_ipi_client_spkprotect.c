@@ -187,16 +187,14 @@ int spkprotect_open_dump_file(void)
 	pr_debug("%s(), path_decode_debug_pcm= %s\n", __func__,
 		path_decode_debugpcm);
 
-	file_spk_pcm = filp_open(path_decode_pcm,
-				 O_CREAT | O_WRONLY, 0);
+	file_spk_pcm = filp_open(path_decode_pcm, O_CREAT | O_WRONLY, 0644);
 	if (IS_ERR(file_spk_pcm)) {
 		pr_info("%s(), %s file open error: %ld\n",
 			__func__, path_decode_pcm, PTR_ERR(file_spk_pcm));
 		return PTR_ERR(file_spk_pcm);
 	}
 
-	file_spk_iv = filp_open(path_decode_ivpcm,
-				O_CREAT | O_WRONLY, 0);
+	file_spk_iv = filp_open(path_decode_ivpcm, O_CREAT | O_WRONLY, 0644);
 	if (IS_ERR(file_spk_iv)) {
 		pr_info("%s(), %s file open error: %ld\n",
 			__func__, path_decode_ivpcm, PTR_ERR(file_spk_iv));
@@ -204,7 +202,7 @@ int spkprotect_open_dump_file(void)
 	}
 
 	file_spk_debug = filp_open(path_decode_debugpcm,
-				   O_CREAT | O_WRONLY, 0);
+				   O_CREAT | O_WRONLY, 0644);
 	if (IS_ERR(file_spk_debug)) {
 		pr_info("%s(), %s file open error: %ld\n",
 			__func__, path_decode_debugpcm,
@@ -369,9 +367,10 @@ static int spk_pcm_dump_split_kthread(void *data)
 {
 	unsigned long flags = 0;
 	int ret = 0;
-	int size = 0, writedata = 0;
 	uint8_t current_idx = 0;
+	int size = 0, writedata = 0;
 	struct pcm_dump_t *pcm_dump = NULL;
+	mm_segment_t old_fs;
 	struct dump_package_t *dump_package = NULL;
 
 	/* RTPM_PRIO_AUDIO_PLAYBACK */
@@ -388,7 +387,6 @@ static int spk_pcm_dump_split_kthread(void *data)
 	int iv_dump_cnt = 0;
 	int debug_dump_cnt = 0;
 	int blocks = 32; /* collect 32 buffer */
-	mm_segment_t old_fs;
 
 	sched_setscheduler(current, SCHED_RR, &param);
 
@@ -401,7 +399,7 @@ static int spk_pcm_dump_split_kthread(void *data)
 				DUMP_SMARTPA_PCM_DATA_PATH,
 				spk_debug_pcm_str, debug_file_cnt);
 			file_spk_debug = filp_open(spk_debug_pcm_path,
-						   O_CREAT | O_WRONLY, 0);
+						   O_CREAT | O_WRONLY, 0644);
 			if (IS_ERR(file_spk_debug)) {
 				AUD_LOG_W("%s(), %s file open error: %ld\n",
 					  __func__, spk_debug_pcm_path,
@@ -422,7 +420,7 @@ static int spk_pcm_dump_split_kthread(void *data)
 				DUMP_SMARTPA_PCM_DATA_PATH,
 				iv_pcm_str, iv_file_cnt);
 			file_spk_iv = filp_open(spk_iv_pcm_path,
-						O_CREAT | O_WRONLY, 0);
+						O_CREAT | O_WRONLY, 0644);
 			if (IS_ERR(file_spk_iv)) {
 				AUD_LOG_W("%s(), %s file open error: %ld\n",
 					  __func__, spk_iv_pcm_path,
@@ -465,6 +463,7 @@ static int spk_pcm_dump_split_kthread(void *data)
 		case DUMP_DEBUG_DATA:
 			size = dump_package->data_size;
 			writedata = size;
+
 			pcm_dump = (struct pcm_dump_t *)
 					(scp_spk_dump_mem.start_virt +
 					 dump_package->rw_idx);
