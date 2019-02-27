@@ -115,7 +115,7 @@ void mdla_dump_prof(struct seq_file *s)
 	int i;
 
 #define _SHOW_VAL(t) \
-	mdla_print_seq(s, "%s=%d\n", #t, cfg_##t)
+	mdla_print_seq(s, "%s=%lu\n", #t, (unsigned long)cfg_##t)
 
 	_SHOW_VAL(period);
 	_SHOW_VAL(cmd_trace);

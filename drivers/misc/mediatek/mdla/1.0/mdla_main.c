@@ -1377,7 +1377,7 @@ static bool mdla_change_opp(int core, int type)
 
 	return true;
 #else
-	int ret;
+	int ret = 0;
 
 
 	switch (type) {
@@ -1467,8 +1467,8 @@ static bool mdla_change_opp(int core, int type)
 						opps.mdlacore.index);
 			if (ret) {
 				LOG_ERR("[mdla]%s%d freq, %s=%d, %s=%d\n",
-					"fail to set dsp_",
-					"step", opps.mdlacore.index,
+					"fail to set dsp_", opps.mdlacore.index,
+					"step", opps.dsp.index,
 					"ret", ret);
 				goto out;
 			}
@@ -3674,7 +3674,7 @@ static int mdla_wait_command(struct ioctl_wait_cmd *wt)
 			(unsigned long long)ce->req_end_t,
 			(unsigned long long)wc.queue_time,
 			(unsigned long long)wc.busy_time,
-			(unsigned long long)wc.bandwidth,
+			wc.bandwidth,
 			wc.result);
 
 		exec_info_eval(ce, wt);
@@ -3707,11 +3707,11 @@ static void mdla_mark_command_id(struct command_entry *ce)
 			(i * (MREG_CMD_SIZE / sizeof(u32)))] = cmd_id++;
 	}
 
-	mdla_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=%p\n",
+	mdla_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=0x%lx\n",
 			__func__,
 			ce->kva,
 			ce->mva,
-			phys_to_dma(mdlactlDevice, ce->mva));
+			(unsigned long)phys_to_dma(mdlactlDevice, ce->mva));
 
 #ifdef CONFIG_MTK_MDLA_ION
 	if (ce->khandle) {
@@ -3845,7 +3845,7 @@ static void mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 	malloc_data->kva = dma_alloc_coherent(mdlactlDevice, malloc_data->size,
 			&phyaddr, GFP_KERNEL);
 	malloc_data->pa = (void *)dma_to_phys(mdlactlDevice, phyaddr);
-	malloc_data->mva = (__u32)malloc_data->pa;
+	malloc_data->mva = (__u32)((long) malloc_data->pa);
 
 	mdla_debug("%s: kva:%p, mva:%x\n",
 		__func__, malloc_data->kva, malloc_data->mva);
@@ -4073,7 +4073,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		}
 
 		retval = mdla_set_power(&power);
-		LOG_INF("[SET_POWER] ret=%d\n", retval);
+		LOG_INF("[SET_POWER] ret=%ld\n", retval);
 		return retval;
 
 		break;

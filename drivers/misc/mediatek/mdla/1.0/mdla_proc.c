@@ -68,7 +68,8 @@ ssize_t prof_read(struct file *filp,
 		return 0;
 
 	read = read - pos;
-	copy_to_user(buff, &prof_data[pos], read);
+	if (copy_to_user(buff, &prof_data[pos], read))
+		return -EFAULT;
 	*ppos = *ppos + read;
 
 	mdla_debug("%s: \"%s\"\n", __func__, prof_data);
