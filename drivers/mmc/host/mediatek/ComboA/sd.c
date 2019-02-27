@@ -1987,7 +1987,7 @@ static unsigned int msdc_cmdq_command_resp_polling(struct msdc_host *host,
 cmdq_resp_intr:
 	/* interrupt */
 	if (host->use_cmd_intr) {
-		if (msdc_wait_cmd_intr(host, true, host->busy_timeout_ms)) {
+		if (msdc_wait_cmd_intr(host, true, host->max_busy_timeout_ms)) {
 			pr_notice("[%s]: msdc%d CMD<%d> %dms timeout ARG<0x%.8x>\n",
 				__func__, host->id, cmd->opcode,
 				host->busy_timeout_ms,
@@ -2022,8 +2022,7 @@ cmdq_resp_intr:
 		if (now - rsp_time > RESP_TO_INTR_TMO_NS) {
 			spin_lock(&host->lock);
 			/* give up CPU */
-			host->busy_timeout_ms = 1000; /* 1000ms */
-			msdc_set_cmd_intr(host, false, host->busy_timeout_ms);
+			msdc_set_cmd_intr(host, false, 0);
 			goto cmdq_resp_intr;
 		}
 
