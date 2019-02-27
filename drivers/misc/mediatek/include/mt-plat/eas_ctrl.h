@@ -21,7 +21,6 @@ enum {
 
 enum {
 	EAS_KIR_PERF = 0,
-	EAS_KIR_FBC,
 	EAS_KIR_BOOT,
 	EAS_KIR_TOUCH,
 	EAS_MAX_KIR
