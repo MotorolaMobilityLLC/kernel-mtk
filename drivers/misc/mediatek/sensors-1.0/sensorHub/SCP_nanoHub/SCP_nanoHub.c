@@ -48,18 +48,26 @@
 #include <asm/arch_timer.h>
 #include <linux/math64.h>
 
-/* ALGIN TO SCP SENSOR_DATA_SIZE AT FILE CONTEXTHUB_FW.H, ALGIN
+/* ALGIN TO SCP SENSOR_IPI_SIZE AT FILE CONTEXTHUB_FW.H, ALGIN
  * TO SCP_SENSOR_HUB_DATA UNION, ALGIN TO STRUCT DATA_UNIT_T
- * SIZEOF(STRUCT DATA_UNIT_T) = SCP_SENSOR_HUB_DATA = SENSOR_DATA_SIZE
+ * SIZEOF(STRUCT DATA_UNIT_T) = SCP_SENSOR_HUB_DATA = SENSOR_IPI_SIZE
  * BUT AT THE MOMENT AP GET DATA THROUGH IPI, WE ONLY TRANSFER
  * 44 BYTES DATA_UNIT_T, THERE ARE 4 BYTES HEADER IN SCP_SENSOR_HUB_DATA
  * HEAD
  */
-#define SENSOR_DATA_SIZE 48
+#define SENSOR_IPI_SIZE 48
 /*
  * experience number for delay_count per DELAY_COUNT sensor input delay 10ms
  * msleep(10) system will schedule to hal process then read input node
  */
+#define SENSOR_IPI_HEADER_SIZE 4
+#define SENSOR_IPI_PACKET_SIZE (SENSOR_IPI_SIZE - SENSOR_IPI_HEADER_SIZE)
+#define SENSOR_DATA_SIZE 40
+
+#if SENSOR_DATA_SIZE > SENSOR_IPI_PACKET_SIZE
+#error "SENSOR_DATA_SIZE > SENSOR_IPI_PACKET_SIZE, out of memory"
+#endif
+
 #define DELAY_COUNT			32
 #define SYNC_TIME_CYCLC		10
 #define SCP_sensorHub_DEV_NAME        "SCP_sensorHub"
@@ -209,7 +217,7 @@ struct ipi_master {
 
 struct ipi_transfer {
 	const unsigned char	*tx_buf;
-	unsigned char		rx_buf[SENSOR_DATA_SIZE];
+	unsigned char		rx_buf[SENSOR_IPI_SIZE];
 	unsigned int		len;
 	struct list_head transfer_list;
 };
@@ -386,7 +394,7 @@ static int scp_ipi_txrx(const unsigned char *txbuf, unsigned int n_tx,
 static int SCP_sensorHub_ipi_txrx(unsigned char *txrxbuf)
 {
 	return scp_ipi_txrx(txrxbuf,
-		SENSOR_DATA_SIZE, txrxbuf, SENSOR_DATA_SIZE);
+		SENSOR_IPI_SIZE, txrxbuf, SENSOR_IPI_SIZE);
 }
 
 static int SCP_sensorHub_ipi_master_init(void)
@@ -412,7 +420,7 @@ int scp_sensorHub_req_send(SCP_SENSOR_HUB_DATA_P data,
 	 *	data->req.action);
 	 */
 
-	if (*len > SENSOR_DATA_SIZE) {
+	if (*len > SENSOR_IPI_SIZE) {
 		pr_err("over sensor data size!!\n");
 		return -1;
 	}
@@ -820,7 +828,7 @@ static void SCP_sensorHub_IPI_handler(int id,
 	SCP_SENSOR_HUB_DATA_P rsp = (SCP_SENSOR_HUB_DATA_P) data;
 	const struct SCP_sensorHub_Cmd *cmd;
 
-	if (len > SENSOR_DATA_SIZE) {
+	if (len > SENSOR_IPI_SIZE) {
 		pr_err("SCP_sensorHub_IPI_handler len=%d error\n", len);
 		return;
 	}
@@ -1056,11 +1064,14 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 	 * now_enter_timestamp = ktime_get_boot_ns();
 	 * pr_err("type:%d,now time:%lld, scp time: %lld\n",
 	 * data_t->sensor_type, now_enter_timestamp,
-	 * (data_t->time_stamp + data_t->time_stamp_gpt));
+	 * data_t->time_stamp);
 	 */
 	sensor_type = data_t->sensor_type;
-	data_t->time_stamp_gpt = get_filter_output(&moving_average_algo);
-	/* pr_err("compensation_offset=%lld\n", data_t->time_stamp_gpt); */
+	data_t->time_stamp += get_filter_output(&moving_average_algo);
+	/*
+	 * pr_debug("compensation_offset=%lld\n",
+	 * get_filter_output(&moving_average_algo));
+	 */
 	alt = READ_ONCE(mSensorState[sensor_type].alt);
 	if (!alt) {
 		raw_enable = READ_ONCE(mSensorState[sensor_type].enable);
@@ -1087,8 +1098,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 		need_send = true;
 	else {
 		/* timestamp filter, drop which equal to each other at 1 ms */
-		timestamp_ms = (int64_t)(data_t->time_stamp +
-			data_t->time_stamp_gpt);
+		timestamp_ms = (int64_t)data_t->time_stamp;
 		timestamp_ms_t = (uint64_t)timestamp_ms;
 		do_div(timestamp_ms_t, 1000000);
 		if (last_timestamp_ms[sensor_type] != timestamp_ms_t) {
@@ -1438,62 +1448,54 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 	switch (sensorType) {
 	case ID_ACCELEROMETER:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
 		data->accelerometer_t.x_bias = data_t->accelerometer_t.x_bias;
 		data->accelerometer_t.y_bias = data_t->accelerometer_t.y_bias;
 		data->accelerometer_t.z_bias = data_t->accelerometer_t.z_bias;
-		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->accelerometer_t.status = data_t->accelerometer_t.status;
 		break;
 	case ID_GRAVITY:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
-		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->accelerometer_t.status = data_t->accelerometer_t.status;
 		break;
 	case ID_LINEAR_ACCELERATION:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
-		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->accelerometer_t.status = data_t->accelerometer_t.status;
 		break;
 	case ID_LIGHT:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->light = data_t->light;
 		break;
 	case ID_PROXIMITY:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->proximity_t.steps = data_t->proximity_t.steps;
 		data->proximity_t.oneshot = data_t->proximity_t.oneshot;
 		break;
 	case ID_PRESSURE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->pressure_t.pressure = data_t->pressure_t.pressure;
 		data->pressure_t.status = data_t->pressure_t.status;
 		break;
 	case ID_GYROSCOPE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->gyroscope_t.x = data_t->gyroscope_t.x;
 		data->gyroscope_t.y = data_t->gyroscope_t.y;
 		data->gyroscope_t.z = data_t->gyroscope_t.z;
 		data->gyroscope_t.x_bias = data_t->gyroscope_t.x_bias;
 		data->gyroscope_t.y_bias  = data_t->gyroscope_t.y_bias;
 		data->gyroscope_t.z_bias  = data_t->gyroscope_t.z_bias;
-		data->gyroscope_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->gyroscope_t.status = data_t->gyroscope_t.status;
 		break;
 	case ID_GYROSCOPE_UNCALIBRATED:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->uncalibrated_gyro_t.x = data_t->uncalibrated_gyro_t.x;
 		data->uncalibrated_gyro_t.y = data_t->uncalibrated_gyro_t.y;
 		data->uncalibrated_gyro_t.z = data_t->uncalibrated_gyro_t.z;
@@ -1505,11 +1507,9 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 			data_t->uncalibrated_gyro_t.z_bias;
 		data->uncalibrated_gyro_t.status =
 			data_t->uncalibrated_gyro_t.status;
-		data->uncalibrated_gyro_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->relative_humidity_t.relative_humidity =
 		data_t->relative_humidity_t.relative_humidity;
 		data->relative_humidity_t.status =
@@ -1517,18 +1517,16 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_MAGNETIC:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->magnetic_t.x = data_t->magnetic_t.x;
 		data->magnetic_t.y = data_t->magnetic_t.y;
 		data->magnetic_t.z = data_t->magnetic_t.z;
 		data->magnetic_t.x_bias = data_t->magnetic_t.x_bias;
 		data->magnetic_t.y_bias = data_t->magnetic_t.y_bias;
 		data->magnetic_t.z_bias = data_t->magnetic_t.z_bias;
-		data->magnetic_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->magnetic_t.status = data_t->magnetic_t.status;
 		break;
 	case ID_MAGNETIC_UNCALIBRATED:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->uncalibrated_mag_t.x = data_t->uncalibrated_mag_t.x;
 		data->uncalibrated_mag_t.y = data_t->uncalibrated_mag_t.y;
 		data->uncalibrated_mag_t.z = data_t->uncalibrated_mag_t.z;
@@ -1540,69 +1538,59 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 			data_t->uncalibrated_mag_t.z_bias;
 		data->uncalibrated_mag_t.status =
 			data_t->uncalibrated_mag_t.status;
-		data->uncalibrated_mag_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->magnetic_t.x = data_t->magnetic_t.x;
 		data->magnetic_t.y = data_t->magnetic_t.y;
 		data->magnetic_t.z = data_t->magnetic_t.z;
 		data->magnetic_t.scalar = data_t->magnetic_t.scalar;
-		data->magnetic_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->magnetic_t.status = data_t->magnetic_t.status;
 		break;
 	case ID_ORIENTATION:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
-		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->orientation_t.status = data_t->orientation_t.status;
 		break;
 	case ID_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
 		data->orientation_t.scalar = data_t->orientation_t.scalar;
-		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->orientation_t.status = data_t->orientation_t.status;
 		break;
 	case ID_GAME_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
 		data->orientation_t.scalar = data_t->orientation_t.scalar;
-		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->orientation_t.status = data_t->orientation_t.status;
 		break;
 	case ID_STEP_COUNTER:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->step_counter_t.accumulated_step_count
 		    = data_t->step_counter_t.accumulated_step_count;
 		break;
 	case ID_STEP_DETECTOR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->step_detector_t.step_detect =
 			data_t->step_detector_t.step_detect;
 		break;
 	case ID_SIGNIFICANT_MOTION:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->smd_t.state = data_t->smd_t.state;
 		break;
 	case ID_HEART_RATE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->heart_rate_t.bpm = data_t->heart_rate_t.bpm;
 		data->heart_rate_t.status = data_t->heart_rate_t.status;
 		break;
 	case ID_PEDOMETER:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->pedometer_t.accumulated_step_count =
 		    data_t->pedometer_t.accumulated_step_count;
 		data->pedometer_t.accumulated_step_length =
@@ -1614,7 +1602,6 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_ACTIVITY:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->activity_data_t.probability[STILL] =
 		    data_t->activity_data_t.probability[STILL];
 		data->activity_data_t.probability[STANDING] =
@@ -1642,43 +1629,36 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		break;
 	case ID_IN_POCKET:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->inpocket_event.state = data_t->inpocket_event.state;
 		break;
 	case ID_PICK_UP_GESTURE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->gesture_data_t.probability =
 			data_t->gesture_data_t.probability;
 		break;
 	case ID_TILT_DETECTOR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->tilt_event.state = data_t->tilt_event.state;
 		break;
 	case ID_WAKE_GESTURE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->gesture_data_t.probability =
 			data_t->gesture_data_t.probability;
 		break;
 	case ID_GLANCE_GESTURE:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->gesture_data_t.probability =
 			data_t->gesture_data_t.probability;
 		break;
 	case ID_PDR:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->pdr_event.x = data_t->pdr_event.x;
 		data->pdr_event.y = data_t->pdr_event.y;
 		data->pdr_event.z = data_t->pdr_event.z;
-		data->pdr_event.status = SENSOR_STATUS_ACCURACY_HIGH;
+		data->pdr_event.status = data_t->pdr_event.status;
 		break;
 	case ID_FLOOR_COUNTER:
 		data->time_stamp = data_t->time_stamp;
-		data->time_stamp_gpt = data_t->time_stamp_gpt;
 		data->floor_counter_t.accumulated_floor_count
 		    = data_t->floor_counter_t.accumulated_floor_count;
 		break;
@@ -2240,7 +2220,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 		(int)sizeof(struct data_unit_t),
 		(int)sizeof(SCP_SENSOR_HUB_DATA));
 	WARN_ON(sizeof(struct data_unit_t) != SENSOR_DATA_SIZE
-		|| sizeof(SCP_SENSOR_HUB_DATA) != SENSOR_DATA_SIZE);
+		|| sizeof(SCP_SENSOR_HUB_DATA) != SENSOR_IPI_SIZE);
 	return 0;
 exit:
 	pr_err("%s: err = %d\n", __func__, err);
