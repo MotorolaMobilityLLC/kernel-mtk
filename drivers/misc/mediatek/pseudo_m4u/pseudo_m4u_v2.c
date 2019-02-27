@@ -2058,9 +2058,12 @@ static long pseudo_ioctl(struct file *filp,
 			  unsigned long arg)
 {
 	int ret = 0;
+#ifdef M4U_TEE_SERVICE_ENABLE
 	struct M4U_PORT_STRUCT m4u_port;
+#endif
 
 	switch (cmd) {
+#ifdef M4U_TEE_SERVICE_ENABLE
 	case MTK_M4U_T_CONFIG_PORT:
 		{
 			ret = copy_from_user(&m4u_port, (void *)arg,
@@ -2085,9 +2088,10 @@ static long pseudo_ioctl(struct file *filp,
 				return -EFAULT;
 			}
 
-			///ret = pseudo_config_port_array(&port_array);
+			/*ret = pseudo_config_port_array(&port_array);*/
 		}
 		break;
+#endif
 	default:
 		M4U_MSG("MTK M4U ioctl:No such command(0x%x)!!\n", cmd);
 		ret = -EINVAL;
