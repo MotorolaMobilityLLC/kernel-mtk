@@ -745,14 +745,14 @@ static void accdet_get_efuse(void)
 	 * BC efuse: key-B Voltage:DB--BC;
 	 * key-C Voltage: BC--600;
 	 */
-	tmp_val = pmic_Read_Efuse_HPOffset(111);
+	tmp_val = pmic_Read_Efuse_HPOffset(103);
 	tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
 	accdet_dts.four_key.mid = tmp_8bit << 2;
 
 	tmp_8bit = (tmp_val >> 8) & ACCDET_CALI_MASK0;
 	accdet_dts.four_key.voice = tmp_8bit << 2;
 
-	tmp_val = pmic_Read_Efuse_HPOffset(112);
+	tmp_val = pmic_Read_Efuse_HPOffset(104);
 	tmp_8bit = tmp_val & ACCDET_CALI_MASK0;
 	accdet_dts.four_key.up = tmp_8bit << 2;
 
@@ -764,11 +764,7 @@ static void accdet_get_efuse(void)
 	/* accdet offset efuse:
 	 * this efuse must divided by 2
 	 */
-#ifdef CONFIG_MTK_PMIC_NEW_ARCH
-	efuseval = pmic_Read_Efuse_HPOffset(110);
-#else
-	efuseval = 0;
-#endif
+	efuseval = pmic_Read_Efuse_HPOffset(102);
 	accdet_auxadc_offset = efuseval & 0xFF;
 	if (accdet_auxadc_offset > 128)
 		accdet_auxadc_offset -= 256;
@@ -780,7 +776,7 @@ static void accdet_get_efuse(void)
  * we need to transfer it
  */
 	/* moisture vdd efuse offset */
-	efuseval = pmic_Read_Efuse_HPOffset(113);
+	efuseval = pmic_Read_Efuse_HPOffset(105);
 	moisture_vdd_offset = (int)((efuseval >> 8) & ACCDET_CALI_MASK0);
 	if (moisture_vdd_offset > 128)
 		moisture_vdd_offset -= 256;
@@ -788,7 +784,7 @@ static void accdet_get_efuse(void)
 		__func__, efuseval, moisture_vdd_offset);
 
 	/* moisture offset */
-	efuseval = pmic_Read_Efuse_HPOffset(114);
+	efuseval = pmic_Read_Efuse_HPOffset(106);
 	moisture_offset = (int)(efuseval & ACCDET_CALI_MASK0);
 	if (moisture_offset > 128)
 		moisture_offset -= 256;
@@ -797,12 +793,12 @@ static void accdet_get_efuse(void)
 
 	if (accdet_dts.moisture_use_ext_res == 0x0) {
 		/* moisture eint efuse offset */
-		efuseval = pmic_Read_Efuse_HPOffset(112);
+		efuseval = pmic_Read_Efuse_HPOffset(104);
 		moisture_eint0 = (int)((efuseval >> 8) & ACCDET_CALI_MASK0);
 		pr_info("%s moisture_eint0 efuse=0x%x,moisture_eint0=0x%x\n",
 			__func__, efuseval, moisture_eint0);
 
-		efuseval = pmic_Read_Efuse_HPOffset(113);
+		efuseval = pmic_Read_Efuse_HPOffset(105);
 		moisture_eint1 = (int)(efuseval & ACCDET_CALI_MASK0);
 		pr_info("%s moisture_eint1 efuse=0x%x,moisture_eint1=0x%x\n",
 			__func__, efuseval, moisture_eint1);
@@ -1089,11 +1085,13 @@ static u32 get_moisture_sw_auxadc_check(void)
 static u32 adjust_eint_analog_setting(u32 eintID)
 {
 	if ((accdet_dts.eint_detect_mode == 0x3) ||
-		(accdet_dts.eint_detect_mode == 0x4)) {
+		(accdet_dts.eint_detect_mode == 0x4) ||
+		(accdet_dts.eint_detect_mode == 0x5)) {
 		/* ESD switches off */
 		pmic_write_clr(PMIC_RG_ACCDETSPARE_ADDR, 8);
 	}
-	if (accdet_dts.eint_detect_mode == 0x4) {
+	if ((accdet_dts.eint_detect_mode == 0x4) ||
+		(accdet_dts.eint_detect_mode == 0x5)) {
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 		/* enable RG_EINT0CONFIGACCDET */
 		pmic_write_set(PMIC_RG_EINT0CONFIGACCDET_ADDR,
@@ -1209,7 +1207,7 @@ static u32 adjust_moisture_digital_setting(u32 eintID)
 
 static u32 adjust_moisture_analog_setting(u32 eintID)
 {
-	unsigned int rg;
+	unsigned int efuseval, vref2val, vref2hi;
 
 	if (accdet_dts.moisture_detect_mode == 0x1) {
 		/* select VTH to 2.8v(default), can set to 2.4 or 2.0v by dts */
@@ -1232,10 +1230,61 @@ static u32 adjust_moisture_analog_setting(u32 eintID)
 		/* do nothing */
 	} else if (accdet_dts.moisture_detect_mode == 0x5) {
 		/* enable VREF2 */
-		/* TBD read efuse */
-		pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR, 3, 0x1f, 0x1e);
-		rg = pmic_read_mbit(PMIC_RG_ACCDETSPARE_ADDR, 0x2, 0x3);
-		pmic_write_mset(PMIC_RG_EINTCOMPVTH_ADDR, 6, 0x3, rg);
+		/* vref2 20k/40k/60k/80k/100k */
+		switch (accdet_dts.moisture_comp_vref2) {
+		case 0:
+			efuseval = pmic_Read_Efuse_HPOffset(109);
+			vref2val = (int)(efuseval & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		case 1:
+			efuseval = pmic_Read_Efuse_HPOffset(109);
+			vref2val = (int)((efuseval >> 8) & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		case 2:
+			efuseval = pmic_Read_Efuse_HPOffset(110);
+			vref2val = (int)(efuseval & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		case 3:
+			efuseval = pmic_Read_Efuse_HPOffset(110);
+			vref2val = (int)((efuseval >> 8) & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		case 4:
+			efuseval = pmic_Read_Efuse_HPOffset(114);
+			vref2val = (int)(efuseval & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		case 5:
+			efuseval = pmic_Read_Efuse_HPOffset(114);
+			vref2val = (int)((efuseval >> 8) & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		default:
+			efuseval = pmic_Read_Efuse_HPOffset(109);
+			vref2val = (int)(efuseval & 0x1F);
+			vref2hi = (int)((efuseval >> 5) & 0x1);
+			break;
+		}
+		pr_info("%s efuse=0x%x,vref2val=0x%x, vref2hi=0x%x\n",
+			__func__, efuseval, vref2val, vref2hi);
+		if (vref2hi == 0) {
+			/* voltage 20~850mV */
+			pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR,
+				3, 0x1f, vref2val);
+		} else {
+			/* voltage 880~1330mV */
+			pmic_write_set(PMIC_RG_ACCDETSPARE_ADDR, 15);
+			pmic_write_mset(PMIC_RG_EINTCOMPVTH_ADDR,
+				6, 0x3, (vref2val & 0xc) >> 2);
+			pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR,
+				13, 0x3, (vref2val & 0x3));
+		}
+		/* golden setting
+		 * pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR, 3, 0x1f, 0x1e);
+		 */
 	}
 	return 0;
 }
@@ -2048,6 +2097,7 @@ static u32 config_moisture_detect_1_1(void)
 
 static u32 config_moisture_detect_2_1(void)
 {
+	u32 efuseval, eintvth;
 	/* select VTH to 2.8v(default), can set to 2.4 or 2.0v by dts */
 	pmic_write_mset(PMIC_RG_EINTCOMPVTH_ADDR,
 		PMIC_RG_EINTCOMPVTH_SHIFT, PMIC_RG_EINTCOMPVTH_MASK,
@@ -2066,9 +2116,19 @@ static u32 config_moisture_detect_2_1(void)
 	pmic_write_set(PMIC_RG_EINT0CTURBO_ADDR, PMIC_RG_EINT0CTURBO_SHIFT);
 	pmic_write_set(PMIC_RG_EINT1CTURBO_ADDR, PMIC_RG_EINT1CTURBO_SHIFT);
 #endif
-	//TBD read efuse  read efuse: set 70mV: 0x2532<7:3>= 4?™d10
+	/* set moisture reference voltage MVTH
+	 * golden setting
+	 * pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR, 0x3, 0x1F, 0xA);
+	 */
+
+	/* EINTVTH1K/5K/10K efuse */
+	efuseval = pmic_Read_Efuse_HPOffset(107);
+	eintvth = (int)(efuseval & ACCDET_CALI_MASK0);
+	pr_info("%s moisture_eint0 efuse=0x%x,eintvth=0x%x\n",
+		__func__, efuseval, eintvth);
+
 	/* set moisture reference voltage MVTH */
-	pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR, 0x3, 0x1F, 0xA);
+	pmic_write_mset(PMIC_RG_ACCDETSPARE_ADDR, 0x3, 0x1F, eintvth);
 	return 0;
 }
 
@@ -2877,7 +2937,7 @@ void accdet_late_init(unsigned long data)
 #else
 		if (true) {
 			accdet_get_dts_data();
-			//TBD accdet_get_efuse();
+			accdet_get_efuse();
 #endif
 			accdet_init();
 			/* just need run once */
