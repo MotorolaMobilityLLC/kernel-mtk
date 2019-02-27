@@ -26,7 +26,7 @@ int do_wlan_drv_init(int chip_id)
 	int i_ret = 0;
 
 	int ret = 0;
-
+#ifdef MTK_WCN_BUILT_IN_DRIVER
 	WMT_DETECT_INFO_FUNC("start to do wlan module init 0x%x\n", chip_id);
 
 	/* WMT-WIFI char dev init */
@@ -70,7 +70,7 @@ int do_wlan_drv_init(int chip_id)
 #endif
 		break;
 	}
-
+#endif
 	i_ret += ret;
 	WMT_DETECT_INFO_FUNC("finish wlan module init\n");
 
