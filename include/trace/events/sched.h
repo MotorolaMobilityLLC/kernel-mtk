@@ -1193,6 +1193,29 @@ TRACE_EVENT(walt_migration_update_sum,
 
 #endif /* CONFIG_SMP */
 
+#ifdef CONFIG_MTK_SCHED_TRACE
+#define sched_trace(event) \
+TRACE_EVENT(event,                      \
+	TP_PROTO(char *strings),                    \
+	TP_ARGS(strings),                           \
+	TP_STRUCT__entry(                           \
+		__array(char,  strings, 128)        \
+	),                                          \
+	TP_fast_assign(                             \
+		memcpy(__entry->strings, strings, 128); \
+	),                                          \
+	TP_printk("%s", __entry->strings))
+
+sched_trace(sched_log);
+/* mtk rt enhancement */
+sched_trace(sched_rt);
+sched_trace(sched_rt_info);
+sched_trace(sched_lb);
+sched_trace(sched_lb_info);
+sched_trace(sched_eas_energy_calc);
+sched_trace(sched_dvfs);
+#endif
+
 #endif /* _TRACE_SCHED_H */
 
 /* This part must be outside protection */
