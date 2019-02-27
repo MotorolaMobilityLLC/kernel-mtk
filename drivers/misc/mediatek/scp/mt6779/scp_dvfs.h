@@ -46,19 +46,18 @@ enum {
 
 enum clk_opp_enum {
 	CLK_26M = 26,
-	CLK_OPP0 = 250,
-	CLK_OPP1 = 273,
-	CLK_OPP2 = 330,
-	CLK_OPP3 = 416,
-	CLK_INVALID_OPP,
+	CLK_OPP0 = 110,
+	CLK_OPP1 = 130,
+	CLK_OPP2 = 165,
+	CLK_OPP3 = 330,
+	CLK_OPP4 = 416,
 };
 
 enum clk_div_enum {
 	CLK_DIV_1 = 0,
 	CLK_DIV_2 = 1,
-	CLK_DIV_4  = 2,
-	CLK_DIV_8  = 3,
-	CLK_DIV_UNKNOWN,
+	CLK_DIV_4 = 2,
+	CLK_DIV_3 = 3,
 };
 
 enum voltage_enum {
