@@ -209,15 +209,6 @@ __weak void ipanic_recursive_ke(struct pt_regs *regs,
 {
 }
 
-__weak struct aee_oops *ipanic_oops_copy(void)
-{
-	return NULL;
-}
-
-__weak void ipanic_oops_free(struct aee_oops *oops, int erase)
-{
-}
-
 __weak void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs,
 		struct task_struct *tsk)
 {
