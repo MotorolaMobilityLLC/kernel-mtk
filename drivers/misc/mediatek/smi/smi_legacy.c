@@ -408,7 +408,7 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *config)
 {
 	struct smi_bwc_scen_cb *cb;
 	bool flag = true;
-	unsigned int i, scen;
+	int i, scen;
 
 	if (smi_bwc_config_disable) {
 		SMIDBG("Disable configure SMI BWC profile\n");
