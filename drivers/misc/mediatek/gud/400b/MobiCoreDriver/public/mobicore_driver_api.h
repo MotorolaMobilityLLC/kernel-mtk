@@ -463,4 +463,6 @@ __MC_CLIENT_LIB_API enum mc_result mc_get_session_error_code(
 	struct mc_session_handle	*session,
 	s32				*exit_code);
 
+__MC_CLIENT_LIB_API bool is_mobicore_ready(void);
+
 #endif /* _MOBICORE_DRIVER_API_H_ */
