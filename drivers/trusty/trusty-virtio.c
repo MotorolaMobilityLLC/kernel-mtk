@@ -129,7 +129,7 @@ static void kick_vqs(struct work_struct *work)
 	struct trusty_ctx *tctx = container_of(work, struct trusty_ctx,
 					       kick_vqs);
 
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 	set_user_nice(current, -20);
 #endif
 
@@ -143,7 +143,7 @@ static void kick_vqs(struct work_struct *work)
 	}
 	mutex_unlock(&tctx->mlock);
 
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 	set_user_nice(current, 0);
 #endif
 }

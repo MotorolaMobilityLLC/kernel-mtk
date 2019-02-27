@@ -100,7 +100,7 @@ static inline void *mb_get_data(struct tipc_msg_buf *mb, size_t len)
 	return pos;
 }
 
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 struct tipc_k_handle {
 	struct tipc_dn_chan *dn;
 };
