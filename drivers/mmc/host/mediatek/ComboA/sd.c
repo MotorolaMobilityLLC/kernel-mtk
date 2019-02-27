@@ -727,7 +727,7 @@ static void msdc_set_busy_timeout_ms(struct msdc_host *host, u32 ms)
 	u64 timeout, clk_ns, us;
 	u32 mode = 0;
 
-	us = ms * 1000;
+	us = (u64)ms * 1000;
 
 	if (host->sclk == 0) {
 		timeout = 0;
