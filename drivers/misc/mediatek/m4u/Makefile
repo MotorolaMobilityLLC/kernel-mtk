@@ -23,3 +23,4 @@ obj-$(CONFIG_ARCH_MT6797) += 2.0/
 obj-$(CONFIG_ARCH_MT6757) += 2.0/
 obj-$(CONFIG_MACH_MT6758) += 2.4/
 obj-$(CONFIG_ARCH_ELBRUS) += 2.0/
+obj-$(CONFIG_MACH_MT3887) += 2.0/
