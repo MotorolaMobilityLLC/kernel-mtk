@@ -486,29 +486,17 @@ static void set_shutter_frame_length(kal_uint16 shutter,
 		else if (realtime_fps >= 147 && realtime_fps <= 150)
 			set_max_framerate(146, 0);
 		else {
-		// Extend frame length
-		//write_cmos_sensor(0x0104, 0x01);
-		write_cmos_sensor(0x0340,
-			imgsensor.frame_length >> 8);
-		write_cmos_sensor(0x0341,
-			imgsensor.frame_length & 0xFF);
-		//write_cmos_sensor(0x0104, 0x00);
+			// Extend frame length
+			write_cmos_sensor(0x0340,
+				imgsensor.frame_length & 0xffff);
 		}
 	} else {
 		// Extend frame length
-		//write_cmos_sensor(0x0104, 0x01);
-		write_cmos_sensor(0x0340,
-			imgsensor.frame_length >> 8);
-		write_cmos_sensor(0x0341,
-			imgsensor.frame_length & 0xFF);
-		//write_cmos_sensor(0x0104, 0x00);
+		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xffff);
 	}
 
 	// Update Shutter
-	//write_cmos_sensor(0x0104, 0x01);
-	write_cmos_sensor(0x0202, shutter >> 8);
-	write_cmos_sensor(0x0203, shutter  & 0xFF);
-	//write_cmos_sensor(0x0104, 0x00);
+	write_cmos_sensor(0x0202, shutter & 0xffff);
 	pr_info("Add for N3D! shutter =%d, framelength =%d\n",
 		shutter, imgsensor.frame_length);
 
