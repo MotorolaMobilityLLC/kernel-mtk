@@ -940,7 +940,8 @@ _ZeroPageArray(IMG_UINT32 uiNumToClean,
                pgprot_t pgprot)
 {
 	IMG_CPU_VIRTADDR pvAddr;
-	IMG_UINT32 uiMaxPagesToMap = PVR_LINUX_PHYSMEM_MAX_KMAP_PAGES;
+	IMG_UINT32 uiMaxPagesToMap = MIN(PVR_LINUX_PHYSMEM_MAX_KMAP_PAGES,
+					uiNumToClean);
 
 	/* Map and fill the pages with zeros.
 	 * For large page arrays do it PVR_LINUX_PHYSMEM_MAX_KMAP_SIZE
@@ -951,7 +952,11 @@ _ZeroPageArray(IMG_UINT32 uiNumToClean,
 		                        uiMaxPagesToMap :
 		                        uiNumToClean;
 
+#if !defined(CONFIG_64BIT) || defined(PVRSRV_FORCE_SLOWER_VMAP_ON_64BIT_BUILDS)
+		pvAddr = vmap(ppsCleanArray, uiToClean, VM_WRITE, pgprot);
+#else
 		pvAddr = vm_map_ram(ppsCleanArray, uiToClean, -1, pgprot);
+#endif
 		if (!pvAddr)
 		{
 			if (uiMaxPagesToMap <= 1)
@@ -971,7 +976,12 @@ _ZeroPageArray(IMG_UINT32 uiNumToClean,
 		}
 
 		OSDeviceMemSet(pvAddr, 0, PAGE_SIZE * uiToClean);
+
+#if !defined(CONFIG_64BIT) || defined(PVRSRV_FORCE_SLOWER_VMAP_ON_64BIT_BUILDS)
+		vunmap(pvAddr);
+#else
 		vm_unmap_ram(pvAddr, uiToClean);
+#endif
 
 		ppsCleanArray = &(ppsCleanArray[uiToClean]);
 		uiNumToClean -= uiToClean;
@@ -983,17 +993,20 @@ _ZeroPageArray(IMG_UINT32 uiNumToClean,
 static PVRSRV_ERROR
 _CleanupThread_CleanPages(void *pvData)
 {
-	PVRSRV_ERROR eError;
 	LinuxCleanupData *psCleanupData = (LinuxCleanupData*) pvData;
 	LinuxPagePoolEntry *psPagePoolEntry = psCleanupData->psPoolEntry;
 	struct list_head *psPoolHead = NULL;
-	pgprot_t pgprot;
 	IMG_UINT32 *puiCounter = NULL;
-
+#if defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES)
+	PVRSRV_ERROR eError;
+	pgprot_t pgprot;
+	IMG_UINT32 i;
+#endif /* defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES) */
 
 	/* Get the correct pool for this caching mode. */
 	_GetPoolListHead(psCleanupData->ui32CPUCacheMode , &psPoolHead, &puiCounter);
 
+#if defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES)
 	switch(PVRSRV_CPU_CACHE_MODE(psCleanupData->ui32CPUCacheMode))
 	{
 		case PVRSRV_MEMALLOCFLAG_CPU_UNCACHED:
@@ -1016,7 +1029,6 @@ _CleanupThread_CleanPages(void *pvData)
 			goto eExit;
 	}
 
-#if defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES)
 	/* Map and fill the pages with zeros.
 	 * For large page arrays do it PVR_LINUX_PHYSMEM_MAX_KMAP_SIZE
 	 * at a time. */
@@ -1027,14 +1039,14 @@ _CleanupThread_CleanPages(void *pvData)
 	{
 		goto eExit;
 	}
-#endif
-
+#endif /* defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES) */
 
 	/* Lock down pool and add item */
 	_PagePoolLock();
 
 	/* Pool counters were already updated so don't do it here again*/
 
+	/* The pages are all zeroed so return them to the to the pool. */
 	list_add_tail(&psPagePoolEntry->sPagePoolItem, psPoolHead);
 
 	_DumpPoolStructure();
@@ -1045,46 +1057,47 @@ _CleanupThread_CleanPages(void *pvData)
 
 	return PVRSRV_OK;
 
+#if defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES)
 eExit:
-	/* If this was the last retry, give up and free pages to OS */
-	if ((psCleanupData->sCleanupWork.ui32RetryCount - 1) == 0)
-	{
-		IMG_UINT32 i;
+	/* we failed to zero the pages so return the error so we can */
+	/* retry during the next spin */
+	if ((psCleanupData->sCleanupWork.ui32RetryCount - 1) > 0)
+		return eError;
 
-		PVR_DPF((PVR_DBG_ERROR,
-						"%s: Deferred task error, freeing pages to OS.",
-						__func__));
-		_PagePoolLock();
+	/* this was the last retry, give up and free pages to OS */
+	PVR_DPF((PVR_DBG_ERROR,
+			"%s: Deferred task error, freeing pages to OS.",
+			__func__));
+	_PagePoolLock();
 
-		*puiCounter -= psPagePoolEntry->uiItemsRemaining;
+	*puiCounter -= psPagePoolEntry->uiItemsRemaining;
 
 #if defined(PVRSRV_ENABLE_PROCESS_STATS)
-		/* MemStats usually relies on having the bridge lock held, however
-		 * the page pool code may call PVRSRVStatsIncrMemAllocPoolStat and
-		 * PVRSRVStatsDecrMemAllocPoolStat without the bridge lock held, so
-		 * the page pool lock is used to ensure these calls are mutually
-		 * exclusive
-		 */
-		PVRSRVStatsDecrMemAllocPoolStat(PAGE_SIZE * psCleanupData->psPoolEntry->uiItemsRemaining);
+	/* MemStats usually relies on having the bridge lock held, however
+	 * the page pool code may call PVRSRVStatsIncrMemAllocPoolStat and
+	 * PVRSRVStatsDecrMemAllocPoolStat without the bridge lock held, so
+	 * the page pool lock is used to ensure these calls are mutually
+	 * exclusive
+	 */
+	size_t alloc_size =
+			PAGE_SIZE *
+			psCleanupData->psPoolEntry->uiItemsRemaining;
+	PVRSRVStatsDecrMemAllocPoolStat(alloc_size);
 #endif
 
-		_PagePoolUnlock();
+	_PagePoolUnlock();
 
-		for (i = 0; i < psCleanupData->psPoolEntry->uiItemsRemaining; i++)
-		{
-			_FreeOSPage(0,
-						IMG_TRUE,
-						psPagePoolEntry->ppsPageArray[i]);
-		}
-		OSFreeMemNoStats(psPagePoolEntry->ppsPageArray);
-		kmem_cache_free(g_psLinuxPagePoolCache, psPagePoolEntry);
-		OSFreeMem(psCleanupData);
+	for (i = 0; i < psCleanupData->psPoolEntry->uiItemsRemaining; i++)
+		_FreeOSPage(0, IMG_TRUE, psPagePoolEntry->ppsPageArray[i]);
 
-		OSAtomicDecrement(&g_iPoolCleanTasks);
-		eError = PVRSRV_OK;
-	}
+	OSFreeMemNoStats(psPagePoolEntry->ppsPageArray);
+	kmem_cache_free(g_psLinuxPagePoolCache, psPagePoolEntry);
+	OSFreeMem(psCleanupData);
 
-	return eError;
+	OSAtomicDecrement(&g_iPoolCleanTasks);
+
+	return PVRSRV_OK;
+#endif /* defined(PVR_LINUX_PHYSMEM_ZERO_ALL_PAGES) */
 }
 
 
@@ -1474,9 +1487,9 @@ _ApplyCacheMaintenance(PVRSRV_DEVICE_NODE *psDevNode,
 			 * at a time. */
 			while (uiNumToClean != 0)
 			{
-				IMG_UINT32 uiToClean = (uiNumToClean >= PVR_LINUX_PHYSMEM_MAX_KMAP_PAGES) ?
-											PVR_LINUX_PHYSMEM_MAX_KMAP_PAGES :
-											uiNumToClean;
+				IMG_UINT32 uiToClean = MIN(
+					PVR_LINUX_PHYSMEM_MAX_KMAP_PAGES,
+					uiNumToClean);
 				IMG_CPU_PHYADDR sUnused = {(uintptr_t)0xCAFEF00DDEADBEEF};
 
 				pvAddr = vm_map_ram(ppsCleanArray, uiToClean, -1, pgprot);
