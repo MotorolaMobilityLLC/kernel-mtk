@@ -542,9 +542,10 @@ static void tcpc_init_work(struct work_struct *work)
 	struct tcpc_device *tcpc = container_of(
 		work, struct tcpc_device, init_work.work);
 
+#ifndef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 	if (tcpc->desc.notifier_supply_num == 0)
 		return;
-
+#endif
 	pr_info("%s force start\n", __func__);
 
 	tcpc->desc.notifier_supply_num = 0;
@@ -553,6 +554,7 @@ static void tcpc_init_work(struct work_struct *work)
 
 int tcpc_schedule_init_work(struct tcpc_device *tcpc)
 {
+#ifndef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 	if (tcpc->desc.notifier_supply_num == 0)
 		return tcpc_device_irq_enable(tcpc);
 
@@ -560,6 +562,7 @@ int tcpc_schedule_init_work(struct tcpc_device *tcpc)
 
 	schedule_delayed_work(
 		&tcpc->init_work, msecs_to_jiffies(30*1000));
+#endif
 	return 0;
 }
 
@@ -672,6 +675,7 @@ int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
 		}
 	}
 
+#ifndef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 	if (tcp_dev->desc.notifier_supply_num == 0) {
 		pr_info("%s already started\n", __func__);
 		return 0;
@@ -685,7 +689,7 @@ int register_tcp_dev_notifier(struct tcpc_device *tcp_dev,
 		cancel_delayed_work(&tcp_dev->init_work);
 		tcpc_device_irq_enable(tcp_dev);
 	}
-
+#endif
 	return ret;
 }
 EXPORT_SYMBOL(register_tcp_dev_notifier);
@@ -831,12 +835,51 @@ static void __exit tcpc_class_exit(void)
 subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
+#ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
+static int __tcpc_class_complete_work(struct device *dev, void *data)
+{
+	struct tcpc_device *tcpc = dev_get_drvdata(dev);
+
+	if (tcpc != NULL) {
+		pr_info("%s = %s\n", __func__, dev_name(dev));
+#if 1
+		tcpc_device_irq_enable(tcpc);
+#else
+		schedule_delayed_work(&tcpc->init_work,
+			msecs_to_jiffies(1000));
+#endif
+	}
+	return 0;
+}
+
+static int __init tcpc_class_complete_init(void)
+{
+	if (!IS_ERR(tcpc_class)) {
+		class_for_each_device(tcpc_class, NULL, NULL,
+			__tcpc_class_complete_work);
+	}
+	return 0;
+}
+late_initcall_sync(tcpc_class_complete_init);
+#endif
+
 MODULE_DESCRIPTION("Richtek TypeC Port Control Core");
 MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
 MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.4_MTK
+ * (1) add CONFIG_TCPC_NOTIFIER_LATE_SYNC to
+ *      move irq_enable to late_initcall_sync stage
+ *      to prevent from notifier_supply_num setting wrong.
+ *
+ * 2.0.3_MTK
+ * (1) use local_irq_XXX to instead raw_local_irq_XXX
+ *      to fix lock prov WARNING
+ * (2) Remove unnecessary charger detect flow. it does
+ *      not need to switch BC1-2 path on otg_en
+ *
  * 2.0.2_MTK
  * (1) Fix Coverity and check patch issue
  * (2) Fix 32-bit project build error
@@ -844,3 +887,4 @@ MODULE_LICENSE("GPL");
  * 2.0.1_MTK
  *	First released PD3.0 Driver for MTK Platform
  */
+
