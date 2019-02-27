@@ -25,21 +25,21 @@
 #include "mdla_trace.h"
 #include "mdla_decoder.h"
 #include "met_mdlasys_events.h"
-#include "mdla_proc.h"
 
 #include <linux/kallsyms.h>
-//#include <linux/trace_events.h>
 #include <linux/preempt.h>
 
 #define TRACE_LEN 128
 #define PERIOD_DEFAULT 1000 // in micro-seconds (us)
 
 static struct hrtimer hr_timer;
+
 static u64 cfg_period;
-static u32 cfg_op_trace;
-static u32 cfg_cmd_trace;
-static u32 cfg_pmu_int;
-static u32 cfg_pmu_event[MDLA_PMU_COUNTERS];
+static int cfg_op_trace;
+static int cfg_cmd_trace;
+static int cfg_pmu_int;
+static int cfg_timer_en;
+static int timer_started;
 
 static noinline int tracing_mark_write(const char *buf)
 {
@@ -90,7 +90,7 @@ void mdla_trace_begin(const int cmd_num, void *cmd)
 			tracing_mark_write(buf);
 		}
 	}
-	pmu_reset_cycle();
+	pmu_reset_saved_cycle();
 }
 
 void mdla_trace_end(u32 cmd_id, u64 end, int mode)
@@ -106,7 +106,7 @@ void mdla_trace_end(u32 cmd_id, u64 end, int mode)
 		task_pid_nr(current),
 		cmd_id,
 		pmu_get_perf_cycle(),
-		end);
+		(unsigned long long) end);
 }
 
 /* MET: define to enable MET */
@@ -118,6 +118,7 @@ void mdla_trace_end(u32 cmd_id, u64 end, int mode)
 void mdla_dump_prof(struct seq_file *s)
 {
 	int i;
+	u32 c[MDLA_PMU_COUNTERS];
 
 #define _SHOW_VAL(t) \
 	mdla_print_seq(s, "%s=%lu\n", #t, (unsigned long)cfg_##t)
@@ -127,12 +128,10 @@ void mdla_dump_prof(struct seq_file *s)
 	_SHOW_VAL(op_trace);
 	_SHOW_VAL(pmu_int);
 
-	mdla_print_seq(s, "PMU_INT=%d\n",
-		(mdla_reg_read(MREG_TOP_G_INTP2) & MDLA_IRQ_PMU_INTE) ? 1 : 0);
-	mdla_print_seq(s, "PMU_CFG_PMCR=0x%x\n", pmu_reg_read(PMU_CFG_PMCR));
+	pmu_counter_event_get_all(c);
+
 	for (i = 0; i < MDLA_PMU_COUNTERS; i++)
-		mdla_print_seq(s, "c%d=0x%x\n", (i+1),
-			pmu_reg_read(PMU_EVENT_OFFSET +	(i * PMU_CNT_SHIFT)));
+		mdla_print_seq(s, "c%d=0x%x\n", (i+1), c[i]);
 }
 
 /*
@@ -142,7 +141,7 @@ static void mdla_profile_pmu_counter(int core)
 {
 	u32 c[MDLA_PMU_COUNTERS];
 
-	pmu_get_perf_counters(c);
+	pmu_counter_read_all(c);
 	mdla_debug("_id=c%d, c1=%u, c2=%u, c3=%u, c4=%u, c5=%u, c6=%u, c7=%u, c8=%u, c9=%u, c10=%u, c11=%u, c12=%u, c13=%u, c14=%u, c15=%u\n",
 		core,
 		c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7],
@@ -163,11 +162,11 @@ static void mdla_profile_register_read(void)
  */
 static enum hrtimer_restart mdla_profile_polling(struct hrtimer *timer)
 {
+	if (!cfg_period || !cfg_timer_en)
+		return HRTIMER_NORESTART;
+
 	/*call functions need to be called periodically*/
 	mdla_profile_register_read();
-
-	if (!cfg_period)
-		return HRTIMER_NORESTART;
 
 	hrtimer_forward_now(&hr_timer, ns_to_ktime(cfg_period * 1000));
 	return HRTIMER_RESTART;
@@ -201,15 +200,28 @@ static int mdla_profile_timer_stop(int wait)
 	return ret;
 }
 
+/* protected by cmd_list_lock @ mdla_main.c */
 int mdla_profile_start(void)
 {
-	mdla_profile_timer_start();
+	if (!cfg_timer_en)
+		return 0;
+
+	if (!timer_started) {
+		mdla_profile_timer_start();
+		timer_started = 1;
+	}
+
 	return 0;
 }
 
+/* protected by cmd_list_lock @ mdla_main.c */
 int mdla_profile_stop(int wait)
 {
-	mdla_profile_timer_stop(wait);
+	if (timer_started) {
+		mdla_profile_timer_stop(wait);
+		timer_started = 0;
+	}
+
 	return 0;
 }
 
@@ -220,11 +232,8 @@ static int mdla_profile_set_handle(const char *tag, u32 val)
 	mdla_debug("%s: %s=0x%x\n", __func__, tag, val);
 
 	if (sscanf(tag, "c%d", &counter) == 1) {
-		if (counter < 1 || counter > MDLA_PMU_COUNTERS)
-			return -EINVAL;
 		counter--;
-		cfg_pmu_event[counter] = val;
-		return pmu_event_set(counter, val);
+		return pmu_counter_event_save(counter, val);
 	}
 
 #define _SET_VAL(t) \
@@ -290,13 +299,11 @@ int mdla_profile(const char *str)
 	int ret = 0;
 
 	if (!strcmp(str, "start"))
-		ret = mdla_profile_start();
+		cfg_timer_en = 1;
 	else if (!strcmp(str, "stop"))
-		ret = mdla_profile_stop(1);
-	else if (!strcmp(str, "try_stop"))
-		ret = mdla_profile_stop(0);
+		cfg_timer_en = 0;
 	else if (!strcmp(str, "reset_counter"))
-		pmu_reset_counter();
+		pmu_reset_saved_counter();
 	else
 		ret = mdla_profile_set(str);
 
@@ -307,15 +314,10 @@ int mdla_profile(const char *str)
 /* restore trace settings after reset */
 int mdla_profile_reset(const char *str)
 {
-	int i;
-
 	if (cfg_pmu_int)
 		mdla_reg_set(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP2);
 	else
 		mdla_reg_clear(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP2);
-
-	for (i = 0; i < MDLA_PMU_COUNTERS; i++)
-		pmu_event_set(i, cfg_pmu_event[i]);
 
 	if (cfg_cmd_trace)
 		mdla_trace_custom("I|%d|MDLA|C|reset:%s",
@@ -330,7 +332,8 @@ int mdla_profile_init(void)
 	cfg_op_trace = 0;
 	cfg_cmd_trace = 0;
 	cfg_pmu_int = MDLA_TRACE_MODE_CMD;
-	memset(cfg_pmu_event, 0xFF, sizeof(cfg_pmu_event));
+	cfg_timer_en = 0;
+	timer_started = 0;
 
 	return 0;
 }

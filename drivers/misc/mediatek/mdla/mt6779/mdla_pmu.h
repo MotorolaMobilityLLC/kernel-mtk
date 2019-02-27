@@ -56,19 +56,29 @@ enum MDLA_PMU_MODE {
 
 #define MDLA_PMU_COUNTERS 15
 
-int pmu_event_set(u32 handle, u32 val);
-int pmu_set_perf_event(u32 interface, u32 event);
 unsigned int pmu_reg_read(u32 offset);
-int pmu_unset_perf_event(int handle);
-int pmu_get_perf_event(int handle);
-int pmu_get_perf_counter(int handle);
-void pmu_get_perf_counters(u32 out[MDLA_PMU_COUNTERS]);
+
+int pmu_counter_alloc(u32 interface, u32 event);
+int pmu_counter_free(int handle);
+int pmu_counter_event_save(u32 handle, u32 val);
+int pmu_counter_event_get(int handle);
+int pmu_counter_event_get_all(u32 out[MDLA_PMU_COUNTERS]);
+u32 pmu_counter_get(int handle);
+void pmu_counter_get_all(u32 out[MDLA_PMU_COUNTERS]);
+void pmu_counter_read_all(u32 out[MDLA_PMU_COUNTERS]);
+
+void pmu_reg_save(void);
+void pmu_clr_mode_save(u32 mode);
+
 u32 pmu_get_perf_start(void);
 u32 pmu_get_perf_end(void);
 u32 pmu_get_perf_cycle(void);
-void pmu_reset_counter(void);
-void pmu_reset_cycle(void);
-void pmu_perf_set_mode(u32 mode);
-void pmu_init(void);
 
-#endif /* KMOD_PMU_H_ */
+void pmu_reset_saved_counter(void);
+void pmu_reset_saved_cycle(void);
+
+void pmu_init(void);
+void pmu_reset(void);
+
+#endif
+
