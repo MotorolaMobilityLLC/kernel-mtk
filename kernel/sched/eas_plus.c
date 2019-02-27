@@ -38,6 +38,7 @@ update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 	if (!sched_feat(SCHED_MTK_EAS))
 		return;
 
+
 	do {
 		struct sg_lb_stats *sgs = &tmp_sgs;
 		int local_group;
@@ -50,7 +51,13 @@ update_system_overutilized(struct lb_env *env, struct sd_lb_stats *sds)
 
 		this_cpu = smp_processor_id();
 		max_capacity = cpu_rq(this_cpu)->rd->max_cpu_capacity.val;
+
+		memset(sgs, 0, sizeof(*sgs));
+
 		for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
+
+			if (cpu_isolated(i))
+				continue;
 
 			sgs->group_util += cpu_util(i);
 			if (cpu_overutilized(i)) {
