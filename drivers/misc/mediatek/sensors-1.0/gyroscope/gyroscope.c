@@ -784,7 +784,7 @@ int gyro_data_report(struct gyro_data *data)
 			       event.time_stamp);
 	err = sensor_input_event(gyro_context_obj->mdev.minor, &event);
 	if (err < 0)
-		pr_err(
+		pr_err_ratelimited(
 			"gyro_data_report failed due to event buffer full\n");
 	return err;
 }
