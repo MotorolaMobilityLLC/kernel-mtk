@@ -35,7 +35,7 @@
 
 #include "zram_drv.h"
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 #define GUARD_BYTES_LENGTH	64
 #define GUARD_BYTES_HALFLEN	32
 #define GUARD_BYTES		(0x0)
@@ -576,7 +576,7 @@ static void zram_free_page(struct zram *zram, size_t index)
 	zram_set_obj_size(meta, index, 0);
 }
 
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 static void zram_check_guardbytes(unsigned char *cmem, bool is_header)
 {
 	int idx;
@@ -620,6 +620,31 @@ static void dump_object(unsigned char *cmem, size_t tlen)
 
 	pr_info("\n!!!!!!!!!\n");
 }
+#else
+static void check_compressed_data(unsigned char *cmem, size_t tlen)
+{
+#define MAX_PROPRATION_SHIFT	(3)
+
+	size_t nz_count = 0;
+	int idx;
+
+	/*
+	 * View it as being full of zero -
+	 * ZRAM compressed data should not contains lots of zero due to
+	 * its compression algorithm. So we judge it with the following
+	 * formula,
+	 * the number of non-zero bytes < (tlen >> MAX_PROPRATION_SHIFT)
+	 */
+	for (idx = 0; idx < tlen; idx++) {
+		if (*cmem++)
+			nz_count++;
+	}
+
+	if (nz_count < (tlen >> MAX_PROPRATION_SHIFT))
+		pr_info("%s: full of zero!\n", __func__);
+
+#undef MAX_PROPRATION_SHIFT
+}
 #endif
 
 static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
@@ -643,7 +668,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 	if (size == PAGE_SIZE) {
 		memcpy(mem, cmem, PAGE_SIZE);
-#ifndef CONFIG_MT_ENG_BUILD
+#ifndef CONFIG_MTK_ENG_BUILD
 	} else {
 		struct zcomp_strm *zstrm = zcomp_stream_get(zram->comp);
 
@@ -652,6 +677,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	}
 #else
 	} else {
+		struct zcomp_strm *zstrm = zcomp_stream_get(zram->comp);
 		zram_check_guardbytes(cmem, true);
 		ret = zcomp_decompress(zstrm, cmem, size, mem);
 		zcomp_stream_put(zram->comp);
@@ -665,9 +691,14 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	if (unlikely(ret)) {
 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
 		return ret;
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 		dump_object(cmem, size + GUARD_BYTES_LENGTH);
+		zs_unmap_object(meta->mem_pool, handle);
+#else
+		/* Try to identify which pattern it contains */
+		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
+		check_compressed_data(cmem, size);
 		zs_unmap_object(meta->mem_pool, handle);
 #endif
 	}
@@ -851,7 +882,7 @@ compress_again:
 		memcpy(cmem, src, PAGE_SIZE);
 		kunmap_atomic(src);
 	} else {
-#ifdef CONFIG_MT_ENG_BUILD
+#ifdef CONFIG_MTK_ENG_BUILD
 		if (clen < PAGE_SIZE) {
 			int idx;
 
