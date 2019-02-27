@@ -171,7 +171,7 @@ static ssize_t resource_req_read(struct file *filp,
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
 			"[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
 	p += scnprintf(p, DBG_BUF_LEN - strlen(dbg_buf),
-			"[5] CONN, [6] MSDC\n");
+			"[5] CONN, [6] MSDC, [7] SCP\n");
 
 	len = p - dbg_buf;
 
