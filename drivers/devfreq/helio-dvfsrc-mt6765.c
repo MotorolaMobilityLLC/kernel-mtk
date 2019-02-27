@@ -17,6 +17,7 @@
 
 #include <mtk_dramc.h>
 #include <mt-plat/upmu_common.h>
+#include <ext_wd_drv.h>
 
 #include <helio-dvfsrc.h>
 #include <mtk_dvfsrc_reg.h>
@@ -153,6 +154,7 @@ static struct notifier_block dvfsrc_fb_notifier = {
 void helio_dvfsrc_platform_init(void)
 {
 	fb_register_client(&dvfsrc_fb_notifier);
+	mtk_rgu_cfg_dvfsrc(1);
 }
 
 void get_opp_info(char *p)
@@ -169,75 +171,122 @@ void get_opp_info(char *p)
 
 void get_dvfsrc_reg(char *p)
 {
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_BASIC_CONTROL",
 			dvfsrc_read(DVFSRC_BASIC_CONTROL));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_LEVEL",
-			dvfsrc_read(DVFSRC_LEVEL));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_SW_REQ",
-			dvfsrc_read(DVFSRC_SW_REQ));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_SW_REQ2",
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x\n",
+			"DVFSRC_SW_REQ(2)",
+			dvfsrc_read(DVFSRC_SW_REQ),
 			dvfsrc_read(DVFSRC_SW_REQ2));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_SEC_SW_REQ",
-			dvfsrc_read(DVFSRC_SEC_SW_REQ));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_VCORE_REQUEST",
-			dvfsrc_read(DVFSRC_VCORE_REQUEST));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_VCORE_REQUEST2",
-			dvfsrc_read(DVFSRC_VCORE_REQUEST2));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_EMI_REQUEST",
-			dvfsrc_read(DVFSRC_EMI_REQUEST));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_EMI_REQUEST2",
-			dvfsrc_read(DVFSRC_EMI_REQUEST2));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_EMI_REQUEST3",
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_EMI_QOS0(1)(2)",
+			dvfsrc_read(DVFSRC_EMI_QOS0),
+			dvfsrc_read(DVFSRC_EMI_QOS1),
+			dvfsrc_read(DVFSRC_EMI_QOS2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_EMI_REQUEST(2)(3)",
+			dvfsrc_read(DVFSRC_EMI_REQUEST),
+			dvfsrc_read(DVFSRC_EMI_REQUEST2),
 			dvfsrc_read(DVFSRC_EMI_REQUEST3));
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_EMI_MD2SPM0~2",
+			dvfsrc_read(DVFSRC_EMI_MD2SPM0),
+			dvfsrc_read(DVFSRC_EMI_MD2SPM1),
+			dvfsrc_read(DVFSRC_EMI_MD2SPM2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_EMI_MD2SPM0~2_T",
+			dvfsrc_read(DVFSRC_EMI_MD2SPM0_T),
+			dvfsrc_read(DVFSRC_EMI_MD2SPM1_T),
+			dvfsrc_read(DVFSRC_EMI_MD2SPM2_T));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x\n",
+			"DVFSRC_VCORE_REQUEST(2)",
+			dvfsrc_read(DVFSRC_VCORE_REQUEST),
+			dvfsrc_read(DVFSRC_VCORE_REQUEST2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_VCORE_MD2SPM0~2",
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM0),
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM1),
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_VCORE_MD2SPM0~2_T",
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM0_T),
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM1_T),
+			dvfsrc_read(DVFSRC_VCORE_MD2SPM2_T));
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_MD_REQUEST",
 			dvfsrc_read(DVFSRC_MD_REQUEST));
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_INT",
 			dvfsrc_read(DVFSRC_INT));
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"DVFSRC_INT_EN",
+			dvfsrc_read(DVFSRC_INT_EN));
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"DVFSRC_LEVEL",
+			dvfsrc_read(DVFSRC_LEVEL));
+	p += sprintf(p, "%-24s: %d, %d, %d, %d, %d\n",
+			"DVFSRC_SW_BW_0~4",
+			dvfsrc_read(DVFSRC_SW_BW_0),
+			dvfsrc_read(DVFSRC_SW_BW_1),
+			dvfsrc_read(DVFSRC_SW_BW_2),
+			dvfsrc_read(DVFSRC_SW_BW_3),
+			dvfsrc_read(DVFSRC_SW_BW_4));
+}
+
+void get_dvfsrc_record(char *p)
+{
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_FORCE",
 			dvfsrc_read(DVFSRC_FORCE));
-	p += sprintf(p, "%-24s: 0x%x\n",
-			"DVFSRC_RECORD_COUNT",
-			dvfsrc_read(DVFSRC_RECORD_COUNT));
-	p += sprintf(p, "%-24s: 0x%x\n",
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"DVFSRC_SEC_SW_REQ",
+			dvfsrc_read(DVFSRC_SEC_SW_REQ));
+	p += sprintf(p, "%-24s: 0x%08x\n",
 			"DVFSRC_LAST",
 			dvfsrc_read(DVFSRC_LAST));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
-			"DVFSRC_RECORD_0_1~3_1",
-			dvfsrc_read(DVFSRC_RECORD_0_1),
-			dvfsrc_read(DVFSRC_RECORD_1_1),
-			dvfsrc_read(DVFSRC_RECORD_2_1),
-			dvfsrc_read(DVFSRC_RECORD_3_1));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
-			"DVFSRC_RECORD_4_1~7_1",
-			dvfsrc_read(DVFSRC_RECORD_4_1),
-			dvfsrc_read(DVFSRC_RECORD_5_1),
-			dvfsrc_read(DVFSRC_RECORD_6_1),
-			dvfsrc_read(DVFSRC_RECORD_7_1));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
-			"DVFSRC_RECORD_0_0~3_0",
+	p += sprintf(p, "%-24s: 0x%08x\n",
+			"DVFSRC_MD_SCENARIO",
+			dvfsrc_read(DVFSRC_MD_SCENARIO));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_0_0~0_2",
 			dvfsrc_read(DVFSRC_RECORD_0_0),
+			dvfsrc_read(DVFSRC_RECORD_0_1),
+			dvfsrc_read(DVFSRC_RECORD_0_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_1_0~1_2",
 			dvfsrc_read(DVFSRC_RECORD_1_0),
+			dvfsrc_read(DVFSRC_RECORD_1_1),
+			dvfsrc_read(DVFSRC_RECORD_1_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_2_0~2_2",
 			dvfsrc_read(DVFSRC_RECORD_2_0),
-			dvfsrc_read(DVFSRC_RECORD_3_0));
-	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
-			"DVFSRC_RECORD_4_0~7_0",
+			dvfsrc_read(DVFSRC_RECORD_2_1),
+			dvfsrc_read(DVFSRC_RECORD_2_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_3_0~3_2",
+			dvfsrc_read(DVFSRC_RECORD_3_0),
+			dvfsrc_read(DVFSRC_RECORD_3_1),
+			dvfsrc_read(DVFSRC_RECORD_3_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_4_0~4_2",
 			dvfsrc_read(DVFSRC_RECORD_4_0),
+			dvfsrc_read(DVFSRC_RECORD_4_1),
+			dvfsrc_read(DVFSRC_RECORD_4_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_5_0~5_2",
 			dvfsrc_read(DVFSRC_RECORD_5_0),
+			dvfsrc_read(DVFSRC_RECORD_5_1),
+			dvfsrc_read(DVFSRC_RECORD_5_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_6_0~6_2",
 			dvfsrc_read(DVFSRC_RECORD_6_0),
-			dvfsrc_read(DVFSRC_RECORD_7_0));
+			dvfsrc_read(DVFSRC_RECORD_6_1),
+			dvfsrc_read(DVFSRC_RECORD_6_2));
+	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x\n",
+			"DVFSRC_RECORD_7_0~7_2",
+			dvfsrc_read(DVFSRC_RECORD_7_0),
+			dvfsrc_read(DVFSRC_RECORD_7_1),
+			dvfsrc_read(DVFSRC_RECORD_7_2));
 	p += sprintf(p, "%-24s: 0x%08x, 0x%08x, 0x%08x, 0x%08x\n",
 			"DVFSRC_RECORD_MD_0~3",
 			dvfsrc_read(DVFSRC_RECORD_MD_0),
@@ -250,5 +299,8 @@ void get_dvfsrc_reg(char *p)
 			dvfsrc_read(DVFSRC_RECORD_MD_5),
 			dvfsrc_read(DVFSRC_RECORD_MD_6),
 			dvfsrc_read(DVFSRC_RECORD_MD_7));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"DVFSRC_RECORD_COUNT",
+			dvfsrc_read(DVFSRC_RECORD_COUNT));
 }
 
