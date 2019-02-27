@@ -2710,7 +2710,7 @@ static void cmdq_core_parse_handle_error(const struct cmdqRecStruct *handle,
 	u32 addr = 0;
 	const char *module = NULL;
 	int isSMIHang = 0;
-	dma_addr_t curr_pc;
+	dma_addr_t curr_pc = 0;
 	u32 tmp_instr[2] = { 0 };
 	struct cmdq_client *client;
 
@@ -3003,33 +3003,23 @@ static void cmdq_core_dump_handle_with_engine_flag(
 #endif
 }
 
-static void cmdq_core_dump_status(
-	const struct cmdqRecStruct *handle, const char *tag)
+static void cmdq_core_dump_status(const char *tag)
 {
 	s32 coreExecThread = CMDQ_INVALID_THREAD;
 	u32 value[6] = { 0 };
-	u32 irq;
-	struct cmdq_client *client;
-
-	if (handle && handle->timeout_info)
-		irq = handle->timeout_info->irq;
-	else
-		irq = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS);
-
-	client = cmdq_clients[handle->thread];
-	cmdq_task_get_thread_irq(client->chan, &irq);
 
 	value[0] = CMDQ_REG_GET32(CMDQ_CURR_LOADED_THR);
 	value[1] = CMDQ_REG_GET32(CMDQ_THR_EXEC_CYCLES);
 	value[2] = CMDQ_REG_GET32(CMDQ_THR_TIMEOUT_TIMER);
 	value[3] = CMDQ_REG_GET32(CMDQ_BUS_CONTROL_TYPE);
+	value[4] = CMDQ_REG_GET32(CMDQ_CURR_IRQ_STATUS);
 
 	/* this returns (1 + index of least bit set) or 0 if input is 0. */
 	coreExecThread = __builtin_ffs(value[0]) - 1;
 
 	CMDQ_LOG(
 		"[%s]IRQ:0x%08x Execing:%d Thread:%d CURR_LOADED_THR:0x%08x THR_EXEC_CYCLES:0x%08x\n",
-		tag, irq, (0x80000000 & value[0]) ? 1 : 0,
+		tag, value[4], (0x80000000 & value[0]) ? 1 : 0,
 		 coreExecThread, value[0], value[1]);
 	CMDQ_LOG(
 		"[%s]THR_TIMER:0x%x BUS_CTRL:0x%x DEBUG: 0x%x 0x%x 0x%x 0x%x\n",
@@ -3174,7 +3164,7 @@ static void cmdq_core_dump_error_handle(const struct cmdqRecStruct *handle,
 		handle, printEngineFlag, thread);
 
 	CMDQ_ERR("============ [CMDQ] CMDQ Status ============\n");
-	cmdq_core_dump_status(handle, "ERR");
+	cmdq_core_dump_status("ERR");
 
 	CMDQ_ERR("============ [CMDQ] Clock Gating Status ============\n");
 	CMDQ_ERR("[CLOCK] common clock ref:%d\n",
@@ -4840,7 +4830,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 			"===== SW timeout Pre-dump %d handle:0x%p pkt:0x%p thread:%d state:%d =====\n",
 			count, handle, handle->pkt, handle->thread,
 			handle->state);
-		cmdq_core_dump_status(handle, "INFO");
+		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(handle, handle->thread, "INFO");
 		cmdq_core_dump_thread(handle, handle->thread, "INFO");
 
