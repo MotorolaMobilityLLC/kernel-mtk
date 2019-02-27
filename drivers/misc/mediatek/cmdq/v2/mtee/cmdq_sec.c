@@ -19,8 +19,12 @@
 #if defined(CMDQ_SECURE_PATH_SUPPORT)
 /* secure path header */
 #include "cmdqSecTl_Api.h"
-#include "tz_cross/ta_mem.h"
 #endif
+
+
+#include "tz_cross/ta_mem.h"
+#include "tz_cross/trustzone.h"
+#include "kree/mem.h"
 
 static atomic_t gDebugSecSwCopy = ATOMIC_INIT(0);
 static atomic_t gDebugSecCmdId = ATOMIC_INIT(0);
@@ -454,10 +458,10 @@ static int32_t cmdq_sec_execute_session_unlocked(cmdqSecContextHandle handle)
 
 	do {
 		/* Register share memory */
-		MTEEC_PARAM cmdq_param[4];
+		union MTEEC_PARAM cmdq_param[4];
 		unsigned int paramTypes;
 		KREE_SHAREDMEM_HANDLE cmdq_share_handle = 0;
-		KREE_SHAREDMEM_PARAM cmdq_shared_param;
+		struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
 		struct iwcCmdqMessage_t *pMessage =
 			(struct iwcCmdqMessage_t *)(handle->iwcMessage);
 #if 1
@@ -630,10 +634,10 @@ int32_t cmdq_sec_send_context_session_message(cmdqSecContextHandle handle,
 
 	do {
 		struct iwcCmdqMessage_t *pMessage =
-			(struct iwcCmdqMessage_t *)(handle->iwcMessage));
+			(struct iwcCmdqMessage_t *)(handle->iwcMessage);
 		/* fill message bufer */
 		/*debug level */
-		(pMessage->debug.logLevel =
+		pMessage->debug.logLevel =
 			cmdq_sec_get_sec_print_count()
 				? LOG_LEVEL_MSG
 				: cmdq_sec_get_log_level();
@@ -1202,7 +1206,7 @@ int32_t cmdqSecRegisterSecureBuffer(struct transmitBufferStruct *pSecureData)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	int32_t status = 0;
-	KREE_SHAREDMEM_PARAM cmdq_shared_param;
+	struct KREE_SHAREDMEM_PARAM cmdq_shared_param;
 	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
 
 	do {
@@ -1248,7 +1252,7 @@ int32_t cmdqSecServiceCall(struct transmitBufferStruct *pSecureData,
 			   int32_t cmd)
 {
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	MTEEC_PARAM cmdq_param[4];
+	union MTEEC_PARAM cmdq_param[4];
 	unsigned int paramTypes = TZ_ParamTypes1(TZPT_MEMREF_INPUT);
 	TZ_RESULT tzRes = TZ_RESULT_SUCCESS;
 
