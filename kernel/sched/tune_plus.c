@@ -10,7 +10,59 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+
 int sys_boosted;
+
+int stune_task_threshold_for_perf_idx(bool filter)
+{
+	if (!default_stune_threshold)
+		return -EINVAL;
+
+	if (filter)
+		stune_task_threshold = default_stune_threshold;
+	else
+		stune_task_threshold = 0;
+
+#if MET_STUNE_DEBUG
+	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
+#endif
+	return 0;
+}
+
+int capacity_min_write_for_perf_idx(int idx, int capacity_min)
+{
+	struct schedtune *ct = allocated_group[idx];
+
+	if (!ct)
+		return -EINVAL;
+
+	if (capacity_min < 0 || capacity_min > 1024) {
+		printk_deferred("warning: capacity_min should be 0~1024\n");
+		if (capacity_min > 1024)
+			capacity_min = 1024;
+		else if (capacity_min < 0)
+			capacity_min = 0;
+	}
+
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+	set_cap_min_freq(capacity_min);
+#endif
+	rcu_read_lock();
+	ct->capacity_min = capacity_min;
+
+	/* Update CPU capacity_min */
+	schedtune_boostgroup_update_capacity_min(ct->idx, ct->capacity_min);
+	rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+	/* top-app */
+	if (ct->idx == 3)
+		met_tag_oneshot(0, "sched_boost_top_capacity_min",
+				ct->capacity_min);
+#endif
+
+	return 0;
+}
 
 int boost_write_for_perf_idx(int group_idx, int boost_value)
 {
@@ -20,17 +72,58 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int idx = 0;
 	int ctl_no = div64_s64(boost_value, 1000);
 	int cluster;
+	int cap_min = 0;
 #if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	bool dvfs_on_demand = false;
 	int floor = 0;
 	int i;
 	int c0, c1;
+	int dvfs_floor;
 #endif
 
 	switch (ctl_no) {
 	case 4:
+		/* min cpu capacity request */
+		boost_value -= ctl_no * 1000;
+
+		if (boost_value < 0 || boost_value > 100) {
+			printk_deferred("warning: boost for capacity_min should be 0~100\n");
+			if (boost_value > 100)
+				boost_value = 100;
+			else if (boost_value < 0)
+				boost_value = 0;
+		}
+
+		ct = allocated_group[group_idx];
+		if (ct) {
+			cap_min = div64_s64(boost_value * 1024, 100);
+
+#if 0 /*#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
+			set_cap_min_freq(cap_min);
+#endif
+			rcu_read_lock();
+			ct->capacity_min = cap_min;
+			/* Update CPU capacity_min */
+			schedtune_boostgroup_update_capacity_min(
+						ct->idx, ct->capacity_min);
+			rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+			/* top-app */
+			if (ct->idx == 3)
+				met_tag_oneshot(
+					0, "sched_boost_top_capacity_min",
+					ct->capacity_min);
+#endif
+		}
+
+		/* boost4xxx: no boost only capacity_min */
+		boost_value = 0;
+
+		stune_task_threshold = default_stune_threshold;
+		break;
 	case 3:
-		/* dvfs floor */
+		/* a floor of cpu frequency */
 		boost_value -= ctl_no * 1000;
 		cluster = (int)boost_value / 100;
 		boost_value = (int)boost_value % 100;
@@ -87,15 +180,38 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		boost_value = -100;
 
 #if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
-	if (!floor) {
-		for (i = 0; i < cpu_cluster_nr; i++)
+	for (i = 0; i < cpu_cluster_nr; i++) {
+		if (!floor)
 			min_boost_freq[i] = 0;
+		if (!cap_min)
+			cap_min_freq[i] = 0;
+
+#if MET_STUNE_DEBUG
+		met_tag_oneshot(0, met_dvfs_info2[i], min_boost_freq[i]);
+		met_tag_oneshot(0, met_dvfs_info3[i], cap_min_freq[i]);
+#endif
+	}
+
+	if (!cap_min) {
+		ct = allocated_group[group_idx];
+		if (ct) {
+			rcu_read_lock();
+			ct->capacity_min = 0;
+			/* Update CPU capacity_min */
+			schedtune_boostgroup_update_capacity_min(
+					ct->idx, ct->capacity_min);
+			rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+			/* top-app */
+			if (ct->idx == 3)
+				met_tag_oneshot(
+					0, "sched_boost_top_capacity_min",
+					ct->capacity_min);
+#endif
+		}
 	}
 #endif
-
-	/* bypass change boost */
-	if (ctl_no == 4)
-		return 0;
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
@@ -133,6 +249,16 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 			/* Update CPU boost */
 			schedtune_boostgroup_update(ct->idx, ct->boost);
 			rcu_read_unlock();
+
+#if MET_STUNE_DEBUG
+			/* foreground */
+			if (ct->idx == 1)
+				met_tag_oneshot(0, "sched_boost_fg", ct->boost);
+			/* top-app */
+			if (ct->idx == 3)
+				met_tag_oneshot(
+					0, "sched_boost_top", ct->boost);
+#endif
 
 			if (!global_negative_flag)
 				break;
