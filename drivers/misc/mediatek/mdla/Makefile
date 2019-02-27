@@ -16,7 +16,11 @@ obj-$(CONFIG_MACH_MT6779) += 1.0/
 
 ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6779))
 endif
-
+MTK_MDLA_CORE := 1
+ifneq (,$(filter $(strip $(MTK_PLATFORM)), mt6779))
+MTK_MDLA_CORE := 1
+else
+endif
 subdir-ccflags-y += -DMTK_MDLA_CORE=$(MTK_MDLA_CORE)
 subdir-ccflags-y += -DMTK_MDLA_DVT
 

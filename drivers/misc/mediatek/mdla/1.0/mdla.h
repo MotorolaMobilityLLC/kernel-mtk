@@ -37,5 +37,26 @@ unsigned int mdla_dump_reg(void)
 }
 #endif
 
+#ifndef MTK_MDLA_FPGA_PORTING
+int mdla_set_power_parameter(uint8_t param, int argc, int *args);
+int mdla_dump_power(struct seq_file *s);
+int mdla_dump_opp_table(struct seq_file *s);
+
+#else
+static inline int mdla_set_power_parameter(uint8_t param, int argc, int *args)
+{
+	return 0;
+}
+static inline int mdla_dump_power(struct seq_file *s)
+{
+	return 0;
+}
+static inline int mdla_dump_opp_table(struct seq_file *s)
+{
+	return 0;
+}
+
+#endif
+
 #endif
 
