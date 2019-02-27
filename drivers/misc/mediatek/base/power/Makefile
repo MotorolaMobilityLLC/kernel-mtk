@@ -26,3 +26,4 @@ obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT6758) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
+obj-$(CONFIG_MACH_MT6758) += cpuidle_v3/
