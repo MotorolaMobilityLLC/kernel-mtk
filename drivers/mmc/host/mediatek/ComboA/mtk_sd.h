@@ -364,7 +364,6 @@ struct msdc_host {
 #endif
 	u32                     data_timeout_cont; /* data continuous timeout */
 	bool                    tuning_in_progress;
-	bool			save_hs400_autok;
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
@@ -662,8 +661,8 @@ int msdc_switch_part(struct msdc_host *host, char part_id);
 int sdcard_hw_reset(struct mmc_host *mmc);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
-int msdc_try_restoring_autok_setting(struct msdc_host *host);
-void msdc_save_autok_setting(struct msdc_host *host);
+void msdc_restore_timing_setting(struct msdc_host *host);
+void msdc_save_timing_setting(struct msdc_host *host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 unsigned int msdc_do_cmdq_command(struct msdc_host *host,
@@ -688,8 +687,6 @@ void msdc_init_tune_setting(struct msdc_host *host);
 void msdc_ios_tune_setting(struct msdc_host *host, struct mmc_ios *ios);
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing);
 void msdc_sdio_restore_after_resume(struct msdc_host *host);
-void msdc_save_timing_setting(struct msdc_host *host, int save_mode);
-void msdc_restore_timing_setting(struct msdc_host *host);
 void msdc_set_bad_card_and_remove(struct msdc_host *host);
 void msdc_remove_card(struct work_struct *work);
 #ifdef CONFIG_HIE

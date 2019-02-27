@@ -30,7 +30,7 @@ void msdc_sdio_restore_after_resume(struct msdc_host *host)
 {
 }
 
-void msdc_save_autok_setting(struct msdc_host *host)
+void msdc_save_timing_setting(struct msdc_host *host)
 {
 	struct msdc_hw *hw = host->hw;
 	void __iomem *base = host->base, *base_top;
@@ -70,8 +70,6 @@ void msdc_save_autok_setting(struct msdc_host *host)
 		host->saved_para.pad_tune0 = MSDC_READ32(MSDC_PAD_TUNE0);
 		host->saved_para.pad_tune1 = MSDC_READ32(MSDC_PAD_TUNE1);
 	}
-
-	host->save_hs400_autok = 1;
 }
 
 void msdc_set_bad_card_and_remove(struct msdc_host *host)
@@ -302,14 +300,13 @@ done:
 	return ret;
 }
 
-int msdc_try_restoring_autok_setting(struct msdc_host *host)
+void msdc_restore_timing_setting(struct msdc_host *host)
 {
 	void __iomem *base = host->base, *base_top = host->base_top;
 	int emmc = (host->hw->host_function == MSDC_EMMC) ? 1 : 0;
 	int i;
 
-	if (host->error || host->save_hs400_autok == 0)
-		return 0;
+	autok_path_sel(host);
 
 	MSDC_WRITE32(SDC_CFG, host->saved_para.sdc_cfg);
 
@@ -365,8 +362,6 @@ int msdc_try_restoring_autok_setting(struct msdc_host *host)
 
 	if (host->use_hw_dvfs == 1)
 		msdc_dvfs_reg_restore(host);
-
-	return 1;
 }
 
 void msdc_init_tune_path(struct msdc_host *host, unsigned char timing)
