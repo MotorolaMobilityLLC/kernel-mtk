@@ -14,7 +14,11 @@
 #ifndef _MTK_UDI_H_
 #define _MTK_UDI_H_
 
-#if defined(CONFIG_MACH_MT6761)
+#if defined(CONFIG_MACH_MT3967)
+
+#include "udi_v1/mtk_udi_mt3967.h"
+
+#elif defined(CONFIG_MACH_MT6761)
 
 #include "udi_v1/mtk_udi_mt6761.h"
 
