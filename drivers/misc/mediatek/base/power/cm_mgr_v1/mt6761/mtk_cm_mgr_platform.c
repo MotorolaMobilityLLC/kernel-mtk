@@ -571,7 +571,7 @@ static int cm_mgr_is_lp_flavor(void)
 
 	len = sizeof(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES);
 
-	if (strncmp(CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES + len - 4,
+	if (strncmp(&CONFIG_BUILD_ARM64_DTB_OVERLAY_IMAGE_NAMES[len - 4],
 				"_lp", 3) == 0)
 		r = 1;
 
