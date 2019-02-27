@@ -161,6 +161,9 @@ static int commit_data(int type, int data, int check_spmfw)
 	if (check_spmfw)
 		mtk_spmfw_init(1, 0);
 
+	if (!is_spm_enabled())
+		return ret;
+
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
 	case PM_QOS_CPU_MEMORY_BANDWIDTH:
