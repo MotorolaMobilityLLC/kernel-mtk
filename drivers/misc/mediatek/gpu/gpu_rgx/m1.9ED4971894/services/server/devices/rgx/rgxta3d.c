@@ -4536,7 +4536,7 @@ fail_tacmdinit:
 	SyncAddrListRollbackCheckpoints(psRenderContext->psDeviceNode, &psRenderContext->sSyncAddrListTAUpdate);
 	SyncAddrListRollbackCheckpoints(psRenderContext->psDeviceNode, &psRenderContext->sSyncAddrList3DFence);
 	SyncAddrListRollbackCheckpoints(psRenderContext->psDeviceNode, &psRenderContext->sSyncAddrList3DUpdate);
-	if (pauiClientPRUpdateUFOAddress)
+	if (pauiClientPRUpdateUFOAddress && pauiClientPRUpdateUFOAddress != psRenderContext->sSyncAddrList3DUpdate.pasFWAddrs)
 	{
 		SyncCheckpointRollbackFromUFO(psRenderContext->psDeviceNode, pauiClientPRUpdateUFOAddress->ui32Addr);
 	}
