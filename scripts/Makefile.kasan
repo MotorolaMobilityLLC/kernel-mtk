@@ -5,7 +5,11 @@ else
 	call_threshold := 0
 endif
 
+ifdef CONFIG_KASAN_ENHANCEMENT
+KASAN_SHADOW_OFFSET ?= 0xefffff8800000000
+else
 KASAN_SHADOW_OFFSET ?= $(CONFIG_KASAN_SHADOW_OFFSET)
+endif
 
 CFLAGS_KASAN_MINIMAL := -fsanitize=kernel-address
 
@@ -23,6 +27,7 @@ else
 			$(call cc-option, -fsanitize=kernel-address \
 			-mllvm -asan-mapping-offset=$(KASAN_SHADOW_OFFSET)))
 
+
    ifeq ($(strip $(CFLAGS_KASAN_SHADOW)),)
       CFLAGS_KASAN := $(CFLAGS_KASAN_MINIMAL)
    else
@@ -36,4 +41,9 @@ else
    endif
 
 endif
+
+ifdef CONFIG_KASAN_ENHANCEMENT
+	CFLAGS_KASAN += $(call cc-param,asan-mapping-scale=4)
+endif
+
 endif

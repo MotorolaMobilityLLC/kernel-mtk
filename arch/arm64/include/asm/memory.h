@@ -78,12 +78,21 @@
 #define KERNEL_START      _text
 #define KERNEL_END        _end
 
+#ifdef CONFIG_KASAN
+#ifndef CONFIG_KASAN_ENHANCEMENT
 /*
  * The size of the KASAN shadow region. This should be 1/8th of the
  * size of the entire kernel virtual address space.
  */
-#ifdef CONFIG_KASAN
-#define KASAN_SHADOW_SIZE	(UL(1) << (VA_BITS - 3))
+#define KASAN_SHADOW_SCALE_SHIFT 3
+#else
+/*
+ * The size of the KASAN shadow region. This should be 1/16th of the
+ * size of the entire kernel virtual address space.
+ */
+#define KASAN_SHADOW_SCALE_SHIFT 4
+#endif
+#define KASAN_SHADOW_SIZE	(UL(1) << (VA_BITS - KASAN_SHADOW_SCALE_SHIFT))
 #else
 #define KASAN_SHADOW_SIZE	(0)
 #endif
