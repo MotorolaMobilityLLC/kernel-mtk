@@ -22,6 +22,10 @@
 
 #include "spm_v3/mtk_idle_mcdi.h"
 
+#elif defined(CONFIG_MACH_MT6765)
+
+#include "spm/mtk_idle.h"
+
 #endif
 
 #endif /* __MTK_IDLE_MCDI_COMMON_H__ */
