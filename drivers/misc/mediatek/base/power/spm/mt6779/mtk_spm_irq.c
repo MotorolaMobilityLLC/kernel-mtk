@@ -192,26 +192,25 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	struct twam_cfg twamsig;
 	u32 twam_idle_sel = 0;
 	struct twam_select twam_sel;
-
 	twam_handler_t twam_handler;
 
 	spin_lock_irqsave(&__spm_lock, flags);
 	/* get ISR status */
 	isr = spm_read(SPM_IRQ_STA);
 	if (isr & ISRS_TWAM) {
-		twamsig.byte0.id = spm_read(SPM_TWAM_LAST_STA0);
-		twamsig.byte1.id = spm_read(SPM_TWAM_LAST_STA1);
-		twamsig.byte2.id = spm_read(SPM_TWAM_LAST_STA2);
-		twamsig.byte3.id = spm_read(SPM_TWAM_LAST_STA3);
+		twamsig.byte[0].id = spm_read(SPM_TWAM_LAST_STA0);
+		twamsig.byte[1].id = spm_read(SPM_TWAM_LAST_STA1);
+		twamsig.byte[2].id = spm_read(SPM_TWAM_LAST_STA2);
+		twamsig.byte[3].id = spm_read(SPM_TWAM_LAST_STA3);
 		twam_idle_sel = spm_read(SPM_TWAM_IDLE_SEL);
-		twam_sel.signal0 = ((twam_idle_sel & 0x00000060) >> 5);
-		twam_sel.signal1 = ((twam_idle_sel & 0x00006000) >> 13);
-		twam_sel.signal2 = ((twam_idle_sel & 0x00600000) >> 21);
-		twam_sel.signal3 = ((twam_idle_sel & 0x60000000) >> 29);
-		twam_sel.id0 = (twam_idle_sel & 0x0000001F);
-		twam_sel.id1 = ((twam_idle_sel & 0x00001F00) >> 8);
-		twam_sel.id2 = ((twam_idle_sel & 0x001F0000) >> 16);
-		twam_sel.id3 = ((twam_idle_sel & 0x1F000000) >> 24);
+		twam_sel.signal[0] = ((twam_idle_sel & 0x00000060) >> 5);
+		twam_sel.signal[1] = ((twam_idle_sel & 0x00006000) >> 13);
+		twam_sel.signal[2] = ((twam_idle_sel & 0x00600000) >> 21);
+		twam_sel.signal[3] = ((twam_idle_sel & 0x60000000) >> 29);
+		twam_sel.id[0] = (twam_idle_sel & 0x0000001F);
+		twam_sel.id[1] = ((twam_idle_sel & 0x00001F00) >> 8);
+		twam_sel.id[2] = ((twam_idle_sel & 0x001F0000) >> 16);
+		twam_sel.id[3] = ((twam_idle_sel & 0x1F000000) >> 24);
 		udelay(40); /* delay 1T @ 32K */
 	}
 	/* clean ISR status */
