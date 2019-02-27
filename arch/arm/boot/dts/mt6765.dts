@@ -1663,13 +1663,15 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		#address-cells = <2>;
 		#size-cells = <2>;
 			/*CONN_MCU_CONFIG_BASE */
-		reg = <0 0x18002000 0 0x0200>,
+		reg = <0 0x18002000 0 0x1000>,
 			/*TOP_RGU_BASE */
 		    <0 0x10007000 0 0x0100>,
 			/*INFRACFG_AO_BASE */
 		    <0 0x10001000 0 0x1000>,
 			/*SPM_BASE */
 		    <0 0x10006000 0 0x1000>,
+			/*CONN_TOP_MISC_OFF_BASE */
+		    <0 0x180b1000 0 0x1000>,
 			/*CONN_MCU_CFG_ON_BASE */
 		    <0 0x180a3000 0 0x1000>,
 			/*CONN_MCU_CIRQ_BASE */
