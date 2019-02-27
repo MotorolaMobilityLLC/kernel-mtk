@@ -516,10 +516,12 @@ static const struct mtk_smi_larb_gen mtk_smi_larb_mt8173 = {
 
 static const struct mtk_smi_larb_gen mtk_smi_larb_mt2701 = {
 	.need_larbid = true,
+#if !IS_ENABLED(CONFIG_MTK_SMI_EXT)
 	.port_in_larb = {
 		LARB0_PORT_OFFSET, LARB1_PORT_OFFSET,
 		LARB2_PORT_OFFSET, LARB3_PORT_OFFSET
 	},
+#endif
 	.config_port = mtk_smi_larb_config_port_gen1,
 };
 
