@@ -20,7 +20,7 @@ enum {
 	NF_MCDI_SMC_EVENT
 };
 
-extern void aee_rr_rec_mcdi_val(int id, u32 val);
+extern void aee_rr_rec_mcdi_val(int id, unsigned int val);
 
 /* mtk_menu */
 unsigned int get_menu_predict_us(void);

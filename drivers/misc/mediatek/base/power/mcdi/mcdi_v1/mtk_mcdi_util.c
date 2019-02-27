@@ -12,6 +12,7 @@
  */
 #include <linux/printk.h>
 #include <linux/types.h>
+#include <linux/kconfig.h>
 
 #include <mtk_mcdi_util.h>
 #include <mtk_mcdi_plat.h>
@@ -26,6 +27,7 @@ static inline unsigned int mcdi_sspm_read(int id)
 	unsigned int val = 0;
 
 	sspm_mbox_read(MCDI_MBOX, id, &val, 1);
+
 	return val;
 }
 
@@ -36,11 +38,7 @@ static inline void mcdi_sspm_write(int id, unsigned int val)
 
 static inline int mcdi_sspm_ready(void)
 {
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	return true;
-#else
-	return false;
-#endif
+	return IS_BUILTIN(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) ? true : false;
 }
 
 static inline unsigned int mcdi_mcupm_read(int id)
@@ -92,3 +90,12 @@ int mcdi_fw_is_ready(void)
 {
 	return __mcdi_fw_is_ready();
 }
+
+unsigned long long idle_get_current_time_us(void)
+{
+	unsigned long long idle_current_time = sched_clock();
+
+	do_div(idle_current_time, 1000);
+	return idle_current_time;
+}
+
