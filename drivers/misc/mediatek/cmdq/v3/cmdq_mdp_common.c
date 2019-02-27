@@ -45,7 +45,7 @@ static struct pm_qos_request mdp_clk_qos_request[MDP_TOTAL_THREAD];
 static struct pm_qos_request isp_bw_qos_request[MDP_TOTAL_THREAD];
 static struct pm_qos_request isp_clk_qos_request[MDP_TOTAL_THREAD];
 static u64 g_freq_steps[MAX_FREQ_STEP];
-static u32 step_size;
+/* static u32 step_size; */
 
 #define CMDQ_LOG_PMQOS(string, args...) \
 do {			\
@@ -1313,8 +1313,9 @@ static void cmdq_mdp_init_pmqos(void)
 		  sizeof(isp_clk_qos_request[i].owner) - 1, "isp_clk_%d", i);
 	}
 	/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
-	result = mmdvfs_qos_get_freq_steps(PM_QOS_MDP_FREQ, &g_freq_steps[0],
-			&step_size);
+	/* result = mmdvfs_qos_get_freq_steps(PM_QOS_MDP_FREQ, &g_freq_steps[0],
+	 *		&step_size);
+	 */
 	if (g_freq_steps[0] == 0)
 		g_freq_steps[0] = 457;
 	if (result < 0)
