@@ -880,12 +880,27 @@ int rawbulk_start_transactions(int transfer_id, int nups, int ndowns, int upsz,
 	struct upstream_transaction *upstream;	/* upstream_copy; */
 	struct downstream_transaction *downstream, *downstream_copy;
 	struct cache_buf *c;
+	char name[20];
 
 	C2K_NOTE("%s\n", __func__);
 
 	transfer = id_to_transfer(transfer_id);
 	if (!transfer)
 		return -ENODEV;
+
+	memset(name, 0, 20);
+	snprintf(name, sizeof(name), "%s_flow_ctrl",
+			transfer_name[transfer_id]);
+	if (!transfer->flow_wq)
+		transfer->flow_wq = create_singlethread_workqueue(name);
+	if (!transfer->flow_wq)
+		return -ENOMEM;
+	memset(name, 0, 20);
+	snprintf(name, sizeof(name), "%s_tx_wq", transfer_name[transfer_id]);
+	if (!transfer->tx_wq)
+		transfer->tx_wq = create_singlethread_workqueue(name);
+	if (!transfer->tx_wq)
+		return -ENOMEM;
 
 	if (!rawbulk->cdev)
 		return -ENODEV;
@@ -1308,17 +1323,9 @@ static __init int rawbulk_init(void)
 		INIT_DELAYED_WORK(&t->delayed, downstream_delayed_work);
 		memset(name, 0, 20);
 		snprintf(name, sizeof(name), "%s_flow_ctrl", transfer_name[n]);
-		t->flow_wq = create_singlethread_workqueue(name);
-		if (!t->flow_wq)
-			return -ENOMEM;
-
 		INIT_WORK(&t->write_work, start_upstream);
 		memset(name, 0, 20);
 		snprintf(name, sizeof(name), "%s_tx_wq", transfer_name[n]);
-		t->tx_wq = create_singlethread_workqueue(name);
-		if (!t->tx_wq)
-			return -ENOMEM;
-
 		mutex_init(&t->modem_up_mutex);
 		mutex_init(&t->usb_up_mutex);
 		spin_lock_init(&t->lock);
@@ -1341,8 +1348,10 @@ static __exit void rawbulk_exit(void)
 	for (n = 0; n < _MAX_TID; n++) {
 		t = &rawbulk->transfer[n];
 		rawbulk_stop_transactions(n);
-		destroy_workqueue(t->flow_wq);
-		destroy_workqueue(t->tx_wq);
+		if (t->flow_wq)
+			destroy_workqueue(t->flow_wq);
+		if (t->tx_wq)
+			destroy_workqueue(t->tx_wq);
 	}
 	kfree(rawbulk);
 }
