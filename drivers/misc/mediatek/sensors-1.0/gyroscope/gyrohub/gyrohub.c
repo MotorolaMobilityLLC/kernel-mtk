@@ -632,8 +632,8 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 	}
 	spin_lock(&calibration_lock);
 	data[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
-	data[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
-	data[GYROHUB_AXIS_X] = obj->static_cali[GYROHUB_AXIS_X];
+	data[GYROHUB_AXIS_Y] = obj->static_cali[GYROHUB_AXIS_Y];
+	data[GYROHUB_AXIS_Z] = obj->static_cali[GYROHUB_AXIS_Z];
 	spin_unlock(&calibration_lock);
 #endif
 	return err;
