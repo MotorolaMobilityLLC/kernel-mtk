@@ -38,7 +38,7 @@ enum throttle_type {
  * extern int mt_cpufreq_set_by_schedule_load(unsigned int cpu,
  *		enum cpu_dvfs_sched_type state, unsigned int freq);
  */
-#ifdef CONFIG_MTK_BASE_POWER
+#ifdef CONFIG_MTK_CPU_FREQ
 extern int  mt_cpufreq_set_by_schedule_load_cluster(int cid, unsigned int freq);
 extern int  mt_cpufreq_set_by_wfi_load_cluster(int cid, unsigned int freq);
 extern unsigned int mt_cpufreq_find_close_freq(
