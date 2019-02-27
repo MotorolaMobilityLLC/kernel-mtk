@@ -305,6 +305,8 @@ menu "Security"
 config MTK_TEE_GP_SUPPORT
 	bool "Enable MTK GlobalPlatform support in TEE related modules"
 	default n
+	depends on (TRUSTONIC_TEE_SUPPORT) || (MICROTRUST_TEE_SUPPORT) || \
+	           (WATCHDATA_TEE_SUPPORT)
 	help
 	  GlobalPlatform defines common/consistent APIs and this option
 	  enables TEE related modules to use GPAPIs. (depending on
