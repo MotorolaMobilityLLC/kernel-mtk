@@ -112,6 +112,8 @@ static long compat_mtkfb_vsync_unlocked_ioctl(struct file *file,
 		return -ENOTTY;
 
 	data32 = compat_ptr(arg);
+	data = compat_alloc_user_space(sizeof(unsigned long));
+
 	err |= get_user(u, data32);
 	err |= put_user(u, data);
 
