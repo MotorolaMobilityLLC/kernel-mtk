@@ -533,7 +533,6 @@ int base_ops_mon_mode(struct eem_det *det)
 	else if (det_to_id(det) == EEM_DET_CCI)
 		ts_bank = THERMAL_BANK2;
 #if ENABLE_LOO
-	/* For share cci bank */
 	else if (det_to_id(det) == EEM_DET_L_HI)
 		ts_bank = THERMAL_BANK0;
 	else if (det_to_id(det) == EEM_DET_2L_HI)
@@ -1055,7 +1054,7 @@ static int eem_init1stress_thread_handler(void *data)
 			/* Clear EEM INIT interrupt EEMINTSTS = 0x00ff0000 */
 				eem_write(EEMINTSTS, 0x00ff0000);
 				det->eem_eemEn[EEM_PHASE_INIT01] = 0;
-				det->features = FEA_INIT01;
+				det->features &= FEA_INIT01;
 			}
 			mt_ptp_unlock(&flag);
 
@@ -1346,7 +1345,6 @@ static void eem_set_eem_volt(struct eem_det *det)
 			sizeof(det->volt_tbl)/2);
 		ctrl = id_to_eem_ctrl(det->ctrl_id);
 	} else if (det->ctrl_id == EEM_CTRL_2L_HI) {
-		/* For share cci bank */
 		det = id_to_eem_det(EEM_DET_2L);
 		memcpy(det->volt_tbl, org_det->volt_tbl,
 			sizeof(det->volt_tbl)/2);
@@ -1793,12 +1791,11 @@ static inline void handle_init02_isr(struct eem_det *det)
 			}
 			break;
 		case EEM_CTRL_2L_HI:
-		/* case EEM_CTRL_CCI, for cci share bank */
 			if (det->ctrl_id == EEM_CTRL_2L_HI) {
 				if (i < 8) {
 					aee_rr_rec_ptp_cpu_2_little_volt(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
-		(aee_rr_curr_ptp_cpu_big_volt() & ~
+		(aee_rr_curr_ptp_cpu_2_little_volt() & ~
 		((unsigned long long)(0xFF) << (8 * i))
 						)
 					);
@@ -1809,7 +1806,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			if (i  >= 8) {
 				aee_rr_rec_ptp_cpu_2_little_volt_1(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
-		(aee_rr_curr_ptp_cpu_big_volt_1() & ~
+		(aee_rr_curr_ptp_cpu_2_little_volt_1() & ~
 		((unsigned long long)(0xFF) << (8 * (i - 8)))
 					)
 				);
@@ -2096,7 +2093,7 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
 				if (i < 8) {
 					aee_rr_rec_ptp_cpu_2_little_volt(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * i)) |
-		(aee_rr_curr_ptp_cpu_big_volt() & ~
+		(aee_rr_curr_ptp_cpu_2_little_volt() & ~
 		((unsigned long long)(0xFF) << (8 * i))
 						)
 					);
@@ -2107,7 +2104,7 @@ div_u64((unsigned long long)tscpu_get_temp_by_bank(THERMAL_BANK2), 1000);
 			if (i  >= 8) {
 				aee_rr_rec_ptp_cpu_2_little_volt_1(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
-		(aee_rr_curr_ptp_cpu_big_volt_1() & ~
+		(aee_rr_curr_ptp_cpu_2_little_volt_1() & ~
 		((unsigned long long)(0xFF) << (8 * (i - 8)))
 					)
 				);
@@ -2461,7 +2458,7 @@ void eem_init01(void)
 			while (det->real_vboot != det->VBOOT) {
 				det->real_vboot = det->ops->volt_2_eem(det,
 					det->ops->get_volt(det));
-				if (timeout % 30000 == 0)
+				if (timeout++ % 300 == 0)
 					eem_error
 ("@%s():%d, get_volt(%s) = 0x%08X, VBOOT = 0x%08X\n",
 __func__, __LINE__, det->name, det->real_vboot, det->VBOOT);
