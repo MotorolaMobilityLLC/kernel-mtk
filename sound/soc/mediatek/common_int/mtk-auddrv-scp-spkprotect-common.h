@@ -80,4 +80,7 @@ void spkproc_service_ipicmd_send(
 				 uint16_t msg_id,
 				 uint32_t param1, uint32_t param2,
 				 char *payload);
+extern void scp_reset_check(void);
+extern atomic_t stop_send_ipi_flag;
+extern atomic_t scp_reset_done;
 #endif
