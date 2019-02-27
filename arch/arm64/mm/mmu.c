@@ -42,6 +42,7 @@
 #include <asm/tlb.h>
 #include <asm/memblock.h>
 #include <asm/mmu_context.h>
+#include <mt-plat/mtk_meminfo.h>
 
 u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
 
@@ -182,6 +183,17 @@ static inline bool use_1G_block(unsigned long addr, unsigned long next,
 
 	if (((addr | next | phys) & ~PUD_MASK) != 0)
 		return false;
+#ifdef CONFIG_MTK_SSMR
+	/*
+	 * SSMR will unmapping memory region which shared with kernel
+	 * and SVP to prevent illegal fetch of EMI MPU Violation.
+	 * Return false to make all memory become pmd mapping.
+	 */
+	if (memory_ssmr_inited()) {
+		pr_info("%s, memory-ssmr inited\n", __func__);
+		return false;
+	}
+#endif
 
 	return true;
 }
