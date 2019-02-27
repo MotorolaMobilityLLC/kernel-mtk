@@ -805,6 +805,15 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 
 			dump_input_cfg_info(&cfg->input_cfg[i],
 				session_id, is_err);
+
+			if (cfg->input_cfg[i].src_fmt ==
+					DISP_FORMAT_RGBA1010102 ||
+					cfg->input_cfg[i].src_fmt ==
+						DISP_FORMAT_RGBA_FP16) {
+				DISPERR
+					("disp can't process WCG fmt: %u\n",
+					cfg->input_cfg[i].src_fmt);
+			}
 		} else {
 			cfg->input_cfg[i].src_fence_struct = NULL;
 			DISPPR_FENCE("S+/%sL%d/e%d/id%d\n",
