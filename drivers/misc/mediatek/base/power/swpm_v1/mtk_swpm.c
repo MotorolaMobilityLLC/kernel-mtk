@@ -94,25 +94,17 @@ DEFINE_SPINLOCK(swpm_spinlock);
  ****************************************************************************/
 static char *_copy_from_user_for_proc(const char __user *buffer, size_t count)
 {
-	char *buf = (char *)__get_free_page(GFP_USER);
+	static char buf[64];
+	unsigned int len = 0;
 
-	if (!buf)
+	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
+
+	if (copy_from_user(buf, buffer, len))
 		return NULL;
 
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
+	buf[len] = '\0';
 
 	return buf;
-
-out:
-	free_page((unsigned long)buf);
-
-	return NULL;
 }
 
 static int dump_power_proc_show(struct seq_file *m, void *v)
@@ -167,7 +159,6 @@ static ssize_t debug_proc_write(struct file *file,
 	else
 		swpm_err("echo 1/0 > /proc/swpm/debug\n");
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -196,7 +187,6 @@ static ssize_t enable_proc_write(struct file *file,
 		swpm_err("echo <type or 65535> <0 or 1> > /proc/swpm/enable\n");
 #endif
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -240,7 +230,6 @@ static ssize_t profile_proc_write(struct file *file,
 	else
 		swpm_err("echo <1/0> > /proc/swpm/profile\n");
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -267,7 +256,6 @@ static ssize_t avg_window_proc_write(struct file *file,
 	else
 		swpm_err("echo <window> > /proc/swpm/avg_window\n");
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
