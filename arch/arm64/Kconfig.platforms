@@ -143,6 +143,7 @@ config MACH_MT6765
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
 	select MTK_TIMER_V1
+	select MTK_TIMER_TIMESYNC
 	select MTK_SYSTRACKER_V2
 	help
 	  This enables support for MediaTek MT6765
