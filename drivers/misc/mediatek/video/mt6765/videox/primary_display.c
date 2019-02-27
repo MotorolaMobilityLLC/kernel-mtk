@@ -3866,12 +3866,6 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
 	dpmgr_path_init(pgc->dpmgr_handle, use_cmdq);
 
-	/* need to force off top CG clock here
-	 * because we force it on in disp drv init stage
-	 */
-	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
-		ddp_clk_force_on(0);
-
 	/*
 	 * use fake timer to generate vsync signal for cmd mode w/o
 	 * LCM(originally using LCM TE Signal as VSYNC)
