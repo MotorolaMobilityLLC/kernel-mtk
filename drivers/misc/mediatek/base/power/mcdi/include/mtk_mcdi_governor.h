@@ -14,6 +14,8 @@
 #ifndef __MTK_MCDI_GOVERNOR_H__
 #define __MTK_MCDI_GOVERNOR_H__
 
+#include <linux/hrtimer.h>
+
 enum {
 	PAUSE_CNT	= 0,
 	MULTI_CORE_CNT,
@@ -31,6 +33,18 @@ struct mcdi_feature_status {
 	unsigned int pauseby;
 };
 
+struct mcdi_cluster_dev {
+	bool tmr_en;
+	bool chk_res_each_core;
+	bool use_max_remain;
+	bool tmr_running;
+
+	int cpu;
+	unsigned int chk_res_cnt;
+	unsigned int chk_res_fail;
+	struct hrtimer timer;
+};
+
 int mcdi_governor_select(int cpu, int cluster_idx);
 void mcdi_governor_reflect(int cpu, int state);
 void mcdi_avail_cpu_cluster_update(void);
@@ -39,6 +53,7 @@ void set_mcdi_enable_status(bool enabled);
 void set_mcdi_s_state(int state);
 void set_mcdi_idle_state(int cpu, int state);
 const struct mcdi_feature_status *get_mcdi_feature_stat(void);
+struct mcdi_cluster_dev *get_mcdi_cluster_dev(void);
 void get_mcdi_feature_status(struct mcdi_feature_status *stat);
 void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask);
 int get_residency_latency_result(int cpu);

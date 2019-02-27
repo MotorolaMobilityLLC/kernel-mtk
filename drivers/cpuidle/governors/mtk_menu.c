@@ -615,6 +615,13 @@ unsigned int get_menu_predict_us(void)
 	return data->predicted_us;
 }
 
+unsigned int get_menu_next_timer_us(void)
+{
+	struct menu_device *data = this_cpu_ptr(&menu_devices);
+
+	return data->next_timer_us;
+}
+
 static struct cpuidle_governor menu_governor = {
 	.name =		"mtk_menu",
 	.rating =	100,
