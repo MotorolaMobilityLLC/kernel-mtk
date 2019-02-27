@@ -118,7 +118,7 @@ do { \
 		__func__, __LINE__); \
 } while (0)
 
-/*-----------------------------------Enum Defination--------------------------------*/
+/*-------------------------------Enum Defination----------------------------*/
 /*IRQ sensetive type */
 enum _ENUM_IRQ_SENS_TYPE_ {
 	IRQ_SENS_EDGE = 0,
@@ -194,7 +194,7 @@ enum _MTK_BTIF_PM_OPID_ {
 
 #define BTIF_HAL_TX_FIFO_SIZE (1024 * 4)
 
-/*-----------------------------------Enum Defination End--------------------------------*/
+/*----------------------------Enum Defination End---------------------------*/
 
 /*****************************structure definition***************************/
 /*IRQ related information*/
@@ -218,7 +218,7 @@ struct _MTK_BTIF_IRQ_STR_ {
 struct _DMA_VFIFO_ {
 	/*[Driver Access] vFIFO memory'svirtual address */
 	unsigned char *p_vir_addr;
-	/*[HW Access] dma handle , physically address, set to DMA's HW Register */
+	/*[HW Access] dma handle, physical address, set to DMA's HW Register */
 	dma_addr_t phy_addr;
 	/*DMA's vFIFO size */
 	unsigned int vfifo_size;
@@ -288,12 +288,14 @@ struct _MTK_BTIF_INFO_STR_ {
 #define BTIF_READ32(REG)              __raw_readl((unsigned int *)(REG))
 
 #define BTIF_SET_BIT(REG, BITVAL)    do { \
-*((volatile unsigned int *)(REG)) |= ((unsigned int)(BITVAL)); \
+writel(readl((unsigned int *)(REG)) | ((unsigned int)(BITVAL)), \
+(unsigned int *)(REG)); \
 mb(); /**/ \
 } \
 while (0)
 #define BTIF_CLR_BIT(REG, BITVAL)    do { \
-(*(volatile unsigned int *)(REG)) &= ~((unsigned int)(BITVAL)); \
+writel(readl((unsigned int *)(REG)) & ~((unsigned int)(BITVAL)), \
+(unsigned int *)(REG)); \
 mb(); /**/\
 } \
 while (0)

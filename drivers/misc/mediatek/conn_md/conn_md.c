@@ -20,7 +20,8 @@ struct conn_md_struct g_conn_md;
 static struct conn_md_log_msg_info g_log_msg_info;
 
 static int _conn_md_del_msg_by_uid(uint32 u_id);
-static int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_id);
+static int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id,
+		uint32 dst_id);
 
 static unsigned long conn_md_log_msg_interval_ms(
 	struct conn_md_time_struct *p_begin,
@@ -115,7 +116,8 @@ int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 		if (p_user->u_id == u_id) {
 			/*if yes */
 			/*print warning information */
-			CONN_MD_WARN_FUNC("uid (0x%08x) is already registered, updating with newer one\n", u_id);
+			CONN_MD_WARN_FUNC("uid (0x%08x) registered, updating\n",
+					u_id);
 			break;
 		}
 		p_user = NULL;
@@ -140,7 +142,8 @@ int conn_md_add_user(uint32 u_id, struct conn_md_bridge_ops *p_ops)
 
 	p_user->state = USER_ENABLED;
 
-	CONN_MD_WARN_FUNC("uid (0x%08x) is added to user list successfully\n", p_user->u_id);
+	CONN_MD_WARN_FUNC("uid (0x%08x) is added to user list successfully\n",
+			p_user->u_id);
 	/*unlock user_list lock */
 	mutex_unlock(&p_user_list->lock);
 
@@ -164,7 +167,8 @@ int conn_md_del_user(uint32 u_id)
 		if (p_user->u_id == u_id) {
 			/*if yes */
 			/*print information */
-			CONN_MD_INFO_FUNC("uid (0x%08x) is registered, delete it\n", u_id);
+			CONN_MD_INFO_FUNC("uid(0x%08x) registered, delete it\n",
+					u_id);
 			break;
 		}
 		p_user = NULL;
@@ -173,7 +177,8 @@ int conn_md_del_user(uint32 u_id)
 	if (p_user == NULL) {
 		i_ret = CONN_MD_ERR_INVALID_PARAM;
 		/*print warning information */
-		CONN_MD_WARN_FUNC("uid (0x%08x) not found in user list..\n", u_id);
+		CONN_MD_WARN_FUNC("uid (0x%08x) not found in user list..\n",
+				u_id);
 	} else {
 		/*delete user info from user info list of target uid */
 		list_del(pos);
@@ -186,13 +191,15 @@ int conn_md_del_user(uint32 u_id)
 	/*unlock user_list lock */
 	mutex_unlock(&p_user_list->lock);
 
-	/*search all message enquued in p_msg_list and delete them before delete user */
+	/*search all message enquued in p_msg_list */
+	/* and delete them before delete user */
 	_conn_md_del_msg_by_uid(u_id);
 
 	return i_ret;
 }
 
-int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_id)
+int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id,
+		uint32 dst_id)
 {
 #define MAX_LENGTH_PER_PACKAGE 8
 
@@ -202,7 +209,8 @@ int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_
 	int counter = 0;
 
 	if (p_msg_list == NULL) {
-		CONN_MD_ERR_FUNC("invalid parameter, p_msg_list:0x%08x\n", p_msg_list);
+		CONN_MD_ERR_FUNC("invalid parameter, p_msg_list:0x%08x\n",
+				p_msg_list);
 		return CONN_MD_ERR_INVALID_PARAM;
 	}
 
@@ -214,10 +222,14 @@ int conn_md_dmp_msg(struct conn_md_queue *p_msg_list, uint32 src_id, uint32 dst_
 		    ((dst_id == 0) || (dst_id == p_msg->ilm.dest_mod_id))) {
 			counter++;
 			CONN_MD_INFO_FUNC
-			    ("p_msg:0x%08x, src_id:0x%08x, dest_id:0x%08x, msg_len:%d\n", p_msg,
-			     p_msg->ilm.src_mod_id, p_msg->ilm.dest_mod_id, p_msg->local_para.msg_len);
-			for (i = 0; (i < p_msg->local_para.msg_len) && (i < MAX_LENGTH_PER_PACKAGE); i++) {
-				CONN_MD_INFO_FUNC("%02x ", p_msg->local_para.data[i]);
+			("p_msg:0x%08x, src:0x%08x, dest:0x%08x, msg_len:%d\n",
+					p_msg, p_msg->ilm.src_mod_id,
+					p_msg->ilm.dest_mod_id,
+					p_msg->local_para.msg_len);
+			for (i = 0; (i < p_msg->local_para.msg_len) &&
+					(i < MAX_LENGTH_PER_PACKAGE); i++) {
+				CONN_MD_INFO_FUNC("%02x ",
+						p_msg->local_para.data[i]);
 				if (7 == (i % 8))
 					CONN_MD_INFO_FUNC("\n");
 			}
@@ -247,11 +259,13 @@ int _conn_md_del_msg_by_uid(uint32 u_id)
 
 		list_for_each(pos, &p_msg_list->list) {
 			p_msg = container_of(pos, struct conn_md_msg, entry);
-			if ((p_msg->ilm.dest_mod_id == u_id) || (p_msg->ilm.src_mod_id == u_id)) {
+			if ((p_msg->ilm.dest_mod_id == u_id) ||
+					(p_msg->ilm.src_mod_id == u_id)) {
 				flag = 1;
 				CONN_MD_DBG_FUNC
-				    ("message for uid(0x%08x) found in queue list, dest_id(0x%08x), src_id(0x%08x)\n",
-				     u_id, p_msg->ilm.dest_mod_id, p_msg->ilm.src_mod_id);
+				("uid(0x%08x)found,dest(0x%08x),src(0x%08x)\n",
+						u_id, p_msg->ilm.dest_mod_id,
+						p_msg->ilm.src_mod_id);
 				break;
 			}
 		}
@@ -280,7 +294,8 @@ int conn_md_send_msg(struct ipc_ilm *ilm)
 	struct conn_md_msg *p_new_msg = NULL;
 	uint32 msg_info_len = ilm->local_para_ptr->msg_len;
 
-	CONN_MD_DBG_FUNC("ilm:0x%08x, msg_len:%d\n", ilm, ilm->local_para_ptr->msg_len);
+	CONN_MD_DBG_FUNC("ilm:0x%08x, msg_len:%d\n", ilm,
+			ilm->local_para_ptr->msg_len);
 
 	/*malloc message structure for this msg */
 	msg_str_len = sizeof(struct conn_md_msg) + msg_info_len;
@@ -294,9 +309,11 @@ int conn_md_send_msg(struct ipc_ilm *ilm)
 		p_local_para = &p_new_msg->local_para;
 		p_new_msg->ilm.local_para_ptr = p_local_para;
 		/*copy local_para_ptr structure */
-		memcpy(p_local_para, ilm->local_para_ptr, sizeof(struct local_para));
+		memcpy(p_local_para, ilm->local_para_ptr,
+				sizeof(struct local_para));
 		/*copy data from local_para_ptr structure */
-		memcpy(p_local_para->data, ilm->local_para_ptr->data, msg_info_len);
+		memcpy(p_local_para->data, ilm->local_para_ptr->data,
+				msg_info_len);
 
 		CONN_MD_DBG_FUNC("p_local_para:0x%08x, msg_len:%d\n",
 				p_local_para, p_local_para->msg_len);
@@ -365,7 +382,8 @@ static int conn_md_thread(void *p_data)
 			}
 
 			/*ignore case of p_act_queue is not empty */
-			list_replace_init(&p_msg_queue->list, &p_act_queue->list);
+			list_replace_init(&p_msg_queue->list,
+					&p_act_queue->list);
 
 			mutex_unlock(&p_act_queue->lock);
 
@@ -393,16 +411,21 @@ static int conn_md_thread(void *p_data)
 				continue;
 			}
 
-			conn_md_dmp_in(p_cur_ilm, MSG_DEQUEUE, p_conn_md->p_msg_dmp_sys);
+			conn_md_dmp_in(p_cur_ilm, MSG_DEQUEUE,
+					p_conn_md->p_msg_dmp_sys);
 
 			mutex_lock(&p_user_list->lock);
 
 			/*check if src module is enabled or not */
 			list_for_each(p_user_pos, &p_user_list->list) {
-				p_user = container_of(p_user_pos, struct conn_md_user, entry);
-				if (p_user->u_id == p_cur_ilm->src_mod_id && p_user->state == USER_ENABLED) {
+				p_user = container_of(p_user_pos,
+						struct conn_md_user, entry);
+				if (p_user->u_id == p_cur_ilm->src_mod_id &&
+						p_user->state == USER_ENABLED) {
 					/*src module id is enabled already */
-					CONN_MD_DBG_FUNC("source user id (0x%08x) found\n", p_cur_ilm->src_mod_id);
+					CONN_MD_DBG_FUNC
+					("source user id (0x%08x) found\n",
+							p_cur_ilm->src_mod_id);
 					break;
 				}
 				p_user = NULL;
@@ -411,7 +434,7 @@ static int conn_md_thread(void *p_data)
 			if (p_user == NULL) {
 				mutex_unlock(&p_user_list->lock);
 				CONN_MD_WARN_FUNC
-				    ("source user id (0x%08x) is not registered or not enabled yet, drop ilm msg\n",
+				    ("user (0x%08x) is ready, drop ilm msg\n",
 				     p_cur_ilm->src_mod_id);
 #if (ACT_QUEUE_DBG == 1)
 				/*free message structure */
@@ -427,9 +450,13 @@ static int conn_md_thread(void *p_data)
 
 			/*check if destination module is enabled or not */
 			list_for_each(p_user_pos, &p_user_list->list) {
-				p_user = container_of(p_user_pos, struct conn_md_user, entry);
-				if (p_user->u_id == p_cur_ilm->dest_mod_id && p_user->state == USER_ENABLED) {
-					CONN_MD_DBG_FUNC("target user id (0x%08x) found\n", p_cur_ilm->dest_mod_id);
+				p_user = container_of(p_user_pos,
+						struct conn_md_user, entry);
+				if (p_user->u_id == p_cur_ilm->dest_mod_id &&
+						p_user->state == USER_ENABLED) {
+					CONN_MD_DBG_FUNC
+					("target user id (0x%08x) found\n",
+							p_cur_ilm->dest_mod_id);
 					/*src module id is enabled already */
 					break;
 				}
@@ -440,7 +467,7 @@ static int conn_md_thread(void *p_data)
 				mutex_unlock(&p_user_list->lock);
 
 				CONN_MD_WARN_FUNC
-				    ("target user id (0x%08x) is not registered or enabled yet, drop ilm msg\n",
+				    ("user (0x%08x) not ready, drop ilm msg\n",
 				     p_cur_ilm->dest_mod_id);
 #if (ACT_QUEUE_DBG == 1)
 				/*free message structure */
@@ -452,7 +479,8 @@ static int conn_md_thread(void *p_data)
 #endif
 				continue;
 			}
-			CONN_MD_DBG_FUNC("p_cur_ilm:0x%08x, local_para_ptr:0x%08x, msg_len:%d\n",
+			CONN_MD_DBG_FUNC(
+			"p_cur_ilm:0x%08x, local_para_ptr:0x%08x, msg_len:%d\n",
 					 p_cur_ilm, &p_cur_ilm->local_para_ptr,
 					 p_cur_ilm->local_para_ptr->msg_len);
 			CONN_MD_DBG_FUNC("send message to user id(0x%08x)\n",
