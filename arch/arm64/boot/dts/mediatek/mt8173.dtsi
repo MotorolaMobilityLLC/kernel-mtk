@@ -1134,6 +1134,11 @@
 				 <&vencltsys CLK_VENCLT_CKE0>;
 			clock-names = "apb", "smi";
 		};
+
+		clkao: clkao {
+			compatible = "simple-bus";
+		};
 	};
 };
 
+#include "mt8173-clkao.dtsi"
