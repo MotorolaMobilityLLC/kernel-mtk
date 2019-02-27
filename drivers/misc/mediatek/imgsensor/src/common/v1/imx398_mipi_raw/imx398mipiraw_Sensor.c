@@ -3860,22 +3860,22 @@ static kal_uint32 imx398_awb_gain(struct SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 {
 	UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
 
-	pr_debug("imx398_awb_gain\n");
+	pr_debug("%s\n", __func__);
 	grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
 	rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
 	bgain_32 = (pSetSensorAWB->ABS_GAIN_B << 8) >> 9;
 	gbgain_32 = (pSetSensorAWB->ABS_GAIN_GB << 8) >> 9;
 
-	pr_debug("[imx398_awb_gain] ABS_GAIN_GR:%d, grgain_32:%d\n",
+	pr_debug("[%s] ABS_GAIN_GR:%d, grgain_32:%d\n", __func__,
 		pSetSensorAWB->ABS_GAIN_GR, grgain_32);
 
-	pr_debug("[imx398_awb_gain] ABS_GAIN_R:%d, rgain_32:%d\n",
+	pr_debug("[%s] ABS_GAIN_R:%d, rgain_32:%d\n", __func__,
 		pSetSensorAWB->ABS_GAIN_R, rgain_32);
 
-	pr_debug("[imx398_awb_gain] ABS_GAIN_B:%d, bgain_32:%d\n",
+	pr_debug("[%s] ABS_GAIN_B:%d, bgain_32:%d\n", __func__,
 		pSetSensorAWB->ABS_GAIN_B, bgain_32);
 
-	pr_debug("[imx398_awb_gain] ABS_GAIN_GB:%d, gbgain_32:%d\n",
+	pr_debug("[%s] ABS_GAIN_GB:%d, gbgain_32:%d\n", __func__,
 		pSetSensorAWB->ABS_GAIN_GB, gbgain_32);
 
 	write_cmos_sensor(0x0b8e, (grgain_32 >> 8) & 0xFF);

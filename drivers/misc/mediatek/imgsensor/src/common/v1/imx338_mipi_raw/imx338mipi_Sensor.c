@@ -2987,7 +2987,7 @@ kal_uint16 addr_data_pair_video_imx338_hdr[] = {
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	pr_debug("E! normal_video_setting:%d\n", currefps);
+	pr_debug("E! %s:%d\n", __func__, currefps);
 	if ((imgsensor.hdr_mode == 2) || (imgsensor.hdr_mode == 9)) {
 		imx338_table_write_cmos_sensor(addr_data_pair_video_imx338_hdr,
 		  sizeof(addr_data_pair_video_imx338_hdr) / sizeof(kal_uint16));
@@ -3341,7 +3341,7 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
-	KD_SENSOR_PROFILE("open-1");
+	KD_SENSOR_PROFILE("open_1");
 	/* initail sequence write in  */
 	sensor_init();
 
@@ -3362,7 +3362,7 @@ static kal_uint32 open(void)
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
 
-	KD_SENSOR_PROFILE("open-2");
+	KD_SENSOR_PROFILE("open_2");
 	return ERROR_NONE;
 } /*    open  */
 
@@ -3569,7 +3569,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 
 
 static kal_uint32 get_resolution(
-	MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_resolution)
+	MSDK_SENSOR_RESOLUTION_INFO_STRUCT * sensor_resolution)
 {
 
 	sensor_resolution->SensorFullWidth =
@@ -4154,7 +4154,7 @@ static kal_uint32 imx338_awb_gain(struct SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 {
 	UINT32 rgain_32, grgain_32, gbgain_32, bgain_32;
 
-	pr_debug("imx338_awb_gain\n");
+	pr_debug("%s\n", __func__);
 
 	grgain_32 = (pSetSensorAWB->ABS_GAIN_GR << 8) >> 9;
 	rgain_32 = (pSetSensorAWB->ABS_GAIN_R << 8) >> 9;
@@ -4162,7 +4162,8 @@ static kal_uint32 imx338_awb_gain(struct SET_SENSOR_AWB_GAIN *pSetSensorAWB)
 	gbgain_32 = (pSetSensorAWB->ABS_GAIN_GB << 8) >> 9;
 
 	pr_debug(
-		"[imx338_awb_gain] ABS_GAIN_GR:%d, grgain_32:%d\n, ABS_GAIN_R:%d, rgain_32:%d\n, ABS_GAIN_B:%d, bgain_32:%d,ABS_GAIN_GB:%d, gbgain_32:%d\n",
+		"[%s] ABS_GAIN_GR:%d, grgain_32:%d\n, ABS_GAIN_R:%d, rgain_32:%d\n, ABS_GAIN_B:%d, bgain_32:%d,ABS_GAIN_GB:%d, gbgain_32:%d\n",
+		__func__,
 		pSetSensorAWB->ABS_GAIN_GR, grgain_32,
 		pSetSensorAWB->ABS_GAIN_R, rgain_32,
 		pSetSensorAWB->ABS_GAIN_B, bgain_32,

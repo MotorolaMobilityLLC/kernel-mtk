@@ -573,7 +573,8 @@ int imgsensor_set_driver(struct IMGSENSOR_SENSOR *psensor)
 #endif
 				if (!imgsensor_check_is_alive(psensor)) {
 					pr_info(
-					    "[imgsensor_set_driver]:[%d][%d][%s]\n",
+					    "[%s]:[%d][%d][%s]\n",
+					    __func__,
 					    psensor->inst.sensor_idx,
 					    drv_idx,
 					    psensor_inst->psensor_name);
@@ -2446,7 +2447,8 @@ static int imgsensor_open(struct inode *a_pstInode, struct file *a_pstFile)
 
 	atomic_inc(&pgimgsensor->imgsensor_open_cnt);
 	pr_info(
-	    "imgsensor_open %d\n",
+	    "%s %d\n",
+	    __func__,
 	    atomic_read(&pgimgsensor->imgsensor_open_cnt));
 	return 0;
 }
@@ -2459,7 +2461,8 @@ static int imgsensor_release(struct inode *a_pstInode, struct file *a_pstFile)
 		imgsensor_hw_release_all(&pgimgsensor->hw);
 	}
 	pr_info(
-	    "imgsensor_release %d\n",
+	    "%s %d\n",
+	    __func__,
 	    atomic_read(&pgimgsensor->imgsensor_open_cnt));
 	return 0;
 }

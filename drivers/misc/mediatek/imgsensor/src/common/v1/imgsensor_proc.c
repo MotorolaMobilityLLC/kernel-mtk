@@ -375,7 +375,7 @@ static ssize_t CAMERA_HW_Reg_Debug4(
 /* Camera information */
 static int subsys_camera_info_read(struct seq_file *m, void *v)
 {
-	pr_debug("subsys_camera_info_read %s\n", mtk_ccm_name);
+	pr_debug("%s %s\n", __func__, mtk_ccm_name);
 	seq_printf(m, "%s\n", mtk_ccm_name);
 	return 0;
 };
