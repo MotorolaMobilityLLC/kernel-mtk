@@ -210,7 +210,17 @@ int md_cd_get_modem_hw_info(struct platform_device *dev_ptr,
 		}
 		node = of_find_compatible_node(NULL, NULL, "mediatek,apmixed");
 		hw_info->ap_mixed_base = (unsigned long)of_iomap(node, 0);
-
+		node = of_find_compatible_node(NULL, NULL, "mediatek,topckgen");
+		if (node)
+			hw_info->ap_topclkgen_base = of_iomap(node, 0);
+		else
+			hw_info->ap_topclkgen_base =
+				ioremap_nocache(0x10000000, 4);
+		if (!hw_info->ap_topclkgen_base) {
+			CCCI_ERROR_LOG(-1, TAG,
+			"md_cd_get_modem_hw_info:ioremap topclkgen base address fail\n");
+			return -1;
+		}
 		break;
 	default:
 		return -1;
@@ -1119,6 +1129,15 @@ int md_cd_power_on(struct ccci_modem *md)
 	int ret = 0;
 	unsigned int reg_value;
 	struct md_sys1_info *md_info = (struct md_sys1_info *)md->private_data;
+	struct md_hw_info *hw_info = md->hw_info;
+
+	/* step 1: modem clock setting */
+	reg_value = ccci_read32(hw_info->ap_topclkgen_base, 0);
+	reg_value &= ~((1<<8)|(1<<9));
+	ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
+	CCCI_BOOTUP_LOG(md->index, CORE,
+	"md_cd_power_on: set md1_clk_mod =0x%x\n",
+		     ccci_read32(hw_info->ap_topclkgen_base, 0));
 
 	/* step 2: PMIC setting */
 	md1_pmic_setting_on();
@@ -1194,6 +1213,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 {
 	int ret = 0;
 	unsigned int reg_value;
+	struct md_hw_info *hw_info = md->hw_info;
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 	/* notify NFC */
@@ -1218,6 +1238,15 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		clk_buf_set_by_flightmode(true);
 		/* 3. PMIC off */
 		md1_pmic_setting_off();
+
+		/* 4. gating md related clock */
+		reg_value = ccci_read32(hw_info->ap_topclkgen_base, 0);
+		reg_value |= ((1<<8)|(1<<9));
+		ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
+		CCCI_BOOTUP_LOG(md->index, CORE,
+			"md_cd_power_off: set md1_clk_mod =0x%x\n",
+			ccci_read32(hw_info->ap_topclkgen_base, 0));
+
 		/* 5. DLPT */
 		kicker_pbm_by_md(KR_MD1, false);
 		CCCI_BOOTUP_LOG(md->index, TAG,
