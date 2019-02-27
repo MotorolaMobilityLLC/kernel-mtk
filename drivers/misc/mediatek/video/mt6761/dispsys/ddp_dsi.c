@@ -1489,6 +1489,17 @@ void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module,
 			FLD_AD_DSI_PLL_SDM_ISO_EN, 1);
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_PWR,
 			FLD_AD_DSI_PLL_SDM_PWR_ON, 0);
+		/* Switch ON each Lane */
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_D0_SW_CTL_EN,
+			FLD_DSI_D0_SW_CTL_EN, 1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_D1_SW_CTL_EN,
+			FLD_DSI_D1_SW_CTL_EN, 1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_D2_SW_CTL_EN,
+			FLD_DSI_D2_SW_CTL_EN, 1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_D3_SW_CTL_EN,
+			FLD_DSI_D3_SW_CTL_EN, 1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_CK_SW_CTL_EN,
+			FLD_DSI_CK_SW_CTL_EN, 1);
 
 		/* Switch ON each Lane */
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i]+MIPITX_D0_SW_CTL_EN,
@@ -2866,8 +2877,11 @@ static void _set_power_on_status(enum DISP_MODULE_ENUM module,
 
 int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 {
-	int i = 0, j = 0;
+	int i = 0;
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	int j = 0;
 	unsigned long addr = 0;
+#endif
 
 	DISPFUNC();
 	cmdqBackupAllocateSlot(&_h_intstat, 1);
@@ -2900,7 +2914,6 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		_init_condition_wq(&(_dsi_context[i].sleep_out_done_wq));
 		_init_condition_wq(&(_dsi_context[i].sleep_in_done_wq));
 	}
-
 	if (module == DISP_MODULE_DSIDUAL) {
 		disp_register_module_irq_callback(DISP_MODULE_DSI0,
 			_DSI_INTERNAL_IRQ_Handler);
@@ -2910,7 +2923,7 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		disp_register_module_irq_callback(module,
 			_DSI_INTERNAL_IRQ_Handler);
 	}
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (MIPITX_IsEnabled(module, cmdq)) {
 		_set_power_on_status(module, 1);
 		/* enable cg(for ccf) */
@@ -2924,7 +2937,9 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 
 		/* __close_dsi_default_clock(module); */
 	}
-
+#else
+_set_power_on_status(module, 1);
+#endif
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	if (module == DISP_MODULE_DSI1) {
@@ -2936,9 +2951,10 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		lcm1_set_te_pin();
 	}
 #endif
-
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	/* backup mipitx impedance0 which is inited in LK*/
 	addr = DSI_PHY_REG[0]+0x100;
+
 	for (i = 0; i < 5; i++) {
 		for (j = 0; j < 10; j++) {
 			mipitx_impedance_backup[i] |= ((INREG32(addr))<<j);
@@ -2947,6 +2963,7 @@ int ddp_dsi_init(enum DISP_MODULE_ENUM module, void *cmdq)
 		/* 0xD8 = 0x300 - 0x228*/
 		addr += 0xD8;
 	}
+#endif
 
 	return DSI_STATUS_OK;
 }
