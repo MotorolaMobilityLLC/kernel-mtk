@@ -1714,6 +1714,24 @@ static int idletime_get(void *data, u64 *val)
 
 DEFINE_SIMPLE_ATTRIBUTE(idletime_fops, idletime_get, idletime_set, "%llu\n");
 
+static int idlevfp_set(void *data, u64 val)
+{
+
+	if (val > 4095)
+		val = 4095;
+
+	backup_vfp_for_lp_cust((unsigned int)val);
+	return 0;
+}
+
+static int idlevfp_get(void *data, u64 *val)
+{
+	*val = (u64)get_backup_vfp();
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(idlevfp_fops, idlevfp_get, idlevfp_set, "%llu\n");
+
 void DBG_Init(void)
 {
 	struct dentry *d_folder;
@@ -1730,6 +1748,8 @@ void DBG_Init(void)
 			S_IFREG | 0444, d_folder, NULL, &partial_fops);
 		d_file = debugfs_create_file("idletime",
 			S_IFREG | 0666, d_folder, NULL, &idletime_fops);
+		d_file = debugfs_create_file("idlevfp",
+			S_IFREG | 0666, d_folder, NULL, &idlevfp_fops);
 	}
 }
 
