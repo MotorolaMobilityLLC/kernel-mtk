@@ -16,20 +16,17 @@
 #include <linux/types.h>
 
 #ifdef CONFIG_MTK_MDLA_SUPPORT
+#define MTK_MDLA_CORE 1
+
 unsigned int mdla_cfg_read(u32 offset);
 unsigned int mdla_reg_read(u32 offset);
+u32 mdla_max_cmd_id(void);
 
 // TODO: clearify the usage of gsm_bitmap
 extern unsigned long gsm_bitmap[];
 extern void *apu_mdla_gsm_top;
 extern void *apu_mdla_biu_top;
 extern u32 mdla_timeout;
-#else
-static inline
-unsigned int mdla_dump_reg(void)
-{
-	return 0;
-}
 #endif
 
 #ifndef MTK_MDLA_FPGA_PORTING
