@@ -52,8 +52,8 @@ static const struct resource mt6323_rtc_resources[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	{
-		.start = MT6323_IRQ_RTC,
-		.end   = MT6323_IRQ_RTC,
+		.start = MT6323_IRQ_STATUS_RTC,
+		.end   = MT6323_IRQ_STATUS_RTC,
 		.flags = IORESOURCE_IRQ,
 	},
 };
