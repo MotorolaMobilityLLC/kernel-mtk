@@ -58,7 +58,9 @@ extern int sspm_ipi_init(void);
 extern int sspm_ipi_recv_registration(int mid, struct ipi_action *act);
 extern int sspm_ipi_recv_registration_ex(int mid, spinlock_t *lock,
 	struct ipi_action *act);
+extern int sspm_ipi_recv_unregistration(int mid);
 extern int sspm_ipi_recv_wait(int mid);
+extern void sspm_ipi_recv_complete(int mid);
 extern int sspm_ipi_send_sync(int mid, int opts, void *buffer, int slot,
 	void *retbuf, int retslot);
 extern int sspm_ipi_send_ack(int mid, unsigned int *data);
