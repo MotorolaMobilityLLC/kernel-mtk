@@ -894,6 +894,8 @@ void cpuhvfs_pvt_tbl_create(void)
 			(i * ARRAY_COL_SIZE) + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n",
 				i + NR_FREQ, recordRef[i + NR_FREQ]);
+
+		if (NR_MT_CPU_DVFS > 2) {
 		/* L [31:16] = Vproc, [15:0] = Freq */
 		recordRef[i + 36] =
 			((*(recordTbl +
@@ -930,6 +932,7 @@ void cpuhvfs_pvt_tbl_create(void)
 			((NR_FREQ * 2) + i) * ARRAY_COL_SIZE + 2) & 0xFF);
 		cpufreq_ver("DVFS - recordRef[%d] = 0x%x\n",
 				i + 72 + NR_FREQ, recordRef[i + 72 + NR_FREQ]);
+		}
 
 		if (NR_MT_CPU_DVFS > 3) {
 			/* CCI [31:16] = Vproc, [15:0] = Freq */
