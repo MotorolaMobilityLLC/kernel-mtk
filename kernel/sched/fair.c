@@ -109,6 +109,7 @@ unsigned int sysctl_sched_child_runs_first __read_mostly;
 unsigned int sysctl_sched_wakeup_granularity = 1000000UL;
 unsigned int normalized_sysctl_sched_wakeup_granularity = 1000000UL;
 
+const_debug unsigned int sched_cache_hot_migration_cost = 500000UL;
 const_debug unsigned int sysctl_sched_migration_cost = 500000UL;
 
 /*
@@ -7984,9 +7985,17 @@ static int task_hot(struct task_struct *p, struct lb_env *env)
 	if (sysctl_sched_migration_cost == 0)
 		return 0;
 
-	delta = rq_clock_task(env->src_rq) - p->se.exec_start;
+	/* fixed: If sched_clock_cpu and rq_clock_task are different,
+	 * change rq_clock_task to sched_clock_cpu.
+	 */
+	delta = sched_clock_cpu(cpu_of(env->src_rq))
+			- rq_clock_task(env->src_rq);
+	if (delta > 0)
+		delta = sched_clock_cpu(cpu_of(env->src_rq)) - p->se.exec_start;
+	else
+		delta = rq_clock_task(env->src_rq) - p->se.exec_start;
 
-	return delta < (s64)sysctl_sched_migration_cost;
+	return delta < (s64)sched_cache_hot_migration_cost;
 }
 
 #ifdef CONFIG_NUMA_BALANCING
