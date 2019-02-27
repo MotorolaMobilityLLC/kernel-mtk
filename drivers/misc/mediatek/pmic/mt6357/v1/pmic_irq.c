@@ -615,6 +615,7 @@ void register_all_oc_interrupts(void)
 		case INT_VCAMA_OC:
 		case INT_VCAMD_OC:
 		case INT_VCAMIO_OC:
+		case INT_VLDO28_OC:
 			IRQLOG("[PMIC_INT] non-enabled OC: %d\n", oc_int);
 			break;
 #if 0
