@@ -49,6 +49,8 @@ void msdc_save_autok_setting(struct msdc_host *host)
 	host->saved_para.pb1 = MSDC_READ32(MSDC_PATCH_BIT1);
 	host->saved_para.pb2 = MSDC_READ32(MSDC_PATCH_BIT2);
 	host->saved_para.sdc_fifo_cfg = MSDC_READ32(SDC_FIFO_CFG);
+	host->saved_para.sdc_adv_cfg0 = MSDC_READ32(SDC_ADV_CFG0);
+
 
 	if (host->base_top) {
 		base_top = host->base_top;
@@ -322,6 +324,8 @@ int msdc_try_restoring_autok_setting(struct msdc_host *host)
 	MSDC_WRITE32(MSDC_PATCH_BIT1, host->saved_para.pb1);
 	MSDC_WRITE32(MSDC_PATCH_BIT2, host->saved_para.pb2);
 	MSDC_WRITE32(SDC_FIFO_CFG, host->saved_para.sdc_fifo_cfg);
+	MSDC_WRITE32(SDC_ADV_CFG0, host->saved_para.sdc_adv_cfg0);
+
 
 	if (emmc && !host->base_top) {
 		/* FIX ME: sdio shall add extra check for sdio3.0+ */
