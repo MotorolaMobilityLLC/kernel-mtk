@@ -168,6 +168,11 @@ READ_START:
 	}
 
 	skb = skb_peek(&port->rx_skb_list);
+	if (skb == NULL) {
+		ret = -EFAULT;
+		goto exit;
+	}
+
 	read_len = skb->len;
 
 	if (count >= read_len) {
