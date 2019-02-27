@@ -30,8 +30,9 @@
 #define MT_CG_ENABLE		0
 #else
 #define MT_MUXPLL_ENABLE	0
-#define MT_CG_ENABLE		0
+#define MT_CG_ENABLE		1
 #endif
+
 #define LOW_POWER_CLK_PDN	0
 /*fmeter div select 4*/
 #define _DIV4_ 1
@@ -2113,7 +2114,11 @@ static void __init mtk_pericfg_init(struct device_node *node)
 			__func__, r);
 	pericfg_base = base;
 	/* AO */
+#if (!MT_CG_ENABLE)
 	clk_writel(PERIAXI_SI0_CTL, clk_readl(PERIAXI_SI0_CTL) | PERI_CG);
+#else
+	clk_writel(PERIAXI_SI0_CTL, clk_readl(PERIAXI_SI0_CTL) & ~PERI_CG);
+#endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_pericfg, "mediatek,pericfg", mtk_pericfg_init);
 
