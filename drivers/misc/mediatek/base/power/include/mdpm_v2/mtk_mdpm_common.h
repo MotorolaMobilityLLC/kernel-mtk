@@ -11,16 +11,15 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MTK_PBM_REL_H__
-#define __MTK_PBM_REL_H__
+#ifndef _MTK_MDPM_COMMON_H_
+#define _MTK_MDPM_COMMON_H_
 
-#include "mtk_pbm_common.h"
-#if defined(CONFIG_MACH_MT6765)
-#include "mt6765/mtk_pbm_data.h"
-#elif defined(CONFIG_MACH_MT6761)
-#include "mt6761/mtk_pbm_data.h"
-#elif defined(CONFIG_MACH_MT3967)
-#include "mt3967/mtk_pbm_data.h"
+extern int mt_mdpm_debug;
+extern struct md_power_status dbm_power_sta;
+
+#ifdef MD_POWER_UT
+extern u32 fake_share_reg;
+extern u32 fake_share_mem[SHARE_MEM_SIZE];
 #endif
 
-#endif /* __MTK_PBM_REL_H__ */
+#endif

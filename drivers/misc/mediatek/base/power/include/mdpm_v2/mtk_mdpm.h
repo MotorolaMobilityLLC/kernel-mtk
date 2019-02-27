@@ -11,16 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MTK_PBM_REL_H__
-#define __MTK_PBM_REL_H__
+#ifndef __MTK_MDPM_H__
+#define __MTK_MDPM_H__
 
-#include "mtk_pbm_common.h"
-#if defined(CONFIG_MACH_MT6765)
-#include "mt6765/mtk_pbm_data.h"
-#elif defined(CONFIG_MACH_MT6761)
-#include "mt6761/mtk_pbm_data.h"
-#elif defined(CONFIG_MACH_MT3967)
-#include "mt3967/mtk_pbm_data.h"
+#if defined(CONFIG_MACH_MT3967)
+#include "mt3967/mtk_mdpm_platform.h"
 #endif
 
-#endif /* __MTK_PBM_REL_H__ */
+#endif /* __MTK_MDPM_H__ */
