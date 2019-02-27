@@ -910,7 +910,6 @@ void musb_start(struct musb *musb)
 	u8 devctl = (u8) os_readl(U3D_DEVICE_CONTROL);
 
 	os_printk(K_INFO, "%s  <== devctl %02x\n", __func__, devctl);
-
 	if (musb->is_clk_on == 0) {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 		/* Recovert PHY. And turn on CLK. */
