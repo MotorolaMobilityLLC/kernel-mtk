@@ -235,13 +235,6 @@ void show_freq_kernel_log(int dbg_id, int cid, unsigned int freq)
 				cid, freq);
 }
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu)
-{
-	return per_cpu(freq_scale, cpu);
-}
-#endif
-
 static void cpufreq_sched_try_driver_target(
 	int target_cpu, struct cpufreq_policy *policy,
 	unsigned int freq, int type)
@@ -280,9 +273,10 @@ static void cpufreq_sched_try_driver_target(
 
 	cur_time = ktime_get();
 
+	policy = cpufreq_cpu_get(gd->target_cpu);
 	/* update current freq asap if tiny system. */
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	max = arch_scale_get_max_freq(target_cpu);
+	max = policy->cpuinfo.max_freq;
 
 	/* freq is real world frequency already. */
 	scale = (freq << SCHED_CAPACITY_SHIFT) / max;
@@ -310,7 +304,6 @@ static void cpufreq_sched_try_driver_target(
 	mt_cpufreq_set_by_wfi_load_cluster(cid, freq);
 #endif
 #else
-	policy = cpufreq_cpu_get(gd->target_cpu);
 
 	if (IS_ERR_OR_NULL(policy))
 		return;
