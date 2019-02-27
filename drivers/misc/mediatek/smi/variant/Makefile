@@ -20,3 +20,4 @@ endif
 
 obj-y += smi_variant.o
 obj-y += smi_variant_config_8173.o
+obj-y += smi_variant_config_8163.o

@@ -79,6 +79,15 @@ static unsigned int caller_tid;
 static KREE_SESSION_HANDLE ion_session;
 KREE_SESSION_HANDLE ion_session_handle(void)
 {
+	if (ion_session == KREE_SESSION_HANDLE_NULL) {
+		int ret = 0;
+
+		ret = KREE_CreateSession(TZ_TA_MEM_UUID, &ion_session);
+		if (ret != TZ_RESULT_SUCCESS) {
+			IONMSG("KREE_CreateSession fail, ret=%d\n", ret);
+			return KREE_SESSION_HANDLE_NULL;
+		}
+	}
 	return ion_session;
 }
 #endif
@@ -212,6 +221,23 @@ static int ion_sec_heap_allocate(struct ion_heap *heap,
 					      heap->id);
 	}
 #elif defined(MTK_IN_HOUSE_SEC_ION_SUPPORT)
+	{
+		int ret = 0;
+
+		if (flags & ION_FLAG_MM_HEAP_INIT_ZERO)
+			ret = KREE_ZallocSecurechunkmemWithTag(
+				ion_session_handle(),
+				&sec_handle, align, size, heap->name);
+		else
+			ret = KREE_AllocSecurechunkmemWithTag(
+				ion_session_handle(),
+				&sec_handle, align, size, heap->name);
+		if (ret != TZ_RESULT_SUCCESS) {
+			pr_err("KREE_AllocSecurechunkmemWithTag failed, ret is 0x%x\n",
+			       ret);
+			return -ENOMEM;
+		}
+	}
 	refcount = 0;
 #else
 	refcount = 0;
@@ -283,6 +309,16 @@ void ion_sec_heap_free(struct ion_buffer *buffer)
 		trusted_mem_api_unref(TRUSTED_MEM_REQ_SVP, sec_handle,
 				      (uint8_t *)buffer->heap->name,
 				      buffer->heap->id);
+#elif defined(MTK_IN_HOUSE_SEC_ION_SUPPORT)
+	{
+		int ret = 0;
+
+		ret = KREE_UnreferenceSecurechunkmem(
+			ion_session_handle(), sec_handle);
+		if (ret != TZ_RESULT_SUCCESS)
+			pr_err("KREE_UnreferenceSecurechunkmem failed, ret is 0x%x\n",
+			       ret);
+	}
 #endif
 
 	ion_sec_heap_unmap_dma(heap, buffer);
