@@ -645,13 +645,18 @@ static struct snd_soc_dai_driver mt6660_codec_dai = {
 static inline int mt6660_chip_id_check(struct i2c_client *i2c)
 {
 	u8 reg_addr = MT6660_GET_ADDR(MT6660_REG_DEVID);
+	u8 id[2] = {0};
 	int ret = 0;
 
-	ret = i2c_smbus_read_byte_data(i2c, reg_addr);
+	i2c_smbus_write_byte_data(i2c, 0x03, 0x00);
+	ret = i2c_smbus_read_i2c_block_data(i2c, reg_addr, 2, id);
 	if (ret < 0)
 		return ret;
-	if ((ret & 0x0f) != 0x00)
+	ret = (id[0] << 8) + id[1];
+	ret &= 0x0ff0;
+	if (ret != 0x00e0)
 		return -ENODEV;
+	i2c_smbus_write_byte_data(i2c, 0x03, 0x01);
 	return 0;
 }
 
