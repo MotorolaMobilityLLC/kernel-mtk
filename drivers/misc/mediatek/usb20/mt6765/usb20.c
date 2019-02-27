@@ -478,123 +478,6 @@ void trigger_disconnect_check_work(void)
 	queue_delayed_work(mtk_musb->st_wq, &disconnect_check_work, 0);
 }
 
-#define CONN_WORK_DELAY 50
-static struct delayed_work connection_work;
-void do_connection_work(struct work_struct *data)
-{
-	unsigned long flags = 0;
-	bool usb_in = false;
-	int usb_clk_state = NO_CHANGE;
-
-	if (!mtk_musb->is_ready) {
-		/* re issue work */
-		DBG_LIMIT(3,
-			"!is_ready, retrigger after %d ms, is_host<%d>, power<%d>",
-			CONN_WORK_DELAY,
-			mtk_musb->is_host,
-			mtk_musb->power);
-		queue_delayed_work(mtk_musb->st_wq,
-			&connection_work,
-			msecs_to_jiffies(CONN_WORK_DELAY));
-		return;
-	}
-
-	DBG(0, "is_host<%d>, power<%d>\n",
-			mtk_musb->is_host,
-			mtk_musb->power);
-
-	/* always prepare clock and check if need to unprepater later */
-	/* clk_prepare_cnt +1 here*/
-	usb_prepare_clock(true);
-
-	/* be aware this could not be used in non-sleep context */
-	usb_in = usb_cable_connected();
-
-	spin_lock_irqsave(&mtk_musb->lock, flags);
-
-	if (mtk_musb->is_host) {
-		DBG(0, "is host, return\n");
-		goto exit;
-	}
-
-#ifdef CONFIG_MTK_UART_USB_SWITCH
-	if (in_uart_mode) {
-		DBG(0, "in uart mode, return\n");
-		goto exit;
-	}
-#endif
-
-	if (!mtk_musb->power && (usb_in == true)) {
-		/* enable usb */
-		if (!mtk_musb->usb_lock.active) {
-			__pm_stay_awake(&mtk_musb->usb_lock);
-			DBG(0, "lock\n");
-		} else {
-			DBG(0, "already lock\n");
-		}
-
-		/* note this already put SOFTCON */
-		musb_start(mtk_musb);
-		usb_clk_state = OFF_TO_ON;
-
-	} else if (mtk_musb->power && (usb_in == false)) {
-		/* disable usb */
-		musb_stop(mtk_musb);
-		if (mtk_musb->usb_lock.active) {
-			DBG(0, "unlock\n");
-			__pm_relax(&mtk_musb->usb_lock);
-		} else {
-			DBG(0, "lock not active\n");
-		}
-		usb_clk_state = ON_TO_OFF;
-	} else
-		DBG(0, "do nothing, usb_in:%d, power:%d\n",
-				usb_in, mtk_musb->power);
-exit:
-	spin_unlock_irqrestore(&mtk_musb->lock, flags);
-
-	if (usb_clk_state == ON_TO_OFF) {
-		/* clock on -> of: clk_prepare_cnt -2 */
-		usb_prepare_clock(false);
-		usb_prepare_clock(false);
-	} else if (usb_clk_state == NO_CHANGE) {
-		/* clock no change : clk_prepare_cnt -1 */
-		usb_prepare_clock(false);
-	}
-
-}
-
-void mt_usb_connect(void)
-{
-	if (!mtk_musb) {
-		DBG(0, "mtk_musb = NULL\n");
-		return;
-	}
-	/* issue connection work */
-	DBG(0, "issue work\n");
-	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
-	DBG(0, "[MUSB] USB connect\n");
-
-}
-
-void mt_usb_disconnect(void)
-{
-	if (!mtk_musb) {
-		DBG(0, "mtk_musb = NULL\n");
-		return;
-	}
-	/* issue connection work */
-	DBG(0, "issue work\n");
-	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
-	DBG(0, "[MUSB] USB disconnect\n");
-}
-
-/* build time force on */
-#if defined(CONFIG_FPGA_EARLY_PORTING) ||\
-		defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
-#define BYPASS_PMIC_LINKAGE
-#endif
-
 /* to avoid build error due to PMIC module not ready */
 #ifndef CONFIG_MTK_CHARGER
 #define BYPASS_PMIC_LINKAGE
@@ -608,7 +491,6 @@ static enum charger_type musb_hal_get_charger_type(void)
 #else
 	chg_type = mt_get_charger_type();
 #endif
-
 	return chg_type;
 }
 static bool musb_hal_is_vbus_exist(void)
@@ -627,11 +509,192 @@ static bool musb_hal_is_vbus_exist(void)
 #endif
 
 	return vbus_exist;
-
 }
 
+DEFINE_MUTEX(cable_connected_lock);
+/* be aware this could not be used in non-sleep context */
+bool usb_cable_connected(void)
+{
+	enum charger_type chg_type = CHARGER_UNKNOWN;
+	bool connected = false, vbus_exist = false;
+
+	mutex_lock(&cable_connected_lock);
+
+	/* TYPE CHECK */
+	chg_type = musb_hal_get_charger_type();
+
+	if (musb_fake_CDP && chg_type == STANDARD_HOST) {
+		DBG(0, "fake to type 2\n");
+		chg_type = CHARGING_HOST;
+	}
+
+	if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
+		connected = true;
+
+	/* VBUS CHECK to avoid type miss-judge */
+	vbus_exist = musb_hal_is_vbus_exist();
+
+	if (!vbus_exist)
+		connected = false;
+
+	DBG(0, "connected=%d vbus_exist=%d type=%d\n",
+		connected, vbus_exist, chg_type);
+
+	mutex_unlock(&cable_connected_lock);
+	return connected;
+}
+
+static bool cmode_effect_on(void)
+{
+	enum charger_type chg_type = CHARGER_UNKNOWN;
+	bool effect = false;
+
+	/* TYPE CHECK */
+	chg_type = musb_hal_get_charger_type();
+
+	/* CMODE CHECK */
+	if (cable_mode == CABLE_MODE_CHRG_ONLY ||
+		(cable_mode == CABLE_MODE_HOST_ONLY &&
+			chg_type != CHARGING_HOST))
+		effect = true;
+
+	DBG(0, "cable_mode=%d, effect=%d\n", cable_mode, effect);
+	return effect;
+}
+
+void do_connection_work(struct work_struct *data)
+{
+	unsigned long flags = 0;
+	int usb_clk_state = NO_CHANGE;
+	bool usb_on, usb_connected;
+	struct mt_usb_work *work =
+		container_of(data, struct mt_usb_work, dwork.work);
+
+	DBG(0, "is_host<%d>, power<%d>, ops<%d>\n",
+		mtk_musb->is_host, mtk_musb->power, work->ops);
+
+	/* always prepare clock and check if need to unprepater later */
+	/* clk_prepare_cnt +1 here*/
+	usb_prepare_clock(true);
+
+	/* be aware this could not be used in non-sleep context */
+	usb_connected = usb_cable_connected();
+
+	/* additional check operation here */
+	if (musb_force_on)
+		usb_on = true;
+	else if (work->ops == CONNECTION_OPS_CHECK)
+		usb_on = usb_connected;
+	else
+		usb_on = (work->ops ==
+			CONNECTION_OPS_CONN ? true : false);
+
+	if (cmode_effect_on())
+		usb_on = false;
+	/* additional check operation done */
+
+	spin_lock_irqsave(&mtk_musb->lock, flags);
+
+	if (mtk_musb->is_host) {
+		DBG(0, "is host, return\n");
+		goto exit;
+	}
+
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+	if (in_uart_mode) {
+		DBG(0, "in uart mode, return\n");
+		goto exit;
+	}
+#endif
+
+	if (!mtk_musb->power && (usb_on == true)) {
+		/* enable usb */
+		if (!mtk_musb->usb_lock.active) {
+			__pm_stay_awake(&mtk_musb->usb_lock);
+			DBG(0, "lock\n");
+		} else {
+			DBG(0, "already lock\n");
+		}
+
+		/* note this already put SOFTCON */
+		musb_start(mtk_musb);
+		usb_clk_state = OFF_TO_ON;
+
+	} else if (mtk_musb->power && (usb_on == false)) {
+		/* disable usb */
+		musb_stop(mtk_musb);
+		if (mtk_musb->usb_lock.active) {
+			DBG(0, "unlock\n");
+			__pm_relax(&mtk_musb->usb_lock);
+		} else {
+			DBG(0, "lock not active\n");
+		}
+		usb_clk_state = ON_TO_OFF;
+	} else
+		DBG(0, "do nothing, usb_on:%d, power:%d\n",
+				usb_on, mtk_musb->power);
+exit:
+	spin_unlock_irqrestore(&mtk_musb->lock, flags);
+
+	if (usb_clk_state == ON_TO_OFF) {
+		/* clock on -> of: clk_prepare_cnt -2 */
+		usb_prepare_clock(false);
+		usb_prepare_clock(false);
+	} else if (usb_clk_state == NO_CHANGE) {
+		/* clock no change : clk_prepare_cnt -1 */
+		usb_prepare_clock(false);
+	}
+
+	/* free mt_usb_work */
+	kfree(work);
+}
+
+static void issue_connection_work(int ops)
+{
+	struct mt_usb_work *work;
+
+	if (!mtk_musb) {
+		DBG(0, "mtk_musb = NULL\n");
+		return;
+	}
+	/* create and prepare worker */
+	work = kzalloc(sizeof(struct mt_usb_work), GFP_ATOMIC);
+	if (!work) {
+		DBG(0, "wrap is NULL, directly return\n");
+		return;
+	}
+	work->ops = ops;
+	INIT_DELAYED_WORK(&work->dwork, do_connection_work);
+	/* issue connection work */
+	DBG(0, "issue work, ops<%d>\n", ops);
+	queue_delayed_work(mtk_musb->st_wq, &work->dwork, 0);
+}
+
+void mt_usb_connect(void)
+{
+	DBG(0, "[MUSB] USB connect\n");
+	issue_connection_work(CONNECTION_OPS_CONN);
+}
+
+void mt_usb_disconnect(void)
+{
+	DBG(0, "[MUSB] USB disconnect\n");
+	issue_connection_work(CONNECTION_OPS_DISC);
+}
+
+static void mt_usb_reconnect(void)
+{
+	DBG(0, "[MUSB] USB reconnect\n");
+	issue_connection_work(CONNECTION_OPS_CHECK);
+}
+
+/* build time force on */
+#if defined(CONFIG_FPGA_EARLY_PORTING) ||\
+		defined(U3_COMPLIANCE) || defined(FOR_BRING_UP)
+#define BYPASS_PMIC_LINKAGE
+#endif
+
 static int usb20_test_connect;
-static bool test_connected;
 static struct delayed_work usb20_test_connect_work;
 #define TEST_CONNECT_BASE_MS 3000
 #define TEST_CONNECT_BIAS_MS 5000
@@ -640,20 +703,25 @@ static void do_usb20_test_connect_work(struct work_struct *work)
 	static ktime_t ktime;
 	static unsigned long int ktime_us;
 	unsigned int delay_time_ms;
+	static bool test_connected;
 
 	if (!usb20_test_connect) {
 		test_connected = false;
-		DBG(0, "%s, test done, trigger connect\n", __func__);
-		mt_usb_connect();
+		DBG(0, "test done, trigger connect\n");
+		mt_usb_reconnect();
 		return;
 	}
-	mt_usb_connect();
+
+	if (test_connected)
+		mt_usb_connect();
+	else
+		mt_usb_disconnect();
 
 	ktime = ktime_get();
 	ktime_us = ktime_to_us(ktime);
 	delay_time_ms = TEST_CONNECT_BASE_MS
 				+ (ktime_us % TEST_CONNECT_BIAS_MS);
-	DBG(0, "%s, work after %d ms\n", __func__, delay_time_ms);
+	DBG(0, "work after %d ms\n", delay_time_ms);
 	schedule_delayed_work(&usb20_test_connect_work,
 					msecs_to_jiffies(delay_time_ms));
 
@@ -665,7 +733,7 @@ void mt_usb_connect_test(int start)
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
-		DBG(0, "%s wake_lock_init\n", __func__);
+		DBG(0, "wake_lock_init\n");
 		wakeup_source_init(&device_test_wakelock, "device.test.lock");
 		wake_lock_inited = 1;
 	}
@@ -682,57 +750,7 @@ void mt_usb_connect_test(int start)
 	}
 }
 
-DEFINE_MUTEX(cable_connected_lock);
-/* be aware this could not be used in non-sleep context */
-bool usb_cable_connected(void)
-{
-	enum charger_type chg_type = CHARGER_UNKNOWN;
-	bool connected = false, vbus_exist = false;
 
-	if (usb20_test_connect) {
-		DBG(0, "%s, return test_connected<%d>\n",
-			__func__, test_connected);
-		return test_connected;
-	}
-
-	mutex_lock(&cable_connected_lock);
-	/* FORCE USB ON case */
-	if (musb_force_on) {
-		chg_type = STANDARD_HOST;
-		vbus_exist = true;
-		connected = true;
-		DBG(0, "%s type force to STANDARD_HOST\n", __func__);
-	} else {
-		/* TYPE CHECK */
-		chg_type = musb_hal_get_charger_type();
-		if (musb_fake_CDP && chg_type == STANDARD_HOST) {
-			DBG(0, "%s, fake to type 2\n", __func__);
-			chg_type = CHARGING_HOST;
-		}
-
-		if (chg_type == STANDARD_HOST || chg_type == CHARGING_HOST)
-			connected = true;
-
-		/* VBUS CHECK to avoid type miss-judge */
-		vbus_exist = musb_hal_is_vbus_exist();
-
-		DBG(0, "%s vbus_exist=%d type=%d\n", __func__
-			, vbus_exist, chg_type);
-		if (!vbus_exist)
-			connected = false;
-	}
-
-	/* CMODE CHECK */
-	if (cable_mode == CABLE_MODE_CHRG_ONLY ||
-		(cable_mode == CABLE_MODE_HOST_ONLY &&
-		chg_type != CHARGING_HOST))
-		connected = false;
-
-	mutex_unlock(&cable_connected_lock);
-	DBG(0, "%s, connected:%d, cable_mode:%d\n",
-				__func__, connected, cable_mode);
-	return connected;
-}
 
 void musb_platform_reset(struct musb *musb)
 {
@@ -757,13 +775,6 @@ void musb_platform_reset(struct musb *musb)
 	swrst = musb_readw(mbase, MUSB_SWRST);
 	swrst |= (MUSB_SWRST_DISUSBRESET | MUSB_SWRST_SWRST);
 	musb_writew(mbase, MUSB_SWRST, swrst);
-}
-
-static void usb_reconnect(void)
-{
-	DBG(0, "issue work\n");
-	queue_delayed_work(mtk_musb->st_wq, &connection_work, 0);
-	DBG(0, "%s end\n", __func__);
 }
 
 bool is_switch_charger(void)
@@ -921,8 +932,7 @@ static ssize_t mt_usb_store_cmode(struct device *dev,
 
 		if (cable_mode != cmode) {
 			cable_mode = cmode;
-			usb_reconnect();
-
+			mt_usb_reconnect();
 			/* let conection work do its job */
 			msleep(50);
 		}
@@ -1792,8 +1802,6 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
 
-	DBG(0, "init connection_work and idle_work\n");
-	INIT_DELAYED_WORK(&connection_work, do_connection_work);
 	INIT_DELAYED_WORK(&idle_work, do_idle_work);
 
 	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
