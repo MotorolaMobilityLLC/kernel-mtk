@@ -30,10 +30,19 @@
 #include <linux/timer.h>
 #include <mach/mtk_pmic_wrap.h>
 #include <linux/syscore_ops.h>
+#include <linux/regmap.h>
+#include <linux/soc/mediatek/pmic_wrap.h>
+#include <linux/of_address.h>
+#include <linux/of_fdt.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/spinlock.h>
 
 #define PMIC_WRAP_DEVICE "pmic_wrap"
 #define VERSION     "Revision"
 
+#if !defined CONFIG_MTK_PMIC_WRAP
 static struct mt_pmic_wrap_driver mt_wrp = {
 	.driver = {
 		   .name = "pmic_wrap",
@@ -196,6 +205,62 @@ postcore_initcall(mt_pwrap_init);
 /* return 0; */
 /* } */
 /* device_initcall(pwrap_init_ops); */
+#else
+
+static struct regmap *pmic_regmap;
+static spinlock_t   wrp_lock = __SPIN_LOCK_UNLOCKED(lock);
+
+s32 pwrap_read(u32 adr, u32 *rdata)
+{
+	int ret = 0;
+	unsigned long flags = 0;
+
+	if (pmic_regmap) {
+		spin_lock_irqsave(&wrp_lock, flags);
+		ret = regmap_read(pmic_regmap, adr, rdata);
+		spin_unlock_irqrestore(&wrp_lock, flags);
+	} else
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+	return ret;
+}
+EXPORT_SYMBOL(pwrap_read);
+
+s32 pwrap_write(u32 adr, u32 wdata)
+{
+	int ret = 0;
+	unsigned long flags = 0;
+
+	if (pmic_regmap) {
+		spin_lock_irqsave(&wrp_lock, flags);
+		ret = regmap_write(pmic_regmap, adr, wdata);
+		spin_unlock_irqrestore(&wrp_lock, flags);
+	} else
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+	return ret;
+}
+EXPORT_SYMBOL(pwrap_write);
+
+static int __init mt_pwrap_init(void)
+{
+	struct device_node *node, *pwrap_node;
+
+	pr_info("%s\n", __func__);
+	node = of_find_compatible_node(NULL, NULL, "mediatek,pwraph");
+	pwrap_node = of_parse_phandle(node, "mediatek,pwrap-regmap", 0);
+	if (pwrap_node) {
+		pmic_regmap = pwrap_node_to_regmap(pwrap_node);
+		if (IS_ERR(pmic_regmap)) {
+			pr_notice("%s %d Error.\n", __func__, __LINE__);
+			return PTR_ERR(pmic_regmap);
+		}
+	} else {
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+	return 0;
+}
+subsys_initcall(mt_pwrap_init);
+#endif
 
 MODULE_AUTHOR("mediatek");
 MODULE_DESCRIPTION("pmic_wrapper Driver  Revision");
