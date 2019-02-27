@@ -478,7 +478,19 @@ static bool dump_interrupted(void)
 	 * but then we need to teach dump_write() to restart and clear
 	 * TIF_SIGPENDING.
 	 */
+#ifdef CONFIG_MTK_AEE_FEATURE
+	/* avoid coredump truncated */
+	int ret = signal_pending(current);
+
+	if (ret) {
+		pr_info("%s: clear sig pending flag\n", __func__);
+		clear_thread_flag(TIF_SIGPENDING);
+		ret = signal_pending(current);
+	}
+	return ret;
+#else
 	return signal_pending(current);
+#endif
 }
 
 static void wait_for_dump_helpers(struct file *file)
@@ -860,7 +872,25 @@ int dump_emit(struct coredump_params *cprm, const void *addr, int nr)
 		n = __kernel_write(file, addr, nr, &pos);
 		if (n <= 0) {
 			pr_info("%s: __kernel_write fail: %zd\n", __func__, n);
+#ifdef CONFIG_MTK_AEE_FEATURE
+			/* retry for avoid coredump truncated */
+			if (n == -ERESTARTSYS) {
+				if (signal_pending(current)) {
+					pr_info("%s: clear sig pending flag\n",
+						__func__);
+					clear_thread_flag(TIF_SIGPENDING);
+				}
+				n = __kernel_write(file, addr, nr, &pos);
+				if (n <= 0) {
+					pr_info("%s: retry fail: %zd\n",
+						__func__, n);
+					return 0;
+				}
+			} else
+				return 0;
+#else
 			return 0;
+#endif
 		}
 		file->f_pos = pos;
 		cprm->written += n;
