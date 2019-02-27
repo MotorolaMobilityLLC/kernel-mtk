@@ -516,7 +516,7 @@ static void cldma_timeout_timer_func(unsigned long data)
 
 	ccci_md_dump_port_status(md);
 	md_cd_traffic_monitor_func((unsigned long)md);
-	ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, queue->index);
+	ccci_hif_dump_status(CLDMA_HIF_ID, DUMP_FLAG_CLDMA, 1 << queue->index);
 
 	CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
 		"CLDMA no response, force assert md by CCIF_INTERRUPT\n");
@@ -703,7 +703,6 @@ again:
 			skb->tstamp.tv64 = sched_clock();
 #endif
 			ccci_skb_enqueue(&queue->skb_list, skb);
-			wake_up_all(&queue->rx_wq);
 			ret = 0;
 		}
 #ifdef CLDMA_TRACE
@@ -711,8 +710,7 @@ again:
 			((skb_alloc_time = sched_clock()) - port_recv_time);
 #endif
 
-		if ((ret >= 0 || ret == -CCCI_ERR_DROP_PACKET)
-			&& new_skb) {
+		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
 			/* mark cldma_request as available */
 			req->skb = NULL;
 			cldma_rgpd_set_data_ptr(rgpd, 0);
@@ -836,7 +834,6 @@ again:
 	 * size and the queue is stopped
 	 * permanentely.
 	 */
-	ret = ALL_CLEAR;
 	spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 	if (md_ctrl->rxq_active & (1 << queue->index)) {
 		/* resume Rx queue */
@@ -1085,7 +1082,8 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 					CLDMA_AP_UL_RESUME_CMD,
 					CLDMA_BM_ALL_QUEUE
 					& (1 << queue->index));
-				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
+				resume_done = 1;
+				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
 					"resume txq %d in tx done\n",
 					queue->index);
 			}
@@ -1316,7 +1314,8 @@ static void cldma_tx_done(struct work_struct *work)
 			CLDMA_AP_L2TISAR0, (1 << queue->index));
 		if (IS_NET_QUE(md_ctrl->md_id, queue->index))
 			queue_delayed_work(queue->worker,
-				&queue->cldma_tx_work, msecs_to_jiffies(10));
+				&queue->cldma_tx_work,
+				msecs_to_jiffies(1000 / HZ));
 		else
 			queue_delayed_work(queue->worker,
 				&queue->cldma_tx_work, msecs_to_jiffies(0));
@@ -1330,7 +1329,7 @@ static void cldma_tx_done(struct work_struct *work)
 				CLDMA_AP_L2TIMCR0,
 				(CLDMA_TX_INT_DONE & (1 << queue->index)) |
 				(CLDMA_TX_INT_QUEUE_EMPTY
-				& ((1 << queue->index) << CLDMA_RX_QE_OFFSET)));
+				& ((1 << queue->index) << CLDMA_TX_QE_OFFSET)));
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 #endif
 	}
@@ -1736,7 +1735,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 					"txq%d queue work=%d\n", i, ret);
 			}
 			if (L2TISAR0 &
-				(CLDMA_TX_INT_DONE |
+				(CLDMA_TX_INT_QUEUE_EMPTY &
 				((1 << i) << CLDMA_TX_QE_OFFSET)))
 				cldma_tx_queue_empty_handler(&md_ctrl->txq[i]);
 		}
@@ -1749,7 +1748,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 #endif
 		/* ack Rx interrupt */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base,
-			CLDMA_AP_L2RISAR0, L2RISAR0);
+			CLDMA_AP_L2RISAR0, L2RISAR0_REG);
 		/* clear IP busy register wake up cpu case */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base,
 			CLDMA_AP_CLDMA_IP_BUSY,
@@ -2149,6 +2148,8 @@ void cldma_reset(unsigned char hif_id)
 	CCCI_NORMAL_LOG(md_ctrl->md_id, TAG, "%s from %ps\n",
 		__func__, __builtin_return_address(0));
 
+	md_ctrl->tx_busy_warn_cnt = 0;
+
 	ccci_reset_seq_num(&md_ctrl->traffic_info);
 #if TRAFFIC_MONITOR_INTERVAL
 	md_cd_clear_traffic_data(CLDMA_HIF_ID);
@@ -2542,6 +2543,7 @@ void md_cldma_clear(unsigned char hif_id)
 	int retry = 100;
 
 #if MD_GENERATION >= (6293)
+	retry = 5;
 	while (retry > 0) {
 		ret = cldma_read32(md_ctrl->cldma_ap_ao_base,
 			CLDMA_AP_SO_STATUS);

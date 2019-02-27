@@ -25,6 +25,9 @@
 #include "ccci_modem.h"
 #include "ccci_port.h"
 #include "ccci_hif.h"
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+#include "scp_helper.h"
+#endif
 
 static void *dev_class;
 /*
@@ -111,11 +114,32 @@ void ccci_sysfs_add_md(int md_id, void *kobj)
 		boot_md_show, boot_md_store);
 }
 
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+static int apsync_event(struct notifier_block *this,
+	unsigned long event, void *ptr)
+{
+	switch (event) {
+	case SCP_EVENT_READY:
+		fsm_scp_init0();
+		break;
+	}
+
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block apsync_notifier = {
+	.notifier_call = apsync_event,
+};
+#endif
+
 static int __init ccci_init(void)
 {
 	CCCI_INIT_LOG(-1, CORE, "ccci core init\n");
 	dev_class = class_create(THIS_MODULE, "ccci_node");
 	ccci_subsys_bm_init();
+#ifdef FEATURE_SCP_CCCI_SUPPORT
+	scp_A_register_notify(&apsync_notifier);
+#endif
 	return 0;
 }
 
@@ -123,6 +147,7 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 	unsigned int len)
 {
 	int ret = 0;
+	int tmp_data;
 
 	if (!get_modem_is_enabled(md_id)) {
 		CCCI_ERROR_LOG(md_id, CORE,
@@ -210,7 +235,6 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 				*((int *)buf), 1);
 		break;
 		/* used for throttling feature - end */
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
 	case ID_UPDATE_TX_POWER:
 		{
 			unsigned int msg_id = (md_id == 0) ?
@@ -222,7 +246,6 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 				msg_id, mode, 0);
 		}
 		break;
-#endif
 	case ID_DUMP_MD_SLEEP_MODE:
 		ccci_md_dump_info(md_id, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
 		break;
@@ -234,6 +257,12 @@ int exec_ccci_kern_func_by_md_id(int md_id, unsigned int id, char *buf,
 	case ID_LWA_CONTROL_MSG:
 		ret = ccci_port_send_msg_to_md(md_id, CCCI_SYSTEM_TX,
 			LWA_CONTROL_MSG, *((int *)buf), 1);
+		break;
+	case MD_DISPLAY_DYNAMIC_MIPI:
+		tmp_data = 0;
+		memcpy((void *)&tmp_data, buf, len);
+		ret = ccci_port_send_msg_to_md(md_id, CCCI_SYSTEM_TX,
+			id, tmp_data, 0);
 		break;
 	default:
 		ret = -CCCI_ERR_FUNC_ID_ERROR;

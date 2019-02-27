@@ -302,19 +302,25 @@ static int check_md_header_v3(int md_id, void *parse_addr,
 				for (region_id = 0;
 					 region_id <= MPU_REGION_INFO_ID_LAST;
 					 region_id++) {
-					image->rmpu_info.region_info[region_id].region_offset
-						= head->region_info[region_id].region_offset;
-					image->rmpu_info.region_info[region_id].region_size
-						= head->region_info[region_id].region_size;
+					image->rmpu_info.region_info[region_id].
+						region_offset =
+						head->region_info[region_id].
+						region_offset;
+					image->rmpu_info.region_info[region_id].
+						region_size =
+						head->region_info[region_id].
+						region_size;
 					CCCI_UTIL_INF_MSG_WITH_ID(md_id,
 						"load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
 						region_id,
-						head->region_info[region_id].region_size,
-						head->region_info[region_id].region_offset);
+						head->region_info[region_id]
+						.region_size,
+						head->region_info[region_id]
+						.region_offset);
 				}
 
 				for (domain_id = 0;
-					 domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM;
+				domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM;
 					 domain_id++) {
 					image->rmpu_info.domain_attr[domain_id]
 						= head->domain_attr[domain_id];
@@ -573,15 +579,21 @@ static int md_check_header_parser(int md_id, void *parse_addr,
 			for (region_id = 0;
 				 region_id <= MPU_REGION_INFO_ID_LAST;
 				 region_id++) {
-				image->rmpu_info.region_info[region_id].region_offset
-					= headv34->region_info[region_id].region_offset;
-				image->rmpu_info.region_info[region_id].region_size
-					= headv34->region_info[region_id].region_size;
+				image->rmpu_info.region_info[region_id].
+				region_offset =
+				headv34->region_info[region_id].
+				region_offset;
+				image->rmpu_info.region_info[region_id].
+				region_size =
+				headv34->region_info[region_id].
+				region_size;
 				CCCI_UTIL_INF_MSG_WITH_ID(md_id,
 					"load_image: check_header_v4, region(%d): size = %x , offset = %x\n",
 					region_id,
-					headv34->region_info[region_id].region_size,
-					headv34->region_info[region_id].region_offset);
+					headv34->region_info[region_id].
+					region_size,
+					headv34->region_info[region_id].
+					region_offset);
 			}
 			for (domain_id = 0;
 				 domain_id < MPU_DOMAIN_INFO_ID_TOTAL_NUM;
@@ -768,7 +780,8 @@ static int check_md_header(int md_id, void *parse_addr,
 					else {
 						CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 							"[Reason]MD image size mis-match to AP!\n");
-						ret = -CCCI_ERR_LOAD_IMG_MD_CHECK;
+						ret =
+						-CCCI_ERR_LOAD_IMG_MD_CHECK;
 					}
 					image->ap_info.md_img_size
 						= image->size;
