@@ -218,7 +218,8 @@ int devkmsg_sysctl_set_loglvl(struct ctl_table *table, int write,
 			return -EINVAL;
 
 		old = devkmsg_log;
-		strncpy(old_str, devkmsg_log_str, DEVKMSG_STR_MAX_SIZE);
+		memset(old_str, 0, sizeof(old_str));
+		strncpy(old_str, devkmsg_log_str, DEVKMSG_STR_MAX_SIZE - 1);
 	}
 
 	err = proc_dostring(table, write, buffer, lenp, ppos);
@@ -237,7 +238,8 @@ int devkmsg_sysctl_set_loglvl(struct ctl_table *table, int write,
 			/* ... and restore old setting. */
 			devkmsg_log = old;
 			memset(devkmsg_log_str, 0, sizeof(devkmsg_log_str));
-			strncpy(devkmsg_log_str, old_str, DEVKMSG_STR_MAX_SIZE);
+			strncpy(devkmsg_log_str, old_str,
+				DEVKMSG_STR_MAX_SIZE - 1);
 
 			return -EINVAL;
 		}
