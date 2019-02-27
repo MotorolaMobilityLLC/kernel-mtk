@@ -869,6 +869,11 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.5_MTK
+ * (1) add CONFIG_TYPEC_CAP_NORP_SRC to support
+ *      A-to-C No-Rp cable.
+ * (2) add handler pd eint with eint mask
+ *
  * 2.0.4_MTK
  * (1) add CONFIG_TCPC_NOTIFIER_LATE_SYNC to
  *      move irq_enable to late_initcall_sync stage
