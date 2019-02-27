@@ -204,10 +204,6 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 	struct disp_rect src_total_roi = {0, 0, 0, 0};
 	struct disp_rect dst_layer_roi = {0, 0, 0, 0};
 	struct disp_rect dst_total_roi = {0, 0, 0, 0};
-	int all_ratio_x = 1;
-	int all_ratio_y = 1;
-	int layer_ratio_x = 1;
-	int layer_ratio_y = 1;
 
 	*has_dim_layer = false;
 	*rsz_idx = -1;
