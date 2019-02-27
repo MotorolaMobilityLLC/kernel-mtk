@@ -22,16 +22,14 @@
 /* scp config reg. definition*/
 #define SCP_TCM_SIZE		(scpreg.total_tcmsize)
 #define SCP_A_TCM_SIZE		(scpreg.scp_tcmsize)
-#define SCP_TCM				(scpreg.sram)
+#define SCP_TCM			(scpreg.sram)
+#define SCP_RTOS_START		(0x800)
 #define SCP_A_SHARE_BUFFER	(scpreg.sram + \
-							SCP_A_TCM_SIZE -  \
-							SHARE_BUF_SIZE*2)
-
-
+					SCP_RTOS_START -  SHARE_BUF_SIZE*2)
 
 /* scp dvfs return status flag */
 #define SET_PLL_FAIL		(1)
-#define SET_PMIC_VOLT_FAIL		(2)
+#define SET_PMIC_VOLT_FAIL	(2)
 
 /* This structre need to sync with SCP-side */
 struct SCP_IRQ_AST_INFO {
