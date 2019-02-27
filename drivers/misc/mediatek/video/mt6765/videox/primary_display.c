@@ -4826,7 +4826,6 @@ int primary_display_resume(void)
 			data_config->ovl_config[i].layer_en = 0;
 		}
 		data_config->ovl_dirty = 1;
-
 		ret = dpmgr_path_config(pgc->dpmgr_handle, data_config, NULL);
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 			MMPROFILE_FLAG_PULSE, 2, 2);
@@ -5899,6 +5898,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 	if (pgc->session_mode != DISP_SESSION_RDMA_MODE) {
 		data_config->ovl_dirty = 1;
+		data_config->sbch_enable = 1;
 	} else {
 		ret = ddp_convert_ovl_input_to_rdma(&data_config->rdma_config,
 			&data_config->ovl_config[bypass_layer_id],
@@ -6371,10 +6371,10 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 		dprec_start(trigger_event, cfg->present_fence_idx, proc_name);
 	}
 
+	primary_display_trigger_nolock(0, NULL, 0);
+
 	if (cfg->present_fence_idx != (unsigned int)-1)
 		primary_display_update_present_fence(cfg->present_fence_idx);
-
-	primary_display_trigger_nolock(0, NULL, 0);
 
 	dprec_done(trigger_event, 0, 0);
 

@@ -413,9 +413,7 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
 
 	/* OVL SBCH */
-#ifndef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	disp_helper_set_option(DISP_OPT_OVL_SBCH, 0);
-#endif
+	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)
