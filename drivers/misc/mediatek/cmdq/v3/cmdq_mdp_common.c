@@ -1720,6 +1720,7 @@ int cmdq_mdp_loop_reset_impl(const unsigned long resetReg,
 {
 	u32 poll_value = 0;
 	s32 ret;
+
 	CMDQ_REG_SET32(resetReg, resetWriteValue);
 	/* polling with 10ms timeout */
 	ret = readl_poll_timeout_atomic((void *)resetStateReg, poll_value,

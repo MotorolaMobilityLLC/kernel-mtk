@@ -2097,7 +2097,6 @@ static void testcase_get_result(void)
 	kfree(desc_buf);
 
 	CMDQ_LOG("%s END\n", __func__);
-	return;
 }
 
 static int _testcase_simplest_command_loop_submit(
