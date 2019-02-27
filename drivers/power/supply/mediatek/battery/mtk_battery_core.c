@@ -1357,6 +1357,8 @@ void fg_nafg_monitor(void)
 	if (gm.disableGM30 || gm.cmd_disable_nafg || gm.ntc_disable_nafg)
 		return;
 
+	now_time.tv_sec = 0;
+	now_time.tv_nsec = 0;
 	dtime.tv_sec = 0;
 	dtime.tv_nsec = 0;
 
