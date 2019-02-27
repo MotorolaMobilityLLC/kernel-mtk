@@ -199,54 +199,6 @@ static void __mrdump_reboot_stop_all(struct mrdump_crash_record *crash_record)
 
 #endif
 
-
-static void __mrdump_reboot_va(enum AEE_REBOOT_MODE reboot_mode,
-		struct pt_regs *regs, const char *msg, va_list ap)
-{
-	struct mrdump_crash_record *crash_record;
-	int cpu;
-	void *creg;
-
-	if (mrdump_cblock) {
-		if (mrdump_cblock->enabled != MRDUMP_ENABLE_COOKIE)
-			pr_info("MT-RAMDUMP no enable");
-
-		crash_record = &mrdump_cblock->crash_record;
-
-		local_irq_disable();
-		local_fiq_disable();
-
-#if defined(CONFIG_SMP)
-		__mrdump_reboot_stop_all(crash_record);
-#endif
-
-		cpu = get_HW_cpuid();
-		crashing_cpu = cpu;
-		crash_save_cpu(regs, cpu);
-
-		elf_core_copy_kernel_regs(
-			(elf_gregset_t *)&crash_record->cpu_regs[cpu], regs);
-
-		vsnprintf(crash_record->msg, sizeof(crash_record->msg), msg,
-				ap);
-		crash_record->fault_cpu = cpu;
-
-		creg = (void *)&crash_record->cpu_creg[cpu];
-		mrdump_save_control_register(creg);
-
-		/* FIXME: Check reboot_mode is valid */
-		crash_record->reboot_mode = reboot_mode;
-		dis_D_inner_fL1L2();
-
-		if (reboot_mode == AEE_REBOOT_MODE_NESTED_EXCEPTION) {
-			while (1)
-				cpu_relax();
-		}
-	}
-
-	mrdump_plat->reboot();
-}
-
 void mrdump_save_ctrlreg(void)
 {
 	struct mrdump_crash_record *crash_record;
@@ -258,19 +210,6 @@ void mrdump_save_ctrlreg(void)
 		creg = (void *)&crash_record->cpu_creg[cpu];
 		mrdump_save_control_register(creg);
 	}
-}
-
-void aee_kdump_reboot(enum AEE_REBOOT_MODE reboot_mode, const char *msg, ...)
-{
-	va_list ap;
-	struct pt_regs regs;
-
-	mrdump_save_current_backtrace(&regs);
-
-	va_start(ap, msg);
-	__mrdump_reboot_va(reboot_mode, &regs, msg, ap);
-	/* No return anymore */
-	va_end(ap);
 }
 
 void mrdump_save_per_cpu_reg(int cpu, struct pt_regs *regs)

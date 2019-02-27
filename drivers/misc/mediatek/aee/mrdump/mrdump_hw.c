@@ -120,10 +120,6 @@ static int __init mrdump_hw_init(void)
 	condition++;
 #endif
 
-#ifdef CONFIG_MTK_AEE_MRDUMP
-	condition++;
-#endif
-
 	if (condition > 0) {
 		ddr_rsv_mode_ok = true;
 		cache_preserve_ok = true;

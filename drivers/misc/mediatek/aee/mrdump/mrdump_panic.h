@@ -17,29 +17,6 @@
 #include <generated/autoconf.h>
 #include <mt-plat/aee.h>
 
-#define AEE_LOG_LEVEL 8
-#define LOG_DEBUG(fmt, ...)			\
-	do {	\
-		if (aee_in_nested_panic())			\
-			aee_nested_printf(fmt, ##__VA_ARGS__);	\
-		else						\
-			pr_debug(fmt, ##__VA_ARGS__);	\
-	} while (0)
-
-#define LOG_NOTICE(fmt, ...)			\
-	do {	\
-		if (aee_in_nested_panic())			\
-			aee_nested_printf(fmt, ##__VA_ARGS__);	\
-		else						\
-			pr_notice(fmt, ##__VA_ARGS__);	\
-	} while (0)
-
-#define LOGV(fmt, msg...)
-#define LOGD LOG_DEBUG
-#define LOGI LOG_DEBUG
-#define LOGW LOG_NOTICE
-#define LOGE LOG_NOTICE
-
 /* for WDT timeout case : dump timer/schedule/irq/softirq etc...
  * debug information
  */

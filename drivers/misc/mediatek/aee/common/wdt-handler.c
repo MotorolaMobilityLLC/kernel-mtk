@@ -36,7 +36,7 @@
 #include <smp.h>
 #endif
 #include "aee-common.h"
-#include <ipanic.h>
+#include <mrdump_panic.h>
 #include <mt-plat/mtk_ram_console.h>
 #include <mrdump_private.h>
 
