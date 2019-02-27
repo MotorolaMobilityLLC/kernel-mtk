@@ -613,7 +613,7 @@ int __handle_domain_irq(struct irq_domain *domain, unsigned int hwirq,
 	unsigned int irq = hwirq;
 	int ret = 0;
 #ifdef CONFIG_MTK_SCHED_TRACERS
-	struct irq_desc *desc;
+	//struct irq_desc *desc;
 #endif
 
 	irq_enter();
