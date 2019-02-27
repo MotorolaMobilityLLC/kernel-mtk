@@ -221,7 +221,6 @@ struct mtk_pll_data {
 	int pcw_shift;
 	int analog_div;
 	const struct mtk_pll_div_table *div_table;
-
 };
 
 void mtk_clk_register_plls(struct device_node *node,
