@@ -267,7 +267,7 @@ static const struct mtk_pinctrl_devdata mt6765_pinctrl_data = {
 		.port_mask = 7,
 		.ports     = 6,
 	},
-	.ap_num = 192,
+	.ap_num = 160,
 	.db_cnt = 13,
 };
 
