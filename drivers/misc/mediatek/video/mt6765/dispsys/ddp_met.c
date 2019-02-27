@@ -14,10 +14,8 @@
 #define LOG_TAG "MET"
 
 #include "ddp_log.h"
+#include "disp_drv_platform.h"
 
-#if defined(CONFIG_MTK_MET)
-#include <mt-plat/met_drv.h>
-#endif
 #include "ddp_irq.h"
 #include "ddp_reg.h"
 #include "ddp_met.h"
@@ -41,6 +39,10 @@
 static unsigned int met_tag_on;
 
 #if defined(CONFIG_MTK_MET)
+#include <linux/module.h>
+
+extern int met_tag_oneshot_real(unsigned int class_id,
+const char *name, unsigned int value);
 static struct ovl_info_s {
 	unsigned char ovl_idx;
 	unsigned char layer_num;
@@ -48,40 +50,6 @@ static struct ovl_info_s {
 	{DISP_MODULE_OVL0, 4}, {DISP_MODULE_OVL0_2L, 2},
 	{DISP_MODULE_OVL1_2L, 2},
 };
-#endif
-
-#if 0
-static const char *const parse_color_format(DpColorFormat fmt)
-{
-	switch (fmt) {
-	case eBGR565:
-		return "eBGR565";
-	case eRGB565:
-		return "eRGB565";
-	case eRGB888:
-		return "eRGB888";
-	case eBGR888:
-		return "eBGR888";
-	case eRGBA8888:
-		return "eRGBA8888";
-	case eBGRA8888:
-		return "eBGRA8888";
-	case eARGB8888:
-		return "eARGB8888";
-	case eABGR8888:
-		return "eABGR8888";
-	case eVYUY:
-		return "eVYUY";
-	case eUYVY:
-		return "eUYVY";
-	case eYVYU:
-		return "eYVYU";
-	case eYUY2:
-		return "eYUY2";
-	default:
-		return "DEFAULT";
-	}
-}
 #endif
 
 /**
@@ -121,6 +89,11 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 	int layer_pos = 0;
 	int b_layer_changed = 0;
 	int i, j;
+	int (*met_tag_oneshot_symbol)(unsigned int class_id,
+		const char *name, unsigned int value) = NULL;
+
+	met_tag_oneshot_symbol =
+		(void *)symbol_get(met_tag_oneshot_real);
 
 	if (dpp_disp_is_decouple() == 1) {
 
@@ -130,7 +103,9 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 			sBufAddr[index] = rdmaInfo.addr;
 			sprintf(tag_name, index ?
 				"ExtDispRefresh" : "PrimDispRefresh");
-			met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+			if (met_tag_oneshot_symbol)
+				met_tag_oneshot_symbol(DDP_IRQ_FPS_ID,
+					tag_name, 1);
 		}
 		return;
 	}
@@ -169,7 +144,8 @@ static void ddp_disp_refresh_tag_start(unsigned int index)
 	if (b_layer_changed) {
 		sprintf(tag_name,
 			index ? "ExtDispRefresh" : "PrimDispRefresh");
-		met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 1);
+		if (met_tag_oneshot_symbol)
+			met_tag_oneshot_symbol(DDP_IRQ_FPS_ID, tag_name, 1);
 	}
 
 #endif
@@ -179,10 +155,15 @@ static void ddp_disp_refresh_tag_end(unsigned int index)
 {
 #if defined(CONFIG_MTK_MET)
 	char tag_name[30] = { '\0' };
+	int (*met_tag_oneshot_symbol)(unsigned int class_id,
+		const char *name, unsigned int value) = NULL;
 
 	sprintf(tag_name, index ?
 		"ExtDispRefresh" : "PrimDispRefresh");
-	met_tag_oneshot(DDP_IRQ_FPS_ID, tag_name, 0);
+	met_tag_oneshot_symbol =
+		(void *)symbol_get(met_tag_oneshot_real);
+	if (met_tag_oneshot_symbol)
+		met_tag_oneshot_symbol(DDP_IRQ_FPS_ID, tag_name, 0);
 #endif
 }
 
@@ -197,15 +178,21 @@ static void ddp_inout_info_tag(unsigned int index)
 static void ddp_err_irq_met_tag(const char *name)
 {
 #if defined(CONFIG_MTK_MET)
-	met_tag_oneshot(DDP_IRQ_EER_ID, name, 0);
+	int (*met_tag_oneshot_symbol)(unsigned int class_id,
+		const char *name, unsigned int value) = NULL;
+
+	met_tag_oneshot_symbol =
+		(void *)symbol_get(met_tag_oneshot_real);
+	if (met_tag_oneshot_symbol)
+		met_tag_oneshot_symbol(DDP_IRQ_EER_ID, name, 0);
 #endif
 }
 
-static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
+static void met_irq_handler(enum DISP_MODULE_ENUM module,
+		unsigned int reg_val)
 {
 	int index = 0;
 	char tag_name[30] = { '\0' };
-	int mutexID;
 
 	switch (module) {
 	case DISP_MODULE_RDMA0:
@@ -230,29 +217,11 @@ static void met_irq_handler(enum DISP_MODULE_ENUM module, unsigned int reg_val)
 
 	case DISP_MODULE_OVL0:
 		index = module - DISP_MODULE_OVL0;
-		if (reg_val & (1 << 1)) {/*EOF*/
+		if (reg_val & (1 << 1))	/*EOF*/
 			ddp_inout_info_tag(index);
-#if defined(CONFIG_MTK_MET)
-			if (met_mmsys_event_disp_ovl_eof)
-				met_mmsys_event_disp_ovl_eof(index);
-#endif
-		}
-
 		break;
 
 	case DISP_MODULE_MUTEX:
-		for (mutexID = DISP_MUTEX_DDP_FIRST;
-			mutexID <= DISP_MUTEX_DDP_LAST; mutexID++) {
-#if defined(CONFIG_MTK_MET)
-			if (reg_val & (0x1<<mutexID))
-				if (met_mmsys_event_disp_sof)
-					met_mmsys_event_disp_sof(mutexID);
-			if (reg_val & (0x1<<(mutexID+DISP_MUTEX_TOTAL)))
-				if (met_mmsys_event_disp_mutex_eof)
-					met_mmsys_event_disp_mutex_eof(mutexID);
-#endif
-		}
-
 		break;
 
 	default:

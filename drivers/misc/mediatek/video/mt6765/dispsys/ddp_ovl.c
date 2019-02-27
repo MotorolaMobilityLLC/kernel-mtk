@@ -830,8 +830,14 @@ void ovl_get_info(enum DISP_MODULE_ENUM module, void *data)
 	struct OVL_BASIC_STRUCT *pdata = data;
 	unsigned long ovl_base = ovl_base_addr(module);
 	unsigned long layer_off = 0;
-	unsigned int src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + ovl_base);
+	unsigned int src_on = 0;
 	struct OVL_BASIC_STRUCT *p = NULL;
+
+	/* no this ovl engine */
+	if (ovl_base == 0)
+		return;
+
+	src_on = DISP_REG_GET(DISP_REG_OVL_SRC_CON + ovl_base);
 
 	for (i = 0; i < ovl_layer_num(module); i++) {
 		layer_off = i * OVL_LAYER_OFFSET + ovl_base;
