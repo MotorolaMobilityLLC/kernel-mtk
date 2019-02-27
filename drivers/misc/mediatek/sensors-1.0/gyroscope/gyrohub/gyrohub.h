@@ -25,9 +25,9 @@
 
 #define GYROHUB_BUFSIZE 60
 
-/* 1 rad = 180/PI degree, MAX_LSB = 131, */
-/* 180*131/PI = 7506 */
-#define DEGREE_TO_RAD	7506
+/* 1 rad = 180/PI degree, MAX_LSB = 131000, */
+/* 180*131000/PI = 7505747 */
+#define DEGREE_TO_RAD	7505747
 
 #endif
 
