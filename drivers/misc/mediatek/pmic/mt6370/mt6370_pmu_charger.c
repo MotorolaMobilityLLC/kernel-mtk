@@ -36,7 +36,7 @@
 #include "inc/mt6370_pmu_charger.h"
 #include "inc/mt6370_pmu.h"
 
-#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.22_MTK"
+#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.23_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
@@ -104,8 +104,8 @@ struct mt6370_pmu_charger_data {
 	struct mutex pe_access_lock;
 	struct mutex bc12_access_lock;
 	struct mutex hidden_mode_lock;
-	struct mutex chgdet_lock;
 	struct mutex ieoc_lock;
+	struct mutex tchg_lock;
 	struct device *dev;
 	struct power_supply *psy;
 	wait_queue_head_t wait_queue;
@@ -122,6 +122,7 @@ struct mt6370_pmu_charger_data {
 	bool ieoc_wkard;
 	atomic_t bc12_cnt;
 	atomic_t bc12_wkard;
+	int tchg;
 #ifdef CONFIG_TCPC_CLASS
 	atomic_t tcpc_usb_connected;
 #else
@@ -656,14 +657,29 @@ out:
 	return ret;
 }
 
+static int __mt6370_enable_chgdet_flow(struct mt6370_pmu_charger_data *chg_data,
+	bool en)
+{
+	int ret = 0;
+	enum mt6370_usbsw_state usbsw =
+		en ? MT6370_USBSW_CHG : MT6370_USBSW_USB;
+
+	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
+	mt6370_set_usbsw_state(chg_data, usbsw);
+	ret = (en ? mt6370_pmu_reg_set_bit : mt6370_pmu_reg_clr_bit)
+		(chg_data->chip, MT6370_PMU_REG_DEVICETYPE,
+		MT6370_MASK_USBCHGEN);
+	if (ret >= 0)
+		chg_data->bc12_en = en;
+	return ret;
+}
+
 static int mt6370_enable_chgdet_flow(struct mt6370_pmu_charger_data *chg_data,
 	bool en)
 {
 	int ret = 0;
 	int i = 0, vbus = 0;
 	const int max_wait_cnt = 200;
-	enum mt6370_usbsw_state usbsw =
-		en ? MT6370_USBSW_CHG : MT6370_USBSW_USB;
 
 #ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
 	if (en && is_meta_mode()) {
@@ -698,15 +714,9 @@ static int mt6370_enable_chgdet_flow(struct mt6370_pmu_charger_data *chg_data,
 			dev_info(chg_data->dev, "%s: CDP free\n", __func__);
 	}
 
-	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
-	mt6370_set_usbsw_state(chg_data, usbsw);
 	mutex_lock(&chg_data->bc12_access_lock);
-	ret = (en ? mt6370_pmu_reg_set_bit : mt6370_pmu_reg_clr_bit)
-	(chg_data->chip, MT6370_PMU_REG_DEVICETYPE, MT6370_MASK_USBCHGEN);
-	if (ret >= 0)
-		chg_data->bc12_en = en;
+	ret = __mt6370_enable_chgdet_flow(chg_data, en);
 	mutex_unlock(&chg_data->bc12_access_lock);
-
 	return ret;
 }
 
@@ -904,7 +914,7 @@ out:
 	atomic_set(&chg_data->bc12_wkard, 0);
 
 	/* Turn off USB charger detection */
-	ret = mt6370_enable_chgdet_flow(chg_data, false);
+	ret = __mt6370_enable_chgdet_flow(chg_data, false);
 	if (ret < 0)
 		dev_err(chg_data->dev, "%s: disable chrdet fail\n", __func__);
 
@@ -918,9 +928,9 @@ static int mt6370_chgdet_handler(struct mt6370_pmu_charger_data *chg_data)
 {
 	int ret = 0;
 
-	mutex_lock(&chg_data->chgdet_lock);
+	mutex_lock(&chg_data->bc12_access_lock);
 	ret = __mt6370_chgdet_handler(chg_data);
-	mutex_unlock(&chg_data->chgdet_lock);
+	mutex_unlock(&chg_data->bc12_access_lock);
 	return ret;
 }
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT */
@@ -2410,11 +2420,30 @@ static int mt6370_get_tchg(struct charger_device *chg_dev, int *tchg_min,
 	int ret = 0, adc_temp = 0;
 	struct mt6370_pmu_charger_data *chg_data =
 		dev_get_drvdata(&chg_dev->dev);
+	u32 retry_cnt = 3;
 
 	/* Get value from ADC */
 	ret = mt6370_get_adc(chg_data, MT6370_ADC_TEMP_JC, &adc_temp);
 	if (ret < 0)
 		return ret;
+
+	/* Check unusual temperature */
+	while (adc_temp >= 120 && retry_cnt > 0) {
+		dev_err(chg_data->dev, "%s: [WARNING] t = %d\n",
+			__func__, adc_temp);
+		mt6370_get_adc(chg_data, MT6370_ADC_VBAT, &adc_temp);
+		ret = mt6370_get_adc(chg_data, MT6370_ADC_TEMP_JC, &adc_temp);
+		retry_cnt--;
+	}
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&chg_data->tchg_lock);
+	if (adc_temp >= 120)
+		adc_temp = chg_data->tchg;
+	else
+		chg_data->tchg = adc_temp;
+	mutex_unlock(&chg_data->tchg_lock);
 
 	*tchg_min = adc_temp;
 	*tchg_max = adc_temp;
@@ -3770,8 +3799,8 @@ static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 	mutex_init(&chg_data->pe_access_lock);
 	mutex_init(&chg_data->bc12_access_lock);
 	mutex_init(&chg_data->hidden_mode_lock);
-	mutex_init(&chg_data->chgdet_lock);
 	mutex_init(&chg_data->ieoc_lock);
+	mutex_init(&chg_data->tchg_lock);
 	chg_data->chip = dev_get_drvdata(pdev->dev.parent);
 	chg_data->dev = &pdev->dev;
 	chg_data->chg_type = CHARGER_UNKNOWN;
@@ -3879,8 +3908,8 @@ err_no_psy:
 	mutex_destroy(&chg_data->pe_access_lock);
 	mutex_destroy(&chg_data->bc12_access_lock);
 	mutex_destroy(&chg_data->hidden_mode_lock);
-	mutex_destroy(&chg_data->chgdet_lock);
 	mutex_destroy(&chg_data->ieoc_lock);
+	mutex_destroy(&chg_data->tchg_lock);
 	return ret;
 }
 
@@ -3899,8 +3928,8 @@ static int mt6370_pmu_charger_remove(struct platform_device *pdev)
 		mutex_destroy(&chg_data->pe_access_lock);
 		mutex_destroy(&chg_data->bc12_access_lock);
 		mutex_destroy(&chg_data->hidden_mode_lock);
-		mutex_destroy(&chg_data->chgdet_lock);
 		mutex_destroy(&chg_data->ieoc_lock);
+		mutex_destroy(&chg_data->tchg_lock);
 		dev_info(chg_data->dev, "%s successfully\n", __func__);
 	}
 
@@ -3937,6 +3966,10 @@ MODULE_VERSION(MT6370_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.23_MTK
+ * (1) Use bc12_access_lock instead of chgdet_lock
+ * (2) Add junction ADC workaround
+ *
  * 1.1.22_MTK
  * (1) If ichg < 900mA -> disable vsys sp
  *        ichg >= 900mA -> enable vsys sp
