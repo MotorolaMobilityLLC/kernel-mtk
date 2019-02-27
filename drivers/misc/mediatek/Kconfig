@@ -38,6 +38,7 @@ config MTK_FREQ_HOPPING
 
 source "drivers/misc/mediatek/freqhopping/Kconfig"
 source "drivers/misc/mediatek/pmic/Kconfig"
+source "drivers/misc/mediatek/pmic_wrap/Kconfig"
 source "drivers/misc/mediatek/power/Kconfig"
 
 config MTK_PSCI
