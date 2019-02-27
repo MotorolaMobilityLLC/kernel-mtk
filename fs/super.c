@@ -440,6 +440,7 @@ void generic_shutdown_super(struct super_block *sb)
 			printk("VFS: Busy inodes after unmount of %s. "
 			   "Self-destruct in 5 seconds.  Have a nice day...\n",
 			   sb->s_id);
+			BUG();
 		}
 	}
 	spin_lock(&sb_lock);
