@@ -132,8 +132,15 @@ static int lowmem_check_status_by_zone(enum zone_type high_zoneidx,
 					new_other_free;
 			}
 
-			/* Check whether there is any unreclaimable pgdat */
-			if (pgdat_reclaimable(pgdat))
+			/*
+			 * Consider pgdat as unreclaimable when hitting one of
+			 * following two cases,
+			 * 1. Memory node is unreclaimable in vmscan.c
+			 * 2. Memory node is reclaimable, but nearly no user
+			 *    pages(under high wmark)
+			 */
+			if (!pgdat_reclaimable(pgdat) ||
+			    (pgdat_reclaimable(pgdat) && memory_pressure < 0))
 				unreclaimable++;
 		}
 
