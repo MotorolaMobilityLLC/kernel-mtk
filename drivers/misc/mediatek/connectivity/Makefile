@@ -36,9 +36,24 @@ endif
     # MINI PLATFORM VERSION = Android O
     MINI_PLATFORM_VER = O
 
+    $(warning TARGET_PLATFORM_VERSION: [$(TARGET_PLATFORM_VERSION)])
     ifndef TARGET_PLATFORM_VERSION
-        $(warning TARGET_PLATFORM_VERSION is not set, define it as A)
-        TARGET_PLATFORM_VERSION = A
+        # check kernel_modules/connectivity folder exist ==> Android O1 above
+        CONSYS_DIR = $(TOP)/vendor/mediatek/kernel_modules/connectivity
+        ifeq (,$(wildcard $(CONSYS_DIR)))
+            # $(CONSYS_DIR) is not existed
+            $(warning TARGET_PLATFORM_VERSION is not set, define it as A)
+            TARGET_PLATFORM_VERSION = A
+        else
+            # $(CONSYS_DIR) is existed
+            $(warning TARGET_PLATFORM_VERSION is not set, define it as OMR1)
+            TARGET_PLATFORM_VERSION = OMR1
+        endif
+    endif
+
+    ifeq ($(TARGET_PLATFORM_VERSION),OPR1)
+        # force build-in
+        MINI_PLATFORM_VER = OPR2
     endif
 
     # compare $(PLATFORM_VERSION)>=$(MINI_PLATFORM_VER)
