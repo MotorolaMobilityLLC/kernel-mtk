@@ -689,7 +689,7 @@ static int __init lockdep_proc_init(void)
 	proc_create("lock_stat", S_IRUSR | S_IWUSR, NULL,
 		    &proc_lock_stat_operations);
 #endif
-
+	lockdep_test_init();
 	return 0;
 }
 
