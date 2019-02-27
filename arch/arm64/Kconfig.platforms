@@ -112,6 +112,7 @@ config MACH_MT6758
 	select MTK_IRQ_NEW_DESIGN_DEBUG
 	select MTK_SYSIRQ
 	select MTK_TIMER_V1
+	select MTK_LASTBUS_INTERFACE
 	help
 	  This enables support for MediaTek Helio P30 - MT6758
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
