@@ -212,19 +212,21 @@ static int can_dvfsrc_enable(void)
 	pr_info("%s: PTPOD0: 0x%x\n", __func__, ptpod0);
 
 	if (spm_get_spmfw_idx() == SPMFW_LP4X_2CH_3200) {
+		enable = 0;
 		pr_info("VCORE DVFS disable for LP4[TEMP]\n");
 	} else if (is_efuse_bypass_flavor()) {
 		enable = 1;
 		pr_info("VCORE DVFS enable for special flavor\n");
+	} else if (!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62mv1_bsp", 10) ||
+		!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62v1_bsp", 9)) {
+		enable = 0;
+		pr_info("VCORE DVFS disable XM\n");
 	} else if (ptpod0 == 0x0000FF00 || ptpod0 == 0x0) {
 		enable = 0;
 		pr_info("VCORE DVFS disable for efuse\n");
 	} else {
-		pr_info("VCORE DVFS disable default\n");
-#if 0
-		pr_info("VCORE DVFS enable default\n");
 		enable = 1;
-#endif
+		pr_info("VCORE DVFS enable default\n");
 	}
 
 	return enable;
