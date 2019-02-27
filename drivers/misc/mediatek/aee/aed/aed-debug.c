@@ -57,7 +57,7 @@ void notrace wdt_atf_hang(void)
 {
 	int cpu = get_HW_cpuid();
 
-	pr_notice(" CPU %d : wdt_atf_hang\n", cpu);
+	pr_notice(" CPU %d : %s\n", cpu, __func__);
 	local_fiq_disable();
 	preempt_disable();
 	local_irq_disable();
@@ -72,8 +72,8 @@ static int kwdt_thread_test(void *arg)
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	set_current_state(TASK_INTERRUPTIBLE);
-	pr_notice("\n ==> kwdt_thread_test on CPU %d, test_case = %d\n",
-							cpu, test_case);
+	pr_notice("\n ==> %s on CPU %d, test_case = %d\n",
+						__func__, cpu, test_case);
 	msleep(1000);
 
 	if (test_case == 1) {
