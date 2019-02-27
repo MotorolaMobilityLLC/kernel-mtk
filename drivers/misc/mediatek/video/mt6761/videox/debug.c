@@ -65,7 +65,7 @@
 #include "ddp_clkmgr.h"
 
 static struct dentry *mtkfb_dbgfs;
-unsigned int g_mobilelog = 1;
+unsigned int g_mobilelog;
 int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
@@ -846,6 +846,69 @@ static int disp_fake_engine_stop(void)
 	return 0;
 }
 
+static void do_helper_opt(const char *opt)
+{
+	int ret = 0;
+	char option[100] = "";
+	char *tmp;
+	int value, i;
+
+	/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
+	tmp = (char *)(opt + 7);
+	for (i = 0; i < 50; i++) {
+		if (tmp[i] != ',' && tmp[i] != ' ')
+			option[i] = tmp[i];
+		else
+			break;
+	}
+	tmp += i + 1;
+	ret = sscanf(tmp, "%d\n", &value);
+	if (ret != 1) {
+		DISPWARN("error to parse cmd %s: %s %s ret=%d\n",
+			opt, option, tmp, ret);
+		return;
+	}
+
+	DISPMSG("will set option %s to %d\n", option, value);
+	disp_helper_set_option_by_name(option, value);
+
+}
+
+static void do_set_emi_bound_tb_opt(const char *opt)
+{
+	int ret = 0;
+	int num, i, idx;
+	int val[8] = {0};
+	char *fmt;
+	int size = sizeof("set_emi_bound_tb:%d") +
+			strlen(",%d") * ARRAY_SIZE(val);
+
+	fmt = kzalloc(size, GFP_KERNEL);
+	if (!fmt)
+		return;
+
+	strncpy(fmt, "set_emi_bound_tb:%d", size);
+	fmt[size - 1] = '\0';
+
+	for (i = 0; i < ARRAY_SIZE(val); i++) {
+		/* make fmt like: "set_dsi_cmd:%d,%d,%d\n" */
+		strncat(fmt, ",%d", size - strlen(fmt) - 1);
+	}
+	strncat(fmt, "\n", size - strlen(fmt) - 1);
+
+	num = sscanf(opt, fmt, &idx, &val[0], &val[1], &val[2],
+		&val[3], &val[4], &val[5], &val[6], &val[7]);
+
+	if (num < 2 || num > HRT_LEVEL_NUM + 1)
+		goto done;
+
+	ret = set_emi_bound_tb(idx, num - 1, val);
+
+done:
+	kfree(fmt);
+	fmt = NULL;
+}
+
 struct completion dump_buf_comp;
 
 static void process_dbg_opt(const char *opt)
@@ -855,27 +918,7 @@ static void process_dbg_opt(const char *opt)
 
 	if (strncmp(opt, "helper", 6) == 0) {
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
-		char option[100] = "";
-		char *tmp;
-		int value, i;
-
-		tmp = (char *)(opt + 7);
-		for (i = 0; i < 100; i++) {
-			if (tmp[i] != ',' && tmp[i] != ' ')
-				option[i] = tmp[i];
-			else
-				break;
-		}
-		tmp += i + 1;
-		ret = sscanf(tmp, "%d\n", &value);
-		if (ret != 1) {
-			DISPWARN("error to parse cmd %s: %s %s ret=%d\n",
-				opt, option, tmp, ret);
-			return;
-		}
-
-		DISPMSG("will set option %s to %d\n", option, value);
-		disp_helper_set_option_by_name(option, value);
+		do_helper_opt(opt);
 	} else if (strncmp(opt, "switch_mode:", 12) == 0) {
 		int session_id = MAKE_DISP_SESSION(DISP_SESSION_PRIMARY, 0);
 		int sess_mode;
@@ -1316,9 +1359,10 @@ static void process_dbg_opt(const char *opt)
 		DDPMSG(
 			"Display debug command: disp_get_fps done, disp_fps=%d\n",
 			disp_fps);
-	}
+	} else if (strncmp(opt, "set_emi_bound_tb:", 17) == 0) {
 
-	if (strncmp(opt, "primary_basic_test:", 19) == 0) {
+		do_set_emi_bound_tb_opt(opt);
+	} else if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num;
 		unsigned int vsync_num, x, y, r, g, b, a;
 		unsigned int layer_en_mask, cksum;
