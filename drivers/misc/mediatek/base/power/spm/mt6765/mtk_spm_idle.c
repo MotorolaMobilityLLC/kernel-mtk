@@ -27,11 +27,8 @@
 #include "mtk_spm_internal.h"
 #include "pwr_ctrl.h"
 
-// FIXME
-void __attribute__((weak))
-	dvfsrc_md_scenario_update(bool suspend)
-{
-}
+/* FIXME: IT with vcorefs ? */
+void __attribute__((weak)) dvfsrc_md_scenario_update(bool suspend) {}
 
 /********************************************************************
  * dp/so3/so pcm_flags and pcm_flags1
@@ -165,8 +162,8 @@ int mtk_idle_trigger_wfi(int idle_type, int cpu)
 	print_ftrace_tag(idle_type, cpu, 0);
 
 	if (spm_dormant_sta < 0)
-		pr_info("[IDLE] idle spm_dormant_sta(%d) < 0\n",
-			spm_dormant_sta);
+		pr_info("mtk_enter_idle_state(%d) ret %d\n",
+			cpuidle_mode[idle_type], spm_dormant_sta);
 
 	return spm_dormant_sta;
 }
@@ -263,7 +260,7 @@ void mtk_idle_pre_process_by_chip(
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
 
 		wd_ret = get_wd_api(&wd_api);
-		if (!wd_ret) {
+		if (!wd_ret && wd_api) {
 			wd_api->wd_spmwdt_mode_config(WD_REQ_EN
 							, WD_REQ_RST_MODE);
 			wd_api->wd_suspend_notify();
@@ -364,10 +361,6 @@ void mtk_idle_post_process_by_chip(
 		/* backup wakeup reason */
 		slp_dp_last_wr = wr;
 	}
-
-	/* patch: rekick vcorefs */
-	if (wr == WR_PCM_ASSERT)
-		rekick_vcorefs_scenario();
 }
 
 
@@ -404,11 +397,8 @@ static unsigned int mtk_dpidle_output_log(
 		return WR_NONE;
 
 	/* [sleep dpidle] directly print */
-	/* FIXME: here
-	 *	return __spm_output_wake_reason(wakesta, true, "sleep_dpidle");
-	 */
 	if (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE)
-		return 0;
+		return __spm_output_wake_reason(wakesta, true, "sleep_dpidle");
 
 	if (!(idle_flag & MTK_IDLE_LOG_REDUCE)) {
 		print_log = true;
@@ -423,10 +413,8 @@ static unsigned int mtk_dpidle_output_log(
 
 	if (print_log) {
 		pr_info("Power/swap op_cond = 0x%x\n", op_cond);
-#if 0 //FIXME
 		wr = __spm_output_wake_reason(
 			wakesta, false, mtk_idle_name(idle_type));
-#endif
 		if (idle_flag & MTK_IDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
 	}
@@ -466,10 +454,8 @@ static unsigned int mtk_sodi_output_log(
 
 	if (print_log) {
 		pr_info("Power/swap op_cond = 0x%x\n", op_cond);
-#if 0 //FIXME
 		wr = __spm_output_wake_reason(
 			wakesta, false, mtk_idle_name(idle_type));
-#endif
 		if (idle_flag & MTK_IDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
 	}

@@ -209,7 +209,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-	if (!spm_load_firmware_status()) {
+	if (spm_load_firmware_status() < 1) {
 		pr_info("SPM FIRMWARE IS NOT READY\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;

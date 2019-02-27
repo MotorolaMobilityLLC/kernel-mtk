@@ -533,7 +533,7 @@ static ssize_t sodi_ctrl_show(struct kobject *kobj,
 static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj,
 	struct kobj_attribute *attr, char *buf)
 {
-#if 0 //FIXME
+#if 0 /* FIXME: No need for vcorefs ? */
 	return show_pwr_ctrl(SPM_PWR_CTRL_VCOREFS, __spm_vcorefs.pwrctrl, buf);
 #else
 	return 0;
@@ -1131,7 +1131,7 @@ static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj,
 	struct kobj_attribute *attr,
 				     const char *buf, size_t count)
 {
-#if 0  //FIXME
+#if 0 /* FIXME: No need for vcorefs ? */
 	return store_pwr_ctrl(SPM_PWR_CTRL_VCOREFS,
 		__spm_vcorefs.pwrctrl, buf, count);
 #else

@@ -26,7 +26,7 @@
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
 #include <mtk_spm_internal.h>
-
+#include <mtk_spm_resource_req_internal.h>
 
 /* [ByChip] Internal weak functions: implemented in mtk_idle_cond_check.c */
 void __attribute__((weak)) mtk_idle_cg_monitor(int sel) {}
@@ -36,49 +36,9 @@ void __attribute__((weak)) idle_refcnt_inc(void) {}
 void __attribute__((weak)) idle_refcnt_dec(void) {}
 
 /* Local variables */
-static unsigned long rg_cnt[NR_CPUS] = {0};
 /* External variables */
 //extern unsigned long slp_dp_cnt[NR_CPUS];	/* FIXME: sleep dpidle count */
 static unsigned long slp_dp_cnt[NR_CPUS];	/* FIXM: To be removed */
-
-static void go_to_wfi(void)
-{
-	isb();
-	mb();	/* memory barrier */
-	__asm__ __volatile__("wfi" : : : "memory");
-}
-
-int rgidle_enter(int cpu)
-{
-#if 0 //FIXME
-	remove_cpu_from_prefer_schedule_domain(cpu);
-#endif
-	mtk_idle_ratio_calc_start(IDLE_TYPE_RG, cpu);
-
-	idle_refcnt_inc();
-
-	#if MTK_IDLE_TRACE_TAG_ENABLE
-	trace_rgidle_rcuidle(cpu, 1);
-	#endif
-
-	go_to_wfi();
-
-	#if MTK_IDLE_TRACE_TAG_ENABLE
-	trace_rgidle_rcuidle(cpu, 0);
-	#endif
-
-	rg_cnt[cpu]++;
-
-	idle_refcnt_dec();
-
-	mtk_idle_ratio_calc_stop(IDLE_TYPE_RG, cpu);
-#if 0 //FIXME
-	add_cpu_to_prefer_schedule_domain(cpu);
-#endif
-	return CPUIDLE_STATE_DP;
-}
-EXPORT_SYMBOL(rgidle_enter);
-
 
 static int _idle_state_open(struct seq_file *s, void *data)
 {
@@ -110,9 +70,8 @@ static ssize_t idle_state_read(
 
 	log("*************** idle state ***********************\n");
 	for_each_possible_cpu(i) {
-		log("cpu%d: slp_dp=%lu, dp=%lu, so3=%lu, so=%lu, rg=%lu\n"
-			, i, slp_dp_cnt[i], dp_cnt[i], so3_cnt[i]
-			, so_cnt[i], rg_cnt[i]);
+		log("cpu%d: slp_dp=%lu, dp=%lu, so3=%lu, so=%lu\n"
+			, i, slp_dp_cnt[i], dp_cnt[i], so3_cnt[i], so_cnt[i]);
 	}
 	log("\n");
 
@@ -139,7 +98,7 @@ static ssize_t idle_state_read(
 	log("status help:          cat %s\n", MTK_DEBUGFS_IDLE);
 	log("dpidle help:          cat %s\n", MTK_DEBUGFS_DPIDLE);
 	log("sodi help:            cat %s\n", MTK_DEBUGFS_SODI);
-	log("sodi3 help:           cat %sn", MTK_DEBUGFS_SODI3);
+	log("sodi3 help:           cat %s\n", MTK_DEBUGFS_SODI3);
 	log("idle ratio profile:   echo ratio 1/0 > %s\n", MTK_DEBUGFS_IDLE);
 	log("idle latency profile: echo latency 1/0 > %s\n", MTK_DEBUGFS_IDLE);
 	log("cgmon off/dp/so3/so:  echo cgmon 0/1/2/3 > %s\n"
@@ -209,8 +168,6 @@ static void mtk_idle_init(struct dentry *root_entry)
 {
 	debugfs_create_file(
 		"idle_state", 0644, root_entry, NULL, &idle_state_fops);
-
-	mtk_idle_block_setting(IDLE_TYPE_RG, rg_cnt, NULL);
 }
 
 void __init mtk_cpuidle_framework_init(void)
@@ -225,6 +182,7 @@ void __init mtk_cpuidle_framework_init(void)
 	mtk_dpidle_init(root_entry);
 	mtk_sodi_init(root_entry);
 	mtk_sodi3_init(root_entry);
+	spm_resource_req_debugfs_init(root_entry);
 
 	spm_resource_req_init();
 }

@@ -157,11 +157,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->isr = spm_read(SPM_IRQ_STA);
 }
 
-void rekick_vcorefs_scenario(void)
-{
-/* FIXME: */
-}
-
 unsigned int __spm_output_wake_reason(
 	const struct wake_status *wakesta, bool suspend, const char *scenario)
 {
@@ -263,7 +258,7 @@ long int spm_get_current_time_ms(void)
 
 void spm_set_dummy_read_addr(int debug)
 {
-// FIXME
+	/* FIXME: no implementation in this chip ? */
 }
 
 int __attribute__ ((weak)) get_dynamic_period(
