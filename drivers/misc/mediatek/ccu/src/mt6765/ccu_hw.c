@@ -1236,7 +1236,14 @@ int ccu_i2c_ctrl(unsigned char i2c_write_id, int transfer_len)
 
 int ccu_read_info_reg(int regNo)
 {
-	int *offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
+	int *offset;
+
+	if ((regNo < 0) || (regNo > 32)) {
+		LOG_ERR("Invalid regNo : %d\n", regNo);
+		return 0;
+	}
+
+	offset = (int *)(uintptr_t)(ccu_base + 0x60 + regNo * 4);
 
 	LOG_DBG("ccu_read_info_reg: %x\n", (unsigned int)(*offset));
 

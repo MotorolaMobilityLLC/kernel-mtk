@@ -50,8 +50,12 @@ enum mb_result mailbox_init(struct ccu_mailbox_t *apmcu_mb_addr,
 
 enum mb_result mailbox_send_cmd(struct ccu_msg_t *task)
 {
+	enum mb_result result;
+
+	if (!_ccu_mailbox)
+		return MAILBOX_UNINIT;
 	/*Fill slot*/
-	enum mb_result result = _mailbox_write_to_buffer(task);
+	result = _mailbox_write_to_buffer(task);
 
 	if (result != MAILBOX_OK)
 		return result;
@@ -73,11 +77,15 @@ enum mb_result mailbox_send_cmd(struct ccu_msg_t *task)
 
 enum mb_result mailbox_receive_cmd(struct ccu_msg_t *task)
 {
+
 	enum mb_result result;
 	MUINT32 rear;
 	MUINT32 front;
 
 	MUINT32 nextReadSlot;
+
+	if (!_apmcu_mailbox)
+		return MAILBOX_UNINIT;
 
 	rear = _apmcu_mailbox->rear;
 	front = _apmcu_mailbox->front;

@@ -667,7 +667,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 				LOG_ERR(
 					"[%s] pop command failed, ret=%d\n",
 					"DEQUE_COMMAND", ret);
-				return -EFAULT;
+				ret = -EFAULT;
 			}
 
 			ret = copy_to_user((void *)arg, cmd,
@@ -676,7 +676,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 				LOG_ERR(
 					"[%s] copy_to_user failed, ret=%d\n",
 					"DEQUE_COMMAND", ret);
-				return -EFAULT;
+				ret = -EFAULT;
 			}
 
 			ret = ccu_free_command(cmd);
@@ -684,7 +684,7 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 				LOG_ERR(
 					"[%s] free command, ret=%d\n",
 					"DEQUE_COMMAND", ret);
-				return -EFAULT;
+				ret = -EFAULT;
 			}
 
 			break;
