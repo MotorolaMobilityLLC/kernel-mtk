@@ -53,7 +53,7 @@
 
 USB_ETHERNET_MODULE_PARAMETERS();
 
-#ifdef CONFIG_MTK_ECCCI_C2K
+#ifdef CONFIG_MTK_ECCCI_C2K_TMP
 #include "viatel_rawbulk.h"
 #endif
 
@@ -1708,7 +1708,7 @@ static struct android_usb_function audio_source_function = {
 };
 
 
-#ifdef CONFIG_MTK_ECCCI_C2K
+#ifdef CONFIG_MTK_ECCCI_C2K_TMP
 static int rawbulk_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -1858,7 +1858,7 @@ static struct android_usb_function *supported_functions[] = {
 #ifdef CONFIG_SND_RAWMIDI
 	&midi_function,
 #endif
-#ifdef CONFIG_MTK_ECCCI_C2K
+#ifdef CONFIG_MTK_ECCCI_C2K_TMP
 	&rawbulk_modem_function,
 	&rawbulk_ets_function,
 	&rawbulk_atc_function,
