@@ -1924,8 +1924,8 @@ void musb_host_tx(struct musb *musb, u8 epnum)
 
 				diff_ns = timeval_to_ns(&tv_after) -
 					timeval_to_ns(&tv_before);
-				/* 1 sec for timeout */
-				if (diff_ns >= 1000000000) {
+				/* 1 ms for timeout */
+				if (diff_ns >= 1000000) {
 					timeout = 1;
 					break;
 				}
