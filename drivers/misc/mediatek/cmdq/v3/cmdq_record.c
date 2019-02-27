@@ -1641,7 +1641,7 @@ s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
 
 		/* insert EOF instruction */
 		arg_b = 0x1;	/* generate IRQ for each command iteration */
-#ifdef DISABLE_LOOP_IRQ
+#ifndef CMDQ_DEBUG_LOOP_IRQ
 		/* no generate IRQ for loop thread to save power */
 		if (loop && !cmdq_get_func()->force_loop_irq(handle->scenario))
 			arg_b = 0x0;
