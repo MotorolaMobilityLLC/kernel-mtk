@@ -787,7 +787,7 @@ void mtk_qmu_stop(u8 ep_num, u8 isRx)
 			MGC_WriteQMU32(base,
 				MGC_O_QMU_TQCSR(ep_num),
 				DQMU_QUE_STOP);
-			QMU_WARN("Stop TQ %d\n", ep_num);
+			QMU_INFO("Stop TQ %d\n", ep_num);
 		} else {
 			QMU_INFO("TQ %d already inactive\n", ep_num);
 		}
@@ -797,7 +797,7 @@ void mtk_qmu_stop(u8 ep_num, u8 isRx)
 			MGC_WriteQMU32(base
 				, MGC_O_QMU_RQCSR(ep_num)
 				, DQMU_QUE_STOP);
-			QMU_WARN("Stop RQ %d\n", ep_num);
+			QMU_INFO("Stop RQ %d\n", ep_num);
 		} else {
 			QMU_INFO("RQ %d already inactive\n", ep_num);
 		}
