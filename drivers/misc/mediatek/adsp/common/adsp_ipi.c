@@ -111,9 +111,7 @@ void adsp_A_ipi_init(void)
 	adsp_send_obj[ADSP_A_ID] = adsp_rcv_obj[ADSP_A_ID] + 1;
 	pr_debug("adsp_rcv_obj[ADSP_A_ID] = 0x%p\n", adsp_rcv_obj[ADSP_A_ID]);
 	pr_debug("adsp_send_obj[ADSP_A_ID] = 0x%p\n", adsp_send_obj[ADSP_A_ID]);
-#ifdef Liang_Check //memset_io crash
-	memset_io(adsp_send_obj[ADSP_A_ID], 0, SHARE_BUF_SIZE);
-#endif
+
 	adsp_to_ap_ipi_count = 0;
 	ap_to_adsp_ipi_count = 0;
 

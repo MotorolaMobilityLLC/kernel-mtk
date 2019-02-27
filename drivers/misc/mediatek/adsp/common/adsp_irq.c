@@ -78,14 +78,10 @@ irqreturn_t  adsp_A_wdt_handler(int irq, void *dev_id)
  */
 irqreturn_t adsp_A_irq_handler(int irq, void *dev_id)
 {
-	unsigned int reg = readl(ADSP_A_TO_HOST_REG);
-
 	if (!reboot)
 		adsp_A_ipi_handler();
 	/* write 1 clear */
-	reg |= ADSP_IRQ_ADSP2HOST;
-
-	writel(reg, ADSP_A_TO_HOST_REG);
+	writel(ADSP_IRQ_ADSP2HOST, ADSP_A_TO_HOST_REG);
 
 	return IRQ_HANDLED;
 }
