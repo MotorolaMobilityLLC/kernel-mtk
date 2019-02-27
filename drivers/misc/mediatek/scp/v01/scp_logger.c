@@ -540,8 +540,9 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	unsigned long flags;
 	struct SCP_LOG_INFO *log_info = (struct SCP_LOG_INFO *)data;
 
-	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n"
-		, scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
+	pr_debug("[SCP]scp_get_reserve_mem_phys=%llx\n",
+	(unsigned long long)scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID));
+
 	spin_lock_irqsave(&scp_A_log_buf_spinlock, flags);
 	/* sync scp last log information*/
 	scp_A_log_dram_addr_last = log_info->scp_log_dram_addr;
@@ -630,7 +631,12 @@ int scp_logger_init(phys_addr_t start, phys_addr_t limit)
 	/*init dram ctrl table*/
 	last_ofs = 0;
 
+#ifdef CONFIG_ARM64
 	SCP_A_log_ctl = (struct log_ctrl_s *) start;
+#else
+	/* plz fix origial ptr to phys_addr flow */
+	SCP_A_log_ctl = (struct log_ctrl_s *) (u32) start;
+#endif
 	SCP_A_log_ctl->base = PLT_LOG_ENABLE; /* magic */
 	SCP_A_log_ctl->enable = 0;
 	SCP_A_log_ctl->size = sizeof(*SCP_A_log_ctl);
