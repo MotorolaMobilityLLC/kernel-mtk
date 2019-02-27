@@ -84,7 +84,7 @@
 			dprec_logger_pr(DPREC_LOGGER_DUMP, \
 				fmt, ##__VA_ARGS__);	\
 			if (g_mobilelog)				\
-				pr_debug("[DDP/"LOG_TAG"]"fmt, \
+				pr_info("[DDP/"LOG_TAG"]"fmt, \
 					##__VA_ARGS__);	\
 		}							\
 	} while (0)
