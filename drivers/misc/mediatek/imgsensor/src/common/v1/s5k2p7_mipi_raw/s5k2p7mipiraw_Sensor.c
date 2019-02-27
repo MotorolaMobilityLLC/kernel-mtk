@@ -421,7 +421,7 @@ static void check_streamoff(void)
 		else
 			break;
 	}
-	pr_debug(" check_streamoff exit!\n");
+	pr_debug("%s exit!\n", __func__);
 }
 
 static kal_uint32 streaming_control(kal_bool enable)
@@ -1043,7 +1043,7 @@ kal_uint16 addr_data_pair_init2_s5k2p7[] = {
 
 static void sensor_init(void)
 {
-	pr_debug("sensor_init() E\n");
+	pr_debug("%s() E\n", __func__);
 	write_cmos_sensor(0x6028, 0x4000);
 	write_cmos_sensor(0x0100, 0x0000);
 	mdelay(3);         /* Wait value must be at least 20000 MCLKs*/
@@ -1290,7 +1290,7 @@ static void preview_setting(void)
 {
 	/*Preview 2320*1744 30fps 24M MCLK 4lane 1488Mbps/lane*/
 	/*preview 30.01fps*/
-	pr_debug("preview_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 
 	table_write_cmos_sensor(addr_data_pair_preview_s5k2p7,
 		sizeof(addr_data_pair_preview_s5k2p7) / sizeof(kal_uint16));
@@ -1426,7 +1426,7 @@ kal_uint16 addr_data_pair_cap15fps_s5k2p7[] = {
 
 static void capture_setting(kal_uint16 currefps)
 {
-	pr_debug("capture_setting() E! currefps:%d\n", currefps);
+	pr_debug("%s() E! currefps:%d\n", __func__, currefps);
 
 	/* full size 29.76fps*/
 	/* capture setting 4640*3488  24MHz 560MHz 1464Mbps/lane*/
@@ -1498,7 +1498,7 @@ kal_uint16 addr_data_pair_normal_video_s5k2p7[] = {
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	pr_debug("normal_video_setting() E! currefps:%d\n", currefps);
+	pr_debug("%s() E! currefps:%d\n", __func__, currefps);
 	/* full size 30fps*/
 	table_write_cmos_sensor(addr_data_pair_normal_video_s5k2p7,
 	    sizeof(addr_data_pair_normal_video_s5k2p7) / sizeof(kal_uint16));
@@ -1554,7 +1554,7 @@ kal_uint16 addr_data_pair_hs_video_s5k2p7[] = {
 
 static void hs_video_setting(void)
 {
-	pr_debug("hs_video_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 	/*720p 120fps*/
 	table_write_cmos_sensor(addr_data_pair_hs_video_s5k2p7,
 		sizeof(addr_data_pair_hs_video_s5k2p7) / sizeof(kal_uint16));
@@ -1611,7 +1611,7 @@ kal_uint16 addr_data_pair_slim_video_s5k2p7[] = {
 
 static void slim_video_setting(void)
 {
-	pr_debug("slim_video_setting() E\n");
+	pr_debug("%s() E\n", __func__);
 	/*1080p 60fps*/
 	table_write_cmos_sensor(addr_data_pair_slim_video_s5k2p7,
 		sizeof(addr_data_pair_slim_video_s5k2p7) / sizeof(kal_uint16));

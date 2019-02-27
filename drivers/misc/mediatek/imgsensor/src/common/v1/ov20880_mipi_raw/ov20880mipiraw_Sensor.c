@@ -2056,7 +2056,7 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 1;
 	kal_uint32 sensor_id = 0;
 
-	pr_debug("PLATFORM:MIPI 4LANE ov20880 open+++++ ++++\n");
+	pr_debug("PLATFORM:MIPI 4LANE ov20880+++++ ++++\n");
 
 	/* sensor have two i2c address 0x6c 0x6d & 0x21 0x20,
 	 * we should detect the module used i2c address

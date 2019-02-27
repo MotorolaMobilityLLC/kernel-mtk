@@ -142,10 +142,10 @@ struct IMGSENSOR_HW_POWER_SEQ {
 
 struct IMGSENSOR_HW_DEVICE {
 	void              *pinstance;
-	enum IMGSENSOR_RETURN (*init)(void *);
-	enum IMGSENSOR_RETURN (*release)(void *);
+	enum IMGSENSOR_RETURN (*init)(void *arg);
+	enum IMGSENSOR_RETURN (*release)(void *arg);
 	enum IMGSENSOR_RETURN (*set)(
-		void *,
+		void *arg,
 		enum IMGSENSOR_SENSOR_IDX,
 		enum IMGSENSOR_HW_PIN,
 		enum IMGSENSOR_HW_PIN_STATE);
