@@ -1255,37 +1255,41 @@ static ssize_t md_cd_dump_store(struct ccci_modem *md,
 {
 	struct md_sys1_info *md_info =
 		(struct md_sys1_info *)md->private_data;
-
+	enum MD_STATE md_state = ccci_fsm_get_md_state(md->index);
 	/* echo will bring "xxx\n" here,
 	 * so we eliminate the "\n" during comparing
 	 */
-	if (strncmp(buf, "ccif", count - 1) == 0)
-		ccci_hif_dump_status(1 << CCIF_HIF_ID,
-			DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
-	if (strncmp(buf, "cldma", count - 1) == 0)
-		ccci_hif_dump_status(1 << CLDMA_HIF_ID,
-			DUMP_FLAG_CLDMA, -1);
-	if (strncmp(buf, "register", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
-	if (strncmp(buf, "smem_exp", count-1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM_EXP, NULL, 0);
-	if (strncmp(buf, "smem_ccism", count-1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCISM, NULL, 0);
-	if (strncmp(buf, "smem_ccb_ctrl", count-1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCB_CTRL, NULL, 0);
-	if (strncmp(buf, "smem_ccb_data", count-1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM_CCB_DATA, NULL, 0);
-	if (strncmp(buf, "pccif", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_PCCIF_REG, NULL, 0);
-	if (strncmp(buf, "image", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_IMAGE, NULL, 0);
-	if (strncmp(buf, "layout", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_LAYOUT, NULL, 0);
-	if (strncmp(buf, "mdslp", count - 1) == 0)
-		md->ops->dump_info(md, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
-	if (strncmp(buf, "ccif_irq", count - 1) == 0) {
-		CCCI_ERROR_LOG(md->index, TAG, "dump ccif.\n");
-		mt_irq_dump_status(md_info->ap_ccif_irq_id);
+	if (md_state != GATED && md_state != INVALID) {
+		if (strncmp(buf, "ccif", count - 1) == 0)
+			ccci_hif_dump_status(1 << CCIF_HIF_ID,
+				DUMP_FLAG_CCIF_REG | DUMP_FLAG_CCIF, 0);
+		if (strncmp(buf, "cldma", count - 1) == 0)
+			ccci_hif_dump_status(1 << CLDMA_HIF_ID,
+				DUMP_FLAG_CLDMA, -1);
+		if (strncmp(buf, "register", count - 1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_REG, NULL, 0);
+		if (strncmp(buf, "smem_exp", count-1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_SMEM_EXP, NULL, 0);
+		if (strncmp(buf, "smem_ccism", count-1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_SMEM_CCISM, NULL, 0);
+		if (strncmp(buf, "smem_ccb_ctrl", count-1) == 0)
+			md->ops->dump_info(md,
+				DUMP_FLAG_SMEM_CCB_CTRL, NULL, 0);
+		if (strncmp(buf, "smem_ccb_data", count-1) == 0)
+			md->ops->dump_info(md,
+				DUMP_FLAG_SMEM_CCB_DATA, NULL, 0);
+		if (strncmp(buf, "pccif", count - 1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_PCCIF_REG, NULL, 0);
+		if (strncmp(buf, "image", count - 1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_IMAGE, NULL, 0);
+		if (strncmp(buf, "layout", count - 1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_LAYOUT, NULL, 0);
+		if (strncmp(buf, "mdslp", count - 1) == 0)
+			md->ops->dump_info(md, DUMP_FLAG_SMEM_MDSLP, NULL, 0);
+		if (strncmp(buf, "ccif_irq", count - 1) == 0) {
+			CCCI_ERROR_LOG(md->index, TAG, "dump ccif.\n");
+			mt_irq_dump_status(md_info->ap_ccif_irq_id);
+		}
 	}
 	return count;
 }
