@@ -711,11 +711,15 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 
 	names = kcalloc(ION_NUM_HEAP_IDS, sizeof(char *), GFP_ATOMIC);
 
-	if (!names)
+	if (!names) {
+		kfree(sizes);
 		return -ENOMEM;
+	}
 
 	if (!down_read_trylock(&dev->lock)) {
 		pr_notice("%s get lock fail\n", __func__);
+		kfree(sizes);
+		kfree(names);
 		return 0;
 	}
 	if (!ion_client_validate(dev, client)) {
