@@ -1119,6 +1119,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 	&ili9881h_hdp_dsi_vdo_ilitek_rt5081_19_9_lcm_drv,
 #endif
 
+#if defined(HX83112B_FHDP_DSI_CMD_AUO_RT5081)
+	&hx83112b_fhdp_dsi_cmd_auo_rt5081_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
