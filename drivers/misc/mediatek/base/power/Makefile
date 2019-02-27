@@ -30,6 +30,7 @@ endif
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6765) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += dcm_v1/
+obj-$(CONFIG_MACH_MT6761) += dcm_v1/
 obj-$(CONFIG_MACH_MT6765) += dcm_v1/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6758) += clkbuf_v1/
