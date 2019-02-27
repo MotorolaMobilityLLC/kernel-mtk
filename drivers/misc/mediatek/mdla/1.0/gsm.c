@@ -11,17 +11,17 @@
  * GNU General Public License for more details.
  */
 
+#include "mdla_debug.h"
+#include "gsm.h"
+#include "mdla.h"
+
 #include <linux/bitmap.h>
 #include <asm/page.h>
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include "gsm.h"
-#include "mdla.h"
-#include "mdla_debug.h"
 
-#define GSM_SIZE         (SZ_1M)
 #define GSM_BITMAP_SIZE  (GSM_SIZE/PAGE_SIZE)
 DECLARE_BITMAP(gsm_bitmap, GSM_BITMAP_SIZE);
 DEFINE_SPINLOCK(gsm_lock);
@@ -33,11 +33,11 @@ void *gsm_alloc(size_t size)
 	int order = get_order(size);
 
 	spin_lock_irqsave(&gsm_lock, flags);
-
-	pageno = bitmap_find_free_region(gsm_bitmap, GSM_SIZE, order);
+	pageno = bitmap_find_free_region(
+		gsm_bitmap, GSM_BITMAP_SIZE, order);
 	spin_unlock_irqrestore(&gsm_lock, flags);
 	if (unlikely(pageno < 0))
-		return 0;
+		return NULL;
 	return apu_mdla_gsm_top + (pageno << PAGE_SHIFT);
 }
 
@@ -82,22 +82,37 @@ int gsm_release(void *vaddr, size_t size)
 	return 0;
 }
 
-void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
+int mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 {
-	if (malloc_data->size == GSM_MVA_INVALID) {
-		malloc_data->size = GSM_SIZE;
+	int ret = 0;
+	int ex = 0;
+	void *ptr;
+	u32 size = malloc_data->size;
+
+	if (size == GSM_MVA_INVALID) {
+		size = GSM_SIZE;
 		mdla_mem_debug("%s: <exclusive mode>\n", __func__);
+		ex = 1;
 	}
-	malloc_data->kva = gsm_alloc(malloc_data->size);
+	ptr = gsm_alloc(size);
+
+	if (ptr == NULL)
+		ret = -ENOMEM;
+
+	malloc_data->size = size;
+	malloc_data->kva = (ex) ? apu_mdla_gsm_top : ptr;
 	malloc_data->mva = gsm_virt_to_mva(malloc_data->kva);
 	malloc_data->pa = gsm_virt_to_pa(malloc_data->kva);
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	/* avoid bus hang in fpga stage */
 	malloc_data->pa = (void *)((long) malloc_data->mva);
 #endif
-	mdla_mem_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
+	mdla_mem_debug("%s: ret: %d, kva:%p, mva:%x, pa:%p, size:%x\n",
+		__func__, ret,
 		malloc_data->kva, malloc_data->mva,
 		malloc_data->pa, malloc_data->size);
+
+	return ret;
 }
 
 void mdla_gsm_free(struct ioctl_malloc *malloc_data)

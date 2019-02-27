@@ -140,6 +140,21 @@ struct ioctl_ion {
 	size_t len;     /* [in] memory size */
 };
 
+enum MDLA_CONFIG {
+	MDLA_CFG_NONE = 0,
+	MDLA_CFG_TIMEOUT_GET = 1,
+	MDLA_CFG_TIMEOUT_SET = 2,
+	MDLA_CFG_FIFO_SZ_GET = 3,
+	MDLA_CFG_FIFO_SZ_SET = 4,
+	MDLA_CFG_GSM_INFO = 5,
+};
+
+struct ioctl_config {
+	__u32 op;
+	__u32 arg_count;
+	__u64 arg[8];
+};
+
 struct mdla_power {
 	uint8_t boost_value;
 	/* align with core index defined in user space header file */
@@ -182,6 +197,8 @@ struct mdla_lock_power {
 #define IOCTL_PERF_SET_MODE       _IOWR(IOC_MDLA, 14, struct ioctl_perf)
 #define IOCTL_ION_KMAP            _IOWR(IOC_MDLA, 15, struct ioctl_ion)
 #define IOCTL_ION_KUNMAP          _IOWR(IOC_MDLA, 16, struct ioctl_ion)
+
+/* 17 ~ 63: reserved for DVFS */
 #define IOCTL_SET_POWER         _IOW(IOC_MDLA, 17, struct mdla_power)
 #define IOCTL_EARA_LOCK_POWER    _IOW(IOC_MDLA, 18, struct mdla_lock_power)
 #define IOCTL_POWER_HAL_LOCK_POWER _IOW(IOC_MDLA, 19, struct mdla_lock_power)
@@ -190,6 +207,9 @@ struct mdla_lock_power {
 
 #define MDLA_DVFS_IOCTL_START IOCTL_SET_POWER
 #define MDLA_DVFS_IOCTL_END   IOCTL_POWER_HAL_UNLOCK_POWER
+
+#define IOCTL_CONFIG              _IOWR(IOC_MDLA, 64, struct ioctl_config)
+
 
 #endif
 
