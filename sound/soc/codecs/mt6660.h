@@ -27,8 +27,8 @@ struct mt6660_chip {
 	struct platform_device *param_dev;
 	struct rt_regmap_device *regmap;
 	struct mutex var_lock;
-	uint8_t chip_rev;
-	uint8_t dev_cnt;
+	u8 chip_rev;
+	u8 dev_cnt;
 	int pwr_cnt;
 };
 

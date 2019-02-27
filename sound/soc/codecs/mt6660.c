@@ -181,11 +181,11 @@ static int mt6660_codec_init_setting(struct snd_soc_codec *codec)
 	if (ret < 0)
 		return ret;
 	/* HPF coefficient for current sense path */
-	ret = snd_soc_write(codec, MT6660_REG_HPF1_COEF, 0x7fdbfffe);
+	ret = snd_soc_write(codec, MT6660_REG_HPF1_COEF, 0x7fdb7ffe);
 	if (ret < 0)
 		return ret;
 	/* HPF coefficient for voltage sense path */
-	ret = snd_soc_write(codec, MT6660_REG_HPF2_COEF, 0x7fdbfffe);
+	ret = snd_soc_write(codec, MT6660_REG_HPF2_COEF, 0x7fdb7ffe);
 	if (ret < 0)
 		return ret;
 	/* SIG Gain */
@@ -446,6 +446,20 @@ static int mt6660_codec_put_volsw(struct snd_kcontrol *kcontrol,
 	return put_ret;
 }
 
+static int mt6660_codec_get_volsw(struct snd_kcontrol *kcontrol,
+				  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
+	struct mt6660_chip *chip = snd_soc_codec_get_drvdata(codec);
+	int ret = -EINVAL;
+
+	if (!strcmp(kcontrol->id.name, "Chip_Rev")) {
+		ucontrol->value.integer.value[0] = chip->chip_rev & 0x0f;
+		ret = 0;
+	}
+	return ret;
+}
+
 static const DECLARE_TLV_DB_SCALE(vol_ctl_tlv, -1155, 5, 0);
 
 static const struct snd_kcontrol_new mt6660_codec_snd_controls[] = {
@@ -481,6 +495,8 @@ static const struct snd_kcontrol_new mt6660_codec_snd_controls[] = {
 		       snd_soc_get_volsw, mt6660_codec_put_volsw),
 	SOC_SINGLE_EXT("T0_SEL", MT6660_REG_CALI_T0, 0, 7, 0,
 		       snd_soc_get_volsw, NULL),
+	SOC_SINGLE_EXT("Chip_Rev", SND_SOC_NOPM, 0, 16, 0,
+		       mt6660_codec_get_volsw, NULL),
 };
 
 static const struct snd_soc_codec_driver mt6660_codec_driver = {
