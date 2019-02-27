@@ -45,7 +45,7 @@
 #include <linux/freezer.h>
 #include <linux/ratelimit.h>
 
-#define MTK_LMK_USER_EVENT
+//#define MTK_LMK_USER_EVENT
 
 #ifdef MTK_LMK_USER_EVENT
 #include <linux/miscdevice.h>
@@ -410,12 +410,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	/* Compute suitable min_score_adj */
 	min_score_adj = min(min_score_adj, other_min_score_adj);
 
-#ifdef MTK_LMK_USER_EVENT
-	/* Send uevent if needed */
-	if (mtklmk_uevent_timeout)
-		mtklmk_uevent(min_score_adj, minfree);
-#endif
-
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 		     sc->nr_to_scan, sc->gfp_mask, other_free,
 		     other_file, min_score_adj);
@@ -524,6 +518,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	if (selected && selected_oom_score_adj <= lowmem_no_warn_adj &&
 	    min_score_adj <= lowmem_warn_adj)
 		dump_memory_status(selected_oom_score_adj);
+
+#ifdef MTK_LMK_USER_EVENT
+	/* Send uevent if needed */
+	if (mtklmk_uevent_timeout)
+		mtklmk_uevent(min_score_adj, minfree);
+#endif
 
 	return rem;
 }
