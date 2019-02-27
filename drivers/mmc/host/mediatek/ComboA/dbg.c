@@ -303,7 +303,7 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		skip = dbg_run_host_log_dat[i].skip;
 		if (cmd == 44 && !type) {
 			cnt = arg & 0xffff;
-			tag = (arg >> 16) & 0xf;
+			tag = (arg >> 16) & 0x1f;
 			is_read = (arg >> 30) & 0x1;
 			is_rel = (arg >> 31) & 0x1;
 			is_fprg = (arg >> 24) & 0x1;
@@ -314,7 +314,7 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 				is_read ? "R" : "W",
 				cnt, is_rel, is_fprg);
 		} else if ((cmd == 46 || cmd == 47) && !type) {
-			tag = (arg >> 16) & 0xf;
+			tag = (arg >> 16) & 0x1f;
 			SPREAD_PRINTF(buff, size, m,
 				"%03d [%5llu.%06llu]%2d %2d %08x id=%02d\n",
 				j, time_sec, time_usec,
