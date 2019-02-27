@@ -753,9 +753,8 @@ void AudDrv_ADC2_Hires_Clk_Off(void)
 void AudDrv_APLL22M_Clk_On(void)
 {
 	int ret = 0;
-	unsigned long flags = 0;
 
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_clk_mutex);
 	pr_debug("%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
@@ -788,7 +787,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	}
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_clk_mutex);
 }
 
 void AudDrv_APLL22M_Clk_Off(void)
@@ -834,11 +833,10 @@ EXIT:
 void AudDrv_APLL24M_Clk_On(void)
 {
 	int ret = 0;
-	unsigned long flags = 0;
 
 	pr_debug("%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
-	spin_lock_irqsave(&auddrv_Clk_lock, flags);
+	mutex_lock(&auddrv_clk_mutex);
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
 #ifdef PM_MANAGER_API
@@ -870,7 +868,7 @@ void AudDrv_APLL24M_Clk_On(void)
 	}
 	Aud_APLL24M_Clk_cntr++;
 EXIT:
-	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
+	mutex_unlock(&auddrv_clk_mutex);
 }
 
 void AudDrv_APLL24M_Clk_Off(void)
