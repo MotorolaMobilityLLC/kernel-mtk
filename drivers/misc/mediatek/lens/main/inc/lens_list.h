@@ -87,6 +87,16 @@ extern long DW9714AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			   unsigned long a_u4Param);
 extern int DW9714AF_Release(struct inode *a_pstInode, struct file *a_pstFile);
 
+#define FP5510E2AF_SetI2Cclient FP5510E2AF_SetI2Cclient_Main
+#define FP5510E2AF_Ioctl FP5510E2AF_Ioctl_Main
+#define FP5510E2AF_Release FP5510E2AF_Release_Main
+extern int FP5510E2AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+	spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long FP5510E2AF_Ioctl(struct file *a_pstFile,
+	unsigned int a_u4Command, unsigned long a_u4Param);
+extern int FP5510E2AF_Release(struct inode *a_pstInode,
+	struct file *a_pstFile);
+
 #define DW9814AF_SetI2Cclient DW9814AF_SetI2Cclient_Main
 #define DW9814AF_Ioctl DW9814AF_Ioctl_Main
 #define DW9814AF_Release DW9814AF_Release_Main
