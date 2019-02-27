@@ -552,34 +552,6 @@ static int compat_get_ion_sys_client_name(
 	return err;
 }
 
-static int compat_get_ion_sys_get_client_param(
-			struct compat_ion_sys_get_client_param __user *data32,
-			struct ion_sys_get_client_param __user *data)
-{
-	compat_uint_t client;
-
-	int err;
-
-	err = get_user(client, &data32->client);
-	err |= put_user(client, &data->client);
-
-	return err;
-}
-
-static int compat_put_ion_sys_get_client_param(
-			struct compat_ion_sys_get_client_param __user *data32,
-			struct ion_sys_get_client_param __user *data)
-{
-	compat_uint_t client;
-
-	int err = 0;
-
-	err = get_user(client, &data->client);
-	err |= put_user(client, &data32->client);
-
-	return err;
-}
-
 static int compat_get_ion_sys_data(
 			struct compat_ion_sys_data __user *data32,
 			struct ion_sys_data __user *data)
@@ -603,13 +575,6 @@ static int compat_get_ion_sys_data(
 		err |= compat_get_ion_sys_get_phys_param(
 			&data32->get_phys_param,
 			&data->get_phys_param);
-		break;
-	}
-	case ION_SYS_GET_CLIENT:
-	{
-		err |= compat_get_ion_sys_get_client_param(
-			&data32->get_client_param,
-			&data->get_client_param);
 		break;
 	}
 	case ION_SYS_SET_CLIENT_NAME:
@@ -646,12 +611,6 @@ static int compat_put_ion_sys_data(
 	{
 		err |= compat_put_ion_sys_get_phys_param(
 			&data32->get_phys_param, &data->get_phys_param);
-		break;
-	}
-	case ION_SYS_GET_CLIENT:
-	{
-		err |= compat_put_ion_sys_get_client_param(
-			&data32->get_client_param, &data->get_client_param);
 		break;
 	}
 	default:
