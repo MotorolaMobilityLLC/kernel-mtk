@@ -36,6 +36,7 @@ extern void *apu_mdla_gsm_base;
 extern void *apu_mdla_biu_top;
 
 extern u32 mdla_timeout;
+extern u32 mdla_poweroff_time;
 
 enum REASON_ENUM {
 	REASON_OTHERS = 0,
