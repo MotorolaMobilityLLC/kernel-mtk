@@ -1856,7 +1856,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 
 	mfg_cfg: mfg_cfg@13ffe000 {
-		compatible = "mediatek,mt6765-mfg_cfg", "syscon";
+		compatible = "mediatek,mfgcfg", "syscon";
 		reg = <0 0x13ffe000 0 0x1000>;
 		#clock-cells = <1>;
 	};
