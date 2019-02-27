@@ -436,6 +436,7 @@ struct fuel_gauge_custom_data {
 	int ui_full_limit_ith3;
 	int ui_full_limit_soc4;
 	int ui_full_limit_ith4;
+	int ui_full_limit_time;
 
 	/* using voltage to limit uisoc in 1% case */
 	int ui_low_limit_en;
@@ -449,6 +450,7 @@ struct fuel_gauge_custom_data {
 	int ui_low_limit_vth3;
 	int ui_low_limit_soc4;
 	int ui_low_limit_vth4;
+	int ui_low_limit_time;
 
 	/* Additional battery table */
 	int additional_battery_table_en;
@@ -489,7 +491,7 @@ struct FUELGAUGE_TEMPERATURE {
 };
 
 struct FUELGAUGE_PROFILE_STRUCT {
-	unsigned short mah;
+	unsigned int mah;
 	unsigned short voltage;
 	unsigned short resistance; /* Ohm*/
 	unsigned short percentage;
@@ -577,6 +579,8 @@ struct mtk_battery {
 	unsigned int fg_update_flag;
 	struct hrtimer fg_hrtimer;
 	struct mutex fg_mutex;
+	struct mutex notify_mutex;
+	struct srcu_notifier_head gm_notify;
 
 /*custom related*/
 	int battery_id;
@@ -612,6 +616,10 @@ struct mtk_battery {
 	bool disable_mtkbattery;
 	bool cmd_disable_nafg;
 	bool ntc_disable_nafg;
+
+/*battery plug out*/
+	bool disable_plug_int;
+
 
 /* adb */
 	int fixed_bat_tmp;
@@ -747,6 +755,8 @@ extern int wakeup_fg_algo_atomic(unsigned int flow_state);
 extern unsigned int TempToBattVolt(int temp, int update);
 extern int fg_get_battery_temperature_for_zcv(void);
 extern int battery_get_charger_zcv(void);
+extern bool is_fg_disabled(void);
+extern int battery_notifier(int event);
 
 
 /* pmic */
