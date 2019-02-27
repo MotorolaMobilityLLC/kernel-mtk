@@ -800,6 +800,18 @@ int svp_region_offline(phys_addr_t *pa, unsigned long *size)
 }
 EXPORT_SYMBOL(svp_region_offline);
 
+int secmem_region_offline64(phys_addr_t *pa, unsigned long *size)
+{
+	return _secmem_region_offline(pa, size, UPPER_LIMIT64);
+}
+EXPORT_SYMBOL(secmem_region_offline64);
+
+int secmem_region_offline(phys_addr_t *pa, unsigned long *size)
+{
+	return _secmem_region_offline(pa, size, UPPER_LIMIT32);
+}
+EXPORT_SYMBOL(secmem_region_offline);
+
 int secmem_region_online(void)
 {
 	struct SSMR_Region *region = &_ssmregs[SSMR_SECMEM];
