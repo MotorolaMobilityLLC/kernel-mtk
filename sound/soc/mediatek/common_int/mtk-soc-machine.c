@@ -772,9 +772,6 @@ static const struct of_device_id mt_audio_driver_dt_match[] = {
 	{
 		.compatible = "mediatek,audio",
 	},
-	{
-		.compatible = "mediatek,audio_snd_card",
-	},
 	{} };
 #endif
 

@@ -87,6 +87,11 @@
 #include <linux/device.h>
 #include <linux/pm_wakeup.h>
 
+//#define DL1_DEBUG_LOG
+//#define DL2_DEBUG_LOG
+//#define DL3_DEBUG_LOG
+//#define AFE_CONTROL_DEBUG_LOG
+
 /* TODO: KC: don't declare unnecessary typdef, just use it */
 #define DL_ABNORMAL_CONTROL_MAX (5)
 

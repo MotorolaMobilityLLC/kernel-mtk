@@ -367,18 +367,20 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 	unsigned long flags;
 	/* struct snd_pcm_runtime *runtime = substream->runtime; */
 	char *data_w_ptr = (char *)dst;
-
+#ifdef DL1_DEBUG_LOG
 	pr_debug("mtk_pcm_copy pos = %lu count = %lu\n ", pos, count);
+#endif
 	/* get total bytes to copy */
 	count = audio_frame_to_bytes(substream, count);
 
 	/* check which memif nned to be write */
 	Afe_Block = &pMemControl->rBlock;
-
+#ifdef DL1_DEBUG_LOG
 	pr_debug(
 		"AudDrv_write WriteIdx=0x%x, ReadIdx=0x%x, DataRemained=0x%x\n",
 		Afe_Block->u4WriteIdx, Afe_Block->u4DMAReadIdx,
 		Afe_Block->u4DataRemained);
+#endif
 
 	if (Afe_Block->u4BufferSize == 0) {
 		pr_err("AudDrv_write: u4BufferSize=0 Error");
@@ -399,9 +401,10 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 	}
 
 	copy_size = word_size_align(copy_size);
+#ifdef DL1_DEBUG_LOG
 	pr_debug("copy_size=0x%x, count=0x%x\n", copy_size,
 		       (unsigned int)count);
-
+#endif
 	if (copy_size != 0) {
 		spin_lock_irqsave(&auddrv_DLCtl_lock, flags);
 		Afe_WriteIdx_tmp = Afe_Block->u4WriteIdx;
@@ -417,11 +420,13 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
 			} else {
+#ifdef DL1_DEBUG_LOG
 				pr_debug(
 					"memcpy VirtBufAddr+Afe_WriteIdx= %p,data_w_ptr = %p copy_size = 0x%x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr, copy_size);
+#endif
 				if (copy_from_user((Afe_Block->pucVirtBufAddr +
 						    Afe_WriteIdx_tmp),
 						   data_w_ptr, copy_size)) {
@@ -438,13 +443,13 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 			spin_unlock_irqrestore(&auddrv_DLCtl_lock, flags);
 			data_w_ptr += copy_size;
 			count -= copy_size;
-
+#ifdef DL1_DEBUG_LOG
 			pr_debug(
 				"AudDrv_write finish1, copy:%x, WriteIdx:%x,ReadIdx=%x,Remained:%x, count=%d \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained, (int)count);
-
+#endif
 		} else {
 			/* copy twice */
 			kal_uint32 size_1 = 0, size_2 = 0;
@@ -452,20 +457,23 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 			size_1 = word_size_align(
 				(Afe_Block->u4BufferSize - Afe_WriteIdx_tmp));
 			size_2 = word_size_align((copy_size - size_1));
+#ifdef DL1_DEBUG_LOG
 			pr_debug("size_1=0x%x, size_2=0x%x\n", size_1,
 				       size_2);
+#endif
 			if (!access_ok(VERIFY_READ, data_w_ptr, size_1)) {
 				pr_err("AudDrv_write 1ptr invalid data_w_ptr=%p, size_1=%d u4BufferSize=%d, u4DataRemained=%d",
 				       data_w_ptr, size_1,
 				       Afe_Block->u4BufferSize,
 				       Afe_Block->u4DataRemained);
 			} else {
-
+#ifdef DL1_DEBUG_LOG
 				pr_debug(
 					"mcmcpy Afe_Block->pucVirtBufAddr+Afe_WriteIdx= %p data_w_ptr = %p size_1 = %x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr, size_1);
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    data_w_ptr,
@@ -490,13 +498,14 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 					Afe_Block->u4BufferSize,
 					Afe_Block->u4DataRemained);
 			} else {
-
+#ifdef DL1_DEBUG_LOG
 				pr_debug(
 					"mcmcpy VirtBufAddr+Afe_WriteIdx= %p,data_w_ptr+size_1 = %p size_2 = %x\n",
 					Afe_Block->pucVirtBufAddr +
 						Afe_WriteIdx_tmp,
 					data_w_ptr + size_1,
 					(unsigned int)size_2);
+#endif
 				if ((copy_from_user((Afe_Block->pucVirtBufAddr +
 						     Afe_WriteIdx_tmp),
 						    (data_w_ptr + size_1),
@@ -514,12 +523,14 @@ static int mtk_pcm_copy(struct snd_pcm_substream *substream, int channel,
 			spin_unlock_irqrestore(&auddrv_DLCtl_lock, flags);
 			count -= copy_size;
 			data_w_ptr += copy_size;
+#ifdef DL1_DEBUG_LOG
 
 			pr_debug(
 				"AudDrv_write finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%x \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained);
+#endif
 		}
 	}
 	return 0;
