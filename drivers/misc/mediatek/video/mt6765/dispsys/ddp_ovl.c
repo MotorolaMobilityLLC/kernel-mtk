@@ -951,6 +951,261 @@ static int ovl_layer_layout(enum DISP_MODULE_ENUM module,
 	return 1;
 }
 
+static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg)
+{
+	int update = 0;
+	int cnst_en = 1;
+	int trans_en = 0;
+
+	switch (cfg->fmt) {
+	case UFMT_RGBA4444:
+	case UFMT_RGBA5551:
+	case UFMT_RGBA8888:
+	case UFMT_BGRA8888:
+	case UFMT_ARGB8888:
+	case UFMT_ABGR8888:
+	case UFMT_PARGB8888:
+	case UFMT_PABGR8888:
+	case UFMT_PRGBA8888:
+	case UFMT_PBGRA8888:
+		trans_en = cfg->aen ? 1 : 0;
+		break;
+	default:
+		trans_en = 0;
+		break;
+	}
+
+	/* set reg*/
+	if (cfg->ext_layer == -1) {
+		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
+		set_reg[TRANS_EN] |= trans_en << (16 + cfg->phy_layer * 4);
+		set_reg[CNST_EN] |= cnst_en << (17 + cfg->phy_layer * 4);
+	} else {
+		set_reg[UPDATE] |= update << (cfg->ext_layer * 4);
+		set_reg[TRANS_EN] |= trans_en << (16 + cfg->ext_layer * 4);
+		set_reg[CNST_EN] |= cnst_en << (17 + cfg->ext_layer * 4);
+	}
+}
+
+/* note:disable layer isn't same with disable sbch ,so need set update,bch_en */
+static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
+			struct OVL_CONFIG_STRUCT *cfg, int *set_reg)
+{
+	struct sbch *data = bch_info;
+	int update = 1;
+	int trans_en = 0;
+	int cnst_en = 0;
+
+	data->pre_addr = cfg->addr;
+	data->height = cfg->dst_h;
+	data->fmt = cfg->fmt;
+	data->ext_layer_num = ext_layer_num;
+
+	if (cfg->ext_layer == -1) {
+		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
+		set_reg[TRANS_EN] |= trans_en << (16 + cfg->phy_layer * 4);
+		set_reg[CNST_EN] |= cnst_en << (17 + cfg->phy_layer * 4);
+	} else {
+		set_reg[UPDATE] |= update << (cfg->ext_layer * 4);
+		set_reg[TRANS_EN] |= trans_en << (16 + cfg->ext_layer * 4);
+		set_reg[CNST_EN] |= cnst_en << (17 + cfg->ext_layer * 4);
+	}
+}
+
+static void ext_layer_bch_disable(struct sbch *sbch_data,
+		int *ext_reg, struct disp_ddp_path_config *pConfig,
+		int ext_num, int *layer)
+{
+	int j;
+
+	for (j = 0; j < ext_num; j++) {
+		struct OVL_CONFIG_STRUCT *ext_cfg =
+					&pConfig->ovl_config[*layer + 1];
+
+		(*layer)++;
+		sBCH_disable(&sbch_data[*layer], -1, ext_cfg, ext_reg);
+	}
+}
+
+static int get_ext_num(struct disp_ddp_path_config *pConfig, int layer)
+{
+	int j;
+	int ext_num = 0;
+
+	for (j = 0; j < 3; j++) {
+		struct OVL_CONFIG_STRUCT *ext_cfg =
+					&pConfig->ovl_config[layer + j + 1];
+
+		if (pConfig->ovl_config[layer].phy_layer ==
+			ext_cfg->ext_sel_layer && ext_cfg->ext_layer != -1)
+			ext_num++;
+	}
+	return ext_num;
+}
+
+static int check_ext_update(struct sbch *sbch_data, int ext_num,
+		int layer, struct disp_ddp_path_config *pConfig)
+{
+	int j;
+
+	for (j = 0; j < ext_num; j++) {
+		struct OVL_CONFIG_STRUCT *ext_cfg =
+					&pConfig->ovl_config[layer + j + 1];
+
+		if (sbch_data[layer + j + 1].height != ext_cfg->dst_h ||
+			(sbch_data[layer + j + 1].pre_addr != ext_cfg->addr) ||
+			(sbch_data[layer + j + 1].fmt != ext_cfg->fmt))
+			return 1;
+	}
+	return 0;
+}
+
+static void ext_layer_bch_en(int *ext_reg, int ext_num,
+		struct disp_ddp_path_config *pConfig, int *layer)
+{
+	int j;
+
+	for (j = 0; j < ext_num; j++) {
+		struct OVL_CONFIG_STRUCT *ext_cfg =
+					&pConfig->ovl_config[*layer + 1];
+
+		(*layer)++;
+		sBCH_enable(ext_cfg, ext_reg);
+	}
+}
+
+static void layer_disable_bch(struct sbch *sbch_data, int ext_num,
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer,
+		struct disp_ddp_path_config *pConfig, int *phy_reg,
+		int *ext_reg)
+{
+	/*update phy layer */
+	sBCH_disable(&sbch_data[*layer], ext_num, ovl_cfg, phy_reg);
+	/* update all ext layer on this phy */
+	ext_layer_bch_disable(sbch_data, ext_reg, pConfig,
+					ext_num, layer);
+}
+static void ext_layer_compare(struct sbch *sbch_data, int *phy_reg,
+		int *ext_reg, struct disp_ddp_path_config *pConfig,
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer, int ext_num)
+{
+	int ext_update = 0;
+
+	  /* if the phy layer's ext layer num is same with pre frame,
+	   * check ext layer addr ,height , format have changed or not,
+	   * any ext layer height,addr,fmt changed,
+	   * the phy and its ext don't use BCH.
+	   */
+	if (sbch_data[*layer].ext_layer_num == ext_num) {
+		ext_update = check_ext_update(sbch_data, ext_num, (*layer),
+							pConfig);
+		if (!ext_update) {
+			sBCH_enable(ovl_cfg, phy_reg);
+			/* enable ext layer BCH on this phy */
+			ext_layer_bch_en(ext_reg, ext_num, pConfig, layer);
+			return;
+		}
+	}
+
+	/* the phy layer's ext layer num isn't same with pre frame,
+	 * update the phy layer and all ext layer on this phy.
+	 */
+	layer_disable_bch(sbch_data, ext_num, ovl_cfg,
+				layer, pConfig, phy_reg, ext_reg);
+}
+
+
+static void layer_no_update(struct sbch *sbch_data, int *phy_reg,
+		int *ext_reg, struct disp_ddp_path_config *pConfig,
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer)
+{
+	int ext_num = 0;
+
+	/* check the phy layer have ext layer or not */
+	ext_num = get_ext_num(pConfig, *layer);
+
+	/*  the phy layer don't have ext layer, it can use BCH */
+	if (!ext_num && !sbch_data[*layer].ext_layer_num) {
+		sBCH_enable(ovl_cfg, phy_reg);
+	} else if (!ext_num && sbch_data[*layer].ext_layer_num) {
+		/* phy don't have ext, but pre frame has ext
+		 * or pre frame is ext layer.
+		 */
+		sBCH_disable(&sbch_data[*layer], ext_num,
+					ovl_cfg, phy_reg);
+	} else {
+		ext_layer_compare(sbch_data, phy_reg, ext_reg, pConfig, ovl_cfg,
+							layer, ext_num);
+	}
+}
+static void layer_update(struct sbch *sbch_data, int *phy_reg,
+		int *ext_reg, struct disp_ddp_path_config *pConfig,
+		struct OVL_CONFIG_STRUCT *ovl_cfg, int *layer)
+{
+	int ext_num = 0;
+
+	/* check the phy layer has ext layer or not */
+	ext_num = get_ext_num(pConfig, *layer);
+	/* update the phy layer and all ext layer on this phy */
+	layer_disable_bch(sbch_data, ext_num, ovl_cfg,
+				layer, pConfig, phy_reg, ext_reg);
+}
+
+static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
+			struct disp_ddp_path_config *pConfig, void *handle)
+{
+	int i;
+	int phy_bit[BCH_BIT_NUM] = {0};
+	int ext_bit[BCH_BIT_NUM] = {0};
+
+	for (i = 0; i < TOTAL_OVL_LAYER_NUM; i++) {
+		struct OVL_CONFIG_STRUCT *ovl_cfg = &pConfig->ovl_config[i];
+
+		/*1. limit 18:9 */
+		if (ovl_cfg->dst_h > SBCH_HEIGHT ||
+			ovl_cfg->dst_w > SBCH_WIDTH || !ovl_cfg->layer_en) {
+			memset(&sbch_data[i], 0, sizeof(struct sbch));
+			continue;
+		}
+
+		if (ovl_cfg->ovl_index != module) {
+			memset(&sbch_data[i], 0, sizeof(struct sbch));
+			continue;
+		}
+
+		/* for Assert_layer config special case, do it specially */
+		if (is_DAL_Enabled() && module == DISP_MODULE_OVL0_2L &&
+			i == primary_display_get_option("ASSERT_LAYER"))
+			continue;
+
+		/* the layer address,height,fmt all don't change,
+		 * maybe use BCH.
+		 */
+		if (sbch_data[i].pre_addr == ovl_cfg->addr &&
+			sbch_data[i].height == ovl_cfg->dst_h &&
+			sbch_data[i].fmt == ovl_cfg->fmt) {
+			if (ovl_cfg->ext_layer == -1)
+				layer_no_update(sbch_data, phy_bit, ext_bit,
+					pConfig, ovl_cfg, &i);
+		} else {
+			/* the layer addr or height has changed */
+			if (ovl_cfg->ext_layer == -1)
+				layer_update(sbch_data, phy_bit, ext_bit,
+					pConfig, ovl_cfg, &i);
+		}
+	}
+
+	DDPDBG("set bch reg phy:%x, ext:%x\n",
+			(phy_bit[UPDATE]|phy_bit[TRANS_EN]|phy_bit[CNST_EN]),
+			(ext_bit[UPDATE]|ext_bit[TRANS_EN]|ext_bit[CNST_EN]));
+
+	/* set bch reg*/
+	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SBCH,
+		phy_bit[UPDATE] | phy_bit[TRANS_EN] | phy_bit[CNST_EN]);
+	DISP_REG_SET(handle, ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT,
+		ext_bit[UPDATE] | ext_bit[TRANS_EN] | ext_bit[CNST_EN]);
+}
+
 static int ovl_config_l(enum DISP_MODULE_ENUM module,
 	struct disp_ddp_path_config *pConfig, void *handle)
 {
@@ -978,6 +1233,19 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		return 0;
 
 	ovl_layer_layout(module, pConfig);
+
+	if (disp_helper_get_option(DISP_OPT_OVL_SBCH)) {
+		static struct sbch sbch_info[OVL_NUM][TOTAL_OVL_LAYER_NUM];
+		int ovl_index = ovl_to_index(module);
+
+		sbch_calc(module, sbch_info[ovl_index], pConfig, handle);
+	} else {
+	/* if don't enable bch feature, set bch reg to default value(0) */
+		DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_SBCH, 0);
+		DISP_REG_SET(handle,
+			ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT, 0);
+	}
 
 	/* be careful, turn off all layers */
 	for (ovl_layer = 0; ovl_layer < ovl_layer_num(module); ovl_layer++) {
