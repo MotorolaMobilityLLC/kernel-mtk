@@ -567,6 +567,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	if (module != DISP_MODULE_OVL1_2L)
 		rotate = 1;
+
+	if (rotate && is_slt_test())
+		rotate = 0;
+
 #endif
 
 	/* check dim layer fmt */
