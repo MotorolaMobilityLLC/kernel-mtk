@@ -83,7 +83,7 @@ static DEFINE_MUTEX(test_mem1_mutex);
 static DEFINE_MUTEX(test_client_mutex);
 
 static struct dentry *memtest_dir;
-static struct dentry *read_mr4, *read_dram_addr;
+static struct dentry *read_mr4, *read_mr5, *read_dram_addr;
 static struct dentry *memtest_result, *memtest_v2p;
 static struct dentry *memtest_mem0, *memtest_mem1;
 
@@ -168,6 +168,30 @@ static ssize_t read_mr4_read(struct file *file,
 static const struct file_operations read_mr4_fops = {
 	.owner = THIS_MODULE,
 	.read = read_mr4_read,
+};
+
+__weak unsigned char get_ddr_mr(unsigned int index)
+{
+	return 0;
+}
+
+static ssize_t read_mr5_read(struct file *file,
+	char __user *user_buf, size_t len, loff_t *offset)
+{
+	unsigned char buf[64];
+	ssize_t ret;
+
+	ret = 0;
+
+	ret += snprintf(buf + ret, sizeof(buf) - ret,
+		"MR5:0x%x\n", get_ddr_mr(5));
+
+	return simple_read_from_buffer(user_buf, len, offset, buf, ret);
+}
+
+static const struct file_operations read_mr5_fops = {
+	.owner = THIS_MODULE,
+	.read = read_mr5_read,
 };
 
 __weak unsigned int mt_dramc_col_size_get(unsigned int emi_cona,
@@ -764,6 +788,13 @@ static int __init dram_memtest_interface_init(void)
 			memtest_dir, NULL, &read_mr4_fops);
 	if (!read_mr4) {
 		pr_info("%s: create read_mr4 interface fail\n", __func__);
+		return -1;
+	}
+
+	read_mr5 = debugfs_create_file("read_mr5", 0444,
+			memtest_dir, NULL, &read_mr5_fops);
+	if (!read_mr5) {
+		pr_info("%s: create read_mr5 interface fail\n", __func__);
 		return -1;
 	}
 

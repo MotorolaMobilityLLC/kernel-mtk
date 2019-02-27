@@ -188,6 +188,7 @@ static int __init emi_ctrl_init(void)
 	}
 
 	pr_info("[EMI] dram_type(%d)\n", get_dram_type());
+	pr_info("[EMI] mr5(0x%x)\n", get_dram_mr(5));
 	pr_info("[EMI] ch_num(%d)\n", get_ch_num());
 	pr_info("[EMI] rk_num(%d)\n", get_rk_num());
 	for (i = 0; i < get_rk_num(); i++)
@@ -208,7 +209,17 @@ module_exit(emi_ctrl_exit);
 
 unsigned int get_dram_type(void)
 {
-	return emi_info.dram_type;
+	return (emi_info.dram_type & 0xF);
+}
+
+unsigned int get_dram_mr(unsigned int index)
+{
+	switch (index) {
+	case 5:
+		return ((emi_info.dram_type >> 24) & 0xFF);
+	default:
+		return 0;
+	}
 }
 
 unsigned int get_ch_num(void)
