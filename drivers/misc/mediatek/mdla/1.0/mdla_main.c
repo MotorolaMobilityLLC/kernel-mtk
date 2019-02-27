@@ -269,6 +269,7 @@ static void *apu_mdla_cmde_mreg_top;
 static void *apu_mdla_config_top;
 void *apu_mdla_biu_top;
 void *apu_mdla_gsm_top;
+void *apu_mdla_gsm_base;
 
 int mdla_irq;
 
@@ -3468,6 +3469,9 @@ static int mdla_probe(struct platform_device *pdev)
 		rc = -EIO;
 		return rc;
 	}
+	apu_mdla_gsm_base = (void *) apu_mdla_gsm->start;
+	pr_info("%s: apu_mdla_gsm_top: %p, apu_mdla_gsm_base: %p\n",
+		__func__, apu_mdla_gsm_top, apu_mdla_gsm_base);
 
 	/* Get IRQ for the device */
 	r_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
@@ -3792,7 +3796,7 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 				ce->kva,
 				ce->mva);
 		// TODO: get real kva/mva from run_cmd_data->buf.offset
-	} else if (is_gsm_addr(ce->mva)) {
+	} else if (is_gsm_mva(ce->mva)) {
 		ce->kva = gsm_mva_to_virt(ce->mva);
 	} else {
 		ce->kva = phys_to_virt(ce->mva);
@@ -3834,7 +3838,9 @@ static void mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 
 	malloc_data->kva = dma_alloc_coherent(mdlactlDevice, malloc_data->size,
 			&phyaddr, GFP_KERNEL);
-	malloc_data->mva = dma_to_phys(mdlactlDevice, phyaddr);
+	malloc_data->pa = (void *)dma_to_phys(mdlactlDevice, phyaddr);
+	malloc_data->mva = (__u32)malloc_data->pa;
+
 	mdla_debug("%s: kva:%p, mva:%x\n",
 		__func__, malloc_data->kva, malloc_data->mva);
 }
@@ -3845,21 +3851,6 @@ static void mdla_dram_free(struct ioctl_malloc *malloc_data)
 		__func__, malloc_data->kva, malloc_data->mva);
 	dma_free_coherent(mdlactlDevice, malloc_data->size,
 			(void *) malloc_data->kva, malloc_data->mva);
-}
-
-static void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
-{
-	malloc_data->kva = gsm_alloc(malloc_data->size);
-	malloc_data->mva = gsm_virt_to_mva(malloc_data->kva);
-	mdla_debug("%s: kva:%p, mva:%x\n",
-		__func__, malloc_data->kva, malloc_data->mva);
-}
-static void mdla_gsm_free(struct ioctl_malloc *malloc_data)
-{
-	if (malloc_data->kva)
-		gsm_release(malloc_data->kva, malloc_data->size);
-	mdla_debug("%s: kva:%p, mva:%x\n",
-		__func__, malloc_data->kva, malloc_data->mva);
 }
 
 static long mdla_ioctl(struct file *filp, unsigned int command,
@@ -3887,11 +3878,13 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		if (copy_to_user((void *) arg, &malloc_data,
 			sizeof(malloc_data)))
 			return -EFAULT;
-		mdla_debug("%s: IOCTL_MALLOC: size:%x mva:%x kva:%p\n",
+		mdla_debug("%s: IOCTL_MALLOC: size:0x%x mva:0x%x kva:%p pa:%p type:%d\n",
 			__func__,
 			malloc_data.size,
 			malloc_data.mva,
-			malloc_data.kva);
+			malloc_data.kva,
+			malloc_data.pa,
+			malloc_data.type);
 		if (malloc_data.kva == NULL)
 			return -ENOMEM;
 		break;
@@ -3907,11 +3900,13 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			mdla_dram_free(&malloc_data);
 		else if (malloc_data.type == MEM_GSM)
 			mdla_gsm_free(&malloc_data);
-		mdla_debug("%s: IOCTL_FREE: size:%x mva:%x kva:%p\n",
+		mdla_debug("%s: IOCTL_MALLOC: size:0x%x mva:0x%x kva:%p pa:%p type:%d\n",
 			__func__,
 			malloc_data.size,
 			malloc_data.mva,
-			malloc_data.kva);
+			malloc_data.kva,
+			malloc_data.pa,
+			malloc_data.type);
 		break;
 	case IOCTL_RUN_CMD_SYNC:
 	{
