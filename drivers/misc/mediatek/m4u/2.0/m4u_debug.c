@@ -33,8 +33,8 @@
 
 
 /* global variables */
-int gM4U_log_to_uart = 1;
-int gM4U_log_level = 1;
+int gM4U_log_to_uart = 2;
+int gM4U_log_level = 2;
 
 unsigned int gM4U_seed_mva;
 
