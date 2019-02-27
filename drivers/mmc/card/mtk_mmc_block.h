@@ -71,7 +71,7 @@ struct mt_bio_context {
 	int state;
 	pid_t pid;
 	struct request_queue *q;
-	char comm[TASK_COMM_LEN+1];
+	char comm[TASK_COMM_LEN];
 	u16 qid;
 	u16 q_depth;
 	spinlock_t lock;
