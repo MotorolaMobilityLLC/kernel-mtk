@@ -1489,6 +1489,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		pConfig->p_golden_setting_context;
 	unsigned int Bpp, fps;
 	unsigned long long tmp_bw, ovl_bw;
+	unsigned long long full_trans_bw = 0;
 
 	unsigned long layer_offset_rdma_ctrl;
 	unsigned long ovl_base = ovl_base_addr(module);
@@ -1589,8 +1590,6 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 			pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
-	DDPDBG("%s bw:%llu\n", ddp_get_module_name(module), ovl_bw);
-
 	if (!pConfig->ovl_partial_dirty)
 		_ovl_lc_config(module, pConfig, handle);
 
@@ -1629,6 +1628,9 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		DISP_REG_SET(handle,
 			ovl_base_addr(module) + DISP_REG_OVL_SBCH_EXT, 0);
 	}
+
+	DDPDBG("%s transparent bw:%llu, total bw:%llu\n",
+		ddp_get_module_name(module), full_trans_bw, ovl_bw);
 
 	/* bandwidth report */
 	if (module == DISP_MODULE_OVL0) {
