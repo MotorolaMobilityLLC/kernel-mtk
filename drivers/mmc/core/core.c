@@ -36,6 +36,7 @@
 #include <linux/mmc/sd.h>
 #include <linux/mmc/slot-gpio.h>
 #include <mt-plat/mtk_io_boost.h>
+#include <mt-plat/aee.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/mmc.h>
@@ -656,6 +657,7 @@ int mmc_run_queue_thread(void *data)
 	return 0;
 }
 
+unsigned long not_ready_time;
 void mmc_wait_cmdq_done(struct mmc_request *mrq)
 {
 	struct mmc_host *host = mrq->host;
@@ -707,9 +709,29 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 		int i = 0;
 		unsigned int resp = cmd->resp[0];
 
-		if (resp == 0)
-			goto request_end;
+		if (resp == 0) {
+/* Workaround for ALPS03808823: if task not ready over 30s, reinit emmc */
+			if (!not_ready_time)
+				not_ready_time = jiffies;
+			else if (time_after(jiffies, not_ready_time
+			+ msecs_to_jiffies(30 * 1000))) {
+				pr_notice("mmc0: error: task not ready over 30s\n");
+				msleep(2000);
+				if (mmc_reset_for_cmdq(host)) {
+					pr_notice("[CQ] reinit fail\n");
+					BUG_ON(1);
+				}
+				mmc_clr_dat_list(host);
+				mmc_restore_tasks(host);
+				atomic_set(&host->cq_wait_rdy, 0);
+				atomic_set(&host->cq_rdy_cnt, 0);
 
+				aee_kernel_warning("mmc",
+					"task not ready over 30s");
+			}
+			goto request_end;
+		}
+		not_ready_time = 0;
 		do {
 			if ((resp & 1) && (!host->data_mrq_queued[i])) {
 				if (host->cur_rw_task == i) {
@@ -2865,8 +2887,13 @@ void mmc_init_erase(struct mmc_card *card)
 			card->pref_erase = 1024 * 1024 / 512;
 		else if (sz < 1024)
 			card->pref_erase = 2 * 1024 * 1024 / 512;
-		else
-			card->pref_erase = 4 * 1024 * 1024 / 512;
+		else {
+/* Workaround: Enlarge erase size for Micron device erase performance issue. */
+			if (card->cid.manfid == CID_MANFID_MICRON)
+				card->pref_erase = 128 * 1024 * 1024 / 512;
+			else
+				card->pref_erase = 4 * 1024 * 1024 / 512;
+		}
 		if (card->pref_erase < card->erase_size)
 			card->pref_erase = card->erase_size;
 		else {
