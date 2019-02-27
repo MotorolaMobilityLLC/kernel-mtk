@@ -2273,7 +2273,6 @@ static void mtk_eint_irq_handler(struct irq_desc *desc)
 	int dual_edges, start_level, curr_level;
 	const struct mtk_desc_pin *pin;
 
-	pr_debug("enter %s\n", __func__);
 	chained_irq_enter(chip, desc);
 	for (eint_num = 0;
 	     eint_num < pctl->devdata->ap_num;
