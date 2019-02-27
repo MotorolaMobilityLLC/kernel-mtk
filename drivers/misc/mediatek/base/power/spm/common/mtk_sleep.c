@@ -320,6 +320,7 @@ EXPORT_SYMBOL(slp_get_wake_reason);
 static ssize_t suspend_state_read(char *ToUserBuf, size_t sz, void *priv)
 {
 	char *p = ToUserBuf;
+	int i;
 
 	if (!ToUserBuf)
 		return -EINVAL;
@@ -330,6 +331,10 @@ static ssize_t suspend_state_read(char *ToUserBuf, size_t sz, void *priv)
 	log("*********** suspend state ************\n");
 	log("suspend valid status = %d\n",
 		       slp_suspend_ops_valid_on);
+	log("*************** slp dp cnt ***********\n");
+	for (i = 0; i < nr_cpu_ids; i++)
+		log("cpu%d: slp_dp=%lu\n", i, slp_dp_cnt[i]);
+
 	log("*********** suspend command ************\n");
 	log("echo suspend 1/0 > /sys/kernel/debug/cpuidle/slp/suspend_state\n");
 
