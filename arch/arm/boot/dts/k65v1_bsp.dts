@@ -66,7 +66,7 @@ initcall_debug=1 maxcpus=1";
 		compatible = "mediatek,lcd-backlight";
 		led_mode = <5>;
 		data = <1>;
-		pwm_config = <0 1 0 0 0>;
+		pwm_config = <0 3 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
