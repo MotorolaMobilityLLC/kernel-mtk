@@ -28,8 +28,13 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_M
 					 $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_MT6765) \
 					 $(CONFIG_MACH_MT6761) $(CONFIG_MACH_MT3967)))
 ccflags-y += \
-				-I$(srctree)/drivers/misc/mediatek/cmdq/v3/ \
-				-I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+				-I$(srctree)/drivers/misc/mediatek/cmdq/v3/
+
+ifeq ($(CONFIG_MACH_MT6761),y)
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
+else
+    ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/$(MTK_PLATFORM)/
+endif
 else
 ccflags-y += \
 				-I$(srctree)/drivers/misc/mediatek/cmdq/v2/ \
