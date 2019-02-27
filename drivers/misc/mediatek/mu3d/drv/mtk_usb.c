@@ -284,7 +284,7 @@ EXPORT_SYMBOL_GPL(mt_usb_disconnect);
 #endif
 
 /* to avoid build error due to PMIC module not ready */
-#ifndef CONFIG_MTK_SMART_BATTERY
+#ifndef CONFIG_MTK_CHARGER
 #define BYPASS_PMIC_LINKAGE
 #endif
 
@@ -472,9 +472,9 @@ void musb_sync_with_bat(struct musb *musb, int usb_state)
 	os_printk(K_DEBUG, "musb_sync_with_bat\n");
 
 #ifndef CONFIG_FPGA_EARLY_PORTING
-#if defined(CONFIG_MTK_SMART_BATTERY)
+#if defined(CONFIG_MTK_CHARGER)
 	BATTERY_SetUSBState(usb_state);
-	wake_up_bat();
+	/* wake_up_bat();*/
 #endif
 #endif
 
