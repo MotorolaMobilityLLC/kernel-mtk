@@ -400,16 +400,10 @@ static phys_addr_t mtk_iommu_iova_to_phys(struct iommu_domain *domain,
 	struct mtk_iommu_domain *dom = to_mtk_domain(domain);
 	unsigned long flags;
 	phys_addr_t pa;
-	struct mtk_iommu_data *data;
-
-	data = mtk_iommu_get_m4u_data();
 
 	spin_lock_irqsave(&dom->pgtlock, flags);
 	pa = dom->iop->iova_to_phys(dom->iop, iova);
 	spin_unlock_irqrestore(&dom->pgtlock, flags);
-
-	if (data->enable_4GB)
-		pa |= BIT(32);
 
 	return pa;
 }
