@@ -121,7 +121,7 @@ _work_queued(void *ignore, unsigned int req_cpu, struct pool_workqueue *pwq,
 		 struct work_struct *work)
 {
 	gfp_t gfp = GFP_ATOMIC | __GFP_NORETRY | __GFP_NOWARN;
-	struct work_info *work_info;
+	struct work_info *work_info = NULL;
 
 	raw_spin_lock(&works_lock);
 	work_info = find_active_work(work);
@@ -144,7 +144,7 @@ out:
 
 static void _work_exec_start(void *ignore, struct work_struct *work)
 {
-	struct work_info *wi;
+	struct work_info *wi = NULL;
 	unsigned long flags;
 
 	raw_spin_lock_irqsave(&works_lock, flags);
@@ -159,7 +159,7 @@ not_found:
 
 static void _work_exec_end(void *ignore, struct work_struct *work)
 {
-	struct work_info *work_info;
+	struct work_info *work_info = NULL;
 	unsigned long long ts;
 	unsigned long flags, rem_nsec;
 	struct work_info w;
@@ -175,6 +175,7 @@ static void _work_exec_end(void *ignore, struct work_struct *work)
 	w.work = work_info->work;
 	hash_del(&work_info->hash);
 	kmem_cache_free(work_info_cache, work_info);
+	work_info = NULL;
 	raw_spin_unlock_irqrestore(&works_lock, flags);
 
 	if (ts > WORK_EXEC_MAX) {
