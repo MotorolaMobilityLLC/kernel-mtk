@@ -1525,11 +1525,11 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				struct pt_regs *user_ret = NULL;
 
-				read_lock(&tasklist_lock);
+				rcu_read_lock();
 				task = find_task_by_vpid(tmp->tid);
 				if (task == NULL) {
 					kfree(tmp);
-					read_unlock(&tasklist_lock);
+					rcu_read_unlock();
 					ret = -EINVAL;
 					goto EXIT;
 				}
@@ -1541,11 +1541,11 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				    ((struct aee_thread_reg __user *)arg, tmp,
 				     sizeof(struct aee_thread_reg))) {
 					kfree(tmp);
-					read_unlock(&tasklist_lock);
+					rcu_read_unlock();
 					ret = -EFAULT;
 					goto EXIT;
 				}
-				read_unlock(&tasklist_lock);
+				rcu_read_unlock();
 
 			} else {
 				LOGD(
@@ -1594,12 +1594,12 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				struct task_struct *task;
 				int dumpable = -1;
 
-				read_lock(&tasklist_lock);
+				rcu_read_lock();
 				task = find_task_by_vpid(pid);
 				if (task == NULL) {
 					LOGD("%s: process:%d task null\n",
 						__func__, pid);
-					read_unlock(&tasklist_lock);
+					rcu_read_unlock();
 					ret = -EINVAL;
 					goto EXIT;
 				}
@@ -1609,7 +1609,7 @@ static long aed_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					LOGD("%s: process:%d task mm null\n",
 						__func__, pid);
 					task_unlock(task);
-					read_unlock(&tasklist_lock);
+					rcu_read_unlock();
 					ret = -EINVAL;
 					goto EXIT;
 				}
