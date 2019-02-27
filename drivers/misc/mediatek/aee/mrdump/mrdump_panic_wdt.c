@@ -45,9 +45,7 @@
 #ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 #include <linux/irqchip/mtk-eic.h>
 #endif
-#ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
-#endif
 #include <mrdump_private.h>
 #include <mt-plat/upmu_common.h>
 
