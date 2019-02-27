@@ -50,6 +50,7 @@ obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
 obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_MTK_SYSTIMER)	+= mtk_systimer.o
 obj-$(CONFIG_MTK_TIMER_V1)	+= mtk_timer_v1.o
+obj-$(CONFIG_MTK_TIMER_SYSTIMER)	+= mtk_timer_systimer.o
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 obj-$(CONFIG_CLKSRC_NPS)	+= timer-nps.o
