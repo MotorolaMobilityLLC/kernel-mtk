@@ -900,9 +900,13 @@ int disp_ccorr_set_color_matrix(void *cmdq, int32_t matrix[16], int32_t hint)
 			/* Copy Color Matrix */
 			g_disp_ccorr_color_matrix[i][j] = matrix[j*4 + i];
 
+			/* early jump out */
+			if (ccorr_without_gamma == 1)
+				continue;
+
 			if (i == j && g_disp_ccorr_color_matrix[i][j] != 1024)
 				ccorr_without_gamma = 1;
-			if (i != j && g_disp_ccorr_color_matrix[i][j] != 0)
+			else if (i != j && g_disp_ccorr_color_matrix[i][j] != 0)
 				ccorr_without_gamma = 1;
 		}
 	}
