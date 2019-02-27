@@ -119,7 +119,7 @@ config MTK_SEC_VIDEO_PATH_SUPPORT
 	  MTK In-House TEE Support or Trustonic TEE Support)
 
 source "drivers/misc/mediatek/videocodec/Kconfig"
-
+source "drivers/misc/mediatek/cameraisp/Kconfig"
 source "drivers/misc/mediatek/m4u/Kconfig"
 source "drivers/misc/mediatek/smi/Kconfig"
 source "drivers/misc/mediatek/mmp/Kconfig"
