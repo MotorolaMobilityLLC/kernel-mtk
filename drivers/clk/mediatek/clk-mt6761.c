@@ -704,9 +704,9 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 		aes_fde_parents, CLK_CFG_6, CLK_CFG_6_SET, CLK_CFG_6_CLR,
 		24, 3, 31, CLK_CFG_UPDATE, 27),
 	/* CLK_CFG_7 */
-	MUX_CLR_SET_UPD(CLK_TOP_PWRAP_ULPOSC_SEL, "ulposc_sel",
+	MUX_CLR_SET_UPD_FLAGS(CLK_TOP_PWRAP_ULPOSC_SEL, "ulposc_sel",
 		ulposc_parents, CLK_CFG_7, CLK_CFG_7_SET, CLK_CFG_7_CLR,
-		0, 3, 7, CLK_CFG_UPDATE, 28),
+		0, 3, 7, CLK_CFG_UPDATE, 28, CLK_IS_CRITICAL),
 	MUX_CLR_SET_UPD(CLK_TOP_CAMTM_SEL, "camtm_sel",
 		camtm_parents, CLK_CFG_7, CLK_CFG_7_SET, CLK_CFG_7_CLR,
 		8, 2, 15, CLK_CFG_UPDATE, 29),
