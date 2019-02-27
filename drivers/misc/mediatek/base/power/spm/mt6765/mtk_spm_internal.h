@@ -254,7 +254,8 @@ void mtk_idle_power_post_process_async_wait(int idle_type,
  ***********************************************************/
 
 /* call dormant/atf driver for idle scenario */
-extern int mtk_idle_trigger_wfi(int idle_type, int cpu);
+extern int mtk_idle_trigger_wfi(
+	int idle_type, unsigned int idle_flag, int cpu);
 /* call before wfi and setup spm related settings */
 extern void mtk_idle_pre_process_by_chip(int idle_type, int cpu,
 	unsigned int op_cond, unsigned int idle_flag);
