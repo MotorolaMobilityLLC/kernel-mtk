@@ -38,7 +38,7 @@ else
 endif
 
 ccflags-$(CONFIG_MTK_GPU_SPM_DVFS_SUPPORT) += -DMTK_GPU_SPM
-#ccflags-$(CONFIG_MTK_FREQ_HOPPING) += -DFHCTL_READY
+ccflags-$(CONFIG_MTK_FREQ_HOPPING) += -DFHCTL_READY
 
 obj-$(CONFIG_MACH_MT6765) += mtk_picachu.o
 
