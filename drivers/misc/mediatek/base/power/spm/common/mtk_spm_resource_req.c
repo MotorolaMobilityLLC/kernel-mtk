@@ -231,7 +231,7 @@ static ssize_t resource_req_read(char *ToUserBuf, size_t sz, void *priv)
 			"echo bypass [bit] > /d/cpuidle/spm_resource_req\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf), "\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
-			"[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
+			"[0]SPM, [1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
 			"[5] CONN, [6] MSDC, [7] SCP\n");
 
