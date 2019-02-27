@@ -1024,7 +1024,8 @@ bool set_chip_hw_digital_gain_mode(unsigned int gain_type,
 	unsigned int value = 0;
 
 	value = (sample_per_step << 8) |
-		(SampleRateTransform(sample_rate, gain_type) << 4);
+		(SampleRateTransform(sample_rate,
+					Soc_Aud_Digital_Block_MEM_DL1) << 4);
 
 	switch (gain_type) {
 	case Soc_Aud_Hw_Digital_Gain_HW_DIGITAL_GAIN1:
