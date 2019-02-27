@@ -1031,6 +1031,7 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 		break;
 	case GF_IOC_REMOVE:
+#if 0
 		gf_debug(INFO_LOG, "%s: GF_IOC_REMOVE ===\n", __func__);
 
 		gf_netlink_destroy(gf_dev);
@@ -1065,8 +1066,8 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		gf_dev->spi = NULL;
 		mutex_destroy(&gf_dev->buf_lock);
 		mutex_destroy(&gf_dev->release_lock);
+#endif
 		break;
-
 	case GF_IOC_FTM:
 		data = (void __user *) arg;
 		if (copy_to_user(data, id_buf, 7)) {
