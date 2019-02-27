@@ -194,13 +194,17 @@ static void mlog_emit_32(long v)
 static void mlog_reset_format(void)
 {
 	int len;
+	uint vm_eventall = vmstat_eventall;
+	uint vm_filter = vmstat_filter;
 
 	spin_lock_bh(&mlogbuf_lock);
 
 	if (meminfo_filter)
 		meminfo_filter = M_FILTER_ALL;
-	if (vmstat_filter)
+	if (vm_filter) {
+		vm_filter = V_FILTER_ALL;
 		vmstat_filter = V_FILTER_ALL;
+	}
 	if (buddyinfo_filter)
 		buddyinfo_filter = B_FILTER_ALL;
 	if (proc_filter)
@@ -211,12 +215,12 @@ static void mlog_reset_format(void)
 
 	len += hweight32(meminfo_filter);
 
-	if (vmstat_eventall == VMSTAT_EVENTALL_STOP)
-		len += hweight32(vmstat_filter);
+	if (vm_eventall == VMSTAT_EVENTALL_STOP)
+		len += hweight32(vm_filter);
 	else
 		len += NR_VM_EVENT_ITEMS;
 
-	if (vmstat_eventall != VMSTAT_EVENTALL_START_NO_SUCCEED) {
+	if (vm_eventall != VMSTAT_EVENTALL_START_NO_SUCCEED) {
 		/* buddyinfo */
 		len += (2 * MAX_ORDER);
 
@@ -254,11 +258,11 @@ static void mlog_reset_format(void)
 			strfmt_list[len++] = mem_size_str;
 	}
 
-	if (vmstat_eventall <= VMSTAT_EVENTALL_START) {
-		if (vmstat_filter && vmstat_eventall == VMSTAT_EVENTALL_STOP) {
+	if (vm_eventall <= VMSTAT_EVENTALL_START) {
+		if (vm_filter && vm_eventall == VMSTAT_EVENTALL_STOP) {
 			int i;
 
-			for (i = 0; i < hweight32(vmstat_filter); ++i)
+			for (i = 0; i < hweight32(vm_filter); ++i)
 				strfmt_list[len++] = acc_count_str;
 		} else {
 			int i;
