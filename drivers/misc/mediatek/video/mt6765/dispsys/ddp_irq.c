@@ -325,8 +325,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 				(cnt_wdma_underflow[index] << 24) |
 				(index << 16) | reg_val,
 				module);
-	} else if (irq == ddp_get_module_irq(DISP_MODULE_RDMA0) ||
-		irq == ddp_get_module_irq(DISP_MODULE_RDMA1)) {
+	} else if (irq == ddp_get_module_irq(DISP_MODULE_RDMA0)) {
 
 		if (ddp_get_module_irq(DISP_MODULE_RDMA0) == irq) {
 			index = 0;
