@@ -1519,7 +1519,7 @@ static void show_state_filter_local(int flag)
 	} while_each_thread(g, p);
 }
 
-static void ShowStatus(void)
+static void ShowStatus(int flag)
 {
 #define DUMP_PROCESS_NUM 10
 	int dumppids[DUMP_PROCESS_NUM];
@@ -1565,9 +1565,14 @@ static void ShowStatus(void)
 	} else { /* the last dump */
 		DumpMemInfo();
 		DumpMsdc2HangInfo();
+		if (flag == 1)	/* for dump hang issue */
+			show_state_filter_local(1);
+		else {
 #ifndef __aarch64__
 		show_state_filter_local(0);
 #endif
+		}
+
 		/* debug_locks = 1; */
 		debug_show_all_locks();
 		show_free_areas(0);
@@ -1608,7 +1613,6 @@ static int hang_detect_warn_thread(void *arg)
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	snprintf(string_tmp, 30, "hang_detect:[pid:%d]\n", system_server_pid);
-	sched_setscheduler(current, SCHED_FIFO, &param);
 	pr_notice("hang_detect create warning api: %s.", string_tmp);
 #ifdef __aarch64__
 		aee_kernel_warning_api(__FILE__, __LINE__,
@@ -1621,6 +1625,20 @@ static int hang_detect_warn_thread(void *arg)
 		"maybe have other hang_detect KE DB, please send together!!\n",
 		string_tmp);
 #endif
+	return 0;
+}
+
+static int dump_last_thread(void *arg)
+{
+	/* unsigned long flags; */
+	struct sched_param param = {
+		.sched_priority = 99
+	};
+	sched_setscheduler(current, SCHED_FIFO, &param);
+	pr_info("[Hang_Detect] dump last thread.\n");
+	ShowStatus(1);
+	dump_bt_done = 1;
+	wake_up_interruptible(&dump_bt_done_wait);
 	return 0;
 }
 
@@ -1645,12 +1663,22 @@ static int hang_detect_dump_thread(void *arg)
 			if (hd_thread != NULL)
 				wake_up_process(hd_thread);
 		} else
-		ShowStatus();
+			ShowStatus(0);
+
 		dump_bt_done = 1;
 		wake_up_interruptible(&dump_bt_done_wait);
 	}
 	pr_notice("[Hang_Detect] hang_detect dump thread exit.\n");
 	return 0;
+}
+
+void wake_up_dump(void)
+{
+	dump_bt_done = 0;
+	wake_up_interruptible(&dump_bt_start_wait);
+	if (dump_bt_done != 1)
+		wait_event_interruptible_timeout(dump_bt_done_wait,
+			dump_bt_done == 1, HZ*10);
 }
 
 static int hang_detect_thread(void *arg)
@@ -1660,6 +1688,7 @@ static int hang_detect_thread(void *arg)
 	struct sched_param param = {
 		.sched_priority = 99
 	};
+	struct task_struct *hd_thread;
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	reset_hang_info();
@@ -1679,13 +1708,8 @@ static int hang_detect_thread(void *arg)
 			if (hang_detect_counter == 1 && hang_aee_warn == 2
 				&& hd_timeout != 11) {
 				hang_detect_counter = hd_timeout / 2;
-				dump_bt_done = 0;
 				hang_aee_warn = 1;
-				wake_up_interruptible(&dump_bt_start_wait);
-				if (dump_bt_done != 1)
-					wait_event_interruptible_timeout(
-					dump_bt_done_wait, dump_bt_done == 1,
-					HZ*10);
+				wake_up_dump();
 				hang_aee_warn = 0;
 
 			}
@@ -1693,12 +1717,22 @@ static int hang_detect_thread(void *arg)
 				Log2HangInfo(
 					"[Hang_detect]Dump the %d time process bt.\n",
 					Hang_Detect_first ? 2 : 1);
-				dump_bt_done = 0;
-				wake_up_interruptible(&dump_bt_start_wait);
-				if (dump_bt_done != 1)
+				if (Hang_Detect_first == true
+					&& dump_bt_done != 1) {
+		/* some time dump thread will block in dumping native bt */
+		/* so create new thread to dump enough kernel bt */
+					hd_thread = kthread_create(
+						dump_last_thread,
+						NULL, "hang_detect2");
+					if (hd_thread != NULL)
+						wake_up_process(hd_thread);
+					if (dump_bt_done != 1)
 					wait_event_interruptible_timeout(
-						dump_bt_done_wait,
-						dump_bt_done == 1, HZ*10);
+							dump_bt_done_wait,
+							dump_bt_done == 1,
+							HZ*10);
+				} else
+					wake_up_dump();
 
 				if (Hang_Detect_first == true) {
 					pr_notice(
