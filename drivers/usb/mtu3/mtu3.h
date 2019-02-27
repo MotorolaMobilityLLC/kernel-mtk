@@ -268,6 +268,7 @@ struct ssusb_mtk {
 	int num_phys;
 	/* common power & clock */
 	struct regulator *vusb33;
+	struct clk *ssusb_clk;
 	struct clk *sys_clk;
 	struct clk *ref_clk;
 	/* otg */
