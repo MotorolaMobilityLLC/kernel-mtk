@@ -69,9 +69,7 @@ config MTK_L2C_PARITY_CHECK
 	help
 	  L2 cache parity check is a debugging feature on MCUSYS to
 	  latch the parity error in L2 Cachelines. Enable this feature
-	  would promote a sysfs interface for AEE to dump that whether
-	  there are L2 cache parity errors.
-
+	  would provide some interfaces and irq handling.
 
 config MTK_LASTBUS_INTERFACE
 	bool "MTK_LASTBUS"
