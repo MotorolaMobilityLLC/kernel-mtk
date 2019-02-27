@@ -1659,8 +1659,9 @@ void pd_dpm_inform_source_cap_ext(struct pd_port *pd_port)
 
 	if (dpm_check_ext_msg_event(pd_port, PD_EXT_SOURCE_CAP_EXT)) {
 		scedb = pd_get_msg_data_payload(pd_port);
-		DPM_INFO2("vid=0x%04x, pid=0x%04x\r\n",
-			scedb->vid, scedb->pid);
+		DPM_INFO2("vid=0x%04x, pid=0x%04x\r\n", scedb->vid, scedb->pid);
+		DPM_INFO2("fw_ver=0x%02x, hw_ver=0x%02x\r\n",
+			scedb->fw_ver, scedb->hw_ver);
 
 		dpm_reaction_clear(pd_port,
 			DPM_REACTION_GET_SOURCE_CAP_EXT);

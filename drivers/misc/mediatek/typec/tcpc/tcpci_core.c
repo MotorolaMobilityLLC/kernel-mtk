@@ -28,9 +28,14 @@
 #ifdef CONFIG_USB_POWER_DELIVERY
 #include "pd_dpm_prv.h"
 #include "inc/tcpm.h"
+#include "mtk_battery.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
-#define TCPC_CORE_VERSION		"2.0.2_MTK"
+#define TCPC_CORE_VERSION		"2.0.8_MTK"
+
+#ifdef CONFIG_USB_POWER_DELIVERY
+static struct tcpc_device *tcpc_dev;
+#endif
 
 static ssize_t tcpc_show_property(struct device *dev,
 				  struct device_attribute *attr, char *buf);
@@ -835,10 +840,33 @@ static void __exit tcpc_class_exit(void)
 subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
+#ifdef CONFIG_USB_POWER_DELIVERY
+static int bat_notifier_call(struct notifier_block *nb,
+				unsigned long event, void *data)
+{
+	int ret;
+
+	switch (event) {
+	case EVENT_BATTERY_PLUG_OUT:
+		ret = tcpm_shutdown(tcpc_dev);
+		if (ret < 0)
+			pr_notice("%s: tcpm shutdown fail\n", __func__);
+		break;
+	default:
+		break;
+	}
+	return NOTIFY_OK;
+}
+#endif
+
 #ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 static int __tcpc_class_complete_work(struct device *dev, void *data)
 {
 	struct tcpc_device *tcpc = dev_get_drvdata(dev);
+#ifdef CONFIG_USB_POWER_DELIVERY
+	struct notifier_block *bat_nb = &tcpc->pd_port.bat_nb;
+	int ret;
+#endif
 
 	if (tcpc != NULL) {
 		pr_info("%s = %s\n", __func__, dev_name(dev));
@@ -848,6 +876,23 @@ static int __tcpc_class_complete_work(struct device *dev, void *data)
 		schedule_delayed_work(&tcpc->init_work,
 			msecs_to_jiffies(1000));
 #endif
+
+#ifdef CONFIG_USB_POWER_DELIVERY
+		tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+		if (!tcpc_dev) {
+			pr_notice("%s get tcpc device type_c_port0 fail\n",
+				__func__);
+			return -ENODEV;
+		}
+
+		bat_nb->notifier_call = bat_notifier_call;
+		ret = register_battery_notifier(bat_nb);
+		if (ret < 0) {
+			pr_notice("%s: register bat notifier fail\n", __func__);
+			return -EINVAL;
+		}
+#endif
+
 	}
 	return 0;
 }
@@ -869,6 +914,18 @@ MODULE_VERSION(TCPC_CORE_VERSION);
 MODULE_LICENSE("GPL");
 
 /* Release Version
+ * 2.0.8_MTK
+ * (1) fix timeout thread flow for wakeup pd event thread
+ *     after disable timer first.
+ *
+ * 2.0.7_MTK
+ * (1) add extract pd source capability pdo defined in
+ *     PD30 v1.1 ECN for pe40 get apdo profile.
+ *
+ * 2.0.6_MTK
+ * (1) register battery notifier for battery plug out
+ *     avoid TA hardreset 3 times will show charing icon.
+ *
  * 2.0.5_MTK
  * (1) add CONFIG_TYPEC_CAP_NORP_SRC to support
  *      A-to-C No-Rp cable.
