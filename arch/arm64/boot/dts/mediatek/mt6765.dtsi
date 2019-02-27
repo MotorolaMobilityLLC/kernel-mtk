@@ -157,7 +157,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 	toprgu@10007000 {
-		compatible = "mediatek,toprgu";
+		compatible = "mediatek,mt6765-toprgu";
 		reg = <0 0x10007000 0 0x0>;
 		interrupts = <GIC_SPI 139 IRQ_TYPE_NONE>;
 	};

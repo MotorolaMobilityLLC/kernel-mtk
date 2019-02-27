@@ -13,7 +13,6 @@
 
 #include <linux/kernel.h>
 #include <ext_wd_drv.h>
-#include <mach/wd_api.h>
 #include <linux/smp.h>
 /*add by debug for register restart notify*/
 #include <linux/notifier.h>
