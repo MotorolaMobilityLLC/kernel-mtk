@@ -69,4 +69,6 @@ extern unsigned int gPMICREGDbgLvl;
 		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
+extern void wk_pmic_enable_sdn_delay(void);
+
 #endif				/* _MT_PMIC_INFO_H_ */
