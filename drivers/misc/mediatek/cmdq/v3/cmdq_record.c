@@ -427,8 +427,8 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 		}
 		memcpy(new_buf->va_base, buf->va_base, copy_size);
 		if (last_buf) {
-			va = (u32 *)last_buf->va_base + copy_size -
-				CMDQ_INST_SIZE;
+			va = (u32 *)(last_buf->va_base + copy_size -
+				CMDQ_INST_SIZE);
 			va[0] = new_buf->pa_base;
 		}
 		last_buf = new_buf;
