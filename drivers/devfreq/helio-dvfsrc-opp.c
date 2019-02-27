@@ -28,28 +28,32 @@ int get_cur_vcore_dvfs_opp(void)
 
 void set_opp_table(int vcore_dvfs_opp, int vcore_uv, int ddr_khz)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct qos_ipi_data qos_d;
-
-	opp_table[vcore_dvfs_opp].vcore_uv = vcore_uv;
-	opp_table[vcore_dvfs_opp].ddr_khz = ddr_khz;
 
 	qos_d.cmd = QOS_IPI_OPP_TABLE;
 	qos_d.u.opp_table.vcore_dvfs_opp = vcore_dvfs_opp;
 	qos_d.u.opp_table.vcore_uv = vcore_uv;
 	qos_d.u.opp_table.ddr_khz = ddr_khz;
 	qos_ipi_to_sspm_command(&qos_d, 4);
+#endif
+
+	opp_table[vcore_dvfs_opp].vcore_uv = vcore_uv;
+	opp_table[vcore_dvfs_opp].ddr_khz = ddr_khz;
 }
 
 void set_vcore_opp(int vcore_dvfs_opp, int vcore_opp)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct qos_ipi_data qos_d;
-
-	vcore_dvfs_to_vcore_opp[vcore_dvfs_opp] = vcore_opp;
 
 	qos_d.cmd = QOS_IPI_VCORE_OPP;
 	qos_d.u.vcore_opp.vcore_dvfs_opp = vcore_dvfs_opp;
 	qos_d.u.vcore_opp.vcore_opp = vcore_opp;
 	qos_ipi_to_sspm_command(&qos_d, 3);
+#endif
+
+	vcore_dvfs_to_vcore_opp[vcore_dvfs_opp] = vcore_opp;
 }
 
 int get_vcore_opp(int opp)
@@ -82,14 +86,16 @@ int get_cur_vcore_uv(void)
 
 void set_ddr_opp(int vcore_dvfs_opp, int ddr_opp)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	struct qos_ipi_data qos_d;
-
-	vcore_dvfs_to_ddr_opp[vcore_dvfs_opp] = ddr_opp;
 
 	qos_d.cmd = QOS_IPI_DDR_OPP;
 	qos_d.u.ddr_opp.vcore_dvfs_opp = vcore_dvfs_opp;
 	qos_d.u.ddr_opp.ddr_opp = ddr_opp;
 	qos_ipi_to_sspm_command(&qos_d, 3);
+#endif
+
+	vcore_dvfs_to_ddr_opp[vcore_dvfs_opp] = ddr_opp;
 }
 
 int get_ddr_opp(int opp)
