@@ -1008,12 +1008,12 @@ PVRSRV_ERROR LinuxBridgeBlockClientsAccess(IMG_BOOL bShutdown)
 		if (OSAtomicRead(&g_iNumActiveDriverThreads) != 0)
 		{
 			PVR_LOG(("%s: waiting for user threads (%d)", __func__,
-			        OSAtomicRead(&g_iNumActiveDriverThreads)));
+			OSAtomicRead(&g_iNumActiveDriverThreads)));
 		}
 		if (OSAtomicRead(&g_iNumActiveKernelThreads) != 0)
 		{
-			PVR_LOG(("%s: waiting for kernel threads (%d)", __func__,
-			        OSAtomicRead(&g_iNumActiveKernelThreads)));
+		PVR_LOG(("%s: waiting for kernel threads (%d)", __func__,
+			OSAtomicRead(&g_iNumActiveKernelThreads)));
 		}
 		/* Regular wait is called here (and not OSEventObjectWaitKernel) because
 		 * this code is executed by the caller of .suspend/.shutdown callbacks
@@ -1087,6 +1087,12 @@ void LinuxBridgeNumActiveKernelThreadsDecrement(void)
 	(void) LinuxBridgeSignalIfSuspended();
 }
 
+IMG_BOOL LinuxDriverIsSuspended(void)
+{
+	return OSAtomicRead(&g_iDriverSuspended) == _DRIVER_SUSPENDED ?
+			IMG_TRUE : IMG_FALSE;
+}
+
 static PVRSRV_ERROR _WaitForDriverUnsuspend(void)
 {
 	PVRSRV_ERROR eError;
@@ -1131,10 +1137,10 @@ static PVRSRV_ERROR PVRSRVDriverThreadEnter(void)
 		OSAtomicDecrement(&g_iNumActiveDriverThreads);
 
 		/* inform Linux freezer thread is ready to suspend */
-		if (!try_to_freeze())
-		{
-			PVR_DPF((PVR_DBG_ERROR, "%s: driver is suspending but freezer"
-			        " is not freezing", __func__));
+		if (!try_to_freeze()) {
+			PVR_DPF((PVR_DBG_ERROR,
+			"%s: driver is suspending but freezer is not freezing",
+			__func__));
 		}
 
 		/* if the thread was unfrozen but the flag is not yet set to
