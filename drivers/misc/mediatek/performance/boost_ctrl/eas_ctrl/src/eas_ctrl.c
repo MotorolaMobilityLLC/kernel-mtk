@@ -31,7 +31,7 @@
 
 
 #include <linux/platform_device.h>
-#include <eas_controller.h>
+#include "eas_ctrl.h"
 
 #include <mt-plat/mtk_sched.h>
 

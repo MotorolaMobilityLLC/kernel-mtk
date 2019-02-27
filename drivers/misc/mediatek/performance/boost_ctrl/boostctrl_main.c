@@ -16,7 +16,7 @@
 #include <linux/moduleparam.h>
 
 #include <linux/platform_device.h>
-#include "eas_controller.h"
+#include "eas_ctrl.h"
 
 static int __init init_boostctrl(void)
 {

@@ -17,7 +17,6 @@
 
 #include <linux/platform_device.h>
 #include "perfmgr.h"
-#include "eas_controller.h"
 
 /*--------------------prototype--------------------*/
 
