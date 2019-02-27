@@ -23,20 +23,9 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/
 ccflags-y += -I$(srctree)/drivers
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/$(MTK_PLATFORM)
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6739")
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6356
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6771")
+ifeq ($(CONFIG_MTK_PLATFORM), "mt3967")
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6358
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6775")
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6355
+ccflags-y += -I$(srctree)/drivers/devfreq/
 endif
 
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6765")
@@ -47,10 +36,6 @@ endif
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6761")
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6357
 ccflags-y += -I$(srctree)/drivers/devfreq
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6335
 endif
 
 ifeq ($(CONFIG_MTK_HW_FDE_AES),y)
