@@ -16,6 +16,7 @@ static inline unsigned long task_util(struct task_struct *p);
 static int select_max_spare_capacity(struct task_struct *p, int target);
 static int __energy_diff(struct energy_env *eenv);
 int cpu_eff_tp = 1024;
+int tiny_thresh;
 #ifdef CONFIG_SCHED_TUNE
 static inline int energy_diff(struct energy_env *eenv);
 #else
@@ -39,6 +40,14 @@ static bool is_intra_domain(int prev, int target)
 	return (cpu_topology[prev].socket_id ==
 			cpu_topology[target].socket_id);
 #endif
+}
+
+static int is_tiny_task(struct task_struct *p)
+{
+	if (task_util(p) < tiny_thresh)
+		return 1;
+
+	return 0;
 }
 
 /* To find a CPU with max spare capacity in the same cluster with target */
@@ -240,17 +249,24 @@ static int __init parse_dt_eas(void)
 		return 0;
 	}
 
+	/* turning point */
 	tp = of_get_property(cn, "eff_turn_point", &ret);
-	if (!tp) {
+	if (!tp)
 		pr_info("%s missing turning point property\n",
 			cn->full_name);
-		goto out;
-	}
+	else
+		cpu_eff_tp = be32_to_cpup(tp);
 
-	cpu_eff_tp = be32_to_cpup(tp);
+	/* tiny task */
+	tp = of_get_property(cn, "tiny", &ret);
+	if (!tp)
+		pr_info("%s missing turning point property\n",
+			cn->full_name);
+	else
+		tiny_thresh = be32_to_cpup(tp);
 
-	pr_info("eas: turning point=<%d>\n", cpu_eff_tp);
-out:
+	pr_info("eas: turning point=<%d> tiny=<%d>\n", cpu_eff_tp, tiny_thresh);
+
 	of_node_put(cn);
 	return ret;
 }
