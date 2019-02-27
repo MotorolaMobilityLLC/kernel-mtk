@@ -34,6 +34,7 @@
 #include "sspm_ipi.h"
 #include <linux/seq_file.h>
 #include <linux/of_address.h>
+#include "mtk_dramc.h"
 
 #define MASK22b (0x3FFFFF)
 
@@ -91,7 +92,7 @@ static const char *g_pll_name[FH_PLL_NUM] = {
 /*********************************/
 
 /* Should be setting according to HQA de-sense result.  */
-static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
+static int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	/*
 	 *  [FH_SSC_DEF_DISABLE]: Default SSC disable,
 	 *  [FH_SSC_DEF_ENABLE_SSC]: Default enable SSC.
@@ -141,7 +142,7 @@ static const struct freqhopping_ssc g_pll_ssc_setting_tbl[FH_PLL_NUM][4] = {
 	/* FH PLL5 MPLL*/
 	{
 	 {0, 0, 0, 0, 0, 0},
-	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0% */
+	 {PLL_SETTING_IDX__DEF, 0, 9, 0, 1, UNINIT_DDS},	/* 0% ~ -1% */
 	 },
 
 	/* FH PLL6 MMPLL*/
@@ -496,6 +497,10 @@ static void mt_fh_hal_default_conf(void)
 
 	FH_MSG_DEBUG("%s", __func__);
 
+	//Cervino: default enable MPLL SSC 0~-1% at LP3 DDR devices
+	if (get_ddr_type() == TYPE_LPDDR3) {
+		g_pll_ssc_init_tbl[FH_PLL5] = FH_SSC_DEF_ENABLE_SSC;
+	}
 
 	/* According to setting to enable PLL SSC during init FHCTL. */
 	for (id = 0; id < FH_PLL_NUM; id++) {
