@@ -384,13 +384,29 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 	u32 lc_y = 0;
 	u32 lc_w = pconfig->dst_w;
 	u32 lc_h = pconfig->dst_h;
+	int rotate = 0;
+
+#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+	rotate = 1;
+#endif
 
 	rsz_idx = _get_valid_rsz_idx(pconfig);
 	oc = &pconfig->ovl_config[rsz_idx];
 	if (oc->layer_en) {
 		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
-			lc_x = oc->dst_x;
-			lc_y = oc->dst_y;
+			if (rotate) {
+				unsigned int bg_w = 0, bg_h = 0;
+
+				_get_roi(module, &bg_w, &bg_h);
+
+				lc_x = bg_w - oc->dst_w - oc->dst_x;
+				lc_y = bg_h - oc->dst_h - oc->dst_y;
+
+			} else {
+				lc_x = oc->dst_x;
+				lc_y = oc->dst_y;
+			}
+
 			lc_w = oc->dst_w;
 			lc_h = oc->dst_h;
 		}
