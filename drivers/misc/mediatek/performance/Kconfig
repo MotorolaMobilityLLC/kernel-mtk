@@ -7,3 +7,13 @@ config MTK_PERFMGR_TOUCH_BOOST
 	  feature for user experience. When the device receives touch
 	  event, it will raise system resources(CPU frequency / CPU cores)
 	  for better user experience.
+
+config MTK_LOAD_TRACKER
+	tristate "CPU Loading Tracking Service"
+	depends on CPU_FREQ
+	default y
+	help
+	  MTK_LOAD_TRACKER is the kernel config of CPU Loading Tracking
+	  Service designed by MTK, which is a service to get CPU Loading
+	  information.
+
