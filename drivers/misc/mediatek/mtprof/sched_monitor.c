@@ -1054,13 +1054,13 @@ static ssize_t mt_sched_monitor_door_write(struct file *filp,
 {
 	char buf[24];
 
-	if (cnt >= sizeof(buf))
+	if (cnt >= sizeof(buf) || cnt <= 1UL)
 		return cnt;
 
 	if (copy_from_user(&buf, ubuf, cnt))
 		return -EFAULT;
 
-	buf[cnt-1] = 0;
+	buf[cnt-1UL] = 0;
 
 	if (strcmp("ENABLE_setting", buf) == 0)
 		sched_mon_door_key = 1;
