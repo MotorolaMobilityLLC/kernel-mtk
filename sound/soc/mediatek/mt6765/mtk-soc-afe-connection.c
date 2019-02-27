@@ -306,6 +306,15 @@ bool SetConnsysToAwb(unsigned int ConnectionState)
 	return true;
 }
 
+bool SetConnsysToVUL2(unsigned int ConnectionState)
+{
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I34,
+			   Soc_Aud_InterConnectionOutput_O32);
+	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I35,
+			   Soc_Aud_InterConnectionOutput_O33);
+	return true;
+}
+
 bool SetHwGain1InToI2s1Dac(unsigned int ConnectionState)
 {
 	SetConnectionState(ConnectionState, Soc_Aud_InterConnectionInput_I10,
@@ -678,6 +687,8 @@ static const struct connection_link_t mConnectionLink[] = {
 	 Soc_Aud_AFE_IO_Block_MEM_AWB, SetI2s0ToAwb},
 	{Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
 	 Soc_Aud_AFE_IO_Block_MEM_AWB, SetConnsysToAwb},
+	{Soc_Aud_AFE_IO_Block_I2S_CONNSYS,
+	 Soc_Aud_AFE_IO_Block_MEM_VUL2, SetConnsysToVUL2},
 	{Soc_Aud_AFE_IO_Block_MODEM_PCM_2_I_CH1,
 	 Soc_Aud_AFE_IO_Block_MEM_MOD_DAI, SetModem2InCh1ToModemDai},
 	{Soc_Aud_AFE_IO_Block_MODEM_PCM_1_I_CH1,
