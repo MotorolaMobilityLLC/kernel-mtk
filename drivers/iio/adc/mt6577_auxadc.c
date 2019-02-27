@@ -193,7 +193,7 @@ static int mt6577_auxadc_resume(struct device *dev)
 
 	ret = clk_prepare_enable(adc_dev->adc_clk);
 	if (ret) {
-		pr_debug(dev, "failed to enable auxadc clock\n");
+		pr_debug("failed to enable auxadc clock\n");
 		return ret;
 	}
 
