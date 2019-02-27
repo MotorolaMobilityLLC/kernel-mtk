@@ -148,7 +148,7 @@ static __s32 g_adc_cali_en_t;
 static __s32 g_o_slope;
 static __s32 g_o_slope_sign;
 static __s32 g_id;
-static __s32 g_ts_offset;
+
 
 static __s32 g_ge;
 static __s32 g_oe;
