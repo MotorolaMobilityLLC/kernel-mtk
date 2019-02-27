@@ -184,15 +184,7 @@ ifeq ($(MTK_PLATFORM),mt6799)
 		services/system/rgx_mtk/$(MTK_PLATFORM)/mtk_mfg_counter.o
 endif
 
-ifeq ($(MTK_DDK_DEBUG),y)
-	pvrsrvkm-y += \
-		services/server/common/devicemem_history_server.o \
-		services/server/common/ri_server.o \
-		generated/ri_bridge/client_ri_direct_bridge.o \
-		generated/ri_bridge/server_ri_bridge.o \
-		generated/devicememhistory_bridge/server_devicememhistory_bridge.o \
-		generated/devicememhistory_bridge/client_devicememhistory_direct_bridge.o
-endif
+
 
 ccflags-y += \
 	-I$(RGX_TOP)/hwdefs \
