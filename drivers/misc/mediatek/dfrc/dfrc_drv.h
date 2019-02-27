@@ -82,10 +82,10 @@ struct DFRC_DRV_VSYNC_REQUEST {
 	int mode;
 	int sw_fps;
 	int sw_mode;
-	bool valid_info;
-	bool transient_state;
+	int valid_info;
+	int transient_state;
 	int num_policy;
-	bool forbid_vsync;
+	int forbid_vsync;
 };
 
 struct DFRC_DRC_REQUEST_SET {
