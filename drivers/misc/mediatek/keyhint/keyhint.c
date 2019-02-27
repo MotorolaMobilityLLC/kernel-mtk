@@ -143,7 +143,7 @@ int kh_get_hint(struct kh_dev *dev, const char *key, int *need_update)
 
 	if (unlikely(!dev->kh || !need_update)) {
 		kh_info("get, err, key=0x%lx\n", *(unsigned long *)key);
-		return -1;
+		return -ENODEV;
 	}
 
 	/* round 1: simple match */
@@ -261,7 +261,7 @@ int kh_get_hint(struct kh_dev *dev, const char *key, int *need_update)
 int kh_reset(struct kh_dev *dev)
 {
 	if (unlikely(!dev->kh))
-		return -1;
+		return -ENODEV;
 
 	dev->kh_slot_active_cnt = 0;
 
