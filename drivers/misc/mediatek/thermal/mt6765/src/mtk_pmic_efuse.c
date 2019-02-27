@@ -81,7 +81,8 @@ static __s32 tsbuck1_raw_to_temp(__u32 ret)
 		((g_tsbuck1_slope1 * y_curr) / (g_tsbuck1_slope2));
 
 	mtktspmic_dprintk("[tsbuck1_raw_to_temp] %d, %d, %d, %d\n",
-		y_curr, g_tsbuck1_intercept, g_tsbuck1_slope1, g_tsbuck1_slope2);
+		y_curr, g_tsbuck1_intercept, g_tsbuck1_slope1,
+		g_tsbuck1_slope2);
 
 	mtktspmic_dprintk("[tsbuck1_raw_to_temp] t_current=%d\n", t_current);
 	return t_current;
@@ -97,7 +98,8 @@ static __s32 tsbuck2_raw_to_temp(__u32 ret)
 		((g_tsbuck2_slope1 * y_curr) / (g_tsbuck2_slope2));
 
 	mtktspmic_dprintk("[tsbuck2_raw_to_temp] %d, %d, %d, %d\n",
-		y_curr, g_tsbuck2_intercept, g_tsbuck2_slope1, g_tsbuck2_slope2);
+		y_curr, g_tsbuck2_intercept, g_tsbuck2_slope1,
+		g_tsbuck2_slope2);
 
 	mtktspmic_dprintk("[tsbuck2_raw_to_temp] t_current=%d\n", t_current);
 	return t_current;
@@ -235,10 +237,12 @@ void mtktspmic_cali_prepare2(void)
 	vbe_t = (-1) * ((((g_o_vts_3) * 1800)) / 4096) * 1000;
 
 	if (g_o_slope_sign == 0)
-		g_tsbuck2_intercept = (vbe_t * 1000) / (-(factor + g_o_slope * 10));
+		g_tsbuck2_intercept =
+		(vbe_t * 1000) / (-(factor + g_o_slope * 10));
 		/*0.001 degree */
 	else
-		g_tsbuck2_intercept = (vbe_t * 1000) / (-(factor - g_o_slope * 10));
+		g_tsbuck2_intercept =
+		(vbe_t * 1000) / (-(factor - g_o_slope * 10));
 		/*0.001 degree */
 
 	g_tsbuck2_intercept = g_tsbuck2_intercept + (g_degc_cali * (1000 / 2));
