@@ -4273,8 +4273,7 @@ static void cmdq_core_enable_common_clock_locked(
 			if (smi_count == 1) {
 				CMDQ_MSG("[CLOCK] SMI clock enable %d\n",
 					smi_count);
-				cmdq_get_func()->enableCommonClockLocked(
-					enable);
+				cmdq_mdp_get_func()->mdpEnableCommonClock(true);
 			} else if (smi_count == 0) {
 				CMDQ_ERR(
 					"enable smi common %s error usage:%d smi use:%d\n",
@@ -4308,8 +4307,8 @@ static void cmdq_core_enable_common_clock_locked(
 			if (smi_count == 0) {
 				CMDQ_MSG("[CLOCK] SMI clock disable %d\n",
 					smi_count);
-				cmdq_get_func()->enableCommonClockLocked(
-					enable);
+				cmdq_mdp_get_func()->mdpEnableCommonClock(
+					false);
 			} else if (smi_count < 0) {
 				CMDQ_ERR(
 					"disable smi common %s error usage:%d smi use:%d\n",

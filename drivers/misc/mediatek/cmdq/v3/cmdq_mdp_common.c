@@ -23,6 +23,7 @@
 #else
 #include "cmdq_engine.h"
 #endif
+#include "smi_public.h"
 
 static struct cmdqMDPTaskStruct gCmdqMDPTask[MDP_MAX_TASK_NUM];
 static int gCmdqMDPTaskIndex;
@@ -297,6 +298,21 @@ long cmdq_mdp_get_module_base_VA_MMSYS_CONFIG(void)
 	return g_cmdq_mmsys_base;
 }
 
+static void cmdq_mdp_enable_common_clock_virtual(bool enable)
+{
+#ifdef CMDQ_PWR_AWARE
+#ifdef CONFIG_MTK_SMI
+	if (enable) {
+		/* Use SMI clock API */
+		smi_bus_enable(SMI_LARB_MMSYS0, "CMDQ");
+	} else {
+		/* disable, reverse the sequence */
+		smi_bus_disable(SMI_LARB_MMSYS0, "CMDQ");
+	}
+#endif
+#endif	/* CMDQ_PWR_AWARE */
+}
+
 /* Common Code */
 
 void cmdq_mdp_map_mmsys_VA(void)
@@ -351,6 +367,7 @@ void cmdq_mdp_virtual_function_setting(void)
 		cmdq_mdp_parse_error_module_by_hwflag_virtual;
 	pFunc->getEngineGroupBits = cmdq_mdp_get_engine_group_bits_virtual;
 	pFunc->errorReset = cmdq_mdp_error_reset_virtual;
+	pFunc->mdpEnableCommonClock = cmdq_mdp_enable_common_clock_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
