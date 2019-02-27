@@ -872,6 +872,8 @@ int ccu_force_powerdown(void)
 static int _ccu_powerdown(void)
 {
 	int32_t timeout = 10;
+	int32_t dma_rst_timeout = 1000;
+	int32_t dma_rst_st = 0;
 	unsigned long flags;
 
 	g_ccu_sensor_current_fps = -1;
@@ -889,11 +891,51 @@ static int _ccu_powerdown(void)
 			timeout = timeout - 1;
 		}
 
+		LOG_ERR("_ccu_powerdown check over.\n");
 		if (timeout <= 0) {
-			LOG_ERR("_ccu_powerdown timeout\n");
-			/*Even timed-out, clock disable is still necessary,
-			 *DO NOT return here.
-			 */
+			LOG_ERR("_ccu_powerdown timeout, do DMA reset\n");
+
+			//trigger DMA software reset
+			ccu_write_reg_bit(ccu_base, RESET, RDMA_SOFT_RST, 1);
+			ccu_write_reg_bit(ccu_base, RESET, WDMA_SOFT_RST, 1);
+
+			//polling reset done
+			LOG_ERR("polling DMA SW reset\n");
+			dma_rst_timeout = 1000;
+			dma_rst_st = 0;
+			while ((dma_rst_st != 1) && (dma_rst_timeout > 0)) {
+				dma_rst_st = ccu_read_reg_bit(
+					ccu_base, RESET, RDMA_SOFT_RST_ST);
+				dma_rst_timeout--;
+			}
+			if (dma_rst_timeout <= 0)
+				LOG_ERR("polling RDMA SW reset timeout\n");
+
+			dma_rst_timeout = 1000;
+			dma_rst_st = 0;
+			while ((dma_rst_st != 1) && (dma_rst_timeout > 0)) {
+				dma_rst_st = ccu_read_reg_bit(
+					ccu_base, RESET, WDMA_SOFT_RST_ST);
+				dma_rst_timeout--;
+			}
+			if (dma_rst_timeout <= 0)
+				LOG_ERR("polling WDMA SW reset timeout\n");
+			LOG_ERR("polling DMA SW reset done\n");
+
+			//trigger DMA, T2S, S2T hardware reset
+			ccu_write_reg_bit(ccu_base, RESET, S2T_A_HW_RST, 1);
+			ccu_write_reg_bit(ccu_base, RESET, WDMA_HW_RST, 1);
+			ccu_write_reg_bit(ccu_base, RESET, WDMA_SOFT_RST, 0);
+			ccu_write_reg_bit(ccu_base, RESET, WDMA_HW_RST, 0);
+			ccu_write_reg_bit(ccu_base, RESET, S2T_A_HW_RST, 0);
+
+			ccu_write_reg_bit(ccu_base, RESET, RDMA_HW_RST, 1);
+			ccu_write_reg_bit(ccu_base, RESET, T2S_A_HW_RST, 1);
+			ccu_write_reg_bit(ccu_base, RESET, RDMA_SOFT_RST, 0);
+			ccu_write_reg_bit(ccu_base, RESET, T2S_A_HW_RST, 0);
+			ccu_write_reg_bit(ccu_base, RESET, RDMA_HW_RST, 0);
+
+			LOG_ERR("_ccu_powerdown timeout, DMA reset done\n");
 		}
 	}
 
