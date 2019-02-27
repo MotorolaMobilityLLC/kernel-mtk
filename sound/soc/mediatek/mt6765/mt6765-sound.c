@@ -531,6 +531,11 @@ struct aud_reg_string aud_afe_reg_dump[] = {
 	{"AFE_MRGIF_MON1", AFE_MRGIF_MON1},
 	{"AFE_MRGIF_MON2", AFE_MRGIF_MON2},
 	{"AFE_I2S_MON", AFE_I2S_MON},
+	{"AFE_ADDA_IIR_COEF_02_01", AFE_ADDA_IIR_COEF_02_01},
+	{"AFE_ADDA_IIR_COEF_04_03", AFE_ADDA_IIR_COEF_04_03},
+	{"AFE_ADDA_IIR_COEF_06_05", AFE_ADDA_IIR_COEF_06_05},
+	{"AFE_ADDA_IIR_COEF_08_07", AFE_ADDA_IIR_COEF_08_07},
+	{"AFE_ADDA_IIR_COEF_10_09", AFE_ADDA_IIR_COEF_10_09},
 	{"AFE_DAC_CON2", AFE_DAC_CON2},
 	{"AFE_IRQ_MCU_CON1", AFE_IRQ_MCU_CON1},
 	{"AFE_IRQ_MCU_CON2", AFE_IRQ_MCU_CON2},
@@ -1321,9 +1326,25 @@ unsigned int SampleRateTransformI2s(unsigned int SampleRate)
 
 	return Soc_Aud_I2S_SAMPLERATE_I2S_44K;
 }
+
+enum {
+	UL_IIR_SW = 0,
+	/* 3.3 Hz if 32kHz mode ; 5 Hz if 48kHz mode ; 10Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL1,
+	/* 6.6 Hz if 32kHz mode ; 10Hz if 48kHz mode ; 20Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL2,
+	/* 16.6 Hz if 32kHz mode ; 25Hz if 48kHz mode ; 50Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL3,
+	/* 33.3 Hz if 32kHz mode ; 50Hz if 48kHz mode ; 100Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL4,
+	/* 50 Hz if 32kHz mode ; 75Hz if 48kHz mode ; 150Hz if 96kHz mode */
+	UL_IIR_HW_LEVEL5,
+};
+
 bool set_chip_adc_in(unsigned int rate)
 {
 	unsigned int dVoiceModeSelect = 0;
+	unsigned int enable_iir = 0;
 	unsigned int afeAddaUlSrcCon0 = 0;	/* default value */
 
 	/* enable aud_pad_top fifo,
@@ -1341,7 +1362,15 @@ bool set_chip_adc_in(unsigned int rate)
 	    SampleRateTransform(rate, Soc_Aud_Digital_Block_ADDA_UL);
 
 	afeAddaUlSrcCon0 |= (dVoiceModeSelect << 17) & (0x7 << 17);
-
+	afeAddaUlSrcCon0 |= (enable_iir << 10) & (0x1 << 10);
+	afeAddaUlSrcCon0 |= UL_IIR_SW << 7;
+	if ((afeAddaUlSrcCon0 & 0x380) == UL_IIR_SW) {
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_02_01, 0x00000000, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_04_03, 0x00003F7A, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_06_05, 0x3F7A0000, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_08_07, 0x3F7A0000, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_10_09, 0x0000C086, MASK_ALL);
+	}
 	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
 
 	/* mtkaif_rxif_data_mode = 0, amic */
@@ -1705,6 +1734,16 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 		       Afe_Get_Reg(AFE_MRGIF_MON2));
 	n += scnprintf(buffer + n, size - n, "AFE_I2S_MON = 0x%x\n",
 		       Afe_Get_Reg(AFE_I2S_MON));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_IIR_COEF_02_01 = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA_IIR_COEF_02_01));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_IIR_COEF_04_03 = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA_IIR_COEF_04_03));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_IIR_COEF_06_05 = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA_IIR_COEF_06_05));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_IIR_COEF_08_07 = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA_IIR_COEF_08_07));
+	n += scnprintf(buffer + n, size - n, "AFE_ADDA_IIR_COEF_10_09 = 0x%x\n",
+		       Afe_Get_Reg(AFE_ADDA_IIR_COEF_10_09));
 	n += scnprintf(buffer + n, size - n, "AFE_DAC_CON2 = 0x%x\n",
 		       Afe_Get_Reg(AFE_DAC_CON2));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CON1 = 0x%x\n",
