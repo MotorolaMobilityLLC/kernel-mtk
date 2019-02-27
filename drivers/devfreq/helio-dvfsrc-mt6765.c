@@ -32,8 +32,8 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 	{
 		{ DVFSRC_EMI_REQUEST,		0x00240009 },
 		{ DVFSRC_EMI_REQUEST3,		0x09000000 },
-		{ DVFSRC_EMI_HRT,		0x00000020 },
-		{ DVFSRC_EMI_QOS0,		0x003E362C },
+		{ DVFSRC_EMI_HRT,		0x003E362C },
+		{ DVFSRC_EMI_QOS0,		0x00000033 },
 		{ DVFSRC_EMI_QOS1,		0x0000004C },
 		{ DVFSRC_EMI_MD2SPM0,		0x0000003F },
 		{ DVFSRC_EMI_MD2SPM1,		0x00000000 },
@@ -57,7 +57,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_LEVEL_LABEL_12_13,	0x01230023 },
 		{ DVFSRC_LEVEL_LABEL_14_15,	0x03230223 },
 
-		{ DVFSRC_FORCE,			0x02000000 },
+		{ DVFSRC_FORCE,			0x40000000 },
 		{ DVFSRC_RSRV_1,		0x0000000C },
 
 		{ DVFSRC_QOS_EN,		0x0000407F },
@@ -98,7 +98,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_LEVEL_LABEL_12_13,	0x02230213 },
 		{ DVFSRC_LEVEL_LABEL_14_15,	0x03230323 },
 
-		{ DVFSRC_FORCE,			0x02000000 },
+		{ DVFSRC_FORCE,			0x20000000 },
 		{ DVFSRC_RSRV_1,		0x0000000C },
 
 		{ DVFSRC_QOS_EN,		0x0000407F },
