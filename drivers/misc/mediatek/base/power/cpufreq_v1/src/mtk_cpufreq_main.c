@@ -1395,8 +1395,8 @@ static int _mt_cpufreq_init(struct cpufreq_policy *policy)
 		struct mt_cpu_dvfs *p_cci;
 #endif
 
-		cpufreq_ver("DVFS: _mt_cpufreq_init: %s(cpu_id = %d)\n",
-				cpu_dvfs_get_name(p), p->cpu_id);
+		cpufreq_ver("DVFS: %s: %s(cpu_id = %d)\n",
+				__func__, cpu_dvfs_get_name(p), p->cpu_id);
 
 		opp_tbl_info = &opp_tbls[id][lv];
 

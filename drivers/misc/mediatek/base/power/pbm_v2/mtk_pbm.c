@@ -1511,7 +1511,7 @@ static int __init pbm_module_init(void)
 	get_md1_scenario();
 	#endif
 
-	pbm_crit("pbm_module_init : Done\n");
+	pbm_crit("%s : Done\n", __func__);
 
 	if (ret) {
 		pbm_err("FAILED TO CREATE PBM KTHREAD\n");
