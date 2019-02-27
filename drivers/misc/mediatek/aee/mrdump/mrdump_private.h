@@ -16,6 +16,8 @@
 
 #include <asm/cputype.h>
 #include <asm/memory.h>
+#include <asm/smp_plat.h>
+#include <asm/cputype.h>
 #include <asm-generic/sections.h>
 
 #ifdef __aarch64__
@@ -39,7 +41,7 @@ static inline int get_HW_cpuid(void)
 	u32 id;
 
 	mpidr = read_cpuid_mpidr();
-	id = (mpidr & 0xff) + ((mpidr & 0xff00) >> 6);
+	id = get_logical_index(mpidr & MPIDR_HWID_BITMASK);
 
 	return id;
 }
