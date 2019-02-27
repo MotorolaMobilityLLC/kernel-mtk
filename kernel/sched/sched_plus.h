@@ -15,3 +15,7 @@
 extern unsigned long arch_scale_get_max_freq(int cpu);
 extern unsigned long arch_scale_get_min_freq(int cpu);
 #endif
+
+#ifdef CONFIG_SCHED_TUNE
+extern int stune_task_threshold;
+#endif
