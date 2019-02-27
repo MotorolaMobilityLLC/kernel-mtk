@@ -23,16 +23,13 @@
 #include <linux/power_supply.h>
 #include <linux/kthread.h>
 #include <linux/workqueue.h>
-#include <linux/switch.h>
 #include <linux/math64.h>
 
 #include <mt-plat/upmu_common.h>
-#include <mt-plat/charger_class.h>
 #include <mt-plat/charger_type.h>
 #include <mt-plat/aee.h>
 #include <mt-plat/mtk_boot.h>
 #include <mtk_charger_intf.h>
-#include <mtk_pe30_intf.h>
 #include <mtk_pe20_intf.h>
 
 #include "inc/mt6370_pmu_fled.h"
@@ -112,13 +109,12 @@ struct mt6370_pmu_charger_data {
 	struct device *dev;
 	struct power_supply *psy;
 	wait_queue_head_t wait_queue;
-	CHARGER_TYPE chg_type;
+	enum charger_type chg_type;
 	bool pwr_rdy;
 	u8 irq_flag[MT6370_CHG_IRQIDX_MAX];
 	int aicr_limit;
 	u32 zcv;
 	bool adc_hang;
-	struct switch_dev *usb_switch;
 	bool bc12_en;
 	u32 hidden_mode_cnt;
 	u32 ieoc;
@@ -452,15 +448,11 @@ static int mt6370_set_usbsw_state(struct mt6370_pmu_charger_data *chg_data,
 #ifdef CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT
 	dev_info(chg_data->dev, "%s: state = %d\n", __func__, state);
 
-	if (chg_data->usb_switch)
-		switch_set_state(chg_data->usb_switch, state);
 #if defined(CONFIG_PROJECT_PHY) || defined(CONFIG_USB_MTK_HDRC)
-	else {
-		if (state == MT6370_USBSW_CHG)
-			Charger_Detect_Init();
-		else
-			Charger_Detect_Release();
-	}
+	if (state == MT6370_USBSW_CHG)
+		Charger_Detect_Init();
+	else
+		Charger_Detect_Release();
 #endif
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT */
 
@@ -2540,18 +2532,17 @@ static int mt6370_dump_register(struct charger_device *chg_dev)
 	}
 
 	dev_info(chg_data->dev,
-		"%s: ICHG = %dmA, AICR = %dmA, MIVR = %dmV, IEOC = %dmA,
-		CV = %dmV\n", __func__, ichg / 1000, aicr / 1000, mivr / 1000,
+		"%s: ICHG = %dmA, AICR = %dmA, MIVR = %dmV, IEOC = %dmA, CV = %dmV\n",
+		__func__, ichg / 1000, aicr / 1000, mivr / 1000,
 		ieoc / 1000, cv / 1000);
 
 	dev_info(chg_data->dev,
-		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA,
-		VBUS = %dmV\n",	__func__, adc_vsys / 1000, adc_vbat / 1000,
+		"%s: VSYS = %dmV, VBAT = %dmV, IBAT = %dmA, IBUS = %dmA, VBUS = %dmV\n",
+		__func__, adc_vsys / 1000, adc_vbat / 1000,
 		adc_ibat / 1000, adc_ibus / 1000, adc_vbus / 1000);
 
-	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s,
-		CHG_STAT = 0x%02X\n", __func__,
-		chg_en, mt6370_chg_status_name[chg_status], chg_stat);
+	dev_info(chg_data->dev, "%s: CHG_EN = %d, CHG_STATUS = %s, CHG_STAT = 0x%02X\n",
+		__func__, chg_en, mt6370_chg_status_name[chg_status], chg_stat);
 
 	dev_info(chg_data->dev, "%s: CHG_CTRL1 = 0x%02X, CHG_CTRL2 = 0x%02X\n",
 		__func__, chg_ctrl[0], chg_ctrl[1]);
@@ -3728,10 +3719,6 @@ static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 && !defined(CONFIG_TCPC_CLASS)
 	INIT_WORK(&chg_data->chgdet_work, mt6370_chgdet_work_handler);
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
-
-	chg_data->usb_switch = switch_dev_get_by_name("usb_switch");
-	if (!chg_data->usb_switch)
-		dev_err(chg_data->dev, "%s: get usb switch failed\n", __func__);
 
 	/* Get chg type det power supply */
 	chg_data->psy = power_supply_get_by_name("charger");
