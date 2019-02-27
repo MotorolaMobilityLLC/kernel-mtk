@@ -113,8 +113,6 @@ int xgf_est_slptime(struct xgf_proc *proc, unsigned long long *slptime,
 		    struct xgf_tick *ref, struct xgf_tick *now, pid_t r_pid);
 void xgf_trace(const char *fmt, ...);
 void xgf_reset_render(struct xgf_proc *proc);
-int has_xgf_dep(pid_t tid);
-int xgf_dep_counts(void);
 
 
 void *xgf_kzalloc(size_t size);
@@ -125,6 +123,8 @@ int fpsgo_comp2xgf_qudeq_notify(int rpid, int cmd,
 		unsigned long long *sleep_time);
 void fpsgo_fstb2xgf_do_recycle(int fstb_active);
 void fpsgo_create_render_dep(void);
+
+int has_xgf_dep(pid_t tid);
 
 int __init init_xgf(void);
 

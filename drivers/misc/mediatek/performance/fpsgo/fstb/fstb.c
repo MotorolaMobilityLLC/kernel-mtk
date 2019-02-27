@@ -35,6 +35,7 @@
 #include "fpsgo_base.h"
 #include "fstb.h"
 #include "fstb_usedext.h"
+#include "../fbt/include/fbt_fteh.h"
 
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #include "ged_kpi.h"
@@ -1688,6 +1689,8 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 {
 	struct FSTB_FRAME_INFO *iter;
 	struct task_struct *tsk, *gtsk;
+	int fteh_pid;
+	int fteh_state;
 
 	mutex_lock(&fstb_lock);
 
@@ -1764,6 +1767,10 @@ static int fpsgo_status_read(struct seq_file *m, void *v)
 	}
 
 	mutex_unlock(&fstb_lock);
+
+	fteh_state = fpsgo_fteh_get_state(&fteh_pid);
+	seq_puts(m, "\nFTEH\tstate\tcur_pid\n");
+	seq_printf(m, "\t%d\t%d\n", fteh_state, fteh_pid);
 
 	return 0;
 }

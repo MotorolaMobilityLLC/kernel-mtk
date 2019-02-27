@@ -175,7 +175,7 @@ static void minitop_cleanup(void)
 	minitop_trace("clean up");
 }
 
-static void __minitop_nominate(pid_t tid)
+static struct minitop_rec *__minitop_nominate(pid_t tid, int source)
 {
 	struct rb_node **p = &minitop_root.rb_node;
 	struct rb_node *parent = NULL;
@@ -193,18 +193,22 @@ static void __minitop_nominate(pid_t tid)
 			p = &(*p)->rb_left;
 		else if (mr->tid > tid)
 			p = &(*p)->rb_right;
-		else
-			return;
+		else {
+			mr->source |= source;
+			return mr;
+		}
 	}
 
 	mr = kzalloc(sizeof(*mr), GFP_KERNEL);
 	if (unlikely(!mr))
-		return;
+		return NULL;
 
 	mr->tid = tid;
+	mr->source = source;
 
 	rb_link_node(&mr->node, parent, p);
 	rb_insert_color(&mr->node, &minitop_root);
+	return mr;
 }
 
 static int __get_runtime(pid_t tid, u64 *runtime)
@@ -261,9 +265,7 @@ static inline int __minitop_is_render(struct minitop_rec *mr)
 {
 	int ret;
 
-	fpsgo_render_tree_lock(__func__);
 	ret = has_xgf_dep(mr->tid);
-	fpsgo_render_tree_unlock(__func__);
 	return !!ret;
 }
 
@@ -271,6 +273,7 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 {
 	int ret = -EINVAL;
 	u64 runtime, ts, ratio;
+	int keep = 0;
 
 	minitop_lockprove(__func__);
 
@@ -280,6 +283,8 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 	ret = __get_runtime(mr->tid, &runtime);
 	if (ret)
 		goto err_cleanup;
+	/* Re-init return value for usage of following "goto" */
+	ret = -EINVAL;
 
 	if (unlikely(runtime < mr->init_runtime))
 		goto err_cleanup;
@@ -288,16 +293,17 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 	if (unlikely(ts < mr->init_timestamp))
 		goto err_cleanup;
 
+	/* Such a long-life task ?! */
+	if (unlikely(mr->life == U32_MAX))
+		goto err_cleanup;
+
 
 	mr->life++;
 
 	/* TODO: overflow check */
-	/*
-	 * 2^25 / (HZ/32) ~= 1.07, where HZ/32 is scheduler nomination
-	 * interval. Since unit of @ratio is %, multiply numerator by 107.
-	 */
-	ratio = (runtime - mr->init_runtime) * 107;
-	/* HZ/32 ms * window size */
+	/* Since unit of @ratio is %, multiply numerator by 107 */
+	ratio = (runtime - mr->init_runtime) * 100;
+	/* 32 ms * slot size */
 	ratio >>= (25 + __warmup_order);
 	mr->ratio = div_u64(ratio, mr->life);
 
@@ -305,6 +311,19 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 		      mr->tid, mr->ratio, mr->init_runtime, runtime,
 		      mr->life, mr->debnc);
 
+	if (mr->source & MINITOP_FTEH) {
+		if (mr->debnc_fteh > 0)
+			keep |= 1;
+		else
+			minitop_trace(" %5d %3d%% end debnc FTEH",
+				      mr->tid, mr->ratio);
+	}
+
+	if ((mr->source & MINITOP_SCHED) == 0)
+		goto end_sched_nomi;
+
+
+	/* Check thread nominated by scheduler at last */
 	if (mr->ratio >= __thrs_heavy) {
 		mr->debnc = (int)(0x1 << __cooldn_order);
 		mr->ever  = 1;
@@ -312,15 +331,22 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 		return 0;
 	}
 
-	if (mr->debnc-- > 0) {
+	if (mr->debnc > 0)
+		mr->debnc--;
+
+	if (mr->debnc > 0) {
 		*heavy = 1;
 		return 0;
 	}
 
-	/* A light or end-debounce thread; return error to remove */
-	ret = -EAGAIN;
+	/*
+	 * A light or end-debounce thread; return error to remove once
+	 * no one needs this
+	 */
+end_sched_nomi:
+	ret = keep ? 0 : -EAGAIN;
 	if (mr->ever)
-		minitop_trace(" %5d %3d%% end debnc to free",
+		minitop_trace(" %5d %3d%% end debnc heavy",
 			      mr->tid, mr->ratio);
 
 err_cleanup:
@@ -495,7 +521,7 @@ static void minitop_nominate_work(struct work_struct *work)
 		if (tu[j].util < __thrs_heavy_util_half())
 			break;
 
-		__minitop_nominate(tu[j].tid);
+		__minitop_nominate(tu[j].tid, MINITOP_SCHED);
 	}
 
 	kfree(tu);
@@ -545,6 +571,98 @@ static void fpsgo_sched_nominate(pid_t *tid, int *util)
 		minitop_put_work(mw);
 }
 
+/**
+ * FTEH (Frame Time Error Handle) supports
+ */
+int fpsgo_fteh2minitop_start(int count, struct fteh_loading *fl)
+{
+	int i;
+	struct minitop_rec *mr;
+
+	if (!minitop_if_active_then_lock())
+		return -EAGAIN;
+
+	for (i = 0; i < count; i++) {
+		minitop_trace(" %5d being nominated FTEH", fl[i].pid);
+		if (!fl[i].pid)
+			continue;
+		mr = __minitop_nominate(fl[i].pid, MINITOP_FTEH);
+		if (!mr)
+			continue;
+
+		mr->debnc_fteh = (int)(0x1 << __cooldn_order);
+	}
+
+	minitop_unlock(__func__);
+	return 0;
+}
+
+int fpsgo_fteh2minitop_end(void)
+{
+	struct rb_node *n, *next;
+	struct minitop_rec *mr;
+
+	if (!minitop_if_active_then_lock())
+		return -EAGAIN;
+
+	for (n = rb_first(&minitop_root); n; n = next) {
+		next = rb_next(n);
+
+		mr = rb_entry(n, struct minitop_rec, node);
+		if (mr->source != MINITOP_FTEH)
+			continue;
+
+		rb_erase(n, &minitop_root);
+		kfree(mr);
+	}
+
+	minitop_unlock(__func__);
+	return 0;
+}
+
+int fpsgo_fteh2minitop_query(int count, struct fteh_loading *fl)
+{
+	struct rb_node *n = minitop_root.rb_node;
+	struct minitop_rec *mr;
+	int i;
+
+	if (!minitop_if_active_then_lock())
+		return -EAGAIN;
+
+	for (n = rb_first(&minitop_root); n; n = rb_next(n)) {
+		mr = rb_entry(n, struct minitop_rec, node);
+		if (mr->source & MINITOP_FTEH)
+			mr->debnc_fteh--;
+	}
+
+	for (i = 0; i < count; i++) {
+		n = minitop_root.rb_node;
+		while (n) {
+			mr = rb_entry(n, struct minitop_rec, node);
+
+			if (mr->tid < fl[i].pid)
+				n = n->rb_left;
+			else if (mr->tid > fl[i].pid)
+				n = n->rb_right;
+			else {
+				if ((mr->source & MINITOP_FTEH) == 0) {
+					fl[i].loading = 0;
+					break;
+				}
+
+				fl[i].loading = mr->ratio;
+				break;
+			}
+			/* Not found */
+			fl[i].loading = 0;
+		}
+	}
+
+	minitop_unlock(__func__);
+
+	return 0;
+}
+
 #define MINITOP_DEBUGFS_ENTRY(name) \
 static int minitop_##name##_open(struct inode *i, struct file *file) \
 { \
@@ -587,18 +705,17 @@ static ssize_t minitop_##name##_write(struct file *flip, \
 
 static int minitop_list_show(struct seq_file *m, void *unused)
 {
-	struct rb_node *node, *next;
+	struct rb_node *n;
 	struct minitop_rec *mr;
 
 	if (!minitop_if_active_then_lock())
 		return -EAGAIN;
 
-	for (node = rb_first(&minitop_root); node; node = next) {
-		next = rb_next(node);
-
-		mr = rb_entry(node, struct minitop_rec, node);
-		seq_printf(m, " %5d %3llu%% life-%u debnc-%d\n",
-			   mr->tid, mr->ratio, mr->life, mr->debnc);
+	for (n = rb_first(&minitop_root); n; n = rb_next(n)) {
+		mr = rb_entry(n, struct minitop_rec, node);
+		seq_printf(m, " %5d %3llu%% src-0x%2x life-%d debnc-%d/%d\n",
+			   mr->tid, mr->ratio, (unsigned int)mr->source,
+			   mr->life, mr->debnc, mr->debnc_fteh);
 	}
 
 	minitop_unlock(__func__);
