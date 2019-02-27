@@ -392,6 +392,11 @@ enum ISP_IRQ_TYPE_ENUM {
 	ISP_IRQ_TYPE_AMOUNT
 };
 
+enum ISP_PASS1_PATH_ENUM {
+	ISP_PASS1_PATH_TYPE_RAW = 0,	/* P1 */
+	ISP_PASS1_PATH_TYPE_RAW_D,	/* P1_D */
+	ISP_PASS1_PATH_TYPE_AMOUNT
+};
 
 enum ISP_IRQ_USER_ENUM {
 	ISP_IRQ_USER_ISPDRV = 0,
@@ -721,6 +726,20 @@ struct ISP_REF_CNT_CTRL_STRUCT {
 	signed int *data_ptr;
 };
 
+struct ISP_PM_QOS_STRUCT {
+	unsigned int       fps;
+	unsigned int       bw_sum;
+	bool               upd_flag;
+	bool               sof_flag;
+	unsigned int       module;
+};
+
+struct ISP_PM_QOS_INFO_STRUCT {
+	unsigned int       bw_value;
+	unsigned int       module;
+	unsigned int       fps;
+};
+
 /* struct for enqueue/dequeue control in ihalpipe wrapper */
 enum ISP_ED_BUFQUE_CTRL_ENUM {
 	ISP_ED_BUFQUE_CTRL_ENQUE_FRAME = 0,
@@ -941,6 +960,8 @@ enum ISP_CMD_ENUM {
 #ifdef T_STAMP_2_0
 	ISP_CMD_SET_FPS,
 #endif
+	ISP_CMD_SET_PM_QOS,
+	ISP_CMD_SET_PM_QOS_INFO,
 	ISP_CMD_WAKELOCK_CTRL,
 	ISP_CMD_REGISTER_IRQ_USER_KEY,
 	/* register for a user key to do irq operation */
@@ -1007,6 +1028,10 @@ enum ISP_CMD_ENUM {
 #ifdef T_STAMP_2_0
 #define ISP_SET_FPS _IOW(ISP_MAGIC, ISP_CMD_SET_FPS, unsigned int)
 #endif
+#define ISP_SET_PM_QOS \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
+#define ISP_SET_PM_QOS_INFO \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS_INFO, struct ISP_PM_QOS_INFO_STRUCT)
 #define ISP_REGISTER_IRQ_USER_KEY \
 	_IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, \
 		struct ISP_REGISTER_USERKEY_STRUCT)
