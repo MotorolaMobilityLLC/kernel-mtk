@@ -1346,7 +1346,7 @@ enum {
 bool set_chip_adc_in(unsigned int rate)
 {
 	unsigned int dVoiceModeSelect = 0;
-	unsigned int enable_iir = 0;
+	unsigned int enable_iir = 1;
 	unsigned int afeAddaUlSrcCon0 = 0;	/* default value */
 
 	/* enable aud_pad_top fifo,
@@ -1367,11 +1367,12 @@ bool set_chip_adc_in(unsigned int rate)
 	afeAddaUlSrcCon0 |= (enable_iir << 10) & (0x1 << 10);
 	afeAddaUlSrcCon0 |= UL_IIR_SW << 7;
 	if ((afeAddaUlSrcCon0 & 0x380) == UL_IIR_SW) {
+		/* 35HZ @48K */
 		Afe_Set_Reg(AFE_ADDA_IIR_COEF_02_01, 0x00000000, MASK_ALL);
-		Afe_Set_Reg(AFE_ADDA_IIR_COEF_04_03, 0x00003F7A, MASK_ALL);
-		Afe_Set_Reg(AFE_ADDA_IIR_COEF_06_05, 0x3F7A0000, MASK_ALL);
-		Afe_Set_Reg(AFE_ADDA_IIR_COEF_08_07, 0x3F7A0000, MASK_ALL);
-		Afe_Set_Reg(AFE_ADDA_IIR_COEF_10_09, 0x0000C086, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_04_03, 0x00003FB8, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_06_05, 0x3FB80000, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_08_07, 0x3FB80000, MASK_ALL);
+		Afe_Set_Reg(AFE_ADDA_IIR_COEF_10_09, 0x0000C048, MASK_ALL);
 	}
 	Afe_Set_Reg(AFE_ADDA_UL_SRC_CON0, afeAddaUlSrcCon0, MASK_ALL);
 
