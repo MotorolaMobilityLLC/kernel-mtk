@@ -249,6 +249,24 @@ void cmdq_core_remove_status_dump(struct notifier_block *notifier)
 		CMDQ_ERR("fail to unregister chanin:0x%p\n", notifier);
 }
 
+/* for PMQOS task begin/end */
+s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
+	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask)
+{
+	struct CmdqCBkStruct *callback;
+
+	if (!cmdq_core_is_valid_group(group))
+		return -EFAULT;
+
+	CMDQ_MSG("Register %d group engines' callback begin:%pf end:%pf\n",
+		group, beginTask, endTask);
+
+	callback = &cmdq_group_cb[group];
+
+	callback->beginTask = beginTask;
+	callback->endTask = endTask;
+	return 0;
+}
 
 const char *cmdq_core_parse_op(u32 op_code)
 {
@@ -700,9 +718,14 @@ void cmdq_core_set_aee(bool enable)
 	cmdq_ctx.aee = enable;
 }
 
-s32 cmdq_core_profile_enabled(void)
+bool cmdq_core_met_enabled(void)
 {
-	return cmdq_ctx.enableProfile;
+	return cmdq_ctx.enableProfile & (1 << CMDQ_PROFILE_MET);
+}
+
+bool cmdq_core_ftrace_enabled(void)
+{
+	return cmdq_ctx.enableProfile & (1 << CMDQ_PROFILE_FTRACE);
 }
 
 void cmdq_long_string_init(bool force, char *buf, u32 *offset, s32 *max_size)
@@ -2468,7 +2491,7 @@ ssize_t cmdq_core_print_profile_enable(struct device *dev,
 	int len = 0;
 
 	if (buf)
-		len = sprintf(buf, "%d\n", cmdq_ctx.enableProfile);
+		len = sprintf(buf, "0x%x\n", cmdq_ctx.enableProfile);
 
 	return len;
 
@@ -2499,10 +2522,13 @@ ssize_t cmdq_core_write_profile_enable(struct device *dev,
 		}
 
 		status = len;
-		if (value < 0 || value > 3)
+		if (value < 0 || value > CMDQ_PROFILE_MAX)
 			value = 0;
 
-		cmdq_ctx.enableProfile = value;
+		if (value == CMDQ_PROFILE_OFF)
+			cmdq_ctx.enableProfile = CMDQ_PROFILE_OFF;
+		else
+			cmdq_ctx.enableProfile |= (1 << value);
 	} while (0);
 
 	return status;
@@ -3028,7 +3054,7 @@ static void cmdq_core_dump_status(const char *tag)
 		tag, value[4], (0x80000000 & value[0]) ? 1 : 0,
 		 coreExecThread, value[0], value[1]);
 	CMDQ_LOG(
-		"[%s]THR_TIMER:0x%x BUS_CTRL:0x%x DEBUG: 0x%x 0x%x 0x%x 0x%x\n",
+		"[%s]THR_TIMER:0x%x BUS_CTRL:0x%x DEBUG:0x%x 0x%x 0x%x 0x%x\n",
 		tag, value[2], value[3],
 		CMDQ_REG_GET32((GCE_BASE_VA + 0xF0)),
 		CMDQ_REG_GET32((GCE_BASE_VA + 0xF4)),
@@ -3142,7 +3168,7 @@ u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 				insts[0], insts[1], parsedInstruction);
 		}
 	} else {
-		CMDQ_LOG("[%s]Thread %d PC: %s\n", tag, thread,
+		CMDQ_LOG("[%s]Thread %d PC:%s\n", tag, thread,
 			handle->secData.is_secure ?
 			"HIDDEN INFO since is it's secure thread" :
 			"Not available");
@@ -3928,7 +3954,7 @@ static void cmdq_core_v3_replace_jumpc(struct cmdqRecStruct *handle,
 		if (dest_addr_pa == 0) {
 			cmdq_core_dump_handle(handle, "ERR");
 			CMDQ_AEE("CMDQ",
-				"Wrong PA offset, task: 0x%p, inst idx: 0x%08x cmd: 0x%08x:%08x addr: 0x%p\n",
+				"Wrong PA offset, task:0x%p, inst idx:0x%08x cmd:0x%08x:%08x addr:0x%p\n",
 				handle, inst_idx, p_cmd_logic[1],
 				p_cmd_logic[0], p_cmd_logic);
 			return;
@@ -3993,7 +4019,7 @@ void cmdq_core_replace_v3_instr(struct cmdqRecStruct *handle, s32 thread)
 
 		if (!p_cmd_va) {
 			CMDQ_AEE("CMDQ",
-				"Cannot find va, task: 0x%p idx: %u/%u instruction idx: %u(%u) size: %zu+%zu\n",
+				"Cannot find va, task:0x%p idx:%u/%u instruction idx:%u(%u) size:%zu+%zu\n",
 				handle, i, handle->replace_instr.number,
 				inst_idx, p_instr_position[i],
 				handle->pkt->buf_size,
@@ -4205,6 +4231,17 @@ struct ContextStruct *cmdq_core_get_context(void)
 struct CmdqCBkStruct *cmdq_core_get_group_cb(void)
 {
 	return cmdq_group_cb;
+}
+
+unsigned long cmdq_get_tracing_mark(void)
+{
+	static unsigned long __read_mostly tracing_mark_write_addr;
+
+	if (unlikely(tracing_mark_write_addr == 0))
+		tracing_mark_write_addr =
+			kallsyms_lookup_name("tracing_mark_write");
+
+	return tracing_mark_write_addr;
 }
 
 /* core controller function */
@@ -4935,6 +4972,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
 
+	CMDQ_SYSTRACE_BEGIN("%s_wait_done\n", __func__);
 	handle->beginWait = sched_clock();
 
 	do {
@@ -4981,6 +5019,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	} while (1);
 
 	handle->wakedUp = sched_clock();
+	CMDQ_SYSTRACE_END();
 
 	/* set to timeout if state change to */
 	if (handle->state == TASK_STATE_TIMEOUT) {
@@ -5126,8 +5165,8 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 		}
 	}
 
-
 	/* PMQoS */
+	CMDQ_SYSTRACE_BEGIN("%s_pmqos\n", __func__);
 	mutex_lock(&cmdq_thread_mutex);
 	ctx = cmdq_core_get_context();
 	handle_count = ctx->thread[handle->thread].handle_count;
@@ -5148,10 +5187,13 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 	kfree(pmqos_handle_list);
 	ctx->thread[handle->thread].handle_count++;
 	mutex_unlock(&cmdq_thread_mutex);
+	CMDQ_SYSTRACE_END();
 
+	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
 	cmdq_core_replace_v3_instr(handle, handle->thread);
 	err = cmdq_pkt_flush_async(client, handle->pkt, cmdq_pkt_flush_handler,
 		(void *)handle);
+	CMDQ_SYSTRACE_END();
 
 	if (err < 0) {
 		CMDQ_ERR("pkt flush failed err:%d pkt:0x%p\n",
@@ -5188,7 +5230,10 @@ s32 cmdq_pkt_flush_async_ex(struct cmdqRecStruct *handle,
 {
 	s32 err;
 
+	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
 	err = cmdq_pkt_flush_async_ex_impl(handle, cb, user_data);
+	CMDQ_SYSTRACE_END();
+
 	if (err < 0) {
 		if (handle->thread == CMDQ_INVALID_THREAD || err == -EBUSY)
 			return err;
@@ -5476,25 +5521,6 @@ void cmdq_core_deinitialize(void)
 	kfree(cmdq_wait_queue);
 	cmdq_wait_queue = NULL;
 	cmdq_core_destroy_buffer_pool();
-}
-
-/* PMQOS */
-s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
-	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask)
-{
-	struct CmdqCBkStruct *callback;
-
-	if (!cmdq_core_is_valid_group(group))
-		return -EFAULT;
-
-	CMDQ_MSG("Register %d group engines' callback begin:%pf end:%pf\n",
-		group, beginTask, endTask);
-
-	callback = &cmdq_group_cb[group];
-
-	callback->beginTask = beginTask;
-	callback->endTask = endTask;
-	return 0;
 }
 
 late_initcall(cmdq_core_late_init);
