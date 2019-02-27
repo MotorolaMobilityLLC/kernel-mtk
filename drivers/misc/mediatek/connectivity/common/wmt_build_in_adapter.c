@@ -73,9 +73,6 @@ void wmt_export_platform_bridge_register(struct wmt_platform_bridge *cb)
 	if (unlikely(!cb))
 		return;
 	bridge.thermal_query_cb = cb->thermal_query_cb;
-#if MTK_WCN_CMB_FOR_SDIO_1V_AUTOK
-	bridge.autok_cb = cb->autok_cb;
-#endif
 	CONNADP_INFO_FUNC("\n");
 }
 EXPORT_SYMBOL(wmt_export_platform_bridge_register);
@@ -96,19 +93,6 @@ int mtk_wcn_cmb_stub_query_ctrl(void)
 	} else
 		return bridge.thermal_query_cb();
 }
-
-#if MTK_WCN_CMB_FOR_SDIO_1V_AUTOK
-int mtk_wcn_cmb_stub_1vautok_for_dvfs(void)
-{
-	CONNADP_DBG_FUNC("\n");
-	if (unlikely(!bridge.autok_cb)) {
-		CONNADP_WARN_FUNC("1v autok not registered\n");
-		return -1;
-	} else
-		return bridge.autok_cb();
-}
-#endif
-
 
 /*******************************************************************************
  * SDIO integration with platform MMC driver
