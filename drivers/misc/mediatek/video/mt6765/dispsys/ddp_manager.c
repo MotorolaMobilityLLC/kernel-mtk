@@ -1408,8 +1408,8 @@ static int is_module_in_path(enum DISP_MODULE_ENUM module,
 	return 0;
 }
 
-int dpmgr_path_user_cmd(disp_path_handle dp_handle, int msg, unsigned long arg,
-	void *cmdqhandle)
+int dpmgr_path_user_cmd(disp_path_handle dp_handle, unsigned int msg,
+		unsigned long arg, void *cmdqhandle)
 {
 	int ret = -1;
 	struct ddp_path_handle *handle = NULL;
