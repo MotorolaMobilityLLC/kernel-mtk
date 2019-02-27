@@ -70,6 +70,21 @@ int  __attribute__ ((weak)) vcorefs_get_curr_vcore(void)
 	return -1;
 }
 
+static u32 suspend_pcm_flags = {
+	/* SPM_FLAG_DIS_CPU_PDN | */
+	/* SPM_FLAG_DIS_INFRA_PDN | */
+	/* SPM_FLAG_DIS_DDRPHY_PDN | */
+	SPM_FLAG_DIS_VCORE_DVS |
+	SPM_FLAG_DIS_VCORE_DFS |
+	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
+	SPM_FLAG_DIS_ATF_ABORT |
+	SPM_FLAG_SUSPEND_OPTION
+};
+
+static u32 suspend_pcm_flags1 = {
+	0
+};
+
 static inline void spm_suspend_footprint(enum spm_suspend_step step)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
@@ -262,6 +277,16 @@ bool spm_is_enable_sleep(void)
 	return true;
 }
 
+bool spm_suspend_condition_check(void)
+{
+	if (is_infra_pdn(suspend_pcm_flags) && !is_cpu_pdn(suspend_pcm_flags)) {
+		pr_info("[SLP] CANNOT SLEEP DUE TO INFRA PDN BUT CPU PDN\n");
+		return false;
+	}
+
+	return true;
+}
+
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 /* #include <cust_pmic.h> */
@@ -276,7 +301,7 @@ int __attribute__((weak)) get_dlpt_imix_spm(void)
 #endif
 #endif
 
-unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
+unsigned int spm_go_to_sleep(void)
 {
 	u32 sec = 2;
 	unsigned long flags;
@@ -287,7 +312,8 @@ unsigned int spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	static unsigned int last_wr = WR_NONE;
 	struct pwr_ctrl *pwrctrl;
 	u32 cpu = 0;
-	u32 spm_flags1 = spm_data;
+	u32 spm_flags = suspend_pcm_flags;
+	u32 spm_flags1 = suspend_pcm_flags1;
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER);
 
