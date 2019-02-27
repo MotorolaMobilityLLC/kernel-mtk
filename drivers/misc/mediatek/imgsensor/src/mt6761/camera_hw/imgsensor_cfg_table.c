@@ -150,6 +150,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(IMX499_MIPI_RAW_13M)
+	{
+		SENSOR_DRVNAME_IMX499_MIPI_RAW_13M,
+		{
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{AVDD, Vol_2800, 0},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1100, 0},
+			{AFVDD, Vol_2800, 1},
+			{SensorMCLK, Vol_High, 1},
+			{PDN, Vol_High, 0},
+			{RST, Vol_High, 10}
+		},
+	},
+#endif
 #if defined(IMX398_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_IMX398_MIPI_RAW,
@@ -266,6 +282,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #if defined(S5K2T7SP_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_S5K2T7SP_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_2800, 0},
+			{DVDD, Vol_1000, 0},
+			{AFVDD, Vol_2800, 5},
+			{PDN, Vol_Low, 4},
+			{PDN, Vol_High, 0},
+			{RST, Vol_Low, 1},
+			{RST, Vol_High, 0},
+		},
+	},
+#endif
+#if defined(S5K2T7SP_MIPI_RAW_5M)
+	{
+		SENSOR_DRVNAME_S5K2T7SP_MIPI_RAW_5M,
 		{
 			{SensorMCLK, Vol_High, 0},
 			{DOVDD, Vol_1800, 0},
