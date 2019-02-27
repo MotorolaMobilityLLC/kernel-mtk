@@ -1935,8 +1935,8 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 
 	/* MPLL, CCIPLL, MAINPLL set HW mode, TDCLKSQ, CLKSQ1 */
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xFFFFFFE1);
-	clk_writel(PLLON_CON0, clk_readl(PLLON_CON0) & 0x25565965);
-	clk_writel(PLLON_CON1, clk_readl(PLLON_CON1) & 0x25565965);
+	clk_writel(PLLON_CON0, clk_readl(PLLON_CON0) & 0x01041041);
+	clk_writel(PLLON_CON1, clk_readl(PLLON_CON1) & 0x01041041);
 #if 0 /* FIX ME */
 	clk_clrl(AP_PLL_CON1, 3 << 6);/*CLKSQ_EN, CLKSQ_LPF HW Mode*/
 #if 1
