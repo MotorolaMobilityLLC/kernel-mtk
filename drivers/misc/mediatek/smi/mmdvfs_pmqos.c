@@ -678,7 +678,7 @@ MODULE_PARM_DESC(mmdvfs_enable, "enable or disable mmdvfs");
 module_param(log_level, uint, 0644);
 MODULE_PARM_DESC(log_level, "mmdvfs log level");
 
-arch_initcall(mmdvfs_pmqos_init);
+module_init(mmdvfs_pmqos_init);
 module_exit(mmdvfs_pmqos_exit);
 
 MODULE_DESCRIPTION("MTK MMDVFS driver");
