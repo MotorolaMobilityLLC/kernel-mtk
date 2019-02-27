@@ -51,6 +51,7 @@
 #include "sd_ops.h"
 #include "sdio_ops.h"
 #include "../card/mtk_mmc_block.h"
+#include "../card/queue.h"
 
 /* If the device is not responding */
 #define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
@@ -432,14 +433,20 @@ static int mmc_check_write(struct mmc_host *host, struct mmc_request *mrq)
 {
 	int ret = 0;
 	u32 status = 0;
+	struct mmc_queue_req *mq_rq;
+	struct mmc_async_req *areq;
 
 	if (mrq->cmd->opcode == MMC_WRITE_REQUESTED_QUEUE) {
 		ret = mmc_blk_status_check(host->card, &status);
 
 		if ((status & R1_WP_VIOLATION) || host->wp_error) {
 			mrq->data->error = -EROFS;
-			pr_err("[%s]: data error = %d, status=0x%x, line:%d\n",
-				__func__, mrq->data->error, status, __LINE__);
+			areq = host->areq_que[(mrq->cmd->arg >> 16) & 0x1f];
+			mq_rq = container_of(areq, struct mmc_queue_req,
+					mmc_active);
+			pr_notice("[%s]: data error = %d, status=0x%x, line:%d, addr:0x%x\n",
+				__func__, mrq->data->error, status,
+				__LINE__, mq_rq->brq.que.arg << 9);
 		}
 		mmc_wait_tran(host);
 		mrq->data->error = 0;
