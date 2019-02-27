@@ -14,7 +14,7 @@
 #include <mtk-base-afe.h>
 
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
-#include <audio_mem_control.h>
+#include <mtk-dsp-mem-control.h>
 #include <mtk-base-dsp.h>
 #include <mtk-dsp-common.h>
 #endif
@@ -95,19 +95,27 @@ int mtk_scp_ipi_send(int task_scene, int data_type, int ack_type,
 {
 	struct ipi_msg_t ipi_msg;
 	int send_result = 0;
+	int retry_count = 20; // 5 x 20 = 100ms
 
 	/* pr_warn("%s(), scp_ipi send payload = %p\n", __func__, payload); */
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
-	send_result = audio_send_ipi_msg(
-		&ipi_msg, task_scene,
-		AUDIO_IPI_LAYER_TO_DSP, data_type,
-		ack_type, msg_id, param1, param2,
-		(char *)payload);
 
-	if (send_result != 0)
-		pr_warn("%s(), scp_ipi send fail\n", __func__);
+	do {
+		send_result = audio_send_ipi_msg(
+			&ipi_msg, task_scene,
+			AUDIO_IPI_LAYER_TO_DSP, data_type,
+			ack_type, msg_id, param1, param2,
+			(char *)payload);
 
+		if (send_result != 0)
+			pr_warn("%s(), scp_ipi send retry\n", __func__);
+	} while (send_result != 0 && retry_count);
+
+	if (send_result) {
+		pr_info("%s(), scp_ipi send fail\n", __func__);
+		AUD_ASSERT(false);
+	}
 
 	return send_result;
 }
