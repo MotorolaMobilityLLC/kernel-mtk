@@ -1206,22 +1206,32 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 			*sensor_id = read_cmos_sensor_twobyte(0x0000);
 
-	if (*sensor_id == imgsensor_info.sensor_id || *sensor_id == 0x20C1) {
-		pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n",
-		imgsensor.i2c_write_id, *sensor_id);
+			if (*sensor_id == imgsensor_info.sensor_id
+			    || *sensor_id == 0x20C1) {
+				pr_debug(
+				    "i2c write id: 0x%x, sensor id: 0x%x\n",
+				    imgsensor.i2c_write_id, *sensor_id);
 
-		return ERROR_NONE;
-	}
+				break;
+			}
 
-		    pr_debug("Read sensor id fail, write id: 0x%x, id: 0x%x\n",
-				imgsensor.i2c_write_id, *sensor_id);
+			pr_debug(
+			    "Read sensor id fail, write id: 0x%x, id: 0x%x\n",
+			    imgsensor.i2c_write_id, *sensor_id);
 			retry--;
 		} while (retry > 0);
+
+		if (*sensor_id == imgsensor_info.sensor_id
+		    || *sensor_id == 0x20C1) {
+			break;
+		}
 		i++;
 		retry = 2;
 	}
 	if (*sensor_id != imgsensor_info.sensor_id && *sensor_id != 0x20C1) {
-	  /* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
+		/* if Sensor ID is not correct,
+		 * Must set *sensor_id to 0xFFFFFFFF
+		 */
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
