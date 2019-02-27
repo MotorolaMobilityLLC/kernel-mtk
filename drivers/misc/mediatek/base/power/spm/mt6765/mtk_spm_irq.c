@@ -107,16 +107,6 @@ static void mtk_spm_unmask_edge_trig_irqs_for_cirq(void)
 	}
 }
 
-void mtk_spm_wakeup_src_restore(void)
-{
-	int i;
-
-	for (i = 0; i < IRQ_NUMBER; i++) {
-		if (spm_read(SPM_SW_RSV_0) & list[i].wakesrc)
-			mt_irq_set_pending(edge_trig_irqs[i]);
-	}
-}
-
 static unsigned int spm_irq_0;
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 static struct mtk_irq_mask irq_mask;
