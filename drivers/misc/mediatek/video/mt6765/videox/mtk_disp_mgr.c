@@ -91,7 +91,7 @@ static int smartovl_flag;
  */
 static int has_memory_session;
 #endif
-#define NO_PQ_IOCTL
+/* #define NO_PQ_IOCTL */
 
 static unsigned int session_config[MAX_SESSION_COUNT];
 static DEFINE_MUTEX(disp_session_lock);
