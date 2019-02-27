@@ -115,6 +115,7 @@
  ************************************************************************/
 /* SENSOR CHIP VERSION */
 /*IMX*/
+#define IMX499_SENSOR_ID                        0x0499
 #define IMX486_SENSOR_ID                        0x0486
 #define IMX398_SENSOR_ID                        0x0398
 #define IMX268_SENSOR_ID                        0x0268
@@ -221,7 +222,7 @@
 #define S5K8AAYX_MIPI_SENSOR_ID                 0x08aa
 #define S5K8AAYX_SENSOR_ID                      0x08aa
 #define S5K5E8YX_SENSOR_ID                      0x5e80
-#define S5K5E8YXREAR2_SENSOR_ID                 0x5e81
+#define S5K5E8YXREAR2_SENSOR_ID                 0x5e80
 /*HI*/
 #define HI841_SENSOR_ID                         0x0841
 #define HI707_SENSOR_ID                         0x00b8
@@ -312,6 +313,7 @@
 #define CAMERA_HW_DEVNAME                       "kd_camera_hw"
 /* SENSOR DEVICE DRIVER NAME */
 /*IMX*/
+#define SENSOR_DRVNAME_IMX499_MIPI_RAW          "imx499_mipi_raw"
 #define SENSOR_DRVNAME_IMX486_MIPI_RAW          "imx486_mipi_raw"
 #define SENSOR_DRVNAME_IMX398_MIPI_RAW          "imx398_mipi_raw"
 #define SENSOR_DRVNAME_IMX268_MIPI_RAW          "imx268_mipi_raw"
