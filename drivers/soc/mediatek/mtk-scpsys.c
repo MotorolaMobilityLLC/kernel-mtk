@@ -20,7 +20,9 @@
 #include <linux/regulator/consumer.h>
 #include <linux/soc/mediatek/infracfg.h>
 
+#ifdef CONFIG_COMMON_CLK_MT2701
 #include <dt-bindings/power/mt2701-power.h>
+#endif
 #include <dt-bindings/power/mt2712-power.h>
 #include <dt-bindings/power/mt8173-power.h>
 
@@ -504,7 +506,7 @@ static void mtk_register_power_domains(struct platform_device *pdev,
 /*
  * MT2701 power domain support
  */
-
+#ifdef CONFIG_COMMON_CLK_MT2701
 static const struct scp_domain_data scp_domain_data_mt2701[] = {
 	[MT2701_POWER_DOMAIN_CONN] = {
 		.name = "conn",
@@ -603,6 +605,7 @@ static int __init scpsys_probe_mt2701(struct platform_device *pdev)
 /*
  * MT2712 power domain support
  */
+#endif
 
 static const struct scp_domain_data scp_domain_data_mt2712[] = {
 	[MT2712_POWER_DOMAIN_MM] = {
@@ -830,10 +833,13 @@ static int __init scpsys_probe_mt8173(struct platform_device *pdev)
  */
 
 static const struct of_device_id of_scpsys_match_tbl[] = {
+#ifdef CONFIG_COMMON_CLK_MT2701
 	{
 		.compatible = "mediatek,mt2701-scpsys",
 		.data = scpsys_probe_mt2701,
-	}, {
+	},
+#endif
+	{
 		.compatible = "mediatek,mt2712-scpsys",
 		.data = scpsys_probe_mt2712,
 	}, {
