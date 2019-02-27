@@ -350,7 +350,7 @@ void disp_helper_option_init(void)
 
 	/* =================Begin: lowpower option setting================= */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 1);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
 	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
@@ -362,9 +362,9 @@ void disp_helper_option_init(void)
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
-	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
 
-	disp_helper_set_option(DISP_OPT_MET_LOG, 0);
+	disp_helper_set_option(DISP_OPT_MET_LOG, 1);
 	/* =================End: lowpower option setting=================== */
 
 	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);
@@ -374,10 +374,12 @@ void disp_helper_option_init(void)
 
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
+
 	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 0);
-	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 0);
+	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 0);
 	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 0);
+
 	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
 	/* report external fps statistics */
@@ -386,19 +388,18 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_FPS_EXT_INTERVAL, 1000);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
-	disp_helper_set_option(DISP_OPT_HRT, 0);
+	disp_helper_set_option(DISP_OPT_HRT, 1);
 
 	/* display partial update */
-#ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
-	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
-#endif
-	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
-	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 0);
+	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
+
+	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
+	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 0);
 	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 0);
 
 	/* smart layer OVL*/
-	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 0);
+	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 1);
 
 	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 0);
 
@@ -410,9 +411,9 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
 	disp_helper_set_option(DISP_OPT_RPO, 1);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
-	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 0);
+	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 1);
 	disp_helper_set_option(DISP_OPT_FRAME_QUEUE, 0);
-	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 0);
+	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
 
 	/* OVL SBCH */
 	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
