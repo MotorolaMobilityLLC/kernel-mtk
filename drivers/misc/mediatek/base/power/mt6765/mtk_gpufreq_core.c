@@ -1347,8 +1347,8 @@ static void __mt_gpufreq_vcore_volt_switch(unsigned int volt_target)
 		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_1);
 		g_cur_vcore_opp = VCORE_OPP_1;
 	} else if (volt_target > 0) {
-		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_2);
-		g_cur_vcore_opp = VCORE_OPP_2;
+		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_3);
+		g_cur_vcore_opp = VCORE_OPP_3;
 	} else /* UNREQUEST */
 		pm_qos_update_request(&g_pmic->pm_vgpu, VCORE_OPP_UNREQ);
 

@@ -2936,6 +2936,16 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 				HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 				HTBLOG_U64_BITS_HIGH(sDevPAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevPAddr.uiAddr));
 
+			{
+				if ((sDevPAddr.uiAddr >= 0x7a000000) &&
+					(sDevPAddr.uiAddr < 0x7a340000)) {
+					PVR_DPF((PVR_DBG_ERROR,
+"%s: _SetupPTE in region 23, sDevPAddr=0x%llx, sDevVAddr=0x%llx",
+					__func__, sDevPAddr.uiAddr,
+					sDevVAddr.uiAddr));
+				}
+			}
+
 			eError = _SetupPTE(psMMUContext,
 			                   psLevel,
 			                   uiPTEIndex,
@@ -3351,6 +3361,16 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 			HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 			HTBLOG_U64_BITS_HIGH(psDevPAddr[i].uiAddr), HTBLOG_U64_BITS_LOW(psDevPAddr[i].uiAddr));
 
+		{
+			if ((psDevPAddr[i].uiAddr >= 0x7a000000)
+				&& (psDevPAddr[i].uiAddr < 0x7a340000)) {
+
+				PVR_DPF((PVR_DBG_ERROR,
+"%s: _SetupPTE in region 23, psDevPAddr=0x%llx, sDevVAddr=0x%llx",
+			__func__, psDevPAddr[i].uiAddr, sDevVAddr.uiAddr));
+			}
+		}
+
 		/* Set the PT entry with the specified address and protection flags */
 		eError = _SetupPTE(psMMUContext, psLevel, uiPTEIndex,
 		                   psConfig, &psDevPAddr[i], IMG_FALSE,
@@ -3360,6 +3380,7 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 		                   uiSymbolicAddrOffset,
 #endif /*PDUMP*/
 						   uiProtFlags);
+
 		if (eError != PVRSRV_OK)
 			goto e2;
 
