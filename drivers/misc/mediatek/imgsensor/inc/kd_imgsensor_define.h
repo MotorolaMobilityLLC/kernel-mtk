@@ -991,6 +991,12 @@ struct stImgSensorFormat {
 	MUINT32 u4YEnd;
 };
 
+#define ISP_CLK_LEVEL_CNT 10
+struct IMAGESENSOR_GET_SUPPORTED_ISP_CLK {
+	unsigned char clklevelcnt; /* how many clk levels */
+	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
+};
+
 #ifdef CONFIG_COMPAT
 
 struct COMPAT_IMGSENSOR_GET_CONFIG_INFO_STRUCT {

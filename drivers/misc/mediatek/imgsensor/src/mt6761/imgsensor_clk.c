@@ -15,6 +15,7 @@
 #include <linux/clk.h>
 #include "imgsensor_clk.h"
 
+
 /*by platform settings and elements should not be reordered */
 char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_TOP_CAMTG_SEL",
@@ -65,7 +66,86 @@ enum {
 	FREQ_52MHZ = 52,
 };
 
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+struct pm_qos_request imgsensor_qos;
 
+int imgsensor_dfs_ctrl(enum DFS_OPTION option, void *pbuff)
+{
+	int i4RetValue = 0;
+
+	/*pr_info("%s\n", __func__);*/
+
+	switch (option) {
+	case DFS_CTRL_ENABLE:
+		pm_qos_add_request(&imgsensor_qos, PM_QOS_CAM_FREQ, 0);
+		pr_debug("seninf PMQoS turn on\n");
+		break;
+	case DFS_CTRL_DISABLE:
+		pm_qos_remove_request(&imgsensor_qos);
+		pr_debug("seninf PMQoS turn off\n");
+		break;
+	case DFS_UPDATE:
+		pr_debug(
+			"seninf Set isp clock level:%d\n",
+			*(unsigned int *)pbuff);
+		pm_qos_update_request(&imgsensor_qos, *(unsigned int *)pbuff);
+
+		break;
+	case DFS_SUPPORTED_ISP_CLOCKS:
+	{
+		int result = 0;
+		uint64_t freq_steps[ISP_CLK_LEVEL_CNT];
+		struct IMAGESENSOR_GET_SUPPORTED_ISP_CLK *pIspclks;
+		unsigned int lv = 0;
+
+		pIspclks = (struct IMAGESENSOR_GET_SUPPORTED_ISP_CLK *) pbuff;
+
+		/* Call mmdvfs_qos_get_freq_steps
+		 * to get supported frequency
+		 */
+		result = mmdvfs_qos_get_freq_steps(
+			PM_QOS_CAM_FREQ,
+			freq_steps, (u32 *)&pIspclks->clklevelcnt);
+
+		if (result < 0) {
+			pr_err(
+				"ERR: get MMDVFS freq steps failed, result: %d\n",
+				result);
+			i4RetValue = -EFAULT;
+			break;
+		}
+
+		if (pIspclks->clklevelcnt > ISP_CLK_LEVEL_CNT) {
+			pr_err("ERR: clklevelcnt is exceeded");
+			i4RetValue = -EFAULT;
+			break;
+		}
+
+		for (lv = 0; lv < pIspclks->clklevelcnt; lv++) {
+			/* Save clk from low to high */
+			pIspclks->clklevel[lv] = freq_steps[lv];
+			/*pr_debug("DFS Clk level[%d]:%d",
+			 *	lv, pIspclks->clklevel[lv]);
+			 */
+		}
+	}
+		break;
+	case DFS_CUR_ISP_CLOCK:
+	{
+		unsigned int *pGetIspclk;
+
+		pGetIspclk = (unsigned int *) pbuff;
+		*pGetIspclk = (u32)mmdvfs_qos_get_freq(PM_QOS_CAM_FREQ);
+		/*pr_debug("current isp clock:%d", *pGetIspclk);*/
+	}
+		break;
+	default:
+		pr_info("None\n");
+		break;
+	}
+	return i4RetValue;
+}
+#endif
 static inline void imgsensor_clk_check(struct IMGSENSOR_CLK *pclk)
 {
 	int i;
