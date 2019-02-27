@@ -1237,6 +1237,7 @@ static const struct dev_pm_ops cmdq_pm_ops = {
 
 static const struct of_device_id cmdq_of_ids[] = {
 	{.compatible = "mediatek,mailbox-gce"},
+	{}
 };
 
 static struct platform_driver cmdq_drv = {
