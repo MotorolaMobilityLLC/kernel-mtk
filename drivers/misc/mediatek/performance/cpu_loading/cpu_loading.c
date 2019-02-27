@@ -39,10 +39,12 @@ static unsigned long poltime_nsecs; /*set nanoseconds to polling time*/
 static int poltime_secs; /*set seconds to polling time*/
 static int onoff; /*master switch*/
 static int over_threshold; /*threshold value for sent uevent*/
+static int under_threshold; /*threshold value for sent uevent*/
 static int uevent_enable; /*sent uevent switch*/
 static int cpu_num; /*cpu number*/
 static int prev_cpu_loading; /*record previous cpu loading*/
 static bool reset_flag; /*check if need to reset value*/
+static int state;
 
 static struct mutex cpu_loading_lock;
 static struct workqueue_struct *wq;
@@ -53,6 +55,13 @@ static DECLARE_WORK(cpu_loading_timeout_work,
 
 struct cpu_info {
 	cputime64_t time;
+};
+
+enum {
+	high = 1,
+	mid,
+	low,
+
 };
 
 /* cpu loading tracking */
@@ -126,39 +135,45 @@ static enum hrtimer_restart handle_cpu_loading_timeout(struct hrtimer *timer)
 	return HRTIMER_NORESTART;
 }
 
-/*reset value if anyone change switch*/
-/*  1.uevent_enable */
-/*  2.poltime_secs */
-/*  3.over_threshold */
-/*  4.poltime_nsecs */
-
-void reset_cpu_loading(void)
+bool sentuevent(const char *src)
 {
+	int ret;
+	char *envp[2];
+	int string_size = 15;
+	char  event_string[string_size];
 
-	int i;
+	envp[0] = event_string;
+	envp[1] = NULL;
 
-	trace_cpu_loading_log("cpu_loading", "reset_cpu_loading");
-	for_each_possible_cpu(i) {
-		cur_wall_time[i].time = prev_wall_time[i].time = 0;
-		cur_idle_time[i].time = prev_idle_time[i].time = 0;
+
+	/*send uevent*/
+	if (uevent_enable) {
+		strlcpy(event_string, src, string_size);
+		if (event_string == '\0') { /*string is null*/
+
+			trace_cpu_loading_log("cpu_loading", "string is null");
+			return false;
+		}
+
+		ret = kobject_uevent_env(
+				&cpu_loading_object->mdev.this_device->kobj,
+				KOBJ_CHANGE, envp);
+		if (ret != 0) {
+			trace_cpu_loading_log("cpu_loading", "uevent failed");
+			return false;
+		}
+		trace_cpu_loading_log("cpu_loading", "sent uevent success");
 	}
 
-	prev_cpu_loading = 0;
-
+	return true;
 }
 
 /*update info*/
 int update_cpu_loading(void)
 {
-	int i, j, ret, tmp_cpu_loading = 0;
-	char *envp[2];
-	int string_size = 15;
-	char  event_string[string_size];
+	int i, j, tmp_cpu_loading = 0;
 
 	cputime64_t wall_time = 0, idle_time = 0;
-
-	envp[0] = event_string;
-	envp[1] = NULL;
 
 	mutex_lock(&cpu_loading_lock);
 
@@ -170,11 +185,8 @@ int update_cpu_loading(void)
 				&cur_wall_time[j].time, 1);
 
 		trace_cpu_loading_log("cpu_loading",
-				"cur_idle_time[%d].time:%llu\n", j,
-				 cur_idle_time[j].time);
-		trace_cpu_loading_log("cpu_loading",
-				"cur_wall_time[%d].time:%llu\n", j,
-				 cur_wall_time[j].time);
+		"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
+		j, cur_idle_time[j].time, j, cur_wall_time[j].time);
 	}
 
 	if (reset_flag) {
@@ -193,42 +205,51 @@ int update_cpu_loading(void)
 		idle_time += cur_idle_time[i].time - prev_idle_time[i].time;
 
 		trace_cpu_loading_log("cpu_loading",
-				"cur_idle_time[%d].time:%llu\n", i,
-					 cur_idle_time[i].time);
-		trace_cpu_loading_log("cpu_loading",
-				"cur_wall_time[%d].time:%llu\n", i,
-					 cur_wall_time[i].time);
+		"cur_idle_time[%d].time:%llu cur_wall_time[%d].time:%llu\n",
+		i, cur_idle_time[i].time, i, cur_wall_time[i].time);
 	}
 
 	tmp_cpu_loading = div_u64((100 * (wall_time - idle_time)), wall_time);
 
 
 	trace_cpu_loading_log("cpu_loading",
-			"tmp_cpu_loading:%d\n", tmp_cpu_loading);
-	if (tmp_cpu_loading > over_threshold &&
-			over_threshold > prev_cpu_loading) {
+			"tmp_cpu_loading:%d prev_cpu_loading:%d previous state:%d\n",
+			tmp_cpu_loading, prev_cpu_loading, state);
 
-		prev_cpu_loading = tmp_cpu_loading;
-		/*send uevent*/
-		if (uevent_enable) {
-			strlcpy(event_string, "over=1", string_size);
-
-			ret = kobject_uevent_env(
-			&cpu_loading_object->mdev.this_device->kobj,
-					 KOBJ_CHANGE, envp);
-			if (ret != 0) {
-				trace_cpu_loading_log("cpu_loading",
-						"uevent failed");
-				mutex_unlock(&cpu_loading_lock);
-				return -1;
-			}
-			trace_cpu_loading_log("cpu_loading",
-					"sent uevent over success");
+	if (state == high) {
+		if (under_threshold > tmp_cpu_loading) {
+			state = low;
+			sentuevent("lower=2");
+		} else if (over_threshold > tmp_cpu_loading) {
+			state = mid;
+		} else {
+			state = high;
+			sentuevent("over=1");
 		}
-		mutex_unlock(&cpu_loading_lock);
-		return 1;
+
+	} else if (state == mid) {
+		if (tmp_cpu_loading > over_threshold) {
+			state = high;
+			sentuevent("over=1");
+		} else if (under_threshold > tmp_cpu_loading) {
+			state = low;
+			sentuevent("lower=2");
+		} else {
+			state = mid;
+		}
+	} else {
+		if (tmp_cpu_loading > over_threshold) {
+			state = high;
+			sentuevent("over=1");
+		} else if (tmp_cpu_loading > under_threshold) {
+			state = mid;
+		} else {
+			state = low;
+			sentuevent("lower=2");
+		}
 	}
 
+	trace_cpu_loading_log("cpu_loading", "current state:%d\n", state);
 	prev_cpu_loading = tmp_cpu_loading;
 	mutex_unlock(&cpu_loading_lock);
 	return 3;
@@ -236,16 +257,24 @@ int update_cpu_loading(void)
 
 static void notify_cpu_loading_timeout(void)
 {
-	int i;
 
 	mutex_lock(&cpu_loading_lock);
 
 	if (reset_flag) {
+		int i;
 
-		reset_cpu_loading();
+		trace_cpu_loading_log("cpu_loading", "reset_cpu_loading");
+		for_each_possible_cpu(i) {
+			cur_wall_time[i].time = prev_wall_time[i].time = 0;
+			cur_idle_time[i].time = prev_idle_time[i].time = 0;
+		}
 
+		prev_cpu_loading = 0;
+		state = mid;
 	} else {
+		int i;
 
+		trace_cpu_loading_log("cpu_loading", "not_reset_cpu_loading");
 		for_each_possible_cpu(i) {
 			prev_wall_time[i].time = cur_wall_time[i].time;
 			prev_idle_time[i].time = cur_idle_time[i].time;
@@ -267,11 +296,13 @@ void init_cpu_loading_value(void)
 
 	/*default setting*/
 	over_threshold = 85;
+	under_threshold = 20;
 	poltime_secs = 10;
 	poltime_nsecs = 0;
 	onoff = 0;
 	uevent_enable = 1;
 	prev_cpu_loading = 0;
+	reset_flag = true;
 
 	mutex_unlock(&cpu_loading_lock);
 }
@@ -311,13 +342,13 @@ static const struct file_operations cpu_loading_ ## name ## _proc_fops = { \
 #define PROC_ENTRY(name) {__stringify(name), \
 	&cpu_loading_ ## name ## _proc_fops}
 
-static int cpu_loading_onof_proc_show(struct seq_file *m, void *v)
+static int cpu_loading_onoff_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", onoff);
 	return 0;
 }
 
-static ssize_t cpu_loading_onof_proc_write(struct file *filp, const char *ubuf,
+static ssize_t cpu_loading_onoff_proc_write(struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	int val;
@@ -335,6 +366,8 @@ static ssize_t cpu_loading_onof_proc_write(struct file *filp, const char *ubuf,
 	ret = kstrtoint(buf, 10, &val);
 	if (ret < 0)
 		return ret;
+	if (val > 1 || 0 > val)
+		return -EINVAL;
 
 	if (val)
 		enable_cpu_loading_timer();
@@ -351,8 +384,7 @@ static ssize_t cpu_loading_onof_proc_write(struct file *filp, const char *ubuf,
 	return cnt;
 }
 
-static int cpu_loading_poltime_secs_proc_show(
-		struct seq_file *m, void *v)
+static int cpu_loading_poltime_secs_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", poltime_secs);
 	return 0;
@@ -392,7 +424,7 @@ static ssize_t cpu_loading_poltime_secs_proc_write(
 
 		trace_cpu_loading_log("cpu_loading",
 				"both 0, val:%d poltime_nsecs:%lu",
-				 val, poltime_nsecs);
+				val, poltime_nsecs);
 
 		return -EINVAL;
 	}
@@ -415,7 +447,7 @@ static int cpu_loading_poltime_nsecs_proc_show(
 }
 
 static ssize_t cpu_loading_poltime_nsecs_proc_write(
-	struct file *filp, const char *ubuf,
+		struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *data)
 {
 	unsigned long ret, val;
@@ -445,7 +477,7 @@ static ssize_t cpu_loading_poltime_nsecs_proc_write(
 
 		trace_cpu_loading_log("cpu_loading",
 				"both 0, val:%lu poltime_secs:%d",
-			 val, poltime_secs);
+				val, poltime_secs);
 		return -EINVAL;
 	}
 
@@ -459,7 +491,52 @@ static ssize_t cpu_loading_poltime_nsecs_proc_write(
 	return cnt;
 }
 
-static int cpu_loading_overThrhld_proc_show(struct seq_file *m, void *v)
+static int cpu_loading_underThrhld_proc_show(
+		struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", under_threshold);
+	return 0;
+}
+
+static ssize_t cpu_loading_underThrhld_proc_write(
+		struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *data)
+{
+	int ret;
+	int val;
+
+	char buf[64];
+
+	if (cnt >= sizeof(buf))
+		return -EINVAL;
+
+	if (copy_from_user(buf, ubuf, cnt))
+		return -EFAULT;
+
+
+	buf[cnt] = 0;
+	ret = kstrtoint(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+
+	mutex_lock(&cpu_loading_lock);
+
+	if (val < 1 || over_threshold <= val) {
+		mutex_unlock(&cpu_loading_lock);
+		return -EINVAL;
+	}
+	under_threshold = val;
+	reset_flag = true;
+
+	mutex_unlock(&cpu_loading_lock);
+
+	return cnt;
+}
+
+
+
+static int cpu_loading_overThrhld_proc_show(
+		struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", over_threshold);
 	return 0;
@@ -486,10 +563,11 @@ static ssize_t cpu_loading_overThrhld_proc_write(
 	if (ret < 0)
 		return ret;
 
-	if (val > 99)
-		return -EINVAL;
-
 	mutex_lock(&cpu_loading_lock);
+	if (val > 99 || under_threshold >= val) {
+		mutex_unlock(&cpu_loading_lock);
+		return -EINVAL;
+	}
 
 	over_threshold = val;
 	reset_flag = true;
@@ -499,7 +577,8 @@ static ssize_t cpu_loading_overThrhld_proc_write(
 	return cnt;
 }
 
-static int cpu_loading_uevent_enable_proc_show(struct seq_file *m, void *v)
+static int cpu_loading_uevent_enable_proc_show(
+		struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", uevent_enable);
 	return 0;
@@ -524,6 +603,9 @@ static ssize_t cpu_loading_uevent_enable_proc_write(
 	if (ret < 0)
 		return ret;
 
+	if (val > 1 || 0 > val)
+		return -EINVAL;
+
 	mutex_lock(&cpu_loading_lock);
 
 	uevent_enable = val;
@@ -539,10 +621,11 @@ static int cpu_loading_prev_cpu_loading_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "%d\n", prev_cpu_loading);
 	return 0;
 }
-PROC_FOPS_RW(onof);
+PROC_FOPS_RW(onoff);
 PROC_FOPS_RW(poltime_secs);
 PROC_FOPS_RW(poltime_nsecs);
 PROC_FOPS_RW(overThrhld);
+PROC_FOPS_RW(underThrhld);
 PROC_FOPS_RW(uevent_enable);
 PROC_FOPS_RO(prev_cpu_loading);
 
@@ -550,7 +633,6 @@ PROC_FOPS_RO(prev_cpu_loading);
 static int init_cpu_loading_kobj(void)
 {
 	int ret;
-
 	cpu_loading_object =
 		kzalloc(sizeof(struct cpu_loading_context), GFP_KERNEL);
 
@@ -587,10 +669,11 @@ static int __init init_cpu_loading(void)
 
 
 	const struct pentry entries[] = {
-		PROC_ENTRY(onof),
+		PROC_ENTRY(onoff),
 		PROC_ENTRY(poltime_secs),
 		PROC_ENTRY(poltime_nsecs),
 		PROC_ENTRY(overThrhld),
+		PROC_ENTRY(underThrhld),
 		PROC_ENTRY(uevent_enable),
 		PROC_ENTRY(prev_cpu_loading),
 	};
@@ -659,4 +742,3 @@ void exit_cpu_loading(void)
 
 module_init(init_cpu_loading);
 module_exit(exit_cpu_loading);
-
