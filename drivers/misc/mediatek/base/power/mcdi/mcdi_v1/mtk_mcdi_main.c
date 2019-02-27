@@ -280,6 +280,7 @@ static int mcdi_procfs_init(void)
 
 static void __go_to_wfi(int cpu)
 {
+	remove_cpu_from_prefer_schedule_domain(cpu);
 	trace_rgidle_rcuidle(cpu, 1);
 	isb();
 	/* memory barrier before WFI */
@@ -287,6 +288,7 @@ static void __go_to_wfi(int cpu)
 	__asm__ __volatile__("wfi" : : : "memory");
 
 	trace_rgidle_rcuidle(cpu, 0);
+	add_cpu_to_prefer_schedule_domain(cpu);
 }
 
 void mcdi_cpu_off(int cpu)
