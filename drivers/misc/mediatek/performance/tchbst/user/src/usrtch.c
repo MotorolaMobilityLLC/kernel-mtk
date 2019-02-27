@@ -12,8 +12,6 @@
  */
 #define pr_fmt(fmt) "[usrtch]"fmt
 #include "usrtch.h"
-#include <mtk_vcorefs_governor.h>
-#include <mtk_vcorefs_manager.h>
 
 #include <linux/slab.h>
 #include <mt-plat/fpsgo_common.h>
