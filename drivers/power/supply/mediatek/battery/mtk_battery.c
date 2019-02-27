@@ -726,7 +726,7 @@ static int proc_dump_log_show(struct seq_file *m, void *v)
 		proc_dump_log(m);
 		break;
 	case 101:
-		gauge_dev_dump(gm.gdev, m);
+		gauge_dev_dump(gm.gdev, m, 0);
 		break;
 	case 102:
 		dump_kernel_table(m);
