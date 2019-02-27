@@ -74,9 +74,7 @@
 #include <mt-plat/aee.h>
 #endif
 
-#ifdef CONFIG_MTK_MEMCFG
 #include <mt-plat/mtk_memcfg_reserve_info.h>
-#endif
 
 /* prevent >1 _updater_ of zone percpu pageset ->high and ->batch fields */
 static DEFINE_MUTEX(pcp_batch_high_lock);
@@ -7610,8 +7608,8 @@ int free_reserved_memory(phys_addr_t start_phys,
 		pr_info("Freeing modem memory: %ldK from phys %llx\n",
 			pages << (PAGE_SHIFT - 10),
 			(unsigned long long)start_phys);
-	/*comment for temp , will uncomment later*/
-	/*	mtk_memcfg_record_freed_reserved(start_phys, end_phys);*/
+
+	mtk_memcfg_record_freed_reserved(start_phys, end_phys);
 
 	return 0;
 }
