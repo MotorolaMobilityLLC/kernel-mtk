@@ -1961,7 +1961,8 @@ static int tcpm_put_tcp_dpm_event_bk(
 		return TCPM_ERROR_EXPECT_CB2;
 #endif	/* CONFIG_USB_PD_TCPM_CB_2ND */
 
-	if (ret == TCP_DPM_RET_DENIED_REPEAT_REQUEST)
+	if (ret == TCP_DPM_RET_DENIED_REPEAT_REQUEST ||
+	    ret == TCP_DPM_RET_NOT_SUPPORT)
 		ret = TCPM_SUCCESS;
 
 #ifdef CONFIG_MTK_HANDLE_PPS_TIMEOUT
