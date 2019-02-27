@@ -34,7 +34,7 @@ void ged_sodi_start(void);
 void ged_sodi_stop(void);
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173) ||\
-defined(CONFIG_MACH_MT6739)
+defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)
 extern void MTKFWDump(void);
 #endif
 
