@@ -48,14 +48,24 @@ static void conn_md_get_local_time(struct conn_md_time_struct *time)
 static void conn_md_log_add_msg(struct conn_md_time_struct *cur_time)
 {
 	char buf[CONN_MD_MSG_TIME_LENGTH];
+	int msg_buf_size, remain_size;
 
 	if (g_log_msg_info.msg_total == 0)
 		g_log_msg_info.msg_begin_time = *cur_time;
 
-	snprintf(buf, CONN_MD_MSG_TIME_LENGTH, " %llu.%03lu", cur_time->sec,
-		cur_time->msec);
-	strcat(g_log_msg_info.msg_buf, buf);
-	g_log_msg_info.msg_total++;
+	snprintf(buf, CONN_MD_MSG_TIME_LENGTH, " %llu.%03lu",
+		 cur_time->sec, cur_time->msec);
+
+	msg_buf_size = strlen(buf);
+	remain_size = CONN_MD_BUF_SIZE - strlen(g_log_msg_info.msg_buf) - 1;
+	if (remain_size >= msg_buf_size) {
+		strncat(g_log_msg_info.msg_buf, buf, msg_buf_size);
+		g_log_msg_info.msg_total++;
+	} else {
+		CONN_MD_ERR_FUNC("buff full, %s (remain %d), cant add %s (%d)",
+				 g_log_msg_info.msg_buf, remain_size, buf,
+				 msg_buf_size);
+	}
 }
 
 #define CONN_MD_LOG_MSG_HEAD_NAME "send message to Modem,"
