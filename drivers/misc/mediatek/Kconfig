@@ -145,8 +145,10 @@ config MTK_BASE_POWER
 config MTK_FREQ_HOPPING
 	bool "MediaTek FREQHOPPING SUPPORT"
 	help
-	  If you want to use MediaTek freqhopping, say Y here.If unsure, say N.
-	  Please choose your desired freqhopping driver as well. E.g: MTK2712_FREQ_HOPPING=y
+	  If you want to use MediaTek freqhopping,
+	  say Y here.If unsure, say N.
+	  Please choose your desired freqhopping driver as well.
+	  E.g: MTK2712_FREQ_HOPPING=y
 
 config MTK_MEMORY_LOWPOWER
 	bool "Support Mediatek memory lowpower technology"
