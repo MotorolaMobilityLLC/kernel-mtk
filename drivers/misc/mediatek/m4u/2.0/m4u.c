@@ -391,7 +391,8 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 {
 	unsigned long va_align;
 	phys_addr_t pa = 0;
-	int i, ret;
+	int i;
+	long ret = 0;
 	struct scatterlist *sg = *pSg;
 	struct page *pages;
 	int gup_flags;
@@ -450,9 +451,10 @@ static int m4u_fill_sgtable_user(struct vm_area_struct *vma, unsigned long va, i
 		if (!pa || !sg) {
 			struct vm_area_struct *vma_temp;
 
-			M4UMSG("%s: fail va=0x%lx,page_num=0x%x,fail_va=0x%lx,pa=0x%lx,sg=0x%p,i=%d\n",
-				__func__, va, page_num, va_tmp, (unsigned long)pa, sg, i);
-
+			M4UMSG("%s: fail(0x%lx) va=0x%lx,page_num=0x%x\n",
+				__func__, ret, va, page_num);
+			M4UMSG("%s: fail_va=0x%lx,pa=0x%lx,sg=0x%p,i=%d\n",
+				__func__, va_tmp, (unsigned long)pa, sg, i);
 			vma_temp = find_vma(current->mm, va_tmp);
 			if (vma_temp != NULL) {
 				M4UMSG("vm_start=0x%lx, vm_end=%lx, vm_flag= %lx\n",
