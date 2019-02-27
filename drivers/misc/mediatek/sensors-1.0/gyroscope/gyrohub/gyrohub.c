@@ -496,10 +496,7 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 		data.timestamp = (int64_t)event->time_stamp;
 		data.reserved[0] = event->reserve[0];
 		err = gyro_data_report(&data);
-	} else if (event->flush_action == FLUSH_ACTION &&
-		READ_ONCE(obj->android_enable) == true) {
-		if (READ_ONCE(obj->android_enable) == false)
-			return 0;
+	} else if (event->flush_action == FLUSH_ACTION) {
 		err = gyro_flush_report();
 	} else if (event->flush_action == BIAS_ACTION) {
 		data.x = event->gyroscope_t.x_bias;
