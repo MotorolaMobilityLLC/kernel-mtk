@@ -6606,8 +6606,14 @@ static inline void check_sched_energy_data(int cpu, sched_domain_energy_f fn,
 
 		for (y = 0; y < (e->nr_cap_states); y++) {
 			BUG_ON(e->cap_states[y].cap != sge->cap_states[y].cap);
+#ifdef CONFIG_MTK_UNIFY_POWER
+			BUG_ON(e->cap_states[y].dyn_pwr !=
+					sge->cap_states[y].dyn_pwr);
+#else
+
 			BUG_ON(e->cap_states[y].power !=
 					sge->cap_states[y].power);
+#endif
 		}
 	}
 }

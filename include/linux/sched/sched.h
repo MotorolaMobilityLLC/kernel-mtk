@@ -10,6 +10,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#ifdef CONFIG_MTK_UNIFY_POWER
+#include "../../drivers/misc/mediatek/base/power/include/mtk_upower.h"
+#endif
+
 #ifdef CONFIG_MTK_SCHED_TRACE
 #ifdef CONFIG_MTK_SCHED_DEBUG
 #define mt_sched_printf(event, x...) \
