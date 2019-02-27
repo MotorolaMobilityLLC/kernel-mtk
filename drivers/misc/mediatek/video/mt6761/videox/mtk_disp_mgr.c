@@ -1437,6 +1437,8 @@ const char *_session_ioctl_spy(unsigned int cmd)
 		return "DISP_IOCTL_AAL_GET_HIST";
 	case DISP_IOCTL_AAL_INIT_REG:
 		return "DISP_IOCTL_AAL_INIT_REG";
+	case DISP_IOCTL_SET_SMARTBACKLIGHT:
+		return "DISP_IOCTL_SET_SMARTBACKLIGHT";
 	case DISP_IOCTL_AAL_SET_PARAM:
 		return "DISP_IOCTL_AAL_SET_PARAM";
 	case DISP_IOCTL_SET_GAMMALUT:
@@ -1556,6 +1558,7 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_SET_SMARTBACKLIGHT:
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
 	case DISP_IOCTL_CCORR_EVENTCTL:
@@ -1736,6 +1739,7 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_SET_SMARTBACKLIGHT:
 #ifndef NO_PQ_IOCTL
 		{
 			void __user *data32;
