@@ -145,29 +145,37 @@
 				  "buck2_ov_evt", "buck2_uv_evt",
 				  "ldo6_oc_evt", "ldo7_oc_evt",
 				  "ldo6_pgb_evt", "ldo7_pgb_evt";
+		buck1_ctrls = [ab 80 82 6c 00 80 02 70];
+		buck2_ctrls = [ab 80 81 6c 30 80 02 70];
+		ldo6_ctrls = [30 80 02 c4 44];
+		ldo7_ctrls = [30 80 02 c4 44];
 		buck1 {
 			regulator-compatible = "BUCK1";
-			regulator-name = "mt6360,buck1";
+			regulator-name = "VMDLA";
 			regulator-min-microvolt = <300000>;
 			regulator-max-microvolt = <1300000>;
+			regulator-boot-on;
 		};
 		buck2 {
 			regulator-compatible = "BUCK2";
-			regulator-name = "mt6360,buck2";
+			regulator-name = "VDRAM1";
 			regulator-min-microvolt = <300000>;
 			regulator-max-microvolt = <1300000>;
+			regulator-always-on;
 		};
 		ldo6 {
 			regulator-compatible = "LDO6";
-			regulator-name = "mt6360,ldo6";
+			regulator-name = "VMDDR";
 			regulator-min-microvolt = <500000>;
-			regulator-max-microvolt = <2000000>;
+			regulator-max-microvolt = <2100000>;
+			regulator-always-on;
 		};
 		ldo7 {
 			regulator-compatible = "LDO7";
-			regulator-name = "mt6360,ldo7";
+			regulator-name = "VDRAM2";
 			regulator-min-microvolt = <500000>;
-			regulator-max-microvolt = <2000000>;
+			regulator-max-microvolt = <2100000>;
+			regulator-always-on;
 		};
 	};
 
@@ -180,29 +188,30 @@
 				  "ldo3_oc_evt", "ldo5_oc_evt",
 				  "ldo1_pgb_evt", "ldo2_pgb_evt",
 				  "ldo3_pgb_evt", "ldo5_pgb_evt";
+		ldo5_ctrls = [00 80 c1 2c 84];
 		ldo1 {
 			regulator-compatible = "LDO1";
-			regulator-name = "mt6360,ldo1";
+			regulator-name = "VFP";
 			regulator-min-microvolt = <1200000>;
-			regulator-max-microvolt = <3500000>;
+			regulator-max-microvolt = <3600000>;
 		};
-		ldo2 {
+		mt_pmic_vtp_ldo_reg: ldo2 {
 			regulator-compatible = "LDO2";
-			regulator-name = "mt6360,ldo2";
+			regulator-name = "VTP";
 			regulator-min-microvolt = <1200000>;
-			regulator-max-microvolt = <3500000>;
+			regulator-max-microvolt = <3600000>;
 		};
 		ldo3 {
 			regulator-compatible = "LDO3";
-			regulator-name = "mt6360,ldo3";
+			regulator-name = "VMC";
 			regulator-min-microvolt = <1200000>;
-			regulator-max-microvolt = <3500000>;
+			regulator-max-microvolt = <3600000>;
 		};
 		ldo5 {
 			regulator-compatible = "LDO5";
-			regulator-name = "mt6360,ldo5";
+			regulator-name = "VMCH";
 			regulator-min-microvolt = <2700000>;
-			regulator-max-microvolt = <3500000>;
+			regulator-max-microvolt = <3600000>;
 		};
 	};
 };
