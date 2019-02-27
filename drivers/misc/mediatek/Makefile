@@ -32,3 +32,4 @@ obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
 obj-y += devinfo/
+obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
