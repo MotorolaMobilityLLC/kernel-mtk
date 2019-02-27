@@ -53,6 +53,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_MD_SW_CONTROL,		0x20000000 },
 
 		{ DVFSRC_TIMEOUT_NEXTREQ,	0x00000014 },
+		{ DVFSRC_INT_EN,		0x00000003 },
 
 		{ DVFSRC_LEVEL_LABEL_0_1,	0x00010000 },
 		{ DVFSRC_LEVEL_LABEL_2_3,	0x00020101 },
@@ -94,6 +95,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_MD_SW_CONTROL,		0x20000000 },
 
 		{ DVFSRC_TIMEOUT_NEXTREQ,	0x00000014 },
+		{ DVFSRC_INT_EN,		0x00000003 },
 
 		{ DVFSRC_LEVEL_LABEL_0_1,	0x00010000 },
 		{ DVFSRC_LEVEL_LABEL_2_3,	0x00020101 },
