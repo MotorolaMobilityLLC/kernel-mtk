@@ -676,13 +676,15 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 		pe40->r_cable_1 = abs(cap1.output_mv - pe40->vbus_cali - vbus1)
 				* 1000 / abs(cap1.output_ma);
 
-		if (pe40->r_cable_1 < 240)
+		if (pe40->r_cable_1 < pinfo->data.pe40_r_cable_3a_lower)
 			pe40->pe4_input_current_limit = 5000000;
-		else if (pe40->r_cable_1 >= 240 && pe40->r_cable_1 <= 350)
+		else if (pe40->r_cable_1 >= pinfo->data.pe40_r_cable_3a_lower &&
+			pe40->r_cable_1 < pinfo->data.pe40_r_cable_2a_lower)
 			pe40->pe4_input_current_limit = 3000000;
-		else if (pe40->r_cable_1 >= 351 && pe40->r_cable_1 <= 500)
+		else if (pe40->r_cable_1 >= pinfo->data.pe40_r_cable_2a_lower &&
+			pe40->r_cable_1 < pinfo->data.pe40_r_cable_1a_lower)
 			pe40->pe4_input_current_limit = 2000000;
-		else if (pe40->r_cable_1 >= 500)
+		else if (pe40->r_cable_1 >= pinfo->data.pe40_r_cable_1a_lower)
 			pe40->pe4_input_current_limit = 1000000;
 
 		chr_err("[pe40_i2]r_sw:%d r_cable:%d r_cable_1:%d r_cable_2:%d pe4_icl:%d\n",
