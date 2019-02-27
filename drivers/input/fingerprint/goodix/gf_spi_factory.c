@@ -31,7 +31,6 @@
 #include "mtk_spi.h"
 #include "mtk_spi_hal.h"
 #endif
-#include "mtk_gpio.h"
 
 /* there is no this file on standardized GPIO platform */
 #ifdef CONFIG_MTK_GPIO
