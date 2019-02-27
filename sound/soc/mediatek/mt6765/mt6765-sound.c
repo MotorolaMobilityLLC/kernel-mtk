@@ -760,9 +760,10 @@ void Afe_Log_Print(void)
 	AudDrv_Clk_On();
 
 	for (idx = 0; idx < ARRAY_SIZE(aud_afe_reg_dump); idx++)
-		pr_debug("reg %s = 0x%x\n",
+		pr_debug("reg %s = 0x%x, value:0x%x\n",
 			 aud_afe_reg_dump[idx].regname,
-			 aud_afe_reg_dump[idx].address);
+			 aud_afe_reg_dump[idx].address,
+			 Afe_Get_Reg(aud_afe_reg_dump[idx].address));
 
 	AudDrv_Clk_Off();
 
