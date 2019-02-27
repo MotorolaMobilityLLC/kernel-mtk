@@ -82,4 +82,21 @@ config TOUCHSCREEN_MTK_NT36xxx
 source "drivers/input/touchscreen/mediatek/NT36xxx/Kconfig"
 
 
+config TOUCHSCREEN_MTK_NT36572_COMMON
+         bool "NT36572 for Mediatek package"
+         default n
+         help
+           Say Y here if you have NT36572 touch panel.
+
+           If unsure, say N.
+
+         help
+           Say Y here if you have NT36572 touch panel.
+
+           If unsure, say N.
+
+           To compile this dirver as a module, choose M here: the
+           module will be called.
+
+source "drivers/input/touchscreen/mediatek/nt36572_common/Kconfig"
 endif

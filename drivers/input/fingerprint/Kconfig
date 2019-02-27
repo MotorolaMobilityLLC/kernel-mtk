@@ -4,6 +4,12 @@
 menu "Fingerprint support"
 	depends on INPUT
 
+config SUNWAVE_TEE_FINGERPRINT
+    bool "SW Fingerprint"
+    default n
+    ---help---
+    SW fingerprint chip.
+
 config MTK_FINGERPRINT_SUPPORT
 	bool "Mediatek Fingerprint"
 	default n
