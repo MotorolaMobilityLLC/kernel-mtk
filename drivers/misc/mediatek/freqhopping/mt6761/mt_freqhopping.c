@@ -83,8 +83,6 @@ static const char *g_pll_name[FH_PLL_NUM] = {
 	"NOTSUPPORT", /*tell EM MEMPLL cannot do hopping*/
 	"MPLL",
 	"MMPLL",
-	"ARMPLL_L",
-	"CCIPLL",
 };
 
 /*********************************/
@@ -104,8 +102,6 @@ static const int g_pll_ssc_init_tbl[FH_PLL_NUM] = {
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL4 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL5 */
 	FH_SSC_DEF_DISABLE,	/* FHCTL PLL6 */
-	FH_SSC_DEF_DISABLE,	/* FHCTL PLL7 */
-	FH_SSC_DEF_DISABLE,	/* FHCTL PLL8 */
 };
 
 
@@ -154,17 +150,6 @@ static const struct freqhopping_ssc g_pll_ssc_tbl[FH_PLL_NUM][4] = {
 	 {PLL_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0% */
 	 },
 
-	/* FH PLL7 */
-	{
-	 {0, 0, 0, 0, 0, 0},
-	 {PLL_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0% */
-	 },
-
-	/* FH PLL8 */
-	{
-	 {0, 0, 0, 0, 0, 0},
-	 {PLL_IDX__DEF, 0, 9, 0, 0, UNINIT_DDS},	/* 0% ~ -0%) */
-	 },
 };
 
 
@@ -612,7 +597,6 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 
 	switch (pll) {
 	case FH_PLL0:
-	case FH_PLL7:
 		FH_MSG_DEBUG("[Before DVFS] (PLL_CON1): 0x%x",
 			(fh_read32(g_reg_pll_con1[pll]) &  FH_DDS_MASK));
 		break;
@@ -881,43 +865,43 @@ static void __reg_tbl_init(void)
 	const unsigned long reg_dds[] = {
 		REG_FHCTL0_DDS, REG_FHCTL1_DDS, REG_FHCTL2_DDS,
 		REG_FHCTL3_DDS, REG_FHCTL4_DDS, REG_FHCTL5_DDS,
-		REG_FHCTL6_DDS, REG_FHCTL7_DDS, REG_FHCTL8_DDS
+		REG_FHCTL6_DDS
 	};
 
 	const unsigned long reg_cfg[] = {
 		REG_FHCTL0_CFG, REG_FHCTL1_CFG, REG_FHCTL2_CFG,
 		REG_FHCTL3_CFG, REG_FHCTL4_CFG, REG_FHCTL5_CFG,
-		REG_FHCTL6_CFG, REG_FHCTL7_CFG, REG_FHCTL8_CFG
+		REG_FHCTL6_CFG
 	};
 
 	const unsigned long reg_updnlmt[] = {
 		REG_FHCTL0_UPDNLMT, REG_FHCTL1_UPDNLMT, REG_FHCTL2_UPDNLMT,
 		REG_FHCTL3_UPDNLMT, REG_FHCTL4_UPDNLMT, REG_FHCTL5_UPDNLMT,
-		REG_FHCTL6_UPDNLMT, REG_FHCTL7_UPDNLMT, REG_FHCTL8_UPDNLMT
+		REG_FHCTL6_UPDNLMT
 	};
 
 	const unsigned long reg_mon[] = {
 		REG_FHCTL0_MON, REG_FHCTL1_MON, REG_FHCTL2_MON,
 		REG_FHCTL3_MON, REG_FHCTL4_MON, REG_FHCTL5_MON,
-		REG_FHCTL6_MON, REG_FHCTL7_MON, REG_FHCTL8_MON
+		REG_FHCTL6_MON
 	};
 
 	const unsigned long reg_dvfs[] = {
 		REG_FHCTL0_DVFS, REG_FHCTL1_DVFS, REG_FHCTL2_DVFS,
 		REG_FHCTL3_DVFS, REG_FHCTL4_DVFS, REG_FHCTL5_DVFS,
-		REG_FHCTL6_DVFS, REG_FHCTL7_DVFS, REG_FHCTL8_DVFS
+		REG_FHCTL6_DVFS
 	};
 
 	const unsigned long reg_pll_con0[] = {
 		REG_FH_PLL0_CON0, REG_FH_PLL1_CON0, REG_FH_PLL2_CON0,
 		REG_FH_PLL3_CON0, REG_FH_PLL4_CON0, REG_FH_PLL5_CON0,
-		REG_FH_PLL6_CON0, REG_FH_PLL7_CON0, REG_FH_PLL8_CON0
+		REG_FH_PLL6_CON0
 	};
 
 	const unsigned long reg_pll_con1[] = {
 		REG_FH_PLL0_CON1, REG_FH_PLL1_CON1, REG_FH_PLL2_CON1,
 		REG_FH_PLL3_CON1, REG_FH_PLL4_CON1, REG_FH_PLL5_CON1,
-		REG_FH_PLL6_CON1, REG_FH_PLL7_CON1, REG_FH_PLL8_CON1
+		REG_FH_PLL6_CON1
 	};
 
 	/****************************************/
@@ -1258,7 +1242,6 @@ int mt_pause_armpll(unsigned int pll, unsigned int pause)
 
 	switch (pll) {
 	case FH_PLL0:
-	case FH_PLL7:
 		reg_cfg = g_reg_cfg[pll];
 		FH_MSG_DEBUG("(FHCTLx_CFG): 0x%x", fh_read32(g_reg_cfg[pll]));
 		break;
