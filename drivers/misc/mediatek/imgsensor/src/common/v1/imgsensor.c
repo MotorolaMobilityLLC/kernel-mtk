@@ -55,6 +55,8 @@
 #include "imgsensor_clk.h"
 #include "imgsensor.h"
 
+#define PDAF_DATA_SIZE 4096
+
 #ifdef CONFIG_MTK_SMI_EXT
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;
 #endif
@@ -424,16 +426,17 @@ static inline int imgsensor_check_is_alive(struct IMGSENSOR_SENSOR *psensor)
 
 	IMGSENSOR_PROFILE_INIT(&psensor_inst->profile_time);
 
-	imgsensor_hw_power(&pgimgsensor->hw,
-	    psensor,
-	    psensor_inst->psensor_name,
-	    IMGSENSOR_HW_POWER_STATUS_ON);
+	err = imgsensor_hw_power(&pgimgsensor->hw,
+				psensor,
+				psensor_inst->psensor_name,
+				IMGSENSOR_HW_POWER_STATUS_ON);
 
-	imgsensor_sensor_feature_control(
-	    psensor,
-	    SENSOR_FEATURE_CHECK_SENSOR_ID,
-	    (MUINT8 *)&sensorID,
-	    &retLen);
+	if (err == IMGSENSOR_RETURN_SUCCESS)
+		imgsensor_sensor_feature_control(
+			psensor,
+			SENSOR_FEATURE_CHECK_SENSOR_ID,
+			(MUINT8 *)&sensorID,
+			&retLen);
 
 	if (sensorID == 0 || sensorID == 0xFFFFFFFF) {
 		pr_info("Fail to get sensor ID %x\n", sensorID);
@@ -1639,9 +1642,13 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		kal_uint32 u4RegLen = (*pFeaturePara_64);
 		void *usr_ptr_Reg =
 		    (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
-
 		kal_uint32 *pReg = NULL;
 
+		if (u4RegLen > PDAF_DATA_SIZE) {
+			kfree(pFeaturePara);
+			pr_debug("check: u4RegLen > PDAF_DATA_SIZE\n");
+			return -EINVAL;
+		}
 		pReg = kmalloc_array(u4RegLen, sizeof(kal_uint8), GFP_KERNEL);
 		if (pReg == NULL) {
 			kfree(pFeaturePara);
@@ -1879,13 +1886,17 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_PDAF_DATA:
 	case SENSOR_FEATURE_GET_4CELL_DATA:
 	{
-#define PDAF_DATA_SIZE 4096
 		char *pPdaf_data = NULL;
 		unsigned long long *pFeaturePara_64 =
 		    (unsigned long long *) pFeaturePara;
-
 		void *usr_ptr = (void *)(uintptr_t)(*(pFeaturePara_64 + 1));
+		kal_uint32 buf_size = (kal_uint32) (*(pFeaturePara_64 + 2));
 
+		if (buf_size > PDAF_DATA_SIZE) {
+			kfree(pFeaturePara);
+			pr_debug("check: buf_size > PDAF_DATA_SIZE\n");
+			return -EINVAL;
+		}
 		pPdaf_data = kmalloc(
 		    sizeof(char) * PDAF_DATA_SIZE,
 		    GFP_KERNEL);
@@ -1910,7 +1921,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		if (copy_to_user(
 		    (void __user *)usr_ptr,
 		    (void *)pPdaf_data,
-		    (kal_uint32) (*(pFeaturePara_64 + 2)))) {
+		    buf_size)) {
 			pr_debug("[CAMERA_HW]ERROR: copy_to_user fail\n");
 		}
 		kfree(pPdaf_data);
