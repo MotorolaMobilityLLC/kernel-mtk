@@ -568,7 +568,9 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 
 	/*set a wq to enable scp logger*/
 	scp_logger_notify_work[SCP_A_ID].id = SCP_A_ID;
+#if SCP_LOGGER_ENABLE
 	scp_schedule_logger_work(&scp_logger_notify_work[SCP_A_ID]);
+#endif
 }
 
 /*
