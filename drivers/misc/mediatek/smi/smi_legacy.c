@@ -40,7 +40,7 @@
 #include "smi_config_mt6761.h"
 #elif IS_ENABLED(CONFIG_MACH_MT3967)
 #include <clk-mt3967-pg.h>
-#include "smi_config_default.h"
+#include "smi_config_mt3967.h"
 #else
 #include "smi_config_default.h"
 #endif
