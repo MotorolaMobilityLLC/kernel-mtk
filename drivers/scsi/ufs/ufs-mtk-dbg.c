@@ -29,6 +29,7 @@
 #include <linux/scatterlist.h>
 
 #include "ufs-mtk-dbg.h"
+#include "ufs.h"
 #include <mt-plat/mtk_boot.h>
 
 
@@ -95,6 +96,26 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 	ufs_cmd_hlist[ptr].lba = lba;
 	ufs_cmd_hlist[ptr].opcode = opcode;
 	ufs_cmd_hlist[ptr].time = sched_clock();
+	ufs_cmd_hlist[ptr].duration = 0;
+
+	if (event == UFS_TRACE_COMPLETED) {
+		ptr = ufs_cmd_ptr - 1;
+		while (1) {
+			if (ufs_cmd_hlist[ptr].tag == tag) {
+				ufs_cmd_hlist[ufs_cmd_ptr].duration =
+					sched_clock() - ufs_cmd_hlist[ptr].time;
+				break;
+			}
+
+			ptr--;
+			if (ptr < 0)
+				ptr = MAX_UFS_CMD_HLIST_ENTRY_CNT - 1;
+
+
+			if (ptr == ufs_cmd_ptr - 1)
+				break;
+		}
+	}
 
 	ufs_cmd_cnt++;
 
@@ -171,7 +192,7 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 		} else {
 
 			SPREAD_PRINTF(buff, size, m,
-				"[ufs]%d-r,%d,0x%x,t=%d,lun=0x%x,lba=%lld,len=%d,%llu\n",
+				"[ufs]%3d-r,%d,0x%x,t=%2d,lun=0x%x,lba=%lld,len=%6d,%llu,\t%llu\n",
 				ptr,
 				ufs_cmd_hlist[ptr].event,
 				ufs_cmd_hlist[ptr].opcode,
@@ -179,7 +200,8 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 				ufs_cmd_hlist[ptr].lun,
 				(long long int)ufs_cmd_hlist[ptr].lba,
 				ufs_cmd_hlist[ptr].transfer_len,
-				(u64)ufs_cmd_hlist[ptr].time
+				(u64)ufs_cmd_hlist[ptr].time,
+				(u64)ufs_cmd_hlist[ptr].duration
 				);
 		}
 
@@ -258,6 +280,52 @@ void get_ufs_aee_buffer(unsigned long *vaddr, unsigned long *size)
 }
 EXPORT_SYMBOL(get_ufs_aee_buffer);
 
+static int ufsdbg_dump_health_desc(struct seq_file *file)
+{
+#ifdef CONFIG_MTK_UFS_DEBUG
+	int err = 0;
+	int buff_len = QUERY_DESC_HEALTH_MAX_SIZE;
+	u8 desc_buf[QUERY_DESC_HEALTH_MAX_SIZE];
+	int i;
+
+	pm_runtime_get_sync(ufs_mtk_hba->dev);
+	err = ufshcd_read_health_desc(ufs_mtk_hba, desc_buf, buff_len);
+	pm_runtime_put_sync(ufs_mtk_hba->dev);
+
+
+	if (err) {
+		seq_printf(file, "Reading Health Descriptor failed. err = %d\n",
+			err);
+		goto out;
+	}
+
+	for (i = 0; i < QUERY_DESC_HEALTH_MAX_SIZE; i++) {
+		seq_printf(file,
+			"Health Descriptor[0x%x] = 0x%x\n",
+			i,
+			(u8)desc_buf[i]);
+	}
+
+	seq_printf(file,
+		"Health Descriptor[offset 0x02]: %s = 0x%x\n",
+		"bPreEOLInfo",
+		(u8)desc_buf[2]);
+
+	seq_printf(file,
+		"Health Descriptor[offset 0x03]: %s = 0x%x\n",
+		"bDeviceLifeTimeEstA",
+		(u8)desc_buf[3]);
+
+	seq_printf(file,
+		"Health Descriptor[offset 0x04]: %s = 0x%x\n",
+		"bDeviceLifeTimeEstB",
+		(u8)desc_buf[4]);
+
+out:
+	return err;
+#endif
+}
+
 static char cmd_buf[256];
 
 static int ufs_help_proc_show(struct seq_file *m, void *v)
@@ -269,6 +337,9 @@ static int ufs_help_proc_show(struct seq_file *m, void *v)
 
 	seq_printf(m, "\n   Get Power Mode Status: echo %x [host_id] > ufs_debug\n",
 		UFS_GET_PWR_MODE);
+
+	seq_printf(m, "\n   Dump Health Descriptors: echo %x [host_id] > ufs_debug\n",
+		UFS_DUMP_HEALTH_DESCRIPTOR);
 
 	seq_puts(m, "\n   NOTE: All input data is Hex number!\n");
 
@@ -311,6 +382,9 @@ static int ufs_debug_proc_show(struct seq_file *m, void *v)
 		seq_printf(m, "Lanes: tx 0x%x rx 0x%x\n",
 			ufs_mtk_hba->pwr_info.lane_tx,
 			ufs_mtk_hba->pwr_info.lane_rx);
+	} else if (cmd == UFS_DUMP_HEALTH_DESCRIPTOR) {
+		ufsdbg_dump_health_desc(m);
+
 	} else {
 		/*
 		 * Default print cmd history for aee:

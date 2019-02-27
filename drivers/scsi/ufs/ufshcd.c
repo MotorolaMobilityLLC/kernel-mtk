@@ -139,6 +139,7 @@ static u32 ufs_query_desc_max_size[] = {
 	QUERY_DESC_RFU_MAX_SIZE,
 	QUERY_DESC_GEOMETRY_MAX_SIZE,
 	QUERY_DESC_POWER_MAX_SIZE,
+	QUERY_DESC_HEALTH_MAX_SIZE, /* MTK PATCH */
 	QUERY_DESC_RFU_MAX_SIZE,
 };
 
@@ -2617,6 +2618,13 @@ int ufshcd_read_device_desc(struct ufs_hba *hba, u8 *buf, u32 size)
 	return ufshcd_read_desc(hba, QUERY_DESC_IDN_DEVICE, 0, buf, size);
 }
 EXPORT_SYMBOL(ufshcd_read_device_desc);
+
+/* MTK PATCH */
+int ufshcd_read_health_desc(struct ufs_hba *hba, u8 *buf, u32 size)
+{
+	return ufshcd_read_desc(hba, QUERY_DESC_IDN_HEALTH, 0, buf, size);
+}
+EXPORT_SYMBOL(ufshcd_read_health_desc);
 
 /**
  * ufshcd_read_string_desc - read string descriptor

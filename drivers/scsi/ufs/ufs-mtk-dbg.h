@@ -24,6 +24,7 @@ struct ufs_cmd_hlist_struct {
 	u32 transfer_len;
 	sector_t lba;
 	u64 time;
+	u64 duration;
 };
 
 #define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
@@ -61,6 +62,7 @@ do { \
 enum {
 	UFS_CMDS_DUMP = 0,
 	UFS_GET_PWR_MODE = 1,
+	UFS_DUMP_HEALTH_DESCRIPTOR = 2
 };
 
 #define UFS_PRINFO_PROC_MSG(evt, fmt, args...) \
