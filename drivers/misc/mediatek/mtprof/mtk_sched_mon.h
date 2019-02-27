@@ -62,9 +62,9 @@ DECLARE_PER_CPU(struct sched_block_event, SoftIRQ_mon);
 DECLARE_PER_CPU(struct sched_block_event, tasklet_mon);
 DECLARE_PER_CPU(struct sched_block_event, hrt_mon);
 DECLARE_PER_CPU(struct sched_block_event, sft_mon);
+DECLARE_PER_CPU(struct sched_block_event, irq_work_mon);
 DECLARE_PER_CPU(struct sched_stop_event, IRQ_disable_mon);
 DECLARE_PER_CPU(struct sched_stop_event, Preempt_disable_mon);
-DECLARE_PER_CPU(struct sched_lock_event, Raw_spin_lock_mon);
 DECLARE_PER_CPU(struct sched_lock_event, rq_lock_mon);
 DECLARE_PER_CPU(int, mt_timer_irq);
 DECLARE_PER_CPU(int, mtsched_mon_enabled);
@@ -74,7 +74,6 @@ DECLARE_PER_CPU(unsigned long long, save_irq_count_time);
 /* [IRQ-disable] White List */
 /* Flags for special scenario */
 DECLARE_PER_CPU(int, MT_trace_in_sched);
-DECLARE_PER_CPU(int, MT_trace_in_resume_console);
 DECLARE_PER_CPU(unsigned long long, local_timer_ts);
 DECLARE_PER_CPU(unsigned long long, local_timer_te);
 
@@ -94,7 +93,8 @@ extern void mt_trace_sft_end(void *func);
 extern void mt_save_irq_counts(int action);
 extern void mt_trace_rqlock_start(raw_spinlock_t *lock);
 extern void mt_trace_rqlock_end(raw_spinlock_t *lock);
-
+extern void mt_trace_irq_work_start(void *func);
+extern void mt_trace_irq_work_end(void *func);
 
 #ifdef CONFIG_PREEMPT_MONITOR
 extern void MT_trace_irq_on(void);
@@ -102,8 +102,6 @@ extern void MT_trace_irq_off(void);
 extern void MT_trace_preempt_on(void);
 extern void MT_trace_preempt_off(void);
 extern void MT_trace_check_preempt_dur(void);
-extern void MT_trace_spin_lock_start(raw_spinlock_t *lock);
-extern void MT_trace_spin_lock_end(raw_spinlock_t *lock);
 extern void MT_trace_hardirqs_on(void);
 extern void MT_trace_hardirqs_off(void);
 #else
@@ -124,14 +122,6 @@ static inline void MT_trace_preempt_off(void)
 };
 
 static inline void MT_trace_check_preempt_dur(void)
-{
-};
-
-static inline void MT_trace_spin_lock_start(raw_spinlock_t *lock)
-{
-};
-
-static inline void MT_trace_spin_lock_end(raw_spinlock_t *lock)
 {
 };
 
