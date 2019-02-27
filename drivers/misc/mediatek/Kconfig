@@ -171,4 +171,6 @@ endmenu # Peripheral
 
 menu "Misc configs"
 
+source "drivers/misc/mediatek/mtprof/Kconfig"
+
 endmenu    # Misc

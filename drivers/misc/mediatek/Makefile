@@ -38,6 +38,7 @@ obj-$(CONFIG_MTK_GPT_SCHEME_SUPPORT)	+= partition/
 obj-$(CONFIG_MTK_SYSENV)	+= sysenv/
 obj-$(CONFIG_MTK_MT6306_GPIO_SUPPORT) += gpio/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
+obj-$(CONFIG_MTPROF)	+= mtprof/
 obj-$(CONFIG_MTK_PMIC_WRAP_HAL) += pmic_wrap/
 obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_MTK_BOOT) += boot/

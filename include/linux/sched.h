@@ -2118,6 +2118,11 @@ struct task_struct {
 	/* A live task holds one reference. */
 	atomic_t stack_refcount;
 #endif
+
+#ifdef CONFIG_PREEMPT_MONITOR
+	unsigned long preempt_dur;
+#endif
+
 /* CPU-specific state of this task */
 	struct thread_struct thread;
 /*

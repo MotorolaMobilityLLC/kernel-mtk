@@ -88,9 +88,22 @@
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
 
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
 #include "walt.h"
+
+enum ipi_msg_type {
+	IPI_RESCHEDULE,
+	IPI_CALL_FUNC,
+	IPI_CALL_FUNC_SINGLE,
+	IPI_CPU_STOP,
+	IPI_TIMER,
+	IPI_IRQ_WORK,
+};
 
 DEFINE_MUTEX(sched_domains_mutex);
 DEFINE_PER_CPU_SHARED_ALIGNED(struct rq, runqueues);
@@ -1823,8 +1836,14 @@ void scheduler_ipi(void)
 	 */
 	preempt_fold_need_resched();
 
-	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick()) {
+#ifdef CONFIG_MTK_SCHED_MONITOR
+		mt_trace_IPI_start(IPI_RESCHEDULE);
+		mt_trace_IPI_end(IPI_RESCHEDULE);
+#endif
 		return;
+	}
+
 
 	/*
 	 * Not all reschedule IPI handlers call irq_enter/irq_exit, since
@@ -1840,6 +1859,9 @@ void scheduler_ipi(void)
 	 * somewhat pessimize the simple resched case.
 	 */
 	irq_enter();
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_IPI_start(IPI_RESCHEDULE);
+#endif
 	sched_ttwu_pending();
 
 	/*
@@ -1849,6 +1871,9 @@ void scheduler_ipi(void)
 		this_rq()->idle_balance = 1;
 		raise_softirq_irqoff(SCHED_SOFTIRQ);
 	}
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_IPI_end(IPI_RESCHEDULE);
+#endif
 	irq_exit();
 }
 
@@ -3240,8 +3265,15 @@ void scheduler_tick(void)
 	struct task_struct *curr = rq->curr;
 
 	sched_clock_tick();
-
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_rqlock_start(&rq->lock);
+#endif
 	raw_spin_lock(&rq->lock);
+
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_trace_rqlock_end(&rq->lock);
+#endif
+
 	walt_set_window_start(rq);
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
@@ -3253,6 +3285,9 @@ void scheduler_tick(void)
 	raw_spin_unlock(&rq->lock);
 
 	perf_event_task_tick();
+#ifdef CONFIG_MTK_SCHED_MONITOR
+	mt_save_irq_counts(SCHED_TICK);
+#endif
 
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);
@@ -3303,6 +3338,9 @@ static inline void preempt_latency_start(int val)
 		current->preempt_disable_ip = ip;
 #endif
 		trace_preempt_off(CALLER_ADDR0, ip);
+#ifdef CONFIG_PREEMPT_MONITOR
+		MT_trace_preempt_off();
+#endif
 	}
 }
 
@@ -3334,8 +3372,12 @@ NOKPROBE_SYMBOL(preempt_count_add);
  */
 static inline void preempt_latency_stop(int val)
 {
-	if (preempt_count() == val)
+	if (preempt_count() == val) {
 		trace_preempt_on(CALLER_ADDR0, get_lock_parent_ip());
+#ifdef CONFIG_PREEMPT_MONITOR
+		MT_trace_preempt_on();
+#endif
+	}
 }
 
 void preempt_count_sub(int val)
@@ -3356,6 +3398,9 @@ void preempt_count_sub(int val)
 
 	preempt_latency_stop(val);
 	__preempt_count_sub(val);
+#ifdef CONFIG_PREEMPT_MONITOR
+	MT_trace_check_preempt_dur();
+#endif
 }
 EXPORT_SYMBOL(preempt_count_sub);
 NOKPROBE_SYMBOL(preempt_count_sub);
@@ -3512,6 +3557,9 @@ static void __sched notrace __schedule(bool preempt)
 
 	if (sched_feat(HRTICK))
 		hrtick_clear(rq);
+#ifdef CONFIG_PREEMPT_MONITOR
+	per_cpu(MT_trace_in_sched, cpu) = 1;
+#endif
 
 	local_irq_disable();
 	rcu_note_context_switch();
@@ -3574,6 +3622,9 @@ static void __sched notrace __schedule(bool preempt)
 		raw_spin_unlock_irq(&rq->lock);
 	}
 
+#ifdef CONFIG_PREEMPT_MONITOR
+	per_cpu(MT_trace_in_sched, cpu) = 0;
+#endif
 	balance_callback(rq);
 }
 
