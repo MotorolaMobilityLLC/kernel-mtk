@@ -1169,8 +1169,7 @@ int hal_btif_dump_reg(struct _MTK_BTIF_INFO_STR_ *p_btif,
 	mt_irq_dump_status(p_btif->p_irq->irq_id);
 	lsr = BTIF_READ32(BTIF_LSR(base));
 	dma_en = BTIF_READ32(BTIF_DMA_EN(base));
-	/*spin_unlock_irqrestore(&(g_clk_cg_spinlock), irq_flag);*/
-	BTIF_INFO_FUNC("base address: 0x%lx\n", base);
+
 	switch (flag) {
 	case REG_ALL:
 		/*
@@ -1183,22 +1182,19 @@ int hal_btif_dump_reg(struct _MTK_BTIF_INFO_STR_ *p_btif,
 		btif_dump_array("BTIF register", reg_map, sizeof(reg_map));
 		break;
 	case REG_IRQ:
-		BTIF_INFO_FUNC("BTIF_IER:0x%x\n", BTIF_READ32(BTIF_IER(base)));
-		BTIF_INFO_FUNC("BTIF_IIR:0x%x\n", BTIF_READ32(BTIF_IIR(base)));
-		BTIF_INFO_FUNC("BTIF_LSR:0x%x\n", lsr);
+		BTIF_INFO_FUNC("IER:0x%x, IIR:0x%x, LSR:0x%x\n",
+			       BTIF_READ32(BTIF_IER(base)),
+			       BTIF_READ32(BTIF_IIR(base)),
+			       lsr);
 		break;
 	default:
 		break;
 	}
 
-	BTIF_INFO_FUNC("Tx DMA %s\n",
-		       (dma_en & BTIF_DMA_EN_TX) ? "enabled" : "disabled");
-	BTIF_INFO_FUNC("Rx DMA %s\n",
-		       (dma_en & BTIF_DMA_EN_RX) ? "enabled" : "disabled");
-
-	BTIF_INFO_FUNC("Rx data is %s\n",
-		       (lsr & BTIF_LSR_DR_BIT) ? "not empty" : "empty");
-	BTIF_INFO_FUNC("Tx data is %s\n",
+	BTIF_INFO_FUNC("Tx DMA %s, Rx DMA %s, Rx data is %s, Tx data is %s\n",
+		       (dma_en & BTIF_DMA_EN_TX) ? "enabled" : "disabled",
+		       (dma_en & BTIF_DMA_EN_RX) ? "enabled" : "disabled",
+		       (lsr & BTIF_LSR_DR_BIT) ? "not empty" : "empty",
 		       (lsr & BTIF_LSR_TEMT_BIT) ? "empty" : "not empty");
 
 	return i_ret;
