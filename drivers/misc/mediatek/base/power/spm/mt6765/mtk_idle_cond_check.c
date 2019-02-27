@@ -186,7 +186,7 @@ static unsigned int idle_block_mask[NR_IDLE_TYPES][NR_CG_GRPS+1];
 static unsigned int idle_value[NR_CG_GRPS];
 
 /***********************************************************
- * Check pll idle condition for sodi3
+ * Check pll idle condition
  ***********************************************************/
 
 #define PLL_MFGPLL  APMIXEDSYS(0x24C)
@@ -246,9 +246,8 @@ int mtk_idle_cond_append_info(
 	if (short_log) {
 		for (i = 0; i < NR_CG_GRPS; i++)
 			log("0x%08x, ", idle_block_mask[idle_type][i]);
-		if (idle_type == IDLE_TYPE_SO3)
-			log("idle_pll_block_mask: 0x%08x\n"
-				, idle_pll_block_mask[idle_type]);
+		log("idle_pll_block_mask: 0x%08x\n"
+			, idle_pll_block_mask[idle_type]);
 	} else {
 		for (i = 0; i < NR_CG_GRPS; i++) {
 			log("[%02d %s] value/cond/block = 0x%08x "
@@ -278,7 +277,7 @@ void mtk_idle_cond_update_mask(
 }
 
 static int cgmon_sel = -1;
-static unsigned int cgmon_sta[NR_CG_GRPS];
+static unsigned int cgmon_sta[NR_CG_GRPS + 1];
 static DEFINE_SPINLOCK(cgmon_spin_lock);
 
 /* dp/so3/so print cg change state to ftrace log */
@@ -300,16 +299,19 @@ static void mtk_idle_cgmon_trace_log(void)
 {
 	/* Note: trace tag is defined at trace/events/mtk_idle_event.h */
 	#if MTK_IDLE_TRACE_TAG_ENABLE
-	unsigned int diff, g, n;
+	unsigned int diff, block, g, n;
 
 	if (cgmon_sel == IDLE_TYPE_DP ||
 		cgmon_sel == IDLE_TYPE_SO3 ||
 		cgmon_sel == IDLE_TYPE_SO) {
 
-		for (g = 0; g < NR_CG_GRPS; g++) {
-			diff = cgmon_sta[g] ^ idle_block_mask[cgmon_sel][g];
+		for (g = 0; g < NR_CG_GRPS + 1; g++) {
+			block = (g < NR_CG_GRPS) ?
+				idle_block_mask[cgmon_sel][g] :
+				idle_pll_block_mask[cgmon_sel];
+			diff = cgmon_sta[g] ^ block;
 			if (diff) {
-				cgmon_sta[g] = idle_block_mask[cgmon_sel][g];
+				cgmon_sta[g] = block;
 				for (n = 0; n < 32; n++)
 					if (diff & (1U << n))
 						TRACE_CGMON(g, n, cgmon_sta[g]);
