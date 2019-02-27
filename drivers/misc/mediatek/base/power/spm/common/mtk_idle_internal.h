@@ -17,9 +17,9 @@
 /********************************************************************
  * dpidle/sodi3/sodi default feature enable/disable
  *******************************************************************/
-#define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (0)
-#define MTK_IDLE_FEATURE_ENABLE_SODI    (0)
-#define MTK_IDLE_FEATURE_ENABLE_SODI3   (0)
+#define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (1)
+#define MTK_IDLE_FEATURE_ENABLE_SODI    (1)
+#define MTK_IDLE_FEATURE_ENABLE_SODI3   (1)
 
 
 /********************************************************************
@@ -86,14 +86,17 @@ const char*
 #include <linux/debugfs.h>	/* struct dentry */
 
 void mtk_dpidle_init(void);
+void mtk_dpidle_disable(void);
 bool mtk_dpidle_enabled(void);
 bool dpidle_can_enter(int reason);
 
 void mtk_sodi3_init(void);
+void mtk_sodi3_disable(void);
 bool mtk_sodi3_enabled(void);
 bool sodi3_can_enter(int reason);
 
 void mtk_sodi_init(void);
+void mtk_sodi_disable(void);
 bool mtk_sodi_disp_is_ready(void);
 bool mtk_sodi_enabled(void);
 bool sodi_can_enter(int reason);

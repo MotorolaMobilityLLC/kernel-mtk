@@ -152,5 +152,13 @@ void __init mtk_cpuidle_framework_init(void)
 	spm_resource_req_debugfs_init();
 
 	spm_resource_req_init();
+
+	/* FIXME: Disable dp/so3/so for specific projects */
+	if (!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62mv1_bsp", 10) ||
+		!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62v1_bsp", 9)) {
+		mtk_dpidle_disable();
+		mtk_sodi3_disable();
+		mtk_sodi_disable();
+	}
 }
 EXPORT_SYMBOL(mtk_cpuidle_framework_init);
