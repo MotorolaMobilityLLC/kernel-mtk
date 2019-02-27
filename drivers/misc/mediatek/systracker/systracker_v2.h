@@ -25,12 +25,15 @@
 #define BUS_DBG_WP			(BUS_DBG_BASE + 0x0014)
 #define BUS_DBG_WP_MASK			(BUS_DBG_BASE + 0x0018)
 #define BUS_DBG_MON			(BUS_DBG_BASE + 0x001C)
+#define BUS_DBG_W_TRACK_DATA_VALID	(BUS_DBG_BASE + 0x0020)
 #define BUS_DBG_AR_TRACK_L(__n)		(BUS_DBG_BASE + 0x0100 + 8 * (__n))
 #define BUS_DBG_AR_TRACK_H(__n)		(BUS_DBG_BASE + 0x0104 + 8 * (__n))
 #define BUS_DBG_AR_TRANS_TID(__n)	(BUS_DBG_BASE + 0x0180 + 4 * (__n))
 #define BUS_DBG_AW_TRACK_L(__n)		(BUS_DBG_BASE + 0x0200 + 8 * (__n))
 #define BUS_DBG_AW_TRACK_H(__n)		(BUS_DBG_BASE + 0x0204 + 8 * (__n))
 #define BUS_DBG_AW_TRANS_TID(__n)	(BUS_DBG_BASE + 0x0280 + 4 * (__n))
+#define BUS_DBG_W_TRACK_DATA6		(BUS_DBG_BASE + 0x02D8)
+#define BUS_DBG_W_TRACK_DATA7		(BUS_DBG_BASE + 0x02DC)
 
 #if defined(CONFIG_MACH_MT6758)
 	#define BUS_DBG_BUS_MHZ             (135)
@@ -129,6 +132,9 @@ struct systracker_entry_t {
 	unsigned int aw_track_l[BUS_DBG_NUM_TRACKER];
 	unsigned int aw_track_h[BUS_DBG_NUM_TRACKER];
 	unsigned int aw_trans_tid[BUS_DBG_NUM_TRACKER];
+	unsigned int w_track_data6;
+	unsigned int w_track_data7;
+	unsigned int w_track_data_valid;
 };
 
 struct systracker_config_t {
