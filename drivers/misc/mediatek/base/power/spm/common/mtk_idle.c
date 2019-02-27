@@ -13,8 +13,6 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/debugfs.h>
-#include <linux/uaccess.h> /* copy_from_user / copy_to_user */
 
 #include <trace/events/mtk_idle_event.h> /* trace header */
 
@@ -27,6 +25,7 @@
 #include <mtk_idle_internal.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_resource_req_internal.h>
+#include "mtk_idle_sysfs.h"
 
 /* [ByChip] Internal weak functions: implemented in mtk_idle_cond_check.c */
 void __attribute__((weak)) mtk_idle_cg_monitor(int sel) {}
@@ -40,25 +39,12 @@ void __attribute__((weak)) idle_refcnt_dec(void) {}
 //extern unsigned long slp_dp_cnt[NR_CPUS];	/* FIXME: sleep dpidle count */
 static unsigned long slp_dp_cnt[NR_CPUS];	/* FIXM: To be removed */
 
-static int _idle_state_open(struct seq_file *s, void *data)
-{
-	return 0;
-}
 
-static int idle_state_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, _idle_state_open, inode->i_private);
-}
-
-#define logbufsz	4096
-static char logbuf[logbufsz] = { 0 };
-
-static ssize_t idle_state_read(
-	struct file *filp, char __user *userbuf, size_t count, loff_t *f_pos)
+static ssize_t idle_state_read(char *ToUserBuf, size_t sz_t, void *priv)
 {
 	int i;
-	char *p = logbuf;
-	size_t sz = logbufsz;
+	char *p = ToUserBuf;
+	size_t sz = sz_t;
 
 	#undef log
 	#define log(fmt, args...) \
@@ -105,27 +91,15 @@ static ssize_t idle_state_read(
 		, MTK_DEBUGFS_IDLE);
 	log("\n");
 
-	return simple_read_from_buffer(
-		userbuf, count, f_pos, logbuf, p - logbuf);
+	return p - ToUserBuf;
 }
 
-#define cmdbufsz	256
-static char cmdbuf[cmdbufsz] = { 0 };
-
-static ssize_t idle_state_write(struct file *filp, const char __user *userbuf
-		, size_t count, loff_t *f_pos)
+static ssize_t idle_state_write(char *FromUserBuf, size_t sz, void *priv)
 {
 	char cmd[128];
 	int parm;
 
-	count = min(count, sizeof(cmdbuf) - 1);
-
-	if (copy_from_user(cmdbuf, userbuf, count))
-		return -EFAULT;
-
-	cmdbuf[count] = '\0';
-
-	if (sscanf(cmdbuf, "%127s %x", cmd, &parm) == 2) {
+	if (sscanf(FromUserBuf, "%127s %x", cmd, &parm) == 2) {
 		if (!strcmp(cmd, "ratio")) {
 			if (parm == 1)
 				mtk_idle_enable_ratio_calc();
@@ -148,41 +122,35 @@ static ssize_t idle_state_write(struct file *filp, const char __user *userbuf
 				parm == 2 ? IDLE_TYPE_SO3 :
 				parm == 3 ? IDLE_TYPE_SO : -1);
 		}
-		return count;
-	} else if ((!kstrtoint(cmdbuf, 10, &parm)) == 1) {
-		return count;
+		return sz;
+	} else if ((!kstrtoint(FromUserBuf, 10, &parm)) == 1) {
+		return sz;
 	}
 
 	return -EINVAL;
 }
 
-static const struct file_operations idle_state_fops = {
-	.open = idle_state_open,
-	.read = idle_state_read,
-	.write = idle_state_write,
-	.llseek = seq_lseek,
-	.release = single_release,
+static const struct mtk_idle_sysfs_op idle_state_fops = {
+	.fs_read = idle_state_read,
+	.fs_write = idle_state_write,
 };
 
-static void mtk_idle_init(struct dentry *root_entry)
+static void mtk_idle_init(void)
 {
-	debugfs_create_file(
-		"idle_state", 0644, root_entry, NULL, &idle_state_fops);
+	mtk_idle_sysfs_entry_node_add("idle_state"
+			, 0644, &idle_state_fops, NULL);
 }
 
 void __init mtk_cpuidle_framework_init(void)
 {
-	struct dentry *root_entry;
 
-	root_entry = debugfs_create_dir("cpuidle", NULL);
-	if (!root_entry)
-		return;
+	mtk_idle_sysfs_entry_create();
 
-	mtk_idle_init(root_entry);
-	mtk_dpidle_init(root_entry);
-	mtk_sodi_init(root_entry);
-	mtk_sodi3_init(root_entry);
-	spm_resource_req_debugfs_init(root_entry);
+	mtk_idle_init();
+	mtk_dpidle_init();
+	mtk_sodi_init();
+	mtk_sodi3_init();
+	spm_resource_req_debugfs_init();
 
 	spm_resource_req_init();
 }
