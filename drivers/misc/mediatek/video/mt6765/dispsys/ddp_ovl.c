@@ -656,7 +656,10 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 	else
 		offset = src_x * Bpp + src_y * cfg->src_pitch;
 
+	/* sbch can use the variable */
 	cfg->real_addr = cfg->addr + offset;
+	cfg->real_dst_w = dst_w;
+	cfg->real_dst_h = dst_h;
 
 	if (!is_engine_sec) {
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
@@ -1206,6 +1209,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->pre_addr = cfg->real_addr;
 	data->dst_x = cfg->real_dst_x;
 	data->dst_y = cfg->real_dst_y;
+	data->dst_w = cfg->real_dst_w;
+	data->dst_h = cfg->real_dst_h;
 	data->height = cfg->src_h;
 	data->width = cfg->src_w;
 	data->fmt = cfg->fmt;
@@ -1307,6 +1312,8 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 
 		if (sbch_data[layer + j + 1].dst_x != ext_cfg->real_dst_x ||
 			sbch_data[layer + j + 1].dst_y != ext_cfg->real_dst_y ||
+			sbch_data[layer + j + 1].dst_w != ext_cfg->real_dst_w ||
+			sbch_data[layer + j + 1].dst_h != ext_cfg->real_dst_h ||
 			sbch_data[layer + j + 1].height != ext_cfg->src_h ||
 			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
 			sbch_data[layer + j + 1].fmt != ext_cfg->fmt ||
@@ -1443,6 +1450,8 @@ static void sbch_calc(enum DISP_MODULE_ENUM module, struct sbch *sbch_data,
 		if (sbch_data[i].pre_addr == ovl_cfg->real_addr &&
 			sbch_data[i].dst_x == ovl_cfg->real_dst_x &&
 			sbch_data[i].dst_y == ovl_cfg->real_dst_y &&
+			sbch_data[i].dst_w == ovl_cfg->real_dst_w &&
+			sbch_data[i].dst_h == ovl_cfg->real_dst_h &&
 			sbch_data[i].height == ovl_cfg->src_h &&
 			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&

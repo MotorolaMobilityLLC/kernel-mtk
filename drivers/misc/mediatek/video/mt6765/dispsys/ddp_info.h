@@ -156,6 +156,8 @@ struct sbch {
 	unsigned long pre_addr;
 	unsigned int dst_x;
 	unsigned int dst_y;
+	unsigned int dst_w;
+	unsigned int dst_h;
 	unsigned int height;
 	unsigned int width;
 	int phy_layer;
@@ -187,6 +189,8 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int dst_y;
 	unsigned int real_dst_x;
 	unsigned int real_dst_y;
+	unsigned int real_dst_w;
+	unsigned int real_dst_h;
 	unsigned int dst_w;
 	unsigned int dst_h;
 	unsigned int keyEn;
