@@ -38,21 +38,17 @@ static struct helio_dvfsrc *dvfsrc;
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
 
-void dvfsrc_write(u32 offset, u32 val)
-{
-	writel(val, DVFSRC_REG(offset));
-}
-
 u32 dvfsrc_read(u32 offset)
 {
 	return readl(DVFSRC_REG(offset));
 }
 
-void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift)
-{
+#define dvfsrc_write(offset, val) \
+	writel(val, DVFSRC_REG(offset))
+
+#define dvfsrc_rmw(offset, val, mask, shift) \
 	dvfsrc_write(offset, (dvfsrc_read(offset) & ~(mask << shift)) \
-			| (val << shift));
-}
+			| (val << shift))
 
 #define dvfsrc_sram_write(offset, val) \
 	writel(val, DVFSRC_SRAM_REG(offset))
@@ -62,6 +58,9 @@ void dvfsrc_rmw(u32 offset, u32 val, u32 mask, u32 shift)
 
 void helio_dvfsrc_enable(int dvfsrc_en)
 {
+	if (dvfsrc_en > 1 || dvfsrc_en < 0)
+		return;
+
 	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, dvfsrc_en,
 			DVFSRC_EN_MASK, DVFSRC_EN_SHIFT);
@@ -73,7 +72,7 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-static void dvfsrc_opp_table_init(void)
+void dvfsrc_opp_table_init(void)
 {
 	int i;
 	int vcore_opp, ddr_opp;
@@ -134,9 +133,7 @@ int get_vcore_dvfs_level(void)
 	int ret = 0;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
-
 	ret = dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
-
 	mutex_unlock(&dvfsrc->devfreq->lock);
 	return ret;
 }
@@ -181,19 +178,17 @@ static void dvfsrc_set_sw_req(int data, int mask, int shift)
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-static void dvfsrc_set_vcore_request2(int data, int mask, int shift)
+static void dvfsrc_set_sw_req2(int data, int mask, int shift)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
-	dvfsrc_rmw(DVFSRC_VCORE_REQUEST2, data, mask, shift);
+	dvfsrc_rmw(DVFSRC_SW_REQ2, data, mask, shift);
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
-static void dvfsrc_release_force(void)
+static void dvfsrc_set_vcore_request(int data, int mask, int shift)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
-	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
-			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
-	dvfsrc_write(DVFSRC_FORCE, 0);
+	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, data, mask, shift);
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
@@ -209,7 +204,16 @@ static void dvfsrc_set_force_start(int data)
 static void dvfsrc_set_force_end(void)
 {
 	mutex_lock(&dvfsrc->devfreq->lock);
-	/* dvfsrc_write(DVFSRC_FORCE, 0); */
+	dvfsrc_write(DVFSRC_FORCE, 0);
+	mutex_unlock(&dvfsrc->devfreq->lock);
+}
+
+static void dvfsrc_release_force(void)
+{
+	mutex_lock(&dvfsrc->devfreq->lock);
+	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
+			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
+	dvfsrc_write(DVFSRC_FORCE, 0);
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
@@ -285,10 +289,7 @@ static struct devfreq_governor helio_dvfsrc_governor = {
 static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 {
 	int ret = 0;
-	int level = 0;
-
-	if (!dvfsrc->enabled)
-		return 0;
+	int level = 0, opp = 3;
 
 	mtk_spmfw_init();
 
@@ -301,58 +302,58 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		dvfsrc_set_sw_bw(type, data);
 		break;
 	case PM_QOS_DDR_OPP:
-		if (data >= DDR_OPP_NUM || data < 0)
-			data = DDR_OPP_NUM - 1;
-
+		opp = data;
 		level = DDR_OPP_NUM - data - 1;
+
 		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
 
-		ret = wait_for_completion(get_cur_ddr_opp() <= data,
+		ret = wait_for_completion(get_cur_ddr_opp() <= opp,
 				DVFSRC_TIMEOUT);
-		if (ret < 0) {
-			pr_err("DVFSRC ddr: 0x%x, data: 0x%x\n", type, data);
-			dvfsrc_dump_reg(NULL);
-			aee_kernel_warning("DVFSRC", "ddr_opp failed.");
-		}
-
 		break;
 	case PM_QOS_VCORE_OPP:
-		if (data >= VCORE_OPP_NUM || data < 0)
-			data = VCORE_OPP_NUM - 1;
-
+		opp = data;
 		level = VCORE_OPP_NUM - data - 1;
-		dvfsrc_set_vcore_request2(level,
-				VCORE_QOS_GEAR0_MASK, VCORE_QOS_GEAR0_SHIFT);
 
-		ret = wait_for_completion(get_cur_vcore_opp() <= data,
+		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
+
+		ret = wait_for_completion(get_cur_vcore_opp() <= opp,
 				DVFSRC_TIMEOUT);
+		break;
+	case PM_QOS_SCP_VCORE_REQUEST:
+		opp = VCORE_OPP_NUM - data - 1;
+		level = data;
 
-		if (ret < 0) {
-			pr_err("DVFSRC vcore: 0x%x, data: 0x%x\n", type, data);
-			dvfsrc_dump_reg(NULL);
-			aee_kernel_warning("DVFSRC", "vcore_opp failed.");
-		}
+		dvfsrc_set_vcore_request(level,
+				VCORE_SCP_GEAR_MASK, VCORE_SCP_GEAR_SHIFT);
+
+		ret = wait_for_completion(get_cur_vcore_opp() <= opp,
+				DVFSRC_TIMEOUT);
+		break;
+	case PM_QOS_POWER_MODEL_DDR_REQUEST:
+		opp = DDR_OPP_NUM - data - 1;
+		level = data;
+
+		dvfsrc_set_sw_req2(level,
+				EMI_SW_AP2_MASK, EMI_SW_AP2_SHIFT);
+		break;
+	case PM_QOS_POWER_MODEL_VCORE_REQUEST:
+		opp = VCORE_OPP_NUM - data - 1;
+		level = data;
+
+		dvfsrc_set_sw_req2(level,
+				VCORE_SW_AP2_MASK, VCORE_SW_AP2_SHIFT);
 		break;
 	case PM_QOS_VCORE_DVFS_FORCE_OPP:
-		if (data >= VCORE_DVFS_OPP_NUM || data < 0)
-			data = VCORE_DVFS_OPP_NUM;
+		opp = data;
+		level = VCORE_DVFS_OPP_NUM - data - 1;
 
-		if (data == VCORE_DVFS_OPP_NUM) { /* relase opp */
+		if (data == VCORE_DVFS_OPP_NUM) {
 			dvfsrc_release_force();
 			break;
 		}
-
-		/* force opp */
-		level = 1 << (VCORE_DVFS_OPP_NUM - data - 1);
-		dvfsrc_set_force_start(level);
-
-		ret = wait_for_completion(get_cur_vcore_dvfs_opp() == data,
+		dvfsrc_set_force_start(1 << level);
+		ret = wait_for_completion(get_cur_vcore_dvfs_opp() == opp,
 				DVFSRC_TIMEOUT);
-		if (ret < 0) {
-			pr_err("DVFSRC force: 0x%x, data: 0x%x\n", type, data);
-			dvfsrc_dump_reg(NULL);
-			aee_kernel_exception("DVFSRC", "force failed.");
-		}
 
 		dvfsrc_set_force_end();
 		break;
@@ -360,28 +361,14 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		break;
 	}
 
-	return ret;
-}
-
-void dvfsrc_set_vcore_request(unsigned int vcore_level,
-		unsigned int mask, unsigned int shift)
-{
-	int ret = 0;
-	unsigned int val = 0;
-
-	mutex_lock(&dvfsrc->devfreq->lock);
-
-	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, vcore_level, mask, shift);
-
-	val = VCORE_OPP_NUM - vcore_level - 1;
-
-	ret = wait_for_completion(get_cur_vcore_opp() <= val, DVFSRC_TIMEOUT);
 	if (ret < 0) {
+		pr_err("%s: type: 0x%x, data: 0x%x, opp: %d, level: %d\n",
+				__func__, type, data, opp, level);
 		dvfsrc_dump_reg(NULL);
-		aee_kernel_exception("DVFSRC", "%s failed.", __func__);
+		aee_kernel_warning("DVFSRC", "%s: failed.", __func__);
 	}
 
-	mutex_unlock(&dvfsrc->devfreq->lock);
+	return ret;
 }
 
 static int pm_qos_memory_bw_notify(struct notifier_block *b,
@@ -450,6 +437,9 @@ static int pm_qos_ddr_opp_notify(struct notifier_block *b,
 {
 	struct helio_dvfsrc *dvfsrc;
 
+	if (l >= DDR_OPP_NUM)
+		l = DDR_OPP_NUM - 1;
+
 	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_ddr_opp_nb);
 
 	commit_data(dvfsrc, PM_QOS_DDR_OPP, l);
@@ -462,9 +452,60 @@ static int pm_qos_vcore_opp_notify(struct notifier_block *b,
 {
 	struct helio_dvfsrc *dvfsrc;
 
+	if (l >= VCORE_OPP_NUM)
+		l = VCORE_OPP_NUM - 1;
+
 	dvfsrc = container_of(b, struct helio_dvfsrc, pm_qos_vcore_opp_nb);
 
 	commit_data(dvfsrc, PM_QOS_VCORE_OPP, l);
+
+	return NOTIFY_OK;
+}
+
+static int pm_qos_scp_vcore_request_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	struct helio_dvfsrc *dvfsrc;
+
+	if (l >= VCORE_OPP_NUM)
+		l = 0;
+
+	dvfsrc = container_of(b, struct helio_dvfsrc,
+			pm_qos_scp_vcore_request_nb);
+
+	commit_data(dvfsrc, PM_QOS_SCP_VCORE_REQUEST, l);
+
+	return NOTIFY_OK;
+}
+
+static int pm_qos_power_model_ddr_request_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	struct helio_dvfsrc *dvfsrc;
+
+	if (l >= DDR_OPP_NUM)
+		l = 0;
+
+	dvfsrc = container_of(b, struct helio_dvfsrc,
+			pm_qos_power_model_ddr_request_nb);
+
+	commit_data(dvfsrc, PM_QOS_POWER_MODEL_DDR_REQUEST, l);
+
+	return NOTIFY_OK;
+}
+
+static int pm_qos_power_model_vcore_request_notify(struct notifier_block *b,
+		unsigned long l, void *v)
+{
+	struct helio_dvfsrc *dvfsrc;
+
+	if (l >= VCORE_OPP_NUM)
+		l = 0;
+
+	dvfsrc = container_of(b, struct helio_dvfsrc,
+			pm_qos_power_model_vcore_request_nb);
+
+	commit_data(dvfsrc, PM_QOS_POWER_MODEL_VCORE_REQUEST, l);
 
 	return NOTIFY_OK;
 }
@@ -473,6 +514,9 @@ static int pm_qos_vcore_dvfs_force_opp_notify(struct notifier_block *b,
 		unsigned long l, void *v)
 {
 	struct helio_dvfsrc *dvfsrc;
+
+	if (l >= VCORE_DVFS_OPP_NUM)
+		l = VCORE_DVFS_OPP_NUM;
 
 	dvfsrc = container_of(b,
 			struct helio_dvfsrc, pm_qos_vcore_dvfs_force_opp_nb);
@@ -498,6 +542,12 @@ static void pm_qos_notifier_register(void)
 		pm_qos_ddr_opp_notify;
 	dvfsrc->pm_qos_vcore_opp_nb.notifier_call =
 		pm_qos_vcore_opp_notify;
+	dvfsrc->pm_qos_scp_vcore_request_nb.notifier_call =
+		pm_qos_scp_vcore_request_notify;
+	dvfsrc->pm_qos_power_model_ddr_request_nb.notifier_call =
+		pm_qos_power_model_ddr_request_notify;
+	dvfsrc->pm_qos_power_model_vcore_request_nb.notifier_call =
+		pm_qos_power_model_vcore_request_notify;
 	dvfsrc->pm_qos_vcore_dvfs_force_opp_nb.notifier_call =
 		pm_qos_vcore_dvfs_force_opp_notify;
 
@@ -515,6 +565,12 @@ static void pm_qos_notifier_register(void)
 			&dvfsrc->pm_qos_ddr_opp_nb);
 	pm_qos_add_notifier(PM_QOS_VCORE_OPP,
 			&dvfsrc->pm_qos_vcore_opp_nb);
+	pm_qos_add_notifier(PM_QOS_SCP_VCORE_REQUEST,
+			&dvfsrc->pm_qos_scp_vcore_request_nb);
+	pm_qos_add_notifier(PM_QOS_POWER_MODEL_DDR_REQUEST,
+			&dvfsrc->pm_qos_power_model_ddr_request_nb);
+	pm_qos_add_notifier(PM_QOS_POWER_MODEL_VCORE_REQUEST,
+			&dvfsrc->pm_qos_power_model_vcore_request_nb);
 	pm_qos_add_notifier(PM_QOS_VCORE_DVFS_FORCE_OPP,
 			&dvfsrc->pm_qos_vcore_dvfs_force_opp_nb);
 }
