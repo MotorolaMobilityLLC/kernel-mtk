@@ -37,7 +37,7 @@ int smi_bus_prepare_enable(const unsigned int reg_indx,
 	const char *user_name, const bool mtcmos);
 int smi_bus_disable_unprepare(const unsigned int reg_indx,
 	const char *user_name, const bool mtcmos);
-int smi_debug_dump_status(const unsigned int reg_indx);
+void smi_debug_dump_status(const unsigned int reg_indx);
 int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
 	const bool gce, const bool m4u);
 struct smi_bwc_scen_cb *smi_bwc_scen_cb_register(struct smi_bwc_scen_cb *cb);
