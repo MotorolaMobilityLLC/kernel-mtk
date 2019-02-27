@@ -1326,8 +1326,9 @@ static inline int mmc_blk_part_switch(struct mmc_card *card,
 			mmc_retune_unpause(card->host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-		/* enable cmdq at all partition */
-		if (!card->ext_csd.cmdq_mode_en) {
+		/* enable cmdq at boot1/boot2/user partition */
+		if ((!card->ext_csd.cmdq_mode_en)
+		 && (md->part_type <= 2)) {
 			mmc_blk_cmdq_switch(card, 1);
 			/* do not return error,
 			 * just work without command queue
