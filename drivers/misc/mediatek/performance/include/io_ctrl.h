@@ -11,26 +11,12 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/proc_fs.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
 
-#include <linux/platform_device.h>
+#ifndef _IO_CTRL_H
+#define _IO_CTRL_H
 
-static int __init init_usr(void)
-{
-	struct proc_dir_entry *usr_dir = NULL;
-
-	pr_debug("__init init_usr\n");
+/*perf_ioctl*/
+int init_perfctl(struct proc_dir_entry *parent);
 
 
-	usr_dir = proc_mkdir("perfmgr/tchbst/user", NULL);
-
-
-	return 0;
-}
-device_initcall(init_usr);
-
-/*MODULE_LICENSE("GPL");*/
-/*MODULE_AUTHOR("MTK");*/
-/*MODULE_DESCRIPTION("The usr file");*/
+#endif /* _IO_CTRL_H */

@@ -12,11 +12,7 @@
 #
 
 ccflags-y += \
-	-I$(srctree)/drivers/misc/mediatek/base/power/include \
 	-I$(srctree)/kernel/trace/ \
 	-I$(srctree)/drivers/misc/mediatek/performance/fpsgo/fstb/ \
 
-
-obj-y +=user_main.o
-
-obj-y += src/usrtch.o
+obj-y += utch.o

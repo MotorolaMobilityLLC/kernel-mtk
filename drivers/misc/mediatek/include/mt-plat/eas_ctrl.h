@@ -10,6 +10,10 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
+#ifndef _EAS_CTRL_H
+#define _EAS_CTRL_H
+
+
 enum {
 	CGROUP_ROOT = 0,
 	CGROUP_FG,
@@ -28,5 +32,6 @@ enum {
 
 extern int boost_write_for_perf_idx(int group_idx, int boost_value);
 
-int update_eas_boost_value(int kicker, int cgroup_idx, int value);
-void init_perfmgr_eas_controller(void);
+extern int update_eas_boost_value(int kicker, int cgroup_idx, int value);
+
+#endif /* _EAS_CTRL_H */

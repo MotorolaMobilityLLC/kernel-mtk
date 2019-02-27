@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,12 +11,13 @@
  * GNU General Public License for more details.
  */
 #define pr_fmt(fmt) "[usrtch]"fmt
-#include "usrtch.h"
 
 #include <linux/slab.h>
+#include <linux/proc_fs.h>
 #include <mt-plat/fpsgo_common.h>
-#include "fstb.h"
 
+#include "tchbst.h"
+#include "fstb.h"
 
 static void notify_touch_up_timeout(void);
 static DECLARE_WORK(mt_touch_timeout_work, (void *) notify_touch_up_timeout);
@@ -34,6 +35,7 @@ static int touch_boost_duration;
 static int prev_boost_pid;
 static long long active_time;
 static int usrtch_debug;
+
 void switch_usrtch(int enable)
 {
 		mutex_lock(&notify_lock);
@@ -263,13 +265,16 @@ static const struct file_operations fop = {
 	.release = single_release,
 };
 /*--------------------INIT------------------------*/
-int init_usrtch(void)
+int init_utch(struct proc_dir_entry *parent)
 {
-	struct proc_dir_entry *usrtch, *usrdebug;
+	struct proc_dir_entry *usrtch, *usrdebug, *usrtch_root;
 	int i;
 	int ret_val = 0;
 
 	pr_debug("Start to init usrtch  driver\n");
+
+	/*create usr touch root procfs*/
+	usrtch_root = proc_mkdir("user", parent);
 
 	touch_boost_value = TOUCH_BOOST_EAS;
 
@@ -299,13 +304,12 @@ int init_usrtch(void)
 	hrtimer_init(&hrt1, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hrt1.function = &mt_touch_timeout;
 
-	usrtch = proc_create("perfmgr/tchbst/user/usrtch", 0664, NULL, &Fops);
+	usrtch = proc_create("usrtch", 0664, usrtch_root, &Fops);
 	if (!usrtch) {
 		ret_val = -ENOMEM;
 		goto out_chrdev;
 	}
-	usrdebug = proc_create("perfmgr/tchbst/user/usrdebug",
-				 0664, NULL, &fop);
+	usrdebug = proc_create("usrdebug", 0664, usrtch_root, &fop);
 	if (!usrdebug) {
 		ret_val = -ENOMEM;
 		goto out_chrdev;
