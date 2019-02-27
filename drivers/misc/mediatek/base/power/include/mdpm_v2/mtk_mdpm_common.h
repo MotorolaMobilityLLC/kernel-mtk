@@ -15,7 +15,7 @@
 #define _MTK_MDPM_COMMON_H_
 
 extern int mt_mdpm_debug;
-extern struct md_power_status dbm_power_sta;
+extern struct md_power_status mdpm_power_sta;
 
 #ifdef MD_POWER_UT
 extern u32 fake_share_reg;
