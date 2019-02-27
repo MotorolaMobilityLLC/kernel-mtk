@@ -28,12 +28,11 @@
 #include <sspm_timesync.h>
 #endif
 
-#if defined(MTK_SUSPEND_GS_DUMP_READY)
-/* NOTE: Check golden setting dump header file for each project */
 #include <mtk_power_gs_api.h>
-#endif
-
 #include <mtk_sspm.h>
+
+#define WORLD_CLK_CNTCV_L        (0x10017008)
+#define WORLD_CLK_CNTCV_H        (0x1001700C)
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 __attribute__ ((weak))
@@ -60,9 +59,17 @@ unsigned int pmic_config_interface_nolock(unsigned int RegNum, unsigned int val,
 }
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
-void __attribute__ ((weak)) mt_power_gs_dump_suspend(int count, ...)
+void spm_dump_world_clk_cntcv(void)
 {
-	pr_info("NO %s !!!\n", __func__);
+	u32 wlk_cntcv_l;
+	u32 wlk_cntcv_h;
+
+	/* SYS_TIMER counter value low and high */
+	wlk_cntcv_l = _golden_read_reg(WORLD_CLK_CNTCV_L);
+	wlk_cntcv_h = _golden_read_reg(WORLD_CLK_CNTCV_H);
+
+	pr_info("[SPM] wlk_cntcv_l = 0x%x, wlk_cntcv_h = 0x%x\n",
+		wlk_cntcv_l, wlk_cntcv_h);
 }
 
 void spm_set_sysclk_settle(void)
