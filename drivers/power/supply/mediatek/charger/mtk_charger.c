@@ -1087,7 +1087,7 @@ int charger_psy_event(struct notifier_block *nb, unsigned long event, void *v)
 
 	if (strcmp(psy->desc->name, "battery") == 0) {
 		ret = power_supply_get_property(psy,
-				POWER_SUPPLY_PROP_batt_temp, &val);
+				POWER_SUPPLY_PROP_TEMP, &val);
 		if (!ret) {
 			tmp = val.intval / 10;
 			if (info->battery_temp != tmp
