@@ -580,6 +580,10 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 			"CRDISPATCH_KEY:Device APC Violation Issue/",
 			subsys_str
 	);
+
+	/* unmask irq for module "i" */
+	unmask_infra_module_irq(i);
+
 }
 
 #endif
