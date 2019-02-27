@@ -162,15 +162,14 @@ static inline int moveAF(unsigned long a_u4Position)
 			g_u4CurrPosition = (unsigned long)InitPos;
 			spin_unlock(g_pAF_SpinLock);
 
+			spin_lock(g_pAF_SpinLock);
+			*g_pAF_Opened = 2;
+			spin_unlock(g_pAF_SpinLock);
 		} else {
 			spin_lock(g_pAF_SpinLock);
 			g_u4CurrPosition = 0;
 			spin_unlock(g_pAF_SpinLock);
 		}
-
-		spin_lock(g_pAF_SpinLock);
-		*g_pAF_Opened = 2;
-		spin_unlock(g_pAF_SpinLock);
 	}
 
 	if (g_u4CurrPosition == a_u4Position)
