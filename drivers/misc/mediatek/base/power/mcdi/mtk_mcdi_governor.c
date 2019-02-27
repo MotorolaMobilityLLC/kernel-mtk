@@ -177,20 +177,13 @@ static inline struct mcdi_status *get_mcdi_status(int cpu)
 
 void set_mcdi_idle_state(int cpu, int state)
 {
-	int cluster_id;
-
 	get_mcdi_status(cpu)->state = state;
 
-	if (state == MCDI_STATE_CLUSTER_OFF) {
+	if (state == MCDI_STATE_CLUSTER_OFF
+		&& cpu != core_cluster_off_token[cluster_idx_get(cpu)])
+		state = MCDI_STATE_CPU_OFF;
 
-		cluster_id = cluster_idx_get(cpu);
-
-		if (cpu == core_cluster_off_token[cluster_id])
-			mcdi_notify_cluster_off(cluster_id);
-		else
-			state = MCDI_STATE_CPU_OFF;
-	}
-
+	/* Save a real entered state */
 	mcdi_prof_set_idle_state(cpu, state);
 }
 
@@ -337,16 +330,12 @@ static bool cluster_residency_check(int cpu)
 			mcdi_cluster.chk_res_fail++;
 			spin_unlock_irqrestore(&mcdi_cluster_spin_lock, flags);
 #if 0
-			pr_info("[MCDI] cpu%d state%d, remain_sleep_us = %llu, target_us = %u\n",
+			pr_info("[MCDI] cpu%d, entry:%llu curr:%llu next:%u, remain:%llu dur:%llu\n",
 				i,
-				sta->state,
-				max_remain_sleep_us,
-				target_residency);
-
-			pr_info("[MCDI] next_timer_us = %u, entry time %llu current time %llu, dur %llu\n",
-				sta->next_timer_us,
 				sta->enter_time_us,
 				curr_time_us,
+				sta->next_timer_us,
+				remain_sleep_us,
 				curr_time_us - sta->enter_time_us);
 #endif
 			return false;
@@ -388,6 +377,9 @@ void cluster_off_check(int cpu, int *state)
 	}
 
 	if (acquire_cluster_last_core_prot(cpu) == 0) {
+
+		mcdi_notify_cluster_off(cluster_idx_get(cpu));
+
 		/* Token for profile mechanism */
 		core_cluster_off_token[cluster_idx_get(cpu)] = cpu;
 		mcdi_prof_core_cluster_off_token(cpu);
@@ -645,7 +637,7 @@ void mcdi_governor_reflect(int cpu, int state)
 	else if (state == MCDI_STATE_CLUSTER_OFF)
 		release_cluster_last_core_prot();
 
-	if (mcdi_cluster.cpu == cpu)
+	if (mcdi_cluster.tmr_en && mcdi_cluster.cpu == cpu)
 		mcdi_cancel_timer();
 }
 
