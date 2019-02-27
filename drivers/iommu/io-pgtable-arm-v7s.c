@@ -639,7 +639,8 @@ static phys_addr_t arm_v7s_iova_to_phys(struct io_pgtable_ops *ops,
 		mask *= ARM_V7S_CONT_PAGES;
 	paddr = (pte & mask) | (iova & ~mask);
 
-	if (cfg->quirks & IO_PGTABLE_QUIRK_ARM_MTK_4GB) {
+	if (IS_ENABLED(CONFIG_PHYS_ADDR_T_64BIT) &&
+	    (cfg->quirks & IO_PGTABLE_QUIRK_ARM_MTK_4GB)) {
 		if (pte & ARM_V7S_ATTR_MTK_PA_BIT32)
 			paddr |= BIT_ULL(32);
 		if (pte & ARM_V7S_ATTR_MTK_PA_BIT33)
