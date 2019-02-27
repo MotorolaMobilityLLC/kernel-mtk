@@ -2708,11 +2708,16 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #else	/* eMMC */
 long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+#if defined(RPMB_IOCTL_UT) || defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 	int err = 0;
+#endif
 	struct mmc_card *card;
-	struct rpmb_ioc_param param;
 	int ret = 0;
+#if defined(RPMB_IOCTL_UT)
+	struct rpmb_ioc_param param;
 	unsigned char *ukey, *udata;
+#endif
+
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	u32 arg_k;
 	u32 rpmb_size = 0;
@@ -2729,6 +2734,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	card = mtk_msdc_host[0]->mmc->card;
 
+#if defined(RPMB_IOCTL_UT)
 	err = copy_from_user(&param, (void *)arg, sizeof(param));
 	if (err) {
 		MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
@@ -2781,6 +2787,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = -1;
 		goto end;
 	}
+#endif
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) ||
@@ -2824,7 +2831,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #endif
 
 	switch (cmd) {
-
+#if defined(RPMB_IOCTL_UT)
 	case RPMB_IOCTL_PROGRAM_KEY:
 
 		MSG(INFO, "%s, cmd = RPMB_IOCTL_PROGRAM_KEY!!!!!!!!!!!!!!\n",
@@ -2858,6 +2865,7 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = rpmb_req_ioctl_write_data(card, &param);
 
 		break;
+#endif
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	case RPMB_IOCTL_SOTER_WRITE_DATA:
@@ -2959,9 +2967,10 @@ long rpmb_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		goto end;
 	}
 end:
+#if defined(RPMB_IOCTL_UT)
 	kfree(param.data);
 	kfree(param.key);
-
+#endif
 	return ret;
 }
 
