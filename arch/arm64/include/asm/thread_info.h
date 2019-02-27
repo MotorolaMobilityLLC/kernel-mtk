@@ -53,6 +53,8 @@ struct thread_info {
 #endif
 	int			preempt_count;	/* 0 => preemptable, <0 => bug */
 	int			cpu;		/* cpu */
+	void			*regs_on_excp;	/* aee */
+	int			cpu_excp;	/* aee */
 };
 
 #define INIT_THREAD_INFO(tsk)						\
@@ -61,6 +63,7 @@ struct thread_info {
 	.flags		= 0,						\
 	.preempt_count	= INIT_PREEMPT_COUNT,				\
 	.addr_limit	= KERNEL_DS,					\
+	.cpu_excp	= 0,	/* aee */				\
 }
 
 #define init_thread_info	(init_thread_union.thread_info)
