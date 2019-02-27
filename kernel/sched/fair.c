@@ -3342,8 +3342,7 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 	if (se->avg.last_update_time && !(flags & SKIP_AGE_LOAD)) {
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		if (entity_is_task(se) && se->on_rq)
-			inc_nr_heavy_running("__update_load_avg-",
-				task_of(se), -1, false);
+			inc_nr_heavy_running(0, task_of(se), -1, false);
 #endif
 		__update_load_avg(now, cpu, &se->avg,
 			  se->on_rq * scale_load_down(se->load.weight),
@@ -3351,8 +3350,7 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
 		if (entity_is_task(se) && se->on_rq)
-			inc_nr_heavy_running("__update_load_avg+",
-				task_of(se), 1, false);
+			inc_nr_heavy_running(1, task_of(se), 1, false);
 #endif
 	}
 
@@ -4905,7 +4903,7 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		add_nr_running(rq, 1);
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-		inc_nr_heavy_running(__func__, p, 1, false);
+		inc_nr_heavy_running(2, p, 1, false);
 #endif
 	}
 
@@ -5030,7 +5028,7 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 	if (!se) {
 		sub_nr_running(rq, 1);
 #ifdef CONFIG_MTK_SCHED_RQAVG_US
-		inc_nr_heavy_running(__func__, p, -1, false);
+		inc_nr_heavy_running(3, p, -1, false);
 #endif
 	}
 
@@ -6344,6 +6342,13 @@ boosted_task_util(struct task_struct *task)
 		return util + margin;
 	else
 		return util;
+}
+
+void get_task_util(struct task_struct *p, unsigned long *util,
+	unsigned long *boost_util)
+{
+	*boost_util = boosted_task_util(p);
+	*util = task_util(p);
 }
 
 static int cpu_util_wake(int cpu, struct task_struct *p);
