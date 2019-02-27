@@ -1910,7 +1910,9 @@ static void blk_mq_realloc_hw_ctxs(struct blk_mq_tag_set *set,
 	blk_mq_sysfs_unregister(q);
 
 	/* protect against switching io scheduler  */
+	lockdep_off();
 	mutex_lock(&q->sysfs_lock);
+	lockdep_on();
 	for (i = 0; i < set->nr_hw_queues; i++) {
 		int node;
 
@@ -1960,7 +1962,9 @@ static void blk_mq_realloc_hw_ctxs(struct blk_mq_tag_set *set,
 		}
 	}
 	q->nr_hw_queues = i;
+	lockdep_off();
 	mutex_unlock(&q->sysfs_lock);
+	lockdep_on();
 	blk_mq_sysfs_register(q);
 }
 
