@@ -89,7 +89,7 @@ void unlockadcch3(void)
  * PMIC AUXADC debug register dump
  *********************************/
 #define DBG_REG_SIZE		384
-#define BAT_TEMP_AEE_DBG	1
+#define BAT_TEMP_AEE_DBG	0
 
 struct pmic_adc_dbg_st {
 	int ktime_sec;
