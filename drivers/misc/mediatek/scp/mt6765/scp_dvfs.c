@@ -199,7 +199,6 @@ int scp_request_freq(void)
 	int value = 0;
 	int timeout = 250;
 	int ret = 0;
-	unsigned long spin_flags;
 	int is_increasing_freq = 0;
 
 	pr_debug("%s()\n", __func__);
@@ -257,10 +256,7 @@ int scp_request_freq(void)
 			}
 
 			/* read scp_current_freq again */
-			spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 			scp_current_freq = readl(CURRENT_FREQ_REG);
-			spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-
 		} while (scp_current_freq != scp_expected_freq);
 
 		/* turn off PLL if needed */
@@ -478,13 +474,10 @@ static ssize_t mt_scp_dvfs_sleep_proc_write(
  *****************************/
 static int mt_scp_dvfs_ctrl_proc_show(struct seq_file *m, void *v)
 {
-	unsigned long spin_flags;
 	int i;
 
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
 	scp_current_freq = readl(CURRENT_FREQ_REG);
 	scp_expected_freq = readl(EXPECTED_FREQ_REG);
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
 	seq_printf(m, "SCP DVFS: %s\n", (scp_dvfs_flag == 1)?"ON":"OFF");
 	seq_printf(m, "SCP frequency: cur=%dMHz, expect=%dMHz\n",
 				scp_current_freq, scp_expected_freq);
