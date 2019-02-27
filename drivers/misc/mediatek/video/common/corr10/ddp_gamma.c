@@ -158,6 +158,11 @@ static void disp_gamma_init(enum DISP_MODULE_ENUM module, unsigned int width,
 	}
 #endif
 
+#ifdef GAMMA_ROUND_CORNER
+	/* disable mask config */
+	DISP_REG_SET(cmdq, DISP_REG_GAMMA_DEBUG + offset, 0x0);
+#endif
+
 	/* enable with relay bit set for bypass gamma engine */
 	DISP_REG_MASK(cmdq, DISP_REG_GAMMA_EN + offset, 0x1, 0x1);
 }
