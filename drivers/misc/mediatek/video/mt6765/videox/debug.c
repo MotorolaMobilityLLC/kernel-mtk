@@ -71,6 +71,8 @@ int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned long long idle_check_interval = 50;
+/* modify rdma threshold for debug */
+int dbg_ultlow, dbg_ulthigh, dbg_prehigh, dbg_urg_low, dbg_urg_high;
 
 /* hrt */
 int hrt_high, hrt_low;
@@ -849,6 +851,7 @@ struct completion dump_buf_comp;
 static void process_dbg_opt(const char *opt)
 {
 	int ret;
+	DISPWARN("disp debug cmd %s\n", opt);
 
 	if (strncmp(opt, "helper", 6) == 0) {
 		/*ex: echo helper:DISP_OPT_BYPASS_OVL,0 > /d/mtkfb */
@@ -1473,6 +1476,19 @@ static void process_dbg_opt(const char *opt)
 		} else
 			DISPERR("error to parse cmd %s\n", opt);
 	}
+
+#ifdef CONFIG_MTK_ENG_BUILD
+	if (strncmp(opt, "rdma_threshold:", 15) == 0) {
+		ret = sscanf(opt, "rdma_threshold:%d,%d,%d,%d,%d\n",
+			&dbg_ultlow, &dbg_ulthigh, &dbg_prehigh,
+			&dbg_urg_low, &dbg_urg_high);
+		if (ret != 5) {
+			DISPWARN("%d error to parse cmd %s\n", __LINE__, opt);
+			return;
+		}
+	}
+ #endif
+
 }
 
 static void process_dbg_cmd(char *cmd)
