@@ -209,7 +209,7 @@ static inline void musb_try_b_hnp_enable(struct musb *musb)
 	void __iomem	*mbase = musb->mregs;
 	u8		devctl;
 
-	pr_debug("HNP: Setting HR\n");
+	DBG(2, "HNP: Setting HR\n");
 	devctl = musb_readb(mbase, MUSB_DEVCTL);
 	musb_writeb(mbase, MUSB_DEVCTL, devctl | MUSB_DEVCTL_HR);
 #if defined(CONFIG_USBIF_COMPLIANCE)
@@ -334,7 +334,7 @@ __acquires(musb->lock)
 				} else if (!is_in) {
 					/* Modification for ALPS00451478 */
 					csr  = musb_readw(regs, MUSB_RXCSR);
-					pr_debug(
+					DBG(0,
 						"no more req, clr RXPKTRDY to avoid err RX FIFO/DMA read!! csr:0x%x\n"
 							, csr);
 					csr &= ~(MUSB_RXCSR_RXPKTRDY);
@@ -623,7 +623,7 @@ static void ep0_txstate(struct musb *musb)
 
 	if (!req) {
 		/* WARN_ON(1); */
-		pr_debug("odd; csr0 %04x\n", musb_readw(regs, MUSB_CSR0));
+		DBG(2, "odd; csr0 %04x\n", musb_readw(regs, MUSB_CSR0));
 		return;
 	}
 
@@ -681,7 +681,7 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 	/* NOTE:  earlier 2.6 versions changed setup packets to host
 	 * order, but now USB packets always stay in USB byte order.
 	 */
-	pr_debug("SETUP req%02x.%02x v%04x i%04x l%d\n",
+	DBG(2, "SETUP req%02x.%02x v%04x i%04x l%d\n",
 		req->bRequestType,
 		req->bRequest,
 		le16_to_cpu(req->wValue),
@@ -713,8 +713,8 @@ musb_read_setup(struct musb *musb, struct usb_ctrlrequest *req)
 		/* skip if waiting over 3 sec */
 		while ((musb_readw(regs, MUSB_CSR0)
 				& MUSB_CSR0_RXPKTRDY) != 0 && time_count--)
-			udelay(1);
-		if (!time_count)
+			mdelay(1);
+		if (time_count <= 0)
 			pr_err("%s, timeout\n", __func__);
 		musb->ackpend = 0;
 	} else
@@ -766,7 +766,7 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 	csr = musb_readw(regs, MUSB_CSR0);
 	len = musb_readb(regs, MUSB_COUNT0);
 
-	pr_debug("csr %04x, count %d, ep0stage %s\n",
+	DBG(2, "csr %04x, count %d, ep0stage %s\n",
 			csr, len, decode_ep0stage(musb->ep0_state));
 
 	if (csr & MUSB_CSR0_P_DATAEND) {
@@ -847,7 +847,7 @@ irqreturn_t musb_g_ep0_irq(struct musb *musb)
 
 		/* enter test mode if needed (exit by reset) */
 		else if (musb->test_mode) {
-			pr_debug("entering TESTMODE\n");
+			DBG(0, "entering TESTMODE\n");
 			musb_sync_with_bat(musb, USB_SUSPEND);
 			if (musb->test_mode_nr == MUSB_TEST_PACKET)
 				musb_load_testpacket(musb);
@@ -911,11 +911,22 @@ setup:
 			musb_read_setup(musb, &setup);
 			retval = IRQ_HANDLED;
 
+			if (unlikely(setup_end_err)) {
+				DBG(0,
+					"%s SETUP req%02x.%02x v%04x i%04x l%d\n",
+					decode_ep0stage(musb->ep0_state),
+					setup.bRequestType,
+					setup.bRequest,
+					le16_to_cpu(setup.wValue),
+					le16_to_cpu(setup.wIndex),
+					le16_to_cpu(setup.wLength));
+			}
+
 			/* sometimes the RESET won't be reported */
 			if (unlikely(musb->g.speed == USB_SPEED_UNKNOWN)) {
 				u8	power;
 
-				pr_debug("%s: peripheral reset irq lost!\n",
+				DBG(0, "%s: peripheral reset irq lost!\n",
 						musb_driver_name);
 				power = musb_readb(mbase, MUSB_POWER);
 				musb->g.speed = (power & MUSB_POWER_HSMODE)
@@ -967,7 +978,7 @@ setup:
 				break;
 			}
 
-			pr_debug("handled %d, csr %04x, ep0stage %s\n",
+			DBG(2, "handled %d, csr %04x, ep0stage %s\n",
 				handled, csr,
 				decode_ep0stage(musb->ep0_state));
 
@@ -984,7 +995,7 @@ setup:
 			if (handled < 0) {
 				musb_ep_select(mbase, 0);
 stall:
-				pr_debug("stall (%d)\n", handled);
+				DBG(2, "stall (%d)\n", handled);
 				musb->ackpend |= MUSB_CSR0_P_SENDSTALL;
 				musb->ep0_state = MUSB_EP0_STAGE_IDLE;
 finish:
@@ -1011,7 +1022,8 @@ finish:
 	}
 
 	if (unlikely(setup_end_err))
-		pr_err("SetupEnd, retval=%d\n", retval);
+		ERR("SetupEnd, retval=%d, ep0stage=%s\n"
+		, retval, decode_ep0stage(musb->ep0_state));
 
 	return retval;
 }
@@ -1056,7 +1068,7 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
 	spin_lock_irqsave(&musb->lock, lockflags);
 
 	if (!musb->is_active) {
-		pr_debug("ep0 request queued when usb not active\n");
+		DBG(0, "ep0 request queued when usb not active\n");
 		status = -EINVAL;
 		goto cleanup;
 	}
@@ -1073,7 +1085,7 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
 		status = 0;
 		break;
 	default:
-		pr_debug("ep0 request queued in state %d\n",
+		DBG(2, "ep0 request queued in state %d\n",
 				musb->ep0_state);
 		status = -EINVAL;
 		goto cleanup;
@@ -1082,7 +1094,7 @@ musb_g_ep0_queue(struct usb_ep *e, struct usb_request *r, gfp_t gfp_flags)
 	/* add request to the list */
 	list_add_tail(&req->list, &ep->req_list);
 
-	pr_debug("queue to %s (%s), length=%d\n",
+	DBG(2, "queue to %s (%s), length=%d\n",
 			ep->name, ep->is_in ? "IN/TX" : "OUT/RX",
 			req->request.length);
 
@@ -1175,7 +1187,7 @@ static int musb_g_ep0_halt(struct usb_ep *e, int value)
 		musb->ackpend = 0;
 		break;
 	default:
-		pr_debug("ep0 can't halt in state %d\n", musb->ep0_state);
+		DBG(2, "ep0 can't halt in state %d\n", musb->ep0_state);
 		status = -EINVAL;
 	}
 

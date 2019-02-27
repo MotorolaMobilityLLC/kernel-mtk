@@ -40,19 +40,19 @@ int send_switch_cmd(void)
 	int retval;
 
 	if (apple_dev == NULL) {
-		pr_debug("no apple device attach.\n");
+		DBG(0, "no apple device attach.\n");
 		return -1;
 	}
-	pr_debug("before usb_control_msg\n");
+	DBG(0, "before usb_control_msg\n");
 	retval = usb_control_msg(apple_dev->dev,
 				usb_rcvctrlpipe(apple_dev->dev, 0),
 				0x51, 0x40, 1, 0, NULL, 0,
 				USB_CTRL_GET_TIMEOUT);
 
-	pr_debug("after usb_control_msg retval = %d\n", retval);
+	DBG(0, "after usb_control_msg retval = %d\n", retval);
 
 	if (retval != 0) {
-		pr_debug("send_switch_cmd fail retval = %d\n", retval);
+		DBG(0, "send_switch_cmd fail retval = %d\n", retval);
 		return -1;
 	}
 
@@ -65,7 +65,7 @@ static int carplay_probe(struct usb_interface *intf,
 	struct usb_device *udev;
 	struct carplay_dev *car_dev;
 
-	pr_debug("++ carplay probe ++\n");
+	DBG(0, "++ carplay probe ++\n");
 	udev = interface_to_usbdev(intf);
 
 	car_dev = kzalloc(sizeof(*car_dev), GFP_KERNEL);
@@ -78,7 +78,7 @@ static int carplay_probe(struct usb_interface *intf,
 	apple_dev = car_dev;
 	apple = true;
 	if (car_dev->dev == NULL)
-		pr_debug("car_dev->dev error\n");
+		DBG(0, "car_dev->dev error\n");
 
 	return 0;
 }
@@ -94,7 +94,7 @@ static void carplay_disconnect(struct usb_interface *intf)
 	kfree(car_dev);
 	apple_dev = NULL;
 	apple = false;
-	pr_debug("carplay_disconnect.\n");
+	DBG(0, "carplay_disconnect.\n");
 }
 
 static const struct usb_device_id id_table[] = {
@@ -127,7 +127,7 @@ static struct usb_driver carplay_driver = {
 
 static int __init carplay_init(void)
 {
-	pr_debug("carplay_init register carplay_driver\n");
+	DBG(0, "carplay_init register carplay_driver\n");
 	return usb_register(&carplay_driver);
 }
 module_init(carplay_init);

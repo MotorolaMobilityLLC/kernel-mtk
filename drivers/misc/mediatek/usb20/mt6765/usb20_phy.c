@@ -138,7 +138,7 @@ bool usb_enable_clock(bool enable)
 	int res = -1;
 	unsigned long flags;
 
-	pr_debug("enable(%d),count(%d),<%d,%d,%d,%d>\n",
+	DBG(1, "enable(%d),count(%d),<%d,%d,%d,%d>\n",
 	    enable, count, virt_enable, virt_disable,
 	    real_enable, real_disable);
 
@@ -174,7 +174,7 @@ bool usb_enable_clock(bool enable)
 
 	spin_unlock_irqrestore(&musb_reg_clock_lock, flags);
 
-	pr_debug("enable(%d),count(%d),res(%d),<%d,%d,%d,%d>\n",
+	DBG(1, "enable(%d),count(%d),res(%d),<%d,%d,%d,%d>\n",
 	    enable, count, res, virt_enable, virt_disable,
 	    real_enable, real_disable);
 	return 1;
@@ -213,7 +213,7 @@ static void hs_slew_rate_cal(void)
 
 	/* read result. */
 	if (timeout_flag) {
-		pr_debug("[USBPHY] Slew Rate Calibration: Timeout\n");
+		DBG(0, "[USBPHY] Slew Rate Calibration: Timeout\n");
 		value = 0x4;
 	} else {
 		data = USBPHY_READ32(0xF0C - 0x800);
@@ -221,7 +221,7 @@ static void hs_slew_rate_cal(void)
 		value = (unsigned char)(x / 1000);
 		if ((x - value * 1000) / 100 >= 5)
 			value += 1;
-		pr_debug("[USBPHY]slew calibration:FM_OUT =%lu,x=%lu,value=%d\n",
+		DBG(1, "[USBPHY]slew calibration:FM_OUT =%lu,x=%lu,value=%d\n",
 				data, x, value);
 	}
 
@@ -249,11 +249,11 @@ bool usb_phy_check_in_uart_mode(void)
 	usb_enable_clock(false);
 
 	if (((usb_port_mode >> 30) & 0x3) == 1) {
-		pr_debug("%s:%d - IN UART MODE : 0x%x\n",
+		DBG(0, "%s:%d - IN UART MODE : 0x%x\n",
 				__func__, __LINE__, usb_port_mode);
 		in_uart_mode = true;
 	} else {
-		pr_debug("%s:%d - NOT IN UART MODE : 0x%x\n",
+		DBG(0, "%s:%d - NOT IN UART MODE : 0x%x\n",
 				__func__, __LINE__, usb_port_mode);
 		in_uart_mode = false;
 	}
@@ -265,7 +265,7 @@ void usb_phy_switch_to_uart(void)
 	unsigned int val = 0;
 
 	if (usb_phy_check_in_uart_mode()) {
-		pr_debug("Already in UART mode.\n");
+		DBG(0, "Already in UART mode.\n");
 		return;
 	}
 
@@ -369,9 +369,9 @@ void set_usb_phy_mode(int mode)
 		USBPHY_SET32(0x6c, (0x3f<<8));
 		break;
 	default:
-		pr_debug("mode error %d\n", mode);
+		DBG(0, "mode error %d\n", mode);
 	}
-	pr_debug("force PHY to mode %d, 0x6c=%x\n", mode, USBPHY_READ32(0x6c));
+	DBG(0, "force PHY to mode %d, 0x6c=%x\n", mode, USBPHY_READ32(0x6c));
 }
 
 void usb_rev6_setting(int value)
@@ -395,7 +395,7 @@ void usb_phy_poweron(void)
 {
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
-		pr_debug("At UART mode. No usb_phy_poweron\n");
+		DBG(0, "At UART mode. No usb_phy_poweron\n");
 		return;
 	}
 #endif
@@ -446,7 +446,7 @@ void usb_phy_poweron(void)
 	/* wait for 800 usec. */
 	udelay(800);
 
-	pr_debug("usb power on success\n");
+	DBG(0, "usb power on success\n");
 }
 
 /* M17_USB_PWR Sequence 20160603.xls */
@@ -454,7 +454,7 @@ static void usb_phy_savecurrent_internal(void)
 {
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
-		pr_debug("At UART mode. No usb_phy_savecurrent_internal\n");
+		DBG(0, "At UART mode. No usb_phy_savecurrent_internal\n");
 		return;
 	}
 #endif
@@ -538,7 +538,7 @@ void usb_phy_savecurrent(void)
 	usb_enable_clock(false);
 
 
-	pr_debug("usb save current success\n");
+	DBG(0, "usb save current success\n");
 }
 
 /* M17_USB_PWR Sequence 20160603.xls */
@@ -548,7 +548,7 @@ void usb_phy_recover(void)
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 	if (in_uart_mode) {
-		pr_debug("At UART mode. No usb_phy_recover\n");
+		DBG(0, "At UART mode. No usb_phy_recover\n");
 		return;
 	}
 #endif
@@ -633,7 +633,7 @@ void usb_phy_recover(void)
 	/* M_ANALOG8[4:0] => RG_USB20_INTR_CAL[4:0] */
 	efuse_val = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
 	if (efuse_val) {
-		pr_debug("apply efuse setting, RG_USB20_INTR_CAL=0x%x\n",
+		DBG(0, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n",
 			efuse_val);
 		USBPHY_CLR32(0x04, (0x1F<<19));
 		USBPHY_SET32(0x04, (efuse_val<<19));
@@ -642,7 +642,7 @@ void usb_phy_recover(void)
 	/* disc threshold to max, RG_USB20_DISCTH[7:4], dft:1000, MAX:1111 */
 	USBPHY_SET32(0x18, (0xf0<<0));
 
-	pr_debug("usb recovery success\n");
+	DBG(0, "usb recovery success\n");
 }
 
 /* BC1.2 */
@@ -655,7 +655,7 @@ void Charger_Detect_Init(void)
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
 	} else
-		pr_debug("mtk_musb is NULL\n");
+		DBG(0, "mtk_musb is NULL\n");
 
 	/* turn on USB reference clock. */
 	usb_enable_clock(true);
@@ -671,7 +671,7 @@ void Charger_Detect_Init(void)
 
 	if (do_lock)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
-	pr_debug("Charger_Detect_Init\n");
+	DBG(0, "Charger_Detect_Init\n");
 }
 
 void Charger_Detect_Release(void)
@@ -683,7 +683,7 @@ void Charger_Detect_Release(void)
 		spin_lock_irqsave(&mtk_musb->lock, flags);
 		do_lock = 1;
 	} else
-		pr_debug("mtk_musb is NULL\n");
+		DBG(0, "mtk_musb is NULL\n");
 
 	/* turn on USB reference clock. */
 	usb_enable_clock(true);
@@ -699,7 +699,7 @@ void Charger_Detect_Release(void)
 	if (do_lock)
 		spin_unlock_irqrestore(&mtk_musb->lock, flags);
 
-	pr_debug("Charger_Detect_Release\n");
+	DBG(0, "Charger_Detect_Release\n");
 }
 
 void usb_phy_context_save(void)

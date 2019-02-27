@@ -165,7 +165,7 @@ int musb_otg_env_init(void)
 	init_completion(&stop_event);
 #ifdef DX_DBG
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
-	pr_debug("start the USB-IF test in EM,power=0x%x!\n", power);
+	DBG(0, "start the USB-IF test in EM,power=0x%x!\n", power);
 #endif
 
 	return 0;
@@ -173,7 +173,7 @@ int musb_otg_env_init(void)
 
 int musb_otg_env_exit(void)
 {
-	pr_debug("stop the USB-IF test in EM!\n");
+	DBG(0, "stop the USB-IF test in EM!\n");
 	musb_writel(mtk_musb->mregs, USB_L1INTM, 0);
 	musb_writew(mtk_musb->mregs, MUSB_INTRRXE, 0);
 	musb_writew(mtk_musb->mregs, MUSB_INTRTXE, 0);
@@ -195,7 +195,7 @@ void musb_otg_write_fifo(u16 len, u8 *buf)
 {
 	int i;
 
-	pr_debug("musb_otg_write_fifo,len=%d\n", len);
+	DBG(0, "musb_otg_write_fifo,len=%d\n", len);
 	for (i = 0; i < len; i++)
 		musb_writeb(mtk_musb->mregs, 0x20, *(buf + i));
 }
@@ -204,7 +204,7 @@ void musb_otg_read_fifo(u16 len, u8 *buf)
 {
 	int i;
 
-	pr_debug("musb_otg_read_fifo,len=%d\n", len);
+	DBG(0, "musb_otg_read_fifo,len=%d\n", len);
 	for (i = 0; i < len; i++)
 		*(buf + i) = musb_readb(mtk_musb->mregs, 0x20);
 }
@@ -213,18 +213,18 @@ unsigned int musb_polling_ep0_interrupt(void)
 {
 	unsigned short intrtx;
 
-	pr_debug("polling ep0 interrupt\n");
+	DBG(0, "polling ep0 interrupt\n");
 	do {
 		intrtx = musb_readw(mtk_musb->mregs, MUSB_INTRTX);
 		/* sync status */
 		mb();
 		musb_writew(mtk_musb->mregs, MUSB_INTRTX, intrtx);
 		if (intrtx & 0x1) {	/* ep0 interrupt happen */
-			pr_debug("get ep0 interrupt,csr0=0x%x\n",
+			DBG(0, "get ep0 interrupt,csr0=0x%x\n",
 			    musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0));
 			break;
 		}
-		pr_debug("polling ep0 interrupt,csr0=0x%x\n",
+		DBG(0, "polling ep0 interrupt,csr0=0x%x\n",
 				musb_readb(mtk_musb->mregs, MUSB_OTG_CSR0));
 		wait_for_completion_timeout(&stop_event, 1);
 		if (atomic_read(&g_exec) == 0)
@@ -237,16 +237,16 @@ void musb_h_setup(struct usb_ctrlrequest *setup)
 {
 	unsigned short csr0;
 
-	pr_debug("musb_h_setup++\n");
+	DBG(0, "musb_h_setup++\n");
 	musb_otg_write_fifo(sizeof(struct usb_ctrlrequest), (u8 *) setup);
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-	pr_debug("musb_h_setup,csr0=0x%x\n", csr0);
+	DBG(0, "musb_h_setup,csr0=0x%x\n", csr0);
 	csr0 |= MUSB_CSR0_H_SETUPPKT | MUSB_CSR0_TXPKTRDY;
 	musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 	/* polling the Tx interrupt */
 	if (musb_polling_ep0_interrupt())
 		return;
-	pr_debug("musb_h_setup--\n");
+	DBG(0, "musb_h_setup--\n");
 }
 
 void musb_h_in_data(unsigned char *buf, u16 len)
@@ -256,7 +256,7 @@ void musb_h_in_data(unsigned char *buf, u16 len)
 	u16 received = 0;
 	bool bshort = false;
 
-	pr_debug("musb_h_in_data++\n");
+	DBG(0, "musb_h_in_data++\n");
 	while ((received < len) && (!bshort)) {
 		csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
 		csr0 |= MUSB_CSR0_H_REQPKT;
@@ -264,7 +264,7 @@ void musb_h_in_data(unsigned char *buf, u16 len)
 		if (musb_polling_ep0_interrupt())
 			return;
 		csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-		pr_debug("csr0 = 0x%x!\n", csr0);
+		DBG(0, "csr0 = 0x%x!\n", csr0);
 		if (csr0 & MUSB_CSR0_RXPKTRDY) {
 			/* get the data from ep fifo */
 			u8 count = musb_readb(mtk_musb->mregs, MUSB_OTG_COUNT0);
@@ -273,7 +273,7 @@ void musb_h_in_data(unsigned char *buf, u16 len)
 				bshort = true;
 
 			if (received + count > len) {
-				pr_debug("Data is too large\n");
+				DBG(0, "Data is too large\n");
 
 			/* read FIFO until data end (maximum size of len) */
 				musb_otg_read_fifo(len - received, buf);
@@ -285,8 +285,8 @@ void musb_h_in_data(unsigned char *buf, u16 len)
 			csr0 &= ~MUSB_CSR0_RXPKTRDY;
 			musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 		} else
-			pr_debug("error, not receive the rxpktrdy interrupt!\n");
-		pr_debug("musb_h_in_data--\n");
+			DBG(0, "error, not receive the rxpktrdy interrupt!\n");
+		DBG(0, "musb_h_in_data--\n");
 	}
 }
 
@@ -294,14 +294,14 @@ void musb_h_in_status(void)
 {
 	unsigned short csr0;
 
-	pr_debug("musb_h_in_status++\n");
+	DBG(0, "musb_h_in_status++\n");
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
 	csr0 |= MUSB_CSR0_H_REQPKT | MUSB_CSR0_H_STATUSPKT;
 	musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 	if (musb_polling_ep0_interrupt())
 		return;
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-	pr_debug("csr0 = 0x%x!\n", csr0);
+	DBG(0, "csr0 = 0x%x!\n", csr0);
 
 	if (csr0 & MUSB_CSR0_RXPKTRDY) {
 		csr0 &= ~MUSB_CSR0_RXPKTRDY;
@@ -312,22 +312,22 @@ void musb_h_in_status(void)
 			csr0 &= ~MUSB_CSR0_H_STATUSPKT;
 		musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 	} else if (csr0 & MUSB_CSR0_H_RXSTALL) {
-		pr_debug("stall!\n");
+		DBG(0, "stall!\n");
 		if (set_hnp) {
-			pr_debug("will pop up:DEV_NOT_RESPONSE!\n");
+			DBG(0, "will pop up:DEV_NOT_RESPONSE!\n");
 			g_otg_message.msg = OTG_MSG_DEV_NOT_RESPONSE;
 			set_hnp = false;
 			msleep(1000);
 		}
 	}
-	pr_debug("musb_h_in_status--\n");
+	DBG(0, "musb_h_in_status--\n");
 }
 
 void musb_h_out_status(void)
 {
 	unsigned short csr0;
 
-	pr_debug("musb_h_out_status++\n");
+	DBG(0, "musb_h_out_status++\n");
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
 	csr0 |= MUSB_CSR0_H_STATUSPKT | MUSB_CSR0_TXPKTRDY;
 	musb_writew(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
@@ -335,9 +335,9 @@ void musb_h_out_status(void)
 		return;
 #ifdef DX_DBG
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-	pr_debug("csr0 = 0x%x!\n", csr0);
+	DBG(0, "csr0 = 0x%x!\n", csr0);
 #endif
-	pr_debug("musb_h_out_status--\n");
+	DBG(0, "musb_h_out_status--\n");
 }
 
 void musb_d_reset(void)
@@ -352,7 +352,7 @@ void musb_d_reset(void)
 void musb_d_setup(struct usb_ctrlrequest *setup_packet, u16 len)
 {
 	musb_otg_read_fifo(len, (u8 *) setup_packet);
-	pr_debug(
+	DBG(0,
 		"receive setup packet:0x%x 0x%x 0x%x 0x%x 0x%x\n",
 		setup_packet->bRequest,
 	    setup_packet->bRequestType,
@@ -470,7 +470,7 @@ unsigned int musb_polling_bus_interrupt(unsigned int intr)
 		mb();
 		musb_writeb(mtk_musb->mregs, MUSB_INTRUSB, intrusb);
 		if (intrusb & intr) {
-			pr_debug(
+			DBG(0,
 				"interrupt happen, intrusb=0x%x, intr=0x%x\n",
 				intrusb, intr);
 			break;
@@ -479,17 +479,17 @@ unsigned int musb_polling_bus_interrupt(unsigned int intr)
 		/* check the timeout */
 		if ((intr == MUSB_INTR_CONNECT) &&
 						time_after(jiffies, timeout)) {
-			pr_debug("time out for MUSB_INTR_CONNECT\n");
+			DBG(0, "time out for MUSB_INTR_CONNECT\n");
 			return DEV_NOT_CONNECT;
 		}
 		if ((intr == (MUSB_INTR_CONNECT | MUSB_INTR_RESUME))
 				&& time_after(jiffies, timeout)) {
-			pr_debug(
+			DBG(0,
 				"time out for MUSB_INTR_CONNECT|MUSB_INTR_RESUME\n");
 			return DEV_HNP_TIMEOUT;
 		}
 		if ((intr == MUSB_INTR_RESET) && time_after(jiffies, timeout)) {
-			pr_debug("time out for MUSB_INTR_RESET\n");
+			DBG(0, "time out for MUSB_INTR_RESET\n");
 			return DEV_NOT_RESET;
 		}
 		/* delay for the interrupt */
@@ -500,11 +500,11 @@ unsigned int musb_polling_bus_interrupt(unsigned int intr)
 		}
 	} while (atomic_read(&g_exec) == 1);
 	if (atomic_read(&g_exec) == 0) {
-		pr_debug("TEST_IS_STOP\n");
+		DBG(0, "TEST_IS_STOP\n");
 		return TEST_IS_STOP;
 	}
 	if (intrusb & MUSB_INTR_RESUME) {	/* for TD.4.8, remote wakeup */
-		pr_debug("MUSB_INTR_RESUME\n");
+		DBG(0, "MUSB_INTR_RESUME\n");
 		return MUSB_INTR_RESUME;
 	} else {
 		return intrusb;
@@ -517,7 +517,7 @@ void musb_h_suspend(void)
 	/* before suspend, should to send SOF for a while (USB-IF plan need) */
 	/* mdelay(100); */
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
-	pr_debug("before suspend,power=0x%x\n", power);
+	DBG(0, "before suspend,power=0x%x\n", power);
 	if (high_speed)
 		power = 0x63;
 	else
@@ -547,11 +547,11 @@ bool musb_h_reset(void)
 	musb_writeb(mtk_musb->mregs, MUSB_POWER, power);
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 	if (power & MUSB_POWER_HSMODE) {
-		pr_debug("the device is a hs device!\n");
+		DBG(0, "the device is a hs device!\n");
 		high_speed = true;
 		return true;
 	}
-	pr_debug("the device is a fs device!\n");
+	DBG(0, "the device is a fs device!\n");
 	high_speed = false;
 	return false;
 }
@@ -599,7 +599,7 @@ void musb_h_enumerate(void)
 	musb_h_setup(&setup_packet);
 	musb_h_in_status();
 	musb_writew(mtk_musb->mregs, MUSB_TXFUNCADDR, 1);
-	pr_debug("set address OK!\n");
+	DBG(0, "set address OK!\n");
 	/* get device descriptor */
 	setup_packet.bRequestType = USB_DIR_IN |
 						USB_TYPE_STANDARD |
@@ -619,11 +619,11 @@ void musb_h_enumerate(void)
 		/* msleep(1000); */
 	}
 
-	pr_debug(
+	DBG(0,
 		"get device descriptor OK!device class=0x%x PID=0x%x VID=0x%x\n",
 	    device_descriptor.bDeviceClass, device_descriptor.idProduct,
 	    device_descriptor.idVendor);
-	pr_debug(
+	DBG(0,
 		"get device descriptor OK!DescriptorType=0x%x DeviceSubClass=0x%x\n",
 	    device_descriptor.bDescriptorType,
 	    device_descriptor.bDeviceSubClass);
@@ -639,7 +639,7 @@ void musb_h_enumerate(void)
 	musb_h_in_data((char *)&configuration_descriptor,
 				sizeof(struct usb_config_descriptor));
 	musb_h_out_status();
-	pr_debug("get configuration descriptor OK!\n");
+	DBG(0, "get configuration descriptor OK!\n");
 	/* get all configuration descriptor */
 	setup_packet.bRequestType = USB_DIR_IN
 							| USB_TYPE_STANDARD
@@ -658,20 +658,20 @@ void musb_h_enumerate(void)
 		musb_h_in_data(descriptor,
 				configuration_descriptor.wTotalLength);
 	musb_h_out_status();
-	pr_debug("get all configuration descriptor OK!\n");
+	DBG(0, "get all configuration descriptor OK!\n");
 	/* get otg descriptor */
 	otg_descriptor =
 	    (struct usb_otg_descriptor *)
 		(descriptor + configuration_descriptor.wTotalLength - 3);
-	pr_debug("otg descriptor::bLegth=%d,bDescriptorTye=%d,bmAttr=%d\n",
+	DBG(0, "otg descriptor::bLegth=%d,bDescriptorTye=%d,bmAttr=%d\n",
 		otg_descriptor->bLength,
 	    otg_descriptor->bDescriptorType, otg_descriptor->bmAttributes);
 	if (otg_descriptor->bLength == 3 &&
 		otg_descriptor->bDescriptorType == 9) {
 
-		pr_debug("get an otg descriptor!\n");
+		DBG(0, "get an otg descriptor!\n");
 	} else {
-		pr_debug("not an otg device, will pop Unsupported Device\n");
+		DBG(0, "not an otg device, will pop Unsupported Device\n");
 		g_otg_message.msg = OTG_MSG_DEV_NOT_SUPPORT;
 		msleep(1000);
 	}
@@ -686,7 +686,7 @@ void musb_h_enumerate(void)
 	setup_packet.wLength = 0;
 	musb_h_setup(&setup_packet);
 	musb_h_in_status();
-	pr_debug("set hnp OK!\n");
+	DBG(0, "set hnp OK!\n");
 	/* set configuration */
 	setup_packet.bRequestType = USB_DIR_OUT |
 							USB_TYPE_STANDARD |
@@ -697,7 +697,7 @@ void musb_h_enumerate(void)
 	setup_packet.wLength = 0;
 	musb_h_setup(&setup_packet);
 	musb_h_in_status();
-	pr_debug("set configuration OK!\n");
+	DBG(0, "set configuration OK!\n");
 }
 
 void musb_d_enumerated(void)
@@ -705,9 +705,9 @@ void musb_d_enumerated(void)
 	unsigned char devctl;
 	unsigned short csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
 
-	pr_debug("csr0=0x%x\n", csr0);
+	DBG(0, "csr0=0x%x\n", csr0);
 	if (csr0 & MUSB_CSR0_P_SETUPEND) {
-		pr_debug("SETUPEND\n");
+		DBG(0, "SETUPEND\n");
 		csr0 |= MUSB_CSR0_P_SVDSETUPEND;
 		musb_writeb(mtk_musb->mregs, MUSB_OTG_CSR0, csr0);
 		csr0 &= ~MUSB_CSR0_P_SVDSETUPEND;
@@ -730,7 +730,7 @@ void musb_d_enumerated(void)
 				musb_writew(mtk_musb->mregs,
 						MUSB_OTG_CSR0, csr0);
 				if (musb_polling_ep0_interrupt()) {
-					pr_debug(
+					DBG(0,
 					    "B-UUT:when set address, do not detect ep0 interrupt\n");
 					return;
 				}
@@ -798,12 +798,12 @@ void otg_cmd_a_uut(void)
 	device_enumed = false;
 TD_4_6:
 	musb_otg_reset_usb();
-	pr_debug("A-UUT reset success\n");
+	DBG(0, "A-UUT reset success\n");
 	timeout = jiffies + 5 * HZ;
 	musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 	while ((atomic_read(&g_exec) == 1) && (devctl & 0x18)) {
-		pr_debug("musb::not below session end!\n");
+		DBG(0, "musb::not below session end!\n");
 		msleep(100);
 		if (time_after(jiffies, timeout)) {
 			timeout_flag = true;
@@ -814,13 +814,13 @@ TD_4_6:
 	if (timeout_flag) {
 		timeout_flag = false;
 		musb_otg_reset_usb();
-		pr_debug(
+		BG(0,
 			"timeout for below session end, after reset usb, devctl=0x%x\n",
 		    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
 	}
-	pr_debug("polling session request,begin\n");
+	BG(0, "polling session request,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_SESSREQ);
-	pr_debug("polling session request,done,ret=0x%x\n", ret);
+	pBG(0, "polling session request,done,ret=0x%x\n", ret);
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
 	/* session is set and VBUS will be out. */
@@ -831,17 +831,17 @@ TD_4_6:
 	musb_writeb(mtk_musb->mregs, MUSB_POWER, power);
 #endif
 	/* polling the connect interrupt from B-OPT */
-	pr_debug("polling connect interrupt,begin\n");
+	DBG(0, "polling connect interrupt,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_CONNECT);
-	pr_debug("polling connect interrupt,done,ret=0x%x\n", ret);
+	DBG(0, "polling connect interrupt,done,ret=0x%x\n", ret);
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
 	if (ret == DEV_NOT_CONNECT) {
-		pr_debug("device is not connected in 15s\n");
+		DBG(0, "device is not connected in 15s\n");
 		g_otg_message.msg = OTG_MSG_DEV_NOT_RESPONSE;
 		return TEST_IS_STOP;
 	}
-	pr_debug("musb::connect interrupt is detected!\n");
+	DBG(0, "musb::connect interrupt is detected!\n");
 	/* the test is fail because the reset starts less than100 ms
 	 * from the B-OPT connect. the IF test needs
 	 */
@@ -851,16 +851,16 @@ TD_4_6:
 	musb_h_enumerate();
 	/* suspend the bus */
 	csr0 = musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0);
-	pr_debug("after enum B-OPT,csr0=0x%x\n", csr0);
+	DBG(0, "after enum B-OPT,csr0=0x%x\n", csr0);
 	musb_h_suspend();
 
 	/* polling the disconnect interrupt from B-OPT,
 	 * and remote wakeup(TD.4.8)
 	 */
-	pr_debug("polling disconnect or remote wakeup,begin\n");
+	DBG(0, "polling disconnect or remote wakeup,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_DISCONNECT
 							| MUSB_INTR_RESUME);
-	pr_debug("polling disconnect or remote wakeup,done,ret=0x%x\n", ret);
+	DBG(0, "polling disconnect or remote wakeup,done,ret=0x%x\n", ret);
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
 	if (ret == MUSB_INTR_RESUME) {
@@ -873,9 +873,9 @@ TD_4_6:
 	}
 	/* polling the reset interrupt from B-OPT */
 	if (!(ret & MUSB_INTR_RESET)) {
-		pr_debug("polling reset for B-OPT,begin\n");
+		DBG(0, "polling reset for B-OPT,begin\n");
 		ret = musb_polling_bus_interrupt(MUSB_INTR_RESET);
-		pr_debug("polling reset for B-OPT,done,ret=0x%x\n", ret);
+		DBG(0, "polling reset for B-OPT,done,ret=0x%x\n", ret);
 		if (ret == TEST_IS_STOP)
 			return TEST_IS_STOP;
 		if (ret == DEV_NOT_RESET) {
@@ -885,7 +885,7 @@ TD_4_6:
 		}
 	}
 
-	pr_debug("after receive reset,devctl=0x%x,csr0=0x%x\n",
+	DBG(0, "after receive reset,devctl=0x%x,csr0=0x%x\n",
 	    musb_readb(mtk_musb->mregs, MUSB_DEVCTL),
 		musb_readw(mtk_musb->mregs, MUSB_OTG_CSR0));
 
@@ -925,10 +925,10 @@ TD_4_6:
 		/* return form the switch-case */
 		return TEST_IS_STOP;
 	}
-	pr_debug("polling connect form B-OPT,begin\n");
+	DBG(0, "polling connect form B-OPT,begin\n");
 	/* B-OPT will connect again 100ms after A disconnect */
 	ret = musb_polling_bus_interrupt(MUSB_INTR_CONNECT);
-	pr_debug("polling connect form B-OPT,done,ret=0x%x\n", ret);
+	DBG(0, "polling connect form B-OPT,done,ret=0x%x\n", ret);
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
 	musb_h_reset();		/* should reset bus again, TD.4.7 */
@@ -961,7 +961,7 @@ void otg_cmd_b_uut(void)
 		devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 	}
 	if (timeout_flag) {
-		pr_debug("B-UUT set vbus timeout\n");
+		DBG(0, "B-UUT set vbus timeout\n");
 		g_otg_message.msg = OTG_MSG_DEV_NOT_RESPONSE;
 		timeout_flag = false;
 		return TEST_IS_STOP;
@@ -976,9 +976,9 @@ void otg_cmd_b_uut(void)
 
 	device_enumed = false;
 	/* polling the reset single form the A-OPT */
-	pr_debug("polling reset form A-OPT,begin\n");
+	DBG(0, "polling reset form A-OPT,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_RESET);
-	pr_debug("polling reset form A-OPT,done,ret=0x%x\n", ret);
+	DBG(0, "polling reset form A-OPT,done,ret=0x%x\n", ret);
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
@@ -999,21 +999,21 @@ TD6_13:
 		musb_writeb(mtk_musb->mregs, MUSB_INTRUSB, intrusb);
 		if (intrtx || (intrusb & 0xf7)) {
 			if (intrtx) {
-				/* pr_debug("B-enum,intrtx=0x%x\n",intrtx); */
+				/* DBG(0,"B-enum,intrtx=0x%x\n",intrtx); */
 				if (intrtx & 0x1)
-					pr_debug("ep0 interrupt\n");
+					DBG(0, "ep0 interrupt\n");
 				musb_d_enumerated();
 			}
 			if (intrusb) {
 				if (intrusb & 0xf7)
-					pr_debug(
+					DBG(0,
 						"B-enum,intrusb=0x%x,power=0x%x\n",
 						intrusb,
 						musb_readb(mtk_musb->mregs,
 						MUSB_POWER));
 				if ((device_enumed) &&
 						(intrusb & MUSB_INTR_SUSPEND)) {
-					pr_debug(
+					DBG(0,
 					    "suspend interrupt is received,power=0x%x,devctl=0x%x\n",
 				    musb_readb(mtk_musb->mregs, MUSB_POWER),
 				    musb_readb(mtk_musb->mregs, MUSB_DEVCTL));
@@ -1021,7 +1021,7 @@ TD6_13:
 				}
 			}
 		} else {
-			pr_debug(
+			DBG(0,
 				"power=0x%x,devctl=0x%x,intrtx=0x%x,intrusb=0x%x\n",
 			    musb_readb(mtk_musb->mregs, MUSB_POWER),
 						musb_readb(mtk_musb->mregs,
@@ -1035,22 +1035,22 @@ TD6_13:
 	} while (atomic_read(&g_exec) == 1);
 	if (atomic_read(&g_exec) == 0)
 		return TEST_IS_STOP;
-	pr_debug("hnp start\n");
+	DBG(0, "hnp start\n");
 	if (intrusb & MUSB_INTR_RESUME)
 		goto TD6_13;
 	if (!(intrusb & MUSB_INTR_CONNECT)) {
 		/* polling the connect from A-OPT, the UUT acts as host */
-		pr_debug("polling connect or resume form A-OPT,begin\n");
+		DBG(0, "polling connect or resume form A-OPT,begin\n");
 		ret = musb_polling_bus_interrupt(MUSB_INTR_CONNECT
 							| MUSB_INTR_RESUME);
-		pr_debug("polling connect or resume form A-OPT,done,ret=0x%x\n",
+		DBG(0, "polling connect or resume form A-OPT,done,ret=0x%x\n",
 			ret);
 		if (ret == TEST_IS_STOP)
 			return TEST_IS_STOP;
 		if (ret == MUSB_INTR_RESUME)
 			goto TD6_13;
 		if (ret == DEV_HNP_TIMEOUT) {
-			pr_debug("B-UUT HNP timeout\n");
+			DBG(0, "B-UUT HNP timeout\n");
 			devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 
 			devctl &= ~MUSB_DEVCTL_HR;
@@ -1066,20 +1066,20 @@ TD6_13:
 	/* suspend the bus */
 	musb_h_suspend();
 	/* polling the disconnect interrupt from A-OPT */
-	pr_debug("polling disconnect form A-OPT,begin\n");
+	DBG(0, "polling disconnect form A-OPT,begin\n");
 	ret = musb_polling_bus_interrupt(MUSB_INTR_DISCONNECT);
-	pr_debug("polling disconnect form A-OPT,done,ret=0x%x\n", ret);
+	DBG(0, "polling disconnect form A-OPT,done,ret=0x%x\n", ret);
 
 	if (ret == TEST_IS_STOP)
 		return TEST_IS_STOP;
-	pr_debug("A-OPT is disconnected, UUT will be back to device\n");
+	DBG(0, "A-OPT is disconnected, UUT will be back to device\n");
 	if (!(ret & MUSB_INTR_RESET)) {
 		musb_d_soft_connect(true);
 		/* polling the reset single form the A-OPT */
-		pr_debug("polling reset form A-OPT,begin\n");
+		DBG(0, "polling reset form A-OPT,begin\n");
 		ret = musb_polling_bus_interrupt(MUSB_INTR_RESET);
 		/* musb_d_reset (); */
-		pr_debug("polling reset form A-OPT,done,ret=0x%x\n", ret);
+		DBG(0, "polling reset form A-OPT,done,ret=0x%x\n", ret);
 		if (ret == TEST_IS_STOP)
 			return TEST_IS_STOP;
 	}
@@ -1100,7 +1100,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	unsigned int usb_l1ints;
 
 	if (!mtk_musb) {
-		pr_debug("mtk_musb is NULL,error!\n");
+		DBG(0, "mtk_musb is NULL,error!\n");
 		return false;
 	}
 
@@ -1122,7 +1122,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 	intrusb = musb_readb(mtk_musb->mregs, MUSB_INTRUSB);
-	pr_debug("1:cmd=%d,devctl=0x%x,power=0x%x,intrusb=0x%x\n",
+	DBG(0, "1:cmd=%d,devctl=0x%x,power=0x%x,intrusb=0x%x\n",
 						cmd, devctl, power, intrusb);
 #endif
 	musb_writew(mtk_musb->mregs, MUSB_INTRRX, 0xffff);
@@ -1133,18 +1133,18 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 	power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 	intrusb = musb_readb(mtk_musb->mregs, MUSB_INTRUSB);
-	pr_debug("2:cmd=%d,devctl=0x%x,power=0x%x,intrusb=0x%x\n",
+	DBG(0, "2:cmd=%d,devctl=0x%x,power=0x%x,intrusb=0x%x\n",
 						cmd, devctl, power, intrusb);
 #endif
 	high_speed = false;
 	atomic_set(&g_exec, 1);
 
-	pr_debug("before exec:cmd=%d\n", cmd);
+	DBG(0, "before exec:cmd=%d\n", cmd);
 
 	switch (cmd) {
 		/* electrical */
 	case OTG_CMD_E_ENABLE_VBUS:
-		pr_debug("musb::enable VBUS!\n");
+		DBG(0, "musb::enable VBUS!\n");
 		musb_otg_set_session(true);
 		musb_platform_set_vbus(mtk_musb, 1);
 		while (atomic_read(&g_exec) == 1)
@@ -1153,7 +1153,7 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		musb_platform_set_vbus(mtk_musb, 0);
 		break;
 	case OTG_CMD_E_ENABLE_SRP:	/* need to clear session? */
-		pr_debug("musb::enable srp!\n");
+		DBG(0, "musb::enable srp!\n");
 		musb_otg_reset_usb();
 		{
 			u32 val = 0;
@@ -1177,12 +1177,12 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		musb_writeb(mtk_musb->mregs, MUSB_DEVCTL, 0);
 		devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		while ((atomic_read(&g_exec) == 1) && (devctl & 0x18)) {
-			pr_debug("musb::not below session end!\n");
+			DBG(0, "musb::not below session end!\n");
 			msleep(100);
 			devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		}
 		while ((atomic_read(&g_exec) == 1) && (!(devctl & 0x10))) {
-			pr_debug("musb::not above session end!\n");
+			DBG(0, "musb::not above session end!\n");
 			msleep(100);
 			devctl = musb_readb(mtk_musb->mregs, MUSB_DEVCTL);
 		}
@@ -1198,11 +1198,11 @@ int musb_otg_exec_cmd(unsigned int cmd)
 		musb_writel(mtk_musb->mregs, USB_L1INTP, usb_l1intp);
 		usb_l1ints = musb_readl(mtk_musb->mregs, USB_L1INTS);
 		while ((usb_l1ints & (1 << 8)) == 0) {
-			pr_debug("musb::vbus is 0!\n");
+			DBG(0, "musb::vbus is 0!\n");
 			msleep(100);
 			usb_l1ints = musb_readl(mtk_musb->mregs, USB_L1INTS);
 		}
-		pr_debug("musb::vbus is detected!\n");
+		DBG(0, "musb::vbus is detected!\n");
 		power = musb_readb(mtk_musb->mregs, MUSB_POWER);
 		power |= MUSB_POWER_SOFTCONN;
 		musb_writeb(mtk_musb->mregs, MUSB_POWER, power);
@@ -1214,20 +1214,20 @@ int musb_otg_exec_cmd(unsigned int cmd)
 	case OTG_CMD_P_B_UUT_TD59:
 		is_td_59 = true;
 		if (is_td_59)
-			pr_debug("TD5.9 will be tested!\n");
+			DBG(0, "TD5.9 will be tested!\n");
 		break;
 
 		/* protocal */
 	case OTG_CMD_P_A_UUT:
-		pr_debug("A-UUT starts...\n");
+		DBG(0, "A-UUT starts...\n");
 		otg_cmd_a_uut();
-		pr_debug("the test as A-UUT is done\n");
+		DBG(0, "the test as A-UUT is done\n");
 		break;
 
 	case OTG_CMD_P_B_UUT:
-		pr_debug("B-UUT starts...\n");
+		DBG(0, "B-UUT starts...\n");
 		otg_cmd_b_uut();
-		pr_debug("the test as B_UUT is done\n");
+		DBG(0, "the test as B_UUT is done\n");
 		break;
 
 	case HOST_CMD_TEST_SE0_NAK:
@@ -1242,14 +1242,14 @@ int musb_otg_exec_cmd(unsigned int cmd)
 			msleep(100);
 		break;
 	}
-	pr_debug("musb_otg_exec_cmd--\n");
+	DBG(0, "musb_otg_exec_cmd--\n");
 	return 0;
 
 }
 
 void musb_otg_stop_cmd(void)
 {
-	pr_debug("musb_otg_stop_cmd++\n");
+	DBG(0, "musb_otg_stop_cmd++\n");
 	atomic_set(&g_exec, 0);
 	is_td_59 = false;
 	complete(&stop_event);
@@ -1275,7 +1275,7 @@ void musb_otg_message_cb(void)
 
 static int musb_otg_test_open(struct inode *inode, struct file *file)
 {
-	pr_debug("musb_otg_test_open++\n");
+	DBG(0, "musb_otg_test_open++\n");
 	return 0;
 }
 
@@ -1291,7 +1291,7 @@ ssize_t musb_otg_test_read(struct file *filp,
 	unsigned int message = musb_otg_message();
 
 	if (message)
-		pr_debug("musb_otg_test_read:message=0x%x\n", message);
+		DBG(0, "musb_otg_test_read:message=0x%x\n", message);
 	if (put_user((unsigned int)message, (unsigned int *)buf))
 		ret = -EFAULT;
 	return ret;
@@ -1308,13 +1308,13 @@ ssize_t musb_otg_test_write(struct file *filp,
 		ret = -EFAULT;
 	else {
 		if (value == OTG_STOP_CMD) {
-			pr_debug("musb_otg_test_write::OTG_STOP_CMD\n");
+			DBG(0, "musb_otg_test_write::OTG_STOP_CMD\n");
 			musb_otg_stop_cmd();
 		} else if (value == OTG_INIT_MSG) {
-			pr_debug("musb_otg_test_write::OTG_INIT_MSG\n");
+			DBG(0, "musb_otg_test_write::OTG_INIT_MSG\n");
 			musb_otg_message_cb();
 		} else {
-			pr_debug("musb_otg_test_write::the
+			DBG(0, "musb_otg_test_write::the
 				value is invalid,0x%x\n",
 				value);
 			ret = -EFAULT;
@@ -1328,7 +1328,7 @@ static long musb_otg_test_ioctl
 {
 	int ret = 0;
 
-	pr_debug("musb_otg_test_ioctl:cmd=0x%x\n", cmd);
+	DBG(0, "musb_otg_test_ioctl:cmd=0x%x\n", cmd);
 	ret = musb_otg_exec_cmd(cmd);
 	return (long)ret;
 }
@@ -1374,7 +1374,7 @@ void musb_host_load_testpacket(struct musb *musb)
 {
 	unsigned short csr0 = musb_readw(musb->mregs, 0x102);
 
-	pr_debug("csr0=0x%x\n", csr0);
+	DBG(0, "csr0=0x%x\n", csr0);
 	musb->ignore_disconnect = 1;
 	musb_otg_write_fifo(53, (u8 *) musb_host_test_packet);
 }
@@ -1398,25 +1398,25 @@ void host_test_mode(struct musb *musb, unsigned int wIndex)
 	pr_debug("devctl = 0x%x\n", musb_readb(musb->mregs, MUSB_DEVCTL));
 	switch (wIndex) {
 	case HOST_CMD_TEST_SE0_NAK:
-		pr_debug("TEST_SE0_NAK\n");
+		DBG(0, "TEST_SE0_NAK\n");
 		temp = MUSB_TEST_SE0_NAK;
 		musb_writeb(musb->mregs, MUSB_TESTMODE, temp);
 
 		break;
 	case HOST_CMD_TEST_J:
-		pr_debug("TEST_J\n");
+		DBG(0, "TEST_J\n");
 		temp = MUSB_TEST_J;
 		musb_writeb(musb->mregs, MUSB_TESTMODE, temp);
 
 		break;
 	case HOST_CMD_TEST_K:
-		pr_debug("TEST_K\n");
+		DBG(0, "TEST_K\n");
 		temp = MUSB_TEST_K;
 		musb_writeb(musb->mregs, MUSB_TESTMODE, temp);
 
 		break;
 	case HOST_CMD_TEST_PACKET:
-		pr_debug("TEST_PACKET\n");
+		DBG(0, "TEST_PACKET\n");
 		temp = MUSB_TEST_PACKET;
 		musb_host_load_testpacket(musb);
 		musb_writeb(musb->mregs, MUSB_TESTMODE, temp);
@@ -1425,16 +1425,16 @@ void host_test_mode(struct musb *musb, unsigned int wIndex)
 
 	case HOST_CMD_SUSPEND_RESUME:
 		/* HS_HOST_PORT_SUSPEND_RESUME */
-		pr_debug("HS_HOST_PORT_SUSPEND_RESUME\n");
+		DBG(0, "HS_HOST_PORT_SUSPEND_RESUME\n");
 		msleep(5000);
 		/* the host must continue sending SOFs for 15s */
-		pr_debug("please begin to trigger suspend!\n");
+		DBG(0, "please begin to trigger suspend!\n");
 		msleep(10000);
 		power = musb_readb(musb->mregs, MUSB_POWER);
 		power |= MUSB_POWER_SUSPENDM | MUSB_POWER_ENSUSPEND;
 		musb_writeb(musb->mregs, MUSB_POWER, power);
 		msleep(5000);
-		pr_debug("please begin to trigger resume!\n");
+		DBG(0, "please begin to trigger resume!\n");
 		msleep(10000);
 		power &= ~MUSB_POWER_SUSPENDM;
 		power |= MUSB_POWER_RESUME;
@@ -1447,7 +1447,7 @@ void host_test_mode(struct musb *musb, unsigned int wIndex)
 		break;
 	case HOST_CMD_GET_DESCRIPTOR:
 		/* SINGLE_STEP_GET_DEVICE_DESCRIPTOR setup */
-		pr_debug("SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
+		DBG(0, "SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
 		/* the host issues SOFs for 15s allowing the test engineer
 		 * to raise the scope trigger just above the SOF voltage level.
 		 */
@@ -1456,7 +1456,7 @@ void host_test_mode(struct musb *musb, unsigned int wIndex)
 		break;
 	case HOST_CMD_SET_FEATURE:
 		/* SINGLE_STEP_GET_DEVICE_DESCRIPTOR execute */
-		pr_debug("SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
+		DBG(0, "SINGLE_STEP_GET_DEVICE_DESCRIPTOR\n");
 		/* get device descriptor */
 		musb_h_setup(&setup_packet);
 		msleep(15000);

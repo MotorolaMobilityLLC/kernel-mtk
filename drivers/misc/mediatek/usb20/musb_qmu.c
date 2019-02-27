@@ -57,7 +57,7 @@ static void do_low_power_timer_monitor_work(struct work_struct *work)
 	static int state = IDLE_STAGE;
 	static unsigned int last_trigger_cnt;
 
-	pr_debug("state:%s, last:%d, balanced<%d,%d>\n",
+	DBG(1, "state:%s, last:%d, balanced<%d,%d>\n",
 			state?"RUNNING_STAGE":"IDLE_STAGE",
 			last_trigger_cnt,
 			low_power_timer_total_trigger_cnt,
@@ -134,7 +134,7 @@ static void low_power_timer_wakeup_func(unsigned long data)
 		}
 
 	low_power_timer_activate = 0;
-	pr_debug("sleep forbidden <%d,%d>\n",
+	DBG(1, "sleep forbidden <%d,%d>\n",
 			low_power_timer_total_trigger_cnt,
 			low_power_timer_total_wake_cnt);
 #ifdef TIMER_FUNC_LOCK
@@ -146,7 +146,7 @@ static void low_power_timer_wakeup_func(unsigned long data)
 void try_trigger_low_power_timer(signed int sleep_ms)
 {
 
-	pr_debug("sleep_ms:%d\n", sleep_ms);
+	DBG(1, "sleep_ms:%d\n", sleep_ms);
 	if (sleep_ms <= LOW_POWER_TIMER_MIN_PERIOD ||
 		sleep_ms >= LOW_POWER_TIMER_MAX_PERIOD) {
 		low_power_timer_activate = 0;
@@ -161,7 +161,7 @@ void try_trigger_low_power_timer(signed int sleep_ms)
 		timer = kzalloc(sizeof(struct timer_list), GFP_ATOMIC);
 		if (!timer) {
 			low_power_timer_activate = 0;
-			pr_debug("alloc timer fail\n");
+			DBG(0, "alloc timer fail\n");
 			return;
 		}
 
@@ -175,7 +175,7 @@ void try_trigger_low_power_timer(signed int sleep_ms)
 	mod_timer(&low_power_timer, jiffies + msecs_to_jiffies(sleep_ms));
 #endif
 
-	pr_debug("sleep allowed <%d,%d>, %d ms\n",
+	DBG(1, "sleep allowed <%d,%d>, %d ms\n",
 			low_power_timer_total_trigger_cnt,
 			low_power_timer_total_wake_cnt, sleep_ms);
 
@@ -251,7 +251,7 @@ void lower_power_timer_test_init(void)
 
 void low_power_timer_sleep(unsigned int sleep_ms)
 {
-	pr_debug("sleep(%d) ms\n", sleep_ms);
+	DBG(1, "sleep(%d) ms\n", sleep_ms);
 
 	low_power_timer_activate = 1;
 	if (low_power_timer_mode == 2 && low_power_timer_mode2_option != 0)
@@ -278,7 +278,7 @@ void mtk_host_active_dev_resource_reset(void)
 
 void musb_host_active_dev_add(int addr)
 {
-	pr_debug("devnum:%d\n", addr);
+	DBG(1, "devnum:%d\n", addr);
 	if (!mtk_host_active_dev_table[addr]) {
 		mtk_host_active_dev_table[addr] = 1;
 		mtk_host_active_dev_cnt++;
@@ -311,7 +311,7 @@ int musb_qmu_init(struct musb *musb)
 	mb();
 
 	if (qmu_init_gpd_pool(musb->controller)) {
-		pr_err("[QMU]qmu_init_gpd_pool fail\n");
+		QMU_ERR("[QMU]qmu_init_gpd_pool fail\n");
 		return -1;
 	}
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
@@ -330,7 +330,7 @@ void musb_disable_q_all(struct musb *musb)
 {
 	u32 ep_num;
 
-	pr_notice("disable_q_all\n");
+	QMU_WARN("disable_q_all\n");
 	mtk_host_active_dev_resource_reset();
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
 	low_power_timer_resource_reset();
@@ -408,14 +408,14 @@ irqreturn_t musb_q_irq(struct musb *musb)
 
 void musb_flush_qmu(u32 ep_num, u8 isRx)
 {
-	pr_debug("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
+	QMU_DBG("flush %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 	mtk_qmu_stop(ep_num, isRx);
 	qmu_reset_gpd_pool(ep_num, isRx);
 }
 
 void musb_restart_qmu(struct musb *musb, u32 ep_num, u8 isRx)
 {
-	pr_debug("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
+	QMU_DBG("restart %s(%d)\n", isRx ? "RQ" : "TQ", ep_num);
 	flush_ep_csr(musb, ep_num, isRx);
 	mtk_qmu_enable(musb, ep_num, isRx);
 }
@@ -426,7 +426,7 @@ bool musb_is_qmu_stop(u32 ep_num, u8 isRx)
 
 	/* debug variable to check qmu_base issue */
 	if (qmu_base != qmu_base_2)
-		pr_warn("qmu_base != qmu_base_2, qmu_base = %p, qmu_base_2=%p"
+		QMU_WARN("qmu_base != qmu_base_2, qmu_base = %p, qmu_base_2=%p"
 				, qmu_base, qmu_base_2);
 
 	if (!isRx) {
@@ -454,7 +454,7 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 	int is_timeout = 1;
 	u16 csr;
 
-	pr_notice("TX ZLP direct sent\n");
+	QMU_WARN("TX ZLP direct sent\n");
 	musb_ep_select(mbase, ep_num);
 
 	/* disable dma for pio */
@@ -483,8 +483,8 @@ void musb_tx_zlp_qmu(struct musb *musb, u32 ep_num)
 	musb_writew(epio, MUSB_TXCSR, csr);
 
 	if (is_timeout)
-		pr_err("TX ZLP sent fail???\n");
-	pr_notice("TX ZLP sent done\n");
+		QMU_ERR("TX ZLP sent fail???\n");
+	QMU_WARN("TX ZLP sent done\n");
 }
 #endif
 
@@ -503,21 +503,21 @@ int mtk_kick_CmdQ(struct musb *musb,
 	u32 gpd_free_count = 0;
 
 	if (!urb) {
-		pr_warn("!urb\n");
+		QMU_WARN("!urb\n");
 		return -1; /*KOBE : should we return a value */
 	}
 
 	if (!mtk_is_qmu_enabled(hw_ep->epnum, isRx)) {
-		pr_debug("! mtk_is_qmu_enabled<%d,%s>\n",
+		DBG(0, "! mtk_is_qmu_enabled<%d,%s>\n",
 			hw_ep->epnum, isRx?"RXQ":"TXQ");
 
 		musb_ep_select(mbase, hw_ep->epnum);
 		flush_ep_csr(musb, hw_ep->epnum,  isRx);
 
 		if (isRx) {
-			pr_debug("isRX = 1\n");
+			DBG(4, "isRX = 1\n");
 			if (qh->type == USB_ENDPOINT_XFER_ISOC) {
-				pr_debug("USB_ENDPOINT_XFER_ISOC\n");
+				DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
 				if (qh->hb_mult == 3)
 					musb_writew(epio, MUSB_RXMAXP,
 						qh->maxpacket|0x1000);
@@ -528,7 +528,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 					musb_writew(epio, MUSB_RXMAXP,
 						qh->maxpacket);
 			} else {
-				pr_debug("!! USB_ENDPOINT_XFER_ISOC\n");
+				DBG(4, "!! USB_ENDPOINT_XFER_ISOC\n");
 				musb_writew(epio, MUSB_RXMAXP, qh->maxpacket);
 			}
 
@@ -539,7 +539,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 			musb_writeb(epio, MUSB_RXINTERVAL, qh->intv_reg);
 #ifdef CONFIG_USB_MTK_HDRC
 			if (musb->is_multipoint) {
-				pr_debug("is_multipoint\n");
+				DBG(4, "is_multipoint\n");
 				musb_write_rxfunaddr(musb->mregs, hw_ep->epnum,
 					qh->addr_reg);
 				musb_write_rxhubaddr(musb->mregs, hw_ep->epnum,
@@ -547,7 +547,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 				musb_write_rxhubport(musb->mregs, hw_ep->epnum,
 					qh->h_port_reg);
 			} else {
-				pr_debug("!! is_multipoint\n");
+				DBG(4, "!! is_multipoint\n");
 				musb_writeb(musb->mregs, MUSB_FADDR,
 					qh->addr_reg);
 			}
@@ -566,7 +566,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 				qh->intv_reg);
 #ifdef CONFIG_USB_MTK_HDRC
 			if (musb->is_multipoint) {
-				pr_debug("is_multipoint\n");
+				DBG(4, "is_multipoint\n");
 				musb_write_txfunaddr(mbase, hw_ep->epnum,
 							qh->addr_reg);
 				musb_write_txhubaddr(mbase, hw_ep->epnum,
@@ -575,7 +575,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 							qh->h_port_reg);
 				/* FIXME if !epnum, do the same for RX ... */
 			} else {
-				pr_debug("!! is_multipoint\n");
+				DBG(4, "!! is_multipoint\n");
 				musb_writeb(mbase, MUSB_FADDR, qh->addr_reg);
 			}
 #endif
@@ -589,7 +589,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 			musb_writew(musb->mregs, MUSB_INTRTXE, intr_e);
 		}
 
-		pr_debug("mtk_qmu_enable<%d,%s>\n",
+		DBG(0, "mtk_qmu_enable<%d,%s>\n",
 			hw_ep->epnum, isRx?"RXQ":"TXQ");
 		mtk_qmu_enable(musb, hw_ep->epnum, isRx);
 	}
@@ -598,13 +598,13 @@ int mtk_kick_CmdQ(struct musb *musb,
 	if (qh->type == USB_ENDPOINT_XFER_ISOC) {
 		u32 gpd_used_count;
 
-		pr_debug("USB_ENDPOINT_XFER_ISOC\n");
+		DBG(4, "USB_ENDPOINT_XFER_ISOC\n");
 		pBuffer = urb->transfer_dma;
 
 		if (gpd_free_count < urb->number_of_packets) {
-			pr_debug("gpd_free_count:%d, number_of_packets:%d\n",
+			DBG(0, "gpd_free_count:%d, number_of_packets:%d\n",
 				gpd_free_count, urb->number_of_packets);
-			pr_debug("%s:%d Error Here\n", __func__, __LINE__);
+			DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 			return -ENOSPC;
 		}
 		for (i = 0; i < urb->number_of_packets; i++) {
@@ -613,7 +613,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 			dwLength = urb->iso_frame_desc[i].length;
 			/* If interrupt on complete ? */
 			bIsIoc = (i == (urb->number_of_packets-1)) ? 1 : 0;
-			pr_debug("mtk_qmu_insert_task\n");
+			DBG(4, "mtk_qmu_insert_task\n");
 			mtk_qmu_insert_task(hw_ep->epnum, isRx,
 				pBuffer + offset, dwLength, 0, bIsIoc);
 
@@ -644,7 +644,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 					mtk_host_active_dev_cnt);
 
 #ifdef CONFIG_MTK_UAC_POWER_SAVING
-			pr_debug(
+			DBG(1,
 				"mode:%d, activate:%d, ep:%d-%s, mtk_host_active_dev_cnt:%d\n",
 					low_power_timer_mode,
 					low_power_timer_activate,
@@ -687,18 +687,18 @@ int mtk_kick_CmdQ(struct musb *musb,
 		}
 	} else {
 		/* Must be the bulk transfer type */
-		pr_warn("non isoc\n");
+		QMU_WARN("non isoc\n");
 		pBuffer = urb->transfer_dma;
 		if (urb->transfer_buffer_length < QMU_RX_SPLIT_THRE) {
 			if (gpd_free_count < 1) {
-				pr_debug(
+				DBG(0,
 					"gpd_free_count:%d, number_of_packets:%d\n",
 					gpd_free_count, urb->number_of_packets);
-				pr_debug("%s:%d Error Here\n",
+				DBG(0, "%s:%d Error Here\n",
 					__func__, __LINE__);
 				return -ENOSPC;
 			}
-			pr_debug("urb->transfer_buffer_length : %d\n",
+			DBG(4, "urb->transfer_buffer_length : %d\n",
 				urb->transfer_buffer_length);
 
 			dwLength = urb->transfer_buffer_length;
@@ -714,10 +714,10 @@ int mtk_kick_CmdQ(struct musb *musb,
 				+ QMU_RX_SPLIT_BLOCK_SIZE-1)
 				/(QMU_RX_SPLIT_BLOCK_SIZE);
 			if (gpd_free_count < urb->number_of_packets) {
-				pr_debug(
+				DBG(0,
 					"gpd_free_count:%d, number_of_packets:%d\n",
 					gpd_free_count, urb->number_of_packets);
-				pr_debug("%s:%d Error Here\n"
+				DBG(0, "%s:%d Error Here\n"
 					, __func__, __LINE__);
 				return -ENOSPC;
 			}
@@ -743,6 +743,6 @@ int mtk_kick_CmdQ(struct musb *musb,
 	/*sync register*/
 	mb();
 
-	pr_debug("\n");
+	DBG(4, "\n");
 	return 0;
 }

@@ -55,7 +55,7 @@ static inline u16 musb_readw(const void __iomem *addr, unsigned int offset)
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		rc = readw(addr + offset);
 		usb_enable_clock(false);
@@ -82,7 +82,7 @@ static inline u32
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		rc = readl(addr + offset);
 		usb_enable_clock(false);
@@ -108,7 +108,7 @@ static inline void
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		writew(data, addr + offset);
 		usb_enable_clock(false);
@@ -132,7 +132,7 @@ static inline void
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		writel(data, addr + offset);
 		usb_enable_clock(false);
@@ -157,7 +157,7 @@ static inline u8 musb_readb(const void __iomem *addr, unsigned int offset)
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		rc = readb(addr + offset);
 		usb_enable_clock(false);
@@ -182,7 +182,7 @@ static inline void musb_writeb
 		#endif
 		spin_lock_irqsave(&usb_io_lock, flags);
 		usb_enable_clock(true);
-		pr_debug("[MUSB]:access %s function when usb clock is off 0x%X\n",
+		DBG(1, "[MUSB]:access %s function when usb clock is off 0x%X\n",
 			__func__, offset);
 		writeb(data, addr + offset);
 		usb_enable_clock(false);

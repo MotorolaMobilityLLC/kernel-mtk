@@ -166,13 +166,13 @@ static void configure_channel(struct dma_channel *channel,
 	u8 bchannel = musb_channel->idx;
 	u16 csr = 0;
 
-	pr_debug("%p, pkt_sz %d, addr 0x%x, len %d, mode %d\n",
+	DBG(4, "%p, pkt_sz %d, addr 0x%x, len %d, mode %d\n",
 	    channel, packet_sz, (unsigned int)dma_addr, len, mode);
 
 	if (mode) {
 		csr |= 1 << MUSB_HSDMA_MODE1_SHIFT;
 		if (len < packet_sz) {
-			pr_debug("%s:%d Error Here\n", __func__, __LINE__);
+			DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 			return;
 		}
 	}
@@ -210,7 +210,7 @@ static void configure_channel(struct dma_channel *channel,
 	/* control (this should start things) */
 	musb_writew(mbase,
 		MUSB_HSDMA_CHANNEL_OFFSET(bchannel, MUSB_HSDMA_CONTROL), csr);
-	pr_debug("MUSB:DMA channel %d control reg is %x\n",
+	DBG(5, "MUSB:DMA channel %d control reg is %x\n",
 		bchannel, musb_readw(mbase,
 		MUSB_HSDMA_CHANNEL_OFFSET(bchannel,	MUSB_HSDMA_CONTROL)));
 }
@@ -222,14 +222,14 @@ static int dma_channel_program(struct dma_channel *channel,
 	struct musb_dma_controller *controller = musb_channel->controller;
 	struct musb *musb = controller->private_data;
 
-	pr_debug("ep%d-%s pkt_sz %d, dma_addr 0x%x length %d, mode %d\n",
+	DBG(2, "ep%d-%s pkt_sz %d, dma_addr 0x%x length %d, mode %d\n",
 	    musb_channel->epnum,
 	    musb_channel->transmit ?
 	    "Tx" : "Rx", packet_sz, (unsigned int)dma_addr, len, mode);
 
 	if (channel->status == MUSB_DMA_STATUS_UNKNOWN ||
 	       channel->status == MUSB_DMA_STATUS_BUSY) {
-		pr_debug("%s:%d Error Here\n", __func__, __LINE__);
+		DBG(0, "%s:%d Error Here\n", __func__, __LINE__);
 		return -1;
 	}
 	/* Let targets check/tweak the arguments */
@@ -410,7 +410,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 	/* musb_read_clear_dma_interrupt */
 
 	if (!int_hsdma) {
-		pr_debug("spurious DMA irq\n");
+		DBG(2, "spurious DMA irq\n");
 
 		for (bchannel = 0; bchannel < MUSB_HSDMA_CHANNELS; bchannel++) {
 			musb_channel = (struct musb_dma_channel *)
@@ -427,7 +427,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 			}
 		}
 
-		pr_debug("int_hsdma = 0x%x\n", int_hsdma);
+		DBG(2, "int_hsdma = 0x%x\n", int_hsdma);
 
 		if (!int_hsdma)
 			goto done;
@@ -438,7 +438,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 			musb_channel = (struct musb_dma_channel *)
 			    &(controller->channel[bchannel]);
 			channel = &musb_channel->channel;
-			pr_debug("MUSB:DMA channel %d interrupt\n", bchannel);
+			DBG(1, "MUSB:DMA channel %d interrupt\n", bchannel);
 
 			csr = musb_readw(mbase,
 				MUSB_HSDMA_CHANNEL_OFFSET
@@ -463,7 +463,8 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 				musb_readl(mbase, USB_DMA_REALCOUNT(bchannel));
 #endif
 
-				pr_debug("[MUSB] channel %d ch %p, 0x%p -> 0x%p (%zu / %d) %s\n",
+				DBG(2,
+					"[MUSB] channel %d ch %p, 0x%p -> 0x%p (%zu / %d) %s\n",
 					bchannel,
 				    channel,
 					(void *)(uintptr_t)
@@ -511,7 +512,7 @@ irqreturn_t dma_controller_irq(int irq, void *private_data)
 			}
 		}
 	}
-	pr_debug("[MUSB] DMA interrupt completino on ep\n");
+	DBG(4, "MUSB: DMA interrupt completino on ep\n");
 
 	retval = IRQ_HANDLED;
 done:
@@ -540,7 +541,7 @@ struct dma_controller *dma_controller_create
 	int irq = musb->dma_irq;
 
 	if ((irq <= 0) && (irq != SHARE_IRQ)) {
-		pr_debug("[MUSB] No DMA interrupt line!\n");
+		DBG(0, "[MUSB] No DMA interrupt line!\n");
 		return NULL;
 	}
 
@@ -566,7 +567,7 @@ struct dma_controller *dma_controller_create
 	if (irq != SHARE_IRQ) {
 		if (request_irq(irq, dma_controller_irq, 0,
 			dev_name(musb->controller), &controller->controller)) {
-			pr_debug("[MUSB] request_irq %d failed!\n", irq);
+			DBG(0, "request_irq %d failed!\n", irq);
 			dma_controller_destroy(&controller->controller);
 
 			return NULL;
