@@ -606,8 +606,9 @@ static ssize_t adsp_A_dump_show(struct file *filep, struct kobject *kobj,
 	threshold2 = threshold1 + ADSP_A_CFG_SIZE;
 	threshold3 = threshold2 + sys_memsize;
 	threshold4 = threshold3 + core_memsize;
+#if ADSP_TRAX
 	threshold5 = threshold4 + adsp_get_trax_length();
-
+#endif
 	mutex_lock(&adsp_A_excep_dump_mutex);
 
 	/* IF ADSP in suspend enable clk to dump*/
