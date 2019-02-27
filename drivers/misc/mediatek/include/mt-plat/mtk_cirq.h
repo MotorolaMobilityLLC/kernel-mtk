@@ -87,5 +87,6 @@ void mt_cirq_clone_gic(void);
 void mt_cirq_flush(void);
 int mt_cirq_test(void);
 void mt_cirq_dump_reg(void);
+void set_wakeup_sources(u32 *list, u32 num_events);
 
 #endif  /*!__CIRQ_H__ */
