@@ -60,6 +60,7 @@ static DEFINE_SPINLOCK(cmdq_record_lock);
 #ifdef CMDQ_TIMER_ENABLE
 static DEFINE_SPINLOCK(cmdq_delay_thd_lock);
 #endif
+static DEFINE_SPINLOCK(cmdq_first_err_lock);
 
 /* callbacks */
 static BLOCKING_NOTIFIER_HEAD(cmdq_status_dump_notifier);
@@ -1053,7 +1054,10 @@ int cmdq_core_print_status_seq(struct seq_file *m, void *v)
 			   nowTM.tm_sec, cmdq_first_err.savetv.tv_usec);
 		seq_printf(m, " Pid:%d Name:%s\n", cmdq_first_err.callerPid,
 			cmdq_first_err.callerName);
-		seq_printf(m, "%s", cmdq_first_err.cmdqString);
+		if (cmdq_first_err.cmdqString)
+			seq_printf(m, "%s", cmdq_first_err.cmdqString);
+		else
+			seq_puts(m, "\nWARNING: first error unavailable\n");
 		if (cmdq_first_err.cmdqMaxSize <= 0)
 			seq_printf(m, "\nWARNING: MAX size:%d is full\n",
 			CMDQ_MAX_FIRSTERROR);
@@ -1342,16 +1346,31 @@ s32 cmdq_core_save_first_dump(const char *string, ...)
 	int logLen;
 	va_list argptr;
 	char *buffer;
+	unsigned long flags;
 
 	if (!cmdq_first_err.flag)
 		return -EFAULT;
 
+	spin_lock_irqsave(&cmdq_first_err_lock, flags);
+
+	if (!cmdq_first_err.cmdqString) {
+		cmdq_first_err.cmdqString = kmalloc(CMDQ_MAX_FIRSTERROR,
+			GFP_ATOMIC);
+		if (!cmdq_first_err.cmdqString) {
+			spin_unlock_irqrestore(&cmdq_first_err_lock, flags);
+			cmdq_first_err.flag = false;
+			CMDQ_LOG("[ERR] Error0 dump buffer allocate fail\n");
+			return -ENOMEM;
+		}
+	}
+
 	va_start(argptr, string);
 	buffer = cmdq_first_err.cmdqString + cmdq_first_err.cmdqCount;
-	logLen = vsnprintf(buffer, cmdq_first_err.cmdqMaxSize, string,
-		argptr);
+	logLen = vsnprintf(buffer, cmdq_first_err.cmdqMaxSize, string, argptr);
 	cmdq_first_err.cmdqMaxSize -= logLen;
 	cmdq_first_err.cmdqCount += logLen;
+
+	spin_unlock_irqrestore(&cmdq_first_err_lock, flags);
 
 	if (cmdq_first_err.cmdqMaxSize <= 0) {
 		cmdq_first_err.flag = false;
