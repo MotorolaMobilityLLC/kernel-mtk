@@ -28,6 +28,7 @@ struct ui_pid_info {
 	struct rb_node rb_node;
 	struct list_head render_list;
 	int ui_pid;
+	int render_method;
 };
 
 struct connect_api_info {
