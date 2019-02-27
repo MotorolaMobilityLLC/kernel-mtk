@@ -2326,9 +2326,9 @@ static void musb_pullup(struct musb *musb, int is_on, bool usb_in)
 	if (musb->power) {
 		power = musb_readb(musb->mregs, MUSB_POWER);
 		if (is_on)
-			power |= MUSB_POWER_SOFTCONN;
+			power |= (MUSB_POWER_SOFTCONN | MUSB_POWER_ENSUSPEND);
 		else
-			power &= ~MUSB_POWER_SOFTCONN;
+			power &= ~(MUSB_POWER_SOFTCONN | MUSB_POWER_ENSUSPEND);
 		musb_writeb(musb->mregs, MUSB_POWER, power);
 	}
 	DBG(0, "MUSB: gadget pull up %d end\n", is_on);
