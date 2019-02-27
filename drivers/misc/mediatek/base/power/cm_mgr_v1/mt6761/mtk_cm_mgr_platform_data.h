@@ -57,15 +57,16 @@ static int light_load_cps = 1000;
 static int cm_mgr_loop_count;
 static int cm_mgr_loop;
 static int total_bw_value;
-static int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
-static int cpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
+int cpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
+int cpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
 int vcore_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
 static int gpu_power_ratio_up[CM_MGR_EMI_OPP] = {100, 100};
 static int gpu_power_ratio_down[CM_MGR_EMI_OPP] = {100, 100};
-static int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
-static int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
+int debounce_times_up_adb[CM_MGR_EMI_OPP] = {0, 3};
+int debounce_times_down_adb[CM_MGR_EMI_OPP] = {0, 3};
 static int debounce_times_reset_adb;
+int debounce_times_perf_down = 100;
 static int update;
 static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
@@ -551,7 +552,8 @@ static unsigned int cpu_power_gain_DownHigh3[][CM_MGR_CPU_ARRAY_SIZE] = {
 static unsigned int *cpu_power_gain_up = CPU_POWER_GAIN(Up, High, 0);
 static unsigned int *cpu_power_gain_down = CPU_POWER_GAIN(Down, High, 0);
 
-extern void __iomem *chipid_base;
+#include <mt-plat/mtk_chip.h>
+
 static int cm_get_version = -1;
 static int get_version(void)
 {
@@ -560,12 +562,12 @@ static int get_version(void)
 	if (cm_get_version >= 0)
 		return cm_get_version;
 
-	val = cm_mgr_read(chipid_base + 0x8) & 0xffff;
+	val = mt_get_chip_sw_ver();
 
-	if (val == 0xca00)
-		cm_get_version = 0;
-	else if (val == 0xca01)
+	if (val >= CHIP_SW_VER_02)
 		cm_get_version = 1;
+	else if (val >= CHIP_SW_VER_01)
+		cm_get_version = 0;
 
 	return cm_get_version;
 }
