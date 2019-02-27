@@ -28,8 +28,8 @@ endif
 # Enable AEE
 ccflags-y += -DCMDQ_AEE_READY
 
-ifneq ($(TARGET_BUILD_VARIANT),eng)
-ccflags-y += -D_MTK_USER_
+ifeq ($(TARGET_BUILD_VARIANT),eng)
+ccflags-y += -DCMDQ_DEBUG
 endif
 
 ifneq ($(TARGET_BUILD_VARIANT),user)
