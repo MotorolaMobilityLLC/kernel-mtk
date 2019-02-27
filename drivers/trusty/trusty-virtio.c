@@ -46,6 +46,8 @@ struct trusty_ctx {
 	struct notifier_block	call_notifier;
 	struct list_head	vdev_list;
 	struct mutex		mlock; /* protects vdev_list */
+	struct workqueue_struct	*kick_wq;
+	struct workqueue_struct	*check_wq;
 };
 
 struct trusty_vring {
@@ -58,7 +60,8 @@ struct trusty_vring {
 	atomic_t		needs_kick;
 	struct fw_rsc_vdev_vring *vr_descr;
 	struct virtqueue	*vq;
-	struct trusty_vdev      *tvdev;
+	struct trusty_vdev	*tvdev;
+	struct trusty_nop	kick_nop;
 };
 
 struct trusty_vdev {
@@ -97,7 +100,7 @@ static int trusty_call_notify(struct notifier_block *nb,
 		return NOTIFY_DONE;
 
 	tctx = container_of(nb, struct trusty_ctx, call_notifier);
-	schedule_work(&tctx->check_vqs);
+	queue_work(tctx->check_wq, &tctx->check_vqs);
 
 	return NOTIFY_OK;
 }
@@ -141,9 +144,14 @@ static bool trusty_virtio_notify(struct virtqueue *vq)
 	struct trusty_vring *tvr = vq->priv;
 	struct trusty_vdev *tvdev = tvr->tvdev;
 	struct trusty_ctx *tctx = tvdev->tctx;
+	u32 api_ver = trusty_get_api_version(tctx->dev->parent);
 
-	atomic_set(&tvr->needs_kick, 1);
-	schedule_work(&tctx->kick_vqs);
+	if (api_ver < TRUSTY_API_VERSION_SMP_NOP) {
+		atomic_set(&tvr->needs_kick, 1);
+		queue_work(tctx->kick_wq, &tctx->kick_vqs);
+	} else {
+		trusty_enqueue_nop(tctx->dev->parent, &tvr->kick_nop);
+	}
 
 	return true;
 }
@@ -220,6 +228,7 @@ static int trusty_virtio_finalize_features(struct virtio_device *vdev)
 
 	/* Make sure we don't have any features > 32 bits! */
 	BUG_ON((u32)vdev->features != vdev->features);
+
 	tvdev->vdev_descr->gfeatures = vdev->features;
 	return 0;
 }
@@ -265,6 +274,9 @@ static void _del_vqs(struct virtio_device *vdev)
 	struct trusty_vring *tvr = &tvdev->vrings[0];
 
 	for (i = 0; i < tvdev->vring_num; i++, tvr++) {
+		/* dequeue kick_nop */
+		trusty_dequeue_nop(tvdev->tctx->dev->parent, &tvr->kick_nop);
+
 		/* delete vq */
 		if (tvr->vq) {
 			vring_del_virtqueue(tvr->vq);
@@ -292,6 +304,7 @@ static struct virtqueue *_find_vq(struct virtio_device *vdev,
 {
 	struct trusty_vring *tvr;
 	struct trusty_vdev *tvdev = vdev_to_tvdev(vdev);
+	phys_addr_t pa;
 
 	if (!name)
 		return ERR_PTR(-EINVAL);
@@ -305,14 +318,19 @@ static struct virtqueue *_find_vq(struct virtio_device *vdev,
 	tvr->size = PAGE_ALIGN(vring_size(tvr->elem_num, tvr->align));
 
 	/* allocate memory for the vring. */
-	tvr->vaddr = alloc_pages_exact(tvr->size, GFP_KERNEL | __GFP_ZERO | GFP_DMA);
+	tvr->vaddr = alloc_pages_exact(tvr->size, GFP_KERNEL | __GFP_ZERO);
 	if (!tvr->vaddr) {
 		dev_err(&vdev->dev, "vring alloc failed\n");
 		return ERR_PTR(-ENOMEM);
 	}
 
+	pa = virt_to_phys(tvr->vaddr);
 	/* save vring address to shared structure */
-	tvr->vr_descr->da = (u32)virt_to_phys(tvr->vaddr);
+	tvr->vr_descr->da = (u32)pa;
+	/* da field is only 32 bit wide. Use previously unused 'reserved' field
+	 * to store top 32 bits of 64-bit address
+	 */
+	tvr->vr_descr->pa = (u32)((u64)pa >> 32);
 
 	dev_info(&vdev->dev, "vring%d: va(pa)  %p(%llx) qsz %d notifyid %d\n",
 		 id, tvr->vaddr, (u64)tvr->paddr, tvr->elem_num, tvr->notifyid);
@@ -339,7 +357,7 @@ err_new_virtqueue:
 static int trusty_virtio_find_vqs(struct virtio_device *vdev, unsigned nvqs,
 				  struct virtqueue *vqs[],
 				  vq_callback_t *callbacks[],
-				  const char *names[])
+				  const char * const names[])
 {
 	uint i;
 	int ret;
@@ -412,6 +430,8 @@ static int trusty_virtio_add_device(struct trusty_ctx *tctx,
 		tvr->align    = vr_descr->align;
 		tvr->elem_num = vr_descr->num;
 		tvr->notifyid = vr_descr->notifyid;
+		trusty_nop_init(&tvr->kick_nop, SMC_NC_VDEV_KICK_VQ,
+				tvdev->notifyid, tvr->notifyid);
 	}
 
 	/* register device */
@@ -542,7 +562,7 @@ static int trusty_virtio_add_devices(struct trusty_ctx *tctx)
 
 	/* allocate buffer to load device descriptor into */
 	descr_buf_sz = PAGE_SIZE;
-	descr_va = alloc_pages_exact(descr_buf_sz, GFP_KERNEL | __GFP_ZERO | GFP_DMA);
+	descr_va = alloc_pages_exact(descr_buf_sz, GFP_KERNEL | __GFP_ZERO);
 	if (!descr_va) {
 		dev_err(tctx->dev, "Failed to allocate shared area\n");
 		return -ENOMEM;
@@ -626,6 +646,21 @@ static int trusty_virtio_probe(struct platform_device *pdev)
 	INIT_WORK(&tctx->kick_vqs, kick_vqs);
 	platform_set_drvdata(pdev, tctx);
 
+	tctx->check_wq = alloc_workqueue("trusty-check-wq", WQ_UNBOUND, 0);
+	if (!tctx->check_wq) {
+		ret = -ENODEV;
+		dev_info(&pdev->dev, "Failed create trusty-check-wq\n");
+		goto err_create_check_wq;
+	}
+
+	tctx->kick_wq = alloc_workqueue("trusty-kick-wq",
+					WQ_UNBOUND | WQ_CPU_INTENSIVE, 0);
+	if (!tctx->kick_wq) {
+		ret = -ENODEV;
+		dev_info(&pdev->dev, "Failed create trusty-kick-wq\n");
+		goto err_create_kick_wq;
+	}
+
 	ret = trusty_virtio_add_devices(tctx);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to add virtio devices\n");
@@ -636,6 +671,10 @@ static int trusty_virtio_probe(struct platform_device *pdev)
 	return 0;
 
 err_add_devices:
+	destroy_workqueue(tctx->kick_wq);
+err_create_kick_wq:
+	destroy_workqueue(tctx->check_wq);
+err_create_check_wq:
 	kfree(tctx);
 	return ret;
 }
@@ -654,6 +693,10 @@ static int trusty_virtio_remove(struct platform_device *pdev)
 	/* remove virtio devices */
 	trusty_virtio_remove_devices(tctx);
 	cancel_work_sync(&tctx->kick_vqs);
+
+	/* destroy workqueues */
+	destroy_workqueue(tctx->kick_wq);
+	destroy_workqueue(tctx->check_wq);
 
 	/* notify remote that shared area goes away */
 	trusty_virtio_stop(tctx, tctx->shared_va, tctx->shared_sz);
