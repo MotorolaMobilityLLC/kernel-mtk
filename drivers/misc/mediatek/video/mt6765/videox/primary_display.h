@@ -261,7 +261,6 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle rdma_buff_info;
 	cmdqBackupSlotHandle ovl_status_info;
 	cmdqBackupSlotHandle ovl_dummy_info;
-	cmdqBackupSlotHandle ovl_sbch_trans_invalid;
 	cmdqBackupSlotHandle ovl_config_time;
 	cmdqBackupSlotHandle dither_status_info;
 	cmdqBackupSlotHandle dsi_vfp_line;
