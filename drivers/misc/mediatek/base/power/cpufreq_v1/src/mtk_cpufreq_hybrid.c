@@ -779,8 +779,13 @@ int cpuhvfs_set_iccs_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	p = id_to_cpu_dvfs(id);
 
+#ifdef DVFS_CLUSTER_REMAPPING
+	cluster = (id == MT_CPU_DVFS_LL) ? DVFS_CLUSTER_LL :
+		(id == MT_CPU_DVFS_L) ? DVFS_CLUSTER_L : DVFS_CLUSTER_B;
+#else
 	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
 		(id == MT_CPU_DVFS_L) ? 1 : 2;
+#endif
 
 	cpufreq_ver("ICCS: cluster = %d, freq = %d\n", cluster, freq);
 
@@ -803,8 +808,13 @@ int cpuhvfs_set_cluster_load_freq(enum mt_cpu_dvfs_id id, unsigned int freq)
 
 	p = id_to_cpu_dvfs(id);
 
+#ifdef DVFS_CLUSTER_REMAPPING
+	cluster = (id == MT_CPU_DVFS_LL) ? DVFS_CLUSTER_LL :
+		(id == MT_CPU_DVFS_L) ? DVFS_CLUSTER_L : DVFS_CLUSTER_B;
+#else
 	cluster = (id == MT_CPU_DVFS_LL) ? 0 :
 		(id == MT_CPU_DVFS_L) ? 1 : 2;
+#endif
 
 	cpufreq_ver("sched: cluster = %d, freq = %d\n", cluster, freq);
 
