@@ -126,11 +126,13 @@ struct ioctl_ion {
 	__u64 khandle;  /* [in(unmap)/out(map)] kernel handle */
 	size_t len;     /* [in] memory size */
 };
+
 struct mdla_power {
 	uint8_t boost_value;
 	/* align with core index defined in user space header file */
 	unsigned int core;
 };
+
 enum MDLA_OPP_PRIORIYY {
 	MDLA_OPP_DEBUG = 0,
 	MDLA_OPP_THERMAL = 1,
@@ -172,4 +174,9 @@ struct mdla_lock_power {
 #define IOCTL_POWER_HAL_LOCK_POWER _IOW(IOC_MDLA, 19, struct mdla_lock_power)
 #define IOCTL_EARA_UNLOCK_POWER   _IOW(IOC_MDLA, 20, struct mdla_lock_power)
 #define IOCTL_POWER_HAL_UNLOCK_POWER _IOW(IOC_MDLA, 21, struct mdla_lock_power)
+
+#define MDLA_DVFS_IOCTL_START IOCTL_SET_POWER
+#define MDLA_DVFS_IOCTL_END   IOCTL_POWER_HAL_UNLOCK_POWER
+
 #endif
+
