@@ -2085,7 +2085,7 @@ int BattThermistorConverTemp(int Res)
 unsigned int TempToBattVolt(int temp, int update)
 {
 	unsigned int R_NTC = TempConverBattThermistor(temp);
-	long long Vin = 0;
+	unsigned long long Vin = 0;
 	long long V_IR_comp = 0;
 	/*int vbif28 = pmic_get_auxadc_value(AUXADC_LIST_VBIF);*/
 	int vbif28 = RBAT_PULL_UP_VOLT;
@@ -2128,8 +2128,8 @@ unsigned int TempToBattVolt(int temp, int update)
 
 int BattVoltToTemp(int dwVolt, int volt_cali)
 {
-	long long TRes_temp;
-	long long TRes;
+	unsigned long long TRes_temp;
+	unsigned long long TRes;
 	int sBaTTMP = -100;
 	int vbif28 = RBAT_PULL_UP_VOLT;
 	int delta_v;

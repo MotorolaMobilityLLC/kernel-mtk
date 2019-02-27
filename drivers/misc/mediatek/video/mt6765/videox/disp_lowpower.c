@@ -880,7 +880,7 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 static int _primary_path_idlemgr_monitor_thread(void *data)
 {
 	int ret = 0;
-	long long interval = 0;
+	unsigned long long interval = 0;
 	unsigned long long time_diff;
 
 	msleep(16000);

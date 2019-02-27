@@ -438,7 +438,9 @@ int i2c_get_dma_buffer_addr(void **va,
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
 	*va = i2c->dma_buf.vaddr;
 	*pa_l = i2c->dma_buf.paddr;
+#ifdef CONFIG_COMPAT
 	*pa_h = (i2c->dma_buf.paddr >> 32);
+#endif
 	*i2c_id = i2c->id;
 	LOG_DBG_MUST("got i2c buf: %p %d %d %d\n",
 		*va, *pa_l, *pa_h, *i2c_id);
@@ -616,9 +618,12 @@ static int ccu_reset_i2c_apdma(struct mt_i2c *i2c)
 	i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
 	i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
 	i2c_writel_dma((u32) i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+
+#ifdef CONFIG_COMPAT
 	if ((i2c->dev_comp->dma_support >= 2))
 		i2c_writel_dma(i2c->dma_buf.paddr >> 32,
 			i2c, OFFSET_TX_MEM_ADDR2);
+#endif
 
 	/*write ap mda tx len = 128(must > totoal tx len within a frame)*/
 	i2c_writel_dma(CCU_I2C_APDMA_TXLEN, i2c, OFFSET_TX_LEN);
