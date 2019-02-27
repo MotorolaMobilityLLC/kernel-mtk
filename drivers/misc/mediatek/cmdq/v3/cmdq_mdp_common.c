@@ -15,6 +15,7 @@
 #include "cmdq_device.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
+#include "cmdq_sec.h"
 #ifdef CMDQ_PROFILE_MMP
 #include "cmdq_mmp.h"
 #endif
@@ -624,7 +625,8 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 	mdp_ctx.thread[thread].task_count--;
 
 	/* if no task on thread, release to cmdq core */
-	if (!mdp_ctx.thread[thread].task_count) {
+	/* no need to release thread since secure path use static thread */
+	if (!mdp_ctx.thread[thread].task_count && !handle->secData.is_secure) {
 		cmdq_core_release_thread(handle->scenario, thread);
 		mdp_ctx.thread[thread].acquired = false;
 	}
@@ -655,20 +657,16 @@ static void cmdq_mdp_handle_unprepare(struct cmdqRecStruct *handle)
 	/* only handle if this handle run by mdp flush and thread
 	 * unlock thread usage when cmdq ending this handle
 	 */
-	if (mdp_ctx.thread[handle->thread].acquired)
-		cmdq_mdp_unlock_thread(handle);
+	cmdq_mdp_unlock_thread(handle);
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-static s32 cmdq_mdp_check_engine_waiting(struct cmdqRecStruct *handle)
+static s32 cmdq_mdp_check_engine_waiting_unlock(struct cmdqRecStruct *handle)
 {
 	struct cmdqRecStruct *entry;
 	const u64 engine_flag = handle->engineFlag;
-	struct cmdqRecStruct *waiting_handle;
-	bool is_secure;
-
-	/* operation for tasks_wait list need task mutex */
-	mutex_lock(&mdp_task_mutex);
+	struct cmdqRecStruct *waiting_handle = NULL;
+	bool is_secure = false;
 
 	list_for_each_entry(entry, &mdp_ctx.tasks_wait, list_entry) {
 		if (engine_flag & entry->engineFlag) {
@@ -677,7 +675,6 @@ static s32 cmdq_mdp_check_engine_waiting(struct cmdqRecStruct *handle)
 			break;
 		}
 	}
-	mutex_unlock(&mdp_task_mutex);
 
 	/* same engine does not exist in waiting list */
 	if (!waiting_handle)
@@ -754,10 +751,12 @@ static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
 	const u32 max_thd = cmdq_dev_get_thread_count();
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
-	if (cmdq_mdp_check_engine_waiting(handle) < 0)
+	if (cmdq_mdp_check_engine_waiting_unlock(handle) < 0)
 		return CMDQ_INVALID_THREAD;
-#endif
 
+	if (handle->secData.is_secure)
+		return handle->ctrl->get_thread_id(handle->scenario);
+#endif
 	conflict = cmdq_mdp_check_engine_conflict(handle, &thread);
 	if (conflict) {
 		CMDQ_LOG(
@@ -955,6 +954,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	struct cmdqRecStruct *handle;
 	struct task_private *private;
 	s32 err;
+	u32 copy_size;
 
 	CMDQ_SYSTRACE_BEGIN("%s\n", __func__);
 
@@ -981,23 +981,21 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 		handle->prop_size = 0;
 	}
 
-	if (desc->regRequest.count &&
-		desc->regRequest.count <= CMDQ_MAX_DUMP_REG_COUNT &&
-		desc->regRequest.regAddresses) {
-		u32 copy_size = desc->blockSize - 2 * CMDQ_INST_SIZE;
-
-		/* no need append other instruction, copy all */
-		if (copy_size > 0) {
-			err = cmdq_mdp_copy_cmd_to_task(handle,
-				(void *)(unsigned long)desc->pVABase,
-				copy_size, user_space);
-			if (err < 0) {
-				cmdq_task_destroy(handle);
-				CMDQ_SYSTRACE_END();
-				return err;
-			}
+	copy_size = desc->blockSize - 2 * CMDQ_INST_SIZE;
+	if (copy_size > 0) {
+		err = cmdq_mdp_copy_cmd_to_task(handle,
+			(void *)(unsigned long)desc->pVABase,
+			copy_size, user_space);
+		if (err < 0) {
+			cmdq_task_destroy(handle);
+			CMDQ_SYSTRACE_END();
+			return err;
 		}
+	}
 
+	if (desc->regRequest.count &&
+			desc->regRequest.count <= CMDQ_MAX_DUMP_REG_COUNT &&
+			desc->regRequest.regAddresses) {
 		err = cmdq_task_append_backup_reg(handle,
 			desc->regRequest.count,
 			(u32 *)(unsigned long)desc->regRequest.regAddresses);
@@ -1006,25 +1004,22 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 			CMDQ_SYSTRACE_END();
 			return err;
 		}
+	}
 
-		err = cmdq_mdp_copy_cmd_to_task(handle,
-			(void *)(unsigned long)desc->pVABase + copy_size,
-			2 * CMDQ_INST_SIZE, user_space);
-		if (err < 0) {
-			cmdq_task_destroy(handle);
-			CMDQ_SYSTRACE_END();
-			return err;
-		}
-	} else {
-		/* no need append other instruction, copy all */
-		err = cmdq_mdp_copy_cmd_to_task(handle,
-			(void *)(unsigned long)desc->pVABase,
-			desc->blockSize, user_space);
-		if (err < 0) {
-			cmdq_task_destroy(handle);
-			CMDQ_SYSTRACE_END();
-			return err;
-		}
+#ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+	if (handle->secData.is_secure) {
+		/* insert backup cookie cmd */
+		cmdq_sec_insert_backup_cookie_instr(handle, handle->thread);
+	}
+#endif
+
+	err = cmdq_mdp_copy_cmd_to_task(handle,
+		(void *)(unsigned long)desc->pVABase + copy_size,
+		2 * CMDQ_INST_SIZE, user_space);
+	if (err < 0) {
+		cmdq_task_destroy(handle);
+		CMDQ_SYSTRACE_END();
+		return err;
 	}
 
 	/* mark finalized since we copy it */

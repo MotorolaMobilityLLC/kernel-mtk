@@ -48,7 +48,7 @@
 #define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x890)
 #else
 /* use DUMMY_3(0x89C) because DUMMY_0/1 is CLKMGR SW */
-#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x8B0)
+#define CMDQ_TEST_MMSYS_DUMMY_OFFSET (0x40C)
 #endif
 
 #define CMDQ_TEST_MMSYS_DUMMY_PA (0x14000000 + CMDQ_TEST_MMSYS_DUMMY_OFFSET)
@@ -443,7 +443,7 @@ static void testcase_errors(void)
 		cmdq_op_wait(handle, CMDQ_EVENT_MDP_RSZ0_EOF);
 		cmdq_task_flush(handle);
 		cmdq_core_reset_first_dump();
-
+#if 0
 		CMDQ_LOG("=============== INIFINITE JUMP ===============\n");
 
 		/* HW timeout */
@@ -458,6 +458,7 @@ static void testcase_errors(void)
 		msleep_interruptible(500);
 		ret = cmdq_pkt_wait_flush_ex_result(handle);
 		cmdq_core_reset_first_dump();
+#endif
 
 		CMDQ_LOG("=============== POLL INIFINITE ===============\n");
 
@@ -1899,6 +1900,49 @@ static void testcase_write_with_mask(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+static void testcase_cross_4k_buffer(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	const u32 PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
+	u32 value = 0;
+	unsigned long dummy_va, dummy_pa;
+	u32 i;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
+	/* set to 0xFFFFFFFF */
+	CMDQ_REG_SET32((void *)dummy_va, ~0);
+	CMDQ_LOG("set reg=%lx to val=%x\n", dummy_va,
+		CMDQ_REG_GET32((void *)dummy_va));
+
+	/* use CMDQ to set to PATTERN */
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_task_set_secure(handle, gCmdqTestSecure);
+	for (i = 0; i < 500; i++)
+		cmdq_op_write_reg(handle, dummy_pa, PATTERN, ~0);
+	cmdq_task_flush(handle);
+	cmdq_task_destroy(handle);
+
+	/* value check */
+	value = CMDQ_REG_GET32((void *)dummy_va);
+	if (value != PATTERN) {
+		/* test fail */
+		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x not 0x%08x\n",
+			value, PATTERN);
+	}
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
 static void testcase_write(void)
 {
 	struct cmdqRecStruct *handle = NULL;
@@ -2095,9 +2139,16 @@ static void testcase_get_result(void)
 		(void *)(unsigned long)desc.pVABase, desc.blockSize);
 
 	ret = cmdq_mdp_flush_async(&desc, false, &handle);
+	if (ret)
+		CMDQ_ERR("handle=%p flush failed, ret=%d\n", handle, ret);
+
 	if (handle) {
 		cmdq_pkt_dump_command(handle);
 		ret = cmdq_mdp_wait(handle, &desc.regValue);
+		if (ret)
+			CMDQ_ERR(
+				"handle=%p wait failed, ret=%d\n",
+				handle, ret);
 	}
 
 	if (CMDQ_U32_PTR(desc.regValue.regValues)[0] != 0xdeaddead) {
@@ -3001,6 +3052,51 @@ static void testcase_timeout_reorder_test(void)
 	handle->pkt->priority = 4;
 	cmdq_task_flush_async(handle);
 	cmdq_task_destroy(handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testcase_error_irq_for_secure(void)
+{
+	struct cmdqRecStruct *handle = NULL;
+	const u32 PATTERN = (1 << 0) | (1 << 2) | (1 << 16);
+	u32 value = 0;
+	unsigned long dummy_va, dummy_pa;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	if (gCmdqTestSecure) {
+		dummy_va = CMDQ_TEST_MMSYS_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_MMSYS_DUMMY_PA;
+	} else {
+		dummy_va = CMDQ_TEST_GCE_DUMMY_VA;
+		dummy_pa = CMDQ_TEST_GCE_DUMMY_PA;
+	}
+
+	/* set to 0xFFFFFFFF */
+	CMDQ_REG_SET32((void *)dummy_va, ~0);
+	CMDQ_LOG("set reg=%lx to val=%x\n", dummy_va,
+		CMDQ_REG_GET32((void *)dummy_va));
+
+	/* use CMDQ to set to PATTERN */
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	cmdq_task_reset(handle);
+	cmdq_task_set_secure(handle, gCmdqTestSecure);
+	cmdq_op_write_reg(handle, dummy_pa, PATTERN, ~0);
+	cmdq_append_command(handle, CMDQ_CODE_JUMP, 0, 8, 0, 0);
+	cmdq_append_command(handle, CMDQ_CODE_JUMP, 0, 8, 0, 0);
+	cmdq_pkt_append_command(handle->pkt, 0, 0xdead, 0xddaa,
+		0, 0, 0, 0, 0x87);
+	cmdq_task_flush(handle);
+	cmdq_task_destroy(handle);
+
+	/* value check */
+	value = CMDQ_REG_GET32((void *)dummy_va);
+	if (value != PATTERN) {
+		/* test fail */
+		CMDQ_ERR("TEST FAIL: wrote value is 0x%08x not 0x%08x\n",
+			value, PATTERN);
+	}
 
 	CMDQ_LOG("%s END\n", __func__);
 }
@@ -7633,6 +7729,39 @@ static void testmbox_sleep(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
+void testcase_sec_dapc_protect(void)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	struct cmdqRecStruct *handle = NULL;
+	void *wrot_va = (void *)cmdq_mdp_get_module_base_VA_MDP_WROT0() + 0xF00;
+	const u32 pattern = 0xdeadbeef;
+	u32 val;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	cmdq_task_create(CMDQ_SCENARIO_DEBUG, &handle);
+	handle->engineFlag = 0x1LL << CMDQ_ENG_MDP_WROT0;
+
+	cmdq_task_secure_enable_dapc(handle, 1LL << CMDQ_ENG_MDP_WROT0);
+	cmdq_task_secure_enable_port_security(handle,
+		1LL << CMDQ_ENG_MDP_WROT0);
+
+	cmdq_task_set_secure(handle, true);
+	cmdq_op_clear_event(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_op_wait(handle, CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_task_flush_async(handle);
+
+	CMDQ_REG_SET32(wrot_va, pattern);
+	val = CMDQ_REG_GET32(wrot_va);
+	if (val == pattern)
+		CMDQ_TEST_FAIL("dapc protect fail addr:0x%p\n", wrot_va);
+
+	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_USER_0);
+	cmdq_task_destroy(handle);
+
+	CMDQ_LOG("%s END\n", __func__);
+#endif
+}
 
 enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_DEFAULT = 0,
@@ -7733,6 +7862,15 @@ static void testcase_general_handling_case(s32 testID)
 	u32 i = 0;
 
 	switch (testID) {
+	case 161:
+		testcase_sec_dapc_protect();
+		break;
+	case 160:
+		testcase_error_irq_for_secure();
+		break;
+	case 159:
+		testcase_cross_4k_buffer();
+		break;
 	case 158:
 		testcase_verify_cpr();
 		break;
