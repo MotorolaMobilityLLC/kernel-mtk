@@ -963,10 +963,6 @@ void binder_cancel_bwdog_locked(struct binder_transaction *t)
 {
 	struct rb_node **p = NULL;
 
-	if (t->bark_on)
-		pr_info("id:%d bark_on = %s\n", t->debug_id,
-				binder_wait_on_str[t->wait_on]);
-
 	if (binder_bwdog_safe(t)) {
 		if (t->bark_on) {
 			binder_print_bwdog(t, NULL, NULL, t->bark_on);
