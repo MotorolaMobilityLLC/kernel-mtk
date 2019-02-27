@@ -54,8 +54,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 struct pvr_sw_fence_context {
 	struct kref kref;
 	unsigned int context;
-	const char *context_name;
-	const char *driver_name;
+	char context_name[32];
+	char driver_name[32];
 	atomic_t seqno;
 	atomic_t fence_count;
 };
@@ -161,8 +161,10 @@ pvr_sw_fence_context_create(const char *context_name, const char *driver_name)
 		return NULL;
 
 	fence_context->context = dma_fence_context_alloc(1);
-	fence_context->context_name = context_name;
-	fence_context->driver_name = driver_name;
+	strlcpy(fence_context->context_name, context_name,
+		sizeof(fence_context->context_name));
+	strlcpy(fence_context->driver_name, driver_name,
+		sizeof(fence_context->driver_name));
 	atomic_set(&fence_context->seqno, 0);
 	atomic_set(&fence_context->fence_count, 0);
 	kref_init(&fence_context->kref);
