@@ -70,6 +70,7 @@
 #define FBTCPU_SEC_DIVIDER 1000000000
 #define RESET_TOLERENCE 3
 #define NSEC_PER_HUSEC 100000
+#define BIG_CAP 95
 
 #define SEQ_printf(m, x...)\
 do {\
@@ -758,6 +759,36 @@ static long long fbt_middle_vsync_check(long long t_cpu_target,
 	return t_cpu_target;
 }
 
+static void fbt_check_CM_limit(struct render_info *thread_info,
+		long long runtime)
+{
+	int last_blc = 0;
+
+	if (!thread_info || !runtime)
+		return;
+
+	if (thread_info->pid == max_blc_pid)
+		last_blc = max_blc;
+	else {
+		if (thread_info->frame_type == NON_VSYNC_ALIGNED_TYPE) {
+			mutex_lock(&blc_mlock);
+			if (thread_info->p_blc)
+				last_blc = thread_info->p_blc->blc;
+			mutex_unlock(&blc_mlock);
+		} else if (thread_info->frame_type == VSYNC_ALIGNED_TYPE)
+			last_blc = thread_info->boost_info.last_blc;
+	}
+
+	if (!last_blc)
+		return;
+
+	if (last_blc > BIG_CAP &&
+		runtime > thread_info->boost_info.target_time + TIME_1MS)
+		fbt_notify_CM_limit(1);
+	else
+		fbt_notify_CM_limit(0);
+}
+
 static int cmpint(const void *a, const void *b)
 {
 	return *(int *)a - *(int *)b;
@@ -974,7 +1005,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 }
 
 static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
-			struct render_info *thread_info)
+			struct render_info *thread_info, long long runtime)
 {
 	int orig_blc = blc_wt;
 	int ceiling_judge = 1;
@@ -1010,8 +1041,10 @@ static int fbt_set_limit(unsigned int blc_wt, unsigned long long floor, int pid,
 			pid = 0;
 			fbt_free_bhr();
 			fbt_clear_boost_value();
-		} else
+		} else {
+			fbt_check_CM_limit(thread_info,	runtime);
 			fbt_do_boost(blc_wt, pid);
+		}
 
 		max_blc = blc_wt;
 		max_blc_pid = pid;
@@ -1210,7 +1243,10 @@ static int fbt_boost_policy(
 
 	blc_wt = clamp(blc_wt, 1U, 100U);
 
-	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, thread_info);
+	blc_wt = fbt_set_limit(blc_wt, boost_info->floor, pid, thread_info,
+			t_cpu_cur);
+
+	boost_info->target_time = target_time;
 
 	mutex_unlock(&fbt_mlock);
 
@@ -1303,7 +1339,7 @@ static void fbt_check_max_blc_locked(void)
 		fbt_free_bhr();
 		memset(base_opp, 0, cluster_num * sizeof(unsigned int));
 	} else
-		fbt_set_limit(max_blc, 0, max_blc_pid, NULL);
+		fbt_set_limit(max_blc, 0, max_blc_pid, NULL, 0);
 }
 
 static void fbt_frame_start(struct render_info *thr, unsigned long long ts,
@@ -1602,8 +1638,10 @@ void fpsgo_comp2fbt_frame_complete(struct render_info *thr,
 	}
 
 	mutex_lock(&blc_mlock);
-	if (thr->p_blc)
+	if (thr->p_blc) {
+		thr->boost_info.last_blc = thr->p_blc->blc;
 		thr->p_blc->blc = 0;
+	}
 	mutex_unlock(&blc_mlock);
 
 	if (!fbt_find_boosting()) {

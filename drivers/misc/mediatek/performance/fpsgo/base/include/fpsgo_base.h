@@ -62,6 +62,8 @@ struct fbt_thread_blc {
 
 struct fbt_boost_info {
 	int fstb_target_fps;
+	unsigned long long target_time;
+	unsigned int last_blc;
 
 	/* rescue*/
 	struct fbt_proc proc;
