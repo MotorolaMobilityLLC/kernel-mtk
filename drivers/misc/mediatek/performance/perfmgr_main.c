@@ -46,8 +46,10 @@ static int perfmgr_resume(struct device *dev)
 }
 static int perfmgr_remove(struct platform_device *dev)
 {
+#ifdef CONFIG_MTK_BASE_POWER
 	topo_ctrl_exit();
 	cpu_ctrl_exit();
+#endif
 	return 0;
 }
 static struct platform_driver perfmgr_driver = {
@@ -88,13 +90,12 @@ static int __init init_perfmgr(void)
 
 	perfmgr_root = proc_mkdir("perfmgr", NULL);
 	pr_debug("MTK_TOUCH_BOOST function init_perfmgr_touch\n");
+
+#ifdef CONFIG_MTK_BASE_POWER
 	init_tchbst(perfmgr_root);
-
-	init_perfctl(perfmgr_root);
-
 	init_boostctrl(perfmgr_root);
-
-
+#endif
+	init_perfctl(perfmgr_root);
 
 	return 0;
 }
