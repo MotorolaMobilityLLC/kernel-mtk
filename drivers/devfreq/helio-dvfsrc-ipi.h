@@ -11,8 +11,13 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __HELIO_DVFSRC_SSPM_IPI_H
-#define __HELIO_DVFSRC_SSPM_IPI_H
+#ifndef __HELIO_DVFSRC_IPI_H
+#define __HELIO_DVFSRC_IPI_H
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+
+#include <sspm_ipi.h>
+#include <sspm_ipi_pin.h>
 
 enum {
 	QOS_IPI_QOS_ENABLE = 0,
@@ -32,9 +37,7 @@ struct qos_data {
 	unsigned int cmd;
 	union {
 		struct {
-			unsigned int enable;
-			unsigned int dvfs_en;
-			unsigned int spm_dram_type;
+			unsigned int dvfsrc_en;
 		} qos_init;
 		struct {
 			unsigned int opp;
@@ -62,14 +65,12 @@ struct qos_data {
 
 static int qos_ipi_to_sspm_command(void *buffer, int slot)
 {
-#if 0
 	int ack_data;
 
 	return sspm_ipi_send_sync(IPI_ID_QOS, IPI_OPT_POLLING,
 			buffer, slot, &ack_data, 1);
-#endif
-	return 0;
 }
+#endif
 
 #endif
 

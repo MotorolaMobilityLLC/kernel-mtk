@@ -19,88 +19,133 @@
 #include <helio-dvfsrc.h>
 #include <helio-dvfsrc-opp.h>
 
-static struct pm_qos_request dvfsrc_emi_request;
-static struct pm_qos_request dvfsrc_vcore_request;
-
+static struct pm_qos_request dvfsrc_ddr_opp_req;
+static struct pm_qos_request dvfsrc_vcore_opp_req;
+static struct pm_qos_request dvfsrc_vcore_dvfs_opp_force;
 
 static ssize_t dvfsrc_enable_show(struct device *dev,
-				 struct device_attribute *attr,
-				 char *buf)
+		struct device_attribute *attr, char *buf)
 {
-	struct helio_dvfsrc *dvfsrc;
-	int err = 0;
-
-	dvfsrc = dev_get_drvdata(dev);
-
-	if (!dvfsrc)
-		return sprintf(buf, "Failed to access dvfsrc\n");
-
-	mutex_lock(&dvfsrc->devfreq->lock);
-	err = sprintf(buf, "%d\n", dvfsrc->enabled);
-	mutex_unlock(&dvfsrc->devfreq->lock);
-
-	return err;
+	return sprintf(buf, "%d\n", is_dvfsrc_enabled());
 }
-
 static ssize_t dvfsrc_enable_store(struct device *dev,
-				  struct device_attribute *attr,
-				  const char *buf, size_t count)
+		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct helio_dvfsrc *dvfsrc;
-	unsigned int enable = 0;
+	unsigned int val = 0;
 
-	dvfsrc = dev_get_drvdata(dev);
-
-	if (!dvfsrc)
-		return -ENODEV;
-
-	mutex_lock(&dvfsrc->devfreq->lock);
-
-	if (kstrtouint(buf, 10, &enable))
+	if (kstrtouint(buf, 10, &val))
 		return -EINVAL;
 
-	if (enable > 1)
+	if (val > 1)
 		return -EINVAL;
 
-	helio_dvfsrc_enable(enable);
-
-	mutex_unlock(&dvfsrc->devfreq->lock);
+	helio_dvfsrc_enable(val);
 
 	return count;
 }
 static DEVICE_ATTR(dvfsrc_enable, 0644,
 		dvfsrc_enable_show, dvfsrc_enable_store);
 
-static ssize_t dvfsrc_dump_show(struct device *dev,
-				 struct device_attribute *attr,
-				 char *buf)
+static ssize_t dvfsrc_req_ddr_opp_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (kstrtouint(buf, 10, &val))
+		return -EINVAL;
+
+	if (val >= DDR_OPP_NUM)
+		return -EINVAL;
+
+	pm_qos_update_request(&dvfsrc_ddr_opp_req, val);
+
+	return count;
+}
+static DEVICE_ATTR(dvfsrc_req_ddr_opp, 0200,
+		NULL, dvfsrc_req_ddr_opp_store);
+
+static ssize_t dvfsrc_req_vcore_opp_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (kstrtouint(buf, 10, &val))
+		return -EINVAL;
+
+	if (val >= VCORE_OPP_NUM)
+		return -EINVAL;
+
+	pm_qos_update_request(&dvfsrc_vcore_opp_req, val);
+
+	return count;
+}
+static DEVICE_ATTR(dvfsrc_req_vcore_opp, 0200,
+		NULL, dvfsrc_req_vcore_opp_store);
+
+static ssize_t dvfsrc_force_vcore_dvfs_opp_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	unsigned int val = 0;
+
+	if (kstrtouint(buf, 10, &val))
+		return -EINVAL;
+
+	if (val >= VCORE_DVFS_OPP_NUM)
+		return -EINVAL;
+
+	pm_qos_update_request(&dvfsrc_vcore_dvfs_opp_force, val);
+
+	return count;
+}
+static DEVICE_ATTR(dvfsrc_force_vcore_dvfs_opp, 0200,
+		NULL, dvfsrc_force_vcore_dvfs_opp_store);
+
+static ssize_t dvfsrc_opp_table_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
 {
 	struct helio_dvfsrc *dvfsrc;
 	char *p = buf;
 	char *buff_end = p + PAGE_SIZE;
-	int vcore_uv = get_cur_vcore_uv();
-	int ddr_khz = get_cur_ddr_khz();
+	int i;
 
 	dvfsrc = dev_get_drvdata(dev);
 
 	if (!dvfsrc)
 		return sprintf(buf, "Failed to access dvfsrc\n");
 
-	p += snprintf(p, buff_end - p, "[%-12s]: %-8u (0x%x)\n",
-			"vcore_uv", vcore_uv, vcore_uv_to_pmic(vcore_uv));
-	p += snprintf(p, buff_end - p, "[%-12s]: %-8u\n",
-			"ddr_khz", ddr_khz);
+	mutex_lock(&dvfsrc->devfreq->lock);
+	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
+		p += snprintf(p, buff_end - p, "[OPP%-2d]: %-8u uv %-8u khz\n",
+				i, get_vcore_uv(i), get_ddr_khz(i));
+	}
 
 	p += snprintf(p, buff_end - p, "\n");
+	mutex_unlock(&dvfsrc->devfreq->lock);
+
+	return p - buf;
+}
+
+static DEVICE_ATTR(dvfsrc_opp_table, 0444, dvfsrc_opp_table_show, NULL);
+
+static ssize_t dvfsrc_dump_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char *p = buf;
+
+	p = dvfsrc_dump_reg(p);
 
 	return p - buf;
 }
 
 static DEVICE_ATTR(dvfsrc_dump, 0444, dvfsrc_dump_show, NULL);
 
-/* ToDo: Add sysfs */
+/* ToDo: Add sysfs to access vcore opp table */
 static struct attribute *helio_dvfsrc_attrs[] = {
 	&dev_attr_dvfsrc_enable.attr,
+	&dev_attr_dvfsrc_req_ddr_opp.attr,
+	&dev_attr_dvfsrc_req_vcore_opp.attr,
+	&dev_attr_dvfsrc_force_vcore_dvfs_opp.attr,
+	&dev_attr_dvfsrc_opp_table.attr,
 	&dev_attr_dvfsrc_dump.attr,
 	NULL,
 };
@@ -112,10 +157,13 @@ static struct attribute_group helio_dvfsrc_attr_group = {
 
 int helio_dvfsrc_add_interface(struct device *dev)
 {
-	pm_qos_add_request(&dvfsrc_emi_request, PM_QOS_DDR_OPP,
+	pm_qos_add_request(&dvfsrc_ddr_opp_req, PM_QOS_DDR_OPP,
 			PM_QOS_DDR_OPP_DEFAULT_VALUE);
-	pm_qos_add_request(&dvfsrc_vcore_request, PM_QOS_VCORE_OPP,
+	pm_qos_add_request(&dvfsrc_vcore_opp_req, PM_QOS_VCORE_OPP,
 			PM_QOS_VCORE_OPP_DEFAULT_VALUE);
+	pm_qos_add_request(&dvfsrc_vcore_dvfs_opp_force,
+			PM_QOS_VCORE_DVFS_FORCE_OPP,
+			PM_QOS_VCORE_DVFS_FORCE_OPP_DEFAULT_VALUE);
 
 	return sysfs_create_group(&dev->kobj, &helio_dvfsrc_attr_group);
 }

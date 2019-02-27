@@ -14,10 +14,12 @@
 #ifndef __HELIO_DVFSRC_MT6765_H
 #define __HELIO_DVFSRC_MT6765_H
 
-#define PMIC_VCORE_ADDR         PMIC_RG_BUCK_VCORE_VOSEL
-#define VCORE_BASE_UV           500000
-#define VCORE_STEP_UV           6250
-#define VCORE_INVALID           0x80
+#include <mach/upmu_hw.h>
+
+#define PMIC_VCORE_ADDR		PMIC_RG_BUCK_VCORE_VOSEL
+
+#define VCORE_BASE_UV		518750
+#define VCORE_STEP_UV		6250
 
 /* DVFSRC_BASIC_CONTROL 0x0 */
 #define DVFSRC_EN_SHIFT		0
