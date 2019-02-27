@@ -537,7 +537,6 @@ static void imx230_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
 	int i;
-
 	if (read_spc_flag == FALSE) {
 		read_imx230_SPC(imx230_SPC_data);
 		read_spc_flag = TRUE;
@@ -546,11 +545,18 @@ static void imx230_apply_SPC(void)
 
 	for (i = 0; i < 352; i++) {
 		write_cmos_sensor(start_reg, imx230_SPC_data[i]);
-		/* pr_debug("SPC[%d]= %x\n", i , imx230_SPC_data[i]); */
+		//pr_info("SPC[%3d]= %x\n", i , imx230_SPC_data[i]);
 
 		start_reg++;
 	}
 
+#if 0
+    /* for verify */
+    for (i = 0x7c00; i < 0x7c00+352; i++)
+    {
+		pr_info("SPC read out : Addr[%3d] Data[%x], Ref[%x]", i , read_cmos_sensor(i), imx230_SPC_data[i-0x7c00]);
+	}
+#endif
 }
 
 static void set_dummy(void)
@@ -1555,8 +1561,7 @@ static void preview_setting(void)
         write_cmos_sensor(0x3155, 0x70);
         write_cmos_sensor(0x3156, 0x07);
         write_cmos_sensor(0x3157, 0xD8);
-
-
+        imx230_apply_SPC();
 	}
 }				/*    preview_setting  */
 
@@ -1696,6 +1701,7 @@ static void preview_setting_HDR_ES2(void)
         write_cmos_sensor(0x3155, 0x70);
         write_cmos_sensor(0x3156, 0x07);
         write_cmos_sensor(0x3157, 0xD8);
+        imx230_apply_SPC();
 	}
 
 
@@ -2331,8 +2337,7 @@ static void capture_setting_pdaf(kal_uint16 currefps)
 	write_cmos_sensor(0x3155, 0xE0);
 	write_cmos_sensor(0x3156, 0x0F);
 	write_cmos_sensor(0x3157, 0xB0);
-
-
+	imx230_apply_SPC();
 
 }
 
@@ -2868,7 +2873,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
-	imx230_apply_SPC();
 
 	return ERROR_NONE;
 }
@@ -2927,6 +2931,7 @@ static kal_uint32 open(void)
 
 	/* initail sequence write in  */
 	sensor_init();
+	imx230_apply_SPC();
 
 	spin_lock(&imgsensor_drv_lock);
 
