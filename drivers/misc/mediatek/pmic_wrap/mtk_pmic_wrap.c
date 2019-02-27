@@ -90,7 +90,31 @@ s32 pwrap_write(u32 adr, u32 wdata)
  *tracepwrap(adr, wdata);
  *#endif
  */
+#ifdef CONFIG_MACH_MT6765
+	s32 ret = pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
+	s32 wk_ret = 0;
+	u32 rdata;
+
+	if (adr == 0x1516 || adr == 0x1518 || adr == 0x151a) {
+		wk_ret = pwrap_wacs2(PWRAP_READ, 0x1516, 0, &rdata);
+		if (wk_ret != 0) {
+			pr_notice("%s error read wk_ret=%d\n"
+					, __func__
+					, wk_ret);
+			return ret;
+		}
+		wk_ret = pwrap_wacs2(PWRAP_WRITE, 0x1516, rdata | 0x2, 0);
+		if (wk_ret != 0) {
+			pr_notice("%s error write wk_ret=%d\n"
+					, __func__
+					, wk_ret);
+			return ret;
+		}
+	}
+	return ret;
+#else
 	return pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
+#endif
 }
 EXPORT_SYMBOL(pwrap_write);
 /********************************************************************/
