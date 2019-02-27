@@ -672,6 +672,8 @@ static int mtkfb_pan_display_impl(struct fb_var_screeninfo *var,
 
 	session_input->config_layer_num++;
 
+	session_input->setter = SESSION_USER_PANDISP;
+
 	if (!is_DAL_Enabled()) {
 		/* disable font layer(layer3) drawed in lk */
 		session_input->config[1].layer_id =
@@ -1386,6 +1388,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 		layer_num = session_input.config_layer_num;
 		input = &session_input.config[layer_num];
 		session_input.config_layer_num++;
+		session_input.setter = SESSION_USER_PANDISP;
 		_convert_fb_layer_to_disp_input(layerInfo, input);
 		primary_display_config_input_multiple(&session_input);
 		primary_display_trigger(1, NULL, 0);
@@ -1451,6 +1454,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 			session_input.config_layer_num++;
 			_convert_fb_layer_to_disp_input(&layerInfo[i], input);
 		}
+		session_input.setter = SESSION_USER_PANDISP;
 		primary_display_config_input_multiple(&session_input);
 		primary_display_trigger(1, NULL, 0);
 		kfree(layerInfo);
@@ -1597,6 +1601,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 				(ALIGN_TO(MTK_FB_XRES, MTK_FB_ALIGNMENT) *
 				ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) * 4));
 
+		session_input.setter = SESSION_USER_PANDISP;
 		primary_display_config_input_multiple(&session_input);
 		primary_display_trigger(1, NULL, 0);
 
@@ -1809,7 +1814,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd,
 			layer_num = session_input.config_layer_num;
 			input = &session_input.config[layer_num];
 			session_input.config_layer_num++;
-
+			session_input.setter = SESSION_USER_PANDISP;
 			_convert_fb_layer_to_disp_input(&layerInfo, input);
 			primary_display_config_input_multiple(&session_input);
 			/* primary_display_trigger(1, NULL, 0); */
@@ -1849,6 +1854,7 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd,
 			session_input.config_layer_num++;
 			_convert_fb_layer_to_disp_input(&layerInfo, input);
 		}
+		session_input.setter = SESSION_USER_PANDISP;
 		primary_display_config_input_multiple(&session_input);
 		kfree(compat_layerInfo);
 		break;
