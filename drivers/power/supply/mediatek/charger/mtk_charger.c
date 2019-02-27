@@ -2037,6 +2037,28 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 		info->data.pe40_stop_battery_soc = 80;
 	}
 
+	/* PE 4.0 cable impedance (mohm) */
+	if (of_property_read_u32(np, "pe40_r_cable_1a_lower", &val) >= 0)
+		info->data.pe40_r_cable_1a_lower = val;
+	else {
+		chr_err("use default pe40_r_cable_1a_lower:%d\n", 530);
+		info->data.pe40_r_cable_1a_lower = 530;
+	}
+
+	if (of_property_read_u32(np, "pe40_r_cable_2a_lower", &val) >= 0)
+		info->data.pe40_r_cable_2a_lower = val;
+	else {
+		chr_err("use default pe40_r_cable_2a_lower:%d\n", 390);
+		info->data.pe40_r_cable_2a_lower = 390;
+	}
+
+	if (of_property_read_u32(np, "pe40_r_cable_3a_lower", &val) >= 0)
+		info->data.pe40_r_cable_3a_lower = val;
+	else {
+		chr_err("use default pe40_r_cable_3a_lower:%d\n", 252);
+		info->data.pe40_r_cable_3a_lower = 252;
+	}
+
 	/* dual charger */
 	if (of_property_read_u32(np, "chg1_ta_ac_charger_current", &val) >= 0)
 		info->data.chg1_ta_ac_charger_current = val;

@@ -201,6 +201,11 @@ struct charger_custom_data {
 	int pe40_dual_charger_chg2_current;
 	int pe40_stop_battery_soc;
 
+	/* pe4.0 cable impedance threshold (mohm) */
+	u32 pe40_r_cable_1a_lower;
+	u32 pe40_r_cable_2a_lower;
+	u32 pe40_r_cable_3a_lower;
+
 	/* dual charger */
 	u32 chg1_ta_ac_charger_current;
 	u32 chg2_ta_ac_charger_current;
