@@ -290,6 +290,11 @@ struct _PVRSRV_DEVICE_CONFIG_
 #if defined(PVR_DVFS) || defined(SUPPORT_PDVFS)
 	PVRSRV_DVFS sDVFS;
 #endif
+
+#if defined(SUPPORT_ALT_REGBASE)
+        IMG_CPU_PHYADDR sAltRegsCpuPBase;
+#endif
+
 };
 
 #endif /* __PVRSRV_DEVICE_H__*/
