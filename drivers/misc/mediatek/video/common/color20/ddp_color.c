@@ -57,6 +57,7 @@
 #define COLOR_SUPPORT_PARTIAL_UPDATE
 #endif
 
+#define UNUSED(expr) (void)(expr)
 /* global PQ param for kernel space */
 static struct DISP_PQ_PARAM g_Color_Param[2] = {
 	{
@@ -3809,8 +3810,11 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 
 #ifdef DISP_COLOR_OFF
 	COLOR_NLOG("DISP_COLOR_OFF, Color bypassed...\n");
+	UNUSED(module);
+	UNUSED(bypass);
+	UNUSED(offset);
 	return -1;
-#endif
+#else
 
 	g_color_bypass[index_of_color(module)] = bypass;
 
@@ -3860,6 +3864,7 @@ static int _color_bypass(enum DISP_MODULE_ENUM module, int bypass)
 	}
 
 	return 0;
+#endif
 }
 
 static int _color_build_cmdq(enum DISP_MODULE_ENUM module,
