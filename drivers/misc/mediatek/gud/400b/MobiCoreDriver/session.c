@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -303,8 +303,8 @@ static int check_prepare_identity(const struct mc_identity *identity,
 	/* Copy login type */
 	mcp_identity->login_type = identity->login_type;
 
-	if ((identity->login_type == LOGIN_PUBLIC) ||
-	    (identity->login_type == TEEC_TT_LOGIN_KERNEL))
+	if (identity->login_type == LOGIN_PUBLIC ||
+	    identity->login_type == TEEC_TT_LOGIN_KERNEL)
 		return 0;
 
 	/* Mobicore doesn't support GP client authentication. */
@@ -315,16 +315,16 @@ static int check_prepare_identity(const struct mc_identity *identity,
 	}
 
 	/* Fill in uid field */
-	if ((identity->login_type == LOGIN_USER) ||
-	    (identity->login_type == LOGIN_USER_APPLICATION)) {
+	if (identity->login_type == LOGIN_USER ||
+	    identity->login_type == LOGIN_USER_APPLICATION) {
 		/* Set euid and ruid of the process. */
 		mcp_id->uid.euid = __kuid_val(task_euid(task));
 		mcp_id->uid.ruid = __kuid_val(task_uid(task));
 	}
 
 	/* Check gid field */
-	if ((identity->login_type == LOGIN_GROUP) ||
-	    (identity->login_type == LOGIN_GROUP_APPLICATION)) {
+	if (identity->login_type == LOGIN_GROUP ||
+	    identity->login_type == LOGIN_GROUP_APPLICATION) {
 		const struct cred *cred = __task_cred(task);
 
 		/*
@@ -621,12 +621,13 @@ static int wsm_debug_structs(struct kasnprintf_buf *buf, struct tee_wsm *wsm,
 
 	ret = kasnprintf(buf, "\t\t");
 	if (no < 0)
-		ret = kasnprintf(buf, "tci %p: cbuf %p va %lx len %u\n",
-				 wsm, wsm->cbuf, wsm->va, wsm->len);
+		ret = kasnprintf(buf, "tci %pK: cbuf %pK va %pK len %u\n",
+				 wsm, wsm->cbuf, (void *)wsm->va, wsm->len);
 	else if (wsm->in_use)
 		ret = kasnprintf(buf,
-				 "wsm #%d: cbuf %p va %lx len %u sva %x\n",
-				 no, wsm->cbuf, wsm->va, wsm->len, wsm->sva);
+				 "wsm #%d: cbuf %pK va %pK len %u sva %x\n",
+				 no, wsm->cbuf, (void *)wsm->va, wsm->len,
+				 wsm->sva);
 
 	if (ret < 0)
 		return ret;
@@ -705,10 +706,10 @@ int session_unmap(struct tee_session *session,
 	mutex_lock(&session->wsms_lock);
 	/* Look for buffer in the session WSMs array */
 	for (i = 0; i < MC_MAP_MAX; i++)
-		if ((session->wsms[i].in_use) &&
-		    (buf->va == session->wsms[i].va) &&
-		    (buf->len == session->wsms[i].len) &&
-		    (buf->sva == session->wsms[i].sva))
+		if (session->wsms[i].in_use &&
+		    buf->va == session->wsms[i].va &&
+		    buf->len == session->wsms[i].len &&
+		    buf->sva == session->wsms[i].sva)
 			break;
 
 	if (i == MC_MAP_MAX) {
@@ -911,7 +912,7 @@ int session_debug_structs(struct kasnprintf_buf *buf,
 		type = "MC";
 	}
 
-	ret = kasnprintf(buf, "\tsession %p [%d]: %4x %s ec %d%s\n",
+	ret = kasnprintf(buf, "\tsession %pK [%d]: %4x %s ec %d%s\n",
 			 session, kref_read(&session->kref), session_id, type,
 			 exit_code, is_closing ? " <closing>" : "");
 	if (ret < 0)

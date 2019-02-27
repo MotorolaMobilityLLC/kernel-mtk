@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2017 TRUSTONIC LIMITED
+ * Copyright (c) 2013-2018 TRUSTONIC LIMITED
  * All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or
@@ -212,13 +212,13 @@ static inline int _smc(union mc_fc_generic *mc_fc_generic)
 static int active_cpu;
 
 #ifdef MC_FASTCALL_WORKER_THREAD
-static void mc_cpu_offline(int cpu)
+static int mc_cpu_offline(int cpu)
 {
 	int i;
 
 	if (active_cpu != cpu) {
 		mc_dev_devel("not active CPU, no action taken");
-		return;
+		return 0;
 	}
 
 	/* Chose the first online CPU and switch! */
@@ -226,14 +226,16 @@ static void mc_cpu_offline(int cpu)
 		if (cpu != i) {
 			mc_dev_info("CPU %d is dying, switching to %d",
 				    cpu, i);
-			mc_switch_core(i);
-			break;
+			return mc_switch_core(i);
 		}
 
 		mc_dev_devel("Skipping CPU %d", cpu);
 	}
+
+	return 0;
 }
 
+#if KERNEL_VERSION(4, 10, 0) > LINUX_VERSION_CODE
 static int mobicore_cpu_callback(struct notifier_block *nfb,
 				 unsigned long action, void *hcpu)
 {
@@ -251,10 +253,6 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 		mc_dev_devel("Cpu %d is going to die", cpu);
 		mc_cpu_offline(cpu);
 		break;
-	case CPU_DEAD:
-	case CPU_DEAD_FROZEN:
-		mc_dev_devel("Cpu %d is dead", cpu);
-		break;
 	}
 	return NOTIFY_OK;
 }
@@ -262,6 +260,13 @@ static int mobicore_cpu_callback(struct notifier_block *nfb,
 static struct notifier_block mobicore_cpu_notifer = {
 	.notifier_call = mobicore_cpu_callback,
 };
+#else
+static int nq_cpu_down_prep(unsigned int cpu)
+{
+	mc_dev_info("CPU #%d is going to die", cpu);
+	return mc_cpu_offline(cpu);
+}
+#endif
 #endif /* MC_FASTCALL_WORKER_THREAD */
 
 static cpumask_t mc_exec_core_switch(union mc_fc_generic *mc_fc_generic)
@@ -288,27 +293,6 @@ static cpumask_t mc_exec_core_switch(union mc_fc_generic *mc_fc_generic)
 	return cpu;
 }
 
-static ssize_t debug_coreswitch_read(struct file *file,
-		char __user *buf, size_t count, loff_t *f_pos)
-{
-	char act_cpu_str[] = {(active_cpu + '0'), '\n'};
-
-	mc_dev_devel("buf %p count %zu f_pos %lld\n", buf, count, *f_pos);
-
-	if ((size_t)*f_pos >= sizeof(act_cpu_str))
-		return 0;
-
-	if ((count + (size_t)*f_pos) > sizeof(act_cpu_str))
-		count = (sizeof(act_cpu_str) - (size_t)*f_pos);
-
-	if (copy_to_user(buf, act_cpu_str + (size_t)*f_pos, count))
-		return -EFAULT;
-
-	*f_pos += count;
-
-	return count;
-}
-
 static ssize_t debug_coreswitch_write(struct file *file,
 				      const char __user *buffer,
 				      size_t buffer_len, loff_t *x)
@@ -327,14 +311,40 @@ static ssize_t debug_coreswitch_write(struct file *file,
 	return buffer_len;
 }
 
+static ssize_t debug_coreswitch_read(struct file *file, char __user *buffer,
+				     size_t buffer_len, loff_t *ppos)
+{
+	char cpu_str[8];
+	int ret = 0;
+
+	ret = snprintf(cpu_str, sizeof(cpu_str), "%d\n", mc_active_core());
+	if (ret < 0)
+		return -EINVAL;
+
+	return simple_read_from_buffer(buffer, buffer_len, ppos,
+				       cpu_str, ret);
+}
+
 static const struct file_operations mc_debug_coreswitch_ops = {
-	.read = debug_coreswitch_read,
 	.write = debug_coreswitch_write,
+	.read = debug_coreswitch_read,
 };
 #else /* TBASE_CORE_SWITCHER */
 static inline cpumask_t mc_exec_core_switch(union mc_fc_generic *mc_fc_generic)
 {
 	return CPU_MASK_CPU0;
+}
+#endif /* !TBASE_CORE_SWITCHER */
+
+#ifdef MC_SMC_FASTCALL
+static inline int nq_set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+{
+	return 0;
+}
+#else /* MC_SMC_FASTCALL */
+static inline int nq_set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
+{
+	return set_cpus_allowed_ptr(p, &new_mask);
 }
 #endif /* !TBASE_CORE_SWITCHER */
 
@@ -357,7 +367,7 @@ static void fastcall_work_func(struct work_struct *work)
 #ifdef MC_FASTCALL_WORKER_THREAD
 		cpumask_t new_msk = mc_exec_core_switch(mc_fc_generic);
 
-		set_cpus_allowed_ptr(fastcall_thread, &new_msk);
+		nq_set_cpus_allowed(fastcall_thread, new_msk);
 #else
 		mc_exec_core_switch(mc_fc_generic);
 #endif
@@ -405,9 +415,6 @@ static bool mc_fastcall(void *data)
 
 int mc_fastcall_init(void)
 {
-#ifdef MC_FASTCALL_WORKER_THREAD
-	cpumask_t new_msk = CPU_MASK_CPU0;
-#endif
 	int ret = mc_clock_init();
 
 	if (ret)
@@ -432,17 +439,28 @@ int mc_fastcall_init(void)
 	set_user_nice(fastcall_thread, -20);
 #endif
 	/* this thread MUST run on CPU 0 at startup */
-	set_cpus_allowed_ptr(fastcall_thread, &new_msk);
+	nq_set_cpus_allowed(fastcall_thread, CPU_MASK_CPU0);
 
 	wake_up_process(fastcall_thread);
 #ifdef TBASE_CORE_SWITCHER
+#if KERNEL_VERSION(4, 10, 0) > LINUX_VERSION_CODE
 	ret = register_cpu_notifier(&mobicore_cpu_notifer);
+#else
+	ret = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
+					"tee/trustonic:online",
+					NULL, nq_cpu_down_prep);
+#endif
+	if (ret) {
+		mc_dev_notice("cpu online callback setup failed: %d", ret);
+		return ret;
+	}
+
 	/* Create debugfs structs entry */
 	debugfs_create_file("active_cpu", 0600, g_ctx.debug_dir, NULL,
 			    &mc_debug_coreswitch_ops);
 #endif
 #endif /* MC_FASTCALL_WORKER_THREAD */
-	return ret;
+	return 0;
 }
 
 void mc_fastcall_exit(void)
@@ -450,7 +468,11 @@ void mc_fastcall_exit(void)
 #ifdef MC_FASTCALL_WORKER_THREAD
 	if (!IS_ERR_OR_NULL(fastcall_thread)) {
 #ifdef TBASE_CORE_SWITCHER
+#if KERNEL_VERSION(4, 10, 0) > LINUX_VERSION_CODE
 		unregister_cpu_notifier(&mobicore_cpu_notifer);
+#else
+		cpuhp_remove_state_nocalls(CPUHP_AP_ONLINE_DYN);
+#endif
 #endif
 		kthread_stop(fastcall_thread);
 		fastcall_thread = NULL;
@@ -631,6 +653,9 @@ int mc_switch_core(int cpu)
 {
 	s32 ret = 0;
 	union mc_fc_swich_core fc_switch_core;
+
+	if (cpu >= nr_cpu_ids)
+		return -EINVAL;
 
 	if (!cpu_online(cpu))
 		return 1;
