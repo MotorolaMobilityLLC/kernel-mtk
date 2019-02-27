@@ -523,7 +523,7 @@ static int pmic_mt_probe(struct platform_device *dev)
 #endif /* CONFIG_MTK_AUXADC_INTF */
 	PMICLOG("[PMIC] pmic auxadc init : done.\n");
 
-	/* TODO: pmic_throttling_dlpt_init(); */
+	pmic_throttling_dlpt_init();
 
 	PMICLOG("[PMIC] pmic_throttling_dlpt_init : done.\n");
 
@@ -557,7 +557,7 @@ static int pmic_mt_suspend(struct platform_device *dev, pm_message_t state)
 {
 	PMICLOG("******** MT pmic driver suspend!! ********\n");
 
-	/* TODO pmic_throttling_dlpt_suspend(); */
+	pmic_throttling_dlpt_suspend();
 	pmic_auxadc_suspend();
 	return 0;
 }
@@ -566,7 +566,7 @@ static int pmic_mt_resume(struct platform_device *dev)
 {
 	PMICLOG("******** MT pmic driver resume!! ********\n");
 
-	/* TODO pmic_throttling_dlpt_resume(); */
+	pmic_throttling_dlpt_resume();
 	pmic_auxadc_resume();
 	return 0;
 }
