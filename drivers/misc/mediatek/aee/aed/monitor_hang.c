@@ -1744,20 +1744,17 @@ static int hang_detect_thread(void *arg)
 				/* eng load can detect whether KE*/
 #endif
 					/* BUG(); */
-					aee_rr_rec_exp_type(5);
-					aee_rr_rec_fiq_step(
-						AEE_FIQ_STEP_HANG_DETECT);
 					mrdump_mini_add_hang_raw(
 						(unsigned long)Hang_Info,
 						MaxHangInfoSize);
 					mrdump_mini_add_extra_misc();
 					mrdump_mini_save_regs(&saved_regs);
-					__mrdump_create_oops_dump(
+					mrdump_common_die(
+						AEE_FIQ_STEP_HANG_DETECT,
 						AEE_REBOOT_MODE_HANG_DETECT,
-						&saved_regs, "Hang Detect");
-					aee_exception_reboot();
+						"Hang Detect", &saved_regs);
 #ifdef CONFIG_MTK_ENG_BUILD
-						}
+					}
 #endif
 				} else
 					Hang_Detect_first = true;

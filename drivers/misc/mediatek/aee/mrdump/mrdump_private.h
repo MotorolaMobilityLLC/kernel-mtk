@@ -53,11 +53,6 @@ static inline int get_HW_cpuid(void)
 }
 #endif
 
-struct mrdump_platform {
-	void (*hw_enable)(bool enabled);
-	void (*reboot)(void);
-};
-
 struct pt_regs;
 
 extern struct mrdump_rsvmem_block mrdump_sram_cb;
@@ -73,8 +68,6 @@ __attribute__((weak, section(".rodata")));
 
 void mrdump_cblock_init(void);
 
-int mrdump_platform_init(const struct mrdump_platform *plat);
-
 void mrdump_save_current_backtrace(struct pt_regs *regs);
 void mrdump_save_control_register(void *creg);
 
@@ -82,6 +75,9 @@ extern int mrdump_rsv_conflict;
 extern void dis_D_inner_fL1L2(void);
 extern void __inner_flush_dcache_all(void);
 extern void mrdump_mini_add_entry(unsigned long addr, unsigned long size);
+
+int aee_dump_stack_top_binary(char *buf, int buf_len, unsigned long bottom,
+				unsigned long top);
 
 static inline void mrdump_mini_save_regs(struct pt_regs *regs)
 {
@@ -144,7 +140,6 @@ static inline void show_kaslr(void)
 }
 #endif
 
-/* dedicated reboot flow for exception */
-extern void aee_exception_reboot(void);
+int in_fiq_handler(void);
 
 #endif /* __MRDUMP_PRIVATE_H__ */

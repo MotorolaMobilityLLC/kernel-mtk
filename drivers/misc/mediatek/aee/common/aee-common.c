@@ -363,31 +363,6 @@ void aee_sram_printk(const char *fmt, ...)
 }
 EXPORT_SYMBOL(aee_sram_printk);
 
-/* no export symbol to aee_exception_reboot, only used in exception flow */
-void aee_exception_reboot(void)
-{
-#ifdef CONFIG_MTK_WATCHDOG
-	int res;
-	struct wd_api *wd_api = NULL;
-
-	/* config reset mode */
-	int mode = WD_SW_RESET_BYPASS_PWR_KEY;
-
-	res = get_wd_api(&wd_api);
-	if (res < 0) {
-		pr_info("arch_reset, get wd api error %d\n", res);
-		while (1)
-			cpu_relax();
-	} else {
-		pr_info("exception reboot\n");
-		mode += WD_SW_RESET_KEEP_DDR_RESERVE;
-		wd_api->wd_sw_reset(mode);
-	}
-#else
-	emergency_restart();
-#endif
-}
-
 static int __init aee_common_init(void)
 {
 	int ret = 0;
