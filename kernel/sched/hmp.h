@@ -15,9 +15,6 @@
 LIST_HEAD(hmp_domains);
 
 #ifdef CONFIG_SCHED_HMP
-/*
- * XXX: virtual function for imcompleted function
- */
 
 /* CPU cluster statistics for task migration control */
 #define HMP_GB (0x1000)
