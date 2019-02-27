@@ -185,6 +185,7 @@ static int od_need_start;
 /* dvfs */
 #ifdef MTK_FB_MMDVFS_SUPPORT
 static int dvfs_last_ovl_req = HRT_LEVEL_NUM - 1;
+static unsigned int ovl_throughput_freq_req;
 #endif
 
 /* delayed trigger */
@@ -1793,7 +1794,8 @@ static void directlink_path_add_memory(struct WDMA_CONFIG_STRUCT *p_wdma,
 	cmdqRecReset(cmdq_wait_handle);
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-		HRT_LEVEL_NUM - 1);
+		HRT_LEVEL_NUM - 1,
+		layering_rule_get_mm_freq_table(HRT_OPP_LEVEL_LEVEL0));
 #endif
 	/* configure config thread */
 	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
@@ -2052,7 +2054,8 @@ static int _DL_switch_to_DC_fast(int block)
 
 	/* Switch to lower gear */
 #ifdef MTK_FB_MMDVFS_SUPPORT
-	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0);
+	primary_display_request_dvfs_perf(
+		MMDVFS_SCEN_DISP, HRT_LEVEL_LEVEL0, 0);
 #endif
 	/* ddp_mmp_rdma_layer(&rdma_config, 0, 20, 20); */
 
@@ -2194,7 +2197,9 @@ static int _DC_switch_to_DL_fast(int block)
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	/* switch back to last request gear */
-	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, dvfs_last_ovl_req);
+	primary_display_request_dvfs_perf(
+		MMDVFS_SCEN_DISP, dvfs_last_ovl_req,
+		ovl_throughput_freq_req);
 #endif
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode,
@@ -2700,6 +2705,7 @@ static int _convert_disp_input_to_ovl(struct OVL_CONFIG_STRUCT *dst,
 	if (src->buffer_source == DISP_BUFFER_ALPHA) {
 		/* dim layer, constant alpha */
 		dst->source = OVL_LAYER_SOURCE_RESERVED;
+		dst->dim_color = src->dim_color;
 	} else if (src->buffer_source == DISP_BUFFER_ION ||
 		src->buffer_source == DISP_BUFFER_MVA) {
 		dst->source = OVL_LAYER_SOURCE_MEM; /* from memory */
@@ -3237,7 +3243,7 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	if ((real_hrt_level >= dvfs_last_ovl_req) &&
 	    (!primary_display_is_decouple_mode()))
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-			dvfs_last_ovl_req);
+			dvfs_last_ovl_req, ovl_throughput_freq_req);
 #endif
 	_primary_path_unlock(__func__);
 
@@ -4656,12 +4662,12 @@ int primary_display_suspend(void)
 				LCM_ON_LOW_POWER);
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_SUSPEND) {
-		DISPINFO("[POWER]lcm suspend[begin]\n");
+		DISPCHECK("[POWER]lcm suspend[begin]\n");
 		disp_lcm_suspend(pgc->plcm);
 		DISPCHECK("[POWER]lcm suspend[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
 			MMPROFILE_FLAG_PULSE, 0, 6);
-		DISPDBG("[POWER]primary display path Release Fence[begin]\n");
+		DISPINFO("[POWER]primary display path Release Fence[begin]\n");
 		primary_suspend_release_fence();
 		DISPINFO("[POWER]primary display path Release Fence[end]\n");
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
@@ -4720,7 +4726,7 @@ done:
 	/* set MMDVFS to default, do not prevent it from stepping into ULPM */
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-		HRT_LEVEL_DEFAULT);
+		HRT_LEVEL_DEFAULT, 0);
 #endif
 	return ret;
 }
@@ -4967,7 +4973,7 @@ int primary_display_resume(void)
 		}
 	} else if (primary_display_get_power_mode_nolock() == FB_RESUME) {
 		if (primary_display_get_lcm_power_state_nolock() != LCM_ON) {
-			DISPDBG("[POWER]lcm resume[begin]\n");
+			DISPCHECK("[POWER]lcm resume[begin]\n");
 			if (primary_display_get_lcm_power_state_nolock() !=
 				LCM_ON_LOW_POWER) {
 				disp_lcm_resume(pgc->plcm);
@@ -5902,6 +5908,149 @@ static bool disp_rsz_frame_has_rsz_layer(struct disp_frame_cfg_t *cfg)
 	return rsz;
 }
 
+static int _is_overlap(struct disp_input_config *src,
+			       struct disp_input_config *dst)
+{
+	if ((src->tgt_offset_y + src->tgt_height <=
+			dst->tgt_offset_y) ||
+	    (dst->tgt_offset_y + dst->tgt_height <=
+		src->tgt_offset_y))
+		return 0;
+	else if ((src->tgt_offset_x + src->tgt_width <=
+			dst->tgt_offset_x) ||
+		(dst->tgt_offset_x + dst->tgt_width <=
+		src->tgt_offset_x))
+		return 0;
+
+	return 1;
+}
+
+/* This function can only check for YUV layer overlap*/
+/* Todo: modify this func to check YUV layer number */
+static int _is_yuv_overlap
+	(struct disp_frame_cfg_t *cfg)
+{
+	int i = 0, j = 0, is_yuv_overlap = 0;
+	unsigned int yuv_num = 0;
+	struct disp_input_config *yuv_cfg[cfg->input_layer_num];
+
+	/* input layer less than 2, have not YUV overlap */
+	if (cfg->input_layer_num < 2)
+		return 0;
+
+	/* filter YUV layer */
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		struct disp_input_config *input_cfg = &cfg->input_cfg[i];
+		enum DISP_FORMAT src_fmt = input_cfg->src_fmt;
+
+		if (!input_cfg->layer_enable)
+			continue;
+
+		if (UFMT_GET_RGB(disp_fmt_to_unified_fmt(src_fmt)))
+			continue;
+		else {
+			yuv_cfg[yuv_num] = input_cfg;
+			yuv_num += 1;
+		}
+	}
+
+	/* YUV layer less than 2, have not YUV overlap */
+	if (yuv_num < 2)
+		return 0;
+
+	/* Calculate YUV overlap number */
+	for (i = 0; i < yuv_num - 1; i++)
+		for (j = i + 1; j < yuv_num; j++)
+			if (_is_overlap(yuv_cfg[i], yuv_cfg[j]))
+				is_yuv_overlap = 1;
+
+	DISPDBG("%s yuv_num=%d, is_yuv_overlap=%d\n",
+		__func__, yuv_num, is_yuv_overlap);
+	return is_yuv_overlap;
+}
+
+static void _ovl_yuv_throughput_freq_request
+	(struct disp_frame_cfg_t *cfg)
+{
+	int overlap_yuv_num = 0;
+	long long panel_height =
+		(long long)disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	long long panel_width =
+		(long long)disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	unsigned long long blank_ratio = 0;
+	unsigned long long pixel_total = 0;
+	unsigned long long blank_field = 0;
+	struct LCM_PARAMS *lcm_param;
+	int throughput_freq = 0;
+	unsigned long long throughput_freq_temp = 0;
+	enum HRT_OPP_LEVEL mm_dvfs_level;
+
+	/* if have yuv layer overlap, the overlap_yuv_num = 2 */
+	/* this is a workaround for two MM layer overlap */
+	overlap_yuv_num = _is_yuv_overlap(cfg) + 1;
+
+	/* have not overlay yuv layer */
+	if (overlap_yuv_num < 2) {
+		ovl_throughput_freq_req = 0;
+		return;
+	}
+
+	/* calculate ovl throughput frequence */
+	lcm_param = disp_lcm_get_params(pgc->plcm);
+
+	blank_field = (long long int)(((panel_height +
+		(long long)lcm_param->dsi.horizontal_sync_active +
+		(long long)lcm_param->dsi.horizontal_backporch +
+		(long long)lcm_param->dsi.horizontal_frontporch) *
+		(panel_width +
+		(long long)lcm_param->dsi.vertical_sync_active +
+		(long long)lcm_param->dsi.vertical_backporch +
+		(long long)lcm_param->dsi.vertical_frontporch)) -
+		(panel_height * panel_width));
+
+	pixel_total = panel_height * panel_width;
+
+	blank_ratio = blank_field * 10000;
+
+	if (pixel_total == 0) {
+		DISPERR(
+			"width or height of panel is 0! width=%lld, height=%lld\n",
+			panel_width, panel_height);
+		return;
+	}
+
+	do_div(blank_ratio, pixel_total);
+
+	throughput_freq_temp = panel_height * panel_width * overlap_yuv_num *
+		60 * (10000 + blank_ratio) * 10500;
+
+	do_div(throughput_freq_temp, 10000);
+	do_div(throughput_freq_temp, 10000);
+	do_div(throughput_freq_temp, 1000000);
+
+	throughput_freq = (int)throughput_freq_temp;
+
+	DISPDBG("%s throughput_freq=%d\n", __func__, throughput_freq);
+
+	/* Request MM freq, ensure MM Freq more than ovl throughput freq */
+	for (mm_dvfs_level = HRT_OPP_LEVEL_NUM - 1;
+		mm_dvfs_level >= HRT_OPP_LEVEL_LEVEL0;
+		mm_dvfs_level--) {
+		if (throughput_freq <
+				layering_rule_get_mm_freq_table
+					(mm_dvfs_level)) {
+			pm_qos_update_request(&primary_display_mm_freq_request,
+				layering_rule_get_mm_freq_table(mm_dvfs_level));
+			DISPDBG("%s request_mm_freq=%d\n",
+				__func__,
+				layering_rule_get_mm_freq_table(mm_dvfs_level));
+			ovl_throughput_freq_req =
+				layering_rule_get_mm_freq_table(mm_dvfs_level);
+			break;
+		}
+		ovl_throughput_freq_req = 0;
+	}
+}
 
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle,
@@ -6001,7 +6150,8 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			hrt_level, HRT_LEVEL_NUM - 1);
 	if ((hrt_level - dvfs_last_ovl_req) > 0 &&
 		(!primary_display_is_decouple_mode()))
-		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP, hrt_level);
+		primary_display_request_dvfs_perf(
+			MMDVFS_SCEN_DISP, hrt_level, 0);
 
 	dvfs_last_ovl_req = hrt_level;
 #endif
@@ -6087,22 +6237,26 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 	}
 
 #ifdef MTK_FB_MMDVFS_SUPPORT
+	/* Adjust MM DVFS by ovl YUV throughput */
+	_ovl_yuv_throughput_freq_request(cfg);
+
+	/* display hrt request*/
 	if (primary_display_is_decouple_mode() &&
 		primary_display_is_mirror_mode()) {
 		/* if DCMirror mode(WFD/ScreenRecord), */
 		/* forced set dvfs to opp0 */
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-			HRT_LEVEL_LEVEL3);
+			HRT_LEVEL_LEVEL3, ovl_throughput_freq_req);
 		dvfs_last_ovl_req = HRT_LEVEL_LEVEL3;
 	} else if (hrt_level > HRT_LEVEL_LEVEL2 &&
 		primary_display_is_directlink_mode()) {
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-			HRT_LEVEL_LEVEL3);
+			HRT_LEVEL_LEVEL3, ovl_throughput_freq_req);
 		dvfs_last_ovl_req = HRT_LEVEL_LEVEL3;
 	} else if (hrt_level > HRT_LEVEL_LEVEL1 &&
 		primary_display_is_directlink_mode()) {
 		primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
-			HRT_LEVEL_LEVEL2);
+			HRT_LEVEL_LEVEL2, ovl_throughput_freq_req);
 		dvfs_last_ovl_req = HRT_LEVEL_LEVEL2;
 	} else if (hrt_level > HRT_LEVEL_LEVEL0) {
 		dvfs_last_ovl_req = HRT_LEVEL_LEVEL1;
@@ -8155,7 +8309,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 
 	ret = m4u_cache_sync(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf,
 			     buffer_size, mva, M4U_CACHE_INVALID_BY_RANGE);
-	msleep(20);
+
 out:
 	if (mva > 0)
 		m4u_dealloc_mva(m4uClient, DISP_M4U_PORT_DISP_WDMA0, mva);

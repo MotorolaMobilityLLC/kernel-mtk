@@ -47,7 +47,6 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 };
 
 unsigned int gOVLBackground = 0xFF000000;
-unsigned int govldimcolor = 0xFF000000;
 
 static unsigned int ovl_bg_w[OVL_NUM];
 static unsigned int ovl_bg_h[OVL_NUM];
@@ -412,7 +411,6 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 			lc_h = oc->dst_h;
 		}
 	}
-
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_XOFF,
 			   ovl_base + DISP_REG_OVL_LC_OFFSET, lc_x);
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_YOFF,
@@ -567,10 +565,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	if (module != DISP_MODULE_OVL1_2L)
 		rotate = 1;
-
-	if (rotate && is_slt_test())
-		rotate = 0;
-
 #endif
 
 	/* check dim layer fmt */
@@ -660,14 +654,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_CON + layer_offset, value);
 
-	if (cfg->source != OVL_LAYER_SOURCE_RESERVED) {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
-			     0xff000000);
-	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
-			     govldimcolor);
-	}
-
+	DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
+		     0xff000000 | cfg->dim_color);
 	DISP_REG_SET(handle,
 		DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
@@ -1213,6 +1201,12 @@ static void sBCH_enable(struct OVL_CONFIG_STRUCT *cfg, int *set_reg,
 		break;
 	}
 
+	if (cfg->layer_disable_by_partial_update) {
+		update = 0;
+		cnst_en = 0;
+		trans_en = 0;
+	}
+
 	/* set reg*/
 	if (cfg->ext_layer == -1) {
 		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
@@ -1235,6 +1229,12 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	int trans_en = 0;
 	int cnst_en = 0;
 
+	if (cfg->layer_disable_by_partial_update) {
+		update = 0;
+		trans_en = 0;
+		cnst_en = 0;
+	}
+
 	data->pre_addr = cfg->real_addr;
 	data->dst_x = cfg->real_dst_x;
 	data->dst_y = cfg->real_dst_y;
@@ -1247,6 +1247,8 @@ static void sBCH_disable(struct sbch *bch_info, int ext_layer_num,
 	data->phy_layer = cfg->phy_layer;
 	data->sbch_en_cnt = 0;
 	data->full_trans_en = 0;
+	data->layer_disable_by_partial_update =
+		cfg->layer_disable_by_partial_update;
 
 	if (cfg->ext_layer == -1) {
 		set_reg[UPDATE] |= update << (cfg->phy_layer * 4);
@@ -1374,17 +1376,20 @@ static int check_ext_update(struct sbch *sbch_data, int ext_num,
 	int j;
 
 	for (j = 0; j < ext_num; j++) {
+		int ext_l = layer + j + 1;
 		struct OVL_CONFIG_STRUCT *ext_cfg =
-					&pConfig->ovl_config[layer + j + 1];
+					&pConfig->ovl_config[ext_l];
 
-		if (sbch_data[layer + j + 1].dst_x != ext_cfg->real_dst_x ||
-			sbch_data[layer + j + 1].dst_y != ext_cfg->real_dst_y ||
-			sbch_data[layer + j + 1].dst_w != ext_cfg->real_dst_w ||
-			sbch_data[layer + j + 1].dst_h != ext_cfg->real_dst_h ||
-			sbch_data[layer + j + 1].height != ext_cfg->src_h ||
-			sbch_data[layer + j + 1].width != ext_cfg->src_w ||
-			sbch_data[layer + j + 1].fmt != ext_cfg->fmt ||
-			sbch_data[layer + j + 1].pre_addr != ext_cfg->real_addr)
+		if (sbch_data[ext_l].dst_x != ext_cfg->real_dst_x ||
+			sbch_data[ext_l].dst_y != ext_cfg->real_dst_y ||
+			sbch_data[ext_l].dst_w != ext_cfg->real_dst_w ||
+			sbch_data[ext_l].dst_h != ext_cfg->real_dst_h ||
+			sbch_data[ext_l].height != ext_cfg->src_h ||
+			sbch_data[ext_l].width != ext_cfg->src_w ||
+			sbch_data[ext_l].fmt != ext_cfg->fmt ||
+			sbch_data[ext_l].pre_addr != ext_cfg->real_addr ||
+			sbch_data[ext_l].layer_disable_by_partial_update
+			!= ext_cfg->layer_disable_by_partial_update)
 			return 1;
 	}
 	return 0;
@@ -1531,7 +1536,9 @@ static unsigned long long sbch_calc(enum DISP_MODULE_ENUM module,
 			sbch_data[i].height == ovl_cfg->src_h &&
 			sbch_data[i].width == ovl_cfg->src_w &&
 			sbch_data[i].fmt == ovl_cfg->fmt &&
-			sbch_data[i].phy_layer == ovl_cfg->phy_layer) {
+			sbch_data[i].phy_layer == ovl_cfg->phy_layer &&
+			sbch_data[i].layer_disable_by_partial_update ==
+			ovl_cfg->layer_disable_by_partial_update) {
 			if (ovl_cfg->ext_layer == -1)
 				layer_no_update(sbch_data, phy_bit, ext_bit,
 					pConfig, ovl_cfg, &i,
@@ -1641,9 +1648,12 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 					has_sec_layer, ovl_cfg,
 					&pConfig->ovl_partial_roi,
 					&layer_partial_roi, handle);
+				ovl_cfg->layer_disable_by_partial_update = 0;
 			} else {
 				/* this layer will not be displayed */
 				enable = 0;
+				/*update layer_en sbch will skip this layer*/
+				ovl_cfg->layer_disable_by_partial_update = 1;
 			}
 		} else {
 			print_layer_config_args(module, ovl_cfg, NULL);
@@ -2449,6 +2459,12 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	unsigned int dst_w, dst_h;
 
 	layer_num = ovl_layer_num(module);
+
+	/* TODO: temp solution */
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	if (module == DISP_MODULE_OVL0)
+		layer_num += 1;
+#endif
 
 	dst_w = primary_display_get_width();
 	dst_h = primary_display_get_height();
