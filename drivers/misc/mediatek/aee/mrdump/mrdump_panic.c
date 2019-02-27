@@ -23,7 +23,7 @@
 #include <mt-plat/mtk_ram_console.h>
 #endif
 #include <linux/reboot.h>
-#include "ipanic.h"
+#include "mrdump_panic.h"
 #include <asm/system_misc.h>
 #include "../mrdump/mrdump_private.h"
 
@@ -142,7 +142,7 @@ int __init aee_ipanic_init(void)
 	mrdump_init();
 	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 	register_die_notifier(&die_blk);
-	LOGI("ipanic: startup\n");
+	pr_debug("ipanic: startup\n");
 	return 0;
 }
 
