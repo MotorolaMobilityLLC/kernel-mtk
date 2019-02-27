@@ -78,11 +78,12 @@ static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 	int i = 0;
 	int offset = addr;
 
-	pr_debug("enter _read_eeprom size = %d\n", size);
+
 	for (i = 0; i < size; i++) {
-		if (!selective_read_eeprom(offset, &data[i]))
+		if (!selective_read_eeprom(offset, &data[i])) {
+			pr_debug("%s fail 0x%0x %d\n", __func__, offset, i);
 			return false;
-		/*pr_debug("read_eeprom 0x%0x %d\n", offset, data[i]);*/
+		}
 		offset++;
 	}
 	if (addr == SPC_START_ADDR) {
@@ -94,6 +95,7 @@ static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 		last_size_dcc = size;
 		last_offset_dcc = offset;
 	}
+	pr_debug("exit _read_eeprom size = %d\n", size);
 	return true;
 }
 
