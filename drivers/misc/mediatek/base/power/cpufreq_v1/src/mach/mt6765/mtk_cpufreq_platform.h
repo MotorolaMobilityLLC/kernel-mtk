@@ -16,7 +16,8 @@
 
 #include "mtk_cpufreq_internal.h"
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+//#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+#if 0
 #define CONFIG_HYBRID_CPU_DVFS	1
 #define PPM_AP_SIDE	1
 #define EEM_AP_SIDE	1
