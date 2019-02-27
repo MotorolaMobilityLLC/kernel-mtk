@@ -452,6 +452,7 @@ extern struct mtk_pinctrl *pctl;
 unsigned int mtk_gpio_debounce_select(const unsigned int *dbnc_infos,
 	int dbnc_infos_num, unsigned int debounce);
 int mtk_pctrl_get_gpio_chip_base(void);
+int gpio_get_tristate_input(unsigned int pin);
 
 extern const struct dev_pm_ops mtk_eint_pm_ops;
 
