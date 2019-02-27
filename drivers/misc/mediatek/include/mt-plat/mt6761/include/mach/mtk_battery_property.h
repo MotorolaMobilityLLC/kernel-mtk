@@ -17,10 +17,10 @@
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
-#define SHUTDOWN_1_TIME	30
+#define SHUTDOWN_1_TIME	60
 #define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
-#define EMBEDDED_SEL 1
+#define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
 #define CAR_TUNE_VALUE	100 /*1.00 */
@@ -47,7 +47,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 34000
+#define PMIC_MIN_VOL 33500
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -144,7 +144,7 @@
 
 #define PSEUDO1_SEL	2
 
-#define FG_TRACKING_CURRENT	15000	/* not implement */
+#define FG_TRACKING_CURRENT	30000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	0	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
