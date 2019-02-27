@@ -39,17 +39,19 @@ struct eem_ctrl eem_ctrls[NR_EEM_CTRL] = {
 		.name = __stringify(EEM_CTRL_2L),
 		.det_id = EEM_DET_2L,
 	},
-
+#if 0
 	[EEM_CTRL_GPU] = {
 		.name = __stringify(EEM_CTRL_GPU),
 		.det_id = EEM_DET_GPU,
 	},
+#endif
 #if ENABLE_LOO
+#if 0
 	[EEM_CTRL_L_HI] = {
 		.name = __stringify(EEM_CTRL_L_HI),
 		.det_id = EEM_DET_L_HI,
 	},
-
+#endif
 	[EEM_CTRL_2L_HI] = {
 		.name = __stringify(EEM_CTRL_2L_HI),
 		.det_id = EEM_DET_2L_HI,
@@ -138,9 +140,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
 #if ENABLE_LOO
-		.max_freq_khz	= 1050000,
+		.max_freq_khz	= 1400000,
 #else
-		.max_freq_khz	= 1800000,
+		.max_freq_khz	= 2001000,
 #endif
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
@@ -167,10 +169,10 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
-
+#if 0
 	[EEM_DET_GPU] = {
-		.name		= __stringify(EEM_DET_CCI),
-		.ops		= &cci_det_ops,
+		.name		= __stringify(EEM_DET_GPU),
+		.ops		= &gpu_det_ops,
 #ifdef EEM_OFFSET_PROC_SHOW
 		.volt_offset = 0,
 #endif
@@ -198,8 +200,9 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 	},
-
+#endif
 #if ENABLE_LOO
+#if 0
 	[EEM_DET_L_HI] = {
 		.name		= __stringify(EEM_DET_L_HI),
 		.ops		= &cpu_det_ops,
@@ -230,7 +233,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.low_temp_off	= LOW_TEMP_OFF_DEFAULT,
 		},
-
+#endif
 	[EEM_DET_2L_HI] = {
 		.name		= __stringify(EEM_DET_2L_HI),
 		.ops		= &cpu_det_ops,
@@ -239,7 +242,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_2L_HI,
 		.features	= FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1800000,
+		.max_freq_khz	= 2001000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
