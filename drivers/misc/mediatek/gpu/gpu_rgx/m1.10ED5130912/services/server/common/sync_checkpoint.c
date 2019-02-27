@@ -1751,6 +1751,27 @@ SyncCheckpointGetCreator(PSYNC_CHECKPOINT psSyncCheckpoint)
 	return psSyncCheckpointInt->uiProcess;
 }
 
+IMG_UINT32 SyncCheckpointStateFromUFO(PPVRSRV_DEVICE_NODE psDevNode,
+                                IMG_UINT32 ui32FwAddr)
+{
+	_SYNC_CHECKPOINT *psSyncCheckpointInt;
+	PDLLIST_NODE psNode, psNext;
+	IMG_UINT32 ui32State = 0;
+
+	OSLockAcquire(psDevNode->hSyncCheckpointListLock);
+	dllist_foreach_node(&psDevNode->sSyncCheckpointSyncsList, psNode, psNext)
+	{
+		psSyncCheckpointInt = IMG_CONTAINER_OF(psNode, _SYNC_CHECKPOINT, sListNode);
+		if (ui32FwAddr == SyncCheckpointGetFirmwareAddr((PSYNC_CHECKPOINT)psSyncCheckpointInt))
+		{
+			ui32State = psSyncCheckpointInt->psSyncCheckpointFwObj->ui32State;
+			break;
+		}
+	}
+	OSLockRelease(psDevNode->hSyncCheckpointListLock);
+	return ui32State;
+}
+
 void SyncCheckpointErrorFromUFO(PPVRSRV_DEVICE_NODE psDevNode,
                                 IMG_UINT32 ui32FwAddr)
 {

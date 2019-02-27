@@ -2154,27 +2154,36 @@ void DumpStalledContextInfo(PVRSRV_RGXDEV_INFO *psDevInfo)
 		if ((eCommandType == RGXFWIF_CCB_CMD_TYPE_FENCE) || (eCommandType == RGXFWIF_CCB_CMD_TYPE_FENCE_PR))
 		{
 			RGXFWIF_UFO *psUFOPtr = (RGXFWIF_UFO *)(pui8Ptr + sizeof(*psCommandHeader));
-			IMG_UINT32 jj, ui32ReadValue;
+			IMG_UINT32 jj;
 			IMG_UINT32 ui32NumUnsignalledUFOs = 0;
 			IMG_UINT32 ui32UnsignalledUFOVaddrs[PVRSRV_MAX_SYNC_PRIMS];
 
 			PVR_LOG(("Fence found on context 0x%x '%s' has %d UFOs", FWCommonContextGetFWAddress(psStalledClientCCB->psServerCommonContext).ui32Addr, psStalledClientCCB->szName, (IMG_UINT32)(psCommandHeader->ui32CmdSize/sizeof(RGXFWIF_UFO))));
 			for (jj=0; jj<psCommandHeader->ui32CmdSize/sizeof(RGXFWIF_UFO); jj++)
 			{
-				RGXReadWithSP(psDevInfo, psUFOPtr[jj].puiAddrUFO.ui32Addr, &ui32ReadValue);
-
-				PVR_LOG(("  %d/%d FWAddr 0x%x requires 0x%x (currently 0x%x)", jj+1,
-						   (IMG_UINT32)(psCommandHeader->ui32CmdSize/sizeof(RGXFWIF_UFO)),
-						   psUFOPtr[jj].puiAddrUFO.ui32Addr,
-						   psUFOPtr[jj].ui32Value,
-						   ui32ReadValue));
-
-				/* If fence is unmet, dump debug info on it */
-				if (ui32ReadValue != psUFOPtr[jj].ui32Value)
+				if (PVRSRV_UFO_IS_SYNC_CHECKPOINT((RGXFWIF_UFO *)&psUFOPtr[jj]))
 				{
-					/* Add to our list to pass to pvr_sync */
-					ui32UnsignalledUFOVaddrs[ui32NumUnsignalledUFOs] = psUFOPtr[jj].puiAddrUFO.ui32Addr;
-					ui32NumUnsignalledUFOs++;
+					IMG_UINT32 ui32ReadValue = SyncCheckpointStateFromUFO(psDevInfo->psDeviceNode,
+					                                           psUFOPtr[jj].puiAddrUFO.ui32Addr);
+					PVR_LOG(("  %d/%d FWAddr 0x%x requires 0x%x (currently 0x%x)", jj+1,
+							   (IMG_UINT32)(psCommandHeader->ui32CmdSize/sizeof(RGXFWIF_UFO)),
+							   psUFOPtr[jj].puiAddrUFO.ui32Addr,
+							   psUFOPtr[jj].ui32Value,
+							   ui32ReadValue));
+					/* If fence is unmet, dump debug info on it */
+					if (ui32ReadValue != psUFOPtr[jj].ui32Value)
+					{
+						/* Add to our list to pass to pvr_sync */
+						ui32UnsignalledUFOVaddrs[ui32NumUnsignalledUFOs] = psUFOPtr[jj].puiAddrUFO.ui32Addr;
+						ui32NumUnsignalledUFOs++;
+					}
+				}
+				else
+				{
+					PVR_LOG(("  %d/%d FWAddr 0x%x requires 0x%x", jj+1,
+							   (IMG_UINT32)(psCommandHeader->ui32CmdSize/sizeof(RGXFWIF_UFO)),
+							   psUFOPtr[jj].puiAddrUFO.ui32Addr,
+							   psUFOPtr[jj].ui32Value));
 				}
 			}
 #if defined(SUPPORT_NATIVE_FENCE_SYNC) || defined (SUPPORT_FALLBACK_FENCE_SYNC)
