@@ -11,11 +11,28 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MTK_MDPM_PLATFORM_DATA_H__
-#define __MTK_MDPM_PLATFORM_DATA_H__
+#ifndef _MTK_MDPM_API_H_
+#define _MTK_MDPM_API_H_
 
-#if defined(CONFIG_MACH_MT3967)
-#include "mt3967/mtk_mdpm_platform_data.h"
+#include <mach/mtk_pmic.h>
+#include <mach/mtk_pbm.h>
+
+enum mdpm_power_type {
+	MAX_POWER = 0,
+	AVG_POWER,
+	POWER_TYPE_NUM
+};
+
+enum pbm_kicker {
+	KR_DLPT,		/* 0 */
+	KR_MD1,			/* 1 */
+	KR_MD3,			/* 2 */
+	KR_CPU,			/* 3 */
+	KR_GPU,			/* 4 */
+	KR_FLASH		/* 5 */
+};
+
+extern void init_md_section_level(enum pbm_kicker kicker);
+extern int get_md1_power(enum mdpm_power_type power_type, bool need_update);
+
 #endif
-
-#endif /* __MTK_MDPM_PLATFORM_DATA_H__ */

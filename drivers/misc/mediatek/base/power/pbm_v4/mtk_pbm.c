@@ -27,16 +27,19 @@
 #include <linux/uaccess.h>
 
 #include <mach/mtk_pbm.h>
-#include <mtk_pbm_rel.h>
+#include <mtk_pbm_common.h>
+#include <mtk_pbm_data.h>
 
 #ifndef DISABLE_PBM_FEATURE
 #include <mach/upmu_sw.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
 #include <mtk_cpufreq_api.h>
+#if 0 /* FIXME: bring up */
 #include <mtk_gpufreq.h>
 #include <mach/mtk_thermal.h>
 #include <mtk_ppm_api.h>
+#endif
 #endif
 
 #ifndef DISABLE_PBM_FEATURE
@@ -154,7 +157,9 @@ int hpf_get_power_leakage(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 	unsigned int leakage_cpu = 0, leakage_gpu = 0;
 
+#if 0 /* FIXME: bring up */
 	leakage_cpu = mt_ppm_get_leakage_mw(TOTAL_CLUSTER_LKG);
+#endif
 	leakage_gpu = mt_gpufreq_get_leakage_mw();
 	hpfmgr->loading_leakage = leakage_cpu + leakage_gpu;
 
@@ -769,7 +774,7 @@ static int __init pbm_module_init(void)
 	md_power_meter_ut();
 	#endif
 
-	pr_info("pbm_module_init : Done\n");
+	pr_info("%s : Done\n", __func__);
 
 	if (ret) {
 		pr_err("FAILED TO CREATE PBM KTHREAD\n");
