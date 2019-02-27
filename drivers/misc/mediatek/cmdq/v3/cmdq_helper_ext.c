@@ -1152,13 +1152,13 @@ static s32 cmdq_core_thread_exec_counter(const s32 thread)
 #endif
 }
 
-static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
+static bool cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
 	s32 thread, bool dump_irq, bool aee_irq, const char *tag)
 {
 	u32 value[15] = { 0 };
 
 	if (thread == CMDQ_INVALID_THREAD)
-		return;
+		return aee_irq;
 
 	if (handle && handle->timeout_info) {
 		value[0] = (u32)handle->timeout_info->curr_pc;
@@ -1206,11 +1206,15 @@ static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
 	/* if pc match end and irq flag on, dump irq status */
 	if (dump_irq && value[0] == value[1] && value[2] == 1) {
 		mt_irq_dump_status(cmdq_dev_get_irq_id());
-		if (aee_irq)
+		if (aee_irq) {
 			CMDQ_AEE("CMDQ",
 				"thread irq delay id:%u thread:%d",
 				cmdq_dev_get_irq_id(), thread);
+			return false;
+		}
 	}
+
+	return aee_irq;
 }
 
 void cmdq_core_dump_trigger_loop_thread(const char *tag)
@@ -4991,6 +4995,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	s32 waitq;
 	s32 status = 0;
 	u32 count = 0;
+	bool aee = true;
 
 	CMDQ_PROF_MMP(cmdq_mmp_get_event()->wait_task,
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle), handle->thread);
@@ -5029,8 +5034,8 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 			handle->state);
 		cmdq_core_dump_status("INFO");
 		cmdq_core_dump_pc(handle, handle->thread, "INFO");
-		cmdq_core_dump_thread(handle, handle->thread, true,
-			(count == 0), "INFO");
+		aee = cmdq_core_dump_thread(handle, handle->thread, true,
+			aee, "INFO");
 
 		if (count == 0) {
 			cmdq_core_dump_trigger_loop_thread("INFO");
