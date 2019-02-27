@@ -12,26 +12,28 @@
  */
 
 #include <linux/proc_fs.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
 
-#include <linux/platform_device.h>
-#include "eas_ctrl.h"
+#include "boost_ctrl.h"
 
-static int __init init_boostctrl(void)
+int init_boostctrl(struct proc_dir_entry *parent)
 {
-	struct proc_dir_entry *hps_dir = NULL;
+	struct proc_dir_entry *bstctrl_root = NULL;
 
 	pr_debug("__init init_boostctrl\n");
 
 
-	hps_dir = proc_mkdir("perfmgr/boost_ctrl", NULL);
+	bstctrl_root = proc_mkdir("boost_ctrl", parent);
 
-	init_perfmgr_eas_controller();
+	cpu_ctrl_init(bstctrl_root);
+
+	dram_ctrl_init(bstctrl_root);
+
+	eas_ctrl_init(bstctrl_root);
+
+	topo_ctrl_init(bstctrl_root);
 
 	return 0;
 }
-device_initcall(init_boostctrl);
 
 /*MODULE_LICENSE("GPL");*/
 /*MODULE_AUTHOR("MTK");*/

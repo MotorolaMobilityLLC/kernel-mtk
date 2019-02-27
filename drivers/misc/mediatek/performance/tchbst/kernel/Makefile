@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015 MediaTek Inc.
+# Copyright (C) 2018 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,13 +11,6 @@
 # GNU General Public License for more details.
 #
 
-obj-y += perfmgr_main.o
 
-ifeq ($(CONFIG_MTK_PERFMGR_TOUCH_BOOST),y)
-ccflags-y += -DMTK_TOUCH_BOOST
-
-obj-y += perfmgr_touch.o
-endif # CONFIG_MTK_PERFMGR_TOUCH_BOOST
-
-obj-y += common/
+obj-y +=ktch.o
 
