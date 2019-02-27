@@ -725,6 +725,8 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 #ifdef USE_TIMER_CHECK
 	seq_printf(m, "cm_mgr_timer_enable %d\n", cm_mgr_timer_enable);
 #endif /* USE_TIMER_CHECK */
+	seq_printf(m, "cm_mgr_ratio_timer_enable %d\n",
+			cm_mgr_ratio_timer_enable);
 	seq_printf(m, "cm_mgr_disable_fb %d\n", cm_mgr_disable_fb);
 	seq_printf(m, "light_load_cps %d\n", light_load_cps);
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
@@ -1012,6 +1014,9 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_timer_enable")) {
 		cm_mgr_timer_enable = val_1;
 #endif /* USE_TIMER_CHECK */
+	} else if (!strcmp(cmd, "cm_mgr_ratio_timer_enable")) {
+		cm_mgr_ratio_timer_enable = val_1;
+		cm_mgr_ratio_timer_en(val_1);
 	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
 		cm_mgr_disable_fb = val_1;
 		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
