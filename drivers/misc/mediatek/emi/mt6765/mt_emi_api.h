@@ -28,6 +28,8 @@ unsigned int get_dram_type(void);
 unsigned int get_ch_num(void);
 unsigned int get_rk_num(void);
 unsigned int get_rank_size(unsigned int rank_index);
+unsigned int get_emi_bwst(unsigned int bw_index);
+unsigned int get_emi_bwvl(unsigned int bw_index);
 extern void __iomem *mt_cen_emi_base_get(void);
 extern void __iomem *mt_emi_base_get(void);
 extern void __iomem *mt_chn_emi_base_get(unsigned int channel_index);
