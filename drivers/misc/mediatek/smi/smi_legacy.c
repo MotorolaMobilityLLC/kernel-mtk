@@ -248,8 +248,35 @@ static int smi_larb_cmd_grp_enable(void)
 			writel(readl(smi->base + SMI_LARB_NON_SEC_CON(j)) | 0x2,
 				smi->base + SMI_LARB_NON_SEC_CON(j));
 	}
-	SMIDBG("LARB_NUM=%u, PORT_NUM=%u\n",
+	SMIDBG("CMD_GP_EN: LARB_NUM=%u, PORT_NUM=%u\n",
 		SMI_LARB_CMD_GP_EN_LARB_NUM, SMI_LARB_CMD_GP_EN_PORT_NUM);
+	return 0;
+}
+
+static int smi_larb_bw_thrt_enable(const unsigned int reg_indx)
+{
+	struct mtk_smi_dev *smi = larbs[reg_indx];
+	int i;
+
+	if (reg_indx >= SMI_LARB_NUM) {
+		SMIDBG("Invalid reg_indx=%u, SMI_LARB_NUM=%u\n",
+			reg_indx, SMI_LARB_NUM);
+		return -EINVAL;
+	} else if (!smi) {
+		SMIDBG("No such device or address\n");
+		return -ENXIO;
+	} else if (!smi->base) {
+		SMIDBG("LARB%u no such device or address\n", smi->index);
+		return -ENXIO;
+	}
+
+	for (i = smi_larb_bw_thrt_en_port[reg_indx][0];
+		i < smi_larb_bw_thrt_en_port[reg_indx][1]; i++)
+		writel(readl(smi->base + SMI_LARB_NON_SEC_CON(i)) | 0x8,
+			smi->base + SMI_LARB_NON_SEC_CON(i));
+	SMIDBG("BW_THRT_EN: reg_indx=%u, PORT=(%u, %u)\n", reg_indx,
+		smi_larb_bw_thrt_en_port[reg_indx][0],
+		smi_larb_bw_thrt_en_port[reg_indx][1]);
 	return 0;
 }
 
@@ -301,8 +328,9 @@ static void smi_clk_subsys_after_on(enum subsys_id sys)
 		if (subsys & (1 << i)) {
 			mtk_smi_config_set(larbs[i], SMI_SCEN_NUM, false);
 			mtk_smi_config_set(larbs[i], smi_scen, false);
-			if (!i)
-				smi_larb_cmd_grp_enable(); /* DISP */
+			smi_larb_bw_thrt_enable(i);
+			if (!i) /* DISP */
+				smi_larb_cmd_grp_enable();
 		}
 }
 
@@ -1213,10 +1241,15 @@ int smi_register(struct platform_driver *drv)
 			smi, smi_scen_map[smi_drv->scen], true);
 		if (ret)
 			return ret;
+		if (!i) /* DISP */
+			ret = smi_larb_cmd_grp_enable();
+		if (ret)
+			return ret;
+		if (i < SMI_LARB_NUM)
+			ret = smi_larb_bw_thrt_enable(i);
+		if (ret)
+			return ret;
 	}
-	ret = smi_larb_cmd_grp_enable();
-	if (ret)
-		return ret;
 	ret = smi_mmsys_offset_get();
 	if (ret)
 		return ret;
