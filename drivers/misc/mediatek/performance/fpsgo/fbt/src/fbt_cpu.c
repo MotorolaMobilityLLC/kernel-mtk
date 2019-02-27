@@ -461,12 +461,18 @@ static int fbt_get_target_cluster(unsigned int blc_wt)
 	else
 		cluster = max_cap_cluster ^ 1;
 
+	if (cluster >= cluster_num)
+		cluster = 0;
+
 	return cluster;
 }
 
 static int fbt_get_opp_by_normalized_cap(unsigned int cap, int cluster)
 {
 	int tgt_opp;
+
+	if (cluster >= cluster_num)
+		cluster = 0;
 
 	for (tgt_opp = (NR_FREQ_CPU - 1); tgt_opp > 0; tgt_opp--) {
 		if (cpu_dvfs[cluster].capacity_ratio[tgt_opp] >= cap)
@@ -1404,6 +1410,9 @@ void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq)
 	if (!fbt_enable)
 		return;
 
+	if (cid >= cluster_num)
+		return;
+
 	curr_cb_ts = fpsgo_get_time();
 	new_ts = nsec_to_100usec(curr_cb_ts);
 
@@ -1971,6 +1980,9 @@ static void fbt_update_pwd_tbl(void)
 			}
 		}
 	}
+
+	if (max_cap_cluster >= cluster_num)
+		max_cap_cluster = 0;
 
 	for (cluster = 0; cluster < cluster_num ; cluster++) {
 		if (fbt_is_mips_different() && cpu_dvfs[cluster].capacity[0])
