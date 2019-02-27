@@ -762,8 +762,6 @@ enum ISP_HALT_DMA_ENUM {
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_DROP_FRAME,  unsigned long)
 #define ISP_GET_START_TIME  \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME,  unsigned char*)
-#define ISP_TRANSFOR_CCU_REG \
-	_IOWR(ISP_MAGIC, ISP_CMD_TRANSFOR_CCU_REG,  unsigned long long)
 #define ISP_DFS_CTRL             \
 	_IOWR(ISP_MAGIC, ISP_CMD_DFS_CTRL,        unsigned int)
 #define ISP_DFS_UPDATE              \
@@ -814,6 +812,8 @@ enum ISP_HALT_DMA_ENUM {
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, struct ISP_GET_DUMP_INFO_STRUCT)
 #define ISP_SET_MEM_INFO            \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO,  struct ISP_MEM_INFO_STRUCT)
+#define ISP_TRANSFOR_CCU_REG \
+	_IOWR(ISP_MAGIC, ISP_CMD_TRANSFOR_CCU_REG,  unsigned char*)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER      \
@@ -835,7 +835,6 @@ enum ISP_HALT_DMA_ENUM {
 					struct compat_ISP_REF_CNT_CTRL_STRUCT)
 #define COMPAT_ISP_GET_START_TIME     \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_START_TIME,   compat_uptr_t)
-
 #define COMPAT_ISP_WAKELOCK_CTRL      \
 	_IOWR(ISP_MAGIC, ISP_CMD_WAKELOCK_CTRL,    compat_uptr_t)
 #define COMPAT_ISP_GET_DROP_FRAME     \
@@ -856,6 +855,8 @@ enum ISP_HALT_DMA_ENUM {
 #define COMPAT_ISP_SET_MEM_INFO       \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_MEM_INFO, \
 					struct compat_ISP_MEM_INFO_STRUCT)
+#define COMPAT_ISP_TRANSFOR_CCU_REG     \
+	_IOWR(ISP_MAGIC, ISP_CMD_TRANSFOR_CCU_REG,   compat_uptr_t)
 #endif
 
 int32_t ISP_MDPClockOnCallback(uint64_t engineFlag);
