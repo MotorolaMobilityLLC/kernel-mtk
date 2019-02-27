@@ -36,6 +36,7 @@
 #include <smp.h>
 #endif
 #include "aee-common.h"
+#include <ipanic.h>
 #include <mrdump_private.h>
 
 #undef WDT_DEBUG_VERBOSE

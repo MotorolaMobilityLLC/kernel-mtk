@@ -1036,10 +1036,9 @@ int mrdump_mini_init(void)
 		);
 
 		mrdump_mini_add_entry(
-		  ((unsigned long)mrdump_cblock->machdesc.kallsyms.start_addr +
+		  ((unsigned long) &kallsyms_addresses +
 		  (mrdump_cblock->machdesc.kallsyms.size / 2 - PAGE_SIZE)),
-		  mrdump_cblock->machdesc.kallsyms.size + 2 * PAGE_SIZE
-		);
+		  mrdump_cblock->machdesc.kallsyms.size + 2 * PAGE_SIZE);
 	}
 
 	return 0;
