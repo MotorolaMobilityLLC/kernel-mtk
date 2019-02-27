@@ -7282,7 +7282,8 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 	if (sysctl_sched_sync_hint_enable && sync) {
 		int cpu = smp_processor_id();
 
-		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p))) {
+		if (cpumask_test_cpu(cpu, tsk_cpus_allowed(p)) &&
+			!cpu_isolated(cpu)) {
 			schedstat_inc(p->se.statistics.nr_wakeups_secb_sync);
 			schedstat_inc(this_rq()->eas_stats.secb_sync);
 			return cpu;
@@ -7350,7 +7351,8 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 				/* enhance: if previous cpu not idle,
 				 *	    choose better another silbing
 				 */
-				if (idle_cpu(prev_cpu))
+				if (idle_cpu(prev_cpu) &&
+					!cpu_isolated(prev_cpu))
 					target_cpu = prev_cpu;
 				else
 					target_cpu = select_max_spare_capacity(p, prev_cpu);

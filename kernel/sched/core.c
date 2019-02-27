@@ -1672,6 +1672,8 @@ static inline
 int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
 {
 	bool allow_isolated = (p->flags & PF_KTHREAD);
+	bool select_fallback = false;
+	cpumask_t cpu_unisolated_mask;
 
 	lockdep_assert_held(&p->pi_lock);
 
@@ -1690,9 +1692,23 @@ int select_task_rq(struct task_struct *p, int cpu, int sd_flags, int wake_flags)
 	 * [ this allows ->select_task() to simply return task_cpu(p) and
 	 *   not worry about this generic constraint ]
 	 */
+
+	cpumask_andnot(&cpu_unisolated_mask, cpu_possible_mask,
+			cpu_isolated_mask);
+
+	/*
+	 * If kernel thread select a isolated CPU but it has other allowed CPU,
+	 * go to select_fallback_rq to choose allowed and un-isolated CPU.
+	 */
+	if (allow_isolated && cpu_isolated(cpu) &&
+		cpumask_intersects(tsk_cpus_allowed(p), &cpu_unisolated_mask)) {
+		select_fallback = true;
+	}
+
 	if (unlikely(!cpumask_test_cpu(cpu, tsk_cpus_allowed(p)) ||
 		     !cpu_online(cpu)) ||
-		     (cpu_isolated(cpu) && !allow_isolated))
+		     (cpu_isolated(cpu) && !allow_isolated) ||
+		     select_fallback)
 		cpu = select_fallback_rq(task_cpu(p), p, allow_isolated);
 
 	return cpu;
