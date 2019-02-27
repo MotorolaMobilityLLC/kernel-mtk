@@ -2945,7 +2945,11 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 #ifdef CONFIG_MTK_AVB20_SUPPORT
 			vbmeta {
 				compatible = "android,vbmeta";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+				parts = "vbmeta,boot,system,vendor,recovery";
+#else
 				parts = "vbmeta,boot,system,vendor";
+#endif
 			};
 #endif
 			fstab {
