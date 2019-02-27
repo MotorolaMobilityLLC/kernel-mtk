@@ -524,6 +524,7 @@ enum VAL_SET_TYPE_T {
 	VAL_SET_TYPE_SET_TCM_ON,            /* /< Set TCM on */
 	VAL_SET_TYPE_SET_TCM_OFF,           /* /< Set TCM off */
 	VAL_SET_TYPE_SET_AV_TASK_GROUP,     /* /< Set AV task grouping */
+	VAL_SET_FRAME_INFO,           /* /< Set current frame info for PM QoS */
 };
 
 /**
@@ -655,6 +656,17 @@ struct VAL_BufInfo {
 	unsigned int          u4BSSize;
 };
 /* for DirectLink Meta Mode - */
+
+struct VAL_FRAME_INFO_T {
+	void *handle; /* driver handle */
+	enum VAL_DRIVER_TYPE_T driver_type;
+	unsigned int input_size; /* input bitstream bytes */
+	unsigned int frame_width;
+	unsigned int frame_height; /* field pic has half height */
+	/* 0: intra, 1: inter 1 ref, 2: inter 2 ref, 3: copy */
+	unsigned int frame_type;
+	unsigned int is_compressed; /* is output buffer compressed */
+};
 
 
 #ifdef __cplusplus
