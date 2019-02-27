@@ -1651,14 +1651,11 @@ static int mt_i2c_resume_noirq(struct device *dev)
 
 	spin_lock(&i2c->cg_lock);
 	i2c->suspended = false;
-	pr_info("dump i2c when resume\n");
-	mt_i2c_clock_enable(i2c);
-	dump_i2c_info(i2c);
-	mt_i2c_clock_disable(i2c);
 	spin_unlock(&i2c->cg_lock);
 
 	return 0;
 }
+
 #endif
 
 static const struct dev_pm_ops mt_i2c_dev_pm_ops = {
