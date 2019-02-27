@@ -431,9 +431,19 @@ static int alshub_factory_clear_cali(void)
 static int alshub_factory_set_cali(int32_t offset)
 {
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int err = 0;
+	int32_t cfg_data;
 
+	cfg_data = offset;
+	err = sensor_cfg_to_hub(ID_LIGHT,
+		(uint8_t *)&cfg_data, sizeof(cfg_data));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub fail\n");
 	atomic_set(&obj->als_cali, offset);
-	return 0;
+	als_cali_report(&cfg_data);
+
+	return err;
+
 }
 static int alshub_factory_get_cali(int32_t *offset)
 {
