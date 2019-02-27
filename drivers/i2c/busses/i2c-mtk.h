@@ -347,6 +347,7 @@ struct mt_i2c {
 	struct clk *clk_dma;/* DMA clock for i2c via DMA */
 	struct clk *clk_pmic;/* PMIC clock for i2c from PMIC */
 	struct clk *clk_arb;/* Arbitrator clock for i2c */
+	struct clk *clk_pal;
 	bool have_pmic;/* can use i2c pins form PMIC */
 	bool have_dcm;/* HW DCM function */
 	bool use_push_pull;/* IO config push-pull mode */

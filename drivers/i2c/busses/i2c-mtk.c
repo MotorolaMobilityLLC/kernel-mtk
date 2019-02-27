@@ -290,6 +290,12 @@ static int mt_i2c_clock_enable(struct mt_i2c *i2c)
 	if (ret)
 		return ret;
 
+	if (i2c->clk_pal != NULL) {
+		ret = clk_prepare_enable(i2c->clk_pal);
+		if (ret)
+			goto err_main;
+	}
+
 	if (i2c->clk_arb != NULL) {
 		ret = clk_prepare_enable(i2c->clk_arb);
 		if (ret)
@@ -339,6 +345,9 @@ static void mt_i2c_clock_disable(struct mt_i2c *i2c)
 		clk_disable_unprepare(i2c->clk_pmic);
 
 	clk_disable_unprepare(i2c->clk_main);
+	if (i2c->clk_pal != NULL)
+		clk_disable_unprepare(i2c->clk_pal);
+
 	if (i2c->clk_arb != NULL)
 		clk_disable_unprepare(i2c->clk_arb);
 
@@ -1783,6 +1792,12 @@ static int mt_i2c_probe(struct platform_device *pdev)
 		i2c->clk_arb = NULL;
 	else
 		dev_dbg(&pdev->dev, "i2c%d has the relevant arbitrator clk.\n",
+			i2c->id);
+	i2c->clk_pal = devm_clk_get(&pdev->dev, "pal");
+	if (IS_ERR(i2c->clk_pal))
+		i2c->clk_pal = NULL;
+	else
+		dev_dbg(&pdev->dev, "i2c%d has the relevant pal clk.\n",
 			i2c->id);
 #endif
 
