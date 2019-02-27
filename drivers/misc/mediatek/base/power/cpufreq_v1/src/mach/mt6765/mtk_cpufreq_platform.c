@@ -558,6 +558,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 	int val_0 = 0;
 	int val_2 = 0;
 
+#if 0
 	val_0 = _GET_BITS_VAL_(11:8, get_devinfo_with_index(4));
 	val_2 = _GET_BITS_VAL_(15:12, get_devinfo_with_index(4));
 
@@ -569,6 +570,9 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_1;
 	else
 		lv = CPU_LEVEL_0;
+#else
+	lv = CPU_LEVEL_0;
+#endif
 
 	turbo_flag = 0;
 	tag_pr_info("%d, %d, %d, %d\n",

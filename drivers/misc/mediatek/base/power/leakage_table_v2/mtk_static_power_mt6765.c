@@ -15,16 +15,13 @@
 #include <mtk_common_static_power.h>
 
 char *spower_name[] = {
-	"MTK_SPOWER_CPULL",
-	"MTK_SPOWER_CPULL_CLUSTER",
 	"MTK_SPOWER_CPUL",
 	"MTK_SPOWER_CPUL_CLUSTER",
+	"MTK_SPOWER_CPULL",
+	"MTK_SPOWER_CPULL_CLUSTER",
 	"MTK_SPOWER_CCI",
 	"MTK_SPOWER_GPU",
 	"MTK_SPOWER_VCORE",
-#if 0
-	"MTK_SPOWER_VMD",
-#endif
 	"MTK_SPOWER_MODEM",
 
 	"MTK_SPOWER_MAX"
@@ -32,19 +29,19 @@ char *spower_name[] = {
 
 /* todo: devinfo_idx, devinfo_offset need to modify */
 struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX] = {
-	[MTK_LL_LEAKAGE] = {
-		.name = __stringify(MTK_LL_LEAKAGE),
-		.devinfo_idx = DEVINFO_IDX_LL,
-		.devinfo_offset = DEVINFO_OFF_LL,
-		.value = DEF_CPULL_LEAKAGE,
-		.v_of_fuse = V_OF_FUSE_CPU,
-		.t_of_fuse = T_OF_FUSE,
-	},
 	[MTK_L_LEAKAGE] = {
 		.name = __stringify(MTK_L_LEAKAGE),
 		.devinfo_idx = DEVINFO_IDX_L,
 		.devinfo_offset = DEVINFO_OFF_L,
 		.value = DEF_CPUL_LEAKAGE,
+		.v_of_fuse = V_OF_FUSE_CPU,
+		.t_of_fuse = T_OF_FUSE,
+	},
+	[MTK_LL_LEAKAGE] = {
+		.name = __stringify(MTK_LL_LEAKAGE),
+		.devinfo_idx = DEVINFO_IDX_LL,
+		.devinfo_offset = DEVINFO_OFF_LL,
+		.value = DEF_CPULL_LEAKAGE,
 		.v_of_fuse = V_OF_FUSE_CPU,
 		.t_of_fuse = T_OF_FUSE,
 	},
@@ -72,16 +69,6 @@ struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX] = {
 		.v_of_fuse = V_OF_FUSE_VCORE,
 		.t_of_fuse = T_OF_FUSE,
 	},
-#if 0
-	[MTK_VMD_LEAKAGE] = {
-		.name = __stringify(MTK_VMD_LEAKAGE),
-		.devinfo_idx = DEVINFO_IDX_VMD,
-		.devinfo_offset = DEVINFO_OFF_VMD,
-		.value = DEF_VMD_LEAKAGE,
-		.v_of_fuse = V_OF_FUSE_VMD,
-		.t_of_fuse = T_OF_FUSE,
-	},
-#endif
 	[MTK_MODEM_LEAKAGE] = {
 		.name = __stringify(MTK_MODEM_LEAKAGE),
 		.devinfo_idx = DEVINFO_IDX_MODEM,
