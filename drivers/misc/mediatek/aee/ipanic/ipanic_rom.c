@@ -23,7 +23,7 @@
 #include <mt-plat/mtk_ram_console.h>
 #endif
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #endif
 #include <linux/reboot.h>
 #include "ipanic.h"

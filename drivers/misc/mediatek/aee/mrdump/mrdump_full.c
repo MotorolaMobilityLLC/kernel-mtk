@@ -30,7 +30,7 @@
 #include <linux/kexec.h>
 #include <asm/pgtable.h>
 #include <asm/processor.h>
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #if defined(CONFIG_FIQ_GLUE)
 #include <mt-plat/fiq_smp_call.h>
 #endif
@@ -38,7 +38,6 @@
 #include <linux/kdebug.h>
 #include "mrdump_private.h"
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
 #include <ext_wd_drv.h>
 #endif
 

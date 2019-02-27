@@ -35,7 +35,7 @@
 #include <mt-plat/mtk_gpt.h>
 #endif
 #include <ext_wd_drv.h>
-#include <mach/wd_api.h>
+#include <mt-plat/mtk_wd_api.h>
 #include <linux/seq_file.h>
 
 /*************************************************************************

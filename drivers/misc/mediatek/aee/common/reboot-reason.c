@@ -27,7 +27,7 @@
 #include <asm/traps.h>
 #include <linux/elf.h>
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #endif
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
