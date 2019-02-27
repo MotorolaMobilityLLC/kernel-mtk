@@ -36,6 +36,7 @@ obj-$(CONFIG_MACH_MT6765) += cpufreq_v1/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
 obj-$(CONFIG_MACH_MT6765) += hps_v3/
 obj-$(CONFIG_MACH_MT6758) += cpuidle_v3/
+obj-$(CONFIG_MACH_MT6765) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += udi_v1/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
