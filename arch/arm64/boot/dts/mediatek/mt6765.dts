@@ -339,7 +339,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	syscfg_pctl_0: syscfg_pctl_0@10005000 {
 		compatible = "mediatek,mt6765-pctl-0-syscfg", "syscon";
-		reg = <0 10005000 0 0x1000>;
+		reg = <0 0x10005000 0 0x1000>;
 	};
 
 	pio: pinctrl@1000b000 {
