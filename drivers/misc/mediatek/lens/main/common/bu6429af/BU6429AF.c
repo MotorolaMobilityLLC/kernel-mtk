@@ -36,19 +36,17 @@
 #endif
 
 /* if use ISRC mode, should modify variables in init_setting */
-/* #define USE_ISRC_MODE_S5K2P8_SENSOR */
 #define USE_ISRC_MODE_IMX386_SENSOR
 
 static struct i2c_client *g_pstAF_I2Cclient;
 static int *g_pAF_Opened;
 static spinlock_t *g_pAF_SpinLock;
-static int g_i4DriverStatus;
 
 static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
-static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
+#if 0
 static int s4AF_ReadReg(unsigned short *a_pu2Result)
 {
 	int i4RetValue = 0;
@@ -61,8 +59,7 @@ static int s4AF_ReadReg(unsigned short *a_pu2Result)
 	i4RetValue = i2c_master_recv(g_pstAF_I2Cclient, pBuff, 2);
 
 	if (i4RetValue < 0) {
-		g_i4DriverStatus++;
-		LOG_INF("I2C read failed - %d!!\n", g_i4DriverStatus);
+		LOG_INF("I2C read - send failed!!\n");
 		return -1;
 	}
 
@@ -70,18 +67,14 @@ static int s4AF_ReadReg(unsigned short *a_pu2Result)
 
 	return 0;
 }
+#endif
 
 static int s4AF_WriteReg(u16 a_u2Data)
 {
 	int i4RetValue = 0;
 
-#if defined(USE_ISRC_MODE_S5K2P8_SENSOR) || defined(USE_ISRC_MODE_IMX386_SENSOR)
 	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC4),
 			     (char)(a_u2Data & 0xFF)};
-#else
-	char puSendCmd[2] = {(char)(((a_u2Data >> 8) & 0x03) | 0xC0),
-			     (char)(a_u2Data & 0xFF)};
-#endif
 
 	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 
@@ -90,113 +83,12 @@ static int s4AF_WriteReg(u16 a_u2Data)
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
 	if (i4RetValue < 0) {
-		g_i4DriverStatus++;
-		LOG_INF("I2C write failed - %d!!\n", g_i4DriverStatus);
+		LOG_INF("I2C write failed!!\n");
 		return -1;
 	}
 
 	return 0;
 }
-
-#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
-static int init_setting(void)
-{
-	int i4RetValue;
-	char puSendCmd[2];
-
-	char PS, EN, Wx, Mode, Qfact, MSB, resonant_frequency;
-
-	/* following 1 variables should be modified by module */
-	/* resonant_frequency = 106; 1 ~ 255   0.4*106=72.4Hz */
-	resonant_frequency = 123; /* 79HZ */
-	/* following 1 variables for ISRC mode */
-	Mode = 0; /* 0~2  0 0.5x mode ;1 0.8x mode;2 1.0x mode */
-
-	/* following 1 variables for Q fact,modified by module */
-	Qfact = 6; /* if Qfact=15 no need to set Q fact */
-
-	PS = 1;   /* power state */
-	EN = 0;   /* set to 1 when init */
-	Mode = 1; /* 0: direct mode  1: ISRC mode */
-	MSB = (char)((PS << 7) & (EN << 6) & (Mode << 2));
-
-	/* convert frequency to register setting */
-
-	/* step1: power on */
-	/* puSendCmd[2] = (char)(0xc2), (char)(0x00); */
-	puSendCmd[0] = (char)(0xc2);
-	puSendCmd[1] = (char)(0x00);
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
-		return -1;
-	}
-
-/* step2: set Q fact adjustment */
-#if 0
-	if (Mode == 0) {
-		char i;
-		char puQValue[21][2] = {
-			{(char)(0xe8), (char)(0x3f)},
-			{(char)(0xe8), (char)(0x3f)},
-			{(char)(0xe8), (char)(0x6f)},
-			{(char)(0xe8), (char)(0x6f)},
-			{(char)(0xe8), (char)(0xc9)},
-			{(char)(0xe8), (char)(0xc9)},
-			{(char)(0xe9), (char)(0x38)},
-			{(char)(0xe9), (char)(0x38)},
-			{(char)(0xe9), (char)(0x83)},
-			{(char)(0xe9), (char)(0x83)},
-			{(char)(0xe9), (char)(0xca)},
-			{(char)(0xe9), (char)(0xca)},
-			{(char)(0xe9), (char)(0xef)},
-			{(char)(0xe9), (char)(0xef)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)},
-			{(char)(0xea), (char)(0x00)}
-		};
-
-		for (i = 0; i < 21; i++) {
-			i4RetValue = i2c_master_send(g_pstAF_I2Cclient,
-						puQValue[i], 2);
-			if (i4RetValue < 0) {
-				LOG_INF("I2C send Q fact %d failed!!\n", i);
-				return -1;
-			}
-		}
-	}
-#endif
-
-	/* step3: resonant_frequency */
-	Wx = 0x2;
-
-	puSendCmd[0] = (char)((MSB) & (Wx << 3));
-	puSendCmd[1] = (char)(resonant_frequency & 0xff);
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
-		return -1;
-	}
-
-	/* step4: set ISRC mode */
-	Wx = 0x1;
-
-	/* puSendCmd[2] = (char)((MSB) & (Wx << 3)), (char)(Mode & 0xff); */
-	puSendCmd[0] = (char)((MSB) & (Wx << 3));
-	puSendCmd[1] = (char)(Mode & 0xff);
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send failed!!\n");
-		return -1;
-	}
-
-	return 0;
-}
-#endif
 
 static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 {
@@ -221,71 +113,47 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static inline int moveAF(unsigned long a_u4Position)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
-	int ret = 0;
-
-	if (g_i4DriverStatus > 2) /* I2C failed */
-		return -EINVAL;
-
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
+	LOG_INF("+\n");
 
 	if (*g_pAF_Opened == 1) {
-		unsigned short InitPos;
 
 #ifdef USE_ISRC_MODE_IMX386_SENSOR
+		int ret = 0;
 		char puSendCmd[2];
 
 		puSendCmd[0] = (char)(0xD0);
 		puSendCmd[1] = (char)(0xC8);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		ret = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
 		puSendCmd[0] = (char)(0xC8);
 		puSendCmd[1] = (char)(0x01);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		ret = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
 		puSendCmd[0] = (char)(0xC6);
 		puSendCmd[1] = (char)(0x00);
-		i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		ret = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 #endif
-
-		ret = s4AF_ReadReg(&InitPos);
-#ifdef USE_ISRC_MODE_S5K2P8_SENSOR
-		init_setting();
-#endif
-
-		if (ret == 0) {
-			LOG_INF("Init Pos %6d\n", InitPos);
-
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = (unsigned long)InitPos;
-			spin_unlock(g_pAF_SpinLock);
-
-		} else {
-			spin_lock(g_pAF_SpinLock);
-			g_u4CurrPosition = 0;
-			spin_unlock(g_pAF_SpinLock);
-		}
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
+	LOG_INF("-\n");
 
-	spin_lock(g_pAF_SpinLock);
-	g_u4TargetPosition = a_u4Position;
-	spin_unlock(g_pAF_SpinLock);
+	return 0;
+}
 
-	if (s4AF_WriteReg((unsigned short)g_u4TargetPosition) == 0) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)g_u4TargetPosition;
-		spin_unlock(g_pAF_SpinLock);
+/* moveAF only use to control moving the motor */
+static inline int moveAF(unsigned long a_u4Position)
+{
+	int ret = 0;
+
+	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
+		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
 		ret = -1;
@@ -369,8 +237,6 @@ int BU6429AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		spin_unlock(g_pAF_SpinLock);
 	}
 
-	g_i4DriverStatus = 0;
-
 	LOG_INF("End\n");
 
 	return 0;
@@ -382,6 +248,20 @@ int BU6429AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	initAF();
+
+	return 1;
+}
+
+int BU6429AF_GetFileName(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
 }

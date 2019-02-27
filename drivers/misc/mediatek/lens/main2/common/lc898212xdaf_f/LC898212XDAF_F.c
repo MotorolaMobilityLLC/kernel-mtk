@@ -385,39 +385,39 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-static inline int moveAF(unsigned long a_u4Position)
+/* initAF include driver initialization and standby mode */
+static int initAF(void)
 {
-	if ((a_u4Position > g_u4AF_MACRO) || (a_u4Position < g_u4AF_INF)) {
-		LOG_INF("out of range\n");
-		return -EINVAL;
-	}
+	LOG_INF("+\n");
 
 	if (*g_pAF_Opened == 1) {
-		/* Driver Init */
+
 		LC898212XD_init();
 
 		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = a_u4Position;
 		*g_pAF_Opened = 2;
 		spin_unlock(g_pAF_SpinLock);
-
-		LC898212XDAF_F_MONO_moveAF(AF_convert((int)a_u4Position));
 	}
 
-	if (g_u4CurrPosition == a_u4Position)
-		return 0;
+	LOG_INF("-\n");
+
+	return 0;
+}
+
+/* moveAF only use to control moving the motor */
+static inline int moveAF(unsigned long a_u4Position)
+{
+	int ret = 0;
 
 	if ((LC898212XDAF_F_MONO_moveAF(AF_convert((int)a_u4Position)) & 0x1) ==
 	    0) {
-		spin_lock(g_pAF_SpinLock);
-		g_u4CurrPosition = (unsigned long)a_u4Position;
-		spin_unlock(g_pAF_SpinLock);
+		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	return ret;
 }
 
 static inline int setAFInf(unsigned long a_u4Position)
@@ -605,6 +605,20 @@ int LC898212XDAF_F_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
+
+	initAF();
+
+	return 1;
+}
+
+int LC898212XDAF_F_GetFileName(unsigned char *pFileName)
+{
+	char *FileString = (strrchr(__FILE__, '/') + 1);
+
+	strcpy(pFileName, FileString);
+	FileString = strchr(pFileName, '.');
+	*FileString = '\0';
+	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
 }
