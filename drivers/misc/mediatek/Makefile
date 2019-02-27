@@ -26,4 +26,5 @@ obj-$(CONFIG_MTK_COMBO) += connectivity/
 obj-$(CONFIG_MTK_UNIFIED_DEBUG_INTERFACE) += udi/
 obj-$(CONFIG_MTK_DEVAPC_DRIVER) += devapc/
 obj-$(CONFIG_MTK_SERIAL)	+= uart/
+obj-$(CONFIG_MTK_MT6306_GPIO_SUPPORT) += gpio/
 obj-$(CONFIG_MTK_GIC_EXT) += ext_gic/
