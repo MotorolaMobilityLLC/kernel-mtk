@@ -590,8 +590,7 @@ static const char *index_to_subsys(unsigned int index)
 
 static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 {
-	char aee_str[256];
-	char subsys_str[16] = {0};
+	char subsys_str[32] = {0};
 	unsigned int domain_id;
 
 	DEVAPC_VIO_MSG("[DEVAPC] Executing AEE Exception...\n");
@@ -603,10 +602,8 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 	devapc_vio_aee_shown[i] = 1;
 	if (devapc_vio_current_aee_trigger_times <
 		DEVAPC_VIO_MAX_TOTAL_AEE_TRIGGER_TIMES) {
+
 		devapc_vio_current_aee_trigger_times++;
-		snprintf(aee_str, sizeof(aee_str),
-			"[DEVAPC] Access Violation Slave: %s (infra index=%d)\n",
-			devapc_infra_devices[i].device, i);
 		domain_id = (dbg0 & INFRA_VIO_DBG_DMNID)
 			>> INFRA_VIO_DBG_DMNID_START_BIT;
 		if (domain_id == 1) {
@@ -615,7 +612,9 @@ static void execute_aee(unsigned int i, unsigned int dbg0, unsigned int dbg1)
 			strncpy(subsys_str, index_to_subsys(i),
 				sizeof(subsys_str));
 		}
-		aee_kernel_exception(aee_str,
+		subsys_str[sizeof(subsys_str)-1] = '\0';
+
+		aee_kernel_exception("DEVAPC",
 			"%s %s, Vio Addr: 0x%x\n%s%s\n",
 			"[DEVAPC] Violation Slave:",
 			devapc_infra_devices[i].device,
@@ -786,6 +785,8 @@ static irqreturn_t devapc_violation_irq(int irq_number, void *dev_id)
 					"[DEVAPC] Violation",
 					"Process:", current->comm,
 					"PID:", current->pid);
+
+				break;
 			}
 
 		device_count = ARRAY_SIZE(devapc_infra_devices);
