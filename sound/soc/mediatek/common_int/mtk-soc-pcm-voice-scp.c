@@ -70,10 +70,6 @@ static DEFINE_SPINLOCK(scp_voice_lock);
 struct wakeup_source scp_voice_suspend_lock;
 #endif
 
-#define VOICE_MAX_PARLOAD_SIZE (10)
-#define DEFAULT_VOICE_PAYLOAD_SIZE (32)
-static const int scp_voice_buf_size = 16 * 1024;
-
 static unsigned int mscp_voice_PlaybackDramState;
 static unsigned int mscp_voice_mdbackDramState;
 static unsigned int scp_voice_mdback_user;
@@ -103,10 +99,8 @@ struct SPK_PROTECT_SERVICE {
 static struct SPK_PROTECT_SERVICE scp_voice_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static struct scp_reserve_mblock scp_voiceReserveBuffer;
-static struct snd_dma_buffer PlatformBuffer;
-static const int scpvoiceDL1BufferOffset = SOC_NORMAL_USE_BUFFERSIZE_MAX;
+static const int scpvoiceDL1BufferOffset = SCPDL1_MAX_BUFFER_SIZE;
 static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
-static uint32_t scp_voice_ipi_payload_buf[VOICE_MAX_PARLOAD_SIZE];
 #endif
 
 
@@ -380,7 +374,7 @@ static int mtk_pcm_scp_voice_stop(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY,
-				    AUDIO_IPI_MSG_BYPASS_ACK,
+				    AUDIO_IPI_MSG_DIRECT_SEND,
 				    SPK_PROTECT_SPEECH_STOP, 1, 0, NULL);
 #endif
 
@@ -412,7 +406,7 @@ static int scp_voice_get_scpdram_buffer(void)
 		(kal_uint8 *)scp_voiceReserveBuffer.start_virt;
 	scp_voice_DramBuffer.bytes = scp_voiceReserveBuffer.size;
 	pr_debug(
-		"%s scp_voice_DramBuffer.addr = %llx scp_voice_DramBuffer.area = %p bytes = %zu",
+		"%s scp_voice_DramBuffer.addr = %llx scp_voice_DramBuffer.area = %p bytes = %zu\n",
 		__func__, scp_voice_DramBuffer.addr, scp_voice_DramBuffer.area,
 		scp_voice_DramBuffer.bytes);
 	return 0;
@@ -456,27 +450,6 @@ static int scp_voice_allocate_mddl_buffer(struct snd_pcm_substream *substream,
 
 	return 0;
 }
-
-/* platform use Dram*/
-static int
-scp_voice_allocate_platform_buffer(struct snd_pcm_substream *substream,
-				   struct snd_pcm_hw_params *hw_params)
-{
-	unsigned int buffer_size = 0;
-
-	buffer_size = params_buffer_bytes(hw_params);
-	PlatformBuffer.addr = scp_voice_DramBuffer.addr;
-	PlatformBuffer.area = scp_voice_DramBuffer.area;
-	PlatformBuffer.bytes = buffer_size;
-	substream->runtime->dma_area = PlatformBuffer.area;
-	substream->runtime->dma_addr = PlatformBuffer.addr;
-	substream->runtime->dma_bytes = PlatformBuffer.bytes;
-	pr_debug("%s PlatformBuffer.addr = %llx PlatformBuffer.area = %p bytes  = %zu\n",
-		 __func__, PlatformBuffer.addr, PlatformBuffer.area,
-		 PlatformBuffer.bytes);
-	return 0;
-}
-
 
 /* spk iv feedback data*/
 static int
@@ -556,67 +529,9 @@ scp_voice_allocate_platformdl_buffer(struct snd_pcm_substream *substream,
 		       scp_voice_DL1Buffer.bytes);
 	memset_io(scp_voice_DL1Buffer.area, 0, scp_voice_DL1Buffer.bytes);
 	pr_debug(
-		"%s scp_voice_DL1Buffer.addr = %llx scp_voice_DL1Buffer.area = %p bytes  = %zu\n",
+		"%s scp_voice_DL1Buffer.addr = %llx scp_voice_DL1Buffer.area = %p bytes = %zu\n",
 		__func__, scp_voice_DL1Buffer.addr, scp_voice_DL1Buffer.area,
 		scp_voice_DL1Buffer.bytes);
-	return ret;
-}
-
-/* return for payload length*/
-static unsigned int
-scp_voice_packIpi_payload(uint16_t msg_id, uint32_t param1, uint32_t param2,
-			  struct snd_dma_buffer *bmd_buffer,
-			  struct snd_pcm_substream *substream)
-{
-	unsigned int ret = 0;
-	/* clean payload data */
-	memset_io((void *)scp_voice_ipi_payload_buf, 0,
-		  sizeof(uint32_t) * DEFAULT_VOICE_PAYLOAD_SIZE);
-	switch (msg_id) {
-	case SPK_PROTECT_SPEECH_MDFEEDBACKPARAM:
-		scp_voice_ipi_payload_buf[0] = (kal_uint32)(bmd_buffer->addr);
-		scp_voice_ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		scp_voice_ipi_payload_buf[2] = bmd_buffer->bytes;
-		scp_voice_ipi_payload_buf[3] = mscp_voice_mdbackDramState;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_SPEECH_DLMEMPARAM:
-		scp_voice_ipi_payload_buf[0] = (kal_uint32)bmd_buffer->addr;
-		scp_voice_ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		scp_voice_ipi_payload_buf[2] = bmd_buffer->bytes;
-		scp_voice_ipi_payload_buf[3] = mscp_voice_PlaybackDramState;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_SPEECH_PREPARE:
-		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
-			scp_voice_ipi_payload_buf[0] =
-				Soc_Aud_I2S_WLEN_WLEN_32BITS;
-		else
-			scp_voice_ipi_payload_buf[0] =
-				Soc_Aud_I2S_WLEN_WLEN_16BITS;
-
-		scp_voice_ipi_payload_buf[1] =
-			(kal_uint32)substream->runtime->rate;
-		scp_voice_ipi_payload_buf[2] =
-			(kal_uint32)substream->runtime->channels;
-		scp_voice_ipi_payload_buf[3] =
-			(kal_uint32)substream->runtime->period_size;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_SPEECH_IVMEMPARAM:
-		scp_voice_ipi_payload_buf[0] = (kal_uint32)bmd_buffer->addr;
-		scp_voice_ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		scp_voice_ipi_payload_buf[2] = bmd_buffer->bytes;
-		scp_voice_ipi_payload_buf[3] = (mscp_voice_FeedbackDramState);
-		scp_voice_ipi_payload_buf[4] =
-			(mscp_voice_iv_meminterface_type);
-		ret = sizeof(unsigned int) * 5;
-		break;
-	default:
-		pr_debug("%s param1=%d\n", __func__, param1);
-		break;
-	}
 	return ret;
 }
 
@@ -632,44 +547,42 @@ static int mtk_pcm_scp_voice_hw_params(struct snd_pcm_substream *substream,
 
 	scp_voice_get_scpdram_buffer();
 	scp_voice_allocate_mddl_buffer(substream, hw_params);
-	scp_voice_allocate_platform_buffer(substream, hw_params);
 	scp_voice_allocate_feedback_buffer(substream, hw_params);
 	scp_voice_allocate_platformdl_buffer(substream, hw_params);
 
-	payloadlen = scp_voice_packIpi_payload(
-		SPK_PROTECT_SPEECH_MDFEEDBACKPARAM, 0, 0,
+
+	payloadlen = spkproc_ipi_pack_payload(
+		SPK_PROTECT_SPEECH_MDFEEDBACKPARAM,
+		mscp_voice_mdbackDramState, 0,
 		&scp_voice_mddl_dma_buf, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				   SPK_PROTECT_SPEECH_MDFEEDBACKPARAM,
 				   payloadlen, 0,
-				   (char *)scp_voice_ipi_payload_buf);
+				   (char *)spkproc_ipi_get_payload());
 
 	payloadlen =
-		scp_voice_packIpi_payload(SPK_PROTECT_SPEECH_DLMEMPARAM, 0, 0,
-					  &scp_voice_DL1Buffer, substream);
+		spkproc_ipi_pack_payload(SPK_PROTECT_SPEECH_DLMEMPARAM,
+					 mscp_voice_PlaybackDramState, 0,
+					 &scp_voice_DL1Buffer, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
-				   SPK_PROTECT_SPEECH_DLMEMPARAM, payloadlen, 0,
-				   (char *)scp_voice_ipi_payload_buf);
+				    SPK_PROTECT_SPEECH_DLMEMPARAM,
+				    payloadlen, 0,
+				    (char *)spkproc_ipi_get_payload());
 
 	payloadlen =
-		scp_voice_packIpi_payload(SPK_PROTECT_SPEECH_IVMEMPARAM, 0, 0,
-					  &scp_voice_runtime_feedback_dma_buf,
-					  substream);
+		spkproc_ipi_pack_payload(SPK_PROTECT_SPEECH_IVMEMPARAM,
+					 mscp_voice_PlaybackDramState,
+					 mscp_voice_iv_meminterface_type,
+					 &scp_voice_runtime_feedback_dma_buf,
+					 substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_SPEECH_IVMEMPARAM,
 				    payloadlen, 0,
-				    (char *)scp_voice_ipi_payload_buf);
-
-	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
-		 __func__, substream->runtime->dma_bytes,
-		 substream->runtime->dma_area,
-		 (long)substream->runtime->dma_addr);
-
-#else
+				    (char *)spkproc_ipi_get_payload());
+#endif
 	pr_debug("dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		 substream->runtime->dma_bytes, substream->runtime->dma_area,
 		 (long)substream->runtime->dma_addr);
-#endif
 
 	return ret;
 }
@@ -709,7 +622,6 @@ static struct snd_pcm_hw_constraint_list constraints_sample_rates = {
 
 static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 {
-
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	int ret = 0;
 
@@ -759,16 +671,16 @@ static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
-				  SPK_PROTECT_SPEECH_OPEN, 1, 0, NULL);
+				    SPK_PROTECT_SPEECH_OPEN, 1, 0, NULL);
 #endif
 
 	pr_debug("%s return\n", __func__);
+
 	return 0;
 }
 
 static int mtk_pcm_voice_scp_close(struct snd_pcm_substream *substream)
 {
-
 	pr_debug("%s\n", __func__);
 
 	if (mscp_voice_PrepareDone == true) {
@@ -975,11 +887,11 @@ static int mtk_pcm_scp_voice_prepare(struct snd_pcm_substream *substream)
 	}
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-	payloadlen = scp_voice_packIpi_payload(SPK_PROTECT_SPEECH_PREPARE, 0, 0,
-					       NULL, substream);
+	payloadlen = spkproc_ipi_pack_payload(SPK_PROTECT_SPEECH_PREPARE, 0, 0,
+					      NULL, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK,
-				  SPK_PROTECT_SPEECH_PREPARE, payloadlen, 0,
-				   (char *)scp_voice_ipi_payload_buf);
+				    SPK_PROTECT_SPEECH_PREPARE, payloadlen, 0,
+				    (char *)spkproc_ipi_get_payload());
 #endif
 	return 0;
 }
@@ -1019,7 +931,7 @@ static int mtk_pcm_scp_voice_start(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkproc_service_ipicmd_send(
-			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
+			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_DIRECT_SEND,
 			SPK_PROTECT_SPEECH_START, 1, 0, NULL);
 #endif
 

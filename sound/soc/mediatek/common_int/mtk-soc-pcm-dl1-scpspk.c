@@ -75,9 +75,6 @@ static DEFINE_SPINLOCK(scp_spk_lock);
 struct wakeup_source scp_spk_suspend_lock;
 #endif
 
-#define MAX_PARLOAD_SIZE (10)
-#define DEFAULT_PAYLOAD_SIZE (40)
-
 static struct afe_mem_control_t *pdl1spkMemControl;
 
 struct SPK_PROTECT_SERVICE {
@@ -104,7 +101,6 @@ static bool vcore_dvfs_enable;
 
 static struct SPK_PROTECT_SERVICE spk_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static struct audio_resv_dram_t *p_resv_dram_normal;
 static struct scp_reserve_mblock ScpReserveBuffer;
 static struct snd_dma_buffer ScpDramBuffer;
 
@@ -114,7 +110,6 @@ static const int SpkDL1BufferOffset = SCPDL1_MAX_BUFFER_SIZE;
 static struct snd_dma_buffer SpkDL1Buffer;
 
 static int SpkIrq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
-static uint32_t ipi_payload_buf[MAX_PARLOAD_SIZE];
 #endif
 
 atomic_t stop_send_ipi_flag = ATOMIC_INIT(0);
@@ -359,68 +354,10 @@ mtk_pcm_dl1spk_pointer(struct snd_pcm_substream *substream)
 	return Frameidx;
 }
 
-/* return for payload length*/
-static unsigned int packIpi_payload(uint16_t msg_id, uint32_t param1,
-				    uint32_t param2,
-				    struct snd_dma_buffer *bmd_buffer,
-				    struct snd_pcm_substream *substream)
-{
-	unsigned int ret = 0;
-	/* clean payload data */
-	memset_io((void *)ipi_payload_buf, 0,
-		  sizeof(uint32_t) * MAX_PARLOAD_SIZE);
-	switch (msg_id) {
-	case SPK_PROTECT_PLATMEMPARAM:
-		ipi_payload_buf[0] = (kal_uint32)(bmd_buffer->addr);
-		ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		ipi_payload_buf[2] = bmd_buffer->bytes;
-		ipi_payload_buf[3] = true;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_DLMEMPARAM:
-		ipi_payload_buf[0] = (kal_uint32)bmd_buffer->addr;
-		ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		ipi_payload_buf[2] = bmd_buffer->bytes;
-		ipi_payload_buf[3] = mspkPlaybackDramState;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_PREPARE:
-		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
-		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
-			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_32BITS;
-		else
-			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_16BITS;
-		ipi_payload_buf[1] = (kal_uint32)substream->runtime->rate;
-		ipi_payload_buf[2] = (kal_uint32)substream->runtime->channels;
-		ipi_payload_buf[3] =
-			(kal_uint32)substream->runtime->period_size;
-		ret = sizeof(unsigned int) * 4;
-		break;
-	case SPK_PROTECT_IVMEMPARAM:
-		ipi_payload_buf[0] = (kal_uint32)bmd_buffer->addr;
-		ipi_payload_buf[1] = (kal_uint32)(*bmd_buffer->area);
-		ipi_payload_buf[2] = bmd_buffer->bytes;
-		ipi_payload_buf[3] = mspkPlaybackFeedbackDramState;
-		ipi_payload_buf[4] = mspkiv_meminterface_type;
-		ret = sizeof(unsigned int) * 5;
-		break;
-	case SPK_PROTECT_DLCOPY:
-		ipi_payload_buf[0] = (kal_uint32)param1;
-		ipi_payload_buf[1] = (kal_uint32)param2;
-		ret = sizeof(unsigned int) * 2;
-		break;
-	default:
-		pr_debug("%s param1=%d\n", __func__, param1);
-		break;
-	}
-	return ret;
-}
-
 static int dl1spk_get_scpdram_buffer(void)
 {
 	memset(&ScpReserveBuffer, 0, sizeof(ScpReserveBuffer));
 	ScpReserveBuffer.num = SPK_PROTECT_MEM_ID;
-	p_resv_dram_normal = get_reserved_dram_spkprotect();
 	ScpReserveBuffer.start_phys =
 		scp_get_reserve_mem_phys(ScpReserveBuffer.num);
 	ScpReserveBuffer.start_virt =
@@ -599,24 +536,28 @@ static int mtk_pcm_dl1spk_hw_params(struct snd_pcm_substream *substream,
 	dl1spk_allocate_platform_buffer(substream, hw_params);
 	dl1spk_allocate_platformdl_buffer(substream, hw_params);
 
-	payloadlen = packIpi_payload(SPK_PROTECT_PLATMEMPARAM, 0, 0,
-				     &PlatformBuffer, substream);
+	payloadlen = spkproc_ipi_pack_payload(SPK_PROTECT_PLATMEMPARAM, 0, 0,
+					      &PlatformBuffer, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_PLATMEMPARAM, payloadlen, 0,
-				    (char *)ipi_payload_buf);
+				    (char *)spkproc_ipi_get_payload());
 
-	payloadlen = packIpi_payload(SPK_PROTECT_DLMEMPARAM, 0, 0,
-				     &SpkDL1Buffer, substream);
+	payloadlen = spkproc_ipi_pack_payload(SPK_PROTECT_DLMEMPARAM,
+					      mspkPlaybackDramState, 0,
+					      &SpkDL1Buffer, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_DLMEMPARAM, payloadlen, 0,
-				    (char *)ipi_payload_buf);
+				    (char *)spkproc_ipi_get_payload());
 
 	payloadlen =
-		packIpi_payload(SPK_PROTECT_IVMEMPARAM, 0, 0,
-				&Dl1Spk_runtime_feedback_dma_buf, substream);
+		spkproc_ipi_pack_payload(SPK_PROTECT_IVMEMPARAM,
+					 mspkPlaybackFeedbackDramState,
+					 mspkiv_meminterface_type,
+					 &Dl1Spk_runtime_feedback_dma_buf,
+					 substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_IVMEMPARAM, payloadlen, 0,
-				    (char *)ipi_payload_buf);
+				    (char *)spkproc_ipi_get_payload());
 #endif
 	pr_debug("%s dma_bytes = %zu dma_area = %p dma_addr = 0x%lx\n",
 		 __func__, substream->runtime->dma_bytes,
@@ -706,7 +647,6 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_OPEN, 1, 0, NULL);
 #endif
-
 	return 0;
 }
 
@@ -767,6 +707,7 @@ static int mtk_pcm_dl1spk_close(struct snd_pcm_substream *substream)
 	spk_irq_cnt = 0; /* reset spk_irq_cnt */
 	AudDrv_Clk_Off();
 	vcore_dvfs(&vcore_dvfs_enable, true);
+
 	return 0;
 }
 
@@ -873,11 +814,12 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 	}
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	payloadlen =
-		packIpi_payload(SPK_PROTECT_PREPARE, 0, 0, NULL, substream);
+		spkproc_ipi_pack_payload(SPK_PROTECT_PREPARE, 0, 0,
+					 NULL, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK,
 				    SPK_PROTECT_PREPARE, payloadlen,
 				    dl1spk_prepare_count,
-				    (char *)ipi_payload_buf);
+				    (char *)spkproc_ipi_get_payload());
 	dl1spk_prepare_count++;
 #endif
 
@@ -1043,14 +985,15 @@ static int mtk_pcm_dl1spk_copy(struct snd_pcm_substream *substream, int channel,
 			      pdl1spkMemControl, Soc_Aud_Digital_Block_MEM_DL1);
 
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-	payloadlen = packIpi_payload(SPK_PROTECT_DLCOPY, pos, framecount, NULL,
-				     substream);
+	payloadlen = spkproc_ipi_pack_payload(SPK_PROTECT_DLCOPY, pos,
+					      framecount, NULL, substream);
 	if (substream->runtime->status->state != SNDRV_PCM_STATE_RUNNING)
 		acktype = AUDIO_IPI_MSG_NEED_ACK;
 
 	spkproc_service_ipicmd_send(
 		AUDIO_IPI_PAYLOAD, acktype,
-		SPK_PROTECT_DLCOPY, payloadlen, 0, (char *)ipi_payload_buf);
+		SPK_PROTECT_DLCOPY, payloadlen, 0,
+		(char *)spkproc_ipi_get_payload());
 #endif
 	return ret;
 }
