@@ -249,6 +249,7 @@ static int perfmgr_perfserv_freq_proc_show(struct seq_file *m, void *v)
 	return 0;
 }
 /***************************************/
+#define MAX_NR_FREQ 16
 static ssize_t perfmgr_boot_freq_proc_write(struct file *filp,
 		const char __user *ubuf, size_t cnt, loff_t *pos)
 {
@@ -278,11 +279,13 @@ static ssize_t perfmgr_boot_freq_proc_write(struct file *filp,
 			#ifdef MTK_CPU_FREQ
 			if (i % 2) /* max */
 				freq_limit[i/2].max =
-					data == -1 ? -1 :
+					(data < 0 || data > MAX_NR_FREQ - 1)
+					? -1 :
 					mt_cpufreq_get_freq_by_idx(i / 2, data);
 			else /* min */
 				freq_limit[i/2].min =
-					data == -1 ? -1 :
+					(data < 0 || data > MAX_NR_FREQ - 1)
+					? -1 :
 					mt_cpufreq_get_freq_by_idx(i / 2, data);
 			i++;
 			#endif
