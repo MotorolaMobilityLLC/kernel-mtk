@@ -122,7 +122,7 @@ void mcdi_profile_ts(unsigned int idx)
 	if (!(smp_processor_id() == mcdi_prof_target_cpu))
 		return;
 
-	if (idx > NF_MCDI_PROFILE)
+	if (idx >= NF_MCDI_PROFILE)
 		return;
 
 	spin_lock_irqsave(&mcdi_prof_spin_lock, flags);
@@ -228,12 +228,15 @@ static ssize_t mcdi_profile_read(struct file *filp,
 		char __user *userbuf, size_t count, loff_t *f_pos)
 {
 	int i, len = 0;
-	unsigned int cnt[10] = {0};
 	char *p = dbg_buf;
 	unsigned int ratio_raw = 0;
 	unsigned int ratio_int = 0;
 	unsigned int ratio_fraction = 0;
 	unsigned int ratio_dur = 0;
+	struct {
+		unsigned int sec[DISTRIBUTE_NUM];
+		unsigned int total;
+	} cnt[2] = {0};
 
 #ifdef MCDI_PWR_SEQ_PROF_BREAKDOWN
 	struct mcdi_prof_breakdown *p_prof =
@@ -241,80 +244,54 @@ static ssize_t mcdi_profile_read(struct file *filp,
 	unsigned int j;
 #endif
 
-	for (i = 0; i < 4; i++) {
-		cnt[i]   = mcdi_read(PROF_OFF_CNT_REG(i));
-		cnt[i+5] = mcdi_read(PROF_ON_CNT_REG(i));
-		cnt[4]  += cnt[i];
-		cnt[9]  += cnt[i+5];
-	}
-
 	mcdi_log(
 		"mcdi cpu off    : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(CPU_OFF_LATENCY_REG(0x0)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0x4)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0x8)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0xC)));
+		mcdi_read(CPU_OFF_LATENCY_REG(ID_OFS)),
+		mcdi_read(CPU_OFF_LATENCY_REG(AVG_OFS)),
+		mcdi_read(CPU_OFF_LATENCY_REG(MAX_OFS)),
+		mcdi_read(CPU_OFF_LATENCY_REG(CNT_OFS)));
 	mcdi_log(
 		"mcdi cpu on     : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(CPU_ON_LATENCY_REG(0x0)),
-		mcdi_read(CPU_ON_LATENCY_REG(0x4)),
-		mcdi_read(CPU_ON_LATENCY_REG(0x8)),
-		mcdi_read(CPU_ON_LATENCY_REG(0xC)));
+		mcdi_read(CPU_ON_LATENCY_REG(ID_OFS)),
+		mcdi_read(CPU_ON_LATENCY_REG(AVG_OFS)),
+		mcdi_read(CPU_ON_LATENCY_REG(MAX_OFS)),
+		mcdi_read(CPU_ON_LATENCY_REG(CNT_OFS)));
 	mcdi_log(
 		"mcdi cluster off: max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x0)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x4)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x8)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0xC)));
+		mcdi_read(Cluster_OFF_LATENCY_REG(ID_OFS)),
+		mcdi_read(Cluster_OFF_LATENCY_REG(AVG_OFS)),
+		mcdi_read(Cluster_OFF_LATENCY_REG(MAX_OFS)),
+		mcdi_read(Cluster_OFF_LATENCY_REG(CNT_OFS)));
 	mcdi_log(
 		"mcdi cluster on : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(Cluster_ON_LATENCY_REG(0x0)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0x4)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0x8)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0xC)));
-	mcdi_log("\n");
-	mcdi_log("pwr off latency    < 25 us : %2d%% (%d)\n",
-		(100 * cnt[0]) / cnt[4], cnt[0]);
-	mcdi_log("pwr off latency  25-100 us : %2d%% (%d)\n",
-		(100 * cnt[1]) / cnt[4], cnt[1]);
-	mcdi_log("pwr off latency 100-500 us : %2d%% (%d)\n",
-		(100 * cnt[2]) / cnt[4], cnt[2]);
-	mcdi_log("pwr off latency   > 500 us : %2d%% (%d)\n",
-		(100 * cnt[3]) / cnt[4], cnt[3]);
-	mcdi_log("pwr on  latency    < 25 us : %2d%% (%d)\n",
-		(100 * cnt[5]) / cnt[9], cnt[5]);
-	mcdi_log("pwr on  latency  25-100 us : %2d%% (%d)\n",
-		(100 * cnt[6]) / cnt[9], cnt[6]);
-	mcdi_log("pwr on  latency 100-500 us : %2d%% (%d)\n",
-		(100 * cnt[7]) / cnt[9], cnt[7]);
-	mcdi_log("pwr on  latency   > 500 us : %2d%% (%d)\n",
-		(100 * cnt[8]) / cnt[9], cnt[8]);
+		mcdi_read(Cluster_ON_LATENCY_REG(ID_OFS)),
+		mcdi_read(Cluster_ON_LATENCY_REG(AVG_OFS)),
+		mcdi_read(Cluster_ON_LATENCY_REG(MAX_OFS)),
+		mcdi_read(Cluster_ON_LATENCY_REG(CNT_OFS)));
 
-#ifdef WORST_LATENCY_DBG
 	mcdi_log("\n");
-	mcdi_log("mcdi max latency     : %dus\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG));
-	mcdi_log("mcdi ts wfi isr      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x04));
-	mcdi_log("mcdi ts gic isr      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x08));
-	mcdi_log("mcdi last ts wfi isr : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x18));
-	mcdi_log("mcdi last ts gic isr : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x1C));
-	mcdi_log("mcdi ts pwr on       : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x10));
-	mcdi_log("mcdi ts pwr off      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x14));
-	mcdi_log("mcdi ts pause        : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x0C));
-	mcdi_log("mcdi last ts pwr on  : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x24));
-	mcdi_log("mcdi last ts pwr off : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x28));
-	mcdi_log("mcdi last ts pause   : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x20));
-#endif
+
+	for (i = 0; i < DISTRIBUTE_NUM; i++) {
+		cnt[0].sec[i] = mcdi_read(PROF_OFF_CNT_REG(i));
+		cnt[1].sec[i] = mcdi_read(PROF_ON_CNT_REG(i));
+		cnt[0].total += cnt[0].sec[i];
+		cnt[1].total += cnt[1].sec[i];
+	}
+
+	cnt[0].total = cnt[0].total ? : 1;
+	cnt[1].total = cnt[1].total ? : 1;
+
+	for (i = 0; i < DISTRIBUTE_NUM; i++)
+		mcdi_log("pwr off latency (section%d) : %2d%% (%d)\n",
+				i,
+				(100 * cnt[0].sec[i]) / cnt[0].total,
+				cnt[0].sec[i]);
+
+	for (i = 0; i < DISTRIBUTE_NUM; i++)
+		mcdi_log("pwr on latency  (section%d) : %2d%% (%d)\n",
+				i,
+				(100 * cnt[1].sec[i]) / cnt[1].total,
+				cnt[1].sec[i]);
 
 	ratio_dur = mcdi_read(SYSRAM_PROF_RARIO_DUR);
 
