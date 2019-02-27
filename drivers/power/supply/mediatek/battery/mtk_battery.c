@@ -2464,7 +2464,15 @@ void exec_BAT_EC(int cmd, int param)
 				cmd, param);
 		}
 		break;
+	case 788:
+		{
+			fg_cust_data.record_log = param;
 
+			bm_err(
+				"exe_BAT_EC cmd %d,record_log=%d\n",
+				cmd, fg_cust_data.record_log);
+		}
+		break;
 
 	default:
 		bm_err(
