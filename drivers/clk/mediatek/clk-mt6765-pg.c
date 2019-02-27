@@ -515,6 +515,7 @@ static void ram_console_update(void)
 	unsigned int i = 0, j = 0;
 	static unsigned long pre_data;
 	static int k;
+	static bool print_once = true;
 
 	data[i] = ((DBG_ID << 24) & ID_MADK)
 		| ((DBG_STA << 20) & STA_MASK)
@@ -531,7 +532,8 @@ static void ram_console_update(void)
 		pre_data = data[0];
 	}
 
-	if (k > 100000) {
+	if (k > 100000 && print_once) {
+		print_once = false;
 		k = 0;
 		if (DBG_ID == DBG_ID_CONN_BUS) {
 			if (DBG_STEP == 1 && DBG_STA == STA_POWER_DOWN) {
