@@ -41,6 +41,7 @@
 #include <ext_wd_drv.h>
 #endif
 #include "aee-common.h"
+#include <ipanic.h>
 #include <mt-plat/mtk_secure_api.h>
 #ifdef CONFIG_MTK_EIC_HISTORY_DUMP
 #include <linux/irqchip/mtk-eic.h>
@@ -585,6 +586,9 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	/* add __per_cpu_offset */
 	mrdump_mini_add_entry((unsigned long)__per_cpu_offset,
 			MRDUMP_MINI_SECTION_SIZE);
+
+	/* add info for minidump */
+	mrdump_mini_ke_cpu_regs(regs);
 
 #ifdef CONFIG_MTK_SCHED_MONITOR
 #ifdef CONFIG_MTK_RAM_CONSOLE
