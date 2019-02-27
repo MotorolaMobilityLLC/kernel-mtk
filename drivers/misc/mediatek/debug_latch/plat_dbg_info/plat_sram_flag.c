@@ -20,7 +20,7 @@
 #include <linux/io.h>
 #include "plat_sram_flag.h"
 
-static void __iomem *sram_base;
+static struct plat_sram_flag *plat;
 
 static inline unsigned int extract_n2mbits(unsigned int input,
 		unsigned int n, unsigned int m)
@@ -45,17 +45,8 @@ static inline unsigned int extract_n2mbits(unsigned int input,
 
 static int check_sram_base(void)
 {
-	struct device_node *node;
-
-	if (sram_base)
+	if (plat)
 		return 0;
-
-	node = of_find_compatible_node(NULL, NULL, "mediatek,plat_sram_flag");
-	if (node) {
-		sram_base = of_iomap(node, 0);
-		if (sram_base)
-			return 0;
-	}
 
 	pr_notice("%s:%d: sram_base == 0x0\n", __func__, __LINE__);
 	return -1;
@@ -67,8 +58,8 @@ int set_sram_flag_lastpc_valid(void)
 	if (check_sram_base() < 0)
 		return -1;
 
-	writel(readl(sram_base + (PLAT_FLAG0*4))|(1 << OFFSET_LASTPC_VALID),
-			sram_base + (PLAT_FLAG0*4));
+	plat->plat_sram_flag0 =
+		(plat->plat_sram_flag0 | (1 << OFFSET_LASTPC_VALID));
 	return 0;
 }
 EXPORT_SYMBOL(set_sram_flag_lastpc_valid);
@@ -91,10 +82,10 @@ int set_sram_flag_etb_user(unsigned int etb_id, unsigned int user_id)
 		return -1;
 	}
 
-	writel((readl(sram_base + (PLAT_FLAG0*4))
-			& ~(0x7 << (OFFSET_ETB_0 + etb_id*3)))
-			|((user_id & 0x7) << (OFFSET_ETB_0 + etb_id*3))
-			, sram_base + (PLAT_FLAG0*4));
+	plat->plat_sram_flag0 =
+		(plat->plat_sram_flag0 & ~(0x7 << (OFFSET_ETB_0 + etb_id*3)))
+		| ((user_id & 0x7) << (OFFSET_ETB_0 + etb_id*3));
+
 	return 0;
 }
 EXPORT_SYMBOL(set_sram_flag_etb_user);
@@ -105,8 +96,9 @@ int set_sram_flag_dfd_valid(void)
 	if (check_sram_base() < 0)
 		return -1;
 
-	writel(readl(sram_base + (PLAT_FLAG1*4))|(1 << OFFSET_DFD_VALID)
-			, sram_base + (PLAT_FLAG1*4));
+	plat->plat_sram_flag1 =
+		(plat->plat_sram_flag1 | (1 << OFFSET_DFD_VALID));
+
 	return 0;
 }
 EXPORT_SYMBOL(set_sram_flag_dfd_valid);
@@ -123,45 +115,40 @@ static ssize_t plat_sram_flag_dump_show(struct device_driver *driver,
 		char *buf)
 {
 	unsigned int i;
-	unsigned long plat_sram_flag0, plat_sram_flag1, plat_sram_flag2;
 	char *wp = buf;
 
-	if (!sram_base) {
+	if (!plat) {
 		pr_notice("%s:%d: sram_base == 0x0\n", __func__, __LINE__);
 		return snprintf(buf, PAGE_SIZE, "sram_base == 0x0\n");
 	}
 
-	plat_sram_flag0 = readl(sram_base + (PLAT_FLAG0*4));
-	plat_sram_flag1 = readl(sram_base + (PLAT_FLAG1*4));
-	plat_sram_flag2 = readl(sram_base + (PLAT_FLAG2*4));
-
 	wp += snprintf(wp, PAGE_SIZE,
-			"plat_sram_flag0 = 0x%lx\n", plat_sram_flag0);
+			"plat_sram_flag0 = 0x%x\n", plat->plat_sram_flag0);
 	wp += snprintf(wp, PAGE_SIZE,
-			"plat_sram_flag1 = 0x%lx\nplat_sram_flag2 = 0x%lx\n",
-			plat_sram_flag1, plat_sram_flag2);
+			"plat_sram_flag1 = 0x%x\nplat_sram_flag2 = 0x%x\n",
+			plat->plat_sram_flag1, plat->plat_sram_flag2);
 
 	wp += snprintf(wp, PAGE_SIZE, "\n-------------\n");
 
 	wp += snprintf(wp, PAGE_SIZE, "lastpc_valid = 0x%x\n",
-			extract_n2mbits(plat_sram_flag0,
+			extract_n2mbits(plat->plat_sram_flag0,
 				OFFSET_LASTPC_VALID, OFFSET_LASTPC_VALID));
 	wp += snprintf(wp, PAGE_SIZE, "lastpc_valid_before_reboot = 0x%x\n",
-			extract_n2mbits(plat_sram_flag0,
+			extract_n2mbits(plat->plat_sram_flag0,
 				OFFSET_LASTPC_VALID_BEFORE_REBOOT,
 				OFFSET_LASTPC_VALID_BEFORE_REBOOT));
 
 	for (i = 0; i <= MAX_ETB_NUM-1; ++i)
 		wp += snprintf(wp, PAGE_SIZE,
 			"user_id_of_multi_user_etb_%d = 0x%03x\n",
-			i, extract_n2mbits(plat_sram_flag0,
+			i, extract_n2mbits(plat->plat_sram_flag0,
 				OFFSET_ETB_0 + i*3, OFFSET_ETB_0 + i*3 + 2));
 
 	wp += snprintf(wp, PAGE_SIZE, "dfd_valid = 0x%x\n",
-			extract_n2mbits(plat_sram_flag1,
+			extract_n2mbits(plat->plat_sram_flag1,
 				OFFSET_DFD_VALID, OFFSET_DFD_VALID));
 	wp += snprintf(wp, PAGE_SIZE, "dfd_valid_before_reboot = 0x%x\n",
-			extract_n2mbits(plat_sram_flag1,
+			extract_n2mbits(plat->plat_sram_flag1,
 				OFFSET_DFD_VALID_BEFORE_REBOOT,
 				OFFSET_DFD_VALID_BEFORE_REBOOT));
 
@@ -172,16 +159,17 @@ DRIVER_ATTR(plat_sram_flag_dump, 0444, plat_sram_flag_dump_show, NULL);
 
 static int __init plat_sram_flag_init(void)
 {
-	struct device_node *node;
 	int ret = 0;
+	unsigned int size;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,plat_sram_flag");
-	if (node) {
-		if (sram_base == 0)
-			sram_base = of_iomap(node, 0);
-	} else {
-		pr_notice("can't find compatible node for plat_sram_flag\n");
-		return -1;
+	plat = (struct plat_sram_flag *)get_dbg_info_base(PLAT_SRAM_FLAG_KEY);
+	if (!plat)
+		return -EINVAL;
+
+	size = get_dbg_info_size(PLAT_SRAM_FLAG_KEY);
+	if (size != sizeof(struct plat_sram_flag)) {
+		pr_debug("[SRAM FLAG] Can't match plat_sram_flag size\n");
+		return -EINVAL;
 	}
 
 	ret = platform_driver_register(&plat_sram_flag_drv);
@@ -193,6 +181,7 @@ static int __init plat_sram_flag_init(void)
 	if (ret)
 		pr_notice("%s:%d: driver_create_file failed.\n",
 				__func__, __LINE__);
+
 
 	return 0;
 }
