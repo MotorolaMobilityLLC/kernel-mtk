@@ -44,6 +44,7 @@
 #include <asm/system_misc.h>
 #include <asm/sysreg.h>
 #include <mt-plat/aee.h>
+#include <sched.h>
 
 static const char *handler[]= {
 	"Synchronous Abort",
@@ -162,6 +163,9 @@ static void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 		frame.fp = (unsigned long)__builtin_frame_address(0);
 		frame.sp = current_stack_pointer;
 		frame.pc = (unsigned long)dump_backtrace;
+	} else if (tsk == task_rq(tsk)->curr) {
+		pr_notice("Do not dump other cpus' running task\n");
+		return;
 	} else {
 		/*
 		 * task blocked in __switch_to
