@@ -699,6 +699,7 @@ struct rq {
 
 	unsigned long cpu_capacity;
 	unsigned long cpu_capacity_orig;
+	unsigned long cpu_capacity_hw;
 
 	struct callback_head *balance_callback;
 
@@ -1645,6 +1646,11 @@ static inline unsigned long capacity_of(int cpu)
 static inline unsigned long capacity_orig_of(int cpu)
 {
 	return cpu_rq(cpu)->cpu_capacity_orig;
+}
+
+static inline unsigned long capacity_hw_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity_hw;
 }
 
 extern unsigned int sysctl_sched_use_walt_cpu_util;
