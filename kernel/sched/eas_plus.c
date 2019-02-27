@@ -118,27 +118,33 @@ int find_best_idle_cpu(struct task_struct *p, bool prefer_idle)
 	int iter_cpu;
 	int best_idle_cpu = -1;
 	struct cpumask *tsk_cpus_allow = tsk_cpus_allowed(p);
+	struct hmp_domain *domain;
 
-	for (iter_cpu = 0; iter_cpu < nr_cpu_ids; iter_cpu++) {
-		/* foreground task prefer idle to find bigger idle cpu */
-		int i = (sched_boost() ||
-			(prefer_idle && (task_util(p) > stune_task_threshold)))
-			?  nr_cpu_ids-iter_cpu-1 : iter_cpu;
+	for_each_hmp_domain_L_first(domain) {
+		for_each_cpu(iter_cpu, &domain->possible_cpus) {
 
-		if (!cpu_online(i) || !cpumask_test_cpu(i, tsk_cpus_allow) ||
-			cpu_isolated(i))
-			continue;
+			/* tsk with prefer idle to find bigger idle cpu */
+			int i = (sched_boost() || (prefer_idle &&
+				(task_util(p) > stune_task_threshold)))
+				?  nr_cpu_ids-iter_cpu-1 : iter_cpu;
 
+			if (!cpu_online(i) || cpu_isolated(i) ||
+					!cpumask_test_cpu(i, tsk_cpus_allow))
+				continue;
 
 #ifdef CONFIG_MTK_SCHED_INTEROP
-		if (cpu_rq(i)->rt.rt_nr_running && likely(!is_rt_throttle(i)))
-			continue;
+			if (cpu_rq(i)->rt.rt_nr_running &&
+					likely(!is_rt_throttle(i)))
+				continue;
 #endif
 
-		/* favoring tasks that prefer idle cpus to improve latency. */
-		if (idle_cpu(i)) {
-			best_idle_cpu = i;
-			break;
+			/* favoring tasks that prefer idle cpus
+			 * to improve latency.
+			 */
+			if (idle_cpu(i)) {
+				best_idle_cpu = i;
+				break;
+			}
 		}
 	}
 
