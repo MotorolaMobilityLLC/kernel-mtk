@@ -33,7 +33,7 @@ config MTK_SCHED_INTEROP
 
 config MTK_SCHED_TRACE
 	bool "mtk scheduling trace, output mtk schedule trace into FTRACE"
-	default y
+	default n
 	help
 	  MTK scheduling trace, output schedule trace into FTRACE
 	  the ftrace api for scheduling is mt_sched_printf and
