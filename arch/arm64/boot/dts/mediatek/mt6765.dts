@@ -1073,6 +1073,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mdp_wdma0 = <&mdp_wdma0>;
 		mdp_wrot0 = <&mdp_wrot0>;
 		mdp_tdshp0 = <&mdp_tdshp0>;
+		mdp_color0 = <&disp_color0>;
+		mdp_ccorr0 = <&mdp_ccorr>;
 		mm_mutex = <&disp_mutex0>;
 		clocks = <&infracfg_ao CLK_IFR_GCE>,
 			<&infracfg_ao CLK_IFR_GCE_26M>;
@@ -1838,6 +1840,10 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x14000000 0 0x1000>;
 		interrupts = <GIC_SPI 227 IRQ_TYPE_LEVEL_LOW>;
 		#clock-cells = <1>;
+		clocks = <&mmsys_config CLK_MM_CAM_MDP>,
+				<&mmsys_config CLK_MM_IMG_DL_RELAY>,
+				<&mmsys_config CLK_MM_IMG_DL_ASYNC_TOP>;
+		clock-names = "CAM_MDP", "IMG_DL_RELAY", "IMG_DL_ASYNC_TOP";
 	};
 
 	disp_mutex0: disp_mutex0@14001000 {
@@ -1946,41 +1952,55 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,mdp_rdma0";
 		reg = <0 0x14004000 0 0x1000>;
 		interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_RDMA0>;
+		clock-names = "MDP_RDMA0";
 	};
 
-	mdp_ccorr0@14005000 {
+	mdp_ccorr: mdp_ccorr0@14005000 {
 		compatible = "mediatek,mdp_ccorr0";
 		reg = <0 0x14005000 0 0x1000>;
 		interrupts = <GIC_SPI 226 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_CCORR0>;
+		clock-names = "MDP_CCORR";
 	};
 
 	mdp_rsz0: mdp_rsz0@14006000 {
 		compatible = "mediatek,mdp_rsz0";
 		reg = <0 0x14006000 0 0x1000>;
 		interrupts = <GIC_SPI 212 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_RSZ0>;
+		clock-names = "MDP_RSZ0";
 	};
 
 	mdp_rsz1: mdp_rsz1@14007000 {
 		compatible = "mediatek,mdp_rsz1";
 		reg = <0 0x14007000 0 0x1000>;
 		interrupts = <GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_RSZ1>;
+		clock-names = "MDP_RSZ1";
 	};
 
 	mdp_wdma0: mdp_wdma0@14008000 {
 		compatible = "mediatek,mdp_wdma0";
 		reg = <0 0x14008000 0 0x1000>;
 		interrupts = <GIC_SPI 216 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_WDMA0>;
+		clock-names = "MDP_WDMA";
 	};
 
 	mdp_wrot0: mdp_wrot0@14009000 {
 		compatible = "mediatek,mdp_wrot0";
 		reg = <0 0x14009000 0 0x1000>;
 		interrupts = <GIC_SPI 215 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_MDP_WROT0>;
+		clock-names = "MDP_WROT0";
 	};
 
 	mdp_tdshp0: mdp_tdshp0@1400a000 {
 		compatible = "mediatek,mdp_tdshp0";
 		reg = <0 0x1400a000 0 0x1000>;
+		clocks = <&mmsys_config CLK_MM_MDP_TDSHP0>;
+		clock-names = "MDP_TDSHP";
 	};
 
 	disp_ovl0@1400b000 {
@@ -2007,10 +2027,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 219 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	disp_color0@1400f000 {
+	disp_color0: disp_color0@1400f000 {
 		compatible = "mediatek,disp_color0";
 		reg = <0 0x1400f000 0 0x1000>;
 		interrupts = <GIC_SPI 220 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&mmsys_config CLK_MM_DISP_COLOR0>;
+		clock-names = "MDP_COLOR";
 	};
 
 	disp_ccorr0@14010000 {
