@@ -75,7 +75,7 @@ struct port_t {
 	unsigned char txq_exp_index;
 	unsigned char rxq_exp_index;
 	unsigned char hif_id;
-	unsigned char flags;
+	unsigned short flags;
 	struct port_ops *ops;
 	/* device node related */
 	unsigned int minor;

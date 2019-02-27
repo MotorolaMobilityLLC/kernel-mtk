@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-typedef enum {
+enum CCCI_IPC_MSG_ID_CODE {
 	IPC_EL1_MSG_ID_INVALID = IPC_EL1_MSG_ID_BEGIN,
 	/* below are EL1 IPC messages sent from AP */
 	IPC_MSG_ID_EL1_LTE_TX_ALLOW_IND,
@@ -48,4 +48,4 @@ typedef enum {
 	IPC_MSG_ID_EL1_DUMMY31_IND,
 	IPC_MSG_ID_EL1_DUMMY32_IND,
 	IPC_EL1_MSG_ID_END,
-} CCCI_IPC_MSG_ID_CODE;
+};

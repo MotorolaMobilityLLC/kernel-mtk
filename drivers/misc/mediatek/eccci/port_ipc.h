@@ -19,7 +19,7 @@
 #include "ccci_config.h" /* for platform override */
 
 /* MD <-> AP Msg_id mapping enum */
-typedef enum {
+enum CCCI_IPC_MSG_ID_RANGE {
 	IPC_L4C_MSG_ID_BEGIN = 0x80000000,
 #if defined(IPC_L4C_MSG_ID_LEN)
 	IPC_L4C_MSG_ID_RANGE = IPC_L4C_MSG_ID_LEN,
@@ -39,23 +39,23 @@ typedef enum {
 	IPC_UFPM_MSG_ID_BEGIN =
 		IPC_MDT_MSG_ID_BEGIN + IPC_MDT_MSG_ID_RANGE,
 	IPC_UFPM_MSG_ID_RANGE = 0x18,
-} CCCI_IPC_MSG_ID_RANGE;
+};
 
-typedef struct local_para {
+struct local_para {
 	u8 ref_count;
 	u8 _stub; /* MD complier will align ref_count to 16bit */
 	u16 msg_len;
 	u8 data[0];
-} __packed local_para_struct;
+} __packed;
 
-typedef struct peer_buff {
+struct peer_buff {
 	u16 pdu_len;
 	u8 ref_count;
 	u8 pb_resvered;
 	u16 free_header_space;
 	u16 free_tail_space;
 	u8 data[0];
-} __packed peer_buff_struct;
+} __packed;
 
 struct ipc_ilm {
 	u32 src_mod_id;

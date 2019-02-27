@@ -164,8 +164,10 @@ int ccci_fsm_recv_status_packet(int md_id, struct sk_buff *skb)
 
 	CCCI_NORMAL_LOG(poller_ctl->md_id, FSM,
 		"received MD status response %x\n", *(((u32 *)skb->data) + 2));
+	/*
 	ccci_util_cmpt_mem_dump(poller_ctl->md_id,
 		CCCI_DUMP_REPEAT, skb->data, skb->len);
+	*/
 	poller_ctl->poller_state = FSM_POLLER_RECEIVED_RESPONSE;
 	wake_up(&poller_ctl->status_rx_wq);
 	ccci_free_skb(skb);

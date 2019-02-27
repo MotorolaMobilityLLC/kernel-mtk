@@ -95,6 +95,7 @@ static int normal_tx_ring2queue[NORMAL_TXQ_NUM];
 #define NONSTOP_QUEUE_MASK_32 0xFFFFFFFF /* all stop */
 
 #define IS_NET_QUE(md_id, qno) (1)
+#define NET_TX_FIRST_QUE	0
 #else
 static int net_rx_queue_buffer_size[CLDMA_RXQ_NUM] = {
 	0, 0, 0, NET_RX_BUF, NET_RX_BUF, NET_RX_BUF, 0, NET_RX_BUF };
@@ -134,6 +135,7 @@ static int normal_tx_ring2queue[NORMAL_TXQ_NUM] = {
 #define NONSTOP_QUEUE_MASK 0xF0
 #define NONSTOP_QUEUE_MASK_32 0xF0F0F0F0
 
+#define NET_TX_FIRST_QUE	3
 #define IS_NET_QUE(md_id, qno) \
 	((ccci_md_in_ee_dump(md_id) == 0) \
 	&& ((1<<qno) & NET_RX_QUEUE_MASK))
@@ -293,7 +295,8 @@ static inline void cldma_rbd_set_next_ptr(struct cldma_rbd *rbd,
 }
 
 
-static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno)
+static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl,
+	unsigned int qno, unsigned int dir)
 {
 	unsigned int *tmp;
 	struct cldma_request *req = NULL;
@@ -302,60 +305,64 @@ static void cldma_dump_gpd_queue(struct md_cd_ctrl *md_ctrl, unsigned int qno)
 #endif
 	struct cldma_rgpd *rgpd;
 
-	/* use request's link head to traverse */
-	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-		" dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
-		md_ctrl->txq[qno].tr_done->gpd,
-		md_ctrl->txq[qno].tx_xmit->gpd);
-	list_for_each_entry(req,
-		&md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
-		tmp = (unsigned int *)req->gpd;
+	if (dir & 1 << OUT) {
+		/* use request's link head to traverse */
 		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-			" 0x%p: %X %X %X %X\n", req->gpd,
-			*tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			" dump txq %d, tr_done=%p, tx_xmit=0x%p\n", qno,
+			md_ctrl->txq[qno].tr_done->gpd,
+			md_ctrl->txq[qno].tx_xmit->gpd);
+		list_for_each_entry(req, &md_ctrl->txq[qno].tr_ring->gpd_ring, entry) {
+			tmp = (unsigned int *)req->gpd;
+			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+				" 0x%p: %X %X %X %X\n", req->gpd,
+				*tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
 #ifdef CLDMA_DUMP_BD
-		list_for_each_entry(req_bd, &req->bd, entry) {
-			tmp = (unsigned int *)req_bd->gpd;
-			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-				"-0x%p: %X %X %X %X\n", req_bd->gpd,
-				*tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		}
+			list_for_each_entry(req_bd, &req->bd, entry) {
+				tmp = (unsigned int *)req_bd->gpd;
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+					"-0x%p: %X %X %X %X\n", req_bd->gpd,
+					*tmp, *(tmp + 1), *(tmp + 2),
+					*(tmp + 3));
+			}
 #endif
+		}
 	}
-
-	/* use request's link head to traverse */
-	/*maybe there is more txq than rxq*/
-	if (qno >= CLDMA_RXQ_NUM) {
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG, "invalid rxq%d\n", qno);
-		return;
-	}
-	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-		" dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
-		md_ctrl->rxq[qno].tr_done->gpd,
-		md_ctrl->rxq[qno].rx_refill->gpd);
-	list_for_each_entry(req,
-		&md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
-		tmp = (unsigned int *)req->gpd;
-		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-			" 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
-			*tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
-		rgpd = (struct cldma_rgpd *)req->gpd;
-		if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0
-			&& req->skb) {
-			tmp = (unsigned int *)req->skb->data;
+	if (dir & 1 << IN) {
+		/* use request's link head to traverse */
+		/*maybe there is more txq than rxq*/
+		if (qno >= CLDMA_RXQ_NUM) {
 			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
-				" 0x%p: %X %X %X %X\n", req->skb->data,
+				"invalid rxq%d\n", qno);
+			return;
+		}
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+			" dump rxq %d, tr_done=%p, rx_refill=0x%p\n", qno,
+			md_ctrl->rxq[qno].tr_done->gpd,
+			md_ctrl->rxq[qno].rx_refill->gpd);
+		list_for_each_entry(req, &md_ctrl->rxq[qno].tr_ring->gpd_ring, entry) {
+			tmp = (unsigned int *)req->gpd;
+			CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+				" 0x%p/0x%p: %X %X %X %X\n", req->gpd, req->skb,
 				*tmp, *(tmp + 1), *(tmp + 2), *(tmp + 3));
+			rgpd = (struct cldma_rgpd *)req->gpd;
+			if ((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0
+				&& req->skb) {
+				tmp = (unsigned int *)req->skb->data;
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+					" 0x%p: %X %X %X %X\n", req->skb->data,
+					*tmp, *(tmp + 1), *(tmp + 2),
+					*(tmp + 3));
+			}
 		}
 	}
 }
 
-static void cldma_dump_all_gpd(struct md_cd_ctrl *md_ctrl)
+static void cldma_dump_all_tx_gpd(struct md_cd_ctrl *md_ctrl)
 {
 	int i;
 
 	for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++)
-		cldma_dump_gpd_queue(md_ctrl, i);
+		cldma_dump_gpd_queue(md_ctrl, i, 1 << OUT);
 }
 
 #if TRAFFIC_MONITOR_INTERVAL
@@ -383,15 +390,34 @@ void md_cd_traffic_monitor_func(unsigned long data)
 			md_ctrl->tx_traffic_monitor[i]);
 	}
 
-	isr_rem_nsec = (tinfo->latest_isr_time == 0 ? 0 :
-		do_div(tinfo->latest_isr_time, 1000000000));
+	i = NET_TX_FIRST_QUE;
+	if (i + 3 < CLDMA_TXQ_NUM)
+		CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
+			"net Txq%d-%d(status=0x%x):%d-%d, %d-%d, %d-%d, %d-%d\n",
+			i, i + 3, cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_UL_STATUS),
+			md_ctrl->tx_pre_traffic_monitor[i],
+			md_ctrl->tx_traffic_monitor[i],
+			md_ctrl->tx_pre_traffic_monitor[i + 1],
+			md_ctrl->tx_traffic_monitor[i + 1],
+			md_ctrl->tx_pre_traffic_monitor[i + 2],
+			md_ctrl->tx_traffic_monitor[i + 2],
+			md_ctrl->tx_pre_traffic_monitor[i + 3],
+			md_ctrl->tx_traffic_monitor[i + 3]);
+
+	isr_rem_nsec = (tinfo->latest_isr_time == 0 ? 0
+		: do_div(tinfo->latest_isr_time, 1000000000));
+
 	CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
 		"Rx ISR %lu.%06lu, active %d\n",
 		(unsigned long)tinfo->latest_isr_time,
 		isr_rem_nsec / 1000, md_ctrl->rxq_active);
+
 	for (i = 0; i < QUEUE_LEN(md_ctrl->rxq); i++) {
-		q_rx_rem_nsec[i] = (tinfo->latest_q_rx_isr_time[i] == 0 ?
-			0 : do_div(tinfo->latest_q_rx_isr_time[i], 1000000000));
+		q_rx_rem_nsec[i] =
+			(tinfo->latest_q_rx_isr_time[i] == 0 ?
+			0 :
+			do_div(tinfo->latest_q_rx_isr_time[i], 1000000000));
 		CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
 			"RX:%lu.%06lu, %d\n",
 			(unsigned long)tinfo->latest_q_rx_isr_time[i],
@@ -409,12 +435,20 @@ void md_cd_traffic_monitor_func(unsigned long data)
 	CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
 	"traffic(tx_done_timer): CLDMA_AP_L2TIMR0=0x%x   [3]%d %llu, [4]%d %llu, [5]%d %llu\n",
 	cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TIMR0),
-	md_ctrl->tx_done_last_count[3], md_ctrl->tx_done_last_start_time[3],
-	md_ctrl->tx_done_last_count[4], md_ctrl->tx_done_last_start_time[4],
-	md_ctrl->tx_done_last_count[5], md_ctrl->tx_done_last_start_time[5]);
+	md_ctrl->tx_done_last_count[3],
+	md_ctrl->tx_done_last_start_time[3],
+	md_ctrl->tx_done_last_count[4],
+	md_ctrl->tx_done_last_start_time[4],
+	md_ctrl->tx_done_last_count[5],
+	md_ctrl->tx_done_last_start_time[5]);
 #endif
 	ccci_channel_dump_packet_counter(md_ctrl->md_id, tinfo);
 	ccci_dump_skb_pool_usage(md_ctrl->md_id);
+
+	if ((jiffies - md_ctrl->traffic_stamp) / HZ <=
+		TRAFFIC_MONITOR_INTERVAL * 2)
+		mod_timer(&md_ctrl->traffic_monitor,
+			jiffies + TRAFFIC_MONITOR_INTERVAL * HZ);
 }
 #endif
 
@@ -446,6 +480,13 @@ static void cldma_dump_queue_history(struct md_cd_ctrl *md_ctrl,
 		"Current txq%d pos: tr_done=%x, tx_xmit=%x\n", qno,
 		(unsigned int)md_ctrl->txq[qno].tr_done->gpd_addr,
 		(unsigned int)md_ctrl->txq[qno].tx_xmit->gpd_addr);
+
+	if (qno >= CLDMA_RXQ_NUM) {
+		CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+			"invalid rxq%d\n", qno);
+		return;
+	}
+
 	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
 		"Current rxq%d pos: tr_done=%x, rx_refill=%x\n", qno,
 		(unsigned int)md_ctrl->rxq[qno].tr_done->gpd_addr,
@@ -483,6 +524,40 @@ static void cldma_timeout_timer_func(unsigned long data)
 }
 #endif
 
+#if MD_GENERATION == (6293)
+/*
+ * AP_L2RISAR0 register is different from others.
+ * its valid bit is 0,8,16,24
+ * So we have to gather/scatter it to match other registers
+ */
+static inline u32 cldma_reg_bit_gather(u32 reg_s)
+{
+	u32 reg_g = 0;
+	u32 i = 0;
+
+	while (reg_s) {
+		reg_g |= ((reg_s & 0x1) << i);
+		reg_s = reg_s >> 8;
+		i++;
+	}
+
+	return reg_g;
+}
+static inline u32 cldma_reg_bit_scatter(u32 reg_g)
+{
+	u32 reg_s = 0;
+	u32 i = 0;
+
+	while (reg_g && i < 4) {
+		reg_s |= ((reg_g & 0x1) << (8 * i));
+		reg_g = reg_g >> 1;
+		i++;
+	}
+
+	return reg_s;
+}
+#endif
+
 /* may be called from workqueue or NAPI or tasklet (queue0) context,
  * only NAPI and tasklet with blocking=false
  */
@@ -506,8 +581,12 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue,
 	unsigned long flags;
 	char is_net_queue = IS_NET_QUE(md_ctrl->md_id, queue->index);
 	char using_napi = is_net_queue ?
-		(ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_NAPI) : 0;
+		(ccci_md_get_cap_by_id(md_ctrl->md_id) & MODEM_CAP_NAPI)
+		: 0;
 	unsigned int L2RISAR0 = 0;
+	unsigned long time_limit = jiffies + 2;
+	unsigned int l2qe_s_offset = CLDMA_RX_QE_OFFSET;
+
 #ifdef CLDMA_TRACE
 	unsigned long long port_recv_time = 0;
 	unsigned long long skb_alloc_time = 0;
@@ -515,7 +594,8 @@ static int cldma_gpd_rx_collect(struct md_cd_queue *queue,
 	unsigned long long temp_time = 0;
 	unsigned long long total_time = 0;
 	unsigned int rx_interal;
-	static unsigned long long last_leave_time[CLDMA_RXQ_NUM] = { 0 };
+	static unsigned long long last_leave_time[CLDMA_RXQ_NUM]
+	= { 0 };
 	static unsigned int sample_time[CLDMA_RXQ_NUM] = { 0 };
 	static unsigned int sample_bytes[CLDMA_RXQ_NUM] = { 0 };
 
@@ -534,8 +614,22 @@ again:
 		req = queue->tr_done;
 		rgpd = (struct cldma_rgpd *)req->gpd;
 		if (!((cldma_read8(&rgpd->gpd_flags, 0) & 0x1) == 0
-			&& req->skb))
+			&& req->skb)) {
+			ret = ALL_CLEAR;
+
 			break;
+		}
+
+		new_skb = ccci_alloc_skb(queue->tr_ring->pkt_size,
+		!is_net_queue, blocking);
+		if (unlikely(!new_skb)) {
+			CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"alloc skb fail on q%d, retry!\n",
+				queue->index);
+			ret = LOW_MEMORY;
+			return ret;
+		}
+
 		skb = req->skb;
 		/* update skb */
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -616,16 +710,9 @@ again:
 		port_recv_time =
 			((skb_alloc_time = sched_clock()) - port_recv_time);
 #endif
-		new_skb = NULL;
-		if (ret >= 0 || ret == -CCCI_ERR_DROP_PACKET) {
-			new_skb = ccci_alloc_skb(queue->tr_ring->pkt_size,
-						!is_net_queue, blocking);
-			if (!new_skb)
-				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
-					"alloc skb fail on q%d\n",
-					queue->index);
-		}
-		if (new_skb) {
+
+		if ((ret >= 0 || ret == -CCCI_ERR_DROP_PACKET)
+			&& new_skb) {
 			/* mark cldma_request as available */
 			req->skb = NULL;
 			cldma_rgpd_set_data_ptr(rgpd, 0);
@@ -641,7 +728,9 @@ again:
 				(int)queue->index, &ccci_h,
 				(ret >= 0 ? 0 : 1));
 #if MD_GENERATION <= (6292)
-			ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_cnt, &ccci_h);
+			ccci_channel_update_packet_counter(
+				md_ctrl->traffic_info.logic_ch_pkt_cnt,
+				&ccci_h);
 			ccci_md_check_rx_seq_num(md_ctrl->md_id,
 				&md_ctrl->traffic_info, &ccci_h, queue->index);
 #endif
@@ -665,6 +754,7 @@ again:
 					&md_ctrl->cldma_timeout_lock,
 					flags);
 				ccci_free_skb(new_skb);
+				wake_up_all(&queue->rx_wq);
 				return -1;
 			}
 			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock,
@@ -688,8 +778,11 @@ again:
 				"rxq%d leave skb %p in ring, ret = 0x%x\n",
 				queue->index, skb, ret);
 			/* no need to retry if port refused to recv */
-			skb_handled = ret ==
-				-CCCI_ERR_PORT_RX_FULL ? 1 : 0;
+			if (ret == -CCCI_ERR_PORT_RX_FULL)
+				ret = ONCE_MORE;
+			else
+				ret = ALL_CLEAR; /*maybe never come here*/
+			ccci_free_skb(new_skb);
 			break;
 		}
 #ifdef CLDMA_TRACE
@@ -700,20 +793,39 @@ again:
 			port_recv_time, skb_alloc_time,
 			total_handle_time, skb_bytes);
 #endif
-		/* check budget, only NAPI and
-		 * queue0 are allowed to reach budget,
-		 * as they can be scheduled again
+		/* resume cldma rx if necessary,
+		 * avoid cldma rx is inactive for long time
 		 */
+		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+		if (!(cldma_read32(md_ctrl->cldma_ap_ao_base,
+			CLDMA_AP_SO_STATUS)
+			& (1 << queue->index))) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_SO_RESUME_CMD,
+				CLDMA_BM_ALL_QUEUE & (1 << queue->index));
+			cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_SO_RESUME_CMD); /* dummy read */
+		}
+		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
+
 		count++;
-		if (count >= budget && !blocking) {
+		if (count % 8 == 0)
+			wake_up_all(&queue->rx_wq);
+		/* check budget, only NAPI and queue0 are allowed to
+		 * reach budget, as they can be scheduled again
+		 */
+		if ((count >= budget ||
+			time_after_eq(jiffies, time_limit))
+			&& !blocking) {
 			over_budget = 1;
+			ret = ONCE_MORE;
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
+				"rxq%d over budget or timeout, count = %d\n",
+				queue->index, count);
 			break;
 		}
-		if (count >= budget)
-			CCCI_HISTORY_LOG(md_ctrl->md_id, TAG,
-				"rxq%d has been full,budget is %d\n",
-				queue->index, budget);
 	}
+	wake_up_all(&queue->rx_wq);
 	/*
 	 * do not use if(count == RING_BUFFER_SIZE) to resume Rx queue.
 	 * resume Rx queue every time. we may not handle all RX ring
@@ -738,28 +850,24 @@ again:
 		}
 		/* greedy mode */
 		L2RISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base,
-			CLDMA_AP_L2RISAR0);
-		if ((L2RISAR0 & CLDMA_RX_INT_DONE
-			& (1 << queue->index)) ||
-		    (L2RISAR0 & CLDMA_RX_INT_QUEUE_EMPTY
-			& ((1 << queue->index) << CLDMA_RX_QE_OFFSET)))
+					CLDMA_AP_L2RISAR0);
+#if MD_GENERATION == (6293)
+		L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
+		l2qe_s_offset = CLDMA_RX_QE_OFFSET * 8;
+#endif
+		if ((L2RISAR0 & CLDMA_RX_INT_DONE & (1 << queue->index))
+			&& !(!blocking && ret == ONCE_MORE))
 			retry = 1;
 		else
 			retry = 0;
 		/* where are we going */
-		if (over_budget) {
-			/* remember only NAPI and queue0 can reach here */
-			retry = skb_handled ? retry : 1;
-			ret = retry ? ONCE_MORE : ALL_CLEAR;
-		} else {
 			if (retry) {
 				/* ACK interrupt */
-				cldma_write32(md_ctrl->cldma_ap_pdn_base,
-					CLDMA_AP_L2RISAR0,
-					((1 << queue->index)
-					<< CLDMA_RX_QE_OFFSET));
-				cldma_write32(md_ctrl->cldma_ap_pdn_base,
-					CLDMA_AP_L2RISAR0, (1 << queue->index));
+			cldma_write32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_L2RISAR0,
+				((1 << queue->index) << l2qe_s_offset));
+			cldma_write32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_L2RISAR0, (1 << queue->index));
 				/* clear IP busy register wake up cpu case */
 				cldma_write32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_CLDMA_IP_BUSY,
@@ -769,10 +877,7 @@ again:
 					&md_ctrl->cldma_timeout_lock,
 					flags);
 				goto again;
-			} else {
-				ret = ALL_CLEAR;
 			}
-		}
 	}
 	spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 
@@ -804,8 +909,10 @@ static int cldma_net_rx_push_thread(void *arg)
 	struct md_cd_queue *queue = (struct md_cd_queue *)arg;
 	struct md_cd_ctrl *md_ctrl =
 		(struct md_cd_ctrl *)ccci_hif_get_by_id(queue->hif_id);
+#ifdef CCCI_SKB_TRACE
 	struct ccci_per_md *per_md_data =
 		ccci_get_per_md_data(md_ctrl->md_id);
+#endif
 	int count = 0;
 	int ret;
 
@@ -877,14 +984,34 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 	int count = 0;
 	struct sk_buff *skb_free;
 	int need_resume = 0;
+	int resume_done = 0;
 
 	while (1) {
 		spin_lock_irqsave(&queue->ring_lock, flags);
 		req = queue->tr_done;
 		tgpd = (struct cldma_tgpd *)req->gpd;
 		if (!((tgpd->gpd_flags & 0x1) == 0 && req->skb)) {
-			spin_unlock_irqrestore(&queue->ring_lock,
-				flags);
+			spin_unlock_irqrestore(&queue->ring_lock, flags);
+			/* resume channel because cldma HW may stop now*/
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+			if (!resume_done && (tgpd->gpd_flags & 0x1)
+				&& (md_ctrl->txq_active
+				& (1 << queue->index))) {
+				if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base,
+					CLDMA_AP_UL_STATUS)
+					& (1 << queue->index))) {
+					cldma_write32(
+						md_ctrl->cldma_ap_pdn_base,
+						CLDMA_AP_UL_RESUME_CMD,
+						CLDMA_BM_ALL_QUEUE &
+						(1 << queue->index));
+					CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
+						"resume txq %d\n",
+						queue->index);
+				}
+			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock,
+			flags);
 			break;
 		}
 		/* network does not has IOC override needs */
@@ -908,10 +1035,12 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 		req->skb = NULL;
 		/* step forward */
 		queue->tr_done = cldma_ring_step_forward(queue->tr_ring, req);
-		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id)
-			& MODEM_CAP_TXBUSY_STOP))
-			cldma_queue_broadcast_state(md_ctrl, TX_IRQ,
+		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id) &
+			MODEM_CAP_TXBUSY_STOP)) {
+			if (queue->budget > queue->tr_ring->length / 8)
+				cldma_queue_broadcast_state(md_ctrl, TX_IRQ,
 				OUT, queue->index);
+		}
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		count++;
 #if MD_GENERATION >= (6293)
@@ -930,7 +1059,8 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 			ccci_h->data[0], ccci_h->data[1],
 			*(((u32 *) ccci_h) + 2), ccci_h->reserved,
 			queue->index, tgpd->data_buff_len);
-		ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_cnt, ccci_h);
+		ccci_channel_update_packet_counter(
+			md_ctrl->traffic_info.logic_ch_pkt_cnt, ccci_h);
 		ccci_free_skb(skb_free);
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_traffic_monitor[queue->index]++;
@@ -942,9 +1072,7 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 		req = cldma_ring_step_backward(queue->tr_ring,
 			queue->tx_xmit);
 		tgpd = (struct cldma_tgpd *)req->gpd;
-		if ((tgpd->gpd_flags & 0x1) && req->skb &&
-			!(cldma_read32(md_ctrl->cldma_ap_pdn_base,
-			CLDMA_AP_UL_STATUS) & (1 << queue->index)))
+		if ((tgpd->gpd_flags & 0x1) && req->skb)
 			need_resume = 1;
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		/* resume channel */
@@ -964,6 +1092,20 @@ static int cldma_gpd_bd_tx_collect(struct md_cd_queue *queue,
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	}
+#if MD_GENERATION == (6293)
+		/* clear IP busy register to avoid md can't sleep*/
+		if (cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_CLDMA_IP_BUSY)) {
+			cldma_write32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_CLDMA_IP_BUSY,
+				cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_CLDMA_IP_BUSY));
+			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
+				"CLDMA_IP_BUSY = 0x%x\n",
+				cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_CLDMA_IP_BUSY));
+		}
+#endif
 	if (count)
 		wake_up_nr(&queue->req_wq, count);
 	return count;
@@ -1054,7 +1196,8 @@ static int cldma_gpd_tx_collect(struct md_cd_queue *queue,
 				ccci_h->data[0], ccci_h->data[1],
 				*(((u32 *) ccci_h) + 2), ccci_h->reserved,
 				queue->index, skb_free->len);
-		ccci_channel_update_packet_counter(md_ctrl->traffic_info.logic_ch_pkt_cnt, ccci_h);
+		ccci_channel_update_packet_counter(
+			md_ctrl->traffic_info.logic_ch_pkt_cnt, ccci_h);
 		ccci_free_skb(skb_free);
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_traffic_monitor[queue->index]++;
@@ -1092,7 +1235,8 @@ static void cldma_tx_queue_empty_handler(struct md_cd_queue *queue)
 	if (md_ctrl->txq_active & (1 << queue->index)) {
 		/* check if there is any pending TGPD with HWO=1 */
 		spin_lock_irqsave(&queue->ring_lock, flags);
-		req = cldma_ring_step_backward(queue->tr_ring, queue->tx_xmit);
+		req = cldma_ring_step_backward(queue->tr_ring,
+				queue->tx_xmit);
 		tgpd = (struct cldma_tgpd *)req->gpd;
 		if ((tgpd->gpd_flags & 0x1) && req->skb)
 			pending_gpd = 1;
@@ -1153,16 +1297,20 @@ static void cldma_tx_done(struct work_struct *work)
 #endif
 
 	count = queue->tr_ring->handle_tx_done(queue, 0, 0);
+	if (count && md_ctrl->tx_busy_warn_cnt)
+		md_ctrl->tx_busy_warn_cnt = 0;
 
 #if TRAFFIC_MONITOR_INTERVAL
 	md_ctrl->tx_done_last_count[queue->index] = count;
 #endif
 	/* greedy mode */
-	L2TISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0);
+	L2TISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_L2TISAR0);
 	if (L2TISAR0 & CLDMA_TX_INT_QUEUE_EMPTY
 		& ((1 << queue->index) << CLDMA_TX_QE_OFFSET))
 		cldma_tx_queue_empty_handler(queue);
-	if (L2TISAR0 & CLDMA_TX_INT_DONE & (1 << queue->index)) {
+	if (L2TISAR0 & CLDMA_TX_INT_DONE &
+		(1 << queue->index)) {
 		/* ACK interrupt */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base,
 			CLDMA_AP_L2TISAR0, (1 << queue->index));
@@ -1260,7 +1408,9 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 	struct cldma_ring *ring)
 {
 	int i, j;
-	struct cldma_request *item = NULL, *bd_item = NULL, *first_item = NULL;
+	struct cldma_request *item = NULL;
+	struct cldma_request *bd_item = NULL;
+	struct cldma_request *first_item = NULL;
 	struct cldma_tgpd *tgpd = NULL, *prev_gpd = NULL;
 	struct cldma_tbd *bd = NULL, *prev_bd = NULL;
 
@@ -1456,6 +1606,7 @@ void cldma_disable_irq_nosync(struct md_cd_ctrl *md_ctrl)
 }
 static void cldma_rx_worker_start(struct md_cd_ctrl *md_ctrl, int qno)
 {
+#if MD_GENERATION <= (6292)
 	int ret = 0;
 
 	if (qno != 0) {
@@ -1464,11 +1615,14 @@ static void cldma_rx_worker_start(struct md_cd_ctrl *md_ctrl, int qno)
 	} else {
 		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
 	}
+#else
+	tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
+#endif
 }
 static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 {
 	int i, ret;
-	unsigned int L2TIMR0, L2RIMR0, L2TISAR0, L2RISAR0;
+	unsigned int L2TIMR0, L2RIMR0, L2TISAR0, L2RISAR0, L2RISAR0_REG;
 
 	/* get L2 interrupt status */
 	L2TISAR0 = cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_L2TISAR0);
@@ -1488,7 +1642,14 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 #ifndef CLDMA_NO_TX_IRQ
 	L2TISAR0 &= (~L2TIMR0);
 #endif
+#if MD_GENERATION == (6293)
+	L2RISAR0 = cldma_reg_bit_gather(L2RISAR0);
 	L2RISAR0 &= (~L2RIMR0);
+	L2RISAR0_REG = cldma_reg_bit_scatter(L2RISAR0);
+#else
+	L2RISAR0 &= (~L2RIMR0);
+	L2RISAR0_REG = L2RISAR0;
+#endif
 
 	if (L2TISAR0 & CLDMA_TX_INT_ERROR)
 		CCCI_ERROR_LOG(md_ctrl->md_id, TAG, "CLDMA Tx error (%x/%x)\n",
@@ -1535,6 +1696,8 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 		trace_cldma_irq(CCCI_TRACE_TX_IRQ,
 			(L2TISAR0 & CLDMA_TX_INT_DONE));
 #endif
+		if (md_ctrl->tx_busy_warn_cnt && (L2TISAR0 & CLDMA_TX_INT_DONE))
+			md_ctrl->tx_busy_warn_cnt = 0;
 		/* ack Tx interrupt */
 		cldma_write32(md_ctrl->cldma_ap_pdn_base,
 			CLDMA_AP_L2TISAR0, L2TISAR0);
@@ -1563,7 +1726,7 @@ static void cldma_irq_work_cb(struct md_cd_ctrl *md_ctrl)
 					ret = queue_delayed_work(
 						md_ctrl->txq[i].worker,
 						&md_ctrl->txq[i].cldma_tx_work,
-						msecs_to_jiffies(10));
+						msecs_to_jiffies(1000 / HZ));
 				else
 					ret = queue_delayed_work(
 						md_ctrl->txq[i].worker,
@@ -2125,7 +2288,8 @@ void md_cd_clear_all_queue(unsigned char hif_id, DIRECTION dir)
 	if (dir == OUT) {
 		for (i = 0; i < QUEUE_LEN(md_ctrl->txq); i++) {
 			spin_lock_irqsave(&md_ctrl->txq[i].ring_lock, flags);
-			req = list_first_entry(&md_ctrl->txq[i].tr_ring->gpd_ring,
+			req = list_first_entry(
+				&md_ctrl->txq[i].tr_ring->gpd_ring,
 				struct cldma_request, entry);
 			md_ctrl->txq[i].tr_done = req;
 			md_ctrl->txq[i].tx_xmit = req;
@@ -2203,7 +2367,8 @@ void md_cd_clear_all_queue(unsigned char hif_id, DIRECTION dir)
 					if (dma_mapping_error(
 						ccci_md_get_dev_by_id(md_ctrl->md_id),
 						req->data_buffer_ptr_saved)) {
-						CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+						CCCI_ERROR_LOG(
+							md_ctrl->md_id, TAG,
 							"error dma mapping\n");
 						return;
 					}
@@ -2410,34 +2575,32 @@ void md_cldma_clear(unsigned char hif_id)
 			CLDMA_AP_UL_STATUS);
 		if ((CLDMA_BM_ALL_QUEUE & ret) == 0
 		    && cldma_read32(md_ctrl->cldma_ap_pdn_base,
-			CLDMA_AP_CLDMA_IP_BUSY) == 0) {
+				CLDMA_AP_CLDMA_IP_BUSY) == 0) {
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
-				"MD CLDMA tx status is off, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
-				retry,
-				cldma_read32(md_ctrl->cldma_ap_pdn_base,
-				CLDMA_AP_CLDMA_IP_BUSY),
-				cldma_read32(md_ctrl->cldma_md_pdn_base,
-				CLDMA_AP_UL_STATUS),
-				cldma_read32(md_ctrl->cldma_ap_pdn_base,
-				CLDMA_AP_SO_STATUS));
+			"MD CLDMA tx status is off, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
+			retry, cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_CLDMA_IP_BUSY),
+			cldma_read32(md_ctrl->cldma_md_pdn_base,
+			CLDMA_AP_UL_STATUS),
+			cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_SO_STATUS));
 			break;
 		}
 		if ((retry % 10) == 0)
 			CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
-				"MD CLDMA tx is active, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
-				retry,
-				cldma_read32(md_ctrl->cldma_ap_pdn_base,
-				CLDMA_AP_CLDMA_IP_BUSY),
-				cldma_read32(md_ctrl->cldma_md_pdn_base,
-				CLDMA_AP_UL_STATUS),
-				cldma_read32(md_ctrl->cldma_ap_pdn_base,
-				CLDMA_AP_SO_STATUS));
-		mdelay(20);
-		retry--;
+			"MD CLDMA tx is active, retry=%d, AP_CLDMA_IP_BUSY=0x%x, MD_TX_STATUS=0x%x, AP_RX_STATUS=0x%x\n",
+			retry, cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_CLDMA_IP_BUSY),
+			cldma_read32(md_ctrl->cldma_md_pdn_base,
+			CLDMA_AP_UL_STATUS),
+			cldma_read32(md_ctrl->cldma_ap_pdn_base,
+			CLDMA_AP_SO_STATUS));
+			mdelay(20);
+			retry--;
 	}
 #endif
 	if (retry == 0 && cldma_read32(md_ctrl->cldma_ap_pdn_base,
-		CLDMA_AP_CLDMA_IP_BUSY) != 0) {
+			CLDMA_AP_CLDMA_IP_BUSY) != 0) {
 		CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
 			"md_cldma_clear: wait md tx done failed.\n");
 		md_cd_traffic_monitor_func((unsigned long)md_ctrl);
@@ -2452,13 +2615,12 @@ void md_cldma_clear(unsigned char hif_id)
 	md_cd_clear_all_queue(md_ctrl->hif_id, OUT);
 	/*
 	 * there is a race condition between md_power_off and CLDMA IRQ.
-	 * after we get a CLDMA IRQ,
-	 * if we power off MD before CLDMA tasklet is scheduled,
-	 * the tasklet will get 0 when reading CLDMA
+	 * after we get a CLDMA IRQ, if we power off MD before CLDMA
+	 * tasklet is scheduled, the tasklet will get 0 when reading CLDMA
 	 * register, and not schedule workqueue to check RGPD.
-	 * this will leave an HWO=0 RGPD in ring
-	 * buffer and cause a queue being stopped.
-	 * so we flush RGPD here to kill this missing RX_DONE interrupt.
+	 * This will leave an HWO=0 RGPD in ring buffer and cause a queue
+	 * being stopped. so we flush RGPD here to kill this missing
+	 * RX_DONE interrupt.
 	 */
 	md_cd_clear_all_queue(md_ctrl->hif_id, IN);
 
@@ -2468,8 +2630,7 @@ void md_cldma_clear(unsigned char hif_id)
 
 /* this is called inside queue->ring_lock */
 static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue,
-	struct cldma_request *tx_req,
-	struct sk_buff *skb,
+	struct cldma_request *tx_req, struct sk_buff *skb,
 	unsigned int ioc_override)
 {
 	struct md_cd_ctrl *md_ctrl =
@@ -2490,8 +2651,8 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue,
 	/* network does not has IOC override needs */
 	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
 		"SGIO, GPD=%p, frags=%d, len=%d, headlen=%d\n",
-		tx_req->gpd,
-		info->nr_frags, skb->len, skb_headlen(skb));
+		tx_req->gpd, info->nr_frags, skb->len,
+		skb_headlen(skb));
 	/* link firt BD to skb's data */
 	tx_req_bd = list_first_entry(&tx_req->bd,
 		struct cldma_request, entry);
@@ -2511,8 +2672,8 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue,
 		}
 		tbd = tx_req_bd->gpd;
 		CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
-			"SGIO, BD=%p, frag%d, frag_len=%d\n",
-			tbd, cur_frag, frag_len);
+			"SGIO, BD=%p, frag%d, frag_len=%d\n", tbd,
+			cur_frag, frag_len);
 		/* update BD */
 		tx_req_bd->data_buffer_ptr_saved =
 		    dma_map_single(ccci_md_get_dev_by_id(md_ctrl->md_id),
@@ -2520,21 +2681,23 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue,
 		if (dma_mapping_error(ccci_md_get_dev_by_id(md_ctrl->md_id),
 			tx_req_bd->data_buffer_ptr_saved)) {
 			CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
-			"error dma mapping\n");
+				"error dma mapping\n");
 			return -1;
 		}
 		cldma_tbd_set_data_ptr(tbd,
-		tx_req_bd->data_buffer_ptr_saved);
+			tx_req_bd->data_buffer_ptr_saved);
 		cldma_write16(&tbd->data_buff_len, 0, frag_len);
 		tbd->non_used = 1;
+		/* clear EOL */
 		cldma_write8(&tbd->bd_flags, 0,
-		cldma_read8(&tbd->bd_flags, 0) & ~0x1);	/* clear EOL */
+			cldma_read8(&tbd->bd_flags, 0) & ~0x1);
 		/* step forward */
 		tx_req_bd = list_entry(tx_req_bd->entry.next,
-		struct cldma_request, entry);
+			struct cldma_request, entry);
 	}
+	/* set EOL */
 	cldma_write8(&tbd->bd_flags, 0,
-		cldma_read8(&tbd->bd_flags, 0) | 0x1);	/* set EOL */
+		cldma_read8(&tbd->bd_flags, 0) | 0x1);
 	tgpd = tx_req->gpd;
 	/* update GPD */
 	cldma_write32(&tgpd->data_buff_len, 0, skb->len);
@@ -2555,8 +2718,7 @@ static int cldma_gpd_bd_handle_tx_request(struct md_cd_queue *queue,
 
 /* this is called inside queue->ring_lock */
 static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue,
-	struct cldma_request *tx_req,
-	struct sk_buff *skb,
+	struct cldma_request *tx_req, struct sk_buff *skb,
 	unsigned int ioc_override)
 {
 	struct cldma_tgpd *tgpd;
@@ -2570,8 +2732,7 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue,
 	/* override current IOC setting */
 	if (ioc_override & 0x80) {
 		/* backup current IOC setting */
-		tx_req->ioc_override = 0x80
-		| (!!(tgpd->gpd_flags & 0x80));
+		tx_req->ioc_override = 0x80 | (!!(tgpd->gpd_flags & 0x80));
 		if (ioc_override & 0x1)
 			tgpd->gpd_flags |= 0x80;
 		else
@@ -2591,8 +2752,7 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue,
 			"error dma mapping\n");
 		return -1;
 	}
-	cldma_tgpd_set_data_ptr(tgpd,
-		tx_req->data_buffer_ptr_saved);
+	cldma_tgpd_set_data_ptr(tgpd, tx_req->data_buffer_ptr_saved);
 	cldma_write16(&tgpd->data_buff_len, 0, skb->len);
 #if MD_GENERATION >= (6293)
 	cldma_write8(&tgpd->netif, 0, ccci_h->data[0]);
@@ -2601,9 +2761,9 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue,
 	/*
 	 * set HWO
 	 * use cldma_timeout_lock to avoid race conditon with cldma_stop.
-	 * this lock must cover TGPD setting, as even
-	 * without a resume operation, CLDMA still can start sending
-	 * next HWO=1 TGPD if last TGPD was just finished.
+	 * This lock must cover TGPD setting, as even
+	 * without a resume operation, CLDMA still can start sending next
+	 * HWO=1 TGPD if last TGPD was just finished.
 	 */
 	spin_lock(&md_ctrl->cldma_timeout_lock);
 	if (md_ctrl->txq_active & (1 << queue->index))
@@ -2615,8 +2775,8 @@ static int cldma_gpd_handle_tx_request(struct md_cd_queue *queue,
 	return 0;
 }
 
-static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
-	int skb_from_pool, int blocking)
+static int md_cd_send_skb(unsigned char hif_id, int qno,
+	struct sk_buff *skb, int skb_from_pool, int blocking)
 {
 	struct md_cd_ctrl *md_ctrl =
 		(struct md_cd_ctrl *)ccci_hif_get_by_id(hif_id);
@@ -2629,7 +2789,8 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 	unsigned int tx_bytes = 0;
 	struct ccci_buffer_ctrl *buf_ctrl = NULL;
 #ifdef CLDMA_TRACE
-	static unsigned long long last_leave_time[CLDMA_TXQ_NUM] = { 0 };
+	static unsigned long long last_leave_time[CLDMA_TXQ_NUM]
+		= { 0 };
 	static unsigned int sample_time[CLDMA_TXQ_NUM] = { 0 };
 	static unsigned int sample_bytes[CLDMA_TXQ_NUM] = { 0 };
 	unsigned long long total_time = 0;
@@ -2646,11 +2807,11 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 
 	memset(&ccci_h, 0, sizeof(struct ccci_header));
 #if TRAFFIC_MONITOR_INTERVAL
-	if ((jiffies - md_ctrl->traffic_stamp) / HZ
-		>= TRAFFIC_MONITOR_INTERVAL) {
-		md_ctrl->traffic_stamp = jiffies;
-		mod_timer(&md_ctrl->traffic_monitor, jiffies);
-	}
+	if ((jiffies - md_ctrl->traffic_stamp) / HZ >
+			TRAFFIC_MONITOR_INTERVAL)
+		mod_timer(&md_ctrl->traffic_monitor,
+			jiffies + TRAFFIC_MONITOR_INTERVAL * HZ);
+	md_ctrl->traffic_stamp = jiffies;
 #endif
 
 	if (qno >= QUEUE_LEN(md_ctrl->txq)) {
@@ -2675,22 +2836,21 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 
  retry:
 	spin_lock_irqsave(&queue->ring_lock, flags);
-	/* we use irqsave as network require a lock in softirq,
-	 * cause a potential deadlock
-	 */
+		/* we use irqsave as network require a lock in softirq,
+		 * cause a potential deadlock
+		 */
 	CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
 		"get a Tx req on q%d free=%d, tx_bytes = %X\n",
 		qno, queue->budget, tx_bytes);
 	tx_req = queue->tx_xmit;
 	if (queue->budget > 0 && tx_req->skb == NULL) {
-		ccci_md_inc_tx_seq_num(md_ctrl->md_id,
-			&md_ctrl->traffic_info,
+		ccci_md_inc_tx_seq_num(md_ctrl->md_id, &md_ctrl->traffic_info,
 			(struct ccci_header *)skb->data);
 		/* wait write done */
 		wmb();
 		queue->budget--;
-		queue->tr_ring->handle_tx_request(queue, tx_req,
-			skb, ioc_override);
+		queue->tr_ring->handle_tx_request(queue,
+			tx_req, skb, ioc_override);
 		/* step forward */
 		queue->tx_xmit =
 			cldma_ring_step_forward(queue->tr_ring, tx_req);
@@ -2698,17 +2858,20 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 		/* update log */
 #if TRAFFIC_MONITOR_INTERVAL
 		md_ctrl->tx_pre_traffic_monitor[queue->index]++;
+		ccci_channel_update_packet_counter(
+			md_ctrl->traffic_info.logic_ch_pkt_pre_cnt, &ccci_h);
 #endif
 		ccci_md_add_log_history(&md_ctrl->traffic_info, OUT,
 			(int)queue->index, &ccci_h, 0);
 		/*
 		 * make sure TGPD is ready by here,
-		 * otherwise there is race conditon between ports
-		 * over the same queue. one port is just setting TGPD,
-		 * another port may have resumed the queue.
+		 * otherwise there is race conditon between
+		 * ports over the same queue.
+		 * one port is just setting TGPD, another port
+		 * may have resumed the queue.
 		 */
-		/* put it outside of spin_lock_irqsave to avoid
-		 * disabling IRQ too long
+		/* put it outside of spin_lock_irqsave to
+		 * avoid disabling IRQ too long
 		 */
 		spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
 		if (md_ctrl->txq_active & (1 << qno)) {
@@ -2716,7 +2879,7 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 			if (IS_NET_QUE(md_ctrl->md_id, qno)) {
 				queue->timeout_start = local_clock();
 				ret = mod_timer(&queue->timeout_timer,
-						jiffies + CLDMA_ACTIVE_T * HZ);
+					jiffies + CLDMA_ACTIVE_T * HZ);
 				CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
 					"md_ctrl->txq_active=%d, qno%d ,ch%d, start_timer=%d\n",
 					md_ctrl->txq_active, qno,
@@ -2724,17 +2887,20 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 				ret = 0;
 			}
 #endif
-
+			md_ctrl->tx_busy_warn_cnt = 0;
 			if (md_ctrl->txq_started) {
 				/* resume Tx queue */
 				if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base,
-					CLDMA_AP_UL_STATUS) & (1 << qno)))
-					cldma_write32(md_ctrl->cldma_ap_pdn_base,
-					CLDMA_AP_UL_RESUME_CMD,
-					CLDMA_BM_ALL_QUEUE & (1 << qno));
+						CLDMA_AP_UL_STATUS) &
+						(1 << qno)))
+					cldma_write32(
+						md_ctrl->cldma_ap_pdn_base,
+						CLDMA_AP_UL_RESUME_CMD,
+						CLDMA_BM_ALL_QUEUE &
+						(1 << qno));
 				cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_UL_RESUME_CMD);
-				/* dummy read to create a non-buffable write */
+			/* dummy read to create a non-buffable write */
 			} else {
 				cldma_write32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_UL_START_CMD,
@@ -2758,20 +2924,21 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 		}
 		spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock, flags);
 	} else {
-		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id)
-			& MODEM_CAP_TXBUSY_STOP))
-			cldma_queue_broadcast_state(md_ctrl, TX_FULL, OUT,
-				queue->index);
+		if (likely(ccci_md_get_cap_by_id(md_ctrl->md_id) &
+			MODEM_CAP_TXBUSY_STOP))
+			cldma_queue_broadcast_state(md_ctrl, TX_FULL,
+				OUT, queue->index);
 		spin_unlock_irqrestore(&queue->ring_lock, flags);
 		/* check CLDMA status */
-		if (cldma_read32(md_ctrl->cldma_ap_pdn_base, CLDMA_AP_UL_STATUS)
-			& (1 << qno)) {
+		if (cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_UL_STATUS) & (1 << qno)) {
 			CCCI_DEBUG_LOG(md_ctrl->md_id, TAG,
-			"ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
-			ccci_h.channel, qno,
-			cldma_read32(md_ctrl->cldma_ap_pdn_base,
-			CLDMA_AP_UL_STATUS));
+				"ch=%d qno=%d free slot 0, CLDMA_AP_UL_STATUS=0x%x\n",
+				ccci_h.channel, qno,
+				cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_UL_STATUS));
 			queue->busy_count++;
+			md_ctrl->tx_busy_warn_cnt = 0;
 		} else {
 			if (cldma_read32(md_ctrl->cldma_ap_pdn_base,
 				CLDMA_AP_L2TIMR0) & (1 << qno))
@@ -2780,6 +2947,33 @@ static int md_cd_send_skb(unsigned char hif_id, int qno, struct sk_buff *skb,
 					ccci_h.channel, qno,
 					cldma_read32(md_ctrl->cldma_ap_pdn_base,
 					CLDMA_AP_L2TIMR0));
+			if (++md_ctrl->tx_busy_warn_cnt == 1000) {
+				CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
+					"tx busy: dump CLDMA and GPD status\n");
+				CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+					"tx busy: dump CLDMA and GPD status\n");
+				md_ctrl->ops->dump_status(CLDMA_HIF_ID,
+					DUMP_FLAG_CLDMA, -1);
+				/*
+				 * aee_kernel_warning_api(__FILE__,
+				 * __LINE__, DB_OPT_DEFAULT,
+				 * "cldma", "TX busy debug");
+				 */
+			}
+			/* resume channel */
+			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
+			if (!(cldma_read32(md_ctrl->cldma_ap_pdn_base,
+				CLDMA_AP_UL_STATUS) & (1 << queue->index))) {
+				cldma_write32(md_ctrl->cldma_ap_pdn_base,
+					CLDMA_AP_UL_RESUME_CMD,
+					CLDMA_BM_ALL_QUEUE &
+					(1 << queue->index));
+				CCCI_REPEAT_LOG(md_ctrl->md_id, TAG,
+					"resume txq %d in send skb\n",
+					queue->index);
+			}
+			spin_unlock_irqrestore(&md_ctrl->cldma_timeout_lock,
+				flags);
 		}
 #ifdef CLDMA_NO_TX_IRQ
 		queue->tr_ring->handle_tx_done(queue, 0, 0, &ret);
@@ -2841,9 +3035,13 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 		= local_clock();
 	ret = queue->tr_ring->handle_rx_done(queue,
 			queue->budget, 0);
-	if (ret != ALL_CLEAR)
+	if (ret == ONCE_MORE)
 		tasklet_hi_schedule(&md_ctrl->cldma_rxq0_task);
-	else
+	else if (unlikely(ret == LOW_MEMORY)) {
+		/*Rx done and empty interrupt will be enabled in workqueue*/
+		queue_work(md_ctrl->rxq[queue->index].worker,
+			&md_ctrl->rxq[queue->index].cldma_rx_work);
+	} else
 		/* enable RX_DONE and QUEUE_EMPTY interrupt */
 		cldma_write32_ao_misc(md_ctrl, CLDMA_AP_L2RIMCR0,
 			(CLDMA_RX_INT_DONE & (1 << queue->index)) |
@@ -2854,35 +3052,38 @@ static void md_cldma_rxq0_tasklet(unsigned long data)
 		"rxq0 tasklet result %d\n", ret);
 }
 
+/*actrually, length is dump flag's private argument*/
 static int md_cldma_hif_dump_status(unsigned char hif_id,
 	MODEM_DUMP_FLAG flag, int length)
 {
 	struct md_cd_ctrl *md_ctrl =
 		(struct md_cd_ctrl *)ccci_hif_get_by_id(hif_id);
+	int i, q_bitmap = 0;
+	unsigned int dir = 1 << OUT | 1 << IN;
 
 	if (flag & DUMP_FLAG_CLDMA) {
 		cldma_dump_register(md_ctrl);
-		if (length == -1) {
-			cldma_dump_packet_history(md_ctrl);
-			cldma_dump_all_gpd(md_ctrl);
-		}
-		if (length >= 0 && length < CLDMA_TXQ_NUM) {
-			cldma_dump_queue_history(md_ctrl, length);
-			cldma_dump_gpd_queue(md_ctrl, length);
-		}
+		q_bitmap = length;
 	}
-
-	if (flag & DUMP_FLAG_QUEUE_0) {
-		cldma_dump_register(md_ctrl);
-		cldma_dump_queue_history(md_ctrl, 0);
-		cldma_dump_gpd_queue(md_ctrl, 0);
-	}
+	if (flag & DUMP_FLAG_QUEUE_0)
+		q_bitmap = 0x1;
 	if (flag & DUMP_FLAG_QUEUE_0_1) {
-		cldma_dump_register(md_ctrl);
-		cldma_dump_queue_history(md_ctrl, 0);
-		cldma_dump_queue_history(md_ctrl, 1);
-		cldma_dump_gpd_queue(md_ctrl, 0);
-		cldma_dump_gpd_queue(md_ctrl, 1);
+		q_bitmap = 0x3;
+		if (length != 0)
+			dir = length;
+	}
+	CCCI_MEM_LOG_TAG(md_ctrl->md_id, TAG,
+		"md_cldma_hif_dump_status: q_bitmap = %d\n", q_bitmap);
+
+	if (q_bitmap == -1) {
+		cldma_dump_packet_history(md_ctrl);
+		cldma_dump_all_tx_gpd(md_ctrl);
+	} else {
+		for (i = 0; q_bitmap && i < QUEUE_LEN(md_ctrl->txq); i++) {
+			cldma_dump_queue_history(md_ctrl, i);
+			cldma_dump_gpd_queue(md_ctrl, i, dir);
+			q_bitmap &= ~(1 << i);
+		}
 	}
 	if (flag & DUMP_FLAG_IRQ_STATUS) {
 		CCCI_NORMAL_LOG(md_ctrl->md_id, TAG,
@@ -2962,6 +3163,8 @@ int ccci_cldma_hif_init(unsigned char hif_id, unsigned char md_id)
 		md_cd_traffic_monitor_func;
 	md_ctrl->traffic_monitor.data = (unsigned long)md_ctrl;
 #endif
+	md_ctrl->tx_busy_warn_cnt = 0;
+
 	return 0;
 }
 

@@ -29,12 +29,12 @@
 #ifdef CONFIG_COMPAT
 #include <linux/compat.h>
 #endif
+#include <mt-plat/aee.h>
 #include "ccci_core.h"
 #include "ccci_fsm.h"
 #include "ccci_modem.h"
 #include "ccci_hif.h"
 #include "ccci_port.h"
-#include <mt-plat/aee.h>
 
 /************ enumerations ************/
 

@@ -22,6 +22,7 @@
 #include "ccci_core.h"
 #include "ccci_bm.h"
 #include "port_sysmsg.h"
+#include "ccci_swtp.h"
 #define MAX_QUEUE_LENGTH 16
 
 #ifndef TEST_MESSAGE_FOR_BRINGUP
@@ -182,10 +183,8 @@ static void sys_msg_handler(struct port_t *port, struct sk_buff *skb)
 		/* Fall through */
 	case MD_RF_TEMPERATURE_3G:
 		/* Fall through */
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
 	case MD_SW_MD1_TX_POWER_REQ:
 		/* Fall through */
-#endif
 	case LWA_CONTROL_MSG:
 		exec_ccci_sys_call_back(md_id, ccci_h->data[1],
 			ccci_h->reserved);
@@ -201,6 +200,9 @@ static int port_sys_init(struct port_t *port)
 {
 	CCCI_DEBUG_LOG(port->md_id, SYS,
 		"kernel port %s is initializing\n", port->name);
+
+	if (port->md_id == MD_SYS1)
+		swtp_init(port->md_id);
 	port->skb_handler = &sys_msg_handler;
 	port->private_data = kthread_run(port_kthread_handler, port, "%s",
 							port->name);
