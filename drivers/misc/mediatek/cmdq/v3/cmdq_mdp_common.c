@@ -985,6 +985,7 @@ s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle)
 	list_add(&handle->list_entry, insert_pos);
 	mutex_unlock(&mdp_task_mutex);
 
+	handle->state = TASK_STATE_WAITING;
 	/* run consume to run task in thread */
 	cmdq_mdp_consume_handle();
 
