@@ -1575,6 +1575,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		ch_offset_ccu = <0x200>;
 		mediatek,hs_only;
 	};
+	i2c7: i2c7 {};
+	i2c8: i2c8 {};
+	i2c9: i2c9 {};
 
 	spi0: spi0@1100a000 {
 		compatible = "mediatek,mt6765-spi";
