@@ -1365,6 +1365,13 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 			 *	 current->pid);
 			 */
 			++gLockTimeOutCount;
+			pr_info("VENC_LOCKHW Ret %d Count %d First %d Lock %d ,Try %d Timeout %d",
+				eValRet,
+				gLockTimeOutCount,
+				FirstUseEncHW,
+				CodecHWLock.eDriverType,
+				pHWLock->eDriverType,
+				HWLockEvent.u4TimeoutMs);
 			if (gLockTimeOutCount > 30) {
 				pr_info("VENC_LOCKHW %d fail 30 times",
 						current->pid);
@@ -1387,8 +1394,9 @@ static long vcodec_lockhw_venc(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 			 *	(unsigned long)CodecHWLock.pvHandle,
 			 *	(unsigned long)(pHWLock->pvHandle),
 			 *	pHWLock->eDriverType);
-			 *	gLockTimeOutCount = 0;
+			 *
 			 */
+			gLockTimeOutCount = 0;
 		}
 		mutex_unlock(&HWLock);
 	}
