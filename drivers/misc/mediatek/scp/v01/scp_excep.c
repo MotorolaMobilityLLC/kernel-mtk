@@ -294,6 +294,8 @@ uint32_t scp_dump_pc(void)
  */
 void scp_A_dump_regs(void)
 {
+	uint32_t tmp;
+
 	if (is_scp_ready(SCP_A_ID)) {
 		pr_debug("[SCP]ready PC:0x%x,LR:0x%x,PSP:0x%x,SP:0x%x\n"
 		, readl(SCP_A_DEBUG_PC_REG), readl(SCP_A_DEBUG_LR_REG)
@@ -303,6 +305,7 @@ void scp_A_dump_regs(void)
 		, readl(SCP_A_DEBUG_PC_REG), readl(SCP_A_DEBUG_LR_REG)
 		, readl(SCP_A_DEBUG_PSP_REG), readl(SCP_A_DEBUG_SP_REG));
 	}
+
 	pr_debug("[SCP]GIPC     0x%x\n", readl(SCP_GIPC_IN_REG));
 	pr_debug("[SCP]BUS_CTRL 0x%x\n", readl(SCP_BUS_CTRL));
 	pr_debug("[SCP]SLEEP_STATUS 0x%x\n", readl(SCP_CPU_SLEEP_STATUS));
@@ -313,6 +316,17 @@ void scp_A_dump_regs(void)
 	pr_debug("[SCP]CLK_CTRL_SEL 0x%x\n", readl(SCP_CLK_SW_SEL));
 	pr_debug("[SCP]CLK_ENABLE  0x%x\n", readl(SCP_CLK_ENABLE));
 	pr_debug("[SCP]SLEEP_DEBUG 0x%x\n", readl(SCP_A_SLEEP_DEBUG_REG));
+
+	tmp = readl(SCP_BUS_CTRL)&(~dbg_irq_info_sel_mask);
+	writel(tmp | (0 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	pr_debug("[SCP]BUS:INFRA LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
+	writel(tmp | (1 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	pr_debug("[SCP]BUS:DCACHE LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
+	writel(tmp | (2 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	pr_debug("[SCP]BUS:ICACHE LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
+	writel(tmp | (3 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
+	pr_debug("[SCP]BUS:PC LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
+
 }
 
 /*
