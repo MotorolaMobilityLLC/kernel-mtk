@@ -3063,6 +3063,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	eas {
 		eff_turn_point = <467>;
+		tiny = <50>;
 	};
 };
 
