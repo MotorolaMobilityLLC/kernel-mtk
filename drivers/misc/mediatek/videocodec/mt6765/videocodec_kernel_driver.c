@@ -3038,11 +3038,14 @@ static int vcodec_suspend_notifier(struct notifier_block *nb,
 		is_entering_suspend = 1;
 		while (CodecHWLock.pvHandle != 0) {
 			wait_cnt++;
-			if (wait_cnt > 100000) {
+			if (wait_cnt > 90) {
 				pr_info("vcodec_pm_suspend waiting %p %d",
 					CodecHWLock.pvHandle,
 					(int)CodecHWLock.eDriverType);
-				wait_cnt = 0;
+				/* Current task is still not finished, don't
+				 * care, will check again in real suspend
+				 */
+				return NOTIFY_DONE;
 			}
 			msleep(1);
 		}
