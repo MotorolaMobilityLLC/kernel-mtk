@@ -1489,6 +1489,24 @@ static void process_dbg_opt(const char *opt)
 			mipi_clk_change(0, 1);
 		else if (strncmp(opt + 9, "off", 3) == 0)
 			mipi_clk_change(0, 0);
+	}
+	if (strncmp(opt, "change_mipi_date_rate:", 16) == 0) {
+		int mipi_date_rate = 0;
+
+		ret = sscanf(opt, "change_mipi_date_rate:%d\n",
+			&mipi_date_rate);
+		if (ret != 1) {
+			DISPWARN("%d error to parse cmd %s\n",
+				__LINE__, opt);
+			return;
+		}
+		if (mipi_date_rate == 0)
+			mipi_clk_change_by_data_rate(0, mipi_date_rate);
+		else
+			mipi_clk_change_by_data_rate(1, mipi_date_rate);
+
+		DISPMSG("change mipi_date_rate to %dMhz\n",
+			mipi_date_rate);
 	} else if (strncmp(opt, "dump_output:", 12) == 0) {
 		if (strncmp(opt + 12, "on", 2) == 0)
 			dump_output = 1;
