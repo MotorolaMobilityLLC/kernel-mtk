@@ -415,23 +415,8 @@ void sdio_autok_wait_dvfs_ready(void)
 int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore, vcore_dvfs_work;
+	int vcore = 0;
 	u8 *res;
-
-	vcore_dvfs_work = is_vcorefs_can_work();
-	if (vcore_dvfs_work == -1) {
-		vcore = 0;
-		pr_notice("DVFS feature not enabled\n");
-	} else if (vcore_dvfs_work == 0) {
-		vcore = vcorefs_get_hw_opp();
-		pr_notice("DVFS not ready\n");
-	} else if (vcore_dvfs_work == 1) {
-		vcore = vcorefs_get_hw_opp();
-		pr_notice("DVFS ready\n");
-	} else {
-		vcore = 0;
-		pr_notice("Invalid return value from is_vcorefs_can_work()\n");
-	}
 
 	res = host->autok_res[vcore];
 	pr_notice("sd_execute_dvfs_autok %d\n", vcore);
@@ -455,23 +440,8 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 {
 	int ret = 0;
-	int vcore, vcore_dvfs_work;
+	int vcore = 0;
 	u8 *res;
-
-	vcore_dvfs_work = is_vcorefs_can_work();
-	if (vcore_dvfs_work == -1) {
-		vcore = 0;
-		pr_notice("DVFS feature not enabled\n");
-	} else if (vcore_dvfs_work == 0) {
-		vcore = vcorefs_get_hw_opp();
-		pr_notice("DVFS not ready\n");
-	} else if (vcore_dvfs_work == 1) {
-		vcore = vcorefs_get_hw_opp();
-		pr_notice("DVFS ready\n");
-	} else {
-		vcore = 0;
-		pr_notice("Invalid return value from is_vcorefs_can_work()\n");
-	}
 
 	res = host->autok_res[vcore];
 	pr_notice("emmc_execute_dvfs_autok %d\n", vcore);
