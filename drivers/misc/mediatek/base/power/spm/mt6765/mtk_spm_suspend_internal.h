@@ -42,10 +42,9 @@ bool spm_is_md1_sleep(void);
 bool spm_is_md2_sleep(void);
 bool spm_is_conn_sleep(void);
 void spm_ap_mdsrc_req(u8 set);
-ssize_t get_spm_sleep_count(char *ToUserBuf
-			, size_t sz, void *priv);
-ssize_t get_spm_last_wakeup_src(char *ToUserBuf
-			, size_t sz, void *priv);
+int get_spm_sleep_count(struct seq_file *s, void *unused);
+int get_spm_last_wakeup_src(struct seq_file *s, void *unused);
+
 void spm_output_sleep_option(void);
 
 /* record last wakesta */

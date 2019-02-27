@@ -119,21 +119,17 @@ void spm_ap_mdsrc_req(u8 set)
 }
 EXPORT_SYMBOL(spm_ap_mdsrc_req);
 
-ssize_t get_spm_sleep_count(char *ToUserBuf
-		, size_t sz, void *priv)
+int get_spm_sleep_count(struct seq_file *s, void *unused)
 {
-	int bLen = snprintf(ToUserBuf, sz
-				, "%d\n", spm_sleep_count);
-	return (bLen > sz) ? sz : bLen;
+	seq_printf(s, "%d\n", spm_sleep_count);
+	return 0;
 }
 EXPORT_SYMBOL(get_spm_sleep_count);
 
-ssize_t get_spm_last_wakeup_src(char *ToUserBuf
-		, size_t sz, void *priv)
+int get_spm_last_wakeup_src(struct seq_file *s, void *unused)
 {
-	int bLen = snprintf(ToUserBuf, sz
-				, "0x%x\n", spm_wakesta.r12);
-	return (bLen > sz) ? sz : bLen;
+	seq_printf(s, "0x%x\n", spm_wakesta.r12);
+	return 0;
 }
 EXPORT_SYMBOL(get_spm_last_wakeup_src);
 
