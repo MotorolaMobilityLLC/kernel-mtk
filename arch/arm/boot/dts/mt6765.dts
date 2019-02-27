@@ -342,7 +342,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 				<0 0x10006000 0 0x1000>, /* spm */
 				<0 0x14002000 0 0x1000>, /* spi_common */
 				<0 0x1020e000 0 0x1000>, /* infracfg */
-				<0 0x18004000 0 0x1000>; /* connsys */
+				<0 0x18004000 0 0x1000>, /* connsys */
+				<0 0x18002000 0 0x1000>; /* connsys mcu */
 		#clock-cells = <1>;
 	};
 
