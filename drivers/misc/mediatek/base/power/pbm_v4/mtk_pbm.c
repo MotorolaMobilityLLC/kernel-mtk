@@ -203,7 +203,7 @@ unsigned long hpf_get_power_md1(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 
 	if (hpfmgr->switch_md1)
-		hpfmgr->loading_md1 = get_md1_power(MAX_POWER);
+		hpfmgr->loading_md1 = get_md1_power(MAX_POWER, true);
 	else
 		hpfmgr->loading_md1 = 0;
 
