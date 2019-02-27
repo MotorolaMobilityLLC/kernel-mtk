@@ -234,9 +234,9 @@ ssize_t get_spm_mcdsr_state(char *ToUserBuf, size_t sz, void *priv)
 	mcdsr_log("\tmcdsr.expected_slp_us = %d\n", mcdsr.expected_slp_us);
 	mcdsr_log("\tSPM_SRC_REQ[7] = 0x%x\n",
 		  spm_read(SPM_SRC_REQ) & REG_SPM_DDR_EN_REQ_LSB);
-	mcdsr_log("\tSPM_SW_FLAG    = 0x%x\n", spm_read(SPM_SW_FLAG));
-	mcdsr_log("\tSPM_SW_FLAG_2  = 0x%x\n",
-		  spm_read(SPM_SW_FLAG_2)); /* bit[5]=1 MCDSR disable */
+	mcdsr_log("\tSPM_SW_FLAG_0    = 0x%x\n", spm_read(SPM_SW_FLAG_0));
+	mcdsr_log("\tSPM_SW_FLAG_1  = 0x%x\n",
+		  spm_read(SPM_SW_FLAG_1)); /* bit[5]=1 MCDSR disable */
 	mcdsr_log("\tSRC_REQ_STA_0  = 0x%x\n", spm_read(SRC_REQ_STA_0));
 	mcdsr_log("\tSRC_REQ_STA_1  = 0x%x\n", spm_read(SRC_REQ_STA_1));
 	mcdsr_log("\tSRC_REQ_STA_2  = 0x%x\n", spm_read(SRC_REQ_STA_2));

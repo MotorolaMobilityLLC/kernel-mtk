@@ -156,16 +156,19 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->debug_flag = spm_read(PCM_WDT_LATCH_SPARE_0);
 	wakesta->debug_flag1 = spm_read(PCM_WDT_LATCH_SPARE_1);
 
+/* TODO: FIX ME */
+#if 0
 	/* get backup SW flag status */
-	wakesta->b_sw_flag = spm_read(SPM_BSI_D0_SR);   /* SPM_BSI_D0_SR */
-	wakesta->b_sw_flag2 = spm_read(SPM_BSI_D1_SR);   /* SPM_BSI_D1_SR */
+	wakesta->b_sw_flag0 = spm_read(SPM_BSI_D0_SR);   /* SPM_BSI_D0_SR */
+	wakesta->b_sw_flag1 = spm_read(SPM_BSI_D1_SR);   /* SPM_BSI_D1_SR */
+#endif
 
 	/* get ISR status */
 	wakesta->isr = spm_read(SPM_IRQ_STA);
 
 	/* get SW flag status */
-	wakesta->sw_flag = spm_read(SPM_SW_FLAG);
-	wakesta->sw_flag2 = spm_read(SPM_SW_FLAG_2);
+	wakesta->sw_flag0 = spm_read(SPM_SW_FLAG_0);
+	wakesta->sw_flag1 = spm_read(SPM_SW_FLAG_1);
 
 	/* get the numbers of enter DDREN */
 	wakesta->num_ddren = spm_read(SPM_SW_RSV_8);
@@ -210,14 +213,14 @@ unsigned int __spm_output_wake_reason(
 			wakesta->debug_flag, wakesta->debug_flag1);
 
 		aee_sram_printk(" sw_flag = 0x%x 0x%x\n",
-			wakesta->sw_flag, wakesta->sw_flag2);
+			wakesta->sw_flag0, wakesta->sw_flag1);
 		pr_info(" sw_flag = 0x%x 0x%x\n",
-			wakesta->sw_flag, wakesta->sw_flag2);
+			wakesta->sw_flag0, wakesta->sw_flag1);
 
 		aee_sram_printk(" b_sw_flag = 0x%x 0x%x\n",
-			wakesta->b_sw_flag, wakesta->b_sw_flag2);
+			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
 		pr_info(" b_sw_flag = 0x%x 0x%x\n",
-			wakesta->b_sw_flag, wakesta->b_sw_flag2);
+			wakesta->b_sw_flag0, wakesta->b_sw_flag1);
 
 		aee_sram_printk(" num = 0x%x 0x%x\n",
 			wakesta->num_ddren, wakesta->num_mcdsr);
@@ -345,10 +348,10 @@ unsigned int __spm_output_wake_reason(
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, sw_flag = 0x%x 0x%x 0x%x 0x%x, req = 0x%x,",
 		wakesta->raw_ext_sta,
 		wakesta->wake_misc,
-		wakesta->sw_flag,
-		wakesta->sw_flag2,
-		wakesta->b_sw_flag,
-		wakesta->b_sw_flag2,
+		wakesta->sw_flag0,
+		wakesta->sw_flag1,
+		wakesta->b_sw_flag0,
+		wakesta->b_sw_flag1,
 		spm_read(SPM_SRC_REQ));
 
 	if (!strcmp(scenario, "suspend")) {

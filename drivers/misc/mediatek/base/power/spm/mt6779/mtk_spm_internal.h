@@ -194,11 +194,11 @@ struct wake_status {
 	u32 req_sta3;		/* SRC_REQ_STA_3 */
 	u32 debug_flag;		/* PCM_WDT_LATCH_SPARE_0 */
 	u32 debug_flag1;	/* PCM_WDT_LATCH_SPARE_1 */
-	u32 b_sw_flag;		/* SPM_BSI_D0_SR */
-	u32 b_sw_flag2;		/* SPM_BSI_D1_SR */
+	u32 b_sw_flag0;		/* SPM_BSI_D0_SR */
+	u32 b_sw_flag1;		/* SPM_BSI_D1_SR */
 	u32 isr;			/* SPM_IRQ_STA */
-	u32 sw_flag;		/* SPM_SW_FLAG */
-	u32 sw_flag2;		/* SPM_SW_FLAG_2 */
+	u32 sw_flag0;		/* SPM_SW_FLAG_0 */
+	u32 sw_flag1;		/* SPM_SW_FLAG_1 */
 	u32 num_ddren;		/* SPM_SW_RSV_5 */
 	u32 num_mcdsr;		/* SPM_SW_RSV_6 */
 	u32 clk_settle;		/* SPM_CLK_SETTLE */
