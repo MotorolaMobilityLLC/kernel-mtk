@@ -605,6 +605,9 @@ void tick_broadcast_mtk_aee_dump(void)
 	aee_sram_fiq_log(tick_broadcast_mtk_aee_dump_buf);
 
 	for_each_possible_cpu(i) {
+		/* to avoid unexpected overrun */
+		if (i >= num_possible_cpus())
+			break;
 		memset(tick_broadcast_mtk_aee_dump_buf, 0,
 			sizeof(tick_broadcast_mtk_aee_dump_buf));
 		snprintf(tick_broadcast_mtk_aee_dump_buf,
@@ -995,6 +998,9 @@ out:
 			need_dump = true;
 
 			for_each_possible_cpu(i) {
+				/* to avoid unexpected overrun */
+				if (i >= num_possible_cpus())
+					break;
 				_tick_broadcast_enter_count[i] =
 					tick_broadcast_enter_count[i];
 				_tick_broadcast_fail_count[i] =
@@ -1024,6 +1030,9 @@ out:
 			"enter counter cpu: ");
 
 		for_each_possible_cpu(i) {
+			/* to avoid unexpected overrun */
+			if (i >= num_possible_cpus())
+				break;
 			bc_dump_buf_append(bc_dump_buf, "%lld, ",
 				_tick_broadcast_enter_count[i]);
 		}
@@ -1032,6 +1041,9 @@ out:
 			"success counter cpu: ");
 
 		for_each_possible_cpu(i) {
+			/* to avoid unexpected overrun */
+			if (i >= num_possible_cpus())
+				break;
 			bc_dump_buf_append(bc_dump_buf, "%lld, ",
 				_tick_broadcast_success_count[i]);
 		}
@@ -1040,6 +1052,9 @@ out:
 			"fail counter cpu: ");
 
 		for_each_possible_cpu(i) {
+			/* to avoid unexpected overrun */
+			if (i >= num_possible_cpus())
+				break;
 			bc_dump_buf_append(bc_dump_buf, "%lld, ",
 				_tick_broadcast_fail_count[i]);
 		}
@@ -1048,6 +1063,9 @@ out:
 			"interrupt counter cpu: ");
 
 		for_each_possible_cpu(i) {
+			/* to avoid unexpected overrun */
+			if (i >= num_possible_cpus())
+				break;
 			bc_dump_buf_append(bc_dump_buf, "%lld, ",
 				_tick_broadcast_interrupt_count[i]);
 		}
