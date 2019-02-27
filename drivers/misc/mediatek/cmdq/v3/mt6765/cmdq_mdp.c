@@ -461,6 +461,7 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 {
 	unsigned long register_address;
 	uint32_t register_value;
+
 	switch (engine) {
 	case CMDQ_ENG_MDP_CAMIN:
 		cmdq_mdp_enable_clock_CAM_MDP(enable);
