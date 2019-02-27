@@ -780,6 +780,9 @@ extern int pmic_is_bif_exist(void);
 extern int pmic_get_vbus(void);
 extern bool pmic_is_battery_exist(void);
 
+/* usb*/
+extern bool mt_usb_is_device(void);
+
 /* gauge hal */
 extern void battery_dump_nag(void);
 

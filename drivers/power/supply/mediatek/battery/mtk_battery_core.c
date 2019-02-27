@@ -2379,7 +2379,8 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		{
 			int is_charger_exist = 0;
 
-			if (upmu_get_rgs_chrdet() == 0)
+			if (upmu_get_rgs_chrdet() == 0 ||
+				mt_usb_is_device() == 0)
 				is_charger_exist = false;
 			else
 				is_charger_exist = true;
