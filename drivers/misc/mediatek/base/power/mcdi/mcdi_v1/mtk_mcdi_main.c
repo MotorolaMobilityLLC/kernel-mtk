@@ -34,6 +34,7 @@
 #include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
 #include <mtk_mcdi_state.h>
+#include <mtk_mcdi_api.h>
 
 #include <mtk_mcdi_governor_hint.h>
 
@@ -98,6 +99,10 @@ unsigned long long __attribute__((weak)) idle_get_current_time_ms(void)
 }
 
 void __attribute__((weak)) aee_rr_rec_mcdi_val(int id, u32 val)
+{
+}
+
+void __attribute__((weak)) mtk_idle_dump_cnt_in_interval(void)
 {
 }
 
@@ -234,7 +239,7 @@ static ssize_t mcdi_state_write(struct file *filp,
 		set_mcdi_buck_off_mask(param);
 		return count;
 	} else if (!strncmp(cmd_str, "hint", sizeof("hint"))) {
-		system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST,
+		_system_idle_hint_request(SYSTEM_IDLE_HINT_USER_MCDI_TEST,
 								param != 0);
 		return count;
 	} else {
@@ -570,7 +575,7 @@ bool mcdi_pause(bool paused)
 	return true;
 }
 
-bool mcdi_task_pause(bool paused)
+bool _mcdi_task_pause(bool paused)
 {
 	bool ret = false;
 
@@ -606,12 +611,12 @@ bool mcdi_task_pause(bool paused)
 	return ret;
 }
 
-void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
+void mcdi_avail_cpu_mask(unsigned int cpu_mask)
 {
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
 }
 
-void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
+void _mcdi_cpu_iso_mask(unsigned int iso_mask)
 {
 	iso_mask &= 0xff;
 
@@ -723,7 +728,7 @@ static int __init mcdi_init(void)
 
 	mcdi_pm_qos_init();
 
-	update_cpu_isolation_mask_to_mcdi_controller(0x0);
+	_mcdi_cpu_iso_mask(0x0);
 
 	return 0;
 }

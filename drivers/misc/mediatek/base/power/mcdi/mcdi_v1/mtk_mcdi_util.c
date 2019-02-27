@@ -13,6 +13,7 @@
 #include <linux/printk.h>
 #include <linux/types.h>
 #include <linux/kconfig.h>
+#include <linux/sched.h>
 
 #include <mtk_mcdi_util.h>
 #include <mtk_mcdi_plat.h>
@@ -26,14 +27,18 @@ static inline unsigned int mcdi_sspm_read(int id)
 {
 	unsigned int val = 0;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	sspm_mbox_read(MCDI_MBOX, id, &val, 1);
+#endif
 
 	return val;
 }
 
 static inline void mcdi_sspm_write(int id, unsigned int val)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	sspm_mbox_write(MCDI_MBOX, id, (void *)&val, 1);
+#endif
 }
 
 static inline int mcdi_sspm_ready(void)

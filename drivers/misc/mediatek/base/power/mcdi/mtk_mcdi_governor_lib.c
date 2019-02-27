@@ -134,21 +134,19 @@ bool mcdi_controller_token_get_no_pause(int cpu)
 
 bool mcdi_controller_token_get(int cpu)
 {
-	bool token_get = false;
-
 	if (is_cpu_pwr_on_event_pending())
-		token_get = false;
+		return false;
 
 	if (!is_last_core_in_mcusys())
-		token_get = false;
+		return false;
 
 	if (other_cpu_off_but_cluster_on(cpu))
-		token_get = false;
+		return false;
 
 	if (is_match_cpu_cluster_criteria(cpu))
-		token_get = true;
+		return true;
 
-	return token_get;
+	return false;
 }
 
 void dump_multi_core_state_ftrace(int cpu)
@@ -219,7 +217,7 @@ int acquire_last_core_prot(int cpu)
 
 		any_core_cpu_cond_inc(PAUSE_CNT);
 
-		mcdi_task_pause(true);
+		_mcdi_task_pause(true);
 		mcdi_task_paused = true;
 
 		token_get = mcdi_controller_token_get(cpu);
@@ -233,13 +231,13 @@ int acquire_last_core_prot(int cpu)
 	}
 
 	if (mcdi_task_paused)
-		mcdi_task_pause(false);
+		_mcdi_task_pause(false);
 
 	return -1;
 }
 void release_last_core_prot(void)
 {
-	mcdi_task_pause(false);
+	_mcdi_task_pause(false);
 }
 
 int cluster_last_core_prot(int cpu)
