@@ -1152,6 +1152,10 @@ unsigned char lcm_name_list[][128] = {
 #if defined(ILI9881C_HDP_DSI_VDO_ILITEK_RT5081)
 	"ili9881c_hdp_dsi_vdo_ilitek_rt5081_drv",
 #endif
+
+#if defined(NT35695B_FHD_DSI_VDO_AUO_RT5081_HDP)
+	"nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_drv",
+#endif
 };
 
 #define LCM_COMPILE_ASSERT(condition) \
