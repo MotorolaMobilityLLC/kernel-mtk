@@ -53,14 +53,6 @@
 
 #include "imx398mipiraw_Sensor.h"
 
-
-
-
-
-
-
-
-
 #define BYTE               unsigned char
 
 static BOOL read_spc_flag = FALSE;
@@ -105,9 +97,9 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3496,	/* 3104, */
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 600000000,
+		.mipi_pixel_rate = 590400000,
 	},
-	.cap1 = {		/* 24 fps  capture */
+	.cap1 = {		/* 15 fps  capture */
 		.pclk = 300000000,
 		.linelength = 5536,
 		.framelength = 3612,
@@ -2547,18 +2539,18 @@ kal_uint16 addr_data_pair_capture_imx398[] = {
 	/***********clock setting************/
 	0x0301, 0x05,
 	0x0303, 0x02,
-	0x0305, 0x04,
+	0x0305, 0x02,
 	0x0306, 0x00,
-	0x0307, 0xFA,
+	0x0307, 0x7D,
 	0x0309, 0x0A,
 	0x030B, 0x01,
-	0x030D, 0x0F,
-	0x030E, 0x03,
-	0x030F, 0x41,
-	0x0310, 0x00,
+	0x030D, 0x04,
+	0x030E, 0x00,
+	0x030F, 0xF6,
+	0x0310, 0x01,
 	/*************data rateing setting*********/
 	0x0820, 0x17,
-	0x0821, 0x70,
+	0x0821, 0x10,
 	0x0822, 0x00,
 	0x0823, 0x00,
 	/*************integration time setting******/
