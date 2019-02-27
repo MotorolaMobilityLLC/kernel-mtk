@@ -740,18 +740,24 @@ static long FDVT_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case FDVT_IOC_T_SET_FDCONF_CMD:
 		/* LOG_DBG("[FDVT] FDVT set FD config\n"); */
 		FaceDetecteConfig();
-		FDVT_SetRegHW((FDVTRegIO *)pBuff);
-		haveConfig = 1;
+		ret = FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		if (ret == 0)
+			haveConfig = 1;
+		else
+			LOG_DBG("Set FD HW register fail");
 		break;
 	case FDVT_IOC_T_SET_SDCONF_CMD:
 		/* LOG_DBG("[FDVT] FDVT set SD config\n"); */
 		SmileDetecteConfig();
-		FDVT_SetRegHW((FDVTRegIO *)pBuff);
-		haveConfig = 1;
+		ret = FDVT_SetRegHW((FDVTRegIO *)pBuff);
+		if (ret == 0)
+			haveConfig = 1;
+		else
+			LOG_DBG("Set SD HW register fail");
 		break;
 	case FDVT_IOC_G_READ_FDREG_CMD:
 		/* LOG_DBG("[FDVT] FDVT read FD config\n"); */
-		FDVT_ReadRegHW((FDVTRegIO *)pBuff);
+		ret = FDVT_ReadRegHW((FDVTRegIO *)pBuff);
 		break;
 	case FDVT_IOC_T_DUMPREG:
 		LOG_DBG("[FDVT] FDVT_DUMPREG\n");
