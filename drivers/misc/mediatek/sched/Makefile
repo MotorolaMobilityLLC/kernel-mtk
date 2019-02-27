@@ -15,3 +15,6 @@ LINUXINCLUDE += -include $(srctree)/kernel/sched/sched.h
 
 # For RT monitor
 obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
+
+# sysfs interface for user to get EAS related info
+obj-y += eas_plus.o
