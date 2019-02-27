@@ -465,6 +465,6 @@ void mtu3_gadget_disconnect(struct mtu3 *mtu);
 
 irqreturn_t mtu3_ep0_isr(struct mtu3 *mtu);
 extern const struct usb_ep_ops mtu3_ep0_ops;
-extern void check_ltssm_work(struct work_struct *data);
+extern void mtu3_check_ltssm_work(struct work_struct *data);
 
 #endif
