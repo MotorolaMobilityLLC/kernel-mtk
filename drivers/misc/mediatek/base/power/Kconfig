@@ -6,3 +6,10 @@ config MTK_UNIFY_POWER
 	  This table can provide power data and capacity to someone who
 	  need it.
 	  If unsure, say Y.
+
+config MTK_CM_MGR
+	bool "MTK CM MGR"
+	default n
+	---help---
+	  This kernel config can be used to enable CM MGR.
+	  If unsure, say N.
