@@ -746,6 +746,7 @@ void exec_dlpt_callback(unsigned int dlpt_val)
 	}
 }
 
+#if defined(CONFIG_MTK_SMART_BATTERY)
 static int get_rac_val(void)
 {
 	int volt_1 = 0;
@@ -816,6 +817,7 @@ static int get_rac_val(void)
 
 	return ret;
 }
+#endif /* CONFIG_MTK_SMART_BATTERY */
 
 int get_dlpt_imix_spm(void)
 {
@@ -1137,7 +1139,6 @@ int dlpt_notify_handler(void *unused)
 		mutex_unlock(&dlpt_notify_mutex);
 		__pm_relax(&dlpt_notify_lock);
 
-		set_timer_slack(&dlpt_notify_timer, HZ/2);
 		mod_timer(&dlpt_notify_timer, jiffies + dlpt_notify_interval);
 
 	} while (!kthread_should_stop());
@@ -1160,7 +1161,6 @@ void dlpt_notify_init(void)
 	init_timer_deferrable(&dlpt_notify_timer);
 	dlpt_notify_timer.function = dlpt_notify_task;
 	dlpt_notify_timer.data = (unsigned long)&dlpt_notify_timer;
-	set_timer_slack(&dlpt_notify_timer, HZ/2);
 	mod_timer(&dlpt_notify_timer, jiffies + dlpt_notify_interval);
 
 	dlpt_notify_thread = kthread_run(dlpt_notify_handler, 0
@@ -1451,9 +1451,9 @@ static ssize_t store_battery_oc_protect_thd(
 	return size;
 }
 
-static DEVICE_ATTR(battery_oc_protect_level, 0664
-		, show_battery_oc_protect_level
-		, store_battery_oc_protect_level);
+static DEVICE_ATTR(battery_oc_protect_thd, 0664
+		, show_battery_oc_protect_thd
+		, store_battery_oc_protect_thd);
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
@@ -1852,6 +1852,8 @@ void pmic_throttling_dlpt_debug_init(struct platform_device *dev
 				, &dev_attr_battery_oc_protect_stop);
 	ret_device_file = device_create_file(&(dev->dev)
 				, &dev_attr_battery_oc_protect_level);
+	ret_device_file = device_create_file(&(dev->dev)
+				, &dev_attr_battery_oc_protect_thd);
 #endif
 
 #ifdef BATTERY_PERCENT_PROTECT
