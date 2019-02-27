@@ -46,6 +46,7 @@
 #include <mt-plat/mtk_devinfo.h>
 
 static int enable_lp3_1333;
+static unsigned int lp3_highest_freq;
 static unsigned int lp4_highest_freq;
 
 void __iomem *SYS_TIMER_BASE_ADDR;
@@ -1288,7 +1289,7 @@ int dram_steps_freq(unsigned int step)
 	switch (step) {
 	case 0:
 		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = 1866;
+			freq = lp3_highest_freq;
 		else if (DRAM_TYPE == TYPE_LPDDR4X)
 			freq = 3200;
 		else if (DRAM_TYPE == TYPE_LPDDR4)
@@ -1745,10 +1746,12 @@ static int dram_probe(struct platform_device *pdev)
 	dramc_info("shuffle_status = %d\n", get_shuffle_status());
 	dramc_info("MR mode = %d\n", dram_mr_mode);
 
+	lp3_highest_freq = 0;
+	lp4_highest_freq = 0;
 	if (DRAM_TYPE == TYPE_LPDDR4)
 		lp4_highest_freq = get_dram_data_rate();
-	else
-		lp4_highest_freq = 0;
+	else if (DRAM_TYPE == TYPE_LPDDR3)
+		lp3_highest_freq = get_dram_data_rate();
 
 #ifdef SW_TX_TRACKING
 	dram_sw_tx = (readl(PDEF_DRAMC0_CHA_REG_0C8) >> 24) & 0x1;
