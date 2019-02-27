@@ -325,6 +325,7 @@ MODULE_DEVICE_TABLE(i2c, mt6370_pmu_id_table);
 
 static const struct of_device_id mt6370_pmu_ofid_table[] = {
 	{.compatible = "mediatek,mt6370_pmu",},
+	{.compatible = "mediatek,subpmic_pmu",},
 	{},
 };
 MODULE_DEVICE_TABLE(of, mt6370_pmu_ofid_table);
