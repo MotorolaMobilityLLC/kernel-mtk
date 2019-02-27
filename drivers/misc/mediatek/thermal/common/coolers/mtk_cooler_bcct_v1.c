@@ -68,13 +68,13 @@ struct charger_consumer *consumer, int idx, int input_current_uA)
 	return 0;
 }
 	signed int __attribute__ ((weak))
-battery_get_soc(void)
+battery_get_bat_soc(void)
 {
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return 0;
 }
 	signed int __attribute__ ((weak))
-battery_get_uisoc(void)
+battery_get_bat_uisoc(void)
 {
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return 0;
@@ -120,7 +120,6 @@ charger_manager_get_current_charging_type(struct charger_consumer *consumer)
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return -1;
 }
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	int __attribute__ ((weak))
 charger_manager_get_pe30_input_current_limit(
 struct charger_consumer *consumer, int idx, int *input_current_uA,
@@ -137,7 +136,6 @@ struct charger_consumer *consumer, int idx, int input_current_uA)
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return -1;
 }
-#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 
 #else
 	int __attribute__ ((weak))
@@ -346,10 +344,8 @@ static void chrlmt_set_limit_handler(struct work_struct *work)
 		mtk_cooler_bcct_dprintk_always("%s %d\n", __func__
 				, chrlmt_pep30_input_curr_limit);
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 		charger_manager_set_pe30_input_current_limit(pthermal_consumer,
 				0, chrlmt_pep30_input_curr_limit * 1000);
-#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 #else
 		mtk_pep30_set_charging_current_limit(
 					chrlmt_pep30_input_curr_limit);
@@ -625,8 +621,8 @@ static void bat_chg_info_update(void)
 	int pep30_max_input_curr_limit_uA = 0;
 	int pep30_min_input_curr_limit_uA = 0;
 
-	bat_info_soc = battery_get_soc();
-	bat_info_uisoc = battery_get_uisoc();
+	bat_info_soc = battery_get_bat_soc();
+	bat_info_uisoc = battery_get_bat_uisoc();
 	if (cl_bcct_klog_on == 1) {
 		bat_info_vbat = battery_get_bat_voltage();
 		bat_info_ibat = battery_get_bat_current();
@@ -636,12 +632,10 @@ static void bat_chg_info_update(void)
 			mtk_cooler_bcct_dprintk("bat_info_aicr: %d err: %d\n",
 							bat_info_aicr, ret);
 	}
-#ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
 	charger_manager_get_pe30_input_current_limit(pthermal_consumer, 0,
 						&bat_info_pep30_curr_limit,
 						&pep30_min_input_curr_limit_uA,
 						&pep30_max_input_curr_limit_uA);
-#endif /* CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT */
 
 	abcct_pep30_max_input_curr_limit = pep30_max_input_curr_limit_uA / 1000;
 	abcct_pep30_min_input_curr_limit = pep30_min_input_curr_limit_uA / 1000;
