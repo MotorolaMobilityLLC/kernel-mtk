@@ -1126,9 +1126,21 @@ static void cmdq_thread_handle_timeout(unsigned long data)
 {
 	struct cmdq_thread *thread = (struct cmdq_thread *)data;
 	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
+	unsigned long flags;
+	bool empty;
 
-	if (!work_pending(&thread->timeout_work))
+	spin_lock_irqsave(&thread->chan->lock, flags);
+	empty = list_empty(&thread->task_busy_list);
+	spin_unlock_irqrestore(&thread->chan->lock, flags);
+	if (empty)
+		return;
+
+	if (!work_pending(&thread->timeout_work)) {
+		cmdq_msg("queue cmdq timeout thread:%u", thread->idx);
 		queue_work(cmdq->timeout_wq, &thread->timeout_work);
+	} else {
+		cmdq_msg("ignore cmdq timeout thread:%u", thread->idx);
+	}
 }
 
 void cmdq_thread_remove_task(struct mbox_chan *chan,
