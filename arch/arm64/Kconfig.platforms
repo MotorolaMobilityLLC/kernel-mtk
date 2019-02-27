@@ -216,6 +216,10 @@ config MACH_MT3967
 	select ARM_DSU_PMU
 	select CPU_V7
 	select HAVE_SMP
+	select EXT4_FS
+	select EXT4_FS_ENCRYPTION
+	select EXT4_FS_SECURITY
+	select EXT4_ENCRYPTION
 	select F2FS_FS
 	select F2FS_FS_ENCRYPTION
 	select F2FS_FS_SECURITY
