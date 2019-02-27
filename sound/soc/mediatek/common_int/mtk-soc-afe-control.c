@@ -64,7 +64,9 @@
 #include <sound/jack.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
-
+#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
+#include "mtk-auddrv-scp-spkprotect-common.h"
+#endif
 /*
  * #include <mt-plat/mt_boot.h>
  * #include <mt-plat/mt_boot_common.h>
@@ -3178,11 +3180,20 @@ unsigned int word_size_align(unsigned int in_size)
 {
 	unsigned int align_size;
 
-	/* sram is device memory, need word size align, 8 byte for 64 bit
-	 * platform
-	 */
-	/* [3:0] = 4'h0 for the convenience of the hardware implementation */
-	align_size = in_size & 0xFFFFFFF0;
+#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
+	if (scp_smartpa_used_flag) {
+		/* SCP use cache. Cache use 32 bytes data alignment */
+		align_size = in_size & 0xFFFFFFE0;
+	} else
+#endif
+	{
+		/* sram is device memory, need word size align,
+		 * 8 byte for 64 bit platform.
+		 * [3:0] = 4'h0 for the convenience of the hardware
+		 * implementation.
+		 */
+		align_size = in_size & 0xFFFFFFF0;
+	}
 
 	return align_size;
 }
@@ -4636,7 +4647,7 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 			data_w_ptr += copy_size;
 			count -= copy_size;
 #ifdef AFE_CONTROL_DEBUG_LOG
-			pr_debug("finish1, copy_size:%x, WriteIdx:%x, ReadIdx=%x, Remained:%x, count=%x \r\n",
+			pr_debug("finish1, copy_size:%d, WriteIdx:%d, ReadIdx=%d, Remained:%d, count=%u \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained, (unsigned int)count);
@@ -4710,7 +4721,7 @@ static int mtk_mem_dlblk_copy(struct snd_pcm_substream *substream, int channel,
 			count -= copy_size;
 			data_w_ptr += copy_size;
 #ifdef AFE_CONTROL_DEBUG_LOG
-			pr_debug("finish2, copy size:%x, WriteIdx:%x,ReadIdx=%x DataRemained:%x \r\n",
+			pr_debug("finish2, copy size:%d, WriteIdx:%d,ReadIdx=%d DataRemained:%d \r\n",
 				copy_size, Afe_Block->u4WriteIdx,
 				Afe_Block->u4DMAReadIdx,
 				Afe_Block->u4DataRemained);

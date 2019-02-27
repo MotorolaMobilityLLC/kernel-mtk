@@ -83,4 +83,5 @@ void spkproc_service_ipicmd_send(
 extern void scp_reset_check(void);
 extern atomic_t stop_send_ipi_flag;
 extern atomic_t scp_reset_done;
+extern bool scp_smartpa_used_flag;
 #endif
