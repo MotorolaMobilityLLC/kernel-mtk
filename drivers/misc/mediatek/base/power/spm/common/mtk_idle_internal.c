@@ -47,8 +47,8 @@ enum idle_fp_step {
 	IDLE_FP_LEAVE_WFI = 0x1ff,
 	IDLE_FP_UART_RESUME = 0x3ff,
 	IDLE_FP_PCM_CLEANUP = 0x7ff,
-	IDLE_FP_PWR_POST_SYNC = 0xfff,
-	IDLE_FP_POSTHANDLER = 0x1fff,
+	IDLE_FP_POSTHANDLER = 0xfff,
+	IDLE_FP_PWR_POST_SYNC = 0x1fff,
 	IDLE_FP_LEAVE = 0xffff,
 	IDLE_FP_SLEEP_DEEPIDLE = 0x80000000,
 };
@@ -306,13 +306,6 @@ RESTORE_UART:
 
 	__mtk_idle_footprint(IDLE_FP_PCM_CLEANUP);
 
-	/* [by_chip] post power setting sync wait */
-	__profile_idle_start(idle_type, PIDX_PWR_POST_WFI_WAIT);
-	mtk_idle_power_post_process_async_wait(idle_type, op_cond);
-	__profile_idle_stop(idle_type, PIDX_PWR_POST_WFI_WAIT);
-
-	__mtk_idle_footprint(IDLE_FP_PWR_POST_SYNC);
-
 	/* idle post handler: setup notification/thermal/ufs */
 	__profile_idle_start(idle_type, PIDX_POST_HANDLER);
 	if (!(op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE))
@@ -320,6 +313,13 @@ RESTORE_UART:
 	__profile_idle_stop(idle_type, PIDX_POST_HANDLER);
 
 	__mtk_idle_footprint(IDLE_FP_POSTHANDLER);
+
+	/* [by_chip] post power setting sync wait */
+	__profile_idle_start(idle_type, PIDX_PWR_POST_WFI_WAIT);
+	mtk_idle_power_post_process_async_wait(idle_type, op_cond);
+	__profile_idle_stop(idle_type, PIDX_PWR_POST_WFI_WAIT);
+
+	__mtk_idle_footprint(IDLE_FP_PWR_POST_SYNC);
 
 	__profile_idle_stop(idle_type, PIDX_LEAVE_TOTAL);
 
