@@ -80,3 +80,45 @@ extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
 #endif
 
 
+#ifdef CONFIG_SCHED_HMP
+struct clb_stats {
+	int ncpu;                  /* The number of CPU */
+	int ntask;                 /* The number of tasks */
+	int load_avg;              /* Arithmetic average of task load ratio */
+	int cpu_capacity;          /* Current CPU capacity */
+	int cpu_power;             /* Max CPU capacity */
+	int acap;                  /* Available CPU capacity */
+	int scaled_acap;           /* Scaled available CPU capacity */
+	int scaled_atask;          /* Scaled available task */
+	int threshold;             /* Dynamic threshold */
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	int nr_normal_prio_task;   /* The number of normal-prio tasks */
+	int nr_dequeuing_low_prio; /* The number of dequeuing low-prio tasks */
+#endif
+};
+
+struct hmp_domain {
+	struct cpumask cpus;
+	struct cpumask possible_cpus;
+	struct list_head hmp_domains;
+};
+extern struct cpumask hmp_fast_cpu_mask;
+extern struct cpumask hmp_slow_cpu_mask;
+
+extern void __init arch_get_hmp_domains(struct list_head *hmp_domains_list);
+
+#define hmp_cpu_domain(cpu)     (per_cpu(hmp_cpu_domain, (cpu)))
+
+#ifdef CONFIG_HMP_TRACER
+/* Number of task statistic to force migration */
+struct hmp_statisic {
+	unsigned int nr_force_up;
+	unsigned int nr_force_down;
+};
+#endif /* CONFIG_HMP_TRACER */
+
+extern unsigned int hmp_cpu_is_slowest(int cpu);
+#else
+static inline unsigned int hmp_cpu_is_slowest(int cpu) { return false; }
+#endif /* CONFIG_SCHED_HMP */
+
