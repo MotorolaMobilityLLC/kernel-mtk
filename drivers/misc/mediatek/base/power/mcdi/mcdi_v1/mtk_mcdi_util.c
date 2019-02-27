@@ -164,7 +164,7 @@ void mcdi_set_cpu_iso_smc(unsigned int iso_mask)
 		return;
 
 	mt_secure_call(MTK_SIP_KERNEL_MCDI_ARGS,
-			MCDI_SMC_EVENT_ASYNC_WAKEUP_EN,
+			MCDI_SMC_EVENT_GIC_DPG_SET,
 			iso_mask,
 			0, 0);
 }
