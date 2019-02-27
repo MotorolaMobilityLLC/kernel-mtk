@@ -81,6 +81,9 @@ static DEFINE_MUTEX(gimgsensor_mutex);
 
 struct IMGSENSOR  gimgsensor;
 struct IMGSENSOR *pgimgsensor = &gimgsensor;
+
+
+
 DEFINE_MUTEX(pinctrl_mutex);
 
 /************************************************************************
@@ -215,6 +218,9 @@ imgsensor_sensor_open(struct IMGSENSOR_SENSOR *psensor)
 
 			ccu_set_sensor_info(sensor_idx, &ccuSensorInfo);
 #endif
+			if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
+				pgimgsensor->imgsensor_oc_irq_enable(true);
+
 		}
 
 		imgsensor_mutex_unlock(psensor_inst);
@@ -404,6 +410,9 @@ imgsensor_sensor_close(struct IMGSENSOR_SENSOR *psensor)
 			    psensor,
 			    psensor_inst->psensor_name,
 			    IMGSENSOR_HW_POWER_STATUS_OFF);
+			if (pgimgsensor->imgsensor_oc_irq_enable != NULL)
+				pgimgsensor->imgsensor_oc_irq_enable(false);
+
 		}
 
 		imgsensor_mutex_unlock(psensor_inst);

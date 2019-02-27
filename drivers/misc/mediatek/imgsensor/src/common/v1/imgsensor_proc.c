@@ -15,6 +15,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 
 
 #include "imgsensor_proc.h"
@@ -395,6 +396,28 @@ static int proc_camsensor_open(struct inode *inode, struct file *file)
 	return single_open(file, subsys_camsensor_read, NULL);
 };
 
+static int imgsensor_proc_status_read(struct seq_file *m, void *v)
+{
+	char status_info[IMGSENSOR_STATUS_INFO_LENGTH];
+
+	snprintf(status_info, sizeof(status_info),
+			"ERR_L0, %x\n",
+			*((uint32_t *)(&pgimgsensor->status)));
+	seq_printf(m, "%s\n", status_info);
+	return 0;
+};
+
+static int imgsensor_proc_status_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, imgsensor_proc_status_read, NULL);
+};
+
+static const struct file_operations fcamera_proc_fops_status = {
+	.owner = THIS_MODULE,
+	.open = imgsensor_proc_status_open,
+	.read = seq_read,
+};
+
 static const struct file_operations fcamera_proc_fops1 = {
 	.owner = THIS_MODULE,
 	.open = proc_camera_info_open,
@@ -437,6 +460,8 @@ static const struct file_operations fcamera_proc_fops_set_pdaf_type = {
 	.write = proc_SensorType_write
 };
 
+
+
 enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 {
 	memset(mtk_ccm_name, 0, camera_info_size);
@@ -447,6 +472,7 @@ enum IMGSENSOR_RETURN imgsensor_proc_init(void)
 	proc_create("driver/camsensor4", 0664, NULL, &fcamera_proc_fops4);
 	proc_create(
 	    "driver/pdaf_type", 0664, NULL, &fcamera_proc_fops_set_pdaf_type);
+	proc_create(PROC_SENSOR_STAT, 0664, NULL, &fcamera_proc_fops_status);
 
 	/* Camera information */
 	proc_create(PROC_CAMERA_INFO, 0664, NULL, &fcamera_proc_fops1);
