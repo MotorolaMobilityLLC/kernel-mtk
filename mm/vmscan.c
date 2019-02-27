@@ -2083,22 +2083,25 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
 
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 /* threshold of swapin and out */
-static int swpinout_threshold = 3000;
-module_param_named(threshold, swpinout_threshold, int, 0644);
-static int vmscan_swap_file_ratio = 1;
-module_param_named(swap_file_ratio, vmscan_swap_file_ratio, int, 0644);
-static bool is_swap_thrashing(void)
+static unsigned int swpinout_threshold = 12000;
+module_param_named(threshold, swpinout_threshold, uint, 0644);
+static bool swap_is_not_thrashing(void)
 {
-	static unsigned long prev_time;
+	static unsigned long prev_time, last_thrashing_time;
 	static unsigned long prev_swpinout;
+	static bool no_thrashing = true;
 	int cpu;
-	bool thrashing = false;
 	unsigned long swpinout = 0;
 
 	if (prev_time == 0)
 		prev_time = jiffies;
 
-	if (time_after(jiffies, prev_time + (HZ >> 2))) {
+	/* take 1s break */
+	if (!no_thrashing && time_before(jiffies, last_thrashing_time + HZ))
+		return false;
+
+	/* detect at 8Hz */
+	if (time_after(jiffies, prev_time + (HZ >> 3))) {
 		for_each_online_cpu(cpu) {
 			struct vm_event_state *this =
 					&per_cpu(vm_event_states, cpu);
@@ -2106,36 +2109,19 @@ static bool is_swap_thrashing(void)
 			swpinout += this->event[PSWPIN] + this->event[PSWPOUT];
 		}
 
-		if (((swpinout - prev_swpinout) /
-		    (jiffies - prev_time + 1) * HZ) >
-		    swpinout_threshold)
-			thrashing = true;
-		else
-			thrashing = false;
+		if (((swpinout - prev_swpinout) * HZ /
+		    (jiffies - prev_time + 1)) > swpinout_threshold) {
+			last_thrashing_time = jiffies;
+			no_thrashing = false;
+		} else {
+			no_thrashing = true;
+		}
 
 		prev_swpinout = swpinout;
 		prev_time = jiffies;
 	}
 
-	return thrashing;
-}
-
-static unsigned long get_adaptive_anon_prio(int swappiness, unsigned long anon,
-					    unsigned long file,
-					    unsigned long *file_prio)
-{
-	unsigned long anon_prio;
-
-	if (likely(vmscan_swap_file_ratio) && !is_swap_thrashing()) {
-		anon_prio = (swappiness * anon) / (anon + file + 1);
-		*file_prio = (unsigned long)(200 - swappiness) * file /
-			     (anon + file + 1);
-	} else {
-		anon_prio = swappiness;
-		*file_prio = (unsigned long)(200 - swappiness);
-	}
-
-	return anon_prio;
+	return no_thrashing;
 }
 #endif
 
@@ -2293,11 +2279,6 @@ static void get_scan_count(struct lruvec *lruvec, struct mem_cgroup *memcg,
 		lruvec_lru_size(lruvec, LRU_INACTIVE_ANON, MAX_NR_ZONES);
 	file  = lruvec_lru_size(lruvec, LRU_ACTIVE_FILE, MAX_NR_ZONES) +
 		lruvec_lru_size(lruvec, LRU_INACTIVE_FILE, MAX_NR_ZONES);
-
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
-	/* Compute anon_prio adaptively */
-	anon_prio = get_adaptive_anon_prio(swappiness, anon, file, &file_prio);
-#endif
 
 	spin_lock_irq(&pgdat->lru_lock);
 	if (unlikely(reclaim_stat->recent_scanned[0] > anon / 4)) {
@@ -2524,13 +2505,16 @@ static void shrink_node_memcg(struct pglist_data *pgdat, struct mem_cgroup *memc
 	 * (3)    shift:  3,  2,  1,  0
 	 *           nr:  4,  8, 16, 32
 	 */
-	if (sc->priority > 8 && nr[LRU_INACTIVE_ANON] == 0) {
+	if (swap_is_not_thrashing() && sc->priority > 8 &&
+			nr[LRU_INACTIVE_ANON] == 0) {
 		int shift = scan_anon_priority - DEF_PRIORITY + sc->priority;
 
 		if (shift >= 0)
 			nr[LRU_INACTIVE_ANON] = SWAP_CLUSTER_MAX >> shift;
 		else
 			nr[LRU_INACTIVE_ANON] = 1;
+
+		nr[LRU_ACTIVE_ANON] = nr[LRU_INACTIVE_ANON];
 	}
 #else
 	/* Give a chance to migrate anon pages */
