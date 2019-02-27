@@ -260,9 +260,9 @@ struct held_lock {
 	unsigned int pin_count;
 
 	/* MTK_LOCK_DEBUG_HELD_LOCK */
-#define MAX_STACK_TRACE_DEPTH 32
+#define HELD_LOCK_STACK_TRACE_DEPTH 24
 	struct stack_trace trace;
-	unsigned long entries[MAX_STACK_TRACE_DEPTH];
+	unsigned long entries[HELD_LOCK_STACK_TRACE_DEPTH];
 };
 
 /*
