@@ -23,6 +23,7 @@
 #include "clk-mux.h"
 
 #include <dt-bindings/clock/mt6765-clk.h>
+#include <mt-plat/mtk_devinfo.h>
 
 #define MT_CCF_BRINGUP		0
 #if MT_CCF_BRINGUP
@@ -1873,14 +1874,12 @@ static const struct mtk_gate apmixed_clks[] __initconst = {
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
-#if 1
 	PLL(CLK_APMIXED_ARMPLL_L, "armpll_l", 0x021C, 0x0228, BIT(0),
 		PLL_AO, 22, 8, 0x0220, 24, 0, 0, 0, 0x0220, 0, 1),
 	PLL(CLK_APMIXED_ARMPLL, "armpll", 0x020C, 0x0218, BIT(0),
 		PLL_AO, 22, 8, 0x0210, 24, 0, 0, 0, 0x0210, 0, 1),
 	PLL(CLK_APMIXED_CCIPLL, "ccipll", 0x022C, 0x0238, BIT(0),
 		PLL_AO, 22, 8, 0x0230, 24, 0, 0, 0, 0x0230, 0, 1),
-#endif
 	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x023C, 0x0248, BIT(0),
 		(HAVE_RST_BAR | PLL_AO), 22, 8, 0x0240, 24, 0, 0, 0, 0x0240,
 		0, 1),
@@ -1896,16 +1895,31 @@ static const struct mtk_pll_data plls[] = {
 		0, 32, 8, 0x0290, 24, 0x0040, 0x000C, 0, 0x0294, 0, 1),
 	PLL(CLK_APMIXED_MPLL, "mpll", 0x02A0, 0x02AC, BIT(0),
 		PLL_AO, 22, 8, 0x02A4, 24, 0, 0, 0, 0x02A4, 0, 1),
-#if 0
-	PLL(CLK_APMIXED_ULPOSC1, "ulposc1", PLL_INFO_NULL, PLL_INFO_NULL,
-		0x01000000,
-		PLL_AO, 1, PLL_INFO_NULL, PLL_INFO_NULL,
-		0, 0, 0, PLL_INFO_NULL, PLL_INFO_NULL),
-	PLL(CLK_APMIXED_ULPOSC2, "ulposc2", PLL_INFO_NULL, PLL_INFO_NULL,
-		0x01000000,
-		PLL_AO, 1, PLL_INFO_NULL, PLL_INFO_NULL, 0, 0, 0,
-		PLL_INFO_NULL, PLL_INFO_NULL),
-#endif
+};
+
+static const struct mtk_pll_data plls_no_armpll_ll[] = {
+	/* FIXME: need to fix flags/div_table/tuner_reg/table */
+	PLL(CLK_APMIXED_ARMPLL_L, "armpll_l", 0x021C, 0x0228, BIT(0),
+		PLL_AO, 22, 8, 0x0220, 24, 0, 0, 0, 0x0220, 0, 1),
+	PLL(CLK_APMIXED_ARMPLL, "armpll", 0x020C, 0x0218, BIT(0),
+		0, 22, 8, 0x0210, 24, 0, 0, 0, 0x0210, 0, 1),
+	PLL(CLK_APMIXED_CCIPLL, "ccipll", 0x022C, 0x0238, BIT(0),
+		PLL_AO, 22, 8, 0x0230, 24, 0, 0, 0, 0x0230, 0, 1),
+	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x023C, 0x0248, BIT(0),
+		(HAVE_RST_BAR | PLL_AO), 22, 8, 0x0240, 24, 0, 0, 0, 0x0240,
+		0, 1),
+	PLL(CLK_APMIXED_MFGPLL, "mfgpll", 0x024C, 0x0258, BIT(0),
+		0, 22, 8, 0x0250, 24, 0, 0, 0, 0x0250, 0, 1),
+	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x025C, 0x0268, BIT(0),
+		0, 22, 8, 0x0260, 24, 0, 0, 0, 0x0260, 0, 1),
+	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x026C, 0x0278, BIT(0),
+		HAVE_RST_BAR, 22, 8, 0x0270, 24, 0, 0, 0, 0x0270, 0, 2),
+	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x027C, 0x0288, BIT(0),
+		0, 22, 8, 0x0280, 24, 0, 0, 0, 0x0280, 0, 1),
+	PLL(CLK_APMIXED_APLL1, "apll1", 0x028C, 0x029C, BIT(0),
+		0, 32, 8, 0x0290, 24, 0x0040, 0x000C, 0, 0x0294, 0, 1),
+	PLL(CLK_APMIXED_MPLL, "mpll", 0x02A0, 0x02AC, BIT(0),
+		PLL_AO, 22, 8, 0x02A4, 24, 0, 0, 0, 0x02A4, 0, 1),
 };
 
 static void __init mtk_apmixedsys_init(struct device_node *node)
@@ -1913,6 +1927,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	struct clk_onecell_data *clk_data;
 	void __iomem *base;
 	int r;
+	int project_id = get_devinfo_with_index(30);
 
 	base = of_iomap(node, 0);
 	if (!base) {
@@ -1923,7 +1938,13 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_data = mtk_alloc_clk_data(CLK_APMIXED_NR_CLK);
 
 	/* FIXME: add code for APMIXEDSYS */
-	mtk_clk_register_plls(node, plls, ARRAY_SIZE(plls), clk_data);
+	if (project_id != 0x8 && project_id != 0xF)
+		mtk_clk_register_plls(node, plls, ARRAY_SIZE(plls), clk_data);
+	else {
+		/* ARMPLL_LL disable */
+		mtk_clk_register_plls(node, plls_no_armpll_ll,
+			ARRAY_SIZE(plls_no_armpll_ll), clk_data);
+	}
 	mtk_clk_register_gates(node, apmixed_clks,
 		ARRAY_SIZE(apmixed_clks), clk_data);
 	r = of_clk_add_provider(node, of_clk_src_onecell_get, clk_data);
@@ -1937,41 +1958,6 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xFFFFFFE1);
 	clk_writel(PLLON_CON0, clk_readl(PLLON_CON0) & 0x01041041);
 	clk_writel(PLLON_CON1, clk_readl(PLLON_CON1) & 0x01041041);
-#if 0 /* FIX ME */
-	clk_clrl(AP_PLL_CON1, 3 << 6);/*CLKSQ_EN, CLKSQ_LPF HW Mode*/
-#if 1
-	/* ARMPLLs, UNIVPLL,EMI SW Mode */
-	clk_writel(AP_PLL_PWR_CON0, clk_readl(AP_PLL_PWR_CON0) & 0x0F63D8F6);
-	/* ARMPLLs, UNIVPLL,EMI SW Mode, skip out off */
-	clk_writel(AP_PLL_CON4, clk_readl(AP_PLL_CON4) & 0x4F6000F6);
-	/* MAINPLL, Delay mode */
-	clk_writel(AP_PLL_CON8, clk_readl(AP_PLL_CON8) & 0xFFFFFFFE);
-#endif
-#if 1
-/*UNIVPLL*/
-	clk_clrl(UNIVPLL_CON0, PLL_EN);
-	clk_setl(UNIVPLL_CON3, PLL_ISO_EN);
-	clk_clrl(UNIVPLL_CON3, PLL_PWR_ON);
-/*MSDCPLL*/
-	clk_clrl(MSDCPLL_CON0, PLL_EN);
-	clk_setl(MSDCPLL_CON3, PLL_ISO_EN);
-	clk_clrl(MSDCPLL_CON3, PLL_PWR_ON);
-/*MMPLL*/
-#if 0
-	clk_clrl(MMPLL_CON0, PLL_EN);
-	clk_setl(MMPLL_CON3, PLL_ISO_EN);
-	clk_clrl(MMPLL_CON3, PLL_PWR_ON);
-#endif
-/*APLL1*/
-	clk_clrl(APLL1_CON0, PLL_EN);
-	clk_setl(APLL1_CON4, PLL_ISO_EN);
-	clk_clrl(APLL1_CON4, PLL_PWR_ON);
-/*APLL2*/
-	clk_clrl(APLL2_CON0, PLL_EN);
-	clk_setl(APLL2_CON3, PLL_ISO_EN);
-	clk_clrl(APLL2_CON3, PLL_PWR_ON);
-#endif
-#endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apmixedsys, "mediatek,apmixed",
 		mtk_apmixedsys_init);
