@@ -1915,7 +1915,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 #endif
 
 
-	PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware starts"));
+	PVR_DPF((PVR_DBG_MESSAGE, "RGXInit: InitFirmware starts"));
 	eError = InitFirmware(psDeviceNode,
 	                      &sApphints,
 	                      &sBVNC,
@@ -1928,7 +1928,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 		PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware failed (%d)", eError));
 		goto cleanup;
 	}
-	PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware done"));
+	PVR_DPF((PVR_DBG_MESSAGE, "RGXInit: InitFirmware done"));
 
 	/*
 	 * Build Debug info script
@@ -1970,7 +1970,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 	/*
 	 * Perform second stage of RGX initialisation
 	 */
-	PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM starts"));
+	PVR_DPF((PVR_DBG_MESSAGE, "RGXInit: PVRSRVRGXInitDevPart2KM starts"));
 	eError = PVRSRVRGXInitDevPart2KM(psDeviceNode,
 	                                 sDbgInitScript.psCommands,
 	                                 ui32DeviceFlags,
@@ -1983,7 +1983,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 		PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM failed (%d)", eError));
 		goto cleanup;
 	}
-	PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM done"));
+	PVR_DPF((PVR_DBG_MESSAGE, "RGXInit: PVRSRVRGXInitDevPart2KM done"));
 
 #if defined(SUPPORT_VALIDATION)
 	PVRSRVAppHintDumpState();
