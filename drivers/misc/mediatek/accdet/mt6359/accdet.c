@@ -2595,6 +2595,13 @@ static void config_digital_moisture_init_by_mode(void)
 		/* wk1, disable hwmode */
 		pmic_write(PMIC_ACCDET_HWMODE_EN_ADDR, 0x309);
 	}
+
+	if (accdet_dts.moisture_detect_enable == 0) {
+		pr_info("%s() disable digital moisture.\n", __func__);
+		/* disable moisture detection function */
+		pmic_write_clr(PMIC_ACCDET_EINT_M_DETECT_EN_ADDR,
+			PMIC_ACCDET_EINT_M_DETECT_EN_SHIFT);
+	}
 	/* enable PWM */
 	pmic_write(PMIC_ACCDET_CMP_PWM_EN_ADDR, 0x67);
 	/* enable inverter detection */
@@ -2813,12 +2820,10 @@ static void accdet_init_once(void)
 #endif
 
 	if (accdet_dts.moisture_detect_enable == 1) {
+		pr_info("%s() set analog moisture.\n", __func__);
 		config_analog_moisture_init_by_mode();
-	} else {
-		/* disable moisture detection function */
-		pmic_write_clr(PMIC_ACCDET_EINT_M_DETECT_EN_ADDR,
-			PMIC_ACCDET_EINT_M_DETECT_EN_SHIFT);
 	}
+
 	config_digital_moisture_init_by_mode();
 
 	pr_info("%s() done.\n", __func__);
