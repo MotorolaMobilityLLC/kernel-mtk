@@ -28,7 +28,9 @@ int init_tchbst(struct proc_dir_entry *parent)
 	/*initial kernel touch parameter*/
 	init_ktch(tchbst_root);
 #endif
+#ifdef CONFIG_MTK_FPSGO
 	/*initial user touch parameter*/
 	init_utch(tchbst_root);
+#endif
 	return 0;
 }
