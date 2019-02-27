@@ -21,6 +21,7 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 
 #include "mtk_pp.h"
 
@@ -45,6 +46,7 @@ struct MTKPP_WORKQUEUE {
 
 struct MTKPP_WORKQUEUE_WORKER {
 	struct work_struct sWork;
+	int bug_on;
 };
 
 struct MTKPP_WORKQUEUE g_MTKPP_workqueue;
@@ -399,13 +401,20 @@ static const struct file_operations g_MTKPP_proc_ops = {
 
 static void MTKPP_WORKR_Handle(struct work_struct *_psWork)
 {
+	int bug_on;
 	struct MTKPP_WORKQUEUE_WORKER *psWork =
 		container_of(_psWork, struct MTKPP_WORKQUEUE_WORKER, sWork);
 
 	/* avoid the build warnning */
 	psWork = psWork;
+	bug_on = psWork->bug_on;
 
 	aee_kernel_exception("gpulog", "aee dump gpulog");
+
+	if (bug_on) {
+		msleep(2000);
+		BUG_ON(1);
+	}
 }
 
 #endif
@@ -494,8 +503,9 @@ void MTKPP_LOGTIME(MTKPP_ID id, const char *str)
 		_MTKPP_DEBUG_LOG("[not init] %s", str);
 }
 
-void MTKPP_TriggerAEE(void)
+void MTKPP_TriggerAEE(int bug_on)
 {
+	g_MTKPP_worker.bug_on = bug_on;
 #if defined(ENABLE_AEE_WHEN_LOCKUP)
 	if (g_init_done)
 		queue_work(g_MTKPP_workqueue.psWorkQueue,
