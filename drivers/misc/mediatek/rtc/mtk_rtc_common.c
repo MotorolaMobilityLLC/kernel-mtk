@@ -551,10 +551,9 @@ static void rtc_handler(void)
 		spin_unlock_irqrestore(&rtc_lock, flags);
 		return;
 	}
-#if RTC_RELPWR_WHEN_XRST
-	/* set AUTO bit because AUTO = 0 when PWREN = 1 and alarm occurs */
-	hal_rtc_reload_power();
-#endif
+
+	rtc_reset_bbpu_alarm_status();
+
 	pwron_alarm = hal_rtc_is_pwron_alarm(&nowtm, &tm);
 	nowtm.tm_year += RTC_MIN_YEAR;
 	tm.tm_year += RTC_MIN_YEAR;
