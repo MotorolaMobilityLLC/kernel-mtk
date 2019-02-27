@@ -1249,7 +1249,7 @@ multiple, cpu_lower_bound);
 	} else {
 		if (((abs(pre_tocpu - tocpu) >= 10) && cpu > tocpu) ||
 			((abs(pre_togpu - togpu) >= 10) && gpu > togpu)) {
-			pbm_crit
+			pr_info
 ("(C/G)=%d,%d=>(D/L/M1/F/C/G)=%d,%d,%d,%d,%d,%d(Multi:%d),%d\n",
 cpu, gpu, dlpt, leakage, md1, flash, tocpu, togpu,
 multiple, cpu_lower_bound);
@@ -1271,7 +1271,7 @@ static bool pbm_func_enable_check(void)
 	struct pbm *pwrctrl = &pbm_ctrl;
 
 	if (!pwrctrl->feature_en || !pwrctrl->pbm_drv_done) {
-		pbm_crit("feature_en: %d, pbm_drv_done: %d\n",
+		pr_info("feature_en: %d, pbm_drv_done: %d\n",
 		pwrctrl->feature_en, pwrctrl->pbm_drv_done);
 		return false;
 	}
@@ -1325,7 +1325,7 @@ static bool pbm_update_table_info(enum pbm_kicker kicker, struct mrp *mrpmgr)
 		}
 		break;
 	default:
-		pbm_crit("[%s] ERROR, unknown kicker [%d]\n", __func__, kicker);
+		pr_warn("[%s] ERROR, unknown kicker [%d]\n", __func__, kicker);
 		WARN_ON_ONCE(1);
 		break;
 	}
@@ -1474,7 +1474,7 @@ static int pbm_thread_handle(void *data)
 				pbm_allocate_budget_manager();
 				g_dlpt_state_sync = 0;
 			} else {
-				pbm_err("DISABLE PBM\n");
+				pr_notice("DISABLE PBM\n");
 
 				if (g_dlpt_state_sync == 0) {
 #if 0 /* FIXME: pbm early porting*/
@@ -1483,7 +1483,7 @@ static int pbm_thread_handle(void *data)
 					mt_gpufreq_set_power_limit_by_pbm(0);
 #endif
 					g_dlpt_state_sync = 1;
-					pbm_err("Release DLPT limit\n");
+					pr_info("Release DLPT limit\n");
 				}
 			}
 		}
@@ -1688,14 +1688,14 @@ static int mt_pbm_create_procfs(void)
 	dir = proc_mkdir("pbm", NULL);
 
 	if (!dir) {
-		pbm_err("fail to create /proc/pbm @ %s()\n", __func__);
+		pr_err("fail to create /proc/pbm @ %s()\n", __func__);
 		return -ENOMEM;
 	}
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create
 		    (entries[i].name, 0664, dir, entries[i].fops))
-			pbm_err("@%s: create /proc/pbm/%s failed\n", __func__,
+			pr_err("@%s: create /proc/pbm/%s failed\n", __func__,
 				    entries[i].name);
 	}
 
@@ -1717,15 +1717,15 @@ static int __init pbm_module_init(void)
 	ret = create_pbm_kthread();
 
 	#ifdef TEST_MD_POWER
-	/* pbm_crit("share_reg: %x", spm_vcorefs_get_MD_status());*/
+	/* pr_info("share_reg: %x", spm_vcorefs_get_MD_status());*/
 	test_md_dbm_power();
 	get_md1_scenario();
 	#endif
 
-	pbm_crit("pbm_module_init : Done\n");
+	pr_info("pbm_module_init : Done\n");
 
 	if (ret) {
-		pbm_err("FAILED TO CREATE PBM KTHREAD\n");
+		pr_err("FAILED TO CREATE PBM KTHREAD\n");
 		return ret;
 	}
 	return ret;
