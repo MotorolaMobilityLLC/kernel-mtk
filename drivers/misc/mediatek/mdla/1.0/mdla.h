@@ -30,11 +30,6 @@ unsigned int mdla_dump_reg(void)
 {
 	return 0;
 }
-static inline
-unsigned int mdla_dump_reg(void)
-{
-	return 0;
-}
 #endif
 
 #ifndef MTK_MDLA_FPGA_PORTING
