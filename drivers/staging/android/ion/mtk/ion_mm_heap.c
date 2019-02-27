@@ -495,7 +495,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 {
 	struct ion_mm_buffer_info *buffer_info =
 	    (struct ion_mm_buffer_info *)buffer->priv_virt;
-	port_mva_info_t port_info;
+	struct port_mva_info_t port_info;
 	int ret = 0;
 	bool non_vmalloc_request = false;
 
