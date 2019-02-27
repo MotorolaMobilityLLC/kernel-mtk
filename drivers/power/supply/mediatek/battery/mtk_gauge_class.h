@@ -31,6 +31,7 @@
  * Weiching Lin
  *
  ****************************************************************************/
+#ifndef _DEA_MODIFY_
 #include <linux/init.h>		/* For init/exit macros */
 #include <linux/module.h>	/* For MODULE_ marcros  */
 #include <linux/wait.h>		/* For wait queue*/
@@ -51,6 +52,10 @@
 #include <linux/proc_fs.h>
 
 #include <linux/vmalloc.h>
+#else
+#include "simulator_kernel.h"
+#endif
+
 
 #ifndef __MTK_GAUGE_CLASS_H__
 #define __MTK_GAUGE_CLASS_H__

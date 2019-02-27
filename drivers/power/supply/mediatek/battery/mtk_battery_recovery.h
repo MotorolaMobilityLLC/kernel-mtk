@@ -67,7 +67,7 @@ void set_fg_vbat2_l_th(int thr);
 void fg_set_int1(void);	/* Initialize */
 void fg_bat_int1_handler(void);	/* c_soc */
 void fg_bat_int2_handler(int source);	/* UI_soc */
-void fg_int_end_flow(int intr_no);	/* regular flow */
+void fg_int_end_flow(unsigned int intr_no);	/* regular flow */
 void fg_temp_c_int_handler(void);
 void fgr_bat_int2_h_handler(void);
 void fgr_bat_int2_l_handler(void);
