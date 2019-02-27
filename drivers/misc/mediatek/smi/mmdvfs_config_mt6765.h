@@ -134,7 +134,8 @@ struct mmdvfs_clk_hw_map mt6765_clk_hw_map_setting[MMDVFS_CLK_MUX_NUM] = {
 };
 
 struct mmdvfs_profile_mask qos_apply_profiles[] = {
-#ifdef MMDVFS_QOS_SUPPORT
+/* #ifdef MMDVFS_QOS_SUPPORT */
+#if 1
 	/* ISP for opp0 */
 	{"ISP",
 		MMDVFS_PMQOS_ISP,
