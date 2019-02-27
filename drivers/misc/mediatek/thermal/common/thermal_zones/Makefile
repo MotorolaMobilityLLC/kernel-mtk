@@ -298,8 +298,8 @@ obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu_noBank.o
-#obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
-#obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
+obj-$(CONFIG_THERMAL) += mtk_ts_pa.o
+obj-$(CONFIG_THERMAL) += mtk_ts_pa_thput.o
 obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_pmic1.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o

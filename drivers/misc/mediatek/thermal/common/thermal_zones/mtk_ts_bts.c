@@ -1061,8 +1061,10 @@ void mtkts_bts_prepare_table(int table_num)
 		break;
 	}
 
-	pr_notice("[Thermal/TZ/BTS] %s table_num=%d\n",
-			__func__, table_num);
+
+	pr_notice("[Thermal/TZ/BTS] %s table_num=%d, table_rows=%d\n",
+			__func__, table_num,
+			(int)(ntc_tbl_size / sizeof(struct BTS_TEMPERATURE)));
 
 #if 0
 	{
