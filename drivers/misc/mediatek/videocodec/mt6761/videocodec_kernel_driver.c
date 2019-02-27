@@ -346,7 +346,7 @@ void vdec_polling_status(void)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION,
 							1, 0, 1);
 #endif
-			mmsys_cg_check();
+			//mmsys_cg_check();
 
 			u4Counter = 0;
 			WARN_ON(1);
