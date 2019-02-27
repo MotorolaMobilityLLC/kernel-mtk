@@ -210,9 +210,9 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 
 static void set_dummy(void)
 {
-	pr_info("dummyline = %d, dummypixels = %d\n",
-		imgsensor.dummy_line, imgsensor.dummy_pixel);
-
+	/*pr_info("dummyline = %d, dummypixels = %d\n",
+	 *	imgsensor.dummy_line, imgsensor.dummy_pixel);
+	 */
 	write_cmos_sensor(0x0340, imgsensor.frame_length >> 8);
 	write_cmos_sensor(0x0341, imgsensor.frame_length & 0xFF);
 	write_cmos_sensor(0x0342, imgsensor.line_length >> 8);
@@ -1933,7 +1933,7 @@ static kal_uint32 feature_control(
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	pr_info("feature_id = %d", feature_id);
+	/*pr_info("feature_id = %d", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
@@ -2075,6 +2075,47 @@ static kal_uint32 feature_control(
 			set_shutter(*feature_data);
 		streaming_control(KAL_TRUE);
 		break;
+	case SENSOR_FEATURE_GET_PIXEL_RATE:
+
+		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.cap.pclk /
+			(imgsensor_info.cap.linelength - 80))*
+			imgsensor_info.cap.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.normal_video.pclk /
+			(imgsensor_info.normal_video.linelength - 80))*
+			imgsensor_info.normal_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.hs_video.pclk /
+			(imgsensor_info.hs_video.linelength - 80))*
+			imgsensor_info.hs_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_SLIM_VIDEO:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.slim_video.pclk /
+			(imgsensor_info.slim_video.linelength - 80))*
+			imgsensor_info.slim_video.grabwindow_width;
+
+			break;
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		default:
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+			(imgsensor_info.pre.pclk /
+			(imgsensor_info.pre.linelength - 80))*
+			imgsensor_info.pre.grabwindow_width;
+			break;
+		}
+		break;
+
 	case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
