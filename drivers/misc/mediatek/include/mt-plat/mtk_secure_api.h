@@ -136,6 +136,10 @@
 #define MTK_SIP_KERNEL_SCP_DVFS_CTRL \
 	(0x82000290 | MTK_SIP_SMC_AARCH_BIT)
 
+/* Pheripheral related SMC call */
+#define MTK_SIP_KERNEL_I2C_SEC_WRITE \
+	(0x820002A0 | MTK_SIP_SMC_AARCH_BIT)
+
 extern size_t mt_secure_call_all(size_t function_id,
 	size_t arg0, size_t arg1, size_t arg2,
 	size_t arg3, size_t *r1, size_t *r2, size_t *r3);
