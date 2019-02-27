@@ -49,6 +49,11 @@ void mtk_spmfw_init(int dvfsrc_en, int skip_check)
 	spm_go_to_vcorefs(spm_dvfs_flag_init(dvfsrc_en));
 }
 
+int is_spm_enabled(void)
+{
+	return spm_read(PCM_REG15_DATA) != 0 ? 1 : 0;
+}
+
 void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore)
 {
 	unsigned long flags;
