@@ -27,12 +27,12 @@
 #include <linux/spinlock.h>
 #include <linux/vmalloc.h>
 
-#include "../../../perf_ioctl/perf_ioctl.h"
 #include <mt-plat/fpsgo_common.h>
 
 #include <trace/events/fpsgo.h>
 
 #include "xgf.h"
+#include "fpsgo_base.h"
 
 static DEFINE_MUTEX(xgf_main_lock);
 static HLIST_HEAD(xgf_procs);
@@ -41,7 +41,7 @@ static int xgf_enable;
 static struct dentry *debugfs_xgf_dir;
 static unsigned long long last_check2recycle_ts;
 
-#define MAX_RENDER_DEPS	1024
+#define MAX_RENDER_DEPS 1024
 
 static int render_dep_count;
 struct render_dep render_deps[MAX_RENDER_DEPS];
@@ -695,20 +695,25 @@ out:
 	return ret;
 }
 
-int xgf_dep_counts(void)
+int fpsgo_fteh2xgf_get_dep_list_num(int pid)
 {
 	struct xgf_proc *proc_iter;
 	struct hlist_node *n;
 	struct xgf_deps *iter;
-	struct rb_root *r;
 	struct rb_node *rbn;
 	int counts = 0;
+
+	if (!pid)
+		goto out;
 
 	xgf_lock(__func__);
 
 	hlist_for_each_entry_safe(proc_iter, n, &xgf_procs, hlist) {
-		r = &proc_iter->deps_rec;
-		for (rbn = rb_first(r); rbn != NULL; rbn = rb_next(rbn)) {
+		if (proc_iter->render != pid)
+			continue;
+
+		for (rbn = rb_first(&proc_iter->deps_rec);
+			rbn != NULL; rbn = rb_next(rbn)) {
 			iter = rb_entry(rbn, struct xgf_deps, rb_node);
 			if (iter->render_dep)
 				counts++;
@@ -716,7 +721,41 @@ int xgf_dep_counts(void)
 	}
 
 	xgf_unlock(__func__);
+
+out:
 	return counts;
+}
+
+int fpsgo_fteh2xgf_get_dep_list(int pid, int count, struct fteh_loading *arr)
+{
+	struct xgf_proc *proc_iter;
+	struct hlist_node *n;
+	struct xgf_deps *iter;
+	struct rb_node *rbn;
+	int index = 0;
+
+	if (!pid || !count)
+		return 0;
+
+	xgf_lock(__func__);
+
+	hlist_for_each_entry_safe(proc_iter, n, &xgf_procs, hlist) {
+		if (proc_iter->render != pid)
+			continue;
+
+		for (rbn = rb_first(&proc_iter->deps_rec);
+			rbn != NULL; rbn = rb_next(rbn)) {
+			iter = rb_entry(rbn, struct xgf_deps, rb_node);
+			if (iter->render_dep && index < count) {
+				arr[index].pid = iter->tid;
+				index++;
+			}
+		}
+	}
+
+	xgf_unlock(__func__);
+
+	return index;
 }
 
 /**

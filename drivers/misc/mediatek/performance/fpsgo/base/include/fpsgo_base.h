@@ -56,6 +56,7 @@ struct fbt_thread_loading {
 struct fbt_thread_blc {
 	int pid;
 	unsigned int blc;
+	int freerun;
 	struct list_head entry;
 };
 
@@ -124,6 +125,10 @@ struct render_info {
 	struct mutex thr_mlock;
 };
 
+struct fteh_loading {
+	int pid;
+	int loading;
+};
 
 #ifdef FPSGO_DEBUG
 #define FPSGO_LOGI(...)	pr_debug("FPSGO:" __VA_ARGS__)
