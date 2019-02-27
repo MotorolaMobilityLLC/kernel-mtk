@@ -735,6 +735,7 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_sec_init();
 	break;
 	}
+#if 0
 	case 51:
 	{
 		M4U_PORT_STRUCT port;
@@ -762,6 +763,7 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_config_port_tee(&port);
 	}
 	break;
+#endif
 #endif
 	default:
 		M4UMSG("m4u_debug_set error,val=%llu\n", val);
