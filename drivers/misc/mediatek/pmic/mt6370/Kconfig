@@ -23,6 +23,7 @@ config MT6370_PMU_CHARGER_TYPE_DETECT
 	bool "MT6370 PMU Charger Type Detect"
 	depends on MT6370_PMU_CHARGER
 	depends on MTK_EXTERNAL_CHARGER_TYPE_DETECT
+	default MTK_EXTERNAL_CHARGER_TYPE_DETECT
 	help
 	  Depends on enable MT6370 PMU Charger
 	  Say Y here to enable support for
