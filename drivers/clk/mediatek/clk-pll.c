@@ -53,7 +53,7 @@ struct mtk_clk_pll {
 };
 
 int __attribute__ ((weak))
-	mtk_is_clk_bring_up(void)
+	mtk_is_pll_enable(void)
 {
 	return 0;
 }
@@ -465,7 +465,7 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 
 	init.name = data->name;
 	init.flags = (data->flags & PLL_AO) ? CLK_IS_CRITICAL : 0;
-	if (mtk_is_clk_bring_up())
+	if (!mtk_is_pll_enable())
 		init.ops = &mtk_pll_ops_dummy;
 	else
 		init.ops = &mtk_pll_ops;
