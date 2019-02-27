@@ -593,6 +593,9 @@ class GpioObj(ModuleObj):
         gen_str += '''};\n'''
         return gen_str
 
+    def set_eint_map_table(self, map_table):
+        GpioData.set_eint_map_table(map_table);
+
 class GpioObj_whitney(GpioObj):
     def __init__(self):
         GpioObj.__init__(self)
@@ -640,3 +643,45 @@ class GpioObj_MT6759(GpioObj):
         gen_str += '''};\n'''
         return gen_str
 
+class GpioObj_MT6758(GpioObj_MT6759):
+    def __init__(self):
+        GpioObj_MT6759.__init__(self)
+
+    def get_eint_index(self, gpio_index):
+        if string.atoi(gpio_index) in GpioData._map_table.keys():
+            return GpioData._map_table[string.atoi(gpio_index)]
+        return -1;
+
+    def fill_pinctrl_hFile(self):
+        gen_str = '''#include <linux/pinctrl/pinctrl.h>\n'''
+        gen_str += '''#include <pinctrl-mtk-common.h>\n\n'''
+        gen_str += '''static const struct mtk_desc_pin mtk_pins_%s[] = {\n''' % (ModuleObj.get_chipId().lower())
+
+        # sorted_list = sorted(ModuleObj.get_data(self).keys(), key = compare)
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            # for key in sorted_list:
+            value = ModuleObj.get_data(self)[key]
+            gen_str += '''\tMTK_PIN(\n'''
+            gen_str += '''\t\tPINCTRL_PIN(%s, \"%s\"),\n''' % (key[4:], key.upper())
+            gen_str += '''\t\tNULL, \"%s\",\n''' % (ModuleObj.get_chipId().lower())
+            eint_index = self.get_eint_index(key[4:])
+            if eint_index != -1:
+                gen_str += '''\t\tMTK_EINT_FUNCTION(%d, %d)''' % (0, eint_index)
+            else:
+                gen_str += '''\t\tMTK_EINT_FUNCTION(NO_EINT_SUPPORT, NO_EINT_SUPPORT)'''
+            for i in range(0, GpioData._modNum):
+                mode_name = GpioData.get_modeName(key, i)
+
+                if mode_name != '':
+                    lst = []
+                    if mode_name.find('//') != -1:
+                        lst = mode_name.split('//')
+                    else:
+                        lst.append(mode_name)
+                    for j in range(0, len(lst)):
+                        gen_str += ''',\n\t\tMTK_FUNCTION(%d, "%s")''' % (i + j * 8, lst[j])
+            gen_str += '''\n\t),\n'''
+
+        gen_str += '''};\n'''
+
+        return gen_str

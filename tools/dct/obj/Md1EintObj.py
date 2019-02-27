@@ -181,3 +181,51 @@ class Md1EintObj(ModuleObj):
         gen_str += '''};\n'''
 
         return gen_str
+
+    def get_srcPin(self):
+        return self.__srcPin
+
+    def get_srcPinEnable(self):
+        return self.__bSrcPinEnable
+
+class Md1EintObj_MT6758(Md1EintObj):
+    def __init__(self):
+        Md1EintObj.__init__(self)
+
+    def fill_dtsiFile(self):
+        gen_str = ''
+        for key in sorted_key(ModuleObj.get_data(self).keys()):
+            value = ModuleObj.get_data(self)[key]
+            if cmp(value.get_varName(), 'NC') == 0:
+                continue
+            num = key[4:]
+            gen_str += '''&%s {\n''' % (value.get_varName().lower())
+            gen_str += '''\tcompatible = \"mediatek,%s-eint\";\n''' % (value.get_varName().lower())
+
+            type = 1
+            polarity = value.get_polarity()
+            sensitive = value.get_sensitiveLevel()
+
+            if cmp(polarity, 'High') == 0 and cmp(sensitive, 'Edge') == 0:
+                type = 1
+            elif cmp(polarity, 'Low') == 0 and cmp(sensitive, 'Edge') == 0:
+                type = 2
+            elif cmp(polarity, 'High') == 0 and cmp(sensitive, 'Level') == 0:
+                type = 4
+            elif cmp(polarity, 'Low') == 0 and cmp(sensitive, 'Level') == 0:
+                type = 8
+
+            gen_str += '''\tinterrupts = <%s %d>;\n''' % (num, type)
+            gen_str += '''\tdebounce = <%s %d>;\n''' % (num, (string.atoi(value.get_debounceTime())) * 1000)
+            gen_str += '''\tdedicated = <%s %d>;\n''' % (num, int(value.get_dedicatedEn()))
+            if self.get_srcPinEnable():
+                gen_str += '''\tsrc_pin = <%s %s>;\n''' % (num, self.get_srcPin()[value.get_srcPin()])
+            else:
+                gen_str += '''\tsrc_pin = <%s %s>;\n''' % (num, -1)
+            gen_str += '''\tsockettype = <%s %s>;\n''' % (num, value.get_socketType())
+            gen_str += '''\tstatus = \"okay\";\n'''
+            gen_str += '''};\n'''
+
+            gen_str += '''\n'''
+
+        return gen_str

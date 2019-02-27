@@ -19,8 +19,10 @@ import xml.dom.minidom
 from GpioObj import GpioObj
 from GpioObj import GpioObj_whitney
 from GpioObj import GpioObj_MT6759
+from GpioObj import GpioObj_MT6758
 from EintObj import EintObj
 from EintObj import EintObj_MT6750S
+from EintObj import EintObj_MT6758
 from AdcObj import AdcObj
 from ClkObj import ClkObj
 from ClkObj import ClkObj_Everest
@@ -31,6 +33,7 @@ from I2cObj import I2cObj_MT6759
 from PmicObj import PmicObj
 from PmicObj import PmicObj_MT6758
 from Md1EintObj import Md1EintObj
+from Md1EintObj import Md1EintObj_MT6758
 from PowerObj import PowerObj
 from KpdObj import KpdObj
 from ModuleObj import ModuleObj
@@ -312,8 +315,10 @@ class MT6758(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'pmic', PmicObj_MT6758())
-        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6759())
+        ChipObj.replace_obj(self, 'gpio', GpioObj_MT6758())
+        ChipObj.replace_obj(self, 'eint', EintObj_MT6758(ChipObj.get_gpioObj(self)))
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
+        ChipObj.replace_obj(self, 'md1_eint', Md1EintObj_MT6758())
         ChipObj.refresh_eintGpioMap(self)
 
     def parse(self):
