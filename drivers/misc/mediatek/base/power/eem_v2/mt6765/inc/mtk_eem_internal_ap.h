@@ -191,22 +191,6 @@ struct eem_devinfo {
 	unsigned int CCI_LEAKAGE:8;
 	unsigned int CCI_MTDES:8;
 	unsigned int CCI_AGEDELTA:8;
-
-	/* M_HW_RES7 */
-	unsigned int GPU_BDES:8;
-	unsigned int GPU_MDES:8;
-	unsigned int GPU_DCBDET:8;
-	unsigned int GPU_DCMDET:8;
-
-	/* M_HW_RES8 */
-	unsigned int GPU_SPEC:3;
-	unsigned int GPU_TURBO:1;
-	unsigned int GPU_DVFS_LOW:2;
-	unsigned int GPU_INITEN:1;
-	unsigned int GPU_MONEN:1;
-	unsigned int GPU_LEAKAGE:8;
-	unsigned int GPU_MTDES:8;
-	unsigned int GPU_AGEDELTA:8;
 };
 
 /*********************************************
@@ -227,7 +211,6 @@ extern unsigned int record_tbl_locked[NR_FREQ];
  * extern variables and operations defined at mtk_eem_platform.c
  ***************************************************
  */
-extern struct eem_det_ops gpu_det_ops;
 extern struct eem_det_ops cpu_det_ops;
 extern struct eem_det_ops cci_det_ops;
 
@@ -236,11 +219,6 @@ extern int set_volt_cpu(struct eem_det *det);
 extern void restore_default_volt_cpu(struct eem_det *det);
 extern void get_freq_table_cpu(struct eem_det *det);
 extern void get_orig_volt_table_cpu(struct eem_det *det);
-extern int get_volt_gpu(struct eem_det *det);
-extern int set_volt_gpu(struct eem_det *det);
-extern void restore_default_volt_gpu(struct eem_det *det);
-extern void get_freq_table_gpu(struct eem_det *det);
-extern void get_orig_volt_table_gpu(struct eem_det *det);
 
 /*********************************************
  * extern operations defined at mtk_eem.c

@@ -40,8 +40,6 @@
 #define DEVINFO_IDX_4 54	/* 590 */
 #define DEVINFO_IDX_5 55	/* 594 */
 #define DEVINFO_IDX_6 56	/* 598 */
-#define DEVINFO_IDX_7 57	/* 59C */
-#define DEVINFO_IDX_8 58	/* 5A0 */
 
 /* Fake EFUSE */
 #define DEVINFO_0 0x0000FF00
@@ -54,19 +52,15 @@
 /* CCI */
 #define DEVINFO_5 0x10BD3C1B
 #define DEVINFO_6 0x00550000
-/* GPU */
-#define DEVINFO_7 0x10BD3C1B
-#define DEVINFO_8 0x00550000
 
 /*****************************************
  * eem sw setting
  ******************************************
  */
-#define NR_HW_RES_FOR_BANK	(9) /* real eem banks for efuse */
-#define EEM_INIT01_FLAG (0xF) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
+#define NR_HW_RES_FOR_BANK	(7) /* real eem banks for efuse */
+#define EEM_INIT01_FLAG (0x7) /* [3]:GPU, [2]:CCI, [1]:LL, [0]:L */
 
 #define NR_FREQ 16
-#define NR_FREQ_GPU 16
 #define NR_FREQ_CPU 16
 
 /*
@@ -90,11 +84,7 @@
 #define CPU_PMIC_BASE_6357	(51875)
 #define CPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
 
-/* GPU */
-#define GPU_PMIC_BASE		(51875)
-#define GPU_PMIC_STEP		(625) /* 1.231/1024=0.001202v=120(10uv)*/
-
-/* common part: for cci, LL, L, GPU */
+/* common part: for cci, LL, L */
 #define VBOOT_VAL		(0x2d) /* volt domain: 0.8v */
 #define VMAX_VAL		(0x5d) /* volt domain: 1.12v*/
 #define VMIN_VAL		(0xd) /* volt domain: 0.6v*/
@@ -107,11 +97,6 @@
 #define AGECONFIG_VAL		(0x555555)
 #define AGEM_VAL		(0x0)
 #define DCCONFIG_VAL		(0x555555)
-
-/* different for GPU */
-#define VBOOT_VAL_GPU (0x2d) /* eem domain: 0x40, volt domain: 0.8v */
-#define VMAX_VAL_GPU (0x4d) /* eem domain: 0x60, volt domain: 1.0v */
-#define DVTFIXED_VAL_GPU	(0x6)
 
 /* use in base_ops_mon_mode */
 #define MTS_VAL			(0x1fb)

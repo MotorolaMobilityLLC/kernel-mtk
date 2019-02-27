@@ -25,7 +25,6 @@ enum eem_ctrl_id {
 	EEM_CTRL_L = 0,
 	EEM_CTRL_2L = 1,
 	EEM_CTRL_CCI = 2,
-	EEM_CTRL_GPU = 3,
 
 	NR_EEM_CTRL,
 };
@@ -34,7 +33,6 @@ enum eem_det_id {
 	EEM_DET_L	=	EEM_CTRL_L,
 	EEM_DET_2L	=	EEM_CTRL_2L,
 	EEM_DET_CCI	=	EEM_CTRL_CCI,
-	EEM_DET_GPU =	EEM_CTRL_GPU,
 
 	NR_EEM_DET,
 };
@@ -88,7 +86,6 @@ enum eem_state {
 	EEM_CPU_LITTLE_IS_SET_VOLT = 0,		/* L */
 	EEM_CPU_2_LITTLE_IS_SET_VOLT = 1,	/* 2L */
 	EEM_CPU_CCI_IS_SET_VOLT = 2,		/* CCI */
-	EEM_GPU_IS_SET_VOLT = 3,			/* G */
 };
 
 extern void aee_rr_rec_ptp_devinfo_0(u32 val);
