@@ -95,6 +95,7 @@ do {\
 enum gauge_hw_version {
 	GAUGE_HW_V1000 = 1000,
 	GAUGE_HW_V2000 = 2000,
+	GAUGE_HW_V2001 = 2001,
 
 	GAUGE_HW_MAX
 };
@@ -172,6 +173,10 @@ enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_GET_FG_CURRENT_IAVG_VALID,
 	FG_DAEMON_CMD_GET_RTC_UI_SOC,
 	FG_DAEMON_CMD_SET_RTC_UI_SOC,
+	FG_DAEMON_CMD_GET_CON0_SOC,
+	FG_DAEMON_CMD_SET_CON0_SOC,
+	FG_DAEMON_CMD_GET_NVRAM_FAIL_STATUS,
+	FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS,
 	FG_DAEMON_CMD_SET_FG_BAT_TMP_C_GAP,
 	FG_DAEMON_CMD_IS_BATTERY_CYCLE_RESET,
 	FG_DAEMON_CMD_GET_RTC_TWO_SEC_REBOOT,
@@ -288,6 +293,27 @@ struct fuel_gauge_custom_data {
 	int shutdown_system_iboot;
 	int pmic_min_vol;
 
+	/* multi temp gauge 0% */
+	int multi_temp_gauge0;
+
+	int pmic_min_vol_t0;
+	int pmic_min_vol_t1;
+	int pmic_min_vol_t2;
+	int pmic_min_vol_t3;
+	int pmic_min_vol_t4;
+
+	int pon_iboot_t0;
+	int pon_iboot_t1;
+	int pon_iboot_t2;
+	int pon_iboot_t3;
+	int pon_iboot_t4;
+
+	int qmax_sys_vol_t0;
+	int qmax_sys_vol_t1;
+	int qmax_sys_vol_t2;
+	int qmax_sys_vol_t3;
+	int qmax_sys_vol_t4;
+
 	/* hw related */
 	int car_tune_value;
 	int fg_meter_resistance;
@@ -320,6 +346,7 @@ struct fuel_gauge_custom_data {
 	int difference_fullocv_vth;
 	int difference_fullocv_ith;
 	int charge_pseudo_full_level;
+	int over_discharge_level;
 
 
 	/* threshold */
@@ -333,7 +360,7 @@ struct fuel_gauge_custom_data {
 	int vbat_oldocv_diff;	/* 0.1 mv */
 	int tnew_told_pon_diff;	/* degree */
 	int tnew_told_pon_diff2;/* degree */
-	int pmic_shutdown_time;	/* sec */
+	int pmic_shutdown_time;	/* secs */
 	int bat_plug_out_time;	/* min */
 	int swocv_oldocv_diff_emb;	/* 0.1 mv */
 
@@ -393,16 +420,48 @@ struct fuel_gauge_custom_data {
 
 	int pseudo1_sel;
 
+	/* using current to limit uisoc in 100% case */
+	int ui_full_limit_en;
+	int ui_full_limit_soc0;
+	int ui_full_limit_ith0;
+	int ui_full_limit_soc1;
+	int ui_full_limit_ith1;
+	int ui_full_limit_soc2;
+	int ui_full_limit_ith2;
+	int ui_full_limit_soc3;
+	int ui_full_limit_ith3;
+	int ui_full_limit_soc4;
+	int ui_full_limit_ith4;
+
+	/* using voltage to limit uisoc in 1% case */
+	int ui_low_limit_en;
+	int ui_low_limit_soc0;
+	int ui_low_limit_vth0;
+	int ui_low_limit_soc1;
+	int ui_low_limit_vth1;
+	int ui_low_limit_soc2;
+	int ui_low_limit_vth2;
+	int ui_low_limit_soc3;
+	int ui_low_limit_vth3;
+	int ui_low_limit_soc4;
+	int ui_low_limit_vth4;
+
 	/* Additional battery table */
 	int additional_battery_table_en;
 
 	int d0_sel;
+	int dod_init_sel;
 	int aging_sel;
 	int fg_tracking_current;
 	int fg_tracking_current_iboot_en;
 	int ui_fast_tracking_en;
 	int ui_fast_tracking_gap;
 	int bat_par_i;
+	int c_old_d0;
+	int v_old_d0;
+	int c_soc;
+	int v_soc;
+	int ui_old_soc;
 
 	int aging_factor_min;
 	int aging_factor_diff;
@@ -539,6 +598,7 @@ enum {
 };
 
 extern struct fuel_gauge_custom_data fg_cust_data;
+extern struct fuel_gauge_table_custom_data fg_table_cust_data;
 extern struct PMU_ChargerStruct BMT_status;
 extern struct gauge_hw_status FG_status;
 
@@ -563,10 +623,10 @@ extern int bat_get_debug_level(void);
 extern bool is_kernel_power_off_charging(void);
 extern bool is_fg_disable(void);
 extern void notify_fg_dlpt_sd(void);
-extern int gauge_get_coulomb(void);
-extern bool gauge_get_current(int *bat_current);
-extern int gauge_set_coulomb_interrupt1_ht(int car);
-extern int gauge_set_coulomb_interrupt1_lt(int car);
+extern bool fg_interrupt_check(void);
+extern void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg);
+extern int interpolation(int i1, int b1, int i2, int b2, int i);
+extern bool is_evb_load(void);
 
 /* pmic */
 extern int pmic_get_battery_voltage(void);
@@ -587,7 +647,14 @@ extern int gauge_get_coulomb(void);
 extern int gauge_set_coulomb_interrupt1_ht(int car);
 extern int gauge_set_coulomb_interrupt1_lt(int car);
 extern int gauge_get_ptim_current(int *ptim_current, bool *is_charging);
+extern int gauge_get_coulomb(void);
+extern bool gauge_get_current(int *bat_current);
+extern int gauge_set_coulomb_interrupt1_ht(int car);
+extern int gauge_set_coulomb_interrupt1_lt(int car);
 
+/* mtk_battery_recovery.c */
+extern void battery_recovery_init(void);
+extern void wakeup_fg_algo_recovery(unsigned int cmd);
 
 /* DLPT */
 extern int do_ptim_gauge(
