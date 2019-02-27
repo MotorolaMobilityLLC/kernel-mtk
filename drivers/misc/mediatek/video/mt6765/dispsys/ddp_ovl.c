@@ -1262,6 +1262,12 @@ void ovl_dump_reg(enum DISP_MODULE_ENUM module)
 			"OVL: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
 			0x218, INREG32(module_base + 0x218),
 			0x21C, INREG32(module_base + 0x21C),
+			0x220, INREG32(module_base + 0x220),
+			0x224, INREG32(module_base + 0x224));
+		DDPDUMP(
+			"OVL: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+			0x228, INREG32(module_base + 0x228),
+			0x22C, INREG32(module_base + 0x22C),
 			0x230, INREG32(module_base + 0x230),
 			0x234, INREG32(module_base + 0x234));
 		DDPDUMP(
@@ -1811,8 +1817,10 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 			regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_NUM */
-
-	layer_greq_num = 7;
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		layer_greq_num = 7;
+	else
+		layer_greq_num = 1;
 
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER0_GREQ_NUM,
 		layer_greq_num);
@@ -1836,7 +1844,11 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_GREQ_NUM, regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_URG_NUM */
-	layer_greq_num = 7;
+	if (dst_mod_type == DST_MOD_REAL_TIME)
+		layer_greq_num = 7;
+	else
+		layer_greq_num = 1;
+
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER0_GREQ_URG_NUM,
 		layer_greq_num);
 	if (layer_num > 0)
