@@ -90,7 +90,8 @@ static void spin_bug(raw_spinlock_t *lock, const char *msg)
 		pr_info("maybe already unlocked or wrong owner or wrong CPU\n");
 		pr_info("maybe bad magic %08x, should be %08x\n",
 			lock->magic, SPINLOCK_MAGIC);
-		pr_info(">>>>>>>>>>>>>> Let's dump Kernel API <<<<<<<<<<<<<<\n");
+		pr_info(">>>>>>>>>>>>>> Let's KE <<<<<<<<<<<<<<\n");
+		BUG_ON(1);
 	}
 	aee_kernel_warning_api(__FILE__, __LINE__,
 		DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
