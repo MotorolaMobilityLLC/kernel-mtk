@@ -62,7 +62,7 @@
  */
 #define SENSOR_IPI_HEADER_SIZE 4
 #define SENSOR_IPI_PACKET_SIZE (SENSOR_IPI_SIZE - SENSOR_IPI_HEADER_SIZE)
-#define SENSOR_DATA_SIZE 40
+#define SENSOR_DATA_SIZE 44
 
 #if SENSOR_DATA_SIZE > SENSOR_IPI_PACKET_SIZE
 #error "SENSOR_DATA_SIZE > SENSOR_IPI_PACKET_SIZE, out of memory"
@@ -2187,7 +2187,7 @@ static int sensorHub_probe(struct platform_device *pdev)
 	pr_debug("init done, data_unit_t size: %d,SCP_SENSOR_HUB_DATA size:%d\n",
 		(int)sizeof(struct data_unit_t),
 		(int)sizeof(SCP_SENSOR_HUB_DATA));
-	WARN_ON(sizeof(struct data_unit_t) != SENSOR_DATA_SIZE
+	BUG_ON(sizeof(struct data_unit_t) != SENSOR_DATA_SIZE
 		|| sizeof(SCP_SENSOR_HUB_DATA) != SENSOR_IPI_SIZE);
 	return 0;
 exit:
