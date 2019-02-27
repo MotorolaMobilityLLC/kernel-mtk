@@ -730,7 +730,7 @@ __acquires(musb->lock)
 	int usb_state = 0;
 	/* u16 w_value = le16_to_cpu(ctrlrequest->wValue); */
 
-	if (!musb->gadget_driver)
+	if (!musb->gadget_driver || !musb->softconnect)
 		return -EOPNOTSUPP;
 	spin_unlock(&musb->lock);
 
