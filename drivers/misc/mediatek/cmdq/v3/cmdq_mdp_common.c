@@ -1819,6 +1819,9 @@ static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
 	u32 mdp_curr_pixel_size = 0;
 	bool first_task = true;
 
+	/* check engine status */
+	cmdq_mdp_get_func()->CheckHwStatus(handle);
+
 	pmqos_curr_record =
 		kzalloc(sizeof(struct mdp_pmqos_record), GFP_KERNEL);
 	handle->user_private = pmqos_curr_record;
@@ -2248,6 +2251,11 @@ static void cmdq_mdp_end_task_virtual(struct cmdqRecStruct *handle,
 		max_throughput);
 }
 
+static void cmdq_mdp_check_hw_status_virtual(struct cmdqRecStruct *handle)
+{
+	/* Do nothing */
+}
+
 void cmdq_mdp_virtual_function_setting(void)
 {
 	struct cmdqMDPFuncStruct *pFunc;
@@ -2297,6 +2305,7 @@ void cmdq_mdp_virtual_function_setting(void)
 	pFunc->endTask = cmdq_mdp_end_task_virtual;
 	pFunc->beginISPTask = cmdq_mdp_isp_begin_task_virtual;
 	pFunc->endISPTask = cmdq_mdp_isp_end_task_virtual;
+	pFunc->CheckHwStatus = cmdq_mdp_check_hw_status_virtual;
 }
 
 struct cmdqMDPFuncStruct *cmdq_mdp_get_func(void)
