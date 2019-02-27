@@ -2199,7 +2199,7 @@ static int _DC_switch_to_DL_fast(int block)
 	/* switch back to last request gear */
 	primary_display_request_dvfs_perf(
 		MMDVFS_SCEN_DISP, dvfs_last_ovl_req,
-		layering_rule_get_mm_freq_table(HRT_OPP_LEVEL_LEVEL0));
+		ovl_throughput_freq_req);
 #endif
 
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_switch_mode,
@@ -5924,10 +5924,12 @@ static int _is_overlap(struct disp_input_config *src,
 	return 1;
 }
 
-static int _disp_get_yuv_overlap_num
+/* This function can only check for YUV layer overlap*/
+/* Todo: modify this func to check YUV layer number */
+static int _is_yuv_overlap
 	(struct disp_frame_cfg_t *cfg)
 {
-	int i = 0, j = 0, overlap_yuv_num = 1;
+	int i = 0, j = 0, is_yuv_overlap = 0;
 	unsigned int yuv_num = 0;
 	struct disp_input_config *yuv_cfg[cfg->input_layer_num];
 
@@ -5959,19 +5961,21 @@ static int _disp_get_yuv_overlap_num
 	for (i = 0; i < yuv_num - 1; i++)
 		for (j = i + 1; j < yuv_num; j++)
 			if (_is_overlap(yuv_cfg[i], yuv_cfg[j]))
-				overlap_yuv_num += 1;
+				is_yuv_overlap = 1;
 
-	DISPDBG("%s yuv_num=%d, overlap_yuv_num=%d\n",
-		__func__, yuv_num, overlap_yuv_num);
-	return overlap_yuv_num;
+	DISPDBG("%s yuv_num=%d, is_yuv_overlap=%d\n",
+		__func__, yuv_num, is_yuv_overlap);
+	return is_yuv_overlap;
 }
 
 static void _ovl_yuv_throughput_freq_request
 	(struct disp_frame_cfg_t *cfg)
 {
 	int overlap_yuv_num = 0;
-	int panel_height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
-	int panel_width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+	long long panel_height =
+		(long long)disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	long long panel_width =
+		(long long)disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	unsigned long long blank_ratio = 0;
 	unsigned long long pixel_total = 0;
 	unsigned long long blank_field = 0;
@@ -5980,7 +5984,9 @@ static void _ovl_yuv_throughput_freq_request
 	unsigned long long throughput_freq_temp = 0;
 	enum HRT_OPP_LEVEL mm_dvfs_level;
 
-	overlap_yuv_num = _disp_get_yuv_overlap_num(cfg);
+	/* if have yuv layer overlap, the overlap_yuv_num = 2 */
+	/* this is a workaround for two MM layer overlap */
+	overlap_yuv_num = _is_yuv_overlap(cfg) + 1;
 
 	/* have not overlay yuv layer */
 	if (overlap_yuv_num < 2) {
@@ -5992,18 +5998,25 @@ static void _ovl_yuv_throughput_freq_request
 	lcm_param = disp_lcm_get_params(pgc->plcm);
 
 	blank_field = (long long int)(((panel_height +
-		lcm_param->dsi.horizontal_sync_active +
-		lcm_param->dsi.horizontal_backporch +
-		lcm_param->dsi.horizontal_frontporch) *
+		(long long)lcm_param->dsi.horizontal_sync_active +
+		(long long)lcm_param->dsi.horizontal_backporch +
+		(long long)lcm_param->dsi.horizontal_frontporch) *
 		(panel_width +
-		lcm_param->dsi.vertical_sync_active +
-		lcm_param->dsi.vertical_backporch +
-		lcm_param->dsi.vertical_frontporch)) -
+		(long long)lcm_param->dsi.vertical_sync_active +
+		(long long)lcm_param->dsi.vertical_backporch +
+		(long long)lcm_param->dsi.vertical_frontporch)) -
 		(panel_height * panel_width));
 
-	pixel_total = (long long int)(panel_height * panel_width);
+	pixel_total = panel_height * panel_width;
 
 	blank_ratio = blank_field * 10000;
+
+	if (pixel_total == 0) {
+		DISPERR(
+			"width or height of panel is 0! width=%lld, height=%lld\n",
+			panel_width, panel_height);
+		return;
+	}
 
 	do_div(blank_ratio, pixel_total);
 
