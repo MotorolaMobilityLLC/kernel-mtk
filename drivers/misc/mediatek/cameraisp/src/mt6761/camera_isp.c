@@ -1578,12 +1578,15 @@ bool ISP_chkModuleSetting(void)
 		unsigned int histogramen_num;
 
 		unsigned int cam_awb_win_org; /*45B0 */
+		unsigned int cam_awb_win_siz; /*45B4 */
 		unsigned int cam_awb_win_pit; /*45B8 */
 
 		unsigned int AAO_InWidth;
 		unsigned int AAO_InHeight;
 		unsigned int AWB_W_HPIT;
 		unsigned int AWB_W_VPIT;
+		unsigned int AWB_W_HSIZ;
+		unsigned int AWB_W_VSIZ;
 		unsigned int AWB_W_HORG;
 		unsigned int AWB_W_VORG;
 
@@ -2017,6 +2020,7 @@ AF_EXIT:
 		/*Check AWB setting */
 
 		cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x5BC);
+		cam_awb_win_siz = ISP_RD32(ISP_ADDR + 0x5B4);
 		cam_awb_win_pit = ISP_RD32(ISP_ADDR + 0x5B8);
 		cam_awb_win_org = ISP_RD32(ISP_ADDR + 0x5B0);
 
@@ -2030,6 +2034,9 @@ AF_EXIT:
 		}
 		AWB_W_HNUM = (cam_awb_win_num & 0xff);
 		AWB_W_VNUM = ((cam_awb_win_num >> 16) & 0xff);
+
+		AWB_W_HSIZ = (cam_awb_win_siz & 0x1fff);
+		AWB_W_VSIZ = ((cam_awb_win_siz >> 16) & 0x1fff);
 
 		AWB_W_HPIT = (cam_awb_win_pit & 0x1fff);
 		AWB_W_VPIT = ((cam_awb_win_pit >> 16) & 0x1fff);
@@ -2054,6 +2061,12 @@ AF_EXIT:
 				AAO_InHeight, AWB_W_VNUM, AWB_W_VPIT,
 				AWB_W_VORG);
 		}
+		if (AWB_W_HPIT < AWB_W_HSIZ || AWB_W_VPIT < AWB_W_VSIZ) {
+			/*Error */
+			pr_info("Error HwRWCtrl:: AWB_W_HPIT(%d) >= AWB_W_HSIZ(%d), AWB_W_VPIT(%d) >= AWB_W_VSIZ(%d) !!",
+				AWB_W_HPIT, AWB_W_HSIZ, AWB_W_VPIT, AWB_W_VSIZ);
+		}
+
 
 /*Check EIS Setting */
 #if 0
@@ -2325,11 +2338,14 @@ AF_EXIT:
 		unsigned int histogramen_num;
 
 		unsigned int cam_awb_win_org; /*65B0 */
+		unsigned int cam_awb_d_win_siz; /*65B4 */
 		unsigned int cam_awb_win_pit; /*65B8 */
 
 		unsigned int AAO_InWidth;
 		unsigned int AAO_InHeight;
 		unsigned int AWB_W_HPIT;
+		unsigned int AWB_D_W_VSIZ;
+		unsigned int AWB_D_W_HSIZ;
 		unsigned int AWB_W_VPIT;
 		unsigned int AWB_W_HORG;
 		unsigned int AWB_W_VORG;
@@ -2635,6 +2651,7 @@ AF_D_EXIT:
 		unsigned int AWB_W_VORG;
 #endif
 		cam_awb_win_num = ISP_RD32(ISP_ADDR + 0x25BC);
+		cam_awb_d_win_siz = ISP_RD32(ISP_ADDR + 0x25B4);
 		cam_awb_win_pit = ISP_RD32(ISP_ADDR + 0x25B8);
 		cam_awb_win_org = ISP_RD32(ISP_ADDR + 0x25B0);
 
@@ -2648,6 +2665,9 @@ AF_D_EXIT:
 		}
 		AWB_W_HNUM = (cam_awb_win_num & 0xff);
 		AWB_W_VNUM = ((cam_awb_win_num >> 16) & 0xff);
+
+		AWB_D_W_HSIZ = (cam_awb_d_win_siz & 0x1fff);
+		AWB_D_W_VSIZ = ((cam_awb_d_win_siz >> 16) & 0x1fff);
 
 		AWB_W_HPIT = (cam_awb_win_pit & 0x1fff);
 		AWB_W_VPIT = ((cam_awb_win_pit >> 16) & 0x1fff);
@@ -2671,6 +2691,11 @@ AF_D_EXIT:
 			pr_info("Error HwRWCtrl:: AWB_D input frame height(%d) >=	AWB_W_VNUM(%d) * AWB_W_VPIT(%d) + AWB_W_VORG(%d) !!",
 				AAO_InHeight, AWB_W_VNUM, AWB_W_VPIT,
 				AWB_W_VORG);
+		}
+		if (AWB_W_HPIT < AWB_D_W_HSIZ || AWB_W_VPIT < AWB_D_W_VSIZ) {
+			/*Error */
+			pr_info("Error HwRWCtrl:: AWB_W_D_HPIT(%d) >= AWB_D_W_HSIZ(%d),	AWB_W_D_VPIT(%d) >= AWB_D_W_VSIZ(%d) !!",
+			AWB_W_HPIT, AWB_D_W_HSIZ, AWB_W_VPIT, AWB_D_W_VSIZ);
 		}
 	}
 #endif
