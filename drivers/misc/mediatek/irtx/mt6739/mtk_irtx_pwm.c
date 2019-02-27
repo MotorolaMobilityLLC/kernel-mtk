@@ -151,6 +151,8 @@ static long dev_char_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	switch (cmd) {
 	case IRTX_IOC_GET_SOLUTTION_TYPE:
+		if (!access_ok(VERIFY_WRITE, arg, sizeof(unsigned int)))
+			return -EFAULT;
 		ret = put_user(1, (unsigned int __user *)arg);
 		break;
 	case IRTX_IOC_SET_IRTX_LED_EN:
