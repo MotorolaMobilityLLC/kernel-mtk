@@ -605,7 +605,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	int boost_pct;
 	int ctl_no = div64_s64(boost, 1000);
 	int cluster;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	bool dvfs_on_demand = false;
 	int floor = 0;
 	int i;
@@ -619,7 +619,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		boost -= ctl_no * 1000;
 		cluster = (int)boost / 100;
 		boost = (int)boost % 100;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
 			floor = 1;
 			c0 = cluster & 0x1;
@@ -644,7 +644,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		/* dvfs short cut */
 		boost -= 2000;
 		stune_task_threshold = default_stune_threshold;
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 		dvfs_on_demand = true;
 #endif
 		break;
@@ -667,7 +667,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		return -EINVAL;
 	}
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	if (!floor) {
 		for (i = 0; i < cpu_cluster_nr; i++)
 			min_boost_freq[i] = 0;
@@ -705,7 +705,7 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+#if 0 /* ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS */
 	if (dvfs_on_demand)
 		update_freq_fastpath();
 #endif

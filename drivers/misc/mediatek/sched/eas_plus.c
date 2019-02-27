@@ -277,13 +277,12 @@ __ATTR(info, 0400, show_eas_info_attr, NULL);
 static ssize_t store_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
-#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	int val = 0;
 
 	if (sscanf(buf, "%iu", &val) != 0)
 		capacity_margin_dvfs = val;
 #endif
-
 	return count;
 }
 
@@ -291,13 +290,12 @@ static ssize_t show_cap_margin_knob(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
 {
 	unsigned int len = 0;
-#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	unsigned int max_len = 4096;
 
 	len += snprintf(buf, max_len, "capacity_margin_dvfs=%d\n",
 			capacity_margin_dvfs);
 #endif
-
 	return len;
 }
 
@@ -374,12 +372,12 @@ static int __init eas_stats_init(void)
 
 	eas_info.init = 0;
 
-	snprintf(module_name, sizeof(module_name), "%s %s%d",
+	snprintf(module_name, sizeof(module_name), "%s %s",
 		"arctic",
-#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
-		"sched-dvfs:", sched_dvfs_type,
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		"sched+"
 #else
-		"unknown:", 0
+		"others"
 #endif
 	);
 
