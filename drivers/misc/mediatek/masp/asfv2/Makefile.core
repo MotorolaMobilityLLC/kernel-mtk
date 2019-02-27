@@ -2,7 +2,6 @@
 # Specify source files
 #######################################
 
-core_obj += $(asf_link)/core/sec_ccci.o
 core_obj += $(asf_link)/core/sec_boot_core.o
 core_obj += $(asf_link)/core/sec_mod_core.o
 core_obj += $(asf_link)/core/sec_osal.o
