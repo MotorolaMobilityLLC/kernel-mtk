@@ -173,7 +173,6 @@ static struct ddrphy_golden_cfg ddrphy_setting_lp3_1ch[] = {
 	{PHY_AO_CHB, 0x171c, 0x000e0000, 0x000e0000},
 };
 
-
 static int spm_dram_golden_setting_cmp(bool en)
 {
 	int i, ddrphy_num, r = 0;
@@ -183,7 +182,6 @@ static int spm_dram_golden_setting_cmp(bool en)
 		return r;
 
 	switch (spm_get_spmfw_idx()) {
-	switch (__spm_get_dram_type()) {
 	case SPMFW_LP4X_2CH_3733:
 		ddrphy_setting = ddrphy_setting_lp4_2ch;
 		ddrphy_num = ARRAY_SIZE(ddrphy_setting_lp4_2ch);
@@ -208,11 +206,20 @@ static int spm_dram_golden_setting_cmp(bool en)
 					ddrphy_setting[i].offset);
 		if ((value & ddrphy_setting[i].mask) !=
 				ddrphy_setting[i].value) {
-			spm_crit2(
-				"dramc mismatch addr: 0x%.2x, offset: 0x%.3x, ",
+			pr_info(
+				"[SPM] NO dramc mismatch addr: 0x%.2x, offset: 0x%.3x, ",
 				ddrphy_setting[i].base,
 				ddrphy_setting[i].offset);
-			spm_crit2(
+			pr_info(
+				"mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
+				ddrphy_setting[i].mask,
+				ddrphy_setting[i].value,
+				value);
+			aee_sram_printk(
+				"NO dramc mismatch addr: 0x%.2x, offset: 0x%.3x, ",
+				ddrphy_setting[i].base,
+				ddrphy_setting[i].offset);
+			aee_sram_printk(
 				"mask: 0x%.8x, val: 0x%x, read: 0x%x\n",
 				ddrphy_setting[i].mask,
 				ddrphy_setting[i].value,
@@ -229,14 +236,14 @@ static int spm_dram_golden_setting_cmp(bool en)
 static void spm_dram_type_check(void)
 {
 	int ddr_type = get_ddr_type();
-	int emi_ch_num = get_emi_ch_num();
+	int ddr_hz = dram_steps_freq(0);
 
-	if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 2)
-		spmfw_idx = SPMFW_LP4X_2CH;
-	else if (ddr_type == TYPE_LPDDR4X && emi_ch_num == 1)
-		spmfw_idx = SPMFW_LP4X_1CH;
-	else if (ddr_type == TYPE_LPDDR3 && emi_ch_num == 1)
-		spmfw_idx = SPMFW_LP3_1CH;
+	if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3600)
+		spmfw_idx = SPMFW_LP4X_2CH_3733;
+	else if (ddr_type == TYPE_LPDDR4X && ddr_hz == 3200)
+		spmfw_idx = SPMFW_LP4X_2CH_3200;
+	else if (ddr_type == TYPE_LPDDR3 && ddr_hz == 1866)
+		spmfw_idx = SPMFW_LP3_1CH_1866;
 	pr_info("#@# %s(%d) __spmfw_idx 0x%x\n", __func__, __LINE__, spmfw_idx);
 }
 #endif /* CONFIG_MTK_DRAMC */
@@ -278,5 +285,4 @@ void spm_do_dram_config_check(void)
 
 	spm_phypll_mode_check();
 }
-
 

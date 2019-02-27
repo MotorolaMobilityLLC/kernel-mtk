@@ -344,11 +344,11 @@ static int get_base_from_node(
 
 	node = of_find_compatible_node(NULL, NULL, cmp);
 	if (!node)
-		spm_err("node '%s' not found!\n", cmp);
+		pr_info("[IDLE] node '%s' not found!\n", cmp);
 
 	*pbase = of_iomap(node, idx);
 	if (!(*pbase))
-		spm_err("node '%s' cannot iomap!\n", cmp);
+		pr_info("[IDLE] node '%s' cannot iomap!\n", cmp);
 
 	return 0;
 }

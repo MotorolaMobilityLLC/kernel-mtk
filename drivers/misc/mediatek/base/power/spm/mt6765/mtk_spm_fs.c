@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -18,7 +18,6 @@
 #include <linux/string.h>
 
 #include <mtk_spm_internal.h>
-#include <mtk_sleep.h>
 
 /**************************************
  * Macro and Inline
@@ -554,7 +553,7 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl,
 	if (sscanf(buf, "%63s %x", cmd, &val) != 2)
 		return -EPERM;
 
-	spm_debug("pwr_ctrl: cmd = %s, val = 0x%x\n", cmd, val);
+	pr_info("[SPM] pwr_ctrl: cmd = %s, val = 0x%x\n", cmd, val);
 
 
 	if (!strcmp(cmd,
@@ -928,7 +927,7 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl,
 				id, PW_CONN_DDR_EN_MASK_B, val);
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_DDREN_SSPM_APSRC_REQ_MASK_B])) {
-		pwrctrl->ddren_md32_apsrc_req_mask_b = val;
+		pwrctrl->ddren_sspm_apsrc_req_mask_b = val;
 		SMC_CALL(PWR_CTRL_ARGS,
 				id, PW_DDREN_SSPM_APSRC_REQ_MASK_B, val);
 	} else if (!strcmp(cmd,
@@ -1005,7 +1004,7 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl,
 				id, PW_CONN_DDR_EN_2_MASK_B, val);
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_DDREN2_SSPM_APSRC_REQ_MASK_B])) {
-		pwrctrl->ddren2_md32_apsrc_req_mask_b = val;
+		pwrctrl->ddren2_sspm_apsrc_req_mask_b = val;
 		SMC_CALL(PWR_CTRL_ARGS,
 				id, PW_DDREN2_SSPM_APSRC_REQ_MASK_B, val);
 	} else if (!strcmp(cmd,
@@ -1187,7 +1186,7 @@ int spm_fs_init(void)
 	/* create /sys/power/spm/xxx */
 	r = sysfs_create_group(power_kobj, &spm_attr_group);
 	if (r)
-		spm_err("FAILED TO CREATE /sys/power/spm (%d)\n", r);
+		pr_info("[SPM] FAILED TO CREATE /sys/power/spm (%d)\n", r);
 
 	return r;
 }

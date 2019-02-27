@@ -260,12 +260,12 @@ void spm_resource_req_dump(void)
 	int i;
 	unsigned long flags;
 
-	pr_err("resource_req:\n");
+	pr_info("resource_req:\n");
 
 	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
 
 	for (i = 0; i < NF_SPM_RESOURCE; i++)
-		pr_err("[%s]: 0x%x, 0x%x, mask = 0x%x, 0x%x\n",
+		pr_info("[%s]: 0x%x, 0x%x, mask = 0x%x, 0x%x\n",
 				spm_resource_name[i],
 				resc_desc[i].user_usage[0],
 				resc_desc[i].user_usage[1],
@@ -282,7 +282,7 @@ void spm_resource_req_block_dump(void)
 	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
 
 	if (curr_res_usage == SPM_RESOURCE_ALL) {
-		pr_err("[resource_req_block] user: 0x%x, 0x%x\n",
+		pr_info("[resource_req_block] user: 0x%x, 0x%x\n",
 				resc_desc[0].user_usage[0],
 				resc_desc[0].user_usage[1]);
 	}

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __SPM_V4__MTK_SPM_RESOURCE_REQ_H__
-#define __SPM_V4__MTK_SPM_RESOURCE_REQ_H__
+#ifndef __SPM_MTK_SPM_RESOURCE_REQ_H__
+#define __SPM_MTK_SPM_RESOURCE_REQ_H__
 
 /* SPM resource request APIs: public */
 
@@ -41,4 +41,4 @@ enum {
 
 bool spm_resource_req(unsigned int user, unsigned int req_mask);
 
-#endif /* __SPM_V4__MTK_SPM_RESOURCE_REQ_H__ */
+#endif /* __SPM_MTK_SPM_RESOURCE_REQ_H__ */
