@@ -62,6 +62,13 @@ void vmd1_pmic_setting_off(void)
 	PMICLOG("vmd1_pmic_setting_off\n");
 }
 
+void wk_pmic_enable_sdn_delay(void)
+{
+	pmic_set_register_value(PMIC_TMA_KEY, 0x9CA8);
+	pmic_set_register_value(PMIC_RG_SDN_DLY_ENB, 0);
+	pmic_set_register_value(PMIC_TMA_KEY, 0);
+}
+
 int vcore_pmic_set_mode(unsigned char mode)
 {
 	unsigned char ret = 0;
