@@ -492,10 +492,9 @@ void pmic_enable_interrupt(enum PMIC_IRQ_ENUM intNo, unsigned int en, char *str)
 	enable_reg = sp_interrupts[spNo].enable + 0x6 * sp_conNo;
 	IRQLOG("[%s] intNo=%d en=%d str=%s spNo=%d sp_conNo=%d sp_irqNo=%d\n"
 		, __func__, intNo, en, str
-		, spNo, sp_conNo, sp_irqNo
-		, enable_reg);
+		, spNo, sp_conNo, sp_irqNo);
 	IRQLOG("[%s] Reg[0x%x]=0x%x\n"
-		, __func__, upmu_get_reg_value(enable_reg));
+		, __func__, enable_reg, upmu_get_reg_value(enable_reg));
 	if (en == 1)
 		pmic_config_interface(enable_reg + 0x2, 0x1, 0x1, sp_irqNo);
 	else if (en == 0)
@@ -516,10 +515,9 @@ void pmic_mask_interrupt(enum PMIC_IRQ_ENUM intNo, char *str)
 	mask_reg = sp_interrupts[spNo].mask + 0x6 * sp_conNo;
 	IRQLOG("[%s] intNo=%d str=%s spNo=%d sp_conNo=%d sp_irqNo=%d\n"
 	       , __func__, intNo, str
-	       , spNo, sp_conNo, sp_irqNo
-	       , mask_reg);
+	       , spNo, sp_conNo, sp_irqNo);
 	IRQLOG("[%s] Reg[0x%x]=0x%x\n"
-	       , __func__, upmu_get_reg_value(mask_reg));
+	       , __func__, mask_reg, upmu_get_reg_value(mask_reg));
 	/* MASK_SET */
 	pmic_config_interface(mask_reg + 0x2, 0x1, 0x1, sp_irqNo);
 	IRQLOG("[%s] after, Reg[0x%x]=0x%x\n", __func__,
@@ -538,10 +536,9 @@ void pmic_unmask_interrupt(enum PMIC_IRQ_ENUM intNo, char *str)
 	mask_reg = sp_interrupts[spNo].mask + 0x6 * sp_conNo;
 	IRQLOG("[%s] intNo=%d str=%s spNo=%d sp_conNo=%d sp_irqNo=%d\n"
 	       , __func__, intNo, str
-	       , spNo, sp_conNo, sp_irqNo
-	       , mask_reg);
+	       , spNo, sp_conNo, sp_irqNo);
 	IRQLOG("[%s] Reg[0x%x]=0x%x\n"
-	       , __func__, upmu_get_reg_value(mask_reg));
+	       , __func__, mask_reg, upmu_get_reg_value(mask_reg));
 	/* MASK_CLR */
 	pmic_config_interface(mask_reg + 0x4, 0x1, 0x1, sp_irqNo);
 	IRQLOG("[%s] after, Reg[0x%x]=0x%x\n", __func__,
