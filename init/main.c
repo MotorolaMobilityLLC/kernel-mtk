@@ -984,13 +984,6 @@ static int __ref kernel_init(void *unused)
 		       ramdisk_execute_command, ret);
 	}
 
-#ifdef CONFIG_MTK_ROOT_DEVICE
-	if (sys_access("/eng/init", 0) != 0)
-		pr_info("init: %s NOT exists!!\n", "/eng/init");
-	else if (!try_to_run_init_process("/eng/init"))
-		return 0;
-#endif
-
 	/*
 	 * We try each of these until one succeeds.
 	 *
