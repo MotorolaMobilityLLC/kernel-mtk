@@ -1432,7 +1432,8 @@ static ssize_t show_AUXADC_channel(struct device *dev,
 		}
 	}
 
-	sprintf(tmp_buf, "REG:0x%4x,GAIN:%4u,GE_A:%4u,OE_A:%4u,GE:%4d,OE:%4d\n",
+	sprintf(tmp_buf,
+		"-->REG:0x%4x,GAIN:%4u,GE_A:%4u,OE_A:%4u,GE:%4d,OE:%4d\n",
 		cali_reg, gain, cali_ge_a, cali_oe_a, cali_ge, cali_oe);
 	strncat(buf, tmp_buf, strlen(tmp_buf));
 	/* mt_auxadc_dump_register(tmp_buf); */
