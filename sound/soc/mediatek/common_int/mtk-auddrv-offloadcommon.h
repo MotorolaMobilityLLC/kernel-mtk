@@ -108,6 +108,7 @@ struct afe_offload_service_t {
 	bool ipiwait;
 	bool needdata;
 	bool ipiresult;
+	bool decode_error;
 	unsigned int pcmdump;
 	unsigned int volume;
 	uint8_t scene;
@@ -118,23 +119,24 @@ struct afe_offload_codec_t {
 	unsigned int codec_bitrate;
 };
 
-enum ipi_received_mp3 {
-	MP3_NEEDDATA = 21,
-	MP3_PCMCONSUMED = 22,
-	MP3_DRAINDONE = 23,
-	MP3_PCMDUMP_OK = 24,
+enum ipi_received_offload {
+	OFFLOAD_NEEDDATA = 21,
+	OFFLOAD_PCMCONSUMED = 22,
+	OFFLOAD_DRAINDONE = 23,
+	OFFLOAD_PCMDUMP_OK = 24,
+	OFFLOAD_DECODE_ERROR = 25,
 };
 
-enum ipi_send_mp3 {
-	MP3_RESUME = 0x300,
-	MP3_PAUSE,
-	MP3_SETWRITEBLOCK,
-	MP3_DRAIN,
-	MP3_VOLUME,
-	MP3_WRITEIDX,
-	MP3_TSTAMP,
-	MP3_PCMDUMP_ON,
-	MP3_SCENE,
-	MP3_CODEC_INFO,
+enum ipi_send_offload {
+	OFFLOAD_RESUME = 0x300,
+	OFFLOAD_PAUSE,
+	OFFLOAD_SETWRITEBLOCK,
+	OFFLOAD_DRAIN,
+	OFFLOAD_VOLUME,
+	OFFLOAD_WRITEIDX,
+	OFFLOAD_TSTAMP,
+	OFFLOAD_PCMDUMP_ON,
+	OFFLOAD_SCENE,
+	OFFLOAD_CODEC_INFO,
 };
 #endif
