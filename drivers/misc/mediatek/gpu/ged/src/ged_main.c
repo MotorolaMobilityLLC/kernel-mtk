@@ -458,14 +458,9 @@ static int ged_init(void)
 	ghLogBuf_FWTrace = ged_log_buf_alloc(1024*32, 1024*1024, GED_LOG_BUF_TYPE_QUEUEBUFFER, "fw_trace", "fw_trace");
 
 #ifdef GED_DVFS_DEBUG_BUF
-#ifdef GED_LOG_SIZE_LIMITED
 	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60, 20*60*100
 		, GED_LOG_BUF_TYPE_RINGBUFFER
-		, "DVFS_Log", "ged_dvfs_debug_limited");
-#else
-	ghLogBuf_DVFS =  ged_log_buf_alloc(20*60*10, 20*60*10*100
-		, GED_LOG_BUF_TYPE_RINGBUFFER, "DVFS_Log", "ged_dvfs_debug");
-#endif
+		, "DVFS_Log", "ged_dvfs_debug");
 	ghLogBuf_ged_srv =  ged_log_buf_alloc(32, 32*80, GED_LOG_BUF_TYPE_RINGBUFFER, "ged_srv_Log", "ged_srv_debug");
 #endif
 #endif
