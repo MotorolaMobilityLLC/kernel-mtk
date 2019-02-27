@@ -15,10 +15,15 @@
 #define __ADSP_DVFS_H__
 
 #include <adsp_ipi.h>
+#include <adsp_clk.h>
 
 #define ADSP_ITCM_MONITOR               (1)
 #define ADSP_DVFS_PROFILE               (1)
 #define ADSP_FREQ_METER_ID              (43) //hf_fadsp_ck
+
+#define CLK_DEFAULT_INIT_CK     CLK_TOP_ADSPPLL_D6
+#define CLK_DEFAULT_26M_CK      CLK_ADSP_CLK26M
+
 
 #define ADSP_DVFS_USE_PLL               1
 
@@ -109,6 +114,7 @@ extern spinlock_t adsp_awake_spinlock;
 uint32_t mt_adsp_freq_meter(void);
 void adsp_A_send_spm_request(uint32_t enable);
 void adsp_sw_reset(void);
+void adsp_set_clock_freq(enum adsp_clk clk);
 extern void adsp_release_runstall(uint32_t release);
 extern int adsp_suspend_init(void);
 void adsp_start_suspend_timer(void);

@@ -14,30 +14,30 @@
 #ifndef ADSP_CLK_H
 #define ADSP_CLK_H
 
-enum adsppll_freq {
-	ADSPPLL_FREQ_480MHZ     = 480000000,
-	ADSPPLL_FREQ_692MHZ     = 692000000,
-	ADSPPLL_FREQ_800MHZ     = 800000000
-};
+#include <linux/platform_device.h>
+
 
 enum adsp_clk {
-	CLK_INFRA_ADSP,
-	CLK_TOP_MUX_ADSP,
-	CLK_TOP_ADSPPLL_CK,
-	CLK_CLK26M,
-	CLK_APMIXED_ADSPPLL,
+	CLK_ADSP_INFRA,
+	CLK_TOP_ADSP_SEL,
+	CLK_ADSP_CLK26M,
+	CLK_TOP_MMPLL_D4,
+	CLK_TOP_ADSPPLL_D4,
+	CLK_TOP_ADSPPLL_D6,
 	ADSP_CLK_NUM
 };
 
 extern struct clk *clk_adsp_infra;
-extern struct clk *clk_top_mux_adsp;
-extern struct clk *clk_top_adsppll_ck;
-extern struct clk *clk_adsp_clk26;
-extern struct clk *clk_apmixed_adsppll;
+extern struct clk *clk_top_adsp_sel;
+extern struct clk *clk_adsp_clk26m;
+extern struct clk *clk_top_mmpll_d4;
+extern struct clk *clk_top_adsppll_d4;
+extern struct clk *clk_top_adsppll_d6;
 
 int adsppll_mux_setting(bool enable);
-void set_adsppll_rate(enum adsppll_freq freq);
-int adsp_set_top_mux(bool enable, enum adsp_clk clk);
+int adsp_set_top_mux(enum adsp_clk clk);
 int adsp_enable_clock(void);
 void adsp_disable_clock(void);
+int adsp_clk_device_probe(struct platform_device *pdev);
+
 #endif /* ADSP_CLK_H */

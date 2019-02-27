@@ -12,88 +12,92 @@
  */
 
 #include <linux/clk.h>
+#include <linux/device.h>       /* needed by device_* */
+
 #include "adsp_clk.h"
 
-int adsp_set_top_mux(bool enable, enum adsp_clk clk)
+struct clk *clk_adsp_infra;
+struct clk *clk_top_adsp_sel;
+struct clk *clk_adsp_clk26m;
+struct clk *clk_top_mmpll_d4;
+struct clk *clk_top_adsppll_d4;
+struct clk *clk_top_adsppll_d6;
+
+int adsp_set_top_mux(enum adsp_clk clk)
 {
 	int ret = 0;
+	struct clk *parent;
 
-	pr_debug("%s(%d, %x)\n", __func__, enable, clk);
-	if (enable) {
-		switch (clk) {
-		case CLK_TOP_ADSPPLL_CK:
-			ret = clk_set_parent(clk_top_mux_adsp,
-					     clk_top_adsppll_ck);
-			break;
-		case CLK_CLK26M:
-			ret = clk_set_parent(clk_top_mux_adsp,
-					     clk_adsp_clk26);
-			break;
-		default:
-			ret = -1;
-			break;
-		}
-		if (IS_ERR(&ret)) {
-			pr_err("[ADSP] %s clk_set_parent(clk_top_mux_adsp-%x) fail %d\n",
-			      __func__, clk, ret);
-			return ret;
-		} else {
-			return 0;
-		}
+	pr_debug("%s(%x)\n", __func__, clk);
+
+	switch (clk) {
+	case CLK_ADSP_CLK26M:
+		parent = clk_adsp_clk26m;
+		break;
+	case CLK_TOP_MMPLL_D4:
+		parent = clk_top_mmpll_d4;
+		break;
+	case CLK_TOP_ADSPPLL_D4:
+		parent = clk_top_adsppll_d4;
+		break;
+	case CLK_TOP_ADSPPLL_D6:
+		parent = clk_top_adsppll_d6;
+		break;
+	default:
+		parent = clk_adsp_clk26m;
+		break;
+	}
+	ret = clk_set_parent(clk_top_adsp_sel, parent);
+	if (IS_ERR(&ret)) {
+		pr_err("[ADSP] %s clk_set_parent(clk_top_adsp_sel-%x) fail %d\n",
+		      __func__, clk, ret);
+		return ret;
 	} else {
 		return 0;
 	}
 }
 
-int adsppll_mux_setting(bool enable)
+/* clock init */
+int adsp_clk_device_probe(struct platform_device *pdev)
 {
-	int ret = 0;
+	struct device *dev = &pdev->dev;
 
-	if (enable) {
-		ret = clk_prepare_enable(clk_top_mux_adsp);
-		if (IS_ERR(&ret)) {
-			pr_err("[ADSP] %s clk_prepare_enable(clk_top_mux_adsp) fail %d\n",
-			       __func__, ret);
-			goto EXIT;
-		} else {
-			ret = clk_set_parent(clk_top_mux_adsp,
-					     clk_top_adsppll_ck);
-			if (IS_ERR(&ret)) {
-				pr_err("[ADSP] %s clk_set_parent(clk_top_mux_adsp) fail %d\n",
-				       __func__, ret);
-				goto EXIT;
-			}
-		}
-	} else {
-		ret = clk_set_parent(clk_top_mux_adsp, clk_adsp_clk26);
-		if (IS_ERR(&ret)) {
-			pr_err("[ADSP] %s clk_set_parentt(clk_top_mux_adsp) fail %d\n",
-			       __func__, ret);
-
-			goto EXIT;
-		}
-		clk_disable_unprepare(clk_top_mux_adsp);
+	clk_adsp_infra = devm_clk_get(&pdev->dev, "clk_adsp_infra");
+	if (IS_ERR(clk_adsp_infra)) {
+		dev_err(dev, "clk_get(\"clk_adsp_infra\") failed\n");
+		return PTR_ERR(clk_adsp_infra);
 	}
-	pr_debug("%s(%d) done\n", __func__, enable);
 
-EXIT:
-	return PTR_ERR(&ret);
-}
-
-void set_adsppll_rate(enum adsppll_freq freq)
-{
-	int ret = 0;
-
-	ret = clk_prepare_enable(clk_top_adsppll_ck);
-	if (IS_ERR(&ret)) {
-		pr_err("[ADSP] %s clk_prepare_enable(clk_top_mux_adsp) fail %d\n",
-		       __func__, ret);
-		clk_disable_unprepare(clk_top_adsppll_ck);
+	clk_top_adsp_sel = devm_clk_get(&pdev->dev, "clk_top_adsp_sel");
+	if (IS_ERR(clk_top_adsp_sel)) {
+		dev_err(dev, "clk_get(\"clk_top_adsp_sel\") failed\n");
+		return PTR_ERR(clk_top_adsp_sel);
 	}
-	clk_set_rate(clk_top_adsppll_ck, freq);
-	clk_disable_unprepare(clk_top_adsppll_ck);
 
-	pr_debug("set adsppll freq = %d done\n", freq);
+	clk_adsp_clk26m = devm_clk_get(&pdev->dev, "clk_adsp_clk26m");
+	if (IS_ERR(clk_adsp_clk26m)) {
+		dev_err(dev, "clk_get(\"clk_adsp_clk26m\") failed\n");
+		return PTR_ERR(clk_adsp_clk26m);
+	}
+
+	clk_top_mmpll_d4 = devm_clk_get(&pdev->dev, "clk_top_mmpll_d4");
+	if (IS_ERR(clk_top_mmpll_d4)) {
+		dev_err(dev, "clk_get(\"clk_top_mmpll_d4\") failed\n");
+		return PTR_ERR(clk_top_mmpll_d4);
+	}
+
+	clk_top_adsppll_d4 = devm_clk_get(&pdev->dev, "clk_top_adsppll_d4");
+	if (IS_ERR(clk_top_adsppll_d4)) {
+		dev_err(dev, "clk_get(\"clk_top_adsppll_d4\") failed\n");
+		return PTR_ERR(clk_top_adsppll_d4);
+	}
+
+	clk_top_adsppll_d6 = devm_clk_get(&pdev->dev, "clk_top_adsppll_d6");
+	if (IS_ERR(clk_top_adsppll_d6)) {
+		dev_err(dev, "clk_get(\"clk_top_adsppll_d6\") failed\n");
+		return PTR_ERR(clk_top_adsppll_d6);
+	}
+	return 0;
 }
 
 int adsp_enable_clock(void)
