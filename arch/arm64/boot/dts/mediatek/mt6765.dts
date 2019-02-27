@@ -1039,6 +1039,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mdp_wrot0 = <&mdp_wrot0>;
 		mdp_tdshp0 = <&mdp_tdshp0>;
 		mm_mutex = <&disp_mutex0>;
+		clocks = <&infracfg_ao CLK_IFR_GCE>,
+			<&infracfg_ao CLK_IFR_GCE_26M>;
+		clock-names = "GCE", "GCE_TIMER";
 	};
 
 	ap_ccif2@1023c000 {
