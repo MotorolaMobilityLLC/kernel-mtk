@@ -296,9 +296,6 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 	return 0;
 }
 
-int cm_mgr_perf_enable = 1;
-int cm_mgr_perf_timer_enable;
-int cm_mgr_perf_force_enable;
 struct timer_list cm_mgr_perf_timer;
 #define USE_TIMER_PERF_CHECK_TIME msecs_to_jiffies(50)
 
