@@ -21,6 +21,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
+#include <linux/of_fdt.h>
 #include <linux/of.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/mm.h>
@@ -214,6 +215,64 @@ static int mtk_memcfg_memory_layout_open(struct inode *inode, struct file *file)
 	return single_open(file, mtk_memcfg_memory_layout_show, NULL);
 }
 
+/* memblock reserve information */
+static int mtk_memcfg_memblock_reserved_show(struct seq_file *m, void *v)
+{
+	int i = 0, j = 0, record_count = 0;
+	unsigned long start, end, rstart, rend;
+	unsigned long bt;
+	struct memblock_stack_trace *trace;
+	struct memblock_record *record;
+	struct memblock_type *type = &memblock.reserved;
+	struct memblock_region *region;
+	unsigned long total_size = 0;
+
+	record_count = min(memblock_reserve_count, MAX_MEMBLOCK_RECORD);
+
+	for (i = 0; i < type->cnt; i++) {
+		region = &type->regions[i];
+		start = region->base;
+		end = region->base + region->size;
+		total_size += region->size;
+		seq_printf(m, "region: %lx %lx-%lx\n",
+			(unsigned long)region->size, start, end);
+		for (j = 0; j < record_count; j++) {
+			record = &memblock_record[j];
+			trace = &memblock_stack_trace[j];
+			rstart = record->base;
+			rend = record->end;
+			if ((rstart >= start && rstart < end) ||
+				(rend > start && rend <= end) ||
+				(rstart >= start && rend <= end)) {
+				bt = trace->count - 3;
+				seq_printf(m, "bt    : %lx %lx-%lx\n%pF %pF %pF %pF\n",
+						(unsigned long)record->size,
+						rstart, rend,
+						(void *)trace->addrs[bt],
+						(void *)trace->addrs[bt - 1],
+						(void *)trace->addrs[bt - 2],
+						(void *)trace->addrs[bt - 3]);
+			}
+		}
+		seq_puts(m, "\n");
+	}
+
+	seq_printf(m, "Total memblock reserve count: %d\n",
+		memblock_reserve_count);
+	if (memblock_reserve_count >= MAX_MEMBLOCK_RECORD)
+		seq_puts(m, "Total count > MAX_MEMBLOCK_RECORD\n");
+	seq_printf(m, "Memblock reserve total size: 0x%lx\n", total_size);
+
+	return 0;
+}
+
+static int mtk_memcfg_memblock_reserved_open(struct inode *inode,
+	struct file *file)
+{
+	return single_open(file, mtk_memcfg_memblock_reserved_show, NULL);
+}
+/* end of memblock reserve information */
+
 static const struct file_operations mtk_memcfg_memory_layout_operations = {
 	.open = mtk_memcfg_memory_layout_open,
 	.read = seq_read,
@@ -403,6 +462,12 @@ mtk_memcfg_oom_write(struct file *file, const char __user *buffer,
 	return count;
 }
 
+static const struct file_operations mtk_memcfg_memblock_reserved_operations = {
+	.open = mtk_memcfg_memblock_reserved_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
 static const struct file_operations mtk_memcfg_oom_operations = {
 	.open = mtk_memcfg_oom_open,
 	.write = mtk_memcfg_oom_write,
@@ -445,29 +510,14 @@ static int __init mtk_memcfg_late_init(void)
 		mtk_memcfg_reserve_info_init(mtk_memcfg_dir);
 
 #ifdef CONFIG_MTK_ENG_BUILD
-
-		/* fragmentation test */
-		entry = proc_create("frag-trigger",
-				    0644, mtk_memcfg_dir,
-				    &mtk_memcfg_frag_operations);
-
+		/* memblock reserved */
+		entry = proc_create("memblock_reserved", 0644,
+				mtk_memcfg_dir,
+				&mtk_memcfg_memblock_reserved_operations);
 		if (!entry)
-			pr_info("create frag-trigger proc entry failed\n");
+			pr_info("create memblock_reserved proc entry failed\n");
+		pr_info("create memblock_reserved proc entry success!!!!!\n");
 
-		frag_page_cache = kmem_cache_create("frag_page_cache",
-						    sizeof(struct frag_page),
-						    0, SLAB_PANIC, NULL);
-
-		if (!frag_page_cache)
-			pr_info("create frag_page_cache failed\n");
-
-		/* oom test */
-		entry = proc_create("oom-trigger",
-				    0644, mtk_memcfg_dir,
-				    &mtk_memcfg_oom_operations);
-
-		if (!entry)
-			pr_info("create oom entry failed\n");
 
 #ifdef CONFIG_SLUB_DEBUG
 		/* slabtrace - full slub object backtrace */
