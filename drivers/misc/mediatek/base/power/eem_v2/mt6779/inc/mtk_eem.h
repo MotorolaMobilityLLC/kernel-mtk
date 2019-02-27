@@ -25,9 +25,7 @@ enum eem_ctrl_id {
 	EEM_CTRL_L,
 	EEM_CTRL_B,
 	EEM_CTRL_CCI,
-#if ENABLE_LOO
-	EEM_CTRL_GPU_LO,
-#endif
+	EEM_CTRL_GPU,
 #if ENABLE_MDLA
 	EEM_CTRL_MDLA,
 #endif
@@ -44,9 +42,7 @@ enum eem_det_id {
 	EEM_DET_L	=	EEM_CTRL_L,
 	EEM_DET_B	=	EEM_CTRL_B,
 	EEM_DET_CCI	=	EEM_CTRL_CCI,
-#if ENABLE_LOO
-	EEM_DET_GPU_LO     =       EEM_CTRL_GPU_LO,
-#endif
+	EEM_DET_GPU     =       EEM_CTRL_GPU,
 #if ENABLE_MDLA
 	EEM_DET_MDLA	=	EEM_CTRL_MDLA,
 #endif
@@ -117,8 +113,8 @@ enum eem_state {
 	EEM_CPU_2_LITTLE_IS_SET_VOLT = 0,	/* 2L */
 	EEM_CPU_LITTLE_IS_SET_VOLT = 1,		/* L */
 	EEM_CPU_CCI_IS_SET_VOLT = 2,		/* CCI */
+	EEM_GPU_IS_SET_VOLT = 3,		/* G */
 #if ENABLE_LOO
-	EEM_GPU_LO_IS_SET_VOLT = 3,		/* G */
 	EEM_GPU_HI_IS_SET_VOLT = 4,
 #endif
 };

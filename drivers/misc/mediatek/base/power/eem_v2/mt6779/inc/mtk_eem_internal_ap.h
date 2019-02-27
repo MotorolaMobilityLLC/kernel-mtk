@@ -129,6 +129,7 @@ struct eem_det {
 	/* unsigned int volt_offset_drcc[NR_FREQ]; *//* pmic value */
 	int volt_aging[NR_FREQ]; /* aging margin value */
 	int volt_offset:8;
+	int volt_clamp:8;
 
 	unsigned int disabled:8; /* Disabled by error or sysfs */
 	unsigned int low_temp_off:8;
@@ -158,30 +159,6 @@ struct eem_devinfo {
 	unsigned int FABCODE:2;
 	unsigned int RSV2:16;
 
-	/* M_HW_RES1 */
-	unsigned int CPU_L_LO_BDES:8;
-	unsigned int CPU_L_LO_MDES:8;
-	unsigned int CPU_L_LO_DCBDET:8;
-	unsigned int CPU_L_LO_DCMDET:8;
-
-	/* M_HW_RES2 */
-	unsigned int CPU_B_LO_MTDES:8;
-	unsigned int CPU_B_LO_INITEN:1;
-	unsigned int CPU_B_LO_MONEN:1;
-	unsigned int CPU_B_LO_DVFS_LOW:3;
-	unsigned int CPU_B_LO_SPEC:3;
-	unsigned int CPU_L_LO_MTDES:8;
-	unsigned int CPU_L_LO_INITEN:1;
-	unsigned int CPU_L_LO_MONEN:1;
-	unsigned int CPU_L_LO_DVFS_LOW:3;
-	unsigned int CPU_L_LO_SPEC:3;
-
-	/* M_HW_RES3 */
-	unsigned int CPU_B_LO_BDES:8;
-	unsigned int CPU_B_LO_MDES:8;
-	unsigned int CPU_B_LO_DCBDET:8;
-	unsigned int CPU_B_LO_DCMDET:8;
-
 	/* M_HW_RES4 */
 	unsigned int CCI_BDES:8;
 	unsigned int CCI_MDES:8;
@@ -205,54 +182,6 @@ struct eem_devinfo {
 	unsigned int GPU_LO_MDES:8;
 	unsigned int GPU_LO_DCBDET:8;
 	unsigned int GPU_LO_DCMDET:8;
-
-	/* M_HW_RES7 */
-	unsigned int VPU_BDES:8;
-	unsigned int VPU_MDES:8;
-	unsigned int VPU_DCBDET:8;
-	unsigned int VPU_DCMDET:8;
-
-	/* M_HW_RES8 */
-	unsigned int CPU_L_HI_MTDES:8;
-	unsigned int CPU_L_HI_INITEN:1;
-	unsigned int CPU_L_HI__MONEN:1;
-	unsigned int CPU_L_HI_DVFS_LOW:3;
-	unsigned int CPU_L_HI_SPEC:3;
-	unsigned int VPU_MTDES:8;
-	unsigned int VPU_INITEN:1;
-	unsigned int VPU_MONEN:1;
-	unsigned int VPU_DVFS_LOW:3;
-	unsigned int VPU_SPEC:3;
-
-	/* M_HW_RES9 */
-	unsigned int CPU_L_HI_BDES:8;
-	unsigned int CPU_L_HI_MDES:8;
-	unsigned int CPU_L_HI_DCBDET:8;
-	unsigned int CPU_L_HI_DCMDET:8;
-
-	/* M_HW_RES10 */
-	unsigned int CPU_B_HI_BDES:8;
-	unsigned int CPU_B_HI_MDES:8;
-	unsigned int CPU_B_HI_DCBDET:8;
-	unsigned int CPU_B_HI_DCMDET:8;
-
-	/* M_HW_RES11 */
-	unsigned int MODEM_MTDES:8;
-	unsigned int MODEM_INITEN:1;
-	unsigned int MODEM_MONEN:1;
-	unsigned int MODEM_DVFS_LOW:3;
-	unsigned int MODEM_SPEC:3;
-	unsigned int CPU_B_HI_MTDES:8;
-	unsigned int CPU_B_HI_INITEN:1;
-	unsigned int CPU_B_HI_MONEN:1;
-	unsigned int CPU_B_HI_DVFS_LOW:3;
-	unsigned int CPU_B_HI_SPEC:3;
-
-	/* M_HW_RES12 */
-	unsigned int MODEM_BDES:8;
-	unsigned int MODEM_MDES:8;
-	unsigned int MODEM_DCBDET:8;
-	unsigned int MODEM_DCMDET:8;
 
 	/* M_HW_RES16 */
 	unsigned int CPU_L_BDES:8;
@@ -279,10 +208,10 @@ struct eem_devinfo {
 	unsigned int CPU_B_DCMDET:8;
 
 	/* M_HW_RES19 */
-	unsigned int MDLA_BDES:8;
-	unsigned int MDLA_MDES:8;
-	unsigned int MDLA_DCBDET:8;
-	unsigned int MDLA_DCMDET:8;
+	unsigned int GPU_BDES:8;
+	unsigned int GPU_MDES:8;
+	unsigned int GPU_DCBDET:8;
+	unsigned int GPU_DCMDET:8;
 
 	/* M_HW_RES23 */
 	unsigned int GPU_HI_MTDES:8;
@@ -290,11 +219,11 @@ struct eem_devinfo {
 	unsigned int GPU_HI_MONEN:1;
 	unsigned int GPU_HI_DVFS_LOW:3;
 	unsigned int GPU_HI_SPEC:3;
-	unsigned int MDLA_MTDES:8;
-	unsigned int MDLA_INITEN:1;
-	unsigned int MDLA_MONEN:1;
-	unsigned int MDLA_DVFS_LOW:3;
-	unsigned int MDLA_SPEC:3;
+	unsigned int GPU_MTDES:8;
+	unsigned int GPU_INITEN:1;
+	unsigned int GPU_MONEN:1;
+	unsigned int GPU_DVFS_LOW:3;
+	unsigned int GPU_SPEC:3;
 
 	/* M_HW_RES24 */
 	unsigned int GPU_HI_BDES:8;
