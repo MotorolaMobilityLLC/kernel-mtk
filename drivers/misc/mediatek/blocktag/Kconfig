@@ -14,3 +14,11 @@ config MTK_BLOCK_TAG
 	  IO statistics of each process. The Block Tag also provides
 	  utility functions to MMC/UFS Block IO log, such as throughput
 	  calculation, log printing, and ring trace handling.
+
+config MTK_PID_MAP
+	bool "Map of PID and Task Name"
+	help
+	  Enable task name recorder to
+	  provide more pid and task name mappings.
+	  More memory will be required for this feature,
+	  so please consider the trade-off.
