@@ -153,9 +153,15 @@ static struct usb_interface_descriptor rndis_control_intf = {
 	/* .bInterfaceNumber = DYNAMIC */
 	/* status endpoint is optional; this could be patched later */
 	.bNumEndpoints =	1,
+#ifdef CONFIG_USB_G_ANDROID
 	.bInterfaceClass =	USB_CLASS_COMM,
 	.bInterfaceSubClass =   USB_CDC_SUBCLASS_ACM,
 	.bInterfaceProtocol =   USB_CDC_ACM_PROTO_VENDOR,
+#else
+	.bInterfaceClass =	USB_CLASS_WIRELESS_CONTROLLER,
+	.bInterfaceSubClass =	0x01,
+	.bInterfaceProtocol =	0x03,
+#endif
 	/* .iInterface = DYNAMIC */
 };
 
@@ -214,9 +220,15 @@ rndis_iad_descriptor = {
 
 	.bFirstInterface =	0, /* XXX, hardcoded */
 	.bInterfaceCount = 2,	/* control + data */
+#ifdef CONFIG_USB_G_ANDROID
 	.bFunctionClass =	USB_CLASS_COMM,
 	.bFunctionSubClass =	USB_CDC_SUBCLASS_ETHERNET,
 	.bFunctionProtocol =	USB_CDC_PROTO_NONE,
+#else
+	.bFunctionClass =	USB_CLASS_WIRELESS_CONTROLLER,
+	.bFunctionSubClass =	0x01,
+	.bFunctionProtocol =	0x03,
+#endif
 	/* .iFunction = DYNAMIC */
 };
 
@@ -1334,7 +1346,7 @@ rndis_bind(struct usb_configuration *c, struct usb_function *f)
 	 * until we're activated via set_alt().
 	 */
 
-	DBG(cdev, "RNDIS: %s speed IN/%s OUT/%s NOTIFY/%s\n",
+	INFO(cdev, "RNDIS: %s speed IN/%s OUT/%s NOTIFY/%s\n",
 			gadget_is_superspeed(c->cdev->gadget) ? "super" :
 			gadget_is_dualspeed(c->cdev->gadget) ? "dual" : "full",
 			rndis->port.in_ep->name, rndis->port.out_ep->name,
@@ -1357,6 +1369,7 @@ fail:
 	return status;
 }
 
+#ifdef CONFIG_USB_G_ANDROID
 static void
 rndis_old_unbind(struct usb_configuration *c, struct usb_function *f)
 {
@@ -1448,7 +1461,7 @@ fail:
 	F_RNDIS_DBG("done, status %d\n", status);
 	return status;
 }
-
+#endif
 void rndis_borrow_net(struct usb_function_instance *f, struct net_device *net)
 {
 	struct f_rndis_opts *opts;
@@ -1528,7 +1541,7 @@ static struct usb_function_instance *rndis_alloc_inst(void)
 
 	mutex_init(&opts->lock);
 	opts->func_inst.free_func_inst = rndis_free_inst;
-	opts->net = gether_setup_default();
+	opts->net = gether_setup_name_default("rndis");
 	if (IS_ERR(opts->net)) {
 		struct net_device *net = opts->net;
 		kfree(opts);
@@ -1556,11 +1569,17 @@ static void rndis_free(struct usb_function *f)
 {
 	struct f_rndis *rndis;
 	struct f_rndis_opts *opts;
+	unsigned long flags;
 
 	rndis = func_to_rndis(f);
 	rndis_deregister(rndis->params);
 	opts = container_of(f->fi, struct f_rndis_opts, func_inst);
+
+	spin_lock_irqsave(&rndis_lock, flags);
 	kfree(rndis);
+	_rndis = NULL;
+	spin_unlock_irqrestore(&rndis_lock, flags);
+
 	mutex_lock(&opts->lock);
 	opts->refcnt--;
 	mutex_unlock(&opts->lock);
@@ -1588,6 +1607,8 @@ static struct usb_function *rndis_alloc(struct usb_function_instance *fi)
 	rndis = kzalloc(sizeof(*rndis), GFP_KERNEL);
 	if (!rndis)
 		return ERR_PTR(-ENOMEM);
+
+	_rndis = rndis;
 
 	opts = container_of(fi, struct f_rndis_opts, func_inst);
 	mutex_lock(&opts->lock);
@@ -1617,6 +1638,13 @@ static struct usb_function *rndis_alloc(struct usb_function_instance *fi)
 	rndis->port.func.setup = rndis_setup;
 	rndis->port.func.disable = rndis_disable;
 	rndis->port.func.free_func = rndis_free;
+
+#ifdef CONFIG_MTK_MD_DIRECT_TETHERING_SUPPORT
+	rndis->direct_state = DIRECT_STATE_NONE;
+	rndis->network_type = RNDIS_NETWORK_TYPE_NON_MOBILE;
+#endif
+
+	spin_lock_init(&rndis_lock);
 
 	params = rndis_register(rndis_response_available, rndis);
 	if (IS_ERR(params)) {

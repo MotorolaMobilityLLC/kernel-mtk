@@ -859,6 +859,9 @@ static struct usb_function_instance *acm_alloc_instance(void)
 		kfree(opts);
 		return ERR_PTR(ret);
 	}
+
+	pr_info("%s opts->port_num=%d\n", __func__, opts->port_num);
+
 	config_group_init_type_name(&opts->func_inst.group, "",
 			&acm_func_type);
 	return &opts->func_inst;
