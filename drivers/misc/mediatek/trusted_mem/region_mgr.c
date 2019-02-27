@@ -83,8 +83,7 @@ static int trusted_mem_region_poweroff(struct trusted_mem_device *mem_device)
 	struct ssmr_operations *ssmr_ops = mem_device->ssmr_ops;
 	struct peer_mgr_desc *peer_mgr = mem_device->peer_mgr;
 	u32 ssmr_feature_id = mem_device->ssmr_feature_id;
-	struct trusted_driver_operations *drv_ops = drv_ops =
-		mem_device->peer_ops;
+	struct trusted_driver_operations *drv_ops = mem_device->peer_ops;
 	struct trusted_peer_session *peer_mgr_data = &peer_mgr->peer_mgr_data;
 	bool is_session_keep_alive =
 		mem_device->configs.session_keep_alive_enable;
@@ -318,7 +317,7 @@ create_reg_mgr_desc(enum TRUSTED_MEM_TYPE register_type,
 	t_mgr_desc->mem_device = NULL;
 	t_mgr_desc->active_mem_type = TRUSTED_MEM_INVALID;
 
-	sprintf(wq_name, "tmem_regmgr_defer_off_%d", register_type);
+	snprintf(wq_name, 32, "tmem_regmgr_defer_off_%d", register_type);
 	t_mgr_desc->defer_off_wq = create_singlethread_workqueue(wq_name);
 
 	return t_mgr_desc;

@@ -414,7 +414,7 @@ u32 tmem_core_get_min_chunk_size(enum TRUSTED_MEM_TYPE mem_type)
 		get_trusted_mem_device(mem_type);
 
 	if (unlikely(INVALID(mem_device)))
-		return 0;
+		return SIZE_4K;
 
 	return mem_device->configs.minimal_chunk_size;
 }

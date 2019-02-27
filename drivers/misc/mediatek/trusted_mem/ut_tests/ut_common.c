@@ -509,8 +509,9 @@ enum UT_RET_STATE mem_region_on_off_stress_test(enum TRUSTED_MEM_TYPE mem_type,
 }
 
 #define MEM_SPAWN_THREAD_COUNT (8)
+#define MEM_THREAD_NAME_LEN (32)
 struct mem_thread_param {
-	char name[32];
+	char name[MEM_THREAD_NAME_LEN];
 	int alloc_chunk_size;
 	int alloc_total_size;
 	u32 *handle_list;
@@ -566,8 +567,8 @@ static enum UT_RET_STATE mem_create_run_thread(enum TRUSTED_MEM_TYPE mem_type)
 	for (idx = 0; idx < MEM_SPAWN_THREAD_COUNT; idx++) {
 		memset(&thread_param[mem_type][idx], 0x0,
 		       sizeof(struct mem_thread_param));
-		sprintf(thread_param[mem_type][idx].name, "mem%d_thread_%d",
-			mem_type, idx);
+		snprintf(thread_param[mem_type][idx].name, MEM_THREAD_NAME_LEN,
+			 "mem%d_thread_%d", mem_type, idx);
 		thread_param[mem_type][idx].mem_type = mem_type;
 		thread_param[mem_type][idx].alloc_chunk_size = min_alloc_sz;
 		thread_param[mem_type][idx].alloc_total_size = SIZE_8M;
