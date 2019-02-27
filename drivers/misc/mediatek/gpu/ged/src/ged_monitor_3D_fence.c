@@ -37,6 +37,7 @@ static atomic_t g_i32Count = ATOMIC_INIT(0);
 static unsigned int ged_monitor_3D_fence_debug;
 static unsigned int ged_monitor_3D_fence_disable;
 static unsigned int ged_monitor_3D_fence_switch;
+static unsigned int ged_smart_boost;
 static unsigned int ged_monitor_3D_fence_systrace;
 static unsigned long g_ul3DFenceDoneTime;
 
@@ -164,12 +165,7 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
 
 	if (err < 0) {
-		/* if fence not signaled then it means error,
-		 * need to do fence put
-		 */
-		if (err != -ENOENT)
-			fence_put(psMonitor->psSyncFence);
-
+		fence_put(psMonitor->psSyncFence);
 		ged_free(psMonitor, sizeof(GED_MONITOR_3D_FENCE));
 	} else {
 		int iCount = atomic_add_return (1, &g_i32Count);
@@ -206,6 +202,8 @@ GED_ERROR ged_monitor_3D_fence_add(int fence_fd)
 
 void ged_monitor_3D_fence_set_enable(GED_BOOL bEnable)
 {
+	if (bEnable != ged_monitor_3D_fence_switch && ged_smart_boost)
+		ged_monitor_3D_fence_switch = bEnable;
 }
 
 void ged_monitor_3D_fence_notify(void)
@@ -224,6 +222,7 @@ int ged_monitor_3D_fence_get_count(void)
 	return atomic_read(&g_i32Count);
 }
 
+module_param(ged_smart_boost, uint, 0644);
 module_param(ged_monitor_3D_fence_debug, uint, 0644);
 module_param(ged_monitor_3D_fence_disable, uint, 0644);
 module_param(ged_monitor_3D_fence_systrace, uint, 0644);
