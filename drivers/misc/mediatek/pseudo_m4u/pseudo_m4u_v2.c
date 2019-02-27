@@ -243,7 +243,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= sizeof(pseudo_larb_clk_name))
+	if (larb < sizeof(pseudo_larb_clk_name))
 		ret = smi_bus_prepare_enable(larb,
 					     pseudo_larb_clk_name[larb],
 					     true);
@@ -260,7 +260,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= sizeof(pseudo_larb_clk_name))
+	if (larb < sizeof(pseudo_larb_clk_name))
 		ret = smi_bus_disable_unprepare(larb,
 						pseudo_larb_clk_name[larb],
 						true);
@@ -851,7 +851,6 @@ static int m4u_get_pages(int eModuleID, unsigned long BufAddr,
 	unsigned long start_pa;
 	unsigned int write_mode = 0;
 	struct vm_area_struct *vma = NULL;
-	///struct scatterlist *sg;
 
 	M4U_MSG("m4u_get_pages: module=%s,BufAddr=0x%lx,BufSize=%ld,0x%lx\n",
 	       m4u_get_module_name(eModuleID), BufAddr, BufSize, PAGE_OFFSET);
@@ -997,7 +996,7 @@ static int m4u_get_pages(int eModuleID, unsigned long BufAddr,
 			}
 		}
 	} else {		/* from kernel space */
-
+#ifndef CONFIG_ARM64
 		if (BufAddr >= VMALLOC_START && BufAddr <= VMALLOC_END) {
 			/* vmalloc */
 			struct page *ppage;
@@ -1010,11 +1009,14 @@ static int m4u_get_pages(int eModuleID, unsigned long BufAddr,
 							0xfffff000;
 			}
 		} else {	/* kmalloc */
+#endif
 			for (i = 0; i < page_num; i++)
 				*(pPhys + i) = virt_to_phys((void *)((BufAddr &
 							0xfffff000) +
 							i * M4U_PAGE_SIZE));
+#ifndef CONFIG_ARM64
 		}
+#endif
 	}
 /*get_page_exit:*/
 
@@ -1243,7 +1245,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 			goto ERR1_EXIT;
 		}
 		sg_dma_address(table->sgl) = dma_addr;
-	} else	if (sg_table) {
+	} else {
 		iommu_dma_map_sg(dev, table->sgl,
 				 sg_table ? table->nents : table->orig_nents,
 				 IOMMU_READ | IOMMU_WRITE);
@@ -2290,8 +2292,10 @@ static int pseudo_reserve_dm(void)
 	struct iova *iova;
 	unsigned long pg_size = SZ_4K, limit, shift;
 
-	INIT_LIST_HEAD(&mappings);
+	if (!dev)
+		return -1;
 
+	INIT_LIST_HEAD(&mappings);
 	iommu_get_dm_regions(dev, &mappings);
 
 	/* We need to consider overlapping regions for different devices */
