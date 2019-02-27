@@ -715,7 +715,7 @@ static inline int _mt6660_chip_power_on(struct mt6660_chip *chip, int onoff)
 		reg_data &= (~0x01);
 	else
 		reg_data |= 0x01;
-	return i2c_smbus_write_byte_data(chip->i2c, reg_addr, ret);
+	return i2c_smbus_write_byte_data(chip->i2c, reg_addr, reg_data);
 }
 
 static inline int _mt6660_read_chip_revision(struct mt6660_chip *chip)
@@ -827,4 +827,11 @@ module_exit(mt6660_driver_exit);
 MODULE_AUTHOR("CY_Huang <cy_huang@richtek.com>");
 MODULE_DESCRIPTION("MT6660 SPKAMP Driver");
 MODULE_LICENSE("GPL");
-MODULE_VERSION("1.0.0_G");
+MODULE_VERSION("1.0.1_G");
+
+/*
+ * Driver Version
+ *
+ * 1.0.1_G
+ *	fix _mt6660_chip_power_on Issue
+ */
