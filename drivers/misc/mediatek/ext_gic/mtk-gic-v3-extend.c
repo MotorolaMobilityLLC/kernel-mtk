@@ -553,24 +553,26 @@ static spinlock_t domain_lock;
 int add_cpu_to_prefer_schedule_domain(unsigned long cpu)
 {
 	unsigned long domain;
+	unsigned long flag;
 
-	spin_lock(&domain_lock);
+	spin_lock_irqsave(&domain_lock, flag);
 	domain = ioread32(GIC_INT_MASK);
 	domain = domain | (1 << (cpu + GIC500_ACTIVE_CPU_SHIFT));
 	iowrite32(domain, GIC_INT_MASK);
-	spin_unlock(&domain_lock);
+	spin_unlock_irqrestore(&domain_lock, flag);
 	return 0;
 }
 
 int remove_cpu_from_prefer_schedule_domain(unsigned long cpu)
 {
 	unsigned long domain;
+	unsigned long flag;
 
-	spin_lock(&domain_lock);
+	spin_lock_irqsave(&domain_lock, flag);
 	domain = ioread32(GIC_INT_MASK);
 	domain = domain & ~(1 << (cpu + GIC500_ACTIVE_CPU_SHIFT));
 	iowrite32(domain, GIC_INT_MASK);
-	spin_unlock(&domain_lock);
+	spin_unlock_irqrestore(&domain_lock, flag);
 	return 0;
 }
 
