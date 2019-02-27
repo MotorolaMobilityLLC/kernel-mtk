@@ -2519,7 +2519,6 @@ static int mtkfb_probe(struct platform_device *pdev)
 {
 	struct mtkfb_device *fbdev = NULL;
 	struct fb_info *fbi;
-	size_t temp_va = 0;
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 	/* external display fb */
@@ -2531,6 +2530,7 @@ static int mtkfb_probe(struct platform_device *pdev)
 #ifdef CONFIG_MTK_IOMMU_V2
 	struct ion_client *ion_display_client = NULL;
 	struct ion_handle *ion_display_handle = NULL;
+	size_t temp_va = 0;
 #endif
 	/* struct platform_device *pdev; */
 	long dts_gpio_state = 0;
@@ -2563,11 +2563,10 @@ static int mtkfb_probe(struct platform_device *pdev)
 
 	DISPMSG("mtkfb_probe: fb_pa = %pa\n", &fb_base);
 
+#ifdef CONFIG_MTK_IOMMU_V2
 	temp_va = (size_t)ioremap_nocache(fb_base,
 		(fb_base + vramsize - fb_base));
 	fbdev->fb_va_base = (void *)temp_va;
-
-#ifdef CONFIG_MTK_IOMMU
 	ion_display_client = disp_ion_create("disp_fb0");
 	if (ion_display_client == NULL) {
 		DISPERR("mtkfb_probe: fail to create ion\n");
@@ -2999,11 +2998,10 @@ int __init mtkfb_init(void)
 	MSG_FUNC_ENTER();
 	DISPCHECK("mtkfb_init Enter\n");
 	if (platform_driver_register(&mtkfb_driver)) {
-		DISPERR("failed to register mtkfb driver\n");
+		PRNERR("failed to register mtkfb driver\n");
 		r = -ENODEV;
 		goto exit;
 	}
-	DISPCHECK("mtkfb register done!");
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	register_early_suspend(&mtkfb_early_suspend_handler);
 #endif
