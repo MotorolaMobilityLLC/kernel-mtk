@@ -6494,6 +6494,11 @@ LOG_BYPASS:
 					pstRTBuf->ring_buf[rt_dma]
 						.data[iBuf + i]
 						.dmaoCrop.h;
+				deque_buf->data[i].bufIdx =
+					pstRTBuf->ring_buf[rt_dma]
+						.data[iBuf + i]
+						.bufIdx;
+
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
 
