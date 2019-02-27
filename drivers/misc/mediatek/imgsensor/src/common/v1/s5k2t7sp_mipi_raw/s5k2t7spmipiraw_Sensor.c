@@ -2169,7 +2169,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	pr_debug("feature_id = %d\n", feature_id);
+	/*pr_debug("feature_id = %d\n", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
@@ -2177,8 +2177,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len = 4;
 		break;
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ:
-		pr_debug("feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n",
+#if 0
+		pr_debug(
+			"feature_Control imgsensor.pclk = %d,imgsensor.current_fps = %d\n",
 			imgsensor.pclk, imgsensor.current_fps);
+#endif
 		*feature_return_para_32 = imgsensor.pclk;
 		*feature_para_len = 4;
 		break;
