@@ -1,5 +1,5 @@
 obj-y += scp.o
-scp-y := scp_helper.o scp_excep.o scp_ipi.o scp_irq.o scp_logger.o
+scp-y := scp_helper.o scp_excep.o scp_ipi.o scp_irq.o scp_logger.o scp_l1c.o
 #scp-y += scp_timesync.o scp_trace.o
 # include mtk_spm_resource_req
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
