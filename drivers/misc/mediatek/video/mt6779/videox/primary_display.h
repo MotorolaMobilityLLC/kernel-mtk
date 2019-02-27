@@ -264,7 +264,6 @@ int primary_display_get_virtual_height(void);
 int primary_display_get_bpp(void);
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 int primary_display_get_lcm_corner_en(void);
-int primary_display_get_lcm_corner_mode(void);
 int primary_display_get_corner_pattern_width(void);
 int primary_display_get_corner_pattern_height(void);
 #endif

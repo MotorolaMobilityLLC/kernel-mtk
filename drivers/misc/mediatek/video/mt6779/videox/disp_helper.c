@@ -143,11 +143,9 @@ static struct {
 	{DISP_OPT_RPO, 0, "DISP_OPT_RPO"},
 	{DISP_OPT_DUAL_PIPE, 0, "DISP_OPT_DUAL_PIPE"},
 	{DISP_OPT_SHARE_WDMA0, 0, "DISP_OPT_SHARE_WDMA0"},
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	{DISP_OPT_ROUND_CORNER, 0, "DISP_OPT_ROUND_CORNER"},
 	{DISP_OPT_ROUND_CORNER_MODE, DISP_HELPER_SW_RC,
 		"DISP_OPT_ROUND_CORNER_MODE"},
-#endif
 	{DISP_OPT_FRAME_QUEUE, 0, "DISP_OPT_FRAME_QUEUE"},
 	{DISP_OPT_DC_BY_HRT, 0, "DISP_OPT_DC_BY_HRT"},
 };
@@ -426,10 +424,8 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_RPO, 0);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
 	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 0);
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 0);
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER_MODE, DISP_HELPER_HW_RC);
-#endif
 	disp_helper_set_option(DISP_OPT_FRAME_QUEUE, 0);
 	disp_helper_set_option(DISP_OPT_DC_BY_HRT, 0);
 }
