@@ -652,6 +652,7 @@ static long _flashlight_ioctl(
 	int type, ct, part;
 	int ret = 0;
 
+	memset(&fl_arg, 0, sizeof(struct flashlight_user_arg));
 	if (copy_from_user(&fl_arg, (void __user *)arg,
 				sizeof(struct flashlight_user_arg))) {
 		pr_err("Failed copy arguments from user\n");
