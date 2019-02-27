@@ -13,8 +13,8 @@
 
 /* Ver: PTPOFF_WAT0_85C_20170425 */
 /* MT6758_FY = M17T_WAT0_ptpoff_85C (FY) */
-#ifndef MTK_UNIFIED_POWER_DATA_MT6758_H
-#define MTK_UNIFIED_POWER_DATA_MT6758_H
+#ifndef MTK_UNIFIED_POWER_DATA_MT6765_H
+#define MTK_UNIFIED_POWER_DATA_MT6765_H
 
 /* MT6758_FY = M17T_WAT0_ptpoff_85C (FY) */
 struct upower_tbl upower_tbl_ll_FY = {
@@ -304,4 +304,4 @@ struct upower_tbl upower_tbl_l_plus_FY = {
 		{{0}, {41351} },
 	},
 };
-#endif /* UNIFIED_POWER_DATA_MT6758H */
+#endif /* UNIFIED_POWER_DATA_MT6765H */

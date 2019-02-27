@@ -28,6 +28,7 @@
 #include <mt-plat/mtk_chip.h>
 
 /* local include */
+#include "mtk_cpufreq_api.h"
 #include "mtk_upower.h"
 #include "mtk_unified_power_data.h"
 #include "mtk_devinfo.h"
@@ -75,28 +76,21 @@ int degree_set[NR_UPOWER_DEGREE] = {
 /* collect all the raw tables */
 #define INIT_UPOWER_TBL_INFOS(name, tbl) {__stringify(name), &tbl}
 struct upower_tbl_info upower_tbl_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
-	/* MT6758_FY = MT6763T_FY */
 	[0] = {
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_FY),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_FY),
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_FY),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_FY),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_FY),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY),
-#ifdef UPOWER_L_PLUS
-	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L_PLUS, upower_tbl_l_plus_FY),
-#endif
 	},
 };
 /* Upower will know how to apply voltage that comes from EEM */
 unsigned char upower_recognize_by_eem[NR_UPOWER_BANK] = {
-	UPOWER_BANK_LL, /* LL EEM apply voltage to LL upower bank */
 	UPOWER_BANK_L, /* L EEM apply voltage to L upower bank */
-	UPOWER_BANK_LL, /* LL EEM apply voltage to CLS_LL upower bank */
+	UPOWER_BANK_LL, /* LL EEM apply voltage to LL upower bank */
 	UPOWER_BANK_L, /* L EEM apply voltage to CLS_L upower bank */
+	UPOWER_BANK_LL, /* LL EEM apply voltage to CLS_LL upower bank */
 	UPOWER_BANK_CCI, /* CCI EEM apply voltage to CCI upower bank */
-#ifdef UPOWER_L_PLUS
-	UPOWER_BANK_L, /* L EEM apply voltage to L_PLUS upower bank */
-#endif
 };
 
 /* Used for rcu lock, points to all the raw tables list*/
@@ -108,26 +102,21 @@ int upower_bank_to_spower_bank(int upower_bank)
 	int ret;
 
 	switch (upower_bank) {
-	case UPOWER_BANK_LL:
-		ret = MTK_SPOWER_CPULL;
-		break;
 	case UPOWER_BANK_L:
 		ret = MTK_SPOWER_CPUL;
 		break;
-	case UPOWER_BANK_CLS_LL:
-		ret = MTK_SPOWER_CPULL_CLUSTER;
+	case UPOWER_BANK_LL:
+		ret = MTK_SPOWER_CPULL;
 		break;
 	case UPOWER_BANK_CLS_L:
 		ret = MTK_SPOWER_CPUL_CLUSTER;
 		break;
+	case UPOWER_BANK_CLS_LL:
+		ret = MTK_SPOWER_CPULL_CLUSTER;
+		break;
 	case UPOWER_BANK_CCI:
 		ret = MTK_SPOWER_CCI;
 		break;
-#ifdef UPOWER_L_PLUS
-	case UPOWER_BANK_L_PLUS:
-		ret = MTK_SPOWER_CPUL;
-		break;
-#endif
 	default:
 		ret = -1;
 		break;
@@ -136,6 +125,7 @@ int upower_bank_to_spower_bank(int upower_bank)
 }
 #endif
 
+#if 0
 static void upower_scale_l_cap(void)
 {
 	unsigned int ratio;
@@ -175,6 +165,7 @@ static void upower_scale_l_cap(void)
 		tbl->row[UPOWER_OPP_NUM - 1].cap = 1024;
 	}
 }
+#endif
 
 /****************************************************
  * According to chip version get the raw upower tbl *
@@ -189,6 +180,8 @@ void get_original_table(void)
 	/* unsigned int bin = 0; */
 	unsigned short idx = 0; /* default use FY table */
 	unsigned int i, j;
+
+	idx = mt_cpufreq_get_cpu_level();
 
 #if 0
 #define SEG_EFUSE 30
@@ -252,57 +245,11 @@ void get_original_table(void)
 			upower_tbl_ref[i].row[0].dyn_pwr,
 			upower_tbl_ref[i].row[0].volt);
 
+#if 0
 	/* Not support L+ now, scale L and cluster L cap to 1024 */
 	upower_scale_l_cap();
-}
-
-#ifdef UPOWER_L_PLUS
-/* Copy L capacity to L plus  */
-void upower_update_L_plus_cap(void)
-{
-	struct upower_tbl *tbl;
-	int j;
-
-	tbl = upower_tbl_infos[UPOWER_BANK_L].p_upower_tbl;
-	for (j = 0; j < UPOWER_OPP_NUM; j++)
-		upower_tbl_ref[UPOWER_BANK_L_PLUS].row[j].cap = tbl->row[j].cap;
-}
-
-/*
- * Copy L capacity to L plus
- *  1. Get L plus opp15, 85c leakage
- *  2, Get L opp15, 85C leakage
- *  3. Calculate the ratio between 1 and 2
- *  4. Use ratio to calculate opp0-15, 6 degrees leakages
- */
-void upower_update_L_plus_lkg_pwr(void)
-{
-	struct upower_tbl *target_tbl;
-	struct upower_tbl *ref_tbl;
-	enum upower_bank target_bank = UPOWER_BANK_L_PLUS;
-	enum upower_bank ref_bank = UPOWER_BANK_L;
-	unsigned int target_lkg, ref_lkg;
-	unsigned int ratio;
-	int j, i;
-
-	/* get L plus upower table */
-	target_tbl = upower_tbl_infos[target_bank].p_upower_tbl;
-	target_lkg = target_tbl->row[15].lkg_pwr[0];
-	/* get L  upower table */
-	ref_tbl = &upower_tbl_ref[ref_bank];
-	ref_lkg = ref_tbl->row[15].lkg_pwr[0];
-	/* calculate ratio */
-	ratio = (target_lkg * 1000 + ref_lkg - 1) / ref_lkg;
-	upower_debug("target lkg: %d, ref_lkg: %d, ratio: %d\n",
-					target_lkg, ref_lkg, ratio);
-
-	for (j = 0; j < UPOWER_OPP_NUM; j++) {
-		for (i = 0; i < NR_UPOWER_DEGREE; i++)
-			upower_tbl_ref[target_bank].row[j].lkg_pwr[i] =
-				upower_tbl_ref[ref_bank].row[j].lkg_pwr[i] *
-				ratio / 1000;
-	}
-}
 #endif
+}
+
 MODULE_DESCRIPTION("MediaTek Unified Power Driver v0.0");
 MODULE_LICENSE("GPL");

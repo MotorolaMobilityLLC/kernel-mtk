@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_SPOWER_DATA_MTK6758_H__
-#define __MTK_SPOWER_DATA_MTK6758_H__
+#ifndef __MTK_SPOWER_DATA_MTK6765_H__
+#define __MTK_SPOWER_DATA_MTK6765_H__
 
 /* Data: M17 pre 20170106 */
 #include "mtk_static_power.h"
@@ -1387,6 +1387,7 @@ int cci_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		CCI_TABLE_1,
 		CCI_TABLE_2,
 };
+
 int gpu_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		GPU_TABLE_0,
 		GPU_TABLE_1,
@@ -1398,13 +1399,6 @@ int vcore_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		VCORE_TABLE_1,
 		VCORE_TABLE_2,
 };
-#if 0
-int vmd_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
-		VMD_TABLE_0,
-		VMD_TABLE_1,
-		VMD_TABLE_2,
-};
-#endif
 
 int modem_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		MODEM_TABLE_0,
@@ -1413,34 +1407,6 @@ int modem_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 };
 
 struct spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
-	{
-		.vsize = VSIZE,
-		.tsize = TSIZE,
-		.table_size = MAX_TABLE_SIZE,
-		.table = {
-			(int *)&cpull_leakage_data[0],
-			(int *)&cpull_leakage_data[1],
-			(int *)&cpull_leakage_data[2]
-		},
-		.devinfo_domain = LL_DEVINFO_DOMAIN,
-		.leakage_id = MTK_LL_LEAKAGE,
-		.instance = DEFAULT_CORE_INSTANCE,
-		.print_leakage = true,
-	},
-	{
-		.vsize = VSIZE,
-		.tsize = TSIZE,
-		.table_size = MAX_TABLE_SIZE,
-		.table = {
-			(int *)&cpull_cluster_leakage_data[0],
-			(int *)&cpull_cluster_leakage_data[1],
-			(int *)&cpull_cluster_leakage_data[2]
-		},
-		.devinfo_domain = LL_DEVINFO_DOMAIN,
-		.leakage_id = MTK_LL_LEAKAGE,
-		.instance = DEFAULT_INSTANCE,
-		.print_leakage = false,
-	},
 	{
 		.vsize = VSIZE,
 		.tsize = TSIZE,
@@ -1466,6 +1432,34 @@ struct spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		},
 		.devinfo_domain = L_DEVINFO_DOMAIN,
 		.leakage_id = MTK_L_LEAKAGE,
+		.instance = DEFAULT_INSTANCE,
+		.print_leakage = false,
+	},
+	{
+		.vsize = VSIZE,
+		.tsize = TSIZE,
+		.table_size = MAX_TABLE_SIZE,
+		.table = {
+			(int *)&cpull_leakage_data[0],
+			(int *)&cpull_leakage_data[1],
+			(int *)&cpull_leakage_data[2]
+		},
+		.devinfo_domain = LL_DEVINFO_DOMAIN,
+		.leakage_id = MTK_LL_LEAKAGE,
+		.instance = DEFAULT_CORE_INSTANCE,
+		.print_leakage = true,
+	},
+	{
+		.vsize = VSIZE,
+		.tsize = TSIZE,
+		.table_size = MAX_TABLE_SIZE,
+		.table = {
+			(int *)&cpull_cluster_leakage_data[0],
+			(int *)&cpull_cluster_leakage_data[1],
+			(int *)&cpull_cluster_leakage_data[2]
+		},
+		.devinfo_domain = LL_DEVINFO_DOMAIN,
+		.leakage_id = MTK_LL_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
 		.print_leakage = false,
 	},
@@ -1511,22 +1505,6 @@ struct spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		.instance = DEFAULT_INSTANCE,
 		.print_leakage = true,
 	},
-#if 0
-	{
-		.vsize = VSIZE,
-		.tsize = TSIZE,
-		.table_size = MAX_TABLE_SIZE,
-		.table = {
-			(int *)&vmd_leakage_data[0],
-			(int *)&vmd_leakage_data[1],
-			(int *)&vmd_leakage_data[2]
-		},
-		.devinfo_domain = VMD_DEVINFO_DOMAIN,
-		.leakage_id = MTK_VMD_LEAKAGE,
-		.instance = DEFAULT_INSTANCE,
-		.print_leakage = true,
-	},
-#endif
 	{
 		.vsize = VSIZE,
 		.tsize = TSIZE,
