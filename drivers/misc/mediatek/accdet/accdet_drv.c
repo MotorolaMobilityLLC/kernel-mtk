@@ -50,6 +50,7 @@ static int accdet_remove(struct platform_device *dev)
 
 const struct of_device_id accdet_of_match[] = {
 	{ .compatible = "mediatek,mt8173-accdet", },
+	{ .compatible = "mediatek,mt8163-accdet", },
 	{ .compatible = "mediatek,pmic-accdet", },
 	{},
 };
