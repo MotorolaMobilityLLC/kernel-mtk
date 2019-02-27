@@ -650,7 +650,7 @@ CONFIG_MTK_ROTATVECHUB,PROJECT,hongxu.zhao,new config in this commit bd8b6717055
 CONFIG_MTK_RRC_SUPPORT,PROJECT,otis.huang,new config in this commit a9f470e71a32907be7675e8887db0add7a2a5e81,,,,
 CONFIG_MTK_RT9468_SUPPORT,PROJECT,vend_shufan_lee001,new config in this commit abba073794b7f1cf5e6b279c9126658285ce392f,,,,
 CONFIG_MTK_RTC,COMMON,HS.Chien,,y,y,y,y
-CONFIG_MTK_RT_THROTTLE_MON,USER,jing-ting.wu,,X,X,X,X
+CONFIG_MTK_RT_THROTTLE_MON,PLATFORM,jing-ting.wu,,X,X,X,X
 CONFIG_MTK_SCHED_DEBUG,PLATFORM,jing-ting.wu,,X,X,X,X
 CONFIG_MTK_SCHED_RQAVG_KS,COMMON,michael.jiang,,y,y,y,y
 CONFIG_MTK_SCHED_RQAVG_US,COMMON,michael.jiang,,y,y,y,y
