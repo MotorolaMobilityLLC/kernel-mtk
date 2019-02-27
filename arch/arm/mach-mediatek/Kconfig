@@ -63,6 +63,7 @@ config MACH_MT6765
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_DRAMC
 	select PM_DEVFREQ
+	select MTK_EMI
 	select MTK_SYS_CIRQ
 	select ARM_ERRATA_855873
 	select MTK_GIC_TARGET_ALL
