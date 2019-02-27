@@ -30,9 +30,9 @@
 
 /*#define TOPAXI_PROTECT_LOCK*/
 /* need to ignore for bring up */
-/* #ifdef CONFIG_FPGA_EARLY_PORTING */
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define IGNORE_MTCMOS_CHECK
-/* #endif */
+#endif
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP) \
 		|| !defined(CLK_DEBUG) || !defined(DUMMY_REG_TEST)
 #define MT_CCF_DEBUG	0
@@ -2511,11 +2511,11 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dpy(STA_POWER_ON);
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
 	spm_mtcmos_ctrl_isp(STA_POWER_ON);
 	spm_mtcmos_ctrl_ifr(STA_POWER_ON);
-	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg(STA_POWER_ON);
+	spm_mtcmos_ctrl_mfg_core0(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_vcodec(STA_POWER_ON);
 #endif
@@ -2595,14 +2595,14 @@ void mtcmos_force_off(void)
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);/*do after ccif*/
 	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dpy(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_cam(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_vcodec(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
 
 }
 #endif
