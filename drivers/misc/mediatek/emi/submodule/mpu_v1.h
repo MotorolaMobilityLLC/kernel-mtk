@@ -14,7 +14,7 @@
 #ifndef __MPU_H__
 #define __MPU_H__
 
-#define EMI_MPU_TEST		0
+#define EMI_MPU_TEST		1
 
 #define EMI_MPU_MAX_CMD_LEN	128
 #define EMI_MPU_MAX_TOKEN	4
