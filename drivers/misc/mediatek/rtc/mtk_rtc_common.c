@@ -69,8 +69,8 @@
 #include <mt-plat/mtk_boot_common.h>
 /* #include <linux/printk.h> */
 #include <mtk_reboot.h>
-#ifdef CONFIG_MTK_SMART_BATTERY
-#include <mt-plat/charging.h>
+#ifdef CONFIG_MTK_CHARGER
+#include <mt-plat/mtk_charger.h>
 #endif
 
 #define RTC_NAME	"mt-rtc"
@@ -404,9 +404,9 @@ u16 rtc_rdwr_uart_bits(u16 *val)
 void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
-#ifdef CONFIG_MTK_SMART_BATTERY
+	bool charger_status = false;
+#ifdef CONFIG_MTK_CHARGER
 	unsigned char exist;
-	bool charger_status;
 
 	mtk_chr_is_charger_exist(&exist);
 	if (exist == 1)
@@ -416,9 +416,7 @@ void rtc_bbpu_power_down(void)
 	rtc_xinfo("charger_status = %d\n", charger_status);
 #endif
 	spin_lock_irqsave(&rtc_lock, flags);
-#ifdef CONFIG_MTK_SMART_BATTERY
 	hal_rtc_bbpu_pwdn(charger_status);
-#endif
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
@@ -426,7 +424,7 @@ void mt_power_off(void)
 {
 #if !defined(CONFIG_POWER_EXT)
 	int count = 0;
-#ifdef CONFIG_MTK_SMART_BATTERY
+#ifdef CONFIG_MTK_CHARGER
 	unsigned char exist;
 #endif
 #endif
@@ -445,7 +443,7 @@ void mt_power_off(void)
 		rtc_xinfo("Phone with charger\n");
 		mdelay(100);
 		rtc_xinfo("arch_reset\n");
-#ifdef CONFIG_MTK_SMART_BATTERY
+#ifdef CONFIG_MTK_CHARGER
 		mtk_chr_is_charger_exist(&exist);
 		if (exist == 1 || count > 10)
 			arch_reset(0, "charger");
