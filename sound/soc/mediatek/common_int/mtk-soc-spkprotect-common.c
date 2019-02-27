@@ -52,6 +52,8 @@
 #include <audio_task_manager.h>
 #endif
 
+#define MAX_PAYLOAD_SIZE (32)
+uint32_t ipi_payload_buf[MAX_PAYLOAD_SIZE];
 static struct aud_spk_message mAud_Spk_Message;
 static struct audio_resv_dram_t resv_dram_spkprotect;
 static struct spk_dump_ops *mspk_dump_op;
@@ -148,6 +150,107 @@ void spkproc_service_ipicmd_send(uint8_t data_type, uint8_t ack_type,
 
 	if (send_result != 0)
 		pr_err("%s(), scp_ipi send fail\n", __func__);
+}
+
+uint32_t *spkproc_ipi_get_payload(void)
+{
+	return ipi_payload_buf;
+}
+
+unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
+				      uint32_t param2,
+				      struct snd_dma_buffer *bmd_buffer,
+				      struct snd_pcm_substream *substream)
+{
+	unsigned int ret = 0;
+	/* clean payload data */
+	memset_io((void *)ipi_payload_buf, 0,
+		  sizeof(uint32_t) * MAX_PAYLOAD_SIZE);
+	switch (msg_id) {
+	case SPK_PROTECT_PLATMEMPARAM:
+		ipi_payload_buf[0] = (uint32_t)(bmd_buffer->addr);
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = true;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_DLMEMPARAM:
+		ipi_payload_buf[0] = (uint32_t)bmd_buffer->addr;
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = param1;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_PREPARE:
+		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
+			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_32BITS;
+		else
+			ipi_payload_buf[0] = Soc_Aud_I2S_WLEN_WLEN_16BITS;
+		ipi_payload_buf[1] = (uint32_t)substream->runtime->rate;
+		ipi_payload_buf[2] = (uint32_t)substream->runtime->channels;
+		ipi_payload_buf[3] =
+			(uint32_t)substream->runtime->period_size;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_IVMEMPARAM:
+		ipi_payload_buf[0] = (uint32_t)bmd_buffer->addr;
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = param1;
+		ipi_payload_buf[4] = param2;
+		ret = sizeof(unsigned int) * 5;
+		break;
+	case SPK_PROTECT_DLCOPY:
+		ipi_payload_buf[0] = (uint32_t)param1;
+		ipi_payload_buf[1] = (uint32_t)param2;
+		ret = sizeof(unsigned int) * 2;
+		break;
+	case SPK_PROTECT_SPEECH_MDFEEDBACKPARAM:
+		ipi_payload_buf[0] = (uint32_t)(bmd_buffer->addr);
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = param1;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_SPEECH_DLMEMPARAM:
+		ipi_payload_buf[0] = (uint32_t)bmd_buffer->addr;
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = param1;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_SPEECH_PREPARE:
+		if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE ||
+		    substream->runtime->format == SNDRV_PCM_FORMAT_U32_LE)
+			ipi_payload_buf[0] =
+				Soc_Aud_I2S_WLEN_WLEN_32BITS;
+		else
+			ipi_payload_buf[0] =
+				Soc_Aud_I2S_WLEN_WLEN_16BITS;
+
+		ipi_payload_buf[1] =
+			(uint32_t)substream->runtime->rate;
+		ipi_payload_buf[2] =
+			(uint32_t)substream->runtime->channels;
+		ipi_payload_buf[3] =
+			(uint32_t)substream->runtime->period_size;
+		ret = sizeof(unsigned int) * 4;
+		break;
+	case SPK_PROTECT_SPEECH_IVMEMPARAM:
+		ipi_payload_buf[0] = (uint32_t)bmd_buffer->addr;
+		ipi_payload_buf[1] = (uint32_t)(*bmd_buffer->area);
+		ipi_payload_buf[2] = bmd_buffer->bytes;
+		ipi_payload_buf[3] = param1;
+		ipi_payload_buf[4] = param2;
+		ret = sizeof(unsigned int) * 5;
+		break;
+	default:
+		pr_debug("%s msg_id not support\n", __func__);
+		break;
+	}
+
+	return ret;
 }
 
 MODULE_LICENSE("GPL");

@@ -43,13 +43,21 @@
 
 #include "audio_log.h"
 #include "audio_assert.h"
+#include "audio_wakelock.h"
 
 #include "audio_task_manager.h"
 #include <audio_ipi_dma.h>
 #include "audio_spkprotect_msg_id.h"
 
-
 #define DUMP_SMARTPA_PCM_DATA_PATH "/sdcard/mtklog/audio_dump"
+static struct wakeup_source wakelock_scp_dump_lock;
+
+enum { /* dump_data_t */
+	DUMP_PCM_PRE = 0,
+	DUMP_IV_DATA = 1,
+	DUMP_DEBUG_DATA = 2,
+	NUM_DUMP_DATA,
+};
 
 
 struct dump_work_t {
@@ -72,10 +80,11 @@ struct dump_queue_t {
 	uint8_t idx_w;
 };
 
+/* static int spk_pcm_dump_split_kthread(void *data); */
+static struct task_struct *spk_dump_split_task;
 
 static struct dump_queue_t *dump_queue;
 static DEFINE_SPINLOCK(dump_queue_lock);
-
 
 static struct dump_work_t dump_work[NUM_DUMP_DATA];
 static struct workqueue_struct *dump_workqueue[NUM_DUMP_DATA];
@@ -89,6 +98,8 @@ static wait_queue_head_t wq_dump_pcm;
 static uint32_t dump_data_routine_cnt_pass;
 
 static bool b_enable_dump;
+/* static int datasize; */
+static bool split_dump_enable;
 
 #define FRAME_BUF_SIZE   (8192)
 
@@ -98,7 +109,53 @@ struct pcm_dump_t {
 
 static struct file *file_spk_pcm;
 static struct file *file_spk_iv;
+static struct file *file_spk_debug;
 
+void spk_pcm_dump_split_task_enable(void)
+{
+	/* only enable when debug pcm dump on */
+	aud_wake_lock(&wakelock_scp_dump_lock);
+
+	if (dump_queue == NULL) {
+		dump_queue = kmalloc(sizeof(struct dump_queue_t), GFP_KERNEL);
+		if (dump_queue != NULL)
+			memset(dump_queue, 0, sizeof(struct dump_queue_t));
+	}
+
+	if (!spk_dump_split_task) {
+#if 0
+		spk_dump_split_task =
+			kthread_create(spk_pcm_dump_split_kthread,
+				       NULL,
+				       "spk_pcm_dump_split_kthread");
+#endif
+		if (IS_ERR(spk_dump_split_task))
+			AUD_LOG_E(
+				"can not create spk_pcm_dump_split_kthread\n");
+
+		split_dump_enable = true;
+		wake_up_process(spk_dump_split_task);
+	}
+
+}
+
+void spk_pcm_dump_split_task_disable(void)
+{
+	if (split_dump_enable == false)
+		return;
+
+	split_dump_enable = false;
+
+	if (spk_dump_split_task) {
+		kthread_stop(spk_dump_split_task);
+		spk_dump_split_task = NULL;
+	}
+	AUD_LOG_D("%s(), dump_queue = %p\n", __func__, dump_queue);
+	kfree(dump_queue);
+	dump_queue = NULL;
+
+	aud_wake_unlock(&wakelock_scp_dump_lock);
+}
 
 void spkprotect_open_dump_file(void)
 {
@@ -108,12 +165,14 @@ void spkprotect_open_dump_file(void)
 
 	char string_decode_pcm[16] = "spk_dump.pcm";
 	char string_iv_pcm[16] = "spk_ivdump.pcm";
+	char string_debug_pcm[16] = "spk_ddump.pcm";
 
 	char path_decode_pcm[64];
 	char path_decode_ivpcm[64];
+	char path_decode_debugpcm[64];
 
 	/* only enable when debug pcm dump on */
-	/*wake_lock(&smartpa_pcm_dump_wake_lock);*/
+	aud_wake_lock(&wakelock_scp_dump_lock);
 	getnstimeofday(&curr_tm);
 
 	memset(string_time, '\0', 16);
@@ -124,16 +183,21 @@ void spkprotect_open_dump_file(void)
 
 	sprintf(path_decode_pcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_decode_pcm);
-	pr_debug("%s path_decode_pcm= %s\n", __func__, path_decode_pcm);
+	pr_debug("%s(), path_decode_pcm= %s\n", __func__, path_decode_pcm);
 	sprintf(path_decode_ivpcm, "%s/%s_%s",
 		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_iv_pcm);
-	pr_debug("%s path_decode_pcm= %s\n", __func__, path_decode_ivpcm);
+	pr_debug("%s(), path_decode_iv_pcm= %s\n",
+		 __func__, path_decode_ivpcm);
+	sprintf(path_decode_debugpcm, "%s/%s_%s",
+		DUMP_SMARTPA_PCM_DATA_PATH, string_time, string_debug_pcm);
+	pr_debug("%s(), path_decode_debug_pcm= %s\n", __func__,
+		path_decode_debugpcm);
 
 	file_spk_pcm = filp_open(path_decode_pcm,
 				 O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_spk_pcm)) {
-		pr_info("file_spk_pcm < 0,path_decode_pcm = %s\n",
-			path_decode_pcm);
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_pcm, PTR_ERR(file_spk_pcm));
 		return;
 	}
 
@@ -141,11 +205,19 @@ void spkprotect_open_dump_file(void)
 	file_spk_iv = filp_open(path_decode_ivpcm,
 				O_CREAT | O_WRONLY, 0);
 	if (IS_ERR(file_spk_iv)) {
-		pr_info("file_spk_iv < 0,path_decode_ivpcm = %s\n",
-			path_decode_ivpcm);
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_ivpcm, PTR_ERR(file_spk_iv));
 		return;
 	}
 
+	file_spk_debug = filp_open(path_decode_debugpcm,
+				O_CREAT | O_WRONLY, 0);
+	if (IS_ERR(file_spk_debug)) {
+		pr_info("%s(), %s file open error: %ld\n",
+			__func__, path_decode_debugpcm,
+			PTR_ERR(file_spk_debug));
+		return;
+	}
 
 	if (dump_queue == NULL) {
 		dump_queue = kmalloc(sizeof(struct dump_queue_t), GFP_KERNEL);
@@ -175,7 +247,7 @@ void spkprotect_close_dump_file(void)
 
 	b_enable_dump = false;
 
-	pr_debug("pass: %d\n", dump_data_routine_cnt_pass);
+	pr_debug("%s(), pass: %d\n", __func__, dump_data_routine_cnt_pass);
 
 	if (speaker_dump_task) {
 		kthread_stop(speaker_dump_task);
@@ -189,7 +261,15 @@ void spkprotect_close_dump_file(void)
 		filp_close(file_spk_pcm, NULL);
 		file_spk_pcm = NULL;
 	}
-	/*wake_unlock(&smartpa_pcm_dump_wake_lock);*/
+	if (!IS_ERR(file_spk_iv)) {
+		filp_close(file_spk_iv, NULL);
+		file_spk_iv = NULL;
+	}
+	if (!IS_ERR(file_spk_debug)) {
+		filp_close(file_spk_debug, NULL);
+		file_spk_debug = NULL;
+	}
+	aud_wake_unlock(&wakelock_scp_dump_lock);
 }
 
 static void spk_dump_data_routine(struct work_struct *ws)
@@ -254,7 +334,7 @@ void spkprotect_dump_message(struct ipi_msg_t *ipi_msg)
 		pr_info("%s err\n", __func__);
 		return;
 	} else if (ipi_msg->msg_id == SPK_PROTECT_PCMDUMP_OK) {
-		idx = (dump_data_t)ipi_msg->param2;
+		idx = (uint8_t)ipi_msg->param2;
 		dump_work[idx].rw_idx = ipi_msg->dma_info.rw_idx;
 		dump_work[idx].data_size  = ipi_msg->dma_info.data_size;
 		ret = queue_work(dump_workqueue[idx], &dump_work[idx].work);
@@ -264,6 +344,7 @@ void spkprotect_dump_message(struct ipi_msg_t *ipi_msg)
 		pr_info("%s unknown command\n", __func__);
 
 }
+
 
 static int spkprotect_dump_kthread(void *data)
 {
@@ -383,8 +464,7 @@ static int spkprotect_dump_kthread(void *data)
 
 void audio_ipi_client_spkprotect_init(void)
 {
-	/*wake_lock_init(&smartpa_pcm_dump_wake_lock, WAKE_LOCK_SUSPEND,*/
-		       /*"smartpa_pcm_dump_wake_lock");*/
+	aud_wake_lock_init(&wakelock_scp_dump_lock, "scpspkdump lock");
 
 	dump_workqueue[DUMP_PCM_PRE] = create_workqueue("dump_spkprotect_pcm");
 	if (dump_workqueue[DUMP_PCM_PRE] == NULL)
@@ -405,6 +485,11 @@ void audio_ipi_client_spkprotect_init(void)
 	init_waitqueue_head(&wq_dump_pcm);
 
 	speaker_dump_task = NULL;
+
+	dump_queue = NULL;
+
+	speaker_dump_task = NULL;
+	spk_dump_split_task = NULL;
 }
 
 void audio_ipi_client_spkprotect_deinit(void)
@@ -418,6 +503,5 @@ void audio_ipi_client_spkprotect_deinit(void)
 			dump_workqueue[i] = NULL;
 		}
 	}
-
+	aud_wake_lock_destroy(&wakelock_scp_dump_lock);
 }
-

@@ -80,6 +80,11 @@ void spkproc_service_ipicmd_send(
 				 uint16_t msg_id,
 				 uint32_t param1, uint32_t param2,
 				 char *payload);
+unsigned int spkproc_ipi_pack_payload(uint16_t msg_id, uint32_t param1,
+				      uint32_t param2,
+				      struct snd_dma_buffer *bmd_buffer,
+				      struct snd_pcm_substream *substream);
+uint32_t *spkproc_ipi_get_payload(void);
 extern void scp_reset_check(void);
 extern atomic_t stop_send_ipi_flag;
 extern atomic_t scp_reset_done;
