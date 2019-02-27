@@ -252,7 +252,7 @@ int mtk_wdt_enable(enum wk_wdt_en en)
 		tmp &= ~MTK_WDT_MODE_ENABLE;
 		wdt_enable = 0;
 	}
-	pr_debug("mtk_wdt_enable value=%x,pid=%d\n", tmp, current->pid);
+	pr_debug("%s value=%x,pid=%d\n", __func__, tmp, current->pid);
 	mt_reg_sync_writel(tmp, MTK_WDT_MODE);
 	#endif
 	spin_unlock(&rgu_reg_operation_spinlock);
@@ -303,8 +303,8 @@ void mtk_wdt_restart(enum wd_restart_type type)
 		/* so skip cpu_id info in WD_TYPE_NOLOCK */
 		mtk_wdt_update_last_restart(here, -1);
 	} else
-		pr_debug("WDT:[mtk_wdt_restart] type=%d error pid =%d\n",
-			type, current->pid);
+		pr_debug("WDT:[%s] type=%d error pid =%d\n",
+			__func__, type, current->pid);
 }
 
 void mtk_wd_suspend(void)
@@ -486,7 +486,7 @@ void wdt_arch_reset(char mode)
 	while (1) {
 		/* check if system is alive for debugging */
 		mdelay(100);
-		pr_info("wdt_arch_reset: still alive\n");
+		pr_info("%s: still alive\n", __func__);
 		wdt_dump_reg();
 		cpu_relax();
 	}
@@ -803,9 +803,9 @@ void mtk_wdt_set_c2k_sysrst(unsigned int flag, unsigned int shift)
 
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
-			pr_info("mtk_wdt_set_c2k_sysrst RGU iomap failed\n");
-		pr_debug("mtk_wdt_set_c2k_sysrst RGU base: 0x%p  RGU irq: %d\n",
-			toprgu_base, wdt_irq_id);
+			pr_info("%s RGU iomap failed\n", __func__);
+		pr_debug("%s RGU base: 0x%p  RGU irq: %d\n",
+			__func__, toprgu_base, wdt_irq_id);
 	}
 
 	if (flag == 1) {
@@ -861,8 +861,8 @@ int mtk_wdt_dfd_thermal1_dis(int value)
 		tmp |= MTK_WDT_LATCH_CTL2_KEY;
 		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_thermal1_dis:MTK_WDT_LATCH_CTL2(0x%x)\n",
-		__raw_readl(MTK_WDT_LATCH_CTL2));
+	pr_debug("%s:MTK_WDT_LATCH_CTL2(0x%x)\n",
+		__func__, __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -883,8 +883,8 @@ int mtk_wdt_dfd_thermal2_dis(int value)
 		tmp |= MTK_WDT_LATCH_CTL2_KEY;
 		mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 	}
-	pr_debug("mtk_wdt_dfd_thermal2_dis:MTK_WDT_LATCH_CTL2(0x%x)\n",
-		__raw_readl(MTK_WDT_LATCH_CTL2));
+	pr_debug("%s:MTK_WDT_LATCH_CTL2(0x%x)\n",
+		__func__, __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -902,8 +902,8 @@ int mtk_wdt_dfd_timeout(int value)
 	tmp |= (value|MTK_WDT_LATCH_CTL2_KEY);
 	mt_reg_sync_writel(tmp, MTK_WDT_LATCH_CTL2);
 
-	pr_debug("mtk_wdt_dfd_timeout:MTK_WDT_LATCH_CTL2(0x%x)\n",
-		__raw_readl(MTK_WDT_LATCH_CTL2));
+	pr_debug("%s:MTK_WDT_LATCH_CTL2(0x%x)\n",
+		__func__, __raw_readl(MTK_WDT_LATCH_CTL2));
 
 	return 0;
 }
@@ -953,7 +953,7 @@ static void wdt_fiq(void *arg, void *regs, void *svc_sp)
 #else /* CONFIG_FIQ_GLUE */
 static irqreturn_t mtk_wdt_isr(int irq, void *dev_id)
 {
-	pr_info("mtk_wdt_isr\n");
+	pr_info("%s\n", __func__);
 
 #ifndef __USING_DUMMY_WDT_DRV__ /* FPGA will set this flag */
 	wdt_intr_has_trigger = 1;
@@ -997,7 +997,9 @@ static irqreturn_t mtk_wdt_sspm_isr(int irq, void *dev_id)
 /* ------------------------------------------------------------------------- */
 void mtk_wdt_set_time_out_value(unsigned int value) {}
 void mtk_wdt_mode_config(bool dual_mode_en, bool irq,
-	bool ext_en, bool ext_pol, bool wdt_en) {}
+	bool ext_en, bool ext_pol, bool wdt_en)
+{
+}
 int mtk_wdt_enable(enum wk_wdt_en en) { return 0; }
 void mtk_wdt_restart(enum wd_restart_type type) {}
 void wdt_arch_reset(char mode) {}
@@ -1244,7 +1246,7 @@ static int __init mtk_wdt_init(void)
 			ret);
 		return ret;
 	}
-	pr_info("mtk_wdt_init ok\n");
+	pr_info("%s ok\n", __func__);
 	return 0;
 }
 
