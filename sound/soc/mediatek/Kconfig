@@ -60,6 +60,14 @@ config SND_SOC_MT3967_MT6358
 	  Select Y if you have such device.
 	  If unsure select "N".
 
+config SND_SOC_MT8163
+	tristate "ASoC support for Mediatek MT8163 chip"
+	help
+	  This adds ASoC platform driver support for Mediatek MT8163 chip
+	  that can be used with other codecs.
+	  Select Y if you have such device.
+	  If unsure select "N".
+
 config SND_SOC_MT8173
 	tristate "ASoC support for Mediatek MT8173 chip"
 	depends on ARCH_MEDIATEK
