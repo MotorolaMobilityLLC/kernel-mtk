@@ -199,8 +199,8 @@ static int pcmenable(int id)
 	case AUDIO_TASK_PRIMARY_ID:
 	case AUDIO_TASK_PLAYBACK_ID:
 	case AUDIO_TASK_DEEPBUFFER_ID:
-		return 0;
 	case AUDIO_TASK_VOIP_ID:
+		return 0;
 	default:
 		pr_warn("%s err id = %d\n", __func__, id);
 		return -1;
