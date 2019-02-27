@@ -18,6 +18,7 @@ subdir-ccflags-y += -Werror
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 ifeq ($(CONFIG_MTK_SENSOR_SUPPORT),y)
 obj-y	+= hwmon/
@@ -45,6 +46,7 @@ obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_LCM) += lcm/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
+obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
 obj-y += sspm/
