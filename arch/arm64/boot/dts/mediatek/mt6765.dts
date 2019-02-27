@@ -756,44 +756,8 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	mcucfg@10200000 {
 		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200000 0 0x0>;
+		reg = <0 0x10200000 0 0x1000>;
 		interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200200 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200200 0 0x0>;
-		interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200400 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200400 0 0x0>;
-		interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200600 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200600 0 0x0>;
-		interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200800 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200800 0 0x0>;
-		interrupts = <GIC_SPI 4 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200a00 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200a00 0 0x0>;
-		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	mcucfg@10200f00 {
-		compatible = "mediatek,mcucfg";
-		reg = <0 0x10200f00 0 0x0>;
-		interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	m4u@10205000 {
