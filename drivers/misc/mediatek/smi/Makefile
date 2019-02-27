@@ -71,7 +71,7 @@ obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_mgr_util.o
 obj-y += mmdvfs_profile_adaptor.o
 SUPPORT_MMP := true
-FORCE_STEP0 := true
+FORCE_STEP0 := false
 endif
 
 
