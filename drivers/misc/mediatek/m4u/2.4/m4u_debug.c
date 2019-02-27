@@ -324,79 +324,79 @@ int m4u_test_tf(unsigned int prot)
 	return 0;
 }
 
-static int m4u_dbg_set(void *data, u64 val)
+static int m4u_debug_set(void *data, u64 val)
 {
-	m4u_domain_t *domain = data;
+	struct m4u_domain_t *domain = data;
 
-	M4UMSG("m4u_dbg_set:val=%llu\n", val);
+	M4UMSG("m4u_debug_set:val=%llu\n", val);
 
 	switch (val) {
 	case 1:
 		{		/* map4kpageonly */
-			struct sg_table table;
-			struct sg_table *sg_table = &table;
-			struct scatterlist *sg;
-			int i;
-			struct page *page;
-			int page_num = 512;
-			unsigned int mva = 0x4000;
+		struct sg_table table;
+		struct sg_table *sg_table = &table;
+		struct scatterlist *sg;
+		int i;
+		struct page *page;
+		int page_num = 512;
+		unsigned int mva = 0x4000;
 
-			page = alloc_pages(GFP_KERNEL, get_order(page_num));
-			sg_alloc_table(sg_table, page_num, GFP_KERNEL);
-			for_each_sg(sg_table->sgl, sg, sg_table->nents, i)
-				sg_set_page(sg, page + i, PAGE_SIZE, 0);
-			m4u_map_sgtable(domain, mva, sg_table,
+		page = alloc_pages(GFP_KERNEL, get_order(page_num));
+		sg_alloc_table(sg_table, page_num, GFP_KERNEL);
+		for_each_sg(sg_table->sgl, sg, sg_table->nents, i)
+			sg_set_page(sg, page + i, PAGE_SIZE, 0);
+		m4u_map_sgtable(domain, mva, sg_table,
 					page_num * PAGE_SIZE,
 					M4U_PROT_WRITE | M4U_PROT_READ);
-			m4u_dump_pgtable(domain, NULL);
-			m4u_unmap(domain, mva, page_num * PAGE_SIZE);
-			m4u_dump_pgtable(domain, NULL);
+		m4u_dump_pgtable(domain, NULL);
+		m4u_unmap(domain, mva, page_num * PAGE_SIZE);
+		m4u_dump_pgtable(domain, NULL);
 
-			sg_free_table(sg_table);
-			__free_pages(page, get_order(page_num));
-		}
-		break;
+		sg_free_table(sg_table);
+		__free_pages(page, get_order(page_num));
+	}
+	break;
 	case 2:
 		{		/* map64kpageonly */
-			struct sg_table table;
-			struct sg_table *sg_table = &table;
-			struct scatterlist *sg;
-			int i;
-			int page_num = 51;
-			unsigned int page_size = SZ_64K;
-			unsigned int mva = SZ_64K;
+		struct sg_table table;
+		struct sg_table *sg_table = &table;
+		struct scatterlist *sg;
+		int i;
+		int page_num = 51;
+		unsigned int page_size = SZ_64K;
+		unsigned int mva = SZ_64K;
 
-			sg_alloc_table(sg_table, page_num, GFP_KERNEL);
-			for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
-				sg_dma_address(sg) = page_size * (i + 1);
-				sg_dma_len(sg) = page_size;
-			}
+		sg_alloc_table(sg_table, page_num, GFP_KERNEL);
+		for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
+			sg_dma_address(sg) = page_size * (i + 1);
+			sg_dma_len(sg) = page_size;
+		}
 
 			m4u_map_sgtable(domain, mva, sg_table,
 					page_num * page_size,
 					M4U_PROT_WRITE | M4U_PROT_READ);
-			m4u_dump_pgtable(domain, NULL);
-			m4u_unmap(domain, mva, page_num * page_size);
-			m4u_dump_pgtable(domain, NULL);
-			sg_free_table(sg_table);
-		}
-		break;
+		m4u_dump_pgtable(domain, NULL);
+		m4u_unmap(domain, mva, page_num * page_size);
+		m4u_dump_pgtable(domain, NULL);
+		sg_free_table(sg_table);
+	}
+	break;
 	case 3:
-		{		/* map1Mpageonly */
-			struct sg_table table;
-			struct sg_table *sg_table = &table;
-			struct scatterlist *sg;
-			int i;
-			int page_num = 37;
-			unsigned int page_size = SZ_1M;
-			unsigned int mva = SZ_1M;
+	{                   /* map1Mpageonly */
+		struct sg_table table;
+		struct sg_table *sg_table = &table;
+		struct scatterlist *sg;
+		int i;
+		int page_num = 37;
+		unsigned int page_size = SZ_1M;
+		unsigned int mva = SZ_1M;
 
-			sg_alloc_table(sg_table, page_num, GFP_KERNEL);
+		sg_alloc_table(sg_table, page_num, GFP_KERNEL);
 
-			for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
-				sg_dma_address(sg) = page_size * (i + 1);
-				sg_dma_len(sg) = page_size;
-			}
+		for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
+			sg_dma_address(sg) = page_size * (i + 1);
+			sg_dma_len(sg) = page_size;
+		}
 			m4u_map_sgtable(domain, mva, sg_table,
 					page_num * page_size,
 					M4U_PROT_WRITE | M4U_PROT_READ);
@@ -409,67 +409,67 @@ static int m4u_dbg_set(void *data, u64 val)
 		break;
 	case 4:
 		{		/* map16Mpageonly */
-			struct sg_table table;
-			struct sg_table *sg_table = &table;
-			struct scatterlist *sg;
-			int i;
-			int page_num = 2;
-			unsigned int page_size = SZ_16M;
-			unsigned int mva = SZ_16M;
+		struct sg_table table;
+		struct sg_table *sg_table = &table;
+		struct scatterlist *sg;
+		int i;
+		int page_num = 2;
+		unsigned int page_size = SZ_16M;
+		unsigned int mva = SZ_16M;
 
-			sg_alloc_table(sg_table, page_num, GFP_KERNEL);
-			for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
-				sg_dma_address(sg) = page_size * (i + 1);
-				sg_dma_len(sg) = page_size;
-			}
+		sg_alloc_table(sg_table, page_num, GFP_KERNEL);
+		for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
+			sg_dma_address(sg) = page_size * (i + 1);
+			sg_dma_len(sg) = page_size;
+		}
 			m4u_map_sgtable(domain, mva, sg_table,
 					page_num * page_size,
 					M4U_PROT_WRITE | M4U_PROT_READ);
-			m4u_dump_pgtable(domain, NULL);
-			m4u_unmap(domain, mva, page_num * page_size);
-			m4u_dump_pgtable(domain, NULL);
-			sg_free_table(sg_table);
+		m4u_dump_pgtable(domain, NULL);
+		m4u_unmap(domain, mva, page_num * page_size);
+		m4u_dump_pgtable(domain, NULL);
+		sg_free_table(sg_table);
 		}
 		break;
 	case 5:
 		{		/* mapmiscpages */
-			struct sg_table table;
-			struct sg_table *sg_table = &table;
-			struct scatterlist *sg;
-			unsigned int mva = 0x4000;
-			unsigned int size = SZ_16M * 2;
+		struct sg_table table;
+		struct sg_table *sg_table = &table;
+		struct scatterlist *sg;
+		unsigned int mva = 0x4000;
+		unsigned int size = SZ_16M * 2;
 
-			sg_alloc_table(sg_table, 1, GFP_KERNEL);
-			sg = sg_table->sgl;
-			sg_dma_address(sg) = 0x4000;
-			sg_dma_len(sg) = size;
+		sg_alloc_table(sg_table, 1, GFP_KERNEL);
+		sg = sg_table->sgl;
+		sg_dma_address(sg) = 0x4000;
+		sg_dma_len(sg) = size;
 
 			m4u_map_sgtable(domain, mva, sg_table, size,
 					M4U_PROT_WRITE | M4U_PROT_READ);
-			m4u_dump_pgtable(domain, NULL);
-			m4u_unmap(domain, mva, size);
-			m4u_dump_pgtable(domain, NULL);
-			sg_free_table(sg_table);
-		}
-		break;
+		m4u_dump_pgtable(domain, NULL);
+		m4u_unmap(domain, mva, size);
+		m4u_dump_pgtable(domain, NULL);
+		sg_free_table(sg_table);
+	}
+	break;
 	case 6:
 		m4u_test_alloc_dealloc(1, SZ_4M);
-		break;
+	break;
 	case 7:
 		m4u_test_alloc_dealloc(2, SZ_4M);
-		break;
+	break;
 	case 8:
 		m4u_test_alloc_dealloc(3, SZ_4M);
-		break;
-	case 9:		/* m4u_alloc_mvausingkmallocbuffer */
-		{
-			m4u_test_reclaim(SZ_16K);
-			m4u_mvaGraph_dump();
-		}
-		break;
+	break;
+	case 9:                /* m4u_alloc_mvausingkmallocbuffer */
+	{
+		m4u_test_reclaim(SZ_16K);
+		m4u_mvaGraph_dump();
+	}
+	break;
 	case 10:
-		{
-			unsigned int mva;
+	{
+		unsigned int mva;
 
 			mva =
 			    m4u_do_mva_alloc_fix(0, 0x90000000, 0x10000000,
@@ -486,25 +486,25 @@ static int m4u_dbg_set(void *data, u64 val)
 			mva =
 			    m4u_do_mva_alloc_fix(0, 0xa4000000, 0x10000000,
 						 NULL);
-			M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-			m4u_mvaGraph_dump();
-			m4u_do_mva_free(0x90000000, 0x10000000);
-			m4u_do_mva_free(0xa0000000, 0x10000000);
-			m4u_do_mva_free(0xb0000000, 0x10000000);
-			m4u_mvaGraph_dump();
-		}
-		break;
-	case 11:		/* map unmap kernel */
+		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
+		m4u_mvaGraph_dump();
+		m4u_do_mva_free(0x90000000, 0x10000000);
+		m4u_do_mva_free(0xa0000000, 0x10000000);
+		m4u_do_mva_free(0xb0000000, 0x10000000);
+		m4u_mvaGraph_dump();
+	}
+	break;
+	case 11:    /* map unmap kernel */
 		m4u_test_map_kernel();
 		break;
 	case 12:
 		/*ddp_mem_test();*/
 		break;
 	case 13:
-		m4u_test_ddp(M4U_PROT_READ | M4U_PROT_WRITE);
+		m4u_test_ddp(M4U_PROT_READ|M4U_PROT_WRITE);
 		break;
 	case 14:
-		m4u_test_tf(M4U_PROT_READ | M4U_PROT_WRITE);
+		m4u_test_tf(M4U_PROT_READ|M4U_PROT_WRITE);
 		break;
 	case 15:
 		break;
@@ -515,95 +515,105 @@ static int m4u_dbg_set(void *data, u64 val)
 		m4u_dump_pfh_tlb(0);
 		break;
 	case 18:
-		m4u_dump_main_tlb(1, 0);
+		if (TOTAL_M4U_NUM == 2) {
+			m4u_dump_main_tlb(1, 0);
+			break;
+		}
 		break;
 	case 19:
-		m4u_dump_pfh_tlb(1);
+		if (TOTAL_M4U_NUM == 2) {
+			m4u_dump_pfh_tlb(1);
+			break;
+		}
 		break;
 	case 20:
-		{
-			M4U_PORT_STRUCT rM4uPort;
-			int i;
+	{
+		M4U_PORT_STRUCT rM4uPort;
+		int i;
 
-			rM4uPort.Virtuality = 1;
-			rM4uPort.Security = 0;
-			rM4uPort.Distance = 1;
-			rM4uPort.Direction = 0;
-			rM4uPort.domain = 3;
-			for (i = 0; i < M4U_PORT_UNKNOWN; i++) {
-				rM4uPort.ePortID = i;
-				m4u_config_port(&rM4uPort);
-			}
+		rM4uPort.Virtuality = 1;
+		rM4uPort.Security = 0;
+		rM4uPort.Distance = 1;
+		rM4uPort.Direction = 0;
+		rM4uPort.domain = 3;
+		for (i = 0; i < M4U_PORT_UNKNOWN; i++) {
+			rM4uPort.ePortID = i;
+			m4u_config_port(&rM4uPort);
 		}
-		break;
+	}
+	break;
 	case 21:
-		{
-			M4U_PORT_STRUCT rM4uPort;
-			int i;
+	{
+		M4U_PORT_STRUCT rM4uPort;
+		int i;
 
-			rM4uPort.Virtuality = 0;
-			rM4uPort.Security = 0;
-			rM4uPort.Distance = 1;
-			rM4uPort.Direction = 0;
-			rM4uPort.domain = 3;
-			for (i = 0; i < M4U_PORT_UNKNOWN; i++) {
-				rM4uPort.ePortID = i;
-				m4u_config_port(&rM4uPort);
-			}
+		rM4uPort.Virtuality = 0;
+		rM4uPort.Security = 0;
+		rM4uPort.Distance = 1;
+		rM4uPort.Direction = 0;
+		rM4uPort.domain = 3;
+		for (i = 0; i < M4U_PORT_UNKNOWN; i++) {
+			rM4uPort.ePortID = i;
+			m4u_config_port(&rM4uPort);
 		}
-		break;
+	}
+	break;
 	case 22:
-		{
-			int i;
-			unsigned int *pSrc;
+	{
+		int i;
+		unsigned int *pSrc;
 
-			pSrc = vmalloc(128);
-			memset(pSrc, 55, 128);
-			m4u_cache_sync(NULL, 0, 0, 0, 0, M4U_CACHE_FLUSH_ALL);
+		pSrc = vmalloc(128);
+		if (!pSrc) {
+			M4UMSG("vmalloc failed!\n");
+			return 0;
+		}
+		memset(pSrc, 55, 128);
+		m4u_cache_sync(NULL, 0, 0, 0, 0, M4U_CACHE_FLUSH_ALL);
 
-			for (i = 0; i < 128 / 32; i += 32) {
-				M4UMSG("+0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
+		for (i = 0; i < 128 / 32; i += 32) {
+			M4UMSG("+0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
 				       8 * i, pSrc[i], pSrc[i + 1], pSrc[i + 2],
 				       pSrc[i + 3], pSrc[i + 4]);
-				M4UMSG("0x%x, 0x%x, 0x%x\n",
-				       pSrc[i + 5], pSrc[i + 6], pSrc[i + 7]);
-			}
-			vfree(pSrc);
+			M4UMSG("0x%x, 0x%x, 0x%x\n",
+			       pSrc[i + 5], pSrc[i + 6], pSrc[i + 7]);
 		}
-		break;
+		vfree(pSrc);
+	}
+	break;
 	case 23:
-		{
-			void *pgd_va;
-			void *pgd_pa;
-			unsigned int size;
+	{
+		void *pgd_va;
+		void *pgd_pa;
+		unsigned int size;
 
-			m4u_get_pgd(NULL, 0, &pgd_va, &pgd_pa, &size);
+		m4u_get_pgd(NULL, 0, &pgd_va, &pgd_pa, &size);
 			M4UMSG("pgd_va:0x%p pgd_pa:0x%p, size: %d\n", pgd_va,
 			       pgd_pa, size);
-		}
-		break;
+	}
+	break;
 	case 24:
-		{
-			unsigned int *pSrc;
-			unsigned int mva;
-			unsigned long pa;
-			m4u_client_t *client = m4u_create_client();
+	{
+		unsigned int *pSrc;
+		unsigned int mva;
+		unsigned long pa;
+		m4u_client_t *client = m4u_create_client();
 
-			pSrc = vmalloc(128);
-			m4u_alloc_mva(client, M4U_PORT_DISP_OVL0,
+		pSrc = vmalloc(128);
+		m4u_alloc_mva(client, M4U_PORT_DISP_OVL0,
 				      (unsigned long)pSrc, NULL, 128, 0, 0,
 				      &mva);
 
-			m4u_dump_pgtable(domain, NULL);
+		m4u_dump_pgtable(domain, NULL);
 
-			pa = m4u_mva_to_pa(NULL, 0, mva);
-			M4UMSG("(1) mva:0x%x pa:0x%lx\n", mva, pa);
+		pa = m4u_mva_to_pa(NULL, 0, mva);
+		M4UMSG("(1) mva:0x%x pa:0x%lx\n", mva, pa);
 			m4u_dealloc_mva(client, M4U_PORT_DISP_OVL0, mva);
-			pa = m4u_mva_to_pa(NULL, 0, mva);
-			M4UMSG("(2) mva:0x%x pa:0x%lx\n", mva, pa);
-			m4u_destroy_client(client);
-		}
-		break;
+		pa = m4u_mva_to_pa(NULL, 0, mva);
+		M4UMSG("(2) mva:0x%x pa:0x%lx\n", mva, pa);
+		m4u_destroy_client(client);
+	}
+	break;
 	case 25:
 		m4u_monitor_start(0);
 		break;
@@ -611,15 +621,15 @@ static int m4u_dbg_set(void *data, u64 val)
 		m4u_monitor_stop(0);
 		break;
 	case 27:
-		/*m4u_dump_reg_for_smi_hang_issue(); */
+		/*m4u_dump_reg_for_smi_hang_issue();*/
 		break;
 	case 28:
-		{
-			break;
-		}
+	{
+				break;
+			}
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case 50:
-		{
+	{
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
 	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
 
@@ -629,29 +639,29 @@ static int m4u_dbg_set(void *data, u64 val)
 			secmem_api_alloc(0, 0x1000, &refcount, &sec_handle,
 					 "m4u_ut", 0);
 #elif defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT)
-			u32 sec_handle = 0;
-			u32 refcount = 0;
-			int ret = 0;
+		u32 sec_handle = 0;
+		u32 refcount = 0;
+		int ret = 0;
 
 			ret =
 			    KREE_AllocSecurechunkmemWithTag(0, &sec_handle, 0,
 							    0x1000, "m4u_ut");
 			if (ret != TZ_RESULT_SUCCESS) {
 				IONMSG("failed, ret is 0x%x\n", ret);
-				return ret;
-			}
-#endif
-			m4u_sec_init();
-			break;
+			return ret;
 		}
+#endif
+		m4u_sec_init();
+	break;
+	}
 	case 51:
-		{
-			M4U_PORT_STRUCT port;
+	{
+		M4U_PORT_STRUCT port;
 
-			memset(&port, 0, sizeof(M4U_PORT_STRUCT));
+		memset(&port, 0, sizeof(M4U_PORT_STRUCT));
 
-			port.ePortID = M4U_PORT_HW_VDEC_PP_EXT;
-			port.Virtuality = 1;
+		port.ePortID = M4U_PORT_HW_VDEC_PP_EXT;
+		port.Virtuality = 1;
 			M4UMSG("(0) config port: mmu: %d, sec: %d\n",
 			       port.Virtuality, port.Security);
 			m4u_config_port(&port);
@@ -671,24 +681,25 @@ static int m4u_dbg_set(void *data, u64 val)
 			port.Security = 1;
 			M4UMSG("(2) config port: mmu: %d, sec: %d\n",
 			       port.Virtuality, port.Security);
-			m4u_config_port_tee(&port);
-		}
-		break;
+		m4u_config_port_tee(&port);
+	}
+	break;
 #endif
 	default:
-		M4UMSG("m4u_dbg_set error,val=%llu\n", val);
+		M4UMSG("m4u_debug_set error,val=%llu\n", val);
 	}
 
 	return 0;
 }
 
-static int m4u_dbg_get(void *data, u64 *val)
+static int m4u_debug_get(void *data, u64 *val)
 {
 	*val = 0;
 	return 0;
 }
 
-DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_fops, m4u_dbg_get, m4u_dbg_set, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_fops,
+	m4u_debug_get, m4u_debug_set, "%llu\n");
 
 #if (M4U_DVT != 0)
 static void m4u_test_init(void)
@@ -758,8 +769,9 @@ static void m4u_test_end(int invalid_tlb)
 #endif
 
 #if (M4U_DVT != 0)
-static int __vCatchTranslationFault(m4u_domain_t *domain, unsigned int layer,
-				    unsigned int seed_mva)
+static int __vCatchTranslationFault(struct m4u_domain_t *domain,
+					unsigned int layer,
+					unsigned int seed_mva)
 {
 	imu_pgd_t *pgd;
 	imu_pte_t *pte;
@@ -812,8 +824,8 @@ static int __vCatchTranslationFault(m4u_domain_t *domain, unsigned int layer,
 	return 0;
 }
 
-static int __vCatchInvalidPhyFault(m4u_domain_t *domain, int g4_mode,
-				   unsigned int seed_mva)
+static int __vCatchInvalidPhyFault(struct m4u_domain_t *domain,
+	int g4_mode, unsigned int seed_mva)
 {
 	imu_pgd_t *pgd;
 	imu_pte_t *pte;
@@ -854,7 +866,8 @@ static int __vCatchInvalidPhyFault(m4u_domain_t *domain, int g4_mode,
 
 
 	/* restore */
-#if (M4U_DVT == MMU_PT_TYPE_SMALL_PAGE || M4U_DVT == MMU_PT_TYPE_LARGE_PAGE)
+#if (M4U_DVT == MMU_PT_TYPE_SMALL_PAGE
+		|| M4U_DVT == MMU_PT_TYPE_LARGE_PAGE)
 	imu_pte_val(*pte) = backup;
 #else
 	imu_pgd_val(*pgd) = backup;
@@ -886,8 +899,8 @@ DEFINE_SIMPLE_ATTRIBUTE(m4u_log_level_fops, m4u_log_level_get,
 
 static int m4u_debug_freemva_set(void *data, u64 val)
 {
-	m4u_domain_t *domain = data;
-	m4u_buf_info_t *pMvaInfo;
+	struct m4u_domain_t *domain = data;
+	struct m4u_buf_info_t *pMvaInfo;
 	unsigned int mva = (unsigned int)val;
 
 	M4UMSG("free mva: 0x%x\n", mva);
@@ -904,8 +917,8 @@ static int m4u_debug_freemva_get(void *data, u64 *val)
 	return 0;
 }
 
-DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_freemva_fops, m4u_debug_freemva_get,
-			m4u_debug_freemva_set, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_freemva_fops,
+	m4u_debug_freemva_get, m4u_debug_freemva_set, "%llu\n");
 
 int m4u_debug_port_show(struct seq_file *s, void *unused)
 {
@@ -1000,7 +1013,7 @@ const struct file_operations m4u_debug_register_fops = {
 int m4u_debug_init(struct m4u_device *m4u_dev)
 {
 	struct dentry *debug_file;
-	m4u_domain_t *domain = m4u_get_domain_by_id(0);
+	struct m4u_domain_t *domain = m4u_get_domain_by_id(0);
 
 	m4u_dev->debug_root = debugfs_create_dir("m4u", NULL);
 
