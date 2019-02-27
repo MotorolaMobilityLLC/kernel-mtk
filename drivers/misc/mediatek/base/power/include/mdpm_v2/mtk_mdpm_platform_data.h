@@ -11,14 +11,11 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MTK_MDPM_COMMON_H_
-#define _MTK_MDPM_COMMON_H_
+#ifndef __MTK_MDPM_PLATFORM_DATA_H__
+#define __MTK_MDPM_PLATFORM_DATA_H__
 
-extern int mt_mdpm_debug;
-
-#ifdef MD_POWER_UT
-extern u32 fake_share_reg;
-extern u32 fake_share_mem[SHARE_MEM_SIZE];
+#if defined(CONFIG_MACH_MT3967)
+#include "mt3967/mtk_mdpm_platform_data.h"
 #endif
 
-#endif
+#endif /* __MTK_MDPM_PLATFORM_DATA_H__ */
