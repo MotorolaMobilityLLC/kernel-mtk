@@ -7390,14 +7390,14 @@ SELECT_TASK_RQ_FAIR(struct task_struct *p, int prev_cpu,
 	int want_affine = 0;
 	int sync = wake_flags & WF_SYNC;
 
-	if (should_hmp(cpu)) {
+	if (should_hmp(cpu) && p->mm && (sd_flag & SD_BALANCE_FORK)) {
 		int hmp_cpu;
 		/* HMP fork balance:
 		 * always put non-kernel forking tasks on a big domain
 		 */
 		hmp_cpu = hmp_fork_balance(p, prev_cpu);
 
-		if (hmp_cpu >= 0 && (hmp_cpu >= nr_cpu_ids))
+		if (hmp_cpu >= 0 && (hmp_cpu < nr_cpu_ids))
 			return LB_FORK | hmp_cpu;
 	}
 
