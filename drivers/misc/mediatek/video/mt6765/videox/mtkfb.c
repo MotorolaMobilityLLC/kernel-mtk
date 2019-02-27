@@ -2725,8 +2725,7 @@ static int mtkfb_suspend(struct platform_device *pdev, pm_message_t mesg)
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_suspend(): 0x%x\n", mesg.event);
-	/* memory session suspend */
-	ovl2mem_suspend();
+	ovl2mem_wait_done();
 	MSG_FUNC_LEAVE();
 	return 0;
 }
@@ -2738,8 +2737,6 @@ static int mtkfb_resume(struct platform_device *pdev)
 	NOT_REFERENCED(pdev);
 	MSG_FUNC_ENTER();
 	MTKFB_LOG("[FB Driver] mtkfb_resume()\n");
-	/* memory session resume */
-	ovl2mem_resume();
 	MSG_FUNC_LEAVE();
 	return 0;
 }
