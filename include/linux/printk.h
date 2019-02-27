@@ -397,17 +397,7 @@ extern asmlinkage void dump_stack(void) __cold;
 })
 
 #define pr_cont(fmt, ...) \
-({ \
-	static bool __print_once __read_mostly; \
-	if (!__print_once) { \
-		DEFINE_DYNAMIC_DEBUG_METADATA(descriptor, KLOG_MODNAME fmt); \
-		if (unlikely(descriptor.flags & _DPRINTK_FLAGS_PRINT)) \
-			barrier();   \
-		__print_once = true; \
-		printk(KERN_CONT KLOG_MODNAME pr_fmt(fmt), ##__VA_ARGS__); \
-	}	else \
-		printk(KERN_CONT KLOG_MODNAME pr_fmt(fmt), ##__VA_ARGS__); \
-})
+			printk(KERN_CONT fmt, ##__VA_ARGS__)
 #else
 #define pr_emerg(fmt, ...) \
 			printk(KERN_EMERG pr_fmt(fmt), ##__VA_ARGS__)
