@@ -45,6 +45,12 @@
 #include <linux/freezer.h>
 #include <linux/ratelimit.h>
 
+#define MTK_LMK_USER_EVENT
+
+#ifdef MTK_LMK_USER_EVENT
+#include <linux/miscdevice.h>
+#endif
+
 #if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MTK_ENG_BUILD)
 #include <mt-plat/aee.h>
 #include <disp_assert_layer.h>
@@ -96,6 +102,47 @@ static unsigned long lowmem_count(struct shrinker *s,
 		global_node_page_state(NR_INACTIVE_ANON) +
 		global_node_page_state(NR_INACTIVE_FILE);
 }
+
+#ifdef MTK_LMK_USER_EVENT
+static const struct file_operations mtklmk_fops = {
+	.owner = THIS_MODULE,
+};
+
+static struct miscdevice mtklmk_misc = {
+	.minor = MISC_DYNAMIC_MINOR,
+	.name = "mtklmk",
+	.fops = &mtklmk_fops,
+};
+
+static unsigned int mtklmk_uevent_timeout = 10000; /* ms */
+module_param_named(uevent_timeout, mtklmk_uevent_timeout, uint, 0644);
+static void mtklmk_uevent(int oom_score_adj, int minfree)
+{
+#define MTKLMK_EVENT_LENGTH	(24)
+
+	static unsigned long last_time;
+	unsigned long timeout;
+	char adj[MTKLMK_EVENT_LENGTH], free[MTKLMK_EVENT_LENGTH];
+	char *envp[3] = { adj, free, NULL };
+
+	/* change to use jiffies */
+	timeout = msecs_to_jiffies(mtklmk_uevent_timeout);
+
+	if (!last_time)
+		last_time = jiffies - timeout;
+
+	if (time_before(jiffies, last_time + timeout))
+		return;
+
+	last_time = jiffies;
+
+	snprintf(adj, MTKLMK_EVENT_LENGTH, "OOM_SCORE_ADJ=%d", oom_score_adj);
+	snprintf(free, MTKLMK_EVENT_LENGTH, "MINFREE=%d", minfree);
+	kobject_uevent_env(&mtklmk_misc.this_device->kobj, KOBJ_CHANGE, envp);
+
+#undef MTKLMK_EVENT_LENGTH
+}
+#endif
 
 #ifndef CONFIG_MTK_ENABLE_AGO
 /* Check memory status by zone, pgdat */
@@ -363,6 +410,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	/* Compute suitable min_score_adj */
 	min_score_adj = min(min_score_adj, other_min_score_adj);
 
+#ifdef MTK_LMK_USER_EVENT
+	/* Send uevent if needed */
+	if (mtklmk_uevent_timeout)
+		mtklmk_uevent(min_score_adj, minfree);
+#endif
+
 	lowmem_print(3, "lowmem_scan %lu, %x, ofree %d %d, ma %hd\n",
 		     sc->nr_to_scan, sc->gfp_mask, other_free,
 		     other_file, min_score_adj);
@@ -488,6 +541,14 @@ static int __init lowmem_init(void)
 		vm_swappiness = 100;
 
 	register_shrinker(&lowmem_shrinker);
+
+#ifdef MTK_LMK_USER_EVENT
+	if (unlikely(misc_register(&mtklmk_misc)))
+		pr_info("%s: failed to register misc device!\n", __func__);
+	else
+		pr_info("%s: successful to register misc device!\n", __func__);
+#endif
+
 	return 0;
 }
 device_initcall(lowmem_init);
@@ -587,4 +648,3 @@ module_param_array_named(minfree, lowmem_minfree, uint, &lowmem_minfree_size,
 module_param_named(debug_level, lowmem_debug_level, uint, 0644);
 module_param_named(debug_adj, lowmem_warn_adj, short, 0644);
 module_param_named(no_debug_adj, lowmem_no_warn_adj, short, 0644);
-
