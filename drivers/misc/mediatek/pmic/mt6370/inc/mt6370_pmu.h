@@ -64,6 +64,7 @@ struct mt6370_pmu_chip {
 	struct rt_mutex io_lock;
 	int irq;
 	uint8_t chip_rev;
+	uint8_t chip_vid;
 };
 
 /* core control */
