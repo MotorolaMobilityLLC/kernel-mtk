@@ -22,6 +22,11 @@
 #include <linux/types.h>
 
 #define COMMAND_LINE_SIZE	2048
+#define MBLOCK_RESERVED_NAME_SIZE 128
+#define MBLOCK_RESERVED_NUM_MAX  128
+#define MBLOCK_NUM_MAX 128
+#define MBLOCK_MAGIC 0x99999999
+#define MBLOCK_VERSION 0x2
 
 /* general memory descriptor */
 struct mem_desc {
@@ -29,9 +34,33 @@ struct mem_desc {
 	u64 size;
 };
 
+/* mblock is used by CPU */
+struct  mblock {
+	u64 start;
+	u64 size;
+	u32 rank;	/* rank the mblock belongs to */
+};
+
+struct mblock_reserved {
+	u64 start;
+	u64 size;
+	u32 mapping;   /* mapping or unmap*/
+	char name[MBLOCK_RESERVED_NAME_SIZE];
+};
+
+struct mblock_info {
+	u32 mblock_num;
+	struct mblock mblock[MBLOCK_NUM_MAX];
+	u32 mblock_magic;
+	u32 mblock_version;
+	u32 reserved_num;
+	struct mblock_reserved reserved[MBLOCK_RESERVED_NUM_MAX];
+};
+
 struct dram_info {
 	u32 rank_num;
 	struct mem_desc rank_info[4];
 };
+
 
 #endif
