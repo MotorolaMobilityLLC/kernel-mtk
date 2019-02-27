@@ -78,6 +78,11 @@ static u32 PMQoS_BW_value;
 #include <linux/wakelock.h>
 #endif
 
+
+#define ISP_BOTTOMHALF_WORKQ		(1)
+#if (ISP_BOTTOMHALF_WORKQ == 1)
+#include <linux/workqueue.h>
+#endif
 /* #define ISP_DEBUG */
 
 #define LOG_CONSTRAINT_ADJ (1)
@@ -1095,6 +1100,20 @@ struct ISP_INFO_STRUCT {
 };
 
 static struct tasklet_struct isp_tasklet;
+
+#if (ISP_BOTTOMHALF_WORKQ == 1)
+struct IspWorkqueTable {
+	enum ISP_PASS1_PATH_ENUM module;
+	struct work_struct  isp_bh_work;
+};
+
+static void ISP_BH_Workqueue(struct work_struct *pWork);
+
+static struct IspWorkqueTable isp_workque[ISP_PASS1_PATH_TYPE_AMOUNT] = {
+	{ISP_PASS1_PATH_TYPE_RAW},
+	{ISP_PASS1_PATH_TYPE_RAW_D},
+};
+#endif
 
 static bool bSlowMotion = MFALSE;
 static bool bRawEn = MFALSE;
@@ -9151,7 +9170,7 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 	}
 
 	if (PMQoS_BW_value != bw_cal) {
-		pr_info("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n",
+		pr_debug("PM_QoS: module[%d], cmd[%d], bw[%d], fps[%d], total bw = %d MB/s\n",
 			module, cmd,
 			G_PM_QOS[module].bw_sum,
 			G_PM_QOS[module].fps,
@@ -11663,6 +11682,18 @@ if (bSlowMotion == MFALSE) {
 	     (ISP_IRQ_P1_STATUS_D_SOF1_INT_ST))) {
 		tasklet_schedule(&isp_tasklet);
 	}
+	#if (ISP_BOTTOMHALF_WORKQ == 1)
+	if (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST] &
+		(ISP_IRQ_P1_STATUS_SOF1_INT_ST)) {
+		schedule_work(
+			&isp_workque[ISP_PASS1_PATH_TYPE_RAW].isp_bh_work);
+	}
+	if (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] &
+		(ISP_IRQ_P1_STATUS_D_SOF1_INT_ST)) {
+		schedule_work(
+			&isp_workque[ISP_PASS1_PATH_TYPE_RAW_D].isp_bh_work);
+	}
+	#endif
 	/* Work queue. It is interruptible,     so there can be "Sleep" in work
 	 * queue function.
 	 */
@@ -11701,7 +11732,7 @@ static void ISP_TaskletFunc(unsigned long data)
 			 *  (sof_count[_PASS1]));
 			 */
 			IRQ_LOG_PRINTER(_IRQ, m_CurrentPPB, _LOG_INF);
-			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW);
+			// ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW);
 
 			if (dump_smi_debug) {
 				smi_debug_bus_hang_detect(
@@ -11726,7 +11757,7 @@ static void ISP_TaskletFunc(unsigned long data)
 			 *  (sof_count[_PASS1_D]));
 			 */
 			IRQ_LOG_PRINTER(_IRQ_D, m_CurrentPPB, _LOG_INF);
-			ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW_D);
+			// ISP_PM_QOS_CTRL_FUNC(1, ISP_PASS1_PATH_TYPE_RAW_D);
 
 			if (dump_smi_debug) {
 				smi_debug_bus_hang_detect(
@@ -12179,7 +12210,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 					pm_qos_info.fps;
 				G_PM_QOS[pm_qos_info.module].upd_flag =
 					MTRUE;
-				pr_info("ISP_SET_PM_QOS_INFO bw:(%d), fps:(%d), upd_flag:(%d), module:(%d)\n",
+				pr_debug("ISP_SET_PM_QOS_INFO bw:(%d), fps:(%d), upd_flag:(%d), module:(%d)\n",
 					pm_qos_info.bw_value,
 					pm_qos_info.fps,
 					1,
@@ -13870,6 +13901,16 @@ static signed int ISP_probe(struct platform_device *pDev)
 	/*      */
 	init_waitqueue_head(&IspInfo.WaitQueueHead);
 	tasklet_init(&isp_tasklet, ISP_TaskletFunc, 0);
+
+#if (ISP_BOTTOMHALF_WORKQ == 1)
+		for (i = 0 ; i < ISP_PASS1_PATH_TYPE_AMOUNT; i++) {
+			isp_workque[i].module = i;
+			memset((void *)&(isp_workque[i].isp_bh_work), 0,
+				sizeof(isp_workque[i].isp_bh_work));
+			INIT_WORK(&(isp_workque[i].isp_bh_work),
+				ISP_BH_Workqueue);
+		}
+#endif
 
 #ifdef CONFIG_PM_WAKELOCKS
 	wakeup_source_init(&isp_wake_lock, "isp_lock_wakelock");
@@ -15841,6 +15882,20 @@ static void __exit ISP_Exit(void)
 
 	/*      */
 }
+
+
+#if (ISP_BOTTOMHALF_WORKQ == 1)
+static void ISP_BH_Workqueue(struct work_struct *pWork)
+{
+	struct IspWorkqueTable *pWorkTable = container_of(
+		pWork,
+		struct IspWorkqueTable,
+		isp_bh_work);
+	ISP_PM_QOS_CTRL_FUNC(1,
+		pWorkTable->module);
+
+}
+#endif
 
 /******************************************************************************
  *
