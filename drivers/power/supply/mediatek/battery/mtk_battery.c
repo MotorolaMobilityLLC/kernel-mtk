@@ -3107,6 +3107,9 @@ static int __init battery_probe(struct platform_device *dev)
 	} else if (is_recovery_mode())
 		battery_recovery_init();
 
+	mtk_battery_last_init(dev);
+
+
 	gm.is_probe_done = true;
 
 	return 0;

@@ -1807,6 +1807,24 @@ void fg_bat_plugout_int_handler(void)
 	}
 }
 
+void fg_bat_plugout_int_handler_gm25(void)
+{
+	bool is_bat_exist;
+
+	is_bat_exist = pmic_is_battery_exist();
+	pr_info("%s: bat_exist: %d\n", __func__, is_bat_exist);
+
+	if (fg_interrupt_check() == false)
+		return;
+
+	if (is_bat_exist == false) {
+		pmic_enable_interrupt(INT_VBATON_UNDET, 0, "VBATON_UNDET");
+		battery_notifier(EVENT_BATTERY_PLUG_OUT);
+		kernel_power_off();
+	}
+}
+
+
 /* ============================================================ */
 /* nafg interrupt handler */
 /* ============================================================ */
@@ -3516,7 +3534,6 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_cust_data.vbat2_det_counter,
 			fg_cust_data.vbat2_det_time * 1000,
 			fg_cust_data.vbat2_det_counter);
-
 		}
 	}
 
@@ -3556,5 +3573,25 @@ void mtk_battery_init(struct platform_device *dev)
 
 }
 
+
+void mtk_battery_last_init(struct platform_device *dev)
+{
+	int fgv;
+
+	fgv = gauge_get_hw_version();
+
+		if (fgv >= GAUGE_HW_V1000
+		&& fgv < GAUGE_HW_V2000
+		&& gm.disableGM30 == 0) {
+			pmic_register_interrupt_callback(
+				INT_VBATON_UNDET,
+				fg_bat_plugout_int_handler_gm25);
+
+			pmic_enable_interrupt(
+				INT_VBATON_UNDET,
+				1,
+				"VBATON_UNDET");
+		}
+}
 
 
