@@ -98,6 +98,8 @@ config MTK_GPT_SCHEME_SUPPORT
 
 source "drivers/misc/mediatek/partition/Kconfig"
 source "drivers/misc/mediatek/mtk_sdio/Kconfig"
+source "drivers/misc/mediatek/blocktag/Kconfig"
+source "drivers/misc/mediatek/io_boost/Kconfig"
 
 endmenu  # Storage
 
@@ -362,5 +364,4 @@ source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
-source "drivers/misc/mediatek/io_boost/Kconfig"
 endmenu    # Misc
