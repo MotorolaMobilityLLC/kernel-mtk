@@ -23,8 +23,7 @@
 #include "kd_camera_typedef.h"
 
 #define PFX "imx499_pdafotp"
-#define LOG_INF(format, args...)
-	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
 
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
