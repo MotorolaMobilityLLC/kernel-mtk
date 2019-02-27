@@ -2280,7 +2280,7 @@ static void __init mtk_mfgcfg_init(struct device_node *node)
 	mfgcfg_base = base;
 	/* mfg register would cause hang */
 #if MT_CCF_BRINGUP
-	/* clk_writel(MFG_CG_CLR, MFG_DISABLE_CG); */
+	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_mfgcfg, "mediatek,mfgcfg",
