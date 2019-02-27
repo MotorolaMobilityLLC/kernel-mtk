@@ -224,7 +224,7 @@ static unsigned int is_entering_suspend;
 
 void *KVA_VENC_IRQ_ACK_ADDR, *KVA_VENC_IRQ_STATUS_ADDR, *KVA_VENC_BASE;
 void *KVA_VDEC_MISC_BASE, *KVA_VDEC_VLD_BASE;
-void *KVA_VDEC_BASE, *KVA_VDEC_GCON_BASE;
+void *KVA_VDEC_BASE, *KVA_VDEC_GCON_BASE, *KVA_MBIST_BASE;
 unsigned int VENC_IRQ_ID, VDEC_IRQ_ID;
 
 /* #define KS_POWER_WORKAROUND */
@@ -346,7 +346,7 @@ void vdec_polling_status(void)
 			smi_debug_bus_hang_detect(SMI_PARAM_BUS_OPTIMIZATION,
 							1, 0, 1);
 #endif
-			//mmsys_cg_check();
+			/* mmsys_cg_check(); */
 
 			u4Counter = 0;
 			WARN_ON(1);
@@ -408,6 +408,9 @@ void vdec_power_on(void)
 		/* print error log & error handling */
 		pr_info("[VCODEC] MT_CG_VDEC is not on, ret = %d\n", ret);
 	}
+
+	/* GF14 type SRAM  power on config */
+	VDO_HW_WRITE(KVA_MBIST_BASE, 0x93CEB);
 }
 
 #ifdef VCODEC_DEBUG_SYS
@@ -528,6 +531,9 @@ void venc_power_on(void)
 		pr_info("[VENC] MT_CG_VENC is not on, ret = %d\n",
 				ret);
 	}
+
+	/* GF14 type SRAM  power on config */
+	VDO_HW_WRITE(KVA_MBIST_BASE, 0x93CEB);
 }
 
 void venc_power_off(void)
@@ -2236,7 +2242,7 @@ struct COMPAT_VAL_HW_LOCK_T {
 	/* [IN]     The driver type */
 	compat_uint_t       eDriverType;
 	/* [IN]     True if this is a secure instance */
-	/* // MTK_SEC_VIDEO_PATH_SUPPORT */
+	/* MTK_SEC_VIDEO_PATH_SUPPORT */
 	char                bSecureInst;
 };
 
@@ -3328,15 +3334,24 @@ static int __init vcodec_driver_init(void)
 	{
 		struct device_node *node = NULL;
 
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mbist");
+		KVA_MBIST_BASE = of_iomap(node, 0);
+	}
+	{
+		struct device_node *node = NULL;
+
 		node = of_find_compatible_node(NULL, NULL,
 						"mediatek,venc_gcon");
 		KVA_VDEC_GCON_BASE = of_iomap(node, 0);
 
-		pr_debug("[VCODEC] VENC(0x%p), VDEC(0x%p), VDEC_GCON(0x%p)",
-			KVA_VENC_BASE, KVA_VDEC_BASE, KVA_VDEC_GCON_BASE);
+		pr_debug("[VCODEC] VENC(0x%p), VDEC(0x%p), GCON(0x%p), MBIST(0x%p)",
+			KVA_VENC_BASE, KVA_VDEC_BASE,
+			KVA_VDEC_GCON_BASE, KVA_MBIST_BASE);
 		pr_debug("[VCODEC] VDEC_IRQ_ID(%d), VENC_IRQ_ID(%d)",
 			VDEC_IRQ_ID, VENC_IRQ_ID);
 	}
+
+
 
 	/* KVA_VENC_IRQ_STATUS_ADDR =
 	 *		(unsigned long)ioremap(VENC_IRQ_STATUS_addr, 4);
