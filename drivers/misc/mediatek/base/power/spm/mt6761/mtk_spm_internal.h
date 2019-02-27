@@ -305,7 +305,7 @@ void mtk_idle_cond_update_mask(
 int spm_dvfs_flag_init(int dvfsrc_en);
 void spm_go_to_vcorefs(int spm_flags);
 void spm_vcorefs_init(void);
-
+int is_spm_enabled(void);
 /***********************************************************
  * mtk_spm_fs.c
  ***********************************************************/
