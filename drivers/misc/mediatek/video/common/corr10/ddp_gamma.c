@@ -1024,7 +1024,9 @@ static int ccorr_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 static int disp_ccorr_io(enum DISP_MODULE_ENUM module, int msg,
 	unsigned long arg, void *cmdq)
 {
+#ifdef CCORR_TRANSITION
 	int enabled;
+#endif
 
 	switch (msg) {
 	case DISP_IOCTL_SET_CCORR:

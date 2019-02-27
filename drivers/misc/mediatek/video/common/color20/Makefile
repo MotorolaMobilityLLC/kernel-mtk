@@ -47,17 +47,25 @@ endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6757) \
 	$(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6759) $(CONFIG_MACH_MT6763) \
-	$(CONFIG_MACH_MT6758)))
+	$(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775)))
     ccflags-y += -DCOLOR_2_1
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6759) \
-	$(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758)))
+	$(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758) \
+	$(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775)))
     ccflags-y += -DCOLOR_3_0
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     ccflags-y += -DSUPPORT_HDR
+    ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
+        ccflags-y += -DHDR_IN_RDMA
+    endif
+endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775)))
+    ccflags-y += -DSUPPORT_MDP_AAL
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
@@ -65,7 +73,8 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
 endif
 
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6797) $(CONFIG_MACH_MT6799) \
-	$(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758)))
+	$(CONFIG_MACH_MT6763) $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6771) \
+	$(CONFIG_MACH_MT6775)))
     ccflags-y += -DSUPPORT_ULTRA_RESOLUTION
 endif
 

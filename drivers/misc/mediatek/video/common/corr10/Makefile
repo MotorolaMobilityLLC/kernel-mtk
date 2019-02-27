@@ -43,8 +43,8 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
 ccflags-y += -DGAMMA_ROUND_CORNER
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6757) $(CONFIG_MACH_MT6799) $(CONFIG_MACH_MT6763) \
-                     $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6739) $(CONFIG_MACH_MT6765) \
-					 $(CONFIG_MACH_MT6761)))
+ifneq ($(CONFIG_MTK_CMDQ_TAB), y)
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6758) $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
 ccflags-y += -DCCORR_TRANSITION
+endif
 endif
