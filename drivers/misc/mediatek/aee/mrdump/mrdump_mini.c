@@ -124,7 +124,7 @@ __weak struct vm_struct *find_vm_area(const void *addr)
 static unsigned long virt_2_pfn(unsigned long addr)
 {
 	pgd_t *pgd = pgd_offset_k(addr), _pgd_val = {0};
-	pud_t *pud, _pud_val = {0};
+	pud_t *pud, _pud_val = {{0} };
 	pmd_t *pmd, _pmd_val = {0};
 	pte_t *ptep, _pte_val = {0};
 	unsigned long pfn = ~0UL;
