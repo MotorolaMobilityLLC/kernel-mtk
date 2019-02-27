@@ -512,7 +512,7 @@ static void ppm_main_calc_new_limit(void)
 		for (i = 0; i < c_req->cluster_num; i++) {
 			for (j = 0; j < c_req->cpu_limit[i].max_cpu_core; j++)
 				cpumask_set_cpu(k + j, c_req->online_core);
-			k += c_req->cpu_limit[i].max_cpu_core;
+			k += ppm_main_info.cluster_info[i].core_num;
 		}
 
 		if (cpumask_weight(c_req->online_core) == nr_present_cpu ||
