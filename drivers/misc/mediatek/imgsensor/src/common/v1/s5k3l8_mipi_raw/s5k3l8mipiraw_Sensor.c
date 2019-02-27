@@ -222,7 +222,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.mclk = 24,//mclk value, suggest 24Mhz or 26Mhz
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,//mipi lane num
 	.i2c_addr_table = {0x5a, 0x20, 0xff},
-	.i2c_speed = 300, // i2c read/write speed
+	.i2c_speed = 400, // i2c read/write speed
 };
 
 
@@ -1013,7 +1013,7 @@ static void preview_setting(void)
 {
 	pr_info("E\n");
 
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);
@@ -1056,7 +1056,7 @@ static void preview_setting(void)
 	write_cmos_sensor(0x0B08, 0x0000);
 	write_cmos_sensor(0x0B00, 0x0007);
 	write_cmos_sensor(0x316A, 0x00A0);
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 
 }	/*	preview_setting  */
 
@@ -1065,7 +1065,7 @@ static void capture_setting(kal_uint16 currefps)
 	pr_info("E! currefps:%d\n", currefps);
 	if (currefps == 300) {
 
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);
@@ -1107,12 +1107,12 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0B08, 0x0000);
 	write_cmos_sensor(0x0B00, 0x0007);
 	write_cmos_sensor(0x316A, 0x00A0);
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 
 	} else if (currefps == 240) {
 	pr_info("else if (currefps == 240)\n");
 
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);
@@ -1154,7 +1154,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0B08, 0x0000);
 	write_cmos_sensor(0x0B00, 0x0007);
 	write_cmos_sensor(0x316A, 0x00A0);
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 
 	} else if (currefps == 150) {
 //PIP 15fps settings,相比Full 30fps
@@ -1163,7 +1163,7 @@ static void capture_setting(kal_uint16 currefps)
 //   -Linelength: 5808不變
 //
 	pr_info("else if (currefps == 150)\n");
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);	 // 64
@@ -1205,7 +1205,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0B08, 0x0000);	//D.BPC_Off
 	write_cmos_sensor(0x0B00, 0x0007);	//LSC_Off
 	write_cmos_sensor(0x316A, 0x00A0);	// OUTIF threshold
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 	} else { //default fps =15
 //PIP 15fps settings,相比Full 30fps
 //    -VT : 560-> 400M
@@ -1213,7 +1213,7 @@ static void capture_setting(kal_uint16 currefps)
 //   -Linelength: 5808不變
 //
 	pr_info("else  150fps\n");
-	write_cmos_sensor_byte(0x0100, 0x00);
+	//write_cmos_sensor_byte(0x0100, 0x00);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);	 // 64
@@ -1255,7 +1255,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x0B08, 0x0000);	//D.BPC_Off
 	write_cmos_sensor(0x0B00, 0x0007);	//LSC_Off
 	write_cmos_sensor(0x316A, 0x00A0);	// OUTIF threshold
-	write_cmos_sensor_byte(0x0100, 0x01);
+	//write_cmos_sensor_byte(0x0100, 0x01);
 	}
 }
 
@@ -1270,7 +1270,7 @@ static void hs_video_setting(void)
 {
 	pr_info("E\n");
 
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);
@@ -1312,14 +1312,14 @@ static void hs_video_setting(void)
 	write_cmos_sensor(0x0B08, 0x0000);
 	write_cmos_sensor(0x0B00, 0x0007);
 	write_cmos_sensor(0x316A, 0x00A0);
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 }
 
 static void slim_video_setting(void)
 {
 	pr_info("E\n");
 
-	write_cmos_sensor(0x0100, 0x0000);
+	//write_cmos_sensor(0x0100, 0x0000);
 	write_cmos_sensor(0x6028, 0x2000);
 	write_cmos_sensor(0x602A, 0x0F74);
 	write_cmos_sensor(0x6F12, 0x0040);
@@ -1361,7 +1361,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor(0x0B08, 0x0000);
 	write_cmos_sensor(0x0B00, 0x0007);
 	write_cmos_sensor(0x316A, 0x00A0);
-	write_cmos_sensor(0x0100, 0x0100);
+	//write_cmos_sensor(0x0100, 0x0100);
 
 }
 
@@ -1537,7 +1537,7 @@ static kal_uint32 close(void)
  *
  *************************************************************************/
 static kal_uint32 preview(
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT * image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	pr_info("E\n");
@@ -1582,7 +1582,7 @@ static kal_uint32 preview(
  *
  *************************************************************************/
 static kal_uint32 capture(
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT * image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	pr_info("E\n");
@@ -1623,7 +1623,7 @@ static kal_uint32 capture(
 }	/* capture() */
 
 static kal_uint32 normal_video(
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT * image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	pr_info("E\n");
@@ -1644,7 +1644,7 @@ static kal_uint32 normal_video(
 }	/*	normal_video   */
 
 static kal_uint32 hs_video(
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT * image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	pr_info("E\n");
@@ -1668,7 +1668,7 @@ static kal_uint32 hs_video(
 }	/*	hs_video   */
 
 static kal_uint32 slim_video(
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT * image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	pr_info("E\n");
@@ -1923,11 +1923,7 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0; // 0 is default 1x
 	sensor_info->SensorHightSampling = 0; // 0 is default 1x
 	sensor_info->SensorPacketECCOrder = 1;
-	#ifdef FPTPDAFSUPPORT
-	sensor_info->PDAF_Support = 1;
-	#else
 	sensor_info->PDAF_Support = 0;
-	#endif
 
 	switch (scenario_id) {
 	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2349,6 +2345,48 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 get_sensor_temperature(void)
+{
+#if 0
+	UINT8 temperature;
+	INT32 temperature_convert;
+
+	/*TEMP_SEN_CTL */
+	write_cmos_sensor(0x0138, 0x01);
+	temperature = read_cmos_sensor(0x013a);
+
+	if (temperature >= 0x0 && temperature <= 0x4F)
+		temperature_convert = temperature;
+	else if (temperature >= 0x50 && temperature <= 0x7F)
+		temperature_convert = 80;
+	else if (temperature >= 0x80 && temperature <= 0xEC)
+		temperature_convert = -20;
+	else
+		temperature_convert = (INT8) temperature;
+
+		pr_info("temp_c(%d), read_reg(%d)\n",
+			temperature_convert, temperature);
+
+	return temperature_convert;
+#else
+	INT32 temperature_convert = 20;
+	return temperature_convert;
+#endif
+}
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	pr_debug("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+
+	if (enable)
+		write_cmos_sensor(0x0100, 0x0100);
+	else
+		write_cmos_sensor(0x0100, 0x0000);
+
+	mdelay(10);
+	return ERROR_NONE;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			UINT8 *feature_para, UINT32 *feature_para_len)
 {
@@ -2356,6 +2394,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
+	INT32 *feature_return_para_i32 = (INT32 *) feature_para;
 	unsigned long long *feature_data = (unsigned long long *) feature_para;
 
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
@@ -2531,6 +2570,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			(kal_uint32)(*(feature_data+2)));
 		break;
 #endif
+	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
+		*feature_return_para_i32 = get_sensor_temperature();
+		*feature_para_len = 4;
+	break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		pr_debug("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		pr_debug("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
+			*feature_data);
+
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
+		break;
 /******************** PDAF END   <<< *********/
 	default:
 		break;
