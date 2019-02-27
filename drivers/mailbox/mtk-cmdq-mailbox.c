@@ -90,6 +90,7 @@ struct cmdq_thread {
 	struct timer_list	timeout;
 	bool			atomic_exec;
 	u32			idx;
+	struct work_struct	timeout_work;
 };
 
 struct cmdq_task {
@@ -118,6 +119,7 @@ struct cmdq {
 	struct clk		*clock;
 	bool			suspended;
 	atomic_t		usage;
+	struct workqueue_struct *timeout_wq;
 };
 
 static s32 cmdq_clk_enable(struct cmdq *cmdq)
@@ -924,11 +926,12 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	return IRQ_HANDLED;
 }
 
-static void cmdq_thread_handle_timeout(unsigned long data)
+static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 {
-	struct cmdq_thread *thread = (struct cmdq_thread *)data;
+	struct cmdq_thread *thread = container_of(work_item,
+		struct cmdq_thread, timeout_work);
 	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
-	struct cmdq_task *task, *tmp;
+	struct cmdq_task *task, *tmp, *timeout_task = NULL;
 	unsigned long flags;
 	bool first_task = true;
 	u32 pa_curr;
@@ -976,12 +979,37 @@ static void cmdq_thread_handle_timeout(unsigned long data)
 			cmdq_buf_dump_schedule(task, true, pa_curr);
 			first_task = false;
 		}
-		cmdq_task_exec_done(task, curr_task ? -ETIMEDOUT : 0);
 
+		if (curr_task) {
+			timeout_task = task;
+			break;
+		}
+
+		cmdq_task_exec_done(task, 0);
 		kfree(task);
 
 		if (curr_task && !cmdq->suspended)
 			break;
+	}
+
+	if (timeout_task) {
+		spin_unlock_irqrestore(&thread->chan->lock, flags);
+
+		/* timeout task handling */
+		cmdq_task_callback(timeout_task->pkt, -ETIMEDOUT);
+#ifdef CMDQ_MEMORY_JUMP
+		cmdq_task_unmap_dma(timeout_task->cmdq->mbox.dev,
+			timeout_task->pkt);
+#else
+		dma_unmap_single(timeout_task->cmdq->mbox.dev,
+			timeout_task->pa_base,
+			timeout_task->pkt->cmd_buf_size, DMA_TO_DEVICE);
+#endif
+
+		spin_lock_irqsave(&thread->chan->lock, flags);
+
+		list_del(&timeout_task->list_entry);
+		kfree(timeout_task);
 	}
 
 	task = list_first_entry_or_null(&thread->task_busy_list,
@@ -997,6 +1025,15 @@ static void cmdq_thread_handle_timeout(unsigned long data)
 		cmdq_clk_disable(cmdq);
 	}
 	spin_unlock_irqrestore(&thread->chan->lock, flags);
+
+}
+static void cmdq_thread_handle_timeout(unsigned long data)
+{
+	struct cmdq_thread *thread = (struct cmdq_thread *)data;
+	struct cmdq *cmdq = container_of(thread->chan->mbox, struct cmdq, mbox);
+
+	INIT_WORK(&thread->timeout_work, cmdq_thread_handle_timeout_work);
+	queue_work(cmdq->timeout_wq, &thread->timeout_work);
 }
 
 void cmdq_thread_remove_task(struct mbox_chan *chan,
@@ -1287,6 +1324,9 @@ static int cmdq_probe(struct platform_device *pdev)
 	cmdq->buf_dump_wq = alloc_ordered_workqueue(
 			"%s", WQ_MEM_RECLAIM | WQ_HIGHPRI,
 			"cmdq_buf_dump");
+
+	cmdq->timeout_wq = create_singlethread_workqueue(
+		"cmdq_timeout_handler");
 
 	platform_set_drvdata(pdev, cmdq);
 	WARN_ON(clk_prepare(cmdq->clock) < 0);
