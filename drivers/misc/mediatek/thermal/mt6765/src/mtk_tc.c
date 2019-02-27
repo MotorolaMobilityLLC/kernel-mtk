@@ -37,7 +37,7 @@
 #include <linux/clk.h>
 #endif
 
-/*#include <mach/wd_api.h>*/
+#include <mach/wd_api.h>
 
 #include <linux/time.h>
 
