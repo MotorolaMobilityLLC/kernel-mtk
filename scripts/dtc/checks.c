@@ -86,7 +86,7 @@ struct check {
 #define TREE_CHECK(nm, d, ...) \
 	CHECK(nm, check_##nm, NULL, NULL, d, __VA_ARGS__)
 #define NODE_WARNING(nm, d, ...) \
-	WARNING(nm, NULL, check_##nm, NULL, d,  __VA_ARGS__)
+	ERROR(nm, NULL, check_##nm, NULL, d,  __VA_ARGS__)
 #define NODE_ERROR(nm, d, ...) \
 	ERROR(nm, NULL, check_##nm, NULL, d, __VA_ARGS__)
 #define NODE_CHECK(nm, d, ...) \
