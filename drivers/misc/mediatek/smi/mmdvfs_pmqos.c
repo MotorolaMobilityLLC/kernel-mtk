@@ -552,7 +552,7 @@ static int __init mmdvfs_pmqos_init(void)
 		return -ENODEV;
 	}
 
-	pr_notice("mmdvfs_pmqos_init\n");
+	pr_notice("%s\n", __func__);
 	return 0;
 }
 
