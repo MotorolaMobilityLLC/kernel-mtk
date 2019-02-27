@@ -938,12 +938,29 @@ static int detect_impedance(void)
 					audio_get_auxadc_value();
 				dcSum = dcSum + detectsOffset[counter];
 			}
+			if ((dcSum / kDetectTimes) >
+			    hpdet_param.auxadc_upper_bound) {
+				pr_info("%s(), dcValue == 0, auxadc value %d > auxadc_upper_bound %d\n",
+					__func__, dcSum / kDetectTimes,
+					hpdet_param.auxadc_upper_bound);
+				impedance = auxcable_impedance;
+				break;
+			}
 		}
 		/* start checking */
 		if (dcValue == hpdet_param.dc_Phase0) {
 			usleep_range(1*1000, 1*1000);
 			detectSum = 0;
 			detectSum = audio_get_auxadc_value();
+
+			if ((dcSum / kDetectTimes) == detectSum) {
+				pr_info("%s(), dcSum / kDetectTimes %d == detectSum %d\n",
+					__func__, dcSum / kDetectTimes,
+					detectSum);
+				impedance = auxcable_impedance;
+				break;
+			}
+
 			pick_impedance =
 				mtk_calculate_hp_impedance(dcSum/kDetectTimes,
 							   detectSum,
@@ -2741,7 +2758,7 @@ static int Lineout_PGAR_Set(struct snd_kcontrol *kcontrol,
 	}
 	if (index == (ARRAY_SIZE(DAC_DL_PGA_Speaker_GAIN) - 1))
 		index = DL_GAIN_N_40DB;
-	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f10);
+	Ana_Set_Reg(ZCD_CON1, index << 7, 0x0f80);
 	mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_LINEOUTR] = index;
 	return 0;
 }
