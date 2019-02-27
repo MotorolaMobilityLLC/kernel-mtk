@@ -24,11 +24,7 @@ ifneq ($(CONFIG_MTK_LCM), y)
 	obj-y += mtdummy/
 else
 	######################################
-ifeq ($(CONFIG_MACH_MT6761),y)
-	obj-$(CONFIG_MTK_FB) += mt6765/
-else
 	obj-$(CONFIG_MTK_FB) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
-endif
 	obj-$(CONFIG_MACH_MT6763) += common/
 	obj-$(CONFIG_MACH_MT6755) += common/
 	obj-$(CONFIG_MACH_MT6797) += common/
