@@ -2868,7 +2868,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	mt_soc_voice_md2 {
 		compatible = "mediatek,mt_soc_pcm_voice_md2";
 	};
-
+	mt_soc_pcm_dl1_scp_spk {
+		compatible = "mediatek,mt_soc_pcm_dl1_scp_spk";
+	};
+	mt_soc_pcm_voice_scp {
+		compatible = "mediatek,mt_soc_pcm_voice_scp";
+	};
 	mt_soc_routing_pcm {
 		compatible = "mediatek,mt_soc_pcm_routing";
 		/*i2s1clk-gpio = <7 6>;*/

@@ -217,6 +217,7 @@ static const unsigned int
 		{Soc_Aud_Digital_Block_MEM_DL1_DATA2, AFE_DAC_CON0, 8},
 		{Soc_Aud_Digital_Block_MEM_VUL_DATA2, AFE_DAC_CON0, 9},
 		{Soc_Aud_Digital_Block_MEM_VUL2, AFE_DAC_CON0, 27},
+		{Soc_Aud_Digital_Block_MEM_AWB2, AFE_DAC_CON0, 29},
 };
 
 const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
@@ -306,7 +307,7 @@ const struct Aud_IRQ_CTRL_REG mIRQCtrlRegs[Soc_Aud_IRQ_MCU_MODE_NUM] = {
 		{AFE_IRQ_MCU_CLR, 23, 0x1},     /* irq miss clear */
 		{AFE_IRQ_MCU_STATUS, 7, 0x1},   /* irq status */
 		{AFE_IRQ_MCU_EN, 7, 0x1},       /* irq enable */
-		 Soc_Aud_IRQ_MCU /* irq use for specify purpose */
+		 Soc_Aud_IRQ_CM4 /* irq use for specify purpose */
 	},
 	{
 		/*IRQ8*/
@@ -392,7 +393,7 @@ const struct Aud_RegBitsInfo mIRQPurposeRegs[Soc_Aud_IRQ_PURPOSE_NUM] = {
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_MD32 */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_MD32_H */
 	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_DSP */
-	{AFE_REG_UNDEFINED, 0, 0x0}, /* Soc_Aud_IRQ_CM4 */
+	{AFE_IRQ_MCU_EN1, 16, 0xffff}, /* Soc_Aud_IRQ_CM4 */
 };
 
 static const unsigned int
@@ -547,6 +548,7 @@ struct aud_reg_string aud_afe_reg_dump[] = {
 	{"AFE_IRQ_MCU_CNT6", AFE_IRQ_MCU_CNT6},
 	{"AFE_IRQ0_MCU_CNT_MON", AFE_IRQ0_MCU_CNT_MON},
 	{"AFE_IRQ6_MCU_CNT_MON", AFE_IRQ6_MCU_CNT_MON},
+	{"AFE_IRQ_MCU_EN1", AFE_IRQ_MCU_EN1},
 	{"AFE_MOD_DAI_BASE", AFE_MOD_DAI_BASE},
 	{"AFE_MOD_DAI_END", AFE_MOD_DAI_END},
 	{"AFE_MOD_DAI_CUR", AFE_MOD_DAI_CUR},
@@ -1554,12 +1556,12 @@ bool SetMemIfFormatReg(unsigned int InterfaceType, unsigned int eFetchFormat)
 		Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD << 10, 3 << 10);
 		break;
 	case Soc_Aud_Digital_Block_MEM_AWB2:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 14, 1 << 14);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 28, 3 << 28);
-			break;
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 14, 1 << 14);
+		Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 28, 3 << 28);
+		break;
 	case Soc_Aud_Digital_Block_MEM_VUL2:
-			Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 7, 1 << 7);
-			Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 14, 3 << 14);
+		Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 7, 1 << 7);
+		Afe_Set_Reg(AFE_MEMIF_HD_MODE, isHD    << 14, 3 << 14);
 		break;
 	case Soc_Aud_Digital_Block_MEM_DAI:
 		Afe_Set_Reg(AFE_MEMIF_HDALIGN, isAlign << 8, 1 << 8);
@@ -1762,6 +1764,8 @@ ssize_t AudDrv_Reg_Dump(char *buffer, int size)
 		       Afe_Get_Reg(AFE_IRQ_MCU_CNT0));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_CNT6 = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ_MCU_CNT6));
+	n += scnprintf(buffer + n, size - n, "AFE_IRQ_MCU_EN1 = 0x%x\n",
+		       Afe_Get_Reg(AFE_IRQ_MCU_EN1));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ0_MCU_CNT_MON = 0x%x\n",
 		       Afe_Get_Reg(AFE_IRQ0_MCU_CNT_MON));
 	n += scnprintf(buffer + n, size - n, "AFE_IRQ6_MCU_CNT_MON = 0x%x\n",
