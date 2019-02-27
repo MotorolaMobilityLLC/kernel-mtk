@@ -73,7 +73,7 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
 #define SPM_PCMWDT_EN           1
 #define SPM_BYPASS_SYSPWREQ     1
 #define SPM_PMIC_EN             0
-#define SPM_PMIC_DEBUG          0
+#define SPM_PMIC_DEBUG          1
 #endif
 
 /**************************************
