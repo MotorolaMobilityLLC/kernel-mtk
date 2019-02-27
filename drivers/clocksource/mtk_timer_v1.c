@@ -231,7 +231,7 @@ static uint64_t gpt_clkevt_last_interrupt_time;
 static uint64_t gpt_clkevt_last_setting_next_event_time;
 #endif
 
-void mt_gpt_clkevt_aee_dump(void)
+void mtk_timer_clkevt_aee_dump(void)
 {
 #if defined(CONFIG_MTK_RAM_CONSOLE) && defined(CONFIG_MTK_TIMER_AEE_DUMP)
 
