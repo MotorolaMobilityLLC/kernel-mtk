@@ -143,6 +143,21 @@ int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt,
 int ufmt_disable_P(enum UNIFIED_COLOR_FMT src_fmt,
 	enum UNIFIED_COLOR_FMT *dst_fmt);
 
+enum SBCH_BIT {
+	UPDATE = 0,
+	TRANS_EN = 1,
+	CNST_EN = 2,
+	BCH_BIT_NUM = 3
+};
+
+struct sbch {
+	/* the number of ext layer on this phy */
+	int ext_layer_num;/*ext:-1  phy:0~3*/
+	unsigned long pre_addr;
+	unsigned int height;
+	enum UNIFIED_COLOR_FMT fmt;
+};
+
 struct disp_rect {
 	int x;
 	int y;
