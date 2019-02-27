@@ -44,6 +44,8 @@ void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask);
 int get_residency_latency_result(int cpu);
 void mcdi_state_pause(bool pause);
 void any_core_cpu_cond_get(unsigned long buf[NF_ANY_CORE_CPU_COND_INFO]);
+bool is_mcdi_working(void);
+unsigned int mcdi_get_gov_data_num_mcusys(void);
 
 void idle_refcnt_inc(void);
 void idle_refcnt_dec(void);

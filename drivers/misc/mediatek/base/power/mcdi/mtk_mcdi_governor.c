@@ -87,6 +87,20 @@ static struct all_cpu_idle all_cpu_idle_data = {
 
 static DEFINE_SPINLOCK(all_cpu_idle_spin_lock);
 
+unsigned int mcdi_get_gov_data_num_mcusys(void)
+{
+	unsigned long flags;
+	unsigned int ret;
+
+	spin_lock_irqsave(&mcdi_gov_spin_lock, flags);
+
+	ret = mcdi_gov_data.num_mcusys;
+
+	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
+
+	return ret;
+}
+
 void set_mcdi_enable_by_pm_qos(bool en)
 {
 	s32 latency_req = en ? PM_QOS_DEFAULT_VALUE : 2;
@@ -544,7 +558,7 @@ end:
 	return state;
 }
 
-static bool is_mcdi_working(void)
+bool is_mcdi_working(void)
 {
 	unsigned long flags;
 	bool working = false;
@@ -764,6 +778,10 @@ void set_mcdi_enable_status(bool enabled)
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 
 	set_mcdi_enable_by_pm_qos(enabled);
+
+	/* if disabled, wakeup all cpus */
+	if (!enabled)
+		mcdi_wakeup_all_cpu();
 }
 
 void set_mcdi_s_state(int state)

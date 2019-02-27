@@ -152,7 +152,7 @@ unsigned int get_mcdi_profile_sum_us(int idx)
 	unsigned long flags;
 	unsigned int sum_us;
 
-	if (!(idx >= 0 && idx < NF_MCDI_PROFILE))
+	if (!(idx >= 0 && idx < NF_MCDI_PROFILE - 1))
 		return 0;
 
 	spin_lock_irqsave(&mcdi_prof_spin_lock, flags);

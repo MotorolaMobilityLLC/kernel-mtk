@@ -32,7 +32,7 @@ enum {
 	NF_MCDI_SMC_EVENT
 };
 
-extern u32 aee_rr_rec_mcdi_val(int id, u32 val);
+extern void aee_rr_rec_mcdi_val(int id, u32 val);
 
 int cluster_idx_get(int cpu);
 unsigned int get_menu_predict_us(void);
@@ -48,6 +48,6 @@ unsigned int mcdi_get_buck_ctrl_mask(void);
 void mcdi_status_init(void);
 void mcdi_of_init(void);
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
-void mcdi_update_async_wakeup_enable(void);
+void mcdi_wakeup_all_cpu(void);
 
 #endif /* __MTK_MCDI_H__ */
