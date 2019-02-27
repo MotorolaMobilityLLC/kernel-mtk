@@ -25,6 +25,8 @@
 
 #define MT6397_RTC_BASE		0xe000
 #define MT6397_RTC_SIZE		0x3e
+#define MT6323_RTC_BASE		0x8000
+#define MT6323_RTC_SIZE		0x3e
 
 #define MT6323_CID_CODE		0x23
 #define MT6391_CID_CODE		0x91
@@ -43,6 +45,19 @@ static const struct resource mt6397_rtc_resources[] = {
 	},
 };
 
+static const struct resource mt6323_rtc_resources[] = {
+	{
+		.start = MT6323_RTC_BASE,
+		.end   = MT6323_RTC_BASE + MT6323_RTC_SIZE,
+		.flags = IORESOURCE_MEM,
+	},
+	{
+		.start = MT6323_IRQ_RTC,
+		.end   = MT6323_IRQ_RTC,
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 static const struct resource mt6397_pmic_resources[] = {
 	{
 		.start = MT6397_IRQ_THR_L,
@@ -55,6 +70,16 @@ static const struct mfd_cell mt6323_devs[] = {
 	{
 		.name = "mt6323-pmic",
 		.of_compatible = "mediatek,mt6323-pmic"
+	}, {
+		.name = "mt6323-rtc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-rtc",
+	}, {
+		.name = "mt6323-misc",
+		.num_resources = ARRAY_SIZE(mt6323_rtc_resources),
+		.resources = mt6323_rtc_resources,
+		.of_compatible = "mediatek,mt6323-misc",
 	}, {
 		.name = "mt6323-regulator",
 		.of_compatible = "mediatek,mt6323-regulator"
