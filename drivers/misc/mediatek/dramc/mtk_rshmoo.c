@@ -178,7 +178,7 @@ static int dram_rshmoo_remove(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id dram_of_ids[] = {
-	{.compatible = "mediatek,dram_memtest_info",},
+	{.compatible = "mediatek,dram_rshmoo_info",},
 	{}
 };
 #endif
