@@ -28,6 +28,11 @@ static u16 kpd_keymap_state[KPD_NUM_MEMS] = {
 	0xffff, 0xffff, 0xffff, 0xffff, 0x00ff
 };
 
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+struct timer_list Long_press_timer;
+atomic_t vol_up_long_press_flag = ATOMIC_INIT(0);
+atomic_t pow_key_long_press_flag = ATOMIC_INIT(0);
+#endif
 
 static void enable_kpd(int enable)
 {
@@ -169,6 +174,13 @@ void kpd_double_key_enable(int en)
 		writew((u16) (tmp & ~KPD_DOUBLE_KEY_MASK), KP_SEL);
 }
 
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+void vol_up_long_press(unsigned long pressed)
+{
+	atomic_set(&vol_up_long_press_flag, 1);
+}
+#endif
+
 void kpd_pmic_rstkey_hal(unsigned long pressed)
 {
 	if (kpd_dts_data.kpd_sw_rstkey != 0) {
@@ -178,6 +190,20 @@ void kpd_pmic_rstkey_hal(unsigned long pressed)
 		kpd_print(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
 			pressed ? "pressed" : "released",
 				kpd_dts_data.kpd_sw_rstkey);
+
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+		if (pressed) {
+			init_timer(&Long_press_timer);
+			Long_press_timer.expires = jiffies + 5*HZ;
+			Long_press_timer.data = (unsigned long)pressed;
+			Long_press_timer.function = vol_up_long_press;
+			add_timer(&Long_press_timer);
+		} else {
+			del_timer_sync(&Long_press_timer);
+		}
+		if (!pressed && atomic_read(&vol_up_long_press_flag))
+			atomic_set(&vol_up_long_press_flag, 0);
+#endif
 	}
 }
 
@@ -187,6 +213,16 @@ void kpd_pmic_pwrkey_hal(unsigned long pressed)
 	input_sync(kpd_input_dev);
 	kpd_print(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
 		pressed ? "pressed" : "released", kpd_dts_data.kpd_sw_pwrkey);
+
+#ifdef CONFIG_LONG_PRESS_MODE_EN
+	if (pressed && atomic_read(&vol_up_long_press_flag) &&
+		atomic_read(&vol_down_long_press_flag)) {
+		atomic_set(&pow_key_long_press_flag, 1);
+	} else if (!pressed && atomic_read(&pow_key_long_press_flag)) {
+		atomic_set(&pow_key_long_press_flag, 0);
+		BUG_ON(1);
+	}
+#endif
 }
 
 static int mrdump_eint_state;
