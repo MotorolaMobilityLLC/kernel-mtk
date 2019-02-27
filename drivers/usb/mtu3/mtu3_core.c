@@ -26,6 +26,8 @@
 
 #include "mtu3.h"
 
+static u32 sts_ltssm;
+
 static int ep_fifo_alloc(struct mtu3_ep *mep, u32 seg_size)
 {
 	struct mtu3_fifo_info *fifo = mep->fifo;
@@ -290,6 +292,7 @@ void mtu3_stop(struct mtu3 *mtu)
 
 	mtu->is_active = 0;
 	mtu3_setbits(mtu->ippc_base, U3D_SSUSB_IP_PW_CTRL2, SSUSB_IP_DEV_PDN);
+	cancel_delayed_work_sync(&mtu->check_ltssm_work);
 }
 
 /* for non-ep0 */
@@ -671,8 +674,11 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		 */
 		mtu3_hs_softconn_set(mtu, true);
 	}
-	if (ltssm & ENTER_U0_INTR)
+	if (ltssm & ENTER_U0_INTR) {
 		mtu3_printk(K_INFO, "LTSSM: ENTER_U0_INTR\n");
+		cancel_delayed_work(&mtu->check_ltssm_work);
+		sts_ltssm = ENTER_U0_INTR;
+	}
 
 	if (ltssm & (HOT_RST_INTR | WARM_RST_INTR))
 		mtu3_gadget_reset(mtu);
@@ -728,6 +734,8 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		mtu3_printk(K_INFO, "LTSSM: link_err_cnt=%x\n", link_err_cnt);
 		mtu3_writel(mtu->mac_base, CLR_LINK_ERR_CNT,
 			U3D_LINK_ERR_COUNT);
+		cancel_delayed_work(&mtu->check_ltssm_work);
+		sts_ltssm = WARM_RST_INTR;
 	}
 
 	if (ltssm & SS_INACTIVE_INTR)
@@ -740,8 +748,12 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		mtu3_printk(K_INFO, "LTSSM: ENTER_U2_INTR\n");
 	if (ltssm & ENTER_U1_INTR)
 		mtu3_printk(K_INFO, "LTSSM: ENTER_U1_INTR\n");
-	if (ltssm & RXDET_SUCCESS_INTR)
+	if (ltssm & RXDET_SUCCESS_INTR) {
 		mtu3_printk(K_INFO, "LTSSM: RXDET_SUCCESS_INTR\n");
+		sts_ltssm = RXDET_SUCCESS_INTR;
+		schedule_delayed_work(&mtu->check_ltssm_work,
+			msecs_to_jiffies(1000));
+	}
 
 	return IRQ_HANDLED;
 }
@@ -880,6 +892,8 @@ int ssusb_gadget_init(struct ssusb_mtk *ssusb)
 	mtu->ssusb = ssusb;
 	mtu->max_speed = usb_get_maximum_speed(dev);
 
+	INIT_DELAYED_WORK(&mtu->check_ltssm_work, check_ltssm_work);
+
 	/* check the max_speed parameter */
 	switch (mtu->max_speed) {
 	case USB_SPEED_FULL:
@@ -947,3 +961,20 @@ void ssusb_gadget_exit(struct ssusb_mtk *ssusb)
 	device_init_wakeup(ssusb->dev, false);
 	mtu3_hw_exit(mtu);
 }
+
+void check_ltssm_work(struct work_struct *data)
+{
+	struct mtu3 *mtu;
+
+	mtu = container_of(to_delayed_work(data),
+		struct mtu3, check_ltssm_work);
+	dev_dbg(mtu->dev, "%s %x\n", __func__, sts_ltssm);
+
+	if (sts_ltssm == RXDET_SUCCESS_INTR) {
+		sts_ltssm = 0;
+		mtu3_ss_func_set(mtu, false);
+		mdelay(10);
+		mtu3_ss_func_set(mtu, true);
+	}
+}
+
