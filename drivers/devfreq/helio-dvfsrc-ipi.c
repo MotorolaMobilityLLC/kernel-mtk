@@ -15,7 +15,7 @@
 
 #include <helio-dvfsrc-ipi.h>
 
-#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED)
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 static int qos_recv_thread(void *arg)
 {
 	struct ipi_action qos_isr;

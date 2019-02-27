@@ -30,7 +30,7 @@
 #include "helio-dvfsrc.h"
 #include "mtk_dvfsrc_reg.h"
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
 #endif
@@ -274,7 +274,7 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 	sprintf(dvfsrc->force_start, "0");
 	sprintf(dvfsrc->force_end, "0");
 
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT_UNUSED
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
 #endif
 
