@@ -48,8 +48,8 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
-#ifdef COFNIG_MTK_IOMMU
-#include <mtk_iommu.h>
+#ifdef CONFIG_MTK_IOMMU_V2
+#include <mach/mt_iommu.h>
 #else
 #include <m4u.h>
 #endif
@@ -853,17 +853,26 @@ static signed int DIP_DumpDIPReg(void)
 		/*0x15022208, CQ_D1A_CQ_THR0_BASEADDR*/
 		/*0x15022220, CQ_D1A_CQ_THR1_BASEADDR*/
 		/*0x1502222C, CQ_D1A_CQ_THR2_BASEADDR*/
-		for (cmdqidx = 0; cmdqidx < 32 ; cmdqidx++) {
-			if (ctrl_start & (0x1<<cmdqidx) && (cmdqidx <= 1)) {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1208 +
-				(cmdqidx*DIP_CMDQ1_TO_CMDQ0_BASEADDR_OFFSET));
-			} else {
-				g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1220 +
-				((cmdqidx-1)*DIP_CMDQ_BASEADDR_OFFSET));
+		if (ctrl_start == 0x1) {
+			g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1208);
+		} else if (ctrl_start == 0x02) {
+			g_cmdqaddr = DIP_RD32(DIP_A_BASE + 0x1208 +
+					DIP_CMDQ1_TO_CMDQ0_BASEADDR_OFFSET);
+		} else {
+			for (cmdqidx = 2; cmdqidx < 18; cmdqidx++) {
+				if (ctrl_start & (0x1<<cmdqidx)) {
+					g_cmdqaddr = DIP_RD32(DIP_A_BASE
+						+ 0x1220 +
+						((cmdqidx-1)*
+						DIP_CMDQ_BASEADDR_OFFSET));
+					break;
+				}
 			}
-			break;
 		}
-		if ((g_TpipeBaseAddrInfo.MemPa != 0) &&
+
+		if ((ctrl_start  != 0) &&
+			(g_tdriaddr  != 0) &&
+			(g_TpipeBaseAddrInfo.MemPa != 0) &&
 			(g_TpipeBaseAddrInfo.MemVa != NULL) &&
 			(g_pKWTpipeBuffer != NULL)) {
 			/* to get frame tdri baseaddress, */
@@ -892,7 +901,9 @@ static signed int DIP_DumpDIPReg(void)
 			g_TpipeBaseAddrInfo.MemSizeDiff, offset);
 		CMDQ_ERR("g_pKWTpipeBuffer:0x%pK\n", g_pKWTpipeBuffer);
 
-		if ((g_CmdqBaseAddrInfo.MemPa != 0) &&
+		if ((ctrl_start  != 0) &&
+			(g_cmdqaddr  != 0) &&
+			(g_CmdqBaseAddrInfo.MemPa != 0) &&
 			(g_CmdqBaseAddrInfo.MemVa != NULL) &&
 			(g_pKWCmdqBuffer != NULL) &&
 			(g_pKWVirDIPBuffer != NULL)) {
@@ -958,6 +969,15 @@ static signed int DIP_DumpDIPReg(void)
 		g_bDumpPhyDIPBuf, cmdqidx);
 	CMDQ_ERR("direct link: cmdqaddr(0x%x), tdriaddr(0x%x)\n",
 		g_cmdqaddr, g_tdriaddr);
+
+	CMDQ_ERR("imgsys: 0x1502004C(0x%x)\n",
+		DIP_RD32(DIP_IMGSYS_CONFIG_BASE + 0x4C));
+	CMDQ_ERR("0x15020200(0x%x)-0x15020204(0x%x)\n",
+		DIP_RD32(DIP_IMGSYS_CONFIG_BASE + 0x200),
+		DIP_RD32(DIP_IMGSYS_CONFIG_BASE + 0x204));
+	CMDQ_ERR("0x15020208(0x%x)-0x1502020C(0x%x)\n",
+		DIP_RD32(DIP_IMGSYS_CONFIG_BASE + 0x208),
+		DIP_RD32(DIP_IMGSYS_CONFIG_BASE + 0x20C));
 
     /*top control*/
 	CMDQ_ERR("dip: 0x15022000(0x%x)-0x15022004(0x%x)\n",
@@ -1230,6 +1250,35 @@ static signed int DIP_DumpDIPReg(void)
 	CMDQ_ERR("lcei: 0x150213F0(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x03F0));
 
+	/* VIPI DMA*/
+	CMDQ_ERR("vipi: 0x15021700(0x%x)-0x1502170C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0700), DIP_RD32(DIP_A_BASE + 0x070C));
+	CMDQ_ERR("vipi: 0x15021710(0x%x)-0x15021714(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0710), DIP_RD32(DIP_A_BASE + 0x0714));
+	CMDQ_ERR("vipi: 0x15021718(0x%x)-0x1502171C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0718), DIP_RD32(DIP_A_BASE + 0x071C));
+	CMDQ_ERR("vipi: 0x15021720(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0720));
+
+	/* VIPBI DMA*/
+	CMDQ_ERR("vipbi: 0x15021730(0x%x)-0x1502173C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0730), DIP_RD32(DIP_A_BASE + 0x073C));
+	CMDQ_ERR("vipbi: 0x15021740(0x%x)-0x15021744(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0740), DIP_RD32(DIP_A_BASE + 0x0744));
+	CMDQ_ERR("vipbi: 0x15021748(0x%x)-0x1502174C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0748), DIP_RD32(DIP_A_BASE + 0x074C));
+	CMDQ_ERR("vipbi: 0x15021750(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0750));
+
+	/* VIPCI DMA*/
+	CMDQ_ERR("vipci: 0x15021760(0x%x)-0x1502176C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0760), DIP_RD32(DIP_A_BASE + 0x076C));
+	CMDQ_ERR("vipci: 0x15021770(0x%x)-0x15021774(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0770), DIP_RD32(DIP_A_BASE + 0x0774));
+	CMDQ_ERR("vipci: 0x15021778(0x%x)-0x1502177C(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0778), DIP_RD32(DIP_A_BASE + 0x077C));
+	CMDQ_ERR("vipci: 0x15021780(0x%x)\n",
+		DIP_RD32(DIP_A_BASE + 0x0780));
 	/* CRZ */
 	CMDQ_ERR("crz: 0x15028700(0x%x)-0x15028704(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x7700), DIP_RD32(DIP_A_BASE + 0x7704));
@@ -4730,6 +4779,39 @@ static const struct file_operations dip_dump_proc_fops = {
 /**************************************************************
  *
  **************************************************************/
+#ifdef CONFIG_MTK_IOMMU_V2
+enum mtk_iommu_callback_ret_t ISP_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#else
+enum m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#endif
+{
+
+	pr_info("[ISP_M4U]fault call port=%d, mva=0x%x", port, mva);
+
+	switch (port) {
+	case M4U_PORT_IMGI_D1:
+	default:
+		pr_info("imgi:0x%08x, TDRI:0x%08x, CQ0_EN(0x%08x)_BA(0x%08x)\n",
+			DIP_RD32(DIP_A_BASE + 0x100),
+			DIP_RD32(DIP_A_BASE + 0x004),
+			DIP_RD32(DIP_A_BASE + 0x1204),
+			DIP_RD32(DIP_A_BASE + 0x1208));
+		pr_info("start: 0x%08x, top: 0x%08x, 0x%08x, 0x%08x, 0x%08x)\n",
+			DIP_RD32(DIP_A_BASE + 0x1000),
+			DIP_RD32(DIP_A_BASE + 0x1010),
+			DIP_RD32(DIP_A_BASE + 0x1014),
+			DIP_RD32(DIP_A_BASE + 0x1018),
+			DIP_RD32(DIP_A_BASE + 0x101c));
+	break;
+	}
+#ifdef CONFIG_MTK_IOMMU_V2
+	return MTK_IOMMU_CALLBACK_HANDLED;
+#else
+	return M4U_CALLBACK_HANDLED;
+#endif
+}
 
 static signed int __init DIP_Init(void)
 {
@@ -4843,7 +4925,14 @@ static signed int __init DIP_Init(void)
 		(DIP_BeginGCECallback, DIP_EndGCECallback);
 #endif
 	/* m4u_enable_tf(M4U_PORT_CAM_IMGI, 0);*/
-
+#ifdef CONFIG_MTK_IOMMU_V2
+	mtk_iommu_register_fault_callback(M4U_PORT_IMGI_D1,
+					  ISP_M4U_TranslationFault_callback,
+					  NULL);
+#else
+	m4u_register_fault_callback(M4U_PORT_IMGI_D1,
+			ISP_M4U_TranslationFault_callback, NULL);
+#endif
 	LOG_DBG("- X. Ret: %d.", Ret);
 	return Ret;
 }
