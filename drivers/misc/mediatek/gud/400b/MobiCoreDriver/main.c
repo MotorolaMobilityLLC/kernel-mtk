@@ -541,6 +541,9 @@ int mc_wait_tee_start(void)
 {
 	int ret;
 
+	while (!is_mobicore_ready())
+		ssleep(1);
+
 	mutex_lock(&main_ctx.start_mutex);
 	while (main_ctx.start_ret == TEE_START_NOT_TRIGGERED) {
 		mutex_unlock(&main_ctx.start_mutex);
