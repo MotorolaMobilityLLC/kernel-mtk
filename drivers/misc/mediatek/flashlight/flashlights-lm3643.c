@@ -816,6 +816,7 @@ static int lm3643_probe(struct platform_device *pdev)
 	struct lm3643_chip_data *chip = NULL;
 	int err;
 	int i;
+
 	pr_debug("Probe start.\n");
 
 	/* init pinctrl */
@@ -887,6 +888,7 @@ static int lm3643_remove(struct platform_device *pdev)
 {
 	struct lm3643_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int i;
+
 	pr_debug("Remove start.\n");
 
 	i2c_del_driver(&lm3643_i2c_driver);
