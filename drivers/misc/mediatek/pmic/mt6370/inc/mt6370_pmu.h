@@ -61,7 +61,7 @@ struct mt6370_pmu_chip {
 	struct device *dev;
 	struct irq_domain *irq_domain;
 	struct rt_regmap_device *rd;
-	struct rt_mutex io_lock;
+	struct mutex io_lock;
 	int irq;
 	uint8_t chip_rev;
 	uint8_t chip_vid;
