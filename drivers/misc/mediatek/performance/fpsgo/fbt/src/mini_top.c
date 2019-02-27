@@ -21,7 +21,7 @@
 #include <linux/math64.h>
 #include <linux/debugfs.h>
 #include <linux/sort.h>
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 #include <linux/cpufreq.h>
 #endif
 
@@ -47,7 +47,7 @@ static int __minitop_n;
 static int __warmup_order;
 static int __cooldn_order;
 static int __thrs_heavy;
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 static int __thrs_cpu_heavy;
 static int __thrs_cpu_unheavy;
 
@@ -431,7 +431,7 @@ static int minitop_has_heavy(void)
 	return !!heavy;
 }
 
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 static int get_thrs_cpu_heavy(void)
 {
 	int ret;
@@ -901,7 +901,7 @@ MINITOP_DEBUGFS_WRITE(thrs_heavy, 0, 100)
 
 MINITOP_DEBUGFS_ENTRY(thrs_heavy);
 
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 static int minitop_thrs_cpu_heavy_show(struct seq_file *m, void *unused)
 {
 	minitop_lock(__func__);
@@ -983,7 +983,7 @@ int __init minitop_init(void)
 	__warmup_order = 3;
 	__cooldn_order = 2;
 	__thrs_heavy   = 70;
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 	__thrs_cpu_heavy = 90;
 	__thrs_cpu_unheavy = 80;
 #endif
@@ -998,7 +998,7 @@ int __init minitop_init(void)
 		list_add_tail(&mwa[i].link, &minitop_mws);
 	}
 
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 	prev_idle_time = kcalloc(nr_cpus, sizeof(cputime64_t), GFP_KERNEL);
 	prev_wall_time = kcalloc(nr_cpus, sizeof(cputime64_t), GFP_KERNEL);
 #endif
@@ -1033,7 +1033,7 @@ int __init minitop_init(void)
 			    NULL,
 			    &minitop_thrs_heavy_fops);
 
-#ifdef CONFIG_CPU_FREQ
+#if defined(CONFIG_CPU_FREQ) && !defined(CONFIG_MTK_CPU_CTRL_CFP)
 	debugfs_create_file("thrs_cpu_heavy",
 			    0664,
 			    debugfs_minitop_dir,
