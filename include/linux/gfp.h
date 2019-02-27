@@ -593,5 +593,6 @@ extern void init_cma_reserved_pageblock(struct page *page);
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 extern void free_cma_reserved_pageblock(struct page *page);
 #endif
+extern int free_reserved_memory(phys_addr_t start_phys, phys_addr_t end_phys);
 
 #endif /* __LINUX_GFP_H */
