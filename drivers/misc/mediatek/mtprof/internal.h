@@ -25,6 +25,7 @@
 	} while (0)
 
 #define MT_DEBUG_ENTRY(name) \
+void mt_##name##_switch(int on) \
 static int mt_##name##_show(struct seq_file *m, void *v);\
 static ssize_t mt_##name##_write(struct file *filp, const char *ubuf, \
 					size_t cnt, loff_t *data);\
@@ -32,15 +33,13 @@ static int mt_##name##_open(struct inode *inode, struct file *file) \
 { \
 	return single_open(file, mt_##name##_show, inode->i_private); \
 } \
-\
 static const struct file_operations mt_##name##_fops = { \
 	.open = mt_##name##_open, \
 	.write = mt_##name##_write, \
 	.read = seq_read, \
 	.llseek = seq_lseek, \
 	.release = single_release, \
-}; \
-void mt_##name##_switch(int on)
+}
 
 /* for bootprof.c */
 unsigned int gpt_boot_time(void);

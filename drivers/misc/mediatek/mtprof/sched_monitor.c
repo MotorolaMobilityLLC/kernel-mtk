@@ -962,6 +962,7 @@ void mt_dump_irq_off_traces(int mode)
 	int i;
 	char buf[128];
 	struct stack_trace *trace;
+
 	trace = &__raw_get_cpu_var(MT_stack_trace);
 
 	snprintf(buf, sizeof(buf),
