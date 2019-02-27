@@ -92,7 +92,7 @@ static unsigned long __read_mostly tracing_mark_write_addr;
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
-#include"../../../smi/smi_debug.h"
+//#include"../../../smi/smi_debug.h"
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -168,16 +168,15 @@ pr_info(MyTag "[%s] " format, __func__, ##args)
 #endif
 
 #define log_inf(format, args...) \
-pr_info(MyTag format,  ##args)
+pr_info(MyTag "[%s] " format, __func__, ##args)
 #define log_notice(format, args...) \
-pr_notice(MyTag format,  ##args)
+pr_notice(MyTag "[%s] " format, __func__, ##args)
 #define log_wrn(format, args...) \
-pr_info(MyTag format,  ##args)
+pr_debug(MyTag "[%s] " format, __func__, ##args)
 #define log_err(format, args...) \
-pr_info(MyTag format,  ##args)
+pr_debug(MyTag "[%s] " format, __func__, ##args)
 #define log_ast(format, args...) \
-pr_info(MyTag format,  ##args)
-
+pr_debug(MyTag "[%s] " format, __func__, ##args)
 
 /*****************************************************************************
  *
@@ -442,22 +441,23 @@ static struct SV_LOG_STR gSvLog[FDVT_IRQ_TYPE_AMOUNT];
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
 	if (logT == _LOG_ERR) {\
-		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
+		str_leng = NORMAL_STR_LEN*ERR_PAGE;\
 	} else if (logT == _LOG_DBG) {\
-		str_leng = NORMAL_STR_LEN*DBG_PAGE; \
+		str_leng = NORMAL_STR_LEN*DBG_PAGE;\
 	} else if (logT == _LOG_INF) {\
 		str_leng = NORMAL_STR_LEN*INF_PAGE;\
 	} else {\
 		str_leng = 0;\
 	} \
-	ptr = pDes = (char *)&(gSvLog[irq].
-			       _str[ppb][logT][gSvLog[irq].
-			       _cnt[ppb][logT]]);
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);
-	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1])
-		log_err("log str over flow(%d)", irq);
-	while (*ptr++ != '\0')
-		(*ptr2)++;
+	ptr = pDes = (char *)\
+		&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
+	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
+	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
+		log_err("log str over flow(%d)", irq);\
+	} \
+	while (*ptr++ != '\0') {        \
+		(*ptr2)++;\
+	}     \
 } while (0)
 #else
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)  \
@@ -939,23 +939,20 @@ static inline unsigned int FDVT_JiffiesToMs(unsigned int Jiffies)
 	return ((Jiffies * 1000) / HZ);
 }
 
-
 #define RegDump(start, end) {\
 	unsigned int i;\
 	for (i = start; i <= end; i += 0x10) {\
-		log_dbg(
-		"[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",
-		(unsigned int)(ISP_FDVT_BASE + i),
-		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i),
-		(unsigned int)(ISP_FDVT_BASE + i+0x4),
-		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0x4),
-		(unsigned int)(ISP_FDVT_BASE + i+0x8),
-		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0x8),
-		(unsigned int)(ISP_FDVT_BASE + i+0xc),
-		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0xc));
-	}
+	log_dbg("[0x%08X %08X],[0x%08X %08X],[0x%08X %08X],[0x%08X %08X]",\
+		(unsigned int)(ISP_FDVT_BASE + i),\
+		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i),\
+		(unsigned int)(ISP_FDVT_BASE + i+0x4),\
+		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0x4),\
+		(unsigned int)(ISP_FDVT_BASE + i+0x8),\
+		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0x8),\
+		(unsigned int)(ISP_FDVT_BASE + i+0xc),\
+		(unsigned int)FDVT_RD32(ISP_FDVT_BASE + i+0xc));\
+	} \
 }
-
 
 static bool ConfigFDVTRequest(signed int ReqIdx)
 {
@@ -970,7 +967,7 @@ static bool ConfigFDVTRequest(signed int ReqIdx)
 			  [FDVT_IRQ_TYPE_INT_FDVT_ST]),
 			  flags);
 	if (g_FDVT_ReqRing.FDVTReq_Struct[ReqIdx].State ==
-	    DVT_REQUEST_STATE_PENDING) {
+	    FDVT_REQUEST_STATE_PENDING) {
 		g_FDVT_ReqRing.FDVTReq_Struct[ReqIdx].State =
 		FDVT_REQUEST_STATE_RUNNING;
 		for (j = 0; j < _SUPPORT_MAX_FDVT_FRAME_REQUEST_; j++) {
@@ -1672,7 +1669,6 @@ static void FDVT_EnableClock(bool En)
 {
 #if defined(EP_NO_CLKMGR)
 	unsigned int setReg;
-	unsigned int idx = 0x0;
 #endif
 
 	if (En) { /* Enable clock. */
@@ -2971,10 +2967,10 @@ static long FDVT_ioctl(struct file *pFile,
 	/*  */
 EXIT:
 	if (Ret != 0) {
-		log_err("Fail, Cmd(%d), Pid(%d),
-			(process, pid, tgid)=(%s, %d, %d)",
-			Cmd, pUserInfo->Pid, current->comm,
-			current->pid, current->tgid);
+		log_err(
+		"Fail, Cmd(%d), Pid(%d), (process, pid, tgid)=(%s, %d, %d)",
+		Cmd, pUserInfo->Pid, current->comm,
+		current->pid, current->tgid);
 	}
 	/*  */
 	return Ret;
@@ -3725,8 +3721,8 @@ static signed int FDVT_probe(struct platform_device *pDev)
 			"fdvt_lock_wakelock");
 #endif
 
-		// wake_lock_init(&FDVT_wake_lock, WAKE_LOCK_SUSPEND,
-				  "fdvt_lock_wakelock");
+		// wake_lock_init(
+		// &FDVT_wake_lock, WAKE_LOCK_SUSPEND, "fdvt_lock_wakelock");
 
 		for (i = 0; i < FDVT_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(FDVT_tasklet[i].pFDVT_tkt,
