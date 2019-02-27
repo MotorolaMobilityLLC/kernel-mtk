@@ -17,6 +17,7 @@
 #include <mtk/mtk_ion.h>
 #include <linux/uaccess.h>
 #include <linux/err.h>
+#include <m4u.h>
 
 #include "mdla_ioctl.h"
 #include "mdla_ion.h"
@@ -45,8 +46,9 @@ void mdla_ion_exit(void)
 int mdla_ion_kmap(unsigned long arg)
 {
 	struct ioctl_ion ion_data;
+	struct ion_mm_data mm_data;
 	struct ion_handle *hndl;
-	ion_phys_addr_t addr;
+	ion_phys_addr_t mva;
 	void *kva;
 	int ret;
 
@@ -71,6 +73,19 @@ int mdla_ion_kmap(unsigned long arg)
 	// TODO: remove debug
 	mdla_debug("%s: ion_import_dma_buf_fd(): %p\n", __func__, hndl);
 
+	/*	set memory port */
+	mm_data.mm_cmd = ION_MM_CONFIG_BUFFER;
+	mm_data.config_buffer_param.kernel_handle = hndl;
+	mm_data.config_buffer_param.module_id = M4U_PORT_VPU;
+	ret = ion_kernel_ioctl(ion_client, ION_CMD_MULTIMEDIA,
+		(unsigned long) &mm_data);
+	if (ret < 0) {
+		// TODO: remove debug
+		mdla_debug("%s: ion_kernel_ioctl(%p, %p): %d\n",
+			__func__, ion_client, hndl, ret);
+		return -EINVAL;
+	}
+
 	/*  map to to kernel virtual address */
 	kva = ion_map_kernel(ion_client, hndl);
 	if (IS_ERR_OR_NULL(kva)) {
@@ -79,11 +94,8 @@ int mdla_ion_kmap(unsigned long arg)
 		return -EINVAL;
 	}
 
-	/*  Get the phyiscal address (mva) to the buffer,
-	 *  mdla_run_command_async() will translate mva to kva again,
-	 *  via phys_to_virt()
-	 */
-	ret = ion_phys(ion_client, hndl, &addr, &ion_data.len);
+	/*  Get the phyiscal address (mva) to the buffer */
+	ret = ion_phys(ion_client, hndl, &mva, &ion_data.len);
 	if (ret < 0) {
 		// TODO: remove debug
 		mdla_debug("%s: ion_phys(%p, %p): %d\n",
@@ -93,7 +105,7 @@ int mdla_ion_kmap(unsigned long arg)
 	}
 
 	ion_data.kva = (__u64) kva;
-	ion_data.mva = addr;
+	ion_data.mva = mva;
 	ion_data.khandle = (__u64) hndl;
 
 	if (copy_to_user((void * __user) arg, &ion_data, sizeof(ion_data)))
