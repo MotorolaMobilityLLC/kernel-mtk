@@ -12,6 +12,16 @@ config MTK_USER_SPACE_GLOBAL_CPUSET
 endmenu
 
 menu "MTK load balance and schedule enhancement"
+config MTK_IDLE_BALANCE_ENHANCEMENT
+	bool "mtk load balance enhancement"
+	depends on SMP && CGROUP_SCHEDTUNE
+	default n
+	help
+	  Mediatek aggressive idle balance, include
+	  1. aggressive idle balance for runnable tasks with idle prefer attributes
+	  2. aggressive idle balance for runnable and running tasks with min_cap(dynamic floor)
+	  3. migrate runnable task directly and use stop machine to migrate running task
+
 config MTK_SCHED_TRACE
 	bool "mtk scheduling trace, output mtk schedule trace into FTRACE"
 	default y
