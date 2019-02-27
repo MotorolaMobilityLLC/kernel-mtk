@@ -120,6 +120,30 @@ config MACH_MT6758
 	  thin-design smartphones.
 	  Support for aarch64 Architecture
 
+config MACH_MT6765
+	bool "MediaTek MT6765"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select MTK_GIC_V3_EXT
+	select MTK_SYSIRQ
+	select MTK_TIMER_V1
+	help
+	  This enables support for MediaTek MT6765
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones. MT6765 also offers significant multitasking and
+	  multimedia improvements.
+
 config MACH_MT3887
 	bool "MediaTek MT3887"
 	select GENERIC_TIME
@@ -139,9 +163,9 @@ config MACH_MT3887
 	select MTK_SYSIRQ
 	select MTK_TIMER_V1
 	help
-	  This enables support for MediaTek MT3778
+	  This enables support for MediaTek MT3887
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
-	  thin-design smartphones. MT3778 also offers significant multitasking and
+	  thin-design smartphones. MT3887 also offers significant multitasking and
 	  multimedia improvements.
 
 config MACH_MT8173
