@@ -63,7 +63,7 @@ static ssize_t mt_log_write(struct file *filp,
 	if (sscanf(buf, "%lld %d ", &second, &level) == 2) {
 		SEQ_printf(NULL, "will print log in level %d",
 			level);
-		SEQ_printf(" about %lld second.\n",
+		SEQ_printf(NULL, " about %lld second.\n",
 			second);
 	} else {
 		SEQ_printf(NULL, "Please echo m n > log;");
