@@ -112,6 +112,13 @@ config BLK_CMDLINE_PARSER
 
 	See Documentation/block/cmdline-partition.txt for more information.
 
+config MTK_BLK_RW_PROFILING
+	bool "Block layer R/W number profiling"
+	default n
+	help
+	  Saying Y here will eanble block read/write size profiling support
+	  for any block device.
+
 menu "Partition Types"
 
 source "block/partitions/Kconfig"

@@ -17,15 +17,16 @@ struct io_context;
 struct cgroup_subsys_state;
 typedef void (bio_end_io_t) (struct bio *);
 
-#define BC_MAX_ENCRYPTION_KEY_SIZE	64
+#define BC_MAX_ENCRYPTION_KEY_SIZE	64 /* MTK PATCH */
 
+/* MTK PATCH */
 struct bio_crypt_ctx {
 	unsigned int	bc_flags;
 	unsigned int	bc_key_size;
-	unsigned long   bc_fs_type;
+	unsigned long	bc_fs_type;
 	struct key	*bc_keyring_key;
 #ifdef CONFIG_HIE_DUMMY_CRYPT
-	u32			dummy_crypt_key;
+	u32		dummy_crypt_key;
 #endif
 };
 
@@ -107,7 +108,7 @@ struct bio {
 	struct bio_set		*bi_pool;
 
 	/* Encryption context. May contain secret key material. */
-	struct bio_crypt_ctx	bi_crypt_ctx;
+	struct bio_crypt_ctx	bi_crypt_ctx; /* MTK PATCH */
 
 	/*
 	 * We can inline a number of vecs at the end of the bio, to avoid
@@ -218,6 +219,10 @@ enum rq_flag_bits {
 	__REQ_PM,		/* runtime pm request */
 	__REQ_HASHED,		/* on IO scheduler merge hash */
 	__REQ_MQ_INFLIGHT,	/* track inflight for MQ */
+#ifdef MTK_UFS_HQA
+	__REQ_POWER_LOSS,	/* MTK PATCH for SPOH */
+#endif
+	__REQ_DEV_STARTED,	/* MTK PATCH: submitted to storage device */
 	__REQ_NR_BITS,		/* stops here */
 };
 
@@ -264,6 +269,11 @@ enum rq_flag_bits {
 #define REQ_PM			(1ULL << __REQ_PM)
 #define REQ_HASHED		(1ULL << __REQ_HASHED)
 #define REQ_MQ_INFLIGHT		(1ULL << __REQ_MQ_INFLIGHT)
+#ifdef MTK_UFS_HQA
+/* MTK PATCH for SPOH */
+#define REQ_POWER_LOSS		(1ULL << __REQ_POWER_LOSS)
+#endif
+#define REQ_DEV_STARTED		(1ULL << __REQ_DEV_STARTED) /* MTK PATCH */
 
 enum req_op {
 	REQ_OP_READ,
@@ -301,6 +311,7 @@ static inline unsigned int blk_qc_t_to_tag(blk_qc_t cookie)
 }
 
 /*
+ * MTK PATCH
  * block crypt flags
  */
 enum bc_flags_bits {
@@ -314,7 +325,7 @@ enum bc_flags_bits {
 	__BC_AES_256_ECB,
 };
 
-#define BC_CRYPT		(1UL << __BC_CRYPT)
+#define BC_CRYPT	(1UL << __BC_CRYPT)
 #define BC_AES_128_XTS	(1UL << __BC_AES_128_XTS)
 #define BC_AES_192_XTS	(1UL << __BC_AES_192_XTS)
 #define BC_AES_256_XTS	(1UL << __BC_AES_256_XTS)
