@@ -154,6 +154,8 @@ struct sbch {
 	/* the number of ext layer on this phy */
 	int ext_layer_num;/*ext:-1  phy:0~3*/
 	unsigned long pre_addr;
+	unsigned int dst_x;
+	unsigned int dst_y;
 	unsigned int height;
 	unsigned int width;
 	int phy_layer;
@@ -183,6 +185,8 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int src_pitch;
 	unsigned int dst_x;
 	unsigned int dst_y;
+	unsigned int real_dst_x;
+	unsigned int real_dst_y;
 	unsigned int dst_w;
 	unsigned int dst_h;
 	unsigned int keyEn;
