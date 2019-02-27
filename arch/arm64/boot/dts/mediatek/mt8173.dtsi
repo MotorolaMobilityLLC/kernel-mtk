@@ -414,6 +414,11 @@
 			status = "disabled";
 		};
 
+		fhctl: fhctl@10209e00 {
+			compatible = "mediatek,mt8173-fhctl";
+			reg = <0 0x10209e00 0 0x100>;
+		};
+
 		mipi_tx0: mipi-dphy@10215000 {
 			compatible = "mediatek,mt8173-mipi-tx";
 			reg = <0 0x10215000 0 0x1000>;
