@@ -217,9 +217,20 @@ static void spm_idle_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage = 0;
 
+/* scenario-oriented */
+#if 0
 	resource_usage = (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) ?
 		spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP)
 		: spm_get_resource_usage();
+/* resource-oriented */
+#else
+	resource_usage = spm_get_resource_usage();
+
+	if (resource_usage & SPM_RESOURCE_CK_26M)
+		resource_usage &= (~SPM_RESOURCE_CK_26M);
+
+	resource_usage |= spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP);
+#endif
 
 
 	mt_secure_call(smc_id[idle_type], pwrctrl->pcm_flags,
@@ -258,6 +269,11 @@ static unsigned long flags;
 static struct wd_api *wd_api;
 static int wd_ret;
 #endif
+
+bool mtk_idle_resource_pre_process(void)
+{
+	return (spm_get_resource_usage() & SPM_RESOURCE_CK_26M);
+}
 
 void mtk_idle_pre_process_by_chip(
 	int idle_type, int cpu, unsigned int op_cond, unsigned int idle_flag)
