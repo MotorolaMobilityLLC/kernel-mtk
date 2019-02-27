@@ -137,22 +137,20 @@ enum mdlaPowerOnType {
 	VPT_IMT_OFF		= 3,
 };
 
-struct mdla_power {
-	uint8_t opp_step;
-	uint8_t freq_step;
-	uint32_t bw; /* unit: MByte/s */
 
-	/* align with core index defined in user space header file */
-	unsigned int core;
-};
-
+/*3 prioritys of cmd*/
+#define MDLA_REQ_MAX_NUM_PRIORITY 3
 
 extern struct MDLA_OPP_INFO mdla_power_table[MDLA_OPP_NUM];
 extern int32_t mdla_thermal_en_throttle_cb(uint8_t vmdla_opp, uint8_t mdla_opp);
 extern int32_t mdla_thermal_dis_throttle_cb(void);
-int mdla_set_power(struct mdla_power *power);
 int mdla_quick_suspend(int core);
 int mdla_boot_up(int core);
 int mdla_shut_down(int core);
+extern int mdla_get_opp(void);
+extern int get_mdlacore_opp(void);
+extern int get_mdla_platform_floor_opp(void);
+extern int get_mdla_ceiling_opp(void);
+extern int get_mdla_opp_to_freq(uint8_t step);
 
 #endif

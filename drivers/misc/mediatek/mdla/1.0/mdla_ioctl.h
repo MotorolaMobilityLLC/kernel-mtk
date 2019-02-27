@@ -123,6 +123,27 @@ struct ioctl_ion {
 	__u64 khandle;  /* [in(unmap)/out(map)] kernel handle */
 	size_t len;     /* [in] memory size */
 };
+struct mdla_power {
+	uint8_t boost_value;
+	/* align with core index defined in user space header file */
+	unsigned int core;
+};
+enum MDLA_OPP_PRIORIYY {
+	DEBUG = 0,
+	THERMAL = 1,
+	POWER_HAL = 2,
+	EARA_QOS = 3,
+	NORMAL = 4,
+	MDLA_OPP_PRIORIYY_NUM
+};
+
+struct mdla_lock_power {
+	unsigned int core;
+	uint8_t max_boost_value;
+	uint8_t min_boost_value;
+	bool lock;
+	enum MDLA_OPP_PRIORIYY priority;
+};
 
 #define IOC_MDLA ('\x1d')
 
@@ -143,5 +164,9 @@ struct ioctl_ion {
 #define IOCTL_PERF_SET_MODE       _IOWR(IOC_MDLA, 14, struct ioctl_perf)
 #define IOCTL_ION_KMAP            _IOWR(IOC_MDLA, 15, struct ioctl_ion)
 #define IOCTL_ION_KUNMAP          _IOWR(IOC_MDLA, 16, struct ioctl_ion)
-
+#define IOCTL_SET_POWER         _IOW(IOC_MDLA, 17, struct mdla_power)
+#define IOCTL_EARA_LOCK_POWER    _IOW(IOC_MDLA, 18, struct mdla_lock_power)
+#define IOCTL_POWER_HAL_LOCK_POWER _IOW(IOC_MDLA, 19, struct mdla_lock_power)
+#define IOCTL_EARA_UNLOCK_POWER   _IOW(IOC_MDLA, 20, struct mdla_lock_power)
+#define IOCTL_POWER_HAL_UNLOCK_POWER _IOW(IOC_MDLA, 21, struct mdla_lock_power)
 #endif
