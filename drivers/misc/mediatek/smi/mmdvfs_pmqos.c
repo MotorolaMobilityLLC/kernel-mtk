@@ -587,6 +587,7 @@ u64 mmdvfs_qos_get_freq(u32 pm_qos_class)
 }
 EXPORT_SYMBOL_GPL(mmdvfs_qos_get_freq);
 
+#define MAX_DUMP (PAGE_SIZE - 1)
 int dump_setting(char *buf, const struct kernel_param *kp)
 {
 	u32 i, j;
@@ -595,12 +596,12 @@ int dump_setting(char *buf, const struct kernel_param *kp)
 
 	for (i = 0; i < ARRAY_SIZE(all_freqs); i++) {
 		mm_freq = all_freqs[i];
-		length += snprintf(buf + length, PAGE_SIZE - length,
+		length += snprintf(buf + length, MAX_DUMP - length,
 			"[%s] step_size: %u, current_step:%d (%lluMhz)\n",
 			mm_freq->prop_name, step_size, mm_freq->current_step,
 			mmdvfs_qos_get_freq(mm_freq->pm_qos_class));
 		for (j = 0; j < step_size; j++) {
-			length += snprintf(buf + length, PAGE_SIZE - length,
+			length += snprintf(buf + length, MAX_DUMP - length,
 				"  [step:%u] vopp: %d, freq: %llu, clk(%u/%u/%u/%u/0x%08x)\n",
 				j, vopp_steps[j], mm_freq->freq_steps[j],
 				mm_freq->step_config[j].clk_type,
@@ -608,13 +609,14 @@ int dump_setting(char *buf, const struct kernel_param *kp)
 				mm_freq->step_config[j].clk_source_id,
 				mm_freq->step_config[j].pll_id,
 				mm_freq->step_config[j].pll_value);
-			if (length >= PAGE_SIZE)
+			if (length >= MAX_DUMP)
 				break;
 		}
-		if (length >= PAGE_SIZE)
+		if (length >= MAX_DUMP)
 			break;
 	}
-	buf[length] = '\0';
+	if (length >= MAX_DUMP)
+		length = MAX_DUMP - 1;
 
 	return length;
 }
