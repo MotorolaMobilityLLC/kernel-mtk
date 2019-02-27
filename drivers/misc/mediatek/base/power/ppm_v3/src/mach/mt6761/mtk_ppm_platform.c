@@ -138,7 +138,8 @@ static unsigned int ppm_get_cpu_temp(enum ppm_cluster cluster)
 
 	switch (cluster) {
 	case PPM_CLUSTER_LL:
-		temp = get_immediate_cpu_wrap() / 1000;
+		/* temp = get_immediate_cpu_wrap() / 1000; */
+		temp = get_immediate_cpuL_wrap() / 1000;
 		break;
 	default:
 		ppm_err("@%s: invalid cluster id = %d\n", __func__, cluster);

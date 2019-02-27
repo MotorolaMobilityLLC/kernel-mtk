@@ -19,7 +19,7 @@
 extern "C" {
 #endif
 
-#include "mach/mtk_ppm_api.h"
+#include "mtk_ppm_api.h"
 #include "mach/mtk_cpufreq_api.h"
 
 
