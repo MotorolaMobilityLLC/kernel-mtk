@@ -17,6 +17,16 @@ extern void __dump_page_owner(struct page *page);
 extern void pagetypeinfo_showmixedcount_print(struct seq_file *m,
 					pg_data_t *pgdat, struct zone *zone);
 
+extern int __dump_pfn_backtrace(unsigned long pfn);
+
+static inline int dump_pfn_backtrace(unsigned long pfn)
+{
+	if (static_branch_unlikely(&page_owner_inited))
+		return __dump_pfn_backtrace(pfn);
+	else
+		return -1;
+}
+
 static inline void reset_page_owner(struct page *page, unsigned int order)
 {
 	if (static_branch_unlikely(&page_owner_inited))
@@ -59,6 +69,13 @@ struct HandleCount {
 	struct hlist_node node;
 };
 
+struct BtEntry {
+	struct list_head list;
+	size_t nr_entries;
+	size_t allocations;
+	unsigned long backtrace[8];
+};
+
 #endif
 #else
 static inline void reset_page_owner(struct page *page, unsigned int order)
@@ -77,6 +94,11 @@ static inline void copy_page_owner(struct page *oldpage, struct page *newpage)
 }
 static inline void set_page_owner_migrate_reason(struct page *page, int reason)
 {
+}
+
+static inline int dump_pfn_backtrace(unsigned long pfn)
+{
+	return -1;
 }
 
 static inline void dump_page_owner(struct page *page)
