@@ -155,7 +155,7 @@ static struct idle_cond_info idle_cg_info[] = {
 
 static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_DP] = {
-		0x00200038, /* MTCMOS, 21:VEN,5:ISP,4:MFG,3:DIS */
+		0x04000038, /* MTCMOS, 26:VCODEC,5:ISP,4:MFG,3:DIS */
 		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
 		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000C5,	/* INFRA2 */
@@ -163,7 +163,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 		0x00000000,	/* MMSYS1 */
 	},
 	[IDLE_TYPE_SO3] = {
-		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
+		0x04000030, /* MTCMOS, 26:VCODEC,5:ISP,4:MFG */
 		0x0A040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
 		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000D1,	/* INFRA2 */
@@ -171,7 +171,7 @@ static unsigned int idle_cond_mask[NR_IDLE_TYPES][NR_CG_GRPS] = {
 		0x00000000,	/* MMSYS1 */
 	},
 	[IDLE_TYPE_SO] = {
-		0x00200030, /* MTCMOS, 21:VEN,5:ISP,4:MFG */
+		0x04000030, /* MTCMOS, 26:VCODEC,5:ISP,4:MFG */
 		0x08040802,	/* INFRA0, 27:dxcc_sec_core_cg_sta */
 		0x00BFB800,	/* INFRA1, 8:icusb_cg_sta (removed) */
 		0x000000C1,	/* INFRA2 */
@@ -341,9 +341,9 @@ void mtk_idle_cond_update_state(void)
 
 	/* read all cg state (not including secure cg) */
 	for (i = 0; i < NR_CG_GRPS; i++) {
-		idle_value[i] = clk[i] =
-			idle_cg_info[i].bBitflip ? 0 : 0xffffffff;
-		/* check mtcmos */
+		idle_value[i] = clk[i] = 0;
+
+		/* check mtcmos, if off set idle_value and clk to 0 disable */
 		if (!(idle_readl(SPM_PWR_STATUS) & idle_cg_info[i].subsys_mask))
 			continue;
 		/* check clkmux */
