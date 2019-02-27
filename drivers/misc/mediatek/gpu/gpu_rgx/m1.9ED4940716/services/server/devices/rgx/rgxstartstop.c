@@ -53,6 +53,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgxapi_km.h"
 #include "rgxdevice.h"
 #endif
+#include "pvr_debug.h"
 
 #define SOC_FEATURE_STRICT_SAME_ADDRESS_WRITE_ORDERING
 
@@ -723,10 +724,10 @@ PVRSRV_ERROR RGXStart(const void *hPrivate)
 	if (RGXDeviceHasFeature(hPrivate, RGX_FEATURE_S7_TOP_INFRASTRUCTURE_BIT_MASK))
 	{
 		/* Set RGX in soft-reset */
-		RGXCommentLog(hPrivate, "RGXStart: soft reset assert step 1");
+		PVR_DPF((PVR_DBG_ERROR, "RGXStart: soft reset assert step 1"));
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_S7_SOFT_RESET_DUSTS);
 
-		RGXCommentLog(hPrivate, "RGXStart: soft reset assert step 2");
+		PVR_DPF((PVR_DBG_ERROR, "RGXStart: soft reset assert step 2"));
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_S7_SOFT_RESET_JONES_ALL | RGX_S7_SOFT_RESET_DUSTS);
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET2, RGX_S7_SOFT_RESET2);
 
@@ -734,13 +735,19 @@ PVRSRV_ERROR RGXStart(const void *hPrivate)
 		(void) RGXReadReg64(hPrivate, RGX_CR_SOFT_RESET);
 
 		/* Take everything out of reset but META/MIPS */
-		RGXCommentLog(hPrivate, "RGXStart: soft reset de-assert step 1 excluding %s", pcRGXFW_PROCESSOR);
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: soft reset de-assertstep 1 excluding %s",
+		pcRGXFW_PROCESSOR));
+
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_S7_SOFT_RESET_DUSTS | RGX_CR_SOFT_RESET_GARTEN_EN);
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET2, 0x0);
 
 		(void) RGXReadReg64(hPrivate, RGX_CR_SOFT_RESET);
 
-		RGXCommentLog(hPrivate, "RGXStart: soft reset de-assert step 2 excluding %s", pcRGXFW_PROCESSOR);
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: soft reset de-assert step 2 excluding %s",
+		pcRGXFW_PROCESSOR));
+
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN);
 
 		(void) RGXReadReg64(hPrivate, RGX_CR_SOFT_RESET);
@@ -748,18 +755,23 @@ PVRSRV_ERROR RGXStart(const void *hPrivate)
 	else
 	{
 		/* Set RGX in soft-reset */
-		RGXCommentLog(hPrivate, "RGXStart: soft reset everything");
+		PVR_DPF((PVR_DBG_ERROR, "RGXStart: soft reset everything"));
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_ALL);
 
 		/* Take Rascal and Dust out of reset */
-		RGXCommentLog(hPrivate, "RGXStart: Rascal and Dust out of reset");
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: Rascal and Dust out of reset"));
+
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_ALL ^ RGX_CR_SOFT_RESET_RASCALDUSTS_EN);
 
 		/* Read soft-reset to fence previous write in order to clear the SOCIF pipeline */
 		(void) RGXReadReg64(hPrivate, RGX_CR_SOFT_RESET);
 
 		/* Take everything out of reset but META/MIPS */
-		RGXCommentLog(hPrivate, "RGXStart: Take everything out of reset but %s", pcRGXFW_PROCESSOR);
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: Take everything out of reset but %s",
+		pcRGXFW_PROCESSOR));
+
 		RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, RGX_CR_SOFT_RESET_GARTEN_EN);
 	}
 
@@ -802,7 +814,13 @@ PVRSRV_ERROR RGXStart(const void *hPrivate)
 	}
 	else
 	{
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: RGXInitMipsProcWrapper starts"));
+
 		RGXInitMipsProcWrapper(hPrivate);
+
+		PVR_DPF((PVR_DBG_ERROR,
+		"RGXStart: RGXInitMipsProcWrapper done"));
 	}
 
 	if (RGXDeviceHasFeature(hPrivate, RGX_FEATURE_AXI_ACELITE_BIT_MASK))
@@ -814,15 +832,19 @@ PVRSRV_ERROR RGXStart(const void *hPrivate)
 	/*
 	 * Initialise BIF.
 	 */
+	PVR_DPF((PVR_DBG_ERROR, "RGXStart: RGXInitBIF starts"));
 	RGXInitBIF(hPrivate);
+	PVR_DPF((PVR_DBG_ERROR, "RGXStart: RGXInitBIF done"));
 
 	RGXCommentLog(hPrivate, "RGXStart: Take %s out of reset", pcRGXFW_PROCESSOR);
 
 	/* Need to wait for at least 16 cycles before taking META/MIPS out of reset ... */
 	RGXWaitCycles(hPrivate, 32, 3);
 
+	PVR_DPF((PVR_DBG_ERROR, "RGXStart: RGX_CR_SOFT_RESET starts"));
 	RGXWriteReg64(hPrivate, RGX_CR_SOFT_RESET, 0x0);
 	(void) RGXReadReg64(hPrivate, RGX_CR_SOFT_RESET);
+	PVR_DPF((PVR_DBG_ERROR, "RGXStart: RGX_CR_SOFT_RESET done"));
 
 	/* ... and afterwards */
 	RGXWaitCycles(hPrivate, 32, 3);
