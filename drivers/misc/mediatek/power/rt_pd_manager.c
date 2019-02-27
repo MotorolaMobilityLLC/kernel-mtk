@@ -212,8 +212,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
 					MAIN_CHARGER, true);
-				charger_manager_enable_charging(chg_consumer,
-					MAIN_CHARGER, true);
 #else
 				mtk_chr_pd_enable_power_path(1);
 #endif
@@ -225,8 +223,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					break;
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
-					MAIN_CHARGER, false);
-				charger_manager_enable_charging(chg_consumer,
 					MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
@@ -243,8 +239,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				/* disable charge */
 #if CONFIG_MTK_GAUGE_VERSION == 30
 				charger_manager_enable_power_path(chg_consumer,
-					MAIN_CHARGER, false);
-				charger_manager_enable_charging(chg_consumer,
 					MAIN_CHARGER, false);
 #else
 				mtk_chr_pd_enable_power_path(0);
