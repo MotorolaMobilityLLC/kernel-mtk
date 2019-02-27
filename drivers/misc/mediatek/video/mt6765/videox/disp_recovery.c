@@ -26,13 +26,7 @@
 #include <linux/interrupt.h>
 #include "ion_drv.h"
 #include "mtk_ion.h"
-/* #include "mtk_idle.h" */
-#ifdef MTK_FB_SPM_SUPPORT
-#include "mtk_spm_reg.h"
-#endif
-/* #include "pcm_def.h" */
-/* #include "mtk_spm_idle.h" */
-//#include "mtk_smi.h"
+
 #include "m4u.h"
 
 #include "disp_drv_platform.h"
