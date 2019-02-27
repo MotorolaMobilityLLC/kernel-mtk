@@ -15,10 +15,6 @@
 #define AEE_COMMON_H
 #include <linux/console.h>
 
-int in_fiq_handler(void);
-
-int aee_dump_stack_top_binary(char *buf, int buf_len, unsigned long bottom,
-				unsigned long top);
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void ram_console_write(struct console *console, const char *s,
 				unsigned int count);
@@ -48,8 +44,5 @@ extern void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 
 /* for test case only */
 extern int no_zap_locks;
-
-/* dedicated reboot flow for exception */
-extern void aee_exception_reboot(void);
 
 #endif				/* AEE_COMMON_H */

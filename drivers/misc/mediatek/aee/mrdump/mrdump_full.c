@@ -272,10 +272,8 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 	}
 }
 
-int __init mrdump_platform_init(const struct mrdump_platform *plat)
+static int __init mrdump_platform_init(void)
 {
-	int mrdump_enable = 1;
-
 	if (mrdump_cblock == NULL) {
 		memset(mrdump_lk, 0, sizeof(mrdump_lk));
 		pr_notice("%s: MT-RAMDUMP no control block\n", __func__);
@@ -289,27 +287,22 @@ int __init mrdump_platform_init(const struct mrdump_platform *plat)
 		return -ENOMEM;
 	}
 
-	mrdump_plat = plat;
-	if (mrdump_plat == NULL) {
-		mrdump_enable = 0;
-		pr_notice("%s: MT-RAMDUMP platform no init\n", __func__);
-		return -EINVAL;
-	}
-
 	if (strcmp(mrdump_lk, MRDUMP_GO_DUMP) != 0) {
-		mrdump_enable = 0;
 		pr_notice("%s: MT-RAMDUMP init failed, lk version %s not matched.\n",
 				__func__, mrdump_lk);
 		return -EINVAL;
 	}
 
-	/* move default enable MT-RAMDUMP to late_init (this function) */
-	if (mrdump_enable)
-		mrdump_plat->hw_enable(mrdump_enable);
-
-	pr_info("%s: done.\n", __func__);
-
+	mrdump_cblock->enabled = MRDUMP_ENABLE_COOKIE;
+	__inner_flush_dcache_all();
+	pr_info("%s: MT-RAMDUMP enabled done\n", __func__);
 	return 0;
+}
+
+int __init mrdump_init(void)
+{
+	mrdump_cblock_init();
+	return mrdump_platform_init();
 }
 
 #if CONFIG_SYSFS
