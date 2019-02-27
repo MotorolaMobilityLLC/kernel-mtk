@@ -14,6 +14,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/i2c.h>
+#include <linux/slab.h>
 #include <linux/input.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
@@ -107,8 +108,28 @@ __attribute__((weak)) int slp_get_wake_reason(void)
  *   [I2C Function For Read/Write bq24297]
  *
  *********************************************************/
+
+static int bq24297_i2c_alloc(void)
+{
+	u8 *i2c_buf;
+
+	i2c_buf = kzalloc(2, GFP_KERNEL);
+	if (!i2c_buf)
+		return -1;
+
+	i2c_set_clientdata(new_client, i2c_buf);
+	return 0;
+}
+
+static void bq24297_i2c_release(void)
+{
+	kfree(i2c_get_clientdata(new_client));
+	i2c_set_clientdata(new_client, NULL);
+}
+
 int bq24297_read_byte(u8 cmd, u8 *data)
 {
+	static u8 *i2c_addr, *i2c_buff;
 	int ret;
 
 	struct i2c_msg msg[2];
@@ -118,12 +139,20 @@ int bq24297_read_byte(u8 cmd, u8 *data)
 		return 0;
 	}
 
+	i2c_addr = i2c_get_clientdata(new_client);
+	if (i2c_addr == NULL) {
+		pr_debug("error: NO I2C buffer\n");
+		return 0;
+	}
+	memcpy(i2c_addr, &cmd, 1);
+	i2c_buff = i2c_addr + 1;
+
 	msg[0].addr = new_client->addr;
-	msg[0].buf = &cmd;
+	msg[0].buf = i2c_addr;
 	msg[0].flags = 0;
 	msg[0].len = 1;
 	msg[1].addr = new_client->addr;
-	msg[1].buf = data;
+	msg[1].buf = i2c_buff;
 	msg[1].flags = I2C_M_RD;
 	msg[1].len = 1;
 
@@ -132,12 +161,14 @@ int bq24297_read_byte(u8 cmd, u8 *data)
 	if (ret != 2)
 		pr_debug("%s: err=%d\n", __func__, ret);
 
+	*data = *i2c_buff;
+
 	return ret == 2 ? 1 : 0;
 }
 
 int bq24297_write_byte(u8 cmd, u8 data)
 {
-	char buf[2];
+	static u8 *i2c_buff;
 	int ret;
 
 	if (!new_client) {
@@ -145,11 +176,16 @@ int bq24297_write_byte(u8 cmd, u8 data)
 		return 0;
 	}
 
-	buf[0] = cmd;
-	buf[1] = data;
+	i2c_buff = i2c_get_clientdata(new_client);
+	if (i2c_buff == NULL) {
+		pr_debug("error: NO I2C buffer\n");
+		return 0;
+	}
 
-	ret = i2c_master_send(new_client, buf, 2);
+	*i2c_buff = cmd;
+	memcpy(i2c_buff + 1, &data, 1);
 
+	ret = i2c_master_send(new_client, i2c_buff, 2);
 	if (ret != 2)
 		pr_debug("%s: err=%d\n", __func__, ret);
 
@@ -1174,6 +1210,12 @@ static void bq24297_driver_shutdown(struct i2c_client *client)
 		disable_irq(client->irq);
 }
 
+static int bq24297_driver_remove(struct i2c_client *client)
+{
+	bq24297_i2c_release();
+	return 0;
+}
+
 static int bq24297_driver_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
@@ -1183,6 +1225,12 @@ static int bq24297_driver_probe(struct i2c_client *client,
 	pr_debug("[bq24297_driver_probe]\n");
 
 	new_client = client;
+
+	ret = bq24297_i2c_alloc();
+	if (ret != 0) {
+		bq24297_i2c_release();
+		return 0;
+	}
 
 	if (!IS_ERR(i2c_reg)) {
 
@@ -1264,6 +1312,7 @@ static struct i2c_driver bq24297_driver = {
 #endif
 		},
 	.probe = bq24297_driver_probe,
+	.remove = bq24297_driver_remove,
 	.shutdown = bq24297_driver_shutdown,
 	.id_table = bq24297_i2c_id,
 };
