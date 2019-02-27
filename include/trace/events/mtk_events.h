@@ -386,6 +386,113 @@ TRACE_EVENT(sspm_ipi,
 	__entry->start, __entry->ipi_id, __entry->ipi_opt)
 );
 
+TRACE_EVENT(perf_index_s,
+	TP_PROTO(
+		int dram_freq,
+		int bw_c,
+		int bw_g,
+		int bw_mm,
+		int bw_total
+	),
+
+	TP_ARGS(dram_freq, bw_c, bw_g, bw_mm, bw_total),
+
+	TP_STRUCT__entry(
+		__field(int, dram_freq)
+		__field(int, bw_c)
+		__field(int, bw_g)
+		__field(int, bw_mm)
+		__field(int, bw_total)
+	),
+
+	TP_fast_assign(
+		__entry->dram_freq = dram_freq;
+		__entry->bw_c     = bw_c;
+		__entry->bw_g     = bw_g;
+		__entry->bw_mm    = bw_mm;
+		__entry->bw_total = bw_total;
+	),
+
+	TP_printk("dram_freq=%d bw=%d|%d|%d|%d",
+	__entry->dram_freq,
+	__entry->bw_c,  __entry->bw_g,  __entry->bw_mm,  __entry->bw_total)
+);
+
+
+TRACE_EVENT(perf_index_l,
+
+	TP_PROTO(
+		int free_mem,
+		int io_wl,
+		int io_req_r,
+		int io_all_r,
+		int io_reqsz_r,
+		int io_reqc_r,
+		int io_req_w,
+		int io_all_w,
+		int io_reqsz_w,
+		int io_reqc_w,
+		int io_dur,
+		int io_q_dept,
+		int *stall
+	),
+
+	TP_ARGS(free_mem,
+		io_wl,
+		io_req_r, io_all_r, io_reqsz_r, io_reqc_r,
+		io_req_w, io_all_w, io_reqsz_w, io_reqc_w,
+		io_dur,
+		io_q_dept,
+		stall
+	),
+
+	TP_STRUCT__entry(
+		__field(int, free_mem)
+		__field(int, io_wl)
+		__field(int, io_req_r)
+		__field(int, io_all_r)
+		__field(int, io_reqsz_r)
+		__field(int, io_reqc_r)
+		__field(int, io_req_w)
+		__field(int, io_all_w)
+		__field(int, io_reqsz_w)
+		__field(int, io_reqc_w)
+		__field(int, io_dur)
+		__field(int, io_q_dept)
+		__array(int, stall, 8)
+	),
+
+	TP_fast_assign(
+		__entry->free_mem   = free_mem;
+		__entry->io_wl      = io_wl;
+		__entry->io_req_r   = io_req_r;
+		__entry->io_all_r   = io_all_r;
+		__entry->io_reqsz_r = io_reqsz_r;
+		__entry->io_reqc_r  = io_reqc_r;
+		__entry->io_req_w   = io_req_w;
+		__entry->io_all_w   = io_all_w;
+		__entry->io_reqsz_w = io_reqsz_w;
+		__entry->io_reqc_w  = io_reqc_w;
+		__entry->io_dur     = io_dur;
+		__entry->io_q_dept  = io_q_dept;
+		memcpy(__entry->stall, stall, sizeof(int)*8);
+	),
+
+	TP_printk(
+		"free_mem=%d iostats=%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d stall=%d|%d|%d|%d|%d|%d|%d|%d",
+		__entry->free_mem,
+		__entry->io_wl,
+		__entry->io_req_r, __entry->io_all_r,
+		__entry->io_reqsz_r, __entry->io_reqc_r,
+		__entry->io_req_w, __entry->io_all_w,
+		__entry->io_reqsz_w, __entry->io_reqc_w,
+		__entry->io_dur,  __entry->io_q_dept,
+		__entry->stall[0], __entry->stall[1],
+		__entry->stall[2], __entry->stall[3],
+		__entry->stall[4], __entry->stall[5],
+		__entry->stall[6], __entry->stall[7])
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */

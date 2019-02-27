@@ -151,4 +151,6 @@ obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
 
 #io boost
 obj-y += io_boost/
+#perf tracker
+obj-y += perf/
 
