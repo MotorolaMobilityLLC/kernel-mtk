@@ -146,6 +146,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	int ret = 0;
 
 	main2_AF_TARGET(a_u4Position);
+	g_u4CurrPosition = a_u4Position;
 
 	return ret;
 }

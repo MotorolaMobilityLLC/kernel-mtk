@@ -411,6 +411,7 @@ static inline int moveAF(unsigned long a_u4Position)
 
 	if ((LC898212XDAF_F_MONO_moveAF(AF_convert((int)a_u4Position)) & 0x1) ==
 	    0) {
+		g_u4CurrPosition = a_u4Position;
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");

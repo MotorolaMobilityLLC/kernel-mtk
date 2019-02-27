@@ -136,42 +136,42 @@ static int initAF(void)
 
 	if (*g_pAF_Opened == 1) {
 
-	u8 data = 0xFF;
-	int i4RetValue = 0;
-	char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
-	char puSendCmd2[2] = {0x01, 0x39};
-	char puSendCmd3[2] = {0x05, 0x07};
+		u8 data = 0xFF;
+		int i4RetValue = 0;
+		char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
+		char puSendCmd2[2] = {0x01, 0x39};
+		char puSendCmd3[2] = {0x05, 0x07};
 
-	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
-	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send 0x00 failed!!\n");
-		return -1;
-	}
+		if (i4RetValue < 0) {
+			LOG_INF("I2C send 0x00 failed!!\n");
+			return -1;
+		}
 
-	data = read_data(0x00);
-	LOG_INF("Addr:0x00 Data:0x%x\n", data);
+		data = read_data(0x00);
+		LOG_INF("Addr:0x00 Data:0x%x\n", data);
 
-	if (data != 0x0)
-		return -1;
+		if (data != 0x0)
+			return -1;
 
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send 0x01 failed!!\n");
-		return -1;
-	}
+		if (i4RetValue < 0) {
+			LOG_INF("I2C send 0x01 failed!!\n");
+			return -1;
+		}
 
-	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
+		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 
-	if (i4RetValue < 0) {
-		LOG_INF("I2C send 0x05 failed!!\n");
-		return -1;
-	}
+		if (i4RetValue < 0) {
+			LOG_INF("I2C send 0x05 failed!!\n");
+			return -1;
+		}
 
-	LOG_INF("driver init success!!\n");
+		LOG_INF("driver init success!!\n");
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
@@ -189,6 +189,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	int ret = 0;
 
 	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
+		g_u4CurrPosition = a_u4Position;
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");

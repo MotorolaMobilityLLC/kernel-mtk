@@ -133,31 +133,31 @@ static int initAF(void)
 
 	if (*g_pAF_Opened == 1) {
 
-	int i4RetValue = 0;
-	char puSendCmdArray[5][2] = {{0x02, 0x01},
-				     {0xFE, 0xFE},
-				     {0x02, 0x02},
-				     {0x06, 0x40},
-				     {0x07, 0x60} };
-	unsigned char cmd_number;
+		int i4RetValue = 0;
+		char puSendCmdArray[5][2] = {{0x02, 0x01},
+					     {0xFE, 0xFE},
+					     {0x02, 0x02},
+					     {0x06, 0x40},
+					     {0x07, 0x60} };
+		unsigned char cmd_number;
 
-	LOG_INF("InitDrv[1] %p, %p\n", &(puSendCmdArray[1][0]),
-		puSendCmdArray[1]);
-	LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
-		puSendCmdArray[2]);
+		LOG_INF("InitDrv[1] %p, %p\n", &(puSendCmdArray[1][0]),
+			puSendCmdArray[1]);
+		LOG_INF("InitDrv[2] %p, %p\n", &(puSendCmdArray[2][0]),
+			puSendCmdArray[2]);
 
-	for (cmd_number = 0; cmd_number < 5; cmd_number++) {
-		if (puSendCmdArray[cmd_number][0] != 0xFE) {
-			i4RetValue =
-				i2c_master_send(g_pstAF_I2Cclient,
+		for (cmd_number = 0; cmd_number < 5; cmd_number++) {
+			if (puSendCmdArray[cmd_number][0] != 0xFE) {
+				i4RetValue =
+					i2c_master_send(g_pstAF_I2Cclient,
 						puSendCmdArray[cmd_number], 2);
 
-			if (i4RetValue < 0)
-				return -1;
-		} else {
-			udelay(200);
+				if (i4RetValue < 0)
+					return -1;
+			} else {
+				udelay(200);
+			}
 		}
-	}
 
 		spin_lock(g_pAF_SpinLock);
 		*g_pAF_Opened = 2;
@@ -175,6 +175,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	int ret = 0;
 
 	if (s4AF_WriteReg((unsigned short)a_u4Position) == 0) {
+		g_u4CurrPosition = a_u4Position;
 		ret = 0;
 	} else {
 		LOG_INF("set I2C failed when moving the motor\n");
