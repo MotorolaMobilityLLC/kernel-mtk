@@ -163,9 +163,9 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_VR_FPS.o
 endif
 
 
-#ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
-#obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
-#obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
-#obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
-#endif
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
+obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
+obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
+endif
 
