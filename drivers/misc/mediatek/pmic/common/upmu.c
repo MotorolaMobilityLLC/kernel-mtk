@@ -1,10 +1,10 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
-
+ * Copyright (C) 2018 MediaTek Inc.
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
@@ -293,8 +293,11 @@ unsigned short pmic_set_hk_reg_value(PMU_FLAGS_LIST_ENUM flagname,
 		mutex_unlock(&pmic_hk_mutex);
 	}
 	if (ret != 0) {
-		pr_notice("[%s] error ret: %d when set Reg[0x%x]=0x%x\n",
-			__func__, ret, (pFlag->offset), val);
+		pr_notice("[%s] error ret: %d when set Reg[0x%x]=0x%x\n"
+		       , __func__
+		       , ret
+		       , (pFlag->offset)
+		       , val);
 		return ret;
 	}
 

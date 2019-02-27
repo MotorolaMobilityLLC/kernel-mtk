@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -51,5 +51,6 @@
 #define MAIN_PMIC_REGULATOR			0x00000203
 #define SUB_PMIC_CTRL				0x00000204
 #define MT6311_FPWM				0x00000205
+#define RT5738_FPWM				0x00000206
 
 #endif	/* __PMIC_IPI_SERVICE_ID_H__ */
