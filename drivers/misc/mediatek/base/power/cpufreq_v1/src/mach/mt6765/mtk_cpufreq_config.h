@@ -28,6 +28,7 @@ enum cpu_level {
 	CPU_LEVEL_2, /* 65T */
 	CPU_LEVEL_3, /* 65 */
 	CPU_LEVEL_4, /* 62 */
+	CPU_LEVEL_5, /* 62LY */
 
 	NUM_CPU_LEVEL,
 };
