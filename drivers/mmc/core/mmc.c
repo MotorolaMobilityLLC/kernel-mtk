@@ -28,6 +28,7 @@
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 #include <linux/kthread.h>
+#include <mt-plat/mtk_boot_common.h>
 #endif
 
 #define DEFAULT_CMD6_TIMEOUT_MS	500
@@ -669,7 +670,15 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (card->ext_csd.rev > 7) {
 		card->ext_csd.cmdq_support = ext_csd[EXT_CSD_CMDQ_SUPPORT];
-		if (card->ext_csd.cmdq_support) {
+		/*
+		 * Workaround: disable cmdq in sensitive situations (like OTA)
+		 * in case cmdq making data wrong because of devices having
+		 * bug(like Samsung:KMRD60014M-B512).
+		 * Use no quirks because we don't want suffer more on weak
+		 * chips in future.
+		 */
+		if (card->ext_csd.cmdq_support
+				&& get_boot_mode() != RECOVERY_BOOT) {
 			pr_notice("[CQ] card support CMDQ\n");
 			card->ext_csd.cmdq_depth =
 				ext_csd[EXT_CSD_CMDQ_DEPTH] + 1;
@@ -1558,6 +1567,7 @@ static int mmc_hs200_tuning(struct mmc_card *card)
 	return mmc_execute_tuning(card);
 }
 
+static struct mmc_host *mmc_host_g;
 /*
  * Handle the detection and initialisation of a card.
  *
@@ -1574,6 +1584,7 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
+	mmc_host_g = host;
 
 	/* Set correct bus mode for MMC before attempting init */
 	if (!mmc_host_is_spi(host))
@@ -2246,6 +2257,19 @@ static int mmc_shutdown(struct mmc_host *host)
 
 	return err;
 }
+
+/*
+ * WARNING: Can modified or removed in future, because this code design is bad,
+ * instead of this, alarm awake should be optimized to go system shutdown
+ * flow.
+ * Send PON(power off notify) if PON enabled when alarm awake phone(rtc reset)
+ * under charge mode.
+ */
+int mmc_charge_shutdown(void)
+{
+	return (mmc_host_g && mmc_host_g->card) ? mmc_shutdown(mmc_host_g) : -1;
+}
+EXPORT_SYMBOL(mmc_charge_shutdown);
 
 /*
  * Callback for resume.
