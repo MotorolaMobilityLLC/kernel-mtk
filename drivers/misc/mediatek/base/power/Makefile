@@ -14,6 +14,9 @@
 obj-$(CONFIG_MACH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6758) += spm_v3/
 obj-$(CONFIG_MACH_MT6758) += leakage_table_v2/
+ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
+obj-$(CONFIG_MACH_MT6758) += upower_v2/
+endif
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += mcdi/
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
