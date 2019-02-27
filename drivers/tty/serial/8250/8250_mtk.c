@@ -118,7 +118,6 @@ struct mtk8250_data {
 	int			line;
 	unsigned int		rxpos;
 	unsigned int		clk_count;
-	spinlock_t		lock;
 	struct clk		*uart_clk;
 	struct clk		*bus_clk;
 	struct mtk8250_reg	reg;
@@ -440,14 +439,12 @@ static int __maybe_unused mtk8250_runtime_suspend(struct device *dev)
 	while
 		(serial_in(up, MTK_UART_DEBUG0));
 
-	spin_lock(&data->lock);
 	if (data->clk_count == 0U)
 		pr_debug("%s clock count is 0\n", __func__);
 	else {
 		clk_disable_unprepare(data->bus_clk);
 		data->clk_count--;
 	}
-	spin_unlock(&data->lock);
 
 	return 0;
 }
@@ -457,19 +454,16 @@ static int __maybe_unused mtk8250_runtime_resume(struct device *dev)
 	struct mtk8250_data *data = dev_get_drvdata(dev);
 	int err;
 
-	spin_lock(&data->lock);
 	if (data->clk_count > 0U)
 		pr_debug("%s clock count is %d\n", __func__, data->clk_count);
 	else {
 		err = clk_prepare_enable(data->bus_clk);
 		if (err) {
 			dev_warn(dev, "Can't enable bus clock\n");
-			spin_unlock(&data->lock);
 			return err;
 		}
 		data->clk_count++;
 	}
-	spin_unlock(&data->lock);
 
 	return 0;
 }
@@ -568,7 +562,6 @@ static int mtk8250_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	spin_lock_init(&uart.port.lock);
-	spin_lock_init(&data->lock);
 	uart.port.mapbase = regs->start;
 	uart.port.irq = irq->start;
 	uart.port.pm = mtk8250_do_pm;
