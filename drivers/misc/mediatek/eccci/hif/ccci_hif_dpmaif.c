@@ -941,8 +941,9 @@ static int dpmaif_rx_start(struct dpmaif_rx_queue *rxq, unsigned short pit_cnt,
 					"pkt(%d/%d): len = 0x%x, offset=0x%llx-0x%llx, skb(%p, %p, 0x%x, 0x%x)\n",
 					cur_pit, cur_bid, data_len,
 					data_phy_addr, data_base_addr,
-					new_skb->head,  new_skb->data,
-					new_skb->tail, new_skb->end);
+					new_skb->head, new_skb->data,
+					(unsigned int)new_skb->tail,
+					(unsigned int)new_skb->end);
 
 				if (cur_pit > 2) {
 					temp_u32 = (unsigned int *)
