@@ -17,7 +17,9 @@ config FPGA_EARLY_PORTING
 	bool "MTK FPGA EARLY PORTING"
 	help
 	  Used for FPGA early porting to separate code segments between FPGA
-	  platform and non-FPGA platform
+	  platform and non-FPGA platform.
+	  Say Y here if you are doing FPGA early porting.
+	  If unsure, say N
 
 config MTK_LM_MODE
 	bool "MTK Large Memory mode"
@@ -99,9 +101,12 @@ config EXTREME_LOW_RAM
 	  If you are not sure about this, do not set it to y
 
 config MTK_LDVT
-	bool "LDVT"
+	bool "MTK LDVT"
 	help
-	  Support LDVT or not
+	  This option is used for the MTK Linux Design Verification Test
+	  Platform support.
+	  Say Y here if you are doing LDVT
+	  If unsure, say N
 
 config MTK_BOUNCING_CHECK
 	bool "Enable bouncing buffer check"
