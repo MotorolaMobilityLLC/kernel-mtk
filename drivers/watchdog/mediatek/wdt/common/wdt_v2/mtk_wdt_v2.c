@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#if 1
+#ifdef CONFIG_FPGA_EARLY_PORTING
 #define __USING_DUMMY_WDT_DRV__
 #endif
 
