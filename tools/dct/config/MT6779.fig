@@ -1,5 +1,3 @@
-<<<<<<< HEAD   (05cee6 [ALPS04101760] vpu:vpu dvfs porting)
-=======
 [Chip Type]
 Chip = MT6779
 GPIO_Pull_Sel = 1
@@ -281,4 +279,3 @@ GPIO155::ANT_SEL8=0
 
 [POWER]
 POWER_COUNT=0
->>>>>>> BRANCH (0f074e [ALPS04095870] dct: support MT6779)
