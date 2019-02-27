@@ -141,8 +141,8 @@ void ppm_ipi_update_limit(struct ppm_client_req req)
 		data.u.update_limit.cluster_limit[i].max_cpu_core =
 			(unsigned char)req.cpu_limit[i].max_cpu_core;
 		data.u.update_limit.cluster_limit[i].advise_freq_idx =
-			(req.cpu_limit[i].advise_freq_idx < 0)
-			? 0xFF : (char)req.cpu_limit[i].advise_freq_idx;
+			(req.cpu_limit[i].advise_cpufreq_idx < 0)
+			? 0xFF : (char)req.cpu_limit[i].advise_cpufreq_idx;
 	}
 
 	ppm_ipi_to_sspm_command(PPM_IPI_UPDATE_LIMIT, &data);
