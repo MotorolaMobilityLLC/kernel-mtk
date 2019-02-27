@@ -1379,12 +1379,12 @@ static inline void pwrap_dump_ap_register(void)
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x0);
 	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x8); /* clear log */
 
-#ifndef PMIC_WRAP_DEBUG_LOGGING
+#ifdef PMIC_WRAP_MATCH_SUPPORT
 	/* Matching mode and Stop recording after interrupt trigger */
 	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x5); /* reenable */
 #else
-	/* Logging mode and Continue recording after interrupt trigger */
-	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x2); /* reenable */
+	/* Matching mode and Continue recording after interrupt trigger */
+	WRAP_WR32(PMIC_WRAP_MONITOR_CTRL_0, 0x1); /* reenable */
 #endif
 	WRAP_WR32(PMIC_WRAP_WACS2_EN, 0x1);
 
