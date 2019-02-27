@@ -262,6 +262,8 @@
 		interrupt-controller;
 		#interrupt-cells = <2>;
 
+		mediatek,system-power-controller;
+
 		mt6397regulator: mt6397regulator {
 			compatible = "mediatek,mt6397-regulator";
 
