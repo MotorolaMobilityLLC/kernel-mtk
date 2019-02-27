@@ -121,7 +121,7 @@ do {			\
 	cmdq_core_turnoff_first_dump(); \
 	aee_kernel_warning_api(__FILE__, __LINE__, \
 		DB_OPT_DEFAULT | DB_OPT_PROC_CMDQ_INFO | \
-		DB_OPT_MMPROFILE_BUFFER | DB_OPTs, \
+		DB_OPT_MMPROFILE_BUFFER | DB_OPT_FTRACE | DB_OPTs, \
 		dispatchedTag, "error: "string, ##args); \
 } while (0);	\
 }
