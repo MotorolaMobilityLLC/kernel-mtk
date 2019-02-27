@@ -1693,7 +1693,7 @@ static ssize_t mtk_gpio_show_pin(struct device *dev,
 	}
 
 	len += snprintf(buf+len, bufLen-len,
-		"PIN: (MODE)(DIR)(DOUT)(DIN)(IES)(SMT)(DRIVE)(PULL_EN)(PULL_SEL)(R1 R0)\n");
+		"PIN: (MODE)(DIR)(DOUT)(DIN)(DRIVE)(SMT)(IES)(PULL_EN)(PULL_SEL)(R1 R0)\n");
 
 	for (i = pctl->dbg_start; i < pctl->chip->ngpio; i++) {
 		if (len > (bufLen - 96)) {
