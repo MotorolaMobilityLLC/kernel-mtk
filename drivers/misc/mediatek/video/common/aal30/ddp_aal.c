@@ -23,7 +23,13 @@
 #include <linux/uaccess.h>
 #include <linux/atomic.h>
 #include <linux/delay.h>
+#if defined(LED_READY)
 #include <mtk_leds_drv.h>
+#else
+#define backlight_brightness_set(x) do { } while (0)
+#define MT65XX_LED_MODE_NONE (0)
+#define MT65XX_LED_MODE_CUST_LCM (4)
+#endif
 #include <cmdq_record.h>
 #include <ddp_reg.h>
 #include <ddp_drv.h>
