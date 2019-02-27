@@ -1046,6 +1046,8 @@ static int _mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 		reg_ichg << MT6370_SHIFT_ICHG
 	);
 
+	if (chg_data->chip->chip_vid == 0xf0)
+		goto bypass_ieoc_workaround;
 	/* Workaround to make IEOC accurate */
 	if (uA < 900000) /* 900mA */
 		ret = mt6370_set_ieoc(chg_data,
@@ -1053,6 +1055,7 @@ static int _mt6370_set_ichg(struct mt6370_pmu_charger_data *chg_data, u32 uA)
 	else
 		ret = mt6370_set_ieoc(chg_data, chg_data->chg_desc->ieoc);
 
+bypass_ieoc_workaround:
 	/* For adc workaround */
 	mutex_unlock(&chg_data->ichg_access_lock);
 
