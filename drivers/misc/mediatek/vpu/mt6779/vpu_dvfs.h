@@ -81,5 +81,10 @@ extern struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM];
 extern int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp);
 extern int32_t vpu_thermal_dis_throttle_cb(void);
 extern int get_vpu_opp(void);
+extern int get_vpu_dspcore_opp(int core);
+extern int get_vpu_platform_floor_opp(void);
+extern int get_vpu_ceiling_opp(int core);
+extern int get_vpu_opp_to_freq(uint8_t step);
+
 
 #endif
