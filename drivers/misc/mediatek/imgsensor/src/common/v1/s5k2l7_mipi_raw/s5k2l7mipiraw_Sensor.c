@@ -484,7 +484,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 static kal_uint16 read_cmos_sensor_twobyte(kal_uint32 addr)
 {
 	kal_uint16 get_byte = 0;
-	char get_word[2];
+	char get_word[2] = { 0, 0};
 	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
 	/* iReadRegI2C(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id); */
 	iReadRegI2CTiming(pu_send_cmd, 2, get_word, 2, imgsensor.i2c_write_id,
@@ -2432,6 +2432,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 		switch (*feature_data) {
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+			if (fps == 240)
+			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+				imgsensor_info.cap1.mipi_pixel_rate;
+			else
 			*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
 				imgsensor_info.cap.mipi_pixel_rate;
 			break;

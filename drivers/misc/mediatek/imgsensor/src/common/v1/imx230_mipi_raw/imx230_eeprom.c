@@ -50,13 +50,12 @@ BYTE IMX230_DCC_data[96] = { 0 };
 
 static bool get_done_dcc;
 static int last_size_dcc;
-static int last_offset_dcc;
 
 static bool get_done_spc;
 static int last_size_spc;
-static int last_offset_spc;
 
 
+#if 0
 static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 {
 	char pu_send_cmd[2] = { (char)(addr >> 8), (char)(addr & 0xFF) };
@@ -72,28 +71,45 @@ static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 		return false;
 	return true;
 }
-
+#endif
 static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 {
 	int i = 0;
 	int offset = addr;
+	int ret;
+	u8 pu_send_cmd[2];
 
+	#define MAX_READ_WRITE_SIZE 255
+	for (i = 0; i < size; i += MAX_READ_WRITE_SIZE) {
+		pu_send_cmd[0] = (u8) (offset >> 8);
+		pu_send_cmd[1] = (u8) (offset & 0xFF);
 
-	for (i = 0; i < size; i++) {
-		if (!selective_read_eeprom(offset, &data[i])) {
-			pr_debug("%s fail 0x%0x %d\n", __func__, offset, i);
+		if (i + MAX_READ_WRITE_SIZE > size) {
+			ret = iReadRegI2C(pu_send_cmd, 2,
+					 (u8 *) (data + i),
+					 (size - i),
+					 IMX230_EEPROM_READ_ID);
+
+		} else {
+			ret = iReadRegI2C(pu_send_cmd, 2,
+					 (u8 *) (data + i),
+					 MAX_READ_WRITE_SIZE,
+					 IMX230_EEPROM_READ_ID);
+		}
+		if (ret < 0) {
+			pr_debug("read spc failed!\n");
 			return false;
 		}
-		offset++;
+
+		offset += MAX_READ_WRITE_SIZE;
 	}
+
 	if (addr == SPC_START_ADDR) {
 		get_done_spc = true;
 		last_size_spc = size;
-		last_offset_spc = offset;
 	} else {
 		get_done_dcc = true;
 		last_size_dcc = size;
-		last_offset_dcc = offset;
 	}
 	pr_debug("exit _read_eeprom size = %d\n", size);
 	return true;
@@ -106,13 +122,13 @@ void read_imx230_SPC(BYTE *data)
 	int addr = SPC_START_ADDR;
 	int size = 352;
 
-	pr_debug("read imx230 SPC, size = %d, %d\n", size, last_offset_spc);
+	pr_debug("read imx230 SPC, size = %d\n", size);
+
 #if 1
 	if (!get_done_spc || last_size_spc != size) {
 		if (!_read_imx230_eeprom(addr, data, size)) {
 			get_done_spc = 0;
 			last_size_spc = 0;
-			last_offset_spc = 0;
 		}
 	}
 #endif
@@ -126,13 +142,12 @@ void read_imx230_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size)
 	addr = DCC_START_ADDR;
 	size = 96;
 
-	pr_debug("read imx230 DCC, size = %d %d\n", size, last_offset_dcc);
+	pr_debug("read imx230 DCC, size = %d\n", size);
 
 	if (!get_done_dcc || last_size_dcc != size) {
 		if (!_read_imx230_eeprom(addr, IMX230_DCC_data, size)) {
 			get_done_dcc = 0;
 			last_size_dcc = 0;
-			last_offset_dcc = 0;
 		}
 	}
 
