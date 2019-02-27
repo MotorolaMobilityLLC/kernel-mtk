@@ -588,8 +588,10 @@
 			clocks = <&pericfg CLK_PERI_THERM>, <&pericfg CLK_PERI_AUXADC>;
 			clock-names = "therm", "auxadc";
 			resets = <&pericfg MT8173_PERI_THERM_SW_RST>;
+			reset-names = "therm";
 			mediatek,auxadc = <&auxadc>;
 			mediatek,apmixedsys = <&apmixedsys>;
+			mediatek,pericfg = <&pericfg>;
 		};
 
 		nor_flash: spi@1100d000 {
