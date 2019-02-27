@@ -173,3 +173,20 @@ config MTK_RT_ENHANCEMENT
 	default y
 
 endmenu
+
+menu "MTK runqueue statistic calculation"
+config MTK_SCHED_RQAVG_KS
+	bool "Enable runqueue statistic calculation used in kernel space operation"
+	depends on SMP
+	help
+	  MTK ruqueue statistic kernel space CPUfreq governors, e.g., hotplug
+	  TLP estimation,
+	  heavy task detection and
+	  per CPU load for kernel space CPUfreq governors
+
+config MTK_SCHED_RQAVG_US
+	bool "Enable runqueue staticsic calculation used in user space operation"
+	depends on SMP && HIGH_RES_TIMERS
+	help
+	  TLP estimation for user space CPUfreq governors
+endmenu
