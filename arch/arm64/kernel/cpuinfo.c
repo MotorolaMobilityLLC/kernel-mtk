@@ -19,6 +19,7 @@
 #include <asm/cpu.h>
 #include <asm/cputype.h>
 #include <asm/cpufeature.h>
+#include <asm/elf.h>
 
 #include <linux/bitops.h>
 #include <linux/bug.h>
@@ -50,6 +51,9 @@ static char *icache_policy_str[] = {
 };
 
 unsigned long __icache_flags;
+
+/* machine descriptor for arm64 device */
+static const char *machine_desc_str;
 
 static const char *const hwcap_str[] = {
 	"fp",
@@ -103,10 +107,27 @@ static const char *const compat_hwcap2_str[] = {
 };
 #endif /* CONFIG_COMPAT */
 
+/* setup machine descriptor */
+void machine_desc_set(const char *str)
+{
+	machine_desc_str = str;
+}
+
 static int c_show(struct seq_file *m, void *v)
 {
 	int i, j;
 	bool compat = personality(current->personality) == PER_LINUX32;
+
+	/* a hint message to notify that some process reads /proc/cpuinfo */
+	pr_debug("Dump cpuinfo\n");
+
+	/*
+	 * backward-compatibility for thrid-party applications:
+	 * cpu_info->cpu_name is deprecated, print "AArch64 Processor" instead
+	 * (As the sring in arch/arm64/kernel/cputable.c for legacy kernel)
+	 */
+	seq_printf(m, "Processor\t: AArch64 Processor rev %d (%s)\n",
+			read_cpuid_id() & 15, ELF_PLATFORM);
 
 	for_each_online_cpu(i) {
 		struct cpuinfo_arm64 *cpuinfo = &per_cpu(cpu_data, i);
@@ -157,6 +178,9 @@ static int c_show(struct seq_file *m, void *v)
 		seq_printf(m, "CPU part\t: 0x%03x\n", MIDR_PARTNUM(midr));
 		seq_printf(m, "CPU revision\t: %d\n\n", MIDR_REVISION(midr));
 	}
+
+	/* backward-compatibility for thrid-party applications */
+	seq_printf(m, "Hardware\t: %s\n", machine_desc_str);
 
 	return 0;
 }
