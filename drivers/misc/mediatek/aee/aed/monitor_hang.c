@@ -35,6 +35,7 @@
 #include <linux/jiffies.h>
 #include <linux/ptrace.h>
 #include <asm/stacktrace.h>
+#include <asm/traps.h>
 #include "aed.h"
 #include <linux/pid.h>
 #ifdef CONFIG_MTK_BOOT
@@ -143,6 +144,8 @@ static ssize_t monitor_hang_proc_write(struct file *filp, const char *ubuf,
 	} else if (val == 0) {
 		monit_hang_flag = 0;
 		pr_debug("[hang_detect] disable ke.\n");
+	} else if (val > 10) {
+		show_native_bt_by_pid((int)val);
 	}
 
 	return cnt;
@@ -341,18 +344,12 @@ static int FindTaskByName(char *name)
 static void Log2HangInfo(const char *fmt, ...)
 {
 	unsigned long len = 0;
-	static int times;
 	va_list ap;
 
-	LOGV("len 0x%lx+++, times:%d, MaxSize:%lx\n", (long)(Hang_Info_Size),
-		times++, (unsigned long)MaxHangInfoSize);
 	if ((Hang_Info_Size + MAX_STRING_SIZE) >=
-			(unsigned long)MaxHangInfoSize) {
-		LOGE(
-		    "HangInfo Buffer overflow len(0x%x), MaxHangInfoSize:0x%lx !!!!!!!\n"
-		     , Hang_Info_Size, (long)MaxHangInfoSize);
+			(unsigned long)MaxHangInfoSize)
 		return;
-	}
+
 	va_start(ap, fmt);
 	len = vscnprintf(&Hang_Info[Hang_Info_Size], MAX_STRING_SIZE, fmt, ap);
 	va_end(ap);
@@ -362,11 +359,9 @@ static void Log2HangInfo(const char *fmt, ...)
 static void Buff2HangInfo(const char *buff, unsigned long size)
 {
 	if (((unsigned long)Hang_Info_Size + size)
-		>= (unsigned long)MaxHangInfoSize) {
-		pr_debug("Buff2HangInfo Buffer overflow len(0x%x), MaxHangInfoSize:0x%lx !!!!!!!\n",
-			 Hang_Info_Size, (long)MaxHangInfoSize);
+		>= (unsigned long)MaxHangInfoSize)
 		return;
-	}
+
 	memcpy(&Hang_Info[Hang_Info_Size], buff, size);
 	Hang_Info_Size += size;
 
@@ -389,6 +384,162 @@ static void DumpMsdc2HangInfo(void)
 	}
 }
 
+/* copy from arch/armxx/kernel/stacktrace.c file */
+/* Linux will skip shed and lock function address */
+/* We need this information for hand issue although it have some risk*/
+#ifdef __aarch64__		/* 64bit */
+struct stack_trace_data {
+	struct stack_trace *trace;
+	unsigned int no_sched_functions;
+	unsigned int skip;
+};
+
+static int save_trace(struct stackframe *frame, void *d)
+{
+	struct stack_trace_data *data = d;
+	struct stack_trace *trace = data->trace;
+	unsigned long addr = frame->pc;
+
+	if (data->no_sched_functions && in_sched_functions(addr))
+		return 0;
+	if (data->skip) {
+		data->skip--;
+		return 0;
+	}
+
+	trace->entries[trace->nr_entries++] = addr;
+
+	return trace->nr_entries >= trace->max_entries;
+}
+
+static void save_stack_trace_tsk_me(struct task_struct *tsk,
+	struct stack_trace *trace)
+{
+	struct stack_trace_data data;
+	struct stackframe frame;
+
+	data.trace = trace;
+	data.skip = trace->skip;
+
+	if (tsk != current) {
+		data.no_sched_functions = 0; /* modify to 0 */
+		frame.fp = thread_saved_fp(tsk);
+		frame.sp = thread_saved_sp(tsk);
+		frame.pc = thread_saved_pc(tsk);
+	} else {
+		data.no_sched_functions = 0;
+		frame.fp = (unsigned long)__builtin_frame_address(0);
+		frame.sp = current_stack_pointer;
+		frame.pc = (unsigned long)save_stack_trace_tsk_me;
+	}
+#ifdef CONFIG_FUNCTION_GRAPH_TRACER
+	frame.graph = tsk->curr_ret_stack;
+#endif
+
+	walk_stackframe(tsk, &frame, save_trace, &data);
+	if (trace->nr_entries < trace->max_entries)
+		trace->entries[trace->nr_entries++] = ULONG_MAX;
+}
+
+
+#else
+struct stack_trace_data {
+	struct stack_trace *trace;
+	unsigned long last_pc;
+	unsigned int no_sched_functions;
+	unsigned int skip;
+};
+
+static int save_trace(struct stackframe *frame, void *d)
+{
+	struct stack_trace_data *data = d;
+	struct stack_trace *trace = data->trace;
+	struct pt_regs *regs;
+	unsigned long addr = frame->pc;
+
+	if (data->no_sched_functions && in_sched_functions(addr))
+		return 0;
+	if (data->skip) {
+		data->skip--;
+		return 0;
+	}
+
+	trace->entries[trace->nr_entries++] = addr;
+
+	if (trace->nr_entries >= trace->max_entries)
+		return 1;
+
+	/*
+	 * in_exception_text() is designed to test if the PC is one of
+	 * the functions which has an exception stack above it, but
+	 * unfortunately what is in frame->pc is the return LR value,
+	 * not the saved PC value.  So, we need to track the previous
+	 * frame PC value when doing this.
+	 */
+	addr = data->last_pc;
+	data->last_pc = frame->pc;
+	if (!in_exception_text(addr))
+		return 0;
+
+	regs = (struct pt_regs *)frame->sp;
+
+	trace->entries[trace->nr_entries++] = regs->ARM_pc;
+
+	return trace->nr_entries >= trace->max_entries;
+}
+
+/* This must be noinline to so that our skip calculation works correctly */
+static noinline void __save_stack_trace(struct task_struct *tsk,
+	struct stack_trace *trace, unsigned int nosched)
+{
+	struct stack_trace_data data;
+	struct stackframe frame;
+
+	data.trace = trace;
+	data.last_pc = ULONG_MAX;
+	data.skip = trace->skip;
+	data.no_sched_functions = nosched;
+
+	if (tsk != current) {
+#if 0
+#ifdef CONFIG_SMP
+		/*
+		 * What guarantees do we have here that 'tsk' is not
+		 * running on another CPU?  For now, ignore it as we
+		 * can't guarantee we won't explode.
+		 */
+		if (trace->nr_entries < trace->max_entries)
+			trace->entries[trace->nr_entries++] = ULONG_MAX;
+		return;
+#endif
+#else
+		frame.fp = thread_saved_fp(tsk);
+		frame.sp = thread_saved_sp(tsk);
+		frame.lr = 0;		/* recovered from the stack */
+		frame.pc = thread_saved_pc(tsk);
+#endif
+	} else {
+		/* We don't want this function nor the caller */
+		data.skip += 2;
+		frame.fp = (unsigned long)__builtin_frame_address(0);
+		frame.sp = current_stack_pointer;
+		frame.lr = (unsigned long)__builtin_return_address(0);
+		frame.pc = (unsigned long)__save_stack_trace;
+	}
+
+	walk_stackframe(&frame, save_trace, &data);
+	if (trace->nr_entries < trace->max_entries)
+		trace->entries[trace->nr_entries++] = ULONG_MAX;
+}
+
+static void save_stack_trace_tsk_me(struct task_struct *tsk,
+	struct stack_trace *trace)
+{
+	__save_stack_trace(tsk, trace, 0); /* modify to 0*/
+}
+
+#endif
+
 static void get_kernel_bt(struct task_struct *tsk)
 {
 	struct stack_trace trace;
@@ -400,7 +551,7 @@ static void get_kernel_bt(struct task_struct *tsk)
 	trace.nr_entries = 0;
 	trace.max_entries = 32;
 	trace.skip = 0;
-	save_stack_trace_tsk(tsk, &trace);
+	save_stack_trace_tsk_me(tsk, &trace);
 	for (i = 0; i < trace.nr_entries; i++)
 		Log2HangInfo("<%lx> %pS\n", (long)trace.entries[i],
 				(void *)trace.entries[i]);
@@ -475,13 +626,418 @@ void sched_show_task_local(struct task_struct *p)
 	rcu_read_unlock();
 	Log2HangInfo("%-15.15s %c ", p->comm,
 		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%lld.%06ld %d %1ld %1ld 0x%lx\n",
+	Log2HangInfo("%lld.%06ld %d %lu %lu 0x%lx\n",
 		nsec_high(p->se.sum_exec_runtime),
-		nsec_low(p->se.sum_exec_runtime), task_pid_nr(p),
-		(long long)p->nvcsw, (long long)p->nivcsw,
+		nsec_low(p->se.sum_exec_runtime),
+		task_pid_nr(p), p->nvcsw, p->nivcsw,
 		(unsigned long)task_thread_info(p)->flags);
+	/* nvscw: voluntary context switch.  */
+	/* requires a resource that is unavailable. */
+	/* nivcsw: involuntary context switch. */
+	/* time slice out or when higher-priority thread to run*/
 	get_kernel_bt(p); /* Catch kernel-space backtrace */
 }
+
+static int DumpThreadNativeMaps_log(pid_t pid)
+{
+	struct task_struct *current_task;
+	struct vm_area_struct *vma;
+	int mapcount = 0;
+	struct file *file;
+	int flags;
+	struct mm_struct *mm;
+	struct pt_regs *user_ret;
+	char tpath[512];
+	char *path_p = NULL;
+	struct path base_path;
+
+	current_task = find_task_by_vpid(pid);	/* get tid task */
+	if (current_task == NULL)
+		return -ESRCH;
+	user_ret = task_pt_regs(current_task);
+
+	if (!user_mode(user_ret)) {
+		pr_info(" %s,%d:%s: in user_mode",
+			__func__, pid, current_task->comm);
+		return -1;
+	}
+
+	if (current_task->mm == NULL) {
+		pr_info(" %s,%d:%s: current_task->mm == NULL",
+			__func__, pid, current_task->comm);
+		return -1;
+	}
+
+	vma = current_task->mm->mmap;
+	pr_info("Dump native maps files:\n");
+	while (vma && (mapcount < current_task->mm->map_count)) {
+		file = vma->vm_file;
+		flags = vma->vm_flags;
+		if (file) {	/* !!!!!!!!only dump 1st mmaps!!!!!!!!!!!! */
+			if (flags & VM_EXEC) {
+			/* we only catch code section for reduce maps space */
+				base_path = file->f_path;
+				path_p = d_path(&base_path, tpath, 512);
+				pr_info("%08lx-%08lx %c%c%c%c    %s\n",
+				vma->vm_start,
+				vma->vm_end, flags & VM_READ ? 'r' : '-',
+				flags & VM_WRITE ? 'w' : '-',
+				flags & VM_EXEC ? 'x' : '-',
+				flags & VM_MAYSHARE ? 's' : 'p', path_p);
+			}
+		} else {
+			const char *name = arch_vma_name(vma);
+
+			mm = vma->vm_mm;
+			if (!name) {
+				if (mm) {
+				if (vma->vm_start <= mm->start_brk &&
+				    vma->vm_end >= mm->brk) {
+					name = "[heap]";
+				} else if (vma->vm_start <= mm->start_stack &&
+				vma->vm_end >= mm->start_stack) {
+					name = "[stack]";
+				}
+				} else {
+					name = "[vdso]";
+				}
+			}
+
+			if (flags & VM_EXEC) {
+				pr_info("%08lx-%08lx %c%c%c%c %s\n",
+				vma->vm_start,
+				vma->vm_end, flags & VM_READ ? 'r' : '-',
+				flags & VM_WRITE ? 'w' : '-',
+				flags & VM_EXEC ? 'x' : '-',
+				flags & VM_MAYSHARE ? 's' : 'p', name);
+			}
+		}
+		vma = vma->vm_next;
+		mapcount++;
+	}
+
+	return 0;
+}
+
+
+
+static int DumpThreadNativeInfo_By_tid_log(pid_t tid)
+{
+	struct task_struct *current_task;
+	struct pt_regs *user_ret;
+	struct vm_area_struct *vma;
+	int ret = -1;
+
+	/* current_task = get_current(); */
+	current_task = find_task_by_vpid(tid);	/* get tid task */
+	if (current_task == NULL)
+		return -ESRCH;
+	user_ret = task_pt_regs(current_task);
+
+	if (!user_mode(user_ret)) {
+		pr_info(" %s,%d:%s,fail in user_mode",
+			__func__, tid, current_task->comm);
+		return ret;
+	}
+
+	if (current_task->mm == NULL) {
+		pr_info(" %s,%d:%s, current_task->mm == NULL",
+			__func__, tid, current_task->comm);
+		return ret;
+	}
+
+#ifndef __aarch64__		/* 32bit */
+{
+	unsigned int tmpfp, tmp, tmpLR;
+	unsigned int native_bt[16];
+	unsigned int userstack_start = 0;
+	unsigned int userstack_end = 0;
+	int copied, frames;
+
+	pr_info(" pc/lr/sp 0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_pc), (long)(user_ret->ARM_lr),
+	     (long)(user_ret->ARM_sp));
+	pr_info("r12-r0 0x%lx/0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_ip), (long)(user_ret->ARM_fp),
+		(long)(user_ret->ARM_r10), (long)(user_ret->ARM_r9));
+	pr_info("0x%lx/0x%lx/0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_r8), (long)(user_ret->ARM_r7),
+		(long)(user_ret->ARM_r6), (long)(user_ret->ARM_r5),
+		(long)(user_ret->ARM_r4));
+	pr_info("0x%lx/0x%lx/0x%lx/0x%lx\n",
+		(long)(user_ret->ARM_r3), (long)(user_ret->ARM_r2),
+		(long)(user_ret->ARM_r1), (long)(user_ret->ARM_r0));
+
+	userstack_start = (unsigned long)user_ret->ARM_sp;
+	vma = current_task->mm->mmap;
+
+	while (vma != NULL) {
+		if (vma->vm_start <= userstack_start &&
+			vma->vm_end >= userstack_start) {
+			userstack_end = vma->vm_end;
+			break;
+		}
+		vma = vma->vm_next;
+		if (vma == current_task->mm->mmap)
+			break;
+	}
+
+	if (userstack_end == 0) {
+		pr_info(" %s,%d:%s,userstack_end == 0",
+			__func__, tid, current_task->comm);
+		return ret;
+	}
+
+	native_bt[0] = user_ret->ARM_pc;
+	native_bt[1] = user_ret->ARM_lr;	/* lr */
+	frames = 2;
+	tmpfp = user_ret->ARM_fp;
+	while ((unsigned long)tmpfp < userstack_end &&
+		(unsigned long)tmpfp > userstack_start) {
+		copied = access_process_vm(current_task,
+			(unsigned long)tmpfp, &tmp,
+			sizeof(tmp), 0);
+		if (copied != sizeof(tmp)) {
+			pr_info("access_process_vm	fp error\n");
+			return -EIO;
+		}
+		if (((unsigned long)tmp >= userstack_start) &&
+			((unsigned long)tmp <= userstack_end - 4)) {
+			/* CLANG */
+			copied = access_process_vm(current_task,
+				(unsigned long)tmpfp + 4,
+				&tmpLR, sizeof(tmpLR), 0);
+			if (copied != sizeof(tmpLR)) {
+				pr_info("access_process_vm	pc error\n");
+				return -EIO;
+			}
+			tmpfp = tmp;
+			native_bt[frames] = tmpLR - 4;
+			frames++;
+		} else {
+			copied = access_process_vm(current_task,
+				(unsigned long)tmpfp - 4,
+				&tmpLR, sizeof(tmpLR), 0);
+			if (copied != sizeof(tmpLR)) {
+				pr_info("access_process_vm	pc error\n");
+				return -EIO;
+			}
+			tmpfp = tmpLR;
+			native_bt[frames] = tmp - 4;
+			frames++;
+		}
+		if (frames >= 16)
+			break;
+	}
+	for (copied = 0; copied < frames; copied++)
+		pr_info("#%d pc %x\n", copied, native_bt[copied]);
+
+	pr_info("tid(%d:%s), frame %d. tmpfp(0x%x),userstack_start(0x%x),userstack_end(0x%x)\n",
+		tid, current_task->comm, frames, tmpfp,
+		userstack_start, userstack_end);
+}
+#else
+	/* K64_U32 for current task */
+	if (compat_user_mode(user_ret)) {	/* K64_U32 for check reg */
+		unsigned int tmpfp, tmp, tmpLR;
+		unsigned long native_bt[16];
+		unsigned long userstack_start = 0;
+		unsigned long userstack_end = 0;
+		int copied, frames;
+
+		pr_info("K64+ U32 pc/lr/sp 0x%lx/0x%lx/0x%lx\n",
+			(long)(user_ret->user_regs.pc),
+			(long)(user_ret->user_regs.regs[14]),
+			(long)(user_ret->user_regs.regs[13]));
+		pr_info("r12-r0 0x%lx/0x%lx/0x%lx/0x%lx\n",
+			(long)(user_ret->user_regs.regs[12]),
+			(long)(user_ret->user_regs.regs[11]),
+		    (long)(user_ret->user_regs.regs[10]),
+		    (long)(user_ret->user_regs.regs[9]));
+		pr_info("0x%lx/0x%lx/0x%lx/0x%lx/0x%lx\n",
+			(long)(user_ret->user_regs.regs[8]),
+			(long)(user_ret->user_regs.regs[7]),
+		    (long)(user_ret->user_regs.regs[6]),
+		    (long)(user_ret->user_regs.regs[5]),
+		    (long)(user_ret->user_regs.regs[4]));
+		pr_info("0x%lx/0x%lx/0x%lx/0x%lx\n",
+		    (long)(user_ret->user_regs.regs[3]),
+		    (long)(user_ret->user_regs.regs[2]),
+		    (long)(user_ret->user_regs.regs[1]),
+		    (long)(user_ret->user_regs.regs[0]));
+		userstack_start = (unsigned long)user_ret->user_regs.regs[13];
+		vma = current_task->mm->mmap;
+		while (vma != NULL) {
+			if (vma->vm_start <= userstack_start &&
+				vma->vm_end >= userstack_start) {
+				userstack_end = vma->vm_end;
+				break;
+			}
+			vma = vma->vm_next;
+			if (vma == current_task->mm->mmap)
+				break;
+		}
+
+		if (userstack_end == 0) {
+			pr_info("Dump native stack failed:\n");
+			return ret;
+		}
+
+		native_bt[0] = user_ret->user_regs.pc;
+		native_bt[1] = user_ret->user_regs.regs[14] - 4;	/* lr */
+		tmpfp = user_ret->user_regs.regs[11];
+		frames = 2;
+		while ((unsigned long)tmpfp < userstack_end &&
+			(unsigned long)tmpfp > userstack_start) {
+			copied = access_process_vm(current_task,
+				(unsigned long)tmpfp, &tmp,
+				sizeof(tmp), 0);
+			if (copied != sizeof(tmp)) {
+				pr_info("access_process_vm	fp error\n");
+				return -EIO;
+			}
+			if (((unsigned long)tmp >= userstack_start) &&
+				((unsigned long)tmp <= userstack_end - 4)) {
+				/* CLANG */
+				copied = access_process_vm(current_task,
+					(unsigned long)tmpfp + 4,
+					&tmpLR, sizeof(tmpLR), 0);
+				if (copied != sizeof(tmpLR)) {
+					pr_info("access_process_vm	pc error\n");
+					return -EIO;
+				}
+				tmpfp = tmp;
+				native_bt[frames] = tmpLR - 4;
+				frames++;
+			} else {
+				copied = access_process_vm(current_task,
+					(unsigned long)tmpfp - 4,
+					&tmpLR, sizeof(tmpLR), 0);
+				if (copied != sizeof(tmpLR)) {
+					pr_info("access_process_vm	pc error\n");
+					return -EIO;
+				}
+				tmpfp = tmpLR;
+				native_bt[frames] = tmp - 4;
+				frames++;
+			}
+			if (frames >= 16)
+				break;
+		}
+		for (copied = 0; copied < frames; copied++)
+			pr_info("#%d pc %lx\n", copied, native_bt[copied]);
+
+		pr_info("tid(%d:%s), frame %d. tmpfp(0x%x),userstack_start(0x%lx),userstack_end(0x%lx)\n",
+			tid, current_task->comm, frames,
+			tmpfp, userstack_start, userstack_end);
+	} else {		/*K64+U64 */
+		unsigned long userstack_start = 0;
+		unsigned long userstack_end = 0;
+		unsigned long tmpfp, tmp, tmpLR;
+		unsigned long native_bt[16];
+		int copied, frames;
+
+		pr_info(" K64+ U64 pc/lr/sp 0x%16lx/0x%16lx/0x%16lx\n",
+		     (long)(user_ret->user_regs.pc),
+		     (long)(user_ret->user_regs.regs[30]),
+		     (long)(user_ret->user_regs.sp));
+
+		userstack_start = (unsigned long)user_ret->user_regs.sp;
+		vma = current_task->mm->mmap;
+
+		while (vma != NULL) {
+			if (vma->vm_start <= userstack_start &&
+				vma->vm_end >= userstack_start) {
+				userstack_end = vma->vm_end;
+				break;
+			}
+			vma = vma->vm_next;
+			if (vma == current_task->mm->mmap)
+				break;
+		}
+		if (userstack_end == 0) {
+			pr_info("Dump native stack failed:\n");
+			return ret;
+		}
+
+		native_bt[0] = user_ret->user_regs.pc;
+		native_bt[1] = user_ret->user_regs.regs[30];
+		tmpfp = user_ret->user_regs.regs[29];
+		frames = 2;
+		while (tmpfp < userstack_end && tmpfp > userstack_start) {
+			copied = access_process_vm(current_task,
+				(unsigned long)tmpfp, &tmp, sizeof(tmp), 0);
+			if (copied != sizeof(tmp)) {
+				pr_info("access_process_vm  fp error\n");
+				return -EIO;
+			}
+			copied = access_process_vm(current_task,
+				(unsigned long)tmpfp + 0x08, &tmpLR,
+				sizeof(tmpLR), 0);
+			if (copied != sizeof(tmpLR)) {
+				pr_info("access_process_vm  pc error\n");
+				return -EIO;
+			}
+			tmpfp = tmp;
+			native_bt[frames] = tmpLR;
+			frames++;
+			if (frames >= 16)
+				break;
+		}
+		for (copied = 0; copied < frames; copied++)
+			pr_info("#%d pc %lx\n", copied, native_bt[copied]);
+
+		pr_info("tid(%d:%s),frame %d. tmpfp(0x%lx),userstack_start(0x%lx),userstack_end(0x%lx)\n",
+			tid, current_task->comm, frames, tmpfp,
+			userstack_start, userstack_end);
+	}
+#endif
+
+	return 0;
+}
+
+void show_native_bt_by_pid(int task_pid)
+{
+	struct task_struct *t, *p;
+	struct pid *pid;
+	int count = 0;
+	unsigned int state = 0;
+	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
+
+	pid = find_get_pid(task_pid);
+	t = p = get_pid_task(pid, PIDTYPE_PID);
+
+	if (p != NULL) {
+		pr_info("show_bt_by_pid: %d: %s.\n", task_pid, t->comm);
+
+		DumpThreadNativeMaps_log(task_pid);
+		/* catch maps to Userthread_maps */
+		/* change send ptrace_stop to send signal stop */
+		do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, p, true);
+		do {
+			if (t) {
+				pid_t tid = 0;
+
+				tid = task_pid_vnr(t);
+				state = t->state ? __ffs(t->state) + 1 : 0;
+				pr_info("%s sysTid=%d, pid=%d\n",
+					t->comm, tid, task_pid);
+				DumpThreadNativeInfo_By_tid_log(tid);
+				/* catch user-space bt */
+			}
+			if ((++count) % 5 == 4)
+				msleep(20);
+		} while_each_thread(p, t);
+		/* change send ptrace_stop to send signal stop */
+		if (stat_nam[state] != 'T')
+			do_send_sig_info(SIGCONT, SEND_SIG_FORCED, p, true);
+		put_task_struct(t);
+	}
+	put_pid(pid);
+}
+EXPORT_SYMBOL(show_native_bt_by_pid);
+
+
 
 static int DumpThreadNativeMaps(pid_t pid)
 {
@@ -846,15 +1402,14 @@ static void show_bt_by_pid(int task_pid)
 	struct pt_regs *user_ret;
 #endif
 	int count = 0, dump_native = 0;
-	unsigned int state;
+	unsigned int state = 0;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
 
 	pid = find_get_pid(task_pid);
 	t = p = get_pid_task(pid, PIDTYPE_PID);
 
 	if (p != NULL) {
-		LOGE("show_bt_by_pid: %d: %s\n", task_pid, t->comm);
-		Log2HangInfo("show_bt_by_pid: %d: %s.\n", task_pid, t->comm);
+		Log2HangInfo("%s: %d: %s.\n", __func__, task_pid, t->comm);
 #ifndef __aarch64__	 /* 32bit */
 		if (strcmp(t->comm, "system_server") == 0)
 			dump_native = 1;
