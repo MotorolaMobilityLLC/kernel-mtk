@@ -1208,7 +1208,6 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name,
 #else
 			lcm_drv = NULL;
 #endif
-
 			isLCMFound = true;
 			isLCMInited = false;
 			DISPCHECK("EXT LCM Name NULL\n");
@@ -1222,15 +1221,12 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name,
 					break;
 				}
 			}
-			if (lcm_drv == NULL) {
-				DISPERR(
-					"FATAL ERROR!!!EXT_LCM Driver can't find, The lk ext lcm name is(%s)\n",
-					 plcm_name);
-				return NULL;
-			}
-
 			isLCMInited = true;
 			isLCMFound = true;
+		}
+		if (lcm_drv == NULL) {
+			DISPERR("NO EXT_LCM,lk ext lcm is(%s)\n", plcm_name);
+			return NULL;
 		}
 
 		if (!is_lcm_inited) {
@@ -1241,6 +1237,7 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name,
 
 		lcmindex = 0;
 	}
+
 
 	if (isLCMFound == false) {
 		DISPERR("FATAL ERROR!!!No EXT LCM Driver defined\n");
