@@ -117,26 +117,9 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TECHNOLOGY,
 	POWER_SUPPLY_PROP_CAPACITY,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
-	POWER_SUPPLY_PROP_CURRENT_MAX,
-	POWER_SUPPLY_PROP_VOLTAGE_MAX,
+	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
-	/* Add for Battery Service */
-	POWER_SUPPLY_PROP_batt_vol,
-	POWER_SUPPLY_PROP_batt_temp,
-	/* Add for EM */
-	POWER_SUPPLY_PROP_TemperatureR,
-	POWER_SUPPLY_PROP_TempBattVoltage,
-	POWER_SUPPLY_PROP_InstatVolt,
-	POWER_SUPPLY_PROP_BatteryAverageCurrent,
-	POWER_SUPPLY_PROP_BatterySenseVoltage,
-	POWER_SUPPLY_PROP_ISenseVoltage,
-	POWER_SUPPLY_PROP_ChargerVoltage,
-	/* Dual battery */
-	POWER_SUPPLY_PROP_status_smb,
-	POWER_SUPPLY_PROP_capacity_smb,
-	POWER_SUPPLY_PROP_present_smb,
-	/* ADB CMD Discharging */
-	POWER_SUPPLY_PROP_adjust_power,
+	POWER_SUPPLY_PROP_TEMP,
 };
 
 /* weak function */
@@ -351,16 +334,7 @@ signed int battery_meter_get_VSense(void)
 void battery_update_psd(struct battery_data *bat_data)
 {
 	bat_data->BAT_batt_vol = battery_get_bat_voltage();
-	bat_data->BAT_InstatVolt = bat_data->BAT_batt_vol;
-	bat_data->BAT_BatterySenseVoltage = bat_data->BAT_batt_vol;
 	bat_data->BAT_batt_temp = battery_get_bat_temperature();
-	bat_data->BAT_TempBattVoltage = battery_meter_get_tempV();
-	bat_data->BAT_TemperatureR =
-		battery_meter_get_tempR(bat_data->BAT_TempBattVoltage);
-	bat_data->BAT_BatteryAverageCurrent = battery_get_ibus();
-	bat_data->BAT_ISenseVoltage = battery_meter_get_VSense();
-	bat_data->BAT_ChargerVoltage = battery_get_vbus();
-
 }
 
 static int battery_get_property(struct power_supply *psy,
@@ -398,60 +372,17 @@ static int battery_get_property(struct power_supply *psy,
 		if (b_ischarging == false)
 			fgcurrent = 0 - fgcurrent;
 
-		val->intval = fgcurrent / 10;
-		break;
-	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		val->intval = 3000000;
-		/* 3A */
-		break;
-	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		val->intval = 5000000;
-		/* 5v */
+		val->intval = fgcurrent * 100;
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
 		val->intval = gm.soc;
 		/* using soc as charge_counter */
 		break;
-	case POWER_SUPPLY_PROP_batt_vol:
+	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
-	case POWER_SUPPLY_PROP_batt_temp:
+	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = data->BAT_batt_temp * 10;
-		break;
-	case POWER_SUPPLY_PROP_TemperatureR:
-		val->intval = data->BAT_TemperatureR;
-		break;
-	case POWER_SUPPLY_PROP_TempBattVoltage:
-		val->intval = data->BAT_TempBattVoltage;
-		break;
-	case POWER_SUPPLY_PROP_InstatVolt:
-		val->intval = data->BAT_InstatVolt;
-		break;
-	case POWER_SUPPLY_PROP_BatteryAverageCurrent:
-		val->intval = data->BAT_BatteryAverageCurrent;
-		break;
-	case POWER_SUPPLY_PROP_BatterySenseVoltage:
-		val->intval = data->BAT_BatterySenseVoltage;
-		break;
-	case POWER_SUPPLY_PROP_ISenseVoltage:
-		val->intval = data->BAT_ISenseVoltage;
-		break;
-	case POWER_SUPPLY_PROP_ChargerVoltage:
-		val->intval = data->BAT_ChargerVoltage;
-		break;
-
-		/* Dual battery */
-	case POWER_SUPPLY_PROP_status_smb:
-		val->intval = data->status_smb;
-		break;
-	case POWER_SUPPLY_PROP_capacity_smb:
-		val->intval = data->capacity_smb;
-		break;
-	case POWER_SUPPLY_PROP_present_smb:
-		val->intval = data->present_smb;
-		break;
-	case POWER_SUPPLY_PROP_adjust_power:
-		val->intval = data->adjust_power;
 		break;
 
 	default:
@@ -479,12 +410,6 @@ struct battery_data battery_main = {
 	.BAT_CAPACITY = -1,
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
-	/* Dual battery */
-	.status_smb = POWER_SUPPLY_STATUS_DISCHARGING,
-	.capacity_smb = 50,
-	.present_smb = 0,
-	/* ADB CMD discharging */
-	.adjust_power = -1,
 };
 
 void evb_battery_init(void)
@@ -496,12 +421,6 @@ void evb_battery_init(void)
 	battery_main.BAT_CAPACITY = 100;
 	battery_main.BAT_batt_vol = 4200;
 	battery_main.BAT_batt_temp = 22;
-	/* Dual battery */
-	battery_main.status_smb = POWER_SUPPLY_STATUS_DISCHARGING;
-	battery_main.capacity_smb = 50;
-	battery_main.present_smb = 0;
-	/* ADB CMD discharging */
-	battery_main.adjust_power = -1;
 }
 
 void battery_update(struct battery_data *bat_data)
@@ -2427,9 +2346,32 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 776:
 		{
-			fg_cust_data.sleep_current_avg = param;
+			get_ec()->debug_kill_daemontest = param;
 			bm_err(
-				"exe_BAT_EC cmd %d, fg_cust_data.sleep_current_avg=%d\n",
+				"exe_BAT_EC cmd %d, debug_kill_daemontest=%d\n",
+				cmd, param);
+		}
+		break;
+	case 777:
+		{
+			fg_cust_data.swocv_oldocv_diff_emb = param;
+			bm_err("exe_BAT_EC cmd %d, swocv_oldocv_diff_emb=%d\n",
+				cmd, param);
+		}
+		break;
+	case 778:
+		{
+			fg_cust_data.swocv_oldocv_diff_emb_lt = param;
+			bm_err(
+				"exe_BAT_EC cmd %d, swocv_oldocv_diff_emb_lt=%d\n",
+				cmd, param);
+		}
+		break;
+	case 779:
+		{
+			fg_cust_data.swocv_oldocv_diff_emb_tmp = param;
+			bm_err(
+				"exe_BAT_EC cmd %d, swocv_oldocv_diff_emb_tmp=%d\n",
 				cmd, param);
 		}
 		break;
@@ -3437,6 +3379,25 @@ static int __init battery_probe(struct platform_device *dev)
 	return 0;
 }
 
+void battery_shutdown(struct platform_device *dev)
+{
+	int fg_coulomb = 0;
+	int shut_car_diff = 0;
+	int verify_car;
+
+	fg_coulomb = gauge_get_coulomb();
+	if (gm.d_saved_car != 0) {
+		shut_car_diff = fg_coulomb - gm.d_saved_car;
+		gauge_dev_set_info(gm.gdev, GAUGE_SHUTDOWN_CAR, shut_car_diff);
+		/* ready for writing to PMIC_RG */
+	}
+	gauge_dev_get_info(gm.gdev, GAUGE_SHUTDOWN_CAR, &verify_car);
+
+	bm_err("******** battery_shutdown!! car=[o:%d,new:%d,diff:%d v:%d]********\n",
+		gm.d_saved_car, fg_coulomb, shut_car_diff, verify_car);
+
+}
+
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
 	bm_err("******** battery_suspend!! iavg=%d ***GM3 disable:%d %d %d %d***\n",
@@ -3494,7 +3455,7 @@ struct platform_device battery_device = {
 static struct platform_driver battery_driver_probe = {
 	.probe = battery_probe,
 	.remove = NULL,
-	.shutdown = NULL,
+	.shutdown = battery_shutdown,
 	.suspend = battery_suspend,
 	.resume = battery_resume,
 	.driver = {

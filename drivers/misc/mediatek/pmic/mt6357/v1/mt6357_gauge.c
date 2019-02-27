@@ -135,6 +135,9 @@ static int fgauge_set_info(
 	enum gauge_info ginfo, int value)
 {
 	int ret = 0;
+	int value_mask = 0;
+	int sign_bit = 0;
+
 
 	if (ginfo == GAUGE_2SEC_REBOOT)
 		pmic_config_interface(
@@ -155,6 +158,36 @@ static int fgauge_set_info(
 		value = value / 100;
 		pmic_config_interface(
 			PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
+	} else if (ginfo == GAUGE_SHUTDOWN_CAR) {
+		if (value == -99999) {
+			/* write invalid */
+			ret = pmic_config_interface(
+				PMIC_RG_SYSTEM_INFO_CON1_ADDR,
+				0x1FF,
+				0x01FF,
+				0x7);
+
+			bm_err("[fgauge_set_info]: write invalid value to GAUGE_SHUTDOWN_CAR ret:%d\n",
+				ret);
+
+			return 0;
+		}
+
+		if (value < 0)
+			sign_bit = 1;
+
+		value_mask = abs(value);
+		value_mask = value_mask & 0x00ff;
+
+		pmic_config_interface(
+			PMIC_RG_SYSTEM_INFO_CON1_ADDR, value_mask, 0x00FF, 0x7);
+		pmic_config_interface(
+			PMIC_RG_SYSTEM_INFO_CON1_ADDR, sign_bit, 0x0001, 0xf);
+
+		bm_err(
+		"[fgauge_set_info]: GAUGE_SHUTDOWN_CAR:%d,0x%x,sign:%d, 0x%x,0x%x\n",
+			value, value, sign_bit, value_mask,
+			pmic_get_register_value(PMIC_RG_SYSTEM_INFO_CON1));
 	} else
 		ret = -1;
 
@@ -167,6 +200,7 @@ static int fgauge_get_info(
 	int *value)
 {
 	int ret = 0;
+	int sign_bit = 0;
 
 	if (ginfo == GAUGE_2SEC_REBOOT)
 		pmic_read_interface(
@@ -186,7 +220,21 @@ static int fgauge_get_info(
 	else if (ginfo == GAUGE_CON0_SOC)
 		pmic_read_interface(
 			PMIC_RG_SYSTEM_INFO_CON0_ADDR, value, 0x007F, 0x9);
-	else
+	else if (ginfo == GAUGE_SHUTDOWN_CAR) {
+		pmic_read_interface(
+			PMIC_RG_SYSTEM_INFO_CON1_ADDR, &sign_bit, 0x1, 0xf);
+
+		pmic_read_interface(
+			PMIC_RG_SYSTEM_INFO_CON1_ADDR, value, 0xff, 0x7);
+
+		if (sign_bit == 1 && *value == 0xff) {
+			bm_err("[fgauge_get_info]: GAUGE_SHUTDOWN_CAR: invalid, sign:%d value:0x%x\n",
+				sign_bit, *value);
+			sign_bit = 0;
+			*value = 0;
+		} else if (sign_bit == 1)
+			*value = 0 - *value;
+	} else
 		ret = -1;
 
 	return 0;
