@@ -5617,6 +5617,7 @@ static unsigned long __cpu_norm_util(unsigned long util, unsigned long capacity)
 	return (util << SCHED_CAPACITY_SHIFT)/capacity;
 }
 
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 static unsigned long group_max_util(struct energy_env *eenv, int cpu_idx)
 {
 	unsigned long max_util = 0;
@@ -5647,6 +5648,7 @@ static unsigned long group_max_util(struct energy_env *eenv, int cpu_idx)
 
 	return max_util;
 }
+#endif
 
 /*
  * group_norm_util() returns the approximated group util relative to it's
@@ -5683,6 +5685,7 @@ long group_norm_util(struct energy_env *eenv, int cpu_idx)
 	return min_t(unsigned long, util_sum, SCHED_CAPACITY_SCALE);
 }
 
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 static int find_new_capacity(struct energy_env *eenv, int cpu_idx)
 {
 	const struct sched_group_energy *sge = eenv->sg->sge;
@@ -5704,6 +5707,7 @@ static int find_new_capacity(struct energy_env *eenv, int cpu_idx)
 
 	return eenv->cpu[cpu_idx].cap_idx;
 }
+#endif
 
 static int group_idle_state(struct energy_env *eenv, int cpu_idx)
 {
@@ -5789,21 +5793,20 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 	unsigned int busy_power;
 	unsigned int idle_power;
 	unsigned long sg_util;
-	int cap_idx, idle_idx;
+	int idle_idx;
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	int cap_idx;
+#endif
 	int total_energy = 0;
 	int cpu_idx;
 
 	for (cpu_idx = EAS_CPU_PRV; cpu_idx < EAS_CPU_CNT; ++cpu_idx) {
-
-
 		if (eenv->cpu[cpu_idx].cpu_id == -1)
 			continue;
-		/* Compute ACTIVE energy */
-		cap_idx = find_new_capacity(eenv, cpu_idx);
 
 #ifdef CONFIG_MTK_UNIFY_POWER
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-		busy_power = sg->sge->busy_power(group_first_cpu(sg),
+		busy_power = sg->sge->busy_power(cpu_idx, group_first_cpu(sg),
 				eenv, (sd->child) ? 1 : 0);
 		/*
 		 * in order to calculate cpu_norm_util, we need to know which
@@ -5815,13 +5818,16 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 
 		/* Compute IDLE energy */
 		idle_idx = group_idle_state(eenv, cpu_idx);
-		idle_power = sg->sge->idle_power(idle_idx,
+		idle_power = sg->sge->idle_power(cpu_idx, idle_idx,
 				group_first_cpu(sg), eenv,
 				(sd->child) ? 1 : 0);
 
 		idle_energy   = SCHED_CAPACITY_SCALE - sg_util;
 		idle_energy  *= idle_power;
 #else
+		/* Compute ACTIVE energy */
+		cap_idx = find_new_capacity(eenv, cpu_idx);
+
 		busy_power = sg->sge->cap_states[cap_idx].dyn_pwr;
 		/*
 		 * in order to calculate cpu_norm_util, we need to know which
@@ -5839,6 +5845,9 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 		idle_energy  *= idle_power;
 #endif
 #else
+		/* Compute ACTIVE energy */
+		cap_idx = find_new_capacity(eenv, cpu_idx);
+
 		busy_power = sg->sge->cap_states[cap_idx].power;
 		/*
 		 * in order to calculate cpu_norm_util, we need to know which
@@ -5858,6 +5867,16 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 
 		total_energy = busy_energy + idle_energy;
 		eenv->cpu[cpu_idx].energy += total_energy;
+
+		mt_sched_printf(sched_eas_energy_calc,
+			"cpu_idx=%d src_cpu=%d dst_cpu=%d busy_egy=%d idle_egy=%d (cost=%d total_egy=%d) mask=0x%lx child=%d",
+			cpu_idx,  eenv->cpu[EAS_CPU_PRV].cpu_id,
+			eenv->cpu[cpu_idx].cpu_id,
+			busy_energy, idle_energy, total_energy,
+			eenv->cpu[cpu_idx].energy,
+			sched_group_cpus(sg)->bits[0],
+			(sd->child) ? 1 : 0);
+
 	}
 }
 
@@ -6033,32 +6052,11 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 	int sd_cpu = -1;
 	int cpu_idx;
 	int margin;
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	int i;
-#endif
 
 	sd_cpu = eenv->cpu[EAS_CPU_PRV].cpu_id;
 	sd = rcu_dereference(per_cpu(sd_ea, sd_cpu));
 	if (!sd)
 		return EAS_CPU_PRV;
-
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	/* To get max opp index of every cluster for power estimation of
-	 * share buck
-	 */
-	for (i = 0; i < arch_get_nr_clusters(); i++) {
-		/* for energy before */
-		eenv_before.opp_idx[i]  =
-			mtk_cluster_capacity_idx(i, &eenv_before);
-
-		/* for energy after */
-		eenv->opp_idx[i] = mtk_cluster_capacity_idx(i, eenv);
-
-		mt_sched_printf(sched_eas_energy_calc,
-			"cid=%d, before max_opp:%d, after max_opp:%d\n",
-			i, eenv_before.opp_idx[i], eenv->opp_idx[i]);
-	}
-#endif
 
 	cpumask_clear(&eenv->cpus_mask);
 	for (cpu_idx = EAS_CPU_PRV; cpu_idx < EAS_CPU_CNT; ++cpu_idx) {
@@ -6068,6 +6066,10 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 			continue;
 		cpumask_set_cpu(cpu, &eenv->cpus_mask);
 	}
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+	mtk_update_new_capacity(eenv);
+#endif
 
 	sg = sd->groups;
 	do {
@@ -6115,6 +6117,15 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 		/* filter energy variations within the dead-zone margin */
 		if (abs(eenv->cpu[cpu_idx].nrg_delta) < margin)
 			eenv->cpu[cpu_idx].nrg_delta = 0;
+
+		trace_sched_energy_diff(eenv->p,
+			eenv->cpu[EAS_CPU_PRV].cpu_id,
+			eenv->cpu[cpu_idx].cpu_id,
+			eenv->util_delta,
+			eenv->cpu[EAS_CPU_PRV].energy,
+			eenv->cpu[cpu_idx].energy,
+			eenv->cpu[cpu_idx].nrg_delta);
+
 		/* update the schedule candidate with min(nrg_delta) */
 		if (eenv->cpu[cpu_idx].nrg_delta <
 		    eenv->cpu[eenv->next_idx].nrg_delta) {
@@ -6123,6 +6134,9 @@ static inline int select_energy_cpu_idx(struct energy_env *eenv)
 				break;
 		}
 	}
+
+	mt_sched_printf(sched_eas_energy_calc, "%s next_idx=%d ",
+					__func__,  eenv->next_idx);
 
 	return eenv->next_idx;
 }
@@ -7423,6 +7437,12 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 		target_cpu = next_cpu;
 		goto unlock;
 	}
+	if ((is_intra_domain(task_cpu(p), backup_cpu) ||
+		is_intra_domain(target_cpu, backup_cpu)) &&
+		backup_cpu != l_plus_cpu) {
+		backup_cpu = -1;
+	}
+
 	/* Unconditionally prefer IDLE CPUs for boosted/prefer_idle tasks */
 	if ((boosted || prefer_idle) && idle_cpu(next_cpu)) {
 		schedstat_inc(p->se.statistics.nr_wakeups_secb_idle_bt);

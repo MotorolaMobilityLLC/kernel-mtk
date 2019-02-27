@@ -90,78 +90,112 @@ bool is_share_buck(int cid, int *co_buck_cid)
 }
 
 static unsigned long
-mtk_cluster_max_usage(int cid, struct energy_env *eenv, int *max_cpu)
+mtk_cluster_max_usage(int cid, struct energy_env *eenv, int cpu_idx,
+			int *max_cpu)
 {
-	unsigned long max_usage = 0;
+	unsigned long util, max_util = 0;
 	int cpu = -1;
 	struct cpumask cls_cpus;
-	int delta;
 
 	*max_cpu = -1;
 
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	for_each_cpu(cpu, &cls_cpus) {
-		int cpu_usage = 0;
 
 		if (!cpu_online(cpu))
 			continue;
 
-		delta = calc_util_delta(eenv, cpu);
-		cpu_usage = __cpu_util(cpu, delta);
+		util = cpu_util_wake(cpu, eenv->p);
 
-		if (cpu_usage >= max_usage) {
-			max_usage = cpu_usage;
+		/*
+		 * If we are looking at the target CPU specified by the eenv,
+		 * then we should add the (estimated) utilization of the task
+		 * assuming we will wake it up on that CPU.
+		 */
+		if (unlikely(cpu == eenv->cpu[cpu_idx].cpu_id))
+			util += eenv->util_delta;
+
+		if (util >= max_util) {
+			max_util = util;
 			*max_cpu = cpu;
 		}
 	}
 
-	return max_usage;
+	return max_util;
 }
 
-int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv)
+void mtk_cluster_capacity_idx(int cid, struct energy_env *eenv, int cpu_idx)
 {
-	int idx;
 	int cpu;
-	unsigned long util = mtk_cluster_max_usage(cid, eenv, &cpu);
-	const struct sched_group_energy *sge;
-	struct sched_group *sg;
-	struct sched_domain *sd;
-	int sel_idx = -1; /* final selected index */
+	unsigned long util = mtk_cluster_max_usage(cid, eenv, cpu_idx, &cpu);
 	unsigned long new_capacity = util;
+	struct sched_domain *sd;
+	struct sched_group *sg;
+	const struct sched_group_energy *sge;
+	int idx, max_idx;
 
-	if (cpu == -1) /* maybe no online CPU */
-		return -1;
+	if (cpu == -1) { /* maybe no online CPU */
+		printk_deferred("sched: %s no online CPU", __func__);
+		return;
+	}
 
 	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
 	if (sd) {
 		sg = sd->groups;
 		sge = sg->sge;
-	} else
-		return -1;
+	} else{
+		printk_deferred("sched: %s no sd", __func__);
+		return;
+	}
+
+	max_idx = sge->nr_cap_states - 1;
+
+	/* default is max_cap if we don't find a match */
+	eenv->cpu[cpu_idx].cap_idx = max_idx;
+	eenv->cpu[cpu_idx].cap = sge->cap_states[max_idx].cap;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
 	new_capacity = util * capacity_margin_dvfs >> SCHED_CAPACITY_SHIFT;
 #endif
+	new_capacity = min(new_capacity,
+		(unsigned long) sge->cap_states[sge->nr_cap_states-1].cap);
 
 	for (idx = 0; idx < sge->nr_cap_states; idx++) {
 		if (sge->cap_states[idx].cap >= new_capacity) {
-			sel_idx = idx;
+			/* Keep track of SG's capacity */
+			eenv->cpu[cpu_idx].cap_idx = idx;
+			eenv->cpu[cpu_idx].cap = sge->cap_states[idx].cap;
 			break;
 		}
 	}
 
 	mt_sched_printf(sched_eas_energy_calc,
-		"cid=%d max_cpu=%d (util=%ld new=%ld) opp_idx=%d (cap=%lld)",
-		cid, cpu, util, new_capacity, sel_idx,
-		(sel_idx > -1) ? sge->cap_states[sel_idx].cap : 0);
-
-	return sel_idx;
+		"cpu_idx=%d cid=%d max_cpu=%d (util=%ld new=%ld) max_opp=%d (cap=%d)",
+		cpu_idx, cid, cpu, util, new_capacity,
+		eenv->cpu[cpu_idx].cap_idx,
+		eenv->cpu[cpu_idx].cap);
 }
 
-inline
-int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
+void mtk_update_new_capacity(struct energy_env *eenv)
+{
+	int i, cpu_idx;
+
+	/* To get max opp index of every cluster for power estimation of
+	 * share buck
+	 */
+	for (cpu_idx = EAS_CPU_PRV; cpu_idx < EAS_CPU_CNT; ++cpu_idx) {
+		if (eenv->cpu[cpu_idx].cpu_id == -1)
+			continue;
+
+		for (i = 0; i < arch_get_nr_clusters(); i++)
+			mtk_cluster_capacity_idx(i, eenv, cpu_idx);
+	}
+}
+
+inline int
+mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level)
 {
 	int energy_cost = 0;
 	struct sched_domain *sd;
@@ -173,7 +207,7 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 #endif
 	struct energy_env *eenv = (struct energy_env *)argu;
 	int only_lv1 = 0;
-	int cap_idx = eenv->opp_idx[cid];
+	int cap_idx = eenv->opp_idx[cpu_idx][cid];
 	int co_buck_cid = -1;
 
 	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
@@ -187,13 +221,14 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 		return 0;
 
 	if (is_share_buck(cid, &co_buck_cid)) {
-		cap_idx = max(eenv->opp_idx[cid], eenv->opp_idx[co_buck_cid]);
+		cap_idx = max(eenv->opp_idx[cpu_idx][cid],
+				eenv->opp_idx[cpu_idx][co_buck_cid]);
 
 		mt_sched_printf(sched_eas_energy_calc,
 			"[share buck] %s cap_idx=%d is via max_opp(cid%d=%d,cid%d=%d)",
 			__func__,
-			cap_idx, cid, eenv->opp_idx[cid],
-			co_buck_cid, eenv->opp_idx[co_buck_cid]);
+			cap_idx, cid, eenv->opp_idx[cpu_idx][cid],
+			co_buck_cid, eenv->opp_idx[cpu_idx][co_buck_cid]);
 	}
 
 	sge = sd->groups->sge;
@@ -297,7 +332,7 @@ int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level)
 }
 
 inline
-int mtk_busy_power(int cpu, void *argu, int sd_level)
+int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 {
 	struct energy_env *eenv = (struct energy_env *)argu;
 	struct sched_domain *sd;
@@ -308,7 +343,7 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 #else
 	int cid = cpu_topology[cpu].socket_id;
 #endif
-	int cap_idx = eenv->opp_idx[cid];
+	int cap_idx = eenv->opp_idx[cpu_idx][cid];
 	int co_buck_cid = -1;
 	unsigned long int volt_factor = 1;
 	int shared = 0;
@@ -328,8 +363,8 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 
 		mt_sched_printf(sched_eas_energy_calc,
 			"[share buck] cap_idx of clu%d=%d cap_idx of clu%d=%d",
-			cid, eenv->opp_idx[cid], co_buck_cid,
-			eenv->opp_idx[co_buck_cid]);
+			cid, eenv->opp_idx[cpu_idx][cid], co_buck_cid,
+			eenv->opp_idx[cpu_idx][co_buck_cid]);
 		shared = 1;
 	}
 
@@ -338,7 +373,7 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 		/* fix HPS defeats: only one CPU in this cluster */
 		const struct sched_group_energy *sge_core;
 		const struct sched_group_energy *sge_clus;
-		int co_cap_idx = eenv->opp_idx[co_buck_cid];
+		int co_cap_idx = eenv->opp_idx[cpu_idx][co_buck_cid];
 
 		sge_core = cpu_core_energy(cpu);
 		sge_clus = cpu_cluster_energy(cpu);
@@ -414,7 +449,7 @@ int mtk_busy_power(int cpu, void *argu, int sd_level)
 		}
 	} else {
 		const struct sched_group_energy *_sge;
-		int co_cap_idx = eenv->opp_idx[co_buck_cid];
+		int co_cap_idx = eenv->opp_idx[cpu_idx][co_buck_cid];
 
 		if (sd_level == 0)
 			_sge = cpu_core_energy(cpu); /* for CPU */

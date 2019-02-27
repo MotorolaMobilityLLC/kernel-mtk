@@ -52,7 +52,6 @@ do { \
  * energy_diff - supports the computation of the estimated energy impact in
  * moving a "task"'s "util_delta" between different CPU candidates.
  */
-#undef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 struct energy_env {
 	/* Utilization to move */
 	struct task_struct	*p;
@@ -96,7 +95,7 @@ struct energy_env {
 	struct sched_group	*sg_cap;
 	struct sched_group	*sg;
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	int	opp_idx[3];	/* [FIXME] cluster may > 3 */
+	int	opp_idx[EAS_CPU_CNT][3];	/* [FIXME] cluster may > 3 */
 #endif
 
 };
@@ -109,15 +108,15 @@ extern
 const struct sched_group_energy * const cpu_cluster_energy(int cpu);
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-extern inline
-int mtk_idle_power(int idle_state, int cpu, void *argu, int sd_level);
+extern inline int
+mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level);
 
 extern inline
-int mtk_busy_power(int cpu, void *argu, int sd_level);
+int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level);
 
-extern int mtk_cluster_capacity_idx(int cid, struct energy_env *eenv);
+extern void
+mtk_cluster_capacity_idx(int cid, struct energy_env *eenv, int cpu_idx);
 #endif
-
 
 extern void __init arch_init_hmp_domains(void);
 struct hmp_domain {
