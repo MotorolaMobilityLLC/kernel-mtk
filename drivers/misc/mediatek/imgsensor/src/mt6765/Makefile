@@ -37,13 +37,15 @@ common_drv += ../common/$(COMMON_VERSION)/$(1)/
 else
 platform_drv += $(1)/
 endif
+else
+project_drv += ./camera_project/$(ARCH_MTK_PROJECT)/$(1)/
 endif
 endef
 
 
 $(foreach drv,$(subst $\",,$(CONFIG_CUSTOM_KERNEL_IMGSENSOR)),$(eval $(call FILTER_DRV,$(drv))))
 
-ifneq ($(common_drv)),)
+ifneq ($(common_drv),)
 $(info imgsensor drv by common $(common_drv))
 endif
 obj-y				+= $(common_drv)
@@ -58,10 +60,11 @@ obj-y				+= imgsensor_clk.o
 ifeq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw))
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_hw
 obj-y				+= camera_hw/
+ifneq ($(project_drv),)
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
+endif
 else
+obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
 subdir-ccflags-y		+= -I$(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/camera_hw
 endif
 
-ifneq (,$(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)))
-obj-y				+= camera_project/$(ARCH_MTK_PROJECT)/
-endif
