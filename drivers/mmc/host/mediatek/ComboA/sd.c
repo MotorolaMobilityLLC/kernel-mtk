@@ -3964,6 +3964,7 @@ static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		ERR_MSG("cmd<%d> arg<0x%x> card<%d> power<%d>",
 			mrq->cmd->opcode, mrq->cmd->arg,
 			is_card_present(host), host->power_mode);
+		msdc_dump_info(host->id);
 		mrq->cmd->error = (unsigned int)-ENOMEDIUM;
 		if (mrq->done)
 			mrq->done(mrq); /* call done directly. */
