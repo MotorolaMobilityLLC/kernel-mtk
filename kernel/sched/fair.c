@@ -9063,6 +9063,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 	bool overload = false, overutilized = false;
 	bool intra_overutil = false;
 	bool tmp_sys_overutil = false;
+	unsigned long sys_util = 0;
+	unsigned long sys_cap = 0;
 
 	if (child && child->flags & SD_PREFER_SIBLING)
 		prefer_sibling = 1;
@@ -9086,6 +9088,10 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
 				&overload, &overutilized, &intra_overutil);
 
+		if (sg->group_weight > 1) {
+			sys_util += sgs->group_util;
+			sys_cap += sg->sgc->capacity;
+		}
 
 		/* if a overutil occurs in cluster, that means a
 		 * system-wide hint needed.
@@ -9154,6 +9160,9 @@ next_group:
 		/* Update system-wide over-utilization indicator */
 		if (system_overutil != tmp_sys_overutil)
 			system_overutil = tmp_sys_overutil;
+
+		update_sched_hint(sys_util, sys_cap);
+		// met_tag_oneshot(0, "sched_sys_util", sys_util);
 
 	} else {
 		if (!env->dst_rq->rd->overutilized && overutilized) {
