@@ -6201,6 +6201,16 @@ static void _dump_stress_task_result(s32 status,
 			}
 
 			break;
+		} else if (status == -EINVAL &&
+			random_context->handle->thread == CMDQ_INVALID_THREAD &&
+			!cmdq_get_func()->isDynamic(
+			random_context->handle->scenario)) {
+			CMDQ_LOG(
+				"Fail to run handle:0x%p round:%u scenario:%d thread:%d skip compare\n",
+				random_context->handle,
+				random_context->round,
+				random_context->handle->scenario,
+				random_context->handle->thread);
 		} else if (status < 0) {
 			error_happen = true;
 			break;
