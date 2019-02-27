@@ -67,6 +67,9 @@
 
 #include "ufs.h"
 #include "ufshci.h"
+#if defined(CONFIG_UFSHPB)
+#include "ufshpb.h"
+#endif
 
 #define UFSHCD "ufshcd"
 #define UFSHCD_DRIVER_VERSION "0.2"
@@ -682,6 +685,15 @@ struct ufs_hba {
 	struct devfreq *devfreq;
 	struct ufs_clk_scaling clk_scaling;
 	bool is_sys_suspended;
+
+#if defined(CONFIG_UFSHPB)
+	struct ufshpb_lu *ufshpb_lup[UFS_UPIU_MAX_GENERAL_LUN];
+	struct delayed_work ufshpb_init_work;
+	struct work_struct ufshpb_eh_work;
+	int ufshpb_state;
+	struct scsi_device *sdev_ufs_lu[UFS_UPIU_MAX_GENERAL_LUN];
+	bool issue_ioctl;
+#endif
 
 	enum bkops_status urgent_bkops_lvl;
 	bool is_urgent_bkops_lvl_checked;
