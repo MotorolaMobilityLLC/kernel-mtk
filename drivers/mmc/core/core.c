@@ -725,6 +725,7 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 				mmc_restore_tasks(host);
 				atomic_set(&host->cq_wait_rdy, 0);
 				atomic_set(&host->cq_rdy_cnt, 0);
+				not_ready_time = 0;
 
 				aee_kernel_warning("mmc",
 					"task not ready over 30s");
