@@ -2203,8 +2203,10 @@ static int _mmc_resume(struct mmc_host *host)
 
 	if (mmc_card_is_sleep(host->card) && mmc_can_sleep(host->card)) {
 		err = mmc_awake(host);
-		if (err)
-			return err;
+		/*
+		 * No matter if err happens, we should guarantee mmc can run
+		 * suspend next time.
+		 */
 		mmc_card_clr_sleep(host->card);
 	} else
 		err = mmc_init_card(host, host->card->ocr, host->card);
@@ -2213,7 +2215,7 @@ static int _mmc_resume(struct mmc_host *host)
 	/*
 	 * Turn on cache if eMMC reversion before v5.0
 	 */
-	if (host->card->ext_csd.rev < 7)
+	if (!err && host->card->ext_csd.rev < 7)
 		err = mmc_cache_ctrl(host, 1);
 
 out:

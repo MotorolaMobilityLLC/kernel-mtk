@@ -1594,6 +1594,14 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	case MMC_CMDQ_TASK_MGMT:
 		break;
 #endif
+	case MMC_GEN_CMD:
+		if (cmd->data->flags & MMC_DATA_WRITE)
+			rawcmd |= (1 << 13);
+		if (cmd->data->blocks > 1)
+			rawcmd |= (2 << 11);
+		else
+			rawcmd |= (1 << 11);
+		break;
 	case SD_IO_RW_EXTENDED:
 		if (cmd->data->flags & MMC_DATA_WRITE)
 			rawcmd |= (1 << 13);
@@ -1667,9 +1675,7 @@ static unsigned int msdc_command_start(struct msdc_host   *host,
 	/* use polling way */
 	MSDC_CLR_BIT32(MSDC_INTEN, wints_cmd);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	dbg_add_host_log(host->mmc, 0, cmd->opcode, cmd->arg);
-#endif
 
 	sdc_send_cmd(rawcmd, cmd->arg);
 
@@ -1784,9 +1790,7 @@ static u32 msdc_command_resp_polling(struct msdc_host *host,
 #endif
 			break;
 		}
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 		dbg_add_host_log(host->mmc, 1, cmd->opcode, cmd->resp[0]);
-#endif
 	} else if (intsts & MSDC_INT_RSPCRCERR) {
 		cmd->error = (unsigned int)-EILSEQ;
 		if ((cmd->opcode != 19) && (cmd->opcode != 21)) {
@@ -3511,6 +3515,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	int ret = 0;
 	int autok_err_type = -1;
 	unsigned int tune_smpl = 0;
+	u32 status;
 
 	msdc_ungate_clock(host);
 
@@ -3570,18 +3575,28 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 		pr_info("%s: host->need_tune : 0x%x CMD<%d>\n", __func__,
 			host->need_tune, mrq->cmd->opcode);
 
-	pr_info("msdc%d saved device status: %x", host->id,
-		host->device_status);
+	status = host->device_status;
 	/* clear device status */
 	host->device_status = 0x0;
+	pr_info("msdc%d saved device status: %x", host->id, status);
 
 	if (host->hw->host_function == MSDC_SDIO) {
 		host->need_tune = TUNE_NONE;
 		goto end;
 	}
 
-	/* force send stop command to turn device to transfer status */
-	if (msdc_stop_and_wait_busy(host))
+	if (host->hw->host_function == MSDC_SD) {
+		if  (autok_err_type == CRC_STATUS_ERROR) {
+			pr_notice("%s: reset sdcard\n",
+				__func__);
+			(void)sdcard_hw_reset(mmc);
+			goto start_tune;
+		}
+	}
+
+	/* send stop command if device not in transfer state */
+	if (R1_CURRENT_STATE(status) != R1_STATE_TRAN &&
+		msdc_stop_and_wait_busy(host))
 		goto recovery;
 
 	/*  need low level protect tuning phase fail in re-tuning arch */
@@ -3594,6 +3609,7 @@ int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq)
 	}
 #endif
 
+start_tune:
 	msdc_pmic_force_vcore_pwm(true);
 
 	switch (mmc->ios.timing) {
@@ -4568,8 +4584,7 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		return;
 	}
 
-	if (msdc_use_async_dma(data->host_cookie)
-	 && (host->need_tune == TUNE_NONE)) {
+	if (msdc_use_async_dma(data->host_cookie)) {
 		msdc_dma_stop(host);
 		msdc_dma_clear(host);
 		msdc_reset_hw(host->id);
@@ -4622,6 +4637,8 @@ static void msdc_check_data_timeout(struct work_struct *work)
 		msdc_gate_clock(host, 1);
 		host->error |= REQ_DAT_ERR;
 	} else {
+		pr_info("[%s]: Warn! should not go here %d\n",
+			__func__, __LINE__);
 		/* do nothing, since legacy mode or async tuning
 		 * have it own timeout.
 		 */
@@ -5176,6 +5193,7 @@ static int msdc_drv_probe(struct platform_device *pdev)
 	spin_lock_init(&host->lock);
 	spin_lock_init(&host->clk_gate_lock);
 	spin_lock_init(&host->remove_bad_card);
+	spin_lock_init(&host->cmd_dump_lock);
 	spin_lock_init(&host->sdio_irq_lock);
 	/* init dynamtic timer */
 	init_timer(&host->timer);
@@ -5284,6 +5302,10 @@ static int msdc_drv_remove(struct platform_device *pdev)
 		clk_unprepare(host->clk_ctl);
 	if (host->hclk_ctl)
 		clk_unprepare(host->hclk_ctl);
+#ifdef CONFIG_MTK_HW_FDE
+	if (host->aes_clk_ctl)
+		clk_unprepare(host->aes_clk_ctl);
+#endif
 #endif
 
 	mmc_remove_host(host->mmc);

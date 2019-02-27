@@ -308,6 +308,8 @@ struct msdc_host {
 	 */
 	spinlock_t              remove_bad_card;
 
+	spinlock_t              cmd_dump_lock;
+
 	 /* avoid race condition at DAT1 interrupt case*/
 	spinlock_t              sdio_irq_lock;
 	int                     clk_gate_count;

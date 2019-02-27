@@ -1143,6 +1143,9 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	struct mmc_blk_data *md;
 	int i, err = 0, ioc_err = 0;
 	__u64 num_of_cmds;
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	unsigned char cmdq_en;
+#endif
 
 	/*
 	 * The caller must have CAP_SYS_RAWIO, and must be calling this on the
@@ -1184,6 +1187,21 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 		goto cmd_done;
 	}
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	cmdq_en = card->ext_csd.cmdq_mode_en;
+	if (cmdq_en) {
+		mmc_wait_cmdq_empty(card->host);
+		mmc_claim_host(card->host);
+		err = mmc_blk_cmdq_switch(card, 0);
+		if (err) {
+			pr_notice("MMC ioctl: %s disable cmdq error %d\n",
+				mmc_hostname(card->host), err);
+			mmc_release_host(card->host);
+			goto cmd_done;
+		}
+	}
+#endif
+
 	mmc_get_card(card);
 
 	for (i = 0; i < num_of_cmds && !ioc_err; i++)
@@ -1198,6 +1216,17 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 	/* copy to user if data and response */
 	for (i = 0; i < num_of_cmds && !err; i++)
 		err = mmc_blk_ioctl_copy_to_user(&cmds[i], idata[i]);
+
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	if (cmdq_en) {
+		err = mmc_blk_cmdq_switch(card, 1);
+		mmc_release_host(card->host);
+		if (err)
+			pr_notice("MMC ioctl: %s re-enable CMDQ error %d\n",
+				mmc_hostname(card->host), err);
+	}
+#endif
+
 
 cmd_done:
 	mmc_blk_put(md);
@@ -3658,8 +3687,25 @@ static void mmc_blk_shutdown(struct mmc_card *card)
 static int mmc_blk_suspend(struct device *dev)
 {
 	struct mmc_card *card = mmc_dev_to_card(dev);
+	struct mmc_blk_data *md = dev_get_drvdata(dev);
+	int ret;
 
-	return _mmc_blk_suspend(card);
+	ret = _mmc_blk_suspend(card);
+	if (ret)
+		goto out;
+
+	/*
+	 * Make sure partition is the main one when
+	 * suspend.
+	 */
+	if (md) {
+		ret = mmc_blk_part_switch(card, md);
+		if (ret)
+			pr_info("%s: error %d during suspend\n",
+				md->disk->disk_name, ret);
+	}
+out:
+	return ret;
 }
 
 static int mmc_blk_resume(struct device *dev)

@@ -237,6 +237,8 @@ void msdc_power_calibration_init(struct msdc_host *host)
 int msdc_oc_check(struct msdc_host *host, u32 en)
 {
 #if !defined(CONFIG_MTK_MSDC_BRING_UP_BYPASS)
+/* mt6765 follow mt6771 ,use interrupt */
+#if 0
 	u32 val = 0;
 
 	if (host->id == 1 && en) {
@@ -250,6 +252,7 @@ int msdc_oc_check(struct msdc_host *host, u32 en)
 			return -1;
 		}
 	}
+#endif
 #endif
 	return 0;
 }
@@ -288,9 +291,20 @@ void msdc_sd_power(struct msdc_host *host, u32 on)
 		msdc_set_rdsel(host, MSDC_TDRDSEL_3V, 0);
 		if (host->hw->flags & MSDC_SD_NEED_POWER)
 			card_on = 1;
+
+		/* Disable VMCH OC */
+		if (!card_on)
+			pmic_enable_interrupt(INT_VMCH_OC, 0, "sdcard");
+
 		/* VMCH VOLSEL */
 		msdc_ldo_power(card_on, host->mmc->supply.vmmc, VOL_3000,
 			&host->power_flash);
+
+
+		/* Enable VMCH OC */
+		if (card_on)
+			pmic_enable_interrupt(INT_VMCH_OC, 1, "sdcard");
+
 		/* VMC VOLSEL */
 		/* rollback to 0mv in REG_VMC_VOSEL_CAL
 		 * in case of SD3.0 setting
@@ -1324,6 +1338,10 @@ int msdc_of_parse(struct platform_device *pdev, struct mmc_host *mmc)
 			host->id);
 	else if ((host->id == 0) || (host->id == 1))
 		pr_notice("[msdc%d] error: device renamed failed.\n", host->id);
+
+	if (host->id == 1)
+		pmic_register_interrupt_callback(INT_VMCH_OC,
+			msdc_sd_power_off);
 
 	return host->id;
 }

@@ -57,6 +57,7 @@
 #define FORCE_NOTHING           (0x0)
 
 static u32 *sg_msdc_multi_buffer;
+#define SG_MSDC_MULTI_BUFFER_SIZE (64 * 2014)
 
 static int simple_sd_open(struct inode *inode, struct file *file)
 {
@@ -161,7 +162,8 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	mmc = host_ctl->mmc;
 
 	if ((msdc_ctl->total_size <= 0) ||
-	    (msdc_ctl->total_size > host_ctl->mmc->max_seg_size))
+	    (msdc_ctl->total_size > host_ctl->mmc->max_seg_size) ||
+		(msdc_ctl->total_size > SG_MSDC_MULTI_BUFFER_SIZE))
 		return -EINVAL;
 	total_size = msdc_ctl->total_size;
 
@@ -1211,7 +1213,7 @@ static int __init simple_sd_init(void)
 {
 	int ret;
 
-	sg_msdc_multi_buffer = kmalloc(64 * 1024, GFP_KERNEL);
+	sg_msdc_multi_buffer = kmalloc(SG_MSDC_MULTI_BUFFER_SIZE, GFP_KERNEL);
 	if (sg_msdc_multi_buffer == NULL)
 		return 0;
 

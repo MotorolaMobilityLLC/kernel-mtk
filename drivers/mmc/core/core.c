@@ -299,6 +299,7 @@ void mmc_do_check(struct mmc_host *host)
 			}
 			mmc_clr_dat_list(host);
 			mmc_restore_tasks(host);
+			atomic_set(&host->cq_wait_rdy, 0);
 			atomic_set(&host->cq_rdy_cnt, 0);
 		}
 
@@ -606,10 +607,11 @@ int mmc_run_queue_thread(void *data)
 					}
 					mmc_clr_dat_list(host);
 					mmc_restore_tasks(host);
+					atomic_set(&host->cq_wait_rdy, 0);
 					atomic_set(&host->cq_rdy_cnt, 0);
-				}
+				} else
+					atomic_inc(&host->cq_wait_rdy);
 
-				atomic_inc(&host->cq_wait_rdy);
 				spin_lock_irq(&host->cmd_que_lock);
 				cmd_mrq = mmc_get_cmd_que(host);
 				spin_unlock_irq(&host->cmd_que_lock);

@@ -6311,7 +6311,7 @@ int autok_execute_tuning(struct msdc_host *host, u8 *res)
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_CKPDN, 1);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_EN, 0);
 	MSDC_SET_FIELD(MSDC_CFG, MSDC_CFG_DVFS_HW, 0);
-	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, 3);
+	MSDC_SET_FIELD(SDC_CFG, SDC_CFG_DTOC, 0);
 
 	/* store pre autok parameter */
 	for (i = 0; i < TUNING_PARAM_COUNT; i++) {
