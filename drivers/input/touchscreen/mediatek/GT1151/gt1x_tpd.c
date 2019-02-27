@@ -563,7 +563,7 @@ static int tpd_irq_registration(void)
 void gt1x_auto_update_done(void)
 {
 	tpd_pm_flag = 1;
-	wake_up_interruptible(&pm_waiter);
+	wake_up(&pm_waiter);
 }
 #if CONFIG_GTP_AUTO_UPDATE
 int gt1x_pm_notifier(struct notifier_block *nb, unsigned long val, void *ign)
@@ -572,7 +572,7 @@ int gt1x_pm_notifier(struct notifier_block *nb, unsigned long val, void *ign)
 	case PM_RESTORE_PREPARE:
 		pr_info("%s: PM_RESTORE_PREPARE enter\n", __func__);
 		if (!IS_ERR(update_thread) && update_thread)
-			wait_event_interruptible(waiter, tpd_pm_flag == 1);
+			wait_event(waiter, tpd_pm_flag == 1);
 		pr_info("%s: PM_RESTORE_PREPARE leave\n", __func__);
 		return NOTIFY_DONE;
 	}
@@ -674,7 +674,7 @@ static s32 tpd_i2c_probe(struct i2c_client *client,
 		return err;
 	}
 	GTP_INFO("tpd_i2c_probe start.wait_event_interruptible");
-	wait_event_interruptible_timeout(init_waiter,
+	wait_event_timeout(init_waiter,
 					check_flag == true, 5 * HZ);
 	GTP_INFO("tpd_i2c_probe end.wait_event_interruptible");
 	return 0;
