@@ -5,3 +5,5 @@ config MTK_SYNC
 	help
 	  A simplified SW_SYNC that provides essential APIs for
 	  other kernel modules.
+	  default value is "n"
+	  If you want to use mtk display driver, please set y.
