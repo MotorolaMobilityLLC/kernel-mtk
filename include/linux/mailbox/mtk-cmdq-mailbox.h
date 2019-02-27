@@ -22,7 +22,11 @@
 #define CMDQ_NO_TIMEOUT			0xffffffff
 #define CMDQ_TIMEOUT_DEFAULT		1000
 
+#if IS_ENABLED(CONFIG_MACH_MT6779)
 #define CMDQ_THR_MAX_COUNT		24
+#else
+#define CMDQ_THR_MAX_COUNT		16
+#endif
 #define CMDQ_INST_SIZE			8 /* instruction is 64-bit */
 #define CMDQ_SUBSYS_SHIFT		16
 #define CMDQ_OP_CODE_SHIFT		24
