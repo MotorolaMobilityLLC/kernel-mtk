@@ -34,6 +34,13 @@
 #include <scsi/scsi_ioctl.h>
 #include <scsi/scsi_cmnd.h>
 
+/*
+ * MTK PATCH: Include UFS ioctl code definition.
+ */
+#ifdef CONFIG_MTK_UFS_SUPPORT
+#include <scsi/ufs/ufs-mtk-ioctl.h>
+#endif
+
 struct blk_cmd_filter {
 	unsigned long read_ok[BLK_SCSI_CMD_PER_LONG];
 	unsigned long write_ok[BLK_SCSI_CMD_PER_LONG];
@@ -323,6 +330,12 @@ static int sg_io(struct request_queue *q, struct gendisk *bd_disk,
 		return PTR_ERR(rq);
 	blk_rq_set_block_pc(rq);
 
+	/* MTK PATCH for SPOH */
+	#ifdef MTK_UFS_HQA
+	if (hdr->flags & SG_FLAG_POWER_LOSS)
+		rq->cmd_flags |= REQ_POWER_LOSS;
+	#endif
+
 	if (hdr->cmd_len > BLK_MAX_CDB) {
 		rq->cmd = kzalloc(hdr->cmd_len, GFP_KERNEL);
 		if (!rq->cmd)
@@ -521,7 +534,7 @@ int sg_scsi_ioctl(struct request_queue *q, struct gendisk *disk, fmode_t mode,
 		if (copy_to_user(sic->data, buffer, out_len))
 			err = -EFAULT;
 	}
-	
+
 error:
 	blk_put_request(rq);
 
@@ -715,6 +728,18 @@ int scsi_verify_blk_ioctl(struct block_device *bd, unsigned int cmd)
 		 * not have partitions, so we get here only for disks.
 		 */
 		return -ENOIOCTLCMD;
+/* MTK PATCH */
+#ifdef CONFIG_MTK_UFS_SUPPORT
+	/*
+	 * MTK PATCH: bypass CAP_SYS_RAWIO checking for UFS ioctl facility.
+	 */
+	case UFS_IOCTL_FFU:
+		return 0;
+	case UFS_IOCTL_QUERY:
+		return 0;
+	case UFS_IOCTL_GET_FW_VER:
+		return 0;
+#endif
 	default:
 		break;
 	}

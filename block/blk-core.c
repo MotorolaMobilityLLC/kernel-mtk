@@ -33,7 +33,7 @@
 #include <linux/ratelimit.h>
 #include <linux/pm_runtime.h>
 #include <linux/blk-cgroup.h>
-#include <mt-plat/mtk_blocktag.h>
+#include <mt-plat/mtk_blocktag.h> /* MTK PATCH */
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/block.h>
@@ -1355,6 +1355,13 @@ void blk_requeue_request(struct request_queue *q, struct request *rq)
 	if (rq->cmd_flags & REQ_QUEUED)
 		blk_queue_end_tag(q, rq);
 
+	/*
+	 * MTK PATCH:
+	 * Remove REQ_DEV_STARTED to make sure future possible abort handler
+	 * works correctly.
+	 */
+	rq->cmd_flags &= ~REQ_DEV_STARTED;
+
 	BUG_ON(blk_queued_rq(rq));
 
 	elv_requeue_request(q, rq);
@@ -2361,6 +2368,61 @@ void blk_account_io_start(struct request *rq, bool new_io)
 	part_stat_unlock();
 }
 
+/* MTK PATCH */
+#ifdef CONFIG_MTK_BLK_RW_PROFILING
+u32 read_counter[RW_ARRAY_SIZE] = {0};
+u32 write_counter[RW_ARRAY_SIZE] = {0};
+void mtk_trace_block_rq(struct request_queue *q, struct request *rq)
+{
+	/* Record 4KB/8KB/.../512KB/others, currently, others all
+	 * allocate to array[128]
+	 */
+	if (blk_rq_bytes(rq) < FS_RW_UNIT)
+		return;
+	/* Not count discard/unmap cmds */
+	if (req_op(rq) == REQ_OP_DISCARD)
+		return;
+
+	if (rq_data_dir(rq) == WRITE) {
+		if (blk_rq_bytes(rq) > CHECK_SIZE_LIMIT)
+			write_counter[CHECK_SIZE_LIMIT/FS_RW_UNIT]++;
+		else
+			write_counter[(blk_rq_bytes(rq)/FS_RW_UNIT) - 1]++;
+	} else if (rq_data_dir(rq) == READ) {
+		if (blk_rq_bytes(rq) > CHECK_SIZE_LIMIT)
+			read_counter[CHECK_SIZE_LIMIT/FS_RW_UNIT]++;
+		else
+			read_counter[(blk_rq_bytes(rq)/FS_RW_UNIT) - 1]++;
+	}
+
+}
+void mtk_trace_block_rq_get_rw_counter(u32 *temp_buf,
+	enum block_rw_enum operation)
+{
+	int i = 0;
+
+	for (i = 0; i < RW_ARRAY_SIZE; i++) {
+		if (operation == blockread)
+			temp_buf[i] = read_counter[i];
+		else if (operation == blockwrite)
+			temp_buf[i] = write_counter[i];
+		else if (operation == blockrw)
+			temp_buf[i] = read_counter[i] + write_counter[i];
+	}
+}
+
+int mtk_trace_block_rq_get_rw_counter_clr(void)
+{
+	int i;
+
+	for (i = 0; i < RW_ARRAY_SIZE; i++) {
+		write_counter[i] = 0;
+		read_counter[i] = 0;
+	}
+	return 0;
+}
+#endif
+
 /**
  * blk_peek_request - peek at the top of a request queue
  * @q: request queue to peek at
@@ -2463,6 +2525,12 @@ struct request *blk_peek_request(struct request_queue *q)
 			break;
 		}
 	}
+
+/* MTK PATCH */
+#ifdef CONFIG_MTK_BLK_RW_PROFILING
+	if (rq)
+		mtk_trace_block_rq(q, rq);
+#endif
 
 	return rq;
 }

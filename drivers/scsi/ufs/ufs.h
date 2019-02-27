@@ -132,14 +132,30 @@ enum flag_idn {
 	QUERY_FLAG_IDN_FDEVICEINIT      = 0x01,
 	QUERY_FLAG_IDN_PWR_ON_WPE	= 0x03,
 	QUERY_FLAG_IDN_BKOPS_EN         = 0x04,
+	/* MTK PATCH: flag for fw update feasibility check */
+	QUERY_FLAG_IDN_PERMANENTLY_DISABLE_FW_UPDATE = 0xB,
 };
 
 /* Attribute idn for Query requests */
 enum attr_idn {
+	/* MTK PATCH: attribute for BootLUN configuration */
+	QUERY_ATTR_IDN_BOOT_LUN_EN	= 0x00,
 	QUERY_ATTR_IDN_ACTIVE_ICC_LVL	= 0x03,
 	QUERY_ATTR_IDN_BKOPS_STATUS	= 0x05,
 	QUERY_ATTR_IDN_EE_CONTROL	= 0x0D,
 	QUERY_ATTR_IDN_EE_STATUS	= 0x0E,
+	/* MTK PATCH: attribute for FFU status check */
+	QUERY_ATTR_IDN_DEVICE_FFU_STATUS = 0x14,
+};
+
+/* MTK PATCH: status of FFU */
+enum ufs_ffu_status {
+	UFS_FFU_STATUS_NO_INFORMATION   = 0x0,
+	UFS_FFU_STATUS_OK               = 0x1,
+	UFS_FFU_STATUS_CORRUPTION       = 0x2,
+	UFS_FFU_STATUS_INTERNAL_ERROR   = 0x3,
+	UFS_FFU_STATUS_VERSION_MISMATCH = 0x4,
+	UFS_FFU_STATUS_GENERAL_ERROR    = 0xFF,
 };
 
 /* Descriptor idn for Query requests */
@@ -162,7 +178,8 @@ enum desc_header_offset {
 };
 
 enum ufs_desc_max_size {
-	QUERY_DESC_DEVICE_MAX_SIZE		= 0x1F,
+	/* MTK PATCH: QUERY_DESC_DEVICE_MAX_SIZE shall be 0x40 */
+	QUERY_DESC_DEVICE_MAX_SIZE		= 0x40,
 	QUERY_DESC_CONFIGURAION_MAX_SIZE	= 0x90,
 	QUERY_DESC_UNIT_MAX_SIZE		= 0x23,
 	QUERY_DESC_INTERCONNECT_MAX_SIZE	= 0x06,
@@ -171,9 +188,18 @@ enum ufs_desc_max_size {
 	 * of descriptor header.
 	 */
 	QUERY_DESC_STRING_MAX_SIZE		= 0xFE,
-	QUERY_DESC_GEOMETRY_MAX_SIZE		= 0x44,
+
+	/* MTK PATCH: Geometry Descriptor size shall be 0x48 since UFS 2.1 */
+	QUERY_DESC_GEOMETRY_MAX_SIZE		= 0x48,
 	QUERY_DESC_POWER_MAX_SIZE		= 0x62,
 	QUERY_DESC_RFU_MAX_SIZE			= 0x00,
+};
+
+/* MTK PATCH: Read Geometry Descriptor for RPMB initialization */
+enum geometry_desc_param_offset {
+	GEOMETRY_DESC_LEN		= 0x0,
+	GEOMETRY_DESC_TYPE		= 0x1,
+	GEOMETRY_DESC_RPMB_RW_SIZE	= 0x17,
 };
 
 /* Unit descriptor parameters offsets in bytes*/
@@ -225,6 +251,8 @@ enum device_desc_param {
 	DEVICE_DESC_PARAM_UD_LEN		= 0x1B,
 	DEVICE_DESC_PARAM_RTT_CAP		= 0x1C,
 	DEVICE_DESC_PARAM_FRQ_RTC		= 0x1D,
+	/* MTK PATCH: Product Revision Level index in String Descriptor */
+	DEVICE_DESC_PARAM_PRL			= 0x2A,
 };
 
 /*
