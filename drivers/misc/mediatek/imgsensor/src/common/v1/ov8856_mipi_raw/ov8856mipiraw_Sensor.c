@@ -114,7 +114,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		/*record different mode's height of grabwindow*/
 		.grabwindow_height = 480,
 
-		.mipi_data_lp2hs_settle_dc = 30,
+		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 1200,
 	},
 	.slim_video = {/*pre*/
