@@ -39,7 +39,7 @@
 #define dma_fence_is_signaled(a) fence_is_signaled(a)
 #define dma_fence_add_callback(a, b, c) fence_add_callback(a, b, c)
 #define dma_fence_remove_callback(a, b) fence_remove_callback(a, b)
-#define dma_fence_get_status(a) (fence_is_signaled(a) ? (a)->status ?: 1 : 0)
+#define dma_fence_get_status(a) (fence_is_signaled(a) ? (a)->error ?: 1 : 0)
 
 #else
 
