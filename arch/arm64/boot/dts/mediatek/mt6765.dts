@@ -419,6 +419,10 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		status = "okay";
 	};
 
+	accdet: accdet {
+		compatible = "mediatek,pmic-accdet";
+	};
+
 	topmisc@10011000 {
 		compatible = "mediatek,topmisc";
 		reg = <0 0x10011000 0 0x0>;
