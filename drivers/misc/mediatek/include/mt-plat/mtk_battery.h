@@ -47,6 +47,7 @@ extern void gauge_coulomb_set_log_level(int x);
 /* battery common interface */
 extern signed int battery_get_bat_voltage(void);
 extern signed int battery_get_bat_current(void);
+extern signed int battery_get_bat_current_mA(void);
 extern signed int battery_get_soc(void);
 extern signed int battery_get_uisoc(void);
 extern signed int battery_get_bat_temperature(void);
