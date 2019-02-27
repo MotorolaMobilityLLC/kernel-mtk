@@ -680,6 +680,10 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 
 	/* error - request done */
 	if (cmd->error) {
+		pr_notice("%s: cmd%d arg:%x error:%d\n",
+			mmc_hostname(host),
+			cmd->opcode, cmd->arg,
+			cmd->error);
 		if ((cmd->opcode == MMC_READ_REQUESTED_QUEUE) ||
 			(cmd->opcode == MMC_WRITE_REQUESTED_QUEUE)) {
 			atomic_set(&host->cq_tuning_now, 1);
@@ -718,7 +722,23 @@ void mmc_wait_cmdq_done(struct mmc_request *mrq)
 					i++;
 					continue;
 				}
-				WARN_ON(!host->areq_que[i]);
+
+				if (!host->areq_que[i]) {
+					pr_notice("%s: task %d not exist!,QSR:%x\n",
+				mmc_hostname(host), i, cmd->resp[0]);
+					pr_notice("%s: task_idx:%08lx\n",
+						mmc_hostname(host),
+						host->task_id_index);
+					pr_notice("%s: cnt:%d,wait:%d,rdy:%d\n",
+						mmc_hostname(host),
+						atomic_read(&host->areq_cnt),
+						atomic_read(&host->cq_wait_rdy),
+						atomic_read(&host->cq_rdy_cnt));
+					/* reset eMMC flow */
+					cmd->error = (unsigned int)-ETIMEDOUT;
+					cmd->retries = 0;
+					goto request_end;
+				}
 				atomic_dec(&host->cq_wait_rdy);
 				atomic_inc(&host->cq_rdy_cnt);
 				mmc_prep_areq_que(host, host->areq_que[i]);
