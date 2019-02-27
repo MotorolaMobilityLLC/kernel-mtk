@@ -262,7 +262,7 @@ static int fgauge_read_current(
 	unsigned short uvalue16 = 0;
 	signed int dvalue = 0;
 	int m = 0;
-	long long Temp_Value = 0;
+	unsigned long long Temp_Value = 0;
 	unsigned int ret = 0;
 
 	/* HW Init
@@ -383,7 +383,7 @@ static int fgauge_get_coulomb(struct gauge_device *gauge_dev, int *data)
 	unsigned int temp_CAR_31_16 = 0;
 	signed int dvalue_CAR = 0;
 	int m = 0;
-	long long Temp_Value = 0;
+	unsigned long long Temp_Value = 0;
 	unsigned int ret = 0;
 	int reset = 0;
 
@@ -1111,7 +1111,7 @@ static int fgauge_get_ptim_current(
 		unsigned short uvalue16 = 0;
 		signed int dvalue = 0;
 		/*int m = 0;*/
-		long long Temp_Value = 0;
+		unsigned long long Temp_Value = 0;
 		/*unsigned int ret = 0;*/
 
 		uvalue16 = pmic_get_register_value(PMIC_FG_R_CURR);
@@ -1179,7 +1179,7 @@ static int fgauge_get_zcv_current(
 {
 	unsigned short uvalue16 = 0;
 	signed int dvalue = 0;
-	long long Temp_Value = 0;
+	unsigned long long Temp_Value = 0;
 
 	uvalue16 = pmic_get_register_value(PMIC_FG_ZCV_CURR);
 	dvalue = (unsigned int) uvalue16;
@@ -1655,14 +1655,14 @@ static int fgauge_enable_car_tune_value_calibration(
 {
 	int cali_car_tune;
 	long long sum_all = 0;
-	long long temp_sum = 0;
+	unsigned long long temp_sum = 0;
 	int	avg_cnt = 0;
 	int i;
 	unsigned short uvalue16;
 	unsigned int uvalue32;
 	signed int dvalue = 0;
 	long long Temp_Value1 = 0;
-	long long Temp_Value2 = 0;
+	unsigned long long Temp_Value2 = 0;
 	long long current_from_ADC = 0;
 
 	if (meta_input_cali_current != 0) {
