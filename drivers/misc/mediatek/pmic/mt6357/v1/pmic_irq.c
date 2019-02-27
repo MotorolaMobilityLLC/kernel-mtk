@@ -783,10 +783,8 @@ static void register_irq_handlers(void)
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 	pmic_register_interrupt_callback(INT_CHRDET_EDGE, chrdet_int_handler);
 #endif
-
-	pmic_register_interrupt_callback(INT_FG_CUR_H, fg_cur_h_int_handler);
-	pmic_register_interrupt_callback(INT_FG_CUR_L, fg_cur_l_int_handler);
 #endif
+
 #if ENABLE_ALL_OC_IRQ
 	register_all_oc_interrupts();
 #endif
