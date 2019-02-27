@@ -84,15 +84,17 @@ unsigned int scp_recovery_flag[SCP_CORE_TOTAL];
 atomic_t scp_reset_status = ATOMIC_INIT(RESET_STATUS_STOP);
 unsigned int scp_reset_by_cmd;
 struct scp_region_info_st *scp_region_info;
+/* shadow it due to sram may not access during sleep */
+struct scp_region_info_st scp_region_info_copy;
 struct completion scp_sys_reset_cp;
 struct scp_work_struct scp_sys_reset_work;
 struct wakeup_source scp_reset_lock;
-phys_addr_t scp_loader_base_phys;
 phys_addr_t scp_loader_base_virt;
-phys_addr_t scp_fw_base_phys;
-uint32_t scp_loader_size;
-uint32_t scp_fw_size;
 DEFINE_SPINLOCK(scp_reset_spinlock);
+
+/* l1c enable */
+
+void __iomem *scp_l1c_start_virt;
 #endif
 
 phys_addr_t scp_mem_base_phys;
@@ -1394,6 +1396,48 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
+void scp_region_info_init(void)
+{
+	/*get scp loader/firmware info from scp sram*/
+	scp_region_info = (SCP_TCM + SCP_REGION_INFO_OFFSET);
+	pr_debug("[SCP]scp_region_info=%p\n", scp_region_info);
+	memcpy_from_scp(&scp_region_info_copy, scp_region_info,
+		sizeof(scp_region_info_copy));
+}
+
+void scp_recovery_init(void)
+{
+#if SCP_RECOVERY_SUPPORT
+	/*create wq for scp reset*/
+	scp_reset_workqueue = create_workqueue("SCP_RESET_WQ");
+	/*init reset work*/
+	INIT_WORK(&scp_sys_reset_work.work, scp_sys_reset_ws);
+	/*init completion for identify scp aed finished*/
+	init_completion(&scp_sys_reset_cp);
+
+	scp_loader_base_virt = (phys_addr_t)(size_t)ioremap_wc(
+		scp_region_info_copy.ap_loader_start,
+		scp_region_info_copy.ap_loader_size);
+	pr_debug("[SCP]loader image mem:virt:0x%llx - 0x%llx\n",
+		(uint64_t)(phys_addr_t)scp_loader_base_virt,
+		(uint64_t)(phys_addr_t)scp_loader_base_virt +
+		(phys_addr_t)scp_region_info_copy.ap_loader_size);
+	/*init wake,
+	 *this is for prevent scp pll cpu clock disabled during reset flow
+	 */
+	wakeup_source_init(&scp_reset_lock, "scp reset wakelock");
+	/* init reset by cmd flag*/
+	scp_reset_by_cmd = 0;
+
+	if ((int)(scp_region_info_copy.ap_dram_size) > 0) {
+		/*if l1c enable, map it */
+		scp_l1c_start_virt = ioremap_wc(
+		scp_region_info_copy.ap_dram_start,
+		scp_region_info_copy.ap_dram_size);
+	}
+#endif
+}
+
 static int scp_device_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1426,6 +1470,14 @@ static int scp_device_probe(struct platform_device *pdev)
 		return -1;
 	}
 	pr_debug("[SCP] clkctrl base=0x%p\n", scpreg.clkctrl);
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+	scpreg.l1cctrl = devm_ioremap_resource(dev, res);
+	if (IS_ERR((void const *) scpreg.l1cctrl)) {
+		pr_debug("[SCP] scpreg.clkctrl error\n");
+		return -1;
+	}
+	pr_debug("[SCP] l1cctrl base=0x%p\n", scpreg.l1cctrl);
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	scpreg.irq = res->start;
@@ -1542,15 +1594,6 @@ static int __init scp_init(void)
 		return -1;
 	}
 
-	/* scp platform initialise */
-	pr_debug("[SCP] platform init\n");
-	scp_awake_init();
-	scp_workqueue = create_workqueue("SCP_WQ");
-	ret = scp_excep_init();
-	if (ret) {
-		pr_err("[SCP]Excep Init Fail\n");
-		goto err;
-	}
 	if (platform_driver_register(&mtk_scp_device))
 		pr_err("[SCP] scp probe fail\n");
 
@@ -1562,6 +1605,17 @@ static int __init scp_init(void)
 		pr_err("[SCP] scp disabled!!\n");
 		goto err;
 	}
+	/* scp platform initialise */
+	scp_region_info_init();
+	pr_debug("[SCP] platform init\n");
+	scp_awake_init();
+	scp_workqueue = create_workqueue("SCP_WQ");
+	ret = scp_excep_init();
+	if (ret) {
+		pr_debug("[SCP]Excep Init Fail\n");
+		goto err;
+	}
+
 	/* scp ipi initialise */
 	scp_send_buff[SCP_A_ID] = kmalloc((size_t) SHARE_BUF_SIZE, GFP_KERNEL);
 	if (!scp_send_buff[SCP_A_ID])
@@ -1631,43 +1685,7 @@ static int __init scp_init(void)
 	set_scp_mpu();
 #endif
 
-#if SCP_RECOVERY_SUPPORT
-	/*create wq for scp reset*/
-	scp_reset_workqueue = create_workqueue("SCP_RESET_WQ");
-	/*init reset work*/
-	INIT_WORK(&scp_sys_reset_work.work, scp_sys_reset_ws);
-	/*init completion for identify scp aed finished*/
-	init_completion(&scp_sys_reset_cp);
-	/*get scp loader/firmware info from scp sram*/
-	scp_region_info = (SCP_TCM + 0x400);
-	pr_debug("[SCP]scp_region_info=%p\n", scp_region_info);
-
-	scp_loader_base_phys = scp_region_info->ap_loader_start;
-	scp_loader_size = scp_region_info->ap_loader_size;
-	scp_fw_base_phys = scp_region_info->ap_firmware_start;
-	scp_fw_size = scp_region_info->ap_firmware_size;
-	pr_debug("[SCP]loader_addr=0x%llx,_sz=0x%x,fw_addr=0x%llx,sz=0x%x\n",
-		(uint64_t)scp_loader_base_phys,
-		scp_loader_size,
-		(uint64_t)scp_fw_base_phys,
-		scp_fw_size);
-
-
-	scp_loader_base_virt =
-			(phys_addr_t)(size_t)ioremap_wc(scp_loader_base_phys
-			, scp_loader_size);
-	pr_debug("[SCP]loader image mem:virt:0x%llx - 0x%llx (0x%x)\n",
-		(uint64_t)(phys_addr_t)scp_loader_base_virt,
-		(uint64_t)(phys_addr_t)scp_loader_base_virt +
-		(phys_addr_t)scp_loader_size,
-		scp_loader_size);
-	/*init wake,
-	 *this is for prevent scp pll cpu clock disabled during reset flow
-	 */
-	wakeup_source_init(&scp_reset_lock, "scp reset wakelock");
-	/* init reset by cmd flag*/
-	scp_reset_by_cmd = 0;
-#endif
+	scp_recovery_init();
 
 #if SCP_DVFS_INIT_ENABLE
 	wait_scp_dvfs_init_done();

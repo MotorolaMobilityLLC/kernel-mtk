@@ -15,6 +15,7 @@
 #define __SCP_EXCEP_H__
 
 #include <linux/sizes.h>
+#include "scp_helper.h"
 
 #define AED_LOG_PRINT_SIZE	SZ_16K
 #define SCP_LOCK_OFS	0xE0
@@ -69,8 +70,9 @@ struct TaskContextType {
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_LENGTH  (256 * 1024)
 #define CRASH_MEMORY_OFFSET  (0x800)
+#define CRASH_MEMORY_LENGTH  (512 * 1024 - CRASH_MEMORY_OFFSET)
+
 #define CRASH_REG_SIZE  (9 * 32)
 
 #include <linux/elf.h>
@@ -166,7 +168,19 @@ struct scp_reg_dump_list {
 	uint32_t debug_addr_spi1;
 	uint32_t debug_addr_spi2;
 	uint32_t debug_bus_status;
+	uint32_t debug_infra_mon;
+	uint32_t infra_addr_latch;
+	uint32_t ddebug_latch;
+	uint32_t pdebug_latch;
+	uint32_t pc_value;
 	uint32_t scp_reg_magic_end;
+
+};
+
+struct scp_dump_header_list {
+	uint32_t scp_head_magic;
+	struct scp_region_info_st scp_region_info;
+	uint32_t scp_head_magic_end;
 };
 
 struct MemoryDump {
@@ -174,10 +188,12 @@ struct MemoryDump {
 	struct elf32_phdr nhdr;
 	struct elf32_phdr phdr;
 	char notes[CRASH_MEMORY_HEADER_SIZE-sizeof(struct elf32_hdr)
-		-sizeof(struct elf32_phdr)-sizeof(struct elf32_phdr)];
-	/* ram dump total header size (elf+nhdr+phdr) must be fixed
-	 * at CRASH_MEMORY_HEADER_SIZE
+		-sizeof(struct elf32_phdr)-sizeof(struct elf32_phdr)
+		-sizeof(struct scp_dump_header_list)];
+	/* ram dump total header size(elf+nhdr+phdr+header)
+	 * must be fixed at CRASH_MEMORY_HEADER_SIZE
 	 */
+	struct scp_dump_header_list scp_dump_header;
 	/*scp sram*/
 	char memory[CRASH_MEMORY_LENGTH];
 	/*scp reg*/
