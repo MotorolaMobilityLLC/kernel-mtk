@@ -690,7 +690,6 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 	/* Should NEVER happen. Return bio error if it does. */
 	if (unlikely(ret)) {
 		pr_err("Decompression failed! err=%d, page=%u\n", ret, index);
-		return ret;
 #ifdef CONFIG_MTK_ENG_BUILD
 		cmem = zs_map_object(meta->mem_pool, handle, ZS_MM_RO);
 		dump_object(cmem, size + GUARD_BYTES_LENGTH);
@@ -701,6 +700,7 @@ static int zram_decompress_page(struct zram *zram, char *mem, u32 index)
 		check_compressed_data(cmem, size);
 		zs_unmap_object(meta->mem_pool, handle);
 #endif
+		return ret;
 	}
 
 	return 0;
