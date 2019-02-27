@@ -358,6 +358,9 @@ s32 cmdq_op_write_mem(struct cmdqRecStruct *handle,
 s32 cmdqRecBackupUpdateSlot(struct cmdqRecStruct *handle,
 	cmdqBackupSlotHandle h_backup_slot, u32 slot_index, u32 value);
 
+void cmdq_task_prepare(struct cmdqRecStruct *handle);
+void cmdq_task_unprepare(struct cmdqRecStruct *handle);
+
 /* Trigger CMDQ to execute the recorded commands
  * Parameter:
  *     handle: the command queue recorder handle

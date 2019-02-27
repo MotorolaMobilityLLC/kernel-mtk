@@ -128,6 +128,7 @@ void cmdq_mdp_reset_resource(void);
 void cmdq_mdp_dump_resource(void);
 void cmdq_mdp_init_resource(u32 engine_id,
 	enum cmdq_event res_event);
+void cmdq_mdp_enable_res(u64 engine_flag, bool enable);
 void cmdq_mdp_lock_resource(u64 engine_flag, bool from_notify);
 bool cmdq_mdp_acquire_resource(enum cmdq_event res_event,
 	u64 *engine_flag_out);

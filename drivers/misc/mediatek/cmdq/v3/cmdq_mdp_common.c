@@ -337,7 +337,7 @@ void cmdq_mdp_init_resource(u32 engine_id,
 	list_add_tail(&res->list_entry, &mdp_ctx.resource_list);
 }
 
-static void cmdq_mdp_enable_res(u64 engine_flag, bool enable)
+void cmdq_mdp_enable_res(u64 engine_flag, bool enable)
 {
 	struct ResourceUnitStruct *res = NULL;
 
@@ -578,12 +578,7 @@ static void cmdq_mdp_handle_prepare(struct cmdqRecStruct *handle)
 		/* not expect call without thread during ending */
 		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
 			handle, handle->engineFlag);
-		return;
 	}
-
-	/* enable resource clock */
-	if (handle->res_flag_acquire)
-		cmdq_mdp_enable_res(handle->res_flag_acquire, true);
 }
 
 static void cmdq_mdp_handle_unprepare(struct cmdqRecStruct *handle)
@@ -592,12 +587,6 @@ static void cmdq_mdp_handle_unprepare(struct cmdqRecStruct *handle)
 		/* not expect call without thread during ending */
 		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
 			handle, handle->engineFlag);
-		return;
-	}
-
-	/* disable resource clock */
-	if (handle->res_flag_release) {
-		cmdq_mdp_enable_res(handle->res_flag_release, false);
 		return;
 	}
 
@@ -976,6 +965,10 @@ s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle)
 
 	CMDQ_VERBOSE("dispatch handle:0x%p\n", handle);
 
+	/* set handle life cycle callback */
+	handle->prepare = cmdq_mdp_handle_prepare;
+	handle->unprepare = cmdq_mdp_handle_unprepare;
+
 	/* lock resource to make sure task own it after dispatch to hw */
 	cmdq_mdp_lock_resource(handle->engineFlag, false);
 
@@ -1239,8 +1232,6 @@ void cmdq_mdp_init(void)
 	/* some fields has non-zero initial value */
 	cmdq_mdp_reset_engine_struct();
 	cmdq_mdp_reset_thread_struct();
-	cmdq_core_register_handle_cycle(cmdq_mdp_handle_prepare,
-		cmdq_mdp_handle_unprepare);
 
 	mdp_ctx.resource_check_queue =
 		create_singlethread_workqueue("cmdq_resource");
@@ -1686,6 +1677,7 @@ int cmdq_mdp_loop_reset_impl(const unsigned long resetReg,
 			"%s failed Reg:0x%lx writeValue:0x%08x stateReg:0x%lx mask:0x%08x pollingValue:0x%08x\n",
 			__func__, resetReg, resetWriteValue, resetStateReg,
 			resetMask, resetPollingValue);
+		dump_stack();
 		return -EFAULT;
 	}
 	return 0;
