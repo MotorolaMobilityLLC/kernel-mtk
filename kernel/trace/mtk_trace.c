@@ -228,6 +228,8 @@ static void ftrace_events_enable(int enable)
 		trace_set_clr_event(NULL, "softirq_entry", 1);
 		trace_set_clr_event(NULL, "softirq_exit", 1);
 		trace_set_clr_event(NULL, "softirq_raise", 1);
+		trace_set_clr_event(NULL, "irq_handler_entry", 1);
+		trace_set_clr_event(NULL, "irq_handler_exit", 1);
 #ifdef CONFIG_SMP
 		trace_set_clr_event(NULL, "sched_migrate_task", 1);
 #endif
