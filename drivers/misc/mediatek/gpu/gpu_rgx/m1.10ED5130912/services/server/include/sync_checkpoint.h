@@ -218,6 +218,24 @@ void
 SyncCheckpointError(PSYNC_CHECKPOINT psSyncCheckpoint, IMG_BOOL bSleepAllowed);
 
 /*************************************************************************/ /*!
+@Function       SyncCheckpointStateFromUFO
+
+@Description    Returns the current state of the synchronisation checkpoint
+                which has the given UFO firmware address
+
+@Input          psDevNode               The device owning the sync
+                                        checkpoint
+
+@Input          ui32FwAddr              The firmware address of the sync
+                                        checkpoint
+
+@Return         The current state (32-bit value) of the sync checkpoint
+*/
+/*****************************************************************************/
+IMG_UINT32 SyncCheckpointStateFromUFO(PPVRSRV_DEVICE_NODE psDevNode,
+                                IMG_UINT32 ui32FwAddr);
+
+/*************************************************************************/ /*!
 @Function       SyncCheckpointErrorFromUFO
 
 @Description    Error the synchronisation checkpoint which has the
