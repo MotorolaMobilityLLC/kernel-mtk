@@ -72,9 +72,9 @@ struct mdp_context {
 };
 static struct mdp_context mdp_ctx;
 
-static DEFINE_MUTEX(mdp_thread_mutex);
 static DEFINE_MUTEX(mdp_clock_mutex);
 static DEFINE_MUTEX(mdp_task_mutex);
+static DEFINE_MUTEX(mdp_thread_mutex);
 static DEFINE_MUTEX(mdp_resource_mutex);
 
 /* thread acquire notification */
@@ -509,33 +509,6 @@ static u64 cmdq_mdp_get_engine_flag_for_enable_clock(
 	return engine_flag_clk;
 }
 
-static void cmdq_mdp_handle_begin(struct cmdqRecStruct *handle)
-{
-	/* pass mdp process since we do most work in cmdq_mdp_lock_thread */
-
-	/* enable resource clock */
-	if (handle->res_flag_acquire)
-		cmdq_mdp_enable_res(handle->res_flag_acquire, true);
-}
-
-static void cmdq_mdp_handle_end(struct cmdqRecStruct *handle)
-{
-	/* unlock thread usage when cmdq ending this handle */
-	if (handle->thread != CMDQ_INVALID_THREAD) {
-		/* only handle if this handle run by mdp flush and thread */
-		if (mdp_ctx.thread[handle->thread].acquired)
-			cmdq_mdp_unlock_thread(handle);
-	} else {
-		/* not expect call without thread during ending */
-		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
-			handle, handle->engineFlag);
-	}
-
-	/* disable resource clock */
-	if (handle->res_flag_release)
-		cmdq_mdp_enable_res(handle->res_flag_release, false);
-}
-
 static void cmdq_mdp_lock_thread(struct cmdqRecStruct *handle)
 {
 	u64 engine_flag = handle->engineFlag;
@@ -543,16 +516,12 @@ static void cmdq_mdp_lock_thread(struct cmdqRecStruct *handle)
 
 	CMDQ_PROF_START(current->pid, __func__);
 
-	mutex_lock(&mdp_thread_mutex);
-
 	handle->engine_clk = cmdq_mdp_get_engine_flag_for_enable_clock(
 		engine_flag, thread);
 
 	/* make this thread can be dispath again */
 	mdp_ctx.thread[thread].allow_dispatch = true;
 	mdp_ctx.thread[thread].task_count++;
-
-	mutex_unlock(&mdp_thread_mutex);
 
 	CMDQ_PROF_END(current->pid, __func__);
 }
@@ -601,6 +570,42 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 	}
 
 	mutex_unlock(&mdp_thread_mutex);
+}
+
+static void cmdq_mdp_handle_prepare(struct cmdqRecStruct *handle)
+{
+	if (handle->thread == CMDQ_INVALID_THREAD) {
+		/* not expect call without thread during ending */
+		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
+			handle, handle->engineFlag);
+		return;
+	}
+
+	/* enable resource clock */
+	if (handle->res_flag_acquire)
+		cmdq_mdp_enable_res(handle->res_flag_acquire, true);
+}
+
+static void cmdq_mdp_handle_unprepare(struct cmdqRecStruct *handle)
+{
+	if (handle->thread == CMDQ_INVALID_THREAD) {
+		/* not expect call without thread during ending */
+		CMDQ_ERR("handle:0x%p with invalid thread engine:0x%llx\n",
+			handle, handle->engineFlag);
+		return;
+	}
+
+	/* disable resource clock */
+	if (handle->res_flag_release) {
+		cmdq_mdp_enable_res(handle->res_flag_release, false);
+		return;
+	}
+
+	/* only handle if this handle run by mdp flush and thread
+	 * unlock thread usage when cmdq ending this handle
+	 */
+	if (mdp_ctx.thread[handle->thread].acquired)
+		cmdq_mdp_unlock_thread(handle);
 }
 
 #ifdef CMDQ_SECURE_PATH_SUPPORT
@@ -702,20 +707,15 @@ static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
 		return CMDQ_INVALID_THREAD;
 #endif
 
-	/* operations for thread list need thread lock */
-	mutex_lock(&mdp_thread_mutex);
-
 	conflict = cmdq_mdp_check_engine_conflict(handle, &thread);
 	if (conflict) {
 		CMDQ_LOG(
 			"engine conflict handle:0x%p engine:0x%llx thread:%d\n",
 			handle, handle->engineFlag, thread);
-		mutex_unlock(&mdp_thread_mutex);
 		return CMDQ_INVALID_THREAD;
 	}
 	/* same engine used in current thread, use it */
 	if (thread != CMDQ_INVALID_THREAD) {
-		mutex_unlock(&mdp_thread_mutex);
 		return thread;
 	}
 
@@ -759,8 +759,6 @@ static s32 cmdq_mdp_find_free_thread(struct cmdqRecStruct *handle)
 		CMDQ_MSG("acquire thread:%d\n", thread);
 	}
 
-	mutex_unlock(&mdp_thread_mutex);
-
 	return thread;
 }
 
@@ -778,14 +776,22 @@ static s32 cmdq_mdp_consume_handle(void)
 	/* loop waiting list for pending handles */
 	list_for_each_entry_safe(handle, temp, &mdp_ctx.tasks_wait,
 		list_entry) {
+		/* operations for thread list need thread lock */
+		mutex_lock(&mdp_thread_mutex);
+
 		handle->thread = cmdq_mdp_find_free_thread(handle);
 		if (handle->thread == CMDQ_INVALID_THREAD) {
 			/* no available thread, keep wait */
+			mutex_unlock(&mdp_thread_mutex);
 			CMDQ_MSG(
 				"fail to get thread handle:0x%p engine:0x%llx\n",
 				handle, handle->engineFlag);
 			continue;
 		}
+
+		/* lock thread for counting and clk */
+		cmdq_mdp_lock_thread(handle);
+		mutex_unlock(&mdp_thread_mutex);
 
 		/* remove from list */
 		list_del_init(&handle->list_entry);
@@ -814,7 +820,6 @@ static s32 cmdq_mdp_consume_handle(void)
 		}
 
 		/* flush handle */
-		cmdq_mdp_lock_thread(handle);
 		err = cmdq_pkt_flush_async_ex(handle, 0, 0, false);
 		if (err < 0) {
 			/* change state so waiting thread may release it */
@@ -1231,8 +1236,8 @@ void cmdq_mdp_init(void)
 	/* some fields has non-zero initial value */
 	cmdq_mdp_reset_engine_struct();
 	cmdq_mdp_reset_thread_struct();
-	cmdq_core_register_handle_cycle(cmdq_mdp_handle_begin,
-		cmdq_mdp_handle_end);
+	cmdq_core_register_handle_cycle(cmdq_mdp_handle_prepare,
+		cmdq_mdp_handle_unprepare);
 
 	mdp_ctx.resource_check_queue =
 		create_singlethread_workqueue("cmdq_resource");
