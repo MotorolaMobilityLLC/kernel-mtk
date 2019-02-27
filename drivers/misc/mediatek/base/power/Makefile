@@ -13,6 +13,7 @@
 
 
 obj-$(CONFIG_MACH_MT3967) += drcc_v1/
+obj-$(CONFIG_MACH_MT6779) += drcc_v1/
 
 obj-$(CONFIG_MACH_MT8163) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
