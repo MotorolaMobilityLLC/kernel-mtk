@@ -45,8 +45,9 @@
 
 #ifdef UPOWER_USE_QOS_IPI
 #if UPOWER_ENABLE_TINYSYS_SSPM
-#include <mtk_spm_vcore_dvfs_ipi.h>
+//#include <mtk_spm_vcore_dvfs_ipi.h>
 #include <mtk_vcorefs_governor.h>
+#include <helio-dvfsrc-ipi.h>
 #endif
 #endif
 
@@ -524,7 +525,7 @@ static int upower_update_tbl_ref(void)
 #if UPOWER_ENABLE_TINYSYS_SSPM
 void upower_send_data_ipi(phys_addr_t phy_addr, unsigned long long size)
 {
-	struct qos_data qos_d;
+	struct qos_ipi_data qos_d;
 
 	qos_d.cmd = QOS_IPI_UPOWER_DATA_TRANSFER;
 	qos_d.u.upower_data.arg[0] = phy_addr;
@@ -534,7 +535,7 @@ void upower_send_data_ipi(phys_addr_t phy_addr, unsigned long long size)
 
 void upower_dump_data_ipi(void)
 {
-	struct qos_data qos_d;
+	struct qos_ipi_data qos_d;
 
 	qos_d.cmd = QOS_IPI_UPOWER_DUMP_TABLE;
 	qos_ipi_to_sspm_command(&qos_d, 1);
