@@ -295,10 +295,10 @@ void mtk_iommu_debug_init(void)
 	mtk_iomu_dbgfs = debugfs_create_file("mtk_iommu", S_IFREG | 0444, NULL,
 					     (void *)0,
 					     &debug_fops);
-	strcpy(event_mgr[IOMMU_ALLOC].name, "alloc");
-	strcpy(event_mgr[IOMMU_DEALLOC].name, "dealloc");
-	strcpy(event_mgr[IOMMU_MAP].name, "map");
-	strcpy(event_mgr[IOMMU_UNMAP].name, "unmap");
+	strncpy(event_mgr[IOMMU_ALLOC].name, "alloc", 10);
+	strncpy(event_mgr[IOMMU_DEALLOC].name, "dealloc", 10);
+	strncpy(event_mgr[IOMMU_MAP].name, "map", 10);
+	strncpy(event_mgr[IOMMU_UNMAP].name, "unmap", 10);
 	event_mgr[IOMMU_ALLOC].dump_trace = 1;
 	event_mgr[IOMMU_DEALLOC].dump_trace = 1;
 
