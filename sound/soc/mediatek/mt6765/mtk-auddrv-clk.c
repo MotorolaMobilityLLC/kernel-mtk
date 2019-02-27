@@ -756,11 +756,22 @@ void AudDrv_APLL22M_Clk_On(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	pr_debug("%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
 #ifdef PM_MANAGER_API
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
+			if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
+			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock,
+					   180633600);
+			if (ret) {
+				pr_debug("%s clk_set_rate %s-180633600 fail %d\n",
+					 __func__,
+					 aud_clks[CLOCK_APMIXED_APLL1].name,
+					 ret);
+				goto EXIT;
+				}
+			}
 			ret = clk_enable(aud_clks[CLOCK_APLL22M].clock);
 			if (ret) {
 				pr_debug("%s [CCF]Aud enable_clock %s fail",
@@ -777,7 +788,6 @@ void AudDrv_APLL22M_Clk_On(void)
 	}
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
-	pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -786,7 +796,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	pr_debug("%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 
 	Aud_APLL22M_Clk_cntr--;
 
@@ -808,7 +818,6 @@ EXIT:
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
-	pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -827,7 +836,7 @@ void AudDrv_APLL24M_Clk_On(void)
 	int ret = 0;
 	unsigned long flags = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	pr_debug("%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
@@ -835,9 +844,9 @@ void AudDrv_APLL24M_Clk_On(void)
 #ifdef PM_MANAGER_API
 		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
 			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock,
-					   98303999);
+					   196607999);
 			if (ret) {
-				pr_debug("%s clk_set_rate %s-98303000 fail %d\n",
+				pr_debug("%s clk_set_rate %s-196607999 fail %d\n",
 					 __func__,
 					 aud_clks[CLOCK_APMIXED_APLL1].name,
 					 ret);
@@ -867,7 +876,6 @@ EXIT:
 void AudDrv_APLL24M_Clk_Off(void)
 {
 	unsigned long flags = 0;
-	int ret = 0;
 
 	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
 
@@ -877,18 +885,6 @@ void AudDrv_APLL24M_Clk_Off(void)
 
 	if (Aud_APLL24M_Clk_cntr == 0) {
 #ifdef PM_MANAGER_API
-		if (aud_clks[CLOCK_APMIXED_APLL1].clk_prepare) {
-			ret = clk_set_rate(aud_clks[CLOCK_APMIXED_APLL1].clock,
-					   90316800);
-			if (ret) {
-				pr_debug("%s clk_set_rate %s-98303000 fail %d\n",
-					 __func__,
-					 aud_clks[CLOCK_APMIXED_APLL1].name,
-					 ret);
-				goto EXIT;
-			}
-		}
-
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
 			clk_disable(aud_clks[CLOCK_APLL22M].clock);
 		} else {
