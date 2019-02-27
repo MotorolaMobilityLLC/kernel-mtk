@@ -195,7 +195,7 @@ static void inet6_prefix_notify(int event, struct inet6_dev *idev,
 				struct prefix_info *pinfo);
 static bool ipv6_chk_same_addr(struct net *net, const struct in6_addr *addr,
 			       struct net_device *dev);
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp);
 #endif
 
@@ -3768,7 +3768,7 @@ static void addrconf_rs_timer(unsigned long data)
 				      idev->rs_interval);
 	} else {
 		inet6_no_ra_notify(RTM_NORA, idev);
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 		if (idev->if_flags & IF_RS_VZW_SENT)
 			idev->if_flags &= ~IF_RS_VZW_SENT;
 #endif
@@ -4252,7 +4252,7 @@ int ipv6_chk_home_addr(struct net *net, const struct in6_addr *addr)
 }
 #endif
 
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 static void inet6_send_rs_vzw(struct inet6_ifaddr *ifp)
 {
 	struct net_device *dev = ifp->idev->dev;
@@ -4315,7 +4315,7 @@ static void addrconf_verify_rtnl(void)
 restart:
 		hlist_for_each_entry_rcu_bh(ifp, &inet6_addr_lst[i], addr_lst) {
 			unsigned long age;
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 			u32 route_lft, min_lft;
 			struct rt6_info *rt;
 
@@ -4348,7 +4348,7 @@ restart:
 				ipv6_del_addr(ifp);
 				goto restart;
 			} else if (ifp->prefered_lft == INFINITY_LIFE_TIME) {
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 				/*Patch for VzW
 				 *prefered_lft is INFINITY scenario
 				 *ccmni interface will send RS when time flow
@@ -4424,7 +4424,7 @@ restart:
 				/* ifp->prefered_lft <= ifp->valid_lft */
 				if (time_before(ifp->tstamp + ifp->prefered_lft * HZ, next))
 					next = ifp->tstamp + ifp->prefered_lft * HZ;
-#ifdef CONFIG_MTK_IPV6_VZW_REQ6378
+#ifdef CONFIG_MTK_IPV6_VZW
 				/*patch for VzW
 				 *prefered_lft is NOT INFINITY scenario
 				 *ccmni interface will send RS when time flow
