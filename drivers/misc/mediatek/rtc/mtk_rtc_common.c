@@ -65,10 +65,8 @@
 #include <upmu_common.h>
 /* #include <mach/upmu_hw.h> */
 #include <mach/mtk_pmic_wrap.h>
-#if defined CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 #include <mtk_boot.h>
 #include <mt-plat/mtk_boot_common.h>
-#endif
 /* #include <linux/printk.h> */
 #include <mtk_reboot.h>
 #ifdef CONFIG_MTK_SMART_BATTERY
@@ -372,7 +370,6 @@ void rtc_mark_recovery(void)
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 void rtc_mark_kpoc(void)
 {
 	unsigned long flags;
@@ -381,7 +378,7 @@ void rtc_mark_kpoc(void)
 	hal_rtc_set_spare_register(RTC_KPOC, 0x1);
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
-#endif
+
 void rtc_mark_fast(void)
 {
 	unsigned long flags;
@@ -514,7 +511,6 @@ static void rtc_handler(void)
 
 		/* power on */
 		if (now_time >= time - 1 && now_time <= time + 4) {
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 			if (get_boot_mode() == KERNEL_POWER_OFF_CHARGING_BOOT
 			    || get_boot_mode() == LOW_POWER_OFF_CHARGING_BOOT) {
 				do {
@@ -542,10 +538,6 @@ static void rtc_handler(void)
 				hal_rtc_save_pwron_alarm();
 				pwron_alm = true;
 			}
-#else
-			hal_rtc_save_pwron_alarm();
-			pwron_alm = true;
-#endif
 		} else if (now_time < time) {	/* set power-on alarm */
 			time -= 1;
 			rtc_time_to_tm(time, &tm);

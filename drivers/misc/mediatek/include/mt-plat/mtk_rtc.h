@@ -48,9 +48,7 @@ extern void rtc_enable_writeif(void);
 extern void rtc_disable_writeif(void);
 
 extern void rtc_mark_recovery(void);
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 extern void rtc_mark_kpoc(void);
-#endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
 extern void rtc_mark_fast(void);
 extern u16 rtc_rdwr_uart_bits(u16 *val);
 extern void rtc_bbpu_power_down(void);
@@ -70,9 +68,7 @@ extern void mt_power_off(void);
 #define rtc_enable_writeif()		({ 0; })
 #define rtc_disable_writeif()		({ 0; })
 #define rtc_mark_recovery()             ({ 0; })
-#if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #define rtc_mark_kpoc()                 ({ 0; })
-#endif/*if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)*/
 #define rtc_mark_fast()		        ({ 0; })
 #define rtc_rdwr_uart_bits(val)		({ 0; })
 #define rtc_bbpu_power_down()		({ 0; })
