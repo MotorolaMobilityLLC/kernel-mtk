@@ -347,7 +347,6 @@ struct msdc_host {
 	u8                      card_inserted;  /* card inserted ? */
 	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
-	volatile int            is_data_dma;
 	u32                     app_cmd_arg;
 
 	u32                     intsts;         /* raw insts */
@@ -543,7 +542,7 @@ static inline unsigned int uffs(unsigned int x)
 			} \
 		} \
 		if (retry == 0) { \
-			msdc_dump_info(id); \
+			msdc_dump_info(NULL, 0, NULL, id); \
 		} \
 		WARN_ON(retry == 0); \
 	} while (0)
@@ -637,9 +636,12 @@ int msdc_clk_stable(struct msdc_host *host, u32 mode, u32 div,
 void msdc_clr_fifo(unsigned int id);
 unsigned int msdc_do_command(struct msdc_host *host,
 	struct mmc_command *cmd, unsigned long       timeout);
-void msdc_dump_info(u32 id);
-void msdc_dump_register(struct msdc_host *host);
-void msdc_dump_register_core(struct msdc_host *host, struct seq_file *m);
+void msdc_dump_info(char **buff, unsigned long *size, struct seq_file *m,
+	u32 id);
+void msdc_dump_register(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
+void msdc_dump_register_core(char **buff, unsigned long *size,
+	struct seq_file *m, struct msdc_host *host);
 int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode);
 int msdc_error_tuning(struct mmc_host *mmc,  struct mmc_request *mrq);
 int msdc_cache_ctrl(struct msdc_host *host, unsigned int enable,
