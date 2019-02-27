@@ -430,6 +430,12 @@ void helio_dvfsrc_sram_reg_init(void)
 		dvfsrc_sram_write(i, 0);
 }
 
+void dvfsrc_set_power_model_ddr_request(unsigned int level)
+{
+	dvfsrc_set_sw_req2(level,
+				EMI_SW_AP2_MASK, EMI_SW_AP2_SHIFT);
+}
+
 static int helio_governor_event_handler(struct devfreq *devfreq,
 					unsigned int event, void *data)
 {
