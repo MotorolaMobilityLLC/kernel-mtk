@@ -1162,6 +1162,11 @@ static s32 cmdq_core_thread_exec_counter(const s32 thread)
 #endif
 }
 
+static s32 cmdq_core_get_thread_id(s32 scenario)
+{
+	return cmdq_get_func()->getThreadID(scenario, false);
+}
+
 static void cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
 	s32 thread, bool dump_irq, const char *tag)
 {
@@ -1224,10 +1229,13 @@ void cmdq_core_dump_trigger_loop_thread(const char *tag)
 	const u32 max_thread_count = cmdq_dev_get_thread_count();
 	u32 val;
 	const u32 evt_rdma = CMDQ_EVENT_DISP_RDMA0_EOF;
+	s32 static_id = cmdq_core_get_thread_id(CMDQ_SCENARIO_TRIGGER_LOOP);
 
 	/* dump trigger loop */
 	for (i = 0; i < max_thread_count; i++) {
-		if (cmdq_ctx.thread[i].scenario != CMDQ_SCENARIO_TRIGGER_LOOP)
+		if (cmdq_ctx.thread[i].scenario !=
+			CMDQ_SCENARIO_TRIGGER_LOOP &&
+			i != static_id)
 			continue;
 		cmdq_core_dump_thread(NULL, i, false, tag);
 		cmdq_core_dump_pc(NULL, i, tag);
@@ -3482,11 +3490,6 @@ static void cmdq_core_attach_error_handle(const struct cmdqRecStruct *handle,
 			cmdq_core_parse_op(op));
 		break;
 	}
-}
-
-static s32 cmdq_core_get_thread_id(s32 scenario)
-{
-	return cmdq_get_func()->getThreadID(scenario, false);
 }
 
 static void cmdq_core_dump_thread_usage(void)
