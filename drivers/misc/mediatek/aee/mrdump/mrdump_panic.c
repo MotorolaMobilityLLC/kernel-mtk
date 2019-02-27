@@ -174,9 +174,6 @@ int mrdump_common_die(int fiq_step, int reboot_reason, const char *msg,
 		/* Don't print anything */
 		break;
 	}
-#ifdef CONFIG_MTK_WQ_DEBUG
-	wq_debug_dump();
-#endif
 
 	mrdump_mini_ke_cpu_regs(regs);
 	dis_D_inner_fL1L2();
