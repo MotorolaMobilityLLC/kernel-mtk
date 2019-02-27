@@ -2246,8 +2246,10 @@ static void __init mtk_gce_init(struct device_node *node)
 		pr_notice("%s(): could not register clock provider: %d\n",
 			__func__, r);
 	gce_base = base;
-	/* AO */
+	/* default AO, cannot access til infra clk bus on */
+#if (!MT_CG_ENABLE)
 	clk_writel(GCE_CTL_INT0, clk_readl(GCE_CTL_INT0) & ~GCE_DISABLE_CG);
+#endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_gce, "mediatek,gce", mtk_gce_init);
 
