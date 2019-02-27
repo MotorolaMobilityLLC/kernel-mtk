@@ -49,11 +49,11 @@
 /* MTK PATCH */
 #include <asm/unaligned.h>
 #include <linux/rpmb.h>
-#include "ufs-mtk.h"
-#include "ufs-mtk-platform.h"
-#include "ufs-mtk-block.h"
 #include <scsi/ufs/ufs-mtk-ioctl.h>
+#include "ufs-mtk.h"
 #include "ufs-mtk-dbg.h"
+#include "ufs-mtk-block.h"
+#include "ufs-mtk-platform.h"
 
 #define UFSHCD_ENABLE_INTRS	(UTP_TRANSFER_REQ_COMPL |\
 				 UTP_TASK_REQ_COMPL |\
@@ -1902,10 +1902,18 @@ static int ufshcd_queuecommand(struct Scsi_Host *host, struct scsi_cmnd *cmd)
 				cmd->request, &info);
 
 		if (err) {
-			err = -EIO;
-			clear_bit_unlock(tag, &hba->lrb_in_use);
-			dev_info(hba->dev, "%s: fail in crypto hook, req: %p\n",
+			if (err == -ENOMEM) {
+				/* no available key slots */
+				err = SCSI_MLQUEUE_HOST_BUSY;
+			} else {
+				/* unknown errors (shall not happen) */
+				err = -EIO;
+				dev_info(hba->dev,
+				"%s: fail in crypto hook, req: %p\n",
 				__func__, cmd->request);
+			}
+
+			clear_bit_unlock(tag, &hba->lrb_in_use);
 			goto out;
 		}
 	} else {
@@ -4325,6 +4333,7 @@ static void __ufshcd_transfer_req_compl(struct ufs_hba *hba,
 				UFS_TRACE_COMPLETED);
 			ufs_mtk_perf_heurisic_req_done(hba, cmd);
 			ufs_mtk_biolog_transfer_req_compl(index);
+			ufs_mtk_hie_req_done(hba, lrbp);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
 			cmd->result = result;

@@ -137,6 +137,9 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode,
 	/* get key index from key hint, or install new key to key hint */
 	key_idx = kh_get_hint(ufs_mtk_get_kh(), key, &need_update);
 
+	if (key_idx < 0)
+		return key_idx;
+
 	spin_unlock_irqrestore(info->hba->host->host_lock, flags);
 
 	if (need_update || (key_idx < 0)) {
@@ -249,6 +252,19 @@ struct hie_dev ufs_hie_dev = {
 struct hie_dev *ufs_mtk_hie_get_dev(void)
 {
 	return &ufs_hie_dev;
+}
+
+int ufs_mtk_hie_req_done(struct ufs_hba *hba,
+	struct ufshcd_lrb *lrbp)
+{
+	int ret = 0;
+
+	if (lrbp->crypto_en) {
+		ret = kh_release_hint(
+			ufs_mtk_get_kh(), lrbp->crypto_cfgid);
+	}
+
+	return ret;
 }
 #endif
 
