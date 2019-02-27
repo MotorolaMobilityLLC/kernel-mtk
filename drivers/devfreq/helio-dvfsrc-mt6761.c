@@ -506,6 +506,20 @@ unsigned int *vcorefs_get_opp_info(void)
 }
 EXPORT_SYMBOL(vcorefs_get_opp_info);
 
+__weak void pm_qos_trace_dbg_show_request(int pm_qos_class)
+{
+}
+
+static DEFINE_RATELIMIT_STATE(tracelimit, 5 * HZ, 1);
+
+static void vcorefs_trace_qos(void)
+{
+	if (__ratelimit(&tracelimit)) {
+		pm_qos_trace_dbg_show_request(PM_QOS_DDR_OPP);
+		pm_qos_trace_dbg_show_request(PM_QOS_VCORE_OPP);
+	}
+}
+
 unsigned int *vcorefs_get_src_req(void)
 {
 	unsigned int qos_total_bw = dvfsrc_read(DVFSRC_SW_BW_0) +
@@ -549,6 +563,8 @@ unsigned int *vcorefs_get_src_req(void)
 	met_vcorefs_src[SRC_SCP_VCORE_LEVEL_IDX] =
 	(dvfsrc_read(DVFSRC_VCORE_REQUEST) >> VCORE_SCP_GEAR_SHIFT) &
 	VCORE_SCP_GEAR_MASK;
+
+	vcorefs_trace_qos();
 
 	return met_vcorefs_src;
 }
