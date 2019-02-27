@@ -119,6 +119,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
 
+#ifndef CONFIG_TCPC_CLASS
 	int boot_mode = 0;
 
 	if (!mtk_chg->chg_online) {
@@ -129,6 +130,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 			kernel_power_off();
 		}
 	}
+#endif /* !CONFIG_TCPC_CLASS */
 
 	return ret;
 }
