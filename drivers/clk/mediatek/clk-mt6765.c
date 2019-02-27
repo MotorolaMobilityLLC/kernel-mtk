@@ -65,6 +65,9 @@ while (0)
 #define PLL_DIV_RSTB		(0x1 << 23)
 #define PLL_SDM_PCW_CHG	(0x1 << 31)
 
+
+static bool cg_disable;
+
 const char *ckgen_array[] = {
 "hd_faxi_ck",
 "hf_fmem_ck",
@@ -2642,6 +2645,46 @@ void pll_if_on(void)
 		pr_notice("suspend warning: MPLL is on!!!\n");
 }
 
+void clock_force_on(void)
+{
+	/* INFRACFG */
+	clk_writel(MODULE_SW_CG_0_CLR, INFRA_CG2);
+	clk_writel(MODULE_SW_CG_1_CLR, INFRA_CG3);
+	clk_writel(MODULE_SW_CG_2_CLR, INFRA_CG4);
+	clk_writel(MODULE_SW_CG_3_CLR, INFRA_CG5);
+	/* PERICFG */
+	clk_writel(PERIAXI_SI0_CTL, clk_readl(PERIAXI_SI0_CTL) | PERI_CG);
+	/* DISP CG */
+	clk_writel(MMSYS_CG_CLR0, MM_DISABLE_CG);
+	/* AUDIO */
+	clk_writel(AUDIO_TOP_CON0,
+		clk_readl(AUDIO_TOP_CON0) & ~AUDIO_DISABLE_CG0);
+	clk_writel(AUDIO_TOP_CON1,
+		clk_readl(AUDIO_TOP_CON1) & ~AUDIO_DISABLE_CG1);
+	/* MFG */
+	clk_writel(MFG_CG_CLR, MFG_DISABLE_CG);
+	/* ISP */
+	clk_writel(IMG_CG_CLR, IMG_DISABLE_CG);
+	/* VENC not inverse */
+	clk_writel(VENC_CG_SET, VENC_DISABLE_CG);
+	/* CAM */
+	clk_writel(CAMSYS_CG_CLR, CAMSYS_DISABLE_CG);
+	/* GCE AO */
+	/* MIPI */
+	clk_writel(MIPI_RX_WRAPPER80_CSI0A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0A) | MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI0B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0B) | MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI1A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1A) | MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI1B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1B) | MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI2A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2A) | MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI2B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2B) | MIPI_CSI_DISABLE_CG);
+}
+
 void clock_force_off(void)
 {
 	/* DISP CG */
@@ -2651,16 +2694,27 @@ void clock_force_off(void)
 		clk_readl(AUDIO_TOP_CON0) | AUDIO_DISABLE_CG0);
 	clk_writel(AUDIO_TOP_CON1,
 		clk_readl(AUDIO_TOP_CON1) | AUDIO_DISABLE_CG1);
-	/* MFG */
-	clk_writel(MFG_CG_SET, MFG_DISABLE_CG);
+	/* MFG AO */
 	/* ISP */
 	clk_writel(IMG_CG_SET, IMG_DISABLE_CG);
 	/* VENC not inverse */
 	clk_writel(VENC_CG_CLR, VENC_DISABLE_CG);
 	/* CAM */
 	clk_writel(CAMSYS_CG_SET, CAMSYS_DISABLE_CG);
-	/* GCE */
-	clk_writel(GCE_CTL_INT0, clk_readl(GCE_CTL_INT0) | GCE_DISABLE_CG);
+	/* GCE AO */
+	/* MIPI */
+	clk_writel(MIPI_RX_WRAPPER80_CSI0A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0A) & ~MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI0B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI0B) & ~MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI1A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1A) & ~MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI1B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI1B) & ~MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI2A,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2A) & ~MIPI_CSI_DISABLE_CG);
+	clk_writel(MIPI_RX_WRAPPER80_CSI2B,
+		clk_readl(MIPI_RX_WRAPPER80_CSI2B) & ~MIPI_CSI_DISABLE_CG);
 }
 
 void mmsys_cg_check(void)
@@ -2687,10 +2741,7 @@ void pll_force_off(void)
 	clk_clrl(MFGPLL_CON0, PLL_EN);
 	clk_setl(MFGPLL_CON3, PLL_ISO_EN);
 	clk_clrl(MFGPLL_CON3, PLL_PWR_ON);
-/*MPLL*/
-	clk_clrl(MPLL_CON0, PLL_EN);
-	clk_setl(MPLL_CON3, PLL_ISO_EN);
-	clk_clrl(MPLL_CON3, PLL_PWR_ON);
+/*MPLL Control by dram*/
 /*UNIVPLL*/
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_CON3, PLL_ISO_EN);
@@ -2775,11 +2826,24 @@ void check_smi_clk_sts(void)
 }
 #endif
 
+void mtk_set_cg_disable(unsigned int disable)
+{
+	if (disable == 1)
+		cg_disable = true;
+	else if (disable == 0)
+		cg_disable = false;
+}
+
 int mtk_is_cg_enable(void)
 {
 #if MT_CG_ENABLE
-	/* pr_debug("%s: skipped for cg control disable\n", __func__); */
-	return 1;
+	if (cg_disable) {
+		clock_force_on();
+		pr_debug("%s: skipped for cg control disable\n", __func__);
+		return 0;
+	} else {
+		return 1;
+	}
 #else
 	return 0;
 #endif

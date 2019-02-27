@@ -2547,41 +2547,41 @@ void subsys_if_on(void)
 	unsigned int sta_s = spm_read(PWR_STATUS_2ND);
 	int ret = 0;
 
-	if ((sta & (1U << 1)) && (sta_s & (1U << 0))) {
+	if ((sta & (1U << 0)) && (sta_s & (1U << 0))) {
 		pr_notice("suspend warning: SYS_MD1 is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 2)) && (sta_s & (1U << 1))) {
+	if ((sta & (1U << 1)) && (sta_s & (1U << 1))) {
 		pr_notice("suspend warning: SYS_CONN is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 3)) && (sta_s & (1U << 2))) {
+	if ((sta & (1U << 2)) && (sta_s & (1U << 2))) {
 		pr_notice("suspend warning: SYS_DPY is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 4)) && (sta_s & (1U << 3))) {
+	if ((sta & (1U << 3)) && (sta_s & (1U << 3))) {
 		pr_notice("suspend warning: SYS_DIS is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 6)) && (sta_s & (1U << 4)))
+	if ((sta & (1U << 4)) && (sta_s & (1U << 4)))
 		pr_notice("suspend warning: SYS_MFG is on!!!\n");
-	if ((sta & (1U << 7)) && (sta_s & (1U << 5)))
+	if ((sta & (1U << 5)) && (sta_s & (1U << 5)))
 		pr_notice("suspend warning: SYS_ISP is on!!!\n");
 
-	if ((sta & (1U << 10)) && (sta_s & (1U << 6)))
+	if ((sta & (1U << 6)) && (sta_s & (1U << 6)))
 		pr_notice("suspend warning: SYS_IFR is on!!!\n");
 
-	if ((sta & (1U << 12)) && (sta_s & (1U << 7)))
+	if ((sta & (1U << 7)) && (sta_s & (1U << 7)))
 		pr_notice("suspend warning: SYS_MFG_CORE0 is on!!!\n");
-	if ((sta & (1U << 14)) && (sta_s & (1U << 23))) {
+	if ((sta & (1U << 23)) && (sta_s & (1U << 23))) {
 		pr_notice("suspend warning: SYS_MFG_ASYNC is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 15)) && (sta_s & (1U << 25))) {
+	if ((sta & (1U << 25)) && (sta_s & (1U << 25))) {
 		pr_notice("suspend warning: SYS_CAM is on!!!\n");
 		ret++;
 	}
-	if ((sta & (1U << 16)) && (sta_s & (1U << 26))) {
+	if ((sta & (1U << 26)) && (sta_s & (1U << 26))) {
 		pr_notice("suspend warning: SYS_VCODEC is on!!!\n");
 		ret++;
 	}
@@ -2594,9 +2594,9 @@ void mtcmos_force_off(void)
 {
 	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);/*do after ccif*/
 	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_dpy(STA_POWER_DOWN);
+	/* spm_mtcmos_ctrl_dpy(STA_POWER_DOWN); */
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
-	spm_mtcmos_ctrl_ifr(STA_POWER_DOWN);
+	/* spm_mtcmos_ctrl_ifr(STA_POWER_DOWN); */
 	spm_mtcmos_ctrl_mfg_core0(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg_async(STA_POWER_DOWN);

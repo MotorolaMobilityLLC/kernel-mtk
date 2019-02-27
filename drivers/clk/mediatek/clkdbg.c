@@ -482,8 +482,13 @@ static const char *get_provider_name(struct device_node *node, u32 *cells)
 
 	if (p)
 		return p + 1;
-	else
-		return name;
+	else {
+		p = strchr(name, ',');
+		if (p)
+			return p + 1;
+		else
+			return name;
+	}
 }
 
 struct provider_clk *get_all_provider_clks(void)
@@ -2048,6 +2053,23 @@ void set_custom_cmds(const struct cmd_fn *cmds)
 
 static int clkdbg_cmds(struct seq_file *s, void *v);
 
+static int clkdbg_cg_disable(struct seq_file *s, void *v)
+{
+	unsigned long val;
+
+	if (parse_val_from_cmd(&val) != 1)
+		return 0;
+
+	if (val == 1)
+		clkdbg_ops->set_all_clk_cg_disable(1);
+	else if (val == 0)
+		clkdbg_ops->set_all_clk_cg_disable(0);
+
+	seq_printf(s, "%s: %s\n", __func__, val?"true":"false");
+
+	return 0;
+}
+
 static const struct cmd_fn common_cmds[] = {
 	CMDFN("dump_regs", seq_print_regs),
 	CMDFN("dump_regs2", clkdbg_dump_regs2),
@@ -2090,6 +2112,7 @@ static const struct cmd_fn common_cmds[] = {
 	CMDFN("dump_suspend_clks_2", clkdbg_dump_suspend_clks_2),
 	CMDFN("dump_suspend_clks_3", clkdbg_dump_suspend_clks_3),
 	CMDFN("cmds", clkdbg_cmds),
+	CMDFN("cg_disable", clkdbg_cg_disable),
 	{}
 };
 
