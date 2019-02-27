@@ -1027,7 +1027,7 @@ void testcase_clkmgr_impl(enum CMDQ_ENG_ENUM engine,
 	} else {
 		/* Turn on MDP engines */
 #ifdef CMDQ_CONFIG_SMI
-		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "CMDQ", false);
+		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "CMDQ", true);
 #endif
 		cmdq_mdp_get_func()->enableMdpClock(false, engine);
 	}
