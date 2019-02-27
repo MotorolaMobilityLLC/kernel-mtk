@@ -69,7 +69,7 @@ initcall_debug=1 maxcpus=1";
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <5>;
+		vib_vol= <9>;
 	};
 };
 
