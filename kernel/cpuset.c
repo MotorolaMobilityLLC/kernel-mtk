@@ -866,6 +866,22 @@ void rebuild_sched_domains(void)
 	mutex_unlock(&cpuset_mutex);
 }
 
+void rebuild_sched_domains_narrow_locked(void)
+{
+	struct sched_domain_attr *attr;
+	cpumask_var_t *doms;
+	int ndoms;
+
+	if (!cpumask_equal(top_cpuset.effective_cpus, cpu_active_mask))
+		return;
+
+	/* Generate domain masks and attrs */
+	ndoms = generate_sched_domains(&doms, &attr);
+
+	/* Have scheduler rebuild the domains */
+	partition_sched_domains(ndoms, doms, attr);
+}
+
 /**
  * update_tasks_cpumask - Update the cpumasks of tasks in the cpuset.
  * @cs: the cpuset in which each task's cpus_allowed mask needs to be changed
@@ -2427,6 +2443,7 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 	bool cpus_updated, mems_updated;
 	bool on_dfl = cpuset_v2_behavior();
 
+	get_online_cpus();
 	mutex_lock(&cpuset_mutex);
 
 	/* fetch the available cpus/mems and find out which changed how */
@@ -2477,11 +2494,15 @@ static void cpuset_hotplug_workfn(struct work_struct *work)
 		rcu_read_unlock();
 	}
 
+	mutex_lock(&cpuset_mutex);
 	/* rebuild sched domains if cpus_allowed has changed */
 	if (cpus_updated || force_rebuild) {
 		force_rebuild = false;
-		rebuild_sched_domains();
+		rebuild_sched_domains_narrow_locked();
 	}
+
+	mutex_unlock(&cpuset_mutex);
+	put_online_cpus();
 }
 
 void cpuset_update_active_cpus(bool cpu_online)
