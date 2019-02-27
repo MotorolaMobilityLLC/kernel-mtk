@@ -756,6 +756,11 @@ void init_entity_runnable_average(struct sched_entity *se)
 	if (entity_is_task(se))
 		sa->load_avg = scale_load_down(se->load.weight);
 	sa->load_sum = sa->load_avg * LOAD_AVG_MAX;
+#ifdef CONFIG_SCHED_HMP
+	if (entity_is_task(se))
+		sa->loadwop_avg = scale_load_down(NICE_0_LOAD);
+	sa->loadwop_sum = sa->loadwop_avg * LOAD_AVG_MAX;
+#endif
 
 	/*
 	 * At this point, util_avg won't be used in select_task_rq_fair anyway
@@ -2974,6 +2979,11 @@ __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		sa->util_avg = sa->util_sum / LOAD_AVG_MAX;
 	}
 
+#ifdef CONFIG_SCHED_HMP
+	/* update HMP belonged - loadwop_avg/loadwop_sum */
+	hmp_update_load_avg(decayed, weight, scaled_delta_w, sa, periods,
+			contrib, scaled_delta, cfs_rq);
+#endif
 	return decayed;
 }
 
@@ -3280,6 +3290,8 @@ update_cfs_rq_load_avg(u64 now, struct cfs_rq *cfs_rq, bool update_freq)
 		removed_load = 1;
 		set_tg_cfs_propagate(cfs_rq);
 	}
+	if (sched_feat(SCHED_HMP))
+		hmp_update_cfs_rq_load_avg(cfs_rq, sa);
 
 	if (atomic_long_read(&cfs_rq->removed_util_avg)) {
 		long r = atomic_long_xchg(&cfs_rq->removed_util_avg, 0);
@@ -3402,17 +3414,8 @@ enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	}
 
 #ifdef CONFIG_SCHED_HMP
-	if (sched_feat(SCHED_HMP) && entity_is_task(se)) {
-		int cpu = cfs_rq->rq->cpu;
-
-		cfs_nr_pending(cpu) = 0;
-		cfs_pending_load(cpu) = 0;
-		cfs_rq->avg.loadwop_avg += se->avg.loadwop_avg;
-		cfs_rq->avg.loadwop_sum += se->avg.loadwop_sum;
-
-		if (!task_low_priority(task_of(se)->prio))
-			cfs_nr_normal_prio(cpu)++;
-	}
+	if (sched_feat(SCHED_HMP) && entity_is_task(se))
+		hmp_enqueue_entity_load_avg(cfs_rq, se);
 #endif
 }
 
@@ -3426,25 +3429,8 @@ dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 		max_t(s64,  cfs_rq->runnable_load_sum - se->avg.load_sum, 0);
 
 #ifdef CONFIG_SCHED_HMP
-	if (sched_feat(SCHED_HMP) && entity_is_task(se)) {
-		int cpu = cfs_rq->rq->cpu;
-		long avg_diff;
-		s64 sum_diff;
-
-		cfs_reset_nr_dequeuing_low_prio(cpu);
-		if (!task_low_priority(task_of(se)->prio))
-			cfs_nr_normal_prio(cpu)--;
-
-		avg_diff = cfs_rq->avg.loadwop_avg - se->avg.loadwop_avg;
-		cfs_rq->avg.loadwop_avg = max_t(long, avg_diff, 0);
-		sum_diff = cfs_rq->avg.loadwop_sum - se->avg.loadwop_sum;
-		cfs_rq->avg.loadwop_sum = max_t(s64, sum_diff, 0);
-
-#ifdef CONFIG_HMP_TRACER
-		trace_sched_cfs_dequeue_task(task_of(se),
-				se_load(se), cfs_rq->rq->cpu);
-#endif
-	}
+	if (sched_feat(SCHED_HMP) && entity_is_task(se))
+		hmp_dequeue_entity_load_avg(cfs_rq, se);
 #endif
 }
 
@@ -3502,6 +3488,9 @@ void remove_entity_load_avg(struct sched_entity *se)
 
 	sync_entity_load_avg(se);
 	atomic_long_add(se->avg.load_avg, &cfs_rq->removed_load_avg);
+#ifdef CONFIG_SCHED_HMP
+	atomic_long_add(se->avg.loadwop_avg, &cfs_rq->removed_loadwop_avg);
+#endif
 	atomic_long_add(se->avg.util_avg, &cfs_rq->removed_util_avg);
 }
 
@@ -4950,6 +4939,11 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 
 #endif /* CONFIG_SMP */
 	hrtick_update(rq);
+
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_runqueue_length(rq->cpu, rq->nr_running);
+	trace_sched_cfs_length(rq->cpu, rq->cfs.h_nr_running);
+#endif
 }
 
 static void set_next_buddy(struct sched_entity *se);
@@ -5043,6 +5037,11 @@ static void dequeue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 #endif /* CONFIG_SMP */
 
 	hrtick_update(rq);
+
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_runqueue_length(rq->cpu, rq->nr_running);
+	trace_sched_cfs_length(rq->cpu, rq->cfs.h_nr_running);
+#endif
 }
 
 #ifdef CONFIG_SMP

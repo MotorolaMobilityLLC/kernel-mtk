@@ -170,6 +170,17 @@ static void adj_threshold(struct clb_env *clbenv)
 			clbenv->lstats.threshold, clbenv->ltarget,
 			l_cap, clbenv->btarget, b_cap);
 }
+static inline void
+hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa)
+{
+	if (atomic_long_read(&cfs_rq->removed_loadwop_avg)) {
+		s64 r = atomic_long_xchg(&cfs_rq->removed_loadwop_avg, 0);
+
+		sa->loadwop_avg = max_t(long, sa->loadwop_avg - r, 0);
+		sa->loadwop_sum = max_t(s64,
+				sa->loadwop_sum - r * LOAD_AVG_MAX, 0);
+	}
+}
 
 static void sched_update_clbstats(struct clb_env *clbenv)
 {
@@ -525,8 +536,9 @@ static int hmp_select_task_migration(int sd_flag,
 	cpumask_copy(&clbenv.bcpus, fast_cpu_mask);
 	clbenv.ltarget = L_target;
 	clbenv.btarget = B_target;
-	sched_update_clbstats(&clbenv);
+
 	step = 2;
+	sched_update_clbstats(&clbenv);
 	if (hmp_up_migration(L_target, &B_target, se, &clbenv))
 		goto select_fast;
 	step = 3;
@@ -549,7 +561,13 @@ select_slow:
 
 out:
 #ifdef CONFIG_HMP_TRACER
-	trace_sched_hmp_load(clbenv.bstats.load_avg, clbenv.lstats.load_avg);
+	/*
+	 * Value of clbenb..load_avg only ready after step 2.
+	 * Dump value after this step to avoid invalid stack value
+	 */
+	if (step > 1)
+		trace_sched_hmp_load(step,
+				clbenv.bstats.load_avg, clbenv.lstats.load_avg);
 #endif
 	return new_cpu;
 }
@@ -874,6 +892,53 @@ trace:
 #endif
 out:
 	return check->result;
+}
+
+static inline void
+hmp_update_load_avg(unsigned int decayed, unsigned long weight,
+		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
+		u32 contrib, u64 scaled_delta, struct cfs_rq *cfs_rq)
+{
+	const unsigned long nice_0_weight = scale_load_down(NICE_0_LOAD);
+
+	if (decayed) {
+		if (weight) {
+			sa->loadwop_sum += nice_0_weight * scaled_delta_w;
+			if (cfs_rq) {
+				cfs_rq->avg.loadwop_sum +=
+					nice_0_weight * scaled_delta_w;
+			}
+		}
+		sa->loadwop_sum = decay_load(sa->loadwop_sum, periods + 1);
+		if (cfs_rq)
+			cfs_rq->avg.loadwop_sum = decay_load(
+					cfs_rq->avg.loadwop_sum, periods + 1);
+
+		if (weight) {
+			sa->loadwop_sum += nice_0_weight * contrib;
+			if (cfs_rq) {
+				cfs_rq->avg.loadwop_sum +=
+						nice_0_weight * contrib;
+			}
+		}
+	}
+
+	if (weight) {
+		sa->loadwop_sum += nice_0_weight * scaled_delta;
+		if (cfs_rq) {
+			cfs_rq->avg.loadwop_sum +=
+				nice_0_weight * scaled_delta;
+		}
+	}
+
+	if (decayed) {
+		sa->loadwop_avg = div_u64(sa->loadwop_sum, LOAD_AVG_MAX);
+
+		if (cfs_rq) {
+			cfs_rq->avg.loadwop_avg =
+				div_u64(cfs_rq->avg.loadwop_sum, LOAD_AVG_MAX);
+		}
+	}
 }
 
 static int hmp_can_migrate_task(struct task_struct *p, struct lb_env *env)
@@ -1328,11 +1393,51 @@ static void hmp_force_up_migration(int this_cpu)
 	}
 
 #ifdef CONFIG_HMP_TRACER
-	trace_sched_hmp_load(clbenv.bstats.load_avg, clbenv.lstats.load_avg);
+	trace_sched_hmp_load(100,
+			clbenv.bstats.load_avg, clbenv.lstats.load_avg);
 #endif
 	spin_unlock(&hmp_force_migration);
 
 }
+
+static inline void
+hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
+{
+	int cpu = cfs_rq->rq->cpu;
+
+	cfs_nr_pending(cpu) = 0;
+	cfs_pending_load(cpu) = 0;
+	cfs_rq->avg.loadwop_avg += se->avg.loadwop_avg;
+	cfs_rq->avg.loadwop_sum += se->avg.loadwop_sum;
+
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+	if (!task_low_priority(task_of(se)->prio))
+		cfs_nr_normal_prio(cpu)++;
+#endif
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_cfs_enqueue_task(task_of(se), se_load(se), cpu);
+#endif
+}
+
+static inline void
+hmp_dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
+{
+	int cpu = cfs_rq->rq->cpu;
+
+	cfs_reset_nr_dequeuing_low_prio(cpu);
+	if (!task_low_priority(task_of(se)->prio))
+		cfs_nr_normal_prio(cpu)--;
+
+	cfs_rq->avg.loadwop_avg = max_t(long,
+			cfs_rq->avg.loadwop_avg - se->avg.loadwop_avg, 0);
+	cfs_rq->avg.loadwop_sum = max_t(s64,
+			cfs_rq->avg.loadwop_sum - se->avg.loadwop_sum, 0);
+
+#ifdef CONFIG_HMP_TRACER
+	trace_sched_cfs_dequeue_task(task_of(se), se_load(se), cfs_rq->rq->cpu);
+#endif
+}
+
 /*
  * hmp_idle_pull looks at little domain runqueues to see
  * if a task should be pulled.
