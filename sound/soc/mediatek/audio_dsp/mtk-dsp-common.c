@@ -185,7 +185,7 @@ int afe_get_pcmdir(int dir, struct audio_hw_buffer buf)
 	 * if yes ==> check if it is ref buffer.
 	 */
 	memif = buf.audio_memiftype;
-	for (i = 0; i <= AUDIO_TASK_DAI_NUM; i++) {
+	for (i = 0; i < AUDIO_TASK_DAI_NUM; i++) {
 		if (get_afememref_by_afe_taskid(i) == memif &&
 		   buf.hw_buffer == BUFFER_TYPE_HW_MEM) {
 			ret = AUDIO_DSP_TASK_PCM_HWPARAM_REF;
