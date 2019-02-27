@@ -1247,7 +1247,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			pr_err(" ioctl copy from user failed\n");
 			return -EFAULT;
 		}
-		if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE)
+		if (FeatureParaLen > FEATURE_CONTROL_MAX_DATA_SIZE ||
+			FeatureParaLen == 0)
 			return -EINVAL;
 
 		pFeaturePara = kmalloc(FeatureParaLen, GFP_KERNEL);
