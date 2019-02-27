@@ -549,12 +549,11 @@ void tscpu_thermal_cal_prepare_2(__u32 ret)
 
 	g_gain = (10000 + g_ge);
 
-	format[0] = (g_o_vtsmcu1 + 3350 - g_oe);
-	format[1] = (g_o_vtsmcu2 + 3350 - g_oe);
-	format[2] = (g_o_vtsmcu3 + 3350 - g_oe);
-	format[3] = (g_o_vtsmcu4 + 3350 - g_oe);
-	format[4] = (g_o_vtsmcu5 + 3350 - g_oe);
-	format[5] = (g_o_vtsabb + 3350 - g_oe);
+	format[TS_MCU1] = (g_o_vtsmcu1 + 3350 - g_oe);
+	format[TS_MCU2] = (g_o_vtsmcu2 + 3350 - g_oe);
+	format[TS_MCU3] = (g_o_vtsmcu3 + 3350 - g_oe);
+	format[TS_MCU4] = (g_o_vtsmcu4 + 3350 - g_oe);
+	format[TS_MCU5] = (g_o_vtsmcu5 + 3350 - g_oe);
 
 	for (i = 0; i < TS_ENUM_MAX; i++) {
 		/* x_roomt * 10000 */
