@@ -120,6 +120,13 @@ struct last_reboot_reason {
 	uint8_t gpu_dvfs_oppidx;
 	uint8_t gpu_dvfs_status;
 
+	uint32_t drcc_0;
+	uint32_t drcc_1;
+	uint32_t drcc_2;
+	uint32_t drcc_3;
+	uint32_t drcc_dbg_ret;
+	uint32_t drcc_dbg_off;
+	uint64_t drcc_dbg_ts;
 	uint32_t ptp_devinfo_0;
 	uint32_t ptp_devinfo_1;
 	uint32_t ptp_devinfo_2;
@@ -795,6 +802,11 @@ RESERVEDMEM_OF_DECLARE(reserve_memory_ram_console, "mediatek,ram_console",
 static void ram_console_init_val(void)
 {
 	LAST_RR_SET(pmic_ext_buck, 0xff);
+#if defined(CONFIG_RANDOMIZE_BASE) && defined(CONFIG_ARM64)
+	LAST_RR_SET(kaslr_offset, 0xecab1e);
+#else
+	LAST_RR_SET(kaslr_offset, 0xd15ab1e);
+#endif
 	LAST_RR_SET(ram_console_buffer_addr,
 		(unsigned long)&ram_console_buffer);
 }
@@ -1318,6 +1330,34 @@ u8 aee_rr_curr_gpu_dvfs_status(void)
 	return LAST_RR_VAL(gpu_dvfs_status);
 }
 
+void aee_rr_rec_drcc_0(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_0, val);
+}
+
+void aee_rr_rec_drcc_1(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_1, val);
+}
+
+void aee_rr_rec_drcc_2(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_2, val);
+}
+
+void aee_rr_rec_drcc_3(u32 val)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_3, val);
+}
+
 void aee_rr_rec_ptp_devinfo_0(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -1769,6 +1809,26 @@ void aee_rr_rec_ocp_enable(u8 val)
 	LAST_RR_SET(ocp_enable, val);
 }
 
+u32 aee_rr_curr_drcc_0(void)
+{
+	return LAST_RR_VAL(drcc_0);
+}
+
+u32 aee_rr_curr_drcc_1(void)
+{
+	return LAST_RR_VAL(drcc_1);
+}
+
+u32 aee_rr_curr_drcc_2(void)
+{
+	return LAST_RR_VAL(drcc_2);
+}
+
+u32 aee_rr_curr_drcc_3(void)
+{
+	return LAST_RR_VAL(drcc_3);
+}
+
 u32 aee_rr_curr_ptp_devinfo_0(void)
 {
 	return LAST_RR_VAL(ptp_devinfo_0);
@@ -2163,6 +2223,16 @@ unsigned long *aee_rr_rec_gz_irq_pa(void)
 		return NULL;
 }
 
+void aee_rr_rec_drcc_dbg_info(uint32_t ret, uint32_t off, uint64_t ts)
+{
+	if (!ram_console_init_done || !ram_console_buffer)
+		return;
+	LAST_RR_SET(drcc_dbg_ret, ret);
+	LAST_RR_SET(drcc_dbg_off, off);
+	LAST_RR_SET(drcc_dbg_ts, ts);
+}
+
+
 void aee_rr_rec_suspend_debug_flag(u32 val)
 {
 	if (!ram_console_init_done || !ram_console_buffer)
@@ -2487,6 +2557,26 @@ void aee_rr_show_gpu_dvfs_oppidx(struct seq_file *m)
 void aee_rr_show_gpu_dvfs_status(struct seq_file *m)
 {
 	seq_printf(m, "gpu_dvfs_status: 0x%x\n", LAST_RRR_VAL(gpu_dvfs_status));
+}
+
+void aee_rr_show_drcc_0(struct seq_file *m)
+{
+	seq_printf(m, "drcc_0 = 0x%X\n", LAST_RRR_VAL(drcc_0));
+}
+
+void aee_rr_show_drcc_1(struct seq_file *m)
+{
+	seq_printf(m, "drcc_1 = 0x%X\n", LAST_RRR_VAL(drcc_1));
+}
+
+void aee_rr_show_drcc_2(struct seq_file *m)
+{
+	seq_printf(m, "drcc_2 = 0x%X\n", LAST_RRR_VAL(drcc_2));
+}
+
+void aee_rr_show_drcc_3(struct seq_file *m)
+{
+	seq_printf(m, "drcc_3 = 0x%X\n", LAST_RRR_VAL(drcc_3));
 }
 
 void aee_rr_show_ptp_devinfo_0(struct seq_file *m)
@@ -2988,6 +3078,16 @@ void aee_rr_show_gz_irq(struct seq_file *m)
 	seq_printf(m, "GZ IRQ: 0x%x\n", LAST_RRR_VAL(gz_irq));
 }
 
+void aee_rr_show_drcc_dbg_info(struct seq_file *m)
+{
+	seq_printf(m, "DRCC dbg info result: 0x%x\n",
+			LAST_RRR_VAL(drcc_dbg_ret));
+	seq_printf(m, "DRCC dbg info offset: 0x%x\n",
+			LAST_RRR_VAL(drcc_dbg_off));
+	seq_printf(m, "DRCC dbg info timestamp: 0x%llx\n",
+			LAST_RRR_VAL(drcc_dbg_ts));
+}
+
 __weak uint32_t get_vcore_dvfs_sram_debug_regs(uint32_t index)
 {
 	return 0;
@@ -3124,6 +3224,11 @@ last_rr_show_t aee_rr_show[] = {
 	aee_rr_show_gpu_dvfs_vgpu,
 	aee_rr_show_gpu_dvfs_oppidx,
 	aee_rr_show_gpu_dvfs_status,
+	aee_rr_show_drcc_0,
+	aee_rr_show_drcc_1,
+	aee_rr_show_drcc_2,
+	aee_rr_show_drcc_3,
+	aee_rr_show_drcc_dbg_info,
 	aee_rr_show_ptp_devinfo_0,
 	aee_rr_show_ptp_devinfo_1,
 	aee_rr_show_ptp_devinfo_2,
