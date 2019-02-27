@@ -2600,30 +2600,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,gps";
 	};
 
-	ccu@1a080000 {
-		compatible = "mediatek,ccu";
-		reg = <0 0x1a080000 0 0x1000>;
-		interrupts = <GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>;
-	};
-
-	ccu@1a090000 {
-		compatible = "mediatek,ccu";
-		reg = <0 0x1a090000 0 0x1000>;
-	};
-
-	ccu@1a0a0000 {
-		compatible = "mediatek,ccu";
-		reg = <0 0x1a0a0000 0 0x1000>;
-	};
-
 	ccu@1a0b0000 {
 		compatible = "mediatek,ccu";
-		reg = <0 0x1a0b0000 0 0x1000>;
-	};
-
-	ccu@1a0b1000 {
-		compatible = "mediatek,ccu";
 		reg = <0 0x1a0b1000 0 0x1000>;
+		interrupts = <GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&camsys CLK_CAM_CCU>;
+		clock-names = "CCU_CLK_CAM_CCU";
 	};
 
 	mt_charger: mt_charger {
