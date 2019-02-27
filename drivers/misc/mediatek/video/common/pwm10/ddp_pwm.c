@@ -33,8 +33,13 @@
 #include <ddp_pwm_mux.h>
 /* #include <mach/mt_gpio.h> */
 #include <disp_dts_gpio.h> /* DTS GPIO */
+#if defined(LED_READY)
 #include <mtk_leds_drv.h>
 #include <mtk_leds_sw.h>
+#else
+#define MT65XX_LED_MODE_NONE (0)
+#define MT65XX_LED_MODE_CUST_BLS_PWM (5)
+#endif
 #include <ddp_reg.h>
 #include <ddp_path.h>
 #include <primary_display.h>
