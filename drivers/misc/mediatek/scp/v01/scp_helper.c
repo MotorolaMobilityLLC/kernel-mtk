@@ -1355,26 +1355,27 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	/* scp reset by CMD, WDT or awake fail */
 	if (scp_reset_type == RESET_TYPE_WDT) {
 		/* reset type scp WDT */
-		pr_debug("%s(): scp wdt reset\n", __func__);
+		pr_notice("%s(): scp wdt reset\n", __func__);
 		/* make sure scp is in idle state */
-		while (--timeout) {
+		while (timeout--) {
 			if (*(unsigned int *)SCP_GPR_CM4_A_REBOOT == 0x34) {
 				if (readl(SCP_SLEEP_STATUS_REG)
 					& SCP_A_IS_SLEEP) {
-				/* stop scp */
-				*(unsigned int *)scp_reset_reg = 0x0;
-				*(unsigned int *)SCP_GPR_CM4_A_REBOOT = 1;
-				dsb(SY);
-				break;
+					/* SCP stops any activities
+					 * and parks at wfi
+					 */
+					break;
 				}
 			}
 			mdelay(20);
-			if (timeout == 0) {
-			pr_debug("[SCP]wdt reset timeout, still reset scp\n");
-			*(unsigned int *)scp_reset_reg = 0x0;
-			*(unsigned int *)SCP_GPR_CM4_A_REBOOT = 1;
-			}
 		}
+
+		if (timeout == 0)
+			pr_notice("[SCP]wdt reset timeout, still reset scp\n");
+
+		*(unsigned int *)scp_reset_reg = 0x0;
+		*(unsigned int *)SCP_GPR_CM4_A_REBOOT = 1;
+		dsb(SY);
 	} else if (scp_reset_type == RESET_TYPE_AWAKE) {
 		/* reset type awake fail */
 		pr_debug("%s(): scp awake fail reset\n", __func__);
