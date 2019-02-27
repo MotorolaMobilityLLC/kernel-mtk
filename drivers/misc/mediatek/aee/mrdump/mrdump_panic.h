@@ -20,7 +20,6 @@
 /* for WDT timeout case : dump timer/schedule/irq/softirq etc...
  * debug information
  */
-extern void aee_wdt_dump_info(void);
 void aee_disable_api(void);
 
 extern int ipanic_atflog_buffer(void *data, unsigned char *buffer,
