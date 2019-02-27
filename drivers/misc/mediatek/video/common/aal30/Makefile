@@ -59,3 +59,13 @@ endif
 ifeq (y, $(filter y, $(CONFIG_MACH_MT6765) $(CONFIG_MACH_MT6761)))
     ccflags-y += -DAMS_AAL_SUPPORT_KERNEL_API
 endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6779)))
+    ccflags-y += -DAAL_HAS_YHIST
+endif
+
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6779)))
+    ccflags-y += -DAAL_HAS_DRE3
+endif
+
+ccflags-y += -DAAL_SUPPORT_KERNEL_API
