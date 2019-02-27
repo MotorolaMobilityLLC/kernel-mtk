@@ -42,12 +42,18 @@ DRVGEN_OUT := $(objtree)/arch/$(SRCARCH)/boot/dts
 endif
 export DRVGEN_OUT
 
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 ALL_DRVGEN_FILE := $(MTK_PROJECT)/cust.dtsi
+else
+ALL_DRVGEN_FILE := cust.dtsi
+endif
 
 DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
 ifneq ($(wildcard $(DWS_FILE)),)
 DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 DRVGEN_FILE_LIST += $(DTB_FILES)
+endif
 else
 DRVGEN_FILE_LIST :=
 endif
@@ -56,6 +62,7 @@ DRVGEN_FIG := $(wildcard $(dir $(DRVGEN_TOOL))config/*.fig)
 
 .PHONY: drvgen
 drvgen: $(DRVGEN_FILE_LIST)
+ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 $(DRVGEN_FILE_LIST): $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG) $(DTS_FILES)
 	for i in $(DTS_FILES); do \
 		base_prj=`grep -m 1 "#include [<\"].*\/cust\.dtsi[>\"]" $$i | sed 's/#include [<"]//g' | sed 's/\/cust\.dtsi[>"]//g'`;\
@@ -66,6 +73,11 @@ $(DRVGEN_FILE_LIST): $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG) $(DTS_FILES)
 			$(python) $(DRVGEN_TOOL) $$dws_path $$prj_path $$prj_path cust_dtsi;\
 		fi \
 	done
+else
+$(DRVGEN_OUT)/cust.dtsi: $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG)
+	@mkdir -p $(dir $@)
+	$(python) $(DRVGEN_TOOL) $(DWS_FILE) $(dir $@) $(dir $@) cust_dtsi
+endif
 
 ifeq ($(strip $(CONFIG_MTK_DTBO_FEATURE)), y)
 
