@@ -1046,6 +1046,7 @@ static long compat_dfrc_ioctl(
 	unsigned int cmd,
 	unsigned long arg)
 {
+	long res = 0L;
 	switch (cmd) {
 	case DFRC_IOCTL_CMD_REG_POLICY:
 	case DFRC_IOCTL_CMD_SET_POLICY:
@@ -1053,16 +1054,21 @@ static long compat_dfrc_ioctl(
 	case DFRC_IOCTL_CMD_SET_HWC_INFO:
 	case DFRC_IOCTL_CMD_SET_INPUT_WINDOW:
 	case DFRC_IOCTL_CMD_RESET_STATE:
-	case DFRC_IOCTL_CMD_GET_REQUEST_SET:
 	case DFRC_IOCTL_CMD_GET_VSYNC_REQUEST:
+	case DFRC_IOCTL_CMD_GET_REQUEST_SET:
 	case DFRC_IOCTL_CMD_GET_PANEL_INFO:
+	case DFRC_IOCTL_CMD_GET_REFRESH_RANGE:
+	case DFRC_IOCTL_CMD_SET_WINDOW_STATE:
+	case DFRC_IOCTL_CMD_SET_FOREGROUND_WINDOW:
+	case DFRC_IOCTL_CMD_FORBID_ADJUSTING_VSYNC:
+		res = dfrc_ioctl(file, cmd, arg);
 		break;
 
 	default:
 		return -ENODATA;
 	}
 
-	return 0L;
+	return res;
 }
 #endif
 
