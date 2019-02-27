@@ -25,6 +25,7 @@
 #endif
 
 bool mt_mdpm_debug;
+int g_dbm_power[POWER_CATEGORY_NUM], g_scenario_power[POWER_CATEGORY_NUM];
 #ifdef MD_POWER_UT
 u32 fake_share_reg;
 u32 fake_share_mem[SHARE_MEM_BLOCK_NUM];
@@ -62,7 +63,7 @@ void init_md_section_level(enum pbm_kicker kicker)
 		pr_warn("unknown MD kicker: %d\n", kicker);
 }
 
-int get_md1_power(unsigned int power_category)
+int get_md1_power(unsigned int power_category, bool need_update)
 {
 	u32 share_reg, *share_mem;
 	unsigned int scenario;
@@ -71,6 +72,10 @@ int get_md1_power(unsigned int power_category)
 #if !defined(CONFIG_MTK_ECCCI_DRIVER)
 	return 0;
 #endif
+
+	if (need_update == false) {
+		return g_scenario_power[MAX_POWER] + g_dbm_power[MAX_POWER];
+	}
 
 	if (power_category >= POWER_CATEGORY_NUM ||
 		power_category < 0) {
@@ -90,6 +95,7 @@ int get_md1_power(unsigned int power_category)
 	scenario = get_md1_scenario(share_reg, power_category);
 
 	scenario_power = get_md1_scenario_power(scenario, power_category);
+	g_scenario_power[power_category] = scenario_power;
 
 #ifdef MD_POWER_UT
 	share_mem = fake_share_mem;
@@ -97,6 +103,7 @@ int get_md1_power(unsigned int power_category)
 	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
 #endif
 	dbm_power = get_md1_dBm_power(scenario, share_mem, power_category);
+	g_dbm_power[power_category] = dbm_power;
 
 	if (mt_mdpm_debug)
 		pr_info("[md1_power] scenario_power=%d dbm_power=%d total=%d\n",
@@ -144,6 +151,15 @@ static ssize_t mt_mdpm_debug_proc_write
 	return count;
 }
 
+static int mt_mdpm_power_proc_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "MAX power: scenario=%dmW dbm=%dmW total=%dmW\n",
+		g_scenario_power[MAX_POWER], g_dbm_power[MAX_POWER],
+		g_scenario_power[MAX_POWER] + g_dbm_power[MAX_POWER]);
+
+	return 0;
+}
+
 #define PROC_FOPS_RW(name)						\
 static int mt_ ## name ## _proc_open(struct inode *inode, struct file *file)\
 {									\
@@ -158,9 +174,23 @@ static const struct file_operations mt_ ## name ## _proc_fops = {	\
 	.write		= mt_ ## name ## _proc_write,			\
 }
 
+#define PROC_FOPS_RO(name)						\
+static int mt_ ## name ## _proc_open(struct inode *inode, struct file *file)\
+{									\
+	return single_open(file, mt_ ## name ## _proc_show, PDE_DATA(inode));\
+}									\
+static const struct file_operations mt_ ## name ## _proc_fops = {	\
+	.owner		= THIS_MODULE,				\
+	.open		= mt_ ## name ## _proc_open,		\
+	.read		= seq_read,				\
+	.llseek		= seq_lseek,				\
+	.release	= single_release,			\
+}
+
 #define PROC_ENTRY(name)	{__stringify(name), &mt_ ## name ## _proc_fops}
 
 PROC_FOPS_RW(mdpm_debug);
+PROC_FOPS_RO(mdpm_power);
 
 static int mt_mdpm_create_procfs(void)
 {
@@ -174,6 +204,7 @@ static int mt_mdpm_create_procfs(void)
 
 	const struct pentry entries[] = {
 		PROC_ENTRY(mdpm_debug),
+		PROC_ENTRY(mdpm_power),
 	};
 
 	dir = proc_mkdir("mdpm", NULL);
@@ -199,7 +230,7 @@ void init_md_section_level(enum pbm_kicker kicker)
 	pr_notice("MD_POWER_METER_ENABLE:0\n");
 }
 
-int get_md1_power(unsigned int power_category)
+int get_md1_power(unsigned int power_category, bool need_update)
 {
 #if defined(CONFIG_MTK_ECCCI_DRIVER)
 	return MAX_MD1_POWER;
