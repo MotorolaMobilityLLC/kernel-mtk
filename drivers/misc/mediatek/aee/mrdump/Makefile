@@ -11,6 +11,7 @@
 # See http://www.gnu.org/licenses/gpl-2.0.html for more details.
 #
 
+ccflags-$(CONFIG_MTK_AEE_FEATURE) += -DTEXT_OFFSET=$(TEXT_OFFSET)
 obj-$(CONFIG_MTK_AEE_FEATURE)	+= mrdump_hw.o mrdump_key_setup.o
 
 ifeq ($(CONFIG_MTK_AEE_MRDUMP),y)
