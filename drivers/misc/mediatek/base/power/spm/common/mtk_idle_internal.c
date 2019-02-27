@@ -10,7 +10,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
+#include <linux/ratelimit.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -281,7 +281,8 @@ int mtk_idle_enter(
 	#if defined(CONFIG_SERIAL_8250_MT6577)
 	if (!(idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)) {
 		if (mtk8250_request_to_sleep()) {
-			pr_notice("Power/swap Fail to request uart sleep\n");
+			pr_info_ratelimited("Power/swap %s Fail to request uart sleep\n",
+				__func__);
 			goto RESTORE_UART;
 		}
 	}
