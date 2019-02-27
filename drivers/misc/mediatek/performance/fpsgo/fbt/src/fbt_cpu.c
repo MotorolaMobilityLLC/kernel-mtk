@@ -1207,7 +1207,7 @@ static int fbt_boost_policy(
 	t1 = nsec_to_100usec(t1);
 	t2 = target_time;
 	t2 = nsec_to_100usec(t2);
-	t_sleep = t_cpu_slptime + thread_info->dequeue_length;
+	t_sleep = t_cpu_slptime;
 	t_sleep = nsec_to_100usec(t_sleep);
 	if (aa < 0) {
 		mutex_lock(&blc_mlock);
@@ -1402,10 +1402,19 @@ static void fbt_frame_start(struct render_info *thr, unsigned long long ts,
 	spin_lock_irqsave(&loading_slock, flags);
 	if (thr->pLoading) {
 		atomic_set(&thr->pLoading->last_cb_ts, new_ts);
-		atomic_set(&thr->pLoading->skip_loading, 0);
 		fpsgo_systrace_c_fbt_gm(thr->pid,
 				atomic_read(&thr->pLoading->last_cb_ts),
 				"last_cb_ts");
+
+		/*
+		 * When NON-ALIGNED, skip_loading will be reset@enqueue-end.
+		 * Since frame-start will come before enqueue-end, and the
+		 * loading@enqueue should not be included.
+		 * When ALIGNED, frame-start will come after enqueue-end.
+		 * TODO: modify to fit for any order.
+		 */
+		if (thr->frame_type == VSYNC_ALIGNED_TYPE)
+			atomic_set(&thr->pLoading->skip_loading, 0);
 
 		loading = atomic_read(&thr->pLoading->loading);
 
