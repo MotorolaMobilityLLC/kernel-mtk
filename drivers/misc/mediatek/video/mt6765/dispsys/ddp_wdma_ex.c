@@ -648,15 +648,15 @@ wdma_golden_setting(enum DISP_MODULE_ENUM module,
 	unsigned int fifo_off_dvfs = 2;
 
 	unsigned long long consume_rate = 0;
-	unsigned int ultra_low;
-	unsigned int preultra_low;
-	unsigned int preultra_high;
-	unsigned int ultra_high;
+	unsigned long long ultra_low;
+	unsigned long long preultra_low;
+	unsigned long long preultra_high;
+	unsigned long long ultra_high;
 
-	unsigned int ultra_low_UV;
-	unsigned int preultra_low_UV;
-	unsigned int preultra_high_UV;
-	unsigned int ultra_high_UV;
+	unsigned long long ultra_low_UV;
+	unsigned long long preultra_low_UV;
+	unsigned long long preultra_high_UV;
+	unsigned long long ultra_high_UV;
 
 	unsigned int offset = idx * DISP_WDMA_INDEX_OFFSET;
 

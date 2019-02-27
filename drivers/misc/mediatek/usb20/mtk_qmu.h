@@ -448,7 +448,7 @@ u8 PDU_calcCksum(u8 *data, int len);
 #define TGPD_GET_DATA_TX(_pd)		TGPD_GET_DATA(_pd)
 #define TGPD_GET_DATA_RX(_pd)		TGPD_GET_DATA(_pd)
 
-#define TGPD_SET_DATA(_pd, _data)
+#define TGPD_SET_DATA(_pd, _data)  \
 	(((struct TGPD *)_pd)->pBuf = (u32)(uintptr_t)_data)
 #define TGPD_GET_DATA(_pd)  \
 	((u8 *)(uintptr_t)((struct TGPD *)_pd)->pBuf)

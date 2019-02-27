@@ -31,6 +31,7 @@
 #include <linux/irqchip/arm-gic-v3.h>
 #include <linux/irqchip/mtk-gic-extend.h>
 #include <linux/io.h>
+#include <mt-plat/mtk_secure_api.h>
 
 #define IOMEM(x)	((void __force __iomem *)(x))
 /* for cirq use */
@@ -422,7 +423,7 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0, 0);
 #else
 	rc = -1;
 #endif
@@ -478,7 +479,7 @@ int mt_irq_dump_cpu(int irq)
 	irq = virq_to_hwirq(irq);
 
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
-	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0);
+	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0, 0);
 #else
 	rc = -1;
 #endif

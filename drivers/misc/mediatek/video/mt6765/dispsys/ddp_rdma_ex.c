@@ -573,8 +573,8 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 
 	unsigned int frame_rate;
 	unsigned int Bytes_per_sec;
-	long long temp;
-	long long temp_for_div;
+	unsigned long long temp;
+	unsigned long long temp_for_div;
 
 	if (!p_golden_setting) {
 		DDPERR("golden setting is null, %s,%d\n", __FILE__, __LINE__);
