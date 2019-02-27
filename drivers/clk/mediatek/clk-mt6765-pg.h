@@ -29,6 +29,11 @@ enum subsys_id {
 	NR_SYSS = 11,
 };
 
+enum mtcmos_op {
+	MTCMOS_BUS_PROT = 0,
+	MTCMOS_PWR = 1,
+};
+
 struct pg_callbacks {
 	struct list_head list;
 	void (*before_off)(enum subsys_id sys);
@@ -46,14 +51,6 @@ extern void subsys_if_on(void);
 extern void mtcmos_force_off(void);
 
 /*new arch*/
-/*extern void mfg_mtcmos_patch(void);*/
-extern void mm0_mtcmos_patch(int on);
-extern void ven_mtcmos_patch(void);
-extern void ipu_mtcmos_patch(int on);
-extern void isp_mtcmos_patch(int on);
-extern void vde_mtcmos_patch(void);
-extern void cam_mtcmos_patch(int on);
-
 extern void check_ven_clk_sts(void);
 extern void set_ven_bus_protect(void);
 extern void mm_clk_restore(void);
