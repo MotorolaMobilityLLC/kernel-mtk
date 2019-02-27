@@ -27,7 +27,7 @@
 #include <linux/module.h>
 #include <linux/of_device.h>
 
-#define CMDQ_THR_MAX_COUNT		7 /* ddp main/sub, mdp path 0/1/2/3, general(misc) */
+#define CMDQ_THR_MAX_COUNT	7 /* ddp main/sub, mdp 0~3, general(misc) */
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
 #define CMDQ_TIMEOUT_MS			1000
 #define CMDQ_IRQ_MASK			0xffff
@@ -62,12 +62,6 @@
 
 #define CMDQ_JUMP_BY_OFFSET		0x10000000
 #define CMDQ_JUMP_BY_PA			0x10000001
-
-/* CMDQ log flag */
-int mtk_cmdq_log;
-EXPORT_SYMBOL(mtk_cmdq_log);
-
-module_param(mtk_cmdq_log, int, 0644);
 
 
 struct cmdq_thread {
@@ -262,8 +256,10 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		WARN_ON(clk_enable(cmdq->clock) < 0);
 		WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
 
-		cmdq_log("task %p~%p, thread->base=%p",
-			(void *)task->pa_base, (void *)(task->pa_base+pkt->cmd_buf_size), thread->base);
+		pr_debug("cmdq task %p~%p, thread->base=%p\n",
+			(void *)task->pa_base,
+			(void *)(task->pa_base+pkt->cmd_buf_size),
+			thread->base);
 
 		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 		writel(task->pa_base + pkt->cmd_buf_size,
@@ -278,8 +274,9 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 		curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
 		end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
 
-		cmdq_log("curr task %p~%p, thread->base=%p",
-					(void *)curr_pa, (void *)end_pa, thread->base);
+		pr_debug("cmdq curr task %p~%p, thread->base=%p\n",
+					(void *)curr_pa,
+					(void *)end_pa, thread->base);
 
 		/*
 		 * Atomic execution should remove the following wfe, i.e. only
@@ -414,7 +411,8 @@ static void cmdq_buf_print_wfe(struct device *dev, u32 offset, u64 cmd)
 		event_str = "UNKNOWN";
 
 	dev_err(dev, "0x%08x 0x%016llx %s event %d:%s\n", offset, cmd,
-		cmdq_command_is_wfe(cmd) ?  "wait for" : "clear", event, event_str);
+		cmdq_command_is_wfe(cmd) ?  "wait for" : "clear",
+		event, event_str);
 }
 
 static void cmdq_buf_print_mask(struct device *dev, u32 offset, u64 cmd)
@@ -528,8 +526,6 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	irq_flag = readl(thread->base + CMDQ_THR_IRQ_STATUS);
 	writel(~irq_flag, thread->base + CMDQ_THR_IRQ_STATUS);
 
-	cmdq_log("CMDQ_THR_IRQ_STATUS: %u", irq_flag);
-
 	/*
 	 * When ISR call this function, another CPU core could run
 	 * "release task" right before we acquire the spin lock, and thus
@@ -549,13 +545,12 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	curr_pa = readl(thread->base + CMDQ_THR_CURR_ADDR);
 	task_end_pa = readl(thread->base + CMDQ_THR_END_ADDR);
 
-	cmdq_log("task status %p~%p, err=%d", (void *)(unsigned long)curr_pa, (void *)(unsigned long)task_end_pa, err);
+	pr_debug("cmdq status %p~%p, flag=%x\n", (void *)(unsigned long)curr_pa,
+		(void *)(unsigned long)task_end_pa, irq_flag);
 
 	list_for_each_entry_safe(task, tmp, &thread->task_busy_list,
 				 list_entry) {
 		task_end_pa = task->pa_base + task->pkt->cmd_buf_size;
-
-		cmdq_log("task %p~%p", (void *)task->pa_base, (void *)(unsigned long)task_end_pa);
 
 		if (curr_pa >= task->pa_base && curr_pa < task_end_pa)
 			curr_task = task;
@@ -576,12 +571,9 @@ static void cmdq_thread_irq_handler(struct cmdq *cmdq,
 	if (list_empty(&thread->task_busy_list)) {
 		cmdq_thread_disable(cmdq, thread);
 		clk_disable(cmdq->clock);
-
-		cmdq_log("empty task");
 	} else {
 		mod_timer(&thread->timeout,
 			  jiffies + msecs_to_jiffies(CMDQ_TIMEOUT_MS));
-		cmdq_log("mod_timer");
 	}
 }
 
@@ -592,14 +584,15 @@ static irqreturn_t cmdq_irq_handler(int irq, void *dev)
 	int bit;
 
 	irq_status = readl(cmdq->base + CMDQ_CURR_IRQ_STATUS) & CMDQ_IRQ_MASK;
-	cmdq_log("CMDQ_CURR_IRQ_STATUS: %x, %x", (u32)irq_status, (u32)(irq_status ^ CMDQ_IRQ_MASK));
+	pr_debug("cmdq IRQ_STATUS: %x, %x\n", (u32)irq_status,
+		(u32)(irq_status ^ CMDQ_IRQ_MASK));
 	if (!(irq_status ^ CMDQ_IRQ_MASK))
 		return IRQ_NONE;
 
 	for_each_clear_bit(bit, &irq_status, fls(CMDQ_IRQ_MASK)) {
 		struct cmdq_thread *thread = &cmdq->thread[bit];
 
-		cmdq_log("bit=%d, thread->base=%p", bit, thread->base);
+		pr_debug("cmdq bit=%d, thread->base=%p\n", bit, thread->base);
 
 		spin_lock_irqsave(&thread->chan->lock, flags);
 		cmdq_thread_irq_handler(cmdq, thread);

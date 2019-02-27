@@ -86,11 +86,4 @@ struct cmdq_pkt {
 	struct cmdq_task_cb	cb;
 };
 
-extern int mtk_cmdq_log;
-#define cmdq_log(fmt, args...) \
-			do { \
-				if (mtk_cmdq_log) \
-					pr_err("[cmdq] "fmt" @%s,%u\n", ##args, __func__, __LINE__); \
-			} while (0)
-
 #endif /* __MTK_CMDQ_MAILBOX_H__ */
