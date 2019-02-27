@@ -38,6 +38,7 @@
 #include "tune.h"
 #include "walt.h"
 #include "hmp.h"
+#include "eas_plus.c"
 
 int stune_task_threshold;
 
@@ -7192,8 +7193,23 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 	}
 
 	if (!sd) {
-		if (sd_flag & SD_BALANCE_WAKE) /* XXX always ? */
+		if (sd_flag & SD_BALANCE_WAKE) { /* XXX always ? */
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+			bool prefer_idle = schedtune_prefer_idle(p) > 0;
+#else
+			bool prefer_idle = true;
+#endif
+			int idle_cpu;
+
+			idle_cpu = find_best_idle_cpu(p, prefer_idle);
+			if (idle_cpu >= 0)
+				new_cpu = idle_cpu;
+			else
+				new_cpu = select_max_spare_capacity(p, new_cpu);
+
+			if (false)
 			new_cpu = select_idle_sibling(p, prev_cpu, new_cpu);
+		}
 
 	} else {
 		int wu = sd_flag & SD_BALANCE_WAKE;
@@ -10991,3 +11007,4 @@ __init void init_sched_fair_class(void)
 #include "sched_power.c"
 
 #include "hmp.c"
+

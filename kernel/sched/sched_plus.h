@@ -16,10 +16,14 @@ extern unsigned long arch_scale_get_max_freq(int cpu);
 extern unsigned long arch_scale_get_min_freq(int cpu);
 #endif
 
-#ifdef CONFIG_SCHED_TUNE
 extern int stune_task_threshold;
+#ifdef CONFIG_SCHED_TUNE
 extern bool global_negative_flag;
 
 void show_ste_info(void);
 void show_pwr_info(void);
+#endif
+
+#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern int l_plus_cpu;
 #endif
