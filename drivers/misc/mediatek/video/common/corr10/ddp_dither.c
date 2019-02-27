@@ -285,8 +285,7 @@ static int dither_ioctl(enum DISP_MODULE_ENUM module, void *handle,
 struct DDP_MODULE_DRIVER ddp_driver_dither = {
 	.config = disp_dither_config,
 	.bypass = disp_dither_bypass,
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739) && \
-	!defined(CONFIG_MACH_MT6765)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
 	.init = disp_dither_power_on,
 	.deinit = disp_dither_power_off,
 #endif

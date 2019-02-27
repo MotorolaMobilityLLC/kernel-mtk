@@ -2267,8 +2267,7 @@ static int aal_init(enum DISP_MODULE_ENUM module, void *cmq_handle)
 	if (disp_aal_check_module(module, __func__, __LINE__) == false)
 		return 0;
 
-#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739) && \
-	!defined(CONFIG_MACH_MT6765)
+#if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6739)
 	aal_clock_on(module, cmq_handle);
 #endif
 #if defined(CONFIG_MACH_MT6799)
