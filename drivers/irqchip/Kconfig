@@ -297,6 +297,7 @@ config MTK_IRQ_NEW_DESIGN_DEBUG
 
 config MTK_SYSIRQ
 	bool
+	default y if ARCH_MEDIATEK
 	help
 	  GIC only support IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_EDGE_RISING, so this driver is designed for
 	  polarity configuration in order to make GIC driver support various trigger type
