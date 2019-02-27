@@ -226,6 +226,11 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 		"\nheaviest task pid=%d (%s) util=%d boost=%d run in cpu%d\n\n",
 		max_pid, (task)?task->comm:"NULL", max_util, boost, max_cpu);
 
+	len += snprintf(buf+len, max_len - len,
+			"foreground boost=%d\n", group_boost_read(1));
+	len += snprintf(buf+len, max_len - len,
+			"top-app boost=%d\n", group_boost_read(3));
+
 	return len;
 }
 

@@ -46,3 +46,9 @@ extern void (*ged_kpi_set_game_hint_value_fp)(int is_game_mode);
 #define DEFAULT_SODI_LIMIT 200
 #endif
 
+/* Stune group info */
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+extern int group_boost_read(int group_idx);
+#else
+static int group_boost_read(int group_idx) { return 0; }
+#endif
