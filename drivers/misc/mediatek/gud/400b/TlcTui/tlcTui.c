@@ -112,7 +112,7 @@ static void tlc_wait_cmd_from_driver(void)
 	/* Wait for a command from secure driver */
 	ret = mc_wait_notification(&dr_session_handle, -1);
 	if (ret == MC_DRV_OK)
-		pr_debug("tlc_wait_cmd_from_driver: Got a command\n");
+		pr_debug("%s: Got a command\n", __func__);
 	else
 		pr_debug("ERROR %s:%d mc_wait_notification() failed: %d\n",
 			 __func__, __LINE__, ret);
@@ -176,7 +176,7 @@ u32 send_cmd_to_user(u32 command_id, u32 data0, u32 data1)
 		goto end;
 	}
 
-	pr_debug("send_cmd_to_user: Got an answer from ioctl thread.\n");
+	pr_debug("%s: Got an answer from ioctl thread.\n", __func__);
 	reinit_completion(&io_comp);
 
 	/* Check id of the cmd processed by ioctl thread (paranoia) */
@@ -397,7 +397,7 @@ bool tlc_notify_event(u32 event_type)
 	}
 
 	/* Prepare notification message in DCI */
-	pr_debug("tlc_notify_event: event_type = %d\n", event_type);
+	pr_debug("%s: event_type = %d\n", __func__, event_type);
 	dci->nwd_notif = event_type;
 
 	/* Signal the Driver */
@@ -418,7 +418,7 @@ bool tlc_notify_event(u32 event_type)
  */
 static int main_thread(void *uarg)
 {
-	pr_debug("main_thread: TlcTui start!\n");
+	pr_debug("%s: TlcTui start!\n", __func__);
 
 	/* Open session on the driver */
 	if (!tlc_open()) {

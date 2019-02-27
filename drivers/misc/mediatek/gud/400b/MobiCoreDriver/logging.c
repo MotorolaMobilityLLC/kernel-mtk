@@ -21,6 +21,7 @@
 
 #include "public/mc_linux_api.h"
 
+#include "platform.h"	/* TBASE_CORE_SWITCHER */
 #include "main.h"
 #include "fastcall.h"
 #include "logging.h"
@@ -99,8 +100,8 @@ static inline void log_eol(u16 source)
 	else
 		/* TEE kernel */
 #ifdef TBASE_CORE_SWITCHER
-		dev_info(g_ctx.mcd, "mtk(%d)|%s\n", mc_active_core(),
-			log_ctx.line);
+		dev_info(g_ctx.mcd, "mtk(%d)|%s\n",
+			mc_active_core(), log_ctx.line);
 #else
 		dev_info(g_ctx.mcd, "mtk|%s\n", log_ctx.line);
 #endif

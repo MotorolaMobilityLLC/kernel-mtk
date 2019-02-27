@@ -420,7 +420,15 @@ int mc_fastcall_init(void)
 		mc_dev_notice("cannot create fastcall wq: %d\n", ret);
 		return ret;
 	}
+#ifdef TEE_FASTCALL_RT
+	struct sched_param param = {.sched_priority = 1};
 
+	ret = sched_setscheduler(fastcall_thread, SCHED_FIFO, &param);
+	if (ret)
+		mc_dev_info("cannot set tee_fastcall priority: %d\n", ret);
+#else
+	set_user_nice(fastcall_thread, -20);
+#endif
 	/* this thread MUST run on CPU 0 at startup */
 	set_cpus_allowed_ptr(fastcall_thread, &new_msk);
 
@@ -485,7 +493,7 @@ int mc_fc_init(uintptr_t base_pa, ptrdiff_t off, size_t q_len, size_t buf_len)
 	    (u32)(((base_high & 0xFFFF) << 16) | (q_len & 0xFFFF));
 	/* mcp buffer start/length [16:16] [start, length] */
 	fc_init.as_in.mcp_info = (u32)((off << 16) | (buf_len & 0xFFFF));
-	mc_dev_devel("cmd=%d, base=0x%08x,nq_info=0x%08x, mcp_info=0x%08x\n",
+	mc_dev_devel("cmd=0x%08x, base=0x%08x,nq_info=0x%08x, mcp_info=0x%08x\n",
 		     fc_init.as_in.cmd, fc_init.as_in.base,
 		     fc_init.as_in.nq_info, fc_init.as_in.mcp_info);
 	mc_fastcall(&fc_init.as_generic);

@@ -465,8 +465,8 @@ static int mobicore_start(void)
 		goto err_create_dev_user;
 
 #ifdef TBASE_CORE_SWITCHER
-	int core = 0, err;
-	unsigned long freq = 0, max_freq = 0;
+	int core;
+	unsigned int freq = 0, max_freq = 0;
 
 	for (core = 0; core < COUNT_OF_CPUS; ++core) {
 		freq = cpufreq_quick_get(core);
@@ -478,11 +478,11 @@ static int mobicore_start(void)
 
 	--core;
 	if (mc_active_core() != core) {
-		mc_dev_info("switch to core: %d, freq: 0x%lx", core, freq);
-		err = mc_switch_core(core);
-		if (err)
-			mc_dev_info("Switch to core %d failed(%d)!\n",
-				core, err);
+		mc_dev_info("Switch to core %d (%u Hz)\n", core, freq);
+		ret = mc_switch_core(core);
+		if (ret)
+			mc_dev_info("Switch to core %d (%u Hz) failed: %d\n",
+				core, freq, ret);
 	}
 #endif
 
