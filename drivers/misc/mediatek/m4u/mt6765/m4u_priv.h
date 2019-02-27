@@ -71,7 +71,7 @@ extern void show_pte(struct mm_struct *mm, unsigned long addr);
 #endif
 
 #ifndef dmac_flush_range
-#define dmac_flush_range __dma_flush_area
+#define dmac_flush_range __dma_flush_range
 #endif
 
 #ifndef outer_clean_all
