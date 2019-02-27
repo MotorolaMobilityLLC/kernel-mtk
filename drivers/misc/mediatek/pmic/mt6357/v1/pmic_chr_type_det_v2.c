@@ -338,11 +338,13 @@ int hw_charging_get_charger_type(void)
 
 void mtk_pmic_enable_chr_type_det(bool en)
 {
+#ifndef CONFIG_TCPC_CLASS
 	if (!mt_usb_is_device()) {
 		g_chr_type = CHARGER_UNKNOWN;
 		pr_info("charger type: UNKNOWN, Now is usb host mode. Skip detection\n");
 		return;
 	}
+#endif
 
 	mutex_lock(&chrdet_lock);
 
