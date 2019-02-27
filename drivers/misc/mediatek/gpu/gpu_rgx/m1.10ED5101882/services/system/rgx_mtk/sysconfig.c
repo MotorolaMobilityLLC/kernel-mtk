@@ -114,11 +114,11 @@ static void UMAPhysHeapCpuPAddrToDevPAddr(IMG_HANDLE hPrivData,
 #if defined(CONFIG_MACH_MT6761)
 	if (psCpuPAddr[0].uiAddr >= SYSTEM_1G_ADDRESS_SHIFT)
 	{
-	    psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
+		psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr - SYSTEM_1G_ADDRESS_SHIFT;
 	}
 	else
 	{
-	psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr;
+		psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr;
 	}
 #else
 	psDevPAddr[0].uiAddr = psCpuPAddr[0].uiAddr;
