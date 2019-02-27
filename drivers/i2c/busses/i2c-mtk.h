@@ -385,6 +385,7 @@ struct mt_i2c {
 	bool skip_scp_sema;
 	bool has_ccu;
 	u32 ccu_offset;
+	unsigned long main_clk;
 	struct mutex i2c_mutex;
 	struct mt_i2c_ext ext_data;
 	const struct mtk_i2c_compatible *dev_comp;
