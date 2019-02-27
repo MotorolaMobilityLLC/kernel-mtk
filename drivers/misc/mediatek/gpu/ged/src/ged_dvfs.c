@@ -1198,7 +1198,11 @@ void ged_dvfs_cal_gpu_utilization_force(void)
 	spin_lock_irqsave(&g_sSpinLock, ui32IRQFlags);
 
 	ulwork = (( t - g_ulCalResetTS_us ) * loading );
+#if defined(CONFIG_ARM64)
 	do_div(ulwork, 100);
+#else
+	ulwork /= 100;
+#endif
 
 	g_ulWorkingPeriod_us += ulwork;
 
