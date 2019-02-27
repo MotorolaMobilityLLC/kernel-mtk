@@ -103,7 +103,6 @@ obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-y += mtprintk/
 obj-$(CONFIG_MTK_XO)	+= xo/
 obj-$(CONFIG_MICROTRUST_TEE_SUPPORT) += teei/
-obj-$(CONFIG_WATCHDATA_TEE_SUPPORT) += watchtrust/
 obj-$(CONFIG_MTK_RAM_CONSOLE) += ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)    += log_store/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
