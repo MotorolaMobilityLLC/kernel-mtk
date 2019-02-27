@@ -328,11 +328,14 @@ extern unsigned long mem_cgroup_shrink_node(struct mem_cgroup *mem,
 						unsigned long *nr_scanned);
 extern unsigned long shrink_all_memory(unsigned long nr_pages);
 extern int vm_swappiness;
+extern int remove_mapping(struct address_space *mapping, struct page *page);
+extern unsigned long vm_total_pages;
+
+#ifdef CONFIG_MEMCG
 extern unsigned long vmpressure_win;
 extern unsigned int vmpressure_level_med;
 extern unsigned int vmpressure_level_critical;
-extern int remove_mapping(struct address_space *mapping, struct page *page);
-extern unsigned long vm_total_pages;
+#endif
 
 #ifdef CONFIG_NUMA
 extern int node_reclaim_mode;
