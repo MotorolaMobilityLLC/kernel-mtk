@@ -115,7 +115,7 @@ static u32 PMQoS_BW_value;
 #define MyTag "[ISP]"
 #define IRQTag "KEEPER"
 
-#define log_vrb(format, args...) pr_debug(MyTag format, ##args)
+
 
 #ifdef ISP_DEBUG
 #define log_dbg(format, args...) pr_debug(MyTag format, ##args)
@@ -294,6 +294,15 @@ static unsigned int g_log_def_constraint;
 #define ISP_REG_ADDR_TG2_INTER_ST (ISP_ADDR + 0x244C)
 #define ISP_REG_ADDR_IMGO_BASE_ADDR (ISP_ADDR + 0x3300)
 #define ISP_REG_ADDR_RRZO_BASE_ADDR (ISP_ADDR + 0x3320)
+#define ISP_REG_ADDR_DMA_DCM_STATUS (ISP_ADDR + 0x1A8)
+
+#define ISP_REG_ADDR_DMA_REQ_STATUS (ISP_ADDR + 0x1C0)
+#define ISP_REG_ADDR_DMA_RDY_STATUS (ISP_ADDR + 0x1D4)
+#define ISP_REG_ADDR_DBG_SET (ISP_ADDR + 0x160)
+#define ISP_REG_ADDR_DBG_PORT (ISP_ADDR + 0x164)
+#define ISP_REG_ADDR_DMA_DEBUG_SEL (ISP_ADDR + 0x35F4)
+
+
 #if (ISP_RAW_D_SUPPORT == 1)
 #define ISP_REG_ADDR_IMGO_D_BASE_ADDR (ISP_ADDR + 0x34D4)
 #define ISP_REG_ADDR_RRZO_D_BASE_ADDR (ISP_ADDR + 0x34F4)
@@ -1489,13 +1498,14 @@ bool ISP_chkModuleSetting(void)
 
 	unsigned int sgg_sel;
 	unsigned int eis_sel;
-	bool bmx_enable;
+	bool bmx_enable, rmx_enable;
 	bool hbin2_en;
 	bool sgg3_en, flk_en;
 	unsigned int i;
 
 	cam_ctrl_en_p1 = ISP_RD32(ISP_ADDR + 0x4);
 	bmx_enable = (cam_ctrl_en_p1 >> 11) & 0x01;
+	rmx_enable = (cam_ctrl_en_p1 >> 9) & 0x01;
 	hbin2_en = (cam_ctrl_en_p1 >> 18) & 0x01;
 	sgg3_en = (cam_ctrl_en_p1 >> 26) & 0x01;
 	flk_en = (cam_ctrl_en_p1 >> 17) & 0x01;
@@ -1766,11 +1776,17 @@ bool ISP_chkModuleSetting(void)
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		case 1:
-			h_size = bmx_end_x - bmx_str_x + 1;
+			if (bmx_enable == MTRUE)
+				h_size = bmx_end_x - bmx_str_x + 1;
+			else
+				h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		case 2:
-			h_size = rmx_end_x - rmx_str_x + 1;
+			if (rmx_enable == MTRUE)
+				h_size = rmx_end_x - rmx_str_x + 1;
+			else
+				h_size = tg_w_pxl_e - tg_w_pxl_s + 1;
 			v_size = tg_h_lin_e - tg_h_lin_s;
 			break;
 		default:
@@ -5498,6 +5514,11 @@ static long ISP_Buf_CTRL_FUNC(unsigned long Param)
 		 * &(IspInfo.SpinLockIrq[irqT]),
 		 * flags);
 		 */
+#if (HAL3_IPBASE == 1)
+	/* update vAddr for deciding which buffer had been changed to dummy fr*/
+		    pstRTBuf->ring_buf[rt_dma].data[i].base_vAddr =
+				rt_buf_info->base_vAddr;
+#endif
 				pstRTBuf
 					->ring_buf
 						[rt_dma]
@@ -6532,21 +6553,22 @@ LOG_BYPASS:
 			deque_buf->data[i]
 				  .image
 				  .m_num_0) ==
-			 0)
-			deque_buf->data[i]
-				.image
-				.m_num_0 |=
-				_UNCERTAIN_MAGIC_NUM_FLAG_;
-		/*      */
-		IRQ_LOG_KEEPER(
-			irqT, 0, _LOG_DBG,
-			"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)",
-			rt_dma,
-			deque_buf->data[i]
-				.image.m_num_0,
-			deque_buf->data[i]
-				.image.frm_cnt,
-			m_LastMNum[rt_dma]);
+			 0) {
+				deque_buf->data[i]
+					.image
+					.m_num_0 |=
+					_UNCERTAIN_MAGIC_NUM_FLAG_;
+					/*      */
+				IRQ_LOG_KEEPER(
+					irqT, 0, _LOG_DBG,
+					"m# uncertain:dma(%d),m0(0x%x),fcnt(0x%x),Lm#(0x%x)",
+					rt_dma,
+					deque_buf->data[i]
+					.image.m_num_0,
+					deque_buf->data[i]
+					.image.frm_cnt,
+					m_LastMNum[rt_dma]);
+				}
 #ifdef T_STAMP_2_0
 	if (m_T_STAMP.fps >
 		 SlowMotion) {
@@ -7021,10 +7043,8 @@ LOG_BYPASS:
 
 			}
 
-			if (ii == _rt_dma_max_) {
-				pstRTBuf->dropCnt = 0;
+			if (ii == _rt_dma_max_)
 				pstRTBuf->state = 0;
-			}
 		}
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
@@ -7207,22 +7227,21 @@ static signed int ISP_SOF_Buf_Get(enum eISPIrq irqT, union CQ_RTBC_FBC *pFbc,
 #if 0 /* this can't be trusted , because rcnt_in is pull high at sof */
 	/* No drop */
 	if (imgo_fbc.Bits.FB_NUM != imgo_fbc.Bits.FBC_CNT) {
-		pstRTBuf->dropCnt = 0;
+		bDrop = 0;
 	} else {
 		/* dropped */
-		pstRTBuf->dropCnt = 1;
+		bDrop = 1;
 	}
 #else
-	pstRTBuf->dropCnt = bDrop;
 #endif
 /*      */
 /* if(IspInfo.DebugMask & ISP_DBG_INT_2) { */
 /* IRQ_LOG_KEEPER(irqT,m_CurrentPPB,_LOG_INF,"[rtbc]dropCnt(%d)\n",
- * pstRTBuf->dropCnt);
+ * bDrop);
  */
 /* } */
 /* No drop */
-	if (pstRTBuf->dropCnt == 0) {
+	if (bDrop == 0) {
 
 		/* verify write buffer */
 
@@ -7812,21 +7831,20 @@ static signed int ISP_CAMSV_SOF_Buf_Get(unsigned int dma,
 	}
 #if 0 /*     this can't be trusted , because rcnt_in is pull high at sof */
 	if (camsv_fbc.Bits.FB_NUM != camsv_fbc.Bits.FBC_CNT)
-		pstRTBuf->dropCnt = 0;
+		bDrop = 0;
 	else
-		pstRTBuf->dropCnt = 1;
+		bDrop = 1;
 
 
 #else
-	pstRTBuf->dropCnt = bDrop;
 #endif
 
 	if (IspInfo.DebugMask & ISP_DBG_INT_2)
 		IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_INF,
-			       "sv%d dropCnt(%ld)\n", dma, pstRTBuf->dropCnt);
+			       "sv%d dropCnt(%d)\n", dma, bDrop);
 
 	/* No drop */
-	if (pstRTBuf->dropCnt == 0) {
+	if (bDrop == 0) {
 		if (PrvAddr[out] == curr_pa)
 			IRQ_LOG_KEEPER(irqT, m_CurrentPPB, _LOG_ERR,
 				       "sv%d overlap prv(0x%x) = Cur(0x%x)\n",
@@ -9150,7 +9168,8 @@ static int ISP_SetPMQOS(unsigned int cmd, unsigned int module)
 	}
 	case 1: {
 		/* MByte/s 1.33 times */
-		cal = (G_PM_QOS[module].bw_sum * G_PM_QOS[module].fps);
+		cal = ((unsigned long long)G_PM_QOS[module].bw_sum
+			* G_PM_QOS[module].fps);
 		do_div(cal, 1000000);
 		cal = cal * 133;
 		do_div(cal, 100);
@@ -9224,13 +9243,13 @@ static signed int ISP_REGISTER_IRQ_USERKEY(char *userName)
 	} else {
 		/*get UserName from user space */
 		length = strnlen_user(userName, USERKEY_STR_LEN);
-		if (length == 0)
+		if (length == 0) {
 			log_err(" [regUser] userName address is not valid\n");
 			return key;
+		}
 
-
-		if (length > USERKEY_STR_LEN)
-			length = USERKEY_STR_LEN;
+		/*user key len at most 128*/
+		length = (length > USERKEY_STR_LEN) ? USERKEY_STR_LEN : length;
 
 
 		if (copy_from_user(m_UserName, (void *)(userName),
@@ -9407,7 +9426,7 @@ static signed int ISP_MARK_IRQ(struct ISP_WAIT_IRQ_STRUCT irqinfo)
 				      [irqinfo.UserInfo.Type][idx] = 0;
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 
-	log_vrb("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
+	log_dbg("[MARK]	 key/type/sts/idx (%d/%d/0x%x/%d), t(%d/%d)\n",
 		irqinfo.UserInfo.UserKey, irqinfo.UserInfo.Type,
 		irqinfo.UserInfo.Status, idx, (int)sec, (int)usec);
 
@@ -10190,7 +10209,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 						[gEismetaRIdx_D]
 					.tLastSOF2P1done_usec;
 		}
-		log_vrb(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
+		log_dbg(" [WAITIRQv3](%d) EisMeta.tLastSOF2P1done_sec(%d)\n",
 			WaitIrq->UserInfo.Type,
 			WaitIrq->EisMeta.tLastSOF2P1done_sec);
 	}
@@ -10969,6 +10988,37 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
 					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
 				log_err("CQ0 over vsync!\n");
+				// read dma req/rdy
+				log_err("Dma Req:(0x%x),Dma Rdy:(0x%x)\n",
+					ISP_RD32(ISP_REG_ADDR_DMA_REQ_STATUS),
+					ISP_RD32(ISP_REG_ADDR_DMA_RDY_STATUS));
+				/* read dma debug port
+				 * CAM_CTL_DBG_SET[15:12]
+				 * 4'h0
+				 * ISP_REG_ADDR_DMA_DEBUG_SEL[7:0],
+				 *	8'h1(IMGI),
+				 *	8'h3(LSCI)
+				 * ISP_REG_ADDR_DMA_DEBUG_SEL[15:8],
+				 *	8'h1(SMI signal)
+				 * ISP_REG_ADDR_DMA_DEBUG_SEL[23:16],
+				 *	8'h0
+				 */
+				ISP_WR32(ISP_REG_ADDR_DBG_SET,
+					ISP_RD32(ISP_REG_ADDR_DBG_SET)&
+					0xFFFF0FFF);
+				ISP_WR32(ISP_REG_ADDR_DMA_DEBUG_SEL,
+					(ISP_RD32(ISP_REG_ADDR_DMA_DEBUG_SEL)&
+						0xFF000000)|
+						0x101);
+				log_err("IMGI smi:(0x%x)!\n",
+					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
+				ISP_WR32(ISP_REG_ADDR_DMA_DEBUG_SEL,
+					(ISP_RD32(ISP_REG_ADDR_DMA_DEBUG_SEL)&
+						0xFF000000)|
+						0x103);
+				log_err("LSCI smi:(0x%x)!\n",
+					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
+
 				dump_smi_debug = MTRUE;
 			}
 			g_ISPIntErr[_IRQ] |=
@@ -10980,7 +11030,7 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 			log_err("ISP INT ERR_P1_D 0x%x\n",
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X]);
 
-			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
+			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] &
 					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
 				log_err("CQ0_d over vsync!\n");
 				dump_smi_debug = MTRUE;
@@ -11270,7 +11320,7 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
 			IRQ_LOG_KEEPER(
 				_IRQ, m_CurrentPPB, _LOG_INF,
-				"P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
+				"P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
 				sof_count[_PASS1], cur_v_cnt,
 				(unsigned int)(_fbc_chk[0].Reg_val),
 				(unsigned int)(_fbc_chk[1].Reg_val),
@@ -11278,7 +11328,8 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 				ISP_RD32(ISP_REG_ADDR_RRZO_BASE_ADDR),
 				ISP_RD32(ISP_INNER_REG_ADDR_IMGO_YSIZE),
 				ISP_RD32(ISP_INNER_REG_ADDR_RRZO_YSIZE),
-				ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0));
+				ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0),
+				ISP_RD32(ISP_REG_ADDR_DMA_DCM_STATUS));
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_].active) {
 				if (_fbc_chk[0].Bits.WCNT !=
@@ -11787,7 +11838,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	signed int Ret = 0;
 	/*      */
 	bool HoldEnable = MFALSE;
-	unsigned int DebugFlag[2] = {0}, pid = 0;
+	unsigned int DebugFlag[2] = {0};
 	struct ISP_REG_IO_STRUCT RegIo;
 	enum ISP_HOLD_TIME_ENUM HoldTime;
 	struct ISP_WAIT_IRQ_STRUCT IrqInfo;
@@ -12233,6 +12284,62 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			}
 		}
 		break;
+
+	case ISP_SET_ISPCLK:
+		{
+			if (copy_from_user(DebugFlag, (void *)Param,
+				sizeof(unsigned int) * 1) == 0) {
+				// hardcode to 2nd clock level
+				log_err("isp PMQoS sset to %d\n", DebugFlag[0]);
+				pm_qos_update_request(&isp_qos, DebugFlag[0]);
+
+			} else {
+				log_err("ISP_SET_MMDVFS copy_from_user failed\n");
+				Ret = -EFAULT;
+			}
+		}
+		break;
+	case ISP_GET_ISPCLK:
+		{
+			uint64_t freq_steps[ISP_CLK_LEVEL_CNT];
+			unsigned int lv = 0;
+			int result = 0;
+			struct ISP_GET_SUPPORTED_ISP_CLK Ispclks;
+			struct ISP_GET_SUPPORTED_ISP_CLK *pIspclks;
+
+			// get isp clk
+			memset(&Ispclks,
+			0,
+			sizeof(struct ISP_GET_SUPPORTED_ISP_CLK));
+			pIspclks = &Ispclks;
+			result = mmdvfs_qos_get_freq_steps(
+			PM_QOS_CAM_FREQ,
+			freq_steps, (u32 *)&pIspclks->clklevelcnt);
+
+			if (result < 0) {
+				log_err(
+					"ERR: get MMDVFS freq steps failed, result: %d\n",
+					result);
+				Ret = -EFAULT;
+				break;
+			}
+
+			for (lv = 0; lv < pIspclks->clklevelcnt; lv++) {
+				/* Save clk from low to high */
+				pIspclks->clklevel[lv] = freq_steps[lv];
+				/*pr_debug("DFS Clk level[%d]:%d",
+				 *	lv, pIspclks->clklevel[lv]);
+				 */
+			}
+
+			// copy back to user
+			if (copy_to_user((void *)Param, pIspclks,
+				 sizeof(struct ISP_GET_SUPPORTED_ISP_CLK)) !=
+			    0) {
+				log_err("copy_to_user failed\n");
+			}
+		}
+		break;
 	/*      */
 	case ISP_REGISTER_IRQ_USER_KEY:
 		if (copy_from_user(&RegUserKey, (void *)Param,
@@ -12492,23 +12599,6 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 			Ret = -EFAULT;
 		}
 		break;
-#ifdef ISP_KERNEL_MOTIFY_SIGNAL_TEST
-	case ISP_SET_USER_PID:
-		if (copy_from_user(&pid, (void *)Param,
-						   sizeof(unsigned int)) == 0) {
-			spin_lock(&(IspInfo.SpinLockIsp));
-			getTaskInfo((pid_t)pid);
-
-			sendSignal();
-
-			log_dbg("[ISP_KERNEL_MOTIFY_SIGNAL_TEST]:0x08%x", pid);
-			spin_unlock(&(IspInfo.SpinLockIsp));
-		} else {
-			log_err("copy_from_user	failed");
-			Ret = -EFAULT;
-		}
-		break;
-#endif
 	case ISP_BUFFER_CTRL:
 		Ret = ISP_Buf_CTRL_FUNC(Param);
 		break;
@@ -12626,6 +12716,8 @@ compat_get_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 			    struct ISP_WAIT_IRQ_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
+	compat_uint_t tmp3;
 	compat_uptr_t uptr;
 	struct ISP_IRQ_USER_STRUCT isp_irq_user_tmp;
 	struct ISP_IRQ_TIME_STRUCT isp_irq_time_tmp;
@@ -12634,8 +12726,8 @@ compat_get_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 
 	err = get_user(tmp, &data32->Clear);
 	err |= put_user(tmp, &data->Clear);
-	err |= get_user(tmp, &data32->Type);
-	err |= put_user(tmp, &data->Type);
+	err |= get_user(tmp2, &data32->Type);
+	err |= put_user(tmp2, &data->Type);
 	err |= get_user(tmp, &data32->Status);
 	err |= put_user(tmp, &data->Status);
 	err |= get_user(tmp, &data32->UserNumber);
@@ -12661,8 +12753,8 @@ compat_get_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 			      sizeof(struct ISP_EIS_META_STRUCT));
 	err |= copy_to_user((void *)&data->EisMeta, &isp_eis_meta_tmp,
 			    sizeof(struct ISP_EIS_META_STRUCT));
-	err |= get_user(tmp, &data32->SpecUser);
-	err |= put_user(tmp, &data->SpecUser);
+	err |= get_user(tmp3, &data32->SpecUser);
+	err |= put_user(tmp3, &data->SpecUser);
 	return err;
 }
 
@@ -12671,6 +12763,8 @@ compat_put_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 			    struct ISP_WAIT_IRQ_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
+	compat_uint_t tmp3;
 	/*      compat_uptr_t uptr;*/
 	struct ISP_IRQ_USER_STRUCT isp_irq_user_tmp;
 	struct ISP_IRQ_TIME_STRUCT isp_irq_time_tmp;
@@ -12679,8 +12773,8 @@ compat_put_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 
 	err = get_user(tmp, &data->Clear);
 	err |= put_user(tmp, &data32->Clear);
-	err |= get_user(tmp, &data->Type);
-	err |= put_user(tmp, &data32->Type);
+	err |= get_user(tmp2, &data->Type);
+	err |= put_user(tmp2, &data32->Type);
 	err |= get_user(tmp, &data->Status);
 	err |= put_user(tmp, &data32->Status);
 	err |= get_user(tmp, &data->UserNumber);
@@ -12708,8 +12802,8 @@ compat_put_isp_waitirq_data(struct compat_ISP_WAIT_IRQ_STRUCT __user *data32,
 			      sizeof(struct ISP_EIS_META_STRUCT));
 	err |= copy_to_user((void *)&data32->EisMeta, &isp_eis_meta_tmp,
 			    sizeof(struct ISP_EIS_META_STRUCT));
-	err |= get_user(tmp, &data->SpecUser);
-	err |= put_user(tmp, &data32->SpecUser);
+	err |= get_user(tmp3, &data->SpecUser);
+	err |= put_user(tmp3, &data32->SpecUser);
 	return err;
 }
 
@@ -12718,12 +12812,13 @@ compat_get_isp_readirq_data(struct compat_ISP_READ_IRQ_STRUCT __user *data32,
 			    struct ISP_READ_IRQ_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	int err;
 
 	err = get_user(tmp, &data32->Type);
 	err |= put_user(tmp, &data->Type);
-	err |= get_user(tmp, &data32->UserNumber);
-	err |= put_user(tmp, &data->UserNumber);
+	err |= get_user(tmp2, &data32->UserNumber);
+	err |= put_user(tmp2, &data->UserNumber);
 	err |= get_user(tmp, &data32->Status);
 	err |= put_user(tmp, &data->Status);
 	return err;
@@ -12734,12 +12829,13 @@ compat_put_isp_readirq_data(struct compat_ISP_READ_IRQ_STRUCT __user *data32,
 			    struct ISP_READ_IRQ_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	int err;
 
 	err = get_user(tmp, &data->Type);
 	err |= put_user(tmp, &data32->Type);
-	err |= get_user(tmp, &data->UserNumber);
-	err |= put_user(tmp, &data32->UserNumber);
+	err |= get_user(tmp2, &data->UserNumber);
+	err |= put_user(tmp2, &data32->UserNumber);
 	err |= get_user(tmp, &data->Status);
 	err |= put_user(tmp, &data32->Status);
 	return err;
@@ -12749,14 +12845,15 @@ static int compat_get_isp_buf_ctrl_struct_data(
 	struct compat_ISP_BUFFER_CTRL_STRUCT __user *data32,
 	struct ISP_BUFFER_CTRL_STRUCT __user *data)
 {
-	compat_uint_t tmp;
+	compat_uint_t tmp1;
+	compat_uint_t tmp2;
 	compat_uptr_t uptr;
 	int err;
 
-	err = get_user(tmp, &data32->ctrl);
-	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->buf_id);
-	err |= put_user(tmp, &data->buf_id);
+	err = get_user(tmp1, &data32->ctrl);
+	err |= put_user(tmp1, &data->ctrl);
+	err |= get_user(tmp2, &data32->buf_id);
+	err |= put_user(tmp2, &data->buf_id);
 	err |= get_user(uptr, &data32->data_ptr);
 	err |= put_user(compat_ptr(uptr), &data->data_ptr);
 	err |= get_user(uptr, &data32->ex_data_ptr);
@@ -12772,13 +12869,14 @@ static int compat_put_isp_buf_ctrl_struct_data(
 	struct ISP_BUFFER_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	/*      compat_uptr_t uptr;*/
 	int err;
 
 	err = get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->buf_id);
-	err |= put_user(tmp, &data32->buf_id);
+	err |= get_user(tmp2, &data->buf_id);
+	err |= put_user(tmp2, &data32->buf_id);
 	/* Assume data pointer is unchanged. */
 	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
 	/* err |= put_user(uptr, &data32->data_ptr); */
@@ -12795,13 +12893,14 @@ static int compat_get_isp_ref_cnt_ctrl_struct_data(
 	struct ISP_REF_CNT_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tm2;
 	compat_uptr_t uptr;
 	int err;
 
 	err = get_user(tmp, &data32->ctrl);
 	err |= put_user(tmp, &data->ctrl);
-	err |= get_user(tmp, &data32->id);
-	err |= put_user(tmp, &data->id);
+	err |= get_user(tm2, &data32->id);
+	err |= put_user(tm2, &data->id);
 	err |= get_user(uptr, &data32->data_ptr);
 	err |= put_user(compat_ptr(uptr), &data->data_ptr);
 
@@ -12813,13 +12912,14 @@ static int compat_put_isp_ref_cnt_ctrl_struct_data(
 	struct ISP_REF_CNT_CTRL_STRUCT __user *data)
 {
 	compat_uint_t tmp;
+	compat_uint_t tmp2;
 	/*      compat_uptr_t uptr;*/
 	int err;
 
 	err = get_user(tmp, &data->ctrl);
 	err |= put_user(tmp, &data32->ctrl);
-	err |= get_user(tmp, &data->id);
-	err |= put_user(tmp, &data32->id);
+	err |= get_user(tmp2, &data->id);
+	err |= put_user(tmp2, &data32->id);
 	/* Assume data pointer is unchanged. */
 	/* err |= get_user(compat_ptr(uptr), &data->data_ptr); */
 	/* err |= put_user(uptr, &data32->data_ptr); */
@@ -13167,6 +13267,8 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_SET_FPS:
 	case ISP_SET_PM_QOS:
 	case ISP_SET_PM_QOS_INFO:
+	case ISP_SET_ISPCLK:
+	case ISP_GET_ISPCLK:
 	case ISP_DUMP_ISR_LOG:
 	case ISP_WAKELOCK_CTRL:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
@@ -13242,8 +13344,12 @@ static signed int ISP_open(struct inode *pInode, struct file *pFile)
 		memset((void *)IrqUserKey_UserInfo[i].userName, '\0',
 		       USERKEY_STR_LEN);
 		IrqUserKey_UserInfo[i].userKey = -1;
-		/* flushIRQ     v3 */
-		IrqFlush_v3[i] = 0x0;
+		 /* flushIRQ     v3 */
+		 IrqFlush_v3[i] =
+	(ISP_IRQ_P1_STATUS_VS1_INT_ST | ISP_IRQ_P1_STATUS_D_VS1_INT_ST |
+	ISP_IRQ_P1_STATUS_AF_DON_ST | ISP_IRQ_P1_STATUS_D_AF_DON_ST |
+	ISP_IRQ_P1_STATUS_PASS1_DON_ST |
+	ISP_IRQ_P1_STATUS_D_PASS1_DON_ST);
 	}
 
 	/* flushIRQ     v1 */
@@ -13386,6 +13492,8 @@ static signed int ISP_release(struct inode *pInode, struct file *pFile)
 	struct ISP_USER_INFO_STRUCT *pUserInfo;
 	unsigned int Reg;
 	unsigned int i = 0;
+
+
 
 	log_inf("- E. UserCount: %d.", IspInfo.UserCount);
 	/*      */
@@ -13704,6 +13812,7 @@ static signed int ISP_probe(struct platform_device *pDev)
 	 *	struct resource *pRes = NULL;
 	 */
 	signed int i = 0;
+	signed int j = 0;
 	unsigned char n;
 	int new_count;
 #ifdef CONFIG_OF
@@ -13752,26 +13861,26 @@ static signed int ISP_probe(struct platform_device *pDev)
 	}
 
 	/* get IRQ ID   and     request IRQ     */
-	for (i = 0; i < ISP_CAM_IRQ_IDX_NUM; i++) {
-		cam_isp_dev->irq[i] =
-			irq_of_parse_and_map(pDev->dev.of_node, i);
-		gISPSYS_Irq[i] = cam_isp_dev->irq[i];
-		if (i == ISP_CAM0_IRQ_IDX) {
-			Ret = request_irq(cam_isp_dev->irq[i],
+	for (j = 0; j < ISP_CAM_IRQ_IDX_NUM; j++) {
+		cam_isp_dev->irq[j] =
+			irq_of_parse_and_map(pDev->dev.of_node, j);
+		gISPSYS_Irq[j] = cam_isp_dev->irq[j];
+		if (j == ISP_CAM0_IRQ_IDX) {
+			Ret = request_irq(cam_isp_dev->irq[j],
 					  (irq_handler_t)ISP_Irq_CAM,
 					  IRQF_TRIGGER_NONE, "ISP", NULL);
 			/* IRQF_TRIGGER_NONE dose not take effect here, real
 			 * trigger mode set in dts file
 			 */
-		} else if (i == ISP_CAMSV0_IRQ_IDX) {
-			Ret = request_irq(cam_isp_dev->irq[i],
+		} else if (j == ISP_CAMSV0_IRQ_IDX) {
+			Ret = request_irq(cam_isp_dev->irq[j],
 					  (irq_handler_t)ISP_Irq_CAMSV,
 					  IRQF_TRIGGER_NONE, "ISP", NULL);
 			/* IRQF_TRIGGER_NONE dose not take effect here, real
 			 * trigger mode set in dts file
 			 */
-		} else if (i == ISP_CAMSV1_IRQ_IDX) {
-			Ret = request_irq(cam_isp_dev->irq[i],
+		} else if (j == ISP_CAMSV1_IRQ_IDX) {
+			Ret = request_irq(cam_isp_dev->irq[j],
 					  (irq_handler_t)ISP_Irq_CAMSV2,
 					  IRQF_TRIGGER_NONE, "ISP", NULL);
 			/* IRQF_TRIGGER_NONE dose not take effect here, real
@@ -13781,11 +13890,11 @@ static signed int ISP_probe(struct platform_device *pDev)
 
 		if (Ret) {
 			dev_info(&pDev->dev,
-				"Unable to request IRQ, request_irq fail, i=%d, irq=%d\n",
-				i, cam_isp_dev->irq[i]);
+				"Unable to request IRQ, request_irq fail, j=%d, irq=%d\n",
+				j, cam_isp_dev->irq[j]);
 			return Ret;
 		}
-		log_inf("DT, i=%d, map_irq=%d\n", i, cam_isp_dev->irq[i]);
+		log_inf("DT, j=%d, map_irq=%d\n", j, cam_isp_dev->irq[j]);
 	}
 	nr_camisp_devs = new_count;
 
@@ -15642,6 +15751,13 @@ static signed int __init ISP_Init(void)
 		log_err("platform_driver_register fail");
 		return Ret;
 	}
+
+	// register to pmqos for isp clk ctrl
+	pm_qos_add_request(&isp_qos,
+		PM_QOS_CAM_FREQ,
+		0);
+	// }
+
 /*      */
 /* FIX-ME: linux-3.10 procfs API changed */
 #if 1
@@ -15854,6 +15970,10 @@ static void __exit ISP_Exit(void)
 	int i;
 
 	log_dbg("- E.");
+
+	pm_qos_update_request(&isp_qos, 0);
+	pm_qos_remove_request(&isp_qos);
+
 	/*      */
 	platform_driver_unregister(&IspDriver);
 	/*      */
@@ -15879,6 +15999,8 @@ static void __exit ISP_Exit(void)
 	/* free the     memory areas */
 	kfree(pBuf_kmalloc);
 	kfree(pLog_kmalloc);
+
+	pm_qos_remove_request(&isp_qos);
 
 	/*      */
 }
