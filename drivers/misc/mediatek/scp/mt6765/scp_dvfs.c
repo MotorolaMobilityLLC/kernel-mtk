@@ -178,16 +178,16 @@ void scp_vcore_request(unsigned int clk_opp)
 		pm_qos_update_request(&dvfsrc_scp_vcore_req, 0x3);
 
 	/* SCP to SPM voltage level 0x100066C4 (scp reg 0xC0094)
-	 * 0x1: scp request 0.65v
-	 * 0x4: scp request 0.7v
-	 * 0x8: scp request 0.8v
+	 * 2'b0000: scp request 0.65v
+	 * 2'b1000: scp request 0.7v
+	 * 2'b1100: scp request 0.8v
 	 */
 	if (clk_opp == CLK_OPP0 || clk_opp == CLK_OPP1)
 		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x0);
 	else if (clk_opp == CLK_OPP2)
-		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x4);
-	else
 		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0x8);
+	else
+		DRV_WriteReg32(SCP_SCP2SPM_VOL_LV, 0xC);
 }
 
 /* scp_request_freq
