@@ -547,6 +547,26 @@ static unsigned int fbt_get_new_base_blc(struct ppm_limit_data *pld, int jerkid)
 	return blc_wt;
 }
 
+static int fbt_is_queue_time_long(unsigned long long enq_len,
+		unsigned long long deq_len, int type, int method, int pid)
+{
+	if (type == VSYNC_ALIGNED_TYPE && (method == HWUI || method == SWUI)) {
+		if (deq_len > deqtime_bound) {
+			fpsgo_systrace_c_fbt(pid, 1, "wait_queue");
+			fpsgo_systrace_c_fbt(pid, 0, "wait_queue");
+			return 1;
+		}
+	} else {
+		if (enq_len > deqtime_bound || deq_len > deqtime_bound) {
+			fpsgo_systrace_c_fbt(pid, 1, "wait_queue");
+			fpsgo_systrace_c_fbt(pid, 0, "wait_queue");
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
 static void fbt_do_jerk(struct work_struct *work)
 {
 	struct fbt_jerk *jerk;
@@ -603,7 +623,13 @@ static void fbt_do_jerk(struct work_struct *work)
 			if (pld) {
 				blc_wt = fbt_get_new_base_blc(pld, jerk->id);
 
-				if (blc_wt) {
+				if (blc_wt &&
+					!fbt_is_queue_time_long(
+						thr->enqueue_length,
+						thr->dequeue_length,
+						thr->frame_type,
+						thr->render_method,
+						thr->pid)) {
 					fbt_set_boost_value(blc_wt);
 					fpsgo_systrace_c_fbt(thr->pid, blc_wt,
 						"perf idx");
