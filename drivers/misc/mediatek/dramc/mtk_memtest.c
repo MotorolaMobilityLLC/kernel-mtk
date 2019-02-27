@@ -130,6 +130,7 @@ static ssize_t read_mr4_read(struct file *file,
 	char __user *user_buf, size_t len, loff_t *offset)
 {
 	void __iomem *emi_base;
+	void __iomem *dramc_nao_base;
 	unsigned int rank, channel, rank_max, channel_num;
 	unsigned int emi_cona, mr4;
 	unsigned char buf[64];
@@ -153,10 +154,12 @@ static ssize_t read_mr4_read(struct file *file,
 
 	for (rank = 0; rank < rank_max; rank++) {
 		for (channel = 0; channel < channel_num; channel++) {
-			if (!read_dram_mode_reg_by_rank(4, &mr4, rank, channel))
-				ret += snprintf(buf + ret, sizeof(buf) - ret,
-					" R%uCH%c=0x%x,", rank, 'A' + channel,
-					mr4);
+			dramc_nao_base = mt_dramc_nao_chn_base_get(channel);
+			if (!dramc_nao_base)
+				continue;
+			mr4 = Reg_Readl(dramc_nao_base + 0x90) & 0xFFFF;
+			ret += snprintf(buf + ret, sizeof(buf) - ret,
+				" R%uCH%c=0x%x,", rank, 'A' + channel, mr4);
 		}
 	}
 
