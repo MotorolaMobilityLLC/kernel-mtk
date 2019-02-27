@@ -56,6 +56,7 @@
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-pcm-common.h"
 #include "mtk-soc-pcm-platform.h"
+#include "mtk-auddrv-gpio.h"
 
 #include <asm/div64.h>
 #include <linux/clk.h>
@@ -678,6 +679,9 @@ static int mtk_soc_dl1_probe(struct platform_device *pdev)
 #else
 	ret = Register_Aud_Irq(&pdev->dev, MT6735_AFE_MCU_IRQ_LINE);
 #endif
+
+	/* config smartpa gpio pins, set initial state : SMARTPA_OFF */
+	AudDrv_GPIO_SMARTPA_Select(0);
 
 	return snd_soc_register_platform(&pdev->dev, &mtk_soc_platform);
 }

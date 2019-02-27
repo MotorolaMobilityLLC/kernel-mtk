@@ -76,6 +76,7 @@ enum audio_system_gpio_type {
 	GPIO_VOW_CLK_MISO_ON,
 	GPIO_SMARTPA_RESET,
 	GPIO_SMARTPA_ON,
+	GPIO_SMARTPA_OFF,
 	GPIO_TDM_MODE0,
 	GPIO_TDM_MODE1,
 #if MT6755_PIN
@@ -122,6 +123,7 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 
 		[GPIO_SMARTPA_RESET] = {"aud_smartpa_reset", false, NULL},
 		[GPIO_SMARTPA_ON] = {"aud_smartpa_on", false, NULL},
+		[GPIO_SMARTPA_OFF] = {"aud_smartpa_off", false, NULL},
 		[GPIO_TDM_MODE0] = {"aud_tdm_mode0", false, NULL},
 		[GPIO_TDM_MODE1] = {"aud_tdm_mode1", false, NULL},
 
@@ -226,6 +228,22 @@ static int AudDrv_GPIO_Select(enum audio_system_gpio_type _type)
 	return 0;
 #endif
 }
+
+static bool AudDrv_GPIO_IsValid(enum audio_system_gpio_type _type)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	if (_type < 0 || _type >= GPIO_NUM)
+		return false;
+
+	if (!aud_gpios[_type].gpio_prepare)
+		return false;
+
+	return true;
+#else
+	return true;
+#endif
+}
+
 
 static int set_aud_clk_mosi(bool _enable)
 {
@@ -355,54 +373,28 @@ int AudDrv_GPIO_Request(bool _enable, enum soc_aud_digital_block _usage)
 int AudDrv_GPIO_SMARTPA_Select(int mode)
 {
 	int retval = 0;
-
-#if 0
+	mutex_lock(&gpio_request_mutex);
 	switch (mode) {
 	case 0:
-		mt_set_gpio_mode(69 | 0x80000000, GPIO_MODE_00);
-		mt_set_gpio_mode(70 | 0x80000000, GPIO_MODE_00);
-		mt_set_gpio_mode(71 | 0x80000000, GPIO_MODE_00);
-		mt_set_gpio_mode(72 | 0x80000000, GPIO_MODE_00);
-		mt_set_gpio_mode(73 | 0x80000000, GPIO_MODE_00);
+		if (AudDrv_GPIO_IsValid(GPIO_SMARTPA_OFF))
+			retval = AudDrv_GPIO_Select(GPIO_SMARTPA_OFF);
 		break;
 	case 1:
-		mt_set_gpio_mode(69 | 0x80000000, GPIO_MODE_01);
-		mt_set_gpio_mode(70 | 0x80000000, GPIO_MODE_01);
-		mt_set_gpio_mode(71 | 0x80000000, GPIO_MODE_01);
-		mt_set_gpio_mode(72 | 0x80000000, GPIO_MODE_01);
-		mt_set_gpio_mode(73 | 0x80000000, GPIO_MODE_01);
-		break;
-	case 3:
-		mt_set_gpio_mode(69 | 0x80000000, GPIO_MODE_03);
-		mt_set_gpio_mode(70 | 0x80000000, GPIO_MODE_03);
-		mt_set_gpio_mode(71 | 0x80000000, GPIO_MODE_03);
-		mt_set_gpio_mode(72 | 0x80000000, GPIO_MODE_03);
-		mt_set_gpio_mode(73 | 0x80000000, GPIO_MODE_03);
+		if (AudDrv_GPIO_IsValid(GPIO_SMARTPA_ON))
+			retval = AudDrv_GPIO_Select(GPIO_SMARTPA_ON);
 		break;
 	default:
 		pr_err("%s(), invalid mode = %d", __func__, mode);
 		retval = -1;
 	}
-#else
-	switch (mode) {
-	case 0:
-		AudDrv_GPIO_Select(GPIO_SMARTPA_RESET);
-		break;
-	case 1:
-		AudDrv_GPIO_Select(GPIO_SMARTPA_ON);
-		break;
-	default:
-		pr_err("%s(), invalid mode = %d", __func__, mode);
-		retval = -1;
-	}
-#endif
+	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
 
 int AudDrv_GPIO_TDM_Select(int mode)
 {
 	int retval = 0;
-
+	mutex_lock(&gpio_request_mutex);
 #if 0
 	switch (mode) {
 	case 0:
@@ -432,6 +424,7 @@ int AudDrv_GPIO_TDM_Select(int mode)
 		retval = -1;
 	}
 #endif
+	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
 
@@ -439,6 +432,7 @@ int AudDrv_GPIO_PMIC_Select(int bEnable)
 {
 	int retval = 0;
 #if MT6755_PIN
+	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_PMIC_MODE1].gpio_prepare) {
 			retval = pinctrl_select_state(
@@ -456,6 +450,7 @@ int AudDrv_GPIO_PMIC_Select(int bEnable)
 				pr_info("could not set aud_gpios[GPIO_PMIC_MODE0] pins\n");
 		}
 	}
+	mutex_unlock(&gpio_request_mutex);
 #endif
 	return retval;
 }
@@ -463,7 +458,7 @@ int AudDrv_GPIO_PMIC_Select(int bEnable)
 int AudDrv_GPIO_I2S_Select(int bEnable)
 {
 	int retval = 0;
-
+	mutex_lock(&gpio_request_mutex);
 #if MT6755_PIN
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_I2S_MODE1].gpio_prepare) {
@@ -481,6 +476,7 @@ int AudDrv_GPIO_I2S_Select(int bEnable)
 		}
 	}
 #endif
+	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
 
@@ -491,7 +487,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 #if MT6755_PIN
 	int extamp_mode;
 	int i;
-
+	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1) {
 		if (mode == 1)
 			extamp_mode = 1;
@@ -525,6 +521,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 				pr_info("could not set aud_gpios[GPIO_EXTAMP_LOW] pins\n");
 		}
 	}
+	mutex_unlock(&gpio_request_mutex);
 #endif
 	return retval;
 }
@@ -536,7 +533,7 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 #if MT6755_PIN
 	int extamp_mode;
 	int i;
-
+	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1) {
 		if (mode == 1)
 			extamp_mode = 1;
@@ -570,6 +567,7 @@ int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode)
 				pr_info("could not set aud_gpios[GPIO_EXTAMP2_LOW] pins\n");
 		}
 	}
+	mutex_unlock(&gpio_request_mutex);
 #endif
 	return retval;
 }
@@ -579,6 +577,7 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable)
 	int retval = 0;
 
 #if MT6755_PIN
+	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1) {
 		if (aud_gpios[GPIO_RCVSPK_HIGH].gpio_prepare) {
 			retval = pinctrl_select_state(
@@ -596,6 +595,7 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable)
 				pr_info("could not set aud_gpios[GPIO_RCVSPK_LOW] pins\n");
 		}
 	}
+	mutex_unlock(&gpio_request_mutex);
 #endif
 	return retval;
 }
@@ -603,26 +603,26 @@ int AudDrv_GPIO_RCVSPK_Select(int bEnable)
 int AudDrv_GPIO_HPDEPOP_Select(int bEnable)
 {
 	int retval = 0;
-
+	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1)
 		AudDrv_GPIO_Select(GPIO_HPDEPOP_LOW);
 	else
 		AudDrv_GPIO_Select(GPIO_HPDEPOP_HIGH);
-
+	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
 
 int audio_drv_gpio_aud_clk_pull(bool high)
 {
 	int retval = 0;
-
+	mutex_lock(&gpio_request_mutex);
 	pr_debug("%s, high = %d\n", __func__, high);
 
 	if (high == 1)
 		AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_HIGH);
 	else
 		AudDrv_GPIO_Select(GPIO_AUD_CLK_MOSI_LOW);
-
+	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
 
