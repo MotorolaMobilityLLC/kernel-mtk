@@ -33,7 +33,9 @@ enum ION_MM_CMDS {
 	ION_MM_GET_DEBUG_INFO,
 	ION_MM_SET_SF_BUF_INFO,
 	ION_MM_GET_SF_BUF_INFO,
-	ION_MM_CONFIG_BUFFER_EXT
+	ION_MM_CONFIG_BUFFER_EXT,
+	ION_MM_ACQ_CACHE_POOL,
+	ION_MM_QRY_CACHE_POOL,
 };
 
 enum ION_SYS_CMDS {
@@ -185,11 +187,20 @@ struct ion_mm_sf_buf_info {
 	unsigned int info[ION_MM_SF_BUF_INFO_LEN];
 };
 
+struct ion_mm_pool_info {
+	size_t len;
+	size_t align;
+	unsigned int heap_id_mask;
+	unsigned int flags;
+	unsigned int ret;
+};
+
 struct ion_mm_data {
 	enum ION_MM_CMDS mm_cmd;
 	union {
 		struct ion_mm_config_buffer_param config_buffer_param;
 		struct ion_mm_buf_debug_info buf_debug_info_param;
+		struct ion_mm_pool_info pool_info_param;
 	};
 };
 
