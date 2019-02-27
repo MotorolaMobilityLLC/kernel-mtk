@@ -3129,6 +3129,24 @@
 	};
 	mt6360_pd_eint: mt6360_pd_eint {
 	};
+
+	mt6370_pd: mt6370_pd {
+	};
+
+	gyro:gyro {
+	};
+
+	als: als {
+	};
+
+	smart_pa: smart_pa {
+	};
+
+	md1_sim1_hot_plug_eint: md1_sim1_hot_plug_eint {
+	};
+
+	md1_sim2_hot_plug_eint: md1_sim2_hot_plug_eint {
+	};
 };
 
 &pio {
