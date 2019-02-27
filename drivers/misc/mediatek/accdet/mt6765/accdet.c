@@ -1558,8 +1558,15 @@ static inline int ext_eint_setup(struct platform_device *platform_device)
 		return ret;
 	}
 	gpio_set_debounce(gpiopin, gpio_headset_deb);
+
 	accdet_irq = irq_of_parse_and_map(node, 0);
-	of_property_read_u32_array(node, "interrupts", ints, ARRAY_SIZE(ints));
+	ret = of_property_read_u32_array(node, "interrupts", ints,
+			ARRAY_SIZE(ints));
+	if (ret) {
+		pr_notice("accdet %s interrupts not found,ret:%d\n",
+			__func__, ret);
+		return ret;
+	}
 	accdet_eint_type = ints[1];
 	pr_info("accdet set gpio EINT, gpiopin=%d, accdet_eint_type=%d\n",
 			gpiopin, accdet_eint_type);
