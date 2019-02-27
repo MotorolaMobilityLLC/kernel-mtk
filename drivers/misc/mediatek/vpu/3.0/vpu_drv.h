@@ -279,6 +279,7 @@ struct vpu_power {
 
 	/* align with core index defined in user space header file */
 	unsigned int core;
+	uint8_t boost_value;
 };
 
 
@@ -318,6 +319,8 @@ enum vpu_req_status {
 	VPU_REQ_STATUS_FLUSH,
 	VPU_REQ_STATUS_FAILURE,
 };
+/*3 prioritys of req*/
+#define VPU_REQ_MAX_NUM_PRIORITY 3
 
 struct vpu_request {
 	/* to recognize the request is from which user */
@@ -343,6 +346,9 @@ struct vpu_request {
 	/* driver usage only, fd in user space / ion handle in kernel */
 	uint64_t buf_ion_infos[VPU_MAX_NUM_PORTS * 3];
 	struct vpu_power power_param;
+	uint64_t busy_time;
+	uint32_t bandwidth;
+	uint8_t priority;
 };
 
 struct vpu_status {
@@ -356,6 +362,24 @@ struct vpu_dev_debug_info {
 	char callername[32];
 	pid_t open_pid;
 	pid_t open_tgid;
+};
+
+enum VPU_OPP_PRIORIYY {
+	DEBUG = 0,
+	THERMAL = 1,
+	POWER_HAL = 2,
+	EARA_QOS = 3,
+	NORMAL = 4,
+	VPU_OPP_PRIORIYY_NUM
+};
+
+struct vpu_lock_power {
+/* align with core index defined in user space header file*/
+	unsigned int core;
+	uint8_t max_boost_value;
+	uint8_t min_boost_value;
+	bool lock;
+	enum VPU_OPP_PRIORIYY priority;
 };
 
 /*---------------------------------------------------------------------------*/
@@ -375,6 +399,12 @@ struct vpu_dev_debug_info {
 #define VPU_IOCTL_GET_CORE_STATUS   _IOWR(VPU_MAGICNO,  10, int)
 #define VPU_IOCTL_OPEN_DEV_NOTICE   _IOWR(VPU_MAGICNO,  11, int)
 #define VPU_IOCTL_CLOSE_DEV_NOTICE  _IOWR(VPU_MAGICNO,  12, int)
+#define VPU_IOCTL_EARA_LOCK_POWER         _IOW(VPU_MAGICNO,   13, int)
+#define VPU_IOCTL_POWER_HAL_LOCK_POWER         _IOW(VPU_MAGICNO,   14, int)
+#define VPU_IOCTL_EARA_UNLOCK_POWER         _IOW(VPU_MAGICNO,   15, int)
+#define VPU_IOCTL_POWER_HAL_UNLOCK_POWER         _IOW(VPU_MAGICNO,   16, int)
+
+
 
 
 #endif

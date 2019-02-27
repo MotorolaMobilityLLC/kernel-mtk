@@ -43,6 +43,7 @@
 #include "vpu_algo.h"
 #include "vpu_dbg.h"
 
+
 #define ENABLE_PMQOS
 #ifdef ENABLE_PMQOS
 #include "helio-dvfsrc-opp.h"
@@ -58,6 +59,8 @@ struct wake_lock vpu_wake_lock[MTK_VPU_CORE];
 #include "vpu_dvfs.h"
 #include "apu_dvfs.h"
 #include <linux/regulator/consumer.h>
+#include "vpu_drv.h"
+#include "mdla_dvfs.h"
 
 /* opp, mW */
 struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
@@ -80,6 +83,7 @@ struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM] = {
 
 };
 
+#include <linux/ktime.h>
 
 #define CMD_WAIT_TIME_MS    (3 * 1000)
 #define OPP_WAIT_TIME_MS    (300)
@@ -246,7 +250,6 @@ static int power_counter[MTK_VPU_CORE];
 static struct mutex opp_mutex;
 static bool force_change_vcore_opp[MTK_VPU_CORE];
 static bool force_change_vvpu_opp[MTK_VPU_CORE];
-static bool force_change_vmdla_opp[MTK_VPU_CORE];
 static bool force_change_dsp_freq[MTK_VPU_CORE];
 static bool change_freq_first[MTK_VPU_CORE];
 static bool opp_keep_flag;
@@ -255,6 +258,7 @@ static wait_queue_head_t waitq_do_core_executing;
 static uint8_t max_vcore_opp;
 static uint8_t max_vvpu_opp;
 static uint8_t max_dsp_freq;
+static struct mutex power_lock_mutex;
 
 
 /* dvfs */
@@ -273,6 +277,11 @@ static bool is_jtag_enabled;
 static bool is_locked;
 static struct mutex lock_mutex;
 static wait_queue_head_t lock_wait;
+
+static struct vpu_lock_power lock_power[VPU_OPP_PRIORIYY_NUM][MTK_VPU_CORE];
+static uint8_t max_opp[MTK_VPU_CORE];
+static uint8_t min_opp[MTK_VPU_CORE];
+
 
 /* isr handler */
 static irqreturn_t vpu0_isr_handler(int irq, void *dev_id);
@@ -759,6 +768,98 @@ static int vpu_if_set_clock_source(struct clk *clk, uint8_t step)
 }
 
 #endif
+int get_vpu_opp(void)
+{
+	LOG_DBG("[mdla_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
+	return opps.dsp.index;
+}
+EXPORT_SYMBOL(get_vpu_opp);
+
+int get_vpu_dspcore_opp(int core)
+{
+	LOG_DBG("[vpu_%d] get opp:%d\n", core, opps.dspcore[core].index);
+	return opps.dspcore[core].index;
+}
+EXPORT_SYMBOL(get_vpu_dspcore_opp);
+
+int get_vpu_platform_floor_opp(void)
+{
+	return (VPU_MAX_NUM_OPPS - 1);
+}
+EXPORT_SYMBOL(get_vpu_platform_floor_opp);
+
+int get_vpu_ceiling_opp(int core)
+{
+	return max_opp[core];
+}
+EXPORT_SYMBOL(get_vpu_ceiling_opp);
+
+int get_vpu_opp_to_freq(uint8_t step)
+{
+	int freq = 0;
+	/* set dsp frequency - 0:700 MHz, 1:624 MHz, 2:606 MHz, 3:594 MHz*/
+	/* set dsp frequency - 4:560 MHz, 5:525 MHz, 6:450 MHz, 7:416 MHz*/
+	/* set dsp frequency - 8:364 MHz, 9:312 MHz, 10:273 MH, 11:208 MH*/
+	/* set dsp frequency - 12:137 MHz, 13:104 MHz, 14:52 MHz, 15:26 MHz*/
+
+
+
+	switch (freq) {
+	case 0:
+		freq = 700;
+		break;
+	case 1:
+		freq = 624;
+		break;
+	case 2:
+		freq = 606;
+		break;
+	case 3:
+		freq = 594;
+		break;
+	case 4:
+		freq = 560;
+		break;
+	case 5:
+		freq = 525;
+		break;
+	case 6:
+		freq = 450;
+		break;
+	case 7:
+		freq = 416;
+		break;
+	case 8:
+		freq = 364;
+		break;
+	case 9:
+		freq = 312;
+		break;
+	case 10:
+		freq = 273;
+		break;
+	case 11:
+		freq = 208;
+		break;
+	case 12:
+		freq = 137;
+		break;
+	case 13:
+		freq = 104;
+		break;
+	case 14:
+		freq = 52;
+		break;
+	case 15:
+		freq = 26;
+		break;
+	default:
+		LOG_ERR("wrong freq step(%d)", step);
+		return -EINVAL;
+	}
+	return freq;
+}
+EXPORT_SYMBOL(get_vpu_opp_to_freq);
 #if 0
 static int vpu_get_hw_vcore_opp(int core)
 {
@@ -782,44 +883,90 @@ static int vpu_get_hw_vcore_opp(int core)
 #endif
 }
 #endif
-int get_vpu_opp(void)
-{
-	LOG_DBG("[mdla_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
-	return opps.dsp.index;
-}
-EXPORT_SYMBOL(get_vpu_opp);
+
 
 static int vpu_get_hw_vvpu_opp(int core)
 {
 	int opp_value = 0;
 	int get_vvpu_value = 0;
+	int vvpu_opp_0;
+	int vvpu_opp_1;
+	int vvpu_opp_2;
+	int vvpu_opp_0_vol;
+	int vvpu_opp_1_vol;
+	int vvpu_opp_2_vol;
+
+	//index63:PTPOD 0x11C105B4
+	vvpu_opp_0 = (get_devinfo_with_index(63) & (0x7<<15))>>15;
+	vvpu_opp_1 = (get_devinfo_with_index(63) & (0x7<<12))>>12;
+	vvpu_opp_2 = (get_devinfo_with_index(63) & (0x7<<9))>>9;
+
+	if ((vvpu_opp_0 <= 7) && (vvpu_opp_0 >= 2))
+		vvpu_opp_0_vol = 800000;
+	else
+		vvpu_opp_0_vol = 825000;
+
+	if ((vvpu_opp_1 <= 7) && (vvpu_opp_1 >= 2))
+		vvpu_opp_1_vol = 700000;
+	else
+		vvpu_opp_1_vol = 725000;
+
+	if ((vvpu_opp_2 <= 7) && (vvpu_opp_2 >= 2))
+		vvpu_opp_2_vol = 625000;
+	else
+		vvpu_opp_2_vol = 650000;
 
 	get_vvpu_value = (int)regulator_get_voltage(vvpu_reg_id);
-	if (get_vvpu_value >= 825000)
+	if (get_vvpu_value >= vvpu_opp_0_vol)
 		opp_value = 0;
-	else if (get_vvpu_value > 725000)
+	else if (get_vvpu_value > vvpu_opp_1_vol)
 		opp_value = 0;
-	else if (get_vvpu_value > 650000)
+	else if (get_vvpu_value > vvpu_opp_2_vol)
 		opp_value = 1;
 	else
 		opp_value = 2;
-
-	LOG_DBG("[vpu_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
-
+		LOG_DBG("[vpu_%d] vvpu(%d->%d)\n",
+			core, get_vvpu_value, opp_value);
 	return opp_value;
+
 }
 
 static int vpu_get_hw_vmdla_opp(int core)
 {
 	int opp_value = 0;
 	int get_vmdla_value = 0;
+	int vmdla_opp_0;
+	int vmdla_opp_1;
+	int vmdla_opp_2;
+	int vmdla_opp_0_vol;
+	int vmdla_opp_1_vol;
+	int vmdla_opp_2_vol;
+
+	//index63:PTPOD 0x11C105B4
+	vmdla_opp_0 =  (get_devinfo_with_index(63) & (0x7<<24))>>24;
+	vmdla_opp_1 =  (get_devinfo_with_index(63) & (0x7<<21))>>21;
+	vmdla_opp_2 =  (get_devinfo_with_index(63) & (0x7<<18))>>18;
+	if ((vmdla_opp_0 <= 7) && (vmdla_opp_0 >= 2))
+		vmdla_opp_0_vol = 800000;
+	else
+		vmdla_opp_0_vol = 825000;
+
+	if ((vmdla_opp_1 <= 7) && (vmdla_opp_1 >= 2))
+		vmdla_opp_1_vol = 700000;
+	else
+		vmdla_opp_1_vol = 725000;
+
+	if ((vmdla_opp_2 <= 7) && (vmdla_opp_2 >= 2))
+		vmdla_opp_2_vol = 625000;
+	else
+		vmdla_opp_2_vol = 650000;
 
 	get_vmdla_value = (int)regulator_get_voltage(vmdla_reg_id);
-	if (get_vmdla_value >= 825000)
+	if (get_vmdla_value >= vmdla_opp_0_vol)
 		opp_value = 0;
-	else if (get_vmdla_value > 725000)
+	else if (get_vmdla_value > vmdla_opp_1_vol)
 		opp_value = 0;
-	else if (get_vmdla_value > 650000)
+	else if (get_vmdla_value > vmdla_opp_2_vol)
 		opp_value = 1;
 	else
 		opp_value = 2;
@@ -827,6 +974,7 @@ static int vpu_get_hw_vmdla_opp(int core)
 	LOG_DBG("[vpu_%d] vmdla(%d->%d)\n", core, get_vmdla_value, opp_value);
 
 	return opp_value;
+
 }
 
 
@@ -861,6 +1009,18 @@ static void vpu_opp_check(int core, uint8_t vvpu_index, uint8_t freq_index)
 	//get_vcore_opp = vpu_get_hw_vcore_opp(core);
 	/* vvpu opp*/
 	get_vvpu_opp = vpu_get_hw_vvpu_opp(core);
+	if (vvpu_index < opps.vvpu.opp_map[max_opp[core]])
+		vvpu_index = opps.vvpu.opp_map[max_opp[core]];
+	if (vvpu_index > opps.vvpu.opp_map[min_opp[core]])
+		vvpu_index = opps.vvpu.opp_map[min_opp[core]];
+	if (freq_index < max_opp[core])
+		freq_index = max_opp[core];
+	if (freq_index > min_opp[core])
+		freq_index = min_opp[core];
+	LOG_INF("opp_check + max_opp%d, min_opp%d,(%d/%d/%d), ori vvpu(%d)",
+		max_opp[core], min_opp[core], core,
+		vvpu_index, freq_index, opps.vvpu.index);
+
 #if 0
 	if ((vcore_index == 0xFF) || (vcore_index == get_vcore_opp)) {
 
@@ -1001,6 +1161,13 @@ if ((vvpu_index == 0xFF) || (vvpu_index == get_vvpu_opp)) {
 						opps.ipu_if.index =
 							opps.dspcore[i].index;
 					}
+#ifdef MTK_MDLA_SUPPORT
+/* interface should be the max freq of vpu cores and mdla*/
+			if (mdla_get_opp() < opps.dsp.index) {
+			opps.dsp.index = mdla_get_opp();
+			opps.ipu_if.index =	mdla_get_opp();
+			}
+#endif
 				}
 				force_change_dsp_freq[core] = true;
 
@@ -1241,7 +1408,6 @@ static bool vpu_change_opp(int core, int type)
 
 		force_change_vcore_opp[core] = false;
 		force_change_vvpu_opp[core] = false;
-		force_change_vmdla_opp[core] = false;
 		mutex_unlock(&opp_mutex);
 		wake_up_interruptible(&waitq_do_core_executing);
 		break;
@@ -1406,7 +1572,7 @@ static int vpu_prepare_regulator_and_clock(struct device *pdev)
 		ret = -ENOENT;
 	    LOG_ERR("regulator_get vvpu_reg_id failed\n");
 	}
-	vmdla_reg_id = regulator_get(pdev, "mt6360,bulk1");
+	vmdla_reg_id = regulator_get(pdev, "VMDLA");
 	if (!vmdla_reg_id) {
 		ret = -ENOENT;
 		LOG_ERR("regulator_get vmdla_reg_id failed\n");
@@ -1538,11 +1704,13 @@ static int vpu_enable_regulator_and_clock(int core)
 #else
 	/*--enable regulator--*/
 	ret = regulator_enable(vvpu_reg_id);
+	udelay(200);//slew rate:rising10mV/us
 	if (ret) {
 	LOG_ERR("regulator_enable vvpu_reg_id failed\n");
 	goto out;
 	}
 	ret = regulator_enable(vmdla_reg_id);
+	udelay(200);
 	if (ret) {
 	LOG_ERR("regulator_enable vmdla_reg_id failed\n");
 	goto out;
@@ -1918,9 +2086,11 @@ static int vpu_disable_regulator_and_clock(int core)
 out:
 	/*--disable regulator--*/
 	ret = regulator_disable(vvpu_reg_id);
+	udelay(400);
 	if (ret)
 	LOG_ERR("regulator_disable vvpu_reg_id failed\n");
 	ret = regulator_disable(vmdla_reg_id);
+	udelay(400);
 	if (ret)
 	LOG_ERR("regulator_disable vmdla_reg_id failed\n");
 	is_power_on[core] = false;
@@ -2124,11 +2294,16 @@ static int vpu_service_routine(void *arg)
 			list_del_init(vlist_link(req, struct vpu_request));
 
 			vpu_dev->servicepool_list_size[service_core] -= 1;
-
-			LOG_DBG("[vpu] flag - : selfpool(%d)_size(%d)\n",
+/*priority list*/
+	vpu_dev->priority_list[service_core][req->priority] -= 1;
+			LOG_INF("[vpu] flag - : selfpool(%d)_size(%d)\n",
 				service_core,
 				vpu_dev->servicepool_list_size[service_core]);
-
+			for (i = 0 ; i < VPU_REQ_MAX_NUM_PRIORITY ; i++) {
+				LOG_INF("[vpu_%d] priority_list num[%d]:%d\n",
+				service_core, i,
+				vpu_dev->priority_list[service_core][i]);
+			}
 			mutex_unlock(&vpu_dev->servicepool_mutex[service_core]);
 
 			LOG_DBG("[vpu] flag - 2: get selfpool\n");
@@ -2241,6 +2416,20 @@ for (j = 0 ; j < req->buffers[i].plane_count ; j++) { \
 				dsp_freq_index = TEMP_VAR;
 
 #undef TEMP_VAR
+
+/*if running req priority < priority list, increase opp*/
+		LOG_INF("[vpu_%d] req->priority:%d\n",
+		service_core, req->priority);
+	for (i = 0 ; i < req->priority ; i++) {
+		LOG_INF("[vpu_%d] priority_list num[%d]:%d\n",
+			service_core, i,
+				vpu_dev->priority_list[service_core][i]);
+		if (vpu_dev->priority_list[service_core][i] > 0) {
+			vcore_opp_index = 0;
+			dsp_freq_index = 0;
+			break;
+			}
+		}
 			}
 			#else
 			vcore_opp_index = req->power_param.opp_step;
@@ -2820,7 +3009,7 @@ static void vpu_opp_keep_routine(struct work_struct *work)
 
 int vpu_init_hw(int core, struct vpu_device *device)
 {
-	int ret, i;
+	int ret, i, j;
 	int param;
 
 	struct vpu_shared_memory_param mem_param;
@@ -2860,6 +3049,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		mutex_init(&lock_mutex);
 		init_waitqueue_head(&lock_wait);
 		mutex_init(&opp_mutex);
+		mutex_init(&power_lock_mutex);
 		init_waitqueue_head(&waitq_change_vcore);
 		init_waitqueue_head(&waitq_do_core_executing);
 		is_locked = false;
@@ -3245,6 +3435,18 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		}
 		#endif
 
+	}
+	/*init vpu lock power struct*/
+for (i = 0 ; i < VPU_OPP_PRIORIYY_NUM ; i++) {
+	for (j = 0 ; j < MTK_VPU_CORE ; j++) {
+		lock_power[i][j].core = 0;
+		lock_power[i][j].max_boost_value = 100;
+		lock_power[i][j].min_boost_value = 0;
+		lock_power[i][j].lock = false;
+		lock_power[i][j].priority = NORMAL;
+		min_opp[j] = VPU_MAX_NUM_OPPS-1;
+		max_opp[j] = 0;
+		}
 	}
 	return 0;
 
@@ -4131,6 +4333,9 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	int ret;
 	struct vpu_algo *algo = NULL;
 	bool need_reload = false;
+	struct timespec start, end;
+	uint64_t latency = 0;
+
 
 	if (g_vpu_log_level > Log_ALGO_OPP_INFO)
 		LOG_INF("[vpu_%d/%d] pr + ", core, request->algo_id[core]);
@@ -4211,6 +4416,9 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		/* RUN_STALL down */
 		vpu_write_field(core, FLD_RUN_STALL, 0);
 		vpu_write_field(core, FLD_CTL_INT, 1);
+		ktime_get_ts(&start);
+		LOG_INF("[0x%lx]:load algo start ",
+			(unsigned long)request->request_id);
 
 		/* 3. wait until done */
 		ret = wait_command(core);
@@ -4241,6 +4449,11 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 			/* RUN_STALL pull up to avoid fake cmd */
 			vpu_write_field(core, FLD_RUN_STALL, 1);
 		}
+		ktime_get_ts(&end);
+		latency += (uint64_t)(timespec_to_ns(&end) -
+			timespec_to_ns(&start));
+		LOG_INF("[0x%lx]:load algo latency[%lld] ",
+			(unsigned long)request->request_id, latency);
 		vpu_trace_end();
 
 		if (ret) {
@@ -4324,7 +4537,8 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	/* RUN_STALL pull down */
 	vpu_write_field(core, FLD_RUN_STALL, 0);
 	vpu_write_field(core, FLD_CTL_INT, 1);
-
+	ktime_get_ts(&start);
+	LOG_INF("[0x%lx]:d2d start ", (unsigned long)request->request_id);
 	/* 3. wait until done */
 	ret = wait_command(core);
 
@@ -4353,6 +4567,11 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 		/* RUN_STALL pull up to avoid fake cmd */
 		vpu_write_field(core, FLD_RUN_STALL, 1);
 	}
+	ktime_get_ts(&end);
+	latency += (uint64_t)(timespec_to_ns(&end) -
+		timespec_to_ns(&start));
+	LOG_INF("[0x%lx]:load algo + d2d latency[%lld] ",
+		(unsigned long)request->request_id, latency);
 
 	#ifdef ENABLE_PMQOS
 	/* pmqos, release request after d2d done */
@@ -4414,6 +4633,13 @@ out2:
 		vpu_put_power(core, VPT_ENQUE_ON);
 	}
 	LOG_DBG("[vpu] %s - (%d)", __func__, request->status);
+	request->busy_time = (uint64_t)latency;
+	/*Todo*/
+	//request->bandwidth=(uint32_t)get_vpu_bw();
+	request->bandwidth = 0;
+	LOG_INF("[0x%lx]:vpu busy_time[%lld],bw[%d] ",
+		(unsigned long)request->request_id,
+		request->busy_time, request->bandwidth);
 	return ret;
 
 }
@@ -5269,9 +5495,10 @@ vpu_print_seq(s, "%s[%d], %s[%d], %s[%d], %s[%d]\n",
 			"ipu_if", opps.ipu_if.index,
 			"dsp1", opps.dspcore[0].index,
 			"dsp2", opps.dspcore[1].index);
+vpu_print_seq(s, "min/max opp[0][%d/%d], min/max opp[1][%d/%d]\n",
+		min_opp[0], max_opp[0], min_opp[1], max_opp[1]);
 
-
-	vpu_print_seq(s, "is_power_debug_lock(rw): %d\n", is_power_debug_lock);
+vpu_print_seq(s, "is_power_debug_lock(rw): %d\n", is_power_debug_lock);
 
 	return 0;
 }
@@ -5393,3 +5620,245 @@ int vpu_set_power_parameter(uint8_t param, int argc, int *args)
 out:
 	return ret;
 }
+uint8_t vpu_boost_value_to_opp(uint8_t boost_value)
+{
+	int ret = 0;
+
+	if (boost_value <= 100)
+		ret = (100 - boost_value)*(VPU_MAX_NUM_OPPS-1)/100;
+	else
+		ret = VPU_MAX_NUM_OPPS-1;
+
+	if (ret < 0)
+		ret = 0;
+	if (ret > VPU_MAX_NUM_OPPS-1)
+		ret = VPU_MAX_NUM_OPPS-1;
+	LOG_INF("%s opp %d\n", __func__, ret);
+	return ret;
+}
+
+bool vpu_update_lock_power_parameter(struct vpu_lock_power *vpu_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	unsigned int priority = vpu_lock_power->priority;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			vpu_lock_power->core, core, MTK_VPU_CORE);
+		ret = false;
+		return ret;
+	}
+	lock_power[priority][core].core = core;
+	lock_power[priority][core].max_boost_value =
+		vpu_lock_power->max_boost_value;
+	lock_power[priority][core].min_boost_value =
+		vpu_lock_power->min_boost_value;
+	lock_power[priority][core].lock = true;
+	lock_power[priority][core].priority =
+		vpu_lock_power->priority;
+LOG_INF("power_parameter core %d, maxb:%d, minb:%d priority %d\n",
+		lock_power[priority][core].core,
+		lock_power[priority][core].max_boost_value,
+		lock_power[priority][core].min_boost_value,
+		lock_power[priority][core].priority);
+	return ret;
+}
+bool vpu_update_unlock_power_parameter(struct vpu_lock_power *vpu_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	unsigned int priority = vpu_lock_power->priority;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			vpu_lock_power->core, core, MTK_VPU_CORE);
+		ret = false;
+		return ret;
+	}
+	lock_power[priority][core].core =
+		vpu_lock_power->core;
+	lock_power[priority][core].max_boost_value =
+		vpu_lock_power->max_boost_value;
+	lock_power[priority][core].min_boost_value =
+		vpu_lock_power->min_boost_value;
+	lock_power[priority][core].lock = false;
+	lock_power[priority][core].priority =
+		vpu_lock_power->priority;
+	LOG_INF("%s\n", __func__);
+	return ret;
+}
+uint8_t min_of(uint8_t value1, uint8_t value2)
+{
+	if (value1 <= value2)
+		return value1;
+	else
+		return value2;
+}
+uint8_t max_of(uint8_t value1, uint8_t value2)
+{
+	if (value1 <= value2)
+		return value2;
+	else
+		return value1;
+}
+
+bool vpu_update_max_opp(struct vpu_lock_power *vpu_lock_power)
+{
+	bool ret = true;
+	int i, core = -1;
+	uint8_t first_priority = NORMAL;
+	uint8_t first_priority_max_boost_value = 100;
+	uint8_t first_priority_min_boost_value = 0;
+	uint8_t temp_max_boost_value = 100;
+	uint8_t temp_min_boost_value = 0;
+	bool lock = false;
+	uint8_t priority = NORMAL;
+	uint8_t maxboost = 100;
+	uint8_t minboost = 0;
+
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			vpu_lock_power->core, core, MTK_VPU_CORE);
+		ret = false;
+		return ret;
+	}
+
+	for (i = 0 ; i < VPU_OPP_PRIORIYY_NUM ; i++) {
+		if (lock_power[i][core].lock == true
+			&& lock_power[i][core].priority < NORMAL) {
+			first_priority = i;
+			first_priority_max_boost_value =
+				lock_power[i][core].max_boost_value;
+			first_priority_min_boost_value =
+				lock_power[i][core].min_boost_value;
+			break;
+			}
+	}
+	temp_max_boost_value = first_priority_max_boost_value;
+	temp_min_boost_value = first_priority_min_boost_value;
+/*find final_max_boost_value*/
+	for (i = first_priority ; i < VPU_OPP_PRIORIYY_NUM ; i++) {
+		lock = lock_power[i][core].lock;
+		priority = lock_power[i][core].priority;
+		maxboost = lock_power[i][core].max_boost_value;
+		minboost = lock_power[i][core].min_boost_value;
+	if (lock == true
+		&& priority < NORMAL &&
+			(((maxboost <= temp_max_boost_value)
+				&& (maxboost >= temp_min_boost_value))
+			|| ((minboost <= temp_max_boost_value)
+				&& (minboost >= temp_min_boost_value))
+			|| ((maxboost >= temp_max_boost_value)
+				&& (minboost <= temp_min_boost_value)))) {
+
+		temp_max_boost_value =
+	min_of(temp_max_boost_value, lock_power[i][core].max_boost_value);
+		temp_min_boost_value =
+	max_of(temp_min_boost_value, lock_power[i][core].min_boost_value);
+
+			}
+	}
+	max_opp[core] =
+		vpu_boost_value_to_opp(temp_max_boost_value);
+	min_opp[core] =
+		vpu_boost_value_to_opp(temp_min_boost_value);
+LOG_INF("final_min_boost_value:%d final_max_boost_value:%d\n",
+		temp_min_boost_value, temp_max_boost_value);
+	return ret;
+}
+
+int vpu_lock_set_power(struct vpu_lock_power *vpu_lock_power)
+{
+	int ret = -1;
+	int i, core = -1;
+
+	mutex_lock(&power_lock_mutex);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			vpu_lock_power->core, core, MTK_VPU_CORE);
+		ret = -1;
+		mutex_unlock(&power_lock_mutex);
+		return ret;
+	}
+
+
+	if (!vpu_update_lock_power_parameter(vpu_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	if (!vpu_update_max_opp(vpu_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+#if 0
+	if (vpu_update_max_opp(vpu_lock_power)) {
+	power.opp_step = min_opp[core];
+	power.freq_step = min_opp[core];
+	power.core = vpu_lock_power->core;
+	ret = vpu_set_power(user, &power);
+	}
+#endif
+	mutex_unlock(&power_lock_mutex);
+	return 0;
+}
+int vpu_unlock_set_power(struct vpu_lock_power *vpu_lock_power)
+{
+	int ret = -1;
+	int i, core = -1;
+
+	mutex_lock(&power_lock_mutex);
+	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
+		if (vpu_lock_power->core == (0x1 << i)) {
+			core = i;
+			break;
+		}
+	}
+
+	if (core >= MTK_VPU_CORE || core < 0) {
+		LOG_ERR("wrong core index (0x%x/%d/%d)",
+			vpu_lock_power->core, core, MTK_VPU_CORE);
+		ret = false;
+		return ret;
+	}
+	if (!vpu_update_unlock_power_parameter(vpu_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	if (!vpu_update_max_opp(vpu_lock_power)) {
+		mutex_unlock(&power_lock_mutex);
+		return -1;
+		}
+	mutex_unlock(&power_lock_mutex);
+	return ret;
+
+}
+
