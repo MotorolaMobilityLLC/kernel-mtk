@@ -71,7 +71,7 @@ struct cmdqSecContextStruct {
 
 int32_t cmdq_sec_init_allocate_resource_thread(void *data);
 
-s32 cmdq_sec_task_copy_to_buffer(struct TaskStruct *task,
+s32 cmdq_sec_task_copy_to_buffer(struct cmdqRecStruct *task,
 	struct cmdqCommandStruct *desc);
 
 const struct cmdq_controller *cmdq_sec_get_controller(void);
@@ -109,15 +109,20 @@ typedef int32_t(*CmdqSecFillIwcCB) (int32_t, void *, int32_t, void *);
  */
 
 int32_t cmdq_sec_exec_task_async_unlocked(
-	struct TaskStruct *pTask, int32_t thread);
+	struct cmdqRecStruct *pTask, int32_t thread);
 int32_t cmdq_sec_cancel_error_task_unlocked(
-	struct TaskStruct *pTask, int32_t thread,
+	struct cmdqRecStruct *pTask, int32_t thread,
 	struct cmdqSecCancelTaskResultStruct *pResult);
 int32_t cmdq_sec_allocate_path_resource_unlocked(bool throwAEE);
 s32 cmdq_sec_get_secure_thread_exec_counter(const s32 thread);
+s32 cmdq_sec_revise_jump(struct cmdqRecStruct *handle);
+s32 cmdq_sec_handle_error_result(struct cmdqRecStruct *task, s32 thread,
+	const s32 waitQ, bool throw_aee);
+
 
 /* function declaretion */
 struct cmdqSecContextStruct *cmdq_sec_context_handle_create(uint32_t tgid);
+s32 cmdq_sec_insert_backup_cookie_instr(struct cmdqRecStruct *task, s32 thread);
 
 /*
  * secure path control
