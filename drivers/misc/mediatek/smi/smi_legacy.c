@@ -33,6 +33,9 @@
 #include <clk-mt6758-pg.h>
 #elif IS_ENABLED(CONFIG_MACH_MT6765)
 #include <clk-mt6765-pg.h>
+#include "smi_config_mt6765.h"
+#else
+#include "smi_config_default.h"
 #endif
 
 #if IS_ENABLED(CONFIG_MTK_M4U)
@@ -63,7 +66,7 @@
 		aee_kernel_warning("%s:" string, __func__, ##args); \
 	} while (0)
 
-static unsigned int disable_smi_bwc_config;
+static unsigned int smi_bwc_config_disable;
 
 enum SMI_ESL_GOLDEN_SETTING {
 #if IS_ENABLED(CONFIG_MACH_MT6758)
@@ -102,8 +105,15 @@ struct smi_driver {
 	enum MTK_SMI_BWC_SCEN	scen;
 };
 
+struct mmsys_config {
+	void __iomem	*base;
+	unsigned int	nr_debugs;
+	unsigned int	*debugs;
+};
+
 static struct smi_device *smi_dev;
 static struct smi_driver *smi_drv;
+static struct mmsys_config *smi_mmsys;
 
 /* ***********************************************
  * get smi base address of COMMON or specific LARB
@@ -256,6 +266,34 @@ int smi_bus_disable_unprepare(const unsigned int reg_indx,
 }
 EXPORT_SYMBOL_GPL(smi_bus_disable_unprepare);
 
+static int smi_larb_non_sec_con_set(void)
+{
+	unsigned int larb_cnt = 0, port_cnt = 0;
+	struct mtk_smi_dev *smi;
+	int i, j;
+#ifdef CONFIG_MACH_MT6765
+	larb_cnt = 1;
+	port_cnt = 5;
+#endif
+	for (i = 0; i < larb_cnt; i++) {
+		smi = larbs[i];
+		if (!smi) {
+			SMIDBG("no such device or address\n");
+			return -ENXIO;
+		} else if (!smi->dev) {
+			SMIDBG("%s %d no such device or address\n",
+				smi->index == common->index ? "common" : "larb",
+				smi->index);
+			return -ENXIO;
+		}
+		for (j = 0; j < port_cnt; j++)
+			writel(readl(smi->base + SMI_LARB_NON_SEC_CON(j)) | 0x2,
+				smi->base + SMI_LARB_NON_SEC_CON(j));
+	}
+	SMIDBG("larb_cnt=%u, port_cnt=%u\n", larb_cnt, port_cnt);
+	return 0;
+}
+
 static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 {
 #if IS_ENABLED(CONFIG_MACH_MT6758)
@@ -298,6 +336,7 @@ static void smi_clk_subsys_after_on(enum subsys_id sys)
 	if (subsys & 1) { /* common and larb 0 are in mmsys so far */
 		mtk_smi_config_set(common, common->nr_scens, false);
 		mtk_smi_config_set(common, smi_scen, false);
+		smi_larb_non_sec_con_set(); /* for DISP */
 	}
 	/* larbs */
 	for (i = 0; i < common->index; i++)
@@ -389,7 +428,7 @@ static int smi_bwc_config(struct MTK_SMI_BWC_CONFIG *config)
 	unsigned int scen, smi_scen;
 	int i, ret = 0;
 	/* check parameter */
-	if (disable_smi_bwc_config) {
+	if (smi_bwc_config_disable) {
 		SMIDBG("disable configure smi bwc profile\n");
 		return 0;
 	}
@@ -553,9 +592,11 @@ static ssize_t smi_bwc_scen_store(struct device_driver *driver, const char *buf,
 DRIVER_ATTR(smi_bwc_scen, 0644, smi_bwc_scen_show, smi_bwc_scen_store);
 
 /* smi debug */
-static int smi_debug_dumpper(struct mtk_smi_dev *smi, const bool gce,
-	const bool offset)
+static int smi_debug_dumpper(struct mtk_smi_dev *smi,
+	struct mmsys_config *mmsys, const bool gce, const bool offset)
 {
+	void __iomem *base;
+	unsigned int nr_debugs, *debugs;
 	unsigned int length, max_size = 128, size, val;
 	char buffer[max_size + 1];
 	int i, j, ret;
@@ -569,6 +610,9 @@ static int smi_debug_dumpper(struct mtk_smi_dev *smi, const bool gce,
 			smi->index);
 		return -ENXIO;
 	}
+	base = (mmsys ? mmsys->base : smi->base);
+	nr_debugs = (mmsys ? mmsys->nr_debugs : smi->nr_debugs);
+	debugs = (mmsys ? mmsys->debugs : smi->debugs);
 	/* check reference counts of clock */
 	ret = mtk_smi_clk_ref_cnts_read(smi);
 	if (ret < 0) {
@@ -582,7 +626,8 @@ static int smi_debug_dumpper(struct mtk_smi_dev *smi, const bool gce,
 	if (offset)
 		SMIWRN(gce,
 			"========== %s debug dump register offset ==========\n",
-			smi->index == common->index ? "common" : "larb");
+			mmsys ? "mmsys" :
+			(smi->index == common->index ? "common" : "larb"));
 	else if (ret || !smi->index || smi->index == common->index
 #if IS_ENABLED(CONFIG_MACH_MT6758)
 		|| smi->index == 1
@@ -590,28 +635,30 @@ static int smi_debug_dumpper(struct mtk_smi_dev *smi, const bool gce,
 		) /* without check clocks for mmsys */
 		SMIWRN(gce,
 			"========== %s %d debug dump non-zero register, clk=%d ==========\n",
-			smi->index == common->index ? "common" : "larb",
+			mmsys ? "mmsys" :
+			(smi->index == common->index ? "common" : "larb"),
 			smi->index, ret);
 	else {
 		SMIWRN(gce,
 			"========== %s %d clock disable, clk=%d ==========\n",
-			smi->index == common->index ? "common" : "larb",
+			mmsys ? "mmsys" :
+			(smi->index == common->index ? "common" : "larb"),
 			smi->index, ret);
 		return ret;
 	}
 	/* print */
-	for (i = 0; i < smi->nr_debugs; i += j) {
+	for (i = 0; i < nr_debugs; i += j) {
 		length = 0;
-		for (j = 0; i + j < smi->nr_debugs; j++) {
-			val = readl(smi->base + smi->debugs[i + j]);
+		for (j = 0; i + j < nr_debugs; j++) {
+			val = readl(base + debugs[i + j]);
 			if (offset)
 				size = snprintf(buffer + length,
 					max_size - length,
-					" %#x,", smi->debugs[i + j]);
+					" %#x,", debugs[i + j]);
 			else if (val)
 				size = snprintf(buffer + length,
 					max_size - length,
-					" %#x=%#x,", smi->debugs[i + j], val);
+					" %#x=%#x,", debugs[i + j], val);
 			else
 				continue;
 			if (size < 0 || max_size - length <= size) {
@@ -645,8 +692,8 @@ int smi_debug_dump_status(const unsigned int reg_indx)
 				reg_indx);
 			return -ENXIO;
 		}
-		smi_debug_dumpper(smi, gce, !offset);
-		smi_debug_dumpper(smi, gce, offset);
+		smi_debug_dumpper(smi, NULL, gce, !offset);
+		smi_debug_dumpper(smi, NULL, gce, offset);
 	} else { /* common and larbs */
 		int flag, i;
 
@@ -659,12 +706,14 @@ int smi_debug_dump_status(const unsigned int reg_indx)
 				continue;
 			}
 			if (!flag || i == common->index) {
-				smi_debug_dumpper(smi, gce, !offset);
+				smi_debug_dumpper(smi, NULL, gce, !offset);
 				flag += 1;
 			}
-			smi_debug_dumpper(smi, gce, offset);
+			smi_debug_dumpper(smi, NULL, gce, offset);
 		}
 	}
+	smi_debug_dumpper(common, smi_mmsys, gce, !offset);
+	smi_debug_dumpper(common, smi_mmsys, gce, offset);
 	return 0;
 }
 EXPORT_SYMBOL_GPL(smi_debug_dump_status);
@@ -684,23 +733,28 @@ int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
 	bool offset = false;
 	/* offset */
 	if (dump) {
-		ret = smi_debug_dumpper(common, gce, !offset);
+		ret = smi_debug_dumpper(common, smi_mmsys, gce, !offset);
 		if (ret)
 			return ret;
-
-		ret = smi_debug_dumpper(larbs[0], gce, !offset);
+		ret = smi_debug_dumpper(common, NULL, gce, !offset);
+		if (ret)
+			return ret;
+		ret = smi_debug_dumpper(larbs[0], NULL, gce, !offset);
 		if (ret)
 			return ret;
 	}
 	/* check busy counts */
 	for (i = 0; i < dump_time; i++) {
+		/* mmsys */
+		if (dump)
+			smi_debug_dumpper(common, smi_mmsys, gce, offset);
 		/* common */
 		if (reg_indx & 1) { /* common and larb 0 are in mmsys so far */
 			/* without check clocks for mmsys */
 			if (!(readl(common->base + 0x440) & 0x1))
 				common->busy_cnts += 1;
 			if (dump)
-				smi_debug_dumpper(common, gce, offset);
+				smi_debug_dumpper(common, NULL, gce, offset);
 		}
 		/* larbs */
 		for (j = 0; j < common->index; j++) {
@@ -724,7 +778,7 @@ int smi_debug_bus_hang_detect(unsigned int reg_indx, const bool dump,
 			if (val & 0x1)
 				larbs[j]->busy_cnts += 1;
 			if (dump)
-				smi_debug_dumpper(larbs[j], gce, offset);
+				smi_debug_dumpper(larbs[j], NULL, gce, offset);
 		}
 	}
 	/* print */
@@ -800,7 +854,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(&config, (void *)arg,
 			sizeof(struct MTK_SMI_BWC_CONFIG));
 		if (ret) {
-			SMIERR("cmd %d copy_from_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_from_user fail: %d\n", cmd, ret);
 			return ret;
 		}
 		ret = smi_bwc_config(&config);
@@ -814,7 +868,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(&config, (void *)arg,
 			sizeof(struct MTK_SMI_BWC_INFO_SET));
 		if (ret) {
-			SMIERR("cmd %d copy_from_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_from_user fail: %d\n", cmd, ret);
 			return ret;
 		}
 		ret = smi_bwc_info_set(&config);
@@ -826,7 +880,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = copy_to_user((void *)arg, (void *)&g_smi_bwc_mm_info,
 			sizeof(struct MTK_SMI_BWC_MM_INFO));
 		if (ret) {
-			SMIERR("cmd %d copy_to_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_to_user failed %d\n", cmd, ret);
 			return ret;
 		}
 		break;
@@ -838,7 +892,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			SMIDBG("common no such device or address\n");
 			return -ENXIO;
 		}
-		ret = smi_debug_dumpper(common, false, false);
+		ret = smi_debug_dumpper(common, NULL, false, false);
 		break;
 	}
 
@@ -848,14 +902,14 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		ret = copy_from_user(&index, (void *)arg, sizeof(unsigned int));
 		if (ret) {
-			SMIERR("cmd %d copy_from_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_from_user fail: %d\n", cmd, ret);
 			return ret;
 		}
 		if (!common || index >= common->index || !larbs[index]) {
 			SMIDBG("larb %d no such device or address\n", index);
 			return -ENXIO;
 		}
-		ret = smi_debug_dumpper(larbs[index], false, false);
+		ret = smi_debug_dumpper(larbs[index], NULL, false, false);
 		break;
 	}
 #ifdef MMDVFS_HOOK
@@ -869,7 +923,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(&config, (void *)arg,
 			sizeof(struct MTK_MMDVFS_CMD));
 		if (ret) {
-			SMIERR("cmd %d copy_from_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_from_user fail: %d\n", cmd, ret);
 			return ret;
 		}
 
@@ -878,7 +932,7 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		ret = copy_to_user((void *)arg, (void *)&config,
 			sizeof(struct MTK_MMDVFS_CMD));
 		if (ret) {
-			SMIERR("cmd %d copy_to_user failed %d\n", cmd, ret);
+			SMIWRN(0, "cmd %d copy_to_user failed %d\n", cmd, ret);
 			return ret;
 		}
 		break;
@@ -1129,14 +1183,29 @@ static const struct file_operations smi_file_opers = {
 	.compat_ioctl = smi_compat_ioctl,
 };
 
+static int smi_mmsys_offset_get(void)
+{
+	struct device_node *of_node = NULL;
+	/* allocate mmsys_config */
+	smi_mmsys = kzalloc(sizeof(*smi_mmsys), GFP_KERNEL);
+	if (!smi_mmsys)
+		return -ENOMEM;
+
+	of_node = of_parse_phandle(common->dev->of_node, "mmsys_config", 0);
+	smi_mmsys->base = (void *)of_iomap(of_node, 0);
+	of_node_put(of_node);
+	if (!smi_mmsys->base) {
+		SMIERR("Unable to parse or iomap mmsys_config\n");
+		return -ENOMEM;
+	}
+	smi_mmsys->nr_debugs = SMI_MMSYS_DEBUG_NUM;
+	smi_mmsys->debugs = smi_mmsys_debug_offset;
+	SMIDBG("smi_mmsys: nr_debugs=%d\n", smi_mmsys->nr_debugs);
+	return 0;
+}
+
 static int smi_debug_offset_get(struct mtk_smi_dev *smi)
 {
-	const char *name = "debug_offset";
-	struct property *prop;
-	const __be32 *cur;
-	unsigned int val;
-	int i = 0, ret = 0;
-	/* check parameter */
 	if (!smi) {
 		SMIDBG("no such device or address\n");
 		return -ENXIO;
@@ -1146,33 +1215,17 @@ static int smi_debug_offset_get(struct mtk_smi_dev *smi)
 			smi->index);
 		return -ENXIO;
 	}
-	/* number of debugs */
-	ret = of_property_count_elems_of_size(smi->dev->of_node,
-		name, sizeof(unsigned int));
-	if (ret < 0)
-		return ret;
-	smi->nr_debugs = ret;
-	/* allocate and get debugs */
-	smi->debugs = devm_kcalloc(smi->dev, smi->nr_debugs,
-		sizeof(*smi->debugs), GFP_KERNEL);
-	if (!smi->debugs)
-		return -ENOMEM;
 
-	of_property_for_each_u32(smi->dev->of_node, name, prop, cur, val) {
-		smi->debugs[i] = val;
-		i += 1;
-	}
+	smi->nr_debugs = (smi->index == SMI_LARB_NUM) ?
+		SMI_COMM_DEBUG_NUM : SMI_LARB_DEBUG_NUM;
+	smi->debugs = (smi->index == SMI_LARB_NUM) ?
+		smi_comm_debug_offset : smi_larb_debug_offset;
+	SMIDBG("index=%d: nr_debugs=%d\n", smi->index, smi->nr_debugs);
 	return 0;
 }
 
 static int smi_scen_config_get(struct mtk_smi_dev *smi)
 {
-	const char *name[3] = {"nr_scens", "nr_scen_pairs", "scen_pairs"};
-	struct property *prop;
-	const __be32 *cur;
-	unsigned int val;
-	int i, j, ret;
-	/* check parameter */
 	if (!smi) {
 		SMIDBG("no such device or address\n");
 		return -ENXIO;
@@ -1182,55 +1235,30 @@ static int smi_scen_config_get(struct mtk_smi_dev *smi)
 			smi->index);
 		return -ENXIO;
 	}
-	/* read nr_scens and nr_scen_pairs */
-	for (i = 0; i < 2; i++) {
-		ret = of_property_read_u32(smi->dev->of_node, name[i], &val);
-		if (ret) {
-			SMIDBG("%s %d %s %d read failed %d\n",
-				smi->index == common->index ? "common" : "larb",
-				smi->index, name[i], val, ret);
-			if (i) /* nr_scen_pairs */
-				return 0;
-			else if (common && common->nr_scens)
-				smi->nr_scens = common->nr_scens;
-		} else {
-			if (i)
-				smi->nr_scen_pairs = val;
-			else
-				smi->nr_scens = val;
-		}
-	}
-	ret = 0;
-	/* allocate scenario pairs */
-	if (smi->nr_scens <= 0) {
-		smi->nr_scens = ret;
-		return ret;
-	}
-	smi->scen_pairs = devm_kcalloc(smi->dev, smi->nr_scens,
-		sizeof(*smi->scen_pairs), GFP_KERNEL);
-	if (!smi->scen_pairs)
-		return -ENOMEM;
-	for (i = 0; i < smi->nr_scens; i++) {
-		smi->scen_pairs[i] = devm_kcalloc(smi->dev, smi->nr_scen_pairs,
-			sizeof(**smi->scen_pairs), GFP_KERNEL);
-		if (!smi->scen_pairs[i])
-			return -ENOMEM;
-	}
-	/* get scenario pairs */
-	i = 0;
-	of_property_for_each_u32(smi->dev->of_node, name[2], prop, cur, val) {
-		int row, col;
 
-		row = i / smi->nr_scen_pairs;
-		col = i % smi->nr_scen_pairs;
-		if (!row)
-			for (j = 0; j < smi->nr_scens; j++)
-				smi->scen_pairs[j][col].offset = val;
-		else
-			smi->scen_pairs[row - 1][col].value = val;
-		i += 1;
+	smi->nr_scens = SMI_SCEN_NUM;
+	smi->nr_scen_pairs = smi_scen_pair_num[smi->index];
+	smi->scen_pairs = smi_scen_pair[smi->index];
+
+	SMIDBG("index=%d: nr_scens=%d, nr_scen_pairs=%d\n",
+		smi->index, smi->nr_scens, smi->nr_scen_pairs);
+	return 0;
+}
+
+static int smi_basic_config_get(struct mtk_smi_dev *smi)
+{
+	if (!smi || !smi->dev) {
+		SMIDBG("%s %d no such device or address\n",
+			smi->index == common->index ? "common" : "larb",
+			smi->index);
+		return -ENXIO;
 	}
-	return ret;
+
+	smi->nr_config_pairs = smi_config_pair_num[smi->index];
+	smi->config_pairs = smi_config_pair[smi->index];
+	SMIDBG("index=%d: nr_config_pairs=%d\n",
+		smi->index, smi->nr_config_pairs);
+	return 0;
 }
 
 int smi_register(struct platform_driver *drv)
@@ -1247,7 +1275,6 @@ int smi_register(struct platform_driver *drv)
 	for (i = common->index; i <= common->index * 2; i++) { /* comm first */
 		struct mtk_smi_dev *smi;
 		int j = i % (common->index + 1);
-		bool mtcmos = true, gce = false, offset = false;
 		/* check mtk_smi_dev */
 		if (i == common->index)
 			smi = common;
@@ -1258,22 +1285,36 @@ int smi_register(struct platform_driver *drv)
 				i == common->index ? "common" : "larb", i);
 			return -ENXIO;
 		}
-		/* get and set scenario configuration */
+		/* get basic and scenario configuration */
+		ret = smi_basic_config_get(smi);
+		if (ret)
+			return ret;
 		ret = smi_scen_config_get(smi);
 		if (ret)
 			return ret;
-		ret = mtk_smi_config_set(smi, smi_scen_map[smi_drv->scen],
-			mtcmos);
+		/* set basic and scenario configuration */
+		ret = mtk_smi_config_set(smi, SMI_SCEN_NUM, true);
 		if (ret)
 			return ret;
-		/* get debug offset and check config */
+		ret = mtk_smi_config_set(smi,
+			smi_scen_map[smi_drv->scen], true);
+		if (ret)
+			return ret;
+		/* get debug offset */
 		ret = smi_debug_offset_get(smi);
 		if (ret)
 			return ret;
-		ret = smi_debug_dumpper(smi, gce, offset);
-		if (ret)
-			return ret;
 	}
+	ret = smi_larb_non_sec_con_set();
+	if (ret)
+		return ret;
+	ret = smi_mmsys_offset_get();
+	if (ret)
+		return ret;
+	ret = smi_debug_dump_status(-1);
+	if (ret)
+		return ret;
+
 	/* allocate smi device */
 	smi_dev = kzalloc(sizeof(*smi_dev), GFP_KERNEL);
 	if (!smi_dev)
@@ -1324,7 +1365,7 @@ int smi_register(struct platform_driver *drv)
 	/* create sysfs file for SMI driver */
 	ret = driver_create_file(&drv->driver, &driver_attr_smi_bwc_scen);
 	if (ret) {
-		pr_notice("Failed to create sysfs file for SMI driver\n");
+		SMIDBG("Failed to create sysfs file for SMI driver\n");
 		return ret;
 	}
 	/* register CCF callback */
@@ -1430,4 +1471,4 @@ module_param(disable_freq_hopping, uint, 0644);
 module_param(force_max_mmsys_clk, uint, 0644);
 module_param(clk_mux_mask, uint, 0644);
 #endif /* MMDVFS_HOOK */
-module_param(disable_smi_bwc_config, uint, 0644);
+module_param(smi_bwc_config_disable, uint, 0644);

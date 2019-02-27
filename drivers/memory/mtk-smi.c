@@ -208,51 +208,6 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 	return ret;
 }
 
-static int mtk_smi_config_get(struct mtk_smi_dev *smi)
-{
-	unsigned int	val, col;
-	const __be32	*cur;
-	struct property	*prop;
-	const char	*name[2] = {"nr_config_pairs", "config_pairs"};
-	int		i = 0, ret;
-	/* check parameter */
-	if (!smi) {
-		pr_info("no such device or address\n");
-		return -ENXIO;
-	} else if (!smi->dev) {
-		pr_info("%s %d no such device or address\n",
-			smi->index == common->index ? "common" : "larb",
-			smi->index);
-		return -ENXIO;
-	}
-	/* read nr_config_pairs */
-	ret = of_property_read_u32(smi->dev->of_node, name[0], &val);
-	if (ret) {
-		dev_notice(smi->dev, "%s %d %s %d read failed %d\n",
-			smi->index == common->index ? "common" : "larb",
-			smi->index, name[0], val, ret);
-		return ret;
-	}
-	smi->nr_config_pairs = val;
-	if (!smi->nr_config_pairs)
-		return ret;
-	/* allocate and get config_pairs */
-	smi->config_pairs = devm_kcalloc(smi->dev, smi->nr_config_pairs,
-		sizeof(*smi->config_pairs), GFP_KERNEL);
-	if (!smi->config_pairs)
-		return -ENOMEM;
-
-	of_property_for_each_u32(smi->dev->of_node, name[1], prop, cur, val) {
-		col = i % smi->nr_config_pairs;
-		if (!(i / smi->nr_config_pairs))
-			smi->config_pairs[col].offset = val;
-		else
-			smi->config_pairs[col].value = val;
-		i += 1;
-	}
-	return ret;
-}
-
 int mtk_smi_config_set(struct mtk_smi_dev *smi, const unsigned int scen_indx,
 	const bool mtcmos)
 {
@@ -605,21 +560,6 @@ static int mtk_smi_larb_probe(struct platform_device *pdev)
 	ret = mtk_smi_clks_get(larbs[index]);
 	if (ret)
 		return ret;
-	/* config */
-	ret = mtk_smi_config_get(larbs[index]);
-	if (ret)
-		return ret;
-	/* nr_scens and set config */
-	ret = of_property_read_u32(larbs[index]->dev->of_node, "nr_scens",
-		&larbs[index]->nr_scens);
-	if (ret) {
-		dev_notice(&pdev->dev, "larb %d nr_scens %d read failed %d\n",
-			larbs[index]->index, larbs[index]->nr_scens, ret);
-		return ret;
-	}
-	ret = mtk_smi_config_set(larbs[index], larbs[index]->nr_scens, true);
-	if (ret)
-		return ret;
 	/* device set driver data */
 	platform_set_drvdata(pdev, larbs[index]);
 	/* add component for iommu */
@@ -758,21 +698,6 @@ static int mtk_smi_common_probe(struct platform_device *pdev)
 		common->index, common->base, &res->start);
 	/* clks */
 	ret = mtk_smi_clks_get(common);
-	if (ret)
-		return ret;
-	/* config */
-	ret = mtk_smi_config_get(common);
-	if (ret)
-		return ret;
-	/* nr_scens and set config */
-	ret = of_property_read_u32(common->dev->of_node, "nr_scens",
-		&common->nr_scens);
-	if (ret) {
-		dev_notice(&pdev->dev, "common %d nr_scens %d read failed %d\n",
-			common->index, common->nr_scens, ret);
-		return ret;
-	}
-	ret = mtk_smi_config_set(common, common->nr_scens, true);
 	if (ret)
 		return ret;
 	/* larbs */
