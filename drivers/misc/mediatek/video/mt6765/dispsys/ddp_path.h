@@ -68,6 +68,8 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 					int dst_w, int dst_h);
 int ddp_get_module_num_l(int *module_list);
 char *ddp_get_mode_name(enum DDP_MODE ddp_mode);
+void ddp_sodi_smi_request_src_select(int sel, void *handle);
+void ddp_sodi_power_down_mode(int power_down, void *handle);
 
 #include "ddp_mutex.h"
 

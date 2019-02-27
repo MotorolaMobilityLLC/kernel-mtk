@@ -883,3 +883,39 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
 	return 0;
 }
+
+/* ddp_sodi_smi_request_src_select */
+/* 0: depend on HW DISP_RDMA0 SMI request */
+/* 1: depend on SODI_REQ_VALUE */
+void ddp_sodi_smi_request_src_select(int sel, void *handle)
+{
+	if (sel == 1) {
+		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
+			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL, 0x3));
+		DDPDBG("SMI request depend on DISP_RDMA0\n");
+	} else if (sel == 0) {
+		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
+			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_SEL, 0x0));
+		DDPDBG("SMI request depend on SODI_REQ_VALUE\n");
+	} else
+		DDPDBG("%s invalid, sel is %d\n", __func__, sel);
+}
+
+/* ddp_sodi_power_down_mode */
+/* 1: SODI can enter power down mode */
+/* 0: SODI can not enter power down mode */
+/* config must during mmsys clock on */
+void ddp_sodi_power_down_mode(int power_down, void *handle)
+{
+	if (power_down == 1) {
+		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
+			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL, 0x0));
+		DDPDBG("SODI can enter power down mode\n");
+	} else if (power_down == 0) {
+		DISP_REG_SET(handle, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK,
+			REG_FLD_VAL(MMSYS_SODI_REQ_MASK_FLD_SODI_REQ_VAL, 0x3));
+		DDPDBG("SODI can not enter power down mode\n");
+	} else
+		DDPDBG("%s invalid, power_down is %d\n", __func__, power_down);
+}
+

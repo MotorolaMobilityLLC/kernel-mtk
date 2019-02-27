@@ -54,11 +54,10 @@
 #include "disp_arr.h"
 #include "disp_recovery.h"
 #include "disp_partial.h"
-#if defined(MTK_FB_ION_SUPPORT)
+#include "disp_drv_platform.h"
 #include "mtk_ion.h"
 #include "ion_drv.h"
 #include "ion.h"
-#endif
 #include "layering_rule.h"
 #include "ddp_clkmgr.h"
 
@@ -348,7 +347,6 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 	buf_info->size = size;
 
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-#ifdef MTKFB_M4U_SUPPORT
 		static struct sg_table table;
 		struct sg_table *sg_table = &table;
 		unsigned int mva;
@@ -366,7 +364,6 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 			M4U_PROT_READ | M4U_PROT_WRITE, 0, &mva);
 		if (ret)
 			DISPWARN("m4u_alloc_mva returns fail: %d\n", ret);
-#endif
 	}
 #else
 	struct ion_client *ion_display_client = NULL;
@@ -402,7 +399,6 @@ out:
 static int release_test_buf(struct test_buf_info *buf_info)
 {
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-#if defined(MTK_FB_ION_SUPPORT)
 		/* ion buffer */
 		if (buf_info->handle)
 			ion_free(buf_info->ion_client, buf_info->handle);
@@ -415,7 +411,6 @@ static int release_test_buf(struct test_buf_info *buf_info)
 
 		if (buf_info->ion_client)
 			ion_client_destroy(buf_info->ion_client);
-#endif
 	} else
 #ifndef CONFIG_MTK_IOMMU
 		dma_free_coherent(disp_get_device(), buf_info->size,

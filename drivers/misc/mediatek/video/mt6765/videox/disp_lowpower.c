@@ -25,10 +25,8 @@
 #include <linux/slab.h>
 #include <linux/math64.h>
 #include "disp_drv_platform.h"	/* must be at the top-most */
-#if defined(MTK_FB_ION_SUPPORT)
 #include "ion_drv.h"
 #include "mtk_ion.h"
-#endif
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
 /* #include "pcm_def.h" */ /* FIXME: tmp comment */
@@ -154,6 +152,7 @@ static struct golden_setting_context *_get_golden_setting_context(void)
 		g_golden_setting_context.is_dc = 0;
 		g_golden_setting_context.is_display_idle = 0;
 		g_golden_setting_context.is_wrot_sram = 0;
+		g_golden_setting_context.is_rsz_sram = 0;
 		g_golden_setting_context.mmsys_clk = MMSYS_CLK_LOW;
 
 		/* primary_display */
@@ -805,28 +804,27 @@ void _cmd_mode_enter_idle(void)
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
 
+	/* enter PD mode */
+	/* config must before disable mmsys clock */
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		ddp_sodi_power_down_mode(1, NULL);
+
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_disable_mmsys_clk();
-
-#ifdef MTK_FB_SPM_SUPPORT
-	/*enter PD mode*/
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(0);
-#endif
 }
 
 void _cmd_mode_leave_idle(void)
 {
 	DISPMSG("[disp_lowpower]%s\n", __func__);
-#ifdef MTK_FB_SPM_SUPPORT
-	/*Exit PD mode*/
-	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
-		spm_sodi_mempll_pwr_mode(1);
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
+
+	/*Exit PD mode*/
+	/* config must after enable mmsys clock */
+	if (disp_helper_get_option(DISP_OPT_SODI_SUPPORT))
+		ddp_sodi_power_down_mode(0, NULL);
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
 		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
@@ -1024,16 +1022,20 @@ void primary_display_sodi_rule_init(void)
 #ifdef MTK_FB_SPM_SUPPORT
 	/* enable sodi when display driver is ready */
 #ifndef CONFIG_FPGA_EARLY_PORTING
+	/* Set SODI SMI request denpen on SODI_REQ_VALUE */
+	/* SODI_REQ_VALUE default is 1, forbid SMI enter power down mode */
+	ddp_sodi_smi_request_src_select(1, NULL);
+
 	if (primary_display_is_video_mode()) {
 		spm_sodi_set_vdo_mode(1);
-		spm_sodi_mempll_pwr_mode(1);
+		ddp_sodi_power_down_mode(0, NULL);
 		spm_enable_sodi3(0);
 		spm_enable_sodi(1);
 	} else {
 		spm_enable_sodi3(1);
 		spm_enable_sodi(1);
 		/*enable CG mode*/
-		spm_sodi_mempll_pwr_mode(1);
+		ddp_sodi_power_down_mode(0, NULL);
 	}
 #endif
 #endif
