@@ -628,6 +628,38 @@ static int mt6360_charger_get_cv(struct charger_device *chg_dev, u32 *uV)
 	return 0;
 }
 
+static int mt6360_toggle_aicc(struct mt6360_pmu_chg_info *mpci)
+{
+	int ret = 0;
+	u8 data = 0;
+
+	mutex_lock(&mpci->mpi->io_lock);
+	/* read aicc */
+	ret = i2c_smbus_read_i2c_block_data(mpci->mpi->i2c,
+					       MT6360_PMU_CHG_CTRL14, 1, &data);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: read aicc fail\n", __func__);
+		goto out;
+	}
+	/* aicc off */
+	data &= ~MT6360_MASK_RG_EN_AICC;
+	ret = i2c_smbus_read_i2c_block_data(mpci->mpi->i2c,
+					       MT6360_PMU_CHG_CTRL14, 1, &data);
+	if (ret < 0) {
+		dev_err(mpci->dev, "%s: aicc off fail\n", __func__);
+		goto out;
+	}
+	/* aicc on */
+	data |= MT6360_MASK_RG_EN_AICC;
+	ret = i2c_smbus_read_i2c_block_data(mpci->mpi->i2c,
+					       MT6360_PMU_CHG_CTRL14, 1, &data);
+	if (ret < 0)
+		dev_err(mpci->dev, "%s: aicc on fail\n", __func__);
+out:
+	mutex_unlock(&mpci->mpi->io_lock);
+	return ret;
+}
+
 static int mt6360_charger_set_aicr(struct charger_device *chg_dev, u32 uA)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
@@ -635,6 +667,14 @@ static int mt6360_charger_set_aicr(struct charger_device *chg_dev, u32 uA)
 	u8 data = 0;
 
 	dev_dbg(mpci->dev, "%s\n", __func__);
+	/* Toggle aicc for auto aicc mode */
+	if (!mpci->aicc_once) {
+		ret = mt6360_toggle_aicc(mpci);
+		if (ret < 0) {
+			dev_err(mpci->dev, "%s: toggle aicc fail\n", __func__);
+			return ret;
+		}
+	}
 	/* Disable sys drop improvement for download mode */
 	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CHG_CTRL20,
 				      MT6360_MASK_EN_SDI);
@@ -952,34 +992,6 @@ static int mt6360_charger_run_aicc(struct charger_device *chg_dev, u32 *uA)
 	}
 
 	/* Use aicc once method */
-#if 0
-	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT1);
-	if (ret < 0)
-		return ret;
-	mivr_loop = (ret && MT6360_MASK_MIVR_EVT) ? true : false;
-	if (!mivr_loop) {
-		dev_dbg(mpci->dev, "%s: mivr loop is not active\n", __func__);
-		return ret;
-	}
-	ret = mt6360_get_mivr(mpci, &mivr);
-	if (ret < 0)
-		return ret;
-	/* Check if there's a suitable AICC_VTH */
-	aicc_vth = mivr + 200000;
-	aicc_vth_sel = (aicc_vth - 3900000) / 100000;
-	if (aicc_vth_sel > MT6360_AICC_VTH_MAXVAL) {
-		dev_err(mpci->dev, "%s: can't match, aicc_vth_sel = %d\n",
-			__func__, aicc_vth_sel);
-		return -EINVAL;
-	}
-	/* Set AICC_VTH threshold */
-	ret = mt6360_pmu_reg_update_bits(mpci->mpi,
-					 MT6360_PMU_CHG_CTRL16,
-					 MT6360_MASK_AICC_VTH,
-					 aicc_vth_sel << MT6360_SHFT_AICC_VTH);
-	if (ret < 0)
-		return ret;
-#endif
 	/* Run AICC measure */
 	mutex_lock(&mpci->pe_lock);
 	ret = mt6360_pmu_reg_set_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,

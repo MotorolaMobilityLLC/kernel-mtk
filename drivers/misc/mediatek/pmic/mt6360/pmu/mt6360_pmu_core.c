@@ -224,6 +224,7 @@ static const struct mt6360_val_prop mt6360_val_props[] = {
 	MT6360_DT_VALPROP(mrstb_rst_sel, struct mt6360_core_platform_data),
 	MT6360_DT_VALPROP(apwdtrst_en, struct mt6360_core_platform_data),
 	MT6360_DT_VALPROP(cc_open_sel, struct mt6360_core_platform_data),
+	MT6360_DT_VALPROP(i2c_cc_open_tsel, struct mt6360_core_platform_data),
 	MT6360_DT_VALPROP(pd_mden, struct mt6360_core_platform_data),
 	MT6360_DT_VALPROP(ship_rst_dis, struct mt6360_core_platform_data),
 	MT6360_DT_VALPROP(ot_shdn_sel, struct mt6360_core_platform_data),
