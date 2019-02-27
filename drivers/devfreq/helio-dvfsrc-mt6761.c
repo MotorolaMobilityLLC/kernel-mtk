@@ -280,11 +280,8 @@ void get_opp_info(char *p)
 {
 	int pmic_val = pmic_get_register_value(PMIC_VCORE_ADDR);
 	int vcore_uv = vcore_pmic_to_uv(pmic_val);
-#ifdef CONFIG_MTK_DRAMC
 	int ddr_khz = get_dram_data_rate() * 1000;
-#else
-	int ddr_khz = 0;
-#endif
+
 	p += sprintf(p, "%-24s: %-8u uv  (PMIC: 0x%x)\n",
 			"Vcore", vcore_uv, vcore_uv_to_pmic(vcore_uv));
 	p += sprintf(p, "%-24s: %-8u khz\n", "DDR", ddr_khz);
