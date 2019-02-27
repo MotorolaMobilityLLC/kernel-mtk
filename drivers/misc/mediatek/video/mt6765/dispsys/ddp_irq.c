@@ -470,7 +470,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		wake_up_interruptible(&disp_irq_log_wq);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->DDP_IRQ,
-		MMPROFILE_FLAG_END, irq, reg_val);
+		MMPROFILE_FLAG_PULSE, module, reg_val);
 	return IRQ_HANDLED;
 }
 
