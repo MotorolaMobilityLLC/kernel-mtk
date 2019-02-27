@@ -1424,7 +1424,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->accelerometer_t.x_bias = data_t->accelerometer_t.x_bias;
 		data->accelerometer_t.y_bias = data_t->accelerometer_t.y_bias;
 		data->accelerometer_t.z_bias = data_t->accelerometer_t.z_bias;
-		data->accelerometer_t.status = data_t->accelerometer_t.status;
+		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_GRAVITY:
 		data->time_stamp = data_t->time_stamp;
@@ -1432,7 +1432,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
-		data->accelerometer_t.status = data_t->accelerometer_t.status;
+		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_LINEAR_ACCELERATION:
 		data->time_stamp = data_t->time_stamp;
@@ -1440,7 +1440,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->accelerometer_t.x = data_t->accelerometer_t.x;
 		data->accelerometer_t.y = data_t->accelerometer_t.y;
 		data->accelerometer_t.z = data_t->accelerometer_t.z;
-		data->accelerometer_t.status = data_t->accelerometer_t.status;
+		data->accelerometer_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_LIGHT:
 		data->time_stamp = data_t->time_stamp;
@@ -1468,7 +1468,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->gyroscope_t.x_bias = data_t->gyroscope_t.x_bias;
 		data->gyroscope_t.y_bias  = data_t->gyroscope_t.y_bias;
 		data->gyroscope_t.z_bias  = data_t->gyroscope_t.z_bias;
-		data->gyroscope_t.status = data_t->gyroscope_t.status;
+		data->gyroscope_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_GYROSCOPE_UNCALIBRATED:
 		data->time_stamp = data_t->time_stamp;
@@ -1484,6 +1484,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 			data_t->uncalibrated_gyro_t.z_bias;
 		data->uncalibrated_gyro_t.status =
 			data_t->uncalibrated_gyro_t.status;
+		data->uncalibrated_gyro_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_RELATIVE_HUMIDITY:
 		data->time_stamp = data_t->time_stamp;
@@ -1502,7 +1503,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->magnetic_t.x_bias = data_t->magnetic_t.x_bias;
 		data->magnetic_t.y_bias = data_t->magnetic_t.y_bias;
 		data->magnetic_t.z_bias = data_t->magnetic_t.z_bias;
-		data->magnetic_t.status = data_t->magnetic_t.status;
+		data->magnetic_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_MAGNETIC_UNCALIBRATED:
 		data->time_stamp = data_t->time_stamp;
@@ -1518,6 +1519,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 			data_t->uncalibrated_mag_t.z_bias;
 		data->uncalibrated_mag_t.status =
 			data_t->uncalibrated_mag_t.status;
+		data->uncalibrated_mag_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_GEOMAGNETIC_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
@@ -1526,7 +1528,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->magnetic_t.y = data_t->magnetic_t.y;
 		data->magnetic_t.z = data_t->magnetic_t.z;
 		data->magnetic_t.scalar = data_t->magnetic_t.scalar;
-		data->magnetic_t.status = data_t->magnetic_t.status;
+		data->magnetic_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_ORIENTATION:
 		data->time_stamp = data_t->time_stamp;
@@ -1534,7 +1536,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->orientation_t.azimuth = data_t->orientation_t.azimuth;
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
-		data->orientation_t.status = data_t->orientation_t.status;
+		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
@@ -1543,7 +1545,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
 		data->orientation_t.scalar = data_t->orientation_t.scalar;
-		data->orientation_t.status = data_t->orientation_t.status;
+		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_GAME_ROTATION_VECTOR:
 		data->time_stamp = data_t->time_stamp;
@@ -1552,7 +1554,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->orientation_t.pitch = data_t->orientation_t.pitch;
 		data->orientation_t.roll = data_t->orientation_t.roll;
 		data->orientation_t.scalar = data_t->orientation_t.scalar;
-		data->orientation_t.status = data_t->orientation_t.status;
+		data->orientation_t.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_STEP_COUNTER:
 		data->time_stamp = data_t->time_stamp;
@@ -1651,7 +1653,7 @@ int sensor_get_data_from_hub(uint8_t sensorType,
 		data->pdr_event.x = data_t->pdr_event.x;
 		data->pdr_event.y = data_t->pdr_event.y;
 		data->pdr_event.z = data_t->pdr_event.z;
-		data->pdr_event.status = data_t->pdr_event.status;
+		data->pdr_event.status = SENSOR_STATUS_ACCURACY_HIGH;
 		break;
 	case ID_FLOOR_COUNTER:
 		data->time_stamp = data_t->time_stamp;
