@@ -45,7 +45,8 @@ int rdma_reset(enum DISP_MODULE_ENUM module, void *handle);
 /* common interface */
 unsigned long rdma_base_addr(enum DISP_MODULE_ENUM module);
 unsigned int rdma_index(enum DISP_MODULE_ENUM module);
-void rdma_set_target_line(enum DISP_MODULE_ENUM module, unsigned int line, void *handle);
+void rdma_set_target_line(enum DISP_MODULE_ENUM module,
+					unsigned int line, void *handle);
 void rdma_get_address(enum DISP_MODULE_ENUM module, unsigned long *data);
 void rdma_dump_reg(enum DISP_MODULE_ENUM module);
 void rdma_dump_analysis(enum DISP_MODULE_ENUM module);

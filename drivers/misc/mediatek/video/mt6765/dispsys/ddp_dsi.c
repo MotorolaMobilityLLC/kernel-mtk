@@ -1764,6 +1764,7 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module,
 	struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
+
 	if (cmdq)
 		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA,
 			0x00000020, 0x00000000);
