@@ -23,7 +23,9 @@
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <soc/mediatek/smi.h>
+#if !IS_ENABLED(CONFIG_MTK_SMI_EXT)
 #include <dt-bindings/memory/mt2701-larb-port.h>
+#endif
 
 /* mt8173 */
 #define SMI_LARB_MMU_EN		0xf00
