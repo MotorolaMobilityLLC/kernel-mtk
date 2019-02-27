@@ -21,6 +21,8 @@
 #include <linux/wait.h>
 #include <linux/time.h>
 #include <linux/delay.h>
+#include <linux/fs.h>
+#include <linux/file.h>
 #include <linux/sched.h>
 #include "m4u.h"
 #include "ddp_m4u.h"
@@ -68,6 +70,28 @@ int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
 unsigned int idle_check_interval = 50;
+
+struct BMP_FILE_HEADER {
+	UINT16 bfType;
+	UINT32 bfSize;
+	UINT16 bfReserved1;
+	UINT16 bfReserved2;
+	UINT32 bfOffBits;
+};
+
+struct BMP_INFO_HEADER {
+	UINT32 biSize;
+	UINT32 biWidth;
+	UINT32 biHeight;
+	UINT16 biPlanes;
+	UINT16 biBitCount;
+	UINT32 biCompression;
+	UINT32 biSizeImage;
+	UINT32 biXPelsPerMeter;
+	UINT32 biYPelsPerMeter;
+	UINT32 biClrUsed;
+	UINT32 biClrImportant;
+};
 
 /*********************** layer information statistic *********************/
 #define STATISTIC_MAX_LAYERS 20
@@ -263,6 +287,101 @@ static int draw_buffer(char *va, int w, int h,
 	return 0;
 }
 
+void save_bmp(const char *file_name, void *buf, int w, int h)
+{
+	struct file *bmp;
+	mm_segment_t fs;
+	loff_t pos = 0;
+	int size = w * h * 3;
+	struct BMP_FILE_HEADER bfh;
+	struct BMP_INFO_HEADER bih;
+
+	bfh.bfType = 0x4d42;
+	bfh.bfSize = size + 14 + 40;
+	bfh.bfReserved1 = 0;
+	bfh.bfReserved2 = 0;
+	bfh.bfOffBits = 54;
+
+	bih.biSize = 40;
+	bih.biWidth = w;
+	bih.biHeight = h;
+	bih.biPlanes = 1;
+	bih.biBitCount = 24;
+	bih.biCompression = 0;
+	bih.biSizeImage = size;
+	bih.biXPelsPerMeter = 2835;
+	bih.biYPelsPerMeter = 2835;
+	bih.biClrUsed  = 0;
+	bih.biClrImportant = 0;
+
+	bmp = filp_open(file_name, O_CREAT | O_RDWR, 0);
+	if (IS_ERR(bmp)) {
+		DISPERR("open output bmp file failed!\n");
+		return;
+	}
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	vfs_write(bmp, (const char *)&bfh.bfType,
+		sizeof(bfh.bfType), &pos);
+	vfs_write(bmp, (const char *)&bfh.bfSize,
+		sizeof(bfh.bfSize), &pos);
+	vfs_write(bmp, (const char *)&bfh.bfReserved1,
+		sizeof(bfh.bfReserved1), &pos);
+	vfs_write(bmp, (const char *)&bfh.bfReserved2,
+		sizeof(bfh.bfReserved2), &pos);
+	vfs_write(bmp, (const char *)&bfh.bfOffBits,
+		sizeof(bfh.bfOffBits), &pos);
+	vfs_write(bmp, (const char *)&bih.biSize,
+		sizeof(bih.biSize), &pos);
+	vfs_write(bmp, (const char *)&bih.biWidth,
+		sizeof(bih.biWidth), &pos);
+	vfs_write(bmp, (const char *)&bih.biHeight,
+		sizeof(bih.biHeight), &pos);
+	vfs_write(bmp, (const char *)&bih.biPlanes,
+		sizeof(bih.biPlanes), &pos);
+	vfs_write(bmp, (const char *)&bih.biBitCount,
+		sizeof(bih.biBitCount), &pos);
+	vfs_write(bmp, (const char *)&bih.biCompression,
+		sizeof(bih.biCompression), &pos);
+	vfs_write(bmp, (const char *)&bih.biSizeImage,
+		sizeof(bih.biSizeImage), &pos);
+	vfs_write(bmp, (const char *)&bih.biXPelsPerMeter,
+		sizeof(bih.biXPelsPerMeter), &pos);
+	vfs_write(bmp, (const char *)&bih.biYPelsPerMeter,
+		sizeof(bih.biYPelsPerMeter), &pos);
+	vfs_write(bmp, (const char *)&bih.biClrUsed,
+		sizeof(bih.biClrUsed), &pos);
+	vfs_write(bmp, (const char *)&bih.biClrImportant,
+		sizeof(bih.biClrImportant), &pos);
+	vfs_write(bmp, (const char *)buf, size, &pos);
+	filp_close(bmp, NULL);
+	set_fs(fs);
+}
+
+static void bmp_adjust(void *buf, int size, int w, int h)
+{
+	int hpos, vpos;
+	void *temp;
+	UINT8 byte;
+
+	size = w * 3;
+	temp = vmalloc(size);
+	for (vpos = 0; vpos < h/2; vpos++) {
+		memcpy(temp, buf + (h-vpos - 1) * size, size);
+		memcpy(buf + (h-vpos - 1) * size, buf +
+			vpos * size, size);
+		memcpy(buf + vpos * size, temp, size);
+	}
+	for (vpos = 0; vpos < h; vpos++) {
+		for (hpos = 0; hpos < w; hpos++) {
+			byte = *(UINT8 *)(buf + (vpos * size) + hpos * 3);
+			*(UINT8 *)(buf + (vpos * size) + hpos * 3) =
+			*(UINT8 *)(buf + (vpos * size) + hpos * 3 + 2);
+			*(UINT8 *)(buf + (vpos * size) + hpos * 3 + 2) = byte;
+		}
+	}
+	vfree(temp);
+}
 
 struct test_buf_info {
 	struct ion_client *ion_client;
@@ -639,6 +758,8 @@ out_unlock:
 
 	return 0;
 }
+
+struct completion dump_buf_comp;
 
 static void process_dbg_opt(const char *opt)
 {
@@ -1205,6 +1326,41 @@ static void process_dbg_opt(const char *opt)
 			round_corner_offset_enable = 1;
 		else if (strncmp(opt + 26, "off", 3) == 0)
 			round_corner_offset_enable = 0;
+	} else if (strncmp(opt, "dump_output:", 12) == 0) {
+		if (strncmp(opt + 12, "on", 2) == 0)
+			dump_output = 1;
+		else if (strncmp(opt + 12, "off", 3) == 0) {
+			if (composed_buf) {
+				vfree(composed_buf);
+				composed_buf = NULL;
+			}
+			dump_output = 0;
+		} else if (strncmp(opt + 12, "save", 4) == 0) {
+			int w, h, bytes;
+			struct file *bmp;
+
+			if (dump_output == 0)
+				dump_output = 1;
+			w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
+			h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+			bytes = w * h * 3;
+			if (composed_buf == NULL)
+				composed_buf = vmalloc(bytes);
+			init_completion(&dump_buf_comp);
+			dump_output_comp = 1;
+			wait_for_completion(&dump_buf_comp);
+			bmp = filp_open("/sdcard/dump_output.bmp",
+				O_CREAT | O_RDWR, 0);
+			if (IS_ERR(bmp)) {
+				vfree(composed_buf);
+				composed_buf = NULL;
+				return;
+			}
+			filp_close(bmp, NULL);
+			bmp_adjust(composed_buf, bytes, w, h);
+			save_bmp("/sdcard/dump_output.bmp", composed_buf, w, h);
+		} else
+			DISPERR("error to parse cmd %s\n", opt);
 	}
 }
 
