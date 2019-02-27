@@ -24,6 +24,10 @@
 #include <xen/xen.h>
 #include <asm/xen/hypervisor.h>
 
+#ifdef CONFIG_MTK_BOUNCING_CHECK
+#include "../../../../drivers/misc/mediatek/include/mt-plat/aee.h"
+#endif
+
 #define DMA_ERROR_CODE	(~(dma_addr_t)0)
 extern struct dma_map_ops dummy_dma_ops;
 
