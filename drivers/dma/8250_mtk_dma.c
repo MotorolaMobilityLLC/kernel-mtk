@@ -31,7 +31,7 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-
+#include <mt-plat/mtk_boot_common.h>
 #include "virt-dma.h"
 
 #define MTK_SDMA_REQUESTS	127
@@ -181,6 +181,8 @@ static int mtk_dma_clk_enable(struct mtk_dmadev *mtkd)
 {
 	int rc;
 
+	if (get_boot_mode() == NORMAL_BOOT)
+		return 0;
 	rc = clk_prepare_enable(mtkd->clk);
 	if (rc) {
 		pr_err("Couldn't enable the clock\n");
@@ -192,6 +194,8 @@ static int mtk_dma_clk_enable(struct mtk_dmadev *mtkd)
 
 static void mtk_dma_clk_disable(struct mtk_dmadev *mtkd)
 {
+	if (get_boot_mode() == NORMAL_BOOT)
+		return;
 	clk_disable_unprepare(mtkd->clk);
 }
 
