@@ -1231,6 +1231,10 @@ out:
  * It will read the opcode, idn and buf_length parameters, and, put the
  * response in the buffer field while updating the used size in buf_length.
  */
+#if defined(CONFIG_UFSHPB)
+int ufshcd_query_desc_for_ufshpb(struct ufs_hba *hba, int lun,
+		struct ufs_ioctl_query_data *ioctl_data, void __user *buffer);
+#endif
 int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 {
 	struct ufs_ioctl_query_data *idata;
@@ -1258,6 +1262,20 @@ int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user)
 			__func__, err);
 		goto out_release_mem;
 	}
+
+#if defined(CONFIG_UFSHPB)
+	dev_info(hba->dev, "UFS-IOCTL: op %u idn %u size %u\n",
+		idata->opcode,	idata->idn, idata->buf_byte);
+	dev_info(hba->dev, "%s:%d ufshpb code 0x%x opcode 0x%x\n",
+		__func__, __LINE__, ((idata->opcode & 0xffff0000) >> 16),
+		idata->opcode & 0xffff);
+
+	if ((idata->opcode & 0xffff0000) >> 16 == HPB_QUERY_OPCODE) {
+		err = ufshcd_query_desc_for_ufshpb(hba, lun, idata, buf_user);
+		kfree(idata);
+		goto out;
+	}
+#endif
 
 	user_buf_ptr = idata->buf_ptr;
 

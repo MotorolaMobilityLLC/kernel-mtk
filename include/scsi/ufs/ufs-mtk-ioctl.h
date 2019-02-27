@@ -18,9 +18,10 @@
  *  IOCTL opcode for ufs ffu has the following opcode after
  *  Following the last SCSI IOCTL opcode.
  */
+#define UFS_IOCTL_QUERY         0x5388  /* Query descriptors, attr/flags */
 #define UFS_IOCTL_FFU           0x5389  /* Do firmware upgrade */
 #define UFS_IOCTL_GET_FW_VER    0x5390  /* Query production revision level */
-#define UFS_IOCTL_QUERY         0x5391  /* Query descriptors, attr/flags */
+#define HPB_QUERY_OPCODE        0x5500
 
 #define UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES             (512L * 1024)
 #define UFS_IOCTL_FFU_MAX_FW_VER_BYTES              (4)
@@ -60,6 +61,41 @@ struct ufs_ioctl_query_data {
 	 * For Read Flag you will have to allocate 1 byte
 	 */
 	__u8 *buf_ptr;
+};
+
+struct ufs_ioctl_query_data_hpb {
+	/*
+	 * User should select one of the opcode defined in "enum query_opcode".
+	 * Please check include/uapi/scsi/ufs/ufs.h for the definition of it.
+	 * Note that only UPIU_QUERY_OPCODE_READ_DESC,
+	 * UPIU_QUERY_OPCODE_READ_ATTR & UPIU_QUERY_OPCODE_READ_FLAG are
+	 * supported as of now. All other query_opcode would be considered
+	 * invalid.
+	 * As of now only read query operations are supported.
+	 */
+	__u32 opcode;
+	/*
+	 * User should select one of the idn from "enum flag_idn" or "enum
+	 * attr_idn" or "enum desc_idn" based on whether opcode above is
+	 * attribute, flag or descriptor.
+	 * Please check include/uapi/scsi/ufs/ufs.h for the definition of it.
+	 */
+	__u8 idn;
+	/*
+	 * User should specify the size of the buffer (buffer[0] below) where
+	 * it wants to read the query data (attribute/flag/descriptor).
+	 * As we might end up reading less data then what is specified in
+	 * buf_size. So we are updating buf_size to what exactly we have read.
+	 */
+	__u16 buf_size;
+	/*
+	 * placeholder for the start of the data buffer where kernel will copy
+	 * the query data (attribute/flag/descriptor) read from the UFS device
+	 * Note:
+	 * For Read Attribute you will have to allocate 4 bytes
+	 * For Read Flag you will have to allocate 1 byte
+	 */
+	__u8 buffer[0];
 };
 
 /**
