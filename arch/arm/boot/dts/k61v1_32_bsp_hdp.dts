@@ -116,7 +116,7 @@ initcall_debug=1 maxcpus=1";
 
 /* TOUCH start */
 &touch {
-	tpd-resolution = <720 1280>;
+	tpd-resolution = <1080 1920>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
