@@ -2387,6 +2387,11 @@ static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 	int ret = -EINVAL;
 	struct phpb_param *p;
 
+	tscpu_printk("%s, input str len = %zu\n", __func__, count);
+
+	if (count >= 128 || count < 1)
+		return -EINVAL;
+
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
 		return -EFAULT;
@@ -2398,6 +2403,9 @@ static ssize_t tscpu_write_phpb(struct file *file, const char __user *buffer,
 	}
 
 	buf[count] = '\0';
+
+	if (strstr(buf, " ") == NULL)
+		goto exit;
 
 	for (i = 0; i < NR_PHPB_PARAMS; i++) {
 		p = &phpb_params[i];
