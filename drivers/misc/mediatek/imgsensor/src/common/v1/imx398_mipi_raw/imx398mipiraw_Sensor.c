@@ -759,7 +759,7 @@ static kal_uint32 return_sensor_id(void)
 	tmpl = 0x00;
 	tmph = read_cmos_sensor(0x0A29);
 	tmpl = read_cmos_sensor(0x0A2A) >> 4;
-	pr_debug("[ylf]tmph = %d, tmpl= %d\n", tmph, tmpl);
+	/*pr_debug("[ylf]tmph = %d, tmpl= %d\n", tmph, tmpl);*/
 
 	return (
 	    (read_cmos_sensor(0x0A29) << 4) | (read_cmos_sensor(0x0A2A) >> 4));
@@ -3749,7 +3749,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
 		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
-	pr_debug("feature_id = %d\n", feature_id);
+	/*pr_debug("feature_id = %d\n", feature_id);*/
 	switch (feature_id) {
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;

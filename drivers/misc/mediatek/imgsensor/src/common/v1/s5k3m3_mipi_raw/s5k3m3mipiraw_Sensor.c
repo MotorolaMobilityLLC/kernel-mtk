@@ -1156,12 +1156,6 @@ static void custom2_setting(kal_uint16 fps)
 
 static kal_uint32 return_sensor_id(void)
 {
-
-	module_id = (
-	read_cmos_sensor_byte(0x0002) << 8) | read_cmos_sensor_byte(0x0003);
-
-	pr_debug("Module id: 0x%x\n", module_id);
-
 return ((read_cmos_sensor_byte(0x0000) << 8) | read_cmos_sensor_byte(0x0001));
 }
 
@@ -1196,10 +1190,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
+				module_id =
+	  (read_cmos_sensor_byte(0x0002) << 8) | read_cmos_sensor_byte(0x0003);
 				pr_debug(
-		"i2c write id: 0x%x, ReadOut sensor id: 0x%x, sensor_id:0x%x.\n",
+		"i2c write id: 0x%x, ReadOut sensor id: 0x%x, sensor_id:0x%x Module id: 0x%x.\n",
 					imgsensor.i2c_write_id,
-					*sensor_id, imgsensor_info.sensor_id);
+					*sensor_id,
+					imgsensor_info.sensor_id,
+					module_id);
 
 				if (module_id == S5K3M3_MODULE_ID_V1)
 					version_id = S5K3M3_VERSION_ID_V1;

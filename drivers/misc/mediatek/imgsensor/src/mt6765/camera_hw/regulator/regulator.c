@@ -157,14 +157,15 @@ static enum IMGSENSOR_RETURN regulator_set(
 			}
 			atomic_inc(enable_cnt);
 		} else {
-			if (regulator_is_enabled(pregulator))
-				pr_debug("[regulator]%d is enabled\n", pin);
+			if (regulator_is_enabled(pregulator)) {
+				/*pr_debug("[regulator]%d is enabled\n", pin);*/
 
-			if (regulator_disable(pregulator)) {
-				pr_err(
-				    "[regulator]fail to regulator_disable, powertype: %d\n",
-				    pin);
-				return IMGSENSOR_RETURN_ERROR;
+				if (regulator_disable(pregulator)) {
+					pr_err(
+					    "[regulator]fail to regulator_disable, powertype: %d\n",
+					    pin);
+					return IMGSENSOR_RETURN_ERROR;
+				}
 			}
 			atomic_dec(enable_cnt);
 		}

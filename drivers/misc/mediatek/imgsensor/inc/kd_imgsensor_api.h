@@ -17,7 +17,7 @@
 /* API for termal driver use*/
 extern MUINT32 Get_Camera_Temperature(
 	enum CAMERA_DUAL_CAMERA_SENSOR_ENUM senDevId,
-	MUINT8 *invalid,
-	INT32 *temp);
+	MUINT8 *valid,
+	MUINT32 *temp);
 
 #endif
