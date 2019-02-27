@@ -530,13 +530,8 @@ static int mcdi_procfs_init(void)
 		return -ENOMEM;
 	}
 
-	if (!proc_create("state", 0644, mcdi_dir, &mcdi_state_fops))
-		pr_notice("%s(), create /proc/mcdi/%s failed\n",
-			__func__, "state");
-
-	if (!proc_create("info", 0644, mcdi_dir, &mcdi_info_fops))
-		pr_notice("%s(), create /proc/mcdi/%s failed\n",
-			__func__, "info");
+	PROC_CREATE_MCDI(mcdi_dir, state);
+	PROC_CREATE_MCDI(mcdi_dir, info);
 
 	mcdi_procfs_profile_init(mcdi_dir);
 	mcdi_procfs_cpc_init(mcdi_dir);
