@@ -629,7 +629,25 @@ void mt_biolog_mmcqd_req_end(struct mmc_data *data)
 	mt_bio_init_task(tsk);
 }
 
-static size_t mt_bio_seq_debug_show_info(struct seq_file *seq)
+#define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
+	do { \
+		if (buff && size && *(size)) { \
+			unsigned long var = snprintf(*(buff), *(size),\
+				fmt, ##args); \
+			if (var > 0) { \
+				*(size) -= var; \
+				*(buff) += var; \
+			} \
+		} \
+		if (evt) \
+		seq_printf(evt, fmt, ##args); \
+		if (!buff && !evt) { \
+			pr_info(fmt, ##args); \
+		} \
+	} while (0)
+
+static size_t mt_bio_seq_debug_show_info(char **buff, unsigned long *size,
+	struct seq_file *seq)
 {
 	int i;
 	struct mt_bio_context *ctx = BTAG_CTX(mtk_btag_mmc);
@@ -640,7 +658,8 @@ static size_t mt_bio_seq_debug_show_info(struct seq_file *seq)
 	for (i = 0; i < MMC_BIOLOG_CONTEXTS; i++)	{
 		if (ctx[i].pid == 0)
 			continue;
-		seq_printf(seq, "ctx[%d]=ctx_map[%d]=%s,pid:%4d,q:%d\n",
+		SPREAD_PRINTF(buff, size, seq,
+			"ctx[%d]=ctx_map[%d]=%s,pid:%4d,q:%d\n",
 			i,
 			ctx[i].id,
 			ctx[i].comm,
