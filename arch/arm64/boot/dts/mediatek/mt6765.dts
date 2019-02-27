@@ -1781,14 +1781,14 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,mt6765-sdcard-ins";
 	};
 
-	msdc0_top@11f50000 {
+	msdc0_top@11cd0000 {
 		compatible = "mediatek,msdc0_top";
-		reg = <0 0x11f50000 0 0x1000>;
+		reg = <0 0x11cd0000 0 0x1000>;
 	};
 
-	msdc1_top@11e10000 {
+	msdc1_top@11c90000 {
 		compatible = "mediatek,msdc1_top";
-		reg = <0 0x11e10000 0 0x1000>;
+		reg = <0 0x11c90000 0 0x1000>;
 	};
 	usb1p_sif@11210000 {
 		compatible = "mediatek,usb1p_sif";

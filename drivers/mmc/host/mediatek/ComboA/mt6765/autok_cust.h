@@ -275,7 +275,7 @@ struct AUTOK_PLAT_FUNC {
 		autok_para_func.new_path_hs = 1; \
 		autok_para_func.multi_sync = 1; \
 		autok_para_func.rx_enhance = 1; \
-		autok_para_func.msdc0_bypass_duty_modify = 1; \
+		autok_para_func.msdc0_bypass_duty_modify = 0; \
 		autok_para_func.msdc1_bypass_duty_modify = 0; \
 		autok_para_func.msdc2_bypass_duty_modify = 0; \
 	} while (0)

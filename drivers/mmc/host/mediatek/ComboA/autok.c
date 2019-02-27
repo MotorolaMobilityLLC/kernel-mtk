@@ -3458,12 +3458,12 @@ int execute_online_tuning_hs400(struct msdc_host *host, u8 *res)
 	struct AUTOK_PLAT_PARA_RX platform_para_rx;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
-	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_KERNEL);
+	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_ATOMIC);
 	if (!pBdInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
 	}
-	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_KERNEL);
+	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_ATOMIC);
 	if (!pInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		kfree(pBdInfo);
@@ -3676,7 +3676,7 @@ int execute_cmd_online_tuning(struct msdc_host *host, u8 *res)
 	unsigned int opcode = MMC_SEND_STATUS;
 	struct autok_host autok_host_para;
 
-	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_KERNEL);
+	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_ATOMIC);
 	if (!pBdInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
@@ -3879,7 +3879,7 @@ int execute_online_tuning_hs200(struct msdc_host *host, u8 *res)
 	struct AUTOK_PLAT_FUNC platform_para_func;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
-	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_KERNEL);
+	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_ATOMIC);
 	if (!pBdInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
@@ -4078,13 +4078,13 @@ int execute_online_tuning_sdio30_plus(struct msdc_host *host, u8 *res)
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
 #if SDIO_PLUS_CMD_TUNE
-	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_KERNEL);
+	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_ATOMIC);
 	if (!pBdInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
 	}
 #endif
-	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_KERNEL);
+	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_ATOMIC);
 	if (!pInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 #ifdef SDIO_PLUS_CMD_TUNE
@@ -4385,7 +4385,7 @@ int execute_online_tuning(struct msdc_host *host, u8 *res)
 	struct AUTOK_PLAT_FUNC platform_para_func;
 	struct AUTOK_PLAT_PARA_TX platform_para_tx;
 
-	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_KERNEL);
+	pBdInfo = kmalloc(sizeof(struct AUTOK_REF_INFO), GFP_ATOMIC);
 	if (!pBdInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
@@ -5167,7 +5167,7 @@ int autok_offline_tuning_device_RX(struct msdc_host *host, u8 *res)
 	struct autok_host autok_host_para;
 	struct AUTOK_REF_INFO_NEW *pInfo;
 
-	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_KERNEL);
+	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_ATOMIC);
 	if (!pInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
@@ -5636,7 +5636,7 @@ int autok_offline_tuning_TX(struct msdc_host *host, u8 *res)
 	struct autok_host autok_host_para;
 	struct AUTOK_PLAT_PARA_MISC platform_para_misc;
 
-	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_KERNEL);
+	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_ATOMIC);
 	if (!pInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
@@ -6546,7 +6546,7 @@ int autok_vcore_merge_sel(struct msdc_host *host, unsigned int merge_cap)
 	do_gettimeofday(&tm_s);
 	MSDC_GET_FIELD(MSDC_CFG, MSDC_CFG_CKMOD, clk_mode);
 
-	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_KERNEL);
+	pInfo = kmalloc(sizeof(struct AUTOK_REF_INFO_NEW), GFP_ATOMIC);
 	if (!pInfo) {
 		AUTOK_DBGPRINT(AUTOK_DBG_RES, "[AUTOK] mem alloc fail\r\n");
 		return -1;
