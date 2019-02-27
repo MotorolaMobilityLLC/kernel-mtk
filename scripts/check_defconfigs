@@ -30,10 +30,10 @@ while getopts "cuh" opt; do
 	if [ ".$KCONFIG" != "." ]; then
 		echo From git commit: Checking all defconfig due to Kconfig is changed.
 		CONFIGS=`grep -rl "CONFIG_MTK_PLATFORM\|CONFIG_ARCH_MEDIATEK" arch/arm/configs arch/arm64/configs`
-		break
 	fi
 
-	CONFIGS=`git show ${CHECK_COMMIT} --stat-width=500 | gawk '/arch\/(arm64|arm)\/configs\/.*_defconfig +\| +[0-9]*/{print $1}'`
+	CONFIGS+=" `git show ${CHECK_COMMIT} --stat-width=500 | gawk '/arch\/(arm64|arm)\/configs\/.*_defconfig +\| +[0-9]*/{print $1}'`"
+	CONFIGS=`echo $CONFIGS | xargs -n1 | sort -u | xargs`
 	if [ ".$CONFIGS" != "." ]; then
 		echo From git commit: Checking $CONFIGS
 	fi
@@ -59,6 +59,7 @@ fi
 mkdir ${OUT}
 
 for CONFIG in $CONFIGS ; do
+	echo "Checking ${CONFIG}"
 	if [ ! -e ${CONFIG} ]; then
 		echo warning: defconfig file $CONFIG not found
 		continue
@@ -83,14 +84,13 @@ for CONFIG in $CONFIGS ; do
 	fi
 
 	# Check if there is a warning message
-	if echo "$OUTPUT" | grep -q ":warning:"; then
+	if echo "$OUTPUT" | grep -q "warning:"; then
 		echo error: there is a warning message with Kconfig
 		FAIL=1
 		continue
 	fi
 
 	# Check option mismatch
-	echo ${CONFIG} ${OUT}/.config
 	gawk 'BEGIN{lastf="";} { if (lastf != FILENAME) { if (lastf != "") CHECK=1; lastf=FILENAME; } }  \
 		/CONFIG_/ { match($0, /CONFIG_[^ =]*/); option=substr($0, RSTART, RLENGTH); \
 			if (CHECK==1) {  if (option in opts && opts[option]==$0) delete opts[option]; } \
