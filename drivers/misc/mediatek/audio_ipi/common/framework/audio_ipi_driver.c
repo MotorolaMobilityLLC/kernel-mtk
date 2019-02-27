@@ -322,8 +322,10 @@ static long audio_ipi_driver_ioctl(
 	struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct audio_ipi_reg_dma_t dma_reg;
-	struct audio_ipi_reg_feature_t feat_reg;
 
+#if defined(CONFIG_MTK_AUDIODSP_SUPPORT)
+	struct audio_ipi_reg_feature_t feat_reg;
+#endif
 	int retval = 0;
 
 	AUD_LOG_V("%s(), cmd = %u, arg = %lu\n", __func__, cmd, arg);

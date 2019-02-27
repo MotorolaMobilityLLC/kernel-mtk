@@ -34,4 +34,12 @@ uint32_t audio_get_ipi_id(const uint8_t task)
 	return IPI_AUDIO;
 }
 
+unsigned int audio_ipi_check_scp_status(void)
+{
+	return is_scp_ready(SCP_A_ID);
+}
 
+unsigned int get_audio_ipi_scp_location(void)
+{
+	return SCP_A_ID;
+}
