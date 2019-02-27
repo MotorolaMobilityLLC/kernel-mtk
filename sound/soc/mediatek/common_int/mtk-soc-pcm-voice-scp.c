@@ -472,16 +472,17 @@ static int mtk_pcm_scp_voice_hw_params(struct snd_pcm_substream *substream,
 
 	payloadlen = spkproc_ipi_pack_payload(
 		SPK_PROTECT_SPEECH_MDFEEDBACKPARAM,
-		mscp_voice_mdbackDramState, 0,
+		mscp_voice_mdbackDramState, Soc_Aud_Digital_Block_MEM_AWB,
 		&scp_voice_mddl_dma_buf, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
-				   SPK_PROTECT_SPEECH_MDFEEDBACKPARAM,
-				   payloadlen, 0,
-				   (char *)spkproc_ipi_get_payload());
+				    SPK_PROTECT_SPEECH_MDFEEDBACKPARAM,
+				    payloadlen, 0,
+				    (char *)spkproc_ipi_get_payload());
 
 	payloadlen =
 		spkproc_ipi_pack_payload(SPK_PROTECT_SPEECH_DLMEMPARAM,
-					 mscp_voice_PlaybackDramState, 0,
+					 mscp_voice_PlaybackDramState,
+					 Soc_Aud_Digital_Block_MEM_DL1,
 					 &scp_voice_DL1Buffer, substream);
 	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_SPEECH_DLMEMPARAM,
@@ -590,7 +591,9 @@ static int mtk_pcm_scp_voice_open(struct snd_pcm_substream *substream)
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	spkproc_service_ipicmd_send(AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
-				    SPK_PROTECT_SPEECH_OPEN, 1, 0, NULL);
+				    SPK_PROTECT_SPEECH_OPEN,
+				    Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE,
+				    0, NULL);
 #endif
 
 	pr_debug("%s return\n", __func__);
