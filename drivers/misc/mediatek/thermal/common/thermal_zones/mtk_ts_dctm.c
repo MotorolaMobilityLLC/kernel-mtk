@@ -140,7 +140,11 @@ static DEFINE_MUTEX(dctm_mutex);
 static int tskinInit(int tpcbInit)
 {
 	int i = 0, j = 0;
-	long tInit = 0;
+	long long tInit = 0;
+
+	/* -127 deg: invalid value */
+	if (tpcbInit == -127)
+		tpcbInit = tpcbinit;
 
 	mutex_lock(&dctm_mutex);
 	rhs[TSKINNODE] = tamb_coef * tamb; // 10^3
@@ -152,13 +156,13 @@ static int tskinInit(int tpcbInit)
 			tInit += DcMatrix[i][j] *
 				div_s64(rhs[rhsNode[j]], SCALE_UNIT_RHS);
 
-		tInit = tInit / SCALE_UNIT_TINT;
+		tInit = div_s64(tInit, SCALE_UNIT_TINT);
 		tn[i] = tInit;
 		tn_1[i] = tInit;
 	}
 	mutex_unlock(&dctm_mutex);
 
-	mtkts_dctm_dprintk("%s by input tpcbInit = %d\n", __func__, tpcbInit);
+	mtkts_dctm_printk("%s by input tpcbInit = %d\n", __func__, tpcbInit);
 
 	return tn[TSKINNODE];
 }
@@ -171,11 +175,10 @@ static int tskinTransient(int tpcb)
 	int i = 0;
 
 	/* -127 deg: invalid value */
-	if (tpcb ==  -127)
+	if (tpcb == -127)
 		return tn[TSKINNODE];
 
 	mutex_lock(&dctm_mutex);
-
 	for (i = 0; i < NUMNODE; i++) {
 		rhs[i] = div_s64(CapMatrix[i] * tn_1[i], SCALE_UNIT_CAP);
 		tn[i] = 0;
@@ -191,7 +194,6 @@ static int tskinTransient(int tpcb)
 		tn[i] = div_s64(tn[i], SCALE_UNIT_T_TRANSIENT);
 		tn_1[i] = tn[i];
 	}
-
 	mutex_unlock(&dctm_mutex);
 
 	return tn[TSKINNODE];
