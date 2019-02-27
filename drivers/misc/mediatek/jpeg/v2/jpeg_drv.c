@@ -789,7 +789,7 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	/* unsigned int _jpeg_enc_int_status; */
 	unsigned int jpeg_enc_wait_timeout = 0;
 	unsigned int cycle_count;
-	unsigned int ret;
+	int ret;
 	/* No spec, considering [picture size] x [target fps] */
 	unsigned int cshot_spec = 0xffffffff;
 	/* limiting FPS, Upper Bound FPS = 20 */
