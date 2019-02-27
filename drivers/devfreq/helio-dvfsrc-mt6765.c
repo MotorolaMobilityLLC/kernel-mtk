@@ -217,10 +217,6 @@ static int can_dvfsrc_enable(void)
 	} else if (is_efuse_bypass_flavor()) {
 		enable = 1;
 		pr_info("VCORE DVFS enable for special flavor\n");
-	} else if (!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62mv1_bsp", 10) ||
-		!strncmp(CONFIG_ARCH_MTK_PROJECT, "k62v1_bsp", 9)) {
-		enable = 0;
-		pr_info("VCORE DVFS disable XM\n");
 	} else if (ptpod0 == 0x0000FF00 || ptpod0 == 0x0) {
 		enable = 0;
 		pr_info("VCORE DVFS disable for efuse\n");
