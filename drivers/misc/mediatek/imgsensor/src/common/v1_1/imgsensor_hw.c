@@ -92,7 +92,7 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 	struct IMGSENSOR_HW_DEVICE       *pdev;
 	int                               pin_cnt = 0;
 
-	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 30);
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 10);
 
 	while (ppwr_seq->idx != NULL &&
 		ppwr_seq < ppower_sequence + IMGSENSOR_HW_SENSOR_MAX_NUM &&
