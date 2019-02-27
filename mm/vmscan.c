@@ -2535,7 +2535,7 @@ static void shrink_node_memcg(struct pglist_data *pgdat, struct mem_cgroup *memc
 	}
 #else
 	/* Give a chance to migrate anon pages */
-	if (IS_ENABLED(CONFIG_ZONE_MOVABLE_CMA) &&
+	if (IS_ENABLED(CONFIG_MTK_MEMORY_LOWPOWER) &&
 			nr[LRU_INACTIVE_ANON] == 0)
 		nr[LRU_INACTIVE_ANON] = 1;
 #endif
