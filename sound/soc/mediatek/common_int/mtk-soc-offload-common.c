@@ -193,7 +193,7 @@ static int offloadservice_set_pcmdump(struct snd_kcontrol *kcontrol,
 	}
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
-			 AUDIO_IPI_DMA, AUDIO_IPI_MSG_BYPASS_ACK,
+			 AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 			 OFFLOAD_PCMDUMP_ON,
 			 0, afe_offload_service.pcmdump,
 			 0);
@@ -573,7 +573,7 @@ static void mtk_dsp_mp3_dl_handler(struct mtk_base_dsp *dsp,
 	pr_debug("%s msg_id = %u param1 = %u param2 = %u", __func__,
 		 ipi_msg->msg_id, ipi_msg->param1, ipi_msg->param2);
 #endif
-	if (ipi_msg->data_type == AUDIO_IPI_DMA) {
+	if (ipi_msg->data_type == AUDIO_IPI_PAYLOAD) {
 		memcpy((void *)&dsp_mem->adsp_buf,
 		       (void *)dsp_mem->msg_dtoa_share_buf.vir_addr,
 		       sizeof(struct audio_hw_buffer));
