@@ -41,7 +41,7 @@
 #define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (0)
 #define MTK_IDLE_FEATURE_ENABLE_SODI    (0)
 #define MTK_IDLE_FEATURE_ENABLE_SODI3   (0)
-
+#define MTK_FEATURE_EANABLE_KICK_SPMFW	(0)
 
 /**************************************
  * Config and Parameter
