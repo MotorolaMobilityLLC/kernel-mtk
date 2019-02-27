@@ -51,6 +51,13 @@ static int get_vb_volt(int vcore_opp)
 		if (ret == 3)
 			ret = 2;
 		break;
+	case VCORE_OPP_3:
+		ret = (ptpod10 >> 4) & 0x3F;
+		if (ret == 0)
+			ret = 1;
+		else
+			ret = 0;
+		break;
 	default:
 		break;
 	}
@@ -84,7 +91,7 @@ void dvfsrc_opp_level_mapping(void)
 		vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
 		vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
 		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
-		vcore_opp_3_uv = 650000;
+		vcore_opp_3_uv = 650000 + get_vb_volt(VCORE_OPP_3);
 		pr_info("%s: EFUSE vcore_opp_uv: %d, %d, %d, %d\n", __func__,
 				vcore_opp_0_uv,
 				vcore_opp_1_uv,
@@ -115,7 +122,7 @@ void dvfsrc_opp_level_mapping(void)
 	} else {
 		vcore_opp_0_uv = 800000;
 		vcore_opp_1_uv = 700000;
-		vcore_opp_3_uv = 650000;
+		vcore_opp_3_uv = 650000 + get_vb_volt(VCORE_OPP_3);
 		/* apply MD VB */
 		vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
 		vcore_opp_2_uv = max(vcore_opp_2_uv, vcore_opp_3_uv);
