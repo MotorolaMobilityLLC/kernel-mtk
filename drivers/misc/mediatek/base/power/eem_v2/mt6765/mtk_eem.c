@@ -3418,7 +3418,7 @@ det->name, det_entries[i].name);
 }
 #endif /* CONFIG_PROC_FS */
 
-void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
+void eem_set_pi_efuse(enum eem_det_id id, unsigned int pi_efuse)
 {
 	struct eem_det *det = id_to_eem_det(id);
 
