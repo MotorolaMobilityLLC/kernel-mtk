@@ -468,8 +468,8 @@ static void mtp_complete_in(struct usb_ep *ep, struct usb_request *req)
 }
 
 static atomic_t usb_rdone;
-static long usb_rcnt;
-static long vfs_wcnt;
+static int64_t usb_rcnt;
+static int64_t vfs_wcnt;
 static bool rx_cont_abort;
 static bool mtp_rx_cont = true;
 module_param(mtp_rx_cont, bool, 0644);
@@ -1136,8 +1136,8 @@ static void vfs_write_work(struct work_struct *data)
 	int64_t req_cnt = dev->xfer_file_length;
 	int index = 0;
 
-	MTP_RX_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
-			vfs_wcnt, usb_rcnt, (long)req_cnt);
+	MTP_RX_DBG("write_cnt<%lld>, read_cnt<%lld>, req_cnt<%lld>\n",
+			vfs_wcnt, usb_rcnt, req_cnt);
 
 	while (!rx_cont_abort && (vfs_wcnt != req_cnt)) {
 		if (dev->state != STATE_BUSY) {
@@ -1167,9 +1167,9 @@ static void vfs_write_work(struct work_struct *data)
 				MTP_RX_DBG("rc<%d> != actual<%d>\n",
 					rc, write_req->actual);
 			vfs_wcnt += write_req->actual;
-			MTP_RX_DBG("vfs_wcnt%ld, usb_rcnt%ld, req_cnt%ld\n",
+			MTP_RX_DBG("vfs_wcnt%lld,usb_rcnt%lld,req_cnt%lld\n",
 					vfs_wcnt, usb_rcnt,
-					(long)req_cnt);
+					req_cnt);
 
 
 			/* check next round existence */
@@ -1189,14 +1189,14 @@ static void vfs_write_work(struct work_struct *data)
 					break;
 				}
 				usb_rcnt += read_req->length;
-				MTP_RX_DBG("vfs_wcnt%ld,usb_rcnt%ld,req%ld\n",
+				MTP_RX_DBG("v_wcnt%lld,u_rcnt%lld,req%lld\n",
 						vfs_wcnt, usb_rcnt,
-						(long)req_cnt);
+						req_cnt);
 			}
 		}
 	};
-	MTP_RX_DBG("write_cnt<%ld>, read_cnt<%ld>, req_cnt<%ld>\n",
-			vfs_wcnt, usb_rcnt, (long)req_cnt);
+	MTP_RX_DBG("write_cnt<%lld>, read_cnt<%lld>, req_cnt<%lld>\n",
+			vfs_wcnt, usb_rcnt, req_cnt);
 }
 void trigger_rx_cont(void)
 {
@@ -1239,8 +1239,8 @@ void trigger_rx_cont(void)
 
 		usb_rcnt += read_req->length;
 		count -= read_req->length;
-		MTP_RX_DBG("count<%d>, usb_rcnt<%d>\n",
-			(int)count, (int)usb_rcnt);
+		MTP_RX_DBG("count<%lld>, usb_rcnt<%lld>\n",
+			count, usb_rcnt);
 		if (!count)
 			break;
 	}
