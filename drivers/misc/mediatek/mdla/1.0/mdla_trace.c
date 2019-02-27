@@ -16,6 +16,7 @@
 #include <linux/sched.h>
 #include <linux/string.h>
 #include <linux/types.h>
+#include <linux/kernel.h>
 #include <mt-plat/met_drv.h>
 
 #include "mdla.h"
@@ -44,6 +45,18 @@ static noinline int tracing_mark_write(const char *buf)
 {
 	TRACE_PUTS(buf);
 	return 0;
+}
+
+void mdla_trace_custom(const char *fmt, ...)
+{
+	char buf[TRACE_LEN];
+	va_list args;
+
+	va_start(args, fmt);
+	vsnprintf(buf, TRACE_LEN, fmt, args);
+	va_end(args);
+
+	tracing_mark_write(buf);
 }
 
 void mdla_trace_begin(const int cmd_num, void *cmd)
@@ -82,26 +95,18 @@ void mdla_trace_begin(const int cmd_num, void *cmd)
 
 void mdla_trace_end(u32 cmd_id, u64 end, int mode)
 {
-	char buf[TRACE_LEN];
-	int len;
-
 	if ((!cfg_cmd_trace) || (!end))
 		return;
 
 	if (cfg_pmu_int != mode)
 		return;
 
-	len = snprintf(buf, sizeof(buf),
+	mdla_trace_custom(
 		"I|%d|MDLA|E|mdla_cmd_id:%d,cycle:%u,sched_clock_result:%llu",
 		task_pid_nr(current),
 		cmd_id,
 		pmu_get_perf_cycle(),
 		end);
-
-	if (len >= TRACE_LEN)
-		len = TRACE_LEN - 1;
-
-	tracing_mark_write(buf);
 }
 
 /* MET: define to enable MET */
@@ -298,8 +303,9 @@ int mdla_profile(const char *str)
 	return ret;
 }
 
+
 /* restore trace settings after reset */
-int mdla_profile_reset(void)
+int mdla_profile_reset(const char *str)
 {
 	int i;
 
@@ -310,6 +316,10 @@ int mdla_profile_reset(void)
 
 	for (i = 0; i < MDLA_PMU_COUNTERS; i++)
 		pmu_event_set(i, cfg_pmu_event[i]);
+
+	if (cfg_cmd_trace)
+		mdla_trace_custom("I|%d|MDLA|C|reset:%s",
+			task_pid_nr(current), str);
 
 	return 0;
 }
