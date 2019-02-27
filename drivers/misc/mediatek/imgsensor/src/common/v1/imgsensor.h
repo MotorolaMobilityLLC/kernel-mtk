@@ -20,11 +20,17 @@
 #include "imgsensor_hw.h"
 #include "imgsensor_clk.h"
 
+struct IMGSENSOR_STATUS {
+	u32 reserved:31;
+	u32 oc:1;
+};
 struct IMGSENSOR {
+	struct IMGSENSOR_STATUS status;
 	struct IMGSENSOR_HW     hw;
 	struct IMGSENSOR_CLK    clk;
 	struct IMGSENSOR_SENSOR sensor[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 	atomic_t imgsensor_open_cnt;
+	enum IMGSENSOR_RETURN (*imgsensor_oc_irq_enable)(bool enable);
 };
 
 MINT32
