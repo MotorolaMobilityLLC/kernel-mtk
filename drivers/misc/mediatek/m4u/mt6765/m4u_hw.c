@@ -1971,13 +1971,13 @@ int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
 
 				m4uHw_set_field_by_mask(gLarbBaseAddr[i], SMI_LARB_SEC_CONx(j),
 									F_SMI_DOMN(0x7), F_SMI_DOMN(0x4));
+			}
 #else
 			j = 0;
 #endif
 			larb_clock_off(i, 1);
 
 			M4UINFO("init larb %d, 0x%lx\n", i, gLarbBaseAddr[i]);
-			}
 		}
 	}
 	/* ========================================= */
