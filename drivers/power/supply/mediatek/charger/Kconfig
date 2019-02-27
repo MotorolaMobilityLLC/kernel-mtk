@@ -37,6 +37,25 @@ config MTK_KERNEL_POWER_OFF_CHARGING
 	  feature.
 	  device won't enter charging mode if config is no.
 
+config MTK_PUMP_EXPRESS_PLUS_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS"
+	default n
+	help
+	  Fast charging technology using switch charger and current pattern
+	  to achive better charging ability.
+	  Set Yes to enable PE+
+	  Set No to disable PE+
+
+config MTK_PUMP_EXPRESS_PLUS_20_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS 2.0"
+	default n
+	help
+	  Fast charging technology using switch charger and current pattern
+	  to achive better charging ability. It has higher charging efficiency
+	  and has better thermal performance than PE+.
+	  Set Yes to enable PE+2.0
+	  Set No to disable PE+2.0
+
 config SWCHR_POWER_PATH
 	bool "External charger IC supports powerpath"
 	default n

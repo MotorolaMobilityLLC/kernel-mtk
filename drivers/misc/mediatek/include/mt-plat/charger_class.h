@@ -79,13 +79,10 @@ struct charger_ops {
 
 	int (*event)(struct charger_device *, u32 event, u32 args);
 
-	/* PE/PE+ */
-	int (*send_ta_current_pattern)(struct charger_device *,
-	bool is_increase);
-
-	/* PE+ 20*/
+	/* PE+/PE+2.0 */
+	int (*send_ta_current_pattern)(struct charger_device *, bool is_inc);
 	int (*send_ta20_current_pattern)(struct charger_device *, u32 uV);
-	int (*set_ta20_reset)(struct charger_device *);
+	int (*reset_ta)(struct charger_device *);
 	int (*enable_cable_drop_comp)(struct charger_device *, bool en);
 
 	int (*set_mivr)(struct charger_device *, u32 uV);
@@ -231,14 +228,12 @@ extern int charger_dev_reset_eoc_state(
 extern int charger_dev_safety_check(
 	struct charger_device *charger_dev);
 
-/* PE */
+/* PE+/PE+2.0 */
 extern int charger_dev_send_ta_current_pattern(
 	struct charger_device *charger_dev, bool is_increase);
-
-/* PE 2.0 */
 extern int charger_dev_send_ta20_current_pattern(
 	struct charger_device *charger_dev, u32 uV);
-extern int charger_dev_set_ta20_reset(
+extern int charger_dev_reset_ta(
 	struct charger_device *charger_dev);
 extern int charger_dev_set_pe20_efficiency_table(
 	struct charger_device *charger_dev);
