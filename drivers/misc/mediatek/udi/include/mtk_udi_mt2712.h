@@ -11,18 +11,19 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __MTK_UDI_MT2712__
-#define __MTK_UDI_MT2712__
+#ifndef _MTK_UDI_MT2712_
+#define _MTK_UDI_MT2712_
 
 #include <linux/kernel.h>
 
 /* UDI pin mux ADDR */
-/* 1. Write 0x100055C0 = 0x00002400 to switch TCK, TDI pins */
-/* 2. Write 0x100055D0 = 0x00000092 to switch TMS, TDO, NTRST pins */
+/* 1. Write 0x100055C0 = 0x00002400 */
+/* 2. Write 0x100055D0 = 0x00000092 */
 
 #ifdef CONFIG_OF
 #define DEVICE_GPIO "mediatek,mt2712-pctl-a-syscfg"
-static void __iomem  *udipin_base;         /* 0x10005000 0x1000, UDI pinmux reg */
+/* 0x10005000 0x1000, UDI pinmux reg */
+static void __iomem  *udipin_base;
 #endif
 
 #ifdef __KERNEL__
@@ -32,10 +33,10 @@ static void __iomem  *udipin_base;         /* 0x10005000 0x1000, UDI pinmux reg 
 #endif
 
 /* 0x10005000 0x1000, UDI pinmux reg */
-#define UDIPIN_UDI_MUX1			(UDIPIN_BASE+0x5C0)
-#define UDIPIN_UDI_MUX1_VALUE		(0x00002400)
-#define UDIPIN_UDI_MUX2			(UDIPIN_BASE+0x5D0)
-#define UDIPIN_UDI_MUX2_VALUE		(0x00000092)
+#define UDIPIN_UDI_MUX1			(UDIPIN_BASE + 0x5C0)
+#define UDIPIN_UDI_MUX1_VALUE	(0x00002400)
+#define UDIPIN_UDI_MUX2			(UDIPIN_BASE + 0x5D0)
+#define UDIPIN_UDI_MUX2_VALUE	(0x00000092)
 
-#endif /* __MTK_UDI_MT2712__ */
+#endif /* _MTK_UDI_MT2712_ */
 
