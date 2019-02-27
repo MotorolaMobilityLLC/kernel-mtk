@@ -508,10 +508,50 @@ static long cmdq_driver_process_command_request(
 	return 0;
 }
 
+static s32 cmdq_driver_copy_handle_prop_from_user(void *from, u32 size,
+	void **to)
+{
+	void *task_prop = NULL;
+
+	/* considering backward compatible,
+	 * we won't return error when argument not available
+	 */
+	if (from && size && to) {
+		task_prop = kzalloc(size, GFP_KERNEL);
+		if (!task_prop) {
+			CMDQ_ERR("allocate task_prop failed\n");
+			return -ENOMEM;
+		}
+
+		if (copy_from_user(task_prop, from, size)) {
+			CMDQ_ERR(
+				"cannot copy task property from user, size=%d\n",
+				size);
+			kfree(task_prop);
+			return -EFAULT;
+		}
+
+		*to = task_prop;
+	}
+
+	return 0;
+}
+
+static void cmdq_release_handle_property(void **prop_addr, u32 *prop_size)
+{
+	if (!prop_addr || !prop_size)
+		return;
+
+	kfree(*prop_addr);
+	*prop_addr = NULL;
+	*prop_size = 0;
+}
+
 static s32 cmdq_driver_ioctl_exec_command(struct file *pf, unsigned long param)
 {
 	struct cmdqCommandStruct command;
 	struct task_private desc_private = {0};
+	s32 status;
 
 	if (copy_from_user(&command, (void *)param,
 		sizeof(struct cmdqCommandStruct)))
@@ -528,11 +568,24 @@ static s32 cmdq_driver_ioctl_exec_command(struct file *pf, unsigned long param)
 		return -EINVAL;
 	}
 
+	status = cmdq_driver_copy_handle_prop_from_user(
+		(void *)CMDQ_U32_PTR(command.prop_addr), command.prop_size,
+		(void *)CMDQ_U32_PTR(&command.prop_addr));
+	if (status < 0) {
+		CMDQ_ERR("copy prop_addr failed, err=%d\n", status);
+		return status;
+	}
+
 	/* insert private_data for resource reclaim */
 	desc_private.node_private_data = pf->private_data;
 	command.privateData = (cmdqU32Ptr_t)(unsigned long)&desc_private;
 
-	if (cmdq_driver_process_command_request(&command))
+	status = cmdq_driver_process_command_request(&command);
+
+	cmdq_release_handle_property(
+		(void *)CMDQ_U32_PTR(&command.prop_addr), &command.prop_size);
+
+	if (status < 0)
 		return -EFAULT;
 
 	return 0;
@@ -601,7 +654,22 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 	if (status != 0)
 		return status;
 
+	status = cmdq_driver_copy_handle_prop_from_user(
+			(void *)CMDQ_U32_PTR(job.command.prop_addr),
+			job.command.prop_size,
+			(void *)CMDQ_U32_PTR(&job.command.prop_addr));
+
+	if (status < 0) {
+		CMDQ_ERR("copy prop_addr failed, err=status\n");
+		return status;
+	}
+
 	status = cmdq_mdp_flush_async(&job.command, true, &handle);
+
+	cmdq_release_handle_property(
+		(void *)CMDQ_U32_PTR(&job.command.prop_addr),
+		&job.command.prop_size);
+
 	if (status < 0) {
 		CMDQ_ERR(
 			"CMDQ_IOCTL_ASYNC_JOB_EXEC flush task fail status:%d\n",
@@ -611,6 +679,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 				cmdq_mdp_unlock_thread(handle);
 			cmdq_task_destroy(handle);
 		}
+
 		return status;
 	}
 
@@ -1147,6 +1216,11 @@ static int __init cmdq_init(void)
 	/* Register VENC callback */
 	cmdqCoreRegisterCB(CMDQ_GROUP_VENC, NULL, mdp_func->vEncDumpInfo,
 		NULL, NULL);
+
+	/* Register PMQoS */
+	cmdq_core_register_task_cycle_cb(CMDQ_GROUP_MDP,
+			cmdq_mdp_get_func()->beginTask,
+			cmdq_mdp_get_func()->endTask);
 
 	status = platform_driver_register(&gCmdqDriver);
 	if (status != 0) {
