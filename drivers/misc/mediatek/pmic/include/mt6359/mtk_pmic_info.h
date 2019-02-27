@@ -64,6 +64,8 @@ extern unsigned int gPMICREGDbgLvl;
 } while (0)
 
 /* MT6359 Export API */
+extern int pmic_scp_ctrl_enable(bool vcore_en, bool vsram_en,
+				bool is_pmrc_mode);
 extern unsigned int pmic_scp_set_vcore(unsigned int voltage);
 extern unsigned int pmic_scp_set_vsram_vcore(unsigned int voltage);
 extern unsigned int pmic_scp_set_vsram_vcore_sleep(unsigned int voltage);
