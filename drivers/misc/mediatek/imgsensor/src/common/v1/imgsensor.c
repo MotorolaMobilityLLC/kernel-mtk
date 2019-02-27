@@ -1661,7 +1661,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		    (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
 		kal_uint32 *pReg = NULL;
 
-		if (u4RegLen > PDAF_DATA_SIZE) {
+		if (sizeof(kal_uint8) * u4RegLen > PDAF_DATA_SIZE) {
 			kfree(pFeaturePara);
 			pr_debug("check: u4RegLen > PDAF_DATA_SIZE\n");
 			return -EINVAL;
@@ -1678,7 +1678,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		if (copy_from_user(
 		    (void *)pReg,
 		    (void *)usr_ptr_Reg,
-		    sizeof(kal_uint8)*u4RegLen)) {
+		    sizeof(kal_uint8) * u4RegLen)) {
 			pr_err("[CAMERA_HW]ERROR: copy from user fail\n");
 		}
 
@@ -1691,7 +1691,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		if (copy_to_user(
 		    (void __user *)usr_ptr_Reg,
 		    (void *)pReg,
-		    sizeof(kal_uint8)*u4RegLen)) {
+		    sizeof(kal_uint8) * u4RegLen)) {
 			pr_debug("[CAMERA_HW]ERROR: copy_to_user fail\n");
 		}
 		kfree(pReg);

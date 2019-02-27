@@ -61,10 +61,12 @@ static void imgsensor_oc_handler1(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.pid != -1)
-		force_sig(SIGTERM,
+	if (reg_instance.pid != -1 &&
+		pid_task(find_get_pid(reg_instance.pid), PIDTYPE_PID) != NULL)
+		force_sig(SIGKILL,
 				pid_task(find_get_pid(reg_instance.pid),
 						PIDTYPE_PID));
+
 }
 static void imgsensor_oc_handler2(void)
 {
@@ -73,7 +75,8 @@ static void imgsensor_oc_handler2(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.pid != -1)
+	if (reg_instance.pid != -1 &&
+		pid_task(find_get_pid(reg_instance.pid), PIDTYPE_PID) != NULL)
 		force_sig(SIGKILL,
 				pid_task(find_get_pid(reg_instance.pid),
 						PIDTYPE_PID));
@@ -85,10 +88,12 @@ static void imgsensor_oc_handler3(void)
 		gimgsensor.status.oc);
 	gimgsensor.status.oc = 1;
 	aee_kernel_warning("Imgsensor OC", "Over current");
-	if (reg_instance.pid != -1)
+	if (reg_instance.pid != -1 &&
+		pid_task(find_get_pid(reg_instance.pid), PIDTYPE_PID) != NULL)
 		force_sig(SIGKILL,
 				pid_task(find_get_pid(reg_instance.pid),
 						PIDTYPE_PID));
+
 }
 
 
