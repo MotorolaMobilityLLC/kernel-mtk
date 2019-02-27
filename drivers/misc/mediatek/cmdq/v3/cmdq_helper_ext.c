@@ -3612,13 +3612,19 @@ void cmdq_core_release_thread(s32 scenario, s32 thread)
 	}
 
 	mutex_lock(&cmdq_thread_mutex);
+	if (!cmdq_ctx.thread[thread].acquire)
+		CMDQ_ERR("counter fatal error thread:%d scenario:%d\n",
+			thread, scenario);
 	cmdq_ctx.thread[thread].acquire--;
-	if (scenario != cmdq_ctx.thread[thread].scenario)
+	if (scenario != cmdq_ctx.thread[thread].scenario) {
 		CMDQ_ERR(
-			"use diff scenario to release thread:%d to %d acquire:%u thread:%d\n",
+			"use diff scenario to release thread:%d to %d acquire:%d thread:%d\n",
 			cmdq_ctx.thread[thread].scenario,
+			scenario,
 			cmdq_ctx.thread[thread].acquire,
-			scenario, thread);
+			thread);
+		dump_stack();
+	}
 	if (!cmdq_ctx.thread[thread].acquire)
 		CMDQ_MSG("thread:%d released\n", thread);
 	mutex_unlock(&cmdq_thread_mutex);
