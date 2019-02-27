@@ -4231,7 +4231,8 @@ static signed int ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
 		}
 		/* pData++; */
 		/*  */
-		if (((regBase + reg.Addr) < (regBase + PAGE_SIZE))) {
+		if (((regBase + reg.Addr) < (regBase + PAGE_SIZE))
+			&& ((reg.Addr & 0x3) == 0)) {
 			reg.Val = ISP_RD32(regBase + reg.Addr);
 		} else {
 			pr_err("Wrong address(0x%lx)\n",
@@ -4338,7 +4339,8 @@ static signed int ISP_WriteRegToHw(
 				(unsigned long)(pReg[i].Addr),
 				(unsigned int)(pReg[i].Val));
 
-		if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE)))
+		if (((regBase + pReg[i].Addr) < (regBase + PAGE_SIZE))
+			&& ((pReg[i].Addr & 0x3) == 0))
 			ISP_WR32(regBase + pReg[i].Addr, pReg[i].Val);
 		else
 			pr_notice("wrong address(0x%lx)\n",
