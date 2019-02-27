@@ -39,7 +39,5 @@ extern void sched_get_percpu_load2(int cpu, bool reset,
 
 __attribute__((weak))
 int dvfsrc_get_bw(int type) {return 0; };
-__attribute__((weak))
-unsigned int get_cur_ddr_opp(void) {return 0; };
 
 #endif	/* __MTK_CM_MGR_H__ */
