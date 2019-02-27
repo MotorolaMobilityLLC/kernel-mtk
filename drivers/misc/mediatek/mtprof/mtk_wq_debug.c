@@ -75,7 +75,7 @@ static bool work_info_equal(struct work_info *a, struct work_info *b)
 
 static struct work_info *find_active_work(struct work_struct *work)
 {
-	struct work_info *wi;
+	struct work_info *wi = NULL;
 	struct hlist_node *tmp;
 	struct work_info target = {
 		.work	= (unsigned long)work,
@@ -84,8 +84,10 @@ static struct work_info *find_active_work(struct work_struct *work)
 
 	hash_for_each_possible_safe(active_works, wi, tmp,
 				    hash, work_hash(&target)) {
-		if (work_info_equal(wi, &target))
-			return wi;
+		if (wi) {
+			if (work_info_equal(wi, &target))
+				return wi;
+		}
 	}
 	return NULL;
 }
@@ -98,8 +100,13 @@ static void probe_execute_work(void *ignore, struct work_struct *work)
 
 static void probe_execute_end(void *ignore, struct work_struct *work)
 {
-	pr_debug("execute end work=%p func=%pf\n",
-		 (void *)work, (void *)work->func);
+	struct work_info *work_info = NULL;
+
+	work_info = find_active_work(work);
+	if (work_info) {
+		pr_debug("execute end work=%p func=%pf\n",
+			 (void *)work, (void *)work->func);
+	}
 }
 
 static void probe_activate_work(void *ignore, struct work_struct *work)
