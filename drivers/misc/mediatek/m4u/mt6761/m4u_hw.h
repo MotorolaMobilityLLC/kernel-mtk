@@ -36,7 +36,7 @@
 #define MAU_NR_PER_M4U_SLAVE    1
 
 /* smi */
-#define SMI_LARB_NR     4
+#define SMI_LARB_NR     3
 
 /* prog pfh dist related */
 #define PROG_PFH_DIST    2
