@@ -14,7 +14,7 @@
 #include <linux/gfp.h>
 #include <linux/types.h>
 #include <linux/workqueue.h>
-
+#include <asm/memory.h>
 
 /*
  * Flags to pass to kmem_cache_create().
@@ -186,7 +186,11 @@ static inline const char *__check_heap_object(const void *ptr,
  * aligned buffers.
  */
 #ifndef ARCH_SLAB_MINALIGN
+#if defined(CONFIG_KASAN) && defined(CONFIG_KASAN_ENHANCEMENT)
+#define ARCH_SLAB_MINALIGN (1 << KASAN_SHADOW_SCALE_SHIFT)
+#else
 #define ARCH_SLAB_MINALIGN __alignof__(unsigned long long)
+#endif
 #endif
 
 /*
