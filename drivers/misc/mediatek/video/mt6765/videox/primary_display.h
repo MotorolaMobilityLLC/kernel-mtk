@@ -260,6 +260,7 @@ struct display_primary_path_context {
 	cmdqBackupSlotHandle subtractor_when_free;
 	cmdqBackupSlotHandle rdma_buff_info;
 	cmdqBackupSlotHandle ovl_status_info;
+	cmdqBackupSlotHandle ovl_dummy_info;
 	cmdqBackupSlotHandle ovl_config_time;
 	cmdqBackupSlotHandle dither_status_info;
 	cmdqBackupSlotHandle dsi_vfp_line;
