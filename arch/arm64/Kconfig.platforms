@@ -236,6 +236,7 @@ config MACH_MT6779
 	select MTK_BOUNCING_CHECK if MTK_AEE_FEATURE
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select DEBUG_TIMEKEEPING
+	select MTK_DEVMPU
 	help
 	  This enables support for MediaTek - MT6779
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
@@ -291,6 +292,7 @@ config MACH_MT3967
 	select MTK_SYSTRACKER_V2
 	select MTK_PID_MAP
 	select DEBUG_TIMEKEEPING
+	select MTK_DEVMPU
 	help
 	  This enables support for MediaTek - MT3967
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
