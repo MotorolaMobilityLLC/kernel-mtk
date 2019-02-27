@@ -123,7 +123,11 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	port_info.eModuleID = buffer_info->module_id;
 	port_info.cache_coherent = buffer_info->coherent;
 	port_info.security = buffer_info->security;
+#if defined(CONFIG_MTK_M4U)
 	port_info.BufSize = buffer->size;
+#else
+	port_info.bufsize = buffer->size;
+#endif
 	port_info.flags = 0;
 
 	/*Allocate MVA */

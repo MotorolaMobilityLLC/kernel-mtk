@@ -16,7 +16,6 @@
 
 #include <linux/dma-mapping.h>
 //#include "mt-plat/mtk_gpio.h"
-#include "m4u.h"
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
 #include "mt-plat/sync_write.h"

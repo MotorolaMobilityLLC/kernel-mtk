@@ -25,8 +25,10 @@
 #include <linux/slab.h>
 #include <linux/math64.h>
 #include "disp_drv_platform.h"	/* must be at the top-most */
+#if defined(MTK_FB_ION_SUPPORT)
 #include "ion_drv.h"
 #include "mtk_ion.h"
+#endif
 #include "mtk_boot_common.h"
 #ifdef MTK_FB_SPM_SUPPORT
 #include "spm/mtk_idle.h"
@@ -35,7 +37,6 @@
 #include "mt-plat/mtk_smi.h"
 #include "mtk_smi.h"
 #endif
-#include "m4u.h"
 
 #include "debug.h"
 #include "disp_drv_log.h"

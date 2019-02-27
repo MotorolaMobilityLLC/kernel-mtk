@@ -25,8 +25,12 @@
 #include "ddp_hal.h"
 #include "disp_helper.h"
 #include "ddp_path.h"
-
+#ifdef CONFIG_MTK_IOMMU_V2
+#include <soc/mediatek/smi.h>
+#include "ddp_drv.h"
+#else
 #include "m4u.h"
+#endif
 
 /*#pragma GCC optimize("O0")*/
 
@@ -789,6 +793,11 @@ void ddp_check_path(enum DDP_SCENARIO_ENUM scenario)
 
 int ddp_path_top_clock_on(void)
 {
+#ifdef CONFIG_MTK_IOMMU_V2
+	struct disp_iommu_device *iommu_dev;
+	int larb_idx = 0;
+#endif
+
 	DISPINFO("ddp path top clock on\n");
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
@@ -800,7 +809,13 @@ int ddp_path_top_clock_on(void)
 	ddp_clk_prepare_enable(CLK_GALS_COMM1);
 	ddp_clk_prepare_enable(CLK_SMI_LARB0);
 	ddp_clk_prepare_enable(CLK_MM_26M);
-
+#ifdef CONFIG_MTK_IOMMU_V2
+	iommu_dev = disp_get_iommu_dev();
+	if (!iommu_dev)
+		DISPCHECK("ddp_path_top_clock_on iommu is null\n");
+	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
+		mtk_smi_larb_get(&iommu_dev->larb_pdev[larb_idx]->dev);
+#endif
 	/* enable_clock(MT_CG_DISP0_MUTEX_32K, "DDP_MUTEX"); */
 	DISPINFO("ddp CG0:%x, CG1:%x\n",
 		DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
@@ -811,6 +826,11 @@ int ddp_path_top_clock_on(void)
 
 int ddp_path_top_clock_off(void)
 {
+#ifdef CONFIG_MTK_IOMMU_V2
+	struct disp_iommu_device *iommu_dev;
+	int larb_idx = 0;
+#endif
+
 	ddp_clk_disable_unprepare(CLK_MM_26M);
 	ddp_clk_disable_unprepare(CLK_SMI_LARB0);
 	ddp_clk_disable_unprepare(CLK_GALS_COMM1);
@@ -818,6 +838,13 @@ int ddp_path_top_clock_off(void)
 	ddp_clk_disable_unprepare(CLK_SMI_COMMON);
 	/*ddp_clk_disable_unprepare(TOP_26M);*/
 	ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
+
+#ifdef CONFIG_MTK_IOMMU_V2
+	iommu_dev = disp_get_iommu_dev();
+
+	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
+		mtk_smi_larb_put(&iommu_dev->larb_pdev[larb_idx]->dev);
+#endif
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/

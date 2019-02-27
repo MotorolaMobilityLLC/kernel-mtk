@@ -43,6 +43,7 @@ struct mtk_iommu_client_priv {
 enum mtk_iommu_match_type {
 	m4u_mt8173,
 	m4u_mt2712,
+	iommu_mt6xxx_v0,
 };
 
 struct mtk_iommu_match_data {

@@ -43,7 +43,6 @@
 /* ION */
 /* #include <linux/ion.h> */
 /* #include <linux/ion_drv.h> */
-/* #include "m4u.h" */
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
 #include <linux/of.h>
@@ -57,7 +56,6 @@
 /* #include "mach/mt_irq.h" */
 #include "mt-plat/sync_write.h"
 //#include "mt-plat/mtk_smi.h"
-#include "m4u.h"
 
 #include "ddp_drv.h"
 #include "ddp_reg.h"
@@ -73,6 +71,7 @@
 #include "ddp_dpi_reg.h"
 #endif
 #include "disp_helper.h"
+#include <linux/of_platform.h>
 
 
 #define DISP_DEVNAME "DISPSYS"
@@ -523,6 +522,45 @@ static void disp_clk_init(struct platform_device *pdev)
 	ddp_clk_force_on(1);
 #endif
 }
+
+#ifdef CONFIG_MTK_IOMMU_V2
+static struct disp_iommu_device disp_iommu;
+
+struct disp_iommu_device *disp_get_iommu_dev(void)
+{
+	struct device_node *larb_node[DISP_LARB_COUNT];
+	struct platform_device *larb_pdev[DISP_LARB_COUNT];
+	int larb_idx = 0;
+
+	if (disp_iommu.inited)
+		return &disp_iommu;
+
+	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++) {
+
+		larb_node[larb_idx] = of_parse_phandle(mydev.dev.of_node,
+						"mediatek,larb", larb_idx);
+		if (!larb_node[larb_idx]) {
+			DDPERR("disp driver get larb fail\n");
+			return NULL;
+		}
+		larb_pdev[larb_idx] =
+			of_find_device_by_node(larb_node[larb_idx]);
+		of_node_put(larb_node[larb_idx]);
+		if ((!larb_pdev[larb_idx]) ||
+		    (!larb_pdev[larb_idx]->dev.driver)) {
+			if (!larb_pdev[larb_idx])
+				DDPERR("earlier than SMI, larb_pdev null\n");
+			else
+				DDPERR("earlier than SMI, larb drv null\n");
+		}
+
+		disp_iommu.larb_pdev[larb_idx] = larb_pdev[larb_idx];
+	}
+
+	disp_iommu.inited = 1;
+	return &disp_iommu;
+}
+#endif
 
 static int disp_probe(struct platform_device *pdev)
 {

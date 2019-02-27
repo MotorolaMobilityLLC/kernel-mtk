@@ -45,8 +45,9 @@
 #include <linux/mutex.h>
 #include <linux/compat.h>
 
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
-
+#endif
 #include "mtk_sync.h"
 #include "debug.h"
 #include "disp_drv_log.h"
@@ -74,7 +75,6 @@
 #include "extd_multi_control.h"
 #include "external_display.h"
 #include "extd_platform.h"
-#include "m4u.h"
 #include "layering_rule.h"
 #include "compat_mtk_disp_mgr.h"
 #include "disp_partial.h"
