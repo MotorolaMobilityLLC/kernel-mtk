@@ -219,6 +219,9 @@ enum SPM_WAKE_SRC_LIST {
 
 #if 1
 extern const char *wakesrc_str[32];
+
+/* define WAKE_SRC_CONN2AP for conn use */
+#define WAKE_SRC_CONN2AP WAKE_SRC_R12_CONN2AP_SPM_WAKEUP_B
 #else
 static const char *wakesrc_str[32] = {
 	[0] = " R12_PCM_TIMER",
