@@ -1200,10 +1200,10 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 		mmc_wait_cmdq_empty(card->host);
 		mmc_get_card(card);
 		err = mmc_blk_cmdq_switch(card, 0);
-		mmc_put_card(card);
 		if (err) {
 			pr_notice("MMC ioctl: %s disable CQ err %d\n",
 				mmc_hostname(card->host), err);
+			mmc_put_card(card);
 			goto cmd_done;
 		}
 	}
@@ -1227,7 +1227,6 @@ static int mmc_blk_ioctl_multi_cmd(struct block_device *bdev,
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	if (cmdq_en) {
 		main_md = dev_get_drvdata(&card->dev);
-		mmc_get_card(card);
 		if  (main_md->part_curr <= PART_CMDQ_EN)
 			if (mmc_blk_cmdq_switch(card, 1))
 				pr_notice("MMC ioctl: %s re-enable CQ err %d\n",
