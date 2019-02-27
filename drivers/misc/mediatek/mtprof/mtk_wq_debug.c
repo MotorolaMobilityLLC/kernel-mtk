@@ -315,49 +315,53 @@ mt_wq_log_write(struct file *filp, const char *ubuf, size_t cnt, loff_t *data)
 
 void wq_debug_dump(void)
 {
-	struct work_info *wi;
-	struct hlist_node *tmp;
+	struct work_info *wi = NULL;
+	struct hlist_node *tmp = NULL;
 	unsigned long long ts;
 	unsigned long rem_nsec;
 	int i;
 
 	pr_debug("wq_debug: %d\n", wq_debug);
 	hash_for_each_safe(active_works, i, tmp, wi, hash) {
-		ts = wi->ts;
-		rem_nsec = do_div(ts, NSEC_PER_SEC);
-		pr_debug("wq:%lx work:%lx func:%pf cpu:%u state:%s ts:%ld.%06ld\n",
-			   (unsigned long)wi->pwq,
-			   (unsigned long)wi->work,
-			   (void *)wi->func,
-			   (unsigned int)wi->cpu,
-			   wi->state?"exec":"queue",
-			   (unsigned long)ts, rem_nsec / NSEC_PER_USEC);
+		if (wi) {
+			ts = wi->ts;
+			rem_nsec = do_div(ts, NSEC_PER_SEC);
+			pr_debug("wq:%lx work:%lx func:%pf cpu:%u state:%s ts:%lu.%06lu\n",
+				(unsigned long)wi->pwq,
+				(unsigned long)wi->work,
+				(void *)wi->func,
+				(unsigned int)wi->cpu,
+				wi->state?"exec":"queue",
+				(unsigned long)ts, rem_nsec / NSEC_PER_USEC);
+		}
 	}
 }
 
 MT_DEBUG_ENTRY(wq_debug);
 static int mt_wq_debug_show(struct seq_file *m, void *v)
 {
-	struct work_info *wi;
-	struct hlist_node *tmp;
+	struct work_info *wi = NULL;
+	struct hlist_node *tmp = NULL;
 	unsigned long long now, ts;
 	unsigned long rem_nsec;
 	int i;
 
 	ts = now = sched_clock();
 	rem_nsec = do_div(ts, NSEC_PER_SEC);
-	SEQ_printf(m, "wq_debug: %d, now: %ld.%06ld\n",
+	SEQ_printf(m, "wq_debug: %d, now: %ld.%06lu\n",
 		   wq_debug, (unsigned long)ts, rem_nsec / NSEC_PER_USEC);
 	hash_for_each_safe(active_works, i, tmp, wi, hash) {
-		ts = wi->ts;
-		rem_nsec = do_div(ts, NSEC_PER_SEC);
-		SEQ_printf(m, "wq:%lx work:%lx func:%pf",
-			   (unsigned long)wi->pwq,
-			   (unsigned long)wi->work,
-			   (void *)wi->func);
-		SEQ_printf(m, " state:%s ts:%ld.%06ld\n",
-			   wi->state?"exec":"queued",
-			   (unsigned long)ts, rem_nsec / NSEC_PER_USEC);
+		if (wi) {
+			ts = wi->ts;
+			rem_nsec = do_div(ts, NSEC_PER_SEC);
+			SEQ_printf(m, "wq:%lx work:%lx func:%pf",
+				(unsigned long)wi->pwq,
+				(unsigned long)wi->work,
+				(void *)wi->func);
+			SEQ_printf(m, " state:%s ts:%ld.%06lu\n",
+				wi->state?"exec":"queued",
+				(unsigned long)ts, rem_nsec / NSEC_PER_USEC);
+		}
 	}
 	return 0;
 }
