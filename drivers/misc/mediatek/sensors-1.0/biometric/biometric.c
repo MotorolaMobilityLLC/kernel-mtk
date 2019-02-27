@@ -49,7 +49,7 @@ static int handle_to_index(int handle)
 		break;
 	default:
 		index = -1;
-		pr_err("handle_to_index invalid handle:%d, index:%d\n",
+		pr_err("%s invalid handle:%d, index:%d\n", __func__,
 			handle, index);
 		return index;
 	}
@@ -62,7 +62,7 @@ static struct biometric_context *biometric_context_alloc_object(void)
 	struct biometric_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 	int index;
 
-	pr_debug("biometric_context_alloc_object++++\n");
+	pr_debug("%s++++\n", __func__);
 	if (!obj) {
 		pr_err("Alloc biometric object error!\n");
 		return NULL;
@@ -76,7 +76,7 @@ static struct biometric_context *biometric_context_alloc_object(void)
 	}
 
 	mutex_init(&obj->biometric_op_mutex);
-	pr_debug("biometric_context_alloc_object----\n");
+	pr_debug("%s----\n", __func__);
 	return obj;
 }
 
@@ -228,7 +228,7 @@ static ssize_t biometric_store_active(struct device *dev,
 
 	err = sscanf(buf, "%d : %d", &handle, &en);
 	if (err < 0) {
-		pr_debug("biometric_store_active param error: err = %d\n",
+		pr_debug("%s param error: err = %d\n", __func__,
 			err);
 		return err;
 	}
@@ -237,7 +237,7 @@ static ssize_t biometric_store_active(struct device *dev,
 		pr_err("[%s] invalid index\n", __func__);
 		return -1;
 	}
-	pr_debug("biometric_store_active handle=%d, en=%d\n", handle, en);
+	pr_debug("%s handle=%d, en=%d\n", __func__, handle, en);
 
 	mutex_lock(&biometric_context_obj->biometric_op_mutex);
 	if (en == 1)
@@ -245,12 +245,12 @@ static ssize_t biometric_store_active(struct device *dev,
 	else if (en == 0)
 		cxt->ctl_context[index].enable = 0;
 	else {
-		pr_err(" biometric_store_active error !!\n");
+		pr_err("%s error !!\n", __func__);
 		err = -1;
 		goto err_out;
 	}
 	err = biometric_enable_and_batch(index);
-	pr_debug("biometric_store_active done\n");
+	pr_debug("%s done\n", __func__);
 err_out:
 	mutex_unlock(&biometric_context_obj->biometric_op_mutex);
 	return err;
@@ -286,7 +286,7 @@ static ssize_t biometric_store_batch(struct device *dev,
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle,
 		&flag, &samplingPeriodNs, &maxBatchReportLatencyNs);
 	if (err != 4) {
-		pr_err("biometric_store_batch param error: err = %d\n", err);
+		pr_err("%s param error: err = %d\n", __func__, err);
 		return err;
 	}
 	index = handle_to_index(handle);
@@ -327,9 +327,9 @@ static ssize_t biometric_store_flush(struct device *dev,
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		pr_err("biometric_store_flush param error: err = %d\n", err);
+		pr_err("%s param error: err = %d\n", __func__, err);
 
-	pr_debug("biometric_store_flush param: handle %d\n", handle);
+	pr_debug("%s param: handle %d\n", __func__, handle);
 
 	mutex_lock(&biometric_context_obj->biometric_op_mutex);
 	cxt = biometric_context_obj;
@@ -369,13 +369,13 @@ static ssize_t biometric_show_devnum(struct device *dev,
 
 static int biometric_remove(struct platform_device *pdev)
 {
-	pr_debug("biometric_remove\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int biometric_probe(struct platform_device *pdev)
 {
-	pr_debug("biometric_probe\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -401,7 +401,7 @@ static int biometric_real_driver_init(void)
 	int i = 0;
 	int err = -1;
 
-	pr_debug(" biometric_real_driver_init +\n");
+	pr_debug("%s +\n", __func__);
 
 	for (i = 0; i < max_biometric_support; i++) {
 		if (biometric_init_list[i] != NULL) {
@@ -560,7 +560,7 @@ static int bio_probe(void)
 {
 	int err;
 
-	pr_debug("+++++++++++++bio_probe!!\n");
+	pr_debug("+++++++++++++%s!!\n", __func__);
 
 	biometric_context_obj = biometric_context_alloc_object();
 	if (!biometric_context_obj) {
@@ -604,13 +604,13 @@ static int bio_probe(void)
 		KOBJ_ADD);
 
 
-	pr_debug("----bio_probe OK !!\n");
+	pr_debug("----%s OK !!\n", __func__);
 	return 0;
 
 real_driver_init_fail:
 	kfree(biometric_context_obj);
 exit_alloc_data_failed:
-	pr_debug("----bio_probe fail !!!\n");
+	pr_debug("----%s fail !!!\n", __func__);
 	return err;
 }
 
