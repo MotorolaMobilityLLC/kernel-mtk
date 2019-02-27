@@ -73,8 +73,13 @@ struct energy_env {
 		 * other tasks on this CPU,  as well as the task's own
 		 * utilization.
 		 */
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 		int	cap_idx;
 		int	cap;
+#else
+		int     cap_idx[3];             /* [FIXME] cluster may > 3 */
+		int     cap[3];
+#endif
 
 		/* Estimated system energy */
 		unsigned int energy;
@@ -94,9 +99,6 @@ struct energy_env {
 	struct sched_group	*sg_top;
 	struct sched_group	*sg_cap;
 	struct sched_group	*sg;
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	int	opp_idx[EAS_CPU_CNT][3];	/* [FIXME] cluster may > 3 */
-#endif
 
 };
 
