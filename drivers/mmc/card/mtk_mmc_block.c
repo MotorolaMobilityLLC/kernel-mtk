@@ -435,13 +435,10 @@ static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx,
 	__u64 start, __u64 end)
 {
 	if (start <= ctx->period_start_t) {
-
 		ctx->period_end_since_start_t = end;
-
-		if (ctx->period_start_in_window_t)
-			ctx->period_start_in_window_t =
-				ctx->period_end_in_window_t = 0;
-
+		ctx->period_start_in_window_t =
+		ctx->period_end_in_window_t =
+		ctx->period_busy = 0;
 	} else {
 		if (ctx->period_end_since_start_t) {
 			if (start < ctx->period_end_since_start_t)
