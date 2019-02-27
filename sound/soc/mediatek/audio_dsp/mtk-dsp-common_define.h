@@ -65,4 +65,9 @@ enum {
 	MEMORY_SYSTEM_TCM,
 };
 
+enum{
+	BUFFER_TYPE_SHARE_MEM,
+	BUFFER_TYPE_HW_MEM
+};
+
 #endif

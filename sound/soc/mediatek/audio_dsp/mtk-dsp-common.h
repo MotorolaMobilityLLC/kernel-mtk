@@ -1,9 +1,27 @@
-/* SPDX-License-Identifier: GPL-2.0 */
 /*
- * mtk-base-dsp.h --  Mediatek ADSP dsp base
+
+ * Copyright (C) 2018 MediaTek Inc.
+
  *
- * Copyright (c) 2018 MediaTek Inc.
+
+ * This program is free software; you can redistribute it and/or modify
+
+ * it under the terms of the GNU General Public License version 2 as
+
+ * published by the Free Software Foundation.
+
+ *
+
+ * This program is distributed in the hope that it will be useful,
+
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+
  * Author: Chipeng <Chipeng.chang@mediatek.com>
+
  */
 
 #ifndef AUDIO_DSP_COMMON_H
@@ -45,6 +63,7 @@ struct snd_dma_buffer;
 struct snd_pcm_substream;
 struct snd_soc_dai;
 struct mtk_base_afe;
+struct audio_hw_buffer;
 struct platform_device;
 
 int mtk_scp_ipi_send(int task_scene, int data_type, int ack_type,
@@ -86,11 +105,12 @@ int mtk_adsp_genpool_allocate_memory(unsigned char **vaddr,
 				     int id);
 int mtk_adsp_genpool_free_memory(unsigned char **vaddr,
 				 size_t *size, int id);
-int afe_get_pcmdir(int dir);
+int afe_get_pcmdir(int dir, struct audio_hw_buffer buf);
 
 int audio_set_dsp_afe(struct mtk_base_afe *afe);
 struct mtk_base_afe *get_afe_base(void);
 
+bool is_adsp_core_ready(void);
 bool is_adsp_feature_registered(void);
 int mtk_dsp_register_feature(int id);
 int mtk_dsp_deregister_feature(int id);

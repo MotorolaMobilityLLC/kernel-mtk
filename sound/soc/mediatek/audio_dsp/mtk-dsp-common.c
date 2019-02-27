@@ -165,15 +165,18 @@ int get_audio_memery_type(struct snd_pcm_substream *substream)
 		return MEMORY_AUDIO_DRAM;
 }
 
-int afe_get_pcmdir(int dir)
+int afe_get_pcmdir(int dir, struct audio_hw_buffer buf)
 {
+	int ret = -1;
+
 	if (dir == SNDRV_PCM_STREAM_CAPTURE)
 		return AUDIO_DSP_TASK_PCM_HWPARAM_UL;
 	else if (dir == SNDRV_PCM_STREAM_PLAYBACK)
 		return AUDIO_DSP_TASK_PCM_HWPARAM_DL;
+	if (buf.hw_buffer == BUFFER_TYPE_SHARE_MEM)
+		return ret;
 
-	pr_warn("%s dir = %d", __func__, dir);
-	return -1;
+	return ret;
 }
 
 /* function warp playback buffer information send to dsp */
@@ -182,17 +185,13 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 		       struct snd_soc_dai *dai,
 		       struct mtk_base_afe *afe)
 {
-	int task_id = 0, ret = 0, pcmdir = 0;
+	int task_id = 0, ret = 0;
 	struct mtk_base_dsp *dsp = (struct mtk_base_dsp *)local_base_dsp;
 	void *ipi_audio_buf; /* dsp <-> audio data struct*/
 	struct mtk_base_dsp_mem *dsp_memif;
 	struct mtk_base_afe_memif *memif = &afe->memif[dai->id];
 
 	task_id = get_taskid_by_afe_daiid(dai->id);
-	pcmdir = afe_get_pcmdir(substream->stream);
-
-	pr_info("%s task_id = %d dai->id = %d pcmdir = %d\n", __func__, task_id,
-		dai->id, pcmdir);
 
 	if (task_id < 0) {
 		pr_debug("%s() not support\n", __func__);
@@ -210,7 +209,8 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 			break;
 		ret = set_audiobuffer_attribute(
 			&dsp_memif->audio_afepcm_buf,
-			substream, params, pcmdir);
+			substream, params, afe_get_pcmdir(substream->stream,
+			dsp_memif->audio_afepcm_buf));
 		if (ret < 0)
 			break;
 		ret = set_audiobuffer_hw(&dsp_memif->audio_afepcm_buf,
@@ -263,7 +263,10 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 				       AUDIO_IPI_MSG_ONLY,
 				       AUDIO_IPI_MSG_NEED_ACK,
 				       AUDIO_DSP_TASK_PCM_HWFREE,
-				       pcmdir, 0, NULL);
+				       afe_get_pcmdir(substream->stream,
+				       dsp_memif->audio_afepcm_buf),
+				       0,
+				       NULL);
 		break;
 	case AUDIO_DSP_TASK_PCM_PREPARE:
 		ret = set_audiobuffer_threshold(
@@ -298,6 +301,15 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 		return -1;
 	}
 	return ret;
+}
+
+bool is_adsp_core_ready(void)
+{
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
+	return is_adsp_ready(ADSP_A_ID);
+#else
+	return false;
+#endif
 }
 
 bool is_adsp_feature_registered(void)

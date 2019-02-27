@@ -1026,10 +1026,6 @@ static int scp_send_msg_to_scp(
 
 			if (retval == 0)
 				break;
-			if (is_adsp_ready(ADSP_A_ID) == 0) {
-				send_fail = true;
-				break;
-			}
 			send_fail = true;
 			msleep(20);
 		}

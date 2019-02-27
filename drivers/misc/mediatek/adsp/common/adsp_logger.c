@@ -96,7 +96,6 @@ static wait_queue_head_t adsp_A_logwait;
 static unsigned int dram_buf_len;
 
 static DEFINE_MUTEX(adsp_logger_mutex);
-static char *adsp_last_logger;
 static unsigned int adsp_log_buf_addr_last[ADSP_CORE_TOTAL];
 static unsigned int adsp_log_start_addr_last[ADSP_CORE_TOTAL];
 static unsigned int adsp_log_end_addr_last[ADSP_CORE_TOTAL];
@@ -329,7 +328,7 @@ static unsigned int adsp_A_log_enable_set(unsigned int enable)
 
 		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
-			pr_err("[ADSP] adsp_A_log_enable_set fail ret=%d\n",
+			pr_err("[ADSP] %s fail ret=%d\n", __func__,
 			       ret);
 			goto error;
 		}
@@ -372,13 +371,12 @@ static unsigned int adsp_A_trax_enable_set(unsigned int enable)
 			pADSP_A_trax_ctl->enable = 0;
 		}
 
-		pr_info("[ADSP] adsp_A_trax_enable_set enable=%d, done=%d\n",
+		pr_info("[ADSP] %s enable=%d, done=%d\n", __func__,
 			pADSP_A_trax_ctl->enable, pADSP_A_trax_ctl->done);
 
 		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
-			pr_err("[ADSP] adsp_A_trax_enable_set fail ret=%d\n",
-			       ret);
+			pr_err("[ADSP] %s fail ret=%d\n", __func__, ret);
 			goto error;
 		}
 	}
@@ -422,8 +420,7 @@ static unsigned int adsp_A_log_wakeup_set(unsigned int enable)
 
 		adsp_deregister_feature(ADSP_LOGGER_FEATURE_ID);
 		if (ret != ADSP_IPI_DONE) {
-			pr_err("[ADSP] adsp_A_log_wakeup_set fail ret=%d\n",
-			       ret);
+			pr_err("[ADSP] %s fail ret=%d\n", __func__, ret);
 			goto error;
 		}
 
@@ -544,8 +541,7 @@ static ssize_t adsp_A_mobile_log_UT_show(struct device *kobj,
 	r_pos = ADSP_A_buf_info->r_pos;
 	w_pos = ADSP_A_buf_info->w_pos;
 
-	pr_debug("adsp_A_mobile_log_UT_show r_pos=%d, w_pos=%d\n",
-			 r_pos, w_pos);
+	pr_debug("%s r_pos=%d, w_pos=%d\n", __func__, r_pos, w_pos);
 
 	if (r_pos == w_pos)
 		goto error;
@@ -561,7 +557,7 @@ static ssize_t adsp_A_mobile_log_UT_show(struct device *kobj,
 	logger_buf = ((char *)ADSP_A_log_ctl) +
 		     ADSP_A_log_ctl->buff_ofs + r_pos;
 
-	pr_debug("adsp_A_mobile_log_UT_show buff_ofs=%d, logger_buf=%p\n",
+	pr_debug("%s buff_ofs=%d, logger_buf=%p\n", __func__,
 		ADSP_A_log_ctl->buff_ofs, logger_buf);
 
 	len = datalen;
@@ -605,8 +601,8 @@ static ssize_t adsp_A_trax_show(struct device *kobj,
 					 struct device_attribute *attr,
 					 char *buf)
 {
-	pr_info("[ADSP] adsp_A_trax_show initiated=%d, done=%d, length=%d\n",
-		pADSP_A_trax_ctl->initiated, pADSP_A_trax_ctl->done,
+	pr_info("[ADSP] %s initiated=%d, done=%d, length=%d\n",
+		__func__, pADSP_A_trax_ctl->initiated, pADSP_A_trax_ctl->done,
 		pADSP_A_trax_ctl->length);
 
 	if (!pADSP_A_trax_ctl->initiated || !pADSP_A_trax_ctl->done)
@@ -680,7 +676,7 @@ static void adsp_A_trax_done_handler(int id, void *data, unsigned int len)
 	/* sync adsp trax length information*/
 	pADSP_A_trax_ctl->length = *((int *)data);
 	pADSP_A_trax_ctl->done = 1;
-	pr_debug("[ADSP] adsp_A_trax_done_handler length=%d\n",
+	pr_debug("[ADSP] %s length=%d\n", __func__,
 		pADSP_A_trax_ctl->length);
 }
 #endif
@@ -705,7 +701,7 @@ static void adsp_logger_notify_ws(struct work_struct *ws)
 
 	adsp_ipi_id = ADSP_IPI_LOGGER_INIT_A;
 
-	pr_debug("[ADSP]adsp_logger_notify_ws id=%u\n", adsp_ipi_id);
+	pr_debug("[ADSP]%s id=%u\n", __func__, adsp_ipi_id);
 	/*
 	 *send ipi to invoke adsp logger
 	 */
@@ -725,7 +721,7 @@ static void adsp_logger_notify_ws(struct work_struct *ws)
 	do {
 		ret = adsp_ipi_send(adsp_ipi_id, (void *)mem_info,
 			sizeof(mem_info), 0, adsp_core_id);
-		pr_debug("[ADSP]adsp_logger_notify_ws ipi ret=%u\n", ret);
+		pr_debug("[ADSP]%s ipi ret=%u\n", __func__, ret);
 		if (ret == ADSP_IPI_DONE)
 			break;
 		retrytimes--;
@@ -751,7 +747,7 @@ static void adsp_trax_init_ws(struct work_struct *ws)
 	unsigned int phys_u32;
 
 	adsp_ipi_id = ADSP_IPI_TRAX_INIT_A;
-	pr_debug("[ADSP]adsp_trax_init_ws id=%u\n", adsp_ipi_id);
+	pr_debug("[ADSP]%s id=%u\n", __func__, adsp_ipi_id);
 	/*
 	 *send ipi to invoke adsp trax
 	 */
@@ -764,7 +760,7 @@ static void adsp_trax_init_ws(struct work_struct *ws)
 	do {
 		ret = adsp_ipi_send(adsp_ipi_id, (void *)&phys_u32,
 			sizeof(phys_u32), 0, adsp_core_id);
-		pr_info("[ADSP]adsp_trax_init_ws ipi ret=%u\n", ret);
+		pr_info("[ADSP]%s ipi ret=%u\n", __func__, ret);
 		if (ret == ADSP_IPI_DONE)
 			break;
 		retrytimes--;
