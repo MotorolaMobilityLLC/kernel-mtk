@@ -18,6 +18,7 @@
 #include <mt-plat/aee.h>
 #endif
 #include "mdee_dumper_v3.h"
+#include "ccci_config.h"
 
 #ifndef DB_OPT_DEFAULT
 #define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
@@ -170,6 +171,28 @@ static void mdee_output_debug_info_to_buf(struct ccci_fsm_ee *mdee,
 			debug_info->dump_fatal.err_code3,
 			debug_info->dump_fatal.offender);
 		kfree(ex_info_temp);
+		break;
+	case MD_EX_CLASS_CUSTOM:
+		/* fatal:  */
+		snprintf(ex_info, EE_BUF_LEN_UMOLY,
+			 "(%s)%s\n[%s] err_code1:0x%08X err_code2:0x%08X err_code3:0x%08X\n%s%s\n%s\nP1:0x%08X\nP2:0x%08X\nP3:0x%08X\n",
+			debug_info->core_name,
+			debug_info->dump_fatal.err_sec, debug_info->name,
+			debug_info->ex_type,
+			debug_info->dump_fatal.error_address,
+			debug_info->dump_fatal.error_pc,
+			debug_info->dump_fatal.offender,
+			debug_info->dump_fatal.ExStr,
+			debug_info->dump_fatal.fatal_fname,
+			debug_info->dump_fatal.err_code1,
+			debug_info->dump_fatal.err_code2,
+			debug_info->dump_fatal.err_code3);
+		CCCI_ERROR_LOG(md_id, FSM,
+			"fatal custom error code 1,2,3 = [0x%08X, 0x%08X, 0x%08X]%s\n",
+			debug_info->dump_fatal.err_code1,
+			debug_info->dump_fatal.err_code2,
+			debug_info->dump_fatal.err_code3,
+			debug_info->dump_fatal.offender);
 		break;
 	default:
 		snprintf(ex_info, EE_BUF_LEN_UMOLY, "%s\n[%s]\n",
@@ -403,7 +426,9 @@ static char *ee_type_str_v3_30s[] = {
 static char *ee_type_str_v3_50s[] = {
 	/*[ASSERT_FAIL_EXCEPTION - 0x50] = */"ASSERT",
 	/*[ASSERT_DUMP_EXTENDED_RECORD - 0x50] = */"ASSERT",
-	/*[ASSERT_FAIL_NATIVE - 0x50] = */"ASSERT"
+	/*[ASSERT_FAIL_NATIVE - 0x50] = */"ASSERT",
+	/*[ASSERT_CUSTOM_ADDR - 0x50] = */"Fatal error(ASSERT_CUSTOM_ADDR)",
+	/*[ASSERT_CUSTOM_MODID - 0x50] = */"Fatal error(ASSERT_CUSTOM_MODID)"
 };
 
 static char *ee_type_str_v3_60s[] = {
@@ -480,7 +505,7 @@ static void md_ee_set_assert_para(EX_ASSERT_V3_T *assert_src,
 }
 
 static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src,
-	DUMP_INFO_FATAL *fata_tar)
+	DUMP_INFO_FATAL *fata_tar, unsigned int ex_type)
 {
 	char temp_str[32] = { 0 };
 	char *fatal_fname_prefix = "MD Offending File:";
@@ -507,6 +532,8 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src,
 	else
 		fata_tar->ExStr = "";
 	/*4. file name support*/
+	if (ex_type == MD_EX_CLASS_CUSTOM)
+		fatal_fname_prefix = "Original Offending File: ";
 	if (fatal_src->is_filename_supported == 0x01) {
 		snprintf(fata_tar->fatal_fname, EX_BRIEF_FATALERR_SIZE,
 			"%s%s", fatal_fname_prefix, fatal_src->filename);
@@ -526,6 +553,8 @@ static void md_ee_set_fatal_para(EX_FATAL_V3_T *fatal_src,
 			ee_err_sec_str[fatal_src->error_section];
 	else
 		fata_tar->err_sec = "";
+	fata_tar->error_address = fatal_src->error_address;
+	fata_tar->error_pc = fatal_src->error_pc;
 
 }
 
@@ -575,8 +604,9 @@ static void mdee_info_prepare_v3(struct ccci_fsm_ee *mdee)
 			&debug_info->dump_assert);
 		break;
 	case MD_EX_CLASS_FATAL:
+	case MD_EX_CLASS_CUSTOM:
 		md_ee_set_fatal_para(&brief_info->info.fatalerr,
-			&debug_info->dump_fatal);
+			&debug_info->dump_fatal, debug_info->type);
 		break;
 	}
 	/* ======== ELM status ========= */
@@ -609,6 +639,62 @@ static void mdee_dumper_v3_set_ee_pkg(struct ccci_fsm_ee *mdee,
 
 	memcpy(dumper->ex_pl_info, data, cpy_len);
 }
+
+static void md_HS1_Fail_dump(int md_id, char *ex_info, unsigned int len)
+{
+	unsigned int reg_value[2] = { 0 };
+	unsigned int ccif_sram[CCCI_EE_SIZE_CCIF_SRAM/sizeof(unsigned int)]
+	= { 0 };
+
+	ccci_md_dump_info(md_id,
+		DUMP_MD_BOOTUP_STATUS, reg_value, 2);
+	ccci_md_dump_info(md_id,
+				DUMP_FLAG_CCIF, ccif_sram, 0);
+
+	CCCI_MEM_LOG_TAG(md_id, FSM,
+		"md_boot_stats0 /1 / bootuptrace:0x%X / 0x%X / 0x%X\n",
+		reg_value[0], reg_value[1], ccif_sram[0]);
+	if ((reg_value[0] == 0) && (ccif_sram[0] == 0)) {
+		snprintf(ex_info, len,
+			"\n[Others] MD_BOOT_UP_FAIL(HS%d - MD poweron failed)\n"
+			"boot_status0: 0x%x\nboot_status1: 0x%x\n"
+			"MD Offender:DVFS\n",
+			0, reg_value[0], reg_value[1]);
+#if MD_GENERATION >= (6295)
+	} else if ((reg_value[0] == 0x5443000C) ||
+				(reg_value[0] == 0) ||
+				(reg_value[0] >= 0x53310000 &&
+				reg_value[0] <= 0x533100FF)) {
+#else
+	} else if ((reg_value[0] == 0x54430007) ||
+				(reg_value[0] == 0) ||
+				(reg_value[0] >= 0x53310000 &&
+				reg_value[0] <= 0x533100FF)) {
+#endif
+		snprintf(ex_info, len,
+			"\n[Others] MD_BOOT_UP_FAIL(HS%d)\n",
+			1);
+		ccci_md_dump_info(md_id,
+			DUMP_FLAG_REG, NULL, 0);
+		msleep(10000);
+		ccci_md_dump_info(md_id,
+			DUMP_FLAG_REG, NULL, 0);
+	}  else {
+	/* ((reg_value[0] >= 0x54430001 &&
+	 * reg_value[0] <= 0x54430006) ||
+	 * (reg_value[0] >= 0x53310100 &&
+	 * reg_value[0] <= 0x5331FFFF))
+	 * or else
+	 */
+		snprintf(ex_info, len,
+			"\n[Others] MD_BOOT_UP_FAIL(HS%d - MD bootrom failed)\n"
+			"boot_status0: 0x%x\nboot_status1: 0x%x\n"
+			"MD Offender:BOOTROM\n",
+			0, reg_value[0], reg_value[1]);
+	}
+
+}
+
 static void mdee_dumper_v3_dump_ee_info(struct ccci_fsm_ee *mdee,
 	MDEE_DUMP_LEVEL level, int more_info)
 {
@@ -625,51 +711,11 @@ static void mdee_dumper_v3_dump_ee_info(struct ccci_fsm_ee *mdee,
 	struct ccci_per_md *per_md_data =
 		ccci_get_per_md_data(mdee->md_id);
 	int md_dbg_dump_flag = per_md_data->md_dbg_dump_flag;
-	unsigned int reg_value[2] = { 0 };
-	unsigned int ccif_sram[CCCI_EE_SIZE_CCIF_SRAM/sizeof(unsigned int)]
-	= { 0 };
 
 	dumper->more_info = more_info;
 	if (level == MDEE_DUMP_LEVEL_BOOT_FAIL) {
 		if (md_state == BOOT_WAITING_FOR_HS1) {
-			ccci_md_dump_info(mdee->md_id,
-				DUMP_MD_BOOTUP_STATUS, reg_value, 2);
-			ccci_md_dump_info(mdee->md_id,
-				DUMP_FLAG_CCIF, ccif_sram, 0);
-			CCCI_MEM_LOG_TAG(md_id, FSM,
-				"md_boot_stats0 /1 / bootuptrace:0x%X / 0x%X / 0x%X\n",
-				reg_value[0], reg_value[1], ccif_sram[0]);
-			if ((reg_value[0] == 0) && (ccif_sram[0] == 0)) {
-				snprintf(ex_info, EE_BUF_LEN,
-					"\n[Others] MD_BOOT_UP_FAIL(HS%d - MD poweron failed)\n"
-					"boot_status0: 0x%x\nboot_status1: 0x%x\n"
-					"MD Offender:DVFS\n",
-					0, reg_value[0], reg_value[1]);
-			} else if ((reg_value[0] == 0x54430007) ||
-						(reg_value[0] == 0) ||
-						(reg_value[0] >= 0x53310000 &&
-						reg_value[0] <= 0x533100FF)) {
-				snprintf(ex_info, EE_BUF_LEN,
-					"\n[Others] MD_BOOT_UP_FAIL(HS%d)\n",
-					1);
-				ccci_md_dump_info(mdee->md_id,
-					DUMP_FLAG_REG, NULL, 0);
-				msleep(10000);
-				ccci_md_dump_info(mdee->md_id,
-					DUMP_FLAG_REG, NULL, 0);
-			}  else {
-			/* ((reg_value[0] >= 0x54430001 &&
-			 * reg_value[0] <= 0x54430006) ||
-			 * (reg_value[0] >= 0x53310100 &&
-			 * reg_value[0] <= 0x5331FFFF))
-			 * or else
-			 */
-				snprintf(ex_info, EE_BUF_LEN,
-					"\n[Others] MD_BOOT_UP_FAIL(HS%d - MD bootrom failed)\n"
-					"boot_status0: 0x%x\nboot_status1: 0x%x\n"
-					"MD Offender:BOOTROM\n",
-					0, reg_value[0], reg_value[1]);
-			}
+			md_HS1_Fail_dump(mdee->md_id, ex_info, EE_BUF_LEN);
 			/* Handshake 1 fail */
 			ccci_aed_v3(mdee,
 			CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM

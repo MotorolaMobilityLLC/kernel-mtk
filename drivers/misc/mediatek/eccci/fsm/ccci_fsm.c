@@ -76,6 +76,7 @@ static inline int fsm_broadcast_state(struct ccci_fsm_ctl *ctl,
 	 * otherwise send message on HS2 may fail
 	 */
 	ccci_port_md_status_notify(ctl->md_id, state);
+	ccci_hif_state_notification(ctl->md_id, state);
 #ifdef FEATURE_SCP_CCCI_SUPPORT
 	schedule_work(&ctl->scp_ctl.scp_md_state_sync_work);
 #endif

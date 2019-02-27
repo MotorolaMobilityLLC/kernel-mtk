@@ -22,6 +22,7 @@
 typedef enum{
 	CLDMA_HIF_ID,
 	CCIF_HIF_ID,
+	DPMAIF_HIF_ID,
 	CCCI_HIF_NUM,
 } CCCI_HIF;
 
@@ -30,7 +31,19 @@ typedef enum{
 	CLDMA_NET_DATA = (1<<1),
 } CCCI_HIF_FLAG;
 
+#if (MD_GENERATION <= 6292)
+#define MD1_NET_HIF		CLDMA_HIF_ID
+#define MD1_NORMAL_HIF		CLDMA_HIF_ID
+#elif (MD_GENERATION == 6293)
+#define MD1_NET_HIF		CLDMA_HIF_ID
+#define MD1_NORMAL_HIF		CCIF_HIF_ID
+#else
+#define MD1_NET_HIF		DPMAIF_HIF_ID
+#define MD1_NORMAL_HIF		CCIF_HIF_ID
+#endif
+
 int ccci_hif_init(unsigned char md_id, unsigned int hif_flag);
+int ccci_hif_late_init(unsigned char md_id, unsigned int hif_flag);
 int ccci_hif_send_skb(unsigned char hif_id, int tx_qno, struct sk_buff *skb,
 	int from_pool, int blocking);
 int ccci_hif_write_room(unsigned char hif_id, unsigned char qno);
@@ -40,5 +53,8 @@ void ccci_hif_start_queue(unsigned char hif_id, unsigned int reserved,
 int ccci_hif_dump_status(unsigned int hif_flag, MODEM_DUMP_FLAG dump_flag,
 	int length);
 int ccci_hif_set_wakeup_src(unsigned char hif_id, int value);
-
+void ccci_hif_md_exception(unsigned int hif_flag, unsigned char stage);
+int ccci_hif_state_notification(int md_id, unsigned char state);
+void ccci_hif_resume(unsigned char md_id, unsigned int hif_flag);
+void ccci_hif_suspend(unsigned char md_id, unsigned int hif_flag);
 #endif
