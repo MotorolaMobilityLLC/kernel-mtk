@@ -18,7 +18,7 @@
 
 #include <mt-plat/mtk_smi.h>
 #include "smi_info_util.h"
-#include "smi_debug.h"
+#include "smi_common.h"
 
 struct MTK_SMI_BWC_MM_INFO g_smi_bwc_mm_info = {
 	0, 0, {0, 0}, {0, 0}, {0, 0}, {0, 0}, 0, 0, 0,
