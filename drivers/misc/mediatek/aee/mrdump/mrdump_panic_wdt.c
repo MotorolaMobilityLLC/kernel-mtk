@@ -713,7 +713,7 @@ void notrace aee_wdt_atf_entry(void)
 	}
 }
 
-static int __init aee_wdt_init(void)
+int __init mrdump_wdt_init(void)
 {
 	int i;
 	phys_addr_t atf_aee_debug_phy_addr;
@@ -764,5 +764,3 @@ static int __init aee_wdt_init(void)
 	}
 	return 0;
 }
-
-arch_initcall(aee_wdt_init);

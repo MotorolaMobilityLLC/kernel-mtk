@@ -211,16 +211,20 @@ static struct notifier_block die_blk = {
 	.notifier_call = ipanic_die,
 };
 
-int __init aee_ipanic_init(void)
+static int __init mrdump_panic_init(void)
 {
-	mrdump_init();
+	mrdump_hw_init();
+	mrdump_cblock_init();
+	mrdump_full_init();
+	mrdump_wdt_init();
+
 	atomic_notifier_chain_register(&panic_notifier_list, &panic_blk);
 	register_die_notifier(&die_blk);
 	pr_debug("ipanic: startup\n");
 	return 0;
 }
 
-arch_initcall(aee_ipanic_init);
+arch_initcall(mrdump_panic_init);
 
 static char nested_panic_buf[1024];
 int aee_nested_printf(const char *fmt, ...)

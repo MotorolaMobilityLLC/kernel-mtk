@@ -102,40 +102,24 @@ static void mrdump_wd_dram_reserved_mode(bool enabled)
 	}
 }
 
-static int __init mrdump_hw_init(void)
+int __init mrdump_hw_init(void)
 {
-	bool cache_preserve_ok = false;
-	bool ddr_rsv_mode_ok = cache_preserve_ok;
-	int condition = 0;
-
+	mrdump_wd_dram_reserved_mode(true);
 #ifdef CONFIG_MTK_LASTPC_V2
-	condition++;
-#endif
-
-#ifdef CONFIG_MTK_AEE_DRAM_CONSOLE
-	condition++;
-#endif
-
-#ifdef CONFIG_MTK_AEE_IPANIC
-	condition++;
-#endif
-
-	if (condition > 0) {
-		ddr_rsv_mode_ok = true;
-		cache_preserve_ok = true;
-	}
-
-	mrdump_wd_dram_reserved_mode(ddr_rsv_mode_ok);
-#ifdef CONFIG_MTK_LASTPC_V2
-	mrdump_wd_mcu_cache_preserve(cache_preserve_ok);
+	mrdump_wd_mcu_cache_preserve(true);
 	mrdump_set_sram_lastpc_flag();
 #endif /* CONFIG_MTK_LASTPC_V2 */
-
 	pr_info("%s: init_done.\n", __func__);
 	return 0;
 }
 
-arch_initcall(mrdump_hw_init);
+#else
+
+int __init mrdump_hw_init(void)
+{
+	return 0;
+}
+
 #endif /* CONFIG_MTK_WATCHDOG */
 
 MODULE_LICENSE("GPL v2");

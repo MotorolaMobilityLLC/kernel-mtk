@@ -24,7 +24,7 @@
 struct proc_dir_entry;
 
 #ifndef CONFIG_MTK_AEE_FEATURE
-void *aee_excp_regs;
+
 __weak void aee_sram_printk(const char *fmt, ...)
 {
 }
@@ -46,15 +46,6 @@ __weak struct aee_oops *aee_oops_create(enum AE_DEFECT_ATTR attr,
 				enum AE_EXP_CLASS clazz, const char *module)
 {
 	return NULL;
-}
-
-__weak void aee_oops_set_backtrace(struct aee_oops *oops, const char *backtrace)
-{
-}
-
-__weak void aee_oops_set_process_path(struct aee_oops *oops,
-				const char *process_path)
-{
 }
 
 __weak void aee_oops_free(struct aee_oops *oops)
@@ -124,14 +115,6 @@ __weak void aee_register_api(struct aee_kernel_api *aee_api)
 {
 }
 
-__weak void aee_save_excp_regs(struct pt_regs *regs)
-{
-}
-
-__weak void aee_stop_nested_panic(struct pt_regs *regs)
-{
-}
-
 __weak int aee_nested_printf(const char *fmt, ...)
 {
 	return 0;
@@ -168,11 +151,6 @@ __weak void aee_rr_proc_done(struct proc_dir_entry *aed_proc_dir)
 {
 }
 
-
-__weak void aee_kernel_wdt_kick_Powkey_api(const char *module, int msg)
-{
-}
-
 __weak int aee_kernel_wdt_kick_api(int kinterval)
 {
 	return 0;
@@ -182,26 +160,40 @@ __weak void aee_powerkey_notify_press(unsigned long pressed)
 {
 }
 
+#endif
+
+#ifndef CONFIG_MTK_AEE_AED
+
+__weak void aee_kernel_wdt_kick_Powkey_api(const char *module, int msg)
+{
+}
+
 __weak int aee_kernel_Powerkey_is_press(void)
 {
 	return 0;
 }
 
-
-
 #endif
 
 #ifndef CONFIG_MTK_AEE_IPANIC
+
+void *aee_excp_regs;
+
 __weak void ipanic_recursive_ke(struct pt_regs *regs,
 		struct pt_regs *excp_regs, int cpu)
 {
 }
 
-__weak void mrdump_mini_per_cpu_regs(int cpu, struct pt_regs *regs,
-		struct task_struct *tsk)
+__weak void aee_save_excp_regs(struct pt_regs *regs)
 {
 }
+
+__weak void aee_stop_nested_panic(struct pt_regs *regs)
+{
+}
+
 #endif
+
 __weak int mtk_rgu_status_is_sysrst(void)
 {
 	return 0;
