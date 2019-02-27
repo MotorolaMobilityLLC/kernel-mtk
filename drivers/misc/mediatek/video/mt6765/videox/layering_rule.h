@@ -72,6 +72,22 @@ enum HRT_PATH_SCENARIO {
 	HRT_PATH_NUM = MAKE_UNIFIED_HRT_PATH_FMT(0, 0, 0, 3),
 };
 
+enum HRT_OPP_LEVEL {
+	HRT_OPP_LEVEL_LEVEL0 = 0,	/* OPP0 */
+	HRT_OPP_LEVEL_LEVEL1,	/* OPP1 */
+	HRT_OPP_LEVEL_LEVEL2,	/* OPP2 */
+	HRT_OPP_LEVEL_NUM,
+	HRT_OPP_LEVEL_DEFAULT,	/* DEFAULT */
+};
+
+enum HRT_DRAMC_TYPE {
+	HRT_DRAMC_TYPE_LP4_3733 = 0,		/* LP4-3733 */
+	HRT_DRAMC_TYPE_LP4_3200,			/* LP4-3200 */
+	HRT_DRAMC_TYPE_LP3,		/* LP3 */
+	HRT_DRAMC_TYPE_NUM,
+};
+
 void layering_rule_init(void);
+int layering_rule_get_mm_freq_table(enum HRT_OPP_LEVEL opp_level);
 
 #endif
