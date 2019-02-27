@@ -323,16 +323,26 @@ initcall_debug=1 maxcpus=1";
 &pio {
 	aud_clk_mosi_off: aud_clk_mosi_off {
 		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO140__FUNC_GPIO140>;
+			pinmux = <PINMUX_GPIO136__FUNC_GPIO136>;
 		};
 	};
 
 	aud_clk_mosi_on: aud_clk_mosi_on {
 		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO140__FUNC_AUD_CLK_MOSI>;
+			pinmux = <PINMUX_GPIO136__FUNC_AUD_CLK_MOSI>;
+		};
+	};
+	aud_clk_mosi_off: aud_clk_miso_off {
+		pins_cmd0_dat {
+			pinmux = <PINMUX_GPIO140__FUNC_GPIO140>;
 		};
 	};
 
+	aud_clk_mosi_on: aud_clk_miso_on {
+		pins_cmd0_dat {
+			pinmux = <PINMUX_GPIO140__FUNC_AUD_CLK_MISO>;
+		};
+	};
 	aud_dat_mosi_off: aud_dat_mosi_off {
 		pins_cmd1_dat {
 			pinmux = <PINMUX_GPIO138__FUNC_GPIO138>;
