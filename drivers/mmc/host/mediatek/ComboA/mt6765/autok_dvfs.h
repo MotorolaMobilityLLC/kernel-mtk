@@ -16,38 +16,21 @@
 #include "msdc_cust.h"
 #include "autok.h"
 
-/* #define VCOREFS_READY */
+#define VCOREFS_READY
 
 #if defined(VCOREFS_READY)
-#include <mtk_vcorefs_manager.h>
-#include <mtk_spm_vcore_dvfs.h>
+#include <linux/pm_qos.h>
+#include "helio-dvfsrc-opp.h"
+#endif
 
 enum AUTOK_VCORE {
 	AUTOK_VCORE_LEVEL0 = 0,
 	AUTOK_VCORE_LEVEL1,
+	AUTOK_VCORE_LEVEL2,
+	AUTOK_VCORE_LEVEL3,
 	AUTOK_VCORE_MERGE,
 	AUTOK_VCORE_NUM = AUTOK_VCORE_MERGE
 };
-#else
-enum dvfs_opp {
-	OPP_UNREQ = -1,
-	OPP_0 = 0,
-	OPP_1,
-	OPP_2,
-	OPP_3,
-	NUM_OPP,
-};
-
-#define is_vcorefs_can_work() -1
-#define vcorefs_request_dvfs_opp(a, b)	0
-#define vcorefs_get_hw_opp() OPP_0
-#define spm_msdc_dvfs_setting(a, b)
-
-#define AUTOK_VCORE_LEVEL0	0
-#define AUTOK_VCORE_LEVEL1	0
-#define AUTOK_VCORE_MERGE	1
-#define AUTOK_VCORE_NUM		1
-#endif
 
 #define MSDC_DVFS_TIMEOUT       (HZ/100 * 5)     /* 10ms x5 */
 
@@ -73,7 +56,6 @@ extern void sdio_set_hw_dvfs(int vcore, int done, struct msdc_host *host);
 extern void sdio_dvfs_reg_restore(struct msdc_host *host);
 extern void msdc_dump_autok(struct msdc_host *host, struct seq_file *m);
 extern void msdc_dvfs_reg_backup_init(struct msdc_host *host);
-extern int msdc_vcorefs_get_hw_opp(struct msdc_host *host);
 extern void msdc_dvfs_reg_restore(struct msdc_host *host);
 #endif /* _AUTOK_DVFS_H_ */
 

@@ -26,6 +26,8 @@ static char const * const sdio_autok_res_path[] = {
 	"/data/sdio_autok_2", "/data/sdio_autok_3",
 };
 
+/* After merge still have over 10 OOOOOOOOOOO window */
+#define AUTOK_MERGE_MIN_WIN     10
 #define SDIO_AUTOK_DIFF_MARGIN  3
 
 #ifdef CONFIG_MTK_SDIO_SUPPORT
@@ -247,6 +249,7 @@ u16 sdio_dvfs_reg_backup_offsets[] = {
 
 void msdc_dvfs_reg_restore(struct msdc_host *host)
 {
+#if defined(VCOREFS_READY)
 	void __iomem *base = host->base;
 	int i, j;
 	u32 *reg_backup_ptr;
@@ -275,6 +278,7 @@ void msdc_dvfs_reg_restore(struct msdc_host *host)
 	/* Enable HW DVFS */
 	MSDC_WRITE32(MSDC_CFG,
 		MSDC_READ32(MSDC_CFG) | (MSDC_CFG_DVFS_EN | MSDC_CFG_DVFS_HW));
+#endif
 }
 
 void sdio_dvfs_reg_restore(struct msdc_host *host)
@@ -390,6 +394,10 @@ int wait_sdio_autok_ready(void *data)
 }
 EXPORT_SYMBOL(wait_sdio_autok_ready);
 
+static void msdc_set_hw_dvfs(int vcore, struct msdc_host *host)
+{
+}
+
 void sdio_autok_wait_dvfs_ready(void)
 {
 #ifdef CONFIG_MTK_SDIO_SUPPORT
@@ -442,6 +450,16 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	int vcore = 0;
 	u8 *res;
 
+#if defined(VCOREFS_READY)
+	if (host->use_hw_dvfs == 0) {
+		vcore = AUTOK_VCORE_MERGE;
+	} else {
+		vcore = get_cur_vcore_opp();
+		if (vcore >= AUTOK_VCORE_NUM)
+			vcore = AUTOK_VCORE_NUM - 1;
+	}
+#endif
+
 	res = host->autok_res[vcore];
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
@@ -456,22 +474,31 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			pr_notice("[AUTOK]eMMC HS200 Tune\n");
 			ret = hs200_execute_tuning(host, res);
 		}
+
+		if (host->mmc->card &&
+				!(host->mmc->card->mmc_avail_type
+					& EXT_CSD_CARD_TYPE_HS400)) {
+			host->is_autok_done = 1;
+			complete(&host->autok_done);
+		}
 	} else if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400) {
 #ifdef MSDC_HQA
 		msdc_HQA_set_voltage(host);
 #endif
 
-		if (msdc_try_restoring_autok_setting(host)) {
-			pr_notice("[AUTOK]eMMC HS400 restored autok setting\n");
-		} else if (opcode == MMC_SEND_STATUS) {
+		if (opcode == MMC_SEND_STATUS) {
 			pr_notice("[AUTOK]eMMC HS400 Tune CMD only\n");
 			ret = hs400_execute_tuning_cmd(host, res);
 		} else {
 			pr_notice("[AUTOK]eMMC HS400 Tune\n");
 			ret = hs400_execute_tuning(host, res);
-			msdc_save_autok_setting(host);
 		}
+		host->is_autok_done = 1;
+		complete(&host->autok_done);
 	}
+
+	if (host->use_hw_dvfs == 1)
+		msdc_set_hw_dvfs(vcore, host);
 
 	return ret;
 }
@@ -815,16 +842,109 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 #endif
 }
 
+#if defined(VCOREFS_READY)
+static int autok_opp[AUTOK_VCORE_NUM] = {
+	VCORE_DVFS_OPP_1, /* 0.8V */
+	VCORE_DVFS_OPP_8, /* 0.7V */
+	VCORE_DVFS_OPP_13, /* 0.675V or 0.7V */
+	VCORE_DVFS_OPP_15 /* 0.65V */
+};
+#endif
+
+/*
+ * Vcore dvfs module MUST ensure having executed
+ * the function before mmcblk0 inited + 3s,
+ * otherwise will fail because of entering runtime
+ * supsend.
+ */
 int emmc_autok(void)
 {
+#if !defined(FPGA_PLATFORM) && defined(VCOREFS_READY)
 	struct msdc_host *host = mtk_msdc_host[0];
+	void __iomem *base;
+	int merge_result, merge_mode, merge_window;
+	int i, vcore_step1 = -1, vcore_step2 = 0;
+	/*
+	 * Static variable required by vcore dvfs module, otherwise deadlock
+	 * happens.
+	 */
+	static struct pm_qos_request autok_force;
 
 	if (!host || !host->mmc) {
-		pr_notice("emmc card not ready\n");
+		pr_notice("eMMC device not ready\n");
 		return -1;
 	}
 
-	pr_notice("emmc autok\n");
+	if (!(host->mmc->caps2 & MMC_CAP2_HS400_1_8V)
+	 && !(host->mmc->caps2 & MMC_CAP2_HS200_1_8V_SDR))
+		return 0;
+
+	/* Wait completion of AUTOK triggered by eMMC initialization */
+	if (!wait_for_completion_timeout(&host->autok_done, 10 * HZ)) {
+		pr_notice("eMMC 1st autok not done\n");
+		return -1;
+	}
+
+	pr_info("emmc autok\n");
+	base = host->base;
+	mmc_claim_host(host->mmc);
+
+	pm_qos_add_request(&autok_force, PM_QOS_VCORE_DVFS_FORCE_OPP,
+			PM_QOS_VCORE_DVFS_FORCE_OPP_DEFAULT_VALUE);
+
+	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
+		pm_qos_update_request(&autok_force, autok_opp[i]);
+		/* vcore = 0.51875V + 6.25mV * vcore_step2 */
+		vcore_step2 = pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL);
+		pr_notice("msdc fix vcore, PMIC_RG_BUCK_VCORE_VOSEL: %d\n",
+			vcore_step2);
+
+		if (vcore_step2 == vcore_step1) {
+			pr_info("skip duplicated vcore autok\n");
+			memcpy(host->autok_res[i], host->autok_res[i-1],
+				TUNING_PARA_SCAN_COUNT);
+		} else {
+			emmc_execute_dvfs_autok(host,
+				MMC_SEND_TUNING_BLOCK_HS200);
+			if (host->use_hw_dvfs == 0)
+				memcpy(host->autok_res[i],
+					host->autok_res[AUTOK_VCORE_MERGE],
+					TUNING_PARA_SCAN_COUNT);
+		}
+		vcore_step1 = vcore_step2;
+	}
+
+	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS400)
+		merge_mode = MERGE_HS400;
+	else
+		merge_mode = MERGE_HS200_SDR104;
+
+	merge_result = autok_vcore_merge_sel(host, merge_mode);
+	for (i = CMD_MAX_WIN; i <= H_CLK_TX_MAX_WIN; i++) {
+		merge_window = host->autok_res[AUTOK_VCORE_MERGE][i];
+		if (merge_window < AUTOK_MERGE_MIN_WIN)
+			merge_result = -1;
+		if (merge_window != 0xFF)
+			pr_info("[AUTOK]merge_value = %d\n", merge_window);
+	}
+
+	if (merge_result == 0) {
+		autok_tuning_parameter_init(host,
+			host->autok_res[AUTOK_VCORE_MERGE]);
+		pr_info("[AUTOK]No need change para when dvfs\n");
+	} else if (host->use_hw_dvfs == 1) {
+		pr_info("[AUTOK]Need change para when dvfs\n");
+	} else if (host->use_hw_dvfs == 0) {
+		autok_tuning_parameter_init(host,
+			host->autok_res[AUTOK_VCORE_LEVEL0]);
+		pr_info("[AUTOK]Need lock vcore\n");
+		host->lock_vcore = 1;
+	}
+
+	pm_qos_remove_request(&autok_force);
+
+	mmc_release_host(host->mmc);
+#endif
 
 	return 0;
 }
@@ -1067,25 +1187,3 @@ void msdc_dump_autok(struct msdc_host *host, struct seq_file *m)
 	}
 }
 
-int msdc_vcorefs_get_hw_opp(struct msdc_host *host)
-{
-	int vcore;
-
-	if (host->hw->host_function == MSDC_SD)
-		vcore = AUTOK_VCORE_LEVEL0;
-	else if (host->hw->host_function == MSDC_EMMC
-		|| host->use_hw_dvfs == 0) {
-		if (host->lock_vcore == 0)
-			vcore = AUTOK_VCORE_MERGE;
-		else
-			vcore = AUTOK_VCORE_LEVEL0;
-	} else {
-		/* not supported */
-		pr_notice("SDIO use_hw_dvfs wrongly set\n");
-		host->use_hw_dvfs = 0;
-		host->lock_vcore = 1;
-		vcore = AUTOK_VCORE_LEVEL0;
-	}
-
-	return vcore;
-}
