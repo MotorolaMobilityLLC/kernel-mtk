@@ -293,19 +293,19 @@ static struct SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3] = {
 	 {0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
 	  0x00, 0x2b, 0x0918, 0x06D2,/*VC0*/
 	  0x00, 0x00, 0x00, 0x00,/*VC1*/
-	  0x00, 0x31, 0x0230*2, 0x019F*2,/*VC2 LPD+RPD*/
+	  0x00, 0x31, 0x02BC, 0x019F*2,/*VC2 LPD+RPD*/
 	  0x03, 0x00, 0x0000, 0x0000},/*VC3*/
 	 /* Capture mode setting */
 	 {0x03, 0x0a, 0x00, 0x08, 0x40, 0x00,
 	  0x00, 0x2b, 0x1230, 0x0DA8,/*VC0*/
 	  0x00, 0x00, 0x00, 0x00,/*VC1*/
-	  0x00, 0x31, 0x0230*2, 0x01A0*2,/*VC2 LPD+RPD*/
+	  0x00, 0x31, 0x02BC, 0x01A0*2,/*VC2 LPD+RPD*/
 	  0x03, 0x00, 0x0000, 0x0000},/*VC3*/
 	 /* Video mode setting */
 	 {0x02, 0x0a, 0x00, 0x08, 0x40, 0x00,
 	  0x00, 0x2b, 0x14E0, 0x0FB0,
 	  0x00, 0x00, 0x00, 0x00,
-	  0x00, 0x31, 0x0230*2, 0x0144*2,
+	  0x00, 0x31, 0x02BC, 0x0144*2,
 	  0x03, 0x00, 0x0000, 0x0000}
 };
 
@@ -463,6 +463,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info = {
 	.iMirrorFlip = IMAGE_NORMAL,
 #endif
 };
+
+static kal_uint16 test_Pmode;
 
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -1197,10 +1199,6 @@ static void capture_setting(kal_uint16 currefps)
 {
 	imx499_table_write_cmos_sensor(addr_data_pair_capture_imx499,
 		sizeof(addr_data_pair_capture_imx499) / sizeof(kal_uint16));
-
-	if (imgsensor.pdaf_mode == 1) {
-		imx499_apply_LRC();
-	}
 }
 
 kal_uint16 addr_data_pair_video_imx499[] = {
@@ -1562,7 +1560,7 @@ static kal_uint32 open(void)
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
 
-	pr_debug("IMX499,MIPI 4LANE\n");
+	pr_debug("IMX499, MIPI 4LANE %d\n", test_Pmode);
 	pr_debug(
 	 "preview 2328*1746@30fps; video 4656*3496@30fps; capture 21M@24fps\n");
 
@@ -1615,11 +1613,28 @@ static kal_uint32 open(void)
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
 
+
+	if (test_Pmode) {
+		write_cmos_sensor(0x0101, 0x00);
+		write_cmos_sensor(0x0B00, 0x00);
+		write_cmos_sensor(0x3606, 0x00);
+		write_cmos_sensor(0x3E3A, 0x00);
+		write_cmos_sensor(0x3E39, 0x01);
+	} else {
+		write_cmos_sensor(0x0101, 0x00);
+		write_cmos_sensor(0x0B00, 0x00);
+		write_cmos_sensor(0x3606, 0x01);
+		write_cmos_sensor(0x3E3A, 0x01);
+		write_cmos_sensor(0x3E39, 0x01);
+	}
+	imx499_apply_LRC();
+
 #ifdef HV_MIRROR_FLIP
-	write_cmos_sensor(0x0101, IMAGE_HV_MIRROR);
+		write_cmos_sensor(0x0101, IMAGE_HV_MIRROR);
 #else
-	write_cmos_sensor(0x0101, IMAGE_NORMAL);
+		write_cmos_sensor(0x0101, IMAGE_NORMAL);
 #endif
+
 
 	KD_SENSOR_PROFILE("open_2");
 	return ERROR_NONE;
@@ -1920,7 +1935,11 @@ static kal_uint32 get_info(enum MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
 
 	/*0: NO PDAF, 1: PDAF Raw Data mode, 2:PDAF VC mode */
-	sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV;
+	if (test_Pmode == 1)
+		sensor_info->PDAF_Support = PDAF_SUPPORT_RAW_LEGACY;
+	else/*default*/
+		sensor_info->PDAF_Support = PDAF_SUPPORT_CAMSV;
+
 	sensor_info->HDR_Support = 0;/*0: NO HDR, 1: iHDR, 2:mvHDR, 3:zHDR */
 
 	sensor_info->SensorMIPILaneNumber = imgsensor_info.mipi_lane_num;
@@ -2452,6 +2471,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 				sizeof(struct SET_PD_BLOCK_INFO_T));
 
 		break;
+	case SENSOR_FEATURE_SET_PDAF_TYPE:
+		if (strstr(&(*feature_para), "type3")) {
+			test_Pmode = 1;
+			/*PDAF_SUPPORT_RAW_LEGACY case*/
+		} else {
+			test_Pmode = 0;
+			/*default: PDAF_SUPPORT_CAMSV*/
+		}
+		LOG_INF("set Pinfo = %d\n", test_Pmode);
+		break;
+
 
 	case SENSOR_FEATURE_GET_VC_INFO:
 		LOG_INF("SENSOR_FEATURE_GET_VC_INFO %d\n",
