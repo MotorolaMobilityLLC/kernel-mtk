@@ -307,7 +307,8 @@ static void update_step(void)
 	}
 
 	if (current_max_step != STEP_UNREQUEST
-			&& current_max_step < old_max_step) {
+			&& (current_max_step < old_max_step
+				|| old_max_step == STEP_UNREQUEST)) {
 		/* configuration for higher freq */
 		mm_apply_vcore(vopp_steps[current_max_step]);
 		mm_apply_clk_for_all(current_max_step, old_max_step);
