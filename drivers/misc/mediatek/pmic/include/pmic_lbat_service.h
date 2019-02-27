@@ -24,7 +24,7 @@ struct lbat_user {
 	struct lbat_thd_t *hv_thd;
 	struct lbat_thd_t *lv1_thd;
 	struct lbat_thd_t *lv2_thd;
-	void (*callback)(unsigned int);
+	void (*callback)(unsigned int thd_volt);
 	unsigned int deb_cnt;
 	struct lbat_thd_t *deb_thd_ptr;
 	unsigned int hv_deb_prd;
@@ -39,7 +39,7 @@ struct lbat_user {
 extern int lbat_service_init(void);
 extern int lbat_user_register(struct lbat_user *user, const char *name,
 	unsigned int hv_thd_volt, unsigned int lv1_thd_volt,
-	unsigned int lv2_thd_volt, void (*callback)(unsigned int));
+	unsigned int lv2_thd_volt, void (*callback)(unsigned int thd_volt));
 extern int lbat_user_set_debounce(struct lbat_user *user,
 	unsigned int hv_deb_prd, unsigned int hv_deb_cnt,
 	unsigned int lv_deb_prd, unsigned int lv_deb_cnt);
