@@ -57,7 +57,7 @@
  *=============================================================
  */
 /*Enable thermal controller CG*/
-/*#define THERMAL_EBABLE_TC_CG*/
+#define THERMAL_EBABLE_TC_CG
 
 #define ENALBE_UART_LIMIT						(0)
 #define TEMP_EN_UART							(80000)
