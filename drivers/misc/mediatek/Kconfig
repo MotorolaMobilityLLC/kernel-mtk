@@ -176,6 +176,7 @@ source "drivers/misc/mediatek/jpeg/Kconfig"
 source "drivers/misc/mediatek/lcm/Kconfig"
 source "drivers/misc/mediatek/sync/Kconfig"
 source "drivers/misc/mediatek/video/Kconfig"
+source "drivers/misc/mediatek/dfrc/Kconfig"
 
 endmenu  # MM
 
