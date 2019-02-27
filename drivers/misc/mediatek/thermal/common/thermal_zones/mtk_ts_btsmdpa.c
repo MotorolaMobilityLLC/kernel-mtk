@@ -1080,8 +1080,8 @@ void mtkts_btsmdpa_prepare_table(int table_num)
 
 
 	pr_notice("[Thermal/TZ/BTSMDPA] %s table_num=%d, table_rows=%d\n",
-			__func__, table_num,
-			(int)(ntc_tbl_size / sizeof(struct BTSMDPA_TEMPERATURE)));
+		__func__, table_num,
+		(int)(ntc_tbl_size / sizeof(struct BTSMDPA_TEMPERATURE)));
 
 
 #if 0
