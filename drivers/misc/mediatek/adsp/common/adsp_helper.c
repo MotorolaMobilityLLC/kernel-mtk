@@ -170,11 +170,6 @@ int get_adsp_semaphore(int flag)
 	if (!driver_init_done)
 		return -1;
 
-	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("%s: awake adsp fail\n", __func__);
-		return ret;
-	}
-
 	/* spinlock context safe*/
 	spin_lock_irqsave(&adsp_awake_spinlock, spin_flags);
 
@@ -204,10 +199,6 @@ int get_adsp_semaphore(int flag)
 
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
 
-	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
-
-
 	return ret;
 }
 EXPORT_SYMBOL_GPL(get_adsp_semaphore);
@@ -228,10 +219,6 @@ int release_adsp_semaphore(int flag)
 	if (!driver_init_done)
 		return -1;
 
-	if (adsp_awake_lock(ADSP_A_ID) == -1) {
-		pr_debug("%s: awake adsp fail\n", __func__);
-		return ret;
-	}
 	/* spinlock context safe*/
 	spin_lock_irqsave(&adsp_awake_spinlock, spin_flags);
 	flag = (flag * 2) + 1;
@@ -250,10 +237,6 @@ int release_adsp_semaphore(int flag)
 		pr_debug("[ADSP] %s %d not own by me\n", __func__, flag);
 
 	spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
-
-	if (adsp_awake_unlock(ADSP_A_ID) == -1)
-		pr_debug("%s: adsp_awake_unlock fail\n", __func__);
-
 
 	return ret;
 }
