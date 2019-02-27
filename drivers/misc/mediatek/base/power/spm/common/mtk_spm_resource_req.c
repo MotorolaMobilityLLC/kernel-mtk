@@ -106,6 +106,28 @@ unsigned int spm_get_resource_usage(void)
 }
 EXPORT_SYMBOL(spm_get_resource_usage);
 
+unsigned int spm_get_resource_usage_by_user(unsigned int user)
+{
+	int i;
+	unsigned long flags;
+	unsigned int field = 0;
+	unsigned int curr_res_usage_by_user = 0;
+
+	spin_lock_irqsave(&spm_resource_desc_update_lock, flags);
+
+	field = user / 32;
+	for (i = 0; i < NF_SPM_RESOURCE; i++) {
+		if ((resc_desc[i].user_usage_mask[field] & (1 << user)) &&
+			(resc_desc[i].user_usage[field] & (1 << user))) {
+			curr_res_usage_by_user |= (1 << i);
+		}
+	}
+	spin_unlock_irqrestore(&spm_resource_desc_update_lock, flags);
+
+	return curr_res_usage_by_user;
+}
+EXPORT_SYMBOL(spm_get_resource_usage_by_user);
+
 static void spm_update_curr_resource_usage(void)
 {
 	int res;
@@ -147,16 +169,16 @@ static ssize_t resource_req_read(char *ToUserBuf, size_t sz, void *priv)
 
 	p += scnprintf(p, sz - strlen(ToUserBuf), "enable:\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
-			"echo enable [bit] > /d/spm/resource_req\n");
+			"echo enable [bit] > /d/cpuidle/spm_resource_req\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
 			"bypass:\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
-			"echo bypass [bit] > /d/spm/resource_req\n");
+			"echo bypass [bit] > /d/cpuidle/spm_resource_req\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf), "\n");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
 			"[1] UFS, [2] SSUSB, [3] AUDIO, [4] UART, ");
 	p += scnprintf(p, sz - strlen(ToUserBuf),
-			"[5] CONN, [6] MSDC\n");
+			"[5] CONN, [6] MSDC, [7] SCP\n");
 
 	len = p - ToUserBuf;
 
