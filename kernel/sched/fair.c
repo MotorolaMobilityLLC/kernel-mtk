@@ -5717,8 +5717,15 @@ static int sched_group_energy(struct energy_env *eenv)
 				idle_idx = group_idle_state(eenv, sg);
 				group_util = group_norm_util(eenv, sg);
 
+#ifdef CONFIG_MTK_UNIFY_POWER
+				/* Power value had been separated to static + dynamic here */
+				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].dyn_pwr +
+						sg->sge->cap_states[cap_idx].lkg_pwr[sg->sge->lkg_idx]))
+								>> SCHED_CAPACITY_SHIFT;
+#else
 				sg_busy_energy = (group_util * sg->sge->cap_states[cap_idx].power)
 								>> SCHED_CAPACITY_SHIFT;
+#endif
 				sg_idle_energy = ((SCHED_CAPACITY_SCALE-group_util)
 								* sg->sge->idle_states[idle_idx].power)
 								>> SCHED_CAPACITY_SHIFT;
