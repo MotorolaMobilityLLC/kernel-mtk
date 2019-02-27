@@ -18,6 +18,12 @@
 #include <linux/atomic.h>
 #include <linux/platform_device.h>
 #include <kd_imgsensor_define.h>
+#define IMGSENSOR_DFS_CTRL_ENABLE
+
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+#include <linux/pm_qos.h>
+#include <mmdvfs_pmqos.h>
+#endif
 
 enum IMGSENSOR_CCF {
 	IMGSENSOR_CCF_MCLK_TG_MIN_NUM,
@@ -60,6 +66,16 @@ struct IMGSENSOR_CLK {
 	atomic_t    enable_cnt[IMGSENSOR_CCF_MAX_NUM];
 };
 
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+enum DFS_OPTION {
+	DFS_CTRL_ENABLE,
+	DFS_CTRL_DISABLE,
+	DFS_UPDATE,
+	DFS_SUPPORTED_ISP_CLOCKS,
+	DFS_CUR_ISP_CLOCK,
+};
+extern int imgsensor_dfs_ctrl(enum DFS_OPTION option, void *pbuff);
+#endif
 extern unsigned int mt_get_ckgen_freq(int ID);
 enum IMGSENSOR_RETURN imgsensor_clk_init(struct IMGSENSOR_CLK *pclk);
 int  imgsensor_clk_set(
