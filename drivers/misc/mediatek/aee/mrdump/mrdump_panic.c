@@ -168,14 +168,14 @@ int mrdump_common_die(int fiq_step, int reboot_reason, const char *msg,
 		__show_regs(regs);
 		dump_stack();
 		break;
-#ifndef CONFIG_DEBUG_BUGVERBOSE
 	case AEE_REBOOT_MODE_KERNEL_PANIC:
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_exp_type(AEE_EXP_TYPE_KE);
 #endif
+#ifndef CONFIG_DEBUG_BUGVERBOSE
 		dump_stack();
-		break;
 #endif
+		break;
 	case AEE_REBOOT_MODE_HANG_DETECT:
 #ifdef CONFIG_MTK_RAM_CONSOLE
 		aee_rr_rec_exp_type(AEE_EXP_TYPE_HANG_DETECT);
