@@ -170,6 +170,9 @@ int ovl_start(enum DISP_MODULE_ENUM module, void *handle)
 	DISP_REG_SET_FIELD(handle, EN_FLD_OVL_EN,
 			   ovl_base + DISP_REG_OVL_EN, 0x1);
 
+	DISP_REG_SET_FIELD(handle, EN_FLD_HF_FOVL_CK_ON,
+			   ovl_base + DISP_REG_OVL_EN, 0x1);
+
 	DISP_REG_SET(handle, ovl_base + DISP_REG_OVL_INTEN,
 		     0x1E0 | REG_FLD_VAL(INTEN_FLD_ABNORMAL_SOF, 1) |
 		     REG_FLD_VAL(INTEN_FLD_START_INTEN, 1));
