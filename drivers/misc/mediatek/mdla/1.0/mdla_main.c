@@ -3840,29 +3840,27 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 	struct command_entry *ce =
 		kmalloc(sizeof(struct command_entry), GFP_KERNEL);
 
-	ce->mva = cd->buf.mva;
-
-	mdla_debug("%s: mva=%08x, count: %u, priority: %u, boost: %u\n",
+	ce->mva = cd->buf.mva + cd->offset;
+	mdla_debug("%s: mva=%08x, offset=%08x, count: %u, priority: %u, boost: %u\n",
 			__func__,
-			ce->mva,
+			cd->buf.mva,
+			cd->offset,
 			cd->count,
 			cd->priority,
 			cd->boost_value);
 
 	if (cd->buf.ion_khandle) {
-		ce->kva = (void *)cd->buf.kva;
+		ce->kva = (void *)cd->buf.kva + cd->offset;
 		mdla_debug("%s: <ion> kva=%p, mva=%08x\n",
 				__func__,
 				ce->kva,
 				ce->mva);
-		// TODO: get real kva/mva from run_cmd_data->buf.offset
 	} else if (is_gsm_mva(ce->mva)) {
 		ce->kva = gsm_mva_to_virt(ce->mva);
 	} else {
 		ce->kva = phys_to_virt(ce->mva);
 		mdla_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
 			__func__, ce->mva, ce->kva);
-		// TODO: get real kva/mva from ce->buf.offset
 	}
 
 	ce->count = cd->count;
