@@ -45,7 +45,8 @@ static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 
-int main_SOutEx(u8 slaveAddress, u8 *dat, int size)
+int main_SOutEx(unsigned char slaveAddress,
+		unsigned char *dat, int size)
 {
 	int i4RetValue = 0;
 
@@ -61,7 +62,8 @@ int main_SOutEx(u8 slaveAddress, u8 *dat, int size)
 	return 0;
 }
 
-int main_SInEx(u8 slaveAddress, u8 *dat, int size, u8 *ret, int ret_size)
+int main_SInEx(unsigned char slaveAddress, unsigned char *dat,
+		int size, unsigned char *ret, int ret_size)
 {
 	int ret_value = 0;
 	struct i2c_msg msg[2];
@@ -246,7 +248,7 @@ int bu64748af_PowerDown_Main(void)
 int bu64748af_SetI2Cclient_Main(struct i2c_client *pstAF_I2Cclient,
 				spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
-	u8 out[4] = {0};
+	unsigned char out[4] = {0};
 	int ret;
 
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
