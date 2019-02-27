@@ -3586,6 +3586,8 @@ static void testcase_notify_and_delay_submit(u32 delayTimeMS)
 			value, PATTERN);
 	}
 
+	cmdq_mdp_set_resource_callback(resourceEvent, NULL, NULL);
+
 	CMDQ_LOG("%s END\n", __func__);
 }
 
