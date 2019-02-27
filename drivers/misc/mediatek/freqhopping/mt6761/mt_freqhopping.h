@@ -83,8 +83,6 @@ enum FH_PLL_ID {
 	FH_PLL4  = 4,       /*MEMPLL */
 	FH_PLL5  = 5,       /*MPLL */
 	FH_PLL6  = 6,       /*MMPLL */
-	FH_PLL7  = 7,       /*ARMPLL_L */
-	FH_PLL8  = 8,       /*CCIPLL */
 
 	FH_PLL_NUM,
 };

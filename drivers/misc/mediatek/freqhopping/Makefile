@@ -21,3 +21,7 @@ ifeq ($(CONFIG_MTK6765_FREQ_HOPPING),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/mt6765/
 obj-y += mt6765/
 endif
+
+
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/$(MTK_PLATFORM)/
+obj-y += $(MTK_PLATFORM)/
