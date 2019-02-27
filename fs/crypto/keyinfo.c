@@ -119,7 +119,7 @@ find_and_lock_process_key(const char *prefix,
 		pr_info("HIE: %s: prefix:%s ci: %p, master_key:%p, size:%d, mode:%d, min_keysize: %d\n",
 			__func__, prefix, crypt_info, master_key,
 			master_key->size, master_key->mode, min_keysize);
-#endif	
+#endif
 
 	*payload_ret = payload;
 	return key;
@@ -210,7 +210,7 @@ select_encryption_mode(const struct fscrypt_info *ci, const struct inode *inode)
 
 	if (S_ISREG(inode->i_mode)) {
 		/* HIE: default use aes-256-xts */
-		if (inode->i_mode == FS_ENCRYPTION_MODE_PRIVATE)
+		if (ci->ci_data_mode == FS_ENCRYPTION_MODE_PRIVATE)
 			return &available_modes[FS_ENCRYPTION_MODE_AES_256_XTS];
 		return &available_modes[ci->ci_data_mode];
 	}
