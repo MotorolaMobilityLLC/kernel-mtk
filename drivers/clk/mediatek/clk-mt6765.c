@@ -2225,7 +2225,7 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	clk_writel(VENC_CG_SET, VENC_DISABLE_CG);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek,venc_global_con",
+CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek,venc_gcon",
 		mtk_venc_global_con_init);
 
 unsigned int mt_get_ckgen_freq(unsigned int ID)

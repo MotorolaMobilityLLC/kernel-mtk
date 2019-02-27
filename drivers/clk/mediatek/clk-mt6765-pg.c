@@ -29,9 +29,10 @@
 #include <dt-bindings/clock/mt6765-clk.h>
 
 /*#define TOPAXI_PROTECT_LOCK*/
-#ifdef CONFIG_FPGA_EARLY_PORTING
+/* need to ignore for bring up */
+/* #ifdef CONFIG_FPGA_EARLY_PORTING */
 #define IGNORE_MTCMOS_CHECK
-#endif
+/* #endif */
 #if !defined(MT_CCF_DEBUG) || !defined(MT_CCF_BRINGUP)
 #define MT_CCF_DEBUG	1
 #define MT_CCF_BRINGUP	1
