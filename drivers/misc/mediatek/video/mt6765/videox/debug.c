@@ -70,7 +70,7 @@ int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 /* Boundary of enter screen idle */
-unsigned int idle_check_interval = 50;
+unsigned long long idle_check_interval = 50;
 
 struct BMP_FILE_HEADER {
 	UINT16 bfType;
@@ -367,6 +367,9 @@ static void bmp_adjust(void *buf, int size, int w, int h)
 
 	size = w * 3;
 	temp = vmalloc(size);
+	if (!temp)
+		return;
+
 	for (vpos = 0; vpos < h/2; vpos++) {
 		memcpy(temp, buf + (h-vpos - 1) * size, size);
 		memcpy(buf + (h-vpos - 1) * size, buf +
@@ -1308,7 +1311,7 @@ static void process_dbg_opt(const char *opt)
 		}
 	}
 	if (strncmp(opt, "idle_wait:", 10) == 0) {
-		ret = sscanf(opt, "idle_wait:%d\n", &idle_check_interval);
+		ret = sscanf(opt, "idle_wait:%lld\n", &idle_check_interval);
 		if (ret != 1) {
 			DISPWARN("%d error to parse cmd %s\n",
 				__LINE__, opt);
@@ -1316,7 +1319,7 @@ static void process_dbg_opt(const char *opt)
 		}
 		idle_check_interval =
 			idle_check_interval < 17 ? 17 : idle_check_interval;
-		DISPMSG("change idle interval to %dms\n",
+		DISPMSG("change idle interval to %lldms\n",
 			idle_check_interval);
 	}
 	if (strncmp(opt, "layer_statistic:", 16) == 0) {
