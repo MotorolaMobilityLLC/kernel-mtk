@@ -240,7 +240,7 @@
 #define MAX_SGMT_SZ             (MAX_DMA_CNT)
 #define MAX_SGMT_SZ_SDIO        (MAX_DMA_CNT_SDIO)
 
-#define HOST_MAX_NUM            (3)
+#define HOST_MAX_NUM            (2)
 #ifdef CONFIG_PWR_LOSS_MTK_TEST
 #define MAX_REQ_SZ              (512 * 65536)
 #else
