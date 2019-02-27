@@ -6,7 +6,6 @@ config PINCTRL_MTK
 	select GPIOLIB
 	select OF_GPIO
 
-#For SOC MT6758
 config PINCTRL_MT6758
 	bool "Mediatek MT6758 pin control"
 	default n
@@ -15,7 +14,14 @@ config PINCTRL_MT6758
 	select PINCTRL_MTK_NO_UPSTREAM
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
 
-#For SOC MT6765
+config PINCTRL_MT6761
+	bool "Mediatek MT6761 pin control"
+	default n
+	depends on (!ARCH_MEDIATEK) && MACH_MT6761
+	select PINCTRL_MTK
+	select PINCTRL_MTK_NO_UPSTREAM
+	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
 config PINCTRL_MT6765
 	bool "Mediatek MT6765 pin control"
 	default n
