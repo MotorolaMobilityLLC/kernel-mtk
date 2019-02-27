@@ -277,6 +277,5 @@ config MTK_MEMCFG
 	  cost additional memory.
 
 source "drivers/misc/mediatek/mtprof/Kconfig"
-source "drivers/misc/mediatek/vow/Kconfig"
 
 endmenu    # Misc
