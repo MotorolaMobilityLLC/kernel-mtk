@@ -10204,7 +10204,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 	/* clear the status     if someone get the irq */
 	spin_unlock_irqrestore(&(IspInfo.SpinLockIrq[eIrq]), flags);
 	if (WaitIrq->UserInfo.UserKey > 0) {
-		pr_debug(" [WAITIRQv3]user(%d) mark sec/usec (%d/%d), last irq sec/usec	(%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
+		log_dbg(" [WAITIRQv3]user(%d) mark sec/usec (%d/%d), last irq sec/usec	(%d/%d),enterwait(%d/%d),getIRQ(%d/%d)\n",
 			WaitIrq->UserInfo.UserKey,
 			IspInfo.IrqInfo
 				.MarkedTime_sec[WaitIrq->UserInfo.UserKey]
@@ -10220,7 +10220,7 @@ static signed int ISP_WaitIrq_v3(struct ISP_WAIT_IRQ_STRUCT *WaitIrq)
 			(int)(time_getrequest.tv_usec),
 			(int)(time_ready2return.tv_sec),
 			(int)(time_ready2return.tv_usec));
-		pr_debug(" [WAITIRQv3]user(%d) sigNum(%d/%d), mark sec/usec (%d/%d), irq sec/usec (%d/%d),user(0x%x)\n",
+		log_dbg(" [WAITIRQv3]user(%d) sigNum(%d/%d), mark sec/usec (%d/%d), irq sec/usec (%d/%d),user(0x%x)\n",
 			WaitIrq->UserInfo.UserKey,
 			IspInfo.IrqInfo
 				.PassedBySigCnt[WaitIrq->UserInfo.UserKey]
