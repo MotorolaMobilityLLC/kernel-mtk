@@ -19,5 +19,22 @@
 #define __LINUX_USB_F_MTP_H
 
 #include <uapi/linux/usb/f_mtp.h>
+#include <linux/ioctl.h>
+
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif
+
+#ifdef __KERNEL__
+#ifdef CONFIG_COMPAT
+struct __compat_mtp_event {
+	compat_size_t	length;
+	compat_caddr_t	data;
+};
+
+#endif
+#endif
+
+#define COMPAT_MTP_SEND_EVENT	_IOW('M', 3, struct __compat_mtp_event)
 
 #endif /* __LINUX_USB_F_MTP_H */

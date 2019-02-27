@@ -220,7 +220,11 @@ static struct usb_request *acc_request_new(struct usb_ep *ep, int buffer_size)
 		return NULL;
 
 	/* now allocate buffers for the requests */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	req->buf = kmalloc(buffer_size, GFP_KERNEL | GFP_DMA);
+#else
 	req->buf = kmalloc(buffer_size, GFP_KERNEL);
+#endif
 	if (!req->buf) {
 		usb_ep_free_request(ep, req);
 		return NULL;
@@ -590,7 +594,7 @@ static ssize_t acc_read(struct file *fp, char __user *buf,
 	}
 
 	if (dev->rx_done) {
-		// last req cancelled. try to get it.
+		/* last req cancelled. try to get it. */
 		req = dev->rx_req[0];
 		goto copy_data;
 	}
@@ -614,8 +618,9 @@ requeue_req:
 		r = ret;
 		ret = usb_ep_dequeue(dev->ep_out, req);
 		if (ret != 0) {
-			// cancel failed. There can be a data already received.
-			// it will be retrieved in the next read.
+			/* cancel failed. There can be a data already received.
+			 * it will be retrieved in the next read.
+			 */
 			pr_debug("acc_read: cancelling failed %d", ret);
 		}
 		goto done;
@@ -679,7 +684,8 @@ static ssize_t acc_write(struct file *fp, const char __user *buf,
 			req->zero = 0;
 		} else {
 			xfer = count;
-			/* If the data length is a multple of the
+			/*
+			 * If the data length is a multiple of the
 			 * maxpacket size then send a zero length packet(ZLP).
 			*/
 			req->zero = ((xfer % dev->ep_in->maxpacket) == 0);
@@ -779,6 +785,9 @@ static const struct file_operations acc_fops = {
 	.read = acc_read,
 	.write = acc_write,
 	.unlocked_ioctl = acc_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = acc_ioctl,
+#endif
 	.open = acc_open,
 	.release = acc_release,
 };
@@ -811,14 +820,6 @@ static struct hid_driver acc_hid_driver = {
 	.probe = acc_hid_probe,
 };
 
-static void acc_complete_setup_noop(struct usb_ep *ep, struct usb_request *req)
-{
-	/*
-	 * Default no-op function when nothing needs to be done for the
-	 * setup request
-	 */
-}
-
 int acc_ctrlrequest(struct usb_composite_dev *cdev,
 				const struct usb_ctrlrequest *ctrl)
 {
@@ -834,10 +835,10 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 	unsigned long flags;
 
 /*
-	printk(KERN_INFO "acc_ctrlrequest "
-			"%02x.%02x v%04x i%04x l%u\n",
-			b_requestType, b_request,
-			w_value, w_index, w_length);
+ *	printk(KERN_INFO "acc_ctrlrequest "
+ *			"%02x.%02x v%04x i%04x l%u\n",
+ *			b_requestType, b_request,
+ *			w_value, w_index, w_length);
 */
 
 	if (b_requestType == (USB_DIR_OUT | USB_TYPE_VENDOR)) {
@@ -846,7 +847,6 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 			schedule_delayed_work(
 				&dev->start_work, msecs_to_jiffies(10));
 			value = 0;
-			cdev->req->complete = acc_complete_setup_noop;
 		} else if (b_request == ACCESSORY_SEND_STRING) {
 			dev->string_index = w_index;
 			cdev->gadget->ep0->driver_data = dev;
@@ -855,13 +855,10 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 		} else if (b_request == ACCESSORY_SET_AUDIO_MODE &&
 				w_index == 0 && w_length == 0) {
 			dev->audio_mode = w_value;
-			cdev->req->complete = acc_complete_setup_noop;
 			value = 0;
 		} else if (b_request == ACCESSORY_REGISTER_HID) {
-			cdev->req->complete = acc_complete_setup_noop;
 			value = acc_register_hid(dev, w_value, w_index);
 		} else if (b_request == ACCESSORY_UNREGISTER_HID) {
-			cdev->req->complete = acc_complete_setup_noop;
 			value = acc_unregister_hid(dev, w_value);
 		} else if (b_request == ACCESSORY_SET_HID_REPORT_DESC) {
 			spin_lock_irqsave(&dev->lock, flags);
@@ -896,7 +893,7 @@ int acc_ctrlrequest(struct usb_composite_dev *cdev,
 		if (b_request == ACCESSORY_GET_PROTOCOL) {
 			*((u16 *)cdev->req->buf) = PROTOCOL_VERSION;
 			value = sizeof(u16);
-			cdev->req->complete = acc_complete_setup_noop;
+
 			/* clear any string left over from a previous session */
 			memset(dev->manufacturer, 0, sizeof(dev->manufacturer));
 			memset(dev->model, 0, sizeof(dev->model));
@@ -980,6 +977,11 @@ __acc_function_bind(struct usb_configuration *c,
 			gadget_is_dualspeed(c->cdev->gadget) ? "dual" : "full",
 			f->name, dev->ep_in->name, dev->ep_out->name);
 	return 0;
+}
+
+static int
+acc_function_bind(struct usb_configuration *c, struct usb_function *f) {
+	return __acc_function_bind(c, f, false);
 }
 
 static int
@@ -1186,6 +1188,35 @@ static void acc_function_disable(struct usb_function *f)
 	wake_up(&dev->read_wq);
 
 	VDBG(cdev, "%s disabled\n", dev->function.name);
+}
+
+static int acc_bind_config(struct usb_configuration *c)
+{
+	struct acc_dev *dev = _acc_dev;
+	int ret;
+
+	pr_info("acc_bind_config\n");
+
+	/* allocate a string ID for our interface */
+	if (acc_string_defs[INTERFACE_STRING_INDEX].id == 0) {
+		ret = usb_string_id(c->cdev);
+		if (ret < 0)
+			return ret;
+		acc_string_defs[INTERFACE_STRING_INDEX].id = ret;
+		acc_interface_desc.iInterface = ret;
+	}
+
+	dev->cdev = c->cdev;
+	dev->function.name = "accessory";
+	dev->function.strings = acc_strings,
+	dev->function.fs_descriptors = fs_acc_descs;
+	dev->function.hs_descriptors = hs_acc_descs;
+	dev->function.bind = acc_function_bind;
+	dev->function.unbind = acc_function_unbind;
+	dev->function.set_alt = acc_function_set_alt;
+	dev->function.disable = acc_function_disable;
+
+	return usb_add_function(c, &dev->function);
 }
 
 static int acc_setup(void)

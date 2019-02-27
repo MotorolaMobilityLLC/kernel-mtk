@@ -53,6 +53,7 @@ static struct usb_gadget_strings **get_containers_gs(
 	return (struct usb_gadget_strings **)uc->stash;
 }
 
+#if 0
 /**
  * function_descriptors() - get function descriptors for speed
  * @f: the function
@@ -98,7 +99,7 @@ function_descriptors(struct usb_function *f,
 
 	return descriptors;
 }
-
+#endif
 /**
  * next_ep_desc() - advance to the next EP descriptor
  * @t: currect pointer within descriptor array
@@ -477,7 +478,18 @@ static int config_buf(struct usb_configuration *config,
 	list_for_each_entry(f, &config->functions, list) {
 		struct usb_descriptor_header **descriptors;
 
-		descriptors = function_descriptors(f, speed);
+		switch (speed) {
+		case USB_SPEED_SUPER_PLUS:
+		case USB_SPEED_SUPER:
+			descriptors = f->ss_descriptors;
+			break;
+		case USB_SPEED_HIGH:
+			descriptors = f->hs_descriptors;
+			break;
+		default:
+			descriptors = f->fs_descriptors;
+		}
+
 		if (!descriptors)
 			continue;
 		status = usb_descriptor_fillbuf(next, len,
@@ -627,7 +639,13 @@ static int bos_desc(struct usb_composite_dev *cdev)
 	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
 	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
 	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
-	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT | USB_BESL_SUPPORT);
+#ifdef CONFIG_USBIF_COMPLIANCE
+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT) |
+					cpu_to_le32(USB_BESL_SUPPORT);
+#else
+	/* align MTK K310 */
+	usb_ext->bmAttributes = cpu_to_le32(USB_LPM_SUPPORT);
+#endif
 
 	/*
 	 * The Superspeed USB Capability descriptor shall be implemented by all
@@ -796,7 +814,17 @@ static int set_config(struct usb_composite_dev *cdev,
 		 * function's setup callback instead of the current
 		 * configuration's setup callback.
 		 */
-		descriptors = function_descriptors(f, gadget->speed);
+		switch (gadget->speed) {
+		case USB_SPEED_SUPER_PLUS:
+		case USB_SPEED_SUPER:
+			descriptors = f->ss_descriptors;
+			break;
+		case USB_SPEED_HIGH:
+			descriptors = f->hs_descriptors;
+			break;
+		default:
+			descriptors = f->fs_descriptors;
+		}
 
 		for (; *descriptors; ++descriptors) {
 			struct usb_endpoint_descriptor *ep;
@@ -963,7 +991,6 @@ static void remove_config(struct usb_composite_dev *cdev,
 			/* may free memory for "f" */
 		}
 	}
-	list_del(&config->list);
 	if (config->unbind) {
 		DBG(cdev, "unbind config '%s'/%p\n", config->label, config);
 		config->unbind(config);
@@ -984,15 +1011,26 @@ void usb_remove_config(struct usb_composite_dev *cdev,
 		      struct usb_configuration *config)
 {
 	unsigned long flags;
+	struct usb_gadget_string_container *uc, *tmp;
 
 	spin_lock_irqsave(&cdev->lock, flags);
 
 	if (cdev->config == config)
 		reset_config(cdev);
 
+	if (config->cdev != NULL)
+		list_del(&config->list);
+	else
+		INFO(cdev, "%s: config->list has been delete!!!\n", __func__);
+
 	spin_unlock_irqrestore(&cdev->lock, flags);
 
 	remove_config(cdev, config);
+
+	list_for_each_entry_safe(uc, tmp, &cdev->gstrings, list) {
+	list_del(&uc->list);
+	kfree(uc);
+	}
 }
 
 /*-------------------------------------------------------------------------*/
@@ -1220,7 +1258,11 @@ static struct usb_gadget_string_container *copy_gadget_strings(
 	mem += sizeof(void *) * (n_gstrings + 1);
 	mem += sizeof(struct usb_gadget_strings) * n_gstrings;
 	mem += sizeof(struct usb_string) * (n_strings + 1) * (n_gstrings);
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	uc = kmalloc(mem, GFP_KERNEL | GFP_DMA);
+#else
 	uc = kmalloc(mem, GFP_KERNEL);
+#endif
 	if (!uc)
 		return ERR_PTR(-ENOMEM);
 	gs_array = get_containers_gs(uc);
@@ -1347,7 +1389,7 @@ EXPORT_SYMBOL_GPL(usb_string_ids_n);
 
 /*-------------------------------------------------------------------------*/
 
-static void composite_setup_complete(struct usb_ep *ep, struct usb_request *req)
+void composite_setup_complete(struct usb_ep *ep, struct usb_request *req)
 {
 	struct usb_composite_dev *cdev;
 
@@ -1564,6 +1606,16 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	u16				w_length = le16_to_cpu(ctrl->wLength);
 	struct usb_function		*f = NULL;
 	u8				endp;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 1 * HZ, 5);
+#if 0
+#ifdef CONFIG_USBIF_COMPLIANCE
+	struct usb_otg_descriptor *otg_desc = req->buf;
+#endif
+#endif
+	if (!(ctrl->bRequest == USB_REQ_GET_STATUS
+			|| ctrl->bRequest == USB_REQ_CLEAR_FEATURE
+			|| ctrl->bRequest == USB_REQ_SET_FEATURE))
+		VDBG(cdev, "%s bRequest=0x%X\n", __func__, ctrl->bRequest);
 
 	/* partial re-init of the response message; the function or the
 	 * gadget might need to intercept e.g. a control-OUT completion
@@ -1589,7 +1641,16 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 		if (ctrl->bRequestType != USB_DIR_IN)
 			goto unknown;
 		switch (w_value >> 8) {
-
+#if 0
+#ifdef CONFIG_USBIF_COMPLIANCE
+		case USB_DT_OTG:
+			otg_desc->bLength = sizeof(*otg_desc);
+			otg_desc->bDescriptorType = USB_DT_OTG;
+			otg_desc->bmAttributes = USB_OTG_SRP | USB_OTG_HNP;
+			otg_desc->bcdOTG = cpu_to_le16(0x0200);
+			break;
+#endif
+#endif
 		case USB_DT_DEVICE:
 			cdev->desc.bNumConfigurations =
 				count_configs(cdev, USB_DT_DEVICE);
@@ -1700,6 +1761,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			goto unknown;
 		if (!cdev->config || intf >= MAX_CONFIG_INTERFACES)
 			break;
+
+		if (!cdev->config) {
+			INFO(cdev, "%s: cdev->config = NULL\n", __func__);
+			break;
+		}
+
 		f = cdev->config->interface[intf];
 		if (!f)
 			break;
@@ -1800,8 +1867,17 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 			break;
 		}
 		break;
+	case USB_REQ_SET_SEL:
+		INFO(cdev, "[COM]USB_REQ_SET_SEL Pretend success\n");
+		value = 0;
+		break;
 	default:
 unknown:
+		if (__ratelimit(&ratelimit))
+			INFO(cdev,
+					"[ratelimit]non-core control req%02x.%02x v%04x i%04x l%d\n",
+					ctrl->bRequestType, ctrl->bRequest,
+					w_value, w_index, w_length);
 		/*
 		 * OS descriptors handling
 		 */
@@ -1983,6 +2059,7 @@ try_fun_setup:
 	}
 
 done:
+
 	/* device either stalls (value < 0) or reports success */
 	return value;
 }
@@ -1993,8 +2070,8 @@ void composite_disconnect(struct usb_gadget *gadget)
 	unsigned long			flags;
 
 	if (cdev == NULL) {
-		WARN(1, "%s: Calling disconnect on a Gadget that is \
-			 not connected\n", __func__);
+		WARN(1, " Calling disconnect on a Gadget that is");
+		WARN(1,	"%s: not connected\n", __func__);
 		return;
 	}
 
@@ -2006,6 +2083,15 @@ void composite_disconnect(struct usb_gadget *gadget)
 		reset_config(cdev);
 	if (cdev->driver->disconnect)
 		cdev->driver->disconnect(cdev);
+
+	/* ALPS00235316 and ALPS00234976 */
+	/* reset the complet function */
+	if (cdev->req->complete) {
+		INFO(cdev, "[COM]%s: reassign the complete function!!\n",
+				__func__);
+		cdev->req->complete = composite_setup_complete;
+	}
+
 	spin_unlock_irqrestore(&cdev->lock, flags);
 }
 
@@ -2101,8 +2187,11 @@ int composite_dev_prepare(struct usb_composite_driver *composite,
 	cdev->req = usb_ep_alloc_request(gadget->ep0, GFP_KERNEL);
 	if (!cdev->req)
 		return -ENOMEM;
-
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	cdev->req->buf = kmalloc(USB_COMP_EP0_BUFSIZ, GFP_KERNEL | GFP_DMA);
+#else
 	cdev->req->buf = kmalloc(USB_COMP_EP0_BUFSIZ, GFP_KERNEL);
+#endif
 	if (!cdev->req->buf)
 		goto fail;
 
@@ -2145,15 +2234,19 @@ int composite_os_desc_req_prepare(struct usb_composite_dev *cdev,
 
 	cdev->os_desc_req = usb_ep_alloc_request(ep0, GFP_KERNEL);
 	if (!cdev->os_desc_req) {
-		ret = -ENOMEM;
+		ret = PTR_ERR(cdev->os_desc_req);
 		goto end;
 	}
 
 	/* OS feature descriptor length <= 4kB */
+#if defined(CONFIG_64BIT) && defined(CONFIG_MTK_LM_MODE)
+	cdev->os_desc_req->buf = kmalloc(4096, GFP_KERNEL | GFP_DMA);
+#else
 	cdev->os_desc_req->buf = kmalloc(4096, GFP_KERNEL);
+#endif
 	if (!cdev->os_desc_req->buf) {
-		ret = -ENOMEM;
-		usb_ep_free_request(ep0, cdev->os_desc_req);
+		ret = PTR_ERR(cdev->os_desc_req->buf);
+		kfree(cdev->os_desc_req);
 		goto end;
 	}
 	cdev->os_desc_req->context = cdev;

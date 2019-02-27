@@ -1833,6 +1833,7 @@ struct net_device {
 #endif
 
 	/* These may be needed for future network-power-down code. */
+	unsigned long		trans_start;
 	struct timer_list	watchdog_timer;
 
 	int __percpu		*pcpu_refcnt;
