@@ -244,7 +244,7 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		table = m4u_create_sgtable(align, (unsigned int)size);
 		user_va = align;
 		if (size % PAGE_SIZE != 0)
-			IONMSG("%s va(0x%lx)size(%ld) not align page.\n",
+			IONDBG("%s va(0x%lx)size(%ld) not align page.\n",
 			       __func__, user_va, size);
 		if (IS_ERR_OR_NULL(table)) {
 			IONMSG("%s create table error 0x%p!!\n",
