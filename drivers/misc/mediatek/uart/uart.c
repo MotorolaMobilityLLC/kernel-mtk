@@ -1531,17 +1531,6 @@ static void mtk_uart_rx_chars(struct mtk_uart *uart)
 		/* check status */
 		if (!mtk_uart_data_ready(uart))
 			break;
-#if 0
-		if (tty->flip.count >= TTY_FLIPBUF_SIZE) {
-			if (tty->low_latency) {
-				/*
-				 * If this failed then we will throw away the
-				 * bytes but must do so to clear interrupts
-				 */
-				tty_flip_buffer_push(tty);
-			}
-		}
-#endif
 		/* read the byte */
 		data_byte = uart->read_byte(uart);
 		port->icount.rx++;
@@ -1584,22 +1573,17 @@ static void mtk_uart_rx_chars(struct mtk_uart *uart)
 /* FIXME. Infinity, 20081002, 'BREAK' char to enable sysrq handler } */
 		}
 #endif
-
-		if (!tty_insert_flip_char(TTY_FLIP_ARG(tty), data_byte, flag))
-			MSG(ERR, "tty_insert_flip_char: no space");
+		/*If tty=NULL means shell not ready, do not send data*/
+		if (tty)
+			if (!tty_insert_flip_char(TTY_FLIP_ARG(tty),
+				data_byte, flag))
+				MSG(ERR, "tty_insert_flip_char: no space");
 	}
-	tty_flip_buffer_push(TTY_FLIP_ARG(tty));
+	if (tty)
+		tty_flip_buffer_push(TTY_FLIP_ARG(tty));
 	update_history_time(0, uart->nport);
 	spin_unlock_irqrestore(&port->lock, flags);
 	MSG(FUC, "%s (%2d)\n", __func__, UART_FIFO_SIZE - max_count - 1);
-/*
- *#if defined(CONFIG_MTK_HDMI_SUPPORT)
- *#ifdef MHL_UART_SHARE_PIN
- *	if ((UART_FIFO_SIZE - max_count - 1) > 0)
- *		hdmi_force_on(UART_FIFO_SIZE - max_count - 1);
- *#endif
- *#endif
- */
 }
 
 /*---------------------------------------------------------------------------*/
