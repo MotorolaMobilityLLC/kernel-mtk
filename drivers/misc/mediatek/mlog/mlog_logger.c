@@ -311,11 +311,7 @@ static void mlog_reset_format(void)
 
 	spin_unlock_bh(&mlogbuf_lock);
 
-	MLOG_PRINTK("[mlog] reset format %d", strfmt_len);
-	for (len = 0; len < strfmt_len; ++len)
-		MLOG_PRINTK(" %s", strfmt_list[len]);
-
-	MLOG_PRINTK("\n");
+	pr_debug("[mlog] reset format %d\n", strfmt_len);
 }
 
 int mlog_snprint_fmt(char *buf, size_t len)
