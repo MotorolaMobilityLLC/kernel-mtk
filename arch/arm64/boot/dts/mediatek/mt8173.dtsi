@@ -389,6 +389,16 @@
 			reg = <0 0x10200620 0 0x20>;
 		};
 
+		sys_cirq: sys_cirq@10204000 {
+			compatible = "mediatek,mt8173-sys_cirq",
+				     "mediatek,mt6735-sys_cirq",
+				     "mediatek,sys_cirq";
+			reg = <0 0x10204000 0 0x1000>;
+			interrupts = <GIC_SPI 232 IRQ_TYPE_LEVEL_LOW>;
+			mediatek,cirq_num = <255>;
+			mediatek,spi_start_offset = <72>;
+		};
+
 		iommu: iommu@10205000 {
 			compatible = "mediatek,mt8173-m4u";
 			reg = <0 0x10205000 0 0x1000>;
