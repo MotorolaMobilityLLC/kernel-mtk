@@ -461,7 +461,6 @@ int mmc_run_queue_thread(void *data)
 	bool io_boost_done = false;
 
 	int err;
-	u64 polling_tmo;
 
 	pr_notice("[CQ] start cmdq thread\n");
 	mt_bio_queue_alloc(current, NULL);
@@ -614,30 +613,21 @@ int mmc_run_queue_thread(void *data)
 			/* wait for event to wakeup */
 			/* wake up when new request arrived and dma done */
 			areq_cnt_chk = atomic_read(&host->areq_cnt);
-			polling_tmo = sched_clock();
-			while (!(host->done_mrq ||
-			(atomic_read(&host->areq_cnt) > areq_cnt_chk))) {
-				/* delay 1ms to check new request or dma done*/
-				if (sched_clock() - polling_tmo > 1000000) {
-					tmo =
-				wait_event_interruptible_timeout(host->cmdq_que,
+			tmo = wait_event_interruptible_timeout(host->cmdq_que,
 				host->done_mrq ||
 				(atomic_read(&host->areq_cnt) > areq_cnt_chk),
 				10 * HZ);
-					if (!tmo) {
-					pr_info("%s:tmo,mrq(%p),chk(%d),cnt(%d)\n",
-						__func__,
-						host->done_mrq,
-						areq_cnt_chk,
-						atomic_read(&host->areq_cnt));
-					pr_info("%s:tmo,rw(%d),wait(%d),rdy(%d)\n",
-						__func__,
-						atomic_read(&host->cq_rw),
-						atomic_read(&host->cq_wait_rdy),
-						atomic_read(&host->cq_rdy_cnt));
-					}
-					break;
-				}
+			if (!tmo) {
+				pr_info("%s:tmo,mrq(%p),chk(%d),cnt(%d)\n",
+					__func__,
+					host->done_mrq,
+					areq_cnt_chk,
+					atomic_read(&host->areq_cnt));
+				pr_info("%s:tmo,rw(%d),wait(%d),rdy(%d)\n",
+					__func__,
+					atomic_read(&host->cq_rw),
+					atomic_read(&host->cq_wait_rdy),
+					atomic_read(&host->cq_rdy_cnt));
 			}
 		}
 
