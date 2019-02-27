@@ -62,24 +62,44 @@ extern void sspm_ipi_lock_spm_scenario(int start, int id, int opt,
 /********************************************************************
  * TWAM definitions for MET use only.
  *******************************************************************/
+struct twam_byte {
+	u32 signal;
+	u32 id;
+	u32 monitor_type;
+};
 
-struct twam_sig {
-	u32 sig0;       /* signal 0: config or status */
-	u32 sig1;       /* signal 1: config or status */
-	u32 sig2;       /* signal 2: config or status */
-	u32 sig3;       /* signal 3: config or status */
+struct twam_cfg {
+	struct twam_byte byte0;   /* Channel 0 config */
+	struct twam_byte byte1;   /* Channel 1 config */
+	struct twam_byte byte2;   /* Channel 2 config */
+	struct twam_byte byte3;   /* Channel 3 config */
+};
+
+struct twam_select {
+	u32 signal0;
+	u32 signal1;
+	u32 signal2;
+	u32 signal3;
+	u32 id0;
+	u32 id1;
+	u32 id2;
+	u32 id3;
 };
 
 /* for TWAM in MET */
-typedef void (*twam_handler_t) (struct twam_sig *twamsig);
+typedef void (*twam_handler_t) (struct twam_cfg *twamsig,
+	struct twam_select *twam_sel);
 extern void spm_twam_register_handler(twam_handler_t handler);
 extern twam_handler_t spm_twam_handler_get(void);
-extern void spm_twam_enable_monitor(const struct twam_sig *twamsig,
-	bool speed_mode);
+extern void spm_twam_enable_monitor(bool en_monitor,
+	bool debug_signal, twam_handler_t cb_handler);
 extern void spm_twam_disable_monitor(void);
 extern void spm_twam_set_idle_select(unsigned int sel);
 extern void spm_twam_set_window_length(unsigned int len);
-extern void spm_twam_set_mon_type(struct twam_sig *mon);
+extern void spm_twam_set_mon_type(struct twam_cfg *mon);
+extern void spm_twam_config_channel(struct twam_cfg *cfg,
+	bool speed_mode, unsigned int window_len_hz);
+extern bool spm_twam_met_enable(void);
 
 
 #endif /* __MTK_SPM_H__ */
