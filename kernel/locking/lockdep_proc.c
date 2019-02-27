@@ -54,6 +54,18 @@ static void print_name(struct seq_file *m, struct lock_class *class)
 	}
 }
 
+void lock_show_trace(struct seq_file *m, struct stack_trace *trace, int spaces)
+{
+	int i;
+
+	if (!trace->entries)
+		return;
+
+	for (i = 0; i < trace->nr_entries; i++)
+		seq_printf(m, "%*c%pS\n", 1 + spaces, ' ',
+			(void *)trace->entries[i]);
+}
+
 static int l_show(struct seq_file *m, void *v)
 {
 	struct lock_class *class = list_entry(v, struct lock_class, lock_entry);
@@ -86,6 +98,7 @@ static int l_show(struct seq_file *m, void *v)
 			seq_printf(m, " -> [%p] ", entry->class->key);
 			print_name(m, entry->class);
 			seq_puts(m, "\n");
+			lock_show_trace(m, &entry->trace, 6);
 		}
 	}
 	seq_puts(m, "\n");
@@ -157,6 +170,7 @@ static int lc_show(struct seq_file *m, void *v)
 		seq_printf(m, "[%p] ", class->key);
 		print_name(m, class);
 		seq_puts(m, "\n");
+		lock_show_trace(m, class->usage_traces, 6);
 	}
 	seq_puts(m, "\n");
 

@@ -258,6 +258,11 @@ struct held_lock {
 	unsigned int hardirqs_off:1;
 	unsigned int references:12;					/* 32 bits */
 	unsigned int pin_count;
+
+	/* MTK_LOCK_DEBUG_HELD_LOCK */
+#define MAX_STACK_TRACE_DEPTH 32
+	struct stack_trace trace;
+	unsigned long entries[MAX_STACK_TRACE_DEPTH];
 };
 
 /*

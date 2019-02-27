@@ -81,6 +81,12 @@ module_param(lock_stat, int, 0644);
 #define lock_stat 0
 #endif
 
+#define MTK_LOCK_DEBUG_NEW_DEPENDENCY
+#ifdef MTK_LOCK_DEBUG_NEW_DEPENDENCY
+#define MTK_LOCK_DEBUG_NEW_DEPENDENCY_AEE
+#define PREV_LOCK_NAME  "&q->sysfs_lock"
+#define NEXT_LOCK_NAME  "cpu_hotplug.lock"
+#endif
 
 static void lockdep_aee(void)
 {
@@ -506,6 +512,23 @@ static inline unsigned long lock_flag(enum lock_usage_bit bit)
 	return 1UL << bit;
 }
 
+#ifdef MTK_LOCK_DEBUG_NEW_DEPENDENCY
+static int check_lock_name(struct lock_class *class, const char *lock_name)
+{
+	char str[KSYM_NAME_LEN];
+	const char *name;
+
+	name = class->name;
+	if (!name)
+		name = __get_key_name(class->key, str);
+
+	if (name && !strcmp(name, lock_name))
+		return 1;
+
+	return 0;
+}
+#endif
+
 static char get_usage_char(struct lock_class *class, enum lock_usage_bit bit)
 {
 	char c = '.';
@@ -596,6 +619,30 @@ static void print_lock(struct held_lock *hlock)
 		(void *)hlock->acquire_ip, (void *)hlock->acquire_ip);
 }
 
+/* MTK_LOCK_DEBUG_HELD_LOCK */
+void held_lock_save_trace(struct stack_trace *trace, unsigned long *entries)
+{
+	trace->nr_entries = 0;
+	trace->max_entries = MAX_STACK_TRACE_DEPTH;
+	trace->entries = entries;
+	trace->skip = 3;
+	save_stack_trace(trace);
+}
+
+void held_lock_show_trace(struct stack_trace *trace, int spaces)
+{
+	int i;
+
+	if (!trace)
+		return;
+
+	if (!trace->entries)
+		return;
+
+	for (i = 0; i < trace->nr_entries; i++)
+		pr_info("%*c%pS\n", 1 + spaces, ' ', (void *)trace->entries[i]);
+}
+
 static void lockdep_print_held_locks(struct task_struct *curr)
 {
 	int i, depth = curr->lockdep_depth;
@@ -613,6 +660,8 @@ static void lockdep_print_held_locks(struct task_struct *curr)
 	for (i = 0; i < depth; i++) {
 		printk(" #%d: ", i);
 		print_lock(curr->held_locks + i);
+		/* MTK_LOCK_DEBUG_HELD_LOCK */
+		held_lock_show_trace(&(curr->held_locks + i)->trace, 5);
 	}
 }
 
@@ -1933,7 +1982,12 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
 	/*
 	 * Debugging printouts:
 	 */
+#ifdef MTK_LOCK_DEBUG_NEW_DEPENDENCY
+	if (check_lock_name(hlock_class(prev), PREV_LOCK_NAME) &&
+		check_lock_name(hlock_class(next), NEXT_LOCK_NAME)) {
+#else
 	if (verbose(hlock_class(prev)) || verbose(hlock_class(next))) {
+#endif
 		/* We drop graph lock, so another thread can overwrite trace. */
 		*stack_saved = 0;
 		graph_unlock();
@@ -1943,6 +1997,13 @@ check_prev_add(struct task_struct *curr, struct held_lock *prev,
 		print_lock_name(hlock_class(next));
 		printk(KERN_CONT "\n");
 		dump_stack();
+
+		lockdep_print_held_locks(current);
+#ifdef MTK_LOCK_DEBUG_NEW_DEPENDENCY_AEE
+		aee_kernel_warning_api(__FILE__, __LINE__,
+		DB_OPT_DUMMY_DUMP, "[Lockdep] new dependency",
+		"[%s => %s]\n", PREV_LOCK_NAME, NEXT_LOCK_NAME);
+#endif
 		return graph_lock();
 	}
 	return 1;
@@ -3362,6 +3423,9 @@ static int __lock_acquire(struct lockdep_map *lock, unsigned int subclass,
 	hlock->holdtime_stamp = lockstat_clock();
 #endif
 	hlock->pin_count = pin_count;
+
+	/* MTK_LOCK_DEBUG_HELD_LOCK */
+	held_lock_save_trace(&hlock->trace, hlock->entries);
 
 	if (check && !mark_irqflags(curr, hlock))
 		return 0;
