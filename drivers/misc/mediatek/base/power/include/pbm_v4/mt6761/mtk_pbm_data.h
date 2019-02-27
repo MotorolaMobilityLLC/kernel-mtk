@@ -11,14 +11,9 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MTK_PBM_REL_H__
-#define __MTK_PBM_REL_H__
+#ifndef __MTK_PBM_DATA__
+#define __MTK_PBM_DATA__
 
-#include "mtk_pbm_common.h"
-#if defined(CONFIG_MACH_MT6765)
-#include "mt6765/mtk_pbm_data.h"
-#elif defined(CONFIG_MACH_MT6761)
-#include "mt6761/mtk_pbm_data.h"
+#define MAX_FLASH_POWER	3500	/* mW */
+
 #endif
-
-#endif /* __MTK_PBM_REL_H__ */
