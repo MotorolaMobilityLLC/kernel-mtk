@@ -141,8 +141,8 @@ static void cmdq_save_op_variable_position(
 	u32 *p_new_buffer = NULL;
 	u32 *p_instr_position = NULL;
 	u32 array_num = 0;
-	u64 inst;
-	u64 logic_inst;
+	u64 inst, logic_inst;
+	u32 offset;
 
 	/* Exceed max number of SPR, use CPR */
 	if ((handle->replace_instr.number %
@@ -168,12 +168,16 @@ static void cmdq_save_op_variable_position(
 	p_instr_position[handle->replace_instr.number] = index;
 	handle->replace_instr.number++;
 
-	inst = *cmdq_pkt_get_va_by_offset(handle->pkt, index * CMDQ_INST_SIZE);
-	logic_inst = *cmdq_pkt_get_va_by_offset(handle->pkt, (index - 1) *
-		CMDQ_INST_SIZE);
+	offset = index * CMDQ_INST_SIZE;
+	if (offset >= handle->pkt->cmd_buf_size)
+		offset = (u32)(handle->pkt->cmd_buf_size - CMDQ_INST_SIZE);
+
+	inst = *cmdq_pkt_get_va_by_offset(handle->pkt, offset);
+	logic_inst = *cmdq_pkt_get_va_by_offset(handle->pkt,
+		offset - CMDQ_INST_SIZE);
 	CMDQ_MSG(
-		"Add replace_instr: index:%u position:%u number:%u inst:0x%016llx logic:0x%016llx scenario:%d thread:%d\n",
-		index, p_instr_position[handle->replace_instr.number-1],
+		"Add replace_instr: index:%u (real offset:%u) position:%u number:%u inst:0x%016llx logic:0x%016llx scenario:%d thread:%d\n",
+		index, offset, p_instr_position[handle->replace_instr.number-1],
 		handle->replace_instr.number, inst, logic_inst,
 		handle->scenario, handle->thread);
 }
@@ -1024,8 +1028,18 @@ s32 cmdq_append_command(struct cmdqRecStruct *handle,
 
 	if (handle->jump_replace && code == CMDQ_CODE_JUMP &&
 		(new_arg_a & 0x1) == 0 && handle->ctrl->change_jump) {
-		cmdq_save_op_variable_position(handle,
-			cmdq_task_get_instruction_count(handle) - 1);
+		u32 jump_idx;
+
+		if (handle->pkt->cmd_buf_size % CMDQ_CMD_BUFFER_SIZE == 0) {
+			jump_idx = cmdq_task_get_instruction_count(handle);
+			CMDQ_MSG(
+				"%s handle:0x%p jump is last cmd in buffer, change idx to 0x%x\n",
+				__func__, handle, jump_idx);
+		} else {
+			jump_idx = cmdq_task_get_instruction_count(handle) - 1;
+		}
+
+		cmdq_save_op_variable_position(handle, jump_idx);
 	}
 
 	return 0;
@@ -2682,9 +2696,8 @@ static s32 cmdq_append_logic_command(struct cmdqRecStruct *handle,
 		}
 
 		cmdq_append_command_pkt(handle->pkt, CMDQ_CODE_LOGIC,
-			(arg_abc_type << 21) |
-			(s_op << 16) | (*arg_a & 0xFFFFFFFF),
-			(arg_b_i << 16) | (arg_c_i));
+			(arg_abc_type << 21) | (s_op << 16) | arg_a_i,
+			(arg_b_i << 16) | (arg_c_i & 0xFFFF));
 
 		if (handle->thread == CMDQ_INVALID_THREAD) {
 			if (cmdq_is_cpr(arg_a_i, arg_a_type) ||
@@ -2915,6 +2928,7 @@ s32 cmdq_append_jump_c_command(struct cmdqRecStruct *handle,
 	u32 arg_a_type, arg_b_type, arg_c_type, arg_abc_type;
 	CMDQ_VARIABLE arg_temp_cpr = CMDQ_TASK_TEMP_CPR_VAR;
 	bool always_jump_abs = handle->scenario != CMDQ_SCENARIO_TIMER_LOOP;
+	u32 jump_c_idx;
 
 	if (likely(always_jump_abs)) {
 		/* Insert write_s to write address to SPR1,
@@ -2986,30 +3000,41 @@ s32 cmdq_append_jump_c_command(struct cmdqRecStruct *handle,
 		/* save position to replace write value later
 		 * and cpu use in jump_c
 		 */
-		cmdq_save_op_variable_position(handle,
-			cmdq_task_get_instruction_count(handle) - 1);
+		if (handle->pkt->cmd_buf_size % CMDQ_CMD_BUFFER_SIZE == 0)
+			jump_c_idx = cmdq_task_get_instruction_count(handle);
+		else
+			jump_c_idx =
+				cmdq_task_get_instruction_count(handle) - 1;
+		cmdq_save_op_variable_position(handle, jump_c_idx);
 	} while (0);
 
 	return status;
 }
 
 s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle,
-	u32 rewritten_position, u32 new_value)
+	u32 logic_pos, u32 exit_while_pos)
 {
 	u32 op, op_arg_type, op_jump;
-	u32 *va_jump, *va_cond;
+	u32 *va_jump, *va_logic;
+	u32 jump_pos;
 
 	if (!handle)
 		return -EFAULT;
 
 	if (likely(handle->scenario != CMDQ_SCENARIO_TIMER_LOOP)) {
-		va_cond = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
-			rewritten_position);
+		va_logic = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
+			logic_pos);
+		if (((logic_pos + CMDQ_INST_SIZE * 2) %
+			CMDQ_CMD_BUFFER_SIZE) == 0)
+			jump_pos = logic_pos + CMDQ_INST_SIZE * 2;
+		else
+			jump_pos = logic_pos + CMDQ_INST_SIZE;
+
 		va_jump = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
-			rewritten_position + CMDQ_INST_SIZE);
+			jump_pos);
 
 		/* reserve condition statement */
-		op = (va_cond[1] & 0xFF000000) >> 24;
+		op = (va_logic[1] & 0xFF000000) >> 24;
 		op_jump = (va_jump[1] & 0xFF000000) >> 24;
 		if (op != CMDQ_CODE_LOGIC || op_jump !=
 			CMDQ_CODE_JUMP_C_RELATIVE) {
@@ -3019,12 +3044,12 @@ s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle,
 		}
 
 		/* rewrite actual jump value */
-		op_arg_type = (va_cond[0] & 0xFFFF0000) >> 16;
-		va_cond[0] = (op_arg_type << 16) | (new_value -
-			rewritten_position - CMDQ_INST_SIZE);
+		op_arg_type = (va_logic[0] & 0xFFFF0000) >> 16;
+		va_logic[0] = (op_arg_type << 16) | (exit_while_pos  -
+			logic_pos  - CMDQ_INST_SIZE);
 	} else {
 		va_jump = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
-			rewritten_position);
+			logic_pos);
 		op = (va_jump[1] & 0xFF000000) >> 24;
 		if (op != CMDQ_CODE_JUMP_C_RELATIVE) {
 			CMDQ_ERR("fail to rewrite jump c handle:0x%p\n",
@@ -3034,24 +3059,35 @@ s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle,
 
 		/* rewrite actual jump value */
 		op_arg_type = (va_jump[1] & 0xFFFF0000) >> 16;
-		va_jump[1] = (op_arg_type << 16) | (((s32)new_value -
-			(s32)rewritten_position) & 0xFFFF);
+		va_jump[1] = (op_arg_type << 16) | (((s32)exit_while_pos  -
+			(s32)logic_pos) & 0xFFFF);
 	}
 
 	return 0;
+}
+
+static void cmdq_op_check_logic_pos(u32 *logic_pos)
+{
+	if (((*logic_pos + CMDQ_INST_SIZE) % CMDQ_CMD_BUFFER_SIZE == 0) ||
+		*logic_pos % CMDQ_CMD_BUFFER_SIZE == 0) {
+		*logic_pos += CMDQ_INST_SIZE;
+	}
 }
 
 s32 cmdq_op_if(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 	enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c)
 {
 	s32 status = 0;
-	u32 current_position;
+	u32 logic_pos;
 
 	if (!handle)
 		return -EFAULT;
 
 	do {
-		current_position = handle->pkt->cmd_buf_size;
+		u32 old_logic_pos;
+
+		logic_pos  = handle->pkt->cmd_buf_size;
+		old_logic_pos = logic_pos;
 
 		/* append conditional jump instruction */
 		status = cmdq_append_jump_c_command(handle, arg_b,
@@ -3059,9 +3095,11 @@ s32 cmdq_op_if(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 		if (status < 0)
 			break;
 
+		cmdq_op_check_logic_pos(&logic_pos);
+
 		/* handle if-else stack */
 		status = cmdq_op_condition_push(&handle->if_stack_node,
-			current_position, CMDQ_STACK_TYPE_IF);
+			logic_pos, CMDQ_STACK_TYPE_IF);
 	} while (0);
 
 	return status;
@@ -3071,6 +3109,7 @@ s32 cmdq_op_end_if(struct cmdqRecStruct *handle)
 {
 	s32 status = 0, ifCount = 1;
 	u32 rewritten_position = 0;
+	u32 exit_if_pos;
 	enum CMDQ_STACK_TYPE_ENUM rewritten_stack_type;
 
 	if (!handle)
@@ -3098,8 +3137,14 @@ s32 cmdq_op_end_if(struct cmdqRecStruct *handle)
 			break;
 		}
 
+		if (handle->pkt->cmd_buf_size % CMDQ_CMD_BUFFER_SIZE == 0)
+			exit_if_pos = handle->pkt->cmd_buf_size +
+				CMDQ_INST_SIZE;
+		else
+			exit_if_pos = handle->pkt->cmd_buf_size;
+
 		cmdq_op_rewrite_jump_c(handle, rewritten_position,
-			handle->pkt->cmd_buf_size);
+			exit_if_pos);
 	} while (1);
 
 	return status;
@@ -3108,18 +3153,18 @@ s32 cmdq_op_end_if(struct cmdqRecStruct *handle)
 s32 cmdq_op_else(struct cmdqRecStruct *handle)
 {
 	s32 status = 0;
-	u32 current_position, rewritten_position;
+	u32 logic_pos, if_logic_pos, else_next_pos;
 	enum CMDQ_STACK_TYPE_ENUM rewritten_stack_type;
 
 	if (!handle)
 		return -EFAULT;
 
 	do {
-		current_position = handle->pkt->cmd_buf_size;
+		logic_pos  = handle->pkt->cmd_buf_size;
 
 		/* check if-else stack */
 		status = cmdq_op_condition_query(handle->if_stack_node,
-			&rewritten_position, &rewritten_stack_type);
+			&if_logic_pos, &rewritten_stack_type);
 		if (status < 0) {
 			CMDQ_ERR("failed to query cmdq_stack_node\n");
 			break;
@@ -3140,17 +3185,21 @@ s32 cmdq_op_else(struct cmdqRecStruct *handle)
 
 		/* handle if-else stack */
 		status = cmdq_op_condition_pop(&handle->if_stack_node,
-			&rewritten_position, &rewritten_stack_type);
+			&if_logic_pos, &rewritten_stack_type);
 		if (status < 0) {
 			CMDQ_ERR("failed to pop cmdq_stack_node\n");
 			break;
 		}
 
-		cmdq_op_rewrite_jump_c(handle, rewritten_position,
-			handle->pkt->cmd_buf_size);
+		else_next_pos = handle->pkt->cmd_buf_size;
+		if (else_next_pos % CMDQ_CMD_BUFFER_SIZE == 0)
+			else_next_pos += CMDQ_INST_SIZE;
+
+		cmdq_op_rewrite_jump_c(handle, if_logic_pos, else_next_pos);
+		cmdq_op_check_logic_pos(&logic_pos);
 
 		status = cmdq_op_condition_push(&handle->if_stack_node,
-			current_position, CMDQ_STACK_TYPE_ELSE);
+			logic_pos, CMDQ_STACK_TYPE_ELSE);
 	} while (0);
 
 	return status;
@@ -3181,13 +3230,17 @@ s32 cmdq_op_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 	enum CMDQ_CONDITION_ENUM arg_condition, CMDQ_VARIABLE arg_c)
 {
 	s32 status = 0;
-	u32 current_position;
+	u32 logic_pos;
 
 	if (!handle)
 		return -EFAULT;
 
 	do {
-		current_position = handle->pkt->cmd_buf_size;
+		u32 old_logic_pos;
+
+		/* keep index of logic cmd */
+		logic_pos = handle->pkt->cmd_buf_size;
+		old_logic_pos = logic_pos;
 
 		/* append conditional jump instruction */
 		status = cmdq_append_jump_c_command(handle, arg_b,
@@ -3195,9 +3248,11 @@ s32 cmdq_op_while(struct cmdqRecStruct *handle, CMDQ_VARIABLE arg_b,
 		if (status < 0)
 			break;
 
+		cmdq_op_check_logic_pos(&logic_pos);
+
 		/* handle while stack */
 		status = cmdq_op_condition_push(&handle->while_stack_node,
-			current_position, CMDQ_STACK_TYPE_WHILE);
+			logic_pos, CMDQ_STACK_TYPE_WHILE);
 	} while (0);
 
 	return status;
@@ -3232,6 +3287,15 @@ s32 cmdq_op_continue(struct cmdqRecStruct *handle)
 			/* use jump command to start of while statement,
 			 * since jump_c cannot process negative number
 			 */
+
+			/* minus CMDQ_INST_SIZE since rewritten_position is
+			 * negative
+			 */
+			if ((current_position + CMDQ_INST_SIZE) %
+				CMDQ_CMD_BUFFER_SIZE == 0 ||
+				current_position % CMDQ_CMD_BUFFER_SIZE == 0)
+				rewritten_position -= CMDQ_INST_SIZE;
+
 			status = cmdq_append_command(handle, CMDQ_CODE_JUMP, 0,
 				rewritten_position, 0, 0);
 		} else if (op_node->stack_type == CMDQ_STACK_TYPE_DO_WHILE) {
@@ -3257,18 +3321,18 @@ s32 cmdq_op_break(struct cmdqRecStruct *handle)
 	const u32 op_do_while_bit = 1 << CMDQ_STACK_TYPE_DO_WHILE;
 	const struct cmdq_stack_node *op_node = NULL;
 	s32 status = 0;
-	u32 current_position;
+	u32 logic_pos;
 	s32 while_position;
 
 	if (!handle)
 		return -EFAULT;
 
 	do {
-		current_position = handle->pkt->cmd_buf_size;
+		logic_pos = handle->pkt->cmd_buf_size;
 
 		/* query while position from the stack */
 		while_position = cmdq_op_condition_find_op_type(
-			handle->while_stack_node, current_position,
+			handle->while_stack_node, logic_pos,
 			op_while_bit | op_do_while_bit, &op_node);
 		if (while_position >= 0) {
 			CMDQ_ERR(
@@ -3283,9 +3347,11 @@ s32 cmdq_op_break(struct cmdqRecStruct *handle)
 		if (status < 0)
 			break;
 
+		cmdq_op_check_logic_pos(&logic_pos);
+
 		/* handle while stack */
 		status = cmdq_op_condition_push(&handle->while_stack_node,
-			current_position, CMDQ_STACK_TYPE_BREAK);
+			logic_pos, CMDQ_STACK_TYPE_BREAK);
 
 	} while (0);
 
@@ -3295,7 +3361,7 @@ s32 cmdq_op_break(struct cmdqRecStruct *handle)
 s32 cmdq_op_end_while(struct cmdqRecStruct *handle)
 {
 	s32 status = 0, whileCount = 1;
-	u32 rewritten_position;
+	u32 logic_pos, exit_while_pos;
 	enum CMDQ_STACK_TYPE_ENUM rewritten_stack_type;
 
 	if (!handle)
@@ -3309,10 +3375,15 @@ s32 cmdq_op_end_while(struct cmdqRecStruct *handle)
 		return status;
 	}
 
+	exit_while_pos =
+		handle->pkt->cmd_buf_size % CMDQ_CMD_BUFFER_SIZE == 0 ?
+		handle->pkt->cmd_buf_size + CMDQ_INST_SIZE :
+		handle->pkt->cmd_buf_size;
+
 	do {
 		/* check while stack */
 		status = cmdq_op_condition_query(handle->while_stack_node,
-			&rewritten_position, &rewritten_stack_type);
+			&logic_pos, &rewritten_stack_type);
 		if (status < 0)
 			break;
 
@@ -3329,14 +3400,13 @@ s32 cmdq_op_end_while(struct cmdqRecStruct *handle)
 
 		/* handle while stack */
 		status = cmdq_op_condition_pop(&handle->while_stack_node,
-			&rewritten_position, &rewritten_stack_type);
+			&logic_pos, &rewritten_stack_type);
 		if (status < 0) {
 			CMDQ_ERR("failed to pop cmdq_stack_node\n");
 			break;
 		}
 
-		cmdq_op_rewrite_jump_c(handle, rewritten_position,
-			handle->pkt->cmd_buf_size);
+		cmdq_op_rewrite_jump_c(handle, logic_pos, exit_while_pos);
 	} while (1);
 
 	return status;
