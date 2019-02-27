@@ -84,7 +84,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 			.ctrl_id	= EEM_CTRL_L,
 			.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-			.max_freq_khz	= 2351000,
+			.max_freq_khz	= 2301000,
 			.VBOOT		= VBOOT_VAL, /* 10uV */
 			.VMAX		= VMAX_VAL,
 			.VMIN		= VMIN_VAL,
@@ -115,7 +115,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_2L,
 		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
-		.max_freq_khz	= 1701000,
+		.max_freq_khz	= 1800000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
 		.VMIN		= VMIN_VAL,
