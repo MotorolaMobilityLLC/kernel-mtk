@@ -1,5 +1,3 @@
-if ARCH_MEDIATEK || COMPILE_TEST
-
 config PINCTRL_MTK
 	bool
 	depends on OF
@@ -8,8 +6,17 @@ config PINCTRL_MTK
 	select GPIOLIB
 	select OF_GPIO
 
+#For SOC MT6758
+config PINCTRL_MT6758
+	bool "Mediatek MT6758 pin control"
+	default y
+	depends on (!ARCH_MEDIATEK) && MACH_MT6758
+	select PINCTRL_MTK
+	select PINCTRL_MTK_NO_UPSTREAM
+
+if ARCH_MEDIATEK || COMPILE_TEST
 # For pintcrl command debug
-config PINCTRL_MTK_COMMON_DEBUG
+config PINCTRL_MTK_NO_UPSTREAM
 	bool "Mediatek pin control common debug"
 	depends on OF
 	depends on COMPILE_TEST
