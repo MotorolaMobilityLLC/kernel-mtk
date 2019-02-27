@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="12.08.2017.14:43:01"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="12.22.2017.16:21:23"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -69,13 +69,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint2>
-            <eint6>
-                <varName>ALS</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint6>
             <eint7>
                 <varName>SMART_PA</varName>
                 <debounce_time>0</debounce_time>
@@ -104,13 +97,6 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint11>
-            <eint12>
-                <varName>GYRO</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint12>
             <eint23>
                 <varName>RT9465_SLAVE_CHR</varName>
                 <debounce_time>0</debounce_time>
@@ -1973,21 +1959,6 @@
                 <channel>I2C_CHANNEL_0</channel>
                 <address>0x5D</address>
             </device0>
-            <device1>
-                <varName>MSENSOR</varName>
-                <channel>I2C_CHANNEL_1</channel>
-                <address>0x0C</address>
-            </device1>
-            <device2>
-                <varName>ALSPS</varName>
-                <channel>I2C_CHANNEL_1</channel>
-                <address>0x51</address>
-            </device2>
-            <device3>
-                <varName>PRESSURE</varName>
-                <channel>I2C_CHANNEL_1</channel>
-                <address>0x77</address>
-            </device3>
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
