@@ -2447,6 +2447,16 @@ void check_smi_clk_sts(void)
 }
 #endif
 
+int mtk_is_clk_bring_up(void)
+{
+#if MT_CCF_BRINGUP
+	pr_notice("%s: skipped for bring up\n", __func__);
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 static int __init clk_mt6765_init(void)
 {
 	/*timer_ready = true;*/
