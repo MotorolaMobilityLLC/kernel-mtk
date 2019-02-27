@@ -471,6 +471,7 @@ static struct clk *mtk_clk_register_pll(const struct mtk_pll_data *data,
 		init.ops = &mtk_pll_ops;
 
 	init.parent_names = &parent_name;
+
 	init.num_parents = 1;
 
 	clk = clk_register(NULL, &pll->hw);
