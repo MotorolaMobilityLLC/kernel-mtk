@@ -925,4 +925,14 @@ int cpufreq_generic_init(struct cpufreq_policy *policy,
 struct sched_domain;
 unsigned long cpufreq_scale_freq_capacity(struct sched_domain *sd, int cpu);
 unsigned long cpufreq_scale_max_freq_capacity(int cpu);
+
+/* sched+ gov: */
+extern void arch_scale_set_max_freq(int cpu, unsigned long freq);
+extern void arch_scale_set_min_freq(int cpu, unsigned long freq);
+extern void arch_scale_set_curr_freq(int cpu, unsigned long freq);
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+extern unsigned int get_sched_cur_freq(int cid);
+#else
+static inline int get_sched_cur_freq(int cid) { return 0; };
+#endif
 #endif /* _LINUX_CPUFREQ_H */

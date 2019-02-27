@@ -1663,9 +1663,23 @@ static inline unsigned long cpu_util(int cpu)
 
 #endif
 
-#ifdef CONFIG_CPU_FREQ_GOV_SCHED
-#define capacity_max SCHED_CAPACITY_SCALE
+enum cpu_dvfs_sched_type {
+	SCHE_INVALID,
+	SCHE_VALID,
+	SCHE_ONESHOT,
+	SCHE_IOWAIT,
+	SCHE_RT,
+	SCHE_DL,
+	NUM_SCHE_TYPE
+};
+
+#define DEFAULT_CAP_MARGIN_DVFS 1280 /* ~20% margin */
+
 extern unsigned int capacity_margin;
+extern unsigned int capacity_margin_dvfs;
+
+#if defined(CONFIG_CPU_FREQ_GOV_SCHED) || defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
+#define capacity_max SCHED_CAPACITY_SCALE
 extern struct static_key __sched_freq;
 
 static inline bool sched_freq(void)
@@ -1674,10 +1688,10 @@ static inline bool sched_freq(void)
 }
 
 DECLARE_PER_CPU(struct sched_capacity_reqs, cpu_sched_capacity_reqs);
-void update_cpu_capacity_request(int cpu, bool request);
+void update_cpu_capacity_request(int cpu, bool request, int type);
 
 static inline void set_cfs_cpu_capacity(int cpu, bool request,
-					unsigned long capacity)
+					unsigned long capacity, int type)
 {
 	struct sched_capacity_reqs *scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 
@@ -1698,39 +1712,56 @@ static inline void set_cfs_cpu_capacity(int cpu, bool request,
 			capacity = 0;
 	}
 #endif
+
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (scr->cfs != capacity) {
+#endif
 		scr->cfs = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, type);
 	}
 }
 
 static inline void set_rt_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).rt != capacity) {
+#endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).rt = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, SCHE_RT);
 	}
 }
 
 static inline void set_dl_cpu_capacity(int cpu, bool request,
 				       unsigned long capacity)
 {
+#ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
+	if (true) {
+#else
 	if (per_cpu(cpu_sched_capacity_reqs, cpu).dl != capacity) {
+#endif
 		per_cpu(cpu_sched_capacity_reqs, cpu).dl = capacity;
-		update_cpu_capacity_request(cpu, request);
+		update_cpu_capacity_request(cpu, request, SCHE_DL);
 	}
 }
 #else
 static inline bool sched_freq(void) { return false; }
 static inline void set_cfs_cpu_capacity(int cpu, bool request,
-					unsigned long capacity)
+					unsigned long capacity,
+					int type)
 { }
 static inline void set_rt_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 { }
 static inline void set_dl_cpu_capacity(int cpu, bool request,
-				       unsigned long capacity)
+				       unsigned long capacity,
+					int type)
 { }
 #endif
 
