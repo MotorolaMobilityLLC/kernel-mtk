@@ -27,6 +27,54 @@
 
 #include "mt6660.h"
 
+struct codec_reg_val {
+	u32 addr;
+	u32 mask;
+	u32 data;
+};
+
+static const struct codec_reg_val e1_reg_inits[] = {
+	{ MT6660_REG_WDT_CTRL, 0x80, 0x00 },
+	{ MT6660_REG_SPS_CTRL, 0x01, 0x00 },
+	{ MT6660_REG_HPF1_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_HPF2_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_SIG_GAIN, 0xff, 0x7b },
+	{ MT6660_REG_PWM_CTRL, 0x08, 0x00 },
+	{ MT6660_REG_TDM_CFG3, 0x400, 0x400 },
+	{ MT6660_REG_AUDIO_IN2_SEL, 0x1c, 0x04 },
+	{ MT6660_REG_RESV1, 0xc0, 0x00 },
+	{ MT6660_REG_RESV2, 0xe0, 0x20 },
+	{ MT6660_REG_RESV3, 0xc0, 0x80 },
+	{ MT6660_REG_RESV11, 0x0c, 0x00 },
+	{ MT6660_REG_RESV17, 0x7777, 0x7272 },
+	{ MT6660_REG_RESV19, 0x08, 0x08 },
+	{ MT6660_REG_RESV21, 0x8f, 0x0f },
+	{ MT6660_REG_RESV31, 0x03, 0x03 },
+	{ MT6660_REG_RESV40, 0x01, 0x00 },
+};
+
+static const struct codec_reg_val e2_reg_inits[] = {
+	{ MT6660_REG_WDT_CTRL, 0x80, 0x00 },
+	{ MT6660_REG_SPS_CTRL, 0x01, 0x00 },
+	{ MT6660_REG_HPF1_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_HPF2_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_SIG_GAIN, 0xff, 0x70 },
+	{ MT6660_REG_PWM_CTRL, 0x30, 0x10 },
+	{ MT6660_REG_AUDIO_IN2_SEL, 0x1c, 0x04 },
+	{ MT6660_REG_RESV1, 0xc0, 0x00 },
+	{ MT6660_REG_RESV11, 0x0c, 0x00 },
+	{ MT6660_REG_RESV17, 0x7777, 0x7271 },
+	{ MT6660_REG_RESV19, 0x08, 0x08 },
+	{ MT6660_REG_RESV31, 0x03, 0x03 },
+	{ MT6660_REG_RESV40, 0x01, 0x00 },
+	{ MT6660_REG_RESV21, 0xff, 0xff },
+	{ MT6660_REG_ADC_USB_MODE, 0x1c, 0x00 },
+	{ MT6660_REG_RESV0, 0x40, 0x00 },
+	{ MT6660_REG_RESV23, 0xffff, 0x1ff8 },
+	{ MT6660_REG_RESV12, 0x0c, 0x08 },
+	{ MT6660_REG_RESV16, 0x01, 0x01 },
+};
+
 static unsigned int mt6660_codec_io_read(struct snd_soc_codec *codec,
 					 unsigned int reg)
 {
@@ -170,74 +218,24 @@ level_change_skip:
 
 static int mt6660_codec_init_setting(struct snd_soc_codec *codec)
 {
-	int ret = 0;
+	struct mt6660_chip *chip = snd_soc_codec_get_drvdata(codec);
+	const struct codec_reg_val *init_table;
+	int i, len, ret = 0;
 
-	/* disable watchdog */
-	ret = snd_soc_update_bits(codec, MT6660_REG_WDT_CTRL, 0x80, 0x00);
-	if (ret < 0)
-		return ret;
-	/* disable clip func */
-	ret = snd_soc_update_bits(codec, MT6660_REG_SPS_CTRL, 0x01, 0x00);
-	if (ret < 0)
-		return ret;
-	/* HPF coefficient for current sense path */
-	ret = snd_soc_write(codec, MT6660_REG_HPF1_COEF, 0x7fdb7ffe);
-	if (ret < 0)
-		return ret;
-	/* HPF coefficient for voltage sense path */
-	ret = snd_soc_write(codec, MT6660_REG_HPF2_COEF, 0x7fdb7ffe);
-	if (ret < 0)
-		return ret;
-	/* SIG Gain */
-	ret = snd_soc_write(codec, MT6660_REG_SIG_GAIN, 0x7b);
-	if (ret < 0)
-		return ret;
-	/* DC_Trace_Chopper Freq_div8 */
-	ret = snd_soc_update_bits(codec, MT6660_REG_PWM_CTRL, 0x08, 0x00);
-	if (ret < 0)
-		return ret;
-	/* change DSTB source to BCK */
-	ret = snd_soc_update_bits(codec, MT6660_REG_TDM_CFG3, 0x400, 0x400);
-	if (ret < 0)
-		return ret;
-	/* fine tune delay for off */
-	ret = snd_soc_update_bits(codec, MT6660_REG_AUDIO_IN2_SEL, 0x1c, 0x04);
-	if (ret < 0)
-		return ret;
-	/* set_vref_pcdd_mode */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV1, 0xc0, 0x00);
-	if (ret < 0)
-		return ret;
-	/* dcm asyn threshold b'10001 */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV2, 0xe0, 0x20);
-	if (ret < 0)
-		return ret;
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV3, 0xc0, 0x80);
-	if (ret < 0)
-		return ret;
-	/* config IB_CMP_SEL */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV11, 0x0c, 0x00);
-	if (ret < 0)
-		return ret;
-	/* SPK driving strength */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV17, 0x7777, 0x7272);
-	if (ret < 0)
-		return ret;
-	/* controlled by digital boost controller */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV19, 0x08, 0x08);
-	if (ret < 0)
-		return ret;
-	/* DC_TRACE & PWN_CMFB */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV21, 0x8f, 0x0f);
-	if (ret < 0)
-		return ret;
-	/* D_IB_D_CMP[1:0] = 2.5uA */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV31, 0x03, 0x03);
-	if (ret < 0)
-		return ret;
-	/* D_IOFF_RAMO= 10uA */
-	ret = snd_soc_update_bits(codec, MT6660_REG_RESV40, 0x01, 0x00);
-	return ret;
+	if (chip->chip_rev > 0xe1) {
+		init_table = e2_reg_inits;
+		len = ARRAY_SIZE(e2_reg_inits);
+	} else {
+		init_table = e1_reg_inits;
+		len = ARRAY_SIZE(e1_reg_inits);
+	}
+	for (i = 0; i < len; i++) {
+		ret = snd_soc_update_bits(codec, init_table[i].addr,
+					init_table[i].mask, init_table[i].data);
+		if (ret < 0)
+			return ret;
+	}
+	return 0;
 }
 
 static int mt6660_codec_register_param_device(struct mt6660_chip *chip)
@@ -284,8 +282,8 @@ int mt6660_codec_trigger_param_write(struct mt6660_chip *chip,
 						     data[i + 1], data + i + 2);
 #endif /* CONFIG_RT_REGMAP */
 		if (ret <  0) {
-			dev_err(codec->dev, "reg[0x%02x] write fail\n",
-				data[i]);
+			dev_err(codec->dev,
+				"reg[0x%02x] write fail\n", data[i]);
 			break;
 		}
 		i += (data[i + 1] + 2);
