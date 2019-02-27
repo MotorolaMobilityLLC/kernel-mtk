@@ -1391,6 +1391,10 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					gpu_freq_pre = ged_kpi_gpu_dvfs(
 						time_spent, psKPI->t_gpu_target
 						, g_force_gpu_dvfs_fallback);
+				else
+					gpu_freq_pre = ged_kpi_gpu_dvfs(
+						time_spent, psKPI->t_gpu_target
+						, 1); /* fallback mode */
 				last_3D_done = cur_3D_done;
 
 				if (gx_game_mode)
