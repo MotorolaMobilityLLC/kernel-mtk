@@ -131,7 +131,6 @@ class EintObj(ModuleObj):
 
         self.__gpio_obj.set_eint_map_table(EintData._map_table)
 
-
     #def compare(self, value):
         #return string.atoi(value[4:])
 
@@ -328,7 +327,7 @@ class EintObj_MT6750S(EintObj):
     def fill_mappingTable(self):
         return ''
 
-class EintObj_MT6758(EintObj):
+class EintObj_MT6739(EintObj):
     def __init__(self, gpio_obj):
         EintObj.__init__(self, gpio_obj)
 
