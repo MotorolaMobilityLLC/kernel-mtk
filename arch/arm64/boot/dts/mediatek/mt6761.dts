@@ -1674,7 +1674,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			/*WDT_EINT conn_wdt_irq_b*/
 			   <GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>,
 			/*conn2ap_sr_irq*/
-			   <GIC_SPI 214 IRQ_TYPE_LEVEL_LOW>;
+			   <GIC_SPI 214 IRQ_TYPE_EDGE_RISING>;
 		clocks = <&scpsys SCP_SYS_CONN>;
 		clock-names = "conn";
 	};
