@@ -684,9 +684,9 @@ void fg_int_end_flow(intr_no)
 void fg_temp_c_int_handler(void)
 {
 	/* int curr_temp; */
-	fg_construct_table_by_temp(true, pdata->temperature_tb1);
-	fg_construct_vboot(pdata->temperature_tb1);
-	/* fg_debug_dump(pdata->temperature_tb1);*/
+	fg_construct_table_by_temp(true, ptable->temperature_tb1);
+	fg_construct_vboot(ptable->temperature_tb1);
+	/* fg_debug_dump(ptable->temperature_tb1);*/
 	fg_update_c_dod();
 
 	fg_set_soc_by_vc_mode();
@@ -702,75 +702,93 @@ void fgr_set_cust_data(void)
 
 int fg_get_saddles(void)
 {
-	return ptable->fg_profile_t0_size;
+	return ptable->fg_profile[0].size;
 }
 
 struct FUELGAUGE_PROFILE_STRUCT *fg_get_profile(int temperature)
 {
-	if (pdata->temperature_t0 == temperature)
-		return &ptable->fg_profile_t0[0];
-	else if (pdata->temperature_t1 == temperature)
-		return &ptable->fg_profile_t1[0];
-	else if (pdata->temperature_t2 == temperature)
-		return &ptable->fg_profile_t2[0];
-	else if (pdata->temperature_t3 == temperature)
-		return &ptable->fg_profile_t3[0];
-	else if (pdata->temperature_t4 == temperature)
-		return &ptable->fg_profile_t4[0];
-	else if (pdata->temperature_tb0 == temperature)
+	int i;
+
+	for (i = 0; i < ptable->active_table_number; i++)
+		if (ptable->fg_profile[i].temperature == temperature)
+			return &ptable->fg_profile[i].fg_profile[0];
+
+	if (ptable->temperature_tb0 == temperature)
 		return &ptable->fg_profile_temperature_0[0];
-	else if (pdata->temperature_tb1 == temperature)
+
+	if (ptable->temperature_tb1 == temperature)
 		return &ptable->fg_profile_temperature_1[0];
-	else
-		return NULL;
+
+	bm_err(
+		"fg_get_profile: no table for %d\n",
+		temperature);
+
+	return NULL;
 }
+
 
 int fg_check_temperature_order(int *is_ascending, int *is_descending)
 {
-	if (pdata->additional_battery_table_en == 0) {
-		if ((pdata->temperature_t0 < pdata->temperature_t1) &&
-			(pdata->temperature_t1 < pdata->temperature_t2) &&
-			(pdata->temperature_t2 < pdata->temperature_t3)) {
-			*is_ascending = 1;
-			*is_descending = 0;
-		} else if ((pdata->temperature_t0 > pdata->temperature_t1) &&
-			(pdata->temperature_t1 > pdata->temperature_t2) &&
-			(pdata->temperature_t2 > pdata->temperature_t3)) {
-			*is_ascending = 0;
-			*is_descending = 1;
-		} else {
-			*is_ascending = 0;
-			*is_descending = 0;
-			return -1;
-		}
-	} else {
-		if ((pdata->temperature_t0 < pdata->temperature_t1) &&
-			(pdata->temperature_t1 < pdata->temperature_t2) &&
-			(pdata->temperature_t2 < pdata->temperature_t3) &&
-			(pdata->temperature_t3 < pdata->temperature_t4)) {
-			*is_ascending = 1;
-			*is_descending = 0;
-		} else if ((pdata->temperature_t0 > pdata->temperature_t1) &&
-			(pdata->temperature_t1 > pdata->temperature_t2) &&
-			(pdata->temperature_t2 > pdata->temperature_t3) &&
-			(pdata->temperature_t3 > pdata->temperature_t4)) {
-			*is_ascending = 0;
-			*is_descending = 1;
-		} else {
-			*is_ascending = 0;
-			*is_descending = 0;
-			return -1;
-		}
+	int i;
+
+	*is_ascending = 0;
+	*is_descending = 0;
+	/* is ascending*/
+
+	bm_err("act:%d table: %d %d %d %d %d %d %d %d %d %d\n",
+		ptable->active_table_number,
+		ptable->fg_profile[0].temperature,
+		ptable->fg_profile[1].temperature,
+		ptable->fg_profile[2].temperature,
+		ptable->fg_profile[3].temperature,
+		ptable->fg_profile[4].temperature,
+		ptable->fg_profile[5].temperature,
+		ptable->fg_profile[6].temperature,
+		ptable->fg_profile[7].temperature,
+		ptable->fg_profile[8].temperature,
+		ptable->fg_profile[9].temperature);
+
+	for (i = 0; i < ptable->active_table_number - 1; i++) {
+		if (ptable->fg_profile[i].temperature >
+			ptable->fg_profile[i + 1].temperature)
+			break;
+		*is_ascending = 1;
+		*is_descending = 0;
 	}
+
+	/* is descending*/
+	for (i = 0; i < ptable->active_table_number - 1; i++) {
+		if (ptable->fg_profile[i].temperature <
+			ptable->fg_profile[i + 1].temperature)
+			break;
+		*is_ascending = 0;
+		*is_descending = 1;
+
+	}
+
+	bm_err("active_table_no is %d, %d %d\n",
+		ptable->active_table_number,
+		*is_ascending,
+		*is_descending);
+	for (i = 0; i < ptable->active_table_number; i++) {
+		bm_err("table[%d]:%d\n",
+			i,
+			ptable->fg_profile[i].temperature);
+	}
+
+	if (*is_ascending == 0 && *is_descending == 0)
+		return -1;
+
 	return 0;
 }
+
 
 void fgr_construct_battery_profile(int table_idx)
 {
 	struct FUELGAUGE_PROFILE_STRUCT *low_profile_p = NULL;
 	struct FUELGAUGE_PROFILE_STRUCT *high_profile_p = NULL;
 	struct FUELGAUGE_PROFILE_STRUCT *temp_profile_p = NULL;
-	int low_temp = 0, high_temp = 0, tmpture = 0;
+	int low_temp = 0, high_temp = 0, temperature = 0;
 	int i, saddles;
 	int low_pseudo1 = 0, high_pseudo1 = 0;
 	int low_pseudo100 = 0, high_pseudo100 = 0;
@@ -778,7 +796,7 @@ void fgr_construct_battery_profile(int table_idx)
 	int low_shutdown_zcv = 0, high_shutdown_zcv = 0;
 	int is_ascending, is_descending;
 
-	tmpture = last_temp;
+	temperature = last_temp;
 	temp_profile_p = fg_get_profile(table_idx);
 
 	if (temp_profile_p == NULL) {
@@ -793,266 +811,96 @@ void fgr_construct_battery_profile(int table_idx)
 		return;
 	}
 
+	for (i = 1; i < ptable->active_table_number; i++) {
+		if (is_ascending) {
+			if (temperature <= ptable->fg_profile[i].temperature)
+				break;
+		} else {
+			if (temperature >= ptable->fg_profile[i].temperature)
+				break;
+		}
+	}
+
 	if (is_ascending) {
-		if (tmpture <= pdata->temperature_t1) {
-			low_profile_p =
-				fg_get_profile(pdata->temperature_t0);
-			high_profile_p =
-				fg_get_profile(pdata->temperature_t1);
-			low_temp = pdata->temperature_t0;
-			high_temp = pdata->temperature_t1;
-			low_pseudo1 = pdata->pseudo1_t0;
-			high_pseudo1 = pdata->pseudo1_t1;
-			low_pseudo100 = pdata->pseudo100_t0;
-			high_pseudo100 = pdata->pseudo100_t1;
-			low_qmax = pdata->q_max_t0;
-			high_qmax = pdata->q_max_t1;
-			low_qmax_h = pdata->q_max_t0_h_current;
-			high_qmax_h = pdata->q_max_t1_h_current;
-			low_shutdown_zcv = pdata->shutdown_hl_zcv_t0;
-			high_shutdown_zcv = pdata->shutdown_hl_zcv_t1;
-
-			if (tmpture < low_temp)
-				tmpture = low_temp;
-		} else if (tmpture <= pdata->temperature_t2) {
-			low_profile_p =
-				fg_get_profile(pdata->temperature_t1);
-			high_profile_p =
-				fg_get_profile(pdata->temperature_t2);
-			low_temp = pdata->temperature_t1;
-			high_temp = pdata->temperature_t2;
-			low_pseudo1 = pdata->pseudo1_t1;
-			high_pseudo1 = pdata->pseudo1_t2;
-			low_pseudo100 = pdata->pseudo100_t1;
-			high_pseudo100 = pdata->pseudo100_t2;
-			low_qmax = pdata->q_max_t1;
-			high_qmax = pdata->q_max_t2;
-			low_qmax_h = pdata->q_max_t1_h_current;
-			high_qmax_h = pdata->q_max_t2_h_current;
-			low_shutdown_zcv = pdata->shutdown_hl_zcv_t1;
-			high_shutdown_zcv = pdata->shutdown_hl_zcv_t2;
-
-			if (tmpture < low_temp)
-				tmpture = low_temp;
-		} else {
-			if (pdata->additional_battery_table_en == 0) {
-				low_profile_p =
-					fg_get_profile(pdata->temperature_t2);
-				high_profile_p =
-					fg_get_profile(pdata->temperature_t3);
-				low_temp = pdata->temperature_t2;
-				high_temp = pdata->temperature_t3;
-				low_pseudo1 = pdata->pseudo1_t2;
-				high_pseudo1 = pdata->pseudo1_t3;
-				low_pseudo100 = pdata->pseudo100_t2;
-				high_pseudo100 = pdata->pseudo100_t3;
-				low_qmax = pdata->q_max_t2;
-				high_qmax = pdata->q_max_t3;
-				low_qmax_h = pdata->q_max_t2_h_current;
-				high_qmax_h = pdata->q_max_t3_h_current;
-				low_shutdown_zcv = pdata->shutdown_hl_zcv_t2;
-				high_shutdown_zcv = pdata->shutdown_hl_zcv_t3;
-
-				if (tmpture > high_temp)
-					tmpture = high_temp;
-			} else {
-				/* pdata->additional_battery_table_en == 1 */
-				if (tmpture <= pdata->temperature_t3) {
-					low_profile_p =
-						fg_get_profile(
-						pdata->temperature_t2);
-					high_profile_p =
-						fg_get_profile(
-						pdata->temperature_t3);
-					low_temp = pdata->temperature_t2;
-					high_temp = pdata->temperature_t3;
-					low_pseudo1 = pdata->pseudo1_t2;
-					high_pseudo1 = pdata->pseudo1_t3;
-					low_pseudo100 = pdata->pseudo100_t2;
-					high_pseudo100 = pdata->pseudo100_t3;
-					low_qmax = pdata->q_max_t2;
-					high_qmax = pdata->q_max_t3;
-					low_qmax_h = pdata->q_max_t2_h_current;
-					high_qmax_h = pdata->q_max_t3_h_current;
-					low_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t2;
-					high_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t3;
-
-					if (tmpture < low_temp)
-						tmpture = low_temp;
-				} else {
-					low_profile_p =
-						fg_get_profile(
-						pdata->temperature_t3);
-					high_profile_p =
-						fg_get_profile(
-						pdata->temperature_t4);
-					low_temp = pdata->temperature_t3;
-					high_temp = pdata->temperature_t4;
-					low_pseudo1 = pdata->pseudo1_t3;
-					high_pseudo1 = pdata->pseudo1_t4;
-					low_pseudo100 = pdata->pseudo100_t3;
-					high_pseudo100 = pdata->pseudo100_t4;
-					low_qmax = pdata->q_max_t3;
-					high_qmax = pdata->q_max_t4;
-					low_qmax_h = pdata->q_max_t3_h_current;
-					high_qmax_h = pdata->q_max_t4_h_current;
-					low_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t3;
-					high_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t4;
-
-					if (tmpture > high_temp)
-						tmpture = high_temp;
-				}
-			}
-		}
+		low_profile_p =
+			fg_get_profile(
+			ptable->fg_profile[i - 1].temperature);
+		high_profile_p =
+			fg_get_profile(
+			ptable->fg_profile[i].temperature);
+		low_temp =
+			ptable->fg_profile[i - 1].temperature;
+		high_temp =
+			ptable->fg_profile[i].temperature;
+		low_pseudo1 =
+			ptable->fg_profile[i - 1].pseudo1;
+		high_pseudo1 =
+			ptable->fg_profile[i].pseudo1;
+		low_pseudo100 =
+			ptable->fg_profile[i - 1].pseudo100;
+		high_pseudo100 =
+			ptable->fg_profile[i].pseudo100;
+		low_qmax = ptable->fg_profile[i - 1].q_max;
+		high_qmax = ptable->fg_profile[i].q_max;
+		low_qmax_h =
+			ptable->fg_profile[i - 1].q_max_h_current;
+		high_qmax_h =
+			ptable->fg_profile[i].q_max_h_current;
+		low_shutdown_zcv =
+			ptable->fg_profile[i - 1].shutdown_hl_zcv;
+		high_shutdown_zcv =
+			ptable->fg_profile[i].shutdown_hl_zcv;
+	} else {
+		low_profile_p =
+			fg_get_profile(ptable->fg_profile[i].temperature);
+		high_profile_p =
+			fg_get_profile(ptable->fg_profile[i - 1].temperature);
+		low_temp = ptable->fg_profile[i].temperature;
+		high_temp = ptable->fg_profile[i - 1].temperature;
+		low_pseudo1 = ptable->fg_profile[i].pseudo1;
+		high_pseudo1 = ptable->fg_profile[i - 1].pseudo1;
+		low_pseudo100 = ptable->fg_profile[i].pseudo100;
+		high_pseudo100 = ptable->fg_profile[i - 1].pseudo100;
+		low_qmax = ptable->fg_profile[i].q_max;
+		high_qmax = ptable->fg_profile[i - 1].q_max;
+		low_qmax_h = ptable->fg_profile[i].q_max_h_current;
+		high_qmax_h = ptable->fg_profile[i - 1].q_max_h_current;
+		low_shutdown_zcv = ptable->fg_profile[i].shutdown_hl_zcv;
+		high_shutdown_zcv = ptable->fg_profile[i - 1].shutdown_hl_zcv;
 	}
-	if (is_descending) {
-		if (tmpture >= pdata->temperature_t1) {
-			low_profile_p =
-				fg_get_profile(pdata->temperature_t1);
-			high_profile_p =
-				fg_get_profile(pdata->temperature_t0);
-			low_temp = pdata->temperature_t1;
-			high_temp = pdata->temperature_t0;
-			low_pseudo1 = pdata->pseudo1_t1;
-			high_pseudo1 = pdata->pseudo1_t0;
-			low_pseudo100 = pdata->pseudo100_t1;
-			high_pseudo100 = pdata->pseudo100_t0;
-			low_qmax = pdata->q_max_t1;
-			high_qmax = pdata->q_max_t0;
-			low_qmax_h = pdata->q_max_t1_h_current;
-			high_qmax_h = pdata->q_max_t0_h_current;
-			low_shutdown_zcv = pdata->shutdown_hl_zcv_t1;
-			high_shutdown_zcv = pdata->shutdown_hl_zcv_t0;
+	if (temperature < low_temp)
+		temperature = low_temp;
+	else if (temperature > high_temp)
+		temperature = high_temp;
 
-			if (tmpture > high_temp)
-				tmpture = high_temp;
-		} else if (tmpture >= pdata->temperature_t2) {
-			low_profile_p =
-				fg_get_profile(pdata->temperature_t2);
-			high_profile_p =
-				fg_get_profile(pdata->temperature_t1);
-			low_temp = pdata->temperature_t2;
-			high_temp = pdata->temperature_t1;
-			low_pseudo1 = pdata->pseudo1_t2;
-			high_pseudo1 = pdata->pseudo1_t1;
-			low_pseudo100 = pdata->pseudo100_t2;
-			high_pseudo100 = pdata->pseudo100_t1;
-			low_qmax = pdata->q_max_t2;
-			high_qmax = pdata->q_max_t1;
-			low_qmax_h = pdata->q_max_t2_h_current;
-			high_qmax_h = pdata->q_max_t1_h_current;
-			low_shutdown_zcv = pdata->shutdown_hl_zcv_t2;
-			high_shutdown_zcv = pdata->shutdown_hl_zcv_t1;
-
-			if (tmpture > high_temp)
-				tmpture = high_temp;
-		} else {
-			if (pdata->additional_battery_table_en == 0) {
-				low_profile_p =
-					fg_get_profile(pdata->temperature_t3);
-				high_profile_p =
-					fg_get_profile(pdata->temperature_t2);
-				low_temp = pdata->temperature_t3;
-				high_temp = pdata->temperature_t2;
-				low_pseudo1 = pdata->pseudo1_t3;
-				high_pseudo1 = pdata->pseudo1_t2;
-				low_pseudo100 = pdata->pseudo100_t3;
-				high_pseudo100 = pdata->pseudo100_t2;
-				low_qmax = pdata->q_max_t3;
-				high_qmax = pdata->q_max_t2;
-				low_qmax_h = pdata->q_max_t3_h_current;
-				high_qmax_h = pdata->q_max_t2_h_current;
-				low_shutdown_zcv = pdata->shutdown_hl_zcv_t3;
-				high_shutdown_zcv = pdata->shutdown_hl_zcv_t2;
-
-				if (tmpture < low_temp)
-					tmpture = low_temp;
-			} else {
-				/* pdata->additional_battery_table_en == 1 */
-				if (tmpture >= pdata->temperature_t3) {
-					low_profile_p =
-						fg_get_profile(
-						pdata->temperature_t3);
-					high_profile_p =
-						fg_get_profile(
-						pdata->temperature_t2);
-					low_temp = pdata->temperature_t3;
-					high_temp = pdata->temperature_t2;
-					low_pseudo1 = pdata->pseudo1_t3;
-					high_pseudo1 = pdata->pseudo1_t2;
-					low_pseudo100 = pdata->pseudo100_t3;
-					high_pseudo100 = pdata->pseudo100_t2;
-					low_qmax = pdata->q_max_t3;
-					high_qmax = pdata->q_max_t2;
-					low_qmax_h = pdata->q_max_t3_h_current;
-					high_qmax_h = pdata->q_max_t2_h_current;
-					low_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t3;
-					high_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t2;
-
-					if (tmpture > high_temp)
-						tmpture = high_temp;
-				} else {
-					low_profile_p =
-						fg_get_profile(
-						pdata->temperature_t4);
-					high_profile_p =
-						fg_get_profile(
-						pdata->temperature_t3);
-					low_temp = pdata->temperature_t4;
-					high_temp = pdata->temperature_t3;
-					low_pseudo1 = pdata->pseudo1_t4;
-					high_pseudo1 = pdata->pseudo1_t3;
-					low_pseudo100 = pdata->pseudo100_t4;
-					high_pseudo100 = pdata->pseudo100_t3;
-					low_qmax = pdata->q_max_t4;
-					high_qmax = pdata->q_max_t3;
-					low_qmax_h = pdata->q_max_t4_h_current;
-					high_qmax_h = pdata->q_max_t3_h_current;
-					low_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t4;
-					high_shutdown_zcv =
-						pdata->shutdown_hl_zcv_t3;
-
-					if (tmpture < low_temp)
-						tmpture = low_temp;
-				}
-			}
-		}
-	}
 
 	if (table_idx == 255)
-		T_table = tmpture;
+		T_table = temperature;
 	if (table_idx == 254)
-		T_table_c = tmpture;
+		T_table_c = temperature;
 
 	saddles = fg_get_saddles();
 
 	for (i = 0; i < saddles; i++) {
 		temp_profile_p[i].mah =
 		interpolation(low_temp, low_profile_p[i].mah,
-		high_temp, high_profile_p[i].mah, tmpture);
+		high_temp, high_profile_p[i].mah, temperature);
 		temp_profile_p[i].voltage =
 		interpolation(low_temp, low_profile_p[i].voltage,
-		high_temp, high_profile_p[i].voltage, tmpture);
+		high_temp, high_profile_p[i].voltage, temperature);
 		temp_profile_p[i].resistance =
 		interpolation(low_temp, low_profile_p[i].resistance,
-		high_temp, high_profile_p[i].resistance, tmpture);
+		high_temp, high_profile_p[i].resistance, temperature);
 	}
 
-	if (table_idx == pdata->temperature_tb0) {
+	if (table_idx == ptable->temperature_tb0) {
 		if (pdata->pseudo1_en == true)
 			batterypseudo1_h = interpolation(
 			low_temp,
 			low_pseudo1,
 			high_temp,
 			high_pseudo1,
-			tmpture);
+			temperature);
 
 		if (pdata->pseudo100_en == true)
 			batterypseudo100 = interpolation(
@@ -1060,18 +908,18 @@ void fgr_construct_battery_profile(int table_idx)
 			low_pseudo100,
 			high_temp,
 			high_pseudo100,
-			tmpture);
+			temperature);
 
 		bm_trace(
 			"[Profile_Table]pseudo1_en:[%d] lowT %d %d %d lowPs1 %d highPs1 %d batterypseudo1_h [%d]\n",
 			pdata->pseudo1_en, low_temp,
-			high_temp, tmpture,
+			high_temp, temperature,
 			low_pseudo1, high_pseudo1,
 			batterypseudo1_h);
 		bm_trace(
 			"[Profile_Table]pseudo100_en:[%d] %d lowT %d %d %d low100 %d %d [%d]\n",
 			pdata->pseudo100_en, pdata->pseudo100_en_dis,
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			low_pseudo100, high_pseudo100,
 			batterypseudo100);
 
@@ -1082,21 +930,21 @@ void fgr_construct_battery_profile(int table_idx)
 		qmax_t_0ma_h = interpolation(
 			low_temp, UNIT_TRANS_10 * low_qmax,
 			high_temp, UNIT_TRANS_10 * high_qmax,
-			tmpture);
+			temperature);
 		qmax_t_Nma_h = interpolation(
 			low_temp, UNIT_TRANS_10 * low_qmax_h,
 			high_temp, UNIT_TRANS_10 * high_qmax_h,
-			tmpture);
+			temperature);
 
 		bm_trace(
 			"[Profile_Table]lowT %d %d %d lowQ %d %d qmax_t_0ma_h [%d]\n",
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			UNIT_TRANS_10 * low_qmax,
 			UNIT_TRANS_10 * high_qmax,
 			qmax_t_0ma_h);
 		bm_trace(
 			"[Profile_Table]lowT %d %d %d lowQh %d %d qmax_t_Nma_h [%d]\n",
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			UNIT_TRANS_10 * low_qmax_h,
 			UNIT_TRANS_10 * high_qmax_h,
 			qmax_t_Nma_h);
@@ -1104,16 +952,16 @@ void fgr_construct_battery_profile(int table_idx)
 		shutdown_hl_zcv = interpolation(
 			low_temp, UNIT_TRANS_10 * low_shutdown_zcv,
 			high_temp, UNIT_TRANS_10 * high_shutdown_zcv,
-			tmpture);
+			temperature);
 
 		bm_trace(
 			"[Profile_Table]lowT %d %d %d LowShutZCV %d HighShutZCV %d shutdown_hl_zcv [%d]\n",
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			UNIT_TRANS_10 * low_shutdown_zcv,
 			UNIT_TRANS_10 * high_shutdown_zcv,
 			shutdown_hl_zcv);
 
-	} else if (table_idx == pdata->temperature_tb1) {
+	} else if (table_idx == ptable->temperature_tb1) {
 /*
  *	low_qmax and High_qmax need to do
  *	UNIT_TRANS_10 from "1 mAHR" to "0.1 mAHR"
@@ -1121,21 +969,21 @@ void fgr_construct_battery_profile(int table_idx)
 		qmax_t_0ma_h_tb1 = interpolation(
 		low_temp, UNIT_TRANS_10 * low_qmax,
 			high_temp, UNIT_TRANS_10 * high_qmax,
-			tmpture);
+			temperature);
 		qmax_t_Nma_h_tb1 = interpolation(
 			low_temp, UNIT_TRANS_10 * low_qmax_h,
 			high_temp, UNIT_TRANS_10 * high_qmax_h,
-			tmpture);
+			temperature);
 
 		bm_trace(
 			"[Profile_Table]lowT %d %d %d lowQ %d %d qmax_t_0ma_h [%d]\n",
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			UNIT_TRANS_10 * low_qmax,
 			UNIT_TRANS_10 * high_qmax,
 			qmax_t_0ma_h_tb1);
 		bm_trace(
 			"[Profile_Table]lowT %d %d %d lowQh %d %d qmax_t_Nma_h [%d]\n",
-			low_temp, high_temp, tmpture,
+			low_temp, high_temp, temperature,
 			UNIT_TRANS_10 * low_qmax_h,
 			UNIT_TRANS_10 * high_qmax_h,
 			qmax_t_Nma_h_tb1);
@@ -1510,13 +1358,13 @@ void fg_construct_battery_profile_by_qmax(int qmax, int table_index)
 
 	profile_p = fg_get_profile(table_index);
 
-	if (table_index == pdata->temperature_tb0) {
+	if (table_index == ptable->temperature_tb0) {
 		qmax_t_0ma = qmax;
 
 		for (i = 0; i < 100; i++)
 			profile_p[i].percentage =
 			profile_p[i].mah * 10000 / qmax_t_0ma;
-	} else if (table_index == pdata->temperature_tb1) {
+	} else if (table_index == ptable->temperature_tb1) {
 		qmax_t_0ma_tb1 = qmax;
 		for (i = 0; i < 100; i++)
 			profile_p[i].percentage =
@@ -1538,7 +1386,7 @@ void fg_construct_battery_profile_by_vboot(int _vboot, int table_index)
 		if (profile_p[j].voltage < _vboot)
 			break;
 
-	if (table_index == pdata->temperature_tb0) {
+	if (table_index == ptable->temperature_tb0) {
 		if (j == 0) {
 			qmax_t_0ma = profile_p[0].mah;
 		} else if (j >= 100) {
@@ -1569,7 +1417,7 @@ void fg_construct_battery_profile_by_vboot(int _vboot, int table_index)
 			profile_p[i].percentage =
 			profile_p[i].mah * 10000 / qmax_t_0ma;
 
-	} else if (table_index == pdata->temperature_tb1) {
+	} else if (table_index == ptable->temperature_tb1) {
 		if (j == 0) {
 			qmax_t_0ma_tb1 = profile_p[0].mah;
 		} else if (j >= 100) {
@@ -1603,7 +1451,7 @@ void fg_construct_battery_profile_by_vboot(int _vboot, int table_index)
 			profile_p[i].mah * 10000 / qmax_t_0ma_tb1;
 	}
 
-	if (table_index == pdata->temperature_tb1) {
+	if (table_index == ptable->temperature_tb1) {
 		bm_err("[fg_construct_by_vboot]index %d idx:%d _vboot:%d %d qmax_t_0ma_tb1:%d\r\n",
 			table_index, j, _vboot,
 			profile_p[j].voltage, qmax_t_0ma_tb1);
@@ -1724,10 +1572,10 @@ void fg_construct_vboot(int table_idx)
 
 	if (pdata->qmax_sel == 0) {
 		vboot = pdata->pmic_min_vol + iboot * rac / 10000;
-		if (table_idx == pdata->temperature_tb0)
+		if (table_idx == ptable->temperature_tb0)
 			fg_construct_battery_profile_by_qmax(
 			qmax_t_0ma_h, table_idx);
-		if (table_idx == pdata->temperature_tb1)
+		if (table_idx == ptable->temperature_tb1)
 			fg_construct_battery_profile_by_qmax(
 			qmax_t_0ma_h_tb1, table_idx);
 	} else if (pdata->qmax_sel == 1) {
@@ -1829,7 +1677,7 @@ int SOC_to_OCV_c(int _soc)
 	int i = 0, size, high;
 	int _dod = 10000 - _soc;
 
-	profile_p = fg_get_profile(pdata->temperature_tb1);
+	profile_p = fg_get_profile(ptable->temperature_tb1);
 	if (profile_p == NULL) {
 		bm_err("[FGADC] fgauge get c table: fail !\r\n");
 		return 0;
@@ -1870,7 +1718,7 @@ int DOD_to_OCV_c(int _dod)
 	int ret_vol = 0;
 	int i = 0, size, high;
 
-	profile_p = fg_get_profile(pdata->temperature_tb1);
+	profile_p = fg_get_profile(ptable->temperature_tb1);
 	if (profile_p == NULL) {
 		bm_err("[FGADC] fgauge get c table fail !\r\n");
 		return 0;
@@ -1911,7 +1759,7 @@ int OCV_to_SOC_c(int _ocv)
 	int ret_vol = 0;
 	int i = 0, size, high;
 
-	profile_p = fg_get_profile(pdata->temperature_tb1);
+	profile_p = fg_get_profile(ptable->temperature_tb1);
 	if (profile_p == NULL) {
 		bm_err("[FGADC]OCV_to_SOC_cfgauge can't get c table: fail !\r\n");
 		return 0;
@@ -1958,7 +1806,7 @@ int OCV_to_DOD_c(int _ocv)
 	int ret_vol = 0;
 	int i = 0, size, high;
 
-	profile_p = fg_get_profile(pdata->temperature_tb1);
+	profile_p = fg_get_profile(ptable->temperature_tb1);
 	if (profile_p == NULL) {
 		bm_err("[FGADC] fgauge can't get c table: fail !\r\n");
 		return 0;
@@ -2075,11 +1923,11 @@ void battery_recovery_init(void)
 		bm_err("battery_recovery: enter fgr_set_cust_data\n");
 		fgr_set_cust_data();
 		bm_err("battery_recovery: leave fgr_set_cust_data\n");
-		fg_construct_table_by_temp(true, pdata->temperature_tb1);
+		fg_construct_table_by_temp(true, ptable->temperature_tb1);
 		bm_err("battery_recovery: leave fg_construct_table_by_temp\n");
-		fg_construct_vboot(pdata->temperature_tb1);
+		fg_construct_vboot(ptable->temperature_tb1);
 		bm_err("battery_recovery: leave fg_construct_vboot\n");
-		fgr_dump_table(pdata->temperature_tb1);
+		fgr_dump_table(ptable->temperature_tb1);
 		bm_err("battery_recovery: leave fgr_dump_table\n");
 		fgr_dod_init();
 		bm_err("battery_recovery: leave fgr_dod_init\n");
@@ -2090,8 +1938,8 @@ void battery_recovery_init(void)
 		set_nvram_fail_status(1);
 		bm_err("battery_recovery: set_enter_recovery(set_nvram_fail_status)done\n");
 		bm_err("battery_recovery %d %d\n",
-			fg_cust_data.pseudo100_t0,
-			fg_table_cust_data.fg_profile_t0_size);
+			fg_table_cust_data.fg_profile[0].pseudo100,
+			fg_table_cust_data.fg_profile[0].size);
 	}
 	bm_err("[battery_recovery] is_evb:%d,%d is_bat_exist %d\n",
 		is_fg_disabled(), fg_interrupt_check(), is_bat_exist);
