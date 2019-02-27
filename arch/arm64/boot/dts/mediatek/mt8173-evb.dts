@@ -245,7 +245,7 @@
 	};
 };
 
-&pwm0 {
+&pwm {
 	pinctrl-names = "default";
 	pinctrl-0 = <&disp_pwm0_pins>;
 	status = "okay";
