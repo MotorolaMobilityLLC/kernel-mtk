@@ -525,8 +525,8 @@ int mt_spower_get_leakage(int dev, unsigned int vol, int deg)
 
 	ret = sptab_lookup(&sptab[dev], (int)vol, deg) >> 10;
 
-	SPOWER_DEBUG("mt_spower_get_leakage-dev=%d, volt=%d, deg=%d, lkg=%d\n",
-		    dev, vol, deg, ret);
+	SPOWER_DEBUG("%s:dev=%d, volt=%d, deg=%d, lkg=%d\n",
+		    __func__, dev, vol, deg, ret);
 	return ret;
 }
 EXPORT_SYMBOL(mt_spower_get_leakage);
