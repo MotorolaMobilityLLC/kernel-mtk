@@ -32,11 +32,6 @@ void vmd1_pmic_setting_on(void)
 {
 	unsigned int vsram_md_vosel = 0x4F; /*993750*/
 
-	pmic_buck_vmodem_lp(SRCLKEN0, 1, 1, HW_LP);
-	pmic_buck_vmodem_lp(SRCLKEN2, 1, 1, HW_LP);
-	pmic_ldo_vsram_md_lp(SW, 1, 1, SW_ON);
-	pmic_ldo_vsram_md_lp(SRCLKEN2, 1, 1, HW_LP);
-
 	/* 1.Call PMIC driver API configure VMODEM voltage */
 	if (g_vmodem_vosel != 0) {
 		pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL,
@@ -60,19 +55,6 @@ void vmd1_pmic_setting_on(void)
 void vmd1_pmic_setting_off(void)
 {
 	PMICLOG("%s\n", __func__);
-
-	pmic_buck_vmodem_lp(SW, 1, 1, SW_OFF);
-	pmic_ldo_vsram_md_lp(SW, 1, 1, SW_OFF);
-
-	/* 1.Call PMIC driver API configure VMODEM off */
-	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_EN, 0);
-	/* 2.Call PMIC driver API configure VSRAM_MD off */
-	pmic_set_register_value(PMIC_RG_LDO_VSRAM_MD_EN, 0);
-
-	PMICLOG("%s vmodem en %d\n", __func__,
-		(pmic_get_register_value(PMIC_DA_VMODEM_EN) & 0x1));
-	PMICLOG("%s vsram_md en %d\n", __func__,
-		(pmic_get_register_value(PMIC_DA_VSRAM_MD_B_EN) & 0x1));
 }
 
 void pmic_enable_smart_reset(unsigned char smart_en,
