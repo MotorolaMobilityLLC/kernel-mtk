@@ -94,11 +94,13 @@ static void gyro_work_func(struct work_struct *work)
 		err = cxt->gyro_data.get_temperature(&temperature);
 		if (err)
 			pr_info("get gyro temperature fails!!\n");
+		else
+			cxt->drv_data.temperature = temperature;
 	}
 
 	/* add wake lock to make sure data can be read before system suspend */
 	if (cxt->gyro_data.get_data != NULL)
-		cxt->gyro_data.get_data(&x, &y, &z, &status);
+		err = cxt->gyro_data.get_data(&x, &y, &z, &status);
 	else
 		pr_err("gyro driver not register data path\n");
 
@@ -215,6 +217,7 @@ static int gyro_enable_and_batch(void)
 			cxt->drv_data.x = GYRO_INVALID_VALUE;
 			cxt->drv_data.y = GYRO_INVALID_VALUE;
 			cxt->drv_data.z = GYRO_INVALID_VALUE;
+			cxt->drv_data.temperature = 0;
 			cxt->is_polling_run = false;
 			pr_debug("gyro stop polling done\n");
 		}
@@ -773,6 +776,7 @@ int gyro_data_report(struct gyro_data *data)
 	event.word[0] = data->x;
 	event.word[1] = data->y;
 	event.word[2] = data->z;
+	event.word[3] = data->temperature;
 	event.reserved = data->reserved[0];
 
 	if (event.reserved == 1)
