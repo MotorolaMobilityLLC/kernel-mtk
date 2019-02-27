@@ -52,14 +52,13 @@
 /* 0 for early porting */
 #define DEVAPC_TURN_ON         1
 #define DEVAPC_USE_CCF         1
-#define DEVAPC_VIO_DEBUG       0
 
 /* Debug message event */
 #define DEVAPC_LOG_NONE        0x00000000
 #define DEVAPC_LOG_INFO        0x00000001
 #define DEVAPC_LOG_DBG         0x00000002
 
-#define DEVAPC_LOG_LEVEL      (DEVAPC_LOG_INFO)
+#define DEVAPC_LOG_LEVEL      (DEVAPC_LOG_DBG)
 
 #define DEVAPC_MSG(fmt, args...) \
 	do {    \
@@ -835,16 +834,6 @@ static int devapc_resume(struct platform_device *dev)
 	return 0;
 }
 
-static int check_debug_input_type(const char *str)
-{
-	if (sysfs_streq(str, "1"))
-		return DAPC_INPUT_TYPE_DEBUG_ON;
-	else if (sysfs_streq(str, "0"))
-		return DAPC_INPUT_TYPE_DEBUG_OFF;
-	else
-		return 0;
-}
-
 #ifdef DBG_ENABLE
 static ssize_t devapc_dbg_read(struct file *file, char __user *buffer,
 	size_t count, loff_t *ppos)
@@ -869,35 +858,79 @@ static ssize_t devapc_dbg_read(struct file *file, char __user *buffer,
 
 	return retval;
 }
-#endif
 
 static ssize_t devapc_dbg_write(struct file *file, const char __user *buffer,
 	size_t count, loff_t *data)
 {
-	char desc[32];
-	int len = 0;
-	int input_type;
+	char input[32];
+	char *pinput = NULL;
+	char *tmp = NULL;
+	long i;
+	int len = 0, ret = 0;
+	long slave_type = 0, domain = 0, index = 0;
 
-	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
-	if (copy_from_user(desc, buffer, len))
+	pr_info("[DEVAPC] debugging...\n");
+	len = (count < (sizeof(input) - 1)) ? count : (sizeof(input) - 1);
+	if (copy_from_user(input, buffer, len)) {
+		pr_info("[DEVAPC] copy from user failed!\n");
 		return -EFAULT;
+	}
 
-	desc[len] = '\0';
+	input[len] = '\0';
+	pinput = input;
 
-	input_type = check_debug_input_type(desc);
-	if (!input_type)
-		return -EFAULT;
-
-	if (input_type == DAPC_INPUT_TYPE_DEBUG_ON) {
-		enable_dynamic_one_core_violation_debug = 1;
-		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Enabled\n");
-	} else if (input_type == DAPC_INPUT_TYPE_DEBUG_OFF) {
+	if (sysfs_streq(input, "0")) {
 		enable_dynamic_one_core_violation_debug = 0;
-		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Disabled\n");
+		pr_info("[DEVAPC] One-Core Debugging: Disabled\n");
+	} else if (sysfs_streq(input, "1")) {
+		enable_dynamic_one_core_violation_debug = 1;
+		pr_info("[DEVAPC] One-Core Debugging: Enabled\n");
+	} else {
+		tmp = strsep(&pinput, " ");
+		if (tmp != NULL)
+			i = kstrtol(tmp, 10, &slave_type);
+		else
+			slave_type = E_DAPC_OTHERS_SLAVE;
+
+		if (slave_type >= E_DAPC_OTHERS_SLAVE) {
+			pr_info("[DEVAPC] wrong input slave type\n");
+			return -EFAULT;
+		}
+		pr_info("[DEVAPC] slave_type = %lu\n", slave_type);
+
+		tmp = strsep(&pinput, " ");
+		if (tmp != NULL)
+			i = kstrtol(tmp, 10, &domain);
+		else
+			domain = E_DOMAIN_OTHERS;
+
+		if (domain >= E_DOMAIN_OTHERS) {
+			pr_info("[DEVAPC] wrong input domain type\n");
+			return -EFAULT;
+		}
+		pr_info("[DEVAPC] domain id = %lu\n", domain);
+
+		tmp = strsep(&pinput, " ");
+		if (tmp != NULL)
+			i = kstrtol(tmp, 10, &index);
+		else
+			index = 0xFFFFFFFF;
+
+		if (index > DEVAPC_TOTAL_SLAVES) {
+			pr_info("[DEVAPC] wrong input index type\n");
+			return -EFAULT;
+		}
+		pr_info("[DEVAPC] slave index = %lu\n", index);
+
+		ret = mt_secure_call(MTK_SIP_LK_DAPC, slave_type,
+				domain, index, 0);
+
+		pr_info("dump devapc reg = 0x%x.\n", ret);
 	}
 
 	return count;
 }
+#endif
 
 static int devapc_dbg_open(struct inode *inode, struct file *file)
 {
@@ -907,10 +940,11 @@ static int devapc_dbg_open(struct inode *inode, struct file *file)
 static const struct file_operations devapc_dbg_fops = {
 	.owner = THIS_MODULE,
 	.open  = devapc_dbg_open,
-	.write = devapc_dbg_write,
 #ifdef DBG_ENABLE
+	.write = devapc_dbg_write,
 	.read = devapc_dbg_read,
 #else
+	.write = NULL,
 	.read = NULL,
 #endif
 };
