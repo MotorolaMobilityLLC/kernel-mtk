@@ -16,8 +16,8 @@
 
 /* Feature options */
 /* #define LAST_DRAMC */
-#define SW_ZQCS
-#define SW_TX_TRACKING
+/* #define SW_ZQCS */
+/* #define SW_TX_TRACKING */
 /* #define DVFS_READY */
 #ifdef CONFIG_MTK_EMI
 #define EMI_READY
