@@ -51,14 +51,6 @@ void mdla_dump_reg(void)
 	dump_reg_cfg(MDLA_RP_RST);
 	dump_reg_cfg(MDLA_RP_CON);
 	dump_reg_cfg(MDLA_RP_PRE_FUSE);
-	dump_reg_cfg(MDLA_SPARE_0);
-	dump_reg_cfg(MDLA_SPARE_1);
-	dump_reg_cfg(MDLA_SPARE_2);
-	dump_reg_cfg(MDLA_SPARE_3);
-	dump_reg_cfg(MDLA_SPARE_4);
-	dump_reg_cfg(MDLA_SPARE_5);
-	dump_reg_cfg(MDLA_SPARE_6);
-	dump_reg_cfg(MDLA_SPARE_7);
 
 	dump_reg_top(MREG_TOP_G_REV);
 	dump_reg_top(MREG_TOP_G_INTP0);

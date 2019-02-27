@@ -23,6 +23,7 @@ unsigned int mdla_reg_read(u32 offset);
 extern unsigned long gsm_bitmap[];
 extern void *apu_mdla_gsm_top;
 extern void *apu_mdla_biu_top;
+extern u32 mdla_timeout;
 #else
 static inline
 unsigned int mdla_dump_reg(void)
