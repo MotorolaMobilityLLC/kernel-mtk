@@ -1474,20 +1474,19 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 	apdma: dma-controller@11000580 {
-		compatible = "mediatek,mt2712-uart-dma";
+		compatible = "mediatek,mt6577-uart-dma";
 		reg = <0 0x11000680 0 0x80>,
 		      <0 0x11000700 0 0x80>,
 		      <0 0x11000780 0 0x80>,
 		      <0 0x11000800 0 0x80>;
-		interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 105 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 106 IRQ_TYPE_LEVEL_LOW>,
-			     <GIC_SPI 107 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 109 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 110 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 111 IRQ_TYPE_LEVEL_LOW>,
+			     <GIC_SPI 116 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao CLK_IFR_AP_DMA>;
 		clock-names = "apdma";
 		#dma-cells = <1>;
 	};
-
 	uart0: serial@11020000 {
 		compatible = "mediatek,mt6758-uart",
 			     "mediatek,mt6577-uart";
