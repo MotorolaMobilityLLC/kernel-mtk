@@ -142,6 +142,7 @@ void exception_header_init(void *oldbufp, enum scp_core_id id)
 
 	uint8_t *bufp = oldbufp;
 	uint32_t cpu;
+	uint32_t dram_size = 0;
 
 	/* NT_PRPSINFO */
 	struct elf32_prpsinfo prpsinfo;
@@ -181,9 +182,11 @@ void exception_header_init(void *oldbufp, enum scp_core_id id)
 	phdr->p_vaddr = CRASH_MEMORY_OFFSET;
 	phdr->p_paddr = CRASH_MEMORY_OFFSET;
 
+	if ((int)scp_region_info_copy.ap_dram_size > 0)
+		dram_size = scp_region_info_copy.ap_dram_size;
 
-	phdr->p_filesz = (SCP_A_TCM_SIZE - CRASH_MEMORY_OFFSET);
-	phdr->p_memsz = (SCP_A_TCM_SIZE - CRASH_MEMORY_OFFSET);
+	phdr->p_filesz = CRASH_MEMORY_LENGTH + roundup(dram_size, 4);
+	phdr->p_memsz = CRASH_MEMORY_LENGTH + roundup(dram_size, 4);
 
 
 	phdr->p_align = 0;
