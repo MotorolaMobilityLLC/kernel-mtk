@@ -7211,7 +7211,15 @@ static int select_energy_cpu_brute(struct task_struct *p, int prev_cpu, int sync
 			if (tmp_backup < 0 || energy_diff(&eenv) >= 0) {
 				schedstat_inc(p->se.statistics.nr_wakeups_secb_no_nrg_sav);
 				schedstat_inc(this_rq()->eas_stats.secb_no_nrg_sav);
-				target_cpu = prev_cpu;
+
+				/* enhance: if previous cpu not idle,
+				 *	    choose better another silbing
+				 */
+				if (idle_cpu(prev_cpu))
+					target_cpu = prev_cpu;
+				else
+					target_cpu = select_max_spare_capacity(p, prev_cpu);
+
 				goto unlock;
 			}
 		}
