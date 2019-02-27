@@ -50,6 +50,7 @@
 #define MTK_IDLE_FEATURE_ENABLE_SODI    (0)
 #define MTK_IDLE_FEATURE_ENABLE_SODI3   (0)
 #define MTK_FEATURE_EANABLE_KICK_SPMFW	(0)
+#define MTK_SPM_HARDWARE_CG_CHECK	(0)
 
 /**************************************
  * Config and Parameter
@@ -132,6 +133,7 @@ enum {
 	SPM_ARGS_DPIDLE_FINISH,
 	SPM_ARGS_PCM_WDT,
 	SPM_ARGS_SUSPEND_CALLBACK,
+	SPM_ARGS_HARDWARE_CG_CHECK,
 	SPM_ARGS_NUM,
 };
 
