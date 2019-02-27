@@ -1723,7 +1723,7 @@ static int __init mt6370_init(void)
 {
 	struct device_node *np;
 
-	pr_info("mt6370_init (%s): initializing...\n", MT6370_DRV_VERSION);
+	pr_info("%s (%s): initializing...\n", __func__, MT6370_DRV_VERSION);
 	np = of_find_node_by_name(NULL, "usb_type_c");
 	if (np != NULL)
 		pr_info("usb_type_c node found...\n");

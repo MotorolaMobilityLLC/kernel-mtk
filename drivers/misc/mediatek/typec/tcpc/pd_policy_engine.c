@@ -960,8 +960,8 @@ static void pe_reset_vdm_state_variable(
 static inline void pd_pe_state_change(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	void (*prev_exit_action)(struct pd_port *);
-	void (*next_entry_action)(struct pd_port *);
+	void (*prev_exit_action)(struct pd_port *pd_port);
+	void (*next_entry_action)(struct pd_port *pd_port);
 	struct pe_data *pe_data = &pd_port->pe_data;
 
 	uint8_t old_state = pd_port->pe_state_curr;
