@@ -96,9 +96,7 @@ struct SPK_PROTECT_SERVICE {
 	bool ipiresult;
 };
 
-static struct SPK_PROTECT_SERVICE scp_voice_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
-static struct scp_reserve_mblock scp_voiceReserveBuffer;
 static const int scpvoiceDL1BufferOffset = SCPDL1_MAX_BUFFER_SIZE;
 static int scp_voice_Irq_mode = Soc_Aud_IRQ_MCU_MODE_IRQ7_MCU_MODE;
 #endif
@@ -115,10 +113,6 @@ static void
 start_scp_voice_i2s2adc2_hardware(struct snd_pcm_substream *substream);
 static void scp_voice_md2_enable(bool enable, struct snd_pcm_runtime *runtime);
 static void scp_voice_md1_enable(bool enable, struct snd_pcm_runtime *runtime);
-static int voice_scp_pcm_dump_set(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol);
-static int voice_scp_pcm_dump_get(struct snd_kcontrol *kcontrol,
-				  struct snd_ctl_elem_value *ucontrol);
 
 #ifdef use_wake_lock
 static void scp_voice_int_wakelock(bool enable)
@@ -143,7 +137,6 @@ static const struct soc_enum audio_scp_voice_pcmdump_enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(voice_scpspk_pcmdump),
 		voice_scpspk_pcmdump),
 };
-static bool scpvoice_pcmdump;
 
 static int audio_scp_voice_hdoutput_get(struct snd_kcontrol *kcontrol,
 					struct snd_ctl_elem_value *ucontrol)
@@ -253,79 +246,11 @@ static const struct snd_kcontrol_new Audio_Scp_voice_controls[] = {
 		     audio_scp_voice_hdoutput_set),
 	SOC_SINGLE_EXT("Scp_Voice_Irq_Cnt", SND_SOC_NOPM, 0, IRQ_MAX_RATE, 0,
 		       audio_scp_voice_Irqcnt_Get, audio_scp_voice_Irqcnt_Set),
-	SOC_ENUM_EXT("Audio_scp_voice_dump", audio_scp_voice_pcmdump_enum[0],
-		     voice_scp_pcm_dump_get, voice_scp_pcm_dump_set),
 };
 
 #define SPK_IPIMSG_TIMEOUT            50
 #define SPK_WAITCHECK_INTERVAL_MS      (2)
-static bool scp_voice_service_ipicmd_wait(int id)
-{
-	int timeout = 0;
 
-	while (scp_voice_protect_service.ipiwait) {
-		msleep(SPK_WAITCHECK_INTERVAL_MS);
-		if (timeout++ >= SPK_IPIMSG_TIMEOUT) {
-			/* pr_debug("Error: IPI MSG timeout:id_%x\n", id); */
-			scp_voice_protect_service.ipiwait = false;
-			return false;
-		}
-	}
-	return true;
-}
-
-static int voice_scp_pcm_dump_set(struct snd_kcontrol *kcontrol,
-		struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s(), value = %ld, scpvoice_pcmdump = %d\n",
-		 __func__,
-		 ucontrol->value.integer.value[0],
-		 scpvoice_pcmdump);
-
-	if (scpvoice_pcmdump == false &&
-	    ucontrol->value.integer.value[0] == true) {
-		scpvoice_pcmdump = true;
-		AudDrv_Emi_Clk_On();
-		spkprotect_open_dump_file();
-
-		/*spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
-					    AUDIO_IPI_MSG_BYPASS_ACK,
-					    SPK_PROTTCT_PCMDUMP_ON,
-					    p_scp_voice_resv_dram->size,
-					    scpvoice_pcmdump,
-					    p_scp_voice_resv_dram->phy_addr);
-		*/
-		scp_voice_protect_service.ipiwait = true;
-	} else if (scpvoice_pcmdump == true &&
-	    ucontrol->value.integer.value[0] == false) {
-		scpvoice_pcmdump = false;
-		scp_voice_service_ipicmd_wait(SPK_PROTECT_PCMDUMP_OK);
-		spkprotect_close_dump_file();
-
-		/*spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
-					    AUDIO_IPI_MSG_BYPASS_ACK,
-					    SPK_PROTTCT_PCMDUMP_OFF,
-					    p_scp_voice_resv_dram->size,
-					    scpvoice_pcmdump,
-					    p_scp_voice_resv_dram->phy_addr);
-		 */
-		AudDrv_Emi_Clk_Off();
-	}
-	return 0;
-}
-
-static int voice_scp_pcm_dump_get(struct snd_kcontrol *kcontrol,
-				struct snd_ctl_elem_value *ucontrol)
-{
-	pr_debug("%s()\n", __func__);
-	if (ucontrol->value.enumerated.item[0] >
-		ARRAY_SIZE(voice_scpspk_pcmdump)) {
-		pr_debug("return -EINVAL\n");
-		return -EINVAL;
-	}
-	ucontrol->value.integer.value[0] = scpvoice_pcmdump;
-	return 0;
-}
 static struct snd_pcm_hardware mtk_scp_voice_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_INTERLEAVED |
 		 SNDRV_PCM_INFO_RESUME | SNDRV_PCM_INFO_MMAP_VALID),
@@ -393,22 +318,16 @@ mtk_pcm_scp_voice_pointer(struct snd_pcm_substream *substream)
 
 static int scp_voice_get_scpdram_buffer(void)
 {
-	memset(&scp_voiceReserveBuffer, 0, sizeof(scp_voiceReserveBuffer));
-	scp_voiceReserveBuffer.num = SPK_PROTECT_MEM_ID;
-	scp_voiceReserveBuffer.start_phys =
-		scp_get_reserve_mem_phys(scp_voiceReserveBuffer.num);
-	scp_voiceReserveBuffer.start_virt =
-		scp_get_reserve_mem_virt(scp_voiceReserveBuffer.num);
-	scp_voiceReserveBuffer.size =
-		scp_get_reserve_mem_size(scp_voiceReserveBuffer.num);
-	scp_voice_DramBuffer.addr = scp_voiceReserveBuffer.start_phys;
-	scp_voice_DramBuffer.area =
-		(kal_uint8 *)scp_voiceReserveBuffer.start_virt;
-	scp_voice_DramBuffer.bytes = scp_voiceReserveBuffer.size;
+	struct scp_spk_reserved_mem_t *reserved_mem;
+
+	reserved_mem = get_scp_spk_reserved_mem();
+	scp_voice_DramBuffer.addr = reserved_mem->phy_addr;
+	scp_voice_DramBuffer.area = (kal_uint8 *)reserved_mem->vir_addr;
+	scp_voice_DramBuffer.bytes = reserved_mem->size;
 	pr_debug(
-		"%s scp_voice_DramBuffer.addr = %llx scp_voice_DramBuffer.area = %p bytes = %zu\n",
-		__func__, scp_voice_DramBuffer.addr, scp_voice_DramBuffer.area,
-		scp_voice_DramBuffer.bytes);
+		 "%s scp_voice_DramBuffer.addr = %llx scp_voice_DramBuffer.area = %p bytes = %zu\n",
+		 __func__, scp_voice_DramBuffer.addr, scp_voice_DramBuffer.area,
+		 scp_voice_DramBuffer.bytes);
 	return 0;
 }
 
