@@ -83,7 +83,7 @@ struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 };
 
 static int set_cur_volt_proc_cpu(struct buck_ctrl_t *buck_p,
-    unsigned int volt)
+	unsigned int volt)
 {
 	unsigned int max_volt = MAX_VPROC_VOLT + 625;
 
@@ -110,7 +110,7 @@ static unsigned int mt6357_transfer2volt(unsigned int val)
 }
 
 static unsigned int mt6357_vproc_settletime(unsigned int old_volt,
-    unsigned int new_volt)
+	unsigned int new_volt)
 {
 	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
@@ -122,7 +122,7 @@ static unsigned int mt6357_vproc_settletime(unsigned int old_volt,
 }
 
 static int set_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p,
-    unsigned int volt)
+	unsigned int volt)
 {
 	unsigned int max_volt = MAX_VSRAM_VOLT + 625;
 
@@ -140,7 +140,7 @@ static unsigned int get_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p)
 }
 
 static unsigned int mt6357_vsram_settletime(unsigned int old_volt,
-    unsigned int new_volt)
+	unsigned int new_volt)
 {
 	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
@@ -230,7 +230,7 @@ unsigned int _cpu_dds_calc(unsigned int khz)
 }
 
 static void adjust_armpll_dds(struct pll_ctrl_t *pll_p, unsigned int vco,
-    unsigned int pos_div)
+	unsigned int pos_div)
 {
 	unsigned int dds;
 	unsigned int val;
