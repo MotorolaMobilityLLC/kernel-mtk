@@ -140,7 +140,8 @@ static const void *spk_irq_user_id;
 static unsigned int spk_irq_cnt;
 static struct device *mDev;
 static const char *const dl1_scpspk_HD_output[] = {"Off", "On"};
-static const char *const dl1_scpspk_pcmdump[] = {"Off", "On"};
+static const char *const dl1_scpspk_pcmdump[] = {"Off", "normal_dump",
+						 "split_dump"};
 static bool scpspk_pcmdump;
 
 static const struct soc_enum Audio_dl1spk_Enum[] = {
@@ -641,9 +642,9 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	mspkPlaybackDramState = false;
 	p_resv_dram = get_reserved_dram();
 
-	pr_debug(
-		"mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
-		mtk_dl1spk_hardware.buffer_bytes_max, mspkPlaybackDramState);
+	pr_debug("%s(), mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
+		 __func__, mtk_dl1spk_hardware.buffer_bytes_max,
+		 mspkPlaybackDramState);
 	runtime->hw = mtk_dl1spk_hardware;
 
 	AudDrv_Clk_On();
@@ -915,13 +916,28 @@ static bool spkprotect_service_ipicmd_wait(int id)
 static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s = %d\n", __func__, scpspk_pcmdump);
+	static int ctrl_val;
+
+	pr_debug("%s(), value = %d, scpspk_pcmdump = %d\n",
+		 __func__,
+		 ucontrol->value.integer.value[0],
+		 scpspk_pcmdump);
 
 	if (scpspk_pcmdump == false &&
-	    ucontrol->value.integer.value[0] == true) {
+	    ucontrol->value.integer.value[0] > 0) {
+		ctrl_val = ucontrol->value.integer.value[0];
 		scpspk_pcmdump = true;
 		AudDrv_Emi_Clk_On();
-		spkprotect_open_dump_file();
+
+		if (ctrl_val == 1)
+			spkprotect_open_dump_file();
+		else if (ctrl_val == 2)
+			spk_pcm_dump_split_task_enable();
+		else {
+			pr_debug("%s(), value not support, return\n");
+			return -1;
+		}
+
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_ON,
@@ -930,10 +946,19 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 					    p_resv_dram->phy_addr);
 		spk_protect_service.ipiwait = true;
 	} else if (scpspk_pcmdump == true &&
-		ucontrol->value.integer.value[0] == false) {
+		   ucontrol->value.integer.value[0] == 0) {
 		scpspk_pcmdump = false;
 		spkprotect_service_ipicmd_wait(SPK_PROTECT_PCMDUMP_OK);
-		spkprotect_close_dump_file();
+
+		if (ctrl_val == 1)
+			spkprotect_close_dump_file();
+		else if (ctrl_val == 2)
+			spk_pcm_dump_split_task_disable();
+		else {
+			pr_debug("%s(), value not support, return\n");
+			return -1;
+		}
+
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_OFF,
@@ -941,6 +966,7 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 					    scpspk_pcmdump,
 					    p_resv_dram->phy_addr);
 		AudDrv_Emi_Clk_Off();
+		ctrl_val = ucontrol->value.integer.value[0];
 	}
 	return 0;
 }
