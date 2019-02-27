@@ -1065,6 +1065,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695B_FHD_DSI_CMD_AUO_NT50358_QHD)
 	&nt35695B_fhd_dsi_cmd_auo_nt50358_qhd_lcm_drv,
 #endif
+
+#if defined(NT51021_WUXGA_DSI_VDO_MT8173)
+	&nt51021_wuxga_dsi_vdo_mt8173_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
