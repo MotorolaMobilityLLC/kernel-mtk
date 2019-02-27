@@ -45,6 +45,8 @@ typedef enum {
 	tilt_detector,
 	flat,
 	sar,
+/*new add for moto sensor algo*/
+	stowed,
 	max_situation_support,
 } situation_index_table;
 

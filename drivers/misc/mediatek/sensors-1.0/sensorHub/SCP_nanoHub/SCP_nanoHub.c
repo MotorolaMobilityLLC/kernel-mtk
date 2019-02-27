@@ -864,6 +864,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 
 	mSensorState[SENSOR_TYPE_SAR].sensorType = SENSOR_TYPE_SAR;
 	mSensorState[SENSOR_TYPE_SAR].timestamp_filter = false;
+/*add for moto algo*/
+	mSensorState[SENSOR_TYPE_STOWED].sensorType = SENSOR_TYPE_STOWED;
+	mSensorState[SENSOR_TYPE_STOWED].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_STOWED].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int sensor_type)
@@ -1587,6 +1591,11 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->sar_event.data[0] = data_t->sar_event.data[0];
 		data->sar_event.data[1] = data_t->sar_event.data[1];
 		data->sar_event.data[2] = data_t->sar_event.data[2];
+		break;
+/*moto algo ID type*/
+	case ID_STOWED:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;
 	default:
 		err = -1;

@@ -77,6 +77,10 @@ static int handle_to_index(int handle)
 	case ID_SAR:
 		index = sar;
 		break;
+/*new add for moto sensor algo*/
+	case ID_STOWED:
+		index = stowed;
+        break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
