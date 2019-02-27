@@ -175,17 +175,6 @@ unsigned int is_sspm_ready(void)
 }
 EXPORT_SYMBOL_GPL(is_sspm_ready);
 
-static inline ssize_t sspm_status_show(struct device *kobj,
-	struct device_attribute *attr, char *buf)
-{
-	if (sspm_ready)
-		return sprintf(buf, "SSPM is ready");
-	else
-		return sprintf(buf, "SSPM is not ready");
-}
-
-DEVICE_ATTR(sspm_status, 0444, sspm_status_show, NULL);
-
 static int sspm_device_probe(struct platform_device *pdev)
 {
 	struct resource *res;
@@ -263,11 +252,6 @@ static int __init sspm_init(void)
 
 	if (!sspm_workqueue) {
 		pr_err("[SSPM] Workqueue Create Failed\n");
-		goto error;
-	}
-
-	if (sspm_excep_init()) {
-		pr_err("[SSPM] Excep Init Failed\n");
 		goto error;
 	}
 
