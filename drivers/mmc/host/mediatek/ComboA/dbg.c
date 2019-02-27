@@ -25,9 +25,10 @@
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
 #include <mt-plat/mtk_gpt.h>
+#include <mt-plat/mtk_boot_common.h>
 #include <linux/io.h>
 #include <linux/scatterlist.h>
-
+#include <linux/gpio.h>
 #include "mtk_sd.h"
 #include <mmc/core/core.h>
 #include "dbg.h"
@@ -2586,6 +2587,128 @@ static const struct file_operations msdc_help_fops = {
 	.release = single_release,
 };
 
+static int msdc_sdcard_intr_gpio_value_show(struct seq_file *m, void *v)
+{
+	seq_printf(m, "%d\n", __gpio_get_value(cd_gpio) ? 0 : 1);
+	return 0;
+}
+
+static int msdc_sdcard_intr_gpio_value_open(struct inode *inode,
+	struct file *file)
+{
+	return single_open(file, msdc_sdcard_intr_gpio_value_show,
+					inode->i_private);
+}
+
+static const struct file_operations sdcard_intr_gpio_value_fops = {
+	.open = msdc_sdcard_intr_gpio_value_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+#define MSDC_PROC_SHOW(name, fmt, args...) \
+static int msdc_##name##_show(struct seq_file *m, void *v) \
+{ \
+	struct msdc_host *host;	\
+	struct mmc_card *card;	\
+	host = mtk_msdc_host[0]; \
+	card = host->mmc->card; \
+	seq_printf(m, fmt, args); \
+	return 0;	\
+}	\
+static int msdc_##name##_open(struct inode *inode, struct file *file) \
+{ \
+	return single_open(file, msdc_##name##_show, inode->i_private); \
+} \
+static const struct file_operations name##_fops = { \
+	.open = msdc_##name##_open, \
+	.read = seq_read, \
+	.llseek = seq_lseek, \
+	.release = single_release, \
+}
+
+static int msdc_fw_version_show(struct seq_file *m, void *v)
+{
+	struct msdc_host *host;
+	struct mmc_card *card;
+
+	host = mtk_msdc_host[0];
+	card = host->mmc->card;
+
+	if (card->ext_csd.rev < 7) {
+		seq_printf(m, "0x%x\n", card->cid.fwrev);
+
+	} else {
+		seq_printf(m, "0x%*phN\n", 8,
+			       card->ext_csd.fwrev);
+	}
+
+	return 0;
+}
+
+static int msdc_fw_version_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, msdc_fw_version_show, inode->i_private);
+}
+
+static const struct file_operations fw_version_fops = {
+	.open = msdc_fw_version_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static const char * const msdc_proc_list[] = {
+	"cid",
+	"life_time_est_typ_a",
+	"life_time_est_typ_b",
+	"pre_eol_info",
+	"type",
+	"name",
+	"productname",
+	"size",
+	"manfid",
+	"fw_version"
+};
+/*These two TYPES are requested by HUIWEI normalized project*/
+#define  EMMC_TYPE      0
+#define  UFS_TYPE       1
+#ifdef	MTK_BOOT
+#define  BOOTTYPE	(get_boot_type()&0x11 \
+? (get_boot_type() == 2 ? UFS_TYPE : EMMC_TYPE):0xff)
+#else
+#define BOOTTYPE EMMC_TYPE
+#endif
+//static int boot_type = get_boot_type(); // 0 nand, 1 mmc, 2 ufs
+MSDC_PROC_SHOW(cid, "0x%08x%08x%08x%08x\n", card->raw_cid[0], card->raw_cid[1],
+	card->raw_cid[2], card->raw_cid[3]);
+MSDC_PROC_SHOW(life_time_est_typ_a, "0x%02x\n",
+	card->ext_csd.device_life_time_est_typ_a);
+MSDC_PROC_SHOW(life_time_est_typ_b, "0x%02x\n",
+	card->ext_csd.device_life_time_est_typ_b);
+MSDC_PROC_SHOW(pre_eol_info, "0x%02x\n", card->ext_csd.pre_eol_info);
+MSDC_PROC_SHOW(type, "%d\n", BOOTTYPE);
+MSDC_PROC_SHOW(productname, "%s\n", card->cid.prod_name);
+MSDC_PROC_SHOW(manfid, "0x%06x\n", card->cid.manfid);
+MSDC_PROC_SHOW(name, "%s\n", host->mmc->parent->driver->name);
+MSDC_PROC_SHOW(size, "%d\n", ((u32)card->ext_csd.raw_sectors[3]<<24)
+	+ ((u32)card->ext_csd.raw_sectors[2]<<16) +
+((u32)card->ext_csd.raw_sectors[1]<<8)+((u32)card->ext_csd.raw_sectors[0]));
+
+static const struct file_operations *proc_fops_list[] = {
+	&cid_fops,
+	&life_time_est_typ_a_fops,
+	&life_time_est_typ_b_fops,
+	&pre_eol_info_fops,
+	&type_fops,
+	&name_fops,
+	&productname_fops,
+	&size_fops,
+	&manfid_fops,
+	&fw_version_fops,
+};
+
 #ifndef USER_BUILD_KERNEL
 #define PROC_PERM		0660
 #else
@@ -2595,8 +2718,10 @@ static const struct file_operations msdc_help_fops = {
 int msdc_debug_proc_init(void)
 {
 	struct proc_dir_entry *prEntry;
+	struct proc_dir_entry *bootdevice_dir;
 	kuid_t uid;
 	kgid_t gid;
+	int i, num;
 
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
@@ -2614,6 +2739,27 @@ int msdc_debug_proc_init(void)
 	if (!prEntry)
 		pr_notice("[%s]: failed to create /proc/msdc_help\n", __func__);
 
+	prEntry = proc_create("sdcard_intr_gpio_value", 0440, NULL,
+				&sdcard_intr_gpio_value_fops);
+
+	if (!prEntry)
+		pr_notice("[%s]: failed to create /proc/sdcard_intr_gpio_value\n",
+			__func__);
+
+	/*boot device*/
+	bootdevice_dir = proc_mkdir("bootdevice", NULL);
+	if (bootdevice_dir) {
+		num = ARRAY_SIZE(msdc_proc_list);
+		for (i = 0; i < num; i++) {
+			prEntry = proc_create(msdc_proc_list[i], 0440,
+				bootdevice_dir, proc_fops_list[i]);
+			if (!prEntry)
+				pr_notice("[%s]: failed to create /proc/bootdevice/%s\n",
+					__func__, msdc_proc_list[i]);
+		}
+	} else
+		pr_notice("[%s]: failed to create /proc/bootdevice\n",
+			__func__);
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif

@@ -687,8 +687,7 @@ MMC_DEV_ATTR(ocr, "0x%08x\n", card->ocr);
 
 
 static ssize_t mmc_dsr_show(struct device *dev,
-                           struct device_attribute *attr,
-                           char *buf)
+	struct device_attribute *attr, char *buf)
 {
        struct mmc_card *card = mmc_dev_to_card(dev);
        struct mmc_host *host = card->host;
@@ -701,6 +700,43 @@ static ssize_t mmc_dsr_show(struct device *dev,
 }
 
 static DEVICE_ATTR(dsr, S_IRUGO, mmc_dsr_show, NULL);
+
+#define MTK_SHOW_SPEED_CLASS  //for HUIWEI project use
+#ifdef MTK_SHOW_SPEED_CLASS
+static ssize_t mmc_speed_class_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	u8 class_buf = 0;
+	u8 class = 0;
+	struct mmc_card *card = mmc_dev_to_card(dev);
+
+	class_buf = (u8)(card->raw_ssr[2]>>24);
+
+	switch (class_buf) {
+	case 0x00:
+		class = 0;
+		break;
+	case 0x01:
+		class = 2;
+		break;
+	case 0x02:
+		class = 4;
+		break;
+	case 0x03:
+		class = 6;
+		break;
+	case 0x04:
+		class = 10;
+		break;
+	default:
+		return sprintf(buf, "class unknown type\n");
+	}
+
+	return sprintf(buf, "%d\n", class);
+}
+
+static DEVICE_ATTR(speedclass, 0444, mmc_speed_class_show, NULL);
+#endif
 
 static struct attribute *sd_std_attrs[] = {
 	&dev_attr_cid.attr,
@@ -718,6 +754,9 @@ static struct attribute *sd_std_attrs[] = {
 	&dev_attr_serial.attr,
 	&dev_attr_ocr.attr,
 	&dev_attr_dsr.attr,
+#ifdef MTK_SHOW_SPEED_CLASS
+	&dev_attr_speedclass.attr,
+#endif
 	NULL,
 };
 ATTRIBUTE_GROUPS(sd_std);
