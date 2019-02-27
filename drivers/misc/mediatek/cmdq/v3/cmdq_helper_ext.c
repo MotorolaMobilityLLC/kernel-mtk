@@ -1639,6 +1639,11 @@ size_t cmdq_core_get_free_sram_size(void)
 		sizeof(u32);
 }
 
+size_t cmdq_core_get_cpr_cnt(void)
+{
+	return cmdq_dts.cpr_size;
+}
+
 static s32 cmdq_copy_delay_to_sram(void)
 {
 	u32 cpr_offset = 0;

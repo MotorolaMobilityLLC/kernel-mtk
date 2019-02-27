@@ -5494,7 +5494,7 @@ void testcase_verify_timer(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-void testcase_remove_by_file_node(void)
+static void testcase_remove_by_file_node(void)
 {
 	struct cmdqRecStruct *handle[2], *handle_conflict;
 	u64 engines[2] = {
@@ -5548,6 +5548,55 @@ void testcase_remove_by_file_node(void)
 
 	/* all task should be remove and no crash */
 	cmdq_mdp_release_task_by_file_node((void *)(unsigned long)node);
+
+	CMDQ_LOG("%s END\n", __func__);
+}
+
+static void testcase_verify_cpr(void)
+{
+	struct cmdqRecStruct *handle;
+	s32 status;
+	u32 idx, val;
+	const u32 pattern = 0xdeadabcd;
+	CMDQ_VARIABLE var;
+	struct cmdq_pkt_buffer *buf;
+	u32 *va;
+
+	CMDQ_LOG("%s\n", __func__);
+
+	cmdq_op_init_global_cpr_variable(&var, 0);
+
+	cmdq_task_create(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	cmdq_op_assign(handle, &var, pattern);
+	cmdq_op_write_reg(handle, CMDQ_TEST_GCE_DUMMY_PA, var, ~0);
+	cmdq_op_finalize_command(handle, false);
+	cmdq_pkt_dump_command(handle);
+
+	buf = list_first_entry(&handle->pkt->buf, typeof(*buf), list_entry);
+	va = (u32 *)buf->va_base;
+
+	for (idx = 0; idx < cmdq_core_get_cpr_cnt(); idx++) {
+		CMDQ_REG_SET32(CMDQ_TEST_GCE_DUMMY_VA, 0);
+
+		va[1] = (va[1] & 0xFFFF0000) | (CMDQ_CPR_STRAT_ID + idx);
+
+		status = _test_flush_task(handle);
+		if (status < 0) {
+			CMDQ_TEST_FAIL("%s flush %u fail:%d\n",
+				__func__, idx, status);
+			break;
+		}
+
+		val = CMDQ_REG_GET32(CMDQ_TEST_GCE_DUMMY_VA);
+		if (val != pattern) {
+			CMDQ_TEST_FAIL(
+				"cpr:0x%x result:0x%08x pattern:0x%08x\n",
+				idx, val, pattern);
+			break;
+		}
+	}
+
+	cmdq_task_destroy(handle);
 
 	CMDQ_LOG("%s END\n", __func__);
 }
@@ -6827,6 +6876,9 @@ static void testcase_general_handling(s32 testID)
 	case 300:
 		testcase_stress_basic();
 		break;
+	case 158:
+		testcase_verify_cpr();
+		break;
 	case 157:
 		testcase_remove_by_file_node();
 		break;
@@ -7078,6 +7130,7 @@ static void testcase_general_handling(s32 testID)
 		testcase_backup_reg_to_slot();
 		testcase_write_from_data_reg();
 		testcase_update_value_to_slot();
+		testcase_verify_cpr();
 		CMDQ_LOG("FPGA Verify Done!\n");
 		break;
 	case CMDQ_TESTCASE_ERROR:
@@ -7097,6 +7150,7 @@ static void testcase_general_handling(s32 testID)
 	case CMDQ_TESTCASE_GPR:
 		testcase_read_to_data_reg();	/* must verify! */
 		testcase_dram_access();
+		testcase_verify_cpr();
 		break;
 	case CMDQ_TESTCASE_DEFAULT:
 		testcase_multiple_async_request();
@@ -7119,6 +7173,7 @@ static void testcase_general_handling(s32 testID)
 		testcase_backup_reg_to_slot();
 		testcase_thread_dispatch();
 		testcase_full_thread_array();
+		testcase_verify_cpr();
 		break;
 	default:
 		CMDQ_LOG(
