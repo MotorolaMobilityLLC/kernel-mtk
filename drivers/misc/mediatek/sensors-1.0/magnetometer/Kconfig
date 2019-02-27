@@ -15,5 +15,5 @@ config CUSTOM_KERNEL_MAGNETOMETER
 	  orientation that shows direction relative to the geographic
 	  cardinal directions, or "points".
 
-#source "drivers/misc/mediatek/sensors-1.0/magnetometer/maghub/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/magnetometer/maghub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/magnetometer/akm09915/Kconfig"

@@ -16,4 +16,4 @@ config CUSTOM_KERNEL_ACCELEROMETER
 	  configuration should be configured, and the acceleometer
 	  driver configuration should be configured as well.
 
-#source "drivers/misc/mediatek/sensors-1.0/accelerometer/accelhub/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/accelerometer/accelhub/Kconfig"
