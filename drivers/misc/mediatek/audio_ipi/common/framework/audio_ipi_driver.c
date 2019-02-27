@@ -263,12 +263,14 @@ static int parsing_ipi_msg_from_user_space(
 	    hal_wb_buf_addr != NULL &&
 	    wb_dram != NULL &&
 	    wb_dram->addr_val != 0 &&
-	    wb_dram->data_size > 0 &&
 	    ipi_msg.scp_ret == 1) {
 		if (wb_dram->data_size > hal_wb_buf_size) {
 			pr_notice("wb_dram->data_size %u > hal_wb_buf_size %u!!\n",
 				  wb_dram->data_size,
 				  hal_wb_buf_size);
+			ipi_msg.scp_ret = 0;
+		} else if (wb_dram->data_size == 0) {
+			pr_notice("ipi wb data sz = 0!! check adsp write\n");
 			ipi_msg.scp_ret = 0;
 		} else {
 			retval = copy_to_user(
