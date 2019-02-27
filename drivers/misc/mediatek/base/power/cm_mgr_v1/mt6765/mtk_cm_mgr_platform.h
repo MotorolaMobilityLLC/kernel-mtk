@@ -46,7 +46,6 @@ enum {
 };
 
 extern spinlock_t sw_zq_tx_lock;
-extern struct pm_qos_request cm_mgr_qos_req;
 
 extern void __iomem *mcucfg_mp0_counter_base;
 

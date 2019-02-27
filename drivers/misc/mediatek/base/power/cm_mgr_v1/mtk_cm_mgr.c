@@ -49,6 +49,7 @@
 #include <mtk_cpufreq_api.h>
 
 #include <linux/pm_qos.h>
+#include <helio-dvfsrc.h>
 
 spinlock_t cm_mgr_lock;
 
@@ -289,8 +290,7 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			pm_qos_update_request(
-					&cm_mgr_qos_req,
+			dvfsrc_set_power_model_ddr_request(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 
@@ -316,8 +316,7 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			pm_qos_update_request(
-					&cm_mgr_qos_req,
+			dvfsrc_set_power_model_ddr_request(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 
@@ -383,8 +382,7 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			pm_qos_update_request(
-					&cm_mgr_qos_req,
+			dvfsrc_set_power_model_ddr_request(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 
@@ -410,8 +408,7 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 					__func__, __LINE__,
 					vcore_dram_opp_cur, vcore_dram_opp);
 #endif /* DEBUG_CM_MGR */
-			pm_qos_update_request(
-					&cm_mgr_qos_req,
+			dvfsrc_set_power_model_ddr_request(
 					CM_MGR_EMI_OPP - vcore_dram_opp);
 		}
 	}
@@ -1006,13 +1003,11 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	if (!strcmp(cmd, "cm_mgr_opp_enable")) {
 		cm_mgr_opp_enable = val_1;
 		if (!cm_mgr_opp_enable)
-			pm_qos_update_request(
-					&cm_mgr_qos_req, 0);
+			dvfsrc_set_power_model_ddr_request(0);
 	} else if (!strcmp(cmd, "cm_mgr_enable")) {
 		cm_mgr_enable = val_1;
 		if (!cm_mgr_enable)
-			pm_qos_update_request(
-					&cm_mgr_qos_req, 0);
+			dvfsrc_set_power_model_ddr_request(0);
 #ifdef USE_TIMER_CHECK
 	} else if (!strcmp(cmd, "cm_mgr_timer_enable")) {
 		cm_mgr_timer_enable = val_1;
@@ -1020,8 +1015,7 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 	} else if (!strcmp(cmd, "cm_mgr_disable_fb")) {
 		cm_mgr_disable_fb = val_1;
 		if (cm_mgr_disable_fb == 1 && cm_mgr_blank_status == 1)
-			pm_qos_update_request(
-					&cm_mgr_qos_req, 0);
+			dvfsrc_set_power_model_ddr_request(0);
 	} else if (!strcmp(cmd, "light_load_cps")) {
 		light_load_cps = val_1;
 	} else if (!strcmp(cmd, "total_bw_value")) {
