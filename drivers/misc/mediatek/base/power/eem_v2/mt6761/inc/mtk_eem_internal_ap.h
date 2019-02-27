@@ -127,6 +127,8 @@ unsigned int reg_dump_data[ARRAY_SIZE(reg_dump_addr_off)][NR_EEM_PHASE];
 	unsigned char low_temp_off;
 	int volt_offset;
 
+	unsigned int pi_efuse;
+
 	unsigned int disabled; /* Disabled by error or sysfs */
 	unsigned char set_volt_to_upower; /* only when init2, set v to UPT */
 };
