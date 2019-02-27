@@ -273,7 +273,7 @@ static ssize_t perfmgr_boot_freq_write(struct file *filp,
 		if (i == arg_num) {
 			pr_debug("@%s: number of arguments > %d!\n",
 					__func__, arg_num);
-			goto out;
+			break;
 		}
 
 		if (kstrtoint(tok, 10, &data)) {
