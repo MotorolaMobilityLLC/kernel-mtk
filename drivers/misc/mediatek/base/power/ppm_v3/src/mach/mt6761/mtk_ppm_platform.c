@@ -342,3 +342,11 @@ unsigned int mt_ppm_get_leakage_mw(enum ppm_cluster_lkg cluster)
 
 	return mw;
 }
+
+unsigned int get_cluster_ptpod_fix_freq_idx(unsigned int id)
+{
+	if (mt_cpufreq_get_cpu_level() == 1)
+		return PTPOD_FREQ_IDX_SB;
+	else
+		return PTPOD_FREQ_IDX_FY;
+}
