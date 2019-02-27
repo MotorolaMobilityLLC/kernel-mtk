@@ -800,7 +800,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret =
 		    smi_bus_prepare_enable(larb, smi_clk_name[larb], true);
 	if (ret != 0)
@@ -816,7 +816,7 @@ static int larb_clock_off(int larb, bool config_mtcmos)
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
 
-	if (larb <= ARRAY_SIZE(smi_clk_name))
+	if (larb < ARRAY_SIZE(smi_clk_name))
 		ret =
 		    smi_bus_disable_unprepare(larb, smi_clk_name[larb], true);
 	if (ret != 0)
