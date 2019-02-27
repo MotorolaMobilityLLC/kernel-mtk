@@ -3018,6 +3018,15 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		iommus = <&iommu M4U_PORT_CAM_IMGO>,
 			 <&iommu M4U_PORT_CAM_RRZO>;
 	};
+
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
+
 };
 
 #include "cust_mt6761_msdc.dtsi"
