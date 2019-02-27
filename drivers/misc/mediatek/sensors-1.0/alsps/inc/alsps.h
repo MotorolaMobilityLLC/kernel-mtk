@@ -67,6 +67,7 @@ struct als_control_path {
 	int (*batch)(int flag, int64_t samplingPeriodNs,
 		     int64_t maxBatchReportLatencyNs);
 	int (*flush)(void);	    /* open data rerport to HAL */
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	int (*access_data_fifo)(void); /* version2.used for flush operate */
 	bool is_report_input_direct;
 	bool is_support_batch; /* version2.used for batch mode support flag */
@@ -83,7 +84,7 @@ struct ps_control_path {
 	int (*flush)(void);	    /* open data rerport to HAL */
 	int (*access_data_fifo)(void); /* version2.used for flush operate */
 	int (*ps_calibration)(int type, int value);
-	int (*ps_threshold_setting)(int type, int value[2]);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	bool is_report_input_direct;
 	bool is_support_batch; /* version2.used for batch mode support flag */
 	bool is_polling_mode;
@@ -181,6 +182,8 @@ extern int alsps_driver_add(struct alsps_init_info *obj);
 extern int ps_report_interrupt_data(int value);
 extern int ps_flush_report(void);
 extern int als_data_report(int value, int status);
+extern int ps_cali_report(int *value);
+extern int als_cali_report(int *value);
 extern int als_flush_report(void);
 extern int als_register_control_path(struct als_control_path *ctl);
 extern int als_register_data_path(struct als_data_path *data);
