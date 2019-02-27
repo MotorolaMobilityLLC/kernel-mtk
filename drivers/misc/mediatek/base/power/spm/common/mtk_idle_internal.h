@@ -34,6 +34,7 @@
 #define MTK_IDLE_OPT_VCORE_LP_MODE  (1 << 0)
 #define MTK_IDLE_OPT_XO_UFS_ON_OFF  (1 << 1)
 #define MTK_IDLE_OPT_CLKBUF_BBLPM   (1 << 2)
+#define MTK_IDLE_OPT_VCORE_ULPOSC_OFF  (1 << 6)
 #define MTK_IDLE_OPT_SLEEP_DPIDLE   (1 << 16)
 
 
