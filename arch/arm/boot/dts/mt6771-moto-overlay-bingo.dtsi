@@ -19,7 +19,25 @@
 	flashlights_dummy_gpio: flashlights_dummy_gpio {
 	compatible = "mediatek,flashlights_dummy_gpio";
 	};
+	sar_irq:sar_irq {
+	compatible = "mediatek,sar_irq";
+	};
 };
+&i2c3 {
+	abov_sar@20 {
+	compatible = "mediatek,sar";
+	reg = <0x20>;
+	gpio-irq = <9>;
+	gpio-irq-std = <&pio 9 0x0>;
+	reg_array_len = <0x03>;
+	reg_array_val = <0x07 0x00 0x08 0x07 0xFB 0x01>;
+		cap,use_channel_bottom = <0x00>;
+		cap,use_channel_top = <0x01>;
+		label = "AbovCapSense";
+		status = "okay";
+	};
+};
+
 &touch {
 	tpd-resolution = <720 1520>;
 	tpd-filter-enable = <0>;
