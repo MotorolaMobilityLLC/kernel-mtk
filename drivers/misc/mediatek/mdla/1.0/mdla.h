@@ -17,7 +17,6 @@
 #include <linux/types.h>
 #include <linux/seq_file.h>
 
-#ifdef CONFIG_MTK_MDLA_SUPPORT
 #define MTK_MDLA_CORE 1
 
 unsigned int mdla_cfg_read(u32 offset);
@@ -69,8 +68,6 @@ struct command_entry {
 	u64 req_end_t;   /* request end time (ns) */
 	u64 wait_t;      /* time waited by user */
 };
-
-#endif
 
 #endif
 

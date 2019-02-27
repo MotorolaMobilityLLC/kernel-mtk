@@ -128,6 +128,9 @@ int mdla_ion_kunmap(unsigned long arg)
 
 	hndl = (struct ion_handle *)ion_data.khandle;
 
+	if (!virt_addr_valid(hndl))
+		return -EINVAL;
+
 	ion_unmap_kernel(ion_client, hndl);
 	ion_free(ion_client, hndl);
 

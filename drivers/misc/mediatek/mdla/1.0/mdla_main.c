@@ -969,6 +969,8 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = mdla_dram_alloc(&malloc_data);
 		else if (malloc_data.type == MEM_GSM)
 			retval = mdla_gsm_alloc(&malloc_data);
+		else
+			return -EINVAL;
 
 		if (copy_to_user((void *) arg, &malloc_data,
 			sizeof(malloc_data)))
@@ -992,6 +994,8 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			mdla_dram_free(&malloc_data);
 		else if (malloc_data.type == MEM_GSM)
 			mdla_gsm_free(&malloc_data);
+		else
+			return -EINVAL;
 		mdla_mem_debug("%s: IOCTL_MALLOC: size:0x%x mva:0x%x kva:%p pa:%p type:%d\n",
 			__func__,
 			malloc_data.size,

@@ -103,7 +103,7 @@ int pmu_counter_alloc(u32 interface, u32 event)
 
 int pmu_counter_free(int handle)
 {
-	if (handle >= MDLA_PMU_COUNTERS)
+	if ((handle >= MDLA_PMU_COUNTERS) || (handle < 0))
 		return -EINVAL;
 
 	bitmap_release_region(pmu_bitmap, handle, 0);
@@ -126,7 +126,7 @@ int pmu_counter_event_get(int handle)
 {
 	u32 event;
 
-	if (handle >= MDLA_PMU_COUNTERS)
+	if ((handle >= MDLA_PMU_COUNTERS) || (handle < 0))
 		return -EINVAL;
 
 	event = cfg_pmu_event[handle];
@@ -159,7 +159,7 @@ void pmu_counter_read_all(u32 out[MDLA_PMU_COUNTERS])
 
 u32 pmu_counter_get(int handle)
 {
-	if (handle >= MDLA_PMU_COUNTERS)
+	if ((handle >= MDLA_PMU_COUNTERS) || (handle < 0))
 		return -EINVAL;
 
 	return l_counters[handle];
