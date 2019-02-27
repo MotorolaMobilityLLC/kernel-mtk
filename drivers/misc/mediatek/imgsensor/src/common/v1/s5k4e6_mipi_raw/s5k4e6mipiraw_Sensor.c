@@ -293,18 +293,15 @@ static kal_uint16 s5k4e6_table_write_cmos_sensor
 		}
 #if MULTI_WRITE
 
-		if (tosend >= I2C_BUFFER_LEN ||
-		    len    == IDX            ||
-		    addr   != addr_last)
-
-		{
+		if ((I2C_BUFFER_LEN - tosend) < 4 ||
+			len == IDX ||
+			addr   != addr_last) {
 
 			iBurstWriteReg_multi(puSendCmd,
 			tosend, imgsensor.i2c_write_id,
 			4, imgsensor_info.i2c_speed);
 
-		tosend = 0;
-
+			tosend = 0;
 		}
 #else
 		{
