@@ -350,7 +350,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 				mt_usb_host_disconnect(0);
 			} else {
 				DBG(0, "USB Plug out\n");
-				mt_usb_disconnect();
+				mt_usb_dev_disconnect();
 			}
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		} else if ((noti->typec_state.new_state ==
@@ -377,7 +377,7 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 		} else if (is_peripheral_active(mtk_musb) &&
 			noti->swap_state.new_role == PD_ROLE_DFP) {
 			DBG(0, "switch role to host\n");
-			mt_usb_disconnect();
+			mt_usb_dev_disconnect();
 			mt_usb_host_connect(0);
 		}
 		break;
