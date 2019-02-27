@@ -34,7 +34,7 @@ enum {
 
 #define MT6360_SYS_CTRLS_NUM	(3)
 #define MT6360_BUCK_CTRLS_NUM	(8)
-#define MT6360_LDO_CTRLS_NUM	(6)
+#define MT6360_LDO_CTRLS_NUM	(5)
 
 struct mt6360_pmic_platform_data {
 	struct regulator_init_data *init_data[MT6360_PMIC_MAX];
