@@ -1207,8 +1207,8 @@ static int mt6370_set_bist_carrier_mode(
 	return 0;
 }
 
-/* message header (2byte) + data object (7*4) */
-#define MT6370_TRANSMIT_MAX_SIZE	(sizeof(uint16_t) + sizeof(uint32_t)*7)
+/* transmit count (1byte) + message header (2byte) + data object (7*4) */
+#define MT6370_TRANSMIT_MAX_SIZE (1+sizeof(uint16_t) + sizeof(uint32_t)*7)
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
 static int mt6370_retransmit(struct tcpc_device *tcpc)
