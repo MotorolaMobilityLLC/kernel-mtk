@@ -228,6 +228,7 @@ config MACH_MT6779
 	select CPU_IDLE
 	select MTK_GIC_V3_EXT
 	select MTK_SYSIRQ
+	select MTK_EMI
 	select MTK_TIMER_SYSTIMER
 	select MTK_WATCHDOG_COMMON
 	select MTK_WATCHDOG_COMMON_V2

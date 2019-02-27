@@ -25,6 +25,7 @@ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6356) += -I$(srctree)/drivers/misc/media
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc/
+subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery/
 
 obj-y += charger_class.o mtk_charger.o mtk_switch_charging.o mtk_pdc_intf.o\
 	 mtk_chg_type_det.o mtk_pe40_intf.o
@@ -33,3 +34,4 @@ obj-$(CONFIG_MTK_DUAL_CHARGER_SUPPORT) += mtk_dual_switch_charging.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pe_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pe20_intf.o
 obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
+obj-$(CONFIG_CHARGER_BQ25601) += bq25601.o
