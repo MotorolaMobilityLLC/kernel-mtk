@@ -115,8 +115,7 @@ static void collect_cluster_stats(struct clb_stats *clbs,
 	clbs->load_avg /= clbs->ncpu;
 	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_acap = hmp_scale_down(clbs->acap);
-	clbs->scaled_atask = cpu_rq(target)->cfs.h_nr_running *
-		cpu_rq(target)->cfs.avg.loadwop_avg;
+	clbs->scaled_atask = cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
 	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
 
@@ -175,17 +174,6 @@ static void adj_threshold(struct clb_env *clbenv)
 			__func__, clbenv->bstats.threshold,
 			clbenv->lstats.threshold, clbenv->ltarget,
 			l_cap, clbenv->btarget, b_cap);
-}
-static inline void
-hmp_update_cfs_rq_load_avg(struct cfs_rq *cfs_rq, struct sched_avg *sa)
-{
-	if (atomic_long_read(&cfs_rq->removed_loadwop_avg)) {
-		s64 r = atomic_long_xchg(&cfs_rq->removed_loadwop_avg, 0);
-
-		sa->loadwop_avg = max_t(long, sa->loadwop_avg - r, 0);
-		sa->loadwop_sum = max_t(s64,
-				sa->loadwop_sum - r * LOAD_AVG_MAX, 0);
-	}
 }
 
 static void sched_update_clbstats(struct clb_env *clbenv)
@@ -585,14 +573,6 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	struct sched_entity *se = &p->se;
 	struct cpumask fast_cpu_mask, slow_cpu_mask;
 
-#ifdef CONFIG_HMP_TRACER
-	int cpu = 0;
-
-	for_each_online_cpu(cpu)
-		trace_sched_cfs_runnable_load(cpu, cfs_load(cpu),
-				cfs_length(cpu));
-#endif
-
 	if (sched_boost() && idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
 		return new_cpu;
 
@@ -907,45 +887,34 @@ hmp_update_load_avg(unsigned int decayed, unsigned long weight,
 		unsigned int scaled_delta_w, struct sched_avg *sa, u64 periods,
 		u32 contrib, u64 scaled_delta, struct cfs_rq *cfs_rq)
 {
-	const unsigned long nice_0_weight = scale_load_down(NICE_0_LOAD);
+	if (cfs_rq)
+		weight = scale_load_down(NICE_0_LOAD) * cfs_rq->h_nr_running;
+	else if (weight > 0)
+		weight = scale_load_down(NICE_0_LOAD);
 
 	if (decayed) {
-		if (weight) {
-			sa->loadwop_sum += nice_0_weight * scaled_delta_w;
-			if (cfs_rq) {
-				cfs_rq->avg.loadwop_sum +=
-					nice_0_weight * scaled_delta_w;
-			}
-		}
+		if (weight)
+			sa->loadwop_sum += weight * scaled_delta_w;
+
 		sa->loadwop_sum = decay_load(sa->loadwop_sum, periods + 1);
-		if (cfs_rq)
-			cfs_rq->avg.loadwop_sum = decay_load(
-					cfs_rq->avg.loadwop_sum, periods + 1);
 
-		if (weight) {
-			sa->loadwop_sum += nice_0_weight * contrib;
-			if (cfs_rq) {
-				cfs_rq->avg.loadwop_sum +=
-						nice_0_weight * contrib;
-			}
-		}
+		if (weight)
+			sa->loadwop_sum += weight * contrib;
 	}
 
-	if (weight) {
-		sa->loadwop_sum += nice_0_weight * scaled_delta;
-		if (cfs_rq) {
-			cfs_rq->avg.loadwop_sum +=
-				nice_0_weight * scaled_delta;
-		}
-	}
+	if (weight)
+		sa->loadwop_sum += weight * scaled_delta;
 
-	if (decayed) {
+	if (decayed)
 		sa->loadwop_avg = div_u64(sa->loadwop_sum, LOAD_AVG_MAX);
 
-		if (cfs_rq) {
-			cfs_rq->avg.loadwop_avg =
-				div_u64(cfs_rq->avg.loadwop_sum, LOAD_AVG_MAX);
-		}
+	/*
+	 * if caller update cfs' loading, also dump cfs
+	 * loading with systrace
+	 */
+	if (cfs_rq) {
+		trace_sched_cfs_runnable_load(cpu_of(cfs_rq->rq),
+			cfs_rq->avg.loadwop_avg, cfs_rq->h_nr_running);
 	}
 }
 
@@ -1116,12 +1085,6 @@ static void hmp_force_up_migration(int this_cpu)
 
 	if (!spin_trylock(&hmp_force_migration))
 		return;
-
-#ifdef CONFIG_HMP_TRACER
-	for_each_online_cpu(curr_cpu)
-		trace_sched_cfs_runnable_load(curr_cpu,
-				cfs_load(curr_cpu), cfs_length(curr_cpu));
-#endif
 
 	/* Migrate heavy task from LITTLE to big */
 	for_each_online_cpu(curr_cpu) {

@@ -572,6 +572,33 @@ TRACE_EVENT(sched_select_task_rq,
 		__entry->prefer)
 );
 
+/*
+ * Tracepoint for showing tracked cfs runqueue runnable load.
+ */
+TRACE_EVENT(sched_cfs_runnable_load,
+
+		TP_PROTO(int cpu_id, int cpu_load, int cpu_ntask),
+
+		TP_ARGS(cpu_id, cpu_load, cpu_ntask),
+
+		TP_STRUCT__entry(
+			__field(int, cpu_id)
+			__field(int, cpu_load)
+			__field(int, cpu_ntask)
+			),
+
+		TP_fast_assign(
+			__entry->cpu_id = cpu_id;
+			__entry->cpu_load = cpu_load;
+			__entry->cpu_ntask = cpu_ntask;
+			),
+
+		TP_printk("cpu-id=%d cfs-load=%4d, cfs-ntask=%2d",
+			__entry->cpu_id,
+			__entry->cpu_load,
+			__entry->cpu_ntask)
+		);
+
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 TRACE_EVENT(sched_cpufreq_fastpath_request,
 	TP_PROTO(int cpu, unsigned long req_cap,
@@ -878,32 +905,6 @@ TRACE_EVENT(sched_cfs_dequeue_task,
 			__entry->comm)
 		);
 
-/*
- * Tracepoint for showing tracked cfs runqueue runnable load.
- */
-TRACE_EVENT(sched_cfs_runnable_load,
-
-		TP_PROTO(int cpu_id, int cpu_load, int cpu_ntask),
-
-		TP_ARGS(cpu_id, cpu_load, cpu_ntask),
-
-		TP_STRUCT__entry(
-			__field(int, cpu_id)
-			__field(int, cpu_load)
-			__field(int, cpu_ntask)
-			),
-
-		TP_fast_assign(
-			__entry->cpu_id = cpu_id;
-			__entry->cpu_load = cpu_load;
-			__entry->cpu_ntask = cpu_ntask;
-			),
-
-		TP_printk("cpu-id=%d cfs-load=%4d, cfs-ntask=%2d",
-			__entry->cpu_id,
-			__entry->cpu_load,
-			__entry->cpu_ntask)
-		);
 
 /*
  * Tracepoint for profiling runqueue length
