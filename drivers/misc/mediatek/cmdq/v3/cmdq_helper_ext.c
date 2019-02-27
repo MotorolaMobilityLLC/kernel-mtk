@@ -4565,7 +4565,7 @@ s32 cmdq_pkt_copy_cmd(struct cmdqRecStruct *handle, void *src, const u32 size,
 			cmdq_core_dump_handle(handle, "ERR");
 		}
 
-		CMDQ_LOG(
+		CMDQ_MSG(
 			"buf size:%zu size:%zu available:%zu end:0x%p va:0x%p\n",
 			pkt->buf_size, pkt->cmd_buf_size, pkt->avail_buf_size,
 			handle->cmd_end, va);
