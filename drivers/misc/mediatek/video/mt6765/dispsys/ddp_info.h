@@ -161,9 +161,11 @@ struct sbch {
 	unsigned int height;
 	unsigned int width;
 	int phy_layer;
+	int const_bld;
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long long sbch_en_cnt;
 	int full_trans_en;
+	unsigned int trans_invalid;
 	unsigned int layer_disable_by_partial_update;
 };
 
