@@ -22,11 +22,13 @@
 /* scp config reg. definition*/
 #define SCP_TCM_SIZE		(scpreg.total_tcmsize)
 #define SCP_A_TCM_SIZE		(scpreg.scp_tcmsize)
-#define SCP_TCM			(scpreg.sram)
-#define SCP_REGION_INFO_OFFSET 0x400
-#define SCP_RTOS_START		(0x800)
+#define SCP_TCM		(scpreg.sram)
+#define SCP_REGION_INFO_OFFSET	0x400
+#define SCP_RTOS_START		0x800
 #define SCP_A_SHARE_BUFFER	(scpreg.sram + \
 					SCP_RTOS_START -  SHARE_BUF_SIZE*2)
+
+#define OFF_PARAM_START         0x30
 
 /* scp dvfs return status flag */
 #define SET_PLL_FAIL		(1)
@@ -117,6 +119,7 @@ enum scp_reserve_mem_id_t {
 	SPK_PROTECT_MEM_ID,
 	SPK_PROTECT_DUMP_MEM_ID,
 #endif
+	SCP_DRV_PARAMS_MEM_ID,
 	NUMS_MEM_ID,
 };
 
@@ -221,6 +224,9 @@ extern unsigned int scp_reset_by_cmd;
 extern struct scp_region_info_st scp_region_info_copy;
 extern struct scp_region_info_st *scp_region_info;
 extern void __iomem *scp_l1c_start_virt;
-
 #endif
+
+__attribute__((weak))
+int sensor_params_to_scp(phys_addr_t addr_vir, size_t size);
+
 #endif
