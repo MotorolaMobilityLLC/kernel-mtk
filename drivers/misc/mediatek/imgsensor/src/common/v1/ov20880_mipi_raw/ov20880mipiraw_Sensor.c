@@ -31,6 +31,7 @@
 
 #include "ov20880mipiraw_Sensor.h"
 
+#undef CAPTURE_SIZE_5M
 
 
 /****************************   Modify end    *********************************/
