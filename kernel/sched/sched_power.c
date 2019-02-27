@@ -152,8 +152,8 @@ void mtk_cluster_capacity_idx(int cid, struct energy_env *eenv, int cpu_idx)
 	max_idx = sge->nr_cap_states - 1;
 
 	/* default is max_cap if we don't find a match */
-	eenv->cpu[cpu_idx].cap_idx = max_idx;
-	eenv->cpu[cpu_idx].cap = sge->cap_states[max_idx].cap;
+	eenv->cpu[cpu_idx].cap_idx[cid] = max_idx;
+	eenv->cpu[cpu_idx].cap[cid] = sge->cap_states[max_idx].cap;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* OPP idx to refer capacity margin */
@@ -165,8 +165,8 @@ void mtk_cluster_capacity_idx(int cid, struct energy_env *eenv, int cpu_idx)
 	for (idx = 0; idx < sge->nr_cap_states; idx++) {
 		if (sge->cap_states[idx].cap >= new_capacity) {
 			/* Keep track of SG's capacity */
-			eenv->cpu[cpu_idx].cap_idx = idx;
-			eenv->cpu[cpu_idx].cap = sge->cap_states[idx].cap;
+			eenv->cpu[cpu_idx].cap_idx[cid] = idx;
+			eenv->cpu[cpu_idx].cap[cid] = sge->cap_states[idx].cap;
 			break;
 		}
 	}
@@ -174,8 +174,8 @@ void mtk_cluster_capacity_idx(int cid, struct energy_env *eenv, int cpu_idx)
 	mt_sched_printf(sched_eas_energy_calc,
 		"cpu_idx=%d cid=%d max_cpu=%d (util=%ld new=%ld) max_opp=%d (cap=%d)",
 		cpu_idx, cid, cpu, util, new_capacity,
-		eenv->cpu[cpu_idx].cap_idx,
-		eenv->cpu[cpu_idx].cap);
+		eenv->cpu[cpu_idx].cap_idx[cid],
+		eenv->cpu[cpu_idx].cap[cid]);
 }
 
 void mtk_update_new_capacity(struct energy_env *eenv)
@@ -207,7 +207,7 @@ mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level)
 #endif
 	struct energy_env *eenv = (struct energy_env *)argu;
 	int only_lv1 = 0;
-	int cap_idx = eenv->opp_idx[cpu_idx][cid];
+	int cap_idx = eenv->cpu[cpu_idx].cap_idx[cid];
 	int co_buck_cid = -1;
 
 	sd = rcu_dereference_check_sched_domain(cpu_rq(cpu)->sd);
@@ -221,14 +221,14 @@ mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level)
 		return 0;
 
 	if (is_share_buck(cid, &co_buck_cid)) {
-		cap_idx = max(eenv->opp_idx[cpu_idx][cid],
-				eenv->opp_idx[cpu_idx][co_buck_cid]);
+		cap_idx = max(eenv->cpu[cpu_idx].cap_idx[cid],
+				eenv->cpu[cpu_idx].cap_idx[co_buck_cid]);
 
 		mt_sched_printf(sched_eas_energy_calc,
 			"[share buck] %s cap_idx=%d is via max_opp(cid%d=%d,cid%d=%d)",
 			__func__,
-			cap_idx, cid, eenv->opp_idx[cpu_idx][cid],
-			co_buck_cid, eenv->opp_idx[cpu_idx][co_buck_cid]);
+			cap_idx, cid, eenv->cpu[cpu_idx].cap_idx[cid],
+			co_buck_cid, eenv->cpu[cpu_idx].cap_idx[co_buck_cid]);
 	}
 
 	_sge = sge_core = sge_clus = NULL;
@@ -295,7 +295,7 @@ int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 #else
 	int cid = cpu_topology[cpu].socket_id;
 #endif
-	int cap_idx = eenv->opp_idx[cpu_idx][cid];
+	int cap_idx = eenv->cpu[cpu_idx].cap_idx[cid];
 	int co_buck_cid = -1;
 	unsigned long int volt_factor = 1;
 	int shared = 0;
@@ -313,8 +313,8 @@ int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 
 		mt_sched_printf(sched_eas_energy_calc,
 			"[share buck] cap_idx of clu%d=%d cap_idx of clu%d=%d",
-			cid, eenv->opp_idx[cpu_idx][cid], co_buck_cid,
-			eenv->opp_idx[cpu_idx][co_buck_cid]);
+			cid, eenv->cpu[cpu_idx].cap_idx[cid], co_buck_cid,
+			eenv->cpu[cpu_idx].cap_idx[co_buck_cid]);
 		shared = 1;
 	}
 
@@ -323,7 +323,7 @@ int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 		/* fix HPS defeats: only one CPU in this cluster */
 		const struct sched_group_energy *sge_core;
 		const struct sched_group_energy *sge_clus;
-		int co_cap_idx = eenv->opp_idx[cpu_idx][co_buck_cid];
+		int co_cap_idx = eenv->cpu[cpu_idx].cap_idx[co_buck_cid];
 
 		sge_core = cpu_core_energy(cpu);
 		sge_clus = cpu_cluster_energy(cpu);
@@ -399,7 +399,7 @@ int mtk_busy_power(int cpu_idx, int cpu, void *argu, int sd_level)
 		}
 	} else {
 		const struct sched_group_energy *_sge;
-		int co_cap_idx = eenv->opp_idx[cpu_idx][co_buck_cid];
+		int co_cap_idx = eenv->cpu[cpu_idx].cap_idx[co_buck_cid];
 
 		if (sd_level == 0)
 			_sge = cpu_core_energy(cpu); /* for CPU */

@@ -5639,6 +5639,10 @@ static unsigned long group_max_util(struct energy_env *eenv, int cpu_idx)
 		 * capacity_min_of will return 0 (not capped).
 		 */
 		max_util = max(max_util, capacity_min_of(cpu));
+
+		mt_sched_printf(sched_eas_energy_calc,
+			"%s: cpu=%d util=%lu delta=%d max_util=%lu",
+			__func__, cpu, util, eenv->util_delta, max_util);
 	}
 
 	return max_util;
@@ -5659,7 +5663,18 @@ static unsigned long group_max_util(struct energy_env *eenv, int cpu_idx)
 static unsigned
 long group_norm_util(struct energy_env *eenv, int cpu_idx)
 {
+#ifndef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	unsigned long capacity = eenv->cpu[cpu_idx].cap;
+#else
+	struct sched_group *sg = eenv->sg;
+	int cpu_id = group_first_cpu(sg);
+#ifdef CONFIG_ARM64
+	int cid = cpu_topology[cpu_id].cluster_id;
+#else
+	int cid = cpu_topology[cpu_id].socket_id;
+#endif
+	unsigned long capacity = eenv->cpu[cpu_idx].cap[cid];
+#endif
 	unsigned long util, util_sum = 0;
 	int cpu;
 
@@ -5675,6 +5690,12 @@ long group_norm_util(struct energy_env *eenv, int cpu_idx)
 			util += eenv->util_delta;
 
 		util_sum += __cpu_norm_util(util, capacity);
+
+		mt_sched_printf(sched_eas_energy_calc,
+			"%s: cpu=%d util_sum=%lu norm_util=%d delta=%d util=%lu capacity=%d",
+			__func__, cpu, util_sum,
+			(int)__cpu_norm_util(util, capacity),
+			eenv->util_delta, util, (int)capacity);
 	}
 
 	return min_t(unsigned long, util_sum, SCHED_CAPACITY_SCALE);
@@ -5698,6 +5719,11 @@ static int find_new_capacity(struct energy_env *eenv, int cpu_idx)
 			/* Keep track of SG's capacity */
 			eenv->cpu[cpu_idx].cap_idx = idx;
 			eenv->cpu[cpu_idx].cap = sge->cap_states[idx].cap;
+
+			mt_sched_printf(sched_eas_energy_calc,
+				"%s: util=%lu idx=%d capacity=%llu",
+				__func__, util, idx, sge->cap_states[idx].cap);
+
 			break;
 		}
 	}
@@ -5801,6 +5827,11 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 		if (eenv->cpu[cpu_idx].cpu_id == -1)
 			continue;
 
+		mt_sched_printf(sched_eas_energy_calc,
+			"%s cpu_idx=%d src_cpu=%d dst_cpu=%d cpu=%d",
+			__func__, cpu_idx, eenv->cpu[EAS_CPU_PRV].cpu_id,
+			eenv->cpu[cpu_idx].cpu_id, group_first_cpu(sg));
+
 #ifdef CONFIG_MTK_UNIFY_POWER
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 		busy_power = sg->sge->busy_power(cpu_idx, group_first_cpu(sg),
@@ -5866,9 +5897,8 @@ static void calc_sg_energy(struct energy_env *eenv, struct sched_domain *sd)
 		eenv->cpu[cpu_idx].energy += total_energy;
 
 		mt_sched_printf(sched_eas_energy_calc,
-			"cpu_idx=%d src_cpu=%d dst_cpu=%d busy_egy=%d idle_egy=%d (cost=%d total_egy=%d) mask=0x%lx child=%d",
-			cpu_idx,  eenv->cpu[EAS_CPU_PRV].cpu_id,
-			eenv->cpu[cpu_idx].cpu_id,
+			"sg_util=%lu busy_egy=%d idle_egy=%d (cost=%d total_egy=%d) mask=0x%lx child=%d",
+			sg_util,
 			busy_energy, idle_energy, total_energy,
 			eenv->cpu[cpu_idx].energy,
 			sched_group_cpus(sg)->bits[0],
