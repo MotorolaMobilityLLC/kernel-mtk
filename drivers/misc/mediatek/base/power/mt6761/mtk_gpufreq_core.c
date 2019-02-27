@@ -130,23 +130,10 @@ static struct g_opp_table_info *g_opp_table;
 static struct g_opp_table_info *g_opp_table_default;
 static struct g_pmic_info *g_pmic;
 static struct g_clk_info *g_clk;
-static struct g_opp_table_info g_opp_table_segment1[] = {
-GPUOP(SEG1_GPU_DVFS_FREQ0, SEG1_GPU_DVFS_VOLT0, SEG1_GPU_DVFS_VSRAM0, 0),
-};
-static struct g_opp_table_info g_opp_table_segment2[] = {
-GPUOP(SEG2_GPU_DVFS_FREQ0, SEG2_GPU_DVFS_VOLT0, SEG2_GPU_DVFS_VSRAM0, 0),
-GPUOP(SEG2_GPU_DVFS_FREQ1, SEG2_GPU_DVFS_VOLT1, SEG2_GPU_DVFS_VSRAM1, 1),
-GPUOP(SEG2_GPU_DVFS_FREQ2, SEG2_GPU_DVFS_VOLT2, SEG2_GPU_DVFS_VSRAM2, 2),
-};
-static struct g_opp_table_info g_opp_table_segment3[] = {
-GPUOP(SEG3_GPU_DVFS_FREQ0, SEG3_GPU_DVFS_VOLT0, SEG3_GPU_DVFS_VSRAM0, 0),
-GPUOP(SEG3_GPU_DVFS_FREQ1, SEG3_GPU_DVFS_VOLT1, SEG3_GPU_DVFS_VSRAM1, 1),
-GPUOP(SEG3_GPU_DVFS_FREQ2, SEG3_GPU_DVFS_VOLT2, SEG3_GPU_DVFS_VSRAM2, 2),
-};
-static struct g_opp_table_info g_opp_table_segment4[] = {
-GPUOP(SEG4_GPU_DVFS_FREQ0, SEG4_GPU_DVFS_VOLT0, SEG4_GPU_DVFS_VSRAM0, 0),
-GPUOP(SEG4_GPU_DVFS_FREQ1, SEG4_GPU_DVFS_VOLT1, SEG4_GPU_DVFS_VSRAM1, 1),
-GPUOP(SEG4_GPU_DVFS_FREQ2, SEG4_GPU_DVFS_VOLT2, SEG4_GPU_DVFS_VSRAM2, 2),
+static struct g_opp_table_info g_opp_table_6761[] = {
+GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
+GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 1),
+GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,mt6761-gpufreq" },
@@ -2441,34 +2428,6 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	pr_info("mtcmos_mfg is at 0x%p, mtcmos_mfg_core0 is at 0x%p, ",
 		g_clk->mtcmos_mfg, g_clk->mtcmos_mfg_core0);
 
-
-	/* check EFUSE register 0x11f10050[27:24] */
-	/* Free Version : 4'b0000 */
-	/* 1GHz Version : 4'b0001 */
-	/* 950MHz Version : 4'b0010 */
-	/* 900MHz Version : 4'b0011 (Segment1) */
-	/* 850MHz Version : 4'b0100 */
-	/* 800MHz Version : 4'b0101 (Segment2) */
-	/* 750MHz Version : 4'b0110 */
-	/* 700MHz Version : 4'b0111 (Segment3) */
-
-	g_efuse_id = get_devinfo_with_index(30);
-	if (g_efuse_id == 0x8 || g_efuse_id == 0xf) {
-		/* 6762M */
-		g_segment_id = MT6762M_SEGMENT;
-	} else if (g_efuse_id == 0x1 || g_efuse_id == 0x7) {
-		/* 6762 */
-		g_segment_id = MT6762_SEGMENT;
-	} else if (g_efuse_id == 0x2 || g_efuse_id == 0x5) {
-		/* SpeedBin */
-		g_segment_id = MT6761T_SEGMENT;
-	} else {
-		/* Other Version, set default segment */
-		g_segment_id = MT6761_SEGMENT;
-	}
-	gpufreq_pr_info("@%s: g_efuse_id = 0x%08X, g_segment_id = %d\n",
-		__func__, g_efuse_id, g_segment_id);
-
 	/* alloc PMIC regulator */
 	g_pmic = kzalloc(sizeof(struct g_pmic_info), GFP_KERNEL);
 	if (g_pmic == NULL)
@@ -2503,24 +2462,10 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	mt_spower_init();
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
-	/* setup OPP table by device ID */
-	if (g_segment_id == MT6762M_SEGMENT) {
-		__mt_gpufreq_setup_opp_table(g_opp_table_segment1,
-			ARRAY_SIZE(g_opp_table_segment1));
+
+	__mt_gpufreq_setup_opp_table(g_opp_table_6761,
+			ARRAY_SIZE(g_opp_table_6761));
 		g_fixed_vsram_volt_idx = 0;
-	} else if (g_segment_id == MT6762_SEGMENT) {
-		__mt_gpufreq_setup_opp_table(g_opp_table_segment2,
-			ARRAY_SIZE(g_opp_table_segment2));
-		g_fixed_vsram_volt_idx = 2;
-	} else if (g_segment_id == MT6761_SEGMENT) {
-		__mt_gpufreq_setup_opp_table(g_opp_table_segment3,
-			ARRAY_SIZE(g_opp_table_segment3));
-		g_fixed_vsram_volt_idx = 2;
-	} else if (g_segment_id == MT6761T_SEGMENT) {
-		__mt_gpufreq_setup_opp_table(g_opp_table_segment4,
-			ARRAY_SIZE(g_opp_table_segment4));
-		g_fixed_vsram_volt_idx = 2;
-	}
 
 	/* setup PMIC init value */
 #ifdef USE_STAND_ALONE_VGPU
