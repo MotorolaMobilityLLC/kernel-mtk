@@ -2060,13 +2060,13 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 	case VCODEC_INC_PWR_USER:
 	{
-		pr_info("[INFO] VCODEC_INC_PWR_USER empty");
+		/* pr_info("[INFO] VCODEC_INC_PWR_USER empty"); */
 	}
 	break;
 
 	case VCODEC_DEC_PWR_USER:
 	{
-		pr_info("[INFO] VCODEC_DEC_PWR_USER empty");
+		/* pr_info("[INFO] VCODEC_DEC_PWR_USER empty"); */
 	}
 	break;
 
@@ -2156,8 +2156,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 			return -EFAULT;
 		}
 
-/* TODO: Log setting API not available in kernel-4.9 yet */
-#if 0
 		if (rIncLogCount == VAL_TRUE) {
 			if (gu4LogCountUser == 0) {
 				gu4LogCount = get_detect_count();
@@ -2171,7 +2169,6 @@ static long vcodec_unlocked_ioctl(struct file *file, unsigned int cmd,
 				gu4LogCount = 0;
 			}
 		}
-#endif
 		mutex_unlock(&LogCountLock);
 
 		/* pr_debug("VCODEC_SET_LOG_COUNT - tid = %d\n",
