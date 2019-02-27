@@ -55,6 +55,9 @@ obj-y += met_drv/
 endif
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gud/
+ifneq ($(filter y,$(CONFIG_TRUSTONIC_TEE_SUPPORT) $(CONFIG_MTK_TEE_GP_SUPPORT)),)
+obj-y += secmem/
+endif
 obj-y += sspm/
 obj-$(CONFIG_MMPROFILE) += mmp/
 obj-$(CONFIG_MTK_M4U)	+= m4u/
