@@ -131,6 +131,12 @@ static void dpmaif_dump_register(struct hif_dpmaif_ctrl *hif_ctrl, int buf_type)
 	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
 		hif_ctrl->dpmaif_pd_misc_base + DPMAIF_PD_AP_UL_L2TISAR0,
 		DPMAIF_PD_AP_CODA_VER - DPMAIF_PD_AP_UL_L2TISAR0 + 4);
+
+	CCCI_BUF_LOG_TAG(hif_ctrl->md_id, buf_type, TAG,
+		"dump AP DPMAIF SRAM pdn register\n");
+	ccci_util_mem_dump(hif_ctrl->md_id, buf_type,
+		hif_ctrl->dpmaif_pd_sram_base + 0x10,
+		0x24);
 }
 
 void dpmaif_dump_reg(void)
@@ -2919,6 +2925,7 @@ int ccci_dpmaif_hif_init(unsigned char hif_id, unsigned char md_id)
 	hif_ctrl->dpmaif_pd_dl_base = of_iomap(node, 3);
 	hif_ctrl->dpmaif_pd_misc_base = of_iomap(node, 4);
 	hif_ctrl->dpmaif_pd_md_misc_base = of_iomap(node, 5);
+	hif_ctrl->dpmaif_pd_sram_base = of_iomap(node, 6);
 
 	if (hif_ctrl->dpmaif_ao_ul_base == 0 ||
 		hif_ctrl->dpmaif_pd_ul_base == 0) {
