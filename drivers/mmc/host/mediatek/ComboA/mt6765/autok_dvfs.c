@@ -419,7 +419,6 @@ int sd_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	u8 *res;
 
 	res = host->autok_res[vcore];
-	pr_notice("sd_execute_dvfs_autok %d\n", vcore);
 
 	if (host->mmc->ios.timing == MMC_TIMING_UHS_SDR104 ||
 	    host->mmc->ios.timing == MMC_TIMING_UHS_SDR50) {
@@ -444,7 +443,6 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 	u8 *res;
 
 	res = host->autok_res[vcore];
-	pr_notice("emmc_execute_dvfs_autok %d\n", vcore);
 
 	if (host->mmc->ios.timing == MMC_TIMING_MMC_HS200) {
 #ifdef MSDC_HQA
@@ -463,12 +461,15 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 		msdc_HQA_set_voltage(host);
 #endif
 
-		if (opcode == MMC_SEND_STATUS) {
+		if (msdc_try_restoring_autok_setting(host)) {
+			pr_notice("[AUTOK]eMMC HS400 restored autok setting\n");
+		} else if (opcode == MMC_SEND_STATUS) {
 			pr_notice("[AUTOK]eMMC HS400 Tune CMD only\n");
 			ret = hs400_execute_tuning_cmd(host, res);
 		} else {
 			pr_notice("[AUTOK]eMMC HS400 Tune\n");
 			ret = hs400_execute_tuning(host, res);
+			msdc_save_autok_setting(host);
 		}
 	}
 

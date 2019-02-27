@@ -156,7 +156,6 @@ typedef void (*pm_callback_t)(pm_message_t state, void *data);
 #define MSDC_SDIO_IRQ       (1 << 3)  /* use internal sdio irq (bus)   */
 #define MSDC_EXT_SDIO_IRQ   (1 << 4)  /* use external sdio irq         */
 #define MSDC_REMOVABLE      (1 << 5)  /* removable slot                */
-#define MSDC_SYS_SUSPEND    (1 << 6)  /* suspended by system           */
 #define MSDC_SDIO_DDR208    (1 << 7)  /* ddr208 mode used by 6632      */
 /* for some board, need SD power always on!! or cannot recognize the sd card*/
 #define MSDC_SD_NEED_POWER  (1 << 31)
@@ -302,7 +301,6 @@ struct msdc_host {
 
 	int                     error;
 	spinlock_t              lock;           /* mutex */
-	spinlock_t              clk_gate_lock;
 	/* to solve removing bad card
 	 * race condition with hot-plug enable
 	 */
@@ -337,7 +335,6 @@ struct msdc_host {
 	struct completion       autok_done;
 
 	struct completion       xfer_done;
-	struct pm_message       pm_state;
 
 	u32                     mclk;           /* mmc subsystem clock */
 	u32                     hclk;           /* host clock speed */
@@ -347,12 +344,10 @@ struct msdc_host {
 	u8                      power_mode;     /* host power mode */
 	u8                      bus_width;
 	u8                      card_inserted;  /* card inserted ? */
-	u8                      suspend;        /* host suspended ? */
 	u8                      autocmd;
 	u8                      app_cmd;        /* for app command */
 	u32                     app_cmd_arg;
 	int                     pin_state;      /* for hw trapping */
-	struct timer_list       timer;
 	u32                     sw_timeout;
 #ifdef SDCARD_ESD_RECOVERY
 	/* cmd13 contunous timeout, clear when any other cmd succeed */
@@ -360,6 +355,7 @@ struct msdc_host {
 #endif
 	u32                     data_timeout_cont; /* data continuous timeout */
 	bool                    tuning_in_progress;
+	bool			save_hs400_autok;
 	u32                     need_tune;
 	int                     autok_error;
 	int                     reautok_times;
@@ -411,10 +407,6 @@ struct msdc_host {
 	bool                    is_crypto_init;
 	u32                     key_idx;
 #endif
-	/* BEGIN temporarily debug  ALPS03052531*/
-	int                     resume_write_times;
-	/* END temporarily debug  ALPS03052531*/
-
 	u32                     dma_cnt;
 	u64                     start_dma_time;
 	u64                     stop_dma_time;
@@ -663,13 +655,13 @@ void msdc_set_smpl(struct msdc_host *host, u32 clock_mode, u8 mode, u8 type,
 void msdc_set_smpl_all(struct msdc_host *host, u32 clock_mode);
 void msdc_set_check_endbit(struct msdc_host *host, bool enable);
 int msdc_switch_part(struct msdc_host *host, char part_id);
-void msdc_gate_clock(struct msdc_host *host, int delay);
-void msdc_ungate_clock(struct msdc_host *host);
 
 /* Function provided by msdc_tune.c */
 int sdcard_hw_reset(struct mmc_host *mmc);
 int sdcard_reset_tuning(struct mmc_host *mmc);
 int emmc_reinit_tuning(struct mmc_host *mmc);
+int msdc_try_restoring_autok_setting(struct msdc_host *host);
+void msdc_save_autok_setting(struct msdc_host *host);
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 unsigned int msdc_do_cmdq_command(struct msdc_host *host,

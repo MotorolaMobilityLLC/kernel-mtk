@@ -2150,15 +2150,13 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 		((host->caps2 & MMC_CAP2_FULL_PWR_CYCLE) || !is_suspend))
 		err = mmc_poweroff_notify(host->card, notify_type);
 	else if (mmc_can_sleep(host->card)) {
+		memcpy(&host->cached_ios, &host->ios, sizeof(host->ios));
 		err = mmc_sleep(host);
-		if (!err && mmc_card_keep_power(host))
-			mmc_card_set_sleep(host->card);
 	} else if (!mmc_host_is_spi(host))
 		err = mmc_deselect_cards(host);
 
 	if (!err) {
-		if (!mmc_card_keep_power(host))
-			mmc_power_off(host);
+		mmc_power_off(host);
 		mmc_card_set_suspended(host->card);
 	}
 out:
@@ -2198,19 +2196,19 @@ static int _mmc_resume(struct mmc_host *host)
 	if (!mmc_card_suspended(host->card))
 		goto out;
 
-	if (!mmc_card_keep_power(host))
-		mmc_power_up(host, host->card->ocr);
+	mmc_power_up(host, host->card->ocr);
 
-	if (mmc_card_is_sleep(host->card) && mmc_can_sleep(host->card)) {
+	if (mmc_can_sleep(host->card)) {
 		err = mmc_awake(host);
-		/*
-		 * No matter if err happens, we should guarantee mmc can run
-		 * suspend next time.
-		 */
-		mmc_card_clr_sleep(host->card);
+		if (err) {
+			pr_err("%s: %s: awake failed (%d)\n",
+					mmc_hostname(host), __func__, err);
+			goto out;
+		}
+		memcpy(&host->ios, &host->cached_ios, sizeof(host->ios));
+		host->ops->set_ios(host, &host->ios);
 	} else
 		err = mmc_init_card(host, host->card->ocr, host->card);
-	mmc_card_clr_suspended(host->card);
 
 	/*
 	 * Turn on cache if eMMC reversion before v5.0
@@ -2219,6 +2217,7 @@ static int _mmc_resume(struct mmc_host *host)
 		err = mmc_cache_ctrl(host, 1);
 
 out:
+	mmc_card_clr_suspended(host->card);
 	mmc_release_host(host);
 	return err;
 }
@@ -2308,15 +2307,20 @@ static int mmc_reset(struct mmc_host *host)
 	mmc_flush_cache(host->card);
 
 	if ((host->caps & MMC_CAP_HW_RESET) && host->ops->hw_reset &&
-	     mmc_can_reset(card)) {
+			mmc_can_reset(card)) {
 		/* If the card accept RST_n signal, send it. */
+		/*
+		 * WARNING: sometimes CRC happens when f_init = 400000,
+		 * maybe can use 260000.
+		 */
 		mmc_set_clock(host, host->f_init);
 		host->ops->hw_reset(host);
 		/* Set initial state and call mmc_set_ios */
 		mmc_set_initial_state(host);
 	} else {
+		/* Bypass here for keeping power-on wp */
 		/* Do a brute force power cycle */
-		mmc_power_cycle(host, card->ocr);
+		/* mmc_power_cycle(host, card->ocr); */
 	}
 	return mmc_init_card(host, card->ocr, card);
 }
