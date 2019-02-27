@@ -6513,13 +6513,14 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 		atomic_inc(task_ref_count);
 
 		CMDQ_LOG(
-			"Round:%u handle:0x%p pkt:0x%p thread:%d size:%zu ref:%u scenario:%d start async\n",
+			"Round:%u handle:0x%p pkt:0x%p thread:%d size:%zu ref:%u scenario:%d flag:0x%llx start async\n",
 			task_count, random_context->handle,
 			random_context->handle->pkt,
 			random_context->handle->thread,
 			random_context->handle->pkt->cmd_buf_size,
 			(u32)atomic_read(task_ref_count),
-			random_context->handle->scenario);
+			random_context->handle->scenario,
+			random_context->handle->engineFlag);
 	} else {
 		/* sync flush case, will blocking worker */
 		INIT_WORK(&random_context->release_work,
@@ -6527,11 +6528,12 @@ static s32 _testcase_gen_task_thread_each(void *data, u32 task_count,
 		atomic_inc(task_ref_count);
 
 		CMDQ_LOG(
-			"Round:%u handle:0x%p pkt:0x%p size:%zu ref:%u scenario:%d start sync\n",
+			"Round:%u handle:0x%p pkt:0x%p size:%zu ref:%u scenario:%d flag:0x%llx start sync\n",
 			task_count, handle, handle->pkt,
 			handle->pkt->cmd_buf_size,
 			(u32)atomic_read(task_ref_count),
-			handle->scenario);
+			handle->scenario,
+			random_context->handle->engineFlag);
 	}
 
 	queue_work(release_queues[get_random_int() % MAX_RELEASE_QUEUE],

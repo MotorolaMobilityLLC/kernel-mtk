@@ -66,7 +66,6 @@ static struct DumpFirstErrorStruct cmdq_first_err;
 static struct DumpCommandBufferStruct cmdq_command_dump;
 static struct CmdqCBkStruct cmdq_group_cb[CMDQ_MAX_GROUP_COUNT];
 static struct CmdqDebugCBkStruct cmdq_debug_cb;
-static struct cmdq_core_handle_life cmdq_handle_cb;
 static struct cmdq_dts_setting cmdq_dts;
 static struct cmdqDTSDataStruct cmdq_dts_data;
 static struct SubsysStruct cmdq_adds_subsys = {
@@ -226,13 +225,6 @@ s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 	callback->errorReset = errorReset;
 
 	return 0;
-}
-
-void cmdq_core_register_handle_cycle(cmdq_core_handle_prepare prepare,
-	cmdq_core_handle_unprepare unprepare)
-{
-	cmdq_handle_cb.prepare = prepare;
-	cmdq_handle_cb.unprepare = unprepare;
 }
 
 void cmdq_core_register_status_dump(struct notifier_block *notifier)
@@ -929,6 +921,7 @@ static void cmdq_core_print_thd_usage(struct seq_file *m, void *v,
 	char parsed_inst[128] = { 0 };
 	struct cmdq_core_thread *thread = &cmdq_ctx.thread[thread_idx];
 	struct cmdqRecStruct *task;
+	u32 counter = 0;
 
 	seq_printf(m, "====== Thread %d Usage =======\n", thread_idx);
 #if 0
@@ -945,8 +938,8 @@ static void cmdq_core_print_thd_usage(struct seq_file *m, void *v,
 	list_for_each_entry(task, &cmdq_ctx.handle_active, list_entry) {
 		/* dump task basic info */
 		seq_printf(m,
-			   "Slot:%d Task:0x%p Pid:%d Name:%s Scn:%d",
-			   thread_idx, task, task->caller_pid,
+			   "Index:%u handle:0x%p Pid:%d Name:%s Scn:%d",
+			   counter, task, task->caller_pid,
 			   task->caller_name, task->scenario);
 
 		/* here only print first buffer to reduce log */
@@ -979,6 +972,8 @@ static void cmdq_core_print_thd_usage(struct seq_file *m, void *v,
 		} else {
 			seq_puts(m, "PC(VA): Not available\n");
 		}
+
+		counter++;
 	}
 
 	mutex_unlock(&cmdq_thread_mutex);
@@ -3654,7 +3649,7 @@ static void cmdq_core_group_clk_cb(bool enable,
 		if (index == CMDQ_GROUP_ISP)
 			continue;
 
-		if (cmdq_core_is_group_flag(index, engine_clk)) {
+		if (cmdq_core_is_group_flag(index, engine_flag)) {
 			if (enable)
 				cmdq_core_group_clk_on(index, engine_clk);
 			else
@@ -4615,7 +4610,7 @@ static s32 cmdq_pkt_lock_handle(struct cmdqRecStruct *handle,
 	mutex_lock(&cmdq_clock_mutex);
 
 	/* callback clients we are about to start handle in gce */
-	cmdq_handle_cb.prepare(handle);
+	handle->prepare(handle);
 
 	/* task and thread dispatched, increase usage */
 	cmdq_core_clk_enable(handle);
@@ -4657,7 +4652,7 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 	mutex_lock(&cmdq_clock_mutex);
 
 	/* callback clients this thread about to clean */
-	cmdq_handle_cb.unprepare(handle);
+	handle->unprepare(handle);
 
 	/* before stop job, decrease usage */
 	cmdq_core_clk_disable(handle);
