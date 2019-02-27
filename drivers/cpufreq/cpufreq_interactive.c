@@ -32,6 +32,11 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 
+#if defined(CONFIG_CPU_FREQ_SCHED_ASSIST)
+/* removed : && defined(CONFIG_MTK_ACAO_SUPPORT)*/
+#include <mtk_cpufreq_api.h>
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
@@ -531,6 +536,17 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 		icpu->pol_floor_val_time = fvt;
 	}
 
+#if defined(CONFIG_CPU_FREQ_SCHED_ASSIST)
+/* removed : && defined(CONFIG_MTK_ACAO_SUPPORT)*/
+	mt_cpufreq_set_by_wfi_load_cluster(arch_get_cluster_id(policy->cpu),
+						max_freq);
+	if (max_freq != policy->cur) {
+		for_each_cpu(i, policy->cpus) {
+			icpu = &per_cpu(interactive_cpu, i);
+			icpu->pol_hispeed_val_time = hvt;
+		}
+	}
+#else
 	if (max_freq != policy->cur) {
 		__cpufreq_driver_target(policy, max_freq, CPUFREQ_RELATION_H);
 		for_each_cpu(i, policy->cpus) {
@@ -538,6 +554,7 @@ static void cpufreq_interactive_adjust_cpu(unsigned int cpu,
 			icpu->pol_hispeed_val_time = hvt;
 		}
 	}
+#endif
 
 	trace_cpufreq_interactive_setspeed(cpu, max_freq, policy->cur);
 }

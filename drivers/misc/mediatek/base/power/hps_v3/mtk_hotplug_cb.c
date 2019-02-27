@@ -46,22 +46,9 @@
 
 #define BUCK_CTRL_DBLOG		(0)
 
-/*
- * weak function
- */
+/* FIXME : follow K44 first */
 #define CPU_PRI_PERF 20
-int __attribute__ ((weak))
-arch_get_cluster_id(unsigned int cpu)
-{
-	pr_notice("%s not ready\n", __func__);
-	return 0;
-}
-
-void __attribute__ ((weak))
-arch_get_cluster_cpus(struct cpumask *cpus, int cluster_id)
-{
-	pr_notice("%s not ready\n", __func__);
-}
+/* FIXME : follow K44 first */
 
 static struct notifier_block cpu_hotplug_nb;
 #if defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6759)
