@@ -33,16 +33,94 @@ int __attribute__((weak)) spm_load_firmware_status(void) { return -1; }
 void __attribute__((weak)) mtk_idle_cond_update_state(void) {}
 
 
-static bool mtk_idle_can_enter(int idle_type, int reason)
+/* For ACAO case, no need to check single cpu criteria. */
+#define MTK_IDLE_SINGLE_CPU_CHECK   (0)
+
+#if MTK_IDLE_SINGLE_CPU_CHECK
+#include <linux/cpu.h>
+static atomic_t is_in_hotplug = ATOMIC_INIT(0);
+
+static bool mtk_idle_cpu_criteria(void)
 {
-	if (idle_type == IDLE_TYPE_DP)
-		return dpidle_can_enter(reason);
-	else if (idle_type == IDLE_TYPE_SO3)
-		return sodi3_can_enter(reason);
-	else if (idle_type == IDLE_TYPE_SO)
-		return sodi_can_enter(reason);
+	return ((atomic_read(&is_in_hotplug) == 1) ||
+		(num_online_cpus() != 1)) ? false : true;
+}
+
+static int mtk_idle_cpu_callback(struct notifier_block *nfb,
+	unsigned long action, void *hcpu)
+{
+	switch (action) {
+	case CPU_UP_PREPARE:
+	case CPU_UP_PREPARE_FROZEN:
+	case CPU_DOWN_PREPARE:
+	case CPU_DOWN_PREPARE_FROZEN:
+		atomic_inc(&is_in_hotplug);
+		break;
+
+	case CPU_ONLINE:
+	case CPU_ONLINE_FROZEN:
+	case CPU_UP_CANCELED:
+	case CPU_UP_CANCELED_FROZEN:
+	case CPU_DOWN_FAILED:
+	case CPU_DOWN_FAILED_FROZEN:
+	case CPU_DEAD:
+	case CPU_DEAD_FROZEN:
+		atomic_dec(&is_in_hotplug);
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block mtk_idle_cpu_notifier = {
+	.notifier_call = mtk_idle_cpu_callback,
+	.priority   = INT_MAX,
+};
+
+int __init mtk_idle_hotplug_cb_init(void)
+{
+	register_cpu_notifier(&mtk_idle_cpu_notifier);
+
+	return 0;
+}
+
+late_initcall(mtk_idle_hotplug_cb_init);
+#endif /* MTK_IDLE_SINGLE_CPU_CHECK */
+
+#if defined(CONFIG_MTK_UFS_BOOTING)
+static unsigned int idle_ufs_lock;
+static DEFINE_SPINLOCK(idle_ufs_spin_lock);
+
+void idle_lock_by_ufs(unsigned int lock)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
+	idle_ufs_lock = lock;
+	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
+}
+#endif
+
+static int check_each_idle_type(int reason)
+{
+	#if MTK_IDLE_ADJUST_CHECK_ORDER
+	if (sodi3_can_enter(reason))
+		return IDLE_TYPE_SO3;
+	else if (dpidle_can_enter(reason))
+		return IDLE_TYPE_DP;
+	else if (sodi_can_enter(reason))
+		return IDLE_TYPE_SO;
+	#else
+	if (dpidle_can_enter(reason))
+		return IDLE_TYPE_DP;
+	else if (sodi3_can_enter(reason))
+		return IDLE_TYPE_SO3;
+	else if (sodi_can_enter(reason))
+		return IDLE_TYPE_SO;
+	#endif
+
 	/* always can enter rgidle */
-	return true;
+	return IDLE_TYPE_RG;
 }
 
 int mtk_idle_select(int cpu)
@@ -57,6 +135,11 @@ int mtk_idle_select(int cpu)
 	int ch = 0, ret = -1;
 	enum dcs_status dcs_status;
 	bool dcs_lock_get = false;
+	#endif
+
+	#if MTK_IDLE_SINGLE_CPU_CHECK
+	if (!mtk_idle_cpu_criteria())
+		return -1;
 	#endif
 
 	/* direct return if all mtk idle features are off */
@@ -121,10 +204,7 @@ int mtk_idle_select(int cpu)
 	#endif
 
 get_idle_idx:
-	for (idx = 0 ; idx < NR_IDLE_TYPES; idx++)
-		if (mtk_idle_can_enter(idx, reason))
-			break;
-	idx = idx < NR_IDLE_TYPES ? idx : -1;
+	idx = check_each_idle_type(reason);
 
 	#if defined(CONFIG_MTK_DCS)
 	if (dcs_lock_get)
