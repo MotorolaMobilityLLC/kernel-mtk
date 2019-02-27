@@ -856,9 +856,9 @@ static int get_rac_val(void)
 		enable_dummy_load(0);
 
 		/*Calculate Rac---------------------------------------- */
+		/* 70mA <= c_diff <= 120mA, 4mV <= v_diff <= 200mV */
 		if ((curr_2 - curr_1) >= 700 && (curr_2 - curr_1) <= 1200
-		    && (volt_1 - volt_2) >= 80 && (volt_1 - volt_2) <= 2000) {
-			/*40.0mA */
+		    && (volt_1 - volt_2) >= 40 && (volt_1 - volt_2) <= 2000) {
 			/*m-ohm */
 			rac_cal = ((volt_1 - volt_2) * 1000) /
 				(curr_2 - curr_1);
@@ -867,7 +867,10 @@ static int get_rac_val(void)
 				ret = (rac_cal - (rac_cal * 2)) * 1;
 			else
 				ret = rac_cal * 1;
-
+			if (ret < 50) {
+				ret = -1;
+				pmic_spm_crit2("bypass due to Rac < 50mOhm\n");
+			}
 		} else {
 			ret = -1;
 			pmic_spm_crit2("[4, Cal.Rac] bypass c_diff < 70mA\n");
