@@ -64,13 +64,14 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 		return;
 
 	mutex_lock(&dvfsrc->devfreq->lock);
-	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, dvfsrc_en,
-			DVFSRC_EN_MASK, DVFSRC_EN_SHIFT);
+
 	dvfsrc->enabled = dvfsrc_en;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
 #endif
+	mtk_spmfw_init(dvfsrc_en, 1);
+
 	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
@@ -104,8 +105,6 @@ static int helio_dvfsrc_common_init(void)
 		return -ENODEV;
 	}
 
-	mtk_spmfw_init();
-
 	dvfsrc->init_config = dvfsrc_get_init_conf();
 
 	return 0;
@@ -135,6 +134,7 @@ int get_vcore_dvfs_level(void)
 	mutex_lock(&dvfsrc->devfreq->lock);
 	ret = dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
 	mutex_unlock(&dvfsrc->devfreq->lock);
+
 	return ret;
 }
 
@@ -173,36 +173,48 @@ static void dvfsrc_set_sw_bw(int type, int data)
 
 static void dvfsrc_set_sw_req(int data, int mask, int shift)
 {
+	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ, data, mask, shift);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_sw_req2(int data, int mask, int shift)
 {
+	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_SW_REQ2, data, mask, shift);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_vcore_request(int data, int mask, int shift)
 {
+	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, data, mask, shift);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_start(int data)
 {
+	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_write(DVFSRC_FORCE, data);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_set_force_end(void)
 {
-	dvfsrc_write(DVFSRC_FORCE, 0);
+	mutex_lock(&dvfsrc->devfreq->lock);
+	/* dvfsrc_write(DVFSRC_FORCE, 0); */
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void dvfsrc_release_force(void)
 {
+	mutex_lock(&dvfsrc->devfreq->lock);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
 	dvfsrc_write(DVFSRC_FORCE, 0);
+	mutex_unlock(&dvfsrc->devfreq->lock);
 }
 
 static void get_pm_qos_info(char *p)
@@ -341,9 +353,12 @@ static struct devfreq_governor helio_dvfsrc_governor = {
 static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 {
 	int ret = 0;
-	int level = 0, opp = 3;
+	int level = 16, opp = 16;
 
-	mtk_spmfw_init();
+	if (!is_dvfsrc_enabled())
+		return ret;
+
+	mtk_spmfw_init(1, 0);
 
 	switch (type) {
 	case PM_QOS_MEMORY_BANDWIDTH:
@@ -399,7 +414,7 @@ static int commit_data(struct helio_dvfsrc *dvfsrc, int type, int data)
 		opp = data;
 		level = VCORE_DVFS_OPP_NUM - data - 1;
 
-		if (data == VCORE_DVFS_OPP_NUM) {
+		if (opp == VCORE_DVFS_OPP_NUM) {
 			dvfsrc_release_force();
 			break;
 		}

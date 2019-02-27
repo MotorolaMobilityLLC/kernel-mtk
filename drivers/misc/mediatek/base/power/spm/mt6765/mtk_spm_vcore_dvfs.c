@@ -20,9 +20,13 @@
 #include <mtk_sleep_reg_md_reg.h>
 #include <sleep_def.h>
 
-int spm_dvfs_flag_init(void)
+int spm_dvfs_flag_init(int dvfsrc_en)
 {
-	return SPM_FLAG_RUN_COMMON_SCENARIO;
+	if (dvfsrc_en)
+		return SPM_FLAG_RUN_COMMON_SCENARIO;
+
+	return SPM_FLAG_RUN_COMMON_SCENARIO | SPM_FLAG_DIS_VCORE_DVS |
+		SPM_FLAG_DIS_VCORE_DFS;
 }
 
 u32 spm_vcorefs_get_MD_status(void)
