@@ -1895,6 +1895,14 @@ static int find_lowest_rq(struct task_struct *task)
 	int interop_cpu;
 #endif
 
+	if (sched_boost()) {
+		int idle_cpu;
+
+		idle_cpu = find_best_idle_cpu(task, 1);
+		if (idle_cpu >= 0)
+			return idle_cpu;
+	}
+
 	/* Make sure the mask is initialized first */
 	if (unlikely(!lowest_mask))
 		return -1;

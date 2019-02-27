@@ -1156,6 +1156,23 @@ typedef int (*idle_power_func)(int, int, void *, int);
 typedef int (*busy_power_func)(int, void*, int);
 #endif
 
+/* For multi-scheudling support */
+enum SCHED_LB_TYPE {
+	SCHED_HMP_LB = 0,
+	SCHED_EAS_LB,
+	SCHED_HYBRID_LB,
+	SCHED_UNKNOWN_LB
+};
+
+#ifdef CONFIG_MTK_SCHED_BOOST
+extern bool sched_boost(void);
+#else
+static inline bool sched_boost(void)
+{
+	return 0;
+}
+#endif
+
 struct sched_group_energy {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	idle_power_func idle_power;
