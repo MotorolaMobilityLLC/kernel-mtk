@@ -42,8 +42,7 @@ int pmu_set_perf_event(u32 interface, u32 event)
 	int handle;
 
 	spin_lock_irqsave(&pmu_lock, flags);
-	// TODO: do you mean pmu_bitmap ?
-	handle = bitmap_find_free_region(gsm_bitmap, PMU_SIZE, 0);
+	handle = bitmap_find_free_region(pmu_bitmap, PMU_SIZE, 0);
 	spin_unlock_irqrestore(&pmu_lock, flags);
 	if (unlikely(handle < 0))
 		return -EFAULT;
@@ -63,8 +62,7 @@ int pmu_unset_perf_event(int handle)
 {
 	u32 reg;
 
-	// TODO: do you mean pmu_bitmap ?
-	bitmap_release_region(gsm_bitmap, handle, 0);
+	bitmap_release_region(pmu_bitmap, handle, 0);
 	reg = pmu_reg_read(PMU_CFG_PMCR);
 	/* Enable pmu_cnt_enX */
 	reg &= ~(1 << (handle+17));

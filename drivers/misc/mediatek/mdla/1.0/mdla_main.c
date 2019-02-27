@@ -34,6 +34,7 @@
 #include <linux/workqueue.h>
 #include <asm/types.h>
 #include <linux/wait.h>
+#include <linux/timer.h>
 
 #define DRIVER_NAME "mtk_mdla"
 
@@ -78,6 +79,8 @@ struct work_struct mdla_queue;
 #define UINT32_MAX (0xFFFFFFFF)
 static u32 last_cmd_id0 = UINT32_MAX;
 static u32 last_cmd_id1 = UINT32_MAX;
+static u32 fail_cmd_id0 = UINT32_MAX;
+static u32 fail_cmd_id1 = UINT32_MAX;
 
 DEFINE_MUTEX(cmd_list_lock);
 static DECLARE_WAIT_QUEUE_HEAD(mdla_cmd_queue);
@@ -105,6 +108,11 @@ static long mdla_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 static int mdla_wait_command(u32 id);
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
 static int mdla_process_command(struct command_entry *run_cmd_data);
+static void mdla_timeup(unsigned long data);
+
+#define MDLA_TIMEOUT_DEFAULT 1000 /* ms */
+u32 mdla_timeout = MDLA_TIMEOUT_DEFAULT;
+static DEFINE_TIMER(mdla_timer, mdla_timeup, 0, 0);
 
 static const struct file_operations fops = {
 	.open = mdla_open,
@@ -131,6 +139,39 @@ unsigned int mdla_reg_read(u32 offset)
 static void mdla_reg_write(u32 value, u32 offset)
 {
 	iowrite32(value, apu_mdla_cmde_mreg_top + offset);
+}
+
+static void mdla_reset(void)
+{
+	mdla_debug("%s: MDLA RESET\n", __func__);  // TODO: remove debug
+	mdla_cfg_write(0x03f, MDLA_SW_RST);
+	mdla_cfg_write(0x000, MDLA_SW_RST);
+	mdla_cfg_write(0xffffffff, MDLA_CG_CLR);
+	mdla_reg_write(MDLA_IRQ_MASK & ~(MDLA_IRQ_SWCMD_DONE),
+		MREG_TOP_G_INTP2);
+}
+
+static void mdla_timeup(unsigned long data)
+{
+
+	// TODO: remove debug
+	mdla_debug("%s: MDLA Timeout: %u ms, max_cmd_id: %u, cmd_id0: %u, cmd_id1: %u\n",
+		__func__, mdla_timeout, max_cmd_id, last_cmd_id0, last_cmd_id1);
+	mdla_dump_reg();
+	mdla_reset();
+
+	fail_cmd_id0 = last_cmd_id0;
+	fail_cmd_id1 = last_cmd_id1;
+
+	if (last_cmd_id1 == UINT32_MAX)
+		max_cmd_id = last_cmd_id0;
+	else
+		max_cmd_id = last_cmd_id1;
+
+	/* wake up those who were waiting on id0 or id1. */
+	wake_up_interruptible_all(&mdla_cmd_queue);
+	/* resume execution of the command queue */
+	schedule_work(&mdla_queue);
 }
 
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
@@ -168,6 +209,11 @@ static void mdla_start_queue(struct work_struct *work)
 			mdla_process_command(run_cmd_data);
 			kfree(run_cmd_data);
 		}
+	}
+	if ((cmd_list_len == 0) && timer_pending(&mdla_timer)) {
+		// TODO: remove debug
+		mdla_debug("%s: del_timer().\n", __func__);
+		del_timer(&mdla_timer);
 	}
 	mutex_unlock(&cmd_list_lock);
 	wake_up_interruptible_all(&mdla_cmd_queue);
@@ -339,9 +385,6 @@ static int mdlactl_init(void)
 	max_cmd_id = 1;
 	cmd_list_len = 0;
 
-	mdla_cfg_write(0x03f, MDLA_SW_RST);
-	mdla_dump_reg();
-
 	// Try to dynamically allocate a major number for the device
 	//  more difficult but worth it
 	majorNumber = register_chrdev(0, DEVICE_NAME, &fops);
@@ -379,13 +422,15 @@ static int mdlactl_init(void)
 
 	// Set DMA mask
 	if (dma_get_mask(mdlactlDevice) != DMA_BIT_MASK(32)) {
-		if (!dma_set_mask_and_coherent(mdlactlDevice,
-					DMA_BIT_MASK(32))) {
-			pr_warn("MDLA: set DMA mask failed\n");
-		}
+		ret = dma_set_mask_and_coherent(mdlactlDevice,
+					DMA_BIT_MASK(32));
+		if (ret)
+			pr_warn("MDLA: set DMA mask failed: %d\n", ret);
 	}
-	mdla_reg_write(MDLA_IRQ_MASK & ~(MDLA_IRQ_SWCMD_DONE),
-	MREG_TOP_G_INTP2);
+
+	mdla_reset();
+	mdla_dump_reg();
+
 	pmu_init();
 	INIT_WORK(&mdla_queue, mdla_start_queue);
 
@@ -412,6 +457,11 @@ static int mdla_wait_command(u32 id)
 	mdla_debug("%s: enter id:[%d]\n", __func__, id);
 	// @suppress("Type cannot be resolved")
 	wait_event_interruptible(mdla_cmd_queue, max_cmd_id >= id);
+	if ((id == fail_cmd_id0) ||	(id == fail_cmd_id1)) {
+		mdla_debug("mdla_wait_command exit <timeout> [%d]\n", id);
+		return -EIO;
+	}
+
 	mdla_debug("%s; exit\n", __func__);
 
 	return 0;
@@ -462,6 +512,14 @@ static int mdla_process_command(struct command_entry *run_cmd_data)
 	mdla_debug("%s: id: [%d], count: [%d]\n", cmd[84],
 		__func__, run_cmd_data->count);
 
+	if (mdla_timeout) {
+		// TODO: remove debug
+		mdla_debug("%s: mod_timer(), cmd id=%u, [%u]\n",
+			__func__, run_cmd_data->id, cmd[84]);
+		mod_timer(&mdla_timer,
+			jiffies + msecs_to_jiffies(mdla_timeout));
+	}
+
 	/* Issue command */
 	mdla_reg_write(addr, MREG_TOP_G_CDMA1);
 	mdla_reg_write(count, MREG_TOP_G_CDMA2);
@@ -480,16 +538,16 @@ static int mdla_run_command_async(struct ioctl_run_cmd *run_cmd_data)
 
 	if (is_gsm_addr(cmd->mva))
 		cmd->kva = gsm_mva_to_virt(cmd->mva);
-	else if (!run_cmd_data->kva) {
-		cmd->kva = phys_to_virt(cmd->mva);
-		mdla_debug("%s: kva: phys_to_virt(mva:%u) = %p\n",
-			__func__, cmd->mva, cmd->kva);
-	} else {
+	else if (run_cmd_data->khandle) {
 		cmd->kva = (void *)run_cmd_data->kva;
-		mdla_debug("%s: kva=%p, mva=0x%08x\n",
+		mdla_debug("%s: <ion> kva=%p, mva=%08x\n",
 				__func__,
 				cmd->kva,
 				cmd->mva);
+	} else {
+		cmd->kva = phys_to_virt(cmd->mva);
+		mdla_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
+			__func__, cmd->mva, cmd->kva);
 	}
 
 	cmd->count = run_cmd_data->count;
@@ -530,10 +588,14 @@ static void mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 	malloc_data->kva = dma_alloc_coherent(mdlactlDevice, malloc_data->size,
 			&phyaddr, GFP_KERNEL);
 	malloc_data->mva = dma_to_phys(mdlactlDevice, phyaddr);
+	mdla_debug("%s: kva:%p, mva:%x\n", // TODO: remove debug
+		__func__, malloc_data->kva, malloc_data->mva);
 }
 
 static void mdla_dram_free(struct ioctl_malloc *malloc_data)
 {
+	mdla_debug("%s: kva:%p, mva:%x\n", // TODO: remove debug
+		__func__, malloc_data->kva, malloc_data->mva);
 	dma_free_coherent(mdlactlDevice, malloc_data->size,
 			(void *) malloc_data->kva, malloc_data->mva);
 }
@@ -542,11 +604,15 @@ static void mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 {
 	malloc_data->kva = gsm_alloc(malloc_data->size);
 	malloc_data->mva = gsm_virt_to_mva(malloc_data->kva);
+	mdla_debug("%s: kva:%p, mva:%x\n", // TODO: remove debug
+		__func__, malloc_data->kva, malloc_data->mva);
 }
 static void mdla_gsm_free(struct ioctl_malloc *malloc_data)
 {
 	if (malloc_data->kva)
 		gsm_release(malloc_data->kva, malloc_data->size);
+	mdla_debug("%s: kva:%p, mva:%x\n", // TODO: remove debug
+		__func__, malloc_data->kva, malloc_data->mva);
 }
 
 static long mdla_ioctl(struct file *filp, unsigned int command,
@@ -575,11 +641,12 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		if (copy_to_user((void *) arg, &malloc_data,
 			sizeof(malloc_data)))
 			return -EFAULT;
-		mdla_debug("ioctl_malloc size:[%x] pva:[%x] data:[%p]\n",
+		mdla_debug("ioctl_malloc size:[%x] pva:[%x] kva:[%p]\n",
 				malloc_data.size,
 				malloc_data.mva,
 				malloc_data.kva);
-
+		if (malloc_data.kva == NULL)
+			return -ENOMEM;
 		break;
 	case IOCTL_FREE:
 
@@ -610,8 +677,9 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 				run_cmd_data.mva,
 				phys_to_virt(run_cmd_data.mva));
 		id = mdla_run_command_async(&run_cmd_data);
-		mdla_wait_command(id);
-		break;
+		retval = mdla_wait_command(id);
+		return retval;
+
 	case IOCTL_RUN_CMD_ASYNC:
 		if (copy_from_user(&run_cmd_data, (void *) arg,
 				sizeof(run_cmd_data))) {
@@ -636,8 +704,9 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			retval = -EFAULT;
 			return retval;
 		}
-		mdla_wait_command(run_cmd_data.id);
-		break;
+		retval = mdla_wait_command(run_cmd_data.id);
+		return retval;
+
 	case IOCTL_PERF_SET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
