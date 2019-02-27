@@ -108,6 +108,12 @@ PVRSRV_ERROR RGXMMUCacheInvalidateKick(PVRSRV_DEVICE_NODE *psDeviceNode,
 {
 	PVRSRV_ERROR eError;
 
+	if (!gui32CacheOpps)
+	{
+		/* if CacheOps aren't dirty, do nothing */
+		return PVRSRV_OK;
+	}
+
 	eError = PVRSRVPowerLock(psDeviceNode);
 	if (eError != PVRSRV_OK)
 	{
