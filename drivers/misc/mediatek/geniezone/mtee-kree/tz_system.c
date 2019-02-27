@@ -38,10 +38,13 @@
 
 #include "trusty-nop.h"
 
+/* FIXME: MTK_PPM_SUPPORT is disabled temporarily */
+#ifdef MTK_PPM_SUPPORT
 #ifdef CONFIG_MACH_MT6758
 #include "legacy_controller.h"
 #else
 #include "mtk_ppm_platform.h"
+#endif
 #endif
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
@@ -645,8 +648,10 @@ enum GZ_ReeServiceCommand {
 	REE_SERVICE_CMD_END
 };
 
+#ifdef MTK_PPM_SUPPORT
 struct _cpus_cluster_freq cpus_cluster_freq[NR_PPM_CLUSTERS];
 /* static atomic_t boost_cpu[NR_PPM_CLUSTERS]; */
+#endif
 
 struct nop_param {
 	uint32_t type; /* 1: new thread, 2: kick semaphore */
@@ -1184,12 +1189,16 @@ u32 KREE_GetSystemCntFrq(void)
 
 int gz_get_cpuinfo_thread(void *data)
 {
+#ifdef MTK_PPM_SUPPORT
 	struct cpufreq_policy curr_policy;
+#endif
 #ifdef CONFIG_MACH_MT6758
 	msleep(3000);
 #else
 	msleep(1000);
 #endif
+
+#ifdef MTK_PPM_SUPPORT
 	cpufreq_get_policy(&curr_policy, 0);
 	cpus_cluster_freq[0].max_freq = curr_policy.cpuinfo.max_freq;
 	cpus_cluster_freq[0].min_freq = curr_policy.cpuinfo.min_freq;
@@ -1199,6 +1208,7 @@ int gz_get_cpuinfo_thread(void *data)
 	KREE_INFO("%s, cluster [0]=%u-%u, [1]=%u-%u\n", __func__,
 		  cpus_cluster_freq[0].max_freq, cpus_cluster_freq[0].min_freq,
 		  cpus_cluster_freq[1].max_freq, cpus_cluster_freq[1].min_freq);
+#endif
 
 	cpumask_clear(&trusty_all_cmask);
 	cpumask_setall(&trusty_all_cmask);
