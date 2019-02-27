@@ -58,9 +58,9 @@ static int wdt_kick_status;
 static int hwt_kick_times;
 static int pwk_start_monitor;
 
-#define MaxHangInfoSize (1024*1024)
+#define MaxHangInfoSize (4*1024*1024) /* 4M info */
 #define MAX_STRING_SIZE 256
-char Hang_Info[MaxHangInfoSize];	/* 1M info */
+char Hang_Info[MaxHangInfoSize];
 static int Hang_Info_Size;
 static bool Hang_Detect_first;
 
@@ -620,43 +620,40 @@ static unsigned long nsec_low(unsigned long long nsec)
 	return do_div(nsec, 1000000);
 }
 
-void sched_show_task_local(struct task_struct *p)
+void show_thread_info(struct task_struct *p, bool dump_bt)
 {
-	int ppid;
 	unsigned int state;
 	char stat_nam[] = TASK_STATE_TO_CHAR_STR;
-	pid_t pid;
 
 	state = p->state ? __ffs(p->state) + 1 : 0;
 	LOGV("%-15.15s %c", p->comm,
 			state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-#if BITS_PER_LONG == 32
-	if (state == TASK_RUNNING)
-		LOGV(" running  ");
-	else
-		LOGV(" %08lx ", thread_saved_pc(p));
-#else
-	if (state == TASK_RUNNING)
-		LOGV("  running task    ");
-	else
-		LOGV(" %016lx ", thread_saved_pc(p));
-#endif
-	rcu_read_lock();
-	ppid = task_pid_nr(rcu_dereference(p->real_parent));
-	pid = task_pid_nr(p);
-	rcu_read_unlock();
+
 	Log2HangInfo("%-15.15s %c ", p->comm,
 		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
-	Log2HangInfo("%lld.%06ld %d %lu %lu 0x%lx\n",
+	Log2HangInfo("%lld.%06ld %d %lu %lu 0x%x 0x%lx ",
 		nsec_high(p->se.sum_exec_runtime),
 		nsec_low(p->se.sum_exec_runtime),
-		task_pid_nr(p), p->nvcsw, p->nivcsw,
+		task_pid_nr(p), p->nvcsw, p->nivcsw, p->flags,
 		(unsigned long)task_thread_info(p)->flags);
+#ifdef CONFIG_SCHED_INFO
+	Log2HangInfo("%llu", p->sched_info.last_arrival);
+#endif
+	Log2HangInfo("\n");
+
 	/* nvscw: voluntary context switch.  */
 	/* requires a resource that is unavailable. */
 	/* nivcsw: involuntary context switch. */
 	/* time slice out or when higher-priority thread to run*/
-	get_kernel_bt(p); /* Catch kernel-space backtrace */
+
+	if (strcmp(p->comm, "watchdog") == 0)
+		watchdog_thread_exist = true;
+
+	if (dump_bt || ((p->state == TASK_RUNNING ||
+			p->state & TASK_UNINTERRUPTIBLE) &&
+			!strstr(p->comm, "wdtk")))
+	/* Catch kernel-space backtrace */
+		get_kernel_bt(p);
 }
 
 static int DumpThreadNativeMaps_log(pid_t pid)
@@ -1486,7 +1483,7 @@ static void show_bt_by_pid(int task_pid)
 				     stat_nam[state] : '?',
 				     task_pid, tid);
 				/* catch kernel bt */
-				sched_show_task_local(t);
+				show_thread_info(t, true);
 
 				Log2HangInfo("%s sysTid=%d, pid=%d\n", t->comm,
 						tid, task_pid);
@@ -1518,82 +1515,62 @@ static void show_bt_by_pid(int task_pid)
 	put_pid(pid);
 }
 
-static void show_state_filter_local(int flag)
+static void hang_dump_backtrace(void)
 {
-	struct task_struct *g, *p;
-
-	watchdog_thread_exist = false;
-
-	do_each_thread(g, p) {
-		if (strcmp(p->comm, "watchdog") == 0)
-			watchdog_thread_exist = true;
-		/*
-		 * reset the NMI-timeout, listing all files on a slow
-		 * console might take a lot of time:
-		 *discard wdtk-* for it always stay in D state
-		 */
-		if ((flag == 1 || p->state == TASK_RUNNING ||
-			p->state & TASK_UNINTERRUPTIBLE	||
-			(strcmp(p->comm, "watchdog") == 0)) &&
-			!strstr(p->comm, "wdtk"))
-			sched_show_task_local(p);
-	} while_each_thread(g, p);
-}
-
-static void ShowStatus(int flag)
-{
-#define DUMP_PROCESS_NUM 10
-	int dumppids[DUMP_PROCESS_NUM];
-	int dump_count = 0;
-	int i = 0;
-	struct task_struct *task, *system_server_task = NULL;
+	struct task_struct *p, *t, *system_server_task = NULL;
 	struct task_struct *monkey_task = NULL;
 
+	watchdog_thread_exist = false;
+	Log2HangInfo("dump backtrace start.\n");
+
 	read_lock(&tasklist_lock);
-	for_each_process(task) {
-		if (dump_count >= DUMP_PROCESS_NUM)
-			break;
-
+	for_each_process(p) {
 		if (Hang_Detect_first == false) {
-			if (strcmp(task->comm, "system_server") == 0)
-				system_server_task = task;
-			if (strstr(task->comm, "monkey") != NULL)
-				monkey_task = task;
+			if (strcmp(p->comm, "system_server") == 0)
+				system_server_task = p;
+			if (strstr(p->comm, "monkey") != NULL)
+				monkey_task = p;
 		}
-
-		if ((strcmp(task->comm, "surfaceflinger") == 0) ||
-			(strcmp(task->comm, "init") == 0) ||
-			(strcmp(task->comm, "system_server") == 0) ||
-			(strcmp(task->comm, "mmcqd/0") == 0) ||
-			(strcmp(task->comm, "debuggerd64") == 0) ||
-			(strcmp(task->comm, "mmcqd/1") == 0) ||
-			(strcmp(task->comm, "debuggerd") == 0)) {
-			dumppids[dump_count++] = task->pid;
+		/* specify process, need dump maps file and native backtrace */
+		if ((strcmp(p->comm, "surfaceflinger") == 0) ||
+			(strcmp(p->comm, "init") == 0) ||
+			(strcmp(p->comm, "system_server") == 0) ||
+			(strcmp(p->comm, "mmcqd/0") == 0) ||
+			(strcmp(p->comm, "debuggerd64") == 0) ||
+			(strcmp(p->comm, "mmcqd/1") == 0) ||
+			(strcmp(p->comm, "debuggerd") == 0)) {
+			read_unlock(&tasklist_lock);
+			show_bt_by_pid(p->pid);
+			read_lock(&tasklist_lock);
 			continue;
+		}
+		for_each_thread(p, t) {
+			show_thread_info(t, false);
 		}
 	}
 	read_unlock(&tasklist_lock);
+	Log2HangInfo("dump backtrace end.\n");
 
 	if (Hang_Detect_first == false) {
-		show_state_filter_local(0);
-
 		if (system_server_task != NULL)
 			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED,
 				system_server_task, true);
 		if (monkey_task != NULL)
 			do_send_sig_info(SIGQUIT, SEND_SIG_FORCED,
 				monkey_task, true);
-	} else { /* the last dump */
+	}
+}
+
+static void ShowStatus(int flag)
+{
+	if (Hang_Detect_first == true)	{ /* the last dump */
 		DumpMemInfo();
 		DumpMsdc2HangInfo();
-		if (flag == 1)	/* for dump hang issue */
-			show_state_filter_local(1);
-		else {
-#ifndef __aarch64__
-		show_state_filter_local(0);
-#endif
-		}
+	}
 
+	hang_dump_backtrace();
+
+	if (Hang_Detect_first == true)	{ /* the last dump */
 		/* debug_locks = 1; */
 		debug_show_all_locks();
 		show_free_areas(0);
@@ -1608,11 +1585,7 @@ static void ShowStatus(int flag)
 
 	}
 
-	for (i = 0; i < dump_count; i++)
-		show_bt_by_pid(dumppids[i]);
 
-	if (Hang_Detect_first == true)
-		show_state_filter_local(1);
 }
 
 void reset_hang_info(void)
