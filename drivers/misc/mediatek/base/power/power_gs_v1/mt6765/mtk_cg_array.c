@@ -46,7 +46,6 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_data[] = {
 	0x1000C23C, 0xFF000000, 0x00000000,/* MAINPLL_CON0 */
 	0x1000C26C, 0xFF000000, 0x00000000,/* UNIVPLL_CON0 */
 	0x102008B4, 0x00000700, 0x00000000,/* ETB_CK_CTL */
-	0x102380F0, 0x00010000, 0x00010000,/* GCE_CTL_INT0 */
 	0x11220000, 0x0F080104, 0x0F080104,/* AUDIO_TOP_CON0 */
 	0x11220004, 0x000000F0, 0x000000F0,/* AUDIO_TOP_CON1 */
 	0x11C10080, 0x00000002, 0x00000000,/* MIPI_RX_WRAPPER80_CSI0A */
@@ -68,7 +67,7 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_data[] = {
 const unsigned int *AP_CG_Golden_Setting_tcl_gs_dpidle =
 		AP_CG_Golden_Setting_tcl_gs_dpidle_data;
 
-unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_len = 132;
+unsigned int AP_CG_Golden_Setting_tcl_gs_dpidle_len = 129;
 
 const unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_data[] = {
 /*      Address     Mask        Golden Setting Value */
@@ -99,7 +98,6 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_data[] = {
 	0x1000C23C, 0xFF000000, 0x00000000,/* MAINPLL_CON0 */
 	0x1000C26C, 0xFF000000, 0x00000000,/* UNIVPLL_CON0 */
 	0x102008B4, 0x00000700, 0x00000000,/* ETB_CK_CTL */
-	0x102380F0, 0x00010000, 0x00010000,/* GCE_CTL_INT0 */
 	0x11220000, 0x0F080104, 0x0F080104,/* AUDIO_TOP_CON0 */
 	0x11220004, 0x000000F0, 0x000000F0,/* AUDIO_TOP_CON1 */
 	0x11C10080, 0x00000002, 0x00000000,/* MIPI_RX_WRAPPER80_CSI0A */
@@ -121,7 +119,7 @@ const unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_data[] = {
 const unsigned int *AP_CG_Golden_Setting_tcl_gs_suspend =
 		AP_CG_Golden_Setting_tcl_gs_suspend_data;
 
-unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_len = 132;
+unsigned int AP_CG_Golden_Setting_tcl_gs_suspend_len = 129;
 
 const unsigned int AP_CG_Golden_Setting_tcl_gs_sodi_data[] = {
 /*      Address     Mask        Golden Setting Value */
