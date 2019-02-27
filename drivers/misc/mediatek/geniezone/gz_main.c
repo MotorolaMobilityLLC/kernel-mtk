@@ -336,7 +336,8 @@ static int check_gp_inout_mem(char *buffer)
 }
 
 
-static int tipc_test_send(tipc_k_handle handle, void *param, int param_size)
+static int tipc_test_send(struct tipc_k_handle *handle, void *param,
+	int param_size)
 {
 	ssize_t rc;
 
@@ -352,7 +353,7 @@ static int tipc_test_send(tipc_k_handle handle, void *param, int param_size)
 	return rc;
 }
 
-static int tipc_test_rcv(tipc_k_handle handle, void *data, size_t len)
+static int tipc_test_rcv(struct tipc_k_handle *handle, void *data, size_t len)
 {
 	ssize_t rc;
 
@@ -371,7 +372,7 @@ static int tipc_test_rcv(tipc_k_handle handle, void *data, size_t len)
 int gz_tipc_test(void *args)
 {
 	int i, rc;
-	tipc_k_handle h = 0;
+	struct tipc_k_handle h;
 
 	TEST_BEGIN("tipc basic test");
 	RESET_UNITTESTS;
@@ -388,18 +389,18 @@ int gz_tipc_test(void *args)
 	rc = tipc_k_connect(&h, TIPC_TEST_SRV);
 	CHECK_EQ(0, rc, "connect");
 
-	rc = tipc_test_send(h, buf1, sizeof(buf1));
+	rc = tipc_test_send(&h, buf1, sizeof(buf1));
 	CHECK_GT_ZERO(rc, "send 1");
-	rc = tipc_test_rcv(h, buf1, sizeof(buf1));
+	rc = tipc_test_rcv(&h, buf1, sizeof(buf1));
 	CHECK_GT_ZERO(rc, "rcv 1");
 
-	rc = tipc_test_send(h, buf2, sizeof(buf2));
+	rc = tipc_test_send(&h, buf2, sizeof(buf2));
 	CHECK_GT_ZERO(rc, "send 2");
-	rc = tipc_test_rcv(h, buf1, sizeof(buf2));
+	rc = tipc_test_rcv(&h, buf1, sizeof(buf2));
 	CHECK_GT_ZERO(rc, "rcv 2");
 
-	if (h)
-		rc = tipc_k_disconnect(h);
+	if (h.dn)
+		rc = tipc_k_disconnect(&h);
 	CHECK_EQ(0, rc, "disconnect");
 
 	mutex_unlock(&ut_mutex);

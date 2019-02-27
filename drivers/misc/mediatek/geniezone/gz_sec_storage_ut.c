@@ -18,7 +18,7 @@ int test_SecureStorageBasic(void *args)
 {
 	int rc;
 
-	tipc_k_handle h = 0;
+	struct tipc_k_handle h;
 
 	char cmd[] = "RUN";
 
@@ -28,14 +28,14 @@ int test_SecureStorageBasic(void *args)
 		return rc;
 	}
 
-	rc = tipc_k_write(h, cmd, sizeof(cmd), O_RDWR);
+	rc = tipc_k_write(&h, cmd, sizeof(cmd), O_RDWR);
 	if (rc != sizeof(cmd)) {
 		pr_debug("failed to write TIPC message, rc=%d, expected=%lu\n",
 			 rc, sizeof(cmd));
-		tipc_k_disconnect(h);
+		tipc_k_disconnect(&h);
 		return rc;
 	}
 
-	tipc_k_disconnect(h);
+	tipc_k_disconnect(&h);
 	return 0;
 }
