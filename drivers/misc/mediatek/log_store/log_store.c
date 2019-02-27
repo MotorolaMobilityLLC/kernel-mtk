@@ -106,8 +106,9 @@ static int pl_lk_log_show(struct seq_file *m, void *v)
 		return 0;
 	}
 
-	seq_printf(m, "show buff sig 0x%x, size 0x%x,pl size 0x%x,
-			lk size 0x%x!\n", log_buff_header->sig,
+	seq_printf(m,
+	"show buff sig 0x%x, size 0x%x,pl size 0x%x, lk size 0x%x!\n",
+			log_buff_header->sig,
 			log_buff_header->buff_size, log_buff_header->sz_pl,
 			log_buff_header->sz_lk);
 
@@ -155,8 +156,8 @@ static int __init log_store_late_init(void)
 
 	pbuff = remap_lowmem(sram_dram_buff->buf_addr,
 			sram_dram_buff->buf_size);
-	MTK_MEMCFG_LOG_AND_PRINTK("[PHY layout]log_store_mem
-			:   0x%08llx - 0x%08llx (0x%llx)\n",
+	MTK_MEMCFG_LOG_AND_PRINTK(
+		"[PHY layout]log_store_mem : 0x%08llx - 0x%08llx (0x%llx)\n",
 			(unsigned long long)sram_dram_buff->buf_addr,
 			(unsigned long long)sram_dram_buff->buf_addr
 			+ sram_dram_buff->buf_size - 1,
@@ -177,13 +178,17 @@ static int __init log_store_late_init(void)
 	}
 
 	dram_log_store_status = BUFF_READY;
-	pr_notice("log_store: log buff 0x%p, sig 0x%x, buff_size 0x%x,
-		pl off 0x%x, pl sz 0x%x,lk off 0x%x,
-		lk size 0x%x,flag 0x%x, 0x%x.\n",
-	pbuff, log_buff_header->sig, log_buff_header->buff_size,
-	log_buff_header->off_pl, log_buff_header->sz_pl,
-	log_buff_header->off_lk, log_buff_header->sz_lk,
-	log_buff_header->pl_flag, log_buff_header->lk_flag);
+	pr_notice(
+		"log_store: log buff 0x%p, sig 0x%x, buff_size 0x%x,\n",
+		pbuff, log_buff_header->sig, log_buff_header->buff_size);
+	pr_notice(
+		"log_store: pl off 0x%x, pl sz 0x%x,lk off 0x%x,\n",
+		log_buff_header->off_pl, log_buff_header->sz_pl,
+		log_buff_header->sz_lk);
+	pr_notice(
+		"log_store: lk size 0x%x,flag 0x%x, 0x%x.\n",
+			log_buff_header->sz_lk, log_buff_header->pl_flag,
+			log_buff_header->lk_flag);
 
 	entry = proc_create("pl_lk", 0444, NULL, &pl_lk_file_ops);
 	if (!entry) {
