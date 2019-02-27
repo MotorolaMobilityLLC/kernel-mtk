@@ -161,6 +161,51 @@ static int mtk_pinctrl_set_gpio_pullsel(struct mtk_pinctrl *pctl,
 	return 0;
 }
 
+int mtk_pinctrl_get_gpio_mode_for_eint(int pin)
+{
+	return mtk_pinctrl_get_gpio_value(pctl, pin,
+		pctl->devdata->n_pin_mode, pctl->devdata->pin_mode_grps);
+}
+
+static const unsigned int mt6765_debounce_data[] = {
+	128, 256, 512, 1024, 16384,
+	32768, 65536, 131072, 262144, 524288
+};
+
+static unsigned int mt6765_spec_debounce_select(unsigned int debounce)
+{
+	return mtk_gpio_debounce_select(mt6765_debounce_data,
+		ARRAY_SIZE(mt6765_debounce_data), debounce);
+}
+
+int mtk_irq_domain_xlate_fourcell(struct irq_domain *d,
+	struct device_node *ctrlr, const u32 *intspec, unsigned int intsize,
+	irq_hw_number_t *out_hwirq, unsigned int *out_type)
+{
+	struct mtk_desc_eint *eint;
+	int gpio, mode;
+
+	if (WARN_ON(intsize < 4))
+		return -EINVAL;
+	*out_hwirq = intspec[0];
+	*out_type = intspec[1] & IRQ_TYPE_SENSE_MASK;
+	gpio = intspec[2];
+	mode = intspec[3];
+
+	eint = (struct mtk_desc_eint *)&pctl->devdata->pins[gpio].eint;
+	eint->eintmux = mode;
+	eint->eintnum = intspec[0];
+
+	pr_debug("[pinctrl] mtk_pin[%d], eint=%d, mode=%d\n",
+		gpio, eint->eintnum, eint->eintmux);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mtk_irq_domain_xlate_fourcell);
+
+const struct irq_domain_ops mtk_irq_domain_ops = {
+	.xlate = mtk_irq_domain_xlate_fourcell,
+};
+
 static const struct mtk_pinctrl_devdata mt6765_pinctrl_data = {
 	.pins = mtk_pins_mt6765,
 	.npins = ARRAY_SIZE(mtk_pins_mt6765),
@@ -191,6 +236,8 @@ static const struct mtk_pinctrl_devdata mt6765_pinctrl_data = {
 	.mtk_pctl_set_pull_sel = mtk_pinctrl_set_gpio_pullsel,
 	.mtk_pctl_get_pull_sel = mtk_pinctrl_get_gpio_pullsel,
 	.mtk_pctl_get_pull_en = mtk_pinctrl_get_gpio_pullen,
+	.spec_debounce_select = mt6765_spec_debounce_select,
+	.mtk_irq_domain_ops = &mtk_irq_domain_ops,
 	.type1_start = 164,
 	.type1_end = 164,
 	.regmap_num = 7,
@@ -248,6 +295,7 @@ static struct platform_driver mtk_pinctrl_driver = {
 		.name = "mediatek-mt6765-pinctrl",
 		.owner = THIS_MODULE,
 		.of_match_table = mtk_pctrl_match,
+		.pm = &mtk_eint_pm_ops,
 	},
 };
 
