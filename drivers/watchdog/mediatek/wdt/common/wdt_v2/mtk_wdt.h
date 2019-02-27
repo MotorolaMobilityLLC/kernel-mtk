@@ -100,8 +100,18 @@
 #define MTK_WDT_SWSYS_RST_CAMSYS_RST        (0x00040000)
 #define MTK_WDT_SWSYS_RST_KEY               (0x88000000)
 
+/* Reboot source */
+#define RGU_STAGE_MASK      (0x3)
+#define RGU_STAGE_PRELOADER (0x1)
+#define RGU_STAGE_LK        (0x2)
+#define RGU_STAGE_KERNEL    (0x3)
+
 /* WDT_NONRST_REG2 */
-#define MTK_WDT_NONRST2_SSPM_RESET          (1 << 0)
+#define MTK_WDT_NONRST2_SSPM_RESET     (1 << 0)
+/* 31:30: 2-bits for current stage */
+#define MTK_WDT_NONRST2_STAGE_OFS      (30)
+/* 29:28: 2-bits for last stage */
+#define MTK_WDT_NONRST2_LAST_STAGE_OFS (28)
 
 /*MTK_WDT_REQ_IRQ*/
 #define MTK_WDT_REQ_IRQ_KEY		(0x44000000)
