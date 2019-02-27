@@ -25,6 +25,10 @@
 #include <linux/irq.h>
 #include "reg_accdet.h"
 #include <mach/upmu_hw.h>
+#ifdef CONFIG_MTK_PMIC_WRAP
+#include <linux/regmap.h>
+#include <linux/soc/mediatek/pmic_wrap.h>
+#endif
 #else
 #include "string.h"
 #include "reg_base.H"
@@ -114,6 +118,9 @@ static struct device *accdet_device;
 static struct input_dev *accdet_input_dev;
 
 #if PMIC_ACCDET_KERNEL
+#ifdef CONFIG_MTK_PMIC_WRAP
+static struct regmap *accdet_regmap;
+#endif
 /* when  MICBIAS_DISABLE_TIMER timeout, queue work: dis_micbias_work */
 static struct work_struct dis_micbias_work;
 static struct workqueue_struct *dis_micbias_workqueue;
@@ -232,8 +239,14 @@ unsigned int pmic_Read_Efuse_HPOffset(int i)
 inline u32 pmic_read(u32 addr)
 {
 	u32 val = 0;
-
+#ifdef CONFIG_MTK_PMIC_WRAP
+	if (accdet_regmap)
+		regmap_read(accdet_regmap, addr, &val);
+	else
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+#else
 	pwrap_read(addr, &val);
+#endif
 
 	return val;
 }
@@ -242,7 +255,14 @@ inline u32 pmic_read_mbit(u32 addr, u32 shift, u32 mask)
 {
 	u32 val = 0;
 
+#ifdef CONFIG_MTK_PMIC_WRAP
+	if (accdet_regmap)
+		regmap_read(accdet_regmap, addr, &val);
+	else
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+#else
 	pwrap_read(addr, &val);
+#endif
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x], shift[0x%x], mask[0x%x]\n",
 		__func__, addr, ((val>>shift) & mask), shift, mask);
@@ -252,7 +272,14 @@ inline u32 pmic_read_mbit(u32 addr, u32 shift, u32 mask)
 
 inline void pmic_write(u32 addr, u32 wdata)
 {
+#ifdef CONFIG_MTK_PMIC_WRAP
+	if (accdet_regmap)
+		regmap_write(accdet_regmap, addr, wdata);
+	else
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+#else
 	pwrap_write(addr, wdata);
+#endif
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x]\n", __func__, addr, wdata);
 #endif
@@ -264,7 +291,7 @@ inline void pmic_write_mset(u32 addr, u32 shift, u32 mask, u32 data)
 
 	pmic_reg = pmic_read(addr);
 	pmic_reg &= ~(mask<<shift);
-	pwrap_write(addr, pmic_reg | (data<<shift));
+	pmic_write(addr, pmic_reg | (data<<shift));
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x], shift[0x%x], mask[0x%x], data[0x%x]\n",
 		__func__, addr, pmic_read(addr), shift, mask, data);
@@ -273,7 +300,7 @@ inline void pmic_write_mset(u32 addr, u32 shift, u32 mask, u32 data)
 
 inline void pmic_write_set(u32 addr, u32 shift)
 {
-	pwrap_write(addr, pmic_read(addr) | (1<<shift));
+	pmic_write(addr, pmic_read(addr) | (1<<shift));
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x], shift[0x%x]\n",
 		__func__, addr, pmic_read(addr), shift);
@@ -282,7 +309,7 @@ inline void pmic_write_set(u32 addr, u32 shift)
 
 inline void pmic_write_mclr(u32 addr, u32 shift, u32 data)
 {
-	pwrap_write(addr, pmic_read(addr) & ~(data<<shift));
+	pmic_write(addr, pmic_read(addr) & ~(data<<shift));
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x], shift[0x%x], data[0x%x]\n",
 		__func__, addr, pmic_read(addr), shift, data);
@@ -291,7 +318,7 @@ inline void pmic_write_mclr(u32 addr, u32 shift, u32 data)
 
 inline void pmic_write_clr(u32 addr, u32 shift)
 {
-	pwrap_write(addr, pmic_read(addr) & ~(1<<shift));
+	pmic_write(addr, pmic_read(addr) & ~(1<<shift));
 #if PMIC_ACCDET_DEBUG
 	pr_debug("%s [0x%x]=[0x%x], shift[0x%x]\n",
 		__func__, addr, pmic_read(addr), shift);
@@ -2249,6 +2276,9 @@ static inline int ext_eint_setup(struct platform_device *platform_device)
 
 static int accdet_get_dts_data(void)
 {
+#ifdef CONFIG_MTK_PMIC_WRAP
+	struct device_node *tmpnode, *accdet_node;
+#endif
 #if PMIC_ACCDET_KERNEL
 	int ret;
 	struct device_node *node = NULL;
@@ -2260,6 +2290,20 @@ static int accdet_get_dts_data(void)
 #endif
 
 	pr_debug("%s\n", __func__);
+#ifdef CONFIG_MTK_PMIC_WRAP
+	tmpnode = of_find_compatible_node(NULL, NULL, "mediatek,pwraph");
+	accdet_node = of_parse_phandle(tmpnode, "mediatek,pwrap-regmap", 0);
+	if (accdet_node) {
+		accdet_regmap = pwrap_node_to_regmap(accdet_node);
+		if (IS_ERR(accdet_regmap)) {
+			pr_notice("%s %d Error.\n", __func__, __LINE__);
+			return PTR_ERR(accdet_regmap);
+		}
+	} else {
+		pr_notice("%s %d Error.\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+#endif
 	node = of_find_matching_node(node, accdet_of_match);
 	if (!node) {
 		pr_notice("%s can't find compatible dts node\n", __func__);
