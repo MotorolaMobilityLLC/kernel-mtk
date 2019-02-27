@@ -1233,7 +1233,7 @@ static inline int typec_legacy_handle_cc_change(struct tcpc_device *tcpc_dev)
 {
 	int ret = 0;
 
-	if (typec_is_cc_open())
+	if (typec_is_cc_open() || typec_is_cable_only())
 		ret = typec_legacy_handle_cc_open(tcpc_dev);
 	else
 		ret = typec_legacy_handle_cc_present(tcpc_dev);
