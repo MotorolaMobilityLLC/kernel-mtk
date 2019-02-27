@@ -1,3 +1,4 @@
+#
 # Copyright (C) 2017 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -10,9 +11,10 @@
 # GNU General Public License for more details.
 #
 
-obj-y += fliper/
-obj-y += perfmgr/
-obj-y += eas_controller/
-ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
-	obj-$(CONFIG_MTK_BASE_POWER) += legacy_controller/
-endif
+obj-y += fliper.o
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+#ifeq ($(CONFIG_MTK_QOS_SUPPORT), y)
+ccflags-y += -I$(srctree)/drivers/devfreq/
+#endif
