@@ -68,12 +68,42 @@ struct ioctl_malloc {
 };
 
 struct ioctl_run_cmd {
-	__u64 kva;      /* [in] kernel virtual address */
-	__u32 mva;      /* [in] device phyiscal address */
-	__u32 count;    /* [in] # of commands */
-	__u32 id;       /* [out] command id */
-	__u64 khandle;  /* [in] ion kernel handle */
-	__u8 type;      /* [in] allocate memory type */
+	struct {
+		uint32_t size;
+		uint32_t mva;
+		void *kva;
+		uint32_t id;
+		uint8_t type;
+		void *data;
+
+		int ion_share_fd;
+		int ion_handle;       /* user space handle */
+		uint64_t ion_khandle; /* kernel space handle */
+	} buf;
+
+	__u32 offset;        /* [in] command byte offset in buf */
+	__u32 count;         /* [in] # of commands */
+	__u32 id;            /* [out] command id */
+	__u8 priority;       /* [in] dvfs priority */
+	__u8 boost_value;    /* [in] dvfs boost value */
+};
+
+enum MDLA_CMD_RESULT {
+	MDLA_CMD_SUCCESS = 0,
+	MDLA_CMD_TIMEOUT = 1,
+};
+
+struct ioctl_wait_cmd {
+	__u32 id;              /* [in] command id */
+	int  result;           /* [out] success(0), timeout(1) */
+	uint64_t queue_time;   /* [out] time queued in driver (ns) */
+	uint64_t busy_time;    /* [out] mdla execution time (ns) */
+	uint32_t bandwidth;    /* [out] mdla bandwidth */
+};
+
+struct ioctl_run_cmd_sync {
+	struct ioctl_run_cmd req;
+	struct ioctl_wait_cmd res;
 };
 
 struct ioctl_perf {
@@ -99,8 +129,8 @@ struct ioctl_ion {
 #define IOCTL_MALLOC              _IOWR(IOC_MDLA, 0, struct ioctl_malloc)
 #define IOCTL_FREE                _IOWR(IOC_MDLA, 1, struct ioctl_malloc)
 #define IOCTL_RUN_CMD_SYNC        _IOWR(IOC_MDLA, 2, struct ioctl_run_cmd)
-#define IOCTL_RUN_CMD_ASYNC       _IOWR(IOC_MDLA, 3, struct ioctl_run_cmd)
-#define IOCTL_WAIT_CMD            _IOWR(IOC_MDLA, 4, struct ioctl_run_cmd)
+#define IOCTL_RUN_CMD_ASYNC       _IOWR(IOC_MDLA, 3, struct ioctl_run_cmd_sync)
+#define IOCTL_WAIT_CMD            _IOWR(IOC_MDLA, 4, struct ioctl_wait_cmd)
 #define IOCTL_PERF_SET_EVENT      _IOWR(IOC_MDLA, 5, struct ioctl_perf)
 #define IOCTL_PERF_GET_EVENT      _IOWR(IOC_MDLA, 6, struct ioctl_perf)
 #define IOCTL_PERF_GET_CNT        _IOWR(IOC_MDLA, 7, struct ioctl_perf)
