@@ -293,7 +293,7 @@ void fpsgo_check_thread_status(void)
 	int delete = 0;
 	int check_max_blc = 0;
 	int has_bypass = 0;
-
+	int only_bypass = 1;
 	struct rb_node *n;
 	struct render_info *iter;
 
@@ -337,7 +337,12 @@ void fpsgo_check_thread_status(void)
 		} else {
 			if (iter->frame_type == BY_PASS_TYPE)
 				has_bypass = 1;
+
+			else
+				only_bypass = 0;
+
 			n = rb_next(n);
+
 			fpsgo_thread_unlock(&iter->thr_mlock);
 		}
 	}
@@ -350,6 +355,8 @@ void fpsgo_check_thread_status(void)
 		fpsgo_base2fbt_check_max_blc();
 	if (RB_EMPTY_ROOT(&render_pid_tree))
 		fpsgo_base2fbt_no_one_render();
+	else if (only_bypass)
+		fpsgo_base2fbt_only_bypass();
 
 	fpsgo_base2fbt_set_bypass(has_bypass);
 }
