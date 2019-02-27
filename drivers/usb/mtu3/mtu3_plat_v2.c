@@ -87,6 +87,7 @@ int ssusb_check_clocks(struct ssusb_mtk *ssusb, u32 ex_clks)
 	return 0;
 }
 
+#if !defined(CONFIG_USB_MU3D_DRV)
 static int ssusb_phy_init(struct ssusb_mtk *ssusb)
 {
 	int i;
@@ -105,6 +106,7 @@ exit_phy:
 
 	return ret;
 }
+#endif
 
 static int ssusb_phy_exit(struct ssusb_mtk *ssusb)
 {
@@ -143,6 +145,7 @@ static void ssusb_phy_power_off(struct ssusb_mtk *ssusb)
 		phy_power_off(ssusb->phys[i]);
 }
 
+#if !defined(CONFIG_USB_MU3D_DRV)
 static int ssusb_rscs_init(struct ssusb_mtk *ssusb)
 {
 	int ret = 0;
@@ -182,6 +185,7 @@ vusb33_err:
 
 	return ret;
 }
+#endif
 
 static void ssusb_rscs_exit(struct ssusb_mtk *ssusb)
 {
@@ -190,6 +194,7 @@ static void ssusb_rscs_exit(struct ssusb_mtk *ssusb)
 	ssusb_phy_exit(ssusb);
 }
 
+#if !defined(CONFIG_USB_MU3D_DRV)
 static void ssusb_ip_sw_reset(struct ssusb_mtk *ssusb)
 {
 	/* reset whole ip (xhci & u3d) */
@@ -197,6 +202,7 @@ static void ssusb_ip_sw_reset(struct ssusb_mtk *ssusb)
 	udelay(1);
 	mtu3_clrbits(ssusb->ippc_base, U3D_SSUSB_IP_PW_CTRL0, SSUSB_IP_SW_RST);
 }
+#endif
 
 static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 {
@@ -212,6 +218,12 @@ static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 		return PTR_ERR(ssusb->vusb33);
 	}
 
+	ssusb->ssusb_clk = devm_clk_get(dev, "ssusb_clk");
+	if (IS_ERR(ssusb->ssusb_clk)) {
+		dev_info(dev, "failed to get ssusb clock\n");
+		return PTR_ERR(ssusb->ssusb_clk);
+	}
+
 	ssusb->sys_clk = devm_clk_get(dev, "sys_ck");
 	if (IS_ERR(ssusb->sys_clk)) {
 		dev_err(dev, "failed to get sys clock\n");
@@ -220,6 +232,7 @@ static int get_ssusb_rscs(struct platform_device *pdev, struct ssusb_mtk *ssusb)
 
 	ssusb->num_phys = of_count_phandle_with_args(node,
 			"phys", "#phy-cells");
+
 	if (ssusb->num_phys > 0) {
 		ssusb->phys = devm_kcalloc(dev, ssusb->num_phys,
 					sizeof(*ssusb->phys), GFP_KERNEL);
@@ -318,15 +331,13 @@ static int mtu3_probe(struct platform_device *pdev)
 		ssusb->dr_mode = USB_DR_MODE_HOST;
 	else if (IS_ENABLED(CONFIG_USB_MTU3_GADGET))
 		ssusb->dr_mode = USB_DR_MODE_PERIPHERAL;
+#if !defined(CONFIG_USB_MU3D_DRV)
+	ret = ssusb_rscs_init(ssusb);
+	if (ret)
+		goto comm_init_err;
 
-	if (0) {
-		ret = ssusb_rscs_init(ssusb);
-		if (ret)
-			goto comm_init_err;
-
-		ssusb_ip_sw_reset(ssusb);
-	}
-
+	ssusb_ip_sw_reset(ssusb);
+#endif
 	switch (ssusb->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
 		ret = ssusb_gadget_init(ssusb);
@@ -343,13 +354,13 @@ static int mtu3_probe(struct platform_device *pdev)
 		}
 		break;
 	case USB_DR_MODE_OTG:
-#ifdef NEVER
+#if !defined(CONFIG_USB_MU3D_DRV)
 		ret = ssusb_gadget_init(ssusb);
 		if (ret) {
 			dev_err(dev, "failed to initialize gadget\n");
 			goto comm_exit;
 		}
-#endif /* NEVER */
+#endif
 
 		ret = ssusb_host_init(ssusb, node);
 		if (ret) {
@@ -372,7 +383,9 @@ gadget_exit:
 	ssusb_gadget_exit(ssusb);
 comm_exit:
 	ssusb_rscs_exit(ssusb);
+#if !defined(CONFIG_USB_MU3D_DRV)
 comm_init_err:
+#endif
 	pm_runtime_put_sync(dev);
 	pm_runtime_disable(dev);
 
@@ -473,7 +486,17 @@ static struct platform_driver mtu3_driver = {
 		.of_match_table = of_match_ptr(mtu3_of_match),
 	},
 };
-module_platform_driver(mtu3_driver);
+
+static int __init mtu3_driver_init(void)
+{
+	int ret;
+
+	ret =  platform_driver_register(&mtu3_driver);
+
+	return ret;
+}
+
+late_initcall(mtu3_driver_init);
 
 MODULE_AUTHOR("Chunfeng Yun <chunfeng.yun@mediatek.com>");
 MODULE_LICENSE("GPL v2");
