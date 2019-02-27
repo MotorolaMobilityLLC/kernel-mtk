@@ -1592,12 +1592,14 @@ void fg_construct_vboot(int table_idx)
 		table_idx, curr_temp, T_table, T_table_c, pdata->qmax_sel);
 
 	if (pdata->iboot_sel == 0)
-		iboot = pdata->poweron_system_iboot;
+		iboot = ptable->fg_profile[0].pon_iboot;
 	else
 		iboot = pdata->shutdown_system_iboot;
 
 	if (pdata->qmax_sel == 0) {
-		vboot = pdata->pmic_min_vol + iboot * rac / 10000;
+		vboot =
+			ptable->fg_profile[0].pmic_min_vol
+			+ iboot * rac / 10000;
 		if (table_idx == ptable->temperature_tb0)
 			fg_construct_battery_profile_by_qmax(
 			qmax_t_0ma_h, table_idx);
@@ -1605,19 +1607,23 @@ void fg_construct_vboot(int table_idx)
 			fg_construct_battery_profile_by_qmax(
 			qmax_t_0ma_h_tb1, table_idx);
 	} else if (pdata->qmax_sel == 1) {
-		vboot_t = pdata->pmic_min_vol + iboot * rac / 10000;
+		vboot_t =
+			ptable->fg_profile[0].pmic_min_vol
+			+ iboot * rac / 10000;
 
 		fg_construct_battery_profile_by_vboot(vboot_t, table_idx);
 		if (table_idx == 255) {
 			vboot =
 				fg_compensate_battery_voltage_from_low(
-				pdata->pmic_min_vol, (0 - iboot), table_idx);
+				ptable->fg_profile[0].pmic_min_vol,
+				(0 - iboot), table_idx);
 			fg_construct_battery_profile_by_vboot(
 				vboot, table_idx);
 		} else if (table_idx == 254) {
 			vboot_c =
 				fg_compensate_battery_voltage_from_low(
-				pdata->pmic_min_vol, (0 - iboot), table_idx);
+				ptable->fg_profile[0].pmic_min_vol,
+				(0 - iboot), table_idx);
 			fg_construct_battery_profile_by_vboot(
 				vboot_c, table_idx);
 		}
@@ -1626,7 +1632,8 @@ void fg_construct_vboot(int table_idx)
 			T_table, T_table_c,
 			pdata->qmax_sel, vboot_t,
 			vboot, vboot_c,
-			pdata->pmic_min_vol, iboot, rac);
+			ptable->fg_profile[0].pmic_min_vol,
+			iboot, rac);
 	}
 
 /* batterypseudo1_auto = get_batterypseudo1_auto(vboot, shutdown_hl_zcv); */
@@ -1643,13 +1650,17 @@ void fg_construct_vboot(int table_idx)
 		bm_err(
 			"[fg_construct_vboot][by_qmax]qmax_sel %d qmax %d vboot %d %d pmic_min_vol %d iboot %d r %d\n",
 			pdata->qmax_sel, qmax_t_0ma_h,
-			vboot, vboot_c, pdata->pmic_min_vol, iboot, rac);
+			vboot, vboot_c,
+			ptable->fg_profile[0].pmic_min_vol,
+			iboot, rac);
 	}
 	if (pdata->qmax_sel == 1) {
 		bm_err(
 			"[fg_construct_vboot][by_vboot]qmax_sel %d vboot_t %d vboot %d %d pmic_min_vol %d iboot %d rac %d\n",
 			pdata->qmax_sel, vboot_t, vboot,
-			vboot_c, pdata->pmic_min_vol, iboot, rac);
+			vboot_c,
+			ptable->fg_profile[0].pmic_min_vol,
+			iboot, rac);
 	}
 }
 

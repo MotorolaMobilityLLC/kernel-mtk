@@ -358,10 +358,7 @@ void fg_custom_init_from_header(void)
 	/* iboot related */
 	fg_cust_data.qmax_sel = QMAX_SEL;
 	fg_cust_data.iboot_sel = IBOOT_SEL;
-	fg_cust_data.poweron_system_iboot =
-		UNIT_TRANS_10 * POWERON_SYSTEM_IBOOT;
 	fg_cust_data.shutdown_system_iboot = SHUTDOWN_SYSTEM_IBOOT;
-	fg_cust_data.pmic_min_vol = PMIC_MIN_VOL;
 
 	/* multi-temp gague 0% related */
 	fg_cust_data.multi_temp_gauge0 = MULTI_TEMP_GAUGE0;
@@ -544,7 +541,7 @@ void fg_custom_init_from_header(void)
 		fg_table_cust_data.fg_profile[i].q_max =
 			g_Q_MAX[i][gm.battery_id];
 		fg_table_cust_data.fg_profile[i].q_max_h_current =
-			g_Q_MAX[i][gm.battery_id];
+			g_Q_MAX_H_CURRENT[i][gm.battery_id];
 		fg_table_cust_data.fg_profile[i].pseudo1 =
 			UNIT_TRANS_100 * g_FG_PSEUDO1[i][gm.battery_id];
 		fg_table_cust_data.fg_profile[i].pseudo100 =
@@ -646,13 +643,13 @@ void fg_custom_init_from_header(void)
 
 	/* init battery temperature table */
 	gm.rbat.type = 10;
-	gm.rbat.rbat_pull_up_r = 16900;
-	gm.rbat.rbat_pull_up_volt = 1800;
-	gm.rbat.bif_ntc_r = 16000;
+	gm.rbat.rbat_pull_up_r = RBAT_PULL_UP_R;
+	gm.rbat.rbat_pull_up_volt = RBAT_PULL_UP_VOLT;
+	gm.rbat.bif_ntc_r = BIF_NTC_R;
 
 	if (IS_ENABLED(BAT_NTC_47)) {
 		gm.rbat.type = 47;
-		gm.rbat.rbat_pull_up_r = 61900;
+		gm.rbat.rbat_pull_up_r = RBAT_PULL_UP_R;
 	}
 
 }
@@ -741,51 +738,52 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("read DISABLE_MTKBATTERY fail\n");
 	}
 
-	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T0", &val)) {
-		fg_table_cust_data.fg_profile[0].pseudo100 =
-			(int)val * UNIT_TRANS_100;
-		bm_debug("Get g_FG_PSEUDO100_T0: %d\n",
-			 fg_table_cust_data.fg_profile[0].pseudo100);
-	} else {
-		bm_err("Get g_FG_PSEUDO100_T0 failed\n");
-	}
+	if (ACTIVE_TABLE == 0 && MULTI_BATTERY == 0) {
+		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T0", &val)) {
+			fg_table_cust_data.fg_profile[0].pseudo100 =
+				(int)val * UNIT_TRANS_100;
+			bm_debug("Get g_FG_PSEUDO100_T0: %d\n",
+				 fg_table_cust_data.fg_profile[0].pseudo100);
+		} else {
+			bm_err("Get g_FG_PSEUDO100_T0 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T1", &val)) {
-		fg_table_cust_data.fg_profile[1].pseudo100 =
-			(int)val * UNIT_TRANS_100;
-		bm_debug("Get g_FG_PSEUDO100_T1: %d\n",
-			 fg_table_cust_data.fg_profile[1].pseudo100);
-	} else {
-		bm_err("Get g_FG_PSEUDO100_T1 failed\n");
-	}
+		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T1", &val)) {
+			fg_table_cust_data.fg_profile[1].pseudo100 =
+				(int)val * UNIT_TRANS_100;
+			bm_debug("Get g_FG_PSEUDO100_T1: %d\n",
+				 fg_table_cust_data.fg_profile[1].pseudo100);
+		} else {
+			bm_err("Get g_FG_PSEUDO100_T1 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T2", &val)) {
-		fg_table_cust_data.fg_profile[2].pseudo100 =
-			(int)val * UNIT_TRANS_100;
-		bm_debug("Get g_FG_PSEUDO100_T2: %d\n",
-			 fg_table_cust_data.fg_profile[2].pseudo100);
-	} else {
-		bm_err("Get g_FG_PSEUDO100_T2 failed\n");
-	}
+		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T2", &val)) {
+			fg_table_cust_data.fg_profile[2].pseudo100 =
+				(int)val * UNIT_TRANS_100;
+			bm_debug("Get g_FG_PSEUDO100_T2: %d\n",
+				 fg_table_cust_data.fg_profile[2].pseudo100);
+		} else {
+			bm_err("Get g_FG_PSEUDO100_T2 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T3", &val)) {
-		fg_table_cust_data.fg_profile[3].pseudo100 =
-			(int)val * UNIT_TRANS_100;
-		bm_debug("Get g_FG_PSEUDO100_T3: %d\n",
-			 fg_table_cust_data.fg_profile[3].pseudo100);
-	} else {
-		bm_err("Get g_FG_PSEUDO100_T3 failed\n");
-	}
+		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T3", &val)) {
+			fg_table_cust_data.fg_profile[3].pseudo100 =
+				(int)val * UNIT_TRANS_100;
+			bm_debug("Get g_FG_PSEUDO100_T3: %d\n",
+				 fg_table_cust_data.fg_profile[3].pseudo100);
+		} else {
+			bm_err("Get g_FG_PSEUDO100_T3 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "g_FG_PSEUDO100_T4", &val)) {
-		fg_table_cust_data.fg_profile[4].pseudo100 =
-			(int)val * UNIT_TRANS_100;
-		bm_debug("Get g_FG_PSEUDO100_T4: %d\n",
-			 fg_table_cust_data.fg_profile[4].pseudo100);
-	} else {
-		bm_err("Get g_FG_PSEUDO100_T4 failed\n");
+		if (!of_property_read_u32(np, "g_FG_PSEUDO100_T4", &val)) {
+			fg_table_cust_data.fg_profile[4].pseudo100 =
+				(int)val * UNIT_TRANS_100;
+			bm_debug("Get g_FG_PSEUDO100_T4: %d\n",
+				 fg_table_cust_data.fg_profile[4].pseudo100);
+		} else {
+			bm_err("Get g_FG_PSEUDO100_T4 failed\n");
+		}
 	}
-
 	if (!of_property_read_u32(np, "DIFFERENCE_FULLOCV_ITH", &val)) {
 		fg_cust_data.difference_fullocv_ith = (int)val * UNIT_TRANS_10;
 		bm_debug("Get DIFFERENCE_FULLOCV_ITH: %d\n",
@@ -884,44 +882,46 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get R_FG_VALUE failed\n");
 	}
 
-	if (!of_property_read_u32(np, "TEMPERATURE_T0", &val)) {
-		fg_table_cust_data.fg_profile[0].temperature = (int)val;
-		bm_debug("Get TEMPERATURE_T0: %d\n",
-			 fg_table_cust_data.fg_profile[0].temperature);
-	} else {
-		bm_err("Get TEMPERATURE_T0 failed\n");
-	}
+	if (ACTIVE_TABLE == 0) {
+		if (!of_property_read_u32(np, "TEMPERATURE_T0", &val)) {
+			fg_table_cust_data.fg_profile[0].temperature = (int)val;
+			bm_debug("Get TEMPERATURE_T0: %d\n",
+				 fg_table_cust_data.fg_profile[0].temperature);
+		} else {
+			bm_err("Get TEMPERATURE_T0 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "TEMPERATURE_T1", &val)) {
-		fg_table_cust_data.fg_profile[1].temperature = (int)val;
-		bm_debug("Get TEMPERATURE_T1: %d\n",
-			 fg_table_cust_data.fg_profile[1].temperature);
-	} else {
-		bm_err("Get TEMPERATURE_T1 failed\n");
-	}
+		if (!of_property_read_u32(np, "TEMPERATURE_T1", &val)) {
+			fg_table_cust_data.fg_profile[1].temperature = (int)val;
+			bm_debug("Get TEMPERATURE_T1: %d\n",
+				 fg_table_cust_data.fg_profile[1].temperature);
+		} else {
+			bm_err("Get TEMPERATURE_T1 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "TEMPERATURE_T2", &val)) {
-		fg_table_cust_data.fg_profile[2].temperature = (int)val;
-		bm_debug("Get TEMPERATURE_T2: %d\n",
-			 fg_table_cust_data.fg_profile[2].temperature);
-	} else {
-		bm_err("Get TEMPERATURE_T2 failed\n");
-	}
+		if (!of_property_read_u32(np, "TEMPERATURE_T2", &val)) {
+			fg_table_cust_data.fg_profile[2].temperature = (int)val;
+			bm_debug("Get TEMPERATURE_T2: %d\n",
+				 fg_table_cust_data.fg_profile[2].temperature);
+		} else {
+			bm_err("Get TEMPERATURE_T2 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "TEMPERATURE_T3", &val)) {
-		fg_table_cust_data.fg_profile[3].temperature = (int)val;
-		bm_debug("Get TEMPERATURE_T3: %d\n",
-			 fg_table_cust_data.fg_profile[3].temperature);
-	} else {
-		bm_err("Get TEMPERATURE_T3 failed\n");
-	}
+		if (!of_property_read_u32(np, "TEMPERATURE_T3", &val)) {
+			fg_table_cust_data.fg_profile[3].temperature = (int)val;
+			bm_debug("Get TEMPERATURE_T3: %d\n",
+				 fg_table_cust_data.fg_profile[3].temperature);
+		} else {
+			bm_err("Get TEMPERATURE_T3 failed\n");
+		}
 
-	if (!of_property_read_u32(np, "TEMPERATURE_T4", &val)) {
-		fg_table_cust_data.fg_profile[4].temperature = (int)val;
-		bm_debug("Get TEMPERATURE_T4: %d\n",
-			 fg_table_cust_data.fg_profile[4].temperature);
-	} else {
-		bm_err("Get TEMPERATURE_T4 failed\n");
+		if (!of_property_read_u32(np, "TEMPERATURE_T4", &val)) {
+			fg_table_cust_data.fg_profile[4].temperature = (int)val;
+			bm_debug("Get TEMPERATURE_T4: %d\n",
+				 fg_table_cust_data.fg_profile[4].temperature);
+		} else {
+			bm_err("Get TEMPERATURE_T4 failed\n");
+		}
 	}
 
 	if (!of_property_read_u32(np, "EMBEDDED_SEL", &val)) {
@@ -948,20 +948,37 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get CAR_TUNE_VALUE failed\n");
 	}
 
-	if (!of_property_read_u32(np, "PMIC_MIN_VOL", &val)) {
-		fg_cust_data.pmic_min_vol = (int)val;
-		bm_debug("Get PMIC_MIN_VOL: %d\n",
-			 fg_cust_data.pmic_min_vol);
+	if (!of_property_read_u32(np, "MULTI_GAUGE0_EN", &val)) {
+		fg_cust_data.multi_temp_gauge0 = (int)val;
+		bm_debug("Get MULTI_GAUGE0_EN: %d\n",
+			 fg_cust_data.multi_temp_gauge0);
 	} else {
-		bm_err("Get PMIC_MIN_VOL failed\n");
+		bm_err("Get MULTI_GAUGE0_EN failed\n");
 	}
 
-	if (!of_property_read_u32(np, "POWERON_SYSTEM_IBOOT", &val)) {
-		fg_cust_data.poweron_system_iboot = (int)val * UNIT_TRANS_10;
-		bm_debug("Get POWERON_SYSTEM_IBOOT: %d\n",
-			 fg_cust_data.poweron_system_iboot);
-	} else {
-		bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
+	if (fg_cust_data.multi_temp_gauge0 == 0) {
+		int i = 0;
+
+		if (!of_property_read_u32(np, "PMIC_MIN_VOL", &val)) {
+			for (i = 0; i < MAX_TABLE_NUMBER; i++)
+				fg_table_cust_data.fg_profile[i].pmic_min_vol =
+				(int)val;
+			bm_debug("Get PMIC_MIN_VOL: %d\n",
+				 fg_table_cust_data.fg_profile[0].pmic_min_vol);
+		} else {
+			bm_err("Get PMIC_MIN_VOL failed\n");
+		}
+
+		if (!of_property_read_u32(np, "POWERON_SYSTEM_IBOOT", &val)) {
+			for (i = 0; i < MAX_TABLE_NUMBER; i++)
+				fg_table_cust_data.fg_profile[i].pon_iboot =
+				(int)val * UNIT_TRANS_10;
+
+			bm_debug("Get POWERON_SYSTEM_IBOOT: %d\n",
+				fg_table_cust_data.fg_profile[0].pon_iboot);
+		} else {
+			bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
+		}
 	}
 
 	if (!of_property_read_u32(np, "FGC_FGV_TH1", &val)) {
@@ -1002,14 +1019,6 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 			 fg_cust_data.ui_full_limit_en);
 	} else {
 		bm_err("Get UIFULLLIMIT_EN failed\n");
-	}
-
-	if (!of_property_read_u32(np, "MULTI_GAUGE0_EN", &val)) {
-		fg_cust_data.multi_temp_gauge0 = (int)val;
-		bm_debug("Get MULTI_GAUGE0_EN: %d\n",
-			 fg_cust_data.multi_temp_gauge0);
-	} else {
-		bm_err("Get MULTI_GAUGE0_EN failed\n");
 	}
 
 	if (!of_property_read_u32(np, "SHUTDOWN_GAUGE0_VOLTAGE", &val)) {

@@ -262,6 +262,20 @@ void set_hw_ocv_unreliable(bool _flag_unreliable)
 
 static void disable_fg(void)
 {
+
+	int fgv;
+
+	fgv = gauge_get_hw_version();
+
+	if (fgv >= GAUGE_HW_V1000
+	&& fgv < GAUGE_HW_V2000) {
+
+		pmic_enable_interrupt(
+			INT_VBATON_UNDET,
+			0,
+			"VBATON_UNDET");
+	}
+
 	pmic_enable_interrupt(FG_BAT1_INT_L_NO, 0, "GM30");
 	pmic_enable_interrupt(FG_BAT1_INT_H_NO, 0, "GM30");
 
@@ -540,17 +554,9 @@ static void proc_dump_log(struct seq_file *m)
 
 static void proc_dump_dtsi(struct seq_file *m)
 {
+	int i;
+
 	seq_puts(m, "********** dump DTSI **********\n");
-	seq_printf(m, "g_FG_PSEUDO100_T0 = %d\n",
-		fg_table_cust_data.fg_profile[0].pseudo100);
-	seq_printf(m, "g_FG_PSEUDO100_T1 = %d\n",
-		fg_table_cust_data.fg_profile[1].pseudo100);
-	seq_printf(m, "g_FG_PSEUDO100_T2 = %d\n",
-		fg_table_cust_data.fg_profile[2].pseudo100);
-	seq_printf(m, "g_FG_PSEUDO100_T3 = %d\n",
-		fg_table_cust_data.fg_profile[3].pseudo100);
-	seq_printf(m, "g_FG_PSEUDO100_T4 = %d\n",
-		fg_table_cust_data.fg_profile[4].pseudo100);
 	seq_printf(m, "DIFFERENCE_FULLOCV_ITH = %d\n",
 		fg_cust_data.difference_fullocv_ith);
 	seq_printf(m, "Q_MAX_SYS_VOLTAGE_BAT = %d\n",
@@ -562,16 +568,20 @@ static void proc_dump_dtsi(struct seq_file *m)
 		fg_cust_data.keep_100_percent);
 	seq_printf(m, "R_FG_VALUE = %d\n",
 		fg_cust_data.r_fg_value);
-	seq_printf(m, "TEMPERATURE_T0 = %d\n",
-		fg_table_cust_data.fg_profile[0].temperature);
-	seq_printf(m, "TEMPERATURE_T1 = %d\n",
-		fg_table_cust_data.fg_profile[1].temperature);
-	seq_printf(m, "TEMPERATURE_T2 = %d\n",
-		fg_table_cust_data.fg_profile[2].temperature);
-	seq_printf(m, "TEMPERATURE_T3 = %d\n",
-		fg_table_cust_data.fg_profile[3].temperature);
-	seq_printf(m, "TEMPERATURE_T4 = %d\n",
-		fg_table_cust_data.fg_profile[4].temperature);
+
+	seq_printf(m, "Active Table :%d\n",
+		fg_table_cust_data.active_table_number);
+
+	for (i = 0; i < fg_table_cust_data.active_table_number; i++)
+		seq_printf(m, "TEMPERATURE_%d = %d\n",
+			i,
+			fg_table_cust_data.fg_profile[i].temperature);
+
+	for (i = 0; i < fg_table_cust_data.active_table_number; i++)
+		seq_printf(m, "g_FG_PSEUDO100_%d = %d\n",
+			i,
+			fg_table_cust_data.fg_profile[i].pseudo100);
+
 
 	seq_printf(m, "EMBEDDED_SEL = %d\n", fg_cust_data.embedded_sel);
 	seq_printf(m, "PMIC_SHUTDOWN_CURRENT = %d\n",
@@ -592,8 +602,8 @@ static void proc_dump_dtsi(struct seq_file *m)
 	seq_puts(m, "SHUTDOWN_CONDITION_LOW_BAT_VOLT = 0\n");
 #endif
 
-	seq_printf(m, "active table :%d\n",
-	fg_table_cust_data.active_table_number);
+	seq_printf(m, "multi_temp_gauge0 = %d\n",
+	fg_cust_data.multi_temp_gauge0);
 
 	seq_printf(m, "hw_version = %d\n", gauge_get_hw_version());
 
@@ -605,6 +615,7 @@ static void dump_kernel_table(struct seq_file *m)
 	struct FUELGAUGE_PROFILE_STRUCT *ptr;
 	struct fuel_gauge_table_custom_data *ptable1;
 	struct fuel_gauge_table_custom_data *ptable2;
+	struct fuel_gauge_table *pfgt;
 
 	ptable1 = &fg_table_cust_data;
 	ptable2 = &gm.fg_data.fg_table_cust_data;
@@ -615,11 +626,25 @@ static void dump_kernel_table(struct seq_file *m)
 		fg_table_cust_data.fg_profile[0].size);
 
 	for (j = 0; j < fg_table_cust_data.active_table_number; j++) {
+		pfgt = &ptable1->fg_profile[j];
+		ptr = &ptable1->fg_profile[j].fg_profile[0];
 		seq_printf(m, "table idx:%d size:%d\n",
 			j,
-			fg_table_cust_data.fg_profile[j].size);
-		ptr = &ptable1->fg_profile[j].fg_profile[0];
-		seq_puts(m, "idx: maH, voltage, R, percentage\n");
+			pfgt->size);
+
+		seq_printf(m,
+			"tmp:%d qmax:%d %d pseudo:%d %d,%d %d %d %d\n",
+			pfgt->temperature,
+			pfgt->q_max,
+			pfgt->q_max_h_current,
+			pfgt->pseudo1,
+			pfgt->pseudo100,
+			pfgt->pmic_min_vol,
+			pfgt->pon_iboot,
+			pfgt->qmax_sys_vol,
+			pfgt->shutdown_hl_zcv);
+
+		seq_puts(m, "idx: maH, voltage, R1, percentage\n");
 		for (i = 0; i < 100; i++) {
 			seq_printf(m, "%d: %d %d %d %d\n",
 				i,
@@ -632,10 +657,24 @@ static void dump_kernel_table(struct seq_file *m)
 
 	seq_puts(m, "\n");
 	for (j = 0; j < 10; j++) {
+		pfgt = &gm.fg_data.fg_table_cust_data.fg_profile[j];
 		seq_printf(m, "daemon table idx:%d size:%d\n",
 			j,
-			gm.fg_data.fg_table_cust_data.fg_profile[j].size);
-		seq_puts(m, "idx: maH, voltage, R, percentage\n");
+			pfgt->size);
+
+		seq_printf(m,
+			"tmp:%d qmax:%d %d pseudo:%d %d,%d %d %d %d\n",
+			pfgt->temperature,
+			pfgt->q_max,
+			pfgt->q_max_h_current,
+			pfgt->pseudo1,
+			pfgt->pseudo100,
+			pfgt->pmic_min_vol,
+			pfgt->pon_iboot,
+			pfgt->qmax_sys_vol,
+			pfgt->shutdown_hl_zcv);
+
+		seq_puts(m, "idx: maH, voltage, R1, R2, percentage\n");
 		ptr = &ptable2->fg_profile[j].fg_profile[0];
 		for (i = 0; i < 100; i++) {
 			seq_printf(m, "%d: %d %d %d %d\n",
@@ -817,6 +856,8 @@ static ssize_t store_Battery_Temperature(
 				gm.gdev, 0, 0);
 			gauge_dev_enable_battery_tmp_ht_interrupt(
 				gm.gdev, 0, 0);
+			wakeup_fg_algo(FG_INTR_BAT_TMP_C_HT);
+			wakeup_fg_algo(FG_INTR_BAT_TMP_HT);
 		}
 		battery_main.BAT_batt_temp = force_get_tbat(true);
 		bm_err(
@@ -843,18 +884,24 @@ void fg_custom_data_check(void)
 	p = &fg_cust_data;
 	fgauge_get_profile_id();
 
-	bm_err("FGLOG Gauge0[%d,%d,%d]\n",
-		p->poweron_system_iboot, p->shutdown_system_iboot,
-		p->pmic_min_vol);
 	bm_err("FGLOG MultiGauge0[%d] BATID[%d] pmic_min_vol[%d,%d,%d,%d,%d]\n",
 		p->multi_temp_gauge0, gm.battery_id,
-		p->pmic_min_vol_t0, p->pmic_min_vol_t1,
-		p->pmic_min_vol_t2, p->pmic_min_vol_t3, p->pmic_min_vol_t4);
+		fg_table_cust_data.fg_profile[0].pmic_min_vol,
+		fg_table_cust_data.fg_profile[1].pmic_min_vol,
+		fg_table_cust_data.fg_profile[2].pmic_min_vol,
+		fg_table_cust_data.fg_profile[3].pmic_min_vol,
+		fg_table_cust_data.fg_profile[4].pmic_min_vol);
 	bm_err("FGLOG pon_iboot[%d,%d,%d,%d,%d] qmax_sys_vol[%d %d %d %d %d]\n",
-		p->pon_iboot_t0, p->pon_iboot_t1,
-		p->pon_iboot_t2, p->pon_iboot_t3, p->pon_iboot_t4,
-		p->qmax_sys_vol_t0, p->qmax_sys_vol_t1,
-		p->qmax_sys_vol_t2, p->qmax_sys_vol_t3, p->qmax_sys_vol_t4);
+		fg_table_cust_data.fg_profile[0].pon_iboot,
+		fg_table_cust_data.fg_profile[1].pon_iboot,
+		fg_table_cust_data.fg_profile[2].pon_iboot,
+		fg_table_cust_data.fg_profile[3].pon_iboot,
+		fg_table_cust_data.fg_profile[4].pon_iboot,
+		fg_table_cust_data.fg_profile[0].qmax_sys_vol,
+		fg_table_cust_data.fg_profile[1].qmax_sys_vol,
+		fg_table_cust_data.fg_profile[2].qmax_sys_vol,
+		fg_table_cust_data.fg_profile[3].qmax_sys_vol,
+		fg_table_cust_data.fg_profile[4].qmax_sys_vol);
 
 }
 
@@ -1464,6 +1511,8 @@ int battery_get_charger_zcv(void)
 
 void exec_BAT_EC(int cmd, int param)
 {
+	int i;
+
 	bm_err("exe_BAT_EC cmd %d, param %d\n", cmd, param);
 	switch (cmd) {
 	case 101:
@@ -1711,7 +1760,12 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 705:
 		{
-			fg_cust_data.pmic_min_vol = param;
+			for (i = 0;
+				i < fg_table_cust_data.active_table_number;
+				i++) {
+				fg_table_cust_data.fg_profile[i].pmic_min_vol =
+					param * UNIT_TRANS_10;
+			}
 			bm_err(
 				"exe_BAT_EC cmd %d, param %d, pmic_min_vol\n",
 				cmd, param);
@@ -1719,8 +1773,12 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 706:
 		{
-			fg_cust_data.poweron_system_iboot =
+			for (i = 0;
+				i < fg_table_cust_data.active_table_number;
+				i++) {
+				fg_table_cust_data.fg_profile[i].pon_iboot =
 				param * UNIT_TRANS_10;
+			}
 			bm_err("exe_BAT_EC cmd %d, param %d, poweron_system_iboot\n"
 				, cmd, param * UNIT_TRANS_10);
 		}
@@ -1994,7 +2052,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 743:
 		{
-			fg_cust_data.pmic_min_vol_t0 = param;
+			fg_table_cust_data.fg_profile[0].pmic_min_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t0=%d\n",
 				cmd, param);
@@ -2002,7 +2060,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 744:
 		{
-			fg_cust_data.pmic_min_vol_t1 = param;
+			fg_table_cust_data.fg_profile[1].pmic_min_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t1=%d\n",
 				cmd, param);
@@ -2010,7 +2068,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 745:
 		{
-			fg_cust_data.pmic_min_vol_t2 = param;
+			fg_table_cust_data.fg_profile[2].pmic_min_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t2=%d\n",
 				cmd, param);
@@ -2018,7 +2076,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 746:
 		{
-			fg_cust_data.pmic_min_vol_t3 = param;
+			fg_table_cust_data.fg_profile[3].pmic_min_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t3=%d\n",
 				cmd, param);
@@ -2026,7 +2084,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 747:
 		{
-			fg_cust_data.pmic_min_vol_t4 = param;
+			fg_table_cust_data.fg_profile[4].pmic_min_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pmic_min_vol_t4=%d\n",
 				cmd, param);
@@ -2034,7 +2092,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 748:
 		{
-			fg_cust_data.pon_iboot_t0 = param;
+			fg_table_cust_data.fg_profile[0].pon_iboot = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t0=%d\n",
 				cmd, param);
@@ -2042,7 +2100,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 749:
 		{
-			fg_cust_data.pon_iboot_t1 = param;
+			fg_table_cust_data.fg_profile[1].pon_iboot = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t1=%d\n",
 				cmd, param);
@@ -2050,7 +2108,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 750:
 		{
-			fg_cust_data.pon_iboot_t2 = param;
+			fg_table_cust_data.fg_profile[2].pon_iboot = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t2=%d\n",
 				cmd, param);
@@ -2058,7 +2116,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 751:
 		{
-			fg_cust_data.pon_iboot_t3 = param;
+			fg_table_cust_data.fg_profile[3].pon_iboot = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t3=%d\n",
 				cmd, param);
@@ -2066,7 +2124,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 752:
 		{
-			fg_cust_data.pon_iboot_t4 = param;
+			fg_table_cust_data.fg_profile[4].pon_iboot = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.pon_iboot_t4=%d\n",
 				cmd, param);
@@ -2074,7 +2132,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 753:
 		{
-			fg_cust_data.qmax_sys_vol_t0 = param;
+			fg_table_cust_data.fg_profile[0].qmax_sys_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t0=%d\n",
 				cmd, param);
@@ -2082,7 +2140,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 754:
 		{
-			fg_cust_data.qmax_sys_vol_t1 = param;
+			fg_table_cust_data.fg_profile[1].qmax_sys_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t1=%d\n",
 				cmd, param);
@@ -2090,7 +2148,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 755:
 		{
-			fg_cust_data.qmax_sys_vol_t2 = param;
+			fg_table_cust_data.fg_profile[2].qmax_sys_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t2=%d\n",
 				cmd, param);
@@ -2098,7 +2156,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 756:
 		{
-			fg_cust_data.qmax_sys_vol_t3 = param;
+			fg_table_cust_data.fg_profile[3].qmax_sys_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t3=%d\n",
 				cmd, param);
@@ -2106,7 +2164,7 @@ void exec_BAT_EC(int cmd, int param)
 		break;
 	case 757:
 		{
-			fg_cust_data.qmax_sys_vol_t4 = param;
+			fg_table_cust_data.fg_profile[4].qmax_sys_vol = param;
 			bm_err(
 				"exe_BAT_EC cmd %d, fg_cust_data.qmax_sys_vol_t4=%d\n",
 				cmd, param);
