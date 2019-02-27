@@ -163,6 +163,33 @@ config MACH_MT6765
 	  thin-design smartphones. MT6765 also offers significant multitasking and
 	  multimedia improvements.
 
+config MACH_MT6761
+	bool "MediaTek MT6761"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6761
+	select MFD_SYSCON
+	select MTK_GIC_V3_EXT
+	select MTK_SYSIRQ
+	select MTK_TIMER_V1
+	help
+	  This enables support for MediaTek MT6761
+	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
+	  thin-design smartphones. MT6761 also offers significant multitasking and
+	  multimedia improvements.
+
 config MACH_MT3887
 	bool "MediaTek MT3887"
 	select GENERIC_TIME
