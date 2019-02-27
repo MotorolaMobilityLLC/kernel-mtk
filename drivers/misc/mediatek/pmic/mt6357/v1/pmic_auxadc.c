@@ -100,8 +100,7 @@ static unsigned int adc_dbg_addr[DBG_REG_SIZE];
 static void wk_auxadc_dbg_dump(void)
 {
 	unsigned char reg_log[861] = "", reg_str[21] = "";
-	unsigned char i;
-	unsigned short j;
+	unsigned short i, j;
 	static unsigned char dbg_stamp;
 	static struct pmic_adc_dbg_st pmic_adc_dbg[4];
 
@@ -109,6 +108,9 @@ static void wk_auxadc_dbg_dump(void)
 		pmic_adc_dbg[dbg_stamp].reg[i] =
 			upmu_get_reg_value(adc_dbg_addr[i]);
 	pmic_adc_dbg[dbg_stamp].ktime_sec = (int)get_monotonic_coarse().tv_sec;
+	dbg_stamp++;
+	if (dbg_stamp >= 4)
+		dbg_stamp = 0;
 
 	for (i = 0; i < 4; i++) {
 		if (pmic_adc_dbg[dbg_stamp].ktime_sec == 0) {
@@ -162,21 +164,23 @@ static int bat_temp_filter(int *arr, unsigned short size)
 
 static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 {
-	int vbif28, bat_temp_new;
+	int vbif28, bat_temp_new = bat_temp;
 	int arr_bat_temp[5];
 	unsigned short i;
 
 	vbif28 = auxadc_priv_read_channel(AUXADC_VBIF);
-	bat_temp_new = auxadc_priv_read_channel(AUXADC_BAT_TEMP);
-	pr_notice("BAT_TEMP_PREV:%d,BAT_TEMP:%d,VBIF28:%d,BAT_TEMP_NEW:%d\n",
-		bat_temp_prev, bat_temp, vbif28, bat_temp_new);
-	if (bat_temp_new < 200 || abs(bat_temp_new - bat_temp) > 100) {
+	pr_notice("BAT_TEMP_PREV:%d,BAT_TEMP:%d,VBIF28:%d\n",
+		bat_temp_prev, bat_temp, vbif28);
+	if (bat_temp < 200 || abs(bat_temp_prev - bat_temp) > 100) {
 		wk_auxadc_dbg_dump();
 		for (i = 0; i < 5; i++) {
 			arr_bat_temp[i] =
 				auxadc_priv_read_channel(AUXADC_BAT_TEMP);
 		}
 		bat_temp_new = bat_temp_filter(arr_bat_temp, 5);
+		pr_notice("%d,%d,%d,%d,%d, BAT_TEMP_NEW:%d\n",
+			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
+			arr_bat_temp[3], arr_bat_temp[4], bat_temp_new);
 	}
 	return bat_temp_new;
 }
