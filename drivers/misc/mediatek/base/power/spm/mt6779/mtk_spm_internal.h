@@ -329,7 +329,6 @@ void __spm_get_wakeup_status(struct wake_status *wakesta);
 unsigned int __spm_output_wake_reason(
 	const struct wake_status *wakesta, bool suspend, const char *scenario);
 unsigned int __spm_get_wake_period(int pwake_time, unsigned int last_wr);
-extern void __sync_vcore_ctrl_pcm_flag(u32 oper_cond, u32 *flag);
 
 /***********************************************************
  * mtk_spm_twam.c
