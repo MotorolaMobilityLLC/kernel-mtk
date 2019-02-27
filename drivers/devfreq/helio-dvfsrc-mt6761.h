@@ -88,5 +88,6 @@ enum met_src_index {
 
 extern void dvfsrc_enable_dvfs_freq_hopping(int gps_on);
 extern int dvfsrc_get_dvfs_freq_hopping_status(void);
+extern void pm_qos_trace_dbg_show_request(int pm_qos_class);
 
 #endif /* __HELIO_DVFSRC_MT6765_H */
