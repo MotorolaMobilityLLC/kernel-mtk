@@ -674,8 +674,6 @@ static kal_uint16 table_write_cmos_sensor(kal_uint16 *para, kal_uint32 len)
 
 
 static kal_uint16 addr_data_pair_init_2t7sp[] = {
-	0x6214, 0x7970,
-	0x6218, 0x7150,
 	0x6028, 0x2000,
 	0x602A, 0x3FE4,
 	0x6F12, 0x0000,
@@ -1161,8 +1159,13 @@ static void sensor_init(void)
 
 
 	write_cmos_sensor(0x6028, 0x4000);
+	write_cmos_sensor(0x0000, 0x0005);
+	write_cmos_sensor(0x0000, 0x2174);
 	write_cmos_sensor(0x6010, 0x0001);
 	mdelay(3);
+	write_cmos_sensor(0x6214, 0x7970);
+	write_cmos_sensor(0x6218, 0x7150);
+	write_cmos_sensor(0x0A02, 0x5F00);
 
 	table_write_cmos_sensor(addr_data_pair_init_2t7sp,
 		sizeof(addr_data_pair_init_2t7sp) / sizeof(kal_uint16));
