@@ -236,6 +236,8 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 	unsigned long long start, end;
 	unsigned long user_va = 0;
 
+	INIT_LIST_HEAD(&pages);
+
 #if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
 	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA) {
 		/*for va-->mva case, align is used for va value */
@@ -283,7 +285,6 @@ static int ion_mm_heap_allocate(struct ion_heap *heap,
 		return -ENOMEM;
 	}
 
-	INIT_LIST_HEAD(&pages);
 	start = sched_clock();
 
 	/* add time interval to alloc 64k page in low memory status*/
@@ -373,10 +374,12 @@ err1:
 	kfree(table);
 	IONMSG("error: alloc for sg_table fail\n");
 err:
-	list_for_each_entry_safe(info, tmp_info, &pages, list) {
-		free_buffer_page(sys_heap, buffer, info->page,
-				 info->order);
-		kfree(info);
+	if (!list_empty(&pages)) {
+		list_for_each_entry_safe(info, tmp_info, &pages, list) {
+			free_buffer_page(sys_heap, buffer, info->page,
+					 info->order);
+			kfree(info);
+		}
 	}
 	IONMSG("error: mm_alloc fail: size=%lu, flag=%lu.\n", size, flags);
 	caller_pid = 0;
