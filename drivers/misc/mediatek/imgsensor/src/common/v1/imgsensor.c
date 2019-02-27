@@ -77,6 +77,7 @@ static DEFINE_MUTEX(gimgsensor_mutex);
 
 struct IMGSENSOR  gimgsensor;
 struct IMGSENSOR *pgimgsensor = &gimgsensor;
+DEFINE_MUTEX(pinctrl_mutex);
 
 /************************************************************************
  * Profiling
@@ -1381,6 +1382,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	switch (pFeatureCtrl->FeatureId) {
 	case SENSOR_FEATURE_OPEN:
 	case SENSOR_FEATURE_CLOSE:
+	case SENSOR_FEATURE_SET_DRIVER:
+	case SENSOR_FEATURE_CHECK_IS_ALIVE:
 		break;
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
