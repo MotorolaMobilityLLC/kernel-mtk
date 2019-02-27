@@ -25,7 +25,7 @@
 
 #define PFX "hi556_camera_sensor"
 #define LOG_INF(format, args...)    \
-	pr_info(PFX "[%s] " format, __func__, ##args)
+	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -176,10 +176,10 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 { 2592, 1944,    0,    0, 2592, 1944, 2592, 1944,
 	 0,    0, 2592, 1944,    0,    0, 2592, 1944},
 	// high speed video
-{ 2592, 1944,   16,   12, 2560, 1920, 2560, 1920,
-	 0,    0,  640,  480,    0,    0,  640,  480},
+{ 2592, 1944,   16,   12, 2560, 1920, 640, 480,
+	 0,   0,  640,  480,    0,    0,  640,  480},
 	// slim video
-{ 2592, 1944,   16,  252, 2560, 1440, 2560, 1440,
+{ 2592, 1944,   16,  252, 2560, 1440, 1280, 720,
 	 0,    0, 1280,  720,    0,    0, 1280,  720},
 };
 
@@ -189,7 +189,6 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 
 	//kdSetI2CSpeed(400);
-
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
 
 	return get_byte;
@@ -1451,7 +1450,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	break;
 	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 		if (framerate == 0)
@@ -1466,7 +1466,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	break;
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		if (imgsensor.current_fps ==
@@ -1498,7 +1499,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.min_frame_length = imgsensor.frame_length;
 			spin_unlock(&imgsensor_drv_lock);
 		}
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	break;
 	case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 	    frame_length = imgsensor_info.hs_video.pclk /
@@ -1511,7 +1513,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	break;
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
 	    frame_length = imgsensor_info.slim_video.pclk /
@@ -1525,7 +1528,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 			imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	break;
 	default:  //coding with  preview scenario by default
 	    frame_length = imgsensor_info.pre.pclk / framerate * 10 /
@@ -1538,7 +1542,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 				imgsensor.dummy_line;
 	    imgsensor.min_frame_length = imgsensor.frame_length;
 	    spin_unlock(&imgsensor_drv_lock);
-	    set_dummy();
+		if (imgsensor.frame_length > imgsensor.shutter)
+			set_dummy();
 	    LOG_INF("error scenario_id = %d, we use preview scenario\n",
 				scenario_id);
 	break;
@@ -1749,7 +1754,7 @@ static kal_uint32 feature_control(
 	#endif
 	break;
 	case SENSOR_FEATURE_GET_TEMPERATURE_VALUE:
-		pr_info("GET_TEMPERATURE_VALUE is not support\n");
+		pr_debug("GET_TEMPERATURE_VALUE is not support\n");
 		*feature_return_para_i32 = 0;
 		*feature_para_len = 4;
 	break;
