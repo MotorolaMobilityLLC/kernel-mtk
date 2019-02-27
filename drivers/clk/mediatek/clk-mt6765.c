@@ -2165,6 +2165,8 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 #if MT_CCF_BRINGUP
 	clk_writel(MMSYS_CG_CLR0, MM_DISABLE_CG);
 #endif
+	pr_notice("%s(): 0x%x\n",
+			__func__, clk_readl(MMSYS_CG_CON0));
 }
 CLK_OF_DECLARE_DRIVER(mtk_mmsys_config, "mediatek,mmsys_config",
 		mtk_mmsys_config_init);
