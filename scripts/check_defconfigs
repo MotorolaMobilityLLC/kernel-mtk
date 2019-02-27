@@ -73,7 +73,7 @@ for CONFIG in $CONFIGS ; do
 		ARCH=arm64
 	fi
 
-	OUTPUT="$(make ARCH=${ARCH} O=${OUT} `basename ${CONFIG}` savedefconfig 2>&1)"
+	OUTPUT="$(make -j1 ARCH=${ARCH} O=${OUT} `basename ${CONFIG}` savedefconfig 2>&1)"
 	RETVAL=$?
 	echo "$OUTPUT"
 
