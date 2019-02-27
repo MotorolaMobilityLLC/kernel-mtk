@@ -364,4 +364,9 @@ source "drivers/misc/mediatek/mlog/Kconfig"
 source "drivers/misc/mediatek/fiq_cache/Kconfig"
 source "drivers/misc/mediatek/debug_latch/Kconfig"
 source "drivers/misc/mediatek/Kconfig.default"
+
+config MTK_DM_VERITY_OFF
+	bool "Disable dm-verity"
+	default n
+
 endmenu    # Misc
