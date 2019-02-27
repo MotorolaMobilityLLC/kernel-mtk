@@ -258,6 +258,9 @@ int ccci_ringbuf_write(int md_id, struct ccci_ringbuf *ringbuf,
 	ringbuf, tx_buffer, ringbuf->tx_control.write, write,
 	data_len, aligned_data_len, 16, length, ringbuf->tx_control.read);
 
+	/* insure sequential execution */
+	mb();
+
 	ringbuf->tx_control.write = write;
 
 	return data_len;
