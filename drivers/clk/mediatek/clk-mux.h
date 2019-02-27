@@ -45,7 +45,6 @@ struct mtk_mux_upd {
 		.upd_shift = _upd,					\
 		.parent_names = _parents,				\
 		.num_parents = ARRAY_SIZE(_parents),			\
-		.flags = 0,					\
 	}
 
 struct mtk_mux_clr_set_upd {
