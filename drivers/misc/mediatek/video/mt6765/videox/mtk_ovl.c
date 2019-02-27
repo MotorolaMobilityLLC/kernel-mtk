@@ -33,8 +33,10 @@
 #include "primary_display.h"
 #include "disp_lowpower.h"
 
+#ifdef CONFIG_MTK_M4U
 #include "m4u.h"
 #include "m4u_port.h"
+#endif
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
@@ -57,7 +59,9 @@
 
 static int is_context_inited;
 static int ovl2mem_layer_num;
+#if defined(CONFIG_MTK_M4U)
 static int ovl2mem_use_m4u = 1;
+#endif
 static int ovl2mem_use_cmdq = CMDQ_ENABLE;
 
 static unsigned int ovl2mem_is_suspended;
@@ -350,8 +354,9 @@ static void deinit_cmdq_slots(cmdqBackupSlotHandle hSlot)
 int ovl2mem_init(unsigned int session)
 {
 	int ret = -1;
+#if defined(CONFIG_MTK_M4U)
 	M4U_PORT_STRUCT sPort;
-
+#endif
 	DISPFUNC();
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger,
@@ -410,6 +415,7 @@ int ovl2mem_init(unsigned int session)
 	dpmgr_path_init(pgcl->dpmgr_handle, CMDQ_DISABLE);
 	dpmgr_path_reset(pgcl->dpmgr_handle, CMDQ_DISABLE);
 
+#if defined(CONFIG_MTK_M4U)
 	sPort.ePortID = M4U_PORT_UNKNOWN; /* modify to real module*/
 	sPort.Virtuality = ovl2mem_use_m4u;
 	sPort.Security = 0;
@@ -443,6 +449,7 @@ int ovl2mem_init(unsigned int session)
 			  ovl2mem_use_m4u ? "virtual" : "physical", ret);
 		goto Exit;
 	}
+#endif
 	dpmgr_enable_event(pgcl->dpmgr_handle, DISP_PATH_EVENT_FRAME_COMPLETE);
 
 	pgcl->max_layer = 4;
