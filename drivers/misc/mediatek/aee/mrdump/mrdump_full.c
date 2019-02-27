@@ -270,7 +270,7 @@ void __mrdump_create_oops_dump(enum AEE_REBOOT_MODE reboot_mode,
 	}
 }
 
-static int __init mrdump_platform_init(void)
+int __init mrdump_full_init(void)
 {
 	if (mrdump_cblock == NULL) {
 		memset(mrdump_lk, 0, sizeof(mrdump_lk));
@@ -295,12 +295,6 @@ static int __init mrdump_platform_init(void)
 	__inner_flush_dcache_all();
 	pr_info("%s: MT-RAMDUMP enabled done\n", __func__);
 	return 0;
-}
-
-int __init mrdump_init(void)
-{
-	mrdump_cblock_init();
-	return mrdump_platform_init();
 }
 
 #if CONFIG_SYSFS

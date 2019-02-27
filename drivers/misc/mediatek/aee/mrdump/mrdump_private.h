@@ -66,7 +66,10 @@ extern const unsigned long kallsyms_num_syms
 __attribute__((weak, section(".rodata")));
 
 
+int mrdump_hw_init(void);
 void mrdump_cblock_init(void);
+int mrdump_full_init(void);
+int mrdump_wdt_init(void);
 
 void mrdump_save_current_backtrace(struct pt_regs *regs);
 void mrdump_save_control_register(void *creg);
