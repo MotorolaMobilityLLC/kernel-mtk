@@ -90,9 +90,7 @@
 #endif
 
 #define EP_MARK_SMI
-#define EP_MARK_MMDVFS
-#define EP_NO_PASS1_CODE
-/*#define EP_MARK_MMDVFS*/ /* disable MMDVFS related for EP */
+#define EP_MARK_MMDVFS /* disable MMDVFS related for EP */
 #ifndef EP_MARK_MMDVFS
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
@@ -122,7 +120,7 @@ struct mmdvfs_pm_qos_request isp_qos;
 
 #define ISP_DEV_NAME           "camera-isp"
 #define SMI_LARB_MMU_CTL       (1)
-#define DUMMY_INT              (0)   /*for EP if load dont need to use camera*/
+#define DUMMY_INT              (1)   /*for EP if load dont need to use camera*/
 #define EP_NO_CLKMGR           /* for clkmgr*/
 /*#define ENABLE_WAITIRQ_LOG*/       /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/       /*show STT irq debug logs */
@@ -382,16 +380,16 @@ const struct ISR_TABLE IRQ_CB_TBL[ISP_IRQ_TYPE_AMOUNT] = {
 static const struct of_device_id isp_of_ids[] = {
 	{ .compatible = "mediatek,imgsys", },
 	{ .compatible = "mediatek,dip1", },
-//		{ .compatible = "mediatek,camsys", },
-//		{ .compatible = "mediatek,cam1", },
-//		{ .compatible = "mediatek,cam2", },
-//		{ .compatible = "mediatek,cam3", },
-//		{ .compatible = "mediatek,camsv1", },
-//		{ .compatible = "mediatek,camsv2", },
-//		{ .compatible = "mediatek,camsv3", },
-//		{ .compatible = "mediatek,camsv4", },
-//		{ .compatible = "mediatek,camsv5", },
-//		{ .compatible = "mediatek,camsv6", },
+	{ .compatible = "mediatek,camsys", },
+	{ .compatible = "mediatek,cam1", },
+	{ .compatible = "mediatek,cam2", },
+	{ .compatible = "mediatek,cam3", },
+	{ .compatible = "mediatek,camsv1", },
+	{ .compatible = "mediatek,camsv2", },
+	{ .compatible = "mediatek,camsv3", },
+	{ .compatible = "mediatek,camsv4", },
+	{ .compatible = "mediatek,camsv5", },
+	{ .compatible = "mediatek,camsv6", },
 	{}
 };
 
@@ -3970,7 +3968,7 @@ static void ISP_EnableClock(bool En)
 			 * 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
-//				ISP_WR32(CAMSYS_REG_CG_CLR, setReg);
+			ISP_WR32(CAMSYS_REG_CG_CLR, setReg);
 			ISP_WR32(IMGSYS_REG_CG_CLR, setReg);
 #else /* Everest not support CLKMGR, only CCF!!*/
 			/*pr_info("MTK_LEGACY:enable clk");*/
@@ -4021,7 +4019,7 @@ static void ISP_EnableClock(bool En)
 			 * 2. IMG_CG_SET (0x15000004) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
-//				ISP_WR32(CAMSYS_REG_CG_SET, setReg);
+			ISP_WR32(CAMSYS_REG_CG_SET, setReg);
 			ISP_WR32(IMGSYS_REG_CG_SET, setReg);
 #else
 			/*pr_info("MTK_LEGACY:disable clk");*/
@@ -9177,9 +9175,7 @@ static signed int ISP_release(
 	struct file *pFile)
 {
 	struct ISP_USER_INFO_STRUCT *pUserInfo;
-#ifndef EP_NO_PASS1_CODE
 	unsigned int Reg;
-#endif
 	unsigned int i = 0;
 
 	pr_info("- E. UserCount: %d.\n", IspInfo.UserCount);
@@ -9218,7 +9214,6 @@ static signed int ISP_release(
 		IspInfo.UserCount, current->comm, current->pid, current->tgid,
 		pr_detect_count);
 
-#ifndef EP_NO_PASS1_CODE
 	/* Close VF when ISP_release.
 	 * reason of close vf is to make sure camera can serve regular after
 	 * previous abnormal exit
@@ -9258,7 +9253,7 @@ static signed int ISP_release(
 	 */
 	ISP_WR32(CAM_REG_CTL_TWIN_STATUS(ISP_CAM_A_IDX), 0x0);
 	ISP_WR32(CAM_REG_CTL_TWIN_STATUS(ISP_CAM_B_IDX), 0x0);
-#endif
+
 	/* why i add this wake_unlock here,
 	 * because the Ap is not expected to be dead.
 	 * The driver must releae the wakelock, ozws the system will not enter
@@ -9353,11 +9348,11 @@ static signed int ISP_release(
 #endif
 	/* reset backup regs*/
 	memset(g_BkReg, 0, sizeof(struct _isp_bk_reg_t) * ISP_IRQ_TYPE_AMOUNT);
-#ifndef EP_NO_PASS1_CODE
+
 	/*  */
 	ISP_StopHW(ISP_CAM_A_IDX);
 	ISP_StopHW(ISP_CAM_B_IDX);
-#endif
+
 #ifdef ENABLE_KEEP_ION_HANDLE
 	/* free keep ion handles, then destroy ion client*/
 	for (i = 0; i < ISP_DEV_NODE_NUM; i++) {
@@ -11024,7 +11019,7 @@ int32_t ISP_MDPClockOnCallback(uint64_t engineFlag)
 {
 	/* pr_info("ISP_MDPClockOnCallback"); */
 	/*pr_info("+MDPEn:%d", G_u4EnableClockCount);*/
-		ISP_EnableClock(MTRUE);
+	ISP_EnableClock(MTRUE);
 
 	return 0;
 }
@@ -11049,7 +11044,7 @@ int32_t ISP_MDPResetCallback(uint64_t engineFlag)
 int32_t ISP_MDPClockOffCallback(uint64_t engineFlag)
 {
 	/* pr_info("ISP_MDPClockOffCallback"); */
-		ISP_EnableClock(MFALSE);
+	ISP_EnableClock(MFALSE);
 	/*pr_info("-MDPEn:%d", G_u4EnableClockCount);*/
 	return 0;
 }
