@@ -1,12 +1,21 @@
+/*
+ * Copyright (C) 2017 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
 
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/of_address.h>
-
-#include "mtk_spm_internal.h"
+#include <mtk_spm_internal.h>
 
 static twam_handler_t spm_twam_handler;
 static unsigned int idle_sel;
@@ -96,7 +105,7 @@ void spm_twam_enable_monitor(const struct twam_sig *twamsig, bool speed_mode)
 	spm_write(SPM_TWAM_WINDOW_LEN, length);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	spm_debug("enable TWAM for signal %u, %u, %u, %u (%u)\n",
+	pr_info("[SPM] enable TWAM for signal %u, %u, %u, %u (%u)\n",
 		  sig0, sig1, sig2, sig3, speed_mode);
 }
 EXPORT_SYMBOL(spm_twam_enable_monitor);
@@ -111,7 +120,7 @@ void spm_twam_disable_monitor(void)
 	spm_write(SPM_IRQ_STA, ISRC_TWAM);
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
-	spm_debug("disable TWAM\n");
+	pr_info("disable TWAM\n");
 }
 EXPORT_SYMBOL(spm_twam_disable_monitor);
 

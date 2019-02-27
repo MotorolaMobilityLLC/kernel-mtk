@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -17,20 +17,9 @@
 #include <linux/spinlock.h>
 #include <linux/suspend.h>
 #include <linux/console.h>
-#include <linux/proc_fs.h>
-#include <linux/fs.h>
-#include <linux/vmalloc.h>
-#include <linux/uaccess.h>
 
-#include <mt-plat/sync_write.h>
-#include <mtk_sleep.h>
-#include <mtk_spm.h>
-#include <mtk_spm_sleep.h>
-#include <mtk_spm_idle.h>
-#include <mtk_spm_misc.h>
-#if 0 //FIXME
-#include <mt-plat/mtk_gpio.h>
-#endif
+#include <mtk_sleep_internal.h>
+#include <mtk_spm_suspend_internal.h>
 #include <mtk_power_gs_api.h>
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
@@ -39,41 +28,14 @@
 #ifdef CONFIG_MTK_ACAO_SUPPORT
 #include <mtk_mcdi_api.h>
 #endif
-/**************************************
- * only for internal debug
- **************************************/
-#ifdef CONFIG_MTK_LDVT
-#define SLP_SLEEP_DPIDLE_EN         1
-#define SLP_REPLACE_DEF_WAKESRC     1
-#define SLP_SUSPEND_LOG_EN          1
-#else
-#define SLP_SLEEP_DPIDLE_EN         1
-#define SLP_REPLACE_DEF_WAKESRC     0
-#define SLP_SUSPEND_LOG_EN          1
-#endif
 
-/**************************************
- * SW code for suspend
- **************************************/
-#define slp_read(addr)              __raw_readl((void __force __iomem *)(addr))
-#define slp_write(addr, val)        mt65xx_reg_sync_writel(val, addr)
-#define slp_emerg(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
-#define slp_alert(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
-#define slp_crit(fmt, args...)      pr_debug("[SLP] " fmt, ##args)
-#define slp_crit2(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
-#define slp_error(fmt, args...)     pr_err("[SLP] " fmt, ##args)
-#define slp_warning(fmt, args...)   pr_debug("[SLP] " fmt, ##args)
-#define slp_notice(fmt, args...)    pr_debug("[SLP] " fmt, ##args)
-#define slp_info(fmt, args...)      pr_debug("[SLP] " fmt, ##args)
-#define slp_debug(fmt, args...)     pr_debug("[SLP] " fmt, ##args)
 static DEFINE_SPINLOCK(slp_lock);
 
 static unsigned int slp_wake_reason = WR_NONE;
 
 static bool slp_ck26m_on;
-#if 0 //FIXME
+
 bool slp_dump_gpio;
-#endif
 bool slp_dump_golden_setting;
 int slp_dump_golden_setting_type = GS_PMIC;
 
@@ -108,7 +70,6 @@ static u32 slp_spm_deepidle_flags1 = {
 	0
 };
 
-
 static u32 slp_spm_flags1;
 static u32 slp_spm_deepidle_flags1;
 static int slp_suspend_ops_valid(suspend_state_t state)
@@ -123,7 +84,7 @@ static int slp_suspend_ops_valid(suspend_state_t state)
 static int slp_suspend_ops_begin(suspend_state_t state)
 {
 	/* legacy log */
-	slp_notice("@@@@@@@@@@@@@@@@@@@@\tChip_pm_begin(%u)(%u)\t@@@@@@@@@@@@@@@@@@@@\n",
+	pr_info("[SLP] @@@@@@@@@@@@@@@@\tChip_pm_begin(%u)(%u)\t@@@@@@@@@@@@@@@@\n",
 			is_cpu_pdn(slp_spm_flags), is_infra_pdn(slp_spm_flags));
 
 	slp_wake_reason = WR_NONE;
@@ -135,7 +96,7 @@ static int slp_suspend_ops_prepare(void)
 {
 #if 0
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@\tChip_pm_prepare\t@@@@@@@@@@@@@@@@@@\n");
+	pr_debug("[SLP] @@@@@@@@@@@@@@@@\tChip_pm_prepare\t@@@@@@@@@@@@@@@@\n");
 #endif
 	return 0;
 }
@@ -143,7 +104,7 @@ static int slp_suspend_ops_prepare(void)
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 	return true;
 }
 #endif /* MTK_SUSPEND_AUDIO_SUPPORT */
@@ -151,32 +112,38 @@ bool __attribute__ ((weak)) ConditionEnterSuspend(void)
 #ifdef CONFIG_MTK_SYSTRACKER
 void __attribute__ ((weak)) systracker_enable(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 #endif /* CONFIG_MTK_SYSTRACKER */
 
 #ifdef CONFIG_MTK_BUS_TRACER
 void __attribute__ ((weak)) bus_tracer_enable(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 #endif /* CONFIG_MTK_BUS_TRACER */
 
 __attribute__ ((weak))
 unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 	return WR_NONE;
 }
 
 void __attribute__((weak)) subsys_if_on(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 }
 
 void __attribute__((weak)) pll_if_on(void)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak))
+gpio_dump_regs(void)
+{
+
 }
 
 void __attribute__((weak))
@@ -197,12 +164,6 @@ spm_go_to_sleep(u32 spm_flags, u32 spm_data)
 	return 0;
 }
 
-void __attribute__((weak))
-gpio_dump_regs(void)
-{
-
-}
-
 static int slp_suspend_ops_enter(suspend_state_t state)
 {
 	int ret = 0;
@@ -220,14 +181,12 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #if 0
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@@@@@\n");
+	pr_debug("[SLP] @@@@@@@@@@@@@@@\tChip_pm_enter\t@@@@@@@@@@@@@@@\n");
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#if 0 //FIXME
 	if (slp_dump_gpio)
 		gpio_dump_regs();
-#endif
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -236,14 +195,14 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
 	if (is_infra_pdn(slp_spm_flags) && !is_cpu_pdn(slp_spm_flags)) {
-		slp_error("CANNOT SLEEP DUE TO INFRA PDN BUT CPU PON\n");
+		pr_info("[SLP] CANNOT SLEEP DUE TO INFRA PDN BUT CPU PON\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (is_sspm_ipi_lock_spm()) {
-		slp_error("CANNOT SLEEP DUE TO SSPM IPI\n");
+		slp_error("[SLP] CANNOT SLEEP DUE TO SSPM IPI\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
@@ -251,7 +210,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (!spm_load_firmware_status()) {
-		slp_error("SPM FIRMWARE IS NOT READY\n");
+		pr_info("SPM FIRMWARE IS NOT READY\n");
 		ret = -EPERM;
 		goto LEAVE_SLEEP;
 	}
@@ -295,7 +254,7 @@ static void slp_suspend_ops_finish(void)
 {
 #if 0
 	/* legacy log */
-	slp_crit2("@@@@@@@@@@@@@@@@@@\tChip_pm_finish\t@@@@@@@@@@@@@@@@\n");
+	pr_debug("[SLP] @@@@@@@@@@@@@@\tChip_pm_finish\t@@@@@@@@@@@@\n");
 #endif
 }
 
@@ -303,7 +262,7 @@ static void slp_suspend_ops_end(void)
 {
 #if 0
 	/* legacy log */
-	slp_notice("@@@@@@@@@@@@@@@@@@\tChip_pm_end\t@@@@@@@@@@@@@@@@@@\n");
+	pr_debug("[SLP] @@@@@@@@@@@@@@\tChip_pm_end\t@@@@@@@@@@@@@@\n");
 #endif
 }
 
@@ -319,7 +278,7 @@ static const struct platform_suspend_ops slp_suspend_ops = {
 __attribute__ ((weak))
 int spm_set_dpidle_wakesrc(u32 wakesrc, bool enable, bool replace)
 {
-	pr_err("NO %s !!!\n", __func__);
+	pr_info("NO %s !!!\n", __func__);
 	return 0;
 }
 
@@ -333,7 +292,7 @@ int slp_set_wakesrc(u32 wakesrc, bool enable, bool ck26m_on)
 	int r;
 	unsigned long flags;
 
-	slp_notice("wakesrc = 0x%x, enable = %u, ck26m_on = %u\n",
+	pr_info("[SLP] wakesrc = 0x%x, enable = %u, ck26m_on = %u\n",
 		wakesrc, enable, ck26m_on);
 
 #if SLP_REPLACE_DEF_WAKESRC
@@ -369,6 +328,7 @@ unsigned int slp_get_wake_reason(void)
 {
 	return slp_wake_reason;
 }
+EXPORT_SYMBOL(slp_get_wake_reason);
 
 void slp_set_infra_on(bool infra_on)
 {
@@ -383,16 +343,16 @@ void slp_set_infra_on(bool infra_on)
 		slp_spm_deepidle_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
 #endif
 	}
-	slp_notice("slp_set_infra_on (%d): 0x%x, 0x%x\n",
+	pr_info("[SLP] slp_set_infra_on (%d): 0x%x, 0x%x\n",
 		infra_on, slp_spm_flags, slp_spm_deepidle_flags);
 }
 
 void slp_module_init(void)
 {
 	spm_output_sleep_option();
-	slp_notice("SLEEP_DPIDLE_EN:%d, REPLACE_DEF_WAKESRC:%d, SUSPEND_LOG_EN:%d\n",
-		SLP_SLEEP_DPIDLE_EN, SLP_REPLACE_DEF_WAKESRC,
-			SLP_SUSPEND_LOG_EN);
+	pr_info("[SLP] SLEEP_DPIDLE_EN:%d, REPLACE_DEF_WAKESRC:%d",
+		SLP_SLEEP_DPIDLE_EN, SLP_REPLACE_DEF_WAKESRC);
+	pr_info(", SUSPEND_LOG_EN:%d\n", SLP_SUSPEND_LOG_EN);
 	suspend_set_ops(&slp_suspend_ops);
 #if SLP_SUSPEND_LOG_EN
 	console_suspend_enabled = 0;
@@ -401,9 +361,8 @@ void slp_module_init(void)
 
 module_param(slp_ck26m_on, bool, 0644);
 module_param(slp_spm_flags, uint, 0644);
-#if 0 //FIXME
+
 module_param(slp_dump_gpio, bool, 0644);
-#endif
 module_param(slp_dump_golden_setting, bool, 0644);
 module_param(slp_dump_golden_setting_type, int, 0644);
 

@@ -23,8 +23,8 @@
 #include <linux/of_address.h>
 
 #include <mtk_spm.h>
-#include "mtk_spm_irq.h"
-#include "mtk_spm_internal.h"
+#include <mtk_spm_irq.h>
+#include <mtk_spm_internal.h>
 
 #if 0 //FIXME
 #include <mtk_spm_vcore_dvfs.h>
@@ -42,12 +42,32 @@ char __attribute__((weak)) *spm_vcorefs_dump_dvfs_regs(char *p)
 	return NULL;
 }
 
+void __attribute__((weak)) mt_cirq_clone_gic(void)
+{
+	pr_info("[SPM] NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) mt_cirq_enable(void)
+{
+	pr_info("[SPM] NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) mt_cirq_flush(void)
+{
+	pr_info("[SPM] NO %s !!!\n", __func__);
+}
+
+void __attribute__((weak)) mt_cirq_disable(void)
+{
+	pr_info("[SPM] NO %s !!!\n", __func__);
+}
+
 /***************************************************
  * spm edge trigger irq backup/restore
  ***************************************************/
 
 /* edge_trigger_irq_list is defined in header file 'mtk_spm_irq_edge.h' */
-#include "mtk_spm_irq_edge.h"
+#include <mtk_spm_irq_edge.h>
 
 #define IRQ_NUMBER (sizeof(list)/sizeof(struct edge_trigger_irq_list))
 static u32 edge_trig_irqs[IRQ_NUMBER];
@@ -57,18 +77,21 @@ static void mtk_spm_get_edge_trigger_irq(void)
 	int i;
 	struct device_node *node;
 
-	spm_err("edge trigger irqs:\n");
+	pr_info("[SPM] edge trigger irqs:\n");
 	for (i = 0; i < IRQ_NUMBER; i++) {
 		node = of_find_compatible_node(NULL, NULL, list[i].name);
 		if (!node)
-			spm_err("find '%s' node failed\n", list[i].name);
+			pr_info("[SPM] find '%s' node failed\n",
+				list[i].name);
 		else {
 			edge_trig_irqs[i] =
 				irq_of_parse_and_map(node, list[i].order);
 			if (!edge_trig_irqs[i])
-				spm_err("get '%s' failed\n", list[i].name);
+				pr_info("[SPM] get '%s' failed\n",
+					list[i].name);
 		}
-		spm_err("'%s', irq=%d\n", list[i].name, edge_trig_irqs[i]);
+		pr_info("[SPM] '%s', irq=%d\n", list[i].name,
+			edge_trig_irqs[i]);
 	}
 }
 
@@ -95,39 +118,34 @@ void mtk_spm_wakeup_src_restore(void)
 }
 
 static unsigned int spm_irq_0;
-static unsigned long irq_flags;
 #if defined(CONFIG_MTK_GIC_V3_EXT)
 static struct mtk_irq_mask irq_mask;
 #endif
 
 void mtk_spm_irq_backup(void)
 {
-	spin_lock_irqsave(&__spm_lock, irq_flags);
-
-	#if defined(CONFIG_MTK_GIC_V3_EXT)
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_all(&irq_mask);
 	mt_irq_unmask_for_sleep_ex(spm_irq_0);
 	mtk_spm_unmask_edge_trig_irqs_for_cirq();
-	#endif
+#endif
 
-	#if defined(CONFIG_MTK_SYS_CIRQ)
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_clone_gic();
 	mt_cirq_enable();
-	#endif
+#endif
 }
 
 void mtk_spm_irq_restore(void)
 {
-	#if defined(CONFIG_MTK_SYS_CIRQ)
+#if defined(CONFIG_MTK_SYS_CIRQ)
 	mt_cirq_flush();
 	mt_cirq_disable();
-	#endif
+#endif
 
-	#if defined(CONFIG_MTK_GIC_V3_EXT)
+#if defined(CONFIG_MTK_GIC_V3_EXT)
 	mt_irq_mask_restore(&irq_mask);
-	#endif
-
-	spin_unlock_irqrestore(&__spm_lock, irq_flags);
+#endif
 }
 
 /********************************************************************
@@ -157,7 +175,7 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 	spin_unlock_irqrestore(&__spm_lock, flags);
 
 	if (isr & (ISRS_SW_INT1)) {
-		spm_err("IRQ0 (ISRS_SW_INT1) HANDLER SHOULD NOT BE EXECUTED (0x%x)\n",
+		pr_info("[SPM] IRQ0 (ISRS_SW_INT1) HANDLER SHOULD NOT BE EXECUTED (0x%x)\n",
 			isr);
 		#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		spm_vcorefs_dump_dvfs_regs(NULL);
@@ -170,7 +188,8 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 		twam_handler(&twamsig);
 
 	if (isr & (ISRS_SW_INT0 | ISRS_PCM_RETURN))
-		spm_err("IRQ0 HANDLER SHOULD NOT BE EXECUTED (0x%x)\n", isr);
+		pr_info("[SPM] IRQ0 HANDLER SHOULD NOT BE EXECUTED (0x%x)\n",
+			isr);
 
 	return IRQ_HANDLED;
 }
@@ -195,8 +214,8 @@ int mtk_spm_irq_register(unsigned int spmirq0)
 				IRQF_PERCPU,
 				"SPM", NULL);
 			if (err) {
-				spm_err("FAILED TO REQUEST IRQ%d (%d)\n", i,
-					err);
+				pr_info("[SPM] FAILED TO REQUEST IRQ%d (%d)\n",
+					i, err);
 				r = -EPERM;
 			}
 		}
@@ -209,5 +228,4 @@ int mtk_spm_irq_register(unsigned int spmirq0)
 
 	return r;
 }
-
 

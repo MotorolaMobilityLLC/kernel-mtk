@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -14,7 +14,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/kernel.h>
-//#include <linux/wakelock.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
 #include <linux/debugfs.h>
 
 #include <linux/of.h>
@@ -30,32 +31,35 @@
 #include <mtk_spm_irq.h>
 #include <mtk_spm_internal.h>
 #include <mtk_sspm.h>
-int spm_for_gps_flag;
 
 DEFINE_SPINLOCK(__spm_lock);
 
 void __attribute__ ((weak)) mtk_idle_cond_check_init(void)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 }
 
 /* Note: implemented in mtk_spm_vcorefs.c */
 void  __attribute__ ((weak)) spm_vcorefs_init(void)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 }
 
 /* Note: implemented in mtk_spm_dram.c */
 int __attribute__ ((weak)) spm_get_spmfw_idx(void)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 	return 1;
 }
 
 /* Note: implemented in mtk_spm_irq.c */
 int __attribute__ ((weak)) mtk_spm_irq_register(unsigned int spmirq0)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 	return 0;
 }
 
@@ -65,13 +69,15 @@ int __attribute__ ((weak)) mtk_cpuidle_init(void) { return -EOPNOTSUPP; }
 /* Note: implemented in mtk_spm_dram.c */
 void __attribute__((weak)) spm_do_dram_config_check(void)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 }
 
 /* Note: implemented in mtk_spm_fs.c */
 int __attribute__((weak)) spm_fs_init(void)
 {
-	spm_crit2("NO %s !!!\n", __func__);
+	aee_sram_printk("NO %s !!!\n", __func__);
+	pr_info("[SPM] NO %s !!!\n", __func__);
 	return 0;
 }
 
@@ -87,9 +93,7 @@ void __iomem *spm_base;
 void __iomem *sleep_reg_md_base;
 
 static struct platform_device *pspmdev;
-#if 0 //FIXME
-static struct wake_lock spm_wakelock;
-#endif
+static struct wakeup_source spm_wakelock;
 
 /* FIXME: should not used externally !!! */
 void *mt_spm_base_get(void)
@@ -98,35 +102,9 @@ void *mt_spm_base_get(void)
 }
 EXPORT_SYMBOL(mt_spm_base_get);
 
-void mt_spm_for_gps_only(int enable)
-{
-	spm_for_gps_flag = !!enable;
-#if 0
-	pr_debug("#@# %s(%d) spm_for_gps_flag %d\n",
-		__func__, __LINE__, spm_for_gps_flag);
-#endif
-}
-EXPORT_SYMBOL(mt_spm_for_gps_only);
-
-void mt_spm_dcs_s1_setting(int enable, int flags)
-{
-}
-EXPORT_SYMBOL(mt_spm_dcs_s1_setting);
-
 void spm_pm_stay_awake(int sec)
 {
-#if 0 //FIXME
-	wake_lock_timeout(&spm_wakelock, HZ * sec);
-#endif
-}
-
-static int local_spm_load_firmware_status = -1;
-int spm_load_firmware_status(void)
-{
-	if (local_spm_load_firmware_status == -1)
-		local_spm_load_firmware_status =
-			SMC_CALL(FIRMWARE_STATUS, 0, 0, 0);
-	return local_spm_load_firmware_status;
+	__pm_wakeup_event(&spm_wakelock, HZ * sec);
 }
 
 static void spm_register_init(unsigned int *spm_irq_0_ptr)
@@ -136,25 +114,26 @@ static void spm_register_init(unsigned int *spm_irq_0_ptr)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
-		spm_err("find sleep node failed\n");
+		pr_info("[SPM] find sleep node failed\n");
+
 	spm_base = of_iomap(node, 0);
 	if (!spm_base)
-		spm_err("base spm_base failed\n");
+		pr_info("[SPM] base spm_base failed\n");
 
 	spmirq0 = irq_of_parse_and_map(node, 0);
 	if (!spmirq0)
-		spm_err("get spm_irq_0 failed\n");
+		pr_info("[SPM] get spm_irq_0 failed\n");
 	*spm_irq_0_ptr = spmirq0;
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep_reg_md");
 	if (!node)
-		spm_err("find sleep_reg_md node failed\n");
+		pr_info("[SPM] find sleep_reg_md node failed\n");
 
 	sleep_reg_md_base = of_iomap(node, 0);
 	if (!sleep_reg_md_base)
-		spm_err("base sleep_reg_md_base failed\n");
+		pr_info("[SPM] base sleep_reg_md_base failed\n");
 
-	spm_err("spm_base = %p, sleep_reg_md_base = %p, spm_irq_0 = %d\n",
+	pr_info("[SPM] spm_base = %p, sleep_reg_md_base = %p, spm_irq_0 = %d\n",
 		spm_base, sleep_reg_md_base, spmirq0);
 }
 
@@ -288,9 +267,9 @@ static int spm_module_init(void)
 	int ret = -1;
 	struct dentry *spm_dir;
 	struct dentry *spm_file;
-#if 0 //FIXME
-	//wake_lock_init(&spm_wakelock, WAKE_LOCK_SUSPEND, "spm");
-#endif
+
+	wakeup_source_init(&spm_wakelock, "spm");
+
 	spm_register_init(&spm_irq_0);
 
 	/* implemented in mtk_spm_irq.c */
