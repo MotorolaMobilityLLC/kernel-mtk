@@ -14,10 +14,7 @@
 #ifndef _COMMON_MTK_UPOWER_H
 #define _COMMON_MTK_UPOWER_H
 
-#if defined(CONFIG_MACH_MT6758) \
-	|| defined(CONFIG_MACH_MT6765) \
-	|| defined(CONFIG_MACH_MT6761) \
-	|| defined(CONFIG_MACH_MT3967)
+#if defined(CONFIG_MTK_UNIFY_POWER)
 #include "upower_v2/mtk_unified_power.h"
 #endif
 
