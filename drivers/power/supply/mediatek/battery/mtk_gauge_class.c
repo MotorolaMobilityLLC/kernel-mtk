@@ -947,7 +947,8 @@ struct gauge_device *gauge_device_register(const char *name,
 	struct gauge_device *gauge_dev;
 	int rc;
 
-	pr_debug("gauge_device_register: name=%s\n", name);
+	pr_debug("%s: name=%s\n",
+		__func__, name);
 	gauge_dev = kzalloc(sizeof(*gauge_dev), GFP_KERNEL);
 	if (!gauge_dev)
 		return ERR_PTR(-ENOMEM);

@@ -120,19 +120,21 @@ struct gauge_hw_info_data {
 
 
 struct gauge_ops {
-	int (*suspend)(struct gauge_device *, pm_message_t);
-	int (*resume)(struct gauge_device *);
+	int (*suspend)(struct gauge_device *gdev, pm_message_t pm);
+	int (*resume)(struct gauge_device *gdev);
 
-	int (*gauge_initial)(struct gauge_device *);
+	int (*gauge_initial)(struct gauge_device *gdev);
 	int (*gauge_read_current)(struct gauge_device *gauge_dev,
 		bool *fg_is_charging, int *data);
 	int (*gauge_get_average_current)(struct gauge_device *gauge_dev,
 		int *data, bool *valid);
 	int (*gauge_get_coulomb)(struct gauge_device *gauge_dev, int *data);
-	int (*gauge_reset_hw)(struct gauge_device *);
-	int (*gauge_get_hwocv)(struct gauge_device *, int *data);
-	int (*gauge_set_coulomb_interrupt1_ht)(struct gauge_device *, int car);
-	int (*gauge_set_coulomb_interrupt1_lt)(struct gauge_device *, int car);
+	int (*gauge_reset_hw)(struct gauge_device *gdev);
+	int (*gauge_get_hwocv)(struct gauge_device *gdev, int *data);
+	int (*gauge_set_coulomb_interrupt1_ht)(
+		struct gauge_device *gdev, int car);
+	int (*gauge_set_coulomb_interrupt1_lt)(
+		struct gauge_device *gdev, int car);
 	int (*gauge_get_boot_battery_plug_out_status)(
 		struct gauge_device *gauge_dev, int *is_plugout,
 		int *plutout_time);
