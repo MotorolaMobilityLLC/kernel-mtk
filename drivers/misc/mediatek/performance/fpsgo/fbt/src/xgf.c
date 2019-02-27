@@ -40,13 +40,12 @@ static HLIST_HEAD(xgf_procs);
 static int xgf_enable;
 static struct dentry *debugfs_xgf_dir;
 static unsigned long long last_check2recycle_ts;
+static unsigned long long last_check2recycle_dep_ts;
 
 #define MAX_RENDER_DEPS 1024
-
 static int render_dep_count;
 struct render_dep render_deps[MAX_RENDER_DEPS];
 static DEFINE_SPINLOCK(render_spinlock);
-
 
 int (*xgf_est_slptime_fp)(
 	struct xgf_proc *proc,
@@ -264,11 +263,9 @@ void fpsgo_create_render_dep(void)
 					iter->render_dep = 0;
 			}
 			iter->render_pre_count = iter->render_count;
-			iter->has_increase = 0;
 		}
 		proc_iter->render_thread_called_count = 0;
-		proc_iter->has_increase_thread_count = 0;
-		proc_iter->total_increase_count = 0;
+		proc_iter->dep_timer_count = 0;
 	}
 
 	for (i = 0; i < render_dep_count_buff; i++) {
@@ -298,11 +295,6 @@ void fpsgo_create_render_dep(void)
 					continue;
 
 				xd_caller->render_count++;
-				if (!xd_caller->has_increase) {
-					xd_caller->has_increase = 1;
-					proc_iter->has_increase_thread_count++;
-				}
-				proc_iter->total_increase_count++;
 				if (unlikely(xd_caller->render_count ==
 							INT_MAX)) {
 					xd_caller->render_count = 100;
@@ -437,7 +429,7 @@ static inline void xgf_timer_recycle(struct xgf_proc *proc,
 	}
 }
 
-static inline void xgf_dep_recycle(struct rb_root *root,
+static inline void xgf_blacked_recycle(struct rb_root *root,
 	unsigned long long now_ts, long long recycle_period)
 {
 	struct rb_node *n;
@@ -446,19 +438,20 @@ static inline void xgf_dep_recycle(struct rb_root *root,
 	xgf_lockprove(__func__);
 
 	n = rb_first(root);
-
 	while (n) {
-		struct xgf_deps *iter;
+		struct xgf_timer *iter;
 
-		iter = rb_entry(n, struct xgf_deps, rb_node);
+		iter = rb_entry(n, struct xgf_timer, rb_node);
 
-		if ((iter->render_dep) || (iter->render_dep_deep)) {
+		diff = (long long)now_ts - (long long)iter->fire.ts;
+		if (!iter->expire.ts && diff < recycle_period) {
 			n = rb_next(n);
 			continue;
 		}
 
-		diff = iter->render_count - iter->render_pre_count;
-		if ((diff > 1) || (iter->render_count > 1)) {
+		/* clean activity over recycle_period ago */
+		diff = (long long)now_ts - (long long)iter->expire.ts;
+		if (diff < 0LL || diff < recycle_period) {
 			n = rb_next(n);
 			continue;
 		}
@@ -470,27 +463,213 @@ static inline void xgf_dep_recycle(struct rb_root *root,
 	}
 }
 
+static inline void xgf_dep_recycle(struct rb_root *root,
+	unsigned long long now_ts, long long recycle_period)
+{
+	struct rb_node *n;
+	long long diff;
+	int shift = 5;
+	int bound = 1 << shift;
+
+	xgf_lockprove(__func__);
+
+	diff = (long long)now_ts - (long long)last_check2recycle_dep_ts;
+
+	if (diff < 0LL || diff < (NSEC_PER_SEC << shift))
+		goto out;
+
+	n = rb_first(root);
+
+	while (n) {
+		struct xgf_deps *iter;
+
+		iter = rb_entry(n, struct xgf_deps, rb_node);
+
+		if (iter->render_dep || iter->render_dep_deep) {
+			n = rb_next(n);
+			continue;
+		}
+
+		diff = iter->render_count - iter->render_pre_count;
+		if (diff > 1 || iter->render_count > bound) {
+			n = rb_next(n);
+			continue;
+		}
+
+		rb_erase(n, root);
+		kfree(iter);
+
+		n = rb_first(root);
+	}
+	last_check2recycle_dep_ts = now_ts;
+
+out:
+	return;
+}
+
+static pid_t most_valuable_timer_owner(struct xgf_proc *proc,
+				pid_t current_tid, unsigned long long now_ts)
+{
+	struct xgf_deps *iter;
+	struct rb_node *rbn;
+	int temp_render_count = 0;
+	pid_t ret = 0;
+
+	xgf_lockprove(__func__);
+
+	/*update count and has timer*/
+	proc->dep_timer_count = 0;
+
+	for (rbn = rb_first(&proc->deps_rec); rbn != NULL; rbn = rb_next(rbn)) {
+		unsigned long long dur;
+
+		iter = rb_entry(rbn, struct xgf_deps, rb_node);
+
+		if (iter->tid == current_tid && iter->render_dep) {
+			iter->has_timer = 1;
+			iter->has_timer_renew_ts = now_ts;
+		}
+
+		/* clean has_timer for longtime no update */
+		dur = now_ts - iter->has_timer_renew_ts;
+		if (dur > (NSEC_PER_MSEC << 8)) {
+			iter->has_timer = 0;
+			iter->has_timer_renew_ts = now_ts;
+		}
+
+		/* calculate mvto */
+		if (iter->has_timer) {
+			proc->dep_timer_count++;
+
+			if (iter->render_count > temp_render_count) {
+				temp_render_count = iter->render_count;
+				ret = iter->tid;
+			}
+		}
+	}
+
+	return ret;
+}
+
+static struct xgf_timer *xgf_get_black_rec(
+		const void * const timer,
+		struct xgf_proc *proc, int force)
+{
+	struct rb_node **p = &proc->timer_rec.rb_node;
+	struct rb_node *parent = NULL;
+	struct xgf_timer *xt = NULL;
+	const void *ref;
+
+	xgf_lockprove(__func__);
+
+	while (*p) {
+		parent = *p;
+		xt = rb_entry(parent, struct xgf_timer, rb_node);
+
+		ref = xt->hrtimer;
+		if (timer < ref)
+			p = &(*p)->rb_left;
+		else if (timer > ref)
+			p = &(*p)->rb_right;
+		else
+			return xt;
+	}
+
+	if (!force)
+		return NULL;
+
+	xt = kzalloc(sizeof(*xt), GFP_KERNEL);
+	if (!xt)
+		return NULL;
+
+	xt->hrtimer = timer;
+
+	rb_link_node(&xt->rb_node, parent, p);
+	rb_insert_color(&xt->rb_node, &proc->timer_rec);
+	return xt;
+}
+
+static int is_black_timer(const void * const timer,
+			    struct xgf_proc *proc,
+			    unsigned long long now_ts)
+{
+	struct xgf_timer *xt;
+
+	xgf_lockprove(__func__);
+
+	xt = xgf_get_black_rec(timer, proc, 1);
+	if (!xt)
+		return 1;
+
+	/* a new record */
+	if (!xt->fire.ts) {
+		xt->fire.ts = now_ts;
+		return 0;
+	}
+
+	xt->fire.ts = now_ts;
+
+	if (!xt->expire.ts || xt->expire.ts >= now_ts)
+		return 1;
+
+	if ((now_ts - xt->expire.ts) < NSEC_PER_MSEC) {
+		if (unlikely(xt->blacked == INT_MAX))
+			xt->blacked = 100;
+		else
+			xt->blacked++;
+	} else {
+		if (unlikely(xt->blacked == INT_MIN))
+			xt->blacked = -100;
+		else
+			xt->blacked--;
+	}
+
+	return (xt->blacked > 0) ? 1 : 0;
+}
+
 /**
  * is_valid_sleeper
  */
 static int is_valid_sleeper(const void * const timer,
-			    struct xgf_proc *proc,
-			    unsigned long long now_ts)
+				struct xgf_proc *proc,
+				unsigned long long now_ts)
 {
 	struct xgf_deps *xd_current;
+	pid_t current_tid;
+	pid_t mvt_tid;
+	int ret = 0;
 
 	xgf_lockprove(__func__);
 
-	xd_current = xgf_get_deps(task_pid_nr(current), proc, 0, 0);
+	current_tid = task_pid_nr(current);
+
+	xd_current = xgf_get_deps(current_tid, proc, 0, 0);
 
 	if (!xd_current)
-		return 0;
+		goto out;
 
-	xgf_trace("is_valid_sleeper timer=%p, dep=%d, count=%d, current:%d:%s",
-		timer, xd_current->render_dep,
-		xd_current->render_count, task_pid_nr(current), current->comm);
+	mvt_tid = most_valuable_timer_owner(proc, current_tid, now_ts);
 
-	return xd_current->render_dep;
+	/* timer for render, keep it */
+	if (current_tid == proc->render) {
+		ret = 1;
+		goto out;
+	}
+
+	/* more then 1 timer in dependency list */
+	if (proc->dep_timer_count > 1 && xd_current->render_dep) {
+		ret = !is_black_timer(timer, proc, now_ts);
+
+		if (current_tid == mvt_tid)
+			ret = 1;
+
+		goto out;
+	}
+
+	ret = xd_current->render_dep;
+
+out:
+	return ret;
 }
 
 /**
@@ -523,6 +702,29 @@ static void xgf_timer_fire(const void * const timer,
 	hlist_add_head(&xt->hlist, &proc->timer_head);
 }
 
+static void xgf_update_black_rec(const void * const timer,
+		struct xgf_proc *proc, unsigned long long now_ts)
+{
+	struct xgf_timer *xt;
+	struct xgf_deps *xd_current;
+
+	xgf_lockprove(__func__);
+
+	xt = xgf_get_black_rec(timer, proc, 0);
+	if (!xt)
+		return;
+
+	xd_current = xgf_get_deps(task_pid_nr(current), proc, 0, 0);
+
+	if (!xd_current)
+		return;
+
+	if (!xd_current->render_dep)
+		return;
+
+	xt->expire.ts = now_ts;
+}
+
 /**
  * xgf_timer_expire - called when timer expires
  */
@@ -536,6 +738,8 @@ static void xgf_timer_expire(const void * const timer,
 	xgf_timer_systrace(timer, 0);
 
 	now_ts = ged_get_time();
+
+	xgf_update_black_rec(timer, proc, now_ts);
 
 	hlist_for_each_entry(iter, &proc->timer_head, hlist) {
 		if (timer != iter->hrtimer)
@@ -662,6 +866,13 @@ void xgf_reset_render(struct xgf_proc *proc)
 
 		xd_iter = rb_entry(n, struct xgf_deps, rb_node);
 		kfree(xd_iter);
+	}
+
+	while ((n = rb_first(&proc->timer_rec))) {
+		rb_erase(n, &proc->timer_rec);
+
+		iter = rb_entry(n, struct xgf_timer, rb_node);
+		kfree(iter);
 	}
 }
 EXPORT_SYMBOL(xgf_reset_render);
@@ -1003,6 +1214,8 @@ void fpsgo_fstb2xgf_do_recycle(int fstb_active)
 		 */
 		if (diff < check_period) {
 			xgf_timer_recycle(proc_iter, now_ts, recycle_period);
+			xgf_blacked_recycle(&proc_iter->timer_rec,
+					now_ts, recycle_period);
 			xgf_dep_recycle(&proc_iter->deps_rec,
 					now_ts, recycle_period);
 			continue;
@@ -1206,6 +1419,7 @@ static int fpsgo_black_show(struct seq_file *m, void *unused)
 	struct rb_node *n;
 	struct xgf_proc *proc;
 	struct xgf_deps *iter;
+	struct xgf_timer *black_iter;
 	struct rb_root *r;
 	int diff;
 
@@ -1218,12 +1432,18 @@ static int fpsgo_black_show(struct seq_file *m, void *unused)
 		for (n = rb_first(r); n != NULL; n = rb_next(n)) {
 			iter = rb_entry(n, struct xgf_deps, rb_node);
 			diff = iter->render_count-iter->render_pre_count;
-			seq_printf(m, "pid:%d render_c:%d diff=%d deep=%d render_dep:%d render_tc=%d tic=%d\n",
-				iter->tid, iter->render_count, diff,
-				iter->render_dep_deep,
-				iter->render_dep,
+			seq_printf(m, "pid:%d dep:%d tc:%d render_c:%d diff:%d\n",
+				iter->tid, iter->render_dep,
 				proc->render_thread_called_count,
-				proc->total_increase_count);
+				iter->render_count, diff);
+		}
+
+		r = &proc->timer_rec;
+		for (n = rb_first(r); n != NULL; n = rb_next(n)) {
+			black_iter = rb_entry(n, struct xgf_timer, rb_node);
+			seq_printf(m, "timer:%p fire:%llu expire:%llu black:%d\n",
+				   black_iter->hrtimer, black_iter->fire.ts,
+				   black_iter->expire.ts, black_iter->blacked);
 		}
 	}
 	xgf_unlock(__func__);
