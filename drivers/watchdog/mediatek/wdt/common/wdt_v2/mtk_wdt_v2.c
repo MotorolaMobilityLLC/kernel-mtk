@@ -51,6 +51,7 @@ int wdt_sspm_irq_id;
 int ext_debugkey_io_eint = -1;
 
 static const struct of_device_id rgu_of_match[] = {
+	{ .compatible = "mediatek,toprgu", },
 	{ .compatible = "mediatek,mt6765-toprgu", },
 	{},
 };
