@@ -198,12 +198,9 @@ int smi_debug_bus_hanging_detect(unsigned short larbs, int show_dump,
 	unsigned char smi_larb_busy_count[SMI_LARB_NUM] = { 0 };
 
 	/* dump resister and save resgister status */
-	smi_dump_debug_register(gce_buffer);
+	if (show_dump)
+		smi_dump_debug_register(gce_buffer);
 
-	smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "SMI_DEBUG", true);
-#if defined(SMI_VIN)
-	smi_bus_prepare_enable(SMI_LARB1_REG_INDX, "SMI_DEBUG", true);
-#endif
 	for (dump_time = 0; dump_time < max_count; dump_time++) {
 		u4Base = get_common_base_addr();
 		/* check smi common busy register */
@@ -229,10 +226,6 @@ int smi_debug_bus_hanging_detect(unsigned short larbs, int show_dump,
 			}
 		}
 	}
-#if defined(SMI_VIN)
-	smi_bus_disable_unprepare(SMI_LARB1_REG_INDX, "SMI_DEBUG", true);
-#endif
-	smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "SMI_DEBUG", true);
 
 	/* show result for each larb */
 	for (i = 0; i < SMI_LARB_NUM; i++) {
