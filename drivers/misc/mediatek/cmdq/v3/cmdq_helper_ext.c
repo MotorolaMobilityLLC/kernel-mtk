@@ -3657,7 +3657,7 @@ static void cmdq_core_group_clk_on(enum CMDQ_GROUP_ENUM group,
 	s32 status;
 
 	if (!callback[group].clockOn) {
-		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOn func NULL\n",
+		CMDQ_MSG("[CLOCK][WARN]enable group %d clockOn func NULL\n",
 			group);
 		return;
 	}
@@ -3675,7 +3675,7 @@ static void cmdq_core_group_clk_off(enum CMDQ_GROUP_ENUM group,
 	s32 status;
 
 	if (!callback[group].clockOff) {
-		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOff func NULL\n",
+		CMDQ_MSG("[CLOCK][WARN]enable group %d clockOff func NULL\n",
 			group);
 		return;
 	}
@@ -4643,14 +4643,9 @@ static s32 cmdq_pkt_lock_handle(struct cmdqRecStruct *handle,
 	s32 ref;
 
 	if (handle->thread == CMDQ_INVALID_THREAD) {
-		if (handle->scenario == CMDQ_SCENARIO_DEBUG) {
-			/* for debug scenario dispatch to first dynamic */
-			handle->thread = CMDQ_DYNAMIC_THREAD_ID_START;
-		} else {
-			CMDQ_ERR("invalid thread handle:0x%p scenario:%d\n",
-				handle, handle->scenario);
-			return -EINVAL;
-		}
+		CMDQ_ERR("invalid thread handle:0x%p scenario:%d\n",
+			handle, handle->scenario);
+		return -EINVAL;
 	}
 
 	client = cmdq_clients[handle->thread];
