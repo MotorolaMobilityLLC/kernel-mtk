@@ -144,6 +144,8 @@ obj-$(CONFIG_MTK_DEBUG_LATCH) += debug_latch/
 obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
 
+obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
+
 #io boost
 obj-y += io_boost/
 
