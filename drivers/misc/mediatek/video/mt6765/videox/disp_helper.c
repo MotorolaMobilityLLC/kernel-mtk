@@ -346,15 +346,15 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 
 	/* =================Begin: lowpower option setting================= */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 0);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	0);
-	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 0);
-	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS,	1);
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
@@ -373,8 +373,8 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 
 	disp_helper_set_option(DISP_OPT_BYPASS_PQ, 1);
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 1);
-	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 0);
-	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 0);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
 	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
@@ -387,10 +387,9 @@ void disp_helper_option_init(void) /* SHANG: Need modify */
 	disp_helper_set_option(DISP_OPT_HRT, 1);
 
 	/* display partial update */
-#ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 1);
-#endif
-	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
+
+	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 1);
 	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 0);
 	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 0);
