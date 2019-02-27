@@ -6355,8 +6355,9 @@ boosted_task_util(struct task_struct *task)
 void get_task_util(struct task_struct *p, unsigned long *util,
 	unsigned long *boost_util)
 {
+	/* heavytask: using pelt */
+	*util = p->se.avg.util_avg;
 	*boost_util = boosted_task_util(p);
-	*util = task_util(p);
 }
 
 static int cpu_util_wake(int cpu, struct task_struct *p);
@@ -6801,7 +6802,7 @@ done:
 
 	return target;
 }
- 
+
 /*
  * cpu_util_wake: Compute cpu utilization with any contributions from
  * the waking task p removed.
@@ -7116,7 +7117,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 /*
  * Disable WAKE_AFFINE in the case where task @p doesn't fit in the
  * capacity of either the waking CPU @cpu or the previous CPU @prev_cpu.
- * 
+ *
  * In that case WAKE_AFFINE doesn't make sense and we'll let
  * BALANCE_WAKE sort things out.
  */
