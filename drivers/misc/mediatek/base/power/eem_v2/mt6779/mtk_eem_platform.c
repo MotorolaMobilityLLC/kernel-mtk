@@ -32,8 +32,8 @@
  * operation of EEM detectors
  */
 /* legacy ptp need to define other hook functions */
-unsigned int dvtfreq[NR_FREQ] = {0x64, 0x62, 0x60, 0x5E, 0x5C, 0x59, 0x56, 0x53,
-	0x53, 0x49, 0x43, 0x3E, 0x39, 0x34, 0x2F, 0x2A};
+unsigned int dvtfreq[NR_FREQ] = {0x64, 0x60, 0x59, 0x53, 0x4d, 0x45, 0x3d, 0x39,
+	0x35, 0x30, 0x2c, 0x26, 0x1e, 0x18, 0x12, 0x0e};
 #if ENABLE_VPU
 static unsigned int vpuOutput[NR_FREQ];
 #endif
@@ -215,9 +215,14 @@ void get_freq_table_cpu(struct eem_det *det)
 	cpudvfsindex = detid_to_dvfsid(det);
 
 	for (i = 0; i < NR_FREQ_CPU; i++) {
+#if DVT
+		det->freq_tbl[i] = dvtfreq[i];
+#else
+
 		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx
 			(cpudvfsindex, i), det->max_freq_khz);
-#if 1
+#endif
+#if 0
 		eem_debug("freq_tbl[%d]=%d 0x%0x\n", i,
 			det->freq_tbl[i], det->freq_tbl[i]);
 #endif
@@ -326,9 +331,14 @@ void get_freq_table_gpu(struct eem_det *det)
 	eem_debug("In gpu freq\n");
 
 	for (i = 0; i < NR_FREQ_GPU; i++) {
+
+#if DVT
+		det->freq_tbl[i] = dvtfreq[i];
+#else
 		det->freq_tbl[i] = PERCENT(mt_gpufreq_get_freq_by_idx
 				(mt_gpufreq_get_ori_opp_idx(i)),
 					det->max_freq_khz);
+#endif
 #if 0
 		eem_debug("freq_tbl_gpu[%d]=%d, (%d)\n",
 			i,

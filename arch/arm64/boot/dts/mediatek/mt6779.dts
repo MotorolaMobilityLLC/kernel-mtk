@@ -396,6 +396,12 @@
 		dma-names = "tx", "rx";
 	};
 
+	eem_fsm@1100b000 {
+		compatible = "mediatek,eem_fsm";
+		reg = <0 0x1100b000 0 0x1000>;
+		interrupts = <GIC_SPI 150 IRQ_TYPE_LEVEL_LOW>;
+	};
+
 	disp_pwm0@1100e000 {
 		compatible = "mediatek,disp_pwm0";
 		reg = <0 0x1100e000 0 0x1000>;
