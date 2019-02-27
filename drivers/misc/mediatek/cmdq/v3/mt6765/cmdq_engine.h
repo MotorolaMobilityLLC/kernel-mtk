@@ -103,6 +103,7 @@ enum CMDQ_ENG_ENUM {
 				 (1LL << CMDQ_ENG_MDP_COLOR0) |	\
 				 (1LL << CMDQ_ENG_MDP_WROT0) |	\
 				 (1LL << CMDQ_ENG_MDP_WROT1) |	\
+				 (1LL << CMDQ_ENG_MDP_CCORR0) |  \
 				 (1LL << CMDQ_ENG_MDP_WDMA))
 
 #define CMDQ_ENG_DISP_GROUP_BITS ((1LL << CMDQ_ENG_DISP_UFOE) |	\
