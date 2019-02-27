@@ -370,7 +370,7 @@ enum {
 } FORK_EXIT_LOG_MASK;
 
 static unsigned int enabled_fork_exit_log;
-#if 0 //ladios wait fork to be ready
+
 static void probe_sched_fork_time(void *ignore,
 	struct task_struct *parent,
 	struct task_struct *child, unsigned long long dur)
@@ -389,7 +389,7 @@ static void probe_sched_fork_time(void *ignore,
 		parent_comm, parent_pid, child_comm, child_pid, fork_time);
 
 }
-#endif
+
 static void probe_sched_process_exit(void *ignore, struct task_struct *p)
 {
 	char comm[TASK_COMM_LEN];
@@ -425,7 +425,7 @@ static ssize_t mt_fork_exit_log_write(struct file *filp, const char *ubuf,
 		return ret;
 
 	update = enabled_fork_exit_log ^ val;
-	#if 0 //ladios wait fork to be ready
+
 	if (update & DO_FORK) {
 		if (val & DO_FORK)
 			register_trace_sched_fork_time(probe_sched_fork_time,
@@ -434,7 +434,7 @@ static ssize_t mt_fork_exit_log_write(struct file *filp, const char *ubuf,
 			unregister_trace_sched_fork_time(probe_sched_fork_time,
 				NULL);
 	}
-	#endif
+
 	if (update & DO_EXIT) {
 		if (val & DO_EXIT)
 			register_trace_sched_process_exit(
@@ -452,13 +452,11 @@ static ssize_t mt_fork_exit_log_write(struct file *filp, const char *ubuf,
 
 static void __init init_fork_exit_log(void)
 {
-	#if 0 //ladios wait fork to be ready
 	if (enabled_fork_exit_log & DO_FORK)
 		register_trace_sched_fork_time(probe_sched_fork_time, NULL);
 	if (enabled_fork_exit_log & DO_EXIT)
 		register_trace_sched_process_exit(probe_sched_process_exit,
 			NULL);
-	#endif
 }
 
 /*-------------------------------------------------------------------*/
