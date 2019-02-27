@@ -354,8 +354,11 @@ static void mtk_gpio_set(struct gpio_chip *chip,
 	struct mtk_pinctrl *pctl = gpiochip_get_data(chip);
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
-	if (pctl->devdata->pin_dout_grps)
+	if (pctl->devdata->pin_dout_grps) {
+		/* Just Used by smartphone projects */
 		mtk_pinctrl_set_gpio_output(pctl, offset, value);
+		return;
+	}
 #endif
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dout_offset;
 	bit = BIT(offset & 0xf);
@@ -465,6 +468,14 @@ static const struct mtk_pin_drv_grp *mtk_find_pin_drv_grp_by_pin(
 	}
 
 	return NULL;
+}
+
+static void mtk_pconf_set_direction(struct mtk_pinctrl *pctl, unsigned int pin,
+		int value, enum pin_config_param param)
+
+{
+	if (pctl->devdata->pin_dir_grps)
+		mtk_pinctrl_set_gpio_direction(pctl, pin, value);
 }
 
 static int mtk_pconf_set_driving(struct mtk_pinctrl *pctl,
@@ -644,7 +655,10 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 		ret = mtk_pconf_set_ies_smt(pctl, pin, arg, param);
 		break;
 	case PIN_CONFIG_DRIVE_STRENGTH:
-		ret = mtk_pconf_set_driving(pctl, pin, arg);
+		mtk_pconf_set_driving(pctl, pin, arg);
+		break;
+	case PIN_CONFIG_SLEW_RATE:
+		mtk_pconf_set_direction(pctl, pin, arg, param);
 		break;
 	default:
 		ret = -EINVAL;
