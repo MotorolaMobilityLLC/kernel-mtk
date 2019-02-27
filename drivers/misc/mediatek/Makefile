@@ -73,6 +73,7 @@ obj-$(CONFIG_MTK_SYNC) += sync/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
 obj-y += pidmap/
+obj-$(CONFIG_MTK_KEY_HINT) += keyhint/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met_drv/),)
