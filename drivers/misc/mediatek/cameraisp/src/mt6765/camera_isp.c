@@ -9467,26 +9467,10 @@ static signed int ISP_mmap(struct file *pFile, struct vm_area_struct *pVma)
 		}
 		break;
 	case GPIO_BASE_HW:
-		if (length > 0x100) {
+		if (length > 0x1000) {
 			pr_err(
 				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
 				pfn, length, 0x1000);
-			return -EAGAIN;
-		}
-		break;
-	case GPIO_BASE_HW2:
-		if (length > 0x100) {
-			pr_err(
-				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
-				pfn, length, 0x100);
-			return -EAGAIN;
-		}
-		break;
-	case GPIO_BASE_HW3:
-		if (length > 0x100) {
-			pr_err(
-				"mmap range error :module(0x%x),length(0x%lx), GPIO_RX_RANGE(0x%x)!\n",
-				pfn, length, 0x100);
 			return -EAGAIN;
 		}
 		break;
