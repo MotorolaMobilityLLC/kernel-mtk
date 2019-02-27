@@ -27,6 +27,10 @@
 
 #include "spm_v4/mtk_sleep.h"
 
+#elif defined(CONFIG_MACH_MT6765)
+
+#include "spm/mtk_sleep.h"
+
 #endif
 
 #endif /* __MT_SLEEP_H__ */

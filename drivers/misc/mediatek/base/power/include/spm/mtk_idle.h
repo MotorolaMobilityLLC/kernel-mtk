@@ -1,0 +1,122 @@
+/*
+ * Copyright (C) 2016 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+#ifndef __MTK_IDLE_H__
+#define __MTK_IDLE_H__
+
+/**********************************************************
+ * mtk idle types
+ **********************************************************/
+
+enum mtk_idle_type_id {
+	IDLE_TYPE_DP = 0,
+	IDLE_TYPE_SO3,
+	IDLE_TYPE_SO,
+	IDLE_TYPE_RG,
+	NR_IDLE_TYPES,
+	NR_TYPES = NR_IDLE_TYPES,
+};
+
+static inline const char *mtk_idle_name(int idle_type)
+{
+	return idle_type == IDLE_TYPE_DP ? "dpidle" :
+		idle_type == IDLE_TYPE_SO3 ? "sodi3" :
+		idle_type == IDLE_TYPE_SO ? "sodi" :
+		idle_type == IDLE_TYPE_RG ? "rgidle" : "null";
+}
+
+/* --------------------------------------------------------
+ * mtk idle notification
+ **********************************************************/
+#include <linux/notifier.h>
+
+enum mtk_idle_notify_id {
+	NOTIFY_DPIDLE_ENTER = 0,
+	NOTIFY_DPIDLE_LEAVE,
+	NOTIFY_SOIDLE_ENTER,
+	NOTIFY_SOIDLE_LEAVE,
+	NOTIFY_SOIDLE3_ENTER,
+	NOTIFY_SOIDLE3_LEAVE,
+};
+
+extern int mtk_idle_notifier_register(struct notifier_block *n);
+extern void mtk_idle_notifier_unregister(struct notifier_block *n);
+
+
+/* --------------------------------------------------------
+ * For MCDI module
+ **********************************************************/
+
+extern int mtk_idle_select(int cpu);    /* return idle_type */
+extern int dpidle_enter(int cpu);       /* dpidle */
+extern int soidle_enter(int cpu);       /* sodi */
+extern int soidle3_enter(int cpu);      /* sodi3 */
+
+
+/* --------------------------------------------------------
+ * For ufs module
+ **********************************************************/
+
+extern void idle_lock_by_ufs(unsigned int lock);
+
+
+/* --------------------------------------------------------
+ * For other modules
+ **********************************************************/
+
+/* FIXME: DPIDLE - Refine dpidle api */
+#define dpidle_active_status() mtk_dpidle_is_active()
+extern bool mtk_dpidle_is_active(void);
+
+/* FIXME: SODI/SODI3 - Replace api for display */
+#define spm_sodi_set_vdo_mode(mode)
+#define spm_enable_sodi(enable) mtk_sodi_disp_ready(enable)
+#define spm_enable_sodi3(enable) mtk_sodi3_disp_ready(enable)
+#define spm_sodi_mempll_pwr_mode(mode) mtk_sodi_disp_mempll_pwr_mode(mode)
+extern void mtk_sodi_disp_ready(bool enable);
+extern void mtk_sodi3_disp_ready(bool enable);
+extern void mtk_sodi_disp_mempll_pwr_mode(bool pwr_mode);
+
+
+/* --------------------------------------------------------
+ * Misc: get recent idle ratio
+ **********************************************************/
+
+/* FIXME: To be removed. Externally used by hps, only for mt6799 project */
+struct mtk_idle_recent_ratio {
+	unsigned long long value;
+	unsigned long long value_dp;
+	unsigned long long value_so3;
+	unsigned long long value_so;
+	unsigned long long last_end_ts;
+	unsigned long long start_ts;
+	unsigned long long end_ts;
+};
+
+/* FIXME: To be removed. Externally used by hps, only for mt6799 project */
+void mtk_idle_recent_ratio_get(int *window_length_ms,
+	struct mtk_idle_recent_ratio *ratio);
+
+/* FIXME: To be removed. Externally used by hps, only for mt6799 project */
+unsigned long long idle_get_current_time_ms(void);
+
+
+/**************************************
+ * extern global value in
+ * mtk_sodi3.c / mtk_sodi.c / mtk_dpidle.c
+ **************************************/
+extern unsigned long dp_cnt[NR_CPUS];
+extern unsigned long so_cnt[NR_CPUS];
+extern unsigned long so3_cnt[NR_CPUS];
+
+#endif /* __MTK_IDLE_H__ */

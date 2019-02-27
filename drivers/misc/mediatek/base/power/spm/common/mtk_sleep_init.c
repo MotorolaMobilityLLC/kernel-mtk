@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,27 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __MT_SPM_H__
-#define __MT_SPM_H__
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+#include <mtk_spm.h>
+#include <mtk_sleep.h>
 
-#include "spm_v2/mtk_spm.h"
-
-#elif defined(CONFIG_MACH_MT6799) || defined(CONFIG_MACH_MT6758) ||\
-	defined(CONFIG_MACH_MT6759)
-
-#include "spm_v3/mtk_spm.h"
-
-#elif defined(CONFIG_MACH_MT6763)
-
-#include "spm_v4/mtk_spm.h"
-
-#elif defined(CONFIG_MACH_MT6765)
-
-#include "spm/mtk_spm.h"
+static int __init mtk_sleep_init(void)
+{
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
+	slp_module_init();
+	mtk_spm_init();
 
 #endif
+	return 0;
+}
 
-#endif /* __MT_SPM_H__ */
-
+late_initcall(mtk_sleep_init);
