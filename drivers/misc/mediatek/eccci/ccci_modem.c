@@ -427,7 +427,7 @@ void ccci_md_config(struct ccci_modem *md)
 	base_ap_view_phy &= PAGE_MASK;
 	if (!pfn_valid(__phys_to_pfn(base_ap_view_phy)))
 		md->mem_layout.md_bank0.base_ap_view_vir =
-			ioremap_nocache(
+			ioremap_wc(
 				md->mem_layout.md_bank0.base_ap_view_phy,
 				MD_IMG_DUMP_SIZE);
 	else {
@@ -458,7 +458,7 @@ void ccci_md_config(struct ccci_modem *md)
 	md->mem_layout.md_bank4_noncacheable_total.size
 			= md_resv_smem_size + md1_md3_smem_size;
 	md->mem_layout.md_bank4_noncacheable_total.base_ap_view_vir =
-		ioremap_nocache(
+		ioremap_wc(
 			md->mem_layout.md_bank4_noncacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_noncacheable_total.size);
 	md->mem_layout.md_bank4_noncacheable_total.base_md_view_phy =
@@ -478,7 +478,7 @@ void ccci_md_config(struct ccci_modem *md)
 	if (md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy &&
 		md->mem_layout.md_bank4_cacheable_total.size)
 		md->mem_layout.md_bank4_cacheable_total.base_ap_view_vir =
-			ioremap_nocache(
+			ioremap_wc(
 			md->mem_layout.md_bank4_cacheable_total.base_ap_view_phy,
 			md->mem_layout.md_bank4_cacheable_total.size);
 	else
