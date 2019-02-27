@@ -40,11 +40,7 @@
 #define FFU_CONFIG(ffu_config) (ffu_config & MMC_FFU_CONFIG)
 #define FFU_FEATURES(ffu_fetures) (ffu_fetures & MMC_FFU_FEATURES)
 
-struct mmc_blk_ioc_data *mmc_ffu_ioctl_copy_from_user(
-	struct mmc_ioc_cmd __user *user);
-int mmc_ffu_download(struct mmc_card *card, struct mmc_command *cmd,
-	u8 *data, int buf_bytes);
-int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd);
+void mmc_wait_for_ffu_req(struct mmc_host *host, struct mmc_request *mrq);
 
 #endif
 #endif /* FFU_H_ */
