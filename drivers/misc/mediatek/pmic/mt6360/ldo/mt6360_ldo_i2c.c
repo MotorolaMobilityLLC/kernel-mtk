@@ -318,22 +318,32 @@ static int mt6360_ldo_enable(struct regulator_dev *rdev)
 {
 	struct mt6360_ldo_info *mli = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
-	int id = rdev_get_id(rdev);
+	int id = rdev_get_id(rdev), ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
-	return mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
-					  desc->enable_mask, 0xff);
+	ret = mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
+					 desc->enable_mask, 0xff);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_ldo_disable(struct regulator_dev *rdev)
 {
 	struct mt6360_ldo_info *mli = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
-	int id = rdev_get_id(rdev);
+	int id = rdev_get_id(rdev), ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
-	return mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
-					  desc->enable_mask, 0);
+	ret = mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
+					 desc->enable_mask, 0);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_ldo_is_enabled(struct regulator_dev *rdev)
@@ -357,11 +367,16 @@ static int mt6360_ldo_set_voltage_sel(struct regulator_dev *rdev,
 	struct mt6360_ldo_info *mli = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
 	int id = rdev_get_id(rdev);
-	int shift = ffs(desc->vsel_mask) - 1;
+	int shift = ffs(desc->vsel_mask) - 1, ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d, sel %d\n", __func__, id, sel);
-	return mt6360_ldo_reg_update_bits(mli, desc->vsel_reg,
-					  desc->vsel_mask, sel << shift);
+	ret = mt6360_ldo_reg_update_bits(mli, desc->vsel_reg,
+					 desc->vsel_mask, sel << shift);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_ldo_get_voltage_sel(struct regulator_dev *rdev)
@@ -387,7 +402,7 @@ static int mt6360_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	const struct mt6360_regulator_desc *desc =
 			       (const struct mt6360_regulator_desc *)rdev->desc;
 	int id = rdev_get_id(rdev);
-	int shift = ffs(desc->mode_mask) - 1;
+	int shift = ffs(desc->mode_mask) - 1, ret;
 	u8 val;
 
 	dev_dbg(&rdev->dev, "%s, id = %d, mode = %d\n", __func__, id, mode);
@@ -406,8 +421,13 @@ static int mt6360_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	default:
 		return -ENOTSUPP;
 	}
-	return mt6360_ldo_reg_update_bits(mli, desc->mode_reg,
-					  desc->mode_mask, val << shift);
+	ret = mt6360_ldo_reg_update_bits(mli, desc->mode_reg,
+					 desc->mode_mask, val << shift);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static unsigned int mt6360_ldo_get_mode(struct regulator_dev *rdev)
@@ -422,7 +442,7 @@ static unsigned int mt6360_ldo_get_mode(struct regulator_dev *rdev)
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_read(mli, desc->moder_reg);
 	if (ret < 0)
-		return -EINVAL;
+		return ret;
 	ret &= desc->moder_mask;
 	ret >>= shift;
 	switch (ret) {
@@ -552,7 +572,7 @@ static const struct mt6360_regulator_desc mt6360_ldo_descs[] =  {
 			0x11, 0x04, 0x11, 0x30, 0x11, 0x03),
 	MT6360_LDO_DESC(LDO3, 0x09, 0xff, 0x05, 0x40,
 			0x05, 0x04, 0x05, 0x30, 0x05, 0x03),
-	MT6360_LDO_DESC(LDO5, 0x0f, 0x70, 0x0b, 0x40,
+	MT6360_LDO_DESC(LDO5, 0x0f, 0x7f, 0x0b, 0x40,
 			0x0b, 0x04, 0x0b, 0x30, 0x0b, 0x03),
 };
 

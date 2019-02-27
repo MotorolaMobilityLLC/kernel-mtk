@@ -57,14 +57,6 @@ static const struct mt6360_core_platform_data def_platform_data = {
 	.fod_isense = 3,
 };
 
-static irqreturn_t mt6360_pmu_usbid_evt_handler(int irq, void *data)
-{
-	struct mt6360_pmu_core_info *mpci = data;
-
-	dev_dbg(mpci->dev, "%s\n", __func__);
-	return IRQ_HANDLED;
-}
-
 static irqreturn_t mt6360_pmu_ap_wdtrst_evt_handler(int irq, void *data)
 {
 	struct mt6360_pmu_core_info *mpci = data;
@@ -122,7 +114,6 @@ static irqreturn_t mt6360_pmu_sysuv_evt_handler(int irq, void *data)
 }
 
 static struct mt6360_pmu_irq_desc mt6360_pmu_core_irq_desc[] = {
-	MT6360_PMU_IRQDESC(usbid_evt),
 	MT6360_PMU_IRQDESC(ap_wdtrst_evt),
 	MT6360_PMU_IRQDESC(en_evt),
 	MT6360_PMU_IRQDESC(qonb_rst_evt),

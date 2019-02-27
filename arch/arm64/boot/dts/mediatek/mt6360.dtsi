@@ -119,11 +119,10 @@
 		core {
 			compatible = "mediatek,mt6360_pmu_core";
 			interrupt-parent = <&mt6360_pmu>;
-			interrupts = <64 0>, <65 0>, <66 0>,
-				     <67 0>, <68 0>, <69 0>,
-				     <70 0>, <71 0>;
-			interrupt-names = "usbid_evt",
-					  "ap_wdtrst_evt",
+			interrupts = <65 0>, <66 0>, <67 0>,
+				     <68 0>, <69 0>, <70 0>,
+				     <71 0>;
+			interrupt-names = "ap_wdtrst_evt",
 					  "en_evt",
 					  "qonb_rst_evt",
 					  "mrstb_evt",
@@ -148,8 +147,8 @@
 				  "ldo6_pgb_evt", "ldo7_pgb_evt";
 		buck1_ctrls = [ab 80 82 6c 00 80 02 70];
 		buck2_ctrls = [ab 80 81 6c 30 80 02 70];
-		ldo6_ctrls = [30 80 02 c4 44];
-		ldo7_ctrls = [30 80 02 c4 44];
+		ldo6_ctrls = [30 80 02 cc 44];
+		ldo7_ctrls = [30 80 02 cc 44];
 		buck1 {
 			regulator-compatible = "BUCK1";
 			regulator-name = "VMDLA";
@@ -189,7 +188,9 @@
 				  "ldo3_oc_evt", "ldo5_oc_evt",
 				  "ldo1_pgb_evt", "ldo2_pgb_evt",
 				  "ldo3_pgb_evt", "ldo5_pgb_evt";
-		ldo5_ctrls = [00 80 c1 2c 84];
+		ldo1_ctrls = [00 80 01 25 44];
+		ldo2_ctrls = [00 80 01 25 44];
+		ldo5_ctrls = [00 80 c1 25 84];
 		ldo1 {
 			regulator-compatible = "LDO1";
 			regulator-name = "VFP";

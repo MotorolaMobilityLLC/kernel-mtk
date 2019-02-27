@@ -40,8 +40,8 @@ static const struct mt6360_pmic_platform_data def_platform_data = {
 	.sys_ctrls = { 0x25, 0x00, 0x00 },
 	.buck1_ctrls =  { 0xa9, 0x82, 0x85, 0x6c, 0x00, 0x80, 0x02, 0x70 },
 	.buck2_ctrls =  { 0xab, 0x82, 0x85, 0x6c, 0x00, 0x80, 0x02, 0x70 },
-	.ldo6_ctrls = { 0x00, 0x80, 0x02, 0xc4, 0x44 },
-	.ldo7_ctrls = { 0x00, 0x80, 0x82, 0xc4, 0x44 },
+	.ldo6_ctrls = { 0x00, 0x80, 0x02, 0xcc, 0x44 },
+	.ldo7_ctrls = { 0x00, 0x80, 0x82, 0xcc, 0x44 },
 };
 
 static const u8 sys_ctrl_mask[MT6360_SYS_CTRLS_NUM] = {
@@ -371,22 +371,32 @@ static int mt6360_pmic_enable(struct regulator_dev *rdev)
 {
 	struct mt6360_pmic_info *mpi = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
-	int id = rdev_get_id(rdev);
+	int id = rdev_get_id(rdev), ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
-	return mt6360_pmic_reg_update_bits(mpi, desc->enable_reg,
+	ret = mt6360_pmic_reg_update_bits(mpi, desc->enable_reg,
 					  desc->enable_mask, 0xff);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_pmic_disable(struct regulator_dev *rdev)
 {
 	struct mt6360_pmic_info *mpi = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
-	int id = rdev_get_id(rdev);
+	int id = rdev_get_id(rdev), ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
-	return mt6360_pmic_reg_update_bits(mpi, desc->enable_reg,
+	ret = mt6360_pmic_reg_update_bits(mpi, desc->enable_reg,
 					  desc->enable_mask, 0);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_pmic_is_enabled(struct regulator_dev *rdev)
@@ -410,14 +420,19 @@ static int mt6360_pmic_set_voltage_sel(struct regulator_dev *rdev,
 	struct mt6360_pmic_info *mpi = rdev_get_drvdata(rdev);
 	const struct regulator_desc *desc = rdev->desc;
 	int id = rdev_get_id(rdev);
-	int shift = ffs(desc->vsel_mask) - 1;
+	int shift = ffs(desc->vsel_mask) - 1, ret;
 
 	dev_dbg(&rdev->dev, "%s, id = %d, sel %d\n", __func__, id, sel);
 	/* for LDO6/7 vocal add */
 	if (id > MT6360_PMIC_BUCK2)
 		sel = (sel >= 160) ? 0xfa : (((sel / 10) << 4) + sel % 10);
-	return mt6360_pmic_reg_update_bits(mpi, desc->vsel_reg,
+	ret = mt6360_pmic_reg_update_bits(mpi, desc->vsel_reg,
 					  desc->vsel_mask, sel << shift);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static int mt6360_pmic_get_voltage_sel(struct regulator_dev *rdev)
@@ -450,7 +465,7 @@ static int mt6360_pmic_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	const struct mt6360_regulator_desc *desc =
 			       (const struct mt6360_regulator_desc *)rdev->desc;
 	int id = rdev_get_id(rdev);
-	int shift = ffs(desc->mode_mask) - 1;
+	int shift = ffs(desc->mode_mask) - 1, ret;
 	u8 val;
 
 	dev_dbg(&rdev->dev, "%s, id = %d, mode = %d\n", __func__, id, mode);
@@ -469,8 +484,13 @@ static int mt6360_pmic_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	default:
 		return -ENOTSUPP;
 	}
-	return mt6360_pmic_reg_update_bits(mpi, desc->mode_reg,
+	ret = mt6360_pmic_reg_update_bits(mpi, desc->mode_reg,
 					  desc->mode_mask, val << shift);
+	if (ret < 0) {
+		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
+		return ret;
+	}
+	return 0;
 }
 
 static unsigned int mt6360_pmic_get_mode(struct regulator_dev *rdev)
@@ -485,7 +505,7 @@ static unsigned int mt6360_pmic_get_mode(struct regulator_dev *rdev)
 	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_pmic_reg_read(mpi, desc->moder_reg);
 	if (ret < 0)
-		return -EINVAL;
+		return ret;
 	ret &= desc->moder_mask;
 	ret >>= shift;
 	switch (ret) {
