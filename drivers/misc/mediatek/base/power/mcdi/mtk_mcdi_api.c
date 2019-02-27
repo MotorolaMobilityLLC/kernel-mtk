@@ -35,4 +35,8 @@ bool mcdi_is_buck_off(int cluster_idx)
 	return _mcdi_is_buck_off(cluster_idx);
 }
 
+void mcdi_pause(unsigned int id, bool paused)
+{
+	__mcdi_pause(id, paused);
+}
 
