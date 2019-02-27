@@ -15,8 +15,11 @@
 #define __EXT_WD_DRV_H
 #include <linux/types.h>
 #include <linux/kthread.h> /*define NR_CPUS*/
+#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#include <mt-plat/mtk_wd_api.h>
+#else
 #include <mach/wd_api.h>
-
+#endif
 
 /* direct api */
 void wdt_arch_reset(char mode);
