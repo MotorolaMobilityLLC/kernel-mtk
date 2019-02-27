@@ -1927,6 +1927,10 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 			__func__, r);
 	apmixed_base = base;
 
+	/* MPLL, CCIPLL, MAINPLL set HW mode, TDCLKSQ, CLKSQ1 */
+	clk_writel(AP_PLL_CON3, clk_readl(AP_PLL_CON3) & 0xFFFFFFE1);
+	clk_writel(PLLON_CON0, clk_readl(PLLON_CON0) & 0x25565965);
+	clk_writel(PLLON_CON1, clk_readl(PLLON_CON1) & 0x25565965);
 #if 0 /* FIX ME */
 	clk_clrl(AP_PLL_CON1, 3 << 6);/*CLKSQ_EN, CLKSQ_LPF HW Mode*/
 #if 1
@@ -2735,6 +2739,7 @@ void mfgsys_cg_check(void)
 	pr_notice("MFG_CG_CON = 0x%08x\n", clk_readl(MFG_CG_CON));
 }
 #endif
+
 void pll_force_off(void)
 {
 /*MFGPLL*/
@@ -2742,6 +2747,11 @@ void pll_force_off(void)
 	clk_setl(MFGPLL_CON3, PLL_ISO_EN);
 	clk_clrl(MFGPLL_CON3, PLL_PWR_ON);
 /*MPLL Control by dram*/
+#if 0
+	clk_clrl(MMPLL_CON0, PLL_EN);
+	clk_setl(MMPLL_CON3, PLL_ISO_EN);
+	clk_clrl(MMPLL_CON3, PLL_PWR_ON);
+#endif
 /*UNIVPLL*/
 	clk_clrl(UNIVPLL_CON0, PLL_EN);
 	clk_setl(UNIVPLL_CON3, PLL_ISO_EN);
@@ -2751,9 +2761,11 @@ void pll_force_off(void)
 	clk_setl(MSDCPLL_CON3, PLL_ISO_EN);
 	clk_clrl(MSDCPLL_CON3, PLL_PWR_ON);
 /*MMPLL*/
+#if 0
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_CON3, PLL_ISO_EN);
 	clk_clrl(MMPLL_CON3, PLL_PWR_ON);
+#endif
 /*APLL1*/
 	clk_clrl(APLL1_CON0, PLL_EN);
 	clk_setl(APLL1_CON4, PLL_ISO_EN);
