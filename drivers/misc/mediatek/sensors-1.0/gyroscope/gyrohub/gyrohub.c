@@ -41,6 +41,7 @@ struct gyrohub_ipi_data {
 	int direction;
 	atomic_t trace;
 	atomic_t suspend;
+	atomic_t selftest_status;
 	int32_t static_cali[GYROHUB_AXES_NUM];
 	uint8_t static_cali_status;
 	int32_t dynamic_cali[GYROHUB_AXES_NUM];
@@ -52,6 +53,7 @@ struct gyrohub_ipi_data {
 	bool factory_enable;
 	bool android_enable;
 	struct completion calibration_done;
+	struct completion selftest_done;
 };
 static struct gyrohub_ipi_data *obj_ipi_data;
 
@@ -534,6 +536,9 @@ static int gyro_recv_data(struct data_unit_t *event, void *reserved)
 		obj->temperature_cali[4] = event->data[4];
 		obj->temperature_cali[5] = event->data[5];
 		spin_unlock(&calibration_lock);
+	} else if (event->flush_action == TEST_ACTION) {
+		atomic_set(&obj->selftest_status, event->gyroscope_t.status);
+		complete(&obj->selftest_done);
 	}
 	return err;
 }
@@ -645,7 +650,19 @@ static int gyrohub_factory_get_cali(int32_t data[3])
 }
 static int gyrohub_factory_do_self_test(void)
 {
-	return 0;
+	int ret = 0;
+	struct gyrohub_ipi_data *obj = obj_ipi_data;
+
+	ret = sensor_selftest_to_hub(ID_GYROSCOPE);
+	if (ret < 0)
+		return -1;
+
+	init_completion(&obj->selftest_done);
+	ret = wait_for_completion_timeout(&obj->selftest_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return atomic_read(&obj->selftest_status);
 }
 
 static struct gyro_factory_fops gyrohub_factory_fops = {
@@ -853,10 +870,12 @@ static int gyrohub_probe(struct platform_device *pdev)
 	atomic_set(&obj->suspend, 0);
 	atomic_set(&obj->first_ready_after_boot, 0);
 	atomic_set(&obj->scp_init_done, 0);
+	atomic_set(&obj->selftest_status, 0);
 	WRITE_ONCE(obj->factory_enable, false);
 	WRITE_ONCE(obj->android_enable, false);
 	INIT_WORK(&obj->init_done_work, scp_init_work_done);
 	init_completion(&obj->calibration_done);
+	init_completion(&obj->selftest_done);
 
 	err = gpio_config();
 	if (err < 0) {
