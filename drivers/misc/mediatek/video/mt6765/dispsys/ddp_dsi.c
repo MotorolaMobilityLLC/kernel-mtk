@@ -1214,6 +1214,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module,
 		PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
 	DISPFUNC();
+
 	data_Rate = def_data_rate ? def_data_rate : data_Rate;
 
 	/* DPHY SETTING */
@@ -1619,6 +1620,49 @@ int mipi_clk_change(int msg, int en)
 
 	_primary_path_unlock(__func__);
 
+
+	return 0;
+}
+
+int mipi_clk_change_by_data_rate(int en, int mipi_data_rate)
+{
+	struct cmdqRecStruct *handle = NULL;
+
+	DISPMSG("%s, mipi_data_rate=%d, en=%d\n",
+		__func__, mipi_data_rate, en);
+
+	_primary_path_lock(__func__);
+
+	if (en) {
+		def_data_rate = mipi_data_rate;
+
+		/*TODO: ssc_disable = 1 */
+		/* if need disable ssc and need re-change hbp or hfp */
+		/* and need add parameter to DSI_MIPI_clk_change */
+		/* MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON2,*/
+		/* FLD_RG_DSI_PLL_SDM_SSC_EN, 0);*/
+	} else {
+		struct LCM_DSI_PARAMS *dsi_params =
+			&(_dsi_context[0].dsi_params);
+		unsigned int data_rate = dsi_params->data_rate != 0 ?
+			dsi_params->data_rate : dsi_params->PLL_CLOCK * 2;
+
+		def_data_rate = data_rate;
+	}
+
+	if (_is_power_on_status(DISP_MODULE_DSI0)) {
+		cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+		cmdqRecReset(handle);
+
+		/* 2.wait mutex0_stream_eof: only used for video mode */
+		cmdqRecWaitNoClear(handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+		DSI_MIPI_clk_change(DISP_MODULE_DSI0, handle, def_data_rate);
+		cmdqRecFlushAsync(handle);
+		cmdqRecDestroy(handle);
+	}
+
+	_primary_path_unlock(__func__);
 
 	return 0;
 }

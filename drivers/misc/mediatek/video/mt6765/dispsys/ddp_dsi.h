@@ -217,8 +217,8 @@ int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle,
 int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
 int dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq);
 extern int mipi_clk_change(int msg, int en);
+extern int mipi_clk_change_by_data_rate(int en, int mipi_data_rate);
 unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module);
-
 int ddp_dsi_read_lcm_cmdq(enum DISP_MODULE_ENUM module,
 		cmdqBackupSlotHandle *read_Slot,
 		struct cmdqRecStruct *cmdq_trigger_handle,
