@@ -19,7 +19,7 @@
 #include "modem_sys.h"
 #include "hif/ccci_hif_cldma.h"
 
-extern unsigned int devapc_check_flag;
+extern volatile unsigned int devapc_check_flag;
 /* the last EMI bank, properly not used */
 #define INVALID_ADDR (0xF0000000)
 #define KERN_EMI_BASE (0x40000000)	/* Bank4 */
