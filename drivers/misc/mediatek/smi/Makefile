@@ -23,6 +23,9 @@ SUPPORT_MET_SMI := false
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6758"))
 ccflags-y += -DSMI_VIN
 obj-y += smi_configuration_mt6758.o
+obj-y += mmdvfs_mgr_v3.o
+obj-y += mmdvfs_mgr_util.o
+obj-y += mmdvfs_profile_adaptor.o
 SUPPORT_MET_SMI := false
 
 else
