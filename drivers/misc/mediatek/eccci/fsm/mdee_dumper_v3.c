@@ -651,7 +651,7 @@ static void mdee_dumper_v3_dump_ee_info(struct ccci_fsm_ee *mdee,
 			ccci_aed_v3(mdee,
 			CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_MD_IMG_MEM
 			| CCCI_AED_DUMP_EX_MEM,
-			ex_info, DB_OPT_DEFAULT);
+			ex_info, DB_OPT_DEFAULT | DB_OPT_FTRACE);
 		} else if (md_state == BOOT_WAITING_FOR_HS2) {
 			snprintf(ex_info, EE_BUF_LEN,
 				"\n[Others] MD_BOOT_UP_FAIL(HS%d)\n", 2);
@@ -668,7 +668,7 @@ static void mdee_dumper_v3_dump_ee_info(struct ccci_fsm_ee *mdee,
 
 			ccci_aed_v3(mdee,
 			CCCI_AED_DUMP_CCIF_REG | CCCI_AED_DUMP_EX_MEM,
-			ex_info, DB_OPT_FTRACE);
+			ex_info, DB_OPT_DEFAULT | DB_OPT_FTRACE);
 		}
 	} else if (level == MDEE_DUMP_LEVEL_STAGE1) {
 		CCCI_MEM_LOG_TAG(md_id, FSM, "Dump MD EX log\n");
