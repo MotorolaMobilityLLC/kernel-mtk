@@ -600,7 +600,8 @@ static int memory_region_online(struct SSMR_Region *region)
 	return 0;
 }
 
-#ifdef CONFIG_TRUSTONIC_TRUSTED_UI
+#if defined(CONFIG_TRUSTONIC_TRUSTED_UI) ||\
+	defined(CONFIG_BLOWFISH_TUI_SUPPORT)
 int _tui_region_offline(phys_addr_t *pa, unsigned long *size,
 		u64 upper_limit)
 {
@@ -1227,6 +1228,7 @@ static int __init memory_ssmr_debug_init(void)
 {
 	struct dentry *dentry;
 	int i = 0;
+
 	if (ssmr_sanity() < 0) {
 		pr_err("SSMR sanity fail\n");
 		return 1;
