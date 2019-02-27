@@ -44,6 +44,7 @@ menu "MTK Heterogenous MultiProcessor Scheduler"
 
 config SCHED_HMP
 	bool "Heterogenous multiprocessor scheduling"
+	default n
 	depends on SCHED_MC && FAIR_GROUP_SCHED && !SCHED_AUTOGROUP
 	help
 	  Scheduler optimizations for heterogeneous platforms.
@@ -55,6 +56,7 @@ config SCHED_HMP
 
 config SCHED_HMP_PRIO_FILTER
 	bool "(EXPERIMENTAL) Filter HMP migrations by task priority"
+	default y
 	depends on SCHED_HMP
 	help
 	  Enables task priority based HMP migration filter. Any task with
@@ -84,6 +86,7 @@ config HMP_FREQUENCY_INVARIANT_SCALE
 
 config HMP_TRACER
 	bool "(EXPERIMENTAL) Profile HMP scheduler"
+	default y
 	depends on SCHED_HMP
 	help
 	  Profile HMP scheduler
@@ -94,7 +97,7 @@ config HMP_TRACER
 config SCHED_HMP_PLUS
 	bool "(EXPERIMENTAL) Corepilot enhancement"
 	depends on SCHED_HMP
-	default n
+	default y
 	help
 	  Corepilot hmp enhancement.
 	  1. Do hmp_idle_pull at idle_balance
