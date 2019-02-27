@@ -36,6 +36,7 @@ static int touch_boost_duration;
 static int prev_boost_pid;
 static long long active_time;
 static int usrtch_debug;
+static int touch_event;/*touch down:1 */
 
 void switch_usrtch(int enable)
 {
@@ -117,6 +118,7 @@ static int notify_touch(int action)
 		if (usrtch_debug)
 			pr_debug("touch down\n");
 		fpsgo_systrace_c_fbt(prev_boost_pid, 1, "touch");
+		touch_event = 1;
 	}
 
 
@@ -134,6 +136,7 @@ static void notify_touch_up_timeout(void)
 	update_eas_boost_value(EAS_KIR_TOUCH, CGROUP_TA, 0);
 	update_userlimit_cpu_freq(CPU_KIR_TOUCH, perfmgr_clusters, reset_freq);
 	fpsgo_systrace_c_fbt(prev_boost_pid, 0, "touch");
+	touch_event = 2;
 	if (usrtch_debug)
 		pr_debug("touch timeout\n");
 
@@ -183,6 +186,7 @@ static int device_show(struct seq_file *m, void *v)
 	seq_printf(m, "touch_opp:\t%d\n", touch_boost_opp);
 	seq_printf(m, "duration:\t%d\n", touch_boost_duration);
 	seq_printf(m, "active_time:\t%d\n", (int)active_time);
+	seq_printf(m, "touch_event:\t%d\n", touch_event);
 	seq_puts(m, "-----------------------------------------------------\n");
 	return 0;
 }
@@ -279,6 +283,7 @@ int init_utch(struct proc_dir_entry *parent)
 
 	touch_boost_value = TOUCH_BOOST_EAS;
 
+	touch_event = 2;
 	touch_boost_opp = TOUCH_BOOST_OPP;
 	touch_boost_duration = TOUCH_TIMEOUT_NSEC;
 	active_time = TOUCH_FSTB_ACTIVE_US;
