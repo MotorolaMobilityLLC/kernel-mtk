@@ -46,7 +46,7 @@ ccflags-y += -DGED_KPI_CPU_SINGLE_CLUSTER
 endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
-ccflags-y += -DCONFIG_MTK_QOS_SUPPORT
+#ccflags-y += -DCONFIG_MTK_QOS_SUPPORT
 endif
 
 
