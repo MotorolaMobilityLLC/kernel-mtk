@@ -81,6 +81,7 @@ static wait_queue_head_t esd_ext_te_wq;
 static atomic_t esd_ext_te_event = ATOMIC_INIT(0);
 static unsigned int esd_check_mode;
 static unsigned int esd_check_enable;
+unsigned int esd_checking;
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
@@ -194,12 +195,17 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *qhandle)
 
 	/* 1.reset */
 	cmdqRecReset(qhandle);
-
+	/*set esd check read timeout 200ms*/
+	/*remove to dts*/
+	/*cmdq_task_set_timeout(qhandle, 200);*/
 	/* wait stream eof first */
 	/* cmdqRecWait(qhandle, CMDQ_EVENT_DISP_RDMA0_EOF); */
 	cmdqRecWait(qhandle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
 
 	primary_display_manual_lock();
+
+	esd_checking = 1;
+
 	/* 2.stop dsi vdo mode */
 	dpmgr_path_build_cmdq(phandle, qhandle, CMDQ_STOP_VDO_MODE, 0);
 
@@ -580,6 +586,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 			DISPCHECK("[ESD]esd recovery success\n");
 			recovery_done = 0;
 		}
+		esd_checking = 0;
 		_primary_path_switch_dst_unlock();
 
 		/* 2. other check & recovery */
