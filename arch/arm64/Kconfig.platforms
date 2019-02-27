@@ -190,6 +190,7 @@ config MACH_MT6761
 	select MTK_SYS_CIRQ
 	select MTK_BOUNCING_CHECK
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select MTK_SECURITY_SW_SUPPORT
 	help
 	  This enables support for MediaTek MT6761
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
