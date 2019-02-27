@@ -1455,7 +1455,7 @@ static int cm36558_ps_factory_get_cali(int32_t *offset)
 	*offset = obj->ps_cali;
 	return 0;
 }
-static int cm36558_ps_factory_set_threashold(int32_t threshold[2])
+static int cm36558_ps_factory_set_threshold(int32_t threshold[2])
 {
 	int err = 0;
 	struct CM36558_priv *obj = CM36558_obj;
@@ -1472,7 +1472,7 @@ static int cm36558_ps_factory_set_threashold(int32_t threshold[2])
 	}
 	return 0;
 }
-static int cm36558_ps_factory_get_threashold(int32_t threshold[2])
+static int cm36558_ps_factory_get_threshold(int32_t threshold[2])
 {
 	struct CM36558_priv *obj = CM36558_obj;
 
@@ -1497,8 +1497,8 @@ static struct alsps_factory_fops cm36558_factory_fops = {
 	.ps_clear_cali = cm36558_ps_factory_clear_cali,
 	.ps_set_cali = cm36558_ps_factory_set_cali,
 	.ps_get_cali = cm36558_ps_factory_get_cali,
-	.ps_set_threashold = cm36558_ps_factory_set_threashold,
-	.ps_get_threashold = cm36558_ps_factory_get_threashold,
+	.ps_set_threshold = cm36558_ps_factory_set_threshold,
+	.ps_get_threshold = cm36558_ps_factory_get_threshold,
 };
 
 static struct alsps_factory_public cm36558_factory_device = {
