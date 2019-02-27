@@ -1130,9 +1130,6 @@ static int hal_tx_dma_dump_reg(struct _MTK_DMA_INFO_STR_ *p_dma_info,
 	valid_size = BTIF_READ32(TX_DMA_VFF_VALID_SIZE(base));
 	/*spin_unlock_irqrestore(&(g_clk_cg_spinlock), irq_flag);*/
 
-	BTIF_INFO_FUNC("DMA's clock is on\n");
-	BTIF_INFO_FUNC("Tx DMA's base address: 0x%lx\n", base);
-
 	if (flag == REG_ALL) {
 		BTIF_INFO_FUNC("TX_EN:0x%x\n", enable);
 		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
@@ -1159,20 +1156,17 @@ static int hal_tx_dma_dump_reg(struct _MTK_DMA_INFO_STR_ *p_dma_info,
 			       BTIF_READ32(TX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
 	} else if (flag == REG_IRQ) {
-		BTIF_INFO_FUNC("TX_EN:0x%x\n", enable);
-		BTIF_INFO_FUNC("INT_EN:0x%x\n",
-			       BTIF_READ32(TX_DMA_INT_EN(base)));
-		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
-		BTIF_INFO_FUNC("TX_WPT:0x%x\n", wpt);
-		BTIF_INFO_FUNC("TX_RPT:0x%x\n", rpt);
+		BTIF_INFO_FUNC("TX EN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x\n",
+			       enable, BTIF_READ32(TX_DMA_INT_EN(base)),
+			       int_flag, wpt, rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
-	BTIF_INFO_FUNC("tx dma %s\n", (enable & DMA_EN_BIT) &&
-		       (!(stop && DMA_STOP_BIT)) ? "enabled" : "stopped");
-	BTIF_INFO_FUNC("data in tx dma is %s sent by HW\n",
-		       ((wpt == rpt) &&
-			(int_buf == 0)) ? "completely" : "not completely");
+	BTIF_INFO_FUNC("tx dma %s,data in tx dma is %s sent by HW\n",
+		       (enable & DMA_EN_BIT) && (!(stop && DMA_STOP_BIT)) ?
+			"enabled" : "stopped",
+		       ((wpt == rpt) && (int_buf == 0)) ?
+			"completely" : "not completely");
 
 	return i_ret;
 }
@@ -1213,9 +1207,6 @@ static int hal_rx_dma_dump_reg(struct _MTK_DMA_INFO_STR_ *p_dma_info,
 	valid_size = BTIF_READ32(RX_DMA_VFF_VALID_SIZE(base));
 	/*spin_unlock_irqrestore(&(g_clk_cg_spinlock), irq_flag);*/
 
-	BTIF_INFO_FUNC("DMA's clock is on\n");
-	BTIF_INFO_FUNC("Rx DMA's base address: 0x%lx\n", base);
-
 	if (flag == REG_ALL) {
 		BTIF_INFO_FUNC("RX_EN:0x%x\n", enable);
 		BTIF_INFO_FUNC("RX_STOP:0x%x\n", stop);
@@ -1242,20 +1233,17 @@ static int hal_rx_dma_dump_reg(struct _MTK_DMA_INFO_STR_ *p_dma_info,
 			       BTIF_READ32(RX_DMA_DEBUG_STATUS(base)));
 		i_ret = 0;
 	}  else if (flag == REG_IRQ) {
-		BTIF_INFO_FUNC("RX_EN:0x%x\n", enable);
-		BTIF_INFO_FUNC("INT_EN:0x%x\n",
-			       BTIF_READ32(RX_DMA_INT_EN(base)));
-		BTIF_INFO_FUNC("INT_FLAG:0x%x\n", int_flag);
-		BTIF_INFO_FUNC("RX_WPT:0x%x\n", wpt);
-		BTIF_INFO_FUNC("RX_RPT:0x%x\n", rpt);
+		BTIF_INFO_FUNC("RXEN:0x%x,IEN:0x%x,FLG:0x%x,WR:0x%x,RD:0x%x\n",
+			       enable, BTIF_READ32(RX_DMA_INT_EN(base)),
+			       int_flag, wpt, rpt);
 	} else {
 		BTIF_WARN_FUNC("unknown flag:%d\n", flag);
 	}
-	BTIF_INFO_FUNC("rx dma %s\n", (enable & DMA_EN_BIT) &&
-		       (!(stop && DMA_STOP_BIT)) ? "enabled" : "stopped");
-	BTIF_INFO_FUNC("data in rx dma is %s by driver\n",
-		       ((wpt == rpt) &&
-			(int_buf == 0)) ? "received" : "not received");
+	BTIF_INFO_FUNC("rx dma %s,data in rx dma is %s by driver\n",
+		       (enable & DMA_EN_BIT) && (!(stop && DMA_STOP_BIT)) ?
+			"enabled" : "stopped",
+		       ((wpt == rpt) && (int_buf == 0)) ?
+			"received" : "not received");
 
 	return i_ret;
 }
