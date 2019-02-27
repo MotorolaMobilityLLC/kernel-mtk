@@ -15,10 +15,10 @@
 
 struct MCLK_PINCTRL_NAMES
 	mclk_pinctrl_list[IMGSENSOR_SENSOR_IDX_MAX_NUM][MCLK_STATE_MAX_NUM] = {
-	{{"cam0_mclk_off"}, {"cam0_mclk_on"} },
-	{{"cam1_mclk_off"}, {"cam1_mclk_on"} },
-	{{"cam2_mclk_off"}, {"cam2_mclk_on"} },
-	{{"cam3_mclk_off"}, {"cam3_mclk_on"} },
+	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
+	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
+	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
+	{{"cam4_mclk_off"}, {"cam4_mclk_on"} },
 };
 
 
@@ -54,12 +54,13 @@ static enum IMGSENSOR_RETURN mclk_init(void *pinstance)
 	pinst->ppinctrl = devm_pinctrl_get(&pplatform_dev->dev);
 	if (IS_ERR(pinst->ppinctrl)) {
 		pr_err("%s : Cannot find camera pinctrl!\n", __func__);
-		ret = IMGSENSOR_RETURN_ERROR;
+		return IMGSENSOR_RETURN_ERROR;
 	}
 
 	for (i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
 	    i < IMGSENSOR_SENSOR_IDX_MAX_NUM;
 	    i++) {
+
 
 		if (mclk_pinctrl_list[i][MCLK_STATE_DISABLE].ppinctrl_names)
 			pinst->ppinctrl_state[i][MCLK_STATE_DISABLE] =
@@ -75,7 +76,7 @@ static enum IMGSENSOR_RETURN mclk_init(void *pinstance)
 			pr_err(
 			    "%s : pinctrl err, %s\n",
 			    __func__,
-		    mclk_pinctrl_list[i][MCLK_STATE_ENABLE].ppinctrl_names);
+		    mclk_pinctrl_list[i][MCLK_STATE_DISABLE].ppinctrl_names);
 
 			ret = IMGSENSOR_RETURN_ERROR;
 		}
@@ -122,6 +123,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 		    ? MCLK_STATE_ENABLE : MCLK_STATE_DISABLE;
 
 		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][pin_state];
+		mutex_lock(&pinctrl_mutex);
 		if (!IS_ERR(ppinctrl_state))
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		else
@@ -131,6 +133,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 			    sensor_idx,
 			    pin,
 			    pin_state);
+		mutex_unlock(&pinctrl_mutex);
 	}
 	return ret;
 }
