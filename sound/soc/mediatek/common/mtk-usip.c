@@ -184,11 +184,13 @@ static const struct file_operations usip_fops = {
 	.mmap = usip_mmap,
 };
 
+#ifdef CONFIG_MTK_ECCCI_DRIVER
 static struct miscdevice usip_miscdevice = {
 	.minor      = MISC_DYNAMIC_MINOR,
 	.name       = "usip",
 	.fops       = &usip_fops,
 };
+#endif
 
 static int __init usip_init(void)
 {
@@ -211,7 +213,7 @@ static int __init usip_init(void)
 	phys_addr_t offset = 0;
 #endif
 
-
+#ifdef CONFIG_MTK_ECCCI_DRIVER
 	phys_addr = get_smem_phy_start_addr(MD_SYS1,
 	SMEM_USER_RAW_USIP, &size_o);
 
@@ -223,10 +225,18 @@ static int __init usip_init(void)
 
 	get_md_resv_mem_info(MD_SYS1, &r_rw_base, &r_rw_size,
 	&srw_base, &srw_size);
+#else
+	phys_addr = 0;
+	size_o = 0;
+	ret = 0;
+	r_rw_base = 0;
+	r_rw_size = 0;
+	srw_base = 0;
+	srw_size = 0;
+#endif
 
 	pr_debug("%s(), %lld %d %lld %d %lld", __func__,
 	r_rw_base, r_rw_size, srw_base, srw_size, phys_addr);
-
 
 	/* init usip info */
 	usip.memory_size = size_o;
@@ -267,7 +277,9 @@ static int __init usip_init(void)
 
 static void __exit usip_exit(void)
 {
+#ifdef CONFIG_MTK_ECCCI_DRIVER
 	misc_deregister(&usip_miscdevice);
+#endif
 }
 
 module_init(usip_init);
