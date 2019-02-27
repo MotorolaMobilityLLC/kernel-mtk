@@ -399,15 +399,15 @@ int charger_dev_send_ta20_current_pattern(struct charger_device *chg_dev,
 }
 EXPORT_SYMBOL(charger_dev_send_ta20_current_pattern);
 
-int charger_dev_set_ta20_reset(struct charger_device *chg_dev)
+int charger_dev_reset_ta(struct charger_device *chg_dev)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
-	    chg_dev->ops->set_ta20_reset)
-		return chg_dev->ops->set_ta20_reset(chg_dev);
+	    chg_dev->ops->reset_ta)
+		return chg_dev->ops->reset_ta(chg_dev);
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_set_ta20_reset);
+EXPORT_SYMBOL(charger_dev_reset_ta);
 
 int charger_dev_set_pe20_efficiency_table(struct charger_device *chg_dev)
 {
