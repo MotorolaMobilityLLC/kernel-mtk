@@ -782,6 +782,10 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 	unsigned int jpeg_enc_wait_timeout = 0;
 	unsigned int cycle_count;
 	unsigned int ret;
+	/* No spec, considering [picture size] x [target fps] */
+	unsigned int cshot_spec = 0xffffffff;
+	/* limiting FPS, Upper Bound FPS = 20 */
+	unsigned int target_fps = 20;
 
 	unsigned int *pStatus;
 
@@ -884,12 +888,19 @@ static int jpeg_enc_ioctl(unsigned int cmd, unsigned long arg, struct file *file
 		else
 			picCost = ((picSize * 3/2) * 8/5) + 1;
 
-		/* considering FPS, 16MP = 14.5 FPS */
-		if ((picCost * 20) < 232) {
-			/* limiting FPS, Upper Bound FPS = 20 */
-			emi_bw = picCost * 20;
+#ifdef QOS_MT6765_SUPPORT
+		/* on mt6765, 16MP = 14.5 FPS */
+		cshot_spec = 232;
+#endif
+#ifdef QOS_MT6761_SUPPORT
+		/* on mt6761, lpddr4: 26MP = 5 FPS , lpddr3: 26MP = 1 FPS*/
+		cshot_spec = 26;
+#endif
+
+		if ((picCost * target_fps) < cshot_spec) {
+			emi_bw = picCost * target_fps;
 		} else {
-			emi_bw = 232 / picCost;
+			emi_bw = cshot_spec / picCost;
 			emi_bw = (emi_bw + 1) * picCost;
 		}
 
