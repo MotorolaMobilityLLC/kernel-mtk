@@ -222,8 +222,6 @@ static irqreturn_t spm_irq0_handler(int irq, void *dev_id)
 		twam_sel.id3 = ((twam_idle_con & 0xF8000000) >> 27);
 		udelay(40); /* delay 1T @ 32K */
 	}
-	spin_lock_irqsave(&__spm_lock, flags);
-
 	/* clean ISR status */
 	SMC_CALL(IRQ0_HANDLER, isr, 0, 0);
 	spin_unlock_irqrestore(&__spm_lock, flags);
