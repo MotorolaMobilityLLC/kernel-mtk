@@ -62,9 +62,7 @@ static struct charger_consumer *chg_consumer;
 
 static void tcpc_mt_power_off(void)
 {
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	kernel_power_off();
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 }
 
 #if CONFIG_MTK_GAUGE_VERSION == 20
@@ -167,9 +165,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	struct tcp_notify *noti = data;
 	u32 vbus = 0;
 	int ret = 0;
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	int boot_mode = 0;
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VCONN:
@@ -296,7 +292,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			ret = mtk_chr_enable_chr_type_det(false);
 #endif
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 			boot_mode = get_boot_mode();
 			if (ret < 0) {
 				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
@@ -306,7 +301,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					kernel_power_off();
 				}
 			}
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
@@ -354,12 +348,10 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	ret = get_boot_mode();
 	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
 	    ret == LOW_POWER_OFF_CHARGING_BOOT)
 		tcpc_kpoc = true;
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
 	pr_info("%s KPOC(%d)\n", __func__, tcpc_kpoc);
 
 
