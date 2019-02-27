@@ -188,6 +188,14 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x50000000>;
 		};
+
+		consys-reserve-memory {
+			compatible = "mediatek,consys-reserve-memory";
+			no-map;
+			size = <0 0x400000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
 	};
 
 	/* ATF logger SW IRQ number 279 = 32 + 247 */
@@ -1528,8 +1536,47 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	btif@1100c000 {
 		compatible = "mediatek,btif";
-		reg = <0 0x1100c000 0 0x0>;
-		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>;
+			/*btif base*/
+		reg = <0 0x1100c000 0 0x1000>,
+			/*btif tx dma base*/
+		    <0 0x11000880 0 0x80>,
+			/*btif rx dma base*/
+		    <0 0x11000900 0 0x80>;
+			/*btif irq*/
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_LOW>,
+			/*btif tx dma irq*/
+			   <GIC_SPI 132 IRQ_TYPE_LEVEL_LOW>,
+			/*btif rx dma irq*/
+			   <GIC_SPI 133 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&infracfg_ao CLK_IFR_BTIF>,
+			/*btif clock*/
+		       <&infracfg_ao CLK_IFR_AP_DMA>;
+			/*ap dma clock*/
+		clock-names = "btifc","apdmac";
+	};
+
+	consys: consys@18002000 {
+		compatible = "mediatek,mt6765-consys";
+		#address-cells = <2>;
+		#size-cells = <2>;
+			/*CONN_MCU_CONFIG_BASE */
+		reg = <0 0x18002000 0 0x0200>,
+			/*TOP_RGU_BASE */
+		    <0 0x10007000 0 0x0100>,
+			/*INFRACFG_AO_BASE */
+		    <0 0x10001000 0 0x1000>,
+			/*SPM_BASE */
+		    <0 0x10006000 0 0x1000>,
+			/*CONN_MCU_CFG_ON_BASE */
+		    <0 0x180a3000 0 0x1000>,
+			/*CONN_MCU_CIRQ_BASE */
+		    <0 0x180a5000 0 0x800>;
+			/*BGF_EINT */
+		interrupts = <GIC_SPI 267 IRQ_TYPE_LEVEL_LOW>,
+			/*WDT_EINT */
+			   <GIC_SPI 269 IRQ_TYPE_LEVEL_LOW>;
+		clocks = <&scpsys SCP_SYS_CONN>;
+		clock-names = "conn";
 	};
 
 
