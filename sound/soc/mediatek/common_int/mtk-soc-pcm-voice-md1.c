@@ -122,6 +122,24 @@ static const struct soc_enum Audio_Speech_Enum[] = {
 	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(speech_md_usage), speech_md_usage),
 };
 
+static int speech_a2m_msg_id;
+
+static int Audio_Speech_A2M_Msg_ID_Get(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol) {
+	pr_debug("%s(), speech_a2m_msg_id=0x%x\n", __func__,
+		speech_a2m_msg_id);
+	ucontrol->value.integer.value[0] = speech_a2m_msg_id;
+	return 0;
+}
+
+static int Audio_Speech_A2M_Msg_ID_Set(struct snd_kcontrol *kcontrol,
+			struct snd_ctl_elem_value *ucontrol) {
+	speech_a2m_msg_id = ucontrol->value.integer.value[0];
+	pr_debug("%s(), speech_a2m_msg_id=0x%x\n", __func__,
+		speech_a2m_msg_id);
+	return 0;
+}
+
 static int Audio_Speech_MD_Control_Get(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
@@ -147,6 +165,8 @@ static int Audio_Speech_MD_Control_Set(struct snd_kcontrol *kcontrol,
 static const struct snd_kcontrol_new Audio_snd_speech_controls[] = {
 	SOC_ENUM_EXT("Speech_MD_USAGE", Audio_Speech_Enum[0],
 		     Audio_Speech_MD_Control_Get, Audio_Speech_MD_Control_Set),
+	SOC_SINGLE_EXT("Speech_A2M_Msg_ID", SND_SOC_NOPM, 0, 0xFFFF, 0,
+		Audio_Speech_A2M_Msg_ID_Get, Audio_Speech_A2M_Msg_ID_Set),
 };
 
 static int mtk_voice_pcm_open(struct snd_pcm_substream *substream)
