@@ -144,7 +144,7 @@ config MACH_MT6765
 	select MTK_TIMER_V1
 	select MTK_TIMER_TIMESYNC
 	select MTK_SYSTRACKER_V2
-	select MTK_BOUNCING_CHECK
+	select MTK_BOUNCING_CHECK if AEE_FEATURE
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_DRAMC
 	select PM_DEVFREQ
@@ -188,9 +188,9 @@ config MACH_MT6761
 	select MTK_DRAMC
 	select PM_DEVFREQ
 	select MTK_SYS_CIRQ
-	select MTK_BOUNCING_CHECK
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select MTK_SECURITY_SW_SUPPORT
+	select MTK_BOUNCING_CHECK if AEE_FEATURE
 	help
 	  This enables support for MediaTek MT6761
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
