@@ -77,7 +77,8 @@ static int debounce_times_reset_adb;
 static int update;
 static int update_v2f_table = 1;
 static int cm_mgr_opp_enable = 1;
-int cm_mgr_enable = 1;
+/* int cm_mgr_enable = 1; */
+int cm_mgr_enable;
 #ifdef USE_TIMER_CHECK
 int cm_mgr_timer_enable = 1;
 #endif /* USE_TIMER_CHECK */
