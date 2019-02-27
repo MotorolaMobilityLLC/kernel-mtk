@@ -343,7 +343,9 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			DBG(0, "OTG Plug in\n");
 			mt_usb_host_connect(0);
 		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
-			noti->typec_state.old_state == TYPEC_ATTACHED_SNK) &&
+			noti->typec_state.old_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.old_state ==
+					TYPEC_ATTACHED_NORP_SRC) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			if (is_host_active(mtk_musb)) {
 				DBG(0, "OTG Plug out\n");
