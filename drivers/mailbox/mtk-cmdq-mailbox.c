@@ -50,6 +50,8 @@
 #define CMDQ_THR_END_ADDR		0x24
 #define CMDQ_THR_WAIT_TOKEN		0x30
 #define CMDQ_THR_CFG			0x40
+#define CMDQ_THR_CNT			0x128
+#define CMDQ_THR_SPR			0x160
 
 #define CMDQ_THR_ENABLED		0x1
 #define CMDQ_THR_DISABLED		0x0
@@ -188,6 +190,31 @@ static int cmdq_thread_reset(struct cmdq *cmdq, struct cmdq_thread *thread)
 	}
 	writel(CMDQ_THR_ACTIVE_SLOT_CYCLES, cmdq->base + CMDQ_THR_SLOT_CYCLES);
 	return 0;
+}
+
+static void cmdq_thread_err_reset(struct cmdq *cmdq, struct cmdq_thread *thread,
+	u32 pc, u32 thd_pri)
+{
+	u32 i, end, spr[4], cookie;
+
+	for (i = 0; i < 4; i++)
+		spr[i] = readl(thread->base + CMDQ_THR_SPR + i * 4);
+	end = readl(thread->base + CMDQ_THR_END_ADDR);
+	cookie = readl(thread->base + CMDQ_THR_CNT);
+
+	cmdq_msg(
+		"reset backup pc:0x%08x end:0x%08x cookie:0x%08x spr:0x%x 0x%x 0x%x 0x%x\n",
+		pc, end, cookie, spr[0], spr[1], spr[2], spr[3]);
+	WARN_ON(cmdq_thread_reset(cmdq, thread) < 0);
+
+	for (i = 0; i < 4; i++)
+		writel(spr[i], thread->base + CMDQ_THR_SPR + i * 4);
+	writel(pc, thread->base + CMDQ_THR_CURR_ADDR);
+	writel(end, thread->base + CMDQ_THR_END_ADDR);
+	writel(cookie, thread->base + CMDQ_THR_CNT);
+	writel(thd_pri, thread->base + CMDQ_THR_CFG);
+	writel(CMDQ_THR_IRQ_EN, thread->base + CMDQ_THR_IRQ_ENABLE);
+	writel(CMDQ_THR_ENABLED, thread->base + CMDQ_THR_ENABLE_TASK);
 }
 
 static void cmdq_thread_disable(struct cmdq *cmdq, struct cmdq_thread *thread)
@@ -1082,9 +1109,10 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	task = list_first_entry_or_null(&thread->task_busy_list,
 		struct cmdq_task, list_entry);
 	if (task) {
-		writel(task->pa_base, thread->base + CMDQ_THR_CURR_ADDR);
 		mod_timer(&thread->timeout, jiffies +
 			msecs_to_jiffies(task->pkt->timeout));
+		cmdq_thread_err_reset(cmdq, thread,
+			task->pa_base, task->pkt->hw_priority);
 		cmdq_thread_resume(thread);
 	} else {
 		cmdq_thread_resume(thread);
