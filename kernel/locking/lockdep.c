@@ -57,7 +57,7 @@
 
 #include "lockdep_internals.h"
 
-#ifdef CONFIG_MTK_LOCK_DEBUG
+#ifdef MTK_LOCK_DEBUG
 #include "sched.h"
 #endif
 
@@ -84,7 +84,7 @@ module_param(lock_stat, int, 0644);
 
 static void lockdep_aee(void)
 {
-#ifdef CONFIG_MTK_LOCK_DEBUG
+#ifdef MTK_LOCK_DEBUG
 	char aee_str[40];
 	int cpu;
 	struct rq *rq;

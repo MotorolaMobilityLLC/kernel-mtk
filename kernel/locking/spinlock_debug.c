@@ -125,7 +125,7 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
 	lock->owner = SPINLOCK_OWNER_INIT;
 	lock->owner_cpu = -1;
 }
-#ifdef CONFIG_MTK_LOCK_DEBUG
+#ifdef MTK_LOCK_DEBUG
 static void show_cpu_backtrace(void *ignored)
 {
 	pr_info("========== The call trace of lock owner on CPU%d ==========\n",
@@ -146,7 +146,7 @@ static void show_cpu_backtrace(void *ignored)
 
 static void __spin_lock_debug(raw_spinlock_t *lock)
 {
-#ifdef CONFIG_MTK_LOCK_DEBUG
+#ifdef MTK_LOCK_DEBUG
 	u64 i;
 	u64 loops = loops_per_jiffy * LOOP_HZ;
 	int print_once = 1;
@@ -226,7 +226,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 				#endif
 		}
 	}
-#else /* CONFIG_MTK_LOCK_DEBUG*/
+#else /* MTK_LOCK_DEBUG */
 	u64 i;
 	u64 loops = loops_per_jiffy * HZ;
 
@@ -250,7 +250,7 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 	 * progress.
 	 */
 	arch_spin_lock(&lock->raw_lock);
-#endif /* CONFIG_MTK_LOCK_DEBUG */
+#endif /* MTK_LOCK_DEBUG */
 }
 
 /*
