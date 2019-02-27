@@ -266,6 +266,7 @@ struct _PMR_
 	 */
 	void		*hRIHandle;
 #endif
+	IMG_BOOL bPathTaken;
 };
 
 /* do we need a struct for the export handle?  I'll use one for now, but if nothing goes in it, we'll lose it */
@@ -295,13 +296,24 @@ PPVRSRV_DEVICE_NODE PMRGetExportDeviceNode(PMR_EXPORT *psExportPMR)
 
 }
 
+void PMRSetPath(PMR *psPMR)
+{
+		psPMR->bPathTaken = IMG_TRUE;
+}
+
+int  PMRRefCount(const PMR *psPMR)
+{
+	return OSAtomicRead(&psPMR->iRefCount);
+}
+
+
 #ifdef PMR_STRUCTURE_ASSERT
 static IMG_BOOL
 _PMRAssert(const PMR *psPMR)
 {
 	if (psPMR
 	    && PMR_SIGNATURE_LIVE == psPMR->ui32PMRSignature
-	    && OSAtomicRead(&psPMR->iRefCount))
+	    && (OSAtomicRead(&psPMR->iRefCount) >= 0))
 	{
 		return IMG_TRUE;
 	}
@@ -313,11 +325,15 @@ _PMRAssert(const PMR *psPMR)
 	else if (PMR_SIGNATURE_DEAD == psPMR->ui32PMRSignature)
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: PMR %p DEAD", __func__, psPMR));
+		PVR_LOG(("PMR : %p  Ref Value: %d Path Taken: %s\n", psPMR,
+			PMRRefCount(psPMR), (psPMR->bPathTaken)?"yes":"no"));
 	}
 	else
 	{
 		PVR_DPF((PVR_DBG_ERROR, "%s: PMR %p CORRUPT %08x", __func__,
 		         psPMR, psPMR->ui32PMRSignature));
+		PVR_LOG(("PMR : %p  Ref Value: %d Path Taken: %s\n", psPMR,
+			PMRRefCount(psPMR), (psPMR->bPathTaken)?"yes":"no"));
 	}
 
 	OSWarnOn(IMG_TRUE);
@@ -450,6 +466,7 @@ IMG_BOOL  PMRIsPMRLive(PMR *psPMR)
 	return (OSAtomicRead(&psPMR->iRefCount) > 0);
 }
 
+
 static IMG_UINT32
 _Ref(PMR *psPMR)
 {
@@ -508,7 +525,6 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 		}
 
 		psPMR->ui32PMRSignature = PMR_SIGNATURE_DEAD;
-
 #if defined(PDUMP)
 		PDumpPMRFreePMR(psPMR,
 		                psPMR->uiLogicalSize,
