@@ -288,6 +288,8 @@ static void __iomem *conn_base;/* connsys */
 #define CAM_PROT_STEP1_0_ACK_MASK		((0x1 << 19))
 #define CAM_PROT_STEP2_0_MASK			((0x1 << 20))
 #define CAM_PROT_STEP2_0_ACK_MASK		((0x1 << 20))
+#define CAM_PROT_STEP2_1_MASK			((0x1 << 2))
+#define CAM_PROT_STEP2_1_ACK_MASK		((0x1 << 2))
 
 /* Define MTCMOS Power Status Mask */
 
@@ -1776,6 +1778,16 @@ int spm_mtcmos_ctrl_cam_bus_prot(int state)
 
 		INCREASE_STEPS;
 #endif
+		/* TINFO="Set bus protect - step2 : 1" */
+		spm_write(SMI_COMMON_SMI_CLAMP_SET, CAM_PROT_STEP2_1_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(SMI_COMMON_SMI_CLAMP)
+			& CAM_PROT_STEP2_1_ACK_MASK)
+			!= CAM_PROT_STEP2_1_ACK_MASK) {
+			ram_console_update();
+		}
+		INCREASE_STEPS;
+#endif
 		/* TINFO="Set SRAM_PDN = 1" */
 		spm_write(CAM_PWR_CON,
 			spm_read(CAM_PWR_CON) | CAM_SRAM_PDN);
@@ -1808,6 +1820,13 @@ int spm_mtcmos_ctrl_cam_bus_prot(int state)
 #endif
 		/* TINFO="Release bus protect - step2 : 0" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, CAM_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* Note that this protect ack check after
+		 * releasing protect has been ignored
+		 */
+#endif
+		/* TINFO="Release bus protect - step2 : 1" */
+		spm_write(SMI_COMMON_SMI_CLAMP_CLR, CAM_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 		/* Note that this protect ack check after
 		 * releasing protect has been ignored
