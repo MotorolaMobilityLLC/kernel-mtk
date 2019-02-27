@@ -47,7 +47,8 @@ static unsigned long g_u4AF_INF;
 static unsigned long g_u4AF_MACRO = 1023;
 static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
-static unsigned int g_MotorDirection;
+static unsigned int  g_MotorDirection;
+static unsigned int  g_MotorResolution;
 #define Min_Pos 0
 #define Max_Pos 1023
 
@@ -102,13 +103,17 @@ static int setPosition(unsigned short UsPosition)
 	unsigned char UcPosL;
 	unsigned int i4RetValue = 0;
 
-	if (g_MotorDirection > 0)
+	if (g_MotorDirection == 0)
 		UsPosition = 1023 - UsPosition;
 
-	if (UsPosition < 512)
-		TarPos = 0x800 + (UsPosition << 2);
-	else
-		TarPos = ((UsPosition - 512) << 2);
+	if (g_MotorResolution == 0) {
+		TarPos = UsPosition;
+	} else {
+		if (UsPosition < 512)
+			TarPos = 0x800 + (UsPosition << 2);
+		else
+			TarPos = ((UsPosition - 512) << 2);
+	}
 
 	/* LOG_INF("DAC(%04d) -> %03x\n", UsPosition, TarPos); */
 
@@ -342,18 +347,47 @@ int LC898217AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-	g_MotorDirection = 0;
 
+	/* mt6739 */
+	g_MotorDirection = 0;
+	g_MotorResolution = 0;
 	return 1;
 }
 
-int LC898217AFD_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+int LC898217AFA_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
 {
 	g_pstAF_I2Cclient = pstAF_I2Cclient;
 	g_pAF_SpinLock = pAF_SpinLock;
 	g_pAF_Opened = pAF_Opened;
-	g_MotorDirection = 1;
 
+	/* mt6775, mt6771 - single camera */
+	g_MotorDirection = 1;
+	g_MotorResolution = 0;
+	return 1;
+}
+
+int LC898217AFB_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
+{
+	g_pstAF_I2Cclient = pstAF_I2Cclient;
+	g_pAF_SpinLock = pAF_SpinLock;
+	g_pAF_Opened = pAF_Opened;
+
+	/* mt6775, mt6771 - dual camera W + T */
+	g_MotorDirection = 0;
+	g_MotorResolution = 1;
+	return 1;
+}
+
+int LC898217AFC_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+			     spinlock_t *pAF_SpinLock, int *pAF_Opened)
+{
+	g_pstAF_I2Cclient = pstAF_I2Cclient;
+	g_pAF_SpinLock = pAF_SpinLock;
+	g_pAF_Opened = pAF_Opened;
+
+	g_MotorDirection = 1;
+	g_MotorResolution = 1;
 	return 1;
 }
