@@ -98,7 +98,7 @@ int get_round_corner_opt(enum LYE_HELPER_OPT opt)
 
 int get_round_corner_mode(int val)
 {
-	if ((val > 0) && (val & 0x1) && ((val >> 16) & 0x1))
+	if ((val > 0) && (val & 0xFF) && ((val >> 16) & 0xFF))
 		return (val >> 8) & 0xFF;
 	else
 		return -1;
