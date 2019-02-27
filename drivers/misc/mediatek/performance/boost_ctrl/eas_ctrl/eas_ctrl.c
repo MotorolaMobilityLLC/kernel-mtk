@@ -14,9 +14,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-
-#define pr_fmt(fmt) "[EAS Controller]"fmt
-
+#define pr_fmt(fmt) "[eas_ctrl]"fmt
 
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
@@ -26,7 +24,7 @@
 #include "boost_ctrl.h"
 #include "eas_ctrl_plat.h"
 #include "eas_ctrl.h"
-
+#include "mtk_perfmgr_internal.h"
 #include <mt-plat/mtk_sched.h>
 
 #ifdef CONFIG_TRACING
@@ -34,44 +32,17 @@
 #include <linux/trace_events.h>
 #endif
 
-#define MAX(a, b) (((a) > (b)) ? (a) : (b))
-
 static struct mutex boost_eas;
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 static int current_boost_value[NR_CGROUP];
 #endif
 static int boost_value[NR_CGROUP][EAS_MAX_KIR];
 static int debug_boost_value[NR_CGROUP];
 static int debug;
+static int log_enable;
+static unsigned long policy_mask[NR_CGROUP];
 
 /************************/
-#ifdef CONFIG_TRACING
-static unsigned long __read_mostly tracing_mark_write_addr;
-static inline void __mt_update_tracing_mark_write_addr(void)
-{
-	if (unlikely(tracing_mark_write_addr == 0))
-		tracing_mark_write_addr =
-				kallsyms_lookup_name("tracing_mark_write");
-}
-
-static inline void eas_ctrl_extend_kernel_trace_begin(char *name,
-					int id, int walt, int fpsgo)
-{
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "B|%d|%s|%d|%d|%d\n",
-				current->tgid, name, id, walt, fpsgo);
-	preempt_enable();
-}
-
-static inline void eas_ctrl_extend_kernel_trace_end(void)
-{
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "E\n");
-	preempt_enable();
-}
-#endif
 
 static void walt_mode(int enable)
 {
@@ -87,13 +58,12 @@ void ext_launch_start(void)
 	pr_debug("ext_launch_start\n");
 	/*--feature start from here--*/
 #ifdef CONFIG_TRACING
-	eas_ctrl_extend_kernel_trace_begin("ext_launch_start", 0, 1, 0);
+	perfmgr_trace_begin("ext_launch_start", 0, 1, 0);
 #endif
-
 	walt_mode(1);
 
 #ifdef CONFIG_TRACING
-	eas_ctrl_extend_kernel_trace_end();
+	perfmgr_trace_end();
 #endif
 }
 
@@ -102,12 +72,12 @@ void ext_launch_end(void)
 	pr_debug("ext_launch_end\n");
 	/*--feature end from here--*/
 #ifdef CONFIG_TRACING
-	eas_ctrl_extend_kernel_trace_begin("ext_launch_end", 0, 0, 1);
+	perfmgr_trace_begin("ext_launch_end", 0, 0, 1);
 #endif
 	walt_mode(0);
 
 #ifdef CONFIG_TRACING
-	eas_ctrl_extend_kernel_trace_end();
+	perfmgr_trace_end();
 #endif
 }
 /************************/
@@ -118,7 +88,7 @@ static int check_boost_value(int boost_value)
 }
 
 /************************/
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 {
 	int final_boost_value = 0, final_boost_value_1 = 0;
@@ -126,7 +96,10 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	int first_prio_boost_value = 0;
 	int boost_1[EAS_MAX_KIR], boost_2[EAS_MAX_KIR];
 	int has_set = 0, first_prio_set = 0;
-	int i;
+	int i, len = 0, len1 = 0;
+
+	char msg[LOG_BUF_SIZE];
+	char msg1[LOG_BUF_SIZE];
 
 	mutex_lock(&boost_eas);
 
@@ -137,13 +110,21 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 	}
 
 	boost_value[cgroup_idx][kicker] = value;
+	len += snprintf(msg + len, sizeof(msg) - len, "[%d] [%d] [%d]",
+			kicker, cgroup_idx, value);
+
+	/*ptr return error EIO:I/O error */
+	if (len < 0)
+		return -EIO;
 
 	for (i = 0; i < EAS_MAX_KIR; i++) {
-		if (boost_value[cgroup_idx][i] == 0)
+		if (boost_value[cgroup_idx][i] == 0) {
+			clear_bit(i, &policy_mask[cgroup_idx]);
 			continue;
+		}
 
 		if (boost_value[cgroup_idx][i] == 1100 ||
-			boost_value[cgroup_idx][i] == 100) {
+				boost_value[cgroup_idx][i] == 100) {
 			first_prio_boost_value =
 				MAX(boost_value[cgroup_idx][i],
 						first_prio_boost_value);
@@ -155,6 +136,9 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 		final_boost_value_1 = MAX(boost_1[i], final_boost_value_1);
 		final_boost_value_2 = MAX(boost_2[i], final_boost_value_2);
 		has_set = 1;
+
+		set_bit(i, &policy_mask[cgroup_idx]);
+
 	}
 
 	if (first_prio_set)
@@ -167,14 +151,29 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 
 	current_boost_value[cgroup_idx] = check_boost_value(final_boost_value);
 
-	if (kicker == EAS_KIR_PERF)
-		pr_debug("kicker:%d, boost:%d, final:%d, current:%d",
-				kicker, boost_value[cgroup_idx][kicker],
-				final_boost_value,
-				current_boost_value[cgroup_idx]);
+	len += snprintf(msg + len, sizeof(msg) - len, "{%d} ",
+			final_boost_value);
+	/*ptr return error EIO:I/O error */
+	if (len < 0)
+		return -EIO;
+
+	len1 += snprintf(msg1 + len1, sizeof(msg1) - len1, "[0x %lx] ",
+			policy_mask[cgroup_idx]);
+
+	if (len1 < 0)
+		return -EIO;
+
 	if (!debug)
 		boost_write_for_perf_idx(cgroup_idx,
 				current_boost_value[cgroup_idx]);
+
+	strncat(msg, msg1, LOG_BUF_SIZE);
+	if (log_enable)
+		pr_debug("%s\n", msg);
+
+#ifdef CONFIG_TRACING
+	perfmgr_trace_printk("eas_ctrl", msg);
+#endif
 	mutex_unlock(&boost_eas);
 
 	return current_boost_value[cgroup_idx];
@@ -187,21 +186,15 @@ int update_eas_boost_value(int kicker, int cgroup_idx, int value)
 #endif
 
 /****************/
-static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp
+static ssize_t perfmgr_perfserv_fg_boost_proc_write(struct file *filp
 		, const char *ubuf, size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	data = check_boost_value(data);
 
@@ -210,31 +203,17 @@ static ssize_t perfmgr_perfserv_fg_boost_write(struct file *filp
 	return cnt;
 }
 
-static int perfmgr_perfserv_fg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_perfserv_fg_boost_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", boost_value[CGROUP_FG][EAS_KIR_PERF]);
 
 	return 0;
 }
 
-static int perfmgr_perfserv_fg_boost_open(struct inode *inode,
-					 struct file *file)
-{
-	return single_open(file, perfmgr_perfserv_fg_boost_show,
-			 inode->i_private);
-}
-
-static const struct file_operations perfmgr_perfserv_fg_boost_fops = {
-	.open = perfmgr_perfserv_fg_boost_open,
-	.write = perfmgr_perfserv_fg_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
 /************************************************/
-static int perfmgr_current_fg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_current_fg_boost_proc_show(struct seq_file *m, void *v)
 {
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	seq_printf(m, "%d\n", current_boost_value[CGROUP_FG]);
 #else
 	seq_printf(m, "%d\n", -1);
@@ -243,88 +222,45 @@ static int perfmgr_current_fg_boost_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static int perfmgr_current_fg_boost_open(struct inode *inode,
-					 struct file *file)
-{
-	return single_open(file, perfmgr_current_fg_boost_show,
-			 inode->i_private);
-}
-
-static const struct file_operations perfmgr_current_fg_boost_fops = {
-	.open = perfmgr_current_fg_boost_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
 /************************************************************/
-static ssize_t perfmgr_debug_fg_boost_write(struct file *filp, const char *ubuf,
+static ssize_t perfmgr_debug_fg_boost_proc_write(
+		struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	debug_boost_value[CGROUP_FG] = check_boost_value(data);
-	if (debug_boost_value[CGROUP_FG])
-		debug = 1;
-	else
-		debug = 0;
 
-#ifdef CONFIG_SCHED_TUNE
-	if (debug) {
-		boost_write_for_perf_idx(CGROUP_FG,
-			 debug_boost_value[CGROUP_FG]);
-	}
+	debug = debug_boost_value[CGROUP_FG] > 0 ? 1:0;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost_write_for_perf_idx(CGROUP_FG,
+			debug_boost_value[CGROUP_FG]);
 #endif
-
 	return cnt;
 }
 
-static int perfmgr_debug_fg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_debug_fg_boost_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", debug_boost_value[CGROUP_FG]);
 
 	return 0;
 }
-
-static int perfmgr_debug_fg_boost_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, perfmgr_debug_fg_boost_show, inode->i_private);
-}
-
-static const struct file_operations perfmgr_debug_fg_boost_fops = {
-	.open = perfmgr_debug_fg_boost_open,
-	.write = perfmgr_debug_fg_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /******************************************************/
-static ssize_t perfmgr_perfserv_bg_boost_write(struct file *filp,
-		 const char *ubuf, size_t cnt, loff_t *pos)
+static ssize_t perfmgr_perfserv_bg_boost_proc_write(struct file *filp,
+		const char *ubuf, size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	data = check_boost_value(data);
 
@@ -333,32 +269,16 @@ static ssize_t perfmgr_perfserv_bg_boost_write(struct file *filp,
 	return cnt;
 }
 
-static int perfmgr_perfserv_bg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_perfserv_bg_boost_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", boost_value[CGROUP_BG][EAS_KIR_PERF]);
 
 	return 0;
 }
-
-static int perfmgr_perfserv_bg_boost_open(struct inode *inode,
-					 struct file *file)
-{
-	return single_open(file, perfmgr_perfserv_bg_boost_show,
-			 inode->i_private);
-}
-
-static const struct file_operations perfmgr_perfserv_bg_boost_fops = {
-	.open = perfmgr_perfserv_bg_boost_open,
-	.write = perfmgr_perfserv_bg_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /*******************************************************/
-static int perfmgr_current_bg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_current_bg_boost_proc_show(struct seq_file *m, void *v)
 {
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	seq_printf(m, "%d\n", current_boost_value[CGROUP_BG]);
 #else
 	seq_printf(m, "%d\n", -1);
@@ -366,90 +286,45 @@ static int perfmgr_current_bg_boost_show(struct seq_file *m, void *v)
 
 	return 0;
 }
-
-static int perfmgr_current_bg_boost_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, perfmgr_current_bg_boost_show
-		, inode->i_private);
-}
-
-static const struct file_operations perfmgr_current_bg_boost_fops = {
-	.open = perfmgr_current_bg_boost_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /**************************************************/
-static ssize_t perfmgr_debug_bg_boost_write(struct file *filp, const char *ubuf,
+static ssize_t perfmgr_debug_bg_boost_proc_write(
+		struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
-
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	debug_boost_value[CGROUP_BG] = check_boost_value(data);
-	if (debug_boost_value[CGROUP_BG])
-		debug = 1;
-	else
-		debug = 0;
 
-#ifdef CONFIG_SCHED_TUNE
-	if (debug) {
-		boost_write_for_perf_idx(CGROUP_BG,
-		 debug_boost_value[CGROUP_BG]);
-	}
+	debug = debug_boost_value[CGROUP_BG] > 0 ? 1:0;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost_write_for_perf_idx(CGROUP_BG,
+			debug_boost_value[CGROUP_BG]);
 #endif
 
 	return cnt;
 }
 
-static int perfmgr_debug_bg_boost_show(struct seq_file *m, void *v)
+static int perfmgr_debug_bg_boost_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", debug_boost_value[CGROUP_BG]);
 
 	return 0;
 }
-
-static int perfmgr_debug_bg_boost_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, perfmgr_debug_bg_boost_show, inode->i_private);
-}
-
-static const struct file_operations perfmgr_debug_bg_boost_fops = {
-	.open = perfmgr_debug_bg_boost_open,
-	.write = perfmgr_debug_bg_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-
 /************************************************/
-static ssize_t perfmgr_perfserv_ta_boost_write(struct file *filp,
-		 const char *ubuf, size_t cnt, loff_t *pos)
+static ssize_t perfmgr_perfserv_ta_boost_proc_write(
+		struct file *filp, const char *ubuf,
+		size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
-
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	data = check_boost_value(data);
 
@@ -458,44 +333,24 @@ static ssize_t perfmgr_perfserv_ta_boost_write(struct file *filp,
 	return cnt;
 }
 
-static int perfmgr_perfserv_ta_boost_show(struct seq_file *m, void *v)
+static int perfmgr_perfserv_ta_boost_proc_show(
+		struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", boost_value[CGROUP_TA][EAS_KIR_PERF]);
 
 	return 0;
 }
-
-static int perfmgr_perfserv_ta_boost_open(struct inode *inode,
-						 struct file *file)
-{
-	return single_open(file, perfmgr_perfserv_ta_boost_show,
-				 inode->i_private);
-}
-
-static const struct file_operations perfmgr_perfserv_ta_boost_fops = {
-	.open = perfmgr_perfserv_ta_boost_open,
-	.write = perfmgr_perfserv_ta_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /************************************************/
-static ssize_t perfmgr_boot_boost_write(struct file *filp, const char *ubuf,
+static ssize_t perfmgr_boot_boost_proc_write(
+		struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
-	int cgroup, data;
-	char buf[128];
+	int cgroup = 0, data = 0;
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
+	int rv = check_boot_boost_proc_write(&cgroup, &data, ubuf, cnt);
 
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (sscanf(buf, "%d %d", &cgroup, &data) != 2)
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	data = check_boost_value(data);
 
@@ -505,7 +360,7 @@ static ssize_t perfmgr_boot_boost_write(struct file *filp, const char *ubuf,
 	return cnt;
 }
 
-static int perfmgr_boot_boost_show(struct seq_file *m, void *v)
+static int perfmgr_boot_boost_proc_show(struct seq_file *m, void *v)
 {
 	int i;
 
@@ -514,24 +369,10 @@ static int perfmgr_boot_boost_show(struct seq_file *m, void *v)
 
 	return 0;
 }
-
-static int perfmgr_boot_boost_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, perfmgr_boot_boost_show, inode->i_private);
-}
-
-static const struct file_operations perfmgr_boot_boost_fops = {
-	.open = perfmgr_boot_boost_open,
-	.write = perfmgr_boot_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /************************************************/
-static int perfmgr_current_ta_boost_show(struct seq_file *m, void *v)
+static int perfmgr_current_ta_boost_proc_show(struct seq_file *m, void *v)
 {
-#ifdef CONFIG_SCHED_TUNE
+#ifdef CONFIG_CGROUP_SCHEDTUNE
 	seq_printf(m, "%d\n", current_boost_value[CGROUP_TA]);
 #else
 	seq_printf(m, "%d\n", -1);
@@ -540,90 +381,46 @@ static int perfmgr_current_ta_boost_show(struct seq_file *m, void *v)
 	return 0;
 }
 
-static int perfmgr_current_ta_boost_open(struct inode *inode,
-					 struct file *file)
-{
-	return single_open(file, perfmgr_current_ta_boost_show,
-			 inode->i_private);
-}
-
-static const struct file_operations perfmgr_current_ta_boost_fops = {
-	.open = perfmgr_current_ta_boost_open,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /**********************************/
-static ssize_t perfmgr_debug_ta_boost_write(struct file *filp, const char *ubuf,
+static ssize_t perfmgr_debug_ta_boost_proc_write(
+		struct file *filp, const char *ubuf,
 		size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
-
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	debug_boost_value[CGROUP_TA] = check_boost_value(data);
-	if (debug_boost_value[CGROUP_TA])
-		debug = 1;
-	else
-		debug = 0;
 
-#ifdef CONFIG_SCHED_TUNE
-	if (debug) {
-		boost_write_for_perf_idx(CGROUP_TA,
-		 debug_boost_value[CGROUP_TA]);
-	}
+	debug = debug_boost_value[CGROUP_TA] > 0 ? 1:0;
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+	boost_write_for_perf_idx(CGROUP_TA,
+			debug_boost_value[CGROUP_TA]);
 #endif
 
 	return cnt;
 }
 
-static int perfmgr_debug_ta_boost_show(struct seq_file *m, void *v)
+static int perfmgr_debug_ta_boost_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", debug_boost_value[CGROUP_TA]);
 
 	return 0;
 }
 
-static int perfmgr_debug_ta_boost_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, perfmgr_debug_ta_boost_show, inode->i_private);
-}
-
-static const struct file_operations perfmgr_debug_ta_boost_fops = {
-	.open = perfmgr_debug_ta_boost_open,
-	.write = perfmgr_debug_ta_boost_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /********************************************************************/
 static int ext_launch_state;
-static ssize_t perfmgr_perfserv_ext_launch_mon_write(struct file *filp,
+static ssize_t perfmgr_perfserv_ext_launch_mon_proc_write(struct file *filp,
 		const char *ubuf, size_t cnt, loff_t *pos)
 {
-	int data;
-	char buf[128];
+	int data = 0;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
-
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	if (data) {
 		ext_launch_start();
@@ -637,114 +434,120 @@ static ssize_t perfmgr_perfserv_ext_launch_mon_write(struct file *filp,
 	return cnt;
 }
 
-static int perfmgr_perfserv_ext_launch_mon_show(struct seq_file *m, void *v)
+	static int
+perfmgr_perfserv_ext_launch_mon_proc_show(
+		struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", ext_launch_state);
 
 	return 0;
 }
 
-static int perfmgr_perfserv_ext_launch_mon_open(struct inode *inode,
-							struct file *file)
-{
-	return single_open(file, perfmgr_perfserv_ext_launch_mon_show,
-							inode->i_private);
-}
-
-static const struct file_operations perfmgr_perfserv_ext_launch_mon_fops = {
-	.open = perfmgr_perfserv_ext_launch_mon_open,
-	.write = perfmgr_perfserv_ext_launch_mon_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
 /* Add procfs to control sysctl_sched_migration_cost */
-static ssize_t perfmgr_m_sched_migrate_cost_n_write(struct file *filp,
+static ssize_t perfmgr_m_sched_migrate_cost_n_proc_write(struct file *filp,
 		const char *ubuf, size_t cnt, loff_t *pos)
 {
-	unsigned int data;
-	char buf[128];
+	int data = 0;
+	int rv = check_proc_write(&data, ubuf, cnt);
 
-	if (cnt >= sizeof(buf))
-		return -EINVAL;
-
-	if (copy_from_user(buf, ubuf, cnt))
-		return -EFAULT;
-	buf[cnt] = 0;
-
-	if (kstrtoint(buf, 10, &data))
-		return -1;
+	if (rv != 0)
+		return rv;
 
 	sysctl_sched_migration_cost = data;
 
 	return cnt;
 }
 
-static int perfmgr_m_sched_migrate_cost_n_show(struct seq_file *m, void *v)
+static int perfmgr_m_sched_migrate_cost_n_proc_show(struct seq_file *m, void *v)
 {
 	seq_printf(m, "%d\n", sysctl_sched_migration_cost);
 
 	return 0;
 }
-
-static int perfmgr_m_sched_migrate_cost_n_open(struct inode *inode,
-		struct file *file)
+static ssize_t perfmgr_perfmgr_log_proc_write(
+		struct file *filp, const char __user *ubuf,
+		size_t cnt, loff_t *pos)
 {
-	return single_open(file, perfmgr_m_sched_migrate_cost_n_show,
-						inode->i_private);
+	int data = 0;
+
+	int rv = check_proc_write(&data, ubuf, cnt);
+
+	if (rv != 0)
+		return rv;
+
+	log_enable = data > 0 ? 1 : 0;
+
+	return cnt;
 }
 
-static const struct file_operations perfmgr_m_sched_migrate_cost_n_fops = {
-	.open = perfmgr_m_sched_migrate_cost_n_open,
-	.write = perfmgr_m_sched_migrate_cost_n_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
+static int perfmgr_perfmgr_log_proc_show(struct seq_file *m, void *v)
+{
+	if (m)
+		seq_printf(m, "%d\n", log_enable);
+	return 0;
+}
+
+PROC_FOPS_RW(perfserv_fg_boost);
+PROC_FOPS_RO(current_fg_boost);
+PROC_FOPS_RW(debug_fg_boost);
+PROC_FOPS_RW(perfserv_bg_boost);
+PROC_FOPS_RO(current_bg_boost);
+PROC_FOPS_RW(debug_bg_boost);
+PROC_FOPS_RW(perfserv_ta_boost);
+PROC_FOPS_RO(current_ta_boost);
+PROC_FOPS_RW(debug_ta_boost);
+PROC_FOPS_RW(boot_boost);
+PROC_FOPS_RW(perfserv_ext_launch_mon);
+PROC_FOPS_RW(m_sched_migrate_cost_n);
+PROC_FOPS_RW(perfmgr_log);
 
 /*******************************************/
 int eas_ctrl_init(struct proc_dir_entry *parent)
 {
-	int i, j;
+	int i, j, ret = 0;
 	struct proc_dir_entry *boost_dir = NULL;
 
+	struct pentry {
+		const char *name;
+		const struct file_operations *fops;
+	};
+
+	const struct pentry entries[] = {
+		PROC_ENTRY(perfserv_fg_boost),
+		PROC_ENTRY(current_fg_boost),
+		PROC_ENTRY(debug_fg_boost),
+		PROC_ENTRY(perfserv_bg_boost),
+		PROC_ENTRY(current_bg_boost),
+		PROC_ENTRY(debug_bg_boost),
+		PROC_ENTRY(perfserv_ta_boost),
+		PROC_ENTRY(current_ta_boost),
+		PROC_ENTRY(debug_ta_boost),
+		PROC_ENTRY(boot_boost),
+		PROC_ENTRY(perfmgr_log),
+		/*--ext_launch--*/
+		PROC_ENTRY(perfserv_ext_launch_mon),
+		/*--sched migrate cost n--*/
+		PROC_ENTRY(m_sched_migrate_cost_n),
+	};
 	mutex_init(&boost_eas);
-
 	boost_dir = proc_mkdir("eas_ctrl", parent);
-	proc_create("perfserv_fg_boost", 0644, boost_dir,
-					 &perfmgr_perfserv_fg_boost_fops);
-	proc_create("current_fg_boost", 0644, boost_dir,
-					 &perfmgr_current_fg_boost_fops);
-	proc_create("debug_fg_boost", 0644, boost_dir,
-					 &perfmgr_debug_fg_boost_fops);
 
-	proc_create("perfserv_bg_boost", 0644, boost_dir,
-					 &perfmgr_perfserv_bg_boost_fops);
-	proc_create("current_bg_boost", 0644, boost_dir,
-					 &perfmgr_current_bg_boost_fops);
-	proc_create("debug_bg_boost", 0644, boost_dir,
-					 &perfmgr_debug_bg_boost_fops);
+	if (!boost_dir)
+		pr_debug("boost_dir null\n ");
 
-	proc_create("perfserv_ta_boost", 0644, boost_dir,
-					 &perfmgr_perfserv_ta_boost_fops);
-	proc_create("current_ta_boost", 0644, boost_dir,
-					 &perfmgr_current_ta_boost_fops);
-	proc_create("debug_ta_boost", 0644, boost_dir,
-					 &perfmgr_debug_ta_boost_fops);
-	proc_create("boot_boost", 0644, boost_dir,
-					&perfmgr_boot_boost_fops);
-
-	/*--ext_launch--*/
-	proc_create("perfserv_ext_launch_mon", 0644, boost_dir,
-					&perfmgr_perfserv_ext_launch_mon_fops);
-
-	/*--sched migrate cost n--*/
-	proc_create("m_sched_migrate_cost_n", 0644, boost_dir,
-					&perfmgr_m_sched_migrate_cost_n_fops);
-
+	/* create procfs */
+	for (i = 0; i < ARRAY_SIZE(entries); i++) {
+		if (!proc_create(entries[i].name, 0644,
+					boost_dir, entries[i].fops)) {
+			pr_debug("%s(), create /eas_ctrl%s failed\n",
+					__func__, entries[i].name);
+			ret = -EINVAL;
+			goto out;
+		}
+	}
 	for (i = 0; i < NR_CGROUP; i++)
 		for (j = 0; j < EAS_MAX_KIR; j++)
 			boost_value[i][j] = 0;
-	return 0;
+out:
+	return ret;
 }

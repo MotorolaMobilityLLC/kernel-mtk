@@ -17,14 +17,14 @@
 #include <mtk_ppm_api.h>
 
 enum {
-	PPM_KIR_PERF = 0,
-	PPM_KIR_FPSGO,
-	PPM_KIR_WIFI,
-	PPM_KIR_BOOT,
-	PPM_KIR_TOUCH,
-	PPM_KIR_PERFTOUCH,
-	PPM_KIR_USB,
-	PPM_MAX_KIR
+	CPU_KIR_PERF = 0,
+	CPU_KIR_FPSGO,
+	CPU_KIR_WIFI,
+	CPU_KIR_BOOT,
+	CPU_KIR_TOUCH,
+	CPU_KIR_PERFTOUCH,
+	CPU_KIR_USB,
+	CPU_MAX_KIR
 };
 extern unsigned int mt_cpufreq_get_freq_by_idx(int id, int idx);
 extern int update_userlimit_cpu_freq(int kicker, int num_cluster
