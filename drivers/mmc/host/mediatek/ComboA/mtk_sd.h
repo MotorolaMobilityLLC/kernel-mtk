@@ -181,6 +181,9 @@ struct msdc_hw {
 	struct msdc_hw_driving driving_sdr104;
 	struct msdc_hw_driving driving_sdr50;
 	struct msdc_hw_driving driving_ddr50;
+	struct msdc_hw_driving driving_hs400;
+	struct msdc_hw_driving driving_hs200;
+
 	unsigned long flags;            /* hardware capability flags */
 
 	unsigned char boot;             /* define boot host */
