@@ -114,7 +114,7 @@ struct ion_sys_get_phys_param {
 	unsigned long len;
 };
 
-#define ION_MM_DBG_NAME_LEN 16
+#define ION_MM_DBG_NAME_LEN 48
 #define ION_MM_SF_BUF_INFO_LEN 16
 
 struct ion_sys_client_name {
@@ -197,15 +197,6 @@ struct ion_mm_data {
 #define ION_LOG_TAG "ion_dbg"
 #define IONMSG(string, args...)	pr_err("[ION]"string, ##args)
 #define IONDBG(string, args...)	pr_debug("[ION]"string, ##args)
-
-#ifdef ION_TO_BE_IMPL
-#include <aee.h>
-#define ion_aee_print(string, args...) do {\
-	char ion_name[100];\
-	snprintf(ion_name, 100, "[ION_LOG_TAG]"string, ##args); \
-	aee_kernel_warning(ion_name, "[ION_LOG_TAG]error:"string, ##args);  \
-} while (0)
-#endif
 
 /* Exported global variables */
 extern struct ion_device *g_ion_device;
