@@ -31,9 +31,9 @@ void store_cpu_topology(unsigned int cpuid);
 const struct cpumask *cpu_coregroup_mask(int cpu);
 
 #ifdef CONFIG_CPU_FREQ
-#define arch_scale_freq_capacity arch_scale_freq_capacity
-
-extern unsigned long arch_scale_freq_capacity(struct sched_domain *sd, int cpu);
+#define arch_scale_freq_capacity cpufreq_scale_freq_capacity
+#define arch_scale_max_freq_capacity cpufreq_scale_max_freq_capacity
+#define arch_scale_min_freq_capacity cpufreq_scale_min_freq_capacity
 #endif
 
 #define arch_scale_cpu_capacity scale_cpu_capacity

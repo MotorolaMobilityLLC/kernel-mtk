@@ -538,6 +538,12 @@ unsigned int tcp_poll(struct file *file, struct socket *sock, poll_table *wait)
 
 		if (tp->urg_data & TCP_URG_VALID)
 			mask |= POLLPRI;
+	} else if (state == TCP_SYN_SENT && inet_sk(sk)->defer_connect) {
+		/* Active TCP fastopen socket with defer_connect
+		 * Return POLLOUT so application can call write()
+		 * in order for kernel to generate SYN+data
+		 */
+		mask |= POLLOUT | POLLWRNORM;
 	}
 	/* This barrier is coupled with smp_wmb() in tcp_reset() */
 	smp_rmb();
@@ -1079,6 +1085,7 @@ static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
 				int *copied, size_t size)
 {
 	struct tcp_sock *tp = tcp_sk(sk);
+	struct inet_sock *inet = inet_sk(sk);
 	struct sockaddr *uaddr = msg->msg_name;
 	int err, flags;
 
@@ -1096,11 +1103,26 @@ static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
 	tp->fastopen_req->data = msg;
 	tp->fastopen_req->size = size;
 
+	if (inet->defer_connect) {
+		err = tcp_connect(sk);
+		/* Same failure procedure as in tcp_v4/6_connect */
+		if (err) {
+			tcp_set_state(sk, TCP_CLOSE);
+			inet->inet_dport = 0;
+			sk->sk_route_caps = 0;
+		}
+	}
 	flags = (msg->msg_flags & MSG_DONTWAIT) ? O_NONBLOCK : 0;
 	err = __inet_stream_connect(sk->sk_socket, uaddr,
 				    msg->msg_namelen, flags);
-	*copied = tp->fastopen_req->copied;
-	tcp_free_fastopen_req(tp);
+	/* fastopen_req could already be freed in __inet_stream_connect
+	 * if the connection times out or gets rst
+	 */
+	if (tp->fastopen_req) {
+		*copied = tp->fastopen_req->copied;
+		tcp_free_fastopen_req(tp);
+		inet->defer_connect = 0;
+	}
 	return err;
 }
 
@@ -1118,7 +1140,8 @@ int tcp_sendmsg(struct sock *sk, struct msghdr *msg, size_t size)
 	lock_sock(sk);
 
 	flags = msg->msg_flags;
-	if (flags & MSG_FASTOPEN) {
+	if (unlikely(flags & MSG_FASTOPEN || inet_sk(sk)->defer_connect) &&
+	    !tp->repair) {
 		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
 		if (err == -EINPROGRESS && copied_syn > 0)
 			goto out;
@@ -2215,6 +2238,9 @@ adjudge_to_death:
 			tcp_send_active_reset(sk, GFP_ATOMIC);
 			__NET_INC_STATS(sock_net(sk),
 					LINUX_MIB_TCPABORTONMEMORY);
+		} else if (!check_net(sock_net(sk))) {
+			/* Not possible to send reset; just close */
+			tcp_set_state(sk, TCP_CLOSE);
 		}
 	}
 
@@ -2311,7 +2337,17 @@ int tcp_disconnect(struct sock *sk, int flags)
 	sk->sk_rx_dst = NULL;
 	tcp_saved_syn_free(tp);
 
+	/* Clean up fastopen related fields */
+	tcp_free_fastopen_req(tp);
+	inet->defer_connect = 0;
+
 	WARN_ON(inet->inet_num && !icsk->icsk_bind_hash);
+
+	if (sk->sk_frag.page) {
+		put_page(sk->sk_frag.page);
+		sk->sk_frag.page = NULL;
+		sk->sk_frag.offset = 0;
+	}
 
 	sk->sk_error_report(sk);
 	return err;
@@ -2514,7 +2550,7 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
 	case TCP_REPAIR_QUEUE:
 		if (!tp->repair)
 			err = -EPERM;
-		else if (val < TCP_QUEUES_NR)
+		else if ((unsigned int)val < TCP_QUEUES_NR)
 			tp->repair_queue = val;
 		else
 			err = -EINVAL;
@@ -2653,8 +2689,10 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
 
 #ifdef CONFIG_TCP_MD5SIG
 	case TCP_MD5SIG:
-		/* Read the IP->Key mappings from userspace */
-		err = tp->af_specific->md5_parse(sk, optval, optlen);
+		if ((1 << sk->sk_state) & (TCPF_CLOSE | TCPF_LISTEN))
+			err = tp->af_specific->md5_parse(sk, optval, optlen);
+		else
+			err = -EINVAL;
 		break;
 #endif
 	case TCP_USER_TIMEOUT:
@@ -2675,6 +2713,18 @@ static int do_tcp_setsockopt(struct sock *sk, int level,
 			fastopen_queue_tune(sk, val);
 		} else {
 			err = -EINVAL;
+		}
+		break;
+	case TCP_FASTOPEN_CONNECT:
+		if (val > 1 || val < 0) {
+			err = -EINVAL;
+		} else if (sysctl_tcp_fastopen & TFO_CLIENT_ENABLE) {
+			if (sk->sk_state == TCP_CLOSE)
+				tp->fastopen_connect = val;
+			else
+				err = -EINVAL;
+		} else {
+			err = -EOPNOTSUPP;
 		}
 		break;
 	case TCP_TIMESTAMP:
@@ -2988,6 +3038,10 @@ static int do_tcp_getsockopt(struct sock *sk, int level,
 
 	case TCP_FASTOPEN:
 		val = icsk->icsk_accept_queue.fastopenq.max_qlen;
+		break;
+
+	case TCP_FASTOPEN_CONNECT:
+		val = tp->fastopen_connect;
 		break;
 
 	case TCP_TIMESTAMP:

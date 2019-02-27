@@ -35,31 +35,70 @@ do { \
 #else
 #define mt_sched_printf(event, x...) do {} while (0)
 #endif
-
+/*
+ * CPU candidates.
+ *
+ * These are labels to reference CPU candidates for an energy_diff.
+ * Currently we support only two possible candidates: the task's previous CPU
+ * and another candiate CPU.
+ * More advanced/aggressive EAS selection policies can consider more
+ * candidates.
+ */
+#define EAS_CPU_PRV	0
+#define EAS_CPU_NXT	1
+#define EAS_CPU_BKP	2
+#define EAS_CPU_CNT	3
+/*
+ * energy_diff - supports the computation of the estimated energy impact in
+ * moving a "task"'s "util_delta" between different CPU candidates.
+ */
+#undef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 struct energy_env {
+	/* Utilization to move */
+	struct task_struct	*p;
+	int			util_delta;
+
+	/* Mask of CPUs candidates to evaluate */
+	cpumask_t		cpus_mask;
+
+	/* CPU candidates to evaluate */
+	struct {
+
+		/* CPU ID, must be in cpus_mask */
+		int	cpu_id;
+
+		/*
+		 * Index (into sched_group_energy::cap_states) of the OPP the
+		 * CPU needs to run at if the task is placed on it.
+		 * This includes the both active and blocked load, due to
+		 * other tasks on this CPU,  as well as the task's own
+		 * utilization.
+		 */
+		int	cap_idx;
+		int	cap;
+
+		/* Estimated system energy */
+		unsigned int energy;
+
+		/* Estimated energy variation wrt EAS_CPU_PRV */
+		int	nrg_delta;
+
+	} cpu[EAS_CPU_CNT];
+
+	/*
+	 * Index (into energy_env::cpu) of the morst energy efficient CPU for
+	 * the specified energy_env::task
+	 */
+	int			next_idx;
+
+	/* Support data */
 	struct sched_group	*sg_top;
 	struct sched_group	*sg_cap;
-	int			cap_idx;
-	int			util_delta;
-	int			src_cpu;
-	int			dst_cpu;
-	int			energy;
-	int			payoff;
-	struct task_struct	*task;
-	struct {
-		int before;
-		int after;
-		int delta;
-		int diff;
-	} nrg;
-	struct {
-		int before;
-		int after;
-		int delta;
-	} cap;
+	struct sched_group	*sg;
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 	int	opp_idx[3];	/* [FIXME] cluster may > 3 */
 #endif
+
 };
 
 /* cpu_core_energy & cpu_cluster_energy both implmented in topology.c */

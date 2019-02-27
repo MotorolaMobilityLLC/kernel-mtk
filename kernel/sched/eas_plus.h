@@ -19,11 +19,6 @@ static bool system_overutil;
 extern int cpu_eff_tp;
 
 inline bool system_overutilized(int cpu);
-static inline unsigned long
-__src_cpu_util(int cpu, int delta, unsigned long task_delta);
-
-static unsigned long
-__src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta);
 
 static inline unsigned long task_util(struct task_struct *p);
 static bool is_intra_domain(int prev, int target);

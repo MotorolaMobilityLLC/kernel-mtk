@@ -75,6 +75,7 @@
 #include <linux/compiler.h>
 #include <linux/frame.h>
 #include <linux/prefetch.h>
+#include <linux/cpufreq_times.h>
 
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
@@ -545,7 +546,8 @@ void resched_cpu(int cpu)
 	unsigned long flags;
 
 	raw_spin_lock_irqsave(&rq->lock, flags);
-	resched_curr(rq);
+	if (cpu_online(cpu) || cpu == smp_processor_id())
+		resched_curr(rq);
 	raw_spin_unlock_irqrestore(&rq->lock, flags);
 }
 
@@ -1324,7 +1326,9 @@ static void __migrate_swap_task(struct task_struct *p, int cpu)
 
 		p->on_rq = TASK_ON_RQ_MIGRATING;
 		deactivate_task(src_rq, p, 0);
+		p->on_rq = TASK_ON_RQ_MIGRATING;
 		set_task_cpu(p, cpu);
+		p->on_rq = TASK_ON_RQ_QUEUED;
 		activate_task(dst_rq, p, 0);
 		p->on_rq = TASK_ON_RQ_QUEUED;
 		check_preempt_curr(dst_rq, p, 0);
@@ -2312,6 +2316,7 @@ void __dl_clear_params(struct task_struct *p)
 	dl_se->dl_period = 0;
 	dl_se->flags = 0;
 	dl_se->dl_bw = 0;
+	dl_se->dl_density = 0;
 
 	dl_se->dl_throttled = 0;
 	dl_se->dl_yielded = 0;
@@ -2333,6 +2338,10 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 	p->se.prev_sum_exec_runtime	= 0;
 	p->se.nr_migrations		= 0;
 	p->se.vruntime			= 0;
+#ifdef CONFIG_SCHED_WALT
+	p->last_sleep_ts		= 0;
+#endif
+
 	INIT_LIST_HEAD(&p->se.group_node);
 	walt_init_new_task_load(p);
 
@@ -2343,6 +2352,10 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
 #ifdef CONFIG_SCHEDSTATS
 	/* Even if schedstat is disabled, there should not be garbage */
 	memset(&p->se.statistics, 0, sizeof(p->se.statistics));
+#endif
+
+#ifdef CONFIG_CPU_FREQ_TIMES
+	cpufreq_task_times_init(p);
 #endif
 
 	RB_CLEAR_NODE(&p->dl.rb_node);
@@ -2710,6 +2723,7 @@ void wake_up_new_task(struct task_struct *p)
 	__set_task_cpu(p, select_task_rq(p, task_cpu(p), SD_BALANCE_FORK, 0));
 #endif
 	rq = __task_rq_lock(p, &rf);
+	update_rq_clock(rq);
 	post_init_entity_util_avg(&p->se);
 
 	walt_mark_task_starting(p);
@@ -3383,7 +3397,6 @@ static void sched_freq_tick_walt(int cpu)
 	cpu_utilization = cpu_utilization * SCHED_CAPACITY_SCALE /
 			capacity_orig_of(cpu);
 	set_cfs_cpu_capacity(cpu, true, cpu_utilization, SCHE_TICK);
-
 }
 #define _sched_freq_tick(cpu) sched_freq_tick_walt(cpu)
 #else
@@ -3425,11 +3438,11 @@ void scheduler_tick(void)
 #endif
 
 	walt_set_window_start(rq);
+	walt_update_task_ravg(rq->curr, rq, TASK_UPDATE,
+			walt_ktime_clock(), 0);
 	update_rq_clock(rq);
 	curr->sched_class->task_tick(rq, curr, 0);
 	cpu_load_update_active(rq);
-	walt_update_task_ravg(rq->curr, rq, TASK_UPDATE,
-			walt_ktime_clock(), 0);
 	calc_global_load_tick(rq);
 	sched_freq_tick(cpu);
 	raw_spin_unlock(&rq->lock);
@@ -3456,6 +3469,8 @@ void scheduler_tick(void)
 #ifdef CONFIG_MTK_SCHED_SYSHINT
 	sched_hint_check(sched_ktime_clock());
 #endif
+	if (curr->sched_class == &fair_sched_class)
+		check_for_migration(rq, curr);
 }
 
 #ifdef CONFIG_NO_HZ_FULL
@@ -3774,6 +3789,10 @@ static void __sched notrace __schedule(bool preempt)
 	rq->clock_skip_update = 0;
 
 	if (likely(prev != next)) {
+#ifdef CONFIG_SCHED_WALT
+		if (!prev->on_rq)
+			prev->last_sleep_ts = wallclock;
+#endif
 		rq->nr_switches++;
 		rq->curr = next;
 		++*switch_count;
@@ -4036,6 +4055,7 @@ void rt_mutex_setprio(struct task_struct *p, int prio)
 	BUG_ON(prio > MAX_PRIO);
 
 	rq = __task_rq_lock(p, &rf);
+	update_rq_clock(rq);
 
 	/*
 	 * Idle task boosting is a nono in general. There is one
@@ -4132,6 +4152,8 @@ void set_user_nice(struct task_struct *p, long nice)
 	 * the task might be in the middle of scheduling on another CPU.
 	 */
 	rq = task_rq_lock(p, &rf);
+	update_rq_clock(rq);
+
 	/*
 	 * The RT priorities are set via sched_setscheduler(), but we still
 	 * allow the 'normal' nice value to be set - but as expected
@@ -4297,6 +4319,7 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
 	dl_se->dl_period = attr->sched_period ?: dl_se->dl_deadline;
 	dl_se->flags = attr->sched_flags;
 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
+	dl_se->dl_density = to_ratio(dl_se->dl_deadline, dl_se->dl_runtime);
 
 	/*
 	 * Changing the parameters of a task is 'tricky' and we're not doing
@@ -4564,6 +4587,7 @@ recheck:
 	 * runqueue lock must be held.
 	 */
 	rq = task_rq_lock(p, &rf);
+	update_rq_clock(rq);
 
 	/*
 	 * Changing the policy of the stop threads its a very bad idea
@@ -6628,6 +6652,19 @@ static void rq_attach_root(struct rq *rq, struct root_domain *rd)
 		call_rcu_sched(&old_rd->rcu, free_rootdomain);
 }
 
+void sched_get_rd(struct root_domain *rd)
+{
+	atomic_inc(&rd->refcount);
+}
+
+void sched_put_rd(struct root_domain *rd)
+{
+	if (!atomic_dec_and_test(&rd->refcount))
+		return;
+
+	call_rcu_sched(&rd->rcu, free_rootdomain);
+}
+
 static int init_rootdomain(struct root_domain *rd)
 {
 	memset(rd, 0, sizeof(*rd));
@@ -8307,7 +8344,6 @@ void __init sched_init_smp(void)
 {
 	cpumask_var_t non_isolated_cpus;
 
-	walt_init_cpu_efficiency();
 	alloc_cpumask_var(&non_isolated_cpus, GFP_KERNEL);
 	alloc_cpumask_var(&fallback_doms, GFP_KERNEL);
 
@@ -8507,6 +8543,7 @@ void __init sched_init(void)
 		rq->active_balance = 0;
 		rq->next_balance = jiffies;
 		rq->push_cpu = 0;
+		rq->push_task = NULL;
 		rq->cpu = i;
 		rq->online = 0;
 		rq->idle_stamp = 0;
@@ -9303,6 +9340,7 @@ static void cpu_cgroup_fork(struct task_struct *task)
 
 	rq = task_rq_lock(task, &rf);
 
+	update_rq_clock(rq);
 	sched_change_group(task, TASK_SET_GROUP);
 
 	task_rq_unlock(rq, task, &rf);

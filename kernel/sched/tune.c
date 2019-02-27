@@ -30,7 +30,7 @@ static struct target_cap schedtune_target_cap[16];
 static int cpu_cluster_nr;
 
 extern struct reciprocal_value schedtune_spc_rdiv;
-extern struct target_nrg schedtune_target_nrg;
+struct target_nrg schedtune_target_nrg;
 
 /* Performance Boost region (B) threshold params */
 static int perf_boost_idx;

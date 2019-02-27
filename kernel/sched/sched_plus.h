@@ -25,9 +25,7 @@ void show_pwr_info(void);
 extern int sys_boosted;
 #endif
 
-#ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 extern int l_plus_cpu;
-#endif
 
 enum fbq_type { regular, remote, all };
 
