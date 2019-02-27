@@ -75,6 +75,9 @@ int gsm_release(void *vaddr, size_t size)
 	int order = get_order(size);
 	int page = (vaddr - apu_mdla_gsm_top) >> PAGE_SHIFT;
 
+	if ((page >= GSM_BITMAP_SIZE) || (page < 0))
+		return -EINVAL;
+
 	spin_lock_irqsave(&gsm_lock, flags);
 	bitmap_release_region(gsm_bitmap, page, order);
 	spin_unlock_irqrestore(&gsm_lock, flags);
@@ -117,6 +120,8 @@ int mdla_gsm_alloc(struct ioctl_malloc *malloc_data)
 
 void mdla_gsm_free(struct ioctl_malloc *malloc_data)
 {
+	if (malloc_data->size > GSM_SIZE)
+		return;
 	if (malloc_data->kva)
 		gsm_release(malloc_data->kva, malloc_data->size);
 	mdla_mem_debug("%s: kva:%p, mva:%x, pa:%p, size:%x\n", __func__,
