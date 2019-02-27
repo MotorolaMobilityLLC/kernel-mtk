@@ -1029,10 +1029,11 @@ struct pd_port {
 	struct pd_country_authority *country_info;
 #endif	/* CONFIG_USB_PD_REV30_COUNTRY_AUTHORITY */
 
-#ifdef CONFIG_USB_POWER_DELIVERY
+#ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
 	/* for MTK only, handle battery plug out */
-	struct notifier_block bat_nb;
-#endif /* CONFIG_USB_POWER_DELIVERY */
+	struct work_struct fg_bat_work;
+	struct notifier_block fg_bat_nb;
+#endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 
 };
 
