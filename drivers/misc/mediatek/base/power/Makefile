@@ -15,14 +15,13 @@ obj-$(CONFIG_MACH_MT6758) += clkbuf_v1/
 obj-$(CONFIG_MACH_MT3967) += clkbuf_v1/
 
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
-#obj-$(CONFIG_MACH_MT3967) += eem_v2/
+obj-$(CONFIG_MACH_MT3967) += eem_v2/
 
 obj-$(CONFIG_MACH_MT3967) += drcc_v1/
 
 obj-$(CONFIG_MACH_MT6758) += pbm_v2/
 obj-$(CONFIG_MACH_MT3967) += pbm_v4/
 obj-$(CONFIG_MACH_MT3967) += mdpm_v1/
-endif
 
 obj-$(CONFIG_MACH_MT8173) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6758) += spm/
