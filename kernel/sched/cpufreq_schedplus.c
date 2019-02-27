@@ -350,6 +350,14 @@ void update_cpu_freq_quick(int cpu, int freq)
 	int max_clus_nr = arch_get_nr_clusters();
 	unsigned int cur_freq;
 
+	/*
+	 * Avoid grabbing the policy if possible. A test is still
+	 * required after locking the CPU's policy to avoid racing
+	 * with the governor changing.
+	 */
+	if (!per_cpu(enabled, cpu))
+		return;
+
 	if (cid >= max_clus_nr || cid < 0)
 		return;
 
@@ -400,14 +408,18 @@ static bool finish_last_request(struct gov_data *gd)
 static int cpufreq_sched_thread(void *data)
 {
 	struct cpufreq_policy *policy;
-	struct gov_data *gd;
 	/* unsigned int new_request = 0; */
 	int cpu;
 	/* unsigned int last_request = 0; */
+	int first_cpu;
+	int cid;
 
 	policy = (struct cpufreq_policy *) data;
-	gd = policy->governor_data;
-	cpu = g_gd[gd->cid]->target_cpu;
+
+	first_cpu = cpumask_first(policy->related_cpus);
+	cid = arch_get_cluster_id(first_cpu);
+
+	cpu = g_gd[cid]->target_cpu;
 
 	do {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -417,7 +429,7 @@ static int cpufreq_sched_thread(void *data)
 			break;
 
 		cpufreq_sched_try_driver_target(cpu, policy,
-			g_gd[gd->cid]->requested_freq, SCHE_INVALID);
+			g_gd[cid]->requested_freq, SCHE_INVALID);
 #if 0
 		new_request = gd->requested_freq;
 		if (new_request == last_request) {
@@ -780,6 +792,7 @@ static int cpufreq_sched_policy_init(struct cpufreq_policy *policy)
 		struct sched_param param;
 
 		cpufreq_driver_slow = true;
+
 		gd_ptr->task = kthread_create(cpufreq_sched_thread, policy,
 					  "kschedfreq:%d",
 					  cpumask_first(policy->related_cpus));
