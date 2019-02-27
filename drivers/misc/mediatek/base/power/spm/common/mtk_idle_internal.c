@@ -16,12 +16,14 @@
 #include <linux/module.h>
 #include <linux/kallsyms.h>
 
+#if 0 /* FIXME: Golden setting dump not ready */
 #include <mtk_power_gs_api.h>
+#endif
 #include <mtk_uart_api.h> /* request_uart_to_sleep request_uart_to_wakeup*/
-#if 0 //FIXME
+#if defined(CONFIG_THERMAL)
 #include <mtk_thermal.h> /* mtkTTimer_start/cancel_timer */
 #endif
-#if 0 //FIXME
+#if 0 /* FIXME: clkbuf is not ready */
 #include <mtk_clkbuf_ctl.h> /* clk_buf_bblpm_enter_cond */
 #endif
 
@@ -214,17 +216,15 @@ static void mtk_idle_post_handler(int idle_type)
 	mtk_idle_notifier_call_chain(idle_notify_leave[idle_type]);
 }
 
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
 static void mtk_idle_gs_dump(int idle_type)
 {
-#if 0 //FIXME
+#if 0 /* FIXME: Golden setting dump not ready */
 	if (idle_type == IDLE_TYPE_DP)
 		mt_power_gs_dump_dpidle(GS_ALL);
 	else if (idle_type == IDLE_TYPE_SO3 || idle_type == IDLE_TYPE_SO)
 		mt_power_gs_dump_sodi3(GS_ALL);
 #endif
 }
-#endif
 
 /************************************************************
  * mtk idle flow for dp/so3/so
@@ -276,10 +276,8 @@ int mtk_idle_enter(
 	__mtk_idle_footprint(IDLE_FP_PWR_PRE_SYNC);
 
 	/* Dump low power golden setting */
-	#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	if (idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)
 		mtk_idle_gs_dump(idle_type);
-	#endif
 
 	__mtk_idle_footprint(IDLE_FP_UART_SLEEP);
 
@@ -303,11 +301,11 @@ int mtk_idle_enter(
 	__mtk_idle_footprint(IDLE_FP_LEAVE_WFI);
 
 	/* uart resume */
-#if defined(CONFIG_MTK_SERIAL)
+	#if defined(CONFIG_MTK_SERIAL)
 	if (!(idle_flag & MTK_IDLE_LOG_DUMP_LP_GS))
 		request_uart_to_wakeup();
 RESTORE_UART:
-#endif
+	#endif
 
 	__mtk_idle_footprint(IDLE_FP_UART_RESUME);
 

@@ -378,9 +378,6 @@ RESTORE_IRQ:
 #endif
 	spm_suspend_footprint(0);
 
-	if (last_wr == WR_PCM_ASSERT)
-		rekick_vcorefs_scenario();
-
 	if (pwrctrl->wakelock_timer_val) {
 		aee_sram_printk("#@# %s(%d) calling spm_pm_stay_awake()\n",
 			__func__, __LINE__);
