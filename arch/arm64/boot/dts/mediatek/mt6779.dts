@@ -3115,10 +3115,7 @@
 
 	subpmic_pmu_eint: mt6360_pmu_eint {
 	};
-	mt6360_pd_eint: mt6360_pd_eint {
-	};
-
-	mt6370_pd: mt6370_pd {
+	tcpc_pd: tcpc_pd {
 	};
 
 	gyro:gyro {
