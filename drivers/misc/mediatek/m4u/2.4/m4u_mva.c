@@ -34,7 +34,7 @@ void m4u_mvaGraph_init(void *priv_reserve)
 	spin_lock_irqsave(&gMvaGraph_lock, irq_flags);
 	memset(mvaGraph, 0, sizeof(short) * (MVA_MAX_BLOCK_NR + 1));
 	memset(mvaInfoGraph, 0, sizeof(void *) * (MVA_MAX_BLOCK_NR + 1));
-	mvaGraph[0] = 1 | MVA_BUSY_MASK;
+	mvaGraph[0] = 1 | (short)MVA_BUSY_MASK;
 	mvaInfoGraph[0] = priv_reserve;
 	/*need to reserve two mva block region for vpu.*/
 	/* *[1, 0x500): shared with all ports.*/
