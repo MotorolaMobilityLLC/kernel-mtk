@@ -169,6 +169,7 @@ enum desc_idn {
 	QUERY_DESC_IDN_RFU_1		= 0x6,
 	QUERY_DESC_IDN_GEOMETRY		= 0x7,
 	QUERY_DESC_IDN_POWER		= 0x8,
+	QUERY_DESC_IDN_HEALTH		= 0x9,/* MTK PATCH */
 	QUERY_DESC_IDN_MAX,
 };
 
@@ -186,6 +187,7 @@ enum ufs_desc_def_size {
 	/* MTK PATCH: Geometry Descriptor size shall be 0x48 since UFS 2.1 */
 	QUERY_DESC_GEOMETRY_DEF_SIZE		= 0x48,
 	QUERY_DESC_POWER_DEF_SIZE		= 0x62,
+	QUERY_DESC_HEALTH_MAX_SIZE		= 0x25, /* MTK PATCH */
 };
 
 /* MTK PATCH: Read Geometry Descriptor for RPMB initialization */
