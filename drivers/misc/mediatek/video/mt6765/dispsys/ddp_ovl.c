@@ -47,7 +47,6 @@ static enum DISP_MODULE_ENUM ovl_index_module[OVL_NUM] = {
 };
 
 unsigned int gOVLBackground = 0xFF000000;
-unsigned int govldimcolor = 0xFF000000;
 
 static unsigned int ovl_bg_w[OVL_NUM];
 static unsigned int ovl_bg_h[OVL_NUM];
@@ -639,14 +638,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_CON + layer_offset, value);
 
-	if (cfg->source != OVL_LAYER_SOURCE_RESERVED) {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
-			     0xff000000);
-	} else {
-		DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
-			     govldimcolor);
-	}
-
+	DISP_REG_SET(handle, DISP_REG_OVL_L0_CLR + layer_offset_clr,
+		     0xff000000 | cfg->dim_color);
 	DISP_REG_SET(handle,
 		DISP_REG_OVL_L0_SRC_SIZE + layer_offset, dst_h << 16 | dst_w);
 
