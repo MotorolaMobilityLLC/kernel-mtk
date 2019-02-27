@@ -23,6 +23,7 @@
 #define DEFAULT_WATERSHED 236
 
 extern int stune_task_threshold;
+extern int cpu_eff_tp;
 
 struct power_tuning_t {
 	int turning_point; /* max=100, default: 65% capacity */

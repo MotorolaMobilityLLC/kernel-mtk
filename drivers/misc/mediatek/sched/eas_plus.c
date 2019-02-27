@@ -235,7 +235,7 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n",
 		power_tuning.watershed);
 	len += snprintf(buf+len, max_len - len, "turning_point=%d\n",
-		power_tuning.turning_point);
+		cpu_eff_tp);
 
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
 	sched_max_util_task(&max_cpu, &max_pid, &max_util, &boost);
