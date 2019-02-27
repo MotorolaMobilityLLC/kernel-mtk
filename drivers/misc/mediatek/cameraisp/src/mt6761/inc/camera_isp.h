@@ -33,6 +33,7 @@ extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
 /* #define KERNEL_LOG  //enable debug log flag if defined */
 #define ISR_LOG_ON		/* turn on log print at isr if defined */
 #define ISP_RAW_D_SUPPORT (1)
+#define HAL3_IPBASE (1)
 #define T_STAMP_2_0		/* time stamp workaround method.
 				 * (increase timestamp baseon
 				 * fix fps, not read at each isr)
@@ -527,6 +528,14 @@ struct ISP_CALLBACK_STRUCT {
 	pIspCallback Func;
 };
 
+
+#define ISP_CLK_LEVEL_CNT 10
+struct ISP_GET_SUPPORTED_ISP_CLK {
+	unsigned char clklevelcnt; /* how many clk levels */
+	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
+};
+
+
 /*  */
 /* length of the two memory areas */
 #define P1_DEQUE_CNT    1
@@ -684,7 +693,6 @@ enum ISP_RAW_TYPE_ENUM {
 /*  */
 struct ISP_RT_BUF_STRUCT {
 	enum ISP_RTBC_STATE_ENUM state;
-	unsigned long dropCnt;
 	struct ISP_RT_RING_BUF_INFO_STRUCT ring_buf[_rt_dma_max_];
 };
 /*  */
@@ -915,6 +923,9 @@ struct compat_ISP_REGISTER_USERKEY_STRUCT {
 #endif
 
 
+
+
+
 /*  */
 /*****************************************************************************
  *
@@ -962,6 +973,8 @@ enum ISP_CMD_ENUM {
 #endif
 	ISP_CMD_SET_PM_QOS,
 	ISP_CMD_SET_PM_QOS_INFO,
+	ISP_CMD_SET_ISPCLK,
+	ISP_CMD_GET_ISPCLK,
 	ISP_CMD_WAKELOCK_CTRL,
 	ISP_CMD_REGISTER_IRQ_USER_KEY,
 	/* register for a user key to do irq operation */
@@ -1032,6 +1045,10 @@ enum ISP_CMD_ENUM {
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
 #define ISP_SET_PM_QOS_INFO \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS_INFO, struct ISP_PM_QOS_INFO_STRUCT)
+#define ISP_SET_ISPCLK \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_ISPCLK, unsigned int)
+#define ISP_GET_ISPCLK \
+	_IOWR(ISP_MAGIC, ISP_CMD_GET_ISPCLK, unsigned int)
 #define ISP_REGISTER_IRQ_USER_KEY \
 	_IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY, \
 		struct ISP_REGISTER_USERKEY_STRUCT)
