@@ -33,5 +33,6 @@ void mcdi_avail_cpu_mask(unsigned int cpu_mask);
 bool is_cpu_pwr_on_event_pending(void);
 void _mcdi_cpu_iso_mask(unsigned int iso_mask);
 void mcdi_wakeup_all_cpu(void);
+bool __mcdi_pause(unsigned int id, bool paused);
 
 #endif /* __MTK_MCDI_H__ */

@@ -95,6 +95,10 @@ int __attribute__((weak)) mtk_idle_select(int cpu)
 	return -1;
 }
 
+unsigned int mcdi_get_boot_time_check(void)
+{
+	return boot_time_check;
+}
 unsigned int mcdi_get_gov_data_num_mcusys(void)
 {
 	unsigned long flags;
@@ -712,6 +716,7 @@ void get_mcdi_feature_status(struct mcdi_feature_status *stat)
 	stat->buck_off    = mcdi_feature_stat.buck_off;
 	stat->any_core    = mcdi_feature_stat.any_core;
 	stat->s_state     = mcdi_feature_stat.s_state;
+	stat->pauseby     = mcdi_feature_stat.pauseby;
 
 	spin_unlock_irqrestore(&mcdi_feature_stat_spin_lock, flags);
 }
@@ -728,7 +733,7 @@ void get_mcdi_avail_mask(unsigned int *cpu_mask, unsigned int *cluster_mask)
 	spin_unlock_irqrestore(&mcdi_gov_spin_lock, flags);
 }
 
-void mcdi_state_pause(bool pause)
+void mcdi_state_pause(unsigned int id, bool pause)
 {
 	unsigned long flags;
 	bool mcdi_enabled = false;
@@ -736,6 +741,11 @@ void mcdi_state_pause(bool pause)
 	spin_lock_irqsave(&mcdi_feature_stat_spin_lock, flags);
 
 	mcdi_feature_stat.pause = pause;
+
+	if (pause)
+		mcdi_feature_stat.pauseby = id;
+	else
+		mcdi_feature_stat.pauseby = 0;
 
 	mcdi_enabled = mcdi_feature_stat.enable;
 
