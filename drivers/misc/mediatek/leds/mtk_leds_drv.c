@@ -24,7 +24,9 @@
 #include <linux/spinlock.h>
 #include <mtk_leds_hal.h>
 #include <mtk_leds_drv.h>
+#ifdef CONFIG_MTK_PWM
 #include <mt-plat/mtk_pwm.h>
+#endif
 #ifdef CONFIG_MTK_AAL_SUPPORT
 #include <ddp_aal.h>
 #endif
@@ -37,6 +39,10 @@
 /****************************************************************************
  * variables
  ***************************************************************************/
+#ifndef CONFIG_MTK_PWM
+#define CLK_DIV1 0
+#endif
+
 struct cust_mt65xx_led *bl_setting;
 #ifndef CONFIG_MTK_AAL_SUPPORT
 static unsigned int bl_div = CLK_DIV1;
@@ -76,7 +82,13 @@ static int debug_enable_led = 1;
 #ifdef LED_INCREASE_LED_LEVEL_MTKPATCH
 #define LED_INTERNAL_LEVEL_BIT_CNT 10
 #endif
-
+/* Fix dependency if CONFIG_MTK_LCM not ready */
+void __weak disp_aal_notify_backlight_changed(int bl_1024) {};
+bool __weak disp_aal_is_support(void) { return false; };
+int __weak disp_bls_set_max_backlight(unsigned int level_1024) { return 0; };
+int __weak disp_bls_set_backlight(int level_1024) { return 0; }
+int __weak mtkfb_set_backlight_level(unsigned int level) { return 0; };
+void __weak disp_pq_notify_backlight_changed(int bl_1024) {};
 static int mt65xx_led_set_cust(struct cust_mt65xx_led *cust, int level);
 
 /****************************************************************************
