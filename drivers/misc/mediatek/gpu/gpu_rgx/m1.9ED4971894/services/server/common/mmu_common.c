@@ -1138,6 +1138,9 @@ static INLINE PVRSRV_ERROR _SetupPTE(MMU_CONTEXT *psMMUContext,
 				uiAddr = psDevice->sTrampoline.sPhysAddr.uiAddr + RGXMIPSFW_TRAMPOLINE_OFFSET(uiAddr);
 			}
 #if !defined(LMA)
+	#if defined(CONFIG_MACH_MT6761)
+			/* Device physical address 0x0 is a valid address and can be used by the GPU */
+	#else
 			/* FIX_HW_BRN_63553 is mainlined for all MIPS cores */
 			else if (uiAddr == 0x0)
 			{
@@ -1145,6 +1148,7 @@ static INLINE PVRSRV_ERROR _SetupPTE(MMU_CONTEXT *psMMUContext,
 				PVR_DPF((PVR_DBG_ERROR, "%s attempt to map addr 0x0 in the FW with BRN63553 WA present.", __func__));
 				return PVRSRV_ERROR_MMU_FAILED_TO_MAP_PAGE_TABLE;
 			}
+	#endif
 #endif
 		}
 	}
