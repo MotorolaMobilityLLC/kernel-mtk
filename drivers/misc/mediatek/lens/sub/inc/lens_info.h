@@ -102,6 +102,7 @@ struct stAF_DrvList {
 	long (*pAF_Ioctl)(struct file *a_pstFile, unsigned int a_u4Command,
 			  unsigned long a_u4Param);
 	int (*pAF_Release)(struct inode *a_pstInode, struct file *a_pstFile);
+	int (*pAF_GetFileName)(unsigned char *pFileName);
 	int (*pAF_OisGetHallPos)(int *PosX, int *PosY);
 };
 
@@ -137,5 +138,7 @@ struct stAF_DrvList {
 #define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
 
 #define AFIOC_S_SETDRVINIT _IOW(AF_MAGIC, 16, u32)
+
+#define AFIOC_G_GETDRVNAME _IOR(AF_MAGIC, 17, struct stAF_MotorName)
 
 #endif
