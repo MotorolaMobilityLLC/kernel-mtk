@@ -1,9 +1,13 @@
 #
 # Makefile for the linux kernel.
 #
-
+#subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/mtprof
 subdir-ccflags-y += -Werror
 ccflags-y := -fno-function-sections -fno-data-sections
+
+ifdef CONFIG_MTPROF
+ccflags-y += -Idrivers/misc/mediatek/mtprof/
+endif
 
 ifdef CONFIG_MTK_RAM_CONSOLE
 ccflags-y += -Idrivers/misc/mediatek/include/
