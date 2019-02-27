@@ -30,7 +30,7 @@
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);	\
 		if (g_mobilelog)					\
-			pr_info("[DDP/"LOG_TAG"]"fmt, ##args);		\
+			pr_debug("[DDP/"LOG_TAG"]"fmt, ##args);		\
 	} while (0)
 
 #define DISP_LOG_V(fmt, args...)					\
@@ -50,7 +50,7 @@
 #define DISP_LOG_W(fmt, args...)					\
 	do {								\
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);	\
-		pr_info("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
+		pr_debug("[DDP/"LOG_TAG"]warn:"fmt, ##args);		\
 	} while (0)
 
 #define DISP_LOG_E(fmt, args...)					\
