@@ -396,7 +396,8 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 		return false;
 
 	if (is_dual_charger_supported(pinfo) == true &&
-		battery_get_soc() >= pinfo->data.pe40_stop_battery_soc)
+		battery_get_soc() >= pinfo->data.pe40_stop_battery_soc &&
+		battery_get_uisoc() != -1)
 		return false;
 
 	if (mtk_is_TA_support_pd_pps(pinfo) == true)
