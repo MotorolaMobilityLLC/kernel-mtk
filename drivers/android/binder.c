@@ -1031,7 +1031,7 @@ static void binder_bwdog_bark(struct binder_transaction *t,
 			e->to_proc = t->tproc;
 			e->to_thrd = t->tthrd;
 			e->code = t->code;
-			strncpy(e->service, t->service, MAX_SERVICE_NAME_LEN);
+			strncpy(e->service, t->service, MAX_SERVICE_NAME_LEN-1);
 			break;
 		}
 
@@ -1047,7 +1047,7 @@ static void binder_bwdog_bark(struct binder_transaction *t,
 			e->to_proc = t->tproc;
 			e->to_thrd = t->tthrd;
 			e->code = t->code;
-			strncpy(e->service, t->service, MAX_SERVICE_NAME_LEN);
+			strncpy(e->service, t->service, MAX_SERVICE_NAME_LEN-1);
 			break;
 		}
 
@@ -3620,7 +3620,7 @@ static void binder_transaction(struct binder_proc *proc,
 		}
 		e->to_node = target_node->debug_id;
 #ifdef BINDER_WATCHDOG
-		strncpy(e->service, target_node->name, MAX_SERVICE_NAME_LEN);
+		strncpy(e->service, target_node->name, MAX_SERVICE_NAME_LEN-1);
 #endif
 		if (security_binder_transaction(proc->tsk,
 						target_proc->tsk) < 0) {
@@ -3684,7 +3684,7 @@ static void binder_transaction(struct binder_proc *proc,
 	/* t->tv.tv_sec -= (sys_tz.tz_minuteswest * 60); */
 	memcpy(&t->tv, &e->tv, sizeof(struct timeval));
 	if (!reply)
-		strncpy(t->service, target_node->name, MAX_SERVICE_NAME_LEN);
+		strncpy(t->service, target_node->name, MAX_SERVICE_NAME_LEN-1);
 #endif
 	binder_stats_created(BINDER_STAT_TRANSACTION);
 	spin_lock_init(&t->lock);
