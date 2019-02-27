@@ -137,7 +137,7 @@ static void ufshpb_ppn_prep(struct ufshpb_lu *hpb,
 		if ((tm_e.tv_sec - tm_s.tv_sec) >= 5) {
 			err_bit = jiffies & 0x3F;
 
-			SYSFS_INFO("hpb err_inject %d, %d, err bit:%d\n",
+			SYSFS_INFO("hpb err_inject %ld, %ld, err bit:%d\n",
 				tm_e.tv_sec, tm_s.tv_sec, err_bit);
 			do_gettimeofday(&tm_s);
 
