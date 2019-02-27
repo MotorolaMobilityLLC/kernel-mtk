@@ -344,12 +344,12 @@ void mtk_idle_post_process_by_chip(
 			if (!pwrctrl->wdt_disable)
 				wd_api->wd_resume_notify();
 			else {
-				aee_sram_printk((
-					"pwrctrl->wdt_disable %d\n"
-						, pwrctrl->wdt_disable);
+				aee_sram_printk(
+					"pwrctrl->wdt_disable %d\n",
+						pwrctrl->wdt_disable);
 				pr_info(
-					"[SPM] pwrctrl->wdt_disable %d\n"
-						, pwrctrl->wdt_disable);
+					"[SPM] pwrctrl->wdt_disable %d\n",
+						pwrctrl->wdt_disable);
 			}
 
 			wd_api->wd_spmwdt_mode_config(WD_REQ_DIS
