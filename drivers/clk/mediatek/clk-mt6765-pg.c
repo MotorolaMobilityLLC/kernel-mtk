@@ -43,6 +43,9 @@
 
 #define	CHECK_PWR_ST	1
 
+#define CONN_TIMEOUT_RECOVERY 5
+#define CONN_TIMEOUT_STEP1	4
+
 #ifndef GENMASK
 #define GENMASK(h, l)	(((U32_C(1) << ((h) - (l) + 1)) - 1) << (l))
 #endif
@@ -175,8 +178,8 @@ static void __iomem *conn_mcu_base; /* connsys MCU */
 #define  SPM_PROJECT_CODE		0xB16
 
 #define INFRA_TOPAXI_SI0_CTL		INFRACFG_REG(0x0200)
+#define INFRA_TOPAXI_PROTECTEN		INFRACFG_REG(0x0220)
 #define INFRA_TOPAXI_PROTECTEN_STA0	INFRACFG_REG(0x0224)
-//#define INFRASYS_QAXI_CTRL		INFRACFG_REG(0x0F28)
 
 #define INFRA_TOPAXI_PROTECTEN_1	INFRACFG_REG(0x0250)
 
@@ -191,6 +194,7 @@ static void __iomem *conn_mcu_base; /* connsys MCU */
 /* fix with infra config address */
 #define INFRA_TOPAXI_SI0_STA		INFRA_REG(0x0000)
 #define INFRA_BUS_IDLE_STA4		INFRA_REG(0x018C)
+#define INFRA_TOPAXI_SI3_STA		INFRA_REG(0x002C)
 
 /* SMI COMMON */
 #define SMI_COMMON_SMI_CLAMP		SMI_COMMON_REG(0x03C0)
@@ -210,7 +214,8 @@ static void __iomem *conn_mcu_base; /* connsys MCU */
 #define CONN_MCU_EMI_CONTROL		CONN_MCU_REG(0x0150)
 #define CONN_MCU_DEBUG_SELECT		CONN_MCU_REG(0x0400)
 #define CONN_MCU_DEBUG_STATUS		CONN_MCU_REG(0x040C)
-
+#define CONN_MCU_BUSHANGCR		CONN_MCU_REG(0x0440)
+#define CONN_MCU_BUSHANGADDR		CONN_MCU_REG(0x0444)
 /* Define MTCMOS Bus Protect Mask */
 #define MD1_PROT_STEP1_0_MASK		((0x1 << 7))
 #define MD1_PROT_STEP1_0_ACK_MASK	((0x1 << 7))
@@ -511,9 +516,9 @@ static int DBG_STEP;
 static void ram_console_update(void)
 {
 #ifdef CONFIG_MTK_RAM_CONSOLE
-	unsigned long data[8] = {0x0};
-	unsigned int i = 0, j = 0;
-	static unsigned long pre_data;
+	u32 data[8] = {0x0};
+	u32 i = 0, j = 0;
+	static u32 pre_data;
 	static int k;
 	static bool print_once = true;
 
@@ -521,9 +526,12 @@ static void ram_console_update(void)
 		| ((DBG_STA << 20) & STA_MASK)
 		| (DBG_STEP & STEP_MASK);
 
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_1);
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA0);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);
+	data[++i] = clk_readl(INFRA_TOPAXI_SI3_STA);
 
 	if (pre_data == data[0])
 		k++;
@@ -532,7 +540,7 @@ static void ram_console_update(void)
 		pre_data = data[0];
 	}
 
-	if (k > 100000 && print_once) {
+	if (k > 5000 && print_once) {
 		print_once = false;
 		k = 0;
 		if (DBG_ID == DBG_ID_CONN_BUS) {
@@ -541,11 +549,6 @@ static void ram_console_update(void)
 				spm_write(INFRA_TOPAXI_PROTECTEN_CLR,
 						CONN_PROT_STEP1_0_MASK);
 			}
-			data[++i] = clk_readl(CONN_HIF_TOP_MISC);
-			data[++i] = clk_readl(CONN_HIF_BUSY_STATUS);
-			clk_writel(CONN_HIF_DBG_IDX, 0x3333);
-			data[++i] = clk_readl(CONN_HIF_DBG_PROBE);
-
 			/* Space for clk in AEE is not enough,
 			 * use printk instead.
 			 */
@@ -572,6 +575,10 @@ static void ram_console_update(void)
 				clk_readl(CONN_MCU_CLOCK_CONTROL));
 			pr_notice("CONN_MCU_BUS_CONTROL=0x%08x\n",
 				clk_readl(CONN_MCU_BUS_CONTROL));
+			pr_notice("CONN_MCU_BUSHANGCR=0x%08x\n",
+				clk_readl(CONN_MCU_BUSHANGCR));
+			pr_notice("CONN_MCU_BUSHANGADDR=0x%08x\n",
+				clk_readl(CONN_MCU_BUSHANGADDR));
 
 			clk_writel(CONN_MCU_DEBUG_SELECT, 0x003e3d00);
 			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
@@ -586,9 +593,34 @@ static void ram_console_update(void)
 			pr_notice("CONN_MCU_DEBUG_STATUS=0x%08x\n",
 				clk_readl(CONN_MCU_DEBUG_STATUS));
 
-		}
-		print_enabled_clks_once();
-		pr_notice("%s: clk = %lu\n", __func__, data[0]);
+			if (DBG_STEP == 1 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Release bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_SET,
+						CONN_PROT_STEP1_0_MASK);
+				j = 0;
+				while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
+					& CONN_PROT_STEP1_0_ACK_MASK)
+					!= CONN_PROT_STEP1_0_ACK_MASK) {
+					if (j > 1000)
+						break;
+					j++;
+				}
+
+				if (j > 1000)
+					DBG_STEP = CONN_TIMEOUT_STEP1;
+				else
+					DBG_STEP = CONN_TIMEOUT_RECOVERY;
+
+				data[0] = ((DBG_ID << 24) & ID_MADK)
+					| ((DBG_STA << 20) & STA_MASK)
+					| (DBG_STEP & STEP_MASK);
+			}
+
+		} else
+			print_enabled_clks_once();
+
+		for (j = 0; j <= i; j++)
+			pr_notice("%s: clk[%d] = 0x%x\n", __func__, j, data[j]);
 	}
 
 	for (j = 0; j <= i; j++)
@@ -780,8 +812,11 @@ int spm_mtcmos_ctrl_conn_bus_prot(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1)
 			& CONN_PROT_STEP1_1_ACK_MASK)
-			!= CONN_PROT_STEP1_1_ACK_MASK)
+			!= CONN_PROT_STEP1_1_ACK_MASK) {
 			ram_console_update();
+			if (DBG_STEP == CONN_TIMEOUT_RECOVERY)
+				break;
+		}
 		INCREASE_STEPS;
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
