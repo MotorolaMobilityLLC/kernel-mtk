@@ -37,6 +37,7 @@ config MTK_FREQ_HOPPING
 	  Please choose your desired freqhopping driver as well. E.g: MTK2712_FREQ_HOPPING=y
 
 source "drivers/misc/mediatek/freqhopping/Kconfig"
+source "drivers/misc/mediatek/pmic/Kconfig"
 source "drivers/misc/mediatek/power/Kconfig"
 
 config MTK_PSCI
