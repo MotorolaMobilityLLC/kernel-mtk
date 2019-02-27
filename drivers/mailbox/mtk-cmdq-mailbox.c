@@ -92,7 +92,6 @@ struct cmdq_thread {
 	u32			idx;
 	struct work_struct	timeout_work;
 	bool			dirty;
-	u64			exec_time;
 };
 
 struct cmdq_task {
@@ -101,6 +100,7 @@ struct cmdq_task {
 	dma_addr_t		pa_base;
 	struct cmdq_thread	*thread;
 	struct cmdq_pkt		*pkt; /* the packet sent from mailbox client */
+	u64			exec_time;
 };
 
 struct cmdq_buf_dump {
@@ -480,8 +480,7 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 	task->pa_base = dma_handle;
 	task->thread = thread;
 	task->pkt = pkt;
-
-	thread->exec_time = sched_clock();
+	task->exec_time = sched_clock();
 
 	if (list_empty(&thread->task_busy_list)) {
 		WARN_ON(cmdq_clk_enable(cmdq) < 0);
@@ -969,35 +968,13 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	unsigned long flags;
 	bool first_task = true;
 	u32 pa_curr;
+	u64 duration;
 
 	spin_lock_irqsave(&thread->chan->lock, flags);
 	if (list_empty(&thread->task_busy_list)) {
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
 		return;
 	}
-
-	/* If only 1 task in list and time small than timeout value,
-	 * it is last task timeout. Skip it.
-	 */
-	task = list_first_entry(&thread->task_busy_list,
-		typeof(*task), list_entry);
-	tmp = list_last_entry(&thread->task_busy_list,
-			typeof(*task), list_entry);
-	if (task == tmp) {
-		u64 remain_time = sched_clock() - thread->exec_time;
-
-		remain_time = div_s64(remain_time, 1000000);
-		if (remain_time < task->pkt->timeout) {
-			mod_timer(&thread->timeout, jiffies +
-				msecs_to_jiffies(remain_time));
-			spin_unlock_irqrestore(&thread->chan->lock, flags);
-			return;
-		}
-	}
-
-	cmdq_err("timeout for thread:0x%p chan:0x%p idx:%u usage:%d",
-		thread->base, thread->chan, thread->idx,
-		atomic_read(&cmdq->usage));
 
 	WARN_ON(cmdq_thread_suspend(cmdq, thread) < 0);
 
@@ -1009,12 +986,33 @@ static void cmdq_thread_handle_timeout_work(struct work_struct *work_item)
 	cmdq_thread_irq_handler(cmdq, thread);
 
 	if (list_empty(&thread->task_busy_list)) {
-		cmdq_err("thread:%u empty after irq handle in timeout",
-			thread->idx);
 		cmdq_thread_resume(thread);
 		spin_unlock_irqrestore(&thread->chan->lock, flags);
+		cmdq_err("thread:%u empty after irq handle in timeout",
+			thread->idx);
 		return;
 	}
+
+	/* If first time exec time stamp smaller than timeout value,
+	 * it is last round timeout. Skip it.
+	 */
+	task = list_first_entry(&thread->task_busy_list,
+		typeof(*task), list_entry);
+	duration = div_s64(sched_clock() - task->exec_time, 1000000);
+	if (duration < task->pkt->timeout) {
+		mod_timer(&thread->timeout, jiffies +
+			msecs_to_jiffies(task->pkt->timeout - duration));
+		spin_unlock_irqrestore(&thread->chan->lock, flags);
+		cmdq_err(
+			"thread:%u usage:%d exec:%llu dur:%llu timeout not excceed",
+			thread->idx, atomic_read(&cmdq->usage),
+			task->exec_time, duration);
+		return;
+	}
+
+	cmdq_err("timeout for thread:0x%p idx:%u usage:%d exec:%llu",
+		thread->base, thread->idx, atomic_read(&cmdq->usage),
+		task->exec_time);
 
 	pa_curr = readl(thread->base + CMDQ_THR_CURR_ADDR);
 
