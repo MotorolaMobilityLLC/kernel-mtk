@@ -15,6 +15,7 @@ obj-y += legacy/$(subst ",,$(CONFIG_MTK_PLATFORM))/
 else
 # $(info cam_cal: use common folder)
 obj-y += eeprom_driver.o
+obj-y += eeprom_I2C_driver.o
 obj-y += cam_cal_list.o
 endif
 #$(info cam_cal: makefile end)
