@@ -13,7 +13,6 @@
  * GNU General Public License for more details.
  */
 
-
 #include <linux/init.h>
 #include <linux/module.h>
 #include <linux/device.h>
@@ -29,6 +28,7 @@
 #include <linux/kthread.h>
 #include <linux/cpu.h>
 #include <linux/version.h>
+#include <linux/wakelock.h>
 
 #include "inc/pd_dbg_info.h"
 #include "inc/tcpci.h"
@@ -44,7 +44,9 @@
 
 /* #define DEBUG_GPIO	66 */
 
-#define RT5081_DRV_VERSION	"1.1.8_MTK"
+#define RT5081_DRV_VERSION	"2.0.1_MTK"
+
+#define RT5081_IRQ_WAKE_TIME	(500) /* ms */
 
 struct rt5081_chip {
 	struct i2c_client *client;
@@ -59,11 +61,10 @@ struct rt5081_chip {
 	struct kthread_worker irq_worker;
 	struct kthread_work irq_work;
 	struct task_struct *irq_worker_task;
+	struct wakeup_source irq_wake_lock;
 
 	atomic_t poll_count;
 	struct delayed_work	poll_work;
-
-	struct wakeup_source intr_wake_lock;
 
 	int irq_gpio;
 	int irq;
@@ -527,17 +528,16 @@ static void rt5081_poll_work(struct work_struct *work)
 		cpu_idle_poll_ctrl(false);
 }
 
-
 static irqreturn_t rt5081_intr_handler(int irq, void *data)
 {
 	struct rt5081_chip *chip = data;
 
-	/* wakelock 500ms when handler interrupt */
-	__pm_wakeup_event(&chip->intr_wake_lock, HZ/2);
+	__pm_wakeup_event(&chip->irq_wake_lock, RT5081_IRQ_WAKE_TIME);
+
 #ifdef DEBUG_GPIO
 	gpio_set_value(DEBUG_GPIO, 0);
 #endif
-	queue_kthread_work(&chip->irq_worker, &chip->irq_work);
+	kthread_queue_work(&chip->irq_worker, &chip->irq_work);
 	return IRQ_HANDLED;
 }
 
@@ -558,7 +558,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 	if (!name)
 		return -ENOMEM;
 
-	snprintf(name, len+5, "%s-IRQ", chip->tcpc_desc->name);
+	snprintf(name, PAGE_SIZE, "%s-IRQ", chip->tcpc_desc->name);
 
 	pr_info("%s name = %s, gpio = %d\n", __func__,
 				chip->tcpc_desc->name, chip->irq_gpio);
@@ -590,7 +590,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 
 	pr_info("%s : IRQ number = %d\n", __func__, chip->irq);
 
-	init_kthread_worker(&chip->irq_worker);
+	kthread_init_worker(&chip->irq_worker);
 	chip->irq_worker_task = kthread_run(kthread_worker_fn,
 			&chip->irq_worker, chip->tcpc_desc->name);
 	if (IS_ERR(chip->irq_worker_task)) {
@@ -599,7 +599,7 @@ static int rt5081_init_alert(struct tcpc_device *tcpc)
 	}
 
 	sched_setscheduler(chip->irq_worker_task, SCHED_FIFO, &param);
-	init_kthread_work(&chip->irq_work, rt5081_irq_work_handler);
+	kthread_init_work(&chip->irq_work, rt5081_irq_work_handler);
 
 	pr_info("IRQF_NO_THREAD Test\r\n");
 	ret = request_irq(chip->irq, rt5081_intr_handler,
@@ -758,7 +758,7 @@ static int rt5081_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 
 	rt5081_i2c_write8(tcpc, RT5081_REG_TTCPC_FILTER, 5);
 	rt5081_i2c_write8(tcpc, RT5081_REG_DRP_TOGGLE_CYCLE, 4);
-	rt5081_i2c_write16(tcpc, RT5081_REG_DRP_DUTY_CTRL, 400);
+	rt5081_i2c_write16(tcpc, RT5081_REG_DRP_DUTY_CTRL, TCPC_NORMAL_RP_DUTY);
 
 	/* Vconn OC */
 	rt5081_i2c_write8(tcpc, RT5081_REG_VCONN_CLIMITEN, 1);
@@ -978,6 +978,13 @@ static int rt5081_set_polarity(struct tcpc_device *tcpc, int polarity)
 	return rt5081_i2c_write8(tcpc, TCPC_V10_REG_TCPC_CTRL, data);
 }
 
+static int rt5081_set_low_rp_duty(struct tcpc_device *tcpc, bool low_rp)
+{
+	uint16_t duty = low_rp ? TCPC_LOW_RP_DUTY : TCPC_NORMAL_RP_DUTY;
+
+	return rt5081_i2c_write16(tcpc, RT5081_REG_DRP_DUTY_CTRL, duty);
+}
+
 static int rt5081_set_vconn(struct tcpc_device *tcpc, int enable)
 {
 	int rv;
@@ -1076,13 +1083,21 @@ static int rt5081_tcpc_deinit(struct tcpc_device *tcpc_dev)
 
 #ifdef CONFIG_USB_POWER_DELIVERY
 static int rt5081_set_msg_header(
-	struct tcpc_device *tcpc, int power_role, int data_role, uint8_t pd_rev)
+	struct tcpc_device *tcpc, uint8_t power_role, uint8_t data_role)
 {
 	uint8_t msg_hdr = TCPC_V10_REG_MSG_HDR_INFO_SET(
-		data_role, power_role, pd_rev);
+		data_role, power_role);
 
 	return rt5081_i2c_write8(
 		tcpc, TCPC_V10_REG_MSG_HDR_INFO, msg_hdr);
+}
+
+static int rt5081_protocol_reset(struct tcpc_device *tcpc_dev)
+{
+	rt5081_i2c_write8(tcpc_dev, RT5081_REG_PRL_FSM_RESET, 0);
+	mdelay(1);
+	rt5081_i2c_write8(tcpc_dev, RT5081_REG_PRL_FSM_RESET, 1);
+	return 0;
 }
 
 static int rt5081_set_rx_enable(struct tcpc_device *tcpc, uint8_t enable)
@@ -1098,6 +1113,9 @@ static int rt5081_set_rx_enable(struct tcpc_device *tcpc, uint8_t enable)
 	if ((ret == 0) && (!enable))
 		ret = rt5081_set_clock_gating(tcpc, true);
 
+	/* For testing */
+	if (!enable)
+		rt5081_protocol_reset(tcpc);
 	return ret;
 }
 
@@ -1147,7 +1165,8 @@ static int rt5081_set_bist_carrier_mode(
 static int rt5081_retransmit(struct tcpc_device *tcpc)
 {
 	return rt5081_i2c_write8(tcpc, TCPC_V10_REG_TRANSMIT,
-			TCPC_V10_REG_TRANSMIT_SET(TCPC_TX_SOP));
+			TCPC_V10_REG_TRANSMIT_SET(
+			tcpc->pd_retry_count, TCPC_TX_SOP));
 }
 #endif
 
@@ -1176,7 +1195,8 @@ static int rt5081_transmit(struct tcpc_device *tcpc,
 	}
 
 	rv = rt5081_i2c_write8(tcpc, TCPC_V10_REG_TRANSMIT,
-			TCPC_V10_REG_TRANSMIT_SET(type));
+			TCPC_V10_REG_TRANSMIT_SET(
+			tcpc->pd_retry_count, type));
 	return rv;
 }
 
@@ -1205,6 +1225,7 @@ static struct tcpc_ops rt5081_tcpc_ops = {
 	.get_cc = rt5081_get_cc,
 	.set_cc = rt5081_set_cc,
 	.set_polarity = rt5081_set_polarity,
+	.set_low_rp_duty = rt5081_set_low_rp_duty,
 	.set_vconn = rt5081_set_vconn,
 	.deinit = rt5081_tcpc_deinit,
 
@@ -1224,6 +1245,7 @@ static struct tcpc_ops rt5081_tcpc_ops = {
 #ifdef CONFIG_USB_POWER_DELIVERY
 	.set_msg_header = rt5081_set_msg_header,
 	.set_rx_enable = rt5081_set_rx_enable,
+	.protocol_reset = rt5081_protocol_reset,
 	.get_message = rt5081_get_message,
 	.transmit = rt5081_transmit,
 	.set_bist_test_mode = rt5081_set_bist_test_mode,
@@ -1260,8 +1282,8 @@ static int rt_parse_dt(struct rt5081_chip *chip, struct device *dev)
 	}
 	chip->irq_gpio = ret;
 #else
-	ret = of_property_read_u32(np, "rt5081pd,intr_gpio_num",
-		&chip->irq_gpio);
+	ret = of_property_read_u32(
+		np, "rt5081pd,intr_gpio_num", &chip->irq_gpio);
 	if (ret < 0)
 		pr_err("%s no intr_gpio info\n", __func__);
 #endif
@@ -1394,30 +1416,27 @@ static int rt5081_tcpcdev_init(struct rt5081_chip *chip, struct device *dev)
 	if (IS_ERR(chip->tcpc))
 		return -EINVAL;
 
-	if (chip->chip_id <= RT5081_DID_B) {
-#ifdef CONFIG_USB_POWER_DELIVERY
-		chip->tcpc->tcpc_flags =
-			TCPC_FLAGS_RETRY_CRC_DISCARD |
-			TCPC_FLAGS_WAIT_HRESET_COMPLETE |
-			TCPC_FLAGS_LPM_WAKEUP_WATCHDOG;
-	} else {
-		chip->tcpc->tcpc_flags =
-			TCPC_FLAGS_RETRY_CRC_DISCARD |
-			TCPC_FLAGS_WAIT_HRESET_COMPLETE |
-			TCPC_FLAGS_CHECK_RA_DETACHE;
-#endif /* CONFIG_USB_POWER_DELIVERY */
-	}
+	chip->tcpc->tcpc_flags =
+		TCPC_FLAGS_LPM_WAKEUP_WATCHDOG |
+		TCPC_FLAGS_RETRY_CRC_DISCARD;
 
 #ifdef CONFIG_USB_PD_RETRY_CRC_DISCARD
-	if (chip->chip_id > RT1715_DID_D)
-		chip->tcpc->tcpc_flags |= TCPC_FLAGS_RETRY_CRC_DISCARD;
+	chip->tcpc->tcpc_flags |= TCPC_FLAGS_RETRY_CRC_DISCARD;
 #endif	/* CONFIG_USB_PD_RETRY_CRC_DISCARD */
 
+#ifdef CONFIG_USB_PD_REV30
+	chip->tcpc->tcpc_flags |= TCPC_FLAGS_PD_REV30;
+
+	if (chip->tcpc->tcpc_flags & TCPC_FLAGS_PD_REV30)
+		dev_info(dev, "PD_REV30\n");
+	else
+		dev_info(dev, "PD_REV20\n");
+#endif	/* CONFIG_USB_PD_REV30 */
 	return 0;
 }
 
-#define RICHTEK_5081_VID	0x29cf
-#define RICHTEK_5081_PID	0x5081
+#define MEDIATEK_5081_VID	0x29cf
+#define MEDIATEK_5081_PID	0x5081
 
 static inline int rt5081_check_revision(struct i2c_client *client)
 {
@@ -1431,7 +1450,7 @@ static inline int rt5081_check_revision(struct i2c_client *client)
 		return -EIO;
 	}
 
-	if (vid != RICHTEK_5081_VID) {
+	if (vid != MEDIATEK_5081_VID) {
 		pr_info("%s failed, VID=0x%04x\n", __func__, vid);
 		return -ENODEV;
 	}
@@ -1442,7 +1461,7 @@ static inline int rt5081_check_revision(struct i2c_client *client)
 		return -EIO;
 	}
 
-	if (pid != RICHTEK_5081_PID) {
+	if (pid != MEDIATEK_5081_PID) {
 		pr_info("%s failed, PID=0x%04x\n", __func__, pid);
 		return -ENODEV;
 	}
@@ -1478,7 +1497,7 @@ static int rt5081_i2c_probe(struct i2c_client *client,
 
 	chip_id = rt5081_check_revision(client);
 	if (chip_id < 0)
-		return ret;
+		return chip_id;
 
 #if TCPC_ENABLE_ANYMSG
 	check_printk_performance();
@@ -1500,12 +1519,11 @@ static int rt5081_i2c_probe(struct i2c_client *client,
 	sema_init(&chip->suspend_lock, 1);
 	i2c_set_clientdata(client, chip);
 	INIT_DELAYED_WORK(&chip->poll_work, rt5081_poll_work);
+	wakeup_source_init(&chip->irq_wake_lock,
+		"rt5081_irq_wakelock");
 
 	chip->chip_id = chip_id;
 	pr_info("rt5081_chipID = 0x%0x\n", chip_id);
-
-	wake_lock_init(&chip->intr_wake_lock,
-			"intr_wake_lock");
 
 	ret = rt5081_regmap_init(chip);
 	if (ret < 0) {
@@ -1672,24 +1690,10 @@ static void __exit rt5081_exit(void)
 module_exit(rt5081_exit);
 
 MODULE_LICENSE("GPL");
-MODULE_AUTHOR("Jeff Chang <jeff_chang@richtek.com>");
 MODULE_DESCRIPTION("RT5081 TCPC Driver");
 MODULE_VERSION(RT5081_DRV_VERSION);
 
-/* 1.1.1_MTK
- *	-- first release version, sync to rt1711h pd driver revision 13
- * 1.1.2_MTK
- *	-- sync to rt1711h pd driver v014
- * 1.1.3_MTK
- *	-- sync to rt1711h pd driver v015
- * 1.1.4_MTK
- *	-- modify dws name rt5081_pd->usb_type_c
- * 1.1.5_MTK
- *	-- sync to rt1711h pd driver v017
- * 1.1.6_MTK
- *	-- sync to rt1711h pd driver v018
- * 1.1.7_MTK
- *	-- sync to rt1711h pd driver v019
- * 1.1.8_MTK
- *	-- sync to rt1711h pd driver v020
+/**** Release Note ****
+ * 2.0.1_MTK
+ *	First released PD3.0 Driver on MTK platform
  */

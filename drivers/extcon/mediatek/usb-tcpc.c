@@ -154,7 +154,8 @@ static int __init mtk_typec_init(void)
 	}
 
 	otg_nb.notifier_call = otg_tcp_notifier_call;
-	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb);
+	ret = register_tcp_dev_notifier(otg_tcpc_dev, &otg_nb,
+		TCP_NOTIFY_TYPE_USB|TCP_NOTIFY_TYPE_VBUS);
 	if (ret < 0) {
 		pr_err("%s register tcpc notifer fail\n", __func__);
 		return -EINVAL;

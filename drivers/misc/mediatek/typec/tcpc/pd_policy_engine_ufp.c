@@ -22,72 +22,27 @@
  * [PD2.0] Figure 8-58 UFP Structured VDM Discover Identity State Diagram
  */
 
-void pe_ufp_vdm_get_identity_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_get_identity_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_id_info(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_send_identity_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_dpm_ufp_response_id(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_get_identity_nak_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_NAK);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_id_info(pd_port);
 }
 
 /*
  * [PD2.0] Figure 8-59 UFP Structured VDM Discover SVIDs State Diagram
  */
 
-void pe_ufp_vdm_get_svids_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_get_svids_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_svid_info(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_send_svids_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_dpm_ufp_response_svids(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_get_svids_nak_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_NAK);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_svid_info(pd_port);
 }
 
 /*
  * [PD2.0] Figure 8-60 UFP Structured VDM Discover Modes State Diagram
  */
 
-void pe_ufp_vdm_get_modes_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_get_modes_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_mode_info(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_send_modes_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_dpm_ufp_response_modes(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_get_modes_nak_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_NAK);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_mode_info(pd_port);
 }
 
 /*
@@ -95,47 +50,18 @@ void pe_ufp_vdm_get_modes_nak_entry(
  */
 
 void pe_ufp_vdm_evaluate_mode_entry_entry(
-			struct pd_port *pd_port, struct pd_event *pd_event)
+			struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_enter_mode(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_mode_entry_ack_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_ACK);
-	pd_free_pd_event(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_mode_entry_nak_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_NAK);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_enter_mode(pd_port);
 }
 
 /*
  * [PD2.0] Figure 8-62 UFP Structured VDM Exit Mode State Diagram
  */
 
-void pe_ufp_vdm_mode_exit_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_mode_exit_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_exit_mode(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_mode_exit_ack_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_ACK);
-	pd_free_pd_event(pd_port, pd_event);
-}
-
-void pe_ufp_vdm_mode_exit_nak_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	pd_reply_svdm_request_simply(pd_port, pd_event, CMDT_RSP_NAK);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_exit_mode(pd_port);
 }
 
 /*
@@ -143,12 +69,14 @@ void pe_ufp_vdm_mode_exit_nak_entry(
  */
 
 void pe_ufp_vdm_attention_request_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+	struct pd_port *pd_port)
 {
+	VDM_STATE_NORESP_CMD(pd_port);
+
 	switch (pd_port->mode_svid) {
 #ifdef CONFIG_USB_PD_ALT_MODE
 	case USB_SID_DISPLAYPORT:
-		pd_dpm_ufp_send_dp_attention(pd_port, pd_event);
+		pd_dpm_ufp_send_dp_attention(pd_port);
 		break;
 #endif
 	default:
@@ -156,8 +84,6 @@ void pe_ufp_vdm_attention_request_entry(
 			TCPC_TX_SOP, pd_port->mode_svid, pd_port->mode_obj_pos);
 		break;
 	}
-
-	pd_free_pd_event(pd_port, pd_event);
 }
 
 /*
@@ -166,32 +92,27 @@ void pe_ufp_vdm_attention_request_entry(
 
 #ifdef CONFIG_USB_PD_ALT_MODE
 
-void pe_ufp_vdm_dp_status_update_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_dp_status_update_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_dp_status(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_dp_status(pd_port);
 }
 
-void pe_ufp_vdm_dp_configure_entry(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_vdm_dp_configure_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_request_dp_config(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_request_dp_config(pd_port);
 }
 
 #endif	/* CONFIG_USB_PD_ALT_MODE */
 
 /*
- * SVDM/UVDM
+ * SVMD/UVDM
  */
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
 
-void pe_ufp_uvdm_recv_entry(struct pd_port *pd_port, struct pd_event *pd_event)
+void pe_ufp_uvdm_recv_entry(struct pd_port *pd_port)
 {
-	pd_dpm_ufp_recv_uvdm(pd_port, pd_event);
-	pd_free_pd_event(pd_port, pd_event);
+	pd_dpm_ufp_recv_uvdm(pd_port);
 }
 
-#endif	/* CONFIG_USB_PD_UVDM */
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
