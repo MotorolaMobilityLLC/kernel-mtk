@@ -48,6 +48,12 @@
 #include <linux/mmc/ffu.h>
 #endif
 
+#ifdef CONFIG_MTK_MMC_PWR_WP
+#include <mt-plat/mtk_partition.h>
+#include <linux/types.h>
+#include "mtk_emmc_write_protect.h"
+#endif
+
 #include <asm/uaccess.h>
 
 #include "queue.h"
@@ -1008,6 +1014,50 @@ cmd_err:
 }
 #endif
 
+#ifdef CONFIG_MTK_MMC_PWR_WP
+static int mmc_pwr_wp_ioctl(struct block_device *bdev, unsigned long arg)
+{
+	struct mmc_blk_data *md;
+	struct mmc_card *card;
+	unsigned int power_on_wp_en = 0;
+	int err = 0;
+
+	if ((!capable(CAP_SYS_RAWIO)) || (bdev != bdev->bd_contains))
+		return -EPERM;
+
+	if (copy_from_user(&power_on_wp_en, (void *)arg, 1))
+		return -EFAULT;
+
+	/*do noting if power-on write protect arg =0*/
+	if (power_on_wp_en == 0) {
+		pr_debug("%s: power_on_wp_en = %d\n", __func__, power_on_wp_en);
+		return 0;
+	}
+
+	md = mmc_blk_get(bdev->bd_disk);
+	if (!md)
+		return -EINVAL;
+
+	card = md->queue.card;
+	if (IS_ERR(card)) {
+		err = PTR_ERR(card);
+		goto cmd_done;
+	}
+
+	mmc_get_card(card);
+	/*
+	 * Default partitions defined in mtk_emmc_write_protect.c will set
+	 * power-on write protect by this function.
+	 */
+	err = set_power_on_write_protect(card);
+
+	mmc_put_card(card);
+cmd_done:
+	mmc_blk_put(md);
+	return err;
+}
+#endif
+
 #ifdef CONFIG_MTK_EMMC_SUPPORT_OTP
 #define MMC_SEND_WRITE_PROT_TYPE        31
 #define EXT_CSD_USR_WP                  171     /* R/W */
@@ -1262,6 +1312,12 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 	case MMC_IOC_FFU_CMD:
 		return mmc_ffu_ioctl(bdev, (struct mmc_ioc_cmd __user *)arg);
 #endif
+
+#ifdef CONFIG_MTK_MMC_PWR_WP
+	case MMC_IOC_WP_CMD:
+		return mmc_pwr_wp_ioctl(bdev, arg);
+#endif
+
 	default:
 		return -EINVAL;
 	}
