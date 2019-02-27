@@ -8,6 +8,8 @@
 #include <linux/slab.h>
 #include <linux/irq_work.h>
 
+#include <trace/events/sched.h>
+
 #include "walt.h"
 
 #ifdef CONFIG_MTK_RT_THROTTLE_MON
@@ -1592,9 +1594,14 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	 * This test is optimistic, if we get it wrong the load-balancer
 	 * will have to sort it out.
 	 */
-	if ((curr && unlikely(rt_task(curr)) &&
+#if defined(CONFIG_MTK_SCHED_INTEROP)
+	/* if the task is allowed to put more than one CPU. */
+	if ((p->nr_cpus_allowed > 1)) {
+#else
+	if (curr && unlikely(rt_task(curr)) &&
 	    (tsk_nr_cpus_allowed(curr) < 2 ||
-	     curr->prio <= p->prio)) || cpu_isolated(cpu)) {
+	     curr->prio <= p->prio)) {
+#endif
 		int target = find_lowest_rq(p);
 
 		/*
@@ -1837,12 +1844,56 @@ static struct task_struct *pick_highest_pushable_task(struct rq *rq, int cpu)
 
 static DEFINE_PER_CPU(cpumask_var_t, local_cpu_mask);
 
+#ifdef CONFIG_MTK_SCHED_INTEROP
+static int mt_sched_interop_rt(int cpu, struct cpumask *lowest_mask)
+{
+	int lowest_cpu = -1, lowest_prio = 0;
+
+	mt_sched_printf(sched_interop, "current cpu=%d, find idle cpu from cpumask 0x%lx",
+			cpu, lowest_mask->bits[0]);
+
+	if (cpumask_test_cpu(cpu, lowest_mask) && idle_cpu(cpu)
+			&& hmp_cpu_is_slowest(cpu) && !cpu_isolated(cpu))
+		return cpu;
+
+	for_each_cpu(cpu, lowest_mask) {
+		struct rq *rq;
+		struct task_struct *curr;
+
+		if (cpu_isolated(cpu))
+			continue;
+
+		if (idle_cpu(cpu))
+			return cpu;
+
+		rq = cpu_rq(cpu);
+		curr = rq->curr;
+		if ((curr->sched_class == &fair_sched_class)
+				&& (curr->prio > lowest_prio)) {
+			lowest_prio = curr->prio;
+			lowest_cpu = cpu;
+
+			mt_sched_printf(sched_interop, "lowest_cpu=%d, lowest_prio=%d",
+					lowest_cpu, lowest_prio);
+		}
+	}
+
+	if (-1 != lowest_cpu)
+		return lowest_cpu;
+
+	return -1;
+}
+#endif
+
 static int find_lowest_rq(struct task_struct *task)
 {
 	struct sched_domain *sd;
 	struct cpumask *lowest_mask = this_cpu_cpumask_var_ptr(local_cpu_mask);
 	int this_cpu = smp_processor_id();
 	int cpu      = task_cpu(task);
+#ifdef CONFIG_MTK_SCHED_INTEROP
+	int interop_cpu;
+#endif
 
 	/* Make sure the mask is initialized first */
 	if (unlikely(!lowest_mask))
@@ -1859,6 +1910,13 @@ static int find_lowest_rq(struct task_struct *task)
 			return -1; /* No targets found */
 	}
 
+#ifdef CONFIG_MTK_SCHED_INTEROP
+	interop_cpu = mt_sched_interop_rt(cpu, lowest_mask);
+	if (interop_cpu != -1) {
+		mt_sched_printf(sched_interop, "find idle cpu=%d", interop_cpu);
+		return interop_cpu;
+	}
+#endif
 	/*
 	 * At this point we have built a mask of cpus representing the
 	 * lowest priority tasks in the system.  Now we want to elect
@@ -2588,6 +2646,24 @@ const struct sched_class rt_sched_class = {
 
 	.update_curr		= update_curr_rt,
 };
+
+#ifdef CONFIG_MTK_SCHED_INTEROP
+bool is_rt_throttle(int cpu)
+{
+	struct rq *rq = cpu_rq(cpu);
+	rt_rq_iter_t iter;
+	struct rt_rq *rt_rq;
+	bool rt_throttle = false;
+
+	for_each_rt_rq(rt_rq, iter, rq) {
+		if (rt_rq->rt_throttled) {
+			rt_throttle = true;
+			break;
+		}
+	}
+	return rt_throttle;
+}
+#endif
 
 #ifdef CONFIG_SCHED_DEBUG
 extern void print_rt_rq(struct seq_file *m, int cpu, struct rt_rq *rt_rq);
