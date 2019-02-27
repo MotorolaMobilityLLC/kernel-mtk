@@ -49,13 +49,14 @@ struct ion_mm_buffer_info {
 	unsigned int security;
 	unsigned int coherent;
 	void *VA;
-	unsigned int MVA;
-	unsigned int FIXED_MVA;
-	unsigned int iova_start;
-	unsigned int iova_end;
+	unsigned int MVA[DOMAIN_NUM];
+	unsigned int FIXED_MVA[DOMAIN_NUM];
+	unsigned int iova_start[DOMAIN_NUM];
+	unsigned int iova_end[DOMAIN_NUM];
 	struct ion_mm_buf_debug_info dbg_info;
 	ion_mm_buf_destroy_callback_t *destroy_fn;
 	pid_t pid;
+	struct mutex lock;/* buffer lock */
 };
 
 #define ION_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
@@ -350,10 +351,14 @@ map_mva_exit:
 
 	buffer->sg_table = table;
 	buffer_info->VA = (void *)user_va;
-	buffer_info->MVA = 0;
-	buffer_info->FIXED_MVA = 0;
-	buffer_info->iova_start = 0;
-	buffer_info->iova_end = 0;
+	buffer_info->MVA[MM_DOMAIN] = 0;
+	buffer_info->FIXED_MVA[MM_DOMAIN] = 0;
+	buffer_info->iova_start[MM_DOMAIN] = 0;
+	buffer_info->iova_end[MM_DOMAIN] = 0;
+	buffer_info->MVA[VPU_DOMAIN] = 0;
+	buffer_info->FIXED_MVA[VPU_DOMAIN] = 0;
+	buffer_info->iova_start[VPU_DOMAIN] = 0;
+	buffer_info->iova_end[VPU_DOMAIN] = 0;
 	buffer_info->module_id = -1;
 	buffer_info->fix_module_id = -1;
 	buffer_info->dbg_info.value1 = 0;
@@ -361,6 +366,7 @@ map_mva_exit:
 	buffer_info->dbg_info.value3 = 0;
 	buffer_info->dbg_info.value4 = 0;
 	buffer_info->pid = buffer->pid;
+	mutex_init(&buffer_info->lock);
 	strncpy((buffer_info->dbg_info.dbg_name), "nothing",
 		ION_MM_DBG_NAME_LEN);
 
@@ -406,24 +412,32 @@ void ion_mm_heap_free_buffer_info(struct ion_buffer *buffer)
 	struct ion_mm_buffer_info *buffer_info =
 	    (struct ion_mm_buffer_info *)buffer->priv_virt;
 	unsigned int free_mva = 0;
+	int domain_idx = 0;
+
+#if defined(CONFIG_MACH_MT6779)
+	if (buffer_info->module_id >= M4U_PORT_VPU)
+		domain_idx = 1;
+#endif
 
 	buffer->priv_virt = NULL;
 
 	if (buffer_info) {
-		if ((buffer_info->destroy_fn) && (buffer_info->MVA))
-			buffer_info->destroy_fn(buffer, buffer_info->MVA);
+		if ((buffer_info->destroy_fn) && (buffer_info->MVA[domain_idx]))
+			buffer_info->destroy_fn(buffer,
+				buffer_info->MVA[domain_idx]);
 #if (defined(CONFIG_MTK_M4U) || defined(CONFIG_MTK_PSEUDO_M4U))
-		if ((buffer_info->module_id != -1) && (buffer_info->MVA)) {
-			free_mva = buffer_info->MVA;
+		if ((buffer_info->module_id != -1) &&
+		    (buffer_info->MVA[domain_idx])) {
+			free_mva = buffer_info->MVA[domain_idx];
 			m4u_dealloc_mva_sg(buffer_info->module_id, table,
-					   buffer->size, buffer_info->MVA);
+				buffer->size, buffer_info->MVA[domain_idx]);
 		}
 		if ((buffer_info->fix_module_id != -1) &&
-		    (buffer_info->FIXED_MVA)) {
-			free_mva = buffer_info->FIXED_MVA;
+		    (buffer_info->FIXED_MVA[domain_idx])) {
+			free_mva = buffer_info->FIXED_MVA[domain_idx];
 			m4u_dealloc_mva_sg(buffer_info->fix_module_id, table,
 					   buffer->size,
-					   buffer_info->FIXED_MVA);
+					   buffer_info->FIXED_MVA[domain_idx]);
 		}
 #ifdef CONFIG_MTK_PSEUDO_M4U
 		if (free_mva)
@@ -511,6 +525,7 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	struct port_mva_info_t port_info;
 	int ret = 0;
 	bool non_vmalloc_request = false;
+	int domain_idx = 0;
 
 	if (!buffer_info) {
 		IONMSG("[ion_mm_heap_phys] Error. Invalid buffer.\n");
@@ -532,19 +547,31 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	port_info.bufsize = buffer->size;
 #endif
 
+#if defined(CONFIG_MACH_MT6779)
+	if (port_info.eModuleID >= M4U_PORT_VPU)
+		domain_idx = 1;
+#endif
+
 	if (((*(unsigned int *)addr & 0xffff) == ION_FLAG_GET_FIXED_PHYS) &&
 	    ((*(unsigned int *)len) == ION_FLAG_GET_FIXED_PHYS)) {
 		port_info.flags = M4U_FLAGS_FIX_MVA;
 		port_info.eModuleID =
 		    (*(unsigned int *)addr & 0xff000000) >> 24;
-		port_info.iova_start = buffer_info->iova_start;
-		port_info.iova_end = buffer_info->iova_end;
+
+#if defined(CONFIG_MACH_MT6779)
+		if (port_info.eModuleID >= M4U_PORT_VPU)
+			domain_idx = 1;
+#endif
+
+		port_info.iova_start = buffer_info->iova_start[domain_idx];
+		port_info.iova_end = buffer_info->iova_end[domain_idx];
 		if (port_info.iova_start == port_info.iova_end)
 			port_info.mva = port_info.iova_start;
 	}
 
-	if (((buffer_info->MVA == 0) && (port_info.flags == 0)) ||
-	    ((buffer_info->FIXED_MVA == 0) && (port_info.flags > 0))) {
+	if (((buffer_info->MVA[domain_idx] == 0) && (port_info.flags == 0)) ||
+	    ((buffer_info->FIXED_MVA[domain_idx] == 0) &&
+			(port_info.flags > 0))) {
 		if (port_info.flags == 0 && buffer_info->module_id == -1) {
 			IONMSG("ion_mm_heap_phys: config buffer fail\n");
 			return -EFAULT;
@@ -577,13 +604,13 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 			       non_vmalloc_request);
 			*addr = 0;
 			if (port_info.flags > 0)
-				buffer_info->FIXED_MVA = 0;
+				buffer_info->FIXED_MVA[domain_idx] = 0;
 			return -EFAULT;
 		}
 		if ((port_info.flags & M4U_FLAGS_FIX_MVA) == 0)
-			buffer_info->MVA = port_info.mva;
+			buffer_info->MVA[domain_idx] = port_info.mva;
 		else
-			buffer_info->FIXED_MVA = port_info.mva;
+			buffer_info->FIXED_MVA[domain_idx] = port_info.mva;
 #ifdef CONFIG_MTK_PSEUDO_M4U
 		mmprofile_log_ex(ion_mmp_events[PROFILE_MVA_ALLOC],
 				 MMPROFILE_FLAG_PULSE,
@@ -593,9 +620,9 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 
 	} else {
 		*(unsigned int *)addr = (port_info.flags
-					 ==
-					 M4U_FLAGS_FIX_MVA) ?
-		    buffer_info->FIXED_MVA : buffer_info->MVA;
+					 == M4U_FLAGS_FIX_MVA) ?
+		    buffer_info->FIXED_MVA[domain_idx] :
+				buffer_info->MVA[domain_idx];
 	}
 
 	if (port_info.flags > 0) {
@@ -603,7 +630,8 @@ static int ion_mm_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 		       __func__, port_info.eModuleID, *(unsigned int *)len,
 		       *(unsigned int *)addr, buffer->size);
 		IONDBG("(region 0x%x--0x%x) (VA 0x%lx-%d)\n",
-		       buffer_info->iova_start, buffer_info->iova_end,
+		       buffer_info->iova_start[domain_idx],
+		       buffer_info->iova_end[domain_idx],
 		       (unsigned long)buffer_info->VA, non_vmalloc_request);
 	}
 
@@ -747,9 +775,10 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 	ION_PRINT_LOG_OR_SEQ(s,
 			     "----------------------------------------------------\n");
 	ION_PRINT_LOG_OR_SEQ(s,
-			     "%18.s %8.s %4.s %3.s %3.s %3.s %7.s %3.s %4.s %s %s %4.s %4.s %4.s %4.s %s\n",
+			     "%18.s %8.s %4.s %3.s %3.s %3.s %s %s %3.s %4.s %s %s %4.s %4.s %4.s %4.s %s\n",
 			     "buffer", "size", "kmap", "ref", "hdl", "mod",
-			     "mva", "sec", "flag", "pid(alloc_pid)",
+			     "mva(dom0)", "mva(dom1)", "sec", "flag",
+			     "pid(alloc_pid)",
 			     "comm(client)", "v1", "v2", "v3", "v4",
 			     "dbg_name");
 
@@ -768,11 +797,13 @@ static int ion_mm_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 		    (buffer->heap->id != ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA))
 			continue;
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %8zu %3d %3d %3d %3d %8x %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
+				     "0x%p %8zu %3d %3d %3d %3d %8x %8x  %3u %3lu %5d(%5d) %16s 0x%x 0x%x 0x%x 0x%x %s\n",
 				     buffer, buffer->size, buffer->kmap_cnt,
 				     atomic_read(&buffer->ref.refcount),
 				     buffer->handle_count, bug_info->module_id,
-				     bug_info->MVA, bug_info->security,
+				     bug_info->MVA[MM_DOMAIN],
+				     bug_info->MVA[VPU_DOMAIN],
+				     bug_info->security,
 				     buffer->flags, buffer->pid, bug_info->pid,
 				     buffer->task_comm, pdbg->value1,
 				     pdbg->value2, pdbg->value3, pdbg->value4,
@@ -1209,6 +1240,7 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 			struct ion_mm_buffer_info *buffer_info =
 			    buffer->priv_virt;
 			enum ION_MM_CMDS mm_cmd = param.mm_cmd;
+			int domain_idx = 0;
 
 			buffer_sec = buffer_info->security;
 
@@ -1219,19 +1251,26 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 				     buffer->heap->type, client->name);
 				return -EFAULT;
 			}
-			if (((buffer_info->MVA == 0) &&
+
+#if defined(CONFIG_MACH_MT6779)
+			if (param.config_buffer_param.module_id >=
+						M4U_PORT_VPU)
+				domain_idx = 1;
+#endif
+
+			if (((buffer_info->MVA[domain_idx] == 0) &&
 			     (mm_cmd == ION_MM_CONFIG_BUFFER)) ||
-			    ((buffer_info->FIXED_MVA == 0) &&
+			    ((buffer_info->FIXED_MVA[domain_idx] == 0) &&
 				(mm_cmd == ION_MM_CONFIG_BUFFER_EXT))) {
 				buffer_info->security =
 				    param.config_buffer_param.security;
 				buffer_info->coherent =
 				    param.config_buffer_param.coherent;
 				if (mm_cmd == ION_MM_CONFIG_BUFFER_EXT) {
-					buffer_info->iova_start =
+					buffer_info->iova_start[domain_idx] =
 					    param.config_buffer_param.
 					    reserve_iova_start;
-					buffer_info->iova_end =
+					buffer_info->iova_end[domain_idx] =
 					    param.config_buffer_param.
 					    reserve_iova_end;
 					buffer_info->fix_module_id =
@@ -1291,6 +1330,100 @@ long ion_mm_ioctl(struct ion_client *client, unsigned int cmd,
 		}
 		ion_drv_put_kernel_handle(kernel_handle);
 
+		break;
+	case ION_MM_GET_IOVA:
+	case ION_MM_GET_IOVA_EXT:
+		if ((from_kernel && param.get_phys_param.kernel_handle) ||
+		    (from_kernel == 0 && param.get_phys_param.handle)) {
+			;
+		} else {
+			IONMSG(": Error config buf with invalid handle.\n");
+			ret = -EFAULT;
+			break;
+		}
+
+		kernel_handle = ion_drv_get_handle(client,
+						   param.get_phys_param.
+						   handle,
+						   param.get_phys_param.
+						   kernel_handle,
+						   from_kernel);
+		if (IS_ERR(kernel_handle)) {
+			IONMSG("ion config buffer fail! port=%d.\n",
+			       param.get_phys_param.module_id);
+			ret = -EINVAL;
+			break;
+		}
+
+		buffer = ion_handle_buffer(kernel_handle);
+		buffer_type = buffer->heap->type;
+		if ((int)buffer->heap->type == ION_HEAP_TYPE_MULTIMEDIA) {
+			struct ion_mm_buffer_info *buffer_info =
+			    buffer->priv_virt;
+			enum ION_MM_CMDS mm_cmd = param.mm_cmd;
+			int domain_idx = 0;
+			ion_phys_addr_t phy_addr;
+
+			mutex_lock(&buffer_info->lock);
+
+			if (param.get_phys_param.module_id < 0) {
+				IONMSG
+				    ("config error:%d-%d,name %16.s!!!\n",
+				     param.get_phys_param.module_id,
+				     buffer->heap->type, client->name);
+				return -EFAULT;
+			}
+
+#if defined(CONFIG_MACH_MT6779)
+			if (param.get_phys_param.module_id >=
+						M4U_PORT_VPU)
+				domain_idx = 1;
+#endif
+			if (((buffer_info->MVA[domain_idx] == 0) &&
+			     (mm_cmd == ION_MM_GET_IOVA)) ||
+			    ((buffer_info->FIXED_MVA[domain_idx] == 0) &&
+				(mm_cmd == ION_MM_GET_IOVA_EXT))) {
+				buffer_info->security =
+				    param.get_phys_param.security;
+				buffer_info->coherent =
+				    param.get_phys_param.coherent;
+				if (mm_cmd == ION_MM_GET_IOVA_EXT) {
+					buffer_info->iova_start[domain_idx] =
+					    param.get_phys_param.
+					    reserve_iova_start;
+					buffer_info->iova_end[domain_idx] =
+					    param.get_phys_param.
+					    reserve_iova_end;
+					buffer_info->fix_module_id =
+					    param.get_phys_param.module_id;
+				} else
+					buffer_info->module_id =
+					    param.get_phys_param.module_id;
+			}
+
+			/* get mva */
+			phy_addr = param.get_phys_param.phy_addr;
+
+			if (ion_phys(client, kernel_handle, &phy_addr,
+				     (size_t *)&param.get_phys_param.len) <
+			    0) {
+				param.get_phys_param.phy_addr = 0;
+				param.get_phys_param.len = 0;
+				IONMSG(" %s: Error. Cannot get PA.\n",
+				       __func__);
+				ret = -EFAULT;
+			}
+			param.get_phys_param.phy_addr = (unsigned int)phy_addr;
+
+			mutex_unlock(&buffer_info->lock);
+
+		} else {
+			IONMSG
+			    (": Error. get iova is not from %c heap.\n",
+			     buffer->heap->type);
+			ret = -EFAULT;
+		}
+		ion_drv_put_kernel_handle(kernel_handle);
 		break;
 	case ION_MM_SET_DEBUG_INFO:
 
