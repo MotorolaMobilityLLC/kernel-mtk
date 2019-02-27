@@ -46,6 +46,7 @@
 #include "sensor_performance.h"
 #include "SCP_power_monitor.h"
 #include <asm/arch_timer.h>
+#include <linux/math64.h>
 
 /* ALGIN TO SCP SENSOR_DATA_SIZE AT FILE CONTEXTHUB_FW.H, ALGIN
  * TO SCP_SENSOR_HUB_DATA UNION, ALGIN TO STRUCT DATA_UNIT_T
@@ -971,7 +972,7 @@ static int SCP_sensorHub_batch(int handle, int flag,
 		if (samplingPeriodNs > 0 &&
 			mSensorState[handle].rate != SENSOR_RATE_ONCHANGE &&
 			mSensorState[handle].rate != SENSOR_RATE_ONESHOT){
-			do_div(rate, samplingPeriodNs);
+			div_s64(rate, samplingPeriodNs);
 			mSensorState[handle].rate = rate;
 		}
 		mSensorState[handle].latency = maxBatchReportLatencyNs;
@@ -1065,7 +1066,7 @@ static int SCP_sensorHub_report_data(struct data_unit_t *data_t)
 		/* timestamp filter, drop which equal to each other at 1 ms */
 		timestamp_ms = (int64_t)(data_t->time_stamp +
 			data_t->time_stamp_gpt);
-		do_div(timestamp_ms, 1000000);
+		div_s64(timestamp_ms, 1000000);
 		if (last_timestamp_ms[sensor_type] != timestamp_ms) {
 			last_timestamp_ms[sensor_type] = timestamp_ms;
 			need_send = true;
