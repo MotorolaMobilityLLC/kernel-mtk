@@ -13,14 +13,7 @@
 
 #include <linux/cpumask.h>
 
-#if 0
-/* FIXME: for NR_TYPES */
-#include <mtk_idle_mcdi.h>
-#else
-/* TODO: remove if spm related code ready */
-#define NR_TYPES 4
-#endif
-
+#include <mtk_idle.h>
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_plat.h>
