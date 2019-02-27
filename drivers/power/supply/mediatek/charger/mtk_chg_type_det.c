@@ -183,7 +183,8 @@ static int mt_charger_set_property(struct power_supply *psy,
 
 	/* usb */
 	if ((mtk_chg->chg_type == STANDARD_HOST) ||
-		(mtk_chg->chg_type == CHARGING_HOST))
+		(mtk_chg->chg_type == CHARGING_HOST) ||
+		(mtk_chg->chg_type == NONSTANDARD_CHARGER))
 		mt_usb_connect();
 	else
 		mt_usb_disconnect();
