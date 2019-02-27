@@ -1494,7 +1494,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 
 		if (!pConfig->sbch_enable || pConfig->ovl_partial_dirty) {
 
-			DISPMSG("sbch disable\n");
+			DISPINFO("sbch disable\n");
 			memset(sbch_info, 0, sizeof(sbch_info));
 			DISP_REG_SET(handle, ovl_base_addr(module) +
 					DISP_REG_OVL_SBCH, 0);
