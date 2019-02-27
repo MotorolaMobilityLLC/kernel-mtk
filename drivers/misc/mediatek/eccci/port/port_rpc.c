@@ -227,7 +227,7 @@ static int get_eint_attr_val(int md_id, struct device_node *node, int index)
 			ERR_SIM_HOT_PLUG_QUERY_TYPE;
 			CCCI_NORMAL_LOG(md_id, RPC, "%s:  not found\n",
 			md_eint_struct[type].property);
-			return ERR_SIM_HOT_PLUG_QUERY_TYPE;
+			ret = ERR_SIM_HOT_PLUG_QUERY_TYPE;
 			continue;
 		}
 		/* special case: polarity's position == sensitivity's start[ */
@@ -1314,7 +1314,7 @@ int port_rpc_recv_match(struct port_t *port, struct sk_buff *skb)
 				"kernelspace rpc msg 0x%x on %s\n",
 				rpc_buf->op_id, port->name);
 		} else {
-			CCCI_ERROR_LOG(md_id, RPC,
+			CCCI_DEBUG_LOG(md_id, RPC,
 				"port_rpc cfg error, need check:msg 0x%x on %s\n",
 				rpc_buf->op_id, port->name);
 			return 0;

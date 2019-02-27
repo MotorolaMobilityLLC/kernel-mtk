@@ -139,8 +139,8 @@ void inject_md_status_event(int md_id, int event_type, char reason[])
 	spin_lock_irqsave(&s_event_update_lock, flag);
 	for (i = 0; i < MD_BC_MAX_NUM; i++) {
 		if (s_bc_ctl_tbl[i]->md_bit_mask & md_mark) {
-			list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[i]->user_list,
-				node)
+			list_for_each_entry(user_ctlb,
+				&s_bc_ctl_tbl[i]->user_list, node)
 				inject_event_helper(user_ctlb, md_id,
 					&time_stamp, event_type, reason);
 			wake_up_interruptible(&s_bc_ctl_tbl[i]->wait);
@@ -172,7 +172,8 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 
 	if (md_id == 0) {
 		spin_lock_irqsave(&s_event_update_lock, flag);
-		list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[0]->user_list, node) {
+		list_for_each_entry(user_ctlb,
+			&s_bc_ctl_tbl[0]->user_list, node) {
 			if (user_ctlb->has_request_rst_lock) {
 				cpy_size = snprintf(&list_buff[total_size],
 				size - total_size,
@@ -184,7 +185,8 @@ int get_lock_rst_user_list(int md_id, char list_buff[], int size)
 		spin_unlock_irqrestore(&s_event_update_lock, flag);
 	} else if (md_id == 2) {
 		spin_lock_irqsave(&s_event_update_lock, flag);
-		list_for_each_entry(user_ctlb, &s_bc_ctl_tbl[3]->user_list, node) {
+		list_for_each_entry(user_ctlb,
+			&s_bc_ctl_tbl[3]->user_list, node) {
 			if (user_ctlb->has_request_rst_lock) {
 				cpy_size = snprintf(&list_buff[total_size],
 				size - total_size,
@@ -498,7 +500,8 @@ long ccci_util_bc_compat_ioctl(struct file *filp, unsigned int cmd,
 	bc_dev = user_ctlb->bc_dev_ptr;
 
 	if (!filp->f_op || !filp->f_op->unlocked_ioctl) {
-		CCCI_UTIL_ERR_MSG("ccci_util_bc_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
+		CCCI_UTIL_ERR_MSG(
+		"ccci_util_bc_compat_ioctl(!filp->f_op || !filp->f_op->unlocked_ioctl)\n");
 		return -ENOTTY;
 	}
 

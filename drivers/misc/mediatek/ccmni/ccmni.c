@@ -1068,8 +1068,6 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 			dev->type = ARPHRD_PPP;
 
 			sprintf(dev->name, "%s%d", ctlb->ccci_ops->name, i);
-			CCMNI_INF_MSG(md_id,
-				"register netdev name: %s\n", dev->name);
 
 			/* init private structure of netdev */
 			ccmni = netdev_priv(dev);
@@ -1084,24 +1082,16 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 
 			/* register net device */
 			ret = register_netdev(dev);
-			if (ret) {
-				CCMNI_PR_DBG(md_id,
-					"CCMNI%d register netdev fail: %d\n",
-					i, ret);
+			if (ret)
 				goto alloc_netdev_fail;
 			}
 
-			CCMNI_DBG_MSG(ccmni->md_id,
-					"CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
-					i, ccmni, ccmni->ctlb,
-					ccmni->ctlb->ccci_ops, ccmni->dev);
-		}
 
 	if ((ctlb->ccci_ops->md_ability & MODEM_CAP_CCMNI_IRAT) != 0) {
 		if (ctlb->ccci_ops->irat_md_id < 0 ||
 				ctlb->ccci_ops->irat_md_id >= MAX_MD_NUM) {
 			CCMNI_PR_DBG(md_id,
-				"md%d IRAT fail because invalid irat md(%d)\n",
+				"md%d IRAT fail: invalid irat md(%d)\n",
 				md_id, ctlb->ccci_ops->irat_md_id);
 			ret = -EINVAL;
 			goto alloc_mem_fail;
@@ -1110,7 +1100,7 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 		ctlb_irat_src = ccmni_ctl_blk[ctlb->ccci_ops->irat_md_id];
 		if (!ctlb_irat_src) {
 			CCMNI_PR_DBG(md_id,
-					"md%d IRAT fail because irat md%d ctlb is NULL\n",
+					"md%d IRAT fail: irat md%d ctlb is NULL\n",
 					md_id, ctlb->ccci_ops->irat_md_id);
 			ret = -EINVAL;
 			goto alloc_mem_fail;
@@ -1119,7 +1109,7 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 		if (unlikely(ctlb->ccci_ops->ccmni_num >
 				ctlb_irat_src->ccci_ops->ccmni_num)) {
 			CCMNI_PR_DBG(md_id,
-			"IRAT fail because number of src(%d) and dest(%d) ccmni isn't equal\n",
+			"IRAT fail: ccmni number not match(%d, %d)\n",
 			ctlb_irat_src->ccci_ops->ccmni_num,
 			ctlb->ccci_ops->ccmni_num);
 			ret = -EINVAL;
@@ -1144,11 +1134,6 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 			memcpy(ccmni_irat_src, ctlb_irat_src->ccmni_inst[i],
 			sizeof(struct ccmni_instance));
 			ctlb_irat_src->ccmni_inst[i] = ccmni_irat_src;
-			CCMNI_DBG_MSG(md_id,
-				"[IRAT]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
-				i, ccmni, ccmni->ctlb,
-				ccmni->ctlb->ccci_ops,
-				ccmni->dev);
 		}
 	}
 
@@ -1178,10 +1163,9 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 		ccmni = netdev_priv(dev);
 		ccmni->index = i;
 		ret = ccmni_inst_init(md_id, ccmni, dev);
-		if (ret) {
-			CCMNI_PR_DBG(md_id, "initial ccmni instance fail\n");
+		if (ret)
 			goto alloc_netdev_fail;
-		}
+
 		ctlb->ccmni_inst[i] = ccmni;
 
 		/*register net device */
@@ -1193,11 +1177,6 @@ static int ccmni_init(int md_id, struct ccmni_ccci_ops *ccci_info)
 				ret);
 			goto alloc_netdev_fail;
 		}
-		CCMNI_DBG_MSG(md_id,
-				"[CCMNI-LAN]CCMNI%d=%p, ctlb=%p, ctlb_ops=%p, dev=%p\n",
-				i, ccmni, ccmni->ctlb,
-				ccmni->ctlb->ccci_ops,
-				ccmni->dev);
 	}
 	snprintf(ctlb->wakelock_name, sizeof(ctlb->wakelock_name),
 			"ccmni_md%d", (md_id + 1));
@@ -1274,6 +1253,7 @@ static int ccmni_rx_callback(int md_id, int ccmni_idx, struct sk_buff *skb,
 	char tag_name[32] = { '\0' };
 	unsigned int tag_id = 0;
 #endif
+
 
 	if (unlikely(ctlb == NULL || ctlb->ccci_ops == NULL)) {
 		CCMNI_PR_DBG(md_id,
@@ -1481,8 +1461,8 @@ static void ccmni_md_state_callback(int md_id, int ccmni_idx,
 	int i = 0;
 
 	if (unlikely(ctlb == NULL)) {
-		CCMNI_PR_DBG(md_id,
-			"invalid ccmni ctrl struct when ccmni_idx=%d md_sta=%d\n",
+		CCMNI_DBG_MSG(md_id,
+			"invalid ccmni ctrl when ccmni%d_md_sta=%d\n",
 			ccmni_idx, state);
 		return;
 	}
