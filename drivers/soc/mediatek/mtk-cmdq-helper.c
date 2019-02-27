@@ -131,7 +131,7 @@ struct cmdq_base *cmdq_register_device(struct device *dev)
 		vals, 2);
 	if (!ret) {
 		clt_base->cpr_base = vals[0] + CMDQ_CPR_STRAT_ID;
-		clt_base->cpr_base = vals[1];
+		clt_base->cpr_cnt = vals[1];
 		cmdq_msg("support cpr:%d count:%d", vals[0], vals[1]);
 	}
 
