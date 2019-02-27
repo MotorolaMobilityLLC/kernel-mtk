@@ -580,72 +580,6 @@ static inline ssize_t scp_A_reg_status_show(struct device *kobj
 
 DEVICE_ATTR(scp_A_reg_status, 0444, scp_A_reg_status_show, NULL);
 
-#if SCP_VCORE_TEST_ENABLE
-static inline ssize_t scp_vcore_request_show(struct device *kobj
-			, struct device_attribute *attr, char *buf)
-{
-	unsigned long spin_flags;
-
-	spin_lock_irqsave(&scp_awake_spinlock, spin_flags);
-	scp_current_freq = readl(CURRENT_FREQ_REG);
-	scp_expected_freq = readl(EXPECTED_FREQ_REG);
-	spin_unlock_irqrestore(&scp_awake_spinlock, spin_flags);
-	pr_err("[SCP] receive freq show\n");
-	return scnprintf(buf, PAGE_SIZE, "SCP freq. expect=%d, cur=%d\n"
-					, scp_expected_freq, scp_current_freq);
-}
-
-static unsigned int pre_feature_req = 0xff;
-
-static ssize_t scp_vcore_request_store(struct device *kobj
-	, struct device_attribute *attr, const char *buf, size_t n)
-{
-	unsigned int feature_req = 0;
-
-
-	if (kstrtouint(buf, 0, &feature_req) == 0) {
-		if (pre_feature_req == 4)
-			scp_deregister_feature(VCORE_TEST5_FEATURE_ID);
-		if (pre_feature_req == 3)
-			scp_deregister_feature(VCORE_TEST4_FEATURE_ID);
-		if (pre_feature_req == 2)
-			scp_deregister_feature(VCORE_TEST3_FEATURE_ID);
-		if (pre_feature_req == 1)
-			scp_deregister_feature(VCORE_TEST2_FEATURE_ID);
-		if (pre_feature_req == 0)
-			scp_deregister_feature(VCORE_TEST_FEATURE_ID);
-
-		if (feature_req == 4) {
-			scp_register_feature(VCORE_TEST5_FEATURE_ID);
-			pre_feature_req = 4;
-		}
-		if (feature_req == 3) {
-			scp_register_feature(VCORE_TEST4_FEATURE_ID);
-			pre_feature_req = 3;
-		}
-		if (feature_req == 2) {
-			scp_register_feature(VCORE_TEST3_FEATURE_ID);
-			pre_feature_req = 2;
-		}
-		if (feature_req == 1) {
-			scp_register_feature(VCORE_TEST2_FEATURE_ID);
-			pre_feature_req = 1;
-		}
-		if (feature_req == 0) {
-			scp_register_feature(VCORE_TEST_FEATURE_ID);
-			pre_feature_req = 0;
-		}
-
-		pr_debug("[SCP] set freq: %d => %d\n"
-			, scp_current_freq, scp_expected_freq);
-	}
-	return n;
-}
-
-DEVICE_ATTR(scp_vcore_request, 0644, scp_vcore_request_show
-					, scp_vcore_request_store);
-#endif
-
 static inline ssize_t scp_A_db_test_show(struct device *kobj
 			, struct device_attribute *attr, char *buf)
 {
@@ -865,14 +799,6 @@ static int create_files(void)
 
 #endif
 
-
-#if SCP_VCORE_TEST_ENABLE
-	ret = device_create_file(scp_device.this_device
-					, &dev_attr_scp_vcore_request);
-
-	if (unlikely(ret != 0))
-		return ret;
-#endif
 	return 0;
 }
 #if SCP_RESERVED_MEM
