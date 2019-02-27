@@ -930,6 +930,14 @@ static void reset_ctrl_regs(void *unused)
 	int i, raw_num_brps, err = 0, cpu = smp_processor_id();
 	u32 val;
 
+#ifdef CONFIG_MTK_WATCHPOINT
+	/*
+	 * mediatek uses its own watchpoint & breakpoint save/restore flow,
+	 * so that we do not need kernel's reset flow.
+	 */
+	return;
+#endif
+
 	/*
 	 * v7 debug contains save and restore registers so that debug state
 	 * can be maintained across low-power modes without leaving the debug
