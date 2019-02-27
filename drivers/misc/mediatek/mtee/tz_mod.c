@@ -53,7 +53,7 @@
 #include "tz_secure_clock.h"
 #define MTEE_MOD_TAG "MTEE_MOD"
 
-#define TZ_PAGESIZE 0x1000	/* fix me!!!! need global define */
+#define MAX_TAG_SIZE   32
 
 #define TZ_DEVNAME "mtk_tz"
 
@@ -1143,6 +1143,9 @@ static long tz_client_reg_sharedmem_with_tag(struct file *file,
 	cret = copy_from_user(&cparam, (void *)arg, sizeof(cparam));
 	if (cret)
 		return -EFAULT;
+
+	if (cparam.tag_size > MAX_TAG_SIZE)
+		cparam.tag_size = MAX_TAG_SIZE;
 
 	return __tz_reg_sharedmem(file, arg, &cparam);
 }
