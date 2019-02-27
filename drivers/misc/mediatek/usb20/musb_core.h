@@ -430,6 +430,7 @@ struct musb {
 	u8 min_power;		/* vbus for periph, in mA/2 */
 
 	bool is_host;
+	bool in_ipo_off;
 
 	int a_wait_bcon;	/* VBUS timeout in msecs */
 	unsigned long idle_timeout;	/* Next timeout in jiffies */
