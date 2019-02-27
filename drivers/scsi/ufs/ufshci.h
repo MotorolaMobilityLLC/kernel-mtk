@@ -75,7 +75,9 @@ enum {
 	REG_UIC_COMMAND_ARG_2			= 0x98,
 	REG_UIC_COMMAND_ARG_3			= 0x9C,
 
-	UFSHCI_REG_SPACE_SIZE			= 0xA0,  /* MTK PATCH */
+	/* MTK PATCH */
+	UFSHCI_REG_SPACE_SIZE			= 0xA0,
+	UFS_REG_CRYPTO_CAPABILITY		= 0x100,
 
 	/* MTK PATCH: vendor-specific registers */
 	REG_UFS_MTK_START = 0x2100, /* the start offset of MTK registers */
