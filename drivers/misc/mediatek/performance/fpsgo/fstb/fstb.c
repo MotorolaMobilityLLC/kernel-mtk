@@ -1332,6 +1332,9 @@ static ssize_t fstb_soft_level_write(struct file *file,
 	 * because fps_levels would be changed.
 	 */
 
+	if (count > 256)
+		return -ENOMEM;
+
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
 		return -ENOMEM;
@@ -1433,6 +1436,9 @@ static ssize_t fstb_level_write(struct file *file,
 	 * because fps_levels would be changed.
 	 */
 
+	if (count > 256)
+		return -ENOMEM;
+
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
 		return -ENOMEM;
@@ -1529,6 +1535,9 @@ static ssize_t fstb_fteh_list_write(struct file *file,
 	char *buf;
 	char proc_name[16], thrd_name[16];
 
+	if (count > 256)
+		return -ENOMEM;
+
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
 		return -ENOMEM;
@@ -1595,6 +1604,9 @@ static ssize_t fstb_fps_list_write(struct file *file,
 	int mode = 1;
 	int pid = 0;
 	struct fps_level level[MAX_NR_RENDER_FPS_LEVELS];
+
+	if (count > 256)
+		return -ENOMEM;
 
 	buf = kmalloc(count + 1, GFP_KERNEL);
 	if (buf == NULL)
