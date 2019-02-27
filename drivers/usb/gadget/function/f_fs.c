@@ -952,6 +952,11 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 	int halt;
 	char *cnxn_data = NULL;
 
+	/* to get updated error atomic variable value */
+	smp_mb__before_atomic();
+	if (atomic_read(&epfile->error))
+		return -ENODEV;
+
 	/* Are we still active? */
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
 		return -ENODEV;
@@ -962,9 +967,26 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		if (file->f_flags & O_NONBLOCK)
 			return -EAGAIN;
 
-		ret = wait_event_interruptible(epfile->wait, (ep = epfile->ep));
-		if (ret)
-			return -EINTR;
+		/* Don't wait on write if device is offline */
+		if (!io_data->read)
+			return -ENODEV;
+
+		/* to get updated error atomic variable value */
+		smp_mb__before_atomic();
+
+		/*
+		 * if ep is disabled, this fails all current IOs
+		 * and wait for next epfile open to happen
+		 */
+		if (!atomic_read(&epfile->error)) {
+			ret = wait_event_interruptible(epfile->wait,
+					(ep = epfile->ep));
+			if (ret < 0)
+				return -EINTR;
+		}
+
+		if (!ep)
+			return -ENODEV;
 	}
 
 	/* Do we halt? */
@@ -1098,8 +1120,10 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 		if (!io_data->read)
 			write_out++;
 
-		if (unlikely(ret < 0))
+		if (unlikely(ret < 0)) {
+			ret = -EIO;
 			goto error_lock;
+		}
 
 		spin_unlock_irq(&epfile->ffs->eps_lock);
 
@@ -1110,13 +1134,37 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			 * status. usb_ep_dequeue API should guarantee no race
 			 * condition with req->complete callback.
 			 */
-			usb_ep_dequeue(ep->ep, req);
-			interrupted = ep->status < 0;
+			spin_lock_irq(&epfile->ffs->eps_lock);
+			interrupted = true;
+			/*
+			 * While we were acquiring lock endpoint got
+			 * disabled (disconnect) or changed
+			 (composition switch) ?
+			 */
+			if (epfile->ep == ep) {
+				usb_ep_dequeue(ep->ep, req);
+				interrupted = ep->status < 0;
+			}
+			spin_unlock_irq(&epfile->ffs->eps_lock);
 		}
 
-		if (interrupted)
+		if (interrupted) {
 			ret = -EINTR;
-		else if (io_data->read && ep->status > 0) {
+			goto error_mutex;
+		}
+
+		ret = -ENODEV;
+		spin_lock_irq(&epfile->ffs->eps_lock);
+		/*
+		 * While we were acquiring lock endpoint got
+		 * disabled (disconnect) or changed
+		 * (composition switch) ?
+		 */
+		if (epfile->ep == ep)
+			ret = ep->status;
+		spin_unlock_irq(&epfile->ffs->eps_lock);
+
+		if (io_data->read && ret > 0) {
 			cnxn_data = req->buf;
 			if (req->actual == 24) {
 				if (cnxn_data[0] == 0x43 && cnxn_data[1] == 0x4e
@@ -1137,8 +1185,7 @@ static ssize_t ffs_epfile_io(struct file *file, struct ffs_io_data *io_data)
 			}
 			ret = __ffs_epfile_read_data(epfile, data, ep->status,
 						     &io_data->data);
-		} else
-			ret = ep->status;
+		}
 		goto error_mutex;
 	} else if (!(req = usb_ep_alloc_request(ep->ep, GFP_ATOMIC))) {
 		ret = -ENOMEM;
@@ -1187,8 +1234,18 @@ ffs_epfile_open(struct inode *inode, struct file *file)
 	if (WARN_ON(epfile->ffs->state != FFS_ACTIVE))
 		return -ENODEV;
 
+	/* to get updated opened atomic variable value */
+	smp_mb__before_atomic();
+	if (atomic_read(&epfile->opened)) {
+		pr_info("%s(): ep(%s) is already opened.\n",
+					__func__, epfile->name);
+		return -EBUSY;
+	}
+
+	atomic_set(&epfile->opened, 1);
 	file->private_data = epfile;
 	ffs_data_opened(epfile->ffs);
+	atomic_set(&epfile->error, 0);
 
 	return 0;
 }
@@ -1304,8 +1361,11 @@ ffs_epfile_release(struct inode *inode, struct file *file)
 
 	ENTER();
 
+	atomic_set(&epfile->opened, 0);
 	__ffs_epfile_read_buffer_free(epfile);
+	atomic_set(&epfile->error, 1);
 	ffs_data_closed(epfile->ffs);
+	file->private_data = NULL;
 
 	return 0;
 }
@@ -1695,6 +1755,8 @@ static void ffs_data_get(struct ffs_data *ffs)
 {
 	ENTER();
 
+	/* to get updated ref atomic variable value */
+	smp_mb__before_atomic();
 	atomic_inc(&ffs->ref);
 }
 
@@ -1702,6 +1764,8 @@ static void ffs_data_opened(struct ffs_data *ffs)
 {
 	ENTER();
 
+	/* to get updated ref atomic variable value */
+	smp_mb__before_atomic();
 	atomic_inc(&ffs->ref);
 	if (atomic_add_return(1, &ffs->opened) == 1 &&
 			ffs->state == FFS_DEACTIVATED) {
@@ -1714,6 +1778,8 @@ static void ffs_data_put(struct ffs_data *ffs)
 {
 	ENTER();
 
+	/* to get updated ref atomic variable value */
+	smp_mb__before_atomic();
 	if (unlikely(atomic_dec_and_test(&ffs->ref))) {
 		pr_info("%s(): freeing\n", __func__);
 		ffs_data_clear(ffs);
@@ -1728,6 +1794,8 @@ static void ffs_data_closed(struct ffs_data *ffs)
 {
 	ENTER();
 
+	/* to get updated opened atomic variable value */
+	smp_mb__before_atomic();
 	if (atomic_dec_and_test(&ffs->opened)) {
 		if (ffs->no_disconnect) {
 			ffs->state = FFS_DEACTIVATED;
@@ -1743,6 +1811,9 @@ static void ffs_data_closed(struct ffs_data *ffs)
 			ffs_data_reset(ffs);
 		}
 	}
+
+	/* to get updated opened atomic variable value */
+	smp_mb__before_atomic();
 	if (atomic_read(&ffs->opened) < 0) {
 		ffs->state = FFS_CLOSING;
 		ffs_data_reset(ffs);
@@ -1934,6 +2005,10 @@ static void ffs_func_eps_disable(struct ffs_function *func)
 
 	spin_lock_irqsave(&func->ffs->eps_lock, flags);
 	do {
+
+		if (epfile)
+			atomic_set(&epfile->error, 1);
+
 		/* pending requests get nuked */
 		if (likely(ep->ep))
 			usb_ep_disable(ep->ep);
@@ -3295,8 +3370,10 @@ static int ffs_func_set_alt(struct usb_function *f,
 			return intf;
 	}
 
-	if (ffs->func)
+	if (ffs->func) {
 		ffs_func_eps_disable(ffs->func);
+		ffs->func = NULL;
+	}
 
 	if (ffs->state == FFS_DEACTIVATED) {
 		ffs->state = FFS_CLOSING;
@@ -3624,6 +3701,7 @@ static void ffs_func_unbind(struct usb_configuration *c,
 		if (ep->ep && ep->req)
 			usb_ep_free_request(ep->ep, ep->req);
 		ep->req = NULL;
+		ep->ep = NULL;
 		++ep;
 	} while (--count);
 	spin_unlock_irqrestore(&func->ffs->eps_lock, flags);
@@ -3858,6 +3936,9 @@ static void ffs_closed(struct ffs_data *ffs)
 	else
 		goto done;
 
+
+	/* to get updated refcount atomic variable value */
+	smp_mb__before_atomic();
 	if (opts->no_configfs || !opts->func_inst.group.cg_item.ci_parent
 	    || !atomic_read(&opts->func_inst.group.cg_item.ci_kref.refcount))
 		goto done;
