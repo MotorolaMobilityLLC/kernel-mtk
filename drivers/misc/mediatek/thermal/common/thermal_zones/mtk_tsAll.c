@@ -30,7 +30,7 @@
 #include <linux/uidgid.h>
 #include <linux/slab.h>
 
-#define RESERVED_TZS (12)
+#define RESERVED_TZS (17)
 
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
@@ -449,6 +449,11 @@ PROC_FOPS_RW(9);
 PROC_FOPS_RW(10);
 PROC_FOPS_RW(11);
 PROC_FOPS_RW(12);
+PROC_FOPS_RW(13);
+PROC_FOPS_RW(14);
+PROC_FOPS_RW(15);
+PROC_FOPS_RW(16);
+PROC_FOPS_RW(17);
 
 static const struct file_operations *thz_fops[RESERVED_TZS] = {
 	FOPS(1),
@@ -462,7 +467,12 @@ static const struct file_operations *thz_fops[RESERVED_TZS] = {
 	FOPS(9),
 	FOPS(10),
 	FOPS(11),
-	FOPS(12)
+	FOPS(12),
+	FOPS(13),
+	FOPS(14),
+	FOPS(15),
+	FOPS(16),
+	FOPS(17)
 };
 
 static int __init tsallts_init(void)
