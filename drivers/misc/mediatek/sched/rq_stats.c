@@ -57,7 +57,7 @@ static unsigned int avg_heavy_task_threshold = 65;
 static int htask_cpucap_ctrl = 1;
 
 /* max = 100, threshold for capacity overutiled */
-static int overutil_threshold = 80;
+static int overutil_threshold = 35;
 
 struct cpu_load_data {
 	cputime64_t prev_cpu_idle;
@@ -85,6 +85,12 @@ int get_overutil_threshold(void)
 {
 	return overutil_threshold;
 }
+
+#ifdef CONFIG_SCHED_HMP_PRIO_FILTER
+static unsigned int heavy_task_prio =
+			NICE_TO_PRIO(CONFIG_SCHED_HMP_PRIO_FILTER_VAL);
+#define task_low_priority(prio) ((prio >= heavy_task_prio)?1:0)
+#endif
 
 #ifdef CONFIG_CPU_FREQ
 #include <linux/cpufreq.h>
@@ -402,7 +408,7 @@ int is_heavy_task(struct task_struct *p)
 }
 EXPORT_SYMBOL(is_heavy_task);
 
-int inc_nr_heavy_running(const char *invoker, struct task_struct *p,
+int inc_nr_heavy_running(int invoker, struct task_struct *p,
 			int inc, bool ack_cap)
 {
 #ifdef CONFIG_MTK_SCHED_RQAVG_KS
@@ -992,6 +998,19 @@ __ATTR(avg_htasks_thresh, 0600 /* S_IWUSR | S_IRUSR */,
 		show_avg_heavy_task_thresh,
 		store_avg_heavy_task_thresh);
 
+/* big task */
+static ssize_t show_big_task(struct kobject *kobj,
+		struct kobj_attribute *attr, char *buf)
+{
+	unsigned int max_len = 4096;
+
+	return show_btask(buf, max_len);
+}
+
+static struct kobj_attribute big_task_attr =
+__ATTR(big_task, 0400 /* S_IRUSR */, show_big_task,
+		NULL);
+
 static struct attribute *rq_attrs[] = {
 	&cpu_normalized_load_attr.attr,
 	&def_timer_ms_attr.attr,
@@ -1004,6 +1023,7 @@ static struct attribute *rq_attrs[] = {
 	&avg_htasks_thresh_attr.attr,
 	&avg_htasks_ac_attr.attr,
 	&over_util_attr.attr,
+	&big_task_attr.attr,
 	NULL,
 };
 
