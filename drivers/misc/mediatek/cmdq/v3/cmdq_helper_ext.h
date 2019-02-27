@@ -18,6 +18,7 @@
 #include <linux/printk.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
 #include <mt-plat/mtk_lpae.h>
+#include <linux/trace_events.h>
 
 #include "cmdq_def.h"
 
@@ -153,23 +154,23 @@ do {			\
 #ifdef CMDQ_PROFILE
 #define CMDQ_PROF_INIT()	\
 {		\
-do {if (cmdq_core_profile_enabled() > 0) met_tag_init(); } while (0);	\
+do {if (cmdq_core_met_enabled()) met_tag_init(); } while (0);	\
 }
 
 #define CMDQ_PROF_START(args...)	\
 {		\
-do {if (cmdq_core_profile_enabled() > 0) met_tag_start(args);	\
+do {if (cmdq_core_met_enabled()) met_tag_start(args);	\
 	} while (0);	\
 }
 
 #define CMDQ_PROF_END(args...)	\
 {		\
-do {if (cmdq_core_profile_enabled() > 0) met_tag_end(args);	\
+do {if (cmdq_core_met_enabled()) met_tag_end(args);	\
 	} while (0);	\
 }
 #define CMDQ_PROF_ONESHOT(args...)	\
 {		\
-do {if (cmdq_core_profile_enabled() > 0) met_tag_oneshot(args);	\
+do {if (cmdq_core_met_enabled()) met_tag_oneshot(args);	\
 	} while (0);	\
 }
 #else
@@ -187,6 +188,27 @@ do {if (1) mmprofile_log_ex(args); } while (0);	\
 #else
 #define CMDQ_PROF_MMP(args...)
 #endif
+
+/* CMDQ FTRACE */
+#define __CMDQ_SYSTRACE_BEGIN(pid, fmt, args...) do { \
+	if (cmdq_core_ftrace_enabled()) { \
+		preempt_disable(); \
+		event_trace_printk(cmdq_get_tracing_mark(), \
+			"B|%d|"fmt, pid, ##args); \
+		preempt_enable();\
+	} \
+} while (0)
+
+#define CMDQ_SYSTRACE_BEGIN(fmt, args...) \
+	__CMDQ_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
+
+#define CMDQ_SYSTRACE_END() do { \
+	if (cmdq_core_ftrace_enabled()) { \
+		preempt_disable(); \
+		event_trace_printk(cmdq_get_tracing_mark(), "E\n"); \
+		preempt_enable(); \
+	} \
+} while (0)
 
 #define CMDQ_GET_TIME_IN_MS(start, end, duration)	\
 {	\
@@ -329,6 +351,14 @@ enum CMDQ_LOG_LEVEL_ENUM {
 	CMDQ_LOG_LEVEL_PMQOS = 4,
 
 	CMDQ_LOG_LEVEL_MAX	/* ALWAYS keep at the end */
+};
+
+enum CMDQ_PROFILE_LEVEL {
+	CMDQ_PROFILE_OFF = 0,
+	CMDQ_PROFILE_MET = 1,
+	CMDQ_PROFILE_FTRACE = 2,
+
+	CMDQ_PROFILE_MAX	/* ALWAYS keep at the end */
 };
 
 
@@ -777,6 +807,10 @@ s32 cmdqCoreRegisterErrorResetCB(enum CMDQ_GROUP_ENUM engGroup,
 void cmdq_core_register_status_dump(struct notifier_block *notifier);
 void cmdq_core_remove_status_dump(struct notifier_block *notifier);
 
+/* PMQoS register function */
+s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
+	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask);
+
 const char *cmdq_core_parse_op(u32 op_code);
 s32 cmdq_core_interpret_instruction(char *textBuf, s32 bufLen,
 	const u32 op, const u32 arg_a, const u32 arg_b);
@@ -788,6 +822,7 @@ bool cmdq_core_should_pmqos_log(void);
 bool cmdq_core_aee_enable(void);
 void cmdq_core_set_aee(bool enable);
 
+bool cmdq_core_ftrace_enabled(void);
 void cmdq_long_string_init(bool force, char *buf, u32 *offset, s32 *max_size);
 void cmdq_long_string(char *buf, u32 *offset, s32 *max_size,
 	const char *string, ...);
@@ -897,6 +932,7 @@ struct cmdq_dts_setting *cmdq_core_get_dts_setting(void);
 struct ContextStruct *cmdq_core_get_context(void);
 struct CmdqCBkStruct *cmdq_core_get_group_cb(void);
 void cmdq_core_release_handle_by_file_node(void *file_node);
+unsigned long cmdq_get_tracing_mark(void);
 const struct cmdq_controller *cmdq_core_get_controller(void);
 
 
@@ -958,9 +994,5 @@ s32 cmdq_helper_mbox_register(struct device *dev);
 void cmdq_core_initialize(void);
 void cmdq_core_deinitialize(void);
 void cmdq_helper_ext_deinit(void);
-
-/* PMQoS register function */
-s32 cmdq_core_register_task_cycle_cb(enum CMDQ_GROUP_ENUM group,
-	CmdqBeginTaskCB beginTask, CmdqEndTaskCB endTask);
 
 #endif
