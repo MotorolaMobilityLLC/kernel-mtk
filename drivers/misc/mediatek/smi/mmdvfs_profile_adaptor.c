@@ -26,6 +26,8 @@
 #include "mmdvfs_config_mt6765.h"
 #elif defined(SMI_MER)
 #include "mmdvfs_config_mt6761.h"
+#elif defined(SMI_EIG)
+#include "mmdvfs_config_mt3967.h"
 #endif
 
 #include "mmdvfs_mgr.h"
@@ -74,6 +76,17 @@ struct mmdvfs_step_util mmdvfs_step_util_obj_mt6761 = {
 	MMDVFS_SCEN_COUNT,
 	{0},
 	MT6761_MMDVFS_OPP_MAX,
+	MMDVFS_FINE_STEP_OPP0,
+	mmdvfs_step_util_init,
+	mmdvfs_step_util_set_step,
+};
+
+#elif defined(SMI_EIG)
+struct mmdvfs_step_util mmdvfs_step_util_obj_mt3967 = {
+	{0},
+	MMDVFS_SCEN_COUNT,
+	{0},
+	MT3967_MMDVFS_OPP_MAX,
 	MMDVFS_FINE_STEP_OPP0,
 	mmdvfs_step_util_init,
 	mmdvfs_step_util_set_step,
@@ -166,6 +179,24 @@ struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt6761 = {
 	NULL, 0,
 	NULL, 0,
 	mt6761_step_profile, MT6761_MMDVFS_OPP_MAX,
+	0,
+	mmdvfs_profile_dump,
+	mmdvfs_single_hw_config_dump,
+	mmdvfs_hw_config_dump,
+	mmdvfs_determine_step,
+	mmdvfs_apply_hw_config,
+	mmdvfs_apply_vcore_hw_config,
+	mmdvfs_apply_clk_hw_config,
+	mmdvfs_get_cam_sys_clk,
+	mmdvfs_single_profile_dump,
+};
+
+#elif defined(SMI_EIG)
+struct mmdvfs_adaptor mmdvfs_adaptor_obj_mt3967 = {
+	0, 0, 0, 0,
+	NULL, 0,
+	NULL, 0,
+	mt3967_step_profile, MT3967_MMDVFS_OPP_MAX,
 	0,
 	mmdvfs_profile_dump,
 	mmdvfs_single_hw_config_dump,
@@ -887,6 +918,13 @@ void mmdvfs_config_util_init(void)
 #if defined(SMI_MER)
 		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt6761;
 		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt6761;
+		g_mmdvfs_threshandler = &mmdvfs_thres_handler_obj;
+#endif
+		break;
+	case MMDVFS_PROFILE_EIG:
+#if defined(SMI_EIG)
+		g_mmdvfs_adaptor = &mmdvfs_adaptor_obj_mt3967;
+		g_mmdvfs_step_util = &mmdvfs_step_util_obj_mt3967;
 		g_mmdvfs_threshandler = &mmdvfs_thres_handler_obj;
 #endif
 		break;

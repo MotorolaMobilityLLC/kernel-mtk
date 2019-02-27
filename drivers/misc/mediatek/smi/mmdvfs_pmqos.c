@@ -513,6 +513,9 @@ static int mmdvfs_probe(struct platform_device *pdev)
 #ifdef MMDVFS_FORCE_STEP0
 	mmdvfs_qos_force_step(0);
 	pr_notice("force set step0 when probe\n");
+#else
+	mmdvfs_qos_force_step(0);
+	mmdvfs_qos_force_step(-1);
 #endif
 	return 0;
 

@@ -63,6 +63,15 @@ obj-y += mmdvfs_mgr_util.o
 obj-y += mmdvfs_profile_adaptor.o
 SUPPORT_MMP := true
 FORCE_STEP0 := false
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt3967"))
+ccflags-y += -DSMI_EIG
+ccflags-y += -DMMDVFS_HOOK
+ccflags-y += -DMMDVFS_QOS_SUPPORT
+obj-y += mmdvfs_mgr_v3.o
+obj-y += mmdvfs_mgr_util.o
+obj-y += mmdvfs_profile_adaptor.o
+SUPPORT_MMP := true
+FORCE_STEP0 := false
 endif
 
 
