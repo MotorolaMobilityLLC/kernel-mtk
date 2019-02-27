@@ -26,6 +26,8 @@
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_spm_internal.h>
 #include <spm/mtk_vcore_dvfs.h>
+#include <mtk_gpufreq.h>
+#include <mmdvfs_mgr.h>
 
 static struct reg_config dvfsrc_init_configs[][128] = {
 	/* SPMFW_LP4X_2CH_3733 */
@@ -228,9 +230,76 @@ static int can_dvfsrc_enable(void)
 	return enable;
 }
 
+__weak int emmc_autok(void)
+{
+	pr_info("NOT SUPPORT EMMC AUTOK\n");
+	return 0;
+}
+
+__weak int sd_autok(void)
+{
+	pr_info("NOT SUPPORT SD AUTOK\n");
+	return 0;
+}
+
+__weak int sdio_autok(void)
+{
+	pr_info("NOT SUPPORT SDIO AUTOK\n");
+	return 0;
+}
+
+
+void begin_autok_task(void)
+{
+	struct mmdvfs_prepare_event evt_from_vcore = {
+		MMDVFS_EVENT_PREPARE_CALIBRATION_START};
+
+	/* notify MM DVFS for msdc autok start */
+	mmdvfs_notify_prepare_action(&evt_from_vcore);
+
+	/* notify GPU DVFS for msdc autok start */
+	mt_gpufreq_disable_by_ptpod();
+}
+
+void finish_autok_task(void)
+{
+	/* check if dvfs force is released */
+	int force = pm_qos_request(PM_QOS_VCORE_DVFS_FORCE_OPP);
+
+	struct mmdvfs_prepare_event evt_from_vcore = {
+		MMDVFS_EVENT_PREPARE_CALIBRATION_END};
+
+	/* notify MM DVFS for msdc autok finish */
+	mmdvfs_notify_prepare_action(&evt_from_vcore);
+
+	/* notify GPU DVFS for msdc autok finish */
+	mt_gpufreq_enable_by_ptpod();
+
+	if (force >= 0 && force < 16)
+		pr_info("autok task not release force opp: %d\n", force);
+}
+
+void dvfsrc_autok_manager(void)
+{
+	int r = 0;
+
+	begin_autok_task();
+
+	r = emmc_autok();
+	pr_info("EMMC autok done: %s\n", (r == 0) ? "Yes" : "No");
+
+	r = sd_autok();
+	pr_info("SD autok done: %s\n", (r == 0) ? "Yes" : "No");
+
+	r = sdio_autok();
+	pr_info("SDIO autok done: %s\n", (r == 0) ? "Yes" : "No");
+
+	finish_autok_task();
+}
 int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc)
 {
 	mtk_rgu_cfg_dvfsrc(1);
+	helio_dvfsrc_sram_reg_init();
 
 	if (can_dvfsrc_enable())
 		helio_dvfsrc_enable(1);
@@ -239,7 +308,8 @@ int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc)
 
 	dvfsrc->init_config = dvfsrc_get_init_conf();
 	helio_dvfsrc_reg_config(dvfsrc->init_config);
-	helio_dvfsrc_sram_reg_init();
+
+	dvfsrc_autok_manager();
 
 	return fb_register_client(&dvfsrc_fb_notifier);
 }
