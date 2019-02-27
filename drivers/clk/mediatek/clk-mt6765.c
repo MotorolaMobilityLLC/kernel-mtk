@@ -425,9 +425,11 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG0		0x80000000
 #define INFRA_CG1		0x00000004
 #define INFRA_CG2		0x98Bfff00
-#define INFRA_CG3		0x86947616
+#define INFRA_CG3		0x86947E16
 #define INFRA_CG4		0x2ffc06dd
 #define INFRA_CG5		0x00030fe7
+
+#define MM_DISABLE_CG		0x00040000 /* un-gating in preloader */
 #else
 #define INFRA_CG0		0x80000000
 #define INFRA_CG1		0x00000004
@@ -435,6 +437,8 @@ void __iomem *venc_gcon_base;
 #define INFRA_CG3		0x879c7f96
 #define INFRA_CG4		0x2ffc87dd
 #define INFRA_CG5		0x00038fff
+
+#define MM_DISABLE_CG		0x3fffffff /* un-gating in preloader */
 #endif
 
 #define PERI_CG		0x80000000
@@ -445,7 +449,6 @@ void __iomem *venc_gcon_base;
 #define IMG_DISABLE_CG		0x3D
 #define GCE_DISABLE_CG		0x00010000
 #define MFG_DISABLE_CG		0x0000000f /* need to confirm */
-#define MM_DISABLE_CG		0x3fffffff /* un-gating in preloader */
 #define VENC_DISABLE_CG		0x00001111 /* inverse */
 #define MIPI_CSI_DISABLE_CG	0x2
 
@@ -2268,6 +2271,8 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 	mmsys_config_base = base;
 #if (!MT_CG_ENABLE)
 	clk_writel(MMSYS_CG_CLR0, MM_DISABLE_CG);
+#else
+	clk_writel(MMSYS_CG_SET0, MM_DISABLE_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_mmsys_config, "mediatek,mmsys_config",
