@@ -1482,6 +1482,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c1: i2c1@11008000 {
@@ -1495,6 +1496,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c2: i2c2@11009000 {
@@ -1508,6 +1510,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c3: i2c3@1100f000 {
@@ -1521,6 +1524,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c4: i2c4@11011000 {
@@ -1534,6 +1538,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c5: i2c5@11016000 {
@@ -1547,6 +1552,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 	i2c6: i2c6@1100d000 {
@@ -1560,6 +1566,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		clock-names = "main", "dma";
 		clock-div = <5>;
 		aed = <0x1a>;
+		mediatek,hs_only;
 	};
 
 
