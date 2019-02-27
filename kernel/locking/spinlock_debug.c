@@ -5,6 +5,7 @@
  * This file contains the spinlock/rwlock implementations for
  * DEBUG_SPINLOCK.
  */
+#define pr_fmt(fmt)	"spinlock_debug: " fmt
 
 #include <linux/spinlock.h>
 #include <linux/nmi.h>
@@ -12,6 +13,12 @@
 #include <linux/debug_locks.h>
 #include <linux/delay.h>
 #include <linux/export.h>
+#include <linux/printk.h>
+#include <mt-plat/aee.h>
+
+#ifdef CONFIG_MTK_SCHED_MONITOR
+#include "mtk_sched_mon.h"
+#endif
 
 void __raw_spin_lock_init(raw_spinlock_t *lock, const char *name,
 			  struct lock_class_key *key)
@@ -102,6 +109,134 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
 	lock->owner = SPINLOCK_OWNER_INIT;
 	lock->owner_cpu = -1;
 }
+#ifdef CONFIG_MTK_LOCK_DEBUG
+static void show_cpu_backtrace(void *ignored)
+{
+	pr_debug("spinlock debug show lock owenr CPU%d:\n", smp_processor_id());
+	show_stack(NULL, NULL);
+}
+#endif
+
+/*Select appropriate loop counts to 1~2sec*/
+#if HZ == 100
+#define LOOP_HZ 100 /* temp 10 */
+#elif HZ == 10
+#define LOOP_HZ 2 /* temp 2 */
+#else
+#define LOOP_HZ HZ
+#endif
+#define WARNING_TIME 1000000000		/* warning time 1 seconds */
+
+static void __spin_lock_debug(raw_spinlock_t *lock)
+{
+#ifdef CONFIG_MTK_LOCK_DEBUG
+	u64 i;
+	u64 loops = loops_per_jiffy * LOOP_HZ;
+	int print_once = 1;
+	char aee_str[50];
+	unsigned long long t1, t2, t3;
+	struct task_struct *owner = NULL;
+
+#ifdef CONFIG_PREEMPT_MONITOR
+	MT_trace_spin_lock_start(lock);
+#endif
+
+	t1 = sched_clock();
+	t2 = t1;
+
+	for (;;) {
+		for (i = 0; i < loops; i++) {
+			if (arch_spin_trylock(&lock->raw_lock)) {
+#ifdef CONFIG_PREEMPT_MONITOR
+				MT_trace_spin_lock_end(lock);
+#endif
+				return;
+			}
+			__delay(1);
+		}
+		t3 = sched_clock();
+		if (t3 < t2)
+			continue;
+		else if (t3 - t2 < WARNING_TIME)
+			continue;
+		/* if(sched_clock() - t2 < WARNING_TIME) continue; */
+		t2 = sched_clock();
+
+		if (oops_in_progress != 0)
+			/* in exception follow, printk maybe spinlock error */
+			continue;
+
+	#if 0 // ladios wait printk is_logbuf_lock
+		if (is_logbuf_lock(lock))	/*block by logbuf lock */
+			continue;
+  #endif
+		/* lockup suspected: */
+		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
+			owner = lock->owner;
+		pr_debug("spin time: %llu ns(start:%llu ns, lpj:%lu, LPHZ:%d),",
+			sched_clock() - t1, t1, loops_per_jiffy, (int)LOOP_HZ);
+		pr_debug(" value: 0x%08x\n",
+			*((unsigned int *)&lock->raw_lock));
+		pr_debug("spinlock .owner: %s/%d, .owner_cpu: %d\n",
+			owner ? owner->comm : "<none>",
+			owner ? task_pid_nr(owner) : -1,
+			lock->owner_cpu);
+
+		if (print_once) {
+			print_once = 0;
+			spin_dump(lock, "lockup suspected");
+#ifdef CONFIG_SMP
+			trigger_all_cpu_backtrace();
+#endif
+			if (owner) {
+				pr_debug("spinlock debug show lock owenr");
+				pr_debug("[%s/%d] info\n",
+				owner->comm, owner->pid);
+				smp_call_function_single(lock->owner_cpu,
+				show_cpu_backtrace, NULL, 0);
+				if (debug_locks)
+					debug_show_held_locks(owner);
+			}
+
+			/* ensure debug_locks is true,then can call aee */
+			if (debug_locks) {
+				debug_show_all_locks();
+				snprintf(aee_str, 50, "Spinlock lockup:%s\n",
+					current->comm);
+				#if defined(CONFIG_MTK_AEE_FEATURE)
+				aee_kernel_warning_api(__FILE__, __LINE__,
+					DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE,
+					aee_str, "spinlock debugger\n");
+				#endif
+			}
+		}
+	}
+#else /* CONFIG_MTK_LOCK_DEBUG*/
+	u64 i;
+	u64 loops = loops_per_jiffy * HZ;
+
+	for (i = 0; i < loops; i++) {
+		if (arch_spin_trylock(&lock->raw_lock))
+			return;
+		__delay(1);
+	}
+	/* lockup suspected: */
+	spin_dump(lock, "lockup suspected");
+#ifdef CONFIG_SMP
+	trigger_all_cpu_backtrace();
+#endif
+
+	/*
+	 * The trylock above was causing a livelock.  Give the lower level arch
+	 * specific lock code a chance to acquire the lock. We have already
+	 * printed a warning/backtrace at this point. The non-debug arch
+	 * specific code might actually succeed in acquiring the lock.  If it is
+	 * not successful, the end-result is the same - there is no forward
+	 * progress.
+	 */
+	arch_spin_lock(&lock->raw_lock);
+#endif /* CONFIG_MTK_LOCK_DEBUG */
+}
 
 /*
  * We are now relying on the NMI watchdog to detect lockup instead of doing
@@ -110,7 +245,8 @@ static inline void debug_spin_unlock(raw_spinlock_t *lock)
 void do_raw_spin_lock(raw_spinlock_t *lock)
 {
 	debug_spin_lock_before(lock);
-	arch_spin_lock(&lock->raw_lock);
+	if (unlikely(!arch_spin_trylock(&lock->raw_lock)))
+		__spin_lock_debug(lock);
 	debug_spin_lock_after(lock);
 }
 
