@@ -591,15 +591,18 @@ static int smi_debug_dumpper(struct mtk_smi_dev *smi,
 		for (j = 0; i + j < nr_debugs; j++) {
 			val = readl(base + debugs[i + j]);
 			if (offset)
-				size = snprintf(buffer + length, max_size,
+				size = snprintf(buffer + length,
+					max_size - length,
 					" %#x,", debugs[i + j]);
 			else if (val)
-				size = snprintf(buffer + length, max_size,
+				size = snprintf(buffer + length,
+					max_size - length,
 					" %#x=%#x,", debugs[i + j], val);
 			else
 				continue;
-			if (size < 0 || max_size - length <= size) {
-				snprintf(buffer + length, max_size, "%c", '\0');
+			if (size < 0 || (max_size <= length + size)) {
+				snprintf(buffer + length, max_size - length,
+					"%c", '\0');
 				break;
 			}
 			length = length + size;
