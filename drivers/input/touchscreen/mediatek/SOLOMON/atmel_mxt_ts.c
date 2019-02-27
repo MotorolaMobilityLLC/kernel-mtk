@@ -5186,7 +5186,8 @@ static int tpd_local_init(void)
 		
 		i2c_del_driver(&tpd_i2c_driver);
 		return -1;
-	}	
+	}
+	tpd_type_cap = 1;
 	return 0;
 }
 
