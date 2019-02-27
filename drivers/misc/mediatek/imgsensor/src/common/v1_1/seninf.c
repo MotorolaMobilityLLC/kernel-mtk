@@ -115,18 +115,21 @@ static irqreturn_t seninf_irq(MINT32 Irq, void *DeviceId)
 
 static MINT32 seninf_open(struct inode *pInode, struct file *pFile)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct SENINF *pseninf = &gseninf;
 
 	seninf_clk_open(&pseninf->clk);
-
+#endif
 	return 0;
 }
 
 static MINT32 seninf_release(struct inode *pInode, struct file *pFile)
 {
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct SENINF *pseninf = &gseninf;
 
 	seninf_clk_release(&pseninf->clk);
+#endif
 	return 0;
 }
 
@@ -193,8 +196,9 @@ static long seninf_ioctl(struct file *pfile,
 {
 	int ret = 0;
 	void *pbuff = NULL;
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 	struct SENINF *pseninf = &gseninf;
-
+#endif
 	if (_IOC_DIR(cmd) != _IOC_NONE) {
 		pbuff = kmalloc(_IOC_SIZE(cmd), GFP_KERNEL);
 		if (pbuff == NULL) {
@@ -232,15 +236,19 @@ static long seninf_ioctl(struct file *pfile,
 		break;
 
 	case KDSENINFIOC_X_SET_MCLK_PLL:
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		ret = seninf_clk_set(&pseninf->clk,
 				(struct ACDK_SENSOR_MCLK_STRUCT *) pbuff);
+#endif
 		break;
 
 	case KDSENINFIOC_X_GET_ISP_CLK:
 	case KDSENINFIOC_X_GET_CSI_CLK:
+#if !defined(CONFIG_FPGA_EARLY_PORTING)
 		*(unsigned int *)pbuff =
 			seninf_clk_get_meter(&pseninf->clk,
 							*(unsigned int *)pbuff);
+#endif
 		break;
 
 	default:

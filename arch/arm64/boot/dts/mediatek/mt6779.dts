@@ -2810,49 +2810,35 @@
 		reg = <0 0x1b10f000 0 0x1000>;
 		interrupts = <GIC_SPI 297 IRQ_TYPE_LEVEL_LOW>;
 	};
-	seninf1@1a040000 {
+
+	seninf1@1a004000 {
 		compatible = "mediatek,seninf1";
-		reg = <0 0x1a040000 0 0x1000>;
+		reg = <0 0x1a004000 0 0x1000>;
 	};
 
-	seninf2@1a041000 {
+	seninf2@1a005000 {
 		compatible = "mediatek,seninf2";
-		reg = <0 0x1a041000 0 0x1000>;
+		reg = <0 0x1a005000 0 0x1000>;
 	};
 
-	seninf3@1a042000 {
+	seninf3@1a006000 {
 		compatible = "mediatek,seninf3";
-		reg = <0 0x1a042000 0 0x1000>;
+		reg = <0 0x1a006000 0 0x1000>;
 	};
 
-	seninf4@1a043000 {
+	seninf4@1a007000 {
 		compatible = "mediatek,seninf4";
-		reg = <0 0x1a043000 0 0x1000>;
+		reg = <0 0x1a007000 0 0x1000>;
 	};
 
-	seninf5@1a044000 {
+	seninf5@1a008000 {
 		compatible = "mediatek,seninf5";
-		reg = <0 0x1a044000 0 0x1000>;
+		reg = <0 0x1a008000 0 0x1000>;
 	};
 
-	seninf6@1a045000 {
-		compatible = "mediatek,seninf6";
-		reg = <0 0x1a045000 0 0x1000>;
-	};
-
-	seninf7@1a046000 {
-		compatible = "mediatek,seninf7";
-		reg = <0 0x1a046000 0 0x1000>;
-	};
-
-	seninf8@1a047000 {
-		compatible = "mediatek,seninf8";
-		reg = <0 0x1a047000 0 0x1000>;
-	};
-
-	seninf_top@1a040000 {
+	seninf_top@1a004000 {
 		compatible = "mediatek,seninf_top";
-		reg = <0 0x1a040000 0 0x1000>;
+		reg = <0 0x1a004000 0 0x1000>;
 #if 0
 		interrupts = <GIC_SPI 251 IRQ_TYPE_LEVEL_LOW>;
 #endif
@@ -2891,7 +2877,7 @@
 #endif
 	};
 
-	kd_camera_hw1:kd_camera_hw1@1a040000 {
+	kd_camera_hw1:kd_camera_hw1@1a004000 {
 		compatible = "mediatek,imgsensor";
 	};
 
