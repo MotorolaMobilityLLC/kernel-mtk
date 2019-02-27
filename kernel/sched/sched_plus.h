@@ -27,3 +27,43 @@ void show_pwr_info(void);
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
 extern int l_plus_cpu;
 #endif
+
+enum fbq_type { regular, remote, all };
+
+enum group_type {
+	group_other = 0,
+	group_misfit_task,
+	group_imbalanced,
+	group_overloaded,
+};
+
+struct lb_env {
+	struct sched_domain	*sd;
+
+	struct rq		*src_rq;
+	int			src_cpu;
+
+	int			dst_cpu;
+	struct rq		*dst_rq;
+
+	struct cpumask		*dst_grpmask;
+	int			new_dst_cpu;
+	enum cpu_idle_type	idle;
+	long			imbalance;
+	unsigned int		src_grp_nr_running;
+	/* The set of CPUs under consideration for load-balancing */
+	struct cpumask		*cpus;
+
+	unsigned int		flags;
+
+	unsigned int		loop;
+	unsigned int		loop_break;
+	unsigned int		loop_max;
+
+	enum fbq_type		fbq_type;
+	enum group_type		busiest_group_type;
+	struct list_head	tasks;
+};
+
+extern bool sched_boost(void);
+#include "rt_enh.h"

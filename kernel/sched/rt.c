@@ -14,6 +14,8 @@
 #include "mtk_rt_mon.h"
 #endif
 
+#include <trace/events/sched.h>
+
 #include "rt_ext.c"
 
 int sched_rr_timeslice = RR_TIMESLICE;
@@ -1524,6 +1526,9 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	if (sd_flag != SD_BALANCE_WAKE && sd_flag != SD_BALANCE_FORK)
 		goto out;
 
+	if (sched_rt_boost())
+		return select_task_rq_rt_boost(p, cpu);
+
 	rq = cpu_rq(cpu);
 
 	rcu_read_lock();
@@ -1773,8 +1778,13 @@ static int find_lowest_rq(struct task_struct *task)
 	if (tsk_nr_cpus_allowed(task) == 1)
 		return -1; /* No other targets possible */
 
-	if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
-		return -1; /* No targets found */
+	if (sched_rt_boost()) {
+		if (!find_lowest_rq_in_hmp(task, lowest_mask))
+			return -1; /* No targets found */
+	} else {
+		if (!cpupri_find(&task_rq(task)->rd->cpupri, task, lowest_mask))
+			return -1; /* No targets found */
+	}
 
 	/*
 	 * At this point we have built a mask of cpus representing the
@@ -2515,3 +2525,6 @@ void print_rt_stats(struct seq_file *m, int cpu)
 	rcu_read_unlock();
 }
 #endif /* CONFIG_SCHED_DEBUG */
+
+#include "rt_enh.c"
+
