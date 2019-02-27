@@ -1360,6 +1360,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* for ARR 2.0 */
 	params->max_refresh_rate = 60;
 	params->min_refresh_rate = 45;
+
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	params->round_corner_en = 1;
+	params->full_content = 0;
+	params->corner_pattern_width = 1080;
+	params->corner_pattern_height = 32;
+	params->corner_pattern_height_bot = 32;
+#endif
 }
 
 static void lcm_init_power(void)
