@@ -18,13 +18,19 @@
 #include <mtk_dramc.h>
 #include <mt-plat/upmu_common.h>
 #include <ext_wd_drv.h>
-/*#include <mt_emi_api.h>*/
+#include <mt_emi_api.h>
 
 #include <helio-dvfsrc.h>
 #include <helio-dvfsrc-opp.h>
 #include <mtk_dvfsrc_reg.h>
 #include <mtk_spm_internal.h>
 #include <spm/mtk_vcore_dvfs.h>
+#include <mtk_gpufreq.h>
+#ifdef CONFIG_MTK_SMI_EXT
+#include <mmdvfs_mgr.h>
+#endif
+
+#define AUTOK_ENABLE
 
 static struct reg_config dvfsrc_init_configs[][128] = {
 	/* SPMFW_LP4X_2CH_3733 */
@@ -58,7 +64,7 @@ static struct reg_config dvfsrc_init_configs[][128] = {
 		{ DVFSRC_LEVEL_LABEL_12_13,	0x02230213 },
 		{ DVFSRC_LEVEL_LABEL_14_15,	0x03230323 },
 
-		{ DVFSRC_FORCE,			0x40000000 },
+		{ DVFSRC_FORCE,			0x20000000 },
 		{ DVFSRC_RSRV_1,		0x0000000C },
 
 		{ DVFSRC_QOS_EN,		0x0000407F },
@@ -182,7 +188,7 @@ static struct notifier_block dvfsrc_fb_notifier = {
 
 static int can_dvfsrc_enable(void)
 {
-	int enable = 0;
+	int enable = 1;
 
 	return enable;
 }
@@ -209,12 +215,15 @@ __weak int sdio_autok(void)
 
 void begin_autok_task(void)
 {
+#if defined CONFIG_MTK_SMI_EXT
 	struct mmdvfs_prepare_event evt_from_vcore = {
 		MMDVFS_EVENT_PREPARE_CALIBRATION_START};
+#endif
 
+#if defined CONFIG_MTK_SMI_EXT
 	/* notify MM DVFS for msdc autok start */
 	mmdvfs_notify_prepare_action(&evt_from_vcore);
-
+#endif
 	/* notify GPU DVFS for msdc autok start */
 	mt_gpufreq_disable_by_ptpod();
 }
@@ -223,12 +232,15 @@ void finish_autok_task(void)
 {
 	/* check if dvfs force is released */
 	int force = pm_qos_request(PM_QOS_VCORE_DVFS_FORCE_OPP);
-
+#if defined CONFIG_MTK_SMI_EXT
 	struct mmdvfs_prepare_event evt_from_vcore = {
 		MMDVFS_EVENT_PREPARE_CALIBRATION_END};
+#endif
 
+#if defined CONFIG_MTK_SMI_EXT
 	/* notify MM DVFS for msdc autok finish */
 	mmdvfs_notify_prepare_action(&evt_from_vcore);
+#endif
 
 	/* notify GPU DVFS for msdc autok finish */
 	mt_gpufreq_enable_by_ptpod();
@@ -489,7 +501,6 @@ EXPORT_SYMBOL(vcorefs_get_opp_info);
 
 unsigned int *vcorefs_get_src_req(void)
 {
-#if 0
 	unsigned int qos_total_bw = dvfsrc_read(DVFSRC_SW_BW_0) +
 			   dvfsrc_read(DVFSRC_SW_BW_1) +
 			   dvfsrc_read(DVFSRC_SW_BW_2) +
@@ -531,7 +542,7 @@ unsigned int *vcorefs_get_src_req(void)
 	met_vcorefs_src[SRC_SCP_VCORE_LEVEL_IDX] =
 	(dvfsrc_read(DVFSRC_VCORE_REQUEST) >> VCORE_SCP_GEAR_SHIFT) &
 	VCORE_SCP_GEAR_MASK;
-#endif
+
 	return met_vcorefs_src;
 }
 EXPORT_SYMBOL(vcorefs_get_src_req);
