@@ -4279,7 +4279,16 @@ void msdc_ops_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		 * or 180MHz Therefore we select to change driving when
 		 * timing mode changes.
 		 */
-		if (host->hw->host_function == MSDC_SD) {
+		if (host->hw->host_function == MSDC_EMMC) {
+			if (host->timing == MMC_TIMING_MMC_HS400) {
+				host->hw->driving_applied =
+					&host->hw->driving_hs400;
+			} else if (host->timing == MMC_TIMING_MMC_HS200) {
+				host->hw->driving_applied =
+					&host->hw->driving_hs200;
+			}
+			msdc_set_driving(host, host->hw->driving_applied);
+		} else if (host->hw->host_function == MSDC_SD) {
 			if (host->timing == MMC_TIMING_UHS_SDR104) {
 				host->hw->driving_applied =
 					&host->hw->driving_sdr104;

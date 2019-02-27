@@ -1123,7 +1123,8 @@ static int msdc_get_pinctl_settings(struct msdc_host *host,
 {
 	struct device_node *pinctl_node, *pins_node;
 	static char const * const pinctl_names[] = {
-		"pinctl", "pinctl_sdr104", "pinctl_sdr50", "pinctl_ddr50"
+		"pinctl", "pinctl_hs400", "pinctl_hs200",
+		"pinctl_sdr104", "pinctl_sdr50", "pinctl_ddr50"
 	};
 
 	/* sequence shall be the same as sequence in msdc_hw_driving */
@@ -1139,6 +1140,10 @@ static int msdc_get_pinctl_settings(struct msdc_host *host,
 
 		if (strcmp(pinctl_names[i], "pinctl") == 0)
 			pin_drv = (unsigned char *)&host->hw->driving;
+		else if (strcmp(pinctl_names[i], "pinctl_hs400") == 0)
+			pin_drv = (unsigned char *)&host->hw->driving_hs400;
+		else if (strcmp(pinctl_names[i], "pinctl_hs200") == 0)
+			pin_drv = (unsigned char *)&host->hw->driving_hs200;
 		else if (strcmp(pinctl_names[i], "pinctl_sdr104") == 0)
 			pin_drv = (unsigned char *)&host->hw->driving_sdr104;
 		else if (strcmp(pinctl_names[i], "pinctl_sdr50") == 0)
