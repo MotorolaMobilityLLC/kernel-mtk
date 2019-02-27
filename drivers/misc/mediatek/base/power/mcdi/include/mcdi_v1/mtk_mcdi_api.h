@@ -14,8 +14,10 @@
 #ifndef __MTK_MCDI_API_H__
 #define __MTK_MCDI_API_H__
 
-unsigned int mcdi_get_curr_cpu_status(void);
-void mcdi_heart_beat_log_dump(void);
+/* mcdi main */
 bool mcdi_task_pause(bool paused);
+
+/* mcdi governor */
+bool mcdi_is_buck_off(int cluster_idx);
 
 #endif /* __MTK_MCDI_API_H__ */
