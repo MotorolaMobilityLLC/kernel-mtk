@@ -221,7 +221,9 @@
 #include <linux/usb/composite.h>
 
 #include "configfs.h"
-//#include "usb_boost.h"
+#ifdef CONFIG_MEDIATEK_SOLUTION
+#include "usb_boost.h"
+#endif
 
 /*------------------------------------------------------------------------*/
 
@@ -750,7 +752,9 @@ static int do_read(struct fsg_common *common)
 		}
 
 		/* Perform the read */
-		//usb_boost();
+#ifdef CONFIG_MEDIATEK_SOLUTION
+		usb_boost();
+#endif
 		file_offset_tmp = file_offset;
 		nread = vfs_read(curlun->filp,
 				 (char __user *)bh->buf,
@@ -947,7 +951,9 @@ static int do_write(struct fsg_common *common)
 				goto empty_write;
 
 			/* Perform the write */
-			//usb_boost();
+#ifdef CONFIG_MEDIATEK_SOLUTION
+			usb_boost();
+#endif
 			file_offset_tmp = file_offset;
 			nwritten = vfs_write(curlun->filp,
 					     (char __user *)bh->buf,
