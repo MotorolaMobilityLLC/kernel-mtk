@@ -7041,7 +7041,7 @@ static void testmbox_dma_access(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
-	struct cmdq_pkt *pkt;
+	struct cmdq_pkt *pkt, *pkt2;
 	const u32 pattern = 0xabcdabcd;
 	const u32 pattern2 = 0xaabbccdd;
 	const u32 pat_default = 0xdeaddead;
@@ -7098,19 +7098,19 @@ static void testmbox_dma_access(void)
 			__func__, value, pattern2, pat_default);
 
 	/* write pattern and read */
-	cmdq_pkt_cl_create(&pkt, clt);
-	cmdq_pkt_jump(pkt, 8);
+	cmdq_pkt_cl_create(&pkt2, clt);
+	cmdq_pkt_jump(pkt2, 8);
 
 	va[mem_off / 4] = 0;
 	va[mem_off / 4 + 1] = 0;
 	slot2 = slot + mem_off;
 
-	cmdq_pkt_write_value_addr(pkt, slot2, 0xdeadbeef, ~0);
-	cmdq_pkt_read_addr(pkt, slot2, CMDQ_THR_SPR_IDX1);
-	cmdq_pkt_write_reg_addr(pkt, slot2 + 4, CMDQ_THR_SPR_IDX1, ~0);
-	cmdq_pkt_flush(clt, pkt);
-	cmdq_pkt_dump_buf(pkt, 0);
-	cmdq_pkt_destroy(pkt);
+	cmdq_pkt_write_value_addr(pkt2, slot2, 0xdeadbeef, ~0);
+	cmdq_pkt_read_addr(pkt2, slot2, CMDQ_THR_SPR_IDX1);
+	cmdq_pkt_write_reg_addr(pkt2, slot2 + 4, CMDQ_THR_SPR_IDX1, ~0);
+	cmdq_pkt_flush(clt, pkt2);
+	cmdq_pkt_dump_buf(pkt2, 0);
+	cmdq_pkt_destroy(pkt2);
 
 	if (va[mem_off / 4] != va[mem_off / 4 + 1] ||
 		va[mem_off / 4 + 1] != pattern3) {
