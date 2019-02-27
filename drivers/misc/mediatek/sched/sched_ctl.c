@@ -282,7 +282,9 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 		struct kobj_attribute *attr, const char *buf, size_t count)
 {
 	unsigned int val = 0;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	static unsigned int dvfs_margin_orig;
+#endif
 	static int is_dirty;
 	int en;
 
@@ -297,12 +299,14 @@ static ssize_t store_idle_prefer(struct kobject *kobj,
 
 	en = (idle_prefer_mode > 0) ? 1 : 0;
 
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 	/* backup system settings */
 	if (!is_dirty)
 		dvfs_margin_orig = capacity_margin_dvfs;
 
 	/* marginless DVFS control for high TLP scene */
 	capacity_margin_dvfs = en ? 1024 : dvfs_margin_orig;
+#endif
 
 #ifdef CONFIG_SCHED_TUNE
 	/*
