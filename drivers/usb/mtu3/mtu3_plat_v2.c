@@ -26,10 +26,10 @@
 #include "mtu3_dr.h"
 #include "mtu3_hal.h"
 
-u32 debug_level = K_EMERG | K_ALET | K_CRIT;
+u32 mtu3_debug_level = K_EMERG | K_ALET | K_CRIT;
 
-module_param(debug_level, int, 0644);
-MODULE_PARM_DESC(debug_level, "Debug Print Log Lvl");
+module_param(mtu3_debug_level, int, 0644);
+MODULE_PARM_DESC(mtu3_debug_level, "Debug Print Log Lvl");
 
 /*
  * USB Speed Mode
@@ -185,7 +185,6 @@ vusb33_err:
 
 static void ssusb_rscs_exit(struct ssusb_mtk *ssusb)
 {
-	clk_disable_unprepare(ssusb->ref_clk);
 	regulator_disable(ssusb->vusb33);
 	ssusb_phy_power_off(ssusb);
 	ssusb_phy_exit(ssusb);
@@ -320,11 +319,13 @@ static int mtu3_probe(struct platform_device *pdev)
 	else if (IS_ENABLED(CONFIG_USB_MTU3_GADGET))
 		ssusb->dr_mode = USB_DR_MODE_PERIPHERAL;
 
-	ret = ssusb_rscs_init(ssusb);
-	if (ret)
-		goto comm_init_err;
+	if (0) {
+		ret = ssusb_rscs_init(ssusb);
+		if (ret)
+			goto comm_init_err;
 
-	ssusb_ip_sw_reset(ssusb);
+		ssusb_ip_sw_reset(ssusb);
+	}
 
 	switch (ssusb->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
@@ -342,11 +343,13 @@ static int mtu3_probe(struct platform_device *pdev)
 		}
 		break;
 	case USB_DR_MODE_OTG:
+#ifdef NEVER
 		ret = ssusb_gadget_init(ssusb);
 		if (ret) {
 			dev_err(dev, "failed to initialize gadget\n");
 			goto comm_exit;
 		}
+#endif /* NEVER */
 
 		ret = ssusb_host_init(ssusb, node);
 		if (ret) {
@@ -413,7 +416,7 @@ static int __maybe_unused mtu3_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct ssusb_mtk *ssusb = platform_get_drvdata(pdev);
 
-	dev_dbg(dev, "%s\n", __func__);
+	dev_info(dev, "%s\n", __func__);
 
 	/* REVISIT: disconnect it for only device mode? */
 	if (!ssusb->is_host)
@@ -422,7 +425,6 @@ static int __maybe_unused mtu3_suspend(struct device *dev)
 	ssusb_host_disable(ssusb, true);
 	ssusb_phy_power_off(ssusb);
 	clk_disable_unprepare(ssusb->sys_clk);
-	clk_disable_unprepare(ssusb->ref_clk);
 	usb_wakeup_enable(ssusb);
 	return 0;
 }
@@ -432,14 +434,13 @@ static int __maybe_unused mtu3_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct ssusb_mtk *ssusb = platform_get_drvdata(pdev);
 
-	dev_dbg(dev, "%s\n", __func__);
+	dev_info(dev, "%s\n", __func__);
 
 	if (!ssusb->is_host)
 		return 0;
 
 	usb_wakeup_disable(ssusb);
 	clk_prepare_enable(ssusb->sys_clk);
-	clk_prepare_enable(ssusb->ref_clk);
 	ssusb_phy_power_on(ssusb);
 	ssusb_host_enable(ssusb);
 	return 0;
@@ -455,6 +456,7 @@ static const struct dev_pm_ops mtu3_pm_ops = {
 
 static const struct of_device_id mtu3_of_match[] = {
 	{.compatible = "mediatek,mt6758-mtu3",},
+	{.compatible = "mediatek,mt3967-mtu3",},
 	{},
 };
 
