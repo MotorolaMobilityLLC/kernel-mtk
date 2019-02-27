@@ -85,7 +85,6 @@ static int __init init_perfmgr(void)
 	init_perfmgr_boost();
 #endif
 
-	init_perfmgr_eas_controller();
 
 	return 0;
 }
