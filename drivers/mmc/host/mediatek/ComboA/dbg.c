@@ -206,7 +206,7 @@ static void msdc_init_dma_latest_address(void)
 }
 #endif
 
-#ifndef CONFIG_MTK_MMC_DEBUG_DISABLE
+#ifdef CONFIG_MTK_MMC_DEBUG
 #define dbg_max_cnt (500)
 #define dbg_max_cnt_low_io (5000)
 #define criterion_low_io (10 * 1024) /* unit: KB/s */
@@ -529,25 +529,25 @@ EXPORT_SYMBOL(get_msdc_aee_buffer);
 #else
 inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE =y: %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	struct mmc_host *mmc, u32 latest_cnt)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE =y: %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 void msdc_dump_host_state(char **buff, unsigned long *size,
 		struct seq_file *m, struct msdc_host *host)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set: %s!\n",__func__);
 }
 static void msdc_proc_dump(struct seq_file *m, u32 id)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set : %s!\n",__func__);
 }
 void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
 {
-	//pr_info("config MTK_MMC_DEBUGDISABLE : %s!\n",__func__);
+	//pr_info("config MTK_MMC_DEBUG is not set : %s!\n",__func__);
 }
 #endif
 
@@ -2583,7 +2583,7 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 	} else {
 		/* default dump info for aee */
 		seq_puts(m, "==== msdc debug info for aee ====\n");
-#ifdef CONFIG_MTK_MMC_DEBUG_DISABLE
+#ifndef CONFIG_MTK_MMC_DEBUG
 		seq_puts(m, "no debug info\n==== CONFIG_MTK_MMC_DEBUG_DISABLE=y ====\n");
 
 #endif
