@@ -1712,7 +1712,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11014000 0 0x1000>;
-		interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 95 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
 				<&topckgen CLK_TOP_SPI_SEL>,
 				<&infracfg_ao CLK_IFR_SPI4>;
@@ -1723,7 +1723,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		compatible = "mediatek,mt6765-spi";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11015000 0 0x1000>;
-		interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 96 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
 				<&topckgen CLK_TOP_SPI_SEL>,
 				<&infracfg_ao CLK_IFR_SPI5>;
