@@ -211,6 +211,7 @@ enum Fg_kernel_cmds {
 	FG_KERNEL_CMD_DISABLE_NAFG,
 	FG_KERNEL_CMD_DUMP_LOG,
 	FG_KERNEL_CMD_UISOC_UPDATE_TYPE,
+	FG_KERNEL_CMD_CHANG_LOGLEVEL,
 
 	FG_KERNEL_CMD_FROM_USER_NUMBER
 
@@ -460,6 +461,9 @@ struct fuel_gauge_custom_data {
 	/* boot status */
 	int pl_charger_status;
 
+	/* log_level */
+	int daemon_log_level;
+
 };
 
 struct FUELGAUGE_TEMPERATURE {
@@ -608,7 +612,6 @@ struct mtk_battery {
 
 /* log */
 	int log_level;
-	int d_log_level;
 
 /* for test */
 	struct BAT_EC_Struct Bat_EC_ctrl;
