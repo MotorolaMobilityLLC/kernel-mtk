@@ -61,7 +61,6 @@
 	{\
 		mt_reg_sync_writel(val, addr); \
 	}
-#endif
 
 #define DPI_EXT_LOG_PRINT(fmt, arg...)  \
 	{\
