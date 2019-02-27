@@ -543,6 +543,10 @@ static int m4u_create_sgtable_user(unsigned long va_align, struct sg_table *tabl
 				struct vm_area_struct *vma_temp;
 
 				vma_temp = find_vma(current->mm, va_align);
+				if (!vma_temp) {
+					M4UMSG("%s not find vma\n", __func__);
+					return -1;
+				}
 				M4UMSG("m4u_create_sgtable_user: vm_start=0x%lx, vm_end=0x%lx, vm_flag= 0x%lx\n",
 				vma_temp->vm_start, vma_temp->vm_end, vma_temp->vm_flags);
 			}
