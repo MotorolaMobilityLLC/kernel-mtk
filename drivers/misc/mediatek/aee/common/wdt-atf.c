@@ -589,8 +589,12 @@ void aee_wdt_atf_info(unsigned int cpu, struct pt_regs *regs)
 	mrdump_mini_add_entry((unsigned long)__per_cpu_offset,
 			MRDUMP_MINI_SECTION_SIZE);
 
+#ifdef CONFIG_MTK_RAM_CONSOLE
 	/* add info for minidump */
-	mrdump_mini_ke_cpu_regs(regs);
+	if (aee_rr_curr_exp_type() == 1 ||
+		aee_rr_curr_exp_type() == 4)
+		mrdump_mini_ke_cpu_regs(regs);
+#endif
 
 #ifdef CONFIG_MTK_SCHED_MONITOR
 #ifdef CONFIG_MTK_RAM_CONSOLE
