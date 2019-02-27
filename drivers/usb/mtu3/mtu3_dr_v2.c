@@ -11,14 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-
-#include <linux/debugfs.h>
 #include <linux/irq.h>
 #include <linux/kernel.h>
 #include <linux/of_device.h>
 #include <linux/module.h>
 #include <linux/pinctrl/consumer.h>
-#include <linux/seq_file.h>
 #include <linux/uaccess.h>
 #include <linux/usb/otg.h>
 
@@ -358,115 +355,6 @@ static void extcon_register_dwork(struct work_struct *work)
 	INIT_DELAYED_WORK(&otg_sx->dr_work, ssusb_set_mode);
 	ssusb_extcon_register(otg_sx);
 }
-
-#if 0
-/*
- * We provide an interface via debugfs to switch between host and device modes
- * depending on user input.
- * This is useful in special cases, such as uses TYPE-A receptacle but also
- * wants to support dual-role mode.
- * It generates cable state changes by pulling up/down IDPIN and
- * notifies driver to switch mode by "extcon-usb-gpio".
- * NOTE: when use MICRO receptacle, should not enable this interface.
- */
-static void ssusb_mode_manual_switch(struct ssusb_mtk *ssusb, int to_host)
-{
-	struct otg_switch_mtk *otg_sx = &ssusb->otg_switch;
-
-	if (to_host)
-		pinctrl_select_state(otg_sx->id_pinctrl, otg_sx->id_ground);
-	else
-		pinctrl_select_state(otg_sx->id_pinctrl, otg_sx->id_float);
-}
-
-
-static int ssusb_mode_show(struct seq_file *sf, void *unused)
-{
-	struct ssusb_mtk *ssusb = sf->private;
-
-	seq_printf(sf, "current mode: %s(%s drd)\n(echo device/host)\n",
-		ssusb->is_host ? "host" : "device",
-		ssusb->otg_switch.manual_drd_enabled ? "manual" : "auto");
-
-	return 0;
-}
-
-static int ssusb_mode_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, ssusb_mode_show, inode->i_private);
-}
-
-static ssize_t ssusb_mode_write(struct file *file,
-	const char __user *ubuf, size_t count, loff_t *ppos)
-{
-	struct seq_file *sf = file->private_data;
-	struct ssusb_mtk *ssusb = sf->private;
-	char buf[16];
-
-	if (copy_from_user(&buf, ubuf, min_t(size_t, sizeof(buf) - 1, count)))
-		return -EFAULT;
-
-	if (!strncmp(buf, "host", 4) && !ssusb->is_host) {
-		ssusb_mode_manual_switch(ssusb, 1);
-	} else if (!strncmp(buf, "device", 6) && ssusb->is_host) {
-		ssusb_mode_manual_switch(ssusb, 0);
-	} else {
-		dev_err(ssusb->dev, "wrong or duplicated setting\n");
-		return -EINVAL;
-	}
-
-	return count;
-}
-
-static const struct file_operations ssusb_mode_fops = {
-	.open = ssusb_mode_open,
-	.write = ssusb_mode_write,
-	.read = seq_read,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-#endif
-
-static int smt_err_count_get(void *data, u64 *val)
-{
-	struct ssusb_mtk *ssusb = data;
-
-	*val = ssusb_u3loop_back_test(ssusb);
-
-	mtu3_printk(K_INFO, "smt_err_count_get %llu\n", *val);
-
-	return 0;
-}
-DEFINE_SIMPLE_ATTRIBUTE(smt_err_count, smt_err_count_get, NULL, "%llu\n");
-
-
-static void ssusb_debugfs_init(struct ssusb_mtk *ssusb)
-{
-	struct dentry *root;
-	struct dentry *file;
-
-	root = debugfs_create_dir("musb_hdrc", NULL);
-	if (IS_ERR_OR_NULL(root)) {
-		if (!root)
-			dev_err(ssusb->dev, "create debugfs root failed\n");
-		return;
-	}
-	ssusb->dbgfs_root = root;
-
-	if (ssusb->u3_loopb_support) {
-		file = debugfs_create_file("smt_err_count", 0644, root,
-			ssusb, &smt_err_count);
-		if (!file)
-			dev_dbg(ssusb->dev, "file smt_err_count failed\n");
-	}
-}
-
-
-static void ssusb_debugfs_exit(struct ssusb_mtk *ssusb)
-{
-	debugfs_remove_recursive(ssusb->dbgfs_root);
-}
-
 
 int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 {
