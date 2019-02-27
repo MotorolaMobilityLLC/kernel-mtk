@@ -550,6 +550,7 @@ static unsigned int lcm_esd_check(void)
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
+#if 0
 #ifndef BUILD_LK
 	unsigned int ret = 0;
 	unsigned int x0 = FRAME_WIDTH / 4;
@@ -598,6 +599,9 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #else
 	return 0;
 #endif
+#endif
+	/*skip ata check*/
+	return 1;
 }
 
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
