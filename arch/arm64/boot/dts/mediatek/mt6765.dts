@@ -38,6 +38,7 @@
 slub_max_order=0 slub_debug=OFZPU page_owner=on \
 androidboot.hardware=mt6765 maxcpus=8 \
 firmware_class.path=/vendor/firmware";
+		kaslr-seed = <0 0>;
 	};
 
 	cpus {
