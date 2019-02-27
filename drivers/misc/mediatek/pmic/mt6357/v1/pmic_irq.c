@@ -640,7 +640,7 @@ static void pmic_sp_irq_handler(unsigned int spNo,
 		return; /* this subpack control has no interrupt triggered */
 
 	pr_notice(PMICTAG "[PMIC_INT] Reg[0x%x]=0x%x\n"
-		  , (sp_interrupts[spNo].status + 0x6 * sp_conNo)
+		  , (sp_interrupts[spNo].status + 0x2 * sp_conNo)
 		  , sp_int_status);
 
 	if (g_pmic_chip_version == 1) {
@@ -656,7 +656,7 @@ static void pmic_sp_irq_handler(unsigned int spNo,
 	} else {
 		/* clear interrupt status in this subpack control */
 		upmu_set_reg_value((sp_interrupts[spNo].status +
-				    0x6 * sp_conNo), sp_int_status);
+				    0x2 * sp_conNo), sp_int_status);
 	}
 
 	for (i = 0; i < PMIC_INT_WIDTH; i++) {
@@ -691,7 +691,7 @@ static void pmic_int_handler(void)
 		for (sp_conNo = 0; sp_conNo < sp_interrupts[spNo].con_len;
 		     sp_conNo++) {
 			status_reg = sp_interrupts[spNo].status +
-				0x6 * sp_conNo;
+				0x2 * sp_conNo;
 			sp_int_status = upmu_get_reg_value(status_reg);
 			pmic_sp_irq_handler(spNo, sp_conNo, sp_int_status);
 		}
@@ -743,7 +743,7 @@ int pmic_thread_kthread(void *x)
 			     sp_conNo < sp_interrupts[spNo].con_len;
 			     sp_conNo++) {
 				status_reg = sp_interrupts[spNo].status +
-					0x6 * sp_conNo;
+					0x2 * sp_conNo;
 				sp_int_status = upmu_get_reg_value(status_reg);
 				IRQLOG("[PMIC_INT] after, Reg[0x%x]=0x%x\n",
 					status_reg, sp_int_status);
