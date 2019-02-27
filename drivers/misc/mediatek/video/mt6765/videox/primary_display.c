@@ -589,7 +589,7 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 		primary_display_is_video_mode() ? "vdo," : "cmd,");
 	screen_logger_add_message("mode", MESSAGE_REPLACE, disp_tmp);
 
-	for (i = 0; i < cfg->input_layer_num; i++) {
+	for (i = 0; TOTAL_OVL_LAYER_NUM; i++) {
 		if (cfg->input_cfg[i].tgt_offset_y == 0 &&
 		    cfg->input_cfg[i].layer_enable) {
 			dst_layer_id =
@@ -599,11 +599,11 @@ static int primary_show_basic_debug_info(struct disp_frame_cfg_t *cfg)
 	}
 
 	dynamic_debug_msg_print(
-		(phys_addr_t)cfg->input_cfg[dst_layer_id].src_phy_addr,
+		(unsigned long)cfg->input_cfg[dst_layer_id].src_phy_addr,
 		cfg->input_cfg[dst_layer_id].tgt_width,
 		cfg->input_cfg[dst_layer_id].tgt_height,
 		cfg->input_cfg[dst_layer_id].src_pitch,
-		4);
+		cfg->input_cfg[dst_layer_id].src_fmt & 0x7);
 	return 0;
 }
 
