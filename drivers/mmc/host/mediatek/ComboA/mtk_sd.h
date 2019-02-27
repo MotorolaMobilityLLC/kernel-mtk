@@ -340,7 +340,6 @@ struct msdc_host {
 	u32                     mclk;           /* mmc subsystem clock */
 	u32                     hclk;           /* host clock speed */
 	u32                     sclk;           /* SD/MS clock speed */
-	u8                      core_clkon;     /* host clock(cg) status */
 	u8                      timing;         /* timing specification used */
 	u8                      power_mode;     /* host power mode */
 	u8                      bus_width;
@@ -397,9 +396,6 @@ struct msdc_host {
 	struct platform_device  *pdev;
 
 	int                     prev_cmd_cause_dump;
-	u64                     last_cg_set_time;
-	u64                     last_cg_clr_time;
-
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	atomic_t                cq_error_need_stop;
 #endif
@@ -583,10 +579,6 @@ static inline unsigned int uffs(unsigned int x)
 
 #define CMD_TIMEOUT             (HZ/10 * 5)     /* 100ms x5 */
 #define DAT_TIMEOUT             (HZ    * 5)     /* 1000ms x5 */
-/* Please modify msdc_sd.h to override the setting here */
-#ifndef CLK_TIMEOUT
-#define CLK_TIMEOUT             (HZ/10)         /* 100ms */
-#endif
 #define POLLING_BUSY            (HZ    * 3)
 #define POLLING_PINS            (HZ*20 / 1000)	/* 20ms */
 
