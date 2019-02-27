@@ -410,7 +410,9 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	int ret = 0;
 	int data_int32 = 0;
+#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
 	char oc_str[30] = "";
+#endif
 
 	switch (intNo) {
 	case INT_VPA_OC:
