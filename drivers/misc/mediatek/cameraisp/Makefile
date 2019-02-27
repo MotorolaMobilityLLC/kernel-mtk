@@ -16,7 +16,7 @@
 #obj-y += owe/
 obj-y += rsc/
 #obj-y += wpe/
-obj-y += dpe/
-obj-y += tsf/
-obj-y += mfb/
-obj-y += fdvt/
+#obj-y += dpe/
+#obj-y += tsf/
+#obj-y += mfb/
+#obj-y += fdvt/
