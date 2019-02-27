@@ -20,7 +20,7 @@
 #define EEM_BANK_SOC (0) /* use voltage bin, so disable it */
 #define EARLY_PORTING (0) /* for detecting real vboot in eem_init01 */
 #define DUMP_DATA_TO_DE (1)
-#define EEM_FAKE_EFUSE (1)
+#define EEM_FAKE_EFUSE (0)
 /* FIX ME */
 #define UPDATE_TO_UPOWER (1)
 #define EEM_LOCKTIME_LIMIT (3000)
@@ -135,13 +135,13 @@
 /*2-line*/
 /* L_LOW */
 #define DEVINFO_1 0x12A446F6
-/* LL_LOW + L_LOW */
+/* L_LOW + LL_LOW */
 #define DEVINFO_2 0x00510051
 /* LL_LOW */
 #define DEVINFO_3 0x12A43602
 /* L_HIGH */
 #define DEVINFO_4 0x12A4FB97
-/* LL_HIGH + L_HIGH */
+/* L_HIGH + LL_HIGH */
 #define DEVINFO_5 0x003A003B
 /* LL_HIGH */
 #define DEVINFO_6 0x12A490EA
@@ -152,7 +152,7 @@
 /*1-line*/
 /* L */
 #define DEVINFO_9 0x12A498E4
-/* LL + L */
+/* L + LL */
 #define DEVINFO_10 0x003A003B
 /* LL */
 #define DEVINFO_11 0x12A476FE
@@ -163,28 +163,28 @@
 
 /*2-line*/
 /* L_LOW */
-#define DEVINFO_1 0x12A446F6
-/* LL_LOW + L_LOW */
-#define DEVINFO_2 0x00510051
+#define DEVINFO_1 0x5DA40CB9
+/* L_LOW + LL_LOW */
+#define DEVINFO_2 0x001E001E
 /* LL_LOW */
-#define DEVINFO_3 0x12A43602
+#define DEVINFO_3 0x5DA47B4D
 /* L_HIGH */
-#define DEVINFO_4 0x12A4FB97
-/* LL_HIGH + L_HIGH */
-#define DEVINFO_5 0x003A003B
+#define DEVINFO_4 0x5DA4B4D8
+/* L_HIGH + LL_HIGH */
+#define DEVINFO_5 0x00750074
 /* LL_HIGH */
-#define DEVINFO_6 0x12A490EA
+#define DEVINFO_6 0x5DA4DFA6
 /* CCI */
-#define DEVINFO_7 0x12A486F2
-#define DEVINFO_8 0x003B0000
+#define DEVINFO_7 0x5DA4CABD
+#define DEVINFO_8 0x00740000
 
 /*1-line*/
 /* L */
-#define DEVINFO_9 0x12A498E4
-/* LL + L */
-#define DEVINFO_10 0x003A003B
+#define DEVINFO_9 0x5DA4D7AB
+/* L + LL */
+#define DEVINFO_10 0x00750074
 /* LL */
-#define DEVINFO_11 0x12A476FE
+#define DEVINFO_11 0x5DA439B1
 
 #endif
 
