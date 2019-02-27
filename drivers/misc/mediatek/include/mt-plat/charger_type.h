@@ -26,7 +26,8 @@ enum charger_type {
 	WIRELESS_CHARGER,
 };
 
-#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV)
+#if defined(CONFIG_USB_MTK_HDRC) || defined(CONFIG_USB_MU3D_DRV) \
+	|| (CONFIG_USB_MTK_EXTCON)
 extern void mt_usb_connect(void);
 extern void mt_usb_disconnect(void);
 #else
