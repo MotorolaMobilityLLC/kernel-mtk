@@ -16,8 +16,8 @@
 
 
 #include <linux/string.h>
-
-
+#include "kd_camera_feature_id.h"
+#include "kd_camera_feature_enum.h"
 
 enum IMGSENSOR_SENSOR_IDX {
 	IMGSENSOR_SENSOR_IDX_MIN_NUM = 0,
