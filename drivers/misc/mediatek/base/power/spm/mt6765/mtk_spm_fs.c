@@ -18,6 +18,7 @@
 #include <linux/string.h>
 
 #include <mtk_spm_internal.h>
+#include <mtk_spm_resource_req_internal.h>
 
 /**************************************
  * Macro and Inline
@@ -725,29 +726,54 @@ static ssize_t store_pwr_ctrl(int id, struct pwr_ctrl *pwrctrl,
 	/* SPM_SRC_REQ */
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_APSRC_REQ])) {
-		pwrctrl->spm_apsrc_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
-				id, PW_SPM_APSRC_REQ, val);
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_DRAM_S1)) != 0) {
+			pwrctrl->spm_apsrc_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
+					id, PW_SPM_APSRC_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_F26M_REQ])) {
-		pwrctrl->spm_f26m_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
-				id, PW_SPM_F26M_REQ, val);
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_26M)) != 0) {
+			pwrctrl->spm_f26m_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
+					id, PW_SPM_F26M_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_INFRA_REQ])) {
-		pwrctrl->spm_infra_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
-				id, PW_SPM_INFRA_REQ, val);
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_AXI_BUS)) != 0) {
+			pwrctrl->spm_infra_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
+					id, PW_SPM_INFRA_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_VRF18_REQ])) {
-		pwrctrl->spm_vrf18_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
-				id, PW_SPM_VRF18_REQ, val);
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_MAINPLL)) != 0) {
+			pwrctrl->spm_vrf18_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
+					id, PW_SPM_VRF18_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_DDREN_REQ])) {
-		pwrctrl->spm_ddren_req = val;
-		SMC_CALL(PWR_CTRL_ARGS,
-				id, PW_SPM_DDREN_REQ, val);
+		unsigned int req = (val == 0) ?
+			SPM_RESOURCE_CONSOLE_RELEASE : SPM_RESOURCE_CONSOLE_REQ;
+		if (spm_resource_req_console_by_id(id, req
+			, _RES_MASK(MTK_SPM_RES_EX_DRAM_S0)) != 0) {
+			pwrctrl->spm_ddren_req = val;
+			SMC_CALL(PWR_CTRL_ARGS,
+					id, PW_SPM_DDREN_REQ, val);
+		}
 	} else if (!strcmp(cmd,
 			pwr_ctrl_str[PW_SPM_RSV_SRC_REQ])) {
 		pwrctrl->spm_rsv_src_req = val;
