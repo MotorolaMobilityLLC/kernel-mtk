@@ -216,3 +216,14 @@ initcall_debug=1 maxcpus=1";
 	};
 };
 /* IRTX GPIO Settings -End */
+
+&mt6370_pmu {
+	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
+	mt6370,intr_gpio = <&pio 11 0x0>;
+};
+
+&mt6370_typec {
+	mt6370pd,intr_gpio_num = <41>; /* direct defined GPIO num */
+	mt6370pd,intr_gpio = <&pio 41 0x0>;
+};
+
