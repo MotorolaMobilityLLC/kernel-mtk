@@ -1466,10 +1466,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x1100a000 0 0x1000>;
 		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI0>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI0>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -1497,10 +1496,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11010000 0 0x1000>;
 		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI1>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI1>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -1509,10 +1507,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11012000 0 0x1000>;
 		interrupts = <GIC_SPI 128 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI2>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI2>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -1521,10 +1518,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11013000 0 0x1000>;
 		interrupts = <GIC_SPI 129 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI3>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI3>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -1533,10 +1529,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11014000 0 0x1000>;
 		interrupts = <GIC_SPI 134 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI4>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI4>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -1545,10 +1540,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		mediatek,pad-select = <0>;
 		reg = <0 0x11015000 0 0x1000>;
 		interrupts = <GIC_SPI 135 IRQ_TYPE_LEVEL_LOW>;
-		/* clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
-		 *		<&topckgen CLK_TOP_SPI_SEL>,
-		 *		<&infracfg_ao CLK_INFRA_SPI5>;
-		 */
+		clocks = <&topckgen CLK_TOP_SYSPLL3_D2>,
+				<&topckgen CLK_TOP_SPI_SEL>,
+				<&infracfg_ao CLK_IFR_SPI5>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
 	};
 
@@ -2222,6 +2216,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 	tcpc_pd: mt6370_pd_eint {
+	};
+
+	irtx_pwm:irtx_pwm {
+		compatible = "mediatek,irtx-pwm";
+		pwm_ch = <0>;
+		pwm_data_invert = <0>;
 	};
 
 	firmware {
