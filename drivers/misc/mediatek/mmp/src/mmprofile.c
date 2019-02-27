@@ -2157,6 +2157,10 @@ static int mmprofile_mmap(struct file *file, struct vm_area_struct *vma)
 
 	if (mmprofile_globals.selected_buffer == MMPROFILE_GLOBALS_BUFFER) {
 
+		/* check user space buffer length */
+		if ((vma->vm_end - vma->vm_start) != MMPROFILE_GLOBALS_SIZE)
+			return -EINVAL;
+
 		pos = vma->vm_start;
 		for (i = 0; i < MMPROFILE_GLOBALS_SIZE;
 			i += PAGE_SIZE, pos += PAGE_SIZE) {
@@ -2171,6 +2175,11 @@ static int mmprofile_mmap(struct file *file, struct vm_area_struct *vma)
 		}
 	} else if (mmprofile_globals.selected_buffer ==
 		MMPROFILE_PRIMARY_BUFFER) {
+
+		/* check user space buffer length */
+		if ((vma->vm_end - vma->vm_start) !=
+			mmprofile_globals.buffer_size_bytes)
+			return -EINVAL;
 
 		mmprofile_init_buffer();
 
