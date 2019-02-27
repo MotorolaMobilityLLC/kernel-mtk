@@ -487,10 +487,11 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 		if (num_trip < 0 || num_trip > 10) {
 			mtktscharger_dprintk_always("%s bad argument\n",
 								__func__);
-
+#ifdef CONFIG_MTK_AEE_FEATURE
 			aee_kernel_warning_api(__FILE__, __LINE__,
 					DB_OPT_DEFAULT, "mtktscharger_write",
 					"Bad argument");
+#endif
 			kfree(ptr_mtktscharger_data);
 			up(&sem_mutex);
 			return -EINVAL;
