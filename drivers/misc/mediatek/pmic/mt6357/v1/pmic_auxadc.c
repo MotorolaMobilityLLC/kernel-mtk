@@ -291,7 +291,7 @@ void mdrt_monitor(void)
 		mdelay(1);
 		mdrt_reg_dump();
 	}
-	if (mdrt_cnt > 15) {
+	if (mdrt_cnt > 10) {
 		mdrt_reg_dump();
 		mdrt_cnt = 0;
 		wake_up_mdrt_thread();
@@ -333,6 +333,8 @@ static int mdrt_kthread(void *x)
 	while (1) {
 		mutex_lock(&mdrt_mutex);
 		polling_cnt = 0;
+		/* Adjust to average 8 sample numbers for ch7 */
+		pmic_set_register_value(PMIC_AUXADC_AVG_NUM_CH7, 0x2);
 		temp_mdrt_adc = pmic_get_register_value(
 			PMIC_AUXADC_ADC_OUT_MDRT);
 		while (mdrt_adc == temp_mdrt_adc) {
