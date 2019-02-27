@@ -163,6 +163,10 @@ __weak void aee_powerkey_notify_press(unsigned long pressed)
 {
 }
 
+__weak void aee_disable_api(void)
+{
+}
+
 #endif
 
 #ifndef CONFIG_MTK_AEE_AED
