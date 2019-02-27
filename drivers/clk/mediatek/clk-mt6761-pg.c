@@ -35,9 +35,9 @@
 #endif
 #if !defined(MT_CCF_DEBUG) \
 		|| !defined(CLK_DEBUG) || !defined(DUMMY_REG_TEST)
-#define MT_CCF_DEBUG	0
-#define CONTROL_LIMIT	0
-#define CLK_DEBUG	0
+#define MT_CCF_DEBUG	1
+#define CONTROL_LIMIT	1
+#define CLK_DEBUG	1
 #define DUMMY_REG_TEST	0
 #endif
 
