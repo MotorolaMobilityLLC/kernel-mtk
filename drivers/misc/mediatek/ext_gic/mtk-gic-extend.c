@@ -167,7 +167,7 @@ void mt_irq_set_pending_for_sleep(unsigned int irq)
 	mb(); /* memory barrier */
 }
 
-u32 mt_irq_get_pending(unsigned int irq)
+u32 mt_irq_get_pending_hw(unsigned int irq)
 {
 	void __iomem *dist_base;
 	u32 bit = 1 << (irq % 32);
@@ -178,13 +178,58 @@ u32 mt_irq_get_pending(unsigned int irq)
 		& bit) ? 1 : 0;
 }
 
-void mt_irq_set_pending(unsigned int irq)
+void mt_irq_set_pending_hw(unsigned int irq)
 {
 	void __iomem *dist_base;
 	u32 bit = 1 << (irq % 32);
 
 	dist_base = GIC_DIST_BASE;
 	writel(bit, dist_base + GIC_DIST_PENDING_SET + irq / 32 * 4);
+}
+
+u32 mt_irq_get_pol_hw(u32 hwirq)
+{
+	u32 reg;
+	void __iomem *base = INT_POL_CTL0;
+
+	if (hwirq < 32) {
+		pr_info("Fail to set polarity of interrupt %d\n", hwirq);
+		return 0;
+	}
+
+	reg = ((hwirq - 32)/32);
+
+	return readl_relaxed(base + reg*4);
+}
+
+u32 mt_irq_get_pending_vec(u32 start_irq)
+{
+	void __iomem *base = 0;
+	u32 pending_vec = 0;
+	u32 reg = start_irq/32;
+	u32 LSB_num, MSB_num;
+	u32 LSB_vec, MSB_vec;
+
+	if (start_irq >= 32)
+		base = GIC_DIST_BASE;
+	else
+		return -EINVAL;
+
+	/* if start_irq is not aligned 32, do some assembling */
+	MSB_num = start_irq%32;
+	if (MSB_num != 0) {
+		LSB_num = 32 - MSB_num;
+		LSB_vec = readl_relaxed(base + GIC_DIST_PENDING_SET + reg*4)
+					>>MSB_num;
+		MSB_vec = readl_relaxed(base + GIC_DIST_PENDING_SET + (reg+1)*4)
+					<<LSB_num;
+		pending_vec = MSB_vec | LSB_vec;
+	} else {
+		pending_vec = readl_relaxed(base + GIC_DIST_PENDING_SET +
+					reg*4);
+	}
+
+	return pending_vec;
 }
 
 /*
