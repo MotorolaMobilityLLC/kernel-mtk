@@ -388,7 +388,7 @@ static INLINE void GetApphints(PVRSRV_RGXDEV_INFO *psDevInfo, RGX_SRVINIT_APPHIN
 		psHints->ui32JonesDisableMask = ui32ParamTemp;
 	}
 
-	if ( (bE42290) && (bTPUFiltermodeCtrl))
+	if ( (bE42290) )
 	{
 		SrvInitParamGetBOOL(pvParamState,    NewFilteringMode, psHints->bFilteringMode);
 	}
