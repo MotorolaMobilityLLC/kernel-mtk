@@ -554,7 +554,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 
 	fhctl@1000ce00 {
 		compatible = "mediatek,fhctl";
-		reg = <0 0x1000ce00 0 0x0>;
+		reg = <0 0x1000ce00 0 0x0200>;
 	};
 
 	pwrap@1000d000 {
