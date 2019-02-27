@@ -77,6 +77,9 @@ static int handle_to_index(int handle)
 	case ID_FLAT:
 		index = flat;
 		break;
+	case ID_SAR:
+		index = sar;
+		break;
 	default:
 		index = -1;
 		pr_err("handle_to_index invalid handle:%d,index:%d\n",

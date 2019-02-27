@@ -81,6 +81,8 @@
 #define SENSOR_TYPE_PPG2						69
 #define SENSOR_TYPE_RGBW						70
 #define SENSOR_TYPE_GYRO_TEMPERATURE					71
+#define SENSOR_TYPE_SAR					            72
+
 /* end sensor type */
 /*---------------------------------------------------------------------------*/
 #define ID_BASE							0
@@ -132,31 +134,33 @@
 
 
 /* follow mtk add sensor ID */
-#define ID_PEDOMETER                    (ID_BASE + SENSOR_TYPE_PEDOMETER - 1)
-#define ID_IN_POCKET                    (ID_BASE + SENSOR_TYPE_IN_POCKET - 1)
-#define ID_ACTIVITY                     (ID_BASE + SENSOR_TYPE_ACTIVITY - 1)
-#define ID_PDR				(ID_BASE + SENSOR_TYPE_PDR - 1)
-#define ID_FREEFALL			(ID_BASE + SENSOR_TYPE_FREEFALL - 1)
-#define ID_FLAT				(ID_BASE + SENSOR_TYPE_FLAT - 1)
-#define ID_FACE_DOWN                    (ID_BASE + SENSOR_TYPE_FACE_DOWN - 1)
-#define ID_SHAKE                        (ID_BASE + SENSOR_TYPE_SHAKE - 1)
-#define ID_BRINGTOSEE                   (ID_BASE + SENSOR_TYPE_BRINGTOSEE - 1)
-#define ID_ANSWER_CALL                  (ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
-#define ID_GEOFENCE                     (ID_BASE + SENSOR_TYPE_GEOFENCE - 1)
-#define ID_FLOOR_COUNTER              (ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
-#define ID_EKG                          (ID_BASE+SENSOR_TYPE_EKG-1)
-#define ID_PPG1                         (ID_BASE+SENSOR_TYPE_PPG1-1)
-#define ID_PPG2                         (ID_BASE+SENSOR_TYPE_PPG2-1)
-#define ID_RGBW                         (ID_BASE+SENSOR_TYPE_RGBW-1)
-#define ID_GYRO_TEMPERATURE             (ID_BASE+SENSOR_TYPE_GYRO_TEMPERATURE-1)
+#define ID_PEDOMETER          (ID_BASE + SENSOR_TYPE_PEDOMETER - 1)
+#define ID_IN_POCKET          (ID_BASE + SENSOR_TYPE_IN_POCKET - 1)
+#define ID_ACTIVITY           (ID_BASE + SENSOR_TYPE_ACTIVITY - 1)
+#define ID_PDR                (ID_BASE + SENSOR_TYPE_PDR - 1)
+#define ID_FREEFALL           (ID_BASE + SENSOR_TYPE_FREEFALL - 1)
+#define ID_FLAT               (ID_BASE + SENSOR_TYPE_FLAT - 1)
+#define ID_FACE_DOWN          (ID_BASE + SENSOR_TYPE_FACE_DOWN - 1)
+#define ID_SHAKE              (ID_BASE + SENSOR_TYPE_SHAKE - 1)
+#define ID_BRINGTOSEE         (ID_BASE + SENSOR_TYPE_BRINGTOSEE - 1)
+#define ID_ANSWER_CALL        (ID_BASE + SENSOR_TYPE_ANSWER_CALL - 1)
+#define ID_GEOFENCE           (ID_BASE + SENSOR_TYPE_GEOFENCE - 1)
+#define ID_FLOOR_COUNTER      (ID_BASE + SENSOR_TYPE_FLOOR_COUNTER - 1)
+#define ID_EKG                (ID_BASE + SENSOR_TYPE_EKG - 1)
+#define ID_PPG1               (ID_BASE + SENSOR_TYPE_PPG1 - 1)
+#define ID_PPG2               (ID_BASE + SENSOR_TYPE_PPG2 - 1)
+#define ID_RGBW               (ID_BASE + SENSOR_TYPE_RGBW - 1)
+#define ID_GYRO_TEMPERATURE   (ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE - 1)
+#define ID_SAR                (ID_BASE + SENSOR_TYPE_SAR - 1)
+
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE	(ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE)
+#define ID_SENSOR_MAX_HANDLE	(ID_BASE + SENSOR_TYPE_SAR - 1)
 #define ID_NONE					(ID_SENSOR_MAX_HANDLE + 1)
 
-#define ID_OFFSET                       (1)
-#define ID_SCP_MAX_SENSOR_TYPE			(69)
+#define ID_OFFSET				(1)
+#define ID_SCP_MAX_SENSOR_TYPE	(SENSOR_TYPE_SAR)
 
-#define MAX_ANDROID_SENSOR_NUM (ID_SENSOR_MAX_HANDLE + 1)
+#define MAX_ANDROID_SENSOR_NUM	(ID_SENSOR_MAX_HANDLE + 1)
 #define MAX_SENSOR_DATA_UPDATE_ONCE (20)
 
 
