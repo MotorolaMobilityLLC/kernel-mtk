@@ -75,7 +75,7 @@ struct mcdi_cpc_dev {
 #define cpc_tick_to_us(val) ((val) / 13)
 
 void mcdi_cpc_init(void);
-void mcdi_cpc_save_latency(int cpu, int last_core);
+void mcdi_cpc_reflect(int cpu, int last_core);
 void mcdi_cpc_prof_en(bool enable);
 void mcdi_procfs_cpc_init(struct proc_dir_entry *mcdi_dir);
 
