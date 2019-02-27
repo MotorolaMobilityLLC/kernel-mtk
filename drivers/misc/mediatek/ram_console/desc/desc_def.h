@@ -124,6 +124,8 @@
 	DF(scp_pc, "scp_pc: 0x%x\n"),
 	DF(scp_lr, "scp_lr: 0x%x\n"),
 	DF(hang_detect_timeout_count, "hang detect time out: 0x%x\n"),
+	DF(last_sync_func, "last sync function: 0x%lx\n"),
+	DF(last_async_func, "last async function: 0x%lx\n"),
 	DF(gz_irq, "GZ IRQ: 0x%x\n"),
 	/* kparams (unused) */
 
