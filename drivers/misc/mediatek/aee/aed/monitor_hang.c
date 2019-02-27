@@ -59,10 +59,21 @@ static DEFINE_SPINLOCK(pwk_hang_lock);
 static int wdt_kick_status;
 static int hwt_kick_times;
 static int pwk_start_monitor;
+//#define HANG_LOW_MEM
+#ifdef HANG_LOW_MEM
+#define MAX_HANG_INFO_SIZE (512*1024) /* 512 K info for low mem*/
+#else
+#ifndef __aarch64__
+#define MAX_HANG_INFO_SIZE (4*1024*1024) /* 4M info */
+#else
+#define MAX_HANG_INFO_SIZE (1*1024*1024) /* 1M info for 64bit*/
+#endif
+#endif
 
-#define MaxHangInfoSize (4*1024*1024) /* 4M info */
+static int MaxHangInfoSize = MAX_HANG_INFO_SIZE;
 #define MAX_STRING_SIZE 256
-char Hang_Info[MaxHangInfoSize];
+char hang_buff[MAX_HANG_INFO_SIZE];
+char *Hang_Info = hang_buff;
 static int Hang_Info_Size;
 static bool Hang_Detect_first;
 
@@ -1523,7 +1534,7 @@ static void hang_dump_backtrace(void)
 	struct task_struct *monkey_task = NULL;
 
 	watchdog_thread_exist = false;
-	Log2HangInfo("dump backtrace start.\n");
+	Log2HangInfo("dump backtrace start: %llu\n", local_clock());
 
 	read_lock(&tasklist_lock);
 	for_each_process(p) {
@@ -1593,7 +1604,7 @@ static void ShowStatus(int flag)
 void reset_hang_info(void)
 {
 	Hang_Detect_first = false;
-	memset(&Hang_Info, 0, MaxHangInfoSize);
+	memset(Hang_Info, 0, MaxHangInfoSize);
 	Hang_Info_Size = 0;
 }
 
@@ -1686,6 +1697,9 @@ static int hang_detect_thread(void *arg)
 	};
 	struct task_struct *hd_thread;
 	struct pt_regs saved_regs;
+#ifdef HANG_LOW_MEM
+	char *buf = NULL;
+#endif
 
 	sched_setscheduler(current, SCHED_FIFO, &param);
 	reset_hang_info();
@@ -1702,14 +1716,26 @@ static int hang_detect_thread(void *arg)
 			aee_rr_rec_hang_detect_timeout_count(hd_timeout);
 #endif
 
+#ifdef HANG_LOW_MEM
+			if (MaxHangInfoSize == MAX_HANG_INFO_SIZE) {
+				buf = kmalloc(4*1024*1024, GFP_KERNEL);
+				if (buf == NULL) {
+					pr_info("[Hang_detect] kmalloc memory failed.\n");
+				} else {
+					Hang_Info = buf;
+					MaxHangInfoSize = 4*1024*1024;
+				}
+			}
+#endif
+
 			if (hang_detect_counter == 1 && hang_aee_warn == 2
 				&& hd_timeout != 11) {
 				hang_detect_counter = hd_timeout / 2;
 				hang_aee_warn = 1;
 				wake_up_dump();
 				hang_aee_warn = 0;
-
 			}
+
 			if (hang_detect_counter <= 0) {
 				Log2HangInfo(
 					"[Hang_detect]Dump the %d time process bt.\n",
@@ -1744,6 +1770,7 @@ static int hang_detect_thread(void *arg)
 				/* eng load can detect whether KE*/
 #endif
 					/* BUG(); */
+					show_kaslr();
 					mrdump_mini_add_hang_raw(
 						(unsigned long)Hang_Info,
 						MaxHangInfoSize);
