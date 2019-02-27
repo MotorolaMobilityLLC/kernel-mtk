@@ -14,7 +14,8 @@
 #ifndef _FLASHLIGHT_DT_H
 #define _FLASHLIGHT_DT_H
 
-#define DUMMY_DTNAME      "mediatek,flashlights_dummy_gpio"
+#define DUMMY_GPIO_DTNAME "mediatek,flashlights_dummy_gpio"
+#define DUMMY_DTNAME      "mediatek,flashlights_dummy"
 #define DUMMY_DTNAME_I2C  "mediatek,flashlights_dummy_i2c"
 #define LED191_DTNAME     "mediatek,flashlights_led191"
 #define LM3642_DTNAME     "mediatek,flashlights_lm3642"
