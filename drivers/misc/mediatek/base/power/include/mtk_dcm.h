@@ -60,6 +60,7 @@
 	|| defined(CONFIG_MACH_MT6799)	\
 	|| defined(CONFIG_MACH_MT6759)	\
 	|| defined(CONFIG_MACH_MT6763)	\
+	|| defined(CONFIG_MACH_MT6765)	\
 	|| defined(CONFIG_MACH_MT6739)
 
 #include "dcm_v1/mtk_dcm.h"
