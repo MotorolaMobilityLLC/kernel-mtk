@@ -11,24 +11,41 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/kernel.h>
+
 #include <mt-plat/mtk_devinfo.h>
 #include <mtk_spm_internal.h>
 
 #include "helio-dvfsrc-opp.h"
 
-static int get_ct_volt(int vcore_opp)
+static int get_vb_volt(int vcore_opp)
 {
 	int ret = 0;
+	int ptpod10 = get_devinfo_with_index(60);
 
 	switch (vcore_opp) {
 	case VCORE_OPP_0:
-		ret = (get_devinfo_with_index(60) >> 2) & 0x3;
+		ret = (ptpod10 >> 2) & (ptpod10 >> 6) & (ptpod10 >> 12) & 0x3;
+
+		/* GPU 730 Mhz 0.8V VB */
+		ptpod10 = (ptpod10 >> 8) & 0x3;
+		/* if GPU 730 Mhz needs 0.8V */
+		if (ptpod10 == 1)
+			ret = 0;
+		if (ret > 1) {
+			pr_err("failed PTPOD10: 0x%x\n", ptpod10);
+			ret = 0;
+		}
 		break;
 	case VCORE_OPP_1:
-		ret = get_devinfo_with_index(60) & 0x3;
+		ret = (ptpod10 >> 0) & (ptpod10 >> 4) & 0x3;
+		if (ret > 1) {
+			pr_err("failed PTPOD10: 0x%x\n", ptpod10);
+			ret = 0;
+		}
 		break;
 	case VCORE_OPP_2:
-		ret = (get_devinfo_with_index(60) >> 10) & 0x3;
+		ret = (ptpod10 >> 10) & 0x3;
 		break;
 	default:
 		break;
@@ -38,21 +55,27 @@ static int get_ct_volt(int vcore_opp)
 
 void dvfsrc_opp_level_mapping(void)
 {
+	int vcore_opp_0_uv, vcore_opp_1_uv, vcore_opp_2_uv;
+
 	set_pwrap_cmd(VCORE_OPP_0, 0);
 	set_pwrap_cmd(VCORE_OPP_1, 2);
 	set_pwrap_cmd(VCORE_OPP_2, 3);
 	set_pwrap_cmd(VCORE_OPP_3, 4);
 
+	vcore_opp_0_uv = 800000 - get_vb_volt(VCORE_OPP_0);
+	vcore_opp_1_uv = 700000 - get_vb_volt(VCORE_OPP_1);
+	vcore_opp_2_uv = 700000 - get_vb_volt(VCORE_OPP_2);
+
+	vcore_opp_1_uv = max(vcore_opp_0_uv - 100000, vcore_opp_1_uv);
+	vcore_opp_1_uv = max(vcore_opp_1_uv, vcore_opp_2_uv);
+
+	set_vcore_uv_table(VCORE_OPP_0, vcore_opp_0_uv);
+	set_vcore_uv_table(VCORE_OPP_1, vcore_opp_1_uv);
+	set_vcore_uv_table(VCORE_OPP_2, vcore_opp_2_uv);
+	set_vcore_uv_table(VCORE_OPP_3, 650000);
+
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
-		set_vcore_uv_table(VCORE_OPP_0,
-				800000 - get_ct_volt(VCORE_OPP_0));
-		set_vcore_uv_table(VCORE_OPP_1,
-				700000 - get_ct_volt(VCORE_OPP_1));
-		set_vcore_uv_table(VCORE_OPP_2,
-				700000 - get_ct_volt(VCORE_OPP_2));
-		set_vcore_uv_table(VCORE_OPP_3, 650000);
-
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_0);
 		set_vcore_opp(VCORE_DVFS_OPP_1, VCORE_OPP_0);
 		set_vcore_opp(VCORE_DVFS_OPP_2, VCORE_OPP_0);
@@ -88,14 +111,6 @@ void dvfsrc_opp_level_mapping(void)
 		set_ddr_opp(VCORE_DVFS_OPP_15, DDR_OPP_2);
 		break;
 	case SPMFW_LP3_1CH_1866:
-		set_vcore_uv_table(VCORE_OPP_0,
-				800000 - get_ct_volt(VCORE_OPP_0));
-		set_vcore_uv_table(VCORE_OPP_1,
-				700000 - get_ct_volt(VCORE_OPP_1));
-		set_vcore_uv_table(VCORE_OPP_2,
-				700000 - get_ct_volt(VCORE_OPP_2));
-		set_vcore_uv_table(VCORE_OPP_3, 650000);
-
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_UNREQ);
 		set_vcore_opp(VCORE_DVFS_OPP_1, VCORE_OPP_0);
 		set_vcore_opp(VCORE_DVFS_OPP_2, VCORE_OPP_0);
