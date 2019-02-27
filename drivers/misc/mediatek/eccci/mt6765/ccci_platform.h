@@ -19,6 +19,7 @@
 #include "modem_sys.h"
 #include "hif/ccci_hif_cldma.h"
 
+extern unsigned int devapc_check_flag;
 /* the last EMI bank, properly not used */
 #define INVALID_ADDR (0xF0000000)
 #define KERN_EMI_BASE (0x40000000)	/* Bank4 */
@@ -35,10 +36,15 @@
 #define DBG_FLAG_JTAG		(1<<1)
 #define MD_DBG_JTAG_BIT		(1<<0)
 
-#define ccci_write32(b, a, v)           mt_reg_sync_writel(v, (b)+(a))
+#define ccci_write32(b, a, v) \
+do { \
+	if (devapc_check_flag == 1) \
+		mt_reg_sync_writel(v, (b) + (a)); \
+} while (0)
 #define ccci_write16(b, a, v)           mt_reg_sync_writew(v, (b)+(a))
 #define ccci_write8(b, a, v)            mt_reg_sync_writeb(v, (b)+(a))
-#define ccci_read32(b, a)               ioread32((void __iomem *)((b)+(a)))
+#define ccci_read32(b, a) \
+	((devapc_check_flag == 1) ? ioread32((void __iomem *)((b)+(a))) : 0)
 #define ccci_read16(b, a)               ioread16((void __iomem *)((b)+(a)))
 #define ccci_read8(b, a)                ioread8((void __iomem *)((b)+(a)))
 
