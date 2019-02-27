@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2018 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -12,7 +12,7 @@
  */
 
 /********************************************************************
- * camera_isp.c - MT6739 Linux ISP Device Driver
+ * camera_isp.c - MT6761 Linux ISP Device Driver
  *
  * DESCRIPTION:
  *     This file provid the other drivers ISP relative functions
@@ -277,6 +277,7 @@ static unsigned int g_log_def_constraint;
 #endif
 
 #define ISP_REG_ADDR_EN1 (ISP_ADDR + 0x4)
+#define ISP_REG_CTL_SEL_GLOBAL (ISP_ADDR + 0x20)
 #define ISP_REG_ADDR_INT_P1_ST (ISP_ADDR + 0x4C)
 #define ISP_REG_ADDR_INT_P1_ST2 (ISP_ADDR + 0x54)
 #define ISP_REG_ADDR_INT_P1_ST_D (ISP_ADDR + 0x5C)
@@ -290,9 +291,13 @@ static unsigned int g_log_def_constraint;
 #define ISP_REG_ADDR_RRZO_FBC (ISP_ADDR + 0xF4)
 #define ISP_REG_ADDR_IMGO_D_FBC (ISP_ADDR + 0xF8)
 #define ISP_REG_ADDR_RRZO_D_FBC (ISP_ADDR + 0xFC)
+#define ISP_REG_ADDR_TG_SEN_MODE (ISP_ADDR + 0x410)
 #define ISP_REG_ADDR_TG_VF_CON (ISP_ADDR + 0x414)
+#define ISP_REG_ADDR_TG_PATH_CFG (ISP_ADDR + 0x420)
 #define ISP_REG_ADDR_TG_INTER_ST (ISP_ADDR + 0x44C)
+#define ISP_REG_ADDR_TG2_SEN_MODE (ISP_ADDR + 0x2410)
 #define ISP_REG_ADDR_TG2_VF_CON (ISP_ADDR + 0x2414)
+#define ISP_REG_ADDR_TG2_PATH_CFG (ISP_ADDR + 0x2420)
 #define ISP_REG_ADDR_TG2_INTER_ST (ISP_ADDR + 0x244C)
 #define ISP_REG_ADDR_IMGO_BASE_ADDR (ISP_ADDR + 0x3300)
 #define ISP_REG_ADDR_RRZO_BASE_ADDR (ISP_ADDR + 0x3320)
@@ -1507,13 +1512,14 @@ bool ISP_chkModuleSetting(void)
 	unsigned int sgg_sel;
 	unsigned int eis_sel;
 	bool bmx_enable, rmx_enable;
-	bool hbin2_en;
+	bool hbin2_en, hbin1_en;
 	bool sgg3_en, flk_en;
 	unsigned int i;
 
 	cam_ctrl_en_p1 = ISP_RD32(ISP_ADDR + 0x4);
 	bmx_enable = (cam_ctrl_en_p1 >> 11) & 0x01;
 	rmx_enable = (cam_ctrl_en_p1 >> 9) & 0x01;
+	hbin1_en = (cam_ctrl_en_p1 >> 25) & 0x01;
 	hbin2_en = (cam_ctrl_en_p1 >> 18) & 0x01;
 	sgg3_en = (cam_ctrl_en_p1 >> 26) & 0x01;
 	flk_en = (cam_ctrl_en_p1 >> 17) & 0x01;
@@ -1564,6 +1570,7 @@ bool ISP_chkModuleSetting(void)
 		unsigned int cam_ae_hst_ctl;  /*4650 */
 		unsigned int cam_ae_stat_en;  /*4698 */
 		unsigned int aa_size_per_blk;
+
 
 		unsigned int AAO_XSIZE;
 		unsigned int AWB_W_HNUM;
@@ -1803,6 +1810,8 @@ bool ISP_chkModuleSetting(void)
 			log_inf("unsupported sgg_sel:0x%x\n", sgg_sel);
 			return MFALSE;
 		}
+		if (hbin1_en)
+			h_size = h_size / 2;
 		af_image_wd = cam_af_size & 0x3fff;
 		if (h_size != af_image_wd) {
 			log_inf("AF input size mismatch:0x%x_0x%x\n",
@@ -8048,7 +8057,23 @@ static signed int ISP_DONE_Buf_Time(enum eISPIrq irqT, union CQ_RTBC_FBC *pFbc,
 #ifdef _rtbc_buf_que_2_0_
 
 	/* dynamic dma port     ctrl */
-	if (pstRTBuf->ring_buf[ch_imgo].active) {
+	if (pstRTBuf->ring_buf[ch_imgo].active &&
+		pstRTBuf->ring_buf[ch_rrzo].active) {
+		/* if P1_DON ISR is coming at */
+		/* output 2 imgo frames, */
+		/* but 1 rrzo frame */
+		/* (another rrzo frame is slowly),*/
+		/*we should refer to smaller WCNT */
+		/* avoid patch too many times*/
+		if (rrzo_fbc.Bits.WCNT <
+			imgo_fbc.Bits.WCNT) {
+			_dma_cur_fbc = rrzo_fbc;
+			_working_dma = ch_rrzo;
+		} else {
+			_dma_cur_fbc = imgo_fbc;
+			_working_dma = ch_imgo;
+		}
+	} else if (pstRTBuf->ring_buf[ch_imgo].active) {
 		_dma_cur_fbc = imgo_fbc;
 		_working_dma = ch_imgo;
 	} else if (pstRTBuf->ring_buf[ch_rrzo].active) {
@@ -8271,7 +8296,7 @@ if (IspInfo.DebugMask & ISP_DBG_INT_2)
 	    pstRTBuf->ring_buf[ch_rrzo].active) {
 		if (pstRTBuf->ring_buf[ch_imgo].start !=
 		    pstRTBuf->ring_buf[ch_rrzo].start) {
-			log_err("start idx mismatch	%d_%d(%d %d	%d,%d %d %d)",
+			log_err("start idx mismatch	%d_%d(%d %d	%d,%d %d %d), dma(%d_%d)",
 				pstRTBuf->ring_buf[ch_imgo].start,
 				pstRTBuf->ring_buf[ch_rrzo].start,
 				pstRTBuf->ring_buf[ch_imgo].data[0].bFilled,
@@ -8279,7 +8304,9 @@ if (IspInfo.DebugMask & ISP_DBG_INT_2)
 				pstRTBuf->ring_buf[ch_imgo].data[2].bFilled,
 				pstRTBuf->ring_buf[ch_rrzo].data[0].bFilled,
 				pstRTBuf->ring_buf[ch_rrzo].data[1].bFilled,
-				pstRTBuf->ring_buf[ch_rrzo].data[2].bFilled);
+				pstRTBuf->ring_buf[ch_rrzo].data[2].bFilled,
+				ch_imgo,
+				ch_rrzo);
 		}
 	}
 /* log_inf("RTBC_DBG7 imgo(buf cnt): %d %d %d\n",
@@ -10890,6 +10917,7 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 		IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_STATUSX] &
 		(~(ISP_IRQ_STATUSX_IMGO_DROP_FRAME_ST |
 		   ISP_IRQ_STATUSX_RRZO_DROP_FRAME_ST));
+
 	/* p1   && p1_d share the same interrupt status */
 	if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
 	    IspInfo.IrqInfo.ErrMask[ISP_IRQ_TYPE_INT_STATUSX]) {
@@ -10917,8 +10945,9 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 		 * }
 		 */
 		if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] & (~STATUSX_WARNING)) {
-			log_err("ISP INT ERR_P1	0x%x\n",
-				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX]);
+			log_err("ISP INT ERR_P1	0x%x, 0x%x\n",
+				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX],
+				IrqStatus[ISP_IRQ_TYPE_INT_P1_ST2]);
 			// cq_over_vsync error, smi debug
 			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUSX] &
 					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
@@ -10954,7 +10983,65 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 				log_err("LSCI smi:(0x%x)!\n",
 					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
 
-				dump_smi_debug = MTRUE;
+				/* read CQ status
+				 * set CAM_CTL_DBG_SET = 0x6000
+				 * read CAM_CTL_DBG_PORT
+				 *   --> dip cq debug information
+				 * set CAM_CTL_DBG_SET = 0x7000
+				 * read CAM_CTL_DBG_PORT
+				 *   --> raw cq debug information
+				 * set CAM_CTL_DBG_SET = 0x8000
+				 * read CAM_CTL_DBG_PORT
+				 *   --> raw_d cq debug information
+				 */
+				ISP_WR32(ISP_REG_ADDR_DBG_SET,
+					(ISP_RD32(ISP_REG_ADDR_DBG_SET)&
+					0xFFFF0FFF)|0x6000);
+				log_err("DIP CQ Info:(0x%x)!\n",
+					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
+
+				ISP_WR32(ISP_REG_ADDR_DBG_SET,
+					(ISP_RD32(ISP_REG_ADDR_DBG_SET)&
+					0xFFFF0FFF)|0x7000);
+				log_err("RAW CQ Info:(0x%x)!\n",
+					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
+
+				ISP_WR32(ISP_REG_ADDR_DBG_SET,
+					(ISP_RD32(ISP_REG_ADDR_DBG_SET)&
+					0xFFFF0FFF)|0x8000);
+				log_err("RAW_D CQ Info:(0x%x)!\n",
+					ISP_RD32(ISP_REG_ADDR_DBG_PORT));
+
+				// dump_smi_debug = MTRUE;
+				// Force P1 TG Reset
+				// Stop streaming
+				log_err("Reset P1 TG!\n");
+				ISP_WR32(ISP_REG_CTL_SEL_GLOBAL,
+					ISP_RD32(ISP_REG_CTL_SEL_GLOBAL)
+					&0xFFFFFFFE);
+				ISP_WR32(ISP_REG_ADDR_TG_PATH_CFG,
+					0x100);
+				ISP_WR32(ISP_REG_ADDR_TG_VF_CON,
+					ISP_RD32(ISP_REG_ADDR_TG_VF_CON)
+					&0xFFFFFFFE);
+				ISP_WR32(ISP_REG_ADDR_TG_SEN_MODE,
+					ISP_RD32(ISP_REG_ADDR_TG_SEN_MODE)
+					&0xFFFFFFFE);
+				// Start streaming
+				sof_count[_PASS1] = 0;
+				ISP_WR32(ISP_REG_ADDR_TG_SEN_MODE,
+					ISP_RD32(ISP_REG_ADDR_TG_SEN_MODE)
+					|0x01);
+				ISP_WR32(ISP_REG_ADDR_TG_VF_CON,
+					ISP_RD32(ISP_REG_ADDR_TG_VF_CON)
+					|0x01);
+				ISP_WR32(ISP_REG_CTL_SEL_GLOBAL,
+					ISP_RD32(ISP_REG_CTL_SEL_GLOBAL)
+					|0x01);
+				ISP_WR32(ISP_REG_ADDR_TG_PATH_CFG,
+					0x0);
+				log_err("Retart streaming!\n");
+
 			}
 			g_ISPIntErr[_IRQ] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUSX];
@@ -10968,7 +11055,34 @@ if ((ISP_RD32(ISP_REG_ADDR_TG_VF_CON) & 0x1) == 0x0) {
 			if (IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X] &
 					ISP_IRQ_STATUSX_CQ0_VS_ERR_ST) {
 				log_err("CQ0_d over vsync!\n");
-				dump_smi_debug = MTRUE;
+				// Force P1 TG Reset
+				// Stop streaming
+				log_err("Reset P1 TG!\n");
+				ISP_WR32(ISP_REG_CTL_SEL_GLOBAL,
+					ISP_RD32(ISP_REG_CTL_SEL_GLOBAL)
+					&0xFFFFFFFD);
+				ISP_WR32(ISP_REG_ADDR_TG2_PATH_CFG,
+					0x100);
+				ISP_WR32(ISP_REG_ADDR_TG2_VF_CON,
+					ISP_RD32(ISP_REG_ADDR_TG2_VF_CON)
+					&0xFFFFFFFE);
+				ISP_WR32(ISP_REG_ADDR_TG2_SEN_MODE,
+					ISP_RD32(ISP_REG_ADDR_TG2_SEN_MODE)
+					&0xFFFFFFFE);
+				// Start streaming
+				sof_count[_PASS1_D] = 0;
+				ISP_WR32(ISP_REG_ADDR_TG2_SEN_MODE,
+					ISP_RD32(ISP_REG_ADDR_TG2_SEN_MODE)
+					|0x01);
+				ISP_WR32(ISP_REG_ADDR_TG2_VF_CON,
+					ISP_RD32(ISP_REG_ADDR_TG2_VF_CON)
+					|0x01);
+				ISP_WR32(ISP_REG_CTL_SEL_GLOBAL,
+					ISP_RD32(ISP_REG_CTL_SEL_GLOBAL)
+					|0x02);
+				ISP_WR32(ISP_REG_ADDR_TG2_PATH_CFG,
+					0x0);
+				log_err("Retart streaming!\n");
 			}
 			g_ISPIntErr[_IRQ_D] |=
 				IrqStatus[ISP_IRQ_TYPE_INT_STATUS2X];
@@ -11067,24 +11181,48 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 		ISP_DONE_Buf_Time(_IRQ, p1_fbc, 0, 0);
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-				       "P1_DON_%d(0x%x,0x%x)\n",
-				       (sof_count[_PASS1])
-					       ? (sof_count[_PASS1] - 1)
-					       : (sof_count[_PASS1]),
-				       (unsigned int)(p1_fbc[0].Reg_val),
-				       (unsigned int)(p1_fbc[1].Reg_val));
+				       "P1_DON_%d(0x%x,0x%x, D_%d(%d/%d)_Filled(%d_%d_%d),D_%d(%d/%d)_Filled(%d_%d_%d) )\n",
+			(sof_count[_PASS1])
+				? (sof_count[_PASS1] - 1)
+				: (sof_count[_PASS1]),
+			(unsigned int)(p1_fbc[0].Reg_val),
+			(unsigned int)(p1_fbc[1].Reg_val),
+			_imgo_,
+			pstRTBuf->ring_buf[_imgo_].start,
+			pstRTBuf->ring_buf[_imgo_].read_idx,
+			pstRTBuf->ring_buf[_imgo_].data[0].bFilled,
+			pstRTBuf->ring_buf[_imgo_].data[1].bFilled,
+			pstRTBuf->ring_buf[_imgo_].data[2].bFilled,
+			_rrzo_,
+			pstRTBuf->ring_buf[_rrzo_].start,
+			pstRTBuf->ring_buf[_rrzo_].read_idx,
+			pstRTBuf->ring_buf[_rrzo_].data[0].bFilled,
+			pstRTBuf->ring_buf[_rrzo_].data[1].bFilled,
+			pstRTBuf->ring_buf[_rrzo_].data[2].bFilled);
 		}
 		lost_pass1_done_cnt = 0;
 #else
 #if defined(_rtbc_use_cq0c_)
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_IRQ, m_CurrentPPB, _LOG_INF,
-				       "P1_DON_%d(0x%x,0x%x)\n",
-				       (sof_count[_PASS1])
-					       ? (sof_count[_PASS1] - 1)
-					       : (sof_count[_PASS1]),
-				       (unsigned int)(p1_fbc[0].Reg_val),
-				       (unsigned int)(p1_fbc[1].Reg_val));
+				       "P1_DON_%d(0x%x,0x%x, D_%d(%d/%d)_Filled(%d_%d_%d),D_%d(%d/%d)_Filled(%d_%d_%d) )\n",
+	       (sof_count[_PASS1])
+		       ? (sof_count[_PASS1] - 1)
+		       : (sof_count[_PASS1]),
+	       (unsigned int)(p1_fbc[0].Reg_val),
+	       (unsigned int)(p1_fbc[1].Reg_val),
+			_imgo_,
+			pstRTBuf->ring_buf[_imgo_].start,
+			pstRTBuf->ring_buf[_imgo_].read_idx,
+			pstRTBuf->ring_buf[_imgo_].data[0].bFilled,
+			pstRTBuf->ring_buf[_imgo_].data[1].bFilled,
+			pstRTBuf->ring_buf[_imgo_].data[2].bFilled,
+			_rrzo_,
+			pstRTBuf->ring_buf[_rrzo_].start,
+			pstRTBuf->ring_buf[_rrzo_].read_idx,
+			pstRTBuf->ring_buf[_rrzo_].data[0].bFilled,
+			pstRTBuf->ring_buf[_rrzo_].data[1].bFilled,
+			pstRTBuf->ring_buf[_rrzo_].data[2].bFilled);
 		}
 #else
 	/* log_dbg("[k_js_test]Pass1_done(0x%x)",IrqStatus[ISP_IRQ_TYPE_INT]);
@@ -11255,7 +11393,7 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 			_fbc_chk[1].Reg_val = ISP_RD32(ISP_REG_ADDR_RRZO_FBC);
 			IRQ_LOG_KEEPER(
 				_IRQ, m_CurrentPPB, _LOG_INF,
-				"P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
+				"P1_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x, D_%d(%d/%d)_Filled(%d_%d_%d),D_%d(%d/%d)_Filled(%d_%d_%d) )\n",
 				sof_count[_PASS1], cur_v_cnt,
 				(unsigned int)(_fbc_chk[0].Reg_val),
 				(unsigned int)(_fbc_chk[1].Reg_val),
@@ -11264,7 +11402,19 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 				ISP_RD32(ISP_INNER_REG_ADDR_IMGO_YSIZE),
 				ISP_RD32(ISP_INNER_REG_ADDR_RRZO_YSIZE),
 				ISP_RD32(ISP_REG_ADDR_TG_MAGIC_0),
-				ISP_RD32(ISP_REG_ADDR_DMA_DCM_STATUS));
+				ISP_RD32(ISP_REG_ADDR_DMA_DCM_STATUS),
+				_imgo_,
+				pstRTBuf->ring_buf[_imgo_].start,
+				pstRTBuf->ring_buf[_imgo_].read_idx,
+				pstRTBuf->ring_buf[_imgo_].data[0].bFilled,
+				pstRTBuf->ring_buf[_imgo_].data[1].bFilled,
+				pstRTBuf->ring_buf[_imgo_].data[2].bFilled,
+				_rrzo_,
+				pstRTBuf->ring_buf[_rrzo_].start,
+				pstRTBuf->ring_buf[_rrzo_].read_idx,
+				pstRTBuf->ring_buf[_rrzo_].data[0].bFilled,
+				pstRTBuf->ring_buf[_rrzo_].data[1].bFilled,
+				pstRTBuf->ring_buf[_rrzo_].data[2].bFilled);
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_].active) {
 				if (_fbc_chk[0].Bits.WCNT !=
@@ -11340,6 +11490,7 @@ IrqStatus[ISP_IRQ_TYPE_INT_SENINF4] =
 			ISP_SOF_Buf_Get(_IRQ, p1_fbc, (unsigned int *)curr_pa,
 							sec, usec, MFALSE);
 		}
+
 	}
 	spin_unlock(&(IspInfo.SpinLockIrq[_IRQ]));
 #if 0 /* in order to keep the isr stability. */
@@ -11359,7 +11510,7 @@ if (bSlowMotion == MFALSE) {
 #if (ISP_RAW_D_SUPPORT == 1)
 	/* TG_D Done */
 	if (IrqStatus[ISP_IRQ_TYPE_INT_P1_ST_D] &
-	    ISP_IRQ_P1_STATUS_D_PASS1_DON_ST) {
+		ISP_IRQ_P1_STATUS_D_PASS1_DON_ST) {
 		unsigned long long sec;
 		unsigned long usec;
 
@@ -11367,13 +11518,25 @@ if (bSlowMotion == MFALSE) {
 
 		if (IspInfo.DebugMask & ISP_DBG_INT) {
 			IRQ_LOG_KEEPER(_IRQ_D, m_CurrentPPB, _LOG_INF,
-				       "P1_D_DON_%d_%d(0x%x,0x%x)\n",
-				       (sof_count[_PASS1_D])
-					       ? (sof_count[_PASS1_D] - 1)
-					       : (sof_count[_PASS1_D]),
-				       d_cur_v_cnt,
-				       (unsigned int)(p1_fbc[2].Reg_val),
-				       (unsigned int)(p1_fbc[3].Reg_val));
+			"P1_D_DON_%d_%d(0x%x,0x%x), D_%d(%d/%d)_Filled(%d_%d_%d),D_%d(%d/%d)_Filled(%d_%d_%d)\n",
+					(sof_count[_PASS1_D])
+					? (sof_count[_PASS1_D] - 1)
+					: (sof_count[_PASS1_D]),
+			d_cur_v_cnt,
+			(unsigned int)(p1_fbc[2].Reg_val),
+			(unsigned int)(p1_fbc[3].Reg_val),
+			_imgo_d_,
+			pstRTBuf->ring_buf[_imgo_d_].start,
+			pstRTBuf->ring_buf[_imgo_d_].read_idx,
+			pstRTBuf->ring_buf[_imgo_d_].data[0].bFilled,
+			pstRTBuf->ring_buf[_imgo_d_].data[1].bFilled,
+			pstRTBuf->ring_buf[_imgo_d_].data[2].bFilled,
+			_rrzo_d_,
+			pstRTBuf->ring_buf[_rrzo_d_].start,
+			pstRTBuf->ring_buf[_rrzo_d_].read_idx,
+			pstRTBuf->ring_buf[_rrzo_d_].data[0].bFilled,
+			pstRTBuf->ring_buf[_rrzo_d_].data[1].bFilled,
+			pstRTBuf->ring_buf[_rrzo_d_].data[2].bFilled);
 		}
 #ifdef _rtbc_buf_que_2_0_
 
@@ -11518,7 +11681,7 @@ if (bSlowMotion == MFALSE) {
 
 			IRQ_LOG_KEEPER(
 				_IRQ_D, m_CurrentPPB, _LOG_INF,
-				"P1_D_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x)\n",
+				"P1_D_SOF_%d_%d(0x%x,0x%x,0x%x,0x%x,0x%x,0x%x,0x%x D_%d(%d/%d)_Filled(%d_%d_%d),D_%d(%d/%d)_Filled(%d_%d_%d) )\n",
 				sof_count[_PASS1_D], d_cur_v_cnt,
 				(unsigned int)(_fbc_chk[0].Reg_val),
 				(unsigned int)(_fbc_chk[1].Reg_val),
@@ -11526,7 +11689,19 @@ if (bSlowMotion == MFALSE) {
 				ISP_RD32(ISP_REG_ADDR_RRZO_D_BASE_ADDR),
 				ISP_RD32(ISP_INNER_REG_ADDR_IMGO_D_YSIZE),
 				ISP_RD32(ISP_INNER_REG_ADDR_RRZO_D_YSIZE),
-				ISP_RD32(ISP_REG_ADDR_TG2_MAGIC_0));
+				ISP_RD32(ISP_REG_ADDR_TG2_MAGIC_0),
+				_imgo_d_,
+				pstRTBuf->ring_buf[_imgo_d_].start,
+				pstRTBuf->ring_buf[_imgo_d_].read_idx,
+				pstRTBuf->ring_buf[_imgo_d_].data[0].bFilled,
+				pstRTBuf->ring_buf[_imgo_d_].data[1].bFilled,
+				pstRTBuf->ring_buf[_imgo_d_].data[2].bFilled,
+				_rrzo_d_,
+				pstRTBuf->ring_buf[_rrzo_d_].start,
+				pstRTBuf->ring_buf[_rrzo_d_].read_idx,
+				pstRTBuf->ring_buf[_rrzo_d_].data[0].bFilled,
+				pstRTBuf->ring_buf[_rrzo_d_].data[1].bFilled,
+				pstRTBuf->ring_buf[_rrzo_d_].data[2].bFilled);
 
 			/* 1 port is enough     */
 			if (pstRTBuf->ring_buf[_imgo_d_].active) {
