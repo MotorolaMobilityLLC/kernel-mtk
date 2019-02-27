@@ -41,6 +41,9 @@ struct cm_mgr_data {
 #define IPI_CM_MGR_DEBOUNCE_DOWN 12
 #define IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB 16
 #define IPI_CM_MGR_DRAM_LEVEL 17
+#define IPI_CM_MGR_LIGHT_LOAD_CPS 18
+#define IPI_CM_MGR_LOADING_ENABLE 19
+#define IPI_CM_MGR_LOADING_LEVEL 20
 
 extern spinlock_t cm_mgr_lock;
 extern int cm_mgr_disable_fb;
@@ -57,6 +60,9 @@ extern int cm_mgr_enable;
 extern int cm_mgr_perf_enable;
 extern int cm_mgr_perf_timer_enable;
 extern int cm_mgr_perf_force_enable;
+extern int light_load_cps;
+extern int cm_mgr_loading_level;
+extern int cm_mgr_loading_enable;
 
 extern void cm_mgr_perf_set_status(int status);
 extern void cm_mgr_perf_set_force_status(int status);

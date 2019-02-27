@@ -635,6 +635,9 @@ int cm_mgr_to_sspm_command(u32 cmd, int val)
 	case IPI_CM_MGR_DEBOUNCE_DOWN:
 	case IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB:
 	case IPI_CM_MGR_DRAM_LEVEL:
+	case IPI_CM_MGR_LIGHT_LOAD_CPS:
+	case IPI_CM_MGR_LOADING_ENABLE:
+	case IPI_CM_MGR_LOADING_LEVEL:
 		cm_mgr_d.cmd = cmd;
 		cm_mgr_d.arg = val;
 		ret = sspm_ipi_send_sync(IPI_ID_CM, IPI_OPT_POLLING,
@@ -712,6 +715,8 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, "total_bw_value %d\n", total_bw_value);
 	seq_printf(m, "cm_mgr_loop_count %d\n", cm_mgr_loop_count);
 	seq_printf(m, "cm_mgr_dram_level %d\n", cm_mgr_dram_level);
+	seq_printf(m, "cm_mgr_loading_level %d\n", cm_mgr_loading_level);
+	seq_printf(m, "cm_mgr_loading_enable %d\n", cm_mgr_loading_enable);
 
 	seq_puts(m, "cpu_power_ratio_up");
 	for (i = 0; i < CM_MGR_EMI_OPP; i++)
@@ -1032,6 +1037,9 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "light_load_cps")) {
 		light_load_cps = val_1;
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		cm_mgr_to_sspm_command(IPI_CM_MGR_LIGHT_LOAD_CPS, val_1);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "total_bw_value")) {
 		total_bw_value = val_1;
 	} else if (!strcmp(cmd, "cm_mgr_loop_count")) {
@@ -1042,6 +1050,16 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		cm_mgr_to_sspm_command(IPI_CM_MGR_DRAM_LEVEL, val_1);
 #else
 		cm_mgr_set_dram_level(val_1);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	} else if (!strcmp(cmd, "cm_mgr_loading_level")) {
+		cm_mgr_loading_level = val_1;
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		cm_mgr_to_sspm_command(IPI_CM_MGR_LOADING_LEVEL, val_1);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
+	} else if (!strcmp(cmd, "cm_mgr_loading_enable")) {
+		cm_mgr_loading_enable = val_1;
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		cm_mgr_to_sspm_command(IPI_CM_MGR_LOADING_ENABLE, val_1);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "cpu_power_ratio_up")) {
 		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
