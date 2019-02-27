@@ -628,7 +628,7 @@ static int mtk_pconf_parse_conf(struct pinctrl_dev *pctldev,
 	switch (param) {
 	case PIN_CONFIG_BIAS_DISABLE:
 		ret = mtk_pconf_set_pull_select(pctl, pin,
-			false, false, MTK_PUPD_SET_R1R0_00);
+			false, false, arg);
 		break;
 	case PIN_CONFIG_BIAS_PULL_UP:
 		ret = mtk_pconf_set_pull_select(pctl, pin, true, true, arg);

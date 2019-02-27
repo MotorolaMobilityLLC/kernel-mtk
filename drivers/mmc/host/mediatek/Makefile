@@ -40,46 +40,16 @@ ccflags-y += -I$(srctree)
 ccflags-y += -I$(srctree)/drivers
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6739")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/mt6739
-obj-$(CONFIG_MMC_MTK_PRO) += mt6799/
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/mt6757
-obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6799")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6799/mt6799
-obj-$(CONFIG_MMC_MTK_PRO) += mt6799/
-endif
-
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6758")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6758
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6758/mt6758
 obj-$(CONFIG_MMC_MTK_PRO) += mt6758/
 endif
 
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6759")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6759
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6759/mt6759
-obj-$(CONFIG_MMC_MTK_PRO) += mt6759/
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6763
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6763/mt6763
-obj-$(CONFIG_MMC_MTK_PRO) += mt6763/
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt3886")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt3886
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt3886/mt3886
-obj-$(CONFIG_MMC_MTK_PRO) += mt3886/
+ifeq ($(CONFIG_MTK_PLATFORM), "mt3967")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt3967
+obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
 endif
 
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6765")
@@ -92,9 +62,4 @@ ifeq ($(CONFIG_MTK_PLATFORM), "mt6761")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6761
 obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
-endif
-
-ifeq ($(CONFIG_MTK_PLATFORM), "mt8167")
-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt8167
-obj-y += mt8167/
 endif
