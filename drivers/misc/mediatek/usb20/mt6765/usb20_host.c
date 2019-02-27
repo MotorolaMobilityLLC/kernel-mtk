@@ -298,6 +298,7 @@ static void tcpc_otg_power_work_call(struct work_struct *work)
 		_set_vbus(mtk_musb, 0);
 	mutex_unlock(&tcpc_otg_pwr_lock);
 }
+
 static int otg_tcp_notifier_call(struct notifier_block *nb,
 		unsigned long event, void *data)
 {
@@ -324,6 +325,15 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&tcpc_otg_lock);
 			usbc_otg_enable = false;
 			mutex_unlock(&tcpc_otg_lock);
+#ifdef CONFIG_MTK_UART_USB_SWITCH
+		} else if ((noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
+			noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC) &&
+			in_uart_mode) {
+			pr_info("%s USB cable plugged-in in UART mode. "
+					"Switch to USB mode.\n", __func__);
+			usb_phy_switch_to_usb();
+#endif
 		}
 		queue_work(otg_tcpc_workq, &tcpc_otg_work);
 		break;
