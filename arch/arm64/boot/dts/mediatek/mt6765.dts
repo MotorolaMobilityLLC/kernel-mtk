@@ -1298,9 +1298,9 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	};
 
 
-	pwm@11006000 {
+	pwm: pwm@11006000 {
 		compatible = "mediatek,pwm";
-		reg = <0 0x11006000 0 0x0>;
+		reg = <0 0x11006000 0 0x10000>;
 		interrupts = <GIC_SPI 77 IRQ_TYPE_LEVEL_LOW>;
 	};
 
