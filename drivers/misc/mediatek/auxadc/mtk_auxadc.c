@@ -309,7 +309,8 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 		mt_auxadc_disable_penirq();
 
 	/* step1 check con2 if auxadc is busy */
-	/* Remove because hw/sw may access in the same time
+	/* Remove because hw/sw may access in the same time */
+	#if 0
 	while (AUXADC_DRV_ReadReg16((u16 *)AUXADC_CON2) & 0x01) {
 		mdelay(1);
 		idle_count++;
@@ -319,7 +320,7 @@ static int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4],
 			return -1;
 		}
 	}
-	*/
+	#endif
 
 	/* step2 clear bit */
 	if (adc_auto_set == 0) {
