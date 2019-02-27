@@ -732,36 +732,85 @@ static inline ssize_t adsp_A_db_test_show(struct device *kobj,
 
 DEVICE_ATTR(adsp_A_db_test, 0444, adsp_A_db_test_show, NULL);
 
-
-#ifdef CONFIG_MTK_ENG_BUILD
-static inline ssize_t adsp_A_awake_lock_show(struct device *kobj,
-					     struct device_attribute *attr,
-					     char *buf)
+static inline ssize_t adsp_awake_force_lock_show(struct device *kobj,
+						 struct device_attribute *att,
+						 char *buf)
 {
+	if (adsp_ready[ADSP_A_ID]) {
+		adsp_awake_force_lock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake force lock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
 
+DEVICE_ATTR(adsp_awake_force_lock, 0444, adsp_awake_force_lock_show, NULL);
+
+static inline ssize_t adsp_awake_force_unlock_show(struct device *kobj,
+						   struct device_attribute *att,
+						   char *buf)
+{
+	if (adsp_ready[ADSP_A_ID]) {
+		adsp_awake_force_unlock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake force unlock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+
+DEVICE_ATTR(adsp_awake_force_unlock, 0444, adsp_awake_force_unlock_show, NULL);
+
+static inline ssize_t adsp_awake_set_normal_show(struct device *kobj,
+						 struct device_attribute *att,
+						 char *buf)
+{
+	if (adsp_ready[ADSP_A_ID]) {
+		adsp_awake_set_normal(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake set normal\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+
+DEVICE_ATTR(adsp_awake_set_normal, 0444, adsp_awake_set_normal_show, NULL);
+
+static inline ssize_t adsp_awake_dump_list_show(struct device *kobj,
+						struct device_attribute *att,
+						char *buf)
+{
+	if (adsp_ready[ADSP_A_ID]) {
+		adsp_awake_dump_list(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake dump list\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+
+DEVICE_ATTR(adsp_awake_dump_list, 0444, adsp_awake_dump_list_show, NULL);
+
+static inline ssize_t adsp_awake_lock_show(struct device *kobj,
+					   struct device_attribute *att,
+					   char *buf)
+{
 	if (adsp_ready[ADSP_A_ID]) {
 		adsp_awake_lock(ADSP_A_ID);
-		return scnprintf(buf, PAGE_SIZE, "ADSP A awake lock\n");
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake lock\n");
 	} else
-		return scnprintf(buf, PAGE_SIZE, "ADSP A is not ready\n");
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
 }
 
-DEVICE_ATTR(adsp_A_awake_lock, 0444, adsp_A_awake_lock_show, NULL);
+DEVICE_ATTR(adsp_awake_lock, 0444, adsp_awake_lock_show, NULL);
 
-static inline ssize_t adsp_A_awake_unlock_show(struct device *kobj,
-					       struct device_attribute *attr,
-					       char *buf)
+static inline ssize_t adsp_awake_unlock_show(struct device *kobj,
+					     struct device_attribute *att,
+					     char *buf)
 {
-
 	if (adsp_ready[ADSP_A_ID]) {
 		adsp_awake_unlock(ADSP_A_ID);
-		return scnprintf(buf, PAGE_SIZE, "ADSP A awake unlock\n");
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake unlock\n");
 	} else
-		return scnprintf(buf, PAGE_SIZE, "ADSP A is not ready\n");
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
 }
 
-DEVICE_ATTR(adsp_A_awake_unlock, 0444, adsp_A_awake_unlock_show, NULL);
+DEVICE_ATTR(adsp_awake_unlock, 0444, adsp_awake_unlock_show, NULL);
 
+#ifdef CONFIG_MTK_ENG_BUILD
 static inline ssize_t adsp_ipi_test_store(struct device *kobj,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
@@ -980,19 +1029,43 @@ static int create_files(void)
 	if (unlikely(ret != 0))
 		return ret;
 
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_force_lock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_force_unlock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_set_normal);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_dump_list);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_lock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
+	ret = device_create_file(adsp_device.this_device,
+				 &dev_attr_adsp_awake_unlock);
+
+	if (unlikely(ret != 0))
+		return ret;
+
 #ifdef CONFIG_MTK_ENG_BUILD
-	ret = device_create_file(adsp_device.this_device,
-				 &dev_attr_adsp_A_awake_lock);
-
-	if (unlikely(ret != 0))
-		return ret;
-
-	ret = device_create_file(adsp_device.this_device,
-				 &dev_attr_adsp_A_awake_unlock);
-
-	if (unlikely(ret != 0))
-		return ret;
-
 	/* ADSP IPI Debug sysfs*/
 	ret = device_create_file(adsp_device.this_device,
 				 &dev_attr_adsp_ipi_test);
