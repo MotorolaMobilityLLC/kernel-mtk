@@ -15,12 +15,14 @@
 #define __SCP_RESERVEDMEM_DEFINE_H__
 
 static struct scp_reserve_mblock scp_reserve_mblock[] = {
+#ifdef CONFIG_MTK_VOW_SUPPORT
 	{
 		.num = VOW_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x1A000,/*104KB*/
 	},
+#endif
 	{
 		.num = SENS_MEM_ID,
 		.start_phys = 0x0,
@@ -42,29 +44,23 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.size = 0x1000,/*4KB*/
 	},
 	{
-		.num = RTOS_MEM_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x100000,/*1MB*/
-	},
-	{
-		.num = SENS_MEM_DIRECT_ID,
-		.start_phys = 0x0,
-		.start_virt = 0x0,
-		.size = 0x2000,/*8KB*/
-	},
-	{
 		.num = SCP_A_LOGGER_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x200000,/*2MB*/
 	},
+#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
+	|| defined(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT)
+	|| defined(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT)
+	|| defined(CONFIG_MTK_VOW_SUPPORT)
+	|| defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT)
 	{
 		.num = AUDIO_IPI_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
 		.size = 0x200000,/*2MB*/
 	},
+#endif
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 	{
 		.num = SPK_PROTECT_MEM_ID,
