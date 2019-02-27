@@ -38,6 +38,7 @@ obj-$(CONFIG_MACH_MT3967) += ppm_v3/
 obj-$(CONFIG_MACH_MT6761) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6765) += ppm_v3/
+obj-$(CONFIG_MACH_MT6779) += ppm_v3/
 obj-$(CONFIG_MACH_MT3967) += dcm_v1/
 obj-$(CONFIG_MACH_MT6758) += dcm_v1/
 obj-$(CONFIG_MACH_MT6761) += dcm_v1/
