@@ -627,7 +627,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 				< gpd_used_count)
 
 			mtk_host_qmu_tx_max_active_isoc_gpd[hw_ep->epnum]
-			= gpd_used_count;
+				= gpd_used_count;
 
 			if (mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum]
 				< urb->number_of_packets)
@@ -635,7 +635,8 @@ int mtk_kick_CmdQ(struct musb *musb,
 				mtk_host_qmu_tx_max_number_of_pkts[hw_ep->epnum]
 				= urb->number_of_packets;
 
-				pr_debug("TXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d\n",
+				DBG_LIMIT(1,
+					"TXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d\n",
 					hw_ep->epnum,
 					mtk_host_qmu_tx_max_active_isoc_gpd
 					[hw_ep->epnum],
@@ -671,7 +672,7 @@ int mtk_kick_CmdQ(struct musb *musb,
 				< gpd_used_count)
 
 			mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum]
-			= gpd_used_count;
+				= gpd_used_count;
 
 			if (mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum]
 				< urb->number_of_packets)
@@ -679,11 +680,14 @@ int mtk_kick_CmdQ(struct musb *musb,
 			mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum] =
 			urb->number_of_packets;
 
-			pr_debug("RXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d\n",
-			hw_ep->epnum,
-			mtk_host_qmu_rx_max_active_isoc_gpd[hw_ep->epnum],
-			mtk_host_qmu_rx_max_number_of_pkts[hw_ep->epnum],
-			mtk_host_active_dev_cnt);
+			DBG_LIMIT(1,
+				"RXQ[%d], max_isoc gpd:%d, max_pkts:%d, active_dev:%d\n",
+				hw_ep->epnum,
+				mtk_host_qmu_rx_max_active_isoc_gpd
+				[hw_ep->epnum],
+				mtk_host_qmu_rx_max_number_of_pkts
+				[hw_ep->epnum],
+				mtk_host_active_dev_cnt);
 		}
 	} else {
 		/* Must be the bulk transfer type */
