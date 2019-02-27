@@ -61,13 +61,13 @@ config MTK_AB_OTA_UPDATER
 	  If you are not sure about this, set n
 
 config SYSTEM_AS_ROOT
-    bool "Support system-as-root"
-    default y
-    help
-      Y means to enable system-as-root.
-      This option merges ramdisk into system image
-      All new launched projects in android P should enable it.
-      If you are not sure about this, set n
+	bool "Support system-as-root"
+	default y
+	help
+	  Y means to enable system-as-root.
+	  This option merges ramdisk into system image
+	  All new launched projects in android P should enable it.
+	  If you are not sure about this, set n
 
 config MTK_ENG_BUILD
 	bool "flag for MTK eng/usr build verification"
@@ -104,7 +104,6 @@ config MTK_BOUNCING_CHECK
 endif
 
 menu "Storage: EMMC, NAND, partition..."
-
 
 config MTK_GPT_SCHEME_SUPPORT
 	bool "MTK GPT SCHEME SUPPORT"
@@ -339,18 +338,18 @@ endmenu # Peripheral
 menu "Performance, Power, and Thermal"
 
 config MTK_FPSGO
-  bool "Support FPSGO framework"
-  default n
-  help
-    Support FPSGO framework for UX & Gaming FPS performance and
-    low power balance. As a perquisite to ensure FPS performance,
-    FPSGO persuades lowest power consumption for better DoU
-    endurance and gaming experience.
-    If you are not sure about this, set n.
+	bool "Support FPSGO framework"
+	default n
+	help
+	  Support FPSGO framework for UX & Gaming FPS performance and
+	  low power balance. As a perquisite to ensure FPS performance,
+	  FPSGO persuades lowest power consumption for better DoU
+	  endurance and gaming experience.
+	  If you are not sure about this, set n.
 
 endmenu  # PPT
 
-menu "Misc configs"
+menu "Memory configs"
 
 config MTK_MEM
 	bool "Support platform memory information"
@@ -379,6 +378,48 @@ config MTK_SSMR
 	  It tries to save memory by switching
 	  different DRAM mode dynamically. It's a
 	  platform-dependent feature.
+
+config MTK_GMO_RAM_OPTIMIZE
+	bool "MTK ram optimize"
+	default n
+	select MTK_ENABLE_GMO
+	select MTK_ENABLE_AGO
+	help
+	  Provide centeral config to use memory efficiently.
+	  GMO must set both in kernel & project config to prevent
+	  different flow.
+	  If you are not familiar with this config, please set it to n.
+
+config MTK_ENABLE_GMO
+	bool "Enable/Disable GMO related feautre"
+	default n
+	select CC_OPTIMIZE_FOR_SIZE
+	select ZRAM_LZ4K_COMPRESS
+	help
+	  Enable/Disable GMO related feautre
+	  Do not use this options in Kernel directly
+	  this is a group kernel setting of GMO
+	  must set CONFIG_LOG_BUF_SHIFT=17 manually
+
+config MTK_ENABLE_AGO
+	bool "Enable/Disable A-Go related feautre"
+	default n
+	select SWAP
+	select ZRAM
+	select ZRAM_LZ4_COMPRESS
+	select MEMCG
+	select MEMCG_SWAP
+	select HZ_300
+	select UID_CPUTIME
+	select SDCARD_FS
+	help
+	  Enable/Disable GMO related feautre
+	  Do not use this options in Kernel directly
+	  this is a group kernel setting of AGO
+
+endmenu  # Memory
+
+menu "Misc configs"
 
 source "drivers/misc/mediatek/mtprintk/Kconfig"
 source "drivers/misc/mediatek/mtprof/Kconfig"
