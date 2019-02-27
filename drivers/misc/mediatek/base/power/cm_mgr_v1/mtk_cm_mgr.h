@@ -39,12 +39,9 @@ struct cm_mgr_data {
 #define IPI_CM_MGR_VCORE_POWER_RATIO_DOWN 10
 #define IPI_CM_MGR_DEBOUNCE_UP 11
 #define IPI_CM_MGR_DEBOUNCE_DOWN 12
-#define IPI_CM_MGR_GPU_ENABLE 13
-#define IPI_CM_MGR_GPU_POWER_RATIO_UP 14
-#define IPI_CM_MGR_GPU_POWER_RATIO_DOWN 15
+#define IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB 16
 
 extern spinlock_t cm_mgr_lock;
-extern int cm_mgr_gpu_enable;
 extern int cm_mgr_disable_fb;
 extern int cm_mgr_blank_status;
 extern int cpu_power_ratio_up[CM_MGR_EMI_OPP];

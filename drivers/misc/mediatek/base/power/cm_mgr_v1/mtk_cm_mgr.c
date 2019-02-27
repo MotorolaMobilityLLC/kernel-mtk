@@ -74,8 +74,8 @@ unsigned int cpu_power_down_array[CM_MGR_CPU_CLUSTER];
 unsigned int cpu_power_up[CM_MGR_CPU_CLUSTER];
 unsigned int cpu_power_down[CM_MGR_CPU_CLUSTER];
 unsigned int v2f[CM_MGR_CPU_CLUSTER];
-unsigned int vcore_power_up;
-unsigned int vcore_power_down;
+int vcore_power_up;
+int vcore_power_down;
 int cpu_opp_cur[CM_MGR_CPU_CLUSTER];
 int ratio_max[CM_MGR_CPU_CLUSTER];
 int ratio[CM_MGR_CPU_COUNT];
@@ -128,7 +128,6 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 {
 	int idx;
 	int cpu_power_total;
-	int gpu_power_total;
 	int i;
 
 	idx = CM_MGR_CPU_CLUSTER * level;
@@ -165,8 +164,6 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 	}
 #endif /* PER_CPU_STALL_RATIO */
 
-	gpu_power_total = cm_mgr_get_gpu_power(level, IS_UP);
-
 	if (cm_mgr_opp_enable == 0) {
 		if (vcore_dram_opp != CM_MGR_EMI_OPP) {
 			vcore_dram_opp = CM_MGR_EMI_OPP;
@@ -185,11 +182,10 @@ static int cm_mgr_check_up_status(int level, int *cpu_ratio_idx)
 	idx = level;
 	vcore_power_up = vcore_power_gain(vcore_power_gain, total_bw, idx);
 #ifdef DEBUG_CM_MGR
-	pr_info("#@# vcore_power_up %d cpu_power_total %d gpu_power_total %d\n",
-			vcore_power_up, cpu_power_total, gpu_power_total);
+	pr_info("#@# vcore_power_up %d cpu_power_total %d\n",
+			vcore_power_up, cpu_power_total);
 #endif /* DEBUG_CM_MGR */
-	if (((vcore_power_up * vcore_power_ratio_up[idx]) +
-				(gpu_power_total * gpu_power_ratio_up[idx])) <
+	if ((vcore_power_up * vcore_power_ratio_up[idx]) <
 			(cpu_power_total * cpu_power_ratio_up[idx])) {
 		debounce_times_down = 0;
 		if (++debounce_times_up >= debounce_times_up_adb[idx]) {
@@ -215,7 +211,6 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 {
 	int idx;
 	int cpu_power_total;
-	int gpu_power_total;
 	int i;
 
 	idx = CM_MGR_CPU_CLUSTER * (level - 1);
@@ -252,8 +247,6 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 	}
 #endif /* PER_CPU_STALL_RATIO */
 
-	gpu_power_total = cm_mgr_get_gpu_power(level, IS_DOWN);
-
 	if (cm_mgr_opp_enable == 0) {
 		if (vcore_dram_opp != CM_MGR_EMI_OPP) {
 			vcore_dram_opp = CM_MGR_EMI_OPP;
@@ -272,11 +265,10 @@ static int cm_mgr_check_down_status(int level, int *cpu_ratio_idx)
 	idx = level - 1;
 	vcore_power_down = vcore_power_gain(vcore_power_gain, total_bw, idx);
 #ifdef DEBUG_CM_MGR
-	pr_info("#@# vcore_power_down %d cpu_power_total %d gpu_power_total %d\n",
-			vcore_power_down, cpu_power_total, gpu_power_total);
+	pr_info("#@# vcore_power_down %d cpu_power_total %d\n",
+			vcore_power_down, cpu_power_total);
 #endif /* DEBUG_CM_MGR */
-	if (((vcore_power_down * vcore_power_ratio_down[idx]) +
-				(gpu_power_total * gpu_power_ratio_down[idx])) >
+	if ((vcore_power_down * vcore_power_ratio_down[idx]) >
 			(cpu_power_total * cpu_power_ratio_down[idx])) {
 		debounce_times_up = 0;
 		if (++debounce_times_down >= debounce_times_down_adb[idx]) {
@@ -629,9 +621,7 @@ int cm_mgr_to_sspm_command(u32 cmd, int val)
 	case IPI_CM_MGR_VCORE_POWER_RATIO_DOWN:
 	case IPI_CM_MGR_DEBOUNCE_UP:
 	case IPI_CM_MGR_DEBOUNCE_DOWN:
-	case IPI_CM_MGR_GPU_ENABLE:
-	case IPI_CM_MGR_GPU_POWER_RATIO_UP:
-	case IPI_CM_MGR_GPU_POWER_RATIO_DOWN:
+	case IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB:
 		cm_mgr_d.cmd = cmd;
 		cm_mgr_d.arg = val;
 		ret = sspm_ipi_send_sync(IPI_ID_CM, IPI_OPT_POLLING,
@@ -693,7 +683,6 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 	seq_printf(m, "cm_mgr_sspm_enable %d\n", cm_mgr_sspm_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-	seq_printf(m, "cm_mgr_gpu_enable %d\n", cm_mgr_gpu_enable);
 #ifdef USE_TIMER_CHECK
 	seq_printf(m, "cm_mgr_timer_enable %d\n", cm_mgr_timer_enable);
 #endif /* USE_TIMER_CHECK */
@@ -728,16 +717,6 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 	seq_puts(m, "vcore_power_ratio_down");
 	for (i = 0; i < CM_MGR_EMI_OPP; i++)
 		seq_printf(m, " %d", vcore_power_ratio_down[i]);
-	seq_puts(m, "\n");
-
-	seq_puts(m, "gpu_power_ratio_up");
-	for (i = 0; i < CM_MGR_EMI_OPP; i++)
-		seq_printf(m, " %d", gpu_power_ratio_up[i]);
-	seq_puts(m, "\n");
-
-	seq_puts(m, "gpu_power_ratio_down");
-	for (i = 0; i < CM_MGR_EMI_OPP; i++)
-		seq_printf(m, " %d", gpu_power_ratio_down[i]);
 	seq_puts(m, "\n");
 
 	seq_puts(m, "debounce_times_up_adb");
@@ -1014,12 +993,6 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
 				cm_mgr_sspm_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-	} else if (!strcmp(cmd, "cm_mgr_gpu_enable")) {
-		cm_mgr_gpu_enable = val_1;
-#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
-		cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_ENABLE,
-				cm_mgr_gpu_enable);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 #ifdef USE_TIMER_CHECK
 	} else if (!strcmp(cmd, "cm_mgr_timer_enable")) {
 		cm_mgr_timer_enable = val_1;
@@ -1077,20 +1050,6 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 		cm_mgr_to_sspm_command(IPI_CM_MGR_VCORE_POWER_RATIO_DOWN,
 				val_1 << 16 | val_2);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-	} else if (!strcmp(cmd, "gpu_power_ratio_up")) {
-		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
-			gpu_power_ratio_up[val_1] = val_2;
-#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
-		cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_POWER_RATIO_UP,
-				val_1 << 16 | val_2);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
-	} else if (!strcmp(cmd, "gpu_power_ratio_down")) {
-		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
-			gpu_power_ratio_down[val_1] = val_2;
-#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
-		cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_POWER_RATIO_DOWN,
-				val_1 << 16 | val_2);
-#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "debounce_times_up_adb")) {
 		if (ret == 3 && val_1 >= 0 && val_1 < CM_MGR_EMI_OPP)
 			debounce_times_up_adb[val_1] = val_2;
@@ -1107,6 +1066,10 @@ static ssize_t dbg_cm_mgr_proc_write(struct file *file,
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "debounce_times_reset_adb")) {
 		debounce_times_reset_adb = val_1;
+#if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
+		cm_mgr_to_sspm_command(IPI_CM_MGR_DEBOUNCE_TIMES_RESET_ADB,
+				debounce_times_reset_adb);
+#endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 	} else if (!strcmp(cmd, "debounce_times_perf_down")) {
 		debounce_times_perf_down = val_1;
 	} else if (!strcmp(cmd, "debounce_times_perf_force_down")) {
@@ -1220,9 +1183,6 @@ int __init cm_mgr_module_init(void)
 
 	cm_mgr_to_sspm_command(IPI_CM_MGR_SSPM_ENABLE,
 			cm_mgr_sspm_enable);
-
-	cm_mgr_to_sspm_command(IPI_CM_MGR_GPU_ENABLE,
-			cm_mgr_gpu_enable);
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
 	return 0;
