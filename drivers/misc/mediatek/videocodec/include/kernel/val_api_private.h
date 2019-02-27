@@ -20,7 +20,6 @@ extern "C" {
 
 #include "val_types_private.h"
 #include "val_api_public.h"
-#include "libmtk_cipher_export.h"
 
 
 enum VAL_RESULT_T eValInit(unsigned long *a_phHalHandle);
@@ -67,9 +66,6 @@ enum VAL_RESULT_T eVideoConfigMCIPort
 	enum VAL_MEM_CODEC_T eMemCodec);
 
 unsigned int eVideoHwM4UEnable(char bEnable);
-/* MTK_SEC_VIDEO_PATH_SUPPORT */
-unsigned int eVideoLibDecrypt
-	(enum VIDEO_ENCRYPT_CODEC_T a_eVIDEO_ENCRYPT_CODEC);
 
 /* for DirectLink Meta Mode + */
 enum VAL_RESULT_T eVideoAllocMetaHandleList(unsigned long *a_MetaHandleList);
