@@ -974,6 +974,9 @@ static void cmdq_core_print_thd_usage(struct seq_file *m, void *v,
 	mutex_lock(&cmdq_thread_mutex);
 
 	list_for_each_entry(task, &cmdq_ctx.handle_active, list_entry) {
+		if (task->thread != thread_idx)
+			continue;
+
 		/* dump task basic info */
 		seq_printf(m,
 			   "Index:%u handle:0x%p Pid:%d Name:%s Scn:%d",
