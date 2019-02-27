@@ -34,7 +34,7 @@ enum {
 	MTK_AFE_RATE_48K = 10,
 	MTK_AFE_RATE_88K = 11,
 	MTK_AFE_RATE_96K = 12,
-	MTK_AFE_RATE_174K = 13,
+	MTK_AFE_RATE_176K = 13,
 	MTK_AFE_RATE_192K = 14,
 	MTK_AFE_RATE_260K = 15,
 };
@@ -82,7 +82,7 @@ unsigned int mt6779_general_rate_transform(struct device *dev,
 	case 130000:
 		return MTK_AFE_RATE_130K;
 	case 176400:
-		return MTK_AFE_RATE_174K;
+		return MTK_AFE_RATE_176K;
 	case 192000:
 		return MTK_AFE_RATE_192K;
 	case 260000:
