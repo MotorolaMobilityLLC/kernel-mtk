@@ -145,11 +145,28 @@ int gauge_reset_hw(void)
 	if (is_fg_disabled())
 		return 0;
 
+	/* must handle sw_ncar before reset car */
+	fg_sw_bat_cycle_accu();
+	gm.bat_cycle_car = 0;
+
 	gauge_coulomb_before_reset();
 	gauge_dev_reset_hw(gm.gdev);
 	gauge_coulomb_after_reset();
 	get_monotonic_boottime(&gm.sw_iavg_time);
 	gm.sw_iavg_car = gauge_get_coulomb();
+
+	gm.bat_cycle_car = 0;
+
+	return 0;
+}
+
+int gauge_reset_ncar(void)
+{
+	gauge_dev_reset_ncar(gm.gdev);
+	gm.bat_cycle_ncar = 0;
+
+	bm_err("gauge_reset_ncar done, %d, version:%d\n",
+		gm.bat_cycle_ncar, gauge_get_hw_version());
 
 	return 0;
 }
@@ -1636,6 +1653,46 @@ void fg_zcv_int_handler(void)
 /* ============================================================ */
 /* battery cycle interrupt handler */
 /* ============================================================ */
+void fg_sw_bat_cycle_accu(void)
+{
+	int diff_car = 0, tmp_car = 0, tmp_ncar = 0, tmp_thr = 0;
+	int fg_coulomb = 0;
+
+	fg_coulomb = gauge_get_coulomb();
+	tmp_car = gm.bat_cycle_car;
+	tmp_ncar = gm.bat_cycle_ncar;
+
+	diff_car = fg_coulomb - gm.bat_cycle_car;
+
+	if (diff_car > 0) {
+		bm_err("[fg_sw_bat_cycle_accu]ERROR!drop diff_car\n");
+		gm.bat_cycle_car = fg_coulomb;
+	} else {
+		gm.bat_cycle_ncar = gm.bat_cycle_ncar + abs(diff_car);
+		gm.bat_cycle_car = fg_coulomb;
+	}
+
+	gauge_dev_get_hw_status(gm.gdev, &gm.hw_status, 0);
+	bm_err("[fg_sw_bat_cycle_accu]car[o:%d n:%d],diff_car:%d,ncar[o:%d n:%d hw:%d] thr %d\n",
+		tmp_car, fg_coulomb, diff_car,
+		tmp_ncar, gm.bat_cycle_ncar, gm.gdev->fg_hw_info.ncar,
+		gm.bat_cycle_thr);
+
+	if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
+		gauge_get_hw_version() < GAUGE_HW_V2000) {
+		if (gm.bat_cycle_thr > 0 &&
+			gm.bat_cycle_ncar >= gm.bat_cycle_thr) {
+			tmp_ncar = gm.bat_cycle_ncar;
+			tmp_thr = gm.bat_cycle_thr;
+
+			gm.bat_cycle_ncar = 0;
+			wakeup_fg_algo(FG_INTR_BAT_CYCLE);
+			bm_err("[fg_cycle_int_handler] ncar:%d thr:%d\n",
+				tmp_ncar, tmp_thr);
+		}
+	}
+}
+
 void fg_cycle_int_handler(void)
 {
 	if (fg_interrupt_check() == false)
@@ -1943,6 +2000,8 @@ int fg_bat_int1_l_handler(struct gauge_consumer *consumer)
 
 	fg_coulomb = gauge_get_coulomb();
 
+	fg_sw_bat_cycle_accu();
+
 	gm.fg_bat_int1_ht = fg_coulomb + gm.fg_bat_int1_gap;
 	gm.fg_bat_int1_lt = fg_coulomb - gm.fg_bat_int1_gap;
 
@@ -1968,6 +2027,8 @@ int fg_bat_int2_h_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int2_h_handler] car:%d ht:%d\n",
 		fg_coulomb, gm.fg_bat_int2_ht);
 
+
+	fg_sw_bat_cycle_accu();
 	fg_bat_temp_int_sw_check();
 	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
 	sw_check_bat_plugout();
@@ -1982,6 +2043,8 @@ int fg_bat_int2_l_handler(struct gauge_consumer *consumer)
 	fg_coulomb = gauge_get_coulomb();
 	bm_err("[fg_bat_int2_l_handler] car:%d lt:%d\n",
 		fg_coulomb, gm.fg_bat_int2_lt);
+
+	fg_sw_bat_cycle_accu();
 
 	fg_bat_temp_int_sw_check();
 	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
@@ -2061,11 +2124,11 @@ void fg_drv_update_hw_status(void)
 		gm.sw_low_battery_lt_en,
 		gm.sw_low_battery_lt_threshold);
 
-
-	bm_err("car[%d,%ld,%ld,%ld,%ld] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d %d\n",
+	bm_err("car[%d,%ld,%ld,%ld,%ld, cycle_car:%d,ncar:%d] c:%d %d vbat:%d vbus:%d soc:%d %d gm3:%d %d %d %d\n",
 		fg_coulomb, gm.coulomb_plus.end,
 		gm.coulomb_minus.end, gm.soc_plus.end,
 		gm.soc_minus.end,
+		gm.bat_cycle_car, gm.bat_cycle_ncar,
 		fg_current_state, fg_current, bat_vol, chr_vol,
 		battery_get_soc(), battery_get_uisoc(),
 		gm.disableGM30, fg_cust_data.disable_nafg,
@@ -2162,7 +2225,7 @@ void fg_daemon_send_data(
 	prcv = (struct fgd_cmd_param_t_6 *)rcv;
 	pret = (struct fgd_cmd_param_t_6 *)ret;
 
-	bm_err("fg_daemon_send_data type:%d, tsize:%d size:%d idx:%d\n",
+	bm_trace("fg_daemon_send_data type:%d, tsize:%d size:%d idx:%d\n",
 		prcv->type,
 		prcv->total_size,
 		prcv->size,
@@ -3045,6 +3108,8 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		bm_err(
 			"[fr] FG_DAEMON_CMD_SET_BATTERY_CYCLE_THRESHOLD = %d\n",
 			gm.bat_cycle_thr);
+
+		fg_sw_bat_cycle_accu();
 	}
 	break;
 
@@ -3057,7 +3122,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_NCAR_RESET:
 	{
-		gauge_dev_reset_ncar(gm.gdev);
+		gauge_reset_ncar();
 		bm_debug("[fr] BATTERY_METER_CMD_NCAR_RESET\n");
 	}
 	break;
@@ -3183,7 +3248,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		int cmdtype = 0;
 
 		cmdtype = msg->fgd_subcmd_para1;
-		if (cmdtype == 1) {
+		if (cmdtype == HW_INFO_SHUTDOWN_CAR) {
 			gauge_dev_get_info(gm.gdev, GAUGE_SHUTDOWN_CAR,
 				&shutdown_car_diff);
 
@@ -3193,6 +3258,32 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 			bm_err("FG_DAEMON_CMD_GET_HW_INFO (GAUGE_SHUTDOWN_CAR): %d, cmdtype:%d\n",
 				shutdown_car_diff, cmdtype);
+		} else if (cmdtype == HW_INFO_NCAR) {
+			if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
+				gauge_get_hw_version() < GAUGE_HW_V2000) {
+
+				ret_msg->fgd_data_len +=
+					sizeof(gm.bat_cycle_ncar);
+
+				memcpy(ret_msg->fgd_data, &gm.bat_cycle_ncar,
+					sizeof(gm.bat_cycle_ncar));
+			} else {
+				/* TODO GM3 */
+				gauge_dev_get_hw_status(gm.gdev,
+					&gm.hw_status, intr_no);
+
+				ret_msg->fgd_data_len +=
+					sizeof(gm.gdev->fg_hw_info.ncar);
+
+				memcpy(ret_msg->fgd_data,
+					&gm.gdev->fg_hw_info.ncar,
+					sizeof(gm.gdev->fg_hw_info.ncar));
+			}
+
+			bm_trace(
+				"FG_DAEMON_CMD_GET_HW_INFO(NCAR):%d %d, cmdtype:%d\n",
+				gm.bat_cycle_ncar,
+				gm.gdev->fg_hw_info.ncar, cmdtype);
 
 		} else {
 			memcpy(&intr_no, &msg->fgd_data[0], sizeof(intr_no));
@@ -3262,13 +3353,41 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 			fg_cust_data.v_soc = daemon_soc;
 		else if (soc_type == 6)
 			gm.d_saved_car = daemon_soc;
+		else if (soc_type == ALGO_AGING_FACTOR)
+			gm.aging_factor = daemon_soc;
+		else if (soc_type == ALGO_QMAX)
+			gm.algo_qmax = daemon_soc;
+		else if (soc_type == ALGO_BAT_CYCLES)
+			gm.bat_cycle = daemon_soc;
+		else if (soc_type == ALGO_NCAR)
+			gm.bat_cycle_ncar = daemon_soc;
+		else if (soc_type == ALGO_OCV_mah)
+			gm.algo_ocv_to_mah = daemon_soc;
+		else if (soc_type == ALGO_OCV_Vtemp)
+			gm.algo_vtemp = daemon_soc;
+		else if (soc_type == ALGO_OCV_SOC)
+			gm.algo_ocv_to_soc = daemon_soc;
 
 		if (soc_type == 4)
 			bm_err(
-			"[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d %d, type:%d\n",
+			"[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d %d qmax:%d, type:%d\n",
 			daemon_soc, gm.soc, fg_cust_data.c_old_d0,
 			fg_cust_data.v_old_d0, fg_cust_data.c_soc,
-			fg_cust_data.v_soc, gm.d_saved_car, soc_type);
+			fg_cust_data.v_soc, gm.d_saved_car,
+			gm.algo_qmax, soc_type);
+
+		if (soc_type == ALGO_BAT_CYCLES ||
+			soc_type == ALGO_AGING_FACTOR ||
+			soc_type == ALGO_NCAR)
+			bm_err("[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC: type:%d ,aging:%d cycle %d ncar %d\n",
+				soc_type, gm.aging_factor, gm.bat_cycle,
+				gm.bat_cycle_ncar);
+
+		if (soc_type == ALGO_OCV_mah)
+			bm_err("[fg_res]FG_DAEMON_CMD_SET_KERNEL_SOC: v_temp %d ocv:%d mah %d soc%d\n",
+				gm.algo_vtemp, gm.algo_req_ocv,
+				gm.algo_ocv_to_mah, gm.algo_ocv_to_soc);
+
 	}
 	break;
 
@@ -3651,6 +3770,9 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_cust_data.vbat2_det_counter,
 			fg_cust_data.vbat2_det_time * 1000,
 			fg_cust_data.vbat2_det_counter);
+
+			/* sw bat_cycle_car init */
+			gm.bat_cycle_car = gauge_get_coulomb();
 		}
 	}
 
