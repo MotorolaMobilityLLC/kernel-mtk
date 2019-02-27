@@ -16,7 +16,7 @@ $(info *MTK_GPU_VERSION 2 = $(word 2,$(MTK_GPU_VERSION)))
 
 ifeq ($(word 2,$(MTK_GPU_VERSION)),doma)
 	obj-y += m1.10ED5101882/
-else
-        obj-y += m1.9ED4971894/
+else ifeq ($(word 2,$(MTK_GPU_VERSION)),clark)
+	obj-y += m1.10ED5101882/
 endif
 

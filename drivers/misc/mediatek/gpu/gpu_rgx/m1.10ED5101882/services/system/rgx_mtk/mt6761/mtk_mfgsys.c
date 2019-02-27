@@ -128,6 +128,7 @@ struct clk *mtcmos_mfg1;
 
 unsigned int _mtk_ged_log;
 unsigned int _track_ged_log;
+unsigned int _mpu_ged_log;
 
 #ifdef CONFIG_MTK_SEGMENT_TEST
 static IMG_UINT32 efuse_mfg_enable;
@@ -1463,6 +1464,9 @@ int MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 	_track_ged_log = ged_log_buf_alloc(32, 32 * 32,
 			GED_LOG_BUF_TYPE_RINGBUFFER, "RegStack", "RTrace");
 
+	_mpu_ged_log = ged_log_buf_alloc(32, 32 * 32,
+			GED_LOG_BUF_TYPE_RINGBUFFER, "GPUImport", "GImp");
+
 #ifdef MTK_GPU_DVFS
 	/* Only Enable buck to get cg & mtcmos */
 	mt_gpufreq_voltage_enable_set(BUCK_ON);
@@ -1486,7 +1490,7 @@ int MTKRGXDeviceInit(PVRSRV_DEVICE_CONFIG *psDevConfig)
 	/* 1.5+DDK support multiple user to query GPU utilization */
 	/* Need Init here */
 	if (g_RGXutilUser == NULL)
-		RGXRegisterGpuUtilStats(&g_RGXutilUser);
+		SORgxGpuUtilStatsRegister(&g_RGXutilUser);
 
 #if MTK_PM_SUPPORT
 	MTKDisableMfgClock(IMG_TRUE);
