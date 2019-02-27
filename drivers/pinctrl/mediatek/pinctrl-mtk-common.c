@@ -2452,7 +2452,9 @@ int mtk_pctrl_init(struct platform_device *pdev,
 		struct regmap *regmap)
 {
 	struct pinctrl_pin_desc *pins;
+#ifndef CONFIG_PINCTRL_MTK_NO_UPSTREAM
 	struct mtk_pinctrl *pctl;
+#endif
 	struct device_node *np = pdev->dev.of_node, *node;
 	struct property *prop;
 	struct resource *res;
