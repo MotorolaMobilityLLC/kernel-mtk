@@ -23,6 +23,7 @@
 #include <linux/perf_event.h>
 #include <linux/kthread.h>
 #include <asm/arch_timer.h>
+#include <linux/smp.h> /* arch_send_call_function_single_ipi */
 
 /******************************************************************************
  * Tracepoints
@@ -372,3 +373,8 @@ u64 met_arch_counter_get_cntvct(void)
 }
 EXPORT_SYMBOL(met_arch_counter_get_cntvct);
 
+void met_arch_send_call_function_single_ipi(int cpu)
+{
+	return arch_send_call_function_single_ipi(cpu);
+}
+EXPORT_SYMBOL(met_arch_send_call_function_single_ipi);
