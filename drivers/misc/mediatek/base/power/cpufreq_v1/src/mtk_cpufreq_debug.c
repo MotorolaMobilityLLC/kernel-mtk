@@ -26,6 +26,7 @@ void aee_record_cpu_dvfs_in(struct mt_cpu_dvfs *p)
 	if (p->id == MT_CPU_DVFS_LL)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
 					   (1 << CPU_DVFS_LL_IS_DOING_DVFS));
+#ifndef ONE_CLUSTER
 	else if (p->id == MT_CPU_DVFS_L)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
 					   (1 << CPU_DVFS_L_IS_DOING_DVFS));
@@ -36,6 +37,7 @@ void aee_record_cpu_dvfs_in(struct mt_cpu_dvfs *p)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() |
 					   (1 << CPU_DVFS_B_IS_DOING_DVFS));
 #endif
+#endif
 }
 
 void aee_record_cpu_dvfs_out(struct mt_cpu_dvfs *p)
@@ -44,6 +46,7 @@ void aee_record_cpu_dvfs_out(struct mt_cpu_dvfs *p)
 	if (p->id == MT_CPU_DVFS_LL)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
 					   ~(1 << CPU_DVFS_LL_IS_DOING_DVFS));
+#ifndef ONE_CLUSTER
 	else if (p->id == MT_CPU_DVFS_L)
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
 					   ~(1 << CPU_DVFS_L_IS_DOING_DVFS));
@@ -53,6 +56,7 @@ void aee_record_cpu_dvfs_out(struct mt_cpu_dvfs *p)
 	else	/* B */
 		aee_rr_rec_cpu_dvfs_status(aee_rr_curr_cpu_dvfs_status() &
 					   ~(1 << CPU_DVFS_B_IS_DOING_DVFS));
+#endif
 #endif
 }
 
@@ -105,6 +109,7 @@ void aee_record_freq_idx(struct mt_cpu_dvfs *p, int idx)	/* idx: 0~15 */
 	if (p->id == MT_CPU_DVFS_LL)
 		aee_rr_rec_cpu_dvfs_oppidx(
 			(aee_rr_curr_cpu_dvfs_oppidx() & 0xF0) | idx);
+#ifndef ONE_CLUSTER
 	else if (p->id == MT_CPU_DVFS_L)
 		aee_rr_rec_cpu_dvfs_oppidx(
 			(aee_rr_curr_cpu_dvfs_oppidx() & 0x0F) | (idx << 4));
@@ -114,6 +119,7 @@ void aee_record_freq_idx(struct mt_cpu_dvfs *p, int idx)	/* idx: 0~15 */
 	else	/* B */
 		aee_rr_rec_cpu_dvfs_status(
 			(aee_rr_curr_cpu_dvfs_status() & 0x0F) | (idx << 4));
+#endif
 #endif
 }
 
