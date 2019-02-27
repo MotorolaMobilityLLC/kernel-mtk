@@ -7018,6 +7018,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 		for_each_cpu_and(i, tsk_cpus_allowed(p), sched_group_cpus(sg)) {
 			unsigned long capacity_curr = capacity_curr_of(i);
 			unsigned long capacity_orig = capacity_orig_of(i);
+			unsigned long capacity_real = capacity_hw_of(i);
 			unsigned long wake_util, new_util;
 
 			if (!cpu_online(i))
@@ -7150,7 +7151,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 				int idle_idx = idle_get_state_idx(cpu_rq(i));
 
 				/* Select idle CPU with lower cap_orig */
-				if (capacity_orig > best_idle_min_cap_orig)
+				if (capacity_real > best_idle_min_cap_orig)
 					continue;
 
 				/*
@@ -7164,7 +7165,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 					continue;
 
 				/* Keep track of best idle CPU */
-				best_idle_min_cap_orig = capacity_orig;
+				best_idle_min_cap_orig = capacity_real;
 				best_idle_cstate = idle_idx;
 				best_idle_cpu = i;
 				continue;
@@ -7191,7 +7192,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			 */
 
 			/* Favor CPUs with smaller capacity */
-			if (capacity_orig > target_capacity)
+			if (capacity_real > target_capacity)
 				continue;
 
 			/* Favor CPUs with maximum spare capacity */
@@ -7199,7 +7200,7 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 				continue;
 
 			target_max_spare_cap = capacity_orig - new_util;
-			target_capacity = capacity_orig;
+			target_capacity = capacity_real;
 			target_util = new_util;
 			target_cpu = i;
 		}
@@ -11403,7 +11404,7 @@ __init void init_sched_fair_class(void)
 
 	arch_init_hmp_domains();
 	hmp_cpu_mask_setup();
-
+	init_cpu_info();
 }
 
 #include "sched_power.c"

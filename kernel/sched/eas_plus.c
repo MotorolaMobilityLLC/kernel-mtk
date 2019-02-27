@@ -193,3 +193,22 @@ __src_cpu_norm_util(int cpu, unsigned long capacity, int delta, int task_delta)
 	return (util << SCHED_CAPACITY_SHIFT)/capacity;
 }
 
+static int init_cpu_info(void)
+{
+	int i;
+
+	for (i = 0; i < nr_cpu_ids; i++) {
+		unsigned long capacity = SCHED_CAPACITY_SCALE;
+
+		if (cpu_core_energy(i)) {
+			int idx = cpu_core_energy(i)->nr_cap_states - 1;
+
+			capacity = cpu_core_energy(i)->cap_states[idx].cap;
+		}
+
+		cpu_rq(i)->cpu_capacity_hw = capacity;
+	}
+
+	return 0;
+}
+late_initcall_sync(init_cpu_info)
