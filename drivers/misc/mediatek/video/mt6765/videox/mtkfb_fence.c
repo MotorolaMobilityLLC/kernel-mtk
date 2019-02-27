@@ -103,7 +103,7 @@ static struct disp_session_sync_info *_get_session_sync_info(
 	struct disp_session_sync_info *session_info = NULL;
 	struct disp_sync_info *layer_info = NULL;
 	char name[32];
-	const char *prefix = "timeline";
+	const char *prefix = "tl";
 
 	if (DISP_SESSION_TYPE(session_id) != DISP_SESSION_PRIMARY &&
 	    DISP_SESSION_TYPE(session_id) != DISP_SESSION_MEMORY &&
@@ -207,17 +207,17 @@ static struct disp_session_sync_info *_get_session_sync_info(
 
 			if (DISP_SESSION_TYPE(session_id) ==
 				DISP_SESSION_PRIMARY)
-				sprintf(name, "%s-primary-%d-%d",
+				sprintf(name, "%s-p-%d-%d",
 					prefix, DISP_SESSION_DEV(session_id),
 					j);
 			else if (DISP_SESSION_TYPE(session_id) ==
 				DISP_SESSION_EXTERNAL)
-				sprintf(name, "%s-external-%d-%d",
+				sprintf(name, "%s-e-%d-%d",
 					prefix, DISP_SESSION_DEV(session_id),
 					j);
 			else if (DISP_SESSION_TYPE(session_id) ==
 				DISP_SESSION_MEMORY)
-				sprintf(name, "%s-memory-%d-%d",
+				sprintf(name, "%s-m-%d-%d",
 					prefix, DISP_SESSION_DEV(session_id),
 					j);
 			else
