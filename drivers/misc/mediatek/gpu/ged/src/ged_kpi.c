@@ -1375,7 +1375,9 @@ static void ged_kpi_work_cb(struct work_struct *psWork)
 					else
 						time_spent = psKPI->t_gpu;
 				} else {
-					time_spent = 0;
+					psKPI->t_gpu
+						= time_spent
+						= psHead->t_gpu_latest;
 				}
 				/* Detect if there are multi renderers by */
 				/* checking if there is GED_KPI info
