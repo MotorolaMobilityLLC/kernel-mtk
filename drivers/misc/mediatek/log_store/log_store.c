@@ -112,9 +112,11 @@ static int pl_lk_log_show(struct seq_file *m, void *v)
 			dram_curlog_header->sz_pl, dram_curlog_header->sz_lk);
 
 	if (dram_log_store_status == BUFF_READY)
-		if (dram_curlog_header->buff_size >= (dram_curlog_header->sz_pl
+		if (dram_curlog_header->buff_size >= (dram_curlog_header->off_pl
+		+ dram_curlog_header->sz_pl
 		+ dram_curlog_header->sz_lk))
-			seq_write(m, pbuff, dram_curlog_header->sz_lk
+			seq_write(m, pbuff+dram_curlog_header->off_pl,
+				dram_curlog_header->sz_lk
 				+ dram_curlog_header->sz_pl);
 	log_store_bootup();
 	return 0;
@@ -145,21 +147,22 @@ static int __init log_store_late_init(void)
 		return -1;
 	}
 
-	if (sram_dram_buff->buf_addr == 0) {
+	if (sram_dram_buff->buf_addr == 0 || sram_dram_buff->buf_size == 0) {
 		pr_notice("log_store: sram header DRAM buff is null.\n");
 		dram_log_store_status = BUFF_ALLOC_ERROR;
 		return -1;
 	}
-	pr_notice("log store:sram_dram_buff addr 0x%x.\n",
-		sram_dram_buff->buf_addr);
+	pr_notice("log store:sram_dram_buff addr 0x%x, size 0x%x.\n",
+		sram_dram_buff->buf_addr, sram_dram_buff->buf_size);
 
-	pbuff = remap_lowmem(sram_dram_buff->buf_addr, LOG_STORE_SIZE);
+	pbuff = remap_lowmem(sram_dram_buff->buf_addr,
+		sram_dram_buff->buf_size);
 	MTK_MEMCFG_LOG_AND_PRINTK(
 			"[PHY layout]log_store_mem   :   0x%08llx - 0x%08llx (0x%llx)\n",
 			(unsigned long long)sram_dram_buff->buf_addr,
 			(unsigned long long)sram_dram_buff->buf_addr
-			+ LOG_STORE_SIZE - 1,
-			(unsigned long long)LOG_STORE_SIZE);
+			+ sram_dram_buff->buf_size - 1,
+			(unsigned long long)sram_dram_buff->buf_size);
 	if (pbuff == NULL) {
 		pr_notice("log_store: ioremap_wc failed.\n");
 		dram_log_store_status = BUFF_ERROR;
@@ -179,8 +182,10 @@ static int __init log_store_late_init(void)
 		pbuff, dram_curlog_header->sig);
 	pr_notice("buff_size 0x%x\n",
 		dram_curlog_header->buff_size);
-	pr_notice("pl sz 0x%x\n", dram_curlog_header->sz_pl);
-	pr_notice("lk sz 0x%x\n", dram_curlog_header->sz_lk);
+	pr_notice("pl off 0x%x, sz 0x%x\n",
+		dram_curlog_header->off_pl, dram_curlog_header->sz_pl);
+	pr_notice("lk off 0x%x, sz 0x%x\n",
+		dram_curlog_header->off_lk, dram_curlog_header->sz_lk);
 	pr_notice("flag p 0x%x, l 0x%x\n",
 		dram_curlog_header->pl_flag, dram_curlog_header->lk_flag);
 
@@ -247,7 +252,7 @@ static int __init log_store_early_init(void)
 		return -1;
 	}
 
-	sram_dram_buff = &(sram_header->dram_buf);
+	sram_dram_buff = &(sram_header->dram_buf[LOG_PL_LK]);
 	if (sram_dram_buff->sig != DRAM_HEADER_SIG) {
 		pr_notice("log_store: sram header DRAM sig error");
 		sram_log_store_status = BUFF_ERROR;
@@ -261,6 +266,9 @@ static int __init log_store_early_init(void)
 	pr_notice("sram_dram_buff sig 0x%x\n", sram_dram_buff->sig);
 	pr_notice("sram_dram_buff flag 0x%x\n", sram_dram_buff->flag);
 	pr_notice("sram_dram_buff add 0x%x\n", sram_dram_buff->buf_addr);
+	pr_notice("sram_dram_buff size 0x%x\n", sram_dram_buff->buf_size);
+	pr_notice("sram_dram_buff offsize 0x%x\n", sram_dram_buff->buf_offsize);
+	pr_notice("sram_dram_buff point 0x%x\n", sram_dram_buff->buf_point);
 
 	return 0;
 }
