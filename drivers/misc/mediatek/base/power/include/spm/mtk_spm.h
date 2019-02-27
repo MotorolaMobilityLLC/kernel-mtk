@@ -27,49 +27,26 @@
 extern void __iomem *spm_base;
 #define SPM_BASE spm_base
 
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-#define PCM_REG13_DATA  (SPM_BASE + 0x134)
-#define PWR_STATUS      (SPM_BASE + 0x180)
-#define PWR_STATUS_2ND  (SPM_BASE + 0x184)
-#define MD1_PWR_CON     (SPM_BASE + 0x320)
-#define SPM_SW_RSV_0    (SPM_BASE + 0x608)
-#define SPARE_ACK_MASK  (SPM_BASE + 0x6F4)
-#endif
-
-#if (defined(CONFIG_MACH_MT3967))
 /********************************************************************
  * APIs for external modules
  *******************************************************************/
 bool mtk_spm_drv_ready(void);
 bool mtk_spm_base_ready(void);
-bool mtk_spm_get_subsys_pwrsta(int subsys_idx);
-unsigned int mtk_spm_get_md1_pwr_con(void);
-unsigned int mtk_spm_get_pwr_status(void);
-unsigned int mtk_spm_get_reg13(void);
-unsigned int mtk_spm_get_spare_ack_mask(void);
+unsigned int mtk_spm_read_register(int register_index);
 
 enum {
-	SUBSYS_PWRSTA_MD = 0,
-	SUBSYS_PWRSTA_CONN,
+	SPM_PWRSTA = 0,
+	SPM_MD1_PWR_CON,
+	SPM_REG13,
+	SPM_SPARE_ACK_MASK,
 };
-#endif
 
 /********************************************************************
  * FIXME: To be refined !!!
  *******************************************************************/
+int mtk_spm_init(void);
 void *mt_spm_base_get(void);
 extern int spm_load_firmware_status(void);
-
-#if (defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761))
-enum {
-	WR_NONE = 0,
-	WR_UART_BUSY = 1,
-	WR_PCM_ASSERT = 2,
-	WR_PCM_TIMER = 3,
-	WR_WAKE_SRC = 4,
-	WR_UNKNOWN = 5,
-};
-#endif
 
 /********************************************************************
  * sspm lock spm scenario

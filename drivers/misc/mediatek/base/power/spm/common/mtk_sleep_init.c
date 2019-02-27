@@ -18,22 +18,13 @@
 #include <mtk_spm.h>
 #include <mtk_sleep_internal.h>
 
-#if (!defined(CONFIG_MACH_MT6765) || !defined(CONFIG_MACH_MT6761))
 static bool spm_drv_init;
 
 bool mtk_spm_drv_ready(void)
 {
 	return spm_drv_init;
 }
-#endif
 
-int __attribute__((weak)) mtk_spm_init(void)
-{
-	pr_info("%s not implemented\n", __func__);
-	return 0;
-}
-
-#if (!defined(CONFIG_MACH_MT6765) || !defined(CONFIG_MACH_MT6761))
 static int __init mtk_sleep_init(void)
 {
 	int ret = -1;
@@ -42,20 +33,8 @@ static int __init mtk_sleep_init(void)
 	slp_module_init();
 	ret = mtk_spm_init();
 #endif
-
 	spm_drv_init = !ret;
-
 	return 0;
 }
-#else
-static int __init mtk_sleep_init(void)
-{
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
-	slp_module_init();
-	mtk_spm_init();
-#endif
-	return 0;
-}
-#endif
 
 late_initcall(mtk_sleep_init);
