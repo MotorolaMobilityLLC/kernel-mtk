@@ -60,6 +60,7 @@ struct mtk_btag_vmstat {
 	__u64 dirtied;
 	__u64 writeback;
 	__u64 written;
+	__u64 fmflt;
 };
 
 struct mtk_btag_pidlogger_entry_rw {
