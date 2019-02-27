@@ -113,7 +113,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 			 .startx = 0,
 			 .starty = 0,
 			 .grabwindow_width = 5344,
-			 .grabwindow_height = 3006,
+			 .grabwindow_height = 3004,
 			 .mipi_data_lp2hs_settle_dc = 85,/* unit , ns */
 			 .max_framerate = 300,
 			 },
@@ -230,7 +230,7 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] = {
 0000, 0000, 5344, 4016, 0, 0, 5344, 4016},		/* capture */
 
 {5344, 4016, 0, 504, 5344, 3006, 5344, 3006,
-0000, 0000, 5344, 3006, 0, 0, 5344, 3006},		/* video */
+0000, 0000, 5344, 3006, 0, 0, 5344, 3004},		/* video */
 
 {5344, 4016, 0, 568, 5344, 2880, 1280, 720,
 0000, 0000, 1280, 720, 0, 0, 1280, 720},		/* hight speed video */
@@ -537,6 +537,7 @@ static void imx230_apply_SPC(void)
 {
 	unsigned int start_reg = 0x7c00;
 	int i;
+
 	if (read_spc_flag == FALSE) {
 		read_imx230_SPC(imx230_SPC_data);
 		read_spc_flag = TRUE;
@@ -545,17 +546,16 @@ static void imx230_apply_SPC(void)
 
 	for (i = 0; i < 352; i++) {
 		write_cmos_sensor(start_reg, imx230_SPC_data[i]);
-		//pr_info("SPC[%3d]= %x\n", i , imx230_SPC_data[i]);
-
+		/* pr_info("SPC[%3d]= %x\n", i , imx230_SPC_data[i]);*/
 		start_reg++;
 	}
 
 #if 0
     /* for verify */
-    for (i = 0x7c00; i < 0x7c00+352; i++)
-    {
-		pr_info("SPC read out : Addr[%3d] Data[%x], Ref[%x]", i , read_cmos_sensor(i), imx230_SPC_data[i-0x7c00]);
-	}
+	for (i = 0x7c00; i < 0x7c00+352; i++)
+		pr_info(
+		"SPC read out : Addr[%3d] Data[%x], Ref[%x]",
+		i, read_cmos_sensor(i), imx230_SPC_data[i-0x7c00]);
 #endif
 }
 
@@ -1044,7 +1044,7 @@ static kal_uint16 imx230_table_write_cmos_sensor(
 		}
 #if MULTI_WRITE
 
-		if (tosend >= I2C_BUFFER_LEN ||
+		if ((I2C_BUFFER_LEN - tosend) < 3  ||
 		    len == IDX  ||
 		    addr != addr_last) {
 
@@ -1553,15 +1553,15 @@ static void preview_setting(void)
 		write_cmos_sensor(0x3123, 0x01);
 
 		/*Fixed area mode */
-        write_cmos_sensor(0x3150, 0x00);
-        write_cmos_sensor(0x3151, 0x00);
-        write_cmos_sensor(0x3152, 0x00);
-        write_cmos_sensor(0x3153, 0x00);
-        write_cmos_sensor(0x3154, 0x0A);
-        write_cmos_sensor(0x3155, 0x70);
-        write_cmos_sensor(0x3156, 0x07);
-        write_cmos_sensor(0x3157, 0xD8);
-        imx230_apply_SPC();
+		write_cmos_sensor(0x3150, 0x00);
+		write_cmos_sensor(0x3151, 0x00);
+		write_cmos_sensor(0x3152, 0x00);
+		write_cmos_sensor(0x3153, 0x00);
+		write_cmos_sensor(0x3154, 0x0A);
+		write_cmos_sensor(0x3155, 0x70);
+		write_cmos_sensor(0x3156, 0x07);
+		write_cmos_sensor(0x3157, 0xD8);
+		imx230_apply_SPC();
 	}
 }				/*    preview_setting  */
 
@@ -1693,15 +1693,15 @@ static void preview_setting_HDR_ES2(void)
 		write_cmos_sensor(0x3123, 0x01);
 
 		/*Fixed area mode */
-        write_cmos_sensor(0x3150, 0x00);
-        write_cmos_sensor(0x3151, 0x00);
-        write_cmos_sensor(0x3152, 0x00);
-        write_cmos_sensor(0x3153, 0x00);
-        write_cmos_sensor(0x3154, 0x0A);
-        write_cmos_sensor(0x3155, 0x70);
-        write_cmos_sensor(0x3156, 0x07);
-        write_cmos_sensor(0x3157, 0xD8);
-        imx230_apply_SPC();
+		write_cmos_sensor(0x3150, 0x00);
+		write_cmos_sensor(0x3151, 0x00);
+		write_cmos_sensor(0x3152, 0x00);
+		write_cmos_sensor(0x3153, 0x00);
+		write_cmos_sensor(0x3154, 0x0A);
+		write_cmos_sensor(0x3155, 0x70);
+		write_cmos_sensor(0x3156, 0x07);
+		write_cmos_sensor(0x3157, 0xD8);
+		imx230_apply_SPC();
 	}
 
 
