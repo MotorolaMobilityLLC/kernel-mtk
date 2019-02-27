@@ -20,13 +20,42 @@
 #include "wmt_detect.h"
 #include "wlan_drv_init.h"
 
+#ifdef MTK_WCN_WLAN_GEN4
+int __attribute__((weak)) mtk_wcn_wlan_gen4_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen4_init\n");
+	return 0;
+}
+#endif
+
+#ifdef MTK_WCN_WLAN_GEN3
+int __attribute__((weak)) mtk_wcn_wlan_gen3_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen3_init\n");
+	return 0;
+}
+#endif
+
+#ifdef MTK_WCN_WLAN_GEN2
+int __attribute__((weak)) mtk_wcn_wlan_gen2_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wlan_gen2_init\n");
+	return 0;
+}
+#endif
+
+int __attribute__((weak)) mtk_wcn_wmt_wifi_init()
+{
+	WMT_DETECT_INFO_FUNC("no impl. mtk_wcn_wmt_wifi_init\n");
+	return 0;
+}
 
 int do_wlan_drv_init(int chip_id)
 {
 	int i_ret = 0;
 
 	int ret = 0;
-#ifdef MTK_WCN_BUILT_IN_DRIVER
+
 	WMT_DETECT_INFO_FUNC("start to do wlan module init 0x%x\n", chip_id);
 
 	/* WMT-WIFI char dev init */
@@ -70,7 +99,7 @@ int do_wlan_drv_init(int chip_id)
 #endif
 		break;
 	}
-#endif
+
 	i_ret += ret;
 	WMT_DETECT_INFO_FUNC("finish wlan module init\n");
 
