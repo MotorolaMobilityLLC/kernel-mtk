@@ -26,6 +26,7 @@
 
 #define CMDQ_TPR_ID			(56)
 #define CMDQ_CPR_STRAT_ID		(0x8000)
+#define CMDQ_EVENT_MAX			0x3FF
 
 #if IS_ENABLED(CONFIG_MACH_MT6771) || IS_ENABLED(CONFIG_MACH_MT6765) || \
 	IS_ENABLED(CONFIG_MACH_MT6761)
@@ -38,181 +39,42 @@
 
 typedef u64 CMDQ_VARIABLE;
 
-/* software token in CMDQ */
-enum cmdq_event {
-	/* SW Sync Tokens (Pre-defined) */
-	/* Config thread notify trigger thread */
-	CMDQ_SYNC_TOKEN_CONFIG_DIRTY = 401,
-	/* Trigger thread notify config thread */
-	CMDQ_SYNC_TOKEN_STREAM_EOF = 402,
-	/* Block Trigger thread until the ESD check finishes. */
-	CMDQ_SYNC_TOKEN_ESD_EOF = 403,
-	/* check CABC setup finish */
-	CMDQ_SYNC_TOKEN_CABC_EOF = 404,
-	/* Block Trigger thread until the path freeze finishes */
-	CMDQ_SYNC_TOKEN_FREEZE_EOF = 405,
-	/* Pass-2 notifies VENC frame is ready to be encoded */
-	CMDQ_SYNC_TOKEN_VENC_INPUT_READY = 406,
-	/* VENC notifies Pass-2 encode done so next frame may start */
-	CMDQ_SYNC_TOKEN_VENC_EOF = 407,
+/* GCE provide 32/64 bit General Purpose Register (GPR)
+ * use as data cache or address register
+ *	 32bit: R0-R15
+ *	 64bit: P0-P7
+ * Note:
+ *	R0-R15 and P0-P7 actullay share same memory
+ *	R0 use as mask in instruction, thus be care of use R1/P0.
+ */
+enum cmdq_gpr {
+	/* 32bit R0 to R15 */
+	CMDQ_GPR_R00 = 0x00,
+	CMDQ_GPR_R01 = 0x01,
+	CMDQ_GPR_R02 = 0x02,
+	CMDQ_GPR_R03 = 0x03,
+	CMDQ_GPR_R04 = 0x04,
+	CMDQ_GPR_R05 = 0x05,
+	CMDQ_GPR_R06 = 0x06,
+	CMDQ_GPR_R07 = 0x07,
+	CMDQ_GPR_R08 = 0x08,
+	CMDQ_GPR_R09 = 0x09,
+	CMDQ_GPR_R10 = 0x0A,
+	CMDQ_GPR_R11 = 0x0B,
+	CMDQ_GPR_R12 = 0x0C,
+	CMDQ_GPR_R13 = 0x0D,
+	CMDQ_GPR_R14 = 0x0E,
+	CMDQ_GPR_R15 = 0x0F,
 
-	/* Notify normal CMDQ there are some secure task done */
-	CMDQ_SYNC_SECURE_THR_EOF = 408,
-	/* Lock WSM resource */
-	CMDQ_SYNC_SECURE_WSM_LOCK = 409,
-
-	/* SW Sync Tokens (User-defined) */
-	CMDQ_SYNC_TOKEN_USER_0 = 410,
-	CMDQ_SYNC_TOKEN_USER_1 = 411,
-	CMDQ_SYNC_TOKEN_POLL_MONITOR = 412,
-
-	/* SW Sync Tokens (Pre-defined) */
-	/* Config thread notify trigger thread for external display */
-	CMDQ_SYNC_TOKEN_EXT_CONFIG_DIRTY = 415,
-	/* Trigger thread notify config thread */
-	CMDQ_SYNC_TOKEN_EXT_STREAM_EOF = 416,
-	/* Check CABC setup finish */
-	CMDQ_SYNC_TOKEN_EXT_CABC_EOF = 417,
-
-	/* Secure video path notify SW token */
-	CMDQ_SYNC_DISP_OVL0_2NONSEC_END = 420,
-	CMDQ_SYNC_DISP_OVL1_2NONSEC_END = 421,
-	CMDQ_SYNC_DISP_2LOVL0_2NONSEC_END = 422,
-	CMDQ_SYNC_DISP_2LOVL1_2NONSEC_END = 423,
-	CMDQ_SYNC_DISP_RDMA0_2NONSEC_END = 424,
-	CMDQ_SYNC_DISP_RDMA1_2NONSEC_END = 425,
-	CMDQ_SYNC_DISP_WDMA0_2NONSEC_END = 426,
-	CMDQ_SYNC_DISP_WDMA1_2NONSEC_END = 427,
-	CMDQ_SYNC_DISP_EXT_STREAM_EOF = 428,
-
-	/**
-	 * Event for CMDQ to block executing command when append command
-	 * Plz sync CMDQ_SYNC_TOKEN_APPEND_THR(id) in cmdq_core source file.
-	 */
-	CMDQ_SYNC_TOKEN_APPEND_THR0 = 432,
-	CMDQ_SYNC_TOKEN_APPEND_THR1 = 433,
-	CMDQ_SYNC_TOKEN_APPEND_THR2 = 434,
-	CMDQ_SYNC_TOKEN_APPEND_THR3 = 435,
-	CMDQ_SYNC_TOKEN_APPEND_THR4 = 436,
-	CMDQ_SYNC_TOKEN_APPEND_THR5 = 437,
-	CMDQ_SYNC_TOKEN_APPEND_THR6 = 438,
-	CMDQ_SYNC_TOKEN_APPEND_THR7 = 439,
-	CMDQ_SYNC_TOKEN_APPEND_THR8 = 440,
-	CMDQ_SYNC_TOKEN_APPEND_THR9 = 441,
-	CMDQ_SYNC_TOKEN_APPEND_THR10 = 442,
-	CMDQ_SYNC_TOKEN_APPEND_THR11 = 443,
-	CMDQ_SYNC_TOKEN_APPEND_THR12 = 444,
-	CMDQ_SYNC_TOKEN_APPEND_THR13 = 445,
-	CMDQ_SYNC_TOKEN_APPEND_THR14 = 446,
-	CMDQ_SYNC_TOKEN_APPEND_THR15 = 447,
-	CMDQ_SYNC_TOKEN_APPEND_THR16 = 448,
-	CMDQ_SYNC_TOKEN_APPEND_THR17 = 449,
-	CMDQ_SYNC_TOKEN_APPEND_THR18 = 450,
-	CMDQ_SYNC_TOKEN_APPEND_THR19 = 451,
-	CMDQ_SYNC_TOKEN_APPEND_THR20 = 452,
-	CMDQ_SYNC_TOKEN_APPEND_THR21 = 453,
-	CMDQ_SYNC_TOKEN_APPEND_THR22 = 454,
-	CMDQ_SYNC_TOKEN_APPEND_THR23 = 455,
-	CMDQ_SYNC_TOKEN_APPEND_THR24 = 456,
-	CMDQ_SYNC_TOKEN_APPEND_THR25 = 457,
-	CMDQ_SYNC_TOKEN_APPEND_THR26 = 458,
-	CMDQ_SYNC_TOKEN_APPEND_THR27 = 459,
-	CMDQ_SYNC_TOKEN_APPEND_THR28 = 460,
-	CMDQ_SYNC_TOKEN_APPEND_THR29 = 461,
-	CMDQ_SYNC_TOKEN_APPEND_THR30 = 462,
-	CMDQ_SYNC_TOKEN_APPEND_THR31 = 463,
-
-	/* GPR access tokens (for HW register backup)
-	 * There are 15 32-bit GPR, 3 GPR form a set
-	 * (64-bit for address, 32-bit for value)
-	 */
-	CMDQ_SYNC_TOKEN_GPR_SET_0 = 470,
-	CMDQ_SYNC_TOKEN_GPR_SET_1 = 471,
-	CMDQ_SYNC_TOKEN_GPR_SET_2 = 472,
-	CMDQ_SYNC_TOKEN_GPR_SET_3 = 473,
-	CMDQ_SYNC_TOKEN_GPR_SET_4 = 474,
-
-	/* Resource lock event to control resource in GCE thread */
-	CMDQ_SYNC_RESOURCE_WROT0 = 480,
-	CMDQ_SYNC_RESOURCE_WROT1 = 481,
-
-	/* Event for CMDQ delay implement
-	 * Plz sync CMDQ_SYNC_TOKEN_DELAY_THR(id) in cmdq_core source file.
-	 */
-	CMDQ_SYNC_TOKEN_TIMER = 485,
-	CMDQ_SYNC_TOKEN_DELAY_SET0 = 486,
-	CMDQ_SYNC_TOKEN_DELAY_SET1 = 487,
-	CMDQ_SYNC_TOKEN_DELAY_SET2 = 488,
-
-	/* GCE HW TPR Event*/
-	CMDQ_EVENT_TIMER_00 = 962,
-	CMDQ_EVENT_TIMER_01 = 963,
-	CMDQ_EVENT_TIMER_02 = 964,
-	CMDQ_EVENT_TIMER_03 = 965,
-	CMDQ_EVENT_TIMER_04 = 966,
-	/* 5: 1us */
-	CMDQ_EVENT_TIMER_05 = 967,
-	CMDQ_EVENT_TIMER_06 = 968,
-	CMDQ_EVENT_TIMER_07 = 969,
-	/* 8: 10us */
-	CMDQ_EVENT_TIMER_08 = 970,
-	CMDQ_EVENT_TIMER_09 = 971,
-	CMDQ_EVENT_TIMER_10 = 972,
-	/* 11: 100us */
-	CMDQ_EVENT_TIMER_11 = 973,
-	CMDQ_EVENT_TIMER_12 = 974,
-	CMDQ_EVENT_TIMER_13 = 975,
-	CMDQ_EVENT_TIMER_14 = 976,
-	/* 15: 1ms */
-	CMDQ_EVENT_TIMER_15 = 977,
-	CMDQ_EVENT_TIMER_16 = 978,
-	CMDQ_EVENT_TIMER_17 = 979,
-	/* 18: 10ms */
-	CMDQ_EVENT_TIMER_18 = 980,
-	CMDQ_EVENT_TIMER_19 = 981,
-	CMDQ_EVENT_TIMER_20 = 982,
-	/* 21: 100ms */
-	CMDQ_EVENT_TIMER_21 = 983,
-	CMDQ_EVENT_TIMER_22 = 984,
-	CMDQ_EVENT_TIMER_23 = 985,
-	CMDQ_EVENT_TIMER_24 = 986,
-	CMDQ_EVENT_TIMER_25 = 987,
-	CMDQ_EVENT_TIMER_26 = 988,
-	CMDQ_EVENT_TIMER_27 = 989,
-	CMDQ_EVENT_TIMER_28 = 990,
-	CMDQ_EVENT_TIMER_29 = 991,
-	CMDQ_EVENT_TIMER_30 = 992,
-	CMDQ_EVENT_TIMER_31 = 993,
-
-	/* event id is 9 bit */
-	CMDQ_SYNC_TOKEN_MAX = 0x3FF,
-	CMDQ_SYNC_TOKEN_INVALID = -1,
-};
-
-/* General Purpose Register */
-enum cmdq_gpr_reg {
-	/* Value Reg, we use 32-bit */
-	/* Address Reg, we use 64-bit */
-	/* Note that R0-R15 and P0-P7 actullay share same memory */
-	/* and R1 cannot be used. */
-
-	CMDQ_DATA_REG_JPEG = 0x00,	/* R0 */
-	CMDQ_DATA_REG_JPEG_DST = 0x11,	/* P1 */
-
-	CMDQ_DATA_REG_PQ_COLOR = 0x04,	/* R4 */
-	CMDQ_DATA_REG_PQ_COLOR_DST = 0x13,	/* P3 */
-
-	CMDQ_DATA_REG_2D_SHARPNESS_0 = 0x05,	/* R5 */
-	CMDQ_DATA_REG_2D_SHARPNESS_0_DST = 0x14,	/* P4 */
-
-	CMDQ_DATA_REG_2D_SHARPNESS_1 = 0x0a,	/* R10 */
-	CMDQ_DATA_REG_2D_SHARPNESS_1_DST = 0x16,	/* P6 */
-
-	CMDQ_DATA_REG_DEBUG = 0x0b,	/* R11 */
-	CMDQ_DATA_REG_DEBUG_DST = 0x17,	/* P7 */
-
-	/* sentinel value for invalid register ID */
-	CMDQ_DATA_REG_INVALID = -1,
+	/* 64bit P0 to P7 */
+	CMDQ_GPR_P0 = 0x10,
+	CMDQ_GPR_P1 = 0x11,
+	CMDQ_GPR_P2 = 0x12,
+	CMDQ_GPR_P3 = 0x13,
+	CMDQ_GPR_P4 = 0x14,
+	CMDQ_GPR_P5 = 0x15,
+	CMDQ_GPR_P6 = 0x16,
+	CMDQ_GPR_P7 = 0x17,
 };
 
 struct cmdq_pkt;
@@ -410,7 +272,8 @@ s32 cmdq_pkt_jump(struct cmdq_pkt *pkt, s32 offset);
 
 s32 cmdq_pkt_jump_addr(struct cmdq_pkt *pkt, u32 addr);
 
-s32 cmdq_pkt_poll_addr(struct cmdq_pkt *pkt, u32 value, u32 addr, u32 mask);
+s32 cmdq_pkt_poll_addr(struct cmdq_pkt *pkt, u32 value, u32 addr, u32 mask,
+	u8 reg_gpr);
 
 s32 cmdq_pkt_poll_reg(struct cmdq_pkt *pkt, u32 value, u8 subsys,
 	u16 offset, u32 mask);
@@ -426,7 +289,7 @@ s32 cmdq_pkt_poll_reg(struct cmdq_pkt *pkt, u32 value, u8 subsys,
  * Return: 0 for success; else the error code is returned
  */
 s32 cmdq_pkt_poll(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
-	u32 value, u32 addr, u32 mask);
+	u32 value, u32 addr, u32 mask, u8 reg_gpr);
 
 /**
  * cmdq_pkt_wfe() - append wait for event command to the CMDQ packet
