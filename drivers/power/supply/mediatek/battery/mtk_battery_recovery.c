@@ -847,6 +847,9 @@ void fgr_construct_battery_profile(int table_idx)
 		}
 	}
 
+	if (i > (ptable->active_table_number - 1))
+		i = ptable->active_table_number - 1;
+
 	if (is_ascending) {
 		low_profile_p =
 			fg_get_profile(
@@ -917,6 +920,10 @@ void fgr_construct_battery_profile(int table_idx)
 		temp_profile_p[i].resistance =
 		interpolation(low_temp, low_profile_p[i].resistance,
 		high_temp, high_profile_p[i].resistance, temperature);
+		temp_profile_p[i].resistance2 =
+		interpolation(low_temp, low_profile_p[i].resistance2,
+		high_temp, high_profile_p[i].resistance2, temperature);
+
 	}
 
 	if (table_idx == ptable->temperature_tb0) {

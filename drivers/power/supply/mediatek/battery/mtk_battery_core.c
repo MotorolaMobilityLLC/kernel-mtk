@@ -166,11 +166,13 @@ int gauge_get_hwocv(void)
 
 int gauge_set_coulomb_interrupt1_ht(int car)
 {
+	bm_debug("gauge_set_coulomb_interrupt1_ht:%d\n", car);
 	return gauge_dev_set_coulomb_interrupt1_ht(gm.gdev, car);
 }
 
 int gauge_set_coulomb_interrupt1_lt(int car)
 {
+	bm_debug("gauge_set_coulomb_interrupt1_lt:%d\n", car);
 	return gauge_dev_set_coulomb_interrupt1_lt(gm.gdev, car);
 }
 
@@ -330,7 +332,7 @@ void fgauge_get_profile_id(void)
 
 void fg_custom_init_from_header(void)
 {
-	int i;
+	int i, j;
 
 	fgauge_get_profile_id();
 
@@ -433,6 +435,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.shutdown_1_time = SHUTDOWN_1_TIME;
 	fg_cust_data.shutdown_gauge1_xmins = SHUTDOWN_GAUGE1_XMINS;
 	fg_cust_data.shutdown_gauge0_voltage = SHUTDOWN_GAUGE0_VOLTAGE;
+	fg_cust_data.shutdown_gauge1_vbat_en = SHUTDOWN_GAUGE1_VBAT_EN;
+	fg_cust_data.shutdown_gauge1_vbat = SHUTDOWN_GAUGE1_VBAT;
 
 	/* ZCV update */
 	fg_cust_data.zcv_suspend_time = ZCV_SUSPEND_TIME;
@@ -477,6 +481,9 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.battery_tmp_to_disable_gm30 = BATTERY_TMP_TO_DISABLE_GM30;
 	fg_cust_data.battery_tmp_to_disable_nafg = BATTERY_TMP_TO_DISABLE_NAFG;
 	fg_cust_data.battery_tmp_to_enable_nafg = BATTERY_TMP_TO_ENABLE_NAFG;
+
+	fg_cust_data.low_temp_mode = LOW_TEMP_MODE;
+	fg_cust_data.low_temp_mode_temp = LOW_TEMP_MODE_TEMP;
 
 	/* current limit for uisoc 100% */
 	fg_cust_data.ui_full_limit_en = UI_FULL_LIMIT_EN;
@@ -534,29 +541,6 @@ void fg_custom_init_from_header(void)
 
 	fg_table_cust_data.temperature_tb0 = TEMPERATURE_TB0;
 	fg_table_cust_data.temperature_tb1 = TEMPERATURE_TB1;
-
-	for (i = 0; i < MAX_TABLE_NUMBER; i++) {
-		fg_table_cust_data.fg_profile[i].temperature =
-			g_temperature[i];
-		fg_table_cust_data.fg_profile[i].q_max =
-			g_Q_MAX[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].q_max_h_current =
-			g_Q_MAX_H_CURRENT[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].pseudo1 =
-			UNIT_TRANS_100 * g_FG_PSEUDO1[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].pseudo100 =
-			UNIT_TRANS_100 * g_FG_PSEUDO100[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].pmic_min_vol =
-			g_PMIC_MIN_VOL[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].pon_iboot =
-			g_PON_SYS_IBOOT[i][gm.battery_id];
-		fg_table_cust_data.fg_profile[i].qmax_sys_vol =
-			g_QMAX_SYS_VOL[i][gm.battery_id];
-		/* shutdown_hl_zcv */
-		fg_table_cust_data.fg_profile[i].shutdown_hl_zcv =
-			g_SHUTDOWN_HL_ZCV[i][gm.battery_id];
-	}
-
 
 	fg_table_cust_data.fg_profile[0].size =
 		sizeof(fg_profile_t0[gm.battery_id]) /
@@ -638,6 +622,38 @@ void fg_custom_init_from_header(void)
 			&fg_profile_t9[gm.battery_id],
 			sizeof(fg_profile_t9[gm.battery_id]));
 
+	for (i = 0; i < MAX_TABLE; i++) {
+		struct FUELGAUGE_PROFILE_STRUCT *p;
+
+		p = &fg_table_cust_data.fg_profile[i].fg_profile[0];
+
+		fg_table_cust_data.fg_profile[i].temperature =
+			g_temperature[i];
+		fg_table_cust_data.fg_profile[i].q_max =
+			g_Q_MAX[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].q_max_h_current =
+			g_Q_MAX_H_CURRENT[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].pseudo1 =
+			UNIT_TRANS_100 * g_FG_PSEUDO1[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].pseudo100 =
+			UNIT_TRANS_100 * g_FG_PSEUDO100[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].pmic_min_vol =
+			g_PMIC_MIN_VOL[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].pon_iboot =
+			g_PON_SYS_IBOOT[i][gm.battery_id];
+		fg_table_cust_data.fg_profile[i].qmax_sys_vol =
+			g_QMAX_SYS_VOL[i][gm.battery_id];
+		/* shutdown_hl_zcv */
+		fg_table_cust_data.fg_profile[i].shutdown_hl_zcv =
+			g_SHUTDOWN_HL_ZCV[i][gm.battery_id];
+
+		for (j = 0; j < 100; j++)
+			if (p[j].resistance2 == 0)
+				p[j].resistance2 = p[j].resistance;
+
+	}
+
+
 	/* fg_custom_init_dump(); */
 
 
@@ -686,6 +702,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 		profile_p->mah = mah;
 		profile_p->voltage = voltage;
 		profile_p->resistance = resistance;
+		profile_p->resistance2 = resistance;
 
 		profile_p++;
 		if ((idx++) >= (saddles * 3))
@@ -708,6 +725,7 @@ static void fg_custom_parse_table(const struct device_node *np,
 		profile_p->mah = mah;
 		profile_p->voltage = voltage;
 		profile_p->resistance = resistance;
+		profile_p->resistance2 = resistance;
 		idx = idx + 3;
 	}
 }
@@ -960,7 +978,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		int i = 0;
 
 		if (!of_property_read_u32(np, "PMIC_MIN_VOL", &val)) {
-			for (i = 0; i < MAX_TABLE_NUMBER; i++)
+			for (i = 0; i < MAX_TABLE; i++)
 				fg_table_cust_data.fg_profile[i].pmic_min_vol =
 				(int)val;
 			bm_debug("Get PMIC_MIN_VOL: %d\n",
@@ -970,7 +988,7 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		}
 
 		if (!of_property_read_u32(np, "POWERON_SYSTEM_IBOOT", &val)) {
-			for (i = 0; i < MAX_TABLE_NUMBER; i++)
+			for (i = 0; i < MAX_TABLE; i++)
 				fg_table_cust_data.fg_profile[i].pon_iboot =
 				(int)val * UNIT_TRANS_10;
 
@@ -1836,6 +1854,7 @@ void fg_bat_plugout_int_handler_gm25(void)
 		return;
 
 	if (is_bat_exist == false) {
+		gauge_dev_set_info(gm.gdev, GAUGE_BAT_PLUG_STATUS, 0);
 		pmic_enable_interrupt(INT_VBATON_UNDET, 0, "VBATON_UNDET");
 		battery_notifier(EVENT_BATTERY_PLUG_OUT);
 		kernel_power_off();
@@ -2233,6 +2252,19 @@ void fg_daemon_get_data(
 
 }
 
+void fg_cmd_check(struct fgd_nl_msg_t *msg)
+{
+	while (msg->fgd_subcmd == 0 &&
+		msg->fgd_subcmd_para1 != FGD_NL_MSG_T_HDR_LEN) {
+		bm_err("fuel gauge version cmd:%d %d error %d != %d\n",
+			msg->fgd_cmd,
+			msg->fgd_subcmd,
+			FGD_NL_MSG_T_HDR_LEN,
+			msg->fgd_subcmd_para1);
+		msleep(5000);
+	}
+}
+
 void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 {
 	struct fgd_nl_msg_t *msg;
@@ -2418,6 +2450,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_SET_DAEMON_PID:
 		{
+
+			fg_cmd_check(msg);
+
 			/* check is daemon killed case*/
 			if (gm.g_fgd_pid == 0) {
 				memcpy(&gm.g_fgd_pid, &msg->fgd_data[0],
@@ -2477,6 +2512,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_DATA:
 		{
+			fg_cmd_check(msg);
 			fg_daemon_get_data(&msg->fgd_data[0],
 				&ret_msg->fgd_data[0]);
 			ret_msg->fgd_data_len =
@@ -2486,6 +2522,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_GET_CUSTOM_SETTING:
 		{
+			fg_cmd_check(msg);
 			bm_err("[fr] data len:%d custom data length = %d\n",
 				(int)sizeof(fg_cust_data),
 				ret_msg->fgd_data_len);
@@ -3337,6 +3374,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 	case FG_DAEMON_CMD_PRINT_LOG:
 	{
+		fg_cmd_check(msg);
 		bm_err("%s", &msg->fgd_data[0]);
 	}
 	break;
