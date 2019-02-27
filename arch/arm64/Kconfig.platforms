@@ -142,7 +142,7 @@ config MACH_MT3887
 	  thin-design smartphones. MT3778 also offers significant multitasking and
 	  multimedia improvements.
 
-config ARCH_MT8173
+config MACH_MT8173
 	bool "MediaTek MT8173"
 	select ARCH_MEDIATEK
 	select MTK_BASE_POWER
