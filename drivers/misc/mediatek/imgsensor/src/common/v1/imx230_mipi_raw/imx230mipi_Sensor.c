@@ -2228,6 +2228,7 @@ static void capture_setting_HDR_ES2(void)
 	write_cmos_sensor(0x3155, 0xE0);
 	write_cmos_sensor(0x3156, 0x0F);
 	write_cmos_sensor(0x3157, 0xB0);
+	imx230_apply_SPC();
 
 }
 
