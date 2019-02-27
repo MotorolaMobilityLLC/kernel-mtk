@@ -666,6 +666,18 @@ int fpsgo_fstb_fps_range(int nr_level,
 	return switch_fps_range(nr_level, level);
 }
 
+int fpsgo_fstb_process_fps_range(char *proc_name,
+	int nr_level, struct fps_level *level)
+{
+	return switch_process_fps_range(proc_name, nr_level, level);
+}
+
+int fpsgo_fstb_thread_fps_range(pid_t pid,
+	int nr_level, struct fps_level *level)
+{
+	return switch_thread_fps_range(pid, nr_level, level);
+}
+
 int fpsgo_fstb_dfps_ceiling(int fps)
 {
 	return switch_dfps_ceiling(fps);
