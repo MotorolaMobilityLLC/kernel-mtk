@@ -35,7 +35,7 @@
 #define PLT_INIT			0x504C5401
 #define PLT_LOG_ENABLE		0x504C5402
 #define PLT_TIMESYNC_SYNC	0x504C5405
-
+#define PLT_TIMESYNC_SRAM_TEST	0x504C5406
 #define SSPM_MPU_REGION_ID  4
 
 #define mtk_timer_src_count(...)    arch_counter_get_cntvct(__VA_ARGS__)
