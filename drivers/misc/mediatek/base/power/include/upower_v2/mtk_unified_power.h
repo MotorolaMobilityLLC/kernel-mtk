@@ -27,6 +27,11 @@ extern "C" {
 #include "mtk_unified_power_mt6765.h"
 #endif
 
+#if defined(CONFIG_MACH_MT6761)
+#include "mtk_unified_power_mt6761.h"
+#endif
+
+
 #define UPOWER_TAG "[UPOWER]"
 
 #if UPOWER_LOG
