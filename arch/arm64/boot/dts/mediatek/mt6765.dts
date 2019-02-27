@@ -43,6 +43,17 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		#size-cells = <2>;
 		ranges;
 
+		minirdump-reserved-memory@544f0000{
+			compatible = "mediatek,minirdump";
+			reg = <0 0x544f0000 0 0x10000>;
+		};
+
+		atf-reserved-memory@54600000 {
+			compatible = "mediatek,atf-reserved-memory";
+			no-map;
+			reg = <0 0x54600000 0 0x40000>;
+		};
+
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
@@ -1780,5 +1791,59 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x1a0b1000 0 0x0>;
 	};
 
+	firmware {
+		android {
+			compatible = "android,firmware";
+			fstab {
+				compatible = "android,fstab";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+				system {
+					compatible = "android,system";
+					dev = "/dev/block/platform/bootdevice/by-name/system";
+					type = "ext4";
+					mnt_flags = "ro";
+					fsmgr_flags = "wait";
+				};
+#endif
+#ifndef CONFIG_MTK_LATE_MOUNT
+				vendor {
+					compatible = "android,vendor";
+					dev = "/dev/block/platform/bootdevice/by-name/vendor";
+					type = "ext4";
+					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+					fsmgr_flags = "wait";
+#else
+					#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,slotselect,verify";
+					#else
+					fsmgr_flags = "wait,slotselect";
+					#endif
+#endif
+				};
+#endif
+#if 0
+#ifdef CONFIG_TARGET_COPY_OUT_ODM
+				odm {
+					compatible = "android,odm";
+					dev = "/dev/block/platform/bootdevice/by-name/odm";
+					type = "ext4";
+					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+					fsmgr_flags = "wait";
+#else
+					#ifndef CONFIG_MTK_DM_VERITY_OFF
+					fsmgr_flags = "wait,slotselect,verify";
+					#else
+					fsmgr_flags = "wait,slotselect";
+					#endif
+#endif
+				};
+#endif
+#endif
+
+			};
+		};
+	};
 };
 #include "cust_mt6765_msdc.dtsi"
