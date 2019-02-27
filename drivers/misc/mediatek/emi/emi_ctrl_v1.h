@@ -28,6 +28,7 @@ extern void elm_init(
 	struct platform_driver *emi_ctrl, struct platform_device *pdev);
 
 extern unsigned int get_dram_type(void);
+extern unsigned int get_dram_mr(unsigned int index);
 extern unsigned int get_ch_num(void);
 extern unsigned int get_rk_num(void);
 extern unsigned int get_rank_size(unsigned int rank_index);
