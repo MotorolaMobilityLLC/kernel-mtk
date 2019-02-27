@@ -59,7 +59,9 @@ EXPORT_SYMBOL(register_mtk_auxadc_intf);
 
 void mtk_auxadc_init(void)
 {
+#if 0
 	pmic_auxadc_init();
+#endif
 
 	pmic_auxadc_intf.channel_num = pmic_get_auxadc_channel_max();
 

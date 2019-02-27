@@ -61,13 +61,13 @@
 
 extern const char *pmic_auxadc_channel_name[];
 
+/* Legacy pmic auxadc interface */
 enum {
 	/* mt6357 */
 	AUXADC_LIST_BATADC,
 	AUXADC_LIST_START = AUXADC_LIST_BATADC,
 	AUXADC_LIST_VCDT,
 	AUXADC_LIST_BATTEMP,
-	AUXADC_LIST_BATID,
 	AUXADC_LIST_VBIF,
 	AUXADC_LIST_MT6357_CHIP_TEMP,
 	AUXADC_LIST_DCXO,

@@ -11,11 +11,58 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-/ {
-mt_pmic_regulator {
-	compatible = "mediatek,mt_pmic";
+&main_pmic {
+	pmic_auxadc: mt635x-auxadc {
+		compatible = "mediatek,mt635x-auxadc";
+		#io-channel-cells = <1>;
+
+		batadc {
+			channel = <AUXADC_BATADC>;
+			resistance-ratio = <3 1>;
+			avg-num = <128>;
+		};
+		isense {
+			channel = <AUXADC_ISENSE>;
+			resistance-ratio = <3 1>;
+			avg-num = <128>;
+		};
+		vcdt {
+			channel = <AUXADC_VCDT>;
+		};
+		bat_temp {
+			channel = <AUXADC_BAT_TEMP>;
+			resistance-ratio = <1 1>;
+		};
+		chip_temp {
+			channel = <AUXADC_CHIP_TEMP>;
+		};
+		vcore_temp {
+			channel = <AUXADC_VCORE_TEMP>;
+		};
+		vproc_temp {
+			channel = <AUXADC_VPROC_TEMP>;
+		};
+		accdet {
+			channel = <AUXADC_ACCDET>;
+		};
+		tsx_temp {
+			channel = <AUXADC_TSX_TEMP>;
+			avg-num = <128>;
+		};
+		hpofs_cal {
+			channel = <AUXADC_HPOFS_CAL>;
+			avg-num = <256>;
+		};
+		dcxo_temp {
+			channel = <AUXADC_DCXO_TEMP>;
+			avg-num = <16>;
+		};
+		vbif {
+			channel = <AUXADC_VBIF>;
+			resistance-ratio = <1 1>;
+		};
+	};
 	buck_regulators {
-		compatible = "mediatek,mt_pmic_buck_regulators";
 		mt_pmic_vs1_buck_reg: buck_vs1 {
 			regulator-name = "vs1";
 			regulator-min-microvolt = <1200000>;
@@ -53,7 +100,6 @@ mt_pmic_regulator {
 		};
 	};	/* End of buck_regulators */
 	ldo_regulators {
-		compatible = "mediatek,mt_pmic_ldo_regulators";
 		mt_pmic_vfe28_ldo_reg: ldo_vfe28 {
 			compatible = "regulator-fixed";
 			regulator-name = "vfe28";
@@ -229,5 +275,5 @@ mt_pmic_regulator {
 			regulator-enable-ramp-delay = <264>;
 		};
 	};	/* End of ldo_regulators */
-};/* End of mt_pmic_regulator */
-};
+};/* End of main_pmic */
+

@@ -26,10 +26,6 @@
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
 #include "include/pmic_lbat_service.h"
-#ifdef CONFIG_MTK_AUXADC_INTF
-#include <mach/mtk_pmic.h>
-#include <mt-plat/mtk_auxadc_intf.h>
-#endif /* CONFIG_MTK_AUXADC_INTF */
 
 /*-------pmic_dbg_level global variable-------*/
 unsigned int gPMICDbgLvl;
@@ -137,94 +133,6 @@ static ssize_t store_pmic_access(struct device *dev,
 
 /*664*/
 static DEVICE_ATTR(pmic_access, 0664, show_pmic_access, store_pmic_access);
-
-/*
- * DVT entry
- */
-unsigned char g_reg_value_pmic;
-
-static ssize_t show_pmic_dvt(struct device *dev,
-			     struct device_attribute *attr,
-			     char *buf)
-{
-	pr_info("[%s] 0x%x\n", __func__, g_reg_value_pmic);
-	return sprintf(buf, "%u\n", g_reg_value_pmic);
-}
-
-static ssize_t store_pmic_dvt(struct device *dev,
-			      struct device_attribute *attr,
-			      const char *buf,
-			      size_t size)
-{
-	int ret = 0;
-	char *pvalue = NULL;
-	unsigned int test_item = 0;
-
-	pr_info("[%s]\n", __func__);
-
-	if (buf != NULL && size != 0) {
-		pr_info("[%s] buf is %s and size is %zu\n"
-			, __func__, buf, size);
-
-		pvalue = (char *)buf;
-		ret = kstrtou32(pvalue, 16, (unsigned int *)&test_item);
-		pr_info("[%s] test_item=%d\n"
-			, __func__, test_item);
-
-#ifdef MTK_PMIC_DVT_SUPPORT
-		pmic_dvt_entry(test_item);
-#else
-		pr_info("[%s] no define MTK_PMIC_DVT_SUPPORT\n"
-			, __func__);
-#endif
-	}
-	return size;
-}
-
-static DEVICE_ATTR(pmic_dvt, 0664, show_pmic_dvt, store_pmic_dvt);
-
-/*
- * auxadc
- */
-#ifdef CONFIG_MTK_AUXADC_INTF
-unsigned char g_auxadc_pmic;
-
-static ssize_t show_pmic_auxadc(struct device *dev,
-				struct device_attribute *attr,
-				char *buf)
-{
-	pr_info("[%s] 0x%x\n", __func__, g_auxadc_pmic);
-	return sprintf(buf, "%u\n", g_auxadc_pmic);
-}
-
-static ssize_t store_pmic_auxadc(struct device *dev,
-				 struct device_attribute *attr,
-				 const char *buf,
-				 size_t size)
-{
-	int ret = 0, i, j;
-	char *pvalue = NULL;
-	unsigned int val = 0;
-
-	pr_info("[%s]\n", __func__);
-
-	if (buf != NULL && size != 0) {
-		pvalue = (char *)buf;
-		ret = kstrtou32(pvalue, 16, (unsigned int *)&val);
-		for (i = 0; i < val; i++) {
-			for (j = 0; j < AUXADC_LIST_MAX; j++) {
-				pr_info("[PMIC_AUXADC] [%s]=%d\n",
-						pmic_get_auxadc_name(j),
-						pmic_get_auxadc_value(j));
-				mdelay(5);
-			}
-		}
-	}
-	return size;
-}
-
-static DEVICE_ATTR(pmic_auxadc_ut, 0664, show_pmic_auxadc, store_pmic_auxadc);
-#endif /*--CONFIG_MTK_AUXADC_INTF--*/
 
 /*
  * PMIC dump exception
@@ -375,12 +283,6 @@ int pmic_debug_init(struct platform_device *dev)
 	/*--/sys/devices/platform/mt-pmic/ --*/
 	ret_device_file = device_create_file(&(dev->dev),
 					     &dev_attr_pmic_access);
-	ret_device_file = device_create_file(&(dev->dev),
-					     &dev_attr_pmic_dvt);
-#ifdef CONFIG_MTK_AUXADC_INTF
-	ret_device_file = device_create_file(&(dev->dev),
-					     &dev_attr_pmic_auxadc_ut);
-#endif /*CONFIG_MTK_AUXADC_INTF*/
 	PMICLOG("%s dev attr done\n", __func__);
 
 	return 0;
