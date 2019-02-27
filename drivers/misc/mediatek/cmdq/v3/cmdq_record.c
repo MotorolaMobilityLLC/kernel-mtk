@@ -961,6 +961,7 @@ static void cmdq_task_release_buffer(struct cmdqRecStruct *handle)
 {
 	if (handle->pkt)
 		cmdq_pkt_release_buffer(handle->pkt);
+	kfree(handle->pkt);
 	handle->pkt = NULL;
 	handle->cmd_end = NULL;
 
