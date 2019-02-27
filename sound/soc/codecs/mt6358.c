@@ -170,55 +170,57 @@ int mt6358_set_mtkaif_protocol(struct snd_soc_component *cmpnt,
 	return 0;
 }
 
-static void set_playback_gpio(struct mt6358_priv *priv, bool enable)
+static void playback_gpio_set(struct mt6358_priv *priv)
 {
-	if (enable) {
-		/* set gpio mosi mode */
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_CLR,
-				   0x01f8, 0x01f8);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_SET,
-				   0xffff, 0x0249);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2,
-				   0xffff, 0x0249);
-	} else {
-		/* set pad_aud_*_mosi to GPIO mode and dir input
-		 * reason:
-		 * pad_aud_dat_mosi*, because the pin is used as boot strap
-		 * don't clean clk/sync, for mtkaif protocol 2
-		 */
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_CLR,
-				   0x01f8, 0x01f8);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2,
-				   0x01f8, 0x0000);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_DIR0,
-				   0xf << 8, 0x0);
-	}
+	/* set gpio mosi mode */
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_CLR,
+			   0x01f8, 0x01f8);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_SET,
+			   0xffff, 0x0249);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2,
+			   0xffff, 0x0249);
 }
 
-static void set_capture_gpio(struct mt6358_priv *priv, bool enable)
+static void playback_gpio_reset(struct mt6358_priv *priv)
 {
-	if (enable) {
-		/* set gpio miso mode */
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_CLR,
-				   0xffff, 0xffff);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_SET,
-				   0xffff, 0x0249);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3,
-				   0xffff, 0x0249);
-	} else {
-		/* set pad_aud_*_miso to GPIO mode and dir input
-		 * reason:
-		 * pad_aud_clk_miso, because when playback only the miso_clk
-		 * will also have 26m, so will have power leak
-		 * pad_aud_dat_miso*, because the pin is used as boot strap
-		 */
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_CLR,
-				   0xffff, 0xffff);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3,
-				   0xffff, 0x0000);
-		regmap_update_bits(priv->regmap, MT6358_GPIO_DIR0,
-				   0xf << 12, 0x0);
-	}
+	/* set pad_aud_*_mosi to GPIO mode and dir input
+	 * reason:
+	 * pad_aud_dat_mosi*, because the pin is used as boot strap
+	 * don't clean clk/sync, for mtkaif protocol 2
+	 */
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2_CLR,
+			   0x01f8, 0x01f8);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE2,
+			   0x01f8, 0x0000);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_DIR0,
+			   0xf << 8, 0x0);
+}
+
+static void capture_gpio_set(struct mt6358_priv *priv)
+{
+	/* set gpio miso mode */
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_CLR,
+			   0xffff, 0xffff);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_SET,
+			   0xffff, 0x0249);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3,
+			   0xffff, 0x0249);
+}
+
+static void capture_gpio_reset(struct mt6358_priv *priv)
+{
+	/* set pad_aud_*_miso to GPIO mode and dir input
+	 * reason:
+	 * pad_aud_clk_miso, because when playback only the miso_clk
+	 * will also have 26m, so will have power leak
+	 * pad_aud_dat_miso*, because the pin is used as boot strap
+	 */
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3_CLR,
+			   0xffff, 0xffff);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_MODE3,
+			   0xffff, 0x0000);
+	regmap_update_bits(priv->regmap, MT6358_GPIO_DIR0,
+			   0xf << 12, 0x0);
 }
 
 /* use only when not govern by DAPM */
@@ -262,90 +264,98 @@ static int mt6358_set_topck(struct mt6358_priv *priv, bool enable)
 	return 0;
 }
 
-static int mt6358_set_mtkaif_tx(struct mt6358_priv *priv, bool enable)
+static int mt6358_mtkaif_tx_enable(struct mt6358_priv *priv)
 {
-	if (enable) {
-		if (priv->mtkaif_protocol == MT6358_MTKAIF_PROTOCOL_2_CLK_P2) {
-			/* MTKAIF TX format setting */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_ADDA_MTKAIF_CFG0,
-					   0xffff, 0x0010);
-			/* enable aud_pad TX fifos */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_AUD_PAD_TOP,
-					   0xff00, 0x3800);
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_AUD_PAD_TOP,
-					   0xff00, 0x3900);
-		} else if (priv->mtkaif_protocol == MT6358_MTKAIF_PROTOCOL_2) {
-			/* MTKAIF TX format setting */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_ADDA_MTKAIF_CFG0,
-					   0xffff, 0x0010);
-			/* enable aud_pad TX fifos */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_AUD_PAD_TOP,
-					   0xff00, 0x3100);
-		} else {
-			/* MTKAIF TX format setting */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_ADDA_MTKAIF_CFG0,
-					   0xffff, 0x0000);
-			/* enable aud_pad TX fifos */
-			regmap_update_bits(priv->regmap,
-					   MT6358_AFE_AUD_PAD_TOP,
-					   0xff00, 0x3100);
-		}
-	} else {
-		/* disable aud_pad TX fifos */
-		regmap_update_bits(priv->regmap, MT6358_AFE_AUD_PAD_TOP,
-				   0xff00, 0x3000);
+	switch (priv->mtkaif_protocol) {
+	case MT6358_MTKAIF_PROTOCOL_2_CLK_P2:
+		/* MTKAIF TX format setting */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_ADDA_MTKAIF_CFG0,
+				   0xffff, 0x0010);
+		/* enable aud_pad TX fifos */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_AUD_PAD_TOP,
+				   0xff00, 0x3800);
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_AUD_PAD_TOP,
+				   0xff00, 0x3900);
+		break;
+	case MT6358_MTKAIF_PROTOCOL_2:
+		/* MTKAIF TX format setting */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_ADDA_MTKAIF_CFG0,
+				   0xffff, 0x0010);
+		/* enable aud_pad TX fifos */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_AUD_PAD_TOP,
+				   0xff00, 0x3100);
+		break;
+	case MT6358_MTKAIF_PROTOCOL_1:
+	default:
+		/* MTKAIF TX format setting */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_ADDA_MTKAIF_CFG0,
+				   0xffff, 0x0000);
+		/* enable aud_pad TX fifos */
+		regmap_update_bits(priv->regmap,
+				   MT6358_AFE_AUD_PAD_TOP,
+				   0xff00, 0x3100);
+		break;
 	}
-
 	return 0;
 }
 
-int mt6358_set_mtkaif_calibration(struct snd_soc_component *cmpnt, bool enable)
+static int mt6358_mtkaif_tx_disable(struct mt6358_priv *priv)
+{
+	/* disable aud_pad TX fifos */
+	regmap_update_bits(priv->regmap, MT6358_AFE_AUD_PAD_TOP,
+			   0xff00, 0x3000);
+	return 0;
+}
+
+int mt6358_mtkaif_calibration_enable(struct snd_soc_component *cmpnt)
 {
 	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
-	if (enable) {
-		set_playback_gpio(priv, true);
-		set_capture_gpio(priv, true);
-		mt6358_set_mtkaif_tx(priv, true);
+	playback_gpio_set(priv);
+	capture_gpio_set(priv);
+	mt6358_mtkaif_tx_enable(priv);
 
-		mt6358_set_dcxo(priv, true);
-		mt6358_set_aud_global_bias(priv, true);
-		mt6358_set_clksq(priv, true);
-		mt6358_set_topck(priv, true);
+	mt6358_set_dcxo(priv, true);
+	mt6358_set_aud_global_bias(priv, true);
+	mt6358_set_clksq(priv, true);
+	mt6358_set_topck(priv, true);
 
-		/* set dat_miso_loopback on */
-		regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
-				   RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_MASK_SFT,
-				   1 << RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_SFT);
-		regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
-				   RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_MASK_SFT,
-				   1 << RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_SFT);
-	} else {
+	/* set dat_miso_loopback on */
+	regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
+			   RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_MASK_SFT,
+			   1 << RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_SFT);
+	regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
+			   RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_MASK_SFT,
+			   1 << RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_SFT);
+	return 0;
+}
 
-		/* set dat_miso_loopback off */
-		regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
-				   RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_MASK_SFT,
-				   0 << RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_SFT);
-		regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
-				   RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_MASK_SFT,
-				   0 << RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_SFT);
+int mt6358_mtkaif_calibration_disable(struct snd_soc_component *cmpnt)
+{
+	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
-		mt6358_set_topck(priv, false);
-		mt6358_set_clksq(priv, false);
-		mt6358_set_aud_global_bias(priv, false);
-		mt6358_set_dcxo(priv, false);
+	/* set dat_miso_loopback off */
+	regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
+			   RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_MASK_SFT,
+			   0 << RG_AUD_PAD_TOP_DAT_MISO2_LOOPBACK_SFT);
+	regmap_update_bits(priv->regmap, MT6358_AUDIO_DIG_CFG,
+			   RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_MASK_SFT,
+			   0 << RG_AUD_PAD_TOP_DAT_MISO_LOOPBACK_SFT);
 
-		mt6358_set_mtkaif_tx(priv, false);
-		set_playback_gpio(priv, false);
-		set_capture_gpio(priv, false);
-	}
+	mt6358_set_topck(priv, false);
+	mt6358_set_clksq(priv, false);
+	mt6358_set_aud_global_bias(priv, false);
+	mt6358_set_dcxo(priv, false);
 
+	mt6358_mtkaif_tx_disable(priv);
+	playback_gpio_reset(priv);
+	capture_gpio_reset(priv);
 	return 0;
 }
 
@@ -475,34 +485,26 @@ static void headset_volume_ramp(struct mt6358_priv *priv,
 	dev_info(priv->dev, "%s(), from %d, to %d\n",
 		 __func__, from, to);
 
-	if (to > from) {
+	if (to > from)
 		offset = to - from;
-		while (offset > 0) {
-			reg_idx = from + count;
-			if (is_valid_hp_pga_idx(reg_idx)) {
-				regmap_update_bits(priv->regmap,
-						   MT6358_ZCD_CON2,
-						   DL_GAIN_REG_MASK,
-						   (reg_idx << 7) | reg_idx);
-				usleep_range(200, 300);
-			}
-			offset--;
-			count++;
-		}
-	} else if (to < from) {
+	else
 		offset = from - to;
-		while (offset > 0) {
+
+	while (offset > 0) {
+		if (to > from)
+			reg_idx = from + count;
+		else
 			reg_idx = from - count;
-			if (is_valid_hp_pga_idx(reg_idx)) {
-				regmap_update_bits(priv->regmap,
-						   MT6358_ZCD_CON2,
-						   DL_GAIN_REG_MASK,
-						   (reg_idx << 7) | reg_idx);
-				usleep_range(200, 300);
-			}
-			offset--;
-			count++;
+
+		if (is_valid_hp_pga_idx(reg_idx)) {
+			regmap_update_bits(priv->regmap,
+					   MT6358_ZCD_CON2,
+					   DL_GAIN_REG_MASK,
+					   (reg_idx << 7) | reg_idx);
+			usleep_range(200, 300);
 		}
+		offset--;
+		count++;
 	}
 }
 
@@ -1053,7 +1055,7 @@ static int mt_aif_in_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		set_playback_gpio(priv, true);
+		playback_gpio_set(priv);
 
 		/* sdm audio fifo clock power on */
 		regmap_write(priv->regmap, MT6358_AFUNC_AUD_CON2, 0x0006);
@@ -1069,7 +1071,7 @@ static int mt_aif_in_event(struct snd_soc_dapm_widget *w,
 		regmap_write(priv->regmap, MT6358_AFUNC_AUD_CON2, 0x0000);
 		regmap_write(priv->regmap, MT6358_AFUNC_AUD_CON0, 0xcba0);
 
-		set_playback_gpio(priv, false);
+		playback_gpio_reset(priv);
 		break;
 	default:
 		break;
@@ -1801,10 +1803,10 @@ static int mt_aif_out_event(struct snd_soc_dapm_widget *w,
 
 	switch (event) {
 	case SND_SOC_DAPM_PRE_PMU:
-		set_capture_gpio(priv, true);
+		capture_gpio_set(priv);
 		break;
 	case SND_SOC_DAPM_POST_PMD:
-		set_capture_gpio(priv, false);
+		capture_gpio_reset(priv);
 		break;
 	default:
 		break;
@@ -2146,7 +2148,7 @@ static int mt6358_amic_enable(struct mt6358_priv *priv)
 	}
 
 	/* here to set digital part */
-	mt6358_set_mtkaif_tx(priv, true);
+	mt6358_mtkaif_tx_enable(priv);
 
 	/* UL dmic setting off */
 	regmap_write(priv->regmap, MT6358_AFE_UL_SRC_CON0_H, 0x0000);
@@ -2174,7 +2176,7 @@ static void mt6358_amic_disable(struct mt6358_priv *priv)
 			   0x0001, 0x0000);
 
 	/* disable aud_pad TX fifos */
-	mt6358_set_mtkaif_tx(priv, false);
+	mt6358_mtkaif_tx_disable(priv);
 
 	/* L ADC input sel : off, disable L ADC */
 	regmap_update_bits(priv->regmap, MT6358_AUDENC_ANA_CON0,
@@ -2240,7 +2242,7 @@ static int mt6358_dmic_enable(struct mt6358_priv *priv)
 	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON8, 0x0005);
 
 	/* here to set digital part */
-	mt6358_set_mtkaif_tx(priv, true);
+	mt6358_mtkaif_tx_enable(priv);
 
 	/* UL dmic setting */
 	regmap_write(priv->regmap, MT6358_AFE_UL_SRC_CON0_H, 0x0080);
@@ -2259,7 +2261,7 @@ static void mt6358_dmic_disable(struct mt6358_priv *priv)
 			   0x0003, 0x0000);
 
 	/* disable aud_pad TX fifos */
-	mt6358_set_mtkaif_tx(priv, false);
+	mt6358_mtkaif_tx_disable(priv);
 
 	/* DMIC disable */
 	regmap_write(priv->regmap, MT6358_AUDENC_ANA_CON8, 0x0000);
@@ -4352,7 +4354,7 @@ static int mt6358_rcv_acc_set(struct snd_kcontrol *kcontrol,
 	struct mt6358_priv *priv = snd_soc_component_get_drvdata(cmpnt);
 
 	/* receiver downlink */
-	set_playback_gpio(priv, true);
+	playback_gpio_set(priv);
 	regmap_update_bits(priv->regmap, MT6358_AUDDEC_ANA_CON13,
 			   0x1 << 4, 0x0);
 	/* Pull-down HPL/R to AVSS28_AUD */
@@ -4498,7 +4500,7 @@ static int mt6358_rcv_acc_set(struct snd_kcontrol *kcontrol,
 	/* here to set digital part */
 
 	/* set gpio miso mode */
-	set_capture_gpio(priv, true);
+	capture_gpio_set(priv);
 
 	/* power on clock */
 	regmap_update_bits(priv->regmap, MT6358_AUDIO_TOP_CON0,
@@ -4511,7 +4513,7 @@ static int mt6358_rcv_acc_set(struct snd_kcontrol *kcontrol,
 	regmap_update_bits(priv->regmap, MT6358_AFE_UL_DL_CON0,
 			   0x0001, 0x0001);
 
-	mt6358_set_mtkaif_tx(priv, true);
+	mt6358_mtkaif_tx_enable(priv);
 
 	/* UL dmic setting */
 	regmap_write(priv->regmap, MT6358_AFE_UL_SRC_CON0_H, 0x0000);
@@ -4601,8 +4603,8 @@ static int mt6358_codec_init_reg(struct mt6358_priv *priv)
 	regmap_write(priv->regmap, MT6358_DRV_CON3, 0x8888);
 
 	/* set gpio */
-	set_playback_gpio(priv, false);
-	set_capture_gpio(priv, false);
+	playback_gpio_reset(priv);
+	capture_gpio_reset(priv);
 
 	/* disable clk buf */
 	regmap_update_bits(priv->regmap, MT6358_DCXO_CW14,

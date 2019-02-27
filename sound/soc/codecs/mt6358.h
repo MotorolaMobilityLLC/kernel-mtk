@@ -2105,7 +2105,8 @@ int mt6358_set_codec_ops(struct snd_soc_component *cmpnt,
 int mt6358_set_mtkaif_protocol(struct snd_soc_component *cmpnt,
 			       int mtkaif_protocol);
 
-int mt6358_set_mtkaif_calibration(struct snd_soc_component *cmpnt, bool enable);
+int mt6358_mtkaif_calibration_enable(struct snd_soc_component *cmpnt);
+int mt6358_mtkaif_calibration_disable(struct snd_soc_component *cmpnt);
 int mt6358_set_mtkaif_calibration_phase(struct snd_soc_component *cmpnt,
 					int phase_1, int phase_2);
 
