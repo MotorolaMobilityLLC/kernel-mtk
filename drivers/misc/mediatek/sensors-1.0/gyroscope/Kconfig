@@ -7,4 +7,4 @@ config CUSTOM_KERNEL_GYROSCOPE
 	  configuration should be configured, and the gyroscope
 	  driver configuration should be configured as well.
 
-#source "drivers/misc/mediatek/sensors-1.0/gyroscope/gyrohub/Kconfig"
+source "drivers/misc/mediatek/sensors-1.0/gyroscope/gyrohub/Kconfig"
