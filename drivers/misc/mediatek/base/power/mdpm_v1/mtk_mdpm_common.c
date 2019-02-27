@@ -20,7 +20,7 @@
 #include "mtk_mdpm.h"
 
 #if MD_POWER_METER_ENABLE
-#include "mtk_spm_vcore_dvfs.h"
+#include "mtk_vcore_dvfs.h"
 #include "mtk_ccci_common.h"
 #endif
 
@@ -85,11 +85,7 @@ int get_md1_power(unsigned int power_category)
 	if (!md1_ccci_ready)
 		return MAX_MD1_POWER;
 
-#if 0 /*FIXME: wait vcore dvfs ready */
 	share_reg = spm_vcorefs_get_MD_status();
-#else
-	share_reg = 0;
-#endif /*if 0*/
 #endif
 	scenario = get_md1_scenario(share_reg, power_category);
 
@@ -221,6 +217,7 @@ static int __init mdpm_module_init(void)
 	mt_mdpm_create_procfs();
 
 #ifdef MD_POWER_UT
+	mt_mdpm_debug = 1;
 	init_md1_section_level(fake_share_mem);
 	md_power_meter_ut();
 #endif
