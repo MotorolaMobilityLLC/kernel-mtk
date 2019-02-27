@@ -536,6 +536,21 @@ static void gic_cpu_sys_reg_init(void)
 	gic_write_grpen1(1);
 }
 
+void mt_gic_cpu_init_for_low_power(void)
+{
+	gic_cpu_sys_reg_init();
+}
+
+static int mt_gic_irqs;
+
+#ifndef CONFIG_MTK_GIC
+int mt_get_supported_irq_num(void)
+{
+	return mt_gic_irqs;
+}
+#endif
+__weak int __init mt_gic_ext_init(void) { return 0; }
+
 static int gic_dist_supports_lpis(void)
 {
 	return !!(readl_relaxed(gic_data.dist_base + GICD_TYPER) & GICD_TYPER_LPIS);
@@ -1252,6 +1267,10 @@ static int __init gic_of_init(struct device_node *node, struct device_node *pare
 
 	gic_populate_ppi_partitions(node);
 	gic_of_setup_kvm_info(node);
+
+	mt_gic_ext_init();
+	mt_gic_irqs = gic_data.irq_nr;
+
 	return 0;
 
 out_unmap_rdist:
