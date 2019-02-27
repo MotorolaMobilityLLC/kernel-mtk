@@ -55,25 +55,54 @@ static const struct codec_reg_val e1_reg_inits[] = {
 
 static const struct codec_reg_val e2_reg_inits[] = {
 	{ MT6660_REG_WDT_CTRL, 0x80, 0x00 },
-	{ MT6660_REG_SPS_CTRL, 0x01, 0x00 },
-	{ MT6660_REG_HPF1_COEF, 0xffffffff, 0x7fdb7ffe },
-	{ MT6660_REG_HPF2_COEF, 0xffffffff, 0x7fdb7ffe },
-	{ MT6660_REG_SIG_GAIN, 0xff, 0x70 },
-	{ MT6660_REG_PWM_CTRL, 0x30, 0x10 },
+	{ MT6660_REG_SPS_CTRL, 0x01, 0x01 },
 	{ MT6660_REG_AUDIO_IN2_SEL, 0x1c, 0x04 },
-	{ MT6660_REG_RESV1, 0xc0, 0x00 },
 	{ MT6660_REG_RESV11, 0x0c, 0x00 },
-	{ MT6660_REG_RESV17, 0x7777, 0x7271 },
-	{ MT6660_REG_RESV19, 0x08, 0x08 },
 	{ MT6660_REG_RESV31, 0x03, 0x03 },
 	{ MT6660_REG_RESV40, 0x01, 0x00 },
-	{ MT6660_REG_RESV21, 0xff, 0xff },
-	{ MT6660_REG_ADC_USB_MODE, 0x1c, 0x00 },
-	{ MT6660_REG_RESV0, 0x40, 0x00 },
-	{ MT6660_REG_RESV23, 0xffff, 0x1ff8 },
-	{ MT6660_REG_RESV12, 0x0c, 0x08 },
-	{ MT6660_REG_RESV16, 0x01, 0x01 },
-	{ MT6660_REG_TDM_CFG3, 0x1800, 0x1800 },
+	{ MT6660_REG_RESV0, 0x44, 0x04 },
+	{ MT6660_REG_RESV17, 0x7777, 0x7273 },
+	{ MT6660_REG_RESV16, 0x07, 0x03 },
+	{ MT6660_REG_DRE_CORASE, 0xe0, 0x20 },
+	{ MT6660_REG_ADDA_CLOCK, 0xff, 0x70 },
+	{ MT6660_REG_RESV21, 0xff, 0x20 },
+	{ MT6660_REG_DRE_THDMODE, 0xff, 0xa2 },
+	{ MT6660_REG_RESV23, 0xffff, 0x17f8 },
+	{ MT6660_REG_PWM_CTRL, 0xff, 0x04 },
+	{ MT6660_REG_INTERNAL_CFG, 0xff, 0x42 },
+	{ MT6660_REG_ADC_USB_MODE, 0xff, 0x00 },
+	{ MT6660_REG_PROTECTION_CFG, 0xff, 0x1d },
+	{ MT6660_REG_HPF1_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_HPF2_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_SIGMAX, 0xffff, 0x7fff },
+	{ MT6660_REG_DA_GAIN, 0xffff, 0x0116 },
+	{ MT6660_REG_SIG_GAIN, 0xff, 0x58 },
+	{ MT6660_REG_RESV6, 0xff, 0xce },
+};
+
+static const struct codec_reg_val e3_reg_inits[] = {
+	{ MT6660_REG_WDT_CTRL, 0x80, 0x00 },
+	{ MT6660_REG_SPS_CTRL, 0x01, 0x01 },
+	{ MT6660_REG_AUDIO_IN2_SEL, 0x1c, 0x04 },
+	{ MT6660_REG_RESV11, 0x0c, 0x00 },
+	{ MT6660_REG_RESV31, 0x03, 0x03 },
+	{ MT6660_REG_RESV40, 0x01, 0x00 },
+	{ MT6660_REG_RESV0, 0x44, 0x04 },
+	{ MT6660_REG_RESV19, 0xff, 0x82 },
+	{ MT6660_REG_RESV17, 0x7777, 0x7273 },
+	{ MT6660_REG_RESV16, 0x07, 0x03 },
+	{ MT6660_REG_DRE_CORASE, 0xe0, 0x20 },
+	{ MT6660_REG_ADDA_CLOCK, 0xff, 0x70 },
+	{ MT6660_REG_RESV21, 0xff, 0x20 },
+	{ MT6660_REG_DRE_THDMODE, 0xff, 0xa2 },
+	{ MT6660_REG_RESV23, 0xffff, 0x17f8 },
+	{ MT6660_REG_PWM_CTRL, 0xff, 0x15 },
+	{ MT6660_REG_ADC_USB_MODE, 0xff, 0x00 },
+	{ MT6660_REG_PROTECTION_CFG, 0xff, 0x1d },
+	{ MT6660_REG_HPF1_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_HPF2_COEF, 0xffffffff, 0x7fdb7ffe },
+	{ MT6660_REG_SIG_GAIN, 0xff, 0x58 },
+	{ MT6660_REG_RESV6, 0xff, 0xce },
 };
 
 static unsigned int mt6660_codec_io_read(struct snd_soc_codec *codec,
@@ -223,7 +252,10 @@ static int mt6660_codec_init_setting(struct snd_soc_codec *codec)
 	const struct codec_reg_val *init_table;
 	int i, len, ret = 0;
 
-	if (chip->chip_rev > 0xe1) {
+	if (chip->chip_rev > 0xe2) {
+		init_table = e3_reg_inits;
+		len = ARRAY_SIZE(e3_reg_inits);
+	} else if (chip->chip_rev > 0xe1) {
 		init_table = e2_reg_inits;
 		len = ARRAY_SIZE(e2_reg_inits);
 	} else {
