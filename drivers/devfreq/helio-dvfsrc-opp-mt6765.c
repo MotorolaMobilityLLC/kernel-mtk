@@ -14,8 +14,6 @@
 #include <mt-plat/mtk_devinfo.h>
 #include <mtk_spm_internal.h>
 
-#include <mtk_dramc.h>
-
 #include "helio-dvfsrc-opp.h"
 
 int get_soc_efuse(void)
@@ -24,18 +22,14 @@ int get_soc_efuse(void)
 }
 
 /* ToDo: Use efuse to adjust Vcore Voltage */
-void vcore_volt_init(void)
+void dvfsrc_opp_level_mapping(void)
 {
-	int i;
-	int vcore_uv[VCORE_OPP_NUM];
-	int vcore_opp, ddr_opp;
-
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4X_2CH_3200:
-		vcore_uv[0] = 800000;
-		vcore_uv[1] = 700000;
-		vcore_uv[2] = 700000;
-		vcore_uv[3] = 650000;
+		set_vcore_uv_table(VCORE_OPP_0, 800000);
+		set_vcore_uv_table(VCORE_OPP_1, 700000);
+		set_vcore_uv_table(VCORE_OPP_2, 700000);
+		set_vcore_uv_table(VCORE_OPP_3, 650000);
 
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_0);
 		set_vcore_opp(VCORE_DVFS_OPP_1, VCORE_OPP_0);
@@ -72,10 +66,10 @@ void vcore_volt_init(void)
 		set_ddr_opp(VCORE_DVFS_OPP_15, DDR_OPP_2);
 		break;
 	case SPMFW_LP3_1CH_1866:
-		vcore_uv[0] = 800000;
-		vcore_uv[1] = 700000;
-		vcore_uv[2] = 700000;
-		vcore_uv[3] = 650000;
+		set_vcore_uv_table(VCORE_OPP_0, 800000);
+		set_vcore_uv_table(VCORE_OPP_1, 700000);
+		set_vcore_uv_table(VCORE_OPP_2, 700000);
+		set_vcore_uv_table(VCORE_OPP_3, 650000);
 
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_UNREQ);
 		set_vcore_opp(VCORE_DVFS_OPP_1, VCORE_OPP_0);
@@ -146,18 +140,6 @@ void vcore_volt_init(void)
 		set_ddr_opp(VCORE_DVFS_OPP_14, DDR_OPP_UNREQ);
 		set_ddr_opp(VCORE_DVFS_OPP_15, DDR_OPP_UNREQ);
 		break;
-	}
-
-	for (i = 0; i < VCORE_DVFS_OPP_NUM; i++) {
-		vcore_opp = get_vcore_opp(i);
-		ddr_opp = get_ddr_opp(i);
-
-		if (vcore_opp == VCORE_OPP_UNREQ || ddr_opp == DDR_OPP_UNREQ) {
-			set_opp_table(i, 0, 0);
-			continue;
-		}
-		set_opp_table(i, vcore_uv[vcore_opp],
-				dram_steps_freq(ddr_opp) * 1000);
 	}
 }
 
