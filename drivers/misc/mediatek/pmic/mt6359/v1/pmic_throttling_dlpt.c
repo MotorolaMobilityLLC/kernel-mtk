@@ -51,7 +51,8 @@
  * PMIC related define
  ******************************************************************************/
 #define PMIC_THROTTLING_DLPT_UT	0
-#define UNIT_FGCURRENT     (610352)
+#define UNIT_FGCURRENT	(610352)
+#define DEFAULT_RFG	(50)
 
 /*****************************************************************************
  * PMIC PT and DLPT UT
@@ -249,10 +250,15 @@ int __attribute__ ((weak)) dlpt_check_power_off(void)
  * 65535-reg
  * (65535-(I *fg_cust_data.r_fg_value *1000 /UNIT_FGCURRENT *95 *100
  *  /fg_cust_data.car_tune_value))
+ *
+ * Ricky update for MT6359
+ * 65535–(I_mA*1000*fg_cust_data.r_fg_value / DEFAULT_RFG*1000*1000
+ * / fg_cust_data.car_tune_value / UNIT_FGCURRENT * 95 / 100)
+ *
  */
 #define bat_oc_h_thd(cur)   \
-(65535-(cur*fg_cust_data.r_fg_value*1000/UNIT_FGCURRENT* \
-	95*100/fg_cust_data.car_tune_value))
+(65535-(cur*1000*fg_cust_data.r_fg_value/DEFAULT_RFG*1000000 \
+	/fg_cust_data.car_tune_value/UNIT_FGCURRENT*95*100))
 
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
 
