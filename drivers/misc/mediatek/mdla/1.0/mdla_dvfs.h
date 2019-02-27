@@ -14,6 +14,10 @@
 #ifndef _MDLA_DVFS_H_
 #define _MDLA_DVFS_H_
 
+#include "mdla.h"
+#include "mdla_ioctl.h"
+#include <linux/of_platform.h>
+#include <linux/seq_file.h>
 
 /* ++++++++++++++++++++++++++++++++++*/
 /* |opp_index  |   mdla frequency  |        power             */
@@ -99,6 +103,7 @@ struct mdla_dvfs_opps {
 	uint8_t index;
 	uint8_t count;
 };
+
 enum mdlaPowerOnType {
 	/* power on previously by setPower */
 	MDLA_PRE_ON		= 1,
@@ -110,20 +115,88 @@ enum mdlaPowerOnType {
 	MDLA_IMT_OFF		= 3,
 };
 
-
 /*3 prioritys of cmd*/
 #define MDLA_REQ_MAX_NUM_PRIORITY 3
 
 extern struct MDLA_OPP_INFO mdla_power_table[MDLA_OPP_NUM];
-extern int32_t mdla_thermal_en_throttle_cb(uint8_t vmdla_opp, uint8_t mdla_opp);
-extern int32_t mdla_thermal_dis_throttle_cb(void);
+int32_t mdla_thermal_en_throttle_cb(uint8_t vmdla_opp, uint8_t mdla_opp);
+int32_t mdla_thermal_dis_throttle_cb(void);
 int mdla_quick_suspend(int core);
-int mdla_boot_up(int core);
-int mdla_shut_down(int core);
-extern int mdla_get_opp(void);
-extern int get_mdlacore_opp(void);
-extern int get_mdla_platform_floor_opp(void);
-extern int get_mdla_ceiling_opp(void);
-extern int get_mdla_opp_to_freq(uint8_t step);
+int mdla_get_opp(void);
+int get_mdlacore_opp(void);
+int get_mdla_platform_floor_opp(void);
+int get_mdla_ceiling_opp(void);
+int get_mdla_opp_to_freq(uint8_t step);
+
+#ifndef MTK_MDLA_FPGA_PORTING
+int mdla_init_hw(int core, struct platform_device *pdev);
+int mdla_uninit_hw(void);
+int mdla_set_power_parameter(uint8_t param, int argc, int *args);
+int mdla_dump_power(struct seq_file *s);
+int mdla_dump_opp_table(struct seq_file *s);
+
+long mdla_dvfs_ioctl(struct file *filp, unsigned int command,
+		unsigned long arg);
+int mdla_dvfs_cmd_start(struct command_entry *ce, struct list_head *cmd_list);
+int mdla_dvfs_cmd_end_info(struct command_entry *ce);
+int mdla_dvfs_cmd_end_shutdown(void);
+
+#else
+
+static inline
+int mdla_init_hw(int core, struct platform_device *pdev)
+{
+	return 0;
+}
+
+static inline
+int mdla_uninit_hw(void)
+{
+	return 0;
+}
+
+static inline
+int mdla_set_power_parameter(uint8_t param, int argc, int *args)
+{
+	return 0;
+}
+static inline
+int mdla_dump_power(struct seq_file *s)
+{
+	return 0;
+}
+static inline
+int mdla_dump_opp_table(struct seq_file *s)
+{
+	return 0;
+}
+
+static inline
+long mdla_dvfs_ioctl(struct file *filp, unsigned int command,
+		unsigned long arg)
+{
+	return 0;
+}
+
+static inline
+int mdla_dvfs_cmd_start(struct command_entry *ce, struct list_head *cmd_list)
+{
+	return 0;
+}
+
+static inline
+int mdla_dvfs_cmd_end_info(struct command_entry *ce)
+{
+	return 0;
+}
+
+static inline
+int mdla_dvfs_cmd_end_shutdown(void)
+{
+	return 0;
+}
 
 #endif
+
+#endif
+

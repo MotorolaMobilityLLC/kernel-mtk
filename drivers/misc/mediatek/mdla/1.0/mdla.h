@@ -13,7 +13,9 @@
 
 #ifndef __MDLA_H__
 #define __MDLA_H__
+
 #include <linux/types.h>
+#include <linux/seq_file.h>
 
 #ifdef CONFIG_MTK_MDLA_SUPPORT
 #define MTK_MDLA_CORE 1
@@ -35,26 +37,35 @@ extern void *apu_mdla_gsm_base;
 extern void *apu_mdla_biu_top;
 
 extern u32 mdla_timeout;
-#endif
 
-#ifndef MTK_MDLA_FPGA_PORTING
-int mdla_set_power_parameter(uint8_t param, int argc, int *args);
-int mdla_dump_power(struct seq_file *s);
-int mdla_dump_opp_table(struct seq_file *s);
+enum REASON_ENUM {
+	REASON_OTHERS = 0,
+	REASON_DRVINIT = 1,
+	REASON_TIMEOUT = 2,
+	REASON_POWERON = 3,
+	REASON_MAX
+};
 
-#else
-static inline int mdla_set_power_parameter(uint8_t param, int argc, int *args)
-{
-	return 0;
-}
-static inline int mdla_dump_power(struct seq_file *s)
-{
-	return 0;
-}
-static inline int mdla_dump_opp_table(struct seq_file *s)
-{
-	return 0;
-}
+void mdla_reset(int res);
+
+struct command_entry {
+	struct list_head list;
+	void *kva;    /* Virtual Address for Kernel */
+	u32 mva;      /* Physical Address for Device */
+	u32 count;
+	u32 id;
+	u64 khandle;  /* ion kernel handle */
+	u8 type;      /* allocate memory type */
+
+	u8 priority;     /* dvfs priority */
+	u8 boost_value;  /* dvfs boost value */
+	uint32_t bandwidth;
+
+	int result;
+	u64 queue_t;     /* time queued in list (ns) */
+	u64 req_start_t; /* request stant time (ns) */
+	u64 req_end_t;   /* request end time (ns) */
+};
 
 #endif
 

@@ -12,6 +12,10 @@
  */
 
 #include "mdla_debug.h"
+#include "mdla.h"
+#include "mdla_hw_reg.h"
+#include "mdla_trace.h"
+#include "mdla_dvfs.h"
 
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
@@ -26,10 +30,6 @@
 #include <linux/uaccess.h>
 #include <linux/string.h>
 #include <m4u.h>
-
-#include "mdla.h"
-#include "mdla_hw_reg.h"
-#include "mdla_trace.h"
 
 #define ALGO_OF_MAX_POWER  (3)
 
