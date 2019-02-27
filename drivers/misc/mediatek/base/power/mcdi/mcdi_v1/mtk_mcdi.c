@@ -39,7 +39,7 @@
 
 #include <sspm_mbox.h>
 #include <trace/events/mtk_idle_event.h>
-
+#include <linux/irqchip/mtk-gic-extend.h>
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
@@ -144,6 +144,10 @@ unsigned long long __attribute__((weak)) idle_get_current_time_ms(void)
 	return 0;
 }
 
+void __attribute__((weak)) aee_rr_rec_mcdi_val(int id, u32 val)
+{
+}
+
 static int cluster_idx_map[NF_CPU] = {
 	0,
 	0,
@@ -204,12 +208,34 @@ unsigned int get_pwr_stat_check_map(int type, int idx)
 	if (!(type >= 0 && type < NF_PWR_STAT_MAP_TYPE))
 		return 0;
 
-	if (!(idx >= 0 && idx <= NF_CPU))
+	if (!(idx >= 0 && idx < NF_CPU))
 		return 0;
 
 	return cpu_cluster_pwr_stat_map[type][idx];
 }
 
+void wakeup_all_cpu(void)
+{
+	int cpu = 0;
+
+	for (cpu = 0; cpu < NF_CPU; cpu++) {
+		if (cpu_online(cpu))
+			smp_send_reschedule(cpu);
+	}
+}
+
+void wait_until_all_cpu_powered_on(void)
+{
+	while (!(mcdi_get_gov_data_num_mcusys() == 0x0))
+		;
+}
+
+void mcdi_wakeup_all_cpu(void)
+{
+	wakeup_all_cpu();
+
+	wait_until_all_cpu_powered_on();
+}
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
@@ -563,17 +589,13 @@ static int mcdi_debugfs_init(void)
 
 static void __go_to_wfi(int cpu)
 {
-#ifdef OWEN_FIX_KERNEL49_FIX
 	trace_rgidle_rcuidle(cpu, 1);
-#endif
-
 	isb();
 	/* memory barrier before WFI */
 	mb();
 	__asm__ __volatile__("wfi" : : : "memory");
-#ifdef OWEN_FIX_KERNEL49_FIX
+
 	trace_rgidle_rcuidle(cpu, 0);
-#endif
 }
 
 unsigned int mcdi_mbox_read(int id)
@@ -780,13 +802,13 @@ int mcdi_enter(int cpu)
 	case MCDI_STATE_CPU_OFF:
 
 		trace_mcdi_rcuidle(cpu, 1);
-#ifdef CONFIG_MTK_RAM_CONSOLE
+
 		aee_rr_rec_mcdi_val(cpu, 0xff);
-#endif
+
 		mcdi_cpu_off(cpu);
-#ifdef CONFIG_MTK_RAM_CONSOLE
+
 		aee_rr_rec_mcdi_val(cpu, 0x0);
-#endif
+
 		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
@@ -795,13 +817,13 @@ int mcdi_enter(int cpu)
 	case MCDI_STATE_CLUSTER_OFF:
 
 		trace_mcdi_rcuidle(cpu, 1);
-#ifdef CONFIG_MTK_RAM_CONSOLE
+
 		aee_rr_rec_mcdi_val(cpu, 0xff);
-#endif
+
 		mcdi_cluster_off(cpu);
-#ifdef CONFIG_MTK_RAM_CONSOLE
+
 		aee_rr_rec_mcdi_val(cpu, 0x0);
-#endif
+
 		trace_mcdi_rcuidle(cpu, 0);
 
 		mcdi_cnt_cpu[cpu]++;
@@ -850,22 +872,6 @@ int mcdi_enter(int cpu)
 	return 0;
 }
 
-void wakeup_all_cpu(void)
-{
-	int cpu = 0;
-
-	for (cpu = 0; cpu < NF_CPU; cpu++) {
-		if (cpu_online(cpu))
-			smp_send_reschedule(cpu);
-	}
-}
-
-void wait_until_all_cpu_powered_on(void)
-{
-	while (!(mcdi_mbox_read(MCDI_MBOX_CPU_CLUSTER_PWR_STAT) == 0x0))
-		;
-}
-
 bool mcdi_pause(bool paused)
 {
 	struct mcdi_feature_status feature_stat;
@@ -877,10 +883,8 @@ bool mcdi_pause(bool paused)
 
 	if (paused) {
 		mcdi_state_pause(true);
+		mcdi_wakeup_all_cpu();
 
-		wakeup_all_cpu();
-
-		wait_until_all_cpu_powered_on();
 	} else {
 		mcdi_state_pause(false);
 	}
@@ -891,6 +895,9 @@ bool mcdi_pause(bool paused)
 bool mcdi_task_pause(bool paused)
 {
 	bool ret = false;
+
+	if (!is_mcdi_working())
+		return ret;
 
 	/* TODO */
 #if 1
@@ -924,7 +931,6 @@ bool mcdi_task_pause(bool paused)
 void update_avail_cpu_mask_to_mcdi_controller(unsigned int cpu_mask)
 {
 	mcdi_mbox_write(MCDI_MBOX_AVAIL_CPU_MASK, cpu_mask);
-	mcdi_update_async_wakeup_enable();
 }
 
 void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
@@ -939,7 +945,6 @@ void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
 		return;
 
 	mcdi_mbox_write(MCDI_MBOX_CPU_ISOLATION_MASK, iso_mask);
-	mcdi_update_async_wakeup_enable();
 }
 
 bool is_cpu_pwr_on_event_pending(void)
@@ -958,14 +963,23 @@ static int mcdi_cpu_callback(struct notifier_block *nfb,
 	case CPU_DOWN_PREPARE_FROZEN:
 		mcdi_pause(true);
 		break;
+	}
 
+	return NOTIFY_OK;
+}
+
+static int mcdi_cpu_callback_leave_hotplug(struct notifier_block *nfb,
+				   unsigned long action, void *hcpu)
+{
+	switch (action) {
 	case CPU_ONLINE:
 	case CPU_ONLINE_FROZEN:
 	case CPU_UP_CANCELED:
 	case CPU_UP_CANCELED_FROZEN:
 	case CPU_DOWN_FAILED:
 	case CPU_DOWN_FAILED_FROZEN:
-	case CPU_POST_DEAD:
+	case CPU_DEAD:
+	case CPU_DEAD_FROZEN:
 		mcdi_avail_cpu_cluster_update();
 
 		mcdi_pause(false);
@@ -981,9 +995,15 @@ static struct notifier_block mcdi_cpu_notifier = {
 	.priority   = INT_MAX,
 };
 
+static struct notifier_block mcdi_cpu_notifier_leave_hotplug = {
+	.notifier_call = mcdi_cpu_callback_leave_hotplug,
+	.priority   = INT_MIN,
+};
+
 static int mcdi_hotplug_cb_init(void)
 {
 	register_cpu_notifier(&mcdi_cpu_notifier);
+	register_cpu_notifier(&mcdi_cpu_notifier_leave_hotplug);
 
 	return 0;
 }
