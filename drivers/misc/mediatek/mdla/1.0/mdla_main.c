@@ -3560,6 +3560,10 @@ static int mdla_probe(struct platform_device *pdev)
 
 	mdla_ion_init();
 
+#ifdef CONFIG_FPGA_EARLY_PORTING
+	mdla_reset(REASON_DRVINIT);
+#endif
+
 	return 0;
 
 }
@@ -3655,9 +3659,6 @@ static int mdlactl_init(void)
 		if (ret)
 			pr_warn("MDLA: set DMA mask failed: %d\n", ret);
 	}
-
-	mdla_reset(REASON_DRVINIT);
-	mdla_dump_reg();
 
 	INIT_WORK(&mdla_queue, mdla_start_queue);
 	mdla_debugfs_init();
