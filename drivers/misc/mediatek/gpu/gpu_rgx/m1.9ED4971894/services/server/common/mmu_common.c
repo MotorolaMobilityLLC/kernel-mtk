@@ -2950,6 +2950,7 @@ MMU_MapPages(MMU_CONTEXT *psMMUContext,
 				HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 				HTBLOG_U64_BITS_HIGH(sDevPAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevPAddr.uiAddr));
 
+#if defined(CONFIG_MACH_MT6765)
 			if ((sDevPAddr.uiAddr < 0x40000000) ||
 (sDevPAddr.uiAddr > 0xc0000000 - 1))
 			ged_log_buf_print2(_mpu_ged_log,
@@ -2963,7 +2964,7 @@ GED_LOG_ATTR_TIME, "[0]PAddr=0x%llx", sDevPAddr.uiAddr);
 "%s: _SetupPTE out-of-range, sDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
 sDevPAddr.uiAddr, sDevVAddr.uiAddr));
 			}
-
+#endif
 
 			eError = _SetupPTE(psMMUContext,
 			                   psLevel,
@@ -3380,6 +3381,7 @@ MMU_MapPMRFast (MMU_CONTEXT *psMMUContext,
 			HTBLOG_U64_BITS_HIGH(sDevVAddr.uiAddr), HTBLOG_U64_BITS_LOW(sDevVAddr.uiAddr),
 			HTBLOG_U64_BITS_HIGH(psDevPAddr[i].uiAddr), HTBLOG_U64_BITS_LOW(psDevPAddr[i].uiAddr));
 
+#if defined(CONFIG_MACH_MT6765)
 		if ((psDevPAddr[i].uiAddr < 0x40000000) ||
 (psDevPAddr[i].uiAddr > 0xc0000000 - 1))
 			ged_log_buf_print2(_mpu_ged_log,
@@ -3393,7 +3395,7 @@ GED_LOG_ATTR_TIME, "[1]PAddr=0x%llx", psDevPAddr[i].uiAddr);
 "%s: _SetupPTE out-of-range, psDevPAddr=0x%llx, sDevVAddr=0x%llx", __func__,
 psDevPAddr[i].uiAddr, sDevVAddr.uiAddr));
 		}
-
+#endif
 		/* Set the PT entry with the specified address and protection flags */
 		eError = _SetupPTE(psMMUContext, psLevel, uiPTEIndex,
 		                   psConfig, &psDevPAddr[i], IMG_FALSE,
