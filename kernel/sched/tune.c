@@ -604,8 +604,50 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	unsigned threshold_idx;
 	int boost_pct;
 	int ctl_no = div64_s64(boost, 1000);
+	int cluster;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	bool dvfs_on_demand = false;
+	int floor = 0;
+	int i;
+	int c0, c1;
+#endif
 
 	switch (ctl_no) {
+	case 4:
+	case 3:
+		/* dvfs floor */
+		boost -= ctl_no * 1000;
+		cluster = (int)boost / 100;
+		boost = (int)boost % 100;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
+			floor = 1;
+			c0 = cluster & 0x1;
+			c1 = cluster & 0x2;
+
+			/* cluster 0 */
+			if (c0)
+				set_min_boost_freq(boost, 0);
+			else
+				min_boost_freq[0] = 0;
+
+			/* cluster 1 */
+			if (c1)
+				set_min_boost_freq(boost, 1);
+			else
+				min_boost_freq[1] = 0;
+		}
+#endif
+		stune_task_threshold = default_stune_threshold;
+		break;
+	case 2:
+		/* dvfs short cut */
+		boost -= 2000;
+		stune_task_threshold = default_stune_threshold;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		dvfs_on_demand = true;
+#endif
+		break;
 	case 1:
 		/* boost all tasks */
 		boost -= 1000;
@@ -624,6 +666,17 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 		printk_deferred("warning: perf boost value should be -100~100\n");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	if (!floor) {
+		for (i = 0; i < cpu_cluster_nr; i++)
+			min_boost_freq[i] = 0;
+	}
+#endif
+
+	/* bypass change boost */
+	if (ctl_no == 4)
+		return 0;
 
 	global_negative_flag = false;
 
@@ -651,6 +704,11 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 
 	/* Update CPU boost */
 	schedtune_boostgroup_update(st->idx, st->boost);
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	if (dvfs_on_demand)
+		update_freq_fastpath();
+#endif
 
 	trace_sched_tune_config(st->boost);
 

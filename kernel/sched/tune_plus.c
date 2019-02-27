@@ -19,8 +19,51 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 	int boost_pct;
 	int idx = 0;
 	int ctl_no = div64_s64(boost_value, 1000);
+	int cluster;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	bool dvfs_on_demand = false;
+	int floor = 0;
+	int i;
+	int c0, c1;
+#endif
 
 	switch (ctl_no) {
+	case 4:
+	case 3:
+		/* dvfs floor */
+		boost_value -= ctl_no * 1000;
+		cluster = (int)boost_value / 100;
+		boost_value = (int)boost_value % 100;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		if (cluster > 0 && cluster <= 0x2) { /* only two cluster */
+			floor = 1;
+			c0 = cluster & 0x1;
+			c1 = cluster & 0x2;
+
+			/* cluster 0 */
+			if (c0)
+				set_min_boost_freq(boost_value, 0);
+			else
+				min_boost_freq[0] = 0;
+
+			/* cluster 1 */
+			if (c1)
+				set_min_boost_freq(boost_value, 1);
+			else
+				min_boost_freq[1] = 0;
+		}
+#endif
+		stune_task_threshold = default_stune_threshold;
+		break;
+	case 2:
+		/* dvfs short cut */
+		boost_value -= 2000;
+		stune_task_threshold = default_stune_threshold;
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+		dvfs_on_demand = true;
+#endif
+		break;
 	case 1:
 		/* boost all tasks */
 		boost_value -= 1000;
@@ -42,6 +85,17 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		boost_value = 100;
 	else if (boost_value <= -100)
 		boost_value = -100;
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	if (!floor) {
+		for (i = 0; i < cpu_cluster_nr; i++)
+			min_boost_freq[i] = 0;
+	}
+#endif
+
+	/* bypass change boost */
+	if (ctl_no == 4)
+		return 0;
 
 	if (boost_value < 0)
 		global_negative_flag = true; /* set all group negative */
@@ -94,6 +148,11 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 			break;
 		}
 	}
+
+#ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
+	if (dvfs_on_demand)
+		update_freq_fastpath();
+#endif
 
 	return 0;
 }
