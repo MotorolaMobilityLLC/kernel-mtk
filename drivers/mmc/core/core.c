@@ -2879,13 +2879,10 @@ void mmc_init_erase(struct mmc_card *card)
 			card->pref_erase = 1024 * 1024 / 512;
 		else if (sz < 1024)
 			card->pref_erase = 2 * 1024 * 1024 / 512;
-		else {
-/* Workaround: Enlarge erase size for Micron device erase performance issue. */
-			if (card->cid.manfid == CID_MANFID_MICRON)
-				card->pref_erase = 128 * 1024 * 1024 / 512;
-			else
-				card->pref_erase = 4 * 1024 * 1024 / 512;
-		}
+		else
+		/* workaround: enlarge 'pref_erase' to  speed up discard */
+			card->pref_erase = 128 * 1024 * 1024 / 512;
+
 		if (card->pref_erase < card->erase_size)
 			card->pref_erase = card->erase_size;
 		else {
