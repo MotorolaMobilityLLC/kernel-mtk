@@ -1124,7 +1124,7 @@ static int md_cd_dump_info(struct ccci_modem *md,
 			ccci_md_get_smem_by_user_id(md->index,
 				SMEM_USER_RAW_DHL);
 
-		if (ccb_data) {
+		if (ccb_data && ccb_data->size != 0) {
 			CCCI_MEM_LOG_TAG(md->index, TAG,
 				"Dump CCB DATA share memory\n");
 			curr_ch_p = ccb_data->base_ap_view_vir;
