@@ -456,6 +456,8 @@ struct disp_layer_info {
 	int gles_head[2];
 	int gles_tail[2];
 	int hrt_num;
+	/* res_idx: SF/HWC selects which resolution to use */
+	int res_idx;
 };
 
 enum DISP_SCENARIO {
