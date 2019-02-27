@@ -111,7 +111,7 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 		   ppwr_info->pin != IMGSENSOR_HW_PIN_UNDEF) {
 			pdev = phw->pdev[psensor_pwr->id[ppwr_info->pin]];
 			pr_debug(
-			    "sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d(0:PMIC, 1:GPIO, 2:exGPIO 3:mclk)\n",
+			    "sensor_idx = %d, pin=%d, pin_state_on=%d, hw_id =%d\n",
 			    sensor_idx,
 			    ppwr_info->pin,
 			    ppwr_info->pin_state_on,
@@ -209,7 +209,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 #endif
 
 #endif
-	pr_debug(
+	pr_info(
 	    "sensor_idx %d, power %d curr_sensor_name %s\n",
 	    sensor_idx,
 	    pwr_status,
