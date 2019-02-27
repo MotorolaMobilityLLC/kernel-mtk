@@ -582,6 +582,22 @@ struct ISP_CLK_INFO {
 	unsigned int clklevel[ISP_CLK_LEVEL_CNT]; /* Reocrd each clk level */
 };
 
+struct ISP_GET_CLK_INFO {
+	unsigned int curClk;
+	unsigned int targetClk;
+};
+
+struct ISP_PM_QOS_STRUCT {
+	unsigned int       fps;
+	unsigned int       bw_sum;
+};
+
+struct ISP_PM_QOS_INFO_STRUCT {
+	unsigned int       bw_value;
+	unsigned int       module;
+	unsigned int       fps;
+};
+
 /*******************************************************************************
  * pass1 real time buffer control use cq0c
  ******************************************************************************/
@@ -668,7 +684,9 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_LARB_MMU_CTL, /* toggle mmu config for smi larb ports of isp */
 	ISP_CMD_DUMP_BUFFER,
 	ISP_CMD_GET_DUMP_INFO,
-	ISP_CMD_SET_MEM_INFO
+	ISP_CMD_SET_MEM_INFO,
+	ISP_CMD_SET_PM_QOS,
+	ISP_CMD_SET_PM_QOS_INFO
 };
 
 enum ISP_HALT_DMA_ENUM {
@@ -742,7 +760,11 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_GET_SUPPORTED_ISP_CLOCKS   \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
 #define ISP_GET_CUR_ISP_CLOCK   \
-	_IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, unsigned int)
+	_IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, struct ISP_GET_CLK_INFO)
+#define ISP_SET_PM_QOS             \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
+#define ISP_SET_PM_QOS_INFO         \
+	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS_INFO, struct ISP_PM_QOS_INFO_STRUCT)
 #define ISP_REGISTER_IRQ_USER_KEY   \
 	_IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY,\
 					   struct ISP_REGISTER_USERKEY_STRUCT)
