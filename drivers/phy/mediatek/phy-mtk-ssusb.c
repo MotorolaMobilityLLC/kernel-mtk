@@ -43,7 +43,7 @@
 
 #include "phy-mtk-ssusb-reg.h"
 
-static DEFINE_SPINLOCK(mu3phy_clock_lock);
+static DEFINE_MUTEX(prepare_lock);
 
 enum mt_phy_version {
 	MT_PHY_V1 = 1,
@@ -53,12 +53,11 @@ enum mt_phy_version {
 static bool usb_enable_clock(struct mtk_phy_drv *u3phy, bool enable)
 {
 	static int count;
-	unsigned long flags;
 
 	if (!u3phy->clk)
 		return false;
 
-	spin_lock_irqsave(&mu3phy_clock_lock, flags);
+	mutex_lock(&prepare_lock);
 	phy_printk(K_INFO, "CG, enable<%d>, count<%d>\n", enable, count);
 
 	if (enable && count == 0) {
@@ -73,8 +72,7 @@ static bool usb_enable_clock(struct mtk_phy_drv *u3phy, bool enable)
 	else
 		count = (count == 0) ? 0 : (count - 1);
 
-	spin_unlock_irqrestore(&mu3phy_clock_lock, flags);
-
+	mutex_unlock(&prepare_lock);
 	return true;
 }
 
@@ -870,11 +868,19 @@ static const struct mtk_phy_interface ssusb_phys[] = {
 	},
 };
 
-const struct mtk_usbphy_config ssusb_phy_config = {
+static const struct mtk_usbphy_config ssusb_phy_config = {
 	.phys			= ssusb_phys,
 	.num_phys		= 1,
 	.version		= MT_PHY_V1,
 	.usb_drv_init = mtk_phy_drv_init,
 	.usb_drv_exit = mtk_phy_drv_exit,
+};
+
+const struct of_device_id mtk_phy_of_match[] = {
+	{
+		.compatible = "mediatek,mt6758-phy",
+		.data = &ssusb_phy_config,
+	},
+	{ },
 };
 

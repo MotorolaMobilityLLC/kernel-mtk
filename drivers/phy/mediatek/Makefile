@@ -1,5 +1,9 @@
 #
 # Makefile for the mediatek phy drivers.
 #
-obj-$(CONFIG_PHY_MTK_USB)		+= phy-mtk.o
-obj-$(CONFIG_PHY_MTK_SSUSB)		+= phy-mtk-ssusb.o
+obj-y	+= phy-mtk.o
+ifneq ($(CONFIG_PHY_MTK_SSUSB),)
+	obj-y	+= phy-mtk-ssusb.o
+else
+	obj-$(CONFIG_MACH_MT6758) += phy-mtk-mt6758.o
+endif

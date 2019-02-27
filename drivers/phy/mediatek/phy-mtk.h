@@ -90,8 +90,6 @@ struct mtk_phy_drv {
 	struct regulator *vusb10;
 };
 
-extern const struct mtk_usbphy_config ssusb_phy_config;
-
 /*Set the debug level for phy driver*/
 #define K_ALET	(1<<6)
 #define K_CRIT	(1<<5)
@@ -108,6 +106,8 @@ extern u32 phy_debug_level;
 			pr_info("[MTKPHY]" fmt, ## args); \
 		} \
 	} while (0)
+
+extern const struct of_device_id mtk_phy_of_match[];
 
 #endif
 
