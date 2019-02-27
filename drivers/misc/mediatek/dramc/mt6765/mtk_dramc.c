@@ -344,7 +344,7 @@ static unsigned int dramc_tx_tracking(int channel)
 	void __iomem *dramc_nao_chx_base;
 	void __iomem *ddrphy_chx_base;
 
-	unsigned int shu_level, opp_level;
+	unsigned int shu_level;
 	unsigned int shu_index;
 	unsigned int shu_offset_dramc, shu_offset_ddrphy;
 	unsigned int dqsosc_inc[2], dqsosc_dec[2];
@@ -376,11 +376,10 @@ static unsigned int dramc_tx_tracking(int channel)
 	}
 
 	shu_level = (Reg_Readl(DRAMC_AO_SHUSTATUS) >> 1) & 0x3;
-	opp_level = shu_level + 1;
 
-	tx_freq_ratio[0] = dram_steps_freq(1) * 8 / dram_steps_freq(opp_level);
-	tx_freq_ratio[1] = dram_steps_freq(2) * 8 / dram_steps_freq(opp_level);
-	tx_freq_ratio[2] = dram_steps_freq(3) * 8 / dram_steps_freq(opp_level);
+	tx_freq_ratio[0] = dram_steps_freq(0) * 8 / dram_steps_freq(shu_level);
+	tx_freq_ratio[1] = dram_steps_freq(1) * 8 / dram_steps_freq(shu_level);
+	tx_freq_ratio[2] = dram_steps_freq(2) * 8 / dram_steps_freq(shu_level);
 
 	max_pi_adj[0] = 10;
 	max_pi_adj[1] = 7;
@@ -1250,9 +1249,8 @@ EXPORT_SYMBOL(get_emi_ch_num);
 int dram_steps_freq(unsigned int step)
 {
 	int freq = -1;
-	int channels;
 
-	channels = get_emi_ch_num();
+	/* step here means ddr shuffle */
 
 	switch (step) {
 	case 0:
@@ -1267,16 +1265,9 @@ int dram_steps_freq(unsigned int step)
 			freq = 1600;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
 				(DRAM_TYPE == TYPE_LPDDR4X))
-			freq = 3200;
-		break;
-	case 2:
-		if (DRAM_TYPE == TYPE_LPDDR3)
-			freq = 1600;
-		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
-				(DRAM_TYPE == TYPE_LPDDR4X))
 			freq = 2400;
 		break;
-	case 3:
+	case 2:
 		if (DRAM_TYPE == TYPE_LPDDR3)
 			freq = 1200;
 		else if ((DRAM_TYPE == TYPE_LPDDR4) ||
