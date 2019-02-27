@@ -240,4 +240,5 @@ extern void mlog_get_buffer(char **ptr, int *size)__attribute__((weak));
 extern void get_msdc_aee_buffer(unsigned long *buff,
 	unsigned long *size)__attribute__((weak));
 extern void show_task_mem(void)__attribute__((weak));
+void show_native_bt_by_pid(int task_pid);
 #endif
