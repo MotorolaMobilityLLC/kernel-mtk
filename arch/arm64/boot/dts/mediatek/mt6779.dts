@@ -193,10 +193,10 @@
 		interrupts = <GIC_SPI 79 IRQ_TYPE_EDGE_RISING>;
 	};
 
-	/* Trustonic Mobicore SW IRQ number 112 = 32 + 80 */
+	/* Trustonic Mobicore SW IRQ number 121 = 32 + 89 */
 	mobicore {
 		compatible = "trustonic,mobicore";
-		interrupts = <GIC_SPI 80 IRQ_TYPE_EDGE_RISING>;
+		interrupts = <GIC_SPI 89 IRQ_TYPE_EDGE_RISING>;
 	};
 
 	mcdi@0011b000 {
