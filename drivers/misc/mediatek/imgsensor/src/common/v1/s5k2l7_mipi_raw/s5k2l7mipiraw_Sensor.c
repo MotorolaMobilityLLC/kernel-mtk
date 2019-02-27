@@ -30,6 +30,8 @@
  * Upper this line, this part is controlled by CC/CQ. DO NOT MODIFY!!
  *============================================================================
  ****************************************************************************/
+#undef USE_OIS
+#undef CAPTURE_WDR
 /*******************Modify Following Strings for Debug*************************/
 #define PFX "s5k2l7_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
