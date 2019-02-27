@@ -1520,7 +1520,7 @@ static unsigned int lcm_compare_id(void)
 	pr_debug("[LCM]%s,nt35695_id=0x%08x,version_id=0x%x\n",
 		__func__, id, version_id);
 
-	if (id == LCM_ID_NT35695 && version_id == 0x81)
+	if (id == LCM_ID_NT35695 && version_id == 0x80)
 		return 1;
 	else
 		return 0;
@@ -1683,7 +1683,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 }
 
 struct LCM_DRIVER nt35695B_fhd_dsi_cmd_truly_rt5081_lcm_drv = {
-	.name = "nt35695B_fhd_dsi_cmd_truly_rt5081_drv",
+	.name = "nt35695B_fhd_dsi_cmd_truly_rt5081_lcm_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
