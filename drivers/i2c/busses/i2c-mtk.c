@@ -790,6 +790,9 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 		i2c->ch_offset = i2c->ch_offset_default;
 		i2c->dma_ch_offset = i2c->dma_ch_offset_default;
 	}
+#if defined(CONFIG_ARCH_MT6765)
+	i2c_writel(i2c, OFFSET_DEBUGCTRL, 0x28);
+#endif
 #if !defined(CONFIG_MT_I2C_FPGA_ENABLE)
 	ret = i2c_set_speed(i2c,
 		clk_get_rate(i2c->clk_main) / i2c->clk_src_div);
