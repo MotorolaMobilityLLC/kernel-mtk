@@ -1050,7 +1050,7 @@ void md1_pll_init(struct ccci_modem *md)
 
 	RAnd2W(md_pll->md_top_Pll, 0x64, ~(0x80));
 
-	cldma_write32(md_pll->md_top_Pll, 0x104, 0x4C43100);
+	/* cldma_write32(md_pll->md_top_Pll, 0x104, 0x4C43100); */
 	cldma_write32(md_pll->md_top_Pll, 0x10, 0x100010);
 	do {
 		reg_val = cldma_read32(md_pll->md_top_Pll, 0x10);
