@@ -17,7 +17,7 @@
 
 #include <mt-plat/sync_write.h>
 
-extern unsigned int devapc_check_flag;
+extern volatile unsigned int devapc_check_flag;
 #define ccif_write32(b, a, v) \
 do { \
 	if (devapc_check_flag == 1) \
