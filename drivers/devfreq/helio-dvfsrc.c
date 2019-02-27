@@ -18,6 +18,7 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/pm_qos.h>
+#include <linux/sched.h>
 
 #include "governor.h"
 
@@ -73,8 +74,18 @@ static void dvfsrc_set_vcore_request(int data, int mask, int shift)
 	dvfsrc_rmw(DVFSRC_VCORE_REQUEST, data, mask, shift);
 }
 
+static void dvfsrc_get_timestamp(char *p)
+{
+	u64 sec = local_clock();
+	u64 usec = do_div(sec, 1000000000);
+
+	do_div(usec, 1000000);
+	sprintf(p, "%llu.%llu", sec, usec);
+}
+
 static void dvfsrc_set_force_start(int data)
 {
+	dvfsrc_get_timestamp(dvfsrc->force_start);
 	dvfsrc_write(DVFSRC_FORCE, data);
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 1,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
@@ -82,7 +93,7 @@ static void dvfsrc_set_force_start(int data)
 
 static void dvfsrc_set_force_end(void)
 {
-	/* dvfsrc_write(DVFSRC_FORCE, 0); */
+	dvfsrc_write(DVFSRC_FORCE, 0);
 }
 
 static void dvfsrc_release_force(void)
@@ -90,6 +101,7 @@ static void dvfsrc_release_force(void)
 	dvfsrc_rmw(DVFSRC_BASIC_CONTROL, 0,
 			FORCE_EN_TAR_MASK, FORCE_EN_TAR_SHIFT);
 	dvfsrc_write(DVFSRC_FORCE, 0);
+	dvfsrc_get_timestamp(dvfsrc->force_end);
 }
 
 static void dvfsrc_set_sw_bw(int type, int data)
@@ -238,6 +250,8 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 
 	dvfsrc->qos_enabled = 1;
 	dvfsrc->dvfsrc_enabled = dvfsrc_en;
+	sprintf(dvfsrc->force_start, "0");
+	sprintf(dvfsrc->force_end, "0");
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
@@ -315,6 +329,9 @@ int is_dvfsrc_enabled(void)
 
 static void get_pm_qos_info(char *p)
 {
+	char timestamp[20];
+
+	dvfsrc_get_timestamp(timestamp);
 	p += sprintf(p, "%-24s: %d\n",
 			"PM_QOS_MEMORY_BW",
 			pm_qos_request(PM_QOS_MEMORY_BANDWIDTH));
@@ -364,6 +381,12 @@ static void get_pm_qos_info(char *p)
 			"EMI_BW_MM", dvfsrc_get_emi_bw(QOS_EMI_BW_MM));
 	p += sprintf(p, "%-24s: %d\n",
 			"EMI_BW_OTHER", dvfsrc_get_emi_bw(QOS_EMI_BW_OTHER));
+	p += sprintf(p, "%-24s: %s\n",
+			"Current Timestamp", timestamp);
+	p += sprintf(p, "%-24s: %s\n",
+			"Force Start Timestamp", dvfsrc->force_start);
+	p += sprintf(p, "%-24s: %s\n",
+			"Force End Timestamp", dvfsrc->force_end);
 }
 
 char *dvfsrc_dump_reg(char *ptr)

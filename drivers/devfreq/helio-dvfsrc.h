@@ -54,7 +54,8 @@ struct helio_dvfsrc {
 
 	struct reg_config	*init_config;
 
-	struct opp_profile	opp_table[VCORE_DVFS_OPP_NUM];
+	char			force_start[20];
+	char			force_end[20];
 };
 
 #define DVFSRC_TIMEOUT		1000
