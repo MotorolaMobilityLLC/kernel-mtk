@@ -265,6 +265,7 @@ struct charger_manager {
 	struct charger_custom_data data;
 
 	bool enable_sw_safety_timer;
+	bool sw_safety_timer_setting;
 
 	/* High voltage charging */
 	bool enable_hv_charging;

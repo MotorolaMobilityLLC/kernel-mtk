@@ -106,5 +106,6 @@ extern int charger_manager_enable_kpoc_shutdown(
 	struct charger_consumer *consumer,
 	bool en);
 extern int mtk_chr_is_charger_exist(unsigned char *exist);
+extern bool is_power_path_supported(void);
 
 #endif /* __MTK_CHARGER_H__ */
