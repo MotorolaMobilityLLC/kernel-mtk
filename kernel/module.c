@@ -4283,6 +4283,11 @@ void print_modules(void)
 	pr_cont("\n");
 }
 
+int __weak do_translation_fault_preconditioner(unsigned long addr)
+{
+	return -1;
+}
+
 /* MUST ensure called when preempt disabled already */
 int save_modules(char *mbuf, int mbufsize)
 {
@@ -4299,6 +4304,7 @@ int save_modules(char *mbuf, int mbufsize)
 	memset(mbuf, '\0', mbufsize);
 	sz += snprintf(mbuf + sz, mbufsize - sz, "Modules linked in:");
 	list_for_each_entry_rcu(mod, &modules, list) {
+		do_translation_fault_preconditioner((unsigned long)mod);
 		if (mod->state == MODULE_STATE_UNFORMED)
 			continue;
 		if (sz >= mbufsize) {

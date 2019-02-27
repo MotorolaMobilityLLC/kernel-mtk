@@ -484,6 +484,66 @@ bad_area:
 	do_bad_area(addr, fsr, regs);
 	return 0;
 }
+
+#if defined(CONFIG_MTK_AEE_FEATURE) && defined(CONFIG_MODULES)
+int __kprobes
+do_translation_fault_preconditioner(unsigned long addr)
+{
+	unsigned int index;
+	pgd_t *pgd, *pgd_k;
+	pud_t *pud, *pud_k;
+	pmd_t *pmd, *pmd_k;
+
+	if (addr < TASK_SIZE)
+		goto bad_ret;
+
+	index = pgd_index(addr);
+
+	pgd = cpu_get_pgd() + index;
+	pgd_k = init_mm.pgd + index;
+
+	if (pgd_none(*pgd_k))
+		goto bad_ret;
+	if (!pgd_present(*pgd))
+		set_pgd(pgd, *pgd_k);
+
+	pud = pud_offset(pgd, addr);
+	pud_k = pud_offset(pgd_k, addr);
+
+	if (pud_none(*pud_k))
+		goto bad_ret;
+	if (!pud_present(*pud))
+		set_pud(pud, *pud_k);
+
+	pmd = pmd_offset(pud, addr);
+	pmd_k = pmd_offset(pud_k, addr);
+
+#ifdef CONFIG_ARM_LPAE
+	/*
+	 * Only one hardware entry per PMD with LPAE.
+	 */
+	index = 0;
+#else
+	/*
+	 * On ARM one Linux PGD entry contains two hardware entries (see page
+	 * tables layout in pgtable.h). We normally guarantee that we always
+	 * fill both L1 entries. But create_mapping() doesn't follow the rule.
+	 * It can create inidividual L1 entries, so here we have to call
+	 * pmd_none() check for the entry really corresponded to address, not
+	 * for the first of pair.
+	 */
+	index = (addr >> SECTION_SHIFT) & 1;
+#endif
+	if (pmd_none(pmd_k[index]))
+		goto bad_ret;
+
+	copy_pmd(pmd, pmd_k);
+	return 0;
+
+bad_ret:
+	return -1;
+}
+#endif
 #else					/* CONFIG_MMU */
 static int
 do_translation_fault(unsigned long addr, unsigned int fsr,
