@@ -34,6 +34,14 @@
 #include <cpuidle_v3/mtk_cpuidle.h> /* atf/dormant header file */
 
 
+/********************************************************************
+ * MTK_SPM_ARCH_TYPE
+ *******************************************************************/
+#define MTK_SPM_ARCH_SCENARIO_ORIENTED  (0)
+#define MTK_SPM_ARCH_RESOURCE_ORIENTED  (1)
+#define MTK_SPM_ARCH_TYPE	(MTK_SPM_ARCH_RESOURCE_ORIENTED)
+
+
 
 /********************************************************************
  * dpidle/sodi3/sodi default feature enable/disable
@@ -216,6 +224,18 @@ struct spm_lp_scen {
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
 	struct wake_status *wakestatus;
+};
+
+/**********************************************************
+ * mtk spm resource level types
+ **********************************************************/
+enum mtk_resource_level_id {
+	SPM_RES_LEVEL_DRAM,
+	SPM_RES_LEVEL_SYSPLL,
+	SPM_RES_LEVEL_BUS_26M,
+	SPM_RES_LEVEL_PMIC_LP,
+	NR_SPM_RES_LEVEL_TYPES,
+	NR_SPM_RES_TYPES = NR_SPM_RES_LEVEL_TYPES,
 };
 
 enum {
@@ -420,6 +440,8 @@ void mtk_idle_power_post_process_async_wait(int idle_type,
  * mtk_spm_idle.c
  ***********************************************************/
 
+/* call resource_usage check for resource-oriented adjust */
+extern bool mtk_idle_resource_pre_process(void);
 /* call dormant/atf driver for idle scenario */
 extern int mtk_idle_trigger_wfi(
 	int idle_type, unsigned int idle_flag, int cpu);
@@ -435,6 +457,13 @@ extern unsigned int get_slp_dp_last_wr(void);
 /***********************************************************
  * mtk_idle_cond_check.c
  ***********************************************************/
+
+/* spm architecture (resource/scenario-oriented) */
+extern void mtk_spm_arch_type_init(void);
+extern bool mtk_spm_arch_type_get(void);
+extern void mtk_spm_arch_type_set(bool type);
+
+extern void mtk_suspend_cond_info(void);
 
 /* append idle block info to input logbuf */
 extern int mtk_idle_cond_append_info(
