@@ -418,6 +418,7 @@ int primary_display_mipi_clk_change(unsigned int clk_value);
 void _cmdq_insert_wait_frame_done_token_mira(void *handle);
 int primary_display_get_max_layer(void);
 long primary_display_wait_state(enum DISP_POWER_STATE state, long timeout);
+long primary_display_wait_not_state(enum DISP_POWER_STATE state, long timeout);
 int do_primary_display_switch_mode(int sess_mode, unsigned int session,
 	int need_lock, struct cmdqRecStruct *handle, int block);
 int primary_display_check_test(void);
