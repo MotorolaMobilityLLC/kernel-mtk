@@ -214,7 +214,8 @@ static ssize_t mt_soc_debug_write(struct file *f, const char __user *buf,
 		goto exit;
 	}
 
-	str_begin = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT, GFP_KERNEL);
+	str_begin = kstrndup(InputString, MAX_DEBUG_WRITE_INPUT - 1,
+						 GFP_KERNEL);
 	if (!str_begin) {
 		pr_warn("%s(), kstrdup fail\n", __func__);
 		goto exit;
