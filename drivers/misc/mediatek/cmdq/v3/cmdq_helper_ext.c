@@ -3586,7 +3586,76 @@ void cmdq_core_release_thread(s32 scenario, s32 thread)
 	mutex_unlock(&cmdq_thread_mutex);
 }
 
-static void cmdq_core_clk_enable(enum CMDQ_SCENARIO_ENUM scenario)
+static void cmdq_core_group_clk_on(enum CMDQ_GROUP_ENUM group,
+	u64 engine_flag)
+{
+	struct CmdqCBkStruct *callback = cmdq_group_cb;
+	s32 status;
+
+	if (!callback[group].clockOn) {
+		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOn func NULL\n",
+			group);
+		return;
+	}
+
+	status = callback[group].clockOn(
+		cmdq_mdp_get_func()->getEngineGroupBits(group) & engine_flag);
+	if (status < 0)
+		CMDQ_ERR("[CLOCK]enable group %d clockOn failed\n", group);
+}
+
+static void cmdq_core_group_clk_off(enum CMDQ_GROUP_ENUM group,
+	u64 engine_flag)
+{
+	struct CmdqCBkStruct *callback = cmdq_group_cb;
+	s32 status;
+
+	if (!callback[group].clockOff) {
+		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOff func NULL\n",
+			group);
+		return;
+	}
+
+	status = callback[group].clockOff(
+		cmdq_mdp_get_func()->getEngineGroupBits(group) & engine_flag);
+	if (status < 0)
+		CMDQ_ERR("[CLOCK]enable group %d clockOn failed\n", group);
+}
+
+static void cmdq_core_group_clk_cb(bool enable,
+	u64 engine_flag, u64 engine_clk)
+{
+	s32 index;
+
+	/* ISP special check: Always call ISP on/off if this task
+	 * involves ISP. Ignore the ISP HW flags.
+	 */
+	if (cmdq_core_is_group_flag(CMDQ_GROUP_ISP, engine_flag)) {
+		if (enable)
+			cmdq_core_group_clk_on(CMDQ_GROUP_ISP, engine_flag);
+		else
+			cmdq_core_group_clk_off(CMDQ_GROUP_ISP, engine_flag);
+	}
+
+	for (index = CMDQ_MAX_GROUP_COUNT - 1; index >= 0; index--) {
+		/* note that DISPSYS controls their own clock on/off */
+		if (index == CMDQ_GROUP_DISP)
+			continue;
+
+		/* note that ISP is per-task on/off, not per HW flag */
+		if (index == CMDQ_GROUP_ISP)
+			continue;
+
+		if (cmdq_core_is_group_flag(index, engine_clk)) {
+			if (enable)
+				cmdq_core_group_clk_on(index, engine_clk);
+			else
+				cmdq_core_group_clk_off(index, engine_clk);
+		}
+	}
+}
+
+static void cmdq_core_clk_enable(struct cmdqRecStruct *handle)
 {
 	s32 clock_count;
 
@@ -3595,7 +3664,8 @@ static void cmdq_core_clk_enable(enum CMDQ_SCENARIO_ENUM scenario)
 
 	clock_count = atomic_inc_return(&cmdq_thread_usage);
 
-	CMDQ_MSG("[CLOCK]enable usage:%d\n", clock_count);
+	CMDQ_MSG("[CLOCK]enable usage:%d scenario:%d\n",
+		clock_count, handle->scenario);
 
 	if (clock_count == 1) {
 		/* CMDQ init flow: */
@@ -3617,15 +3687,19 @@ static void cmdq_core_clk_enable(enum CMDQ_SCENARIO_ENUM scenario)
 		cmdq_get_func()->eventRestore();
 	}
 
+	cmdq_core_group_clk_cb(true, handle->engineFlag, handle->engine_clk);
+
 	mutex_unlock(&cmdq_clock_mutex);
 }
 
-static void cmdq_core_clk_disable(enum CMDQ_SCENARIO_ENUM scenario)
+static void cmdq_core_clk_disable(struct cmdqRecStruct *handle)
 {
 	s32 clock_count;
 
 	/* protect multi-thread lock/unlock same time */
 	mutex_lock(&cmdq_clock_mutex);
+
+	cmdq_core_group_clk_cb(false, handle->engineFlag, handle->engine_clk);
 
 	clock_count = atomic_dec_return(&cmdq_thread_usage);
 
@@ -3644,42 +3718,6 @@ static void cmdq_core_clk_disable(enum CMDQ_SCENARIO_ENUM scenario)
 	}
 
 	mutex_unlock(&cmdq_clock_mutex);
-}
-
-void cmdq_core_group_clk_enable(enum CMDQ_GROUP_ENUM group,
-	u64 engine_flag)
-{
-	struct CmdqCBkStruct *callback = cmdq_group_cb;
-	s32 status;
-
-	if (!callback[group].clockOn) {
-		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOn func NULL\n",
-			group);
-		return;
-	}
-
-	status = callback[group].clockOn(
-		cmdq_mdp_get_func()->getEngineGroupBits(group) & engine_flag);
-	if (status < 0)
-		CMDQ_ERR("[CLOCK]enable group %d clockOn failed\n", group);
-}
-
-void cmdq_core_group_clk_disable(enum CMDQ_GROUP_ENUM group,
-	u64 engine_flag)
-{
-	struct CmdqCBkStruct *callback = cmdq_group_cb;
-	s32 status;
-
-	if (!callback[group].clockOff) {
-		CMDQ_LOG("[CLOCK][WARN]enable group %d clockOff func NULL\n",
-			group);
-		return;
-	}
-
-	status = callback[group].clockOff(
-		cmdq_mdp_get_func()->getEngineGroupBits(group) & engine_flag);
-	if (status < 0)
-		CMDQ_ERR("[CLOCK]enable group %d clockOn failed\n", group);
 }
 
 s32 cmdq_core_suspend_hw_thread(s32 thread)
@@ -4581,7 +4619,7 @@ static s32 cmdq_pkt_lock_handle(struct cmdqRecStruct *handle,
 	cmdq_delay_thread_start();
 
 	/* task and thread dispatched, increase usage */
-	cmdq_core_clk_enable(handle->scenario);
+	cmdq_core_clk_enable(handle);
 
 	/* callback clients we are about to start handle in gce */
 	cmdq_handle_cb.begin(handle);
@@ -4620,7 +4658,7 @@ void cmdq_pkt_release_handle(struct cmdqRecStruct *handle)
 
 	/* before stop job, decrease usage */
 
-	cmdq_core_clk_disable(handle->scenario);
+	cmdq_core_clk_disable(handle);
 
 	mutex_lock(&cmdq_handle_list_mutex);
 	list_del_init(&handle->list_entry);

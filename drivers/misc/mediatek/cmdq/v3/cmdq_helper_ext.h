@@ -682,7 +682,8 @@ struct cmdqRecStruct {
 	/* profile marker */
 	struct cmdqProfileMarkerStruct profileMarker;
 
-	/* resource flag to enable/disable clock */
+	/* flag to enable/disable clock */
+	u64 engine_clk;
 	u64 res_flag_acquire;
 	u64 res_flag_release;
 
@@ -871,8 +872,6 @@ s32 cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, u64 engineFlag);
 s32 cmdq_core_acquire_thread(enum CMDQ_SCENARIO_ENUM scenario, bool exclusive);
 void cmdq_core_release_thread(s32 scenario, s32 thread);
 
-void cmdq_core_group_clk_enable(enum CMDQ_GROUP_ENUM group, u64 engine_flag);
-void cmdq_core_group_clk_disable(enum CMDQ_GROUP_ENUM group, u64 engine_flag);
 s32 cmdq_core_suspend_hw_thread(s32 thread);
 
 u64 cmdq_core_get_gpr64(const enum cmdq_gpr_reg regID);
