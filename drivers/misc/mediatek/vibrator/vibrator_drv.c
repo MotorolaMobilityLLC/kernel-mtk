@@ -38,6 +38,7 @@ struct mt_vibr {
 	struct hrtimer vibr_timer;
 	int ldo_state;
 	int shutdown_flag;
+	atomic_t vibr_dur;
 	spinlock_t vibr_lock;
 	atomic_t vibr_state;
 };
@@ -72,7 +73,7 @@ static void update_vibrator(struct work_struct *work)
 		vibr_Enable();
 }
 
-static void vibrator_enable(unsigned int value)
+static void vibrator_enable(unsigned int dur, unsigned int activate)
 {
 	unsigned long flags;
 	struct vibrator_hw *hw = mt_get_cust_vibrator_hw();
@@ -80,22 +81,22 @@ static void vibrator_enable(unsigned int value)
 	spin_lock_irqsave(&g_mt_vib->vibr_lock, flags);
 	hrtimer_cancel(&g_mt_vib->vibr_timer);
 	pr_debug(VIB_TAG "cancel hrtimer, cust:%dms, value:%u, shutdown:%d\n",
-			hw->vib_timer, value, g_mt_vib->shutdown_flag);
+			hw->vib_timer, dur, g_mt_vib->shutdown_flag);
 
-	if (value == 0 || g_mt_vib->shutdown_flag == 1) {
+	if (activate == 0 || g_mt_vib->shutdown_flag == 1) {
 		atomic_set(&g_mt_vib->vibr_state, 0);
 	} else {
 #ifdef CUST_VIBR_LIMIT
-		if (value > hw->vib_limit && value < hw->vib_timer)
+		if (dur > hw->vib_limit && dur < hw->vib_timer)
 #else
-		if (value >= 10 && value < hw->vib_timer)
+		if (dur >= 10 && dur < hw->vib_timer)
 #endif
-			value = hw->vib_timer;
+			dur = hw->vib_timer;
 
-		value = (value > 15000 ? 15000 : value);
+		dur = (dur > 15000 ? 15000 : dur);
 		atomic_set(&g_mt_vib->vibr_state, 1);
 		hrtimer_start(&g_mt_vib->vibr_timer,
-			      ktime_set(value / 1000, (value % 1000) * 1000000),
+			      ktime_set(dur / 1000, (dur % 1000) * 1000000),
 			      HRTIMER_MODE_REL);
 	}
 	spin_unlock_irqrestore(&g_mt_vib->vibr_lock, flags);
@@ -105,7 +106,7 @@ static void vibrator_enable(unsigned int value)
 static void vibrator_oc_handler(void)
 {
 	pr_debug(VIB_TAG "vibrator_oc_handler: disable vibr due to oc intr happened\n");
-	vibrator_enable(0);
+	vibrator_enable(0, 0);
 }
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
@@ -133,7 +134,7 @@ static ssize_t vibr_activate_show(struct device *dev,
 static ssize_t vibr_activate_store(struct device *dev,
 		struct device_attribute *attr, const char *buf, size_t size)
 {
-	unsigned int activate;
+	unsigned int activate, dur;
 	ssize_t ret;
 
 	ret = kstrtouint(buf, 10, &activate);
@@ -141,7 +142,8 @@ static ssize_t vibr_activate_store(struct device *dev,
 		pr_err(VIB_TAG "set activate fail\n");
 		return ret;
 	}
-
+	dur = atomic_read(&g_mt_vib->vibr_dur);
+	vibrator_enable(dur, activate);
 	ret = size;
 	return ret;
 }
@@ -179,8 +181,8 @@ static ssize_t vibr_duration_store(struct device *dev,
 		pr_err(VIB_TAG "set duration fail\n");
 		return ret;
 	}
-	vibrator_enable(duration);
 
+	atomic_set(&g_mt_vib->vibr_dur, duration);
 	ret = size;
 	return ret;
 }
