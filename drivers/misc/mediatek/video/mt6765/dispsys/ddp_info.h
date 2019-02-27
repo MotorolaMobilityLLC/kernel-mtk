@@ -156,8 +156,6 @@ struct sbch {
 	unsigned long pre_addr;
 	unsigned int height;
 	unsigned int width;
-	unsigned int src_x;
-	unsigned int src_y;
 	int phy_layer;
 	enum UNIFIED_COLOR_FMT fmt;
 };
@@ -176,6 +174,7 @@ struct OVL_CONFIG_STRUCT {
 	enum OVL_LAYER_SOURCE source;
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long addr;
+	unsigned long real_addr;
 	unsigned long vaddr;
 	unsigned int src_x;
 	unsigned int src_y;
