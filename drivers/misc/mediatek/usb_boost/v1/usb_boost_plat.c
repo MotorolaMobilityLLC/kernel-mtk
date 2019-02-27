@@ -120,7 +120,7 @@ static int vcorefs_release(struct act_arg_obj *arg)
 	return 0;
 }
 
-static int __init usb_boost(void)
+static int __init usbboost(void)
 {
 	/* mandatory, related resource inited*/
 	usb_boost_init();
@@ -160,7 +160,7 @@ static int __init usb_boost(void)
 
 	return 0;
 }
-module_init(usb_boost);
+module_init(usbboost);
 
 static void __exit clean(void)
 {
