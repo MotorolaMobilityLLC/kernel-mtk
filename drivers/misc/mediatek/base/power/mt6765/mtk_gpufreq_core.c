@@ -1498,13 +1498,13 @@ static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc)
 		__func__, ret);
 
 	if (clksrc == CLOCK_MAIN) {
-		clk_set_parent(g_clk->clk_mux, g_clk->clk_main_parent);
-		gpufreq_pr_debug("@%s: switch to main clock source done\n",
-			__func__);
+		ret = clk_set_parent(g_clk->clk_mux, g_clk->clk_main_parent);
+		gpufreq_pr_debug("@%s: switch to main clock source (%d)\n",
+			__func__, ret);
 	} else if (clksrc == CLOCK_SUB) {
-		clk_set_parent(g_clk->clk_mux, g_clk->clk_sub_parent);
-		gpufreq_pr_debug("@%s: switch to sub clock source done\n",
-			__func__);
+		ret = clk_set_parent(g_clk->clk_mux, g_clk->clk_sub_parent);
+		gpufreq_pr_debug("@%s: switch to sub clock source (%d)\n",
+			__func__, ret);
 	} else {
 		gpufreq_pr_debug(
 			"@%s: clock source index is not valid, clksrc = %d\n",
@@ -1512,6 +1512,7 @@ static void __mt_gpufreq_switch_to_clksrc(enum g_clock_source_enum clksrc)
 	}
 
 	clk_disable_unprepare(g_clk->clk_mux);
+
 }
 
 /*
