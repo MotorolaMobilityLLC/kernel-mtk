@@ -78,7 +78,6 @@ static struct pbm pbm_ctrl = {
 	.hpf_en = 63,/* bin: 111111 (Flash, GPU, CPU, MD3, MD1, DLPT) */
 };
 
-
 int g_dlpt_need_do = 1;
 static DEFINE_MUTEX(pbm_mutex);
 static DEFINE_MUTEX(pbm_table_lock);
@@ -101,6 +100,12 @@ mt_gpufreq_get_leakage_mw(void)
 {
 	pr_warn_ratelimited("%s not ready\n", __func__);
 	return 0;
+}
+
+void __attribute__ ((weak))
+mt_ppm_dlpt_set_limit_by_pbm(unsigned int limited_power)
+{
+	pr_warn_ratelimited("%s not ready\n", __func__);
 }
 
 void __attribute__ ((weak))
@@ -519,8 +524,6 @@ static int pbm_thread_handle(void *data)
 			continue;
 		}
 
-		set_current_state(TASK_RUNNING);
-
 		mutex_lock(&pbm_mutex);
 		if (g_dlpt_need_do == 1) {
 			if (g_dlpt_stop == 0) {
@@ -542,6 +545,8 @@ static int pbm_thread_handle(void *data)
 		atomic_dec(&kthread_nreq);
 		mutex_unlock(&pbm_mutex);
 	}
+
+	set_current_state(TASK_RUNNING);
 
 	return 0;
 }
