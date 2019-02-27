@@ -18,4 +18,7 @@
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
 
+extern unsigned int PMIC_IMM_GetOneChannelValue(unsigned int dwChannel,
+		int deCount, int trimd);
+
 #endif				/* _MT_PMIC_COMMON_H_ */
