@@ -299,9 +299,6 @@ void mtk_idle_pre_process_by_chip(
 #endif
 	}
 
-	if (idle_type == IDLE_TYPE_DP || idle_type == IDLE_TYPE_SO3)
-		__sync_vcore_ctrl_pcm_flag(op_cond, &pcm_flags1);
-
 	/* initialize pcm_flags/pcm_flags1 */
 	__spm_set_pwrctrl_pcm_flags(pwrctrl, pcm_flags);
 	__spm_set_pwrctrl_pcm_flags1(pwrctrl, pcm_flags1);

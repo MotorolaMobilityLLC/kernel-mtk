@@ -414,21 +414,4 @@ u32 __spm_get_wake_period(int pwake_time, unsigned int last_wr)
 	return period;
 }
 
-/* FIXME:
- * 1. Need to move to
- * "drivers/misc/mediatek/base/power/spm/mt6779/sleep_def.h" later
- * 2. Need to check w/ DE for the correct value.
- */
-
-void __sync_vcore_ctrl_pcm_flag(u32 oper_cond, u32 *flag)
-{
-/* TODO: FIX ME */
-#if 0
-	if (oper_cond & DEEPIDLE_OPT_VCORE_LOW_VOLT)
-		*flag &= ~SPM_FLAG1_DISABLE_VCORE_LP_0P600V;
-	else
-		*flag |= SPM_FLAG1_DISABLE_VCORE_LP_0P600V;
-#endif
-}
-
 MODULE_DESCRIPTION("SPM-Internal Driver v0.1");
