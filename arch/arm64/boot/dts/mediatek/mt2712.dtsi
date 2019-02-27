@@ -220,7 +220,8 @@
 		};
 
 		uart5: serial@1000f000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x1000f000 0 0xc0>;
 			interrupts = <GIC_SPI 127 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&infracfg CLK_INFRA_AO_UART5>;
@@ -408,7 +409,8 @@
 		};
 
 		uart0: serial@11002000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x11002000 0 0xc0>;
 			interrupts = <GIC_SPI 91 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART0>;
@@ -417,7 +419,8 @@
 		};
 
 		uart1: serial@11003000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x11003000 0 0xc0>;
 			interrupts = <GIC_SPI 92 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART1>;
@@ -429,7 +432,8 @@
 		};
 
 		uart2: serial@11004000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x11004000 0 0xc0>;
 			interrupts = <GIC_SPI 93 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART2>;
@@ -441,7 +445,8 @@
 		};
 
 		uart3: serial@11005000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x11005000 0 0xc0>;
 			interrupts = <GIC_SPI 94 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART3>;
@@ -671,7 +676,8 @@
 		};
 
 		uart4: serial@11019000 {
-			compatible = "mediatek,mt2712-uart";
+			compatible = "mediatek,mt2712-uart",
+				     "mediatek,mt6577-uart";
 			reg = <0 0x11019000 0 0xc0>;
 			interrupts = <GIC_SPI 126 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&topckgen CLK_TOP_UART_SEL>, <&pericfg CLK_PERI_UART4>;
