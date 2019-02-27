@@ -194,7 +194,10 @@ update_window_start(struct rq *rq, u64 wallclock)
 	/* If the MPM global timer is cleared, set delta as 0 to avoid kernel BUG happening */
 	if (delta < 0) {
 		delta = 0;
-		WARN_ONCE(1, "WALT wallclock appears to have gone backwards or reset\n");
+		/*
+		 * WARN_ONCE(1,
+		 * "WALT wallclock appears to have gone backwards or reset\n");
+		 */
 	}
 
 	if (delta < walt_ravg_window)
@@ -209,12 +212,16 @@ static u64 scale_exec_time(u64 delta, struct rq *rq)
 	unsigned int cur_freq = rq->cur_freq;
 	int sf;
 
-	if (unlikely(cur_freq > max_possible_freq))
+	if (unlikely(cur_freq > rq->max_possible_freq))
 		cur_freq = rq->max_possible_freq;
 
+	/* platform driver may be not ready */
+	if (!rq->max_possible_freq)
+		return 0;
+
 	/* round up div64 */
-	delta = div64_u64(delta * cur_freq + max_possible_freq - 1,
-			  max_possible_freq);
+	delta = div64_u64(delta * cur_freq + rq->max_possible_freq - 1,
+			  rq->max_possible_freq);
 
 	sf = DIV_ROUND_UP(rq->efficiency * 1024, max_possible_efficiency);
 
@@ -721,14 +728,26 @@ static void update_task_demand(struct task_struct *p, struct rq *rq,
 	add_to_task_demand(rq, p, wallclock - mark_start);
 }
 
+static DEFINE_PER_CPU(raw_spinlock_t, walt_dvfs_lock) =
+		__RAW_SPIN_LOCK_UNLOCKED(walt_dvfs_lock);
+
 /* Reflect task activity on its demand and cpu's busy time statistics */
 void walt_update_task_ravg(struct task_struct *p, struct rq *rq,
 	     int event, u64 wallclock, u64 irqtime)
 {
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	unsigned long flags;
+	int cpu = cpu_of(rq);
+#endif
+
 	if (walt_disabled || !rq->window_start)
 		return;
 
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	raw_spin_lock_irqsave(&per_cpu(walt_dvfs_lock, cpu), flags);
+#else
 	lockdep_assert_held(&rq->lock);
+#endif
 
 	update_window_start(rq, wallclock);
 
@@ -742,11 +761,25 @@ done:
 	trace_walt_update_task_ravg(p, rq, event, wallclock, irqtime);
 
 	p->ravg.mark_start = wallclock;
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+	raw_spin_unlock_irqrestore(&per_cpu(walt_dvfs_lock, cpu), flags);
+#endif
 }
 
-unsigned long __weak arch_get_cpu_efficiency(int cpu)
+unsigned long arch_get_cpu_efficiency(int cpu)
 {
-	return SCHED_CAPACITY_SCALE;
+	unsigned long capacity;
+
+	if (cpu_core_energy(cpu)) {
+		/* if power table is found, get capacity of CPU from it */
+		int max_cap_idx = cpu_core_energy(cpu)->nr_cap_states - 1;
+
+		capacity = cpu_core_energy(cpu)->cap_states[max_cap_idx].cap;
+
+		return capacity;
+	} else
+		return SCHED_CAPACITY_SCALE;
 }
 
 void walt_init_cpu_efficiency(void)
@@ -861,11 +894,11 @@ void walt_fixup_busy_time(struct task_struct *p, int new_cpu)
 
 	if ((s64)src_rq->prev_runnable_sum < 0) {
 		src_rq->prev_runnable_sum = 0;
-		WARN_ON(1);
+		/* WARN_ON(1); */
 	}
 	if ((s64)src_rq->curr_runnable_sum < 0) {
 		src_rq->curr_runnable_sum = 0;
-		WARN_ON(1);
+		/* WARN_ON(1); */
 	}
 
 	trace_walt_migration_update_sum(src_rq, p);
@@ -910,7 +943,11 @@ static unsigned long load_scale_cpu_efficiency(int cpu)
  */
 static unsigned long load_scale_cpu_freq(int cpu)
 {
-	return DIV_ROUND_UP(1024 * max_possible_freq, cpu_rq(cpu)->max_freq);
+	if (cpu_rq(cpu)->max_freq)
+		return DIV_ROUND_UP(1024 * max_possible_freq,
+				cpu_rq(cpu)->max_freq);
+	else
+		return 1024;
 }
 
 static int compute_capacity(int cpu)
@@ -966,7 +1003,9 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 		orig_max_freq = cpu_rq(i)->max_freq;
 		cpu_rq(i)->min_freq = policy->min;
 		cpu_rq(i)->max_freq = policy->max;
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 		cpu_rq(i)->cur_freq = policy->cur;
+#endif
 		cpu_rq(i)->max_possible_freq = policy->cpuinfo.max_freq;
 	}
 
@@ -1024,6 +1063,10 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 		if (update_max) {
 			u64 mpc, mplsf;
 
+			/* paltform driver may be delayed */
+			if (!rq->max_freq)
+				return 0;
+
 			mpc = div_u64(((u64) rq->capacity) *
 				rq->max_possible_freq, rq->max_freq);
 			rq->max_possible_capacity = (int) mpc;
@@ -1052,6 +1095,7 @@ static int cpufreq_notifier_policy(struct notifier_block *nb,
 	return 0;
 }
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static int cpufreq_notifier_trans(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
@@ -1080,14 +1124,36 @@ static int cpufreq_notifier_trans(struct notifier_block *nb,
 
 	return 0;
 }
+#else
+int cpufreq_notifier_trans_sspm_walt(unsigned int cpu, unsigned int new_freq)
+{
+	struct rq *rq = cpu_rq(cpu);
+	unsigned long flags;
+
+	if (rq->cur_freq == new_freq)
+		return 0;
+
+	/* critical section */
+	walt_update_task_ravg(rq->curr, rq, TASK_UPDATE,
+			walt_ktime_clock(), 0);
+
+	raw_spin_lock_irqsave(&per_cpu(walt_dvfs_lock, cpu), flags);
+	rq->cur_freq = new_freq;
+	raw_spin_unlock_irqrestore(&per_cpu(walt_dvfs_lock, cpu), flags);
+
+	return 0;
+}
+#endif
 
 static struct notifier_block notifier_policy_block = {
 	.notifier_call = cpufreq_notifier_policy
 };
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 static struct notifier_block notifier_trans_block = {
 	.notifier_call = cpufreq_notifier_trans
 };
+#endif
 
 static int register_sched_callback(void)
 {
@@ -1096,10 +1162,11 @@ static int register_sched_callback(void)
 	ret = cpufreq_register_notifier(&notifier_policy_block,
 						CPUFREQ_POLICY_NOTIFIER);
 
+#ifndef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 	if (!ret)
 		ret = cpufreq_register_notifier(&notifier_trans_block,
 						CPUFREQ_TRANSITION_NOTIFIER);
-
+#endif
 	return 0;
 }
 
