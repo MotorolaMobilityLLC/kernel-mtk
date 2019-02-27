@@ -81,7 +81,7 @@ enum {
 
 typedef uint8_t task_offload_scene_t;
 
-static task_offload_scene_t OFFLOAD_SCENE = TASK_SCENE_OFFLOAD_MP3;
+static task_offload_scene_t OFFLOAD_TYPE = TASK_SCENE_OFFLOAD_MP3;
 
 static struct afe_offload_service_t afe_offload_service = {
 	.write_blocked   = false,
@@ -90,6 +90,7 @@ static struct afe_offload_service_t afe_offload_service = {
 	.ipiwait         = false,
 	.needdata        = false,
 	.ipiresult       = true,
+	.decode_error    = false,
 	.volume          = 0x10000,
 	.scene           = TASK_SCENE_PLAYBACK_MP3,
 };
@@ -166,7 +167,7 @@ static int offloadservice_setvolume(struct snd_kcontrol *kcontrol,
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 			 AUDIO_IPI_MSG_ONLY,
 			 AUDIO_IPI_MSG_BYPASS_ACK,
-			 MP3_VOLUME, afe_offload_service.volume,
+			 OFFLOAD_VOLUME, afe_offload_service.volume,
 			 afe_offload_service.volume, NULL);
 #endif
 	return 0;
@@ -193,15 +194,15 @@ static int offloadservice_set_pcmdump(struct snd_kcontrol *kcontrol,
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 			 AUDIO_IPI_DMA, AUDIO_IPI_MSG_BYPASS_ACK,
-			 MP3_PCMDUMP_ON,
+			 OFFLOAD_PCMDUMP_ON,
 			 0, afe_offload_service.pcmdump,
 			 0);
 #endif
-	pr_debug("%s, MP3_PCMDUMP_ON = %d\n", __func__, MP3_PCMDUMP_ON);
+	pr_debug("%s, PCMDUMP = %d\n", __func__, afe_offload_service.pcmdump);
 	afe_offload_service.ipiwait = true;
 	/* dsp dump closed */
 	if (afe_offload_service.pcmdump == 0) {
-		OffloadService_IPICmd_Wait(MP3_PCMDUMP_OK);
+		OffloadService_IPICmd_Wait(OFFLOAD_PCMDUMP_OK);
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		playback_close_dump_file();
 #endif
@@ -217,18 +218,22 @@ static int offloadservice_get_pcmdump(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int offloadservice_setscene(struct snd_kcontrol *kcontrol,
+static int offloadservice_setformat(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	OFFLOAD_SCENE = (task_offload_scene_t)ucontrol->value.integer.value[0];
-	pr_debug("%s OFFLOAD_SCENE = %d\n", __func__, OFFLOAD_SCENE);
+	OFFLOAD_TYPE = (task_offload_scene_t)ucontrol->value.integer.value[0];
+	pr_debug("%s OFFLOAD_TYPE = %d\n", __func__, OFFLOAD_TYPE);
 	return 0;
 }
 
-static int offloadservice_getscene(struct snd_kcontrol *kcontrol,
+static int offloadservice_getformat(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
-	ucontrol->value.integer.value[0] = (unsigned int)OFFLOAD_SCENE;
+	ucontrol->value.integer.value[0] = 0;
+	if (afe_offload_service.decode_error == true) {
+		pr_info("offloadgetformat decode_error\n");
+		ucontrol->value.integer.value[0] = 1;
+	}
 	return 0;
 }
 
@@ -237,9 +242,9 @@ static const struct snd_kcontrol_new Audio_snd_dloffload_controls[] = {
 	offloadservice_getvolume, offloadservice_setvolume),
 	SOC_SINGLE_EXT("offload set dump", SND_SOC_NOPM, 0, 0xF, 0,
 	offloadservice_get_pcmdump, offloadservice_set_pcmdump),
-	SOC_SINGLE_EXT("offload set scene", SND_SOC_NOPM, 0,
+	SOC_SINGLE_EXT("offload set format", SND_SOC_NOPM, 0,
 	TASK_SCENE_PLAYBACK_MP3, 0,
-	offloadservice_getscene, offloadservice_setscene),
+	offloadservice_getformat, offloadservice_setformat),
 };
 
 
@@ -286,6 +291,8 @@ int mtk_compr_offload_copy(struct snd_compr_stream *stream, char __user *buf,
 	mtk_compr_offload_int_wakelock(true);
 #endif
 	ret = offloadservice_copydatatoram(buf, count);
+	if (afe_offload_service.decode_error == true)
+		ret = -1;
 	return ret;
 }
 
@@ -315,10 +322,10 @@ static int mtk_compr_offload_drain(struct snd_compr_stream *stream)
 		afe_offload_service.needdata = false;
 
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-		pr_info("%s, MP3_DRAIN", __func__);
+		pr_info("%s, OFFLOAD_DRAIN", __func__);
 		mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 				 AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
-				 MP3_DRAIN, buf_bridge->pWrite, 0, NULL);
+				 OFFLOAD_DRAIN, buf_bridge->pWrite, 0, NULL);
 
 #endif
 #ifdef use_wake_lock
@@ -356,7 +363,7 @@ static int mtk_compr_offload_open(struct snd_compr_stream *stream)
 			 NULL);
 #endif
 	offload_stream = stream;
-	pr_debug("%s OFFLOAD_SCENE = %d\n", __func__, OFFLOAD_SCENE);
+	pr_debug("%s OFFLOAD_TYPE = %d\n", __func__, OFFLOAD_TYPE);
 
 	return 0;
 }
@@ -460,14 +467,15 @@ static int mtk_compr_offload_set_params(struct snd_compr_stream *stream,
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 			 AUDIO_IPI_MSG_ONLY,
 			 AUDIO_IPI_MSG_BYPASS_ACK,
-			 MP3_CODEC_INFO, afe_offload_codec_info.codec_bitrate,
+			 OFFLOAD_CODEC_INFO,
+			 afe_offload_codec_info.codec_bitrate,
 			 afe_offload_codec_info.codec_samplerate
 			 , NULL);
 
 	/* send audio_hw_buffer to SCP side */
 	ipi_audio_buf =
 		(void *)dsp->dsp_mem[ID].msg_atod_share_buf.va_addr;
-	pr_debug("%s mp3 ipi_audio_buf = %p\n", __func__, ipi_audio_buf);
+	pr_debug("%s offload ipi_audio_buf = %p\n", __func__, ipi_audio_buf);
 	memcpy((void *)ipi_audio_buf,
 	       (void *)&dsp->dsp_mem[ID].adsp_buf,
 	       sizeof(struct audio_hw_buffer));
@@ -489,8 +497,8 @@ static int mtk_compr_offload_set_params(struct snd_compr_stream *stream,
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 			 AUDIO_IPI_MSG_ONLY,
 			 AUDIO_IPI_MSG_NEED_ACK,
-			 MP3_SCENE, OFFLOAD_SCENE, OFFLOAD_SCENE, NULL);
-	pr_debug("%s MP3_SCENE Done\n", __func__);
+			 OFFLOAD_SCENE, OFFLOAD_TYPE, OFFLOAD_TYPE, NULL);
+	pr_debug("%s OFFLOAD_SCENE Done\n", __func__);
 	return ret;
 
 ERROR:
@@ -600,21 +608,26 @@ static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 		offloadservice_releasewriteblocked();
 		afe_offload_service.needdata = true;
 		break;
-	case MP3_PCMCONSUMED:
+	case OFFLOAD_PCMCONSUMED:
 		afe_offload_block.copied_total = ipi_msg->param1;
 		afe_offload_service.ipiwait = false;
 		afe_offload_service.ipiresult = true;
 		break;
-	case MP3_DRAINDONE:
+	case OFFLOAD_DRAINDONE:
 		pr_info("%s mtk_compr_offload_draindone\n", __func__);
 		afe_offload_block.drain_state = AUDIO_DRAIN_ALL;
 		mtk_compr_offload_draindone();
 		afe_offload_service.ipiwait = false;
 		afe_offload_service.ipiresult = true;
 		break;
-	case MP3_PCMDUMP_OK:
+	case OFFLOAD_PCMDUMP_OK:
 		afe_offload_service.ipiwait = false;
 		playback_dump_message(ipi_msg);
+		break;
+
+	case OFFLOAD_DECODE_ERROR:
+		afe_offload_service.decode_error = true;
+		pr_info("%s decode_error\n", __func__);
 		break;
 	}
 	pr_debug("%s msg_id :  %d\n", __func__, ipi_msg->msg_id);
@@ -683,7 +696,7 @@ static int offloadservice_copydatatoram(void __user *buf, size_t count)
 		mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 				AUDIO_IPI_MSG_ONLY,
 				AUDIO_IPI_MSG_BYPASS_ACK,
-				MP3_SETWRITEBLOCK,
+				OFFLOAD_SETWRITEBLOCK,
 				afe_offload_block.write_blocked_idx,
 				0, NULL);
 #endif
@@ -711,7 +724,7 @@ static int offloadservice_copydatatoram(void __user *buf, size_t count)
 			mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 				AUDIO_IPI_MSG_ONLY,
 				AUDIO_IPI_MSG_BYPASS_ACK,
-				MP3_WRITEIDX,
+				OFFLOAD_WRITEIDX,
 				buf_bridge->pWrite,
 				0, NULL);
 #endif
@@ -768,7 +781,7 @@ static int mtk_compr_offload_pointer(struct snd_compr_stream *stream,
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
 		mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 				 AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
-				 MP3_TSTAMP, 0, 0, NULL);
+				 OFFLOAD_TSTAMP, 0, 0, NULL);
 #endif
 		afe_offload_service.ipiwait = true;
 	}
@@ -783,7 +796,7 @@ static int mtk_compr_offload_pointer(struct snd_compr_stream *stream,
 
 	if (afe_offload_block.state == OFFLOAD_STATE_RUNNING &&
 	    afe_offload_service.write_blocked)
-		OffloadService_IPICmd_Wait(MP3_PCMCONSUMED);
+		OffloadService_IPICmd_Wait(OFFLOAD_PCMCONSUMED);
 
 	if (!afe_offload_service.needdata) {
 		tstamp->copied_total  =
@@ -836,7 +849,7 @@ static int mtk_compr_offload_resume(struct snd_compr_stream *stream)
 		ret = mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 				       AUDIO_IPI_MSG_ONLY,
 				       AUDIO_IPI_MSG_NEED_ACK,
-				       MP3_RESUME,
+				       OFFLOAD_RESUME,
 				       1, 0, NULL);
 
 		if (afe_offload_block.drain_state != AUDIO_DRAIN_EARLY_NOTIFY)
@@ -867,7 +880,7 @@ static int mtk_compr_offload_pause(struct snd_compr_stream *stream)
 		ret = mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
 					AUDIO_IPI_MSG_ONLY,
 					AUDIO_IPI_MSG_NEED_ACK,
-					MP3_PAUSE,
+					OFFLOAD_PAUSE,
 					1, 0, NULL);
 		pr_debug("%s > transferred\n", __func__);
 	}
