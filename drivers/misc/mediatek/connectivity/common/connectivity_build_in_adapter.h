@@ -14,7 +14,6 @@
 #ifndef CONNECTIVITY_BUILD_IN_ADAPTER_H
 #define CONNECTIVITY_BUILD_IN_ADAPTER_H
 
-#include "mach/mtk_ppm_api.h"
 #ifdef CONFIG_ARCH_MT6570
 #define CPU_BOOST y
 #endif
@@ -30,47 +29,51 @@
 #ifdef CONFIG_MACH_MT6763
 #define CPU_BOOST y
 #endif
-
 #ifdef CONFIG_MACH_MT6799
 #define CPU_BOOST y
 #endif
+
 #ifdef CPU_BOOST
-#include "mtk_spm_resource_req.h"
+#include "mach/mtk_ppm_api.h"
 #endif
+
 #define KERNEL_show_stack connectivity_export_show_stack
 #define KERNEL_tracing_record_cmdline connectivity_export_tracing_record_cmdline
+#ifdef CPU_BOOST
 #define KERNEL_mt_ppm_sysboost_freq connectivity_export_mt_ppm_sysboost_freq
 #define KERNEL_mt_ppm_sysboost_core connectivity_export_mt_ppm_sysboost_core
-#define KERNEL_spm_resource_req connectivity_export_spm_resource_req
-
 #define KERNEL_mt_ppm_sysboost_set_core_limit \
 		connectivity_export_mt_ppm_sysboost_set_core_limit
 #define KERNEL_mt_ppm_sysboost_set_freq_limit \
 		connectivity_export_mt_ppm_sysboost_set_freq_limit
+#else
+#define KERNEL_mt_ppm_sysboost_freq
+#define KERNEL_mt_ppm_sysboost_core
+#define KERNEL_mt_ppm_sysboost_set_core_limit
+#define KERNEL_mt_ppm_sysboost_set_freq_limit
+#endif
 extern void tracing_record_cmdline(struct task_struct *tsk);
 extern void show_stack(struct task_struct *tsk, unsigned long *sp);
+#ifdef CPU_BOOST
 extern void mt_ppm_sysboost_freq(enum ppm_sysboost_user user,
 				 unsigned int freq);
 extern void mt_ppm_sysboost_core(enum ppm_sysboost_user user,
 				 unsigned int core_num);
-#ifdef CPU_BOOST
 extern void mt_ppm_sysboost_set_core_limit(enum ppm_sysboost_user user,
 					   unsigned int cluster,
 					   int min_core, int max_core);
 extern void mt_ppm_sysboost_set_freq_limit(enum ppm_sysboost_user user,
 					   unsigned int cluster,
 					   int min_freq, int max_freq);
-extern bool spm_resource_req(unsigned int user, unsigned int req_mask);
 #endif
+
 void connectivity_export_show_stack(struct task_struct *tsk, unsigned long *sp);
 void connectivity_export_tracing_record_cmdline(struct task_struct *tsk);
+#ifdef CPU_BOOST
 void connectivity_export_mt_ppm_sysboost_freq(enum ppm_sysboost_user user,
 					      unsigned int freq);
 void connectivity_export_mt_ppm_sysboost_core(enum ppm_sysboost_user user,
 					      unsigned int core_num);
-#ifdef CPU_BOOST
-bool connectivity_export_spm_resource_req(unsigned int user,
-					  unsigned int req_mask);
 void connectivity_export_mt_ppm_sysboost_set_core_limit(
 				enum ppm_sysboost_user user,
 				unsigned int cluster,
