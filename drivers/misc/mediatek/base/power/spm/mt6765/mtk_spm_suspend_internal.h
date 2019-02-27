@@ -55,6 +55,8 @@ void spm_output_sleep_option(void);
 u32 spm_get_last_wakeup_src(void);
 u32 spm_get_last_wakeup_misc(void);
 void spm_set_sysclk_settle(void);
+void spm_dump_world_clk_cntcv(void);
+
 
 void spm_suspend_pre_process(struct pwr_ctrl *pwrctrl);
 void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
