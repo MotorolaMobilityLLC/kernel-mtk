@@ -220,6 +220,12 @@ static long AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 			(__user struct stAF_MotorName *)(a_u4Param));
 		break;
 
+	case AFIOC_S_SETDRVINIT:
+		spin_lock(&g_AF_SpinLock);
+		g_s4AF_Opened = 1;
+		spin_unlock(&g_AF_SpinLock);
+		break;
+
 #if !defined(CONFIG_MTK_LEGACY)
 	case AFIOC_S_SETPOWERCTRL:
 		AFRegulatorCtrl(0);

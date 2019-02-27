@@ -186,4 +186,6 @@ struct stAF_MotorI2CSendCmd {
 
 #define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
 
+#define AFIOC_S_SETDRVINIT _IOW(AF_MAGIC, 16, u32)
+
 #endif
