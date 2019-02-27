@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#define pr_fmt(fmt) "<GYROSCOPE> " fmt
+#define pr_fmt(fmt) "<GYRO_FAC> " fmt
 
 #include "inc/gyro_factory.h"
 

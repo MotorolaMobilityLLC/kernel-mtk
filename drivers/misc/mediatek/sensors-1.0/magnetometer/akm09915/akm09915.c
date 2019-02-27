@@ -26,7 +26,7 @@
  *
  */
 
-#define pr_fmt(fmt) "<MAGNETIC> " fmt
+#define pr_fmt(fmt) "<AKM09915> " fmt
 
 #include "akm09915.h"
 #include "cust_mag.h"
