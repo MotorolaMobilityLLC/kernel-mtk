@@ -33,10 +33,8 @@
 #include <mach/upmu_sw.h>
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_auxadc_intf.h>
-#if 0 /* FIXME: bring up */
 #include <mtk_cpufreq_api.h>
 #include <mtk_gpufreq.h>
-#endif
 #include <mach/mtk_thermal.h>
 #include <mtk_ppm_api.h>
 #endif
@@ -156,9 +154,7 @@ int hpf_get_power_leakage(void)
 	struct hpf *hpfmgr = &hpf_ctrl;
 	unsigned int leakage_cpu = 0, leakage_gpu = 0;
 
-#if 0 /* FIXME: bring up */
 	leakage_cpu = mt_ppm_get_leakage_mw(TOTAL_CLUSTER_LKG);
-#endif
 	leakage_gpu = mt_gpufreq_get_leakage_mw();
 	hpfmgr->loading_leakage = leakage_cpu + leakage_gpu;
 
@@ -267,9 +263,7 @@ static void pbm_allocate_budget_manager(void)
 		if (tocpu <= 0)
 			tocpu = 1;
 
-#if 0 /* FIXME: bring up */
 		mt_ppm_dlpt_set_limit_by_pbm(tocpu);
-#endif
 	} else {
 		multiple = (_dlpt * 1000) / (cpu + gpu);
 
@@ -292,9 +286,7 @@ static void pbm_allocate_budget_manager(void)
 		if (togpu <= 0)
 			togpu = 1;
 
-#if 0 /* FIXME: bring up */
 		mt_ppm_dlpt_set_limit_by_pbm(tocpu);
-#endif
 		mt_gpufreq_set_power_limit_by_pbm(togpu);
 	}
 
@@ -533,9 +525,7 @@ static int pbm_thread_handle(void *data)
 				pr_notice("DISABLE PBM\n");
 
 				if (g_dlpt_state_sync == 0) {
-#if 0 /* FIXME: bring up */
 					mt_ppm_dlpt_set_limit_by_pbm(0);
-#endif
 					mt_gpufreq_set_power_limit_by_pbm(0);
 					g_dlpt_state_sync = 1;
 					pr_info("Release DLPT limit\n");
