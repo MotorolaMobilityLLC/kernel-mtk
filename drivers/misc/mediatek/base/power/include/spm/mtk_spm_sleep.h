@@ -25,8 +25,10 @@ extern bool spm_is_md1_sleep(void);
 extern bool spm_is_md2_sleep(void);
 extern bool spm_is_conn_sleep(void);
 extern void spm_ap_mdsrc_req(u8 set);
-extern int get_spm_sleep_count(struct seq_file *s, void *unused);
-extern int get_spm_last_wakeup_src(struct seq_file *s, void *unused);
+extern ssize_t get_spm_sleep_count(char *ToUserBuf
+			, size_t sz, void *priv);
+extern ssize_t get_spm_last_wakeup_src(char *ToUserBuf
+			, size_t sz, void *priv);
 
 /* record last wakesta */
 extern u32 spm_get_last_wakeup_src(void);
