@@ -69,7 +69,7 @@ struct TaskContextType {
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_LENGTH  (512 * 1024)
+#define CRASH_MEMORY_LENGTH  (256 * 1024)
 #define CRASH_MEMORY_OFFSET  (0x800)
 #define CRASH_REG_SIZE  (9 * 32)
 
@@ -166,7 +166,6 @@ struct scp_reg_dump_list {
 	uint32_t debug_addr_spi1;
 	uint32_t debug_addr_spi2;
 	uint32_t debug_bus_status;
-	uint32_t debug_infra_mon;
 	uint32_t scp_reg_magic_end;
 };
 
