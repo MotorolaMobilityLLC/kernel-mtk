@@ -2798,6 +2798,16 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			};
 		};
 	};
+	pmic_clock_buffer_ctrl: pmic_clock_buffer_ctrl {};
+	i2c7:i2c7{};
+	i2c8:i2c8{};
+	i2c9:i2c9{};
+	smart_pa: smart_pa{};
+	irq_nfc: irq_nfc{};
+	md1_sim1_hot_plug_eint:md1_sim1_hot_plug_eint{};
+	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint{};
+	kd_camera_hw1: kd_camera_hw1{};
+
 };
 
 #include "cust_mt6765_msdc.dtsi"
