@@ -216,9 +216,9 @@ static void mt_aee_show_current_irq_counts(void)
 				" %d:IPI +%d(%d)\n", irq,
 				count - per_cpu(ipi_count_mon, cpu).ipis[irq],
 				count);
-				#if defined(CONFIG_MTK_AEE_FEATURE)
+#ifdef CONFIG_MTK_RAM_CONSOLE
 				aee_sram_fiq_log(wdt_sched_mon_log_buf);
-				#endif
+#endif
 				memset(wdt_sched_mon_log_buf, 0,
 					sizeof(wdt_sched_mon_log_buf));
 			}
