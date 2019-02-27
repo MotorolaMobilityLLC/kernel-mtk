@@ -15,7 +15,7 @@
 #define __CMDQ_DRIVER_H__
 
 #include <linux/kernel.h>
-#include "cmdq_def.h"
+#include "cmdq_v3_def.h"
 
 struct cmdqUsageInfoStruct {
 	/* [OUT] current engine ref count */
