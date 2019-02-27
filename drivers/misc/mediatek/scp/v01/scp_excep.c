@@ -53,6 +53,8 @@ static struct scp_work_struct scp_aed_work;
 static struct scp_status_reg scp_A_aee_status;
 static struct mutex scp_excep_mutex;
 static struct mutex scp_A_excep_dump_mutex;
+int scp_ee_enable;
+
 
 /* An ELF note in memory */
 struct memelfnote {
@@ -225,6 +227,17 @@ void scp_reg_copy(void *bufp)
 	scp_reg->clk_sw_sel = readl(SCP_CLK_SW_SEL);
 	scp_reg->clk_enable = readl(SCP_CLK_ENABLE);
 	scp_reg->clk_high_core = readl(SCP_CLK_HIGH_CORE_CG);
+	scp_reg->debug_wdt_sp = readl(SCP_WDT_SP);
+	scp_reg->debug_wdt_lr = readl(SCP_WDT_LR);
+	scp_reg->debug_wdt_psp = readl(SCP_WDT_PSP);
+	scp_reg->debug_wdt_pc = readl(SCP_WDT_PC);
+	scp_reg->debug_addr_s2r = readl(SCP_DEBUG_ADDR_S2R);
+	scp_reg->debug_addr_dma = readl(SCP_DEBUG_ADDR_DMA);
+	scp_reg->debug_addr_spi0 = readl(SCP_DEBUG_ADDR_SPI0);
+	scp_reg->debug_addr_spi1 = readl(SCP_DEBUG_ADDR_SPI1);
+	scp_reg->debug_addr_spi2 = readl(SCP_DEBUG_ADDR_SPI2);
+	scp_reg->debug_bus_status = readl(SCP_DEBUG_BUS_STATUS);
+	scp_reg->debug_infra_mon = readl(SCP_SYS_INFRA_MON);
 	scp_reg->scp_reg_magic_end = 0xDEADBEEF;
 
 }
@@ -324,7 +337,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 
 	scp_dump_size = CRASH_MEMORY_HEADER_SIZE +
 					SCP_A_TCM_SIZE +
-					CRASH_REG_SIZE;
+					sizeof(struct scp_reg_dump_list);
 
 	*reg = lock;
 	dsb(SY);
@@ -526,16 +539,25 @@ void scp_aed_reset_inplace(enum scp_excep_id type,
 		enum scp_core_id id)
 {
 	pr_debug("[SCP]scp_aed_reset_inplace\n");
-	scp_aed(type, id);
-#ifndef CFG_RECOVERY_SUPPORT
+	if (scp_ee_enable)
+		scp_aed(type, id);
+	else
+		pr_debug("[SCP]ee disable value=%d\n", scp_ee_enable);
+
+#if (SCP_RECOVERY_SUPPORT == 0)
 	/* workaround for QA, not reset SCP in WDT */
 	if (type == EXCEP_RUNTIME)
 		return;
 
 #endif
 
-	pr_debug("[SCP] SCP_A_REBOOT\n");
-	reset_scp(SCP_A_REBOOT);
+#if SCP_RECOVERY_SUPPORT
+	if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
+		/*complete scp ee, if scp reset by wdt or awake fail*/
+		pr_debug("[SCP]aed finished, complete it\n");
+		complete(&scp_sys_reset_cp);
+	}
+#endif
 
 }
 
@@ -641,7 +663,8 @@ int scp_excep_init(void)
 
 	/* init global values */
 	scp_A_dump_length = 0;
-
+	/* 1: ee on, 0: ee disable*/
+	scp_ee_enable = 1;
 
 	return 0;
 }

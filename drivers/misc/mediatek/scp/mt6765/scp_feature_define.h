@@ -14,14 +14,16 @@
 #ifndef __SCP_FEATURE_DEFINE_H__
 #define __SCP_FEATURE_DEFINE_H__
 
-/* reset recovery feature kernel option*/
-#define CFG_RECOVERY_SUPPORT
 
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR       (0)
 #define SCP_LOGGER_ENABLE               (1)
 #define SCP_DVFS_INIT_ENABLE			(1)
 #define SCP_RESERVED_MEM				(1)
+/* scp rescovery feature option*/
+#define SCP_RECOVERY_SUPPORT			(1)
+/* scp recovery timeout value (ms)*/
+#define SCP_SYS_RESET_TIMEOUT			1000
 
 /* scp aed definition*/
 #define SCP_AED_STR_LEN		(512)

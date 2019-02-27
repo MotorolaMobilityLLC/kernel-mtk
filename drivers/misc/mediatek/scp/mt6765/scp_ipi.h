@@ -18,7 +18,7 @@
 
 #define SHARE_BUF_SIZE 288
 /* scp awake timout count definition*/
-#define SCP_AWAKE_TIMEOUT 5000
+#define SCP_AWAKE_TIMEOUT 100000
 #define SCP_IPI_STAMP_SUPPORT 0
 
 /* scp Core ID definition*/

@@ -70,6 +70,18 @@ enum SEMAPHORE_FLAG {
 	NR_FLAG = 9,
 };
 
+/* scp reset status */
+enum SCP_RESET_STATUS {
+	RESET_STATUS_STOP = 0,
+	RESET_STATUS_START = 1,
+};
+
+/* scp reset status */
+enum SCP_RESET_TYPE {
+	RESET_TYPE_WDT = 0,
+	RESET_TYPE_AWAKE = 1,
+	RESET_TYPE_CMD = 2,
+};
 
 struct scp_regs {
 	void __iomem *scpsys;
@@ -115,6 +127,16 @@ struct scp_reserve_mblock {
 	u64 size;
 };
 
+struct scp_region_info_st {
+	uint32_t ap_loader_start;
+	uint32_t ap_loader_size;
+	uint32_t ap_firmware_start;
+	uint32_t ap_firmware_size;
+	uint32_t ap_cached_start;
+	uint32_t ap_cached_size;
+	uint32_t ap_cached_backup_start;
+};
+
 /* scp device attribute */
 extern struct device_attribute dev_attr_scp_A_mobile_log_UT;
 extern struct device_attribute dev_attr_scp_A_logger_wakeup_AP;
@@ -147,7 +169,7 @@ extern void scp_A_ipi_init(void);
 extern void scp_A_register_notify(struct notifier_block *nb);
 extern void scp_A_unregister_notify(struct notifier_block *nb);
 extern void scp_schedule_work(struct scp_work_struct *scp_ws);
-
+extern void scp_schedule_logger_work(struct scp_work_struct *scp_ws);
 extern int get_scp_semaphore(int flag);
 extern int release_scp_semaphore(int flag);
 extern int scp_get_semaphore_3way(int flag);
@@ -163,5 +185,28 @@ extern phys_addr_t scp_get_reserve_mem_phys(enum scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_virt(enum scp_reserve_mem_id_t id);
 extern phys_addr_t scp_get_reserve_mem_size(enum scp_reserve_mem_id_t id);
 extern int scp_check_resource(void);
+void set_scp_mpu(void);
+extern phys_addr_t scp_mem_base_phys;
+extern phys_addr_t scp_mem_base_virt;
+extern phys_addr_t scp_mem_size;
+extern atomic_t scp_reset_status;
 
+/*extern scp notify*/
+extern void scp_send_reset_wq(enum SCP_RESET_TYPE type);
+extern void scp_extern_notify(enum SCP_NOTIFY_EVENT notify_status);
+extern struct completion scp_sys_reset_cp;
+extern void scp_status_set(unsigned int value);
+extern void scp_logger_init_set(unsigned int value);
+extern unsigned int scp_set_reset_status(void);
+extern void scp_enable_sram(void);
+extern int scp_sys_full_reset(void);
+#if SCP_RECOVERY_SUPPORT
+extern phys_addr_t scp_loader_base_phys;
+extern phys_addr_t scp_loader_base_virt;
+extern phys_addr_t scp_fw_base_phys;
+extern uint32_t scp_loader_size;
+extern uint32_t scp_fw_size;
+extern unsigned int scp_reset_by_cmd;
+extern struct scp_region_info_st *scp_region_info;
+#endif
 #endif
