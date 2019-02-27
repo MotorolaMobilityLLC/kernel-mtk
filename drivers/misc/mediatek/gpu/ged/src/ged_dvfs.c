@@ -758,7 +758,7 @@ GED_ERROR ged_dvfs_um_commit( unsigned long gpu_tar_freq, bool bFallback)
 }
 
 #ifdef GED_ENABLE_FB_DVFS
-static int gx_gpu_dvfs_margin = 15;
+static int gx_gpu_dvfs_margin = 10;
 module_param(gx_gpu_dvfs_margin, int, 0644);
 #define GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM 4
 static int is_fb_dvfs_triggered;
@@ -832,6 +832,8 @@ static int ged_dvfs_fb_gpu_dvfs(int t_gpu, int t_gpu_target,
 		for (i = 0; i < GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM; i++)
 			gpu_busy_cycle += busy_cycle[i];
 		gpu_busy_cycle /= GED_DVFS_BUSY_CYCLE_MONITORING_WINDOW_NUM;
+		gpu_busy_cycle = (gpu_busy_cycle > busy_cycle_cur) ?
+			gpu_busy_cycle : busy_cycle_cur;
 	}
 	gpu_freq_tar = (gpu_busy_cycle / t_gpu_target) << 10;
 	pre_frame_idx = cur_frame_idx;
