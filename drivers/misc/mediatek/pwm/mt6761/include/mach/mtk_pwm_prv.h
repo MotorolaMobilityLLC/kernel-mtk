@@ -21,13 +21,18 @@
 
 #ifdef CONFIG_OF
 extern void __iomem *pwm_base;
-extern void __iomem *pwm_pericfg_base;
+extern void __iomem *pwm_infracfg_base;
 
 #undef PWM_BASE
 #define PWM_BASE pwm_base
-#define PWM_PERICFG_BASE pwm_pericfg_base
+#define PWM_INFRACFG_BASE pwm_infracfg_base
 #endif
 
+/* This variable is for pwm cervino,merlot change.
+ * 1. change 8G DRAM enable from PERICFG domain to PWM internal register
+ * 2. change 26M clock source to use INFRA domain control
+ */
+#define PWM_HW_V_1_0
 /***********************************
  * PWM register address
  ************************************/
@@ -71,10 +76,7 @@ extern void __iomem *pwm_pericfg_base;
 #define BLOCK_CLK     (66UL*1000*1000)
 #define PWM_26M_CLK   (26UL*1000*1000)
 
-/* PWM pericfg control register */
-#define PERI_8GB_DDR_EN (PWM_PERICFG_BASE+0x94)
-#define PWM_PERI_SHIFT (PWM_PERICFG_BASE+0x01C8)
-#define PWM_PERI_SHIFT_OFFSET 18
-
+/* PWM infracfg control register */
+#define PWM_CLK_SRC_CTRL  (pwm_infracfg_base + 0x410)
 void mt_pwm_platform_init(void);
 #endif
