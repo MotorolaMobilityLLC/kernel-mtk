@@ -16,7 +16,6 @@ mmp_event ion_mmp_events[PROFILE_MAX];
 /*because avoid CamelCase, will modify after*/
 void ion_profile_init(void)
 {
-#ifdef ION_PROFILE
 	mmp_event ion_event;
 
 	mmprofile_enable(1);
@@ -53,15 +52,20 @@ void ion_profile_init(void)
 	    mmprofile_register_event(ion_event, "flush_all");
 	ion_mmp_events[PROFILE_DMA_INVALID_ALL] =
 	    mmprofile_register_event(ion_event, "inv_all");
+	ion_mmp_events[PROFILE_MVA_ALLOC] =
+	    mmprofile_register_event(ion_event, "alloc_mva");
+	ion_mmp_events[PROFILE_MVA_DEALLOC] =
+	    mmprofile_register_event(ion_event, "dealloc_mva");
 
 	/* enable events by default */
-
 	mmprofile_enable_event(ion_mmp_events[PROFILE_ALLOC], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 1);
-	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_KERNEL], 0);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MAP_USER], 0);
 	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_CLEAN_ALL], 1);
 	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_FLUSH_ALL], 1);
 	mmprofile_enable_event(ion_mmp_events[PROFILE_DMA_INVALID_ALL], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MVA_ALLOC], 1);
+	mmprofile_enable_event(ion_mmp_events[PROFILE_MVA_DEALLOC], 1);
+
 	mmprofile_start(1);
-#endif
 }
