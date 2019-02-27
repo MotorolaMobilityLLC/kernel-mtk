@@ -85,7 +85,7 @@ static struct TEEC_SharedMemory wsm; /* world shared memory */
 #define SECMEM_RECLAIM_DELAY 1000 /* ms */
 
 static u32 secmem_region_ref;
-static u32 secmem_region_online;
+static u32 is_region_ready;
 
 static DEFINE_MUTEX(secmem_region_lock);
 
@@ -550,19 +550,19 @@ static int secmem_region_alloc(void)
 	unsigned long size = 0;
 
 	/* already online */
-	if (secmem_region_online) {
+	if (is_region_ready) {
 		pr_debug("secure memory already online\n");
 		return 0;
 	}
 
 	/* allocate secure memory region */
 #ifdef SECMEM_64BIT_PHYS_SUPPORT
-	ret = svp_region_offline64(&pa, &size);
+	ret = secmem_region_offline64(&pa, &size);
 #else
-	ret = svp_region_offline(&pa, &size);
+	ret = secmem_region_offline(&pa, &size);
 #endif
 	if (ret) {
-		pr_err("svp_region_offline() failed! ret=%d\n", ret);
+		pr_err("secmem_region_offline() failed! ret=%d\n", ret);
 		return -1;
 	}
 
@@ -575,12 +575,12 @@ static int secmem_region_alloc(void)
 	ret = secmem_enable(pa, size);
 	if (ret) {
 		/* free secure memory */
-		svp_region_online();
+		secmem_region_online();
 		pr_err("secmem_enable() failed! ret=%d\n", ret);
 		return -1;
 	}
 
-	secmem_region_online = 1;
+	is_region_ready = 1;
 	secmem_region_ref = 0;
 
 #if defined(CONFIG_MTK_SVP_DISABLE_SODI)
@@ -588,7 +588,7 @@ static int secmem_region_alloc(void)
 #endif
 
 	pr_debug("phyaddr=0x%llx sz=0x%lx rgn_on=%u rgn_ref=%u\n",
-			(u64)pa, size, secmem_region_online, secmem_region_ref);
+			(u64)pa, size, is_region_ready, secmem_region_ref);
 
 	return 0;
 }
@@ -598,7 +598,7 @@ static int secmem_region_release(void)
 	int ret;
 
 	/* already offline */
-	if (secmem_region_online == 0) {
+	if (is_region_ready == 0) {
 		pr_debug("secure memory already offline\n");
 		return 0;
 	}
@@ -617,19 +617,19 @@ static int secmem_region_release(void)
 		return -1;
 	}
 
-	ret = svp_region_online();
+	ret = secmem_region_online();
 	if (ret) {
-		pr_err("svp_region_online() failed! ret=%d\n", ret);
+		pr_err("secmem_region_online() failed! ret=%d\n", ret);
 		return -1;
 	}
 
-	secmem_region_online = 0;
+	is_region_ready = 0;
 
 #if defined(CONFIG_MTK_SVP_DISABLE_SODI)
 	spm_enable_sodi(true);
 #endif
 
-	pr_debug("done, rgn_on=%u\n", secmem_region_online);
+	pr_debug("done, rgn_on=%u\n", is_region_ready);
 
 	return 0;
 }
@@ -674,7 +674,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
-		if (!secmem_region_online) {
+		if (!is_region_ready) {
 			err = secmem_region_alloc();
 			if (err) {
 				mutex_unlock(&secmem_region_lock);
@@ -707,7 +707,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 		cancel_delayed_work_sync(&secmem_reclaim_work);
 		mutex_lock(&secmem_region_lock);
-		if (!secmem_region_online) {
+		if (!is_region_ready) {
 			err = secmem_region_alloc();
 			if (err) {
 				mutex_unlock(&secmem_region_lock);
@@ -715,7 +715,7 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			}
 		}
 		pr_debug("rgn_on=%u rgn_ref=%u\n",
-				secmem_region_online, secmem_region_ref);
+				is_region_ready, secmem_region_ref);
 		mutex_unlock(&secmem_region_lock);
 #endif
 		err = secmem_execute(CMD_SEC_MEM_ALLOC_TBL, &param);
@@ -749,13 +749,13 @@ static long secmem_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	mutex_lock(&secmem_region_lock);
-	if (secmem_region_online == 1 && secmem_region_ref == 0) {
+	if (is_region_ready == 1 && secmem_region_ref == 0) {
 		pr_debug("queue secmem_reclaim_work!!\n");
 		queue_delayed_work(secmem_reclaim_wq, &secmem_reclaim_work,
 			msecs_to_jiffies(SECMEM_RECLAIM_DELAY));
 	} else {
 		pr_debug("cmd=%u rgn_on=%u rgn_ref=%u!!\n",
-				_IOC_NR(cmd), secmem_region_online,
+				_IOC_NR(cmd), is_region_ready,
 				secmem_region_ref);
 	}
 	mutex_unlock(&secmem_region_lock);
@@ -860,14 +860,14 @@ static int secmem_api_alloc_internal(u32 alignment, u32 size, u32 *refcount,
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	cancel_delayed_work_sync(&secmem_reclaim_work);
 	mutex_lock(&secmem_region_lock);
-	if (!secmem_region_online)
+	if (!is_region_ready)
 		ret = secmem_region_alloc();
 
-	if (secmem_region_online)
+	if (is_region_ready)
 		secmem_region_ref++;
 
 	pr_debug("rgn_on=%u rgn_ref=%u\n",
-			secmem_region_online, secmem_region_ref);
+			is_region_ready, secmem_region_ref);
 	mutex_unlock(&secmem_region_lock);
 	if (ret != 0)
 		goto end;
@@ -907,7 +907,7 @@ end:
 		 * decrease region_ref when session_open() and
 		 * execute() failed.
 		 */
-		if (secmem_region_online)
+		if (is_region_ready)
 			secmem_region_ref--;
 		mutex_unlock(&secmem_region_lock);
 #endif
@@ -916,7 +916,7 @@ end:
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("align=0x%x size=0x%x owner=%s id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x rgn_on=%u rgn_ref=%u\n",
 		alignment, size, (owner ? (char *)owner : "NULL"), id, clean,
-		ret, *refcount, *sec_handle, secmem_region_online,
+		ret, *refcount, *sec_handle, is_region_ready,
 		secmem_region_ref);
 #else
 	pr_debug("align=0x%x size=0x%x id=0x%x clean=%d ret=%d refcnt=0x%x shndl=0x%x\n",
@@ -971,7 +971,7 @@ end:
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	if (ret == 0) {
 		mutex_lock(&secmem_region_lock);
-		if (secmem_region_online == 1 && --secmem_region_ref == 0) {
+		if (is_region_ready == 1 && --secmem_region_ref == 0) {
 			pr_debug("queue secmem_reclaim_work!!\n");
 			queue_delayed_work(secmem_reclaim_wq,
 					   &secmem_reclaim_work,
@@ -979,7 +979,7 @@ end:
 						SECMEM_RECLAIM_DELAY));
 		} else {
 			pr_debug("rgn_on=%u rgn_ref=%u\n",
-			secmem_region_online, secmem_region_ref);
+			is_region_ready, secmem_region_ref);
 		}
 		mutex_unlock(&secmem_region_lock);
 	}
@@ -988,7 +988,7 @@ end:
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 	pr_debug("ret=%d shndl=0x%x owner=%s id=0x%x rgn_on=%u rgn_ref=%u\n",
 		ret, sec_handle, (owner ? (char *)owner : "NULL"), id,
-		secmem_region_online, secmem_region_ref);
+		is_region_ready, secmem_region_ref);
 #else
 	pr_debug("ret=%d shndl=0x%x owner=%s id=0x%x\n", ret, sec_handle,
 		 (owner ? (char *)owner : "NULL"), id);

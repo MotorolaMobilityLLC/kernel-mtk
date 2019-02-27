@@ -64,9 +64,9 @@ struct secmem_param {
 
 #if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 /* SVP CMA API */
-extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
-extern int svp_region_offline64(phys_addr_t *pa, unsigned long *size);
-extern int svp_region_online(void);
+extern int secmem_region_offline(phys_addr_t *pa, unsigned long *size);
+extern int secmem_region_offline64(phys_addr_t *pa, unsigned long *size);
+extern int secmem_region_online(void);
 extern void spm_enable_sodi(bool en);
 #endif
 
