@@ -2170,9 +2170,9 @@ static void testcase_thread_dispatch(void)
 	msleep_interruptible(5 * 1000);
 
 	/* ensure both thread execute all command */
-	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG,
+	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG_MDP,
 		engineFlag1, false);
-	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG,
+	_testcase_simplest_command_loop_submit(1, CMDQ_SCENARIO_DEBUG_MDP,
 		engineFlag2, false);
 
 	CMDQ_LOG("%s END\n", __func__);
