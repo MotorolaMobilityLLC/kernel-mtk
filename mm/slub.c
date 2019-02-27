@@ -5574,6 +5574,10 @@ static int sysfs_slab_add(struct kmem_cache *s)
 	const char *name;
 	int unmergeable = slab_unmergeable(s);
 
+	if (!unmergeable && disable_higher_order_debug &&
+			(slub_debug & DEBUG_METADATA_FLAGS))
+		unmergeable = 1;
+
 	if (unmergeable) {
 		/*
 		 * Slabcache can never be merged so we can use the name proper.
