@@ -22,7 +22,7 @@ ccflags-y += -I$(srctree)/drivers/devfreq
 ccflags-y += -I$(srctree)/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/vpu/$(MTK_PLATFORM)
 
-obj-$(CONFIG_MTK_MDLA_SUPPORT) := mdla_main.o gsm.o mdla_trace.o mdla_proc.o
-obj-$(CONFIG_MTK_MDLA_DEBUG) += mdla_debug.o
+obj-$(CONFIG_MTK_MDLA_SUPPORT) := mdla_main.o gsm.o mdla_proc.o
+obj-$(CONFIG_MTK_MDLA_DEBUG) += mdla_debug.o mdla_trace.o mdla_decoder.o
 obj-$(CONFIG_MTK_MDLA_ION) += mdla_ion.o
 

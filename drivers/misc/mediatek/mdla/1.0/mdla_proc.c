@@ -11,13 +11,13 @@
  * GNU General Public License for more details.
  */
 
+#include "mdla_debug.h"
 #include <linux/module.h>
 #include <linux/seq_file.h>
 #include <linux/proc_fs.h>
 #include <linux/uaccess.h>
 #include <linux/string.h>
 #include "mdla_trace.h"
-#include "mdla_debug.h"
 
 static const char *proc_dirname = "mdla";
 static struct proc_dir_entry *mdla_proc_root;
@@ -32,7 +32,6 @@ ssize_t prof_write(struct file *filp,
 {
 	int in;
 	char str[PROC_BUFSIZE], *p;
-	//int type;
 
 	in = (len >= PROC_BUFSIZE) ? PROC_BUFSIZE-1 : len;
 

@@ -11,6 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#ifndef __MDLA_DEBUG_H__
+#define __MDLA_DEBUG_H__
+
 #define DEBUG 1
 
 #include <linux/types.h>
@@ -114,5 +117,7 @@ static inline void mdla_debugfs_init(void)
 static inline void mdla_debugfs_exit(void)
 {
 }
+#endif
+
 #endif
 
