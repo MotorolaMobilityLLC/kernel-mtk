@@ -75,6 +75,13 @@ enum _ENUM_BTIF_STATE_ {
 	B_S_MAX,
 };
 
+#if BTIF_DBG_SUPPORT
+enum _ENUM_BTIF_TEST_CASE_ {
+	BTIF_TEST_RX_THREAD_BLOCK = 0,
+	BTIF_TEST_RX_IRQ_BLOCK = 1,
+};
+#endif
+
 #define ENABLE_BTIF_RX_DMA 1
 #define ENABLE_BTIF_TX_DMA 1
 
@@ -184,6 +191,7 @@ typedef void (*MTK_BTIF_RX_NOTIFY) (void);
 struct _btif_log_buf_t_ {
 	unsigned int len;
 	struct timeval timer;
+	struct timespec ts;
 	unsigned char buffer[BTIF_LOG_SZ];
 };
 
@@ -242,6 +250,7 @@ struct _mtk_btif_ {
 	spinlock_t rx_tasklet_spinlock;
 
 /*rx thread information*/
+	struct mutex rx_thread_mtx;
 	struct task_struct *p_task;
 	struct completion rx_comp;
 
@@ -265,6 +274,12 @@ struct _mtk_btif_ {
 	struct list_head user_list;
 /* get btif dev pointer*/
 	void *private_data;
+#if BTIF_DBG_SUPPORT
+/* Test btif thread */
+	struct delayed_work btif_rx_test_work;
+	enum _ENUM_BTIF_TEST_CASE_ test_case;
+	int delay_sched_time;
+#endif
 };
 /*---------------------------------------------------------------------------*/
 
@@ -367,5 +382,10 @@ bool btif_parser_wmt_evt(struct _mtk_btif_ *p_btif,
 				const char *sub_str,
 				unsigned int sub_len);
 void mtk_btif_read_cpu_sw_rst_debug(void);
-
+int btif_rx_data_path_lock(struct _mtk_btif_ *p_btif);
+int btif_rx_data_path_unlock(struct _mtk_btif_ *p_btif);
+int btif_rx_buf_has_pending_data(struct _mtk_btif_ *p_btif);
+int btif_rx_dma_has_pending_data(struct _mtk_btif_ *p_btif);
+int btif_tx_dma_has_pending_data(struct _mtk_btif_ *p_btif);
+struct task_struct *btif_rx_thread_get(struct _mtk_btif_ *p_btif);
 #endif /*__MTK_BTIF_H_*/
