@@ -54,6 +54,7 @@ struct helio_dvfsrc {
 
 	struct reg_config	*init_config;
 
+	bool opp_forced;
 	char			force_start[20];
 	char			force_end[20];
 };
@@ -101,6 +102,7 @@ enum {
 
 extern int is_qos_enabled(void);
 extern int is_dvfsrc_enabled(void);
+extern int is_opp_forced(void);
 extern int dvfsrc_get_emi_bw(int type);
 extern int get_vcore_dvfs_level(void);
 extern void mtk_spmfw_init(int dvfsrc_en, int skip_check);
