@@ -1747,7 +1747,7 @@ GED_ERROR ged_kpi_dequeue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 					int fence_fd, int isSF)
 {
 #ifdef MTK_GED_KPI
-	GED_ERROR ret;
+	int ret;
 	GED_KPI_GPU_TS *psMonitor;
 	struct fence *psSyncFence;
 
@@ -1795,7 +1795,7 @@ GED_ERROR ged_kpi_queue_buffer_ts(int pid, u64 ullWdnd, int i32FrameID,
 					int fence_fd, int QedBuffer_length)
 {
 #ifdef MTK_GED_KPI
-	GED_ERROR ret;
+	int ret;
 	GED_KPI_GPU_TS *psMonitor;
 	struct fence *psSyncFence;
 
