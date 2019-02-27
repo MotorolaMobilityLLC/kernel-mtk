@@ -438,8 +438,12 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		interrupts = <GIC_SPI 180 IRQ_TYPE_EDGE_FALLING>;
 	};
 
+	otg_iddig: otg_iddig{
+		compatible = "mediatek,usb_iddig_bi_eint";
+	};
+
 	mrdump_ext_rst: mrdump_ext_rst {
-		compatible = "mediatek, mrdump_ext_rst-eint";
+		/*compatible = "mediatek, mrdump_ext_rst-eint";*/
 		source = "EINT";
 		mode = "IRQ";
 		status = "okay";
@@ -1547,14 +1551,21 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 		reg = <0 0x11019000 0 0x0>;
 	};
 
-	usb1p@11200000 {
-		compatible = "mediatek,usb1p";
-		reg = <0 0x11200000 0 0x0>;
+	usb0@11200000 {
+		compatible = "mediatek,mt6765-usb20";
+		reg = <0 0x11200000 0 0x10000>,
+		      <0 0x11F40000 0 0x10000>;
+		interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
+		mode = <2>;
+		multipoint = <1>;
+		num_eps = <16>;
+		/*clocks = <&infracfg_ao INFRACFG_AO_ICUSB_CG>;*/
+		clock-names = "usb0";
 	};
 
-	usb1p_sub@11200de0 {
-		compatible = "mediatek,usb1p_sub";
-		reg = <0 0x11200de0 0 0x0>;
+	usb_sif@11210000 {
+		compatible = "mediatek,usb_sif";
+		reg = <0 0x11210000 0 0x1000>;
 	};
 
 	msdc0:msdc@11230000 {
@@ -1658,11 +1669,6 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 	msdc1_pad_macro@11c90000 {
 		compatible = "mediatek,msdc1_pad_macro";
 		reg = <0 0x11c90000 0 0x0>;
-	};
-
-	usb_phy@11cc0000 {
-		compatible = "mediatek,usb_phy";
-		reg = <0 0x11cc0000 0 0x0>;
 	};
 
 	msdc0_pad_macro@11cd0000 {
