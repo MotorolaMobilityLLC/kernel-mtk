@@ -36,8 +36,11 @@
 #define MAU_NR_PER_M4U_SLAVE    1
 
 /* smi */
+#ifdef CONFIG_MACH_MT6765
 #define SMI_LARB_NR     4
-
+#elif defined(CONFIG_MACH_MT6761)
+#define SMI_LARB_NR     3
+#endif
 /* prog pfh dist related */
 #define PROG_PFH_DIST    2
 
