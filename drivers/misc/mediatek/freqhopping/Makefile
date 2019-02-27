@@ -12,6 +12,11 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/mt8173/
 obj-y += mt8173/
 endif
 
+ifeq ($(CONFIG_MTK8163_FREQ_HOPPING),y)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/mt8163/
+obj-y += mt8163/
+endif
+
 ifeq ($(CONFIG_MTK6758_FREQ_HOPPING),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/freqhopping/mt6758/
 obj-y += mt6758/
