@@ -27,6 +27,7 @@
 #include "ufs-mtk-platform.h"
 #include "ufs-mtk-dbg.h"
 
+#include <mt-plat/keyhint.h>
 #include <mt-plat/mtk_partition.h>
 #include <mt-plat/mtk_secure_api.h>
 #include <mt-plat/mtk_boot.h>
@@ -83,6 +84,171 @@ static int ufs_mtk_query_desc(struct ufs_hba *hba, enum query_opcode opcode,
 {
 	return ufshcd_query_descriptor_retry(hba,
 		opcode, idn, index, 0, desc, &len);
+}
+#endif
+
+#ifdef CONFIG_HIE
+
+static struct kh_dev ufs_mtk_kh;
+
+struct kh_dev *ufs_mtk_get_kh(void)
+{
+	return &ufs_mtk_kh;
+}
+
+#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
+static int ufs_crypto_hie_get_cap(struct ufs_hba *hba, unsigned int hie_cap)
+{
+	dev_info(hba->dev, "hie_cap: 0x%x\n", hie_cap);
+
+	if (hie_cap & BC_AES_128_XTS)
+		return 0;
+	else if (hie_cap & BC_AES_256_XTS)
+		return 1;
+	else
+		return -1;
+}
+#endif
+
+/* configure request for HIE */
+static int ufs_mtk_hie_cfg_request(unsigned int mode,
+	const char *key, int len, struct request *req, void *priv)
+{
+	struct ufs_crypt_info *info = (struct ufs_crypt_info *)priv;
+	struct ufshcd_lrb *lrbp;
+	u32 i;
+	u32 *key_ptr;
+	unsigned long flags;
+	u64 iv, lba;
+	u32 dunl, dunu;
+	struct scsi_cmnd *cmd;
+	int need_update = 1;
+	int key_idx;
+#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
+	union ufs_cpt_cap cpt_cap;
+	union ufs_cap_cfg cpt_cfg;
+	u32 addr;
+#else
+	u32 hie_para;
+#endif
+
+	spin_lock_irqsave(info->hba->host->host_lock, flags);
+
+	/* get key index from key hint, or install new key to key hint */
+	key_idx = kh_get_hint(ufs_mtk_get_kh(), key, &need_update);
+
+	spin_unlock_irqrestore(info->hba->host->host_lock, flags);
+
+	if (need_update || (key_idx < 0)) {
+
+		if (key_idx < 0)
+			key_idx = 0;
+
+		key_ptr = (u32 *)key;
+
+#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
+		/* init crypto cfg */
+		memset(&cpt_cfg, 0, sizeof(cpt_cfg));
+
+		/* init key */
+		len = len >> 2;
+		if (len > 16) {
+			dev_info(info->hba->dev,
+				"Key size is over %d bits\n", len * 32);
+			len = 16;
+		}
+		for (i = 0; i < len; i++)
+			cpt_cfg.cfgx.key[i] = key_ptr[i];
+
+		/* enable this cfg */
+		cpt_cfg.cfgx.cfg_en = 1;
+
+		/* init capability id */
+		mode = ufs_crypto_hie_get_cap(info->hba, mode);
+		cpt_cfg.cfgx.cap_id = (u8) mode;
+
+		/* init data unit size: fixed as 4 KB (512 * 2^3) for UFS */
+		cpt_cfg.cfgx.du_size = (1 << 3);
+
+		/*
+		 * Get address of cfg[cfg_id], this is also
+		 * address of key in cfg[cfg_id].
+		 */
+		cpt_cap.cap_raw = ufshcd_readl(info->hba,
+			UFS_REG_CRYPTO_CAPABILITY);
+		addr = (cpt_cap.cap.cfg_ptr << 8) + (u32)(key_idx << 7);
+
+		spin_lock_irqsave(info->hba->host->host_lock, flags);
+
+		/* write configuration only to register */
+		for (i = 0; i < 32; i++) {
+			ufshcd_writel(info->hba, cpt_cfg.cfgx_raw[i],
+				(addr + i * 4));
+			dev_info(info->hba->dev, "0x%x=0x%x\n",
+				(addr + i * 4), cpt_cfg.cfgx_raw[i]);
+		}
+
+		spin_unlock_irqrestore(info->hba->host->host_lock, flags);
+#else
+		hie_para = ((key_idx & 0xFF) << UFS_HIE_PARAM_OFS_CFG_ID) |
+			((mode & 0xFF) << UFS_HIE_PARAM_OFS_MODE) |
+			((len & 0xFF) << UFS_HIE_PARAM_OFS_KEY_TOTAL_BYTE);
+
+		spin_lock_irqsave(info->hba->host->host_lock, flags);
+
+		/* init ufs crypto IP for HIE and program key by first 8B */
+		mt_secure_call(MTK_SIP_KERNEL_CRYPTO_HIE_CFG_REQUEST,
+			hie_para, key_ptr[0], key_ptr[1], 0);
+
+		/* program remaining key */
+		for (i = 2; i < len / sizeof(u32); i += 3) {
+			mt_secure_call(MTK_SIP_KERNEL_CRYPTO_HIE_CFG_REQUEST,
+				key_ptr[i], key_ptr[i + 1], key_ptr[i + 2], 0);
+		}
+
+		spin_unlock_irqrestore(info->hba->host->host_lock, flags);
+#endif
+	}
+
+	cmd = info->cmd;
+	lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
+			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
+
+	/* Get iv from hie */
+	iv = hie_get_iv(req);
+
+	/* If hie not assign iv, then use lba as iv */
+	if (!iv)
+		iv = lba;
+
+	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, iv, &dunl, &dunu);
+
+	/* setup LRB for UTPRD's crypto fields */
+	lrbp = &info->hba->lrb[req->tag];
+	lrbp->crypto_en = 1;
+	lrbp->crypto_cfgid = key_idx;
+
+	/* remember to give "tweak" for AES-XTS */
+	lrbp->crypto_dunl = dunl;
+	lrbp->crypto_dunu = dunu;
+
+	/* mark data has ever gone through encryption/decryption path */
+	info->hba->crypto_feature |= UFS_CRYPTO_HW_FBE_ENCRYPTED;
+
+	return 0;
+}
+
+struct hie_dev ufs_hie_dev = {
+	.name = "ufs",
+	.mode = (BC_AES_256_XTS | BC_AES_128_XTS),
+	.encrypt = ufs_mtk_hie_cfg_request,
+	.decrypt = ufs_mtk_hie_cfg_request,
+	.priv = NULL,
+};
+
+struct hie_dev *ufs_mtk_hie_get_dev(void)
+{
+	return &ufs_hie_dev;
 }
 #endif
 
@@ -679,7 +845,7 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 
 #ifdef CONFIG_HIE
 		/* hie suspend handling: reset key hint */
-		hie_kh_reset(ufs_mtk_hie_get_dev());
+		kh_reset(ufs_mtk_get_kh());
 #endif
 	}
 
@@ -1849,163 +2015,6 @@ static struct ufs_hba_variant_ops ufs_hba_mtk_vops = {
 	ufs_mtk_scsi_dev_cfg          /* scsi_dev_cfg */
 };
 
-#ifdef CONFIG_HIE
-#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
-static int ufs_crypto_hie_get_cap(struct ufs_hba *hba, unsigned int hie_cap)
-{
-	dev_info(hba->dev, "hie_cap: 0x%x\n", hie_cap);
-
-	if (hie_cap & BC_AES_128_XTS)
-		return 0;
-	else if (hie_cap & BC_AES_256_XTS)
-		return 1;
-	else
-		return -1;
-}
-#endif
-
-/* configure request for HIE */
-static int ufs_mtk_hie_cfg_request(unsigned int mode,
-	const char *key, int len, struct request *req, void *priv)
-{
-	struct ufs_crypt_info *info = (struct ufs_crypt_info *)priv;
-	struct ufshcd_lrb *lrbp;
-	u32 i;
-	u32 *key_ptr;
-	unsigned long flags;
-	u64 iv, lba;
-	u32 dunl, dunu;
-	struct scsi_cmnd *cmd;
-	int need_update = 1;
-	int key_idx;
-#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
-	union ufs_cpt_cap cpt_cap;
-	union ufs_cap_cfg cpt_cfg;
-	u32 addr;
-#else
-	u32 hie_para;
-#endif
-
-	spin_lock_irqsave(info->hba->host->host_lock, flags);
-
-	/* get key index from key hint, or install new key to key hint */
-	key_idx = hie_kh_get_hint(ufs_mtk_hie_get_dev(), key, &need_update);
-
-	spin_unlock_irqrestore(info->hba->host->host_lock, flags);
-
-	if (need_update || (key_idx < 0)) {
-
-		if (key_idx < 0)
-			key_idx = 0;
-
-		key_ptr = (u32 *)key;
-
-#if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
-		/* init crypto cfg */
-		memset(&cpt_cfg, 0, sizeof(cpt_cfg));
-
-		/* init key */
-		len = len >> 2;
-		if (len > 16) {
-			dev_warn(info->hba->dev,
-				"Key size is over %d bits\n", len * 32);
-			len = 16;
-		}
-		for (i = 0; i < len; i++)
-			cpt_cfg.cfgx.key[i] = key_ptr[i];
-
-		/* enable this cfg */
-		cpt_cfg.cfgx.cfg_en = 1;
-
-		/* init capability id */
-		mode = ufs_crypto_hie_get_cap(info->hba, mode);
-		cpt_cfg.cfgx.cap_id = (u8) mode;
-
-		/* init data unit size: fixed as 4 KB (512 * 2^3) for UFS */
-		cpt_cfg.cfgx.du_size = (1 << 3);
-
-		/*
-		 * Get address of cfg[cfg_id], this is also
-		 * address of key in cfg[cfg_id].
-		 */
-		cpt_cap.cap_raw = ufshcd_readl(info->hba,
-			UFS_REG_CRYPTO_CAPABILITY);
-		addr = (cpt_cap.cap.cfg_ptr << 8) + (u32)(key_idx << 7);
-
-		spin_lock_irqsave(info->hba->host->host_lock, flags);
-
-		/* write configuration only to register */
-		for (i = 0; i < 32; i++) {
-			ufshcd_writel(info->hba, cpt_cfg.cfgx_raw[i],
-				(addr + i * 4));
-			dev_info(info->hba->dev, "0x%x=0x%x\n",
-				(addr + i * 4), cpt_cfg.cfgx_raw[i]);
-		}
-
-		spin_unlock_irqrestore(info->hba->host->host_lock, flags);
-#else
-		hie_para = ((key_idx & 0xFF) << UFS_HIE_PARAM_OFS_CFG_ID) |
-			((mode & 0xFF) << UFS_HIE_PARAM_OFS_MODE) |
-			((len & 0xFF) << UFS_HIE_PARAM_OFS_KEY_TOTAL_BYTE);
-
-		spin_lock_irqsave(info->hba->host->host_lock, flags);
-
-		/* init ufs crypto IP for HIE and program key by first 8B */
-		mt_secure_call(MTK_SIP_KERNEL_CRYPTO_HIE_CFG_REQUEST,
-			hie_para, key_ptr[0], key_ptr[1], 0);
-
-		/* program remaining key */
-		for (i = 2; i < len / sizeof(u32); i += 3) {
-			mt_secure_call(MTK_SIP_KERNEL_CRYPTO_HIE_CFG_REQUEST,
-				key_ptr[i], key_ptr[i + 1], key_ptr[i + 2], 0);
-		}
-
-		spin_unlock_irqrestore(info->hba->host->host_lock, flags);
-#endif
-	}
-
-	cmd = info->cmd;
-	lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
-			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
-
-	/* Get iv from hie */
-	iv = hie_get_iv(req);
-
-	/* If hie not assign iv, then use lba as iv */
-	if (!iv)
-		iv = lba;
-
-	ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_AES_XTS, iv, &dunl, &dunu);
-
-	/* setup LRB for UTPRD's crypto fields */
-	lrbp = &info->hba->lrb[req->tag];
-	lrbp->crypto_en = 1;
-	lrbp->crypto_cfgid = key_idx;
-
-	/* remember to give "tweak" for AES-XTS */
-	lrbp->crypto_dunl = dunl;
-	lrbp->crypto_dunu = dunu;
-
-	/* mark data has ever gone through encryption/decryption path */
-	info->hba->crypto_feature |= UFS_CRYPTO_HW_FBE_ENCRYPTED;
-
-	return 0;
-}
-
-struct hie_dev ufs_hie_dev = {
-	.name = "ufs",
-	.mode = (BC_AES_256_XTS | BC_AES_128_XTS),
-	.encrypt = ufs_mtk_hie_cfg_request,
-	.decrypt = ufs_mtk_hie_cfg_request,
-	.priv = NULL,
-};
-
-struct hie_dev *ufs_mtk_hie_get_dev(void)
-{
-	return &ufs_hie_dev;
-}
-#endif
-
 /**
  * ufs_mtk_probe - probe routine of the driver
  * @pdev: pointer to Platform device handle
@@ -2045,7 +2054,7 @@ static int ufs_mtk_probe(struct platform_device *pdev)
 	 * key_bits = 512 bits for all possible FBE crypto algorithms
 	 * key_slot = 16 crypto configuration slots
 	 */
-	hie_kh_register(&ufs_hie_dev, 512, 16);
+	kh_register(ufs_mtk_get_kh(), 512, 16);
 
 	hba->crypto_feature |= UFS_CRYPTO_HW_FBE;
 
