@@ -23,7 +23,7 @@
 bool richtek_dfp_notify_pe_startup(
 		struct pd_port *pd_port, struct svdm_svid_data *svid_data)
 {
-	UVDM_INFO("richtek_dfp_notify_pe_startup\r\n");
+	UVDM_INFO("%s\r\n", __func__);
 	pd_port->richtek_init_done = false;
 	return true;
 }
@@ -38,7 +38,7 @@ int richtek_dfp_notify_pe_ready(
 		return 0;
 
 	pd_port->richtek_init_done = true;
-	UVDM_INFO("richtek_dfp_notify_pe_ready\r\n");
+	UVDM_INFO("%s\r\n", __func__);
 
 #if 0
 	pd_port->uvdm_cnt = 3;
