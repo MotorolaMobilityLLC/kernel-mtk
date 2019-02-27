@@ -508,16 +508,6 @@ int Ana_Debug_Read(char *buffer, const int size)
 		       Ana_Get_Reg(ZCD_CON4));
 	n += scnprintf(buffer + n, size - n, "ZCD_CON5 = 0x%x\n",
 		       Ana_Get_Reg(ZCD_CON5));
-
-
-	n += scnprintf(buffer + n, size - n, "GPIO_MODE2  = 0x%x\n",
-		       Ana_Get_Reg(GPIO_MODE2));
-	n += scnprintf(buffer + n, size - n, "GPIO_MODE3  = 0x%x\n",
-		       Ana_Get_Reg(GPIO_MODE3));
-	n += scnprintf(buffer + n, size - n, "GPIO_DIR0  = 0x%x\n",
-		       Ana_Get_Reg(GPIO_DIR0));
-	n += scnprintf(buffer + n, size - n, "DRV_CON3  = 0x%x\n",
-		       Ana_Get_Reg(DRV_CON3));
 	n += scnprintf(buffer + n, size - n, "DCXO_CW14  = 0x%x\n",
 		       Ana_Get_Reg(DCXO_CW14));
 	return n;
