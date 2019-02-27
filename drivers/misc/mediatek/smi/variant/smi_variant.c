@@ -669,7 +669,7 @@ int smi_common_init(void)
 {
 	int i;
 
-	for (i = 0; i <= smi_data->larb_nr; i++) {
+	for (i = 0; i < smi_data->larb_nr; i++) {
 		pLarbRegBackUp[i] =
 			kmalloc(LARB_BACKUP_REG_SIZE, GFP_KERNEL | __GFP_ZERO);
 	}
@@ -1157,7 +1157,8 @@ static int mtk_smi_probe(struct platform_device *pdev);
 static int mtk_smi_remove(struct platform_device *pdev);
 
 static const struct of_device_id mtk_smi_of_ids[] = {
-	{ .compatible = "mediatek,mt8173-smi", .data = &smi_mt8173_priv, },
+	{ .compatible = "mediatek,mt8173-smi-common",
+	  .data = &smi_mt8173_priv, },
 	{}
 };
 
