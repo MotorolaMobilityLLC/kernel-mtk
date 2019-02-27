@@ -4328,7 +4328,12 @@ static void __ufshcd_transfer_req_compl(struct ufs_hba *hba,
 				UFS_TRACE_COMPLETED);
 			ufs_mtk_perf_heurisic_req_done(hba, cmd);
 			ufs_mtk_biolog_transfer_req_compl(index);
-			ufs_mtk_hie_req_done(hba, lrbp);
+			/*
+			 * file-based inline encryption:
+			 * call UFS key hint to release usage count
+			 */
+			if (hie_request_crypted(cmd->request))
+				ufs_mtk_hie_req_done(hba, lrbp);
 			result = ufshcd_transfer_rsp_status(hba, lrbp);
 			scsi_dma_unmap(cmd);
 			cmd->result = result;
