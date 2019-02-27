@@ -23,6 +23,16 @@ endif
 
 menu "Storage: EMMC, NAND, partition..."
 
+
+config MTK_GPT_SCHEME_SUPPORT
+	bool "MTK GPT SCHEME SUPPORT"
+	help
+	  GPT is GUID Partition Table
+	  MTK driver support gpt scheme layout
+	  GPT is a better partition layout scheme
+	  GPT is instead of PMT
+
+source "drivers/misc/mediatek/partition/Kconfig"
 source "drivers/misc/mediatek/mtk_sdio/Kconfig"
 
 endmenu  # Storage
@@ -106,6 +116,7 @@ source "drivers/misc/mediatek/boot/Kconfig"
 source "drivers/misc/mediatek/boot_reason/Kconfig"
 source "drivers/misc/mediatek/chip/Kconfig"
 source "drivers/misc/mediatek/selinux_warning/Kconfig"
+source "drivers/misc/mediatek/sysenv/Kconfig"
 source "drivers/misc/mediatek/sspm/Kconfig"
 source "drivers/misc/mediatek/typec/Kconfig"
 source "drivers/misc/mediatek/rtc/Kconfig"
