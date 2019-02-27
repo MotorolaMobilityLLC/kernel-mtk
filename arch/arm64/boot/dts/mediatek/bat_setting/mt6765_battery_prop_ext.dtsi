@@ -16,12 +16,12 @@ bat_gm30: battery{
 	/*	Charging termination current.*/
 	DIFFERENCE_FULLOCV_ITH = <(200)>;
 	/*	If ui_soc shows 1% more than X minites, system will shutdown.*/
-	SHUTDOWN_1_TIME = <(60)>;
+	SHUTDOWN_1_TIME = <(30)>;
 /*	The ui_soc will keep 100% until SOC drop X percents after unplugged.*/
-	KEEP_100_PERCENT = <(2)>;
+	KEEP_100_PERCENT = <(1)>;
 	R_FG_VALUE = <(10)>;	/*	R_sense resistance.*/
 	/*	Configures whether using embedded battery or not.*/
-	EMBEDDED_SEL = <(0)>;
+	EMBEDDED_SEL = <(1)>;
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
 	FG_METER_RESISTANCE = <(75)>;	/*	The resistance of PCB*/
 	/*	Tune value for current measurement.*/
