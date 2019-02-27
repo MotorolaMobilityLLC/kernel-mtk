@@ -215,7 +215,7 @@ static ssize_t gt1x_debug_write_proc(struct file *file,
 		return count;
 	}
 
-	ret = sscanf(buf, "%s %d", (char *)&mode_str, &mode);
+	ret = sscanf(buf, "%49s %d", (char *)&mode_str, &mode);
 	if (ret < 0) {
 		GTP_ERROR("Sscanf buf ERROR1");
 		return ret;
