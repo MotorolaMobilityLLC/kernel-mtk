@@ -568,10 +568,10 @@ static int mtk_pcm_I2S0dl1_prepare(struct snd_pcm_substream *substream)
 
 			MclkDiv3 = SetCLkMclk(Soc_Aud_I2S1, runtime->rate);
 			MclkDiv3 = SetCLkMclk(Soc_Aud_I2S3, runtime->rate);
-
+#if 0
 			SetCLkBclk(MclkDiv3, runtime->rate, runtime->channels,
 				   Soc_Aud_I2S_WLEN_WLEN_32BITS);
-
+#endif
 			EnableI2SDivPower(AUDIO_APLL12_DIV2, true);
 			EnableI2SDivPower(AUDIO_APLL12_DIV4, true);
 
