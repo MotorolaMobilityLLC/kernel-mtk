@@ -89,6 +89,14 @@ struct ccci_ccb_debug {
 	unsigned int page_id;
 	unsigned int value;
 };
+
+struct ccb_ctrl_info {
+	unsigned int  user_id;
+	unsigned int ctrl_offset;
+	unsigned int ctrl_addr;	/*phy addr*/
+	unsigned int ctrl_length;
+};
+
 extern unsigned int ccb_configs_len;
 extern struct ccci_ccb_config ccb_configs[];
 
@@ -274,6 +282,10 @@ extern struct ccci_ccb_config ccb_configs[];
 	_IOR(CCCI_IOC_MAGIC, 69, unsigned int[16])
 #define CCCI_IOC_SET_RAT_STR		\
 	_IOW(CCCI_IOC_MAGIC, 70, unsigned int[16])
+
+#define CCCI_IOC_CCB_CTRL_INFO			\
+	_IOWR(CCCI_IOC_MAGIC, 71, struct ccb_ctrl_info)
+
 #define CCCI_IOC_SET_HEADER			\
 	_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER			\
@@ -476,6 +488,10 @@ typedef enum {
 	CCCI_IMSM_TX			= 170,
 	CCCI_WOA_RX			= 171,
 	CCCI_WOA_TX			= 172,
+	CCCI_XCAP_RX			= 173,
+	CCCI_XCAP_TX			= 174,
+	CCCI_BIP_RX			= 175,
+	CCCI_BIP_TX			= 176,
 
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
 
@@ -551,8 +567,4 @@ enum c2k_channel {
 /* ========================================================================= */
 void ccci_sysfs_add_md(int md_id, void *kobj);
 int ccci_register_dev_node(const char *name, int major_id, int minor);
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
-int swtp_init(int md_id);
-#endif
-
 #endif	/* __CCCI_CORE_H__ */

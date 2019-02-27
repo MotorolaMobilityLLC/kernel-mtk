@@ -42,6 +42,7 @@
 #include "ccci_modem.h"
 #include "ccci_bm.h"
 #include "ccci_platform.h"
+#if (MD_GENERATION <= 6292)
 #include "ccif_c2k_platform.h"
 #include "ccci_hif.h"
 #include "hif/ccci_hif_ccif.h"
@@ -688,3 +689,4 @@ module_init(md_ccif_init);
 MODULE_AUTHOR("Yanbin Ren <Yanbin.Ren@mediatek.com>");
 MODULE_DESCRIPTION("CCIF modem driver v0.1");
 MODULE_LICENSE("GPL");
+#endif

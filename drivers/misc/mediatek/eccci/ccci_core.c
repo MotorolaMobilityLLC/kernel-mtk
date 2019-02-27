@@ -116,9 +116,6 @@ static int __init ccci_init(void)
 	CCCI_INIT_LOG(-1, CORE, "ccci core init\n");
 	dev_class = class_create(THIS_MODULE, "ccci_node");
 	ccci_subsys_bm_init();
-#ifdef FEATURE_MTK_SWITCH_TX_POWER
-	swtp_init(0);
-#endif
 	return 0;
 }
 
@@ -279,34 +276,6 @@ int ccci_register_dev_node(const char *name, int major_id, int minor)
 
 	return ret;
 }
-
-#if defined(FEATURE_MTK_SWITCH_TX_POWER)
-static int switch_Tx_Power(int md_id, unsigned int mode)
-{
-	int ret = 0;
-	unsigned int resv = mode;
-
-	ret = exec_ccci_kern_func_by_md_id(md_id, ID_UPDATE_TX_POWER,
-		(char *)&resv, sizeof(resv));
-	CCCI_DEBUG_LOG(md_id, "ctl", "switch_MD%d_Tx_Power(%d): %d\n",
-		md_id + 1, resv, ret);
-
-	return ret;
-}
-
-int switch_MD1_Tx_Power(unsigned int mode)
-{
-	return switch_Tx_Power(0, mode);
-}
-EXPORT_SYMBOL(switch_MD1_Tx_Power);
-
-int switch_MD2_Tx_Power(unsigned int mode)
-{
-	return switch_Tx_Power(1, mode);
-}
-EXPORT_SYMBOL(switch_MD2_Tx_Power);
-#endif
-
 
 subsys_initcall(ccci_init);
 

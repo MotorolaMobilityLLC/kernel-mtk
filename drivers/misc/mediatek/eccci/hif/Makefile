@@ -27,9 +27,9 @@ obj-$(CONFIG_MTK_ECCCI_DRIVER) := ccci_hif_all.o
 ccci_hif_all-y += ccci_hif.o
 ccci_hif_all-y += ccci_hif_cldma.o
 
-#ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
+ifeq ($(CONFIG_MTK_ECCCI_C2K), y)
 ccci_hif_all-y += ccci_ringbuf.o ccci_hif_ccif.o
-#endif
+endif
 
 else
 obj-  := dummy.o # avoid build error
