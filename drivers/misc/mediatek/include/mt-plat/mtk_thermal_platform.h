@@ -91,7 +91,7 @@ enum ta_daemon_crtl_cmd_to_kernel {
 }; /*must sync userspace/kernel: TA_DAEMON_CTRL_CMD_FROM_USER*/
 
 #define TAD_NL_MSG_T_HDR_LEN 12
-#define TAD_NL_MSG_MAX_LEN 2048
+#define TAD_NL_MSG_MAX_LEN 512
 
 struct tad_nl_msg_t {
 	unsigned int tad_cmd;
