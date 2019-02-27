@@ -19,8 +19,6 @@
 #include "tz_m4u.h"
 #include "m4u_sec_gp.h"
 
-#define M4U_SEC_SESSION (0)
-
 static struct m4u_sec_gp_context m4u_gp_ta_ctx = {
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 		.uuid = (struct TEEC_UUID)M4U_TA_UUID,
@@ -111,17 +109,15 @@ static int m4u_sec_gp_init(struct m4u_sec_context *ctx)
 		M4UMSG("m4u msg is invalid\n");
 		return -1;
 	}
-	if (!M4U_SEC_SESSION) {
+	if (!gp_ctx->init) {
 		ret = TEEC_OpenSession(&gp_ctx->ctx, &gp_ctx->session,
 			&gp_ctx->uuid, TEEC_LOGIN_PUBLIC, NULL, NULL, NULL);
 		if (ret != TEEC_SUCCESS) {
 			M4UMSG("teec_open_session failed: %x\n", ret);
 			goto exit_release;
 		}
-		M4U_SEC_SESSION = 1;
+		gp_ctx->init = 1;
 	}
-
-	gp_ctx->init = 1;
 
 	M4ULOG_HIGH("%s, open TCI session success\n", __func__);
 	return ret;
@@ -137,11 +133,10 @@ static int m4u_sec_gp_deinit(struct m4u_sec_context *ctx)
 {
 	struct m4u_sec_gp_context *gp_ctx = ctx->imp;
 
-	gp_ctx->init = 0;
-
 	TEEC_ReleaseSharedMemory(&gp_ctx->shared_mem);
 	TEEC_CloseSession(&gp_ctx->session);
 	TEEC_FinalizeContext(&gp_ctx->ctx);
+	gp_ctx->init = 0;
 
 	return 0;
 }
