@@ -22,6 +22,7 @@ enum {
 	PWR_OPT_VCORE_LP_MODE = (1 << 3),
 	PWR_OPT_XO_UFS_OFF    = (1 << 4),
 	PWR_OPT_CLKBUF_ENTER_BBLPM = (1 << 5),
+	PWR_OPT_VCORE_ULPOSC_OFF = (1 << 6),
 	NF_PWR_OPT
 };
 
