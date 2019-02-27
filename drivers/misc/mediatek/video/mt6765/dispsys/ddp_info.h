@@ -88,7 +88,7 @@ unsigned int ufmt_is_old_fmt(unsigned int fmt);
 enum UNIFIED_COLOR_FMT {
 	UFMT_UNKNOWN = 0,
 	UFMT_Y8 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 7, 0, 0, 1),
-	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 2),
+	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 4, 0, 0, 2),
 	UFMT_RGBA5551 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 3),
 	UFMT_RGB565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 4),
 	UFMT_BGR565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 1, 0, 5),
@@ -329,7 +329,7 @@ struct disp_ddp_path_config {
 	/*each bit reprsent one layer, used for ovl engines */
 	int ovl_layer_scanned;
 	int overlap_layer_num;
-	struct OVL_CONFIG_STRUCT ovl_config[TOTAL_OVL_LAYER_NUM];
+	struct OVL_CONFIG_STRUCT ovl_config[TOTAL_REAL_OVL_LAYER_NUM];
 	struct disp_rect ovl_partial_roi;
 	struct RSZ_CONFIG_STRUCT rsz_config;
 	struct RDMA_CONFIG_STRUCT rdma_config;

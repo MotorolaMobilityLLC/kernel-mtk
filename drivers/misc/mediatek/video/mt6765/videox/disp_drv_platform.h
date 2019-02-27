@@ -50,8 +50,13 @@
 #define VIDEO_LAYER_COUNT            (3)
 /* #define HW_OVERLAY_COUNT                  (4) */
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+/* phy(4+1) + ext(3+2) */
+#define PRIMARY_SESSION_INPUT_LAYER_COUNT (10)
+#else
 /* phy(4+2) + ext(3+3) */
 #define PRIMARY_SESSION_INPUT_LAYER_COUNT (12)
+#endif
 /* 2 is enough, no need ext layer */
 #define EXTERNAL_SESSION_INPUT_LAYER_COUNT (2)
 /* 2 is enough, no need ext layer */
