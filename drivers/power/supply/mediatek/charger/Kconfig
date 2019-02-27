@@ -88,3 +88,12 @@ config CHARGER_RT9465
 	  It is mainly used as slave IC for dual charger
 	  application.
 	  It depends on config MTK_CHARGER.
+
+config MTK_CHARGER_UNLIMITED
+	bool "MediaTek Charger Unlimited"
+	default n
+	depends on MTK_CHARGER
+	help
+	  Say Yes to release charging current restrictions.
+	  It is mainly used for long-term tests.
+	  It depends on config MTK_CHARGER.
