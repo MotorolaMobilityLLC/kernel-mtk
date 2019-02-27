@@ -53,7 +53,6 @@
 #include "mtk-soc-pcm-platform.h"
 #include <linux/compat.h>
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-#include <audio_dma_buf_control.h>
 #include <audio_ipi_client_playback.h>
 #include <audio_task_manager.h>
 #endif
@@ -109,9 +108,7 @@ static bool offload_playback_resume;
 static DEFINE_SPINLOCK(offload_lock);
 struct wakeup_source Offload_suspend_lock;
 #endif
-#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-static struct audio_resv_dram_t *resv_dram;
-#endif
+
 /*
  * Function  Declaration
  */
@@ -388,7 +385,6 @@ static int mtk_compr_offload_open(struct snd_compr_stream *stream)
 
 	memset(&MP3DRAM, 0, sizeof(MP3DRAM));
 	MP3DRAM.num = MP3_MEM_ID;
-	resv_dram = get_reserved_dram();
 	MP3DRAM.start_phys = scp_get_reserve_mem_phys(MP3DRAM.num);
 	MP3DRAM.start_virt = scp_get_reserve_mem_virt(MP3DRAM.num);
 	MP3DRAM.size = scp_get_reserve_mem_size(MP3DRAM.num) -
@@ -818,10 +814,10 @@ static void mtk_compr_offload_pcmdump(unsigned long enable)
 		playback_open_dump_file();
 #endif
 	}
-#ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
+#if 0 /* def CONFIG_MTK_AUDIO_TUNNELING_SUPPORT */
 	offloadservice_ipicmd_send(AUDIO_IPI_DMA, AUDIO_IPI_MSG_BYPASS_ACK,
-				   MP3_PCMDUMP_ON, resv_dram->size, enable,
-				   resv_dram->phy_addr);
+				   MP3_PCMDUMP_ON, 0, enable,
+				   0);
 #endif
 	afe_offload_service.ipiwait = true;
 	/* dsp dump closed */

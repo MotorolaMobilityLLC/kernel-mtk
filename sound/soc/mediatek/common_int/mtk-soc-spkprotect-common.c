@@ -48,7 +48,6 @@
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include "audio_ipi_client_spkprotect.h"
-#include <audio_dma_buf_control.h>
 #include <audio_ipi_client_spkprotect.h>
 #include <audio_task_manager.h>
 #endif
@@ -127,31 +126,20 @@ void spkproc_service_ipicmd_send(uint8_t data_type, uint8_t ack_type,
 	struct ipi_msg_t ipi_msg;
 	int send_result = 0;
 	int retry_count;
-	const int k_max_try_count = 200; /* maximum wait 20ms */
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
-	for (retry_count = 0; retry_count < k_max_try_count; retry_count++) {
-		if (ack_type == AUDIO_IPI_MSG_DIRECT_SEND)
-			send_result = audio_send_ipi_msg(
-				&ipi_msg, TASK_SCENE_SPEAKER_PROTECTION,
-				AUDIO_IPI_LAYER_KERNEL_TO_SCP_ATOMIC, data_type,
-				ack_type, msg_id, param1, param2,
-				(char *)payload);
-		else
-			send_result = audio_send_ipi_msg(
-				&ipi_msg, TASK_SCENE_SPEAKER_PROTECTION,
-				AUDIO_IPI_LAYER_KERNEL_TO_SCP, data_type,
-				ack_type, msg_id, param1, param2,
-				(char *)payload);
-		if (send_result == 0)
-			break;
-		udelay(100);
-	}
+	send_result = audio_send_ipi_msg(&ipi_msg,
+					  TASK_SCENE_SPEAKER_PROTECTION,
+					  AUDIO_IPI_LAYER_TO_DSP,
+					  data_type,
+					  ack_type,
+					  msg_id,
+					  param1,
+					  param2,
+					  (char *)payload);
 
-	if (send_result < 0) {
+	if (send_result != 0)
 		pr_err("%s(), scp_ipi send fail\n", __func__);
-		return;
-	}
 }
 
 MODULE_LICENSE("GPL");

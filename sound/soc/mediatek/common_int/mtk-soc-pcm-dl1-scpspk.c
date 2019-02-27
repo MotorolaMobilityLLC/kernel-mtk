@@ -47,7 +47,6 @@
  *                E X T E R N A L   R E F E R E N C E S
  *****************************************************************************/
 
-#include "audio_dma_buf_control.h"
 #include "audio_ipi_client_spkprotect.h"
 #include "audio_spkprotect_msg_id.h"
 #include "mtk-auddrv-afe.h"
@@ -65,7 +64,6 @@
 
 #ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
 #include "scp_helper.h"
-#include <audio_dma_buf_control.h>
 #include <audio_ipi_client_spkprotect.h>
 #include <audio_task_manager.h>
 #endif
@@ -103,7 +101,6 @@ static int mspkiv_meminterface_type;
 static int mspkiv_io_type;
 static bool vcore_dvfs_enable;
 
-static struct audio_resv_dram_t *p_resv_dram;
 static struct SPK_PROTECT_SERVICE spk_protect_service;
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static struct audio_resv_dram_t *p_resv_dram_normal;
@@ -641,7 +638,6 @@ static int mtk_pcm_dl1spk_open(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 
 	mspkPlaybackDramState = false;
-	p_resv_dram = get_reserved_dram();
 
 	pr_debug("%s(), mtk_dl1spk_hardware.buffer_bytes_max = %zu mspkPlaybackDramState = %d\n",
 		 __func__, mtk_dl1spk_hardware.buffer_bytes_max,
@@ -946,13 +942,14 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				 __func__);
 			return -1;
 		}
-
+#if 0
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_ON,
-					    p_resv_dram->size,
+					    0,
 					    scpspk_pcmdump,
-					    p_resv_dram->phy_addr);
+					    0);
+#endif
 		spk_protect_service.ipiwait = true;
 	} else if (scpspk_pcmdump == true &&
 		   ucontrol->value.integer.value[0] == 0) {
@@ -968,13 +965,14 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 				 __func__);
 			return -1;
 		}
-
+#if 0
 		spkproc_service_ipicmd_send(AUDIO_IPI_DMA,
 					    AUDIO_IPI_MSG_BYPASS_ACK,
 					    SPK_PROTTCT_PCMDUMP_OFF,
-					    p_resv_dram->size,
+					    0,
 					    scpspk_pcmdump,
-					    p_resv_dram->phy_addr);
+					    0);
+#endif
 		AudDrv_Emi_Clk_Off();
 		ctrl_val = ucontrol->value.integer.value[0];
 	}

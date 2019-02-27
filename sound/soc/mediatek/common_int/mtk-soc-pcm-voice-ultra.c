@@ -252,7 +252,7 @@ static int send_ipi_enable(bool enable)
 
 		audio_send_ipi_msg(
 			&ipi_msg, TASK_SCENE_VOICE_ULTRASOUND,
-			AUDIO_IPI_LAYER_KERNEL_TO_SCP, AUDIO_IPI_PAYLOAD,
+			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
 			AUDIO_IPI_MSG_BYPASS_ACK, VOICE_ULTRA_ENABLE_ID,
 			MAX_IPI_MSG_PAYLOAD_SIZE, 0, (char *)payload);
 
@@ -260,7 +260,7 @@ static int send_ipi_enable(bool enable)
 		udelay(5 * 1000);
 	} else {
 		audio_send_ipi_msg(&ipi_msg, TASK_SCENE_VOICE_ULTRASOUND,
-				   AUDIO_IPI_LAYER_KERNEL_TO_SCP,
+				   AUDIO_IPI_LAYER_TO_DSP,
 				   AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_BYPASS_ACK,
 				   VOICE_ULTRA_DISABLE_ID, 0, 0, NULL);
 
