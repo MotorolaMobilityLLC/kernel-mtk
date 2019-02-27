@@ -386,7 +386,7 @@ int larb_reg_restore(int larb)
 
 	pReg = pLarbRegBackUp[larb];
 
-	pr_debug("+larb_reg_restore(), larb_idx=%d\n", larb);
+	pr_debug("+%s, larb_idx=%d\n", __func__, larb);
 	pr_debug("m4u part restore, larb_idx=%d\n", larb);
 	/*warning: larb_con is controlled by set/clr */
 	regval = *(pReg++);
@@ -1335,7 +1335,7 @@ static int __init smi_init(void)
 	mmdvfs_init(&g_smi_bwc_mm_info);
 #endif
 	fb_register_client(&mtk_smi_variant_event_notifier);
-	pr_debug("smi_init done\n");
+	pr_debug("%s done\n", __func__);
 
 	return 0;
 }
@@ -1349,7 +1349,7 @@ static void __exit smi_exit(void)
 static int __init smi_init_late(void)
 {
 	/*init clk/mtcmos should be late while ccf */
-	pr_debug("smi_init_late-\n");
+	pr_debug("%s\n", __func__);
 
 	smi_common_init();
 
