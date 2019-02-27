@@ -258,6 +258,7 @@ int i2c_get_dma_buffer_addr(void **va,
 	/*i2c_get_dma_buffer_addr_imp(pClient->adapter ,va);*/
 	*va = i2c->dma_buf.vaddr + PAGE_SIZE;
 	*pa_l = i2c->dma_buf.paddr + PAGE_SIZE;
+	*pa_h = 0;
 #ifdef CONFIG_COMPAT
 	*pa_h = ((i2c->dma_buf.paddr  + PAGE_SIZE) >> 32);
 #endif
