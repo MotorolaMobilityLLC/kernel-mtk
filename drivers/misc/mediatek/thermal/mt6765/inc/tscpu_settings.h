@@ -122,12 +122,16 @@
  *=============================================================
  */
 /* double check */
-#define TS_CONFIGURE		TS_CON1_TM	/* depend on CPU design*/
+//#define TS_CONFIGURE		TS_CON1_TM	/* depend on CPU design*/
+#define TS_CONFIGURE		TS_CON0_TM	/* depend on CPU design*/
+
 #define TS_CONFIGURE_P		TS_CON1_P	/* depend on CPU design*/
 #define TS_TURN_ON		0xFFFFFFCF	/* turn on TS_CON1[5:4] 2'b 00
 						 * 11001111 -> 0xCF  ~(0x30
 						 */
-#define TS_TURN_OFF		0x00000030	/* turn off thermal*/
+//#define TS_TURN_OFF		0x00000030	/* turn off thermal*/
+#define TS_TURN_OFF		0x30000000	/* turn off thermal*/
+
 
 /*chip dependent*/
 #define ADDRESS_INDEX_0  101
@@ -162,15 +166,37 @@
 #define TSCON1_bit_0_2_MASK 0x07
 
 
+#define TSCON0_bit_29_28_00   0x00000000  /* TSCON0[29:28]=2'b00*/
+#define TSCON0_bit_29_28_01   0x10000000  /* TSCON0[29:28]=2'b01*/
+#define TSCON0_bit_29_28_10   0x20000000  /* TSCON0[29:28]=2'b10*/
+#define TSCON0_bit_29_28_11   0x30000000  /* TSCON0[29:28]=2'b11*/
+
+#define TSCON0_bit_29_28_MASK 0x30000000
+
 /* ADC value to mcu */
 /*chip dependent*/
+#if 1
+#define TEMPADC_MCU1	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_00)|(0x07&TSCON1_bit_0_2_000))
+#define TEMPADC_MCU2	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_00)|(0x07&TSCON1_bit_0_2_001))
+#define TEMPADC_MCU3	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_00)|(0x07&TSCON1_bit_0_2_010))
+#define TEMPADC_MCU4	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_00)|(0x07&TSCON1_bit_0_2_011))
+#define TEMPADC_MCU5	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_00)|(0x07&TSCON1_bit_0_2_100))
+
+#define TEMPADC_ABB	\
+	((TSCON0_bit_29_28_MASK&TSCON0_bit_29_28_01)|(0x07&TSCON1_bit_0_2_000))
+#else
 #define TEMPADC_MCU1    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_000))
 #define TEMPADC_MCU2    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_001))
 #define TEMPADC_MCU3    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_010))
 #define TEMPADC_MCU4    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_011))
 #define TEMPADC_MCU5    ((0x30&TSCON1_bit_4_5_00)|(0x07&TSCON1_bit_0_2_100))
 #define TEMPADC_ABB     ((0x30&TSCON1_bit_4_5_01)|(0x07&TSCON1_bit_0_2_000))
-
+#endif
 #define TS_FILL(n) {#n, n}
 /*#define TS_LEN_ARRAY(name) (sizeof(name)/sizeof(name[0]))*/
 #define MAX_TS_NAME 20
