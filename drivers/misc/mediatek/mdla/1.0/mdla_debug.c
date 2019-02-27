@@ -848,6 +848,7 @@ static const struct file_operations mdla_debug_prof_fops = {
 
 	DEFINE_MDLA_DEBUGFS(root);
 	DEFINE_MDLA_DEBUGFS(timeout);
+	DEFINE_MDLA_DEBUGFS(poweroff_time);
 	DEFINE_MDLA_DEBUGFS(klog);
 //	DEFINE_MDLA_DEBUGFS(algo);
 //	DEFINE_MDLA_DEBUGFS(func_mask);
@@ -878,6 +879,8 @@ void mdla_debugfs_init(void)
 
 	mdla_dtimeout = debugfs_create_u32("timeout", 0660, mdla_droot,
 		&mdla_timeout);
+	mdla_dpoweroff_time = debugfs_create_u32("poweroff_time",
+		0660, mdla_droot, &mdla_poweroff_time);
 	mdla_dklog = debugfs_create_u32("klog", 0660, mdla_droot,
 		&mdla_klog);
 
@@ -916,6 +919,7 @@ void mdla_debugfs_exit(void)
 	debugfs_remove(mdla_d##name)
 
 	REMOVE_MDLA_DEBUGFS(timeout);
+	REMOVE_MDLA_DEBUGFS(poweroff_time);
 	REMOVE_MDLA_DEBUGFS(klog);
 //	REMOVE_MDLA_DEBUGFS(algo);
 //	REMOVE_MDLA_DEBUGFS(func_mask);

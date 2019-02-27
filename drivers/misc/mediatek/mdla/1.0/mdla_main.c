@@ -50,9 +50,7 @@
 
 // #define MTK_MDLA_ALWAYS_POWER_ON
 
-#ifdef MTK_MDLA_ALWAYS_POWER_ON
-u32 dbg_power_on;
-#endif
+u32 power_on;
 
 #define DRIVER_NAME "mtk_mdla"
 #define DEVICE_NAME "mdlactl"
@@ -83,6 +81,7 @@ static u32 cmd_id;
 static u32 max_cmd_id;
 static u32 cmd_list_len;
 struct work_struct mdla_queue;
+struct work_struct mdla_power_off_queue;
 
 #define UINT32_MAX (0xFFFFFFFF)
 
@@ -121,7 +120,6 @@ static inline void command_entry_result(
 
 #if (MDLA_FIFO_SIZE == 1)
 static u32 last_cmd_id = UINT32_MAX;
-static u32 fail_cmd_id = UINT32_MAX;
 static struct command_entry *last_cmd_ent;
 static inline
 struct command_entry *mdla_fifo_head(void)
@@ -263,10 +261,14 @@ static int mdla_wait_command(struct ioctl_wait_cmd *wt);
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
 static int mdla_process_command(struct command_entry *ce);
 static void mdla_timeup(unsigned long data);
+static void mdla_power_timeup(unsigned long data);
 
-#define MDLA_TIMEOUT_DEFAULT 1000 /* ms */
+#define MDLA_TIMEOUT_DEFAULT 10000 /* ms */
+#define MDLA_POWEROFF_TIME_DEFAULT 2000 /* ms */
 u32 mdla_timeout = MDLA_TIMEOUT_DEFAULT;
+u32 mdla_poweroff_time = MDLA_POWEROFF_TIME_DEFAULT;
 static DEFINE_TIMER(mdla_timer, mdla_timeup, 0, 0);
+static DEFINE_TIMER(mdla_power_timer, mdla_power_timeup, 0, 0);
 
 static const struct file_operations fops = {
 	.open = mdla_open,
@@ -338,6 +340,11 @@ void mdla_reset(int res)
 	mdla_profile_reset(str);
 }
 
+static void mdla_power_timeup(unsigned long data)
+{
+	schedule_work(&mdla_power_off_queue);
+}
+
 static void mdla_timeup(unsigned long data)
 {
 
@@ -372,6 +379,18 @@ static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
 		return -EAGAIN;
 	}
 	return 0;
+}
+
+static void mdla_start_power_off(struct work_struct *work)
+{
+	mdla_drv_debug("%s: start timer shutdown\n", __func__);
+	mutex_lock(&cmd_list_lock);
+	if (mdla_fifo_is_empty() && list_empty(&cmd_list)) {
+		mdla_dvfs_cmd_end_shutdown();
+		power_on = 0;
+	}
+	mutex_unlock(&cmd_list_lock);
+
 }
 
 static void mdla_start_queue(struct work_struct *work)
@@ -413,20 +432,28 @@ static void mdla_start_queue(struct work_struct *work)
 		if (!mdla_profile_power_mode(NULL))
 			mdla_dvfs_cmd_end_shutdown();
 #else
-		mdla_dvfs_cmd_end_shutdown();
+		if (mdla_poweroff_time) {
+			mdla_drv_debug("%s: start power_timer\n", __func__);
+			mod_timer(&mdla_power_timer,
+				jiffies + msecs_to_jiffies(mdla_poweroff_time));
+		}
 #endif
 	}
 	mutex_unlock(&cmd_list_lock);
 	wake_up_interruptible_all(&mdla_cmd_queue);
 	mdla_cmd_debug(
-			"mdla_interrupt max_cmd_id: %d, fifo_head_id: %d, fifo_tail_id: %d\n",
+			"mdla_start_queue max_cmd_id: %d, fifo_head_id: %d, fifo_tail_id: %d\n",
 			max_cmd_id, mdla_fifo_head_id(), mdla_fifo_tail_id());
 }
 
 static irqreturn_t mdla_interrupt(int irq, void *dev_id)
 {
+	u32 status_int = mdla_reg_read(MREG_TOP_G_INTP0);
+
+	if (status_int & MDLA_IRQ_PMU_INTE)
+		mdla_reg_write(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP0);
+
 	max_cmd_id = mdla_reg_read(MREG_TOP_G_FIN0);
-	mdla_reg_write(MDLA_IRQ_MASK, MREG_TOP_G_INTP0);
 	mdla_fifo_mark_time();
 	pmu_reg_save();
 	schedule_work(&mdla_queue);
@@ -598,9 +625,7 @@ static int mdlactl_init(void)
 	cmd_id = 1;
 	max_cmd_id = 1;
 	cmd_list_len = 0;
-#ifdef MTK_MDLA_ALWAYS_POWER_ON
-	dbg_power_on = 0;
-#endif
+	power_on = 0;
 
 	// Try to dynamically allocate a major number for the device
 	//  more difficult but worth it
@@ -646,6 +671,7 @@ static int mdlactl_init(void)
 	}
 
 	INIT_WORK(&mdla_queue, mdla_start_queue);
+	INIT_WORK(&mdla_power_off_queue, mdla_start_power_off);
 	mdla_debugfs_init();
 	mdla_profile_init();
 	pmu_init();
@@ -794,19 +820,15 @@ static int mdla_process_command(struct command_entry *ce)
 
 	ce->poweron_t = sched_clock();
 
-#ifdef MTK_MDLA_ALWAYS_POWER_ON
-	if (dbg_power_on) {
-		if (mdla_profile_power_mode(&dbg_power_on))
+	if (power_on) {
+		if (mdla_profile_power_mode(&power_on))
 			goto skip_power;
 	}
-#endif
 	ret = mdla_dvfs_cmd_start(ce, &cmd_list);
 	if (ret)
 		return ret;
-#ifdef MTK_MDLA_ALWAYS_POWER_ON
-	dbg_power_on = 1;
+	power_on = 1;
 skip_power:
-#endif
 
 	if (mdla_timeout) {
 		mdla_cmd_debug("%s: mod_timer(), cmd id=%u, [%u]\n",
@@ -814,6 +836,9 @@ skip_power:
 		mod_timer(&mdla_timer,
 			jiffies + msecs_to_jiffies(mdla_timeout));
 	}
+
+	if (timer_pending(&mdla_power_timer))
+		del_timer(&mdla_power_timer);
 
 	mdla_profile_start();
 	mdla_trace_begin(count, cmd);
