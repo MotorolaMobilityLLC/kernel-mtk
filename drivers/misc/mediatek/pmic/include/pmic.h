@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 MediaTek Inc.
+ * Copyright (C) 2017 MediaTek Inc.
 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -29,7 +29,23 @@
 #include <mach/upmu_sw.h>
 
 #include "mtk_pmic_common.h"
-#include "mtk_pmic_info.h"
+
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6353
+#include "mt6353/mtk_pmic_info.h"
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6335
+#include "mt6335/mtk_pmic_info.h"
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6355
+#include "mt6355/mtk_pmic_info.h"
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+#include "mt6356/mtk_pmic_info.h"
+#endif
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
+#include "mt6357/mtk_pmic_info.h"
+#endif
+
 
 #define PMIC_EN REGULATOR_CHANGE_STATUS
 #define PMIC_VOL REGULATOR_CHANGE_VOLTAGE
@@ -101,6 +117,9 @@ extern int get_mt6311_i2c_ch_num(void);
 extern void pmu_drv_tool_customization_init(void);
 #endif
 extern int batt_init_cust_data(void);
+#ifdef CONFIG_MTK_RTC
+extern void rtc_enable_k_eosc(void);
+#endif
 
 extern unsigned int mt_gpio_to_irq(unsigned int gpio);
 extern int mt_gpio_set_debounce(unsigned int gpio, unsigned int debounce);

@@ -24,6 +24,7 @@
 extern int pmic_get_auxadc_value(u8 list);
 extern const char *pmic_get_auxadc_name(u8 list);
 
+/* Move to include/mt-plat/<mtxxxx>/include/mach/mtk_pmic.h */
 #if 0
 enum {
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6355
@@ -119,6 +120,7 @@ struct mtk_auxadc_intf {
 	int data;
 };
 
+/* Move to include/mt-plat/<mtxxxx>/include/mach/mtk_pmic.h */
 #if 0
 extern void mt6355_auxadc_init(void);
 extern void mt6355_auxadc_dump_regs(char *buf);
@@ -128,7 +130,7 @@ extern void mt6355_auxadc_unlock(void);
 extern int mt6355_auxadc_recv_batmp(void);
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6355 */
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6356
+#if 0
 extern void mt6356_auxadc_init(void);
 extern void mt6356_auxadc_dump_regs(char *buf);
 extern int mt6356_get_auxadc_value(u8 channel);
@@ -136,7 +138,7 @@ extern void pmic_auxadc_lock(void);
 extern void pmic_auxadc_unlock(void);
 #endif /* CONFIG_MTK_PMIC_CHIP_MT6356 */
 
-#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
+#if 0
 extern void mt6357_auxadc_init(void);
 extern void mt6357_auxadc_dump_regs(char *buf);
 extern int mt6357_get_auxadc_value(u8 channel);
