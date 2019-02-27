@@ -2451,7 +2451,7 @@ void eem_init01(void)
 #endif
 			}
 			timeout = 0;
-#if 0
+#if 1
 			while (det->real_vboot != det->VBOOT) {
 				det->real_vboot = det->ops->volt_2_eem(det,
 					det->ops->get_volt(det));
