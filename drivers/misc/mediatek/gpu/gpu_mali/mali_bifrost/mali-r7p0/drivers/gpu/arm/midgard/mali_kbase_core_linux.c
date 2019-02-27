@@ -108,6 +108,7 @@ static DEFINE_MUTEX(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
 
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"
+#include "platform/mtk_platform_common.h"
 static inline void __compile_time_asserts(void)
 {
 	CSTD_COMPILE_TIME_ASSERT(sizeof(KERNEL_SIDE_DDK_VERSION_STRING) <= KBASE_GET_VERSION_BUFFER_SIZE);
@@ -4345,6 +4346,14 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_gpu_device;
 #endif /* CONFIG_MALI_NO_MALI */
+
+	/* MTK  */
+	err = mtk_platform_init(pdev, kbdev);
+	if (err) {
+		pr_info("[MALI] GPU: mtk_platform_init fail!\n");
+		return err;
+	}
+	/********/
 
 	err = assign_irqs(pdev);
 	if (err) {
