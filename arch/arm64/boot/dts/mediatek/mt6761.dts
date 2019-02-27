@@ -1751,7 +1751,7 @@ maxcpus=8 firmware_class.path=/vendor/firmware";
 		#address-cells = <2>;
 		#size-cells = <2>;
 			/*CONN_MCU_CONFIG_BASE */
-		reg = <0 0x18002000 0 0x3000>,
+		reg = <0 0x18002000 0 0x1000>,
 			/*TOP_RGU_BASE */
 		    <0 0x10007000 0 0x0100>,
 			/*INFRACFG_AO_BASE */
@@ -1767,12 +1767,14 @@ maxcpus=8 firmware_class.path=/vendor/firmware";
 			/*CONN_MCU_CIRQ_BASE */
 		    <0 0x180a5000 0 0x800>,
 			/*CONN_TOP_MISC_ON_BASE */
-		    <0 0x180c1000 0 0x1000>;
+		    <0 0x180c1000 0 0x1000>,
+			/*CONN_HIF_PDMA_BASE */
+		    <0 0x18004000 0 0x1000>;
 			/*BGF_EINT conn2ap_btif_wakeup_out_b*/
 		interrupts = <GIC_SPI 211 IRQ_TYPE_LEVEL_LOW>,
 			/*WDT_EINT conn_wdt_irq_b*/
 			   <GIC_SPI 213 IRQ_TYPE_LEVEL_LOW>,
-			/*conn2ap_sr_irq*/
+			/*conn2ap_sw_irq*/
 			   <GIC_SPI 214 IRQ_TYPE_EDGE_RISING>;
 		clocks = <&scpsys SCP_SYS_CONN>;
 		clock-names = "conn";
