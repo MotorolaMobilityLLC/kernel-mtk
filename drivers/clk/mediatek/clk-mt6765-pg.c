@@ -188,6 +188,7 @@ static void __iomem *conn_mcu_base; /* connsys MCU */
 #define INFRA_TOPAXI_PROTECTEN_CLR	INFRACFG_REG(0x02A4)
 
 #define INFRA_TOPAXI_PROTECTEN_1_SET	INFRACFG_REG(0x02A8)
+#define INFRA_TOPAXI_PROTECTEN_STA0_1	INFRACFG_REG(0x0254)
 #define INFRA_TOPAXI_PROTECTEN_STA1_1	INFRACFG_REG(0x0258)
 #define INFRA_TOPAXI_PROTECTEN_1_CLR	INFRACFG_REG(0x02AC)
 
@@ -476,26 +477,32 @@ static struct subsys *id_to_sys(unsigned int id)
 	return id < NR_SYSS ? &syss[id] : NULL;
 }
 
-#define DBG_ID_MD1_BUS 1
-#define DBG_ID_CONN_BUS 2
-#define DBG_ID_DPY_BUS 3
-#define DBG_ID_DIS_BUS 4
-#define DBG_ID_MFG_BUS 5
-#define DBG_ID_ISP_BUS 6
-#define DBG_ID_CAM_BUS 7
+enum dbg_id {
+	DBG_ID_MD1_BUS = 0,
+	DBG_ID_CONN_BUS,
+	DBG_ID_DPY_BUS,
+	DBG_ID_DIS_BUS,
+	DBG_ID_MFG_BUS,
+	DBG_ID_ISP_BUS,
+	DBG_ID_IFR_BUS,
+	DBG_ID_MFG_CORE0_BUS,
+	DBG_ID_MFG_ASYNC_BUS,
+	DBG_ID_CAM_BUS,
+	DBG_ID_VCODEC_BUS = 10,
 
-#define DBG_ID_MD1_PWR 8
-#define DBG_ID_CONN_PWR 9
-#define DBG_ID_DPY_PWR 10
-#define DBG_ID_DIS_PWR 11
-#define DBG_ID_MFG_PWR 12
-#define DBG_ID_ISP_PWR 13
-#define DBG_ID_IFR_PWR 14
-#define DBG_ID_MFG_CORE0_PWR 15
-#define DBG_ID_MFG_ASYNC_PWR 16
-#define DBG_ID_CAM_PWR 17
-#define DBG_ID_VCODEC_PWR 18
-
+	DBG_ID_MD1_PWR = 11,
+	DBG_ID_CONN_PWR,
+	DBG_ID_DPY_PWR,
+	DBG_ID_DIS_PWR,
+	DBG_ID_MFG_PWR,
+	DBG_ID_ISP_PWR,
+	DBG_ID_IFR_PWR,
+	DBG_ID_MFG_CORE0_PWR,
+	DBG_ID_MFG_ASYNC_PWR,
+	DBG_ID_CAM_PWR,
+	DBG_ID_VCODEC_PWR,
+	DBG_ID_NUM = 22,
+};
 
 #define ID_MADK   0xFF000000
 #define STA_MASK  0x00F00000
@@ -530,6 +537,7 @@ static void ram_console_update(void)
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA0);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1);
+	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA0_1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);
 	data[++i] = clk_readl(INFRA_TOPAXI_SI3_STA);
 
@@ -538,6 +546,7 @@ static void ram_console_update(void)
 	else if (pre_data != data[0]) {
 		k = 0;
 		pre_data = data[0];
+		print_once = true;
 	}
 
 	if (k > 5000 && print_once) {
@@ -615,11 +624,23 @@ static void ram_console_update(void)
 					| ((DBG_STA << 20) & STA_MASK)
 					| (DBG_STEP & STEP_MASK);
 			}
-
 		} else
 			print_enabled_clks_once();
 
-		for (j = 0; j <= i; j++)
+		if (DBG_ID >= (DBG_ID_NUM / 2))
+			pr_notice("%s %s MTCMOS PWR hang at %s flow step %d\n",
+				"[clkmgr]",
+				syss[(DBG_ID - (DBG_ID_NUM / 2))].name,
+				DBG_STA ? "pwron":"pdn",
+				DBG_STEP);
+		else
+			pr_notice("%s %s MTCMOS BUS hang at %s flow step %d\n",
+				"[clkmgr]",
+				syss[DBG_ID].name,
+				DBG_STA ? "pwron":"pdn",
+				DBG_STEP);
+
+		for (j = 1; j <= i; j++)
 			pr_notice("%s: clk[%d] = 0x%x\n", __func__, j, data[j]);
 	}
 
