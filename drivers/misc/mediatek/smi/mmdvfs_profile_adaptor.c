@@ -31,7 +31,7 @@
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_internal.h"
 #ifdef PLL_HOPPING_READY
-#include "mach/mtk_freqhopping.h"
+#include <mt_freqhopping_drv.h>
 #endif
 
 #ifdef USE_DDR_TYPE
