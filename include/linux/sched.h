@@ -2675,6 +2675,13 @@ static inline void calc_load_exit_idle(void) { }
  * Please use one of the three interfaces below.
  */
 extern unsigned long long notrace sched_clock(void);
+
+/*
+ * alternative sched_clock to get arch_timer cycle as well
+ */
+extern unsigned long long notrace
+sched_clock_get_cyc(unsigned long long *cyc_ret);
+
 /*
  * See the comment in kernel/sched/clock.c
  */
