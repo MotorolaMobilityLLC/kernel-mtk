@@ -21,6 +21,7 @@
 
 enum {
 	QOS_IPI_QOS_ENABLE = 0,
+	QOS_IPI_OPP_TABLE,
 	QOS_IPI_VCORE_OPP,
 	QOS_IPI_DDR_OPP,
 	QOS_IPI_ERROR_HANDLER,
@@ -33,19 +34,24 @@ enum {
 };
 
 
-struct qos_data {
+struct qos_ipi_data {
 	unsigned int cmd;
 	union {
 		struct {
 			unsigned int dvfsrc_en;
 		} qos_init;
 		struct {
-			unsigned int opp;
+			unsigned int vcore_dvfs_opp;
 			unsigned int vcore_uv;
+			unsigned int ddr_khz;
+		} opp_table;
+		struct {
+			unsigned int vcore_dvfs_opp;
+			unsigned int vcore_opp;
 		} vcore_opp;
 		struct {
-			unsigned int opp;
-			unsigned int ddr_khz;
+			unsigned int vcore_dvfs_opp;
+			unsigned int ddr_opp;
 		} ddr_opp;
 		struct {
 			unsigned int master_type;
