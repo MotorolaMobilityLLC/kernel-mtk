@@ -40,6 +40,10 @@
 #include <sspm_mbox.h>
 #endif
 
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
+#include <adsp_helper.h>
+#endif
+
 #define SYS_TIMER_DEBUG                    (0)
 
 #if SYS_TIMER_DEBUG
@@ -213,21 +217,21 @@ void sys_timer_timesync_verify_sspm(void)
 #define sys_timer_timesync_verify_sspm(void)
 #endif
 
-static void sys_timer_timesync_update_sysram(int freeze,
-	u64 tick, u64 ts)
+static void sys_timer_timesync_update_ram(void __iomem *base,
+	int freeze, u64 tick, u64 ts)
 {
 	sys_timer_sysram_write((tick >> 32) & 0xFFFFFFFF,
-		timesync_cxt.sysram_base + TIMESYNC_BASE_TICK);
+		base + TIMESYNC_BASE_TICK);
 	sys_timer_sysram_write(tick & 0xFFFFFFFF,
-		timesync_cxt.sysram_base + TIMESYNC_BASE_TICK + 4);
+		base + TIMESYNC_BASE_TICK + 4);
 
 	sys_timer_sysram_write((ts >> 32) & 0xFFFFFFFF,
-		timesync_cxt.sysram_base + TIMESYNC_BASE_TS);
+		base + TIMESYNC_BASE_TS);
 	sys_timer_sysram_write(ts & 0xFFFFFFFF,
-		timesync_cxt.sysram_base + TIMESYNC_BASE_TS + 4);
+		base + TIMESYNC_BASE_TS + 4);
 
 	sys_timer_sysram_write(freeze,
-		timesync_cxt.sysram_base + TIMESYNC_BASE_FREEZE);
+		base + TIMESYNC_BASE_FREEZE);
 }
 
 static void
@@ -236,9 +240,6 @@ sys_timer_timesync_sync_base_internal(unsigned int flag)
 	u64 tick, ts;
 	unsigned long irq_flags = 0;
 	int freeze;
-
-	if (!timesync_cxt.enabled)
-		return;
 
 	spin_lock_irqsave(&timesync_cxt.lock, irq_flags);
 
@@ -250,9 +251,23 @@ sys_timer_timesync_sync_base_internal(unsigned int flag)
 
 	freeze = (flag & SYS_TIMER_TIMESYNC_FLAG_FREEZE) ? 1 : 0;
 
-	if (timesync_cxt.support_sysram)
-		sys_timer_timesync_update_sysram(freeze, tick, ts);
+	/* sync with sysram */
+	if (timesync_cxt.support_sysram) {
+		sys_timer_timesync_update_ram(timesync_cxt.ram_base,
+			freeze, tick, ts);
+	}
 
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
+	/* sync with adsp */
+	adsp_enable_dsp_clk(true);
+
+	sys_timer_timesync_update_ram(ADSP_A_OSTIMER_BUFFER,
+		freeze, tick, ts);
+
+	adsp_enable_dsp_clk(false);
+#endif
+
+	/* sync with sspm */
 	sys_timer_timesync_update_sspm(freeze, tick, ts);
 
 	spin_unlock_irqrestore(&timesync_cxt.lock, irq_flags);
@@ -286,6 +301,9 @@ u64 sys_timer_timesync_tick_to_sched_clock(u64 tick)
 
 void sys_timer_timesync_sync_base(unsigned int flag)
 {
+	if (!timesync_cxt.enabled)
+		return;
+
 	if (flag & SYS_TIMER_TIMESYNC_FLAG_ASYNC)
 		queue_work(sys_timer_workqueue, &(timesync_cxt.work));
 	else
@@ -399,10 +417,15 @@ static int sys_timer_timesync_init(struct platform_device *pdev)
 	/* get sysram base */
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "sysram_base");
-	timesync_cxt.sysram_base = devm_ioremap_resource(dev, res);
+	timesync_cxt.ram_base = devm_ioremap_resource(dev, res);
 
-	if (IS_ERR((void const *)timesync_cxt.sysram_base))
+	if (IS_ERR((void const *)timesync_cxt.ram_base)) {
+
 		pr_info("unable to ioremap sysram base, might be disabled\n");
+
+		/* ensure sysram support is disabled */
+		timesync_cxt.support_sysram = 0;
+	}
 	else {
 		/* get sysram size */
 
@@ -440,13 +463,17 @@ static int sys_timer_timesync_init(struct platform_device *pdev)
 	goto out;
 
 fail_out:
+
+	/* ensure disabled */
+	timesync_cxt.enabled = 0;
+
 	ret = -1;
 
 out:
 	pr_info("enabled: %d, support_sysram: %d\n",
 		timesync_cxt.enabled, timesync_cxt.support_sysram);
 
-	return 0;
+	return ret;
 }
 
 #ifdef CONFIG_DEBUG_FS
@@ -604,8 +631,13 @@ static int __init sys_timer_device_init(void)
 
 #endif
 
-/* shall not be prior than sspm init (mbox init) which is using arch_initcall */
-device_initcall(sys_timer_device_init);
+/*
+ * shall not be prior than initialization of target sub-sys,
+ * for example,
+ *   sspm: mbox shall be ready.
+ *   adsp: io-remapped ram address for timesync base shall be ready.
+ */
+late_initcall(sys_timer_device_init);
 
 MODULE_AUTHOR("Stanley Chu <stanley.chu@mediatek.com>");
 MODULE_LICENSE("GPL");
