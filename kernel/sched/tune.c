@@ -322,6 +322,8 @@ schedtune_boostgroup_update(int idx, int boost)
 	return 0;
 }
 
+#include "tune_plus.c"
+
 #define ENQUEUE_TASK  1
 #define DEQUEUE_TASK -1
 
@@ -601,15 +603,29 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	struct schedtune *st = css_st(css);
 	unsigned threshold_idx;
 	int boost_pct;
+	int ctl_no = div64_s64(boost, 1000);
 
-	/* boost big tasks only */
-	stune_task_threshold = default_stune_threshold;
-
-	if (boost < -100 || boost > 100)
+	switch (ctl_no) {
+	case 1:
+		/* boost all tasks */
+		boost -= 1000;
+		stune_task_threshold = 0;
+		break;
+	case 0:
+		/* boost big tasks only */
+		stune_task_threshold = default_stune_threshold;
+		break;
+	default:
+		printk_deferred("warning: perf ctrl no should be 0~1\n");
 		return -EINVAL;
+	}
 
-	if (boost < 0)
-		global_negative_flag = false;
+	if (boost < -100 || boost > 100) {
+		printk_deferred("warning: perf boost value should be -100~100\n");
+		return -EINVAL;
+	}
+
+	global_negative_flag = false;
 
 	boost_pct = boost;
 
@@ -624,6 +640,9 @@ boost_write(struct cgroup_subsys_state *css, struct cftype *cft,
 	st->perf_constrain_idx = threshold_idx;
 
 	st->boost = boost;
+
+	sys_boosted = boost;
+
 	if (css == &root_schedtune.css) {
 		sysctl_sched_cfs_boost = boost;
 		perf_boost_idx  = threshold_idx;
