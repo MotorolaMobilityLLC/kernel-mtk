@@ -385,6 +385,8 @@ struct cfs_rq {
 
 	u64 exec_clock;
 	u64 min_vruntime;
+	int idx;
+	u64 old_min_vruntime[5];
 #ifndef CONFIG_64BIT
 	u64 min_vruntime_copy;
 #endif
