@@ -1415,7 +1415,7 @@ void EnableApll1(bool enable)
 
 void EnableApll2(bool enable)
 {
-	pr_debug("%s enable = %d\n", __func__, enable);
+	/* pr_debug("%s enable = %d\n", __func__, enable); */
 
 	if (enable) {
 		if (Aud_APLL_DIV_APLL2_cntr == 0) {

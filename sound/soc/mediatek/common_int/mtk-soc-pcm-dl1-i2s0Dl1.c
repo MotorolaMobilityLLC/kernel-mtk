@@ -233,7 +233,7 @@ static int mtk_pcm_I2S0dl1_hw_params(struct snd_pcm_substream *substream,
 
 static int mtk_pcm_I2S0dl1_hw_free(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s substream = %p\n", __func__, substream);
+	/* pr_debug("%s substream = %p\n", __func__, substream); */
 	if (mPlaybackDramState == true) {
 		AudDrv_Emi_Clk_Off();
 		mPlaybackDramState = false;
