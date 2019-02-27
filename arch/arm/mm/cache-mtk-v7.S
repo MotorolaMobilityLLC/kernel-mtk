@@ -30,6 +30,7 @@
        .global __disable_dcache__inner_flush_dcache_L1
        .global __disable_dcache__inner_flush_dcache_L1__inner_flush_dcache_L2
        .global __disable_dcache__inner_flush_dcache_L1__inner_clean_dcache_L2
+       .global dis_D_inner_fL1L2
        .global d_i_dis_flush_all
 .equ C1_IBIT ,  0x00001000
 .equ C1_CBIT ,  0x00000004
@@ -809,6 +810,7 @@ DF1F2_L2_finished:
         pop     {r0,r1,r2,r3,r4,r5,r7,r9,r10,r11,r14}
         bx      lr
 
+dis_D_inner_fL1L2:
 __disable_dcache__inner_flush_dcache_L1__inner_clean_dcache_L2:
 /*******************************************************************************
  * push stack                                                                  *
