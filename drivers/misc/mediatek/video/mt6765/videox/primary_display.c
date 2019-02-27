@@ -8057,6 +8057,7 @@ int primary_display_lcm_ATA(void)
 
 	DISPFUNC();
 	primary_display_esd_check_enable(0);
+	_primary_path_switch_dst_lock();
 	_primary_path_lock(__func__);
 	disp_irq_esd_cust_bycmdq(0);
 	if (pgc->state == 0) {
@@ -8065,7 +8066,7 @@ int primary_display_lcm_ATA(void)
 		goto done;
 	}
 
-	DISPCHECK("[ATA_LCM]primary display path stop[begin]\n");
+	DISPCHECK("dxs [ATA_LCM]primary display path stop[begin]\n");
 	if (primary_display_is_video_mode())
 		dpmgr_path_ioctl(pgc->dpmgr_handle, NULL,
 			DDP_STOP_VIDEO_MODE, NULL);
@@ -8085,6 +8086,7 @@ int primary_display_lcm_ATA(void)
 done:
 	disp_irq_esd_cust_bycmdq(1);
 	_primary_path_unlock(__func__);
+	_primary_path_switch_dst_unlock();
 	primary_display_esd_check_enable(1);
 	return ret;
 }
