@@ -5857,21 +5857,28 @@ static int sched_group_energy(struct energy_env *eenv)
 					sg->sge->idle_power(idle_idx,
 						group_first_cpu(sg), eenv,
 						(sd->child) ? 1 : 0))
-							>> SCHED_CAPACITY_SHIFT;
+						>> SCHED_CAPACITY_SHIFT;
 #else
 				/* Power value had been separated to static + dynamic here */
-				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].dyn_pwr +
-						sg->sge->cap_states[cap_idx].lkg_pwr[sg->sge->lkg_idx]))
-								>> SCHED_CAPACITY_SHIFT;
+				sg_busy_energy = (group_util * (sg->sge->cap_states[cap_idx].dyn_pwr
+					+ sg->sge->cap_states[cap_idx].lkg_pwr[sg->sge->lkg_idx]))
+						>> SCHED_CAPACITY_SHIFT;
+
+				sg_idle_energy = ((SCHED_CAPACITY_SCALE
+						- group_util)
+						* sg->sge->idle_states[idle_idx].power)
+						>> SCHED_CAPACITY_SHIFT;
 #endif
 #else
-				sg_busy_energy = (group_util * sg->sge->cap_states[cap_idx].power)
-								>> SCHED_CAPACITY_SHIFT;
-#endif
-				sg_idle_energy = ((SCHED_CAPACITY_SCALE-group_util)
-								* sg->sge->idle_states[idle_idx].power)
-								>> SCHED_CAPACITY_SHIFT;
+				sg_busy_energy = (group_util
+						* sg->sge->cap_states[cap_idx].power)
+						>> SCHED_CAPACITY_SHIFT;
 
+				sg_idle_energy = ((SCHED_CAPACITY_SCALE
+						- group_util)
+						* sg->sge->idle_states[idle_idx].power)
+						>> SCHED_CAPACITY_SHIFT;
+#endif
 				total_energy += sg_busy_energy + sg_idle_energy;
 
 				mt_sched_printf(sched_eas_energy_calc,

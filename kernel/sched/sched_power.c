@@ -66,6 +66,9 @@ int l_plus_cpu = 7;
 static int share_buck[3] = {2, 1, 0};
 /* No L+ */
 int l_plus_cpu = -1;
+#elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6762)
+static int share_buck[3] = {1, 0, 2};
+int l_plus_cpu = -1;
 #else
 /* no buck shared */
 static int share_buck[3] = {0, 1, 2};
