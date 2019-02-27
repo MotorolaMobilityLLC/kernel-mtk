@@ -12,9 +12,7 @@
  */
 
 #include "disp_drv_log.h"
-#if defined(MTK_FB_ION_SUPPORT)
 #include "ion_drv.h"
-#endif
 #include <linux/slab.h>
 #include <linux/wait.h>
 #include <linux/sched.h>
@@ -83,9 +81,7 @@ void mtkfb_fence_log_enable(bool enable)
 
 int fence_clean_up_task_wakeup;
 
-#if defined(MTK_FB_ION_SUPPORT)
 static struct ion_client *ion_client;
-#endif
 
 /* how many counters prior to current timeline real-time counter */
 #define FENCE_STEP_COUNTER         (1)
@@ -354,7 +350,7 @@ static struct ion_handle *mtkfb_ion_import_handle(struct ion_client *client,
 		pr_info("invalid ion fd!\n");
 		return handle;
 	}
-	handle = ion_import_dma_buf(client, fd);
+	handle = ion_import_dma_buf_fd(client, fd);
 	if (IS_ERR(handle)) {
 		pr_info("import ion handle failed!\n");
 		return NULL;
@@ -456,9 +452,7 @@ unsigned int mtkfb_query_buf_mva(unsigned int session_id,
 			mmprofile_log_ex(
 				ddp_mmp_get_events()->primary_cache_sync,
 				MMPROFILE_FLAG_START, current->pid, 0);
-#if defined(MTK_FB_ION_SUPPORT)
 			mtkfb_ion_cache_flush(ion_client, buf->hnd);
-#endif
 			mmprofile_log_ex(
 				ddp_mmp_get_events()->primary_cache_sync,
 				MMPROFILE_FLAG_END, current->pid, 0);
@@ -800,9 +794,9 @@ int disp_sync_init(void)
 	DISPMSG("Fence timeline idx: present = %d, output = %d\n",
 		disp_sync_get_present_timeline_id(),
 		disp_sync_get_output_timeline_id());
-#ifdef MTK_FB_ION_SUPPORT
+
 	mtkfb_ion_init();
-#endif
+
 	return 0;
 }
 
@@ -1339,7 +1333,6 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id,
 		if (buf->idx != idx)
 			continue;
 
-#if defined(MTK_FB_ION_SUPPORT)
 		if (buf->cache_sync) {
 			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 				(unsigned long)buf->hnd, buf->mva);
@@ -1347,7 +1340,6 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id,
 			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 				(unsigned long)buf->hnd, buf->mva);
 		}
-#endif
 		found = 1;
 		break;
 	}
@@ -1397,7 +1389,6 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id,
 		*mva = dst_mva;
 		*size = dst_size;
 		buf->ts_create = sched_clock();
-#if defined(MTK_FB_ION_SUPPORT)
 		if (buf->cache_sync && need_sync) {
 			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 				(unsigned long)buf->hnd, buf->mva);
@@ -1405,7 +1396,6 @@ static unsigned int __disp_sync_query_buf_info(unsigned int session_id,
 			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 				(unsigned long)buf->hnd, buf->mva);
 		}
-#endif
 		MTKFB_FENCE_LOG("query buf mva: layer=%d, idx=%d, mva=0x%lx\n",
 				timeline_id, idx, buf->mva);
 	} else {

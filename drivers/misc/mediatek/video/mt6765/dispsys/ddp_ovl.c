@@ -486,7 +486,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 		DISP_REG_SET(handle, DISP_REG_OVL_L0_ADDR + layer_offset_addr,
 			cfg->addr + offset);
 	} else {
-#ifdef MTKFB_M4U_SUPPORT
 		unsigned int size;
 		int m4u_port;
 
@@ -517,7 +516,6 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 				CMDQ_SAM_H_2_MVA, cfg->addr,
 				offset, size, m4u_port);
 		}
-#endif
 	}
 	DISP_REG_SET(handle, DISP_REG_OVL_L0_SRCKEY + layer_offset, cfg->key);
 
@@ -990,7 +988,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		if (enable == 0)
 			continue;
 		if (ovl_check_input_param(ovl_cfg)) {
-			DDPAEE("invalid layer parameters!\n");
+			DDPAEE("invalid layer %d parameters!\n", layer_id);
 			continue;
 		}
 		if (ovl_cfg->ovl_index != module)
@@ -1799,9 +1797,9 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	} else {
 		/* decouple */
 		regval |= REG_FLD_VAL(
-			FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 63);
+			FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES, 15);
 		regval |= REG_FLD_VAL(
-			FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 63);
+			FLD_OVL_RDMA_MEM_GMC2_ISSUE_REQ_THRES_URG, 15);
 	}
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_REQ_THRES_PREULTRA, 0);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_MEM_GMC2_REQ_THRES_ULTRA, 1);
@@ -1831,14 +1829,14 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_OSTD_GREQ_NUM, 0xff);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GREQ_DIS_CNT, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_STOP_EN, 0);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_END_STOP, 0);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_BRK_STOP, 0);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_END_STOP, 1);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_GRP_BRK_STOP, 1);
 	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_PREULTRA, 1);
-	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_ULTRA, 0);
+	regval |= REG_FLD_VAL(FLD_OVL_RDMA_GREQ_IOBUF_FLUSH_ULTRA, 1);
 	DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMA_GREQ_NUM, regval);
 
 	/* DISP_REG_OVL_RDMA_GREQ_URG_NUM */
-	layer_greq_num = 3;
+	layer_greq_num = 7;
 	regval = REG_FLD_VAL(FLD_OVL_RDMA_GREQ_LAYER0_GREQ_URG_NUM,
 		layer_greq_num);
 	if (layer_num > 0)

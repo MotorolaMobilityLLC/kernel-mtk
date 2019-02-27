@@ -17,6 +17,7 @@
 #include "ddp_reg.h"
 #include "ddp_log.h"
 #include "disp_helper.h"
+#include "disp_drv_platform.h"
 
 #ifdef CONFIG_MTK_IOMMU
 #include "mtk_iommu.h"
@@ -174,7 +175,6 @@ struct ion_client *disp_ion_create(const char *name)
 {
 	struct ion_client *disp_ion_client = NULL;
 
-#if defined(MTK_FB_ION_SUPPORT)
 	if (g_ion_device)
 		disp_ion_client = ion_client_create(g_ion_device, name);
 
@@ -184,7 +184,7 @@ struct ion_client *disp_ion_create(const char *name)
 	}
 
 	DDPDBG("create ion client 0x%p\n", disp_ion_client);
-#endif
+
 	return disp_ion_client;
 }
 
@@ -193,7 +193,6 @@ struct ion_handle *disp_ion_alloc(struct ion_client *client,
 {
 	struct ion_handle *disp_handle = NULL;
 
-#if defined(MTK_FB_ION_SUPPORT)
 	disp_handle = ion_alloc(client, size, align, heap_id_mask, 0);
 	if (IS_ERR(disp_handle)) {
 		DISPERR("disp_ion_alloc error %p\n", disp_handle);
@@ -201,14 +200,13 @@ struct ion_handle *disp_ion_alloc(struct ion_client *client,
 	}
 
 	DDPDBG("disp_ion_alloc %p\n", disp_handle);
-#endif
+
 	return disp_handle;
 }
 
 int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 	unsigned int *mva, int port)
 {
-#if defined(MTK_FB_ION_SUPPORT)
 	struct ion_mm_data mm_data;
 	unsigned int mva_size;
 
@@ -229,14 +227,13 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 		(size_t *)&mva_size);
 	DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08x\n",
 		handle, (unsigned int)*mva);
-#endif
+
 	return 0;
 }
 
 struct ion_handle *disp_ion_import_handle(struct ion_client *client, int fd)
 {
 	struct ion_handle *handle = NULL;
-#if defined(MTK_FB_ION_SUPPORT)
 	struct ion_mm_data mm_data;
 
 	/* If no need Ion support, do nothing! */
@@ -250,7 +247,7 @@ struct ion_handle *disp_ion_import_handle(struct ion_client *client, int fd)
 		return handle;
 	}
 
-	handle = ion_import_dma_buf(client, fd);
+	handle = ion_import_dma_buf_fd(client, fd);
 	if (IS_ERR(handle)) {
 		DDPERR("import ion handle failed!\n");
 		return NULL;
@@ -266,13 +263,12 @@ struct ion_handle *disp_ion_import_handle(struct ion_client *client, int fd)
 		DDPERR("configure ion buffer failed!\n");
 
 	DDPDBG("import ion handle fd=%d,hnd=0x%p\n", fd, handle);
-#endif
+
 	return handle;
 }
 
 void disp_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
 {
-#if defined(MTK_FB_ION_SUPPORT)
 	if (!client) {
 		DDPERR("invalid ion client!\n");
 		return;
@@ -283,21 +279,17 @@ void disp_ion_free_handle(struct ion_client *client, struct ion_handle *handle)
 	ion_free(client, handle);
 
 	DDPDBG("free ion handle 0x%p\n", handle);
-#endif
 }
 
 void disp_ion_destroy(struct ion_client *client)
 {
-#if defined(MTK_FB_ION_SUPPORT)
 	if (client && g_ion_device)
 		ion_client_destroy(client);
-#endif
 }
 
 void disp_ion_cache_flush(struct ion_client *client,
 	struct ion_handle *handle, enum ION_CACHE_SYNC_TYPE sync_type)
 {
-#if defined(MTK_FB_ION_SUPPORT)
 	struct ion_sys_data sys_data;
 
 	if (!client || !handle)
@@ -310,13 +302,10 @@ void disp_ion_cache_flush(struct ion_client *client,
 	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM,
 		(unsigned long)&sys_data))
 		DDPERR("ion cache flush failed!\n");
-#endif
 }
 
 #ifndef CONFIG_MTK_IOMMU
-#ifdef MTKFB_M4U_SUPPORT
 static struct sg_table table;
-#endif
 
 int disp_allocate_mva(m4u_client_t *client, enum DISP_MODULE_ENUM module,
 	unsigned long va, struct sg_table *sg_table,
@@ -328,27 +317,20 @@ int disp_allocate_mva(m4u_client_t *client, enum DISP_MODULE_ENUM module,
 	if (port == M4U_PORT_NR)
 		return 1; /* err */
 
-#ifdef MTKFB_M4U_SUPPORT
 	return m4u_alloc_mva(client, port, va, sg_table, size, prot,
 		flags, pMva);
-#else
-	return 0;
-#endif
 }
 
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,
 				  unsigned long *va, unsigned long *mva)
 {
-#ifdef MTKFB_M4U_SUPPORT
 	int ret = 0;
-#endif
 
 	*va = (unsigned long)ioremap_nocache(pa_start, pa_end - pa_start + 1);
 	pr_info("disphal_allocate_fb, pa_start=0x%pa, pa_end=0x%pa, va=0x%lx\n",
 		&pa_start, &pa_end, *va);
 
 	if (disp_helper_get_option(DISP_OPT_USE_M4U)) {
-#ifdef MTKFB_M4U_SUPPORT
 		m4u_client_t *client;
 
 		struct sg_table *sg_table = &table;
@@ -368,9 +350,8 @@ int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,
 		if (ret)
 			DISPERR("m4u_alloc_mva returns fail: %d\n", ret);
 
-		pr_debug("[DISPHAL] FB MVA is 0x%lx PA is 0x%pa\n",
+		DISPINFO("[DISPHAL] FB MVA is 0x%lx PA is 0x%pa\n",
 			*mva, &pa_start);
-#endif
 	} else {
 		*mva = pa_start & 0xffffffffULL;
 	}

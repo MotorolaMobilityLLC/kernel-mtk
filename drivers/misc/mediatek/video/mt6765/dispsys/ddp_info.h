@@ -282,6 +282,7 @@ struct WDMA_CONFIG_STRUCT {
 struct golden_setting_context {
 	unsigned int fifo_mode;
 	unsigned int is_wrot_sram;
+	unsigned int is_rsz_sram;
 	unsigned int mmsys_clk;
 	unsigned int hrt_num;
 	unsigned int ext_hrt_num;
