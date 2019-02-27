@@ -623,7 +623,13 @@ static int mtk_i2c_transfer(struct i2c_adapter *adap,
 {
 	int ret;
 	int left_num = num;
+	int num_cnt;
 	struct mtk_i2c *i2c = i2c_get_adapdata(adap);
+
+	for (num_cnt = 0; num_cnt < num; num_cnt++) {
+		if (!msgs[num_cnt].len)
+			return -EINVAL;
+	}
 
 	ret = mtk_i2c_clock_enable(i2c);
 	if (ret)
