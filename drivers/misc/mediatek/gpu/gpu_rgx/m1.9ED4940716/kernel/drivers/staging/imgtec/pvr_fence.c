@@ -609,18 +609,19 @@ pvr_fence_release(struct dma_fence *fence)
 	unsigned long flags;
 
 	if (pvr_fence) {
+		struct pvr_fence_context *fctx = pvr_fence->fctx;
+
 		PVR_FENCE_TRACE(&pvr_fence->base, "released fence (%s)\n",
 				pvr_fence->name);
 
 		pvr_fence_sync_deinit(pvr_fence);
 
-		spin_lock_irqsave(&pvr_fence->fctx->list_lock, flags);
+		spin_lock_irqsave(&fctx->list_lock, flags);
 		list_move(&pvr_fence->fence_head,
-			  &pvr_fence->fctx->deferred_free_list);
-		spin_unlock_irqrestore(&pvr_fence->fctx->list_lock, flags);
+			  &fctx->deferred_free_list);
+		spin_unlock_irqrestore(&fctx->list_lock, flags);
 
-		kref_put(&pvr_fence->fctx->kref,
-			 pvr_fence_context_destroy_kref);
+		kref_put(&fctx->kref, pvr_fence_context_destroy_kref);
 	}
 }
 
