@@ -274,11 +274,18 @@ struct disp_output_config {
 	unsigned int frm_sequence;
 };
 
+struct disp_ccorr_config {
+	bool is_dirty;
+	int mode;
+	int color_matrix[16];
+};
+
 struct disp_session_input_config {
 	enum DISP_SESSION_USER setter;
 	unsigned int session_id;
 	unsigned int config_layer_num;
 	struct disp_input_config config[12];
+	struct disp_ccorr_config ccorr_config;
 };
 
 struct disp_session_output_config {
@@ -315,6 +322,12 @@ struct disp_frame_cfg_t {
 	void *prev_present_fence_struct;
 	enum EXTD_TRIGGER_MODE tigger_mode;
 	enum DISP_SESSION_USER user;
+
+	/* ccorr config */
+	struct disp_ccorr_config ccorr_config;
+
+	/* res_idx: SF/HWC selects which resolution to use */
+	int res_idx;
 };
 
 struct disp_session_info {
