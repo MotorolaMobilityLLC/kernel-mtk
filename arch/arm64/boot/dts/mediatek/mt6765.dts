@@ -3120,6 +3120,11 @@ firmware_class.path=/vendor/firmware";
 		eff_turn_point = <467>;
 		tiny = <50>;
 	};
+
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
 };
 
 #include "cust_mt6765_msdc.dtsi"
