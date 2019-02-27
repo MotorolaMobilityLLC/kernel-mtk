@@ -623,7 +623,7 @@ void cm_mgr_enable_fn(int enable)
 {
 	cm_mgr_enable = enable;
 	if (!cm_mgr_enable)
-		dvfsrc_set_power_model_ddr_request(0);
+		cm_mgr_set_dram_level(0);
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && defined(USE_CM_MGR_AT_SSPM)
 	cm_mgr_to_sspm_command(IPI_CM_MGR_ENABLE,
 			cm_mgr_enable);
