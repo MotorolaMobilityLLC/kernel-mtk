@@ -2278,6 +2278,12 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mtk_pdc_init(info);
 	charger_ftm_init();
 
+#ifdef CONFIG_MTK_CHARGER_UNLIMITED
+	info->usb_unlimited = true;
+	info->enable_sw_safety_timer = false;
+	charger_dev_enable_safety_timer(info->chg1_dev, false);
+#endif
+
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {
 		ptr = container_of(pos, struct charger_consumer, list);
