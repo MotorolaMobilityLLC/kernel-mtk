@@ -34,6 +34,16 @@
 #include <mach/pseudo_m4u.h>
 #include <linux/pagemap.h>
 #include <linux/compat.h>
+#ifndef CONFIG_ARM64
+#include <asm/dma-iommu.h>
+#include <asm/memory.h>
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
+#include <linux/highmem.h>
+#include <linux/dma-direction.h>
+#include <asm/memory.h>
+#include <mm/dma.h>
+#endif
 
 #include <sync_write.h>
 #ifdef CONFIG_MTK_SMI_EXT
@@ -50,8 +60,10 @@
 
 int m4u_log_level = 2;
 int m4u_log_to_uart = 2;
+#ifdef CONFIG_ARM64
 static unsigned int temp_st = 0xffffffff;
 static unsigned int temp_en;
+#endif
 
 #define _M4ULOG(level, string, args...) \
 do { \
@@ -589,8 +601,8 @@ static void pseudo_free_iova(int port, dma_addr_t dma_addr)
 
 	__free_iova(iovad, iova);
 
-	M4U_MSG("pseudo_free_iova dma_addr iova 0x%llx, size %zu, done\n",
-		dma_addr, size);
+	M4U_MSG("pseudo_free_iova dma_addr iova 0x%lx, size %zu, done\n",
+		(unsigned long)dma_addr, size);
 }
 
 
@@ -1099,6 +1111,7 @@ struct sg_table *pseudo_get_sg(int portid, unsigned long va, int size)
 		if (have_page) {
 			page = phys_to_page(pPhys[i]);
 			sg_set_page(sg, page, M4U_PAGE_SIZE, 0);
+			sg_dma_len(sg) = M4U_PAGE_SIZE;
 		} else {
 			/*
 			 * the pa must not be set to zero or DMA would omit
@@ -1169,6 +1182,466 @@ struct sg_table *pseudo_add_sgtable(struct mva_sglist *mva_sg)
 	M4U_DBG("adding pseudo_sglist, mva = 0x%x\n", mva_sg->mva);
 	return table;
 }
+#ifndef CONFIG_ARM64
+static struct dma_iommu_mapping *dmapping;
+static int __dma_direction_to_prot(enum dma_data_direction dir)
+{
+	int prot;
+
+	switch (dir) {
+	case DMA_BIDIRECTIONAL:
+		prot = IOMMU_READ | IOMMU_WRITE;
+		break;
+	case DMA_TO_DEVICE:
+		prot = IOMMU_READ;
+		break;
+	case DMA_FROM_DEVICE:
+		prot = IOMMU_WRITE;
+		break;
+	default:
+		prot = 0;
+	}
+
+	return prot;
+}
+
+static int extend_iommu_mapping(struct dma_iommu_mapping *mapping)
+{
+	int next_bitmap;
+
+	if (mapping->nr_bitmaps >= mapping->extensions)
+		return -EINVAL;
+
+	next_bitmap = mapping->nr_bitmaps;
+	mapping->bitmaps[next_bitmap] = kzalloc(mapping->bitmap_size,
+						GFP_ATOMIC);
+	if (!mapping->bitmaps[next_bitmap])
+		return -ENOMEM;
+
+	mapping->nr_bitmaps++;
+
+	return 0;
+}
+
+static dma_addr_t _alloc_iova(struct dma_iommu_mapping *mapping,
+				      size_t size)
+{
+	unsigned int order = get_order(size);
+	unsigned int align = 0;
+	unsigned int count, start;
+	size_t mapping_size = mapping->bits << PAGE_SHIFT;
+	unsigned long flags;
+	dma_addr_t iova;
+	int i;
+
+	if (order > CONFIG_ARM_DMA_IOMMU_ALIGNMENT)
+		order = CONFIG_ARM_DMA_IOMMU_ALIGNMENT;
+
+	count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+	align = (1 << order) - 1;
+
+	spin_lock_irqsave(&mapping->lock, flags);
+	for (i = 0; i < mapping->nr_bitmaps; i++) {
+		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
+				mapping->bits, 0, count, align);
+
+		if (start > mapping->bits)
+			continue;
+
+		bitmap_set(mapping->bitmaps[i], start, count);
+		break;
+	}
+
+	/*
+	 * No unused range found. Try to extend the existing mapping
+	 * and perform a second attempt to reserve an IO virtual
+	 * address range of size bytes.
+	 */
+	if (i == mapping->nr_bitmaps) {
+		if (extend_iommu_mapping(mapping)) {
+			spin_unlock_irqrestore(&mapping->lock, flags);
+			return DMA_ERROR_CODE;
+		}
+
+		start = bitmap_find_next_zero_area(mapping->bitmaps[i],
+				mapping->bits, 0, count, align);
+
+		if (start > mapping->bits) {
+			spin_unlock_irqrestore(&mapping->lock, flags);
+			return DMA_ERROR_CODE;
+		}
+
+		bitmap_set(mapping->bitmaps[i], start, count);
+	}
+	spin_unlock_irqrestore(&mapping->lock, flags);
+
+	iova = mapping->base + (mapping_size * i);
+	iova += start << PAGE_SHIFT;
+
+	return iova;
+}
+
+static void _free_iova(struct dma_iommu_mapping *mapping,
+			       dma_addr_t addr, size_t size)
+{
+	unsigned int start, count;
+	size_t mapping_size = mapping->bits << PAGE_SHIFT;
+	unsigned long flags;
+	dma_addr_t bitmap_base;
+	u32 bitmap_index;
+
+	if (!size)
+		return;
+
+	bitmap_index = (u32) (addr - mapping->base) / (u32) mapping_size;
+	WARN_ON(addr < mapping->base || bitmap_index > mapping->extensions);
+
+	bitmap_base = mapping->base + mapping_size * bitmap_index;
+
+	start = (addr - bitmap_base) >>	PAGE_SHIFT;
+
+	if (addr + size > bitmap_base + mapping_size) {
+		/*
+		 * The address range to be freed reaches into the iova
+		 * range of the next bitmap. This should not happen as
+		 * we don't allow this in _alloc_iova (at the
+		 * moment).
+		 */
+		WARN_ON(1);
+		return;
+	}
+
+	count = size >> PAGE_SHIFT;
+
+	spin_lock_irqsave(&mapping->lock, flags);
+	bitmap_clear(mapping->bitmaps[bitmap_index], start, count);
+	spin_unlock_irqrestore(&mapping->lock, flags);
+}
+
+static inline int _reserve_iova(struct dma_iommu_mapping *mapping,
+				dma_addr_t iova, size_t size)
+{
+	unsigned long count, start;
+	unsigned long flags;
+	int i, sbitmap, ebitmap;
+
+	if (iova < mapping->base)
+		return -EINVAL;
+
+	start = (iova - mapping->base) >> PAGE_SHIFT;
+	count = PAGE_ALIGN(size) >> PAGE_SHIFT;
+
+	sbitmap = start / mapping->bits;
+	ebitmap = (start + count) / mapping->bits;
+	start = start % mapping->bits;
+
+	if (ebitmap > mapping->extensions)
+		return -EINVAL;
+
+	spin_lock_irqsave(&mapping->lock, flags);
+
+	for (i = mapping->nr_bitmaps; i <= ebitmap; i++) {
+		if (extend_iommu_mapping(mapping)) {
+			spin_unlock_irqrestore(&mapping->lock, flags);
+			return -ENOMEM;
+		}
+	}
+
+	for (i = sbitmap; count && i < mapping->nr_bitmaps; i++) {
+		int bits = count;
+
+		if (bits + start > mapping->bits)
+			bits = mapping->bits - start;
+
+		bitmap_set(mapping->bitmaps[i], start, bits);
+		start = 0;
+		count -= bits;
+	}
+
+	spin_unlock_irqrestore(&mapping->lock, flags);
+
+	return 0;
+}
+
+static void dma_cache_maint_page(struct page *page, unsigned long offset,
+	size_t size, enum dma_data_direction dir,
+	void (*op)(const void *, size_t, int))
+{
+	unsigned long pfn;
+	size_t left = size;
+
+	pfn = page_to_pfn(page) + offset / PAGE_SIZE;
+	offset %= PAGE_SIZE;
+
+	/*
+	 * A single sg entry may refer to multiple physically contiguous
+	 * pages.  But we still need to process highmem pages individually.
+	 * If highmem is not configured then the bulk of this loop gets
+	 * optimized out.
+	 */
+	do {
+		size_t len = left;
+		void *vaddr;
+
+		page = pfn_to_page(pfn);
+
+		if (PageHighMem(page)) {
+			if (len + offset > PAGE_SIZE)
+				len = PAGE_SIZE - offset;
+
+			if (cache_is_vipt_nonaliasing()) {
+				vaddr = kmap_atomic(page);
+				op(vaddr + offset, len, dir);
+				kunmap_atomic(vaddr);
+			} else {
+				vaddr = kmap_high_get(page);
+				if (vaddr) {
+					op(vaddr + offset, len, dir);
+					kunmap_high(page);
+				}
+			}
+		} else {
+			vaddr = page_address(page) + offset;
+			op(vaddr, len, dir);
+		}
+		offset = 0;
+		pfn++;
+		left -= len;
+	} while (left);
+}
+
+
+/*
+ * Make an area consistent for devices.
+ * Note: Drivers should NOT use this function directly, as it will break
+ * platforms with CONFIG_DMABOUNCE.
+ * Use the driver DMA support - see dma-mapping.h (dma_sync_*)
+ */
+static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
+size_t size, enum dma_data_direction dir)
+{
+	phys_addr_t paddr;
+
+	dma_cache_maint_page(page, off, size, dir, dmac_map_area);
+
+	paddr = page_to_phys(page) + off;
+	if (dir == DMA_FROM_DEVICE)
+		outer_inv_range(paddr, paddr + size);
+	else
+		outer_clean_range(paddr, paddr + size);
+	/* FIXME: non-speculating: flush on bidirectional mappings? */
+}
+
+static void __dma_page_dev_to_cpu(struct page *page, unsigned long off,
+	size_t size, enum dma_data_direction dir)
+{
+	phys_addr_t paddr = page_to_phys(page) + off;
+
+	/* FIXME: non-speculating: not required */
+	/* in any case, don't bother invalidating if DMA to device */
+	if (dir != DMA_TO_DEVICE) {
+		outer_inv_range(paddr, paddr + size);
+
+		dma_cache_maint_page(page, off, size, dir, dmac_unmap_area);
+	}
+
+	/*
+	 * Mark the D-cache clean for these pages to avoid extra flushing.
+	 */
+	if (dir != DMA_TO_DEVICE && size >= PAGE_SIZE) {
+		unsigned long pfn;
+		size_t left = size;
+
+		pfn = page_to_pfn(page) + off / PAGE_SIZE;
+		off %= PAGE_SIZE;
+		if (off) {
+			pfn++;
+			left -= PAGE_SIZE - off;
+		}
+		while (left >= PAGE_SIZE) {
+			page = pfn_to_page(pfn++);
+			set_bit(PG_dcache_clean, &page->flags);
+			left -= PAGE_SIZE;
+		}
+	}
+}
+
+
+static int __iommu_remove_mapping(struct device *dev,
+				  dma_addr_t iova,
+				  size_t size)
+{
+	struct dma_iommu_mapping *mapping = to_dma_iommu_mapping(dev);
+
+	/*
+	 * add optional in-page offset from iova to size and align
+	 * result to page size
+	 */
+	size = PAGE_ALIGN((iova & ~PAGE_MASK) + size);
+	iova &= PAGE_MASK;
+
+	iommu_unmap(mapping->domain, iova, size);
+	_free_iova(mapping, iova, size);
+	return 0;
+}
+
+/*
+ * Map a part of the scatter-gather list into contiguous io address space
+ */
+static int __map_sg_chunk(struct device *dev, struct scatterlist *sg,
+			  size_t size, dma_addr_t *handle,
+			  enum dma_data_direction dir, unsigned long attrs,
+			  bool is_coherent)
+{
+	struct dma_iommu_mapping *mapping = to_dma_iommu_mapping(dev);
+	dma_addr_t iova, iova_base;
+	int ret = 0;
+	unsigned int count;
+	struct scatterlist *s;
+	int prot;
+
+	size = PAGE_ALIGN(size);
+	*handle = DMA_ERROR_CODE;
+
+	if (!mapping) {
+		pr_info("func %s, mapping %p\n", __func__, mapping);
+		return -ENOMEM;
+	}
+	iova_base = iova = _alloc_iova(mapping, size);
+	if (iova == DMA_ERROR_CODE)
+		return -ENOMEM;
+
+	for (count = 0, s = sg; count < (size >> PAGE_SHIFT); s = sg_next(s)) {
+		phys_addr_t phys = page_to_phys(sg_page(s));
+		unsigned int len = PAGE_ALIGN(s->offset + s->length);
+
+		if (!is_coherent && (attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0)
+			__dma_page_cpu_to_dev(sg_page(s),
+					      s->offset,
+					      s->length,
+					      dir);
+
+		prot = __dma_direction_to_prot(dir);
+
+		ret = iommu_map(mapping->domain, iova, phys, len, prot);
+		if (ret < 0)
+			goto fail;
+		count += len >> PAGE_SHIFT;
+		iova += len;
+	}
+	*handle = iova_base;
+
+	return 0;
+fail:
+	iommu_unmap(mapping->domain, iova_base, count * PAGE_SIZE);
+	_free_iova(mapping, iova_base, size);
+	return ret;
+}
+
+
+static int __iommu_map_sg(struct device *dev, struct scatterlist *sg, int nents,
+		     enum dma_data_direction dir, unsigned long attrs,
+		     bool is_coherent)
+{
+	struct scatterlist *s = sg, *dma = sg, *start = sg;
+	int i, count = 0;
+	unsigned int offset = s->offset;
+	unsigned int size = s->offset + s->length;
+	unsigned int max = dma_get_max_seg_size(dev);
+
+	for (i = 1; i < nents; i++) {
+		s = sg_next(s);
+
+		s->dma_address = DMA_ERROR_CODE;
+		s->dma_length = 0;
+
+		if (s->offset || (size & ~PAGE_MASK)
+		    || size + s->length > max) {
+			if (__map_sg_chunk(dev, start, size, &dma->dma_address,
+			    dir, attrs, is_coherent) < 0)
+				goto bad_mapping;
+
+			dma->dma_address += offset;
+			dma->dma_length = size - offset;
+
+			size = offset = s->offset;
+			start = s;
+			dma = sg_next(dma);
+			count += 1;
+		}
+		size += s->length;
+	}
+	if (__map_sg_chunk(dev, start, size, &dma->dma_address, dir, attrs,
+		is_coherent) < 0)
+		goto bad_mapping;
+
+	dma->dma_address += offset;
+	dma->dma_length = size - offset;
+
+	return count+1;
+
+bad_mapping:
+	for_each_sg(sg, s, count, i)
+		__iommu_remove_mapping(dev, sg_dma_address(s), sg_dma_len(s));
+	return 0;
+}
+
+
+/**
+ * __arm_coherent_iommu_map_sg - map a set of SG buffers for streaming mode DMA
+ * @dev: valid struct device pointer
+ * @sg: list of buffers
+ * @nents: number of buffers to map
+ * @dir: DMA transfer direction
+ *
+ * Map a set of i/o coherent buffers described by scatterlist in streaming
+ * mode for DMA. The scatter gather list elements are merged together (if
+ * possible) and tagged with the appropriate dma address and length. They are
+ * obtained via sg_dma_{address,length}.
+ */
+int __arm_coherent_iommu_map_sg(struct device *dev, struct scatterlist *sg,
+		int nents, enum dma_data_direction dir, unsigned long attrs)
+{
+	return __iommu_map_sg(dev, sg, nents, dir, attrs, true);
+}
+
+static void __iommu_unmap_sg(struct device *dev, struct scatterlist *sg,
+		int nents, enum dma_data_direction dir, unsigned long attrs,
+		bool is_coherent)
+{
+	struct scatterlist *s;
+	int i;
+
+	for_each_sg(sg, s, nents, i) {
+		if (sg_dma_len(s))
+			__iommu_remove_mapping(dev, sg_dma_address(s),
+					       sg_dma_len(s));
+		if (!is_coherent && (attrs & DMA_ATTR_SKIP_CPU_SYNC) == 0)
+			__dma_page_dev_to_cpu(sg_page(s), s->offset,
+					      s->length, dir);
+	}
+}
+
+
+/**
+ * unmap a set of SG buffers mapped by dma_map_sg
+ * @dev: valid struct device pointer
+ * @sg: list of buffers
+ * @nents: number of buffers to unmap (same as was passed to dma_map_sg)
+ * @dir: DMA transfer direction (same as was passed to dma_map_sg)
+ *
+ * Unmap a set of streaming mode DMA translations.  Again, CPU access
+ * rules concerning calls here are the same as for dma_unmap_single().
+ */
+void __arm_coherent_iommu_unmap_sg(struct device *dev, struct scatterlist *sg,
+		int nents, enum dma_data_direction dir, unsigned long attrs)
+{
+	__iommu_unmap_sg(dev, sg, nents, dir, attrs, true);
+}
+
+
+
+#endif
 
 static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 			   struct sg_table *sg_table, unsigned int flags,
@@ -1178,9 +1651,11 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 	struct sg_table *table = NULL;
 	int ret, kernelport = m4u_user2kernel_port(port);
 	struct device *dev = pseudo_get_larbdev(kernelport);
-	struct iommu_domain *domain;
-	struct iova_domain *iovad;
 	dma_addr_t dma_addr = DMA_ERROR_CODE;
+#ifdef CONFIG_ARM64
+	struct iommu_domain *domain = NULL;
+	struct iova_domain *iovad;
+#endif
 
 	if (va && sg_table) {
 		M4U_DBG("va/sg 0x%x are valid:0x%lx, 0x%p, 0x%x, 0x%x-0x%x\n",
@@ -1190,8 +1665,15 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 		M4U_MSG("dev NULL!\n");
 		return -1;
 	}
+
+#ifdef CONFIG_ARM64
 	domain = iommu_get_domain_for_dev(dev);
 
+	if (!domain) {
+		pr_info("func %s, dom is null\n", __func__);
+		return -EINVAL;
+	}
+#endif
 	if (!va && !sg_table) {
 		M4U_MSG("va and sg_table are all NULL\n");
 		return -EINVAL;
@@ -1221,6 +1703,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 				phys = sg_phys(s);
 				size += s->length;
 				sg_set_page(ng, sg_page(s), s->length, 0);
+				sg_dma_len(ng) = s->length;
 				s = sg_next(s);
 				ng = sg_next(ng);
 			}
@@ -1239,16 +1722,26 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 
 	if ((flags & (M4U_FLAGS_FIX_MVA | M4U_FLAGS_START_FROM)) != 0) {
 		dma_addr = pseudo_alloc_fixed_iova(port, *retmva, size);
+#ifdef CONFIG_ARM64
 		if (iommu_map_sg(domain, dma_addr, table->sgl, sg_table ?
 				 table->nents : table->orig_nents,
 				 IOMMU_READ | IOMMU_WRITE) < size) {
 			goto ERR1_EXIT;
 		}
+#else
+		__arm_coherent_iommu_map_sg(dev, table->sgl,
+					    table->nents, 1, 0);
+#endif
 		sg_dma_address(table->sgl) = dma_addr;
 	} else {
+#ifdef CONFIG_ARM64
 		iommu_dma_map_sg(dev, table->sgl,
 				 sg_table ? table->nents : table->orig_nents,
 				 IOMMU_READ | IOMMU_WRITE);
+#else
+		__arm_coherent_iommu_map_sg(dev,
+					    table->sgl, table->nents, 1, 0);
+#endif
 		dma_addr = sg_dma_address(table->sgl);
 	}
 
@@ -1256,7 +1749,8 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 		M4U_ERR("alloc mva failed, port is %s, dma:0x%lx s:0x%x\n",
 			m4u_get_port_name(port),
 			(unsigned long)dma_addr, size);
-		M4U_ERR("SUSPECT that iova have been all exhaust\n");
+		M4U_ERR("SUSPECT that iova have been all exhaust 0x%x, %d-%d\n",
+			flags, table->nents, table->orig_nents);
 		goto ERR1_EXIT;
 	}
 
@@ -1268,6 +1762,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 
 	pseudo_add_sgtable(mva_sg);
 
+#ifdef CONFIG_ARM64
 	if (!domain) {
 		M4U_MSG("iovad para pfn2, get iommu_domain fail\n");
 	} else {
@@ -1277,7 +1772,7 @@ static int __pseudo_alloc_mva(int port, unsigned long va, unsigned int size,
 			iovad->granule, iovad->start_pfn,
 			dma_get_seg_boundary(dev), *retmva, flags);
 	}
-
+#endif
 	M4U_DBG("mva is 0x%x, dma_address is 0x%lx, size is 0x%x\n",
 		mva_sg->mva, (unsigned long)dma_addr, size);
 
@@ -1527,7 +2022,12 @@ int __pseudo_dealloc_mva(int port,
 	struct sg_table *table = NULL;
 	int kernelport = m4u_user2kernel_port(port);
 	struct device *dev = pseudo_get_larbdev(0);
+#ifdef CONFIG_ARM64
 	struct iommu_domain *domain;
+#else
+	struct dma_iommu_mapping *mapping;
+#endif
+
 	unsigned long addr_align = MVA;
 	unsigned int size_align = size;
 	int offset;
@@ -1537,11 +2037,19 @@ int __pseudo_dealloc_mva(int port,
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_ARM64
 	domain = iommu_get_domain_for_dev(dev);
 	if (!domain) {
 		M4U_MSG("domain is NULL\n");
 		return -EINVAL;
 	}
+#else
+	mapping = to_dma_iommu_mapping(dev);
+	if (!mapping) {
+		M4U_MSG("mapping is NULL\n");
+		return -EINVAL;
+	}
+#endif
 
 	M4U_DBG("module=0x%x, addr=0x%lx, size=0x%x, MVA=0x%x, mva_end=0x%x\n",
 		port, BufAddr, size, MVA, MVA + size - 1);
@@ -1581,9 +2089,14 @@ int __pseudo_dealloc_mva(int port,
 
 	mtk_iommu_trace_log(IOMMU_DEALLOC, MVA, size, (port << 16));
 
-	if (table)
+	if (table) {
+#ifdef CONFIG_ARM64
 		iommu_dma_unmap_sg(dev, table->sgl, table->orig_nents, 0, 0);
-	else {
+#else
+		__arm_coherent_iommu_unmap_sg(dev, table->sgl,
+					      table->nents, 0, 0);
+#endif
+	} else {
 		M4U_ERR("can't find the sgtable and would return error\n");
 		return -EINVAL;
 	}
@@ -1957,6 +2470,7 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 					goto err;
 				}
 				sg_set_page(sg, page, psize, 0);
+				sg_dma_len(sg) = psize;
 			}
 		} else {
 			ret = m4u_create_sgtable_user(va_align, table);
@@ -1978,6 +2492,7 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 					goto err;
 				}
 				sg_set_page(sg, page, psize, 0);
+				sg_dma_len(sg) = psize;
 			}
 		} else {	/* kmalloc to-do: use one entry sgtable. */
 			for_each_sg(table->sgl, sg, table->nents, i) {
@@ -1985,6 +2500,7 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size)
 						 i * psize));
 				page = phys_to_page(pa);
 				sg_set_page(sg, page, psize, 0);
+				sg_dma_len(sg) = psize;
 			}
 		}
 	}
@@ -2287,12 +2803,14 @@ retry:
  * and the armv7s iopgtable may assert warning and return error.
  * We reserve those iova to avoid this iova been allocated by other users.
  */
+#ifdef CONFIG_ARM64
+static struct dma_iommu_mapping *dmapping;
 static int pseudo_reserve_dm(void)
 {
 	struct iommu_dm_region *entry;
 	struct list_head mappings;
 	struct device *dev = pseudo_get_larbdev(0);
-	struct iommu_domain *domain;
+	struct iommu_domain *domain;/// = dmapping->domain;
 	struct iova_domain *iovad;
 	struct iova *iova;
 	unsigned long pg_size = SZ_4K, limit, shift;
@@ -2311,7 +2829,8 @@ static int pseudo_reserve_dm(void)
 retry:
 		domain = iommu_get_domain_for_dev(dev);
 		if (!domain) {
-			M4U_MSG("get iommu_domain failed\n");
+			M4U_MSG("get iommu_domain failed, pa 0x%lx-0x%lx\n",
+				(unsigned long)entry->start, pg_size);
 			domain = iommu_get_domain_for_dev(dev);
 			cond_resched();
 			goto retry;
@@ -2330,12 +2849,12 @@ retry:
 		iova = alloc_iova(iovad, (entry->length >> shift) + 1,
 				  limit, false);
 		if (!iova) {
-			M4U_ERR("%s pseudo alloc_iova failed dm: 0x%lx-0x%lx\n",
+			M4U_ERR("%s pseudo alloc_iova failed dm: 0x%lx-%zu\n",
 				dev_name(dev),
 				(unsigned long)entry->start, entry->length);
 			return -1;
 		}
-		M4U_MSG("reserve iova done,dm 0x%lx-0x%lx,iova 0x%lx-0x%lx\n",
+		M4U_MSG("reserve iova done,dm 0x%lx-%zu,iova 0x%lx-0x%lx\n",
 			(unsigned long)entry->start, entry->length,
 			iova->pfn_lo << shift, iova->pfn_hi << shift);
 		M4U_MSG("ipfn 0x%lx, node %p, granule 0x%lx,start_pfn 0x%lx\n",
@@ -2350,7 +2869,56 @@ retry:
 
 	return 0;
 }
+#else
+static int pseudo_reserve_dm(void)
+{
+	struct iommu_dm_region *entry;
+	struct list_head mappings;
+	struct device *dev = pseudo_get_larbdev(0);
+	unsigned long pg_size;
+	struct iommu_domain	*domain = dmapping->domain;
+	int ret = 0;
 
+	WARN_ON(!domain->ops->pgsize_bitmap);
+
+	pg_size = 1UL << __ffs(domain->ops->pgsize_bitmap);
+	INIT_LIST_HEAD(&mappings);
+
+	iommu_get_dm_regions(dev, &mappings);
+
+	/* We need to consider overlapping regions for different devices */
+	list_for_each_entry(entry, &mappings, list) {
+		dma_addr_t start, end, addr;
+
+		start = ALIGN(entry->start, pg_size);
+		end   = ALIGN(entry->start + entry->length, pg_size);
+
+		for (addr = start; addr < end; addr += pg_size) {
+			phys_addr_t phys_addr;
+
+			phys_addr = iommu_iova_to_phys(domain, addr);
+			if (phys_addr)
+				continue;
+
+			ret = iommu_map(domain, addr, addr,
+					pg_size, entry->prot);
+			if (ret)
+				goto out;
+		}
+
+		ret = _reserve_iova(dmapping, start, end - start);
+		if (ret != 0) {
+			M4U_ERR("failed to reserve mapping\n");
+			goto out;
+		}
+	}
+
+out:
+	iommu_put_dm_regions(dev, &mappings);
+
+	return ret;
+}
+#endif
 static const struct file_operations pseudo_fops = {
 	.owner = THIS_MODULE,
 	.open = pseudo_open,
@@ -2360,13 +2928,28 @@ static const struct file_operations pseudo_fops = {
 	.compat_ioctl = pseudo_compat_ioctl,
 };
 
-
 static int pseudo_probe(struct platform_device *pdev)
 {
 	int i, j;
 	struct device_node *node = NULL;
+#ifndef CONFIG_ARM64
+	///struct device *dev = &pdev->dev;
+	///struct device_node *node = dev->of_node;
+	struct platform_device *pimudev;
 
-	M4U_MSG("pseudo_probe +0\n");
+	node = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
+	if (!node)
+		return 0;
+
+	pimudev = of_find_device_by_node(node);
+	of_node_put(node);
+	if (WARN_ON(!pimudev))
+		return -EINVAL;
+
+	dmapping = pimudev->dev.archdata.iommu;
+	///WARN_ON(!dmapping);
+#endif
+
 	for (i = 0; i < 3; i++) {
 		/* wait for larb probe done. */
 		/* if (mtk_smi_larb_ready(i) == 0) {
@@ -2436,7 +3019,7 @@ static int pseudo_probe(struct platform_device *pdev)
 
 		M4U_MSG("init larb %d, 0x%lx\n", i, pseudo_larbbase[i]);
 	}
-	M4U_MSG("pseudo_probe -\n");
+	M4U_MSG("pseudo_probe done\n");
 	return 0;
 }
 
@@ -2446,9 +3029,26 @@ static int pseudo_port_probe(struct platform_device *pdev)
 	int ret;
 	struct device *dev;
 	struct device_dma_parameters *dma_param;
-	struct device_node *np;
+#ifndef CONFIG_ARM64
+	struct device_node *node;
+	struct platform_device *pimudev;
 
-	M4U_MSG("pseudo_port_probe +\n");
+	dev = &pdev->dev;
+
+	node = of_parse_phandle(pdev->dev.of_node, "iommus", 0);
+	if (!node)
+		return 0;
+
+	pimudev = of_find_device_by_node(node);
+	of_node_put(node);
+	if (WARN_ON(!pimudev))
+		return -EINVAL;
+
+	dmapping = pimudev->dev.archdata.iommu;
+	///WARN_ON(!dmapping);
+#endif
+
+	M4U_MSG("pseudo_port_probe start dmapping %p\n", dmapping);
 	/* dma will split the iova into max size to 65535 byte by default */
 	/* if we do not set this.*/
 	dma_param = kzalloc(sizeof(*dma_param), GFP_KERNEL);
@@ -2471,15 +3071,7 @@ static int pseudo_port_probe(struct platform_device *pdev)
 
 	dev = larbdev[larbid].dev;
 
-	np = of_parse_phandle(dev->of_node, "iommus", 0);
-	if (!np)
-		return 0;
-
-	pdev = of_find_device_by_node(np);
-	of_node_put(np);
-	if (WARN_ON(!pdev))
-		return -EINVAL;
-	M4U_MSG("pseudo_port_probe -\n");
+	M4U_MSG("pseudo_port_probe done\n");
 	return 0;
 }
 

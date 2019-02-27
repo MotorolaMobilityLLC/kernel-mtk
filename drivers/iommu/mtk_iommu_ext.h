@@ -35,7 +35,10 @@ int mtk_iommu_register_fault_callback(int port,
 				      void *cb_data);
 int mtk_iommu_unregister_fault_callback(int port);
 int mtk_iommu_enable_tf(int port, bool fgenable);
-void *mtk_iommu_iova_to_va(struct device *dev, dma_addr_t iova, size_t size);
+int mtk_iommu_iova_to_va(struct device *dev,
+			 dma_addr_t iova,
+			 unsigned long *map_va,
+			 size_t size);
 int mtk_smi_larb_get_ext(struct device *larbdev);
 
 

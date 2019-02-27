@@ -45,7 +45,11 @@
 #include <linux/of_platform.h>
 #include <mt-plat/sync_write.h> /* For mt65xx_reg_sync_writel(). */
 
+#ifdef CONFIG_MTK_M4U
 #include <m4u.h>
+#else
+#include "mach/mt_iommu.h"
+#endif
 // #define EP_NO_CLKMGR
 #include <cmdq_core.h>
 
@@ -712,7 +716,7 @@ static spinlock_t SpinLockRegScen;
 static spinlock_t SpinLock_UserKey;
 
 /*m4u_callback_ret_t \ */
-/* ISP_M4U_TranslationFault_callback \*/
+/* ISP_M4U_TF_callback \*/
 /* (int port, unsigned int mva, void *data);*/
 
 /*********************************************************************
@@ -14385,8 +14389,15 @@ int32_t ISP_EndGCECallback(uint32_t taskID, uint32_t regCount,
 	return 0;
 }
 
-m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
-						     void *data)
+#ifdef CONFIG_MTK_M4U
+m4u_callback_ret_t ISP_M4U_TF_callback(int port,
+				       unsigned int mva,
+				       void *data)
+#else
+enum mtk_iommu_callback_ret_t ISP_M4U_TF_callback(int port,
+						  unsigned int mva,
+						  void *data)
+#endif
 {
 	log_dbg("[ISP_M4U]fault	call port=%d, mva=0x%x", port, mva);
 
@@ -15311,8 +15322,11 @@ m4u_callback_ret_t ISP_M4U_TranslationFault_callback(int port, unsigned int mva,
 			(unsigned int)ISP_RD32(ISP_ADDR + 0x00a8));
 		break;
 	}
-
+#ifdef CONFIG_MTK_M4U
 	return M4U_CALLBACK_HANDLED;
+#else
+	return MTK_IOMMU_CALLBACK_HANDLED;
+#endif
 }
 
 /******************************************************************************
@@ -15455,48 +15469,77 @@ static signed int __init ISP_Init(void)
 
 	/* Register M4U callback dump */
 	log_dbg("register M4U callback dump");
+#ifdef CONFIG_MTK_M4U
 	m4u_register_fault_callback(M4U_PORT_CAM_IMGI,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_IMGO,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_RRZO,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_AAO,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_LCSO,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 
 
 
 	m4u_register_fault_callback(M4U_PORT_CAM_ESFKO,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_IMGO_S,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_IMGO_S2,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_LSCI,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_LSCI_D,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_BPCI,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_BPCI_D,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_CAM_IMG2O,
-				    ISP_M4U_TranslationFault_callback, NULL);
+				    ISP_M4U_TF_callback, NULL);
+#else
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_IMGI,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_IMGO,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_RRZO,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_AAO,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_LCSO,
+					  ISP_M4U_TF_callback, NULL);
 
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_ESFKO,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_IMGO_S,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_IMGO_S2,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_LSCI,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_LSCI_D,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_BPCI,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_BPCI_D,
+					  ISP_M4U_TF_callback, NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_CAM_IMG2O,
+					  ISP_M4U_TF_callback, NULL);
+#endif
 
 #if 0
 	m4u_register_fault_callback(M4U_PORT_UFDI,
-				ISP_M4U_TranslationFault_callback, NULL);
+				ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_IMG3O,
-				ISP_M4U_TranslationFault_callback, NULL);
+				ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_VIPI,
-				ISP_M4U_TranslationFault_callback, NULL);
+				ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_VIP2I,
-				ISP_M4U_TranslationFault_callback, NULL);
+				ISP_M4U_TF_callback, NULL);
 	m4u_register_fault_callback(M4U_PORT_VIP3I,
-				ISP_M4U_TranslationFault_callback, NULL);
+				ISP_M4U_TF_callback, NULL);
 #endif
 
 #ifdef _MAGIC_NUM_ERR_HANDLING_
@@ -15530,8 +15573,11 @@ static void __exit ISP_Exit(void)
 	/*      */
 	/* Un-Register M4U callback dump */
 	log_dbg("Un-Register M4U callback dump");
+#ifdef CONFIG_MTK_M4U
 	m4u_unregister_fault_callback(M4U_PORT_CAM_IMGI);
-
+#else
+	mtk_iommu_unregister_fault_callback(M4U_PORT_CAM_IMGI);
+#endif
 	/* unreserve the pages */
 	for (i = 0; i < RT_BUF_TBL_NPAGES * PAGE_SIZE; i += PAGE_SIZE)
 		SetPageReserved(virt_to_page(((unsigned long)pTbl_RTBuf) + i));
