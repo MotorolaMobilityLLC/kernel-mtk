@@ -224,7 +224,7 @@ static ssize_t spi_log_store(struct device *dev, struct device_attribute *attr,
 		return -EINVAL;
 	}
 
-	pr_info("[spi]%s buflen:%ld buf:%s\n", __func__, strlen(buf), buf);
+	pr_info("[spi]%s buflen:%d buf:%s\n", __func__, (u32)strlen(buf), buf);
 	if (!strncmp(buf, "1", 1)) {
 		pr_info("[spi]%s Now enable spi log\n", __func__);
 		spi_log_status = LOG_OPEN;
