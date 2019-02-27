@@ -11,4 +11,8 @@
 # GNU General Public License for more details.
 #
 
+# Do not change the following order
+obj-y += plat_dbg_info.o
 obj-y += plat_sram_flag.o
+
+

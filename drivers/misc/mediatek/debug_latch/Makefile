@@ -11,6 +11,7 @@
 # GNU General Public License for more details.
 #
 
-obj-$(CONFIG_MTK_PLAT_SRAM_FLAG) += plat_sram_flag/
+obj-$(CONFIG_MTK_PLAT_SRAM_FLAG) += plat_dbg_info/
+
 obj-$(CONFIG_MTK_L2C_PARITY_CHECK) += l2c_parity/
 obj-$(CONFIG_MTK_LASTBUS_INTERFACE) += lastbus/
