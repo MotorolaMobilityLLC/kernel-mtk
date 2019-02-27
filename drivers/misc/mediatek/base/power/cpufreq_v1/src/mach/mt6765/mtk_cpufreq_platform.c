@@ -112,12 +112,12 @@ static unsigned int mt6357_transfer2volt(unsigned int val)
 static unsigned int mt6357_vproc_settletime(unsigned int old_volt,
     unsigned int new_volt)
 {
-	/* UP:10mv/us DOWN:5mv/us */
+	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
 		return ((new_volt - old_volt) + 1000 - 1) / 1000 +
 		PMIC_CMD_DELAY_TIME;
 	else
-		return ((old_volt - new_volt) + 500 - 1) / 500 +
+		return ((old_volt - new_volt) + 1000 - 1) / 1000 +
 		PMIC_CMD_DELAY_TIME;
 }
 
@@ -142,9 +142,9 @@ static unsigned int get_cur_volt_sram_cpu(struct buck_ctrl_t *buck_p)
 static unsigned int mt6357_vsram_settletime(unsigned int old_volt,
     unsigned int new_volt)
 {
-	/* UP:20mv/us DOWN:10mv/us */
+	/* UP:10mv/us DOWN:10mv/us */
 	if (new_volt > old_volt)
-		return ((new_volt - old_volt) + 2000 - 1) / 2000 +
+		return ((new_volt - old_volt) + 1000 - 1) / 1000 +
 		PMIC_CMD_DELAY_TIME;
 	else
 		return ((old_volt - new_volt) + 1000 - 1) / 1000 +
