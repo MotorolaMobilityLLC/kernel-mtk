@@ -4002,7 +4002,11 @@ static void ISP_EnableClock(bool En)
 			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
 
 			ISP_WR32(CLOCK_CELL_BASE, _reg|(1<<6));
-#ifdef ALWAYS_HIGH
+		}
+		G_u4EnableClockCount++;
+		spin_unlock(&(IspInfo.SpinLockClock));
+		#ifdef ALWAYS_HIGH
+		if (G_u4EnableClockCount == 1) {
 			mmdvfs_pm_qos_add_request(
 			&isp_qos,
 			MMDVFS_PM_QOS_SUB_SYS_CAMERA,
@@ -4014,10 +4018,8 @@ static void ISP_EnableClock(bool En)
 			pr_debug(
 			"[open] CAMSYS PMQoS turn on(%d)",
 			dfs_update);
-#endif
 		}
-		G_u4EnableClockCount++;
-		spin_unlock(&(IspInfo.SpinLockClock));
+		#endif
 		Prepare_Enable_ccf_clock(); /* can't be used in spinlock! */
 #endif
 	/* Disable CAMSYS_HALT1_EN: LSCI&BPCI, To avoid ISP halt keep arise */
@@ -4072,16 +4074,17 @@ static void ISP_EnableClock(bool En)
 		G_u4EnableClockCount--;
 		if (G_u4EnableClockCount == 0) {
 			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
-
 			ISP_WR32(CLOCK_CELL_BASE, _reg&(~(1<<6)));
-#ifdef ALWAYS_HIGH
+		}
+		spin_unlock(&(IspInfo.SpinLockClock));
+		#ifdef ALWAYS_HIGH
+		if (G_u4EnableClockCount == 0) {
 			mmdvfs_pm_qos_remove_request(
 				&isp_qos);
 			pr_debug(
 				"[release]CAMSYS PMQoS turn off");
-#endif
 		}
-		spin_unlock(&(IspInfo.SpinLockClock));
+		#endif
 		Disable_Unprepare_ccf_clock(); /* can't be used in spinlock! */
 #endif
 	}
