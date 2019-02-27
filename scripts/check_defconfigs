@@ -73,7 +73,7 @@ for CONFIG in $CONFIGS ; do
 		ARCH=arm64
 	fi
 
-	OUTPUT="$(make -j1 ARCH=${ARCH} O=${OUT} `basename ${CONFIG}` savedefconfig 2>&1)"
+	OUTPUT="$(make ARCH=${ARCH} O=${OUT} `basename ${CONFIG}` savedefconfig 2>&1)"
 	RETVAL=$?
 	echo "$OUTPUT"
 
@@ -84,7 +84,7 @@ for CONFIG in $CONFIGS ; do
 	fi
 
 	# Check if there is a warning message
-	if echo "$OUTPUT" | grep -q "warning:"; then
+	if echo "$OUTPUT" | grep -q "^warning:"; then
 		echo error: there is a warning message with Kconfig
 		FAIL=1
 		continue
