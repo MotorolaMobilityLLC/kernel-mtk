@@ -739,10 +739,6 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 	dvfs_threshold_low = preultra_low;
 	dvfs_threshold_high = preultra_low;
 
-	/* Disable HRT_URGENT_SIGNAL */
-	DISP_REG_SET_FIELD(handle, MMSYS_EMI_REQ_CTL_FLD_HRT_URGENT_CTL,
-		DISP_REG_CONFIG_MMSYS_EMI_REQ_CTL, 0x3);
-
 	if (primary_display_is_video_mode()) {
 		/* video mode*/
 		DISP_REG_SET(handle, idx * DISP_RDMA_INDEX_OFFSET +
