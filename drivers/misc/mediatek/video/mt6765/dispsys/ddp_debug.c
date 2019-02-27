@@ -49,6 +49,7 @@
 #include "disp_session.h"
 #include "disp_lowpower.h"
 #include "disp_drv_log.h"
+#include "disp_recovery.h"
 
 static struct dentry *debugfs;
 static struct dentry *debugDir;
@@ -275,6 +276,88 @@ static void process_dbg_opt(const char *opt)
 		} else {
 			goto Error;
 		}
+	} else if (strncmp(opt, "ddic_test:", 10) == 0) {
+		char *p = (char *)opt + 10;
+		unsigned int test_type;
+
+		ret = kstrtouint(p, 0, &test_type);
+		if (ret) {
+			snprintf(buf, 50, "error to parse cmd %s\n", opt);
+			return;
+		}
+
+		if (test_type < 1) {
+			//disp_bls_set_backlight(level);
+			struct ddp_lcm_read_cmd_table read_table;
+				memset(&read_table, 0,
+				sizeof(struct ddp_lcm_read_cmd_table));
+			read_table.cmd[0] = 0x0A;
+			read_table.cmd[1] = 0x0A;
+			read_table.cmd[2] = 0x0A;
+
+			do_lcm_vdo_lp_read(&read_table);
+
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table.data[0].byte0,
+				read_table.data[0].byte1,
+				read_table.data[0].byte2,
+				read_table.data[0].byte3);
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table.data[1].byte0,
+				read_table.data[1].byte1,
+				read_table.data[1].byte2,
+				read_table.data[1].byte3);
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table.data[2].byte0,
+				read_table.data[2].byte1,
+				read_table.data[2].byte2,
+				read_table.data[2].byte3);
+		} else if (test_type > 1 && test_type < 5) {
+
+			struct ddp_lcm_write_cmd_table write_table[5] = {
+			{0xB6, 1, {0x01} },
+			{0xC8, 1, {0x83} },
+			{0xF0, 5, {0x55, 0xAA, 0x52, 0x08, 0x01} },/*page 1*/
+			{0xB0, 2, {0x0F, 0x0F} },
+			{0xB1, 2, {0x0F, 0x0F } },
+			};
+
+
+			do_lcm_vdo_lp_write(write_table, 5);
+
+		} else if (test_type > 10) {
+
+			struct ddp_lcm_write_cmd_table write_table1[3] = {
+				{0x51, 1, {0xFE} },
+				{0x53, 1, {0xff} },
+				{0x5E, 1, {0x45} },
+			};
+			struct ddp_lcm_read_cmd_table read_table1;
+
+			do_lcm_vdo_lp_write(write_table1, 3);
+			memset(&read_table1, 0,
+				sizeof(struct ddp_lcm_read_cmd_table));
+			read_table1.cmd[0] = 0x52;
+			read_table1.cmd[1] = 0x54;
+			read_table1.cmd[2] = 0x5F;
+			do_lcm_vdo_lp_read(&read_table1);
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table1.data[0].byte0,
+				read_table1.data[0].byte1,
+				read_table1.data[0].byte2,
+				read_table1.data[0].byte3);
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table1.data[1].byte0,
+				read_table1.data[1].byte1,
+				read_table1.data[1].byte2,
+				read_table1.data[1].byte3);
+			DDPMSG("after b0 %x, b1 %x, b2 %x, b3 = %x\n",
+				read_table1.data[2].byte0,
+				read_table1.data[2].byte1,
+				read_table1.data[2].byte2,
+				read_table1.data[2].byte3);
+		}
+
 	} else if (strncmp(opt, "partial:", 8) == 0) {
 		ret = sscanf(opt, "partial:%d,%d,%d,%d,%d\n", &dbg_force_roi,
 			&dbg_partial_x, &dbg_partial_y, &dbg_partial_w,

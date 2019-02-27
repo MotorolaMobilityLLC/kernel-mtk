@@ -4658,6 +4658,227 @@ int ddp_dsi_build_cmdq(enum DISP_MODULE_ENUM module,
 	return ret;
 }
 
+int ddp_dsi_read_lcm_cmdq(enum DISP_MODULE_ENUM module,
+	cmdqBackupSlotHandle *read_Slot,
+	struct cmdqRecStruct *cmdq_trigger_handle,
+	struct ddp_lcm_read_cmd_table *read_table)
+{
+	int ret = 0;
+	int i = 0;
+	int dsi_i = 0;
+
+	struct DSI_T0_INS t0;
+
+	dsi_i = DSI_MODULE_to_ID(module);
+
+	if (dsi_i != 0)
+		DISPERR("[DSI]should use dsi0\n");
+
+	if (*read_Slot == 0) {
+		ret = -1;
+		DISPERR("[DSI]alloc cmdq slot fail\n");
+		return ret;
+	}
+	/* enable dsi interrupt: RD_RDY/CMD_DONE (need do this here?) */
+	DSI_OUTREGBIT(cmdq_trigger_handle,
+		struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+			RD_RDY, 1);
+	DSI_OUTREGBIT(cmdq_trigger_handle,
+		struct DSI_INT_ENABLE_REG, DSI_REG[dsi_i]->DSI_INTEN,
+			CMD_DONE, 1);
+
+	for (i = 0; i < 3; i++) {
+		if (read_table->cmd[i] == 0)
+			break;
+		/* 0. send read lcm command(short packet) */
+		t0.CONFG = 0x04;	/* /BTA */
+		t0.Data0 = read_table->cmd[i];
+		/* / 0xB0 is used to distinguish DCS cmd */
+		/* or Gerneric cmd, is that Right??? */
+		t0.Data_ID =
+			(t0.Data0 < 0xB0) ?
+			DSI_DCS_READ_PACKET_ID :
+			DSI_GERNERIC_READ_LONG_PACKET_ID;
+		t0.Data1 = 0;
+
+			/* write DSI CMDQ */
+		DSI_OUTREG32(cmdq_trigger_handle, &DSI_CMDQ_REG[dsi_i]->data[0],
+				    0x00013700);
+		DSI_OUTREG32(cmdq_trigger_handle, &DSI_CMDQ_REG[dsi_i]->data[1],
+				     AS_UINT32(&t0));
+		DSI_OUTREG32(cmdq_trigger_handle,
+			&DSI_REG[dsi_i]->DSI_CMDQ_SIZE, 2);
+
+		/* start DSI */
+		DSI_OUTREG32(cmdq_trigger_handle,
+			&DSI_REG[dsi_i]->DSI_START, 0);
+		DSI_OUTREG32(cmdq_trigger_handle,
+			&DSI_REG[dsi_i]->DSI_START, 1);
+
+		/* 1. wait DSI RD_RDY(must clear,*/
+		/* in case of cpu RD_RDY interrupt handler) */
+		if (dsi_i == 0) {
+			DSI_POLLREG32(cmdq_trigger_handle,
+				&DSI_REG[dsi_i]->DSI_INTSTA, 0x00000001, 0x1);
+			DSI_OUTREGBIT(cmdq_trigger_handle,
+				struct DSI_INT_STATUS_REG,
+				DSI_REG[dsi_i]->DSI_INTSTA,
+				RD_RDY, 0x00000000);
+		}
+		/* 2. save RX data */
+		if (*read_Slot && dsi_i == 0) {
+			DSI_BACKUPREG32(cmdq_trigger_handle,
+				*read_Slot, i,
+				&DSI_REG[dsi_i]->DSI_RX_DATA0);
+		}
+
+		/* 3. write RX_RACK */
+		DSI_OUTREGBIT(cmdq_trigger_handle,
+			struct DSI_RACK_REG, DSI_REG[dsi_i]->DSI_RACK,
+				    DSI_RACK, 1);
+
+		/* 4. polling not busy(no need clear) */
+		if (dsi_i == 0) {
+			DSI_POLLREG32(cmdq_trigger_handle,
+				&DSI_REG[dsi_i]->DSI_INTSTA,
+				0x80000000, 0);
+		}
+		/* loop: 0~2*/
+	}
+	return ret;
+}
+
+
+int ddp_dsi_write_lcm_cmdq(enum DISP_MODULE_ENUM module,
+	struct cmdqRecStruct *cmdq, unsigned  char cmd_char,
+	unsigned char count, unsigned char *para_list)
+{
+	UINT32 i = 0;
+	int d = 0;
+	int ret = 0;
+	unsigned long goto_addr, mask_para, set_para;
+	unsigned int cmd = 0;
+	struct DSI_T0_INS t0 = {0};
+	struct DSI_T2_INS t2 = {0};
+
+	if (module == DISP_MODULE_DSI0)
+		d = 0;
+	else
+		return -1;
+
+	for (i = 0; i < count; i++)
+		DISPDBG("ddp_dsi_write_lcm_cmdq list %x\n", para_list[i]);
+	cmd = (unsigned int)cmd_char;
+	DISPDBG("ddp_dsi_write_lcm_cmdq cmd %x, count = %x\n", cmd, count);
+
+	if (cmdq == NULL)
+		return ret;
+
+	DSI_POLLREG32(cmdq, &DSI_REG[d]->DSI_INTSTA, 0x80000000, 0x0);
+	if (cmd < 0xB0) {
+		if (count > 1) {
+			t2.CONFG = 2;
+			t2.Data_ID = DSI_DCS_LONG_PACKET_ID;
+			t2.WC16 = count + 1;
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+						AS_UINT32(&t2));
+
+			goto_addr =
+				(unsigned long)(
+				&DSI_CMDQ_REG[d]->data[1].byte0);
+			mask_para = (0xFFu <<
+				((goto_addr & 0x3u) * 8));
+			set_para =
+				(cmd << ((goto_addr & 0x3u) * 8));
+			DSI_MASKREG32(cmdq,
+				goto_addr & (~(0x3u)),
+				mask_para, set_para);
+
+			for (i = 0; i < count; i++) {
+				goto_addr =
+				(unsigned long)(&DSI_CMDQ_REG[d]->data[1].
+							byte1) + i;
+				mask_para = (0xFFu << ((goto_addr & 0x3u) * 8));
+				set_para =
+				(para_list[i] << ((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+					goto_addr & (~(0x3u)),
+					mask_para, set_para);
+			}
+
+			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE,
+					2 + (count) / 4);
+		} else {
+			t0.CONFG = 0;
+			t0.Data0 = cmd;
+			if (count) {
+				t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_1;
+				t0.Data1 = para_list[0];
+			} else {
+				t0.Data_ID = DSI_DCS_SHORT_PACKET_ID_0;
+				t0.Data1 = 0;
+			}
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+							AS_UINT32(&t0));
+			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+			}
+	} else {
+		if (count > 1) {
+			t2.CONFG = 2;
+			t2.Data_ID = DSI_GERNERIC_LONG_PACKET_ID;
+			t2.WC16 = count + 1;
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+					AS_UINT32(&t2));
+			goto_addr =
+			(unsigned long)(&DSI_CMDQ_REG[d]->data[1].byte0);
+			mask_para =
+				(0xFFu << ((goto_addr & 0x3u) * 8));
+			set_para =
+				(cmd << ((goto_addr & 0x3u) * 8));
+			DSI_MASKREG32(cmdq, goto_addr & (~(0x3u)),
+					mask_para, set_para);
+
+			for (i = 0; i < count; i++) {
+				goto_addr =
+					(unsigned long)(
+					&DSI_CMDQ_REG[d]->data[1].byte1) + i;
+				mask_para =
+					(0xFFu <<
+					((goto_addr & 0x3u) * 8));
+				set_para =
+					(para_list[i] <<
+					((goto_addr & 0x3u) * 8));
+				DSI_MASKREG32(cmdq,
+						goto_addr & (~(0x3u)),
+						mask_para, set_para);
+			}
+
+			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE,
+					 2 + (count) / 4);
+
+		} else {
+			t0.CONFG = 0;
+			t0.Data0 = cmd;
+			if (count) {
+				t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_2;
+				t0.Data1 = para_list[0];
+			} else {
+				t0.Data_ID = DSI_GERNERIC_SHORT_PACKET_ID_1;
+				t0.Data1 = 0;
+			}
+			DSI_OUTREG32(cmdq, &DSI_CMDQ_REG[d]->data[0],
+					 AS_UINT32(&t0));
+			DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_CMDQ_SIZE, 1);
+		}
+	}
+	/* start DSI */
+	DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 0);
+	DSI_OUTREG32(cmdq, &DSI_REG[d]->DSI_START, 1);
+	DSI_POLLREG32(cmdq, &DSI_REG[d]->DSI_INTSTA, 0x80000000, 0x0);
+	return ret;
+}
+
+
 void *get_dsi_params_handle(UINT32 dsi_idx)
 {
 	if (dsi_idx != PM_DSI1)
