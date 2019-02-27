@@ -1270,12 +1270,12 @@ int spm_mtcmos_ctrl_mfg_pwr(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
 		while ((spm_read(PWR_STATUS) & MFG_PWR_STA_MASK)
-		       || (spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
+			|| (spm_read(PWR_STATUS_2ND) & MFG_PWR_STA_MASK)) {
 			/* No logic between pwr_on and pwr_ack.
 			 * Print SRAM / MTCMOS control and
 			 * PWR_ACK for debug.
 			 */
-			 ram_console_update();
+			ram_console_update();
 		}
 #endif
 		/* TINFO="Finish to turn off MFG" */
@@ -2506,9 +2506,8 @@ int pg_prepare(struct clk_hw *hw)
 	struct subsys *sys =  id_to_sys(pg->pd_id);
 
 #if CHECK_PWR_ST
-	if (sys->ops->get_state(sys) == SUBSYS_PWR_ON) {
+	if (sys->ops->get_state(sys) == SUBSYS_PWR_ON)
 		skip_pg = 1;
-	}
 #endif				/* CHECK_PWR_ST */
 
 	do {
@@ -2708,11 +2707,6 @@ struct cg_list cam_cg = {
 			"cam_larb3",
 			"cam_dfp_vad",
 			"cam",
-			"camtg",
-			"cam_seninf",
-			"camsv0",
-			"camsv1",
-			"camsv2",
 			"cam_ccu",
 			"mm_smi_cam_ck"
 		},
@@ -2750,13 +2744,13 @@ struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE2(SCP_SYS_CONN, pg_conn, NULL, NULL, NULL, SYS_CONN),
 	PGATE2(SCP_SYS_DPY, pg_dpy, NULL, NULL, NULL, SYS_DPY),
 	PGATE2(SCP_SYS_DIS, pg_dis, NULL, &mm_cg1, &mm_cg2, SYS_DIS),
-	PGATE2(SCP_SYS_MFG, pg_mfg, pg_mfg_async, &mfg_cg, NULL, SYS_MFG),
+	PGATE2(SCP_SYS_MFG, pg_mfg, pg_mfg_async, NULL, NULL, SYS_MFG),
 	PGATE2(SCP_SYS_ISP, pg_isp, pg_dis, NULL, &isp_cg, SYS_ISP),
 	PGATE2(SCP_SYS_IFR, pg_ifr, NULL, NULL, NULL, SYS_IFR),
 	PGATE2(SCP_SYS_MFG_CORE0, pg_mfg_core0, pg_mfg,
 		NULL, NULL, SYS_MFG_CORE0),
 	PGATE2(SCP_SYS_MFG_ASYNC, pg_mfg_async, NULL,
-		NULL, NULL, SYS_MFG_ASYNC),
+		&mfg_cg, NULL, SYS_MFG_ASYNC),
 	PGATE2(SCP_SYS_CAM, pg_cam, pg_dis, NULL, &cam_cg, SYS_CAM),
 	PGATE2(SCP_SYS_VCODEC, pg_vcodec, pg_dis, NULL, NULL, SYS_VCODEC),
 };
