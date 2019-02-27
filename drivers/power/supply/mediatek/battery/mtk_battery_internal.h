@@ -627,6 +627,10 @@ extern bool fg_interrupt_check(void);
 extern void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg);
 extern int interpolation(int i1, int b1, int i2, int b2, int i);
 extern bool is_evb_load(void);
+extern int battery_get_charger_zcv(void);
+extern int fg_get_battery_temperature_for_zcv(void);
+extern int get_sw_ocv(void);
+extern void set_hw_ocv_unreliable(bool _flag_unreliable);
 
 /* pmic */
 extern int pmic_get_battery_voltage(void);
