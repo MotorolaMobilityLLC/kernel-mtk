@@ -288,14 +288,6 @@ enum LCM_DSI_PLL_CLOCK {
 	LCM_DSI_6589_PLL_CLOCK_520 = 50,
 };
 
-
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-enum LCM_ROUND_CORNER_MODE {
-	LCM_SW_ROUND_CORNER = 0,
-	LCM_HW_ROUND_CORNER = 1,
-};
-#endif
-
 /* ------------------------------------------------------------------------- */
 
 struct LCM_DBI_DATA_FORMAT {
@@ -648,9 +640,7 @@ struct LCM_DSI_PARAMS {
 };
 
 /* ------------------------------------------------------------------------- */
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 struct LCM_ROUND_CORNER {
-	unsigned int round_corner_en;
 	unsigned int w;
 	unsigned int h;
 	unsigned int tp_size;
@@ -660,7 +650,6 @@ struct LCM_ROUND_CORNER {
 	void *lb_addr;
 	void *rb_addr;
 };
-#endif
 
 struct LCM_PARAMS {
 	enum LCM_TYPE type;
@@ -692,15 +681,12 @@ struct LCM_PARAMS {
 	unsigned int max_refresh_rate;
 	unsigned int min_refresh_rate;
 
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	unsigned int round_corner_en;
-	unsigned int round_corner_mode;
 	unsigned int full_content;
 	unsigned int corner_pattern_width;
 	unsigned int corner_pattern_height;
 	unsigned int corner_pattern_height_bot;
 	struct LCM_ROUND_CORNER round_corner_params;
-#endif
 };
 
 

@@ -933,7 +933,6 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 #ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
 	params->round_corner_en = 1;
-	params->round_corner_mode = LCM_HW_ROUND_CORNER;
 	params->corner_pattern_width = FRAME_WIDTH;
 	params->corner_pattern_height = ROUND_CORNER_H;
 
