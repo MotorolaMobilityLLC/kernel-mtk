@@ -1,5 +1,5 @@
 config MTK2712_FREQ_HOPPING
-    tristate "MT2712 FREQHOPPING driver"
-    depends on MTK_FREQ_HOPPING
-    help
-      Freqhopping can help you control some PLLs by freqhopping HW.
+	bool "MT2712 FREQHOPPING driver"
+	depends on MTK_FREQ_HOPPING
+	help
+	  Freqhopping can help you control some PLLs by freqhopping HW.
