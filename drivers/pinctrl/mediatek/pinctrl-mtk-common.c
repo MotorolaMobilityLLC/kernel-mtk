@@ -326,8 +326,8 @@ static int mtk_pmx_gpio_set_direction(struct pinctrl_dev *pctldev,
 	struct mtk_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
 
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
-	if (pctl->devdata->pin_dir_grps)/* because input is true,0,in;1,out */
-		return mtk_pinctrl_set_gpio_direction(pctl, offset, !input);
+	if (pctl->devdata->pin_dir_grps)/* because input is true */
+		return mtk_pinctrl_set_gpio_direction(pctl, offset, input);
 #endif
 
 	reg_addr = mtk_get_port(pctl, offset) + pctl->devdata->dir_offset;
