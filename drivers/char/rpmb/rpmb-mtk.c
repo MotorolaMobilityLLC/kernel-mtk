@@ -326,16 +326,13 @@ int emmc_rpmb_switch(struct mmc_card *card, struct emmc_rpmb_blk_data *md)
 	}
 
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	/* enable cmdq at boot1/boot2/user partition */
+	/* enable cmdq at user partition */
 	if ((!card->ext_csd.cmdq_mode_en)
-	&& (md->part_type <= 2)) {
+	&& (md->part_type <= 0)) {
 		ret = mmc_blk_cmdq_switch(card, 1);
-		if (ret) {
-			MSG(ERR,
-			"%s enable cmdq error %d, so just work without cmdq\n",
-				mmc_hostname(card->host), ret);
-			return ret;
-		}
+		if (ret)
+			pr_notice("%s enable CMDQ error %d, so just work without CMDQ\n",
+					mmc_hostname(card->host), ret);
 	}
 #endif
 	main_md->part_curr = md->part_type;
