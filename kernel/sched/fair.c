@@ -63,6 +63,7 @@ unsigned int sysctl_sched_initial_task_util = 0;
 unsigned int sysctl_sched_cstate_aware = 1;
 
 #ifdef CONFIG_SCHED_WALT
+static int sched_use_walt_nice = 101;
 unsigned int sysctl_sched_use_walt_cpu_util = 1;
 unsigned int sysctl_sched_use_walt_task_util = 1;
 __read_mostly unsigned int sysctl_sched_walt_cpu_high_irqload =
@@ -6195,7 +6196,8 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p,
 static inline unsigned long task_util(struct task_struct *p)
 {
 #ifdef CONFIG_SCHED_WALT
-	if (!walt_disabled && sysctl_sched_use_walt_task_util) {
+	if (!walt_disabled && (sysctl_sched_use_walt_task_util ||
+				p->prio < sched_use_walt_nice)) {
 		unsigned long demand = p->ravg.demand;
 		return (demand << 10) / walt_ravg_window;
 	}
