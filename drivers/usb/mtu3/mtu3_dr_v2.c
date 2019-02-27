@@ -425,13 +425,27 @@ static const struct file_operations ssusb_mode_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+#endif
+
+static int smt_err_count_get(void *data, u64 *val)
+{
+	struct ssusb_mtk *ssusb = data;
+
+	*val = ssusb_u3loop_back_test(ssusb);
+
+	mtu3_printk(K_INFO, "smt_err_count_get %llu\n", *val);
+
+	return 0;
+}
+DEFINE_SIMPLE_ATTRIBUTE(smt_err_count, smt_err_count_get, NULL, "%llu\n");
+
 
 static void ssusb_debugfs_init(struct ssusb_mtk *ssusb)
 {
 	struct dentry *root;
 	struct dentry *file;
 
-	root = debugfs_create_dir(dev_name(ssusb->dev), usb_debug_root);
+	root = debugfs_create_dir("musb_hdrc", NULL);
 	if (IS_ERR_OR_NULL(root)) {
 		if (!root)
 			dev_err(ssusb->dev, "create debugfs root failed\n");
@@ -439,17 +453,21 @@ static void ssusb_debugfs_init(struct ssusb_mtk *ssusb)
 	}
 	ssusb->dbgfs_root = root;
 
-	file = debugfs_create_file("mode", 0644, root,
-			ssusb, &ssusb_mode_fops);
-	if (!file)
-		dev_dbg(ssusb->dev, "create debugfs mode failed\n");
+	if (ssusb->u3_loopb_support) {
+		file = debugfs_create_file("smt_err_count", 0644, root,
+			ssusb, &smt_err_count);
+		if (!file)
+			dev_dbg(ssusb->dev, "file smt_err_count failed\n");
+	}
 }
+
 
 static void ssusb_debugfs_exit(struct ssusb_mtk *ssusb)
 {
 	debugfs_remove_recursive(ssusb->dbgfs_root);
 }
-#endif
+
+
 int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 {
 	struct otg_switch_mtk *otg_sx = &ssusb->otg_switch;
@@ -460,6 +478,8 @@ int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 	spin_lock_init(&otg_sx->dr_lock);
 
 	INIT_DELAYED_WORK(&otg_sx->extcon_reg_dwork, extcon_register_dwork);
+
+	ssusb_debugfs_init(ssusb);
 
 	/* It is enough to delay 1s for waiting for host initialization */
 	schedule_delayed_work(&otg_sx->extcon_reg_dwork, HZ);
@@ -481,8 +501,7 @@ void ssusb_otg_switch_exit(struct ssusb_mtk *ssusb)
 			EXTCON_USB_HOST, &otg_sx->id_nb);
 	}
 
-//	if (otg_sx->manual_drd_enabled)
-//		ssusb_debugfs_exit(ssusb);
+	ssusb_debugfs_exit(ssusb);
 	g_otg_sx = NULL;
 }
 

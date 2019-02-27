@@ -40,6 +40,8 @@ extern void Charger_Detect_Init(void);
 extern void Charger_Detect_Release(void);
 extern void phy_hal_init(struct phy *phy);
 extern void phy_hal_exit(struct phy *phy);
+extern bool ssusb_u3loop_back_test(struct ssusb_mtk *ssusb);
+
 
 extern void usb_wakeup_enable(struct ssusb_mtk *ssusb);
 extern void usb_wakeup_disable(struct ssusb_mtk *ssusb);
