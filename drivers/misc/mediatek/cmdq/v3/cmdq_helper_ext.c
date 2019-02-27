@@ -4850,17 +4850,8 @@ static s32 cmdq_core_get_pmqos_handle_list(struct cmdqRecStruct *handle,
 	u32 pkt_count;
 
 	if (!handle || !handle_out || !handle_list_size) {
-		if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-			CMDQ_MSG(
-				"leave %s since invalid param, handle=%p, handle_out=%p, handle_list_size=%d\n",
-				__func__, handle, handle_out,
-				handle_list_size);
 		return -EINVAL;
 	}
-
-	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-		CMDQ_MSG("enter %s, handle=%p, pkt=%p, expect list size=%d\n",
-			__func__, handle, handle->pkt, handle_list_size);
 
 	pkt_list = kcalloc(handle_list_size, sizeof(*pkt_list), GFP_KERNEL);
 	if (!pkt_list)
@@ -4876,15 +4867,7 @@ static s32 cmdq_core_get_pmqos_handle_list(struct cmdqRecStruct *handle,
 		if (!pkt_list[i])
 			continue;
 		handle_out[i] = pkt_list[i]->user_data;
-		if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-			CMDQ_MSG("handle_out[%d]=%p\n", i, handle_out[i]);
 	}
-
-	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-		CMDQ_MSG(
-			"leave %s, handle=%p, pkt=%p, expect list size=%d, actual list size=%d\n",
-			__func__, handle, handle->pkt,
-			handle_list_size, pkt_count);
 
 	kfree(pkt_list);
 	return 0;
@@ -4950,11 +4933,6 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 	mutex_lock(&cmdq_thread_mutex);
 	ctx = cmdq_core_get_context();
 	handle_count = --ctx->thread[handle->thread].handle_count;
-
-	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-		CMDQ_MSG("%s, thread=%d, handle=%p, pkt=%p, handle_count=%d\n",
-			__func__, handle->thread, handle,
-			handle->pkt, handle_count);
 
 	if (handle_count) {
 		pmqos_handle_list = kcalloc(handle_count + 1,
@@ -5037,7 +5015,6 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 	struct cmdqRecStruct **pmqos_handle_list = NULL;
 	struct ContextStruct *ctx;
 	u32 handle_count;
-	u32 i;
 
 	if (!handle->finalized) {
 		CMDQ_ERR("handle not finalized:0x%p scenario:%d\n",
@@ -5112,11 +5089,6 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 	ctx = cmdq_core_get_context();
 	handle_count = ctx->thread[handle->thread].handle_count;
 
-	if (handle->scenario == CMDQ_SCENARIO_USER_MDP)
-		CMDQ_MSG("%s, thread=%d, handle=%p, pkt=%p, handle_count=%d\n",
-			__func__, handle->thread, handle,
-			handle->pkt, handle_count);
-
 	pmqos_handle_list = kcalloc(handle_count + 1,
 		sizeof(*pmqos_handle_list), GFP_KERNEL);
 
@@ -5126,15 +5098,6 @@ static s32 cmdq_pkt_flush_async_ex_impl(struct cmdqRecStruct *handle,
 				pmqos_handle_list, handle_count);
 
 		pmqos_handle_list[handle_count] = handle;
-	}
-
-	if (handle->scenario == CMDQ_SCENARIO_USER_MDP) {
-		CMDQ_MSG(
-			"%s dump pmqos_handle_list before call cmdq_core_group_begin_task\n",
-			__func__);
-		for (i = 0; i < handle_count + 1; i++)
-			CMDQ_MSG("%s, pmqos_handle_list[%d]=%p\n",
-				__func__, i, pmqos_handle_list[i]);
 	}
 
 	cmdq_core_group_begin_task(handle, pmqos_handle_list, handle_count + 1);
