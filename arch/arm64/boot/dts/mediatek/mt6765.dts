@@ -51,7 +51,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x001>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -59,7 +59,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x002>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -67,7 +67,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x003>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -75,7 +75,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x100>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -83,7 +83,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x101>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -91,7 +91,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x102>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
@@ -99,7 +99,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
 			reg = <0x103>;
-			enable-method = "disabled";
+			enable-method = "psci";
 			clock-frequency = <2340000000>;
 		};
 
