@@ -280,8 +280,8 @@ static bool system_mem_status_ok(unsigned long count)
 		for (zoneidx = 0; zoneidx < OPT_ZONE_MOVABLE_CMA; zoneidx++) {
 			z = pgdat->node_zones + zoneidx;
 			free += zone_page_state(z, NR_FREE_PAGES);
-			file += (zone_page_state(z, NR_FILE_PAGES) -
-					zone_page_state(z, NR_SHMEM));
+			file += (zone_page_state(z, NR_ZONE_ACTIVE_FILE) +
+				 zone_page_state(z, NR_ZONE_INACTIVE_FILE));
 			high_wmark += high_wmark_pages(z) +
 				z->nr_reserved_highatomic;
 		}
@@ -309,10 +309,10 @@ static bool zmc_check_mem_status_ok(unsigned long count)
 		z = pgdat->node_zones + OPT_ZONE_MOVABLE_CMA;
 		free += zone_page_state(z, NR_FREE_PAGES);
 		available += zone_page_state(z, NR_FREE_PAGES);
-		minus += zone_page_state(z, NR_INACTIVE_ANON) +
-			zone_page_state(z, NR_ACTIVE_ANON) +
-			zone_page_state(z, NR_INACTIVE_FILE) +
-			zone_page_state(z, NR_ACTIVE_FILE);
+		minus += zone_page_state(z, NR_ZONE_INACTIVE_ANON) +
+			zone_page_state(z, NR_ZONE_ACTIVE_ANON) +
+			zone_page_state(z, NR_ZONE_INACTIVE_FILE) +
+			zone_page_state(z, NR_ZONE_ACTIVE_FILE);
 		available += minus;
 	}
 
