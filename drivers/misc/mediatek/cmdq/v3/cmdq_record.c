@@ -377,7 +377,7 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 
 	err = cmdq_task_reset(handle);
 	if (err < 0) {
-		kfree(handle);
+		cmdq_task_destroy(handle);
 		CMDQ_PROF_MMP(cmdq_mmp_get_event()->alloc_task,
 			MMPROFILE_FLAG_END, current->pid, scenario);
 		return err;
@@ -385,9 +385,10 @@ s32 cmdq_task_create(enum CMDQ_SCENARIO_ENUM scenario,
 
 	if (unlikely(handle->thread == CMDQ_INVALID_THREAD) &&
 		cmdq_get_func()->isDispScenario(scenario)) {
-		CMDQ_ERR("cannot dispatch thread for scenario:%d\n",
+		CMDQ_ERR("cannot dispatch thread for disp scenario:%d\n",
 			scenario);
-		handle->thread = CMDQ_DYNAMIC_THREAD_ID_START;
+		cmdq_task_destroy(handle);
+		return -EBUSY;
 	}
 
 	*handle_out = handle;
