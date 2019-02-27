@@ -54,10 +54,15 @@ enum MDLA_PMU_MODE {
 };
 #endif
 
+#define MDLA_PMU_COUNTERS 15
+
+int pmu_event_set(u32 handle, u32 val);
 int pmu_set_perf_event(u32 interface, u32 event);
+unsigned int pmu_reg_read(u32 offset);
 int pmu_unset_perf_event(int handle);
 int pmu_get_perf_event(int handle);
 int pmu_get_perf_counter(int handle);
+void pmu_get_perf_counters(u32 out[MDLA_PMU_COUNTERS]);
 u32 pmu_get_perf_start(void);
 u32 pmu_get_perf_end(void);
 u32 pmu_get_perf_cycle(void);

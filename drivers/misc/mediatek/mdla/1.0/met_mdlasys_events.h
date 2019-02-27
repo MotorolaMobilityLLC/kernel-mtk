@@ -16,27 +16,37 @@
 #if !defined(_TRACE_MET_MDLASYS_EVENTS_H) || defined(TRACE_HEADER_MULTI_READ)
 #define _TRACE_MET_MDLASYS_EVENTS_H
 #include <linux/tracepoint.h>
+#include "mdla_pmu.h"
 
 TRACE_EVENT(mdla_polling,
-	TP_PROTO(int core, unsigned int id, int counter, unsigned int cycle),
-	TP_ARGS(core, id, counter, cycle),
+	TP_PROTO(int core,
+		u32 c[MDLA_PMU_COUNTERS]),
+	TP_ARGS(core, c),
 	TP_STRUCT__entry(
 		__field(int, core)
-		__field(unsigned int, id)
-		__field(int, counter)
-		__field(unsigned int, cycle)
+		__array(u32, c, MDLA_PMU_COUNTERS)
 		),
 	TP_fast_assign(
 		__entry->core = core;
-		__entry->id = id;
-		__entry->counter = counter;
-		__entry->cycle = cycle;
+		memcpy(__entry->c, c, MDLA_PMU_COUNTERS * sizeof(u32));
 	),
-	TP_printk("_core=c%d, cmd_id=%d, counter=%d, cycle=%d",
-					__entry->core,
-					__entry->id,
-					__entry->counter,
-					__entry->cycle)
+	TP_printk("_id=c%d, c1=%u, c2=%u, c3=%u, c4=%u, c5=%u, c6=%u, c7=%u, c8=%u, c9=%u, c10=%u, c11=%u, c12=%u, c13=%u, c14=%u, c15=%u",
+		__entry->core,
+		__entry->c[0],
+		__entry->c[1],
+		__entry->c[2],
+		__entry->c[3],
+		__entry->c[4],
+		__entry->c[5],
+		__entry->c[6],
+		__entry->c[7],
+		__entry->c[8],
+		__entry->c[9],
+		__entry->c[10],
+		__entry->c[11],
+		__entry->c[12],
+		__entry->c[13],
+		__entry->c[14])
 );
 
 #endif /* _TRACE_MET_MDLASYS_EVENTS_H */

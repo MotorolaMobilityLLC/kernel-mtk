@@ -20,6 +20,14 @@
 
 unsigned int mdla_cfg_read(u32 offset);
 unsigned int mdla_reg_read(u32 offset);
+void mdla_reg_write(u32 value, u32 offset);
+
+#define mdla_reg_set(mask, offset) \
+	mdla_reg_write(mdla_reg_read(offset) | (mask), (offset))
+
+#define mdla_reg_clear(mask, offset) \
+	mdla_reg_write(mdla_reg_read(offset) & ~(mask), (offset))
+
 u32 mdla_max_cmd_id(void);
 
 extern void *apu_mdla_gsm_top;

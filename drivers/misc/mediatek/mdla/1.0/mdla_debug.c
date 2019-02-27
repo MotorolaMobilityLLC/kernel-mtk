@@ -24,10 +24,12 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 #include <m4u.h>
 
 #include "mdla.h"
 #include "mdla_hw_reg.h"
+#include "mdla_trace.h"
 
 #define ALGO_OF_MAX_POWER  (3)
 
@@ -786,6 +788,61 @@ static const struct file_operations mdla_debug_algo_fops = {
 };
 #endif
 
+static int mdla_debug_prof_show(struct seq_file *s, void *unused)
+{
+	mdla_dump_prof(s);
+	return 0;
+}
+
+static int mdla_debug_prof_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mdla_debug_prof_show, inode->i_private);
+}
+
+static ssize_t mdla_debug_prof_write(struct file *flip,
+		const char __user *buffer,
+		size_t count, loff_t *f_pos)
+{
+	char *tmp, *token, *cursor;
+	int ret;
+
+	tmp = kzalloc(count + 1, GFP_KERNEL);
+	if (!tmp)
+		return -ENOMEM;
+
+	ret = copy_from_user(tmp, buffer, count);
+	if (ret) {
+		LOG_ERR("%s: copy_from_user failed, ret=%d\n", __func__, ret);
+		goto out;
+	}
+
+	tmp[count] = '\0';
+	cursor = strim(tmp);
+
+	for (token = strsep(&cursor, " ");
+		token != NULL; token = strsep(&cursor, " ")) {
+		if (mdla_profile(token)) {
+			ret = -EINVAL;
+			goto out;
+		}
+	}
+
+	ret = count;
+out:
+
+	kfree(tmp);
+	return ret;
+}
+
+static const struct file_operations mdla_debug_prof_fops = {
+	.open = mdla_debug_prof_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = seq_release,
+	.write = mdla_debug_prof_write,
+};
+
+
 #define DEFINE_MDLA_DEBUGFS(name)  \
 	struct dentry *mdla_d##name
 
@@ -803,6 +860,7 @@ static const struct file_operations mdla_debug_algo_fops = {
 	DEFINE_MDLA_DEBUGFS(opp_table);
 	DEFINE_MDLA_DEBUGFS(power);
 //	DEFINE_MDLA_DEBUGFS(device_dbg);
+	DEFINE_MDLA_DEBUGFS(prof);
 
 u32 mdla_klog;
 
@@ -843,6 +901,7 @@ void mdla_debugfs_init(void)
 	CREATE_MDLA_DEBUGFS(opp_table);
 	CREATE_MDLA_DEBUGFS(power);
 //	CREATE_MDLA_DEBUGFS(device_dbg);
+	CREATE_MDLA_DEBUGFS(prof);
 
 #ifdef MTK_MDLA_DVT
 	//CREATE_MDLA_DEBUGFS(test);
@@ -869,6 +928,7 @@ void mdla_debugfs_exit(void)
 	REMOVE_MDLA_DEBUGFS(opp_table);
 	REMOVE_MDLA_DEBUGFS(power);
 //	REMOVE_MDLA_DEBUGFS(device_dbg);
+	REMOVE_MDLA_DEBUGFS(prof);
 	REMOVE_MDLA_DEBUGFS(root);
 }
 

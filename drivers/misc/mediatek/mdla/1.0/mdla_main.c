@@ -517,7 +517,7 @@ unsigned int mdla_reg_read(u32 offset)
 	return ioread32(apu_mdla_cmde_mreg_top + offset);
 }
 
-static void mdla_reg_write(u32 value, u32 offset)
+void mdla_reg_write(u32 value, u32 offset)
 {
 	iowrite32(value, apu_mdla_cmde_mreg_top + offset);
 }
@@ -535,6 +535,9 @@ static void mdla_reset(void)
 	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI_CTRL);
 	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI1_CTRL);
 #endif
+
+	pmu_init();
+	mdla_profile_reset();
 }
 
 static void mdla_timeup(unsigned long data)
@@ -576,11 +579,17 @@ static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
 static void mdla_start_queue(struct work_struct *work)
 {
 	struct command_entry *ce;
+	u64 end;
 
 	mutex_lock(&cmd_list_lock);
 
+	ce = mdla_fifo_head();
+	end = ce ? ce->req_end_t : 0;
+
+	mdla_trace_end(max_cmd_id, end, MDLA_TRACE_MODE_INT);
+
 	while (max_cmd_id >= mdla_fifo_head_id()) {
-		mdla_trace_end(max_cmd_id);
+		mdla_trace_end(max_cmd_id, end, MDLA_TRACE_MODE_CMD);
 #ifndef MTK_MDLA_FPGA_PORTING
 /*end of cmd, power off mdla*/
 		//struct command_entry *fh = mdla_fifo_head()
@@ -3606,10 +3615,10 @@ static int mdlactl_init(void)
 	mdla_reset();
 	mdla_dump_reg();
 
-	pmu_init();
 	INIT_WORK(&mdla_queue, mdla_start_queue);
 	mdla_procfs_init();
 	mdla_debugfs_init();
+	mdla_profile_init();
 
 	return 0;
 }
@@ -3691,14 +3700,11 @@ static void mdla_mark_command_id(struct command_entry *ce)
 
 	ce->id = cmd_id;
 
-	/* Patch Command buffer 0x150
-	 * CODA: 0x150,	mreg_cmd_swcmd_id, 32, 31, 0, mreg_cmd_swcmd_id,
-	 * RW, PRIVATE, 32'h0,, This SW command ID
-	 */
-
+	/* Patch SW command ID */
 	for (i = 0; i < count; i++) {
 		mdla_debug("%s: add command: %d\n", __func__, cmd_id);
-		cmd[84 + (i * 96)] = cmd_id++;
+		cmd[(MREG_CMD_SWCMD_ID / sizeof(u32)) +
+			(i * (MREG_CMD_SIZE / sizeof(u32)))] = cmd_id++;
 	}
 
 	mdla_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=%p\n",
@@ -3761,7 +3767,7 @@ static int mdla_process_command(struct command_entry *ce)
 			jiffies + msecs_to_jiffies(mdla_timeout));
 	}
 
-	mdla_trace_begin(count);
+	mdla_trace_begin(count, cmd);
 	ce->req_start_t = sched_clock();
 
 	/* Issue command */
