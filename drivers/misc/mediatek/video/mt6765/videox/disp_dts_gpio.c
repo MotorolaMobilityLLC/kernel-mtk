@@ -71,7 +71,7 @@ long disp_dts_gpio_init(struct platform_device *pdev)
 	/* retrieve */
 	pctrl = devm_pinctrl_get(&pdev->dev);
 	if (IS_ERR(pctrl)) {
-		DISPERR("Cannot find disp pinctrl!");
+		DISPMSG("Cannot find disp pinctrl!");
 		ret = PTR_ERR(pctrl);
 		goto exit;
 	}
