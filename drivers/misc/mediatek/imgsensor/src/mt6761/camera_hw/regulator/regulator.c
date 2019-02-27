@@ -89,31 +89,72 @@ static void imgsensor_oc_handler3(void)
 }
 
 
-enum IMGSENSOR_RETURN imgsensor_oc_interrupt(bool enable)
+enum IMGSENSOR_RETURN imgsensor_oc_interrupt(
+	enum IMGSENSOR_SENSOR_IDX sensor_idx, bool enable)
 {
-	pr_debug("[regulator] %s %d\n", __func__, enable);
+	struct regulator *preg = NULL;
+	struct device *pdevice = gimgsensor_device;
 
 
 	gimgsensor.status.oc = 0;
 
 	if (enable) {
 		mdelay(5);
-		/* enable interrupt after power on */
-		/* At least delay 3ms after power for recommendation */
-		pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
-		pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
-		pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) {
+			preg = regulator_get(pdevice, "vcama");
+			if (preg && regulator_is_enabled(preg)) {
+			pmic_enable_interrupt(INT_VCAMA_OC, 1, "camera");
+				regulator_put(preg);
+				pr_debug("[regulator] %s INT_VCAMA_OC %d\n",
+					__func__, enable);
+			}
 
+		}
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
+			preg = regulator_get(pdevice, "vcamd");
+			if (preg && regulator_is_enabled(preg)) {
+			pmic_enable_interrupt(INT_VCAMD_OC, 1, "camera");
+				regulator_put(preg);
+				pr_debug("[regulator] %s INT_VCAMD_OC %d\n",
+					__func__, enable);
+			}
+		}
+
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN ||
+			sensor_idx == IMGSENSOR_SENSOR_IDX_SUB ||
+			sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
+
+			preg = regulator_get(pdevice, "vcamio");
+			if (preg && regulator_is_enabled(preg)) {
+			pmic_enable_interrupt(INT_VCAMIO_OC, 1, "camera");
+				regulator_put(preg);
+				pr_debug("[regulator] %s INT_VCAMIO_OC %d\n",
+					__func__, enable);
+			}
+		}
 		rcu_read_lock();
 		reg_instance.pid = current->tgid;
 		rcu_read_unlock();
 	} else {
 		reg_instance.pid = -1;
-
 		/* Disable interrupt before power off */
-		pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");
-		pmic_enable_interrupt(INT_VCAMD_OC, 0, "camera");
-		pmic_enable_interrupt(INT_VCAMIO_OC, 0, "camera");
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN) {
+			pmic_enable_interrupt(INT_VCAMA_OC, 0, "camera");
+			pr_debug("[regulator] %s INT_VCAMA_OC %d\n",
+			__func__,  enable);
+		}
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
+			pmic_enable_interrupt(INT_VCAMD_OC, 0, "camera");
+			pr_debug("[regulator] %s INT_VCAMD_OC %d\n",
+			__func__,  enable);
+		}
+		if (sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN ||
+			sensor_idx == IMGSENSOR_SENSOR_IDX_SUB ||
+			sensor_idx == IMGSENSOR_SENSOR_IDX_MAIN2) {
+			pmic_enable_interrupt(INT_VCAMIO_OC, 0, "camera");
+			pr_debug("[regulator] %s INT_VCAMIO_OC %d\n",
+			__func__,  enable);
+		}
 	}
 
 	return IMGSENSOR_RETURN_SUCCESS;
