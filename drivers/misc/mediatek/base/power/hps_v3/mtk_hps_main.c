@@ -517,9 +517,6 @@ static int hps_probe(struct platform_device *pdev)
  */
 static int hps_suspend(struct device *dev)
 {
-#if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
-	int cpu = 9;
-#endif
 	int ret = 0;
 
 	hps_warn("%s\n", __func__);
@@ -537,15 +534,6 @@ suspend_end:
 ("state:%u,enabled:%u,suspend_enabled:%u,rush_boost_enabled:%u,ret:%d\n",
 		 hps_ctxt.state, hps_ctxt.enabled,
 		 hps_ctxt.suspend_enabled, hps_ctxt.rush_boost_enabled, ret);
-#if !defined(CONFIG_MACH_MT6763) && !defined(CONFIG_MACH_MT6758)
-	/* offline big cores only */
-	cpu_hotplug_enable();
-	for (cpu = 9; cpu >= 8; cpu--) {
-		if (cpu_online(cpu))
-			cpu_down(cpu);
-	}
-	cpu_hotplug_disable();
-#endif
 	return 0;
 }
 
