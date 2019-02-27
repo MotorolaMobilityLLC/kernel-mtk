@@ -4929,6 +4929,11 @@ enqueue_task_fair(struct rq *rq, struct task_struct *p, int flags)
 		if (!task_new && !rq->rd->overutilized &&
 		    cpu_overutilized(rq->cpu)) {
 			rq->rd->overutilized = true;
+
+			/* Little.cpu */
+			if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
+				system_overutil = true;
+
 			trace_sched_overutilized(true);
 		}
 
@@ -6171,7 +6176,7 @@ static bool cpu_overutilized(int cpu)
 static inline bool should_hmp(int cpu)
 {
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
-	if (sched_feat(ENERGY_AWARE) && !cpu_overutilized(cpu))
+	if (sched_feat(ENERGY_AWARE) && !system_overutilized(cpu))
 		return false;
 #endif
 	return sched_feat(SCHED_HMP);
@@ -7168,7 +7173,7 @@ select_task_rq_fair(struct task_struct *p, int prev_cpu, int sd_flag, int wake_f
 			cpumask_test_cpu(cpu, tsk_cpus_allowed(p)));
 	}
 
-	if (energy_aware() && !(cpu_rq(prev_cpu)->rd->overutilized))
+	if (energy_aware() && !system_overutilized(cpu))
 		return select_energy_cpu_brute(p, prev_cpu, sync);
 
 	rcu_read_lock();
@@ -8714,10 +8719,14 @@ static inline void update_cpu_stats_if_tickless(struct rq *rq) { }
 static inline void update_sg_lb_stats(struct lb_env *env,
 			struct sched_group *group, int load_idx,
 			int local_group, struct sg_lb_stats *sgs,
-			bool *overload, bool *overutilized)
+			bool *overload, bool *overutilized,
+			bool *intra_overutil)
 {
 	unsigned long load;
 	int i, nr_running;
+	unsigned long max_capacity;
+
+	max_capacity = cpu_rq(smp_processor_id())->rd->max_cpu_capacity.val;
 
 	memset(sgs, 0, sizeof(*sgs));
 
@@ -8756,10 +8765,29 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 			sgs->idle_cpus++;
 
 		if (cpu_overutilized(i)) {
+			if (capacity_orig_of(i) < max_capacity)
+				*intra_overutil = true;
+
 			*overutilized = true;
 			if (!sgs->group_misfit_task && rq->misfit_task)
 				sgs->group_misfit_task = capacity_of(i);
 		}
+	}
+
+	/*
+	 * A capacity base hint for over-utilization.
+	 * Not to trigger system overutiled if heavy tasks in Big.cluster, so
+	 * add the free room(20%) of Big.cluster is impacted which means
+	 * system-wide over-utilization,
+	 * that considers whole cluster not single cpu
+	 */
+	if (group->group_weight > 1) {
+		bool overutiled;
+
+		overutiled = (group->sgc->capacity * 1024) < (sgs->group_util * 1280);
+
+		if (overutiled)
+			*intra_overutil = true;
 	}
 
 	/* Adjust by relative CPU capacity of the group */
@@ -8895,6 +8923,8 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 	struct sg_lb_stats tmp_sgs;
 	int load_idx, prefer_sibling = 0;
 	bool overload = false, overutilized = false;
+	bool intra_overutil = false;
+	bool tmp_sys_overutil = false;
 
 	if (child && child->flags & SD_PREFER_SIBLING)
 		prefer_sibling = 1;
@@ -8916,7 +8946,14 @@ static inline void update_sd_lb_stats(struct lb_env *env, struct sd_lb_stats *sd
 		}
 
 		update_sg_lb_stats(env, sg, load_idx, local_group, sgs,
-						&overload, &overutilized);
+				&overload, &overutilized, &intra_overutil);
+
+
+		/* if a overutil occurs in cluster, that means a
+		 * system-wide hint needed.
+		 */
+		if (intra_overutil)
+			tmp_sys_overutil = true;
 
 		if (local_group)
 			goto next_group;
@@ -8975,6 +9012,11 @@ next_group:
 			env->dst_rq->rd->overutilized = overutilized;
 			trace_sched_overutilized(overutilized);
 		}
+
+		/* Update system-wide over-utilization indicator */
+		if (system_overutil != tmp_sys_overutil)
+			system_overutil = tmp_sys_overutil;
+
 	} else {
 		if (!env->dst_rq->rd->overutilized && overutilized) {
 			env->dst_rq->rd->overutilized = true;
@@ -9236,7 +9278,7 @@ static struct sched_group *find_busiest_group(struct lb_env *env)
 			busiest_cpumask->bits[0], intra);
 	}
 
-	if (energy_aware() && !env->dst_rq->rd->overutilized && !intra)
+	if (energy_aware() && !system_overutilized(env->dst_cpu) && !intra)
 		goto out_balanced;
 
 	local = &sds.local_stat;
@@ -10464,6 +10506,10 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 #ifdef CONFIG_SMP
 	if (!rq->rd->overutilized && cpu_overutilized(task_cpu(curr))) {
 		rq->rd->overutilized = true;
+
+		/* Little.cpu */
+		if (capacity_orig_of(cpu_of(rq)) < (rq->rd->max_cpu_capacity.val))
+			system_overutil = true;
 		trace_sched_overutilized(true);
 	}
 
