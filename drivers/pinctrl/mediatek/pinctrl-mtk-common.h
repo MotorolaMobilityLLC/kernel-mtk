@@ -260,6 +260,7 @@ struct mtk_pinctrl {
 	struct device           *dev;
 	struct gpio_chip	*chip;
 	struct mtk_pinctrl_group	*groups;
+	struct timer_list	*eint_timers;
 	unsigned int	ngroups;
 	const char		**grp_names;
 	struct pinctrl_dev	*pctl_dev;
@@ -269,6 +270,8 @@ struct mtk_pinctrl {
 	int		*eint_dual_edges;
 	u32		*wake_mask;
 	u32		*cur_mask;
+	int		*eint_sw_debounce_en;
+	u32		*eint_sw_debounce;
 #if defined(CONFIG_PINCTRL_MTK_NO_UPSTREAM)
 	int		dbg_start;
 	struct regmap	*regmap[MAX_IP_BASE];
