@@ -232,6 +232,34 @@ struct eem_devinfo {
 	unsigned int CPU_2L_DCMDET:8;
 };
 
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+struct eem_devinfo_extra {
+	/* M_HW_RES9 */
+	unsigned int EX_2L_LO_BDES:8;
+	unsigned int EX_2L_LO_MDES:8;
+	unsigned int EX_L_LO_BDES:8;
+	unsigned int EX_L_LO_MDES:8;
+
+	/* M_HW_RES14 */
+	unsigned int EX_2L_HI_MTDES:8;
+	unsigned int EX_L_HI_MTDES:8;
+	unsigned int EX_2L_LO_MTDES:8;
+	unsigned int EX_L_LO_MTDES:8;
+
+	/* M_HW_RES15 */
+	unsigned int EX_2L_HI_BDES:8;
+	unsigned int EX_2L_HI_MDES:8;
+	unsigned int EX_L_HI_BDES:8;
+	unsigned int EX_L_HI_MDES:8;
+
+	/* M_HW_FAB_INFO3 */
+	unsigned int EXTRA_BIN:1;
+	unsigned int EX_CCI_RSV2:7;
+	unsigned int EX_CCI_MTDES:8;
+	unsigned int EX_CCI_BDES:8;
+	unsigned int EX_CCI_MDES:8;
+};
+#endif
 /*********************************************
  * extern variables defined at mtk_eem.c
  *********************************************

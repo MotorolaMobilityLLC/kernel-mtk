@@ -114,6 +114,9 @@ unsigned int final_init02_flag;
 
 DEFINE_MUTEX(record_mutex);
 static struct eem_devinfo eem_devinfo;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+static struct eem_devinfo_extra ex_eem_devinfo;
+#endif
 static struct hrtimer eem_log_timer;
 static DEFINE_SPINLOCK(eem_spinlock);
 DEFINE_SPINLOCK(record_spinlock);
@@ -124,6 +127,9 @@ DEFINE_SPINLOCK(record_spinlock);
  */
 static int eem_log_en;
 static unsigned int eem_checkEfuse = 1;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+static unsigned int eem_chkExEfuse = 1;
+#endif
 static unsigned int informEEMisReady;
 
 /* Global variable for slow idle*/
@@ -275,6 +281,30 @@ static int get_devinfo(void)
 			break;
 		}
 	}
+
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+	val = (int *)&ex_eem_devinfo;
+
+	val[0] = get_devinfo_with_index(EX_DEV_IDX_0);
+	val[1] = get_devinfo_with_index(EX_DEV_IDX_1);
+	val[2] = get_devinfo_with_index(EX_DEV_IDX_2);
+	val[3] = get_devinfo_with_index(EX_DEV_IDX_3);
+
+	aee_rr_rec_ptp_devinfo_1((unsigned int)val[0]);
+	aee_rr_rec_ptp_devinfo_2((unsigned int)val[1]);
+	aee_rr_rec_ptp_devinfo_3((unsigned int)val[2]);
+	aee_rr_rec_ptp_devinfo_4((unsigned int)val[3]);
+	if ((ex_eem_devinfo.EXTRA_BIN & 0x1) != 0x1)
+		eem_chkExEfuse = 0;
+
+	for (i = 1; i < 4; i++) {
+		if (val[i] == 0) {
+			eem_chkExEfuse = 0;
+			break;
+		}
+	}
+
+#endif
 
 #if (EEM_FAKE_EFUSE)
 	eem_checkEfuse = 1;
@@ -1189,6 +1219,14 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->MTDES	= devinfo->CPU_L_LO_MTDES;
 		det->SPEC	= devinfo->CPU_L_LO_SPEC;
 		det->DVTFIXED = DVTFIXED_M_VAL;
+
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+		if (eem_chkExEfuse) {
+			det->MDES	= ex_eem_devinfo.EX_L_LO_MDES;
+			det->BDES	= ex_eem_devinfo.EX_L_LO_BDES;
+			det->MTDES	= ex_eem_devinfo.EX_L_LO_MTDES;
+		}
+#endif
 		break;
 	case EEM_DET_2L:
 		det->MDES	= devinfo->CPU_2L_LO_MDES;
@@ -1201,6 +1239,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->SPEC	= devinfo->CPU_2L_LO_SPEC;
 		det->DVTFIXED = DVTFIXED_M_VAL;
 		break;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+		if (eem_chkExEfuse) {
+			det->MDES	= ex_eem_devinfo.EX_2L_LO_MDES;
+			det->BDES	= ex_eem_devinfo.EX_2L_LO_BDES;
+			det->MTDES	= ex_eem_devinfo.EX_2L_LO_MTDES;
+		}
+#endif
 #else
 	case EEM_DET_L:
 		det->MDES	= devinfo->CPU_L_MDES;
@@ -1233,6 +1278,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CCI_MONEN;
 		det->MTDES	= devinfo->CCI_MTDES;
 		det->SPEC       = devinfo->CCI_SPEC;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+		if (eem_chkExEfuse) {
+			det->MDES	= ex_eem_devinfo.EX_CCI_MDES;
+			det->BDES	= ex_eem_devinfo.EX_CCI_BDES;
+			det->MTDES	= ex_eem_devinfo.EX_CCI_MTDES;
+		}
+#endif
 		break;
 #if ENABLE_LOO
 	case EEM_DET_L_HI:
@@ -1244,6 +1296,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_L_HI_MONEN;
 		det->MTDES	= devinfo->CPU_L_HI_MTDES;
 		det->SPEC	= devinfo->CPU_L_HI_SPEC;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+		if (eem_chkExEfuse) {
+			det->MDES	= ex_eem_devinfo.EX_L_HI_MDES;
+			det->BDES	= ex_eem_devinfo.EX_L_HI_BDES;
+			det->MTDES	= ex_eem_devinfo.EX_L_HI_MTDES;
+		}
+#endif
 	break;
 	case EEM_DET_2L_HI:
 		/* TODO: config real B_HI efuse here */
@@ -1255,6 +1314,13 @@ static void eem_init_det(struct eem_det *det, struct eem_devinfo *devinfo)
 		det->EEMMONEN	= devinfo->CPU_2L_HI_MONEN;
 		det->MTDES	= devinfo->CPU_2L_HI_MTDES;
 		det->SPEC	= devinfo->CPU_2L_HI_SPEC;
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+		if (eem_chkExEfuse) {
+			det->MDES	= ex_eem_devinfo.EX_2L_HI_MDES;
+			det->BDES	= ex_eem_devinfo.EX_2L_HI_BDES;
+			det->MTDES	= ex_eem_devinfo.EX_2L_HI_MTDES;
+		}
+#endif
 	break;
 
 #endif
@@ -2874,6 +2940,15 @@ static int eem_dump_proc_show(struct seq_file *m, void *v)
 			seq_printf(m, "M_HW_RES%d\t= 0x%08X\n", i + 2, val[i]);
 	}
 
+#if defined(CONFIG_CPU_FORCE_TO_BIN2)
+	val = (int *)&ex_eem_devinfo;
+	for (i = 0; i < sizeof(struct eem_devinfo_extra) / sizeof(unsigned int);
+		i++) {
+		/* Depend on EFUSE location */
+
+		seq_printf(m, "Extra M_HW_RES%d\t= 0x%08X\n", i, val[i]);
+	}
+#endif
 	for_each_det(det) {
 		eem_dump_reg_by_det(det, m);
 	}
