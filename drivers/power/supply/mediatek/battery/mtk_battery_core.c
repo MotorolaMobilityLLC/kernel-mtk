@@ -543,6 +543,7 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_full_limit_ith3 = UI_FULL_LIMIT_ITH3;
 	fg_cust_data.ui_full_limit_soc4 = UI_FULL_LIMIT_SOC4;
 	fg_cust_data.ui_full_limit_ith4 = UI_FULL_LIMIT_ITH4;
+	fg_cust_data.ui_full_limit_time = UI_FULL_LIMIT_TIME;
 
 	/* voltage limit for uisoc 1% */
 	fg_cust_data.ui_low_limit_en = UI_LOW_LIMIT_EN;
@@ -556,6 +557,8 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_low_limit_vth3 = UI_LOW_LIMIT_VTH3;
 	fg_cust_data.ui_low_limit_soc4 = UI_LOW_LIMIT_SOC4;
 	fg_cust_data.ui_low_limit_vth4 = UI_LOW_LIMIT_VTH4;
+	fg_cust_data.ui_low_limit_time = UI_LOW_LIMIT_TIME;
+
 
 #if defined(GM30_DISABLE_NAFG)
 		fg_cust_data.disable_nafg = 1;
@@ -926,6 +929,54 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get POWERON_SYSTEM_IBOOT failed\n");
 	}
 
+	if (!of_property_read_u32(np, "FGC_FGV_TH1", &val)) {
+		fg_cust_data.difference_fgc_fgv_th1 = (int)val;
+		bm_debug("Get FGC_FGV_TH1: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th1);
+	} else {
+		bm_err("Get FGC_FGV_TH1 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "FGC_FGV_TH2", &val)) {
+		fg_cust_data.difference_fgc_fgv_th2 = (int)val;
+		bm_debug("Get FGC_FGV_TH2: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th2);
+	} else {
+		bm_err("Get FGC_FGV_TH2 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "FGC_FGV_TH3", &val)) {
+		fg_cust_data.difference_fgc_fgv_th3 = (int)val;
+		bm_debug("Get FGC_FGV_TH3: %d\n",
+			 fg_cust_data.difference_fgc_fgv_th3);
+	} else {
+		bm_err("Get FGC_FGV_TH3 failed\n");
+	}
+
+	if (!of_property_read_u32(np, "UISOC_UPDATE_T", &val)) {
+		fg_cust_data.uisoc_update_type = (int)val;
+		bm_debug("Get UISOC_UPDATE_T: %d\n",
+			 fg_cust_data.uisoc_update_type);
+	} else {
+		bm_err("Get UISOC_UPDATE_T failed\n");
+	}
+
+	if (!of_property_read_u32(np, "UIFULLLIMIT_EN", &val)) {
+		fg_cust_data.ui_full_limit_en = (int)val;
+		bm_debug("Get UIFULLLIMIT_EN: %d\n",
+			 fg_cust_data.ui_full_limit_en);
+	} else {
+		bm_err("Get UIFULLLIMIT_EN failed\n");
+	}
+
+	if (!of_property_read_u32(np, "MULTI_GAUGE0_EN", &val)) {
+		fg_cust_data.multi_temp_gauge0 = (int)val;
+		bm_debug("Get MULTI_GAUGE0_EN: %d\n",
+			 fg_cust_data.multi_temp_gauge0);
+	} else {
+		bm_err("Get MULTI_GAUGE0_EN failed\n");
+	}
+
 	if (!of_property_read_u32(np, "SHUTDOWN_GAUGE0_VOLTAGE", &val)) {
 		fg_cust_data.shutdown_gauge0_voltage = (int)val;
 		bm_debug("Get SHUTDOWN_GAUGE0_VOLTAGE: %d\n",
@@ -1268,6 +1319,31 @@ void notify_fg_chr_full(void)
 	}
 }
 
+/* ============================================================ */
+/* check bat plug out  */
+/* ============================================================ */
+void sw_check_bat_plugout(void)
+{
+	int is_bat_exist;
+
+	if (gm.disable_plug_int && gm.disableGM30 != true) {
+		is_bat_exist = pmic_is_battery_exist();
+		/* fg_bat_plugout_int_handler(); */
+		if (is_bat_exist == 0) {
+			bm_err(
+				"[swcheck_bat_plugout]g_disable_plug_int=%d, is_bat_exist %d, is_fg_disable %d\n",
+				gm.disable_plug_int,
+				is_bat_exist,
+				is_fg_disabled());
+
+			battery_notifier(EVENT_BATTERY_PLUG_OUT);
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
+			wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
+			battery_update(&battery_main);
+			kernel_power_off();
+		}
+	}
+}
 
 /* ============================================================ */
 /* nafg monitor */
@@ -1300,8 +1376,12 @@ void fg_nafg_monitor(void)
 				true);
 		}
 	}
-	bm_debug("[fg_nafg_monitor]time:%d nafg_cnt:%d\n",
-		(int)dtime.tv_sec, gm.last_nafg_cnt);
+	bm_debug("[fg_nafg_monitor]time:%d nafg_cnt:%d, now:%d, last_t:%d\n",
+		(int)dtime.tv_sec,
+		gm.last_nafg_cnt,
+		(int)now_time.tv_sec,
+		(int)gm.last_nafg_update_time.tv_sec);
+
 }
 
 /* ============================================================ */
@@ -1365,13 +1445,13 @@ void fg_update_sw_iavg(void)
 
 void fg_bat_sw_temp_int_l_handler(void)
 {
-	bm_err("[fg_bat_sw_temp_int_l_handler]\n");
+	bm_debug("[fg_bat_sw_temp_int_l_handler]\n");
 	fg_bat_temp_int_internal();
 }
 
 void fg_bat_sw_temp_int_h_handler(void)
 {
-	bm_err("[fg_bat_sw_temp_int_h_handler]\n");
+	bm_debug("[fg_bat_sw_temp_int_h_handler]\n");
 	fg_bat_temp_int_internal();
 }
 
@@ -1409,6 +1489,7 @@ void fg_update_sw_low_battery_check(unsigned int thd)
 		vbat >= gm.sw_low_battery_ht_threshold) {
 		gm.sw_low_battery_ht_en = 0;
 		gm.sw_low_battery_lt_en = 0;
+		disable_shutdown_cond(LOW_BAT_VOLT);
 		wakeup_fg_algo(FG_INTR_VBAT2_H);
 	}
 	if (gm.sw_low_battery_lt_en == 1 &&
@@ -1461,6 +1542,7 @@ void fg_zcv_int_handler(void)
 	}
 
 	fg_bat_temp_int_sw_check();
+	sw_check_bat_plugout();
 }
 
 
@@ -1474,6 +1556,7 @@ void fg_cycle_int_handler(void)
 	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
 	fg_bat_temp_int_sw_check();
+	sw_check_bat_plugout();
 }
 
 /* ============================================================ */
@@ -1494,6 +1577,8 @@ void fg_iavg_int_ht_handler(void)
 	wakeup_fg_algo(FG_INTR_IAVG);
 
 	fg_bat_temp_int_sw_check();
+
+	sw_check_bat_plugout();
 }
 
 void fg_iavg_int_lt_handler(void)
@@ -1511,6 +1596,7 @@ void fg_iavg_int_lt_handler(void)
 	wakeup_fg_algo(FG_INTR_IAVG);
 
 	fg_bat_temp_int_sw_check();
+	sw_check_bat_plugout();
 }
 
 /* ============================================================ */
@@ -1669,6 +1755,7 @@ void fg_bat_plugout_int_handler(void)
 		if (gm.plug_miss_count >= 3) {
 			pmic_enable_interrupt(FG_BAT_PLUGOUT_NO, 0, "GM30");
 			bm_err("[fg_bat_plugout_int_handler]disable FG_BAT_PLUGOUT\n");
+			gm.disable_plug_int = 1;
 		}
 	}
 
@@ -1711,6 +1798,8 @@ void fg_nafg_int_handler(void)
 	/* 2. Stop HW interrupt*/
 	gauge_set_nag_en(nafg_en);
 
+	fg_bat_temp_int_sw_check();
+
 	/* 3. Notify fg daemon */
 	wakeup_fg_algo(FG_INTR_NAG_C_DLTV);
 
@@ -1736,9 +1825,9 @@ int fg_bat_int1_h_handler(struct gauge_consumer *consumer)
 		fg_coulomb, gm.fg_bat_int1_ht,
 		gm.fg_bat_int1_lt, gm.fg_bat_int1_gap);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
-
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
+	sw_check_bat_plugout();
 	return 0;
 }
 
@@ -1757,9 +1846,11 @@ int fg_bat_int1_l_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int1_l_handler] car:%d ht:%d lt:%d gap:%d\n",
 		fg_coulomb, gm.fg_bat_int1_ht,
 		gm.fg_bat_int1_lt, gm.fg_bat_int1_gap);
-	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
 
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
+	sw_check_bat_plugout();
+
 	return 0;
 }
 
@@ -1771,9 +1862,10 @@ int fg_bat_int2_h_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int2_h_handler] car:%d ht:%d\n",
 		fg_coulomb, gm.fg_bat_int2_ht);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
-
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
+	sw_check_bat_plugout();
+
 	return 0;
 }
 
@@ -1785,9 +1877,10 @@ int fg_bat_int2_l_handler(struct gauge_consumer *consumer)
 	bm_err("[fg_bat_int2_l_handler] car:%d lt:%d\n",
 		fg_coulomb, gm.fg_bat_int2_lt);
 
-	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
-
 	fg_bat_temp_int_sw_check();
+	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
+	sw_check_bat_plugout();
+
 	return 0;
 }
 
@@ -1806,6 +1899,7 @@ void fg_vbat2_l_int_handler(void)
 	wakeup_fg_algo(FG_INTR_VBAT2_L);
 
 	fg_bat_temp_int_sw_check();
+	sw_check_bat_plugout();
 }
 
 void fg_vbat2_h_int_handler(void)
@@ -1821,6 +1915,7 @@ void fg_vbat2_h_int_handler(void)
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
 
 	fg_bat_temp_int_sw_check();
+	sw_check_bat_plugout();
 }
 
 /* ============================================================ */
@@ -2878,7 +2973,9 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		else if (soc_type == 4)
 			fg_cust_data.v_soc = daemon_soc;
 
-		bm_err("[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
+		if (soc_type == 4)
+			bm_err(
+			"[fg_res] FG_DAEMON_CMD_SET_KERNEL_SOC = %d %d %d %d %d %d, type:%d\n",
 			daemon_soc, gm.soc, fg_cust_data.c_old_d0,
 			fg_cust_data.v_old_d0, fg_cust_data.c_soc,
 			fg_cust_data.v_soc, soc_type);
@@ -3084,7 +3181,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 		gauge_dev_get_info(gm.gdev, GAUGE_CON0_SOC, &_soc);
 		ret_msg->fgd_data_len += sizeof(_soc);
 		memcpy(ret_msg->fgd_data, &_soc, sizeof(_soc));
-		bm_err("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
+		bm_debug("[fg_res] FG_DAEMON_CMD_GET_CON0_SOC = %d\n", _soc);
 	}
 	break;
 
@@ -3094,7 +3191,7 @@ void bmd_ctrl_cmd_from_user(void *nl_data, struct fgd_nl_msg_t *ret_msg)
 
 		memcpy(&flag, &msg->fgd_data[0], sizeof(flag));
 		gauge_dev_set_info(gm.gdev, GAUGE_IS_NVRAM_FAIL_MODE, flag);
-		bm_err(
+		bm_debug(
 			"[fg_res] FG_DAEMON_CMD_SET_NVRAM_FAIL_STATUS = %d\n",
 			flag);
 	}
@@ -3185,6 +3282,9 @@ void mtk_battery_init(struct platform_device *dev)
 	mutex_init(&gm.fg_mutex);
 	mutex_init(&gm.sw_low_battery_mutex);
 	init_waitqueue_head(&gm.wait_que);
+
+	mutex_init(&gm.notify_mutex);
+	srcu_init_notifier_head(&gm.gm_notify);
 
 	gm.gdev = get_gauge_by_name("gauge");
 	if (gm.gdev != NULL) {

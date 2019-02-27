@@ -64,7 +64,7 @@
 #define CHARGE_PSEUDO_FULL_LEVEL 9000
 
 /* pre tracking */
-#define FG_PRE_TRACKING_EN 0
+#define FG_PRE_TRACKING_EN 1
 #define VBAT2_DET_TIME 5
 #define VBAT2_DET_COUNTER 6
 #define VBAT2_DET_VOLTAGE1	34500
@@ -103,7 +103,7 @@
 #define SWOCV_OLDOCV_DIFF_EMB	1000
 
 #define TNEW_TOLD_PON_DIFF	5
-#define TNEW_TOLD_PON_DIFF2	15
+#define TNEW_TOLD_PON_DIFF2	20
 #define PMIC_SHUTDOWN_TIME	30
 #define BAT_PLUG_OUT_TIME	32
 #define EXT_HWOCV_SWOCV		300
@@ -143,8 +143,8 @@
 
 #define PSEUDO1_SEL	2
 
-#define FG_TRACKING_CURRENT	10000	/* not implement */
-#define FG_TRACKING_CURRENT_IBOOT_EN	1	/* not implement */
+#define FG_TRACKING_CURRENT	15000	/* not implement */
+#define FG_TRACKING_CURRENT_IBOOT_EN	0	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
 #define KEEP_100_PERCENT_MINSOC 9000
@@ -174,7 +174,7 @@
 /* #define GM30_DISABLE_NAFG */
 
 
-#define MULTI_TEMP_GAUGE0 0	/* different temp using different gauge 0% */
+#define MULTI_TEMP_GAUGE0 1	/* different temp using different gauge 0% */
 
 #define OVER_DISCHARGE_LEVEL -1500
 
@@ -190,20 +190,22 @@
 /* UI_FULL_LIMIT_ITH0 3000 means 300ma */
 #define UI_FULL_LIMIT_EN 0
 
-#define UI_FULL_LIMIT_SOC0 9700
-#define UI_FULL_LIMIT_ITH0 3000
+#define UI_FULL_LIMIT_SOC0 9100
+#define UI_FULL_LIMIT_ITH0 7500
 
-#define UI_FULL_LIMIT_SOC1 9800
-#define UI_FULL_LIMIT_ITH1 2800
+#define UI_FULL_LIMIT_SOC1 9300
+#define UI_FULL_LIMIT_ITH1 5500
 
-#define UI_FULL_LIMIT_SOC2 9900
-#define UI_FULL_LIMIT_ITH2 2500
+#define UI_FULL_LIMIT_SOC2 9500
+#define UI_FULL_LIMIT_ITH2 3500
 
-#define UI_FULL_LIMIT_SOC3 9940
-#define UI_FULL_LIMIT_ITH3 2200
+#define UI_FULL_LIMIT_SOC3 9700
+#define UI_FULL_LIMIT_ITH3 3000
 
-#define UI_FULL_LIMIT_SOC4 10000
-#define UI_FULL_LIMIT_ITH4 2000
+#define UI_FULL_LIMIT_SOC4 9900
+#define UI_FULL_LIMIT_ITH4 2200
+
+#define UI_FULL_LIMIT_TIME 99999
 
 
 /* using voltage to limit uisoc in 1% case */
@@ -224,5 +226,8 @@
 
 #define UI_LOW_LIMIT_SOC4 100
 #define UI_LOW_LIMIT_VTH4 34000
+
+#define UI_LOW_LIMIT_TIME 99999
+
 
 #endif

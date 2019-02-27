@@ -139,7 +139,7 @@ int set_shutdown_cond(int shutdown_cond)
 	vbat = battery_get_bat_voltage();
 	sds = &sdc.shutdown_status;
 
-	if (mt_get_charger_type() != CHARGER_UNKNOWN)
+	if (now_current >= 0)
 		now_is_charging = 1;
 
 	bm_err("set_shutdown_cond %d, is kpoc %d curr %d is_charging %d flag:%d lb:%d\n",

@@ -1905,6 +1905,52 @@ int DOD_to_OCV_c(int _dod)
 	return ret_vol;
 }
 
+int OCV_to_SOC_c(int _ocv)
+{
+	struct FUELGAUGE_PROFILE_STRUCT *profile_p;
+	int ret_vol = 0;
+	int i = 0, size, high;
+
+	profile_p = fg_get_profile(pdata->temperature_tb1);
+	if (profile_p == NULL) {
+		bm_err("[FGADC]OCV_to_SOC_cfgauge can't get c table: fail !\r\n");
+		return 0;
+	}
+
+	size = fg_get_saddles();
+
+	for (i = 0; i < size; i++) {
+		if (profile_p[i].voltage <= _ocv)
+			break;
+	}
+
+	if (i == 0) {
+		high = 1;
+		ret_vol = profile_p[0].percentage;
+		ret_vol = 10000 - ret_vol;
+	} else if (i >= size) {
+		high = size-1;
+		ret_vol = profile_p[high].percentage;
+		ret_vol = 10000 - ret_vol;
+	} else {
+		high = i;
+
+		ret_vol = interpolation(
+			profile_p[high-1].voltage,
+			profile_p[high-1].percentage,
+			profile_p[high].voltage,
+			profile_p[high].percentage,
+			_ocv);
+
+		ret_vol = 10000 - ret_vol;
+	}
+	bm_err("[FGADC] OCV_to_DOD: voltage:%d dod:%d highidx:%d\r\n",
+		_ocv, ret_vol, high);
+
+	return ret_vol;
+
+}
+
 
 int OCV_to_DOD_c(int _ocv)
 {
@@ -1972,10 +2018,24 @@ void fg_update_c_dod(void)
 
 void fgr_dod_init(void)
 {
-	rtc_ui_soc = UNIT_TRANS_100 * get_rtc_ui_soc();
-	ui_d0_soc = rtc_ui_soc;
+	int init_swocv = get_ptim_vbat();
+	int con0_soc = get_con0_soc();
+	int con0_uisoc = get_rtc_ui_soc();
 
-	fg_c_d0_soc = UNIT_TRANS_100 * get_con0_soc();
+	rtc_ui_soc = UNIT_TRANS_100 * con0_uisoc;
+
+	if (rtc_ui_soc == 0 || con0_soc == 0) {
+		rtc_ui_soc = OCV_to_SOC_c(init_swocv);
+		ui_d0_soc = rtc_ui_soc;
+		fg_c_d0_soc = rtc_ui_soc;
+		bm_err("[dod_init_recovery]rtcui=0,init_swocv=%d,OCV_to_SOC=%d ui:%d con0_soc=%d\n",
+			init_swocv, rtc_ui_soc, ui_d0_soc, con0_soc);
+	} else {
+	ui_d0_soc = rtc_ui_soc;
+		fg_c_d0_soc = UNIT_TRANS_100 * con0_soc;
+	}
+
+
 	fg_c_d0_ocv = SOC_to_OCV_c(fg_c_d0_soc);
 	Set_fg_c_d0_by_ocv(fg_c_d0_ocv);
 
@@ -1995,11 +2055,13 @@ void fgr_dod_init(void)
 	ui_soc = ui_d0_soc;
 	soc = fg_c_soc;
 
-	bm_err("[dod_init]fg_c_d0[%d %d %d] d0_sel[%d] c_soc[%d %d] ui[%d %d] soc[%d]\n",
-		fg_c_d0_soc, fg_c_d0_ocv, fg_c_d0_dod, pdata->d0_sel,
-		fg_c_dod, fg_c_soc, rtc_ui_soc, ui_d0_soc, soc);
+	bm_err("[dod_init]fg_c_d0[%d %d %d] d0_sel[%d] c_soc[%d %d] ui[%d %d] soc[%d] con0[ui %d %d]\n",
+		fg_c_d0_soc, fg_c_d0_ocv,
+		fg_c_d0_dod, pdata->d0_sel,
+		fg_c_dod, fg_c_soc,
+		rtc_ui_soc, ui_d0_soc,
+		soc, con0_uisoc, con0_soc);
 }
-
 
 void battery_recovery_init(void)
 {
