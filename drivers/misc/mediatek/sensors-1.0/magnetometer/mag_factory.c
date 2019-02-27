@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#define pr_fmt(fmt) "<MAG_FAC> " fmt
+
 #include "inc/mag_factory.h"
 
 struct mag_factory_private {

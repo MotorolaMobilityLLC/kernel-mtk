@@ -10,10 +10,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#define pr_fmt(fmt) "<ACCEL_FAC> " fmt
 
 #include "inc/accel_factory.h"
-
-#define pr_fmt(fmt) "<ACCELEROMETER> " fmt
 
 struct accel_factory_private {
 	uint32_t gain;

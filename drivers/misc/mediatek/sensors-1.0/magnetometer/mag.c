@@ -11,6 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#define pr_fmt(fmt) "<MAG> " fmt
+
 #include "inc/mag.h"
 #include "sensor_performance.h"
 #include <linux/vmalloc.h>

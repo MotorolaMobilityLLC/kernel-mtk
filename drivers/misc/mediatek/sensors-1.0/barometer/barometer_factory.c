@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#define pr_fmt(fmt) "<BAROMETER> " fmt
+#define pr_fmt(fmt) "<BARO_FAC> " fmt
 
 #include "inc/barometer_factory.h"
 

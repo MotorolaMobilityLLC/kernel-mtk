@@ -16,7 +16,7 @@
  *
  */
 
-#define pr_fmt(fmt) "<ALS/PS> " fmt
+#define pr_fmt(fmt) "<CM36558> " fmt
 
 #include <linux/of.h>
 #include <linux/of_address.h>
