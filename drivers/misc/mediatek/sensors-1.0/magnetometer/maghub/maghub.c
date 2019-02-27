@@ -466,8 +466,15 @@ static int maghub_factory_enable_sensor(bool enabledisable,
 }
 static int maghub_factory_get_data(int32_t data[3], int *status)
 {
+	int err = 0;
+
 	/* get raw data */
-	return  maghub_get_data(&data[0], &data[1], &data[2], status);
+	err = maghub_get_data(&data[0], &data[1], &data[2], status);
+	data[0] = data[0] / CONVERT_M_DIV;
+	data[1] = data[1] / CONVERT_M_DIV;
+	data[2] = data[2] / CONVERT_M_DIV;
+
+	return err;
 }
 static int maghub_factory_get_raw_data(int32_t data[3])
 {
@@ -562,7 +569,7 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.is_support_batch = false;
 #elif defined CONFIG_NANOHUB
 	ctl.is_report_input_direct = true;
-	ctl.is_support_batch = false;
+	ctl.is_support_batch = true;
 #else
 #endif
 
