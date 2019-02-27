@@ -64,9 +64,6 @@ config MTK_GPT_SCHEME_SUPPORT
 
 source "drivers/misc/mediatek/partition/Kconfig"
 source "drivers/misc/mediatek/mtk_sdio/Kconfig"
-source "drivers/misc/mediatek/connectivity/Kconfig"
-source "drivers/misc/mediatek/conn_md/Kconfig"
-source "drivers/misc/mediatek/btif/Kconfig"
 
 endmenu  # Storage
 
@@ -206,6 +203,8 @@ source "drivers/misc/mediatek/ccci_util/Kconfig"
 source "drivers/misc/mediatek/ccmni/Kconfig"
 source "drivers/misc/mediatek/connectivity/Kconfig"
 source "drivers/misc/mediatek/eccci/Kconfig"
+source "drivers/misc/mediatek/conn_md/Kconfig"
+source "drivers/misc/mediatek/btif/Kconfig"
 
 endmenu  # CONN
 
