@@ -34,7 +34,6 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 			disp_arr.o		\
 			disp_partial.o		\
 			mtk_ovl.o		\
-			layering_rule_base.o	\
 			layering_rule.o		\
 			frame_queue.o		\
 			disp_pm_qos.o		\
@@ -62,7 +61,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/		\
              -I$(srctree)/drivers/misc/mediatek/video/common/		\
              -I$(srctree)/drivers/misc/mediatek/video/common/rdma20/	\
              -I$(srctree)/drivers/misc/mediatek/video/common/wdma20/	\
-             -I$(srctree)/drivers/misc/mediatek/video/common/layering_rule_base/v1.1/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/layering_rule_base/v1.2/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/	\
              -I$(srctree)/drivers/misc/mediatek/sync/			\
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include/mach/ \
