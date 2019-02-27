@@ -235,6 +235,20 @@ check_hw_crypto:
 				WARN_ON(1);
 				return;
 			}
+			if (hie_is_nocrypt())
+				return;
+			if (hie_is_dummy()) {
+				struct mmc_data *data = cmd->data;
+
+				if (dir == DMA_TO_DEVICE &&
+				    msdc_use_async_dma(data->host_cookie)) {
+					dma_unmap_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+					dma_map_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+				}
+				return;
+			}
 		}
 #endif
 		if (!mmc_card_blockaddr(mmc->card))
