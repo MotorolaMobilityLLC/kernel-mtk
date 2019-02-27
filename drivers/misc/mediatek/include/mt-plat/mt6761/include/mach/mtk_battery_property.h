@@ -17,10 +17,9 @@
 /* customize */
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
-#define SHUTDOWN_1_TIME	60
 #define KEEP_100_PERCENT 1
 #define R_FG_VALUE	10				/* mOhm */
-#define EMBEDDED_SEL 0
+#define EMBEDDED_SEL 1
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
 #define FG_METER_RESISTANCE	75
 #define CAR_TUNE_VALUE	100 /*1.00 */
@@ -28,11 +27,34 @@
 /* NO_BAT_TEMP_COMPENSATE 1 = don't need bat_temper compensate, */
 /* but fg_meter_resistance still use for SWOCV */
 
+/* enable that soc = 0 , shutdown */
 #define SHUTDOWN_GAUGE0 1
+
+/* enable that uisoc = 1 and wait xmins then shutdown */
 #define SHUTDOWN_GAUGE1_XMINS 1
+/* define Xmins to shutdown*/
+#define SHUTDOWN_1_TIME	30
+
+#define SHUTDOWN_GAUGE1_VBAT_EN 1
+#define SHUTDOWN_GAUGE1_VBAT 34000
+
 #define SHUTDOWN_GAUGE0_VOLTAGE 34000
 
 #define POWERON_SYSTEM_IBOOT 500	/* mA */
+
+/*
+ * LOW_TEMP_MODE = 0
+ *	disable LOW_TEMP_MODE
+ * LOW_TEMP_MODE = 1
+ *	if battery temperautre < LOW_TEMP_MODE_TEMP
+ *	when bootup , force C mode
+ * LOW_TEMP_MODE = 2
+ *	if battery temperautre < LOW_TEMP_MODE_TEMP
+ *	force C mode
+ */
+#define LOW_TEMP_MODE 0
+#define LOW_TEMP_MODE_TEMP 0
+
 
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
@@ -47,7 +69,7 @@
 #define QMAX_SEL 1
 #define IBOOT_SEL 0
 #define SHUTDOWN_SYSTEM_IBOOT 15000	/* 0.1mA */
-#define PMIC_MIN_VOL 33500
+#define PMIC_MIN_VOL 34000
 
 /*ui_soc related */
 #define DIFFERENCE_FULL_CV 1000 /*0.01%*/
@@ -144,7 +166,7 @@
 
 #define PSEUDO1_SEL	2
 
-#define FG_TRACKING_CURRENT	30000	/* not implement */
+#define FG_TRACKING_CURRENT	15000	/* not implement */
 #define FG_TRACKING_CURRENT_IBOOT_EN	0	/* not implement */
 #define UI_FAST_TRACKING_EN 0
 #define UI_FAST_TRACKING_GAP 300
@@ -168,6 +190,8 @@
 #define CAR_TO_REG_SHIFT (3)
 
 #define SHUTDOWN_CONDITION_LOW_BAT_VOLT
+#define LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN 1
+
 #define BATTERY_TMP_TO_DISABLE_GM30 -50
 #define BATTERY_TMP_TO_DISABLE_NAFG -35
 #define DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG 25

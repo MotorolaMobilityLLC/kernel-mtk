@@ -609,17 +609,88 @@ static void proc_dump_dtsi(struct seq_file *m)
 
 }
 
+static void dump_daemon_table(struct seq_file *m)
+{
+	int i, j;
+	struct FUELGAUGE_PROFILE_STRUCT *ptr;
+	struct fuel_gauge_table_custom_data *ptable2;
+	struct fuel_gauge_table *pfgt;
+
+	ptable2 = &gm.fg_data.fg_table_cust_data;
+
+	for (j = 0; j < fg_table_cust_data.active_table_number; j++) {
+		pfgt = &gm.fg_data.fg_table_cust_data.fg_profile[j];
+		seq_printf(m, "daemon table idx:%d size:%d\n",
+			j,
+			pfgt->size);
+
+		seq_printf(m,
+			"tmp:%d qmax:%d %d pseudo1:%d pseudo100:%d\n",
+			pfgt->temperature,
+			pfgt->q_max,
+			pfgt->q_max_h_current,
+			pfgt->pseudo1,
+			pfgt->pseudo100);
+
+		seq_printf(m,
+			"pmic_min_vol:%d pon_iboot:%d qmax_sys_vol:%d sd_hl_zcv:%d\n",
+			pfgt->pmic_min_vol,
+			pfgt->pon_iboot,
+			pfgt->qmax_sys_vol,
+			pfgt->shutdown_hl_zcv);
+
+		seq_puts(m, "idx: maH, voltage, R1, R2, percentage\n");
+		ptr = &ptable2->fg_profile[j].fg_profile[0];
+		for (i = 0; i < 100; i++) {
+			seq_printf(m, "%d: %d %d %d %d %d\n",
+				i,
+				ptr[i].mah,
+				ptr[i].voltage,
+				ptr[i].resistance,
+				ptr[i].resistance2,
+				ptr[i].percentage);
+		}
+	}
+
+	seq_printf(m, "\ndaemon table idx:tmp0 size:%d\n",
+		gm.fg_data.fg_table_cust_data.fg_profile_temperature_0_size);
+	seq_puts(m, "idx: maH, voltage, R1, R2, percentage\n");
+	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_0[0];
+	for (i = 0; i < 100; i++) {
+		seq_printf(m, "%d: %d %d %d %d %d\n",
+			i,
+			ptr[i].mah,
+			ptr[i].voltage,
+			ptr[i].resistance,
+			ptr[i].resistance2,
+			ptr[i].percentage);
+
+	}
+
+	seq_printf(m, "\ndaemon table idx:tmp1 size:%d\n",
+		gm.fg_data.fg_table_cust_data.fg_profile_temperature_1_size);
+	seq_puts(m, "idx: maH, voltage, R, R2, percentage\n");
+	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_1[0];
+	for (i = 0; i < 100; i++) {
+		seq_printf(m, "%d: %d %d %d %d %d\n",
+			i,
+			ptr[i].mah,
+			ptr[i].voltage,
+			ptr[i].resistance,
+			ptr[i].resistance2,
+			ptr[i].percentage);
+	}
+
+}
+
 static void dump_kernel_table(struct seq_file *m)
 {
 	int i, j;
 	struct FUELGAUGE_PROFILE_STRUCT *ptr;
 	struct fuel_gauge_table_custom_data *ptable1;
-	struct fuel_gauge_table_custom_data *ptable2;
 	struct fuel_gauge_table *pfgt;
 
 	ptable1 = &fg_table_cust_data;
-	ptable2 = &gm.fg_data.fg_table_cust_data;
-
 
 	seq_printf(m, "tables no:%d table size:%d\n",
 		fg_table_cust_data.active_table_number,
@@ -633,86 +704,50 @@ static void dump_kernel_table(struct seq_file *m)
 			pfgt->size);
 
 		seq_printf(m,
-			"tmp:%d qmax:%d %d pseudo:%d %d,%d %d %d %d\n",
+			"tmp:%d qmax:%d %d pseudo1:%d pseudo100:%d\n",
 			pfgt->temperature,
 			pfgt->q_max,
 			pfgt->q_max_h_current,
 			pfgt->pseudo1,
-			pfgt->pseudo100,
-			pfgt->pmic_min_vol,
-			pfgt->pon_iboot,
-			pfgt->qmax_sys_vol,
-			pfgt->shutdown_hl_zcv);
-
-		seq_puts(m, "idx: maH, voltage, R1, percentage\n");
-		for (i = 0; i < 100; i++) {
-			seq_printf(m, "%d: %d %d %d %d\n",
-				i,
-				ptr[i].mah,
-				ptr[i].voltage,
-				ptr[i].resistance,
-				ptr[i].percentage);
-		}
-	}
-
-	seq_puts(m, "\n");
-	for (j = 0; j < 10; j++) {
-		pfgt = &gm.fg_data.fg_table_cust_data.fg_profile[j];
-		seq_printf(m, "daemon table idx:%d size:%d\n",
-			j,
-			pfgt->size);
+			pfgt->pseudo100);
 
 		seq_printf(m,
-			"tmp:%d qmax:%d %d pseudo:%d %d,%d %d %d %d\n",
-			pfgt->temperature,
-			pfgt->q_max,
-			pfgt->q_max_h_current,
-			pfgt->pseudo1,
-			pfgt->pseudo100,
+			"pmic_min_vol:%d pon_iboot:%d qmax_sys_vol:%d sd_hl_zcv:%d\n",
 			pfgt->pmic_min_vol,
 			pfgt->pon_iboot,
 			pfgt->qmax_sys_vol,
 			pfgt->shutdown_hl_zcv);
 
 		seq_puts(m, "idx: maH, voltage, R1, R2, percentage\n");
-		ptr = &ptable2->fg_profile[j].fg_profile[0];
 		for (i = 0; i < 100; i++) {
-			seq_printf(m, "%d: %d %d %d %d\n",
+			seq_printf(m, "%d: %d %d %d %d %d\n",
 				i,
 				ptr[i].mah,
 				ptr[i].voltage,
 				ptr[i].resistance,
+				ptr[i].resistance2,
 				ptr[i].percentage);
 		}
 	}
 
-	seq_printf(m, "\ndaemon table idx:tmp0 size:%d\n",
-		gm.fg_data.fg_table_cust_data.fg_profile_temperature_0_size);
-	seq_puts(m, "idx: maH, voltage, R, percentage\n");
-	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_0[0];
-	for (i = 0; i < 100; i++) {
-		seq_printf(m, "%d: %d %d %d %d\n",
-			i,
-			ptr[i].mah,
-			ptr[i].voltage,
-			ptr[i].resistance,
-			ptr[i].percentage);
+	seq_puts(m, "\n");
 
+	if (is_recovery_mode() == false) {
+		dump_daemon_table(m);
+	} else {
+
+		ptr = &ptable1->fg_profile_temperature_1[0];
+		seq_puts(m, "tmp1 idx: maH, voltage, R1, R2, percentage\n");
+		for (i = 0; i < 100; i++) {
+			seq_printf(m, "%d: %d %d %d %d %d\n",
+				i,
+				ptr[i].mah,
+				ptr[i].voltage,
+				ptr[i].resistance,
+				ptr[i].resistance2,
+				ptr[i].percentage);
+		}
 	}
-
-	seq_printf(m, "\ndaemon table idx:tmp1 size:%d\n",
-		gm.fg_data.fg_table_cust_data.fg_profile_temperature_1_size);
-	seq_puts(m, "idx: maH, voltage, R, percentage\n");
-	ptr = &gm.fg_data.fg_table_cust_data.fg_profile_temperature_1[0];
-	for (i = 0; i < 100; i++) {
-		seq_printf(m, "%d: %d %d %d %d\n",
-			i,
-			ptr[i].mah,
-			ptr[i].voltage,
-			ptr[i].resistance,
-			ptr[i].percentage);
-	}
-
 
 }
 
@@ -1285,10 +1320,22 @@ int force_get_tbat(bool update)
 	}
 
 	if (bat_temperature_val <= BATTERY_TMP_TO_DISABLE_NAFG) {
+		int fgv;
+
+		fgv = gauge_get_hw_version();
+		if (fgv >= GAUGE_HW_V1000
+		&& fgv < GAUGE_HW_V2000) {
+			pmic_enable_interrupt(
+				INT_VBATON_UNDET,
+				0,
+				"VBATON_UNDET");
+		}
+
 		gm.ntc_disable_nafg = true;
 		bm_err("[force_get_tbat] ntc_disable_nafg %d %d\n",
 			bat_temperature_val,
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
+
 		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	} else
 		gm.ntc_disable_nafg = false;
@@ -1430,6 +1477,11 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 		return -1;
 	}
 
+	if (is_recovery_mode()) {
+		wakeup_fg_algo_recovery(flow_state);
+		return 0;
+	}
+
 	gm3_log_notify(flow_state);
 
 	if (gm.g_fgd_pid != 0) {
@@ -1466,6 +1518,11 @@ int wakeup_fg_algo_atomic(unsigned int flow_state)
 	if (gm.disableGM30) {
 		bm_err("FG daemon is disabled\n");
 		return -1;
+	}
+
+	if (is_recovery_mode()) {
+		wakeup_fg_algo_recovery(flow_state);
+		return 0;
 	}
 
 	gm3_log_notify(flow_state);
@@ -3308,8 +3365,12 @@ static int __init battery_probe(struct platform_device *dev)
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
 {
-	bm_err("******** battery_suspend!! iavg=%d ********\n",
-		gm.hw_status.iavg_intr_flag);
+	bm_err("******** battery_suspend!! iavg=%d ***GM3 disable:%d %d %d %d***\n",
+		gm.hw_status.iavg_intr_flag,
+		gm.disableGM30,
+		fg_cust_data.disable_nafg,
+		gm.ntc_disable_nafg,
+		gm.cmd_disable_nafg);
 	if (gauge_get_hw_version() >= GAUGE_HW_V2000
 		&& gm.hw_status.iavg_intr_flag == 1) {
 		pmic_enable_interrupt(FG_IAVG_H_NO, 0, "GM30");
@@ -3321,8 +3382,12 @@ static int battery_suspend(struct platform_device *dev, pm_message_t state)
 
 static int battery_resume(struct platform_device *dev)
 {
-	bm_err("******** battery_resume!! iavg=%d ********\n",
-		gm.hw_status.iavg_intr_flag);
+	bm_err("******** battery_resume!! iavg=%d ***GM3 disable:%d %d %d %d***\n",
+		gm.hw_status.iavg_intr_flag,
+		gm.disableGM30,
+		fg_cust_data.disable_nafg,
+		gm.ntc_disable_nafg,
+		gm.cmd_disable_nafg);
 	if (gauge_get_hw_version() >=
 		GAUGE_HW_V2000
 		&& gm.hw_status.iavg_intr_flag == 1) {

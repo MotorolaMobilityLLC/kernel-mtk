@@ -45,6 +45,7 @@
 /* ============================================================ */
 #define BAT_VOLTAGE_LOW_BOUND 3400
 #define BAT_VOLTAGE_HIGH_BOUND 3450
+#define LOW_TMP_BAT_VOLTAGE_LOW_BOUND 3200
 #define SHUTDOWN_TIME 40
 #define AVGVBAT_ARRAY_SIZE 30
 #define INIT_VOLTAGE 3450
@@ -114,11 +115,12 @@ enum gauge_hw_version {
 
 enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_PRINT_LOG,
+	FG_DAEMON_CMD_SET_DAEMON_PID,
 	FG_DAEMON_CMD_GET_CUSTOM_SETTING,
+	FG_DAEMON_CMD_GET_DATA,
 	FG_DAEMON_CMD_IS_BAT_EXIST,
 	FG_DAEMON_CMD_GET_INIT_FLAG,
 	FG_DAEMON_CMD_SET_INIT_FLAG,
-	FG_DAEMON_CMD_SET_DAEMON_PID,
 	FG_DAEMON_CMD_NOTIFY_DAEMON,
 	FG_DAEMON_CMD_CHECK_FG_DAEMON_VERSION,
 	FG_DAEMON_CMD_FGADC_RESET,
@@ -196,7 +198,6 @@ enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_GET_VBAT,
 	FG_DAEMON_CMD_GET_DISABLE_NAFG,
 	FG_DAEMON_CMD_DUMP_LOG,
-	FG_DAEMON_CMD_GET_DATA,
 	FG_DAEMON_CMD_SEND_DATA,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
@@ -277,6 +278,9 @@ struct fuel_gauge_custom_data {
 	int versionID2;
 	int versionID3;
 	int hardwareVersion;
+
+	int low_temp_mode;
+	int low_temp_mode_temp;
 
 	/* Qmax for battery  */
 	int q_max_L_current;
@@ -386,6 +390,8 @@ struct fuel_gauge_custom_data {
 	int shutdown_gauge1_xmins;
 	int shutdown_gauge1_mins;
 	int shutdown_gauge0_voltage;
+	int shutdown_gauge1_vbat_en;
+	int shutdown_gauge1_vbat;
 
 	/* ZCV update */
 	int zcv_suspend_time;
@@ -463,6 +469,7 @@ struct FUELGAUGE_PROFILE_STRUCT {
 	unsigned int mah;
 	unsigned short voltage;
 	unsigned short resistance; /* Ohm*/
+	unsigned short resistance2; /* Ohm*/
 	unsigned short percentage;
 };
 
@@ -810,6 +817,7 @@ extern void fg_update_sw_iavg(void);
 extern void fg_bat_temp_int_sw_check(void);
 extern void gm3_log_notify(unsigned int interrupt);
 extern void dump_gm3_log(void);
+extern void fg_update_sw_low_battery_check(unsigned int thd);
 
 
 /* query function , review */

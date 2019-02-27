@@ -251,6 +251,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	int current_ui_soc = battery_get_uisoc();
 	int current_soc = battery_get_soc();
 	int vbat = battery_get_bat_voltage();
+	int tmp = 25;
 
 
 	now.tv_sec = 0;
@@ -319,16 +320,34 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 			vbatcnt += sdd->batdata[i];
 		sdd->avgvbat = vbatcnt / AVGVBAT_ARRAY_SIZE;
 
-		bm_err("lbatcheck vbat:%d avgvbat:%d %d,%d\n",
+		tmp = battery_get_bat_temperature();
+
+		bm_err("lbatcheck vbat:%d avgvbat:%d %d,%d tmp:%d\n",
 			vbat,
-			sdd->avgvbat, g_vbat_lt, g_vbat_lt_lv1);
+			sdd->avgvbat,
+			g_vbat_lt,
+			g_vbat_lt_lv1,
+			tmp);
 
 		if (sdd->avgvbat < BAT_VOLTAGE_LOW_BOUND) {
 			/* avg vbat less than 3.4v */
 
 			if (down_to_low_bat == 0) {
-				down_to_low_bat = 1;
-				notify_fg_shutdown();
+				if (IS_ENABLED(
+					LOW_TEMP_DISABLE_LOW_BAT_SHUTDOWN)) {
+					if (tmp >= 5) {
+						down_to_low_bat = 1;
+						notify_fg_shutdown();
+					} else if (sdd->avgvbat <=
+						LOW_TMP_BAT_VOLTAGE_LOW_BOUND) {
+						down_to_low_bat = 1;
+						notify_fg_shutdown();
+					} else
+						bm_err("low temp disable low battery sd\n");
+				} else {
+					down_to_low_bat = 1;
+					notify_fg_shutdown();
+				}
 			}
 
 			if ((current_ui_soc == 0) && (ui_zero_time_flag == 0)) {
@@ -365,11 +384,10 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		if (sdd->lbat2_h_count >= 3) {
 			bm_err("escape from LOW_BAT_VOLT shutdown_condition:%d\n",
 				sdd->lbat2_h_count);
-			disable_shutdown_cond(LOW_BAT_VOLT);
-			wakeup_fg_algo(FG_INTR_VBAT2_H);
+			fg_update_sw_low_battery_check(
+				fg_cust_data.vbat2_det_voltage3 / 10);
 			sdd->lbat2_h_count = 0;
 		}
-
 
 		polling++;
 			bm_err("[shutdown_event_handler][UT] V %d ui_soc %d dur %d [%d:%d:%d:%d:%d] batdata[%d] %d\n",
