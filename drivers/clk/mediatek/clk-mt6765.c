@@ -28,9 +28,11 @@
 #if MT_CCF_BRINGUP
 #define MT_MUXPLL_ENABLE	0
 #define MT_CG_ENABLE		0
+#define MT_MTCMOS_ENABLE	0
 #else
 #define MT_MUXPLL_ENABLE	1
 #define MT_CG_ENABLE		1
+#define MT_MTCMOS_ENABLE	0
 #endif
 
 #define LOW_POWER_CLK_PDN	0
@@ -67,6 +69,7 @@ while (0)
 
 
 static bool cg_disable;
+static bool mtcmos_disable;
 
 const char *ckgen_array[] = {
 "hd_faxi_ck",
@@ -2828,21 +2831,6 @@ void armpll_control(int id, int on)
 	}
 }
 
-void check_ven_clk_sts(void)
-{
-	/* confirm ven clk */
-}
-
-
-#if 0
-void check_smi_clk_sts(void)
-{
-	/* confirm mjc clk */
-	pr_notice("[CCF] %s: smi_clk = %dkhz\r\n",
-		__func__, mt_get_ckgen_freq(24));
-}
-#endif
-
 void mtk_set_cg_disable(unsigned int disable)
 {
 	if (disable == 1)
@@ -2876,11 +2864,41 @@ int mtk_is_pll_enable(void)
 #endif
 }
 
+void mtk_set_mtcmos_disable(unsigned int disable)
+{
+	if (disable == 1)
+		mtcmos_disable = true;
+	else if (disable == 0)
+		mtcmos_disable = false;
+}
+
+int mtk_is_mtcmos_enable(void)
+{
+#if MT_MTCMOS_ENABLE
+	if (mtcmos_disable) {
+		pr_debug("%s: skipped for mtcmos control disable\n", __func__);
+		return 0;
+	} else {
+		return 1;
+	}
+#else
+	return 0;
+#endif
+}
+
 static int __init clk_mt6765_init(void)
 {
-	/*timer_ready = true;*/
-	/*mtk_clk_enable_critical();*/
-
+#if MT_CCF_BRINGUP
+	cg_disable = true;
+	mtcmos_disable = true;
+#else
+#if MT_CG_ENABLE
+	cg_disable = false;
+#endif
+#if MT_MTCMOS_ENABLE
+	mtcmos_disable = false;
+#endif
+#endif
 	return 0;
 }
 arch_initcall(clk_mt6765_init);
