@@ -50,6 +50,8 @@ unsigned int gOVLBackground = 0xFF000000;
 
 static unsigned int ovl_bg_w[OVL_NUM];
 static unsigned int ovl_bg_h[OVL_NUM];
+static enum DISP_MODULE_ENUM next_rsz_module = DISP_MODULE_UNKNOWN;
+static enum DISP_MODULE_ENUM prev_rsz_module = DISP_MODULE_UNKNOWN;
 
 static inline int is_module_ovl(enum DISP_MODULE_ENUM module)
 {
@@ -296,7 +298,8 @@ int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bg_w, unsigned int bg_h,
 }
 
 static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
-				u32 *dst_x, u32 *dst_y, u32 *dst_w, u32 *dst_h)
+				u32 *dst_x, u32 *dst_y, u32 *dst_w, u32 *dst_h,
+				struct disp_rect src_total_roi)
 {
 	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
 		DDPERR("%s:L%u:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
@@ -305,8 +308,10 @@ static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
 	}
 
 	if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
-		*dst_x = 0;
-		*dst_y = 0;
+		*dst_x = ((oc->dst_x * oc->src_w) / oc->dst_w)
+			- src_total_roi.x;
+		*dst_y = ((oc->dst_y * oc->src_h) / oc->dst_h)
+			- src_total_roi.y;
 		*dst_w = oc->src_w;
 		*dst_h = oc->src_h;
 	}
@@ -320,56 +325,23 @@ static int _ovl_get_rsz_layer_roi(const struct OVL_CONFIG_STRUCT * const oc,
 	return 0;
 }
 
-static u32 _get_valid_rsz_idx(struct disp_ddp_path_config *pconfig)
-{
-	int i = 0;
-	struct OVL_CONFIG_STRUCT *c = NULL;
-
-	c = &pconfig->ovl_config[i];
-	if (i == 0 && c->layer_en && c->source == OVL_LAYER_SOURCE_RESERVED)
-		i++;
-
-	return i;
-}
-
-static int _ovl_get_rsz_roi(enum DISP_MODULE_ENUM module,
-			    struct disp_ddp_path_config *pconfig,
-			    u32 *bg_w, u32 *bg_h)
-{
-	u32 rsz_idx = 0;
-	struct OVL_CONFIG_STRUCT *oc = NULL;
-
-	rsz_idx = _get_valid_rsz_idx(pconfig);
-	oc = &pconfig->ovl_config[rsz_idx];
-
-	if (oc->src_w > oc->dst_w || oc->src_h > oc->dst_h) {
-		DDPERR("%s:L%u:src(%ux%u)>dst(%ux%u)\n", __func__, oc->layer,
-		       oc->src_w, oc->src_h, oc->dst_w, oc->dst_h);
-		return -EINVAL;
-	}
-
-	do {
-		if (oc->ovl_index != module)
-			break;
-		if (!oc->layer_en)
-			break;
-
-		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
-			*bg_w = oc->src_w;
-			*bg_h = oc->src_h;
-		}
-	} while (0);
-
-	return 0;
-}
-
 static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 			    struct disp_ddp_path_config *pconfig, void *handle)
 {
-	u32 bg_w = pconfig->dst_w, bg_h = pconfig->dst_h;
+	struct disp_rect rsz_src_roi = pconfig->rsz_src_roi;
+	u32 bg_w, bg_h;
 
-	_ovl_get_rsz_roi(module, pconfig, &bg_w, &bg_h);
+	if (pconfig->rsz_enable) {
+		bg_w = rsz_src_roi.width;
+		bg_h = rsz_src_roi.height;
+	} else {
+		bg_w = pconfig->dst_w;
+		bg_h = pconfig->dst_h;
+	}
+
 	ovl_roi(module, bg_w, bg_h, gOVLBackground, handle);
+	DDPDBG("RPO] module=%s, bg(w,h)=(%d,%d)\n",
+			ddp_get_module_name(module), bg_w, bg_h);
 
 	return 0;
 }
@@ -377,39 +349,34 @@ static int _ovl_set_rsz_roi(enum DISP_MODULE_ENUM module,
 static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 			  struct disp_ddp_path_config *pconfig, void *handle)
 {
-	u32 rsz_idx = 0;
 	unsigned long ovl_base = ovl_base_addr(module);
-	struct OVL_CONFIG_STRUCT *oc = NULL;
-	u32 lc_x = 0;
-	u32 lc_y = 0;
-	u32 lc_w = pconfig->dst_w;
-	u32 lc_h = pconfig->dst_h;
+	struct disp_rect rsz_dst_roi = pconfig->rsz_dst_roi;
 	int rotate = 0;
+	u32 lc_x, lc_y, lc_w, lc_h;
 
-#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
-	rotate = 1;
-#endif
+	#ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
+		rotate = 1;
+	#endif
 
-	rsz_idx = _get_valid_rsz_idx(pconfig);
-	oc = &pconfig->ovl_config[rsz_idx];
-	if (oc->layer_en) {
-		if (oc->src_w < oc->dst_w || oc->src_h < oc->dst_h) {
-			if (rotate) {
-				unsigned int bg_w = 0, bg_h = 0;
-
-				_get_roi(module, &bg_w, &bg_h);
-
-				lc_x = bg_w - oc->dst_w - oc->dst_x;
-				lc_y = bg_h - oc->dst_h - oc->dst_y;
-
-			} else {
-				lc_x = oc->dst_x;
-				lc_y = oc->dst_y;
-			}
-
-			lc_w = oc->dst_w;
-			lc_h = oc->dst_h;
+	if (pconfig->rsz_enable) {
+		if (!rotate) {
+			lc_x = rsz_dst_roi.x;
+			lc_y = rsz_dst_roi.y;
+			lc_w = rsz_dst_roi.width;
+			lc_h = rsz_dst_roi.height;
+		} else {
+			lc_x = pconfig->dst_w - rsz_dst_roi.x -
+						rsz_dst_roi.width;
+			lc_y = pconfig->dst_h - rsz_dst_roi.y -
+						rsz_dst_roi.height;
+			lc_w = rsz_dst_roi.width;
+			lc_h = rsz_dst_roi.height;
 		}
+	} else {
+		lc_x = 0;
+		lc_y = 0;
+		lc_w = pconfig->dst_w;
+		lc_h = pconfig->dst_h;
 	}
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_XOFF,
 			   ovl_base + DISP_REG_OVL_LC_OFFSET, lc_x);
@@ -420,6 +387,8 @@ static int _ovl_lc_config(enum DISP_MODULE_ENUM module,
 	DISP_REG_SET_FIELD(handle, FLD_OVL_LC_SRC_H,
 			   ovl_base + DISP_REG_OVL_LC_SRC_SIZE, lc_h);
 
+	DDPDBG("[RPO] module=%s,lc(x,y,w,h)=(%d,%d,%d,%d)\n",
+			ddp_get_module_name(module), lc_x, lc_y, lc_w, lc_h);
 	return 0;
 }
 
@@ -495,7 +464,9 @@ int ovl_layer_switch(enum DISP_MODULE_ENUM module, unsigned int layer,
 }
 
 static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
-	unsigned int is_engine_sec, struct OVL_CONFIG_STRUCT * const cfg,
+	struct disp_rect src_total_roi,
+	unsigned int is_engine_sec,
+	struct OVL_CONFIG_STRUCT * const cfg,
 	const struct disp_rect * const ovl_partial_roi,
 	const struct disp_rect * const layer_partial_roi,
 	void *handle)
@@ -560,7 +531,8 @@ static int ovl_layer_config(enum DISP_MODULE_ENUM module, unsigned int layer,
 		return -1;
 	}
 
-	_ovl_get_rsz_layer_roi(cfg, &dst_x, &dst_y, &dst_w, &dst_h);
+	_ovl_get_rsz_layer_roi(cfg, &dst_x, &dst_y, &dst_w,
+					&dst_h, src_total_roi);
 
 #ifdef CONFIG_MTK_LCM_PHYSICAL_ROTATION_HW
 	if (module != DISP_MODULE_OVL1_2L)
@@ -790,10 +762,15 @@ int ovl_connect(enum DISP_MODULE_ENUM module, enum DISP_MODULE_ENUM prev,
 		DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_BGCLR_IN_SEL,
 				   ovl_base + DISP_REG_OVL_DATAPATH_CON, 0);
 
-	if (connect && is_module_rsz(prev))
+	if (connect && is_module_rsz(prev)) {
 		_ovl_UFOd_in(module, 1, handle);
+		next_rsz_module = module;
+	}
 	else
 		_ovl_UFOd_in(module, 0, handle);
+
+	if (connect && is_module_rsz(next))
+		prev_rsz_module = module;
 
 	DISP_REG_SET_FIELD(handle, DATAPATH_CON_FLD_OUTPUT_CLAMP,
 			   ovl_base + DISP_REG_OVL_DATAPATH_CON, 1);
@@ -1704,7 +1681,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 
 	ovl_bw = 0;
 
-	if (!pConfig->ovl_partial_dirty)
+	if (!pConfig->ovl_partial_dirty && module == prev_rsz_module)
 		_ovl_set_rsz_roi(module, pConfig, handle);
 
 	for (layer_id = 0; layer_id < TOTAL_REAL_OVL_LAYER_NUM; layer_id++) {
@@ -1735,8 +1712,8 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 				print_layer_config_args(module, ovl_cfg,
 					&layer_partial_roi);
 				ovl_layer_config(module, ovl_cfg->phy_layer,
-					has_sec_layer, ovl_cfg,
-					&pConfig->ovl_partial_roi,
+					pConfig->rsz_src_roi, has_sec_layer,
+					ovl_cfg, &pConfig->ovl_partial_roi,
 					&layer_partial_roi, handle);
 				ovl_cfg->layer_disable_by_partial_update = 0;
 			} else {
@@ -1748,7 +1725,9 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 		} else {
 			print_layer_config_args(module, ovl_cfg, NULL);
 			ovl_layer_config(module, ovl_cfg->phy_layer,
-				has_sec_layer, ovl_cfg, NULL, NULL, handle);
+				pConfig->rsz_src_roi,
+				has_sec_layer, ovl_cfg,
+				NULL, NULL, handle);
 		}
 
 		if (ovl_cfg->ext_layer != -1) {
@@ -1771,7 +1750,7 @@ static int ovl_config_l(enum DISP_MODULE_ENUM module,
 			pConfig->dst_h, pConfig->dst_w, fps, Bpp, tmp_bw);
 	}
 
-	if (!pConfig->ovl_partial_dirty)
+	if (!pConfig->ovl_partial_dirty && module == next_rsz_module)
 		_ovl_lc_config(module, pConfig, handle);
 
 	_rpo_disable_dim_L0(module, pConfig, &enabled_layers);
