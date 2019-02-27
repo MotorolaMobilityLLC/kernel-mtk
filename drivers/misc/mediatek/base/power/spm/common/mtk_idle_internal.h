@@ -31,7 +31,8 @@
 /********************************************************************
  * Enable/Disable all idle related trace_tag
  *******************************************************************/
-#define MTK_IDLE_TRACE_TAG_ENABLE       (0)
+#define MTK_IDLE_TRACE_TAG_ENABLE       (1)
+
 
 /********************************************************************
  * mtk idle related definitions
