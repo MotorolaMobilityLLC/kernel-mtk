@@ -15,9 +15,9 @@ obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6758) += 1.0/
 #subdir-ccflags-y += -DMTK_VPU_EMULATOR
 
-#ifneq ($(TARGET_BUILD_VARIANT),user)
+
 subdir-ccflags-y += -DMTK_VPU_DVT
-#endif
+
 
 # FPGA environment
 ifeq ($(CONFIG_MTK_FPGA),y)
