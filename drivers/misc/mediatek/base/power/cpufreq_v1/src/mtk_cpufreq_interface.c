@@ -45,25 +45,17 @@ static const char *power_mode_str[NUM_PPB_POWER_MODE] = {
 
 char *_copy_from_user_for_proc(const char __user *buffer, size_t count)
 {
-	char *buf = (char *)__get_free_page(GFP_USER);
+	static char buf[64];
+	unsigned int len = 0;
 
-	if (!buf)
+	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
+
+	if (copy_from_user(buf, buffer, len))
 		return NULL;
 
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
+	buf[len] = '\0';
 
 	return buf;
-
-out:
-	free_page((unsigned long)buf);
-
-	return NULL;
 }
 
 /* cpufreq_debug */
@@ -92,7 +84,6 @@ static ssize_t cpufreq_debug_proc_write(struct file *file,
 	else
 		func_lv_mask = dbg_lv;
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -124,7 +115,6 @@ static ssize_t cpufreq_power_mode_proc_write(struct file *file,
 		("echo 0/1/2/3 > /proc/cpufreq/cpufreq_power_mode\n");
 	}
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -154,7 +144,6 @@ static ssize_t cpufreq_stress_test_proc_write(struct file *file,
 #endif
 	}
 
-	free_page((unsigned long)buf);
 	return count;
 }
 
@@ -215,8 +204,6 @@ static ssize_t cpufreq_oppidx_proc_write(struct file *file,
 			p->name);
 		}
 	}
-
-	free_page((unsigned long)buf);
 
 	return count;
 }
@@ -285,8 +272,6 @@ static ssize_t cpufreq_freq_proc_write(struct file *file,
 		}
 	}
 
-	free_page((unsigned long)buf);
-
 	return count;
 }
 
@@ -341,8 +326,6 @@ static ssize_t cpufreq_volt_proc_write(struct file *file,
 		cpufreq_unlock(flags);
 	}
 
-	free_page((unsigned long)buf);
-
 	return count;
 }
 
@@ -384,8 +367,6 @@ static ssize_t cpufreq_turbo_mode_proc_write(struct file *file,
 #endif
 	}
 
-	free_page((unsigned long)buf);
-
 	return count;
 }
 
@@ -425,8 +406,6 @@ static ssize_t cpufreq_sched_disable_proc_write(struct file *file,
 			sched_dvfs_enable = 1;
 #endif
 	}
-
-	free_page((unsigned long)buf);
 
 	return count;
 }
@@ -468,7 +447,6 @@ static ssize_t cpufreq_dvfs_time_profile_proc_write(struct file *file,
 				max[i].tv64 = 0;
 		}
 	}
-	free_page((unsigned long)buf);
 
 	return count;
 }
@@ -515,8 +493,6 @@ static ssize_t cpufreq_cci_map_table_proc_write(struct file *file,
 #endif
 	} else
 		tag_pr_info("Usage: echo <idx_1> <idx_2> <result>\n");
-
-	free_page((unsigned long)buf);
 
 	return count;
 }
