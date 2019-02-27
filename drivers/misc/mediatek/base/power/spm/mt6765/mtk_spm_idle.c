@@ -27,6 +27,14 @@
 #include "mtk_spm_internal.h"
 #include "pwr_ctrl.h"
 
+
+#define MTK_IDLE_GS_DUMP_READY	(1)
+
+#if defined(MTK_IDLE_GS_DUMP_READY)
+/* NOTE: Check golden setting dump header file for each project */
+#include "power_gs_v1/mtk_power_gs_internal.h"
+#endif
+
 /* FIXME: IT with vcorefs ? */
 void __attribute__((weak)) dvfsrc_md_scenario_update(bool suspend) {}
 
@@ -101,6 +109,15 @@ static struct pwr_ctrl *get_pwrctrl(int idle_type)
 		idle_type == IDLE_TYPE_SO ? &pwrctrl_so : NULL;
 }
 
+static void mtk_idle_gs_dump(int idle_type)
+{
+	#if defined(MTK_IDLE_GS_DUMP_READY)
+	if (idle_type == IDLE_TYPE_DP)
+		mt_power_gs_dump_dpidle(GS_ALL);
+	else if (idle_type == IDLE_TYPE_SO3 || idle_type == IDLE_TYPE_SO)
+		mt_power_gs_dump_sodi3(GS_ALL);
+	#endif
+}
 
 /********************************************************************
  * dp/so3/so trigger wfi
@@ -125,7 +142,7 @@ static void print_ftrace_tag(int idle_type, int cpu, int enter)
 #endif
 }
 
-int mtk_idle_trigger_wfi(int idle_type, int cpu)
+int mtk_idle_trigger_wfi(int idle_type, unsigned int idle_flag, int cpu)
 {
 	int spm_dormant_sta = 0;
 	struct pwr_ctrl *pwrctrl;
@@ -144,6 +161,10 @@ int mtk_idle_trigger_wfi(int idle_type, int cpu)
 		[IDLE_TYPE_SO3] = SPM_ARGS_SODI_FINISH,
 		[IDLE_TYPE_SO] = SPM_ARGS_SODI_FINISH,
 	};
+
+	/* Dump low power golden setting */
+	if (idle_flag & MTK_IDLE_LOG_DUMP_LP_GS)
+		mtk_idle_gs_dump(idle_type);
 
 	pwrctrl = get_pwrctrl(idle_type);
 
@@ -372,7 +393,9 @@ static bool check_print_log_duration(void)
 
 	cur_time = spm_get_current_time_ms();
 	ret = (cur_time - pre_time > IDLE_PRINT_LOG_DURATION);
-	pre_time = cur_time;
+
+	if (ret)
+		pre_time = cur_time;
 
 	return ret;
 }

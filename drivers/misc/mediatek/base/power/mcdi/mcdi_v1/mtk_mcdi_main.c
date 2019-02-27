@@ -25,7 +25,7 @@
 #include <linux/uaccess.h>
 
 #include <mtk_cpuidle.h>
-#include <mtk_idle_profile.h>
+#include <mtk_idle.h>
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
@@ -454,6 +454,14 @@ int mcdi_enter(int cpu)
 	int cluster_idx = cluster_idx_get(cpu);
 	int state = -1;
 	struct cpuidle_state *mcdi_sta;
+
+	/* Note: [DVT] Enter mtk idle state w/o mcdi enable
+	 * Include mtk_idle.h for MTK_IDLE_DVT_TEST_ONLY
+	 */
+	#if defined(MTK_IDLE_DVT_TEST_ONLY)
+	mtk_idle_enter_dvt(cpu);
+	return 0;
+	#endif
 
 	idle_refcnt_inc();
 	mcdi_profile_ts(MCDI_PROFILE_GOV_SEL_ENTER);
