@@ -6140,11 +6140,15 @@ schedtune_margin(int cpu, unsigned long signal, long boost)
 	 *   M = B * (SCHED_CAPACITY_SCALE - S)
 	 * The obtained M could be used by the caller to "boost" S.
 	 */
+	/*
+	 * If we use kernel API to update negatice boost,
+	 * don't decrease task utilization.
+	 */
 	if (cpu == -1) { /* task margin */
 		if (boost >= 0) {
 			margin  = SCHED_CAPACITY_SCALE - signal;
 			margin *= boost;
-		} else
+		} else if (!global_negative_flag) /* google original path */
 			margin = -signal * boost;
 	} else { /* cpu margin */
 		if (boost >= 0) {
@@ -6223,8 +6227,8 @@ boosted_task_util(struct task_struct *task)
 
 	trace_sched_boost_task(task, util, margin);
 
-	/* only boosted for heavy task */
-	if (util >= stune_task_threshold)
+	/* only boosted for heavy task or negative boosted */
+	if (util >= stune_task_threshold || margin < 0)
 		return util + margin;
 	else
 		return util;
