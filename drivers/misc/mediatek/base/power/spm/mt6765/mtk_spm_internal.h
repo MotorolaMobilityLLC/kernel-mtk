@@ -34,19 +34,28 @@
 #include <cpuidle_v3/mtk_cpuidle.h> /* atf/dormant header file */
 
 
+
+/********************************************************************
+ * dpidle/sodi3/sodi default feature enable/disable
+ *******************************************************************/
+#define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (1)
+#define MTK_IDLE_FEATURE_ENABLE_SODI    (1)
+#define MTK_IDLE_FEATURE_ENABLE_SODI3   (1)
+
+
 /**************************************
  * Config and Parameter
  **************************************/
-#define LOG_BUF_SIZE           256
-#define SPM_WAKE_PERIOD         600    /* sec */
+#define LOG_BUF_SIZE        256
+#define SPM_WAKE_PERIOD     600 /* sec */
 
 /**************************************
  * Define and Declare
  **************************************/
-#define PCM_TIMER_RAMP_BASE_DPIDLE      80          /*  80/32000 =  2.5 ms */
-#define PCM_TIMER_RAMP_BASE_SUSPEND_50MS       0xA0
-#define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT      0x7D000 /* 16sec */
-#define PCM_TIMER_RAMP_BASE_SUSPEND_LONG       0x927C00 /* 5min */
+#define PCM_TIMER_RAMP_BASE_DPIDLE          80          /* 80/32000 = 2.5 ms */
+#define PCM_TIMER_RAMP_BASE_SUSPEND_50MS    0xA0
+#define PCM_TIMER_RAMP_BASE_SUSPEND_SHORT   0x7D000     /* 16sec */
+#define PCM_TIMER_RAMP_BASE_SUSPEND_LONG    0x927C00    /* 5min */
 /* PCM_WDT_VAL */
 #define PCM_WDT_TIMEOUT		(30 * 32768)	/* 30s */
 /* PCM_TIMER_VAL */

@@ -34,6 +34,7 @@
 
 static DEFINE_SPINLOCK(slp_lock);
 
+unsigned long slp_dp_cnt[NR_CPUS] = {0};
 static unsigned int slp_wake_reason = WR_NONE;
 
 static bool slp_suspend_ops_valid_on;
@@ -215,6 +216,7 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 		mtk_idle_enter(IDLE_TYPE_DP, smp_processor_id(),
 					MTK_IDLE_OPT_SLEEP_DPIDLE, 0);
 		slp_wake_reason = get_slp_dp_last_wr();
+		slp_dp_cnt[smp_processor_id()]++;
 
 	} else
 #endif
