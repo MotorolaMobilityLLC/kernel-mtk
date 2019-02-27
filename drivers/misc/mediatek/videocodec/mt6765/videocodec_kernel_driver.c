@@ -2821,6 +2821,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 				CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_MP1_MP2_DEC) {
 				vdec_break();
+				disable_irq(VDEC_IRQ_ID);
 #ifdef CONFIG_PM
 				pm_runtime_put_sync(vcodec_device);
 #else
@@ -2832,6 +2833,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 			} else if (CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_H264_ENC) {
 				venc_break();
+				disable_irq(VENC_IRQ_ID);
 #ifdef CONFIG_PM
 				pm_runtime_put_sync(vcodec_device2);
 #else
@@ -2842,6 +2844,7 @@ static int vcodec_release(struct inode *inode, struct file *file)
 							0);
 			} else if (CodecHWLock.eDriverType ==
 					VAL_DRIVER_TYPE_JPEG_ENC) {
+				disable_irq(VENC_IRQ_ID);
 				venc_power_off();
 			}
 		}
