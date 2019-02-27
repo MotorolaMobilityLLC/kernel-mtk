@@ -62,6 +62,7 @@ obj-$(CONFIG_MACH_MT6779) += mdpm_v2/
 obj-$(CONFIG_MACH_MT3967) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6765) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6761) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+obj-$(CONFIG_MACH_MT6779) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
 obj-$(CONFIG_MACH_MT8163) += hps_v1/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/

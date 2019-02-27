@@ -42,7 +42,7 @@
 #include "sync_write.h"
 
 /* #include "mtk_thermal_typedefs.h" */
-#include "mtk_thermal.h"
+//#include "mtk_thermal.h"
 #include "mt_freqhopping.h"
 #include "mt_fhreg.h"
 #include "upmu_sw.h"
@@ -1037,10 +1037,10 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	seq_printf(m,
 	"g_cur_opp_freq = %d, g_cur_opp_volt = %d, g_cur_opp_vsram_volt = %d\n",
 		g_cur_opp_freq, g_cur_opp_volt, g_cur_opp_vsram_volt);
-	seq_printf(m, "real freq = %d, real volt = %d, real vsram_volt = %d"
+	seq_printf(m, "real freq = %d, real volt = %d, real vsram_volt = %d",
 			__mt_gpufreq_get_cur_freq(),
 			__mt_gpufreq_get_cur_volt(),
-			__mt_gpufreq_get_cur_vsram_volt())
+			__mt_gpufreq_get_cur_vsram_volt());
 	seq_printf(m, ", real vmdla_volt = %d, real vapu_volt = %d\n",
 			__mt_gpufreq_get_cur_vmdla_volt(),
 			__mt_gpufreq_get_cur_vapu_volt());
