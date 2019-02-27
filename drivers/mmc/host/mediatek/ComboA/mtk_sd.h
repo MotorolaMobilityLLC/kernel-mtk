@@ -279,6 +279,7 @@ struct msdc_saved_para {
 	u32 pb1;
 	u32 pb2;
 	u32 sdc_fifo_cfg;
+	u32 sdc_adv_cfg0;
 
 	/* msdc top reg  */
 	u32 emmc_top_control;
