@@ -1873,7 +1873,7 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	if (dst_mod_type == DST_MOD_REAL_TIME)
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0);
 	else
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 18);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_LOW_PREULTRA_TH, 0x18);
 
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_LOW(i),
@@ -1884,7 +1884,7 @@ static int ovl_golden_setting(enum DISP_MODULE_ENUM module,
 	if (dst_mod_type == DST_MOD_REAL_TIME)
 		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0);
 	else
-		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 90);
+		regval |= REG_FLD_VAL(FLD_OVL_RDMA_BUF_HIGH_PREULTRA_TH, 0x90);
 
 	for (i = 0; i < layer_num; i++)
 		DISP_REG_SET(cmdq, ovl_base + DISP_REG_OVL_RDMAn_BUF_HIGH(i),
