@@ -91,6 +91,12 @@ int imgsensor_dfs_ctrl(enum DFS_OPTION option, void *pbuff)
 		pm_qos_update_request(&imgsensor_qos, *(unsigned int *)pbuff);
 
 		break;
+	case DFS_RELEASE:
+		pr_debug(
+			"seninf release and set isp clk request to 0\n");
+		pm_qos_update_request(&imgsensor_qos, 0);
+
+		break;
 	case DFS_SUPPORTED_ISP_CLOCKS:
 	{
 		int result = 0;
