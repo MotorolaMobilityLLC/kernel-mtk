@@ -127,6 +127,7 @@ static const enum base_hw_issue *kbase_hw_get_issues_for_new_id(
 		   base_hw_issues_tMIx_r0p0_05dev0},
 		  {GPU_ID2_VERSION_MAKE(0, 0, 2), base_hw_issues_tMIx_r0p0},
 		  {GPU_ID2_VERSION_MAKE(0, 1, 0), base_hw_issues_tMIx_r0p1},
+		  {GPU_ID2_VERSION_MAKE(0, 0, 0xa), base_hw_issues_tMIx_r0p0},
 		  {U32_MAX /* sentinel value */, NULL} } },
 
 		{GPU_ID2_PRODUCT_THEX,
