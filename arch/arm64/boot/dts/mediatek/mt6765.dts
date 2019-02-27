@@ -881,9 +881,7 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			<0 0x10226000 0 0x1000>, /* EMI MPU */
 			<0 0x1022d000 0 0x1000>, /* CHA EMI */
 			<0 0x10235000 0 0x1000>; /* CHB EMI */
-		interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_LOW>, /* MPU */
-				<GIC_SPI 148 IRQ_TYPE_LEVEL_HIGH>, /* CGM TBD*/
-				<GIC_SPI 155 IRQ_TYPE_LEVEL_HIGH>; /* ELM TBD*/
+		interrupts = <GIC_SPI 144 IRQ_TYPE_LEVEL_LOW>; /* MPU */
 	};
 
 	apcldmain@1021b000 {
