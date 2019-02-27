@@ -19,6 +19,7 @@ obj-$(CONFIG_COMMON_CLK_MT2712_MFGCFG) += clk-mt2712-mfg.o
 obj-$(CONFIG_COMMON_CLK_MT2712_MMSYS) += clk-mt2712-mm.o
 obj-$(CONFIG_COMMON_CLK_MT2712_VDECSYS) += clk-mt2712-vdec.o
 obj-$(CONFIG_COMMON_CLK_MT2712_VENCSYS) += clk-mt2712-venc.o
+obj-$(CONFIG_COMMON_CLK_MT3967) += clk-mt3967.o clk-mt3967-pg.o clk-mtk-v1.o clk-mux.o clkchk-mt3967.o mt3967_clkmgr.o
 obj-$(CONFIG_COMMON_CLK_MT6758) += clk-mt6758.o clk-mt6758-pg.o clk-mtk-v1.o clk-mux.o
 obj-$(CONFIG_COMMON_CLK_MT6765) += clk-mt6765.o clk-mt6765-pg.o clk-mtk-v1.o clk-mux.o mt6765_clkmgr.o
 obj-$(CONFIG_COMMON_CLK_MT6761) += clk-mt6761.o clk-mt6761-pg.o clk-mtk-v1.o clk-mux.o mt6761_clkmgr.o
@@ -29,6 +30,7 @@ obj-y += clk-bringup.o
 ifeq ($(CONFIG_DEBUG_FS), y)
 obj-$(CONFIG_COMMON_CLK_MEDIATEK) += clkdbg.o
 obj-$(CONFIG_COMMON_CLK_MT2712) += clkdbg-mt2712.o
+obj-$(CONFIG_COMMON_CLK_MT3967) += clkdbg-mt3967.o
 obj-$(CONFIG_COMMON_CLK_MT6765) += clkdbg_mt6765.o clkchk-mt6765.o
 obj-$(CONFIG_COMMON_CLK_MT6761) += clkdbg_mt6761.o clkchk-mt6761.o
 endif
