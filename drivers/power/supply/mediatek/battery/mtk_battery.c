@@ -1540,6 +1540,19 @@ int battery_get_charger_zcv(void)
 	return zcv;
 }
 
+void fg_ocv_query_soc(int ocv)
+{
+	if (ocv > 50000 || ocv <= 0)
+		return;
+
+	gm.algo_req_ocv = ocv;
+	wakeup_fg_algo_cmd(
+		FG_INTR_KERNEL_CMD, FG_KERNEL_CMD_REQ_ALGO_DATA,
+		ocv);
+
+	bm_trace("[fg_ocv_query_soc] ocv:%d\n", ocv);
+}
+
 void exec_BAT_EC(int cmd, int param)
 {
 	int i;
@@ -2406,6 +2419,39 @@ void exec_BAT_EC(int cmd, int param)
 				cmd, param);
 		}
 		break;
+	case 784:
+		{
+			bm_err(
+				"exe_BAT_EC cmd %d,DAEMON_PID=%d\n",
+				cmd, gm.g_fgd_pid);
+		}
+		break;
+	case 785:
+		{
+			gm.bat_cycle_thr = param;
+			bm_err(
+				"exe_BAT_EC cmd %d,thr=%d\n",
+				cmd, gm.bat_cycle_thr);
+		}
+		break;
+	case 786:
+		{
+			gm.bat_cycle_ncar = param;
+
+			bm_err(
+				"exe_BAT_EC cmd %d,thr=%d\n",
+				cmd, gm.bat_cycle_ncar);
+		}
+		break;
+	case 787:
+		{
+			fg_ocv_query_soc(param);
+			bm_err(
+				"exe_BAT_EC cmd %d,[fg_ocv_query_soc]ocv=%d\n",
+				cmd, param);
+		}
+		break;
+
 
 	default:
 		bm_err(
@@ -2859,6 +2905,10 @@ static int battery_callback(
 	case CHARGER_NOTIFY_START_CHARGING:
 		{
 /* START CHARGING */
+			if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
+				gauge_get_hw_version() < GAUGE_HW_V2000)
+				fg_sw_bat_cycle_accu();
+
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
 			battery_update(&battery_main);
 		}
@@ -2922,6 +2972,8 @@ struct file *filp, unsigned int cmd, unsigned long arg)
 	}
 
 	switch (cmd) {
+	case BAT_STATUS_READ:
+	case ADC_CHANNEL_READ:
 	case Get_META_BAT_VOL:
 	case Get_META_BAT_SOC:
 	case Get_META_BAT_CAR_TUNE_VALUE:

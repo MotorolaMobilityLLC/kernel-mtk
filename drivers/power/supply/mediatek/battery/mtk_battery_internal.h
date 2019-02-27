@@ -114,6 +114,29 @@ enum gauge_hw_version {
 	GAUGE_HW_MAX
 };
 
+enum daemon_req_hw_data {
+	HW_INFO_NORETURN = 0,
+	HW_INFO_SHUTDOWN_CAR = 1,
+	HW_INFO_NCAR = 2,
+};
+
+enum daemon_send_algo_data {
+	ALGO_SOC = 0,
+	ALGO_C_D0_SOC = 1,
+	ALGO_V_D0_SOC = 2,
+	ALGO_C_SOC = 3,
+	ALGO_V_SOC = 4,
+	ALGO_QMAX_T_AGING = 5,
+	ALGO_SAVED_CAR = 6,
+	ALGO_AGING_FACTOR = 7,
+	ALGO_QMAX = 8,
+	ALGO_BAT_CYCLES = 9,
+	ALGO_NCAR = 10,
+	ALGO_OCV_mah = 11,
+	ALGO_OCV_Vtemp = 12,
+	ALGO_OCV_SOC = 13,
+};
+
 enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_PRINT_LOG,
 	FG_DAEMON_CMD_SET_DAEMON_PID,
@@ -212,6 +235,7 @@ enum Fg_kernel_cmds {
 	FG_KERNEL_CMD_DUMP_LOG,
 	FG_KERNEL_CMD_UISOC_UPDATE_TYPE,
 	FG_KERNEL_CMD_CHANG_LOGLEVEL,
+	FG_KERNEL_CMD_REQ_ALGO_DATA,
 
 	FG_KERNEL_CMD_FROM_USER_NUMBER
 
@@ -666,8 +690,21 @@ struct mtk_battery {
 	int fg_bat_tmp_int_ht;
 	int fg_bat_tmp_int_lt;
 
+/* battery cycle */
 	bool is_reset_battery_cycle;
+	int bat_cycle;
 	int bat_cycle_thr;
+	int bat_cycle_car;
+	int bat_cycle_ncar;
+
+/* cust req ocv data */
+	int algo_qmax;
+	int algo_req_ocv;
+	int algo_ocv_to_mah;
+	int algo_ocv_to_soc;
+	int algo_vtemp;
+
+	int aging_factor;
 
 	struct timespec uisoc_oldtime;
 
@@ -823,7 +860,8 @@ extern void fg_bat_temp_int_sw_check(void);
 extern void gm3_log_notify(unsigned int interrupt);
 extern void dump_gm3_log(void);
 extern void fg_update_sw_low_battery_check(unsigned int thd);
-
+extern void fg_sw_bat_cycle_accu(void);
+extern void fg_ocv_query_soc(int ocv);
 
 /* query function , review */
 extern struct BAT_EC_Struct *get_ec(void);
