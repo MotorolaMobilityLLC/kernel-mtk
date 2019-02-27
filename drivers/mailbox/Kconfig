@@ -146,8 +146,6 @@ config BCM_PDC_MBOX
 
 config MTK_CMDQ_MBOX
 	bool "MediaTek CMDQ Mailbox Support"
-	depends on ARM64 && ( ARCH_MEDIATEK || COMPILE_TEST )
-	select MTK_INFRACFG
 	help
 	  Say yes here to add support for the MediaTek Command Queue (CMDQ)
 	  mailbox driver. The CMDQ is used to help read/write registers with

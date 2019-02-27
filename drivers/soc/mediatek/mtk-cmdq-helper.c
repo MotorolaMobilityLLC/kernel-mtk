@@ -16,6 +16,7 @@
 #include <linux/of_address.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
 
+
 #define CMDQ_ARG_A_WRITE_MASK	0xffff
 #define CMDQ_WRITE_ENABLE_MASK	BIT(0)
 #define CMDQ_EOC_IRQ_EN		BIT(0)
@@ -54,6 +55,14 @@ u32 cmdq_subsys_id_to_base(int id)
 }
 EXPORT_SYMBOL(cmdq_subsys_id_to_base);
 
+#ifdef CMDQ_MEMORY_JUMP
+int cmdq_pkt_realloc_cmd_buffer(struct cmdq_pkt *pkt, size_t size)
+{
+	cmdq_log("not support realloc cmd buffer");
+	return 0;
+}
+EXPORT_SYMBOL(cmdq_pkt_realloc_cmd_buffer);
+#else
 int cmdq_pkt_realloc_cmd_buffer(struct cmdq_pkt *pkt, size_t size)
 {
 	void *new_buf;
@@ -66,6 +75,7 @@ int cmdq_pkt_realloc_cmd_buffer(struct cmdq_pkt *pkt, size_t size)
 	return 0;
 }
 EXPORT_SYMBOL(cmdq_pkt_realloc_cmd_buffer);
+#endif
 
 struct cmdq_base *cmdq_register_device(struct device *dev)
 {
@@ -111,6 +121,32 @@ void cmdq_mbox_destroy(struct cmdq_client *client)
 }
 EXPORT_SYMBOL(cmdq_mbox_destroy);
 
+#ifdef CMDQ_MEMORY_JUMP
+int cmdq_pkt_create(struct cmdq_pkt **pkt_ptr)
+{
+	struct cmdq_pkt *pkt;
+
+	pkt = kzalloc(sizeof(*pkt), GFP_KERNEL);
+	if (!pkt)
+		return -ENOMEM;
+	INIT_LIST_HEAD(&pkt->buf);
+	*pkt_ptr = pkt;
+	return 0;
+}
+
+void cmdq_pkt_destroy(struct cmdq_pkt *pkt)
+{
+	struct cmdq_pkt_buffer *buf, *tmp;
+
+	list_for_each_entry_safe(buf, tmp, &pkt->buf, list_entry) {
+		list_del(&buf->list_entry);
+		kfree(buf->va_base);
+		kfree(buf);
+	}
+	kfree(pkt);
+}
+EXPORT_SYMBOL(cmdq_pkt_destroy);
+#else
 int cmdq_pkt_create(struct cmdq_pkt **pkt_ptr)
 {
 	struct cmdq_pkt *pkt;
@@ -135,7 +171,59 @@ void cmdq_pkt_destroy(struct cmdq_pkt *pkt)
 	kfree(pkt);
 }
 EXPORT_SYMBOL(cmdq_pkt_destroy);
+#endif
 
+#ifdef CMDQ_MEMORY_JUMP
+u64 *cmdq_pkt_get_va_by_offset(struct cmdq_pkt *pkt, size_t offset)
+{
+	size_t offset_remaind = offset;
+	struct cmdq_pkt_buffer *buf;
+
+	list_for_each_entry(buf, &pkt->buf, list_entry) {
+		if (offset_remaind >= CMDQ_CMD_BUFFER_SIZE) {
+			offset_remaind -= CMDQ_CMD_BUFFER_SIZE;
+			continue;
+		}
+		return (u64 *)(buf->va_base + offset_remaind);
+	}
+
+	return NULL;
+}
+EXPORT_SYMBOL(cmdq_pkt_get_va_by_offset);
+
+dma_addr_t cmdq_pkt_get_pa_by_offset(struct cmdq_pkt *pkt, u32 offset)
+{
+	u32 offset_remaind = offset;
+	struct cmdq_pkt_buffer *buf;
+
+	list_for_each_entry(buf, &pkt->buf, list_entry) {
+		if (offset_remaind >= CMDQ_CMD_BUFFER_SIZE) {
+			offset_remaind -= CMDQ_CMD_BUFFER_SIZE;
+			continue;
+		}
+
+		return buf->pa_base + offset_remaind;
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL(cmdq_pkt_get_pa_by_offset);
+
+static bool cmdq_pkt_is_finalized(struct cmdq_pkt *pkt)
+{
+	u64 *expect_eoc;
+
+	if (pkt->cmd_buf_size < CMDQ_INST_SIZE * 2)
+		return false;
+
+	expect_eoc = cmdq_pkt_get_va_by_offset(pkt,
+		pkt->cmd_buf_size - CMDQ_INST_SIZE * 2);
+	if (expect_eoc && *expect_eoc == CMDQ_EOC_CMD)
+		return true;
+
+	return false;
+}
+#else
 static bool cmdq_pkt_is_finalized(struct cmdq_pkt *pkt)
 {
 	u64 *expect_eoc;
@@ -149,7 +237,31 @@ static bool cmdq_pkt_is_finalized(struct cmdq_pkt *pkt)
 
 	return false;
 }
+#endif
 
+#ifdef CMDQ_MEMORY_JUMP
+static int cmdq_pkt_append_command(struct cmdq_pkt *pkt, enum cmdq_code code,
+	u32 arg_a, u32 arg_b)
+{
+	u64 *cmd_ptr;
+	int err;
+	struct cmdq_pkt_buffer *buf;
+
+	if (WARN_ON(cmdq_pkt_is_finalized(pkt)))
+		return -EBUSY;
+	if (unlikely(pkt->cmd_buf_size + CMDQ_INST_SIZE > pkt->buf_size)) {
+		err = cmdq_pkt_realloc_cmd_buffer(pkt, pkt->buf_size << 1);
+		if (err < 0)
+			return err;
+	}
+	buf = list_first_entry(&pkt->buf, typeof(*buf), list_entry);
+	cmd_ptr = buf->va_base + pkt->cmd_buf_size;
+	(*cmd_ptr) = (u64)((code << CMDQ_OP_CODE_SHIFT) | arg_a) << 32 | arg_b;
+	pkt->avail_buf_size -= CMDQ_INST_SIZE;
+	pkt->cmd_buf_size += CMDQ_INST_SIZE;
+	return 0;
+}
+#else
 static int cmdq_pkt_append_command(struct cmdq_pkt *pkt, enum cmdq_code code,
 				   u32 arg_a, u32 arg_b)
 {
@@ -168,6 +280,7 @@ static int cmdq_pkt_append_command(struct cmdq_pkt *pkt, enum cmdq_code code,
 	pkt->cmd_buf_size += CMDQ_INST_SIZE;
 	return 0;
 }
+#endif
 
 int cmdq_pkt_read(struct cmdq_pkt *pkt,
 			struct cmdq_base *base, u32 offset, u32 writeAddress,
@@ -196,7 +309,7 @@ int cmdq_pkt_read(struct cmdq_pkt *pkt,
 				((destRegId & 0x1f) << 16) | (6 << 21),
 				valueRegId);
 
-	pr_debug("COMMAND: copy reg:0x%08x to phys:%pa, GPR(%d, %d)\n",
+	cmdq_log("COMMAND: copy reg:0x%08x to phys:%pa, GPR(%d, %d)",
 		arg_a, &writeAddress, valueRegId, destRegId);
 	return ret;
 }
@@ -252,7 +365,11 @@ int cmdq_pkt_poll_mask(struct cmdq_pkt *pkt, u32 value,
 }
 EXPORT_SYMBOL(cmdq_pkt_poll_mask);
 
+
 const u32 cmdq_event_value_8173[CMDQ_MAX_EVENT] = {
+#if 1
+};
+#else
 	/* MDP start of frame(SOF) events */
 	[CMDQ_EVENT_MDP_RDMA0_SOF] = 0,
 	[CMDQ_EVENT_MDP_RDMA1_SOF] = 1,
@@ -306,8 +423,12 @@ const u32 cmdq_event_value_8173[CMDQ_MAX_EVENT] = {
 	[CMDQ_EVENT_DISP_RDMA1_UNDERRUN] = 64,
 	[CMDQ_EVENT_DISP_RDMA2_UNDERRUN] = 65,
 };
+#endif
 
 const u32 cmdq_event_value_2712[CMDQ_MAX_EVENT] = {
+#if 1
+};
+#else
 	[CMDQ_EVENT_MDP_RDMA0_SOF] = 0,
 	[CMDQ_EVENT_MDP_RDMA1_SOF] = 1,
 	[CMDQ_EVENT_MDP_TDSHP0_SOF] = 5,
@@ -391,6 +512,9 @@ const u32 cmdq_event_value_2712[CMDQ_MAX_EVENT] = {
 	[CMDQ_EVENT_DISP_RDMA1_UNDERRUN] = 90,
 	[CMDQ_EVENT_DISP_RDMA2_UNDERRUN] = 91,
 };
+#endif
+
+const u32 cmdq_event_value_common[CMDQ_MAX_EVENT] = {};
 
 const u32 *cmdq_event_value;
 
@@ -441,7 +565,7 @@ static int cmdq_pkt_finalize(struct cmdq_pkt *pkt)
 	if (err < 0)
 		return err;
 
-	pr_debug("finalize: add EOC and JUMP cmd\n");
+	cmdq_log("finalize: add EOC and JUMP cmd");
 
 	return 0;
 }
@@ -458,24 +582,26 @@ int cmdq_pkt_flush_async(struct cmdq_client *client, struct cmdq_pkt *pkt,
 	pkt->cb.cb = cb;
 	pkt->cb.data = data;
 
-	mbox_send_message(client->chan, pkt);
+	err = mbox_send_message(client->chan, pkt);
 	/* We can send next packet immediately, so just call txdone. */
 	mbox_client_txdone(client->chan, 0);
 
-	return 0;
+	return err;
 }
 EXPORT_SYMBOL(cmdq_pkt_flush_async);
 
 struct cmdq_flush_completion {
 	struct completion cmplt;
-	bool err;
+	s32 err;
 };
 
 static void cmdq_pkt_flush_cb(struct cmdq_cb_data data)
 {
 	struct cmdq_flush_completion *cmplt = data.data;
 
-	cmplt->err = data.err;
+	cmdq_log("err=%d", data.err);
+
+	cmplt->err = !data.err ? false : true;
 	complete(&cmplt->cmplt);
 }
 
@@ -484,14 +610,14 @@ int cmdq_pkt_flush(struct cmdq_client *client, struct cmdq_pkt *pkt)
 	struct cmdq_flush_completion cmplt;
 	int err;
 
-	pr_debug("cmdq flush\n");
+	cmdq_log("start");
 
 	init_completion(&cmplt.cmplt);
 	err = cmdq_pkt_flush_async(client, pkt, cmdq_pkt_flush_cb, &cmplt);
 	if (err < 0)
 		return err;
 	wait_for_completion(&cmplt.cmplt);
-	pr_debug("cmdq done, err=%u\n", cmplt.err);
+	cmdq_log("done, err=%u", cmplt.err);
 	return cmplt.err ? -EFAULT : 0;
 }
 EXPORT_SYMBOL(cmdq_pkt_flush);

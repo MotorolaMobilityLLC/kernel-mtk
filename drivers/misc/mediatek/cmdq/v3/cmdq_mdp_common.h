@@ -15,8 +15,7 @@
 #define __CMDQ_MDP_COMMON_H__
 
 #include "cmdq_def.h"
-#include "cmdq_core.h"
-
+#include "cmdq_helper_ext.h"
 #include <linux/types.h>
 
 /* dump mmsys config */
@@ -67,10 +66,13 @@ typedef void (*CmdqTestcaseClkmgrMdp) (void);
 
 typedef const char*(*CmdqDispatchModule) (u64 engineFlag);
 
-typedef void (*CmdqTrackTask) (const struct TaskStruct *pTask);
+typedef void (*CmdqTrackTask) (const struct cmdqRecStruct *task);
 
 typedef const char *(*CmdqPraseErrorModByEngFlag) (
-	const struct TaskStruct *task);
+	const struct cmdqRecStruct *task);
+
+typedef const char *(*CmdqPraseHandleErrorModByEngFlag) (
+	const struct cmdqRecStruct *handle);
 
 typedef u64 (*CmdqMdpGetEngineGroupBits) (u32 engine_group);
 
@@ -98,6 +100,7 @@ struct cmdqMDPFuncStruct {
 	CmdqDispatchModule dispatchModule;
 	CmdqTrackTask trackTask;
 	CmdqPraseErrorModByEngFlag parseErrModByEngFlag;
+	CmdqPraseHandleErrorModByEngFlag parseHandleErrModByEngFlag;
 	CmdqMdpGetEngineGroupBits getEngineGroupBits;
 	CmdqErrorResetCB errorReset;
 	CmdqMdpEnableCommonClock mdpEnableCommonClock;
@@ -113,14 +116,40 @@ struct cmdqMDPFuncStruct {
 /* dispatch key format is MDP_(ThreadName) */
 #define MDP_DISPATCH_KEY_STR_LEN (TASK_COMM_LEN + 5)
 
-struct cmdqMDPTaskStruct {
-	char callerName[TASK_COMM_LEN];
-	char userDebugStr[DEBUG_STR_LEN];
-};
+/* MDP common kernel logic */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void cmdq_mdp_fix_command_scenario_for_user_space(
+	struct cmdqCommandStruct *command);
+bool cmdq_mdp_is_request_from_user_space(
+	const enum CMDQ_SCENARIO_ENUM scenario);
+s32 cmdq_mdp_query_usage(s32 *counters);
+
+void cmdq_mdp_reset_resource(void);
+void cmdq_mdp_dump_resource(void);
+void cmdq_mdp_init_resource(u32 engine_id,
+	enum cmdq_event res_event);
+void cmdq_mdp_lock_resource(u64 engine_flag, bool from_notify);
+bool cmdq_mdp_acquire_resource(enum cmdq_event res_event,
+	u64 *engine_flag_out);
+void cmdq_mdp_release_resource(enum cmdq_event res_event,
+	u64 *engine_flag_out);
+void cmdq_mdp_set_resource_callback(enum cmdq_event res_event,
+	CmdqResourceAvailableCB res_available,
+	CmdqResourceReleaseCB res_release);
+void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle);
+s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
+	struct cmdqRecStruct **handle_out);
+s32 cmdq_mdp_flush_async_impl(struct cmdqRecStruct *handle);
+struct cmdqRecStruct *cmdq_mdp_get_valid_handle(unsigned long job);
+s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
+	struct cmdqRegValueStruct *results);
+s32 cmdq_mdp_flush(struct cmdqCommandStruct *desc, bool user_space);
+void cmdq_mdp_suspend(void);
+void cmdq_mdp_resume(void);
+void cmdq_mdp_release_task_by_file_node(void *file_node);
+void cmdq_mdp_init(void);
+
+/* Platform dependent function */
 
 void cmdq_mdp_virtual_function_setting(void);
 void cmdq_mdp_map_mmsys_VA(void);
@@ -152,7 +181,10 @@ void cmdq_mdp_dump_wdma(const unsigned long base, const char *label);
 
 void cmdq_mdp_check_TF_address(unsigned int mva, char *module);
 const char *cmdq_mdp_parse_error_module_by_hwflag(
-	const struct TaskStruct *task);
+	const struct cmdqRecStruct *task);
+
+const char *cmdq_mdp_parse_handle_error_module_by_hwflag(
+	const struct cmdqRecStruct *handle);
 
 /* Platform dependent function */
 
@@ -175,7 +207,4 @@ void testcase_clkmgr_mdp(void);
 /* Platform virtual function setting */
 void cmdq_mdp_platform_function_setting(void);
 
-#ifdef __cplusplus
-}
-#endif
 #endif				/* __CMDQ_MDP_COMMON_H__ */
