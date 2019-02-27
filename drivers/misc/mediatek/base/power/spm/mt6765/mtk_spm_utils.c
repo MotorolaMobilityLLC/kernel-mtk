@@ -21,12 +21,14 @@
 #include <mtk_spm_internal.h>
 #include <mtk_spm_suspend_internal.h>
 
-static int local_spm_load_firmware_status = -1;
+static int local_spm_load_firmware_status = 1;
 int spm_load_firmware_status(void)
 {
-	if (local_spm_load_firmware_status == -1)
+	if (local_spm_load_firmware_status == 1)
 		local_spm_load_firmware_status =
 			SMC_CALL(FIRMWARE_STATUS, 0, 0, 0);
+
+	/* -1 not init, 0: not loaded, 1: loaded, 2: loaded and kicked */
 	return local_spm_load_firmware_status;
 }
 
