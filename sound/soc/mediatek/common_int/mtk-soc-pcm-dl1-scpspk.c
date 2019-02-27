@@ -992,7 +992,7 @@ static int mtk_pcm_dl1spk_copy(struct snd_pcm_substream *substream, int channel,
 		acktype = AUDIO_IPI_MSG_NEED_ACK;
 
 	spkproc_service_ipicmd_send(
-		AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_DIRECT_SEND,
+		AUDIO_IPI_PAYLOAD, acktype,
 		SPK_PROTECT_DLCOPY, payloadlen, 0, (char *)ipi_payload_buf);
 #endif
 	return ret;
