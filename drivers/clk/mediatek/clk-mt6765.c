@@ -2635,6 +2635,7 @@ void mp_enter_suspend(int id, int suspend)
 
 void pll_if_on(void)
 {
+#if 0
 	if (clk_readl(ARMPLL_CON0) & 0x1)
 		pr_notice("suspend warning: ARMPLL is on!!!\n");
 	if (clk_readl(ARMPLL_L_CON0) & 0x1)
@@ -2655,6 +2656,7 @@ void pll_if_on(void)
 		pr_notice("suspend warning: MAINPLL is on!!!\n");
 	if (clk_readl(MPLL_CON0) & 0x1)
 		pr_notice("suspend warning: MPLL is on!!!\n");
+#endif
 }
 
 void clock_force_on(void)
