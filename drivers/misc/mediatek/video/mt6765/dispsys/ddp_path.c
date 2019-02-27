@@ -833,6 +833,11 @@ int ddp_path_top_clock_off(void)
 #ifdef CONFIG_MTK_IOMMU_V2
 	struct disp_iommu_device *iommu_dev;
 	int larb_idx = 0;
+
+	iommu_dev = disp_get_iommu_dev();
+
+	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
+		mtk_smi_larb_put(&iommu_dev->larb_pdev[larb_idx]->dev);
 #endif
 
 	ddp_clk_disable_unprepare(CLK_MM_26M);
@@ -842,13 +847,6 @@ int ddp_path_top_clock_off(void)
 	ddp_clk_disable_unprepare(CLK_SMI_COMMON);
 	/*ddp_clk_disable_unprepare(TOP_26M);*/
 	ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
-
-#ifdef CONFIG_MTK_IOMMU_V2
-	iommu_dev = disp_get_iommu_dev();
-
-	for (larb_idx = 0; larb_idx < DISP_LARB_COUNT; larb_idx++)
-		mtk_smi_larb_put(&iommu_dev->larb_pdev[larb_idx]->dev);
-#endif
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK))
 		;/*ddp_clk_disable_unprepare(MM_VENCPLL);*/

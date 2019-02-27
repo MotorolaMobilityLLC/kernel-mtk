@@ -230,8 +230,10 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 
 	ion_phys(client, handle, (unsigned long int *)mva,
 		(size_t *)&mva_size);
-	DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08lx\n",
-		handle, *mva);
+
+	if (*mva == 0)
+		DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08lx\n",
+			handle, *mva);
 #endif
 	return 0;
 }
