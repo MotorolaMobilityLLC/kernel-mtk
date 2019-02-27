@@ -255,7 +255,4 @@ extern int hw_charger_type_detection(void);
 /* spm utility */
 extern int slp_get_wake_reason(void);
 
-/* spm utility */
-extern int slp_get_wake_reason(void);
-
 #endif /* _bq24297_SW_H_ */

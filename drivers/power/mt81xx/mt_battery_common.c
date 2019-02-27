@@ -14,7 +14,6 @@
 #include <linux/cdev.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/device.h>
 #include <linux/fs.h>
 #include <linux/fs.h>
 #include <linux/fs.h>
@@ -1714,6 +1713,7 @@ static void mt_battery_Sync_UI_Percentage_to_Real(void)
 static void battery_update(struct battery_data *bat_data)
 {
 	struct power_supply *bat_psy = bat_data->psy;
+
 	bool resetBatteryMeter = false;
 
 	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
@@ -2410,7 +2410,7 @@ static void mt_battery_thermal_check(void)
 		    BMT_status.temperature <
 			    p_bat_charging_data->min_discharge_temperature) {
 			struct battery_data *bat_data = &battery_main;
-			struct power_supply *bat_psy = &bat_data->psy;
+			struct power_supply *bat_psy = bat_data->psy;
 
 			pr_debug("[Battery] Tbat(%d)out of range, power down device.\n",
 				BMT_status.temperature);
@@ -2442,7 +2442,7 @@ static void mt_battery_thermal_check(void)
 				struct battery_data *bat_data =
 					&battery_main;
 				struct power_supply *bat_psy =
-					&bat_data->psy;
+					bat_data->psy;
 
 				pr_debug("[Battery] Tbat(%d)>=%d, system need power down.\n",
 					p_bat_charging_data
