@@ -21,3 +21,6 @@ obj-$(CONFIG_MTK_RT_THROTTLE_MON) += rt_monitor.o
 
 # sysfs interface for user to get EAS related info
 obj-y += eas_plus.o
+
+# For CPU topology to user space
+obj-y += sched_ctl.o

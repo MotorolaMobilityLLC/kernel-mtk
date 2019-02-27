@@ -6441,6 +6441,10 @@ find_idlest_cpu(struct sched_group *group, struct task_struct *p, int this_cpu)
 
 	/* Traverse only the allowed CPUs */
 	for_each_cpu_and(i, sched_group_cpus(group), tsk_cpus_allowed(p)) {
+
+		if (cpu_isolated(i))
+			continue;
+
 		if (idle_cpu(i)) {
 			struct rq *rq = cpu_rq(i);
 			struct cpuidle_state *idle = idle_get_state(rq);
@@ -6834,6 +6838,9 @@ static inline int find_best_target(struct task_struct *p, int *backup_cpu,
 			unsigned long wake_util, new_util;
 
 			if (!cpu_online(i))
+				continue;
+
+			if (cpu_isolated(i))
 				continue;
 
 			if (walt_cpu_high_irqload(i))
@@ -8521,6 +8528,9 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 			struct sched_group_capacity *sgc;
 			struct rq *rq = cpu_rq(cpu);
 
+			if (cpumask_test_cpu(cpu, cpu_isolated_mask))
+				continue;
+
 			/*
 			 * build_sched_domains() -> init_sched_groups_capacity()
 			 * gets here before we've attached the domains to the
@@ -8551,8 +8561,11 @@ void update_group_capacity(struct sched_domain *sd, int cpu)
 		group = child->groups;
 		do {
 			struct sched_group_capacity *sgc = group->sgc;
+			cpumask_t *cpus = sched_group_cpus(group);
 
-			capacity += sgc->capacity;
+			/* Revisit this later. This won't work for MT domain */
+			if (!cpu_isolated(cpumask_first(cpus)))
+				capacity += sgc->capacity;
 			max_capacity = max(sgc->max_capacity, max_capacity);
 			min_capacity = min(sgc->min_capacity, min_capacity);
 			group = group->next;
@@ -8742,6 +8755,9 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 	for_each_cpu_and(i, sched_group_cpus(group), env->cpus) {
 		struct rq *rq = cpu_rq(i);
 
+		if (cpu_isolated(i))
+			continue;
+
 		/* if we are entering idle and there are CPUs with
 		 * their tick stopped, do an update for them
 		 */
@@ -8799,17 +8815,28 @@ static inline void update_sg_lb_stats(struct lb_env *env,
 			*intra_overutil = true;
 	}
 
-	/* Adjust by relative CPU capacity of the group */
-	sgs->group_capacity = group->sgc->capacity;
-	sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) / sgs->group_capacity;
+	/* Isolated CPU has no weight */
+	if (!group->group_weight) {
+		sgs->group_capacity = 0;
+		sgs->avg_load = 0;
+		sgs->group_no_capacity = 1;
+		sgs->group_type = group_other;
+		sgs->group_weight = group->group_weight;
+	} else {
+		/* Adjust by relative CPU capacity of the group */
+		sgs->group_capacity = group->sgc->capacity;
+		sgs->avg_load = (sgs->group_load*SCHED_CAPACITY_SCALE) /
+							sgs->group_capacity;
+
+		sgs->group_weight = group->group_weight;
+
+		sgs->group_no_capacity = group_is_overloaded(env, sgs);
+		sgs->group_type = group_classify(group, sgs);
+	}
 
 	if (sgs->sum_nr_running)
-		sgs->load_per_task = sgs->sum_weighted_load / sgs->sum_nr_running;
-
-	sgs->group_weight = group->group_weight;
-
-	sgs->group_no_capacity = group_is_overloaded(env, sgs);
-	sgs->group_type = group_classify(group, sgs);
+		sgs->load_per_task =
+			sgs->sum_weighted_load / sgs->sum_nr_running;
 }
 
 /**
@@ -9489,6 +9516,15 @@ static int need_active_balance(struct lb_env *env)
 
 static int active_load_balance_cpu_stop(void *data);
 
+static int group_balance_cpu_not_isolated(struct sched_group *sg)
+{
+	cpumask_t cpus;
+
+	cpumask_and(&cpus, sched_group_cpus(sg), sched_group_mask(sg));
+	cpumask_andnot(&cpus, &cpus, cpu_isolated_mask);
+	return cpumask_first(&cpus);
+}
+
 static int should_we_balance(struct lb_env *env)
 {
 	struct sched_group *sg = env->sd->groups;
@@ -9506,7 +9542,8 @@ static int should_we_balance(struct lb_env *env)
 	sg_mask = sched_group_mask(sg);
 	/* Try to find first idle cpu */
 	for_each_cpu_and(cpu, sg_cpus, env->cpus) {
-		if (!cpumask_test_cpu(cpu, sg_mask) || !idle_cpu(cpu))
+		if (!cpumask_test_cpu(cpu, sg_mask) || !idle_cpu(cpu) ||
+			cpu_isolated(cpu))
 			continue;
 
 		balance_cpu = cpu;
@@ -9514,7 +9551,7 @@ static int should_we_balance(struct lb_env *env)
 	}
 
 	if (balance_cpu == -1)
-		balance_cpu = group_balance_cpu(sg);
+		balance_cpu = group_balance_cpu_not_isolated(sg);
 
 	/*
 	 * First idle cpu or the first cpu(busiest) in this sched group
@@ -9724,7 +9761,8 @@ more_balance:
 			 * ->active_balance_work.  Once set, it's cleared
 			 * only after active load balance is finished.
 			 */
-			if (!busiest->active_balance) {
+			if (!busiest->active_balance &&
+				!cpu_isolated(cpu_of(busiest))) {
 				busiest->active_balance = 1;
 				busiest->push_cpu = this_cpu;
 				active_balance = 1;
@@ -9833,6 +9871,9 @@ static int idle_balance(struct rq *this_rq)
 	int pulled_task = 0;
 	u64 curr_cost = 0;
 	long removed_util=0;
+
+	if (cpu_isolated(this_cpu))
+		return 0;
 
 	/*
 	 * We must set idle_stamp _before_ calling idle_balance(), such that we
@@ -10073,16 +10114,21 @@ static void nohz_balancer_kick(void)
 	return;
 }
 
+void nohz_balance_clear_nohz_mask(int cpu)
+{
+	if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
+		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+		atomic_dec(&nohz.nr_cpus);
+	}
+}
+
 void nohz_balance_exit_idle(unsigned int cpu)
 {
 	if (unlikely(test_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu)))) {
 		/*
 		 * Completely isolated CPUs don't ever set, so we must test.
 		 */
-		if (likely(cpumask_test_cpu(cpu, nohz.idle_cpus_mask))) {
-			cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
-			atomic_dec(&nohz.nr_cpus);
-		}
+		nohz_balance_clear_nohz_mask(cpu);
 		clear_bit(NOHZ_TICK_STOPPED, nohz_flags(cpu));
 	}
 }
@@ -10139,7 +10185,7 @@ void nohz_balance_enter_idle(int cpu)
 	/*
 	 * If we're a completely isolated CPU, we don't play.
 	 */
-	if (on_null_domain(cpu_rq(cpu)))
+	if (on_null_domain(cpu_rq(cpu)) || cpu_isolated(cpu))
 		return;
 
 	cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
@@ -10156,7 +10202,13 @@ static DEFINE_SPINLOCK(balancing);
  */
 void update_max_interval(void)
 {
-	max_load_balance_interval = HZ*num_online_cpus()/10;
+	cpumask_t avail_mask;
+	unsigned int available_cpus;
+
+	cpumask_andnot(&avail_mask, cpu_online_mask, cpu_isolated_mask);
+	available_cpus = cpumask_weight(&avail_mask);
+
+	max_load_balance_interval = HZ*available_cpus/10;
 }
 
 /*
@@ -10281,12 +10333,15 @@ static void nohz_idle_balance(struct rq *this_rq, enum cpu_idle_type idle)
 	/* Earliest time when we have to do rebalance again */
 	unsigned long next_balance = jiffies + 60*HZ;
 	int update_next_balance = 0;
+	cpumask_t cpus;
 
 	if (idle != CPU_IDLE ||
 	    !test_bit(NOHZ_BALANCE_KICK, nohz_flags(this_cpu)))
 		goto end;
 
-	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
+	cpumask_andnot(&cpus, nohz.idle_cpus_mask, cpu_isolated_mask);
+
+	for_each_cpu(balance_cpu, &cpus) {
 		if (balance_cpu == this_cpu || !idle_cpu(balance_cpu))
 			continue;
 
@@ -10461,8 +10516,10 @@ static __latent_entropy void run_rebalance_domains(struct softirq_action *h)
  */
 void trigger_load_balance(struct rq *rq)
 {
-	/* Don't need to rebalance while attached to NULL domain */
-	if (unlikely(on_null_domain(rq)))
+	/* Don't need to rebalance while attached to NULL domain or
+	 * cpu is isolated.
+	 */
+	if (unlikely(on_null_domain(rq)) || cpu_isolated(cpu_of(rq)))
 		return;
 
 	if (time_after_eq(jiffies, rq->next_balance))
