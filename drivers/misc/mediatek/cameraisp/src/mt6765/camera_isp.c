@@ -4165,7 +4165,11 @@ static signed int ISP_ReadReg(struct ISP_REG_IO_STRUCT *pRegIo)
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	struct ISP_REG_STRUCT *pData = (struct ISP_REG_STRUCT *)pRegIo->pData;
 
-	module = pData->module;
+	if (get_user(module, (unsigned int *)&pData->module) != 0) {
+		pr_err("get_user failed\n");
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
 	switch (module) {
 	case ISP_CAM_A_IDX:
