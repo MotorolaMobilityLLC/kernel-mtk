@@ -358,9 +358,6 @@ extern int sched_isolate_count(const cpumask_t *mask, bool include_offline);
 extern int sched_isolate_cpu(int cpu);
 extern int sched_deisolate_cpu(int cpu);
 extern int sched_deisolate_cpu_unlocked(int cpu);
-#if 0
-extern void update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask);
-#endif
 #else
 static inline int sched_isolate_count(const cpumask_t *mask,
 				      bool include_offline)
