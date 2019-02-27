@@ -77,20 +77,13 @@ static inline void __mt_update_tracing_mark_write_addr(void)
 		= kallsyms_lookup_name("tracing_mark_write");
 }
 
-static inline void lhd_kernel_trace_begin(char *name, int id, int min, int max)
+static inline void lhd_kernel_trace(char *name, int id, int min, int max)
 {
 	__mt_update_tracing_mark_write_addr();
 	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "B|%d|%s|%d|%d|%d\n",
-			 current->tgid, name, id, min, max);
-	preempt_enable();
-}
-
-static inline void lhd_kernel_trace_end(void)
-{
-	__mt_update_tracing_mark_write_addr();
-	preempt_disable();
-	event_trace_printk(tracing_mark_write_addr, "E\n");
+	event_trace_printk(tracing_mark_write_addr,
+			"boost_controller: %d %s %d %d %d\n",
+			current->tgid, name, id, min, max);
 	preempt_enable();
 }
 
@@ -160,16 +153,12 @@ int update_userlimit_cpu_freq(int kicker, int num_cluster
 			i, current_freq[i].min, current_freq[i].max);
 		}
 #ifdef CONFIG_TRACING
-		lhd_kernel_trace_begin("current_freq",
-			 i, current_freq[i].min, current_freq[i].max);
+		lhd_kernel_trace("current_freq",
+				i, current_freq[i].min, current_freq[i].max);
 #endif
 	}
 
 	mt_ppm_userlimit_cpu_freq(nr_ppm_clusters, final_freq);
-
-#ifdef CONFIG_TRACING
-	lhd_kernel_trace_end();
-#endif
 
 ret_update:
 	kfree(final_freq);
@@ -178,6 +167,7 @@ ret_update:
 
 	return 0;
 }
+EXPORT_SYMBOL(update_userlimit_cpu_freq);
 
 
 
@@ -263,7 +253,85 @@ static const struct file_operations perfmgr_perfserv_freq_fops = {
 	.release = single_release,
 };
 
-/*************************/
+/***************************************/
+static ssize_t perfmgr_boot_freq_write(struct file *filp,
+		const char __user *ubuf, size_t cnt, loff_t *pos)
+{
+	int i = 0, data;
+	struct ppm_limit_data *freq_limit;
+	unsigned int arg_num = nr_ppm_clusters * 2; /* for min and max */
+	char *tok, *tmp;
+	char *buf = lbc_copy_from_user_for_proc(ubuf, cnt);
+
+	freq_limit = kcalloc(nr_ppm_clusters,
+			sizeof(struct ppm_limit_data), GFP_KERNEL);
+	if (!freq_limit)
+		goto out;
+
+	tmp = buf;
+	while ((tok = strsep(&tmp, " ")) != NULL) {
+		if (i == arg_num) {
+			pr_debug("@%s: number of arguments > %d!\n",
+					__func__, arg_num);
+			goto out;
+		}
+
+		if (kstrtoint(tok, 10, &data)) {
+			pr_debug("@%s: Invalid input: %s\n", __func__, tok);
+			goto out;
+		} else {
+			if (i % 2) /* max */
+				freq_limit[i/2].max =
+					data == -1 ? -1 :
+					mt_cpufreq_get_freq_by_idx(i / 2, data);
+			else /* min */
+				freq_limit[i/2].min =
+					data == -1 ? -1 :
+					mt_cpufreq_get_freq_by_idx(i / 2, data);
+			i++;
+		}
+	}
+
+	if (i < arg_num)
+		pr_debug("@%s: number of arguments < %d!\n",
+				__func__, arg_num);
+	else
+		update_userlimit_cpu_freq(PPM_KIR_BOOT,
+				nr_ppm_clusters, freq_limit);
+
+out:
+	free_page((unsigned long)buf);
+	kfree(freq_limit);
+	return cnt;
+
+}
+
+static int perfmgr_boot_freq_show(struct seq_file *m, void *v)
+{
+	int i;
+
+	for (i = 0; i < nr_ppm_clusters; i++)
+		seq_printf(m, "cluster %d min:%d max:%d\n",
+				i, freq_set[PPM_KIR_BOOT][i].min,
+				freq_set[PPM_KIR_BOOT][i].max);
+
+	return 0;
+}
+
+static int perfmgr_boot_freq_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, perfmgr_boot_freq_show, inode->i_private);
+}
+
+static const struct file_operations perfmgr_boot_freq_fops = {
+	.open = perfmgr_boot_freq_open,
+	.write = perfmgr_boot_freq_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+/***************************************/
 static int perfmgr_current_freq_show(struct seq_file *m, void *v)
 {
 	int i;
@@ -348,6 +416,8 @@ static int __init perfmgr_legacy_boost_init(void)
 
 	proc_create("perfserv_freq", 0644, boost_dir,
 			 &perfmgr_perfserv_freq_fops);
+	proc_create("boot_freq", 0644, boost_dir,
+			&perfmgr_boot_freq_fops);
 	proc_create("current_freq", 0644, boost_dir,
 			 &perfmgr_current_freq_fops);
 	proc_create("perfmgr_log", 0644, boost_dir,
