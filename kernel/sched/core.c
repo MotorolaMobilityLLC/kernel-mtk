@@ -84,6 +84,8 @@
 #include <asm/paravirt.h>
 #endif
 
+#include <mt-plat/aee.h>
+
 #include "sched.h"
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
@@ -3439,6 +3441,8 @@ static noinline void __schedule_bug(struct task_struct *prev)
 
 	dump_stack();
 	add_taint(TAINT_WARN, LOCKDEP_STILL_OK);
+	aee_kernel_exception("Sched exception",
+			"__schedule_bug: call schedule() when preempt disable");
 }
 
 /*
