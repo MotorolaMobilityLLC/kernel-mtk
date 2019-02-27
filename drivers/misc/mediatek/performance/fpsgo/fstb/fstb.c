@@ -1503,7 +1503,6 @@ static ssize_t fstb_fps_list_write(struct file *file,
 
 err:
 	kfree(buf);
-	mutex_unlock(&fstb_lock);
 	return ret;
 }
 
