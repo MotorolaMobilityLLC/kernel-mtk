@@ -2934,7 +2934,8 @@ static void cmdq_core_dump_task_in_thread_by_handle(const s32 thread,
 
 		buf = list_last_entry(&handle->pkt->buf, typeof(*buf),
 			list_entry);
-		va = (u32 *)(buf->va_base + handle->pkt->avail_buf_size);
+		va = (u32 *)(buf->va_base + CMDQ_CMD_BUFFER_SIZE -
+			handle->pkt->avail_buf_size);
 		va -= 4;
 
 		CMDQ_ERR(
