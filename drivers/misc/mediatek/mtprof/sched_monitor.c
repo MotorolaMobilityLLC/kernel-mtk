@@ -95,7 +95,6 @@ static char *aee_buf;
 static char buf_tasklet[144];
 static char buf_hrtimer[144];
 static char buf_stimer[144];
-static char buf_rcu[144];
 
 /* //////////////////////////////////////////////////////// */
 DEFINE_PER_CPU(struct sched_block_event, ISR_mon);
@@ -163,14 +162,14 @@ static void sched_monitor_aee(unsigned int event, const char *msg,
 		aee_kernel_warning_api(__FILE__, __LINE__,
 			DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE, aee_str,
 			"ISR DURATION WARN\n%s\n%s", msg, aee_buf);
-		aee_buf = NULL;
+		aee_buf = "";
 		break;
 	case evt_SOFTIRQ:
 		snprintf(aee_str, 64, "SCHED MONITOR : SOFTIRQ DURATION WARN");
 		aee_kernel_warning_api(__FILE__, __LINE__,
 			DB_OPT_DUMMY_DUMP | DB_OPT_FTRACE, aee_str,
 			"SOFTIRQ DURATION WARN\n%s\n%s", msg, aee_buf);
-		aee_buf = NULL;
+		aee_buf = "";
 		break;
 	case evt_HARDIRQ:
 		snprintf(aee_str, 64,
@@ -260,8 +259,8 @@ static void event_duration_check(struct sched_block_event *b)
 					sched_mon_msg(buf2, TO_BOTH);
 				}
 			}
-			/* Should skip (b->last_event != RCU_SOFTIRQ)? */
-			if (t_dur > AEE_WARN_DUR)
+			if (t_dur > AEE_WARN_DUR
+				&& b->last_event != RCU_SOFTIRQ)
 				sched_monitor_aee(b->type, buf, b);
 		}
 		if (b->preempt_count != preempt_count()) {
@@ -479,10 +478,9 @@ static void softirq_event_duration_check(struct sched_block_event *b)
 					sec_high(b->last_te),
 					sec_low(b->last_te));
 				sched_mon_msg(buf, TO_BOTH);
-				if (t_dur > AEE_WARN_DUR) {
-					strncpy(buf_rcu, buf,
-						sizeof(buf_rcu) - 1);
-					aee_buf = buf_rcu;
+				if (t_dur > (AEE_WARN_DUR - TIME_10MS)) {
+					aee_buf = "";
+					sched_monitor_aee(evt_SOFTIRQ, buf, b);
 				}
 			}
 		}
