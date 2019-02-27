@@ -46,3 +46,6 @@ ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
 obj-$(CONFIG_MACH_MT6758) += eem_v2/
 obj-$(CONFIG_MACH_MT6765) += eem_v2/
 endif
+ifeq ($(CONFIG_MTK_CM_MGR), y)
+obj-$(CONFIG_MACH_MT6765) += cm_mgr_v1/
+endif

@@ -15,6 +15,16 @@
 #include "mtk_cpufreq_hybrid.h"
 #include "mtk_cpufreq_platform.h"
 
+#ifdef CONFIG_MTK_CM_MGR
+cpuFreqsampler_func g_pCpuFreqSampler_func_cpi;
+/* cpu governor freq sampler */
+void mt_cpufreq_set_governor_freq_registerCB(cpuFreqsampler_func pCB)
+{
+	g_pCpuFreqSampler_func_cpi = pCB;
+}
+EXPORT_SYMBOL(mt_cpufreq_set_governor_freq_registerCB);
+#endif /* CONFIG_MTK_CM_MGR */
+
 int mt_cpufreq_set_by_wfi_load_cluster(unsigned int cluster_id,
 	unsigned int freq)
 {
@@ -26,6 +36,11 @@ int mt_cpufreq_set_by_wfi_load_cluster(unsigned int cluster_id,
 
 	if (freq > mt_cpufreq_get_freq_by_idx(id, 0))
 		freq = mt_cpufreq_get_freq_by_idx(id, 0);
+
+#ifdef CONFIG_MTK_CM_MGR
+	if (g_pCpuFreqSampler_func_cpi)
+		g_pCpuFreqSampler_func_cpi(id, freq);
+#endif /* CONFIG_MTK_CM_MGR */
 
 	cpuhvfs_set_dvfs(id, freq);
 #endif
@@ -194,6 +209,24 @@ unsigned int mt_cpufreq_get_cur_freq(enum mt_cpu_dvfs_id id)
 }
 EXPORT_SYMBOL(mt_cpufreq_get_cur_freq);
 
+unsigned int mt_cpufreq_get_cur_freq_idx(enum mt_cpu_dvfs_id id)
+{
+#ifdef CONFIG_HYBRID_CPU_DVFS
+	int freq_idx = cpuhvfs_get_cur_dvfs_freq_idx(id);
+
+	if (freq_idx < 0)
+		freq_idx = 0;
+
+	if (freq_idx > 15)
+		freq_idx = 15;
+
+	return freq_idx;
+#endif
+	/* Not Support */
+	return 0;
+}
+EXPORT_SYMBOL(mt_cpufreq_get_cur_freq_idx);
+
 unsigned int mt_cpufreq_get_freq_by_idx(enum mt_cpu_dvfs_id id, int idx)
 {
 	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
@@ -242,6 +275,14 @@ unsigned int mt_cpufreq_get_cur_phy_freq_no_lock(enum mt_cpu_dvfs_id id)
 	return freq;
 }
 EXPORT_SYMBOL(mt_cpufreq_get_cur_phy_freq_no_lock);
+
+unsigned int mt_cpufreq_get_cur_phy_freq_idx_no_lock(enum mt_cpu_dvfs_id id)
+{
+	struct mt_cpu_dvfs *p = id_to_cpu_dvfs(id);
+
+	return p->idx_opp_tbl;
+}
+EXPORT_SYMBOL(mt_cpufreq_get_cur_phy_freq_idx_no_lock);
 
 int mt_cpufreq_get_ppb_state(void)
 {
