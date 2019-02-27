@@ -2318,9 +2318,12 @@ static int mmc_reset(struct mmc_host *host)
 		/* Set initial state and call mmc_set_ios */
 		mmc_set_initial_state(host);
 	} else {
-		/* Bypass here for keeping power-on wp */
-		/* Do a brute force power cycle */
-		/* mmc_power_cycle(host, card->ocr); */
+		/*
+		 * Instead power cycle by only setting initial state for
+		 * keeping power-on wp
+		 */
+		mmc_set_clock(host, host->f_init);
+		mmc_set_initial_state(host);
 	}
 	return mmc_init_card(host, card->ocr, card);
 }
