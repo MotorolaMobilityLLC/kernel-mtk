@@ -144,6 +144,12 @@ phys_addr_t __attribute__((weak))
 	return 0;
 }
 
+phys_addr_t __attribute__((weak))
+	scp_get_reserve_mem_size(enum scp_reserve_mem_id_t id)
+{
+	return 0;
+}
+
 void __attribute__((weak)) scp_register_feature(enum feature_id id)
 {
 }
