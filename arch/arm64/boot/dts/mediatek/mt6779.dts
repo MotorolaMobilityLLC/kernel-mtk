@@ -2799,10 +2799,16 @@
 		interrupts = <GIC_SPI 298 IRQ_TYPE_LEVEL_LOW>;
 	};
 
-	depth@1b100000 {
-		compatible = "mediatek,depth";
+	dvs@1b100000 {
+		compatible = "mediatek,dvs";
 		reg = <0 0x1b100000 0 0x1000>;
 		interrupts = <GIC_SPI 302 IRQ_TYPE_LEVEL_LOW>;
+	};
+
+	dvp@1b100800 {
+		compatible = "mediatek,dvp";
+		reg = <0 0x1b100000 0 0x1000>;
+		interrupts = <GIC_SPI 303 IRQ_TYPE_LEVEL_LOW>;
 	};
 
 	smi_larb7@1b10f000 {
