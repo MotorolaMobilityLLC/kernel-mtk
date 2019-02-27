@@ -99,7 +99,7 @@ static unsigned long __mtk_pll_recalc_rate(struct mtk_clk_pll *pll, u32 fin,
 static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 		int postdiv)
 {
-	u32 val;
+	u32 val, pcw_val;
 	u32 tuner_en = 0;
 	u32 tuner_en_mask;
 	void __iomem *tuner_en_addr = NULL;
@@ -131,22 +131,33 @@ static void mtk_pll_set_rate_regs(struct mtk_clk_pll *pll, u32 pcw,
 	/* postdiv and pcw need to set at the same time if on same register */
 	if (pll->pd_addr != pll->pcw_addr) {
 		writel(val, pll->pd_addr);
-		val = readl(pll->pcw_addr);
-	}
+		pcw_val = readl(pll->pcw_addr);
+	} else
+		pcw_val = val;
 
 	/* set pcw */
-	val &= ~GENMASK(pll->data->pcw_shift + pll->data->pcwbits - 1,
+	pcw_val &= ~GENMASK(pll->data->pcw_shift + pll->data->pcwbits - 1,
 			pll->data->pcw_shift);
-	val |= pcw << pll->data->pcw_shift;
-	val &= ~CON1_PCW_CHG;
-	writel(val, pll->pcw_addr);
+	pcw_val |= pcw << pll->data->pcw_shift;
+
+	if (pll->pd_addr != pll->pcw_addr) {
+		val &= ~CON1_PCW_CHG;
+		writel(val, pll->pd_addr);
+	} else
+		pcw_val &= ~CON1_PCW_CHG;
+
+	writel(pcw_val, pll->pcw_addr);
 
 	if (pll->tuner_addr)
-		writel(val + 1, pll->tuner_addr);
+		writel(pcw_val + 1, pll->tuner_addr);
 
-	val |= CON1_PCW_CHG;
-
-	writel(val, pll->pcw_addr);
+	if (pll->pd_addr != pll->pcw_addr) {
+		val  |= CON1_PCW_CHG;
+		writel(val, pll->pd_addr);
+	} else {
+		pcw_val  |= CON1_PCW_CHG;
+		writel(pcw_val, pll->pcw_addr);
+	}
 
 	/* restore tuner_en */
 	if (tuner_en_addr && tuner_en) {
@@ -200,18 +211,12 @@ static void mtk_pll_calc_values(struct mtk_clk_pll *pll, u32 *pcw, u32 *postdiv,
 	ibits = pll->data->pcwibits ? pll->data->pcwibits : INTEGER_BITS;
 	_pcw = ((u64)freq << val) << (pll->data->pcwbits - ibits);
 	do_div(_pcw, fin);
-
 	*pcw = (u32)_pcw;
 }
 
 static int mtk_pll_is_prepared_dummy(struct clk_hw *hw)
 {
 	return 1;
-}
-static int mtk_pll_set_rate_dummy(struct clk_hw *hw, unsigned long rate,
-		unsigned long parent_rate)
-{
-	return 0;
 }
 
 static int mtk_pll_prepare_dummy(struct clk_hw *hw)
@@ -412,7 +417,7 @@ static const struct clk_ops mtk_pll_ops_dummy = {
 	.disable	= mtk_pll_unprepare_dummy,
 	.recalc_rate	= mtk_pll_recalc_rate,
 	.round_rate	= mtk_pll_round_rate,
-	.set_rate	= mtk_pll_set_rate_dummy,
+	.set_rate	= mtk_pll_set_rate,
 };
 
 #if (defined(CONFIG_MACH_MT6758)) | (defined(CONFIG_MACH_MT6765))
