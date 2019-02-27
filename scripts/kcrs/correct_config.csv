@@ -686,8 +686,7 @@ CONFIG_MTK_SPKGPIO_REWORK,PROJECT,georgecy.lin,new config in this commit 378eb5b
 CONFIG_MTK_STATHUB,PROJECT,qiangming.xia,new config in this commit e5afb39d5bc749c04142bb69e4f89131015320a6,,,,
 CONFIG_MTK_STEPSIGNHUB,PROJECT,hongxu.zhao,new config in this commit 5d3fd154d89af1a6fdf1dcf1963d1595834933de,,,,
 CONFIG_MTK_SVP_DISABLE_SODI,PROJECT,tryout.chen,,,,,
-CONFIG_MTK_SVP,PROJECT,tehsin.lin,new config in this commit 127c1a282ad9be25750ea4a3fb5b64324301b7f3,,,,
-CONFIG_MTK_SVP_RAM_SIZE,PROJECT,tehsin.lin,new config in this commit 127c1a282ad9be25750ea4a3fb5b64324301b7f3,,,,
+CONFIG_MTK_SSMR,PROJECT,tehsin.lin,new config in this commit 127c1a282ad9be25750ea4a3fb5b64324301b7f3,,,,
 CONFIG_MTK_SWCHR_SUPPORT,PLATFORM,elvin.lin,,y,y,y,y
 CONFIG_MTK_SYNC,COMMON,,,y,y,y,y
 CONFIG_MTK_SYSENV,PROJECT,ying.jiang,,,,,
@@ -698,7 +697,6 @@ CONFIG_MTK_TINYSYS_SCP_SUPPORT,PROJECT,HC.Kao,new config in this commit a093c6e6
 CONFIG_MTK_TINYSYS_SSPM_SUPPORT,PLATFORM,jiachiam.liu,new config in this commit 0882fbfb410389a677423c4418d05ccf72744111,y,y,y,y
 CONFIG_MTK_TLC_NAND_SUPPORT,PROJECT,chienwei.chang,TLC nand project only,,,,
 CONFIG_MTK_TRUSTY_DEBUGFS,USER;PROJECT,vink.shen,,,,,
-CONFIG_MTK_TUI_RAM_SIZE,PROJECT,tehsin.lin,new config in this commit 127c1a282ad9be25750ea4a3fb5b64324301b7f3,,,,
 CONFIG_MTK_UART_USB_SWITCH,PROJECT,yu-chang.wang,,,,,
 CONFIG_MTK_UNCALI_GYROHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,
 CONFIG_MTK_UNCALI_MAGHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,

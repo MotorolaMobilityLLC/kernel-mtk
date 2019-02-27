@@ -62,7 +62,7 @@ struct secmem_param {
 
 #define SECMEM_IOC_MAXNR      (10)
 
-#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SVP)
+#if defined(CONFIG_CMA) && defined(CONFIG_MTK_SSMR)
 /* SVP CMA API */
 extern int svp_region_offline(phys_addr_t *pa, unsigned long *size);
 extern int svp_region_offline64(phys_addr_t *pa, unsigned long *size);
