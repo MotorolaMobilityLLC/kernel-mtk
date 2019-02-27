@@ -26,7 +26,6 @@
 #include "mtk_boot_common.h"
 #endif
 #include "tpd.h"
-#include "upmu_common.h"
 #include <linux/hrtimer.h>
 #include <linux/string.h>
 #include <linux/vmalloc.h>
