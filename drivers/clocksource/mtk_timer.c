@@ -394,7 +394,10 @@ err_irq:
 	irq_dispose_mapping(evt->dev.irq);
 err_mem:
 	iounmap(evt->gpt_base);
-	of_address_to_resource(node, 0, &res);
+	if (of_address_to_resource(node, 0, &res)) {
+		pr_info("Failed to parse resource\n");
+		goto err_kzalloc;
+	}
 	release_mem_region(res.start, resource_size(&res));
 err_kzalloc:
 	kfree(evt);
