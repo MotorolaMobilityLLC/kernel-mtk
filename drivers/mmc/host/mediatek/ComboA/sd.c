@@ -4130,10 +4130,6 @@ static void msdc_unreq_vcore(struct work_struct *work)
 {
 }
 
-static void msdc_set_vcore_performance(struct msdc_host *host, u32 enable)
-{
-}
-
 static void msdc_ops_request(struct mmc_host *mmc, struct mmc_request *mrq)
 {
 	int host_cookie = 0;

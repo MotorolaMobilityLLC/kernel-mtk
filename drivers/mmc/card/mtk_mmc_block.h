@@ -58,6 +58,13 @@ struct mt_bio_context_task {
 	uint64_t t[tsk_max];
 };
 
+struct mt_bio_context_wl {
+	uint64_t period_busy;
+	uint64_t period_left_window_end_t;
+	uint64_t period_right_window_start_t;
+	uint64_t period_right_window_end_t;
+};
+
 /* Context of Request Queue */
 struct mt_bio_context {
 	int id;
@@ -69,10 +76,7 @@ struct mt_bio_context {
 	spinlock_t lock;
 	uint64_t period_start_t;
 	uint64_t period_end_t;
-	uint64_t period_busy;
-	uint64_t period_end_since_start_t;
-	uint64_t period_end_in_window_t;
-	uint64_t period_start_in_window_t;
+	struct mt_bio_context_wl wl;
 	struct mt_bio_context_task task[MMC_BIOLOG_CONTEXT_TASKS];
 	struct mtk_btag_workload workload;
 	struct mtk_btag_throughput throughput;
