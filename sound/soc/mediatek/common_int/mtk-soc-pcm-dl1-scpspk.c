@@ -918,7 +918,7 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 {
 	static int ctrl_val;
 
-	pr_debug("%s(), value = %d, scpspk_pcmdump = %d\n",
+	pr_debug("%s(), value = %ld, scpspk_pcmdump = %d\n",
 		 __func__,
 		 ucontrol->value.integer.value[0],
 		 scpspk_pcmdump);
@@ -934,7 +934,8 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		else if (ctrl_val == 2)
 			spk_pcm_dump_split_task_enable();
 		else {
-			pr_debug("%s(), value not support, return\n");
+			pr_debug("%s(), value not support, return\n",
+				 __func__);
 			return -1;
 		}
 
@@ -955,7 +956,8 @@ static int audio_spk_pcm_dump_set(struct snd_kcontrol *kcontrol,
 		else if (ctrl_val == 2)
 			spk_pcm_dump_split_task_disable();
 		else {
-			pr_debug("%s(), value not support, return\n");
+			pr_debug("%s(), value not support, return\n",
+				 __func__);
 			return -1;
 		}
 
