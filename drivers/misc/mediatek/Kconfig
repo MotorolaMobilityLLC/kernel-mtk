@@ -40,6 +40,15 @@ config MTK_DTBO_FEATURE
 	  in the existing tree.
 	  If you are not sure about this, set y
 
+config MTK_ENG_BUILD
+	bool "flag for MTK eng/usr build verification"
+	default n
+	help
+	  Y means this kernel version is engineering mode and has more debugging
+	  features built-in. This option is supposed to specifiy engineering or
+	  user load for this build.
+	  If you are not sure about this, set n
+
 endif
 
 menu "Storage: EMMC, NAND, partition..."

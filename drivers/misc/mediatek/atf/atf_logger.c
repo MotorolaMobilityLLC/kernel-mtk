@@ -94,11 +94,6 @@ union atf_log_ctl_t {
 	} info;
 	unsigned char data[ATF_LOG_CTRL_BUF_SIZE];
 };
-/* general memory descriptor */
-struct mem_desc {
-	u64 start;
-	u64 size;
-};
 
 struct ipanic_atf_log_rec {
 	size_t total_size;
