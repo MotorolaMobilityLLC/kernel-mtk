@@ -19,13 +19,5 @@ ccflags-y += -DMTK_TOUCH_BOOST
 obj-y += perfmgr_touch.o
 endif # CONFIG_MTK_PERFMGR_TOUCH_BOOST
 
-#ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/performance/perfmgr/$(MTK_PLATFORM)/),)
-#ccflags-y += -DMTK_BOOST_SUPPORT
-#obj-y += $(MTK_PLATFORM)/
-#else
-#obj-y += common/
-#endif
 obj-y += common/
-
-#ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/
 

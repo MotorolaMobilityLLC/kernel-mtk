@@ -35,7 +35,7 @@ struct platform_device perfmgr_device = {
 
 int perfmgr_suspend(struct device *dev)
 {
-#ifdef MTK_TOUCH_BOOST
+#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
 	perfmgr_touch_suspend();
 #endif
 	return 0;
@@ -65,6 +65,8 @@ static int __init init_perfmgr(void)
 	struct proc_dir_entry *hps_dir = NULL;
 	int ret = 0;
 
+	pr_debug("__init init_perfmgr\n");
+
 	ret = platform_device_register(&perfmgr_device);
 	if (ret)
 		return ret;
@@ -74,11 +76,12 @@ static int __init init_perfmgr(void)
 
 
 	hps_dir = proc_mkdir("perfmgr", NULL);
-#ifdef MTK_TOUCH_BOOST
+#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
+	pr_debug("MTK_TOUCH_BOOST function init_perfmgr_touch\n");
 	init_perfmgr_touch();
 #endif
 
-#ifdef MTK_BOOST_SUPPORT
+#ifdef CONFIG_MTK_PERFMGR_TOUCH_BOOST
 	init_perfmgr_boost();
 #endif
 
