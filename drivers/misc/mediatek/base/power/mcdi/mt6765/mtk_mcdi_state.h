@@ -32,7 +32,8 @@ enum mcdi_s_state {
 	MCDI_STATE_SODI3
 };
 
-extern struct cpuidle_driver *mcdi_state_tbl_get(int cpu);
+int mcdi_get_mcdi_idle_state(int idx);
+struct cpuidle_driver *mcdi_state_tbl_get(int cpu);
 
 #endif /* __MCDI_STATE_H__ */
 

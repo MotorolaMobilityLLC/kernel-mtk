@@ -10,14 +10,16 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
+#include <stdbool.h>
 
-#ifndef __MTK_MCDI_PROFILE_COMMON_H__
-#define __MTK_MCDI_PROFILE_COMMON_H__
+void __attribute__((weak))
+update_cpu_isolation_mask_to_mcdi_controller(unsigned int iso_mask)
+{
 
-#if defined(CONFIG_MACH_MT6758)
+}
 
-#include "mcdi_v1/mtk_mcdi_profile.h"
-
-#endif
-
-#endif /* __MTK_MCDI_PROFILE_COMMON_H__ */
+bool __attribute__((weak))
+mcdi_task_pause(bool paused)
+{
+	return true;
+}

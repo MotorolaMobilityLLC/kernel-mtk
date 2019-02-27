@@ -10,7 +10,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-
 #include <linux/cpu.h>
 #include <linux/debugfs.h>
 #include <linux/module.h>
@@ -30,25 +29,21 @@
 
 #include <mtk_mcdi.h>
 #include <mtk_mcdi_governor.h>
-#include <mtk_mcdi_mbox.h>
 #include <mtk_mcdi_profile.h>
+#include <mtk_mcdi_util.h>
+
+#include <mtk_mcdi_plat.h>
 #include <mtk_mcdi_reg.h>
 #include <mtk_mcdi_state.h>
 
 #include <mtk_mcdi_governor_hint.h>
 
-#include <sspm_mbox.h>
 #include <trace/events/mtk_idle_event.h>
 #include <linux/irqchip/mtk-gic-extend.h>
 /* #define USING_TICK_BROADCAST */
 
 #define MCDI_CPU_OFF        1
 #define MCDI_CLUSTER_OFF    1
-
-#define NF_CMD_BUF          128
-#define LOG_BUF_LEN         1024
-
-#define MCDI_SYSRAM_SIZE    0x800
 
 #define MCDI_DEBUG_INFO_MAGIC_NUM           0x1eef9487
 #define MCDI_DEBUG_INFO_NON_REPLACE_OFFSET  0x0008
@@ -60,29 +55,6 @@ void __iomem *mcdi_sysram_base;
 #define MCDI_SYSRAM (mcdi_sysram_base + MCDI_DEBUG_INFO_NON_REPLACE_OFFSET)
 
 /* #define WORST_LATENCY_DBG */
-
-#define SYSRAM_PROF_RATIO_REG      (mcdi_sysram_base + 0x5B0)
-#define SYSRAM_PROF_BASE_REG       (mcdi_sysram_base + 0x600)
-#define SYSRAM_PROF_DATA_REG       (mcdi_sysram_base + 0x680)
-#define SYSRAM_LATENCY_BASE_REG    (mcdi_sysram_base + 0x780)
-#define SYSRAM_PROF_RARIO_DUR      (mcdi_sysram_base + 0x7C0)
-
-#define SYSRAM_PROF_REG(ofs)          (SYSRAM_PROF_BASE_REG + ofs)
-#define CPU_OFF_LATENCY_REG(ofs)      (SYSRAM_LATENCY_BASE_REG + ofs)
-#define CPU_ON_LATENCY_REG(ofs)       (SYSRAM_LATENCY_BASE_REG + 0x10 + ofs)
-#define Cluster_OFF_LATENCY_REG(ofs)  (SYSRAM_LATENCY_BASE_REG + 0x20 + ofs)
-#define Cluster_ON_LATENCY_REG(ofs)   (SYSRAM_LATENCY_BASE_REG + 0x30 + ofs)
-
-#define LATENCY_DISTRIBUTE_REG(ofs) (SYSRAM_PROF_BASE_REG + 0x140 + ofs)
-#define PROF_OFF_CNT_REG(idx)       (LATENCY_DISTRIBUTE_REG(idx * 4))
-#define PROF_ON_CNT_REG(idx)        (LATENCY_DISTRIBUTE_REG((idx + 4) * 4))
-
-#define cpu_ratio_shift(idx)        ((idx) * 0x8 + 0x4)
-#define cluster_ratio_shift(idx)    (((idx) + NF_CPU) * 0x8 + 0x4)
-#define PROF_CPU_RATIO_REG(idx) \
-	(SYSRAM_PROF_RATIO_REG + cpu_ratio_shift(idx))
-#define PROF_CLUSTER_RATIO_REG(idx) \
-	(SYSRAM_PROF_RATIO_REG + cluster_ratio_shift(idx))
 
 static unsigned long mcdi_cnt_cpu_last[NF_CPU];
 static unsigned long mcdi_cnt_cluster_last[NF_CLUSTER];
@@ -100,24 +72,6 @@ static unsigned long long mcdi_heart_beat_log_prev;
 static DEFINE_SPINLOCK(mcdi_heart_beat_spin_lock);
 
 static unsigned int mcdi_heart_beat_log_dump_thd = 5000;          /* 5 sec */
-
-#define log2buf(p, s, fmt, args...) \
-	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
-
-#undef mcdi_log
-#define mcdi_log(fmt, args...)	log2buf(p, dbg_buf, fmt, ##args)
-
-struct mtk_mcdi_buf {
-	char buf[LOG_BUF_LEN];
-	char *p_idx;
-};
-
-#define reset_mcdi_buf(mcdi) ((mcdi).p_idx = (mcdi).buf)
-#define get_mcdi_buf(mcdi)   ((mcdi).buf)
-#define mcdi_buf_append(mcdi, fmt, args...)           \
-	((mcdi).p_idx += snprintf((mcdi).p_idx,           \
-					LOG_BUF_LEN - strlen((mcdi).buf), \
-					fmt, ##args))
 
 int __attribute__((weak)) mtk_enter_idle_state(int mode)
 {
@@ -148,72 +102,6 @@ void __attribute__((weak)) aee_rr_rec_mcdi_val(int id, u32 val)
 {
 }
 
-static int cluster_idx_map[NF_CPU] = {
-	0,
-	0,
-	0,
-	0,
-	1,
-	1,
-	1,
-	1
-};
-
-int cluster_idx_get(int cpu)
-{
-	if (!(cpu >= 0 && cpu < NF_CPU)) {
-		WARN_ON(!(cpu >= 0 && cpu < NF_CPU));
-
-		return 0;
-	}
-
-	return cluster_idx_map[cpu];
-}
-
-static unsigned int cpu_cluster_pwr_stat_map[NF_PWR_STAT_MAP_TYPE][NF_CPU] = {
-	[ALL_CPU_IN_CLUSTER] = {
-		0x000F,		/* Cluster 0 */
-		0x00F0,		/* Cluster 1 */
-		0x0000,		/* N/A */
-		0x0000,
-		0x0000,
-		0x0000,
-		0x0000,
-		0x0000
-	},
-	[CPU_CLUSTER] = {
-		0x200FE,     /* Only CPU 0 */
-		0x200FD,     /* Only CPU 1 */
-		0x200FB,
-		0x200F7,
-		0x100EF,
-		0x100DF,
-		0x100BF,
-		0x1007F      /* Only CPU 7 */
-	},
-	[CPU_IN_OTHER_CLUSTER] = {
-		0x000F0,
-		0x000F0,
-		0x000F0,
-		0x000F0,
-		0x0000F,
-		0x0000F,
-		0x0000F,
-		0x0000F
-	}
-};
-
-unsigned int get_pwr_stat_check_map(int type, int idx)
-{
-	if (!(type >= 0 && type < NF_PWR_STAT_MAP_TYPE))
-		return 0;
-
-	if (!(idx >= 0 && idx < NF_CPU))
-		return 0;
-
-	return cpu_cluster_pwr_stat_map[type][idx];
-}
-
 void wakeup_all_cpu(void)
 {
 	int cpu = 0;
@@ -236,6 +124,7 @@ void mcdi_wakeup_all_cpu(void)
 
 	wait_until_all_cpu_powered_on();
 }
+
 /* debugfs */
 static char dbg_buf[4096] = { 0 };
 static char cmd_buf[512] = { 0 };
@@ -354,212 +243,10 @@ static ssize_t mcdi_state_write(struct file *filp,
 	}
 }
 
-/* mcdi profile */
-static int _mcdi_profile_open(struct seq_file *s, void *data)
-{
-	return 0;
-}
-
-static int mcdi_profile_open(struct inode *inode, struct file *filp)
-{
-	return single_open(filp, _mcdi_profile_open, inode->i_private);
-}
-
-static ssize_t mcdi_profile_read(struct file *filp,
-		char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	int i, len = 0;
-	unsigned int cnt[10] = {0};
-	char *p = dbg_buf;
-	unsigned int ratio_raw = 0;
-	unsigned int ratio_int = 0;
-	unsigned int ratio_fraction = 0;
-	unsigned int ratio_dur = 0;
-
-	for (i = 0; i < 4; i++) {
-		cnt[i]   = mcdi_read(PROF_OFF_CNT_REG(i));
-		cnt[i+5] = mcdi_read(PROF_ON_CNT_REG(i));
-		cnt[4]  += cnt[i];
-		cnt[9]  += cnt[i+5];
-	}
-
-	mcdi_log(
-		"mcdi cpu off    : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(CPU_OFF_LATENCY_REG(0x0)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0x4)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0x8)),
-		mcdi_read(CPU_OFF_LATENCY_REG(0xC)));
-	mcdi_log(
-		"mcdi cpu on     : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(CPU_ON_LATENCY_REG(0x0)),
-		mcdi_read(CPU_ON_LATENCY_REG(0x4)),
-		mcdi_read(CPU_ON_LATENCY_REG(0x8)),
-		mcdi_read(CPU_ON_LATENCY_REG(0xC)));
-	mcdi_log(
-		"mcdi cluster off: max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x0)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x4)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0x8)),
-		mcdi_read(Cluster_OFF_LATENCY_REG(0xC)));
-	mcdi_log(
-		"mcdi cluster on : max_id = 0x%x, avg = %4dus, max = %5dus, cnt = %d\n",
-		mcdi_read(Cluster_ON_LATENCY_REG(0x0)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0x4)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0x8)),
-		mcdi_read(Cluster_ON_LATENCY_REG(0xC)));
-	mcdi_log("\n");
-	mcdi_log("pwr off latency    < 25 us : %2d%% (%d)\n",
-		(100 * cnt[0]) / cnt[4], cnt[0]);
-	mcdi_log("pwr off latency  25-100 us : %2d%% (%d)\n",
-		(100 * cnt[1]) / cnt[4], cnt[1]);
-	mcdi_log("pwr off latency 100-500 us : %2d%% (%d)\n",
-		(100 * cnt[2]) / cnt[4], cnt[2]);
-	mcdi_log("pwr off latency   > 500 us : %2d%% (%d)\n",
-		(100 * cnt[3]) / cnt[4], cnt[3]);
-	mcdi_log("pwr on  latency    < 25 us : %2d%% (%d)\n",
-		(100 * cnt[5]) / cnt[9], cnt[5]);
-	mcdi_log("pwr on  latency  25-100 us : %2d%% (%d)\n",
-		(100 * cnt[6]) / cnt[9], cnt[6]);
-	mcdi_log("pwr on  latency 100-500 us : %2d%% (%d)\n",
-		(100 * cnt[7]) / cnt[9], cnt[7]);
-	mcdi_log("pwr on  latency   > 500 us : %2d%% (%d)\n",
-		(100 * cnt[8]) / cnt[9], cnt[8]);
-
-#ifdef WORST_LATENCY_DBG
-	mcdi_log("\n");
-	mcdi_log("mcdi max latency     : %dus\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG));
-	mcdi_log("mcdi ts wfi isr      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x04));
-	mcdi_log("mcdi ts gic isr      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x08));
-	mcdi_log("mcdi last ts wfi isr : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x18));
-	mcdi_log("mcdi last ts gic isr : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x1C));
-	mcdi_log("mcdi ts pwr on       : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x10));
-	mcdi_log("mcdi ts pwr off      : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x14));
-	mcdi_log("mcdi ts pause        : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x0C));
-	mcdi_log("mcdi last ts pwr on  : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x24));
-	mcdi_log("mcdi last ts pwr off : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x28));
-	mcdi_log("mcdi last ts pause   : %u\n",
-		mcdi_read(SYSRAM_PROF_DATA_REG + 0x20));
-#endif
-
-	ratio_dur = mcdi_read(SYSRAM_PROF_RARIO_DUR);
-
-	if (ratio_dur == 0)
-		ratio_dur = ~0;
-
-	mcdi_log("\nOFF %% (cpu):\n");
-
-	for (i = 0; i < NF_CPU; i++) {
-		ratio_raw = 100 * mcdi_read(PROF_CPU_RATIO_REG(i));
-		ratio_int = ratio_raw / ratio_dur;
-		ratio_fraction = (1000 * (ratio_raw % ratio_dur)) / ratio_dur;
-
-		mcdi_log("%d: %3u.%03u%% (%u)\n",
-			i, ratio_int, ratio_fraction, ratio_raw/100);
-	}
-
-	mcdi_log("\nOFF %% (cluster):\n");
-
-	for (i = 0; i < NF_CLUSTER; i++) {
-		ratio_raw      = 100 * mcdi_read(PROF_CLUSTER_RATIO_REG(i));
-		ratio_int      = ratio_raw / ratio_dur;
-		ratio_fraction = (1000 * (ratio_raw % ratio_dur)) / ratio_dur;
-
-		mcdi_log("%d: %3u.%03u%% (%u)\n",
-			i, ratio_int, ratio_fraction, ratio_raw/100);
-	}
-
-	mcdi_log("\nprof cpu = %d, count = %d, state = %d\n",
-				get_mcdi_profile_cpu(),
-				get_mcdi_profile_cnt(),
-				mcdi_mbox_read(MCDI_MBOX_PROF_CMD));
-	for (i = 0; i < (NF_MCDI_PROFILE - 1); i++)
-		mcdi_log("%d: %u\n", i, get_mcdi_profile_sum_us(i));
-
-	len = p - dbg_buf;
-
-	return simple_read_from_buffer(userbuf, count, f_pos, dbg_buf, len);
-}
-
-static ssize_t mcdi_profile_write(struct file *filp,
-		const char __user *userbuf, size_t count, loff_t *f_pos)
-{
-	int ret = 0;
-	unsigned long param = 0;
-	char *cmd_ptr = cmd_buf;
-	char *cmd_str = NULL;
-	char *param_str = NULL;
-
-	count = min(count, sizeof(cmd_buf) - 1);
-
-	if (copy_from_user(cmd_buf, userbuf, count))
-		return -EFAULT;
-
-	cmd_buf[count] = '\0';
-
-	cmd_str = strsep(&cmd_ptr, " ");
-
-	if (cmd_str == NULL)
-		return -EINVAL;
-
-	param_str = strsep(&cmd_ptr, " ");
-
-	if (param_str == NULL)
-		return -EINVAL;
-
-	ret = kstrtoul(param_str, 16, &param);
-
-	if (ret < 0)
-		return -EINVAL;
-
-	if (!strncmp(cmd_str, "reg", sizeof("reg"))) {
-		if (!(param >= 0
-				&& param < MCDI_SYSRAM_SIZE
-				&& (param % 4) == 0))
-			return -EINVAL;
-
-		pr_info("mcdi_reg: 0x%lx=0x%x(%d)\n",
-			param, mcdi_read(mcdi_sysram_base + param),
-			mcdi_read(mcdi_sysram_base + param));
-	} else if (!strncmp(cmd_str, "enable", sizeof("enable"))) {
-		if (param == MCDI_PROF_FLAG_STOP
-				|| param == MCDI_PROF_FLAG_START)
-			set_mcdi_profile_sampling(param);
-
-		if (param == MCDI_PROF_FLAG_STOP
-				|| param == MCDI_PROF_FLAG_START
-				|| param == MCDI_PROF_FLAG_POLLING) {
-			mcdi_mbox_write(MCDI_MBOX_PROF_CMD, param);
-		}
-	} else if (!strncmp(cmd_str, "cpu", sizeof("cpu"))) {
-		set_mcdi_profile_target_cpu(param);
-	} else {
-		return -EINVAL;
-	}
-	return count;
-}
-
 static const struct file_operations mcdi_state_fops = {
 	.open = mcdi_state_open,
 	.read = mcdi_state_read,
 	.write = mcdi_state_write,
-	.llseek = seq_lseek,
-	.release = single_release,
-};
-
-static const struct file_operations mcdi_profile_fops = {
-	.open = mcdi_profile_open,
-	.read = mcdi_profile_read,
-	.write = mcdi_profile_write,
 	.llseek = seq_lseek,
 	.release = single_release,
 };
@@ -581,8 +268,8 @@ static int mcdi_debugfs_init(void)
 
 	debugfs_create_file("mcdi_state", 0644,
 				root_entry, NULL, &mcdi_state_fops);
-	debugfs_create_file("mcdi_profile", 0644,
-				root_entry, NULL, &mcdi_profile_fops);
+
+	mcdi_debugfs_profile_init(root_entry);
 
 	return 0;
 }
@@ -597,26 +284,6 @@ static void __go_to_wfi(int cpu)
 
 	trace_rgidle_rcuidle(cpu, 0);
 }
-
-unsigned int mcdi_mbox_read(int id)
-{
-	unsigned int val = 0;
-
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	sspm_mbox_read(MCDI_MBOX, id, &val, 1);
-#endif
-
-	return val;
-}
-
-void mcdi_mbox_write(int id, unsigned int val)
-{
-#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	sspm_mbox_write(MCDI_MBOX, id, (void *)&val, 1);
-#endif
-}
-
-
 
 void mcdi_cpu_off(int cpu)
 {
@@ -776,6 +443,15 @@ void mcdi_heart_beat_log_dump(void)
 	pr_info("%s\n", get_mcdi_buf(buf));
 }
 
+int wfi_enter(int cpu)
+{
+	mtk_idle_dump_cnt_in_interval();
+	mcdi_heart_beat_log_dump();
+	__go_to_wfi(cpu);
+
+	return 0;
+}
+
 int mcdi_enter(int cpu)
 {
 	int cluster_idx = cluster_idx_get(cpu);
@@ -785,7 +461,10 @@ int mcdi_enter(int cpu)
 	idle_refcnt_inc();
 	mcdi_profile_ts(MCDI_PROFILE_ENTER);
 
-	state = mcdi_governor_select(cpu, cluster_idx);
+	if (likely(mcdi_fw_is_ready()))
+		state = mcdi_governor_select(cpu, cluster_idx);
+	else
+		state = MCDI_STATE_WFI;
 
 	mcdi_profile_ts(MCDI_PROFILE_MCDI_GOVERNOR_SELECT_LEAVE);
 
@@ -1015,7 +694,7 @@ static void __init mcdi_pm_qos_init(void)
 static int __init mcdi_sysram_init(void)
 {
 	/* of init */
-	mcdi_of_init();
+	mcdi_of_init(&mcdi_sysram_base);
 
 	if (!mcdi_sysram_base)
 		return -1;
