@@ -97,6 +97,8 @@
 #define EP_NO_CLKMGR /* for clkmgr*/
 #endif
 
+#define ALWAYS_HIGH /*work around: mmdvfs always high*/
+
 #ifndef EP_NO_PMQOS
 #include <mmdvfs_mgr.h>
 /* Use this qos request to control camera dynamic frequency change */
@@ -3954,6 +3956,8 @@ EXPORT_SYMBOL(ISP_Halt_Mask);
  *****************************************************************************/
 static void ISP_EnableClock(bool En)
 {
+	unsigned int dfs_update = 457;
+
 #if defined(EP_NO_CLKMGR)
 	unsigned int setReg;
 #endif
@@ -3998,6 +4002,19 @@ static void ISP_EnableClock(bool En)
 			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
 
 			ISP_WR32(CLOCK_CELL_BASE, _reg|(1<<6));
+#ifdef ALWAYS_HIGH
+			mmdvfs_pm_qos_add_request(
+			&isp_qos,
+			MMDVFS_PM_QOS_SUB_SYS_CAMERA,
+			0);
+			mmdvfs_pm_qos_update_request(
+			&isp_qos,
+			MMDVFS_PM_QOS_SUB_SYS_CAMERA,
+			dfs_update);
+			pr_debug(
+			"[open] CAMSYS PMQoS turn on(%d)",
+			dfs_update);
+#endif
 		}
 		G_u4EnableClockCount++;
 		spin_unlock(&(IspInfo.SpinLockClock));
@@ -4057,6 +4074,12 @@ static void ISP_EnableClock(bool En)
 			unsigned int _reg = ISP_RD32(CLOCK_CELL_BASE);
 
 			ISP_WR32(CLOCK_CELL_BASE, _reg&(~(1<<6)));
+#ifdef ALWAYS_HIGH
+			mmdvfs_pm_qos_remove_request(
+				&isp_qos);
+			pr_debug(
+				"[release]CAMSYS PMQoS turn off");
+#endif
 		}
 		spin_unlock(&(IspInfo.SpinLockClock));
 		Disable_Unprepare_ccf_clock(); /* can't be used in spinlock! */
@@ -7887,10 +7910,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 #else
 	case ISP_DFS_CTRL:
+		#ifndef ALWAYS_HIGH
 		{
 			static unsigned int camsys_qos;
 			unsigned int dfs_ctrl;
-			unsigned int dfs_update = 457;
 
 			if (copy_from_user(&dfs_ctrl, (void *)Param,
 			    sizeof(unsigned int)) == 0) {
@@ -7900,13 +7923,8 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						  &isp_qos,
 						  MMDVFS_PM_QOS_SUB_SYS_CAMERA,
 						  0);
-						mmdvfs_pm_qos_update_request(
-						  &isp_qos,
-						  MMDVFS_PM_QOS_SUB_SYS_CAMERA,
-						  dfs_update);
 						pr_debug(
-						  "CAMSYS PMQoS turn on(%d)",
-						  dfs_update);
+						  "CAMSYS PMQoS turn on");
 					}
 				} else {
 					if (--camsys_qos == 0) {
@@ -7921,9 +7939,10 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				Ret = -EFAULT;
 			}
 		}
+		#endif
 		break;
 	case ISP_DFS_UPDATE:
-		#if 0
+		#ifndef ALWAYS_HIGH
 		{
 			unsigned int dfs_update;
 
@@ -7941,8 +7960,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 		/* To get how many clk levels this platform is supported */
+		#ifdef ALWAYS_HIGH
+		ispclks.clklevelcnt = 1;
+		#else
 		ispclks.clklevelcnt = mmdvfs_qos_get_thres_count(&isp_qos,
 						MMDVFS_PM_QOS_SUB_SYS_CAMERA);
+		#endif
 
 		if (ispclks.clklevelcnt > ISP_CLK_LEVEL_CNT) {
 			pr_err("clklevelcnt is exceeded");
@@ -7952,8 +7975,12 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 		for (; lv < ispclks.clklevelcnt; lv++) {
 			/* To get all clk level on this platform */
+			#ifdef ALWAYS_HIGH
+			ispclks.clklevel[lv] = 457;
+			#else
 			ispclks.clklevel[lv] = mmdvfs_qos_get_thres_value(
 				&isp_qos, MMDVFS_PM_QOS_SUB_SYS_CAMERA, lv);
+			#endif
 			pr_debug("DFS Clk level:%d", ispclks.clklevel[lv]);
 		}
 
@@ -9083,7 +9110,6 @@ EXIT:
 		/* Enable clock */
 		ISP_EnableClock(MTRUE);
 	}
-
 	pr_info("- X. Ret: %d. UserCount: %d. G_u4EnableClockCount:%d\n", Ret,
 		IspInfo.UserCount, G_u4EnableClockCount);
 	return Ret;
