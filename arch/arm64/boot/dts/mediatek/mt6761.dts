@@ -2651,6 +2651,12 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 	firmware {
 		android {
 			compatible = "android,firmware";
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+			vbmeta {
+				compatible = "android,vbmeta";
+				parts = "vbmeta,boot,system,vendor";
+			};
+#endif
 			fstab {
 				compatible = "android,fstab";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
