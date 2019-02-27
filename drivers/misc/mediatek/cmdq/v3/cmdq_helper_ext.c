@@ -1207,9 +1207,11 @@ static bool cmdq_core_dump_thread(const struct cmdqRecStruct *handle,
 	if (dump_irq && value[0] == value[1] && value[2] == 1) {
 		mt_irq_dump_status(cmdq_dev_get_irq_id());
 		if (aee_irq) {
+#ifdef CMDQ_DEBUG
 			CMDQ_AEE("CMDQ",
 				"thread irq delay id:%u thread:%d",
 				cmdq_dev_get_irq_id(), thread);
+#endif
 			return false;
 		}
 	}
