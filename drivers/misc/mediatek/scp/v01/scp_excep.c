@@ -237,7 +237,6 @@ void scp_reg_copy(void *bufp)
 	scp_reg->debug_addr_spi1 = readl(SCP_DEBUG_ADDR_SPI1);
 	scp_reg->debug_addr_spi2 = readl(SCP_DEBUG_ADDR_SPI2);
 	scp_reg->debug_bus_status = readl(SCP_DEBUG_BUS_STATUS);
-	scp_reg->debug_infra_mon = readl(SCP_SYS_INFRA_MON);
 	scp_reg->scp_reg_magic_end = 0xDEADBEEF;
 
 }
