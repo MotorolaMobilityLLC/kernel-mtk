@@ -26,9 +26,16 @@ else
     subdir-ccflags-y += -D WMT_IDC_SUPPORT=0
 endif
     subdir-ccflags-y += -D MTK_WCN_WMT_STP_EXP_SYMBOL_ABSTRACT
-	subdir-ccflags-y += -D CONFIG_OF
+    subdir-ccflags-y += -D CONFIG_OF
 
-    #obj-y += common/
+   subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+   subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
+   #subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+   subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+   subdir-ccflags-y += -I$(srctree)/drivers/mmc/core
+   subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+   subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/
+   subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/ppm_v3
 
     # MINI PLATFORM VERSION = Android O
     MINI_PLATFORM_VER = O
@@ -57,9 +64,13 @@ endif
     ifeq ($(MINI_PLATFORM_VER), $(word 1, $(sort $(MINI_PLATFORM_VER) $(TARGET_PLATFORM_VERSION))))
         # Do Nothing, move to standalone repo
         $(warning Android($(TARGET_PLATFORM_VERSION) >= $(MINI_PLATFORM_VER)) ignore build-in)
-        obj-y += common/connectivity_build_in_adapter.o
+        MODULE_NAME := connadp
+	obj-y += $(MODULE_NAME).o
+	$(MODULE_NAME)-objs += common/connectivity_build_in_adapter.o
+	$(MODULE_NAME)-objs += common/wmt_build_in_adapter.o
     else
         $(warning Android($(TARGET_PLATFORM_VERSION) < $(MINI_PLATFORM_VER)) do build-in)
+	#obj-y += common/
         #obj-$(CONFIG_MTK_FMRADIO) += fmradio/
         obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/
         #obj-$(CONFIG_MTK_COMBO_GPS) += gps/

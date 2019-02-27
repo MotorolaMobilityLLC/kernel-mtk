@@ -20,6 +20,7 @@
 
 #include "btif_pub.h"
 #include "btif_priv.h"
+#include "mtk_btif.h"
 
 #define BTIF_USER_ID "btif_driver"
 
@@ -27,7 +28,7 @@ static spinlock_t g_clk_cg_spinlock;	/*BTIF clock's spinlock */
 
 /*-----------------------------BTIF Module Clock and Power Control Defination------------------*/
 
-MTK_BTIF_IRQ_STR mtk_btif_irq = {
+struct _MTK_BTIF_IRQ_STR_ mtk_btif_irq = {
 	.name = "mtk btif irq",
 	.is_irq_sup = true,
 	.reg_flag = false,
@@ -46,7 +47,7 @@ MTK_BTIF_IRQ_STR mtk_btif_irq = {
  * but we may need to access these registers in case of btif clock control logic is wrong in clock manager
  */
 
-MTK_BTIF_INFO_STR mtk_btif = {
+struct _MTK_BTIF_INFO_STR_ mtk_btif_info = {
 #ifndef CONFIG_OF
 	.base = MTK_BTIF_REG_BASE,
 #endif
@@ -59,13 +60,13 @@ MTK_BTIF_INFO_STR mtk_btif = {
 	.p_tx_fifo = NULL,
 };
 #if !(NEW_TX_HANDLING_SUPPORT)
-static bool _btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif);
+static bool _btif_is_tx_allow(struct _MTK_BTIF_INFO_STR_ *p_btif);
 #endif
 
-static int btif_rx_irq_handler(P_MTK_BTIF_INFO_STR p_btif_info,
+static int btif_rx_irq_handler(struct _MTK_BTIF_INFO_STR_ *p_btif_info,
 			       unsigned char *p_buf,
 			       const unsigned int max_len);
-static int btif_tx_irq_handler(P_MTK_BTIF_INFO_STR p_btif);
+static int btif_tx_irq_handler(struct _MTK_BTIF_INFO_STR_ *p_btif);
 
 /*****************************************************************************
 * FUNCTION
@@ -78,7 +79,7 @@ static int btif_tx_irq_handler(P_MTK_BTIF_INFO_STR p_btif);
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-static int hal_btif_rx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en);
+static int hal_btif_rx_ier_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en);
 
 /*****************************************************************************
 * FUNCTION
@@ -91,10 +92,10 @@ static int hal_btif_rx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en);
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-static int hal_btif_tx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en);
+static int hal_btif_tx_ier_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en);
 
 #ifndef MTK_BTIF_MARK_UNUSED_API
-static int btif_sleep_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en);
+static int btif_sleep_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en);
 
 /*****************************************************************************
 * FUNCTION
@@ -108,9 +109,10 @@ static int btif_sleep_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en);
 * RETURNS
 *  positive means data is available, 0 means no data available
 *****************************************************************************/
-static int _btif_receive_data(P_MTK_BTIF_INFO_STR p_btif,
+static int _btif_receive_data(struct _MTK_BTIF_INFO_STR_ *p_btif,
 			      unsigned char *p_buf, const unsigned int max_len);
-static int btif_tx_thr_set(P_MTK_BTIF_INFO_STR p_btif, unsigned int thr_count);
+static int btif_tx_thr_set(struct _MTK_BTIF_INFO_STR_ *p_btif,
+			   unsigned int thr_count);
 #endif
 
 static int btif_dump_array(char *string, char *p_buf, int len)
@@ -141,7 +143,7 @@ static int btif_dump_array(char *string, char *p_buf, int len)
 }
 
 #if NEW_TX_HANDLING_SUPPORT
-static int _btif_tx_fifo_init(P_MTK_BTIF_INFO_STR p_btif_info)
+static int _btif_tx_fifo_init(struct _MTK_BTIF_INFO_STR_ *p_btif_info)
 {
 	int i_ret = -1;
 
@@ -174,7 +176,7 @@ ret:
 	return i_ret;
 }
 
-static int _get_btif_tx_fifo_room(P_MTK_BTIF_INFO_STR p_btif_info)
+static int _get_btif_tx_fifo_room(struct _MTK_BTIF_INFO_STR_ *p_btif_info)
 {
 	int i_ret = 0;
 	unsigned long flag = 0;
@@ -189,7 +191,7 @@ static int _get_btif_tx_fifo_room(P_MTK_BTIF_INFO_STR p_btif_info)
 	return i_ret;
 }
 
-static int _btif_tx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif_info)
+static int _btif_tx_fifo_reset(struct _MTK_BTIF_INFO_STR_ *p_btif_info)
 {
 	int i_ret = 0;
 
@@ -204,16 +206,16 @@ static int _btif_tx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif_info)
 static void _btif_set_default_setting(void)
 {
 	struct device_node *node = NULL;
-	unsigned int irq_info[3] = {0, 0, 0};
+	unsigned int irq_info[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 	unsigned int phy_base;
 
-	node = of_find_compatible_node(NULL, NULL, "mediatek,btif");
+	node = ((struct device *)(g_btif[0].private_data))->of_node;
 	if (node) {
-		mtk_btif.p_irq->irq_id = irq_of_parse_and_map(node, 0);
+		mtk_btif_info.p_irq->irq_id = irq_of_parse_and_map(node, 0);
 		/*fixme, be compitable arch 64bits*/
-		mtk_btif.base = (unsigned long)of_iomap(node, 0);
+		mtk_btif_info.base = (unsigned long)of_iomap(node, 0);
 		BTIF_INFO_FUNC("get btif irq(%d),register base(0x%lx)\n",
-			mtk_btif.p_irq->irq_id, mtk_btif.base);
+			mtk_btif_info.p_irq->irq_id, mtk_btif_info.base);
 	} else {
 		BTIF_ERR_FUNC("get btif device node fail\n");
 	}
@@ -222,14 +224,16 @@ static void _btif_set_default_setting(void)
 	if (of_property_read_u32_array(node, "interrupts", irq_info, ARRAY_SIZE(irq_info))) {
 		BTIF_ERR_FUNC("get interrupt flag from DTS fail\n");
 	} else {
-		mtk_btif.p_irq->irq_flags = irq_info[2];
-		BTIF_INFO_FUNC("get interrupt flag(0x%x)\n", mtk_btif.p_irq->irq_flags);
+		mtk_btif_info.p_irq->irq_flags = irq_info[2];
+		BTIF_INFO_FUNC("get interrupt flag(0x%x)\n",
+				mtk_btif_info.p_irq->irq_flags);
 	}
 
 	if (of_property_read_u32_index(node, "reg", 1, &phy_base))
 		BTIF_ERR_FUNC("get register phy base from DTS fail\n");
 	else
-		BTIF_INFO_FUNC("get register phy base(0x%x)\n", (unsigned int)phy_base);
+		BTIF_INFO_FUNC("get register phy base(0x%x)\n",
+				(unsigned int)phy_base);
 }
 #endif
 
@@ -242,12 +246,12 @@ static void _btif_set_default_setting(void)
 * RETURNS
 *  BTIF's information
 *****************************************************************************/
-P_MTK_BTIF_INFO_STR hal_btif_info_get(void)
+struct _MTK_BTIF_INFO_STR_ *hal_btif_info_get(void)
 {
 #if NEW_TX_HANDLING_SUPPORT
 	int i_ret = 0;
 /*tx fifo and fifo lock init*/
-	i_ret = _btif_tx_fifo_init(&mtk_btif);
+	i_ret = _btif_tx_fifo_init(&mtk_btif_info);
 	if (i_ret == 0)
 		BTIF_INFO_FUNC("_btif_tx_fifo_init succeed\n");
 	else
@@ -261,7 +265,7 @@ P_MTK_BTIF_INFO_STR hal_btif_info_get(void)
 
 	spin_lock_init(&g_clk_cg_spinlock);
 
-	return &mtk_btif;
+	return &mtk_btif_info;
 }
 /*****************************************************************************
 * FUNCTION
@@ -331,7 +335,8 @@ int hal_btif_clk_unprepare(void)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_clk_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_CLOCK_CTRL flag)
+int hal_btif_clk_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif,
+		      enum _ENUM_CLOCK_CTRL_ flag)
 {
 /*In MTK BTIF, there's only one global CG on AP_DMA, no sub channel's CG bit*/
 /*according to Artis's comment, clock of DMA and BTIF is default off, so we assume it to be off by default*/
@@ -341,7 +346,7 @@ int hal_btif_clk_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_CLOCK_CTRL flag)
 #if MTK_BTIF_ENABLE_CLK_REF_COUNTER
 	static atomic_t s_clk_ref = ATOMIC_INIT(0);
 #else
-	static ENUM_CLOCK_CTRL status = CLK_OUT_DISABLE;
+	static enum _ENUM_CLOCK_CTRL_ status = CLK_OUT_DISABLE;
 #endif
 
 	spin_lock_irqsave(&(g_clk_cg_spinlock), irq_flag);
@@ -460,7 +465,8 @@ int hal_btif_clk_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_CLOCK_CTRL flag)
 	return i_ret;
 }
 
-static int btif_new_handshake_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool enable)
+static int btif_new_handshake_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif,
+				   bool enable)
 {
 	unsigned long base = p_btif->base;
 
@@ -481,7 +487,7 @@ static int btif_new_handshake_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool enable)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_hw_init(P_MTK_BTIF_INFO_STR p_btif)
+int hal_btif_hw_init(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 /*Chaozhong: To be implement*/
 	int i_ret = -1;
@@ -540,7 +546,7 @@ int hal_btif_hw_init(P_MTK_BTIF_INFO_STR p_btif)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_rx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
+int hal_btif_rx_ier_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -566,7 +572,7 @@ int hal_btif_rx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_tx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
+int hal_btif_tx_ier_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -596,7 +602,7 @@ int hal_btif_tx_ier_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
 * RETURNS
 *  positive means data is available, 0 means no data available
 *****************************************************************************/
-int _btif_receive_data(P_MTK_BTIF_INFO_STR p_btif,
+int _btif_receive_data(struct _MTK_BTIF_INFO_STR_ *p_btif,
 		       unsigned char *p_buf, const unsigned int max_len)
 {
 /*Chaozhong: To be implement*/
@@ -612,7 +618,7 @@ int _btif_receive_data(P_MTK_BTIF_INFO_STR p_btif,
 	return i_ret;
 }
 
-int btif_sleep_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
+int btif_sleep_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -628,7 +634,8 @@ int btif_sleep_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
 	return i_ret;
 }
 
-static int btif_tx_thr_set(P_MTK_BTIF_INFO_STR p_btif, unsigned int thr_count)
+static int btif_tx_thr_set(struct _MTK_BTIF_INFO_STR_ *p_btif,
+			   unsigned int thr_count)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -657,7 +664,7 @@ static int btif_tx_thr_set(P_MTK_BTIF_INFO_STR p_btif, unsigned int thr_count)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-static int btif_rx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif)
+static int btif_rx_fifo_reset(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 /*Chaozhong: To be implement*/
 	int i_ret = -1;
@@ -685,7 +692,7 @@ static int btif_rx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-static int btif_tx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif)
+static int btif_tx_fifo_reset(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -713,7 +720,7 @@ static int btif_tx_fifo_reset(P_MTK_BTIF_INFO_STR p_btif)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_loopback_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
+int hal_btif_loopback_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif, bool en)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -742,7 +749,7 @@ int hal_btif_loopback_ctrl(P_MTK_BTIF_INFO_STR p_btif, bool en)
 * RETURNS
 *  0 means success; negative means fail; positive means rx data length
 *****************************************************************************/
-int hal_btif_irq_handler(P_MTK_BTIF_INFO_STR p_btif,
+int hal_btif_irq_handler(struct _MTK_BTIF_INFO_STR_ *p_btif,
 			 unsigned char *p_buf, const unsigned int max_len)
 {
 /*Chaozhong: To be implement*/
@@ -801,7 +808,8 @@ int hal_btif_irq_handler(P_MTK_BTIF_INFO_STR p_btif,
 	return i_ret;
 }
 
-int hal_btif_rx_cb_reg(P_MTK_BTIF_INFO_STR p_btif_info, btif_rx_buf_write rx_cb)
+int hal_btif_rx_cb_reg(struct _MTK_BTIF_INFO_STR_ *p_btif_info,
+		       btif_rx_buf_write rx_cb)
 {
 	if (p_btif_info->rx_cb != NULL)
 		BTIF_DBG_FUNC("rx_cb already registered, replace (0x%p) with (0x%p)\n",
@@ -821,7 +829,7 @@ int hal_btif_rx_cb_reg(P_MTK_BTIF_INFO_STR p_btif_info, btif_rx_buf_write rx_cb)
 * RETURNS
 *  positive means length of rx data , negative means fail
 *****************************************************************************/
-static int btif_rx_irq_handler(P_MTK_BTIF_INFO_STR p_btif_info,
+static int btif_rx_irq_handler(struct _MTK_BTIF_INFO_STR_ *p_btif_info,
 			       unsigned char *p_buf, const unsigned int max_len)
 {
 /*Chaozhong: To be implement*/
@@ -882,7 +890,7 @@ static int btif_rx_irq_handler(P_MTK_BTIF_INFO_STR p_btif_info,
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-static int btif_tx_irq_handler(P_MTK_BTIF_INFO_STR p_btif)
+static int btif_tx_irq_handler(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 	int i_ret = -1;
 
@@ -946,7 +954,8 @@ ret:
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_tx_mode_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_MODE mode)
+int hal_btif_tx_mode_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif,
+			  enum _ENUM_BTIF_MODE_ mode)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -973,7 +982,8 @@ int hal_btif_tx_mode_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_MODE mode)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_rx_mode_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_MODE mode)
+int hal_btif_rx_mode_ctrl(struct _MTK_BTIF_INFO_STR_ *p_btif,
+			  enum _ENUM_BTIF_MODE_ mode)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -1001,7 +1011,7 @@ int hal_btif_rx_mode_ctrl(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_MODE mode)
 * RETURNS
 *   positive means number of data sent; 0 means no data put to FIFO; negative means error happens
 *****************************************************************************/
-int hal_btif_send_data(P_MTK_BTIF_INFO_STR p_btif,
+int hal_btif_send_data(struct _MTK_BTIF_INFO_STR_ *p_btif,
 		       const unsigned char *p_buf, const unsigned int buf_len)
 {
 /*Chaozhong: To be implement*/
@@ -1097,7 +1107,7 @@ int hal_btif_send_data(P_MTK_BTIF_INFO_STR p_btif,
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_raise_wak_sig(P_MTK_BTIF_INFO_STR p_btif)
+int hal_btif_raise_wak_sig(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 	int i_ret = -1;
 	unsigned long base = p_btif->base;
@@ -1135,7 +1145,8 @@ int hal_btif_raise_wak_sig(P_MTK_BTIF_INFO_STR p_btif)
 * RETURNS
 *  0 means success, negative means fail
 *****************************************************************************/
-int hal_btif_dump_reg(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_REG_ID flag)
+int hal_btif_dump_reg(struct _MTK_BTIF_INFO_STR_ *p_btif,
+		      enum _ENUM_BTIF_REG_ID_ flag)
 {
 /*Chaozhong: To be implement*/
 	int i_ret = -1;
@@ -1216,7 +1227,7 @@ int hal_btif_dump_reg(P_MTK_BTIF_INFO_STR p_btif, ENUM_BTIF_REG_ID flag)
 * RETURNS
 *  true means tx complete, false means tx in process
 *****************************************************************************/
-bool hal_btif_is_tx_complete(P_MTK_BTIF_INFO_STR p_btif)
+bool hal_btif_is_tx_complete(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 /*Chaozhong: To be implement*/
 	bool b_ret = false;
@@ -1267,7 +1278,7 @@ bool hal_btif_is_tx_complete(P_MTK_BTIF_INFO_STR p_btif)
 * RETURNS
 * true if tx operation is allowed; false if tx is not allowed
 *****************************************************************************/
-bool hal_btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif)
+bool hal_btif_is_tx_allow(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 #define MIN_TX_MB ((26 * 1000000 / 13) / 1000000)
 #define AVE_TX_MB ((26 * 1000000 / 8) / 1000000)
@@ -1312,7 +1323,7 @@ bool hal_btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif)
 
 #if !(NEW_TX_HANDLING_SUPPORT)
 
-static bool _btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif)
+static bool _btif_is_tx_allow(struct _MTK_BTIF_INFO_STR_ *p_btif)
 {
 /*Chaozhong: To be implement*/
 	bool b_ret = false;
@@ -1326,7 +1337,8 @@ static bool _btif_is_tx_allow(P_MTK_BTIF_INFO_STR p_btif)
 }
 #endif
 
-int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif_info, MTK_BTIF_PM_OPID opid)
+int hal_btif_pm_ops(struct _MTK_BTIF_INFO_STR_ *p_btif_info,
+		    enum _MTK_BTIF_PM_OPID_ opid)
 {
 	int i_ret = -1;
 
@@ -1346,7 +1358,7 @@ int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif_info, MTK_BTIF_PM_OPID opid)
 		break;
 	case BTIF_PM_RESTORE_NOIRQ:{
 			unsigned int flag = 0;
-			P_MTK_BTIF_IRQ_STR p_irq = p_btif_info->p_irq;
+			struct _MTK_BTIF_IRQ_STR_ *p_irq = p_btif_info->p_irq;
 
 #ifdef CONFIG_OF
 			flag = p_irq->irq_flags;
@@ -1361,7 +1373,7 @@ int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif_info, MTK_BTIF_PM_OPID opid)
 					flag = IRQF_TRIGGER_RISING |
 					    IRQF_TRIGGER_FALLING;
 				else
-					flag = IRQF_TRIGGER_FALLING;	/*make this as default type */
+					flag = IRQF_TRIGGER_FALLING;
 				break;
 			case IRQ_SENS_LVL:
 				if (p_irq->lvl_type == IRQ_LVL_LOW)
@@ -1369,10 +1381,10 @@ int hal_btif_pm_ops(P_MTK_BTIF_INFO_STR p_btif_info, MTK_BTIF_PM_OPID opid)
 				else if (p_irq->lvl_type == IRQ_LVL_HIGH)
 					flag = IRQF_TRIGGER_HIGH;
 				else
-					flag = IRQF_TRIGGER_LOW;	/*make this as default type */
+					flag = IRQF_TRIGGER_LOW;
 				break;
 			default:
-				flag = IRQF_TRIGGER_LOW;	/*make this as default type */
+				flag = IRQF_TRIGGER_LOW;
 				break;
 			}
 #endif
@@ -1391,6 +1403,6 @@ void mtk_btif_read_cpu_sw_rst_debug_plat(void)
 {
 #define CONSYS_AP2CONN_WAKEUP_OFFSET	0x00000064
 	BTIF_WARN_FUNC("+CONSYS_AP2CONN_WAKEUP_OFFSET(0x%x)\n",
-			   BTIF_READ32(mtk_btif.base + CONSYS_AP2CONN_WAKEUP_OFFSET));
+		BTIF_READ32(mtk_btif_info.base + CONSYS_AP2CONN_WAKEUP_OFFSET));
 }
 

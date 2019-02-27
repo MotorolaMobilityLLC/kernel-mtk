@@ -532,7 +532,6 @@ static UINT32 wmt_dev_tra_poll(VOID)
 		during_count = count_last_access_sdio;
 		break;
 	case WMT_CHIP_TYPE_SOC:
-		during_count = (*mtk_wcn_wlan_bus_tx_cnt)();
 		if (mtk_wcn_wlan_bus_tx_cnt == NULL) {
 			WMT_ERR_FUNC("WMT-DEV:mtk_wcn_wlan_bus_tx_cnt null pointer\n");
 			return -1;
@@ -541,6 +540,7 @@ static UINT32 wmt_dev_tra_poll(VOID)
 			WMT_ERR_FUNC("WMT-DEV:mtk_wcn_wlan_bus_tx_cnt_clr null pointer\n");
 			return -3;
 		}
+		during_count = (*mtk_wcn_wlan_bus_tx_cnt)();
 		break;
 	default:
 		WMT_ERR_FUNC("WMT-DEV:error chip type(%d)\n", chip_type);
