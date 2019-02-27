@@ -75,6 +75,9 @@
 
 
 #define DISP_DEVNAME "DISPSYS"
+
+#define OCCUPIED_BW_RATIO 1330
+
 /* device and driver */
 static dev_t disp_devno;
 static struct cdev *disp_cdev;
@@ -88,6 +91,93 @@ struct disp_node_struct {
 };
 
 static struct platform_device mydev;
+cmdqBackupSlotHandle dispsys_slot;
+
+static int _disp_init_cmdq_slots(cmdqBackupSlotHandle *pSlot,
+	int count, int init_val)
+{
+	int i;
+
+	cmdqBackupAllocateSlot(pSlot, count);
+
+	for (i = 0; i < count; i++)
+		cmdqBackupWriteSlot(*pSlot, i, init_val);
+
+	return 0;
+}
+
+static int _disp_get_cmdq_slots(cmdqBackupSlotHandle Slot,
+	unsigned int slot_index, unsigned int *value)
+{
+	int ret;
+
+	ret = cmdqBackupReadSlot(Slot, slot_index, value);
+
+	/* cmdq get slot fail */
+	if (ret)
+		DDPERR("DISP CMDQ get slot failed:%d\n", ret);
+
+	return ret;
+}
+
+int disp_get_ovl_bandwidth(unsigned int in_fps,
+	unsigned int out_fps, unsigned long long *bandwidth)
+{
+	int ret = 0;
+	unsigned int is_dc;
+	unsigned int ovl0_bw, ovl0_2l_bw, rdma0_bw, wdma0_bw;
+
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_IS_DC, &is_dc);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_OVL0_BW, &ovl0_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_OVL0_2L_BW, &ovl0_2l_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_RDMA0_BW, &rdma0_bw);
+	ret |= _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_WDMA0_BW, &wdma0_bw);
+
+	/* cmdq get slot fail */
+	if (ret) {
+		DDPERR("DISP CMDQ get slot failed:%d\n", ret);
+		*bandwidth = 0;
+	} else {
+		if (is_dc)
+			*bandwidth =
+				(((ovl0_bw + ovl0_2l_bw + wdma0_bw) * in_fps)
+				+ (rdma0_bw * out_fps)) * OCCUPIED_BW_RATIO;
+		else
+			*bandwidth = (ovl0_bw + ovl0_2l_bw) * out_fps
+				* OCCUPIED_BW_RATIO;
+
+		do_div(*bandwidth, 1000 * 1000);
+	}
+
+	return ret;
+}
+
+int disp_get_rdma_bandwidth(unsigned int out_fps,
+	unsigned long long *bandwidth)
+{
+	int ret = 0;
+	unsigned int rdma0_bw;
+
+	ret = _disp_get_cmdq_slots(DISPSYS_SLOT_BASE,
+		DISP_SLOT_RDMA0_BW, &rdma0_bw);
+
+	/* cmdq get slot fail */
+	if (ret) {
+		DDPERR("DISP CMDQ get slot failed:%d\n", ret);
+		*bandwidth = 0;
+	} else {
+		*bandwidth = rdma0_bw * out_fps * OCCUPIED_BW_RATIO;
+
+		do_div(*bandwidth, 1000 * 1000);
+	}
+
+	return ret;
+}
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
 	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
@@ -686,6 +776,9 @@ static int __init disp_probe_1(void)
 		       i, ddp_get_module_name(i), (void *)ddp_get_module_va(i),
 		       ddp_get_module_irq(i), ddp_get_module_pa(i));
 	}
+
+	/* initialize display slot */
+	_disp_init_cmdq_slots(&(dispsys_slot), DISP_SLOT_NUM, 0);
 
 	/* register irq */
 	for (i = 0; i < DISP_MODULE_NUM; i++) {

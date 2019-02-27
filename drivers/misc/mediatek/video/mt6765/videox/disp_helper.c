@@ -333,7 +333,7 @@ const char *disp_helper_stage_spy(void)
 	return "UNKNOWN";
 }
 
-void disp_helper_option_init(void) /* SHANG: Need modify */
+void disp_helper_option_init(void)
 {
 	disp_helper_set_option(DISP_OPT_USE_CMDQ, 1);
 	disp_helper_set_option(DISP_OPT_USE_M4U, 1);

@@ -93,6 +93,9 @@
 #include "disp_partial.h"
 #include "ddp_aal.h"
 #include "ddp_gamma.h"
+#ifdef MTK_FB_MMDVFS_SUPPORT
+#include <linux/pm_qos.h>
+#endif
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -145,6 +148,11 @@ static struct task_struct *primary_od_trigger_task;
 static struct task_struct *decouple_update_rdma_config_thread;
 static struct task_struct *decouple_trigger_thread;
 static struct task_struct *init_decouple_buffer_thread;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+struct pm_qos_request primary_display_qos_request;
+struct pm_qos_request primary_display_emi_opp_request;
+struct pm_qos_request primary_display_mm_freq_request;
+#endif
 
 static int decouple_mirror_update_rdma_config_thread(void *data);
 static int decouple_trigger_worker_thread(void *data);
@@ -1007,6 +1015,11 @@ static int fps_ext_ctx_set_interval(struct fps_ext_ctx_t *fps_ctx,
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz)
 {
 	return fps_ctx_set_wnd_sz(&primary_fps_ctx, wnd_sz);
+}
+
+int primary_fps_ctx_get_fps(unsigned int *fps, int *stable)
+{
+	return fps_ctx_get_fps(&primary_fps_ctx, fps, stable);
 }
 
 int primary_fps_ext_ctx_set_interval(unsigned int interval)
@@ -3171,6 +3184,12 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	int i = 0;
 	int ret = 0;
 	int real_hrt_level = 0;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
+	int stable = 0;
+#endif
 
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release,
 		MMPROFILE_FLAG_START, 1, userdata);
@@ -3248,6 +3267,21 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 		if ((primary_display_is_decouple_mode() == 0))
 			update_frm_seq_info(addr, 0, 2, FRM_START);
 	}
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	primary_fps_ctx_get_fps(&in_fps, &stable);
+	if (!primary_display_is_video_mode())
+		out_fps = in_fps;
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_START,
+			!primary_display_is_decouple_mode(), bandwidth);
+	pm_qos_update_request(&primary_display_qos_request, bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_END,
+			!primary_display_is_decouple_mode(), bandwidth);
+#endif
 
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release,
 		MMPROFILE_FLAG_END, 1, userdata);
@@ -3641,6 +3675,15 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	if (disp_helper_get_option(DISP_OPT_FPS_EXT))
 		fps_ext_ctx_init(&primary_fps_ext_ctx,
 			disp_helper_get_option(DISP_OPT_FPS_EXT_INTERVAL));
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	pm_qos_add_request(&primary_display_qos_request,
+		PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
+	pm_qos_add_request(&primary_display_emi_opp_request,
+		PM_QOS_DDR_OPP, PM_QOS_DDR_OPP_DEFAULT_VALUE);
+	pm_qos_add_request(&primary_display_mm_freq_request,
+		PM_QOS_DISP_FREQ, PM_QOS_MM_FREQ_DEFAULT_VALUE);
+#endif
 
 	_primary_path_lock(__func__);
 
@@ -4246,6 +4289,13 @@ int primary_display_deinit(void)
 	_cmdq_stop_trigger_loop();
 	dpmgr_path_deinit(pgc->dpmgr_handle, CMDQ_DISABLE);
 	_primary_path_unlock(__func__);
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	pm_qos_remove_request(&primary_display_qos_request);
+	pm_qos_remove_request(&primary_display_emi_opp_request);
+	pm_qos_remove_request(&primary_display_mm_freq_request);
+#endif
+
 	return 0;
 }
 
@@ -4581,6 +4631,16 @@ int primary_display_suspend(void)
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_START,
+			!primary_display_is_decouple_mode(), 0);
+	pm_qos_update_request(&primary_display_qos_request, 0);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_END,
+			!primary_display_is_decouple_mode(), 0);
+#endif
+
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_suspend,
 		MMPROFILE_FLAG_PULSE, 0, 8);
@@ -4676,6 +4736,11 @@ int primary_display_resume(void)
 	enum DISP_STATUS ret = DISP_STATUS_OK;
 	struct ddp_io_golden_setting_arg gset_arg;
 	int i, skip_update = 0;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
+#endif
 
 	DISPCHECK("primary_display_resume begin\n");
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
@@ -4977,6 +5042,18 @@ int primary_display_resume(void)
 	}
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_resume,
 		MMPROFILE_FLAG_PULSE, 0, 11);
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	disp_get_ovl_bandwidth(in_fps, out_fps, &bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_START,
+			!primary_display_is_decouple_mode(), bandwidth);
+	pm_qos_update_request(&primary_display_qos_request, bandwidth);
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_pm_qos,
+			MMPROFILE_FLAG_END,
+			!primary_display_is_decouple_mode(), bandwidth);
+#endif
 
 	/*
 	 * (in suspend) when we stop trigger loop
