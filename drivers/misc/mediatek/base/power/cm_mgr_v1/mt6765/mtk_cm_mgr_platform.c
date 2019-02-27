@@ -193,7 +193,6 @@ spinlock_t cm_mgr_cpu_mask_lock;
 
 #define CM_MGR_MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#define USE_TIME_NS
 /* #define USE_DEBUG_LOG */
 
 struct stall_s {
@@ -333,9 +332,7 @@ int cm_mgr_check_stall_ratio(int mp0, int mp1)
 	unsigned int i;
 	unsigned int clustor;
 	unsigned int stall_val_new;
-#ifdef USE_TIME_NS
 	unsigned long long time_ns_new;
-#endif /* USE_TIME_NS */
 
 	pstall_all->clustor[0] = mp0;
 	pstall_all->clustor[1] = mp1;
@@ -360,12 +357,12 @@ int cm_mgr_check_stall_ratio(int mp0, int mp1)
 			continue;
 		}
 
-#ifdef USE_TIME_NS
 		time_ns_new = sched_clock();
 		pstall_all->time_ns_diff[i] =
 			time_ns_new - pstall_all->time_ns[i];
 		pstall_all->time_ns[i] = time_ns_new;
-#endif /* USE_TIME_NS */
+		if (pstall_all->time_ns_diff[i] == 0)
+			continue;
 
 		diff_value_overflow(pstall_all->stall_val_diff[i],
 				stall_val_new, pstall_all->stall_val[i]);
