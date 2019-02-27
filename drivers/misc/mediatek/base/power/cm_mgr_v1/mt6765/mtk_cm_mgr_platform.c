@@ -48,6 +48,9 @@
 #include <linux/of_address.h>
 #include <mtk_cm_mgr.h>
 
+#define CREATE_TRACE_POINTS
+#include "mtk_cm_mgr_platform_events.h"
+
 #include <linux/fb.h>
 #include <linux/notifier.h>
 
@@ -487,6 +490,32 @@ static int cm_mgr_is_lp_flavor(void)
 }
 #endif
 
+struct timer_list cm_mgr_ratio_timer;
+#define CM_MGR_RATIO_TIMER_MS	1
+
+static void cm_mgr_ratio_timer_fn(unsigned long data)
+{
+	trace_CM_MGR__stall_raio_0(
+			(unsigned int)cm_mgr_read(MP0_CPU_AVG_STALL_RATIO));
+	trace_CM_MGR__stall_raio_1(
+			(unsigned int)cm_mgr_read(MP1_CPU_AVG_STALL_RATIO));
+
+	cm_mgr_ratio_timer.expires = jiffies +
+		msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+	add_timer(&cm_mgr_ratio_timer);
+}
+
+void cm_mgr_ratio_timer_en(int enable)
+{
+	if (enable) {
+		cm_mgr_ratio_timer.expires = jiffies +
+			msecs_to_jiffies(CM_MGR_RATIO_TIMER_MS);
+		add_timer(&cm_mgr_ratio_timer);
+	} else {
+		del_timer(&cm_mgr_ratio_timer);
+	}
+}
+
 int cm_mgr_register_init(void)
 {
 	struct device_node *node;
@@ -494,7 +523,7 @@ int cm_mgr_register_init(void)
 	node = of_find_compatible_node(NULL, NULL,
 			"mediatek,mcucfg_mp0_counter");
 	if (!node)
-		pr_info("find mp0_counter node failed\n");
+		pr_info("find mcucfg_mp0_counter node failed\n");
 	mcucfg_mp0_counter_base = of_iomap(node, 0);
 	if (!mcucfg_mp0_counter_base) {
 		pr_info("base mcucfg_mp0_counter_base failed\n");
@@ -503,7 +532,7 @@ int cm_mgr_register_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,sleep");
 	if (!node)
-		pr_info("find mp2_counter node failed\n");
+		pr_info("find sleep node failed\n");
 	spm_sleep_base = of_iomap(node, 0);
 	if (!spm_sleep_base) {
 		pr_info("base spm_sleep_base failed\n");
@@ -544,8 +573,11 @@ int cm_mgr_platform_init(void)
 		cm_mgr_enable = 1;
 #endif
 
-	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
+	init_timer_deferrable(&cm_mgr_ratio_timer);
+	cm_mgr_ratio_timer.function = cm_mgr_ratio_timer_fn;
+	cm_mgr_ratio_timer.data = 0;
 
+	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
 
 	return r;
 }
