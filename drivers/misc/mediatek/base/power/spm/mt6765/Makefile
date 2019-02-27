@@ -46,5 +46,3 @@ obj-y += mtk_spm_utils.o
 obj-y += mtk_idle_cond_check.o
 obj-y += mtk_spm_idle.o
 obj-y += mtk_spm_vcore_dvfs.o
-
-KASAN_SANITIZE_mtk_spm_internal.o := n
