@@ -797,6 +797,10 @@ void md_cd_dump_debug_register(struct ccci_modem *md)
 		iounmap(dump_reg0);
 	}
 
+	/* Clear flags for wdt timeout dump MDRGU */
+	md->per_md_data.md_dbg_dump_flag &= (~((1 << MD_DBG_DUMP_TOPSM)
+		| (1 << MD_DBG_DUMP_MDRGU) | (1 << MD_DBG_DUMP_OST)));
+
 	md_cd_lock_modem_clock_src(0);
 
 }
