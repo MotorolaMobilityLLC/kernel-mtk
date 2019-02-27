@@ -1642,6 +1642,9 @@ sched_trace(sched_lb);
 sched_trace(sched_lb_info);
 sched_trace(sched_eas_energy_calc);
 sched_trace(sched_dvfs);
+
+// mtk scheduling interopertion enhancement
+sched_trace(sched_interop);
 #endif
 
 /*
