@@ -359,13 +359,12 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 
 	IRQLOG("[%s] int name=%s\n", __func__, int_name);
 	switch (intNo) {
-	case INT_VCN33_OC:
+	case INT_VCN33_1_OC:
+	case INT_VCN33_2_OC:
 		/* keep OC interrupt and keep tracking */
 		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
 	case INT_VIO18_OC:
-		pr_notice("LDO_DEGTD_SEL=0x%x\n",
-			pmic_get_register_value(PMIC_LDO_DEGTD_SEL));
 		pr_notice("RG_INT_EN_VIO18_OC=0x%x\n",
 			pmic_get_register_value(PMIC_RG_INT_EN_VIO18_OC));
 		pr_notice("RG_INT_MASK_VIO18_OC=0x%x\n",
