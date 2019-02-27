@@ -220,7 +220,12 @@ enum scp_ipi_status scp_ipi_send(enum ipi_id id, void *buf,
 		scp_ipi_desc[id].error_count++;
 		return SCP_IPI_ERROR;
 	}
-
+#if SCP_RECOVERY_SUPPORT
+	if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
+		scp_ipi_desc[id].error_count++;
+		return SCP_IPI_ERROR;
+	}
+#endif
 	if (mutex_trylock(&scp_ipi_mutex[scp_id]) == 0) {
 		/*avoid scp ipi send log print too much*/
 		if ((scp_ipi_id_record_count % PRINT_THRESHOLD == 0) ||
