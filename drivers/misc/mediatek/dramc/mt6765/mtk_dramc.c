@@ -70,6 +70,7 @@ unsigned int CBT_MODE;
 #define Reg_Readl(addr) readl(IOMEM(addr))
 
 static unsigned int dram_rank_num;
+static unsigned int dram_mr_mode;
 
 struct dram_info *g_dram_info_dummy_read, *get_dram_info;
 struct dram_info dram_info_dummy_read;
@@ -189,6 +190,7 @@ unsigned int read_dram_mode_reg_by_rank(
 	ssize_t ret;
 	unsigned long save_flags;
 	unsigned int res;
+	unsigned int mr_rank_offset = (dram_mr_mode) ? 26 : 24;
 
 	ret = 0;
 
@@ -209,15 +211,15 @@ unsigned int read_dram_mode_reg_by_rank(
 		return -1;
 	}
 
-	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
-	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<26));
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<mr_rank_offset);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<mr_rank_offset));
 
 	res = read_dram_mode_reg(mr_index, mr_value,
 		dramc_ao_chx_base, dramc_nao_chx_base);
 	if (res != TX_DONE)
 		ret = -1;
 
-	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<mr_rank_offset);
 	Reg_Sync_Writel(DRAMC_AO_MRS, temp);
 
 	release_dram_ctrl();
@@ -265,6 +267,7 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	unsigned int backup_mrs, backup_pd_ctrl, backup_ckectrl;
 	unsigned int temp;
 	unsigned int res;
+	unsigned int mr_rank_offset = (dram_mr_mode) ? 26 : 24;
 
 	backup_mrs = Reg_Readl(DRAMC_AO_MRS);
 	backup_pd_ctrl = Reg_Readl(DRAMC_AO_PD_CTRL);
@@ -295,8 +298,8 @@ void __iomem *dramc_ao_chx_base, void __iomem *dramc_nao_chx_base)
 	if (res != TX_DONE)
 		goto ret_auto_dram_dqs_osc;
 	udelay(1);
-	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<26);
-	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<26));
+	temp = Reg_Readl(DRAMC_AO_MRS) & ~(0x3<<mr_rank_offset);
+	Reg_Sync_Writel(DRAMC_AO_MRS, temp | (rank<<mr_rank_offset));
 	res = read_dram_mode_reg(18, &mr18_cur,
 		dramc_ao_chx_base, dramc_nao_chx_base);
 	if (res != TX_DONE)
@@ -1708,8 +1711,11 @@ static int dram_probe(struct platform_device *pdev)
 		break;
 	}
 
+	dram_mr_mode = (readl(PDEF_DRAMC0_CHA_REG_028) >> 29) & 0x1;
+
 	dramc_info("Dram Data Rate = %d\n", get_dram_data_rate());
 	dramc_info("shuffle_status = %d\n", get_shuffle_status());
+	dramc_info("MR mode = %d\n", dram_mr_mode);
 
 	if ((DRAM_TYPE == TYPE_LPDDR4) || (DRAM_TYPE == TYPE_LPDDR4X)) {
 		low_freq_counter = 10;
