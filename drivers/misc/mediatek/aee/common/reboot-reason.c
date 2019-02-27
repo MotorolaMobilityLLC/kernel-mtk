@@ -124,8 +124,8 @@ static ssize_t powerup_reason_show(struct kobject *kobj,
 		if (!strncmp(boot_reason, "2sec_reboot",
 					strlen("2sec_reboot"))) {
 			br_ptr = strstr(saved_command_line,
-					"has_battery_removed=0");
-			if (br_ptr != 0)
+					"has_battery_removed=1");
+			if (br_ptr == NULL)
 				return snprintf(buf, sizeof(boot_reason),
 						"%s_abnormal\n", boot_reason);
 		}
