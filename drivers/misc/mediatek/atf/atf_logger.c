@@ -193,19 +193,19 @@ size_t ipanic_atflog_buffer(void *data, unsigned char *buffer, size_t sz_buffer)
 static ssize_t atf_log_write(struct file *file,
 	const char __user *buf, size_t count, loff_t *pos)
 {
-	char kernel_buf[12];
 	unsigned long ret;
 	unsigned long param;
 
-	if (!copy_from_user(kernel_buf, buf, count)) {
-		if (count >= 12) {
-			ret = -1;
-		} else {
-			kernel_buf[count] = 0;
-			ret = kstrtoul(kernel_buf, 0, &param);
-		}
-	} else
-		ret = -1;
+	ret = -1;
+	param = -1;
+
+	if (count < 12) {
+		/* for coverity check */
+		/* use kstrtoul_from_user() instead of */
+		/* copy_from_user() and kstrtoul() */
+		ret = kstrtoul_from_user(buf, count, 16, &param);
+	}
+
 	pr_notice("[%s]param:0x%lx, count:%zu, ret:%ld\n",
 		__func__, param, count, ret);
 	if (ret == 0x0) {
@@ -364,12 +364,15 @@ static unsigned int atf_log_poll(struct file *file, poll_table *wait)
 
 	if (!(file->f_mode & FMODE_READ))
 		return ret;
+
 	poll_wait(file, &atf_log_wq, wait);
+
 	atf_log_lock();
 	if (atf_buf_vir_ctl->info.atf_write_pos !=
 		atf_buf_vir_ctl->info.atf_read_pos)
 		ret |= POLLIN | POLLRDNORM;
 	atf_log_unlock();
+
 	return ret;
 }
 
