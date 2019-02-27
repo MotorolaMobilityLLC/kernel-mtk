@@ -2899,9 +2899,9 @@ static int pseudo_probe(struct platform_device *pdev)
 	///struct device_node *node = dev->of_node;
 	struct platform_device *pimudev;
 #if defined(CONFIG_MTK_SMI_EXT)
-	M4UMSG("%s: %d\n", __func__, smi_mm_clk_first_get());
+	M4U_MSG("%s: %d\n", __func__, smi_mm_clk_first_get());
 	if (!smi_mm_clk_first_get()) {
-		M4UMSG("SMI not start probe\n");
+		M4U_MSG("SMI not start probe\n");
 		return -EPROBE_DEFER;
 	}
 #endif
@@ -2918,9 +2918,9 @@ static int pseudo_probe(struct platform_device *pdev)
 	///WARN_ON(!dmapping);
 #endif
 #if defined(CONFIG_MTK_SMI_EXT)
-	M4UMSG("%s: %d\n", __func__, smi_mm_clk_first_get());
+	M4U_MSG("%s: %d\n", __func__, smi_mm_clk_first_get());
 	if (!smi_mm_clk_first_get()) {
-		M4UMSG("SMI not start probe\n");
+		M4U_MSG("SMI not start probe\n");
 		return -EPROBE_DEFER;
 	}
 #endif
