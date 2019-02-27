@@ -5,6 +5,8 @@
 # Rewritten to use lists instead of if-statements.
 #
 
+subdir-ccflags-y += -Werror
+
 obj-$(CONFIG_NET)		:= socket.o core/
 
 tmp-$(CONFIG_COMPAT) 		:= compat.o
