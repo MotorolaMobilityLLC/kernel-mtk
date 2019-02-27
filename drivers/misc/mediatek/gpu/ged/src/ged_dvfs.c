@@ -519,7 +519,7 @@ bool ged_dvfs_gpu_freq_commit(unsigned long ui32NewFreqID, unsigned long ui32New
 			 * since it is possible to have multiple freq settings in previous execution period
 			 * Does this fatal for precision?
 			 */
-			ged_log_buf_print(ghLogBuf_DVFS,
+			ged_log_buf_print2(ghLogBuf_DVFS, GED_LOG_ATTR_TIME,
 				"[GED_K] new freq ID committed: idx=%lu type=%u, g_type=%u",
 				ui32NewFreqID, eCommitType, g_CommitType);
 			if (bCommited == true) {
@@ -1107,6 +1107,7 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 	s_bottom_freq_id = ui32MaxLevel - ui32FreqLevel;
 	gpu_bottom_freq = mt_gpufreq_get_freq_by_idx(s_bottom_freq_id);
 	if (g_bottom_freq_id < s_bottom_freq_id) {
+		g_bottom_freq_id = s_bottom_freq_id;
 		if (s_bottom_freq_id < g_last_def_commit_freq_id)
 			ged_dvfs_gpu_freq_commit(s_bottom_freq_id,
 			gpu_bottom_freq,
@@ -1117,12 +1118,12 @@ static void ged_dvfs_set_bottom_gpu_freq(unsigned int ui32FreqLevel)
 			GED_DVFS_SET_BOTTOM_COMMIT);
 	} else {
 	/* if current id is larger, ie lower freq, reflect immedately */
+		g_bottom_freq_id = s_bottom_freq_id;
 		if (s_bottom_freq_id < mt_gpufreq_get_cur_freq_index())
 			ged_dvfs_gpu_freq_commit(s_bottom_freq_id,
 			gpu_bottom_freq,
 			GED_DVFS_SET_BOTTOM_COMMIT);
 	}
-	g_bottom_freq_id = s_bottom_freq_id;
 	mutex_unlock(&gsDVFSLock);
 }
 
