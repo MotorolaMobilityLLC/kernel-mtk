@@ -108,10 +108,10 @@ static int deep_buffer_dl_hdoutput_get(struct snd_kcontrol *kcontrol,
 static int deep_buffer_dl_hdoutput_set(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	/* pr_debug("%s()\n", __func__); */
 	if (ucontrol->value.enumerated.item[0] >
 	    ARRAY_SIZE(deep_buffer_dl_HD_output)) {
-		pr_err("return -EINVAL\n");
+		pr_warn("%s(), return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
 

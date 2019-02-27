@@ -57,6 +57,7 @@
 #include "mtk-soc-pcm-platform.h"
 #include <linux/ftrace.h>
 
+static int fast_dl_hdoutput;
 static struct afe_mem_control_t *pMemControl;
 static struct snd_dma_buffer *Dl2_Playback_dma_buf;
 
@@ -70,6 +71,40 @@ static unsigned long NowTime;
 static const int ISRCopyMaxSize = 256 * 2 * 4; /* 256 frames, stereo, 32bit */
 static struct afe_dl_isr_copy_t ISRCopyBuffer = {0};
 #endif
+
+const char * const fast_dl_hd_output[] = {"Off", "On"};
+
+static const struct soc_enum fast_dl_enum[] = {
+	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(fast_dl_hd_output), fast_dl_hd_output),
+};
+
+static int fast_dl_hdoutput_get(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s() = %d\n", __func__, fast_dl_hdoutput);
+	ucontrol->value.integer.value[0] = fast_dl_hdoutput;
+	return 0;
+}
+
+static int fast_dl_hdoutput_set(struct snd_kcontrol *kcontrol,
+				struct snd_ctl_elem_value *ucontrol)
+{
+	/* pr_debug("%s()\n", __func__); */
+	if (ucontrol->value.enumerated.item[0] >
+	    ARRAY_SIZE(fast_dl_hd_output)) {
+		pr_warn("%s(), return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	fast_dl_hdoutput = ucontrol->value.integer.value[0];
+
+	if (GetMemoryPathEnable(Soc_Aud_Digital_Block_MEM_HDMI) == true) {
+		pr_debug("return HDMI enabled\n");
+		return 0;
+	}
+
+	return 0;
+}
 
 static int dataTransfer(void *dest, const void *src, uint32_t size);
 
@@ -105,6 +140,11 @@ static bool mPrepareDone;
 #define USE_CHANNELS_MAX 2
 #define USE_PERIODS_MIN 512
 #define USE_PERIODS_MAX 8192
+
+static const struct snd_kcontrol_new fast_dl_controls[] = {
+	SOC_ENUM_EXT("fast_dl_hd_Switch", fast_dl_enum[0],
+		    fast_dl_hdoutput_get, fast_dl_hdoutput_set),
+};
 
 static struct snd_pcm_hardware mtk_pcm_dl2_hardware = {
 	.info = (SNDRV_PCM_INFO_MMAP | SNDRV_PCM_INFO_NO_PERIOD_WAKEUP |
@@ -312,7 +352,8 @@ static int mtk_pcm_dl2_open(struct snd_pcm_substream *substream)
 
 static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 {
-	pr_debug("%s\n", __func__);
+	pr_debug("%s, mPrepareDone = %d, fast_dl_hdoutput = %d\n",
+		 __func__, mPrepareDone, fast_dl_hdoutput);
 
 	if (mPrepareDone == true) {
 		/* stop DAC output */
@@ -327,6 +368,16 @@ static int mtk_soc_pcm_dl2_close(struct snd_pcm_substream *substream)
 			Afe_Set_Reg(AFE_I2S_CON3, 0x0, 0x1);
 
 		RemoveMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
+
+		if (fast_dl_hdoutput == true) {
+			/* here to close APLL */
+			if (!mtk_soc_always_hd) {
+				DisableAPLLTunerbySampleRate(
+						substream->runtime->rate);
+				DisableALLbySampleRate(
+						substream->runtime->rate);
+			}
+		}
 
 		EnableAfe(false);
 		mPrepareDone = false;
@@ -352,9 +403,10 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 	pr_debug("%s\n", __func__);
 
 	if (mPrepareDone == false) {
-		pr_info("%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d\n",
+		pr_info(
+			"%s format = %d SNDRV_PCM_FORMAT_S32_LE = %d SNDRV_PCM_FORMAT_U32_LE = %d, fast_dl_hdoutput = %d\n",
 			__func__, runtime->format, SNDRV_PCM_FORMAT_S32_LE,
-			SNDRV_PCM_FORMAT_U32_LE);
+			SNDRV_PCM_FORMAT_U32_LE, fast_dl_hdoutput);
 		SetMemifSubStream(Soc_Aud_Digital_Block_MEM_DL2, substream);
 		set_memif_pbuf_size(Soc_Aud_Digital_Block_MEM_DL2,
 				    MEMIF_PBUF_SIZE_32_BYTES);
@@ -397,6 +449,19 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 			<< 8;
 		u32AudioI2S |= Soc_Aud_I2S_FORMAT_I2S << 3; /* use I2s format */
 		u32AudioI2S |= mI2SWLen << 1;
+
+		if (fast_dl_hdoutput == true) {
+			/* here to open APLL */
+			if (!mtk_soc_always_hd) {
+				EnableALLbySampleRate(runtime->rate);
+				EnableAPLLTunerbySampleRate(runtime->rate);
+			}
+			/* Low jitter mode */
+			u32AudioI2S |= Soc_Aud_LOW_JITTER_CLOCK << 12;
+		} else {
+			u32AudioI2S &= ~(Soc_Aud_LOW_JITTER_CLOCK << 12);
+		}
+
 		if (GetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2) ==
 		    false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_2,
@@ -413,7 +478,8 @@ static int mtk_pcm_dl2_prepare(struct snd_pcm_substream *substream)
 		    false) {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC,
 					    true);
-			SetI2SDacOut(substream->runtime->rate, false, mI2SWLen);
+			SetI2SDacOut(substream->runtime->rate, fast_dl_hdoutput,
+				     mI2SWLen);
 			SetI2SDacEnable(true);
 		} else {
 			SetMemoryPathEnable(Soc_Aud_Digital_Block_I2S_OUT_DAC,
@@ -920,6 +986,10 @@ static int mtk_soc_dl2_probe(struct platform_device *pdev)
 static int mtk_asoc_dl2_probe(struct snd_soc_platform *platform)
 {
 	pr_debug("mtk_asoc_dl2_probe\n");
+
+	snd_soc_add_platform_controls(platform, fast_dl_controls,
+				      ARRAY_SIZE(fast_dl_controls));
+
 	/* allocate dram */
 	AudDrv_Allocate_mem_Buffer(platform->dev, Soc_Aud_Digital_Block_MEM_DL2,
 				   Dl2_MAX_BUFFER_SIZE);
