@@ -39,6 +39,7 @@ char *gimgsensor_mclk_name[IMGSENSOR_CCF_MAX_NUM] = {
 	"CLK_MIPI_ANA_2B_CG",
 	"CLK_TOP_CAMTM_SEL_CG",
 	"CLK_TOP_CAMTM_208_CG",
+	"CLK_SCP_SYS_CAM",
 };
 
 
@@ -174,6 +175,20 @@ void imgsensor_clk_enable_all(struct IMGSENSOR_CLK *pclk)
 	int i;
 
 	pr_info("imgsensor_clk_enable_all_cg\n");
+	for (i = IMGSENSOR_CCF_MTCMOS_MIN_NUM;
+		i < IMGSENSOR_CCF_MTCMOS_MAX_NUM;
+		i++) {
+		if (!IS_ERR(pclk->imgsensor_ccf[i])) {
+			if (clk_prepare_enable(pclk->imgsensor_ccf[i]))
+				pr_debug(
+					"[CAMERA SENSOR]imgsensor_ccf enable cmos fail cg_index = %d\n",
+					i);
+			else
+				atomic_inc(&pclk->enable_cnt[i]);
+			/*pr_debug("imgsensor_clk_enable_all %s ok\n",*/
+				/*gimgsensor_mclk_name[i]);*/
+		}
+	}
 	for (i = IMGSENSOR_CCF_CG_MIN_NUM; i < IMGSENSOR_CCF_CG_MAX_NUM; i++) {
 		if (!IS_ERR(pclk->imgsensor_ccf[i])) {
 			if (clk_prepare_enable(pclk->imgsensor_ccf[i]))
