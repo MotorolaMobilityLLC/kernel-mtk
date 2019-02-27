@@ -4,11 +4,11 @@ config SUNWAVE_FP
 	tristate "Sunwave Fingerprint"
 	default y
 	help
-	  If you say Y to this option, support will be included for 
-	  the Sunwave's fingerprint sensor. This driver supports 
-	  both REE and TEE. If in REE, CONFIG_SPI_SPIDEV must be set 
+	  If you say Y to this option, support will be included for
+	  the Sunwave's fingerprint sensor. This driver supports
+	  both REE and TEE. If in REE, CONFIG_SPI_SPIDEV must be set
 	  to use the standard 'spidev' driver.
-	
+
 	  This driver can also be built as a module. If so, the module
 	  will be called 'sunwave_fp'.
 
