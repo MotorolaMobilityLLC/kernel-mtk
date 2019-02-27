@@ -162,8 +162,8 @@ static int initAF(void)
 	s4EEPROM_ReadReg(0x0004, &eepdata1);
 	No_eeprom = s4EEPROM_ReadReg(0x0005, &eepdata2);
 
-	LOG_INF("min %d, max %x, offset 0x%x, gain 0x%x\n", min_pos, max_pos,
-		eepdata1, eepdata2);
+	LOG_INF("min %d, max %x, offset 0x%x, gain 0x%x\n",
+		min_pos, max_pos, eepdata1, eepdata2);
 
 	s4AF_WriteReg(0, 0x80, 0x34);
 	s4AF_WriteReg(0, 0x81, 0x20);
@@ -386,11 +386,14 @@ int LC898212AF_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
 
 int LC898212AF_GetFileName(unsigned char *pFileName)
 {
-	char *FileString = (strrchr(__FILE__, '/') + 1);
+	char FilePath[512];
+	char *FileString;
 
-	strncpy(pFileName, FileString, AF_MOTOR_NAME);
-	FileString = strchr(pFileName, '.');
+	sprintf(FilePath, "%s", __FILE__);
+	FileString = strrchr(FilePath, '/');
 	*FileString = '\0';
+	FileString = (strrchr(FilePath, '/') + 1);
+	strncpy(pFileName, FileString, AF_MOTOR_NAME);
 	LOG_INF("FileName : %s\n", pFileName);
 
 	return 1;
