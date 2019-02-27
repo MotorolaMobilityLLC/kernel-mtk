@@ -433,8 +433,10 @@ unsigned int mt_gpufreq_voltage_enable_set(unsigned int enable)
  */
 void mt_gpufreq_enable_by_ptpod(void)
 {
+#ifdef USE_STAND_ALONE_VGPU
 	/* Set GPU Buck to leave PWM mode */
 	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_NORMAL);
+#endif
 
 	/* Freerun GPU DVFS */
 	g_DVFS_is_paused_by_ptpod = false;
@@ -476,8 +478,10 @@ void mt_gpufreq_disable_by_ptpod(void)
 	g_DVFS_off_by_ptpod_idx = (unsigned int)target_idx;
 	mt_gpufreq_target(target_idx);
 
+#ifdef USE_STAND_ALONE_VGPU
 	/* Set GPU Buck to enter PWM mode */
 	__mt_gpufreq_vgpu_set_mode(REGULATOR_MODE_FAST);
+#endif
 
 	gpufreq_pr_debug("@%s: DVFS is disabled by ptpod\n", __func__);
 }
