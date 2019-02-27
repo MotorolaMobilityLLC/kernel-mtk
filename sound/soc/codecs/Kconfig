@@ -204,16 +204,17 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_WM9712 if SND_SOC_AC97_BUS
 	select SND_SOC_WM9713 if SND_SOC_AC97_BUS
 	select SND_SOC_RT5509 if I2C
-        help
-          Normally ASoC codec drivers are only built if a machine driver which
-          uses them is also built since they are only usable with a machine
-          driver.  Selecting this option will allow these drivers to be built
-          without an explicit machine driver for test and development purposes.
+	select SND_SOC_MT6660 if I2C
+	help
+	  Normally ASoC codec drivers are only built if a machine driver which
+	  uses them is also built since they are only usable with a machine
+	  driver.  Selecting this option will allow these drivers to be built
+	  without an explicit machine driver for test and development purposes.
 
 	  Support for the bus types used to access the codecs to be built must
 	  be selected separately.
 
-          If unsure select "N".
+	  If unsure select "N".
 
 config SND_SOC_88PM860X
 	tristate
@@ -1067,6 +1068,15 @@ config SND_SOC_WM9713
 	select REGMAP_AC97
 
 # Amp
+config SND_SOC_MT6660
+	tristate "Mediatek MT6660 speaker amplifier"
+	depends on I2C
+	help
+	  Config of MT6660. It is a Smart power
+	  amplifier which contain speaker protection,
+	  multi-band DRC, equalizer function. It would
+	  be set to yes if device with MT6660 on it.
+
 config SND_SOC_LM4857
 	tristate
 
