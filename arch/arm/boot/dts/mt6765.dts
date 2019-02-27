@@ -33,8 +33,10 @@
 
 	/* chosen */
 	chosen: chosen {
-	bootargs = "console=tty0 console=ttyS0,921600n1 root=/dev/ram\
-initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
+	bootargs = "console=tty0 console=ttyS0,921600n1 vmalloc=496M \
+slub_max_order=0 slub_debug=OFZPU page_owner=on \
+androidboot.hardware=mt6765 maxcpus=8 \
+firmware_class.path=/vendor/firmware";
 	};
 
 	cpus {
