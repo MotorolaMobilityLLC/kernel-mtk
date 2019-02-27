@@ -326,7 +326,9 @@ static INLINE PVRSRV_ERROR RGXDoStart(PVRSRV_DEVICE_NODE *psDeviceNode)
 #else
 	PVRSRV_RGXDEV_INFO *psDevInfo = psDeviceNode->pvDevice;
 
+	PVR_DPF((PVR_DBG_ERROR, "RGXDoStart: RGXStart done"));
 	eError = RGXStart(&psDevInfo->sLayerParams);
+	PVR_DPF((PVR_DBG_ERROR, "RGXDoStart: RGXStart done"));
 #endif
 
 	return eError;
@@ -362,12 +364,14 @@ PVRSRV_ERROR RGXPostPowerState (IMG_HANDLE				hDevHandle,
 			/* Update GPU state counters */
 			_RGXUpdateGPUUtilStats(psDevInfo);
 
+		PVR_DPF((PVR_DBG_ERROR, "%s: RGXDoStart starts", __func__));
 			eError = RGXDoStart(psDeviceNode);
 			if (eError != PVRSRV_OK)
 			{
 				PVR_DPF((PVR_DBG_ERROR,"RGXPostPowerState: RGXDoStart failed"));
 				return eError;
 			}
+		PVR_DPF((PVR_DBG_ERROR, "%s: RGXDoStart done", __func__));
 
 			OSMemoryBarrier();
 

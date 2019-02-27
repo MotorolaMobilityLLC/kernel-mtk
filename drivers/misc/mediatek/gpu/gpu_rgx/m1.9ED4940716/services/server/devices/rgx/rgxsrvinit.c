@@ -520,11 +520,11 @@ static INLINE void GetApphints(RGX_SRVINIT_APPHINTS *psHints, IMG_UINT64 ui64Ern
 		}
 
 		/* MTK default FW debug flags */
-		ui32LogType |= RGXFWIF_LOG_TYPE_TRACE;
-		ui32LogType |= RGXFWIF_LOG_TYPE_GROUP_MAIN;
-		ui32LogType |= RGXFWIF_LOG_TYPE_GROUP_PM;
-		ui32LogType |= RGXFWIF_LOG_TYPE_GROUP_POW;
-		ui32LogType |= RGXFWIF_LOG_TYPE_GROUP_HWR;
+		ui32LogType |= (RGXFWIF_LOG_TYPE_TRACE |
+				RGXFWIF_LOG_TYPE_GROUP_MAIN |
+				RGXFWIF_LOG_TYPE_GROUP_PM |
+				RGXFWIF_LOG_TYPE_GROUP_POW |
+				RGXFWIF_LOG_TYPE_GROUP_HWR);
 
 		psHints->ui32LogType = ui32LogType;
 	}
@@ -1915,6 +1915,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 #endif
 
 
+	PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware starts"));
 	eError = InitFirmware(psDeviceNode,
 	                      &sApphints,
 	                      &sBVNC,
@@ -1927,6 +1928,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 		PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware failed (%d)", eError));
 		goto cleanup;
 	}
+	PVR_DPF((PVR_DBG_ERROR, "RGXInit: InitFirmware done"));
 
 	/*
 	 * Build Debug info script
@@ -1968,6 +1970,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 	/*
 	 * Perform second stage of RGX initialisation
 	 */
+	PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM starts"));
 	eError = PVRSRVRGXInitDevPart2KM(psDeviceNode,
 	                                 sDbgInitScript.psCommands,
 	                                 ui32DeviceFlags,
@@ -1980,6 +1983,7 @@ PVRSRV_ERROR RGXInit(PVRSRV_DEVICE_NODE *psDeviceNode)
 		PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM failed (%d)", eError));
 		goto cleanup;
 	}
+	PVR_DPF((PVR_DBG_ERROR, "RGXInit: PVRSRVRGXInitDevPart2KM done"));
 
 #if defined(SUPPORT_VALIDATION)
 	PVRSRVAppHintDumpState();
