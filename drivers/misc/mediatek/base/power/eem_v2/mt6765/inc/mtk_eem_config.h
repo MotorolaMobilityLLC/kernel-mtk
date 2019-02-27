@@ -53,20 +53,20 @@
 
 /*2-line*/
 /* L_LOW */
-#define DEVINFO_1 0x09EA96E5
+#define DEVINFO_1 0xA45146F6
 /* LL_LOW + L_LOW */
-#define DEVINFO_2 0x00420042
+#define DEVINFO_2 0x00120012
 /* LL_LOW */
-#define DEVINFO_3 0x09EA76FE
+#define DEVINFO_3 0xA4513602
 /* L_HIGH */
-#define DEVINFO_4 0x09EA96E5
+#define DEVINFO_4 0xA43AFB97
 /* LL_HIGH + L_HIGH */
-#define DEVINFO_5 0x00420042
+#define DEVINFO_5 0x00120012
 /* LL_HIGH */
-#define DEVINFO_6 0x09EA76FE
+#define DEVINFO_6 0xA43B90EA
 /* CCI */
-#define DEVINFO_7 0x09EA85F2
-#define DEVINFO_8 0x00420042
+#define DEVINFO_7 0xA43B86F2
+#define DEVINFO_8 0x00120012
 
 /* RESERVED */
 #define DEVINFO_9 0xFFFFFFFF
@@ -74,11 +74,11 @@
 
 /*1-line*/
 /* L */
-#define DEVINFO_11 0x09EA96E5
+#define DEVINFO_11 0xA43A98E4
 /* LL + L */
-#define DEVINFO_12 0x00420042
+#define DEVINFO_12 0x00120012
 /* LL */
-#define DEVINFO_13 0x09EA76FE
+#define DEVINFO_13 0xA43B77FE
 
 /*****************************************
  * eem sw setting
