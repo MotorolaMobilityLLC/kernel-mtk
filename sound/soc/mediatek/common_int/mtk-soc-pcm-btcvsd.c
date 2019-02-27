@@ -717,7 +717,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 				btsco.pRX->u4BufferSize - BTSCORX_ReadIdx_tmp;
 			unsigned long size_2 = read_size - size_1;
 
-			pr_debug("%s 2 c_u target=%p, source=0x%p, size_1=%zu\n",
+			pr_debug("%s 2 c_u target=%p, source=0x%p, size_1=%lu\n",
 			      __func__, Read_Data_Ptr,
 			      ((unsigned char *)btsco.pRX->PacketBuf +
 			       BTSCORX_ReadIdx_tmp),
@@ -746,7 +746,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 					  BTSCO_CVSD_PACKET_VALID_SIZE);
 			spin_unlock_irqrestore(&auddrv_btcvsd_rx_lock, flags);
 
-			pr_debug("%s 2 user target=%p, source=%p,size_2=%zu\n",
+			pr_debug("%s 2 user target=%p, source=%p,size_2=%lu\n",
 			      __func__, (Read_Data_Ptr + size_1),
 			      ((unsigned char *)btsco.pRX->PacketBuf +
 			       BTSCORX_ReadIdx_tmp + size_1),
@@ -776,7 +776,7 @@ ssize_t AudDrv_btcvsd_read(char __user *data, size_t count)
 
 			count -= read_size;
 			Read_Data_Ptr += read_size;
-			pr_debug("%s 3 size_2:%zu,i_r:0x%x,i_w:0x%x Re:%zu\n",
+			pr_debug("%s 3 size_2:%lu, i_r:0x%x, i_w:0x%x Re:%lu\n",
 			      __func__, size_2, btsco.pRX->iPacket_r,
 			      btsco.pRX->iPacket_w, u4DataRemained);
 		}

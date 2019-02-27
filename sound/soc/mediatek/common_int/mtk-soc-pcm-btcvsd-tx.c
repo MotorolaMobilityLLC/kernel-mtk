@@ -89,14 +89,14 @@ static int btcvsd_tx_timestamp_get(unsigned int __user *data, unsigned int size)
 
 	get_tx_timestamp(&time_buffer_info_tx);
 
-	pr_debug("%s(),tS_us:%llu, data_time:%llu, sizeof = %lu",
+	pr_debug("%s(), tS_us:%llu, data_time:%llu, sizeof = %zu",
 	      __func__, time_buffer_info_tx.timestamp_us,
 	      time_buffer_info_tx.data_count_equi_time,
 	      sizeof(struct time_buffer_info));
 
 	if (copy_to_user(data, &time_buffer_info_tx,
 			 sizeof(struct time_buffer_info))) {
-		pr_err("%s(), Fail copy to user Ptr:%p,r_sz:%zu", __func__,
+		pr_err("%s(), Fail copy to user Ptr:%p, r_sz:%zu", __func__,
 		       &time_buffer_info_tx, sizeof(struct time_buffer_info));
 		ret = -EFAULT;
 	}
