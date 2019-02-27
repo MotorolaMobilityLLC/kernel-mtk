@@ -10,9 +10,13 @@
 # GNU General Public License for more details.
 #
 
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/tchbst/user/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/perf_ioctl
+
 obj-y += perfmgr/
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
+	obj-$(CONFIG_MTK_BASE_POWER) += tchbst/
 endif
 
 obj-y += perf_ioctl/

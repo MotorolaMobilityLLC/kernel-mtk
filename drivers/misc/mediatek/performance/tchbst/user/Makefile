@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 MediaTek Inc.
+# Copyright (C) 2018 MediaTek Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -11,6 +11,12 @@
 # GNU General Public License for more details.
 #
 
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y += \
+	-I$(srctree)/drivers/misc/mediatek/base/power/include \
+	-I$(srctree)/kernel/trace/ \
+	-I$(srctree)/drivers/misc/mediatek/performance/fpsgo/fstb/ \
 
-obj-y += perf_ioctl.o
+
+obj-y +=user_main.o
+
+obj-y += src/usrtch.o
