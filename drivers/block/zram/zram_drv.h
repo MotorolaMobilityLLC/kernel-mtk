@@ -120,4 +120,8 @@ struct zram {
 	 */
 	bool claim; /* Protected by bdev->bd_mutex */
 };
+
+/* mlog */
+unsigned long zram_mlog(void);
+
 #endif
