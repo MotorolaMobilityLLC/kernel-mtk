@@ -74,8 +74,8 @@ extern struct clk *musb_clk_univpll3_d4;
 
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 
-#define RG_GPIO_SELECT (0x6E0)
-#define GPIO_SEL_OFFSET (20)
+#define RG_GPIO_SELECT (0x600)
+#define GPIO_SEL_OFFSET (4)
 #define GPIO_SEL_MASK (0x7 << GPIO_SEL_OFFSET)
 #define GPIO_SEL_UART0 (0x1 << GPIO_SEL_OFFSET)
 #define GPIO_SEL_UART1 (0x2 << GPIO_SEL_OFFSET)
