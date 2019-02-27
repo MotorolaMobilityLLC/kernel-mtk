@@ -84,7 +84,7 @@ struct helio_dvfsrc {
 #define vcore_uv_to_pmic(uv)	/* pmic >= uv */	\
 	((((uv) - VCORE_BASE_UV) + (VCORE_STEP_UV - 1)) / VCORE_STEP_UV)
 
-#define wait_for_completion(condition, timeout)			\
+#define dvfsrc_wait_for_completion(condition, timeout)			\
 ({								\
 	int ret = 0;						\
 	if (is_dvfsrc_enabled())				\

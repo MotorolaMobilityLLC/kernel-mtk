@@ -20,6 +20,7 @@
 #include <linux/pm_qos.h>
 #include <linux/sched.h>
 #include <linux/mutex.h>
+#include <linux/spinlock.h>
 
 #include "governor.h"
 
@@ -37,6 +38,7 @@
 
 static struct helio_dvfsrc *dvfsrc;
 static DEFINE_MUTEX(sw_req1_mutex);
+static DEFINE_SPINLOCK(force_req_lock);
 
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
 #define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
@@ -151,6 +153,7 @@ static int commit_data(int type, int data, int check_spmfw)
 {
 	int ret = 0;
 	int level = 16, opp = 16;
+	unsigned long flags;
 
 	if (!is_dvfsrc_enabled())
 		return ret;
@@ -178,9 +181,12 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
 
-		if (!is_opp_forced() && check_spmfw)
-			ret = wait_for_completion(get_cur_ddr_opp() <= opp,
+		if (!is_opp_forced() && check_spmfw) {
+			ret = dvfsrc_wait_for_completion(
+					get_cur_ddr_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		}
+
 		mutex_unlock(&sw_req1_mutex);
 		break;
 	case PM_QOS_VCORE_OPP:
@@ -193,9 +199,12 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
 
-		if (!is_opp_forced() && check_spmfw)
-			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
+		if (!is_opp_forced() && check_spmfw) {
+			ret = dvfsrc_wait_for_completion(
+					get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		}
+
 		mutex_unlock(&sw_req1_mutex);
 		break;
 	case PM_QOS_SCP_VCORE_REQUEST:
@@ -208,9 +217,12 @@ static int commit_data(int type, int data, int check_spmfw)
 		dvfsrc_set_vcore_request(level,
 				VCORE_SCP_GEAR_MASK, VCORE_SCP_GEAR_SHIFT);
 
-		if (!is_opp_forced() && check_spmfw)
-			ret = wait_for_completion(get_cur_vcore_opp() <= opp,
+		if (!is_opp_forced() && check_spmfw) {
+			ret = dvfsrc_wait_for_completion(
+					get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		}
+
 		break;
 	case PM_QOS_POWER_MODEL_DDR_REQUEST:
 		if (data >= DDR_OPP_NUM || data < 0)
@@ -233,6 +245,7 @@ static int commit_data(int type, int data, int check_spmfw)
 				VCORE_SW_AP2_MASK, VCORE_SW_AP2_SHIFT);
 		break;
 	case PM_QOS_VCORE_DVFS_FORCE_OPP:
+		spin_lock_irqsave(&force_req_lock, flags);
 		if (data >= VCORE_DVFS_OPP_NUM || data < 0)
 			data = VCORE_DVFS_OPP_NUM;
 
@@ -241,15 +254,18 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		if (opp == VCORE_DVFS_OPP_NUM) {
 			dvfsrc_release_force();
+			spin_unlock_irqrestore(&force_req_lock, flags);
 			break;
 		}
 		dvfsrc_set_force_start(1 << level);
-		if (check_spmfw)
-			ret = wait_for_completion(
+		if (check_spmfw) {
+			ret = dvfsrc_wait_for_completion(
 					get_cur_vcore_dvfs_opp() == opp,
 					DVFSRC_TIMEOUT);
+		}
 
 		dvfsrc_set_force_end();
+		spin_unlock_irqrestore(&force_req_lock, flags);
 		break;
 	default:
 		break;
