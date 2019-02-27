@@ -80,7 +80,7 @@ static unsigned int WARN_STIMER_DUR = TIME_10MS;
 static unsigned int WARN_BURST_IRQ_DETECT = 25000;
 static unsigned int WARN_PREEMPT_DUR = TIME_3MS;
 static unsigned int WARN_IRQ_DISABLE_DUR = TIME_50MS;
-static unsigned int AEE_IRQ_DISABLE_DUR = TIME_200MS;
+static unsigned int AEE_IRQ_DISABLE_DUR = TIME_500MS;
 static unsigned int WARN_IRQ_WORK_DUR = TIME_500MS - TIME_10MS;
 static unsigned int AEE_WARN_DUR = TIME_500MS;
 
