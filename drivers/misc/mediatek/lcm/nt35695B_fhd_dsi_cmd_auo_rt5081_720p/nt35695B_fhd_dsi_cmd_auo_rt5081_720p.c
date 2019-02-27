@@ -74,16 +74,17 @@ static struct LCM_UTIL_FUNCS lcm_util;
 
 /* static unsigned char lcd_id_pins_value = 0xFF; */
 static const unsigned char LCD_MODULE_ID = 0x01;
-#define LCM_DSI_CMD_MODE 1
-#define FRAME_WIDTH	(720)
-#define FRAME_HEIGHT	(1440)
-#define VIRTUAL_WIDTH		(1080)
-#define VIRTUAL_HEIGHT	(1920)
+#define LCM_DSI_CMD_MODE	1
+#define FRAME_WIDTH		(720)
+#define FRAME_HEIGHT	(1280)
 
 /* physical size in um */
-#define LCM_PHYSICAL_WIDTH (74520)
-#define LCM_PHYSICAL_HEIGHT (132480)
-#define LCM_DENSITY (320)
+#define LCM_PHYSICAL_WIDTH		(74520)
+#define LCM_PHYSICAL_HEIGHT		(132480)
+#define LCM_DENSITY				(320)
+
+#define VIRTUAL_WIDTH		(1080)
+#define VIRTUAL_HEIGHT	(1920)
 
 #define REGFLAG_DELAY		0xFFFC
 #define REGFLAG_UDELAY	0xFFFB
@@ -110,9 +111,9 @@ struct LCM_setting_table {
 static struct LCM_setting_table lcm_suspend_setting[] = {
 	{0x28, 0, {} },
 	{0x10, 0, {} },
-	{REGFLAG_DELAY, 80, {} },
+	{REGFLAG_DELAY, 120, {} },
 	{0x4F, 1, {0x01} },
-	{REGFLAG_DELAY, 80, {} }
+	{REGFLAG_DELAY, 120, {} }
 };
 
 static struct LCM_setting_table init_setting_cmd[] = {
@@ -1280,14 +1281,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
-
-	params->virtual_width = VIRTUAL_WIDTH;
-	params->virtual_height = VIRTUAL_HEIGHT;
 	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
 	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
 	params->physical_width_um = LCM_PHYSICAL_WIDTH;
 	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
-	params->density = LCM_DENSITY;
+	params->virtual_width = VIRTUAL_WIDTH;
+	params->virtual_height = VIRTUAL_HEIGHT;
+	params->density            = LCM_DENSITY;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
@@ -1326,11 +1326,13 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_backporch = 20;
 	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = VIRTUAL_WIDTH;
-	params->dsi.ssc_disable = 0;
+	/*params->dsi.ssc_disable = 1;*/
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
+	/* this value must be in MTK suggested table */
 	params->dsi.PLL_CLOCK = 420;
 #else
+	/* this value must be in MTK suggested table */
 	params->dsi.PLL_CLOCK = 440;
 #endif
 	params->dsi.PLL_CK_CMD = 420;
@@ -1364,17 +1366,6 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] =
 		MIPITX_PHY_LANE_1;
 #endif
-	/* for ARR 2.0 */
-	params->max_refresh_rate = 60;
-	params->min_refresh_rate = 45;
-
-#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
-	params->round_corner_en = 1;
-	params->full_content = 0;
-	params->corner_pattern_width = 1080;
-	params->corner_pattern_height = 32;
-	params->corner_pattern_height_bot = 32;
-#endif
 }
 static void lcm_init_power(void)
 {
@@ -1406,7 +1397,6 @@ static void lcm_init(void)
 
 	SET_RESET_PIN(1);
 	MDELAY(10);
-
 	if (lcm_dsi_mode == CMD_MODE) {
 		size = sizeof(init_setting_cmd) /
 			sizeof(struct LCM_setting_table);
@@ -1660,12 +1650,12 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 #endif
 
 #if (LCM_DSI_CMD_MODE)
-struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_lcm_drv = {
-	.name = "nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_drv",
+struct LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_720p_lcm_drv = {
+	.name = "nt35695B_fhd_dsi_cmd_auo_rt5081_720p_lcm_drv",
 #else
 
-struct LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_lcm_drv = {
-	.name = "nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_drv",
+struct LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_720p_lcm_drv = {
+	.name = "nt35695B_fhd_dsi_vdo_auo_rt5081_720p_lcm_drv",
 #endif
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
