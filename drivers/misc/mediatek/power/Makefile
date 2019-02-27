@@ -13,4 +13,7 @@
 subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
 subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+obj-$(CONFIG_TCPC_CLASS) += rt_pd_manager.o
