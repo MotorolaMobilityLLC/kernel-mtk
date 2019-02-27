@@ -287,7 +287,8 @@ static void event_duration_check(struct sched_block_event *b)
 				sec_high(b->last_te), sec_low(b->last_te));
 			sched_mon_msg(buf, TO_BOTH);
 			if (t_dur > AEE_WARN_DUR) {
-				strcpy(buf_tasklet, buf);
+				strncpy(buf_tasklet, buf,
+					sizeof(buf_tasklet) - 1);
 				aee_buf = buf_tasklet;
 			}
 
@@ -340,7 +341,8 @@ static void event_duration_check(struct sched_block_event *b)
 				sec_high(b->last_te), sec_low(b->last_te));
 			sched_mon_msg(buf, TO_BOTH);
 			if (t_dur > AEE_WARN_DUR) {
-				strcpy(buf_hrtimer, buf);
+				strncpy(buf_hrtimer, buf,
+					sizeof(buf_hrtimer) - 1);
 				aee_buf = buf_hrtimer;
 			}
 
@@ -382,7 +384,8 @@ static void event_duration_check(struct sched_block_event *b)
 				sec_high(b->last_te), sec_low(b->last_te));
 			sched_mon_msg(buf, TO_BOTH);
 			if (t_dur > AEE_WARN_DUR) {
-				strcpy(buf_stimer, buf);
+				strncpy(buf_stimer, buf,
+					sizeof(buf_stimer) - 1);
 				aee_buf = buf_stimer;
 			}
 
@@ -477,7 +480,8 @@ static void softirq_event_duration_check(struct sched_block_event *b)
 					sec_low(b->last_te));
 				sched_mon_msg(buf, TO_BOTH);
 				if (t_dur > AEE_WARN_DUR) {
-					strcpy(buf_rcu, buf);
+					strncpy(buf_rcu, buf,
+						sizeof(buf_rcu) - 1);
 					aee_buf = buf_rcu;
 				}
 			}
