@@ -2778,7 +2778,7 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 	struct cmdqRecStruct *cmdq_handle,
 	CmdqAsyncFlushCB callback, unsigned int data)
 {
-	int layer = 0;
+	int layer = 0, i;
 	unsigned int rdma_pitch_sec;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->ovl_trigger,
@@ -2814,6 +2814,13 @@ int _trigger_ovl_to_memory(disp_path_handle disp_handle,
 		1, rdma_pitch_sec);
 	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->rdma_buff_info,
 		2, (unsigned int)mem_config.fmt);
+
+	/* backup night params here */
+	cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params, 0,
+		mem_config.m_ccorr_config.mode);
+	for (i = 0; i < 16; i++)
+		cmdqRecBackupUpdateSlot(cmdq_handle, pgc->night_light_params,
+			i + 1, mem_config.m_ccorr_config.color_matrix[i]);
 
 	cmdqRecFlushAsyncCallback(cmdq_handle, callback, data);
 	cmdqRecReset(cmdq_handle);
@@ -3069,6 +3076,28 @@ static int _Interface_fence_release_callback(unsigned long userdata)
 	return ret;
 }
 
+static void DC_config_nightlight(struct cmdqRecStruct *cmdq_handle)
+{
+	int i, mode, ccorr_matrix[16], all_zero = 1;
+
+	cmdqBackupReadSlot(pgc->night_light_params, 0, &mode);
+
+	for (i = 0; i < 16; i++)
+		cmdqBackupReadSlot(pgc->night_light_params,
+			i + 1, &(ccorr_matrix[i]));
+
+	for (i = 0; i <= 15; i += 5) {
+		if (ccorr_matrix[i] != 0) {
+			all_zero = 0;
+			break;
+		}
+	}
+	if (all_zero)
+		disp_aee_print("Night light backup param is zero matrix\n");
+	else
+		disp_ccorr_set_color_matrix(cmdq_handle, ccorr_matrix, mode);
+}
+
 static int _decouple_update_rdma_config_nolock(void)
 {
 	int interface_fence = 0;
@@ -3119,6 +3148,10 @@ static int _decouple_update_rdma_config_nolock(void)
 
 		cmdqRecReset(cmdq_handle);
 		_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
+
+		/* update night light params */
+		DC_config_nightlight(cmdq_handle);
+
 		cmdqBackupReadSlot(pgc->rdma_buff_info, 0,
 			(uint32_t *)(&(tmpConfig.address)));
 
@@ -3645,6 +3678,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	int use_cmdq = disp_helper_get_option(DISP_OPT_USE_CMDQ);
 	struct disp_ddp_path_config *data_config;
 	struct ddp_io_golden_setting_arg gset_arg;
+	int i = 0;
 
 	DISPCHECK("primary_display_init begin lcm=%s, inited=%d\n",
 		lcm_name, is_lcm_inited);
@@ -3661,6 +3695,19 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	init_cmdq_slots(&(pgc->ovl_status_info), 4, 0);
 	init_cmdq_slots(&(pgc->dither_status_info), 1, 0x10001);
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
+	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
+
+
+	/* init night light related variable */
+	mem_config.m_ccorr_config.is_dirty = 1;
+
+	mem_config.m_ccorr_config.mode = 1;
+	cmdqBackupWriteSlot(pgc->night_light_params, 0, 1);
+
+	for (i = 0; i <= 15; i += 5) {
+		mem_config.m_ccorr_config.color_matrix[i] = 1024;
+		cmdqBackupWriteSlot(pgc->night_light_params, i + 1, 1024);
+	}
 
 	mutex_init(&(pgc->capture_lock));
 	mutex_init(&(pgc->lock));
@@ -6380,11 +6427,33 @@ static int primary_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 
 	_config_ovl_input(cfg, disp_handle, cmdq_handle);
 
-	/* set ccorr matrix */
+	/* handle night light in DL, DC separately */
 	if (m_ccorr_config.is_dirty) {
-		disp_ccorr_set_color_matrix(cmdq_handle,
-			m_ccorr_config.color_matrix,
-			m_ccorr_config.mode);
+		int i = 0, all_zero = 1;
+
+		for (i = 0; i <= 15; i += 5) {
+			if (m_ccorr_config.color_matrix[i] != 0) {
+				all_zero = 0;
+				break;
+			}
+		}
+		if (all_zero)
+			disp_aee_print("HWC set zero matrix\n");
+		else if (!primary_display_is_decouple_mode()) {
+			disp_ccorr_set_color_matrix(cmdq_handle,
+				m_ccorr_config.color_matrix,
+				m_ccorr_config.mode);
+
+			/* backup night params here */
+			cmdqRecBackupUpdateSlot(cmdq_handle,
+				pgc->night_light_params, 0,
+				mem_config.m_ccorr_config.mode);
+			for (i = 0; i < 16; i++)
+				cmdqRecBackupUpdateSlot(cmdq_handle,
+				pgc->night_light_params, i + 1,
+				mem_config.m_ccorr_config.color_matrix[i]);
+		} else
+			mem_config.m_ccorr_config = m_ccorr_config;
 	}
 
 	if (primary_display_is_decouple_mode() &&
