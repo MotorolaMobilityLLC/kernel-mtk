@@ -1084,7 +1084,16 @@ void dump_rbuf(struct RingBuf *ring_buffer)
 {
 	if (ring_buffer == NULL)
 		return;
-
+#if defined(__linux__)
+	pr_info("%s Base[%p] End[%p] R[%p] w[%p] Len[%d] count[%d]\n",
+		__func__,
+		ring_buffer->pBufBase,
+		ring_buffer->pBufEnd,
+		ring_buffer->pRead,
+		ring_buffer->pWrite,
+		ring_buffer->bufLen,
+		ring_buffer->datacount);
+#else
 	AUD_LOG_D("%s Base[%p] End[%p] R[%p] w[%p] Len[%d] count[%d]\n",
 		  __func__,
 		  ring_buffer->pBufBase,
@@ -1093,21 +1102,32 @@ void dump_rbuf(struct RingBuf *ring_buffer)
 		  ring_buffer->pWrite,
 		  ring_buffer->bufLen,
 		  ring_buffer->datacount);
+#endif
 }
 
 void dump_rbuf_s(const char *appendingstring, struct RingBuf *ring_buffer)
 {
 	if (ring_buffer == NULL)
 		return;
-
+#if defined(__linux__)
+	pr_info("%s %s Base[%p] End[%p] R[%p] w[%p] Len[%d] count[%d]\n",
+		appendingstring, __func__,
+		ring_buffer->pBufBase,
+		ring_buffer->pBufEnd,
+		ring_buffer->pRead,
+		ring_buffer->pWrite,
+		ring_buffer->bufLen,
+		ring_buffer->datacount);
+#else
 	AUD_LOG_D("%s %s Base[%p] End[%p] R[%p] w[%p] Len[%d] count[%d]\n",
-		   appendingstring, __func__,
-		   ring_buffer->pBufBase,
-		   ring_buffer->pBufEnd,
-		   ring_buffer->pRead,
-		   ring_buffer->pWrite,
-		   ring_buffer->bufLen,
-		   ring_buffer->datacount);
+		  appendingstring, __func__,
+		  ring_buffer->pBufBase,
+		  ring_buffer->pBufEnd,
+		  ring_buffer->pRead,
+		  ring_buffer->pWrite,
+		  ring_buffer->bufLen,
+		  ring_buffer->datacount);
+#endif
 }
 
 
@@ -1151,10 +1171,16 @@ void dump_audio_hwbuffer(struct audio_hw_buffer *audio_hwbuf)
 
 void dump_ring_bufinfo(struct RingBuf *buf)
 {
+#if defined(__linux__)
+	pr_info("pBufBase = %p pBufEnd = %p  pread = %p p write = %p DataCount = %u freespace = %u\n",
+		buf->pBufBase, buf->pBufEnd, buf->pRead, buf->pWrite,
+		RingBuf_getDataCount(buf), RingBuf_getFreeSpace(buf));
+#else
 	AUD_LOG_D(
 		"pBufBase = %p pBufEnd = %p  pread = %p p write = %p DataCount = %u freespace = %u\n",
 		buf->pBufBase, buf->pBufEnd, buf->pRead, buf->pWrite,
 		RingBuf_getDataCount(buf), RingBuf_getFreeSpace(buf));
+#endif
 }
 
 #ifdef CFG_AUDIO_SUPPORT
