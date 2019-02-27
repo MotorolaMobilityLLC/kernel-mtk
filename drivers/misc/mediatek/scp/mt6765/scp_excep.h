@@ -174,7 +174,6 @@ struct scp_reg_dump_list {
 	uint32_t pdebug_latch;
 	uint32_t pc_value;
 	uint32_t scp_reg_magic_end;
-
 };
 
 struct scp_dump_header_list {
