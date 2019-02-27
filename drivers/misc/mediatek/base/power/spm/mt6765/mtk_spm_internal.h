@@ -263,7 +263,8 @@ extern void mtk_idle_pre_process_by_chip(int idle_type, int cpu,
 extern void mtk_idle_post_process_by_chip(int idle_type, int cpu,
 	unsigned int op_cond, unsigned int idle_flag);
 
-
+/* get sleep dpidle last wake reason */
+extern unsigned int get_slp_dp_last_wr(void);
 /***********************************************************
  * mtk_idle_cond_check.c
  ***********************************************************/

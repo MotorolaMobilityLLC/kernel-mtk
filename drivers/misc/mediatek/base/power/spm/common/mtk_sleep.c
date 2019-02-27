@@ -22,6 +22,8 @@
 #include <mtk_spm_suspend_internal.h>
 #include <mtk_idle_sysfs.h>
 #include <mtk_power_gs_api.h>
+#include <mtk_idle.h>
+#include <mtk_idle_internal.h>
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
 #include <mtk-soc-afe-control.h>
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
@@ -53,27 +55,11 @@ static u32 slp_spm_flags = {
 	SPM_FLAG_SUSPEND_OPTION
 };
 
-static u32 slp_spm_deepidle_flags = {
-	/* SPM_FLAG_DIS_CPU_PDN | */
-	/* SPM_FLAG_DIS_INFRA_PDN | */
-	/* SPM_FLAG_DIS_DDRPHY_PDN | */
-	SPM_FLAG_DIS_VCORE_DVS |
-	SPM_FLAG_DIS_VCORE_DFS |
-	/* SPM_FLAG_DIS_VPROC_VSRAM_DVS | */
-	SPM_FLAG_DIS_ATF_ABORT |
-	SPM_FLAG_DEEPIDLE_OPTION
-};
-
 static u32 slp_spm_flags1 = {
 	0
 };
 
-static u32 slp_spm_deepidle_flags1 = {
-	0
-};
-
 static u32 slp_spm_flags1;
-static u32 slp_spm_deepidle_flags1;
 static int slp_suspend_ops_valid(suspend_state_t state)
 {
 	if (slp_suspend_ops_valid_on)
@@ -123,13 +109,6 @@ void __attribute__ ((weak)) bus_tracer_enable(void)
 	pr_info("NO %s !!!\n", __func__);
 }
 #endif /* CONFIG_MTK_BUS_TRACER */
-
-__attribute__ ((weak))
-unsigned int spm_go_to_sleep_dpidle(u32 spm_flags, u32 spm_data)
-{
-	pr_info("NO %s !!!\n", __func__);
-	return WR_NONE;
-}
 
 void __attribute__((weak)) subsys_if_on(void)
 {
@@ -229,13 +208,15 @@ static int slp_suspend_ops_enter(suspend_state_t state)
 
 #if SLP_SLEEP_DPIDLE_EN
 #ifdef CONFIG_MTK_SND_SOC_NEW_ARCH
-	if (slp_ck26m_on | fm_radio_is_playing)
+	if (slp_ck26m_on | fm_radio_is_playing) {
 #else
-	if (slp_ck26m_on)
+	if (slp_ck26m_on) {
 #endif /* CONFIG_MTK_SND_SOC_NEW_ARCH */
-		slp_wake_reason = spm_go_to_sleep_dpidle(slp_spm_deepidle_flags,
-			slp_spm_deepidle_flags1);
-	else
+		mtk_idle_enter(IDLE_TYPE_DP, smp_processor_id(),
+					MTK_IDLE_OPT_SLEEP_DPIDLE, 0);
+		slp_wake_reason = get_slp_dp_last_wr();
+
+	} else
 #endif
 
 		slp_wake_reason = spm_go_to_sleep(slp_spm_flags,
@@ -336,23 +317,6 @@ unsigned int slp_get_wake_reason(void)
 	return slp_wake_reason;
 }
 EXPORT_SYMBOL(slp_get_wake_reason);
-
-void slp_set_infra_on(bool infra_on)
-{
-	if (infra_on) {
-		slp_spm_flags |= SPM_FLAG_DIS_INFRA_PDN;
-#if SLP_SLEEP_DPIDLE_EN
-		slp_spm_deepidle_flags |= SPM_FLAG_DIS_INFRA_PDN;
-#endif
-	} else {
-		slp_spm_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
-#if SLP_SLEEP_DPIDLE_EN
-		slp_spm_deepidle_flags &= ~SPM_FLAG_DIS_INFRA_PDN;
-#endif
-	}
-	pr_info("[SLP] slp_set_infra_on (%d): 0x%x, 0x%x\n",
-		infra_on, slp_spm_flags, slp_spm_deepidle_flags);
-}
 
 /*
  * debugfs

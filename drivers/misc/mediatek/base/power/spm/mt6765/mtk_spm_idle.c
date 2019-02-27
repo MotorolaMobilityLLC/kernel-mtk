@@ -23,6 +23,8 @@
 
 #include <mtk_idle.h>
 #include <mtk_idle_internal.h>
+#include <mtk_spm_suspend_internal.h>
+#include <mtk_spm_resource_req.h>
 
 #include "mtk_spm_internal.h"
 #include "pwr_ctrl.h"
@@ -207,7 +209,9 @@ static void spm_idle_pcm_setup_before_wfi(
 	unsigned int resource_usage = 0;
 
 	resource_usage = (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) ?
-		0 : spm_get_resource_usage();
+		spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP)
+		: spm_get_resource_usage();
+
 
 	mt_secure_call(smc_id[idle_type], pwrctrl->pcm_flags,
 		pwrctrl->pcm_flags1, resource_usage, 0);
@@ -222,7 +226,7 @@ static void spm_idle_pcm_setup_before_wfi(
 
 	/* [sleep dpidle] bypass wake_src and pcm timer value */
 	if (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE)
-		mt_secure_call(smc_id[idle_type]
+		mt_secure_call(MTK_SIP_KERNEL_SPM_SLEEP_DPIDLE_ARGS
 			, pwrctrl->timer_val, pwrctrl->wake_src, 0, 0);
 }
 
@@ -268,8 +272,8 @@ void mtk_idle_pre_process_by_chip(
 		pwrctrl->timer_val =
 			32768 * __spm_get_wake_period(-1, slp_dp_last_wr);
 
-		/* FIXME: Get sleep wake_src for sleep dpidle */
-		//pwrctrl->wake_src = spm_get_sleep_wakesrc();
+		/* Get sleep wake_src for sleep dpidle */
+		pwrctrl->wake_src = spm_get_sleep_wakesrc();
 
 		/* pre watch dog config */
 #if defined(CONFIG_MTK_WATCHDOG) && defined(CONFIG_MTK_WD_KICKER)
@@ -378,7 +382,10 @@ void mtk_idle_post_process_by_chip(
 	}
 }
 
-
+unsigned int get_slp_dp_last_wr(void)
+{
+	return slp_dp_last_wr;
+}
 /********************************************************************
  * mtk idle output log
  *******************************************************************/
