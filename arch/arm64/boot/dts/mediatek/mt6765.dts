@@ -279,6 +279,15 @@ initrd=0x45000000,0x200000 loglevel=8 androidboot.selinux=permissive";
 			alignment = <0 0x1000000>;
 			alloc-ranges = <0 0x40000000 0 0x80000000>;
 		};
+
+		wifi-reserve-memory {
+			compatible = "mediatek,wifi-reserve-memory";
+			no-map;
+			size = <0 0x300000>;
+			alignment = <0 0x1000000>;
+			alloc-ranges = <0 0x40000000 0 0x80000000>;
+		};
+
 		soter-shared-mem {
 			compatible = "microtrust,shared_mem";
 			no-map;
