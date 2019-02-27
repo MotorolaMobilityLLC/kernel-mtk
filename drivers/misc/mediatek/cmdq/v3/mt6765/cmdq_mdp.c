@@ -826,6 +826,13 @@ int32_t cmdqMdpResetEng(uint64_t engineFlag)
 		cmdq_mdp_reset_with_mmsys((1LL << CMDQ_ENG_MDP_CAMIN));
 	}
 
+	if (engineFlag & (1LL << CMDQ_ENG_MDP_CCORR0)) {
+		if (cmdq_mdp_get_func()->mdpClockIsOn(CMDQ_ENG_MDP_CCORR0)) {
+			CMDQ_REG_SET32(MDP_CCORR_BASE + 0x04, 0x1);
+			CMDQ_REG_SET32(MDP_CCORR_BASE + 0x04, 0x0);
+		}
+	}
+
 	/*
 	 * when MDP engines fail to reset,
 	 * 1. print SMI debug log
@@ -1099,6 +1106,12 @@ void testcase_clkmgr_mdp(void)
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_COLOR0, "CMDQ_TEST_MDP_COLOR",
 		MDP_COLOR_BASE + 0x438, 0x000001AB, MDP_COLOR_BASE + 0x438,
 		true);
+
+	/* CCORR clk test with debug port */
+	testcase_clkmgr_impl(CMDQ_ENG_MDP_CCORR0, "CMDQ_TEST_MDP_CCORR",
+		MDP_CCORR_BASE + 0x30, 0x1FFF1FFF, MDP_CCORR_BASE + 0x30,
+		true);
+
 #endif
 }
 
