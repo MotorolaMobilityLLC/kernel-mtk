@@ -1112,7 +1112,6 @@ unsigned long MIPI_BASE_ADDR(enum DISP_MODULE_ENUM dsi_module)
 
 int MIPITX_IsEnabled(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
-#ifndef CONFIG_FPGA_EARLY_PORTING
 	int ret = 0;
 	unsigned long base0, base1;
 
@@ -1132,9 +1131,6 @@ int MIPITX_IsEnabled(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 	}
 
 	return ret;
-#else
-	return 0; /* fpga mipi init by cmm, but need dump regs */
-#endif /* CONFIG_FPGA_EARLY_PORTING */
 }
 
 unsigned int dsi_phy_get_clk(enum DISP_MODULE_ENUM module)
@@ -3204,14 +3200,12 @@ int ddp_dsi_config(enum DISP_MODULE_ENUM module,
 		_dump_dsi_params(&(_dsi_context[i].dsi_params));
 	}
 
-#ifndef CONFIG_FPGA_EARLY_PORTING
 	if (!MIPITX_IsEnabled(module, cmdq)) {
 		DISPCHECK("MIPITX is not inited, will config mipitx clk=%d\n",
 			_dsi_context[i].dsi_params.PLL_CLOCK);
 
-		DSI_PHY_clk_switch(module, NULL, false);
+		DSI_PHY_clk_switch(module, NULL, true);
 	}
-#endif
 
 	/* c2v */
 	if (dsi_config->mode != CMD_MODE)
