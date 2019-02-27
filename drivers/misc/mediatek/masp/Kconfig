@@ -16,3 +16,9 @@ config MTK_SEC_MODEM_NVRAM_ANTI_CLONE
 	  default, only two LID is defaulted has MSP attribute
 	  (1)NVRAM_EF_SML_LID (2)NVRAM_EF_SIM_LOCK_LID 3. if want to turn on
 	  specific LID, please add attribute NVRAM_ATTR_MSP
+
+config MTK_AVB20_SUPPORT
+	bool "MTK_AVB20_SUPPORT"
+	help
+	  This option is used to enable AVB2.0, which stands for Android
+	  Verified Boot 2.0.
