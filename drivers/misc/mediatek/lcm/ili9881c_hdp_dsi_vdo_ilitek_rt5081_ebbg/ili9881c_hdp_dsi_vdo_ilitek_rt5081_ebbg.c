@@ -370,7 +370,7 @@ static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
 };
 #endif
 static struct LCM_setting_table bl_level[] = {
-	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
+	/* { 0xFF, 0x03, {0x98, 0x81, 0x00} }, */
 	{0x51, 2, {0x0F, 0xFF} },
 	/* {0x53, 1, {0x2C} }, */
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
@@ -759,7 +759,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	pr_debug("%s,ili9881c backlight: level = %d\n", __func__, level);
 
-	bl_level[0].para_list[0] = level;
+	bl_level[0].para_list[1] = level;
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
