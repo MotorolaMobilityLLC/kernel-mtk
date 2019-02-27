@@ -1604,10 +1604,10 @@ int get_io_reg_base(void)
 		return 0;
 	}
 
-	of_property_read_u32_index(node, "reg", 1, &thermal_phy_base);
-	/* tscpu_printk("[THERM_CTRL] thermal_base thermal_phy_base=0x%x\n",
-	 *						thermal_phy_base);
-	 */
+	if (of_property_read_u32_index(node, "reg", 1, &thermal_phy_base)) {
+		tscpu_printk("[THERM_CTRL] config error thermal_phy_base\n");
+		return 0;
+	}
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,auxadc");
 	WARN_ON_ONCE(node == 0);
@@ -1618,10 +1618,10 @@ int get_io_reg_base(void)
 		 *					auxadc_ts_base);
 		 */
 	}
-	of_property_read_u32_index(node, "reg", 1, &auxadc_ts_phy_base);
-	/* tscpu_printk("[THERM_CTRL] auxadc_ts_phy_base=0x%x\n",
-	 *						auxadc_ts_phy_base);
-	 */
+	if (of_property_read_u32_index(node, "reg", 1, &auxadc_ts_phy_base)) {
+		tscpu_printk("[THERM_CTRL] config error auxadc_ts_phy_base\n");
+		return 0;
+	}
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
 	WARN_ON_ONCE(node == 0);
@@ -1642,10 +1642,10 @@ int get_io_reg_base(void)
 		 *					th_apmixed_base);
 		 */
 	}
-	of_property_read_u32_index(node, "reg", 1, &apmixed_phy_base);
-	/* tscpu_printk("[THERM_CTRL] apmixed_phy_base=0x%x\n",
-	 *						apmixed_phy_base);
-	 */
+	if (of_property_read_u32_index(node, "reg", 1, &apmixed_phy_base)) {
+		tscpu_printk("[THERM_CTRL] config error apmixed_phy_base=\n");
+		return 0;
+	}
 
 #if THERMAL_GET_AHB_BUS_CLOCK
 	/* TODO: If this is required, it needs to confirm which node to read. */
