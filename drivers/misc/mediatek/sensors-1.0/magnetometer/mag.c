@@ -747,6 +747,22 @@ int mag_flush_report(void)
 		pr_err_ratelimited("failed due to event buffer full\n");
 	return err;
 }
+
+int mag_info_record(struct mag_libinfo_t *p_mag_info)
+{
+	struct mag_context *cxt = NULL;
+	int err = 0;
+
+	cxt = mag_context_obj;
+
+	memcpy(cxt->mag_ctl.libinfo.libname,
+		p_mag_info->libname, sizeof(cxt->mag_ctl.libinfo.libname));
+	cxt->mag_ctl.libinfo.layout = p_mag_info->layout;
+	cxt->mag_ctl.libinfo.deviceid = p_mag_info->deviceid;
+
+	return err;
+}
+
 static int mag_probe(void)
 {
 	int err;

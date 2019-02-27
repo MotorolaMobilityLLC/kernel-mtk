@@ -395,6 +395,7 @@ typedef enum {
 	CUST_ACTION_SHOW_ALSLV,
 	CUST_ACTION_SHOW_ALSVAL,
 	CUST_ACTION_SET_FACTORY,
+	CUST_ACTION_GET_SENSOR_INFO,
 } CUST_ACTION;
 
 typedef struct {
@@ -455,6 +456,19 @@ typedef struct {
 	};
 } SCP_SENSOR_HUB_GET_RAW_DATA;
 
+struct mag_dev_info_t {
+	char libname[16];
+	int32_t layout;
+	int32_t deviceid;
+};
+
+struct SCP_SENSOR_HUB_GET_SENSOR_INFO {
+	CUST_ACTION action;
+	union {
+		struct mag_dev_info_t mag_dev_info;
+	};
+};
+
 enum {
 	USE_OUT_FACTORY_MODE = 0,
 	USE_IN_FACTORY_MODE
@@ -478,6 +492,7 @@ typedef struct {
 		SCP_SENSOR_HUB_SHOW_ALSLV showAlslv;
 		SCP_SENSOR_HUB_SHOW_ALSVAL showAlsval;
 		SCP_SENSOR_HUB_SET_FACTORY	setFactory;
+		struct SCP_SENSOR_HUB_GET_SENSOR_INFO getInfo;
 	};
 } SCP_SENSOR_HUB_SET_CUST_REQ;
 
@@ -489,6 +504,7 @@ typedef struct {
 	union {
 		uint32_t custData[9];
 		SCP_SENSOR_HUB_GET_RAW_DATA getRawData;
+		struct SCP_SENSOR_HUB_GET_SENSOR_INFO getInfo;
 	};
 } SCP_SENSOR_HUB_SET_CUST_RSP;
 

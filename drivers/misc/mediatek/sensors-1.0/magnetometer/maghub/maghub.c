@@ -47,6 +47,7 @@ struct maghub_ipi_data {
 	struct data_unit_t m_data_t;
 	bool factory_enable;
 	bool android_enable;
+	struct mag_dev_info_t mag_dev_info;
 };
 static int maghub_m_setPowerMode(bool enable)
 {
@@ -271,13 +272,29 @@ static void scp_init_work_done(struct work_struct *work)
 	int32_t cfg_data[3] = {0};
 	struct maghub_ipi_data *obj = mag_ipi_data;
 	int err = 0;
+	struct mag_libinfo_t mag_libinfo;
 
 	if (atomic_read(&obj->scp_init_done) == 0) {
 		pr_err("scp is not ready to send cmd\n");
 		return;
 	}
-	if (atomic_xchg(&obj->first_ready_after_boot, 1) == 0)
+	if (atomic_xchg(&obj->first_ready_after_boot, 1) == 0) {
+
+		err = sensor_set_cmd_to_hub(ID_MAGNETIC,
+			CUST_ACTION_GET_SENSOR_INFO, &obj->mag_dev_info);
+		if (err < 0) {
+			pr_err("set_cmd_to_hub fail, (ID: %d),(action: %d)\n",
+				ID_MAGNETIC, CUST_ACTION_GET_SENSOR_INFO);
+		}
+		strlcpy(mag_libinfo.libname,
+			obj->mag_dev_info.libname,
+			sizeof(mag_libinfo.libname));
+		mag_libinfo.layout = obj->mag_dev_info.layout;
+		mag_libinfo.deviceid = obj->mag_dev_info.deviceid;
+
+		err = mag_info_record(&mag_libinfo);
 		return;
+	}
 
 	spin_lock(&calibration_lock);
 	cfg_data[0] = obj->dynamic_cali[0];
@@ -517,8 +534,6 @@ static int maghub_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	INIT_WORK(&data->init_done_work, scp_init_work_done);
-	scp_power_monitor_register(&scp_ready_notifier);
 	err = scp_sensorHub_data_registration(ID_MAGNETIC, mag_recv_data);
 	if (err < 0) {
 		pr_err("scp_sensorHub_data_registration failed\n");
@@ -550,7 +565,6 @@ static int maghub_probe(struct platform_device *pdev)
 	ctl.is_support_batch = false;
 #else
 #endif
-	strlcpy(ctl.libinfo.libname, "akl", sizeof(ctl.libinfo.libname));
 
 	err = mag_register_control_path(&ctl);
 	if (err) {
@@ -568,6 +582,15 @@ static int maghub_probe(struct platform_device *pdev)
 	}
 	pr_debug("%s: OK\n", __func__);
 	maghub_init_flag = 1;
+	/*Mointor scp ready notify,
+	 *need monitor at the end of probe for two function:
+	 * 1.read mag_dev_info from sensorhub,
+	 * write to mag context
+	 * 2.set cali to sensorhub
+	 */
+	INIT_WORK(&data->init_done_work, scp_init_work_done);
+	scp_power_monitor_register(&scp_ready_notifier);
+
 	return 0;
 
 create_attr_failed:
