@@ -648,7 +648,6 @@ enum {
 	CCCI_DUMP_REPEAT,
 	CCCI_DUMP_MEM_DUMP,
 	CCCI_DUMP_HISTORY,
-	CCCI_DUMP_REGISTER,
 	CCCI_DUMP_MAX,
 };
 void ccci_util_mem_dump(int md_id, int buf_type, void *start_addr, int len);
