@@ -482,13 +482,13 @@ static const char *get_provider_name(struct device_node *node, u32 *cells)
 
 	if (p)
 		return p + 1;
-	else {
-		p = strchr(name, ',');
-		if (p)
-			return p + 1;
-		else
-			return name;
-	}
+
+	p = strchr(name, ',');
+
+	if (p)
+		return p + 1;
+
+	return name;
 }
 
 struct provider_clk *get_all_provider_clks(void)
@@ -2185,7 +2185,7 @@ static int __init clkdbg_debug_init(void)
 {
 	struct proc_dir_entry *entry;
 
-	entry = proc_create("clkdbg", 0, 0, &clkdbg_fops);
+	entry = proc_create("clkdbg", 0644, NULL, &clkdbg_fops);
 	if (!entry)
 		return -ENOMEM;
 
