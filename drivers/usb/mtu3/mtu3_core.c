@@ -607,7 +607,6 @@ static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
 	link &= mtu3_readl(mbase, U3D_DEV_LINK_INTR_ENABLE);
 	mtu3_writel(mbase, U3D_DEV_LINK_INTR, link); /* W1C */
 	dev_dbg(mtu->dev, "=== LINK[%x] ===\n", link);
-
 	if (!(link & SSUSB_DEV_SPEED_CHG_INTR))
 		return IRQ_NONE;
 
@@ -644,10 +643,14 @@ static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
 	mtu->g.ep0->maxpacket = maxpkt;
 	mtu->ep0_state = MU3D_EP0_STATE_SETUP;
 
+#ifdef CONFIG_USB_MTU3_PLAT_PHONE
+	mtu3_ep0_setup(mtu);
+#else
 	if (udev_speed == USB_SPEED_UNKNOWN)
 		mtu3_gadget_disconnect(mtu);
 	else
 		mtu3_ep0_setup(mtu);
+#endif
 
 	return IRQ_HANDLED;
 }

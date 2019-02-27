@@ -2084,14 +2084,6 @@ void composite_disconnect(struct usb_gadget *gadget)
 	if (cdev->driver->disconnect)
 		cdev->driver->disconnect(cdev);
 
-	/* ALPS00235316 and ALPS00234976 */
-	/* reset the complet function */
-	if (cdev->req->complete) {
-		INFO(cdev, "[COM]%s: reassign the complete function!!\n",
-				__func__);
-		cdev->req->complete = composite_setup_complete;
-	}
-
 	spin_unlock_irqrestore(&cdev->lock, flags);
 }
 
