@@ -31,6 +31,7 @@
 #define SUPPORT_SLT_TEST 0
 
 static struct mt_fh_hal_driver *g_p_fh_hal_drv;
+static struct fh_pll_t *g_fh_drv_pll;
 
 #if SUPPORT_SLT_TEST
 static int fhctl_slt_test_result = -2;
@@ -40,11 +41,12 @@ static int freqhopping_slt_test_proc_read(struct seq_file *m, void *v)
 	/* This FH_MSG_NOTICE doesn't need to be replaced by seq_file *m
 	 * because userspace parser only needs to know fhctl_slt_test_result
 	 */
-	FH_MSG_NOTICE("%s()\n", __func__);
-	FH_MSG_NOTICE("fhctl slt result info\n");
-	FH_MSG_NOTICE("return 0 => [SLT]FHCTL Test Pass!\n");
-	FH_MSG_NOTICE("return -1 => [SLT]FHCTL Test Fail!\n");
-	FH_MSG_NOTICE("return (result != 0 && result != -1) => [SLT]FHCTL Test Untested!\n");
+	pr_info("[FH] %s()\n", __func__);
+	pr_info("[FH] fhctl slt result info\n");
+	pr_info("[FH] return 0 => [SLT]FHCTL Test Pass!\n");
+	pr_info("[FH] return -1 => [SLT]FHCTL Test Fail!\n");
+	pr_info("[FH] return (result != 0 && result != -1) ");
+	pr_info("[FH] => [SLT]FHCTL Test Untested!\n");
 
 	seq_printf(m, "%d\n", fhctl_slt_test_result);
 
@@ -58,7 +60,7 @@ static ssize_t freqhopping_slt_test_proc_write(struct file *file,
 {
 	char *cmd = (char *)__get_free_page(GFP_USER);
 
-	FH_MSG_NOTICE("%s()\n", __func__);
+	pr_info("[FH] %s()\n", __func__);
 
 	if (cmd == NULL)
 		return -ENOMEM;
@@ -71,14 +73,15 @@ static ssize_t freqhopping_slt_test_proc_write(struct file *file,
 	if (!strcmp(cmd, "slt_start"))
 		fhctl_slt_test_result = g_p_fh_hal_drv->mt_fh_hal_slt_start();
 	else
-		FH_MSG_ERROR("unknown cmd = %s\n", cmd);
+		pr_info("[FH]unknown cmd = %s\n", cmd);
 out:
 	free_page((unsigned long)cmd);
 
 	return count;
 }
 
-static int freqhopping_slt_test_proc_open(struct inode *inode, struct file *file)
+static int freqhopping_slt_test_proc_open(struct inode *inode
+	, struct file *file)
 {
 	return single_open(file, freqhopping_slt_test_proc_read, NULL);
 }
@@ -92,7 +95,8 @@ static const struct file_operations slt_test_fops = {
 };
 #endif /* SUPPORT_SLT_TEST */
 
-static int freqhopping_dumpregs_proc_open(struct inode *inode, struct file *file)
+static int freqhopping_dumpregs_proc_open(struct inode *inode
+	, struct file *file)
 {
 	return single_open(file, g_p_fh_hal_drv->mt_fh_hal_dumpregs_read, NULL);
 }
@@ -104,36 +108,90 @@ static const struct file_operations dumpregs_fops = {
 	.release = single_release,
 };
 
+int mt_dfs_armpll(unsigned int pll, unsigned int dds)
+{
+	if (!g_p_fh_hal_drv) {
+		pr_info("[FH] [%s]: g_p_fh_hal_drv is uninitialized."
+			, __func__);
+		return 1;
+	}
+
+	return g_p_fh_hal_drv->mt_dfs_armpll(pll, dds);
+}
+
 static int freqhopping_debug_proc_init(void)
 {
-	struct proc_dir_entry *prDumpregEntry;
+	struct proc_dir_entry *prdumpregentry;
 #if SUPPORT_SLT_TEST
-	struct proc_dir_entry *prSltTestEntry;
+	struct proc_dir_entry *prslttestentry;
 #endif /* SUPPORT_SLT_TEST */
 	struct proc_dir_entry *fh_proc_dir = NULL;
 
-	FH_MSG_INFO("%s", __func__);
+	pr_info("[FH] %s", __func__);
 
 	fh_proc_dir = proc_mkdir("freqhopping", NULL);
 	if (fh_proc_dir == NULL) {
-		FH_MSG_ERROR("proc_mkdir fail!");
+		pr_info("[FH]proc_mkdir fail!");
 		return -EINVAL;
 	}
 
 	/* /proc/freqhopping/dumpregs */
-	prDumpregEntry = proc_create("dumpregs", 0664, fh_proc_dir, &dumpregs_fops);
-	if (prDumpregEntry == NULL) {
-		FH_MSG_ERROR("[%s]: failed to create /proc/freqhopping/dumpregs", __func__);
+	prdumpregentry
+		= proc_create("dumpregs", 0664, fh_proc_dir, &dumpregs_fops);
+	if (prdumpregentry == NULL) {
+		pr_info("[FH][%s]: failed to create /proc/freqhopping/dumpregs"
+			, __func__);
 		return -EINVAL;
 	}
 #if SUPPORT_SLT_TEST
 	/* /proc/freqhopping/slt_test */
-	prSltTestEntry = proc_create("slt_test", 0664, fh_proc_dir, &slt_test_fops);
-	if (prSltTestEntry == NULL) {
-		FH_MSG_ERROR("[%s]: failed to create /proc/freqhopping/slt_test", __func__);
+	prslttestentry
+		= proc_create("slt_test", 0664, fh_proc_dir, &slt_test_fops);
+	if (prslttestentry == NULL) {
+		pr_info("[FH][%s]: failed to create /proc/freqhopping/slt_test"
+			, __func__);
 		return -EINVAL;
 	}
 #endif /* SUPPORT_SLT_TEST */
+	return 0;
+}
+
+int freqhopping_config(unsigned int pll_id
+	, unsigned long vco_freq, unsigned int enable)
+{
+	struct freqhopping_ioctl fh_ctl;
+	unsigned int fh_status;
+	unsigned long flags = 0;
+	unsigned int skip_flag = 0;
+
+	if ((g_p_fh_hal_drv->mt_fh_get_init()) == 0) {
+		pr_info("[FH]Not init yet, init first.");
+		return 1;
+	}
+
+	g_p_fh_hal_drv->mt_fh_lock(&flags);
+
+	/* backup */
+	fh_status = g_fh_drv_pll[pll_id].fh_status;
+
+	g_fh_drv_pll[pll_id].curr_freq = vco_freq;
+
+	g_fh_drv_pll[pll_id].pll_status
+		= (enable > 0) ? FH_PLL_ENABLE : FH_PLL_DISABLE;
+
+	/* prepare freqhopping_ioctl */
+	fh_ctl.pll_id = pll_id;
+
+	if (g_fh_drv_pll[pll_id].fh_status != FH_FH_DISABLE)
+		g_p_fh_hal_drv->mt_fh_hal_ctrl(&fh_ctl, enable);
+	else
+		skip_flag = 1;
+
+	/* restore */
+	g_fh_drv_pll[pll_id].fh_status = fh_status;
+
+	g_p_fh_hal_drv->mt_fh_unlock(&flags);
+
 	return 0;
 }
 
@@ -143,13 +201,15 @@ static int mt_freqhopping_init(void)
 
 	g_p_fh_hal_drv = mt_get_fh_hal_drv();
 	if (g_p_fh_hal_drv == NULL) {
-		FH_MSG_ERROR("No fh driver is found\n");
+		pr_info("[FH]No fh driver is found\n");
 		return -EINVAL;
 	}
 
 	ret = g_p_fh_hal_drv->mt_fh_hal_init();
 	if (ret != 0)
 		return ret;
+
+	g_fh_drv_pll = g_p_fh_hal_drv->fh_pll;
 
 	g_p_fh_hal_drv->mt_fh_hal_default_conf();
 

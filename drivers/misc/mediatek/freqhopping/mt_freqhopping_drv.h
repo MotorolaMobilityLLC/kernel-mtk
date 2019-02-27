@@ -17,23 +17,21 @@
 #include <linux/proc_fs.h>
 #include "mt_freqhopping.h"
 
-/* move to /mediatek/platform/prj, can config. by prj. */
-/* #define MEMPLL_SSC 0 */
-/* #define MAINPLL_SSC 1 */
-
 struct mt_fh_hal_driver {
+	struct fh_pll_t *fh_pll;
+	void (*mt_fh_lock)(unsigned long *);
+	void (*mt_fh_unlock)(unsigned long *);
 	int (*mt_fh_hal_init)(void);
+	int (*mt_fh_get_init)(void);
+	int (*mt_fh_hal_ctrl)(struct freqhopping_ioctl *, bool);
 	void (*mt_fh_hal_default_conf)(void);
+	int (*mt_dfs_armpll)(unsigned int, unsigned int);
 	int (*mt_fh_hal_dumpregs_read)(struct seq_file *m, void *v);
 	int (*mt_fh_hal_slt_start)(void);
 };
 
 struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
 
-#define FH_BUG_ON(x) \
-do {		 \
-	if ((x)) \
-		pr_err("BUGON %s:%d %s:%d\n", __func__, __LINE__, current->comm, current->pid); \
-} while (0)
+int mt_dfs_armpll(unsigned int pll, unsigned int dds);
 
 #endif
