@@ -342,10 +342,16 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			DBG(0, "OTG Plug in\n");
 			mt_usb_host_connect(0);
-		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
+		} else if ((noti->typec_state.old_state == TYPEC_ATTACHED_SRC ||
+			noti->typec_state.old_state == TYPEC_ATTACHED_SNK) &&
 			noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			DBG(0, "OTG Plug out\n");
-			mt_usb_host_disconnect(0);
+			if (is_host_active(mtk_musb)) {
+				DBG(0, "OTG Plug out\n");
+				mt_usb_host_disconnect(0);
+			} else {
+				DBG(0, "USB Plug out\n");
+				mt_usb_disconnect();
+			}
 #ifdef CONFIG_MTK_UART_USB_SWITCH
 		} else if ((noti->typec_state.new_state ==
 					TYPEC_ATTACHED_SNK ||
