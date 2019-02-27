@@ -35,3 +35,4 @@ obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
 obj-y += devinfo/
 obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_TRUSTONIC_TEE_SUPPORT) += gcpu/
+obj-y += sspm/
