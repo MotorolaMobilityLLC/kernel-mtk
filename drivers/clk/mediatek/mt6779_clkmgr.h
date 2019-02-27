@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _MT_CLKMGR_3967_H
-#define _MT_CLKMGR_3967_H
+#ifndef _MT_CLKMGR_6779_H
+#define _MT_CLKMGR_6779_H
 
 extern unsigned int mt_get_abist_freq(unsigned int ID);
 extern unsigned int mt_get_ckgen_freq(unsigned int ID);
