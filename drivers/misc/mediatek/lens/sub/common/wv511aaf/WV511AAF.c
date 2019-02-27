@@ -117,7 +117,7 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 }
 
 #ifdef LensdrvCM3
-static inline int getAFMETA(__user stWV511AAF_MotorMETAInfo *pstMotorMETAInfo)
+static inline int getAFMETA(__user stWV511AAF_MotorMETAInfo * pstMotorMETAInfo)
 {
 	stWV511AAF_MotorMETAInfo stMotorMETAInfo;
 
