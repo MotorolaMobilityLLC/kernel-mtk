@@ -443,10 +443,9 @@ int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
 	int idx, int *tchg_min,	int *tchg_max)
 {
 	struct charger_manager *info = consumer->cm;
-	int ret;
 
 	if (info != NULL) {
-		struct charger_device *pchr;
+		struct charger_data *pdata;
 
 		if (!upmu_get_rgs_chrdet()) {
 			pr_debug("[%s] No cable in, skip it\n", __func__);
@@ -456,15 +455,16 @@ int charger_manager_get_charger_temperature(struct charger_consumer *consumer,
 		}
 
 		if (idx == MAIN_CHARGER)
-			pchr = info->chg1_dev;
+			pdata = &info->chg1_data;
 		else if (idx == SLAVE_CHARGER)
-			pchr = info->chg2_dev;
+			pdata = &info->chg2_data;
 		else
 			return -ENOTSUPP;
 
-		ret = charger_dev_get_temperature(pchr, tchg_min, tchg_max);
+		*tchg_min = pdata->junction_temp_min;
+		*tchg_max = pdata->junction_temp_max;
 
-		return ret;
+		return 0;
 	}
 	return -EBUSY;
 }
@@ -1309,6 +1309,38 @@ static void check_battery_exist(struct charger_manager *info)
 	}
 }
 
+static void mtk_chg_get_tchg(struct charger_manager *info)
+{
+	int ret;
+	int tchg_min, tchg_max;
+	struct charger_data *pdata;
+
+	pdata = &info->chg1_data;
+	ret = charger_dev_get_temperature(info->chg1_dev, &tchg_min, &tchg_max);
+
+	if (ret < 0) {
+		pdata->junction_temp_min = -127;
+		pdata->junction_temp_max = -127;
+	} else {
+		pdata->junction_temp_min = tchg_min;
+		pdata->junction_temp_max = tchg_max;
+	}
+
+	if (is_slave_charger_exist()) {
+		pdata = &info->chg2_data;
+		ret = charger_dev_get_temperature(info->chg2_dev,
+			&tchg_min, &tchg_max);
+
+		if (ret < 0) {
+			pdata->junction_temp_min = -127;
+			pdata->junction_temp_max = -127;
+		} else {
+			pdata->junction_temp_min = tchg_min;
+			pdata->junction_temp_max = tchg_max;
+		}
+	}
+}
+
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1368,6 +1400,8 @@ static void charger_check_status(struct charger_manager *info)
 			}
 		}
 	}
+
+	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
 		charging = false;
