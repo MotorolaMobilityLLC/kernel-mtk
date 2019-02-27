@@ -50,6 +50,7 @@ extern unsigned int DISP_GetScreenHeight(void);
 #define MMDVFS_EVENT_UI_IDLE_EXIT 3
 #define MMDVFS_CLIENT_ID_ISP 0
 
+#define QOS_ALL_SCENARIO 99
 enum {
 	MMDVFS_CAM_MON_SCEN = SMI_BWC_SCEN_CNT, MMDVFS_SCEN_MHL,
 	MMDVFS_SCEN_MJC, MMDVFS_SCEN_DISP, MMDVFS_SCEN_ISP,
@@ -65,6 +66,19 @@ enum {
 	(1 << SMI_BWC_SCEN_CAM_CP) |	\
 	(1 << SMI_BWC_SCEN_ICFP) |	\
 	(1 << MMDVFS_SCEN_ISP))
+
+enum mmdvfs_vpu_clk {
+		vpu_clk_0, vpu_clk_1, vpu_clk_2, vpu_clk_3
+};
+
+enum mmdvfs_vpu_if_clk {
+		vpu_if_clk_0, vpu_if_clk_1, vpu_if_clk_2, vpu_if_clk_3
+};
+
+enum mmdvfs_vimvo_vol {
+		vimvo_vol_0, vimvo_vol_1, vimvo_vol_2, vimvo_vol_3
+};
+
 
 struct mmdvfs_state_change_event {
 	int scenario;
@@ -91,6 +105,9 @@ struct mmdvfs_prepare_event {
 	int event_type;
 };
 
+typedef int (*clk_switch_cb)(
+	int ori_mmsys_clk_mode, int update_mmsys_clk_mode);
+typedef int (*vdec_ctrl_cb)(void);
 typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
 typedef int (*mmdvfs_prepare_cb)(struct mmdvfs_prepare_event *event);
 
@@ -108,6 +125,7 @@ extern int get_mmdvfs_clk_mux_mask(void);
 
 #define MMDVFS_PROFILE_UNKNOWN (0)
 #define MMDVFS_PROFILE_VIN (1)
+#define MMDVFS_PROFILE_CER (2)
 
 /* Macro used to resovling step setting ioctl command */
 #define MMDVFS_CMD_STEP_LEN (8)
