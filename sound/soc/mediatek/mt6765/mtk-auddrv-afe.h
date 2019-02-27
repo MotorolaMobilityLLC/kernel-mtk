@@ -75,7 +75,7 @@ enum audio_sdm_level {
 /* We need to write AP_PLL_CON5 to set mux,
  * thus we can set APLL Tuner in AFE setting
  */
-#define AP_PLL_CON5 (0x0014)
+#define AP_PLL_CON3 (0x000C)
 
 #ifdef AUDIO_MEM_IOREMAP
 #define AFE_BASE (0L)
@@ -243,7 +243,7 @@ enum audio_sdm_level {
 #define AFE_IRQ_MCU_CNT4 (AFE_BASE + 0x03e8)
 #define AFE_IRQ_MCU_CNT11 (AFE_BASE + 0x03ec)
 #define AFE_APLL1_TUNER_CFG (AFE_BASE + 0x03f0)
-#define AFE_APLL2_TUNER_CFG (AFE_BASE + 0x03f4)
+#define AFE_APLL2_TUNER_CFG (AFE_BASE + 0x03f0)
 #define AFE_MEMIF_HD_MODE (AFE_BASE + 0x03f8)
 #define AFE_MEMIF_HDALIGN (AFE_BASE + 0x03fc)
 #define AFE_CONN33 (AFE_BASE + 0x0408)
