@@ -1698,18 +1698,19 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 #if WK_MONITOR_VCORE_HWCFG
 	if ((int1_flg & 0x2000) == 0x2000) {
 		pr_notice("[PWRAP] Monitor catch a target transaction\n");
-		pr_notice("[PWRAP] PMIC_WRAP_INT1_FLG: 0x%x\n", int1_flg);
+		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(before)\n", int1_flg);
 		pwrap_logging_at_isr();
 		pwrap_reenable_pmic_logging();
 		pwrap_dump_ap_register();
 		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0x2000);
+		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(after)\n", int1_flg);
 
 		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP] RG_BUCK_VCORE_HW0_OP_CFG = 0x%x\n", rdata);
+		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(before)\n", rdata);
 		pwrap_write_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR
 				  , rdata | 0x2);
 		pwrap_read_nochk(PMIC_RG_BUCK_VCORE_HW0_OP_CFG_ADDR, &rdata);
-		pr_notice("[PWRAP] RG_BUCK_VCORE_HW0_OP_CFG = 0x%x\n", rdata);
+		pr_notice("[PWRAP]BUCK_VCORE_HW0_OP_CFG=0x%x(after)\n", rdata);
 	}
 #endif
 
