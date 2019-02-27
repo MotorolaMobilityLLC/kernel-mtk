@@ -2014,7 +2014,7 @@ int pseudo_put_sgtable_pages(struct sg_table *table, int nents)
 
 /* the caller should make sure the mva offset have been eliminated. */
 int __pseudo_dealloc_mva(int port,
-		      const unsigned long BufAddr,
+		      unsigned long BufAddr,
 		      const unsigned int size,
 		      const unsigned int MVA,
 		      struct sg_table *sg_table)
@@ -2062,9 +2062,7 @@ int __pseudo_dealloc_mva(int port,
 		struct m4u_buf_info_t *m4u_buf_info;
 
 		m4u_buf_info = pseudo_client_find_buf(ion_m4u_client,
-						      addr_align, 1);
-		if (m4u_buf_info && m4u_buf_info->mva != addr_align)
-			M4U_MSG("warning: mva address are not same\n");
+						      MVA, 1);
 		table = pseudo_del_sgtable(addr_align);
 		if (!table) {
 			M4U_ERR("can't found the table from mva 0x%x-0x%lx\n",
@@ -2081,7 +2079,10 @@ int __pseudo_dealloc_mva(int port,
 			return -EINVAL;
 		}
 
-		pseudo_free_buf_info(m4u_buf_info);
+		if (m4u_buf_info) {
+			BufAddr = m4u_buf_info->va;
+			pseudo_free_buf_info(m4u_buf_info);
+		}
 	}
 
 	if (!table)
@@ -2105,53 +2106,14 @@ int __pseudo_dealloc_mva(int port,
 	if (BufAddr) {
 		/* from user space */
 		if (BufAddr < PAGE_OFFSET) {
-			struct vm_area_struct *vma = NULL;
-
-			M4UTRACE();
-			if (current->mm) {
-				down_read(&current->mm->mmap_sem);
-				vma = find_vma(current->mm, BufAddr);
-			} else if (current->active_mm) {
-				down_read(&current->active_mm->mmap_sem);
-				vma = NULL;
-			}
-			M4UTRACE();
-			if (vma == NULL) {
-				M4U_MSG("can't find vma:%s,va:0x%lx-0x%x\n",
-				       m4u_get_module_name(port),
-				       BufAddr, size);
-				if (current->mm)
-					up_read(&current->mm->mmap_sem);
-				else if (current->active_mm)
-					up_read(&current->active_mm->mmap_sem);
-				goto out;
-			}
-			if ((vma->vm_flags) & VM_PFNMAP) {
-				if (current->mm)
-					up_read(&current->mm->mmap_sem);
-				else if (current->active_mm)
-					up_read(&current->active_mm->mmap_sem);
-				goto out;
-			}
-			if (current->mm)
-				up_read(&current->mm->mmap_sem);
-			else if (current->active_mm)
-				up_read(&current->active_mm->mmap_sem);
 			if (!((BufAddr >= VMALLOC_START) &&
-				(BufAddr <= VMALLOC_END)))
-				if (!sg_table) {
-					if (BufAddr +  size < vma->vm_end)
-						pseudo_put_sgtable_pages(
-							table,
-							table->nents);
-					else
-						pseudo_put_sgtable_pages(
-							table,
-							table->nents - 1);
-				}
+				(BufAddr <= VMALLOC_END))) {
+				pseudo_put_sgtable_pages(
+					table,
+					table->nents);
+			}
 		}
 	}
-out:
 	if (table) {
 		sg_free_table(table);
 		kfree(table);
