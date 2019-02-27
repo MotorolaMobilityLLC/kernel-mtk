@@ -77,6 +77,10 @@ enum {
 #define REQ_MMCQD0_RPMB  "mmcqd/0rpmb"
 #define REQ_MMCQD1 "mmcqd/1"
 
+static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx,
+	__u64 start, __u64 end);
+static uint64_t mt_bio_get_period_busy(struct mt_bio_context *ctx);
+
 /* queue id:
  * 0=internal storage (emmc:mmcqd0/exe_cq),
  * 1=external storage (t-card:mmcqd1)
@@ -249,8 +253,9 @@ static void mt_bio_context_eval(struct mt_bio_context *ctx)
 				min = tsk_start;
 		}
 	}
-	ctx->period_usage += (ctx->period_end_t - min);
-	ctx->workload.usage = ctx->period_usage;
+
+	mt_bio_ctx_count_usage(ctx, min, ctx->period_end_t);
+	ctx->workload.usage = mt_bio_get_period_busy(ctx);
 
 	if (ctx->workload.period > (ctx->workload.usage * 100)) {
 		ctx->workload.percent = 1;
@@ -260,6 +265,7 @@ static void mt_bio_context_eval(struct mt_bio_context *ctx)
 		ctx->workload.percent =
 			(__u32)ctx->workload.usage / (__u32)period;
 	}
+
 	mtk_btag_throughput_eval(&ctx->throughput);
 }
 
@@ -386,7 +392,10 @@ void mt_biolog_cmdq_check(void)
 		mt_bio_print_trace(ctx);
 		ctx->period_start_t = end_time;
 		ctx->period_end_t = 0;
-		ctx->period_usage = 0;
+		ctx->period_busy = 0;
+		ctx->period_end_since_start_t = 0;
+		ctx->period_end_in_window_t = 0;
+		ctx->period_start_in_window_t = 0;
 		memset(&ctx->throughput, 0, sizeof(struct mtk_btag_throughput));
 		memset(&ctx->workload, 0, sizeof(struct mtk_btag_workload));
 	}
@@ -422,17 +431,64 @@ void mt_biolog_cmdq_queue_task(unsigned int task_id, struct mmc_request *req)
 	mt_pr_cmdq_tsk(tsk, tsk_req_start);
 }
 
-static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx, __u64 start,
-	__u64 end)
+static void mt_bio_ctx_count_usage(struct mt_bio_context *ctx,
+	__u64 start, __u64 end)
 {
-	__u64 busy_in_period;
+	if (start <= ctx->period_start_t) {
 
-	if (start < ctx->period_start_t)
-		busy_in_period = end - ctx->period_start_t;
-	else
-		busy_in_period = end - start;
+		ctx->period_end_since_start_t = end;
 
-	ctx->period_usage += busy_in_period;
+		if (ctx->period_start_in_window_t)
+			ctx->period_start_in_window_t =
+				ctx->period_end_in_window_t = 0;
+
+	} else {
+		if (ctx->period_end_since_start_t) {
+			if (start < ctx->period_end_since_start_t)
+				ctx->period_end_since_start_t = end;
+			else
+				goto new_window;
+		} else
+			goto new_window;
+	}
+
+	goto out;
+
+new_window:
+
+	if (ctx->period_start_in_window_t) {
+		if (start > ctx->period_end_in_window_t) {
+			ctx->period_busy +=
+		(ctx->period_end_in_window_t - ctx->period_start_in_window_t);
+			ctx->period_start_in_window_t = start;
+		}
+		ctx->period_end_in_window_t = end;
+	} else {
+		ctx->period_start_in_window_t = start;
+		ctx->period_end_in_window_t = end;
+	}
+
+out:
+	return;
+}
+
+static uint64_t mt_bio_get_period_busy(struct mt_bio_context *ctx)
+{
+	uint64_t busy;
+
+	busy = ctx->period_busy;
+
+	if (ctx->period_end_since_start_t) {
+		busy +=
+			(ctx->period_end_since_start_t - ctx->period_start_t);
+	}
+
+	if (ctx->period_start_in_window_t) {
+		busy +=
+		(ctx->period_end_in_window_t - ctx->period_start_in_window_t);
+	}
+
+	return busy;
 }
 
 /* Command Queue Hook: stage2: dma start */
@@ -556,7 +612,10 @@ void mt_biolog_mmcqd_req_check(void)
 		mt_bio_print_trace(ctx);
 		ctx->period_start_t = end_time;
 		ctx->period_end_t = 0;
-		ctx->period_usage = 0;
+		ctx->period_busy = 0;
+		ctx->period_end_since_start_t = 0;
+		ctx->period_end_in_window_t = 0;
+		ctx->period_start_in_window_t = 0;
 		memset(&ctx->throughput, 0, sizeof(struct mtk_btag_throughput));
 		memset(&ctx->workload, 0, sizeof(struct mtk_btag_workload));
 	}
