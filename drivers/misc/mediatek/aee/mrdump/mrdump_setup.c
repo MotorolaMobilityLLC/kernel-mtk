@@ -16,7 +16,7 @@
 #include <linux/reboot.h>
 #include <mrdump.h>
 #include <asm/memory.h>
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #include "mrdump_private.h"
 
 static void mrdump_hw_enable(bool enabled)

@@ -26,7 +26,7 @@
 #include <linux/delay.h>
 #include <linux/reboot.h>
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #endif
 #include "aee-common.h"
 #include <linux/uaccess.h>

@@ -17,7 +17,7 @@
 #include <linux/of.h>
 #endif
 #ifdef CONFIG_MTK_WD_KICKER
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 
 enum MRDUMP_RST_SOURCE {
 	MRDUMP_SYSRST,

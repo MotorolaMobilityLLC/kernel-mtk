@@ -37,7 +37,7 @@
 #include <linux/reboot.h>
 /* #include <mach/fiq_smp_call.h> */
 #ifdef CONFIG_MTK_WATCHDOG
-#include <mach/wd_api.h>
+#include <mtk_wd_api.h>
 #include <ext_wd_drv.h>
 #endif
 #include "aee-common.h"
