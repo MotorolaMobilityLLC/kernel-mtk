@@ -1,0 +1,33 @@
+/dts-v1/;
+
+#include "mt6765.dts"
+
+/ {
+
+	/* chosen */
+	chosen {
+		bootargs = "console=tty0 console=ttyMT0,921600n1\
+root=/dev/ram initrd=0x45000000,0x1000000 loglevel=8 \
+androidboot.selinux=permissive androidboot.hardware=mt6765 \
+initcall_debug=1 maxcpus=1";
+
+		/* fpga may has no lk, we need to specify display info here */
+		/* fb buffer is reserved using this dts by memory node above */
+		atag,videolfb-fb_base_h = <0x0>;
+		atag,videolfb-fb_base_l = <0x5e605000>;
+		atag,videolfb-islcmfound = <1>;
+		/* because no lk, so lcm is not inited */
+		atag,videolfb-islcm_inited = <0>;
+		atag,videolfb-fps= <6000>;
+		atag,videolfb-vramSize= <0x017bb000>;
+		atag,videolfb-lcmname= "nt35595_fhd_dsi_cmd_truly_nt50358_drv";
+	};
+
+	vibrator0:vibrator@0 {
+		compatible = "mediatek,vibrator";
+		vib_timer = <25>;
+		vib_limit = <9>;
+		vib_vol= <5>;
+	};
+};
+
