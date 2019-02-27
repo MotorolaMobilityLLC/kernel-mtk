@@ -20,7 +20,7 @@
 
 #if defined(CONFIG_MTK_IN_HOUSE_TEE_SUPPORT) || defined(CONFIG_TRUSTY)
 
-#include <gz/tz_cross/trustzone.h>
+#include <tz_cross/trustzone.h>
 
 void KREE_SESSION_LOCK(int32_t handle);
 void KREE_SESSION_UNLOCK(int32_t handle);
