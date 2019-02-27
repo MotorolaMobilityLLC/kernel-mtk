@@ -42,13 +42,12 @@
 #include "mtk_irtx.h"
 
 #define irtx_driver_name "mt_irtx"
-#define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
 #define IRTX_GPIO_MODE_LED_DEFAULT 0
 #define IRTX_GPIO_MODE_LED_SET 1
 
 static atomic_t ir_usage_cnt;
 char *irtx_gpio_cfg[] = {  "irtx_gpio_led_default", "irtx_gpio_led_set"};
-static u64 irtx_dma_mask = DMA_BIT_MASK((sizeof(unsigned long) << 3));
+static u64 irtx_dma_mask = DMA_BIT_MASK(32);
 
 struct mt_irtx mt_irtx_dev;
 struct pwm_spec_config irtx_pwm_config = {
