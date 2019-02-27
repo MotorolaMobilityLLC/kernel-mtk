@@ -60,9 +60,9 @@ static inline uint64_t tcpc_get_timer_enable_mask(struct tcpc_device *tcpc)
 	unsigned long flags;
 
 	down(&tcpc->timer_enable_mask_lock);
-	raw_local_irq_save(flags);
+	local_irq_save(flags);
 	data = tcpc->timer_enable_mask;
-	raw_local_irq_restore(flags);
+	local_irq_restore(flags);
 	up(&tcpc->timer_enable_mask_lock);
 
 	return data;
@@ -73,9 +73,9 @@ static inline void tcpc_reset_timer_enable_mask(struct tcpc_device *tcpc)
 	unsigned long flags;
 
 	down(&tcpc->timer_enable_mask_lock);
-	raw_local_irq_save(flags);
+	local_irq_save(flags);
 	tcpc->timer_enable_mask = 0;
-	raw_local_irq_restore(flags);
+	local_irq_restore(flags);
 	up(&tcpc->timer_enable_mask_lock);
 }
 
@@ -85,14 +85,14 @@ static inline void tcpc_clear_timer_enable_mask(
 	unsigned long flags;
 
 	down(&tcpc->timer_enable_mask_lock);
-	raw_local_irq_save(flags);
+	local_irq_save(flags);
 	tcpc->timer_enable_mask &= ~RT_MASK64(nr);
 
 	spin_lock(&tcpc->timer_tick_lock);
 	tcpc->timer_tick &= ~RT_MASK64(nr);
 	spin_unlock(&tcpc->timer_tick_lock);
 
-	raw_local_irq_restore(flags);
+	local_irq_restore(flags);
 	up(&tcpc->timer_enable_mask_lock);
 }
 
@@ -102,9 +102,9 @@ static inline void tcpc_set_timer_enable_mask(
 	unsigned long flags;
 
 	down(&tcpc->timer_enable_mask_lock);
-	raw_local_irq_save(flags);
+	local_irq_save(flags);
 	tcpc->timer_enable_mask |= RT_MASK64(nr);
-	raw_local_irq_restore(flags);
+	local_irq_restore(flags);
 	up(&tcpc->timer_enable_mask_lock);
 }
 
