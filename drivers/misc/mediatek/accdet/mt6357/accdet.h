@@ -59,6 +59,11 @@
 #define HEADSET_MODE_2	(2)
 #define HEADSET_MODE_6	(6)
 
+/* IOCTL */
+#define ACCDET_IOC_MAGIC 'A'
+#define ACCDET_INIT _IO(ACCDET_IOC_MAGIC, 0)
+#define SET_CALL_STATE _IO(ACCDET_IOC_MAGIC, 1)
+#define GET_BUTTON_STATUS _IO(ACCDET_IOC_MAGIC, 2)
 
 /* 400us, Accdet irq clear timeout  */
 #define ACCDET_TIME_OUT 0x61A80
@@ -153,6 +158,8 @@ void mt_accdet_remove(void);
 void mt_accdet_suspend(void);
 void mt_accdet_resume(void);
 int mt_accdet_probe(struct platform_device *dev);
+long mt_accdet_unlocked_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg);
 
 #endif
 

@@ -16,6 +16,11 @@
 static struct platform_driver accdet_driver;
 static int debug_enable_drv = 1;
 
+long __weak mt_accdet_unlocked_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg)
+{
+	return 0;
+}
 static int accdet_open(struct inode *inode, struct file *file)
 {
 	return 0;
@@ -28,6 +33,7 @@ static int accdet_release(struct inode *inode, struct file *file)
 
 static const struct file_operations accdet_fops = {
 	.owner = THIS_MODULE,
+	.unlocked_ioctl = mt_accdet_unlocked_ioctl,
 	.open = accdet_open,
 	.release = accdet_release,
 };

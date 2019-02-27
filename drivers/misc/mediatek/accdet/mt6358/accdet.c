@@ -133,6 +133,7 @@ static int accdet_auxadc_offset;
 static struct wakeup_source *accdet_irq_lock;
 static struct wakeup_source *accdet_timer_lock;
 static DEFINE_MUTEX(accdet_eint_irq_sync_mutex);
+static int s_button_status;
 
 static u32 accdet_eint_type = IRQ_TYPE_LEVEL_LOW;
 static u32 button_press_debounce = 0x400;
@@ -1100,6 +1101,7 @@ static inline void check_cable_type(void)
 	pr_notice("accdet %s(), cur_status:%s current AB = %d\n", __func__,
 		     accdet_status_str[accdet_status], cur_AB);
 
+	s_button_status = 0;
 	pre_status = accdet_status;
 
 	switch (accdet_status) {
@@ -1163,6 +1165,7 @@ static inline void check_cable_type(void)
 				cust_pwm_deb->debounce0);
 			mutex_lock(&accdet_eint_irq_sync_mutex);
 			if (eint_accdet_sync_flag) {
+				s_button_status = 1;
 				accdet_status = HOOK_SWITCH;
 				multi_key_detection(cur_AB);
 			} else
@@ -2096,5 +2099,22 @@ void mt_accdet_remove(void)
 	cdev_del(accdet_cdev);
 	unregister_chrdev_region(accdet_devno, 1);
 	pr_debug("%s done!\n", __func__);
+}
+
+long mt_accdet_unlocked_ioctl(struct file *file, unsigned int cmd,
+	unsigned long arg)
+{
+	switch (cmd) {
+	case ACCDET_INIT:
+		break;
+	case SET_CALL_STATE:
+		break;
+	case GET_BUTTON_STATUS:
+		return s_button_status;
+	default:
+		pr_debug("[Accdet]accdet_ioctl : default\n");
+		break;
+	}
+	return 0;
 }
 
