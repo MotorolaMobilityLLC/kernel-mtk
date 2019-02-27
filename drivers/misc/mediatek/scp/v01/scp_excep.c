@@ -218,6 +218,7 @@ void scp_reg_copy(void *bufp)
 {
 	struct scp_reg_dump_list *scp_reg;
 	uint32_t tmp;
+
 	scp_reg = (struct scp_reg_dump_list *) bufp;
 
 	/*setup scp reg*/
@@ -705,6 +706,7 @@ struct bin_attribute bin_attr_scp_dump = {
 int scp_excep_init(void)
 {
 	int dram_size = 0;
+
 	mutex_init(&scp_excep_mutex);
 	mutex_init(&scp_A_excep_dump_mutex);
 
