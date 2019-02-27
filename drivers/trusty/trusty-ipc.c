@@ -1127,7 +1127,7 @@ static const struct file_operations tipc_fops = {
 };
 
 /*****************************************************************************/
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 static struct tipc_virtio_dev *_get_vds(struct tipc_cdev_node *cdn)
 {
 	if (!cdn) {
@@ -1325,7 +1325,7 @@ err_out:
 	return ret;
 }
 EXPORT_SYMBOL(tipc_k_write);
-#endif /* end of CONFIG_GZ_V2_SUPPORT */
+#endif /* end of CONFIG_MTK_ENABLE_GENIEZONE */
 /*****************************************************************************/
 
 static void chan_trigger_event(struct tipc_chan *chan, int event)

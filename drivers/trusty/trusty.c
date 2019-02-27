@@ -29,7 +29,7 @@
 #include <linux/trusty/trusty.h>
 
 #if 0
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include "trusty-ramconsole.h"
 #endif
@@ -283,7 +283,7 @@ ssize_t trusty_version_show(struct device *dev, struct device_attribute *attr,
 DEVICE_ATTR(trusty_version, S_IRUSR, trusty_version_show, NULL);
 
 #if 0
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #ifdef CONFIG_MTK_RAM_CONSOLE
 static void init_gz_ramconsole(struct device *dev)
 {
@@ -697,7 +697,7 @@ static int trusty_probe(struct platform_device *pdev)
 #endif
 
 #if 0
-#ifdef CONFIG_GZ_V2_SUPPORT
+#ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #ifdef CONFIG_MTK_RAM_CONSOLE
 	init_gz_ramconsole(&pdev->dev);
 #endif
