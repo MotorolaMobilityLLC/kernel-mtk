@@ -273,7 +273,7 @@ void rtc_bbpu_pwrdown(bool auto_boot)
 
 void hal_rtc_bbpu_pwdn(bool charger_status)
 {
-	u16 con, bbpu;
+	u16 con;
 
 	rtc_disable_2sec_reboot();
 	rtc_enable_k_eosc();
