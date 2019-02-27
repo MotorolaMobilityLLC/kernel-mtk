@@ -22,25 +22,25 @@
 #define V_OF_FUSE_CPU 1000
 #define V_OF_FUSE_GPU 800
 #define V_OF_FUSE_VCORE 800
+#define V_OF_FUSE_MD1 800
 #define V_OF_FUSE_MODEM 800
 #define T_OF_FUSE 30
 
-/* TODO */
 /* devinfo offset for each bank */
-/* CCI use LL leakage */
 #define DEVINFO_IDX_L 136 /* 07B8 */
-#define DEVINFO_IDX_LL 136 /* 07b8 */
+#define DEVINFO_IDX_LL 136 /* 07B8 */
 #define DEVINFO_IDX_CCI 136 /* 07B8 */
 #define DEVINFO_IDX_GPU 137 /* 07BC */
 #define DEVINFO_IDX_VCORE 137 /* 07BC */
+#define DEVINFO_IDX_MD1 137 /* 07BC */
 #define DEVINFO_IDX_MODEM 137 /* 07BC */
 
-/* TODO */
-#define DEVINFO_OFF_L 16
-#define DEVINFO_OFF_LL 8
-#define DEVINFO_OFF_CCI 16
+#define DEVINFO_OFF_L 8
+#define DEVINFO_OFF_LL 16
+#define DEVINFO_OFF_CCI 0
 #define DEVINFO_OFF_GPU 24
 #define DEVINFO_OFF_VCORE 16
+#define DEVINFO_OFF_MD1 0
 #define DEVINFO_OFF_MODEM 8
 
 /* default leakage value for each bank */
@@ -49,7 +49,8 @@
 #define DEF_CCI_LEAKAGE 2
 #define DEF_GPU_LEAKAGE 8
 #define DEF_VCORE_LEAKAGE 9
-#define DEF_MODEM_LEAKAGE 8
+#define DEF_MD1_LEAKAGE 2
+#define DEF_MODEM_LEAKAGE 6
 
 
 enum {
@@ -60,6 +61,7 @@ enum {
 	MTK_SPOWER_CCI,
 	MTK_SPOWER_GPU,
 	MTK_SPOWER_VCORE,
+	MTK_SPOWER_MD1,
 	MTK_SPOWER_MODEM,
 
 	MTK_SPOWER_MAX
@@ -71,6 +73,7 @@ enum {
 	MTK_CCI_LEAKAGE,
 	MTK_GPU_LEAKAGE,
 	MTK_VCORE_LEAKAGE,
+	MTK_MD1_LEAKAGE,
 	MTK_MODEM_LEAKAGE,
 
 	MTK_LEAKAGE_MAX
@@ -93,10 +96,10 @@ extern struct spower_leakage_info spower_lkg_info[MTK_SPOWER_MAX];
 	(BIT(MTK_SPOWER_CPUL) | BIT(MTK_SPOWER_CPUL_CLUSTER))
 #define LL_DEVINFO_DOMAIN \
 	(BIT(MTK_SPOWER_CPULL) | BIT(MTK_SPOWER_CPULL_CLUSTER))
-#define CCI_DEVINFO_DOMAIN \
-	(BIT(MTK_SPOWER_CCI))
+#define CCI_DEVINFO_DOMAIN (BIT(MTK_SPOWER_CCI))
 #define GPU_DEVINFO_DOMAIN (BIT(MTK_SPOWER_GPU))
 #define VCORE_DEVINFO_DOMAIN (BIT(MTK_SPOWER_VCORE))
+#define MD1_DEVINFO_DOMAIN (BIT(MTK_SPOWER_MD1))
 #define MODEM_DEVINFO_DOMAIN (BIT(MTK_SPOWER_MODEM))
 
 /* used to calculate total leakage that search from raw table */

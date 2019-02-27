@@ -1062,7 +1062,6 @@
 		579296, 665206, 762015, 873752, 1000137, 1146069, 1313595, \
 }
 
-#if 0
 #define VMD_TABLE_0 { \
 	600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050, 1100, \
 		1150, 1200, 1250, \
@@ -1209,7 +1208,6 @@
 	125, 18583, 19230, 19914, 21304, 21310, 22335, 23793, \
 		25515, 27305, 29033, 30985, 33418, 36156, 38917, \
 }
-#endif
 
 #define MODEM_TABLE_0 { \
 	600, 650, 700, 750, 800, 850, 900, 950, 1000, 1050, 1100, 1150, 1200, \
@@ -1400,6 +1398,12 @@ int vcore_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		VCORE_TABLE_2,
 };
 
+int md1_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
+		VMD_TABLE_0,
+		VMD_TABLE_1,
+		VMD_TABLE_2,
+};
+
 int modem_leakage_data[][VSIZE*TSIZE+VSIZE+TSIZE] = {
 		MODEM_TABLE_0,
 		MODEM_TABLE_1,
@@ -1502,6 +1506,20 @@ struct spower_raw_t spower_raw[MTK_SPOWER_MAX] = {
 		},
 		.devinfo_domain = VCORE_DEVINFO_DOMAIN,
 		.leakage_id = MTK_VCORE_LEAKAGE,
+		.instance = DEFAULT_INSTANCE,
+		.print_leakage = true,
+	},
+	{
+		.vsize = VSIZE,
+		.tsize = TSIZE,
+		.table_size = MAX_TABLE_SIZE,
+		.table = {
+			(int *)&md1_leakage_data[0],
+			(int *)&md1_leakage_data[1],
+			(int *)&md1_leakage_data[2]
+		},
+		.devinfo_domain = MD1_DEVINFO_DOMAIN,
+		.leakage_id = MTK_MD1_LEAKAGE,
 		.instance = DEFAULT_INSTANCE,
 		.print_leakage = true,
 	},
