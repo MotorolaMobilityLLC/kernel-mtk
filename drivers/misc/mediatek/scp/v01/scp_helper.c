@@ -389,8 +389,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
  */
 static void scp_timeout_ws(struct work_struct *ws)
 {
+#if SCP_RECOVERY_SUPPORT
 	if (scp_timeout_times < 10)
 		scp_send_reset_wq(RESET_TYPE_AWAKE);
+#endif
 
 	scp_timeout_times++;
 	pr_notice("[SCP] scp_timeout_times=%x\n", scp_timeout_times);
@@ -1444,6 +1446,7 @@ int scp_check_resource(void)
 	return scp_resource_status;
 }
 
+#if SCP_RECOVERY_SUPPORT
 void scp_region_info_init(void)
 {
 	/*get scp loader/firmware info from scp sram*/
@@ -1452,6 +1455,9 @@ void scp_region_info_init(void)
 	memcpy_from_scp(&scp_region_info_copy, scp_region_info,
 		sizeof(scp_region_info_copy));
 }
+#else
+void scp_region_info_init(void) {}
+#endif
 
 void scp_recovery_init(void)
 {
@@ -1640,11 +1646,15 @@ static int __init scp_init(void)
 	/* keep Univpll */
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_CK_26M);
 
+#if SCP_RESERVED_MEM
+#ifdef CONFIG_OF_RESERVED_MEM
 	/* make sure the reserved memory for scp is ready */
 	if (scp_mem_size == 0) {
 		pr_err("[SCP] Reserving memory by of_device for SCP failed.\n");
 		return -1;
 	}
+#endif
+#endif
 
 	if (platform_driver_register(&mtk_scp_device))
 		pr_err("[SCP] scp probe fail\n");

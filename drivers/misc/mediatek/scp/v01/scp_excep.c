@@ -182,8 +182,10 @@ void exception_header_init(void *oldbufp, enum scp_core_id id)
 	phdr->p_vaddr = CRASH_MEMORY_OFFSET;
 	phdr->p_paddr = CRASH_MEMORY_OFFSET;
 
+#if SCP_RECOVERY_SUPPORT
 	if ((int)scp_region_info_copy.ap_dram_size > 0)
 		dram_size = scp_region_info_copy.ap_dram_size;
+#endif
 
 	phdr->p_filesz = CRASH_MEMORY_LENGTH + roundup(dram_size, 4);
 	phdr->p_memsz = CRASH_MEMORY_LENGTH + roundup(dram_size, 4);
@@ -264,8 +266,10 @@ void scp_sub_header_init(void *bufp)
 	scp_sub_head = (struct scp_dump_header_list *) bufp;
 	/*setup scp reg*/
 	scp_sub_head->scp_head_magic = 0xDEADBEEF;
+#if SCP_RECOVERY_SUPPORT
 	memcpy(&scp_sub_head->scp_region_info,
 		&scp_region_info_copy, sizeof(scp_region_info_copy));
+#endif
 	scp_sub_head->scp_head_magic_end = 0xDEADBEEF;
 }
 
@@ -381,6 +385,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		return 0;
 	}
 
+#if SCP_RECOVERY_SUPPORT
 	/* L1C support? */
 	if ((int)(scp_region_info_copy.ap_dram_size) <= 0) {
 		scp_dump_size = sizeof(struct MemoryDump);
@@ -391,7 +396,9 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		scp_dump_size = sizeof(struct MemoryDump) +
 			roundup(dram_size, 4);
 	}
-
+#else
+	scp_dump_size = 0;
+#endif
 	exception_header_init(pMemoryDump, id);
 	/* init sub header*/
 	scp_sub_header_init(&(pMemoryDump->scp_dump_header));
@@ -406,12 +413,14 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		scp_l1c_flua(SCP_DL1C);
 		scp_l1c_flua(SCP_IL1C);
 		udelay(10);
+#if SCP_RECOVERY_SUPPORT
 		pr_debug("scp:scp_l1c_start_virt 0x%p\n",
 			scp_l1c_start_virt);
 		/* copy dram data*/
 		memcpy((void *)&(pMemoryDump->scp_reg_dump),
 			scp_l1c_start_virt, dram_size);
 		/* dump scp reg */
+#endif
 		scp_reg_copy((void *)(&pMemoryDump->scp_reg_dump) +
 			roundup(dram_size, 4));
 	} else {
@@ -733,10 +742,13 @@ int scp_excep_init(void)
 	scp_A_detail_buffer = vmalloc(SCP_AED_STR_LEN);
 	if (!scp_A_detail_buffer)
 		return -1;
-
+#if SCP_RECOVERY_SUPPORT
 	/* support L1C or not? */
 	if ((int)(scp_region_info->ap_dram_size) > 0)
 		dram_size = scp_region_info->ap_dram_size;
+#else
+	dram_size = 0;
+#endif
 
 	scp_A_dump_buffer = vmalloc(sizeof(struct MemoryDump) +
 		roundup(dram_size, 4));
