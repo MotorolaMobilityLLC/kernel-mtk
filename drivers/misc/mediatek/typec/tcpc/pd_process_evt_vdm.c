@@ -18,145 +18,319 @@
 #include "inc/pd_process_evt.h"
 #include "inc/pd_dpm_core.h"
 
-#define VDM_CMD_STATE(cmd, cmd_type)	\
-	((cmd & 0x1f) | ((cmd_type & 0x03) << 6))
+/* VDM reactions */
 
-#define VDM_CMD_INIT_STATE(cmd, next_state)	\
-	{ VDM_CMD_STATE(cmd, CMDT_INIT), next_state }
+#define VDM_CMD_FLAG_CABLE_CMD			(1<<0)
+#define VDM_CMD_FLAG_SEND_BY_UFP			(1<<1)
+#define VDM_CMD_FLAG_SEND_BY_DFP			(1<<2)
+#define VDM_CMD_FLAG_RECV_BY_UFP			(1<<3)
+#define VDM_CMD_FLAG_RECV_BY_DFP			(1<<4)
+#define VDM_CMD_FLAG_PD30_DUPLEX			(1<<5)
 
-#define VDM_CMD_ACK_STATE(cmd, next_state)	\
-	{ VDM_CMD_STATE(cmd, CMDT_RSP_ACK), next_state }
-
-#define VDM_CMD_NACK_STATE(cmd, next_state)	\
-	{ VDM_CMD_STATE(cmd, CMDT_RSP_NAK), next_state }
-
-#define VDM_CMD_BUSY_STATE(cmd, next_state)	\
-	{ VDM_CMD_STATE(cmd, CMDT_RSP_BUSY), next_state }
-
-/* UFP PD VDM Command's reactions */
-
-DECL_PE_STATE_TRANSITION(PD_UFP_VDM_CMD) = {
-
-	VDM_CMD_INIT_STATE(CMD_DISCOVER_IDENT, PE_UFP_VDM_GET_IDENTITY),
-	VDM_CMD_INIT_STATE(CMD_DISCOVER_SVID, PE_UFP_VDM_GET_SVIDS),
-	VDM_CMD_INIT_STATE(CMD_DISCOVER_MODES, PE_UFP_VDM_GET_MODES),
-	VDM_CMD_INIT_STATE(CMD_ENTER_MODE, PE_UFP_VDM_EVALUATE_MODE_ENTRY),
-	VDM_CMD_INIT_STATE(CMD_EXIT_MODE, PE_UFP_VDM_MODE_EXIT),
-
-#ifdef CONFIG_USB_PD_ALT_MODE
-	VDM_CMD_INIT_STATE(CMD_DP_STATUS, PE_UFP_VDM_DP_STATUS_UPDATE),
-	VDM_CMD_INIT_STATE(CMD_DP_CONFIG, PE_UFP_VDM_DP_CONFIGURE),
-#endif
+struct vdm_state_transition {
+	uint8_t	vdm_cmd;
+	uint8_t vdm_init_state;
+	uint8_t	vdm_request_state;
+	uint8_t	vdm_cmd_flags;
 };
-DECL_PE_STATE_REACTION(PD_UFP_VDM_CMD);
 
-/* DFP PD VDM Command's reactions */
+#define VDM_CMD_REACTION(cmd, init, req, flags)	{ \
+	.vdm_cmd = cmd,	\
+	.vdm_init_state = init, \
+	.vdm_request_state = req,	\
+	.vdm_cmd_flags = flags, \
+}
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DISCOVER_ID) = {
-	VDM_CMD_ACK_STATE(CMD_DISCOVER_IDENT,
-		PE_DFP_UFP_VDM_IDENTITY_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DISCOVER_IDENT, PE_DFP_UFP_VDM_IDENTITY_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DISCOVER_IDENT, PE_DFP_UFP_VDM_IDENTITY_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DISCOVER_ID);
+#define VDM_DFP_CMD_REACTION(cmd, init, req)		\
+	VDM_CMD_REACTION(cmd, init, req,  \
+		VDM_CMD_FLAG_SEND_BY_DFP | VDM_CMD_FLAG_RECV_BY_UFP)
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DISCOVER_SVID) = {
-	VDM_CMD_ACK_STATE(CMD_DISCOVER_SVID,
-		PE_DFP_VDM_SVIDS_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DISCOVER_SVID, PE_DFP_VDM_SVIDS_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DISCOVER_SVID, PE_DFP_VDM_SVIDS_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DISCOVER_SVID);
+#define VDM_UFP_CMD_REACTION(cmd, init, req)		\
+	VDM_CMD_REACTION(cmd, init, req, \
+		VDM_CMD_FLAG_SEND_BY_UFP | VDM_CMD_FLAG_RECV_BY_DFP)
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DISCOVER_MODES) = {
-	VDM_CMD_ACK_STATE(CMD_DISCOVER_MODES,
-			PE_DFP_VDM_MODES_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DISCOVER_MODES, PE_DFP_VDM_MODES_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DISCOVER_MODES, PE_DFP_VDM_MODES_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DISCOVER_MODES);
+#define VDM_CABLE_CMD_REACTION(cmd, init, req)		\
+	VDM_CMD_REACTION(cmd, init, req, \
+		VDM_CMD_FLAG_SEND_BY_UFP | VDM_CMD_FLAG_SEND_BY_DFP \
+		| VDM_CMD_FLAG_CABLE_CMD)
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_ENTER_MODE) = {
-	VDM_CMD_ACK_STATE(CMD_ENTER_MODE,
-			PE_DFP_VDM_MODE_ENTRY_ACKED),
-	VDM_CMD_NACK_STATE(CMD_ENTER_MODE, PE_DFP_VDM_MODE_ENTRY_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_ENTER_MODE, PE_DFP_VDM_MODE_ENTRY_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_ENTER_MODE);
+#define VDM_DFP_CMD_REACTION_PD30(cmd, init, req)		\
+	VDM_CMD_REACTION(cmd, init, req,  \
+		VDM_CMD_FLAG_SEND_BY_DFP | VDM_CMD_FLAG_RECV_BY_UFP |	\
+		VDM_CMD_FLAG_PD30_DUPLEX)
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_EXIT_MODE) = {
-	VDM_CMD_ACK_STATE(CMD_EXIT_MODE,
-		PE_DFP_VDM_MODE_ENTRY_ACKED),
-	VDM_CMD_NACK_STATE(CMD_EXIT_MODE,
-		PE_DFP_VDM_MODE_ENTRY_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_EXIT_MODE,
-		PE_VIRT_HARD_RESET),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_EXIT_MODE);
+#define VDM_UFP_CMD_REACTION_PD30(cmd, init, req)		\
+	VDM_CMD_REACTION(cmd, init, req, \
+		VDM_CMD_FLAG_SEND_BY_UFP | VDM_CMD_FLAG_RECV_BY_DFP |	\
+		VDM_CMD_FLAG_PD30_DUPLEX)
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_ATTENTION) = {
-	VDM_CMD_INIT_STATE(CMD_ATTENTION,
-		PE_DFP_VDM_ATTENTION_REQUEST),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_ATTENTION);
+static const struct vdm_state_transition pe_vdm_state_reactions[] = {
+
+	VDM_DFP_CMD_REACTION_PD30(CMD_DISCOVER_IDENT,
+		PE_UFP_VDM_GET_IDENTITY,
+		PE_DFP_UFP_VDM_IDENTITY_REQUEST
+	),
+
+	VDM_DFP_CMD_REACTION_PD30(CMD_DISCOVER_SVID,
+		PE_UFP_VDM_GET_SVIDS,
+		PE_DFP_VDM_SVIDS_REQUEST
+	),
+
+	VDM_DFP_CMD_REACTION_PD30(CMD_DISCOVER_MODES,
+		PE_UFP_VDM_GET_MODES,
+		PE_DFP_VDM_MODES_REQUEST
+	),
+
+	VDM_DFP_CMD_REACTION(CMD_ENTER_MODE,
+		PE_UFP_VDM_EVALUATE_MODE_ENTRY,
+		PE_DFP_VDM_MODE_ENTRY_REQUEST
+	),
+
+	VDM_DFP_CMD_REACTION(CMD_EXIT_MODE,
+		PE_UFP_VDM_MODE_EXIT,
+		PE_DFP_VDM_MODE_EXIT_REQUEST
+	),
+
+	VDM_UFP_CMD_REACTION_PD30(CMD_ATTENTION,
+		PE_DFP_VDM_ATTENTION_REQUEST,
+		PE_UFP_VDM_ATTENTION_REQUEST
+	),
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
+	VDM_DFP_CMD_REACTION(CMD_DP_STATUS,
+		PE_UFP_VDM_DP_STATUS_UPDATE,
+		PE_DFP_VDM_DP_STATUS_UPDATE_REQUEST
+	),
 
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DP_STATUS) = {
-	VDM_CMD_ACK_STATE(CMD_DP_STATUS,
-			PE_DFP_VDM_DP_STATUS_UPDATE_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DP_STATUS, PE_DFP_VDM_DP_STATUS_UPDATE_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DP_STATUS, PE_DFP_VDM_DP_STATUS_UPDATE_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DP_STATUS);
-
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DP_CONFIG) = {
-	VDM_CMD_ACK_STATE(CMD_DP_CONFIG,
-			PE_DFP_VDM_DP_CONFIGURATION_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DP_CONFIG, PE_DFP_VDM_DP_CONFIGURATION_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DP_CONFIG, PE_DFP_VDM_DP_CONFIGURATION_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DP_CONFIG);
-
+	VDM_DFP_CMD_REACTION(CMD_DP_CONFIG,
+		PE_UFP_VDM_DP_CONFIGURE,
+		PE_DFP_VDM_DP_CONFIGURATION_REQUEST
+	),
 #endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
+	/* Only handle Timeout Case */
+	VDM_DFP_CMD_REACTION_PD30(0,
+		PE_UFP_UVDM_RECV,
+		PE_DFP_UVDM_SEND
+	),
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 
-/* HW Event reactions */
-
-DECL_PE_STATE_TRANSITION(PD_HW_MSG_TX_FAILED) = {
 #ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-	{PE_SRC_VDM_IDENTITY_REQUEST, PE_SRC_VDM_IDENTITY_NAKED},
-#endif	/* PD_CAP_SRC_STARTUP_DISCOVERY_ID */
+	VDM_CABLE_CMD_REACTION(CMD_DISCOVER_IDENT,
+		0,
+		PE_SRC_VDM_IDENTITY_REQUEST
+	),
+#endif /* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
 
 #ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-	{PE_DFP_CBL_VDM_IDENTITY_REQUEST, PE_DFP_CBL_VDM_IDENTITY_NAKED},
-#endif	/* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
-
-#ifdef CONFIG_USB_PD_UVDM
-	{PE_DFP_UVDM_SEND, PE_DFP_UVDM_NAKED},
-#endif	/* CONFIG_USB_PD_UVDM */
+	VDM_CABLE_CMD_REACTION(CMD_DISCOVER_IDENT,
+		0,
+		PE_DFP_CBL_VDM_IDENTITY_REQUEST
+	),
+#endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
 };
-DECL_PE_STATE_REACTION(PD_HW_MSG_TX_FAILED);
 
-/* DPM Event reactions */
+static inline bool pd_vdm_state_transit_rx(struct pd_port *pd_port,
+	const struct vdm_state_transition *state_transition)
+{
+	if (!pd_check_pe_state_ready(pd_port)) {
+		PE_DBG("670 : invalid, current status\r\n");
+		return false;
+	}
 
-DECL_PE_STATE_TRANSITION(PD_DPM_MSG_ACK) = {
-	{ PE_UFP_VDM_GET_IDENTITY, PE_UFP_VDM_SEND_IDENTITY },
-	{ PE_UFP_VDM_GET_SVIDS, PE_UFP_VDM_SEND_SVIDS },
-	{ PE_UFP_VDM_GET_MODES, PE_UFP_VDM_SEND_MODES },
-	{ PE_UFP_VDM_MODE_EXIT, PE_UFP_VDM_MODE_EXIT_ACK},
-	{ PE_UFP_VDM_EVALUATE_MODE_ENTRY, PE_UFP_VDM_MODE_ENTRY_ACK },
+	PE_TRANSIT_STATE(pd_port, state_transition->vdm_init_state);
+	return true;
+}
+
+static inline bool pd_vdm_state_transit_tx(struct pd_port *pd_port,
+	uint8_t vdm_cmdt, const struct vdm_state_transition *state_transition)
+{
+	int ret_code = TCP_DPM_RET_VDM_NAK;
+	uint8_t curr_state = state_transition->vdm_request_state;
+	uint8_t next_state = curr_state + 1;
+
+	switch (vdm_cmdt) {
+
+	case CMDT_RSP_NAK:
+		if (curr_state != PE_DFP_VDM_MODE_EXIT_REQUEST)
+			next_state = curr_state+2;
+		break;
+
+	case CMDT_RSP_BUSY:
+		if (curr_state == PE_DFP_VDM_MODE_EXIT_REQUEST)
+			next_state = pe_get_curr_hard_reset_state(pd_port);
+		else
+			next_state = curr_state+2;
+		break;
+
+	default:
+		ret_code = TCP_DPM_RET_VDM_ACK;
+		break;
+	}
+
+	pd_notify_tcp_vdm_event_2nd_result(pd_port, ret_code);
+	PE_TRANSIT_STATE(pd_port, next_state);
+	return true;
+}
+
+bool vdm_is_state_transition_available(struct pd_port *pd_port,
+	bool recv, const struct vdm_state_transition *state_transition)
+{
+	uint8_t shift = 1;
+	uint8_t vdm_cmd_flags = state_transition->vdm_cmd_flags;
+
+#ifdef CONFIG_USB_PD_REV30
+	if (pd_check_rev30(pd_port) &&
+		(vdm_cmd_flags & VDM_CMD_FLAG_PD30_DUPLEX)) {
+		return true;
+	}
+#endif	/* CONFIG_USB_PD_REV30 */
+
+	if (pd_port->data_role == PD_ROLE_DFP)
+		shift += 1;
+
+	if (recv)
+		shift += 2;
+
+	return vdm_cmd_flags & (1 << shift);
+}
+
+static bool pd_vdm_state_transit(
+	struct pd_port *pd_port, uint8_t vdm_cmdt,
+	const struct vdm_state_transition *state_transition)
+{
+	uint8_t curr_state;
+
+	curr_state = pd_port->pe_state_curr;
+
+	if (curr_state == PE_UFP_VDM_ATTENTION_REQUEST) {
+		VDM_STATE_DPM_INFORMED(pd_port);
+		pd_notify_tcp_vdm_event_2nd_result(
+			pd_port, TCP_DPM_RET_TIMEOUT);
+		return false;
+	}
+
+	if (vdm_cmdt == CMDT_INIT) {	/* Recv */
+		if (!vdm_is_state_transition_available(
+			pd_port, true, state_transition))
+			return false;
+
+		return pd_vdm_state_transit_rx(pd_port, state_transition);
+	}
+
+	/* Send */
+	if (!vdm_is_state_transition_available(
+				pd_port, false, state_transition))
+		return false;
+
+	if (curr_state != state_transition->vdm_request_state)
+		return false;
+
+	return pd_vdm_state_transit_tx(
+			pd_port, vdm_cmdt, state_transition);
+}
+
+enum {
+	VDM_STATE_TRANSIT_SOP_CMD = 0,
+	VDM_STATE_TRANSIT_SOP_PRIME_CMD = VDM_CMD_FLAG_CABLE_CMD,
+	VDM_STATE_TRANSIT_NAK = 2,
+
+	VDM_STATE_TRANSIT_CHECK_TX = 3,
 };
-DECL_PE_STATE_REACTION(PD_DPM_MSG_ACK);
 
-DECL_PE_STATE_TRANSITION(PD_DPM_MSG_NAK) = {
-	{PE_UFP_VDM_GET_IDENTITY, PE_UFP_VDM_GET_IDENTITY_NAK},
-	{PE_UFP_VDM_GET_SVIDS, PE_UFP_VDM_GET_SVIDS_NAK},
-	{PE_UFP_VDM_GET_MODES, PE_UFP_VDM_GET_MODES_NAK},
-	{PE_UFP_VDM_MODE_EXIT, PE_UFP_VDM_MODE_EXIT_NAK},
-	{PE_UFP_VDM_EVALUATE_MODE_ENTRY, PE_UFP_VDM_MODE_ENTRY_NAK},
-};
-DECL_PE_STATE_REACTION(PD_DPM_MSG_NAK);
+static bool pe_check_vdm_state_transit_valid(
+	struct pd_port *pd_port, uint8_t transit_type, uint8_t *vdm_cmdt,
+	const struct vdm_state_transition *state_transition)
+{
+	uint8_t curr_state;
+	uint8_t vdm_cmd;
+	uint8_t cable_cmd;
+	uint8_t vdm_cmd_flags;
+	uint32_t curr_vdm_hdr;
+
+	curr_state = pd_port->pe_state_curr;
+
+	if (transit_type == VDM_STATE_TRANSIT_NAK) {
+		if (curr_state != state_transition->vdm_request_state)
+			return false;
+
+		*vdm_cmdt = CMDT_RSP_BUSY;
+		return true;
+	} else if (transit_type >= VDM_STATE_TRANSIT_CHECK_TX) {
+		return state_transition->vdm_request_state == transit_type;
+	}
+
+	curr_vdm_hdr = pd_port->curr_vdm_hdr;
+
+	vdm_cmd = PD_VDO_CMD(curr_vdm_hdr);
+	*vdm_cmdt = PD_VDO_CMDT(curr_vdm_hdr);
+
+	if (state_transition->vdm_cmd != vdm_cmd)
+		return false;
+
+	vdm_cmd_flags = state_transition->vdm_cmd_flags;
+	cable_cmd = vdm_cmd_flags & VDM_CMD_FLAG_CABLE_CMD;
+
+	if (cable_cmd != transit_type)
+		return false;
+
+	if (cable_cmd && curr_state != state_transition->vdm_request_state)
+		return false;
+
+	return true;
+}
+
+static bool pd_make_vdm_state_transit(
+		struct pd_port *pd_port, uint8_t transit_type)
+{
+	int i;
+	bool check_tx;
+	uint8_t vdm_cmdt;
+	const struct vdm_state_transition *state_transition;
+
+	uint8_t nr_transition = ARRAY_SIZE(pe_vdm_state_reactions);
+	const struct vdm_state_transition *state_reaction =
+						pe_vdm_state_reactions;
+
+	check_tx = transit_type >= VDM_STATE_TRANSIT_CHECK_TX;
+
+	for (i = 0; i < nr_transition; i++) {
+		state_transition = &state_reaction[i];
+
+		if (!pe_check_vdm_state_transit_valid(
+			pd_port, transit_type, &vdm_cmdt, state_transition))
+			continue;
+
+		if (check_tx) {
+			return vdm_is_state_transition_available(
+				pd_port, false, state_transition);
+		} else {
+			return pd_vdm_state_transit(
+				pd_port, vdm_cmdt, state_transition);
+		}
+	}
+
+	return false;
+}
+
+static inline bool pd_make_vdm_state_transit_sop(struct pd_port *pd_port)
+{
+	return pd_make_vdm_state_transit(
+		pd_port, VDM_STATE_TRANSIT_SOP_CMD);
+}
+
+static inline bool pd_make_vdm_state_transit_cable(struct pd_port *pd_port)
+{
+	return pd_make_vdm_state_transit(
+		pd_port, VDM_STATE_TRANSIT_SOP_PRIME_CMD);
+}
+
+static inline bool pd_make_vdm_state_transit_nak(struct pd_port *pd_port)
+{
+	return pd_make_vdm_state_transit(
+		pd_port, VDM_STATE_TRANSIT_NAK);
+}
 
 /* Discover Cable ID */
 
@@ -179,160 +353,18 @@ DECL_PE_STATE_TRANSITION(PD_DPM_MSG_DISCOVER_CABLE) = {
 DECL_PE_STATE_REACTION(PD_DPM_MSG_DISCOVER_CABLE);
 #endif	/* CONFIG_PD_DISCOVER_CABLE_ID */
 
-/* Source Startup Discover Cable ID */
-#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-DECL_PE_STATE_TRANSITION(PD_SRC_VDM_DISCOVER_CABLE) = {
-	VDM_CMD_ACK_STATE(CMD_DISCOVER_IDENT, PE_SRC_VDM_IDENTITY_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DISCOVER_IDENT, PE_SRC_VDM_IDENTITY_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DISCOVER_IDENT, PE_SRC_VDM_IDENTITY_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_SRC_VDM_DISCOVER_CABLE);
-#endif /* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
-
-#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-DECL_PE_STATE_TRANSITION(PD_DFP_VDM_DISCOVER_CABLE) = {
-	VDM_CMD_ACK_STATE(CMD_DISCOVER_IDENT, PE_DFP_CBL_VDM_IDENTITY_ACKED),
-	VDM_CMD_NACK_STATE(CMD_DISCOVER_IDENT, PE_DFP_CBL_VDM_IDENTITY_NAKED),
-	VDM_CMD_BUSY_STATE(CMD_DISCOVER_IDENT, PE_DFP_CBL_VDM_IDENTITY_NAKED),
-};
-DECL_PE_STATE_REACTION(PD_DFP_VDM_DISCOVER_CABLE);
-
-#endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
-
-/* PE Event reactions */
-
-DECL_PE_STATE_TRANSITION(PD_PE_MSG_VDM_RESET) = {
-	{ PE_DFP_VDM_MODE_ENTRY_REQUEST, PE_DFP_VDM_MODE_ENTRY_NAKED },
-	{ PE_DFP_VDM_MODE_EXIT_REQUEST, PE_VIRT_HARD_RESET },
-
-	{ PE_DFP_UFP_VDM_IDENTITY_REQUEST, PE_DFP_UFP_VDM_IDENTITY_NAKED },
-	{ PE_DFP_VDM_SVIDS_REQUEST, PE_DFP_VDM_SVIDS_NAKED },
-	{ PE_DFP_VDM_MODES_REQUEST, PE_DFP_VDM_MODES_NAKED },
-
-#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-	{ PE_SRC_VDM_IDENTITY_REQUEST, PE_SRC_VDM_IDENTITY_NAKED },
-#endif
-
-#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-	{ PE_DFP_CBL_VDM_IDENTITY_REQUEST, PE_DFP_CBL_VDM_IDENTITY_NAKED },
-#endif
-
-#ifdef CONFIG_USB_PD_ALT_MODE_DFP
-	{ PE_DFP_VDM_DP_STATUS_UPDATE_REQUEST,
-			PE_DFP_VDM_DP_STATUS_UPDATE_NAKED },
-	{ PE_DFP_VDM_DP_CONFIGURATION_REQUEST,
-			PE_DFP_VDM_DP_CONFIGURATION_NAKED },
-#endif
-
-#ifdef CONFIG_USB_PD_UVDM
-	{ PE_DFP_UVDM_SEND, PE_DFP_UVDM_NAKED },
-#endif	/* CONFIG_USB_PD_UVDM */
-};
-DECL_PE_STATE_REACTION(PD_PE_MSG_VDM_RESET);
-
-/* Timer Event reactions */
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_VDM_MODE_ENTRY) = {
-	{ PE_DFP_VDM_MODE_ENTRY_REQUEST, PE_DFP_VDM_MODE_ENTRY_NAKED },
-};
-DECL_PE_STATE_REACTION(PD_TIMER_VDM_MODE_ENTRY);
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_VDM_MODE_EXIT) = {
-	{ PE_DFP_VDM_MODE_EXIT_REQUEST, PE_VIRT_HARD_RESET },
-};
-DECL_PE_STATE_REACTION(PD_TIMER_VDM_MODE_EXIT);
-
-DECL_PE_STATE_TRANSITION(PD_TIMER_VDM_RESPONSE) = {
-	{ PE_DFP_UFP_VDM_IDENTITY_REQUEST, PE_DFP_UFP_VDM_IDENTITY_NAKED },
-	{ PE_DFP_VDM_SVIDS_REQUEST, PE_DFP_VDM_SVIDS_NAKED },
-	{ PE_DFP_VDM_MODES_REQUEST, PE_DFP_VDM_MODES_NAKED },
-
-#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-	{ PE_SRC_VDM_IDENTITY_REQUEST, PE_SRC_VDM_IDENTITY_NAKED },
-#endif
-
-#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-	{ PE_DFP_CBL_VDM_IDENTITY_REQUEST, PE_DFP_CBL_VDM_IDENTITY_NAKED },
-#endif
-
-#ifdef CONFIG_USB_PD_ALT_MODE_DFP
-	{ PE_DFP_VDM_DP_STATUS_UPDATE_REQUEST,
-			PE_DFP_VDM_DP_STATUS_UPDATE_NAKED },
-	{ PE_DFP_VDM_DP_CONFIGURATION_REQUEST,
-			PE_DFP_VDM_DP_CONFIGURATION_NAKED },
-#endif
-};
-DECL_PE_STATE_REACTION(PD_TIMER_VDM_RESPONSE);
-
-#ifdef CONFIG_USB_PD_UVDM
-DECL_PE_STATE_TRANSITION(PD_TIMER_UVDM_RESPONSE) = {
-	{ PE_DFP_UVDM_SEND, PE_DFP_UVDM_NAKED },
-};
-DECL_PE_STATE_REACTION(PD_TIMER_UVDM_RESPONSE);
-#endif	/* CONFIG_USB_PD_UVDM */
-
 /*
  * [BLOCK] Porcess Ctrl MSG
  */
 
-static inline bool pd_process_ctrl_msg_good_crc(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+static inline bool pd_ufp_u_auto_send_attention(struct pd_port *pd_port)
 {
-#ifdef CONFIG_USB_PD_ALT_MODE
-#ifdef CONFIG_USB_PD_DBG_DP_UFP_U_AUTO_ATTENTION
-	if (pd_port->pe_state_curr == PE_UFP_VDM_DP_CONFIGURE) {
+	struct dp_data *dp_data = pd_get_dp_data(pd_port);
+
+	if (dp_data->local_config != 0) {
 		PE_TRANSIT_STATE(pd_port,
 			PE_UFP_VDM_ATTENTION_REQUEST);
 		return true;
-	}
-#endif	/* CONFIG_USB_PD_DBG_DP_UFP_U_AUTO_ATTENTION */
-#endif	/* CONFIG_USB_PD_ALT_MODE */
-
-	switch (pd_port->pe_state_curr) {
-	case PE_UFP_VDM_SEND_IDENTITY:
-	case PE_UFP_VDM_GET_IDENTITY_NAK:
-	case PE_UFP_VDM_SEND_SVIDS:
-	case PE_UFP_VDM_GET_SVIDS_NAK:
-
-	case PE_UFP_VDM_SEND_MODES:
-	case PE_UFP_VDM_GET_MODES_NAK:
-	case PE_UFP_VDM_MODE_ENTRY_ACK:
-	case PE_UFP_VDM_MODE_ENTRY_NAK:
-	case PE_UFP_VDM_MODE_EXIT_ACK:
-	case PE_UFP_VDM_MODE_EXIT_NAK:
-		PE_TRANSIT_READY_STATE(pd_port);
-		return true;
-#ifdef CONFIG_USB_PD_ALT_MODE
-	case PE_UFP_VDM_DP_CONFIGURE:
-		PE_TRANSIT_READY_STATE(pd_port);
-		return true;
-	case PE_UFP_VDM_DP_STATUS_UPDATE:
-		PE_TRANSIT_READY_STATE(pd_port);
-		return true;
-#endif
-
-#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-	case PE_SRC_VDM_IDENTITY_REQUEST:
-		pd_port->power_cable_present = true;
-		return false;
-#endif	/* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
-
-#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-	case PE_DFP_CBL_VDM_IDENTITY_REQUEST:
-		pd_port->power_cable_present = true;
-		return false;
-#endif	/* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
-
-#ifdef CONFIG_USB_PD_UVDM
-	case PE_DFP_UVDM_SEND:
-		if (!pd_port->uvdm_wait_resp) {
-			PE_TRANSIT_STATE(pd_port, PE_DFP_UVDM_ACKED);
-			return true;
-		}
-		break;
-#endif	/* CONFIG_USB_PD_UVDM */
-	default:
-		break;
 	}
 
 	return false;
@@ -341,54 +373,109 @@ static inline bool pd_process_ctrl_msg_good_crc(
 static inline bool pd_process_ctrl_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
+	/* VDM Only handle CtrlMsg = GoodCRC */
 
-	switch (pd_event->msg) {
-	case PD_CTRL_GOOD_CRC:
-		return pd_process_ctrl_msg_good_crc(pd_port, pd_event);
+	if (pd_event->msg != PD_CTRL_GOOD_CRC)
+		return false;
 
-	default:
+	switch (pd_port->pe_state_curr) {
+#ifdef CONFIG_USB_PD_ALT_MODE
+#ifdef CONFIG_USB_PD_DBG_DP_UFP_U_AUTO_ATTENTION
+	case PE_UFP_VDM_DP_CONFIGURE:
+		if (pd_ufp_u_auto_send_attention(pd_port))
+			return true;
 		break;
+#endif	/* CONFIG_USB_PD_DBG_DP_UFP_U_AUTO_ATTENTION */
+
+	case PE_UFP_VDM_ATTENTION_REQUEST:
+		pd_notify_tcp_vdm_event_2nd_result(
+			pd_port, TCP_DPM_RET_VDM_ACK);
+		break;
+#endif	/* CONFIG_USB_PD_ALT_MODE */
+
+#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
+	case PE_SRC_VDM_IDENTITY_REQUEST:
+		pd_port->pe_data.power_cable_present = true;
+		return false;
+#endif	/* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
+
+#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
+	case PE_DFP_CBL_VDM_IDENTITY_REQUEST:
+		pd_port->pe_data.power_cable_present = true;
+		return false;
+#endif	/* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
+
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
+	case PE_DFP_UVDM_SEND:
+		if (!pd_port->uvdm_wait_resp) {
+			PE_TRANSIT_STATE(pd_port, PE_DFP_UVDM_ACKED);
+			return true;
+		}
+		break;
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 	}
 
-	return ret;
+	if (pd_port->pe_data.vdm_state_flags
+		& VDM_STATE_FLAG_BACK_READY_IF_RECV_GOOD_CRC) {
+		pe_transit_ready_state(pd_port);
+		return true;
+	}
+
+	return false;
 }
 
 /*
- * [BLOCK] Porcess Data MSG (UVDM)
+ * [BLOCK] Porcess Custom MSG (SVDM/UVDM)
  */
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
+
+bool pd_process_custom_vdm(struct pd_port *pd_port, bool svdm)
+{
+	bool recv = false;
+
+	if (pd_port->data_role == PD_ROLE_UFP)
+		recv = true;
+
+#ifdef CONFIG_USB_PD_REV30
+	if (pd_check_rev30(pd_port) && svdm)
+		recv = true;
+#endif	/* CONFIG_USB_PD_REV30 */
+
+	if (pd_check_pe_state_ready(pd_port)) {
+		if (recv) {
+			PE_TRANSIT_STATE(pd_port, PE_UFP_UVDM_RECV);
+			return true;
+		}
+	} else if (pd_port->pe_state_curr == PE_DFP_UVDM_SEND) {
+		PE_TRANSIT_STATE(pd_port, PE_DFP_UVDM_ACKED);
+		return true;
+	}
+
+	pd_put_dpm_event(pd_port, PD_DPM_NOT_SUPPORT);
+	return false;
+}
+
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 
 static inline bool pd_process_uvdm(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
+#ifdef CONFIG_USB_PD_UVDM
 	/* support sop only */
 	if (pd_event->pd_msg->frame_type != TCPC_TX_SOP)
 		return false;
 
-	if (pd_port->data_role == PD_ROLE_UFP) {
-		if (pd_check_pe_state_ready(pd_port)) {
-			PE_TRANSIT_STATE(pd_port, PE_UFP_UVDM_RECV);
-			return true;
-		}
-	} else { /* DFP */
-		if (pd_port->pe_state_curr == PE_DFP_UVDM_SEND) {
-			PE_TRANSIT_STATE(pd_port, PE_DFP_UVDM_ACKED);
-			return true;
-		}
-	}
-
-	PE_DBG("659 : invalid, current status\r\n");
-	return false;
-}
+	if (pd_process_custom_vdm(pd_port, false))
+		return true;
 #else
-static inline bool pd_process_uvdm(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
+	pd_put_dpm_event(pd_port, PD_DPM_NOT_SUPPORT);
+#endif	/* CONFIG_USB_PD_UVDM */
+
+	/* TODO: Reply Not_Supported Message*/
+	PE_DBG("659 : Invalid UVDM\r\n");
 	return false;
 }
-#endif	/* CONFIG_USB_PD_UVDM */
 
 /*
  * [BLOCK] Porcess Data MSG (VDM)
@@ -409,7 +496,7 @@ static const char *const pe_vdm_dp_cmd_name[] = {
 	"DPConfig",
 };
 
-static const char * const pe_vdm_cmd_type_name[] = {
+static const char *const pe_vdm_cmd_type_name[] = {
 	"INIT",
 	"ACK",
 	"NACK",
@@ -437,19 +524,19 @@ static inline const char *assign_vdm_dp_cmd_name(uint8_t cmd)
 
 	return NULL;
 }
-#endif     /* CONFIG_USB_PD_ALT_MODE */
+#endif	/* CONFIG_USB_PD_ALT_MODE */
 
 #endif /* if (PE_EVT_INFO_VDM_DIS == 0) */
 
 static inline void print_vdm_msg(
-		struct pd_port *pd_port, struct pd_event *pd_event)
+	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 #if (PE_EVT_INFO_VDM_DIS == 0)
 	uint8_t cmd;
 	uint8_t cmd_type;
 	uint16_t svid;
 	const char *name = NULL;
-	uint32_t vdm_hdr = pd_event->pd_msg->payload[0];
+	uint32_t vdm_hdr = pd_port->curr_vdm_hdr;
 
 	cmd = PD_VDO_CMD(vdm_hdr);
 	cmd_type = PD_VDO_CMDT(vdm_hdr);
@@ -460,7 +547,7 @@ static inline void print_vdm_msg(
 #ifdef CONFIG_USB_PD_ALT_MODE
 	if (name == NULL && svid == USB_SID_DISPLAYPORT)
 		name = assign_vdm_dp_cmd_name(cmd);
-#endif     /* CONFIG_USB_PD_ALT_MODE */
+#endif	/* CONFIG_USB_PD_ALT_MODE */
 
 	if (name == NULL)
 		return;
@@ -473,122 +560,25 @@ static inline void print_vdm_msg(
 #endif	/* PE_EVT_INFO_VDM_DIS */
 }
 
-static inline bool pd_process_ufp_vdm(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	if (!pd_check_pe_state_ready(pd_port)) {
-		PE_DBG("659 : invalid, current status\r\n");
-		return false;
-	}
-
-	if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_UFP_VDM_CMD))
-		return true;
-
-	return false;
-}
-
-static inline bool pd_process_dfp_vdm(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	uint32_t vdm_hdr = pd_event->pd_msg->payload[0];
-
-	if ((PD_VDO_CMDT(vdm_hdr) == CMDT_INIT) &&
-			PD_VDO_CMD(vdm_hdr) == CMD_ATTENTION) {
-
-		if (!pd_check_pe_state_ready(pd_port)) {
-			PE_DBG("670 : invalid, current status\r\n");
-			return false;
-		}
-
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_ATTENTION))
-			return true;
-	}
-
-	switch (pd_port->pe_state_curr) {
-
-	case PE_DFP_UFP_VDM_IDENTITY_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DISCOVER_ID))
-			return true;
-
-	case PE_DFP_VDM_SVIDS_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DISCOVER_SVID))
-			return true;
-
-	case PE_DFP_VDM_MODES_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DISCOVER_MODES))
-			return true;
-
-	case PE_DFP_VDM_MODE_ENTRY_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_ENTER_MODE))
-			return true;
-
-	case PE_DFP_VDM_MODE_EXIT_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT_VIRT(PD_DFP_VDM_EXIT_MODE))
-			return true;
-
-#ifdef CONFIG_USB_PD_ALT_MODE_DFP
-	case PE_DFP_VDM_DP_STATUS_UPDATE_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DP_STATUS))
-			return true;
-
-	case PE_DFP_VDM_DP_CONFIGURATION_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DP_CONFIG))
-			return true;
-#endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
-
-#ifdef CONFIG_USB_PD_SVDM
-	case PE_DFP_UVDM_SEND:
-		if (pd_port->pe_state_curr == PE_DFP_UVDM_SEND) {
-			PE_TRANSIT_STATE(pd_port, PE_DFP_UVDM_ACKED);
-			return true;
-		}
-#endif	/* CONFIG_USB_PD_SVDM */
-	}
-
-	return false;
-}
-
 static inline bool pd_process_sop_vdm(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
+	if (pd_make_vdm_state_transit_sop(pd_port))
+		return true;
 
-	if (pd_port->data_role == PD_ROLE_UFP)
-		ret = pd_process_ufp_vdm(pd_port, pd_event);
-	else
-		ret = pd_process_dfp_vdm(pd_port, pd_event);
+#ifdef CONFIG_USB_PD_SVDM
+	if (pd_process_custom_vdm(pd_port, true))
+		return true;
+#endif	/* CONFIG_USB_PD_SVDM */
 
-	if (!ret)
-		PE_DBG("Unknown VDM\r\n");
-
-	return ret;
+	PE_DBG("Unknown SVDM\r\n");
+	return false;
 }
 
 static inline bool pd_process_sop_prime_vdm(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
-
-	switch (pd_port->pe_state_curr) {
-
-#ifdef CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID
-	case PE_SRC_VDM_IDENTITY_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_SRC_VDM_DISCOVER_CABLE))
-			ret = true;
-		break;
-#endif /* CONFIG_USB_PD_SRC_STARTUP_DISCOVER_ID */
-
-#ifdef CONFIG_USB_PD_DFP_READY_DISCOVER_ID
-	case PE_DFP_CBL_VDM_IDENTITY_REQUEST:
-		if (PE_MAKE_VDM_CMD_STATE_TRANSIT(PD_DFP_VDM_DISCOVER_CABLE))
-			ret = true;
-		break;
-#endif /* CONFIG_USB_PD_DFP_READY_DISCOVER_ID */
-	default:
-		break;
-	}
-
-	return ret;
+	return pd_make_vdm_state_transit_cable(pd_port);
 }
 
 static inline bool pd_process_data_msg(
@@ -602,6 +592,9 @@ static inline bool pd_process_data_msg(
 		return ret;
 
 	vdm_hdr = pd_msg->payload[0];
+	pd_port->curr_vdm_hdr = vdm_hdr;
+	pd_port->curr_vdm_ops = PD_VDO_OPOS(vdm_hdr);
+	pd_port->curr_vdm_svid = PD_VDO_VID(vdm_hdr);
 
 	if (!PD_VDO_SVDM(vdm_hdr))
 		return pd_process_uvdm(pd_port, pd_event);
@@ -630,83 +623,50 @@ static inline bool pd_process_data_msg(
  * [BLOCK] Porcess PDM MSG
  */
 
-static inline bool pd_process_dpm_msg_ack(
-		struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	if (pd_port->data_role == PD_ROLE_DFP) {
-		switch (pd_port->pe_state_curr) {
-		case PE_DFP_UFP_VDM_IDENTITY_ACKED:
-		case PE_DFP_UFP_VDM_IDENTITY_NAKED:
-		case PE_DFP_CBL_VDM_IDENTITY_ACKED:
-		case PE_DFP_CBL_VDM_IDENTITY_NAKED:
-		case PE_DFP_VDM_SVIDS_ACKED:
-		case PE_DFP_VDM_SVIDS_NAKED:
-		case PE_DFP_VDM_MODES_ACKED:
-		case PE_DFP_VDM_MODES_NAKED:
-		case PE_DFP_VDM_MODE_ENTRY_ACKED:
-		case PE_DFP_VDM_MODE_EXIT_REQUEST:
-		case PE_DFP_VDM_MODE_EXIT_ACKED:
-		case PE_DFP_VDM_ATTENTION_REQUEST:
-			PE_TRANSIT_READY_STATE(pd_port);
-			return true;
-#ifdef CONFIG_USB_PD_UVDM
-		case PE_DFP_UVDM_ACKED:
-		case PE_DFP_UVDM_NAKED:
-			PE_TRANSIT_READY_STATE(pd_port);
-			return true;
-#endif	/* CONFIG_USB_PD_UVDM */
-		default:
-			return false;
-		}
-	} else
-		return PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_ACK);
-}
-
 static inline bool pd_process_dpm_msg(
 		struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
+	if (pd_event->msg != PD_DPM_ACK)
+		return false;
 
-	switch (pd_event->msg) {
-	case PD_DPM_ACK:
-		ret = pd_process_dpm_msg_ack(pd_port, pd_event);
-		break;
-
-	case PD_DPM_NAK:
-		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_NAK);
-		break;
+	if (pd_port->pe_data.vdm_state_flags &
+		VDM_STATE_FLAG_BACK_READY_IF_DPM_ACK) {
+		pe_transit_ready_state(pd_port);
+		return true;
 	}
 
-	return ret;
+	return false;
 }
 
 /*
  * [BLOCK] Porcess HW MSG
  */
 
-static inline bool pd_process_hw_msg_retry_vdm(
-	struct pd_port *pd_port, struct pd_event *pd_event)
-{
-	PE_DBG("RetryVDM\r\n");
-	return pd_process_sop_vdm(pd_port, pd_event);
-}
-
 static inline bool pd_process_hw_msg(
 		struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
+	struct pe_data *pe_data = &pd_port->pe_data;
+
+	if (pd_event->msg == PD_HW_TX_DISCARD &&
+		(pe_data->vdm_discard_retry_count < 10)) {
+		PE_INFO("vdm_discard_retry\r\n");
+		pe_data->vdm_discard_retry_flag = true;
+		pe_data->vdm_discard_retry_count++;
+	}
 
 	switch (pd_event->msg) {
 	case PD_HW_TX_FAILED:
-		ret = PE_MAKE_STATE_TRANSIT(PD_HW_MSG_TX_FAILED);
-		break;
+	case PD_HW_TX_DISCARD:
+		return pd_make_vdm_state_transit_nak(pd_port);
 
 	case PD_HW_RETRY_VDM:
-		ret = pd_process_hw_msg_retry_vdm(pd_port, pd_event);
-		break;
+		if (pd_port->pe_data.vdm_state_timer)
+			return pd_make_vdm_state_transit_nak(pd_port);
+		PE_DBG("RetryVDM\r\n");
+		return pd_process_sop_vdm(pd_port, pd_event);
 	}
 
-	return ret;
+	return false;
 }
 
 /*
@@ -716,16 +676,19 @@ static inline bool pd_process_hw_msg(
 static inline bool pd_process_pe_msg(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool ret = false;
-
 	switch (pd_event->msg) {
-	case PD_PE_VDM_RESET:
-		pd_port->reset_vdm_state = true;
-		ret = PE_MAKE_STATE_TRANSIT(PD_PE_MSG_VDM_RESET);
+	case PD_PE_VDM_NOT_SUPPORT:
 		break;
+
+	case PD_PE_VDM_RESET:
+		pd_port->pe_data.reset_vdm_state = true;
+		break;
+
+	default:
+		return false;
 	}
 
-	return ret;
+	return pd_make_vdm_state_transit_nak(pd_port);
 }
 
 /*
@@ -737,18 +700,10 @@ static inline bool pd_process_timer_msg(
 {
 	switch (pd_event->msg) {
 	case PD_TIMER_VDM_MODE_ENTRY:
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_VDM_MODE_ENTRY);
-
 	case PD_TIMER_VDM_MODE_EXIT:
-		return PE_MAKE_STATE_TRANSIT_VIRT(PD_TIMER_VDM_MODE_EXIT);
-
 	case PD_TIMER_VDM_RESPONSE:
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_VDM_RESPONSE);
-
-#ifdef CONFIG_USB_PD_UVDM
 	case PD_TIMER_UVDM_RESPONSE:
-		return PE_MAKE_STATE_TRANSIT(PD_TIMER_UVDM_RESPONSE);
-#endif	/* CONFIG_USB_PD_UVDM */
+		return pd_make_vdm_state_transit_nak(pd_port);
 
 	default:
 		return false;
@@ -775,9 +730,9 @@ const uint8_t tcp_vdm_evt_init_state[] = {
 #endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 #endif	/* CONFIG_USB_PD_ALT_MODE */
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
 	PE_DFP_UVDM_SEND, /* TCP_DPM_EVT_UVDM */
-#endif	/* CONFIG_USB_PD_UVDM */
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 };
 
 static inline bool pd_process_tcp_cable_event(
@@ -785,13 +740,25 @@ static inline bool pd_process_tcp_cable_event(
 {
 	bool ret;
 	int tcp_ret;
+	bool role_check = true;
 
 #ifdef CONFIG_PD_DISCOVER_CABLE_ID
-	ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_DISCOVER_CABLE);
-	tcp_ret = ret ? TCP_DPM_RET_SENT : TCP_DPM_RET_DENIED_NOT_READY;
+
+#ifdef CONFIG_USB_PD_REV30
+	if (pd_check_rev30(pd_port))
+		role_check = pd_port->vconn_role;
+#endif	/* CONFIG_USB_PD_REV30 */
+
+	if (role_check) {
+		ret = PE_MAKE_STATE_TRANSIT(PD_DPM_MSG_DISCOVER_CABLE);
+		tcp_ret = ret ? TCP_DPM_RET_SENT : TCP_DPM_RET_DENIED_NOT_READY;
+	} else {
+		ret = false;
+		tcp_ret = TCP_DPM_RET_DENIED_WRONG_DATA_ROLE;
+	}
 #else
 	ret = false;
-	tcp_ret = TCP_DPM_RET_DENIED_NO_SUPPORT;
+	tcp_ret = TCP_DPM_RET_DENIED_UNKNOWN;
 #endif	/* CONFIG_PD_DISCOVER_CABLE_ID */
 
 	pd_notify_tcp_event_1st_result(pd_port, tcp_ret);
@@ -817,49 +784,68 @@ static inline void pd_parse_tcp_dpm_evt_svdm(struct pd_port *pd_port)
 
 static inline void pd_parse_tcp_dpm_evt_dp_status(struct pd_port *pd_port)
 {
-	struct tcp_dpm_dp_data *dp_data =
+	struct tcp_dpm_dp_data *dp_data_tcp =
 		&pd_port->tcp_event.tcp_dpm_data.dp_data;
 
+	struct dp_data *dp_data = pd_get_dp_data(pd_port);
+
 	pd_port->mode_svid = USB_SID_DISPLAYPORT;
-	pd_port->dp_status = tcpc_update_bits(
-		pd_port->dp_status, dp_data->val, dp_data->mask);
+	dp_data->local_status = tcpc_update_bits(
+		dp_data->local_status,
+		dp_data_tcp->val, dp_data_tcp->mask);
 }
 
 #ifdef CONFIG_USB_PD_ALT_MODE_DFP
 
 static inline void pd_parse_tcp_dpm_evt_dp_config(struct pd_port *pd_port)
 {
-	struct tcp_dpm_dp_data *dp_data =
+	struct tcp_dpm_dp_data *dp_data_tcp =
 		&pd_port->tcp_event.tcp_dpm_data.dp_data;
+	struct dp_data *dp_data = pd_get_dp_data(pd_port);
 
 	pd_port->mode_svid = USB_SID_DISPLAYPORT;
-	pd_port->local_dp_config = tcpc_update_bits(
-		pd_port->local_dp_config, dp_data->val, dp_data->mask);
+	dp_data->local_config = tcpc_update_bits(
+		dp_data->local_config, dp_data_tcp->val, dp_data_tcp->mask);
 }
 
 #endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 #endif	/* CONFIG_USB_PD_ALT_MODE */
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
 static inline void pd_parse_tcp_dpm_evt_uvdm(struct pd_port *pd_port)
 {
-	struct tcp_dpm_uvdm_data *uvdm_data =
-		&pd_port->tcp_event.tcp_dpm_data.uvdm_data;
+	struct tcp_dpm_custom_vdm_data *vdm_data =
+		&pd_port->tcp_event.tcp_dpm_data.vdm_data;
 
-	pd_port->uvdm_cnt = uvdm_data->cnt;
-	pd_port->uvdm_wait_resp = uvdm_data->wait_resp;
+	pd_port->uvdm_cnt = vdm_data->cnt;
+	pd_port->uvdm_wait_resp = vdm_data->wait_resp;
 	memcpy(pd_port->uvdm_data,
-		uvdm_data->vdos, sizeof(uint32_t) * uvdm_data->cnt);
+		vdm_data->vdos, sizeof(uint32_t) * vdm_data->cnt);
+
+#ifdef CONFIG_USB_PD_SVDM
+#ifdef CONFIG_USB_PD_REV30
+	if (pd_check_rev30(pd_port) &&
+		(pd_port->uvdm_data[0] & VDO_SVDM_TYPE))
+		pd_port->uvdm_data[0] |= VDO_SVDM_VERS(SVDM_REV20);
+#endif	/* CONFIG_USB_PD_REV30 */
+#endif	/* CONFIG_USB_PD_SVDM */
 }
-#endif	/* CONFIG_USB_PD_UVDM */
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 
 static inline void pd_parse_tcp_dpm_evt_from_tcpm(
 	struct pd_port *pd_port, struct pd_event *pd_event)
 {
 	switch (pd_event->msg) {
+#ifdef CONFIG_USB_PD_KEEP_SVIDS
+	case TCP_DPM_EVT_DISCOVER_SVIDS:
+		pd_port->pe_data.remote_svid_list.cnt = 0;
+		break;
+#endif	/* CONFIG_USB_PD_KEEP_SVIDS */
+
 	case TCP_DPM_EVT_DISCOVER_MODES:
 	case TCP_DPM_EVT_ENTER_MODE:
 	case TCP_DPM_EVT_EXIT_MODE:
+	case TCP_DPM_EVT_ATTENTION:
 		pd_parse_tcp_dpm_evt_svdm(pd_port);
 		break;
 
@@ -876,19 +862,23 @@ static inline void pd_parse_tcp_dpm_evt_from_tcpm(
 		break;
 #endif	/* CONFIG_USB_PD_ALT_MODE_DFP */
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
 	case TCP_DPM_EVT_UVDM:
 		pd_parse_tcp_dpm_evt_uvdm(pd_port);
 		break;
-#endif	/* CONFIG_USB_PD_UVDM */
+#endif	/* CONFIG_USB_PD_CUSTOM_VDM */
 	}
+}
+
+static inline bool pd_check_tcp_msg_valid(
+		struct pd_port *pd_port, uint8_t new_state)
+{
+	return pd_make_vdm_state_transit(pd_port, new_state);
 }
 
 static inline bool pd_process_tcp_msg(
 		struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	bool is_dfp;
-	bool is_attention;
 	uint8_t new_state;
 
 	if (pd_event->msg == TCP_DPM_EVT_DISCOVER_CABLE)
@@ -896,29 +886,23 @@ static inline bool pd_process_tcp_msg(
 
 	if (!pd_check_pe_state_ready(pd_port)) {
 		pd_notify_tcp_event_1st_result(
-				pd_port, TCP_DPM_RET_DENIED_NOT_READY);
+			pd_port, TCP_DPM_RET_DENIED_NOT_READY);
 		PE_DBG("skip vdm_request, not ready_state (%d)\r\n",
 					pd_port->pe_state_curr);
 		return false;
 	}
 
-	is_dfp = pd_port->data_role == PD_ROLE_DFP;
-	is_attention = pd_event->msg == TCP_DPM_EVT_ATTENTION;
+	new_state = pd_event->msg - TCP_DPM_EVT_DISCOVER_ID;
+	PD_BUG_ON(new_state >= ARRAY_SIZE(tcp_vdm_evt_init_state));
 
-#ifdef CONFIG_USB_PD_ALT_MODE
-	if (pd_event->msg == TCP_DPM_EVT_DP_ATTENTION)
-		is_attention = true;
-#endif	/* CONFIG_USB_PD_ALT_MODE */
+	new_state = tcp_vdm_evt_init_state[new_state];
 
-	if ((is_dfp && is_attention) || (!is_dfp && !is_attention)) {
+	if (!pd_check_tcp_msg_valid(pd_port, new_state)) {
 		pd_notify_tcp_event_1st_result(
-				pd_port, TCP_DPM_RET_DENIED_WRONG_DATA_ROLE);
+			pd_port, TCP_DPM_RET_DENIED_WRONG_DATA_ROLE);
 		PE_DBG("skip vdm_request, WRONG DATA ROLE\r\n");
 		return false;
 	}
-
-	new_state = tcp_vdm_evt_init_state[
-		pd_event->msg - TCP_DPM_EVT_DISCOVER_ID];
 
 	if (pd_event->msg_sec == PD_TCP_FROM_TCPM)
 		pd_parse_tcp_dpm_evt_from_tcpm(pd_port, pd_event);
@@ -934,6 +918,8 @@ static inline bool pd_process_tcp_msg(
 
 bool pd_process_event_vdm(struct pd_port *pd_port, struct pd_event *pd_event)
 {
+	pd_port->pe_data.vdm_discard_retry_flag = false;
+
 	switch (pd_event->event_type) {
 	case PD_EVT_CTRL_MSG:
 		return pd_process_ctrl_msg(pd_port, pd_event);

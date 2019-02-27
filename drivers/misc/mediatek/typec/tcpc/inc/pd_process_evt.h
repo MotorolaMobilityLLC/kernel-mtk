@@ -38,84 +38,122 @@ struct pe_state_reaction {
 		.state_transition = state##_state_transition,\
 	}
 
-/*---------------------------------------------------------------------------*/
-
-static inline bool pd_check_pe_state_ready(struct pd_port *pd_port)
-{
-	/* TODO: Handle Port Partner first (skip our get_cap state )*/
-	switch (pd_port->pe_state_curr) {
-	case PE_SNK_READY:
-	case PE_SRC_READY:
-
-#ifdef CONFIG_USB_PD_CUSTOM_DBGACC
-	case PE_DBG_READY:
-#endif	/* CONFIG_USB_PD_CUSTOM_DBGACC */
-		return true;
-
-	default:
-		return false;
-	}
-}
-
-/*
- *---------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
  * Sink & Source Common Event
  *---------------------------------------------------------------------------
  */
 
-bool pd_process_data_msg_bist(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-
 bool pd_process_protocol_error(
 	struct pd_port *pd_port, struct pd_event *pd_event);
 
-bool pd_process_ctrl_msg_dr_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-bool pd_process_dpm_msg_dr_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-
-bool pd_process_ctrl_msg_pr_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-bool pd_process_dpm_msg_pr_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-
-bool pd_process_ctrl_msg_vconn_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-bool pd_process_dpm_msg_vconn_swap(
-	struct pd_port *pd_port, struct pd_event *pd_event);
-
-bool pd_process_recv_hard_reset(struct pd_port *pd_port,
-		struct pd_event *pd_event, uint8_t hreset_state);
+bool pd_process_tx_failed(struct pd_port *pd_port);
 
 /*---------------------------------------------------------------------------*/
 
 #define PE_TRANSIT_STATE(pd_port, state)	\
 	(pd_port->pe_state_next = state)
 
-#define PE_TRANSIT_POWER_STATE(pd_port, sink, source)	\
-	(pd_port->pe_state_next =\
-	((pd_port->power_role == PD_ROLE_SINK) ? sink : source))
-
 #define PE_TRANSIT_DATA_STATE(pd_port, ufp, dfp)	\
 	(pd_port->pe_state_next =\
 	((pd_port->data_role == PD_ROLE_UFP) ? ufp : dfp))
 
-#define PE_TRANSIT_READY_STATE(pd_port) \
-	PE_TRANSIT_POWER_STATE(pd_port, PE_SNK_READY, PE_SRC_READY)
+static inline uint8_t pe_get_curr_ready_state(struct pd_port *pd_port)
+{
+	return pd_port->curr_ready_state;
+}
 
-#define PE_TRANSIT_HARD_RESET_STATE(pd_port) \
-	PE_TRANSIT_POWER_STATE(pd_port, PE_SNK_HARD_RESET, PE_SRC_HARD_RESET)
+static inline uint8_t pe_get_curr_hard_reset_state(struct pd_port *pd_port)
+{
+	return pd_port->curr_hreset_state;
+}
 
-#define PE_TRANSIT_SOFT_RESET_STATE(pd_port) \
-	PE_TRANSIT_POWER_STATE(pd_port, PE_SNK_SOFT_RESET, PE_SRC_SOFT_RESET)
+static inline uint8_t pe_get_curr_soft_reset_state(struct pd_port *pd_port)
+{
+	return pd_port->curr_sreset_state;
+}
 
-#define PE_TRANSIT_VCS_SWAP_STATE(pd_port) \
-	PE_TRANSIT_STATE(pd_port, pd_port->vconn_source ? \
-		PE_VCS_WAIT_FOR_VCONN : PE_VCS_TURN_ON_VCONN)
+static inline uint8_t pe_get_curr_evaluate_pr_swap_state(
+	struct pd_port *pd_port)
+{
+	if (pd_port->power_role == PD_ROLE_SINK)
+		return PE_PRS_SNK_SRC_EVALUATE_PR_SWAP;
 
-#define PE_TRANSIT_SEND_SOFT_RESET_STATE(pd_port) \
-	PE_TRANSIT_POWER_STATE(pd_port, \
-	PE_SNK_SEND_SOFT_RESET, PE_SRC_SEND_SOFT_RESET)
+	return PE_PRS_SRC_SNK_EVALUATE_PR_SWAP;
+}
+
+static inline uint8_t pe_get_curr_send_pr_swap_state(
+	struct pd_port *pd_port)
+{
+	if (pd_port->power_role == PD_ROLE_SINK)
+		return PE_PRS_SNK_SRC_SEND_SWAP;
+
+	return PE_PRS_SRC_SNK_SEND_SWAP;
+}
+
+static inline uint8_t pd_get_curr_hard_reset_recv_state(
+	struct pd_port *pd_port)
+{
+	if (pd_port->power_role == PD_ROLE_SINK)
+		return PE_SNK_TRANSITION_TO_DEFAULT;
+
+	return PE_SRC_HARD_RESET_RECEIVED;
+}
+
+static inline uint8_t pd_get_curr_soft_reset_recv_state(
+	struct pd_port *pd_port)
+{
+	if (pd_port->power_role == PD_ROLE_SINK)
+		return PE_SNK_SOFT_RESET;
+
+	return PE_SRC_SOFT_RESET;
+}
+
+static inline void pe_transit_ready_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port, pe_get_curr_ready_state(pd_port));
+}
+
+static inline void pe_transit_hard_reset_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port, pe_get_curr_hard_reset_state(pd_port));
+}
+
+static inline void pe_transit_soft_reset_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port, pe_get_curr_soft_reset_state(pd_port));
+}
+
+static inline void pe_transit_soft_reset_recv_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port, pd_get_curr_soft_reset_recv_state(pd_port));
+}
+
+static inline void pe_transit_evaluate_pr_swap_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port,
+		pe_get_curr_evaluate_pr_swap_state(pd_port));
+}
+
+static inline void pe_transit_send_pr_swap_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port,
+		pe_get_curr_send_pr_swap_state(pd_port));
+}
+
+static inline void pe_transit_hard_reset_recv_state(struct pd_port *pd_port)
+{
+	PE_TRANSIT_STATE(pd_port,
+		pd_get_curr_hard_reset_recv_state(pd_port));
+}
+
+/*---------------------------------------------------------------------------*/
+
+static inline bool pd_check_pe_state_ready(struct pd_port *pd_port)
+{
+	uint8_t ready_state = pe_get_curr_ready_state(pd_port);
+
+	return pd_port->pe_state_curr == ready_state;
+}
 
 /*---------------------------------------------------------------------------*/
 
@@ -124,42 +162,16 @@ bool pd_process_recv_hard_reset(struct pd_port *pd_port,
 			pd_port, pd_port->pe_state_curr, reaction, next)
 /* PE_MAKE_STATE_TRANSIT_SINGLE */
 
-#define PE_MAKE_STATE_TRANSIT_SRC_READY(state)	\
-		PE_MAKE_STATE_TRANSIT_SINGLE(PE_SRC_READY, state)
-/* PE_MAKE_STATE_TRANSIT_SRC_READY */
-
-
+#define PE_MAKE_STATE_TRANSIT_TO_HRESET(reaction)	\
+	PE_MAKE_STATE_TRANSIT_SINGLE(reaction, \
+		pe_get_curr_hard_reset_state(pd_port))
+/* PE_MAKE_STATE_TRANSIT_TO_HRESET */
 
 #define PE_MAKE_STATE_TRANSIT(state)	\
 		pd_make_pe_state_transit(\
 			pd_port, pd_port->pe_state_curr, &state##_reactions)
 /* PE_MAKE_STATE_TRANSIT */
 
-#define PE_MAKE_STATE_TRANSIT_VIRT(state)	\
-		pd_make_pe_state_transit_virt(\
-			pd_port, pd_port->pe_state_curr, &state##_reactions)
-/* PE_MAKE_STATE_TRANSIT_VIRT */
-
-#define PE_MAKE_STATE_TRANSIT_FORCE(state, force)	\
-		pd_make_pe_state_transit_force(\
-		pd_port, pd_port->pe_state_curr, force, &state##_reactions)
-/* PE_MAKE_STATE_TRANSIT_FORCE */
-
-#define VDM_CMD_STATE_MASK(raw)		(raw & 0xdf)
-
-#define PE_MAKE_VDM_CMD_STATE_TRANSIT(state)	\
-		pd_make_pe_state_transit(\
-			pd_port, \
-			VDM_CMD_STATE_MASK(pd_event->pd_msg->payload[0]), \
-			&state##_reactions)
-/* PE_MAKE_VDM_CMD_STATE_TRANSIT */
-
-#define PE_MAKE_VDM_CMD_STATE_TRANSIT_VIRT(state)	\
-		pd_make_pe_state_transit_virt(\
-			pd_port, \
-			VDM_CMD_STATE_MASK(pd_event->pd_msg->payload[0]), \
-			&state##_reactions)
-/* PE_MAKE_VDM_CMD_STATE_TRANSIT_VIRT */
 
 static inline bool pd_make_pe_state_transit_single(struct pd_port *pd_port,
 	uint8_t curr_state, uint8_t reaction_state, uint8_t next_state)
@@ -168,21 +180,14 @@ static inline bool pd_make_pe_state_transit_single(struct pd_port *pd_port,
 		PE_TRANSIT_STATE(pd_port, next_state);
 		return true;
 	}
+
 	return false;
 }
 
 bool pd_make_pe_state_transit(struct pd_port *pd_port, uint8_t curr_state,
 	const struct pe_state_reaction *state_reaction);
 
-bool pd_make_pe_state_transit_virt(struct pd_port *pd_port, uint8_t curr_state,
-	const struct pe_state_reaction *state_reaction);
-
-bool pd_make_pe_state_transit_force(struct pd_port *pd_port,
-	uint8_t curr_state, uint8_t force_state,
-	const struct pe_state_reaction *state_reaction);
-
-bool pd_process_event(struct pd_port *pd_port,
-		struct pd_event *pd_event, bool vdm_evt);
+bool pd_process_event(struct pd_port *pd_port, struct pd_event *pd_event);
 
 extern bool pd_process_event_snk(struct pd_port *pd_port, struct pd_event *evt);
 extern bool pd_process_event_src(struct pd_port *pd_port, struct pd_event *evt);
@@ -190,6 +195,8 @@ extern bool pd_process_event_drs(struct pd_port *pd_port, struct pd_event *evt);
 extern bool pd_process_event_prs(struct pd_port *pd_port, struct pd_event *evt);
 extern bool pd_process_event_vdm(struct pd_port *pd_port, struct pd_event *evt);
 extern bool pd_process_event_vcs(struct pd_port *pd_port, struct pd_event *evt);
+extern bool pd_process_event_com(struct pd_port *pd_port, struct pd_event *evt);
+extern bool pd_process_event_tcp(struct pd_port *pd_port, struct pd_event *evt);
 
 #ifdef CONFIG_USB_PD_CUSTOM_DBGACC
 extern bool pd_process_event_dbg(struct pd_port *pd_port, struct pd_event *evt);

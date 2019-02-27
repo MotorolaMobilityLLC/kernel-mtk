@@ -19,28 +19,9 @@
 
 #ifdef CONFIG_USB_PD_CUSTOM_DBGACC
 
-DECL_PE_STATE_TRANSITION(PD_PE_MSG_IDLE) = {
-	{ PE_IDLE1, PE_IDLE2 },
-};
-DECL_PE_STATE_REACTION(PD_PE_MSG_IDLE);
-
 bool pd_process_event_dbg(struct pd_port *pd_port, struct pd_event *pd_event)
 {
-	if (pd_event->event_type == PD_EVT_HW_MSG) {
-		switch (pd_event->msg) {
-		case PD_HW_CC_DETACHED:
-			PE_TRANSIT_STATE(pd_port, PE_IDLE1);
-			return true;
-
-		case PD_HW_CC_ATTACHED:
-			PE_TRANSIT_STATE(pd_port, PE_DBG_READY);
-			return true;
-		}
-	}
-
-	if (pd_event_msg_match(pd_event, PD_EVT_PE_MSG, PD_PE_IDLE))
-		return PE_MAKE_STATE_TRANSIT(PD_PE_MSG_IDLE);
-
+	/* Don't need to handle any PD message, Keep VBUS 5V, and using VDM */
 	return false;
 }
 

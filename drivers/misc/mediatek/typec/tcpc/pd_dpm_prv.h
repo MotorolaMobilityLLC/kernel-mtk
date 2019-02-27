@@ -17,46 +17,17 @@
 #include <linux/of.h>
 #include <linux/device.h>
 
-struct eval_snk_request_result {
-	int src_sel;
-	int snk_sel;
-};
-
 #define SVID_DATA_LOCAL_MODE(svid_data, n)	\
-		svid_data->local_mode.mode_vdo[n]
+		(svid_data->local_mode.mode_vdo[n])
 
 #define SVID_DATA_REMOTE_MODE(svid_data, n) \
-		svid_data->remote_mode.mode_vdo[n]
+		(svid_data->remote_mode.mode_vdo[n])
 
 #define SVID_DATA_DFP_GET_ACTIVE_MODE(svid_data)\
 	SVID_DATA_REMOTE_MODE(svid_data, svid_data->active_mode-1)
 
 #define SVID_DATA_UFP_GET_ACTIVE_MODE(svid_data)\
 	SVID_DATA_LOCAL_MODE(svid_data, svid_data->active_mode-1)
-
-extern bool eval_snk_cap_request(
-	const struct pd_port_power_capabilities *snk_caps,
-	const struct pd_port_power_capabilities *src_caps,
-	int strategy,
-	struct eval_snk_request_result *result);
-
-struct pd_mode_prop {
-	const char *name;
-	uint32_t svid;
-	void (*request_enter_mode)(struct pd_port *pd_port);
-	void (*request_exit_mode)(struct pd_port *pd_port);
-	bool (*dfp_inform_id)(struct pd_port *pd_port,
-			struct pd_event *pd_event, bool ack);
-	bool (*dfp_inform_svids)(struct pd_port *pd_port, bool ack);
-	bool (*dfp_inform_modes)(struct pd_port *pd_port, bool ack);
-	bool (*dfp_inform_enter_mode)(struct pd_port *pd_port, bool ack);
-	bool (*dfp_inform_exit_mode)(struct pd_port *pd_port, uint16_t svid);
-	bool (*dfp_inform_attention)(struct pd_port *pd_port,
-					struct pd_event *pd_event);
-	bool (*notify_pe_dfp_ready)(struct pd_port *pd_port,
-					struct pd_event *pd_event);
-	void (*reset_state)(struct pd_port *pd_port);
-};
 
 extern int dpm_check_supported_modes(void);
 
@@ -65,8 +36,7 @@ struct svdm_svid_ops {
 	uint16_t svid;
 
 	bool (*dfp_inform_id)(struct pd_port *pd_port,
-		struct svdm_svid_data *svid_data,
-		struct pd_event *pd_event, bool ack);
+		struct svdm_svid_data *svid_data, bool ack);
 	bool (*dfp_inform_svids)(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data, bool ack);
 	bool (*dfp_inform_modes)(struct pd_port *pd_port,
@@ -78,7 +48,7 @@ struct svdm_svid_ops {
 		struct svdm_svid_data *svid_data, uint8_t ops);
 
 	bool (*dfp_inform_attention)(struct pd_port *pd_port,
-		struct svdm_svid_data *svid_data, struct pd_event *pd_event);
+		struct svdm_svid_data *svid_data);
 
 	void (*ufp_request_enter_mode)(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data, uint8_t ops);
@@ -88,11 +58,11 @@ struct svdm_svid_ops {
 	bool (*notify_pe_startup)(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data);
 	int (*notify_pe_ready)(struct pd_port *pd_port,
-		struct svdm_svid_data *svid_data, struct pd_event *pd_event);
+		struct svdm_svid_data *svid_data);
 	bool (*notify_pe_shutdown)(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data);
 
-#ifdef CONFIG_USB_PD_UVDM
+#ifdef CONFIG_USB_PD_CUSTOM_VDM
 	bool (*dfp_notify_uvdm)(struct pd_port *pd_port,
 		struct svdm_svid_data *svid_data, bool ack);
 
@@ -107,70 +77,62 @@ struct svdm_svid_ops {
 		struct svdm_svid_data *svid_data);
 };
 
-static inline struct svdm_svid_data *
-	dpm_get_svdm_svid_data(struct pd_port *pd_port, uint16_t svid)
+static inline bool dpm_check_data_msg_event(
+	struct pd_port *pd_port, uint8_t msg)
 {
-	uint8_t i;
-	struct svdm_svid_data *svid_data;
-
-	if (!(pd_port->id_vdos[0] & PD_IDH_MODAL_SUPPORT))
-		return NULL;
-
-	for (i = 0; i < pd_port->svid_data_cnt; i++) {
-		svid_data = &pd_port->svid_data[i];
-		if (svid_data->svid == svid)
-			return svid_data;
-	}
-
-	return NULL;
+	return pd_event_data_msg_match(
+		pd_get_curr_pd_event(pd_port), msg);
 }
 
-static inline void dpm_vdm_get_svid_ops(
-	struct pd_event *pd_event, uint16_t *svid, uint8_t *ops)
+#ifdef CONFIG_USB_PD_REV30
+static inline bool dpm_check_ext_msg_event(
+	struct pd_port *pd_port, uint8_t msg)
 {
-	uint32_t vdm_hdr;
+	return pd_event_ext_msg_match(
+		pd_get_curr_pd_event(pd_port), msg);
+}
+#endif	/* CONFIG_USB_PD_REV30 */
 
-	PD_BUG_ON(pd_event->pd_msg == NULL);
-	vdm_hdr = pd_event->pd_msg->payload[0];
-	if (svid)
-		*svid = PD_VDO_VID(vdm_hdr);
-	if (ops)
-		*ops = PD_VDO_OPOS(vdm_hdr);
+static inline uint8_t dpm_vdm_get_ops(struct pd_port *pd_port)
+{
+	return pd_port->curr_vdm_ops;
 }
 
-static inline bool dpm_register_svdm_ops(struct pd_port *pd_port,
-	struct svdm_svid_data *svid_data, const struct svdm_svid_ops *ops)
+static inline uint16_t dpm_vdm_get_svid(struct pd_port *pd_port)
 {
-	bool ret = true;
-
-	if (ops->parse_svid_data)
-		ret = ops->parse_svid_data(pd_port, svid_data);
-
-	if (ret) {
-		svid_data->ops = ops;
-		svid_data->svid = ops->svid;
-		DPM_DBG("register_svdm: 0x%x\r\n", ops->svid);
-	}
-
-	return ret;
+	return pd_port->curr_vdm_svid;
 }
 
-static inline bool svdm_notify_pe_startup(struct pd_port *pd_port)
+static inline int dpm_vdm_reply_svdm_request(
+		struct pd_port *pd_port, bool ack)
 {
-	int i;
-	struct svdm_svid_data *svid_data;
-
-	for (i = 0; i < pd_port->svid_data_cnt; i++) {
-		svid_data = &pd_port->svid_data[i];
-		if (svid_data->ops && svid_data->ops->notify_pe_startup)
-			svid_data->ops->notify_pe_startup(pd_port, svid_data);
-	}
-
-	return true;
+	return pd_reply_svdm_request_simply(
+		pd_port, ack ? CMDT_RSP_ACK : CMDT_RSP_NAK);
 }
 
-static inline int svdm_notify_pe_ready(
-	struct pd_port *pd_port, struct pd_event *pd_event)
+static inline int dpm_vdm_reply_svdm_nak(struct pd_port *pd_port)
+{
+	return pd_reply_svdm_request_simply(pd_port, CMDT_RSP_NAK);
+}
+
+enum {
+	GOOD_PW_NONE = 0,	/* both no GP */
+	GOOD_PW_PARTNER,	/* partner has GP */
+	GOOD_PW_LOCAL,		/* local has GP */
+	GOOD_PW_BOTH,		/* both have GPs */
+};
+
+int dpm_check_good_power(struct pd_port *pd_port);
+
+/* SVDM */
+
+extern struct svdm_svid_data *
+	dpm_get_svdm_svid_data(struct pd_port *pd_port, uint16_t svid);
+
+extern bool svdm_reset_state(struct pd_port *pd_port);
+extern bool svdm_notify_pe_startup(struct pd_port *pd_port);
+
+static inline int svdm_notify_pe_ready(struct pd_port *pd_port)
 {
 	int i, ret;
 	struct svdm_svid_data *svid_data;
@@ -179,8 +141,7 @@ static inline int svdm_notify_pe_ready(
 		svid_data = &pd_port->svid_data[i];
 		if (svid_data->ops && svid_data->ops->notify_pe_ready) {
 			ret = svid_data->ops->notify_pe_ready(
-				pd_port, svid_data, pd_event);
-
+						pd_port, svid_data);
 			if (ret != 0)
 				return ret;
 		}
@@ -206,28 +167,7 @@ static inline bool svdm_notify_pe_shutdown(
 	return 0;
 }
 
-static inline bool svdm_reset_state(struct pd_port *pd_port)
-{
-	int i;
-	struct svdm_svid_data *svid_data;
-
-	if (pd_port->dpm_charging_policy >= DPM_CHARGING_POLICY_RUNTIME) {
-		pd_port->dpm_charging_policy =
-			pd_port->dpm_charging_policy_default;
-	}
-
-	for (i = 0; i < pd_port->svid_data_cnt; i++) {
-		svid_data = &pd_port->svid_data[i];
-		if (svid_data->ops && svid_data->ops->reset_state)
-			svid_data->ops->reset_state(pd_port, svid_data);
-	}
-
-	return true;
-}
-
-
-static inline bool svdm_dfp_inform_id(
-	struct pd_port *pd_port, struct pd_event *pd_event, bool ack)
+static inline bool svdm_dfp_inform_id(struct pd_port *pd_port, bool ack)
 {
 	int i;
 	struct svdm_svid_data *svid_data;
@@ -235,8 +175,7 @@ static inline bool svdm_dfp_inform_id(
 	for (i = 0; i < pd_port->svid_data_cnt; i++) {
 		svid_data = &pd_port->svid_data[i];
 		if (svid_data->ops && svid_data->ops->dfp_inform_id)
-			svid_data->ops->dfp_inform_id(
-					pd_port, svid_data, pd_event, ack);
+			svid_data->ops->dfp_inform_id(pd_port, svid_data, ack);
 	}
 
 	return true;
@@ -304,7 +243,7 @@ static inline bool svdm_dfp_inform_exit_mode(
 }
 
 static inline bool svdm_dfp_inform_attention(
-	struct pd_port *pd_port, uint16_t svid, struct pd_event *pd_event)
+	struct pd_port *pd_port, uint16_t svid)
 {
 	struct svdm_svid_data *svid_data;
 
@@ -313,8 +252,7 @@ static inline bool svdm_dfp_inform_attention(
 		return false;
 
 	if (svid_data->ops && svid_data->ops->dfp_inform_attention)
-		svid_data->ops->dfp_inform_attention(
-					pd_port, svid_data, pd_event);
+		svid_data->ops->dfp_inform_attention(pd_port, svid_data);
 
 	return true;
 }

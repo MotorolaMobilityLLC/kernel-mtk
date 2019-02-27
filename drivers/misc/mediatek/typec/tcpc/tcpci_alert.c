@@ -24,9 +24,7 @@
 #include "inc/tcpci.h"
 #include "inc/tcpci_typec.h"
 
-
 #ifdef CONFIG_USB_POWER_DELIVERY
-#include "inc/pd_dpm_core.h"
 #include "inc/tcpci_event.h"
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
@@ -85,15 +83,21 @@ void tcpci_vbus_level_init(struct tcpc_device *tcpc_dev, uint16_t power_status)
 static int tcpci_alert_power_status_changed(struct tcpc_device *tcpc_dev)
 {
 	int rv = 0;
+	bool show_msg = true;
 	uint16_t power_status = 0;
 
 	rv = tcpci_get_power_status(tcpc_dev, &power_status);
 	if (rv < 0)
 		return rv;
 
-	tcpci_vbus_level_init(tcpc_dev, power_status);
+#ifdef CONFIG_USB_PD_DIRECT_CHARGE
+	if (tcpc_dev->pd_during_direct_charge && tcpc_dev->vbus_level != 0)
+		show_msg = false;
+#endif	/* CONFIG_USB_PD_DIRECT_CHARGE */
 
-	TCPC_INFO("ps_change=%d\r\n", tcpc_dev->vbus_level);
+	if (show_msg)
+		TCPC_INFO("ps_change=%d\r\n", tcpc_dev->vbus_level);
+
 	rv = tcpc_typec_handle_ps_change(tcpc_dev, tcpc_dev->vbus_level);
 	if (rv < 0)
 		return rv;
@@ -209,7 +213,6 @@ static int tcpci_alert_recv_msg(struct tcpc_device *tcpc_dev)
 
 	pd_msg->frame_type = (uint8_t) type;
 	pd_put_pd_msg_event(tcpc_dev, pd_msg);
-
 	return 0;
 }
 
@@ -253,11 +256,10 @@ static int tcpci_alert_fault(struct tcpc_device *tcpc_dev)
 static int tcpci_alert_wakeup(struct tcpc_device *tcpc_dev)
 {
 	if (tcpc_dev->tcpc_flags & TCPC_FLAGS_LPM_WAKEUP_WATCHDOG) {
-		TCPC_DBG("Wakeup\r\n");
+		TCPC_INFO("Wakeup\r\n");
 
-		if (tcpc_dev->typec_remote_cc[0] == TYPEC_CC_DRP_TOGGLING &&
-			tcpc_dev->typec_remote_cc[1] == TYPEC_CC_DRP_TOGGLING)
-			tcpc_enable_timer(tcpc_dev, TYPEC_TIMER_WAKEUP);
+		if (tcpc_dev->typec_remote_cc[0] == TYPEC_CC_DRP_TOGGLING)
+			tcpc_enable_wakeup_timer(tcpc_dev, true);
 	}
 
 	return 0;
@@ -269,9 +271,9 @@ static int tcpci_alert_ra_detach(struct tcpc_device *tcpc_dev)
 {
 	if (tcpc_dev->tcpc_flags & TCPC_FLAGS_CHECK_RA_DETACHE) {
 		TCPC_DBG("RA_DETACH\r\n");
-		if (tcpc_dev->typec_remote_cc[0] == TYPEC_CC_DRP_TOGGLING &&
-			tcpc_dev->typec_remote_cc[1] == TYPEC_CC_DRP_TOGGLING)
-			tcpc_typec_handle_ra_detach(tcpc_dev);
+
+		if (tcpc_dev->typec_remote_cc[0] == TYPEC_CC_DRP_TOGGLING)
+			tcpc_typec_enter_lpm_again(tcpc_dev);
 	}
 
 	return 0;
@@ -288,7 +290,7 @@ struct tcpci_alert_handler {
 		.handler = xhandler, \
 	}
 
-const struct tcpci_alert_handler tcpci_alert_handlers[] = {
+static const struct tcpci_alert_handler tcpci_alert_handlers[] = {
 #ifdef CONFIG_USB_POWER_DELIVERY
 	DECL_TCPCI_ALERT_HANDLER(4, tcpci_alert_tx_failed),
 	DECL_TCPCI_ALERT_HANDLER(5, tcpci_alert_tx_discard),
@@ -332,7 +334,6 @@ static inline bool tcpci_check_hard_reset_complete(
 	return false;
 }
 #endif	/* CONFIG_USB_POWER_DELIVERY */
-
 static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 {
 	int rv, i;
@@ -403,9 +404,8 @@ static inline void tcpci_attach_wake_lock(struct tcpc_device *tcpc)
 		CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT * HZ);
 #else
 	__pm_stay_awake(&tcpc->attach_wake_lock);
-#endif     /* CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT */
+#endif	/* CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT */
 }
-
 
 int tcpci_set_wake_lock(
 	struct tcpc_device *tcpc, bool pd_lock, bool user_lock)
@@ -494,7 +494,14 @@ static inline int tcpci_report_usb_port_attached(struct tcpc_device *tcpc)
 	tcpci_set_wake_lock_pd(tcpc, true);
 
 #ifdef CONFIG_USB_POWER_DELIVERY
-	if (tcpc->pd_dly_flag)
+
+#ifdef CONFIG_USB_PD_DISABLE_PE
+	if (tcpc->disable_pe)
+		return 0;
+#endif	/* CONFIG_USB_PD_DISABLE_PE */
+
+	/* MTK Only */
+	if (tcpc->pd_inited_flag)
 		pd_put_cc_attached_event(tcpc, tcpc->typec_attach_new);
 #endif /* CONFIG_USB_POWER_DLEIVERY */
 
@@ -513,10 +520,9 @@ static inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
 	dual_role_instance_changed(tcpc->dr_usb);
 #endif /* CONFIG_DUAL_ROLE_USB_INTF */
 
-	tcpci_set_wake_lock_pd(tcpc, false);
-
 #ifdef CONFIG_USB_POWER_DELIVERY
-	if (tcpc->pd_dly_flag)
+	/* MTK Only */
+	if (tcpc->pd_inited_flag)
 		pd_put_cc_detached_event(tcpc);
 	else {
 		pd_event_buf_reset(tcpc);
@@ -524,6 +530,7 @@ static inline int tcpci_report_usb_port_detached(struct tcpc_device *tcpc)
 	}
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
+	tcpci_set_wake_lock_pd(tcpc, false);
 	return 0;
 }
 
@@ -600,4 +607,3 @@ int tcpci_report_power_control(struct tcpc_device *tcpc, bool en)
 
 	return 0;
 }
-
