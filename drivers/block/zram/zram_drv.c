@@ -378,7 +378,7 @@ static ssize_t comp_algorithm_store(struct device *dev,
 		return -EBUSY;
 	}
 
-	strlcpy(zram->compressor, compressor, sizeof(compressor));
+	strlcpy(zram->compressor, compressor, sizeof(zram->compressor));
 	up_write(&zram->init_lock);
 	return len;
 }
