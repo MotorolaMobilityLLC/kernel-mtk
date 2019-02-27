@@ -362,10 +362,10 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #if SCP_RECOVERY_SUPPORT
 	/*clear reset status and unlock wake lock*/
 	pr_debug("[SCP] clear scp reset flag and unlock\n");
-	__pm_relax(&scp_reset_lock);
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_RELEASE);
 	/* register scp dvfs*/
-	mdelay(2000);
+	msleep(2000);
+	__pm_relax(&scp_reset_lock);
 	scp_register_feature(RTOS_FEATURE_ID);
 #endif
 
