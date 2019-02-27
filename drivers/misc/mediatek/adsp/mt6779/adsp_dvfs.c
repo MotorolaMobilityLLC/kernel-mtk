@@ -1080,8 +1080,10 @@ void adsp_start_suspend_timer(void)
 void adsp_stop_suspend_timer(void)
 {
 	mutex_lock(&adsp_timer_mutex);
-	if (timer_pending(&adsp_suspend_timer))
+	if (timer_pending(&adsp_suspend_timer)) {
 		del_timer(&adsp_suspend_timer);
+		pr_debug("adsp_suspend_timer delete\n");
+	}
 	mutex_unlock(&adsp_timer_mutex);
 }
 
@@ -1089,13 +1091,17 @@ void adsp_stop_suspend_timer(void)
  * callback function for work struct
  * @param ws:   work struct
  */
+
 static void adsp_suspend_ws(struct work_struct *ws)
 {
 	struct adsp_work_struct *sws = container_of(ws, struct adsp_work_struct,
 						    work);
 	enum adsp_core_id core_id = (enum adsp_core_id) sws->id;
 
-	adsp_suspend(core_id);
+	mutex_lock(&adsp_feature_mutex);
+	if (!adsp_feature_is_active())
+		adsp_suspend(core_id);
+	mutex_unlock(&adsp_feature_mutex);
 }
 #if ADSP_ITCM_MONITOR
 static unsigned int adsp_itcm_gtable[4096];

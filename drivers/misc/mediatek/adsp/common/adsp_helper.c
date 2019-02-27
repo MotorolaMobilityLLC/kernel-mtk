@@ -1224,10 +1224,6 @@ void adsp_update_memory_protect_info(void)
 
 void adsp_enable_dsp_clk(bool enable)
 {
-	if (is_adsp_ready(ADSP_A_ID))
-		return;
-
-	/* no feature enabled ,enable dsp clock to write tcm*/
 	if (enable) {
 		pr_debug("enable dsp clk\n");
 		adsp_enable_clock();
