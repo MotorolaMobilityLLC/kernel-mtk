@@ -227,8 +227,4 @@ int iBurstWriteReg_multi(
 	u16 transfer_length,
 	u16 timing);
 
-extern void read_imx499_SPC(BYTE *data);
-extern void read_imx499_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size);
-
-
 #endif
