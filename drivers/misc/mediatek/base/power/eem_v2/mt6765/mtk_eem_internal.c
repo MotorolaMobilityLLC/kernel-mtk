@@ -172,7 +172,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset = 0,
 #endif
 		.ctrl_id	= EEM_CTRL_CCI,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.features	= 0,
 		.max_freq_khz	= 1051000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL,
