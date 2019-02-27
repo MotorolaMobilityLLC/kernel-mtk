@@ -30,7 +30,7 @@
 #define TOTAL_M4U_NUM	1
 #define M4U_REG_SIZE	0x5e0
 #define M4U_PORT_NR	28
-#define SMI_LARB_NR	4
+#define SMI_LARB_NR	3
 
 #define M4U_PAGE_MASK	0xfff
 
