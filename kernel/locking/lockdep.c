@@ -605,9 +605,9 @@ static void lockdep_print_held_locks(struct task_struct *curr)
 		return;
 	}
 	if (curr->state == TASK_RUNNING)
-		pr_debug("[Caution!] %s/%d is runable state\n",
-		curr->comm, curr->pid);
-	pr_debug("%d lock%s held by %s/%d:\n",
+		pr_info("[Caution!] %s/%d is runable state\n",
+			curr->comm, curr->pid);
+	pr_info("%d lock%s held by %s/%d:\n",
 		depth, depth > 1 ? "s" : "", curr->comm, task_pid_nr(curr));
 
 	for (i = 0; i < depth; i++) {
