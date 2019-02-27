@@ -89,6 +89,11 @@
 #define VCODEC_MB			_IOW(MFV_IOC_MAGIC, 0x34, unsigned int)
 /* VAL_BOOL_T * */
 #define VCODEC_SET_LOG_COUNT		_IOW(MFV_IOC_MAGIC, 0x35, unsigned int)
+/* VAL_BOOL_T * */
+#define VCODEC_SET_AV_TASK_GROUP       _IOW(MFV_IOC_MAGIC, 0x36, unsigned int)
+/* VAL_BOOL_T * */
+#define VCODEC_SET_FRAME_INFO          _IOW(MFV_IOC_MAGIC, 0x37, unsigned int)
+/* VAL_FRAME_INFO_T * */
 
 
 /* #define MFV_GET_CACHECTRLADDR_CMD  _IOR(MFV_IOC_MAGIC, 0x06, int) */
