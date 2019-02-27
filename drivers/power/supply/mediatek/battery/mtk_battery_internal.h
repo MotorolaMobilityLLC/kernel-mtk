@@ -23,7 +23,7 @@
 /* ============================================================ */
 /* Define Macro Value */
 /* ============================================================ */
-#define FGD_NL_MSG_T_HDR_LEN 20
+#define FGD_NL_MSG_T_HDR_LEN 24
 #define FGD_NL_MSG_MAX_LEN 9200
 
 #define UNIT_TRANS_10	10
@@ -31,6 +31,8 @@
 #define UNIT_TRANS_100	100
 #define UNIT_TRANS_1000	1000
 #define UNIT_TRANS_60 60
+
+#define MAX_TABLE 10
 
 /* ============================================================ */
 /* power misc related */
@@ -188,7 +190,8 @@ enum Fg_daemon_cmds {
 	FG_DAEMON_CMD_GET_VBAT,
 	FG_DAEMON_CMD_GET_DISABLE_NAFG,
 	FG_DAEMON_CMD_DUMP_LOG,
-
+	FG_DAEMON_CMD_GET_DATA,
+	FG_DAEMON_CMD_SEND_DATA,
 
 	FG_DAEMON_CMD_FROM_USER_NUMBER
 };
@@ -240,9 +243,26 @@ struct fgd_nl_msg_t {
 	unsigned int fgd_cmd;
 	unsigned int fgd_subcmd;
 	unsigned int fgd_subcmd_para1;
+	unsigned int fgd_subcmd_para2;
 	unsigned int fgd_data_len;
 	unsigned int fgd_ret_data_len;
 	char fgd_data[FGD_NL_MSG_MAX_LEN];
+};
+
+/* get data type */
+enum Fg_data_type {
+	FUEL_GAUGE_TABLE_CUSTOM_DATA,
+	FGD_CMD_PARAM_T_CUSTOM,
+
+	FG_DATA_TYPE_NUMBER
+};
+
+struct fgd_cmd_param_t_6 {
+	unsigned int type;
+	unsigned int total_size;
+	unsigned int size;
+	unsigned int idx;
+	char input[2048];
 };
 
 struct fuel_gauge_custom_data {
@@ -255,36 +275,8 @@ struct fuel_gauge_custom_data {
 	/* Qmax for battery  */
 	int q_max_L_current;
 	int q_max_H_current;
-	int q_max_t0;
-	int q_max_t1;
-	int q_max_t2;
-	int q_max_t3;
-	int q_max_t4;
-	int q_max_t0_h_current;
-	int q_max_t1_h_current;
-	int q_max_t2_h_current;
-	int q_max_t3_h_current;
-	int q_max_t4_h_current;
 	int q_max_sys_voltage;
 
-	int temperature_t0;
-	int temperature_t1;
-	int temperature_t2;
-	int temperature_t3;
-	int temperature_t4;
-	int temperature_tb0;
-	int temperature_tb1;
-
-	int pseudo1_t0;
-	int pseudo1_t1;
-	int pseudo1_t2;
-	int pseudo1_t3;
-	int pseudo1_t4;
-	int pseudo100_t0;
-	int pseudo100_t1;
-	int pseudo100_t2;
-	int pseudo100_t3;
-	int pseudo100_t4;
 	int pseudo1_en;
 	int pseudo100_en;
 	int pseudo100_en_dis;
@@ -415,13 +407,6 @@ struct fuel_gauge_custom_data {
 	int dc_ratio_sel;
 	int dc_r_cnt;
 
-	/* shutdown_hl_zcv */
-	int shutdown_hl_zcv_t0;
-	int shutdown_hl_zcv_t1;
-	int shutdown_hl_zcv_t2;
-	int shutdown_hl_zcv_t3;
-	int shutdown_hl_zcv_t4;
-
 	int pseudo1_sel;
 
 	/* using current to limit uisoc in 100% case */
@@ -451,9 +436,6 @@ struct fuel_gauge_custom_data {
 	int ui_low_limit_soc4;
 	int ui_low_limit_vth4;
 	int ui_low_limit_time;
-
-	/* Additional battery table */
-	int additional_battery_table_en;
 
 	int d0_sel;
 	int dod_init_sel;
@@ -497,23 +479,41 @@ struct FUELGAUGE_PROFILE_STRUCT {
 	unsigned short percentage;
 };
 
+struct fuel_gauge_table {
+	int temperature;
+	int q_max;
+	int q_max_h_current;
+	int pseudo1;
+	int pseudo100;
+	int pmic_min_vol;
+	int pon_iboot;
+	int qmax_sys_vol;
+	int shutdown_hl_zcv;
+
+	int size;
+	struct FUELGAUGE_PROFILE_STRUCT fg_profile[100];
+};
+
+
 struct fuel_gauge_table_custom_data {
 	/* cust_battery_meter_table.h */
-	int fg_profile_t0_size;
-	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t0[100];
-	int fg_profile_t1_size;
-	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t1[100];
-	int fg_profile_t2_size;
-	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t2[100];
-	int fg_profile_t3_size;
-	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t3[100];
-	int fg_profile_t4_size;
-	struct FUELGAUGE_PROFILE_STRUCT fg_profile_t4[100];
+	int active_table_number;
+	struct fuel_gauge_table fg_profile[MAX_TABLE];
+
+	int temperature_tb0;
 	int fg_profile_temperature_0_size;
 	struct FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_0[100];
+
+	int temperature_tb1;
 	int fg_profile_temperature_1_size;
 	struct FUELGAUGE_PROFILE_STRUCT fg_profile_temperature_1[100];
 };
+
+struct fgd_cmd_param_t_custom {
+	struct fuel_gauge_custom_data fg_cust_data;
+	struct fuel_gauge_table_custom_data fg_table_cust_data;
+};
+
 
 struct battery_data {
 	struct power_supply_desc psd;
@@ -702,6 +702,7 @@ struct mtk_battery {
 	/* battery temperature table */
 	struct battery_temperature_table rbat;
 
+	struct fgd_cmd_param_t_custom fg_data;
 };
 
 
@@ -778,10 +779,6 @@ extern int gauge_get_coulomb(void);
 extern int gauge_set_coulomb_interrupt1_ht(int car);
 extern int gauge_set_coulomb_interrupt1_lt(int car);
 extern int gauge_get_ptim_current(int *ptim_current, bool *is_charging);
-extern int gauge_get_coulomb(void);
-extern bool gauge_get_current(int *bat_current);
-extern int gauge_set_coulomb_interrupt1_ht(int car);
-extern int gauge_set_coulomb_interrupt1_lt(int car);
 extern int gauge_get_hw_version(void);
 extern int gauge_set_nag_en(int nafg_zcv_en);
 
