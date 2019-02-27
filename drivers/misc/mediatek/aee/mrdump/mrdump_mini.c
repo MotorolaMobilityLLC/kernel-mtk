@@ -36,6 +36,9 @@
 #include "../../../../kernel/sched/sched.h"
 #include "mrdump_mini.h"
 #include "mrdump_private.h"
+#include <mach/memory_layout.h>
+
+static bool reserve_mem_fail;
 
 #define LOG_DEBUG(fmt, ...)			\
 	do {	\
@@ -929,6 +932,11 @@ int mrdump_mini_init(void)
 	unsigned long size, offset;
 	struct pt_regs regs;
 
+	if (reserve_mem_fail) {
+		pr_info("minirdump wrong reserved memory\n");
+		BUG();
+	}
+
 	mrdump_mini_elf_header_init();
 
 	fill_psinfo(&mrdump_mini_ehdr->psinfo.data);
@@ -990,7 +998,15 @@ void mrdump_mini_reserve_memory(void)
 
 int mini_rdump_reserve_memory(struct reserved_mem *rmem)
 {
-	pr_notice("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n", "mini_rdump",
+#ifndef DUMMY_MEMORY_LAYOUT
+	if (rmem->base != KERN_MINIDUMP_BASE ||
+		rmem->size > KERN_MINIDUMP_MAX_SIZE) {
+		reserve_mem_fail = true;
+		pr_info("minirdump: Check the reserved address and size\n");
+	}
+#endif
+	pr_info("[memblock]%s: 0x%llx - 0x%llx (0x%llx)\n",
+		"mediatek,minirdump",
 		 (unsigned long long)rmem->base,
 		 (unsigned long long)rmem->base +
 		 (unsigned long long)rmem->size,
