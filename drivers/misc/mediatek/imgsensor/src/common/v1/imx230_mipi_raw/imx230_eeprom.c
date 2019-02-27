@@ -26,11 +26,6 @@
 #include <linux/slab.h>
 #include "kd_camera_typedef.h"
 
-/*
- * #define LOG_INF(format, args...) pr_debug(\
- * PFX "[%s] " format, __func__, ##args)
- */
-
 
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
@@ -48,14 +43,18 @@
 #define IMX230_MAX_OFFSET		0xFFFF
 
 #define DATA_SIZE 2048
+#define SPC_START_ADDR (0x763 + 96)
+#define DCC_START_ADDR 0x448
 
 BYTE IMX230_DCC_data[96] = { 0 };
-BYTE IMX230_SPC_data[352] = { 0 };
 
+static bool get_done_dcc;
+static int last_size_dcc;
+static int last_offset_dcc;
 
-static bool get_done;
-static int last_size;
-static int last_offset;
+static bool get_done_spc;
+static int last_size_spc;
+static int last_offset_spc;
 
 
 static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
@@ -65,10 +64,12 @@ static bool selective_read_eeprom(kal_uint16 addr, BYTE *data)
 	if (addr > IMX230_MAX_OFFSET)
 		return false;
 
-if (iReadRegI2C(pu_send_cmd, 2, (u8 *) data, 1, IMX230_EEPROM_READ_ID) < 0) {
-	/*20171213 : fix coding style*/
-	return false;
-}
+	if (iReadRegI2C(pu_send_cmd,
+		2,
+		(u8 *) data,
+		1,
+		IMX230_EEPROM_READ_ID) < 0)
+		return false;
 	return true;
 }
 
@@ -81,12 +82,18 @@ static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 	for (i = 0; i < size; i++) {
 		if (!selective_read_eeprom(offset, &data[i]))
 			return false;
-		pr_debug("read_eeprom 0x%0x %d\n", offset, data[i]);
+		/*pr_debug("read_eeprom 0x%0x %d\n", offset, data[i]);*/
 		offset++;
 	}
-	get_done = true;
-	last_size = size;
-	last_offset = addr;
+	if (addr == SPC_START_ADDR) {
+		get_done_spc = true;
+		last_size_spc = size;
+		last_offset_spc = offset;
+	} else {
+		get_done_dcc = true;
+		last_size_dcc = size;
+		last_offset_dcc = offset;
+	}
 	return true;
 }
 
@@ -94,20 +101,19 @@ static bool _read_imx230_eeprom(kal_uint16 addr, BYTE *data, int size)
 void read_imx230_SPC(BYTE *data)
 {
 
-	int addr = 0x763 + 96;
+	int addr = SPC_START_ADDR;
 	int size = 352;
 
-	pr_debug("read imx230 SPC, size = %d\n", size);
+	pr_debug("read imx230 SPC, size = %d, %d\n", size, last_offset_spc);
 #if 1
-	if (!get_done || last_size != size || last_offset != addr) {
-		if (!_read_imx230_eeprom(addr, IMX230_SPC_data, size)) {
-			get_done = 0;
-			last_size = 0;
-			last_offset = 0;
+	if (!get_done_spc || last_size_spc != size) {
+		if (!_read_imx230_eeprom(addr, data, size)) {
+			get_done_spc = 0;
+			last_size_spc = 0;
+			last_offset_spc = 0;
 		}
 	}
 #endif
-	memcpy(data, IMX230_SPC_data, size);
 	/* return true; */
 }
 
@@ -115,17 +121,16 @@ void read_imx230_SPC(BYTE *data)
 void read_imx230_DCC(kal_uint16 addr, BYTE *data, kal_uint32 size)
 {
 	/* int i; */
-	addr = 0x448;
+	addr = DCC_START_ADDR;
 	size = 96;
 
-	pr_debug("read imx230 DCC, size = %d\n", size);
+	pr_debug("read imx230 DCC, size = %d %d\n", size, last_offset_dcc);
 
-	if (!get_done || last_size != size || last_offset != addr) {
+	if (!get_done_dcc || last_size_dcc != size) {
 		if (!_read_imx230_eeprom(addr, IMX230_DCC_data, size)) {
-			get_done = 0;
-			last_size = 0;
-			last_offset = 0;
-			/* return false; */
+			get_done_dcc = 0;
+			last_size_dcc = 0;
+			last_offset_dcc = 0;
 		}
 	}
 
