@@ -1727,7 +1727,7 @@ static const struct mtk_gate apmixed_clks[] __initconst = {
 
 #define PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
 		_pcwibits, _pd_reg, _pd_shift, _tuner_reg, _tuner_en_reg,\
-		_tuner_en_bit, _pcw_reg, _pcw_shift, _div_table) {	\
+		_tuner_en_bit, _pcw_reg, _pcw_shift, _div_table, _analog_div) {\
 		.id = _id,						\
 		.name = _name,						\
 		.reg = _reg,						\
@@ -1746,42 +1746,43 @@ static const struct mtk_gate apmixed_clks[] __initconst = {
 		.tuner_en_bit = _tuner_en_bit,				\
 		.pcw_reg = _pcw_reg,					\
 		.pcw_shift = _pcw_shift,				\
+		.analog_div = _analog_div,				\
 		.div_table = _div_table,				\
 	}
 
 #define PLL(_id, _name, _reg, _pwr_reg, _en_mask, _flags, _pcwbits,	\
 			_pcwibits, _pd_reg, _pd_shift, _tuner_reg,	\
 			_tuner_en_reg, _tuner_en_bit, _pcw_reg,	\
-			_pcw_shift)	\
+			_pcw_shift, _analog_div)	\
 		PLL_B(_id, _name, _reg, _pwr_reg, _en_mask, _flags,	\
 			_pcwbits, _pcwibits, _pd_reg, _pd_shift,	\
 			_tuner_reg, _tuner_en_reg, _tuner_en_bit,	\
-			_pcw_reg, _pcw_shift, NULL)		\
+			_pcw_reg, _pcw_shift, NULL, _analog_div)	\
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
 #if 0
 	PLL(CLK_APMIXED_ARMPLL_L, "armpll_l", 0x021C, 0x0228, 0x00000199,
-		HAVE_RST_BAR, 22, 8, 0x0220, 24, 0, 0, 0, 0x0220, 0),
+		HAVE_RST_BAR, 22, 8, 0x0220, 24, 0, 0, 0, 0x0220, 0, 1),
 	PLL(CLK_APMIXED_ARMPLL, "armpll", 0x020C, 0x0218, 0x00000199,
-		HAVE_RST_BAR, 22, 8, 0x0210, 24, 0, 0, 0, 0x0210, 0),
+		HAVE_RST_BAR, 22, 8, 0x0210, 24, 0, 0, 0, 0x0210, 0, 1),
 	PLL(CLK_APMIXED_CCIPLL, "ccipll", 0x022C, 0x0238, 0x00000199,
-		HAVE_RST_BAR, 22, 8, 0x0230, 24, 0, 0, 0, 0x0230, 0),
+		HAVE_RST_BAR, 22, 8, 0x0230, 24, 0, 0, 0, 0x0230, 0, 1),
 #endif
 	PLL(CLK_APMIXED_MAINPLL, "mainpll", 0x023C, 0x0248, 0xff000199,
-		HAVE_RST_BAR, 22, 8, 0x0240, 24, 0, 0, 0, 0x0240, 0),
+		HAVE_RST_BAR, 22, 8, 0x0240, 24, 0, 0, 0, 0x0240, 0, 1),
 	PLL(CLK_APMIXED_MFGPLL, "mfgpll", 0x024C, 0x0258, 0x00000199,
-		0, 22, 8, 0x0250, 24, 0, 0, 0, 0x0250, 0),
+		0, 22, 8, 0x0250, 24, 0, 0, 0, 0x0250, 0, 1),
 	PLL(CLK_APMIXED_MMPLL, "mmpll", 0x025C, 0x0268, 0x00000199,
-		0, 22, 8, 0x0260, 24, 0, 0, 0, 0x0260, 0),
+		0, 22, 8, 0x0260, 24, 0, 0, 0, 0x0260, 0, 1),
 	PLL(CLK_APMIXED_UNIVPLL, "univpll", 0x026C, 0x0278, 0xff000199,
-		HAVE_RST_BAR, 22, 8, 0x0270, 24, 0, 0, 0, 0x0270, 0),
+		HAVE_RST_BAR, 22, 8, 0x0270, 24, 0, 0, 0, 0x0270, 0, 2),
 	PLL(CLK_APMIXED_MSDCPLL, "msdcpll", 0x027C, 0x0288, 0x00000199,
-		0, 22, 8, 0x0280, 24, 0, 0, 0, 0x0280, 0),
-	PLL(CLK_APMIXED_APLL1, "apll1", 0x028C, 0x0298, 0x00000199,
-		0, 32, 8, 0x0290, 24, 0x0040, 0x000C, 0, 0x0294, 0),
+		0, 22, 8, 0x0280, 24, 0, 0, 0, 0x0280, 0, 1),
+	PLL(CLK_APMIXED_APLL1, "apll1", 0x028C, 0x029C, 0x00000199,
+		0, 32, 8, 0x0290, 24, 0x0040, 0x000C, 0, 0x0294, 0, 1),
 	PLL(CLK_APMIXED_MPLL, "mpll", 0x02A0, 0x02AC, 0x00000199,
-		HAVE_RST_BAR, 22, 8, 0x02A4, 24, 0, 0, 0, 0x02A4, 0),
+		HAVE_RST_BAR, 22, 8, 0x02A4, 24, 0, 0, 0, 0x02A4, 0, 1),
 #if 0
 	PLL(CLK_APMIXED_ULPOSC1, "ulposc1", 0x02B0, 0x02B0, 0x01000000,
 		HAVE_RST_BAR, 1, PLL_INFO_NULL, PLL_INFO_NULL,
@@ -1844,8 +1845,8 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 #endif
 /*APLL1*/
 	clk_clrl(APLL1_CON0, PLL_EN);
-	clk_setl(APLL1_CON3, PLL_ISO_EN);
-	clk_clrl(APLL1_CON3, PLL_PWR_ON);
+	clk_setl(APLL1_CON4, PLL_ISO_EN);
+	clk_clrl(APLL1_CON4, PLL_PWR_ON);
 /*APLL2*/
 	clk_clrl(APLL2_CON0, PLL_EN);
 	clk_setl(APLL2_CON3, PLL_ISO_EN);
@@ -2287,7 +2288,7 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	clk_writel(CLK_DBG_CFG, (clk_dbg_cfg & 0xFFC0FFFC)|(ID << 16));
 	clk_misc_cfg_0 = clk_readl(CLK_MISC_CFG_0);
 	/* select divider, WAIT CONFIRM */
-	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF));
+	clk_writel(CLK_MISC_CFG_0, (clk_misc_cfg_0 & 0x00FFFFFF) | (0x3 << 24));
 	clk26cali_0 = clk_readl(CLK26CALI_0);
 	clk26cali_1 = clk_readl(CLK26CALI_1);
 	clk_writel(CLK26CALI_0, 0x1000);
@@ -2313,7 +2314,7 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	if (i > 10000)
 		return 0;
 	else
-		return output;
+		return output * 4;
 }
 
 void mp_enter_suspend(int id, int suspend)
@@ -2425,8 +2426,8 @@ void pll_force_off(void)
 	clk_clrl(MMPLL_CON3, PLL_PWR_ON);
 /*APLL1*/
 	clk_clrl(APLL1_CON0, PLL_EN);
-	clk_setl(APLL1_CON3, PLL_ISO_EN);
-	clk_clrl(APLL1_CON3, PLL_PWR_ON);
+	clk_setl(APLL1_CON4, PLL_ISO_EN);
+	clk_clrl(APLL1_CON4, PLL_PWR_ON);
 }
 
 void armpll_control(int id, int on)
@@ -2498,7 +2499,7 @@ void check_smi_clk_sts(void)
 int mtk_is_clk_bring_up(void)
 {
 #if MT_CCF_BRINGUP
-	pr_notice("%s: skipped for bring up\n", __func__);
+	/* pr_debug("%s: skipped for bring up\n", __func__); */
 	return 1;
 #else
 	return 0;
