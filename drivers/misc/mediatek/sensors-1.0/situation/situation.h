@@ -47,6 +47,8 @@ typedef enum {
 	sar,
 /*new add for moto sensor algo*/
 	stowed,
+	flatup,
+	flatdown,
 	max_situation_support,
 } situation_index_table;
 
