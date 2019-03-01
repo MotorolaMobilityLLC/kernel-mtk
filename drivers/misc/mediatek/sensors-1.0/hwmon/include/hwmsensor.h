@@ -87,8 +87,11 @@
 #define SENSOR_TYPE_STOWED                             73
 #define SENSOR_TYPE_FLAT_UP                            74
 #define SENSOR_TYPE_FLAT_DOWN                          75
+#define SENSOR_TYPE_CAMERA_ACTIVATE                    76
+#define SENSOR_TYPE_CHOPCHOP_GESTURE                   77
+#define SENSOR_TYPE_MOTO_GLANCE_GESTURE                78
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_FLAT_DOWN
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_MOTO_GLANCE_GESTURE
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -164,8 +167,11 @@
 #define ID_STOWED              (ID_BASE + SENSOR_TYPE_STOWED - 1)
 #define ID_FLATUP              (ID_BASE + SENSOR_TYPE_FLAT_UP - 1)
 #define ID_FLATDOWN            (ID_BASE + SENSOR_TYPE_FLAT_DOWN - 1)
+#define ID_CAMGEST             (ID_BASE + SENSOR_TYPE_CAMERA_ACTIVATE - 1)
+#define ID_CHOPCHOP            (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
+#define ID_MOT_GLANCE          (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_FLATDOWN)
+#define ID_SENSOR_MAX_HANDLE    (ID_MOT_GLANCE)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)

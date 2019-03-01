@@ -49,6 +49,9 @@ typedef enum {
 	stowed,
 	flatup,
 	flatdown,
+	camgest,
+	chopchop,
+	mot_glance,
 	max_situation_support,
 } situation_index_table;
 

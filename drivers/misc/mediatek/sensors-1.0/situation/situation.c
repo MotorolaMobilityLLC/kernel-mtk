@@ -87,6 +87,15 @@ static int handle_to_index(int handle)
 	case ID_FLATDOWN:
 		index = flatdown;
 		break;
+	case ID_CAMGEST:
+		index = camgest;
+		break;
+	case ID_CHOPCHOP:
+		index = chopchop;
+		break;
+	case ID_MOT_GLANCE:
+		index = mot_glance;
+		break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);

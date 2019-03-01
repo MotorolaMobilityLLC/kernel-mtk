@@ -876,6 +876,18 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[SENSOR_TYPE_FLAT_DOWN].sensorType = SENSOR_TYPE_FLAT_DOWN;
 	mSensorState[SENSOR_TYPE_FLAT_DOWN].rate = SENSOR_RATE_ONCHANGE;
 	mSensorState[SENSOR_TYPE_FLAT_DOWN].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].sensorType = SENSOR_TYPE_CAMERA_ACTIVATE;
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_CAMERA_ACTIVATE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].sensorType = SENSOR_TYPE_CHOPCHOP_GESTURE;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_CHOPCHOP_GESTURE].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].sensorType = SENSOR_TYPE_MOTO_GLANCE_GESTURE;
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_MOTO_GLANCE_GESTURE].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int sensor_type)
@@ -1610,6 +1622,18 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;
 	case ID_FLATDOWN:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_CAMGEST:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_CHOPCHOP:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_MOT_GLANCE:
 		data->time_stamp = data_t->time_stamp;
 		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;
