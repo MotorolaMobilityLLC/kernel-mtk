@@ -9,9 +9,9 @@
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
-// #define DRIVER_NAME "abov_sar"
+#define DRIVER_NAME "abov_sar"
 
-#define DRIVER_NAME "sar"
+//#define DRIVER_NAME "sar"
 
 #include <linux/module.h>
 #include <linux/slab.h>
@@ -65,6 +65,7 @@ static u8 checksum_l_bin;
 #endif
 
 static int mEnabled;
+static int fw_dl_status;
 static int programming_done;
 pabovXX_t abov_sar_ptr;
 
@@ -1031,11 +1032,13 @@ static int abov_fw_update(bool force)
 	else {
 		LOG_INFO("Exiting fw upgrade...\n");
 		fw_upgrade = false;
+		fw_dl_status = 0;
 		rc = -EIO;
 		goto rel_fw;
 	}
 
 	if (fw_upgrade) {
+		fw_dl_status = 2;
 		for (update_loop = 0; update_loop < 10; update_loop++) {
 			rc = _abov_fw_update(client, &fw->data[32], fw->size-32);
 			if (rc < 0)
@@ -1046,8 +1049,11 @@ static int abov_fw_update(bool force)
 			}
 			SLEEP(400);
 		}
-		if (update_loop >= 10)
+		if (update_loop >= 10){
+			fw_dl_status = 1;
 			rc = -EIO;
+		}
+		fw_dl_status = 0;
 	}
 
 rel_fw:
@@ -1149,6 +1155,14 @@ static ssize_t capsense_force_update_fw_store(struct class *class,
 	return count;
 }
 static CLASS_ATTR(force_update_fw, 0660, capsense_fw_ver_show, capsense_force_update_fw_store);
+
+static ssize_t capsense_fw_download_status_show(struct class *class,
+		struct class_attribute *attr,
+		char *buf)
+{
+	return snprintf(buf,8,"%d",fw_dl_status);
+}
+static CLASS_ATTR(fw_download_status, 0660, capsense_fw_download_status_show, NULL);
 
 static void capsense_update_work(struct work_struct *work)
 {
@@ -1350,6 +1364,11 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 			LOG_ERR("Create update_fw file failed (%d)\n", ret);
 			goto err_class_creat;
 		}
+		ret = class_create_file(&capsense_class, &class_attr_fw_download_status);
+		if (ret < 0) {
+			LOG_ERR("Create update_fw file failed (%d)\n", ret);
+			goto err_class_creat;
+		}
 
 		abovXX_sar_init(this);
 		sar_misc_init(this);
@@ -1377,6 +1396,7 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		}
 
 		this->loading_fw = false;
+		fw_dl_status = 1;
 		if (isForceUpdate == true) {
 		    INIT_WORK(&this->fw_update_work, capsense_fore_update_work);
 		} else {
