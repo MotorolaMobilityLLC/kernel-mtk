@@ -891,7 +891,7 @@ static s32 cmdq_sec_prepare_command(struct TaskStruct *task,
 	struct cmdqCommandStruct *pCommandDesc)
 {
 	/* use buffer directly to avoid copy */
-	task->cmd_buffer_va = (u32 *)pCommandDesc->pVABase;
+	task->cmd_buffer_va = (u32 *)(unsigned long)pCommandDesc->pVABase;
 	task->is_client_buffer = true;
 	task->pCMDEnd = NULL;
 	return 0;
