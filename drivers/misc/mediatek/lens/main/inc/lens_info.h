@@ -96,6 +96,12 @@ struct stAF_MotorCmd {
 };
 
 /* Structures */
+struct stAF_CtrlCmd {
+	long long i8CmdID;
+	long long i8Param[2];
+};
+
+/* Structures */
 struct stAF_MotorOisInfo {
 	int i4OISHallPosXum;
 	int i4OISHallPosYum;
@@ -186,5 +192,7 @@ struct stAF_MotorI2CSendCmd {
 #define AFIOC_S_SETLENSTEST  _IOW(AF_MAGIC, 14, u32)
 
 #define AFIOC_G_OISPOSINFO _IOR(AF_MAGIC, 15, struct stAF_OisPosInfo)
+
+#define AFIOC_X_CTRLPARA _IOWR(AF_MAGIC, 18, struct stAF_CtrlCmd)
 
 #endif

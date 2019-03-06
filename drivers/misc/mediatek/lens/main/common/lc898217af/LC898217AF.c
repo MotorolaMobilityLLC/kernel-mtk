@@ -50,6 +50,7 @@ static unsigned long g_u4TargetPosition;
 static unsigned long g_u4CurrPosition;
 static unsigned int  g_MotorDirection;
 static unsigned int  g_MotorResolution;
+static unsigned long g_u4ActualPosition;
 #define Min_Pos		0
 #define Max_Pos		1023
 
@@ -305,6 +306,43 @@ static inline int setAFMacro(unsigned long a_u4Position)
 	return 0;
 }
 
+static int AF_ControlParam(unsigned long a_u4Param)
+{
+	int i4RetValue = -1;
+	__user struct stAF_CtrlCmd *pCtrlCmd =
+			(__user struct stAF_CtrlCmd *)a_u4Param;
+	struct stAF_CtrlCmd CtrlCmd;
+
+	if (copy_from_user(&CtrlCmd, pCtrlCmd, sizeof(struct stAF_CtrlCmd)))
+		LOG_INF("copy to user failed\n");
+
+	switch (CtrlCmd.i8CmdID) {
+	case 0x10:
+		{
+			/* TODO */
+			/* g_u4ActualPosition = read_hal_sensor */
+			/* TODO */
+
+			CtrlCmd.i8Param[0] = 1;
+			CtrlCmd.i8Param[1] = g_u4ActualPosition;
+
+			i4RetValue = 1;
+		}
+		break;
+	default:
+		i4RetValue = -1;
+		break;
+	}
+
+	if (i4RetValue > 0) {
+		if (copy_to_user(pCtrlCmd, &CtrlCmd,
+			sizeof(struct stAF_CtrlCmd)))
+			LOG_INF("copy to user failed\n");
+	}
+
+	return i4RetValue;
+}
+
 /* ////////////////////////////////////////////////////////////// */
 long LC898217AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned long a_u4Param)
 {
@@ -325,6 +363,10 @@ long LC898217AF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command, unsigned
 
 	case AFIOC_T_SETMACROPOS:
 		i4RetValue = setAFMacro(a_u4Param);
+		break;
+
+	case AFIOC_X_CTRLPARA:
+		i4RetValue = AF_ControlParam(a_u4Param);
 		break;
 
 	default:
