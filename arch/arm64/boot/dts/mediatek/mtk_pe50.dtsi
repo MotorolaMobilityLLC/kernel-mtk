@@ -1,0 +1,51 @@
+/*
+ * Copyright (C) 2019 MediaTek Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+ */
+
+/ {
+	mtk_pe50 {
+		polling_interval = <500>;
+		vbus_upper_bound = <10000>;
+		vbat_upper_bound = <4350>;
+		start_soc_min = <5>;
+		idvchg_term = <1000>;
+		idvchg_step = <50>;
+		ita_level = <3000 2700 2400 2000>;
+		rcable_level = <250 278 313 375>;
+		idvchg_ss_init = <750>;
+		idvchg_ss_step = <250>;
+		idvchg_ss_step1 = <100>;
+		idvchg_ss_step2 = <50>;
+		idvchg_ss_step1_vbat = <4000>;
+		idvchg_ss_step2_vbat = <4200>;
+		ta_blanking = <300>;
+		swchg_aicr = <0>;
+		swchg_ichg = <0>;
+		swchg_aicr_ss_init = <400>;
+		swchg_aicr_ss_step = <200>;
+		chg_time_max = <5400>;
+		ta_temp_level = <25 50 60 70 80>;
+		ta_temp_curlmt = <(-1) 2500 2000 1500 0>;
+		ta_temp_recover_area = <3>;
+		bat_temp_level = <0 25 40 45 50 55>;
+		bat_temp_curlmt = <0 (-1) 2500 2000 1500 0>;
+		bat_temp_recover_area = <3>;
+		dvchg_temp_level = <25 70>;
+		dvchg_temp_curlmt = <(-1) 0>;
+		fod_current = <200>;
+		r_bat_min = <40>;
+		r_sw_min = <20>;
+		ta_cap_vmin = <6800>;
+		ta_cap_vmax = <11000>;
+		ta_cap_imin = <1000>;
+	};
+};

@@ -61,6 +61,38 @@ config CHARGER_RT9471
 	  which RT9471D supports BC1.2
 	  It depends on config MTK_CHARGER.
 
+config CHARGER_RT9759
+	bool "Richtek RT9759 Divider Charger Driver"
+	default n
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Say Y here to enable support of rt9759 divider charger
+	  It is mainly used as divider charger for
+	  direct charge
+	  It depends on config MTK_SMART_BATTERY
+	  and config MTK_SWCHR_SUPPORT.
+
+config RT_PROP_CHGALGO
+	bool "Richtek Proprietary Charging Algorithm"
+	default n
+	help
+	  Say Y to enable
+	  Richtek Proprietary charging algorithm
+	  Say N to disable
+	  Richtek Proprietary charging algorithm
+
+config MTK_PUMP_EXPRESS_PLUS_50_SUPPORT
+	bool "MediaTek PUMP EXPRESS PLUS 5.0"
+	default y
+	select RT_PROP_CHGALGO
+	depends on MTK_SMART_BATTERY && MTK_SWCHR_SUPPORT
+	help
+	  Fast charging technology using divider charger to achieve better
+	  charging ability. It has higher charging efficiency and better
+	  thermal performance than using switching charger.
+	  Set Yes to enable PE5.0
+	  Set No to disable PE5.0
+
 config CHARGER_HL7005
 	bool "Charger Driver for Halo HL7005 Charger IC"
 	default n

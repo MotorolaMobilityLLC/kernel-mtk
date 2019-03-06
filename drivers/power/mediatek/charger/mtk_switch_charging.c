@@ -109,6 +109,10 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	u32 ichg1_min = 0, aicr1_min = 0;
 	int ret;
 
+	if (info->pe5.online) {
+		chr_err("In PE50\n");
+		return;
+	}
 	pdata = &info->chg1_data;
 	mutex_lock(&swchgalg->ichg_aicr_access_mutex);
 
@@ -365,6 +369,7 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	mtk_pe30_plugout_reset(info);
 	mtk_pdc_plugout(info);
 	mtk_pe40_plugout_reset(info);
+	mtk_pe50_plugout_reset(info);
 	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 	return 0;
 }
@@ -401,6 +406,28 @@ static int mtk_switch_chr_pe40_cc(struct charger_manager *info)
 {
 	swchg_turn_on_charging(info);
 	return mtk_pe40_cc_state(info);
+}
+
+static int mtk_switch_chr_pe50_ready(struct charger_manager *info)
+{
+	int ret;
+	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+	ret = mtk_pe50_start(info);
+	swchgalg->state = ret < 0 ? CHR_CC : CHR_PE50_RUNNING;
+	return ret;
+}
+
+static int mtk_switch_chr_pe50_running(struct charger_manager *info)
+{
+	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
+
+	if (!mtk_pe50_is_running(info)) {
+		chr_info("%s pe50 stops\n", __func__);
+		info->pe5.online = false;
+		swchgalg->state = CHR_CC;
+	}
+	return 0;
 }
 
 /* return false if total charging time exceeds max_charging_time */
@@ -445,6 +472,13 @@ static int mtk_switch_chr_cc(struct charger_manager *info)
 	charging_time = timespec_sub(time_now, swchgalg->charging_begin_time);
 
 	swchgalg->total_charging_time = charging_time.tv_sec;
+
+	if (mtk_pe50_is_ready(info)) {
+		chr_err("enter PE5.0\n");
+		swchgalg->state = CHR_PE50_READY;
+		info->pe5.online = true;
+		return 1;
+	}
 
 	if (mtk_pe40_is_ready(info)) {
 		chr_err("enter PE4.0!\n");
@@ -594,6 +628,14 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 
 		case CHR_PE30:
 			ret = mtk_switch_pe30(info);
+			break;
+
+		case CHR_PE50_READY:
+			ret = mtk_switch_chr_pe50_ready(info);
+			break;
+
+		case CHR_PE50_RUNNING:
+			ret = mtk_switch_chr_pe50_running(info);
 			break;
 		}
 	} while (ret != 0);

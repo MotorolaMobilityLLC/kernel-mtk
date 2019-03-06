@@ -21,6 +21,19 @@
 #include <linux/device.h>
 #include <linux/mutex.h>
 
+enum adc_channel {
+	ADC_CHANNEL_VBUS,
+	ADC_CHANNEL_VSYS,
+	ADC_CHANNEL_VBAT,
+	ADC_CHANNEL_IBUS,
+	ADC_CHANNEL_IBAT,
+	ADC_CHANNEL_TEMP_JC,
+	ADC_CHANNEL_USBID,
+	ADC_CHANNEL_TS,
+	ADC_CHANNEL_TBAT,
+	ADC_CHANNEL_VOUT,
+	ADC_CHANNEL_MAX,
+};
 
 struct charger_properties {
 	const char *alias_name;
@@ -112,6 +125,8 @@ struct charger_ops {
 	int (*kick_direct_charging_wdt)(struct charger_device *);
 	int (*set_direct_charging_ibusoc)(struct charger_device *, u32 uA);
 	int (*set_direct_charging_vbusov)(struct charger_device *, u32 uV);
+	int (*set_direct_charging_ibatoc)(struct charger_device *, u32 uA);
+	int (*set_direct_charging_vbatov)(struct charger_device *, u32 uV);
 
 	/* OTG */
 	int (*enable_otg)(struct charger_device *, bool en);
@@ -133,10 +148,13 @@ struct charger_ops {
 	int (*set_pe20_efficiency_table)(struct charger_device *);
 	int (*dump_registers)(struct charger_device *);
 
+	int (*get_adc)(struct charger_device *dev, enum adc_channel chan,
+		       int *min, int *max);
 	int (*get_ibus_adc)(struct charger_device *, u32 *ibus);
 	int (*get_tchg_adc)(struct charger_device *, int *tchg_min,
 		int *tchg_max);
 	int (*get_zcv)(struct charger_device *, u32 *uV);
+	int (*enable_hz)(struct charger_device *dev, bool en);
 };
 
 static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)
@@ -197,6 +215,7 @@ extern int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV);
 extern int charger_dev_run_aicl(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_reset_eoc_state(struct charger_device *charger_dev);
 extern int charger_dev_safety_check(struct charger_device *charger_dev);
+extern int charger_dev_enable_hz(struct charger_device *charger_dev, bool en);
 
 /* PE */
 extern int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool is_increase);
@@ -212,12 +231,17 @@ extern int charger_dev_enable_chip(struct charger_device *charger_dev, bool en);
 extern int charger_dev_is_chip_enabled(struct charger_device *charger_dev, bool *en);
 extern int charger_dev_enable_direct_charging(struct charger_device *charger_dev, bool en);
 extern int charger_dev_kick_direct_charging_wdt(struct charger_device *charger_dev);
+extern int charger_dev_get_adc(struct charger_device *charger_dev,
+	enum adc_channel chan, int *min, int *max);
 extern int charger_dev_get_ibus(struct charger_device *charger_dev, u32 *ibus);
 extern int charger_dev_get_temperature(struct charger_device *charger_dev, int *tchg_min,
 		int *tchg_max);
 extern int charger_dev_set_direct_charging_ibusoc(struct charger_device *charger_dev, u32 ua);
 extern int charger_dev_set_direct_charging_vbusov(struct charger_device *charger_dev, u32 uv);
-
+extern int charger_dev_set_direct_charging_ibatoc(
+	struct charger_device *charger_dev, u32 ua);
+extern int charger_dev_set_direct_charging_vbatov(
+	struct charger_device *charger_dev, u32 uv);
 
 extern int register_charger_device_notifier(struct charger_device *charger_dev,
 			      struct notifier_block *nb);

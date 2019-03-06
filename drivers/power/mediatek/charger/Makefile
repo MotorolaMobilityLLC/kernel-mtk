@@ -49,3 +49,7 @@ obj-$(CONFIG_CHARGER_RT9467) += rt9467.o
 obj-$(CONFIG_CHARGER_RT9458) += rt9458.o
 obj-$(CONFIG_MTK_BQ25890_SUPPORT) += bq25890.o
 obj-$(CONFIG_CHARGER_HL7005) += hl7005.o
+obj-$(CONFIG_CHARGER_RT9759) += rt9759.o
+obj-$(CONFIG_RT_PROP_CHGALGO) += prop_chgalgo_class.o pca_pps_ta.o \
+				 pca_mtk_chg.o pca_dv2_algo.o
+obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_50_SUPPORT) += mtk_pe50_intf.o

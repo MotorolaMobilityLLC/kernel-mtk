@@ -2615,6 +2615,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (mtk_pe40_init(info) == false)
 		info->enable_pe_4 = false;
 
+	if (mtk_pe50_init(info) < 0)
+		info->enable_pe_5 = false;
+
 	mtk_pdc_init(info);
 	charger_ftm_init();
 

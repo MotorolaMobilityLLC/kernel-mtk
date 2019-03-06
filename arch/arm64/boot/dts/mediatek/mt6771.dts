@@ -4243,6 +4243,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_TCPC_RT1711H
 #include "rt1711h.dtsi"
 #endif
+#ifdef CONFIG_CHARGER_RT9759
+#include "rt9759.dtsi"
+#endif
 #ifdef CONFIG_MTK_ENABLE_GENIEZONE
 #include "trusty.dtsi"
 #endif
+#include "mtk_pe50.dtsi"
