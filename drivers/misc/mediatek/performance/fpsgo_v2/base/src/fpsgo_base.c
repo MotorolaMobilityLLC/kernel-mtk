@@ -385,18 +385,6 @@ void fpsgo_check_thread_status(void)
 	fpsgo_base2fbt_set_bypass(has_bypass);
 }
 
-static void fpsgo_clear_BQid(void)
-{
-	struct BQ_id *pos, *next;
-
-	fpsgo_lockprove(__func__);
-
-	list_for_each_entry_safe(pos, next, &BQ_id_list, entry) {
-		list_del(&pos->entry);
-		kfree(pos);
-	}
-}
-
 void fpsgo_clear(void)
 {
 	int delete = 0;
@@ -432,7 +420,6 @@ void fpsgo_clear(void)
 	}
 
 	fpsgo_base2com_clear_ui_pid_info();
-	fpsgo_clear_BQid();
 
 	fpsgo_render_tree_unlock(__func__);
 }
