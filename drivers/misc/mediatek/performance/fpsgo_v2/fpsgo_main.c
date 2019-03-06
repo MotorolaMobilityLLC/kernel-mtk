@@ -45,6 +45,7 @@ enum FPSGO_NOTIFIER_PUSH_TYPE {
 	FPSGO_NOTIFIER_CPU_CAP				= 0x05,
 	FPSGO_NOTIFIER_DFRC_FPS				= 0x06,
 	FPSGO_NOTIFIER_DRAW_START			= 0x07,
+	FPSGO_NOTIFIER_BQID			 = 0x08,
 };
 
 /* TODO: use union*/
@@ -62,6 +63,7 @@ struct FPSGO_NOTIFIER_PUSH_TAG {
 	unsigned long long bufID;
 	int connectedAPI;
 	int queue_SF;
+	unsigned long long identifier;
 
 	int frame_type;
 	unsigned long long Q2Q_time;
@@ -120,14 +122,14 @@ static void fpsgo_notifier_wq_cb_intended_vsync(int cur_pid,
 	fpsgo_ctrl2comp_vysnc_aligned_frame_start(cur_pid, cur_ts, frame_id);
 }
 
-static void fpsgo_notifier_wq_cb_connect(int pid, unsigned long long bufID, int connectedAPI)
+static void fpsgo_notifier_wq_cb_connect(int pid, int connectedAPI, unsigned long long id)
 {
-	FPSGO_LOGI("[FPSGO_CB] connect: pid %d, bufID %llu, connectedAPI %d\n", pid, bufID, connectedAPI);
+	FPSGO_LOGI("[FPSGO_CB] connect: pid %d, API %d, id %lld\n", pid, connectedAPI, id);
 
 	if (connectedAPI == WINDOW_DISCONNECT)
-		fpsgo_ctrl2comp_disconnect_api(pid, bufID, connectedAPI);
+		fpsgo_ctrl2comp_disconnect_api(pid, connectedAPI, id);
 	else
-		fpsgo_ctrl2comp_connect_api(pid, bufID, connectedAPI);
+		fpsgo_ctrl2comp_connect_api(pid, connectedAPI, id);
 }
 
 static void fpsgo_notifier_wq_cb_framecomplete(int cur_pid, int ui_pid, unsigned long long frame_time,
@@ -156,11 +158,23 @@ static void fpsgo_notifier_wq_cb_draw_start(int pid, unsigned long long frame_id
 	fpsgo_ctrl2comp_vysnc_aligned_draw_start(pid, frame_id);
 }
 
-static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigned long long bufID,
-					int cur_pid, unsigned long long curr_ts, int queue_SF)
+static void fpsgo_notifier_wq_cb_bqid(int pid, unsigned long long bufID, int queue_SF,
+	unsigned long long id, int create)
 {
-	FPSGO_LOGI("[FPSGO_CB] qudeq: %d-%d, buf %llu, pid %d, ts %llu, queue_SF %d\n",
-		qudeq, startend, bufID, cur_pid, curr_ts, queue_SF);
+	FPSGO_LOGI("[FPSGO_CB] bqid: pid %d, bufID %llu, queue_SF %d, id %llu, create %d\n",
+		pid, bufID, queue_SF, id, create);
+
+	if (!fpsgo_is_enable())
+		return;
+
+	fpsgo_ctrl2comp_bqid(pid, bufID, queue_SF, id, create);
+}
+
+static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend,
+					int cur_pid, unsigned long long curr_ts, unsigned long long id)
+{
+	FPSGO_LOGI("[FPSGO_CB] qudeq: %d-%d, pid %d, ts %llu, id %llu\n",
+		qudeq, startend, cur_pid, curr_ts, id);
 
 	if (!fpsgo_is_enable())
 		return;
@@ -169,19 +183,19 @@ static void fpsgo_notifier_wq_cb_qudeq(int qudeq, unsigned int startend, unsigne
 	case 1:
 		if (startend) {
 			FPSGO_LOGI("[FPSGO_CB] QUEUE Start: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_enqueue_start(cur_pid, curr_ts, bufID, queue_SF);
+			fpsgo_ctrl2comp_enqueue_start(cur_pid, curr_ts, id);
 		} else {
 			FPSGO_LOGI("[FPSGO_CB] QUEUE End: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_enqueue_end(cur_pid, curr_ts, bufID, queue_SF);
+			fpsgo_ctrl2comp_enqueue_end(cur_pid, curr_ts, id);
 		}
 		break;
 	case 0:
 		if (startend) {
 			FPSGO_LOGI("[FPSGO_CB] DEQUEUE Start: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_dequeue_start(cur_pid, curr_ts, bufID, queue_SF);
+			fpsgo_ctrl2comp_dequeue_start(cur_pid, curr_ts, id);
 		} else {
 			FPSGO_LOGI("[FPSGO_CB] DEQUEUE End: pid %d\n", cur_pid);
-			fpsgo_ctrl2comp_dequeue_end(cur_pid, curr_ts, bufID, queue_SF);
+			fpsgo_ctrl2comp_dequeue_end(cur_pid, curr_ts, id);
 		}
 		break;
 	default:
@@ -234,8 +248,8 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		fpsgo_notifier_wq_cb_enable(vpPush->enable);
 		break;
 	case FPSGO_NOTIFIER_QUEUE_DEQUEUE:
-		fpsgo_notifier_wq_cb_qudeq(vpPush->qudeq_cmd, vpPush->queue_arg, vpPush->bufID,
-					vpPush->pid, vpPush->cur_ts, vpPush->queue_SF);
+		fpsgo_notifier_wq_cb_qudeq(vpPush->qudeq_cmd, vpPush->queue_arg,
+					vpPush->pid, vpPush->cur_ts, vpPush->identifier);
 		break;
 	case FPSGO_NOTIFIER_INTENDED_VSYNC:
 		fpsgo_notifier_wq_cb_intended_vsync(vpPush->pid, vpPush->cur_ts, vpPush->frame_id);
@@ -245,7 +259,7 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 					vpPush->render_method, vpPush->render, vpPush->cur_ts, vpPush->frame_id);
 		break;
 	case FPSGO_NOTIFIER_CONNECT:
-		fpsgo_notifier_wq_cb_connect(vpPush->pid, vpPush->bufID, vpPush->connectedAPI);
+		fpsgo_notifier_wq_cb_connect(vpPush->pid, vpPush->connectedAPI, vpPush->identifier);
 		break;
 	case FPSGO_NOTIFIER_CPU_CAP:
 		fpsgo_fbt2fstb_update_cpu_frame_info(
@@ -262,6 +276,10 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		break;
 	case FPSGO_NOTIFIER_DRAW_START:
 		fpsgo_notifier_wq_cb_draw_start(vpPush->pid, vpPush->frame_id);
+		break;
+	case FPSGO_NOTIFIER_BQID:
+		fpsgo_notifier_wq_cb_bqid(vpPush->pid, vpPush->bufID,
+			vpPush->queue_SF, vpPush->identifier, vpPush->render);
 		break;
 	default:
 		FPSGO_LOGE("[FPSGO_CTRL] unhandled push type = %d\n", vpPush->ePushType);
@@ -308,12 +326,12 @@ int fpsgo_fbt2fstb_cpu_capability(
 	return FPSGO_OK;
 }
 
-void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long bufID, int pid, int queue_SF)
+void fpsgo_notify_qudeq(int qudeq, unsigned int startend, int pid, unsigned long long id)
 {
 	unsigned long long cur_ts;
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
 
-	FPSGO_LOGI("[FPSGO_CTRL] qudeq %d-%d, buf %llu pid %d\n", qudeq, startend, bufID, pid);
+	FPSGO_LOGI("[FPSGO_CTRL] qudeq %d-%d, id %llu pid %d\n", qudeq, startend, id, pid);
 
 	if (!fpsgo_is_enable())
 		return;
@@ -338,8 +356,7 @@ void fpsgo_notify_qudeq(int qudeq, unsigned int startend, unsigned long long buf
 	vpPush->cur_ts = cur_ts;
 	vpPush->qudeq_cmd = qudeq;
 	vpPush->queue_arg = startend;
-	vpPush->bufID = bufID;
-	vpPush->queue_SF = queue_SF;
+	vpPush->identifier = id;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
@@ -453,11 +470,11 @@ void fpsgo_notify_drawstart(int pid, unsigned long long frame_id)
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
 }
 
-void fpsgo_notify_connect(int pid, unsigned long long bufID, int connectedAPI)
+void fpsgo_notify_connect(int pid, int connectedAPI, unsigned long long id)
 {
 	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
 
-	FPSGO_LOGI("[FPSGO_CTRL] connect pid %d, buf %llu, API %d\n", pid, bufID, connectedAPI);
+	FPSGO_LOGI("[FPSGO_CTRL] connect pid %d, id %llu, API %d\n", pid, id, connectedAPI);
 
 	vpPush =
 		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
@@ -475,8 +492,39 @@ void fpsgo_notify_connect(int pid, unsigned long long bufID, int connectedAPI)
 
 	vpPush->ePushType = FPSGO_NOTIFIER_CONNECT;
 	vpPush->pid = pid;
-	vpPush->bufID = bufID;
 	vpPush->connectedAPI = connectedAPI;
+	vpPush->identifier = id;
+
+	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
+	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
+}
+
+void fpsgo_notify_bqid(int pid, unsigned long long bufID, int queue_SF, unsigned long long id, int create)
+{
+	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
+
+	FPSGO_LOGI("[FPSGO_CTRL] bqid pid %d, buf %llu, queue_SF %d, id %llu\n", pid, bufID, queue_SF, id);
+
+	vpPush =
+		(struct FPSGO_NOTIFIER_PUSH_TAG *) fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+
+	if (!vpPush) {
+		FPSGO_LOGE("[FPSGO_CTRL] OOM\n");
+		return;
+	}
+
+	if (!g_psNotifyWorkQueue) {
+		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
+		fpsgo_free(vpPush, sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+		return;
+	}
+
+	vpPush->ePushType = FPSGO_NOTIFIER_BQID;
+	vpPush->pid = pid;
+	vpPush->bufID = bufID;
+	vpPush->queue_SF = queue_SF;
+	vpPush->identifier = id;
+	vpPush->render = create;
 
 	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
 	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
@@ -684,7 +732,7 @@ static int __init fpsgo_init(void)
 	fpsgo_notify_intended_vsync_fp = fpsgo_notify_intended_vsync;
 	fpsgo_notify_framecomplete_fp = fpsgo_notify_framecomplete;
 	fpsgo_notify_connect_fp = fpsgo_notify_connect;
-
+	fpsgo_notify_bqid_fp = fpsgo_notify_bqid;
 	fpsgo_notify_draw_start_fp = fpsgo_notify_drawstart;
 
 	return 0;

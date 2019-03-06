@@ -50,17 +50,15 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_start
 	(int pid, unsigned long long t_frame_start, unsigned long long id);
 void fpsgo_ctrl2comp_vysnc_aligned_no_render
 	(int pid, int render, unsigned long long t_frame_done, unsigned long long id);
-void fpsgo_ctrl2comp_dequeue_end(int pid, unsigned long long dequeue_end_time, unsigned long long bufferID,
-				int queue_SF);
-void fpsgo_ctrl2comp_dequeue_start(int pid, unsigned long long dequeue_start_time, unsigned long long bufferID,
-					int queue_SF);
-void fpsgo_ctrl2comp_enqueue_end(int pid, unsigned long long enqueue_end_time, unsigned long long bufferID,
-				int queue_SF);
-void fpsgo_ctrl2comp_enqueue_start(int pid, unsigned long long enqueue_start_time, unsigned long long bufferID,
-					int queue_SF);
+void fpsgo_ctrl2comp_dequeue_end(int pid, unsigned long long dequeue_end_time, unsigned long long identifier);
+void fpsgo_ctrl2comp_dequeue_start(int pid, unsigned long long dequeue_start_time, unsigned long long identifier);
+void fpsgo_ctrl2comp_enqueue_end(int pid, unsigned long long enqueue_end_time, unsigned long long identifier);
+void fpsgo_ctrl2comp_enqueue_start(int pid, unsigned long long enqueue_start_time, unsigned long long identifier);
+void fpsgo_ctrl2comp_bqid(int pid, unsigned long long buffer_id,
+	int queue_SF, unsigned long long identifier, int create);
 void fpsgo_fbt2comp_destroy_frame_info(int pid);
-void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long bufferID, int api);
-void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long bufferID, int api);
+void fpsgo_ctrl2comp_connect_api(int pid, int api, unsigned long long identifier);
+void fpsgo_ctrl2comp_disconnect_api(int pid, int api, unsigned long long identifier);
 void fpsgo_fstb2comp_check_connect_api(void);
 void fpsgo_base2com_delete_ui_pid_info(int ui_pid);
 void fpsgo_base2com_clear_ui_pid_info(void);

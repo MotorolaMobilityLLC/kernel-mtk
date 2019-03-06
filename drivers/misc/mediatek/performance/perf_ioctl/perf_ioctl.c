@@ -19,12 +19,14 @@
 
 #define TAG "PERF_IOCTL"
 
-void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, unsigned long long bufID, int pid, int queue_SF);
+void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, int pid, unsigned long long identifier);
 void (*fpsgo_notify_intended_vsync_fp)(int pid, unsigned long long frame_id);
 void (*fpsgo_notify_framecomplete_fp)(int ui_pid, unsigned long long frame_time,
 						int render_method, int render, unsigned long long frame_id);
-void (*fpsgo_notify_connect_fp)(int pid, unsigned long long bufID, int connectedAPI);
+void (*fpsgo_notify_connect_fp)(int pid, int connectedAPI, unsigned long long identifier);
 void (*fpsgo_notify_draw_start_fp)(int pid, unsigned long long frame_id);
+void (*fpsgo_notify_bqid_fp)(int pid, unsigned long long bufID,
+			int queue_SF, unsigned long long identifier, int create);
 
 unsigned long perfctl_copy_from_user(void *pvTo, const void __user *pvFrom, unsigned long ulBytes)
 {
@@ -102,15 +104,20 @@ static long device_ioctl(struct file *filp,
 		break;
 	case FPSGO_QUEUE:
 		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(1, msgKM->start, msgKM->bufID, msgKM->tid, msgKM->queue_SF);
+			fpsgo_notify_qudeq_fp(1, msgKM->start, msgKM->tid, msgKM->identifier);
 		break;
 	case FPSGO_DEQUEUE:
 		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(0, msgKM->start, msgKM->bufID, msgKM->tid, msgKM->queue_SF);
+			fpsgo_notify_qudeq_fp(0, msgKM->start, msgKM->tid, msgKM->identifier);
 		break;
 	case FPSGO_QUEUE_CONNECT:
 		if (fpsgo_notify_connect_fp)
-			fpsgo_notify_connect_fp(msgKM->tid, msgKM->bufID, msgKM->connectedAPI);
+			fpsgo_notify_connect_fp(msgKM->tid, msgKM->connectedAPI, msgKM->identifier);
+		break;
+	case FPSGO_BQID:
+		if (fpsgo_notify_bqid_fp)
+			fpsgo_notify_bqid_fp(msgKM->tid, msgKM->bufID,
+				msgKM->queue_SF, msgKM->identifier, msgKM->start);
 		break;
 	case FPSGO_TOUCH:
 		fbc_ioctl(cmd, msgKM->frame_time);
@@ -154,6 +161,8 @@ static long device_ioctl(struct file *filp,
 		break;
 	case FPSGO_DRAW_START:
 		/* FALLTHROUGH */
+	case FPSGO_BQID:
+		/* FALLTHROUGH */
 	case FPSGO_QUEUE_CONNECT:
 		break;
 #endif
@@ -181,6 +190,8 @@ static long device_ioctl(struct file *filp,
 	case FPSGO_NO_RENDER:
 		/* FALLTHROUGH */
 	case FPSGO_DRAW_START:
+		/* FALLTHROUGH */
+	case FPSGO_BQID:
 		/* FALLTHROUGH */
 	case FPSGO_SWAP_BUFFER:
 		break;

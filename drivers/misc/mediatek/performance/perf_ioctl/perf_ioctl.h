@@ -64,6 +64,7 @@ struct _FPSGO_PACKAGE {
 	};
 	__u64 frame_id; /* for HWUI only*/
 	__s32 queue_SF;
+	__u64 identifier;
 };
 
 #define FPSGO_QUEUE                  _IOW('g', 1, struct _FPSGO_PACKAGE)
@@ -78,6 +79,7 @@ struct _FPSGO_PACKAGE {
 #define FPSGO_NO_RENDER              _IOW('g', 13, struct _FPSGO_PACKAGE)
 #define FPSGO_SWAP_BUFFER            _IOW('g', 14, struct _FPSGO_PACKAGE)
 #define FPSGO_QUEUE_CONNECT          _IOW('g', 15, struct _FPSGO_PACKAGE)
+#define FPSGO_BQID                   _IOW('g', 16, struct _FPSGO_PACKAGE)
 
 #endif
 

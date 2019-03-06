@@ -235,17 +235,16 @@ int fpsgo_com_update_render_api_info(struct render_info *f_render)
 }
 
 void fpsgo_ctrl2comp_enqueue_start(int pid,
-	unsigned long long enqueue_start_time, unsigned long long buffer_id, int queue_SF)
+	unsigned long long enqueue_start_time, unsigned long long identifier)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 	unsigned long long slptime = 0;
+	unsigned long long buffer_id = 0;
+	int queue_SF = 0;
 
-	FPSGO_COM_TRACE("%s pid[%d] buffer_id %llu", __func__, pid, buffer_id);
-
-	if (!queue_SF)
-		return;
+	FPSGO_COM_TRACE("%s pid[%d] identifier %llu", __func__, pid, identifier);
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -265,10 +264,22 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
 
-	if (!f_render->api && buffer_id) {
+	/* @buffer_id and @queue_SF MUST be initialized
+	 * with @api at the same time
+	 */
+	if (!f_render->api && identifier) {
 		int ret;
 
+		ret = fpsgo_get_BQid_pair(pid, f_render->tgid, identifier, &buffer_id, &queue_SF);
+		if (!ret || !buffer_id) {
+			FPSGO_LOGE("[ERROR] QueueS %d: %llu, %d\n", pid, buffer_id, queue_SF);
+			fpsgo_render_tree_unlock(__func__);
+			fpsgo_thread_unlock(&f_render->thr_mlock);
+			return;
+		}
+
 		f_render->buffer_id = buffer_id;
+		f_render->queue_SF = queue_SF;
 		ret = fpsgo_com_update_render_api_info(f_render);
 		if (!ret) {
 			fpsgo_render_tree_unlock(__func__);
@@ -279,11 +290,16 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 
 	fpsgo_render_tree_unlock(__func__);
 
+	if (!f_render->queue_SF) {
+		fpsgo_thread_unlock(&f_render->thr_mlock);
+		return;
+	}
+
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
 		f_render->t_enqueue_start = enqueue_start_time;
 		FPSGO_COM_TRACE("pid[%d] type[%d] enqueue_s:%llu frame_time:%llu buffer_id:%llu",
-			pid, f_render->frame_type, enqueue_start_time, f_render->self_time, buffer_id);
+			pid, f_render->frame_type, enqueue_start_time, f_render->self_time, f_render->buffer_id);
 		if (f_render->render_method == GLSURFACE) {
 			xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_START, &slptime);
 			if (xgf_ret != XGF_SLPTIME_OK)
@@ -332,16 +348,13 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 }
 
 void fpsgo_ctrl2comp_enqueue_end(int pid,
-	unsigned long long enqueue_end_time, unsigned long long buffer_id, int queue_SF)
+	unsigned long long enqueue_end_time, unsigned long long identifier)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
-
-	if (!queue_SF)
-		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -361,7 +374,14 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
+
 	fpsgo_render_tree_unlock(__func__);
+
+	if (!f_render->queue_SF) {
+		fpsgo_thread_unlock(&f_render->thr_mlock);
+		return;
+	}
+
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
 		f_render->t_enqueue_end = enqueue_end_time;
@@ -401,14 +421,11 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 }
 
 void fpsgo_ctrl2comp_dequeue_start(int pid,
-	unsigned long long dequeue_start_time, unsigned long long buffer_id, int queue_SF)
+	unsigned long long dequeue_start_time, unsigned long long identifier)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
-
-	if (!queue_SF)
-		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -429,7 +446,13 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
+
 	fpsgo_render_tree_unlock(__func__);
+
+	if (!f_render->queue_SF) {
+		fpsgo_thread_unlock(&f_render->thr_mlock);
+		return;
+	}
 
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
@@ -464,16 +487,13 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 }
 
 void fpsgo_ctrl2comp_dequeue_end(int pid,
-	unsigned long long dequeue_end_time, unsigned long long buffer_id, int queue_SF)
+	unsigned long long dequeue_end_time, unsigned long long identifier)
 {
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
-
-	if (!queue_SF)
-		return;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -493,7 +513,13 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
+
 	fpsgo_render_tree_unlock(__func__);
+
+	if (!f_render->queue_SF) {
+		fpsgo_thread_unlock(&f_render->thr_mlock);
+		return;
+	}
 
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
@@ -796,10 +822,13 @@ out:
 
 }
 
-void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long buffer_id, int api)
+void fpsgo_ctrl2comp_connect_api(int pid, int api, unsigned long long identifier)
 {
 	struct connect_api_info *connect_api;
 	int check_render;
+	unsigned long long buffer_id = 0;
+	int queue_SF = 0;
+	int ret;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -809,6 +838,14 @@ void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long buffer_id, int api)
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
 	fpsgo_render_tree_lock(__func__);
+
+	ret = fpsgo_get_BQid_pair(pid, 0, identifier, &buffer_id, &queue_SF);
+	if (!ret || !buffer_id) {
+		FPSGO_LOGE("[ERROR] connect %d: %llu\n", pid, buffer_id);
+		fpsgo_render_tree_unlock(__func__);
+		return;
+	}
+
 	connect_api = fpsgo_com_search_and_add_connect_api_info(pid, buffer_id, 1);
 	if (!connect_api) {
 		fpsgo_render_tree_unlock(__func__);
@@ -820,6 +857,40 @@ void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long buffer_id, int api)
 	connect_api->api = api;
 	fpsgo_render_tree_unlock(__func__);
 
+}
+
+void fpsgo_ctrl2comp_bqid(int pid, unsigned long long buffer_id,
+	int queue_SF, unsigned long long identifier, int create)
+{
+	struct BQ_id *pair;
+
+	if (!buffer_id || !identifier || !pid)
+		return;
+
+	fpsgo_render_tree_lock(__func__);
+
+	FPSGO_LOGI("bqid %d: buffer_id %llu, identifier %llu, queue_SF %d, create %d\n",
+		pid, buffer_id, identifier, queue_SF, create);
+
+	if (create) {
+		pair = fpsgo_find_BQ_id(pid, 0, identifier, ACTION_FIND_ADD, 0ULL);
+
+		if (!pair) {
+			fpsgo_render_tree_unlock(__func__);
+			FPSGO_COM_TRACE("%s: add fail : %d !!!!\n",
+				__func__, pid);
+			return;
+		}
+
+		if (pair->pid != pid)
+			FPSGO_LOGE("[ERROR] %d: diff render same key %d\n", pid, pair->pid);
+
+		pair->buffer_id = buffer_id;
+		pair->queue_SF = queue_SF;
+	} else
+		fpsgo_find_BQ_id(pid, 0, identifier, ACTION_FIND_DEL, buffer_id);
+
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_com_clear_connect_api_render_list(struct connect_api_info *connect_api)
@@ -834,10 +905,13 @@ void fpsgo_com_clear_connect_api_render_list(struct connect_api_info *connect_ap
 
 }
 
-void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long buffer_id, int api)
+void fpsgo_ctrl2comp_disconnect_api(int pid, int api, unsigned long long identifier)
 {
 	struct connect_api_info *connect_api;
 	int check_render;
+	unsigned long long buffer_id = 0;
+	int queue_SF = 0;
+	int ret;
 
 	check_render = fpsgo_com_check_is_surfaceflinger(pid);
 
@@ -848,6 +922,13 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, unsigned long long buffer_id, int a
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
 	fpsgo_render_tree_lock(__func__);
+
+	ret = fpsgo_get_BQid_pair(pid, 0, identifier, &buffer_id, &queue_SF);
+	if (!ret || !buffer_id) {
+		FPSGO_LOGE("[ERROR] disconnect %d: %llu\n", pid, buffer_id);
+		fpsgo_render_tree_unlock(__func__);
+		return;
+	}
 
 	connect_api = fpsgo_com_search_and_add_connect_api_info(pid, buffer_id, 0);
 	if (!connect_api) {

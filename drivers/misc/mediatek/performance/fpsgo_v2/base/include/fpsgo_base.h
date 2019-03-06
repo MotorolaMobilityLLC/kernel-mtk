@@ -99,6 +99,7 @@ struct render_info {
 	/*render basic info pid bufferId..etc*/
 	int pid;
 	unsigned long long buffer_id;
+	int queue_SF;
 	int ui_pid;		/*vsync aligned frame's UI pid*/
 	int tgid;	/*render's process pid*/
 	int api;	/*connected API*/
@@ -126,6 +127,15 @@ struct render_info {
 	int is_black;
 
 	struct mutex thr_mlock;
+};
+
+struct BQ_id {
+	unsigned long long key;
+	unsigned long long identifier;
+	unsigned long long buffer_id;
+	int queue_SF;
+	int pid;
+	struct list_head entry;
 };
 
 struct fteh_loading {
@@ -157,6 +167,8 @@ struct render_info *fpsgo_search_and_add_render_info(int pid, int force);
 int fpsgo_has_bypass(void);
 void fpsgo_check_thread_status(void);
 void fpsgo_clear(void);
+struct BQ_id *fpsgo_find_BQ_id(int pid, int tgid, long long identifier, int action, unsigned long long buffer_id);
+int fpsgo_get_BQid_pair(int pid, int tgid, long long identifier, unsigned long long *buffer_id, int *queue_SF);
 
 int init_fpsgo_common(void);
 
@@ -203,6 +215,13 @@ enum {
 	NOT_ASKED = 0,
 	ASKED_IN = 1,
 	ASKED_OUT = 2,
+};
+
+enum {
+	ACTION_FIND = 0,
+	ACTION_FIND_ADD,
+	ACTION_FIND_DEL,
+	ACTION_DEL_PID
 };
 
 #endif

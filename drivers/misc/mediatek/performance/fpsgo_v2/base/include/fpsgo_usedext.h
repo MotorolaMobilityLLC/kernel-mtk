@@ -20,12 +20,14 @@
 extern void (*cpufreq_notifier_fp)(int, unsigned long);
 /*extern void (*ged_kpi_output_gfx_info_fp)(long long t_gpu, unsigned int cur_freq, unsigned int cur_max_freq);*/
 /*extern void (*display_time_fps_stablizer)(unsigned long long ts);*/
-extern void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, unsigned long long bufID, int pid, int queue_SF);
+extern void (*fpsgo_notify_qudeq_fp)(int qudeq, unsigned int startend, int pid, unsigned long long identifier);
 extern void (*fpsgo_notify_intended_vsync_fp)(int pid, unsigned long long frame_id);
 extern void (*fpsgo_notify_framecomplete_fp)
 	(int ui_pid, unsigned long long frame_time, int render_method, int render, unsigned long long frame_id);
-extern void (*fpsgo_notify_connect_fp)(int pid, unsigned long long bufID, int connectedAPI);
+extern void (*fpsgo_notify_connect_fp)(int pid, int connectedAPI, unsigned long long identifier);
 extern void (*fpsgo_notify_draw_start_fp)(int pid, unsigned long long frame_id);
+extern void (*fpsgo_notify_bqid_fp)(int pid, unsigned long long bufID, int queue_SF,
+	unsigned long long identifier, int create);
 
 extern void (*ged_vsync_notifier_fp)(void);
 
