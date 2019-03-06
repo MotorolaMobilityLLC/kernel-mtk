@@ -30,3 +30,12 @@ config BACKLIGHT_SUPPORT_LM3697
 	  Set y to support.
 	  Set n to disable.
 	  Charge pump driver for external backlight.
+
+config BACKLIGHT_SUPPORT_SGM37604A
+	bool "SGM37604A Support"
+	default n
+	---help---
+	  LED driver for sgm37604a support.
+	  Set y to support.
+	  Set n to disable.
+	  Charge pump driver for external backlight.
