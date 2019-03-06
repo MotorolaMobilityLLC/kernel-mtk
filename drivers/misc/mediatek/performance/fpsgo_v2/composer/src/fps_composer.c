@@ -614,7 +614,8 @@ void fpsgo_ctrl2comp_vysnc_aligned_no_render(int pid,
 			pos->render = render;
 			if (pos->render_method != GLSURFACE) {
 				for (i = 0; i < 2; i++) {
-					if (pos->frame_id[i].id == id) {
+					if (pos->frame_id[i].id == id &&
+						pos->frame_id[i].complete == 0) {
 						pos->frame_id[i].complete = 1;
 						FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
 							__func__, pos->pid, pos->frame_id[i].id,
@@ -662,7 +663,8 @@ void fpsgo_ctrl2comp_vysnc_aligned_draw_start(int pid, unsigned long long id)
 		fpsgo_thread_lock(&pos->thr_mlock);
 		if (pos->frame_type != BY_PASS_TYPE && pos->render_method != GLSURFACE) {
 			for (i = 0; i < 2; i++) {
-				if (pos->frame_id[i].id == id) {
+				if (pos->frame_id[i].id == id &&
+					pos->frame_id[i].complete == 0) {
 					pos->frame_id[i].draw++;
 					FPSGO_COM_TRACE("%s pid[%d] id[%llu] complete[%d] draw[%d]",
 						__func__, pos->pid, pos->frame_id[i].id,
@@ -765,7 +767,8 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 		}
 
 		for (i = 0; i < 2; i++) {
-			if (f_render->frame_id[i].id == id) {
+			if (f_render->frame_id[i].id == id &&
+				f_render->frame_id[i].complete == 0) {
 				if (f_render->frame_id[i].draw > 1)
 					f_render->frame_id[i].draw--;
 				else
