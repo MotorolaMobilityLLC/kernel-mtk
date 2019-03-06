@@ -43,6 +43,8 @@
 #define FPSGO_COM_TRACE(...)
 #endif
 
+#define FPSGO_MAN_TRACE(...)	xgf_trace("fpsgo_com:" __VA_ARGS__)
+
 #define COMP_TAG "FPSGO_COMP"
 
 static struct rb_root ui_pid_tree;
@@ -272,7 +274,8 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 
 		ret = fpsgo_get_BQid_pair(pid, f_render->tgid, identifier, &buffer_id, &queue_SF);
 		if (!ret || !buffer_id) {
-			FPSGO_LOGE("[ERROR] QueueS %d: %llu, %d\n", pid, buffer_id, queue_SF);
+			FPSGO_LOGI("QueueS %d: %llu, %d, %llu\n", pid, buffer_id, queue_SF, identifier);
+			FPSGO_MAN_TRACE("QueueS %d: %llu, %d, %llu\n", pid, buffer_id, queue_SF, identifier);
 			fpsgo_render_tree_unlock(__func__);
 			fpsgo_thread_unlock(&f_render->thr_mlock);
 			return;
@@ -841,7 +844,8 @@ void fpsgo_ctrl2comp_connect_api(int pid, int api, unsigned long long identifier
 
 	ret = fpsgo_get_BQid_pair(pid, 0, identifier, &buffer_id, &queue_SF);
 	if (!ret || !buffer_id) {
-		FPSGO_LOGE("[ERROR] connect %d: %llu\n", pid, buffer_id);
+		FPSGO_LOGI("connect %d: %llu, %llu\n", pid, buffer_id, identifier);
+		FPSGO_MAN_TRACE("connect %d: %llu, %llu\n", pid, buffer_id, identifier);
 		fpsgo_render_tree_unlock(__func__);
 		return;
 	}
@@ -883,7 +887,7 @@ void fpsgo_ctrl2comp_bqid(int pid, unsigned long long buffer_id,
 		}
 
 		if (pair->pid != pid)
-			FPSGO_LOGE("[ERROR] %d: diff render same key %d\n", pid, pair->pid);
+			FPSGO_LOGI("%d: diff render same key %d\n", pid, pair->pid);
 
 		pair->buffer_id = buffer_id;
 		pair->queue_SF = queue_SF;
@@ -925,7 +929,8 @@ void fpsgo_ctrl2comp_disconnect_api(int pid, int api, unsigned long long identif
 
 	ret = fpsgo_get_BQid_pair(pid, 0, identifier, &buffer_id, &queue_SF);
 	if (!ret || !buffer_id) {
-		FPSGO_LOGE("[ERROR] disconnect %d: %llu\n", pid, buffer_id);
+		FPSGO_LOGI("disconnect %d: %llu, %llu\n", pid, buffer_id, identifier);
+		FPSGO_MAN_TRACE("disconnect %d: %llu, %llu\n", pid, buffer_id, identifier);
 		fpsgo_render_tree_unlock(__func__);
 		return;
 	}
