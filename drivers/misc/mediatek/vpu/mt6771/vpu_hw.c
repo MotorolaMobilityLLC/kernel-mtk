@@ -4263,6 +4263,8 @@ int vpu_dump_mesg(struct seq_file *s)
 	char *log_a_pos = NULL;
 	int core_index = 0;
 	bool jump_out = false;
+	int jump_out_type = 0;
+	int jump_count = 0;
 
 	for (core_index = 0 ; core_index < MTK_VPU_CORE; core_index++) {
 		log_buf = (char *) ((uintptr_t)vpu_service_cores[core_index].work_buf->va + VPU_OFFSET_LOG);
@@ -4306,32 +4308,60 @@ int vpu_dump_mesg(struct seq_file *s)
 
     /* in case total log < VPU_SIZE_LOG_SHIFT and there's '\0' */
 	*(log_head + VPU_SIZE_LOG_BUF - 1) = '\0';
-	vpu_print_seq(s, "%s", ptr+VPU_SIZE_LOG_HEADER);
+	/*vpu_print_seq(s, "%s", ptr+VPU_SIZE_LOG_HEADER);*/
 
 	ptr += VPU_SIZE_LOG_HEADER;
 	log_head = ptr;
 
+	jump_out_type = jump_count = 0;
 	jump_out = false;
 	*(log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER) - 1) = '\n';
 	do {
 		if ((ptr + VPU_SIZE_LOG_SHIFT) >= (log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER))) {
-			*(log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER) - 1) = '\0'; /* last part of log buffer */
-			jump_out = true;
+			*(log_head +
+				(VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER) - 1) = '\0';
+				/* last part of log buffer */
+				jump_out = true;
+				jump_out_type = 1;
 		} else {
 			log_a_pos = strchr(ptr + VPU_SIZE_LOG_SHIFT, '\n');
-			if (log_a_pos == NULL)
-				break;
+			if (log_a_pos == NULL) {
+				log_a_pos = strchr(ptr + VPU_SIZE_LOG_SHIFT, '\0');
+				if (log_a_pos != NULL) {
+					if ((unsigned int)(uintptr_t)log_a_pos ==
+						(unsigned int)(uintptr_t)ptr + VPU_SIZE_LOG_SHIFT) {
+						jump_count++;
+						jump_out_type = 2;
+					}
+				}
+			}
 			*log_a_pos = '\0';
 		}
+
+		if (jump_count == 2)
+			jump_out = true;
 		vpu_print_seq(s, "%s\n", ptr);
 		ptr = log_a_pos + 1;
-
 		/* incase log_a_pos is at end of string */
-		if (ptr >= log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER))
+		if (ptr >= log_head + (VPU_SIZE_LOG_BUF - VPU_SIZE_LOG_HEADER)) {
+			vpu_print_seq(s, "=== L2 jump out ===\n");
 			break;
-
+		}
 		mdelay(1);
 	} while (!jump_out);
+
+	if (jump_out) {
+		switch (jump_out_type) {
+		case 1:
+			vpu_print_seq(s, "===  ENDOFBUF ===\n");
+			break;
+		case 2:
+			vpu_print_seq(s, "=== ENDOFSTR ===\n");
+			break;
+		default:
+			break;
+		}
+	}
 
 	#endif
 	}
