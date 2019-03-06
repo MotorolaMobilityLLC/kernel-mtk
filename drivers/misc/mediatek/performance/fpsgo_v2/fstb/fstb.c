@@ -531,9 +531,6 @@ void gpu_time_update(long long t_gpu, unsigned int cur_freq, unsigned int cur_ma
 	} else
 		iter->weighted_gpu_time[iter->weighted_gpu_time_end] = t_gpu;
 
-	iter->weighted_gpu_time_ts[iter->weighted_gpu_time_end] = cur_time_us;
-	iter->weighted_gpu_time_end++;
-
 	/*print debug message*/
 	mtk_fstb_dprintk("fstb: time %lld %lld t_gpu %lld cur_freq %u cur_max_freq %u\n",
 			cur_time_us, ktime_to_us(ktime_get())-cur_time_us, t_gpu, cur_freq, cur_max_freq);
