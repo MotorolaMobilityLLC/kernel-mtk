@@ -12,6 +12,7 @@
 
 #include "mt6771-moto-overlay.dtsi"
 #include "bq2560x.dtsi"
+#include "sgm37604a.dtsi"
 &odm {
 	otg_iddig:otg_iddig  {
 	compatible = "mediatek,usb_iddig_bi_eint";
@@ -211,4 +212,8 @@
 };
 &mt_soc_codec_name {
 		ext_pa =  <&pio 153 0>;
+};
+&led6{
+	led_mode = <4>;
+	pwm_config = <0 0 0 0 0>;
 };

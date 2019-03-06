@@ -1,0 +1,8 @@
+/* sgm37604a dtsi */
+
+&i2c5 {
+	sgm37604a@36 {
+	compatible = "mediatek,sgm37604a";
+	reg = <0x36>;
+	};
+};
