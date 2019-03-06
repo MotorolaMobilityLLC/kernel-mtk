@@ -24,6 +24,12 @@
 
 #include "u_os_desc.h"
 
+/* disable LPM by default */
+static bool disable_l1_for_hs = true;
+module_param(disable_l1_for_hs, bool, S_IRUGO | S_IWUSR);
+MODULE_PARM_DESC(disable_l1_for_hs,
+	"Disable support for L1 LPM for HS devices");
+
 /**
  * struct usb_os_string - represents OS String to be reported by a gadget
  * @bLength: total length of the entire descritor, always 0x12
@@ -1552,15 +1558,16 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				count_configs(cdev, USB_DT_DEVICE);
 			cdev->desc.bMaxPacketSize0 =
 				cdev->gadget->ep0->maxpacket;
+			cdev->desc.bcdUSB = cpu_to_le16(0x0200);
 			if (gadget_is_superspeed(gadget)) {
 				if (gadget->speed >= USB_SPEED_SUPER) {
 					cdev->desc.bcdUSB = cpu_to_le16(0x0310);
 					cdev->desc.bMaxPacketSize0 = 9;
-				} else {
+				} else if (!disable_l1_for_hs) {
 					cdev->desc.bcdUSB = cpu_to_le16(0x0210);
+					DBG(cdev,
+					"Config HS device with LPM(L1)\n");
 				}
-			} else {
-				cdev->desc.bcdUSB = cpu_to_le16(0x0200);
 			}
 
 			value = min(w_length, (u16) sizeof cdev->desc);
@@ -1591,7 +1598,9 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 				value = min(w_length, (u16) value);
 			break;
 		case USB_DT_BOS:
-			if (gadget_is_superspeed(gadget)) {
+			if ((gadget_is_superspeed(gadget) &&
+				(gadget->speed >= USB_SPEED_SUPER))
+				 || !disable_l1_for_hs) {
 				value = bos_desc(cdev);
 				value = min(w_length, (u16) value);
 			}
