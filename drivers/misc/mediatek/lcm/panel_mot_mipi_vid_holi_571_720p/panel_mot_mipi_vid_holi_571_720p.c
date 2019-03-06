@@ -127,47 +127,16 @@ static struct LCM_setting_table init_setting_vdo[] = {
         {0xFF,3,{0x98,0x81,0x04} },
         {0x8B,1,{0xE3} },
         {0xFF,3,{0x98,0x81,0x00} },
-        {0x51,2,{0x0F,0xFF} },
+        {0x51,2,{0x0C,0xCC} },
         {0x53,1,{0x2C} },
         {0x55,1,{0x01} },
-        {0x35,1,{0x01} },
         {0x29,1,{0x00} },
         {REGFLAG_DELAY,120, {}},
         {REGFLAG_END_OF_TABLE, 0x00,{}}
 };
 
-#if 0
-static struct LCM_setting_table lcm_set_window[] = {
-	{0x2A, 4, {0x00, 0x00, (FRAME_WIDTH >> 8), (FRAME_WIDTH & 0xFF)} },
-	{0x2B, 4, {0x00, 0x00, (FRAME_HEIGHT >> 8), (FRAME_HEIGHT & 0xFF)} },
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-#endif
-#if 0
-static struct LCM_setting_table lcm_sleep_out_setting[] = {
-	/* Sleep Out */
-	{0x11, 1, {0x00} },
-	{REGFLAG_DELAY, 120, {} },
-
-	/* Display ON */
-	{0x29, 1, {0x00} },
-	{REGFLAG_DELAY, 20, {} },
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-
-static struct LCM_setting_table lcm_deep_sleep_mode_in_setting[] = {
-	/* Display off sequence */
-	{0x28, 1, {0x00} },
-	{REGFLAG_DELAY, 20, {} },
-
-	/* Sleep Mode On */
-	{0x10, 1, {0x00} },
-	{REGFLAG_DELAY, 120, {} },
-	{REGFLAG_END_OF_TABLE, 0x00, {} }
-};
-#endif
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 1, {0xFF} },
+	{0x51, 2, {0x0C,0xCC} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -251,15 +220,9 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch = 40;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	/* params->dsi.ssc_disable                                                   = 1; */
-#ifndef CONFIG_FPGA_EARLY_PORTING
+
 	params->dsi.PLL_CLOCK = 440;	/* this value must be in MTK suggested table */
-	params->dsi.PLL_CK_CMD = 420;
-	params->dsi.PLL_CK_VDO = 440;
-#else
-	params->dsi.pll_div1 = 0;
-	params->dsi.pll_div2 = 0;
-	params->dsi.fbk_div = 0x1;
-#endif
+
 	params->dsi.CLK_HS_POST = 36;
 	params->dsi.clk_lp_per_line_enable = 0;
 	params->dsi.esd_check_enable = 0;
@@ -268,19 +231,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
 
-#ifdef CONFIG_NT35695_LANESWAP
-	params->dsi.lane_swap_en = 1;
-
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_0] = MIPITX_PHY_LANE_CK;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_1] = MIPITX_PHY_LANE_2;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_2] = MIPITX_PHY_LANE_3;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_3] = MIPITX_PHY_LANE_0;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_CK] = MIPITX_PHY_LANE_1;
-	params->dsi.lane_swap[MIPITX_PHY_PORT_0][MIPITX_PHY_LANE_RX] = MIPITX_PHY_LANE_1;
-#endif
 	/* for ARR 2.0 */
 	params->max_refresh_rate = 60;
-	params->min_refresh_rate = 45;
 }
 
 static void lcm_init_power(void)
@@ -311,7 +263,6 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	MDELAY(10);
         push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
-	LCM_LOGI("ili9881c----ocp65131----lcm mode = vdo mode :%d----\n", lcm_dsi_mode);
 }
 
 static void lcm_suspend(void)
@@ -380,7 +331,7 @@ static unsigned int lcm_compare_id(void)
 	read_reg_v2(0xDB, buffer, 1);
 	version_id = buffer[0];
 
-	LCM_LOGI("%s,nt35695_id=0x%08x,version_id=0x%x\n", __func__, id, version_id);
+	LCM_LOGI("%s,ili9881c_id=0x%08x,version_id=0x%x\n", __func__, id, version_id);
 
 	if (id == LCM_ID_NT35695 && version_id == 0x81)
 		return 1;
@@ -468,7 +419,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,nt35695 backlight: level = %d\n", __func__, level);
+	LCM_LOGI("%s,ili9881c backlight: level = %d\n", __func__, level);
 
 	bl_level[0].para_list[0] = level;
 
