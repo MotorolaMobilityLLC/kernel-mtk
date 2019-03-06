@@ -135,7 +135,7 @@ struct BQ_id {
 	unsigned long long buffer_id;
 	int queue_SF;
 	int pid;
-	struct list_head entry;
+	struct rb_node entry;
 };
 
 struct fteh_loading {
