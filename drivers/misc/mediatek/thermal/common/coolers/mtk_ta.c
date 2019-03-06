@@ -292,12 +292,23 @@ int wakeup_ta_algo(int flow_state)
 		int size = TAD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
 		/*tad_msg = (struct tad_nl_msg_t *)vmalloc(size);*/
-		tad_msg = vmalloc(size);
+		if (size > (PAGE_SIZE << 1))
+			tad_msg = vmalloc(size);
+		else
+			tad_msg = kmalloc(size, GFP_KERNEL);
 
 		if (tad_msg == NULL) {
 			g_ta_status = g_ta_status | 0x00100000;
-			return -ENOMEM;
+			/* avoid page fragment issue */
+			if (size > PAGE_SIZE) {
+				tad_msg = vmalloc(size);
+
+				if (tad_msg == NULL)
+					return -ENOMEM;
+			} else
+				return -ENOMEM;
 		}
+
 		tsta_dprintk("[wakeup_ta_algo] malloc size=%d\n", size);
 		memset(tad_msg, 0, size);
 		tad_msg->tad_cmd = TA_DAEMON_CMD_NOTIFY_DAEMON;
