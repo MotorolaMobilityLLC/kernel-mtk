@@ -297,6 +297,11 @@ struct cust_mt65xx_led *get_cust_led_dtsi(void)
 					    (long)chargepump_set_backlight_level;
 					LEDS_DEBUG
 					    ("backlight set by chargepump_set_backlight_level\n");
+#elif defined(CONFIG_BACKLIGHT_SUPPORT_SGM37604A)
+					pled_dtsi[i].data =
+					    (long)sgm37604a_set_backlight_level;
+					LEDS_DEBUG
+					    ("backlight set by sgm37604a_set_backlight_level\n");
 #else
 					pled_dtsi[i].data =
 					    (long)mtkfb_set_backlight_level;
