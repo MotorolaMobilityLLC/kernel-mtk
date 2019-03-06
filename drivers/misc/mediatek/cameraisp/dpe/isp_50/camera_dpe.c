@@ -384,6 +384,7 @@ struct DPE_INFO_STRUCT {
 	spinlock_t SpinLockIrq[DPE_IRQ_TYPE_AMOUNT];
 	wait_queue_head_t WaitQueueHead;
 	struct work_struct ScheduleDveWork;
+	struct workqueue_struct *wkqueue;
 	struct work_struct ScheduleWmfeWork;
 	unsigned int UserCount;	/* User Count */
 	unsigned int DebugMask;	/* Debug Mask */
@@ -3804,6 +3805,9 @@ static signed int DPE_probe(struct platform_device *pDev)
 		init_waitqueue_head(&DPEInfo.WaitQueueHead);
 		INIT_WORK(&DPEInfo.ScheduleDveWork, DPE_ScheduleDveWork);
 		INIT_WORK(&DPEInfo.ScheduleWmfeWork, DPE_ScheduleWmfeWork);
+		DPEInfo.wkqueue = create_singlethread_workqueue("DPE-CMDQ-WQ");
+		if (!DPEInfo.wkqueue)
+			LOG_INF("NULL DPE-CMDQ-WQ\n");
 
 		for (i = 0; i < DPE_IRQ_TYPE_AMOUNT; i++)
 			tasklet_init(DPE_tasklet[i].pDPE_tkt, DPE_tasklet[i].tkt_cb, 0);
@@ -3840,6 +3844,11 @@ static signed int DPE_remove(struct platform_device *pDev)
 	int i;
 	/*  */
 	LOG_DBG("- E.");
+
+	/* wait for unfinished works in the workqueue. */
+	destroy_workqueue(DPEInfo.wkqueue);
+	DPEInfo.wkqueue = NULL;
+
 	/* unregister char driver. */
 	DPE_UnregCharDev();
 
@@ -4508,7 +4517,8 @@ static irqreturn_t ISP_Irq_DPE(signed int Irq, void *DeviceId)
 	WmfeStatus = DPE_RD32(DPE_WMFE_INT_STATUS_REG);	/* WMFE Status */
 	DpeDveSta0 = DPE_RD32(DPE_DVE_STA_REG);	/* WMFE Status */
 	if (DVE_INT_ST == (DVE_INT_ST & DveStatus))
-		schedule_work(&DPEInfo.ScheduleDveWork);
+	/*schedule_work(&DPEInfo.ScheduleDveWork);*/
+		queue_work(DPEInfo.wkqueue, &DPEInfo.ScheduleDveWork);
 #if 0
 	spin_lock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DPE_ST]));
 	if (DVE_INT_ST == (DVE_INT_ST & DveStatus)) {
