@@ -18,6 +18,8 @@
 #include <mtk_gauge_time_service.h>
 #include <mtk_gauge_class.h>
 
+#include <linux/power/moto_chg_tcmd.h>
+
 
 /* ============================================================ */
 /* Define Macro Value */
@@ -660,6 +662,8 @@ struct battery_data {
 	/* Add for Battery Service */
 	int BAT_batt_vol;
 	int BAT_batt_temp;
+
+	struct moto_chg_tcmd_client bat_tcmd_client;
 };
 
 struct BAT_EC_Struct {
