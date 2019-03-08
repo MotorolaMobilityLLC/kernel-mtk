@@ -3947,7 +3947,7 @@ static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 	charger_dev_enable(cm->chg1_dev, val);
 
 	val = val ? CHARGER_NOTIFY_START_CHARGING : CHARGER_NOTIFY_STOP_CHARGING;
-	ret = charger_manager_notifier(cm, CHARGER_NOTIFY_STOP_CHARGING);
+	ret = charger_manager_notifier(cm, val);
 
 	return ret;
 }
