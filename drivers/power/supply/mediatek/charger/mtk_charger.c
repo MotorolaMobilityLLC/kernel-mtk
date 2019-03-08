@@ -1712,6 +1712,7 @@ static void mtk_chg_get_tchg(struct charger_manager *info)
 	}
 }
 
+int charging_enable_flag = 1;
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1781,7 +1782,10 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 		goto stop_charging;
 	}
-
+	if (!charging_enable_flag) {
+		charging = false;
+		goto stop_charging;
+	}
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
@@ -4073,8 +4077,13 @@ static int mtk_charger_probe(struct platform_device *pdev)
 				boot_mode = tag->bootmode;
 		}
 	}
-	
+
+	/* Disable charging when enter ATM mode(factory mode) */
+	if (!strcmp(atm_mode, "enable"))
+		charging_enable_flag = 0;
+
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+
 	if (!info)
 		return -ENOMEM;
 	pinfo = info;
