@@ -74,7 +74,7 @@
 #include "mtk_charger_intf.h"
 #include "mtk_charger_init.h"
 
-char atm_mode[10];
+static char atm_mode[10];
 
 int __init atm_mode_init(char *s)
 {
