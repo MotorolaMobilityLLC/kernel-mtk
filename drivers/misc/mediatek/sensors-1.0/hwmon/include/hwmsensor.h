@@ -90,8 +90,9 @@
 #define SENSOR_TYPE_CAMERA_ACTIVATE                    76
 #define SENSOR_TYPE_CHOPCHOP_GESTURE                   77
 #define SENSOR_TYPE_MOTO_GLANCE_GESTURE                78
+#define SENSOR_TYPE_LTV                                79
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_MOTO_GLANCE_GESTURE
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_LTV
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -170,8 +171,9 @@
 #define ID_CAMGEST             (ID_BASE + SENSOR_TYPE_CAMERA_ACTIVATE - 1)
 #define ID_CHOPCHOP            (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
 #define ID_MOT_GLANCE          (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
+#define ID_LTV                 (ID_BASE + SENSOR_TYPE_LTV - 1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_MOT_GLANCE)
+#define ID_SENSOR_MAX_HANDLE    (ID_LTV)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)

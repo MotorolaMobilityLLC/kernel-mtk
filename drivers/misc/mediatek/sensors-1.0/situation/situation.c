@@ -96,6 +96,9 @@ static int handle_to_index(int handle)
 	case ID_MOT_GLANCE:
 		index = mot_glance;
 		break;
+	case ID_LTV:
+		index = ltv;
+		break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
@@ -147,6 +150,32 @@ int sar_data_report(int32_t value[3])
 		return -1;
 	}
 	event.handle = ID_SAR;
+	event.flush_action = DATA_ACTION;
+	event.word[0] = value[0];
+	event.word[1] = value[1];
+	event.word[2] = value[2];
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
+		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
+		wake_lock_timeout(&cxt->wake_lock[index], msecs_to_jiffies(250));
+
+	return err;
+}
+
+int mot_ltv_data_report(int32_t value[3])
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	struct situation_context *cxt = situation_context_obj;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(ID_LTV);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+	event.handle = ID_LTV;
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value[0];
 	event.word[1] = value[1];

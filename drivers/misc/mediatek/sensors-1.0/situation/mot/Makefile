@@ -7,3 +7,4 @@ obj-$(CONFIG_MOTO_STOWED)	+=	moto_stowed/
 obj-$(CONFIG_MOTO_CAMGEST)	+=	moto_camgest/
 obj-$(CONFIG_MOTO_CHOPCHOP)	+=	moto_chopchop/
 obj-$(CONFIG_MOTO_GLANCE)	+=	moto_glance/
+obj-$(CONFIG_MOTO_LTV)	        +=	moto_ltv/
