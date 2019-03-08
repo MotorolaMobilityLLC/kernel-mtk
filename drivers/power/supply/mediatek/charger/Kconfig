@@ -204,3 +204,9 @@ config LOAD_SWITCH_RT9750
 	  It is a load switch,
 	  which is good for direct charge.
 	  It depends on config MTK_CHARGER.
+
+config MOTO_CHG_TCMD_SUPPORT
+	bool "MOTO TCMD interface driver for charger"
+	default n
+	help
+	  This is to enable MOTO supports of charger TCMD INTERFACE.
