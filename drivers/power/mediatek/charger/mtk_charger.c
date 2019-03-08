@@ -73,7 +73,7 @@
 #include <pmic.h>
 #include <mtk_gauge_time_service.h>
 
-char atm_mode[10];
+static char atm_mode[10];
 int __init atm_mode_init(char *s)
 {
 	strlcpy(atm_mode, s, 10);
