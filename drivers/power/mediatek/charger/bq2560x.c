@@ -482,6 +482,18 @@ static int bq2560x_set_batfet_delay(struct bq2560x *bq, uint8_t delay)
 }
 EXPORT_SYMBOL_GPL(bq2560x_set_batfet_delay);
 
+static int bq2560x_set_batfet(struct charger_device *chg_dev, bool en)
+{
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	if(en)
+		ret = bq2560x_enable_batfet(bq);
+	else
+		ret = bq2560x_disable_batfet(bq);
+
+	return ret;
+}
+
 static int bq2560x_set_vdpm_bat_track(struct bq2560x *bq)
 {
 	const u8 val = REG07_VDPM_BAT_TRACK_200MV << REG07_VDPM_BAT_TRACK_SHIFT;
@@ -1180,6 +1192,8 @@ static struct charger_ops bq2560x_chg_ops = {
 
 	/* ADC */
 	.get_tchg_adc = NULL,
+
+	.set_batfet = bq2560x_set_batfet,
 
 	.event = bq2560x_do_event,
 };

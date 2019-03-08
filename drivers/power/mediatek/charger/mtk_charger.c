@@ -1333,6 +1333,7 @@ static void mtk_chg_get_tchg(struct charger_manager *info)
 	}
 }
 
+int charging_enable_flag = 1;
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1394,6 +1395,11 @@ static void charger_check_status(struct charger_manager *info)
 	mtk_chg_get_tchg(info);
 
 	if (!mtk_chg_check_vbus(info)) {
+		charging = false;
+		goto stop_charging;
+	}
+
+	if (!charging_enable_flag) {
 		charging = false;
 		goto stop_charging;
 	}

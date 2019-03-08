@@ -578,6 +578,8 @@ struct battery_data {
 	int BAT_PRESENT;
 	int BAT_TECHNOLOGY;
 	int BAT_CAPACITY;
+	int BAT_CHGEN;
+	int BAT_BATTEN;
 	/* Add for Battery Service */
 	int BAT_batt_vol;
 	int BAT_batt_temp;

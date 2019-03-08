@@ -484,6 +484,15 @@ int charger_dev_safety_check(struct charger_device *charger_dev)
 	return -ENOTSUPP;
 }
 
+int charger_dev_set_batfet(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_batfet)
+		return charger_dev->ops->set_batfet(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_batfet);
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(

@@ -100,6 +100,9 @@ static int adc_cali_major;
 static dev_t adc_cali_devno;
 static struct cdev *adc_cali_cdev;
 
+static struct charger_device *primary_charger;
+extern int charging_enable_flag;
+
 static int adc_cali_slop[14] = {
 	1000, 1000, 1000, 1000, 1000, 1000,
 	1000, 1000, 1000, 1000, 1000, 1000,
@@ -124,6 +127,8 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_COUNTER,
 	POWER_SUPPLY_PROP_TEMP,
+	POWER_SUPPLY_PROP_charging_enabled,
+	POWER_SUPPLY_PROP_battery_charging_enable,
 };
 
 /* weak function */
@@ -396,6 +401,12 @@ static int battery_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_TEMP:
 		val->intval = data->BAT_batt_temp * 10;
 		break;
+	case POWER_SUPPLY_PROP_charging_enabled:
+		val->intval = data->BAT_CHGEN;
+		break;
+	case POWER_SUPPLY_PROP_battery_charging_enable:
+		val->intval = data->BAT_BATTEN;
+		break;
 
 	default:
 		ret = -EINVAL;
@@ -403,6 +414,54 @@ static int battery_get_property(struct power_supply *psy,
 	}
 
 	return ret;
+}
+
+static int battery_set_property(struct power_supply *psy,
+				enum power_supply_property psp, const union power_supply_propval *val)
+{
+	struct battery_data *data = container_of(psy->desc, struct battery_data, psd);
+
+	primary_charger = get_charger_by_name("primary_chg");
+	if (!primary_charger) {
+		pr_err("%s: get primary charger device failed\n", __func__);
+		return -ENODEV;
+	}
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_charging_enabled:
+		data->BAT_CHGEN = val->intval;
+		charging_enable_flag = val->intval;
+		return 0;
+	case POWER_SUPPLY_PROP_battery_charging_enable:
+		data->BAT_BATTEN = val->intval;
+		if(data->BAT_BATTEN)
+			charger_dev_set_batfet(primary_charger, true);
+		else
+			charger_dev_set_batfet(primary_charger, false);
+		return 0;
+
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int battery_is_writeable(struct power_supply *psy,
+				       enum power_supply_property prop)
+{
+	int rc;
+	switch (prop) {
+	case POWER_SUPPLY_PROP_charging_enabled:
+	case POWER_SUPPLY_PROP_battery_charging_enable:
+		rc = 1;
+		break;
+
+	default:
+		rc = 0;
+		break;
+	}
+	return rc;
 }
 
 /* battery_data initialization */
@@ -413,6 +472,8 @@ struct battery_data battery_main = {
 		.properties = battery_props,
 		.num_properties = ARRAY_SIZE(battery_props),
 		.get_property = battery_get_property,
+		.set_property = battery_set_property,
+		.property_is_writeable = battery_is_writeable,
 		},
 
 	.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING,
@@ -420,6 +481,8 @@ struct battery_data battery_main = {
 	.BAT_PRESENT = 1,
 	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
 	.BAT_CAPACITY = -1,
+	.BAT_CHGEN = 1,
+	.BAT_BATTEN = 1,
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
 };
@@ -431,6 +494,8 @@ void evb_battery_init(void)
 	battery_main.BAT_PRESENT = 1;
 	battery_main.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
 	battery_main.BAT_CAPACITY = 100;
+	battery_main.BAT_CHGEN = 1,
+	battery_main.BAT_BATTEN = 1,
 	battery_main.BAT_batt_vol = 4200;
 	battery_main.BAT_batt_temp = 22;
 }
