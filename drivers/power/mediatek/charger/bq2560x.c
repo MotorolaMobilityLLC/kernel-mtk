@@ -32,7 +32,7 @@
 #include <linux/math64.h>
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-
+#include <linux/leds.h>
 #include "mtk_charger_intf.h"
 #include "bq2560x_reg.h"
 #include "bq2560x.h"
@@ -83,6 +83,7 @@ struct bq2560x {
 
 	struct bq2560x_platform_data* platform_data;
 	struct charger_device *chg_dev;
+	struct led_classdev led_dev;
 
 };
 
@@ -1106,6 +1107,19 @@ static int bq2560x_set_boost_ilmt(struct charger_device *chg_dev, u32 curr)
 	return ret;
 }
 
+static void charging_brightness_set(struct led_classdev *led_cdev,
+				     enum led_brightness brt_val)
+{
+	struct bq2560x *bq =
+	container_of(led_cdev, struct bq2560x, led_dev);
+	if (brt_val)
+		bq2560x_update_bits(bq, BQ2560X_REG_00, REG00_STAT_CTRL_MASK,
+				0 << REG00_STAT_CTRL_SHIFT);
+	else
+		bq2560x_update_bits(bq, BQ2560X_REG_00, REG00_STAT_CTRL_MASK,
+				3 << REG00_STAT_CTRL_SHIFT);
+}
+
 static int bq2560x_do_event(struct charger_device *chg_dev, u32 event, u32 args)
 {
 	if (chg_dev == NULL)
@@ -1253,6 +1267,14 @@ static int bq2560x_charger_probe(struct i2c_client *client,
 	pr_err("bq2560x probe successfully, Part Num:%d, Revision:%d\n!",
 				bq->part_no, bq->revision);
 
+	bq->led_dev.name = "charging";
+	bq->led_dev.brightness_set = charging_brightness_set;
+	bq->led_dev.max_brightness = 256;
+	ret = led_classdev_register(&client->dev, &bq->led_dev);
+	if (ret < 0) {
+		return ret;
+	}
+
 	return 0;
 err_0:
 	return ret;
@@ -1266,7 +1288,7 @@ static int bq2560x_charger_remove(struct i2c_client *client)
 	mutex_destroy(&bq->i2c_rw_lock);
 
 	sysfs_remove_group(&bq->dev->kobj, &bq2560x_attr_group);
-
+	led_classdev_unregister(&bq->led_dev);
 
 	return 0;
 }
