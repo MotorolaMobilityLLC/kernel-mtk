@@ -28,6 +28,8 @@
 #include <linux/usb.h>
 #include <linux/power_supply.h>
 
+#include "../situation/situation.h"
+
 #if defined(CONFIG_FB)
 #include <linux/fb.h>
 #endif
@@ -1508,10 +1510,94 @@ static struct i2c_driver abov_driver = {
 	.probe	  = abov_probe,
 	.remove	  = abov_remove,
 };
+/*---------------------add to situation----------------*/
+static int sar_open_report_data(int open)
+{
+	pabovXX_t this = abov_sar_ptr;
+
+	if (this == NULL)
+		return -EINVAL;
+
+	if (open == 1) {
+		LOG_DBG("enable cap sensor\n");
+		initialize(this);
+
+		this->report_data[CHANNEL_STATE] = IDLE;
+		abovXX_sar_data_report(this);
+		mEnabled = 1;
+	} else if (open == 0) {
+		LOG_DBG("disable cap sensor\n");
+		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
+
+		this->report_data[CHANNEL_STATE] = DISABLE;
+		abovXX_sar_data_report(this);
+		mEnabled = 0;
+	} else {
+		LOG_DBG("unknown enable symbol\n");
+	}
+
+	return 0;
+}
+static int sar_batch(int flag,
+	int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	return 0;
+}
+static int sar_flush(void)
+{
+	return 0;
+}
+
+static int sar_get_data(int *probability, int *status)
+{
+	return 0;
+}
+static int abov_sar_local_init(void)
+{
+	struct situation_control_path ctl = {0};
+	struct situation_data_path data = {0};
+	int err = 0;
+
+	pr_debug("%s\n", __func__);
+	i2c_add_driver(&abov_driver);
+
+	ctl.open_report_data = sar_open_report_data;
+	ctl.batch = sar_batch;
+	ctl.flush = sar_flush;
+	ctl.is_support_wake_lock = true;
+	ctl.is_support_batch = false;
+	err = situation_register_control_path(&ctl, ID_SAR);
+	if (err) {
+		pr_err("register sar control path err\n");
+		goto exit;
+	}
+	data.get_data = sar_get_data;
+	err = situation_register_data_path(&data, ID_SAR);
+	if (err) {
+		pr_err("register sar data path err\n");
+		goto exit;
+	}
+
+	return 0;
+exit:
+	return -1;
+}
+static int abov_sar_local_uninit(void)
+{
+	return 0;
+}
+static struct situation_init_info abov_sar_init_info = {
+	.name = "abov_sar",
+	.init = abov_sar_local_init,
+	.uninit = abov_sar_local_uninit,
+};
+
+/*---------------------add to situation----------------*/
 static int __init abov_init(void)
 {
 	printk("func = %s, line = %d\n", __func__, __LINE__);
-	return i2c_add_driver(&abov_driver);
+	situation_driver_add(&abov_sar_init_info, ID_SAR);
+	return 0;
 }
 static void __exit abov_exit(void)
 {
@@ -1732,16 +1818,16 @@ int abovXX_sar_remove(pabovXX_t this)
 int abovXX_sar_data_report(pabovXX_t this)
 {
 	int err = 0;
-	struct sensor_event event;
+	int32_t value[3] = {0};
 
-	memset(&event, 0, sizeof(struct sensor_event));
+//	memset(&event, 0, sizeof(struct sensor_event));
 
-	event.handle = ID_SAR;
-	event.flush_action = DATA_ACTION;
-	event.word[CHANNEL_STATE] = this->report_data[CHANNEL_STATE];
-	event.word[1] = this->report_data[1];
-	event.word[2] = this->report_data[2];
-	err = sensor_input_event(this->mdev.minor, &event);
+//	event.handle = ID_SAR;
+//	event.flush_action = DATA_ACTION;
+	value[CHANNEL_STATE] = this->report_data[CHANNEL_STATE];
+	value[1] = this->report_data[1];
+	value[2] = this->report_data[2];
+	err = sar_data_report(value);
 	if (err < 0)
 		printk("func = %s, fail to report data: %d\n", __func__, this->report_data[CHANNEL_STATE]);
 	else {
