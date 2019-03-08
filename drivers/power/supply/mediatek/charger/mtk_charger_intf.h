@@ -26,6 +26,8 @@
 #include <mt-plat/mtk_charger.h>
 #include <mt-plat/mtk_battery.h>
 
+#include <linux/power/moto_chg_tcmd.h>
+
 #include <mtk_gauge_time_service.h>
 
 #include <mt-plat/charger_class.h>
@@ -430,6 +432,7 @@ struct charger_manager {
 	u_int g_scd_pid;
 	struct scd_cmd_param_t_1 sc_data;
 
+	struct moto_chg_tcmd_client chg_tcmd_client;
 };
 
 /* charger related module interface */
