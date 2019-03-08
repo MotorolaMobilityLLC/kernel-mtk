@@ -26,6 +26,8 @@
 #include <mt-plat/mtk_charger.h>
 #include <mt-plat/mtk_battery.h>
 
+#include <linux/power/moto_chg_tcmd.h>
+
 #include <mtk_gauge_time_service.h>
 
 #include <mt-plat/charger_class.h>
@@ -434,6 +436,8 @@ struct charger_manager {
 	bool force_disable_pp[TOTAL_CHARGER];
 	bool enable_pp[TOTAL_CHARGER];
 	struct mutex pp_lock[TOTAL_CHARGER];
+
+	struct moto_chg_tcmd_client chg_tcmd_client;
 };
 
 /* charger related module interface */
