@@ -27,6 +27,7 @@
 #include <linux/spinlock.h>
 #include <mt-plat/mtk_battery.h>
 #include <mtk_gauge_time_service.h>
+#include <linux/power/moto_chg_tcmd.h>
 
 /* PD */
 #include <tcpm.h>
@@ -414,6 +415,8 @@ struct charger_manager {
 
 	/* kpoc */
 	atomic_t enable_kpoc_shdn;
+
+	struct moto_chg_tcmd_client chg_tcmd_client;
 };
 
 /* charger related module interface */
