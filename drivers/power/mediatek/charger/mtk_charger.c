@@ -2665,6 +2665,10 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	chr_err("%s: starts\n", __func__);
 
+	/* Disable charging when enter ATM mode(factory mode) */
+	if (!strcmp(atm_mode, "enable"))
+		charging_enable_flag = 0;
+
 	info = devm_kzalloc(&pdev->dev, sizeof(struct charger_manager), GFP_KERNEL);
 	if (!info)
 		return -ENOMEM;
