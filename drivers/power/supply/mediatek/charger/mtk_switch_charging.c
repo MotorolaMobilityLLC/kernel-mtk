@@ -66,8 +66,6 @@
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
 
-extern char atm_mode[10];
-
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -408,11 +406,8 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		charging_enable = false;
 		chr_err("[charger]Charger Error, turn OFF charging !\n");
 
-	} else if ((get_boot_mode() == META_BOOT) || ((get_boot_mode() == ADVMETA_BOOT)) ||
-			(!strcmp(atm_mode, "enable"))) {
-
+	} else if ((get_boot_mode() == META_BOOT) || ((get_boot_mode() == ADVMETA_BOOT))) {
 		charging_enable = false;
-		charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
 		info->chg1_data.input_current_limit = 200000; /* 200mA */
 		charger_dev_set_input_current(info->chg1_dev,
 					info->chg1_data.input_current_limit);
