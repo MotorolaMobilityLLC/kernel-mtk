@@ -3937,6 +3937,106 @@ static ssize_t store_sc_test(
 static DEVICE_ATTR(sc_test, 0664,
 	show_sc_test, store_sc_test);
 
+/*==================moto chg tcmd interface======================*/
+static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret;
+
+	val = !!val;
+	charger_dev_enable(cm->chg1_dev, val);
+
+	val = val ? CHARGER_NOTIFY_START_CHARGING : CHARGER_NOTIFY_STOP_CHARGING;
+	ret = charger_manager_notifier(cm, CHARGER_NOTIFY_STOP_CHARGING);
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_set_usb_enable(void *input, int  val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret;
+
+	val = !!val;
+	ret = charger_dev_enable_powerpath(cm->chg1_dev, val);
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_set_chg_current(void *input, int  val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret;
+
+	cm->chg1_data.thermal_charging_current_limit = val;
+	ret = _mtk_charger_change_current_setting(cm);
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_get_chg_current(void *input, int* val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret = 0;
+
+	*val = cm->chg1_data.thermal_charging_current_limit;
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_set_usb_current(void *input, int  val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret;
+
+	cm->chg1_data.thermal_input_current_limit = val;
+	ret = _mtk_charger_change_current_setting(cm);
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_get_usb_current(void *input, int* val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret = 0;
+
+	*val = cm->chg1_data.thermal_input_current_limit;
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_get_usb_voltage(void *input, int* val)
+{
+	int ret = 0;
+
+	*val = pmic_get_vbus(); /* mV */
+
+	return ret;
+}
+
+static int  mtk_charger_tcmd_register(struct charger_manager *cm)
+{
+	int ret;
+
+	cm->chg_tcmd_client.data = cm;
+	cm->chg_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_CHG;
+
+	cm->chg_tcmd_client.set_chg_enable = mtk_charger_tcmd_set_chg_enable;
+	cm->chg_tcmd_client.set_usb_enable = mtk_charger_tcmd_set_usb_enable;
+
+	cm->chg_tcmd_client.get_chg_current = mtk_charger_tcmd_get_chg_current;
+	cm->chg_tcmd_client.set_chg_current = mtk_charger_tcmd_set_chg_current;
+	cm->chg_tcmd_client.get_usb_current = mtk_charger_tcmd_get_usb_current;
+	cm->chg_tcmd_client.set_usb_current = mtk_charger_tcmd_set_usb_current;
+
+	cm->chg_tcmd_client.get_usb_voltage = mtk_charger_tcmd_get_usb_voltage;
+
+	ret = moto_chg_tcmd_register(&cm->chg_tcmd_client);
+
+	return ret;
+}
+/*==================================================*/
+
 static int mtk_charger_probe(struct platform_device *pdev)
 {
 	struct charger_manager *info = NULL;
@@ -4069,6 +4169,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	sc_init(&info->sc);
 
 	charger_debug_init();
+
+	mtk_charger_tcmd_register(info);
 
 	mutex_lock(&consumer_mutex);
 	list_for_each(pos, phead) {
