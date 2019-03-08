@@ -69,7 +69,7 @@ static  imgsensor_info_struct imgsensor_info = {
 		 */
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
-		.max_framerate = 300,
+		.max_framerate = 300,//30.0402
 		.mipi_pixel_rate = 78000000,
 	},
 	.cap = {
@@ -85,9 +85,9 @@ static  imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 78000000,
 	},
 	.cap1 = { /*capture for 15fps*/
-		.pclk = 144000000,
-		.linelength  = 1932,
-		.framelength = 4964,
+		.pclk = 39000000,
+		.linelength  = 934,
+		.framelength = 1390,
 		.startx = 0,
 		.starty = 0,
 		.grabwindow_width  = 3264,
@@ -109,32 +109,32 @@ static  imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 78000000,
 	},
 	.hs_video = {
-		.pclk = 144000000, /*record different mode's pclk*/
-		.linelength  = 1932, /*record different mode's linelength*/
-		.framelength = 620, /*record different mode's framelength*/
+		.pclk = 39000000, /*record different mode's pclk*/
+		.linelength  = 934, /*record different mode's linelength*/
+		.framelength = 1390, /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0, /*record different mode's starty of grabwindow*/
 
 		/*record different mode's width of grabwindow*/
-		.grabwindow_width  = 640,
+		.grabwindow_width  = 1600,
 		/*record different mode's height of grabwindow*/
-		.grabwindow_height = 480,
+		.grabwindow_height = 1200,
 
 		.mipi_data_lp2hs_settle_dc = 85,
-		.max_framerate = 1200,
+		.max_framerate = 300,
 		.mipi_pixel_rate = 78000000,
 	},
 	.slim_video = {/*pre*/
-		.pclk = 144000000, /*record different mode's pclk*/
-		.linelength  = 1932, /*record different mode's linelength*/
-		.framelength = 2482, /*record different mode's framelength*/
+		.pclk = 39000000, /*record different mode's pclk*/
+		.linelength  = 934, /*record different mode's linelength*/
+		.framelength = 1390, /*record different mode's framelength*/
 		.startx = 0, /*record different mode's startx of grabwindow*/
 		.starty = 0, /*record different mode's starty of grabwindow*/
 
 		/*record different mode's width of grabwindow*/
-		.grabwindow_width  = 1632,
+		.grabwindow_width  = 1600,
 		/*record different mode's height of grabwindow*/
-		.grabwindow_height = 1224,
+		.grabwindow_height = 1200,
 
 		/* following for MIPIDataLowPwr2HighSpeedSettleDelayCount
 		 * by different scenario
@@ -209,7 +209,7 @@ imgsensor_struct imgsensor中：
 	/*sensor output first pixel color*/
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_B,
 
-	.mclk = 12,/*mclk value, suggest 24 or 26 for 24Mhz or 26Mhz*/
+	.mclk = 24,/*mclk value, suggest 24 or 26 for 24Mhz or 26Mhz*/
 	.mipi_lane_num = SENSOR_MIPI_1_LANE,/*mipi lane num*/
 
 	/*record sensor support all write id addr, only supprt 4must end with 0xff*/
@@ -507,42 +507,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	return gain;
 }	/*	set_gain  */
 
-static void ihdr_write_shutter_gain(
-			kal_uint16 le, kal_uint16 se, kal_uint16 gain)
-{
-	LOG_INF("le:0x%x, se:0x%x, gain:0x%x\n", le, se, gain);
-	if (imgsensor.ihdr_mode) {
 
-		spin_lock(&imgsensor_drv_lock);
-		if (le > imgsensor.min_frame_length - imgsensor_info.margin) {
-			imgsensor.frame_length = le + imgsensor_info.margin;
-		} else {
-			imgsensor.frame_length = imgsensor.min_frame_length;
-		}
-		if (imgsensor.frame_length > imgsensor_info.max_frame_length) {
-			imgsensor.frame_length = imgsensor_info.max_frame_length;
-		}
-		spin_unlock(&imgsensor_drv_lock);
-
-		if (le < imgsensor_info.min_shutter) {
-			le = imgsensor_info.min_shutter;
-		}
-		if (se < imgsensor_info.min_shutter) {
-			se = imgsensor_info.min_shutter;
-		}
-
-		/* Extend frame length first*/
-		write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
-		write_cmos_sensor(0x380f, imgsensor.frame_length & 0xFF);
-		write_cmos_sensor(0x3502, (le << 4) & 0xFF);
-		write_cmos_sensor(0x3501, (le >> 4) & 0xFF);
-		write_cmos_sensor(0x3500, (le >> 12) & 0x0F);
-		write_cmos_sensor(0x3512, (se << 4) & 0xFF);
-		write_cmos_sensor(0x3511, (se >> 4) & 0xFF);
-		write_cmos_sensor(0x3510, (se >> 12) & 0x0F);
-		set_gain(gain);
-	}
-}
 
 
 
@@ -730,7 +695,6 @@ static void preview_setting(void)
 	write_cmos_sensor(0x05, 0x00);
 	write_cmos_sensor(0x06, 0xa6);
 	write_cmos_sensor(0xac, 0X00);
-
 }	/*	preview_setting  */
 /*************************************************************************
  * FUNCTION
@@ -1657,7 +1621,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
 		LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n", (UINT16)*feature_data, (UINT16)*(feature_data + 1), (UINT16)*(feature_data + 2));
 
-		ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data + 2));
+		//ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data + 2));
 		break;
 
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
