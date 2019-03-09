@@ -31,6 +31,15 @@ config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 
 	  If unsure, say Y.
 
+config TOUCHSCREEN_ILITEK_MMI
+	bool "ILI9881 for Mediatek package"
+	default n
+	help
+	Say Y here if you have ILI9881 touch panel.
+	If unsure, say N.
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
