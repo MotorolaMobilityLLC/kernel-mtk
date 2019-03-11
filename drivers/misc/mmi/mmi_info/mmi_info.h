@@ -37,6 +37,7 @@ struct mmi_ddr_info{
 	unsigned int mr6;
 	unsigned int mr7;
 	unsigned int mr8;
+	unsigned int type;
 	unsigned int ramsize;
 };
 

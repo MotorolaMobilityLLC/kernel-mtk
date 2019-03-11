@@ -19,6 +19,20 @@
 #include <linux/slab.h>
 #include "mmi_info.h"
 
+/** DDR types. */
+enum MOT_DDR_TYPE
+{
+	MOT_DDR_TYPE_LPDDR1 = 0,	/**< Low power DDR1. */
+	MOT_DDR_TYPE_LPDDR2 = 2,	/**< Low power DDR2, set to 2 for compatibility*/
+	MOT_DDR_TYPE_PCDDR2 = 3,	/**< Personal computer DDR2. */
+	MOT_DDR_TYPE_PCDDR3 = 4,	/**< Personal computer DDR3. */
+	MOT_DDR_TYPE_LPDDR3 = 5,	/**< Low power DDR3. */
+	MOT_DDR_TYPE_LPDDR4 = 6,	/**< Low power DDR4. */
+	MOT_DDR_TYPE_RESERVED = 7,	/**< Reserved for future use. */
+	MOT_DDR_TYPE_UNUSED = 0x7FFFFFFF
+};
+
+
 struct mmi_ddr_info *ddr_info;
 
 static char sysfsram_type_name[20] = "unknown";
@@ -102,11 +116,10 @@ int mmi_ram_info_init(void)
 	int ret = 0;
 	int status = 0;
 	uint32_t vid, tid;
-	struct property *p;
 	struct device_node *n;
 	const char *tname = "unknown";
 	const char *vname = "unknown";
-	static const char *vendors[] = {
+	const char *vendors[] = {
 		"unknown",
 		"Samsung",
 		"Qimonda",
@@ -123,11 +136,17 @@ int mmi_ram_info_init(void)
 		"ZMOS",
 		"Intel"
 	};
-	static const char *types[] = {
-		"S4 SDRAM",
+
+	const char *types[] = {
+		"LP2",
 		"S2 SDRAM",
 		"N NVM",
-		"Reserved"
+		"LP3"
+	};
+	const char *types_lpddr4[] = {
+		"LP4",
+		"LP4x", /* SkHynix LPDDR4X */
+		"LP4x", /* Samsung LPDDR4X */
 	};
 
 	ddr_info = kzalloc(sizeof(struct mmi_ddr_info), GFP_KERNEL);
@@ -140,25 +159,33 @@ int mmi_ram_info_init(void)
 
 	n = of_find_node_by_path("/chosen/mmi,ram");
 	if (n != NULL) {
-		for_each_property_of_node(n, p) {
-			if (!strcmp(p->name, "mr5") && p->value)
-				ddr_info->mr5 = (unsigned int)p->value;
-			if (!strcmp(p->name, "mr6") && p->value)
-				ddr_info->mr6 = (unsigned int)p->value;
-			if (!strcmp(p->name, "mr7") && p->value)
-				ddr_info->mr7 = (unsigned int)p->value;
-			if (!strcmp(p->name, "mr8") && p->value)
-				ddr_info->mr8 = (unsigned int)p->value;
-			if (!strcmp(p->name, "ramsize") && p->value)
-				ddr_info->ramsize = (unsigned int)p->value;
-		}
+
+		of_property_read_u32(n, "mr5", &ddr_info->mr5);
+		of_property_read_u32(n, "mr6", &ddr_info->mr6);
+		of_property_read_u32(n, "mr7", &ddr_info->mr7);
+		of_property_read_u32(n, "mr8", &ddr_info->mr8);
+		of_property_read_u32(n, "type", &ddr_info->type);
+		of_property_read_u32(n, "ramsize", &ddr_info->ramsize);
 
 		of_node_put(n);
+
+		ddr_info->mr5 &= 0xFF;
+		ddr_info->mr6 &= 0xFF;
+		ddr_info->mr7 &= 0xFF;
+		ddr_info->mr8 &= 0xFF;
 
 		/* identify vendor */
 		vid = ddr_info->mr5 & 0xFF;
 		if (vid < ARRAY_SIZE(vendors))
 			vname = vendors[vid];
+		else if (vid == 0x12)
+			vname = "BAMC";
+		else if (vid == 0x1B)
+			vname = "ISSI";
+		else if (vid == 0x1C)
+			vname = "EMLSI";
+		else if (vid == 0xC2)
+			vname = "MACRONIX";
 		else if (vid == 0xFE)
 			vname = "Numonyx";
 		else if (vid == 0xFF)
@@ -169,8 +196,13 @@ int mmi_ram_info_init(void)
 
 		/* identify type */
 		tid = ddr_info->mr8 & 0x03;
-		if (tid < ARRAY_SIZE(types))
-			tname = types[tid];
+		if (ddr_info->type == MOT_DDR_TYPE_LPDDR4) {
+			if (tid < ARRAY_SIZE(types_lpddr4))
+				tname = types_lpddr4[tid];
+		} else {
+			if (tid < ARRAY_SIZE(types))
+				tname = types[tid];
+		}
 
 		snprintf(sysfsram_type_name, sizeof(sysfsram_type_name),
 			"%s", tname);
