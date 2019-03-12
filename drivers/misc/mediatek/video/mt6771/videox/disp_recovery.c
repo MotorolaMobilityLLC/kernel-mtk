@@ -520,8 +520,9 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	DISPFUNC();
 	sched_setscheduler(current, SCHED_RR, &param);
 
+	DDPPR_ERR("[ESD] primary display check recovery worker kthread start.\n");
 	while (1) {
-		msleep(2000); /* 2s */
+		msleep(8000); /* 8s */
 		ret = wait_event_interruptible(_check_task_wq, atomic_read(&_check_task_wakeup));
 		if (ret < 0) {
 			DISPINFO("[disp_check]check thread waked up accidently\n");
