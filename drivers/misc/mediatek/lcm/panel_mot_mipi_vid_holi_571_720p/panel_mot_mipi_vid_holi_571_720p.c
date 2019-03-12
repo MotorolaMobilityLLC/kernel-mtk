@@ -39,8 +39,6 @@
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #endif
 
-#define LCM_ID_NT35695 (0xf5)
-
 static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
@@ -120,7 +118,7 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
-static struct LCM_setting_table init_setting_vdo[] = {
+static struct LCM_setting_table init_setting[] = {
         {0xFF,3,{0x98,0x81,0x00} },
         {0x11,1,{0x00} },
         {REGFLAG_DELAY,120, {}},
@@ -225,11 +223,11 @@ static void lcm_get_params(LCM_PARAMS *params)
 
 	params->dsi.CLK_HS_POST = 36;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 0;
-	params->dsi.lcm_esd_check_table[0].cmd = 0x53;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
-	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x24;
+	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 
 	/* for ARR 2.0 */
 	params->max_refresh_rate = 60;
@@ -262,7 +260,7 @@ static void lcm_init(void)
 
 	SET_RESET_PIN(1);
 	MDELAY(10);
-        push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
+        push_table(NULL, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void lcm_suspend(void)
@@ -311,7 +309,6 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width, unsig
 
 static unsigned int lcm_compare_id(void)
 {
-	unsigned int id = 0, version_id = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
 
@@ -322,18 +319,15 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 
-	array[0] = 0x00023700;	/* read id return two byte,version and id */
+	array[0] = 0x00023700;
 	dsi_set_cmdq(array, 1, 1);
 
-	read_reg_v2(0xF4, buffer, 2);
-	id = buffer[0];     /* we only need ID */
+	read_reg_v2(0xA1, buffer, 2);
 
-	read_reg_v2(0xDB, buffer, 1);
-	version_id = buffer[0];
+	pr_debug("%s,Holi panel id1=0x%02x, id1=0x%02x\n", __func__,
+			buffer[0], buffer[1]);
 
-	LCM_LOGI("%s,ili9881c_id=0x%08x,version_id=0x%x\n", __func__, id, version_id);
-
-	if (id == LCM_ID_NT35695 && version_id == 0x81)
+	if (buffer[0] == 0x0f && buffer[1] == 0x05)
 		return 1;
 	else
 		return 0;
