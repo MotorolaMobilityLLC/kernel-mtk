@@ -55,6 +55,7 @@ struct ilitek_platform_data {
 	bool isEnableIRQ;
 	bool isEnablePollCheckPower;
 	bool isEnablePollCheckEsd;
+	bool do_otp_check;
 
 	atomic_t do_reset;
 
@@ -90,6 +91,7 @@ struct ilitek_platform_data {
 	bool debug_data_start_flag;
 	struct mutex ilitek_debug_mutex;
 	struct mutex ilitek_debug_read_mutex;
+	bool suspended;
 };
 
 extern struct ilitek_platform_data *ipd;

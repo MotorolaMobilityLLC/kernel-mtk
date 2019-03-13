@@ -108,19 +108,14 @@
 /* A interface currently supported by driver */
 #define I2C_INTERFACE 1
 #define SPI_INTERFACE 2
-#define INTERFACE I2C_INTERFACE
 
 /* Reset methods */
 #define SW_RST	1
 #define HW_RST	2
 #define HW_RST_HOST_DOWNLOAD	3
 #define SW_RST_HOST_DOWNLOAD	4
-
-#if(INTERFACE==SPI_INTERFACE)
 #define RST_METHODS HW_RST_HOST_DOWNLOAD
-#else
-#define RST_METHODS HW_RST
-#endif
+
 /* Choise open hex file function*/
 #define REQUEST_FIRMWARE	0
 #define FILP_OPEN 			1
@@ -176,6 +171,12 @@ enum {
 enum {
 	NO_STOP_MCU = 0,
 	STOP_MCU
+};
+
+enum {
+	I2C_MODE = 1,
+	SPI_MODE = 2,
+	NULL_MODE = -1,
 };
 
 /* Distributed to all core functions */
@@ -273,41 +274,16 @@ enum ili7807_types {
 /* How many numbers of touch are supported by IC. */
 #define MAX_TOUCH_NUM	10
 
-/* It's only for spi interface used to download data to iram */
-#if (INTERFACE == SPI_INTERFACE)
-#define HOST_DOWNLOAD
-#endif
-
 /* Set spi clk up to 10Mhz (it must be enabled if chip is ILI7807G_AA) */
-#if (TP_TOUCH_IC == CHIP_TYPE_ILI7807 && INTERFACE == SPI_INTERFACE)
+#if (TP_TOUCH_IC == CHIP_TYPE_ILI7807)
 #define ENABLE_SPI_SPEED_UP
 #endif
 
 /* Linux multiple touch protocol, either B type or A type. */
 #define MT_B_TYPE
 
-/* Enable the support of regulator power. */
-//#define REGULATOR_POWER_ON
-
-/* Enable DMA with I2C. */
-//#define I2C_DMA
-
-/* Split the length written to or read from IC via I2C. */
-//#define I2C_SEGMENT
-
-/* Be able to upgrade fw at boot stage */
-//#define BOOT_FW_UPGRADE
 #define BOOT_FW_HEX_NAME "ILITEK_FW"
 #define BOOT_UPDATE_FW_DELAY_TIME 10000
-
-/* Enable gesture function */
-//#define GESTURE_ENABLE
-
-/* Check battery's status in order to avoid some effects from charge. */
-//#define BATTERY_CHECK
-
-/* Check whether the IC is damaged by ESD */
-//#define ESD_CHECK
 
 static inline void ipio_kfree(void **mem)
 {

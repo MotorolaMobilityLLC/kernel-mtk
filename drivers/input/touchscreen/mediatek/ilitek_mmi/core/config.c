@@ -42,6 +42,7 @@ uint32_t ipio_chip_list[] = {
 
 uint8_t g_read_buf[128] = {0};
 
+extern char mode_chose;
 struct core_config_data *core_config;
 
 struct set_res_data set_res;
@@ -228,7 +229,7 @@ int core_config_switch_fw_mode(uint8_t *data)
 	case P5_0_FIRMWARE_TEST_MODE:
 		ipio_info("Switch to Test mode\n");
 
-		if (INTERFACE == I2C_INTERFACE) {
+		if (mode_chose == I2C_MODE) {
 			cmd[0] = protocol->cmd_mode_ctrl;
 			cmd[1] = mode;
 
@@ -513,6 +514,10 @@ void core_config_ic_suspend(void)
 	int i;
 
 	ipio_info("Starting to suspend ...\n");
+	if (ipd->suspended) {
+		ipio_info("TP already in suspend status ...\n");
+		return;
+	}
 
 	core_fr->isEnableFR = false;
 	ilitek_platform_disable_irq();
@@ -532,12 +537,12 @@ void core_config_ic_suspend(void)
 	ipio_info("Enabled Gesture = %d\n", core_config->isEnableGesture);
 
 	if (core_config->isEnableGesture) {
-#ifdef HOST_DOWNLOAD
-		if (core_gesture_load_code() < 0)
-			ipio_err("load gesture code fail\n");
-#else
-		core_config_switch_fw_mode(&protocol->gesture_mode);
-#endif
+		if (mode_chose == SPI_MODE) {
+			if (core_gesture_load_code() < 0)
+				ipio_err("load gesture code fail\n");
+		} else {
+			core_config_switch_fw_mode(&protocol->gesture_mode);
+		}
 		enable_irq_wake(ipd->isr_gpio);
 		core_fr->isEnableFR = true;
 		ilitek_platform_enable_irq();
@@ -546,6 +551,7 @@ void core_config_ic_suspend(void)
 
 	/* sleep in if gesture is disabled. */
 	core_config_sleep_ctrl(false);
+	ipd->suspended = true;
 
 end:
 	/* release all touch points to get rid of locked points on screen. */
@@ -567,6 +573,10 @@ EXPORT_SYMBOL(core_config_ic_suspend);
 void core_config_ic_resume(void)
 {
 	ipio_info("Starting to resume ...\n");
+	if (!ipd->suspended) {
+		ipio_info("TP already in resume statues ...\n");
+		return;
+	}
 
 	/* we hope there's no any reports during resume */
 	core_fr->isEnableFR = false;
@@ -576,7 +586,10 @@ void core_config_ic_resume(void)
 		disable_irq_wake(ipd->isr_gpio);
 	}
 
-	core_config_switch_fw_mode(&protocol->demo_mode);
+	if (mode_chose == I2C_MODE)
+		ilitek_platform_reset_ctrl(true, HW_RST);
+	else
+		core_config_switch_fw_mode(&protocol->demo_mode);
 
 	if (ipd->isEnablePollCheckPower)
 		queue_delayed_work(ipd->check_power_status_queue,
@@ -587,6 +600,8 @@ void core_config_ic_resume(void)
 
 	core_fr->isEnableFR = true;
 	ilitek_platform_enable_irq();
+	ipd->suspended = false;
+
 	ipio_info("Resume done\n");
 }
 EXPORT_SYMBOL(core_config_ic_resume);
@@ -675,7 +690,7 @@ int core_config_set_watch_dog(bool enable)
 	}
 
 	/* FW will automatiacally disable WDT in I2C */
-	if (INTERFACE == I2C_INTERFACE) {
+	if (mode_chose == I2C_MODE) {
 		ipio_info("Interface is I2C, do nothing\n");
 		return 0;
 	}
@@ -819,37 +834,34 @@ EXPORT_SYMBOL(core_config_check_int_status);
 int core_config_get_project_id(void)
 {
 	int ret = 0;
-#ifndef HOST_DOWNLOAD
 	int i = 0;
 	uint8_t pid_data[5] = {0};
+	if (mode_chose != SPI_MODE) {
+		core_config_ice_mode_enable(STOP_MCU);
 
-	core_config_ice_mode_enable(STOP_MCU);
+		/* Disable watch dog */
+		core_config_set_watch_dog(false);
 
-	/* Disable watch dog */
-	core_config_set_watch_dog(false);
+		core_config_ice_mode_write(0x041000, 0x0, 1);   /* CS low */
+		core_config_ice_mode_write(0x041004, 0x66aa55, 3);  /* Key */
 
-	core_config_ice_mode_write(0x041000, 0x0, 1);   /* CS low */
-	core_config_ice_mode_write(0x041004, 0x66aa55, 3);  /* Key */
+		core_config_ice_mode_write(0x041008, 0x03, 1);
 
-	core_config_ice_mode_write(0x041008, 0x03, 1);
-
-	core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0xFF0000) >> 16, 1);
-	core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0x00FF00) >> 8, 1);
-	core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0x0000FF), 1);
+		core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0xFF0000) >> 16, 1);
+		core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0x00FF00) >> 8, 1);
+		core_config_ice_mode_write(0x041008, (RESERVE_BLOCK_START_ADDR & 0x0000FF), 1);
 
 
-	for (i = 0; i < ARRAY_SIZE(pid_data); i++) {
-		core_config_ice_mode_write(0x041008, 0xFF, 1);
-		pid_data[i] = core_config_read_write_onebyte(0x41010);
-		ipio_info("project_id[%d] = 0x%x\n", i, pid_data[i]);
+		for (i = 0; i < ARRAY_SIZE(pid_data); i++) {
+			core_config_ice_mode_write(0x041008, 0xFF, 1);
+			pid_data[i] = core_config_read_write_onebyte(0x41010);
+			ipio_info("project_id[%d] = 0x%x\n", i, pid_data[i]);
+		}
+
+		core_flash_dma_clear();
+		core_config_ice_mode_write(0x041000, 0x1, 1);   /* CS high */
+		core_config_ice_mode_disable();
 	}
-
-	core_flash_dma_clear();
-
-	core_config_ice_mode_write(0x041000, 0x1, 1);   /* CS high */
-
-	core_config_ice_mode_disable();
-#endif /* HOST_DOWNLOAD */
 	return ret;
 }
 EXPORT_SYMBOL(core_config_get_project_id);
@@ -888,14 +900,8 @@ int core_config_get_panel_info(void)
 	core_config->tp_info->res_height = (g_read_buf[3] << 8) | g_read_buf[4];
 
 out:
-	if (g_read_buf[0] != protocol->cmd_get_panel_info) {
-		set_res.width = TOUCH_SCREEN_X_MAX;
-		set_res.height = TOUCH_SCREEN_Y_MAX;
-	} else {
-		set_res.width = core_config->tp_info->res_width;
-		set_res.height = core_config->tp_info->res_height;
-	}
-
+	set_res.width = TOUCH_SCREEN_X_MAX;
+	set_res.height = TOUCH_SCREEN_Y_MAX;
 	ipio_info("Panel info: width = %d, height = %d\n", set_res.width, set_res.height);
 	return ret;
 }
@@ -908,7 +914,7 @@ int core_config_get_key_info(void)
 
 	memset(g_read_buf, 0, sizeof(g_read_buf));
 
-	if (INTERFACE == SPI_INTERFACE)
+	if (mode_chose == SPI_MODE)
 		return 0;
 
 	cmd[0] = protocol->cmd_read_ctrl;
@@ -1225,6 +1231,36 @@ static void core_config_wr_pack(int packet)
 		ipio_info("check 0x73010 error read 0x%X\n", reg_data);
 	}
 	core_config_ice_mode_write(0x73000, packet, 4);
+}
+
+void core_config_protect_otp_prog_mode(int mode)
+{
+	int prog_mode, prog_done, retry = 5;
+
+	if (core_config_ice_mode_enable(STOP_MCU) < 0) {
+		ipio_err("enter ice mode failed in otp\n");
+		return;
+	}
+
+	do {
+		core_config_ice_mode_write(0x43008, 0x80, 1);
+		core_config_ice_mode_write(0x43030, 0x0, 1);
+		core_config_ice_mode_write(0x4300C, 0x4, 1);
+
+		mdelay(1);
+
+		core_config_ice_mode_write(0x4300C, 0x4, 1);
+
+		prog_done = core_config_ice_mode_read(0x43030);
+		prog_mode = core_config_ice_mode_read(0x43008);
+		ipio_info("otp prog_mode = 0x%x, prog_done = 0x%x\n", prog_mode, prog_done);
+
+		if (prog_done == 0x0 && prog_mode == 0x80)
+			break;
+	} while (--retry > 0);
+
+	if (retry <= 0)
+		ipio_err("OTP Program mode error!\n");
 }
 
 void core_set_ddi_register_onlyone(uint8_t page, uint8_t reg, uint8_t data)

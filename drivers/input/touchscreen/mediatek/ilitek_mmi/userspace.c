@@ -73,6 +73,7 @@ unsigned char g_user_buf[USER_STR_BUFF] = { 0 };
 #define REGISTER_READ	0
 #define REGISTER_WRITE	1
 uint32_t temp[5] = {0};
+extern char mode_chose;
 
 struct file_buffer {
 	char *ptr;
@@ -569,13 +570,13 @@ static ssize_t ilitek_proc_mp_lcm_on_test_read(struct file *filp, char __user *b
 
 	/* copy MP result to user */
 	core_mp_copy_reseult(apk, ARRAY_SIZE(apk));
-	ret = copy_to_user((char *)buff, apk, sizeof(apk) * 100);
+	ret = copy_to_user((char *)buff, apk, sizeof(apk));
 	if (ret < 0)
 		ipio_err("Failed to copy data to user space\n");
 
 out:
 	core_mp_test_free();
-	return 0;
+	return ret;
 }
 
 static ssize_t ilitek_proc_mp_lcm_off_test_read(struct file *filp, char __user *buff, size_t size, loff_t *pPos)
@@ -604,13 +605,13 @@ static ssize_t ilitek_proc_mp_lcm_off_test_read(struct file *filp, char __user *
 
 	/* copy MP result to user */
 	core_mp_copy_reseult(apk, ARRAY_SIZE(apk));
-	ret = copy_to_user((char *)buff, apk, sizeof(apk) * 100);
+	ret = copy_to_user((char *)buff, apk, sizeof(apk));
 	if (ret < 0)
 		ipio_err("Failed to copy data to user space\n");
 
 out:
 	core_mp_test_free();
-	return 0;
+	return ret;
 }
 static ssize_t ilitek_proc_debug_level_read(struct file *filp, char __user *buff, size_t size, loff_t *pPos)
 {
@@ -1208,13 +1209,13 @@ static ssize_t ilitek_proc_fw_upgrade_read(struct file *filp, char __user *buff,
 
 	ilitek_platform_disable_irq();
 
-#ifdef HOST_DOWNLOAD
-	ret = ilitek_platform_reset_ctrl(true, RST_METHODS);
-#else
-	ret = core_firmware_upgrade(UPGRADE_FLASH, HEX_FILE, OPEN_FW_METHOD);
+	if (mode_chose == SPI_MODE)
+		ret = ilitek_platform_reset_ctrl(true, RST_METHODS);
+	else
+		ret = core_firmware_upgrade(UPGRADE_FLASH, HEX_FILE, OPEN_FW_METHOD);
 	if (ret < 0)
 		ipio_err("firmware upgrade failed\n");
-#endif
+
 
 	ilitek_platform_enable_irq();
 
@@ -1375,9 +1376,8 @@ static ssize_t ilitek_proc_ioctl_write(struct file *filp, const char *buff, size
 		mdelay(10);
 	} else if (strcmp(cmd, "gt") == 0) {
 		ipio_info("test Gesture test\n");
-#ifdef HOST_DOWNLOAD
-		core_gesture_load_code();
-#endif
+		if (mode_chose == SPI_MODE)
+			core_gesture_load_code();
 	} else if (strcmp(cmd, "suspend") == 0) {
 		ipio_info("test suspend test\n");
 		core_config_ic_suspend();
@@ -1703,7 +1703,7 @@ static long ilitek_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long
 		break;
 
 	case ILITEK_IOCTL_TP_INTERFACE_TYPE:
-		if_to_user = INTERFACE;
+		if_to_user = mode_chose;
 		ret = copy_to_user((uint8_t *) arg, &if_to_user, sizeof(if_to_user));
 		if (ret < 0) {
 			ipio_err("ioctl: Failed to copy interface type to user space\n");

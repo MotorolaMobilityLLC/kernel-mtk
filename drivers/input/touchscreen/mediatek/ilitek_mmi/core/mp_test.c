@@ -72,7 +72,7 @@
 		printk(KERN_CONT fmt, ##arg);	\
 	} while (0)
 
-
+extern char mode_chose;
 enum open_test_node_type {
 	NO_COMPARE = 0x00,  /*Not A Area, No Compare  */
 	AA_Area = 0x01,	    /*AA Area, Compare using Charge_AA  */
@@ -2443,7 +2443,6 @@ static void mp_run_test(char *item, int id)
 	}
 }
 
-#ifndef HOST_DOWNLOAD
 static void dma_clear_register_setting(void)
 {
 	ipio_info("interrupt t0/t1 enable flag\n");
@@ -2558,71 +2557,63 @@ void get_dma_overlay_info(void)
 	ipio_info("Overlay addr = 0x%x ~ 0x%x , flash addr = 0x%x , mp size = 0x%x\n",
 		mp_move.overlay_start_addr, mp_move.overlay_end_addr, mp_move.mp_flash_addr, mp_move.mp_size);
 }
-#endif
 
 int core_mp_move_code(void)
 {
 	int ret = 0;
-#ifndef HOST_DOWNLOAD
 	uint32_t mp_text_size = 0, mp_andes_init_size = 0;
-#endif
-
 	ipio_info("Start moving MP code\n");
-
-#ifdef HOST_DOWNLOAD
-	if (ilitek_platform_reset_ctrl(true, RST_METHODS) < 0) {
-		goto out;
-	}
-#else
-	/* Get Dma overlay info command only be used in I2C mode */
-	get_dma_overlay_info();
-
-	if (core_config_ice_mode_enable(STOP_MCU) < 0) {
-		ipio_err("Failed to enter ICE mode\n");
-		ret = -1;
-		goto out;
-	}
-
-	ipio_info("DMA trigger = %d\n", mp_move.dma_trigger_enable);
-
-	if (mp_move.dma_trigger_enable) {
-		mp_andes_init_size = mp_move.overlay_start_addr;
-		mp_text_size = (mp_move.mp_size - mp_move.overlay_end_addr) + 1;
-		ipio_info("Mp andes init size = %d , Mp text size = %d\n", mp_andes_init_size, mp_text_size);
-
-		ipio_info("[clear register setting]\n");
-		dma_clear_register_setting();
-
-		ipio_info("[Move ANDES.INIT to DRAM]\n");
-		dma_trigger_register_setting(0, mp_move.mp_flash_addr, mp_andes_init_size);   /* DMA ANDES.INIT */
-
-		ipio_info("[Clear register setting]\n");
-		dma_clear_register_setting();
-
-		ipio_info("[Move MP.TEXT to DRAM]\n");
-		//dma_trigger_register_setting(NUM_OF_4_MULTIPLE(mp_move.overlay_end_addr), (mp_move.mp_flash_addr + NUM_OF_4_MULTIPLE(mp_move.overlay_end_addr)), mp_text_size);  /* DMA MP.TEXT */
-		dma_trigger_register_setting(mp_move.overlay_end_addr, (mp_move.mp_flash_addr + mp_move.overlay_start_addr), mp_text_size);
+	if (mode_chose == SPI_MODE) {
+		if (ilitek_platform_reset_ctrl(true, RST_METHODS) < 0) {
+			goto out;
+		}
 	} else {
-		/* DMA Trigger */
-		core_config_ice_mode_write(FLASH4_reg_rcv_data, 0xFF, 1);
-		mdelay(30);
+		/* Get Dma overlay info command only be used in I2C mode */
+		get_dma_overlay_info();
+		if (core_config_ice_mode_enable(STOP_MCU) < 0) {
+			ipio_err("Failed to enter ICE mode\n");
+			ret = -1;
+			goto out;
+		}
 
-		/* CS High */
-		core_config_ice_mode_write(FLASH0_reg_flash_csb, 0x1, 1);
-		mdelay(60);
+		ipio_info("DMA trigger = %d\n", mp_move.dma_trigger_enable);
+
+		if (mp_move.dma_trigger_enable) {
+			mp_andes_init_size = mp_move.overlay_start_addr;
+			mp_text_size = (mp_move.mp_size - mp_move.overlay_end_addr) + 1;
+			ipio_info("Mp andes init size = %d , Mp text size = %d\n", mp_andes_init_size, mp_text_size);
+
+			ipio_info("[clear register setting]\n");
+			dma_clear_register_setting();
+
+			ipio_info("[Move ANDES.INIT to DRAM]\n");
+			dma_trigger_register_setting(0, mp_move.mp_flash_addr, mp_andes_init_size);   /* DMA ANDES.INIT */
+
+			ipio_info("[Clear register setting]\n");
+			dma_clear_register_setting();
+
+			ipio_info("[Move MP.TEXT to DRAM]\n");
+			/* DMA MP.TEXT */
+			dma_trigger_register_setting(mp_move.overlay_end_addr, (mp_move.mp_flash_addr + mp_move.overlay_start_addr), mp_text_size);
+		} else {
+			/* DMA Trigger */
+			core_config_ice_mode_write(FLASH4_reg_rcv_data, 0xFF, 1);
+			mdelay(30);
+
+			/* CS High */
+			core_config_ice_mode_write(FLASH0_reg_flash_csb, 0x1, 1);
+			mdelay(60);
+		}
+		/* Code reset */
+		core_config_ice_mode_write(0x40040, 0xAE, 1);
+		core_config_ice_mode_disable();
+
+		if (core_config_check_cdc_busy(300, 50) < 0) {
+			ipio_err("Check busy is timout ! moving MP code failed\n");
+			ret = -1;
+			goto out;
+		}
 	}
-
-	/* Code reset */
-	core_config_ice_mode_write(0x40040, 0xAE, 1);
-
-	core_config_ice_mode_disable();
-
-	if (core_config_check_cdc_busy(300, 50) < 0) {
-		ipio_err("Check busy is timout ! moving MP code failed\n");
-		ret = -1;
-		goto out;
-	}
-#endif
 
 out:
 	return ret;
@@ -2634,7 +2625,6 @@ void core_mp_test_free(void)
 	int i;
 
 	ipio_info("Free all allocated mem\n");
-
 	core_mp->final_result = MP_FAIL;
 
 	for (i = 0; i < ARRAY_SIZE(tItems); i++) {

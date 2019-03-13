@@ -36,7 +36,7 @@
 
 struct core_gesture_data *core_gesture;
 extern uint8_t ap_fw[MAX_AP_FIRMWARE_SIZE];
-
+extern char mode_chose;
 int core_esd_gesture(void)
 {
 	int ret = 0, retry = 100;
@@ -91,13 +91,14 @@ int core_esd_gesture(void)
 	core_config_ice_mode_disable();
 
 	/* reloading gesture code if host download is enabled */
-#ifdef HOST_DOWNLOAD
-	ret = core_gesture_load_code();
-	if (ret < 0) {
-		ipio_err("load gesture code failed\n");
-		goto out;
+	if (mode_chose) {
+		ret = core_gesture_load_code();
+		if (ret < 0) {
+			ipio_err("load gesture code failed\n");
+			goto out;
+		}
 	}
-#endif
+
 
 	return 0;
 
@@ -110,7 +111,6 @@ out:
 }
 EXPORT_SYMBOL(core_esd_gesture);
 
-#ifdef HOST_DOWNLOAD
 int core_gesture_load_code(void)
 {
 	int i = 0, ret = 0, retry = 0;
@@ -183,7 +183,6 @@ int core_gesture_load_code(void)
 	return ret;
 }
 EXPORT_SYMBOL(core_gesture_load_code);
-#endif
 
 int core_gesture_match_key(uint8_t gdata)
 {

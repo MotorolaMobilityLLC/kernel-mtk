@@ -39,6 +39,7 @@
 #include "mp_test.h"
 #include "protocol.h"
 
+extern char mode_chose;
 /* An id with position in each fingers */
 struct mutual_touch_point {
 	uint16_t id;
@@ -332,14 +333,20 @@ static int do_report_handle(void)
 
 	if (ret < 0) {
 		ipio_err("Failed to read finger report packet\n");
-#ifdef HOST_DOWNLOAD
-		if (ret == CHECK_RECOVER) {
-			ipio_err("Doing host download recovery !\n");
-			ret = ilitek_platform_reset_ctrl(true, HW_RST_HOST_DOWNLOAD);
-			if (ret < 0)
-				ipio_info("host download failed!\n");
+		if (mode_chose == SPI_MODE) {
+			if ((core_fr->actual_fw_mode == protocol->gesture_mode) && (core_config->isEnableGesture))
+			{
+				ipio_info("Doing esd gesture recovery\n");
+				ret = core_esd_gesture();
+				if (ret < 0)
+					ipio_info("esd gesture recovery failed!\n");
+			} else if (ret == CHECK_RECOVER) {
+				ipio_err("Doing host download recovery !\n");
+				ret = ilitek_platform_reset_ctrl(true, HW_RST_HOST_DOWNLOAD);
+				if (ret < 0)
+					ipio_info("host download failed!\n");
+			}
 		}
-#endif
 		goto out;
 	}
 

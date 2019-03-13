@@ -104,6 +104,7 @@ extern int panel_info_len;
 extern int core_cmd_len;
 
 /* R/W with Touch ICs */
+extern void core_config_protect_otp_prog_mode(int mode);
 extern uint32_t core_config_ice_mode_read(uint32_t addr);
 extern int core_config_ice_mode_write(uint32_t addr, uint32_t data, uint32_t size);
 extern int core_config_ice_mode_bit_mask(uint32_t addr, uint32_t nMask, uint32_t value);

@@ -29,18 +29,7 @@
 #include "finger_report.h"
 #include "mp_test.h"
 
-//#if (TP_PLATFORM == PT_MTK)
-//#include "mt_spi.h"
-//#include "sync_write.h"
-//#endif
-
 struct core_spi_data *core_spi;
-
-/* Declare dma buffer as 4 byte alignment */
-__attribute__ ((section ("NONCACHEDRW"), aligned(4)))
-uint8_t dma_txbuf[SPI_WRITE_BUFF_MAXSIZE] = {0};
-__attribute__ ((section ("NONCACHEDRW"), aligned(4)))
-uint8_t dma_rxbuf[SPI_READ_BUFF_MAXSIZE] = {0};
 
 /*
  * As spi_write_then_read() in kernel can't guarante the data we
@@ -61,7 +50,8 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 	uint8_t cmd, temp1[1] = {0}, temp2[1] = {0};
 	struct spi_message	message;
 	struct spi_transfer	xfer[DMA_TRANSFER_MAX_TIMES + 1];
-
+	uint8_t *dma_txbuf = NULL;
+	uint8_t *dma_rxbuf = NULL;
 	if (n_tx > (SPI_WRITE_BUFF_MAXSIZE)) {
 		ipio_err("[spi write] Exceeded transmission length, %d > Max length:%d\n", n_tx, SPI_WRITE_BUFF_MAXSIZE);
 		goto out;
@@ -70,7 +60,18 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 		ipio_err("[spi read] Exceeded transmission length, %d > Max length:%d\n", n_rx, SPI_READ_BUFF_MAXSIZE);
 		goto out;
 	}
-
+	dma_txbuf = kzalloc(SPI_WRITE_BUFF_MAXSIZE, GFP_KERNEL);
+	if (ERR_ALLOC_MEM(dma_txbuf)) {
+		ipio_err("Failed to allocate dma_txbuf, %ld\n", PTR_ERR(dma_txbuf));
+		status = -ENOMEM;
+		goto out;
+	}
+	dma_rxbuf = kzalloc(SPI_READ_BUFF_MAXSIZE, GFP_KERNEL);
+	if (ERR_ALLOC_MEM(dma_rxbuf)) {
+		ipio_err("Failed to allocate dma_rxbuf, %ld\n", PTR_ERR(dma_rxbuf));
+		status = -ENOMEM;
+		goto out;
+	}
 	mutex_trylock(&lock);
 
 	spi_message_init(&message);
@@ -142,6 +143,8 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 	mutex_unlock(&lock);
 
 out:
+	ipio_kfree((void **)&dma_rxbuf);
+	ipio_kfree((void **)&dma_txbuf);
 	return status;
 }
 #endif

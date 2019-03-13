@@ -84,9 +84,7 @@ struct core_gesture_data {
 
 extern struct core_gesture_data *core_gesture;
 
-#ifdef HOST_DOWNLOAD
 extern int core_gesture_load_code(void);
-#endif
 extern int core_gesture_match_key(uint8_t gid);
 extern void core_gesture_set_key(struct core_fr_data *fr_data);
 extern int core_gesture_init(void);

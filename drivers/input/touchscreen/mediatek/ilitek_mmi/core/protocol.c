@@ -29,6 +29,7 @@
 #include "protocol.h"
 
 #define FUNC_NUM    20
+extern char mode_chose;
 
 struct protocol_sup_list {
 	uint8_t major;
@@ -48,7 +49,7 @@ struct protocol_cmd_list *protocol;
 
 int core_write(uint8_t nSlaveId, uint8_t *pBuf, uint16_t nSize)
 {
-	if (INTERFACE == I2C_INTERFACE)
+	if (mode_chose == I2C_MODE)
 		return core_i2c_write(nSlaveId, pBuf, nSize);
 	else
 		return core_spi_write(pBuf, nSize);
@@ -57,7 +58,7 @@ EXPORT_SYMBOL(core_write);
 
 int core_read(uint8_t nSlaveId, uint8_t *pBuf, uint16_t nSize)
 {
-	if (INTERFACE == I2C_INTERFACE)
+	if (mode_chose == I2C_MODE)
 		return core_i2c_read(nSlaveId, pBuf, nSize);
 	else
 		return core_spi_read(pBuf, nSize);
