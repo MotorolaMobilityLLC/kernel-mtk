@@ -186,6 +186,29 @@ static int remove_sysfs_interface(struct device *dev)
 	return 0;
 }
 
+/*===================moto chg tcmd interface========================*/
+static int adc_tcmd_read_adc(void *input, int channel, int* val)
+{
+	*val = pmic_get_auxadc_value(channel);
+
+	return 0;
+}
+
+static int adc_tcmd_register_tcmd(struct mtk_auxadc_intf *data)
+{
+	int ret;
+
+	data->adc_tcmd_client.data = data;
+	data->adc_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_ADC;
+
+	data->adc_tcmd_client.get_adc_value = adc_tcmd_read_adc;
+
+	ret = moto_chg_tcmd_register(&data->adc_tcmd_client);
+
+	return ret;
+}
+/*===================moto chg tcmd interface end======================*/
+
 static int mtk_auxadc_intf_probe(struct platform_device *pdev)
 {
 	int ret;
@@ -198,6 +221,8 @@ static int mtk_auxadc_intf_probe(struct platform_device *pdev)
 		pr_notice("%s create sysfs fail\n", __func__);
 		return -EINVAL;
 	}
+
+	adc_tcmd_register_tcmd(auxadc_intf);
 
 	return 0;
 }
