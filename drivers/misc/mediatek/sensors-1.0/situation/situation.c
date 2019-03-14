@@ -12,6 +12,11 @@
 */
 
 #include "situation.h"
+/*moto add for sensor algo*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+#include <SCP_sensorHub.h>
+#include "SCP_power_monitor.h"
+#endif
 
 static struct situation_context *situation_context_obj;
 
@@ -460,6 +465,35 @@ static ssize_t situation_show_devnum(struct device *dev, struct device_attribute
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);	/* TODO: why +5? */
 }
 
+/*moto add for senosr algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+static ssize_t situation_store_params(struct device *dev, struct device_attribute *attr,
+			       const char *buf, size_t count) {
+	struct situation_context *cxt = situation_context_obj;
+	int err = 0;
+	//SITUATION_PR_ERR("situation_store_params count=%d\n", count);
+
+	memcpy(&cxt->motparams, buf, sizeof(struct mot_params));
+#ifdef CONFIG_MOTO_CHOPCHOP
+	err = sensor_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&cxt->motparams.chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_GLANCE
+	err = sensor_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&cxt->motparams.glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub GLANCE fail\n");
+#endif
+#ifdef CONFIG_MOTO_LTV
+	err = sensor_cfg_to_hub(ID_LTV, (uint8_t *)&cxt->motparams.ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub LTV fail\n");
+#endif
+	//SITUATION_PR_ERR("situation_store_params done\n");
+
+	return count;
+}
+#endif
 
 static int situation_real_driver_init(void)
 {
@@ -549,13 +583,17 @@ DEVICE_ATTR(situactive, S_IWUSR | S_IRUGO, situation_show_active, situation_stor
 DEVICE_ATTR(situbatch, S_IWUSR | S_IRUGO, situation_show_batch, situation_store_batch);
 DEVICE_ATTR(situflush, S_IWUSR | S_IRUGO, situation_show_flush, situation_store_flush);
 DEVICE_ATTR(situdevnum, S_IWUSR | S_IRUGO, situation_show_devnum, NULL);
-
-
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+DEVICE_ATTR(situparams, S_IWUSR | S_IRUGO, NULL, situation_store_params);
+#endif
 static struct attribute *situation_attributes[] = {
 	&dev_attr_situactive.attr,
 	&dev_attr_situbatch.attr,
 	&dev_attr_situflush.attr,
 	&dev_attr_situdevnum.attr,
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+	&dev_attr_situparams.attr,
+#endif
 	NULL
 };
 
@@ -618,6 +656,60 @@ int situation_register_control_path(struct situation_control_path *ctl, int hand
 	return 0;
 }
 
+/*moto add for sensor algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+static void scp_init_work_done(struct work_struct *work)
+{
+	int err = 0;
+	struct situation_context *cxt = situation_context_obj;
+    //SITUATION_PR_ERR("into scp_init_work_done\n");
+	if (atomic_read(&cxt->scp_init_done) == 0) {
+		SITUATION_PR_ERR("scp is not ready to send cmd\n");
+		return;
+	}
+
+	if (atomic_xchg(&cxt->first_ready_after_boot, 1) == 0)
+		return;
+
+#ifdef CONFIG_MOTO_CHOPCHOP
+	err = sensor_cfg_to_hub(ID_CHOPCHOP, (uint8_t *)&cxt->motparams.chopchop_params, sizeof(struct mot_chopchop));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub CHOPCHOP fail\n");
+#endif
+#ifdef CONFIG_MOTO_GLANCE
+	err = sensor_cfg_to_hub(ID_MOT_GLANCE, (uint8_t *)&cxt->motparams.glance_params, sizeof(struct mot_glance));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub GLANCE fail\n");
+#endif
+#ifdef CONFIG_MOTO_LTV
+	err = sensor_cfg_to_hub(ID_LTV, (uint8_t *)&cxt->motparams.ltv_params, sizeof(struct mot_ltv));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub LTV fail\n");
+#endif
+}
+
+static int scp_ready_event(uint8_t event, void *ptr)
+{
+	struct situation_context *obj = situation_context_obj;
+
+	switch (event) {
+	case SENSOR_POWER_UP:
+		atomic_set(&obj->scp_init_done, 1);
+		schedule_work(&obj->init_done_work);
+		break;
+	case SENSOR_POWER_DOWN:
+		atomic_set(&obj->scp_init_done, 0);
+		break;
+	}
+	return 0;
+}
+
+static struct scp_power_monitor scp_ready_notifier = {
+	.name = "situation",
+	.notifier_call = scp_ready_event,
+};
+#endif
+
 static int situation_probe(void)
 {
 	int err;
@@ -649,8 +741,13 @@ static int situation_probe(void)
 		goto real_driver_init_fail;
 	}
 	kobject_uevent(&situation_context_obj->mdev.this_device->kobj, KOBJ_ADD);
-
-
+/*moto add for sensor algo transfer params to scp*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+	atomic_set(&situation_context_obj->first_ready_after_boot, 0);
+	INIT_WORK(&situation_context_obj->init_done_work, scp_init_work_done);
+	atomic_set(&situation_context_obj->scp_init_done, 0);
+	scp_power_monitor_register(&scp_ready_notifier);
+#endif
 	SITUATION_LOG("----situation_probe OK !!\n");
 	return 0;
 

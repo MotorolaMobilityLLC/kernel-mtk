@@ -86,12 +86,62 @@ struct situation_data_control_context {
 	int64_t latency_ns;
 };
 
+/*moto add for sensor algo params*/
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+struct mot_chopchop {
+    float max_gyro_rotation;
+    uint32_t max_chop_duration_ms;
+    float first_accel_threshold;
+    float second_accel_threshold;
+    float min_magnitude_percentage;
+    float max_xy_percentage;
+    bool gyroless;
+};
+struct mot_glance {
+    float motion_threshold;
+    uint64_t cool_time;
+    uint16_t gesture_allow;
+    uint64_t uncover_timeout;
+};
+struct mot_ltv {
+    float min_accel_rotation;
+    float accel_fast_alpha;
+    float accel_slow_alpha;
+    uint8_t land_conv_cnt;
+    float min_accel_rotation_wake;
+    float non_accel_rotation_ff;
+    float rearm_non_rotation;
+    float rearm_min_accel_rotation;
+    float rearm_forced_accel_rotation;
+    uint8_t rearm_conv_cnt;
+    float raw_accel_margin;
+};
+struct mot_params {
+#ifdef CONFIG_MOTO_CHOPCHOP
+	struct mot_chopchop chopchop_params;
+#endif
+#ifdef CONFIG_MOTO_GLANCE
+    struct mot_glance glance_params;
+#endif
+#ifdef CONFIG_MOTO_LTV
+    struct mot_ltv ltv_params;
+#endif
+};
+#endif
+
 struct situation_context {
 	struct sensor_attr_t mdev;
 	struct mutex situation_op_mutex;
 	struct situation_data_control_context ctl_context[max_situation_support];
 	struct wake_lock wake_lock[max_situation_support];
 	char *wake_lock_name[max_situation_support];
+//moto add for sensor algo transfer params to scp
+#ifdef CONFIG_MOTO_ALGO_PARAMS
+	atomic_t first_ready_after_boot;
+	struct work_struct init_done_work;
+	atomic_t scp_init_done;
+	struct mot_params motparams;
+#endif
 };
 
 extern int situation_data_report(int handle, uint32_t one_sample_data);
