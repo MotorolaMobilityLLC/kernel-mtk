@@ -86,7 +86,7 @@ static LCM_UTIL_FUNCS lcm_util;
 static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE									0
 #define FRAME_WIDTH										(720)
-#define FRAME_HEIGHT									(1440)
+#define FRAME_HEIGHT									(1520)
 #define VIRTUAL_WIDTH									(1080)
 #define VIRTUAL_HEIGHT								(1920)
 
@@ -1318,12 +1318,12 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_backporch = 8;
 	params->dsi.vertical_frontporch = 20;
 	params->dsi.vertical_frontporch_for_low_power = 620;
-	params->dsi.vertical_active_line = FRAME_HEIGHT;
+	params->dsi.vertical_active_line = VIRTUAL_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
 	params->dsi.horizontal_backporch = 20;
 	params->dsi.horizontal_frontporch = 40;
-	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
+	params->dsi.horizontal_active_pixel = VIRTUAL_WIDTH;
 	/* params->dsi.ssc_disable                                                   = 1; */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #if (LCM_DSI_CMD_MODE)
