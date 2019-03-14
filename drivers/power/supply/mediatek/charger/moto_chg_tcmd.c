@@ -528,13 +528,12 @@ static ssize_t bat_ocv_show(struct device *dev, struct device_attribute *attr, c
 	int val;
 	int ret;
 
-	//MMI_STOPSHIP just return battery voltage firstly.
 	if (!bat_client) {
 		pr_err("%s bat client  is null\n", __func__);
 		goto end;
 	}
 
-	ret = bat_client->get_bat_voltage(bat_client->data,
+	ret = bat_client->get_bat_ocv(bat_client->data,
 					&val);
 	if (ret) {
 		pr_err("%s get bat vol fail %d\n", __func__, ret);
