@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.09.2019.13:17:46"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.09.2019.21:13:56"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -55,13 +55,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint0>
-            <eint1>
-                <varName>TOUCH</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint1>
             <eint3>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>256</debounce_time>
@@ -84,7 +77,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint5>
             <eint6>
-                <varName>ALSPS_MTK</varName>
+                <varName>TOUCH</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
@@ -167,7 +160,6 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CTP_EINT_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio1>
@@ -178,7 +170,6 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CTP_RST_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio2>
@@ -201,7 +192,7 @@
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_GYRO_EINT_PIN</varName0>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio4>
             <gpio5>
@@ -212,7 +203,7 @@
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_MSE_EINT_PIN</varName0>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio5>
             <gpio6>
@@ -222,8 +213,8 @@
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_ALS_EINT_PIN</varName0>
-                <smt>false</smt>
+                <varName0>GPIO_CTP_EINT_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio6>
             <gpio7>
@@ -234,7 +225,7 @@
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <varName0>GPIO_EARPHONE_DETECT_PIN</varName0>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio7>
             <gpio8>
@@ -881,17 +872,18 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio69>
             <gpio70>
                 <eint_mode>false</eint_mode>
-                <def_mode>1</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <varName0>GPIO_CTP_RST_PIN</varName0>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio70>
             <gpio71>
@@ -901,7 +893,7 @@
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <smt>false</smt>
+                <smt>true</smt>
                 <ies>true</ies>
             </gpio71>
             <gpio72>
@@ -2099,7 +2091,7 @@
             <device0>
                 <varName>CAP_TOUCH</varName>
                 <channel>I2C_CHANNEL_0</channel>
-                <address>0x5D</address>
+                <address>0x41</address>
             </device0>
             <device1>
                 <varName>MSENSOR</varName>
