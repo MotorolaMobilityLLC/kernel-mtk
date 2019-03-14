@@ -11,14 +11,14 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-&i2c7 {
+&i2c5 {
 	rt-swchg@53 {
 		compatible = "richtek,swchg";
 		reg = <0x53>;
 		status = "okay";
 
-		rt,intr_gpio_num = <42>; /* direct defined GPIO num */
-		rt,intr_gpio = <&pio 42 0x0>; /* GPIO */
+		rt,intr_gpio_num = <56>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 56 0x0>; /* GPIO */
 		rt9471 {
 			/*
 			 * Charger name
