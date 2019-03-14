@@ -1035,6 +1035,10 @@ static int mt_i2c_do_transfer(struct mt_i2c *i2c)
 
 	/* Prepare buffer data to start transfer */
 	if (isDMA == true && (!i2c->is_ccu_trig)) {
+		if (i2c_readl_dma(i2c, OFFSET_EN)) {
+			i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
+			udelay(5);
+		}
 
 #ifdef CONFIG_MTK_LM_MODE
 		if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
