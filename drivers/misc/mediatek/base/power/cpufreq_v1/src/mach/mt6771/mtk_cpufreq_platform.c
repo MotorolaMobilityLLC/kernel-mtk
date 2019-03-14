@@ -630,14 +630,16 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_6;  /* V5_T */
 #else
 	/* k71v1_bsp_motobingo_defconfig */
-	unsigned int len = sizeof(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES);
+	{
+		unsigned int len = sizeof(CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES);
 
-	if (strncmp(
-		CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES + len - 11,
-		"_motobingo", 10) == 0) {
-	} else {
-		if (turbocode == 1)
-			lv = CPU_LEVEL_6;  /* V5_T */
+		if (strncmp(
+			CONFIG_BUILD_ARM_DTB_OVERLAY_IMAGE_NAMES + len - 11,
+			"_motobingo", 10) == 0) {
+		} else {
+			if (turbocode == 1)
+				lv = CPU_LEVEL_6;  /* V5_T */
+		}
 	}
 #endif
 
