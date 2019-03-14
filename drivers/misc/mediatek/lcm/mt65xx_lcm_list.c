@@ -38,6 +38,11 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(PANEL_MOT_MIPI_VID_TIANMA_622_720P)
 	&mipi_mot_vid_tianma_720p_622_lcm_drv,
 #endif
+
+#if defined(PANEL_MOT_MIPI_VID_ILITEK_622_720P)
+	&mipi_mot_vid_ilitek_720p_622_lcm_drv,
+#endif
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif
