@@ -14,6 +14,7 @@
 #ifndef __LINUX_MTK_AUXADC_INTF_H
 #define __LINUX_MTK_AUXADC_INTF_H
 #include <mach/upmu_hw.h>
+#include <linux/power/moto_chg_tcmd.h>
 
 #define VOLTAGE_FULL_RANGE	(1800)
 
@@ -169,6 +170,7 @@ struct mtk_auxadc_intf {
 	int dbg_md_chl;
 	int reg;
 	int data;
+	struct moto_chg_tcmd_client adc_tcmd_client;
 };
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6335
