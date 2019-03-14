@@ -83,109 +83,11 @@ static LCM_UTIL_FUNCS lcm_util;
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+#include <linux/i2c/ocp2131.h>
 
 /*****************************************************************************
  * Define
  *****************************************************************************/
-#ifndef MACH_FPGA
-
-#define TPS_I2C_BUSNUM  5   /* for I2C channel 5 */
-#define I2C_ID_NAME "OCP2131"
-#define TPS_ADDR 0x3E
-/*****************************************************************************
- * GLobal Variable
- *****************************************************************************/
-static struct i2c_board_info OCP2131_board_info __initdata = { I2C_BOARD_INFO(I2C_ID_NAME, TPS_ADDR) };
-
-static struct i2c_client *OCP2131_i2c_client;
-
-/*****************************************************************************
- * Function Prototype
- *****************************************************************************/
-static int OCP2131_probe(struct i2c_client *client, const struct i2c_device_id *id);
-static int OCP2131_remove(struct i2c_client *client);
-/*****************************************************************************
- * Data Structure
- *****************************************************************************/
-
-struct OCP2131_dev {
-	struct i2c_client *client;
-
-};
-
-static const struct i2c_device_id OCP2131_id[] = {
-	{I2C_ID_NAME, 0},
-	{}
-};
-
-
-static struct i2c_driver OCP2131_iic_driver = {
-	.id_table = OCP2131_id,
-	.probe = OCP2131_probe,
-	.remove = OCP2131_remove,
-	/* .detect               = mt6605_detect, */
-	.driver = {
-		.owner = THIS_MODULE,
-		.name = "OCP2131",
-	},
-};
-
-/*****************************************************************************
- * Function
- *****************************************************************************/
-static int OCP2131_probe(struct i2c_client *client, const struct i2c_device_id *id)
-{
-	LCM_LOGI("OCP2131_iic_probe\n");
-	LCM_LOGI("TPS: info==>name=%s addr=0x%x\n", client->name, client->addr);
-	OCP2131_i2c_client = client;
-	return 0;
-}
-
-static int OCP2131_remove(struct i2c_client *client)
-{
-	LCM_LOGI("OCP2131_remove\n");
-	OCP2131_i2c_client = NULL;
-	i2c_unregister_device(client);
-	return 0;
-}
-
-
-static int OCP2131_write_bytes(unsigned char addr, unsigned char value)
-{
-	int ret = 0;
-	struct i2c_client *client = OCP2131_i2c_client;
-	char write_data[2] = { 0 };
-	write_data[0] = addr;
-	write_data[1] = value;
-	ret = i2c_master_send(client, write_data, 2);
-	if (ret < 0)
-		LCM_LOGI("OCP2131 write data fail !!\n");
-	return ret;
-}
-
-static int __init OCP2131_iic_init(void)
-{
-	LCM_LOGI("OCP2131_iic_init\n");
-	i2c_register_board_info(TPS_I2C_BUSNUM, &OCP2131_board_info, 1);
-	LCM_LOGI("OCP2131_iic_init2\n");
-	i2c_add_driver(&OCP2131_iic_driver);
-	LCM_LOGI("OCP2131_iic_init success\n");
-	return 0;
-}
-
-static void __exit OCP2131_iic_exit(void)
-{
-	LCM_LOGI("OCP2131_iic_exit\n");
-	i2c_del_driver(&OCP2131_iic_driver);
-}
-
-
-module_init(OCP2131_iic_init);
-module_exit(OCP2131_iic_exit);
-
-MODULE_AUTHOR("Xiaokuan Shi");
-MODULE_DESCRIPTION("MTK OCP2131 I2C Driver");
-#endif
 #endif
 
 static const unsigned char LCD_MODULE_ID = 0x01;
@@ -228,11 +130,10 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 
 
 static struct LCM_setting_table init_setting_vdo[] = {
+	{ 0xFF, 0x03, {0x98,0x81,0x00} },/* Page0 */
 	{ 0x51, 0x02, {0x0c ,0xcc} },
 	{ 0x53, 0x01, {0x2c} },
 	{ 0x55, 0x01, {0x01} },
-
-	{ 0xFF, 0x03, {0x98,0x81,0x00} },//Page0
 
 	{ 0x11, 0x01, {0x00} },
 	{REGFLAG_DELAY, 120, {} },
@@ -242,7 +143,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 
 static struct LCM_setting_table bl_level[] = {
 	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
-	{ 0x51, 0x02, {0x00, 0xFF} },
+	{ 0x51, 0x02, {0x0c, 0xcc} },
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -367,6 +268,7 @@ static void lcm_resume_power(void)
 
 }
 
+
 static void lcm_init(void)
 {
 
@@ -400,6 +302,10 @@ static void lcm_init(void)
 	SET_RESET_PIN(0);
 	MDELAY(10);
 
+	OCP2131_GPIO_ENP_enable();
+	MDELAY(1);
+	OCP2131_GPIO_ENN_enable();
+
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
@@ -414,6 +320,9 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
 	/* SET_RESET_PIN(0); */
+	OCP2131_GPIO_ENN_disable();
+	MDELAY(1);
+	OCP2131_GPIO_ENP_disable();
 }
 
 static void lcm_resume(void)
@@ -543,7 +452,7 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
-static void lcm_setbacklight_cmdq(unsigned int level)
+static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
 	LCM_LOGI("%s,ili9881h backlight: level = %d\n", __func__, level);
@@ -586,7 +495,7 @@ LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 	.resume_power = lcm_resume_power,
 	.suspend_power = lcm_suspend_power,
 	.esd_check = lcm_esd_check,
-	.set_backlight = lcm_setbacklight_cmdq,
+	.set_backlight_cmdq = lcm_setbacklight_cmdq,
 	.ata_check = lcm_ata_check,
 	.update = lcm_update,
 	.switch_mode = lcm_switch_mode,
