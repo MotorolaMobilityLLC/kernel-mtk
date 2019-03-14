@@ -6,6 +6,8 @@
 #ifndef __LINUX_MTK_AUXADC_INTF_H
 #define __LINUX_MTK_AUXADC_INTF_H
 
+#include <linux/power/moto_chg_tcmd.h>
+
 #include <mach/mtk_pmic.h>
 
 /* =========== User Layer ================== */
