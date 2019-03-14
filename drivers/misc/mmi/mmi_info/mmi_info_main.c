@@ -27,6 +27,7 @@ int mmi_get_bootarg(char *key, char **value)
 	char *idx = NULL;
 	char *kvpair = NULL;
 	int err = 1;
+	int args_len = 0;
 	struct device_node *n = of_find_node_by_path("/chosen");
 
 	if (n == NULL)
@@ -35,15 +36,16 @@ int mmi_get_bootarg(char *key, char **value)
 	if (of_property_read_string(n, "bootargs", &bootargs_tmp) != 0)
 		goto putnode;
 
+	args_len = strlen(bootargs_tmp) + 1;
 	if (!bootargs_str)
 		/* The following operations need a non-const
 		 * version of bootargs
 		 */
-		bootargs_str = kzalloc(strlen(bootargs_tmp) + 1, GFP_KERNEL);
+		bootargs_str = kzalloc(args_len, GFP_KERNEL);
 		if (!bootargs_str)
 			goto putnode;
 
-	strlcpy(bootargs_str, bootargs_tmp, strlen(bootargs_str) + 1);
+	strlcpy(bootargs_str, bootargs_tmp, args_len);
 
 	idx = strnstr(bootargs_str, key, strlen(bootargs_str));
 	if (idx) {
