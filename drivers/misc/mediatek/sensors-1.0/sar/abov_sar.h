@@ -162,7 +162,7 @@ struct abovXX {
 	 * or does not work properly */
 	u8 useIrqTimer;
 	u8 read_reg;
-
+	u8 read_len;	//add to read serial multi-reg
 	struct work_struct ps_notify_work;
 	struct notifier_block ps_notif;
 	bool ps_is_present;
