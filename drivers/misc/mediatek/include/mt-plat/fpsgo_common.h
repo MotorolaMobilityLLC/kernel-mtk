@@ -26,7 +26,7 @@ struct fps_level {
 	int end;
 };
 
-#ifdef CONFIG_MTK_FPSGO
+#if defined(CONFIG_MTK_FPSGO) || defined(CONFIG_MTK_FPSGO_V3)
 #define FPSGO_SYSTRACE_LIST(macro) \
 	macro(MANDATORY, 0), \
 	macro(FBT_GM, 1), \
@@ -40,6 +40,19 @@ struct fps_level {
 enum {
 	FPSGO_SYSTRACE_LIST(GENERATE_ENUM)
 };
+
+#define FPSFO_DECLARE_SYSTRACE(prefix, name) \
+	extern struct tracepoint __tracepoint_##name; \
+	int prefix##_reg_trace_##name(void *probe, void *data) \
+	{ \
+		return tracepoint_probe_register( \
+			&__tracepoint_##name, (void *)probe, data); \
+	} \
+	int prefix##_unreg_trace_##name(void *probe, void *data) \
+	{ \
+		return tracepoint_probe_unregister( \
+			&__tracepoint_##name, (void *)probe, data); \
+	}
 
 extern uint32_t fpsgo_systrace_mask;
 extern struct dentry *fpsgo_debugfs_dir;
@@ -155,7 +168,7 @@ static inline int fbt_cpu_set_floor_kmin(int k) { return 0; }
 static inline int fbt_cpu_set_floor_opp(int new_opp) { return 0; }
 #endif
 
-#ifdef CONFIG_MTK_FPSGO
+#if defined(CONFIG_MTK_FPSGO) || defined(CONFIG_MTK_FPSGO_V3)
 void xgf_igather_timer(const void * const t, int v);
 void xgf_epoll_igather_timer(const void * const t, ktime_t *to, int v);
 void xgf_qudeq_notify(unsigned int cmd, unsigned long arg);
@@ -166,6 +179,13 @@ static inline void xgf_epoll_igather_timer(const void * const t,
 		ktime_t *to, int v) { }
 static inline void xgf_qudeq_notify(unsigned int cmd, unsigned long arg) { }
 static inline void fpsgo_update_render_dep(struct task_struct *p) { }
+#endif
+
+#if defined(CONFIG_MTK_FPSGO_V3)
+int fpsgo_notify_gpu_block(int tid, unsigned long long mid, int begin);
+#else
+static inline int fpsgo_notify_gpu_block(int tid,
+	unsigned long long mid, int begin) { return -1; }
 #endif
 
 #endif
