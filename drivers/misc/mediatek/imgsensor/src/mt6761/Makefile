@@ -35,6 +35,9 @@ obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_proc.o
 obj-y				+= ../common/$(COMMON_VERSION)/imgsensor_sensor_list.o
 
 
+ifneq ($(CONFIG_MTK_CAMERA_FAKE_STEREO_MAIN2),)
+obj-y				+= ../common/$(COMMON_VERSION)/fakestereo_sensor.o
+endif
 define FILTER_DRV
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/camera_project/$(ARCH_MTK_PROJECT)/$(1)),)
 ifeq ($(wildcard $(IMGSENSOR_DRIVER_PATH)/$(MTK_PLATFORM)/$(1)),)

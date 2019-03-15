@@ -922,12 +922,11 @@
             </gpio87>
             <gpio88>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>1</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_VCAMD_EN_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio88>
@@ -1879,12 +1878,12 @@
             </device11>
             <device12>
                 <varName>CAMERA_SUB</varName>
-                <channel>I2C_CHANNEL_4</channel>
-                <address>0x2D</address>
+                <channel>I2C_CHANNEL_6</channel>
+                <address>0x37</address>
             </device12>
             <device13>
                 <varName>CAMERA_SUB_EEPROM</varName>
-                <channel>I2C_CHANNEL_4</channel>
+                <channel>I2C_CHANNEL_6</channel>
                 <address>0x52</address>
             </device13>
             <device14>
@@ -1894,8 +1893,8 @@
             </device14>
             <device16>
                 <varName>CAMERA_MAIN_TWO</varName>
-                <channel>I2C_CHANNEL_6</channel>
-                <address>0x2D</address>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x3C</address>
             </device16>
             <device17>
                 <varName>CAMERA_MAIN_TWO_EEPROM</varName>
@@ -1933,6 +1932,8 @@
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_POWER_A</varName0>
+                <varName1>SUB_CAMERA_POWER_A</varName1>
+                <varName2>MAIN_CAMERA_2_POWER_A</varName2>
             </pmic0>
             <pmic1>
                 <ldoVar>VSIM1</ldoVar>
@@ -1946,6 +1947,7 @@
                 <ldoVar>VCAMD</ldoVar>
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_2_POWER_D</varName0>
+                <varName1>SUB_CAMERA_POWER_D</varName1>
             </pmic3>
             <pmic4>
                 <ldoVar>VCAMIO</ldoVar>
