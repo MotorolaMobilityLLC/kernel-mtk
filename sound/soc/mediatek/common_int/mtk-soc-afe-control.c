@@ -334,10 +334,10 @@ void SetExternalModemStatus(const bool bEnable)
  *
  *****************************************************************************
  */
-bool InitAfeControl(struct device *pDev)
+int InitAfeControl(struct device *pDev)
 {
 	int i = 0;
-
+	int ret = 0;
 	pr_debug("InitAfeControl\n");
 
 	/* first time to init , reg init. */
@@ -351,55 +351,65 @@ bool InitAfeControl(struct device *pDev)
 	/* allocate memory for pointers */
 	if (mAudioInit == false) {
 		mAudioInit = true;
-		mAudioMrg = kzalloc(sizeof(struct audio_mrg_if), GFP_KERNEL);
+		mAudioMrg = devm_kzalloc(pDev, sizeof(struct audio_mrg_if),
+					 GFP_KERNEL);
 		if (!mAudioMrg) {
 			/* pr_debug("Failed to allocate private data\n"); */
-			return -ENOMEM;
+			ret = -ENOMEM;
+		} else {
+			mAudioMrg->Mrg_I2S_SampleRate =
+				SampleRateTransform(44100,
+					Soc_Aud_Digital_Block_MRG_I2S_OUT);
 		}
-		AudioDaiBt = kzalloc(sizeof(struct audio_digital_dai_bt),
+		AudioDaiBt =
+			devm_kzalloc(pDev, sizeof(struct audio_digital_dai_bt),
 				     GFP_KERNEL);
 		if (!AudioDaiBt) {
 			/* pr_debug("Failed to allocate private data\n"); */
-			return -ENOMEM;
+			ret = -ENOMEM;
 		}
-		m2ndI2S = kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
+		m2ndI2S = devm_kzalloc(pDev,
+				       sizeof(struct audio_digital_i2s),
+				       GFP_KERNEL);
 		if (!m2ndI2S) {
 			/* pr_debug("Failed to allocate private data\n"); */
-			return -ENOMEM;
+			ret = -ENOMEM;
 		}
 		m2ndI2Sout =
-			kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
+			devm_kzalloc(pDev, sizeof(struct audio_digital_i2s),
+				     GFP_KERNEL);
 		if (!m2ndI2Sout) {
 			/* pr_debug("Failed to allocate private data\n"); */
-			return -ENOMEM;
+			ret = -ENOMEM;
 		}
-		mHDMIOutput = kzalloc(sizeof(struct audio_hdmi), GFP_KERNEL);
+		mHDMIOutput = devm_kzalloc(pDev, sizeof(struct audio_hdmi),
+					   GFP_KERNEL);
 		if (!mHDMIOutput) {
 			/* pr_debug("Failed to allocate private data\n"); */
-			return -ENOMEM;
+			ret = -ENOMEM;
 		}
-
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK;
 		     i++) {
 			mAudioMEMIF[i] =
-				kzalloc(sizeof(struct audio_memif_attribute),
+				devm_kzalloc(pDev,
+					sizeof(struct audio_memif_attribute),
 					GFP_KERNEL);
 			if (!mAudioMEMIF[i]) {
 				/* pr_debug("Failed to
 				 * allocate private data\n");
 				 */
-				return -ENOMEM;
+				ret = -ENOMEM;
 			}
 		}
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE;
 		     i++) {
-			AFE_Mem_Control_context[i] = kzalloc(
+			AFE_Mem_Control_context[i] = devm_kzalloc(pDev,
 				sizeof(struct afe_mem_control_t), GFP_KERNEL);
 			if (!AFE_Mem_Control_context[i]) {
 				/* pr_debug("Failed to
 				 * allocate private data\n");
 				 */
-				return -ENOMEM;
+				ret = -ENOMEM;
 			}
 			AFE_Mem_Control_context[i]->substreamL = NULL;
 			spin_lock_init(
@@ -409,12 +419,13 @@ bool InitAfeControl(struct device *pDev)
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE;
 		     i++) {
 			Audio_dma_buf[i] =
-				kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
+				devm_kzalloc(pDev,
+					     sizeof(Audio_dma_buf), GFP_KERNEL);
 			if (!Audio_dma_buf[i]) {
 				/* pr_debug("Failed to
 				 * allocate private data\n");
 				 */
-				return -ENOMEM;
+				ret = -ENOMEM;
 			}
 		}
 		memset((void *)&AFE_dL_Abnormal_context, 0,
@@ -429,9 +440,6 @@ bool InitAfeControl(struct device *pDev)
 	InitSramManager(pDev, SramBlockSize);
 	init_irq_manager();
 
-	mAudioMrg->Mrg_I2S_SampleRate =
-		SampleRateTransform(44100, Soc_Aud_Digital_Block_MRG_I2S_OUT);
-
 	PowerDownAllI2SDiv();
 
 	init_afe_ops();
@@ -440,7 +448,7 @@ bool InitAfeControl(struct device *pDev)
 	/* set APLL clock setting */
 	AfeControlMutexUnLock();
 
-	return true;
+	return ret;
 }
 
 bool ResetAfeControl(void)
