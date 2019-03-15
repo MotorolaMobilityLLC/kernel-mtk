@@ -11,6 +11,9 @@
  */
 
 #include "mt6771-moto-overlay.dtsi"
+#ifdef CONFIG_TCPC_RT1711
+#include "rt1711.dtsi"
+#endif
 
 &ctp_pins_eint_as_int {
 	pins_cmd_dat {
