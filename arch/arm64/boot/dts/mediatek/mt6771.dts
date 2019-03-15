@@ -4282,6 +4282,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_CHARGER_RT9471
 #include "rt9471.dtsi"
 #endif
+#ifdef CONFIG_TCPC_RT1711
+#include "rt1711.dtsi"
+#endif
 #ifdef CONFIG_TCPC_RT1711H
 #include "rt1711h.dtsi"
 #endif
