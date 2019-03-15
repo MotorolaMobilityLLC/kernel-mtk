@@ -2534,7 +2534,9 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 			part = <0>;
 		};
 	};
-
+	flashlights_aw3644: flashlights_aw3644 {
+		compatible = "mediatek,flashlights_aw3644";
+	};
 	venc_gcon: venc_gcon@17000000 {
 		compatible = "mediatek,venc_gcon", "syscon";
 		reg = <0 0x17000000 0 0x10000>;

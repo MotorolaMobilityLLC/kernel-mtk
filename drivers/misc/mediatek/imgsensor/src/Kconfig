@@ -29,3 +29,15 @@ config IMGSENSOR_SUB2
 	depends on SPECIFY_IMGSENSOR
 	help
 	  Specify sub2 sensor.
+
+config MTK_CAMERA_FAKE_STEREO_MAIN2
+	bool "use fake stereo main2"
+	default n
+	help
+	  use fake stereo main2, no isp, no hal
+
+config MTK_CAMERA_FAKE_STEREO_SUB2
+	bool "use fake stereo sub2"
+	default n
+	help
+	  use fake stereo sub2, no isp, no hal
