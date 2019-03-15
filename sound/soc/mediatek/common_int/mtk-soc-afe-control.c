@@ -352,30 +352,71 @@ bool InitAfeControl(struct device *pDev)
 	if (mAudioInit == false) {
 		mAudioInit = true;
 		mAudioMrg = kzalloc(sizeof(struct audio_mrg_if), GFP_KERNEL);
+		if (!mAudioMrg) {
+			/* pr_debug("Failed to allocate private data\n"); */
+			return -ENOMEM;
+		}
 		AudioDaiBt = kzalloc(sizeof(struct audio_digital_dai_bt),
 				     GFP_KERNEL);
+		if (!AudioDaiBt) {
+			/* pr_debug("Failed to allocate private data\n"); */
+			return -ENOMEM;
+		}
 		m2ndI2S = kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
+		if (!m2ndI2S) {
+			/* pr_debug("Failed to allocate private data\n"); */
+			return -ENOMEM;
+		}
 		m2ndI2Sout =
 			kzalloc(sizeof(struct audio_digital_i2s), GFP_KERNEL);
+		if (!m2ndI2Sout) {
+			/* pr_debug("Failed to allocate private data\n"); */
+			return -ENOMEM;
+		}
 		mHDMIOutput = kzalloc(sizeof(struct audio_hdmi), GFP_KERNEL);
+		if (!mHDMIOutput) {
+			/* pr_debug("Failed to allocate private data\n"); */
+			return -ENOMEM;
+		}
 
-		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK; i++)
+		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_DIGITAL_BLOCK;
+		     i++) {
 			mAudioMEMIF[i] =
 				kzalloc(sizeof(struct audio_memif_attribute),
 					GFP_KERNEL);
-
+			if (!mAudioMEMIF[i]) {
+				/* pr_debug("Failed to
+				 * allocate private data\n");
+				 */
+				return -ENOMEM;
+			}
+		}
 		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE;
 		     i++) {
 			AFE_Mem_Control_context[i] = kzalloc(
 				sizeof(struct afe_mem_control_t), GFP_KERNEL);
+			if (!AFE_Mem_Control_context[i]) {
+				/* pr_debug("Failed to
+				 * allocate private data\n");
+				 */
+				return -ENOMEM;
+			}
 			AFE_Mem_Control_context[i]->substreamL = NULL;
 			spin_lock_init(
 				&AFE_Mem_Control_context[i]->substream_lock);
 		}
 
-		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE; i++)
+		for (i = 0; i < Soc_Aud_Digital_Block_NUM_OF_MEM_INTERFACE;
+		     i++) {
 			Audio_dma_buf[i] =
 				kzalloc(sizeof(Audio_dma_buf), GFP_KERNEL);
+			if (!Audio_dma_buf[i]) {
+				/* pr_debug("Failed to
+				 * allocate private data\n");
+				 */
+				return -ENOMEM;
+			}
+		}
 		memset((void *)&AFE_dL_Abnormal_context, 0,
 		       sizeof(struct afe_dl_abnormal_control_t));
 		memset((void *)&mtk_dais, 0, sizeof(mtk_dais));
@@ -3294,7 +3335,8 @@ bool InitSramManager(struct device *pDev, unsigned int sramblocksize)
 		devm_kzalloc(pDev, mAud_Sram_Manager.mBlocknum *
 					   sizeof(struct audio_sram_block),
 			     GFP_KERNEL);
-
+	if (!mAud_Sram_Manager.mAud_Sram_Block)
+		return -ENOMEM;
 	for (i = 0; i < mAud_Sram_Manager.mBlocknum; i++) {
 		mAud_Sram_Manager.mAud_Sram_Block[i].mValid = true;
 		mAud_Sram_Manager.mAud_Sram_Block[i].mLength =
@@ -3588,6 +3630,10 @@ get_min_period_user(enum Soc_Aud_IRQ_MCU_MODE _irq)
 static int check_and_update_irq(const struct irq_user *_irq_user,
 				enum Soc_Aud_IRQ_MCU_MODE _irq)
 {
+	if (_irq_user == NULL) {
+		pr_info("error, irq_user is empty\n");
+		return -EINVAL;
+	}
 	if (!is_tgt_rate_ok(_irq_user->request_rate, _irq_user->request_count,
 			    irq_managers[_irq].rate)) {
 		/* if you got here, you should reconsider your irq usage */
