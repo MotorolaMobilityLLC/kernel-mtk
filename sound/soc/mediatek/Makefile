@@ -15,7 +15,7 @@ subdir-ccflags-y += -Werror
 # dsp related code
 obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += audio_dsp/
 # btcvsd
-obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common_int/
+obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common/
 
 obj-$(CONFIG_SND_SOC_MEDIATEK) += common/
 obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
