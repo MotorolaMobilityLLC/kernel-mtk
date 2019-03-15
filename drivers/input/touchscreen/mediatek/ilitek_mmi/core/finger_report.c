@@ -239,7 +239,7 @@ static int parse_report_data(uint8_t pid)
 				g_mutual_data.mtp[g_mutual_data.touch_num].y = nY;
 				g_mutual_data.mtp[g_mutual_data.touch_num].id = i;
 			} else {
-				g_mutual_data.mtp[g_mutual_data.touch_num].x = nX * set_res.width / TPD_WIDTH;
+				g_mutual_data.mtp[g_mutual_data.touch_num].x = TOUCH_SCREEN_X_MAX - nX * set_res.width / TPD_WIDTH;
 				g_mutual_data.mtp[g_mutual_data.touch_num].y = nY * set_res.height / TPD_HEIGHT;
 				g_mutual_data.mtp[g_mutual_data.touch_num].id = i;
 			}
@@ -282,7 +282,7 @@ static int parse_report_data(uint8_t pid)
 				g_mutual_data.mtp[g_mutual_data.touch_num].y = nY;
 				g_mutual_data.mtp[g_mutual_data.touch_num].id = i;
 			} else {
-				g_mutual_data.mtp[g_mutual_data.touch_num].x = nX * set_res.width / TPD_WIDTH;
+				g_mutual_data.mtp[g_mutual_data.touch_num].x = TOUCH_SCREEN_X_MAX - nX * set_res.width / TPD_WIDTH;
 				g_mutual_data.mtp[g_mutual_data.touch_num].y = nY * set_res.height / TPD_HEIGHT;
 				g_mutual_data.mtp[g_mutual_data.touch_num].id = i;
 			}
