@@ -302,40 +302,35 @@ static int mtk_compr_offload_drain(struct snd_compr_stream *stream)
 	struct ringbuf_bridge *buf_bridge =
 		&(dsp->dsp_mem[ID].adsp_buf.aud_buffer.buf_bridge);
 
-	if (afe_offload_block.transferred >= (8 * USE_PERIODS_MAX)) {
-		int silence_length = 0;
+	int silence_length = 0;
 
-		afe_offload_block.state = OFFLOAD_STATE_DRAIN;
-		afe_offload_block.drain_state = AUDIO_DRAIN_EARLY_NOTIFY;
+	afe_offload_block.state = OFFLOAD_STATE_DRAIN;
+	afe_offload_block.drain_state = AUDIO_DRAIN_EARLY_NOTIFY;
 
-		if (ringbuf->pRead >= ringbuf->pWrite)
-			silence_length = ringbuf->pRead - ringbuf->pWrite;
-		else
-			silence_length = ringbuf->pBufEnd - ringbuf->pWrite;
-		if (silence_length > (USE_PERIODS_MAX))
-			silence_length = USE_PERIODS_MAX;
-		memset(ringbuf->pWrite, 0, silence_length);
-		RingBuf_update_writeptr(ringbuf, silence_length);
-		RingBuf_Bridge_update_writeptr(buf_bridge, silence_length);
-		ringbuf_writebk = (unsigned long)ringbuf->pWrite;
-		ringbufbridge_writebk = buf_bridge->pWrite;
-		afe_offload_service.needdata = false;
+	if (ringbuf->pRead >= ringbuf->pWrite)
+		silence_length = ringbuf->pRead - ringbuf->pWrite;
+	else
+		silence_length = ringbuf->pBufEnd - ringbuf->pWrite;
+	if (silence_length > (USE_PERIODS_MAX))
+		silence_length = USE_PERIODS_MAX;
+	memset(ringbuf->pWrite, 0, silence_length);
+	RingBuf_update_writeptr(ringbuf, silence_length);
+	RingBuf_Bridge_update_writeptr(buf_bridge, silence_length);
+	ringbuf_writebk = (unsigned long)ringbuf->pWrite;
+	ringbufbridge_writebk = buf_bridge->pWrite;
+	afe_offload_service.needdata = false;
 
 #ifdef CONFIG_MTK_AUDIO_TUNNELING_SUPPORT
-		pr_info("%s, OFFLOAD_DRAIN", __func__);
-		mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
-				 AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
-				 OFFLOAD_DRAIN, buf_bridge->pWrite, 0, NULL);
+	pr_info("%s, OFFLOAD_DRAIN", __func__);
+	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(ID),
+			AUDIO_IPI_MSG_ONLY, AUDIO_IPI_MSG_NEED_ACK,
+			OFFLOAD_DRAIN, buf_bridge->pWrite, 0, NULL);
 
 #endif
 #ifdef use_wake_lock
-		mtk_compr_offload_int_wakelock(false);
+	mtk_compr_offload_int_wakelock(false);
 #endif
-	} else {
-		afe_offload_block.drain_state = AUDIO_DRAIN_ALL;
-		mtk_compr_offload_draindone();
-		pr_debug("%s params alloc failed\n", __func__);
-	}
+
 	return 1;  /* make compress driver drain failed */
 }
 
@@ -590,17 +585,25 @@ static void mtk_dsp_mp3_dl_handler(struct mtk_base_dsp *dsp,
 
 static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 {
-	int id = get_dspdaiid_by_dspscene(ipi_msg->task_scene);
 	struct mtk_base_dsp *dsp =
 		(struct mtk_base_dsp *)get_ipi_recv_private();
+	int id = 0;
+
+	if (ipi_msg == NULL) {
+		pr_info("%s ipi_msg == NULL\n", __func__);
+		return;
+	}
 
 	if (dsp == NULL) {
 		pr_warn("%s dsp == NULL\n", __func__);
 		return;
-	} else if (ipi_msg == NULL) {
-		pr_warn("%s ipi_msg == NULL\n", __func__);
-		return;
 	}
+
+	id = get_dspdaiid_by_dspscene(ipi_msg->task_scene);
+
+	if (id < 0)
+		return;
+
 	switch (ipi_msg->msg_id) {
 	case AUDIO_DSP_TASK_IRQDL:
 		mtk_dsp_mp3_dl_handler(dsp, ipi_msg, id);
@@ -628,6 +631,8 @@ static void offloadservice_ipicmd_received(struct ipi_msg_t *ipi_msg)
 	case OFFLOAD_DECODE_ERROR:
 		afe_offload_service.decode_error = true;
 		pr_info("%s decode_error\n", __func__);
+		break;
+	default:
 		break;
 	}
 	pr_debug("%s msg_id :  %d\n", __func__, ipi_msg->msg_id);
