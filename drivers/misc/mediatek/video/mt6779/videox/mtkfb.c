@@ -191,8 +191,10 @@ static int mtkfb_get_overlay_layer_info(
 #ifdef CONFIG_OF
 static int _parse_tag_videolfb(void);
 #endif
+#if defined(CONFIG_PM_AUTOSLEEP)
 static void mtkfb_late_resume(void);
 static void mtkfb_early_suspend(void);
+#endif
 
 
 void mtkfb_log_enable(int enable)
@@ -2721,6 +2723,7 @@ void mtkfb_clear_lcm(void)
 {
 }
 
+#if defined(CONFIG_PM_AUTOSLEEP)
 static void mtkfb_early_suspend(void)
 {
 	int ret = 0;
@@ -2739,6 +2742,7 @@ static void mtkfb_early_suspend(void)
 
 	DISPMSG("%s-\n", __func__);
 }
+#endif
 
 /* PM resume */
 static int mtkfb_resume(struct device *pdev)
@@ -2750,6 +2754,7 @@ static int mtkfb_resume(struct device *pdev)
 	return 0;
 }
 
+#if defined(CONFIG_PM_AUTOSLEEP)
 static void mtkfb_late_resume(void)
 {
 	int ret = 0;
@@ -2769,6 +2774,7 @@ static void mtkfb_late_resume(void)
 	DISPMSG("%s-\n", __func__);
 
 }
+#endif
 
 #ifdef CONFIG_PM
 
