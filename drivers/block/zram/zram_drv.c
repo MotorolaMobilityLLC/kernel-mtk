@@ -2128,6 +2128,7 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 		"DiskSize:       %8lu kB\n"
 		"OrigSize:       %8lu kB\n"
 		"ComprSize:      %8lu kB\n"
+		"MemUsed:        %8lu kB\n"
 		"SamePage:       %8lu kB\n"
 		"NotifyFree:     %8lu kB\n"
 		"FailReads:      %8lu kB\n"
@@ -2140,6 +2141,7 @@ static int zraminfo_proc_show(struct seq_file *m, void *v)
 		B2K(zram_devices->disksize),
 		P2K(atomic64_read(&zram_devices->stats.pages_stored)),
 		B2K(atomic64_read(&zram_devices->stats.compr_data_size)),
+		P2K(zs_get_total_pages(zram_devices->mem_pool)),
 		P2K(atomic64_read(&zram_devices->stats.same_pages)),
 		P2K(atomic64_read(&zram_devices->stats.notify_free)),
 		P2K(atomic64_read(&zram_devices->stats.failed_reads)),
