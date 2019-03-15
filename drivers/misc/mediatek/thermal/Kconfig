@@ -5,3 +5,12 @@ config MTK_THERMAL_PA_VIA_ATCMD
 	  to query modem RF temperature
 	  via AT command.
 	  (RIL sockets)
+
+config MTK_CHARGER2_THERMAL
+     bool "enable mtktscharger2 thermal"
+     default n
+     help
+       Set yes to choose AUX_IN2_NTC to
+       enable mtktscharger2 thermal
+       Set no to use MTK default design
+
