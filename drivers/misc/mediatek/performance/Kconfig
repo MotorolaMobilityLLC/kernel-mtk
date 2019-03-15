@@ -26,3 +26,14 @@ config MTK_CPU_CTRL_CFP
 	  Ceiling-Fool-Proof Mechanism designed by MTK. CPU controller
 	  will free CPU frequency ceiling during heavy CPU loading.
 
+config MTK_FPSGO_V3
+	bool "Support FPSGO_V3 framework"
+	default n
+	help
+	  Support FPSGO_V3 framework for most FPS performance and
+	  low power balance. As a perquisite to ensure FPS performance,
+	  FPSGO_V3 persuades lowest power consumption for better DoU
+	  endurance and gaming experience.
+	  FPSGO_V3 include AI performance and low power.
+	  If you are not sure about this, set n.
+

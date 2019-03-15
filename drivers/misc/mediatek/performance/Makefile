@@ -17,6 +17,8 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/perf_ioctl/ \
 
 obj-y += perfmgr_main.o
 obj-y += base/
+obj-$(CONFIG_MTK_PERF_OBSERVER) += observer/
+#obj-$(CONFIG_MTK_FPSGO_V3) += resym/
 
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
@@ -25,6 +27,7 @@ endif
 
 obj-y += perf_ioctl/
 obj-$(CONFIG_MTK_FPSGO) += fpsgo/
+obj-$(CONFIG_MTK_FPSGO_V3) += fpsgo_v3/
 
 obj-$(CONFIG_MTK_LOAD_TRACKER) += load_track/
 obj-$(CONFIG_MTK_LOAD_TRACKER) += duraspeed/
