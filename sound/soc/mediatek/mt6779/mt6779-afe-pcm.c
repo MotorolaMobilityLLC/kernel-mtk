@@ -686,6 +686,55 @@ static int mt6779_deep_irq_cnt_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int mt6779_voip_rx_irq_cnt_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->irq_cnt[MT6779_VOIP_MEMIF];
+	return 0;
+}
+
+static int mt6779_voip_rx_irq_cnt_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+	int memif_num = MT6779_VOIP_MEMIF;
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+	int irq_id = memif->irq_usage;
+	int irq_cnt = afe_priv->irq_cnt[memif_num];
+
+	dev_info(afe->dev, "%s(), irq_id %d, irq_cnt = %d, value = %ld\n",
+		 __func__,
+		 irq_id, irq_cnt,
+		 ucontrol->value.integer.value[0]);
+
+	if (irq_cnt == ucontrol->value.integer.value[0])
+		return 0;
+
+	irq_cnt = ucontrol->value.integer.value[0];
+	afe_priv->irq_cnt[memif_num] = irq_cnt;
+
+	if (pm_runtime_status_suspended(afe->dev) || irq_id < 0) {
+		dev_info(afe->dev, "%s(), suspended || irq_id %d, not set\n",
+			 __func__, irq_id);
+	} else {
+		struct mtk_base_afe_irq *irqs = &afe->irqs[irq_id];
+		const struct mtk_base_irq_data *irq_data = irqs->irq_data;
+
+		regmap_update_bits(afe->regmap, irq_data->irq_cnt_reg,
+				   irq_data->irq_cnt_maskbit
+				   << irq_data->irq_cnt_shift,
+				   irq_cnt << irq_data->irq_cnt_shift);
+	}
+
+	return 0;
+}
+
 static int mt6779_deep_scene_get(struct snd_kcontrol *kcontrol,
 				 struct snd_ctl_elem_value *ucontrol)
 {
@@ -932,6 +981,8 @@ static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
 		       mt6779_irq_cnt2_get, mt6779_irq_cnt2_set),
 	SOC_SINGLE_EXT("deep_buffer_irq_cnt", SND_SOC_NOPM, 0, 0x3ffff, 0,
 		       mt6779_deep_irq_cnt_get, mt6779_deep_irq_cnt_set),
+	SOC_SINGLE_EXT("voip_rx_irq_cnt", SND_SOC_NOPM, 0, 0x3ffff, 0,
+		       mt6779_voip_rx_irq_cnt_get, mt6779_voip_rx_irq_cnt_set),
 	SOC_SINGLE_EXT("deep_buffer_scenario", SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_deep_scene_get, mt6779_deep_scene_set),
 	SOC_SINGLE_EXT("record_xrun_assert", SND_SOC_NOPM, 0, 0x1, 0,
