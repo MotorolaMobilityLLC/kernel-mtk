@@ -64,6 +64,7 @@ enum rt9471_reg_addr {
 #define RT9471_WDTCNTRST_MASK	BIT(2)
 #define RT9471_DISI2CTO_MASK	BIT(3)
 #define RT9471_QONRST_MASK	BIT(7)
+#define RT9471_STATPIN_MASK	BIT(6)
 
 /* ========== FUNCTION 0x02 ============ */
 #define RT9471_CHG_EN_SHIFT	0
@@ -174,5 +175,5 @@ enum rt9471_reg_addr {
 /* ========== OTG_HDEN2 0x58 ============ */
 #define RT9471_REG_OTG_RES_COMP_SHIFT	4
 #define RT9471_REG_OTG_RES_COMP_MASK	0x30
-
+void rt9471_enable_statpin(bool en);
 #endif /* __RT9471_CHARGER_H */

@@ -794,6 +794,22 @@ static int __rt9471_enable_te(struct rt9471_chip *chip, bool en)
 		(chip, RT9471_REG_EOC, RT9471_TE_MASK);
 }
 
+static struct rt9471_chip *g_chip;
+void rt9471_enable_statpin(bool en)
+{
+	int ret = 0;
+	u8 port = 0;
+
+	ret = rt9471_i2c_read_byte(g_chip, RT9471_REG_TOP, &port);
+	dev_info(g_chip->dev, "%s before reg TOP = %d\n", __func__, port);
+
+	dev_info(g_chip->dev, "%s en = %d\n", __func__, en);
+	(en ? rt9471_set_bit : rt9471_clr_bit)(g_chip,RT9471_REG_TOP, RT9471_STATPIN_MASK);
+
+	ret = rt9471_i2c_read_byte(g_chip, RT9471_REG_TOP, &port);
+	dev_info(g_chip->dev, "%s after reg TOP = %d\n", __func__, port);
+}
+
 static int __rt9471_enable_jeita(struct rt9471_chip *chip, bool en)
 {
 	dev_info(chip->dev, "%s en = %d\n", __func__, en);
@@ -1655,6 +1671,9 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 
 	dev_info(chip->dev, "%s\n", __func__);
 
+	/*disable stat pin func*/
+	rt9471_enable_statpin(0);
+
 	/* Disable WDT during IRQ masked period */
 	ret = __rt9471_set_wdt(chip, 0);
 	if (ret < 0)
@@ -2253,6 +2272,7 @@ static int rt9471_probe(struct i2c_client *client,
 	chip->port = RT9471_PORTSTAT_NOINFO;
 	chip->chg_type = CHARGER_UNKNOWN;
 	i2c_set_clientdata(client, chip);
+	g_chip=chip;
 
 	if (!rt9471_check_devinfo(chip)) {
 		ret = -ENODEV;
