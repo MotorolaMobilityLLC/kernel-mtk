@@ -53,6 +53,10 @@ typedef enum {
 	chopchop,
 	mot_glance,
 	ltv,
+	sar_top,
+	sar_bottom_left,
+	sar_bottom,
+	sar_bottom_right,
 	max_situation_support,
 } situation_index_table;
 
@@ -153,5 +157,6 @@ extern int situation_register_control_path(
 extern int situation_register_data_path(struct situation_data_path *data,
 	int handle);
 extern int sar_data_report(int32_t value[3]);
+extern int moto_sar_data_report(int32_t value,int32_t sar_id);
 extern int mot_ltv_data_report(int32_t value[3]);
 #endif

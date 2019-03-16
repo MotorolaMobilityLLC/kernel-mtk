@@ -83,6 +83,7 @@
 #define SENSOR_TYPE_RGBW                               70
 #define SENSOR_TYPE_GYRO_TEMPERATURE                   71
 #define SENSOR_TYPE_SAR                                72
+
 /*moto algo sensor type*/
 #define SENSOR_TYPE_STOWED                             73
 #define SENSOR_TYPE_FLAT_UP                            74
@@ -91,8 +92,12 @@
 #define SENSOR_TYPE_CHOPCHOP_GESTURE                   77
 #define SENSOR_TYPE_MOTO_GLANCE_GESTURE                78
 #define SENSOR_TYPE_LTV                                79
+#define SENSOR_TYPE_SAR_TOP                            80
+#define SENSOR_TYPE_SAR_BOTTOM_LEFT                    81
+#define SENSOR_TYPE_SAR_BOTTOM                         82
+#define SENSOR_TYPE_SAR_BOTTOM_RIGHT                   83
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_LTV
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_SAR_BOTTOM_RIGHT
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -163,7 +168,8 @@
 #define ID_PPG2                 (ID_BASE + SENSOR_TYPE_PPG2 - 1)
 #define ID_RGBW                 (ID_BASE + SENSOR_TYPE_RGBW - 1)
 #define ID_GYRO_TEMPERATURE     (ID_BASE + SENSOR_TYPE_GYRO_TEMPERATURE - 1)
-#define ID_SAR                  (ID_BASE + SENSOR_TYPE_SAR - 1)
+#define ID_SAR                      (ID_BASE + SENSOR_TYPE_SAR - 1)
+
 /*moto sensor algo ID*/
 #define ID_STOWED              (ID_BASE + SENSOR_TYPE_STOWED - 1)
 #define ID_FLATUP              (ID_BASE + SENSOR_TYPE_FLAT_UP - 1)
@@ -172,8 +178,12 @@
 #define ID_CHOPCHOP            (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
 #define ID_MOT_GLANCE          (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
 #define ID_LTV                 (ID_BASE + SENSOR_TYPE_LTV - 1)
+#define ID_SAR_TOP                  (ID_BASE + SENSOR_TYPE_SAR_TOP - 1)
+#define ID_SAR_BOTTOM_LEFT          (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_LEFT - 1)
+#define ID_SAR_BOTTOM               (ID_BASE + SENSOR_TYPE_SAR_BOTTOM - 1)
+#define ID_SAR_BOTTOM_RIGHT         (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_RIGHT - 1)
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_LTV)
+#define ID_SENSOR_MAX_HANDLE    (ID_SAR_BOTTOM_RIGHT)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)

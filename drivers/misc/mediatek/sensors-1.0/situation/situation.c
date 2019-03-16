@@ -104,6 +104,18 @@ static int handle_to_index(int handle)
 	case ID_LTV:
 		index = ltv;
 		break;
+	case ID_SAR_TOP:
+		index = sar_top;
+		break;
+	case ID_SAR_BOTTOM_LEFT:
+		index = sar_bottom_left;
+		break;
+	case ID_SAR_BOTTOM:
+		index = sar_bottom;
+		break;
+	case ID_SAR_BOTTOM_RIGHT:
+		index = sar_bottom_right;
+		break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
@@ -159,6 +171,32 @@ int sar_data_report(int32_t value[3])
 	event.word[0] = value[0];
 	event.word[1] = value[1];
 	event.word[2] = value[2];
+	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
+	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
+		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
+		wake_lock_timeout(&cxt->wake_lock[index], msecs_to_jiffies(250));
+
+	return err;
+}
+
+int moto_sar_data_report(int32_t value, int32_t sar_id)
+{
+	int err = 0, index = -1;
+	struct sensor_event event;
+	struct situation_context *cxt = situation_context_obj;
+
+	memset(&event, 0, sizeof(struct sensor_event));
+
+	index = handle_to_index(sar_id);
+	if (index < 0) {
+		pr_err("[%s] invalid index\n", __func__);
+		return -1;
+	}
+	event.handle = sar_id;
+	event.flush_action = DATA_ACTION;
+	event.word[0] = value;
+	//event.word[1] = value[1];
+	//event.word[2] = value[2];
 	err = sensor_input_event(situation_context_obj->mdev.minor, &event);
 	if (cxt->ctl_context[index].situation_ctl.open_report_data != NULL &&
 		cxt->ctl_context[index].situation_ctl.is_support_wake_lock)
