@@ -6,3 +6,7 @@ config ABOV_SAR
 	bool "MTK AUTO DETECT SAR Sensor"
 	help
 	  to support abov sar sensor.
+config ABOV_A96T346
+	bool "MTK AUTO DETECT SAR Sensor"
+	help
+	  to support abov a96t346 sar sensor.
