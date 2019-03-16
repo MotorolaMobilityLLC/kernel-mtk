@@ -89,6 +89,7 @@ char *leds_name[TYPE_TOTAL] = {
 	"keyboard-backlight",
 	"button-backlight",
 	"lcd-backlight",
+	"charging",
 };
 
 /****************************************************************************
