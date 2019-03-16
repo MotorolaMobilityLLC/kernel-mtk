@@ -324,68 +324,66 @@ error_exit:
 static void touchProcess(pabovXX_t this)
 {
 	u8 i = 0;
+	int retry = 0;
 	struct abov_platform_data *board;
+	struct channel_info *ci;
 
 	board = this->board;
 	if (this) {
 		LOG_INFO("Inside touchProcess()\n");
 		read_register(this, ABOV_IRQSTAT_REG_DETAIL, &i);
-
-		switch (this->report_data[CHANNEL_STATE]) {
-			case IDLE:
-				if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) ||
-					((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL)) {
-					this->report_data[CHANNEL_STATE] = S_BODY;
-					abovXX_sar_data_report(this);
-					LOG_INFO("CS %d State = BODY.\n", S_BODY);
-				} else {
-					if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL & 0x05)) ||
-						((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL & 0x05))) {
-						this->report_data[CHANNEL_STATE] = S_PROX;
-						abovXX_sar_data_report(this);
-						LOG_INFO("CS %d State = PROX.\n", S_PROX);
+		for(retry = 0 ; retry < SAR_CHANNEL_COUNT ; retry++){
+			ci = &(this->channelInfor[retry]);
+			switch (ci->state) {
+				case IDLE:
+					if ((i & ci->mask) == ci->mask) {
+						ci->state = S_BODY;
+						abovXX_sar_data_report(ci->state,ci->channel_id);
+						LOG_INFO("CS %d State = BODY.\n", ci->channel_id);
 					} else {
-						LOG_INFO("CS %d still in IDLE State.\n", IDLE);
+						if ((i & ci->mask) == (ci->mask & 0x05)) {
+							ci->state = S_PROX;
+							abovXX_sar_data_report(ci->state,ci->channel_id);
+							LOG_INFO("CS %d State = PROX.\n", ci->channel_id);
+						} else {
+							LOG_INFO("CS %d still in IDLE State.\n", ci->channel_id);
+						}
 					}
-				}
-				break;
-			case S_PROX:
-				if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) ||
-					((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL)) {
-					this->report_data[CHANNEL_STATE] = S_BODY;
-					abovXX_sar_data_report(this);
-					LOG_INFO("CS %d State = BODY.\n", S_BODY);
-				} else {
-					if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL & 0x05)) ||
-						((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL & 0x05))) {
-						LOG_INFO("CS %d still in PROX State.\n", S_PROX);
+					break;
+				case S_PROX:
+					if ((i & ci->mask) == ci->mask) {
+						ci->state = S_BODY;
+						abovXX_sar_data_report(ci->state,ci->channel_id);
+						LOG_INFO("CS %d State = BODY.\n", ci->channel_id);
 					} else {
-						this->report_data[CHANNEL_STATE] = IDLE;
-						abovXX_sar_data_report(this);
-						LOG_INFO("CS %d State = IDLE.\n", IDLE);
+						if ((i & ci->mask) == (ci->mask & 0x05)) {
+							LOG_INFO("CS %d still in PROX State.\n", ci->channel_id);
+						} else {
+							ci->state = IDLE;
+							abovXX_sar_data_report(ci->state,ci->channel_id);
+							LOG_INFO("CS %d State = IDLE.\n", ci->channel_id);
+						}
 					}
-				}
-				break;
-			case S_BODY:
-				if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) ||
-					((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL)) {
-					LOG_INFO("CS %d still in BODY State.\n", S_BODY);
-				} else {
-					if (((i & ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL & 0x05)) ||
-						((i & ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL) == (ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL & 0x05))) {
-						this->report_data[CHANNEL_STATE] = S_PROX;
-						abovXX_sar_data_report(this);
-						LOG_INFO("CS %d still in PROX State.\n", S_PROX);
+					break;
+				case S_BODY:
+					if ((i & ci->mask) == ci->mask) {
+						LOG_INFO("CS %d still in BODY State.\n", ci->channel_id);
 					} else {
-						this->report_data[CHANNEL_STATE] = IDLE;
-						abovXX_sar_data_report(this);
-						LOG_INFO("CS %d State = IDLE.\n", IDLE);
+						if ((i & ci->mask) == (ci->mask & 0x05)) {
+							ci->state = S_PROX;
+							abovXX_sar_data_report(ci->state,ci->channel_id);
+							LOG_INFO("CS %d still in PROX State.\n", ci->channel_id);
+						} else {
+							ci->state = IDLE;
+							abovXX_sar_data_report(ci->state,ci->channel_id);
+							LOG_INFO("CS %d State = IDLE.\n", ci->channel_id);
+						}
 					}
-				}
-				break;
-			default:
-				LOG_ERR("CS %d State = unknown\n", i);
-				break;
+					break;
+				default:
+					LOG_ERR("CS %d State = unknown\n", retry);
+					break;
+			}
 		}
 		LOG_INFO("Leaving touchProcess()\n");
 	}
@@ -499,8 +497,10 @@ static ssize_t capsense_reset_store(struct class *class,
 	if (!strncmp(buf, "reset", 5) || !strncmp(buf, "1", 1))
 		write_register(this, ABOV_SOFTRESET_REG, 0x10);
 
-	this->report_data[CHANNEL_STATE] = IDLE;
-	abovXX_sar_data_report(this);
+	this->channelInfor[0].state = IDLE;
+	this->channelInfor[1].state = IDLE;
+	abovXX_sar_data_report(IDLE,ID_SAR_TOP);
+	abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
 
 	return count;
 }
@@ -527,15 +527,19 @@ static ssize_t capsense_enable_store(struct class *class,
 		LOG_DBG("enable cap sensor\n");
 		initialize(this);
 
-		this->report_data[CHANNEL_STATE] = IDLE;
-		abovXX_sar_data_report(this);
-		mEnabled = 1;
+		this->channelInfor[0].state = IDLE;
+		this->channelInfor[1].state = IDLE;
+		abovXX_sar_data_report(IDLE,ID_SAR_TOP);
+		abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
+		if(!mEnabled) mEnabled = 1;
 	} else if (!strncmp(buf, "0", 1)) {
 		LOG_DBG("disable cap sensor\n");
 		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 
-		this->report_data[CHANNEL_STATE] = DISABLE;
-		abovXX_sar_data_report(this);
+		this->channelInfor[0].state = DISABLE;
+		this->channelInfor[1].state = DISABLE;
+		abovXX_sar_data_report(DISABLE,ID_SAR_TOP);
+		abovXX_sar_data_report(DISABLE,ID_SAR_BOTTOM);
 		mEnabled = 0;
 	} else {
 		LOG_DBG("unknown enable symbol\n");
@@ -662,7 +666,6 @@ static ssize_t reg_dump_store(struct class *class,
 			this->read_reg = buf[0];
 			this->read_len = buf[1];
 			this->read_flag = 1;
-			LOG_ERR("-----------%d\n",this->read_len);
 		}
 	} else {
 		unsigned int val, reg, opt;
@@ -696,8 +699,10 @@ static void ps_notify_callback_work(struct work_struct *work)
 	if (ret < 0)
 		LOG_ERR(" Usb insert,calibrate cap sensor failed\n");
 
-	this->report_data[CHANNEL_STATE] = IDLE;
-	abovXX_sar_data_report(this);
+	this->channelInfor[0].state = IDLE;
+	this->channelInfor[1].state = IDLE;
+	abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
+	abovXX_sar_data_report(IDLE,ID_SAR_TOP);
 }
 
 static int ps_get_state(struct power_supply *psy, bool *present)
@@ -1590,19 +1595,32 @@ static int sar_open_report_data(int open)
 		return -EINVAL;
 
 	if (open == 1) {
+		if(mEnabled){
+			mEnabled++;
+			LOG_DBG("Cap sensor is already enabled\n");
+			return 0;
+		}
 		LOG_DBG("enable cap sensor\n");
 		initialize(this);
 
-		this->report_data[CHANNEL_STATE] = IDLE;
-		abovXX_sar_data_report(this);
-		mEnabled = 1;
+		this->channelInfor[0].state = IDLE;
+		this->channelInfor[1].state = IDLE;
+		abovXX_sar_data_report(IDLE,ID_SAR_TOP);
+		abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
+		mEnabled++;
 	} else if (open == 0) {
+		if(!mEnabled){
+			LOG_DBG("Cap sensor is already disenabled\n");
+			return 0;
+		}
 		LOG_DBG("disable cap sensor\n");
 		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 
-		this->report_data[CHANNEL_STATE] = DISABLE;
-		abovXX_sar_data_report(this);
-		mEnabled = 0;
+		this->channelInfor[0].state = DISABLE;
+		this->channelInfor[1].state = DISABLE;
+		abovXX_sar_data_report(DISABLE,ID_SAR_TOP);
+		abovXX_sar_data_report(DISABLE,ID_SAR_BOTTOM);
+		mEnabled--;
 	} else {
 		LOG_DBG("unknown enable symbol\n");
 	}
@@ -1623,27 +1641,30 @@ static int sar_get_data(int *probability, int *status)
 {
 	return 0;
 }
-static int abov_sar_local_init(void)
+static bool sar_init_flag = false;
+static int abov_sar_top_local_init(void)
 {
-	struct situation_control_path ctl = {0};
-	struct situation_data_path data = {0};
+	struct situation_control_path ctl_sar_top = {0};
+	struct situation_data_path data_sar_top = {0};
 	int err = 0;
 
 	pr_debug("%s\n", __func__);
-	i2c_add_driver(&abov_driver);
-
-	ctl.open_report_data = sar_open_report_data;
-	ctl.batch = sar_batch;
-	ctl.flush = sar_flush;
-	ctl.is_support_wake_lock = true;
-	ctl.is_support_batch = false;
-	err = situation_register_control_path(&ctl, ID_SAR);
+	if(!sar_init_flag){
+		i2c_add_driver(&abov_driver);
+		sar_init_flag = true;
+	}
+	ctl_sar_top.open_report_data = sar_open_report_data;
+	ctl_sar_top.batch = sar_batch;
+	ctl_sar_top.flush = sar_flush;
+	ctl_sar_top.is_support_wake_lock = true;
+	ctl_sar_top.is_support_batch = false;
+	err = situation_register_control_path(&ctl_sar_top, ID_SAR_TOP);
 	if (err) {
 		pr_err("register sar control path err\n");
 		goto exit;
 	}
-	data.get_data = sar_get_data;
-	err = situation_register_data_path(&data, ID_SAR);
+	data_sar_top.get_data = sar_get_data;
+	err = situation_register_data_path(&data_sar_top, ID_SAR_TOP);
 	if (err) {
 		pr_err("register sar data path err\n");
 		goto exit;
@@ -1653,21 +1674,64 @@ static int abov_sar_local_init(void)
 exit:
 	return -1;
 }
-static int abov_sar_local_uninit(void)
+static int abov_sar_top_local_uninit(void)
 {
 	return 0;
 }
-static struct situation_init_info abov_sar_init_info = {
-	.name = "abov_sar",
-	.init = abov_sar_local_init,
-	.uninit = abov_sar_local_uninit,
+static int abov_sar_bottom_local_init(void)
+{
+	struct situation_control_path ctl_sar_bottom = {0};
+	struct situation_data_path data_sar_bottom = {0};
+	int err = 0;
+
+	pr_debug("%s\n", __func__);
+	if(!sar_init_flag){
+		i2c_add_driver(&abov_driver);
+		sar_init_flag = true;
+	}
+
+	ctl_sar_bottom.open_report_data = sar_open_report_data;
+	ctl_sar_bottom.batch = sar_batch;
+	ctl_sar_bottom.flush = sar_flush;
+	ctl_sar_bottom.is_support_wake_lock = true;
+	ctl_sar_bottom.is_support_batch = false;
+	err = situation_register_control_path(&ctl_sar_bottom, ID_SAR_BOTTOM);
+	if (err) {
+		pr_err("register sar control path err\n");
+		goto exit;
+	}
+	data_sar_bottom.get_data = sar_get_data;
+	err = situation_register_data_path(&data_sar_bottom, ID_SAR_BOTTOM);
+	if (err) {
+		pr_err("register sar data path err\n");
+		goto exit;
+	}
+
+	return 0;
+exit:
+	return -1;
+}
+static int abov_sar_bottom_local_uninit(void)
+{
+	return 0;
+}
+static struct situation_init_info abov_sar_top_init_info = {
+	.name = "abov_sar_top",
+	.init = abov_sar_top_local_init,
+	.uninit = abov_sar_top_local_uninit,
+};
+static struct situation_init_info abov_sar_bottom_init_info = {
+	.name = "abov_sar_bottom",
+	.init = abov_sar_bottom_local_init,
+	.uninit = abov_sar_bottom_local_uninit,
 };
 
 /*---------------------add to situation----------------*/
 static int __init abov_init(void)
 {
 	printk("func = %s, line = %d\n", __func__, __LINE__);
-	situation_driver_add(&abov_sar_init_info, ID_SAR);
+	situation_driver_add(&abov_sar_top_init_info, ID_SAR_TOP);
+	situation_driver_add(&abov_sar_bottom_init_info, ID_SAR_BOTTOM);
 	return 0;
 }
 static void __exit abov_exit(void)
@@ -1886,23 +1950,15 @@ int abovXX_sar_remove(pabovXX_t this)
 	return -ENOMEM;
 }
 
-int abovXX_sar_data_report(pabovXX_t this)
+int abovXX_sar_data_report(int32_t value,int32_t sar_id)
 {
 	int err = 0;
-	int32_t value[3] = {0};
 
-//	memset(&event, 0, sizeof(struct sensor_event));
-
-//	event.handle = ID_SAR;
-//	event.flush_action = DATA_ACTION;
-	value[CHANNEL_STATE] = this->report_data[CHANNEL_STATE];
-	value[1] = this->report_data[1];
-	value[2] = this->report_data[2];
-	err = sar_data_report(value);
-	if (err < 0)
-		printk("func = %s, fail to report data: %d\n", __func__, this->report_data[CHANNEL_STATE]);
-	else {
-		printk("func = %s, success to report data: %d\n",__func__, this->report_data[CHANNEL_STATE]);
+	err = moto_sar_data_report(value,sar_id);
+	if (err < 0){
+		printk("func = %s, fail to report data: %d\n", __func__,value);
+	}else{
+		printk("func = %s, channel[%d] success to report data: %d\n",__func__, sar_id,value);
 	}
 	return err;
 }
@@ -1938,9 +1994,12 @@ static const struct file_operations sar_fops = {
 static int sar_misc_init(pabovXX_t this)
 {
 	int err = 0;
-	this->report_data[CHANNEL_STATE] = IDLE;
-	this->report_data[1] = 0;
-	this->report_data[2] = 0;
+	this->channelInfor[0].channel_id = ID_SAR_BOTTOM;
+	this->channelInfor[0].state = IDLE;
+	this->channelInfor[0].mask = ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL;
+	this->channelInfor[1].channel_id = ID_SAR_TOP;
+	this->channelInfor[1].state = IDLE;
+	this->channelInfor[1].mask = ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL;
 	this->mdev.minor = ID_SAR;
 	this->mdev.name = "sar_misc";
 	this->mdev.fops = &sar_fops;

@@ -140,6 +140,13 @@ enum channel_state
 	DISABLE,
 };
 
+#define SAR_CHANNEL_COUNT 2
+struct channel_info{
+	int32_t channel_id;
+	int32_t state;
+	int32_t mask;
+};
+
 typedef struct abovXX abovXX_t, *pabovXX_t;
 struct abovXX {
 	struct sensor_attr_t mdev;
@@ -153,7 +160,8 @@ struct abovXX {
 #endif
 	void *bus;
 	// void *pDevice;
-	int32_t report_data[3];
+	int32_t report_data;
+	struct channel_info channelInfor[SAR_CHANNEL_COUNT];
 	int read_flag;
 	int irq;
 	int irqTimeout;
@@ -187,5 +195,5 @@ int abovXX_sar_init(pabovXX_t this);
 int abovXX_sar_remove(pabovXX_t this);
 static int abov_tk_fw_mode_enter(struct i2c_client *client);
 static int sar_misc_init(pabovXX_t this);
-int abovXX_sar_data_report(pabovXX_t this);
+int abovXX_sar_data_report(int32_t value,int32_t sar_id);
 #endif
