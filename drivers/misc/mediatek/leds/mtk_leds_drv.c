@@ -29,6 +29,10 @@
 #endif
 #include <ddp_aal.h>
 
+#ifdef CONFIG_CHARGER_RT9471
+#include <rt9471.h>
+#endif
+
 #ifdef CONFIG_BACKLIGHT_SUPPORT_LP8557
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
@@ -290,6 +294,18 @@ static void mt65xx_led_set(struct led_classdev *led_cdev,
 			i2c_smbus_write_byte_data(client, 0x14, 0xdf);
 			i2c_smbus_write_byte_data(client, 0x04, 0xff);
 			i2c_smbus_write_byte_data(client, 0x00, 1);
+		}
+	}
+#endif
+
+#ifdef CONFIG_CHARGER_RT9471
+	if (strcmp(led_data->cust.name, "charging") == 0) {
+		if (level == 0) {
+			rt9471_enable_statpin(0);
+		}
+		else
+		{
+			rt9471_enable_statpin(1);
 		}
 	}
 #endif
