@@ -37,3 +37,24 @@
 		pins = <PINMUX_GPIO70__FUNC_GPIO70>;
 	};
 };
+&odm {
+	sar_irq:sar_irq {
+	compatible = "mediatek,sar_irq";
+	};
+};
+
+&i2c3 {
+	abov_sar@20 {
+	   compatible = "mediatek,sar";
+	   reg = <0x20>;
+	   gpio-irq = <9>;
+	   gpio-irq-std = <&pio 9 0x0>;
+	   reg_array_len = <0x03>;
+	   reg_array_val = <0x07 0x00 0x08 0x1F 0xFB 0x01>;
+	   cap,use_channel_bottom_lmb = <0x00>;
+	   cap,use_channel_bottom_hb = <0x01>;
+	   cap,use_channel_top = <0x02>;
+	   label = "AbovCapSense";
+	   status =  "okay";
+	 };
+};
