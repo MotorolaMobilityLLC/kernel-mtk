@@ -12,6 +12,7 @@
 
 #include "mt6771-moto-overlay.dtsi"
 #include "mt6771-moto-audio-lima.dtsi"
+#include "mt6771-camera-sensor-moto-lima.dtsi"
 
 &ctp_pins_eint_as_int {
 	pins_cmd_dat {
