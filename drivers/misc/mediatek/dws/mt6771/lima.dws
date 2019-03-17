@@ -111,6 +111,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint20>
+            <eint27>
+                <varName>SMART_PA</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>Low</polarity>
+                <sensitive_level>Level</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint27>
             <eint44>
                 <varName>DSI_TE</varName>
                 <debounce_time>0</debounce_time>
@@ -132,13 +139,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint182>
-            <eint186>
-                <varName>SMART_PA</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint186>
         </module>
         <module name="gpio">
             <count>192</count>
@@ -324,45 +324,41 @@
             </gpio16>
             <gpio17>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>2</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_USB_REDRI_SW_C2_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio17>
             <gpio18>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <def_mode>2</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
-                <varName0>GPIO_USB_REDRI_SW_C1_PIN</varName0>
+                <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio18>
             <gpio19>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
+                <def_mode>2</def_mode>
+                <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>true</out_high>
-                <varName0>GPIO_NFC_RST_PIN</varName0>
+                <out_high>false</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio19>
             <gpio20>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <eint_mode>false</eint_mode>
+                <def_mode>2</def_mode>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_IRQ_NFC_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio20>
@@ -429,20 +425,21 @@
                 <ies>true</ies>
             </gpio26>
             <gpio27>
-                <eint_mode>false</eint_mode>
-                <def_mode>5</def_mode>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>OUT</def_dir>
+                <def_dir>IN</def_dir>
                 <out_high>false</out_high>
+                <varName0>GPIO_SMARTPA_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio27>
             <gpio28>
-                <eint_mode>false</eint_mode>
-                <def_mode>5</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
+                <eint_mode>true</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
                 <smt>false</smt>
@@ -1963,13 +1960,12 @@
                 <ies>true</ies>
             </gpio172>
             <gpio173>
-                <eint_mode>true</eint_mode>
+                <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_Smart_PA_EINT_PIN</varName0>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio173>
