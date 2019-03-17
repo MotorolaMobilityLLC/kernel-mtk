@@ -17,6 +17,10 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 # AP object
 obj-$(CONFIG_SND_SOC_CS35L35) +=mtk-cs35l35-machine-ops.o
 obj-$(CONFIG_SND_SOC_CS43130) +=mtk-cs43130-machine-ops.o
+obj-$(CONFIG_SND_SOC_CS35L41) +=mtk-cirrus-machine-ops.o
+
+ifneq ($(CONFIG_SND_SOC_CS35L41),y)
 obj-y +=mtk-hw-component.o
+endif
 
 

@@ -99,12 +99,17 @@
 #include "mtk-soc-codec-63xx.h"
 #include "mtk-soc-speaker-amp.h"
 
+#if !defined(CONFIG_SND_SOC_CS35L41)
 #include "mtk-hw-component.h"
+#endif
 #if defined(CONFIG_SND_SOC_CS43130)
 #include "mtk-cs43130-machine-ops.h"
 #endif
 #if defined(CONFIG_SND_SOC_CS35L35)
 #include "mtk-cs35l35-machine-ops.h"
+#endif
+#if defined(CONFIG_SND_SOC_CS35L41)
+extern const struct snd_soc_ops cirrus_amp_ops;
 #endif
 
 static struct dentry *mt_sco_audio_debugfs;
@@ -685,6 +690,19 @@ static struct snd_soc_dai_link mt_soc_exthp_dai[] = {
 	},
 };
 
+#if defined(CONFIG_SND_SOC_CS35L41)
+static struct snd_soc_dai_link_component cirrus_spk[] = {
+	{
+		.name = "spi32762.0",
+		.dai_name = "cs35l41-pcm",
+	}/*,
+	{
+		.name = "spi4.1",
+		.dai_name = "cs35l41-pcm",
+	},*/
+};
+#endif
+
 static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 	{
 		.name = "ext_Speaker_Multimedia",
@@ -703,6 +721,15 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 			   SND_SOC_DAIFMT_CBS_CFS |
 			   SND_SOC_DAIFMT_NB_NF,
 		.ops = &cs35l35_ops,
+#elif defined(CONFIG_SND_SOC_CS35L41)
+		.codecs = cirrus_spk,
+		.num_codecs = ARRAY_SIZE(cirrus_spk),
+		.ignore_suspend = 1,
+		.ignore_pmdown_time = true,
+		.dai_fmt = SND_SOC_DAIFMT_I2S |
+			   SND_SOC_DAIFMT_CBS_CFS |
+			   SND_SOC_DAIFMT_NB_NF,
+		.ops = &cirrus_amp_ops,
 #else
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.codec_name = "snd-soc-dummy",
@@ -724,17 +751,36 @@ static struct snd_soc_dai_link mt_soc_dai_component[
 	ARRAY_SIZE(mt_soc_exthp_dai) +
 	ARRAY_SIZE(mt_soc_extspk_dai)];
 
+#if defined(CONFIG_SND_SOC_CS35L41)
+static struct snd_soc_codec_conf cirrus_amp_conf[] = {
+	{
+		.dev_name		= "spi32762.0",
+		.name_prefix		= "SPK",
+	}/*,
+	{
+		.dev_name		= "spi4.1",
+		.name_prefix		= "RCV",
+	}*/
+};
+#endif
+
 static struct snd_soc_card mt_snd_soc_card_mt = {
 	.name       = "mt-snd-card",
 	.dai_link   = mt_soc_dai_common,
 	.num_links  = ARRAY_SIZE(mt_soc_dai_common),
+#if defined(CONFIG_SND_SOC_CS35L41)
+	.codec_conf	= cirrus_amp_conf,
+	.num_configs	= ARRAY_SIZE(cirrus_amp_conf),
+#endif
 };
 
+#if !defined(CONFIG_SND_SOC_CS35L41)
 static void get_ext_dai_codec_name(void)
 {
 	get_extspk_dai_codec_name(mt_soc_extspk_dai);
 	get_exthp_dai_codec_name(mt_soc_exthp_dai);
 }
+#endif
 
 static int mt_soc_snd_init(struct platform_device *pdev)
 {
@@ -742,6 +788,7 @@ static int mt_soc_snd_init(struct platform_device *pdev)
 	int ret;
 	int daiLinkNum = 0;
 
+#if !defined(CONFIG_SND_SOC_CS35L41)
 	ret = mtk_spk_update_dai_link(mt_soc_extspk_dai, pdev);
 	if (ret) {
 		dev_err(&pdev->dev, "%s(), mtk_spk_update_dai_link error\n",
@@ -751,6 +798,7 @@ static int mt_soc_snd_init(struct platform_device *pdev)
 
 	get_ext_dai_codec_name();
 	pr_debug("mt_soc_snd_init dai_link = %p\n", mt_snd_soc_card_mt.dai_link);
+#endif
 
 	/* DEAL WITH DAI LINK */
 	memcpy(mt_soc_dai_component, mt_soc_dai_common, sizeof(mt_soc_dai_common));
