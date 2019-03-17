@@ -512,7 +512,7 @@ static int btcvsd_rx_timeout_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
-static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
+static int btcvsd_rx_timestamp_get(struct snd_kcontrol *kcontrol, unsigned int __user *data, unsigned int size)
 {
 	int ret = 0;
 	struct time_buffer_info time_buffer_info_rx;
@@ -536,7 +536,7 @@ static int btcvsd_rx_timestamp_get(unsigned int __user *data, unsigned int size)
 	return ret;
 }
 
-static int btcvsd_rx_timestamp_set(const unsigned int __user *data, unsigned int size)
+static int btcvsd_rx_timestamp_set(struct snd_kcontrol *kcontrol, const unsigned int __user *data, unsigned int size)
 {
 	return 0;
 }
