@@ -100,3 +100,13 @@
 &msdc1 {
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
+
+&i2c5 {
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3e>;
+		bias_gpio_enn = <&pio 151 0>;
+		bias_gpio_enp = <&pio 150 0>;
+		status = "okay";
+	};
+};
