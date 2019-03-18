@@ -1,7 +1,8 @@
 /*
- * MT6771 Bingo main dts override
+ * MT6771 lima main dts override
  * Things can done here:
  * 	Add nodes or properties to root node
  * 	Delete nodes or properties
 */
 
+#include "rt1711.dtsi"
