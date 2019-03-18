@@ -2180,6 +2180,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x43</address>
             </device22>
+            <device23>
+                <varName>I2C_LCD_BIAS</varName>
+                <channel>I2C_CHANNEL_5</channel>
+                <address>0x3E</address>
+            </device23>
         </module>
         <module name="md1_eint">
             <count>3</count>
