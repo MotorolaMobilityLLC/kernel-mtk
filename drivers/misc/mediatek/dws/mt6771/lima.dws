@@ -48,13 +48,6 @@
         </module>
         <module name="eint">
             <count>193</count>
-            <eint0>
-                <varName>MRDUMP_EXT_RST</varName>
-                <debounce_time>512</debounce_time>
-                <polarity>Low</polarity>
-                <sensitive_level>Level</sensitive_level>
-                <debounce_en>Enable</debounce_en>
-            </eint0>
             <eint3>
                 <varName>MSDC1_INS</varName>
                 <debounce_time>256</debounce_time>
@@ -143,29 +136,28 @@
         <module name="gpio">
             <count>192</count>
             <gpio0>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <eint_mode>false</eint_mode>
+                <def_mode>7</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
-                <varName0>GPIO_EINT_RAMDUMP_PIN</varName0>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio0>
             <gpio1>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
+                <eint_mode>false</eint_mode>
+                <def_mode>7</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>OUT</def_dir>
                 <out_high>false</out_high>
                 <smt>true</smt>
                 <ies>true</ies>
             </gpio1>
             <gpio2>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>7</def_mode>
                 <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>OUT</def_dir>
@@ -1133,7 +1125,7 @@
             </gpio93>
             <gpio94>
                 <eint_mode>false</eint_mode>
-                <def_mode>0</def_mode>
+                <def_mode>7</def_mode>
                 <inpull_en>true</inpull_en>
                 <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>IN</def_dir>
