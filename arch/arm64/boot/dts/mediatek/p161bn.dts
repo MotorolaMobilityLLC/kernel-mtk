@@ -455,6 +455,7 @@
 };
 /* AUDIO end */
 
+
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 11 0x0>;
