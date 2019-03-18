@@ -155,7 +155,11 @@ void AFRegulatorCtrl(int Stage)
 			struct device_node *node, *kd_node;
 
 			/* check if customer camera node defined */
+#ifdef CONFIG_CAMERA_PROJECT_LIMA
+
+#else
 			node = of_find_compatible_node(NULL, NULL, "mediatek,CAMERA_MAIN_AF");
+#endif
 
 			if (node) {
 				kd_node = lens_device->of_node;
