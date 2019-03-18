@@ -101,6 +101,10 @@
         cd_level = /bits/ 8 <MSDC_CD_HIGH>;
 };
 
+&led6{
+	led_mode = <4>;
+};
+
 &i2c5 {
 	i2c_lcd_bias@3e {
 		compatible = "mediatek,i2c_lcd_bias";
