@@ -32,8 +32,8 @@
 	gpio-irq-std = <&pio 9 0x0>;
 	reg_array_len = <0x03>;
 	reg_array_val = <0x07 0x00 0x08 0x07 0xFB 0x01>;
-		cap,use_channel_bottom = <0x00>;
-		cap,use_channel_top = <0x01>;
+		cap,use_channel_bottom = <0x01>;
+		cap,use_channel_top = <0x00>;
 		label = "AbovCapSense";
 		status = "okay";
 	};
