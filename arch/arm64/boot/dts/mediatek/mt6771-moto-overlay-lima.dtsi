@@ -38,6 +38,16 @@
 		pins = <PINMUX_GPIO70__FUNC_GPIO70>;
 	};
 };
+
+&spi2{
+	cap_touch_mtk_spi:cap_touch_spi@0{
+		compatible= "mediatek,cap_touch_spi";
+		spi-max-frequency = <10000000>;
+		reg = <0x0>;
+		status = "okay";
+	};
+};
+
 &odm {
 	sar_irq:sar_irq {
 	compatible = "mediatek,sar_irq";
