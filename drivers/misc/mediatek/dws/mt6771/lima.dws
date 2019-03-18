@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.16.2019.14:27:47"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.18.2019.17:34:39"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -2256,7 +2256,7 @@
 				NC NC NC NC
 				NC NC NC NC</keyMatrix_ext>
             <downloadKey>VOLUMEDOWN VOLUMEUP POWER</downloadKey>
-            <modeKey>NC VOLUMEDOWN VOLUMEUP</modeKey>
+            <modeKey>NC VOLUMEUP VOLUMEDOWN</modeKey>
             <pwrKeyEint_gpioNum>0</pwrKeyEint_gpioNum>
             <pwrKeyUtility>POWER</pwrKeyUtility>
             <home_key></home_key>
