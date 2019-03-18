@@ -66,7 +66,10 @@ $(obj)/zImage:	$(obj)/compressed/vmlinux FORCE
 	@$(kecho) '  Kernel: $@ is ready'
 
 $(obj)/zImage-dtb:	$(obj)/zImage $(DTB_OBJS) FORCE
-	$(call if_changed,cat)
+	set -x
+	ls -al $(obj)/zImage-dtb || true
+	$(call if_changed,cat2)
+	ls -al $(obj)/zImage-dtb
 	@echo '  Kernel: $@ is ready'
 
 endif
