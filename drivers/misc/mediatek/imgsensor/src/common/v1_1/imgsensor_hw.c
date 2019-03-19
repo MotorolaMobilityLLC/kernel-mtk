@@ -241,6 +241,10 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	       curr_sensor_name);
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
+	if (strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 && IMGSENSOR_SENSOR_IDX_SUB2 == sensor_idx){
+	      return IMGSENSOR_RETURN_ERROR;
+	}
+
 	mipiswitch(phw, sensor_idx, pwr_status);
 #endif
 

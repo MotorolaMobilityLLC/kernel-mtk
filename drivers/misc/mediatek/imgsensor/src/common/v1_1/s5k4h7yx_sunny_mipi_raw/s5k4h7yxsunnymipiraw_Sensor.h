@@ -22,7 +22,6 @@ typedef enum{
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
-	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
 } IMGSENSOR_MODE;
 
@@ -80,10 +79,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint32 checksum_value;		/* checksum value for Camera Auto Test */
 	imgsensor_mode_struct pre;		/* preview scenario relative information */
 	imgsensor_mode_struct cap;		/* capture scenario relative information */
-	imgsensor_mode_struct cap1;		/* capture for PIP 15fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate */
-	imgsensor_mode_struct cap2;	/* capture for PIP 24fps relative information, capture1 mode must use same framelength, linelength with Capture mode for shutter calculate */
 	imgsensor_mode_struct normal_video;/* normal video  scenario relative information */
-	imgsensor_mode_struct hs_video;	/* high speed video scenario relative information */
 	imgsensor_mode_struct slim_video;	/* slim video for VT scenario relative information */
 
 
