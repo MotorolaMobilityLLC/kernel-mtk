@@ -52,6 +52,41 @@
 	sar_irq:sar_irq {
 	compatible = "mediatek,sar_irq";
 	};
+
+	fp_int:fp_int{
+		compatible = "mediatek,fpsensor_fp_eint";
+		int-gpios = <&pio 11 0>;
+	};
+
+	fpsensor_finger:fpsensor_finger{
+		compatible = "mediatek,fingerprint";
+		fpc,enable-wakeup;
+		pinctrl-names = "fpsensor_fpc_rst_low", "fpsensor_fpc_rst_high",
+				"fpsensor_eint_in_low", "fpsensor_eint_in_float";
+		pinctrl-0 = <&fpsensor_fpc_rst_low>;
+		pinctrl-1 = <&fpsensor_fpc_rst_high>;
+		pinctrl-2 = <&fpsensor_eint_in_low>;
+		pinctrl-3 = <&fpsensor_eint_in_float>;
+		status = "okay";
+	};
+};
+
+&spi0 {
+	fpc_tee@0 {
+		compatible = "fpc,fpc_spi";
+		reg = <0>;
+		fpc,enable-wakeup;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+};
+
+
+&i2c6 {
+	rt9465@4b {
+		status =  "disable";
+	};
 };
 
 &i2c3 {
