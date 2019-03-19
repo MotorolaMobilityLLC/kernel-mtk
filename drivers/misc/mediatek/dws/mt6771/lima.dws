@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.19.2019.11:32:17"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="03.19.2019.18:39:17"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -63,9 +63,9 @@
                 <debounce_en>Disable</debounce_en>
             </eint4>
             <eint5>
-                <varName>MSE</varName>
+                <varName>ALSPS_MTK</varName>
                 <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
+                <polarity>Low</polarity>
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint5>
@@ -1913,11 +1913,10 @@
             <gpio169>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>false</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_en>true</inpull_en>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
-                <varName0>GPIO_CAMERA_2_VCAMA_EN</varName0>
+                <out_high>true</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio169>
