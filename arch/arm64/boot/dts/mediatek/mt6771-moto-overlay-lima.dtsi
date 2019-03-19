@@ -217,3 +217,24 @@
 	max_charge_temperature = <60>;
 	max_charge_temperature_minus_x_degree = <45>;
 };
+
+&camera_pins_cam2_vcamd_0 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+	};
+};
+&camera_pins_cam2_vcamd_1 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+	};
+};
+&camera_pins_cam2_vcama_0 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+	};
+};
+&camera_pins_cam2_vcama_1 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO80__FUNC_GPIO80>;
+	};
+};
