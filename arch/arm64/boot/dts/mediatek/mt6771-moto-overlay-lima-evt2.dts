@@ -35,7 +35,7 @@
 
 
 
-#include <lima/cust.dtsi>
+#include <lima/cust_evt.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 
