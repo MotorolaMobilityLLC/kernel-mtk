@@ -3,4 +3,4 @@
 #
 
 obj-$(CONFIG_GOODIX_FINGERPRINT) += goodix/
-obj-$(CONFIG_FPC_FINGERPRINT) += fpc/
+obj-$(CONFIG_INPUT_FPC_FINGERPRINT) += fpc/
