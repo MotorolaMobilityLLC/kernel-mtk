@@ -20,11 +20,10 @@
 /*
  *  I2C Registers
  */
-#define ABOV_IRQSTAT_REG_MACRO		0x00
 #define ABOV_VERSION_REG		    0x01
 #define ABOV_MODELNO_REG		    0x02
-#define ABOV_VENDOR_ID_REG		    0x03
-#define ABOV_IRQSTAT_REG_DETAIL		0x04
+#define ABOV_ABOV_WHOAMI_REG		0x03
+#define ABOV_IRQSTAT_REG			0x04
 #define ABOV_SOFTRESET_REG  		0x06
 #define ABOV_CTRL_MODE_REG			0x07
 #define ABOV_CTRL_CHANNEL_REG		0x08
@@ -32,28 +31,12 @@
 #define ABOV_CH0_DIFF_LSB_REG		0x1D
 #define ABOV_CH1_DIFF_MSB_REG		0x1E
 #define ABOV_CH1_DIFF_LSB_REG		0x1F
-#define ABOV_CH0_CAP_MSB_REG		0x20
-#define ABOV_CH0_CAP_LSB_REG		0x21
-#define ABOV_CH1_CAP_MSB_REG		0x22
-#define ABOV_CH1_CAP_LSB_REG		0x23
-#define ABOV_REF_CAP_MSB_REG		0x24
-#define ABOV_REF_CAP_LSB_REG		0x25
-#define ABOV_CTRL_TH_LEVEL_REG		0x2B
 #define ABOV_RECALI_REG				0xFB
 
-/* define key value for report */
-#define KEY_CAPSENSE_TOUCHCS0       253
-#define KEY_CAPSENSE_TOUCHCS1       254
-#define KEY_CAPSENSE_RELEASECS0	    198
-#define KEY_CAPSENSE_RELEASECS1	    199
-
 /* enable body stat */
-#define ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_MACRO   0x01
-#define ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_MACRO   0x02
-
-#define ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL   0x0C
-#define ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL   0x03
-
+#define ABOV_TCHCMPSTAT_TCHSTAT1_FLAG   0x0C
+/* enable body stat */
+#define ABOV_TCHCMPSTAT_TCHSTAT0_FLAG   0x03
 
 /**************************************
 * define platform data
@@ -66,6 +49,26 @@ struct smtc_reg_data {
 
 typedef struct smtc_reg_data smtc_reg_data_t;
 typedef struct smtc_reg_data *psmtc_reg_data_t;
+
+
+struct _buttonInfo {
+	/* The Key to send to the input */
+//	int keycode;
+	/* Mask to look for on Touch Status */
+	int mask;
+	/* Current state of button. */
+	int state;
+};
+
+struct _totalButtonInformation {
+	struct _buttonInfo *buttons;
+	int buttonSize;
+	//struct input_dev *input_top;
+	//struct input_dev *input_bottom;
+};
+
+typedef struct _totalButtonInformation buttonInformation_t;
+typedef struct _totalButtonInformation *pbuttonInformation_t;
 
 /* Define Registers that need to be initialized to values different than
  * default
@@ -86,13 +89,28 @@ static struct smtc_reg_data abov_i2c_reg_setup[] = {
 };
 
 
+
+static struct _buttonInfo psmtcButtons[] = {
+	{
+//		.keycode = KEY_CAP_CS0,
+		.mask = ABOV_TCHCMPSTAT_TCHSTAT0_FLAG,
+	},
+	{
+//		.keycode = KEY_CAP_CS1,
+		.mask = ABOV_TCHCMPSTAT_TCHSTAT1_FLAG,
+	},
+};
+
 struct abov_platform_data {
 	int i2c_reg_num;
 	struct smtc_reg_data *pi2c_reg;
 	unsigned irq_gpio;
 	/* used for custom setting for channel and scan period */
+	u32 cust_prox_ctrl0;
+	u32 cust_raw_data_channel;
 	int cap_channel_top;
 	int cap_channel_bottom;
+	pbuttonInformation_t pbuttonInformation;
 	const char *fw_name;
 
 	int (*get_is_nirq_low)(unsigned irq_gpio);
@@ -125,11 +143,13 @@ typedef struct abov_platform_data *pabov_platform_data_t;
 ***************************************/
 #define USE_THREADED_IRQ
 
-#define MAX_NUM_STATUS_BITS (2)
+#define MAX_NUM_STATUS_BITS (8)
 
 enum channel_index
 {
-	CHANNEL_STATE = 0x00,
+	//CHANNEL_STATE = 0x00,
+	CHANNEL_TOP = 0x00,
+	CHANNEL_BOTTOM = 0x01,
 };
 
 enum channel_state
@@ -140,16 +160,8 @@ enum channel_state
 	DISABLE,
 };
 
-#define SAR_CHANNEL_COUNT 2
-struct channel_info{
-	int32_t channel_id;
-	int32_t state;
-	int32_t mask;
-};
-
 typedef struct abovXX abovXX_t, *pabovXX_t;
 struct abovXX {
-	struct sensor_attr_t mdev;
 	struct device *pdev;
 	struct delayed_work dworker;
 	struct abov_platform_data *board;
@@ -159,10 +171,10 @@ struct abovXX {
 	spinlock_t	lock;
 #endif
 	void *bus;
-	// void *pDevice;
+	void *pDevice;
 	int32_t report_data;
-	struct channel_info channelInfor[SAR_CHANNEL_COUNT];
 	int read_flag;
+	int get_ch0_flag;
 	int irq;
 	int irqTimeout;
 	char irq_disabled;
@@ -170,7 +182,7 @@ struct abovXX {
 	 * or does not work properly */
 	u8 useIrqTimer;
 	u8 read_reg;
-	u8 read_len;	//add to read serial multi-reg
+	u8 read_len;
 	struct work_struct ps_notify_work;
 	struct notifier_block ps_notif;
 	bool ps_is_present;
@@ -194,6 +206,6 @@ void abovXX_resume(pabovXX_t this);
 int abovXX_sar_init(pabovXX_t this);
 int abovXX_sar_remove(pabovXX_t this);
 static int abov_tk_fw_mode_enter(struct i2c_client *client);
-static int sar_misc_init(pabovXX_t this);
-int abovXX_sar_data_report(int32_t value,int32_t sar_id);
+//static int sar_misc_init(pabovXX_t this);
+int abovXX_sar_data_report(pabovXX_t this,int32_t channel);
 #endif

@@ -11,8 +11,9 @@
  */
 #define DRIVER_NAME "abov_sar"
 
+#define USE_KERNEL_SUSPEND
 //#define DRIVER_NAME "sar"
-
+#define MAX_WRITE_ARRAY_SIZE 32
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/i2c.h>
@@ -36,6 +37,7 @@
 
 #include "abov_sar.h"
 
+#define BOOT_UPDATE_ABOV_FIRMWARE 1
 #include <asm/segment.h>
 #include <asm/uaccess.h>
 #include <asm/atomic.h>
@@ -50,11 +52,13 @@ static u8 checksum_h;
 static u8 checksum_h_bin;
 static u8 checksum_l;
 static u8 checksum_l_bin;
+static char _Buffer[128];
 
-#define REST_IDLE 0
-#define REST_ACTIVE 1
+#define IDLE 0
+#define ACTIVE 1
 #define ABOV_DEBUG 1
 #define LOG_TAG "ABOV "
+
 
 #if ABOV_DEBUG
 #define LOG_INFO(fmt, args...)  pr_info(LOG_TAG fmt, ##args)
@@ -66,11 +70,45 @@ static u8 checksum_l_bin;
 #define LOG_ERR(fmt, args...)
 #endif
 
+static int last_val;
 static int mEnabled;
 static int fw_dl_status;
 static int programming_done;
 static bool user_debug = false;
+static bool i2c_added = false;
 pabovXX_t abov_sar_ptr;
+
+/**
+ * struct abov
+ * Specialized struct containing input event data, platform data, and
+ * last cap state read if needed.
+ */
+typedef struct abov {
+	pbuttonInformation_t pbuttonInformation;
+	pabov_platform_data_t hw; /* specific platform data settings */
+} abov_t, *pabov_t;
+
+static void ForcetoTouched(pabovXX_t this)
+{
+	pabov_t pDevice = NULL;
+	struct _buttonInfo *pCurrentButton  = NULL;
+
+	pDevice = this->pDevice;
+	if (this && pDevice) {
+		LOG_INFO("ForcetoTouched()\n");
+
+		pCurrentButton = pDevice->pbuttonInformation->buttons;
+		pCurrentButton->state = ACTIVE;
+		last_val = 1;
+		if (mEnabled) {
+            this->report_data = 1;
+			abovXX_sar_data_report(this,CHANNEL_TOP);
+            this->report_data = 1;
+			abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+		}
+		LOG_INFO("Leaving ForcetoTouched()\n");
+	}
+}
 
 /**
  * fn static int write_register(pabovXX_t this, u8 address, u8 value)
@@ -97,7 +135,8 @@ static int write_register(pabovXX_t this, u8 address, u8 value)
 				address, value, returnValue);
 	}
 	if (returnValue < 0) {
-		LOG_DBG("Write_register failed!\n");
+		ForcetoTouched(this);
+		LOG_DBG("Write_register-ForcetoTouched()\n");
 	}
 	return returnValue;
 }
@@ -127,7 +166,8 @@ static int read_register(pabovXX_t this, u8 address, u8 *value)
 			return returnValue;
 		}
 	}
-	LOG_INFO("read_register failed!\n");
+	ForcetoTouched(this);
+	LOG_INFO("read_register-ForcetoTouched()\n");
 	return -ENOMEM;
 }
 
@@ -138,7 +178,7 @@ static int read_register(pabovXX_t this, u8 address, u8 *value)
 static int abov_detect(struct i2c_client *client)
 {
 	s32 returnValue = 0, i;
-	u8 address = ABOV_VENDOR_ID_REG;
+	u8 address = ABOV_ABOV_WHOAMI_REG;
 	u8 value = 0xAB;
 
 	if (client) {
@@ -189,8 +229,8 @@ static ssize_t manual_offset_calibration_show(struct device *dev,
 	pabovXX_t this = dev_get_drvdata(dev);
 
 	LOG_INFO("Reading IRQSTAT_REG\n");
-	read_register(this, ABOV_IRQSTAT_REG_DETAIL, &reg_value);
-	return scnprintf(buf, PAGE_SIZE, "0x%x\n", reg_value);
+	read_register(this, ABOV_IRQSTAT_REG, &reg_value);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", reg_value);
 }
 
 /* brief sysfs store function for manual calibration */
@@ -233,7 +273,7 @@ static int read_regStat(pabovXX_t this)
 	u8 data = 0;
 
 	if (this) {
-		if (read_register(this, ABOV_IRQSTAT_REG_DETAIL, &data) == 0)
+		if (read_register(this, ABOV_IRQSTAT_REG, &data) == 0)
 			return (data & 0x00FF);
 	}
 	return 0;
@@ -246,12 +286,14 @@ static int read_regStat(pabovXX_t this)
  */
 static void hw_init(pabovXX_t this)
 {
+	pabov_t pDevice = 0;
 	pabov_platform_data_t pdata = 0;
 	int i = 0;
 	/* configure device */
 	LOG_INFO("Going to Setup I2C Registers\n");
-	pdata = this->board;
-	if (this && this->board && pdata) {
+	pDevice = this->pDevice;
+	pdata = pDevice->hw;
+	if (this && pDevice && pdata) {
 		while (i < pdata->i2c_reg_num) {
 			/* Write all registers/values contained in i2c_reg */
 			LOG_INFO("Going to Write Reg: 0x%x Value: 0x%x\n",
@@ -261,7 +303,10 @@ static void hw_init(pabovXX_t this)
 			i++;
 		}
 	} else {
-		LOG_ERR("ERROR! platform data 0x%p\n", this->board);
+		LOG_DBG("ERROR! platform data 0x%p\n", pDevice->hw);
+		/* Force to touched if error */
+		ForcetoTouched(this);
+		LOG_INFO("Hardware_init-ForcetoTouched()\n");
 	}
 }
 
@@ -307,13 +352,13 @@ static int initialize(pabovXX_t this)
 		read_regStat(this);
 		LOG_INFO("Exiting initialize(). NIRQ = %d\n",
 				this->get_nirq_low(this->board->irq_gpio));
-		programming_done = REST_ACTIVE;
+		programming_done = ACTIVE;
 		return 0;
 	}
 	return -ENOMEM;
 
 error_exit:
-	programming_done = REST_ACTIVE;
+	programming_done = IDLE;
 	return ret;
 }
 
@@ -323,67 +368,129 @@ error_exit:
  */
 static void touchProcess(pabovXX_t this)
 {
+	int counter = 0;
 	u8 i = 0;
-	int retry = 0;
+	int numberOfButtons = 0;
+	pabov_t pDevice = NULL;
+	struct _buttonInfo *buttons = NULL;
+	struct _buttonInfo *pCurrentButton  = NULL;
 	struct abov_platform_data *board;
-	struct channel_info *ci;
 
+	pDevice = this->pDevice;
 	board = this->board;
-	if (this) {
+	if (this && pDevice) {
 		LOG_INFO("Inside touchProcess()\n");
-		read_register(this, ABOV_IRQSTAT_REG_DETAIL, &i);
-		for(retry = 0 ; retry < SAR_CHANNEL_COUNT ; retry++){
-			ci = &(this->channelInfor[retry]);
-			switch (ci->state) {
-				case IDLE:
-					if ((i & ci->mask) == ci->mask) {
-						ci->state = S_BODY;
-						abovXX_sar_data_report(ci->state,ci->channel_id);
-						LOG_INFO("CS %d State = BODY.\n", ci->channel_id);
-					} else {
-						if ((i & ci->mask) == (ci->mask & 0x05)) {
-							ci->state = S_PROX;
-							abovXX_sar_data_report(ci->state,ci->channel_id);
-							LOG_INFO("CS %d State = PROX.\n", ci->channel_id);
-						} else {
-							LOG_INFO("CS %d still in IDLE State.\n", ci->channel_id);
-						}
-					}
-					break;
-				case S_PROX:
-					if ((i & ci->mask) == ci->mask) {
-						ci->state = S_BODY;
-						abovXX_sar_data_report(ci->state,ci->channel_id);
-						LOG_INFO("CS %d State = BODY.\n", ci->channel_id);
-					} else {
-						if ((i & ci->mask) == (ci->mask & 0x05)) {
-							LOG_INFO("CS %d still in PROX State.\n", ci->channel_id);
-						} else {
-							ci->state = IDLE;
-							abovXX_sar_data_report(ci->state,ci->channel_id);
-							LOG_INFO("CS %d State = IDLE.\n", ci->channel_id);
-						}
-					}
-					break;
-				case S_BODY:
-					if ((i & ci->mask) == ci->mask) {
-						LOG_INFO("CS %d still in BODY State.\n", ci->channel_id);
-					} else {
-						if ((i & ci->mask) == (ci->mask & 0x05)) {
-							ci->state = S_PROX;
-							abovXX_sar_data_report(ci->state,ci->channel_id);
-							LOG_INFO("CS %d still in PROX State.\n", ci->channel_id);
-						} else {
-							ci->state = IDLE;
-							abovXX_sar_data_report(ci->state,ci->channel_id);
-							LOG_INFO("CS %d State = IDLE.\n", ci->channel_id);
-						}
-					}
-					break;
-				default:
-					LOG_ERR("CS %d State = unknown\n", retry);
-					break;
+		read_register(this, ABOV_IRQSTAT_REG, &i);
+
+		buttons = pDevice->pbuttonInformation->buttons;
+		numberOfButtons = pDevice->pbuttonInformation->buttonSize;
+
+		if (unlikely(buttons == NULL)) {
+			LOG_DBG("ERROR!! buttons or input NULL!!!\n");
+			return;
+		}
+
+		for (counter = 0; counter < numberOfButtons; counter++) {
+			pCurrentButton = &buttons[counter];
+			if (pCurrentButton == NULL) {
+				LOG_DBG("ERR!current button index: %d NULL!\n",
+						counter);
+				return; /* ERRORR!!!! */
 			}
+			switch (pCurrentButton->state) {
+			case IDLE: /* Button is being in far state! */
+				if ((i & pCurrentButton->mask) == pCurrentButton->mask) {
+					LOG_INFO("CS %d State=BODY.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+                        this->report_data = S_BODY;
+                        abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = S_BODY;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = S_BODY;
+					last_val = 2;
+				} else if ((i & pCurrentButton->mask) == (pCurrentButton->mask & 0x05)) {
+					LOG_INFO("CS %d State=PROX.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+						this->report_data = S_PROX;
+						abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = S_PROX;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = S_PROX;
+					last_val = 0;
+				} else {
+					LOG_INFO("CS %d still in IDLE State.\n",
+							counter);
+				}
+				break;
+			case S_PROX: /* Button is being in proximity! */
+				if ((i & pCurrentButton->mask) == pCurrentButton->mask) {
+					LOG_INFO("CS %d State=BODY.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+                        this->report_data = S_BODY;
+                        abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = S_BODY;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = S_BODY;
+					last_val = 2;
+				} else if ((i & pCurrentButton->mask) == (pCurrentButton->mask & 0x05)) {
+					LOG_INFO("CS %d still in PROX State.\n",
+							counter);
+				} else{
+					LOG_INFO("CS %d State=IDLE.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+						this->report_data = IDLE;
+						abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = IDLE;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = IDLE;
+					last_val = 0;
+				}
+				break;
+			case S_BODY: /* Button is being in 0mm! */
+				if ((i & pCurrentButton->mask) == pCurrentButton->mask) {
+					LOG_INFO("CS %d still in BODY State.\n",
+							counter);
+				} else if ((i & pCurrentButton->mask) == (pCurrentButton->mask & 0x05)) {
+					LOG_INFO("CS %d State=PROX.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+						this->report_data = S_PROX;
+						abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = S_PROX;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = S_PROX;
+					last_val = 1;
+				} else{
+					LOG_INFO("CS %d State=IDLE.\n",
+							counter);
+					if (board->cap_channel_top == counter) {
+						this->report_data = IDLE;
+						abovXX_sar_data_report(this,CHANNEL_TOP);
+					} else if (board->cap_channel_bottom == counter) {
+						this->report_data = IDLE;
+						abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+					}
+					pCurrentButton->state = IDLE;
+					last_val = 0;
+				}
+				break;
+			default: /* Shouldn't be here, device only allowed ACTIVE or IDLE */
+				break;
+			};
 		}
 		LOG_INFO("Leaving touchProcess()\n");
 	}
@@ -398,6 +505,11 @@ static int abov_get_nirq_state(unsigned irq_gpio)
 		return -EINVAL;
 	}
 }
+
+static struct _totalButtonInformation smtcButtonInformation = {
+	.buttons = psmtcButtons,
+	.buttonSize = ARRAY_SIZE(psmtcButtons),
+};
 
 /**
  *fn static void abov_reg_setup_init(struct i2c_client *client)
@@ -470,6 +582,8 @@ static void abov_platform_data_of_init(struct i2c_client *client,
 	pplatData->pi2c_reg = abov_i2c_reg_setup;
 	pplatData->i2c_reg_num = ARRAY_SIZE(abov_i2c_reg_setup);
 
+	pplatData->pbuttonInformation = &smtcButtonInformation;
+
 	ret = of_property_read_string(np, "label", &pplatData->fw_name);
 	if (ret < 0) {
 		LOG_ERR("firmware name read error!\n");
@@ -497,10 +611,9 @@ static ssize_t capsense_reset_store(struct class *class,
 	if (!strncmp(buf, "reset", 5) || !strncmp(buf, "1", 1))
 		write_register(this, ABOV_SOFTRESET_REG, 0x10);
 
-	this->channelInfor[0].state = IDLE;
-	this->channelInfor[1].state = IDLE;
-	abovXX_sar_data_report(IDLE,ID_SAR_TOP);
-	abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
+	this->report_data = IDLE;
+	abovXX_sar_data_report(this,CHANNEL_TOP);
+	abovXX_sar_data_report(this,CHANNEL_BOTTOM);
 
 	return count;
 }
@@ -527,20 +640,18 @@ static ssize_t capsense_enable_store(struct class *class,
 		LOG_DBG("enable cap sensor\n");
 		initialize(this);
 
-		this->channelInfor[0].state = IDLE;
-		this->channelInfor[1].state = IDLE;
-		abovXX_sar_data_report(IDLE,ID_SAR_TOP);
-		abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
-		if(!mEnabled) mEnabled = 1;
+		this->report_data = IDLE;
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+
 	} else if (!strncmp(buf, "0", 1)) {
 		LOG_DBG("disable cap sensor\n");
 		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 
-		this->channelInfor[0].state = DISABLE;
-		this->channelInfor[1].state = DISABLE;
-		abovXX_sar_data_report(DISABLE,ID_SAR_TOP);
-		abovXX_sar_data_report(DISABLE,ID_SAR_BOTTOM);
-		mEnabled = 0;
+		this->report_data = IDLE;
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+
 	} else {
 		LOG_DBG("unknown enable symbol\n");
 	}
@@ -699,10 +810,9 @@ static void ps_notify_callback_work(struct work_struct *work)
 	if (ret < 0)
 		LOG_ERR(" Usb insert,calibrate cap sensor failed\n");
 
-	this->channelInfor[0].state = IDLE;
-	this->channelInfor[1].state = IDLE;
-	abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
-	abovXX_sar_data_report(IDLE,ID_SAR_TOP);
+	this->report_data = IDLE;
+	abovXX_sar_data_report(this,CHANNEL_TOP);
+	abovXX_sar_data_report(this,CHANNEL_BOTTOM);
 }
 
 static int ps_get_state(struct power_supply *psy, bool *present)
@@ -757,7 +867,27 @@ static int ps_notify_callback(struct notifier_block *self,
 	return 0;
 }
 
-static int _i2c_adapter_block_write(struct i2c_client *client, u8 *data, u8 len)
+static char *toString(u8 *buffer, int len)
+{
+	int i = 0;
+	int h = 0;
+	int l = 0;
+
+	if (buffer == 0 || len < 1)
+		_Buffer[0] = 0x00;
+	else
+		for (i = 0; i < len && i < 40; i++) {
+			h = (buffer[i] & 0xf0) >> 4;
+			l = buffer[i] & 0x0f;
+			_Buffer[i * 3 + 0] = h < 10 ? '0' + h : 'A' + (h - 10);
+			_Buffer[i * 3 + 1] = l < 10 ? '0' + l : 'A' + (l - 10);
+			_Buffer[i * 3 + 2] = ' ';
+			_Buffer[i * 3 + 3] = 0x00;
+		}
+
+	return _Buffer;
+}
+static int _i2c_adapter_block_write(struct i2c_client *client, u8 *data, u8 len, int outData)
 {
 	u8 buffer[C_I2C_FIFO_SIZE];
 	u8 left = len;
@@ -791,12 +921,20 @@ static int _i2c_adapter_block_write(struct i2c_client *client, u8 *data, u8 len)
 		while (i2c_transfer(client->adapter, &msg, 1) != 1) {
 			retry++;
 			if (retry > 10) {
-			    LOG_ERR("OUT : fail - addr:%#x len:%d \n", client->addr, msg.len);
+				if (outData)
+					LOG_ERR("OUT : fail - addr:%#x len:%d data:%s\n", client->addr, msg.len, toString(msg.buf, msg.len));
+				else
+					LOG_ERR("OUT : fail - addr:%#x len:%d \n", client->addr, msg.len);
 				return -EIO;
 			}
 		}
 	}
 	return 0;
+}
+
+static int i2c_adapter_block_write_nodatalog(struct i2c_client *client, u8 *data, u8 len)
+{
+	return _i2c_adapter_block_write(client, data, len, 0);
 }
 
 static int abov_tk_check_busy(struct i2c_client *client)
@@ -831,7 +969,7 @@ static int abov_tk_fw_write(struct i2c_client *client, unsigned char *addrH,
 	memcpy(&buf[2], addrH, 1);
 	memcpy(&buf[3], addrL, 1);
 	memcpy(&buf[4], val, 32);
-	ret = _i2c_adapter_block_write(client, buf, length);
+	ret = i2c_adapter_block_write_nodatalog(client, buf, length);
 	if (ret < 0) {
 		LOG_ERR("Firmware write fail ...\n");
 		return ret;
@@ -864,6 +1002,37 @@ retry:
 	}
 }
 
+static int i2c_adapter_read_raw(struct i2c_client *client, u8 *data, u8 len)
+{
+	struct i2c_msg msg;
+	int ret;
+	int retry = 3;
+
+	msg.addr = client->addr;
+	msg.flags = 1;
+	msg.len = len;
+	msg.buf = data;
+	while (retry--) {
+		ret = i2c_transfer(client->adapter, &msg, 1);
+		if (ret == 1) {
+			break;
+		}
+
+		if (ret < 0) {
+			LOG_ERR("%s fail(data read)(%d)\n", __func__, retry);
+			SLEEP(10);
+		}
+	}
+
+	if (retry) {
+		LOG_INFO("TRAN : succ - addr:%#x ... len:%d data:%s\n", client->addr, msg.len, toString(msg.buf, msg.len));
+		return 0;
+	} else {
+		LOG_INFO("TRAN : fail - addr:%#x len:%d \n", client->addr, msg.len);
+		return -EIO;
+	}
+}
+
 static int abov_tk_fw_mode_enter(struct i2c_client *client)
 {
 	int ret = 0;
@@ -879,13 +1048,13 @@ static int abov_tk_fw_mode_enter(struct i2c_client *client)
 	LOG_INFO("SEND : succ - addr:%#x data:%#x %#x... ret:%d\n", client->addr, buf[0], buf[1], ret);
 	SLEEP(5);
 
-	ret = i2c_master_recv(client, buf, 1);
+	ret = i2c_adapter_read_raw(client, buf, 1);
 	if (ret < 0) {
-		LOG_ERR("Enter fw downloader mode fail ...\n");
+		LOG_ERR("Enter fw mode fail ...\n");
 		return -EIO;
 	}
 
-	LOG_INFO("succ ... device id=0x%#x\n", buf[0]);
+	LOG_INFO("succ ... data:%#x\n", buf[0]);
 
 	return 0;
 }
@@ -913,8 +1082,11 @@ static int abov_tk_flash_erase(struct i2c_client *client)
 	unsigned char buf[16] = {0, };
 
 	buf[0] = 0xAC;
+#ifdef ABOV_POWER_CONFIG
+	buf[1] = 0x2D;
+#else
 	buf[1] = 0x2E;
-
+#endif
 
 	ret = i2c_master_send(client, buf, 2);
 	if (ret != 2) {
@@ -936,6 +1108,15 @@ static int abov_tk_i2c_read_checksum(struct i2c_client *client)
 	checksum_h = 0;
 	checksum_l = 0;
 
+#ifdef ABOV_POWER_CONFIG
+	buf[0] = 0xAC;
+	buf[1] = 0x9E;
+	buf[2] = 0x10;
+	buf[3] = 0x00;
+	buf[4] = 0x3F;
+	buf[5] = 0xFF;
+	ret = i2c_master_send(client, buf, 6);
+#else
 	buf[0] = 0xAC;
 	buf[1] = 0x9E;
 	buf[2] = 0x00;
@@ -943,9 +1124,9 @@ static int abov_tk_i2c_read_checksum(struct i2c_client *client)
 	buf[4] = checksum_h_bin;
 	buf[5] = checksum_l_bin;
 	ret = i2c_master_send(client, buf, 6);
-
+#endif
 	if (ret != 6) {
-		LOG_ERR("SEND : fail - addr:%#x len:%d... ret:%d\n", client->addr, 6, ret);
+		LOG_ERR("SEND : fail - addr:%#x len:%d data:%s ... ret:%d\n", client->addr, 6, toString(buf, 6), ret);
 		return -EIO;
 	}
 	SLEEP(5);
@@ -958,7 +1139,7 @@ static int abov_tk_i2c_read_checksum(struct i2c_client *client)
 	}
 	SLEEP(5);
 
-	ret = i2c_master_recv(client, checksum, 6);
+	ret = i2c_adapter_read_raw(client, checksum, 6);
 	if (ret < 0) {
 		LOG_ERR("Read raw fail ... \n");
 		return -EIO;
@@ -1028,10 +1209,10 @@ static int _abov_fw_update(struct i2c_client *client, const u8 *image, u32 size)
 	ret = abov_tk_i2c_read_checksum(client);
 	ret = abov_tk_fw_mode_exit(client);
 	if ((checksum_h == checksum_h_bin) && (checksum_l == checksum_l_bin)) {
-		LOG_INFO("checksum successful. checksum_h:0x%02x=0x%02x && checksum_l:0x%02x=0x%02x\n",
+		LOG_INFO("checksum successful. checksum_h:%x=%x && checksum_l:%x=%x\n",
 			checksum_h, checksum_h_bin, checksum_l, checksum_l_bin);
 	} else {
-		LOG_INFO("checksum error. checksum_h:0x%02x!=0x%02x && checksum_l:0x%02x!=0x%02x\n",
+		LOG_INFO("checksum error. checksum_h:%x=%x && checksum_l:%x=%x\n",
 			checksum_h, checksum_h_bin, checksum_l, checksum_l_bin);
 		ret = -1;
 	}
@@ -1061,10 +1242,8 @@ static int abov_fw_update(bool force)
 		return rc;
 	}
 
-	if (force == false) {
-		read_register(this, ABOV_VERSION_REG, &fw_version);
-		read_register(this, ABOV_MODELNO_REG, &fw_modelno);
-	}
+	read_register(this, ABOV_VERSION_REG, &fw_version);
+	read_register(this, ABOV_MODELNO_REG, &fw_modelno);
 
 	fw_file_modeno = fw->data[1];
 	fw_file_version = fw->data[5];
@@ -1134,22 +1313,14 @@ static ssize_t capsense_update_fw_store(struct class *class,
 
 	this->irq_disabled = 1;
 	disable_irq(this->irq);
-#ifdef USE_THREADED_IRQ
-	mutex_lock(&this->mutex);
-#else
-    spin_lock(&this->lock);
-#endif
 
+	mutex_lock(&this->mutex);
 	if (!this->loading_fw  && val) {
 		this->loading_fw = true;
 		abov_fw_update(false);
 		this->loading_fw = false;
 	}
-#ifdef USE_THREADED_IRQ
 	mutex_unlock(&this->mutex);
-#else
-	spin_unlock(&this->lock);
-#endif
 
 	enable_irq(this->irq);
 	this->irq_disabled = 0;
@@ -1176,22 +1347,13 @@ static ssize_t capsense_force_update_fw_store(struct class *class,
 	this->irq_disabled = 1;
 	disable_irq(this->irq);
 
-#ifdef USE_THREADED_IRQ
 	mutex_lock(&this->mutex);
-#else
-	spin_lock(&this->lock);
-#endif
-
 	if (!this->loading_fw  && val) {
 		this->loading_fw = true;
 		abov_fw_update(true);
 		this->loading_fw = false;
 	}
-#ifdef USE_THREADED_IRQ
 	mutex_unlock(&this->mutex);
-#else
-	spin_unlock(&this->lock);
-#endif
 
 	enable_irq(this->irq);
 	this->irq_disabled = 0;
@@ -1241,20 +1403,11 @@ static void capsense_update_work(struct work_struct *work)
 	pabovXX_t this = container_of(work, abovXX_t, fw_update_work);
 
 	LOG_INFO("%s: start update firmware\n", __func__);
-#ifdef USE_THREADED_IRQ
 	mutex_lock(&this->mutex);
-#else
-	spin_lock(&this->lock);
-#endif
 	this->loading_fw = true;
 	abov_fw_update(false);
 	this->loading_fw = false;
-#ifdef USE_THREADED_IRQ
 	mutex_unlock(&this->mutex);
-#else
-	spin_unlock(&this->lock);
-#endif
-
 	LOG_INFO("%s: update firmware end\n", __func__);
 }
 
@@ -1263,20 +1416,11 @@ static void capsense_fore_update_work(struct work_struct *work)
 	pabovXX_t this = container_of(work, abovXX_t, fw_update_work);
 
 	LOG_INFO("%s: start force update firmware\n", __func__);
-#ifdef USE_THREADED_IRQ
 	mutex_lock(&this->mutex);
-#else
-	spin_lock(&this->lock);
-#endif
 	this->loading_fw = true;
 	abov_fw_update(true);
 	this->loading_fw = false;
-#ifdef USE_THREADED_IRQ
 	mutex_unlock(&this->mutex);
-#else
-	spin_unlock(&this->lock);
-#endif
-
 	LOG_INFO("%s: force update firmware end\n", __func__);
 }
 
@@ -1291,9 +1435,10 @@ static void capsense_fore_update_work(struct work_struct *work)
 static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	pabovXX_t this = 0;
+	pabov_t pDevice = 0;
 	pabov_platform_data_t pplatData = 0;
-	int ret;
 	bool isForceUpdate = false;
+	int ret;
 	struct power_supply *psy = NULL;
 
 	LOG_INFO("abov_probe() start!\n");
@@ -1380,9 +1525,15 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		this->useIrqTimer = 0;
 		this->board = pplatData;
 		/* Setup function to call on corresponding reg irq source bit */
-		if (MAX_NUM_STATUS_BITS >= 2) {
-			this->statusFunc[0] = touchProcess; /* RELEASE_STAT */
-			this->statusFunc[1] = touchProcess; /* TOUCH_STAT  */
+		if (MAX_NUM_STATUS_BITS >= 8) {
+			this->statusFunc[0] = 0; /* TXEN_STAT */
+			this->statusFunc[1] = 0; /* UNUSED */
+			this->statusFunc[2] = 0; /* UNUSED */
+			this->statusFunc[3] = 0;/*read_rawData;  CONV_STAT */
+			this->statusFunc[4] = 0; /* COMP_STAT */
+			this->statusFunc[5] = touchProcess; /* RELEASE_STAT */
+			this->statusFunc[6] = touchProcess; /* TOUCH_STAT  */
+			this->statusFunc[7] = 0; /* RESET_STAT */
 		}
 
 		/* setup i2c communication */
@@ -1392,15 +1543,25 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		/* record device struct */
 		this->pdev = &client->dev;
 
+		/* create memory for device specific struct */
+		this->pDevice = pDevice = kzalloc(sizeof(abov_t), GFP_KERNEL);
+		LOG_INFO("\t Initialized Device Specific Memory: 0x%p\n",
+				pDevice);
 		abov_sar_ptr = this;
-
-		/* for accessing items in user data (e.g. calibrate) */
-		ret = sysfs_create_group(&client->dev.kobj, &abov_attr_group);
+		if (pDevice) {
+			/* for accessing items in user data (e.g. calibrate) */
+			ret = sysfs_create_group(&client->dev.kobj, &abov_attr_group);
 
 		/* Check if we hava a platform initialization function to call*/
 		if (pplatData->init_platform_hw)
 			pplatData->init_platform_hw();
 
+			/* Add Pointer to main platform data struct */
+			pDevice->hw = pplatData;
+
+			/* Initialize the button information initialized with keycodes */
+			pDevice->pbuttonInformation = pplatData->pbuttonInformation;
+		}
 		ret = class_register(&capsense_class);
 		if (ret < 0) {
 			LOG_ERR("Create fsys class failed (%d)\n", ret);
@@ -1449,7 +1610,8 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		}
 
 		abovXX_sar_init(this);
-		sar_misc_init(this);
+	    this->report_data = IDLE;
+
 		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 		mEnabled = 0;
 
@@ -1525,18 +1687,20 @@ err_vdd_defer:
 static int abov_remove(struct i2c_client *client)
 {
 	pabov_platform_data_t pplatData = 0;
+	pabov_t pDevice = 0;
 	pabovXX_t this = i2c_get_clientdata(client);
 
-	if (this) {
+	pDevice = this->pDevice;
+	if (this && pDevice) {
 		sysfs_remove_group(&client->dev.kobj, &abov_attr_group);
 		pplatData = client->dev.platform_data;
 		if (pplatData && pplatData->exit_platform_hw)
 			pplatData->exit_platform_hw();
+		kfree(this->pDevice);
 	}
 	return abovXX_sar_remove(this);
 }
-
-#ifdef CONFIG_PM_SLEEP
+#if defined(USE_KERNEL_SUSPEND)
 /*====================================================*/
 /***** Kernel Suspend *****/
 static int abov_suspend(struct device *dev)
@@ -1587,86 +1751,108 @@ static struct i2c_driver abov_driver = {
 	.remove	  = abov_remove,
 };
 /*---------------------add to situation----------------*/
-static int sar_open_report_data(int open)
+static int sar_top_open_report_data(int enable)
 {
 	pabovXX_t this = abov_sar_ptr;
 
 	if (this == NULL)
 		return -EINVAL;
 
-	if (open == 1) {
-		if(mEnabled){
-			mEnabled++;
-			LOG_DBG("Cap sensor is already enabled\n");
-			return 0;
-		}
-		LOG_DBG("enable cap sensor\n");
-		initialize(this);
+	if (enable == 1) {
+		LOG_DBG("enable cap sensor mEnabled=%d\n",mEnabled);
+		if (mEnabled == 0)
+		   initialize(this);
 
-		this->channelInfor[0].state = IDLE;
-		this->channelInfor[1].state = IDLE;
-		abovXX_sar_data_report(IDLE,ID_SAR_TOP);
-		abovXX_sar_data_report(IDLE,ID_SAR_BOTTOM);
-		mEnabled++;
-	} else if (open == 0) {
-		if(!mEnabled){
-			LOG_DBG("Cap sensor is already disenabled\n");
-			return 0;
-		}
-		LOG_DBG("disable cap sensor\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
-
-		this->channelInfor[0].state = DISABLE;
-		this->channelInfor[1].state = DISABLE;
-		abovXX_sar_data_report(DISABLE,ID_SAR_TOP);
-		abovXX_sar_data_report(DISABLE,ID_SAR_BOTTOM);
-		mEnabled--;
-	} else {
-		LOG_DBG("unknown enable symbol\n");
+		this->report_data = 0;
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		mEnabled = mEnabled | 0x01;
+	} else if (enable == 0) {
+		LOG_DBG("disable cap sensor mEnabled=%d\n",mEnabled);
+		mEnabled = mEnabled & 0xFE;
+		if ((mEnabled & 0x03) == 0)
+		   write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
 
 	return 0;
 }
-static int sar_batch(int flag,
+static int sar_bottom_open_report_data(int enable)
+{
+	pabovXX_t this = abov_sar_ptr;
+
+	if (this == NULL)
+		return -EINVAL;
+
+	if (enable == 1) {
+		LOG_DBG("enable cap sensor mEnabled=%d\n",mEnabled);
+		if (mEnabled == 0)
+		   initialize(this);
+		this->report_data = 0;
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM);
+		mEnabled = mEnabled | 0x02;
+	} else if (enable == 0) {
+		LOG_DBG("disable cap sensor mEnabled=%d\n",mEnabled);
+		mEnabled = mEnabled & 0xFD;
+		if ((mEnabled & 0x03) == 0)
+		   write_register(this, ABOV_CTRL_MODE_REG, 0x02);
+	}
+	return 0;
+}
+static int sar_top_batch(int flag,
 	int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
 	return 0;
 }
-static int sar_flush(void)
+static int sar_bottom_batch(int flag,
+	int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
 {
 	return 0;
 }
 
-static int sar_get_data(int *probability, int *status)
+static int sar_top_flush(void)
 {
 	return 0;
 }
-static bool sar_init_flag = false;
+static int sar_bottom_flush(void)
+{
+	return 0;
+}
+
+
+static int sar_top_get_data(int *probability, int *status)
+{
+	return 0;
+}
+static int sar_bottom_get_data(int *probability, int *status)
+{
+	return 0;
+}
+
 static int abov_sar_top_local_init(void)
 {
-	struct situation_control_path ctl_sar_top = {0};
-	struct situation_data_path data_sar_top = {0};
+	struct situation_control_path ctl = {0};
+	struct situation_data_path data = {0};
 	int err = 0;
 
 	pr_debug("%s\n", __func__);
-	if(!sar_init_flag){
-		i2c_add_driver(&abov_driver);
-		sar_init_flag = true;
-	}
-	ctl_sar_top.open_report_data = sar_open_report_data;
-	ctl_sar_top.batch = sar_batch;
-	ctl_sar_top.flush = sar_flush;
-	ctl_sar_top.is_support_wake_lock = true;
-	ctl_sar_top.is_support_batch = false;
-	err = situation_register_control_path(&ctl_sar_top, ID_SAR_TOP);
+
+    if (false == i2c_added) {
+	   i2c_add_driver(&abov_driver);
+       i2c_added = true;
+    }
+	ctl.open_report_data = sar_top_open_report_data;
+	ctl.batch = sar_top_batch;
+	ctl.flush = sar_top_flush;
+	ctl.is_support_wake_lock = true;
+	ctl.is_support_batch = false;
+	err = situation_register_control_path(&ctl, ID_SAR_TOP);
 	if (err) {
-		pr_err("register sar control path err\n");
+		pr_err("register sar top control path err\n");
 		goto exit;
 	}
-	data_sar_top.get_data = sar_get_data;
-	err = situation_register_data_path(&data_sar_top, ID_SAR_TOP);
+	data.get_data = sar_top_get_data;
+	err = situation_register_data_path(&data, ID_SAR_TOP);
 	if (err) {
-		pr_err("register sar data path err\n");
+		pr_err("register sar top data path err\n");
 		goto exit;
 	}
 
@@ -1674,42 +1860,45 @@ static int abov_sar_top_local_init(void)
 exit:
 	return -1;
 }
+
+static int abov_sar_bottom_local_init(void)
+{
+	struct situation_control_path ctl = {0};
+	struct situation_data_path data = {0};
+	int err = 0;
+
+	pr_debug("%s\n", __func__);
+    if (false == i2c_added) {
+	   i2c_add_driver(&abov_driver);
+       i2c_added = true;
+    }
+
+	ctl.open_report_data = sar_bottom_open_report_data;
+	ctl.batch = sar_bottom_batch;
+	ctl.flush = sar_bottom_flush;
+	ctl.is_support_wake_lock = true;
+	ctl.is_support_batch = false;
+	err = situation_register_control_path(&ctl, ID_SAR_BOTTOM);
+	if (err) {
+		pr_err("register sar bottom control path err\n");
+		goto exit;
+	}
+	data.get_data = sar_bottom_get_data;
+	err = situation_register_data_path(&data, ID_SAR_BOTTOM);
+	if (err) {
+		pr_err("register sar bottom data path err\n");
+		goto exit;
+	}
+
+	return 0;
+exit:
+	return -1;
+}
+
+
 static int abov_sar_top_local_uninit(void)
 {
 	return 0;
-}
-static int abov_sar_bottom_local_init(void)
-{
-	struct situation_control_path ctl_sar_bottom = {0};
-	struct situation_data_path data_sar_bottom = {0};
-	int err = 0;
-
-	pr_debug("%s\n", __func__);
-	if(!sar_init_flag){
-		i2c_add_driver(&abov_driver);
-		sar_init_flag = true;
-	}
-
-	ctl_sar_bottom.open_report_data = sar_open_report_data;
-	ctl_sar_bottom.batch = sar_batch;
-	ctl_sar_bottom.flush = sar_flush;
-	ctl_sar_bottom.is_support_wake_lock = true;
-	ctl_sar_bottom.is_support_batch = false;
-	err = situation_register_control_path(&ctl_sar_bottom, ID_SAR_BOTTOM);
-	if (err) {
-		pr_err("register sar control path err\n");
-		goto exit;
-	}
-	data_sar_bottom.get_data = sar_get_data;
-	err = situation_register_data_path(&data_sar_bottom, ID_SAR_BOTTOM);
-	if (err) {
-		pr_err("register sar data path err\n");
-		goto exit;
-	}
-
-	return 0;
-exit:
-	return -1;
 }
 static int abov_sar_bottom_local_uninit(void)
 {
@@ -1759,7 +1948,7 @@ static void abovXX_process_interrupt(pabovXX_t this, u8 nirqlow)
 	/* since we are not in an interrupt don't need to disable irq. */
 	status = this->refreshStatus(this);
 	LOG_INFO("Worker - Refresh Status %d\n", status);
-	this->statusFunc[0](this);
+	this->statusFunc[6](this);
 	if (unlikely(this->useIrqTimer && nirqlow)) {
 		/* In case we need to send a timer for example on a touchscreen
 		 * checking penup, perform this here
@@ -1843,6 +2032,7 @@ static void abovXX_worker_func(struct work_struct *work)
 {
 	pabovXX_t this = 0;
 	int status = 0;
+	int counter = 0;
 	u8 nirqLow = 0;
 
 	if (work) {
@@ -1860,8 +2050,13 @@ static void abovXX_worker_func(struct work_struct *work)
 		status = this->refreshStatus(this);
 		counter = -1;
 		LOG_INFO("Worker - Refresh Status %d\n", status);
-		this->statusFunc[0](this);
-
+		while ((++counter) < MAX_NUM_STATUS_BITS) { /* counter start from MSB */
+			LOG_INFO("Looping Counter %d\n", counter);
+			if (((status >> counter) & 0x01) && (this->statusFunc[counter])) {
+				LOG_INFO("Function Pointer Found. Calling\n");
+				this->statusFunc[counter](this);
+			}
+		}
 		if (unlikely(this->useIrqTimer && nirqLow)) {
 			/* Early models and if RATE=0 for newer models require a penup timer */
 			/* Queue up the function again for checking on penup */
@@ -1877,17 +2072,17 @@ void abovXX_suspend(pabovXX_t this)
 {
 	if (this) {
 		LOG_INFO("ABOV suspend: enter stop mode!\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
-		LOG_INFO("ABOV suspend: disable irq!\n");
 		disable_irq(this->irq);
+		if (mEnabled)
+			write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
 }
 void abovXX_resume(pabovXX_t this)
 {
 	if (this) {
 		LOG_INFO("ABOV resume: enter ative mode!\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x00);
-		LOG_INFO("ABOV resume: enable irq!\n");
+		if (mEnabled)
+			write_register(this, ABOV_CTRL_MODE_REG, 0x00);
 		enable_irq(this->irq);
 	}
 }
@@ -1896,7 +2091,7 @@ int abovXX_sar_init(pabovXX_t this)
 {
 	int err = 0;
 
-	if (this) {
+	if (this && this->pDevice) {
 #ifdef USE_THREADED_IRQ
 
 		/* initialize worker function */
@@ -1950,61 +2145,24 @@ int abovXX_sar_remove(pabovXX_t this)
 	return -ENOMEM;
 }
 
-int abovXX_sar_data_report(int32_t value,int32_t sar_id)
+int abovXX_sar_data_report(pabovXX_t this,int32_t channel)
 {
-	int err = 0;
+	int32_t value = 0;
 
-	err = moto_sar_data_report(value,sar_id);
-	if (err < 0){
-		printk("func = %s, fail to report data: %d\n", __func__,value);
-	}else{
-		printk("func = %s, channel[%d] success to report data: %d\n",__func__, sar_id,value);
+	value = this->report_data;
+
+	switch (channel) {
+		case CHANNEL_TOP:
+		  moto_sar_data_report(value,ID_SAR_TOP);
+		  break;
+		case CHANNEL_BOTTOM:
+		  moto_sar_data_report(value,ID_SAR_BOTTOM);
+		  break;
+		default:
+		  pr_err("abovXX_sar_data_report err channel=%d\n",channel);
+		  break;
 	}
-	return err;
-}
-
-static int sar_open(struct inode *inode, struct file *file)
-{
-	nonseekable_open(inode, file);
 	return 0;
 }
 
-static ssize_t sar_read(struct file *file, char __user *buffer,
-			  size_t count, loff_t *ppos)
-{
-	ssize_t read_cnt = 0;
 
-	read_cnt = sensor_event_read(abov_sar_ptr->mdev.minor, file, buffer, count, ppos);
-
-	return read_cnt;
-}
-
-static unsigned int sar_poll(struct file *file, poll_table *wait)
-{
-	return sensor_event_poll(abov_sar_ptr->mdev.minor, file, wait);
-}
-
-static const struct file_operations sar_fops = {
-	.owner = THIS_MODULE,
-	.open = sar_open,
-	.read = sar_read,
-	.poll = sar_poll,
-};
-
-static int sar_misc_init(pabovXX_t this)
-{
-	int err = 0;
-	this->channelInfor[0].channel_id = ID_SAR_BOTTOM;
-	this->channelInfor[0].state = IDLE;
-	this->channelInfor[0].mask = ABOV_TCHCMPSTAT_TCHSTAT0_FLAG_DETAIL;
-	this->channelInfor[1].channel_id = ID_SAR_TOP;
-	this->channelInfor[1].state = IDLE;
-	this->channelInfor[1].mask = ABOV_TCHCMPSTAT_TCHSTAT1_FLAG_DETAIL;
-	this->mdev.minor = ID_SAR;
-	this->mdev.name = "sar_misc";
-	this->mdev.fops = &sar_fops;
-	err = sensor_attr_register(&this->mdev);
-	if (err)
-		LOG_ERR("unable to register sar misc device!!\n");
-	return err;
-}
