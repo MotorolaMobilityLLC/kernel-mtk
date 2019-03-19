@@ -146,7 +146,7 @@ class ChipObj:
             for obj in self.__objs.values():
                 obj.gen_files()
 
-            self.gen_custDtsi()
+            self.gen_custDtsi('')
         else:
             self.gen_spec(paras)
 
@@ -166,8 +166,13 @@ class ChipObj:
             # return True
 
         for para in paras:
-            if cmp(para, 'cust_dtsi') == 0:
-                self.gen_custDtsi()
+
+            pos = para.find('cust_dtsi')
+            if pos >= 0:
+                hwrev = ''
+                if pos > 0:
+                    hwrev = para[0:pos]
+                self.gen_custDtsi(hwrev)
                 continue
 
             idx = 0
@@ -190,9 +195,9 @@ class ChipObj:
 
         return True
 
-    def gen_custDtsi(self):
+    def gen_custDtsi(self, hwrev):
         log(LogLevel.info, 'Start to generate cust_dtsi file...')
-        fp = open(os.path.join(ModuleObj.get_genPath(), 'cust.dtsi'), 'w')
+        fp = open(os.path.join(ModuleObj.get_genPath(), 'cust' + hwrev + '.dtsi'), 'w')
         gen_str = ModuleObj.writeComment()
 
         #sorted_list = sorted(self.__objs.keys())

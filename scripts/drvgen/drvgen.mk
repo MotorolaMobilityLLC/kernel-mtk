@@ -47,7 +47,7 @@ export DRVGEN_OUT
 
 ALL_DRVGEN_FILE := $(MTK_PROJECT)/cust.dtsi
 
-DWS_FILE := $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT).dws
+DWS_FILE := $(wildcard $(srctree)/$(DRVGEN_PATH)/$(MTK_PROJECT)*.dws)
 ifneq ($(wildcard $(DWS_FILE)),)
 DRVGEN_FILE_LIST := $(addprefix $(DRVGEN_OUT)/,$(ALL_DRVGEN_FILE))
 DRVGEN_FILE_LIST += $(PROJ_DTB_FILES)
@@ -61,13 +61,15 @@ DRVGEN_FIG := $(wildcard $(dir $(DRVGEN_TOOL))config/*.fig)
 drvgen: $(DRVGEN_FILE_LIST)
 $(DRVGEN_FILE_LIST): $(DRVGEN_TOOL) $(DWS_FILE) $(DRVGEN_FIG) $(PROJ_DTS_FILES)
 	for i in $(PROJ_DTS_FILES); do \
-		base_prj=`grep -m 1 '#include [<\"].*\/cust\.dtsi[>\"]' $$i | sed 's/#include [<"]//g'\
-	       	| sed 's/\/cust\.dtsi[>"]//g' | sed 's/\/\*//g' | sed 's/\*\///g' | sed 's/ //g'`\
+		base_prj=`grep -m 1 '#include [<\"].*\/cust.*\.dtsi[>\"]' $$i | sed 's/#include [<"]//g'\
+			| sed 's/\/cust.*\.dtsi[>"]//g' | sed 's/\/\*//g' | sed 's/\*\///g' | sed 's/ //g'`\
+		hwrev=`grep -m 1 '#include [<\"].*\/cust.*\.dtsi[>\"]' $$i | sed 's/#include [<"].*\/cust//g'\
+			| sed 's/\.dtsi[>"]//g' | sed 's/\/\*//g' | sed 's/\*\///g' | sed 's/ //g'`\
 		prj_path=$(DRVGEN_OUT)/$$base_prj ;\
-		dws_path=$(srctree)/$(DRVGEN_PATH)/$$base_prj.dws ;\
+		dws_path=$(srctree)/$(DRVGEN_PATH)/$$base_prj$$hwrev.dws ;\
 		if [ -f $$dws_path ] ; then \
 			mkdir -p $$prj_path ;\
-			$(python) $(DRVGEN_TOOL) $$dws_path $$prj_path $$prj_path cust_dtsi;\
+			$(python) $(DRVGEN_TOOL) $$dws_path $$prj_path $$prj_path $$hwrev'cust_dtsi';\
 		fi \
 	done
 
