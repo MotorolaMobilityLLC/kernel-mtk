@@ -97,4 +97,8 @@ else
 # AP include path
   subdir-ccflags-y += -Werror -I$(src)/$(AUDIO_PLATFORM)
 endif
+
+# EXTAMP_MODE TN:peter
+EXTAMP_MODE := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC_EXTAMP_MODE))
+subdir-ccflags-y += -DCODEC_EXTAMP_MODE_$(EXTAMP_MODE)
 endif

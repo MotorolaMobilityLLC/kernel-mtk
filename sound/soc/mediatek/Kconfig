@@ -241,3 +241,10 @@ config SND_SOC_MTK_AUDIO_DSP
 	  that can be used with other platforms
 	  Select Y if you have such device.
 	  If unsure select "N".
+
+#EXTAMP_MODE TN:peter
+config MTK_SND_SOC_CODEC_EXTAMP_MODE
+	string "String for Mediatek audio codec extapm mode"
+	help
+	  Mediatek audio codec extapm mode.
+	  

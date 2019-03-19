@@ -179,6 +179,17 @@ int (*set_hp_impedance_ctl)(bool enable) = NULL;
 #define SOC_HIGH_USE_RATE (\
 				SNDRV_PCM_RATE_CONTINUOUS |\
 				SNDRV_PCM_RATE_8000_192000)
+
+//ext apm mode  TN:peter 
+#ifdef CODEC_EXTAMP_MODE_1
+static int CODEC_EXTAMP_MODE  = 1; 
+#elif defined  CODEC_EXTAMP_MODE_2
+static int CODEC_EXTAMP_MODE  = 2;
+#else
+/* default mode is 3 */
+static int CODEC_EXTAMP_MODE  = 3;
+#endif
+
 static void Audio_Amp_Change(int channels, bool enable);
 static void SavePowerState(void)
 {
@@ -3459,18 +3470,20 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol,
 }
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-	pr_debug("%s(), enable %d\n", __func__, enable);
+	//++extapm mode TN:peter
+	pr_debug("%s(), enable %d mode %d \n", __func__, enable,CODEC_EXTAMP_MODE);
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
 	if (enable) {
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+		AudDrv_GPIO_EXTAMP_Select(false, CODEC_EXTAMP_MODE);
 		/*udelay(1000); */
 		usleep_range(1 * 1000, 2 * 1000);
-		AudDrv_GPIO_EXTAMP_Select(true, 3);
+		AudDrv_GPIO_EXTAMP_Select(true, CODEC_EXTAMP_MODE);
 		usleep_range(5 * 1000, 10 * 1000);
 	} else {
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
+		AudDrv_GPIO_EXTAMP_Select(false, CODEC_EXTAMP_MODE);
 		udelay(500);
 	}
+	//--extapm mode 
 }
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol,
 			       struct snd_ctl_elem_value *ucontrol)
