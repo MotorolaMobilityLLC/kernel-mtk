@@ -69,7 +69,7 @@ static u8 checksum_l_bin;
 #define LOG_ERR(fmt, args...)   pr_err(LOG_TAG fmt, ##args)
 
 static int last_val;
-static int mEnabled;
+int mEnabled = 0;
 static int fw_dl_status;
 static int programming_done;
 //static bool user_debug = false;
@@ -83,8 +83,6 @@ pabovXX_t abov_sar_ptr;
  */
 typedef struct abov {
 	pbuttonInformation_t pbuttonInformation;
-	//struct _buttonInfo *buttons;
-    //uint8_t state[CHANNEL_BOTTOM_NB+1];
 	pabov_platform_data_t hw; /* specific platform data settings */
 } abov_t, *pabov_t;
 
@@ -92,21 +90,13 @@ static void ForcetoTouched(pabovXX_t this)
 {
 	pabov_t pDevice = NULL;
 
-	//struct input_dev *input_top = NULL;
-	//struct input_dev *input_bottom_lmb = NULL;
-	//struct input_dev *input_bottom_hb = NULL;
 	struct _buttonInfo *pCurrentButton  = NULL;
 
 	pDevice = this->pDevice;
 	if (this && pDevice) {
 		LOG_INFO("ForcetoTouched()\n");
-        //uint8_t *current_state = pDevice->state;
 		pCurrentButton = pDevice->pbuttonInformation->buttons;
-		//input_top = pDevice->pbuttonInformation->input_top;
-		//input_bottom_lmb = pDevice->pbuttonInformation->input_bottom_lmb;
-		//input_bottom_hb = pDevice->pbuttonInformation->input_bottom_hb;
 		pCurrentButton->state = ACTIVE;
-        //current_state[0] = ACTIVE;
 		last_val = 1;
 		if (mEnabled) {
             this->report_data = 1;
@@ -115,12 +105,6 @@ static void ForcetoTouched(pabovXX_t this)
 			abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
             this->report_data = 1;
 			abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
-			//input_report_abs(input_top, ABS_DISTANCE, 1);
-			//input_sync(input_top);
-			//input_report_abs(input_bottom_lmb, ABS_DISTANCE, 1);
-			//input_sync(input_bottom_lmb);
-			//input_report_abs(input_bottom_hb, ABS_DISTANCE, 1);
-			//input_sync(input_bottom_hb);
 		}
 		LOG_INFO("Leaving ForcetoTouched()\n");
 	}
@@ -391,9 +375,6 @@ static void touchProcess(pabovXX_t this)
 	int numberOfButtons = 0;
 	pabov_t pDevice = NULL;
 	struct _buttonInfo *buttons = NULL;
-//	struct input_dev *input_top = NULL;
-//	struct input_dev *input_bottom_lmb = NULL;
-//	struct input_dev *input_bottom_hb = NULL;
 	struct _buttonInfo *pCurrentButton  = NULL;
 	struct abov_platform_data *board;
 
@@ -404,9 +385,6 @@ static void touchProcess(pabovXX_t this)
 		read_register(this, ABOV_IRQSTAT_REG, &i);
 
 		buttons = pDevice->pbuttonInformation->buttons;
-		//input_top = pDevice->pbuttonInformation->input_top;
-		//input_bottom_lmb = pDevice->pbuttonInformation->input_bottom_lmb;
-		//input_bottom_hb = pDevice->pbuttonInformation->input_bottom_hb;
 		numberOfButtons = pDevice->pbuttonInformation->buttonSize;
 
 		if (unlikely(buttons == NULL)) {
@@ -427,8 +405,6 @@ static void touchProcess(pabovXX_t this)
 					LOG_INFO("CS %d State=BODY.\n",
 							counter);
 					if (board->cap_channel_top == counter) {
-						//input_report_abs(input_top, ABS_DISTANCE, 2);
-						//input_sync(input_top);
                         this->report_data = S_BODY;
                         abovXX_sar_data_report(this,CHANNEL_TOP);
 					} else if (board->cap_channel_bottom_lmb == counter) {
@@ -691,23 +667,21 @@ static ssize_t capsense_enable_store(struct class *class,
 		LOG_DBG("enable cap sensor\n");
 		initialize(this);
 
-	this->report_data = IDLE;
-	abovXX_sar_data_report(this,CHANNEL_TOP);
-	abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-	abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);	
+		this->report_data = IDLE;
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
 
-		mEnabled = 1;
 	} else if (!strncmp(buf, "0", 1)) {
 		LOG_DBG("disable cap sensor\n");
 
 		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 
-	this->report_data = IDLE;
-	abovXX_sar_data_report(this,CHANNEL_TOP);
-	abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-	abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);	
+		this->report_data = IDLE;
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
 
-		mEnabled = 0;
 	} else {
 		LOG_DBG("unknown enable symbol\n");
 	}
@@ -1463,53 +1437,6 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 			/* Initialize the button information initialized with keycodes */
 			pDevice->pbuttonInformation = pplatData->pbuttonInformation;
-#if 0
-			/* Create the input device */
-			input_top = input_allocate_device();
-			if (!input_top)
-				return -ENOMEM;
-
-			/* Set all the keycodes */
-			__set_bit(EV_ABS, input_top->evbit);
-			input_set_abs_params(input_top, ABS_DISTANCE, -1, 100, 0, 0);
-			/* save the input pointer and finish initialization */
-			pDevice->pbuttonInformation->input_top = input_top;
-			input_top->name = "ABOV Cap Touch top";
-			if (input_register_device(input_top)) {
-				LOG_INFO("add top cap touch unsuccess\n");
-				return -ENOMEM;
-			}
-			/* Create the input device */
-			input_bottom_lmb = input_allocate_device();
-			if (!input_bottom_lmb)
-				return -ENOMEM;
-			/* Set all the keycodes */
-			__set_bit(EV_ABS, input_bottom_lmb->evbit);
-			input_set_abs_params(input_bottom_lmb, ABS_DISTANCE, -1, 100, 0, 0);
-			/* save the input pointer and finish initialization */
-			pDevice->pbuttonInformation->input_bottom_lmb = input_bottom_lmb;
-			/* save the input pointer and finish initialization */
-			input_bottom_lmb->name = "ABOV Cap Touch bottom lmb";
-			if (input_register_device(input_bottom_lmb)) {
-				LOG_INFO("add bottom lmb cap touch unsuccess\n");
-				return -ENOMEM;
-			}
-			/* Create the input device */
-			input_bottom_hb = input_allocate_device();
-			if (!input_bottom_hb)
-				return -ENOMEM;
-			/* Set all the keycodes */
-			__set_bit(EV_ABS, input_bottom_hb->evbit);
-			input_set_abs_params(input_bottom_hb, ABS_DISTANCE, -1, 100, 0, 0);
-			/* save the input pointer and finish initialization */
-			pDevice->pbuttonInformation->input_bottom_hb = input_bottom_hb;
-			/* save the input pointer and finish initialization */
-			input_bottom_hb->name = "ABOV Cap Touch bottom hb";
-			if (input_register_device(input_bottom_hb)) {
-				LOG_INFO("add bottom hb cap touch unsuccess\n");
-				return -ENOMEM;
-			}
-#endif
 		}
 
 		ret = class_register(&capsense_class);
@@ -1633,11 +1560,6 @@ static int abov_remove(struct i2c_client *client)
 
 	pDevice = this->pDevice;
 	if (this && pDevice) {
-
-//		input_unregister_device(pDevice->pbuttonInformation->input_top);
-//		input_unregister_device(pDevice->pbuttonInformation->input_bottom_lmb);
-//		input_unregister_device(pDevice->pbuttonInformation->input_bottom_hb);
-
 		sysfs_remove_group(&client->dev.kobj, &abov_attr_group);
 		pplatData = client->dev.platform_data;
 		if (pplatData && pplatData->exit_platform_hw)
@@ -1705,26 +1627,19 @@ static int sar_top_open_report_data(int enable)
 	if (this == NULL)
 		return -EINVAL;
 
-	if ((enable == 1) && (mEnabled == 0)) {
-		LOG_DBG("enable cap sensor\n");
-		initialize(this);
+	if (enable == 1) {
+		LOG_DBG("enable cap sensor mEnabled=%d\n",mEnabled);
+		if (mEnabled == 0)
+		   initialize(this);
 
 		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_TOP);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
-		mEnabled = 1;
-	} else if ((enable == 0) && (mEnabled == 1)) {
-		LOG_DBG("disable cap sensor\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
-
-		this->report_data = -1;
-		//abovXX_sar_data_report(this);
-		mEnabled = 0;
-	} else {
-		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_TOP);
-		LOG_DBG("unknown enable symbol\n");
+		abovXX_sar_data_report(this,CHANNEL_TOP);
+		mEnabled = mEnabled | 0x01;
+	} else if (enable == 0) {
+		LOG_DBG("disable cap sensor mEnabled=%d\n",mEnabled);
+		mEnabled = mEnabled & 0xFE;
+		if ((mEnabled & 0x07) == 0)
+		   write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
 
 	return 0;
@@ -1737,27 +1652,20 @@ static int sar_bottom_lmb_open_report_data(int enable)
 	if (this == NULL)
 		return -EINVAL;
 
-	if ((enable == 1) && (mEnabled == 0)) {
-		LOG_DBG("enable cap sensor\n");
-		initialize(this);
+	if (enable == 1) {
+		LOG_DBG("enable cap sensor mEnabled=%d\n",mEnabled);
+		if (mEnabled == 0)
+		   initialize(this);
 		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_TOP);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
-		mEnabled = 1;
-	} else if ((enable == 0) && (mEnabled == 1)) {
-		LOG_DBG("disable cap sensor\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
+		mEnabled = mEnabled | 0x02;
+	} else if (enable == 0) {
+		LOG_DBG("disable cap sensor mEnabled=%d\n",mEnabled);
 
-		this->report_data = -1;
-		//abovXX_sar_data_report(this);
-		mEnabled = 0;
-	} else {
-		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-		LOG_DBG("unknown enable symbol\n");
+		mEnabled = mEnabled & 0xFD;
+		if ((mEnabled & 0x07) == 0)
+		   write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
-
 	return 0;
 }
 
@@ -1768,27 +1676,19 @@ static int sar_bottom_nb_open_report_data(int enable)
 	if (this == NULL)
 		return -EINVAL;
 
-	if ((enable == 1) && (mEnabled == 0)) {
-		LOG_DBG("enable cap sensor\n");
-		initialize(this);
+	if (enable == 1) {
+		LOG_DBG("enable cap sensor mEnabled=%d\n",mEnabled);
+		if (mEnabled == 0)
+		   initialize(this);
 		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_TOP);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_LMB);
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
-		mEnabled = 1;
-	} else if ((enable == 0) && (mEnabled == 1)) {
-		LOG_DBG("disable cap sensor\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
-
-		this->report_data = -1;
-		//abovXX_sar_data_report(this);
-		mEnabled = 0;
-	} else {
-		this->report_data = 0;
-	    abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
-		LOG_DBG("unknown enable symbol\n");
+		abovXX_sar_data_report(this,CHANNEL_BOTTOM_NB);
+		mEnabled = mEnabled | 0x04;
+	} else if (enable == 0) {
+	    LOG_DBG("disable cap sensor mEnabled=%d\n",mEnabled);
+		mEnabled = mEnabled & 0XFB;
+		if ((mEnabled & 0x07) == 0)
+		   write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
-
 	return 0;
 }
 
@@ -2114,17 +2014,17 @@ void abovXX_suspend(pabovXX_t this)
 {
 	if (this) {
 		LOG_INFO("ABOV suspend: enter stop mode!\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x02);
-		LOG_INFO("ABOV suspend: disable irq!\n");
 		disable_irq(this->irq);
+		if (mEnabled)
+			write_register(this, ABOV_CTRL_MODE_REG, 0x02);
 	}
 }
 void abovXX_resume(pabovXX_t this)
 {
 	if (this) {
 		LOG_INFO("ABOV resume: enter ative mode!\n");
-		write_register(this, ABOV_CTRL_MODE_REG, 0x00);
-		LOG_INFO("ABOV resume: enable irq!\n");
+		if (mEnabled)
+			write_register(this, ABOV_CTRL_MODE_REG, 0x00);
 		enable_irq(this->irq);
 	}
 }
@@ -2144,9 +2044,7 @@ int abovXX_sar_init(pabovXX_t this)
 		mutex_init(&this->mutex);
 		/* initailize interrupt reporting */
 		this->irq_disabled = 0;
-		printk("func = %s, line = %d, this->irq:%d \n", __func__, __LINE__, this->irq);
-		//this->irq=28;
-		printk("2 func = %s, line = %d, this->irq:%d \n", __func__, __LINE__, this->irq);
+
 		err = request_threaded_irq(this->irq, NULL, abovXX_interrupt_thread,
 				IRQF_TRIGGER_FALLING | IRQF_ONESHOT, this->pdev->driver->name,
 				this);
@@ -2196,17 +2094,20 @@ int abovXX_sar_data_report(pabovXX_t this,int32_t channel)
 
 	value = this->report_data;
 
-    switch (channel) {
+	switch (channel) {
 		case CHANNEL_TOP:
-        moto_sar_data_report(value,ID_SAR_TOP);
-        break;
-        case CHANNEL_BOTTOM_LMB:
-        moto_sar_data_report(value,ID_SAR_BOTTOM_LEFT);
-        break;
-        case CHANNEL_BOTTOM_NB:
-        moto_sar_data_report(value,ID_SAR_BOTTOM_RIGHT);
-        break;
-   }
+		  moto_sar_data_report(value,ID_SAR_TOP);
+		  break;
+		case CHANNEL_BOTTOM_LMB:
+		  moto_sar_data_report(value,ID_SAR_BOTTOM_LEFT);
+		  break;
+		case CHANNEL_BOTTOM_NB:
+		  moto_sar_data_report(value,ID_SAR_BOTTOM_RIGHT);
+		  break;
+		default:
+		  pr_err("abovXX_sar_data_report err channel=%d\n",channel);
+		  break;
+	}
 	return 0;
 }
 
