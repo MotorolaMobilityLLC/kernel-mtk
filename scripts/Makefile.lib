@@ -309,9 +309,6 @@ dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 quiet_cmd_cat = CAT     $@
 cmd_cat = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
 
-quiet_cmd_cat2 = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
-cmd_cat2 = (cat $(filter-out FORCE,$^) > $@) || (rm -f $@; false)
-
 # Bzip2
 # ---------------------------------------------------------------------------
 
