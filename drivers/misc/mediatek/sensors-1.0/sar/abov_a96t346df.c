@@ -72,7 +72,7 @@ static int last_val;
 int mEnabled = 0;
 static int fw_dl_status;
 static int programming_done;
-//static bool user_debug = false;
+static bool user_debug = false;
 static bool i2c_added = false;
 pabovXX_t abov_sar_ptr;
 
@@ -695,84 +695,99 @@ static ssize_t reg_dump_show(struct class *class,
 		struct class_attribute *attr,
 		char *buf)
 {
-	u8 reg_value = 0, i;
-	u16 offset_value = 0, diff_value = 0;
-	pabovXX_t this = abov_sar_ptr;
-	char *p = buf;
-
-	if (this->read_flag) {
-		this->read_flag = 0;
-		read_register(this, this->read_reg, &reg_value);
-		p += snprintf(p, PAGE_SIZE,  "(0x%02x)=0x%02x\n", this->read_reg, reg_value);
-		return (p-buf);
-	}
-
-	for (i = 0; i < 0x40; i++) {
-		read_register(this, i, &reg_value);
-		p += snprintf(p, PAGE_SIZE, "(0x%02x)=0x%02x\n",
-				i, reg_value);
-	}
-
-	for (i = 0x80; i < 0x8C; i++) {
-		read_register(this, i, &reg_value);
-		p += snprintf(p, PAGE_SIZE, "(0x%02x)=0x%02x\n",
-				i, reg_value);
-	}
-	if ((this->get_ch0_flag) == 1) {
-		/* diff */
-		read_register(this, ABOV_CH0_DIFF_MSB_REG, &reg_value);
-		diff_value = reg_value;
-		diff_value <<= 8;
-		read_register(this, ABOV_CH0_DIFF_LSB_REG, &reg_value);
-		diff_value += reg_value;
-
-		/* offset */
-		read_register(this, ABOV_CH0_CAP_MSB_REG, &reg_value);
-		offset_value = reg_value;
-		offset_value <<= 8;
-		read_register(this, ABOV_CH0_CAP_LSB_REG, &reg_value);
-		offset_value += reg_value;
-	} else if ((this->get_ch0_flag) == 2) {
-
-		/* diff */
-		read_register(this, ABOV_CH1_DIFF_MSB_REG, &reg_value);
-		diff_value = reg_value;
-		diff_value <<= 8;
-		read_register(this, ABOV_CH1_DIFF_LSB_REG, &reg_value);
-		diff_value += reg_value;
-
-		/* offset */
-		read_register(this, ABOV_CH1_CAP_MSB_REG, &reg_value);
-		offset_value = reg_value;
-		offset_value <<= 8;
-		read_register(this, ABOV_CH1_CAP_LSB_REG, &reg_value);
-		offset_value += reg_value;
+	if(!user_debug) {
+		u8 reg_value = 0, i;
+		pabovXX_t this = abov_sar_ptr;
+		if(this->read_flag){
+			this->read_flag = 0;
+			for(i = 0 ; i < this->read_len ; i++){
+				read_register(this,(this->read_reg+i),&reg_value);
+				buf[i] = reg_value;
+				LOG_INFO("%s : buf[%d] = 0x%x\n",__func__,i,buf[i]);
+			}
+			return i;
+		}
+		return -1;
 	} else {
+		u8 reg_value = 0, i;
+		u16 offset_value = 0, diff_value = 0;
+		pabovXX_t this = abov_sar_ptr;
+		char *p = buf;
 
-		/* diff */
-		read_register(this, ABOV_CH2_DIFF_MSB_REG, &reg_value);
-		diff_value = reg_value;
-		diff_value <<= 8;
-		read_register(this, ABOV_CH2_DIFF_LSB_REG, &reg_value);
-		diff_value += reg_value;
+		if (this->read_flag) {
+			this->read_flag = 0;
+			read_register(this, this->read_reg, &reg_value);
+			p += snprintf(p, PAGE_SIZE,  "(0x%02x)=0x%02x\n", this->read_reg, reg_value);
+			return (p-buf);
+		}
 
-		/* offset */
-		read_register(this, ABOV_CH2_CAP_MSB_REG, &reg_value);
-		offset_value = reg_value;
-		offset_value <<= 8;
-		read_register(this, ABOV_CH2_CAP_LSB_REG, &reg_value);
-		offset_value += reg_value;
-	}
+		for (i = 0; i < 0x40; i++) {
+			read_register(this, i, &reg_value);
+			p += snprintf(p, PAGE_SIZE, "(0x%02x)=0x%02x\n",
+					i, reg_value);
+		}
 
-	reg_value = gpio_get_value(this->board->irq_gpio);
-	p += snprintf(p, PAGE_SIZE, "NIRQ=%d\n", reg_value);
+		for (i = 0x80; i < 0x8C; i++) {
+			read_register(this, i, &reg_value);
+			p += snprintf(p, PAGE_SIZE, "(0x%02x)=0x%02x\n",
+					i, reg_value);
+		}
+		if ((this->get_ch0_flag) == 1) {
+			/* diff */
+			read_register(this, ABOV_CH0_DIFF_MSB_REG, &reg_value);
+			diff_value = reg_value;
+			diff_value <<= 8;
+			read_register(this, ABOV_CH0_DIFF_LSB_REG, &reg_value);
+			diff_value += reg_value;
 
-	p += snprintf(p, PAGE_SIZE, "diff_value=0x%04x\n",
+			/* offset */
+			read_register(this, ABOV_CH0_CAP_MSB_REG, &reg_value);
+			offset_value = reg_value;
+			offset_value <<= 8;
+			read_register(this, ABOV_CH0_CAP_LSB_REG, &reg_value);
+			offset_value += reg_value;
+		} else if ((this->get_ch0_flag) == 2) {
+
+			/* diff */
+			read_register(this, ABOV_CH1_DIFF_MSB_REG, &reg_value);
+			diff_value = reg_value;
+			diff_value <<= 8;
+			read_register(this, ABOV_CH1_DIFF_LSB_REG, &reg_value);
+			diff_value += reg_value;
+
+			/* offset */
+			read_register(this, ABOV_CH1_CAP_MSB_REG, &reg_value);
+			offset_value = reg_value;
+			offset_value <<= 8;
+			read_register(this, ABOV_CH1_CAP_LSB_REG, &reg_value);
+			offset_value += reg_value;
+		} else {
+
+			/* diff */
+			read_register(this, ABOV_CH2_DIFF_MSB_REG, &reg_value);
+			diff_value = reg_value;
+			diff_value <<= 8;
+			read_register(this, ABOV_CH2_DIFF_LSB_REG, &reg_value);
+			diff_value += reg_value;
+
+			/* offset */
+			read_register(this, ABOV_CH2_CAP_MSB_REG, &reg_value);
+			offset_value = reg_value;
+			offset_value <<= 8;
+			read_register(this, ABOV_CH2_CAP_LSB_REG, &reg_value);
+			offset_value += reg_value;
+		}
+
+		reg_value = gpio_get_value(this->board->irq_gpio);
+		p += snprintf(p, PAGE_SIZE, "NIRQ=%d\n", reg_value);
+
+		p += snprintf(p, PAGE_SIZE, "diff_value=0x%04x\n",
 			diff_value);
-	p += snprintf(p, PAGE_SIZE, "offset_value=0x%04x\n",
+		p += snprintf(p, PAGE_SIZE, "offset_value=0x%04x\n",
 			offset_value);
 
-	return (p-buf);
+		return (p-buf);
+	}
 }
 
 static ssize_t reg_dump_store(struct class *class,
@@ -780,25 +795,46 @@ static ssize_t reg_dump_store(struct class *class,
 		const char *buf, size_t count)
 {
 	pabovXX_t this = abov_sar_ptr;
-	unsigned int val, reg, opt;
-	if (strcmp("select_ch0\n", buf) == 0) {
-		this->get_ch0_flag = 1;
-	} else if (strcmp("select_ch1\n", buf) == 0) {
-		this->get_ch0_flag = 2;
-	} else if (strcmp("select_ch2\n", buf) == 0) {
-		this->get_ch0_flag = 0;
-	} else if (strcmp("calibrate\n", buf) == 0) {
-		write_register(this, ABOV_RECALI_REG, 0x01);
-	} else if (sscanf(buf, "%x,%x,%x", &reg, &val, &opt) == 3) {
-		LOG_INFO("%s, read reg = 0x%02x\n", __func__, *(u8 *)&reg);
-		this->read_reg = *((u8 *)&reg);
-		this->read_flag = 1;
-	} else if (sscanf(buf, "%x,%x", &reg, &val) == 2) {
-		LOG_INFO("%s,reg = 0x%02x, val = 0x%02x\n",
-				__func__, *(u8 *)&reg, *(u8 *)&val);
-		write_register(this, *((u8 *)&reg), *((u8 *)&val));
-	}
+	if(!user_debug) {
+		u8 regaddr,val;
+		int i = 0;
 
+		if( count != 3){
+			LOG_ERR("%s :params error[ count == %d !=2]\n",__func__,count);
+			return -1;
+		}
+		for(i = 0 ; i < count ; i++)
+			LOG_INFO("%s : buf[%d] = 0x%x\n",__func__,i,buf[i]);
+		if(buf[2] == 0){
+			regaddr = buf[0];
+			val= buf[1];
+			write_register(this,regaddr,val);
+	} else if(buf[2] == 1) {
+			this->read_reg = buf[0];
+			this->read_len = buf[1];
+			this->read_flag = 1;
+			LOG_ERR("-----------%d\n",this->read_len);
+		}
+	} else {
+		unsigned int val, reg, opt;
+		if (strcmp("select_ch0\n", buf) == 0) {
+			this->get_ch0_flag = 1;
+		} else if (strcmp("select_ch1\n", buf) == 0) {
+			this->get_ch0_flag = 2;
+		} else if (strcmp("select_ch2\n", buf) == 0) {
+			this->get_ch0_flag = 0;
+		} else if (strcmp("calibrate\n", buf) == 0) {
+			write_register(this, ABOV_RECALI_REG, 0x01);
+		} else if (sscanf(buf, "%x,%x,%x", &reg, &val, &opt) == 3) {
+			LOG_INFO("%s, read reg = 0x%02x\n", __func__, *(u8 *)&reg);
+			this->read_reg = *((u8 *)&reg);
+			this->read_flag = 1;
+		} else if (sscanf(buf, "%x,%x", &reg, &val) == 2) {
+			LOG_INFO("%s,reg = 0x%02x, val = 0x%02x\n",
+				__func__, *(u8 *)&reg, *(u8 *)&val);
+			write_register(this, *((u8 *)&reg), *((u8 *)&val));
+		}
+	}
 	return count;
 }
 
@@ -1304,6 +1340,34 @@ static ssize_t capsense_force_update_fw_store(struct class *class,
 }
 static CLASS_ATTR(force_update_fw, 0660, capsense_fw_ver_show, capsense_force_update_fw_store);
 
+static ssize_t capsense_user_debug_status_store(struct class *class,
+		struct class_attribute *attr,
+		const char *buf, size_t count)
+{
+	if (!count )
+		return -EINVAL;
+
+	if (!strncmp(buf, "1", 1)) {
+		LOG_DBG("enable cap user debug\n");
+		user_debug = true;
+	} else if (!strncmp(buf, "0", 1)) {
+		LOG_DBG("disable cap user debug\n");
+		user_debug = false;
+	} else {
+		LOG_DBG("unknown enable symbol\n");
+	}
+
+	return count;
+}
+
+static ssize_t capsense_user_debug_status_show(struct class *class,
+		struct class_attribute *attr,
+		char *buf)
+{
+	return snprintf(buf,8,"%d\n",user_debug);
+}
+static CLASS_ATTR(user_debug_status, 0660, capsense_user_debug_status_show, capsense_user_debug_status_store);
+
 static void capsense_update_work(struct work_struct *work)
 {
 	pabovXX_t this = container_of(work, abovXX_t, fw_update_work);
@@ -1474,6 +1538,11 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 			LOG_ERR("Create update_fw file failed (%d)\n", ret);
 			goto err_class_creat;
 
+		}
+		ret = class_create_file(&capsense_class, &class_attr_user_debug_status);
+		if (ret < 0) {
+			LOG_ERR("Create user_debug_status failed (%d)\n", ret);
+			goto err_class_creat;
 		}
 
 		abovXX_sar_init(this);
