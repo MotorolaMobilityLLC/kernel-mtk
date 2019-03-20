@@ -604,7 +604,7 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 	bio_set_op_attrs(bio, REQ_OP_READ, 0);
 
 	if (fscrypt_is_hw_encrypt(inode)) {
-		f2fs_wait_on_block_writeback(sbi, blkaddr);
+		f2fs_wait_on_block_writeback(inode, blkaddr);
 		return bio;
 	}
 
@@ -619,9 +619,6 @@ static struct bio *f2fs_grab_read_bio(struct inode *inode, block_t blkaddr,
 		ctx->bio = bio;
 		ctx->enabled_steps = post_read_steps;
 		bio->bi_private = ctx;
-
-		/* wait the page to be moved by cleaning */
-		f2fs_wait_on_block_writeback(sbi, blkaddr);
 	}
 
 	return bio;
@@ -635,6 +632,9 @@ static int f2fs_submit_page_read(struct inode *inode, struct page *page,
 
 	if (IS_ERR(bio))
 		return PTR_ERR(bio);
+
+	/* wait for GCed page writeback via META_MAPPING */
+	f2fs_wait_on_block_writeback(inode, blkaddr);
 
 	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
 		bio_put(bio);
@@ -1587,6 +1587,12 @@ submit_and_realloc:
 			}
 		}
 
+		/*
+		 * If the page is under writeback, we need to wait for
+		 * its completion to see the correct decrypted data.
+		 */
+		f2fs_wait_on_block_writeback(inode, block_nr);
+
 		if (bio_add_page(bio, page, blocksize, 0) < blocksize)
 			goto submit_and_realloc;
 
@@ -1656,7 +1662,7 @@ static int encrypt_one_page(struct f2fs_io_info *fio)
 		return 0;
 
 	/* wait for GCed page writeback via META_MAPPING */
-	f2fs_wait_on_block_writeback(fio->sbi, fio->old_blkaddr);
+	f2fs_wait_on_block_writeback(inode, fio->old_blkaddr);
 
 	if (fscrypt_is_hw_encrypt(inode))
 		return 0;
@@ -2377,10 +2383,6 @@ repeat:
 	}
 
 	f2fs_wait_on_page_writeback(page, DATA, false);
-
-	/* wait for GCed page writeback via META_MAPPING */
-	if (f2fs_post_read_required(inode))
-		f2fs_wait_on_block_writeback(sbi, blkaddr);
 
 	if (len == PAGE_SIZE || PageUptodate(page))
 		return 0;

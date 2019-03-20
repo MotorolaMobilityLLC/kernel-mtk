@@ -90,7 +90,69 @@ s32 pwrap_write(u32 adr, u32 wdata)
  *tracepwrap(adr, wdata);
  *#endif
  */
+#ifdef CONFIG_MACH_MT6765
+	s32 ret = 0;
+
+	if ((adr == 0x1508) && ((wdata & 0x1) == 0x0)) {
+		pr_notice("[PWRAP] Illegal write 0x1508 bit 0 to 0\n");
+		pr_notice("[PWRAP] Error: %s, line: %d\n", __func__, __LINE__);
+		pr_notice("[PWRAP] addr: 0x%x, wdata: 0x%x\n", adr, wdata);
+		return -1;
+	} else if (adr == 0x1510 || adr == 0x1512 || adr == 0x1514) {
+		ret = pwrap_wacs2(PWRAP_WRITE, 0x1510, 0xB, 0);
+		if (ret != 0) {
+			pr_notice("[PWRAP] Recovery Fail, ret=%d\n", ret);
+			pr_notice("[PWRAP] %s, line: %d\n", __func__, __LINE__);
+			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
+			return ret;
+		}
+	} else if (adr == 0x1516 || adr == 0x1518 || adr == 0x151a) {
+		ret = pwrap_wacs2(PWRAP_WRITE, 0x1516, 0x10A, 0);
+		if (ret != 0) {
+			pr_notice("[PWRAP] Recovery Fail, ret=%d\n", ret);
+			pr_notice("[PWRAP] %s, line: %d\n", __func__, __LINE__);
+			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
+			return ret;
+		}
+	} else if ((adr == 0x19D0) && ((wdata & 0x1) == 0x0)) {
+		pr_notice("[PWRAP] Illegal write 0x19D0 bit 0 to 0\n");
+		pr_notice("[PWRAP] Error: %s, line: %d\n", __func__, __LINE__);
+		pr_notice("[PWRAP] addr: 0x%x, wdata: 0x%x\n", adr, wdata);
+		return -1;
+	} else if (adr == 0x19D8 || adr == 0x19DA || adr == 0x19DC) {
+		ret = pwrap_wacs2(PWRAP_WRITE, 0x19D8, 0xB, 0);
+		if (ret != 0) {
+			pr_notice("[PWRAP] Recovery Fail, ret=%d\n", ret);
+			pr_notice("[PWRAP] %s, line: %d\n", __func__, __LINE__);
+			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
+			return ret;
+		}
+	} else if (adr == 0x19DE || adr == 0x19E0 || adr == 0x19E2) {
+		ret = pwrap_wacs2(PWRAP_WRITE, 0x19DE, 0xA, 0);
+		if (ret != 0) {
+			pr_notice("[PWRAP] Recovery Fail, ret=%d\n", ret);
+			pr_notice("[PWRAP] %s, line: %d\n", __func__, __LINE__);
+			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
+			return ret;
+		}
+	} else if ((adr == 0x170E) && (wdata & 0x80)) {
+		pr_notice("[PWRAP] Illegal write 0x170E bit 7 to 1\n");
+		pr_notice("[PWRAP] Error: %s, line: %d\n", __func__, __LINE__);
+		pr_notice("[PWRAP] addr: 0x%x, wdata: 0x%x\n", adr, wdata);
+		return -1;
+	} else {
+		ret = pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
+		if (ret != 0) {
+			pr_notice("[PWRAP] Write Fail, ret=%d\n", ret);
+			pr_notice("[PWRAP] %s, line: %d\n", __func__, __LINE__);
+			pr_notice("[PWRAP] adr:0x%x, wdata:0x%x\n", adr, wdata);
+			return ret;
+		}
+	}
+	return ret;
+#else
 	return pwrap_wacs2(PWRAP_WRITE, adr, wdata, 0);
+#endif
 }
 EXPORT_SYMBOL(pwrap_write);
 /********************************************************************/

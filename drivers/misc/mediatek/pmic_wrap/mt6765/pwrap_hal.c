@@ -1668,6 +1668,7 @@ static int pwrap_ipi_register(void)
 }
 #endif
 
+#define WK_MONITOR_VCORE_HWCFG		1
 /* Interrupt handler function */
 static int g_wrap_wdt_irq_count;
 static int g_case_flag;
@@ -1675,7 +1676,9 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 {
 	unsigned int int0_flg = 0, int1_flg = 0, ret = 0;
 	unsigned char str[50] = "";
-
+#if WK_MONITOR_VCORE_HWCFG
+	unsigned int rdata = 0;
+#endif
 	int0_flg = WRAP_RD32(PMIC_WRAP_INT0_FLG);
 	int1_flg = WRAP_RD32(PMIC_WRAP_INT1_FLG);
 
@@ -1691,6 +1694,27 @@ static irqreturn_t mt_pmic_wrap_irq(int irqno, void *dev_id)
 		}
 #endif
 	}
+
+#if WK_MONITOR_VCORE_HWCFG
+	if ((int1_flg & 0x2000) == 0x2000) {
+		pr_notice("[PWRAP] Monitor catch a target transaction\n");
+		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(before)\n", int1_flg);
+		pwrap_logging_at_isr();
+		pwrap_reenable_pmic_logging();
+		pwrap_dump_ap_register();
+		WRAP_WR32(PMIC_WRAP_INT1_CLR, 0x2000);
+		pr_notice("[PWRAP]PMIC_WRAP_INT1_FLG:0x%x(after)\n", int1_flg);
+
+		pwrap_read_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, &rdata);
+		pr_notice("[PWRAP]PMIC_RG_VCOREVPROC_TMDL_ADDR=0x%x(before)\n"
+			  , rdata);
+		rdata &= ~(0x80);
+		pwrap_write_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, rdata);
+		pwrap_read_nochk(PMIC_RG_VCOREVPROC_TMDL_ADDR, &rdata);
+		pr_notice("[PWRAP]PMIC_RG_VCOREVPROC_TMDL_ADDR=0x%x(after)\n"
+			  , rdata);
+	}
+#endif
 
 	if ((int1_flg & 0xffffffff) != 0) {
 		pr_notice("[PWRAP] INT1 error = 0x%x\n", int1_flg);

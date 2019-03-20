@@ -419,11 +419,8 @@ static void scp_timeout_ws(struct work_struct *ws)
  */
 static int params_to_scp(void)
 {
+#ifdef CFG_SENSOR_PARAMS_TO_SCP_SUPPORT
 	int ret = 0;
-
-	/* return success, if sensor_params_to_scp is not defined */
-	if (sensor_params_to_scp == NULL)
-		return 0;
 
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_DRV_PARAMS_MEM_ID),
 			(SCP_TCM + SCP_REGION_INFO_OFFSET + OFF_PARAM_START));
@@ -433,6 +430,10 @@ static int params_to_scp(void)
 		scp_get_reserve_mem_size(SCP_DRV_PARAMS_MEM_ID));
 
 	return ret;
+#else
+	/* return success, if sensor_params_to_scp is not defined */
+	return 0;
+#endif
 }
 #endif
 
