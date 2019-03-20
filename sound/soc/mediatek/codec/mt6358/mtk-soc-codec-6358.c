@@ -1745,6 +1745,12 @@ struct anaoffset {
 };
 
 static struct anaoffset hp_3pole_anaoffset, hp_4pole_anaoffset, spk_3pole_anaoffset, spk_4pole_anaoffset;
+
+static int dc_compensation_disabled;
+static unsigned int hp_3_pole_trim_setting;
+static unsigned int hp_4_pole_trim_setting;
+static unsigned int spk_hp_3_pole_trim_setting;
+static unsigned int spk_hp_4_pole_trim_setting;
 #endif
 static int mHplTrimOffset;
 static int mHprTrimOffset;
@@ -2165,14 +2171,54 @@ static int get_spk_trim_offset(int channel)
 #define HPFINETRIM_R_MASK (0x3 << HPFINETRIM_R_SHIFT)
 #define HPTRIM_EN_MASK (0x1 << HPTRIM_EN_SHIFT)
 
+static int pick_hp_finetrim(int offset_base,
+			    int offset_finetrim_1,
+			    int offset_finetrim_3)
+{
+	if (abs(offset_base) < abs(offset_finetrim_1)) {
+		if (abs(offset_base) < abs(offset_finetrim_3))
+			return 0x0;
+		else
+			return 0x3;
+	} else {
+		if (abs(offset_finetrim_1) < abs(offset_finetrim_3))
+			return 0x1;
+		else
+			return 0x3;
+	}
+}
+
+static int pick_spk_finetrim(int offset_base,
+			     int offset_finetrim_2,
+			     int offset_finetrim_3)
+{
+	if (abs(offset_base) < abs(offset_finetrim_2)) {
+		if (abs(offset_base) < abs(offset_finetrim_3))
+			return 0x0;
+		else
+			return 0x3;
+	} else {
+		if (abs(offset_finetrim_2) < abs(offset_finetrim_3))
+			return 0x2;
+		else
+			return 0x3;
+	}
+}
+
 static void set_lr_trim_code(void)
 {
 	int hpl_base = 0, hpr_base = 0;
 	int hpl_min = 0, hpr_min = 0;
+	int hpl_ceiling = 0, hpr_ceiling = 0;
+	int hpl_floor = 0, hpr_floor = 0;
+	int hpl_finetrim_1 = 0, hpr_finetrim_1 = 0;
+	int hpl_finetrim_3 = 0, hpr_finetrim_3 = 0;
 	int trimcodel = 0, trimcoder = 0;
+	int trimcodel_ceiling = 0, trimcoder_ceiling = 0;
+	int trimcodel_floor = 0, trimcoder_floor = 0;
 	int finetriml = 0, finetrimr = 0;
 	int trimcode_tmpl = 0, trimcode_tmpr = 0;
-	int tmp = 0, hp_3pole_offset = 0, hp_4pole_offset = 0;
+	int tmp = 0;
 	bool code_change = false;
 
 	pr_debug("%s(), Start DCtrim Calibrating, AUDDEC_ELR_0 = 0x%x\n",
@@ -2226,13 +2272,18 @@ static void set_lr_trim_code(void)
 			Ana_Set_Reg(AUDDEC_ELR_0, 0x0 << HPTRIM_R_SHIFT,
 				    HPTRIM_R_MASK);
 			mdelay(10);
-			if (hpl_base > 0)
-				trimcodel = (((abs(hpl_base)*3)/
-					       abs(hpl_base-hpl_min))+1)/2;
 
-			if (hpr_base > 0)
-				trimcoder = (((abs(hpr_base)*3)/
-					       abs(hpr_base-hpr_min))+1)/2;
+			/* Check floor & ceiling to avoid rounding error */
+			if (hpl_base > 0) {
+				trimcodel_floor = (abs(hpl_base)*3) /
+						  (abs(hpl_base-hpl_min));
+				trimcodel_ceiling = trimcodel_floor + 1;
+			}
+			if (hpr_base > 0) {
+				trimcoder_floor = (abs(hpr_base)*3) /
+						  (abs(hpr_base-hpr_min));
+				trimcoder_ceiling = trimcoder_floor + 1;
+			}
 		}
 	}
 	if (hpl_base < 0 || hpr_base < 0) {
@@ -2261,27 +2312,64 @@ static void set_lr_trim_code(void)
 			Ana_Set_Reg(AUDDEC_ELR_0, 0x0 << HPTRIM_R_SHIFT,
 				    HPTRIM_R_MASK);
 			mdelay(10);
-			if (hpl_base < 0)
-				trimcodel = (((abs(hpl_base)*3)/
-					       abs(hpl_base-hpl_min))+1)/2 + 8;
-			if (hpr_base < 0)
-				trimcoder = (((abs(hpr_base)*3)/
-					       abs(hpr_base-hpr_min))+1)/2 + 8;
+			/* Check floor & ceiling to avoid rounding error */
+			if (hpl_base < 0) {
+				trimcodel_floor = (abs(hpl_base)*3) /
+						  (abs(hpl_base-hpl_min)) + 8;
+				trimcodel_ceiling = trimcodel_floor + 1;
+			}
+			if (hpr_base < 0) {
+				trimcoder_floor = (abs(hpr_base)*3) /
+						  (abs(hpr_base-hpr_min)) + 8;
+				trimcoder_ceiling = trimcoder_floor + 1;
+			}
 		}
+	}
+
+	/* Get the best trim code from floor and ceiling value */
+	/* Get floor trim code */
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcodel_floor << HPTRIM_L_SHIFT,
+		    HPTRIM_L_MASK);
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcoder_floor << HPTRIM_R_SHIFT,
+		    HPTRIM_R_MASK);
+	get_hp_trim_offset();
+	hpl_floor = mHplTrimOffset;
+	hpr_floor = mHprTrimOffset;
+	mdelay(10);
+	/* Get ceiling trim code */
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcodel_ceiling << HPTRIM_L_SHIFT,
+		    HPTRIM_L_MASK);
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcoder_ceiling << HPTRIM_R_SHIFT,
+		    HPTRIM_R_MASK);
+	get_hp_trim_offset();
+	hpl_ceiling = mHplTrimOffset;
+	hpr_ceiling = mHprTrimOffset;
+	mdelay(10);
+	/* Choose the best */
+	if (abs(hpl_ceiling) < abs(hpl_floor)) {
+		hpl_base = hpl_ceiling;
+		trimcodel = trimcodel_ceiling;
+	} else {
+		hpl_base = hpl_floor;
+		trimcodel = trimcodel_floor;
+	}
+	if (abs(hpr_ceiling) < abs(hpr_floor)) {
+		hpr_base = hpr_ceiling;
+		trimcoder = trimcoder_ceiling;
+	} else {
+		hpr_base = hpr_floor;
+		trimcoder = trimcoder_floor;
 	}
 
 	Ana_Set_Reg(AUDDEC_ELR_0, trimcodel << HPTRIM_L_SHIFT, HPTRIM_L_MASK);
 	Ana_Set_Reg(AUDDEC_ELR_0, trimcoder << HPTRIM_R_SHIFT, HPTRIM_R_MASK);
-	pr_debug("%s(), step1 result AUDDEC_ELR_0 = 0x%x  trimcode(L/R) = %d/%d\n",
-		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcodel, trimcoder);
+	pr_debug("%s(), step1 result AUDDEC_ELR_0 = 0x%x  hp_base(L/R) = %d/%d, trimcode(L/R) = %d/%d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0),
+		 hpl_base, hpr_base, trimcodel, trimcoder);
 
 	/* Step2: Trim code refine +1/0/-1 */
-	get_hp_trim_offset();
-	hpl_base = mHplTrimOffset;
-	hpr_base = mHprTrimOffset;
 	trimcode_tmpl = trimcodel;
 	trimcode_tmpr = trimcoder;
-
 	mdelay(10);
 	if (hpl_base == 0)
 		goto EXIT;
@@ -2425,28 +2513,32 @@ static void set_lr_trim_code(void)
 		if (code_change) {
 			get_hp_trim_offset();
 			code_change = false;
-			hpl_min = mHplTrimOffset;
-			hpr_min = mHprTrimOffset;
+			hpl_finetrim_1 = mHplTrimOffset;
+			hpr_finetrim_1 = mHprTrimOffset;
 			Ana_Set_Reg(AUDDEC_ELR_0, 0x0 << HPFINETRIM_L_SHIFT,
 				    HPFINETRIM_L_MASK);
 			Ana_Set_Reg(AUDDEC_ELR_0, 0x0 << HPFINETRIM_R_SHIFT,
 				    HPFINETRIM_R_MASK);
 			mdelay(10);
 			if ((hpl_base > 0) &&
-			    (hpl_min >= 0 || abs(hpl_min) < abs(hpl_base)))
+			    (hpl_finetrim_1 >= 0 &&
+			     abs(hpl_finetrim_1) < abs(hpl_base)))
 				finetriml = 0x1;
 			if ((hpr_base > 0) &&
-			    (hpr_min >= 0 || abs(hpr_min) < abs(hpr_base)))
+			    (hpr_finetrim_1 >= 0 &&
+			     abs(hpr_finetrim_1) < abs(hpr_base)))
 				finetrimr = 0x1;
-			if (hpl_min < 0 || hpr_min < 0) {
-				if (hpl_min < 0  && hpl_base > 0) {
+			if (hpl_finetrim_1 < 0 || hpr_finetrim_1 < 0) {
+				/* base and finetrim=1 across zero. */
+				/* Choose base, finetrim=1, and finetrim=3 */
+				if (hpl_finetrim_1 < 0  && hpl_base > 0) {
 					/* channel L */
 					Ana_Set_Reg(AUDDEC_ELR_0,
 						    0x3 << HPFINETRIM_L_SHIFT,
 						    HPFINETRIM_L_MASK);
 					code_change = true;
 				}
-				if (hpr_min < 0  && hpr_base > 0) {
+				if (hpr_finetrim_1 < 0  && hpr_base > 0) {
 					/* channel R */
 					Ana_Set_Reg(AUDDEC_ELR_0,
 						    0x3 << HPFINETRIM_R_SHIFT,
@@ -2458,8 +2550,8 @@ static void set_lr_trim_code(void)
 				if (code_change) {
 					get_hp_trim_offset();
 					code_change = false;
-					hpl_min = mHplTrimOffset;
-					hpr_min = mHprTrimOffset;
+					hpl_finetrim_3 = mHplTrimOffset;
+					hpr_finetrim_3 = mHprTrimOffset;
 					Ana_Set_Reg(AUDDEC_ELR_0,
 						    0x0 << HPFINETRIM_L_SHIFT,
 						    HPFINETRIM_L_MASK);
@@ -2467,17 +2559,20 @@ static void set_lr_trim_code(void)
 						    0x0 << HPFINETRIM_R_SHIFT,
 						    HPFINETRIM_R_MASK);
 					mdelay(10);
-					if ((hpl_base > 0) &&
-					    (hpl_min >= 0 ||
-					     abs(hpl_min) < abs(hpl_base))) {
-						finetriml = 0x3;
+
+					if (hpl_base > 0) {
+						finetriml =
+						pick_hp_finetrim(hpl_base,
+							hpl_finetrim_1,
+							hpl_finetrim_3);
 						pr_debug("%s(), [Step3] refine finetriml = %d\n",
 							 __func__, finetriml);
 					}
-					if ((hpr_base > 0) &&
-					    (hpr_min >= 0 ||
-					     abs(hpr_min) < abs(hpr_base))) {
-						finetrimr = 0x3;
+					if (hpr_base > 0) {
+						finetrimr =
+						pick_hp_finetrim(hpr_base,
+							hpr_finetrim_1,
+							hpr_finetrim_3);
 						pr_debug("%s(), [Step3] refine finetrimr = %d\n",
 							 __func__, finetrimr);
 					}
@@ -2538,9 +2633,9 @@ EXIT:
 
 	/* check trimcode is valid */
 	if ((trimcodel < 0 || trimcodel > 0xf) ||
-		(finetriml < 0 || finetriml > 0x3) ||
-		(trimcoder < 0 || trimcoder > 0xf) ||
-		(finetrimr < 0 || finetrimr > 0x3))
+	    (finetriml < 0 || finetriml > 0x3) ||
+	    (trimcoder < 0 || trimcoder > 0xf) ||
+	    (finetrimr < 0 || finetrimr > 0x3))
 		pr_info("%s(), [Warning], invalid trimcode(3pole), trimcodel = %d, finetriml = %d, trimcoder = %d, finetrimr = %d\n",
 			__func__, trimcodel, finetriml, trimcoder, finetrimr);
 
@@ -2573,20 +2668,20 @@ EXIT:
 
 	/* check trimcode is valid */
 	if ((trimcodel < 0 || trimcodel > 0xf) ||
-		(finetriml < 0 || finetriml > 0x3) ||
-		(trimcoder < 0 || trimcoder > 0xf) ||
-		(finetrimr < 0 || finetrimr > 0x3))
+	    (finetriml < 0 || finetriml > 0x3) ||
+	    (trimcoder < 0 || trimcoder > 0xf) ||
+	    (finetrimr < 0 || finetrimr > 0x3))
 		pr_info("%s(), [Warning], invalid trimcode(4pole), trimcodel = %d, finetriml = %d, trimcoder = %d, finetrimr = %d\n",
 			__func__, trimcodel, finetriml, trimcoder, finetrimr);
 
-	hp_3pole_offset =
+	hp_3_pole_trim_setting =
 		(hp_3pole_anaoffset.enable << HPTRIM_EN_SHIFT) |
 		(hp_3pole_anaoffset.hpr_finetrim << HPFINETRIM_R_SHIFT) |
 		(hp_3pole_anaoffset.hpl_finetrim << HPFINETRIM_L_SHIFT) |
 		(hp_3pole_anaoffset.hpr_trimecode << HPTRIM_R_SHIFT) |
 		(hp_3pole_anaoffset.hpl_trimecode << HPTRIM_L_SHIFT);
 
-	hp_4pole_offset =
+	hp_4_pole_trim_setting =
 		(hp_4pole_anaoffset.enable << HPTRIM_EN_SHIFT) |
 		(hp_4pole_anaoffset.hpr_finetrim << HPFINETRIM_R_SHIFT) |
 		(hp_4pole_anaoffset.hpl_finetrim << HPFINETRIM_L_SHIFT) |
@@ -2595,7 +2690,7 @@ EXIT:
 
 	pr_debug("%s(), Final result AUDDEC_ELR_0 = 0x%x, hp_3pole_anaoffset= 0x%x, hp_4pole_anaoffset= 0x%x\n",
 		 __func__, Ana_Get_Reg(AUDDEC_ELR_0),
-		 hp_3pole_offset, hp_4pole_offset);
+		 hp_3_pole_trim_setting, hp_4_pole_trim_setting);
 	pr_debug("%s(), get hp offset L:%d, R:%d\n",
 		 __func__, mHplTrimOffset, mHprTrimOffset);
 }
@@ -2604,10 +2699,15 @@ static void set_lr_trim_code_spk(int channel)
 {
 	int hpl_base = 0;
 	int hpl_min = 0;
+	int hpl_ceiling = 0;
+	int hpl_floor = 0;
+	int hpl_finetrim_2 = 0;
+	int hpl_finetrim_3 = 0;
 	int trimcode = 0;
+	int trimcode_ceiling = 0;
+	int trimcode_floor = 0;
 	int finetrim = 0;
 	int trimcode_tmp = 0;
-	int spk_3pole_offset = 0, spk_4pole_offset = 0;
 	int trim_shift = 0, trim_mask = 0;
 	int fine_shift = 0, fine_mask = 0;
 
@@ -2645,21 +2745,53 @@ static void set_lr_trim_code_spk(int channel)
 			 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode);
 		hpl_min = get_spk_trim_offset(channel);
 		mdelay(10);
-		trimcode = (((abs(hpl_base)*3)/abs(hpl_base-hpl_min))+1)/2;
+
+		/* Check floor and ceiling value to avoid rounding error */
+		trimcode_floor = (abs(hpl_base)*3)/abs(hpl_base-hpl_min);
+		trimcode_ceiling = trimcode_floor + 1;
+		pr_debug("%s(), step1 > 0, get trim level trimcode_floor = %d, trimcode_ceiling = %d\n",
+			__func__, trimcode_floor, trimcode_ceiling);
+
 	} else {
 		Ana_Set_Reg(AUDDEC_ELR_0, 0xa << trim_shift, trim_mask);
 		pr_debug("%s(), step1 < 0 AUDDEC_ELR_0 = 0x%x  trimcode = %d\n",
 			 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode);
 		hpl_min = get_spk_trim_offset(channel);
 		mdelay(10);
-		trimcode = (((abs(hpl_base)*3)/abs(hpl_base-hpl_min))+1)/2 + 8;
-		pr_debug("%s(), step1 < 0 get trim level trimcode = %d\n",
-			 __func__, trimcode);
+
+		/* Check floor and ceiling value to avoid rounding error */
+		trimcode_floor = (abs(hpl_base)*3)/abs(hpl_base-hpl_min) + 8;
+		trimcode_ceiling = trimcode_floor + 1;
+		pr_debug("%s(), step1 < 0, get trim level trimcode_floor = %d, trimcode_ceiling = %d\n",
+			 __func__, trimcode_floor, trimcode_ceiling);
 	}
 
+	/* Get the best trim code from floor and ceiling value */
+	/* Get floor trim code */
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcode_floor << trim_shift, trim_mask);
+	pr_debug("%s(), step1 floor AUDDEC_ELR_0 = 0x%x  trimcode_floor = %d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode_floor);
+	hpl_floor = get_spk_trim_offset(channel);
+	mdelay(10);
+
+	/* Get ceiling trim code */
+	Ana_Set_Reg(AUDDEC_ELR_0, trimcode_ceiling << trim_shift, trim_mask);
+	pr_debug("%s(), step1 floor AUDDEC_ELR_0 = 0x%x  trimcode_ceiling = %d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode_ceiling);
+	hpl_ceiling = get_spk_trim_offset(channel);
+	mdelay(10);
+
+	/* Choose the best */
+	if (abs(hpl_ceiling) < abs(hpl_floor)) {
+		hpl_base = hpl_ceiling;
+		trimcode = trimcode_ceiling;
+	} else {
+		hpl_base = hpl_floor;
+		trimcode = trimcode_floor;
+	}
 	Ana_Set_Reg(AUDDEC_ELR_0, trimcode << trim_shift, trim_mask);
-	pr_debug("%s(), step1 result AUDDEC_ELR_0 = 0x%x  trimcode = %d\n",
-		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode);
+	pr_debug("%s(), step1 result AUDDEC_ELR_0 = 0x%x, hp_base = %d, trimcode = %d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), hpl_base, trimcode);
 
 	/* Step2: Trim code refine +1/0/-1 */
 	hpl_base = get_spk_trim_offset(channel);
@@ -2730,24 +2862,33 @@ static void set_lr_trim_code_spk(int channel)
 			}
 		}
 	}	else {
+		/* SPK+HP finetrim=3 compensates positive DC value */
+		/* choose the best fine trim */
 		Ana_Set_Reg(AUDDEC_ELR_0, 0x2 << fine_shift, fine_mask);
 		pr_debug("%s(), step3 < 0 AUDDEC_ELR_0 = 0x%x\n",
 			 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
-		hpl_min = get_spk_trim_offset(channel);
+		hpl_finetrim_2 = get_spk_trim_offset(channel);
 		mdelay(10);
-		if (hpl_min <= 0 || abs(hpl_min) < abs(hpl_base)) {
+		if (hpl_finetrim_2 <= 0 &&
+		    abs(hpl_finetrim_2) < abs(hpl_base)) {
 			finetrim = 0x2;
-			hpl_base = hpl_min;
+			hpl_base = hpl_finetrim_2;
 		} else {
+			/* base and finetrim=2 across zero */
+			/* Choose best from base, finetrim=2, and finetrim=3 */
 			Ana_Set_Reg(AUDDEC_ELR_0, 0x3 << fine_shift, fine_mask);
 			pr_debug("%s(), step3_2 < 0 AUDDEC_ELR_0 = 0x%x\n ",
 				 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
-			hpl_min = get_spk_trim_offset(channel);
+			hpl_finetrim_3 = get_spk_trim_offset(channel);
 			mdelay(10);
-			if (hpl_min <= 0 && abs(hpl_min) < abs(hpl_base)) {
-				finetrim = 0x3;
-				hpl_base = hpl_min;
-			}
+			finetrim = pick_spk_finetrim(hpl_base,
+						     hpl_finetrim_2,
+						     hpl_finetrim_3);
+			if (finetrim == 0x2)
+				hpl_base = hpl_finetrim_2;
+			else if (finetrim == 0x3)
+				hpl_base = hpl_finetrim_3;
+
 		}
 	}
 	Ana_Set_Reg(AUDDEC_ELR_0, finetrim << fine_shift, fine_mask);
@@ -2757,15 +2898,14 @@ EXIT:
 	spk_3pole_anaoffset.hpl_finetrim = finetrim;
 	spk_3pole_anaoffset.hpr_trimecode = hp_3pole_anaoffset.hpr_trimecode;
 	spk_3pole_anaoffset.hpr_finetrim = hp_3pole_anaoffset.hpr_finetrim;
-	pr_debug("%s(), step3 result AUDDEC_ELR_0 = 0x%x\n",
-		 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
+	pr_debug("%s(), step3 result AUDDEC_ELR_0 = 0x%x, 3-pole trimcode = %d, finetrim = %d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode, finetrim);
 
 	/* check trimcode is valid */
 	if ((trimcode < 0 || trimcode > 0xf) ||
 	    (finetrim < 0 || finetrim > 0x3))
 		pr_info("%s(), [Warning], invalid trimcode(3pole), trimcode = %d, finetrim = %d\n",
 			__func__, trimcode, finetrim);
-
 
 	/* 4 pole fine trim */
 	hpl_base = get_spk_trim_offset(channel);
@@ -2784,6 +2924,8 @@ EXIT:
 	spk_4pole_anaoffset.hpl_finetrim = finetrim;
 	spk_4pole_anaoffset.hpr_trimecode = hp_4pole_anaoffset.hpr_trimecode;
 	spk_4pole_anaoffset.hpr_finetrim =  hp_4pole_anaoffset.hpr_finetrim;
+	pr_debug("%s(), step4 result AUDDEC_ELR_0 = 0x%x, 4-pole trimcode = %d, finetrim = %d\n",
+		 __func__, Ana_Get_Reg(AUDDEC_ELR_0), trimcode, finetrim);
 
 	/* check trimcode is valid */
 	if ((trimcode < 0 || trimcode > 0xf) ||
@@ -2791,13 +2933,13 @@ EXIT:
 		pr_info("%s(), [Warning], invalid trimcode(4pole), trimcode = %d, finetrim = %d\n",
 			__func__, trimcode, finetrim);
 
-	spk_3pole_offset =
+	spk_hp_3_pole_trim_setting =
 		(spk_3pole_anaoffset.enable << HPTRIM_EN_SHIFT) |
 		(spk_3pole_anaoffset.hpr_finetrim << HPFINETRIM_R_SHIFT) |
 		(spk_3pole_anaoffset.hpl_finetrim << HPFINETRIM_L_SHIFT) |
 		(spk_3pole_anaoffset.hpr_trimecode << HPTRIM_R_SHIFT) |
 		(spk_3pole_anaoffset.hpl_trimecode << HPTRIM_L_SHIFT);
-	spk_4pole_offset =
+	spk_hp_4_pole_trim_setting =
 		(spk_4pole_anaoffset.enable << HPTRIM_EN_SHIFT) |
 		(spk_4pole_anaoffset.hpr_finetrim << HPFINETRIM_R_SHIFT) |
 		(spk_4pole_anaoffset.hpl_finetrim << HPFINETRIM_L_SHIFT) |
@@ -2806,7 +2948,7 @@ EXIT:
 
 	pr_debug("%s(), Final result AUDDEC_ELR_0 = 0x%x, spk_3pole_anaoffset= 0x%x, spk_4pole_anaoffset= 0x%x\n",
 		 __func__, Ana_Get_Reg(AUDDEC_ELR_0),
-		 spk_3pole_offset, spk_4pole_offset);
+		 spk_hp_3_pole_trim_setting, spk_hp_4_pole_trim_setting);
 	pr_debug("%s(), get spkl offset : %d\n",
 		 __func__, get_spk_trim_offset(channel));
 }
@@ -3281,25 +3423,28 @@ static void Audio_Amp_Change(int channels, bool enable)
 		 mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_HEADSETR]);
 
 #ifdef ANALOG_HPTRIM
-	pr_debug("%s(), mic_vinp_mv %d\n", __func__, mic_vinp_mv);
-	pr_debug("%s(), Result AUDDEC_ELR_0 = 0x%x\n", __func__, Ana_Get_Reg(AUDDEC_ELR_0));
+	pr_debug("%s(), mic_vinp_mv = %d, dc_compensation_disabled = %d, old trim_setting = 0x%x\n",
+		 __func__, mic_vinp_mv,
+		 dc_compensation_disabled, Ana_Get_Reg(AUDDEC_ELR_0));
 
-	if (mic_vinp_mv > MIC_VINP_4POLE_THRES_MV &&
-	   ((codec_debug_enable & DBG_DCTRIM_BYPASS_4POLE) == 0)) {
-		Ana_Set_Reg(AUDDEC_ELR_0, hp_4pole_anaoffset.enable << 12
-			   | hp_4pole_anaoffset.hpr_finetrim << 10
-			   | hp_4pole_anaoffset.hpl_finetrim << 8
-			   | hp_4pole_anaoffset.hpr_trimecode << 4
-			   | hp_4pole_anaoffset.hpl_trimecode << 0, 0xffff);
-		pr_debug("%s(), set 4pole mic_vinp_mv %d\n", __func__, mic_vinp_mv);
+	if (!dc_compensation_disabled) {
+		if (mic_vinp_mv > MIC_VINP_4POLE_THRES_MV &&
+		   ((codec_debug_enable & DBG_DCTRIM_BYPASS_4POLE) == 0)) {
+			Ana_Set_Reg(AUDDEC_ELR_0,
+				    hp_4_pole_trim_setting, 0xffff);
+			pr_debug("%s(), set hp_4_pole_trim_setting = 0x%x\n",
+				 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
+		} else {
+			Ana_Set_Reg(AUDDEC_ELR_0,
+				    hp_3_pole_trim_setting, 0xffff);
+			pr_debug("%s(), set hp_3_pole_trim_setting = 0x%x\n",
+				 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
+		}
 	} else {
-		Ana_Set_Reg(AUDDEC_ELR_0, hp_3pole_anaoffset.enable << 12
-			   | hp_3pole_anaoffset.hpr_finetrim << 10
-			   | hp_3pole_anaoffset.hpl_finetrim << 8
-			   | hp_3pole_anaoffset.hpr_trimecode << 4
-			   | hp_3pole_anaoffset.hpl_trimecode << 0, 0xffff);
+		Ana_Set_Reg(AUDDEC_ELR_0, 0x0, 0xffff);
+		pr_debug("%s(), dc_compensation_disabled, set trim_setting = 0x%x\n",
+			 __func__, Ana_Get_Reg(AUDDEC_ELR_0));
 	}
-	pr_debug("%s(), new AUDDEC_ELR_0 0x%x\n", __func__, Ana_Get_Reg(AUDDEC_ELR_0));
 #endif
 
 	if (enable) {
@@ -4742,26 +4887,58 @@ static int Aud_Clk_Buf_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	return 0;
 }
 
-static int pmic_dc_offset_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int pmic_dc_offset_get(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s(), %d, %d\n", __func__, hpl_dc_offset, hpr_dc_offset);
+
+	pr_debug("%s(), hp_trim(3pole/4pole) = 0x%x/0x%x, hp+spk_trim(3pole/4pole) = 0x%x/0x%x\n",
+		 __func__,
+		 hp_3_pole_trim_setting, hp_4_pole_trim_setting,
+		 spk_hp_3_pole_trim_setting, spk_hp_4_pole_trim_setting);
+
 	ucontrol->value.integer.value[0] = hpl_dc_offset;
 	ucontrol->value.integer.value[1] = hpr_dc_offset;
 	return 0;
 }
 
-static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int pmic_dc_offset_set(struct snd_kcontrol *kcontrol,
+			      struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s(), %ld, %ld\n", __func__, ucontrol->value.integer.value[0], ucontrol->value.integer.value[1]);
+	pr_debug("%s(), %ld, %ld\n", __func__,
+		 ucontrol->value.integer.value[0],
+		 ucontrol->value.integer.value[1]);
 	hpl_dc_offset = ucontrol->value.integer.value[0];
 	hpr_dc_offset = ucontrol->value.integer.value[1];
 	return 0;
 }
 
+#ifdef ANALOG_HPTRIM
+static int disable_pmic_dctrim_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), dc_compensation_disabled: %d\n",
+		 __func__, dc_compensation_disabled);
+	ucontrol->value.integer.value[0] = dc_compensation_disabled;
+	return 0;
+}
+
+static int disable_pmic_dctrim_set(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
+{
+	pr_debug("%s(), dc_compensation_disabled: %ld\n",
+		 __func__, ucontrol->value.integer.value[0]);
+	dc_compensation_disabled = ucontrol->value.integer.value[0];
+	return 0;
+
+}
+#endif
+
 static const char * const dctrim_control_state[] = {
 	"Not_Yet", "Calibrating", "Calibrated", "Reset"};
 
-static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
 {
 	pr_debug("%s(), dctrim_calibrated = %d\n", __func__, dctrim_calibrated);
 
@@ -4774,9 +4951,11 @@ static int pmic_dctrim_control_get(struct snd_kcontrol *kcontrol, struct snd_ctl
 	return 0;
 }
 
-static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+static int pmic_dctrim_control_set(struct snd_kcontrol *kcontrol,
+				   struct snd_ctl_elem_value *ucontrol)
 {
-	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(dctrim_control_state)) {
+	if (ucontrol->value.enumerated.item[0] >
+	    ARRAY_SIZE(dctrim_control_state)) {
 		pr_warn("%s(), return -EINVAL\n", __func__);
 		return -EINVAL;
 	}
@@ -5073,6 +5252,11 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 #ifdef CONFIG_MT6771_QUERY_PCB_ID
 	SOC_SINGLE_EXT("Audio_MIC_Mode", SND_SOC_NOPM, 0, 6, 0,
 		       Audio_MIC_Mode_Get, Audio_MIC_Mode_Set),
+#endif
+#ifdef ANALOG_HPTRIM
+	SOC_ENUM_EXT("Disable Analog DC Compensation", Audio_DL_Enum[0],
+		     disable_pmic_dctrim_get,
+		     disable_pmic_dctrim_set),
 #endif
 };
 
@@ -7365,6 +7549,7 @@ static void InitGlobalVarDefault(void)
 	TopCkCount = 0;
 	NvRegCount = 0;
 	mIsNeedPullDown = true;
+	dc_compensation_disabled = false;
 }
 
 static struct task_struct *dc_trim_task;
