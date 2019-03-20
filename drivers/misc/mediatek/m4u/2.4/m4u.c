@@ -713,6 +713,12 @@ int m4u_alloc_mva(m4u_client_t *client, M4U_PORT_ID port,
 		m4u_dump_buf_info(NULL);
 		ret = -EINVAL;
 		goto err1;
+	} else if (mva == 1) {
+		M4UMSG("fix mva fail: mva:0x%x, module:%s, size:%d\n",
+				*pMva, m4u_get_port_name(port), size);
+		m4u_dump_buf_info(NULL);
+		ret = -EINVAL;
+		goto err1;
 	} else
 		M4ULOG_LOW("%s,mva = 0x%x\n", __func__, mva);
 
