@@ -19,3 +19,11 @@ config MTK_ION
 	  It set in xxxx_defconfig.mk
 	  default is on.
 
+config MTK_ION_CAM_POOL_DIS
+	tristate "MTK_ION_CAM_POOL_DIS -- camera heap pool"
+	default n
+	help
+	  This option is useful for ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA.
+	  For ion camera heap, buffer is reclaimed to system instead
+	  of reclaiming to camera heap pool.So the memory of system can
+	  use the buffer.

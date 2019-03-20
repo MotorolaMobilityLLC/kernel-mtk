@@ -117,6 +117,21 @@ static void free_buffer_page(struct ion_system_heap *heap,
 			     struct ion_buffer *buffer, struct page *page, unsigned int order) {
 	bool cached = ion_buffer_cached(buffer);
 
+#ifdef CONFIG_MTK_ION_CAM_POOL_DIS
+	if ((!cached) && (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) &&
+	    (heap->heap.id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)) {
+		struct ion_page_pool *pool = heap->pools[order_to_index(order)];
+
+		ion_page_pool_free(pool, page);
+	} else if (cached && (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) &&
+				(heap->heap.id != ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA)) {
+		struct ion_page_pool *pool = heap->cached_pools[order_to_index(order)];
+
+		ion_page_pool_free(pool, page);
+	} else {
+		__free_pages(page, order);
+	}
+#else
 	if (!cached && !(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)) {
 		struct ion_page_pool *pool = heap->pools[order_to_index(order)];
 
@@ -128,6 +143,7 @@ static void free_buffer_page(struct ion_system_heap *heap,
 	} else {
 		__free_pages(page, order);
 	}
+#endif
 }
 
 static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
