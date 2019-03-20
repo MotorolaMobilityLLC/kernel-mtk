@@ -299,6 +299,15 @@ struct CmdqDebugCBkStruct {
 	CmdqDebugRegDumpEndCB endDebugRegDump;
 };
 
+enum CMDQ_CLT_ENUM {
+	CMDQ_CLT_UNKN,
+	CMDQ_CLT_MDP,
+	CMDQ_CLT_CMDQ,
+	CMDQ_CLT_GNRL,
+	CMDQ_CLT_DISP,
+	CMDQ_CLT_MAX	/* ALWAYS keep at the end */
+};
+
 enum CMDQ_CODE_ENUM {
 	/* these are actual HW op code */
 	CMDQ_CODE_READ = 0x01,
@@ -481,6 +490,7 @@ struct CmdBufferStruct {
 struct CmdFreeWorkStruct {
 	struct list_head cmd_buffer_list;
 	struct work_struct free_buffer_work;
+	enum CMDQ_CLT_ENUM clt;
 };
 
 struct TaskPrivateStruct {
@@ -999,6 +1009,10 @@ extern "C" {
 /**
  * Allocate/Free HW use buffer, e.g. command buffer forCMDQ HW
  */
+	void *cmdq_core_alloc_hw_buffer_clt(struct device *dev, size_t size, dma_addr_t *dma_handle,
+					const gfp_t flag, enum CMDQ_CLT_ENUM clt);
+	void cmdq_core_free_hw_buffer_clt(struct device *dev, size_t size, void *cpu_addr,
+				      dma_addr_t dma_handle, enum CMDQ_CLT_ENUM clt);
 	void *cmdq_core_alloc_hw_buffer(struct device *dev, size_t size, dma_addr_t *dma_handle,
 					const gfp_t flag);
 	void cmdq_core_free_hw_buffer(struct device *dev, size_t size, void *cpu_addr,
@@ -1086,8 +1100,8 @@ extern "C" {
 
 	uint32_t cmdqCoreReadDataRegister(enum CMDQ_DATA_REGISTER_ENUM regID);
 
-	int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart, void *node);
-	int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
+	int cmdqCoreAllocWriteAddress(uint32_t count, dma_addr_t *paStart, void *node, enum CMDQ_CLT_ENUM clt);
+	int cmdqCoreFreeWriteAddress(dma_addr_t paStart, enum CMDQ_CLT_ENUM clt);
 	void cmdqCoreFreeWriteAddressNode(void *node);
 	uint32_t cmdqCoreReadWriteAddress(dma_addr_t pa);
 	void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out);

@@ -862,7 +862,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 				return -EFAULT;
 			}
 
-			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart, (void *)pFile);
+			status = cmdqCoreAllocWriteAddress(addrReq.count, &paStart, (void *)pFile, CMDQ_CLT_MDP);
 			if (status != 0) {
 				CMDQ_ERR
 				    ("CMDQ_IOCTL_ALLOC_WRITE_ADDRESS cmdqCoreAllocWriteAddress() failed\n");
@@ -891,7 +891,7 @@ static long cmdq_ioctl(struct file *pFile, unsigned int code, unsigned long para
 				return -EFAULT;
 			}
 
-			status = cmdqCoreFreeWriteAddress(freeReq.startPA);
+			status = cmdqCoreFreeWriteAddress(freeReq.startPA, CMDQ_CLT_MDP);
 			if (status != 0)
 				return status;
 
