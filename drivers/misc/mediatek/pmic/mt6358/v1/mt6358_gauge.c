@@ -28,6 +28,7 @@
 #include "include/pmic_throttling_dlpt.h"
 #include <linux/proc_fs.h>
 #include <linux/math64.h>
+#include <linux/of.h>
 #include "mtk_gauge_class.h"
 #include <mtk_battery_internal.h>
 #include <mt-plat/mtk_auxadc_intf.h>
@@ -132,7 +133,17 @@ static signed int MV_to_REG_value(signed int _mv)
 	bm_trace("[MV_to_REG_value] mv=%d,%lld => %d,\n", _mv, _reg64, ret);
 	return ret;
 }
-
+s64 fg_div(s64 dividend, s32 divisor)
+{
+	s64 ret;
+#if defined(__LP64__) || defined(_LP64)
+	do_div(dividend, divisor);
+	ret = dividend;
+#else
+	ret = div_s64(dividend, divisor);
+#endif
+	return ret;
+}
 static int fgauge_set_info(
 	struct gauge_device *gauge_dev,
 	enum gauge_info ginfo, int value)
@@ -467,8 +478,156 @@ static signed int fg_get_current_iavg(
 
 	return 0;
 }
-
-
+void enable_dwa(bool enable)
+{
+	if (enable == true) {
+		pmic_set_register_value(PMIC_FG_DWA_RST_SW, 0);
+		pmic_set_register_value(PMIC_FG_DWA_RST_MODE, 0);
+		pmic_config_interface(PMIC_RG_SPARE_ADDR, 0x0000, 0x0001, 0x5);
+	} else {
+		pmic_set_register_value(PMIC_FG_DWA_RST_SW, 1);
+		pmic_set_register_value(PMIC_FG_DWA_RST_MODE, 1);
+		pmic_config_interface(PMIC_RG_SPARE_ADDR, 0x0001, 0x0001, 0x5);
+	}
+}
+static signed int convert_current(
+	struct gauge_device *gauge_dev,
+	unsigned short current_reg)
+{
+	signed int dvalue = 0;
+	long long Temp_Value = 0;
+	int sign_bit = 0;
+	/*calculate the real world data    */
+	dvalue = (unsigned int) current_reg;
+	if (dvalue == 0) {
+		Temp_Value = (long long) dvalue;
+		sign_bit = 0;
+	} else if (dvalue > 32767) {
+		/* > 0x8000 */
+		Temp_Value = (long long) (dvalue - 65535);
+		Temp_Value = Temp_Value - (Temp_Value * 2);
+		sign_bit = 1;
+	} else {
+		Temp_Value = (long long) dvalue;
+		sign_bit = 0;
+	}
+	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+	do_div(Temp_Value, 100000);
+	dvalue = (unsigned int) Temp_Value;
+	if (gauge_dev->fg_cust_data->r_fg_value != 100)
+		dvalue = (dvalue * 100) / gauge_dev->fg_cust_data->r_fg_value;
+	if (sign_bit == 1)
+		dvalue = dvalue - (dvalue * 2);
+	gauge_dev->fg_hw_info.current_2 =
+		((dvalue * gauge_dev->fg_cust_data->car_tune_value) / 1000);
+	return dvalue;
+}
+void iavg_check(struct gauge_device *gauge_dev,
+	int *offset_less,
+	int *iavg_less)
+{
+	unsigned short iavg_reg = 0, offset_reg = 0;
+	signed int cic2 = 0, offset = 0;
+	int m = 0;
+	unsigned int ret = 0;
+	long long fg_iavg_reg = 0;
+	long long fg_iavg_reg_tmp = 0;
+	long long fg_iavg_ma = 0;
+	int fg_iavg_reg_27_16 = 0;
+	int fg_iavg_reg_15_00 = 0;
+	int sign_bit = 0;
+	int is_bat_charging;
+	int valid_bit;
+	int iavg;
+	/* Read HW Raw Data
+	 *(1)	 Set READ command
+	 */
+	ret = pmic_config_interface(MT6358_FGADC_CON1, 0x0001, 0x000F, 0x0);
+	/*(2)	  Keep i2c read when status = 1 (0x06) */
+	m = 0;
+		while (fg_get_data_ready_status() == 0) {
+			m++;
+			if (m > 1000) {
+				bm_err(
+				"[%s] fg_get_data_ready_status timeout 1 !\r\n",
+				__func__);
+				break;
+			}
+		}
+	/*
+	 *(5)	 (Read other data)
+	 *(6)	 Clear status to 0
+	 */
+	ret = pmic_config_interface(MT6358_FGADC_CON1, 0x0008, 0x000F, 0x0);
+	/*
+	 *(7)	 Keep i2c read when status = 0 (0x08)
+	 * while ( fg_get_sw_clear_status() != 0 )
+	 */
+	m = 0;
+		while (fg_get_data_ready_status() != 0) {
+			m++;
+			if (m > 1000) {
+				bm_err(
+					"[%s] get_ready_status timeout 2 !\r\n",
+					__func__);
+				break;
+			}
+		}
+	/*(8)	 Recover original settings */
+	ret = pmic_config_interface(MT6358_FGADC_CON1, 0x0000, 0x000F, 0x0);
+	iavg_reg = pmic_get_register_value(PMIC_FG_CIC2);
+	offset_reg = pmic_get_register_value(PMIC_FG_OFFSET);
+	cic2 = convert_current(gauge_dev, iavg_reg);
+	offset = convert_current(gauge_dev, offset_reg);
+	/* iavg */
+	valid_bit = pmic_get_register_value(PMIC_FG_IAVG_VLD);
+	if (valid_bit == 1) {
+		fg_iavg_reg_27_16 =
+		pmic_get_register_value(PMIC_FG_IAVG_27_16);
+		fg_iavg_reg_15_00 =
+		pmic_get_register_value(PMIC_FG_IAVG_15_00);
+		fg_iavg_reg = fg_iavg_reg_27_16;
+		fg_iavg_reg =
+		((long long)fg_iavg_reg << 16) + fg_iavg_reg_15_00;
+		sign_bit = (fg_iavg_reg_27_16 & 0x800) >> 11;
+		if (sign_bit) {
+			fg_iavg_reg_tmp = fg_iavg_reg;
+			fg_iavg_reg = 0xfffffff - fg_iavg_reg_tmp + 1;
+		}
+		if (sign_bit)
+			is_bat_charging = 0;	/* discharge */
+		else
+			is_bat_charging = 1;	/* charge */
+		fg_iavg_ma = fg_iavg_reg * UNIT_FG_IAVG *
+			gauge_dev->fg_cust_data->car_tune_value;
+		do_div(fg_iavg_ma, 1000000);
+		do_div(fg_iavg_ma, gauge_dev->fg_cust_data->r_fg_value);
+		if (sign_bit == 1)
+			fg_iavg_ma = 0 - fg_iavg_ma;
+		iavg = fg_iavg_ma;
+	} else {
+		iavg = cic2;
+	}
+	if (abs(offset) < 1500)
+		*offset_less = true;
+	else
+		*offset_less = false;
+	if (abs(iavg + offset) < 300)
+		*iavg_less = true;
+	else
+		*iavg_less = false;
+	bm_err(
+		"[%s] iavg:%lld cic2:%d offset:%d 0x%x 0x%x %d %d\r\n",
+		__func__,
+		fg_iavg_ma,
+		cic2,
+		offset,
+		upmu_get_reg_value(MT6358_FGADC_ANA_TEST_CON0),
+		upmu_get_reg_value(MT6358_FGADC_ANA_CON0),
+		*offset_less,
+		*iavg_less
+		);
+}
 static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 {
 	int iavg_gap = *(unsigned int *) (data);
@@ -2952,9 +3111,40 @@ int fgauge_set_battery_cycle_interrupt(
 	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 1, "GM30");
 
 	return 0;
-
 }
+void iavg_workaround(struct gauge_device *gauge_dev,
+	enum gauge_event evt)
+{
+	int iavg_less, offset_less;
 
+	iavg_check(gauge_dev, &offset_less, &iavg_less);
+	if (offset_less == true) {
+		if (evt == EVT_INT_IAVG
+			&& iavg_less == false)
+			enable_dwa(true);
+		if (evt == EVT_INT_BAT_INT2_HT ||
+			evt == EVT_INT_BAT_INT2_LT) {
+			if (iavg_less == true)
+				enable_dwa(false);
+			else
+				enable_dwa(true);
+		}
+	}
+	bm_err(
+		"[%s]type:%d 0x%x 0x%x!\n",
+		__func__,
+		evt,
+		upmu_get_reg_value(MT6358_FGADC_ANA_TEST_CON0),
+		upmu_get_reg_value(MT6358_FGADC_ANA_CON0)
+		);
+}
+int fgauge_notify_event(
+	struct gauge_device *gauge_dev,
+	enum gauge_event evt, int value)
+{
+	iavg_workaround(gauge_dev, evt);
+	return 0;
+}
 static struct gauge_ops mt6358_gauge_ops = {
 	.gauge_initial = fgauge_initial,
 	.gauge_read_current = fgauge_read_current,
@@ -3009,6 +3199,7 @@ static struct gauge_ops mt6358_gauge_ops = {
 	.gauge_get_hw_version = fgauge_get_hw_version,
 	.gauge_set_info = fgauge_set_info,
 	.gauge_get_info = fgauge_get_info,
+	.gauge_notify_event = fgauge_notify_event,
 };
 
 static int mt6358_parse_dt(struct mt6358_gauge *info, struct device *dev)

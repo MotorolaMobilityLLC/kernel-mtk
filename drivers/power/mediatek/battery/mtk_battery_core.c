@@ -1466,7 +1466,7 @@ void notify_fg_chr_full(void)
 		gm.chr_full_handler_time = now_time;
 		bm_err("[fg_chr_full_int_handler]\n");
 		wakeup_fg_algo(FG_INTR_CHR_FULL);
-		fg_bat_temp_int_sw_check();
+		fg_int_event(gm.gdev, EVT_INT_CHR_FULL);
 	}
 }
 
@@ -1632,7 +1632,11 @@ void fg_bat_temp_int_sw_check(void)
 	else if (tmp <= gm.fg_bat_tmp_lt)
 		fg_bat_sw_temp_int_l_handler();
 }
-
+void fg_int_event(struct gauge_device *gauge_dev, enum gauge_event evt)
+{
+	fg_bat_temp_int_sw_check();
+	gauge_dev_notify_event(gauge_dev, evt, 0);
+}
 void fg_update_sw_low_battery_check(unsigned int thd)
 {
 	int vbat;
@@ -1714,8 +1718,7 @@ void fg_zcv_int_handler(void)
 		zcv_intr_en = 0;
 		gauge_set_zcv_interrupt_en(zcv_intr_en);
 	}
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_ZCV);
 	sw_check_bat_plugout();
 }
 
@@ -1770,7 +1773,7 @@ void fg_cycle_int_handler(void)
 		return;
 	pmic_enable_interrupt(FG_N_CHARGE_L_NO, 0, "GM30");
 	wakeup_fg_algo(FG_INTR_BAT_CYCLE);
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_BAT_CYCLE);
 	sw_check_bat_plugout();
 }
 
@@ -1791,9 +1794,7 @@ void fg_iavg_int_ht_handler(void)
 		gm.hw_status.iavg_intr_flag);
 
 	wakeup_fg_algo(FG_INTR_IAVG);
-
-	fg_bat_temp_int_sw_check();
-
+	fg_int_event(gm.gdev, EVT_INT_IAVG);
 	sw_check_bat_plugout();
 }
 
@@ -1811,8 +1812,7 @@ void fg_iavg_int_lt_handler(void)
 		gm.hw_status.iavg_intr_flag);
 
 	wakeup_fg_algo(FG_INTR_IAVG);
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_IAVG);
 	sw_check_bat_plugout();
 }
 
@@ -1959,7 +1959,7 @@ void fg_bat_plugout_int_handler(void)
 
 	/* avoid battery plug status mismatch case*/
 	if (is_bat_exist == 1) {
-		fg_bat_temp_int_sw_check();
+		fg_int_event(gm.gdev, EVT_INT_BAT_PLUGOUT);
 		gm.plug_miss_count++;
 
 		bm_err("[%s]is_bat %d miss:%d\n",
@@ -1985,7 +1985,7 @@ void fg_bat_plugout_int_handler(void)
 		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 		battery_update(&battery_main);
-		fg_bat_temp_int_sw_check();
+		fg_int_event(gm.gdev, EVT_INT_BAT_PLUGOUT);
 		kernel_power_off();
 	}
 }
@@ -2039,9 +2039,7 @@ void fg_nafg_int_handler(void)
 
 	/* 2. Stop HW interrupt*/
 	gauge_set_nag_en(nafg_en);
-
-	fg_bat_temp_int_sw_check();
-
+	fg_int_event(gm.gdev, EVT_INT_NAFG);
 	/* 3. Notify fg daemon */
 	wakeup_fg_algo(FG_INTR_NAG_C_DLTV);
 
@@ -2067,8 +2065,7 @@ int fg_bat_int1_h_handler(struct gauge_consumer *consumer)
 		__func__,
 		fg_coulomb, gm.fg_bat_int1_ht,
 		gm.fg_bat_int1_lt, gm.fg_bat_int1_gap);
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_BAT_INT1_HT);
 	wakeup_fg_algo(FG_INTR_BAT_INT1_HT);
 	sw_check_bat_plugout();
 	return 0;
@@ -2092,8 +2089,7 @@ int fg_bat_int1_l_handler(struct gauge_consumer *consumer)
 		__func__,
 		fg_coulomb, gm.fg_bat_int1_ht,
 		gm.fg_bat_int1_lt, gm.fg_bat_int1_gap);
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_BAT_INT1_LT);
 	wakeup_fg_algo(FG_INTR_BAT_INT1_LT);
 	sw_check_bat_plugout();
 
@@ -2111,7 +2107,7 @@ int fg_bat_int2_h_handler(struct gauge_consumer *consumer)
 
 
 	fg_sw_bat_cycle_accu();
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_BAT_INT2_HT);
 	wakeup_fg_algo(FG_INTR_BAT_INT2_HT);
 	sw_check_bat_plugout();
 
@@ -2128,8 +2124,7 @@ int fg_bat_int2_l_handler(struct gauge_consumer *consumer)
 		fg_coulomb, gm.fg_bat_int2_lt);
 
 	fg_sw_bat_cycle_accu();
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_BAT_INT2_LT);
 	wakeup_fg_algo(FG_INTR_BAT_INT2_LT);
 	sw_check_bat_plugout();
 
@@ -2149,8 +2144,7 @@ void fg_vbat2_l_int_handler(void)
 	gauge_enable_vbat_high_interrupt(lt_ht_en);
 	gauge_enable_vbat_low_interrupt(lt_ht_en);
 	wakeup_fg_algo(FG_INTR_VBAT2_L);
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_VBAT_L);
 	sw_check_bat_plugout();
 }
 
@@ -2165,8 +2159,7 @@ void fg_vbat2_h_int_handler(void)
 	gauge_enable_vbat_low_interrupt(lt_ht_en);
 	disable_shutdown_cond(LOW_BAT_VOLT);
 	wakeup_fg_algo(FG_INTR_VBAT2_H);
-
-	fg_bat_temp_int_sw_check();
+	fg_int_event(gm.gdev, EVT_INT_VBAT_H);
 	sw_check_bat_plugout();
 }
 
@@ -2189,8 +2182,7 @@ void fg_drv_update_hw_status(void)
 
 	if (gauge_get_hw_version() >= GAUGE_HW_V1000 &&
 	gauge_get_hw_version() < GAUGE_HW_V2000)
-		fg_bat_temp_int_sw_check();
-
+		fg_int_event(gm.gdev, EVB_PERIODIC_CHECK);
 	fg_update_sw_iavg();
 
 	gauge_dev_get_boot_battery_plug_out_status(
