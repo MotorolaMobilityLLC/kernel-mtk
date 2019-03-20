@@ -1396,7 +1396,7 @@ static void show_bt_by_pid(int task_pid)
 		} else
 			dump_native = 1;
 #endif
-		if (dump_native == 1)
+		if (dump_native == 1 || reboot_flag == true)
 			DumpThreadNativeMaps(task_pid);	/* catch maps to Userthread_maps */
 		do {
 			if (t) {
@@ -1412,7 +1412,7 @@ static void show_bt_by_pid(int task_pid)
 
 				Log2HangInfo("%s sysTid=%d, pid=%d\n", t->comm, tid, task_pid);
 
-				if (dump_native == 1) {
+				if (dump_native == 1 || reboot_flag == true) {
 					/* do_send_sig_info(SIGSTOP, SEND_SIG_FORCED, t, true); */
 					/* change send ptrace_stop to send signal stop */
 					DumpThreadNativeInfo_By_tid(tid);	/* catch user-space bt */
@@ -1457,6 +1457,7 @@ static void hang_dump_backtrace(void)
 			(strcmp(p->comm, "mmcqd/0") == 0) ||
 			(strcmp(p->comm, "debuggerd64") == 0) ||
 			(strcmp(p->comm, "mmcqd/1") == 0) ||
+			(strcmp(p->comm, "vdc") == 0) ||
 			(strcmp(p->comm, "debuggerd") == 0)) {
 			read_unlock(&tasklist_lock);
 			show_bt_by_pid(p->pid);
