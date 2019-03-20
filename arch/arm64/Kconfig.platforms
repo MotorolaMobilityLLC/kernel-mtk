@@ -287,6 +287,13 @@ config MACH_MT6771
 	select FAST_CIRQ_CLONE_FLUSH
 	select MTK_CACHE_FLUSH_BY_SF
 	select MTK_PID_MAP
+	select HIE
+	select HIE_DEBUG
+	select F2FS_FS
+	select F2FS_FS_SECURITY
+	select F2FS_FS_ENCRYPTION
+	select F2FS_FS_XATTR
+	select FS_ENCRYPTION
 	help
 	  This enables support for MediaTek MT6771
 	  Support for aarch64 Architecture
