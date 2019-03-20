@@ -4,6 +4,16 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/pinctrl/mt6771-pinfunc.h>
 
+&reserved_memory {
+	reserve-memory-scp_share {
+		compatible = "mediatek,reserve-memory-scp_share";
+		no-map;
+		size = <0 0x00300000>;
+		alignment = <0 0x1000000>;
+		alloc-ranges = <0 0x40000000 0 0x50000000>;
+	};
+};
+
 /* chosen */
 &chosen {
 	/* fpga may has no lk, we need to specify display info here */
