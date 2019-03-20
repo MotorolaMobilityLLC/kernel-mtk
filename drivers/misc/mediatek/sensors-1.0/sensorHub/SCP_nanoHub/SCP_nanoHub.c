@@ -138,6 +138,12 @@ phys_addr_t __attribute__((weak)) scp_get_reserve_mem_phys(enum scp_reserve_mem_
 	return 0;
 }
 
+phys_addr_t __attribute__((weak))
+	scp_get_reserve_mem_size(enum scp_reserve_mem_id_t id)
+{
+	return 0;
+}
+
 void __attribute__((weak)) scp_register_feature(enum feature_id id)
 {
 }
@@ -1981,7 +1987,7 @@ static int sensorHub_power_up_work(void *data)
 		obj->SCP_sensorFIFO->wp = 0;
 		obj->SCP_sensorFIFO->rp = 0;
 		obj->SCP_sensorFIFO->FIFOSize =
-				(SCP_SENSOR_HUB_FIFO_SIZE - offsetof(struct sensorFIFO, data)) /
+				((long)scp_get_reserve_mem_size(SENS_MEM_ID) - offsetof(struct sensorFIFO, data)) /
 				SENSOR_DATA_SIZE * SENSOR_DATA_SIZE;
 		SCP_LOG("obj->SCP_sensorFIFO = %p, wp = %d, rp = %d, size = %d\n", obj->SCP_sensorFIFO,
 			obj->SCP_sensorFIFO->wp, obj->SCP_sensorFIFO->rp, obj->SCP_sensorFIFO->FIFOSize);

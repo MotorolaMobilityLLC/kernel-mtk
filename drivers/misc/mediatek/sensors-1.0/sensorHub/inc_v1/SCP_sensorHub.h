@@ -51,7 +51,6 @@ struct SensorState {
 
 #define SCP_SENSOR_HUB_TEMP_BUFSIZE     256
 
-#define SCP_SENSOR_HUB_FIFO_SIZE        0x800000
 #define SCP_KFIFO_BUFFER_SIZE			(2048)
 #define SCP_DIRECT_PUSH_FIFO_SIZE       8192
 
