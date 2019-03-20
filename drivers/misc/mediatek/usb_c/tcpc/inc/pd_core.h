@@ -1033,6 +1033,7 @@ struct pd_port {
 	struct notifier_block bat_nb;
 #endif /* CONFIG_USB_POWER_DELIVERY */
 
+	uint8_t cap_miss_match; /* For src_cap miss match */
 };
 
 static inline struct dp_data *pd_get_dp_data(struct pd_port *pd_port)
