@@ -104,6 +104,11 @@
 		pinctrl-3 = <&fpsensor_eint_in_float>;
 		status = "okay";
 	};
+
+	led7:led@7 {
+		compatible = "mediatek,charging";
+		led_mode = <5>;
+	};
 };
 
 &spi0 {
