@@ -372,6 +372,7 @@ ACAO_HPS_START:
 	aee_rr_rec_hps_cb_footprint(2);
 	aee_rr_rec_hps_cb_fp_times((u64) ktime_to_ms(ktime_get()));
 	/*Debug message dump*/
+	cpu_onoff = 0;
 	for (i = 0 ; i < 8 ; i++) {
 
 		if (i >= setup_max_cpus)
