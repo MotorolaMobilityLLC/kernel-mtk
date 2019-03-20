@@ -116,6 +116,9 @@ static int handle_to_index(int handle)
 	case ID_SAR_BOTTOM_RIGHT:
 		index = sar_bottom_right;
 		break;
+	case ID_FTM:
+		index = ftm;
+		break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);

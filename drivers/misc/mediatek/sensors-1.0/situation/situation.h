@@ -57,6 +57,7 @@ typedef enum {
 	sar_bottom_left,
 	sar_bottom,
 	sar_bottom_right,
+	ftm,
 	max_situation_support,
 } situation_index_table;
 

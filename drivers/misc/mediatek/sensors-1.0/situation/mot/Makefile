@@ -8,3 +8,4 @@ obj-$(CONFIG_MOTO_CAMGEST)	+=	moto_camgest/
 obj-$(CONFIG_MOTO_CHOPCHOP)	+=	moto_chopchop/
 obj-$(CONFIG_MOTO_GLANCE)	+=	moto_glance/
 obj-$(CONFIG_MOTO_LTV)	        +=	moto_ltv/
+obj-$(CONFIG_MOTO_FTM)	        +=	moto_ftm/
