@@ -349,6 +349,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		interrupts = <GIC_PPI 9 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
+	lcm_pins_bl_en: lcm_pins_bl_en@0 {
+		compatible = "tinno,lcm_pins_bl_en";
+	};
+
 	sysirq: intpol-controller@10200a80 {
 		compatible = "mediatek,mt6577-sysirq";
 		interrupt-controller;
@@ -656,8 +660,16 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,pmic-accdet";
 	};
 
-	goodix_fp: fingerprint {
+	hall_1: hall{
+		compatible = "mediatek, hall";
+	};
+	
+/*	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
+	};*/
+
+        focal_fp: focal_fp {
+		compatible = "mediatek,focal_fp";
 	};
 
 	mt6357_gauge {
@@ -2651,6 +2663,11 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
+
+        flashlights_aw3641: flashlights_aw3641 {
+                compatible = "mediatek,flashlights_aw3641";
+				decouple = <1>;
+        };
 
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
