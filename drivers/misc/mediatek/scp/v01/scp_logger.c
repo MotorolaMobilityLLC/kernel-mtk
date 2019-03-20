@@ -191,7 +191,7 @@ static size_t scp_A_get_last_log(size_t b_len)
 ssize_t scp_A_log_read(char __user *data, size_t len)
 {
 	unsigned int w_pos, r_pos, datalen;
-	char *buf, *to_user_buf;
+	char *buf;
 
 	if (!scp_A_logger_inited)
 		return 0;
@@ -224,19 +224,10 @@ ssize_t scp_A_log_read(char __user *data, size_t len)
 	}
 
 	buf = ((char *) SCP_A_log_ctl) + SCP_A_log_ctl->buff_ofs + r_pos;
-	to_user_buf = vmalloc(len);
 	len = datalen;
 	/*memory copy from log buf*/
-	if (to_user_buf) {
-		memcpy_fromio(to_user_buf, buf, len);
-		if (copy_to_user(data, to_user_buf, len))
-			pr_debug("[SCP]copy to user buf failed..\n");
-
-		vfree(to_user_buf);
-	} else {
-		pr_debug("[SCP]create log buffer failed..\n");
-		goto error;
-	}
+	if (copy_to_user(data, buf, len))
+		pr_debug("[SCP]copy to user buf failed..\n");
 
 	r_pos += datalen;
 	if (r_pos >= DRAM_BUF_LEN)
