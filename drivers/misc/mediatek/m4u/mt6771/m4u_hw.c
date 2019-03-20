@@ -1949,7 +1949,8 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 			       m4u_get_port_name(m4u_port), fault_mva, fault_pa, layer, write,
 			       regval, M4U_ReadReg32(m4u_base, REG_MMU_IVRP_PADDR));
 
-			if (m4u_port == M4U_PORT_DISP_OVL0) {
+			if (m4u_port == M4U_PORT_DISP_OVL0 ||
+			    m4u_port == M4U_PORT_DISP_2L_OVL0_LARB0) {
 				unsigned int valid_mva = 0;
 				unsigned int valid_size = 0;
 				unsigned int valid_mva_end = 0;
