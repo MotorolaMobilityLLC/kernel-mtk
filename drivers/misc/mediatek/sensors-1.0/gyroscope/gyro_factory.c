@@ -165,6 +165,20 @@ static long gyro_factory_unlocked_ioctl(struct file *file, unsigned int cmd, uns
 			return -EINVAL;
 		}
 		return 0;
+	case GYROSCOPE_IOCTL_SELF_TEST:
+		if (gyro_factory.fops != NULL &&
+		    gyro_factory.fops->do_self_test != NULL) {
+			err = gyro_factory.fops->do_self_test();
+			if (err < 0) {
+				pr_err(
+					"GYROSCOPE_IOCTL_SELF_TEST FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("GYROSCOPE_IOCTL_SELF_TEST NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	default:
 		GYRO_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
@@ -191,9 +205,10 @@ static long compat_gyro_factory_unlocked_ioctl(struct file *filp, unsigned int c
 	case COMPAT_GYROSCOPE_IOCTL_CLR_CALI:
 	case COMPAT_GYROSCOPE_IOCTL_GET_CALI:
 	case COMPAT_GYROSCOPE_IOCTL_ENABLE_CALI:
+	case COMPAT_GYROSCOPE_IOCTL_SELF_TEST:
 		GYRO_LOG("compat_ion_ioctl : GYROSCOPE_IOCTL_XXX command is 0x%x\n", cmd);
-		return filp->f_op->unlocked_ioctl(filp, cmd,
-						  (unsigned long)compat_ptr(arg));
+		return filp->f_op->unlocked_ioctl(
+			filp, cmd, (unsigned long)compat_ptr(arg));
 	default:
 		GYRO_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 		return -ENOIOCTLCMD;

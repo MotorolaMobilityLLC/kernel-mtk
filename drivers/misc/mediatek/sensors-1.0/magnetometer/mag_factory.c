@@ -88,6 +88,20 @@ static long mag_factory_unlocked_ioctl(struct file *file, unsigned int cmd, unsi
 			return -EINVAL;
 		}
 		return 0;
+	case MSENSOR_IOCTL_SELF_TEST:
+		if (mag_factory.fops != NULL &&
+		    mag_factory.fops->do_self_test != NULL) {
+			err = mag_factory.fops->do_self_test();
+			if (err < 0) {
+				pr_err(
+					"MSENSOR_IOCTL_SELF_TEST fail!\n");
+				return -EINVAL;
+			}
+		} else {
+			pr_err("MSENSOR_IOCTL_SELF_TEST NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	default:
 		MAG_LOG("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
@@ -106,10 +120,11 @@ static long compat_mag_factory_unlocked_ioctl(struct file *filp, unsigned int cm
 	switch (cmd) {
 	case COMPAT_MSENSOR_IOCTL_READ_SENSORDATA:
 	case COMPAT_MSENSOR_IOCTL_SENSOR_ENABLE:
+	case COMPAT_MSENSOR_IOCTL_READ_FACTORY_SENSORDATA:
+	case COMPAT_MSENSOR_IOCTL_SELF_TEST:
 		MAG_LOG("compat_ion_ioctl : MSENSOR_IOCTL_XXX command is 0x%x\n", cmd);
-		return filp->f_op->unlocked_ioctl(filp, cmd,
-			(unsigned long)compat_ptr(arg));
-
+		return filp->f_op->unlocked_ioctl(
+			filp, cmd, (unsigned long)compat_ptr(arg));
 	default:
 		MAG_PR_ERR("compat_ion_ioctl : No such command!! 0x%x\n", cmd);
 		return -ENOIOCTLCMD;
