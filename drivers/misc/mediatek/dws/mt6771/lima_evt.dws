@@ -1808,16 +1808,6 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio158>
-            <gpio159>
-                <eint_mode>true</eint_mode>
-                <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
-                <inpull_selhigh>true</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
-                <smt>false</smt>
-                <ies>true</ies>
-            </gpio159>
             <gpio160>
                 <eint_mode>true</eint_mode>
                 <def_mode>0</def_mode>
