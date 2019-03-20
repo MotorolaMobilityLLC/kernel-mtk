@@ -188,14 +188,14 @@
 	};
 	camera_pins_cam2_vcama_0: cam1@vcam2 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO169__FUNC_GPIO169>;
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam2_vcama_1: cam1@vcam3 {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO169__FUNC_GPIO169>;
+			pins = <PINMUX_GPIO80__FUNC_GPIO80>;
 			slew-rate = <1>;
 			output-high;
 		};
