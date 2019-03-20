@@ -590,6 +590,7 @@ int ccci_fsm_init(int md_id)
 	fsm_poller_init(&ctl->poller_ctl);
 	fsm_ee_init(&ctl->ee_ctl);
 	fsm_monitor_init(&ctl->monitor_ctl);
+	fsm_sys_init();
 	register_ccci_sys_call_back(ctl->md_id, MD_SIM_TYPE, fsm_sim_type_handler);
 
 	ccci_fsm_entries[md_id] = ctl;
