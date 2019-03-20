@@ -27,7 +27,10 @@
 };
 
 /* Changes for lima EVT1 go here */
-
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 26 0>;
+};
 
 
 
