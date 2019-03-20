@@ -21,11 +21,14 @@ int last_als_report_data = -1;
 #define AAL_DELAY	200000000
 
 static struct alsps_init_info *alsps_init_list[MAX_CHOOSE_ALSPS_NUM] = {0};
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_ALSPSHUB)
 atomic_t prox_state;
+
 enum ProxState {
 	PROX_STATE_NEAR,
 	PROX_STATE_FAR,
 };
+#endif
 
 int als_data_report(int value, int status)
 {
@@ -125,7 +128,9 @@ int ps_data_report(int value, int status)
 	pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value + 1;
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_ALSPSHUB)
 	atomic_set(&prox_state, value);
+#endif
 	event.status = status;
 	err = sensor_input_event(alsps_context_obj->ps_mdev.minor, &event);
 	if (err < 0)
@@ -287,7 +292,9 @@ static struct alsps_context *alsps_context_alloc_object(void)
 		ALSPS_PR_ERR("Alloc alsps object error!\n");
 		return NULL;
 	}
+#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_ALSPSHUB)
 	atomic_set(&prox_state, PROX_STATE_FAR);
+#endif
 	atomic_set(&obj->delay_als, 200); /*5Hz, set work queue delay time 200ms */
 	atomic_set(&obj->delay_ps, 200); /* 5Hz,  set work queue delay time 200ms */
 	atomic_set(&obj->wake, 0);
@@ -702,8 +709,9 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 	err = cxt->ps_ctl.enable_nodata(cxt->ps_enable);
 #else
 	err = ps_enable_and_batch();
-#endif
 	atomic_set(&prox_state, PROX_STATE_FAR);
+#endif
+
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG(" ps_store_active done\n");
@@ -745,12 +753,11 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, cxt->ps_latency_ns);
 	else
 		err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, 0);
-	ps_data_report(1, SENSOR_STATUS_ACCURACY_HIGH);
 #else
 	err = ps_enable_and_batch();
-#endif
 	pr_debug("prox_state:%d\n", atomic_read(&prox_state));
 	ps_data_report(atomic_read(&prox_state), SENSOR_STATUS_ACCURACY_HIGH);
+#endif
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
 	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
 	if (err)
