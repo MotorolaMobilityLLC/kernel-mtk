@@ -40,6 +40,8 @@ struct core_firmware_data {
 
 	int delay_after_upgrade;
 
+	bool force_upgrad;
+
 	bool isUpgrading;
 	bool isCRC;
 	bool isboot;

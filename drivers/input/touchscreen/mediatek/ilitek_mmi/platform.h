@@ -91,6 +91,7 @@ struct ilitek_platform_data {
 	bool debug_data_start_flag;
 	struct mutex ilitek_debug_mutex;
 	struct mutex ilitek_debug_read_mutex;
+	const char *TP_IC_TYPE;
 	bool suspended;
 };
 
@@ -110,5 +111,7 @@ extern void ilitek_regulator_power_on(bool status);
 extern void netlink_reply_msg(void *raw, int size);
 extern int ilitek_proc_init(void);
 extern void ilitek_proc_remove(void);
+extern int ilitek_sys_init(void);
+extern void ilitek_sys_remove(void);
 
 #endif /* __PLATFORM_H */

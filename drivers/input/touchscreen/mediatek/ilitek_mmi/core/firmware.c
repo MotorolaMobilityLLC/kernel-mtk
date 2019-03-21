@@ -63,6 +63,9 @@ struct flash_block_info fbi[FW_BLOCK_INFO_NUM];
 struct core_firmware_data *core_firmware;
 u8 gestrue_fw[(10 * K)];
 
+extern unsigned char g_user_buf[PAGE_SIZE];
+extern bool use_g_user_buf;
+
 static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw);
 
 static uint32_t HexToDec(char *pHex, int32_t nLength)
@@ -354,7 +357,10 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 	case REQUEST_FIRMWARE:
 		ipio_info("Request_firmware_file, name = %s \n", BOOT_FW_HEX_NAME);
 		msleep(BOOT_UPDATE_FW_DELAY_TIME);
-		ret = request_firmware(&fw, BOOT_FW_HEX_NAME, ipd->dev);
+		if(use_g_user_buf)
+			ret = request_firmware(&fw, g_user_buf, ipd->dev);
+		else
+			ret = request_firmware(&fw, BOOT_FW_HEX_NAME, ipd->dev);
 		if (ret < 0) {
 			ipio_err("Failed to open the file Name %s,try to open ili file\n", BOOT_FW_HEX_NAME);
 			return -ENOMEM;
@@ -380,7 +386,10 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 		break;
 	case FILP_OPEN:
 		ipio_err("filp_open path %s \n", UPDATE_FW_PATH);
-		f = filp_open(UPDATE_FW_PATH, O_RDONLY, 0644);
+		if(use_g_user_buf)
+			f = filp_open(g_user_buf, O_RDONLY, 0644);
+		else
+			f = filp_open(UPDATE_FW_PATH, O_RDONLY, 0644);
 		if (ERR_ALLOC_MEM(f)) {
 			ipio_err("Failed to open the file at %ld.\n", PTR_ERR(f));
 			return -ENOMEM;

@@ -49,6 +49,8 @@ extern struct tpd_device *tpd;
 #define DEVICE_ID	"ILITEK_TDDI"
 #define DEVICE_ID_SPI	"ILITEK_TDDI_SPI"
 extern char mtkfb_lcm_name[256];
+bool use_g_user_buf = false;
+EXPORT_SYMBOL(use_g_user_buf);
 
 /* Debug level */
 uint32_t ipio_debug_level = DEBUG_ALL;
@@ -640,7 +642,6 @@ static int ilitek_platform_gpio(void)
 	ipd->int_gpio = of_get_named_gpio_flags(dev_node, DTS_INT_GPIO, 0, &flag);
 	ipd->reset_gpio = of_get_named_gpio_flags(dev_node, DTS_RESET_GPIO, 0, &flag);
 #endif /* CONFIG_OF */
-#endif /* PT_MTK */
 
 	ipio_info("TP GPIO INT: %d\n", ipd->int_gpio);
 	ipio_info("TP GPIO RESET: %d\n", ipd->reset_gpio);
@@ -678,8 +679,8 @@ static int ilitek_platform_gpio(void)
 	}
 
 	gpio_direction_input(ipd->int_gpio);
+#endif /* PT_MTK */
 
-out:
 	return ret;
 }
 
@@ -776,7 +777,7 @@ int ilitek_platform_reset_ctrl(bool rst, int mode)
 		break;
 	case HW_RST_HOST_DOWNLOAD:
 		ipio_info("HW_RST_HOST_DOWNLOAD\n");
-		ilitek_platform_tp_hw_reset(rst);
+		/* ilitek_platform_tp_hw_reset(rst); */
 		ret = core_firmware_upgrade(UPGRADE_IRAM, HEX_FILE, OPEN_FW_METHOD);
 		if (ret < 0)
 			ipio_err("host download with retry failed\n");
@@ -836,6 +837,7 @@ static int ilitek_platform_remove_i2c(struct i2c_client *client)
 	}
 
 	ilitek_proc_remove();
+	ilitek_sys_remove();
 	return 0;
 }
 
@@ -874,6 +876,7 @@ static int ilitek_platform_remove_spi(struct spi_device *spi)
 	}
 
 	ilitek_proc_remove();
+	ilitek_sys_remove();
 
 	return 0;
 }
@@ -888,6 +891,7 @@ static int ilitek_platform_remove_spi(struct spi_device *spi)
 
 static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c_device_id *id)
 {
+	int ret = 0;
 	if (client == NULL) {
 		ipio_err("i2c client is NULL\n");
 		return -ENODEV;
@@ -929,6 +933,9 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	ipd->delay_time_low = 5;
 	ipd->edge_delay = 100;
 
+	ipd->TP_IC_TYPE = kzalloc(128, GFP_KERNEL);
+	ipd->TP_IC_TYPE = "ili9881";
+
 	mutex_init(&ipd->plat_mutex);
 	mutex_init(&ipd->touch_mutex);
 	spin_lock_init(&ipd->plat_spinlock);
@@ -956,6 +963,8 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 
 	if (ilitek_platform_gpio() < 0)
 		ipio_err("Failed to request gpios\n ");
+
+	use_g_user_buf = false;
 
 	/* Pull TP RST low to high after request GPIO succeed for normal work. */
 	if (RST_METHODS == HW_RST_HOST_DOWNLOAD || RST_METHODS == HW_RST) {
@@ -997,6 +1006,10 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 
 	if (ilitek_proc_init() < 0)
 		ipio_err("Failed to create ilitek device nodes\n");
+	ret = ilitek_sys_init() ;
+	if (ret < 0) {
+		ipio_err("sys class files creation failed\n");
+	}
 
 	ipd->suspended = false;
 #if (TP_PLATFORM == PT_MTK)
@@ -1010,12 +1023,12 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 		ipio_err("Failed to create fw upgrade thread\n");
 	}
 #endif
-
 	return 0;
 }
 
 static int ilitek_platform_probe_spi(struct spi_device *spi)
 {
+	int ret = 0;
 	if (spi == NULL) {
 		ipio_err("spi device is NULL\n");
 		return -ENODEV;
@@ -1040,6 +1053,9 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	ipio_info("Driver Version : %s\n", DRIVER_VERSION);
 	ipio_info("Driver on platform :  %x\n", TP_PLATFORM);
 	ipio_info("Driver interface :  SPI\n");
+
+	ipd->TP_IC_TYPE = kzalloc(128, GFP_KERNEL);
+	ipd->TP_IC_TYPE = "ili9881";
 
 	ipd->delay_time_high = 10;
 	ipd->delay_time_low = 5;
@@ -1073,6 +1089,7 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	if (ilitek_platform_gpio() < 0)
 		ipio_err("Failed to request gpios\n ");
 
+	use_g_user_buf = false;
 	/* Pull TP RST low to high after request GPIO succeed for normal work. */
 	if (RST_METHODS == HW_RST_HOST_DOWNLOAD || RST_METHODS == HW_RST) {
 		ipd->do_otp_check = false;
@@ -1114,7 +1131,10 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 
 	if (ilitek_proc_init() < 0)
 		ipio_err("Failed to create ilitek device nodes\n");
-
+	ret = ilitek_sys_init() ;
+	if (ret < 0) {
+		ipio_err("sys class files creation failed\n");
+	}
 	ipd->suspended = false;
 #if (TP_PLATFORM == PT_MTK)
 	tpd_load_status = 1;

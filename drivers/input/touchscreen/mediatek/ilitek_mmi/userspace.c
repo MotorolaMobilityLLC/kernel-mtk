@@ -74,6 +74,9 @@ unsigned char g_user_buf[USER_STR_BUFF] = { 0 };
 #define REGISTER_WRITE	1
 uint32_t temp[5] = {0};
 extern char mode_chose;
+static struct class *touchscreen_class;
+static struct device *touchscreen_class_dev;
+extern bool use_g_user_buf;
 
 struct file_buffer {
 	char *ptr;
@@ -1972,3 +1975,274 @@ void ilitek_proc_remove(void)
 	netlink_kernel_release(_gNetLinkSkb);
 }
 EXPORT_SYMBOL(ilitek_proc_remove);
+
+/*********** Add sys node for tcmd and fw upgrade  *********************/
+
+static ssize_t drv_power_on_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ipio_info("*** %s() ipd->suspended = %d ***\n", __func__, ipd->suspended);
+
+	if (ipd->suspended == true)
+		return snprintf(pBuf, PAGE_SIZE, "0\n");
+	else
+		return snprintf(pBuf, PAGE_SIZE, "1\n");
+}
+static DEVICE_ATTR(poweron, 0444, drv_power_on_show, NULL);
+
+static ssize_t drv_product_info_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ipio_info ("*** %s() productinfo = %s ***\n", __func__, ipd->TP_IC_TYPE);
+
+	return scnprintf(pBuf, PAGE_SIZE, "%s\n", ipd->TP_IC_TYPE);
+}
+static DEVICE_ATTR(productinfo, 0444, drv_product_info_show, NULL);
+
+static ssize_t drv_force_reflash_store(struct device *pDevice, struct device_attribute *pAttr, const char *pBuf, size_t nSize)
+{
+	int temp;
+	ipio_info ("*** %s() ***\n", __func__);
+	memset(g_user_buf, 0, USER_STR_BUFF * sizeof(unsigned char));
+	memcpy(g_user_buf, pBuf, nSize - 1);
+
+	ipio_info ("%s g_user_buf=%s\n", __func__, g_user_buf);
+	temp = katoi(g_user_buf);
+	ipio_info ("%s temp=%d\n", __func__, temp);
+	if (temp == 1)
+		core_firmware->force_upgrad = true;
+	else
+		core_firmware->force_upgrad = false;
+
+	ipio_info("%s core_firmware->force_upgrad =%d\n", __func__, core_firmware->force_upgrad);
+	return nSize;
+}
+static DEVICE_ATTR(forcereflash, 0220, NULL, drv_force_reflash_store);
+
+
+static ssize_t drv_flash_prog_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ipio_info ("*** %s() core_firmware->isUpgrading = %d ***\n", __func__, core_firmware->isUpgrading);
+
+	return scnprintf(pBuf, PAGE_SIZE, "%d\n", core_firmware->isUpgrading);
+}
+static DEVICE_ATTR(flashprog, 0444, drv_flash_prog_show, NULL);
+
+static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute *pAttr, const char *pBuf, size_t nSize)
+{
+	int ret;
+	char prefix[128] = "ILITEK";
+	const char *chip_name = ipd->TP_IC_TYPE;
+
+	ipio_info ("*** %s() ***\n", __func__);
+	memset(g_user_buf, 0, USER_STR_BUFF * sizeof(unsigned char));
+	memcpy(g_user_buf, pBuf, nSize - 1);
+	ipio_info ("%s g_user_buf=%s\n", __func__, g_user_buf);
+
+	if (ipd->suspended == true) {
+		ipio_err("%s: In suspend state, try again later\n", __func__);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	if (core_firmware->isUpgrading == true) {
+		ipio_err("%s: In FW flashing state, try again later\n", __func__);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	if (core_firmware->force_upgrad != 1) {
+		if (strnstr(g_user_buf, prefix, strnlen(g_user_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
+			ipio_err("%s: FW does not belong to %s\n", __func__, prefix);
+			ret = -EINVAL;
+			goto exit;
+		}
+		if (strnstr(g_user_buf, chip_name, strnlen(g_user_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
+			ipio_err("%s: FW does not belong to chip %s\n", __func__, chip_name);
+			ret = -EINVAL;
+			goto exit;
+		}
+		ipio_info("%s: FW belong to %s\n", __func__, prefix);
+		ipio_err("%s: FW belong to chip %s\n", __func__, chip_name);
+	}
+
+	ilitek_platform_disable_irq();
+
+	if (ipd->isEnablePollCheckPower) {
+		ipd->isEnablePollCheckPower = false;
+		cancel_delayed_work_sync(&ipd->check_power_status_work);
+	}
+
+	if (ipd->isEnablePollCheckEsd) {
+		ipd->isEnablePollCheckEsd = false;
+		cancel_delayed_work_sync(&ipd->check_esd_status_work);
+	}
+
+	/* ret = core_firmware_upgrade(g_user_buf, false); */
+	use_g_user_buf = true;
+	if(mode_chose == I2C_MODE)
+		ret = core_firmware_upgrade(UPGRADE_FLASH, HEX_FILE, OPEN_FW_METHOD);
+	else
+		ret = core_config_switch_fw_mode(&protocol->demo_mode);
+	use_g_user_buf = false;
+
+
+	ilitek_platform_enable_irq();
+
+	if (ipd->isEnablePollCheckPower)
+		queue_delayed_work(ipd->check_power_status_queue,
+			&ipd->check_power_status_work, ipd->work_delay);
+	if (ipd->isEnablePollCheckEsd)
+		queue_delayed_work(ipd->check_esd_status_queue,
+			&ipd->check_esd_status_work, ipd->esd_check_time);
+
+	if (ret < 0) {
+		core_firmware->update_status = ret;
+		ipio_err("Failed to upgrade firwmare\n");
+	} else {
+		core_firmware->update_status = 100;
+		ipio_info("Succeed to upgrade firmware\n");
+	}
+
+	core_firmware->isUpgrading = false;
+exit:
+	return nSize;
+
+}
+
+static DEVICE_ATTR(doreflash, 0220, NULL, do_reflash_store);
+
+static ssize_t drv_build_id_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ipio_info ("*** %s() Fw Version = V%d.%d.%d.%d***\n", __func__, core_config->firmware_ver[1], core_config->firmware_ver[2], core_config->firmware_ver[3], core_config->firmware_ver[4]);
+
+	return scnprintf(pBuf, PAGE_SIZE, "%02x-%02x\n", core_config->firmware_ver[2], core_config->firmware_ver[3]);
+}
+static DEVICE_ATTR(buildid, 0444, drv_build_id_show, NULL);
+
+
+
+static const struct attribute *dev_attrs_list[] = {
+	&dev_attr_poweron.attr,
+	&dev_attr_productinfo.attr,
+	&dev_attr_forcereflash.attr,
+	&dev_attr_flashprog.attr,
+	&dev_attr_doreflash.attr,
+	&dev_attr_buildid.attr,
+	NULL
+};
+
+static ssize_t path_show(struct device *pDevice, struct device_attribute *pAttr, char *pBuf)
+{
+	ssize_t blen;
+	const char *path;
+
+	if(mode_chose == SPI_MODE)
+		path = kobject_get_path(&ipd->spi->dev.kobj, GFP_KERNEL);
+	else
+		path = kobject_get_path(&ipd->client->dev.kobj, GFP_KERNEL);
+	blen = scnprintf(pBuf, PAGE_SIZE, "%s\n", path ? path : "na");
+	kfree(path);
+
+	return blen;
+}
+
+/* Attribute: vendor (RO) */
+static ssize_t vendor_show(struct device *dev,
+	struct device_attribute *attr, char *buf)
+{
+	ipio_info("*** %s() vendor = %s ***\n", __func__, "ilitek");
+	return scnprintf(buf, PAGE_SIZE, "ilitek");
+}
+
+
+static struct device_attribute touchscreen_attributes[] = {
+	__ATTR_RO(path),
+	__ATTR_RO(vendor),
+	__ATTR_NULL
+};
+
+int ilitek_sys_init(void)
+{
+	int i;
+	s32 ret = 0;
+	dev_t devno;
+	struct device_attribute *attrs = touchscreen_attributes;
+
+	ret = alloc_chrdev_region(&devno, 0, 1, ipd->TP_IC_TYPE);
+	if (ret) {
+		ipio_err ("can't allocate chrdev\n");
+		return ret;
+	} else {
+
+		/* set sysfs for firmware */
+		touchscreen_class = class_create(THIS_MODULE, "touchscreen");
+		if (IS_ERR(touchscreen_class)) {
+			ret = PTR_ERR(touchscreen_class);
+			touchscreen_class = NULL;
+			ipio_err("Failed to create touchscreen class!\n");
+			return ret;
+		}
+
+		touchscreen_class_dev = device_create(touchscreen_class, NULL, devno, NULL, ipd->TP_IC_TYPE);
+		pr_info(" touchscreen_class_dev = %p \n", touchscreen_class_dev);
+		if (IS_ERR(touchscreen_class_dev)) {
+			ret = PTR_ERR(touchscreen_class_dev);
+			touchscreen_class_dev = NULL;
+			ipio_err("Failed to create device(touchscreen_class_dev)!\n");
+			return ret;
+		}
+		ipio_info("Succeed to create device(touchscreen_class_dev)!\n");
+
+		for (i = 0; attrs[i].attr.name != NULL; ++i) {
+			ret = device_create_file(touchscreen_class_dev, &attrs[i]);
+			if (ret < 0)
+				goto device_destroy;
+		}
+		if(mode_chose == SPI_MODE)
+			ret = sysfs_create_files(&ipd->spi->dev.kobj, dev_attrs_list);
+		else
+			ret = sysfs_create_files(&ipd->client->dev.kobj, dev_attrs_list);
+		if (ret < 0) {
+			ipio_info("Fail to create dev_attrs_list files)!\n");
+			goto device_destroy;
+		}
+
+		ipio_info("Succeed to sysfs create files)!\n");
+	}
+
+	return ret;
+
+device_destroy:
+	for (--i; i >= 0; --i)
+		device_remove_file(touchscreen_class_dev, &attrs[i]);
+
+	touchscreen_class_dev = NULL;
+	class_unregister(touchscreen_class);
+	ipio_err("error creating touchscreen class\n");
+
+	return -ENODEV;
+}
+
+EXPORT_SYMBOL(ilitek_sys_init);
+
+void ilitek_sys_remove(void)
+{
+	int i;
+	struct device_attribute *attrs = touchscreen_attributes;
+	if(mode_chose == SPI_MODE)
+		sysfs_remove_files(&ipd->spi->dev.kobj, dev_attrs_list);
+	else
+		sysfs_remove_files(&ipd->client->dev.kobj, dev_attrs_list);
+
+	for (i = 0; attrs[i].attr.name != NULL; ++i)
+		device_remove_file(touchscreen_class_dev, &attrs[i]);
+
+
+	device_unregister(touchscreen_class_dev);
+
+	class_unregister(touchscreen_class);
+}
+
+EXPORT_SYMBOL(ilitek_sys_remove);
+
+/*********** Add sys node for tcmd and fw upgrade  *********************/
+
