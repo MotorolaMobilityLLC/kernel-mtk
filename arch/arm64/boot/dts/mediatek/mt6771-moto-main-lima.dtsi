@@ -7,6 +7,15 @@
 
 #include "rt1711.dtsi"
 
+/ {
+	model = "mt6771";
+	compatible = "mediatek,mt6771";
+
+	moto_chg_tcmd: moto_chg_tcmd {
+		compatible = "mmi,moto-chg-tcmd";
+	};
+};
+
 &lk_charger {
 	/delete-property/ enable_pe_plus;
 };
