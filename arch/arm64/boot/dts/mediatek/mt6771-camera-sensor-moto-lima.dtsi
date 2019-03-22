@@ -144,14 +144,14 @@
 			output-high;
 		};
 	};
-	camera_pins_cam4_rst_0: cam4@0 {
+	camera_pins_cam3_rst_0: cam3@0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO112__FUNC_GPIO112>;
 			slew-rate = <1>; /*direction 0:in, 1:out*/
 			output-low;/*direction out used only. output_low or high*/
 		};
 	};
-	camera_pins_cam4_rst_1: cam4@1 {
+	camera_pins_cam3_rst_1: cam3@1 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO112__FUNC_GPIO112>;
 			slew-rate = <1>;
@@ -172,14 +172,14 @@
 			output-high;
 		};
 	};
-	camera_pins_cam4_vcamd_0: cam4@vcam0 {
+	camera_pins_cam3_vcamd_0: cam3@vcam0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO158__FUNC_GPIO158>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_cam4_vcamd_1: cam4@vcam1 {
+	camera_pins_cam3_vcamd_1: cam3@vcam1 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO158__FUNC_GPIO158>;
 			slew-rate = <1>;
@@ -230,24 +230,24 @@
 			pins = <PINMUX_GPIO108__FUNC_CMMCLK2>;
 		};
 	};
-	camera_pins_cam4_mclk_off: camera_pins_cam4_mclk_off {
+	camera_pins_cam3_mclk_off: camera_pins_cam3_mclk_off {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO111__FUNC_GPIO111>;
 		};
 	};
-	camera_pins_cam4_mclk_on: camera_pins_cam4_mclk_on {
+	camera_pins_cam3_mclk_on: camera_pins_cam3_mclk_on {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO111__FUNC_CMMCLK3>;
 		};
 	};
-	camera_pins_mipi_switch_sel_1: camera_pins_mipi_switch_sel_1 {
+	camera_pins_mipi_switch_sel_0: camera_pins_mipi_switch_sel_0 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO157__FUNC_GPIO157>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
-	camera_pins_mipi_switch_sel_0: camera_pins_mipi_switch_sel_0 {
+	camera_pins_mipi_switch_sel_1: camera_pins_mipi_switch_sel_1 {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO157__FUNC_GPIO157>;
                         slew-rate = <1>;
@@ -266,15 +266,15 @@
 			"cam1_pnd0", "cam1_pnd1",
 			"cam2_rst0", "cam2_rst1",
 			"cam2_pnd0", "cam2_pnd1",
-			"cam4_rst0", "cam4_rst1",
+			"cam3_rst0", "cam3_rst1",
 			"cam_ldo_vcamd_0", "cam_ldo_vcamd_1",
-			"cam_ldo_main3_vcamd_0", "cam_ldo_main3_vcamd_1",
+			"cam_ldo_sub2_vcamd_0", "cam_ldo_sub2_vcamd_1",
 			"cam_ldo_main2_vcama_0", "cam_ldo_main2_vcama_1",
 			"cam0_mclk_off", "cam0_mclk_on",
 			"cam1_mclk_off", "cam1_mclk_on",
 			"cam2_mclk_off", "cam2_mclk_on",
-			"cam4_mclk_off", "cam4_mclk_on",
-			"cam_mipi_switch_sel_1", "cam_mipi_switch_sel_0";
+			"cam3_mclk_off", "cam3_mclk_on",
+			"cam_mipi_switch_sel_0", "cam_mipi_switch_sel_1";
 	pinctrl-0 = <&camera_pins_default>;
 	pinctrl-1 = <&camera_pins_cam0_rst_0>;
 	pinctrl-2 = <&camera_pins_cam0_rst_1>;
@@ -288,12 +288,12 @@
 	pinctrl-10 = <&camera_pins_cam2_rst_1>;
 	pinctrl-11 = <&camera_pins_cam2_pnd_0>;
 	pinctrl-12 = <&camera_pins_cam2_pnd_1>;
-	pinctrl-13 = <&camera_pins_cam4_rst_0>;
-	pinctrl-14 = <&camera_pins_cam4_rst_1>;
+	pinctrl-13 = <&camera_pins_cam3_rst_0>;
+	pinctrl-14 = <&camera_pins_cam3_rst_1>;
 	pinctrl-15 = <&camera_pins_cam0_vcamd_0>;
 	pinctrl-16 = <&camera_pins_cam0_vcamd_1>;
-	pinctrl-17 = <&camera_pins_cam4_vcamd_0>;
-	pinctrl-18 = <&camera_pins_cam4_vcamd_1>;
+	pinctrl-17 = <&camera_pins_cam3_vcamd_0>;
+	pinctrl-18 = <&camera_pins_cam3_vcamd_1>;
 	pinctrl-19 = <&camera_pins_cam2_vcama_0>;
 	pinctrl-20 = <&camera_pins_cam2_vcama_1>;
 	pinctrl-21 = <&camera_pins_cam0_mclk_off>;
@@ -302,10 +302,10 @@
 	pinctrl-24 = <&camera_pins_cam1_mclk_on>;
 	pinctrl-25 = <&camera_pins_cam2_mclk_off>;
 	pinctrl-26 = <&camera_pins_cam2_mclk_on>;
-	pinctrl-27 = <&camera_pins_cam4_mclk_off>;
-	pinctrl-28 = <&camera_pins_cam4_mclk_on>;
-	pinctrl-29 = <&camera_pins_mipi_switch_sel_1>;
-	pinctrl-30 = <&camera_pins_mipi_switch_sel_0>;
+	pinctrl-27 = <&camera_pins_cam3_mclk_off>;
+	pinctrl-28 = <&camera_pins_cam3_mclk_on>;
+	pinctrl-29 = <&camera_pins_mipi_switch_sel_0>;
+	pinctrl-30 = <&camera_pins_mipi_switch_sel_1>;
 	status = "okay";
 };
 

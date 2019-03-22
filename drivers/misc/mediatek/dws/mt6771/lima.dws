@@ -2153,6 +2153,11 @@
                 <channel>I2C_CHANNEL_4</channel>
                 <address>0x20</address>
             </device14>
+            <device15>
+                <varName>CAMERA_SUB_TWO</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x55</address>
+            </device15>
             <device16>
                 <varName>USB_TYPE_C</varName>
                 <channel>I2C_CHANNEL_5</channel>
@@ -2226,6 +2231,7 @@
                 <varName0>SUB_CAMERA_POWER_A</varName0>
                 <varName1>MAIN_CAMERA_3_POWER_A</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_A</varName2>
+                <varName3>SUB_CAMERA_2_POWER_A</varName3>
             </pmic0>
             <pmic1>
                 <ldoVar>VCAMA2</ldoVar>
@@ -2252,6 +2258,7 @@
                 <varName1>SUB_CAMERA_POWER_IO</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_IO</varName2>
                 <varName3>MAIN_CAMERA_3_POWER_IO</varName3>
+                <varName4>SUB_CAMERA_2_POWER_IO</varName4>
             </pmic5>
             <pmic6>
                 <ldoVar>VLDO28</ldoVar>
