@@ -554,7 +554,17 @@ config PROJECT_P161BN
     bool "PROJECT_P161BN"
     default n
     help
-
+    
+config PROJECT_P160MLITE
+    bool "PROJECT_P160MLITE"
+    default n
+    help    
+    
+config PROJECT_P161M
+    bool "PROJECT_P161M"
+    default n
+    help
+    
 config LCM_BIAS_SUPPORT
     bool "LCM have bias ic"
     default n
