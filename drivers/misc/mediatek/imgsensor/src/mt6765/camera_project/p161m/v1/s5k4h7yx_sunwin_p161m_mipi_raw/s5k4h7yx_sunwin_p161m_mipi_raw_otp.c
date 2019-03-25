@@ -27,7 +27,7 @@
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-#include "s5k4h7yx_sunwin_p310_mipi_raw_Sensor.h"
+#include "s5k4h7yx_sunwin_p161m_mipi_raw_Sensor.h"
 
 #define USHORT             unsigned short
 #define BYTE               unsigned char

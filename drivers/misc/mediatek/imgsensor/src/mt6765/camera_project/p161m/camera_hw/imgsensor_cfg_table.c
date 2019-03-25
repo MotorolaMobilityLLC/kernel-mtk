@@ -192,9 +192,9 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
-#if defined(S5K4H7YX_SUNWIN_P310_MIPI_RAW)
+#if defined(S5K4H7YX_SUNWIN_P161M_MIPI_RAW)
 	{
-		SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P310_MIPI_RAW,
+		SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P161M_MIPI_RAW,
 		{
 		   {SensorMCLK, Vol_High, 1},
 		   {DOVDD, Vol_1800, 1},
