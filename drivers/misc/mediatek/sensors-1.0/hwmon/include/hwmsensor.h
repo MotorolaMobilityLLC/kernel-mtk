@@ -97,8 +97,9 @@
 #define SENSOR_TYPE_SAR_BOTTOM                         82
 #define SENSOR_TYPE_SAR_BOTTOM_RIGHT                   83
 #define SENSOR_TYPE_FTM                                84
+#define SENSOR_TYPE_OFFBODY                            85
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_FTM
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_OFFBODY
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -183,10 +184,11 @@
 #define ID_SAR_BOTTOM_LEFT          (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_LEFT - 1)
 #define ID_SAR_BOTTOM               (ID_BASE + SENSOR_TYPE_SAR_BOTTOM - 1)
 #define ID_SAR_BOTTOM_RIGHT         (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_RIGHT - 1)
-#define ID_FTM                 (ID_BASE + SENSOR_TYPE_FTM - 1)
+#define ID_FTM                      (ID_BASE + SENSOR_TYPE_FTM - 1)
+#define ID_OFFBODY                  (ID_BASE + SENSOR_TYPE_OFFBODY - 1)
 
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_FTM)
+#define ID_SENSOR_MAX_HANDLE    (ID_OFFBODY)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)

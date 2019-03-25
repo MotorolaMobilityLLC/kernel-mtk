@@ -119,6 +119,9 @@ static int handle_to_index(int handle)
 	case ID_FTM:
 		index = ftm;
 		break;
+	case ID_OFFBODY:
+		index = offbody;
+		break;
 	default:
 		index = -1;
 		SITUATION_PR_ERR("handle_to_index invalid handle:%d, index:%d\n", handle, index);
@@ -530,6 +533,11 @@ static ssize_t situation_store_params(struct device *dev, struct device_attribut
 	if (err < 0)
 		SITUATION_PR_ERR("sensor_cfg_to_hub LTV fail\n");
 #endif
+#ifdef CONFIG_MOTO_OFFBODY
+	err = sensor_cfg_to_hub(ID_OFFBODY, (uint8_t *)&cxt->motparams.offbody_params, sizeof(struct mot_offbody));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub OFFBODY fail\n");
+#endif
 	//SITUATION_PR_ERR("situation_store_params done\n");
 
 	return count;
@@ -726,6 +734,11 @@ static void scp_init_work_done(struct work_struct *work)
 	err = sensor_cfg_to_hub(ID_LTV, (uint8_t *)&cxt->motparams.ltv_params, sizeof(struct mot_ltv));
 	if (err < 0)
 		SITUATION_PR_ERR("sensor_cfg_to_hub LTV fail\n");
+#endif
+#ifdef CONFIG_MOTO_OFFBODY
+	err = sensor_cfg_to_hub(ID_OFFBODY, (uint8_t *)&cxt->motparams.offbody_params, sizeof(struct mot_offbody));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub OFFBODY fail\n");
 #endif
 }
 

@@ -58,6 +58,7 @@ typedef enum {
 	sar_bottom,
 	sar_bottom_right,
 	ftm,
+	offbody,
 	max_situation_support,
 } situation_index_table;
 
@@ -121,6 +122,17 @@ struct mot_ltv {
     uint8_t rearm_conv_cnt;
     float raw_accel_margin;
 };
+struct mot_offbody {
+    float alpha;
+    float var_lt;
+    float var_ht;
+    uint16_t th_cnt;
+    float st_alpha;
+    float st_var_ht;
+    float theta_exit;
+    float theta_low;
+    float theta_high;
+};
 struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP
 	struct mot_chopchop chopchop_params;
@@ -130,6 +142,9 @@ struct mot_params {
 #endif
 #ifdef CONFIG_MOTO_LTV
     struct mot_ltv ltv_params;
+#endif
+#ifdef CONFIG_MOTO_OFFBODY
+    struct mot_offbody offbody_params;
 #endif
 };
 #endif
