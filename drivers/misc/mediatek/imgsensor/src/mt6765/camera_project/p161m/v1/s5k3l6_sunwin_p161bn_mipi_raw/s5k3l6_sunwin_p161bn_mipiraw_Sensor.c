@@ -245,8 +245,8 @@ static struct SET_PD_BLOCK_INFO_T imgsensor_pd_info =
 	.i4SubBlkH =16, 
 	.i4BlockNumX = 65,
 	.i4BlockNumY = 48,
-	.i4PosL = {{28,31},{80,31},{44,35},{64,35},{32,51},{76,51},{48,55},{60,55},{48,63},{60,63},{32,67},{76,67},{44,83},{64,83},{28,87},{80,87}},
-	.i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
+	.i4PosL = {{28,31},{44,35},{64,35},{80,31},{32,51},{48,55},{60,55},{76,51},{32,67},{48,63},{60,63},{76,67},{28,87},{44,83},{64,83},{80,87}},
+	.i4PosR = {{28,35},{44,39},{64,39},{80,35},{32,47},{48,51},{60,51},{76,47},{32,71},{48,67},{60,67},{76,71},{28,83},{44,79},{64,79},{80,83}},
 	.iMirrorFlip = 0,
 };
 
@@ -299,7 +299,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 		write_cmos_sensor_16_8(0x0100, 0x00);
 		for (i = 0; i < timeout; i++) {
 			mdelay(10);
-			framecnt = read_cmos_sensor(0x0005);
+			framecnt = read_cmos_sensor_16_8(0x0005);
 			if ( framecnt == 0xFF) {
 				LOG_INF(" Stream Off OK at i=%d.\n", i);
 				return ERROR_NONE;
@@ -2365,6 +2365,10 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_shutter_frame_length((UINT16)*feature_data,
 					(UINT16)*(feature_data+1));
 			break;
+	case SENSOR_FEATURE_SET_PDAF:
+		LOG_INF("PDAF mode :%d\n", *feature_data_16);
+		imgsensor.pdaf_mode = *feature_data_16;
+		break;
 	/******************** STREAMING RESUME/SUSPEND *********/
 	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
 		pr_debug("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
