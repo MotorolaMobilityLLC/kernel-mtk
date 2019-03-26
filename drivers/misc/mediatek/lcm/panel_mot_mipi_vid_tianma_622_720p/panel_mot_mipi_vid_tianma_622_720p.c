@@ -491,6 +491,7 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 
 LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 	.name = "mipi_mot_vid_tianma_720p_622",
+	.supplier = "tianma",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
