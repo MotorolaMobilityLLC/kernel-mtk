@@ -3128,6 +3128,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	md1_sim1_hot_plug_eint:md1_sim1_hot_plug_eint{};
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint{};
 
+	led_red_gpio:led_red_gpio{
+		compatible = "mediatek,led-red-pwm";
+	};
 };
 
 #include "cust_mt6765_msdc.dtsi"
