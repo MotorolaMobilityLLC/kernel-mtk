@@ -1488,7 +1488,8 @@ static long ilitek_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long
 		ipio_err("Failed to allocate mem\n");
 		return -ENOMEM;
 	}
-
+	
+	mutex_lock(&ipd->plat_mutex);
 	switch (cmd) {
 	case ILITEK_IOCTL_I2C_WRITE_DATA:
 		ipio_info("ioctl: i2c write: len = %d\n", i2c_rw_length);
@@ -1725,6 +1726,7 @@ static long ilitek_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long
 		ret = -ENOTTY;
 		break;
 	}
+	mutex_unlock(&ipd->plat_mutex);
 
 	ipio_kfree((void **)&szBuf);
 	return ret;

@@ -797,7 +797,8 @@ int ilitek_platform_reset_ctrl(bool rst, int mode)
 
 	core_config->icemodeenable = false;
 	atomic_set(&ipd->do_reset, false);
-	ilitek_platform_enable_irq();
+	if (core_fr->actual_fw_mode != protocol->test_mode)
+		ilitek_platform_enable_irq();
 	return ret;
 }
 
