@@ -4,6 +4,8 @@
 enum MOTO_CHG_TCMD_CLIENT_ID {
 	MOTO_CHG_TCMD_CLIENT_CHG,
 	MOTO_CHG_TCMD_CLIENT_BAT,
+	MOTO_CHG_TCMD_CLIENT_AP_ADC,
+	MOTO_CHG_TCMD_CLIENT_PM_ADC,
 	MOTO_CHG_TCMD_ClIENT_MAX
 };
 
@@ -29,6 +31,7 @@ struct moto_chg_tcmd_client {
 	int (*set_usb_enable)(void *input, int val);
 
 	int (*get_usb_voltage)(void *input, int* val);//unit uV
+	int (*get_charger_type)(void *input, int* val);
 
 	int (*get_bat_temp)(void *input, int* val);//unit C
 	int (*get_bat_voltage)(void *input, int* val);//unit mV
