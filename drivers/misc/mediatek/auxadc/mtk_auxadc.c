@@ -63,6 +63,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
+#include <linux/power/moto_chg_tcmd.h>
+
 static struct clk *clk_auxadc;
 #if defined(AUXADC_CLK_CTR)
 static struct clk *clk_top_auxadc1;
@@ -1719,7 +1721,29 @@ static void adc_debug_init(void)
 	pr_err("proc_create auxadc_debug_proc_fops\n");
 }
 
+/*===================moto chg tcmd interface========================*/
+static struct moto_chg_tcmd_client adc_tcmd_client;
 
+static int adc_tcmd_read_adc(void *input, int channel, int* val)
+{
+	IMM_GetOneChannelValue_Cali(channel, val);
+
+	return 0;
+}
+
+static int adc_tcmd_register(void)
+{
+	int ret;
+
+	adc_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_AP_ADC;
+
+	adc_tcmd_client.get_adc_value = adc_tcmd_read_adc;
+
+	ret = moto_chg_tcmd_register(&adc_tcmd_client);
+
+	return ret;
+}
+/*===================moto chg tcmd interface end======================*/
 
 /* platform_driver API */
 static int mt_auxadc_probe(struct platform_device *dev)
@@ -1903,6 +1927,9 @@ static int mt_auxadc_probe(struct platform_device *dev)
 
 	mt_auxadc_create_device_attr(adc_dev);
 	mt_auxadc_update_cali();
+
+	adc_tcmd_register();
+
 	return ret;
 }
 
