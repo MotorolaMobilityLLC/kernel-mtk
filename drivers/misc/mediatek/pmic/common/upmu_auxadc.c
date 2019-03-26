@@ -202,12 +202,12 @@ static int adc_tcmd_read_adc(void *input, int channel, int* val)
 	return 0;
 }
 
-static int adc_tcmd_register_tcmd(struct mtk_auxadc_intf *data)
+static int adc_tcmd_register(struct mtk_auxadc_intf *data)
 {
 	int ret;
 
 	data->adc_tcmd_client.data = data;
-	data->adc_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_ADC;
+	data->adc_tcmd_client.client_id = MOTO_CHG_TCMD_CLIENT_PM_ADC;
 
 	data->adc_tcmd_client.get_adc_value = adc_tcmd_read_adc;
 
@@ -230,7 +230,7 @@ static int mtk_auxadc_intf_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	adc_tcmd_register_tcmd(auxadc_intf);
+	adc_tcmd_register(auxadc_intf);
 
 	return 0;
 }
