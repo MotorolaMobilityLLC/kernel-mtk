@@ -3951,6 +3951,7 @@ static int  mtk_charger_tcmd_set_chg_enable(void *input, int  val)
 	charger_dev_enable(cm->chg1_dev, val);
 
 	val = val ? CHARGER_NOTIFY_START_CHARGING : CHARGER_NOTIFY_STOP_CHARGING;
+	charging_enable_flag = !!val;
 	ret = charger_manager_notifier(cm, val);
 
 	return ret;
@@ -4018,6 +4019,16 @@ static int  mtk_charger_tcmd_get_usb_voltage(void *input, int* val)
 	return ret;
 }
 
+static int  mtk_charger_tcmd_get_charger_type(void *input, int* val)
+{
+	struct charger_manager *cm = (struct charger_manager *)input;
+	int ret = 0;
+
+	*val = cm->chr_type;
+
+	return ret;
+}
+
 static int  mtk_charger_tcmd_register(struct charger_manager *cm)
 {
 	int ret;
@@ -4034,6 +4045,8 @@ static int  mtk_charger_tcmd_register(struct charger_manager *cm)
 	cm->chg_tcmd_client.set_usb_current = mtk_charger_tcmd_set_usb_current;
 
 	cm->chg_tcmd_client.get_usb_voltage = mtk_charger_tcmd_get_usb_voltage;
+
+	cm->chg_tcmd_client.get_charger_type = mtk_charger_tcmd_get_charger_type;
 
 	ret = moto_chg_tcmd_register(&cm->chg_tcmd_client);
 
