@@ -76,6 +76,9 @@ ifeq ($(CONFIG_MTK_LENS_DW9718SAF_IMX486_SUNWIN_P310_SUPPORT),y)
 MAIN_CFILES += common/dw9718saf_imx486_sunwin_p310/DW9718SAF_IMX486_SUNWIN_P310.c
 endif
 
+ifeq ($(CONFIG_MTK_LENS_DW9718SAF_S5K3L6_SUNWIN_P161M_SUPPORT),y)
+MAIN_CFILES += common/dw9718saf_s5k3l6_sunwin_p161m/DW9718SAF_S5K3L6_SUNWIN_P161M.c
+endif
 
 obj-m := mainaf.o
 mainaf-objs := $(MAIN_CFILES:.c=.o)
@@ -92,6 +95,7 @@ obj-y  += common/dw9814af/
 obj-y  += common/dw9718af/
 obj-y  += common/dw9718saf/
 obj-y  += common/dw9718saf_imx486_sunwin_p310/
+obj-y  += common/dw9718saf_s5k3l6_sunwin_p161m/
 obj-y  += common/dw9719taf/
 obj-y  += common/lc898212af/
 obj-y  += common/lc898212xdaf/
