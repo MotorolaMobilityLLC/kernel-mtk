@@ -48,6 +48,8 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 extern bool update_otp(void);
 extern bool check_sum_flag_lsc(void);
+extern int apply_4h7_otp_awb(void);
+extern void apply_4h7_otp_enb_lsc(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H7YX_SUNWIN_P161M_SENSOR_ID,
@@ -618,7 +620,7 @@ static void preview_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 }	/*	preview_setting  */
 
@@ -703,7 +705,7 @@ static void capture_setting(kal_uint16 currefps)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 }
 
@@ -777,7 +779,7 @@ static void normal_video_setting(kal_uint16 currefps)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -850,7 +852,7 @@ static void hs_video_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x02);
   write_cmos_sensor_8(0x0203, 0x08);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -926,7 +928,7 @@ static void slim_video_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x02);
   write_cmos_sensor_8(0x0203, 0x08);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -961,7 +963,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 
-//add camera info for p161m
+			#if 1
+	           if (!(update_otp()))
+	              {
+		             LOG_INF("Demon_otp update_otp error!");
+	              }
+           #endif
+
+//add camera info for p311
 #ifdef CONFIG_TINNO_PRODUCT_INFO
          FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P161M_SENSOR_ID, 1, "s5k4h7yx_sunwin_p161m_mipi_raw", 
              imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);       
@@ -1002,6 +1011,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 *************************************************************************/
 static kal_uint32 open(void)
 {
+
 	/* const kal_uint8 i2c_addr[] = {IMGSENSOR_WRITE_ID_1, IMGSENSOR_WRITE_ID_2}; */
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
@@ -1036,6 +1046,9 @@ static kal_uint32 open(void)
 		LOG_INF("Demon_otp update_otp error!");
 	}
 #endif
+	apply_4h7_otp_awb();
+	apply_4h7_otp_enb_lsc();
+
 	/* initail sequence write in  */
 	sensor_init();
 
@@ -1558,7 +1571,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
     write_cmos_sensor_8(0x3201, 0x01);
     write_cmos_sensor_8(0x0b05, 0x00);
     write_cmos_sensor_8(0x0b00, 0x00);
-    write_cmos_sensor_8(0x3400, 0x01);
+    write_cmos_sensor_8(0x3400, 0x00);
     write_cmos_sensor_8(0x3C0F, 0x01);
     write_cmos_sensor_8(0x020E, 0x01);
     write_cmos_sensor_8(0x020F, 0x00);
