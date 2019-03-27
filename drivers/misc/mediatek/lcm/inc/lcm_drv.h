@@ -834,6 +834,7 @@ typedef enum {
 
 typedef struct {
 	const char *name;
+	char *supplier;
 	void (*set_util_funcs)(const LCM_UTIL_FUNCS *util);
 	void (*get_params)(LCM_PARAMS *params);
 
