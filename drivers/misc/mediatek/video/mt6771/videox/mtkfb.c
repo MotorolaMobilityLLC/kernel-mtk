@@ -210,6 +210,34 @@ void mtkfb_log_enable(int enable)
 	MTKFB_LOG("mtkfb log %s\n", enable ? "enabled" : "disabled");
 }
 
+static ssize_t panel_supplier_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", primary_display_get_lcm_supplier());
+}
+
+static DEVICE_ATTR(panel_supplier, S_IRUGO,
+					panel_supplier_show, NULL);
+static struct attribute *panel_id_attrs[] = {
+	&dev_attr_panel_supplier.attr,
+	NULL,
+};
+
+static struct attribute_group panel_id_attr_group = {
+	.attrs = panel_id_attrs,
+};
+
+static int mtk_fb_create_sysfs(void)
+{
+	int rc;
+
+	rc = sysfs_create_group(&mtkfb_fbi->dev->kobj, &panel_id_attr_group);
+	if (rc)
+		pr_err("panel id group creation failed, rc=%d\n", rc);
+
+	return rc;
+}
+
 /*
  * ---------------------------------------------------------------------------
  * fbdev framework callbacks and the ioctl interface
@@ -2736,6 +2764,8 @@ static int mtkfb_probe(struct platform_device *pdev)
 	register_framebuffer(fb1);
 	DISPMSG("register_ext_framebuffer done\n");
 #endif
+
+	mtk_fb_create_sysfs();
 
 #ifdef FPGA_DEBUG_PAN
 	test_task = kthread_create(update_test_kthread, NULL, "update_test_kthread");
