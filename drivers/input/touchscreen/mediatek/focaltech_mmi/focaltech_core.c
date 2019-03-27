@@ -888,6 +888,10 @@ static int tpd_probe(struct i2c_client *client, const struct i2c_device_id *id)
     }
 
     fts_data = ts_data;
+/*-----------add to support moto tcmd framework--------------*/
+    ts_data->name = "focaltech";
+    ts_data->force_reflash = false;
+/*-----------------------------------------------------------*/
     ts_data->client = client;
     ts_data->input_dev = tpd->dev;
 

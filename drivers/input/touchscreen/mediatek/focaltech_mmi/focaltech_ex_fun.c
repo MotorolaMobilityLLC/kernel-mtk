@@ -999,6 +999,128 @@ static DEVICE_ATTR(fts_dump_reg, S_IRUGO | S_IWUSR, fts_dumpreg_show, fts_dumpre
 static DEVICE_ATTR(fts_hw_reset, S_IRUGO | S_IWUSR, fts_hw_reset_show, fts_hw_reset_store);
 static DEVICE_ATTR(fts_irq, S_IRUGO | S_IWUSR, fts_irq_show, fts_irq_store);
 
+
+/*-----------add to support moto tcmd framework--------------*/
+static ssize_t fts_productinfo_show(struct device *dev,struct device_attribute *arrt,char *buf)
+{
+    return scnprintf(buf, PAGE_SIZE, "%s\n", fts_data->name);
+}
+static DEVICE_ATTR(productinfo, 0444, fts_productinfo_show, NULL);
+
+static ssize_t fts_force_reflash_store(struct device *dev,struct device_attribute *arrt,const char *buf,size_t count)
+{
+    unsigned int input;
+
+    if(kstrtouint(buf,10,&input)!=1) return -EINVAL;
+
+    fts_data->force_reflash = (input == 0)?false:true;
+
+    return count;
+}
+static DEVICE_ATTR(forcereflash, 0220, NULL, fts_force_reflash_store);
+
+static ssize_t fts_flashprog_show(struct device *dev,struct device_attribute *arrt,char *buf)
+{
+    return scnprintf(buf,PAGE_SIZE,"%d\n",(fts_data->fw_loading)?1:0);
+}
+static DEVICE_ATTR(flashprog, 0444, fts_flashprog_show, NULL);
+
+static ssize_t fts_do_reflash_store(struct device *dev,struct device_attribute *arrt,const char *buf,size_t count)
+{
+    char fwname[FILE_NAME_LENGTH];
+    struct fts_ts_data *ts_data = fts_data;
+    struct input_dev *input_dev = ts_data->input_dev;
+    struct i2c_client *client = ts_data->client;
+
+    if ((count <= 1) || (count >= FILE_NAME_LENGTH - 32)) {
+        FTS_ERROR("fw bin name's length(%d) fail", (int)count);
+        return -EINVAL;
+    }
+    memset(fwname, 0, sizeof(fwname));
+    snprintf(fwname, PAGE_SIZE, "%s", buf);
+    fwname[count - 1] = '\0';
+
+    FTS_INFO("force upgrade through sysfs node");
+    mutex_lock(&input_dev->mutex);
+    ts_data->fw_loading = 1;
+    fts_irq_disable();
+#if FTS_ESDCHECK_EN
+    fts_esdcheck_switch(DISABLE);
+#endif
+    if(ts_data->force_reflash){
+        fts_upgrade_bin(client, fwname, 1);
+    }else{
+        fts_upgrade_bin(client, fwname, 0);
+    }
+#if FTS_ESDCHECK_EN
+    fts_esdcheck_switch(ENABLE);
+#endif
+    fts_irq_enable();
+    ts_data->fw_loading = 0;
+    mutex_unlock(&input_dev->mutex);
+
+    return count;
+}
+static DEVICE_ATTR(doreflash, 0220, NULL, fts_do_reflash_store);
+
+#define FT_REG_FW_ID 0xA1
+#define FT_FW_ID_LEN 2
+#define FT_REG_FW_VER 0xA6
+#define FT_REG_FW_MIN_VER 0xB2
+#define FT_REG_FW_SUB_MIN_VER 0xB3
+#define FT_FW_VER_LEN 3
+static ssize_t fts_buildid_show(struct device *dev,struct device_attribute *arrt,char *buf)
+{
+    u8 fw_id[FT_FW_ID_LEN] = {0};
+    u8 fw_ver[FT_FW_VER_LEN] = {0};
+    u8 reg_addr;
+    int ret;
+
+    //to read fw id
+    reg_addr = FT_REG_FW_ID;
+    ret = fts_i2c_read(fts_data->client,&reg_addr,1,&fw_id[0],FT_FW_ID_LEN);
+    if(ret < 0){
+        FTS_ERROR("fw id read fialed");
+    }
+
+    //to read fw ver
+    reg_addr = FT_REG_FW_VER;
+    ret = fts_i2c_read(fts_data->client,&reg_addr,1,&fw_ver[0],1);
+    if(ret < 0){
+        FTS_ERROR("fw major version read fialed");
+    }
+    reg_addr = FT_REG_FW_MIN_VER;
+    ret = fts_i2c_read(fts_data->client,&reg_addr,1,&fw_ver[1],1);
+    if(ret < 0){
+        FTS_ERROR("fw minor version read fialed");
+    }
+    reg_addr =  FT_REG_FW_SUB_MIN_VER;
+    ret = fts_i2c_read(fts_data->client,&reg_addr,1,&fw_ver[2],1);
+    if(ret < 0){
+        FTS_ERROR("fw sub minor version read fialed");
+    }
+
+    return scnprintf(buf,PAGE_SIZE,"%02x%02x-%02x\n",fw_id[0],fw_id[1],fw_ver[0]);
+}
+static DEVICE_ATTR(buildid, 0444, fts_buildid_show, NULL);
+
+static ssize_t fts_ic_ver_show(struct device *dev,struct device_attribute *arrt,char *buf)
+{
+    u8 fw_ver[FT_FW_VER_LEN] = {0};
+    u8 reg_addr;
+    int ret;
+
+    reg_addr = FT_REG_FW_VER;
+    ret = fts_i2c_read(fts_data->client,&reg_addr,1,&fw_ver[0],1);
+    if(ret < 0){
+        FTS_ERROR("fw major version read fialed");
+    }
+
+    return scnprintf(buf,PAGE_SIZE,"[FW]%02x,[IC]FT5446\n",fw_ver[0]);
+}
+static DEVICE_ATTR(ic_ver, 0444, fts_ic_ver_show, NULL);
+
+/*-----------------------------------------------------------*/
 /* add your attr in here*/
 static struct attribute *fts_attributes[] = {
     &dev_attr_fts_fw_version.attr,
@@ -1009,6 +1131,14 @@ static struct attribute *fts_attributes[] = {
     &dev_attr_fts_driver_info.attr,
     &dev_attr_fts_hw_reset.attr,
     &dev_attr_fts_irq.attr,
+/*-----------add to support moto tcmd framework--------------*/
+    &dev_attr_productinfo.attr,
+    &dev_attr_forcereflash.attr,
+    &dev_attr_flashprog.attr,
+    &dev_attr_doreflash.attr,
+    &dev_attr_buildid.attr,
+    &dev_attr_ic_ver.attr,
+/*-----------------------------------------------------------*/
     NULL
 };
 

@@ -131,6 +131,10 @@ struct fts_ts_data {
     int point_num;
     struct proc_dir_entry *proc;
     u8 proc_opmode;
+/*-----------add to support moto tcmd framework--------------*/
+    u8 *name;
+    bool force_reflash;
+/*-----------------------------------------------------------*/
 };
 
 /*****************************************************************************
