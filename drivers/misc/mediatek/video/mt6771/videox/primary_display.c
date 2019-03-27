@@ -9759,3 +9759,8 @@ end:
 
 	return -1;
 }
+
+char* primary_display_get_lcm_supplier(void)
+{
+	return disp_lcm_get_supplier(pgc->plcm);
+}

@@ -468,4 +468,5 @@ int display_freeze_mode(int enable, int need_lock);
 int primary_display_recovery(enum DISP_MODULE_ENUM module);
 int primary_display_wdma_recovery(void);
 void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module);
+char* primary_display_get_lcm_supplier(void);
 #endif
