@@ -458,7 +458,7 @@ static inline void xgf_dep_recycle(struct rb_root *root,
 
 	diff = (long long)now_ts - (long long)last_check2recycle_dep_ts;
 
-	if (diff < 0LL || diff < (NSEC_PER_SEC << shift))
+	if (diff < 0LL || diff < ((long long)NSEC_PER_SEC << shift))
 		goto out;
 
 	n = rb_first(root);
