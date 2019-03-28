@@ -459,6 +459,23 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
+&lk_charger {
+	fast_charge_voltage = <3000000>;
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <550000>;
+	ac_charger_input_current = <550000>;
+	non_std_ac_charger_current = <550000>;
+	charging_host_charger_current = <550000>;
+	ta_ac_charger_current = <3000000>;
+	pd_charger_current = <500000>;
+
+	/* battery temperature protection */
+		temp_t4_threshold = <57>;
+		temp_t3_threshold = <45>;
+		temp_t1_threshold = <3>;
+};
+
 &pio {
 	camera_pins_cam0_mclk_on: camera_pins_cam0_mclk_on {
 		pins_cmd_dat {
