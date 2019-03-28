@@ -364,6 +364,7 @@ int ccu_init_hw(struct ccu_device_s *device)
 {
 	int ret = 0, n;
 
+	ccuInfo.IsCcuPoweredOn = 0;
 #ifdef CONFIG_MTK_CHIP
 	init_check_sw_ver();
 #endif
@@ -551,7 +552,11 @@ int ccu_power(struct ccu_power_s *power)
 
 	} else if (power->bON == 0) {
 		/*CCU Power off*/
-		ret = _ccu_powerdown();
+		if (ccuInfo.IsCcuPoweredOn) {
+			ret = _ccu_powerdown();
+		} else {
+			LOG_DBG_MUST("ccu not power on yet\n");
+		}
 	} else if (power->bON == 2) {
 		/*Restart CCU, no need to release CG*/
 
