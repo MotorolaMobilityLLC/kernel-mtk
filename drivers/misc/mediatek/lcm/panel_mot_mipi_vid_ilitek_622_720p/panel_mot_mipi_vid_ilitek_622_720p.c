@@ -50,6 +50,7 @@ static const unsigned int BL_MIN_LEVEL = 20;
 static LCM_UTIL_FUNCS lcm_util;
 
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
+#define SET_BACKLIGHT_OUT(v)	(lcm_util.set_backlight_out((v)))
 #define MDELAY(n)		(lcm_util.mdelay(n))
 #define UDELAY(n)		(lcm_util.udelay(n))
 
@@ -305,6 +306,7 @@ static void lcm_init(void)
 	SET_RESET_PIN(0);
 	MDELAY(10);
 	SET_RESET_PIN(1);
+	SET_BACKLIGHT_OUT(1);
 	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("ili9881h----tianma----lcm mode = vdo mode ----\n");
@@ -318,6 +320,7 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
 	/* SET_RESET_PIN(0); */
+	SET_BACKLIGHT_OUT(0);
 	OCP2131_GPIO_ENN_disable();
 	MDELAY(1);
 	OCP2131_GPIO_ENP_disable();
