@@ -377,9 +377,13 @@ EXPORT_SYMBOL(core_config_sense_ctrl);
 
 void core_config_sleep_ctrl(bool out)
 {
+	uint8_t cmd[3] = {0x01, 0x02, 0x03};
+	if (mode_chose == I2C_MODE) {
+		cmd[2] = 0x00;
+	}
 	ipio_info("Sleep Out = %d\n", out);
-
-	return core_protocol_func_control(1, out);
+	core_write(core_config->slave_i2c_addr, cmd, 3);
+	return;
 }
 EXPORT_SYMBOL(core_config_sleep_ctrl);
 
