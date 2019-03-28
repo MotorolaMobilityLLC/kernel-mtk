@@ -75,6 +75,8 @@ struct ilitek_platform_data {
 	struct workqueue_struct *check_power_status_queue;
 	struct workqueue_struct *check_esd_status_queue;
 	struct work_struct esd_recovery;
+	struct work_struct ilitek_resume_work;
+	struct workqueue_struct *ilitek_resume_workqueue;
 	unsigned long work_delay;
 	unsigned long esd_check_time;
 	bool vpower_reg_nb;

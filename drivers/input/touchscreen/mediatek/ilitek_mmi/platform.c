@@ -298,18 +298,79 @@ static void tpd_resume(struct device *h)
 {
 	ipio_info("TP Resume\n");
 
-	if (!core_firmware->isUpgrading) {
+	/*if (!core_firmware->isUpgrading) {
 		core_config_ic_resume();
-	}
+	}*/
 }
 
 static void tpd_suspend(struct device *h)
 {
 	ipio_info("TP Suspend\n");
 
-	if (!core_firmware->isUpgrading) {
+	/*if (!core_firmware->isUpgrading) {
 		core_config_ic_suspend();
+	}*/
+}
+
+static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned long event, void *data)
+{
+	int *blank;
+	int err;
+	struct fb_event *evdata = data;
+
+	ipio_info("Notifier's event = %ld\n", event);
+
+	/*
+	 *  FB_EVENT_BLANK(0x09): A hardware display blank change occurred.
+	 *  FB_EARLY_EVENT_BLANK(0x10): A hardware display blank early change occurred.
+	 */
+	if (evdata && evdata->data) {
+		blank = evdata->data;
+
+#if (TP_PLATFORM == PT_SPRD)
+		if (*blank == DRM_MODE_DPMS_OFF)
+#else
+		if (*blank == FB_BLANK_POWERDOWN)
+#endif /* PT_SPRD */
+		{
+			if (TP_SUSPEND_PRIO) {
+				if (event != FB_EARLY_EVENT_BLANK)
+					return NOTIFY_DONE;
+			} else {
+				if (event != FB_EVENT_BLANK)
+					return NOTIFY_DONE;
+			}
+
+			ipio_info("TP Suspend\n");
+
+			if (!core_firmware->isUpgrading) {
+			err = cancel_work_sync(&ipd->ilitek_resume_work);
+			if (!err)
+				ipio_err("cancel touch_resume_workqueue err = %d\n", err);
+				core_config_ic_suspend();
+			}
+		}
+#if (TP_PLATFORM == PT_SPRD)
+		else if (*blank == DRM_MODE_DPMS_ON)
+#else
+		else if (*blank == FB_BLANK_UNBLANK || *blank == FB_BLANK_NORMAL)
+#endif /* PT_SPRD */
+		{
+			if (event == FB_EVENT_BLANK) {
+				ipio_info("TP Resuem\n");
+
+				if (!core_firmware->isUpgrading) {
+					err = queue_work(ipd->ilitek_resume_workqueue, &ipd->ilitek_resume_work);
+					if (!err) {
+						ipio_err("start touch_resume_workqueue failed\n");
+						return err;
+					}
+				}
+			}
+		}
 	}
+
+	return NOTIFY_OK;
 }
 #elif defined CONFIG_FB
 static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned long event, void *data)
@@ -456,12 +517,22 @@ static int ilitek_platform_reg_esd_check(void)
  * If you'd rather liek to use early suspend, CONFIG_HAS_EARLYSUSPEND in kernel config
  * must be enabled.
  */
+static void ilitek_resume_workqueue_callback(struct work_struct *work)
+{
+	ipio_info("ilitek touch_resume_workqueue_callback\n");
+	core_config_ic_resume();
+}
+
 static int ilitek_platform_reg_suspend(void)
 {
 	int ret = 0;
 
 #if (TP_PLATFORM == PT_MTK)
 	ipio_info("It does nothing if platform is MTK\n");
+	ipd->notifier_fb.notifier_call = ilitek_platform_notifier_fb;
+	ret = fb_register_client(&ipd->notifier_fb);
+	ipd->ilitek_resume_workqueue= create_singlethread_workqueue("ilitek_touch_resume");
+	INIT_WORK(&ipd->ilitek_resume_work, ilitek_resume_workqueue_callback);
 #else
 	ipio_info("Register suspend/resume callback function\n");
 #ifdef CONFIG_FB
