@@ -1681,7 +1681,7 @@ int m4u_sec_init(void)
 	M4UINFO("tz_m4u: open DCI session returned: %d\n", mcRet);
 
 	{
-		volatile int i, j;
+		int i, j = 0;
 
 		for (i = 0; i < 10000000; i++)
 			j++;
@@ -2519,10 +2519,12 @@ static int m4u_probe(struct platform_device *pdev)
 			if (pMvaInfo != NULL) {
 				pMvaInfo->port = M4U_PORT_UNKNOWN;
 				pMvaInfo->size = M4U_NONSEC_MVA_START - 0x100000;
+				mva = m4u_do_mva_alloc(0, M4U_NONSEC_MVA_START - 0x100000, pMvaInfo);
+				M4UINFO("reserve sec mva: 0x%x\n", mva);
+			} else {
+				M4UINFO(
+					"pMvaInfo is NULL,secure mva space reserve fail\n");
 			}
-
-			mva = m4u_do_mva_alloc(0, M4U_NONSEC_MVA_START - 0x100000, pMvaInfo);
-			M4UINFO("reserve sec mva: 0x%x\n", mva);
 		}
 #endif
 
