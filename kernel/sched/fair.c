@@ -816,9 +816,6 @@ void init_entity_runnable_average(struct sched_entity *se)
 	sa->util_sum = sa->util_avg * LOAD_AVG_MAX;
 	/* when this task enqueue'ed, it will contribute to its cfs_rq's load_avg */
 
-	/* sched: add trace_sched */
-	if (entity_is_task(se))
-		trace_sched_task_entity_avg(0, task_of(se), &se->avg);
 }
 
 static inline u64 cfs_rq_clock_task(struct cfs_rq *cfs_rq);
@@ -894,9 +891,6 @@ void post_init_entity_util_avg(struct sched_entity *se)
 
 	attach_entity_cfs_rq(se);
 
-	/* sched: add trace_sched */
-	if (entity_is_task(se))
-		trace_sched_task_entity_avg(0, task_of(se), &se->avg);
 }
 
 #else /* !CONFIG_SMP */
@@ -3309,7 +3303,6 @@ static inline void update_load_avg(struct sched_entity *se, int flags)
 
 	/* sched: add trace_sched */
 	if (entity_is_task(se)) {
-		trace_sched_task_entity_avg(1, task_of(se), &se->avg);
 		trace_sched_load_avg_task(task_of(se), &se->avg);
 	}
 
