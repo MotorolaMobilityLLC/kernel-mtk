@@ -140,7 +140,7 @@ static int initAF(void)
 		int i4RetValue = 0;
 		char puSendCmd[2] = {0x00, 0x00}; /* soft power on */
 	char puSendCmd2[2] = { 0x01, 0x3b };
-	char puSendCmd3[2] = { 0x05, 0x79 };
+	char puSendCmd3[2] = { 0x05, 0x78 };
 
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
@@ -164,12 +164,16 @@ static int initAF(void)
 			return -1;
 		}
 
+		data = read_data(0x01);
+		LOG_INF("thy_debug:read addr:0x01 Data:0x%x\n", data);
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 
 		if (i4RetValue < 0) {
 			LOG_INF("I2C send 0x05 failed!!\n");
 			return -1;
 		}
+		data = read_data(0x05);
+		LOG_INF("thy_debug:read addr:0x05 Data:0x%x\n", data);
 
 		LOG_INF("driver init success!!\n");
 
