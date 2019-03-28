@@ -169,7 +169,7 @@ struct RSC_CLK_STRUCT rsc_clk;
 #define LOG_ERR(format, args...)    pr_info(MyTag format,  ##args)
 #define LOG_AST(format, args...)    pr_info(MyTag format, ##args)
 
-
+bool gPMState;
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3461,7 +3461,7 @@ static signed int RSC_probe(struct platform_device *pDev)
 #endif
 
 	}
-
+	gPMState = 0;
 EXIT:
 	if (Ret < 0)
 		RSC_UnregCharDev();
@@ -3557,8 +3557,11 @@ static signed int RSC_suspend(struct platform_device *pDev, pm_message_t Mesg)
 		g_SuspendCnt++;
 	}
 	bPass1_On_In_Resume_TG1 = 0;
+	if (gPMState == 0) {
 	LOG_INF("%s:g_u4EnableClockCount(%d) g_SuspendCnt(%d).\n", __func__,
 				g_u4EnableClockCount, g_SuspendCnt);
+	gPMState = 1;
+	}
 
 	return 0;
 }
@@ -3573,8 +3576,11 @@ static signed int RSC_resume(struct platform_device *pDev)
 		RSC_EnableClock(MTRUE);
 		g_SuspendCnt--;
 	}
+	if (gPMState == 1) {
 	LOG_INF("%s:g_u4EnableClockCount(%d) g_SuspendCnt(%d).\n", __func__,
 				g_u4EnableClockCount, g_SuspendCnt);
+		gPMState = 0;
+	}
 	return 0;
 }
 

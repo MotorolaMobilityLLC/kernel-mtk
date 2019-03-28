@@ -152,6 +152,7 @@
 #define LOG_ERR(format, args...)    pr_info(MyTag "[%s] " format, __func__, ##args)
 #define LOG_AST(format, args...)    pr_debug(MyTag "[%s] " format, __func__, ##args)
 
+bool g_DIP_PMState;
 /*******************************************************************************
 *
 ********************************************************************************/
@@ -3839,7 +3840,7 @@ static signed int DIP_probe(struct platform_device *pDev)
 			IspInfo.IrqCntInfo.m_int_usec[i] = 0;
 		}
 
-
+		g_DIP_PMState = 0;
 EXIT:
 		if (Ret < 0)
 			DIP_UnregCharDev();
@@ -3946,8 +3947,12 @@ int DIP_pm_suspend(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	/*pr_debug("calling %s()\n", __func__);*/
-	LOG_INF("DIP suspend G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
+	if (g_DIP_PMState == 0) {
+		/*pr_debug("calling %s()\n", __func__);*/
+		LOG_INF("DIP suspend G_u4DipEnClkCnt: %d, g_u4DipCnt: %d",
+			G_u4DipEnClkCnt, g_u4DipCnt);
+		g_DIP_PMState = 1;
+	}
 
 	return DIP_suspend(pdev, PMSG_SUSPEND);
 }
@@ -3958,8 +3963,12 @@ int DIP_pm_resume(struct device *device)
 
 	WARN_ON(pdev == NULL);
 
-	/*pr_debug("calling %s()\n", __func__);*/
-	LOG_INF("DIP resume G_u4DipEnClkCnt: %d, g_u4DipCnt: %d", G_u4DipEnClkCnt, g_u4DipCnt);
+	if (g_DIP_PMState == 1) {
+		/*pr_debug("calling %s()\n", __func__);*/
+		LOG_INF("DIP resume G_u4DipEnClkCnt: %d, g_u4DipCnt: %d",
+			G_u4DipEnClkCnt, g_u4DipCnt);
+		g_DIP_PMState = 0;
+	}
 
 	return DIP_resume(pdev);
 }
