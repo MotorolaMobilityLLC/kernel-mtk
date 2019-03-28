@@ -280,6 +280,10 @@ static void lcm_init(void)
 
 	LCM_LOGD("lcm_init\n");
 
+	OCP2131_GPIO_ENP_enable();
+	MDELAY(2);
+	OCP2131_GPIO_ENN_enable();
+	MDELAY(5);
 	ret = OCP2131_write_bytes(cmd, data);
 	if (ret < 0)
 		LCM_LOGI("ili9881h----ocp2131----cmd=%0x--i2c write error----\n", cmd);
@@ -296,16 +300,10 @@ static void lcm_init(void)
 	else
 		LCM_LOGI("ili9881h----ocp2131----cmd=%0x--i2c write success----\n", cmd);
 
-
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);
 	MDELAY(10);
-
-	OCP2131_GPIO_ENP_enable();
-	MDELAY(1);
-	OCP2131_GPIO_ENN_enable();
-
 	SET_RESET_PIN(1);
 	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
