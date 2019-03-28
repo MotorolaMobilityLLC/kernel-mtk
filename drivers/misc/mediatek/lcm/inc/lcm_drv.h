@@ -786,6 +786,7 @@ typedef struct {
 
 typedef struct {
 	void (*set_reset_pin)(unsigned int value);
+	void (*set_backlight_out)(unsigned int value);
 	void (*set_chip_select)(unsigned int value);
 	int (*set_gpio_out)(unsigned int gpio, unsigned int value);
 	void (*set_te_pin)(void);
