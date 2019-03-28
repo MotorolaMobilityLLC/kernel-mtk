@@ -943,7 +943,7 @@ static ssize_t adc_vbat_show(struct device *dev, struct device_attribute *attr, 
 	}
 
 	if (!client) {
-		pr_err("%s adc client(%d) is null\n", __func__,
+		pr_err("%s adc client(%s) is null\n", __func__,
 			channel < 100 ? "ap" : "pm");
 		ret = -ENODEV;
 		goto end;
