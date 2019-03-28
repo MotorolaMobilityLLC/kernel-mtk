@@ -426,17 +426,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			rcu_read_unlock();
 			spin_unlock(&lowmem_shrink_lock);
 			return SHRINK_STOP;
-		} else if (task_lmk_waiting(tsk)) {
-#ifdef CONFIG_MTK_ENG_BUILD
-			pr_info_ratelimited("%d (%s) is dying, find next candidate\n",
-					    tsk->pid, tsk->comm);
-#endif
-			if (tsk->state == TASK_RUNNING)
-				p_state_is_found |= LOWMEM_P_STATE_R;
-			else
-				p_state_is_found |= LOWMEM_P_STATE_OTHER;
-
-			continue;
 		}
 
 		p = find_lock_task_mm(tsk);
@@ -449,6 +438,22 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			continue;
 		}
 #endif
+
+		/* Bypass process which has been selected */
+		if (task_lmk_waiting(p)) {
+#ifdef CONFIG_MTK_ENG_BUILD
+			pr_info_ratelimited("%d (%s) is dying, find next candidate\n",
+					    p->pid, p->comm);
+#endif
+			if (p->state == TASK_RUNNING)
+				p_state_is_found |= LOWMEM_P_STATE_R;
+			else
+				p_state_is_found |= LOWMEM_P_STATE_OTHER;
+
+			task_unlock(p);
+			continue;
+		}
+
 		/* Bypass D-state process */
 		if (p->state & TASK_UNINTERRUPTIBLE) {
 			lowmem_print(2, "lowmem_scan filter D state process: %d (%s) state:0x%lx\n",
