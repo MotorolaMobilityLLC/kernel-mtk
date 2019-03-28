@@ -36,6 +36,7 @@
 #include <linux/of_device.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
+#include <linux/string.h>
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
@@ -49,6 +50,8 @@
 #define INTERVAL_READ_REG                   100  /* interval time per read reg unit:ms */
 #define TIMEOUT_READ_REG                    1000 /* timeout of read reg unit:ms */
 #define FTS_I2C_SLAVE_ADDR                  0x38
+
+bool isFT5446DQS_Q02 = 0;
 
 static DECLARE_WAIT_QUEUE_HEAD(waiter);
 static int tpd_flag;
@@ -126,6 +129,25 @@ int fts_wait_tp_to_valid(struct i2c_client *client)
     return -EIO;
 }
 
+static bool check_isFT5446DQS_Q02(void)
+{
+    char *ptr_s;
+    char *ptr_e;
+
+    ptr_s = strstr(saved_command_line, "isFT5446DQS_Q02=");
+    if(ptr_s == 0){
+        FTS_DEBUG("Can't find isFT5446DQS_Q02 from kernel command line,return false\n");
+        return false;
+    }
+    ptr_e = strstr(ptr_s," ");
+    if (*(ptr_e-1) == '1'){
+        FTS_DEBUG("is FT5446DQS_Q02\n");
+        return true;
+    }
+    FTS_DEBUG("is not FT5446DQS_Q02\n");
+    return false;
+}
+
 /************************************************************************
 * Name: fts_get_chip_types
 * Brief: verity chip id and get chip type data
@@ -162,8 +184,13 @@ static int fts_get_chip_types(
     if (i >= ctype_entries) {
         return -ENODATA;
     }
-
-    ts_data->ic_info.ids = ctype[i];
+    isFT5446DQS_Q02 = check_isFT5446DQS_Q02();
+    FTS_DEBUG("isFT5446DQS_Q02 = %d\n", isFT5446DQS_Q02);
+    if(isFT5446DQS_Q02){
+        ts_data->ic_info.ids = ctype[1];
+    }else{
+        ts_data->ic_info.ids = ctype[0];
+    }
     return 0;
 }
 
@@ -184,8 +211,13 @@ static int fts_get_ic_information(struct fts_ts_data *ts_data)
     u32 id_cmd_len = 0;
     struct i2c_client *client = ts_data->client;
 
-    ts_data->ic_info.is_incell = FTS_CHIP_IDC;
-    ts_data->ic_info.hid_supported = FTS_HID_SUPPORTTED;
+    if(isFT5446DQS_Q02){
+        ts_data->ic_info.is_incell = ((_FT5446DQS_Q02 & FLAGBIT(FLAG_IDC_BIT)) == FLAGBIT(FLAG_IDC_BIT));
+        ts_data->ic_info.hid_supported = ((_FT5446DQS_Q02 & FLAGBIT(FLAG_HID_BIT)) == FLAGBIT(FLAG_HID_BIT));
+    }else{
+        ts_data->ic_info.is_incell = ((_FT5446 & FLAGBIT(FLAG_IDC_BIT)) == FLAGBIT(FLAG_IDC_BIT));
+        ts_data->ic_info.hid_supported = ((_FT5446 & FLAGBIT(FLAG_HID_BIT)) == FLAGBIT(FLAG_HID_BIT));
+    }
     do {
         ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID, &chip_id[0]);
         ret = fts_i2c_read_reg(client, FTS_REG_CHIP_ID2, &chip_id[1]);

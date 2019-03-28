@@ -9,3 +9,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 ccflags-y += -I$(srctree)/drivers/base
 
 obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS) += focaltech_upgrade_ft5446.o
+obj-$(CONFIG_TOUCHSCREEN_MTK_FOCALTECH_TS_DQS) += focaltech_upgrade_ft5446dqs_q02.o

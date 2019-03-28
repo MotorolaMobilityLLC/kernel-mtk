@@ -63,9 +63,11 @@ struct upgrade_fw fw_list[] = {
 
 struct upgrade_func *upgrade_func_list[] = {
     &upgrade_func_ft5x46,
+    &upgrade_func_ft5422u,
 };
 struct fts_upgrade *fwupgrade;
 
+static int fts_fwupg_get_ver_in_tp(struct i2c_client *client, u8 *ver);
 /*****************************************************************************
 * Static function prototypes
 *****************************************************************************/
@@ -1084,6 +1086,24 @@ int fts_read_file(char *file_name, u8 **file_buf)
     return ret;
 }
 
+static int fts_fwupg_get_ver_in_host_bin(u8 *fw,u32 fw_len,u8 *ver)
+{
+    struct fts_upgrade *upg = fwupgrade;
+    if ((!upg) || (!upg->func) || (!fw) || (!ver)) {
+        FTS_ERROR("%s:fts_data/upgrade/func/fw/ver is NULL",__func__);
+        return -EINVAL;
+    }
+
+    if (fw_len < upg->func->fwveroff) {
+        FTS_ERROR("fw len(0x%0x) < fw ver offset(0x%x)",
+                  fw_len, upg->func->fwveroff);
+        return -EINVAL;
+    }
+
+    FTS_INFO("fw version offset:0x%x", upg->func->fwveroff);
+    *ver = upg->fw[upg->func->fwveroff];
+    return 0;
+}
 /************************************************************************
 * Name: fts_upgrade_bin
 * Brief:
@@ -1097,6 +1117,8 @@ int fts_upgrade_bin(struct i2c_client *client, char *fw_name, bool force)
     u32 fw_file_len = 0;
     u8 *fw_file_buf = NULL;
     struct fts_upgrade *upg = fwupgrade;
+    u8 fw_ver_in_host = 0;
+    u8 fw_ver_in_tp = 0;
 
     FTS_INFO("start upgrade with fw bin");
     if ((NULL == upg) || (NULL == upg->func)) {
@@ -1127,6 +1149,21 @@ int fts_upgrade_bin(struct i2c_client *client, char *fw_name, bool force)
             FTS_INFO("lic_upgrade function is null, no upgrade");
         }
 #endif
+        ret = fts_fwupg_get_ver_in_host_bin(fw_file_buf,fw_file_len,&fw_ver_in_host);
+	if (ret < 0) {
+            FTS_ERROR("get fw ver in host fail");
+            return ret;
+        }
+        ret = fts_fwupg_get_ver_in_tp(client, &fw_ver_in_tp);
+        if (ret < 0) {
+            FTS_ERROR("get fw ver in tp fail");
+            return ret;
+        }
+        FTS_INFO("fw version in tp:%x, host:%x", fw_ver_in_tp, fw_ver_in_host);
+        if (fw_ver_in_tp != fw_ver_in_host) {
+            FTS_ERROR("Don't need upgrade fw(fw_ver_in_tp == fw_ver_in_host)\n");
+            return 0;
+        }
         if (upg->func->upgrade) {
             ret = upg->func->upgrade(client, fw_file_buf, fw_file_len);
         } else {
@@ -1516,7 +1553,7 @@ static bool fts_fwupg_need_upgrade(struct i2c_client *client)
         }
 
         FTS_INFO("fw version in tp:%x, host:%x", fw_ver_in_tp, fw_ver_in_host);
-        if (fw_ver_in_tp < fw_ver_in_host) {
+        if (fw_ver_in_tp != fw_ver_in_host) {
             return true;
         }
     } else {
@@ -1688,6 +1725,7 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
     struct upgrade_fw *fw = &fw_list[0];
     struct fts_upgrade *upg = fwupgrade;
 
+#if 0
 #if (FTS_GET_VENDOR_ID_NUM > 1)
     int ret = 0;
     int i = 0;
@@ -1712,6 +1750,14 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
         return -ENODATA;
     }
 #endif
+#endif
+
+    extern bool isFT5446DQS_Q02;
+    if(isFT5446DQS_Q02){
+        fw = &fw_list[1];
+    }else{
+        fw = &fw_list[0];
+    }
 
     if (upg) {
         upg->fw = fw->fw_file;

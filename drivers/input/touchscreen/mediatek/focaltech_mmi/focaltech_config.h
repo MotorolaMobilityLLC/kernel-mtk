@@ -189,7 +189,7 @@
  * 0:No check vendor_id (default)
  * 1/2/3: Check vendor_id for vendor compatibility
  */
-#define FTS_GET_VENDOR_ID_NUM                   0
+#define FTS_GET_VENDOR_ID_NUM                   2
 
 /*
  * vendor_id(s) for vendor(s) to be compatible with.
@@ -201,7 +201,7 @@
  * FTS_GET_VENDOR_ID_NUM >= 3, compatible with FTS_VENDOR_ID3
  */
 #define FTS_VENDOR_ID                          0x0000
-#define FTS_VENDOR_ID2                         0x0000
+#define FTS_VENDOR_ID2                         0x0010
 #define FTS_VENDOR_ID3                         0x0000
 
 /*
@@ -215,7 +215,7 @@
  * if FTS_GET_VENDOR_ID_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW2_FILE                     "include/firmware/focaltech-holi-ft5446-02-0001-bingo.i"
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/focaltech-djn-ft5446dqs-02-0011-bingo.i"
 
 /*
  * if FTS_GET_VENDOR_ID_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3

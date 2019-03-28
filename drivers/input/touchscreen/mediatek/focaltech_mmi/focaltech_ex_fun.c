@@ -1048,7 +1048,7 @@ static ssize_t fts_do_reflash_store(struct device *dev,struct device_attribute *
     fts_esdcheck_switch(DISABLE);
 #endif
     if(ts_data->force_reflash){
-        fts_upgrade_bin(client, fwname, 1);
+        fts_upgrade_bin(client, fwname, 0);
     }else{
         fts_upgrade_bin(client, fwname, 0);
     }
@@ -1063,7 +1063,7 @@ static ssize_t fts_do_reflash_store(struct device *dev,struct device_attribute *
 }
 static DEVICE_ATTR(doreflash, 0220, NULL, fts_do_reflash_store);
 
-#define FT_REG_FW_ID 0xA1
+#define FT_REG_FW_ID 0xA8
 #define FT_FW_ID_LEN 2
 #define FT_REG_FW_VER 0xA6
 #define FT_REG_FW_MIN_VER 0xB2
