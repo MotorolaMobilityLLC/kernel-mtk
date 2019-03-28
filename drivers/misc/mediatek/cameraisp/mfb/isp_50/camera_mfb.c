@@ -1729,6 +1729,12 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	MFB_REG_STRUCT *pData = (MFB_REG_STRUCT *) pRegIo->pData;
 
+	if ((pRegIo->pData == NULL) || (pRegIo->Count == 0) || (pRegIo->Count > (MFB_REG_RANGE>>2))) {
+		log_inf("MFB_ReadReg pRegIo->pData is NULL, Count:%d!!", pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
 			log_err("get_user failed");
