@@ -790,7 +790,7 @@ static int __init fpsgo_init(void)
 
 	cpufreq_notifier_fp = fpsgo_notify_cpufreq;
 
-	ged_vsync_notifier_fp = fpsgo_notify_vsync;
+	fpsgo_notify_vsync_fp = fpsgo_notify_vsync;
 
 	fpsgo_notify_qudeq_fp = fpsgo_notify_qudeq;
 	fpsgo_notify_connect_fp = fpsgo_notify_connect;

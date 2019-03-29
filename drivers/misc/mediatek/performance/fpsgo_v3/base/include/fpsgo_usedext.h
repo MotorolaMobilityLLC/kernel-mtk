@@ -25,6 +25,7 @@ extern void (*fpsgo_notify_connect_fp)(int pid, int connectedAPI,
 extern void (*fpsgo_notify_bqid_fp)(int pid, unsigned long long bufID,
 		int queue_SF,
 		unsigned long long identifier, int create);
+extern void (*fpsgo_notify_vsync_fp)(void);
 
 extern void (*fpsgo_notify_nn_job_begin_fp)(unsigned int tid,
 		unsigned long long mid);
