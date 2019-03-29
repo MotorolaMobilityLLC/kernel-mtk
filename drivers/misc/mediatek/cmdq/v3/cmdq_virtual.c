@@ -21,7 +21,6 @@
 #endif
 #ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
-#include "smi_debug.h"
 #endif
 
 static struct cmdqCoreFuncStruct gFunctionPointer;

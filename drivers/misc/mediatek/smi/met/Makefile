@@ -13,10 +13,18 @@
 
 ifeq ($(CONFIG_FTRACE),y)
 ifeq ($(CONFIG_TRACING),y)
+
+ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT),y)
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6779"))
+ccflags-$(CONFIG_MACH_MT6779) += -I$(srctree)/drivers/misc/mediatek/base/power/qos/$(MTK_PLATFORM)/
+ccflags-y += -DSMI_MET_IPI
+endif
+endif
 obj-y += met_smi.o
 obj-$(CONFIG_MACH_MT6758) += met_smi_config_mt6758.o
 obj-$(CONFIG_MACH_MT6765) += met_smi_config_mt6765.o
 obj-$(CONFIG_MACH_MT6761) += met_smi_config_mt6761.o
 obj-$(CONFIG_MACH_MT3967) += met_smi_config_mt3967.o
+obj-$(CONFIG_MACH_MT6779) += met_smi_config_mt6779.o
 endif
 endif

@@ -331,14 +331,14 @@ void mmdvfs_internal_notify_vcore_calibration(
 		g_mmdvfs_mgr->is_mmdvfs_start = 0;
 /* #ifdef MMDVFS_QOS_SUPPORT */
 #if 1
-		mmdvfs_qos_enable(false);
+		mmdvfs_autok_qos_enable(false);
 #endif
 		MMDVFSMSG("mmdvfs service is disabled for vcore calibration\n");
 	} else if (event->event_type  == MMDVFS_EVENT_PREPARE_CALIBRATION_END) {
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 /* #ifdef MMDVFS_QOS_SUPPORT */
 #if 1
-		mmdvfs_qos_enable(true);
+		mmdvfs_autok_qos_enable(true);
 #endif
 		MMDVFSMSG("mmdvfs service has been enabled\n");
 	} else {
@@ -761,6 +761,8 @@ void mmdvfs_init(struct MTK_SMI_BWC_MM_INFO *info)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_EIG)
 		g_mmdvfs_mgr->is_mmdvfs_start = 1;
+	if (mmdvfs_get_mmdvfs_profile() == MMDVFS_PROFILE_LAF)
+		g_mmdvfs_mgr->is_mmdvfs_start = 1;
 #if IS_ENABLED(CONFIG_MTK_SMI_EXT)
 	mmdvfs_clks_init();
 #endif
@@ -1081,6 +1083,8 @@ int mmdvfs_get_mmdvfs_profile(void)
 	mmdvfs_profile_id = MMDVFS_PROFILE_MER;
 #elif defined(SMI_EIG)
 	mmdvfs_profile_id = MMDVFS_PROFILE_EIG;
+#elif defined(SMI_LAF)
+	mmdvfs_profile_id = MMDVFS_PROFILE_LAF;
 #endif
 
 	MMDVFSDEBUG(4, "Segment_code=%d,mmdvfs_profile_id=%d\n", segment_code,

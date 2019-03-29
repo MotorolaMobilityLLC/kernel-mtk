@@ -18,6 +18,10 @@
 #include "met_smi_config.h"
 #include "../smi_public.h"
 
+#ifdef SMI_MET_IPI
+#include <mtk_qos_ipi.h>
+#endif
+
 #define	smi_readl		readl
 #define	smi_reg_sync_writel	mt_reg_sync_writel
 static void __iomem *(SMICommBaseAddr[SMI_MET_TOTAL_MASTER_NUM]);
@@ -402,6 +406,9 @@ int SMI_MET_type_check(unsigned int parallel_mode, struct met_smi_conf *config)
 }
 EXPORT_SYMBOL(SMI_MET_type_check);
 
+static int already_configured;
+
+#ifndef SMI_MET_IPI
 static void SMI_MET_clear_monitor(void)
 {
 	int larbno;
@@ -445,13 +452,102 @@ static void SMI_MET_monitor(const bool on_off)
 	smi_reg_sync_writel(u4RegVal, SMI_MET_COMM_MON_ENA(SMICommBaseAddr[0]));
 }
 
-static int already_configured;
+static char *SMI_MET_ms_formatH_EOL(char *__restrict__ buf, unsigned char cnt,
+	unsigned int *__restrict__ value)
+{
+	char	*s = buf;
+	int	len;
+
+	if (cnt == 0) {
+		buf[0] = '\0';
+		return buf;
+	}
+
+	switch (cnt % 4) {
+	case 1:
+		len = sprintf(s, "%x", value[0]);
+		s += len;
+		value += 1;
+		cnt -= 1;
+		break;
+	case 2:
+		len = sprintf(s, "%x,%x", value[0], value[1]);
+		s += len;
+		value += 2;
+		cnt -= 2;
+		break;
+	case 3:
+		len = sprintf(s, "%x,%x,%x", value[0], value[1], value[2]);
+		s += len;
+		value += 3;
+		cnt -= 3;
+		break;
+	case 0:
+		len = sprintf(s, "%x,%x,%x,%x",
+			value[0], value[1], value[2], value[3]);
+		s += len;
+		value += 4;
+		cnt -= 4;
+		break;
+	}
+
+	while (cnt) {
+		len = sprintf(s, ",%x,%x,%x,%x",
+			value[0], value[1], value[2], value[3]);
+		s += len;
+		value += 4;
+		cnt -= 4;
+	}
+
+	s[0] = '\n';
+	s[1] = '\0';
+
+	return (s + 1);
+}
+
+static noinline void ms_smi(unsigned char cnt, unsigned int *value)
+{
+	char	*SOB, *EOB;
+
+	SMI_MET_PRINTK_GETBUF(&SOB, &EOB);
+	EOB = SMI_MET_ms_formatH_EOL(EOB, cnt, value);
+	SMI_MET_PRINTK_PUTBUF(SOB, EOB);
+}
+
+#else
+#define SMI_MET_MASK(val, mask, bit)	(((val) & (mask)) << (bit))
+static inline u32
+smi_met_enc(const u32 para, const struct met_smi_conf conf, const u32 i)
+{
+	return SMI_MET_MASK(conf.master, 0xf, 12) |
+		SMI_MET_MASK(para, 0x1, 24) |
+		SMI_MET_MASK(conf.reqtype, 0x3, 0) |
+		SMI_MET_MASK(conf.rwtype[i], 0x3, 4) |
+		SMI_MET_MASK(conf.port[i], 0x3f, 6);
+}
+
+static void
+smi_met_ipi(const bool ena, const u32 para, const struct met_smi_conf conf)
+{
+	struct qos_ipi_data qos_ipi_d;
+	s32 i;
+
+	qos_ipi_d.cmd = QOS_IPI_SMI_MET_MON;
+	qos_ipi_d.u.smi_met_mon.ena = ena;
+	memset(qos_ipi_d.u.smi_met_mon.enc, ~0,
+		sizeof(qos_ipi_d.u.smi_met_mon.enc));
+
+	for (i = 0; i < parall_port_num[conf.master] && ena; i++)
+		qos_ipi_d.u.smi_met_mon.enc[i] = smi_met_enc(para, conf, i);
+	qos_ipi_to_sspm_command(&qos_ipi_d, 6);
+}
+#endif
 
 int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 		   unsigned int parallel_mode)
 {
 	int index, larbno;
-	unsigned int u4RegVal, master;
+	unsigned int master;
 	struct met_smi_conf *smi_cfg;
 	unsigned int j;
 
@@ -479,7 +575,8 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 				if (smi_cfg->port[j] != -1)
 					parall_port_num[master] = j + 1;
 			}
-		}
+		} else
+			parall_port_num[master] = 1;
 
 		met_smi_conf_array[master].master = smi_cfg->master;
 		met_smi_conf_array[master].port[0] = smi_cfg->port[0];
@@ -492,6 +589,9 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 		met_smi_conf_array[master].rwtype[3] = smi_cfg->rwtype[3];
 		met_smi_conf_array[master].desttype = smi_cfg->desttype;
 		met_smi_conf_array[master].reqtype = smi_cfg->reqtype;
+#ifdef SMI_MET_IPI
+		smi_met_ipi(true, parallel_mode, met_smi_conf_array[master]);
+#endif
 	}
 
 
@@ -501,9 +601,10 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 			"[MET_SMI] larb %d poweron\n", larbno);
 		met_smi_debug(debug_msg);
 	}
-
+#ifndef SMI_MET_IPI
 	for (index = 0; index < conf_num; index++) {
 		static void __iomem *addr;
+		unsigned int u4RegVal;
 
 		smi_cfg = &met_smi_config[index];
 		if (smi_cfg->master != MET_SMI_LARB_NUM) { /* larb config */
@@ -574,14 +675,17 @@ int SMI_MET_config(struct met_smi_conf *met_smi_config, unsigned int conf_num,
 				j < parall_port_num[smi_cfg->master]);
 		}
 	}
+#endif
 	return MET_SMI_SUCCESS;
 }
 EXPORT_SYMBOL(SMI_MET_config);
 
 void SMI_MET_start(void)
 {
+#ifndef SMI_MET_IPI
 	SMI_MET_clear_monitor();
 	SMI_MET_monitor(true); /* start monitor counting */
+#endif
 }
 EXPORT_SYMBOL(SMI_MET_start);
 
@@ -613,8 +717,11 @@ void SMI_MET_stop(void)
 
 	/* reset configurations */
 	smi_init_value(); /* clear config array */
+#ifdef SMI_MET_IPI
+	smi_met_ipi(false, 0, met_smi_conf_array[0]);
+#else
 	SMI_MET_clear_monitor(); /* clear monitor */
-
+#endif
 	for (larbno = 0; larbno < MET_SMI_LARB_NUM; larbno++) {
 		smi_bus_disable_unprepare(larbno, "MET_SMI", true);
 		snprintf(debug_msg, SMI_MET_DEBUGBUF_SIZE,
@@ -626,70 +733,9 @@ EXPORT_SYMBOL(SMI_MET_stop);
 
 #define NARRAY		(SMI_MET_TOTAL_MASTER_NUM * 10 + 2)
 #define metadata	(0x5555aaaa)
-static char *SMI_MET_ms_formatH_EOL(char *__restrict__ buf, unsigned char cnt,
-	unsigned int *__restrict__ value)
-{
-	char	*s = buf;
-	int	len;
-
-	if (cnt == 0) {
-		buf[0] = '\0';
-		return buf;
-	}
-
-	switch (cnt % 4) {
-	case 1:
-		len = sprintf(s, "%x", value[0]);
-		s += len;
-		value += 1;
-		cnt -= 1;
-		break;
-	case 2:
-		len = sprintf(s, "%x,%x", value[0], value[1]);
-		s += len;
-		value += 2;
-		cnt -= 2;
-		break;
-	case 3:
-		len = sprintf(s, "%x,%x,%x", value[0], value[1], value[2]);
-		s += len;
-		value += 3;
-		cnt -= 3;
-		break;
-	case 0:
-		len = sprintf(s, "%x,%x,%x,%x",
-			value[0], value[1], value[2], value[3]);
-		s += len;
-		value += 4;
-		cnt -= 4;
-		break;
-	}
-
-	while (cnt) {
-		len = sprintf(s, ",%x,%x,%x,%x",
-			value[0], value[1], value[2], value[3]);
-		s += len;
-		value += 4;
-		cnt -= 4;
-	}
-
-	s[0] = '\n';
-	s[1] = '\0';
-
-	return (s + 1);
-}
-
-static noinline void ms_smi(unsigned char cnt, unsigned int *value)
-{
-	char	*SOB, *EOB;
-
-	SMI_MET_PRINTK_GETBUF(&SOB, &EOB);
-	EOB = SMI_MET_ms_formatH_EOL(EOB, cnt, value);
-	SMI_MET_PRINTK_PUTBUF(SOB, EOB);
-}
-
 void SMI_MET_polling(void)
 {
+#ifndef SMI_MET_IPI
 	int larbno;
 	unsigned int smi_value[NARRAY];
 	int j, cnt = 0;
@@ -778,5 +824,6 @@ void SMI_MET_polling(void)
 	SMI_MET_clear_monitor();
 	SMI_MET_monitor(true); /* restart monitor counting */
 	ms_smi(cnt, smi_value); /* output log to ftrace buffer */
+#endif
 }
 EXPORT_SYMBOL(SMI_MET_polling);
