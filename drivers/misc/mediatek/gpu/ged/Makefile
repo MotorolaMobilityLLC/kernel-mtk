@@ -49,6 +49,11 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
 #ccflags-y += -DCONFIG_MTK_QOS_SUPPORT
 endif
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6761"))
+ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
+ccflags-y += -DGED_ENABLE_DYNAMIC_DVFS_MARGIN
+endif
+endif
 
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
