@@ -65,6 +65,7 @@ void connectivity_export_clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 /*******************************************************************************
  * PMIC
  * Caller please be sure to #include:
+ *      drivers/misc/mediatek/pmic/include/mt6359/mtk_pmic_api_buck.h
  *	drivers/misc/mediatek/include/mt-plat/upmu_common.h
  ******************************************************************************/
 #if defined(CONFIG_MACH_MT8163)
@@ -95,6 +96,16 @@ void connectivity_export_upmu_set_vcn33_on_ctrl_wifi(unsigned int val);
 	connectivity_export_pmic_get_register_value
 #define KERNEL_upmu_set_reg_value \
 	connectivity_export_upmu_set_reg_value
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
+#define KERNEL_pmic_ldo_vcn13_lp \
+	connectivity_export_pmic_ldo_vcn13_lp
+#define KERNEL_pmic_ldo_vcn18_lp \
+	connectivity_export_pmic_ldo_vcn18_lp
+#define KERNEL_pmic_ldo_vcn33_1_lp \
+	connectivity_export_pmic_ldo_vcn33_1_lp
+#define KERNEL_pmic_ldo_vcn33_2_lp \
+	connectivity_export_pmic_ldo_vcn33_2_lp
+#endif
 void connectivity_export_pmic_config_interface(unsigned int RegNum,
 						unsigned int val,
 						unsigned int MASK,
@@ -108,6 +119,16 @@ void connectivity_export_pmic_set_register_value(int flagname,
 unsigned short connectivity_export_pmic_get_register_value(int flagname);
 void connectivity_export_upmu_set_reg_value(unsigned int reg,
 						unsigned int reg_val);
+#if defined(CONFIG_MTK_PMIC_CHIP_MT6359)
+int connectivity_export_pmic_ldo_vcn13_lp(int user,
+		int op_mode, unsigned char op_en, unsigned char op_cfg);
+int connectivity_export_pmic_ldo_vcn18_lp(int user,
+		int op_mode, unsigned char op_en, unsigned char op_cfg);
+int connectivity_export_pmic_ldo_vcn33_1_lp(int user,
+		int op_mode, unsigned char op_en, unsigned char op_cfg);
+int connectivity_export_pmic_ldo_vcn33_2_lp(int user,
+		int op_mode, unsigned char op_en, unsigned char op_cfg);
+#endif
 #endif
 
 /*******************************************************************************
