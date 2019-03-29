@@ -74,16 +74,15 @@ void move_task(struct task_struct *p, struct lb_env *env)
 	activate_task(env->dst_rq, p, 0);
 	p->on_rq = TASK_ON_RQ_QUEUED;
 	check_preempt_curr(env->dst_rq, p, 0);
+	update_capacity_of(cpu_of(env->dst_rq), SCHE_VALID);
 }
 
 static void collect_cluster_stats(struct clb_stats *clbs,
 		struct cpumask *cluster_cpus, int target)
 {
-#define HMP_RESOLUTION_SCALING (4)
-#define hmp_scale_down(w) ((w) >> HMP_RESOLUTION_SCALING)
-
 	/* Update cluster informatics */
 	int cpu;
+	int loadwop;
 
 	for_each_cpu(cpu, cluster_cpus) {
 		if (cpu_online(cpu)) {
@@ -112,19 +111,19 @@ static void collect_cluster_stats(struct clb_stats *clbs,
 	 * Thus, multiplying the number of tasks can adjust load ratio to a more
 	 * reasonable value.
 	 */
+	loadwop = cpu_rq(target)->cfs.avg.loadwop_avg;
 	clbs->load_avg /= clbs->ncpu;
-	clbs->acap = clbs->cpu_capacity - cpu_rq(target)->cfs.avg.loadwop_avg;
-	clbs->scaled_acap = hmp_scale_down(clbs->acap);
-	clbs->scaled_atask = cpu_rq(target)->cfs.avg.loadwop_avg;
-	clbs->scaled_atask = clbs->cpu_capacity - clbs->scaled_atask;
-	clbs->scaled_atask = hmp_scale_down(clbs->scaled_atask);
+	clbs->acap = (clbs->cpu_capacity > loadwop) ?
+		(clbs->cpu_capacity - loadwop) : 0;
+	clbs->scaled_atask = (clbs->cpu_capacity > loadwop) ?
+		(clbs->cpu_capacity - loadwop) : 0;
 
-	mt_sched_printf(sched_log, "[%s] cpu/cluster:%d/%02lx load/len:%lu/%u stats:%d,%d,%d,%d,%d,%d,%d,%d\n",
-			__func__, target, *cpumask_bits(cluster_cpus),
+	trace_sched_cluster_stats(target,
 			cpu_rq(target)->cfs.avg.loadwop_avg,
 			cpu_rq(target)->cfs.h_nr_running,
-			clbs->ncpu, clbs->ntask, clbs->load_avg,
-			clbs->cpu_capacity, clbs->acap, clbs->scaled_acap,
+			*cpumask_bits(cluster_cpus),
+			clbs->ntask, clbs->load_avg,
+			clbs->cpu_capacity, clbs->acap,
 			clbs->scaled_atask, clbs->threshold);
 }
 
@@ -150,28 +149,33 @@ static void collect_cluster_stats(struct clb_stats *clbs,
  */
 static void adj_threshold(struct clb_env *clbenv)
 {
-#define POSITIVE(x) ((int)(x) < 0 ? 0 : (x))
+#define HMP_RESOLUTION_SCALING (4)
+#define hmp_scale_down(w) ((w) >> HMP_RESOLUTION_SCALING)
 
 	unsigned long b_cap = 0, l_cap = 0;
 	int b_nacap, l_nacap, b_natask, l_natask;
+	const int hmp_max_weight = scale_load_down(HMP_MAX_LOAD);
 
 	b_cap = clbenv->bstats.cpu_power;
 	l_cap = clbenv->lstats.cpu_power;
-	b_nacap = POSITIVE(clbenv->bstats.scaled_acap *
-			b_cap / (l_cap+1));
-	b_natask = POSITIVE(clbenv->bstats.scaled_atask *
-			b_cap / (l_cap+1));
-	l_nacap = POSITIVE(clbenv->lstats.scaled_acap);
-	l_natask = POSITIVE(clbenv->lstats.scaled_atask);
+	b_nacap = clbenv->bstats.acap *	b_cap / (l_cap+1);
+	b_natask = clbenv->bstats.scaled_atask *
+			b_cap / (l_cap+1);
+	l_nacap = clbenv->lstats.acap;
+	l_natask = clbenv->lstats.scaled_atask;
 
-	clbenv->bstats.threshold = HMP_MAX_LOAD -
-		(HMP_MAX_LOAD * b_nacap * b_natask) /
+	b_nacap = hmp_scale_down(b_nacap);
+	l_nacap = hmp_scale_down(l_nacap);
+	b_natask = hmp_scale_down(b_natask);
+	l_natask = hmp_scale_down(l_natask);
+
+	clbenv->bstats.threshold = hmp_max_weight -
+		(hmp_max_weight * b_nacap * b_natask) /
 		((b_nacap + l_nacap) * (b_natask + l_natask) + 1);
-	clbenv->lstats.threshold = HMP_MAX_LOAD * l_nacap * l_natask /
+	clbenv->lstats.threshold = hmp_max_weight * l_nacap * l_natask /
 		((b_nacap + l_nacap) * (b_natask + l_natask) + 1);
 
-	mt_sched_printf(sched_log, "[%s]\tup/dl:%4d/%4d L(%d:%4lu) b(%d:%4lu)\n",
-			__func__, clbenv->bstats.threshold,
+	trace_sched_adj_threshold(clbenv->bstats.threshold,
 			clbenv->lstats.threshold, clbenv->ltarget,
 			l_cap, clbenv->btarget, b_cap);
 }
@@ -269,7 +273,7 @@ static inline unsigned int hmp_domain_min_load(struct hmp_domain *hmpd,
 		int *min_cpu);
 
 /* Check if cpu is in fastest hmp_domain */
-static inline unsigned int hmp_cpu_is_fastest(int cpu)
+inline unsigned int hmp_cpu_is_fastest(int cpu)
 {
 	struct list_head *pos;
 
@@ -549,7 +553,6 @@ select_slow:
 	goto out;
 
 out:
-#ifdef CONFIG_HMP_TRACER
 	/*
 	 * Value of clbenb..load_avg only ready after step 2.
 	 * Dump value after this step to avoid invalid stack value
@@ -557,7 +560,6 @@ out:
 	if (step > 1)
 		trace_sched_hmp_load(step,
 				clbenv.bstats.load_avg, clbenv.lstats.load_avg);
-#endif
 	return new_cpu;
 }
 
@@ -573,7 +575,7 @@ static int hmp_select_task_rq_fair(int sd_flag, struct task_struct *p,
 	struct sched_entity *se = &p->se;
 	struct cpumask fast_cpu_mask, slow_cpu_mask;
 
-	if (sched_boost() && idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
+	if (idle_cpu(new_cpu) && hmp_cpu_is_fastest(new_cpu))
 		return new_cpu;
 
 	/* error handling */
@@ -620,8 +622,8 @@ out:
 
 }
 
-#define hmp_fast_cpu_has_spare_cycles(B, cpu_load) (cpu_load < \
-		(B->cpu_capacity - (B->cpu_capacity >> 2)))
+#define hmp_fast_cpu_has_spare_cycles(B, cpu_load) (cpu_load * 1280 < \
+		(SCHED_CAPACITY_SCALE * 1024))
 
 #define hmp_task_fast_cpu_afford(B, se, cpu) \
 		(B->acap > 0 && hmp_fast_cpu_has_spare_cycles(B, \
@@ -656,10 +658,10 @@ out:
 #define HMP_MIGRATION_APPROVED              (0x100)
 #define HMP_TASK_UP_MIGRATION               (0x200)
 #define HMP_TASK_DOWN_MIGRATION             (0x400)
+
 /* Migration statistics */
-#ifdef CONFIG_HMP_TRACER
 struct hmp_statisic hmp_stats;
-#endif
+
 /*
  * Check whether this task should be migrated to big
  * Briefly summarize the flow as below;
@@ -677,9 +679,7 @@ static unsigned int hmp_up_migration(int cpu,
 	struct clb_stats *L, *B;
 	struct mcheck *check;
 	int curr_cpu = cpu;
-#ifdef CONFIG_HMP_TRACER
 	unsigned int caller = clbenv->flags;
-#endif
 	cpumask_t act_mask;
 
 	L = &clbenv->lstats;
@@ -748,14 +748,12 @@ static unsigned int hmp_up_migration(int cpu,
 	}
 
 trace:
-#ifdef CONFIG_HMP_TRACER
 	if (check->result && hmp_caller_is_gb(caller))
 		hmp_stats.nr_force_up++;
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), B->threshold, check->status,
 			curr_cpu, *target_cpu, se_load(se), B, L);
 	trace_sched_dynamic_threshold_draw(B->threshold, L->threshold);
-#endif
 out:
 	return check->result;
 }
@@ -849,7 +847,8 @@ static unsigned int hmp_down_migration(int cpu,
 	 *    keep it staying in its previous cluster instead)
 	 * 2) LITTLE cpu doesn't have available capacity for this new task
 	 */
-	if (!hmp_fast_cpu_oversubscribed(caller, B, se, curr_cpu)) {
+	if (cpu_rq(curr_cpu)->cfs.h_nr_running > 1 &&
+			!hmp_fast_cpu_oversubscribed(caller, B, se, curr_cpu)) {
 		check->status |= HMP_BIG_NOT_OVERSUBSCRIBED;
 		goto trace;
 	}
@@ -870,14 +869,12 @@ static unsigned int hmp_down_migration(int cpu,
 	}
 
 trace:
-#ifdef CONFIG_HMP_TRACER
 	if (check->result && hmp_caller_is_gb(caller))
 		hmp_stats.nr_force_down++;
 	trace_sched_hmp_stats(&hmp_stats);
 	trace_sched_dynamic_threshold(task_of(se), L->threshold, check->status,
 			curr_cpu, *target_cpu, se_load(se), B, L);
 	trace_sched_dynamic_threshold_draw(B->threshold, L->threshold);
-#endif
 out:
 	return check->result;
 }
@@ -997,6 +994,10 @@ static void hmp_force_down_migration(int this_cpu)
 #ifdef CONFIG_SCHED_HMP_PLUS
 	orig = se;
 	se = hmp_get_lightest_task(orig, 1);
+	if (!se) {
+		raw_spin_unlock_irqrestore(&target->lock, flags);
+		return;
+	}
 	if (!entity_is_task(se))
 		p = task_of(orig);
 	else
@@ -1113,7 +1114,7 @@ static void hmp_force_up_migration(int this_cpu)
 				break;
 			}
 		} else {
-			hmp_force_down_migration(this_cpu);
+			hmp_force_down_migration(curr_cpu);
 			continue;
 		}
 		if (!hmp_domain || hmp_domain == hmp_cpu_domain(curr_cpu))
@@ -1202,10 +1203,8 @@ static void hmp_force_up_migration(int this_cpu)
 			hmp_force_down_migration(this_cpu);
 	}
 
-#ifdef CONFIG_HMP_TRACER
 	trace_sched_hmp_load(100,
 			clbenv.bstats.load_avg, clbenv.lstats.load_avg);
-#endif
 	spin_unlock(&hmp_force_migration);
 
 }
@@ -1224,9 +1223,7 @@ hmp_enqueue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	if (!task_low_priority(task_of(se)->prio))
 		cfs_nr_normal_prio(cpu)++;
 #endif
-#ifdef CONFIG_HMP_TRACER
 	trace_sched_cfs_enqueue_task(task_of(se), se_load(se), cpu);
-#endif
 }
 
 static inline void
@@ -1243,9 +1240,7 @@ hmp_dequeue_entity_load_avg(struct cfs_rq *cfs_rq, struct sched_entity *se)
 	cfs_rq->avg.loadwop_sum = max_t(s64,
 			cfs_rq->avg.loadwop_sum - se->avg.loadwop_sum, 0);
 
-#ifdef CONFIG_HMP_TRACER
 	trace_sched_cfs_dequeue_task(task_of(se), se_load(se), cfs_rq->rq->cpu);
-#endif
 }
 
 /*
@@ -1352,13 +1347,18 @@ static struct sched_entity *hmp_get_heaviest_task(
 		struct sched_entity *se, int target_cpu)
 {
 	int num_tasks = hmp_max_tasks;
-	struct sched_entity *max_se = se;
-	unsigned long int max_ratio = se->avg.loadwop_avg;
+	struct sched_entity *max_se = 0;
+	long int max_ratio = -1;
 	const struct cpumask *hmp_target_mask = NULL;
 	struct hmp_domain *hmp;
 
 	if (hmp_cpu_is_fastest(cpu_of(se->cfs_rq->rq)))
 		return max_se;
+
+	if (!task_prefer_little(task_of(se))) {
+		max_se = se;
+		max_ratio = se->avg.loadwop_avg;
+	}
 
 	hmp = hmp_faster_domain(cpu_of(se->cfs_rq->rq));
 	hmp_target_mask = &hmp->cpus;
@@ -1385,12 +1385,13 @@ static struct sched_entity *hmp_get_heaviest_task(
 	}
 	return max_se;
 }
+
 static struct sched_entity *hmp_get_lightest_task(
 		struct sched_entity *se, int migrate_down)
 {
 	int num_tasks = hmp_max_tasks;
-	struct sched_entity *min_se = se;
-	unsigned long int min_ratio = se->avg.loadwop_avg;
+	struct sched_entity *min_se = 0;
+	unsigned long int min_ratio = INT_MAX;
 	const struct cpumask *hmp_target_mask = NULL;
 
 	if (migrate_down) {
@@ -1401,6 +1402,12 @@ static struct sched_entity *hmp_get_lightest_task(
 		hmp = hmp_slower_domain(cpu_of(se->cfs_rq->rq));
 		hmp_target_mask = &hmp->cpus;
 	}
+
+	if (!task_prefer_big(task_of(se))) {
+		min_se = se;
+		min_ratio = se->avg.loadwop_avg;
+	}
+
 	/* The currently running task is not on the runqueue */
 	se = __pick_first_entity(cfs_rq_of(se));
 

@@ -1606,6 +1606,7 @@ select_task_rq_rt(struct task_struct *p, int cpu, int sd_flag, int flags)
 	rcu_read_unlock();
 
 out:
+	cpu = select_task_prefer_cpu(p, cpu);
 	return cpu;
 }
 
@@ -1665,6 +1666,41 @@ static void check_preempt_curr_rt(struct rq *rq, struct task_struct *p, int flag
 		check_preempt_equal_prio(rq, p);
 #endif
 }
+
+#ifdef CONFIG_SMP
+static void sched_rt_update_capacity_req(struct rq *rq)
+{
+	u64 total, used, age_stamp, avg;
+	s64 delta;
+
+	if (!sched_freq())
+		return;
+
+	sched_avg_update(rq);
+	/*
+	 * Since we're reading these variables without serialization make sure
+	 * we read them once before doing sanity checks on them.
+	 */
+	age_stamp = READ_ONCE(rq->age_stamp);
+	avg = READ_ONCE(rq->rt_avg);
+	delta = rq_clock(rq) - age_stamp;
+
+	if (unlikely(delta < 0))
+		delta = 0;
+
+	total = sched_avg_period() + delta;
+
+	used = div_u64(avg, total);
+	if (unlikely(used > SCHED_CAPACITY_SCALE))
+		used = SCHED_CAPACITY_SCALE;
+
+	set_rt_cpu_capacity(rq->cpu, true, (unsigned long)(used), SCHE_ONESHOT);
+}
+#else
+static inline void sched_rt_update_capacity_req(struct rq *rq)
+{ }
+
+#endif
 
 static struct sched_rt_entity *pick_next_rt_entity(struct rq *rq,
 						   struct rt_rq *rt_rq)
@@ -1736,8 +1772,10 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev, struct pin_cookie coo
 	if (prev->sched_class == &rt_sched_class)
 		update_curr_rt(rq);
 
-	if (!rt_rq->rt_queued)
+	if (!rt_rq->rt_queued) {
+		sched_rt_update_capacity_req(rq);
 		return NULL;
+	}
 
 	put_prev_task(rq, prev);
 
@@ -1878,14 +1916,6 @@ static int find_lowest_rq(struct task_struct *task)
 #ifdef CONFIG_MTK_SCHED_INTEROP
 	int interop_cpu;
 #endif
-
-	if (sched_boost()) {
-		int idle_cpu;
-
-		idle_cpu = find_best_idle_cpu(task, 1);
-		if (idle_cpu >= 0)
-			return idle_cpu;
-	}
 
 	/* Make sure the mask is initialized first */
 	if (unlikely(!lowest_mask))
@@ -2592,6 +2622,9 @@ static void task_tick_rt(struct rq *rq, struct task_struct *p, int queued)
 
 	update_curr_rt(rq);
 
+	if (rq->rt.rt_nr_running)
+		sched_rt_update_capacity_req(rq);
+
 	watchdog(rq, p);
 
 	/*
@@ -2671,6 +2704,10 @@ const struct sched_class rt_sched_class = {
 	.switched_to		= switched_to_rt,
 
 	.update_curr		= update_curr_rt,
+
+#ifdef CONFIG_UCLAMP_TASK
+	.uclamp_enabled		= 1,
+#endif
 };
 
 #ifdef CONFIG_MTK_SCHED_INTEROP

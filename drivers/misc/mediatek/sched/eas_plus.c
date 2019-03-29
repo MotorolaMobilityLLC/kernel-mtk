@@ -110,10 +110,11 @@ int show_cpu_capacity(char *buf, int buf_size)
 		scr = &per_cpu(cpu_sched_capacity_reqs, cpu);
 #endif
 		len += snprintf(buf+len, buf_size-len,
-			"cpu=%d orig=%4lu(%4lu) cap=%4lu max_cap=%4lu max=%4lu min=%4lu ",
+			"cpu=%d orig=%4lu(%4lu, limit=%4lu) cap=%4lu max_cap=%4lu max=%4lu min=%4lu ",
 			cpu,
 			cpu_rq(cpu)->cpu_capacity_orig,
 			cpu_rq(cpu)->cpu_capacity_hw,
+			cpu_rq(cpu)->cpu_capacity_limit,
 			cpu_online(cpu)?cpu_rq(cpu)->cpu_capacity:0,
 			cpu_online(cpu)?cpu_rq(cpu)->rd->max_cpu_capacity.val:0,
 			/* limited frequency */
@@ -243,8 +244,9 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 
 	len += snprintf(buf+len, max_len - len, "\nwatershed=%d\n",
 		power_tuning.watershed);
-	len += snprintf(buf+len, max_len - len, "turning_point=%d\n",
-		cpu_eff_tp);
+	len += snprintf(buf+len, max_len - len,
+		"turning_point=%d, big_cpu_eff_tp=%llu\n",
+		cpu_eff_tp, big_cpu_eff_tp);
 	len += snprintf(buf+len, max_len - len, "tiny_thresh=%d\n",
 		tiny_thresh);
 
@@ -265,42 +267,6 @@ static ssize_t show_eas_info_attr(struct kobject *kobj,
 
 	return len;
 }
-
-/* To identify min capacity for stune to boost */
-static ssize_t store_stune_task_thresh_knob(struct kobject *kobj,
-		struct kobj_attribute *attr, const char *buf, size_t count)
-{
-	int val = 0;
-
-	if (sscanf(buf, "%iu", &val) != 0) {
-		if (val < 1024 || val >= 0)
-			stune_task_threshold = val;
-	}
-
-	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
-
-	return count;
-}
-
-static ssize_t show_stune_task_thresh_knob(struct kobject *kobj,
-		struct kobj_attribute *attr, char *buf)
-{
-	unsigned int len = 0;
-	unsigned int max_len = 4096;
-
-	len += snprintf(buf, max_len, "stune_task_thresh=%d\n",
-			stune_task_threshold);
-
-	met_tag_oneshot(0, "sched_stune_filter",
-			stune_task_threshold);
-
-	return len;
-}
-
-static struct kobj_attribute eas_stune_task_thresh_attr =
-__ATTR(stune_task_thresh, 0600,
-	show_stune_task_thresh_knob,
-	store_stune_task_thresh_knob);
 
 static struct kobj_attribute eas_info_attr =
 __ATTR(info, 0400, show_eas_info_attr, NULL);
@@ -369,7 +335,6 @@ static struct attribute *eas_attrs[] = {
 #endif
 	&eas_watershed_attr.attr,
 	&eas_turning_point_attr.attr,
-	&eas_stune_task_thresh_attr.attr,
 	&eas_cap_margin_dvfs_attr.attr,
 	&eas_sodi_limit_attr.attr,
 	NULL,
