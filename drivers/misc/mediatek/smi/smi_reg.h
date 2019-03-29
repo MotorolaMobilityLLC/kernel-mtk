@@ -370,6 +370,7 @@
 #define MMSYS_HW_DCM_2ND_DIS0	(0x130)
 #define MMSYS_SW0_RST_B		(0x140)
 #define MMSYS_GALS_DBG(x)	(0x914+((x)<<2))
+#define MMSYS_GALS_DBG6(x)	(0x96c+((x)<<2))
 
 /* ========================================================================= */
 /* peripheral system */

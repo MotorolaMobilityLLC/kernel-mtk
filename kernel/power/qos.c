@@ -225,6 +225,22 @@ static struct pm_qos_object cam_freq_pm_qos = {
 	.name = "cam_freq",
 };
 
+static BLOCKING_NOTIFIER_HEAD(dpe_freq_notifier);
+static struct pm_qos_constraints dpe_freq_constraints = {
+	.req_list = LIST_HEAD_INIT(dpe_freq_constraints.req_list),
+	.list = PLIST_HEAD_INIT(dpe_freq_constraints.list),
+	.target_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_FREQ_DEFAULT_VALUE,
+	.type = PM_QOS_MAX,
+	.qos_lock = __MUTEX_INITIALIZER(dpe_freq_constraints.qos_lock),
+	.notifiers = &dpe_freq_notifier,
+};
+static struct pm_qos_object dpe_freq_pm_qos = {
+	.constraints = &dpe_freq_constraints,
+	.name = "dpe_freq",
+};
+
 static BLOCKING_NOTIFIER_HEAD(cpu_memory_bandwidth_notifier);
 static struct pm_qos_constraints cpu_memory_bw_constraints = {
 	.req_list = LIST_HEAD_INIT(cpu_memory_bw_constraints.req_list),
@@ -292,6 +308,38 @@ static struct pm_qos_object other_memory_bandwidth_pm_qos = {
 	.name = "other_memory_bandwidth",
 };
 
+
+static BLOCKING_NOTIFIER_HEAD(mm0_bandwidth_limiter_notifier);
+static struct pm_qos_constraints mm0_bw_limiter_constraints = {
+	.req_list = LIST_HEAD_INIT(mm0_bw_limiter_constraints.req_list),
+	.list = PLIST_HEAD_INIT(mm0_bw_limiter_constraints.list),
+	.target_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.qos_lock = __MUTEX_INITIALIZER(mm0_bw_limiter_constraints.qos_lock),
+	.notifiers = &mm0_bandwidth_limiter_notifier,
+};
+static struct pm_qos_object mm0_bandwidth_limiter_pm_qos = {
+	.constraints = &mm0_bw_limiter_constraints,
+	.name = "mm0_bandwidth_limiter",
+};
+
+static BLOCKING_NOTIFIER_HEAD(mm1_bandwidth_limiter_notifier);
+static struct pm_qos_constraints mm1_bw_limiter_constraints = {
+	.req_list = LIST_HEAD_INIT(mm1_bw_limiter_constraints.req_list),
+	.list = PLIST_HEAD_INIT(mm1_bw_limiter_constraints.list),
+	.target_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.default_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.no_constraint_value = PM_QOS_MM_BANDWIDTH_LIMITER_DEFAULT_VALUE,
+	.type = PM_QOS_SUM,
+	.qos_lock = __MUTEX_INITIALIZER(mm1_bw_limiter_constraints.qos_lock),
+	.notifiers = &mm1_bandwidth_limiter_notifier,
+};
+static struct pm_qos_object mm1_bandwidth_limiter_pm_qos = {
+	.constraints = &mm1_bw_limiter_constraints,
+	.name = "mm1_bandwidth_limiter",
+};
 
 static BLOCKING_NOTIFIER_HEAD(ddr_opp_notifier);
 static struct pm_qos_constraints ddr_opp_constraints = {
@@ -470,6 +518,8 @@ static struct pm_qos_object *pm_qos_array[] = {
 	&gpu_memory_bandwidth_pm_qos,
 	&mm_memory_bandwidth_pm_qos,
 	&other_memory_bandwidth_pm_qos,
+	&mm0_bandwidth_limiter_pm_qos,
+	&mm1_bandwidth_limiter_pm_qos,
 
 	&ddr_opp_pm_qos,
 	&vcore_opp_pm_qos,
@@ -484,6 +534,7 @@ static struct pm_qos_object *pm_qos_array[] = {
 	&venc_freq_pm_qos,
 	&img_freq_pm_qos,
 	&cam_freq_pm_qos,
+	&dpe_freq_pm_qos,
 	&vvpu_opp_pm_qos,
 	&vmdla_opp_pm_qos,
 	&isp_hrt_bandwidth_pm_qos,

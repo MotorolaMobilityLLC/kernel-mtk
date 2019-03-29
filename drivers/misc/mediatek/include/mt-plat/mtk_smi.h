@@ -124,6 +124,12 @@ struct MTK_MMDVFS_CMD {
 	unsigned int ret;
 };
 
+struct MTK_MMDVFS_QOS_CMD {
+	unsigned int type;
+	unsigned int max_cam_bw;
+	unsigned int ret;
+};
+
 #define MTK_MMDVFS_CMD_TYPE_SET		0
 #define MTK_MMDVFS_CMD_TYPE_QUERY	1
 #define MTK_MMDVFS_CMD_TYPE_GET	2
@@ -131,6 +137,8 @@ struct MTK_MMDVFS_CMD {
 #define MTK_MMDVFS_CMD_TYPE_STEP_SET 4
 #define MTK_MMDVFS_CMD_TYPE_VPU_STEP_SET 10
 #define MTK_MMDVFS_CMD_TYPE_VPU_STEP_GET 11
+
+#define MTK_MMDVFS_QOS_CMD_TYPE_SET		0
 
 
 enum MTK_SMI_BWC_INFO_ID {
@@ -189,6 +197,8 @@ struct MTK_SMI_BWC_MM_INFO {
 #define MTK_IOC_SMI_DUMP_COMMON     MTK_IOWR(67, unsigned int)
 #define MTK_IOC_MMDVFS_CMD \
 	MTK_IOW(88, struct MTK_MMDVFS_CMD)
+#define MTK_IOC_MMDVFS_QOS_CMD \
+	MTK_IOW(89, struct MTK_MMDVFS_QOS_CMD)
 
 
 enum SPC_PROT_T {
