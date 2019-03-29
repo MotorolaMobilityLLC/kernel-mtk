@@ -83,6 +83,7 @@ unsigned long pmem_user_v2p_video(unsigned long va)
 		return pa;
 	}
 
+	pte_unmap(pte);
 	pr_info("[ERROR] v2p, va=0x%lx, pte invalid!\n", va);
 	return 0;
 }
