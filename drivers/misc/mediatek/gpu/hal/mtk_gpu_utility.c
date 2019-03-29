@@ -810,3 +810,32 @@ void mtk_notify_gpu_power_change(int power_on)
 	mutex_unlock(&g_power_change.lock);
 }
 EXPORT_SYMBOL(mtk_notify_gpu_power_change);
+
+/* ------------------------------------------------------------------------ */
+void (*mtk_dvfs_margin_value_fp)(int i32MarginValue) = NULL;
+EXPORT_SYMBOL(mtk_dvfs_margin_value_fp);
+
+bool mtk_dvfs_margin_value(int i32MarginValue)
+{
+	if (mtk_dvfs_margin_value_fp != NULL) {
+		mtk_dvfs_margin_value_fp(i32MarginValue);
+		return true;
+	}
+	return false;
+}
+EXPORT_SYMBOL(mtk_dvfs_margin_value);
+
+int (*mtk_get_dvfs_margin_value_fp)(void) = NULL;
+EXPORT_SYMBOL(mtk_get_dvfs_margin_value_fp);
+
+bool mtk_get_dvfs_margin_value(int *pi32MarginValue)
+{
+	if ((mtk_get_dvfs_margin_value_fp != NULL) &&
+		(pi32MarginValue != NULL)) {
+
+		*pi32MarginValue = mtk_get_dvfs_margin_value_fp();
+		return true;
+	}
+	return false;
+}
+EXPORT_SYMBOL(mtk_get_dvfs_margin_value);

@@ -55,6 +55,9 @@ void ged_kpi_set_game_hint(int mode);
 unsigned int ged_kpi_enabled(void);
 void ged_kpi_set_target_FPS(u64 ulID, int target_FPS);
 
+void ged_kpi_set_target_FPS_margin(u64 ulID, int target_FPS,
+	int target_FPS_margin);
+
 extern int linear_real_boost(int linear_boost);
 #ifdef GED_KPI_CPU_INFO
 extern unsigned int sched_get_cpu_load(int cpu);
