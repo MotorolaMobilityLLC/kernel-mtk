@@ -13,6 +13,9 @@
 
 #include "../common/mtk-afe-fe-dai.h"
 #include "../common/mtk-afe-platform-driver.h"
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+#include "../scp_vow/mtk-scp-vow-common.h"
+#endif
 
 #include "mt6779-afe-common.h"
 
@@ -1696,7 +1699,7 @@ static int speech_property_get(struct snd_kcontrol *kcontrol,
 	sph_property = (int *)get_sph_property_by_name(afe_priv,
 						       kcontrol->id.name);
 	if (!sph_property) {
-		dev_info(afe->dev, "%s(), sph_property == NULL\n", __func__);
+		dev_err(afe->dev, "%s(), sph_property == NULL\n", __func__);
 		return -EINVAL;
 	}
 	ucontrol->value.integer.value[0] = *sph_property;
@@ -1715,7 +1718,7 @@ static int speech_property_set(struct snd_kcontrol *kcontrol,
 	sph_property = (int *)get_sph_property_by_name(afe_priv,
 						       kcontrol->id.name);
 	if (!sph_property) {
-		dev_info(afe->dev, "%s(), sph_property == NULL\n", __func__);
+		dev_err(afe->dev, "%s(), sph_property == NULL\n", __func__);
 		return -EINVAL;
 	}
 	*sph_property = ucontrol->value.integer.value[0];
@@ -1771,7 +1774,7 @@ static const struct snd_kcontrol_new mt6779_afe_speech_controls[] = {
 #if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
 /* VOW barge in control */
 static int mt6779_afe_vow_bargein_get(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+				      struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
@@ -1784,15 +1787,16 @@ static int mt6779_afe_vow_bargein_get(struct snd_kcontrol *kcontrol,
 }
 
 static int mt6779_afe_vow_bargein_set(struct snd_kcontrol *kcontrol,
-					struct snd_ctl_elem_value *ucontrol)
+				      struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
 	int id;
+	int val;
 
 	id = get_scp_vow_memif_id();
-	dev_info(afe->dev, "%s(), %d\n",
-		 __func__, ucontrol->value.integer.value[0]);
+	val = ucontrol->value.integer.value[0];
+	dev_info(afe->dev, "%s(), %d\n", __func__, val);
 
 	if (ucontrol->value.integer.value[0] > 0)
 		afe->memif[id].vow_bargein_enable = true;
@@ -1807,6 +1811,7 @@ static const struct snd_kcontrol_new mt6779_afe_bargein_controls[] = {
 		       mt6779_afe_vow_bargein_get,
 		       mt6779_afe_vow_bargein_set),
 };
+#endif
 
 int mt6779_add_misc_control(struct snd_soc_platform *platform)
 {
@@ -1827,6 +1832,12 @@ int mt6779_add_misc_control(struct snd_soc_platform *platform)
 	snd_soc_add_platform_controls(platform,
 				      mt6779_afe_speech_controls,
 				      ARRAY_SIZE(mt6779_afe_speech_controls));
+
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+	snd_soc_add_platform_controls(platform,
+				      mt6779_afe_bargein_controls,
+				      ARRAY_SIZE(mt6779_afe_bargein_controls));
+#endif
 
 	return 0;
 }

@@ -71,11 +71,7 @@
 
 #define DDPDUMP(fmt, ...)						\
 	do {								\
-		if (ddp_debug_analysis_to_buffer()) {			\
-			char log[512] = {'\0'};				\
-			scnprintf(log, 511, fmt, ##__VA_ARGS__);	\
-			dprec_logger_dump(log);				\
-		} else if (get_oneshot_dump() == ONESHOT_DUMP_UNDERGOING) { \
+		if (get_oneshot_dump() == ONESHOT_DUMP_UNDERGOING) {	\
 			dprec_logger_pr(DPREC_LOGGER_ONESHOT_DUMP,	\
 					fmt, ##__VA_ARGS__);		\
 		} else {						\

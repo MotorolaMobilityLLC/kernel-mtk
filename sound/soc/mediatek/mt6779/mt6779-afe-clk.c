@@ -54,6 +54,7 @@ enum {
 	CLK_TOP_APLL1_D8,
 	CLK_TOP_MUX_AUD_ENG2,
 	CLK_TOP_APLL2_D8,
+	CLK_TOP_MUX_AUDIO_H,
 	CLK_TOP_I2S0_M_SEL,
 	CLK_TOP_I2S1_M_SEL,
 	CLK_TOP_I2S2_M_SEL,
@@ -96,6 +97,7 @@ static const char *aud_clks[CLK_NUM] = {
 	[CLK_TOP_APLL1_D8] = "top_apll1_d8",
 	[CLK_TOP_MUX_AUD_ENG2] = "top_mux_aud_eng2",
 	[CLK_TOP_APLL2_D8] = "top_apll2_d8",
+	[CLK_TOP_MUX_AUDIO_H] = "top_mux_audio_h",
 	[CLK_TOP_I2S0_M_SEL] = "top_i2s0_m_sel",
 	[CLK_TOP_I2S1_M_SEL] = "top_i2s1_m_sel",
 	[CLK_TOP_I2S2_M_SEL] = "top_i2s2_m_sel",
@@ -302,6 +304,15 @@ int mt6779_afe_enable_clock(struct mtk_base_afe *afe)
 	if (ret)
 		goto CLK_MUX_AUDIO_INTBUS_PARENT_ERR;
 
+	ret = clk_set_parent(afe_priv->clk[CLK_TOP_MUX_AUDIO_H],
+			     afe_priv->clk[CLK_TOP_APLL2_CK]);
+	if (ret) {
+		dev_err(afe->dev, "%s clk_set_parent %s-%s fail %d\n",
+		       __func__, aud_clks[CLK_TOP_MUX_AUDIO_H],
+		       aud_clks[CLK_TOP_APLL2_CK], ret);
+		goto CLK_MUX_AUDIO_H_PARENT_ERR;
+	}
+
 	ret = clk_prepare_enable(afe_priv->clk[CLK_AFE]);
 	if (ret) {
 		dev_err(afe->dev, "%s clk_prepare_enable %s fail %d\n",
@@ -313,6 +324,7 @@ int mt6779_afe_enable_clock(struct mtk_base_afe *afe)
 
 CLK_AFE_ERR:
 	clk_disable_unprepare(afe_priv->clk[CLK_AFE]);
+CLK_MUX_AUDIO_H_PARENT_ERR:
 CLK_MUX_AUDIO_INTBUS_PARENT_ERR:
 	mt6779_set_audio_int_bus_parent(afe, CLK_CLK26M);
 CLK_MUX_AUDIO_INTBUS_ERR:
@@ -827,10 +839,7 @@ int mt6779_mck_enable(struct mtk_base_afe *afe, int mck_id, int rate)
 
 	afe_priv->mck_rate[mck_id] = rate;
 
-	if (mck_id == MT6779_I2S4_BCK)
-		div = afe_priv->mck_rate[MT6779_I2S4_MCK] / rate - 1;
-	else
-		div = apll_rate / rate - 1;
+	div = apll_rate / rate - 1;
 
 	/* set ck div */
 	div_mask = mck_div[mck_id].div_mask;

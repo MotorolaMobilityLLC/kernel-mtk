@@ -22,6 +22,10 @@ void DBG_Deinit(void);
 extern int bypass_blank;
 extern int lcm_mode_status;
 extern int layer_layout_allow_non_continuous;
+extern unsigned long long idle_check_interval;
+extern unsigned int fake_layer_mask;
+extern unsigned int fake_layer_overwrite;
+unsigned int get_fake_layer_mva(int i);
 
 #include "disp_session.h"
 #include "ddp_info.h"

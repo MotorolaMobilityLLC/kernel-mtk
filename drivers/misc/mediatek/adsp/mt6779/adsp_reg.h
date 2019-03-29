@@ -40,6 +40,7 @@
 #define ADSP_A_SPM_REQ              (adspreg.cfg + 0x0048)
 #define ADSP_A_SPM_ACK              (adspreg.cfg + 0x004C)
 #define ADSP_A_SPM_SRC_BITS         (0xF << 0)
+#define ADSP_A_IRQ_EN               (adspreg.cfg + 0x0050)
 
 #define ADSP_TO_SPM_REG             (adspreg.cfg + 0x005C) //spm wakeup
 
@@ -49,9 +50,14 @@
 #define ADSP_A_WDT_INIT_VALUE       (adspreg.cfg + 0x0080)
 #define ADSP_A_WDT_CNT              (adspreg.cfg + 0x0084)
 #define ADSP_WDT_TRIGGER            (ADSP_A_WDT_INIT_VALUE)
+#define WDT_EN_BIT  (1 << 31)
+#define WDT_DIS_BIT (0 << 31)
+#define WDT_KICK_BIT 0
 
 #define ADSP_CFGREG_RSV_RW_REG0     (adspreg.cfg + 0x008C)
 #define ADSP_CFGREG_RSV_RW_REG1     (adspreg.cfg + 0x0090)
+#define ADSP_CFGREG_RSV_RW_REG2     (adspreg.cfg + 0x0094)
+#define ADSP_SEGMENT_CON            ADSP_CFGREG_RSV_RW_REG2
 
 /* Latch Debug info after WDT */
 #define ADSP_A_WDT_DEBUG_PC_REG     (adspreg.cfg + 0x0170)
@@ -80,7 +86,7 @@
 
 
 #define ADSP_A_DEBUG_PC_REG         (adspreg.cfg + 0x013C)
-
+#define ADSP_DBG_PEND_CNT           (adspreg.cfg + 0x015C)
 #define ADSP_SLEEP_STATUS_REG       (adspreg.cfg + 0x0158)
 /* adsp power state*/
 #define ADSP_A_IS_RESET             (0x00)
@@ -101,6 +107,8 @@
 #define ADSP_CLK_UART_EN            (1 << 5)
 #define ADSP_CLK_DMA_EN             (1 << 4)
 #define ADSP_CLK_TIMER_EN           (1 << 3)
+#define ADSP_MCLK_DIV_REG           (adspreg.clkctrl + 0x0004)
+#define ADSP_MCLK_DIV_MASK          (0x3 << 0)
 #define ADSP_UART_CTRL              (adspreg.clkctrl + 0x0010)
 #define ADSP_UART_RST_N             (1 << 3)
 #define ADSP_UART_CLK_SEL           (1 << 1)
@@ -118,6 +126,7 @@
 #define AP_AWAKE_DUMP_BIT           (4)
 #define AP_AWAKE_UPDATE_BIT         (5)
 #define AP_AWAKE_STATE_BIT          (6)
+#define ADSPPLL_UNLOCK_BIT          (8)
 
 #define ADSP_ADSP2SPM_VOL_LV         (adspreg.cfg + 0x0094)
 

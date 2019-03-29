@@ -1812,6 +1812,74 @@ enum {
 #define IRQ0_MCU_CLR_MASK                              0x1
 #define IRQ0_MCU_CLR_MASK_SFT                          (0x1 << 0)
 
+/* AFE_IRQ_MCU_EN */
+#define IRQ31_MCU_EN_SFT                               31
+#define IRQ30_MCU_EN_SFT                               30
+#define IRQ29_MCU_EN_SFT                               29
+#define IRQ28_MCU_EN_SFT                               28
+#define IRQ27_MCU_EN_SFT                               27
+#define IRQ26_MCU_EN_SFT                               26
+#define IRQ25_MCU_EN_SFT                               25
+#define IRQ24_MCU_EN_SFT                               24
+#define IRQ23_MCU_EN_SFT                               23
+#define IRQ22_MCU_EN_SFT                               22
+#define IRQ21_MCU_EN_SFT                               21
+#define IRQ20_MCU_EN_SFT                               20
+#define IRQ19_MCU_EN_SFT                               19
+#define IRQ18_MCU_EN_SFT                               18
+#define IRQ17_MCU_EN_SFT                               17
+#define IRQ16_MCU_EN_SFT                               16
+#define IRQ15_MCU_EN_SFT                               15
+#define IRQ14_MCU_EN_SFT                               14
+#define IRQ13_MCU_EN_SFT                               13
+#define IRQ12_MCU_EN_SFT                               12
+#define IRQ11_MCU_EN_SFT                               11
+#define IRQ10_MCU_EN_SFT                               10
+#define IRQ9_MCU_EN_SFT                                9
+#define IRQ8_MCU_EN_SFT                                8
+#define IRQ7_MCU_EN_SFT                                7
+#define IRQ6_MCU_EN_SFT                                6
+#define IRQ5_MCU_EN_SFT                                5
+#define IRQ4_MCU_EN_SFT                                4
+#define IRQ3_MCU_EN_SFT                                3
+#define IRQ2_MCU_EN_SFT                                2
+#define IRQ1_MCU_EN_SFT                                1
+#define IRQ0_MCU_EN_SFT                                0
+
+/* AFE_IRQ_MCU_SCP_EN */
+#define IRQ31_MCU_SCP_EN_SFT                           31
+#define IRQ30_MCU_SCP_EN_SFT                           30
+#define IRQ29_MCU_SCP_EN_SFT                           29
+#define IRQ28_MCU_SCP_EN_SFT                           28
+#define IRQ27_MCU_SCP_EN_SFT                           27
+#define IRQ26_MCU_SCP_EN_SFT                           26
+#define IRQ25_MCU_SCP_EN_SFT                           25
+#define IRQ24_MCU_SCP_EN_SFT                           24
+#define IRQ23_MCU_SCP_EN_SFT                           23
+#define IRQ22_MCU_SCP_EN_SFT                           22
+#define IRQ21_MCU_SCP_EN_SFT                           21
+#define IRQ20_MCU_SCP_EN_SFT                           20
+#define IRQ19_MCU_SCP_EN_SFT                           19
+#define IRQ18_MCU_SCP_EN_SFT                           18
+#define IRQ17_MCU_SCP_EN_SFT                           17
+#define IRQ16_MCU_SCP_EN_SFT                           16
+#define IRQ15_MCU_SCP_EN_SFT                           15
+#define IRQ14_MCU_SCP_EN_SFT                           14
+#define IRQ13_MCU_SCP_EN_SFT                           13
+#define IRQ12_MCU_SCP_EN_SFT                           12
+#define IRQ11_MCU_SCP_EN_SFT                           11
+#define IRQ10_MCU_SCP_EN_SFT                           10
+#define IRQ9_MCU_SCP_EN_SFT                            9
+#define IRQ8_MCU_SCP_EN_SFT                            8
+#define IRQ7_MCU_SCP_EN_SFT                            7
+#define IRQ6_MCU_SCP_EN_SFT                            6
+#define IRQ5_MCU_SCP_EN_SFT                            5
+#define IRQ4_MCU_SCP_EN_SFT                            4
+#define IRQ3_MCU_SCP_EN_SFT                            3
+#define IRQ2_MCU_SCP_EN_SFT                            2
+#define IRQ1_MCU_SCP_EN_SFT                            1
+#define IRQ0_MCU_SCP_EN_SFT                            0
+
 /* AFE_TDM_CON1 */
 #define TDM_EN_SFT                                     0
 #define TDM_EN_MASK                                    0x1
@@ -1912,6 +1980,103 @@ enum {
 #define RG_RX_FIFO_ON_SFT                              0
 #define RG_RX_FIFO_ON_MASK                             0x1
 #define RG_RX_FIFO_ON_MASK_SFT                         (0x1 << 0)
+
+/* AFE_ADDA_MTKAIF_RX_CFG0 */
+#define MTKAIF_RXIF_VOICE_MODE_SFT                     20
+#define MTKAIF_RXIF_VOICE_MODE_MASK                    0xf
+#define MTKAIF_RXIF_VOICE_MODE_MASK_SFT                (0xf << 20)
+#define MTKAIF_RXIF_DETECT_ON_SFT                      16
+#define MTKAIF_RXIF_DETECT_ON_MASK                     0x1
+#define MTKAIF_RXIF_DETECT_ON_MASK_SFT                 (0x1 << 16)
+#define MTKAIF_RXIF_DATA_BIT_SFT                       8
+#define MTKAIF_RXIF_DATA_BIT_MASK                      0x7
+#define MTKAIF_RXIF_DATA_BIT_MASK_SFT                  (0x7 << 8)
+#define MTKAIF_RXIF_FIFO_RSP_SFT                       4
+#define MTKAIF_RXIF_FIFO_RSP_MASK                      0x7
+#define MTKAIF_RXIF_FIFO_RSP_MASK_SFT                  (0x7 << 4)
+#define MTKAIF_RXIF_DATA_MODE_SFT                      0
+#define MTKAIF_RXIF_DATA_MODE_MASK                     0x1
+#define MTKAIF_RXIF_DATA_MODE_MASK_SFT                 (0x1 << 0)
+
+/* GENERAL_ASRC_MODE */
+#define GENERAL2_ASRCOUT_MODE_SFT                      12
+#define GENERAL2_ASRCOUT_MODE_MASK                     0xf
+#define GENERAL2_ASRCOUT_MODE_MASK_SFT                 (0xf << 12)
+#define GENERAL2_ASRCIN_MODE_SFT                       8
+#define GENERAL2_ASRCIN_MODE_MASK                      0xf
+#define GENERAL2_ASRCIN_MODE_MASK_SFT                  (0xf << 8)
+#define GENERAL1_ASRCOUT_MODE_SFT                      4
+#define GENERAL1_ASRCOUT_MODE_MASK                     0xf
+#define GENERAL1_ASRCOUT_MODE_MASK_SFT                 (0xf << 4)
+#define GENERAL1_ASRCIN_MODE_SFT                       0
+#define GENERAL1_ASRCIN_MODE_MASK                      0xf
+#define GENERAL1_ASRCIN_MODE_MASK_SFT                  (0xf << 0)
+
+/* GENERAL_ASRC_EN_ON */
+#define GENERAL2_ASRC_EN_ON_SFT                        1
+#define GENERAL2_ASRC_EN_ON_MASK                       0x1
+#define GENERAL2_ASRC_EN_ON_MASK_SFT                   (0x1 << 1)
+#define GENERAL1_ASRC_EN_ON_SFT                        0
+#define GENERAL1_ASRC_EN_ON_MASK                       0x1
+#define GENERAL1_ASRC_EN_ON_MASK_SFT                   (0x1 << 0)
+
+/* AFE_GENERAL1_ASRC_2CH_CON0 */
+#define G_SRC_CHSET_STR_CLR_SFT                        4
+#define G_SRC_CHSET_STR_CLR_MASK                       0x1
+#define G_SRC_CHSET_STR_CLR_MASK_SFT                   (0x1 << 4)
+#define G_SRC_CHSET_ON_SFT                             2
+#define G_SRC_CHSET_ON_MASK                            0x1
+#define G_SRC_CHSET_ON_MASK_SFT                        (0x1 << 2)
+#define G_SRC_COEFF_SRAM_CTRL_SFT                      1
+#define G_SRC_COEFF_SRAM_CTRL_MASK                     0x1
+#define G_SRC_COEFF_SRAM_CTRL_MASK_SFT                 (0x1 << 1)
+#define G_SRC_ASM_ON_SFT                               0
+#define G_SRC_ASM_ON_MASK                              0x1
+#define G_SRC_ASM_ON_MASK_SFT                          (0x1 << 0)
+
+/* AFE_GENERAL1_ASRC_2CH_CON3 */
+#define G_SRC_ASM_FREQ_4_SFT                           0
+#define G_SRC_ASM_FREQ_4_MASK                          0xffffff
+#define G_SRC_ASM_FREQ_4_MASK_SFT                      (0xffffff << 0)
+
+/* AFE_GENERAL1_ASRC_2CH_CON4 */
+#define G_SRC_ASM_FREQ_5_SFT                           0
+#define G_SRC_ASM_FREQ_5_MASK                          0xffffff
+#define G_SRC_ASM_FREQ_5_MASK_SFT                      (0xffffff << 0)
+
+/* AFE_GENERAL1_ASRC_2CH_CON13 */
+#define G_SRC_COEFF_SRAM_ADR_SFT                       0
+#define G_SRC_COEFF_SRAM_ADR_MASK                      0x3f
+#define G_SRC_COEFF_SRAM_ADR_MASK_SFT                  (0x3f << 0)
+
+/* AFE_GENERAL1_ASRC_2CH_CON2 */
+#define G_SRC_CHSET_O16BIT_SFT                         19
+#define G_SRC_CHSET_O16BIT_MASK                        0x1
+#define G_SRC_CHSET_O16BIT_MASK_SFT                    (0x1 << 19)
+#define G_SRC_CHSET_CLR_IIR_HISTORY_SFT                17
+#define G_SRC_CHSET_CLR_IIR_HISTORY_MASK               0x1
+#define G_SRC_CHSET_CLR_IIR_HISTORY_MASK_SFT           (0x1 << 17)
+#define G_SRC_CHSET_IS_MONO_SFT                        16
+#define G_SRC_CHSET_IS_MONO_MASK                       0x1
+#define G_SRC_CHSET_IS_MONO_MASK_SFT                   (0x1 << 16)
+#define G_SRC_CHSET_IIR_EN_SFT                         11
+#define G_SRC_CHSET_IIR_EN_MASK                        0x1
+#define G_SRC_CHSET_IIR_EN_MASK_SFT                    (0x1 << 11)
+#define G_SRC_CHSET_IIR_STAGE_SFT                      8
+#define G_SRC_CHSET_IIR_STAGE_MASK                     0x7
+#define G_SRC_CHSET_IIR_STAGE_MASK_SFT                 (0x7 << 8)
+#define G_SRC_CHSET_STR_CLR_RU_SFT                     5
+#define G_SRC_CHSET_STR_CLR_RU_MASK                    0x1
+#define G_SRC_CHSET_STR_CLR_RU_MASK_SFT                (0x1 << 5)
+#define G_SRC_CHSET_ON_SFT                             2
+#define G_SRC_CHSET_ON_MASK                            0x1
+#define G_SRC_CHSET_ON_MASK_SFT                        (0x1 << 2)
+#define G_SRC_COEFF_SRAM_CTRL_SFT                      1
+#define G_SRC_COEFF_SRAM_CTRL_MASK                     0x1
+#define G_SRC_COEFF_SRAM_CTRL_MASK_SFT                 (0x1 << 1)
+#define G_SRC_ASM_ON_SFT                               0
+#define G_SRC_ASM_ON_MASK                              0x1
+#define G_SRC_ASM_ON_MASK_SFT                          (0x1 << 0)
 
 #define AUDIO_TOP_CON0                     0x0000
 #define AUDIO_TOP_CON1                     0x0004

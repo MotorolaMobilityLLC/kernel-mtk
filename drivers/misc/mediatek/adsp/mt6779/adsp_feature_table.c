@@ -25,19 +25,16 @@ DEFINE_MUTEX(adsp_feature_mutex);
 
 /*adsp feature list*/
 struct adsp_feature_tb adsp_feature_table[ADSP_NUM_FEATURE_ID] = {
-	[SYSTEM_FEATURE_ID]           = ADSP_SYSTEM_UNIT("system"),
+	[SYSTEM_FEATURE_ID]           = ADSP_FEATURE_UNIT("system"),
 	[ADSP_LOGGER_FEATURE_ID]      = ADSP_FEATURE_UNIT("logger"),
 	[AURISYS_FEATURE_ID]          = ADSP_FEATURE_UNIT("aurisys"),
 	[AUDIO_CONTROLLER_FEATURE_ID] = ADSP_FEATURE_UNIT("audio_controller"),
-	[AUDIO_DUMP_FEATURE_ID]       = ADSP_FEATURE_UNIT("audio_dump"),
 	[PRIMARY_FEATURE_ID]          = ADSP_FEATURE_UNIT("primary"),
 	[DEEPBUF_FEATURE_ID]          = ADSP_FEATURE_UNIT("deepbuf"),
 	[OFFLOAD_FEATURE_ID]          = ADSP_FEATURE_UNIT("offload"),
 	[AUDIO_PLAYBACK_FEATURE_ID]   = ADSP_FEATURE_UNIT("audplayback"),
-	[EFFECT_HIGH_FEATURE_ID]      = ADSP_FEATURE_UNIT("effect_high"),
-	[EFFECT_MEDIUM_FEATURE_ID]    = ADSP_FEATURE_UNIT("effect_medium"),
-	[EFFECT_LOW_FEATURE_ID]       = ADSP_FEATURE_UNIT("effect_low"),
 	[A2DP_PLAYBACK_FEATURE_ID]    = ADSP_FEATURE_UNIT("a2dp_playback"),
+	[AUDIO_DATAPROVIDER_FEATURE_ID] = ADSP_FEATURE_UNIT("dataprovider"),
 	[SPK_PROTECT_FEATURE_ID]      = ADSP_FEATURE_UNIT("spk_protect"),
 	[VOICE_CALL_FEATURE_ID]       = ADSP_FEATURE_UNIT("voice_call"),
 	[VOIP_FEATURE_ID]             = ADSP_FEATURE_UNIT("voip"),
@@ -86,83 +83,57 @@ bool adsp_feature_is_active(void)
 
 	/* not include system feature */
 	for (fid = 0; fid < ADSP_NUM_FEATURE_ID ; fid++) {
-		if (adsp_feature_table[fid].counter > 0
-			&& fid != SYSTEM_FEATURE_ID)
+		if (adsp_feature_table[fid].counter > 0)
 			break;
 	}
-	if (fid != ADSP_NUM_FEATURE_ID)
-		return true;
-	else
-		return false;
+	return fid == ADSP_NUM_FEATURE_ID ? false : true;
 }
 
 int adsp_register_feature(enum adsp_feature_id id)
 {
 	int ret = 0;
-#ifdef ADSP_DVFS_PROFILE
-	ktime_t begin, end;
 
-	begin = ktime_get();
-#endif
 	if (id >= ADSP_NUM_FEATURE_ID)
 		return -EINVAL;
 
 	if (!adsp_feature_table[id].name)
 		return -EINVAL;
 
-	pr_debug("[%s]%s, adsp_active=%d, adsp_ready=%x\n", __func__,
-		 adsp_feature_table[id].name, adsp_feature_is_active(),
-		 is_adsp_ready(ADSP_A_ID));
-
 	mutex_lock(&adsp_feature_mutex);
 	if (!adsp_feature_is_active()) {
+		pr_debug("[%s]%s, adsp_ready=%x\n", __func__,
+			 adsp_feature_table[id].name, is_adsp_ready(ADSP_A_ID));
 		adsp_stop_suspend_timer();
 		ret = adsp_resume();
 	}
 	if (ret == 0)
 		adsp_feature_table[id].counter += 1;
-
 	mutex_unlock(&adsp_feature_mutex);
-#ifdef ADSP_DVFS_PROFILE
-	end = ktime_get();
-	pr_debug("[%s]latency = %lld us\n",
-		 __func__, ktime_us_delta(end, begin));
-#endif
 	return ret;
 }
 
 int adsp_deregister_feature(enum adsp_feature_id id)
 {
-	bool adsp_A_ready = is_adsp_ready(ADSP_A_ID);
-
 	if (id >= ADSP_NUM_FEATURE_ID)
 		return -EINVAL;
 
 	if (!adsp_feature_table[id].name)
 		return -EINVAL;
 
-	pr_debug("[%s]%s, adsp_active=%d, adsp_ready=%x\n", __func__,
-		 adsp_feature_table[id].name, adsp_feature_is_active(),
-		 adsp_A_ready);
-
-	if (!adsp_A_ready) {
-		pr_warn("adsp deregister feature failed. Adsp is not ready\n");
-		return -EALREADY;
-	}
-
 	mutex_lock(&adsp_feature_mutex);
 	if (adsp_feature_table[id].counter == 0) {
 		pr_err("[%s] error to deregister id=%d\n", __func__, id);
-		WARN_ON(1);
 		mutex_unlock(&adsp_feature_mutex);
 		return -EINVAL;
-	}
-
-	adsp_feature_table[id].counter -= 1;
+	} else
+		adsp_feature_table[id].counter -= 1;
 
 	/* no feature registered, delay 1s and then suspend adsp. */
-	if (!adsp_feature_is_active())
+	if (!adsp_feature_is_active() && (is_adsp_ready(ADSP_A_ID) == 1)) {
+		pr_debug("[%s]%s, adsp_ready=%x\n", __func__,
+			 adsp_feature_table[id].name, is_adsp_ready(ADSP_A_ID));
 		adsp_start_suspend_timer();
+	}
 	mutex_unlock(&adsp_feature_mutex);
 
 	return 0;

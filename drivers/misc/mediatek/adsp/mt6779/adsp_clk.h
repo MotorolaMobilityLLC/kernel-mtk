@@ -14,9 +14,6 @@
 #ifndef ADSP_CLK_H
 #define ADSP_CLK_H
 
-#include <linux/platform_device.h>
-
-
 enum adsp_clk {
 	CLK_ADSP_INFRA,
 	CLK_TOP_ADSP_SEL,
@@ -27,17 +24,10 @@ enum adsp_clk {
 	ADSP_CLK_NUM
 };
 
-extern struct clk *clk_adsp_infra;
-extern struct clk *clk_top_adsp_sel;
-extern struct clk *clk_adsp_clk26m;
-extern struct clk *clk_top_mmpll_d4;
-extern struct clk *clk_top_adsppll_d4;
-extern struct clk *clk_top_adsppll_d6;
-
-int adsppll_mux_setting(bool enable);
 int adsp_set_top_mux(enum adsp_clk clk);
 int adsp_enable_clock(void);
 void adsp_disable_clock(void);
-int adsp_clk_device_probe(struct platform_device *pdev);
+int adsp_clk_device_probe(void *dev);
+void adsp_clk_device_remove(void *dev);
 
 #endif /* ADSP_CLK_H */

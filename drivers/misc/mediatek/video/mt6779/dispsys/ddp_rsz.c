@@ -220,7 +220,7 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 	u32 frm_out_w = pconfig->dst_w, frm_out_h = pconfig->dst_h;
 
 	/* platform dependent: color_fmt, tile_mode */
-	enum RSZ_COLOR_FORMAT fmt = RGB888;
+	enum RSZ_COLOR_FORMAT fmt = ARGB8101010;
 	bool tile_mode = false;
 
 	if (!pconfig->ovl_dirty && !pconfig->dst_dirty)
@@ -282,10 +282,6 @@ static int rsz_config(enum DISP_MODULE_ENUM module,
 	reg_val = 0;
 	reg_val |= REG_FLD_VAL(FLD_RSZ_HORIZONTAL_EN, (in_w != out_w));
 	reg_val |= REG_FLD_VAL(FLD_RSZ_VERTICAL_EN, (in_h != out_h));
-	reg_val |= REG_FLD_VAL(FLD_RSZ_HORIZONTAL_TABLE_SELECT,
-			       (fmt == ARGB8101010 ? 0x1 : 0x0));
-	reg_val |= REG_FLD_VAL(FLD_RSZ_VERTICAL_TABLE_SELECT,
-			       (fmt == ARGB8101010 ? 0x1 : 0x0));
 	DISP_REG_SET(qhandle, baddr + DISP_REG_RSZ_CONTROL_1, reg_val);
 	DDPDBG("%s:CONTROL_1:0x%x\n", __func__, reg_val);
 

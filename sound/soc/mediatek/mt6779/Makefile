@@ -9,6 +9,7 @@ snd-soc-mt6779-afe-objs := \
 	mt6779-afe-control.o \
 	mt6779-dai-i2s.o \
 	mt6779-dai-hw-gain.o \
+	mt6779-dai-src.o \
 	mt6779-dai-pcm.o \
 	mt6779-dai-tdm.o \
 	mt6779-dai-hostless.o \
@@ -26,4 +27,3 @@ endif
 
 # spm
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
-

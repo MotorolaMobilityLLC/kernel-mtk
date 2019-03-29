@@ -33,7 +33,7 @@
 #include "pwr_ctrl.h"
 
 
-#define MTK_IDLE_GS_DUMP_READY	(0)
+#define MTK_IDLE_GS_DUMP_READY	(1)
 
 #if MTK_IDLE_GS_DUMP_READY
 /* NOTE: Check golden setting dump header file for each project */
@@ -42,7 +42,6 @@
 
 /* FIXME: IT with vcorefs ? */
 void __attribute__((weak)) dvfsrc_md_scenario_update(bool suspend) {}
-void __attribute__((weak)) dpmaif_dump_reg(void) {}
 
 /********************************************************************
  * dp/so3/so pcm_flags and pcm_flags1
@@ -89,17 +88,23 @@ static unsigned int idle_pcm_flags1[NR_IDLE_TYPES] = {
 	[IDLE_TYPE_DP] =
 		SPM_FLAG1_ENABLE_BIG_BUCK_OFF |
 		SPM_FLAG1_ENABLE_BIG_BUCK_ON |
-		SPM_FLAG1_FORCE_CPU_BUCK_OFF,
+		SPM_FLAG1_FORCE_CPU_BUCK_OFF |
+		SPM_FLAG1_DISABLE_VS1_VOTER |
+		SPM_FLAG1_DISABLE_VS2_VOTER,
 
 	[IDLE_TYPE_SO3] =
 		SPM_FLAG1_ENABLE_BIG_BUCK_OFF |
 		SPM_FLAG1_ENABLE_BIG_BUCK_ON |
-		SPM_FLAG1_FORCE_CPU_BUCK_OFF,
+		SPM_FLAG1_FORCE_CPU_BUCK_OFF |
+		SPM_FLAG1_DISABLE_VS1_VOTER |
+		SPM_FLAG1_DISABLE_VS2_VOTER,
 
 	[IDLE_TYPE_SO] =
 		SPM_FLAG1_ENABLE_BIG_BUCK_OFF |
 		SPM_FLAG1_ENABLE_BIG_BUCK_ON |
-		SPM_FLAG1_FORCE_CPU_BUCK_OFF,
+		SPM_FLAG1_FORCE_CPU_BUCK_OFF |
+		SPM_FLAG1_DISABLE_VS1_VOTER |
+		SPM_FLAG1_DISABLE_VS2_VOTER,
 
 	[IDLE_TYPE_RG] = 0,
 };
@@ -272,7 +277,11 @@ static int wd_ret;
 
 bool mtk_idle_resource_pre_process(void)
 {
-	return (spm_get_resource_usage() & SPM_RESOURCE_CK_26M);
+	if (mtk_dpidle_enabled() &&
+		mtk_spm_arch_type_get() == MTK_SPM_ARCH_RESOURCE_ORIENTED)
+		return (spm_get_resource_usage() & SPM_RESOURCE_CK_26M);
+	else
+		return 0;
 }
 
 void mtk_idle_pre_process_by_chip(
@@ -361,6 +370,11 @@ void mtk_idle_post_process_by_chip(
 
 	/* get spm info */
 	__spm_get_wakeup_status(&wakesta);
+
+	/* save ap and 26M's off counter and duration */
+	__spm_save_ap_sleep_info(&wakesta);
+	if (idle_type == IDLE_TYPE_SO3)
+		__spm_save_26m_sleep_info();
 
 	/* clean up spm */
 	spm_idle_pcm_setup_after_wfi(idle_type, pwrctrl, op_cond);
@@ -482,8 +496,6 @@ static unsigned int mtk_sodi_output_log(
 	unsigned int op_cond, unsigned int idle_flag)
 {
 	bool print_log = false;
-	static unsigned int timeout_cnt;
-	bool timeout_log = false;
 	unsigned int wr = WR_NONE;
 
 	/* No log for latency profiling case */
@@ -492,21 +504,15 @@ static unsigned int mtk_sodi_output_log(
 
 	if (!(idle_flag & MTK_IDLE_LOG_REDUCE)) {
 		print_log = true;
-		timeout_cnt = 0;
 	} else {
 		if (wakesta->is_abort != 0 || wakesta->r12 == 0) {
 			print_log = true;
-			timeout_cnt = 0;
-		} else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA) {
-			print_log = true;
-			if (wakesta->r12 & R12_AP2AP_PEER_WAKEUP_EVENT)
-				if (timeout_cnt++ > 220)
-					timeout_log = true;
 		} else if (check_print_log_duration()) {
 			print_log = true;
-			timeout_cnt = 0;
-		} else {
-			timeout_cnt = 0;
+		} else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA) {
+			print_log = true;
+			if (wakesta->r12 == R12_AP2AP_PEER_WAKEUP_EVENT)
+				print_log = false;
 		}
 	}
 
@@ -516,14 +522,6 @@ static unsigned int mtk_sodi_output_log(
 			wakesta, false, mtk_idle_name(idle_type));
 		if (idle_flag & MTK_IDLE_LOG_RESOURCE_USAGE)
 			spm_resource_req_dump();
-	}
-
-	if (timeout_log) {
-		pr_info("R12_AP2AP_PEER_WAKEUP_EVENT too much,r12 = 0x%x\n",
-			 wakesta->r12);
-		dpmaif_dump_reg();
-		timeout_cnt = 0;
-		timeout_log = false;
 	}
 
 	return wr;

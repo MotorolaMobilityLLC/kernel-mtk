@@ -23,11 +23,11 @@
 //#define PPM_AP_SIDE	1
 #define EEM_AP_SIDE	1
 #define CCI_MAP_TBL_SUPPORT	1
-#define CPU_DVFS_NOT_READY	1
+//#define CPU_DVFS_NOT_READY	1
 #define REPORT_IDLE_FREQ	1
 #else
 #define SUPPORT_VOLT_HW_AUTO_TRACK 1
-#define CPU_DVFS_NOT_READY	1 /* for bring up, remove for MP */
+//#define CPU_DVFS_NOT_READY	1 /* for bring up, remove for MP */
 #endif
 
 #define NR_FREQ		16
@@ -62,8 +62,10 @@
 
 #define DVFS_LOG_NUM		150
 #define ENTRY_EACH_LOG		5
+#define ENABLE_DOE              1
 
 extern struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS];
+extern struct cpudvfs_doe dvfs_doe;
 extern struct buck_ctrl_t buck_ctrl[NR_MT_BUCK];
 extern struct pll_ctrl_t pll_ctrl[NR_MT_PLL];
 extern struct hp_action_tbl cpu_dvfs_hp_action[];

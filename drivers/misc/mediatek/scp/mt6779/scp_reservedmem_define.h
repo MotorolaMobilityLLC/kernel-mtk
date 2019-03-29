@@ -20,7 +20,7 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.num = VOW_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x1A000,  /* 104 KB */
+		.size = 0x20400,  /* 129KB */
 	},
 #endif
 	{
@@ -49,7 +49,7 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x200000,  /* 2 MB */
 	},
-#if defined(CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT) || \
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA) || \
 	defined(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT) || \
 	defined(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) || \
 	defined(CONFIG_MTK_VOW_SUPPORT)
@@ -60,12 +60,34 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.size = 0x200000,  /* 2 MB */
 	},
 #endif
-#ifdef CONFIG_MTK_AUDIO_SCP_SPKPROTECT_SUPPORT
+#ifdef CONFIG_SND_SOC_MTK_SCP_SMARTPA
 	{
 		.num = SPK_PROTECT_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x30000,  /* 192 KB */
+		.size = 0x18000,  /* 96KB */
+	},
+	{
+		.num = SPK_PROTECT_DUMP_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x18000, /* 96KB */
+	},
+#endif
+#ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
+	{
+		.num = VOW_BARGEIN_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x4600,  /* 17KB */
+	},
+#endif
+#ifdef SCP_PARAMS_TO_SCP_SUPPORT
+	{
+		.num = SCP_DRV_PARAMS_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x100,  /* 256 bytes */
 	},
 #endif
 };

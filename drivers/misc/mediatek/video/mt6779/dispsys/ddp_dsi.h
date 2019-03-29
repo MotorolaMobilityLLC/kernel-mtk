@@ -191,6 +191,9 @@ UINT32 DSI_dcs_read_lcm_reg_v2(enum DISP_MODULE_ENUM module,
 UINT32 DSI_dcs_read_lcm_reg_v3(enum DISP_MODULE_ENUM module,
 					UINT8 cmd, UINT8 *usr_buffer,
 					UINT8 buffer_size);
+UINT32 DSI_dcs_read_lcm_reg_v4(enum DISP_MODULE_ENUM module,
+					UINT8 cmd, UINT8 *usr_buffer,
+					UINT8 buffer_size, bool sendhs);
 void *get_dsi_params_handle(UINT32 dsi_idx);
 void dsi_analysis(enum DISP_MODULE_ENUM module);
 void dsi_lfr_update(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq);
@@ -207,17 +210,17 @@ int DSI_set_roi(int x, int y);
 int DSI_check_roi(void);
 int ddp_dsi_trigger(enum DISP_MODULE_ENUM module, void *cmdq);
 void DSI_set_cmdq_V2(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq,
-		     unsigned int cmd, unsigned char count,
-		     unsigned char *para_list, unsigned char force_update);
-void DSI_set_cmdq_V4(enum DISP_MODULE_ENUM module, bool hs, unsigned int cmd,
-			unsigned char count, unsigned char *para_list,
-			unsigned char force_update);
+		    unsigned int cmd, unsigned char count,
+		    unsigned char *para_list, unsigned char force_update);
+void DSI_set_cmdq_V4(enum DISP_MODULE_ENUM module, bool hs,
+			struct LCM_setting_table_V3 *para_tbl,
+			unsigned int size, unsigned char force_update);
 int dsi_enable_irq(enum DISP_MODULE_ENUM module, void *handle,
 		   unsigned int enable);
 int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle);
-int dsi_te_irq_enable(enum DISP_MODULE_ENUM module, void *handle,
-		      unsigned int enable);
 int dsi_basic_irq_enable(enum DISP_MODULE_ENUM module, void *cmdq);
+extern int mipi_clk_change(enum DISP_MODULE_ENUM module, int en);
+unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module);
 int ddp_dsi_enter_idle(enum DISP_MODULE_ENUM module, void *cmdq_handle);
 int ddp_dsi_leave_idle(enum DISP_MODULE_ENUM module, void *cmdq_handle);
 unsigned int _is_power_on_status(enum DISP_MODULE_ENUM module);

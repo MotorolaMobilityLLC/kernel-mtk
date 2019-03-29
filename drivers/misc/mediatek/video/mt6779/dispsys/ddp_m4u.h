@@ -27,12 +27,19 @@ extern "C" {
  * display m4u port wrapper
  * -- by chip
  */
+/* larb 0 */
+/* TODO: PVRIC, postmask, fake engine */
 #define DISP_M4U_PORT_DISP_OVL0 M4U_PORT_DISP_OVL0
-#define DISP_M4U_PORT_DISP_OVL0_2L M4U_PORT_DISP_OVL0_2L
-#define DISP_M4U_PORT_DISP_OVL1 M4U_PORT_DISP_OVL1_2L
 #define DISP_M4U_PORT_DISP_RDMA0 M4U_PORT_DISP_RDMA0
-#define DISP_M4U_PORT_DISP_RDMA1 M4U_PORT_DISP_RDMA1
 #define DISP_M4U_PORT_DISP_WDMA0 M4U_PORT_DISP_WDMA0
+#define DISP_M4U_PORT_DISP_POSTMASK M4U_PORT_DISP_POSTMASK0
+#define DISP_M4U_PORT_DISP_OVL0_HDR M4U_PORT_DISP_OVL0_HDR
+
+/* larb 1 */
+#define DISP_M4U_PORT_DISP_OVL0_2L M4U_PORT_DISP_OVL0_2L
+#define DISP_M4U_PORT_DISP_OVL1_2L M4U_PORT_DISP_OVL1_2L
+#define DISP_M4U_PORT_DISP_RDMA1 M4U_PORT_DISP_RDMA1
+#define DISP_M4U_PORT_DISP_OVL0_2L_HDR M4U_PORT_DISP_OVL0_2L_HDR
 
 struct module_to_m4u_port_t {
 	enum DISP_MODULE_ENUM module;
@@ -42,7 +49,7 @@ struct module_to_m4u_port_t {
 
 int module_to_m4u_port(enum DISP_MODULE_ENUM module);
 enum DISP_MODULE_ENUM m4u_port_to_module(int port);
-enum m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva,
+int disp_m4u_callback(int port, unsigned long mva,
 					  void *data);
 void disp_m4u_init(void);
 int config_display_m4u_port(void);

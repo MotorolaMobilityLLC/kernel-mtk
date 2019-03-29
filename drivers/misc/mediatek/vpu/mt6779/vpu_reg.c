@@ -333,6 +333,7 @@ uint32_t vpu_read_field(int core, enum vpu_reg_field f)
 	return (reg_val & (((1L << (msb - lsb + 1)) - 1) << lsb)) >> lsb;
 }
 
+//#define VPU_OLD_WRITE
 
 void vpu_write_field(int core, enum vpu_reg_field f, uint32_t v)
 {
@@ -346,8 +347,18 @@ void vpu_write_field(int core, enum vpu_reg_field f, uint32_t v)
 	msb = field->msb;
 	lsb = field->lsb;
 
+#ifdef VPU_OLD_WRITE
 	temp = F_REG(vpu_base[core], reg->offset);
+#else
+	temp = vpu_read_reg32(vpu_base[core], reg->offset);
+#endif
+
 	temp &= ~F_MSK(msb, lsb);
 	temp |= F_VAL(v, msb, lsb);
+#ifdef VPU_OLD_WRITE
 	F_REG(vpu_base[core], reg->offset) = temp;
+#else
+	vpu_write_reg32(vpu_base[core], reg->offset, temp);
+#endif
+
 }

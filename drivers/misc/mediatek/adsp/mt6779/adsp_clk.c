@@ -12,16 +12,26 @@
  */
 
 #include <linux/clk.h>
-#include <linux/device.h>       /* needed by device_* */
-
 #include "adsp_clk.h"
+#include "adsp_helper.h"
 
-struct clk *clk_adsp_infra;
-struct clk *clk_top_adsp_sel;
-struct clk *clk_adsp_clk26m;
-struct clk *clk_top_mmpll_d4;
-struct clk *clk_top_adsppll_d4;
-struct clk *clk_top_adsppll_d6;
+struct adsp_clock_attr {
+	const char *name;
+	bool clk_prepare;
+	bool clk_status;
+	struct clk *clock;
+};
+
+static struct adsp_clock_attr adsp_clks[ADSP_CLK_NUM] = {
+	[CLK_ADSP_INFRA] = {"clk_adsp_infra", false, false, NULL},
+	[CLK_TOP_ADSP_SEL] = {"clk_top_adsp_sel", false, false, NULL},
+	[CLK_ADSP_CLK26M] = {"clk_adsp_clk26m", false, false, NULL},
+	[CLK_TOP_MMPLL_D4] = {"clk_top_mmpll_d4", false, false, NULL},
+	[CLK_TOP_ADSPPLL_D4] = {"clk_top_adsppll_d4", false, false, NULL},
+	[CLK_TOP_ADSPPLL_D6] = {"clk_top_adsppll_d6", false, false, NULL},
+};
+static uint32_t adsp_clock_count;
+DEFINE_SPINLOCK(adsp_clock_spinlock);
 
 int adsp_set_top_mux(enum adsp_clk clk)
 {
@@ -32,88 +42,113 @@ int adsp_set_top_mux(enum adsp_clk clk)
 
 	switch (clk) {
 	case CLK_ADSP_CLK26M:
-		parent = clk_adsp_clk26m;
+		parent = adsp_clks[CLK_ADSP_CLK26M].clock;
 		break;
 	case CLK_TOP_MMPLL_D4:
-		parent = clk_top_mmpll_d4;
+		parent = adsp_clks[CLK_TOP_MMPLL_D4].clock;
 		break;
 	case CLK_TOP_ADSPPLL_D4:
-		parent = clk_top_adsppll_d4;
+		parent = adsp_clks[CLK_TOP_ADSPPLL_D4].clock;
 		break;
 	case CLK_TOP_ADSPPLL_D6:
-		parent = clk_top_adsppll_d6;
+		parent = adsp_clks[CLK_TOP_ADSPPLL_D6].clock;
 		break;
 	default:
-		parent = clk_adsp_clk26m;
+		parent = adsp_clks[CLK_ADSP_CLK26M].clock;
 		break;
 	}
-	ret = clk_set_parent(clk_top_adsp_sel, parent);
-	if (IS_ERR(&ret)) {
+	ret = clk_set_parent(adsp_clks[CLK_TOP_ADSP_SEL].clock, parent);
+	if (IS_ERR(&ret))
 		pr_err("[ADSP] %s clk_set_parent(clk_top_adsp_sel-%x) fail %d\n",
 		      __func__, clk, ret);
-		return ret;
-	} else {
-		return 0;
-	}
+
+	return ret;
 }
 
 /* clock init */
-int adsp_clk_device_probe(struct platform_device *pdev)
+int adsp_clk_device_probe(void *dev)
 {
-	struct device *dev = &pdev->dev;
+	size_t i;
+	int ret = 0;
 
-	clk_adsp_infra = devm_clk_get(&pdev->dev, "clk_adsp_infra");
-	if (IS_ERR(clk_adsp_infra)) {
-		dev_err(dev, "clk_get(\"clk_adsp_infra\") failed\n");
-		return PTR_ERR(clk_adsp_infra);
+	for (i = 0; i < ARRAY_SIZE(adsp_clks); i++) {
+		adsp_clks[i].clock = devm_clk_get(dev, adsp_clks[i].name);
+		if (IS_ERR(adsp_clks[i].clock)) {
+			ret = PTR_ERR(adsp_clks[i].clock);
+			pr_err("%s devm_clk_get %s fail %d\n", __func__,
+				   adsp_clks[i].name, ret);
+		} else {
+			adsp_clks[i].clk_status = true;
+		}
 	}
 
-	clk_top_adsp_sel = devm_clk_get(&pdev->dev, "clk_top_adsp_sel");
-	if (IS_ERR(clk_top_adsp_sel)) {
-		dev_err(dev, "clk_get(\"clk_top_adsp_sel\") failed\n");
-		return PTR_ERR(clk_top_adsp_sel);
+	if (ret)
+		return ret;
+
+	for (i = 0; i < ARRAY_SIZE(adsp_clks); i++) {
+		if (adsp_clks[i].clk_status) {
+			ret = clk_prepare(adsp_clks[i].clock);
+			if (ret) {
+				pr_err("%s clk_prepare %s fail %d\n", __func__,
+					   adsp_clks[i].name, ret);
+			} else {
+				adsp_clks[i].clk_prepare = true;
+			}
+		}
 	}
 
-	clk_adsp_clk26m = devm_clk_get(&pdev->dev, "clk_adsp_clk26m");
-	if (IS_ERR(clk_adsp_clk26m)) {
-		dev_err(dev, "clk_get(\"clk_adsp_clk26m\") failed\n");
-		return PTR_ERR(clk_adsp_clk26m);
-	}
+	return ret;
+}
 
-	clk_top_mmpll_d4 = devm_clk_get(&pdev->dev, "clk_top_mmpll_d4");
-	if (IS_ERR(clk_top_mmpll_d4)) {
-		dev_err(dev, "clk_get(\"clk_top_mmpll_d4\") failed\n");
-		return PTR_ERR(clk_top_mmpll_d4);
-	}
+/* clock deinit */
+void adsp_clk_device_remove(void *dev)
+{
+	size_t i;
 
-	clk_top_adsppll_d4 = devm_clk_get(&pdev->dev, "clk_top_adsppll_d4");
-	if (IS_ERR(clk_top_adsppll_d4)) {
-		dev_err(dev, "clk_get(\"clk_top_adsppll_d4\") failed\n");
-		return PTR_ERR(clk_top_adsppll_d4);
+	pr_debug("%s\n", __func__);
+	for (i = 0; i < ARRAY_SIZE(adsp_clks); i++) {
+		if (adsp_clks[i].clock && !IS_ERR(adsp_clks[i].clock) &&
+			adsp_clks[i].clk_prepare) {
+			clk_unprepare(adsp_clks[i].clock);
+			adsp_clks[i].clk_prepare = false;
+		}
 	}
-
-	clk_top_adsppll_d6 = devm_clk_get(&pdev->dev, "clk_top_adsppll_d6");
-	if (IS_ERR(clk_top_adsppll_d6)) {
-		dev_err(dev, "clk_get(\"clk_top_adsppll_d6\") failed\n");
-		return PTR_ERR(clk_top_adsppll_d6);
-	}
-	return 0;
 }
 
 int adsp_enable_clock(void)
 {
 	int ret = 0;
+	unsigned long spin_flags;
 
-	ret = clk_prepare_enable(clk_adsp_infra);
-	if (IS_ERR(&ret)) {
-		pr_err("[ADSP] %s clk_prepare_enable(clk_adsp_infra) fail %d\n",
-		       __func__, ret);
-		return PTR_ERR(&ret);
+	if (adsp_clks[CLK_ADSP_INFRA].clk_prepare) {
+		spin_lock_irqsave(&adsp_clock_spinlock, spin_flags);
+		if (++adsp_clock_count == 1)
+			/* unable to access adsp sram before set way_en to 1 */
+			adsp_way_en_ctrl(1);
+		ret = clk_enable(adsp_clks[CLK_ADSP_INFRA].clock);
+		if (IS_ERR(&ret))
+			pr_err("%s(), clk_enable %s fail, ret %d\n", __func__,
+				adsp_clks[CLK_ADSP_INFRA].name, ret);
+		spin_unlock_irqrestore(&adsp_clock_spinlock, spin_flags);
+	} else {
+		pr_err("%s(), clk %s, not prepared\n",
+			__func__, adsp_clks[CLK_ADSP_INFRA].name);
+		ret = -EINVAL;
 	}
+
 	return ret;
 }
 
 void adsp_disable_clock(void)
 {
-	clk_disable_unprepare(clk_adsp_infra);
+	unsigned long spin_flags;
+
+	if (adsp_clks[CLK_ADSP_INFRA].clk_prepare) {
+		spin_lock_irqsave(&adsp_clock_spinlock, spin_flags);
+		if (--adsp_clock_count == 0)
+			/* unable to access adsp sram before set way_en to 1 */
+			adsp_way_en_ctrl(0);
+		clk_disable(adsp_clks[CLK_ADSP_INFRA].clock);
+		spin_unlock_irqrestore(&adsp_clock_spinlock, spin_flags);
+	}
 }

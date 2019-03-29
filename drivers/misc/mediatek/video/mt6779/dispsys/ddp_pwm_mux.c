@@ -21,7 +21,7 @@
 #include <linux/of_address.h>
 #include "ddp_reg.h"
 
-#define BYPASS_CLK_SELECT
+/* #define BYPASS_CLK_SELECT */
 /*
  *
  * dummy function
@@ -53,11 +53,17 @@ bool disp_pwm_mux_is_osc(void)
 static void __iomem *disp_pmw_mux_base;
 
 #ifndef MUX_DISPPWM_ADDR /* disp pwm source clock select register address */
-#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xB0)
+#define MUX_DISPPWM_ADDR (disp_pmw_mux_base + 0xA0)
 #endif
 
+#ifndef CLK_CFG_UPDATE1 /* disp pwm source clock select register address */
+#define CLK_CFG_UPDATE1 (disp_pmw_mux_base + 0x08)
+#endif
+
+#define DISP_PWM_MUX_CK_UPDATE	(1)
+
 #ifndef OSC_ULPOSC_ADDR /* rosc control register address */
-#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x458)
+#define OSC_ULPOSC_ADDR (disp_pmw_osc_base + 0x440)
 #endif
 
 /* clock hard code access API */
@@ -78,10 +84,10 @@ enum DDP_CLK_ID disp_pwm_get_clkid(unsigned int clk_req)
 
 	switch (clk_req) {
 	case 0:
-		clkid = CLK_OSC_D16;
+		clkid = CLK_OSC_D4;
 		break;
 	case 1:
-		clkid = CLK_OSC_D4;
+		clkid = CLK_OSC_D16;
 		break;
 	case 2:
 		clkid = CLK_OSC_D2;
@@ -142,6 +148,15 @@ static unsigned int disp_pwm_get_pwmmux(void)
 	return regsrc;
 }
 
+static void disp_pwm_clkmux_update(void)
+{
+	unsigned int regsrc = clk_readl(CLK_CFG_UPDATE1);
+
+	regsrc = regsrc | (0x1 << DISP_PWM_MUX_CK_UPDATE);
+	/* write 1 to update the change of pwm clock source selection */
+	clk_writel(CLK_CFG_UPDATE1, regsrc);
+}
+
 /*
  *
  * disp pwm source clock select mux api
@@ -162,12 +177,18 @@ int disp_pwm_set_pwmmux(unsigned int clk_req)
 		ddp_clk_prepare_enable(CLK_MUX_DISP_PWM);
 		ddp_clk_set_parent(CLK_MUX_DISP_PWM, clkid);
 		ddp_clk_disable_unprepare(CLK_MUX_DISP_PWM);
+
+		disp_pwm_clkmux_update();
 	}
 
 	reg_after = disp_pwm_get_pwmmux();
 	g_pwm_mux_clock_source = reg_after & 0x7;
-	pr_debug("[PWM]PWM_MUX %x->%x, clk_req=%d clkid=%d",
-		reg_before, reg_after, clk_req, clkid);
+
+	if (reg_before != reg_after) {
+		pr_debug(
+			"[PWM]PWM_MUX %x->%x, clk_req=%d clkid=%d",
+			reg_before, reg_after, clk_req, clkid);
+	}
 
 	return 0;
 }

@@ -12,3 +12,4 @@
 #
 
 obj-y += devapc.o
+obj-y += busid_to_mast.o

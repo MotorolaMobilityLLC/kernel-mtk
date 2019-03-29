@@ -32,6 +32,9 @@
 #include "ddp_dsi.h"
 #include "ddp_postmask.h"
 #include "disp_drv_log.h"
+#include "primary_display.h"
+#include "ddp_misc.h"
+#include "disp_recovery.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -213,9 +216,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			reg_val = (DISP_REG_GET(DISPSYS_DSI1_BASE + 0xC) &
 				   0xffff);
 
-		DDPIRQ("%s irq_status = 0x%x\n",
-		       ddp_get_module_name(module), reg_val);
-
 		reg_temp_val = reg_val;
 		/*
 		 * rd_rdy don't clear and wait for ESD &
@@ -229,14 +229,22 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		else
 			DISP_CPU_REG_SET(DISPSYS_DSI1_BASE + 0xC,
 					 ~reg_temp_val);
+		DDPIRQ("%s irq_status = 0x%x\n",
+			ddp_get_module_name(module), reg_val);
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_OVL0) ||
 		   irq == ddp_get_module_irq(DISP_MODULE_OVL0_2L) ||
 		   irq == ddp_get_module_irq(DISP_MODULE_OVL1_2L)) {
-		module = disp_irq_to_module(irq);
+		if (irq == ddp_get_module_irq(DISP_MODULE_OVL0))
+			module = DISP_MODULE_OVL0;
+		else if (irq == ddp_get_module_irq(DISP_MODULE_OVL0_2L))
+			module = DISP_MODULE_OVL0_2L;
+		else
+			module = DISP_MODULE_OVL1_2L;
 		index = ovl_to_index(module);
 		reg_val = DISP_REG_GET(DISP_REG_OVL_INTSTA +
 				       ovl_base_addr(module));
-
+		DISP_CPU_REG_SET(DISP_REG_OVL_INTSTA + ovl_base_addr(module),
+			~reg_val);
 		DDPIRQ("%s irq_status = 0x%x\n",
 		       ddp_get_module_name(module), reg_val);
 
@@ -277,12 +285,19 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDP_PR_ERR("IRQ: %s-L3 not complete until EOF!\n",
 				   ddp_get_module_name(module));
 
-		if (reg_val & (1 << 13))
+		if (reg_val & (1 << 13)) {
 			DDP_PR_ERR("IRQ: %s abnormal SOF!\n",
 				   ddp_get_module_name(module));
+			primary_display_set_recovery_module(module);
+			/* The DISP_RECOVERY event waiting by recovery thread
+			 * is bundled with main display path. So we fill the
+			 * main display path module: MODULE_RDMA0 to signal
+			 * the awaking event in recovery thread.
+			 */
+			dpmgr_module_notify(DISP_MODULE_RDMA0,
+				DISP_PATH_EVENT_DISP_RECOVERY);
+		}
 
-		DISP_CPU_REG_SET(DISP_REG_OVL_INTSTA + ovl_base_addr(module),
-				 ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->OVL_IRQ[index],
 				 MMPROFILE_FLAG_PULSE, reg_val, 0);
 		if (reg_val & 0x1e0)
@@ -294,12 +309,16 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		module = DISP_MODULE_WDMA0;
 
 		reg_val = DISP_REG_GET(DISP_REG_WDMA_INTSTA);
+		/* clear intr */
+		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA, ~reg_val);
 
 		DDPIRQ("%s irq_status = 0x%x\n", ddp_get_module_name(module),
 		       reg_val);
 
-		if (reg_val & (1 << 0))
+		if (reg_val & (1 << 0)) {
 			DDPIRQ("IRQ: WDMA%d frame done!\n", index);
+			MMPathTracePrimaryOvl2Mem();
+		}
 
 		if (reg_val & (1 << 1)) {
 			DDP_PR_ERR("IRQ: WDMA%d underrun! cnt=%d\n",
@@ -307,8 +326,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			cnt_wdma_underflow[index]++;
 			disp_irq_log_module |= 1 << module;
 		}
-		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_WDMA_INTSTA, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->WDMA_IRQ[index],
 				 MMPROFILE_FLAG_PULSE, reg_val,
 				 DISP_REG_GET(DISP_REG_WDMA_CLIP_SIZE));
@@ -330,6 +347,10 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		reg_val = DISP_REG_GET(DISP_REG_RDMA_INT_STATUS +
 				       index * DISP_RDMA_INDEX_OFFSET);
 
+		/* clear intr */
+		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS +
+				 index * DISP_RDMA_INDEX_OFFSET, ~reg_val);
+
 		DDPIRQ("%s irq_status = 0x%x\n", ddp_get_module_name(module),
 		       reg_val);
 
@@ -345,6 +366,9 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			rdma_end_time[index] = sched_clock();
 			DDPIRQ("IRQ: RDMA%d frame done!\n", index);
 			rdma_done_irq_cnt[index]++;
+
+			if (index == 0)
+				MMPathTracePrimaryOvl2Dsi();
 		}
 		if (reg_val & (1 << 1)) {
 			mmprofile_log_ex(
@@ -391,14 +415,13 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			cnt_rdma_underflow[index]++;
 			rdma_underflow_irq_cnt[index]++;
 			disp_irq_log_module |= 1 << module;
+
+			primary_display_diagnose_oneshot(__func__, __LINE__);
 		}
 		if (reg_val & (1 << 5)) {
 			DDPIRQ("IRQ: RDMA%d target line!\n", index);
 			rdma_targetline_irq_cnt[index]++;
 		}
-		/* clear intr */
-		DISP_CPU_REG_SET(DISP_REG_RDMA_INT_STATUS +
-				 index * DISP_RDMA_INDEX_OFFSET, ~reg_val);
 		mmprofile_log_ex(ddp_mmp_get_events()->RDMA_IRQ[index],
 				 MMPROFILE_FLAG_PULSE, reg_val, 0);
 		if (reg_val & 0x18)
@@ -415,6 +438,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		module = DISP_MODULE_MUTEX;
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MUTEX_INTSTA) &
 					DISP_MUTEX_INT_MSK;
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
 
 		DDPIRQ("%s, irq_status = 0x%x\n",
 		       ddp_get_module_name(module), reg_val);
@@ -434,7 +458,6 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			}
 		}
 
-		DISP_CPU_REG_SET(DISP_REG_CONFIG_MUTEX_INTSTA, ~reg_val);
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_AAL0)) {
 		module = DISP_MODULE_AAL0;
 		reg_val = DISP_REG_GET(DISP_AAL_INTSTA);
@@ -446,6 +469,7 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_CONFIG)) {
 		/* MMSYS error intr */
 		reg_val = DISP_REG_GET(DISP_REG_CONFIG_MMSYS_INTSTA) & 0x7;
+		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
 		if (reg_val & (1 << 0))
 			DDP_PR_ERR("MMSYS to MFG APB TX Error, MMSYS clock off but MFG clock on!\n");
 
@@ -455,9 +479,8 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 		if (reg_val & (1 << 2))
 			DDP_PR_ERR("PWM APB TX Error!\n");
 
-		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
 	} else if (irq == ddp_get_module_irq(DISP_MODULE_POSTMASK)) {
-		module = disp_irq_to_module(irq);
+		module = DISP_MODULE_POSTMASK;
 		reg_val = DISP_REG_GET(DISP_REG_POSTMASK_INTSTA +
 				postmask_base_addr(module));
 

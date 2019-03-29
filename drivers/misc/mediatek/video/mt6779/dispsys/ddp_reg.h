@@ -88,6 +88,8 @@
 #  define TRUE  (1)
 #endif
 
+extern cmdqBackupSlotHandle dispsys_slot;
+
 #define DISP_RDMA_INDEX_OFFSET	(ddp_get_module_va(DISP_MODULE_RDMA1) -	\
 					 ddp_get_module_va(DISP_MODULE_RDMA0))
 #define DISP_WDMA_INDEX_OFFSET	(0)
@@ -117,6 +119,7 @@
 #define DISPSYS_MIPITX1_BASE	ddp_get_module_va(DISP_MODULE_MIPI1)
 #define DISPSYS_RSZ0_BASE	ddp_get_module_va(DISP_MODULE_RSZ0)
 #define DISPSYS_POSTMASK_BASE	ddp_get_module_va(DISP_MODULE_POSTMASK)
+#define DISPSYS_SLOT_BASE	dispsys_slot
 
 #ifdef INREG32
 #undef INREG32
@@ -149,6 +152,12 @@
 #define DISP_REG_GET(reg32)	__raw_readl((unsigned long *)(reg32))
 #define DISP_REG_GET_FIELD(field, reg32)				\
 		REG_FLD_VAL_GET(field, __raw_readl((unsigned long *)(reg32)))
+
+#define SET_VAL_MASK(o_val, o_mask, i_val, i_fld)		\
+	do {							\
+		o_val  |= (i_val << REG_FLD_SHIFT(i_fld));	\
+		o_mask |= (REG_FLD_MASK(i_fld));		\
+	} while (0)
 
 /* polling register until masked bit is 1 */
 #define DDP_REG_POLLING(reg32, mask)					\
@@ -204,14 +213,17 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		}							\
 	} while (0)
 
+/* Notice: input arg name should not be ltmp_regval */
 #define DISP_REG_SET_FIELD(handle, field, reg32, val)			\
 	do {								\
 		if (handle == NULL) {					\
-			unsigned int regval;				\
-			regval = __raw_readl((unsigned long *)(reg32)); \
-			regval  = (regval & ~REG_FLD_MASK(field)) |	\
-					(REG_FLD_VAL((field), (val)));	\
-			mt_reg_sync_writel(regval, (reg32));		\
+			unsigned int ltmp_regval;			\
+			ltmp_regval =					\
+				__raw_readl((unsigned long *)(reg32));  \
+			ltmp_regval  =					\
+				(ltmp_regval & ~REG_FLD_MASK(field)) |	\
+				(REG_FLD_VAL((field), (val)));		\
+			mt_reg_sync_writel(ltmp_regval, (reg32));	\
 		} else {						\
 			cmdqRecWrite(handle, disp_addr_convert(reg32),	\
 					(val)<<REG_FLD_SHIFT(field),	\
@@ -237,6 +249,14 @@ static inline unsigned long disp_addr_convert(unsigned long va)
 		if (handle && hSlot) {					\
 			cmdqRecBackupRegisterToSlot(handle, hSlot, idx,	\
 				disp_addr_convert((unsigned long)(reg32))); \
+		}							\
+	} while (0)
+
+#define DISP_SLOT_SET(handle, hSlot, idx, val)			\
+	do {								\
+		if (handle && hSlot) {					\
+			cmdqRecBackupUpdateSlot(handle, hSlot,	\
+				idx, val); \
 		}							\
 	} while (0)
 

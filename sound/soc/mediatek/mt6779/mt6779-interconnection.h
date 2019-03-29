@@ -41,6 +41,10 @@
 #define I_32_OFFSET 32
 #define I_CONNSYS_I2S_CH1 (34 - I_32_OFFSET)
 #define I_CONNSYS_I2S_CH2 (35 - I_32_OFFSET)
+#define I_SRC_1_OUT_CH1 (36 - I_32_OFFSET)
+#define I_SRC_1_OUT_CH2 (37 - I_32_OFFSET)
+#define I_SRC_2_OUT_CH1 (38 - I_32_OFFSET)
+#define I_SRC_2_OUT_CH2 (39 - I_32_OFFSET)
 #define I_DL4_CH1 (40 - I_32_OFFSET)
 #define I_DL4_CH2 (41 - I_32_OFFSET)
 #define I_DL5_CH1 (42 - I_32_OFFSET)

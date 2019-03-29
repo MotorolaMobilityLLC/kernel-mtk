@@ -55,6 +55,7 @@
 #endif
 
 #include <linux/pm_qos.h>
+#include "helio-dvfsrc-opp.h"
 #include "mtk_spm_resource_req.h"
 
 #ifdef pr_fmt
@@ -70,7 +71,7 @@
 #define SCP_VCORE_REQ_TO_DVFSRC 1
 
 /* -1:SCP DVFS OFF, 1:SCP DVFS ON */
-static int scp_dvfs_flag = -1;
+static int scp_dvfs_flag = 1;
 
 /*
  * 0: SCP Sleep: OFF,
@@ -108,22 +109,29 @@ int scp_set_pmic_vcore(unsigned int cur_freq)
 	int ret = 0;
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	unsigned int ret_vc = 0, ret_vs = 0;
+	int get_vcore_val = 0;
 
 	if (cur_freq == CLK_OPP0) {
 		ret_vc = pmic_scp_set_vcore(575000);
 		ret_vs = pmic_scp_set_vsram_vcore(825000);
 	} else if (cur_freq == CLK_OPP1) {
 		ret_vc = pmic_scp_set_vcore(600000);
-		ret_vs = pmic_scp_set_vsram_vcore(850000);
+		ret_vs = pmic_scp_set_vsram_vcore(875000);
 	} else if (cur_freq == CLK_OPP2) {
-		ret_vc = pmic_scp_set_vcore(625000);
-		ret_vs = pmic_scp_set_vsram_vcore(850000);
+		get_vcore_val = get_vcore_uv_table(VCORE_OPP_2);
+		pr_debug("get_vcore_val = %d\n", get_vcore_val);
+		ret_vc = pmic_scp_set_vcore(get_vcore_val);
+		ret_vs = pmic_scp_set_vsram_vcore(875000);
 	} else if (cur_freq == CLK_OPP3) {
-		ret_vc = pmic_scp_set_vcore(700000);
-		ret_vs = pmic_scp_set_vsram_vcore(850000);
+		get_vcore_val = get_vcore_uv_table(VCORE_OPP_1);
+		pr_debug("get_vcore_val = %d\n", get_vcore_val);
+		ret_vc = pmic_scp_set_vcore(get_vcore_val);
+		ret_vs = pmic_scp_set_vsram_vcore(875000);
 	} else if (cur_freq == CLK_OPP4) {
-		ret_vc = pmic_scp_set_vcore(800000);
-		ret_vs = pmic_scp_set_vsram_vcore(925000);
+		get_vcore_val = get_vcore_uv_table(VCORE_OPP_0);
+		pr_debug("get_vcore_val = %d\n", get_vcore_val);
+		ret_vc = pmic_scp_set_vcore(get_vcore_val);
+		ret_vs = pmic_scp_set_vsram_vcore(875000);
 	} else {
 	    ret = -2;
 	    pr_err("cur_freq=%d is not supported\n", cur_freq);
@@ -266,11 +274,12 @@ int scp_request_freq(void)
 			is_increasing_freq = 1;
 		}
 
-		/* Request SPM not to turn off mainpll/univpll   */
+		/* Request SPM not to turn off mainpll/26M/infra */
 		/* because SCP may park in it during DFS process */
 		spm_resource_req(SPM_RESOURCE_USER_SCP,
 						SPM_RESOURCE_MAINPLL |
-						SPM_RESOURCE_CK_26M);
+						SPM_RESOURCE_CK_26M |
+						SPM_RESOURCE_AXI_BUS);
 
 		/*  turn on PLL if necessary */
 		scp_pll_ctrl_set(PLL_ENABLE, scp_expected_freq);
@@ -309,9 +318,10 @@ int scp_request_freq(void)
 			scp_vcore_request(scp_expected_freq);
 
 		if (scp_expected_freq == (unsigned int)CLK_OPP4)
-			/* request SPM not to turn off univpll/26M */
+			/* request SPM not to turn off 26M/infra */
 			spm_resource_req(SPM_RESOURCE_USER_SCP,
-							 SPM_RESOURCE_CK_26M);
+							 SPM_RESOURCE_CK_26M |
+							 SPM_RESOURCE_AXI_BUS);
 		else
 			spm_resource_req(SPM_RESOURCE_USER_SCP,
 							 SPM_RESOURCE_RELEASE);
@@ -711,7 +721,7 @@ static int mt_scp_dvfs_create_procfs(void)
 
 	for (i = 0; i < ARRAY_SIZE(entries); i++) {
 		if (!proc_create(entries[i].name,
-						0x0664,
+						0664,
 						dir,
 						entries[i].fops)) {
 			pr_err("ERROR: %s: create /proc/scp_dvfs/%s failed\n",
@@ -880,10 +890,12 @@ void mt_pmic_sshub_init(void)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 
 	/* set SCP VCORE voltage */
-	pmic_scp_set_vcore(575000);
+	if (pmic_scp_set_vcore(575000) != 0)
+		pr_notice("Set wrong vcore voltage\n");
 
 	/* set SCP VSRAM voltage */
-	pmic_scp_set_vsram_vcore(825000);
+	if (pmic_scp_set_vsram_vcore(825000) != 0)
+		pr_notice("Set wrong vsram voltage\n");
 
 #if SCP_VOW_LOW_POWER_MODE
 	/* enable VOW low power mode */

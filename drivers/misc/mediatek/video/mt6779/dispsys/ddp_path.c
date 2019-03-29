@@ -59,9 +59,9 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 #ifdef DISP_COLOR_ON
 		DISP_MODULE_COLOR0,
 #endif
-		DISP_MODULE_CCORR0, DISP_MODULE_AAL0, DISP_MODULE_GAMMA0,
-		DISP_MODULE_POSTMASK,
-		DISP_MODULE_DITHER0, DISP_MODULE_PWM0, DISP_MODULE_DSI0,
+		DISP_MODULE_CCORR0, DISP_MODULE_AAL0,
+		DISP_MODULE_GAMMA0, DISP_MODULE_POSTMASK, DISP_MODULE_DITHER0,
+		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -69,8 +69,7 @@ unsigned int module_list_scenario[DDP_SCENARIO_MAX][DDP_ENING_NUM] = {
 	{
 		DISP_MODULE_OVL0_2L, DISP_MODULE_RSZ0, DISP_MODULE_OVL0,
 		DISP_MODULE_RDMA0, DISP_MODULE_RDMA_VIRTUAL0,
-		/* DISP_MODULE_PWM0, */
-		DISP_MODULE_DSI0,
+		DISP_MODULE_PWM0, DISP_MODULE_DSI0,
 		-1,
 	},
 
@@ -361,7 +360,8 @@ static struct sel_s sel_in_map[] = {
 	[9] = {
 		DISP_MODULE_OVL0,
 		{
-			DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L, -1
+			DISP_MODULE_OVL0_2L, DISP_MODULE_OVL1_2L,
+			DISP_MODULE_RSZ0, -1
 		},
 		0, 0
 	},
@@ -834,7 +834,7 @@ int ddp_set_dst_module(enum DDP_SCENARIO_ENUM scenario,
 {
 	int i = 0;
 
-	DDPMSG("%s, scenario=%s, dst_module=%s\n", __func__,
+	DDPDBG("%s, scenario=%s, dst_module=%s\n", __func__,
 	       ddp_get_scenario_name(scenario),
 	       ddp_get_module_name(dst_module));
 
@@ -987,12 +987,7 @@ int ddp_path_top_clock_on(void)
 
 	ddp_clk_top_clk_switch(true);
 
-	DISP_REG_SET_FIELD(NULL, FLD_HRT_URGENT_CTRL,
-			   DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0xf);
-	DISP_REG_SET_FIELD(NULL, FLD_SODI_REQ_MASKEN,
-			   DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x1);
-	DISP_REG_SET_FIELD(NULL, FLD_SODI_REQ_MASKVAL,
-			   DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x1);
+	DISP_REG_SET(NULL, DISP_REG_CONFIG_MMSYS_SODI_REQ_MASK, 0x0F005506);
 
 	DDPDBG("ddp CG0:%x, CG1:%x\n",
 	       DISP_REG_GET(DISP_REG_CONFIG_MMSYS_CG_CON0),
@@ -1070,4 +1065,66 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 	rdma_cfg->security = ovl_cfg->security;
 	rdma_cfg->yuv_range = ovl_cfg->yuv_range;
 	return 0;
+}
+
+unsigned int get_smi_larb_ostd(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		return DISP_REG_GET_FIELD(REG_FLD_MSB_LSB(4, 0),
+			DISPSYS_SMI_LARB0_BASE + 0x28C);
+	case DISP_MODULE_OVL0_2L:
+		return DISP_REG_GET_FIELD(REG_FLD_MSB_LSB(4, 0),
+			DISPSYS_SMI_LARB1_BASE + 0x288);
+	default:
+		return 0xff;
+	}
+}
+
+/* check the following things
+ * 1. OVL state is at h_w_rst
+ * 2. OVL RDMAx SMI busy
+ * 3. SMI OSTD for OVL is zero
+ */
+bool ovl_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module)
+{
+	unsigned int ovl_smi_busy = 0, ovl_state;
+	unsigned int smi_larb_ostd;
+	int i, ovl_reg_value;
+	unsigned long ovl_base = ovl_base_addr(module);
+
+	ovl_state = DISP_REG_GET_FIELD(REG_FLD(10, 0),
+		DISP_REG_OVL_FLOW_CTRL_DBG + ovl_base);
+
+	for (i = 0 ; i < ovl_layer_num(module) ; i++)	{
+		ovl_reg_value =	DISP_REG_GET(DISP_REG_OVL_RDMA0_DBG +
+			ovl_base + 0x4 * i);
+		ovl_smi_busy |= (ovl_reg_value >> 30) & 0x1;
+	}
+
+	smi_larb_ostd = get_smi_larb_ostd(module);
+
+	DDPMSG("[%s]%s: ovl state:0x%x, ovl_smi_busy:%u, larb_ostd:%u\n",
+		__func__, ddp_get_module_name(module), ovl_state,
+		ovl_smi_busy, smi_larb_ostd);
+
+	if (ovl_state == 0x100 && ovl_smi_busy != 0 && smi_larb_ostd == 0)
+		return true;
+	else
+		return false;
+}
+
+void ddp_path_mmsys_sw_reset(unsigned int sw_rst_id, unsigned int bit)
+{
+	unsigned long addr = 0;
+
+	if (sw_rst_id == 0)
+		addr = DISP_REG_CONFIG_MMSYS_SW0_RST_B;
+	else if (sw_rst_id == 1)
+		addr = DISP_REG_CONFIG_MMSYS_SW1_RST_B;
+	else
+		return;
+
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), addr, 0x0);
+	DISP_REG_SET_FIELD(NULL, REG_FLD(1, bit), addr, 0x1);
 }

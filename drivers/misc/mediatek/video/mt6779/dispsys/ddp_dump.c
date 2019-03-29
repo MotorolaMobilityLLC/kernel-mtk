@@ -34,65 +34,65 @@ static char *ddp_signal_0(int bit)
 	case 1:
 		return "ccorr0__to__aal0";
 	case 2:
-		return "color0__to__disp_color_out_sel_in0";
+		return "color0__to__color_out_sel_in0";
 	case 3:
 		return "disp_color_out_sel__to__ccorr0";
 	case 4:
-		return "disp_path0_sel__to__disp_rdma0";
-	case 5:
-		return "disp_rdma0__to__disp_rdma0_sout";
-	case 6:
-		return "disp_rdma0_sout_out0__to__dsi0_sel_in1";
-	case 7:
-		return "disp_rdma0_sout_out1__to__color0";
-	case 8:
-		return "disp_rdma0_sout_out2__to__disp_color_out_sel_in1";
-	case 9:
-		return "disp_rdma0_sout_out3__to__dsi1_sel_in1";
-	case 10:
-		return "disp_rdma1__to__disp_rdma1_sout";
-	case 11:
-		return "disp_rdma1_sout_out0__to__dsi1_sel_in2";
-	case 12:
-		return "disp_rdma1_sout_out1__to__dsi0_sel_in3";
-	case 13:
-		return "disp_rsz__to__disp_rsz_mout";
-	case 14:
-		return "disp_rsz_mout0__to__ovl0";
-	case 15:
-		return "disp_rsz_mout1__to__ovl0_2L";
-	case 16:
-		return "disp_rsz_mout2__to__ovl1_2L";
-	case 17:
-		return "disp_rsz_mout3__to__disp_path0_sel_in3";
-	case 18:
-		return "disp_rsz_mout4__to__ovl_to_wdma_sel_in3";
-	case 19:
-		return "disp_rsz_sel__to__disp_rsz";
-	case 20:
-		return "disp_split_out0__to__dsi0_sel_in2";
-	case 21:
-		return "disp_split_out1__to__dsi1_sel_in0";
-	case 22:
-		return "disp_wdma_pre_sel__to__disp_to_wdma";
-	case 23:
 		return "dither0__to__dither0_mout";
-	case 24:
+	case 5:
 		return "dither0_mout0__to__dsi0_sel_in0";
+	case 6:
+		return "dither0_mout1__to__dpi_sel_in2";
+	case 7:
+		return "dither0_mout2__to__wdma0_pre_sel_in1";
+	case 8:
+		return "gamma0__to__postmask";
+	case 9:
+		return "ovl0_2l_mout_out0__to__path0_sel_in1";
+	case 10:
+		return "ovl0_2l_mout_out1__to__ovl_to_wrot_sel_in1";
+	case 11:
+		return "ovl0_2l_mout_out2__to__ovl_to_wdma_sel_in1";
+	case 12:
+		return "ovl0_2l_mout_out3__to__ovl_to_rsz_sel_in1";
+	case 13:
+		return "ovl0_2l_mout_out4__to__rsz_sel_in5";
+	case 14:
+		return "ovl0_2l_out0__to__ovl0_2l_mout";
+	case 15:
+		return "ovl0_2l_out1__to__ovl0_2l_wcg_mout";
+	case 16:
+		return "ovl0_2l_out2__to__rsz_sel_in1";
+	case 17:
+		return "ovl0_2l_sel__to__ovl0_2l_in1";
+	case 18:
+		return "ovl0_2l_wcg_mout_out0__to__ovl0_wcg_sel_in0";
+	case 19:
+		return "ovl0_2l_wcg_mout_out1__to__ovl1_2l_wcg_sel_in1";
+	case 20:
+		return "ovl0_2l_wcg_sel__to__ovl0_2l_in0";
+	case 21:
+		return "ovl0_mout_out0__to__path0_sel_in0";
+	case 22:
+		return "ovl0_mout_out1__to__ovl_to_wrot_sel_in0";
+	case 23:
+		return "ovl0_mout_out2__to__ovl_to_wdma_sel_in0";
+	case 24:
+		return "ovl0_mout_out3__to__ovl_to_rsz_sel_in0";
 	case 25:
-		return "dither0_mout1__to__disp_split";
+		return "ovl0_mout_out4__to__rsz_sel_in4";
 	case 26:
-		return "dither0_mout2__to__dsi1_sel_in3";
+		return "ovl0_out0__to__ovl0_mout";
 	case 27:
-		return "dither0_mout3__to__disp_wdma0_pre_sel_in1";
+		return "ovl0_out1__to__ovl0_wcg_mout";
 	case 28:
-		return "dsi0_sel__to__dsi0";
+		return "ovl0_out2__to__rsz_sel_in0";
 	case 29:
-		return "dsi1_sel__to__dsi1";
+		return "ovl0_sel__to__ovl0_in1";
 	case 30:
-		return "gamma0__to__dither0";
+		return "ovl0_wcg_mout_out0__to__ovl0_2l_wcg_sel_in0";
 	case 31:
-		return "mdp_to_disp0__to__mdp_to_disp0_sout";
+		return "ovl0_wcg_mout_out1__to__ovl1_2l_wcg_sel_in0";
 	default:
 		break;
 	}
@@ -103,69 +103,100 @@ static char *ddp_signal_1(int bit)
 {
 	switch (bit) {
 	case 0:
-		return "mdp_to_disp0_sout_out0__to__ovl0_sel_in0";
+		return "ovl0_wcg_sel__to__ovl0_in0";
 	case 1:
-		return "mdp_to_disp0_sout_out1__to__ovl0_2L_sel_in0";
+		return "ovl1_2l_mout_out0__to__path0_sel_in2";
 	case 2:
-		return "mdp_to_disp1__to__mdp_to_disp1_sout";
+		return "ovl1_2l_mout_out1__to__ovl_to_wrot_sel_in2";
 	case 3:
-		return "mdp_to_disp1_sout_out0__to__ovl0_2L_sel_in1";
+		return "ovl1_2l_mout_out2__to__ovl_to_wdma_sel_in2";
 	case 4:
-		return "mdp_to_disp1_sout_out1__to__ovl1_2L";
+		return "ovl1_2l_mout_out3__to__ovl_to_rsz_sel_in2";
 	case 5:
-		return "mdp_to_disp1_sout_out2__to__ovl0_sel_in1";
+		return "ovl1_2l_mout_out4__to__rdma1";
 	case 6:
-		return "ovl0_2L__to__ovl0_2L_mout";
+		return "ovl1_2l_mout_out5__to__rsz_sel_in6";
 	case 7:
-		return "ovl0_2L_mout0__to__disp_path0_sel_in1";
+		return "ovl1_2l_out0__to__ovl1_2l_mout";
 	case 8:
-		return "ovl0_2L_mout1__to__ovl_to_wrot_sel_in1";
+		return "ovl1_2l_out1__to__ovl1_2l_wcg_mout";
 	case 9:
-		return "ovl0_2L_mout2__to__ovl_to_wdma_sel_in1";
+		return "ovl1_2l_out2__to__rsz_sel_in2";
 	case 10:
-		return "ovl0_2L_mout3__to__ovl_to_rsz_sel_in1";
+		return "ovl1_2l_wcg_mout_out0__to__ovl0_2l_wcg_sel_in0";
 	case 11:
-		return "ovl0_2L_mout4__to__ovl1_2L";
+		return "ovl1_2l_wcg_mout_out1__to__ovl0_wcg_sel_in1";
 	case 12:
-		return "ovl0_2L_mout5__to__disp_rsz_sel_in1";
+		return "ovl1_2l_wcg_sel__to__ovl1_2l_in0";
 	case 13:
-		return "ovl0_2L_sel__to__ovl0_2L";
+		return "path0_sel__to__rdma0";
 	case 14:
-		return "ovl0__to__ovl0_mout";
+		return "postmask0__to__dither0";
 	case 15:
-		return "ovl0_mout0__to__disp_path0_sel_in0";
+		return "rdma0__to__rdma0_rsz_in_sout";
 	case 16:
-		return "ovl0_mout1__to__ovl_to_wrot_sel_in0";
+		return "rdma0_rsz_in_sout_out0__to__rdma0_rsz_out_sel_in0";
 	case 17:
-		return "ovl0_mout2__to__ovl_to_wdma_sel_in0";
+		return "rdma0_rsz_in_sout_out1__to__rsz_sel_in3";
 	case 18:
-		return "ovl0_mout3__to__ovl_to_rsz_sel_in0";
+		return "rdma0_esz_out_sel__to__rdma0_sout";
 	case 19:
-		return "ovl0_mout4__to__ovl0_2L";
+		return "rdma0_sout_out0__to__dsi0_sel_in1";
 	case 20:
-		return "ovl0_mout5__to__disp_rsz_sel_in0";
+		return "rdma0_sout_out1__to__color0";
 	case 21:
-		return "ovl0_sel__to__ovl0";
+		return "rdma0_sout_out2__to__color_out_sel_in1";
 	case 22:
-		return "ovl1_2L__to__ovl1_2L_mout";
+		return "rdma0_sout_out3__to__dpi0_sel_in0";
 	case 23:
-		return "ovl1_2L_mout0__to__disp_path0_sel_in2";
+		return "rdma1__to__rdma1_sout";
 	case 24:
-		return "ovl1_2L_mout1__to__ovl_to_wrot_sel_in2";
+		return "rdma1_sout_out0__to__dpi0_sel_in1";
 	case 25:
-		return "ovl1_2L_mout2__to__ovl_to_wdma_sel_in2";
+		return "rdma1_sout_out1__to__dsi0_sel_in2";
 	case 26:
-		return "ovl1_2L_mout3__to__ovl_to_rsz_sel_in2";
+		return "rsz0__to__rsz_mout";
 	case 27:
-		return "ovl1_2L_mout4__to__disp_rdma1";
+		return "rsz_mout_out0__to__ovl0_in2";
 	case 28:
-		return "ovl1_2L_mout5__to__disp_rsz_sel_in2";
+		return "rsz_mout_out1__to__ovl0_2l_in2";
 	case 29:
-		return "ovl_to_rsz_sel__to__disp_to_rsz";
+		return "rsz_mout_out2__to__ovl1_2l_in2";
 	case 30:
-		return "ovl_to_wdma_sel__to__disp_wdma0_pre_sel_in0";
+		return "ovl_to_wdma_sel__to__wdma0_pre_sel_in0";
 	case 31:
-		return "ovl_to_wrot_sel__to__disp_to_wrot";
+		return "rsz_mout_out4__to__ovl_to_wdma_sel_in3";
+	default:
+		break;
+	}
+	return NULL;
+}
+
+static char *ddp_signal_2(int bit)
+{
+	switch (bit) {
+	case 0:
+		return "rsz_mout_out5__to__rdma0_rsz_out_sel_in3";
+	case 1:
+		return "rsz_mout_out6__to__ovl_to_wrot_sel_in3";
+	case 2:
+		return "rsz_sel__to__rsz0";
+	case 3:
+		return "to_wrot_sout_out0__to__mdp_wrot0_sel_in1";
+	case 4:
+		return "to_wrot_sout_out1__to__mdp_wrot1_sel_in1";
+	case 5:
+		return "wdma0_pre_sel__to__wdma0_sel_in3";
+	case 6:
+		return "wdma0_sel__to__wdma0";
+	case 7:
+		return "dpi0_sel__to__dpi0_thp_lmt";
+	case 8:
+		return "dpi0_thp_lmt__to__dpi0";
+	case 9:
+		return "dsi0_sel__to__dsi0_thp_lmt";
+	case 10:
+		return "dsi0_thp_lmt__to__dsi0";
 	default:
 		break;
 	}
@@ -250,6 +281,10 @@ static char *ddp_get_mutex_module0_name(unsigned int bit)
 		return "DSI";
 	case 20:
 		return "DPI";
+	case 21:
+		return "postmask";
+	case 22:
+		return "rsz";
 	default:
 		break;
 	}
@@ -798,8 +833,10 @@ static void mmsys_config_dump_analysis(void)
 
 	unsigned int valid0 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_0);
 	unsigned int valid1 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_1);
+	unsigned int valid2 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_VALID_2);
 	unsigned int ready0 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_0);
 	unsigned int ready1 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_1);
+	unsigned int ready2 = DISP_REG_GET(DISP_REG_CONFIG_DISP_DL_READY_2);
 	unsigned int greq = DISP_REG_GET(DISP_REG_CONFIG_SMI_LARB_GREQ);
 
 	DDPDUMP("== DISP MMSYS_CONFIG ANALYSIS ==\n");
@@ -833,8 +870,10 @@ static void mmsys_config_dump_analysis(void)
 	}
 	DDPDUMP("clock on modules:%s\n", clock_on);
 
-	DDPDUMP("valid0=0x%x,valid1=0x%x,ready0=0x%x,ready1=0x%x,greq=0%x\n",
-		valid0, valid1, ready0, ready1, greq);
+	DDPDUMP("valid0=0x%x,valid1=0x%x,valid2=0x%x\n",
+		valid0, valid1, valid2);
+	DDPDUMP("ready0=0x%x,ready1=0x%x,ready2=0x%x,greq=0%x\n",
+		ready0, ready1, ready2, greq);
 	for (i = 0; i < 32; i++) {
 		name = ddp_signal_0(i);
 		if (!name)
@@ -870,6 +909,28 @@ static void mmsys_config_dump_analysis(void)
 			pos += sprintf(pos, "%s,", "n");
 
 		if ((ready1 & (1 << i)))
+			pos += sprintf(pos, "%s", "r");
+		else
+			pos += sprintf(pos, "%s", "n");
+
+		pos += sprintf(pos, ": %s", name);
+
+		DDPDUMP("%s\n", clock_on);
+	}
+
+	for (i = 0; i < 11; i++) {
+		name = ddp_signal_2(i);
+		if (!name)
+			continue;
+
+		pos = clock_on;
+
+		if ((valid2 & (1 << i)))
+			pos += sprintf(pos, "%s,", "v");
+		else
+			pos += sprintf(pos, "%s,", "n");
+
+		if ((ready2 & (1 << i)))
 			pos += sprintf(pos, "%s", "r");
 		else
 			pos += sprintf(pos, "%s", "n");

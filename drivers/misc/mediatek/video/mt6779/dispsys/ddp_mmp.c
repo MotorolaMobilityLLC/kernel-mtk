@@ -132,15 +132,15 @@ void init_ddp_mmp_events(void)
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
 					 "wdma_fence_r");
 
-	DDP_MMP_Events.present_fence_release =
+	DDP_MMP_Events.primary_present_fence_release =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
-					 "preset_fence_release");
-	DDP_MMP_Events.present_fence_get =
+					 "primary_preset_fence_release");
+	DDP_MMP_Events.primary_present_fence_get =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
-					 "preset_fence_get");
-	DDP_MMP_Events.present_fence_set =
+					 "primary_preset_fence_get");
+	DDP_MMP_Events.primary_present_fence_set =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
-					 "preset_fence_set");
+					 "primary_preset_fence_set");
 
 	DDP_MMP_Events.idlemgr =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
@@ -151,6 +151,12 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.share_sram =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
 					 "share_sram");
+	DDP_MMP_Events.sbch_set =
+	    mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+					 "sbch_set");
+	DDP_MMP_Events.sbch_set_error =
+	    mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+					 "sbch_set_error");
 	DDP_MMP_Events.sec =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent, "sec");
 	DDP_MMP_Events.svp_module[DISP_MODULE_OVL0_2L] =
@@ -189,6 +195,12 @@ void init_ddp_mmp_events(void)
 	DDP_MMP_Events.primary_set_cmd =
 		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
 					 "primary_set_cmd");
+	DDP_MMP_Events.primary_hrt_bw =
+		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+					 "primary_hrt_bw");
+	DDP_MMP_Events.primary_pm_qos =
+		mmprofile_register_event(DDP_MMP_Events.primary_Parent,
+					 "primary_pm_qos");
 
 #ifdef CONFIG_MTK_HDMI_SUPPORT
 	DDP_MMP_Events.Extd_Parent =
@@ -505,6 +517,7 @@ void ddp_mmp_ovl_layer(struct OVL_CONFIG_STRUCT *pLayer,
 	if (!pLayer->layer_en)
 		goto end;
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = pLayer->vaddr;
 	Bitmap.width = pLayer->dst_w;
 	Bitmap.height = pLayer->dst_h;
@@ -666,6 +679,7 @@ void ddp_mmp_wdma_layer(struct WDMA_CONFIG_STRUCT *wdma_layer,
 		return;
 	}
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = wdma_layer->dstAddress;
 	Bitmap.width = wdma_layer->srcWidth;
 	Bitmap.height = wdma_layer->srcHeight;
@@ -766,6 +780,7 @@ void ddp_mmp_rdma_layer(struct RDMA_CONFIG_STRUCT *rdma_layer,
 		return;
 	}
 
+	memset(&Bitmap, 0, sizeof(struct mmp_metadata_bitmap_t));
 	Bitmap.data1 = rdma_layer->address;
 	Bitmap.width = rdma_layer->width;
 	Bitmap.height = rdma_layer->height;

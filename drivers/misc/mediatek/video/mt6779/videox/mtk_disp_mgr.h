@@ -44,5 +44,5 @@ void dump_input_cfg_info(struct disp_input_config *input_cfg,
 int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg);
 int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg);
 int disp_mgr_has_mem_session(void);
-
+int get_HWC_gpid(void);
 #endif /* __H_MTK_DISP_MGR__ */

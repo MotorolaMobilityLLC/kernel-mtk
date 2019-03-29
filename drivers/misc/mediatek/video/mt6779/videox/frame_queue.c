@@ -273,9 +273,11 @@ struct frame_queue_t *frame_queue_node_create(void)
 	return node;
 }
 
-void frame_queue_node_destroy(struct frame_queue_t *node)
+void frame_queue_node_destroy(struct frame_queue_t *node,
+	bool free_dirty_roi)
 {
-	disp_input_free_dirty_roi(&node->frame_cfg);
+	if (free_dirty_roi)
+		disp_input_free_dirty_roi(&node->frame_cfg);
 	kfree(node);
 }
 
@@ -313,7 +315,7 @@ static int fence_wait_worker_func(void *data)
 		list_del(list);
 		mutex_unlock(&head->lock);
 
-		frame_queue_node_destroy(node);
+		frame_queue_node_destroy(node, 1);
 
 next:
 		/* wake up HWC thread, if it's being blocked */

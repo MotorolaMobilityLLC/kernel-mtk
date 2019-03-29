@@ -28,5 +28,7 @@ void external_display_check_recovery_init(void);
 void external_display_esd_check_enable(int enable);
 
 void set_esd_check_mode(unsigned int mode);
+int primary_display_ovl_recovery(void);
+void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module);
 
 #endif /* _DISP_RECOVERY_H_ */

@@ -14,9 +14,10 @@
 #ifndef _MTK_MDPM_PLATFORM_H_
 #define _MTK_MDPM_PLATFORM_H_
 
-#define MD_POWER_METER_ENABLE 0
+#define MD_POWER_METER_ENABLE 1
 
 #if MD_POWER_METER_ENABLE
+#define GET_MD_SCEANRIO_BY_SHARE_MEMORY
 /* #define MD_POWER_UT */
 #endif
 
@@ -30,6 +31,8 @@
 #define DBM_SECTION_MASK	0x1F
 /* each section is 0x1F = bit(11111) */
 
+#define MDPM_SHARE_MEMORY_MASK		0xFFFFFFFF
+#define MDPM_SHARE_MEMORY_SHIFT		0
 #define VERSION_CHECK_VERSION_MASK	0xFFFF
 #define VERSION_CHECK_VERSION_SHIFT	0
 #define VERSION_CHECK_VALID_MASK	0x3
@@ -65,25 +68,28 @@ enum section_level_tbl {
 
 enum md_scenario {
 	S_STANDBY = 0,
-	S_2G_CONNECT,
-	S_4G_L1_0D0U,
-	S_3G_FDD_L1_WCDMA_TALKING,
+	S_2G_NON_CONN,
+	S_2G_CONN,
+	S_3G_TDD_PAGING,
 	S_3G_TDD_TALKING,
-	S_C2K_1X_TRAFFIC,
-	S_3G_FDD_L1_IDLE_PAGING,
-	S_3GTDD_NON_HSPA_PAGING,
+	S_3G_TDD_DATALINK,
 	S_C2K_PAGING,
-	S_3G_FDD_L1_HSPA_1CC,
-	S_3G_FDD_L1_HSPA_2CC,
-	S_3GTDD_HSPA,
-	S_C2K_DO_DATALINK,
+	S_C2K_EVDO,
 	S_C2K_SHDR,
-	S_4G_L1_1D0U,
-	S_4G_L1_1D1U,
-	S_4G_L1_2D,
-	S_4G_L1_3D,
-	S_4G_L1_4D,
-	S_4G_POSITIONING,
+	S_C2K_1X,
+	S_3G_UL1_TALKING,
+	S_3G_UL1_PAGING,
+	S_3G_UL1_DATA_1C,
+	S_3G_UL1_DATA_2C,
+	S_4G_0D0U,
+	S_4G_1CC,
+	S_4G_2CC,
+	S_4G_3D1U,
+	S_4G_3D2U,
+	S_4G_4D1U,
+	S_4G_4D2U,
+	S_4G_4D3U,
+	S_4G_POS,
 	SCENARIO_NUM
 };
 
@@ -140,7 +146,7 @@ enum share_mem_mapping {	/* each of 8 bytes */
 	M_4G_SECTION_5_LEVEL,
 	M_4G_SECTION_6_LEVEL,
 	M_4G_SECTION_7_LEVEL,
-	M_4G_SECTION_8_LEVEL,
+	M_MD_SCENARIO,
 	M_2G_SECTION_1_LEVEL,
 	M_3G_SECTION_1_LEVEL,
 	M_4G_SECTION_9_LEVEL,
@@ -219,5 +225,7 @@ extern int get_md1_scenario_power(unsigned int scenario,
 	enum mdpm_power_type power_type, struct md_power_status *mdpm_pwr_sta);
 extern int get_md1_tx_power(enum md_scenario scenario, u32 *share_mem,
 	enum mdpm_power_type power_type, struct md_power_status *mdpm_pwr_sta);
-
+#ifdef GET_MD_SCEANRIO_BY_SHARE_MEMORY
+extern unsigned int get_md1_scenario_by_shm(u32 *share_mem);
+#endif
 #endif /* _MTK_MDPM_PLATFORM_H_ */

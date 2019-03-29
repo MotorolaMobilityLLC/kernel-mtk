@@ -15,26 +15,29 @@
 #define _MTK_MDPM_PLATFORM_DATA_H_
 
 static struct scenario_power_type_t md_scen_power[SCENARIO_NUM] = {
-	[S_STANDBY]			= {    0,    0}, /*(MAX, AVG)*/
-	[S_2G_CONNECT]			= {   65,   65},
-	[S_4G_L1_0D0U]			= {    2,    2},
-	[S_3G_FDD_L1_WCDMA_TALKING]	= {   60,   60},
-	[S_3G_TDD_TALKING]		= {   65,   65},
-	[S_C2K_1X_TRAFFIC]		= {   65,   65},
-	[S_3G_FDD_L1_IDLE_PAGING]	= {   40,   40},
-	[S_3GTDD_NON_HSPA_PAGING]	= {   46,   46},
-	[S_C2K_PAGING]			= {    2,    2},
-	[S_3G_FDD_L1_HSPA_1CC]		= {   65,   65},
-	[S_3G_FDD_L1_HSPA_2CC]		= {  129,  129},
-	[S_3GTDD_HSPA]			= {   80,   80},
-	[S_C2K_DO_DATALINK]		= {   78,   78},
-	[S_C2K_SHDR]			= {   79,   79},
-	[S_4G_L1_1D0U]			= {   77,   77},
-	[S_4G_L1_1D1U]			= {  130,  130},
-	[S_4G_L1_2D]			= {  220,  220},
-	[S_4G_L1_3D]			= {  347,  347},
-	[S_4G_L1_4D]			= {  662,  662},
-	[S_4G_POSITIONING]		= {    0,    0}
+	[S_STANDBY]		= {    0,    0},
+	[S_2G_NON_CONN]		= {    1,    1},
+	[S_2G_CONN]		= {   21,   21},
+	[S_3G_TDD_PAGING]	= {   40,   40},
+	[S_3G_TDD_TALKING]	= {   51,   51},
+	[S_3G_TDD_DATALINK]	= {   68,   68},
+	[S_C2K_PAGING]		= {    2,    2},
+	[S_C2K_EVDO]		= {   65,   65},
+	[S_C2K_SHDR]		= {   68,   68},
+	[S_C2K_1X]		= {   52,   52},
+	[S_3G_UL1_TALKING]	= {   51,   51},
+	[S_3G_UL1_PAGING]	= {    2,    2},
+	[S_3G_UL1_DATA_1C]	= {   93,   93},
+	[S_3G_UL1_DATA_2C]	= {  117,  117},
+	[S_4G_0D0U]		= {    2,    2},
+	[S_4G_1CC]		= {  121,  121},
+	[S_4G_2CC]		= {  190,  190},
+	[S_4G_3D1U]		= {  251,  251},
+	[S_4G_3D2U]		= {  298,  298},
+	[S_4G_4D1U]		= {  550,  550},
+	[S_4G_4D2U]		= {  556,  556},
+	[S_4G_4D3U]		= {  567,  567},
+	[S_4G_POS]		= {    0,    0}
 };
 
 static struct rfhw_power_t rfhw0[TX_DBM_NUM] = {

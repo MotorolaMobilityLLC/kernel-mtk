@@ -66,9 +66,6 @@ enum VPU_OPP_INDEX {
 	VPU_OPP_10 = 10,
 	VPU_OPP_11 = 11,
 	VPU_OPP_12 = 12,
-	VPU_OPP_13 = 13,
-	VPU_OPP_14 = 14,
-	VPU_OPP_15 = 15,
 	VPU_OPP_NUM
 };
 
@@ -76,6 +73,23 @@ struct VPU_OPP_INFO {
 	enum VPU_OPP_INDEX opp_index;
 	int power;	/*mW*/
 };
+
+static const int g_vpu_opp_table[VPU_OPP_NUM] = {
+	[VPU_OPP_0] = 700000,
+	[VPU_OPP_1] = 624000,
+	[VPU_OPP_2] = 606000,
+	[VPU_OPP_3] = 594000,
+	[VPU_OPP_4] = 560000,
+	[VPU_OPP_5] = 525000,
+	[VPU_OPP_6] = 450000,
+	[VPU_OPP_7] = 416000,
+	[VPU_OPP_8] = 364000,
+	[VPU_OPP_9] = 312000,
+	[VPU_OPP_10] = 273000,
+	[VPU_OPP_11] = 208000,
+	[VPU_OPP_12] = 137000,
+};
+
 
 extern struct VPU_OPP_INFO vpu_power_table[VPU_OPP_NUM];
 extern int32_t vpu_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t vpu_opp);
@@ -85,6 +99,9 @@ extern int get_vpu_dspcore_opp(int core);
 extern int get_vpu_platform_floor_opp(void);
 extern int get_vpu_ceiling_opp(int core);
 extern int get_vpu_opp_to_freq(uint8_t step);
+void vpu_enable_mtcmos(void);
+void vpu_disable_mtcmos(void);
+int get_vpu_init_done(void);
 
 
 #endif

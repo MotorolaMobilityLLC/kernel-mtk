@@ -300,6 +300,7 @@ struct MFB_Config {
 	unsigned int UNP_CONT_C;
 
 	unsigned int USERDUMP_EN;
+	unsigned int TPIPE_NO;
 };
 #define MFB_Config struct MFB_Config
 

@@ -20,6 +20,8 @@
 #include "disp_session.h"
 #include "disp_lcm.h"
 #include "disp_helper.h"
+
+
 enum DISP_PRIMARY_PATH_MODE {
 	DIRECT_LINK_MODE,
 	DECOUPLE_MODE,
@@ -43,6 +45,8 @@ enum DISP_PRIMARY_PATH_MODE {
 extern unsigned int FB_LAYER; /* default LCD layer */
 #define DISP_DEFAULT_UI_LAYER_ID	(DDP_OVL_LAYER_MUN-1)
 #define DISP_CHANGED_UI_LAYER_ID	(DDP_OVL_LAYER_MUN-2)
+
+#define pgc	_get_context()
 
 extern unsigned int ap_fps_changed;
 extern unsigned int arr_fps_backup;
@@ -89,7 +93,8 @@ enum DISP_OP_STATE {
 enum DISP_POWER_STATE {
 	DISP_ALIVE = 0xf0,
 	DISP_SLEPT,
-	DISP_BLANK
+	DISP_BLANK,
+	DISP_FREEZE,
 };
 
 enum DISP_FRM_SEQ_STATE {
@@ -163,12 +168,16 @@ struct disp_mem_output_config {
 	enum DISP_BUFFER_TYPE security;
 	unsigned int dirty;
 	int mode;
+
+	/* night light setting */
+	struct disp_ccorr_config m_ccorr_config;
 };
 
 #define DISP_INTERNAL_BUFFER_COUNT 3
 
 struct disp_internal_buffer_info {
 	struct list_head list;
+	struct ion_client *client;
 	struct ion_handle *handle;
 	struct sync_fence *pfence;
 	void *va;
@@ -208,6 +217,62 @@ enum mtkfb_power_mode {
 	MTKFB_POWER_MODE_UNKNOWN,
 };
 
+struct display_primary_path_context {
+	enum DISP_POWER_STATE state;
+	unsigned int lcm_fps;
+	unsigned int dynamic_fps;
+	int lcm_refresh_rate;
+	int max_layer;
+	int need_trigger_overlay;
+	int need_trigger_ovl1to2;
+	int need_trigger_dcMirror_out;
+	enum DISP_PRIMARY_PATH_MODE mode;
+	unsigned int session_id;
+	int session_mode;
+	int ovl1to2_mode;
+	unsigned int last_vsync_tick;
+	unsigned long framebuffer_mva;
+	unsigned long framebuffer_va;
+	unsigned long framebuffer_pa;
+	struct mutex lock;
+	struct mutex capture_lock;
+	struct mutex switch_dst_lock;
+	struct disp_lcm_handle *plcm;
+	struct cmdqRecStruct *cmdq_handle_config_esd;
+	struct cmdqRecStruct *cmdq_handle_config;
+	disp_path_handle dpmgr_handle;
+	disp_path_handle ovl2mem_path_handle;
+	struct cmdqRecStruct *cmdq_handle_ovl1to2_config;
+	struct cmdqRecStruct *cmdq_handle_trigger;
+	char *mutex_locker;
+	int vsync_drop;
+	unsigned int dc_buf_id;
+	unsigned int dc_buf[DISP_INTERNAL_BUFFER_COUNT];
+	unsigned int freeze_buf;
+	unsigned int force_fps_keep_count;
+	unsigned int force_fps_skip_count;
+	cmdqBackupSlotHandle cur_config_fence;
+	cmdqBackupSlotHandle subtractor_when_free;
+	cmdqBackupSlotHandle rdma_buff_info;
+	cmdqBackupSlotHandle ovl_status_info;
+	cmdqBackupSlotHandle ovl_dummy_info;
+	cmdqBackupSlotHandle ovl_config_time;
+	cmdqBackupSlotHandle dither_status_info;
+	cmdqBackupSlotHandle dsi_vfp_line;
+	cmdqBackupSlotHandle night_light_params;
+	cmdqBackupSlotHandle hrt_idx_id;
+
+
+	int is_primary_sec;
+	int primary_display_scenario;
+#ifdef CONFIG_MTK_DISPLAY_120HZ_SUPPORT
+	int request_fps;
+#endif
+	enum mtkfb_power_mode pm;
+	enum mtkfb_power_mode prev_pm;
+	enum lcm_power_state lcm_ps;
+};
+
 static inline char *lcm_power_state_to_string(enum lcm_power_state ps)
 {
 	switch (ps) {
@@ -244,6 +309,7 @@ static inline char *power_mode_str(enum mtkfb_power_mode pm)
 
 typedef int (*PRIMARY_DISPLAY_CALLBACK) (unsigned int user_data);
 
+struct display_primary_path_context *_get_context(void);
 void _primary_path_lock(const char *caller);
 void _primary_path_unlock(const char *caller);
 int primary_display_init(char *lcm_name, unsigned int lcm_fps,
@@ -324,6 +390,7 @@ unsigned int primary_display_get_fps_nolock(void);
 int primary_display_get_original_width(void);
 int primary_display_get_original_height(void);
 int primary_display_lcm_ATA(void);
+int primary_display_setbacklight_nolock(unsigned int level);
 int primary_display_setbacklight(unsigned int level);
 int primary_display_pause(PRIMARY_DISPLAY_CALLBACK callback,
 			  unsigned int user_data);
@@ -344,6 +411,7 @@ int primary_display_vsync_switch(int method);
 int primary_display_setlcm_cmd(unsigned int *lcm_cmd, unsigned int *lcm_count,
 			       unsigned int *lcm_value);
 int primary_display_mipi_clk_change(unsigned int clk_value);
+int primary_display_ccci_mipi_callback(int en, unsigned int userdata);
 
 void _cmdq_insert_wait_frame_done_token_mira(void *handle);
 int primary_display_get_max_layer(void);
@@ -396,6 +464,7 @@ extern unsigned int islcmconnected;
 size_t mtkfb_get_fb_size(void);
 
 int primary_fps_ctx_set_wnd_sz(unsigned int wnd_sz);
+int primary_fps_ctx_get_fps(unsigned int *fps, int *stable);
 int primary_fps_ext_ctx_set_interval(unsigned int interval);
 
 int dynamic_debug_msg_print(unsigned int mva, int w, int h, int pitch,
@@ -410,5 +479,6 @@ int primary_display_config_full_roi(struct disp_ddp_path_config *pconfig,
 int primary_display_set_scenario(int scenario);
 enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm);
 extern void check_mm0_clk_sts(void);
+int primary_display_get_dvfs_last_req(void);
 
 #endif

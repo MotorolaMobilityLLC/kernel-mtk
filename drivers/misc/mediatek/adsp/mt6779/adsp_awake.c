@@ -58,6 +58,7 @@
 #define AP_AWAKE_DUMP_MASK          (0x1 << AP_AWAKE_DUMP_BIT)
 #define AP_AWAKE_UPDATE_MASK        (0x1 << AP_AWAKE_UPDATE_BIT)
 #define AP_AWAKE_STATE_MASK         (0x3 << AP_AWAKE_STATE_BIT)
+#define ADSPPLL_UNLOCK_MASK         (0x1 << ADSPPLL_UNLOCK_BIT)
 #define REG_AP_AWAKE                (readl(ADSP_A_AP_AWAKE))
 #define CHECK_AP_AWAKE_MASK(mask)   ((REG_AP_AWAKE & mask) == 0)
 
@@ -213,6 +214,48 @@ void adsp_awake_init(void)
 	for (i = 0; i < ADSP_CORE_TOTAL; i++)
 		mutex_init(&adsp_awake_mutexs[i]);
 }
+
+/*
+ * lock/unlock switch of adsppll clock
+ * @param adsp_id: adsp core id
+ *        unlock: if unlock adsppll
+ * return 0     : send command success
+ *        non-0 : adsp is not ready
+ */
+int adsp_awake_unlock_adsppll(enum adsp_core_id adsp_id, uint32_t unlock)
+{
+	if (adsp_id >= ADSP_CORE_TOTAL) {
+		pr_err("%s() ID %d >= CORE TOTAL", __func__, adsp_id);
+		return -EINVAL;
+	}
+	if (is_adsp_ready(adsp_id) == 0) {
+		char *p_id = adsp_core_ids[adsp_id];
+
+		pr_warn("%s() %s not enabled\n", __func__, p_id);
+		return -1;
+	}
+	{	/* Protected by mutex lock & spin lock */
+		int ret = 0;
+		unsigned long spin_flags = 0;
+		spinlock_t *p_spin = &adsp_awake_spinlock;
+		struct mutex *p_mutex = &adsp_awake_mutexs[adsp_id];
+		uint32_t reg_val;
+
+		mutex_lock(p_mutex);
+		spin_lock_irqsave(p_spin, spin_flags);
+		reg_val = REG_AP_AWAKE;
+		if (unlock)
+			reg_val |= ADSPPLL_UNLOCK_MASK;
+		else
+			reg_val &= ~ADSPPLL_UNLOCK_MASK;
+		writel(reg_val, ADSP_A_AP_AWAKE);
+		writel(ADSP_SW_INT1_BIT, ADSP_SWINT_REG);
+		spin_unlock_irqrestore(p_spin, spin_flags);
+		mutex_unlock(p_mutex);
+		return ret;
+	}
+}
+EXPORT_SYMBOL_GPL(adsp_awake_unlock_adsppll);
 
 /*
  * dump adsp lock list in adsp log

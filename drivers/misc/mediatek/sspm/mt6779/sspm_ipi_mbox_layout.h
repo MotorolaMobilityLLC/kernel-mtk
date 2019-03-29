@@ -34,7 +34,7 @@
 /* definition of slot size for send PINs */
 #define PINS_SIZE_PLATFORM       3  /* the following will use mbox 0 */
 #define PINS_SIZE_CPU_DVFS       4
-#define PINS_SIZE_QOS            4
+#define PINS_SIZE_QOS            6
 #define PINS_SIZE_TST1           4
 #define PINS_SIZE_FHCTL          9
 /* ============================================================ */
@@ -75,7 +75,7 @@
 /* definition of slot size for received PINs */
 #define PINR_SIZE_PLATFORM       3  /* the following will use mbox 2 */
 #define PINR_SIZE_CPU_DVFS       4
-#define PINR_SIZE_QOS            4
+#define PINR_SIZE_QOS            6
 #define PINR_SIZE_TST1           4
 /* definition of slot offset for PINs */
 #define PINR_OFFSET_PLATFORM     0  /* the following will use mbox 2 */

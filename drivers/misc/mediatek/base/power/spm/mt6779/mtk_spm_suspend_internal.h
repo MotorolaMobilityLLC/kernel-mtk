@@ -24,7 +24,7 @@
 #define spm_is_wakesrc_invalid(wakesrc)     (!!((u32)(wakesrc) & 0xc0003803))
 #define CPU_FOOTPRINT_SHIFT 24
 
-#define MTK_SUSPEND_FEATURE_ENABLE (0)
+#define MTK_SUSPEND_FEATURE_ENABLE (1)
 
 enum spm_suspend_step {
 	SPM_SUSPEND_ENTER = 0x00000001,
@@ -47,11 +47,17 @@ bool spm_is_md1_sleep(void);
 bool spm_is_md2_sleep(void);
 bool spm_is_conn_sleep(void);
 void spm_ap_mdsrc_req(u8 set);
+ssize_t get_spm_system_stats(char *ToUserBuf
+			, size_t sz, void *priv);
+ssize_t get_spm_subsystem_stats(char *ToUserBuf
+			, size_t sz, void *priv);
 ssize_t get_spm_sleep_count(char *ToUserBuf
 			, size_t sz, void *priv);
 ssize_t get_spm_last_wakeup_src(char *ToUserBuf
 			, size_t sz, void *priv);
 ssize_t get_spm_last_debug_flag(char *ToUserBuf
+			, size_t sz, void *priv);
+ssize_t get_spmfw_version(char *ToUserBuf
 			, size_t sz, void *priv);
 void spm_output_sleep_option(void);
 
@@ -89,12 +95,17 @@ void spm_suspend_post_process(struct pwr_ctrl *pwrctrl);
 extern void mt_eint_print_status(void);
 #endif
 
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+extern void mt_print_scp_ipi_id(void);
+#endif
+
 #ifdef CONFIG_MTK_RAM_CONSOLE
 extern void aee_rr_rec_spm_suspend_val(u32 val);
 #endif
 
 extern int mtk8250_request_to_sleep(void);
 extern int mtk8250_request_to_wakeup(void);
+extern void mtk8250_backup_dev(void);
 extern void mtk8250_restore_dev(void);
 
 extern int spm_ap_mdsrc_req_cnt;

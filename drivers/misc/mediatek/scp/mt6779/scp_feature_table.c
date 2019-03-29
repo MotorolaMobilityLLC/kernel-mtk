@@ -18,7 +18,7 @@
 struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 	{
 		.feature     = VOW_FEATURE_ID,
-		.freq        = 75,
+		.freq        = 47,
 		.enable      = 0,
 		.sub_feature = 0,
 	},
@@ -30,9 +30,9 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 	},
 	{
 		.feature     = SENS_FEATURE_ID,
-		.freq        = 0,
+		.freq        = 62,
 		.enable      = 0,
-		.sub_feature = 1,
+		.sub_feature = 0,
 	},
 	{
 		.feature     = MP3_FEATURE_ID,
@@ -61,6 +61,18 @@ struct scp_feature_tb feature_table[NUM_FEATURE_ID] = {
 	{
 		.feature     = VCORE_TEST_FEATURE_ID,
 		.freq        = 0,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+	{
+		.feature     = VOW_BARGEIN_FEATURE_ID,
+		.freq        = 100,
+		.enable      = 0,
+		.sub_feature = 0,
+	},
+	{
+		.feature     = VOW_DUMP_FEATURE_ID,
+		.freq        = 10,
 		.enable      = 0,
 		.sub_feature = 0,
 	},

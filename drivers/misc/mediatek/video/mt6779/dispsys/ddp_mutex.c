@@ -50,7 +50,6 @@ static struct module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 
 	[DISP_MODULE_RSZ0] = {DISP_MODULE_RSZ0, 22, 0},
 	[DISP_MODULE_DPI] = {DISP_MODULE_DPI, 20, 0},
-	[DISP_MODULE_DBI] = {DISP_MODULE_DBI, 25, 0},
 	[DISP_MODULE_DPI_VIRTUAL] = {DISP_MODULE_DPI_VIRTUAL, -1, 0},
 	[DISP_MODULE_POSTMASK] = {DISP_MODULE_POSTMASK, 21, 0},
 	[DISP_MODULE_UNKNOWN] = {DISP_MODULE_UNKNOWN, -1, 0},
@@ -98,6 +97,7 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module,
 	return 0;
 }
 
+/* Notice: to reduce cmdq mask write, set mutex mod at ddp_mutex_set_l */
 static int ddp_mutex_add_module(int mutex_id, enum DISP_MODULE_ENUM module,
 				void *handle)
 {
@@ -110,19 +110,23 @@ static int ddp_mutex_add_module(int mutex_id, enum DISP_MODULE_ENUM module,
 		DDPDBG("module %s added to mutex %d\n",
 		       ddp_get_module_name(module), mutex_id);
 		value = (1 << module_mutex_map[module].bit);
+	/*
 		if (module_mutex_map[module].mod_num == 0)
 			DISP_REG_MASK(handle,
 				      DISP_REG_CONFIG_MUTEX_MOD0(mutex_id),
 				      value, value);
+	*/
 	} else if (module == DISP_MODULE_DSIDUAL) {
 		DDPDBG("module %s added to mutex %d\n",
 		       ddp_get_module_name(module), mutex_id);
 		value = (1 << module_mutex_map[DISP_MODULE_DSI0].bit);
 		value |= (1 << module_mutex_map[DISP_MODULE_DSI1].bit);
+	/*
 		if (module_mutex_map[module].mod_num == 0)
 			DISP_REG_MASK(handle,
 				      DISP_REG_CONFIG_MUTEX_MOD0(mutex_id),
 				      value, value);
+	*/
 	}
 
 	return value;
@@ -175,11 +179,13 @@ static int ddp_mutex_set_l(int mutex_id, int *module_list,
 		return -1;
 	}
 
-	/* important */
-	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD0(mutex_id), 0);
 
 	for (i = 0; i < module_num; i++)
-		value |= ddp_mutex_add_module(mutex_id, module_list[i], handle);
+		value |= ddp_mutex_add_module(mutex_id,
+			module_list[i], handle);
+
+	/* Notice: to reduce cmdq mask write, set mutex mod here */
+	DISP_REG_SET(handle, DISP_REG_CONFIG_MUTEX_MOD0(mutex_id), value);
 
 	ddp_get_mutex_src(module_list[module_num - 1], ddp_mode, &sof_src,
 			  &eof_src);
@@ -250,23 +256,26 @@ static void ddp_check_mutex_l(int mutex_id, int *module_list,
 
 void ddp_mutex_interrupt_enable(int mutex_id, void *handle)
 {
+	unsigned int value = 0;
+
 	DDPDBG("mutex %d interrupt enable\n", mutex_id);
-	/* sof irq */
-	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN,
-		      0x1 << mutex_id, 0x1 << mutex_id);
-	/* stream done irq */
-	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN,
-		      0x1 << (mutex_id + DISP_MUTEX_TOTAL),
-		      0x1 << (mutex_id + DISP_MUTEX_TOTAL));
+
+	value |= (0x1 << mutex_id);
+	value |= (0x1 << (mutex_id + DISP_MUTEX_TOTAL));
+
+	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, value, value);
 }
 
 void ddp_mutex_interrupt_disable(int mutex_id, void *handle)
 {
+	unsigned int mask = 0;
+
 	DDPDBG("mutex %d interrupt disenable\n", mutex_id);
-	/* sof irq */
-	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0, 0x1 << mutex_id);
-	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0,
-		      0x1 << (mutex_id + DISP_MUTEX_TOTAL));
+
+	mask |= (0x1 << mutex_id);
+	mask |= (0x1 << (mutex_id + DISP_MUTEX_TOTAL));
+
+	DISP_REG_MASK(handle, DISP_REG_CONFIG_MUTEX_INTEN, 0, mask);
 }
 
 void ddp_mutex_reset(int mutex_id, void *handle)

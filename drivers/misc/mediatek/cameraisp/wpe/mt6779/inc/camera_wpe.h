@@ -34,7 +34,7 @@
 #define WPE_MAGIC               'w'
 
 #define WPE_REG_RANGE           (0x1000)
-/*TODO: WPE base address : 0x1502a000
+/*TODO: WPE base address : 0x15011000
  *       for GCE to access physical register addresses
  */
 #define WPE_BASE_HW     0x15011000
@@ -197,6 +197,7 @@ struct WPE_Config {
 	unsigned int WPE_ISPCROP_CON2;
 	unsigned int WPE_PSP_CTL;
 	unsigned int WPE_PSP2_CTL;
+	unsigned int WPE_PSP_BORDER_COLOR;
 	unsigned int WPE_ADDR_GEN_SOFT_RSTSTAT_0;
 	unsigned int WPE_ADDR_GEN_BASE_ADDR_0;
 	unsigned int WPE_ADDR_GEN_OFFSET_ADDR_0;

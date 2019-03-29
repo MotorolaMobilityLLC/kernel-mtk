@@ -128,16 +128,26 @@ struct eem_det {
 	unsigned int volt_tbl_pmic[NR_FREQ]; /* pmic value */
 	/* unsigned int volt_offset_drcc[NR_FREQ]; *//* pmic value */
 	int volt_aging[NR_FREQ]; /* aging margin value */
+
+	/* Picachu */
+	unsigned int pi_efuse;
+	unsigned int pi_dvtfixed;
+
+	int volt_dcv:8;
 	int volt_offset:8;
 	int volt_clamp:8;
 
 	unsigned int disabled:8; /* Disabled by error or sysfs */
 	unsigned int low_temp_off:8;
 	unsigned int isTempInv:1;
+	unsigned int isHighTemp:1;
+	unsigned int isAddExtra:2;
+	unsigned int volt_policy:1;
 	/* only when init2, eem need to set volt to upower */
 	unsigned int set_volt_to_upower:1;
 	unsigned int init2_done:1;
 	unsigned int vop_check:1;
+	unsigned int detcount;
 #if ENABLE_LOO
 	unsigned char loo_role;
 	unsigned char loo_couple;
@@ -147,17 +157,16 @@ struct eem_det {
 
 struct eem_devinfo {
 	/* M_HW_RES0 0x11f1_0580 */
-	unsigned int BODYBIAS:1;
-	unsigned int PTPOD_T:1;
-	unsigned int EPS:1;
-	unsigned int ANALOG:1;
+	unsigned int PI_DVTFIX_B:4;
 	unsigned int FT_PGM:4;
 	unsigned int TURBO:1;
 	unsigned int RSV1:1;
 	unsigned int REV:2;
 	unsigned int PACKAGE:2;
 	unsigned int FABCODE:2;
-	unsigned int RSV2:16;
+	unsigned int PI_DVTFIX_L:4;
+	unsigned int FT_BIN:4;
+	unsigned int RSV2:8;
 
 	/* M_HW_RES4 */
 	unsigned int CCI_BDES:8;
@@ -273,6 +282,7 @@ extern void get_freq_table_gpu(struct eem_det *det);
 extern void get_orig_volt_table_gpu(struct eem_det *det);
 extern int get_volt_vpu(struct eem_det *det);
 extern int set_volt_vpu(struct eem_det *det);
+extern int get_volt_mdla(struct eem_det *det);
 extern void restore_default_volt_vpu(struct eem_det *det);
 extern void get_freq_table_vpu(struct eem_det *det);
 extern void get_orig_volt_table_vpu(struct eem_det *det);

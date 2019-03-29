@@ -17,7 +17,7 @@
 #include "scp_reg.h"
 
 #define SHARE_BUF_SIZE 288
-/* scp awake timout count definition*/
+/* scp awake timeout count definition*/
 #define SCP_AWAKE_TIMEOUT 100000
 #define SCP_IPI_STAMP_SUPPORT 0
 
@@ -63,6 +63,8 @@ enum ipi_id {
 	IPI_MET_SCP,
 	IPI_SCP_TIMER,              /* 30 */
 	IPI_SCP_ERROR_INFO,
+	IPI_SCPCTL,
+	IPI_SCP_LOG_FILTER = 33,
 	SCP_NR_IPI,
 };
 

@@ -66,9 +66,12 @@
 #include "disp_recovery.h"
 #include "disp_partial.h"
 #include "ddp_dsi.h"
+#include "ddp_reg_mmsys.h"
+#include "ddp_reg.h"
 
 /* For abnormal check */
 static struct task_struct *primary_display_check_task;
+static struct task_struct *primary_display_recovery_thread;
 /* used for blocking check task  */
 static wait_queue_head_t _check_task_wq;
 /* For  Check Task */
@@ -98,6 +101,9 @@ static atomic_t esd_ext_te_1_event = ATOMIC_INIT(0);
 static unsigned int extd_esd_check_mode;
 static unsigned int extd_esd_check_enable;
 #endif
+
+atomic_t enable_ovl0_recovery = ATOMIC_INIT(0);
+atomic_t enable_ovl0_2l_recovery = ATOMIC_INIT(0);
 
 unsigned int get_esd_check_mode(void)
 {
@@ -705,6 +711,166 @@ done:
 	return ret;
 }
 
+/* add for display recovery */
+int primary_display_ovl_recovery(void)
+{
+	enum DISP_STATUS ret = DISP_STATUS_OK;
+	struct disp_ddp_path_config *pconfig;
+	struct ddp_io_golden_setting_arg io_gs;
+
+	DISPFUNC();
+	DISPCHECK("[%s]begin\n", __func__);
+
+	primary_display_manual_lock();
+
+	if (primary_get_state() == DISP_SLEPT) {
+		DISPCHECK("[%s]primary display is slept?\n", __func__);
+		goto done;
+	}
+
+	primary_display_idlemgr_kick((char *)__func__, 0);
+
+	if (pgc->session_mode != DISP_SESSION_DIRECT_LINK_MODE) {
+		DISPCHECK("[%s]path is not DL, skip recovery\n", __func__);
+		goto done;
+	}
+
+	DISPDBG("[%s]cmdq trigger loop stop[begin]\n", __func__);
+	_cmdq_stop_trigger_loop();
+	DISPCHECK("[%s]cmdq trigger loop stop[end]\n", __func__);
+
+	DISPDBG("[%s]stop dpmgr path[begin]\n", __func__);
+	dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPCHECK("[%s]stop dpmgr path[end]\n", __func__);
+
+	if (dpmgr_path_is_busy(primary_get_dpmgr_handle()))
+		DISP_PR_ERR("[%s]display path is busy after stop\n",
+			__func__);
+
+	DISPDBG("[%s]reset display path[begin]\n", __func__);
+
+	ddp_path_mmsys_sw_reset(0, 14); /* reset OVL0_2L */
+	ddp_path_mmsys_sw_reset(0, 13); /* reset OVL0 */
+	ddp_path_mmsys_sw_reset(1, 18); /* reset PVRIC core */
+
+	dpmgr_path_reset(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+
+	DISPCHECK("[%s]reset display path[end]\n", __func__);
+	dsi_basic_irq_enable(DISP_MODULE_DSI0, NULL);
+
+	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
+	pconfig->rdma_dirty = 1;
+	pconfig->ovl_dirty = 1;
+	pconfig->dst_dirty = 1;
+	pconfig->sbch_enable = 0;
+
+	dpmgr_path_connect(pgc->dpmgr_handle, CMDQ_DISABLE);
+	ret = dpmgr_path_config(pgc->dpmgr_handle, pconfig, NULL);
+
+	memset(&io_gs, 0, sizeof(struct ddp_io_golden_setting_arg));
+	io_gs.dst_mod_type = DST_MOD_REAL_TIME;
+	io_gs.is_decouple_mode = 0;
+	dpmgr_path_ioctl(pgc->dpmgr_handle, NULL,
+		DDP_OVL_GOLDEN_SETTING, &io_gs);
+
+	DISPDBG("[%s]start dpmgr path[begin]\n", __func__);
+	if (disp_partial_is_support()) {
+		struct disp_ddp_path_config *data_config =
+			dpmgr_path_get_last_config(primary_get_dpmgr_handle());
+
+		primary_display_config_full_roi(data_config,
+			primary_get_dpmgr_handle(), NULL);
+	}
+	dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
+	DISPCHECK("[%s]start dpmgr path[end]\n", __func__);
+
+	if (dpmgr_path_is_busy(primary_get_dpmgr_handle())) {
+		DISP_PR_ERR("[%s]not trigger display but already busy\n",
+			__func__);
+		ret = -1;
+		/* goto done; */
+	}
+
+	DISPDBG("[%s]start cmdq trigger loop[begin]\n", __func__);
+	_cmdq_start_trigger_loop();
+	DISPCHECK("[%s]start cmdq trigger loop[end]\n", __func__);
+	if (primary_display_is_video_mode()) {
+		/*
+		 * for video mode, we need to force trigger here
+		 * for cmd mode, just set DPREC_EVENT_CMDQ_SET_EVENT_ALLOW
+		 * when trigger loop start
+		 */
+		dpmgr_path_trigger(primary_get_dpmgr_handle(),
+			NULL, CMDQ_DISABLE);
+
+	}
+
+	/*
+	 * (in suspend) when we stop trigger loop
+	 * if no other thread is running, cmdq may disable its clock
+	 * all cmdq event will be cleared after suspend
+	 */
+	cmdqCoreSetEvent(CMDQ_EVENT_DISP_WDMA0_EOF);
+
+	/* set dirty to trigger one frame -- cmd mode */
+	if (!primary_display_is_video_mode()) {
+		cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CONFIG_DIRTY);
+		mdelay(40);
+	}
+
+done:
+	primary_display_manual_unlock();
+	DISPCHECK("[%s] end\n", __func__);
+	return ret;
+}
+
+void primary_display_set_recovery_module(enum DISP_MODULE_ENUM module)
+{
+	switch (module) {
+	case DISP_MODULE_OVL0:
+		atomic_set(&enable_ovl0_recovery, 1);
+		break;
+	case DISP_MODULE_OVL0_2L:
+		atomic_set(&enable_ovl0_2l_recovery, 1);
+		break;
+	default:
+		break;
+	}
+}
+
+static int primary_display_recovery_kthread(void *data)
+{
+	dpmgr_enable_event(primary_get_dpmgr_handle(),
+		DISP_PATH_EVENT_DISP_RECOVERY);
+	while (1) {
+		dpmgr_wait_event(primary_get_dpmgr_handle(),
+			DISP_PATH_EVENT_DISP_RECOVERY);
+
+		if (atomic_read(&enable_ovl0_recovery) &&
+			ovl_need_mmsys_sw_reset(DISP_MODULE_OVL0)) {
+			atomic_set(&enable_ovl0_recovery, 0);
+			atomic_set(&enable_ovl0_2l_recovery, 0);
+			DISP_PR_ERR("Detect %s malfunction, do recovery\n",
+				ddp_get_module_name(DISP_MODULE_OVL0));
+			primary_display_ovl_recovery();
+		}
+
+		if (atomic_read(&enable_ovl0_2l_recovery) &&
+			ovl_need_mmsys_sw_reset(DISP_MODULE_OVL0_2L)) {
+			atomic_set(&enable_ovl0_recovery, 0);
+			atomic_set(&enable_ovl0_2l_recovery, 0);
+			DISP_PR_ERR("Detect %s malfunction, do recovery\n",
+				ddp_get_module_name(DISP_MODULE_OVL0_2L));
+			primary_display_ovl_recovery();
+		}
+
+		if (kthread_should_stop())
+			break;
+	}
+
+	return 0;
+}
+
 void primary_display_check_recovery_init(void)
 {
 	/* primary display check thread init */
@@ -721,6 +887,12 @@ void primary_display_check_recovery_init(void)
 			set_esd_check_mode(GPIO_EINT_MODE);
 			primary_display_esd_check_enable(1);
 		}
+	}
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
+		primary_display_recovery_thread =
+		    kthread_create(primary_display_recovery_kthread,
+			    NULL, "primary_display_path_recovery");
+		wake_up_process(primary_display_recovery_thread);
 	}
 }
 

@@ -51,53 +51,47 @@ enum CMDQ_ENG_ENUM {
 	CMDQ_ENG_JPEG_REMDC,		/* 26 */
 
 	/* DISP */
-	CMDQ_ENG_DISP_UFOE,		/* 27 */
-	CMDQ_ENG_DISP_AAL,		/* 28 */
-	CMDQ_ENG_DISP_COLOR0,		/* 29 */
-	CMDQ_ENG_DISP_RDMA0,		/* 30 */
-	CMDQ_ENG_DISP_RDMA1,		/* 31 */
-	CMDQ_ENG_DISP_RDMA2,		/* 32 */
-	CMDQ_ENG_DISP_WDMA0,		/* 33 */
-	CMDQ_ENG_DISP_WDMA1,		/* 34 */
-	CMDQ_ENG_DISP_OVL0,		/* 35 */
-	CMDQ_ENG_DISP_OVL1,		/* 36 */
-	CMDQ_ENG_DISP_OVL2,		/* 37 */
-	CMDQ_ENG_DISP_GAMMA,		/* 38 */
-	CMDQ_ENG_DISP_DSI0_VDO,		/* 39 */
-	CMDQ_ENG_DISP_DSI0_CMD,		/* 40 */
-	CMDQ_ENG_DISP_DSI0,		/* 41 */
-	CMDQ_ENG_DISP_2L_OVL0,		/* 42 */
-	CMDQ_ENG_DISP_2L_OVL1,		/* 43 */
-	CMDQ_ENG_DISP_2L_OVL2,		/* 44 */
+	CMDQ_ENG_DISP_AAL,		/* 27 */
+	CMDQ_ENG_DISP_COLOR0,		/* 28 */
+	CMDQ_ENG_DISP_RDMA0,		/* 29 */
+	CMDQ_ENG_DISP_RDMA1,		/* 30 */
+	CMDQ_ENG_DISP_WDMA0,		/* 31 */
+	CMDQ_ENG_DISP_WDMA1,		/* 32 */
+	CMDQ_ENG_DISP_OVL0,		/* 33 */
+	CMDQ_ENG_DISP_OVL1,		/* 34 */
+	CMDQ_ENG_DISP_OVL2,		/* 35 */
+	CMDQ_ENG_DISP_GAMMA,		/* 36 */
+	CMDQ_ENG_DISP_DSI0,		/* 37 */
+	CMDQ_ENG_DISP_2L_OVL0,		/* 38 */
+	CMDQ_ENG_DISP_2L_OVL1,		/* 39 */
 
 	/* ISP */
-	CMDQ_ENG_DPE,			/* 45 */
-	CMDQ_ENG_RSC,			/* 46 */
-	CMDQ_ENG_GEPF,			/* 47 */
-	CMDQ_ENG_EAF,			/* 48 */
-	CMDQ_ENG_OWE,			/* 49 */
-	CMDQ_ENG_MFB,			/* 50 */
-	CMDQ_ENG_FDVT,			/* 51 */
+	CMDQ_ENG_DPE,			/* 40 */
+	CMDQ_ENG_RSC,			/* 41 */
+	CMDQ_ENG_GEPF,			/* 42 */
+	CMDQ_ENG_EAF,			/* 43 */
+	CMDQ_ENG_OWE,			/* 44 */
+	CMDQ_ENG_MFB,			/* 45 */
+	CMDQ_ENG_FDVT,			/* 46 */
 
 	/* temp: CMDQ internal usage */
-	CMDQ_ENG_CMDQ,			/* 52 */
-	CMDQ_ENG_DISP_MUTEX,		/* 53 */
-	CMDQ_ENG_MMSYS_CONFIG,		/* 54 */
+	CMDQ_ENG_CMDQ,			/* 47 */
 
 	/* Dummy Engine */
-	CMDQ_ENG_MDP_RSZ2,		/* 55 */
-	CMDQ_ENG_MDP_TDSHP1,		/* 56 */
-	CMDQ_ENG_MDP_WDMA,		/* 57 */
+	CMDQ_ENG_MDP_RSZ2,		/* 48 */
+	CMDQ_ENG_MDP_TDSHP1,		/* 49 */
+	CMDQ_ENG_MDP_WDMA,		/* 50 */
 
-	CMDQ_ENG_DISP_MERGE,		/* 58 */
-	CMDQ_ENG_DISP_SPLIT0,		/* 59 */
-	CMDQ_ENG_DISP_SPLIT1,		/* 60 */
-	CMDQ_ENG_DISP_DSI1_VDO,		/* 61 */
-	CMDQ_ENG_DISP_DSI1_CMD,		/* 62 */
-	CMDQ_ENG_DISP_DSI1,		/* 63 */
+	/* ISP sec */
+	CMDQ_ENG_ISP_VIPI,		/* 51 */
+	CMDQ_ENG_ISP_LCEI,		/* 52 */
+	CMDQ_ENG_ISP_IMG3O,		/* 53 */
+	CMDQ_ENG_ISP_SMXIO,		/* 54 */
+	CMDQ_ENG_ISP_DMGI_DEPI,		/* 55 */
+	CMDQ_ENG_ISP_IMGCI,		/* 56 */
+	CMDQ_ENG_ISP_TIMGO,		/* 57 */
 
-
-	CMDQ_MAX_ENGINE_COUNT	/* ALWAYS keep at the end */
+	CMDQ_MAX_ENGINE_COUNT		/* ALWAYS keep at the end */
 };
 
 #define CMDQ_ENG_WPE_GROUP_BITS	((1LL << CMDQ_ENG_WPEI) |	\
@@ -128,8 +122,7 @@ enum CMDQ_ENG_ENUM {
 				 (1LL << CMDQ_ENG_MDP_WROT1))
 
 #define CMDQ_ENG_DISP_GROUP_BITS	\
-				((1LL << CMDQ_ENG_DISP_UFOE) |		\
-				(1LL << CMDQ_ENG_DISP_AAL) |		\
+				((1LL << CMDQ_ENG_DISP_AAL) |		\
 				(1LL << CMDQ_ENG_DISP_COLOR0) |	\
 				(1LL << CMDQ_ENG_DISP_RDMA0) |		\
 				(1LL << CMDQ_ENG_DISP_RDMA1) |		\
@@ -137,20 +130,10 @@ enum CMDQ_ENG_ENUM {
 				(1LL << CMDQ_ENG_DISP_WDMA1) |		\
 				(1LL << CMDQ_ENG_DISP_OVL0) |		\
 				(1LL << CMDQ_ENG_DISP_OVL1) |		\
-				(1LL << CMDQ_ENG_DISP_OVL2) |		\
 				(1LL << CMDQ_ENG_DISP_2L_OVL0) |	\
 				(1LL << CMDQ_ENG_DISP_2L_OVL1) |	\
-				(1LL << CMDQ_ENG_DISP_2L_OVL2) |	\
 				(1LL << CMDQ_ENG_DISP_GAMMA) |		\
-				(1LL << CMDQ_ENG_DISP_MERGE) |		\
-				(1LL << CMDQ_ENG_DISP_SPLIT0) |	\
-				(1LL << CMDQ_ENG_DISP_SPLIT1) |	\
-				(1LL << CMDQ_ENG_DISP_DSI0_VDO) |	\
-				(1LL << CMDQ_ENG_DISP_DSI1_VDO) |	\
-				(1LL << CMDQ_ENG_DISP_DSI0_CMD) |	\
-				(1LL << CMDQ_ENG_DISP_DSI1_CMD) |	\
-				(1LL << CMDQ_ENG_DISP_DSI0) |		\
-				(1LL << CMDQ_ENG_DISP_DSI1))
+				(1LL << CMDQ_ENG_DISP_DSI0))
 
 #define CMDQ_ENG_VENC_GROUP_BITS	((1LL << CMDQ_ENG_VIDEO_ENC))
 

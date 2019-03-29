@@ -69,6 +69,12 @@ enum xo_id {
 	XO_NUMBER
 };
 
+enum clk_buf_onff {
+	CLK_BUF_FORCE_OFF,
+	CLK_BUF_FORCE_ON,
+	CLK_BUF_INIT_SETTING
+};
+
 enum {
 	BBLPM_COND_SKIP	= (1 << 0),
 	BBLPM_COND_WCN	= (1 << CLK_BUF_CONN),

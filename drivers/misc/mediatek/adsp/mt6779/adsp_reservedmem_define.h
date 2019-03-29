@@ -120,6 +120,12 @@ static struct adsp_reserve_mblock adsp_reserve_mblock[] = {
 		.start_virt = 0x0,
 		.size = 0x20000,/*128KB*/
 	},
+	{
+		.num = ADSP_DATAPROVIDER_MEM_ID,
+		.start_phys = 0x0,
+		.start_virt = 0x0,
+		.size = 0x30000,/*192KB*/
+	},
 #endif
 	{
 		.num = ADSP_A_DEBUG_DUMP_MEM_ID,

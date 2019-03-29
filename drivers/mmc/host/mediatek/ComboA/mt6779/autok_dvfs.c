@@ -484,9 +484,7 @@ int emmc_execute_dvfs_autok(struct msdc_host *host, u32 opcode)
 			ret = hs200_execute_tuning(host, res);
 		}
 
-		if (host->mmc->card &&
-				!(host->mmc->card->mmc_avail_type
-					& EXT_CSD_CARD_TYPE_HS400)) {
+		if (host->hs400_mode == false) {
 			host->is_autok_done = 1;
 			complete(&host->autok_done);
 		}
@@ -853,10 +851,42 @@ void sdio_execute_dvfs_autok(struct msdc_host *host)
 
 #if defined(VCOREFS_READY)
 static int autok_opp[AUTOK_VCORE_NUM] = {
-	VCORE_DVFS_OPP_2, /* 0.8V, OPP_0 is invalid */
-	VCORE_DVFS_OPP_6, /* 0.7V */
-	VCORE_DVFS_OPP_9, /* 0.625V */
+	VCORE_DVFS_OPP_2, /* 0.825V, OPP_0 is invalid */
+	VCORE_DVFS_OPP_6, /* 0.725V */
+	VCORE_DVFS_OPP_9, /* 0.65V */
 };
+#endif
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+static int emmc_autok_switch_cqe(struct msdc_host *host, bool enable)
+{
+	bool cmdq_mode = 0;
+	int err = 0;
+
+	if (host->mmc->card) {
+		cmdq_mode = !!mmc_card_cmdq(host->mmc->card);
+		if (cmdq_mode && !enable) {
+			err = host->mmc->cmdq_ops->halt(host->mmc, 1);
+			if (err) {
+				pr_notice("%s: halt:failed: %d\n",
+					__func__, err);
+				return err;
+			}
+			/* disable for xf data */
+			host->mmc->cmdq_ops->disable(host->mmc, true);
+		} else if (cmdq_mode && enable) {
+			/* enable for cqhci */
+			host->mmc->cmdq_ops->enable(host->mmc);
+			err = host->mmc->cmdq_ops->halt(host->mmc, 0);
+			if (err) {
+				pr_notice("%s: unhalt:failed: %d\n",
+					__func__, err);
+				return err;
+			}
+		}
+	}
+	return err;
+}
 #endif
 
 /*
@@ -897,12 +927,17 @@ int emmc_autok(void)
 	base = host->base;
 	mmc_claim_host(host->mmc);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (emmc_autok_switch_cqe(host, 0))
+		pr_notice("WARN:%s:cqe disable fail", __func__);
+#endif
+
 	pm_qos_add_request(&autok_force, PM_QOS_VCORE_DVFS_FORCE_OPP,
 			PM_QOS_VCORE_DVFS_FORCE_OPP_DEFAULT_VALUE);
 
 	for (i = 0; i < AUTOK_VCORE_NUM; i++) {
 		pm_qos_update_request(&autok_force, autok_opp[i]);
-		/* vcore = 0.5V + 6.25mV * vcore_step2 */
+		/* vcore = 0.4V + 6.25mV * vcore_step2 */
 		vcore_step2 = pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL);
 		pr_notice("msdc fix vcore, PMIC_RG_BUCK_VCORE_VOSEL: %d\n",
 			vcore_step2);
@@ -950,6 +985,11 @@ int emmc_autok(void)
 	}
 
 	pm_qos_remove_request(&autok_force);
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (emmc_autok_switch_cqe(host, 1))
+		pr_notice("WARN:%s:cqe enable fail", __func__);
+#endif
 
 	mmc_release_host(host->mmc);
 #endif

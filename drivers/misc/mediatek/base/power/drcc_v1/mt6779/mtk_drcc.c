@@ -70,7 +70,7 @@
 /************************************************
  * Marco definition
  ************************************************/
-#define LOG_INTERVAL	(2LL * NSEC_PER_SEC)
+#define LOG_INTERVAL	(1LL * NSEC_PER_SEC)
 
 #ifdef TIME_LOG
 /* Get time stmp to known the time period */
@@ -150,6 +150,33 @@ static struct hrtimer drcc_timer_log;
 static bool drcc_timer_en;
 static DEFINE_SPINLOCK(drcc_spinlock);
 static unsigned int drccNum = 8;
+#ifdef CONFIG_OF
+static unsigned int state;
+static unsigned int drcc0_Vref;
+static unsigned int drcc1_Vref;
+static unsigned int drcc2_Vref;
+static unsigned int drcc3_Vref;
+static unsigned int drcc4_Vref;
+static unsigned int drcc5_Vref;
+static unsigned int drcc6_Vref;
+static unsigned int drcc7_Vref;
+static unsigned int drcc0_Hwgatepct;
+static unsigned int drcc1_Hwgatepct;
+static unsigned int drcc2_Hwgatepct;
+static unsigned int drcc3_Hwgatepct;
+static unsigned int drcc4_Hwgatepct;
+static unsigned int drcc5_Hwgatepct;
+static unsigned int drcc6_Hwgatepct;
+static unsigned int drcc7_Hwgatepct;
+static unsigned int drcc0_Code;
+static unsigned int drcc1_Code;
+static unsigned int drcc2_Code;
+static unsigned int drcc3_Code;
+static unsigned int drcc4_Code;
+static unsigned int drcc5_Code;
+static unsigned int drcc6_Code;
+static unsigned int drcc7_Code;
+#endif
 
 /************************************************
  * Global function definition
@@ -219,12 +246,12 @@ void mtk_drcc_log2RamConsole(void)
 
 int mtk_drcc_feature_enabled_check(void)
 {
-	unsigned int status = 0, i;
+	unsigned int status = 0, i = 0;
 
 	for (i = 0; i < drccNum; i++) {
 		status |= (mt_secure_call_drcc(
 				MTK_SIP_KERNEL_DRCC_READ,
-				DRCC_AO_REG_BASE + (0x200 * i),
+				DRCC_AO_REG_BASE + ((u64)0x200 * i),
 				0,
 				0) &
 				0x01) <<
@@ -332,11 +359,13 @@ void mtk_drcc_protect(unsigned int value,
 /*
  * timer for log
  */
+static unsigned int preCount[8];
 static enum hrtimer_restart drcc_timer_log_func(struct hrtimer *timer)
 {
-	unsigned int i, value[drccNum][4], drcc_n;
+	unsigned int i, value[drccNum][4], drcc_n = 0;
 
-	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
+	for (drcc_n = 6; drcc_n < drccNum; drcc_n++) {
+		#if 0
 		drcc_debug("CPU(%d)_DRCC_AO_CONFIG reg=0x%x,\t value=0x%x\n",
 			drcc_n,
 			DRCC_AO_REG_BASE + (0x200 * drcc_n),
@@ -345,20 +374,27 @@ static enum hrtimer_restart drcc_timer_log_func(struct hrtimer *timer)
 				DRCC_AO_REG_BASE + (0x200 * drcc_n),
 				0,
 				0));
+		#endif
 
-		for (i = 0; i < 4; i++)
+		for (i = 3; i < 4; i++)
 			value[drcc_n][i] = mt_secure_call_drcc(
 				MTK_SIP_KERNEL_DRCC_READ,
-				DRCC_CONF0 + (drcc_n * 0x800) + (i * 4),
+				DRCC_CONF0 + (drcc_n * (u64)0x800) + (i * 4),
 				0,
 				0);
 
+		#if 0
 		drcc_debug("CPU(%d), drcc_reg :", drcc_n);
-		for (i = 0; i < 4; i++)
+		for (i = 3; i < 4; i++)
 			drcc_debug("\t0x%x = 0x%x",
 				DRCC_CONF0 + (drcc_n * 0x800) + (i * 4),
 				value[drcc_n][i]);
 		drcc_debug("\n");
+		#endif
+		drcc_debug("[xxxxdrcc] count_%d = %d\n",
+			drcc_n,
+			value[drcc_n][3] - preCount[drcc_n]);
+		preCount[drcc_n] = value[drcc_n][3];
 	}
 
 	hrtimer_forward_now(timer, ns_to_ktime(LOG_INTERVAL));
@@ -370,12 +406,12 @@ static enum hrtimer_restart drcc_timer_log_func(struct hrtimer *timer)
  ************************************************/
 static int drcc_enable_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n, value;
+	int status = 0, value, drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		value = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			0,
 			0);
 		status = status | ((value & 0x01) << drcc_n);
@@ -418,12 +454,12 @@ out:
 
 static int drcc_trig_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n;
+	int status = 0, drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_CONF0 + (drcc_n * 0x800),
+			DRCC_CONF0 + (drcc_n * (u64)0x800),
 			0,
 			0);
 
@@ -467,19 +503,20 @@ out:
 
 static int drcc_count_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_CONF0 + (drcc_n * 0x800),
+			DRCC_CONF0 + (drcc_n * (u64)0x800),
 			0,
 			0);
 
 		seq_printf(m, "drcc_%d count =  %s, %s\n",
 			drcc_n,
 			(status & 0x40) ? "enable" : "disable",
-			(status & 0x80) ? "clock gate" : "comparator");
+			(status & 0x80) ? "comparator" : "clock gate");
 	}
 	return 0;
 }
@@ -515,12 +552,13 @@ out:
 
 static int drcc_mode_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_CONF0 + (drcc_n * 0x800),
+			DRCC_CONF0 + (drcc_n * (u64)0x800),
 			0,
 			0);
 
@@ -562,12 +600,13 @@ out:
 
 static int drcc_code_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			0,
 			0);
 
@@ -610,12 +649,13 @@ out:
 
 static int drcc_hwgatepct_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			0,
 			0);
 
@@ -658,12 +698,13 @@ out:
 
 static int drcc_vreffilt_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			0,
 			0);
 
@@ -706,12 +747,13 @@ out:
 
 static int drcc_autocalibdelay_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			0,
 			0);
 
@@ -754,12 +796,13 @@ out:
 
 static int drcc_forcetrim_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_CONF2 + (drcc_n * 0x800),
+			DRCC_CONF2 + ((u64)drcc_n * 0x800),
 			0,
 			0);
 
@@ -803,12 +846,13 @@ out:
 
 static int drcc_protect_proc_show(struct seq_file *m, void *v)
 {
-	int status = 0, drcc_n = 0;
+	int status = 0;
+	unsigned int drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		status = mt_secure_call_drcc(
 			MTK_SIP_KERNEL_DRCC_READ,
-			DRCC_CONF2 + (drcc_n * 0x800),
+			DRCC_CONF2 + (drcc_n * (u64)0x800),
 			0,
 			0);
 
@@ -902,33 +946,33 @@ out:
 static int drcc_reg_dump_proc_show(struct seq_file *m, void *v)
 {
 	unsigned long flags;
-	unsigned int i, value[drccNum][4], drcc_n;
+	unsigned int i, value[drccNum][4], drcc_n = 0;
 
 	for (drcc_n = 0; drcc_n < drccNum; drcc_n++) {
 		mtk_drcc_lock(&flags);
-		seq_printf(m, "CPU(%d)_DRCC_AO_CONFIG reg=0x%x,\t value=0x%x\n",
+		seq_printf(m, "CPU(%d)_DRCC_AO_CONFIG reg=0x%llx,\t value=0x%x\n",
 			drcc_n,
-			DRCC_AO_REG_BASE + (0x200 * drcc_n),
+			DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 			mt_secure_call_drcc(
 				MTK_SIP_KERNEL_DRCC_READ,
-				DRCC_AO_REG_BASE + (0x200 * drcc_n),
+				DRCC_AO_REG_BASE + ((u64)0x200 * drcc_n),
 				0,
 				0));
 
 		for (i = 0; i < 4; i++)
 			value[drcc_n][i] = mt_secure_call_drcc(
 				MTK_SIP_KERNEL_DRCC_READ,
-				DRCC_CONF0 + (drcc_n * 0x800) + (i * 4),
+				DRCC_CONF0 + (drcc_n * (u64)0x800) + (i * 4),
 				0,
 				0);
 		mtk_drcc_unlock(&flags);
 
 		seq_printf(m, "CPU(%d), drcc_reg :", drcc_n);
 		for (i = 0; i < 4; i++)
-			seq_printf(m, "\t0x%x = 0x%x",
-				DRCC_CONF0 + (drcc_n * 0x800) + (i * 4),
+			seq_printf(m, "\t0x%llx = 0x%x",
+				DRCC_CONF0 + (drcc_n * (u64)0x800) + (i * 4),
 				value[drcc_n][i]);
-		seq_printf(m, "%d\n", i);
+		seq_printf(m, "    .%d\n", i);
 	}
 	return 0;
 }
@@ -1026,6 +1070,268 @@ static int create_procfs(void)
 
 static int drcc_probe(struct platform_device *pdev)
 {
+	#ifdef CONFIG_OF
+	struct device_node *node = NULL;
+	int rc = 0;
+	unsigned int drcc_n = 0;
+
+	node = pdev->dev.of_node;
+	if (!node) {
+		drcc_debug("get drcc device node err\n");
+		return -ENODEV;
+	}
+
+	rc = of_property_read_u32(node, "state", &state);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] state from DTree; rc(%d) state(0x%x)\n",
+			rc,
+			state);
+
+		for (drcc_n = 0; drcc_n < drccNum; drcc_n++)
+			mtk_drcc_enable((state >> drcc_n) & 0x01, drcc_n);
+	}
+
+	rc = of_property_read_u32(node, "drcc0_Vref", &drcc0_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc0_Vref from DTree; rc(%d) drcc0_Vref(0x%x)\n",
+			rc,
+			drcc0_Vref);
+
+		if (drcc0_Vref <= 7)
+			mtk_drcc_vreffilt(drcc0_Vref, 0);
+	}
+
+	rc = of_property_read_u32(node, "drcc1_Vref", &drcc1_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc1_Vref from DTree; rc(%d) drcc1_Vref(0x%x)\n",
+			rc,
+			drcc1_Vref);
+
+		if (drcc1_Vref <= 7)
+			mtk_drcc_vreffilt(drcc1_Vref, 1);
+	}
+
+	rc = of_property_read_u32(node, "drcc2_Vref", &drcc2_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc2_Vref from DTree; rc(%d) drcc2_Vref(0x%x)\n",
+			rc,
+			drcc2_Vref);
+
+		if (drcc2_Vref <= 7)
+			mtk_drcc_vreffilt(drcc2_Vref, 2);
+	}
+
+	rc = of_property_read_u32(node, "drcc3_Vref", &drcc3_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc3_Vref from DTree; rc(%d) drcc3_Vref(0x%x)\n",
+			rc,
+			drcc3_Vref);
+
+		if (drcc3_Vref <= 7)
+			mtk_drcc_vreffilt(drcc3_Vref, 3);
+	}
+
+	rc = of_property_read_u32(node, "drcc4_Vref", &drcc4_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc4_Vref from DTree; rc(%d) drcc4_Vref(0x%x)\n",
+			rc,
+			drcc4_Vref);
+
+		if (drcc4_Vref <= 7)
+			mtk_drcc_vreffilt(drcc4_Vref, 4);
+	}
+
+	rc = of_property_read_u32(node, "drcc5_Vref", &drcc5_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc5_Vref from DTree; rc(%d) drcc5_Vref(0x%x)\n",
+			rc,
+			drcc5_Vref);
+
+		if (drcc5_Vref <= 7)
+			mtk_drcc_vreffilt(drcc5_Vref, 5);
+	}
+
+	rc = of_property_read_u32(node, "drcc6_Vref", &drcc6_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc6_Vref from DTree; rc(%d) drcc6_Vref(0x%x)\n",
+			rc,
+			drcc6_Vref);
+
+		if (drcc6_Vref <= 7)
+			mtk_drcc_vreffilt(drcc6_Vref, 6);
+	}
+
+	rc = of_property_read_u32(node, "drcc7_Vref", &drcc7_Vref);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc7_Vref from DTree; rc(%d) drcc7_Vref(0x%x)\n",
+			rc,
+			drcc7_Vref);
+
+		if (drcc7_Vref <= 7)
+			mtk_drcc_vreffilt(drcc7_Vref, 7);
+	}
+
+	rc = of_property_read_u32(node, "drcc0_Hwgatepct", &drcc0_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc0_Hwgatepct from DTree; rc(%d) drcc0_Hwgatepct(0x%x)\n",
+			rc,
+			drcc0_Hwgatepct);
+
+		if (drcc0_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc0_Hwgatepct, 0);
+	}
+
+	rc = of_property_read_u32(node, "drcc1_Hwgatepct", &drcc1_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc1_Hwgatepct from DTree; rc(%d) drcc1_Hwgatepct(0x%x)\n",
+			rc,
+			drcc1_Hwgatepct);
+
+		if (drcc1_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc1_Hwgatepct, 1);
+	}
+
+	rc = of_property_read_u32(node, "drcc2_Hwgatepct", &drcc2_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc2_Hwgatepct from DTree; rc(%d) drcc2_Hwgatepct(0x%x)\n",
+			rc,
+			drcc2_Hwgatepct);
+
+		if (drcc2_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc2_Hwgatepct, 2);
+	}
+
+	rc = of_property_read_u32(node, "drcc3_Hwgatepct", &drcc3_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc3_Hwgatepct from DTree; rc(%d) drcc3_Hwgatepct(0x%x)\n",
+			rc,
+			drcc3_Hwgatepct);
+
+		if (drcc3_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc3_Hwgatepct, 3);
+	}
+
+	rc = of_property_read_u32(node, "drcc4_Hwgatepct", &drcc4_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc4_Hwgatepct from DTree; rc(%d) drcc4_Hwgatepct(0x%x)\n",
+			rc,
+			drcc4_Hwgatepct);
+
+		if (drcc4_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc4_Hwgatepct, 4);
+	}
+
+	rc = of_property_read_u32(node, "drcc5_Hwgatepct", &drcc5_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc5_Hwgatepct from DTree; rc(%d) drcc5_Hwgatepct(0x%x)\n",
+			rc,
+			drcc5_Hwgatepct);
+
+		if (drcc5_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc5_Hwgatepct, 5);
+	}
+
+	rc = of_property_read_u32(node, "drcc6_Hwgatepct", &drcc6_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc6_Hwgatepct from DTree; rc(%d) drcc6_Hwgatepct(0x%x)\n",
+			rc,
+			drcc6_Hwgatepct);
+
+		if (drcc6_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc6_Hwgatepct, 6);
+	}
+
+	rc = of_property_read_u32(node, "drcc7_Hwgatepct", &drcc7_Hwgatepct);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc7_Hwgatepct from DTree; rc(%d) drcc7_Hwgatepct(0x%x)\n",
+			rc,
+			drcc7_Hwgatepct);
+
+		if (drcc7_Hwgatepct <= 7)
+			mtk_drcc_hwgatepct(drcc7_Hwgatepct, 7);
+	}
+
+	rc = of_property_read_u32(node, "drcc0_Code", &drcc0_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc0_Code from DTree; rc(%d) drcc0_Code(0x%x)\n",
+			rc,
+			drcc0_Code);
+
+		if (drcc0_Code <= 63)
+			mtk_drcc_code(drcc0_Code, 0);
+	}
+
+	rc = of_property_read_u32(node, "drcc1_Code", &drcc1_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc1_Code from DTree; rc(%d) drcc1_Code(0x%x)\n",
+			rc,
+			drcc1_Code);
+
+		if (drcc1_Code <= 63)
+			mtk_drcc_code(drcc1_Code, 1);
+	}
+
+	rc = of_property_read_u32(node, "drcc2_Code", &drcc2_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc2_Code from DTree; rc(%d) drcc2_Code(0x%x)\n",
+			rc,
+			drcc2_Code);
+
+		if (drcc2_Code <= 63)
+			mtk_drcc_code(drcc2_Code, 2);
+	}
+
+	rc = of_property_read_u32(node, "drcc3_Code", &drcc3_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc3_Code from DTree; rc(%d) drcc3_Code(0x%x)\n",
+			rc,
+			drcc3_Code);
+
+		if (drcc3_Code <= 63)
+			mtk_drcc_code(drcc3_Code, 3);
+	}
+
+	rc = of_property_read_u32(node, "drcc4_Code", &drcc4_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc4_Code from DTree; rc(%d) drcc4_Code(0x%x)\n",
+			rc,
+			drcc4_Code);
+
+		if (drcc4_Code <= 63)
+			mtk_drcc_code(drcc4_Code, 4);
+	}
+
+	rc = of_property_read_u32(node, "drcc5_Code", &drcc5_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc5_Code from DTree; rc(%d) drcc5_Code(0x%x)\n",
+			rc,
+			drcc5_Code);
+
+		if (drcc5_Code <= 63)
+			mtk_drcc_code(drcc5_Code, 5);
+	}
+
+	rc = of_property_read_u32(node, "drcc6_Code", &drcc6_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc6_Code from DTree; rc(%d) drcc6_Code(0x%x)\n",
+			rc,
+			drcc6_Code);
+
+		if (drcc6_Code <= 63)
+			mtk_drcc_code(drcc6_Code, 6);
+	}
+
+	rc = of_property_read_u32(node, "drcc7_Code", &drcc7_Code);
+	if (!rc) {
+		drcc_debug("[xxxxdrcc] drcc7_Code from DTree; rc(%d) drcc7_Code(0x%x)\n",
+			rc,
+			drcc7_Code);
+
+		if (drcc7_Code <= 63)
+			mtk_drcc_code(drcc7_Code, 7);
+	}
+	#endif
+
 	#ifdef CONFIG_MTK_RAM_CONSOLE
 	_mt_drcc_aee_init();
 	#endif
@@ -1043,6 +1349,14 @@ static int drcc_resume(struct platform_device *pdev)
 {
 	return 0;
 }
+
+#ifdef CONFIG_OF
+static const struct of_device_id mt_drcc_of_match[] = {
+	{ .compatible = "mediatek,drcc", },
+	{},
+};
+#endif
+
 static struct platform_driver drcc_driver = {
 	.remove		= NULL,
 	.shutdown	= NULL,
@@ -1051,6 +1365,9 @@ static struct platform_driver drcc_driver = {
 	.resume		= drcc_resume,
 	.driver		= {
 		.name   = "mt-drcc",
+#ifdef CONFIG_OF
+	.of_match_table = mt_drcc_of_match,
+#endif
 	},
 };
 

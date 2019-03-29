@@ -43,6 +43,8 @@
 #define IS_DOWN 0
 #define USE_TIMER_CHECK_TIME msecs_to_jiffies(50)
 #define CM_MGR_INIT_DELAY_MS 1
+#define CM_MGR_BW_VALUE 0
+#define CM_MGR_VCORE_OPP_COUNT 13
 
 enum {
 	CM_MGR_LP4X_2CH = 0,
@@ -51,6 +53,7 @@ enum {
 
 extern void __iomem *mcucfg_mp0_counter_base;
 
+extern int cm_mgr_vcore_opp_to_bw[CM_MGR_VCORE_OPP_COUNT];
 extern unsigned int cpu_power_up_array[CM_MGR_CPU_CLUSTER];
 extern unsigned int cpu_power_down_array[CM_MGR_CPU_CLUSTER];
 extern unsigned int cpu_power_up[CM_MGR_CPU_CLUSTER];
@@ -90,6 +93,7 @@ extern int cm_mgr_register_init(void);
 extern int cm_mgr_platform_init(void);
 extern void cm_mgr_set_dram_level(int level);
 extern int cm_mgr_get_dram_opp(void);
-extern void cm_mgr_emi_latency(int enable);
+extern int cm_mgr_check_bw_status(void);
+extern int cm_mgr_get_bw(void);
 
 #endif	/* __MTK_CM_MGR_PLATFORM_H__ */

@@ -134,7 +134,9 @@ extern unsigned long dcm_ddrphy1_ao_base;
 #define P2P_RX_CLK_ON (INFRACFG_AO_BASE + 0xa0)
 #define INFRA_AXIMEM_IDLE_BIT_EN_0 (INFRACFG_AO_BASE + 0xa30)
 #define INFRA_EMI_DCM_CFG0 (INFRACFG_AO_MEM_BASE + 0x28)
+#define INFRA_EMI_DCM_CFG1 (INFRACFG_AO_MEM_BASE + 0x2c)
 #define INFRA_EMI_DCM_CFG3 (INFRACFG_AO_MEM_BASE + 0x34)
+#define TOP_CK_ANCHOR_CFG (INFRACFG_AO_MEM_BASE + 0x38)
 #define PMIC_WRAP_DCM_EN (PWRAP_BASE + 0x1ec)
 #define EMI_CONM (EMI_BASE + 0x60)
 #define EMI_CONN (EMI_BASE + 0x68)
@@ -160,8 +162,6 @@ extern unsigned long dcm_ddrphy1_ao_base;
 /* INFRACFG_AO */
 bool dcm_infracfg_ao_infra_bus_dcm_is_on(void);
 void dcm_infracfg_ao_infra_bus_dcm(int on);
-bool dcm_infracfg_ao_infra_emi_local_dcm_is_on(void);
-void dcm_infracfg_ao_infra_emi_local_dcm(int on);
 bool dcm_infracfg_ao_infra_rx_p2p_dcm_is_on(void);
 void dcm_infracfg_ao_infra_rx_p2p_dcm(int on);
 bool dcm_infracfg_ao_peri_bus_dcm_is_on(void);

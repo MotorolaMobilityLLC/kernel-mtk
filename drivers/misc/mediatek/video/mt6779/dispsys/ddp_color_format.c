@@ -111,15 +111,23 @@ char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt)
 		return "PRGBA8888";
 	case UFMT_PBGRA8888:
 		return "PBGRA8888";
+	case UFMT_RGBA1010102:
+		return "RGBA1010102";
+	case UFMT_PRGBA1010102:
+		return "PRGBA101012";
+	case UFMT_RGBA_FP16:
+		return "RGBA_FP16";
+	case UFMT_PRGBA_FP16:
+		return "PRGBA_FP16";
 	default:
-		return "fmt_unknown";
+		break;
 	}
 	return "fmt_unknown";
 }
 
-
 static enum UNIFIED_COLOR_FMT display_engine_supported_color[] = {
-	/* ovl/rdma supported */
+	/* OVL/RDMA supported */
+	UFMT_RGBA4444,
 	UFMT_RGB565, UFMT_BGR565,
 	UFMT_RGB888, UFMT_BGR888,
 	UFMT_RGBA8888, UFMT_BGRA8888,
@@ -127,9 +135,11 @@ static enum UNIFIED_COLOR_FMT display_engine_supported_color[] = {
 	UFMT_XRGB8888, UFMT_RGBX8888,
 	UFMT_PARGB8888, UFMT_PABGR8888,
 	UFMT_PRGBA8888, UFMT_PBGRA8888,
+	UFMT_RGBA1010102, UFMT_PRGBA1010102,
+	UFMT_RGBA_FP16, UFMT_PRGBA_FP16,
 	UFMT_UYVY, UFMT_VYUY,
 	UFMT_YUYV, UFMT_YVYU,
-	/* wdma supported */
+	/* WDMA supported */
 	UFMT_YV12, UFMT_I420,
 	UFMT_NV12, UFMT_NV21,
 };
@@ -204,10 +214,19 @@ enum UNIFIED_COLOR_FMT disp_fmt_to_unified_fmt(enum DISP_FORMAT src_fmt)
 		return UFMT_PRGBA8888;
 	case DISP_FORMAT_PBGRA8888:
 		return UFMT_PBGRA8888;
+	case DISP_FORMAT_RGBA1010102:
+		return UFMT_RGBA1010102;
+	case DISP_FORMAT_PRGBA1010102:
+		return UFMT_PRGBA1010102;
+	case DISP_FORMAT_RGBA_FP16:
+		return UFMT_RGBA_FP16;
+	case DISP_FORMAT_PRGBA_FP16:
+		return UFMT_PRGBA_FP16;
 	default:
 		DDP_PR_ERR("Invalid color format: 0x%x\n", src_fmt);
-		return UFMT_UNKNOWN;
+		break;
 	}
+	return UFMT_UNKNOWN;
 }
 
 int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt,
@@ -323,15 +342,14 @@ unsigned int ufmt_is_old_fmt(unsigned int fmt)
 
 	switch (fmt) {
 	case UFMT_PARGB8888:
-		old_fmt = 1;
-		break;
 	case UFMT_PABGR8888:
-		old_fmt = 1;
-		break;
 	case UFMT_PRGBA8888:
+	case UFMT_PBGRA8888:
+	case UFMT_PRGBA1010102:
+	case UFMT_PRGBA_FP16:
 		old_fmt = 1;
 		break;
-	case UFMT_PBGRA8888:
+	case UFMT_RGBA4444:
 		old_fmt = 1;
 		break;
 	default:

@@ -17,6 +17,10 @@
 #include "ddp_hal.h"
 #include "ddp_info.h"
 
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+extern unsigned int top_mva;
+#endif
+
 
 /* start postmask module */
 int postmask_start(enum DISP_MODULE_ENUM module, void *handle);

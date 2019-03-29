@@ -49,7 +49,7 @@
 #define MTK_IDLE_FEATURE_ENABLE_DPIDLE  (0)
 #define MTK_IDLE_FEATURE_ENABLE_SODI    (0)
 #define MTK_IDLE_FEATURE_ENABLE_SODI3   (0)
-#define MTK_FEATURE_EANABLE_KICK_SPMFW	(0)
+#define MTK_FEATURE_EANABLE_KICK_SPMFW	(1)
 #define MTK_SPM_HARDWARE_CG_CHECK	(0)
 
 /**************************************
@@ -210,6 +210,7 @@ struct wake_status {
 	u32 req_sta1;		/* SRC_REQ_STA_1 */
 	u32 req_sta2;		/* SRC_REQ_STA_2 */
 	u32 req_sta3;		/* SRC_REQ_STA_3 */
+	u32 req_sta4;		/* SRC_REQ_STA_4 */
 	u32 debug_flag;		/* PCM_WDT_LATCH_SPARE_0 */
 	u32 debug_flag1;	/* PCM_WDT_LATCH_SPARE_1 */
 	u32 b_sw_flag0;		/* SPM_SW_RSV_7 */
@@ -226,6 +227,22 @@ struct spm_lp_scen {
 	struct pcm_desc *pcmdesc;
 	struct pwr_ctrl *pwrctrl;
 	struct wake_status *wakestatus;
+};
+
+/**********************************************************
+ * MD sleep status
+ **********************************************************/
+struct md_sleep_status {
+	u32 slp_sleep_info1;
+	u32 slp_cnt_high;
+	u32 slp_cnt_low;
+	u32 slp_cnt_reserve1;
+	u32 slp_cnt_reserve2;
+	u32 slp_sleep_time_high;
+	u32 slp_sleep_time_low;
+	u32 slp_sleep_time_reserve1;
+	u32 slp_sleep_time_reserve2;
+	u32 slp_sleep_info2;
 };
 
 /**********************************************************
@@ -331,14 +348,14 @@ enum {
 	CLKMUX_BUS_AXIMEM	= 54,
 	CLKMUX_CAMTG5		= 55,
 
-	/* CLK_CFG_13 1000_0640*/
+	/* CLK_CFG_14 1000_0640*/
 	CLKMUX_MEM		= 56,
 
 	NF_CLKMUX,
 };
 
 #define CLK_CHECK   (1 << 31)
-#define NF_CLK_CFG            (NF_CLKMUX / 4)
+#define NF_CLK_CFG            ((NF_CLKMUX / 4) + 1)
 
 /***********************************************************
  * mtk_spm.c
@@ -367,6 +384,8 @@ void __spm_set_pwrctrl_pcm_flags(struct pwr_ctrl *pwrctrl, u32 flags);
 void __spm_set_pwrctrl_pcm_flags1(struct pwr_ctrl *pwrctrl, u32 flags);
 void __spm_sync_pcm_flags(struct pwr_ctrl *pwrctrl);
 void __spm_get_wakeup_status(struct wake_status *wakesta);
+void __spm_save_ap_sleep_info(struct wake_status *wakesta);
+void __spm_save_26m_sleep_info(void);
 unsigned int __spm_output_wake_reason(
 	const struct wake_status *wakesta, bool suspend, const char *scenario);
 unsigned int __spm_get_wake_period(int pwake_time, unsigned int last_wr);
@@ -507,7 +526,12 @@ extern struct spm_lp_scen __spm_dpidle;
 extern struct spm_lp_scen __spm_sodi3;
 extern struct spm_lp_scen __spm_sodi;
 
-/* dpamif debug */
-extern void dpmaif_dump_reg(void);
+/***********************************************************
+ * mtk_spm_suspend.c
+ ***********************************************************/
+extern u64 spm_26M_off_count;
+extern u64 spm_26M_off_duration;
+extern u64 ap_pd_count;
+extern u64 ap_slp_duration;
 
 #endif /* __MTK_SPM_INTERNAL_H__ */

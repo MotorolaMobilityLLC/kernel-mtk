@@ -129,6 +129,8 @@ static struct {
 	{DISP_OPT_SHOW_VISUAL_DEBUG_INFO, 0, "DISP_OPT_SHOW_VISUAL_DEBUG_INFO"},
 	{DISP_OPT_RDMA_UNDERFLOW_AEE, 0, "DISP_OPT_RDMA_UNDERFLOW_AEE"},
 	{DISP_OPT_HRT, 1, "DISP_OPT_HRT"},
+	 /* HRT_MODE, 0 -> legacy PMQOS, 1 -> HRT BW */
+	{DISP_OPT_HRT_MODE, 0, "DISP_OPT_HRT_MODE"},
 	{DISP_OPT_PARTIAL_UPDATE, 0, "DISP_OPT_PARTIAL_UPDATE"},
 	{DISP_OPT_CV_BYSUSPEND, 0, "DISP_OPT_CV_BYSUSPEND"},
 	{DISP_OPT_DELAYED_TRIGGER, 0, "DISP_OPT_DELAYED_TRIGGER"},
@@ -148,6 +150,9 @@ static struct {
 		"DISP_OPT_ROUND_CORNER_MODE"},
 	{DISP_OPT_FRAME_QUEUE, 0, "DISP_OPT_FRAME_QUEUE"},
 	{DISP_OPT_DC_BY_HRT, 0, "DISP_OPT_DC_BY_HRT"},
+	{DISP_OPT_OVL_WCG, 0, "DISP_OPT_OVL_WCG"},
+	{DISP_OPT_OVL_SBCH, 0, "DISP_OPT_OVL_SBCH"},
+	{DISP_OPT_MMPATH, 0, "DISP_OPT_MMPATH"},
 };
 
 const char *disp_helper_option_spy(enum DISP_HELPER_OPT option)
@@ -297,6 +302,7 @@ int disp_helper_get_option(enum DISP_HELPER_OPT option)
 			return 0;
 		else if (_is_early_porting_stage())
 			return 0;
+		return 1;/*avoid error with no break when default case*/
 	}
 	case DISP_OPT_SWITCH_DST_MODE:
 	{
@@ -344,8 +350,8 @@ const char *disp_helper_stage_spy(void)
 
 void disp_helper_option_init(void)
 {
-	disp_helper_set_option(DISP_OPT_USE_CMDQ, 0);
-	disp_helper_set_option(DISP_OPT_USE_M4U, 0);
+	disp_helper_set_option(DISP_OPT_USE_CMDQ, 1);
+	disp_helper_set_option(DISP_OPT_USE_M4U, 1);
 
 	/*
 	 * test solution for 6795 rdma underflow caused by ufoe LR mode
@@ -358,26 +364,26 @@ void disp_helper_option_init(void)
 
 	/* ================ Begin: lowpower option setting ================ */
 	disp_helper_set_option(DISP_OPT_SODI_SUPPORT, 0);
-	disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+	disp_helper_set_option(DISP_OPT_IDLE_MGR, 1);
 
 	/* 1. vdo mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	0);
-	disp_helper_set_option(DISP_OPT_IDLEMGR_BY_REPAINT, 0);
-	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 0);
-	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_SWTCH_DECOUPLE,	1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_BY_REPAINT, 1);
+	disp_helper_set_option(DISP_OPT_SHARE_SRAM, 1);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_DISABLE_ROUTINE_IRQ, 1);
 
 	/* 2. cmd mode + screen idle(need idlemgr) */
-	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 0);
+	disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 1);
 	disp_helper_set_option(DISP_OPT_IDLEMGR_KEEP_LP11, 0);
 
 	/* 3. cmd mode + vdo mode */
 	disp_helper_set_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK, 0);
-	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 0);
+	disp_helper_set_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING, 1);
 
 	disp_helper_set_option(DISP_OPT_MET_LOG, 0);
 	/* ================ End: lowpower option setting ================== */
 
-	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 0);
+	disp_helper_set_option(DISP_OPT_PRESENT_FENCE, 1);
 
 	/* use fake vsync timer for low power measurement */
 	disp_helper_set_option(DISP_OPT_NO_LCM_FOR_LOW_POWER_MEASUREMENT, 0);
@@ -385,10 +391,10 @@ void disp_helper_option_init(void)
 	/* use RGB565 format for decouple mode intermediate buffer */
 	disp_helper_set_option(DISP_OPT_DECOUPLE_MODE_USE_RGB565, 0);
 
-	disp_helper_set_option(DISP_OPT_USE_PQ, 0);
+	disp_helper_set_option(DISP_OPT_USE_PQ, 1);
 	disp_helper_set_option(DISP_OPT_MUTEX_EOF_EN_FOR_CMD_MODE, 0);
-	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 0);
-	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 0);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_RECOVERY, 1);
+	disp_helper_set_option(DISP_OPT_ESD_CHECK_SWITCH, 1);
 
 	disp_helper_set_option(DISP_OPT_BYPASS_OVL, 0);
 	disp_helper_set_option(DISP_OPT_FPS_CALC_WND, 10);
@@ -398,36 +404,41 @@ void disp_helper_option_init(void)
 	disp_helper_set_option(DISP_OPT_FPS_EXT_INTERVAL, 1000);
 	disp_helper_set_option(DISP_OPT_SMART_OVL, 0);
 	disp_helper_set_option(DISP_OPT_DYNAMIC_DEBUG, 0);
-	disp_helper_set_option(DISP_OPT_HRT, 0);
+	disp_helper_set_option(DISP_OPT_HRT, 1);
+	disp_helper_set_option(DISP_OPT_HRT_MODE, 1);
 
 	/* display partial update */
 #ifdef CONFIG_MTK_CONSUMER_PARTIAL_UPDATE_SUPPORT
 	disp_helper_set_option(DISP_OPT_PARTIAL_UPDATE, 0);
 #endif
 	disp_helper_set_option(DISP_OPT_CV_BYSUSPEND, 0);
-	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 0);
+	disp_helper_set_option(DISP_OPT_DELAYED_TRIGGER, 1);
 	disp_helper_set_option(DISP_OPT_SHADOW_REGISTER, 0);
 	disp_helper_set_option(DISP_OPT_SHADOW_MODE, 0);
 
 	/* smart layer OVL */
-	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 0);
+	disp_helper_set_option(DISP_OPT_OVL_EXT_LAYER, 1);
 
 	disp_helper_set_option(DISP_OPT_REG_PARSER_RAW_DUMP, 0);
 	disp_helper_set_option(DISP_OPT_PQ_REG_DUMP, 0);
 
-	disp_helper_set_option(DISP_OPT_AOD, 0);
+	disp_helper_set_option(DISP_OPT_AOD, 1);
 
 	/* ARR phase 1 option */
 	disp_helper_set_option(DISP_OPT_ARR_PHASE_1, 0);
 
 	disp_helper_set_option(DISP_OPT_RSZ, 0);
-	disp_helper_set_option(DISP_OPT_RPO, 0);
+	disp_helper_set_option(DISP_OPT_RPO, 1);
 	disp_helper_set_option(DISP_OPT_DUAL_PIPE, 0);
 	disp_helper_set_option(DISP_OPT_SHARE_WDMA0, 0);
-	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 0);
+	disp_helper_set_option(DISP_OPT_ROUND_CORNER, 1);
 	disp_helper_set_option(DISP_OPT_ROUND_CORNER_MODE, DISP_HELPER_HW_RC);
 	disp_helper_set_option(DISP_OPT_FRAME_QUEUE, 0);
 	disp_helper_set_option(DISP_OPT_DC_BY_HRT, 0);
+	disp_helper_set_option(DISP_OPT_OVL_WCG, 1);
+	/* OVL SBCH */
+	disp_helper_set_option(DISP_OPT_OVL_SBCH, 1);
+	disp_helper_set_option(DISP_OPT_MMPATH, 0);
 }
 
 int disp_helper_get_option_list(char *stringbuf, int buf_len)

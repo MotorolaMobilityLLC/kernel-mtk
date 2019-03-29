@@ -15,6 +15,7 @@
 
 #include <linux/slab.h>
 #include <linux/mutex.h>
+#include <linux/spinlock.h>
 
 #include "disp_helper.h"
 #include "lcm_drv.h"
@@ -31,6 +32,7 @@
 #include "ddp_clkmgr.h"
 
 #include "ddp_log.h"
+#include "disp_drv_platform.h"
 
 /* #define __GED_NOTIFICATION_SUPPORT__ */
 #ifdef __GED_NOTIFICATION_SUPPORT__
@@ -39,6 +41,9 @@
 
 static int ddp_manager_init;
 #define DDP_MAX_MANAGER_HANDLE (DISP_MUTEX_DDP_COUNT+DISP_MUTEX_DDP_FIRST)
+
+static CmdqDumpInfoCB cmdq_dump_callback_table[MAX_SESSION_COUNT];
+static spinlock_t cmdq_dump_lock;
 
 struct DPMGR_WQ_HANDLE {
 	unsigned int init;
@@ -100,8 +105,7 @@ static bool ddp_valid_engine[DISP_MODULE_NUM] = {
 	[DISP_MODULE_MIPI0] = 0,
 	[DISP_MODULE_MIPI1] = 0,
 	[DISP_MODULE_DPI] = 0,
-	[DISP_MODULE_DBI] = 0,
-	[DISP_MODULE_RSZ0] = 0,
+	[DISP_MODULE_RSZ0] = 1,
 	[DISP_MODULE_POSTMASK] = 1,
 	[DISP_MODULE_UNKNOWN] = 0,
 };
@@ -352,37 +356,38 @@ static int __maybe_unused acquire_free_bit(unsigned int total)
 
 static int acquire_mutex(enum DDP_SCENARIO_ENUM scenario)
 {
-	/* primay use mutex 0 */
+	/* /: primay use mutex 0 */
 	int mutex_id = 0;
-	struct DDP_MANAGER_CONTEXT *c = _get_context();
-	int mutex_idx_free = c->mutex_idx;
-
+	int mutex_idx_free = 0;
+	struct DDP_MANAGER_CONTEXT *ctx = _get_context();
 	ASSERT(scenario >= 0 && scenario < DDP_SCENARIO_MAX);
-
+	mutex_lock(&ctx->mutex_lock);
+	mutex_idx_free = ctx->mutex_idx;
 	while (mutex_idx_free) {
 		if (mutex_idx_free & 0x1) {
-			c->mutex_idx &= (~(0x1 << mutex_id));
+			ctx->mutex_idx &= (~(0x1 << mutex_id));
 			mutex_id += DISP_MUTEX_DDP_FIRST;
 			break;
 		}
 		mutex_idx_free >>= 1;
 		++mutex_id;
 	}
-
+	mutex_unlock(&ctx->mutex_lock);
 	ASSERT(mutex_id < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
 	DDPDBG("scenario %s acquire mutex %d, left mutex 0x%x!\n",
-	       ddp_get_scenario_name(scenario), mutex_id, c->mutex_idx);
+		   ddp_get_scenario_name(scenario), mutex_id, ctx->mutex_idx);
 	return mutex_id;
 }
 
 static int release_mutex(int mutex_idx)
 {
-	struct DDP_MANAGER_CONTEXT *c = _get_context();
-
+	struct DDP_MANAGER_CONTEXT *ctx = _get_context();
 	ASSERT(mutex_idx < (DISP_MUTEX_DDP_FIRST + DISP_MUTEX_DDP_COUNT));
-	c->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
-	DDPDBG("release mutex %d, left mutex 0x%x!\n",
-	       mutex_idx, c->mutex_idx);
+	mutex_lock(&ctx->mutex_lock);
+	ctx->mutex_idx |= 1 << (mutex_idx - DISP_MUTEX_DDP_FIRST);
+	mutex_unlock(&ctx->mutex_lock);
+	DDPDBG("release mutex %d, left mutex 0x%x!\n", mutex_idx,
+		ctx->mutex_idx);
 	return 0;
 }
 
@@ -1185,6 +1190,7 @@ struct disp_ddp_path_config
 	phandle->last_config.ovl_layer_dirty = 0;
 	phandle->last_config.ovl_layer_scanned = 0;
 	phandle->last_config.ovl_partial_dirty = 0;
+	phandle->last_config.sbch_enable = 0;
 	return &phandle->last_config;
 }
 
@@ -1509,6 +1515,8 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, unsigned int msg,
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_AAL_INIT_DRE30:
+	case DISP_IOCTL_AAL_GET_SIZE:
 		/* TODO: just for verify rootcause, will be removed soon */
 #ifndef CONFIG_FOR_SOURCE_PQ
 		if (!is_module_in_path(DISP_MODULE_AAL0, phandle))
@@ -1743,45 +1751,48 @@ int dpmgr_check_status_by_scenario(enum DDP_SCENARIO_ENUM scenario)
 int dpmgr_check_status(disp_path_handle dp_handle)
 {
 	int i = 0;
-	int *list;
-	int m_num;
-	struct ddp_path_handle *phandle;
-	struct DDP_MANAGER_CONTEXT *c = _get_context();
+	int *modules;
+	int module_num;
+	struct ddp_path_handle *handle;
+	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
-	ASSERT(dp_handle);
-	phandle = (struct ddp_path_handle *)dp_handle;
-	list = ddp_get_scenario_list(phandle->scenario);
-	m_num = ddp_get_module_num(phandle->scenario);
-
-	DDPDUMP("--> check status on scenario %s\n",
-		ddp_get_scenario_name(phandle->scenario));
-
-	if (!c->power_state) {
-		DDPDUMP("cannot check ddp status due to already power off\n");
+	ASSERT(dp_handle != NULL);
+	handle = kmalloc(sizeof(struct ddp_path_handle), GFP_ATOMIC);
+	if (IS_ERR_OR_NULL(handle)) {
+		DISP_PR_INFO("%s:%d alloc path handle fail!\n",
+			__func__, __LINE__);
 		return 0;
 	}
-
+	memcpy(handle, dp_handle, sizeof(struct ddp_path_handle));
+	modules = ddp_get_scenario_list(handle->scenario);
+	module_num = ddp_get_module_num(handle->scenario);
+	DDPDUMP("--> check status on scenario %s\n",
+		ddp_get_scenario_name(handle->scenario));
+	if (!(context->power_state)) {
+		DDPDUMP("cannot check ddp status due to already power off\n");
+		kfree(handle);
+		return 0;
+	}
 	ddp_dump_analysis(DISP_MODULE_CONFIG);
-	ddp_check_path(phandle->scenario);
-	ddp_check_mutex(phandle->hwmutexid, phandle->scenario, phandle->mode);
-
-	DDPDUMP("path:\n");
-	for (i = 0; i < m_num; i++)
-		DDPDUMP("%s-\n", ddp_get_module_name(list[i]));
-
-	DDPDUMP("\n");
-
+	ddp_check_path(handle->scenario);
+	ddp_check_mutex(handle->hwmutexid, handle->scenario, handle->mode);
+	/* dump path */
+	{
+		DDPDUMP("path:\n");
+		for (i = 0; i < module_num; i++)
+			DDPDUMP("%s-\n", ddp_get_module_name(modules[i]));
+		DDPDUMP("\n");
+	}
 	ddp_dump_analysis(DISP_MODULE_MUTEX);
-
-	for (i = 0; i < m_num; i++)
-		ddp_dump_analysis(list[i]);
-
-	for (i = 0; i < m_num; i++)
-		ddp_dump_reg(list[i]);
-
+	for (i = 0; i < module_num; i++)
+		ddp_dump_analysis(modules[i]);
+	for (i = 0; i < module_num; i++) {
+		if (!dpmgr_is_PQ(modules[i]))
+			ddp_dump_reg(modules[i]);
+	}
 	ddp_dump_reg(DISP_MODULE_CONFIG);
 	ddp_dump_reg(DISP_MODULE_MUTEX);
-
+	kfree(handle);
 	return 0;
 }
 
@@ -1951,6 +1962,7 @@ int dpmgr_init(void)
 	ddp_debug_init();
 	disp_init_irq();
 	disp_register_irq_callback(dpmgr_irq_handler);
+	spin_lock_init(&cmdq_dump_lock);
 	return 0;
 }
 
@@ -2008,30 +2020,34 @@ int dpmgr_wait_ovl_available(int ovl_num)
 }
 
 int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle,
-			    const char *caller)
+			int m, const char *caller)
 {
 	int i = 0;
-	int m;
 	struct ddp_path_handle *phandle;
-	int *list;
 	int m_num;
+	int *modules;
 	struct DDP_MODULE_DRIVER *m_drv;
 
 	ASSERT(dp_handle);
 	phandle = (struct ddp_path_handle *)dp_handle;
-	list = ddp_get_scenario_list(phandle->scenario);
+	modules = ddp_get_scenario_list(phandle->scenario);
 	m_num = ddp_get_module_num(phandle->scenario);
 	DDPMSG("[SVP] switch module to nonsec on scenario %s, caller=%s\n",
 	       ddp_get_scenario_name(phandle->scenario), caller);
 
-	for (i = m_num - 1; i >= 0; i--) {
-		m = list[i];
+	if (m == DISP_MODULE_NUM) {
+		for (i = m_num - 1; i >= 0; i--) {
+			m = modules[i];
+			m_drv = ddp_get_module_driver(m);
+			if (m_drv && m_drv->switch_to_nonsec)
+				m_drv->switch_to_nonsec(m, cmdqhandle);
+		}
+	} else {
 		m_drv = ddp_get_module_driver(m);
-		if (!m_drv || !m_drv->switch_to_nonsec)
-			continue;
-
-		m_drv->switch_to_nonsec(m, cmdqhandle);
+		if (m_drv && m_drv->switch_to_nonsec)
+			m_drv->switch_to_nonsec(m, cmdqhandle);
 	}
+
 	return 0;
 }
 
@@ -2075,4 +2091,70 @@ int dpmgr_path_dsi_power_on(disp_path_handle dp_handle, void *cmdqhandle)
 	DDPDBG("%s power on\n", ddp_get_module_name(dst_module));
 	m_drv->power_on(dst_module, cmdqhandle);
 	return 0;
+}
+
+int dpmgr_register_cmdq_dump_callback(CmdqDumpInfoCB cb)
+{
+	int i = 0;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == cb)
+			break;
+	}
+	if (i < MAX_SESSION_COUNT) {
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return 0;
+	}
+
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == NULL)
+			break;
+	}
+	if (i == MAX_SESSION_COUNT) {
+		DDPAEE("not enough cmdq dump callback entries for session\n");
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return -1;
+	}
+	DDPMSG("register callback on %d\n", i);
+	cmdq_dump_callback_table[i] = cb;
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+	return 0;
+}
+
+int dpmgr_unregister_cmdq_dump_callback(CmdqDumpInfoCB cb)
+{
+	int i;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+		if (cmdq_dump_callback_table[i] == cb) {
+			cmdq_dump_callback_table[i] = NULL;
+			break;
+		}
+	}
+	if (i == MAX_SESSION_COUNT) {
+		DDPMSG("%s, fail to unregister callback function %p\n",
+			__func__, cb);
+		spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+		return -1;
+	}
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
+	return 0;
+}
+
+void dpmgr_invoke_cmdq_dump_callbacks(uint64_t engineFlag, int level)
+{
+	int i;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cmdq_dump_lock, flags);
+	for (i = 0; i < MAX_SESSION_COUNT; i++) {
+
+		if (cmdq_dump_callback_table[i])
+			cmdq_dump_callback_table[i](engineFlag, level);
+	}
+	spin_unlock_irqrestore(&cmdq_dump_lock, flags);
 }

@@ -411,19 +411,26 @@ static size_t mtkfb_ion_phys_mmu_addr(struct ion_client *client,
 }
 
 static void mtkfb_ion_cache_flush(struct ion_client *client,
-				  struct ion_handle *handle)
+				  struct ion_handle *handle,
+				  unsigned long mva, unsigned int size)
 {
 	struct ion_sys_data sys_data;
+	void *va = NULL;
 
 	if (!ion_client || !handle)
 		return;
 
+	va = ion_map_kernel(client, handle);
 	sys_data.sys_cmd = ION_SYS_CACHE_SYNC;
 	sys_data.cache_sync_param.kernel_handle = handle;
-	sys_data.cache_sync_param.sync_type = ION_CACHE_FLUSH_ALL;
+	sys_data.cache_sync_param.va = va;
+	sys_data.cache_sync_param.size = size;
+	sys_data.cache_sync_param.sync_type = ION_CACHE_INVALID_BY_RANGE;
 
 	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM, (unsigned long)&sys_data))
 		pr_err("ion cache flush failed!\n");
+
+	ion_unmap_kernel(client, handle);
 }
 #endif /* MTK_FB_ION_SUPPORT */
 
@@ -463,7 +470,8 @@ unsigned int mtkfb_query_buf_mva(unsigned int session_id, unsigned int layer_id,
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 				 MMPROFILE_FLAG_START, current->pid, 0);
 #if defined(MTK_FB_ION_SUPPORT)
-		mtkfb_ion_cache_flush(ion_client, buf->hnd);
+		mtkfb_ion_cache_flush(ion_client, buf->hnd,
+				      buf->mva, buf->size);
 #endif
 		mmprofile_log_ex(ddp_mmp_get_events()->primary_cache_sync,
 				 MMPROFILE_FLAG_END, current->pid, 0);
@@ -971,6 +979,43 @@ void mtkfb_release_session_fence(unsigned int session)
 		mtkfb_release_layer_fence(session, i);
 }
 
+/* release primary display present fence */
+void mtkfb_release_present_fence(unsigned int session_id,
+	unsigned int fence_idx)
+{
+	struct disp_sync_info *layer_info = NULL;
+	unsigned int timeline_id = 0;
+	int fence_increment = 0;
+
+	timeline_id = disp_sync_get_present_timeline_id();
+	layer_info = __get_layer_sync_info(session_id, timeline_id);
+	if (layer_info == NULL) {
+		DISP_PR_INFO("%s, layer_info is null\n", __func__);
+		return;
+	}
+
+	mutex_lock(&layer_info->sync_lock);
+	fence_increment = fence_idx - layer_info->timeline->value;
+
+	if (fence_increment >= 2)
+		DISPFENCE("Warning, R/%s%d/L%d/timeline idx:%d/fence:%d\n",
+			disp_session_type_str(session_id),
+			DISP_SESSION_DEV(session_id), timeline_id,
+			layer_info->timeline->value, fence_idx);
+
+	if (fence_increment > 0) {
+		timeline_inc(layer_info->timeline, fence_increment);
+		DISPFENCE("RL+/%s%d/L%d/id%d\n",
+			disp_session_type_str(session_id),
+		     DISP_SESSION_DEV(session_id), timeline_id, fence_idx);
+	}
+
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_release,
+			MMPROFILE_FLAG_PULSE, fence_idx, fence_increment);
+
+	mutex_unlock(&layer_info->sync_lock);
+}
+
 int disp_sync_get_ovl_timeline_id(int layer_id)
 {
 	return DISP_SESSION_OVL_TIMELINE_ID(layer_id);
@@ -988,7 +1033,7 @@ int disp_sync_get_output_interface_timeline_id(void)
 
 int disp_sync_get_present_timeline_id(void)
 {
-	return DISP_SESSION_PRESENT_TIMELINE_ID;
+	return DISP_SESSION_PRIMARY_PRESENT_TIMELINE_ID;
 }
 
 int disp_sync_get_cached_layer_info(unsigned int session_id,
@@ -1316,7 +1361,8 @@ unsigned int disp_sync_buf_cache_sync(unsigned int session_id,
 		if (buf->cache_sync) {
 			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 					   (unsigned long)buf->hnd, buf->mva);
-			mtkfb_ion_cache_flush(ion_client, buf->hnd);
+			mtkfb_ion_cache_flush(ion_client, buf->hnd,
+					      buf->mva, buf->size);
 			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 					  (unsigned long)buf->hnd, buf->mva);
 		}
@@ -1374,7 +1420,8 @@ __disp_sync_query_buf_info(unsigned int session_id, unsigned int timeline_id,
 		if (buf->cache_sync && need_sync) {
 			dprec_logger_start(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 					   (unsigned long)buf->hnd, buf->mva);
-			mtkfb_ion_cache_flush(ion_client, buf->hnd);
+			mtkfb_ion_cache_flush(ion_client, buf->hnd,
+					      buf->mva, buf->size);
 			dprec_logger_done(DPREC_LOGGER_DISPMGR_CACHE_SYNC,
 					  (unsigned long)buf->hnd, buf->mva);
 		}

@@ -23,6 +23,7 @@ enum adsp_excep_id {
 	EXCEP_RESET,
 	EXCEP_BOOTUP,
 	EXCEP_RUNTIME,
+	EXCEP_KERNEL,
 	ADSP_NR_EXCEP,
 };
 
@@ -36,11 +37,13 @@ extern uint32_t adsp_dump_pc(void);
 extern int adsp_get_trax_initiated(void);
 extern int adsp_get_trax_done(void);
 extern int adsp_get_trax_length(void);
+extern void adsp_dump_cfgreg(void);
 
 extern void aed_scp_exception_api(const int *log, int log_size, const int *phy,
 				   int phy_size, const char *detail,
 				   const int db_opt);
 extern void adsp_excep_cleanup(void);
+extern struct mutex adsp_sw_reset_mutex;
 enum { r0, r1, r2, r3, r12, lr, pc, psr};
 
 struct TaskContextType {
@@ -66,11 +69,11 @@ struct TaskContextType {
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_ITCM_LENGTH  (16 * 1024)
-#define CRASH_MEMORY_DTCM_LENGTH  (40 * 1024)
-#define CRASH_MEMORY_DRAM_LENGTH  (400 * 1024) //test:4M
-#define CRASH_MEMORY_LENGTH (56*1024)
-#define CRASH_MEMORY_OFFSET  (0x800) //Liang: check
+#define CRASH_MEMORY_ITCM_LENGTH  (36 * 1024)
+#define CRASH_MEMORY_DTCM_LENGTH  (32 * 1024)
+#define CRASH_MEMORY_DRAM_LENGTH  (400 * 1024)  /* 4M */
+#define CRASH_MEMORY_LENGTH (68 * 1024)  /* 36k+32k */
+#define CRASH_MEMORY_OFFSET  (0x800)
 #define CRASH_REG_SIZE  (9 * 32)
 
 #include <linux/elf.h>

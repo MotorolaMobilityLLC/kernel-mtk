@@ -26,4 +26,10 @@ enum WDMA_INPUT_FORMAT {
 	WDMA_INPUT_FORMAT_YUV444 = 0x01,	/* from direct link */
 };
 
+void wdma_calc_golden_setting(struct golden_setting_context *gsc,
+	unsigned int is_primary_flag, unsigned int *gs,
+	enum UNIFIED_COLOR_FMT format);
+
+unsigned int MMPathTracePrimaryWDMA(char *str, unsigned int strlen,
+	unsigned int n);
 #endif /* _DDP_WDMA_EX_H_ */

@@ -15,58 +15,11 @@
 #define __MTK_SWPM_PLATFORM_H__
 
 #define MAX_RECORD_CNT                  (64)
-#define USE_PMU                         (1)
-#define USE_MDLA_PMU                    (1)
+#define DEFAULT_LOG_INTERVAL_MS         (1000)
+#define DEFAULT_LOG_MASK                (0x13) /* VPROC2 + VPROC1 + VDRAM */
 
-#ifdef USE_PMU
-#define PMU_EVENT_INST_SPEC             (0x1B)
-#define PMU_EVENT_L3D_CACHE_RD          (0xA0)
-#define PMU_CNTENSET_EVT_CNT_L          (0x1) /* 1 event counter enabled */
-#define PMU_CNTENSET_EVT_CNT_B          (0x3) /* 2 event counter enabled */
-#define PMU_CNTENSET_C                  (0x1 << 31)
-#define PMU_EVTYPER_INC                 (0x1 << 27)
-#define PMU_PMCR_E                      (0x1)
-#define OFF_PMEVCNTR_0                  (0x000)
-#define OFF_PMEVCNTR_1                  (0x008)
-#define OFF_PMEVCNTR_2                  (0x010)
-#define OFF_PMEVCNTR_3                  (0x018)
-#define OFF_PMEVCNTR_4                  (0x020)
-#define OFF_PMEVCNTR_5                  (0x028)
-#define OFF_PMCCNTR_L                   (0x0F8)
-#define OFF_PMCCNTR_H                   (0x0FC)
-#define OFF_PMEVTYPER0                  (0x400)
-#define OFF_PMEVTYPER1                  (0x404)
-#define OFF_PMEVTYPER2                  (0x408)
-#define OFF_PMEVTYPER3                  (0x40C)
-#define OFF_PMEVTYPER4                  (0x410)
-#define OFF_PMEVTYPER5                  (0x414)
-#define OFF_PMCNTENSET                  (0xC00)
-#define OFF_PMCNTENCLR                  (0xC20)
-#define OFF_PMCFGR                      (0xE00)
-#define OFF_PMCR                        (0xE04)
-#define OFF_PMLAR                       (0xFB0)
-#define OFF_PMLSR                       (0xFB4)
-#endif
-#ifdef USE_MDLA_PMU
-#define MDLA_PMU_BASE			(mdla_pmu_base)
-#define MDLA_PMU_CFG			(MDLA_PMU_BASE + 0x0E00)
-#define MDLA_PMU_PMU1_SEL		(MDLA_PMU_BASE + 0x0E10)
-#define MDLA_PMU_PMU1_CNT		(MDLA_PMU_BASE + 0x0E14)
-#define MDLA_PMU_PMU2_SEL		(MDLA_PMU_BASE + 0x0E20)
-#define MDLA_PMU_PMU2_CNT		(MDLA_PMU_BASE + 0x0E24)
-#define MDLA_PMU_PMU3_SEL		(MDLA_PMU_BASE + 0x0E30)
-#define MDLA_PMU_PMU3_CNT		(MDLA_PMU_BASE + 0x0E34)
-#define MDLA_PMU_PMU4_SEL		(MDLA_PMU_BASE + 0x0E40)
-#define MDLA_PMU_PMU4_CNT		(MDLA_PMU_BASE + 0x0E44)
-#define MDLA_PMU_PMU5_SEL		(MDLA_PMU_BASE + 0x0E50)
-#define MDLA_PMU_PMU5_CNT		(MDLA_PMU_BASE + 0x0E54)
-#define MDLA_PMU_PMU6_SEL		(MDLA_PMU_BASE + 0x0E60)
-#define MDLA_PMU_PMU6_CNT		(MDLA_PMU_BASE + 0x0E64)
-#define MDLA_PMU_PMU7_SEL		(MDLA_PMU_BASE + 0x0E70)
-#define MDLA_PMU_PMU7_CNT		(MDLA_PMU_BASE + 0x0E74)
-#define MDLA_PMU_PMU8_SEL		(MDLA_PMU_BASE + 0x0E80)
-#define MDLA_PMU_PMU8_CNT		(MDLA_PMU_BASE + 0x0E84)
-#endif
+#define NR_CPU_OPP                      (16)
+#define NR_CPU_L_CORE                   (6)
 
 /* data shared w/ SSPM */
 enum profile_point {
@@ -90,11 +43,12 @@ enum power_meter_type {
 };
 
 enum power_rail {
-	VPROC12,
-	VPROC11,
+	VPROC2,
+	VPROC1,
 	VGPU,
 	VCORE,
-	VDRAM1,
+	VDRAM,
+	VIO12_DDR,
 	VIO18_DDR,
 	VIO18_DRAM,
 	VVPU,
@@ -117,7 +71,8 @@ enum ddr_freq {
 enum aphy_pwr_type {
 	APHY_VCORE_0P7V,
 	APHY_VDDQ_0P6V,
-	APHY_VM_1P1V,
+	APHY_VM_0P75V,
+	APHY_VIO_1P2V,
 	APHY_VIO_1P8V,
 
 	NR_APHY_PWR_TYPE
@@ -129,6 +84,27 @@ enum dram_pwr_type {
 	DRAM_VDDQ_0P6V,
 
 	NR_DRAM_PWR_TYPE
+};
+
+enum cpu_lkg_type {
+	CPU_L_LKG,
+	CPU_B_LKG,
+	DSU_LKG,
+
+	NR_CPU_LKG_TYPE
+};
+
+enum mdla_pmu {
+	POOL,
+	DW,
+	FC,
+	CONV,
+	EWE_L,
+	EWE_H,
+	STE_L,
+	STE_H,
+
+	NR_MDLA_PMU
 };
 
 struct aphy_pwr {
@@ -159,7 +135,7 @@ struct swpm_rec_data {
 	unsigned int cur_idx;
 	unsigned int profile_enable;
 
-	/* 4(int) * 64(rec_cnt) * 9 = 2304 bytes */
+	/* 4(int) * 64(rec_cnt) * 10 = 2560 bytes */
 	unsigned int pwr[NR_POWER_RAIL][MAX_RECORD_CNT];
 
 	/* 8(long) * 5(prof_pt) * 3 = 120 bytes */
@@ -167,16 +143,26 @@ struct swpm_rec_data {
 	unsigned long long max_latency[NR_PROFILE_POINT];
 	unsigned long long prof_cnt[NR_PROFILE_POINT];
 
-	/* 2(short) * 4(pwr_type) * 126 = 1008 bytes */
+	/* 2(short) * 5(pwr_type) * 126 = 1260 bytes */
 	struct aphy_pwr_data aphy_pwr_tbl[NR_APHY_PWR_TYPE];
 
 	/* 4(int) * 3(pwr_type) * 7 = 84 bytes */
 	struct dram_pwr_conf dram_conf[NR_DRAM_PWR_TYPE];
 
-	/* remaining size = 572 bytes */
+	/* 4(int) * 3(lkg_type) * 16 = 192 bytes */
+	unsigned int cpu_lkg_pwr[NR_CPU_LKG_TYPE][NR_CPU_OPP];
+
+	/* 4(int) * 8 = 32 bytes */
+	int mdla_pmu_idx[NR_MDLA_PMU];
+
+	/* remaining size = 1888 bytes */
 };
 
 extern struct swpm_rec_data *swpm_info_ref;
+
+#ifdef CONFIG_MTK_CACHE_CONTROL
+extern int ca_force_stop_set_in_kernel(int val);
+#endif
 
 #endif
 

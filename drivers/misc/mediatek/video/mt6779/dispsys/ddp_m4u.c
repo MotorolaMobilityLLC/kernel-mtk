@@ -18,11 +18,13 @@
 #include "ddp_log.h"
 #include "disp_helper.h"
 #include "disp_drv_platform.h"
-
-#ifdef CONFIG_MTK_IOMMU
-#  include "mtk_iommu.h"
+#include <ion_priv.h>
+#ifdef CONFIG_MTK_IOMMU_V2
+#include "mach/mt_iommu.h"
+#include <soc/mediatek/smi.h>
+#include "mtk_iommu_ext.h"
 #elif defined(CONFIG_MTK_M4U)
-#  include "m4u.h"
+#include "m4u.h"
 #endif
 
 /**
@@ -33,11 +35,17 @@
 
 static struct module_to_m4u_port_t module_to_m4u_port_mapping[] = {
 	{DISP_MODULE_OVL0, 0, DISP_M4U_PORT_DISP_OVL0},
-	{DISP_MODULE_OVL0_2L, 0, DISP_M4U_PORT_DISP_OVL0_2L},
-	{DISP_MODULE_OVL1_2L, 0, DISP_M4U_PORT_DISP_OVL1},
 	{DISP_MODULE_RDMA0, 0, DISP_M4U_PORT_DISP_RDMA0},
-	{DISP_MODULE_RDMA1, 0, DISP_M4U_PORT_DISP_RDMA1},
 	{DISP_MODULE_WDMA0, 0, DISP_M4U_PORT_DISP_WDMA0},
+#ifdef CONFIG_MTK_ROUND_CORNER_SUPPORT
+	{DISP_MODULE_POSTMASK, 0, DISP_M4U_PORT_DISP_POSTMASK},
+#endif
+	{DISP_MODULE_OVL0, 0, DISP_M4U_PORT_DISP_OVL0_HDR},
+
+	{DISP_MODULE_OVL0_2L, 1, DISP_M4U_PORT_DISP_OVL0_2L},
+	{DISP_MODULE_OVL1_2L, 1, DISP_M4U_PORT_DISP_OVL1_2L},
+	{DISP_MODULE_RDMA1, 1, DISP_M4U_PORT_DISP_RDMA1},
+	{DISP_MODULE_OVL0_2L, 1, DISP_M4U_PORT_DISP_OVL0_2L_HDR},
 };
 
 int module_to_m4u_port(enum DISP_MODULE_ENUM module)
@@ -50,7 +58,7 @@ int module_to_m4u_port(enum DISP_MODULE_ENUM module)
 
 	DDP_PR_ERR("%s, get m4u port fail(module=%s)\n", __func__,
 		   ddp_get_module_name(module));
-	return M4U_PORT_NR;
+	return M4U_PORT_UNKNOWN;
 }
 
 int module_to_m4u_larb(enum DISP_MODULE_ENUM module)
@@ -63,7 +71,7 @@ int module_to_m4u_larb(enum DISP_MODULE_ENUM module)
 
 	DDP_PR_ERR("module_to_m4u_port, get m4u larb fail(module=%s)\n",
 		   ddp_get_module_name(module));
-	return M4U_PORT_NR;
+	return M4U_PORT_UNKNOWN;
 }
 
 enum DISP_MODULE_ENUM m4u_port_to_module(int port)
@@ -86,10 +94,10 @@ void disp_m4u_init(void)
 		/* init M4U callback */
 		DDPMSG("register m4u callback\n");
 		for (i = 0; i < ARRAY_SIZE(module_to_m4u_port_mapping); i++) {
-#ifdef CONFIG_MTK_IOMMU
+#ifdef CONFIG_MTK_IOMMU_V2
 			mtk_iommu_register_fault_callback(
 				module_to_m4u_port_mapping[i].port,
-				(mtk_iommu_fault_callback_t *)disp_m4u_callback,
+				(mtk_iommu_fault_callback_t)disp_m4u_callback,
 				0);
 #elif defined(CONFIG_MTK_M4U)
 			m4u_register_fault_callback(
@@ -115,7 +123,7 @@ void disp_m4u_init(void)
 			DISP_REG_SET_FIELD(0, REG_FLD_MMU_EN,
 				DISP_REG_SMI_LARB0_NON_SEC_CON + i * 4, 0);
 
-		for (i = 0; i < 32; i++)
+		for (i = 0; i < 5; i++)
 			DISP_REG_SET_FIELD(0, REG_FLD_MMU_EN,
 				DISP_REG_SMI_LARB1_NON_SEC_CON + i * 4, 0);
 #endif
@@ -125,11 +133,11 @@ void disp_m4u_init(void)
 int config_display_m4u_port(void)
 {
 	int ret = 0;
-#ifdef CONFIG_MTK_IOMMU
+#ifdef CONFIG_MTK_IOMMU_V2
 	/* if you config to pa mode, please contact iommu owner */
-	struct device *disp_larbdev = NULL;
+	//struct device *disp_larbdev = NULL;
 
-	ret = mtk_smi_larb_get(disp_larbdev);
+	//ret = mtk_smi_larb_get(disp_larbdev);
 #elif defined(CONFIG_MTK_M4U)
 	struct M4U_PORT_STRUCT sPort;
 	unsigned int i;
@@ -159,7 +167,7 @@ int config_display_m4u_port(void)
 	return ret;
 }
 
-enum m4u_callback_ret_t disp_m4u_callback(int port, unsigned long mva,
+int disp_m4u_callback(int port, unsigned long mva,
 					  void *data)
 {
 	enum DISP_MODULE_ENUM module;
@@ -177,8 +185,14 @@ int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
 			unsigned int size, unsigned long *map_va,
 			unsigned int *map_size)
 {
-#ifdef CONFIG_MTK_IOMMU
-	map_va = mtk_iommu_iova_to_va(NULL, mva, size);
+#ifdef CONFIG_MTK_IOMMU_V2
+	struct disp_iommu_device *disp_dev = disp_get_iommu_dev();
+
+	if ((disp_dev != NULL) && (disp_dev->iommu_pdev != NULL))
+		mtk_iommu_iova_to_va(&(disp_dev->iommu_pdev->dev),
+					      mva, map_va, size);
+	else
+		pr_info("disp mva map kernel fail\n");
 #elif defined(CONFIG_MTK_M4U)
 	m4u_mva_map_kernel(mva, size, map_va, map_size);
 #endif
@@ -189,7 +203,7 @@ int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
 int disp_mva_unmap_kernel(unsigned int mva, unsigned int size,
 			  unsigned long map_va)
 {
-#ifdef CONFIG_MTK_IOMMU
+#ifdef CONFIG_MTK_IOMMU_V2
 	vunmap((void *)(map_va & (~DISP_PAGE_MASK)));
 #else
 	vunmap((void *)(map_va & (~DISP_PAGE_MASK)));
@@ -238,7 +252,8 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 {
 #if defined(MTK_FB_ION_SUPPORT)
 	struct ion_mm_data mm_data;
-	unsigned int mva_size;
+	size_t mva_size;
+	ion_phys_addr_t phy_addr = 0;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	mm_data.config_buffer_param.module_id = port;
@@ -252,8 +267,9 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 		return -1;
 	}
 
-	ion_phys(client, handle, (unsigned long int *)mva, (size_t *)&mva_size);
-	DDP_PR_ERR("alloc mmu addr hnd=0x%p,mva=0x%08x\n",
+	ion_phys(client, handle, &phy_addr, &mva_size);
+	*mva = (unsigned int)phy_addr;
+	DDPDBG("alloc mmu addr hnd=0x%p,mva=0x%08x\n",
 		   handle, (unsigned int)*mva);
 #endif
 	return 0;
@@ -325,20 +341,32 @@ void disp_ion_cache_flush(struct ion_client *client, struct ion_handle *handle,
 {
 #if defined(MTK_FB_ION_SUPPORT)
 	struct ion_sys_data sys_data;
+	void *buffer_va;
 
 	if (!client || !handle)
 		return;
 
+	if (sync_type == ION_CACHE_FLUSH_ALL) {
+		DDP_PR_ERR("Cannot use ion cache flush anymore\n");
+		return;
+	}
+
 	sys_data.sys_cmd = ION_SYS_CACHE_SYNC;
 	sys_data.cache_sync_param.kernel_handle = handle;
-	sys_data.cache_sync_param.sync_type = sync_type;
+	sys_data.cache_sync_param.sync_type = ION_CACHE_INVALID_BY_RANGE;
+
+	buffer_va = ion_map_kernel(client, handle);
+	sys_data.cache_sync_param.va = buffer_va;
+	sys_data.cache_sync_param.size = handle->buffer->size;
 
 	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM, (unsigned long)&sys_data))
 		DDP_PR_ERR("ion cache flush failed!\n");
+
+	ion_unmap_kernel(client, handle);
 #endif
 }
 
-#ifndef CONFIG_MTK_IOMMU
+#ifndef CONFIG_MTK_IOMMU_V2
 static struct sg_table table;
 
 int disp_allocate_mva(struct m4u_client_t *client, enum DISP_MODULE_ENUM module,

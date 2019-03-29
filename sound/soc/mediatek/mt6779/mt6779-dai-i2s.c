@@ -201,14 +201,44 @@ static const struct snd_kcontrol_new i2s3_out_mux_control =
 static const struct snd_kcontrol_new i2s5_out_mux_control =
 	SOC_DAPM_ENUM("I2S5 Out Select", i2s_out_mux_map_enum);
 
+/* i2s in lpbk */
+static const char * const i2s_lpbk_mux_map[] = {
+	"Normal", "Lpbk",
+};
+
+static int i2s_lpbk_mux_map_value[] = {
+	0, 1,
+};
+
+static SOC_VALUE_ENUM_SINGLE_AUTODISABLE_DECL(i2s0_lpbk_mux_map_enum,
+					      AFE_I2S_CON,
+					      I2S_LOOPBACK_SFT,
+					      1,
+					      i2s_lpbk_mux_map,
+					      i2s_lpbk_mux_map_value);
+
+static const struct snd_kcontrol_new i2s0_lpbk_mux_control =
+	SOC_DAPM_ENUM("I2S Lpbk Select", i2s0_lpbk_mux_map_enum);
+
+static SOC_VALUE_ENUM_SINGLE_AUTODISABLE_DECL(i2s2_lpbk_mux_map_enum,
+					      AFE_I2S_CON2,
+					      I2S3_LOOPBACK_SFT,
+					      1,
+					      i2s_lpbk_mux_map,
+					      i2s_lpbk_mux_map_value);
+
+static const struct snd_kcontrol_new i2s2_lpbk_mux_control =
+	SOC_DAPM_ENUM("I2S Lpbk Select", i2s2_lpbk_mux_map_enum);
+
 /* interconnection */
 static const struct snd_kcontrol_new mtk_i2s3_ch1_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL1_CH1", AFE_CONN0, I_DL1_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH1", AFE_CONN0, I_DL2_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH1", AFE_CONN0, I_DL3_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH1", AFE_CONN0, I_DL12_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH1", AFE_CONN0_1, I_DL6_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH1", AFE_CONN0_1, I_DL4_CH1, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH1", AFE_CONN0,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH1", AFE_CONN0,
 				    I_GAIN1_OUT_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH1", AFE_CONN0,
 				    I_ADDA_UL_CH1, 1, 0),
@@ -223,8 +253,9 @@ static const struct snd_kcontrol_new mtk_i2s3_ch2_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH2", AFE_CONN1, I_DL2_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH2", AFE_CONN1, I_DL3_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH2", AFE_CONN1, I_DL12_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH2", AFE_CONN1_1, I_DL6_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH2", AFE_CONN1_1, I_DL4_CH2, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH2", AFE_CONN1,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH2", AFE_CONN1,
 				    I_GAIN1_OUT_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH2", AFE_CONN1,
 				    I_ADDA_UL_CH2, 1, 0),
@@ -243,8 +274,9 @@ static const struct snd_kcontrol_new mtk_i2s1_ch1_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH1", AFE_CONN28, I_DL2_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH1", AFE_CONN28, I_DL3_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH1", AFE_CONN28, I_DL12_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH1", AFE_CONN28_1, I_DL6_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH1", AFE_CONN28_1, I_DL4_CH1, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH1", AFE_CONN28,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH1", AFE_CONN28,
 				    I_GAIN1_OUT_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH1", AFE_CONN28,
 				    I_ADDA_UL_CH1, 1, 0),
@@ -259,8 +291,9 @@ static const struct snd_kcontrol_new mtk_i2s1_ch2_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH2", AFE_CONN29, I_DL2_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH2", AFE_CONN29, I_DL3_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH2", AFE_CONN29, I_DL12_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH2", AFE_CONN29_1, I_DL6_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH2", AFE_CONN29_1, I_DL4_CH2, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH2", AFE_CONN29,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH2", AFE_CONN29,
 				    I_GAIN1_OUT_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH2", AFE_CONN29,
 				    I_ADDA_UL_CH2, 1, 0),
@@ -279,8 +312,10 @@ static const struct snd_kcontrol_new mtk_i2s5_ch1_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH1", AFE_CONN30, I_DL2_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH1", AFE_CONN30, I_DL3_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH1", AFE_CONN30, I_DL12_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH1", AFE_CONN30_1, I_DL6_CH1, 1, 0),
+
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH1", AFE_CONN30_1, I_DL4_CH1, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH1", AFE_CONN30,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH1", AFE_CONN30,
 				    I_GAIN1_OUT_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH1", AFE_CONN30,
 				    I_ADDA_UL_CH1, 1, 0),
@@ -295,8 +330,9 @@ static const struct snd_kcontrol_new mtk_i2s5_ch2_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH2", AFE_CONN31, I_DL2_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH2", AFE_CONN31, I_DL3_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH2", AFE_CONN31, I_DL12_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH2", AFE_CONN31_1, I_DL6_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH2", AFE_CONN31_1, I_DL4_CH2, 1, 0),
-	SOC_DAPM_SINGLE_AUTODISABLE("HW_GAIN1_CH2", AFE_CONN31,
+	SOC_DAPM_SINGLE_AUTODISABLE("GAIN1_OUT_CH2", AFE_CONN31,
 				    I_GAIN1_OUT_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH2", AFE_CONN31,
 				    I_ADDA_UL_CH2, 1, 0),
@@ -531,6 +567,12 @@ static const struct snd_soc_dapm_widget mtk_dai_i2s_widgets[] = {
 			 SND_SOC_NOPM, 0, 0, &i2s3_out_mux_control),
 	SND_SOC_DAPM_MUX("I2S5_Out_Mux",
 			 SND_SOC_NOPM, 0, 0, &i2s5_out_mux_control),
+
+	/* i2s in lpbk */
+	SND_SOC_DAPM_MUX("I2S0_Lpbk_Mux",
+			 SND_SOC_NOPM, 0, 0, &i2s0_lpbk_mux_control),
+	SND_SOC_DAPM_MUX("I2S2_Lpbk_Mux",
+			 SND_SOC_NOPM, 0, 0, &i2s2_lpbk_mux_control),
 };
 
 static int mtk_afe_i2s_share_connect(struct snd_soc_dapm_widget *source,
@@ -699,6 +741,9 @@ static const struct snd_soc_dapm_route mtk_dai_i2s_routes[] = {
 	{"I2S1_CH1", "DL12_CH1", "DL12"},
 	{"I2S1_CH2", "DL12_CH2", "DL12"},
 
+	{"I2S1_CH1", "DL6_CH1", "DL6"},
+	{"I2S1_CH2", "DL6_CH2", "DL6"},
+
 	{"I2S1_CH1", "DL4_CH1", "DL4"},
 	{"I2S1_CH2", "DL4_CH2", "DL4"},
 
@@ -763,6 +808,9 @@ static const struct snd_soc_dapm_route mtk_dai_i2s_routes[] = {
 	{"I2S3_CH1", "DL12_CH1", "DL12"},
 	{"I2S3_CH2", "DL12_CH2", "DL12"},
 
+	{"I2S3_CH1", "DL6_CH1", "DL6"},
+	{"I2S3_CH2", "DL6_CH2", "DL6"},
+
 	{"I2S3_CH1", "DL4_CH1", "DL4"},
 	{"I2S3_CH2", "DL4_CH2", "DL4"},
 
@@ -804,6 +852,9 @@ static const struct snd_soc_dapm_route mtk_dai_i2s_routes[] = {
 	{"I2S5_CH1", "DL12_CH1", "DL12"},
 	{"I2S5_CH2", "DL12_CH2", "DL12"},
 
+	{"I2S5_CH1", "DL6_CH1", "DL6"},
+	{"I2S5_CH2", "DL6_CH2", "DL6"},
+
 	{"I2S5_CH1", "DL4_CH1", "DL4"},
 	{"I2S5_CH2", "DL4_CH2", "DL4"},
 
@@ -841,6 +892,12 @@ static const struct snd_soc_dapm_route mtk_dai_i2s_routes[] = {
 
 	{"I2S5_Out_Mux", "Output_Widget", "I2S5"},
 	{"I2S_DUMMY_OUT", NULL, "I2S5_Out_Mux"},
+
+	/* i2s in lpbk */
+	{"I2S0_Lpbk_Mux", "Lpbk", "I2S3"},
+	{"I2S2_Lpbk_Mux", "Lpbk", "I2S1"},
+	{"I2S0", NULL, "I2S0_Lpbk_Mux"},
+	{"I2S2", NULL, "I2S2_Lpbk_Mux"},
 };
 
 /* dai ops */

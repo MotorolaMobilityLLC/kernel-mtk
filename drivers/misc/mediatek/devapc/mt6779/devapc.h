@@ -20,6 +20,40 @@
  * CONSTANT DEFINATION
  ******************************************************************************/
 
+/* Debug message event */
+#define DEVAPC_LOG_NONE        0x00000000
+#define DEVAPC_LOG_INFO        0x00000001
+#define DEVAPC_LOG_DBG         0x00000002
+
+#define DEBUG
+#ifdef DEBUG
+#define DEVAPC_LOG_LEVEL	(DEVAPC_LOG_DBG)
+#else
+#define DEVAPC_LOG_LEVEL	(DEVAPC_LOG_NONE)
+#endif
+
+#define DEVAPC_DBG_MSG(fmt, args...) \
+	do {    \
+		if (DEVAPC_LOG_LEVEL & DEVAPC_LOG_DBG) { \
+			pr_debug(fmt, ##args); \
+		} else if (DEVAPC_LOG_LEVEL & DEVAPC_LOG_INFO) { \
+			pr_info(fmt, ##args); \
+		} \
+	} while (0)
+
+
+#define DEVAPC_VIO_LEVEL      (DEVAPC_LOG_INFO)
+
+#define DEVAPC_MSG(fmt, args...) \
+	do {    \
+		if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_DBG) { \
+			pr_debug(fmt, ##args); \
+		} else if (DEVAPC_VIO_LEVEL & DEVAPC_LOG_INFO) { \
+			pr_info(fmt, ##args); \
+		} \
+	} while (0)
+
+
 #define MOD_NO_IN_1_DEVAPC                  16
 #define DEVAPC_TAG                          "DEVAPC"
 
@@ -32,17 +66,12 @@
 	#define DEVAPC_ENABLE_ONE_CORE_VIOLATION_DEBUG	0
 #endif
 
-#define MTK_SIP_LK_DAPC			0x82000101
-
 #define DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX    0
+#define DAPC_DEVICE_TREE_NODE_AO_INFRA_INDEX    1
 
 /* Uncomment to enable AEE  */
 #define DEVAPC_ENABLE_AEE			1
-#define DEVAPC_TOTAL_SLAVES			478
 
-#if defined(CONFIG_MTK_AEE_FEATURE) && defined(DEVAPC_ENABLE_AEE)
-#define DEVAPC_VIO_MAX_TOTAL_AEE_TRIGGER_TIMES			5
-#endif
 
 /* For Infra VIO_DBG */
 #define INFRA_VIO_DBG_MSTID             0x0000FFFF
@@ -62,8 +91,8 @@
 
 /* Device APC PD */
 #define PD_INFRA_VIO_SHIFT_MAX_BIT      25
-#define PD_INFRA_VIO_MASK_MAX_INDEX     397
-#define PD_INFRA_VIO_STA_MAX_INDEX      397
+#define PD_INFRA_VIO_MASK_MAX_INDEX     525
+#define PD_INFRA_VIO_STA_MAX_INDEX      525
 
 #define DEVAPC_PD_INFRA_VIO_MASK(index) \
 	((unsigned int *)(devapc_pd_infra_base + 0x4 * index))
@@ -85,10 +114,20 @@
 #define DEVAPC_PD_INFRA_VIO_SHIFT_CON \
 	((unsigned int *)(devapc_pd_infra_base+0xF20))
 
+#define DEVAPC_TOTAL_SLAVES		478
+#define DEVAPC_SRAMROM_VIO_INDEX	511
+#define DEVAPC_MD_VIO			231
+#define DEVAPC_MM_VIO_START		232
+
+/******************************************************************************
+ * DATA STRUCTURE & FUNCTION DEFINATION
+ ******************************************************************************/
 
 struct DEVICE_INFO {
-	const char      *device;
-	bool            enable_vio_irq;
+	int		DEVAPC_SLAVE_TYPE;
+	int		config_index;
+	const char	*device;
+	bool		enable_vio_irq;
 };
 
 #ifdef CONFIG_MTK_HIBERNATION

@@ -21,6 +21,8 @@
 
 #include <mtk_dcm_internal.h>
 
+#define DEBUGLINE dcm_pr_info("%s %d\n", __func__, __LINE__)
+
 static short dcm_cpu_cluster_stat;
 
 #ifdef CONFIG_HOTPLUG_CPU
@@ -28,16 +30,12 @@ static struct notifier_block dcm_hotplug_nb;
 #endif
 
 unsigned int all_dcm_type =
-		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | MCSI_DCM_TYPE
-		| STALL_DCM_TYPE | RGU_DCM_TYPE
-		| GIC_SYNC_DCM_TYPE | INFRA_DCM_TYPE
-		| DDRPHY_DCM_TYPE | EMI_DCM_TYPE | DRAMC_DCM_TYPE
-		);
+		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE |
+		INFRA_DCM_TYPE | DDRPHY_DCM_TYPE | EMI_DCM_TYPE
+		| DRAMC_DCM_TYPE);
 unsigned int init_dcm_type =
-		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | MCSI_DCM_TYPE
-		| STALL_DCM_TYPE
-		| GIC_SYNC_DCM_TYPE | INFRA_DCM_TYPE
-		);
+		(ARMCORE_DCM_TYPE | MCUSYS_DCM_TYPE | STALL_DCM_TYPE |
+		INFRA_DCM_TYPE);
 
 #if defined(__KERNEL__) && defined(CONFIG_OF)
 unsigned long dcm_infracfg_ao_base;
@@ -69,15 +67,19 @@ unsigned long dcm_msdc1_base;
 
 
 #define INFRACFG_AO_NODE	"mediatek,infracfg_ao"
+#define INFRACFG_AO_MEM_NODE	"mediatek,infracfg_ao_mem"
 #define MCUCFG_NODE		"mediatek,mcucfg"
-#define CPCCFG_NODE		"mediatek,mt6779-cpc" /* TODO: check again  */
+#define CPCCFG_NODE		"mediatek,mt6779-cpc"
 #define PWRAP_NODE		"mediatek,pwrap"
+#define DRAMC_NODE		"mediatek,dramc"
+/*
 #define DRAMC0_AO_NODE		"mediatek,dramc0"
 #define DRAMC1_AO_NODE		"mediatek,dramc1"
 #define DPHY0_AO_NODE		"mediatek,ddrphy0"
 #define DPHY1_AO_NODE		"mediatek,ddrphy1"
-#define CHN0_EMI_NODE		"mediatek,chn0_emi"
-#define CEN_EMI_NODE		"mediatek,cen_emi"
+*/
+
+#define EMI_NODE		"mediatek,emi"
 
 #endif /* #if defined(__KERNEL__) && defined(CONFIG_OF) */
 
@@ -108,21 +110,25 @@ int mt_dcm_dts_map(void)
 		return -1;
 	}
 
+	/* infracfg_ao_mem */
+	node = of_find_compatible_node(NULL, NULL, INFRACFG_AO_MEM_NODE);
+	if (!node) {
+		dcm_pr_info("error: cannot find node %s\n",
+			INFRACFG_AO_MEM_NODE);
+		return -1;
+	}
+	dcm_infracfg_ao_mem_base = (unsigned long)of_iomap(node, 0);
+	if (!dcm_infracfg_ao_base) {
+		dcm_pr_info("error: cannot iomap %s\n", INFRACFG_AO_MEM_NODE);
+		return -1;
+	}
+
 	/* mcucfg */
 	node = of_find_compatible_node(NULL, NULL, MCUCFG_NODE);
 	if (!node) {
 		dcm_pr_info("error: cannot find node %s\n", MCUCFG_NODE);
 		return -1;
 	}
-
-#if 0	/* not exist in MT6779. */
-	if (of_address_to_resource(node, 0, &r)) {
-		dcm_pr_info("error: cannot get phys addr %s\n", MCUCFG_NODE);
-		return -1;
-	}
-	dcm_mcucfg_phys_base = r.start;
-#endif
-
 	dcm_mcucfg_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_mcucfg_base) {
 		dcm_pr_info("error: cannot iomap %s\n", MCUCFG_NODE);
@@ -143,50 +149,55 @@ int mt_dcm_dts_map(void)
 	}
 
 	/* dram related */
-
-#if 0	/* TODO!!!  waiting for DRAM drirver porting done */
-	/* dramc0_ao */
-	dcm_dramc_ch0_top0_ao_base = (unsigned long)mt_dramc_chn_base_get(0);
+	node = of_find_compatible_node(NULL, NULL, DRAMC_NODE);
+	if (!node) {
+		dcm_pr_info("error: cannot find node %s\n", DRAMC_NODE);
+		return -1;
+	}
+	/* dramc ch0*/
+	dcm_dramc_ch0_top0_ao_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_dramc_ch0_top0_ao_base) {
-		dcm_pr_info("error: cannot iomap %s\n", DRAMC0_AO_NODE);
+		dcm_pr_info("error: cannot iomap dramc ch0\n");
 		return -1;
 	}
-
-	/* dramc1_ao */
-	dcm_dramc_ch1_top0_ao_base = (unsigned long)mt_dramc_chn_base_get(1);
+	/* dramc ch1*/
+	dcm_dramc_ch1_top0_ao_base = (unsigned long)of_iomap(node, 1);
 	if (!dcm_dramc_ch1_top0_ao_base) {
-		dcm_pr_info("error: cannot iomap %s\n", DRAMC1_AO_NODE);
+		dcm_pr_info("error: cannot iomap dramc ch1\n");
 		return -1;
 	}
-
-	/* ddrphy0_ao */
-	dcm_dramc_ch0_top5_ao_base = (unsigned long)mt_ddrphy_chn_base_get(0);
+	/* ddrphy ch0*/
+	dcm_dramc_ch0_top5_ao_base = (unsigned long)of_iomap(node, 4);
 	if (!dcm_dramc_ch0_top5_ao_base) {
-		dcm_pr_info("error: cannot iomap %s\n", DPHY0_AO_NODE);
+		dcm_pr_info("error: cannot iomap ddrphy ch0\n");
 		return -1;
 	}
-	/* ddrphy1_ao */
-	dcm_dramc_ch1_top5_ao_base = (unsigned long)mt_ddrphy_chn_base_get(1);
+	/* ddrphy ch1*/
+	dcm_dramc_ch1_top5_ao_base = (unsigned long)of_iomap(node, 5);
 	if (!dcm_dramc_ch1_top5_ao_base) {
-		dcm_pr_info("error: cannot iomap %s\n", DPHY1_AO_NODE);
+		dcm_pr_info("error: cannot iomap ddrphy ch1\n");
 		return -1;
 	}
 
-	/* emi channel 0 */
-	dcm_ch0_emi_base = (unsigned long)mt_chn_emi_base_get(0);
-	if (!dcm_ch0_emi_base) {
-		dcm_pr_info("error: cannot iomap %s\n", CHN0_EMI_NODE);
+	/* EMI related */
+	node = of_find_compatible_node(NULL, NULL, EMI_NODE);
+	if (!node) {
+		dcm_pr_info("error: cannot find node %s\n", EMI_NODE);
 		return -1;
 	}
-
-	/* emi */
-	dcm_emi_base = (unsigned long)mt_cen_emi_base_get();
+	/* cen emi */
+	dcm_emi_base = (unsigned long)of_iomap(node, 0);
 	if (!dcm_emi_base) {
-		dcm_pr_info("error: cannot iomap %s\n", CEN_EMI_NODE);
+		dcm_pr_info("error: cannot iomap CEN EMI\n");
+		return -1;
+	}
+	/* emi ch0 */
+	dcm_ch0_emi_base = (unsigned long)of_iomap(node, 2);
+	if (!dcm_ch0_emi_base) {
+		dcm_pr_info("error: cannot iomap CH0 EMI\n");
 		return -1;
 	}
 
-#endif
 	return 0;
 }
 #else
@@ -220,7 +231,10 @@ int dcm_infra_preset(int on)
 int dcm_infra(int on)
 {
 	dcm_infracfg_ao_infra_bus_dcm(on);
-	dcm_infracfg_ao_infra_emi_local_dcm(on);
+
+	/* MT6779: Debounce setting, and not DCM really. */
+	/* dcm_infracfg_ao_infra_emi_local_dcm(on); */
+
 	dcm_infracfg_ao_infra_rx_p2p_dcm(on);
 	dcm_infracfg_ao_peri_bus_dcm(on);
 	dcm_infracfg_ao_peri_module_dcm(on);
@@ -509,7 +523,7 @@ void dcm_dump_regs(void)
 
 	/* infra_ao_mem */
 	REG_DUMP(INFRA_EMI_DCM_CFG0);
-	REG_DUMP(INFRA_EMI_DCM_CFG0);
+	REG_DUMP(INFRA_EMI_DCM_CFG3);
 
 	/* emi */
 	REG_DUMP(EMI_CONM);

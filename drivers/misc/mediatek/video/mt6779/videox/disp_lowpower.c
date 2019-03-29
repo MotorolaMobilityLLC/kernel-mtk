@@ -27,12 +27,13 @@
 #include "disp_drv_platform.h"	/* must be at the top-most */
 #include "mtk_boot_common.h"
 #ifdef MTK_FB_SPM_SUPPORT
-#  include "mtk_idle.h"
+#include "mtk_idle.h"
 #endif
 #ifdef MTK_FB_MMDVFS_SUPPORT
-#  include "mt-plat/mtk_smi.h"
-#  include "mtk_smi.h"
-#  include "disp_pm_qos.h"
+#include "mt-plat/mtk_smi.h"
+#include "mtk_smi.h"
+#include "disp_pm_qos.h"
+#include "mmdvfs_pmqos.h"
 #endif
 #include "m4u.h"
 
@@ -45,7 +46,7 @@
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
-#  include "external_display.h"
+#include "external_display.h"
 #endif
 
 #include "disp_helper.h"
@@ -66,10 +67,6 @@
 #include "disp_partial.h"
 #include "mtk_disp_mgr.h"
 #include "disp_assert_layer.h"
-
-#ifdef MTK_FB_MMDVFS_SUPPORT
-#  include "mmdvfs_mgr.h"
-#endif
 
 /* device tree */
 #include <linux/of.h>
@@ -96,9 +93,13 @@ static atomic_t ext_idlemgr_task_wakeup = ATOMIC_INIT(1);
 /* dvfs */
 static atomic_t dvfs_ovl_req_status = ATOMIC_INIT(HRT_LEVEL_LEVEL0);
 #endif
+static int register_share_sram;
+int hrt_bw_privilege;
+static DECLARE_WAIT_QUEUE_HEAD(hrt_cond_wait_queue);
+atomic_t last_hrt_idx = ATOMIC_INIT(0);
+atomic_t hrt_cond_sig = ATOMIC_INIT(0);
 
 /* check interval of entering screen idle */
-static unsigned int idle_check_interval = 50;
 
 atomic_t idle_need_repaint = ATOMIC_INIT(0);
 
@@ -265,6 +266,23 @@ int _blocking_flush(void)
 
 	cmdqRecFlush(handle);
 	cmdqRecDestroy(handle);
+	if (primary_display_is_video_mode()) {
+		struct cmdqRecStruct *handle_vfp = NULL;
+
+		ret = cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE,
+			&handle_vfp);
+		if (ret) {
+			DISP_PR_INFO("%s:%d, create cmdq handle fail!ret=%d\n",
+				__func__, __LINE__, ret);
+			return -1;
+		}
+		cmdqRecReset(handle_vfp);
+		_cmdq_insert_wait_frame_done_token_mira(handle_vfp);
+		cmdqRecFlush(handle_vfp);
+
+		cmdqRecDestroy(handle_vfp);
+	}
+
 	return ret;
 }
 
@@ -274,17 +292,17 @@ static int primary_display_dsi_vfp_change(int state)
 	struct cmdqRecStruct *qhandle = NULL;
 	struct LCM_PARAMS *params;
 
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &qhandle);
+	cmdqRecCreate(CMDQ_SCENARIO_DISP_VFP_CHANGE, &qhandle);
 	cmdqRecReset(qhandle);
 
 	/* make sure token RDMA_SOF is clear */
 	cmdqRecClearEventToken(qhandle, CMDQ_EVENT_DISP_RDMA0_SOF);
 
 	/*
-	 * wait RDMA0_SOF: only used for video mode & trigger loop
-	 * need wait and clear RDMA0 SOF
+	 * for chips later than M17,VFP can be set at anytime
+	 * So don't need to wait-SOF here
 	 */
-	cmdqRecWaitNoClear(qhandle, CMDQ_EVENT_DISP_RDMA0_SOF);
+	/* cmdqRecWaitNoClear(qhandle, CMDQ_EVENT_DISP_RDMA0_SOF); */
 
 	params = primary_get_lcm()->params;
 	if (state == 1) {
@@ -353,9 +371,7 @@ static void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	_cmdq_insert_wait_frame_done_token_mira(qhandle);
 
 	/* 3.try to share WROT SRAM */
-	acquireResult = cmdqRecWriteForResource(qhandle, resourceEvent,
-				disp_addr_convert(DISP_REG_RDMA_SRAM_SEL),
-				1, ~0);
+	acquireResult = cmdqRecAcquireResource(qhandle, resourceEvent);
 
 	if (acquireResult < 0) {
 		/* acquire resource fail */
@@ -383,9 +399,19 @@ static void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 239, 0);
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		primary_display_manual_unlock();
+		return 0;
+	}
+
 	_acquire_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 239, 1);
 
 	return 0;
 }
@@ -435,17 +461,18 @@ static void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 		DISP_REG_SET(qhandle, DISP_REG_RDMA_SHADOW_UPDATE,
 			     rdma0_shadow_mode);
 	}
-	/* 4.release share SRAM resourceEvent */
-	cmdqRecReleaseResource(qhandle, resourceEvent);
 
 	/* set RDMA golden setting parameters */
 	set_share_sram(0);
 
-	/* 5.add instr for modification RDMA fifo regs */
+	/* 4.add instr for modification RDMA fifo regs */
 	/* RDMA: dpmgr_handle can cover both DC & DL */
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		dpmgr_path_ioctl(phandle, qhandle, DDP_RDMA_GOLDEN_SETTING,
 				 pconfig);
+
+	/* 5.release share SRAM resourceEvent */
+	cmdqRecReleaseResource(qhandle, resourceEvent);
 
 	cmdqRecFlushAsync(qhandle);
 	cmdqRecDestroy(qhandle);
@@ -453,10 +480,20 @@ static void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 239, 2);
 	/* need lock */
 	primary_display_manual_lock();
+
+	if (!register_share_sram) {
+		primary_display_manual_unlock();
+		return 0;
+	}
+
 	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 239, 3);
 
 	return 0;
 }
@@ -586,7 +623,7 @@ static void _primary_display_disable_mmsys_clk(void)
 
 		DISPINFO("[LP]3.1.power off ovl2men path[end]\n");
 	}
-	DISPINFO("[LP]3.dpmanager path power off[end]\n");
+	DISPDBG("[LP]3.dpmanager path power off[end]\n");
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
 		set_enterulps(1);
 }
@@ -692,6 +729,10 @@ static void _primary_display_enable_mmsys_clk(void)
 static void _vdo_mode_enter_idle(void)
 {
 	struct LCM_PARAMS *params;
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+	unsigned int out_fps = 60;
+#endif
 
 	DISPDBG("[LP]%s\n", __func__);
 
@@ -756,15 +797,34 @@ static void _vdo_mode_enter_idle(void)
 		}
 	}
 
+	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
+		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
+
 	/* set golden setting, merge fps/dc */
 	set_is_display_idle(1);
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 		_idle_set_golden_setting();
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	disp_pm_qos_set_rdma_bw(out_fps, &bandwidth);
+	disp_pm_qos_update_bw(bandwidth);
+#endif
+
 }
 
 static void _vdo_mode_leave_idle(void)
 {
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
+#endif
+
 	DISPDBG("[LP]%s\n", __func__);
+
+	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
+		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT1);
 
 	/* set golden setting */
 	set_is_display_idle(0);
@@ -804,30 +864,87 @@ static void _vdo_mode_leave_idle(void)
 					DISP_OPT_DYNAMIC_RDMA_GOLDEN_SETTING))
 			_idle_set_golden_setting();
 	}
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	disp_pm_qos_set_ovl_bw(in_fps, out_fps, &bandwidth);
+	disp_pm_qos_update_bw(bandwidth);
+#endif
+
 }
 
 static void _cmd_mode_enter_idle(void)
 {
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+#endif
+
 	DISPDBG("[LP]%s\n", __func__);
 
 	/* need to leave share SRAM for disable mmsys clk */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		; /* leave_share_sram(CMDQ_SYNC_RESOURCE_WROT0); */
 
 	/* please keep last */
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_disable_mmsys_clk();
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	disp_pm_qos_set_default_bw(&bandwidth);
+	disp_pm_qos_update_bw(bandwidth);
+#endif
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1)
+		prim_disp_request_hrt_bw(HRT_BW_UNREQ,
+			DDP_SCENARIO_PRIMARY_DISP, __func__);
+	else
+		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
+					  HRT_LEVEL_LEVEL0);
+#endif
+
 }
 
 static void _cmd_mode_leave_idle(void)
 {
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	unsigned long long bandwidth;
+	unsigned int in_fps = 60;
+	unsigned int out_fps = 60;
+	int stable = 0;
+#endif
+
 	DISPDBG("[LP]%s\n", __func__);
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1) {
+		enum DDP_SCENARIO_ENUM scen =
+		    (primary_display_is_decouple_mode()) ?
+		    DDP_SCENARIO_PRIMARY_RDMA0_COLOR0_DISP :
+		    DDP_SCENARIO_PRIMARY_DISP;
+		int overlap_num = (primary_display_is_decouple_mode()) ? 2 :
+		    primary_display_get_dvfs_last_req();
+
+		prim_disp_request_hrt_bw(overlap_num, scen, __func__);
+	} else
+		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
+				primary_display_get_dvfs_last_req());
+#endif
 
 	if (disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS))
 		_primary_display_enable_mmsys_clk();
 
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		; /* enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0); */
+
+#ifdef MTK_FB_MMDVFS_SUPPORT
+	/* update bandwidth */
+	primary_fps_ctx_get_fps(&in_fps, &stable);
+	out_fps = in_fps;
+	disp_pm_qos_set_ovl_bw(in_fps, out_fps, &bandwidth);
+	disp_pm_qos_update_bw(bandwidth);
+#endif
 }
 
 void primary_display_idlemgr_enter_idle_nolock(void)
@@ -892,9 +1009,10 @@ int primary_display_request_dvfs_perf(int scenario, int req)
 	return 0;
 }
 
-unsigned int disp_lp_set_idle_check_interval(unsigned int new_interval)
+unsigned long long disp_lp_set_idle_check_interval(
+	unsigned long long new_interval)
 {
-	unsigned int old_interval = idle_check_interval;
+	unsigned long long old_interval = idle_check_interval;
 
 	idle_check_interval = new_interval;
 	return old_interval;
@@ -965,22 +1083,11 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			primary_display_set_idle_stat(1);
 		}
 
-#ifdef MTK_FB_MMDVFS_SUPPORT
-		/* when screen idle: LP4 enter ULPM; LP3 enter LPM */
-		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
-						  HRT_LEVEL_LEVEL0);
-#endif
-
 		primary_display_manual_unlock();
 
 		wait_event_interruptible(idlemgr_pgc->idlemgr_wait_queue,
 					 !primary_display_is_idle());
 
-#ifdef MTK_FB_MMDVFS_SUPPORT
-		/* when leave screen idle: reset to default */
-		primary_display_request_dvfs_perf(SMI_BWC_SCEN_UI_IDLE,
-						  HRT_LEVEL_DEFAULT);
-#endif
 		if (kthread_should_stop())
 			break;
 	}
@@ -1045,6 +1152,129 @@ void primary_display_sodi_rule_init(void)
 {
 }
 
+void hrt_bw_sync_idx(unsigned int cur_idx)
+{
+	atomic_set(&last_hrt_idx, cur_idx);
+	atomic_set(&hrt_cond_sig, 1);
+	wake_up(&hrt_cond_wait_queue);
+}
+
+int hrt_bw_cond_state(void)
+{
+	return hrt_bw_privilege;
+}
+
+int hrt_bw_set_state(int sta)
+{
+	hrt_bw_privilege = sta;
+
+	return 0;
+}
+
+bool pri_disp_leave_privilege(bool need_lock)
+{
+	if (need_lock)
+		primary_display_manual_lock();
+
+	if (hrt_bw_privilege != 1) {
+		if (need_lock)
+			primary_display_manual_unlock();
+		return 0;
+	}
+
+	DISPMSG("%s, switch from DC to DL\n", __func__);
+	do_primary_display_switch_mode(DISP_SESSION_DIRECT_LINK_MODE,
+			primary_get_sess_id(), 0, NULL, 0);
+	hrt_bw_privilege = 0;
+
+	set_is_dc(0);
+
+	/* enable idlemgr */
+	DISPCHECK("[disp_lowpower]enable idlemgr\n");
+	atomic_set(&idlemgr_task_active, 1);
+	wake_up_interruptible(&(idlemgr_pgc->idlemgr_wait_queue));
+
+	if (need_lock)
+		primary_display_manual_unlock();
+
+	return 1;
+}
+
+static int hrt_bw_cond_change_cb(struct notifier_block *nb,
+		unsigned long value, void *v)
+{
+	int ret, i;
+	unsigned int hrt_idx;
+
+
+	primary_display_manual_lock();
+
+	switch (value) {
+	case BW_THROTTLE_START: /* CAM on */
+		DISPMSG("DISP BW Throttle start\n");
+
+		if (get_has_hrt_bw() == 0) {
+			DISPMSG("DISP has no HRT BW... return throttle\n");
+			break;
+		}
+
+		/* switch to decouple mode */
+		if (disp_mgr_has_mem_session() ||
+				layering_get_valid_hrt() >= 400) {
+			/* enable HRT throttle */
+			DISPINFO("Cam trigger repain\n");
+			hrt_idx = layering_rule_get_hrt_idx();
+			hrt_idx++;
+			trigger_repaint(REFRESH_FOR_IDLE);
+			primary_display_manual_unlock();
+			for (i = 0 ; i < 5 ; ++i) {
+				ret = wait_event_timeout(hrt_cond_wait_queue,
+					atomic_read(&hrt_cond_sig), 1 * HZ);
+				if (ret == 0)
+					DISPINFO("wait repaint timeout %d\n",
+					 i);
+				atomic_set(&hrt_cond_sig, 0);
+				if (atomic_read(&last_hrt_idx) >= hrt_idx)
+					break;
+			}
+			primary_display_manual_lock();
+			break;
+		}
+
+		/* disable idlemgr during such scenario */
+		atomic_set(&idlemgr_task_active, 0);
+		primary_display_idlemgr_kick((char *)__func__, 0);
+
+		do_primary_display_switch_mode(DISP_SESSION_DECOUPLE_MODE,
+				primary_get_sess_id(), 0, NULL, 0);
+		hrt_bw_privilege = 1;
+
+		set_is_dc(1);
+		break;
+	case BW_THROTTLE_END: /* CAM off */
+		DISPMSG("DISP BW Throttle end\n");
+
+		pri_disp_leave_privilege(0);
+
+		break;
+	default:
+		break;
+	}
+
+	primary_display_manual_unlock();
+
+	return 0;
+}
+
+static struct notifier_block pmqos_hrt_notifier = {
+	.notifier_call = hrt_bw_cond_change_cb,
+};
+
+void hrt_bw_debug(unsigned int v)
+{
+	hrt_bw_cond_change_cb(NULL, v, NULL);
+}
+
 int primary_display_lowpower_init(void)
 {
 	struct LCM_PARAMS *params;
@@ -1062,7 +1292,9 @@ int primary_display_lowpower_init(void)
 
 	/* CMD mode always enables share SRAM */
 	if (disp_helper_get_option(DISP_OPT_SHARE_SRAM))
-		enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0);
+		; /* enter_share_sram(CMDQ_SYNC_RESOURCE_WROT0); */
+
+	mm_hrt_add_bw_throttle_notifier(&pmqos_hrt_notifier);
 
 	return 0;
 }
@@ -1110,21 +1342,29 @@ void primary_display_idlemgr_kick(const char *source, int need_lock)
 void enter_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. register callback first */
-	cmdq_mdp_set_resource_callback(CMDQ_SYNC_RESOURCE_WROT0,
+	cmdq_mdp_set_resource_callback(resourceEvent,
 				       _acquire_wrot_resource,
 				       _release_wrot_resource);
 
+	register_share_sram = 1;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 0, 1);
+
 	/* 2. try to allocate SRAM at the first time */
-	_acquire_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
+	_acquire_wrot_resource_nolock(resourceEvent);
 }
 
 void leave_share_sram(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	/* 1. unregister callback */
-	cmdq_mdp_set_resource_callback(CMDQ_SYNC_RESOURCE_WROT0, NULL, NULL);
+	cmdq_mdp_set_resource_callback(resourceEvent, NULL, NULL);
+
+	register_share_sram = 0;
+	mmprofile_log_ex(ddp_mmp_get_events()->share_sram,
+		MMPROFILE_FLAG_PULSE, 0, 0);
 
 	/* 2. try to release share SRAM */
-	_release_wrot_resource_nolock(CMDQ_SYNC_RESOURCE_WROT0);
+	_release_wrot_resource_nolock(resourceEvent);
 }
 
 void set_hrtnum(unsigned int new_hrtnum)
@@ -1286,7 +1526,7 @@ int _ext_blocking_flush(void)
 
 	cmdqRecReset(qhandle);
 
-	_ext_cmdq_insert_wait_frame_done_token_no_clear(qhandle);
+	_ext_cmdq_insert_wait_frame_done_token(qhandle);
 
 	cmdqRecFlush(qhandle);
 	cmdqRecDestroy(qhandle);

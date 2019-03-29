@@ -78,7 +78,8 @@ enum DPE_IRQ_CLEAR_ENUM {
  *	mapping to isr table,ISR_TABLE when using no device tree
  */
 enum DPE_IRQ_TYPE_ENUM {
-	DPE_IRQ_TYPE_INT_DPE_ST,	/* DPE */
+	DPE_IRQ_TYPE_INT_DVP_ST,	/* DVP */
+	DPE_IRQ_TYPE_INT_DVS_ST,	/* DVS */
 	DPE_IRQ_TYPE_AMOUNT
 };
 
