@@ -959,7 +959,7 @@ int ion_drv_remove(struct platform_device *pdev)
 
 static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	{
-	 .type = ION_HEAP_TYPE_SYSTEM_CONTIG,
+	 .type = (unsigned int)ION_HEAP_TYPE_SYSTEM_CONTIG,
 	 .id = ION_HEAP_TYPE_SYSTEM_CONTIG,
 	 .name = "ion_system_contig_heap",
 	 .base = 0,
@@ -968,7 +968,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA,
 	 .name = "ion_mm_heap",
 	 .base = 0,
@@ -977,7 +977,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
 	 .name = "ion_mm_heap_for_camera",
 	 .base = 0,
@@ -986,7 +986,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .name = "ion_sec_heap",
 	 .base = 0,
@@ -995,7 +995,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_PROT,
 	 .name = "ion_sec_heap_prot",
 	 .base = 0,
@@ -1004,7 +1004,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_2D_FR,
 	 .name = "ion_sec_heap_2d_fr",
 	 .base = 0,
@@ -1013,7 +1013,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_WFD,
 	 .name = "ion_sec_heap_wfd",
 	 .base = 0,
@@ -1022,7 +1022,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_HAPP,
 	 .name = "ion_sec_heap_happ",
 	 .base = 0,
@@ -1031,7 +1031,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_HAPP_EXTRA,
 	 .name = "ion_sec_heap_happ_mem",
 	 .base = 0,
@@ -1040,7 +1040,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_SDSP,
 	 .name = "ion_sec_heap_sdsp",
 	 .base = 0,
@@ -1049,7 +1049,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA_SEC,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA_SEC,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_SDSP_SHARED,
 	 .name = "ion_sec_heap_sdsp_shared",
 	 .base = 0,
@@ -1058,7 +1058,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA,
 	 .name = "ion_mm_heap_for_va2mva",
 	 .base = 0,
@@ -1067,7 +1067,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_MULTIMEDIA,
+	 .type = (unsigned int)ION_HEAP_TYPE_MULTIMEDIA,
 	 .id = ION_HEAP_TYPE_MULTIMEDIA_PA2MVA,
 	 .name = "ion_mm_heap_for_pa2mva",
 	 .base = 0,
@@ -1076,7 +1076,7 @@ static struct ion_platform_heap ion_drv_platform_heaps[] = {
 	 .priv = NULL,
 	 },
 	{
-	 .type = ION_HEAP_TYPE_CARVEOUT,
+	 .type = (unsigned int)ION_HEAP_TYPE_CARVEOUT,
 	 .id = ION_HEAP_TYPE_CARVEOUT,
 	 .name = "ion_carveout_heap",
 	 .base = 0,

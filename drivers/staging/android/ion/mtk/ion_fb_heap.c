@@ -294,7 +294,7 @@ struct ion_heap *ion_fb_heap_create(struct ion_platform_heap *heap_data)
 	fb_heap->size = heap_data->size;
 	gen_pool_add(fb_heap->pool, fb_heap->base, fb_heap->size, -1);
 	fb_heap->heap.ops = &fb_heap_ops;
-	fb_heap->heap.type = ION_HEAP_TYPE_FB;
+	fb_heap->heap.type = (unsigned int)ION_HEAP_TYPE_FB;
 	fb_heap->heap.flags = ION_HEAP_FLAG_DEFER_FREE;
 	fb_heap->heap.debug_show = ion_fb_heap_debug_show;
 
@@ -320,7 +320,7 @@ int ion_drv_create_FB_heap(ion_phys_addr_t fb_base, size_t fb_size)
 		return -ENOMEM;
 
 	heap_data->id = ION_HEAP_TYPE_FB;
-	heap_data->type = ION_HEAP_TYPE_FB;
+	heap_data->type = (unsigned int)ION_HEAP_TYPE_FB;
 	heap_data->name = "ion_fb_heap";
 	heap_data->base = fb_base;
 	heap_data->size = fb_size;
