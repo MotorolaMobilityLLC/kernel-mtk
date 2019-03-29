@@ -211,7 +211,7 @@ CONFIG_EXT4_FS,COMMON,,,y,y,y,y,y,y,y,y,
 CONFIG_EXT4_FS_ENCRYPTION,PROJECT,perry.hsu,disable in 1aadaf04723883ec1a64643c2a0d083e3135aafa,,,,,,,,,
 CONFIG_EXT4_FS_SECURITY,COMMON,,,y,y,y,y,y,y,y,y,
 CONFIG_EXTBUCK_MT6311,PLATFORM,jeter.chen,,X,X,X,X,X,X,X,X,
-CONFIG_EXTREME_LOW_RAM,USER,PROJECT,yu-fu.kao,,X,X,X,X,X,X,X,X
+CONFIG_EXTREME_LOW_RAM,USER;PROJECT,yu-fu.kao,,X,X,X,X,y,X,X,X
 CONFIG_F2FS_FS_ENCRYPTION,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,X,X,X,
 CONFIG_F2FS_FS,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,X,X,X,
 CONFIG_F2FS_FS_SECURITY,PROJECT,sophie.wang,new config in this commit cb46fad4247e478040df7d7260288c59785e446b,X,X,X,X,X,X,X,X,
@@ -463,7 +463,7 @@ CONFIG_MTK_ACTIVITYHUB,PROJECT,hongxu.zhao,new config in this commit c432a63a513
 CONFIG_MTK_AEE_AED,COMMON,weiwei.zhang,,y,y,y,y,y,y,y,y,
 CONFIG_MTK_AEE_FEATURE,PROJECT,weiwei.zhang,,y,y,y,y,O,y,y,y,
 CONFIG_MTK_AEE_IPANIC,PROJECT,weiwei.zhang,,y,y,y,y,O,y,y,y,
-CONFIG_MTK_AEE_MRDUMP,COMMON,my.chuang,,y,y,y,y,y,y,y,y,
+CONFIG_MTK_AEE_MRDUMP,USER;PROJECT,my.chuang,,y,y,y,y,N,N,y,y,
 CONFIG_MTK_AKM09911_NEW,PROJECT,jy.lan,,,,,,,,,,
 CONFIG_MTK_AKM09911,PROJECT,jy.lan,,,,,,,,,,
 CONFIG_MTK_AKM09912,PROJECT,hongxu.zhao,new config in this commit 063ebd2dfda85d1c6ea1c0120c87fa93fc2570e8,,,,,,,,,
