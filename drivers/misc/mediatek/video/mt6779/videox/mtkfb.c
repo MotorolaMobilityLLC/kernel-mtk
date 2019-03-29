@@ -246,7 +246,6 @@ static int mtkfb_release(struct fb_info *info, int user)
 	return 0;
 }
 
-#if defined(CONFIG_PM_AUTOSLEEP)
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 static int mtkfb1_blank(int blank_mode, struct fb_info *info)
@@ -321,7 +320,6 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 
 	return 0;
 }
-#endif
 
 int mtkfb_set_backlight_level(unsigned int level)
 {
@@ -1863,9 +1861,7 @@ static struct fb_ops mtkfb_ops = {
 #ifdef CONFIG_COMPAT
 	.fb_compat_ioctl = mtkfb_compat_ioctl,
 #endif
-#if defined(CONFIG_PM_AUTOSLEEP)
 	.fb_blank = mtkfb_blank,
-#endif
 };
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
@@ -1887,9 +1883,7 @@ static struct fb_ops mtkfb1_ops = {
 #ifdef CONFIG_COMPAT
 	.fb_compat_ioctl = NULL,
 #endif
-#if defined(CONFIG_PM_AUTOSLEEP)
 	.fb_blank = mtkfb1_blank,
-#endif
 };
 #endif
 /*
