@@ -39,7 +39,6 @@ struct _FPSGO_PACKAGE {
 	union {
 		__u32 start;
 		__u32 connectedAPI;
-		__u32 render_method;
 	};
 	union {
 		__u64 frame_time;
@@ -97,16 +96,9 @@ struct _PERFMGR_PACKAGE {
 };
 
 #define FPSGO_QUEUE                  _IOW('g', 1,  struct _FPSGO_PACKAGE)
-#define FPSGO_DRAW_START             _IOW('g', 2,  struct _FPSGO_PACKAGE)
 #define FPSGO_DEQUEUE                _IOW('g', 3,  struct _FPSGO_PACKAGE)
 #define FPSGO_VSYNC                  _IOW('g', 5,  struct _FPSGO_PACKAGE)
-#define FPSGO_ACT_SWITCH             _IOW('g', 8,  struct _FPSGO_PACKAGE)
-#define FPSGO_GAME                   _IOW('g', 9,  struct _FPSGO_PACKAGE)
 #define FPSGO_TOUCH                  _IOW('g', 10, struct _FPSGO_PACKAGE)
-#define FPSGO_FRAME_COMPLETE         _IOW('g', 11, struct _FPSGO_PACKAGE)
-#define FPSGO_INTENDED_VSYNC         _IOW('g', 12, struct _FPSGO_PACKAGE)
-#define FPSGO_NO_RENDER              _IOW('g', 13, struct _FPSGO_PACKAGE)
-#define FPSGO_SWAP_BUFFER            _IOW('g', 14, struct _FPSGO_PACKAGE)
 #define FPSGO_QUEUE_CONNECT          _IOW('g', 15, struct _FPSGO_PACKAGE)
 #define FPSGO_BQID                   _IOW('g', 16, struct _FPSGO_PACKAGE)
 

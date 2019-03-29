@@ -24,15 +24,11 @@
 void (*fpsgo_notify_qudeq_fp)(int qudeq,
 		unsigned int startend,
 		int pid, unsigned long long identifier);
-void (*fpsgo_notify_intended_vsync_fp)(int pid, unsigned long long frame_id);
-void (*fpsgo_notify_framecomplete_fp)(int ui_pid,
-		unsigned long long frame_time,
-		int render_method, int render, unsigned long long frame_id);
 void (*fpsgo_notify_connect_fp)(int pid,
 		int connectedAPI, unsigned long long identifier);
-void (*fpsgo_notify_draw_start_fp)(int pid, unsigned long long frame_id);
 void (*fpsgo_notify_bqid_fp)(int pid, unsigned long long bufID,
 		int queue_SF, unsigned long long identifier, int create);
+void (*fpsgo_notify_vsync_fp)(void);
 void (*fpsgo_notify_nn_job_begin_fp)(unsigned int tid, unsigned long long mid);
 void (*fpsgo_notify_nn_job_end_fp)(int pid, int tid, unsigned long long mid,
 	int num_step, __s32 *boost, __s32 *device, __u64 *exec_time);
@@ -366,29 +362,7 @@ static long device_ioctl(struct file *filp,
 	}
 
 	switch (cmd) {
-#if defined(CONFIG_MTK_FPSGO)
-	case FPSGO_FRAME_COMPLETE:
-		if (fpsgo_notify_framecomplete_fp)
-			fpsgo_notify_framecomplete_fp(msgKM->tid,
-					msgKM->frame_time,
-					msgKM->render_method, 1,
-					msgKM->frame_id);
-		break;
-	case FPSGO_INTENDED_VSYNC:
-		if (fpsgo_notify_intended_vsync_fp)
-			fpsgo_notify_intended_vsync_fp(msgKM->tid,
-					msgKM->frame_id);
-		break;
-	case FPSGO_NO_RENDER:
-		if (fpsgo_notify_framecomplete_fp)
-			fpsgo_notify_framecomplete_fp(msgKM->tid,
-					0, 0, 0, msgKM->frame_id);
-		break;
-	case FPSGO_DRAW_START:
-		if (fpsgo_notify_draw_start_fp)
-			fpsgo_notify_draw_start_fp(msgKM->tid,
-					msgKM->frame_id);
-		break;
+#if defined(CONFIG_MTK_FPSGO_V3)
 	case FPSGO_QUEUE:
 		if (fpsgo_notify_qudeq_fp)
 			fpsgo_notify_qudeq_fp(1,
@@ -415,78 +389,24 @@ static long device_ioctl(struct file *filp,
 	case FPSGO_TOUCH:
 		usrtch_ioctl(cmd, msgKM->frame_time);
 		break;
-	case FPSGO_ACT_SWITCH:
-		/* FALLTHROUGH */
-	case FPSGO_GAME:
-		/* FALLTHROUGH */
-	case FPSGO_SWAP_BUFFER:
+	case FPSGO_VSYNC:
+		if (fpsgo_notify_vsync_fp)
+			fpsgo_notify_vsync_fp();
 		break;
-#elif defined(CONFIG_MTK_FPSGO_V3)
-	case FPSGO_QUEUE:
-		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(1,
-					msgKM->start, msgKM->tid,
-					msgKM->identifier);
-		break;
-	case FPSGO_DEQUEUE:
-		if (fpsgo_notify_qudeq_fp)
-			fpsgo_notify_qudeq_fp(0,
-					msgKM->start, msgKM->tid,
-					msgKM->identifier);
-		break;
-	case FPSGO_QUEUE_CONNECT:
-		if (fpsgo_notify_connect_fp)
-			fpsgo_notify_connect_fp(msgKM->tid,
-					msgKM->connectedAPI, msgKM->identifier);
-		break;
-	case FPSGO_BQID:
-		if (fpsgo_notify_bqid_fp)
-			fpsgo_notify_bqid_fp(msgKM->tid, msgKM->bufID,
-				msgKM->queue_SF, msgKM->identifier,
-				msgKM->start);
-		break;
-	case FPSGO_TOUCH:
-		usrtch_ioctl(cmd, msgKM->frame_time);
-		break;
-	case FPSGO_ACT_SWITCH:
-		/* FALLTHROUGH */
-	case FPSGO_GAME:
-		/* FALLTHROUGH */
-	case FPSGO_SWAP_BUFFER:
-		/* FALLTHROUGH */
-	case FPSGO_FRAME_COMPLETE:
-		/* FALLTHROUGH */
-	case FPSGO_INTENDED_VSYNC:
-		/* FALLTHROUGH */
-	case FPSGO_NO_RENDER:
-		/* FALLTHROUGH */
-	case FPSGO_DRAW_START:
 		break;
 
 #else
 	case FPSGO_TOUCH:
 		/* FALLTHROUGH */
-	case FPSGO_FRAME_COMPLETE:
-		/* FALLTHROUGH */
 	case FPSGO_QUEUE:
 		/* FALLTHROUGH */
 	case FPSGO_DEQUEUE:
 		/* FALLTHROUGH */
 	case FPSGO_QUEUE_CONNECT:
 		/* FALLTHROUGH */
-	case FPSGO_ACT_SWITCH:
-		/* FALLTHROUGH */
-	case FPSGO_GAME:
-		/* FALLTHROUGH */
-	case FPSGO_INTENDED_VSYNC:
-		/* FALLTHROUGH */
-	case FPSGO_NO_RENDER:
-		/* FALLTHROUGH */
-	case FPSGO_DRAW_START:
+	case FPSGO_VSYNC:
 		/* FALLTHROUGH */
 	case FPSGO_BQID:
-		/* FALLTHROUGH */
-	case FPSGO_SWAP_BUFFER:
 		break;
 #endif
 
