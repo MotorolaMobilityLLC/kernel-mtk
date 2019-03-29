@@ -30,6 +30,7 @@ static char met_dvfs_info3[5][32] = {
 #endif
 
 int sys_boosted;
+int stune_task_threshold;
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDPLUS
 void update_freq_fastpath(void)
@@ -56,6 +57,7 @@ void update_freq_fastpath(void)
 		int first_cpu = -1;
 		unsigned int freq_new = 0;
 		unsigned long req_cap = 0;
+		unsigned long temp_value = 0;
 
 		arch_get_cluster_cpus(&cls_cpus, cid);
 
@@ -95,8 +97,9 @@ void update_freq_fastpath(void)
 		} /* visit cpu over cluster */
 
 		if (capacity > 0) { /* update freq in fast path */
-			freq_new = capacity * arch_scale_get_max_freq(first_cpu)
-					>> SCHED_CAPACITY_SHIFT;
+			temp_value = (unsigned long)capacity *
+					arch_scale_get_max_freq(first_cpu);
+			freq_new = (int)(temp_value >> SCHED_CAPACITY_SHIFT);
 
 			trace_sched_cpufreq_fastpath(cid, req_cap, freq_new);
 
@@ -112,6 +115,7 @@ void set_min_boost_freq(int boost_value, int cpu_clus)
 {
 	int max_clus_nr = arch_get_nr_clusters();
 	int max_freq, max_cap, floor_cap, floor_freq;
+	unsigned long temp_value = 0;
 
 	if (cpu_clus >= max_clus_nr || cpu_clus < 0)
 		return;
@@ -120,7 +124,8 @@ void set_min_boost_freq(int boost_value, int cpu_clus)
 	max_cap = schedtune_target_cap[cpu_clus].cap;
 
 	floor_cap = (max_cap * (int)(boost_value+1) / 100);
-	floor_freq = (floor_cap * max_freq / max_cap);
+	temp_value = (unsigned long)floor_cap * max_freq;
+	floor_freq = (int)(temp_value / max_cap);
 	min_boost_freq[cpu_clus] =
 		mt_cpufreq_find_close_freq(cpu_clus, floor_freq);
 }
@@ -130,31 +135,56 @@ void set_cap_min_freq(int cap_min)
 	int max_clus_nr = arch_get_nr_clusters();
 	int max_freq, max_cap, min_freq;
 	int i;
+	unsigned long temp_value = 0;
 
 	for (i = 0; i < max_clus_nr; i++) {
 		max_freq = schedtune_target_cap[i].freq;
 		max_cap = schedtune_target_cap[i].cap;
 
-		min_freq = (cap_min * max_freq / max_cap);
+		temp_value = (unsigned long)cap_min * max_freq;
+		min_freq = (int)(temp_value / max_cap);
 		cap_min_freq[i] = mt_cpufreq_find_close_freq(i, min_freq);
 	}
 }
 #endif
 
-int stune_task_threshold_for_perf_idx(bool filter)
+int set_stune_task_threshold(int threshold)
 {
-	if (!default_stune_threshold)
+	if (threshold > 1024 || threshold < -1)
 		return -EINVAL;
 
-	if (filter)
+	raw_spin_lock(&stune_lock);
+
+	if (threshold < 0)
 		stune_task_threshold = default_stune_threshold;
 	else
-		stune_task_threshold = 0;
+		stune_task_threshold = threshold;
+
+	raw_spin_unlock(&stune_lock);
 
 #if MET_STUNE_DEBUG
-	met_tag_oneshot(0, "sched_stune_filter", stune_task_threshold);
+	met_tag_oneshot(0, "sched_stune_threshold", stune_task_threshold);
 #endif
+
 	return 0;
+}
+
+int sched_stune_task_threshold_handler(struct ctl_table *table,
+					int write, void __user *buffer,
+					size_t *lenp, loff_t *ppos)
+{
+	int ret;
+	int old_threshold;
+
+	old_threshold = stune_task_threshold;
+	ret = proc_dointvec(table, write, buffer, lenp, ppos);
+	if (!ret && write) {
+		ret = set_stune_task_threshold(stune_task_threshold);
+		if (ret)
+			stune_task_threshold = old_threshold;
+	}
+
+	return ret;
 }
 
 int capacity_min_write_for_perf_idx(int idx, int capacity_min)
@@ -267,7 +297,6 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 		/* boost4xxx: no boost only capacity_min */
 		boost_value = 0;
 
-		stune_task_threshold = default_stune_threshold;
 		break;
 	case 3:
 		/* a floor of cpu frequency */
@@ -294,22 +323,18 @@ int boost_write_for_perf_idx(int group_idx, int boost_value)
 				min_boost_freq[1] = 0;
 		}
 #endif
-		stune_task_threshold = default_stune_threshold;
 		break;
 	case 2:
 		/* dvfs short cut */
 		boost_value -= 2000;
-		stune_task_threshold = default_stune_threshold;
 		dvfs_on_demand = true;
 		break;
 	case 1:
 		/* boost all tasks */
 		boost_value -= 1000;
-		stune_task_threshold = 0;
 		break;
 	case 0:
 		/* boost big task only */
-		stune_task_threshold = default_stune_threshold;
 		break;
 	default:
 		printk_deferred("warning: perf ctrl no should be 0~1\n");
@@ -477,4 +502,47 @@ int linear_real_boost(int linear_boost)
 	return boost;
 }
 EXPORT_SYMBOL(linear_real_boost);
+#endif
+
+#if defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_CGROUP_SCHEDTUNE)
+int uclamp_min_for_perf_idx(int idx, int min_value)
+{
+	struct uclamp_se *uc_se;
+	struct schedtune *st;
+	struct cgroup_subsys_state *css;
+	int ret = -EINVAL;
+
+	st = allocated_group[idx];
+	if (!st)
+		return -EINVAL;
+
+
+	css = &st->css;
+	/* Check range and scale to internal representation */
+	if (min_value > 100)
+		return -ERANGE;
+
+	min_value = scale_from_percent(min_value);
+#ifdef CONFIG_MTK_UNIFY_POWER
+	min_value = search_opp_cappacity(min_value);
+#endif
+
+	mutex_lock(&uclamp_mutex);
+	rcu_read_lock();
+
+	if (st->uclamp[UCLAMP_MIN].value == min_value) {
+		ret = 0;
+		goto out;
+	}
+
+	/* Update TG's reference count */
+	uc_se = &st->uclamp[UCLAMP_MIN];
+	ret = uclamp_group_get(NULL, css, UCLAMP_MIN, uc_se, min_value);
+
+out:
+	rcu_read_unlock();
+	mutex_unlock(&uclamp_mutex);
+
+	return ret;
+}
 #endif

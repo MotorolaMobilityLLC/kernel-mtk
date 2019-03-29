@@ -4,7 +4,6 @@
 #include <linux/sched/rt.h>
 #include <linux/u64_stats_sync.h>
 #include <linux/sched/deadline.h>
-#include <linux/kernel_stat.h>
 #include <linux/binfmts.h>
 #include <linux/mutex.h>
 #include <linux/spinlock.h>
@@ -257,8 +256,6 @@ struct cfs_bandwidth {
 	/* statistics */
 	int nr_periods, nr_throttled;
 	u64 throttled_time;
-
-	bool distribute_running;
 #endif
 };
 
@@ -302,6 +299,11 @@ struct task_group {
 #endif
 
 	struct cfs_bandwidth cfs_bandwidth;
+
+#ifdef CONFIG_UCLAMP_TASK_GROUP
+	struct			uclamp_se uclamp[UCLAMP_CNT];
+#endif
+
 };
 
 #ifdef CONFIG_FAIR_GROUP_SCHED
@@ -621,6 +623,52 @@ extern void rto_push_irq_work_func(struct irq_work *work);
 #endif
 #endif /* CONFIG_SMP */
 
+#ifdef CONFIG_UCLAMP_TASK
+/**
+ * struct uclamp_group - Utilization clamp Group
+ * @value: utilization clamp value for tasks on this clamp group
+ * @tasks: number of RUNNABLE tasks on this clamp group
+ *
+ * Keep track of how many tasks are RUNNABLE for a given utilization
+ * clamp value.
+ */
+struct uclamp_group {
+	int value;
+	int tasks;
+};
+
+/**
+ * struct uclamp_cpu - CPU's utilization clamp
+ * @value: currently active clamp values for a CPU
+ * @group: utilization clamp groups affecting a CPU
+ *
+ * Keep track of RUNNABLE tasks on a CPUs to aggregate their clamp values.
+ * A clamp value is affecting a CPU where there is at least one task RUNNABLE
+ * (or actually running) with that value.
+ *
+ * We have up to UCLAMP_CNT possible different clamp value, which are
+ * currently only two: minmum utilization and maximum utilization.
+ *
+ * All utilization clamping values are MAX aggregated, since:
+ * - for util_min: we want to run the CPU at least at the max of the minimum
+ *   utilization required by its currently RUNNABLE tasks.
+ * - for util_max: we want to allow the CPU to run up to the max of the
+ *   maximum utilization allowed by its currently RUNNABLE tasks.
+ *
+ * Since on each system we expect only a limited number of different
+ * utilization clamp values (CONFIG_UCLAMP_GROUPS_COUNT), we use a simple
+ * array to track the metrics required to compute all the per-CPU utilization
+ * clamp values. The additional slot is used to track the default clamp
+ * values, i.e. no min/max clamping at all.
+ */
+struct uclamp_cpu {
+#define UCLAMP_FLAG_IDLE 0x01
+	int flags;
+	int value[UCLAMP_CNT];
+	struct uclamp_group group[UCLAMP_CNT][CONFIG_UCLAMP_GROUPS_COUNT + 1];
+};
+#endif /* CONFIG_UCLAMP_TASK */
+
 /*
  * This is the main, per-CPU runqueue data structure.
  *
@@ -666,6 +714,11 @@ struct rq {
 	unsigned long nr_load_updates;
 	u64 nr_switches;
 
+#ifdef CONFIG_UCLAMP_TASK
+	/* Utilization clamp values based on CPU's RUNNABLE tasks */
+	struct uclamp_cpu	uclamp ____cacheline_aligned;
+#endif
+
 	struct cfs_rq cfs;
 	struct rt_rq rt;
 	struct dl_rq dl;
@@ -701,6 +754,7 @@ struct rq {
 	unsigned long cpu_capacity;
 	unsigned long cpu_capacity_orig;
 	unsigned long cpu_capacity_hw;
+	unsigned long cpu_capacity_limit;
 
 	struct callback_head *balance_callback;
 
@@ -740,7 +794,6 @@ struct rq {
 	u64 irqload_ts;
 	u64 cum_window_demand;
 #endif /* CONFIG_SCHED_WALT */
-
 
 #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 	u64 prev_irq_time;
@@ -794,6 +847,7 @@ struct rq {
 	struct cpuidle_state *idle_state;
 	int idle_state_idx;
 #endif
+	unsigned long rotat_flags;
 };
 
 static inline int cpu_of(struct rq *rq)
@@ -863,8 +917,8 @@ enum numa_faults_stats {
 };
 extern void sched_setnuma(struct task_struct *p, int node);
 extern int migrate_task_to(struct task_struct *p, int cpu);
-extern int migrate_swap(struct task_struct *, struct task_struct *);
 #endif /* CONFIG_NUMA_BALANCING */
+extern int migrate_swap(struct task_struct *src, struct task_struct *dst);
 
 #ifdef CONFIG_SMP
 
@@ -1341,6 +1395,10 @@ struct sched_class {
 #ifdef CONFIG_FAIR_GROUP_SCHED
 	void (*task_change_group) (struct task_struct *p, int type);
 #endif
+
+#ifdef CONFIG_UCLAMP_TASK
+	int uclamp_enabled;
+#endif
 };
 
 static inline void put_prev_task(struct rq *rq, struct task_struct *prev)
@@ -1663,6 +1721,11 @@ static inline unsigned long capacity_orig_of(int cpu)
 static inline unsigned long capacity_hw_of(int cpu)
 {
 	return cpu_rq(cpu)->cpu_capacity_hw;
+}
+
+static inline unsigned long capacity_limit_of(int cpu)
+{
+	return cpu_rq(cpu)->cpu_capacity_limit;
 }
 
 extern unsigned int sysctl_sched_use_walt_cpu_util;
@@ -2105,19 +2168,14 @@ static inline void nohz_balance_exit_idle(unsigned int cpu) { }
 
 #ifdef CONFIG_IRQ_TIME_ACCOUNTING
 struct irqtime {
-	u64			total;
-	u64			tick_delta;
+	u64			hardirq_time;
+	u64			softirq_time;
 	u64			irq_start_time;
 	struct u64_stats_sync	sync;
 };
 
 DECLARE_PER_CPU(struct irqtime, cpu_irqtime);
 
-/*
- * Returns the irqtime minus the softirq time computed by ksoftirqd.
- * Otherwise ksoftirqd's sum_exec_runtime is substracted its own runtime
- * and never move forward.
- */
 static inline u64 irq_time_read(int cpu)
 {
 	struct irqtime *irqtime = &per_cpu(cpu_irqtime, cpu);
@@ -2126,12 +2184,75 @@ static inline u64 irq_time_read(int cpu)
 
 	do {
 		seq = __u64_stats_fetch_begin(&irqtime->sync);
-		total = irqtime->total;
+		total = irqtime->softirq_time + irqtime->hardirq_time;
 	} while (__u64_stats_fetch_retry(&irqtime->sync, seq));
 
 	return total;
 }
 #endif /* CONFIG_IRQ_TIME_ACCOUNTING */
+
+#ifdef CONFIG_UCLAMP_TASK
+/**
+ * uclamp_group_active: check if a clamp group is active on a CPU
+ * @uc_grp: the clamp groups for a CPU
+ * @group_id: the clamp group to check
+ *
+ * A clamp group affects a CPU if it as at least one RUNNABLE task.
+ *
+ * Return: true if the specified CPU has at least one RUNNABLE task
+ *         for the specified clamp group.
+ */
+static inline bool uclamp_group_active(struct uclamp_group *uc_grp,
+				       int group_id)
+{
+	return uc_grp[group_id].tasks > 0;
+}
+
+/**
+ * uclamp_task_affects: check if a task affects a utilization clamp
+ * @p: the task to consider
+ * @clamp_id: the utilization clamp to check
+ *
+ * A task affects a clamp index if:
+ * - it's currently enqueued on a CPU
+ * - it references a valid clamp group index for the specified clamp index
+ *
+ * Return: true if p currently affects the specified clamp_id
+ */
+static inline bool uclamp_task_affects(struct task_struct *p, int clamp_id)
+{
+	return (p->uclamp_group_id[clamp_id] != UCLAMP_NONE);
+}
+
+/**
+ * uclamp_task_active: check if a task is currently clamping a CPU
+ * @p: the task to check
+ *
+ * A task actively affects the utilization clamp of a CPU if:
+ * - it's currently enqueued or running on that CPU
+ * - it's refcounted in at least one clamp group of that CPU
+ *
+ * Return: true if p is currently clamping the utilization of its CPU.
+ */
+static inline bool uclamp_task_active(struct task_struct *p)
+{
+	struct rq *rq = task_rq(p);
+	int clamp_id;
+
+	lockdep_assert_held(&p->pi_lock);
+	lockdep_assert_held(&rq->lock);
+
+	if (!task_on_rq_queued(p) && !p->on_cpu)
+		return false;
+
+	for (clamp_id = 0; clamp_id < UCLAMP_CNT; ++clamp_id) {
+		if (uclamp_task_affects(p, clamp_id))
+			return true;
+	}
+
+	return false;
+}
+#endif /* CONFIG_UCLAMP_TASK */
 
 /* sched:  add for print aee log */
 #ifdef CONFIG_SMP
@@ -2183,6 +2304,86 @@ static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags)
 static inline void cpufreq_update_util(struct rq *rq, unsigned int flags) {}
 static inline void cpufreq_update_this_cpu(struct rq *rq, unsigned int flags) {}
 #endif /* CONFIG_CPU_FREQ */
+
+/**
+ * uclamp_none: default value for a clamp
+ *
+ * This returns the default value for each clamp
+ * - 0 for a min utilization clamp
+ * - SCHED_CAPACITY_SCALE for a max utilization clamp
+ *
+ * Return: the default value for a given utilization clamp
+ */
+static inline unsigned int uclamp_none(int clamp_id)
+{
+	if (clamp_id == UCLAMP_MIN)
+		return 0;
+	return SCHED_CAPACITY_SCALE;
+}
+
+#ifdef CONFIG_UCLAMP_TASK
+/**
+ * uclamp_value: get the current CPU's utilization clamp value
+ * @cpu: the CPU to consider
+ * @clamp_id: the utilization clamp index (i.e. min or max utilization)
+ *
+ * The utilization clamp value for a CPU depends on its set of currently
+ * RUNNABLE tasks and their specific util_{min,max} constraints.
+ * A max aggregated value is tracked for each CPU and returned by this
+ * function.
+ *
+ * Return: the current value for the specified CPU and clamp index
+ */
+static inline unsigned int uclamp_value(unsigned int cpu, int clamp_id)
+{
+	struct uclamp_cpu *uc_cpu = &cpu_rq(cpu)->uclamp;
+
+	if (uc_cpu->value[clamp_id] == UCLAMP_NONE)
+		return uclamp_none(clamp_id);
+
+	return uc_cpu->value[clamp_id];
+}
+
+/**
+ * clamp_util: clamp a utilization value for a specified CPU
+ * @cpu: the CPU to get the clamp values from
+ * @util: the utilization signal to clamp
+ *
+ * Each CPU tracks util_{min,max} clamp values depending on the set of its
+ * currently RUNNABLE tasks. Given a utilization signal, i.e a signal in
+ * the [0..SCHED_CAPACITY_SCALE] range, this function returns a clamped
+ * utilization signal considering the current clamp values for the
+ * specified CPU.
+ *
+ * Return: a clamped utilization signal for a given CPU.
+ */
+static inline unsigned int uclamp_util(unsigned int cpu, unsigned int util)
+{
+	unsigned int min_util = uclamp_value(cpu, UCLAMP_MIN);
+	unsigned int max_util = uclamp_value(cpu, UCLAMP_MAX);
+
+	return clamp(util, min_util, max_util);
+}
+
+#if defined(CONFIG_UCLAMP_TASK_GROUP) && defined(CONFIG_CGROUP_SCHEDTUNE)
+extern unsigned int uclamp_st_min(struct task_struct *tsk);
+extern struct uclamp_se *root_schedtune_uclamp(int clamp_id);
+extern struct uclamp_se *schedtune_uclamp(struct task_struct *tsk,
+						int clamp_id);
+#elif defined(CONFIG_UCLAMP_TASK_GROUP)
+extern unsigned long uclamp_tg_min(struct task_struct *tsk);
+#endif
+#else /* CONFIG_UCLAMP_TASK */
+static inline unsigned int uclamp_value(unsigned int cpu, int clamp_id)
+{
+	return uclamp_none(clamp_id);
+}
+
+static inline unsigned int uclamp_util(unsigned int cpu, unsigned int util)
+{
+	return util;
+}
+#endif /* CONFIG_UCLAMP_TASK */
 
 #ifdef CONFIG_SCHED_WALT
 

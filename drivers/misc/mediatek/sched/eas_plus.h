@@ -24,6 +24,7 @@
 
 extern int stune_task_threshold;
 extern int cpu_eff_tp;
+extern unsigned long long big_cpu_eff_tp;
 extern int tiny_thresh;
 
 struct power_tuning_t {

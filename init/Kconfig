@@ -915,6 +915,46 @@ config HAVE_UNSTABLE_SCHED_CLOCK
 config GENERIC_SCHED_CLOCK
 	bool
 
+menu "Scheduler features"
+
+config UCLAMP_TASK
+	bool "Enable utilization clamping for RT/FAIR tasks"
+	default false
+	help
+	  This feature enables the scheduler to track the clamped utilization
+	  of each CPU based on RUNNABLE tasks currently scheduled on that CPU.
+
+	  When this option is enabled, the user can specify a min and max CPU
+          bandwidth which is allowed for a task.
+	  The max bandwidth allows to clamp the maximum frequency a task can
+	  use, while the min bandwidth allows to define a minimum frequency a
+          task will always use.
+
+	  If in doubt, say N.
+
+config UCLAMP_GROUPS_COUNT
+	int "Number of different utilization clamp values supported"
+	range 0 127
+	default 2
+	depends on UCLAMP_TASK
+	help
+	  This defines the maximum number of different utilization clamp
+	  values which can be concurrently enforced for each utilization
+	  clamp index (i.e. minimum and maximum utilization).
+
+	  Only a limited number of clamp values are supported because:
+	    1. there are usually only few classes of workloads for which it
+	       makes sense to boost/cap for different frequencies,
+	       e.g. background vs foreground, interactive vs low-priority.
+	    2. it allows a simpler and more memory/time efficient tracking of
+	       the per-CPU clamp values.
+
+	  Set to 0 (default value) to disable the utilization clamping feature.
+
+	  If in doubt, use the default value.
+
+endmenu
+
 #
 # For architectures that want to enable the support for NUMA-affine scheduler
 # balancing logic:
@@ -995,6 +1035,28 @@ config CGROUP_FREEZER
 	help
 	  Provides a way to freeze and unfreeze all tasks in a
 	  cgroup.
+
+config UCLAMP_TASK_GROUP
+	bool "Utilization clamping per group of tasks"
+	depends on CGROUP_SCHED
+	depends on UCLAMP_TASK
+	default n
+	help
+	  This feature enables the scheduler to track the clamped utilization
+	  of each CPU based on RUNNABLE tasks currently scheduled on that CPU.
+
+	  When this option is enabled, the user can specify a min and max
+	  CPU bandwidth which is allowed for each single task in a group.
+	  The max bandwidth allows to clamp the maximum frequency a task
+	  can use, while the min bandwidth allows to define a minimum
+	  frequency a task will always use.
+
+	  When task group based utilization clamping is enabled, an eventually
+          specified task-specific clamp value is constrained by the cgroup
+	  specified clamp value. Both minimum and maximum task clamping cannot
+          be bigger than the corresponding clamping defined at task group level.
+
+	  If in doubt, say N.
 
 config CGROUP_PIDS
 	bool "PIDs cgroup subsystem"

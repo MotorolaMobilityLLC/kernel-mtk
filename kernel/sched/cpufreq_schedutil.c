@@ -76,6 +76,7 @@ struct sugov_policy {
 struct sugov_cpu {
 	struct update_util_data update_util;
 	struct sugov_policy *sg_policy;
+	unsigned int		cpu;
 
 	unsigned long iowait_boost;
 	unsigned long iowait_boost_max;
@@ -242,6 +243,7 @@ static void sugov_get_util(unsigned long *util, unsigned long *max, u64 time)
 	rt = (rt * max_cap) >> SCHED_CAPACITY_SHIFT;
 
 	*util = boosted_cpu_util(cpu);
+	*util = uclamp_util(cpu, *util);
 	if (likely(use_pelt()))
 		*util = min((*util + rt), max_cap);
 
@@ -271,12 +273,19 @@ static void sugov_iowait_boost(struct sugov_cpu *sg_cpu, unsigned long *util,
 	if (!boost_util)
 		return;
 
+	boost_max = uclamp_util(sg_cpu->cpu, boost_max);
+
 	if (*util * boost_max < *max * boost_util) {
 		*util = boost_util;
 		*max = boost_max;
 	}
+
 	sg_cpu->iowait_boost >>= 1;
+
+	if (sg_cpu->iowait_boost && sg_cpu->iowait_boost > boost_max)
+		sg_cpu->iowait_boost = boost_max;
 }
+
 
 #ifdef CONFIG_NO_HZ_COMMON
 static bool sugov_cpu_is_busy(struct sugov_cpu *sg_cpu)
@@ -748,6 +757,7 @@ static int sugov_start(struct cpufreq_policy *policy)
 		struct sugov_cpu *sg_cpu = &per_cpu(sugov_cpu, cpu);
 
 		memset(sg_cpu, 0, sizeof(*sg_cpu));
+		sg_cpu->cpu			= cpu;
 		sg_cpu->sg_policy = sg_policy;
 		sg_cpu->flags = SCHED_CPUFREQ_DL;
 		sg_cpu->iowait_boost_max = policy->cpuinfo.max_freq;

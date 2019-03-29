@@ -110,6 +110,7 @@ extern
 const struct sched_group_energy * const cpu_cluster_energy(int cpu);
 
 #ifdef CONFIG_MTK_SCHED_EAS_POWER_SUPPORT
+extern const struct sched_group_energy * const cci_energy(void);
 extern int
 mtk_idle_power(int cpu_idx, int idle_state, int cpu, void *argu, int sd_level);
 
@@ -158,13 +159,11 @@ extern struct cpumask hmp_slow_cpu_mask;
 
 #define hmp_cpu_domain(cpu)     (per_cpu(hmp_cpu_domain, (cpu)))
 
-#ifdef CONFIG_HMP_TRACER
 /* Number of task statistic to force migration */
 struct hmp_statisic {
 	unsigned int nr_force_up;
 	unsigned int nr_force_down;
 };
-#endif /* CONFIG_HMP_TRACER */
 
 extern unsigned int hmp_cpu_is_slowest(int cpu);
 #else
@@ -177,3 +176,8 @@ get_task_util(struct task_struct *p, unsigned long *util, unsigned long *boost);
 extern bool is_rt_throttle(int cpu);
 #endif
 
+extern void set_sched_rotation_enable(bool enable);
+
+#ifdef CONFIG_CGROUP_SCHEDTUNE
+extern int set_stune_task_threshold(int threshold);
+#endif

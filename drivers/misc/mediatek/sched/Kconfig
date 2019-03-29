@@ -155,16 +155,6 @@ config HMP_FREQUENCY_INVARIANT_SCALE
 	  migration strategy to interact more predictably with CPUFreq's
 	  asynchronous compute capacity changes.
 
-config HMP_TRACER
-	bool "(EXPERIMENTAL) Profile HMP scheduler"
-	default n
-	depends on SCHED_HMP
-	help
-	  Profile HMP scheduler
-	  Trace the update of cfs rq, load, and hmp_statisics to evaluate if
-	  the schedule decision is as expected.
-	  If unsure say N here.
-
 config SCHED_HMP_PLUS
 	bool "(EXPERIMENTAL) Corepilot enhancement"
 	depends on SCHED_HMP

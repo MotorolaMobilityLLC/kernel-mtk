@@ -74,8 +74,33 @@ struct sched_param {
  * the tasks may be useful for a wide variety of application fields, e.g.,
  * multimedia, streaming, automation and control, and many others.
  *
- * This variant (sched_attr) is meant at describing a so-called
- * sporadic time-constrained task. In such model a task is specified by:
+ * This variant (sched_attr) allows to define additional attributes to
+ * improve the scheduler knowledge about task requirements.
+ *
+ * Scheduling Class Attributes
+ * ===========================
+ *
+ * A subset of sched_attr attributes specifies the
+ * scheduling policy and relative POSIX attributes:
+ *
+ *  @size		size of the structure, for fwd/bwd compat.
+ *
+ *  @sched_policy	task's scheduling policy
+ *  @sched_nice		task's nice value      (SCHED_NORMAL/BATCH)
+ *  @sched_priority	task's static priority (SCHED_FIFO/RR)
+ *
+ * Certain more advanced scheduling features can be controlled by a
+ * predefined set of flags via the attribute:
+ *
+ *  @sched_flags	for customizing the scheduler behaviour
+ *
+ * Sporadic Time-Constrained Tasks Attributes
+ * ==========================================
+ *
+ * A subset of sched_attr attributes allows to describe a so-called
+ * sporadic time-constrained task.
+ *
+ * In such model a task is specified by:
  *  - the activation period or minimum instance inter-arrival time;
  *  - the maximum (or average, depending on the actual scheduling
  *    discipline) computation time of all instances, a.k.a. runtime;
@@ -87,14 +112,8 @@ struct sched_param {
  * than the runtime and must be completed by time instant t equal to
  * the instance activation time + the deadline.
  *
- * This is reflected by the actual fields of the sched_attr structure:
+ * This is reflected by the following fields of the sched_attr structure:
  *
- *  @size		size of the structure, for fwd/bwd compat.
- *
- *  @sched_policy	task's scheduling policy
- *  @sched_flags	for customizing the scheduler behaviour
- *  @sched_nice		task's nice value      (SCHED_NORMAL/BATCH)
- *  @sched_priority	task's static priority (SCHED_FIFO/RR)
  *  @sched_deadline	representative of the task's deadline
  *  @sched_runtime	representative of the task's runtime
  *  @sched_period	representative of the task's period
@@ -108,21 +127,21 @@ struct sched_param {
  * available in the scheduling class file or in Documentation/.
  */
 struct sched_attr {
-	u32 size;
+	__u32 size;
 
-	u32 sched_policy;
-	u64 sched_flags;
+	__u32 sched_policy;
+	__u64 sched_flags;
 
 	/* SCHED_NORMAL, SCHED_BATCH */
-	s32 sched_nice;
+	__s32 sched_nice;
 
 	/* SCHED_FIFO, SCHED_RR */
-	u32 sched_priority;
+	__u32 sched_priority;
 
 	/* SCHED_DEADLINE */
-	u64 sched_runtime;
-	u64 sched_deadline;
-	u64 sched_period;
+	__u64 sched_runtime;
+	__u64 sched_deadline;
+	__u64 sched_period;
 };
 
 struct futex_pi_state;
@@ -573,7 +592,7 @@ static inline int get_dumpable(struct mm_struct *mm)
 #define MMF_OOM_SKIP		21	/* mm is of no interest for the OOM killer */
 #define MMF_UNSTABLE		22	/* mm is unstable for copy_from_user */
 #define MMF_HUGE_ZERO_PAGE	23      /* mm has ever used the global huge zero page */
-#define MMF_OOM_REAP_QUEUED	26	/* mm was queued for oom_reaper */
+#define MMF_OOM_REAP_QUEUED  26      /* mm has queued for oom_reaper */
 
 #define MMF_INIT_MASK		(MMF_DUMPABLE_MASK | MMF_DUMP_FILTER_MASK)
 
@@ -944,6 +963,17 @@ extern struct user_struct root_user;
 struct backing_dev_info;
 struct reclaim_state;
 
+enum uclamp_id {
+	/* No utilization clamp group assigned */
+	UCLAMP_NONE = -1,
+
+	UCLAMP_MIN = 0, /* Minimum utilization */
+	UCLAMP_MAX,     /* Maximum utilization */
+
+	/* Utilization clamping constraints count */
+	UCLAMP_CNT
+};
+
 #ifdef CONFIG_SCHED_INFO
 struct sched_info {
 	/* cumulative counters */
@@ -1023,6 +1053,27 @@ enum cpu_idle_type {
 # define SCHED_FIXEDPOINT_SHIFT	10
 # define SCHED_FIXEDPOINT_SCALE	(1L << SCHED_FIXEDPOINT_SHIFT)
 
+static inline unsigned int scale_from_percent(unsigned int pct)
+{
+	WARN_ON(pct > 100);
+
+	return ((SCHED_FIXEDPOINT_SCALE * pct) / 100);
+}
+
+static inline unsigned int scale_to_percent(unsigned int value)
+{
+	unsigned int rounding = 0;
+
+	WARN_ON(value > SCHED_FIXEDPOINT_SCALE);
+
+	/* Compensate rounding errors for: 0, 256, 512, 768, 1024 */
+	if (likely((value & 0xFF) && ~(value & 0x700)))
+		rounding = 1;
+
+	return (rounding + ((100 * value) / SCHED_FIXEDPOINT_SCALE));
+}
+
+
 /*
  * Increase resolution of cpu_capacity calculations
  */
@@ -1036,6 +1087,19 @@ struct sched_capacity_reqs {
 
 	unsigned long total;
 };
+
+#if defined(CONFIG_UCLAMP_TASK) && defined(CONFIG_MTK_UNIFY_POWER)
+extern int opp_capacity_tbl_ready;
+extern void init_opp_capacity_tbl(void);
+extern unsigned int find_fit_capacity(unsigned int cap);
+static inline unsigned int search_opp_cappacity(unsigned int cap)
+{
+	if (unlikely(!opp_capacity_tbl_ready))
+		init_opp_capacity_tbl();
+
+	return find_fit_capacity(cap);
+}
+#endif
 
 /*
  * Wake-queues are lists of tasks with a pending wakeup, whose
@@ -1682,6 +1746,21 @@ struct sched_dl_entity {
 	struct hrtimer dl_timer;
 };
 
+/**
+ * Utilization's clamp group
+ *
+ * A utilization clamp group maps a "clamp value" (value), i.e.
+ * util_{min,max}, to a "clamp group index" (group_id).
+ * The same "group_id" can be used by multiple TG's to enforce the same
+ * clamp "value" for a given clamp index.
+ */
+struct uclamp_se {
+	/* Utilization constraint for tasks in this group */
+	unsigned int value;
+	/* Utilization clamp group for this constraint */
+	unsigned int group_id;
+};
+
 union rcu_special {
 	struct {
 		u8 blocked;
@@ -1746,6 +1825,9 @@ struct task_struct {
 	int wake_cpu;
 #endif
 	int on_rq;
+#ifdef CONFIG_MTK_SCHED_BOOST
+	int cpu_prefer;
+#endif
 
 	int prio, static_prio, normal_prio;
 	unsigned int rt_priority;
@@ -1761,11 +1843,19 @@ struct task_struct {
 	u32 init_load_pct;
 	u64 last_sleep_ts;
 #endif
+	u64 last_enqueued_ts;
 
 #ifdef CONFIG_CGROUP_SCHED
 	struct task_group *sched_task_group;
 #endif
 	struct sched_dl_entity dl;
+
+#ifdef CONFIG_UCLAMP_TASK
+	/* Clamp group the task is currently accounted into */
+	int				uclamp_group_id[UCLAMP_CNT];
+	/* Utlization clamp values for this task */
+	struct uclamp_se		uclamp[UCLAMP_CNT];
+#endif
 
 #ifdef CONFIG_PREEMPT_NOTIFIERS
 	/* list of struct preempt_notifier: */
@@ -2230,6 +2320,10 @@ struct task_struct {
 
 #ifdef CONFIG_PREEMPT_MONITOR
 	unsigned long preempt_dur;
+#endif
+#ifdef CONFIG_MTK_CACHE_CONTROL
+	u64 stall_ratio;
+	u64 badness;
 #endif
 
 /* CPU-specific state of this task */
