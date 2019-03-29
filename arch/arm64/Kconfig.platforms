@@ -208,6 +208,47 @@ config MACH_MT6761
 	  thin-design smartphones. MT6761 also offers significant multitasking and
 	  multimedia improvements.
 
+config MACH_MT6763
+	bool "MediaTek MT6763"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select NEED_MACH_MEMORY_H
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select PINCTRL
+	select PINCTRL_MT6763
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_GIC_V3_EXT
+	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
+	select MTK_EIC_HISTORY_DUMP
+	select MTK_EIC
+	select MTK_BOUNCING_CHECK
+	select MTK_SYSTRACKER_V2
+	select MTK_PLAT_SRAM_FLAG
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_SEC_DEINT_SUPPORT
+	select MTK_FIQ_CACHE
+	select ARM64_CRYPTO
+	select CRYPTO_SHA2_ARM64_CE
+	select CRYPTO_AES_ARM64_CE_BLK
+	select FAST_CIRQ_CLONE_FLUSH
+	help
+	  This enables support for MediaTek MT6763
+	  Support for aarch64 Architecture
+	  Support for fpga6763_64_emmc related projects
+	  Support for fpga6763_64_ufs related projects
+
 config MACH_MT6779
 	bool "MediaTek MT6779"
 	select GENERIC_CLOCKEVENTS
