@@ -540,18 +540,16 @@ void gpu_time_update(long long t_gpu, unsigned int cur_freq,
 		iter->weighted_gpu_time_begin = 0;
 	}
 
-	if (cur_max_freq > 0 && cur_max_freq > cur_freq) {
+	if (cur_max_freq > 0 && cur_max_freq >= cur_freq
+			&& t_gpu > 0LL && t_gpu < 1000000000LL) {
 		iter->weighted_gpu_time[iter->weighted_gpu_time_end] =
 			t_gpu * cur_freq;
 		do_div(iter->weighted_gpu_time[iter->weighted_gpu_time_end],
 				cur_max_freq);
-	} else
-		iter->weighted_gpu_time[iter->weighted_gpu_time_end] =
-			t_gpu;
-
-	iter->weighted_gpu_time_ts[iter->weighted_gpu_time_end] =
-		cur_time_us;
-	iter->weighted_gpu_time_end++;
+		iter->weighted_gpu_time_ts[iter->weighted_gpu_time_end] =
+			cur_time_us;
+		iter->weighted_gpu_time_end++;
+	}
 
 	mtk_fstb_dprintk(
 	"fstb: time %lld %lld t_gpu %lld cur_freq %u cur_max_freq %u\n",
@@ -1066,7 +1064,6 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 	unsigned long long tmp_target_limit = 60;
 	int cur_cpu_time;
 	int cur_gpu_time;
-	int sys_time;
 	int cur_cap;
 
 	cur_cpu_time = get_cpu_frame_time(iter);
@@ -1106,14 +1103,9 @@ static int cal_target_fps(struct FSTB_FRAME_INFO *iter)
 		second_chance_flag = 0;
 		fpsgo_systrace_c_fstb(iter->pid,
 				second_chance_flag, "second_chance_flag");
-		sys_time = max(cur_cpu_time, cur_gpu_time);
-
-		if (sys_time > 0) {
-			tmp_target_limit = 1000000000LL;
-			do_div(tmp_target_limit,
-					(long long)sys_time);
-		}
-
+		tmp_target_limit = 1000000000LL;
+		do_div(tmp_target_limit,
+				(long long)max(cur_cpu_time, cur_gpu_time));
 		fpsgo_systrace_c_fstb(iter->pid,
 				(int)tmp_target_limit, "tmp_target_limit");
 

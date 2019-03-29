@@ -36,7 +36,6 @@ enum HW_EVENT4RENDER {
 struct fbt_jerk {
 	int id;
 	int jerking;
-	int postpone;
 	struct hrtimer timer;
 	struct work_struct work;
 };

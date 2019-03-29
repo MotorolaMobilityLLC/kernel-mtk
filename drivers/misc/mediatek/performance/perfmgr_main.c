@@ -20,7 +20,6 @@
 #include "io_ctrl.h"
 #include "boost_ctrl.h"
 #include "mtk_perfmgr_internal.h"
-#include "duraspeed_ind.h"
 
 int clstr_num;
 static int perfmgr_probe(struct platform_device *dev)
@@ -102,9 +101,6 @@ static int __init init_perfmgr(void)
 #endif
 	init_perfctl(perfmgr_root);
 
-#ifdef CONFIG_MTK_LOAD_TRACKER
-	init_duraspeed_ind(perfmgr_root);
-#endif
 	return 0;
 }
 device_initcall(init_perfmgr);
