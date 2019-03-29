@@ -198,6 +198,10 @@
 	};
 };
 
+&bat_gm30 {
+	R_FG_VALUE = <(10)>;	/*	R_sense resistance.*/
+};
+
 &lk_charger {
 	compatible = "mediatek,lk_charger";
 	power_path_support;
