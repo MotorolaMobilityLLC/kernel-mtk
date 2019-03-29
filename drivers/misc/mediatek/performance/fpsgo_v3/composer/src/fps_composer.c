@@ -169,8 +169,10 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
+	unsigned long long running_time = 0;
 	unsigned long long buffer_id = 0;
 	int queue_SF = 0;
+	unsigned long long mid = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d] id %llu", __func__, pid, identifier);
 
@@ -249,6 +251,9 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 
 	switch (f_render->frame_type) {
 	case NON_VSYNC_ALIGNED_TYPE:
+		if (f_render->t_enqueue_start)
+			f_render->Q2Q_time =
+				enqueue_start_time - f_render->t_enqueue_start;
 		f_render->t_enqueue_start = enqueue_start_time;
 		FPSGO_COM_TRACE(
 			"pid[%d] type[%d] enqueue_s:%llu",
@@ -259,10 +264,18 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 			f_render->buffer_id, f_render->api);
 		xgf_ret =
 			fpsgo_comp2xgf_qudeq_notify(pid,
-					XGF_QUEUE_START, NULL, NULL,
+					XGF_QUEUE_START, &running_time, &mid,
 					enqueue_start_time);
-		if (xgf_ret != XGF_NOTIFY_OK)
+		if (xgf_ret != XGF_SLPTIME_OK)
 			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
+		if (running_time != 0)
+			f_render->running_time = running_time;
+		f_render->mid = mid;
+		fpsgo_comp2fbt_frame_start(f_render,
+				enqueue_start_time);
+		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
+			enqueue_start_time,
+			f_render->buffer_id, f_render->api);
 		break;
 	case BY_PASS_TYPE:
 		f_render->t_enqueue_start = enqueue_start_time;
@@ -284,8 +297,6 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 	struct render_info *f_render;
 	int xgf_ret = 0;
 	int check_render;
-	unsigned long long running_time = 0;
-	unsigned long long mid = 0;
 
 	FPSGO_COM_TRACE("%s pid[%d]", __func__, pid);
 
@@ -317,9 +328,6 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 
 	switch (f_render->frame_type) {
 	case NON_VSYNC_ALIGNED_TYPE:
-		if (f_render->t_enqueue_end)
-			f_render->Q2Q_time =
-				enqueue_end_time - f_render->t_enqueue_end;
 		f_render->t_enqueue_end = enqueue_end_time;
 		f_render->enqueue_length =
 			enqueue_end_time - f_render->t_enqueue_start;
@@ -327,22 +335,10 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 			"pid[%d] type[%d] enqueue_e:%llu enqueue_l:%llu",
 			pid, f_render->frame_type,
 			enqueue_end_time, f_render->enqueue_length);
-		xgf_ret =
-			fpsgo_comp2xgf_qudeq_notify(pid,
-					XGF_QUEUE_END, &running_time, &mid,
-					enqueue_end_time);
-		if (xgf_ret != XGF_SLPTIME_OK)
+		xgf_ret = fpsgo_comp2xgf_qudeq_notify(pid, XGF_QUEUE_END,
+				NULL, NULL, enqueue_end_time);
+		if (xgf_ret != XGF_NOTIFY_OK)
 			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
-
-		if (running_time != 0)
-			f_render->running_time = running_time;
-		f_render->mid = mid;
-
-		fpsgo_comp2fbt_frame_start(f_render,
-				enqueue_end_time);
-		fpsgo_comp2fstb_queue_time_update(pid, f_render->frame_type,
-			enqueue_end_time,
-			f_render->buffer_id, f_render->api);
 		fpsgo_comp2fstb_enq_end(f_render->pid,
 			f_render->enqueue_length);
 		fpsgo_systrace_c_fbt_gm(-300, f_render->enqueue_length,
@@ -467,7 +463,6 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 					NULL, NULL, dequeue_end_time);
 		if (xgf_ret != XGF_NOTIFY_OK)
 			pr_debug(COMP_TAG"%s xgf_ret:%d", __func__, xgf_ret);
-		fpsgo_comp2fbt_deq_end(f_render, dequeue_end_time);
 		fpsgo_systrace_c_fbt_gm(-300, f_render->dequeue_length,
 			"%d_%d-dequeue_length", pid, f_render->frame_type);
 		break;
