@@ -20,7 +20,6 @@
 #include <mt-plat/mtk_perfobserver.h>
 
 #define TAG "PERF_IOCTL"
-#define API_READY 0
 
 void (*fpsgo_notify_qudeq_fp)(int qudeq,
 		unsigned int startend,
@@ -314,9 +313,7 @@ static long dev_perfmgr_ioctl(struct file *filp,
 	case PERFMGR_CPU_PREFER:
 		pr_debug(TAG " sched_set_cpuprefer:%d, %d\n",
 			msgKM->tid, msgKM->prefer_type);
-#if API_READY
 		sched_set_cpuprefer(msgKM->tid, msgKM->prefer_type);
-#endif
 		break;
 
 	default:

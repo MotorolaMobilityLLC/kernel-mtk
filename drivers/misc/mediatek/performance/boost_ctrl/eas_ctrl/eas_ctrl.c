@@ -33,7 +33,6 @@
 #include <linux/trace_events.h>
 #endif
 
-#define API_READY 0
 /* boost value */
 static struct mutex boost_eas;
 #ifdef CONFIG_CGROUP_SCHEDTUNE
@@ -159,7 +158,6 @@ int update_schedplus_down_throttle_ns(int kicker, int nsec)
 	cur_schedplus_down_throttle_ns = final_down_thres < 0 ?
 		-1 : final_down_thres;
 
-#if API_READY
 	if (debug_schedplus_down_throttle_nsec == -1) {
 		if (cur_schedplus_down_throttle_ns >= 0)
 			schedplus_set_down_throttle_nsec(
@@ -168,7 +166,6 @@ int update_schedplus_down_throttle_ns(int kicker, int nsec)
 			schedplus_set_down_throttle_nsec(
 				default_schedplus_down_throttle_ns);
 	}
-#endif
 
 	pr_debug("%s %d %d %d %d", __func__, kicker, nsec,
 		cur_schedplus_down_throttle_ns,
@@ -176,11 +173,7 @@ int update_schedplus_down_throttle_ns(int kicker, int nsec)
 
 	mutex_unlock(&boost_eas);
 
-#if API_READY
 	return schedplus_show_down_throttle_nsec(0);
-#else
-	return 0;
-#endif
 }
 
 int update_schedplus_sync_flag(int kicker, int enable)
@@ -1019,13 +1012,11 @@ static ssize_t perfmgr_debug_schedplus_down_throttle_proc_write(
 
 	mutex_lock(&boost_eas);
 	debug_schedplus_down_throttle_nsec = data;
-#if API_READY
 	if (data == -1)
 		schedplus_set_down_throttle_nsec(
 			default_schedplus_down_throttle_ns);
 	else if (data >= 0)
 		schedplus_set_down_throttle_nsec(data);
-#endif
 	mutex_unlock(&boost_eas);
 
 	return cnt;
@@ -1074,12 +1065,10 @@ static ssize_t perfmgr_sched_big_task_rotation_proc_write(struct file *filp,
 		return rv;
 
 	perf_sched_big_task_rotation = data;
-#if API_READY
 	if (data)
 		set_sched_rotation_enable(true);
 	else
 		set_sched_rotation_enable(false);
-#endif
 
 	return cnt;
 }
@@ -1102,13 +1091,11 @@ static ssize_t perfmgr_sched_stune_task_thresh_proc_write(struct file *filp,
 		return rv;
 
 	perf_sched_stune_task_thresh = data;
-#if API_READY
 #ifdef CONFIG_CGROUP_SCHEDTUNE
 	if (perf_sched_stune_task_thresh >= 0)
 		set_stune_task_threshold(perf_sched_stune_task_thresh);
 	else
 		set_stune_task_threshold(-1);
-#endif
 #endif
 
 	return cnt;
