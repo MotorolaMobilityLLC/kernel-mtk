@@ -1184,6 +1184,11 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			#clock-cells = <1>;
 		};
 
+		vdec_gcon@16000000 {
+			compatible = "mediatek,mt8173-vdec_gcon";
+			reg = <0 0x16000000 0 0x10000>;
+		};
+
 		larb1: larb@16010000 {
 			compatible = "mediatek,mt8173-smi-larb";
 			reg = <0 0x16010000 0 0x1000>;
@@ -1193,6 +1198,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			clocks = <&vdecsys CLK_VDEC_CKEN>,
 				 <&vdecsys CLK_VDEC_LARB_CKEN>;
 			clock-names = "apb", "smi";
+		};
+
+		vdec@16020000 {
+			compatible = "mediatek,mt8173-vdec";
+			reg = <0 0x16020000 0 0x10000>;
+			interrupts = <GIC_SPI 204 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		vencsys: clock-controller@18000000 {
