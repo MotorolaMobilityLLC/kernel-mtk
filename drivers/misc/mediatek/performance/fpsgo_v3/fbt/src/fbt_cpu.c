@@ -366,24 +366,6 @@ int fbt_cpu_set_floor_opp(int new_opp)
 	return 0;
 }
 
-static int fbt_get_L_min_ceiling(void)
-{
-	int opp, freq;
-
-#if API_READY
-	opp = upower_get_turn_point();
-#else
-	opp = 15;
-#endif
-
-	if (opp >= NR_FREQ_CPU || opp < 0)
-		return 0;
-
-	freq = cpu_dvfs[fbt_get_L_cluster_num()].power[opp];
-
-	return freq;
-}
-
 static int fbt_is_enable(void)
 {
 	int enable;
