@@ -70,8 +70,6 @@
 #include "eara_job.h"
 #include "mtk_upower.h"
 
-#define API_READY 0
-
 #define GED_VSYNC_MISS_QUANTUM_NS 16666666
 #define TIME_3MS  3000000
 #define TIME_1MS  1000000

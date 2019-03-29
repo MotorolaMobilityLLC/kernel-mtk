@@ -50,8 +50,6 @@
 #include "dfrc_drv.h"
 #endif
 
-#define API_READY 0
-
 #define mtk_fstb_dprintk_always(fmt, args...) \
 	pr_debug("[FSTB]" fmt, ##args)
 
@@ -1447,10 +1445,8 @@ static void fstb_fps_stats(struct work_struct *work)
 				calculate_fps_limit(iter, target_fps);
 			fpsgo_systrace_c_fstb(iter->pid,
 				iter->target_fps_margin, "target_fps_margin");
-#if API_READY
 			ged_kpi_set_target_FPS_margin(iter->bufid,
 				iter->target_fps, iter->target_fps_margin);
-#endif
 			mtk_fstb_dprintk_always(
 			"%s pid:%d target_fps:%d\n",
 			__func__, iter->pid,
