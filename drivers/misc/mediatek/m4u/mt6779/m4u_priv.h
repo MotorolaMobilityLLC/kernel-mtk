@@ -30,7 +30,7 @@
 #define M4UINFO(string, args...) pr_info("[M4U] "string, ##args)
 
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
-	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+	defined(CONFIG_MTK_TEE_GP_SUPPORT)
 #define M4U_TEE_SERVICE_ENABLE
 #endif
 
@@ -126,6 +126,7 @@ struct m4u_buf_info_t {
 	int seq_id;
 	unsigned long mapped_kernel_va_for_debug;
 	unsigned int domain_idx;
+	unsigned long long current_ts;
 };
 
 struct M4U_MAU_STRUCT {
@@ -164,12 +165,15 @@ unsigned int m4u_do_mva_alloc_start_from(unsigned int domain_idx,
 	unsigned int size, void *priv);
 int m4u_do_mva_free(unsigned int domain_idx,
 		unsigned int mva, unsigned int size);
+int check_reserved_region_integrity(unsigned int domain_idx,
+		unsigned int start, unsigned int nr);
+
 
 /* ================================= */
 /* ==== define in m4u_pgtable.c===== */
 void m4u_dump_pgtable(struct m4u_domain_t *domain,
 			struct seq_file *seq);
-void m4u_dump_pte_nolock(struct m4u_domain_t *domain,
+int m4u_dump_pte_nolock(struct m4u_domain_t *domain,
 				unsigned int mva);
 void m4u_dump_pte(struct m4u_domain_t *domain,
 			unsigned int mva);
@@ -182,6 +186,7 @@ int m4u_clean_pte(struct m4u_domain_t *domain,
 
 unsigned long m4u_get_pte(struct m4u_domain_t *domain,
 			unsigned int mva);
+int _m4u_get_pte(struct m4u_domain_t *domain, unsigned int mva);
 
 
 /* ================================= */
@@ -227,6 +232,7 @@ void m4u_get_pgd(struct m4u_client_t *client, int port,
 	void **pgd_va, void **pgd_pa, unsigned int *size);
 unsigned long m4u_mva_to_pa(struct m4u_client_t *client,
 	int port, unsigned int mva);
+int m4u_mva_check(int port, unsigned int mva);
 int m4u_query_mva_info(unsigned int domain_idx,
 	unsigned int mva, unsigned int size,
 	unsigned int *real_mva, unsigned int *real_size);
@@ -378,6 +384,11 @@ struct M4U_DMA_STRUCT {
 #define MTK_M4U_T_DMA_OP	      _IOW(MTK_M4U_MAGICNO, 29, int)
 
 #define MTK_M4U_T_SEC_INIT	    _IOW(MTK_M4U_MAGICNO, 50, int)
+
+#ifdef CONFIG_MACH_MT6779
+int larb_clock_on(int larb, bool config_mtcmos);
+int larb_clock_off(int larb, bool config_mtcmos);
+#endif
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 int m4u_config_port_tee(struct M4U_PORT_STRUCT *pM4uPort);

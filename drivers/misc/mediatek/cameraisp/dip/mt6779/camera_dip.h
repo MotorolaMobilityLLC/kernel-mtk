@@ -155,6 +155,7 @@ struct DIP_GET_DUMP_INFO_STRUCT {
 	unsigned int imgi_baseaddr;
 	unsigned int tdri_baseaddr;
 	unsigned int dmgi_baseaddr;
+	unsigned int cmdq_baseaddr;
 };
 
 enum DIP_MEMORY_INFO_CMD {
@@ -185,6 +186,21 @@ struct compat_DIP_MEM_INFO_STRUCT {
 #endif
 
 
+enum DIP_GCE_EVENT_ENUM {
+	DIP_GCE_EVENT_NONE,
+	DIP_GCE_EVENT_DPE,
+	DIP_GCE_EVENT_RSC,
+	DIP_GCE_EVENT_WPE,
+	DIP_GCE_EVENT_MFB,
+	DIP_GCE_EVENT_FDVT,
+	DIP_GCE_EVENT_DIP,
+	DIP_GCE_EVENT_MDP,
+	DIP_GCE_EVENT_DISP,
+	DIP_GCE_EVENT_JPGE,
+	DIP_GCE_EVENT_VENC,
+	DIP_GCE_EVENT_CMDQ,
+	DIP_GCE_EVENT_THEOTHERS
+};
 /* struct for enqueue/dequeue control in ihalpipe wrapper */
 /* 0,signal that a specific buffer is enqueued */
 /* 1,a dequeue thread is waiting to do dequeue */
@@ -263,7 +279,8 @@ enum DIP_CMD_ENUM {
 	DIP_CMD_ION_FREE_BY_HWMODULE,  /* free all ion handle */
 	DIP_CMD_DUMP_BUFFER,
 	DIP_CMD_GET_DUMP_INFO,
-	DIP_CMD_SET_MEM_INFO
+	DIP_CMD_SET_MEM_INFO,
+	DIP_CMD_GET_GCE_FIRST_ERR
 };
 
 
@@ -299,6 +316,11 @@ enum DIP_CMD_ENUM {
 	struct DIP_GET_DUMP_INFO_STRUCT)
 #define DIP_SET_MEM_INFO \
 	_IOWR(DIP_MAGIC, DIP_CMD_SET_MEM_INFO, struct DIP_MEM_INFO_STRUCT)
+
+#define DIP_GET_GCE_FIRST_ERR \
+	_IOWR(DIP_MAGIC, DIP_CMD_GET_GCE_FIRST_ERR, unsigned int)
+
+
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_DIP_RESET_BY_HWMODULE \

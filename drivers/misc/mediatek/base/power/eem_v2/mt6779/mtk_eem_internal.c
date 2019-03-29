@@ -107,7 +107,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_L,
 		.features	= FEA_INIT01 | FEA_INIT02,
-		.max_freq_khz	= 1970000,
+		.max_freq_khz	= 2000000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
@@ -136,7 +136,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 #endif
 		.ctrl_id	= EEM_CTRL_B,
 		.features	= FEA_INIT01 | FEA_INIT02,
-		.max_freq_khz	= 2184000,
+		.max_freq_khz	= 2200000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.eem_v_base	= EEM_V_BASE,
 		.eem_step	= EEM_STEP,
@@ -214,12 +214,12 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.AGECONFIG	= AGECONFIG_VAL,
 		.AGEM		= AGEM_VAL,
 #if ENABLE_LOO
-		.DVTFIXED	= DVTFIXED_M_VAL_GPU,
 		.loo_role       = LOW_BANK,
 		.loo_couple     = EEM_CTRL_GPU_HI,
 		.loo_mutex      = &gpu_mutex,
+		.DVTFIXED	= DVTFIXED_VAL_GL,
 #else
-		.DVTFIXED	= DVTFIXED_M_VAL_GPU,
+		.DVTFIXED	= DVTFIXED_VAL_GPU,
 #endif
 		.VCO		= VCO_VAL_GL,
 		.DCCONFIG	= DCCONFIG_VAL,
@@ -235,7 +235,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_MDLA,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.features	= FEA_INIT01 | FEA_CORN,
 		.max_freq_khz	= 880000,/* MHz */
 		.VBOOT		= VBOOT_VAL_VPU, /* 10uV */
 		.VMAX		= VMAX_VAL_VPU,
@@ -266,7 +266,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_VPU,
-		.features	= FEA_INIT01 | FEA_INIT02 | FEA_MON,
+		.features	= FEA_INIT01 | FEA_CORN,
 		.max_freq_khz	= 880000,/* MHz */
 		.VBOOT		= VBOOT_VAL_VPU, /* 10uV */
 		.VMAX		= VMAX_VAL_VPU,
@@ -298,7 +298,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 		.volt_offset	= 0,
 #endif
 		.ctrl_id	= EEM_CTRL_GPU_HI,
-		.features	= FEA_INIT02 | FEA_MON,
+		.features	= FEA_INIT02,
 		.max_freq_khz	= 970000,
 		.VBOOT		= VBOOT_VAL, /* 10uV */
 		.VMAX		= VMAX_VAL_GH,
@@ -328,7 +328,7 @@ struct eem_det eem_detectors[NR_EEM_DET] = {
 };
 
 #if DUMP_DATA_TO_DE
-const unsigned int reg_dump_addr_off[410] = {
+const unsigned int reg_dump_addr_off[DUMP_LEN] = {
 	0x0000,
 	0x0004,
 	0x0008,
@@ -434,6 +434,7 @@ const unsigned int reg_dump_addr_off[410] = {
 	0x0F28,
 	0x0F2C,
 	0x0F30,
+#if DVT
 	0x0800,
 	0x0804,
 	0x0808,
@@ -739,6 +740,7 @@ const unsigned int reg_dump_addr_off[410] = {
 	0x02F4,
 	0x02F8,
 	0x02FC,
+#endif
 };
 #endif
 #undef __MT_EEM_INTERNAL_C__

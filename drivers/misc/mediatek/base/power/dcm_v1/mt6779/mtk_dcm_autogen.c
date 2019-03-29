@@ -18,9 +18,9 @@
 #include <mtk_dcm_internal.h>
 #include <mtk_dcm_autogen.h>
 #include <mtk_dcm.h>
-
 // ========== auto gen code 2018 0827 ====================
-/* Below from DCM autogen. */
+// ========== auto gen code 2018 0905 ====================
+// ========== auto gen code 2018 0919 ====================
 #define INFRACFG_AO_INFRA_BUS_DCM_REG0_MASK ((0x1 << 0) | \
 			(0x1 << 1) | \
 			(0x1 << 3) | \
@@ -106,38 +106,6 @@ void dcm_infracfg_ao_infra_bus_dcm(int on)
 			(reg_read(INFRA_AXIMEM_IDLE_BIT_EN_0) &
 			~INFRACFG_AO_INFRA_BUS_DCM_REG1_MASK) |
 			INFRACFG_AO_INFRA_BUS_DCM_REG1_OFF);
-	}
-}
-
-#define INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_MASK ((0x1 << 27))
-#define INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_ON ((0x1 << 27))
-#define INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_OFF ((0x0 << 27))
-
-bool dcm_infracfg_ao_infra_emi_local_dcm_is_on(void)
-{
-	bool ret = true;
-
-	ret &= ((reg_read(MEM_DCM_CTRL) &
-		INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_MASK) ==
-		(unsigned int) INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_ON);
-
-	return ret;
-}
-
-void dcm_infracfg_ao_infra_emi_local_dcm(int on)
-{
-	if (on) {
-		/* TINFO = "Turn ON DCM 'infracfg_ao_infra_emi_local_dcm'" */
-		reg_write(MEM_DCM_CTRL,
-			(reg_read(MEM_DCM_CTRL) &
-			~INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_MASK) |
-			INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_ON);
-	} else {
-		/* TINFO = "Turn OFF DCM 'infracfg_ao_infra_emi_local_dcm'" */
-		reg_write(MEM_DCM_CTRL,
-			(reg_read(MEM_DCM_CTRL) &
-			~INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_MASK) |
-			INFRACFG_AO_INFRA_EMI_LOCAL_DCM_REG0_OFF);
 	}
 }
 
@@ -288,6 +256,8 @@ void dcm_infracfg_ao_peri_module_dcm(int on)
 			(0x1 << 10) | \
 			(0x1 << 12))
 #define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_MASK ((0xffffffff << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_MASK ((0xffffffff << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_MASK ((0xffffffff << 0))
 #define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_ON ((0x1 << 1) | \
 			(0x1 << 2) | \
 			(0x1 << 3) | \
@@ -296,7 +266,9 @@ void dcm_infracfg_ao_peri_module_dcm(int on)
 			(0x1 << 6) | \
 			(0x1 << 10) | \
 			(0x1 << 12))
-#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_ON ((0xff << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_ON ((0x40388000 << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_ON ((0xff << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_ON ((0x7 << 0))
 #define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_OFF ((0x0 << 1) | \
 			(0x0 << 2) | \
 			(0x0 << 3) | \
@@ -305,7 +277,9 @@ void dcm_infracfg_ao_peri_module_dcm(int on)
 			(0x0 << 6) | \
 			(0x0 << 10) | \
 			(0x0 << 12))
-#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_OFF ((0x0 << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_OFF ((0x40388000 << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_OFF ((0x0 << 0))
+#define INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_OFF ((0x7 << 0))
 
 bool dcm_infracfg_ao_mem_dcm_emi_group_is_on(void)
 {
@@ -314,9 +288,15 @@ bool dcm_infracfg_ao_mem_dcm_emi_group_is_on(void)
 	ret &= ((reg_read(INFRA_EMI_DCM_CFG0) &
 		INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_MASK) ==
 		(unsigned int) INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_ON);
-	ret &= ((reg_read(INFRA_EMI_DCM_CFG3) &
+	ret &= ((reg_read(INFRA_EMI_DCM_CFG1) &
 		INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_MASK) ==
 		(unsigned int) INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_ON);
+	ret &= ((reg_read(INFRA_EMI_DCM_CFG3) &
+		INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_MASK) ==
+		(unsigned int) INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_ON);
+	ret &= ((reg_read(TOP_CK_ANCHOR_CFG) &
+		INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_MASK) ==
+		(unsigned int) INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_ON);
 
 	return ret;
 }
@@ -329,20 +309,36 @@ void dcm_infracfg_ao_mem_dcm_emi_group(int on)
 			(reg_read(INFRA_EMI_DCM_CFG0) &
 			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_MASK) |
 			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_ON);
-		reg_write(INFRA_EMI_DCM_CFG3,
-			(reg_read(INFRA_EMI_DCM_CFG3) &
+		reg_write(INFRA_EMI_DCM_CFG1,
+			(reg_read(INFRA_EMI_DCM_CFG1) &
 			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_MASK) |
 			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_ON);
+		reg_write(INFRA_EMI_DCM_CFG3,
+			(reg_read(INFRA_EMI_DCM_CFG3) &
+			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_MASK) |
+			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_ON);
+		reg_write(TOP_CK_ANCHOR_CFG,
+			(reg_read(TOP_CK_ANCHOR_CFG) &
+			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_MASK) |
+			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_ON);
 	} else {
 		/* TINFO = "Turn OFF DCM 'infracfg_ao_mem_dcm_emi_group'" */
 		reg_write(INFRA_EMI_DCM_CFG0,
 			(reg_read(INFRA_EMI_DCM_CFG0) &
 			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_MASK) |
 			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG0_OFF);
-		reg_write(INFRA_EMI_DCM_CFG3,
-			(reg_read(INFRA_EMI_DCM_CFG3) &
+		reg_write(INFRA_EMI_DCM_CFG1,
+			(reg_read(INFRA_EMI_DCM_CFG1) &
 			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_MASK) |
 			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG1_OFF);
+		reg_write(INFRA_EMI_DCM_CFG3,
+			(reg_read(INFRA_EMI_DCM_CFG3) &
+			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_MASK) |
+			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG2_OFF);
+		reg_write(TOP_CK_ANCHOR_CFG,
+			(reg_read(TOP_CK_ANCHOR_CFG) &
+			~INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_MASK) |
+			INFRACFG_AO_MEM_DCM_EMI_GROUP_REG3_OFF);
 	}
 }
 
@@ -1477,105 +1473,54 @@ void dcm_msdc1_mwctlcken_dcm(int on)
 	}
 }
 
-#define MP_CPUSYS_TOP_ADB_DCM_REG0_MASK ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG0_MASK ((0x1 << 16) | \
 			(0x1 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG1_MASK ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG1_MASK ((0x1 << 16) | \
 			(0x1 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG2_MASK ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 4) | \
-			(0x1 << 5) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG2_MASK ((0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 18) | \
 			(0x1 << 19) | \
 			(0x1 << 20) | \
 			(0x1 << 21) | \
 			(0x1 << 22))
-#define MP_CPUSYS_TOP_ADB_DCM_REG3_MASK ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG3_MASK ((0x1 << 3) | \
 			(0x1 << 4) | \
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 18) | \
 			(0x1 << 19) | \
 			(0x1 << 20))
-#define MP_CPUSYS_TOP_ADB_DCM_REG0_ON ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG0_ON ((0x1 << 16) | \
 			(0x1 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG1_ON ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG1_ON ((0x1 << 16) | \
 			(0x1 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG2_ON ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
-			(0x1 << 4) | \
-			(0x1 << 5) | \
-			(0x1 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG2_ON ((0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 18) | \
 			(0x1 << 19) | \
 			(0x1 << 20) | \
 			(0x1 << 21) | \
 			(0x1 << 22))
-#define MP_CPUSYS_TOP_ADB_DCM_REG3_ON ((0x1 << 0) | \
-			(0x1 << 1) | \
-			(0x1 << 2) | \
-			(0x1 << 3) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG3_ON ((0x1 << 3) | \
 			(0x1 << 4) | \
 			(0x1 << 16) | \
 			(0x1 << 17) | \
 			(0x1 << 18) | \
 			(0x1 << 19) | \
 			(0x1 << 20))
-#define MP_CPUSYS_TOP_ADB_DCM_REG0_OFF ((0x0 << 0) | \
-			(0x0 << 1) | \
-			(0x0 << 2) | \
-			(0x0 << 3) | \
-			(0x0 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG0_OFF ((0x0 << 16) | \
 			(0x0 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG1_OFF ((0x0 << 0) | \
-			(0x0 << 1) | \
-			(0x0 << 2) | \
-			(0x0 << 3) | \
-			(0x0 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG1_OFF ((0x0 << 16) | \
 			(0x0 << 17))
-#define MP_CPUSYS_TOP_ADB_DCM_REG2_OFF ((0x0 << 0) | \
-			(0x0 << 1) | \
-			(0x0 << 2) | \
-			(0x0 << 3) | \
-			(0x0 << 4) | \
-			(0x0 << 5) | \
-			(0x0 << 16) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG2_OFF ((0x0 << 16) | \
 			(0x0 << 17) | \
 			(0x0 << 18) | \
 			(0x0 << 19) | \
 			(0x0 << 20) | \
 			(0x0 << 21) | \
 			(0x0 << 22))
-#define MP_CPUSYS_TOP_ADB_DCM_REG3_OFF ((0x0 << 0) | \
-			(0x0 << 1) | \
-			(0x0 << 2) | \
-			(0x0 << 3) | \
+#define MP_CPUSYS_TOP_ADB_DCM_REG3_OFF ((0x0 << 3) | \
 			(0x0 << 4) | \
 			(0x0 << 16) | \
 			(0x0 << 17) | \

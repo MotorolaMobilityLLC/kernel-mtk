@@ -11,6 +11,10 @@
 #include "../common/mtk-sp-afe-external.h"
 #include "../common/mtk-sram-manager.h"
 
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
+#include "../audio_dsp/mtk-dsp-core.h"
+#endif
+
 /* don't use this directly if not necessary */
 static struct mtk_base_afe *local_afe;
 
@@ -200,6 +204,35 @@ int mt6779_set_rch_dc_compensation(int value)
 	return 0;
 }
 
+int mt6779_adda_dl_gain_control(bool mute)
+{
+	unsigned int dl_2_gain_ctl;
+
+	if (!local_afe)
+		return -EPERM;
+
+	if (pm_runtime_status_suspended(local_afe->dev))
+		dev_warn(local_afe->dev, "%s(), status suspended\n", __func__);
+
+	pm_runtime_get_sync(local_afe->dev);
+
+	if (mute)
+		dl_2_gain_ctl = MTK_AFE_ADDA_DL_GAIN_MUTE;
+	else
+		dl_2_gain_ctl = MTK_AFE_ADDA_DL_GAIN_NORMAL;
+
+	regmap_update_bits(local_afe->regmap,
+			   AFE_ADDA_DL_SRC2_CON1,
+			   DL_2_GAIN_CTL_PRE_MASK_SFT,
+			   dl_2_gain_ctl << DL_2_GAIN_CTL_PRE_SFT);
+
+	dev_info(local_afe->dev, "%s(), adda_dl_gain %x\n",
+		 __func__, dl_2_gain_ctl);
+
+	pm_runtime_put(local_afe->dev);
+	return 0;
+}
+
 int mt6779_dai_set_priv(struct mtk_base_afe *afe, int id,
 			int priv_size, const void *priv_data)
 {
@@ -272,6 +305,14 @@ bool mtk_audio_condition_enter_suspend(void)
 	struct mt6779_afe_private *afe_priv = local_afe->platform_priv;
 
 	if (afe_priv->dai_on[MT6779_DAI_CONNSYS_I2S])
+		return false;
+
+#ifdef CONFIG_MTK_AUDIODSP_SUPPORT
+	if (is_adsp_feature_registered() || is_adsp_core_ready())
+		return false;
+#endif
+
+	if (request_sram_count)
 		return false;
 
 	return true;

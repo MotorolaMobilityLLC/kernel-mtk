@@ -83,6 +83,8 @@
 #include "disp_partial.h"
 #include "frame_queue.h"
 #include "disp_lowpower.h"
+#include "ddp_rsz.h"
+
 
 #define DDP_OUTPUT_LAYID 4
 
@@ -108,6 +110,13 @@ static DEFINE_MUTEX(repaint_queue_lock);
 static DECLARE_WAIT_QUEUE_HEAD(repaint_wq);
 static LIST_HEAD(repaint_job_queue);
 static LIST_HEAD(repaint_job_pool);
+
+static int HWC_gpid;
+
+inline int get_HWC_gpid(void)
+{
+	return HWC_gpid;
+}
 
 static int mtk_disp_mgr_open(struct inode *inode, struct file *file)
 {
@@ -279,21 +288,6 @@ int disp_destroy_session(struct disp_session_config *config)
 
 		g_session[i] = 0;
 
-#if defined(MTK_FB_SHARE_WDMA0_SUPPORT)
-		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY,
-						 DEV_WFD)) {
-			/*
-			 * it needs lock, if set_idlemgr
-			 * restore idlemgr and smart_ovl status
-			 */
-			if (idle_flag)
-				set_idlemgr(idle_flag, 1);
-			if (smartovl_flag)
-				disp_helper_set_option(DISP_OPT_SMART_OVL,
-						       smartovl_flag);
-			has_memory_session = 0;
-		}
-#endif
 		ret = 0;
 		break;
 	}
@@ -306,9 +300,21 @@ int disp_destroy_session(struct disp_session_config *config)
 		release_session_buffer(config->session_id);
 	}
 
-	if (ret == 0)
+	if (ret == 0) {
+#ifdef MTK_FB_SHARE_WDMA0_SUPPORT
+		if (session == MAKE_DISP_SESSION(DISP_SESSION_MEMORY,
+			    DEV_WFD)) {
+			/*it need lock, if set_idlemgr.*/
+			if (idle_flag)
+				set_idlemgr(idle_flag, 1);
+			if (smartovl_flag)
+				disp_helper_set_option(DISP_OPT_SMART_OVL,
+					smartovl_flag);
+			has_memory_session = 0;
+		}
+#endif
 		DISPMSG("destroy session(0x%08x)\n", session);
-	else
+	} else
 		DISP_PR_ERR("session(0x%08x) does not exist\n", session);
 
 	return ret;
@@ -415,7 +421,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 		ret = -EFAULT;
 	}
 
-	mmprofile_log_ex(ddp_mmp_get_events()->present_fence_get,
+	mmprofile_log_ex(ddp_mmp_get_events()->primary_present_fence_get,
 			 MMPROFILE_FLAG_PULSE, pf.present_fence_fd,
 			 pf.present_fence_index);
 	DISPFENCE("P+/%s%d/L%d/idx%d/fd%d\n",
@@ -553,6 +559,14 @@ const char *_disp_format_str(enum DISP_FORMAT format)
 		return "PBGRA";
 	case DISP_FORMAT_PRGBA8888:
 		return "PRGBA";
+	case DISP_FORMAT_RGBA1010102:
+		return "RGBA1010102";
+	case DISP_FORMAT_PRGBA1010102:
+		return "PRGBA1010102";
+	case DISP_FORMAT_RGBA_FP16:
+		return "RGBA_FP16";
+	case DISP_FORMAT_PRGBA_FP16:
+		return "PRGBA_FP16";
 	default:
 		break;
 	}
@@ -563,15 +577,16 @@ void dump_input_cfg_info(struct disp_input_config *input_cfg,
 			 unsigned int session, int is_err)
 {
 	_DISP_PRINT_FENCE_OR_ERR(is_err,
-		"S+/%s%d/L%u/idx%u/(%u,%u,%ux%u)(%u,%u,%ux%u)/%s/%u/mva0x%08lx/t%d/s%d\n",
+		"S+/%s%d/L%u/idx%u/(%u,%u,%ux%u)(%u,%u,%ux%u)/%s/ds%d/%u/mva0x%08lx/compr:%u/v_p:%u/t%d/s%d\n",
 		disp_session_type_str(session), DISP_SESSION_DEV(session),
 		input_cfg->layer_id, input_cfg->next_buff_idx,
 		input_cfg->src_offset_x, input_cfg->src_offset_y,
 		input_cfg->src_width, input_cfg->src_height,
 		input_cfg->tgt_offset_x, input_cfg->tgt_offset_y,
 		input_cfg->tgt_width, input_cfg->tgt_height,
-		_disp_format_str(input_cfg->src_fmt),
+		_disp_format_str(input_cfg->src_fmt), input_cfg->dataspace,
 		input_cfg->src_pitch, (unsigned long)(input_cfg->src_phy_addr),
+		input_cfg->compress, input_cfg->src_v_pitch,
 		get_ovl2mem_ticket(), input_cfg->security);
 }
 
@@ -604,8 +619,8 @@ static int disp_validate_input_params(struct disp_input_config *cfg,
 		return 0;
 
 	if ((cfg->src_fmt <= 0) || ((cfg->src_fmt >> 8) == 15) ||
-	    ((cfg->src_fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
-		disp_aee_print("layer_id=%d,src_fmt=0x%x is invalid color format\n",
+	    ((cfg->src_fmt >> 8) >= (DISP_FORMAT_NUM >> 8))) {
+		disp_aee_print("L%d,src_fmt=0x%x is invalid color format\n",
 			       cfg->layer_id, cfg->src_fmt);
 		return -1;
 	}
@@ -616,7 +631,7 @@ static int disp_validate_input_params(struct disp_input_config *cfg,
 static int disp_validate_output_params(struct disp_output_config *cfg)
 {
 	if ((cfg->fmt <= 0) || ((cfg->fmt >> 8) == 15) ||
-	    ((cfg->fmt >> 8) > (DISP_FORMAT_DIM >> 8))) {
+	    ((cfg->fmt >> 8) >= (DISP_FORMAT_NUM >> 8))) {
 		disp_aee_print("output fmt=0x%x is invalid color format\n",
 			       cfg->fmt);
 		return -1;
@@ -625,20 +640,42 @@ static int disp_validate_output_params(struct disp_output_config *cfg)
 	return 0;
 }
 
+static int _get_max_layer(unsigned int session_id)
+{
+	if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_PRIMARY)
+		return primary_display_get_max_layer();
+#if ((defined CONFIG_MTK_HDMI_SUPPORT) || \
+	(defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
+	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)))
+	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_EXTERNAL)
+		return ext_disp_get_max_layer();
+#endif
+	else if (DISP_SESSION_TYPE(session_id) == DISP_SESSION_MEMORY)
+		return ovl2mem_get_max_layer();
+
+	DISP_PR_INFO("session_id is wrong!!\n");
+	return 0;
+}
+
+
 int disp_validate_ioctl_params(struct disp_frame_cfg_t *cfg)
 {
-	int i;
+	int i, max_layer_num;
 
-	if (cfg->input_layer_num > _get_layer_cnt(cfg->session_id)) {
+	max_layer_num = _get_max_layer(cfg->session_id);
+	if (max_layer_num <= 0)
+		return -1;
+
+	if (cfg->input_layer_num > max_layer_num) {
 		disp_aee_print("sess:0x%x layer_num %d>%d\n",
 			       cfg->session_id, cfg->input_layer_num,
-			       _get_layer_cnt(cfg->session_id));
+			       max_layer_num);
 		return -1;
 	}
 
 	for (i = 0; i < cfg->input_layer_num; i++)
 		if (disp_validate_input_params(&cfg->input_cfg[i],
-					       _get_layer_cnt(cfg->session_id)))
+			    max_layer_num))
 			return -1;
 
 	if (cfg->output_en && disp_validate_output_params(&cfg->output_cfg))
@@ -694,8 +731,20 @@ int disp_input_free_dirty_roi(struct disp_frame_cfg_t *cfg)
 {
 	int i;
 
-	for (i = 0; i < cfg->input_layer_num; i++)
-		kfree(cfg->input_cfg[i].dirty_roi_addr);
+	if (cfg == NULL)
+		return 0;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		if (i >= _get_max_layer(cfg->session_id))
+			break;
+		if (!cfg->input_cfg[i].layer_enable ||
+			!cfg->input_cfg[i].dirty_roi_num)
+			continue;
+		if (cfg->input_cfg[i].dirty_roi_addr != NULL) {
+			kfree(cfg->input_cfg[i].dirty_roi_addr);
+			cfg->input_cfg[i].dirty_roi_addr = NULL;
+		}
+	}
 
 	return 0;
 }
@@ -722,6 +771,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 	}
 
 	disp_input_get_dirty_roi(cfg);
+	_DISP_PRINT_FENCE_OR_ERR(0, "HRT_idx %u\n", cfg->hrt_idx);
 	for (i = 0; i < cfg->input_layer_num; i++) {
 		struct disp_input_config *c = &cfg->input_cfg[i];
 		unsigned long dst_mva = 0;
@@ -760,8 +810,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 
 			dst_mva = (unsigned long)(c->src_phy_addr);
 			if (!dst_mva) {
-				disp_sync_query_buf_info_nosync(
-						session, layer_id,
+				disp_sync_query_buf_info(session, layer_id,
 						(unsigned int)c->next_buff_idx,
 						&dst_mva, &dst_size);
 			}
@@ -914,8 +963,9 @@ static int do_frame_config(struct frame_queue_t *frame_node)
 	return 0;
 }
 
-static int __frame_queue_config(unsigned long arg)
+static long __frame_queue_config(unsigned long arg)
 {
+	void *ret_val = NULL;
 	struct frame_queue_head_t *head;
 	struct disp_frame_cfg_t *cfg;
 	struct sync_fence *present_fence = NULL;
@@ -923,17 +973,25 @@ static int __frame_queue_config(unsigned long arg)
 	struct frame_queue_t *frame_node;
 
 	frame_node = frame_queue_node_create();
-	if (IS_ERR_OR_NULL(frame_node))
-		return PTR_ERR(frame_node);
+	if (IS_ERR_OR_NULL(frame_node)) {
+		ret_val = ERR_PTR(-ENOMEM);
+		goto Error;
+	}
 
 	/* this is initialized correctly when get node from framequeue list */
 	cfg = &frame_node->frame_cfg;
 
-	if (copy_from_user(cfg, (void __user *)arg, sizeof(*cfg)))
-		return -EINVAL;
+	if (copy_from_user(cfg, (void __user *)arg,
+		    sizeof(*cfg))) {
+		ret_val = ERR_PTR(-EFAULT);
+		DISP_PR_INFO("copy_from_user failed! line:%d\n", __LINE__);
+		goto Error;
+	}
 
-	if (disp_validate_ioctl_params(cfg))
-		return -EINVAL;
+	if (disp_validate_ioctl_params(cfg)) {
+		ret_val = ERR_PTR(-EINVAL);
+		goto Error;
+	}
 
 	head = get_frame_queue_head(cfg->session_id);
 	if (!head) {
@@ -973,9 +1031,13 @@ static int __frame_queue_config(unsigned long arg)
 			   cfg->present_fence_idx, 0);
 
 	return 0;
+
+Error:
+	frame_queue_node_destroy(frame_node, 0);
+	return PTR_ERR(ret_val);
 }
 
-int __frame_config(unsigned long arg)
+long __frame_config(unsigned long arg)
 {
 	struct disp_frame_cfg_t *cfg = kzalloc(sizeof(*cfg), GFP_KERNEL);
 	int ret = 0;
@@ -1024,7 +1086,7 @@ error1:
 	return ret;
 }
 
-static int _ioctl_frame_config(unsigned long arg)
+static long _ioctl_frame_config(unsigned long arg)
 {
 	if (disp_helper_get_option(DISP_OPT_FRAME_QUEUE))
 		return __frame_queue_config(arg);
@@ -1116,11 +1178,15 @@ int _ioctl_get_display_caps(unsigned long arg)
 	int ret = 0;
 	struct disp_caps_info caps_info;
 	void __user *argp = (void __user *)arg;
+	struct LCM_PARAMS *params = disp_lcm_get_params(primary_get_lcm());
 
 	if (copy_from_user(&caps_info, argp, sizeof(caps_info))) {
 		DISP_PR_ERR("[FB] copy_from_user failed! line:%d\n", __LINE__);
 		ret = -EFAULT;
 	}
+
+	HWC_gpid = task_tgid_nr(current);
+
 	memset(&caps_info, 0, sizeof(caps_info));
 #ifdef DISP_HW_MODE_CAP
 	caps_info.output_mode = DISP_HW_MODE_CAP;
@@ -1156,6 +1222,37 @@ int _ioctl_get_display_caps(unsigned long arg)
 		caps_info.disp_feature |= DISP_FEATURE_FENCE_WAIT;
 
 	caps_info.disp_feature |= DISP_FEATURE_DISP_SELF_REFRESH;
+
+	caps_info.disp_feature |= DISP_FEATURE_FBDC;
+
+	caps_info.lcm_color_mode = HAL_COLOR_MODE_NATIVE;
+	if (disp_helper_get_option(DISP_OPT_OVL_WCG)) {
+		if (params)
+			caps_info.lcm_color_mode = params->lcm_color_mode;
+		else
+			DISP_PR_ERR("%s: failed to get lcm color mode\n",
+				__func__);
+	}
+
+	if (params) {
+		caps_info.min_luminance = params->min_luminance;
+		caps_info.average_luminance = params->average_luminance;
+		caps_info.max_luminance = params->max_luminance;
+	} else {
+		DISP_PR_ERR("%s: failed to get lcm luminance\n",
+			__func__);
+	}
+	if (disp_helper_get_option(DISP_OPT_RSZ))
+		caps_info.disp_feature |= DISP_FEATURE_RSZ;
+	if (disp_helper_get_option(DISP_OPT_RPO))
+		caps_info.disp_feature |= DISP_FEATURE_RPO;
+
+	if (disp_helper_get_option(DISP_OPT_RSZ) ||
+	    disp_helper_get_option(DISP_OPT_RPO)) {
+		caps_info.rsz_in_max[0] = RSZ_TILE_LENGTH -
+						RSZ_ALIGNMENT_MARGIN;
+		caps_info.rsz_in_max[1] = RSZ_IN_MAX_HEIGHT;
+	}
 
 	if (copy_to_user(argp, &caps_info, sizeof(caps_info))) {
 		DISP_PR_ERR("[FB] copy_to_user failed! line:%d\n", __LINE__);
@@ -1230,25 +1327,36 @@ int _ioctl_set_vsync(unsigned long arg)
 	return ret;
 }
 
-int _ioctl_query_valid_layer(unsigned long arg)
+static long _ioctl_query_valid_layer(unsigned long arg)
 {
-	int ret = 0;
 	struct disp_layer_info disp_info_user;
 	void __user *argp = (void __user *)arg;
 
 	if (copy_from_user(&disp_info_user, argp, sizeof(disp_info_user))) {
 		DISP_PR_ERR("[FB] copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
-	ret = layering_rule_start(&disp_info_user, 0);
+	/* check data from userspace is legal */
+	if (disp_info_user.layer_num[0] < 0 ||
+		disp_info_user.layer_num[0] > 0x300 ||
+		disp_info_user.layer_num[1] < 0 ||
+		disp_info_user.layer_num[1] > 0x300) {
+		DISP_PR_INFO(
+			"%s error, layer_num[0]= %d, layer_num[1]= %d!\n",
+			__func__, disp_info_user.layer_num[0],
+			disp_info_user.layer_num[1]);
+		return -EINVAL;
+	}
+
+	layering_rule_start(&disp_info_user, 0);
 
 	if (copy_to_user(argp, &disp_info_user, sizeof(disp_info_user))) {
 		DISP_PR_ERR("[FB] copy_to_user failed! line:%d\n", __LINE__);
-		ret = -EFAULT;
+		return -EFAULT;
 	}
 
-	return ret;
+	return 0;
 }
 
 int _ioctl_set_scenario(unsigned long arg)
@@ -1432,6 +1540,10 @@ const char *_session_ioctl_str(unsigned int cmd)
 		return "DISP_IOCTL_AAL_INIT_REG";
 	case DISP_IOCTL_AAL_SET_PARAM:
 		return "DISP_IOCTL_AAL_SET_PARAM";
+	case DISP_IOCTL_AAL_INIT_DRE30:
+		return "DISP_IOCTL_AAL_INIT_DRE30";
+	case DISP_IOCTL_AAL_GET_SIZE:
+		return "DISP_IOCTL_AAL_GET_SIZE";
 	case DISP_IOCTL_SET_GAMMALUT:
 		return "DISP_IOCTL_SET_GAMMALUT";
 	case DISP_IOCTL_SET_CCORR:
@@ -1519,6 +1631,8 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_AAL_GET_HIST:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_AAL_INIT_DRE30:
+	case DISP_IOCTL_AAL_GET_SIZE:
 	case DISP_IOCTL_SET_GAMMALUT:
 	case DISP_IOCTL_SET_CCORR:
 	case DISP_IOCTL_CCORR_EVENTCTL:
@@ -1639,6 +1753,8 @@ static long mtk_disp_mgr_compat_ioctl(struct file *file, unsigned int cmd,
 	case DISP_IOCTL_AAL_EVENTCTL:
 	case DISP_IOCTL_AAL_INIT_REG:
 	case DISP_IOCTL_AAL_SET_PARAM:
+	case DISP_IOCTL_AAL_INIT_DRE30:
+	case DISP_IOCTL_AAL_GET_SIZE:
 	{
 		void __user *data32;
 

@@ -18,10 +18,10 @@
 #define DIFFERENCE_FULLOCV_ITH	200	/* mA */
 #define MTK_CHR_EXIST 1
 #define KEEP_100_PERCENT 1
-#define R_FG_VALUE	10				/* mOhm */
+#define R_FG_VALUE	5				/* mOhm */
 #define EMBEDDED_SEL 0
 #define PMIC_SHUTDOWN_CURRENT 20	/* 0.01 mA */
-#define FG_METER_RESISTANCE	75
+#define FG_METER_RESISTANCE	100
 #define CAR_TUNE_VALUE	100 /*1.00 */
 #define NO_BAT_TEMP_COMPENSATE 0
 /* NO_BAT_TEMP_COMPENSATE 1 = don't need bat_temper compensate, */
@@ -35,7 +35,7 @@
 /* define Xmins to shutdown*/
 #define SHUTDOWN_1_TIME	5
 
-#define SHUTDOWN_GAUGE1_VBAT_EN 1
+#define SHUTDOWN_GAUGE1_VBAT_EN 0
 #define SHUTDOWN_GAUGE1_VBAT 34000
 
 #define SHUTDOWN_GAUGE0_VOLTAGE 34000
@@ -58,6 +58,7 @@
 
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
+#define DLPT_UI_REMAP_EN 0
 
 /* ADC resistor  */
 #define R_BAT_SENSE	4
@@ -157,7 +158,7 @@
 #define DIFF_IAVG_TH 3000
 
 /* ZCV INTR */
-#define ZCV_SUSPEND_TIME 29
+#define ZCV_SUSPEND_TIME 3
 #define SLEEP_CURRENT_AVG 200 /*0.1mA*/
 #define ZCV_CAR_GAP_PERCENTAGE 5
 
@@ -229,7 +230,7 @@
 
 /* using voltage to limit uisoc in 1% case */
 /* UI_LOW_LIMIT_VTH0=36000 means 3.6v */
-#define UI_LOW_LIMIT_EN 1
+#define UI_LOW_LIMIT_EN 0
 
 #define UI_LOW_LIMIT_SOC0 200
 #define UI_LOW_LIMIT_VTH0 34500

@@ -40,6 +40,8 @@ enum {
 	MT6779_MEMIF_NUM,
 	MT6779_DAI_ADDA = MT6779_MEMIF_NUM,
 	MT6779_DAI_ADDA_CH34,
+	MT6779_DAI_AP_DMIC,
+	MT6779_DAI_AP_DMIC_CH34,
 	MT6779_DAI_VOW,
 	MT6779_DAI_CONNSYS_I2S,
 	MT6779_DAI_I2S_0,
@@ -49,6 +51,8 @@ enum {
 	MT6779_DAI_I2S_5,
 	MT6779_DAI_HW_GAIN_1,
 	MT6779_DAI_HW_GAIN_2,
+	MT6779_DAI_SRC_1,
+	MT6779_DAI_SRC_2,
 	MT6779_DAI_PCM_1,
 	MT6779_DAI_PCM_2,
 	MT6779_DAI_TDM,
@@ -58,23 +62,28 @@ enum {
 	MT6779_DAI_HOSTLESS_SPH_ECHO_REF,
 	MT6779_DAI_HOSTLESS_SPK_INIT,
 	MT6779_DAI_HOSTLESS_IMPEDANCE,
+	MT6779_DAI_HOSTLESS_SRC_1,	/* just an exmpale */
+	MT6779_DAI_HOSTLESS_SRC_BARGEIN,
 	MT6779_DAI_HOSTLESS_UL1,
 	MT6779_DAI_HOSTLESS_UL2,
-	MT3886_DAI_HOSTLESS_UL3,
-	MT3886_DAI_HOSTLESS_UL6,
-	MT3886_DAI_HOSTLESS_DSP_DL,
+	MT6779_DAI_HOSTLESS_UL3,
+	MT6779_DAI_HOSTLESS_UL6,
+	MT6779_DAI_HOSTLESS_DSP_DL,
 	MT6779_DAI_NUM,
 };
 
 #define MT6779_RECORD_MEMIF MT6779_MEMIF_VUL12
 #define MT6779_ECHO_REF_MEMIF MT6779_MEMIF_AWB
+#define MT6779_PRIMARY_MEMIF MT6779_MEMIF_DL1
 #define MT6779_FAST_MEMIF MT6779_MEMIF_DL2
 #define MT6779_DEEP_MEMIF MT6779_MEMIF_DL3
+#define MT6779_VOIP_MEMIF MT6779_MEMIF_DL12
+#define MT6779_BARGEIN_MEMIF MT6779_MEMIF_AWB
 
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 #define MT6779_DSP_PRIMARY_MEMIF MT6779_MEMIF_DL1
 #define MT6779_DSP_DEEPBUFFER_MEMIF MT6779_MEMIF_DL3
-#define MT6779_DSP_OFFLOAD_MEMIF MT6779_MEMIF_DL12
+#define MT6779_DSP_VOIP_MEMIF MT6779_MEMIF_DL12
 #define MT6779_DSP_PLAYBACKDL_MEMIF MT6779_MEMIF_DL4
 #define MT6779_DSP_PLAYBACKUL_MEMIF MT6779_MEMIF_VUL4
 #endif
@@ -117,6 +126,12 @@ enum {
 	MTKAIF_PROTOCOL_2_CLK_P2,
 };
 
+enum {
+	MTK_AFE_ADDA_DL_GAIN_MUTE = 0,
+	MTK_AFE_ADDA_DL_GAIN_NORMAL = 0xf74f,
+	/* SA suggest apply -0.3db to audio/speech path */
+};
+
 /* MCLK */
 enum {
 	MT6779_I2S0_MCK = 0,
@@ -149,6 +164,10 @@ struct mt6779_afe_private {
 	int deep_playback_state;
 	/* fast playback */
 	int fast_playback_state;
+	/* primary playback */
+	int primary_playback_state;
+	/* voip rx */
+	int voip_rx_state;
 	/* xrun assert */
 	int xrun_assert[MT6779_MEMIF_NUM];
 
@@ -188,6 +207,7 @@ struct mt6779_afe_private {
 int mt6779_dai_adda_register(struct mtk_base_afe *afe);
 int mt6779_dai_i2s_register(struct mtk_base_afe *afe);
 int mt6779_dai_hw_gain_register(struct mtk_base_afe *afe);
+int mt6779_dai_src_register(struct mtk_base_afe *afe);
 int mt6779_dai_pcm_register(struct mtk_base_afe *afe);
 int mt6779_dai_tdm_register(struct mtk_base_afe *afe);
 
@@ -204,6 +224,7 @@ unsigned int mt6779_rate_transform(struct device *dev,
 int mt6779_enable_dc_compensation(bool enable);
 int mt6779_set_lch_dc_compensation(int value);
 int mt6779_set_rch_dc_compensation(int value);
+int mt6779_adda_dl_gain_control(bool mute);
 
 int mt6779_dai_set_priv(struct mtk_base_afe *afe, int id,
 			int priv_size, const void *priv_data);

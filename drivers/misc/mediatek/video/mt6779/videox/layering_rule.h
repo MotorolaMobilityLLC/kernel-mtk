@@ -17,7 +17,7 @@
 #include "layering_rule_base.h"
 #include "lcm_drv.h"
 
-#define MAX_PHY_OVL_CNT 12
+#define MAX_PHY_OVL_CNT (12)
 /* #define HAS_LARB_HRT */
 #define HRT_AEE_LAYER_MASK 0xFFFFFFDF
 
@@ -47,7 +47,6 @@ enum HRT_TB_TYPE {
 
 enum HRT_BOUND_TYPE {
 	HRT_BOUND_TYPE_LP4 = 0,
-	HRT_BOUND_TYPE_LP4_FHD_PLUS,
 	HRT_BOUND_NUM,
 };
 
@@ -67,5 +66,9 @@ enum HRT_PATH_SCENARIO {
 
 void layering_rule_init(void);
 void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT option, int value);
+unsigned int layering_rule_get_hrt_idx(void);
+unsigned long long layering_get_frame_bw(void);
+int layering_get_valid_hrt(void);
+void copy_hrt_bound_table(int is_larb, int *hrt_table);
 
 #endif

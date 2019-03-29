@@ -513,6 +513,7 @@
 #define SCP_SYS_VPU_CORE2_DORMANT  22
 #define SCP_SYS_VPU_CORE2_SHUTDOWN  23
 #define SCP_SYS_MFG4  24
-#define SCP_NR_SYSS  25
+#define SCP_SYS_CONN_W  25
+#define SCP_NR_SYSS  26
 
 #endif				/* _DT_BINDINGS_CLK_MT6779_H */

@@ -24,4 +24,15 @@ void enable_smi_preultra(unsigned int larb, unsigned int value);
 void disable_smi_ultra(unsigned int larb, unsigned int value);
 void disable_smi_preultra(unsigned int larb, unsigned int value);
 
+void golden_setting_test(void);
+
+void fake_engine(unsigned int idx, unsigned int en,
+			unsigned int wr_en, unsigned int rd_en,
+			unsigned int latency, unsigned int preultra_cnt,
+			unsigned int ultra_cnt);
+void dump_fake_engine(void);
+
+void MMPathTracePrimaryOvl2Dsi(void);
+void MMPathTracePrimaryOvl2Mem(void);
+void MMPathTraceSecondOvl2Mem(void);
 #endif

@@ -520,7 +520,7 @@ int dpmgr_module_notify(enum DISP_MODULE_ENUM module,
 
 int dpmgr_wait_ovl_available(int ovl_num);
 int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle,
-			    const char *caller);
+			int module_name, const char *caller);
 
 /**
  * dpmgr_get_input_address - get physical address from register
@@ -540,6 +540,9 @@ int dpmgr_factory_mode_reset(int module_name, void *cmdqhandle, void *config);
 
 /* turn off dsi */
 int dpmgr_path_dsi_power_off(disp_path_handle dp_handle, void *cmdqhandle);
+int dpmgr_register_cmdq_dump_callback(CmdqDumpInfoCB cb);
+int dpmgr_unregister_cmdq_dump_callback(CmdqDumpInfoCB cb);
+void dpmgr_invoke_cmdq_dump_callbacks(uint64_t engineFlag, int level);
 
 /* turn on dsi */
 int dpmgr_path_dsi_power_on(disp_path_handle dp_handle, void *cmdqhandle);

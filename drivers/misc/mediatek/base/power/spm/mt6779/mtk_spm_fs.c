@@ -18,7 +18,9 @@
 #include <linux/string.h>
 
 #include <mtk_spm_internal.h>
+#include <mtk_spm_suspend_internal.h>
 #include <mtk_spm_resource_req_internal.h>
+#include <mtk_idle_sysfs.h>
 
 /**************************************
  * Macro and Inline
@@ -998,7 +1000,7 @@ static ssize_t show_pwr_ctrl(int id,
 		SMC_CALL(GET_PWR_CTRL_ARGS,
 			id, PW_MP0_CPU7_WFI_EN, 0));
 
-	WARN_ON(p - buf >= PAGE_SIZE);
+	WARN_ON(p - buf >= get_mtk_lp_kernfs_bufsz_max());
 
 	return p - buf;
 }
@@ -1035,6 +1037,12 @@ static ssize_t vcore_dvfs_ctrl_show(struct kobject *kobj,
 #else
 	return 0;
 #endif
+}
+
+static ssize_t spmfw_version_show(struct kobject *kobj,
+	struct kobj_attribute *attr, char *buf)
+{
+	return get_spmfw_version(buf, PAGE_SIZE, NULL);
 }
 
 /**************************************
@@ -2068,6 +2076,13 @@ static ssize_t vcore_dvfs_ctrl_store(struct kobject *kobj,
 #endif
 }
 
+static ssize_t spmfw_version_store(struct kobject *kobj,
+	struct kobj_attribute *attr,
+				     const char *buf, size_t count)
+{
+	return 0;
+}
+
 /**************************************
  * fm_suspend Function
  **************************************/
@@ -2076,7 +2091,7 @@ static ssize_t fm_suspend_show(struct kobject *kobj,
 {
 	char *p = buf;
 
-	WARN_ON(p - buf >= PAGE_SIZE);
+	WARN_ON(p - buf >= get_mtk_lp_kernfs_bufsz_max());
 	return p - buf;
 }
 
@@ -2088,6 +2103,7 @@ DEFINE_ATTR_RW(dpidle_ctrl);
 DEFINE_ATTR_RW(sodi3_ctrl);
 DEFINE_ATTR_RW(sodi_ctrl);
 DEFINE_ATTR_RW(vcore_dvfs_ctrl);
+DEFINE_ATTR_RW(spmfw_version);
 DEFINE_ATTR_RO(fm_suspend);
 
 static struct attribute *spm_attrs[] = {
@@ -2097,6 +2113,7 @@ static struct attribute *spm_attrs[] = {
 	__ATTR_OF(sodi3_ctrl),
 	__ATTR_OF(sodi_ctrl),
 	__ATTR_OF(vcore_dvfs_ctrl),
+	__ATTR_OF(spmfw_version),
 	__ATTR_OF(fm_suspend),
 
 	/* must */
@@ -2113,7 +2130,7 @@ int spm_fs_init(void)
 	int r;
 
 	/* create /sys/power/spm/xxx */
-	r = sysfs_create_group(power_kobj, &spm_attr_group);
+	r = mtk_idle_sysfs_power_create_group(&spm_attr_group);
 	if (r)
 		pr_info("[SPM] FAILED TO CREATE /sys/power/spm (%d)\n", r);
 

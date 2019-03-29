@@ -70,6 +70,9 @@ int bypass_blank;
 int lcm_mode_status;
 int layer_layout_allow_non_continuous;
 
+/* Boundary of enter screen idle */
+unsigned long long idle_check_interval = 50;
+
 /*********************** layer information statistic *********************/
 #define STATISTIC_MAX_LAYERS 20
 struct layer_statistic {
@@ -80,6 +83,17 @@ struct layer_statistic {
 };
 static struct layer_statistic layer_stat;
 static int layer_statistic_enable;
+
+/**
+ * @param idleMs new idle wait time in ms unit
+ */
+int display_set_wait_idle_time(unsigned int idleMs)
+{
+	if (idle_check_interval != idleMs)
+		idle_check_interval = idleMs;
+
+	return 0;
+}
 
 static int _is_overlap(unsigned int x1, unsigned int y1,
 		       unsigned int w1, unsigned int h1, unsigned int x2,
@@ -339,7 +353,7 @@ static int alloc_buffer_from_dma(size_t size, struct test_buf_info *buf_info)
 	unsigned long size_align;
 	unsigned int mva  = 0;
 
-#ifndef CONFIG_MTK_IOMMU
+#ifndef CONFIG_MTK_IOMMU_V2
 	size_align = round_up(size, PAGE_SIZE);
 
 	buf_info->buf_va = dma_alloc_coherent(disp_get_device(), size,
@@ -412,10 +426,10 @@ static int release_test_buf(struct test_buf_info *buf_info)
 	else
 		dma_free_coherent(disp_get_device(), buf_info->size,
 				  buf_info->buf_va, buf_info->buf_pa);
-
+#ifdef CONFIG_MTK_M4U
 	if (buf_info->m4u_client)
 		m4u_destroy_client(buf_info->m4u_client);
-
+#endif
 	if (buf_info->ion_client)
 		ion_client_destroy(buf_info->ion_client);
 #endif
@@ -631,6 +645,47 @@ primary_display_basic_test(int layer_num, unsigned int layer_en_mask,
 
 out_unlock:
 	mutex_unlock(&basic_test_lock);
+
+	return 0;
+}
+
+
+/* for fake layer */
+unsigned int fake_layer_mask;
+unsigned int fake_layer_overwrite;
+static struct test_buf_info fake_layer_buf[PRIMARY_SESSION_INPUT_LAYER_COUNT];
+
+unsigned int get_fake_layer_mva(int i)
+{
+	if (i < PRIMARY_SESSION_INPUT_LAYER_COUNT)
+		return fake_layer_buf[i].buf_mva;
+
+	return 0;
+}
+
+int prepare_fake_layer_buffer(void)
+{
+	unsigned int Bpp, i;
+	enum UNIFIED_COLOR_FMT ufmt = UFMT_RGBA8888;
+	int w = primary_display_get_width();
+	int h = primary_display_get_height();
+	size_t size;
+	static int inited;
+
+	if (inited)
+		return 0;
+
+	Bpp = UFMT_GET_bpp(ufmt) / 8;
+	size = w * h * Bpp;
+
+	for (i = 0; i < PRIMARY_SESSION_INPUT_LAYER_COUNT; i++) {
+		memset(&fake_layer_buf[i], 0, sizeof(fake_layer_buf[i]));
+		test_alloc_buffer(size, &fake_layer_buf[i]);
+		draw_buffer(fake_layer_buf[i].buf_va, w, h, ufmt,
+			(!((i+0)%3))*255, (!((i+1)%3))*255,
+			(!((i+2)%3))*255, 100);
+	}
+	inited = 1;
 
 	return 0;
 }
@@ -936,7 +991,8 @@ static void process_dbg_opt(const char *opt)
 		set_esd_check_mode(mode);
 	} else if (strncmp(opt, "lcm0_reset", 10) == 0) {
 		DISPCHECK("lcm0_reset\n");
-#if 1
+#if 0
+		primary_display_idlemgr_kick(__func__, 1);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 		msleep(20);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 0);
@@ -960,8 +1016,10 @@ static void process_dbg_opt(const char *opt)
 #endif
 #endif
 	} else if (strncmp(opt, "lcm0_reset0", 11) == 0) {
+		primary_display_idlemgr_kick(__func__, 1);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 0);
 	} else if (strncmp(opt, "lcm0_reset1", 11) == 0) {
+		primary_display_idlemgr_kick(__func__, 1);
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_LCM_RST_B, 1);
 	} else if (strncmp(opt, "dump_layer:", 11) == 0) {
 		if (strncmp(opt + 11, "on", 2) == 0) {
@@ -1104,9 +1162,7 @@ static void process_dbg_opt(const char *opt)
 		disp_fps = primary_display_force_get_vsync_fps();
 		DDPMSG("Display debug command: disp_get_fps done, disp_fps=%d\n",
 		       disp_fps);
-	}
-
-	if (strncmp(opt, "primary_basic_test:", 19) == 0) {
+	} else if (strncmp(opt, "primary_basic_test:", 19) == 0) {
 		unsigned int layer_num, w, h, fmt, frame_num;
 		unsigned int vsync_num, x, y, r, g, b, a;
 		unsigned int layer_en_mask, cksum;
@@ -1141,9 +1197,7 @@ static void process_dbg_opt(const char *opt)
 		primary_display_basic_test(layer_num, layer_en_mask,
 					   w, h, fmt, frame_num, vsync_num,
 					   x, y, r, g, b, a, mode, cksum);
-	}
-
-	if (strncmp(opt, "pan_disp_test:", 13) == 0) {
+	} else if (strncmp(opt, "pan_disp_test:", 13) == 0) {
 		int frame_num;
 		int bpp;
 
@@ -1155,17 +1209,13 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		pan_display_test(frame_num, bpp);
-	}
-
-	if (strncmp(opt, "dsi_ut:restart_vdo_mode", 23) == 0) {
+	} else if (strncmp(opt, "dsi_ut:restart_vdo_mode", 23) == 0) {
 		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 		primary_display_diagnose();
 		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
 				   CMDQ_DISABLE);
-	}
-
-	if (strncmp(opt, "dsi_ut:restart_cmd_mode", 23) == 0) {
+	} else if (strncmp(opt, "dsi_ut:restart_cmd_mode", 23) == 0) {
 		dpmgr_path_stop(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 		primary_display_diagnose();
 
@@ -1178,9 +1228,7 @@ static void process_dbg_opt(const char *opt)
 		dpmgr_path_start(primary_get_dpmgr_handle(), CMDQ_DISABLE);
 		dpmgr_path_trigger(primary_get_dpmgr_handle(), NULL,
 				   CMDQ_DISABLE);
-	}
-
-	if (strncmp(opt, "scenario:", 8) == 0) {
+	} else if (strncmp(opt, "scenario:", 8) == 0) {
 		int scen;
 
 		ret = sscanf(opt, "scenario:%d\n", &scen);
@@ -1190,8 +1238,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		primary_display_set_scenario(scen);
-	}
-	if (strncmp(opt, "layout_noncontinous:", 20) == 0) {
+	} else if (strncmp(opt, "layout_noncontinous:", 20) == 0) {
 		ret = sscanf(opt, "layout_noncontinuous:%d\n",
 			     &layer_layout_allow_non_continuous);
 		if (ret != 1) {
@@ -1199,21 +1246,20 @@ static void process_dbg_opt(const char *opt)
 				     __LINE__, opt);
 			return;
 		}
-	}
-	if (strncmp(opt, "idle_wait:", 10) == 0) {
-		unsigned int idle_check_interval = 0;
+	} else if (strncmp(opt, "idle_wait:", 10) == 0) {
+		unsigned long long idle_check_interval = 0;
 
-		ret = sscanf(opt, "idle_wait:%d\n", &idle_check_interval);
+		ret = sscanf(opt, "idle_wait:%llu\n", &idle_check_interval);
 		if (ret != 1) {
 			DISP_PR_INFO("%d error to parse cmd %s\n",
 				     __LINE__, opt);
 			return;
 		}
-		idle_check_interval = max(idle_check_interval, 17U);
+		idle_check_interval = max(idle_check_interval, 17ULL);
 		disp_lp_set_idle_check_interval(idle_check_interval);
-		DISPMSG("change idle interval to %dms\n", idle_check_interval);
-	}
-	if (strncmp(opt, "layer_statistic:", 16) == 0) {
+		DISPMSG("change idle interval to %llu ms\n",
+			idle_check_interval);
+	} else if (strncmp(opt, "layer_statistic:", 16) == 0) {
 		ret = sscanf(opt, "layer_statistic:%d\n",
 			     &layer_statistic_enable);
 		if (ret != 1) {
@@ -1223,10 +1269,9 @@ static void process_dbg_opt(const char *opt)
 		}
 		if (!layer_statistic_enable)
 			disp_layer_info_statistic_reset();
-	}
-	if (strncmp(opt, "check_clk", 9) == 0)
+	} else if (strncmp(opt, "check_clk", 9) == 0)
 		ddp_clk_check();
-	if (strncmp(opt, "force_ultra:", 12) == 0) {
+	else if (strncmp(opt, "force_ultra:", 12) == 0) {
 		unsigned int larb, value;
 
 		ret = sscanf(opt, "force_ultra:%u,0x%x\n", &larb, &value);
@@ -1234,8 +1279,7 @@ static void process_dbg_opt(const char *opt)
 			DISP_PR_INFO("%d error to parse cmd %s", __LINE__, opt);
 		else
 			enable_smi_ultra(larb, value);
-	}
-	if (strncmp(opt, "force_preultra:", 15) == 0) {
+	} else if (strncmp(opt, "force_preultra:", 15) == 0) {
 		unsigned int larb, value;
 
 		ret = sscanf(opt, "force_preultra:%u,0x%x\n", &larb, &value);
@@ -1243,8 +1287,7 @@ static void process_dbg_opt(const char *opt)
 			DISP_PR_INFO("%d error to parse cmd %s", __LINE__, opt);
 		else
 			enable_smi_preultra(larb, value);
-	}
-	if (strncmp(opt, "disable_ultra:", 14) == 0) {
+	} else if (strncmp(opt, "disable_ultra:", 14) == 0) {
 		unsigned int larb, value;
 
 		ret = sscanf(opt, "disable_ultra:%u,0x%x\n", &larb, &value);
@@ -1252,8 +1295,7 @@ static void process_dbg_opt(const char *opt)
 			DISP_PR_INFO("%d error to parse cmd %s", __LINE__, opt);
 		else
 			disable_smi_ultra(larb, value);
-	}
-	if (strncmp(opt, "disable_preultra:", 17) == 0) {
+	} else if (strncmp(opt, "disable_preultra:", 17) == 0) {
 		unsigned int larb, value;
 
 		ret = sscanf(opt, "disable_preultra:%u,0x%x\n", &larb, &value);
@@ -1261,9 +1303,12 @@ static void process_dbg_opt(const char *opt)
 			DISP_PR_INFO("%d error to parse cmd %s", __LINE__, opt);
 		else
 			disable_smi_preultra(larb, value);
-	}
-
-	if (!strncmp(opt, "ovl_bgcolor:", 12)) {
+	} else if (strncmp(opt, "MIPI_CLK:", 9) == 0) {
+		if (strncmp(opt + 9, "on", 2) == 0)
+			primary_display_ccci_mipi_callback(1, 0);
+		else if (strncmp(opt + 9, "off", 3) == 0)
+			primary_display_ccci_mipi_callback(0, 0);
+	} else if (!strncmp(opt, "ovl_bgcolor:", 12)) {
 		unsigned int bg_color;
 		unsigned int old;
 
@@ -1292,6 +1337,63 @@ static void process_dbg_opt(const char *opt)
 		else
 			DISPMSG("change dim_color from 0x%08x to 0x%08x\n",
 				old, dim_color);
+	} else if (!strncmp(opt, "golden_setting_test", 19)) {
+		golden_setting_test();
+	} else if (!strncmp(opt, "fake_engine:", 12)) {
+		unsigned int en, idx, wr_en, rd_en, latency,
+				preultra_cnt, ultra_cnt;
+
+		ret = sscanf(opt, "fake_engine:%d,%d,%d,%d,%d,%d,%d\n",
+				&idx, &en, &wr_en, &rd_en, &latency,
+				&preultra_cnt, &ultra_cnt);
+
+		if (ret != 7) {
+			DISP_PR_ERR("%d error to parse cmd %s\n",
+				__LINE__, opt);
+			return;
+		}
+
+		primary_display_idlemgr_kick(__func__, 1);
+		enable_idlemgr(0);
+		fake_engine(idx, en, wr_en, rd_en, latency,
+				preultra_cnt, ultra_cnt);
+		dump_fake_engine();
+	} else if (strncmp(opt, "dump_fake_engine", 16) == 0) {
+		dump_fake_engine();
+	} else if (!strncmp(opt, "fake_layer:", 11)) {
+		unsigned int mask;
+
+		ret = sscanf(opt, "fake_layer:0x%x\n", &mask);
+		if (ret != 1) {
+			DISP_PR_ERR("%d error to parse cmd %s\n",
+				__LINE__, opt);
+			return;
+		}
+
+		prepare_fake_layer_buffer();
+		fake_layer_mask = mask;
+		DISPMSG("fake_layer:0x%x enable\n", mask);
+	} else if (!strncmp(opt, "fake_layer_overwrite:", 21)) {
+		unsigned int overwrite;
+
+		ret = sscanf(opt, "fake_layer_overwrite:%d\n", &overwrite);
+		if (ret != 1) {
+			DISP_PR_ERR("%d error to parse cmd %s\n",
+				__LINE__, opt);
+			return;
+		}
+
+		fake_layer_overwrite = overwrite;
+	} else if (!strncmp(opt, "hrtbw:", 6)) {
+		unsigned int evnt;
+
+		ret = sscanf(opt, "hrtbw:%x\n", &evnt);
+		if (ret != 1)
+			return;
+
+		hrt_bw_debug(evnt);
+	} else if (!strncmp(opt, "primary_display_ovl_recovery", 25)) {
+		primary_display_ovl_recovery();
 	}
 }
 

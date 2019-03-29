@@ -31,6 +31,8 @@ ccflags-y += -I$(srctree)/drivers/devfreq/
 ccflags-y += -Wno-unused-variable
 ccflags-y += -Wno-unused-function
 
+obj-$(CONFIG_MACH_MT6779) += mtk_picachu.o
+
 ifeq ($(CONFIG_MACH_MT6761),y)
     ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq/v3/mt6765/
 else

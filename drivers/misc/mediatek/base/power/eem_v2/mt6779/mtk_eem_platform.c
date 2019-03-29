@@ -25,6 +25,10 @@
 #include "mtk_eem_internal_ap.h"
 #include "mtk_eem_internal.h"
 #include "mtk_cpufreq_api.h"
+#ifdef CORN_LOAD
+#include "vpu_dvfs.h"
+#include "apu_dvfs.h"
+#endif
 #ifdef CONFIG_MTK_GPU_SUPPORT
 #include "mtk_gpufreq.h"
 #endif
@@ -33,10 +37,7 @@
  */
 /* legacy ptp need to define other hook functions */
 unsigned int dvtfreq[NR_FREQ] = {0x64, 0x60, 0x59, 0x53, 0x4d, 0x45, 0x3d, 0x39,
-	0x35, 0x30, 0x2c, 0x26, 0x1e, 0x18, 0x12, 0x0e};
-#if ENABLE_VPU
-static unsigned int vpuOutput[NR_FREQ];
-#endif
+		0x35, 0x30, 0x2c, 0x26, 0x1e, 0x18, 0x12, 0x0e};
 struct eem_det_ops gpu_det_ops = {
 	.get_volt		= get_volt_gpu,
 	.set_volt		= set_volt_gpu,
@@ -63,18 +64,12 @@ struct eem_det_ops cci_det_ops = {
 #if ENABLE_VPU
 struct eem_det_ops vpu_det_ops = {
 	.get_volt		= get_volt_vpu,
-	.set_volt		= set_volt_vpu,
-	.restore_default_volt	= restore_default_volt_vpu,
-	.get_freq_table		= get_freq_table_vpu,
 };
 #endif
 
 #if ENABLE_MDLA
 struct eem_det_ops mdla_det_ops = {
-	.get_volt		= get_volt_vpu,
-	.set_volt		= set_volt_vpu,
-	.restore_default_volt	= restore_default_volt_vpu,
-	.get_freq_table		= get_freq_table_vpu,
+	.get_volt		= get_volt_mdla,
 };
 #endif
 
@@ -215,10 +210,10 @@ void get_freq_table_cpu(struct eem_det *det)
 	cpudvfsindex = detid_to_dvfsid(det);
 
 	for (i = 0; i < NR_FREQ_CPU; i++) {
+
 #if DVT
 		det->freq_tbl[i] = dvtfreq[i];
 #else
-
 		det->freq_tbl[i] = PERCENT(mt_cpufreq_get_freq_by_idx
 			(cpudvfsindex, i), det->max_freq_khz);
 #endif
@@ -289,13 +284,12 @@ int get_volt_gpu(struct eem_det *det)
 
 int set_volt_gpu(struct eem_det *det)
 {
-#ifdef CONFIG_MTK_GPU_SUPPORT
 	int i;
 	unsigned int output[NR_FREQ_GPU];
 
 	for (i = 0; i < det->num_freq_tbl; i++) {
 		output[i] = det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]);
-#if 1
+#if 0
 		eem_error("set_volt_[%s]=0x%x(%d), ",
 		det->name,
 		det->volt_tbl_pmic[i],
@@ -304,9 +298,6 @@ int set_volt_gpu(struct eem_det *det)
 	}
 
 	return mt_gpufreq_update_volt(output, det->num_freq_tbl);
-#else
-	return 0;
-#endif
 }
 
 void restore_default_volt_gpu(struct eem_det *det)
@@ -331,7 +322,6 @@ void get_freq_table_gpu(struct eem_det *det)
 	eem_debug("In gpu freq\n");
 
 	for (i = 0; i < NR_FREQ_GPU; i++) {
-
 #if DVT
 		det->freq_tbl[i] = dvtfreq[i];
 #else
@@ -366,7 +356,8 @@ void get_orig_volt_table_gpu(struct eem_det *det)
 	FUNC_ENTER(FUNC_LV_HELP);
 
 	for (i = 0; i < det->num_freq_tbl; i++) {
-		volt = mt_gpufreq_get_volt_by_idx(i);
+		volt = mt_gpufreq_get_volt_by_idx
+			(mt_gpufreq_get_ori_opp_idx(i));
 		det->volt_tbl_orig[i] = det->ops->volt_2_pmic(det, volt);
 
 #if 0
@@ -397,144 +388,31 @@ int get_volt_vpu(struct eem_det *det)
 #if ENABLE_VPU
 	FUNC_ENTER(FUNC_LV_HELP);
 
-	/* eem_debug("get_volt_vpu=%d\n", vpu_dvfs_get_cur_volt()); */
 #ifdef EARLY_PORTING_VPU
-	    eem_debug("@@%s", __func__);
-		return 0;
+	return 0;
 #else
-	    eem_debug("@@%s", __func__);
-		return vvpu_get_cur_volt();
+	return vvpu_get_cur_volt();
 #endif
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 	return 0;
 }
 
-int set_volt_vpu(struct eem_det *det)
+int get_volt_mdla(struct eem_det *det)
 {
 #if ENABLE_VPU
-	unsigned int i;
-
 	FUNC_ENTER(FUNC_LV_HELP);
-	for (i = 0; i < det->num_freq_tbl; i++) {
-		vpuOutput[i] = det->ops->pmic_2_volt(det,
-		det->volt_tbl_pmic[i]);
-		#if 0
-		eem_error("set_volt_[%s]=0x%x(%d)\n",
-		det->name,
-		det->volt_tbl_pmic[i],
-		det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
-		#endif
-	}
+
 #ifdef EARLY_PORTING_VPU
-		return 0;
+	return 0;
 #else
-		eem_debug("@@%s", __func__);
-		return vvpu_update_volt(vpuOutput, det->num_freq_tbl);
+	return vmdla_get_cur_volt();
 #endif
 	FUNC_EXIT(FUNC_LV_HELP);
 #endif
 	return 0;
 }
 
-void restore_default_volt_vpu(struct eem_det *det)
-{
-#if ENABLE_VPU
-	FUNC_ENTER(FUNC_LV_HELP);
-#ifndef EARLY_PORTING_VPU
-	    eem_debug("@@%s\n", __func__);
-		//vvpu_restore_default_volt();
-		//mt_vpufreq_restore_default_volt();
-#else
-	    eem_debug("@@%s\n", __func__);
-	    //vvpu_restore_default_volt();
-#endif
-	FUNC_EXIT(FUNC_LV_HELP);
-#endif
-}
-
-void get_freq_table_vpu(struct eem_det *det)
-{
-#if ENABLE_VPU
-	int i;
-
-	FUNC_ENTER(FUNC_LV_HELP);
-
-#if DVT
-	for (i = 0; i < NR_FREQ; i++) {
-		det->freq_tbl[i] = dvtfreq[i];
-		if (det->freq_tbl[i] == 0)
-			break;
-	}
-#else
-	eem_debug("@@%s\n", __func__);
-	for (i = 0; i < NR_FREQ_VPU; i++) {
-#ifdef EARLY_PORTING_VPU
-		det->freq_tbl[i] =
-		PERCENT(vpu_get_freq_by_idx(i),
-		det->max_freq_khz);
-
-#else
-			det->freq_tbl[i] =
-			PERCENT(vpu_get_freq_by_idx(i),
-			det->max_freq_khz);
-#endif
-		det->volt_tbl_orig[i] = VMAX_VAL;
-
-		if (det->freq_tbl[i] == 0)
-			break;
-	}
-#endif
-	det->num_freq_tbl = i;
-
-#if ENABLE_LOO
-		/* Use signoff volt */
-		memcpy(det->volt_tbl, det->volt_tbl_orig,
-				sizeof(det->volt_tbl));
-		memcpy(det->volt_tbl_init2, det->volt_tbl_orig,
-				sizeof(det->volt_tbl));
-#endif
-
-	FUNC_EXIT(FUNC_LV_HELP);
-#endif
-}
-
-#if 0
-void get_orig_volt_table_vpu(struct eem_det *det)
-{
-#if ENABLE_VPU
-	int i = 0, volt = 0;
-
-	FUNC_ENTER(FUNC_LV_HELP);
-	eem_debug("@@%s\n", __func__);
-
-	for (i = 0; i < det->num_freq_tbl; i++) {
-		volt = vpu_get_volt_by_idx(i);
-		eem_debug("@@vpu_get_volt_by_idx:%d\n", volt);
-		det->volt_tbl_orig[i] = det->ops->volt_2_pmic(det, volt);
-
-#if 0
-		eem_debug("[%s]volt_tbl_orig[%d] = %d(0x%x)\n",
-			det->name+8,
-			i,
-			volt,
-			det->volt_tbl_orig[i]);
-#endif
-	}
-
-#if ENABLE_LOO
-		/* Use signoff volt */
-		memcpy(det->volt_tbl, det->volt_tbl_orig,
-				sizeof(det->volt_tbl));
-		memcpy(det->volt_tbl_init2, det->volt_tbl_orig,
-				sizeof(det->volt_tbl));
-#endif
-
-	FUNC_EXIT(FUNC_LV_HELP);
-#endif
-
-}
-#endif
 /************************************************
  * common det operations for legacy and sspm ptp
  ************************************************

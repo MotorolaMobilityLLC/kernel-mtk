@@ -121,21 +121,21 @@ static struct cpuidle_driver
 		.states[2] = {
 			.enter              = NULL,
 			.exit_latency       = 300,
-			.target_residency   = 14500,
+			.target_residency   = 12500,
 			.name               = "cluster_off",
 			.desc               = "cluster_off",
 		},
 		.states[3] = {
 			.enter              = NULL,
 			.exit_latency       = 1300,
-			.target_residency   = 2600,
+			.target_residency   = 1900,
 			.name               = "sodi",
 			.desc               = "sodi",
 		},
 		.states[4] = {
 			.enter              = NULL,
 			.exit_latency       = 1300,
-			.target_residency   = 2600,
+			.target_residency   = 1900,
 			.name               = "dpidle",
 			.desc               = "dpidle",
 		},
@@ -169,21 +169,21 @@ static struct cpuidle_driver
 		.states[2] = {
 			.enter              = NULL,
 			.exit_latency       = 300,
-			.target_residency   = 14500,
+			.target_residency   = 12500,
 			.name               = "cluster_off",
 			.desc               = "cluster_off",
 		},
 		.states[3] = {
 			.enter              = NULL,
 			.exit_latency       = 1300,
-			.target_residency   = 4400,
+			.target_residency   = 2300,
 			.name               = "sodi",
 			.desc               = "sodi",
 		},
 		.states[4] = {
 			.enter              = NULL,
 			.exit_latency       = 1300,
-			.target_residency   = 4400,
+			.target_residency   = 2300,
 			.name               = "dpidle",
 			.desc               = "dpidle",
 		},
@@ -207,9 +207,9 @@ static struct cpuidle_driver
 do {                                                                     \
 	mtk_acao_mcdi_state[type].states[i].member = val;                \
 	if (i == MCDI_STATE_CPU_OFF) {                                   \
-		if (cpu_type == CPU_TYPE_L)                              \
+		if (type == CPU_TYPE_L)                                  \
 			mtk_cpuidle_driver_set_0.states[i].member = val; \
-		else if (cpu_type == CPU_TYPE_B)                         \
+		else if (type == CPU_TYPE_B)                             \
 			mtk_cpuidle_driver_set_1.states[i].member = val; \
 	}                                                                \
 } while (0)
@@ -240,7 +240,6 @@ static int mtk_rgidle_enter(struct cpuidle_device *dev,
 static int mtk_mcidle_enter(struct cpuidle_device *dev,
 			      struct cpuidle_driver *drv, int index)
 {
-	cpuidle_get_last_residency(dev);
 	mcdi_enter(dev->cpu);
 	return index;
 }

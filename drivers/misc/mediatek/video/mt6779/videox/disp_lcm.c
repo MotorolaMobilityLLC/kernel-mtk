@@ -1187,13 +1187,14 @@ struct disp_lcm_handle *disp_ext_lcm_probe(char *plcm_name,
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 			lcm_drv = lcm_driver_list[1];
-#else
-			lcm_drv = NULL;
-#endif
-
 			isLCMFound = true;
 			isLCMInited = false;
 			DISPCHECK("EXT LCM Name NULL\n");
+#else
+			DISP_PR_INFO("No CONFIG_MTK_DUAL_DISPLAY_SUPPORT\n");
+			return NULL;
+#endif
+
 		} else {
 			for (i = 0; i < _lcm_count(); i++) {
 				if (strcmp(lcm_driver_list[i]->name,

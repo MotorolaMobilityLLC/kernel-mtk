@@ -22,9 +22,11 @@
 #include "lcm_drv.h"
 #include "ddp_ovl.h"
 #include "disp_event.h"
+#include "graphics-base-v1.0.h"
+#include "graphics-base-v1.1.h"
 
 /**
- * bit  24  23  17    16  15     10        9       8  0
+ * bit  25  24  17    16  15     10        9       8  0
  *     rsv|RGB|bpp|BLOCK|VDO|FORMAT|BYTESWAP|RGBSWAP|ID
  */
 #define _UFMT_ID_SHIFT 0
@@ -40,24 +42,24 @@
 #define _UFMT_BLOCK_SHIT (_UFMT_VDO_SHIFT+_UFMT_VDO_WIDTH)
 #define _UFMT_BLOCK_WIDTH 1
 #define _UFMT_bpp_SHIFT (_UFMT_BLOCK_SHIT+_UFMT_BLOCK_WIDTH)
-#define _UFMT_bpp_WIDTH 6
+#define _UFMT_bpp_WIDTH 7
 #define _UFMT_RGB_SHIFT (_UFMT_bpp_SHIFT+_UFMT_bpp_WIDTH)
 #define _UFMT_RGB_WIDTH 1
 
 
 #define _MASK_SHIFT(val, width, shift) (((val)>>(shift)) & ((1<<(width))-1))
 
-#define MAKE_UNIFIED_COLOR_FMT(rgb, bpp, block, vdo, format, byteswap,\
-	rgbswap, id) \
+#define MAKE_UNIFIED_COLOR_FMT(\
+			rgb, bpp, block, vdo, format, byteswap, rgbswap, id) \
 	( \
-	((rgb)			<< _UFMT_RGB_SHIFT)	| \
-	((bpp)			<< _UFMT_bpp_SHIFT)	| \
-	((block)		<< _UFMT_BLOCK_SHIT)	| \
-	((vdo)			<< _UFMT_VDO_SHIFT)	| \
-	((format)		<< _UFMT_FORMAT_SHIFT)	| \
-	((byteswap)		<< _UFMT_BYTESWAP_SHIFT)	| \
-	((rgbswap)		<< _UFMT_RGBSWAP_SHIFT)	| \
-	((id)			<< _UFMT_ID_SHIFT))
+	((rgb)			<< (_UFMT_RGB_SHIFT))	| \
+	((bpp)			<< (_UFMT_bpp_SHIFT))	| \
+	((block)		<< (_UFMT_BLOCK_SHIT))	| \
+	((vdo)			<< (_UFMT_VDO_SHIFT))	| \
+	((format)		<< (_UFMT_FORMAT_SHIFT))	| \
+	((byteswap)		<< (_UFMT_BYTESWAP_SHIFT))	| \
+	((rgbswap)		<< (_UFMT_RGBSWAP_SHIFT))	| \
+	((id)			<< (_UFMT_ID_SHIFT)))
 
 #define UFMT_GET_RGB(fmt) \
 		_MASK_SHIFT(fmt, _UFMT_RGB_WIDTH, _UFMT_RGB_SHIFT)
@@ -91,51 +93,55 @@ unsigned int ufmt_is_old_fmt(unsigned int fmt);
 
 enum UNIFIED_COLOR_FMT {
 	UFMT_UNKNOWN = 0,
-	UFMT_Y8 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 7, 0, 0, 1),
-	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 2),
+	UFMT_Y8 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 7, 0, 0, 1),
+	UFMT_RGBA4444 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 4, 0, 0, 2),
 	UFMT_RGBA5551 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 3),
-	UFMT_RGB565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 4),
-	UFMT_BGR565 = MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 1, 0, 5),
-	UFMT_RGB888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 1, 0, 6),
-	UFMT_BGR888 = MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 0, 0, 7),
-	UFMT_RGBA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 1, 0, 8),
-	UFMT_BGRA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 0, 0, 9),
-	UFMT_ARGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 0, 10),
-	UFMT_ABGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 0, 11),
-	UFMT_RGBX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 12),
-	UFMT_BGRX8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 13),
-	UFMT_XRGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 14),
-	UFMT_XBGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 15),
-	UFMT_AYUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 16),
-	UFMT_YUV = MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 17),
-	UFMT_UYVY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 0, 0, 18),
-	UFMT_VYUY = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 1, 0, 19),
-	UFMT_YUYV = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 0, 0, 20),
-	UFMT_YVYU = MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 1, 0, 21),
-	UFMT_UYVY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 0, 0, 22),
-	UFMT_VYUY_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 1, 0, 23),
-	UFMT_YUY2_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 0, 0, 24),
-	UFMT_YVYU_BLK = MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 1, 0, 25),
-	UFMT_YV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 1, 0, 26),
-	UFMT_I420 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 0, 0, 27),
-	UFMT_YV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 1, 0, 28),
-	UFMT_I422 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 0, 0, 29),
-	UFMT_YV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 1, 0, 30),
-	UFMT_I444 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 0, 0, 31),
-	UFMT_NV12 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 0, 0, 32),
-	UFMT_NV21 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 1, 0, 33),
-	UFMT_NV12_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 0, 0, 34),
-	UFMT_NV21_BLK = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 1, 0, 35),
+	UFMT_RGB565 =	MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 0, 0, 4),
+	UFMT_BGR565 =	MAKE_UNIFIED_COLOR_FMT(1, 16, 0, 0, 0, 1, 0, 5),
+	UFMT_RGB888 =	MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 1, 0, 6),
+	UFMT_BGR888 =	MAKE_UNIFIED_COLOR_FMT(1, 24, 0, 0, 1, 0, 0, 7),
+	UFMT_RGBA8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 1, 0, 8),
+	UFMT_BGRA8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 0, 0, 9),
+	UFMT_ARGB8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 0, 10),
+	UFMT_ABGR8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 0, 11),
+	UFMT_RGBX8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 12),
+	UFMT_BGRX8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 13),
+	UFMT_XRGB8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 14),
+	UFMT_XBGR8888 =	MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 0, 0, 0, 15),
+	UFMT_AYUV =	MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 16),
+	UFMT_YUV =	MAKE_UNIFIED_COLOR_FMT(0, 0, 0, 0, 0, 0, 0, 17),
+	UFMT_UYVY =	MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 0, 0, 18),
+	UFMT_VYUY =	MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 4, 1, 0, 19),
+	UFMT_YUYV =	MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 0, 0, 20),
+	UFMT_YVYU =	MAKE_UNIFIED_COLOR_FMT(0, 16, 0, 0, 5, 1, 0, 21),
+	UFMT_UYVY_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 0, 0, 22),
+	UFMT_VYUY_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 4, 1, 0, 23),
+	UFMT_YUY2_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 0, 0, 24),
+	UFMT_YVYU_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 16, 1, 0, 5, 1, 0, 25),
+	UFMT_YV12 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 1, 0, 26),
+	UFMT_I420 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 8, 0, 0, 27),
+	UFMT_YV16 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 1, 0, 28),
+	UFMT_I422 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 9, 0, 0, 29),
+	UFMT_YV24 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 1, 0, 30),
+	UFMT_I444 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 10, 0, 0, 31),
+	UFMT_NV12 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 0, 0, 32),
+	UFMT_NV21 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 12, 1, 0, 33),
+	UFMT_NV12_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 0, 0, 34),
+	UFMT_NV21_BLK =	MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 0, 12, 1, 0, 35),
 	UFMT_NV12_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 0, 0, 36),
 	UFMT_NV21_BLK_FLD = MAKE_UNIFIED_COLOR_FMT(0, 8, 1, 1, 12, 1, 0, 37),
-	UFMT_NV16 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 0, 0, 38),
-	UFMT_NV61 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 1, 0, 39),
-	UFMT_NV24 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 0, 0, 40),
-	UFMT_NV42 = MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 1, 0, 41),
+	UFMT_NV16 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 0, 0, 38),
+	UFMT_NV61 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 13, 1, 0, 39),
+	UFMT_NV24 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 0, 0, 40),
+	UFMT_NV42 =	MAKE_UNIFIED_COLOR_FMT(0, 8, 0, 0, 14, 1, 0, 41),
 	UFMT_PARGB8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 0, 42),
 	UFMT_PABGR8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 1, 1, 43),
 	UFMT_PRGBA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 1, 44),
 	UFMT_PBGRA8888 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 0, 45),
+	UFMT_RGBA1010102 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 2, 1, 0, 46),
+	UFMT_PRGBA1010102 = MAKE_UNIFIED_COLOR_FMT(1, 32, 0, 0, 3, 0, 1, 47),
+	UFMT_RGBA_FP16 = MAKE_UNIFIED_COLOR_FMT(1, 64, 0, 0, 2, 1, 0, 48),
+	UFMT_PRGBA_FP16 = MAKE_UNIFIED_COLOR_FMT(1, 64, 0, 0, 3, 0, 1, 49),
 };
 
 char *unified_color_fmt_name(enum UNIFIED_COLOR_FMT fmt);
@@ -148,6 +154,36 @@ int ufmt_disable_X_channel(enum UNIFIED_COLOR_FMT src_fmt,
 int ufmt_disable_P(enum UNIFIED_COLOR_FMT src_fmt,
 		   enum UNIFIED_COLOR_FMT *dst_fmt);
 
+enum SBCH_BIT {
+	UPDATE = 0,
+	TRANS_EN = 1,
+	CNST_EN = 2,
+	BCH_BIT_NUM = 3
+};
+
+struct sbch {
+	/* the number of ext layer on this phy */
+	int ext_layer_num;/*ext:-1  phy:0~3*/
+	unsigned long pre_addr;
+	unsigned int dst_x;
+	unsigned int dst_y;
+	unsigned int dst_w;
+	unsigned int dst_h;
+	unsigned int height;
+	unsigned int width;
+	int phy_layer;
+	int const_bld;
+	enum UNIFIED_COLOR_FMT fmt;
+	unsigned long long sbch_en_cnt;
+	int full_trans_en;
+	unsigned int layer_disable_by_partial_update;
+};
+
+struct sbch_bw {
+	unsigned long long trans_bw;
+	unsigned long long trans_fbdc_bw;
+};
+
 struct disp_rect {
 	int x;
 	int y;
@@ -159,17 +195,24 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int module;
 	unsigned int layer;
 	unsigned int layer_en;
+	unsigned int layer_disable_by_partial_update;
 	enum OVL_LAYER_SOURCE source;
 	enum UNIFIED_COLOR_FMT fmt;
 	unsigned long addr;
+	unsigned long real_addr;
 	unsigned long vaddr;
 	unsigned int src_x;
 	unsigned int src_y;
 	unsigned int src_w;
 	unsigned int src_h;
+	unsigned int src_v_pitch;
 	unsigned int src_pitch;
 	unsigned int dst_x;
 	unsigned int dst_y;
+	unsigned int real_dst_x;
+	unsigned int real_dst_y;
+	unsigned int real_dst_w;
+	unsigned int real_dst_h;
 	unsigned int dst_w;
 	unsigned int dst_h;
 	unsigned int keyEn;
@@ -190,12 +233,14 @@ struct OVL_CONFIG_STRUCT {
 	unsigned int connected_type;
 	enum DISP_BUFFER_TYPE security;
 	unsigned int yuv_range;
+	enum android_dataspace ds;
 	/* is this layer configured to OVL HW, for multiply OVL sync */
 	int is_configured;
 	int const_bld;
 	int ext_sel_layer;
 	int ext_layer;
 	int phy_layer;
+	unsigned char compress;
 };
 
 struct OVL_BASIC_STRUCT {
@@ -351,6 +396,8 @@ struct disp_ddp_path_config {
 	bool rsz_enable;
 	int hrt_path;
 	int hrt_scale;
+	int sbch_enable;
+	int read_dum_reg[OVL_NUM];
 };
 
 /* dpmgr_ioctl cmd definition */
@@ -508,7 +555,6 @@ unsigned int ddp_get_module_num_by_t(enum DISP_MODULE_TYPE_ENUM module_t);
 enum DISP_MODULE_ENUM
 ddp_get_module_id_by_idx(enum DISP_MODULE_TYPE_ENUM module_t, unsigned int idx);
 
-enum DISP_MODULE_ENUM disp_irq_to_module(unsigned int irq);
 const char *ddp_get_ioctl_name(enum DDP_IOCTL_NAME ioctl);
 extern int display_bias_enable(void);
 extern int display_bias_regulator_init(void);

@@ -35,21 +35,25 @@
 #include "mtk_disp_mgr.h"
 #include "disp_rect.h"
 #include "lcm_drv.h"
+#include "ddp_ovl_wcg.h"
+#include "mmdvfs_mgr.h"
+#include "mmdvfs_pmqos.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;
 
+static DEFINE_SPINLOCK(hrt_table_lock);
+
+/* To backup for primary display layer_config */
+static struct layer_config *g_input_config;
+
 int emi_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{100, 300, 500, 600},
-	/* HRT_BOUND_TYPE_LP4_FHD_PLUS */
 	{100, 300, 500, 600},
 };
 
 int larb_bound_table[HRT_BOUND_NUM][HRT_LEVEL_NUM] = {
 	/* HRT_BOUND_TYPE_LP4 */
-	{100, 300, 500, 600},
-	/* HRT_BOUND_TYPE_LP4_FHD_PLUS */
 	{100, 300, 500, 600},
 };
 
@@ -142,9 +146,10 @@ static int is_same_ratio(struct layer_config *ref, struct layer_config *c)
 		return -EINVAL;
 	}
 
-	diff_w = c->dst_width * ref->src_width / ref->dst_width - c->src_width;
-	diff_h = c->dst_height * ref->src_height / ref->dst_height -
-		 c->src_height;
+	diff_w = (c->dst_width * ref->src_width + (ref->dst_width - 1))
+			/ ref->dst_width - c->src_width;
+	diff_h = (c->dst_height * ref->src_height + (ref->dst_height - 1))
+			/ ref->dst_height - c->src_height;
 	if (abs(diff_w) > 1 || abs(diff_h) > 1)
 		return false;
 
@@ -186,13 +191,12 @@ static bool is_RPO(struct disp_layer_info *disp_info, int disp_idx,
 			break;
 
 		rect_make(&src_layer_roi,
-			  c->dst_offset_x * c->src_width / c->dst_width,
-			  c->dst_offset_y * c->src_height / c->dst_height,
-			  c->src_width, c->src_height);
+			c->dst_offset_x * c->src_width / c->dst_width,
+			c->dst_offset_y * c->src_height / c->dst_height,
+			c->src_width, c->src_height);
 		rect_make(&dst_layer_roi,
-			  c->dst_offset_x * c->src_width / c->dst_width,
-			  c->dst_offset_y * c->src_height / c->dst_height,
-			  c->dst_width, c->dst_height);
+			c->dst_offset_x, c->dst_offset_y,
+			c->dst_width, c->dst_height);
 		rect_join(&src_layer_roi, &src_roi, &src_roi);
 		rect_join(&dst_layer_roi, &dst_roi, &dst_roi);
 		if (src_roi.width > dst_roi.width ||
@@ -319,27 +323,199 @@ static void layering_rule_senario_decision(struct disp_layer_info *disp_info)
 
 	l_rule_info.primary_fps = 60;
 
-	if (primary_display_get_height() > 1920)
-		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4_FHD_PLUS;
-	else
-		l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
+	l_rule_info.bound_tb_idx = HRT_BOUND_TYPE_LP4;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->hrt, MMPROFILE_FLAG_END,
 			 l_rule_info.disp_path, l_rule_info.layer_tb_idx |
 			 (l_rule_info.bound_tb_idx << 16));
 }
 
-static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
+/* A OVL supports at most 2 yuv layers */
+static void filter_by_yuv_layers(struct disp_layer_info *disp_info)
 {
-	return true;
+	unsigned int disp_idx = 0, i = 0;
+	struct layer_config *info;
+	unsigned int yuv_cnt;
+
+	/* ovl support total 2 yuv layer */
+	for (disp_idx = 0 ; disp_idx < 2 ; disp_idx++) {
+		yuv_cnt = 0;
+		for (i = 0; i < disp_info->layer_num[disp_idx]; i++) {
+			info = &(disp_info->input_config[disp_idx][i]);
+			if (is_gles_layer(disp_info, disp_idx, i))
+				continue;
+			if (is_yuv(info->src_fmt)) {
+				yuv_cnt++;
+				if (yuv_cnt > 2)
+					rollback_layer_to_GPU(disp_info,
+						disp_idx, i);
+			}
+		}
+	}
 }
 
+static bool filter_by_sec_display(struct disp_layer_info *disp_info)
+{
+	bool flag = false;
+	unsigned int i, layer_cnt = 0;
+
+	for (i = 0; i < disp_info->layer_num[HRT_SECONDARY]; i++) {
+		if (is_gles_layer(disp_info, HRT_SECONDARY, i))
+			continue;
+
+		layer_cnt++;
+		if (layer_cnt > SECONDARY_OVL_LAYER_NUM) {
+			rollback_layer_to_GPU(disp_info, HRT_SECONDARY, i);
+			flag = false;
+		}
+	}
+
+	return flag;
+}
+
+static void filter_by_wcg(struct disp_layer_info *disp_info)
+{
+	unsigned int i = 0;
+	struct layer_config *c;
+
+	for (i = 0; i < disp_info->layer_num[HRT_PRIMARY]; i++) {
+		c = &disp_info->input_config[HRT_PRIMARY][i];
+		if (is_ovl_standard(c->dataspace) ||
+		    has_layer_cap(c, MDP_HDR_LAYER))
+			continue;
+
+		rollback_layer_to_GPU(disp_info, HRT_PRIMARY, i);
+	}
+
+	for (i = 0; i < disp_info->layer_num[HRT_SECONDARY]; i++) {
+		c = &disp_info->input_config[HRT_SECONDARY][i];
+		if (!is_ovl_wcg(c->dataspace) &&
+		    (is_ovl_standard(c->dataspace) ||
+		     has_layer_cap(c, MDP_HDR_LAYER)))
+			continue;
+
+		rollback_layer_to_GPU(disp_info, HRT_SECONDARY, i);
+	}
+
+}
+
+bool can_be_compress(enum DISP_FORMAT format)
+{
+	if (is_yuv(format) || format == DISP_FORMAT_RGB565)
+		return 0;
+	else
+		return 1;
+}
+
+static void filter_by_fbdc(struct disp_layer_info *disp_info)
+{
+	unsigned int i = 0;
+	struct layer_config *c;
+
+	/* primary: check fmt */
+	for (i = 0; i < disp_info->layer_num[HRT_PRIMARY]; i++) {
+		c = &(disp_info->input_config[HRT_PRIMARY][i]);
+
+		if (!c->compress)
+			continue;
+
+		if (can_be_compress(c->src_fmt) == 0)
+			rollback_compress_layer_to_GPU(disp_info,
+				HRT_PRIMARY, i);
+	}
+
+	/* secondary: rollback all */
+	for (i = 0; i < disp_info->layer_num[HRT_SECONDARY]; i++) {
+		c = &(disp_info->input_config[HRT_SECONDARY][i]);
+
+		if (!c->compress)
+			continue;
+
+		/* if the layer is already gles layer, do not set NO_FBDC to
+		 * reduce BW access
+		 */
+		if (is_gles_layer(disp_info, HRT_SECONDARY, i) == false)
+			rollback_compress_layer_to_GPU(disp_info,
+				HRT_SECONDARY, i);
+	}
+}
+
+static bool filter_by_hw_limitation(struct disp_layer_info *disp_info)
+{
+	bool flag = false;
+
+	filter_by_wcg(disp_info);
+
+	filter_by_yuv_layers(disp_info);
+
+	flag |= filter_by_sec_display(disp_info);
+
+	return flag;
+}
+
+static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param);
+
+
+#if 0
+/* phase out */
 static int get_hrt_bound(int is_larb, int hrt_level)
 {
+	unsigned long flags = 0;
+	int valid_num, ovl_bound;
+	int i;
+
 	if (is_larb)
 		return larb_bound_table[l_rule_info.bound_tb_idx][hrt_level];
 
+	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1) {
+		spin_lock_irqsave(&hrt_table_lock, flags);
+		valid_num = layering_get_valid_hrt();
+		ovl_bound = get_phy_layer_limit(
+			get_mapping_table(
+			DISP_HW_LAYER_TB,
+			MAX_PHY_OVL_CNT - 1), 0);
+		valid_num = min(valid_num, ovl_bound * 100);
+
+		for (i = 0; i < HRT_LEVEL_NUM; i++) {
+			emi_bound_table[l_rule_info.bound_tb_idx][i] =
+				valid_num;
+		}
+		spin_unlock_irqrestore(&hrt_table_lock, flags);
+	}
+
 	return emi_bound_table[l_rule_info.bound_tb_idx][hrt_level];
+}
+#endif
+
+void copy_hrt_bound_table(int is_larb, int *hrt_table)
+{
+	unsigned long flags = 0;
+	int valid_num, ovl_bound;
+	int i;
+
+	/* Not used in 6779 */
+	if (is_larb)
+		return;
+
+	/* update table if hrt bw is enabled */
+	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1) {
+		spin_lock_irqsave(&hrt_table_lock, flags);
+		valid_num = layering_get_valid_hrt();
+		ovl_bound = get_phy_layer_limit(
+			get_mapping_table(
+			DISP_HW_LAYER_TB,
+			MAX_PHY_OVL_CNT - 1), 0);
+		valid_num = min(valid_num, ovl_bound * 100);
+
+		for (i = 0; i < HRT_LEVEL_NUM; i++) {
+			emi_bound_table[l_rule_info.bound_tb_idx][i] =
+				valid_num;
+		}
+		spin_unlock_irqrestore(&hrt_table_lock, flags);
+	}
+
+	for (i = 0; i < HRT_LEVEL_NUM; i++)
+		hrt_table[i] = emi_bound_table[l_rule_info.bound_tb_idx][i];
 }
 
 static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
@@ -355,24 +531,41 @@ static int *get_bound_table(enum DISP_HW_MAPPING_TB_TYPE tb_type)
 	return NULL;
 }
 
+static bool lr_frame_has_wcg(struct disp_layer_info *disp_info,
+			     enum HRT_DISP_TYPE di)
+{
+	int i = 0;
+
+	for (i = 0; i < disp_info->layer_num[di]; i++) {
+		struct layer_config *c = &disp_info->input_config[di][i];
+
+		if (is_ovl_wcg(c->dataspace))
+			return true;
+	}
+
+	return false;
+}
+
 static int get_mapping_table(enum DISP_HW_MAPPING_TB_TYPE tb_type, int param)
 {
 	int layer_tb_idx = l_rule_info.layer_tb_idx;
+	int map = -1;
 
 	switch (tb_type) {
 	case DISP_HW_OVL_TB:
-		return ovl_mapping_table[layer_tb_idx];
+		map = ovl_mapping_table[layer_tb_idx];
+		break;
 	case DISP_HW_LARB_TB:
-		return larb_mapping_table[layer_tb_idx];
+		map = larb_mapping_table[layer_tb_idx];
+		break;
 	case DISP_HW_LAYER_TB:
 		if (param < MAX_PHY_OVL_CNT && param >= 0)
-			return layer_mapping_table[layer_tb_idx][param];
-		else
-			return -1;
+			map = layer_mapping_table[layer_tb_idx][param];
+		break;
 	default:
 		break;
 	}
-	return -1;
+	return map;
 }
 
 void layering_rule_init(void)
@@ -384,6 +577,7 @@ void layering_rule_init(void)
 #endif
 
 	l_rule_info.primary_fps = 60;
+	l_rule_info.hrt_idx = 0;
 	register_layering_rule_ops(&l_rule_ops, &l_rule_info);
 
 	set_layering_opt(LYE_OPT_RPO, disp_helper_get_option(DISP_OPT_RPO));
@@ -426,6 +620,45 @@ static bool _rollback_all_to_GPU_for_idle(void)
 	return true;
 }
 
+unsigned long long layering_get_frame_bw(void)
+{
+	static unsigned long long bw_base;
+
+	if (bw_base)
+		return bw_base;
+
+	bw_base = (unsigned long long) primary_display_get_width() *
+		primary_display_get_height() * 60 * 125 * 4;
+	bw_base /= 100 * 1024 * 1024;
+
+	return bw_base;
+}
+
+int layering_get_valid_hrt(void)
+{
+	unsigned long long dvfs_bw;
+	unsigned long long tmp;
+
+	dvfs_bw = mm_hrt_get_available_hrt_bw(PORT_VIRTUAL_DISP);
+	dvfs_bw *= 10000;
+
+	tmp = layering_get_frame_bw();
+	dvfs_bw /= tmp * 100;
+
+	/* error handling when requested BW is less than 2 layers */
+	if (dvfs_bw < 200) {
+		disp_aee_print("avail BW less than 2 layers, BW: %llu\n",
+			dvfs_bw);
+		dvfs_bw = 200;
+	}
+
+	DISPINFO("get avail HRT BW:%u : %llu %llu\n",
+		mm_hrt_get_available_hrt_bw(PORT_VIRTUAL_DISP), dvfs_bw, tmp);
+
+	return dvfs_bw;
+}
+
+
 void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT opt, int value)
 {
 	switch (opt) {
@@ -440,15 +673,302 @@ void update_layering_opt_by_disp_opt(enum DISP_HELPER_OPT opt, int value)
 	}
 }
 
+unsigned int layering_rule_get_hrt_idx(void)
+{
+	return l_rule_info.hrt_idx;
+}
+
+#define SET_CLIP_R(clip, clip_r)	(clip |= ((clip_r & 0xFF) << 0))
+#define SET_CLIP_B(clip, clip_b)	(clip |= ((clip_b & 0xFF) << 8))
+#define SET_CLIP_L(clip, clip_l)	(clip |= ((clip_l & 0xFF) << 16))
+#define SET_CLIP_T(clip, clip_t)	(clip |= ((clip_t & 0xFF) << 24))
+
+#define GET_CLIP_R(clip)		((clip >> 0) & 0xFF)
+#define GET_CLIP_B(clip)		((clip >> 8) & 0xFF)
+#define GET_CLIP_L(clip)		((clip >> 16) & 0xFF)
+#define GET_CLIP_T(clip)		((clip >> 24) & 0xFF)
+
+void calc_clip_x(struct layer_config *cfg)
+{
+	unsigned int tile_w = 16;
+	unsigned int src_x_s, src_x_e; /* aligned */
+	unsigned int clip_l = 0, clip_r = 0;
+
+	src_x_s = (cfg->src_offset_x) & ~(tile_w - 1);
+
+	src_x_e = (cfg->src_offset_x + cfg->src_width + tile_w - 1) &
+		~(tile_w - 1);
+
+	clip_l = cfg->src_offset_x - src_x_s;
+	clip_r = src_x_e - cfg->src_offset_x - cfg->src_width;
+
+	SET_CLIP_R(cfg->clip, clip_r);
+	SET_CLIP_L(cfg->clip, clip_l);
+}
+
+void calc_clip_y(struct layer_config *cfg)
+{
+	unsigned int tile_h = 4;
+	unsigned int src_y_s, src_y_e; /* aligned */
+	unsigned int clip_t = 0, clip_b = 0;
+
+	src_y_s = (cfg->src_offset_y) & ~(tile_h - 1);
+
+	src_y_e = (cfg->src_offset_y + cfg->src_height + tile_h - 1) &
+		~(tile_h - 1);
+
+	clip_t = cfg->src_offset_y - src_y_s;
+	clip_b = src_y_e - cfg->src_offset_y - cfg->src_height;
+
+	SET_CLIP_T(cfg->clip, clip_t);
+	SET_CLIP_B(cfg->clip, clip_b);
+}
+
+static void backup_input_config(struct disp_layer_info *disp_info)
+{
+	unsigned int size = 0;
+
+	/* free before use */
+	if (g_input_config != 0) {
+		kfree(g_input_config);
+		g_input_config = 0;
+	}
+
+	if (disp_info->layer_num[HRT_PRIMARY] <= 0 ||
+		disp_info->input_config[HRT_PRIMARY] == NULL)
+		return;
+
+	/* memory allocate */
+	size = sizeof(struct layer_config) * disp_info->layer_num[HRT_PRIMARY];
+	g_input_config = kzalloc(size, GFP_KERNEL);
+
+	if (g_input_config == 0) {
+		DISP_PR_ERR("%s: allocate memory fail\n", __func__);
+		return;
+	}
+
+	/* memory copy */
+	memcpy(g_input_config, disp_info->input_config[HRT_PRIMARY], size);
+}
+
+static void fbdc_pre_calculate(struct disp_layer_info *disp_info)
+{
+	unsigned int i = 0;
+	struct layer_config *cfg = NULL;
+
+	/* backup g_input_config */
+	backup_input_config(disp_info);
+
+	for (i = 0; i < disp_info->layer_num[HRT_PRIMARY]; i++) {
+		cfg = &(disp_info->input_config[HRT_PRIMARY][i]);
+
+		cfg->clip = 0;
+
+		if (!cfg->compress)
+			continue;
+
+		if (is_gles_layer(disp_info, HRT_PRIMARY, i))
+			continue;
+
+		if (cfg->src_height != cfg->dst_height ||
+			cfg->src_width != cfg->dst_width)
+			continue;
+
+		calc_clip_x(cfg);
+		calc_clip_y(cfg);
+	}
+}
+
+void fbdc_adjust_layout_for_ext_grouping(struct disp_layer_info *disp_info)
+{
+	int i = 0;
+	struct layer_config *c;
+	unsigned int dst_offset_x, dst_offset_y;
+	unsigned int clip_r, clip_b, clip_l, clip_t;
+
+	for (i = 0; i < disp_info->layer_num[HRT_PRIMARY]; i++) {
+		c = &(disp_info->input_config[HRT_PRIMARY][i]);
+
+		/* skip if not compress, gles, resize */
+		if (!c->compress || is_gles_layer(disp_info, HRT_PRIMARY, i) ||
+			(c->src_height != c->dst_height) ||
+			(c->src_width != c->dst_width))
+			continue;
+
+		dst_offset_x = c->dst_offset_x;
+		dst_offset_y = c->dst_offset_y;
+
+		clip_r = GET_CLIP_R(c->clip);
+		clip_b = GET_CLIP_B(c->clip);
+		clip_l = GET_CLIP_L(c->clip);
+		clip_t = GET_CLIP_T(c->clip);
+
+		/* bounary handling */
+		if (dst_offset_x < clip_l)
+			c->dst_offset_x = 0;
+		else
+			c->dst_offset_x -= clip_l;
+		if (dst_offset_y < clip_t)
+			c->dst_offset_y = 0;
+		else
+			c->dst_offset_y -= clip_t;
+
+		c->dst_width += (clip_r + dst_offset_x - c->dst_offset_x);
+		c->dst_height += (clip_b + dst_offset_y - c->dst_offset_y);
+	}
+}
+
+int get_below_ext_layer(struct disp_layer_info *disp_info, int disp_idx,
+	int cur)
+{
+	struct layer_config *c, *tmp_c;
+	int phy_id = -1, ext_id = -1, l_dst_offset_y = -1, i;
+
+	c = &(disp_info->input_config[disp_idx][cur]);
+
+	/* search for phy */
+	if (c->ext_sel_layer != -1) {
+		for (i = cur - 1; i >= 0; i--) {
+			tmp_c = &(disp_info->input_config[disp_idx][i]);
+			if (tmp_c->ext_sel_layer == -1)
+				phy_id = i;
+		}
+		if (phy_id == -1) /* error handle */
+			return -1;
+	} else
+		phy_id = cur;
+
+	/* traverse the ext layer below cur */
+	tmp_c = &(disp_info->input_config[disp_idx][phy_id]);
+	if (tmp_c->dst_offset_y > c->dst_offset_y) {
+		ext_id = phy_id;
+		l_dst_offset_y = tmp_c->dst_offset_y;
+	}
+
+	for (i = phy_id + 1; i <= phy_id + 3; i++) {
+		/* skip itself */
+		if (i == cur)
+			continue;
+
+		/* hit max num, stop */
+		if (i >= disp_info->layer_num[disp_idx])
+			break;
+
+		/* hit gles, stop */
+		if (is_gles_layer(disp_info, disp_idx, i))
+			break;
+
+		tmp_c = &(disp_info->input_config[disp_idx][i]);
+
+		/* hit phy layer, stop */
+		if (tmp_c->ext_sel_layer == -1)
+			break;
+
+		if (tmp_c->dst_offset_y > c->dst_offset_y) {
+			if (l_dst_offset_y == -1 ||
+				l_dst_offset_y > tmp_c->dst_offset_y) {
+				ext_id = i;
+				l_dst_offset_y = tmp_c->dst_offset_y;
+			}
+		}
+	}
+
+	return ext_id;
+}
+
+void fbdc_adjust_layout_for_overlap_calc(struct disp_layer_info *disp_info)
+{
+	int i = 0, ext_id = 0;
+	struct layer_config *c, *ext_c;
+
+	/* adjust dst layout because src clip */
+	fbdc_adjust_layout_for_ext_grouping(disp_info);
+
+	/* adjust dst layout because of buffer pre-fetch */
+	for (i = 0; i < disp_info->layer_num[HRT_PRIMARY]; i++) {
+		/* skip gles layer */
+		if (is_gles_layer(disp_info, HRT_PRIMARY, i))
+			continue;
+
+		c = &(disp_info->input_config[HRT_PRIMARY][i]);
+
+		/* skip resize layer */
+		if ((c->src_height != c->dst_height) ||
+		    (c->src_width != c->dst_width))
+			continue;
+
+		/* if compressed, shift up 4 lines because pre-fetching */
+		if (c->compress) {
+			if (c->dst_height > 4)
+				c->dst_height -= 4;
+			else
+				c->dst_height = 1;
+		}
+
+		/* if there is compressed ext layer below this layer,
+		 * add pre-fetch lines behind it
+		 */
+		ext_id = get_below_ext_layer(disp_info, HRT_PRIMARY, i);
+
+		if (is_layer_id_valid(disp_info, HRT_PRIMARY,
+			ext_id) == true) {
+			ext_c =
+			    &(disp_info->input_config[HRT_PRIMARY][ext_id]);
+			if (ext_c->compress) {
+				c->dst_height +=
+				    (GET_CLIP_T(ext_c->clip) + 4);
+			}
+		}
+	}
+}
+
+static void fbdc_adjust_layout(struct disp_layer_info *disp_info,
+	enum ADJUST_LAYOUT_PURPOSE p)
+{
+	if (p == ADJUST_LAYOUT_EXT_GROUPING)
+		fbdc_adjust_layout_for_ext_grouping(disp_info);
+	else
+		fbdc_adjust_layout_for_overlap_calc(disp_info);
+}
+
+static void fbdc_restore_layout(struct disp_layer_info *dst_info,
+	enum ADJUST_LAYOUT_PURPOSE p)
+{
+	int i = 0;
+	struct layer_config *layer_info_s, *layer_info_d;
+
+	if (g_input_config == 0)
+		return;
+
+	for (i = 0; i < dst_info->layer_num[HRT_PRIMARY]; i++) {
+		layer_info_d = &(dst_info->input_config[HRT_PRIMARY][i]);
+		layer_info_s = &(g_input_config[i]);
+
+		layer_info_d->dst_offset_x = layer_info_s->dst_offset_x;
+		layer_info_d->dst_offset_y = layer_info_s->dst_offset_y;
+		layer_info_d->dst_width = layer_info_s->dst_width;
+		layer_info_d->dst_height = layer_info_s->dst_height;
+	}
+}
+
 static struct layering_rule_ops l_rule_ops = {
 	.resizing_rule = lr_rsz_layout,
 	.rsz_by_gpu_info_change = lr_gpu_change_rsz_info,
 	.scenario_decision = layering_rule_senario_decision,
 	.get_bound_table = get_bound_table,
-	.get_hrt_bound = get_hrt_bound,
+	/* HRT table would change so do not use get_hrt_bound
+	 * in layering_rule_base. Instead, copy hrt table before calculation
+	 */
+	.get_hrt_bound = NULL,
+	.copy_hrt_bound_table = copy_hrt_bound_table,
 	.get_mapping_table = get_mapping_table,
 	.rollback_to_gpu_by_hw_limitation = filter_by_hw_limitation,
 	.unset_disp_rsz_attr = lr_unset_disp_rsz_attr,
 	.adaptive_dc_enabled = _adaptive_dc_enabled,
 	.rollback_all_to_GPU_for_idle = _rollback_all_to_GPU_for_idle,
+	.frame_has_wcg = lr_frame_has_wcg,
+	.fbdc_pre_calculate = fbdc_pre_calculate,
+	.fbdc_adjust_layout = fbdc_adjust_layout,
+	.fbdc_restore_layout = fbdc_restore_layout,
+	.fbdc_rule = filter_by_fbdc,
 };

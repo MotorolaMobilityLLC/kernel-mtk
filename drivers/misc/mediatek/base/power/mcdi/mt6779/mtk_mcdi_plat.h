@@ -47,7 +47,7 @@ enum {
 
 #define get_cpu_type_str(i) \
 	(i == 0 ? "cpu L" : (i == 1 ? "cpu B" : "unknown"))
-#define cpc_cpusys_off_hw_prot() 1
+#define cpc_cpusys_off_hw_prot() 0
 
 unsigned int get_pwr_stat_check_map(int type, int idx);
 int cluster_idx_get(int cpu);

@@ -15,10 +15,13 @@
 #include <mt-plat/sync_write.h>
 #include "sspm_define.h"
 
+__weak void dump_emi_outstanding(void) {}
 
 /* platform callback when ipi timeout */
 void sspm_ipi_timeout_cb(int ipi_id)
 {
+	/* for debug EMI */
+	dump_emi_outstanding();
 
 }
 

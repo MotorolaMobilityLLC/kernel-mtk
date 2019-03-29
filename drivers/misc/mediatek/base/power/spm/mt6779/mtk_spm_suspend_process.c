@@ -31,7 +31,7 @@
 #include <mtk_power_gs_api.h>
 #include <mtk_sspm.h>
 
-#define MTK_SUSPEND_GS_DUMP_READY (0)
+#define MTK_SUSPEND_GS_DUMP_READY (1)
 
 #define WORLD_CLK_CNTCV_L        (0x10017008)
 #define WORLD_CLK_CNTCV_H        (0x1001700C)

@@ -284,6 +284,7 @@ static int mt6779_mt6359_init(struct snd_soc_pcm_runtime *rtd)
 	ops.enable_dc_compensation = mt6779_enable_dc_compensation;
 	ops.set_lch_dc_compensation = mt6779_set_lch_dc_compensation;
 	ops.set_rch_dc_compensation = mt6779_set_rch_dc_compensation;
+	ops.adda_dl_gain_control = mt6779_adda_dl_gain_control;
 	mt6359_set_codec_ops(&rtd->codec->component, &ops);
 
 	/* set mtkaif protocol */
@@ -539,7 +540,7 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 	},
 	{
 		.name = "Capture_8",
-		.stream_name = "Capture8",
+		.stream_name = "Capture_8",
 		.cpu_dai_name = "UL8",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
@@ -669,6 +670,32 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.dpcm_playback = 1,
 		.ignore_suspend = 1,
 	},
+	{
+		.name = "Hostless_SRC_1",
+		.stream_name = "Hostless_SRC_1",
+		.cpu_dai_name = "Hostless_SRC_1_DAI",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
+			    SND_SOC_DPCM_TRIGGER_PRE},
+		.dynamic = 1,
+		.dpcm_playback = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
+	{
+		.name = "Hostless_SRC_Bargein",
+		.stream_name = "Hostless_SRC_Bargein",
+		.cpu_dai_name = "Hostless_SRC_Bargein_DAI",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.trigger = {SND_SOC_DPCM_TRIGGER_PRE,
+			    SND_SOC_DPCM_TRIGGER_PRE},
+		.dynamic = 1,
+		.dpcm_playback = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
 	/* Back End DAI links */
 	{
 		.name = "Primary Codec",
@@ -686,6 +713,24 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.codec_dai_name = "mt6359-snd-codec-aif2",
 		.no_pcm = 1,
 		.dpcm_playback = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
+	{
+		.name = "AP_DMIC",
+		.cpu_dai_name = "AP_DMIC",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.no_pcm = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
+	{
+		.name = "AP_DMIC_CH34",
+		.cpu_dai_name = "AP_DMIC_CH34",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.no_pcm = 1,
 		.dpcm_capture = 1,
 		.ignore_suspend = 1,
 	},
@@ -752,6 +797,26 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 	{
 		.name = "HW Gain 2",
 		.cpu_dai_name = "HW Gain 2",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
+	{
+		.name = "HW_SRC_1",
+		.cpu_dai_name = "HW_SRC_1",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+		.no_pcm = 1,
+		.dpcm_playback = 1,
+		.dpcm_capture = 1,
+		.ignore_suspend = 1,
+	},
+	{
+		.name = "HW_SRC_2",
+		.cpu_dai_name = "HW_SRC_2",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 		.no_pcm = 1,
@@ -898,17 +963,25 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
 	{
-		.name = "DSP_Playback_Swmixer1",
-		.stream_name = "DSP_Playback_Swmixer1",
-		.cpu_dai_name = "audio_task_swmixer1_dai",
+		.name = "DSP_Capture_Ul1",
+		.stream_name = "DSP_Capture_Ul1",
+		.cpu_dai_name = "audio_task_capture_ul1_dai",
 		.platform_name = "snd_audio_dsp",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
 	{
-		.name = "DSP_Playback_Swmixer2",
-		.stream_name = "DSP_Playback_Swmixer2",
-		.cpu_dai_name = "audio_task_swmixer2_dai",
+		.name = "DSP_Playback_A2DP",
+		.stream_name = "DSP_Playback_A2DP",
+		.cpu_dai_name = "audio_task_A2DP_dai",
+		.platform_name = "snd_audio_dsp",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+	},
+	{
+		.name = "DSP_Playback_DataProvider",
+		.stream_name = "DSP_Playback_DataProvider",
+		.cpu_dai_name = "audio_task_dataprovider_dai",
 		.platform_name = "snd_audio_dsp",
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
@@ -924,6 +997,16 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.ops = &mt6779_mt6359_vow_ops,
 	},
 #endif  // #ifdef CONFIG_MTK_VOW_SUPPORT
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+	{
+		.name = "SCP_SPK_Playback",
+		.stream_name = "SCP_SPK_Playback",
+		.cpu_dai_name = "snd-soc-dummy-dai",
+		.platform_name = "snd_scp_spk",
+		.codec_name = "snd-soc-dummy",
+		.codec_dai_name = "snd-soc-dummy-dai",
+	},
+#endif
 };
 
 static struct snd_soc_card mt6779_mt6359_soc_card = {

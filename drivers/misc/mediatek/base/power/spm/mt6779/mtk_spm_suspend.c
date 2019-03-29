@@ -80,7 +80,10 @@ static u32 suspend_pcm_flags = {
 static u32 suspend_pcm_flags1 = {
 	SPM_FLAG1_ENABLE_BIG_BUCK_OFF |
 	SPM_FLAG1_ENABLE_BIG_BUCK_ON |
-	SPM_FLAG1_FORCE_CPU_BUCK_OFF
+	SPM_FLAG1_FORCE_CPU_BUCK_OFF |
+	SPM_FLAG1_DISABLE_VS1_VOTER |
+	SPM_FLAG1_DISABLE_VS2_VOTER,
+
 };
 
 static inline void spm_suspend_footprint(enum spm_suspend_step step)
@@ -100,6 +103,9 @@ struct spm_lp_scen __spm_suspend = {
 
 static void spm_trigger_wfi_for_sleep(struct pwr_ctrl *pwrctrl)
 {
+	if (is_infra_pdn(pwrctrl->pcm_flags))
+		mtk8250_backup_dev();
+
 	if (is_cpu_pdn(pwrctrl->pcm_flags))
 		spm_dormant_sta = mtk_enter_idle_state(MTK_SUSPEND_MODE);
 	else {
@@ -214,6 +220,11 @@ static unsigned int spm_output_wake_reason(struct wake_status *wakesta)
 #ifdef CONFIG_MTK_CCCI_DEVICES
 		exec_ccci_kern_func_by_md_id(0, ID_DUMP_MD_SLEEP_MODE,
 			NULL, 0);
+#endif
+
+#ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
+	if (wakesta->r12 & R12_SC_SCP2SPM_WAKEUP)
+		mt_print_scp_ipi_id();
 #endif
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
@@ -400,6 +411,10 @@ RESTORE_IRQ:
 
 	/* record last wakesta */
 	__spm_get_wakeup_status(&spm_wakesta);
+
+	/* save ap and 26M's off counter and duration */
+	__spm_save_ap_sleep_info(&spm_wakesta);
+	__spm_save_26m_sleep_info();
 
 	spm_suspend_footprint(SPM_SUSPEND_ENTER_UART_AWAKE);
 

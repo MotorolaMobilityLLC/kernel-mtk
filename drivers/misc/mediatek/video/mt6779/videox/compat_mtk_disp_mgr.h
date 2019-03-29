@@ -212,7 +212,6 @@ int _compat_ioctl_set_output_buffer(struct file *file, unsigned long arg);
 int _compat_ioctl_set_session_mode(struct file *file, unsigned long arg);
 int _compat_ioctl_frame_config(struct file *file, unsigned long arg);
 
-
 #define	COMPAT_DISP_IOCTL_CREATE_SESSION \
 	DISP_IOW(201, struct compat_disp_session_config)
 #define	COMPAT_DISP_IOCTL_DESTROY_SESSION \
@@ -253,6 +252,8 @@ int _compat_ioctl_frame_config(struct file *file, unsigned long arg);
 	DISP_IOW(219, struct compat_disp_caps_info)
 #define	COMPAT_DISP_IOCTL_FRAME_CONFIG \
 	DISP_IOW(220, struct compat_disp_session_output_config)
+#define COMPAT_DISP_IOCTL_SCREEN_FREEZE	\
+	DISP_IOW(223, compat_uint_t)
 
 #endif /* CONFIG_COMPAT */
 #endif /* _COMPAT_MTK_DISP_MGR_H_ */

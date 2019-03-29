@@ -22,6 +22,10 @@
 #include "primary_display.h"
 #include "ddp_clkmgr.h"
 
+#ifdef CONFIG_MTK_SMI_EXT
+#include "smi_public.h"
+#endif
+
 #define DRV_Reg32(addr) INREG32(addr)
 #define clk_readl(addr) DRV_Reg32(addr)
 #define clk_writel(addr, val) mt_reg_sync_writel(val, addr)
@@ -45,6 +49,8 @@ static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 		NULL, "CLK_SMI_COMMON", 0, (0), DISP_MODULE_UNKNOWN},
 	[CLK_SMI_LARB0] = {
 		NULL, "CLK_SMI_LARB0", 0, (0), DISP_MODULE_UNKNOWN},
+	[CLK_SMI_LARB1] = {
+		NULL, "CLK_SMI_LARB1", 0, (0), DISP_MODULE_UNKNOWN},
 	[CLK_GALS_COMM0] = {
 		NULL, "CLK_GALS_COMM0", 0, (0), DISP_MODULE_UNKNOWN},
 	[CLK_GALS_COMM1] = {
@@ -80,10 +86,6 @@ static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 		NULL, "CLK_DPI_MM_CK", 0, (1<<1), DISP_MODULE_UNKNOWN},
 	[CLK_DPI_IF_CK] = {
 		NULL, "CLK_DPI_IF_CK", 0, (1<<1), DISP_MODULE_UNKNOWN},
-	[CLK_DBI_MM_CK] = {
-		NULL, "CLK_DBI_MM_CK", 0, (1<<1), DISP_MODULE_UNKNOWN},
-	[CLK_DBI_IF_CK] = {
-		NULL, "CLK_DBI_IF_CK", 0, (1<<1), DISP_MODULE_UNKNOWN},
 	[CLK_MM_26M] = {
 		NULL, "CLK_MM_26M", 0, (1), DISP_MODULE_UNKNOWN},
 	[CLK_DISP_RSZ] = {
@@ -96,8 +98,10 @@ static struct ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 		NULL, "CLK_DISP_PWM", 0, (1), DISP_MODULE_PWM0},
 	[CLK_26M] = {
 		NULL, "CLK_26M", 0, (0), DISP_MODULE_UNKNOWN},
-	[CLK_POSTMASK] = {
-		NULL, "CLK_POSTMASK", 0, (1), DISP_MODULE_POSTMASK},
+	[CLK_DISP_POSTMASK] = {
+		NULL, "CLK_DISP_POSTMASK", 0, (1), DISP_MODULE_POSTMASK},
+	[CLK_DISP_OVL_FBDC] = {
+		NULL, "CLK_DISP_OVL_FBDC", 0, (1), DISP_MODULE_UNKNOWN},
 	/* DPI */
 	[CLK_UNIVPLL_D3_D2] = {
 		NULL, "CLK_UNIVPLL_D3_D2", 0, (0), DISP_MODULE_UNKNOWN},
@@ -331,19 +335,29 @@ void ddp_clk_top_clk_switch(bool on)
 {
 	if (on) {
 		ddp_clk_prepare_enable(CLK_MM_MTCMOS);
+#ifdef CONFIG_MTK_SMI_EXT
+		smi_bus_prepare_enable(SMI_LARB0_REG_INDX, "DISP", true);
+		smi_bus_prepare_enable(SMI_LARB1_REG_INDX, "DISP", true);
+#else
 		ddp_clk_prepare_enable(CLK_GALS_COMM0);
 		ddp_clk_prepare_enable(CLK_GALS_COMM1);
 		ddp_clk_prepare_enable(CLK_SMI_COMMON);
 		ddp_clk_prepare_enable(CLK_SMI_LARB0);
-
+		ddp_clk_prepare_enable(CLK_SMI_LARB1);
+#endif
 		ddp_clk_prepare_enable(CLK_MM_26M);
 	} else {
 		ddp_clk_disable_unprepare(CLK_MM_26M);
-
+#ifdef CONFIG_MTK_SMI_EXT
+		smi_bus_disable_unprepare(SMI_LARB0_REG_INDX, "DISP", true);
+		smi_bus_disable_unprepare(SMI_LARB1_REG_INDX, "DISP", true);
+#else
 		ddp_clk_disable_unprepare(CLK_SMI_LARB0);
+		ddp_clk_disable_unprepare(CLK_SMI_LARB1);
 		ddp_clk_disable_unprepare(CLK_SMI_COMMON);
 		ddp_clk_disable_unprepare(CLK_GALS_COMM1);
 		ddp_clk_disable_unprepare(CLK_GALS_COMM0);
+#endif
 		ddp_clk_disable_unprepare(CLK_MM_MTCMOS);
 	}
 }
@@ -388,7 +402,8 @@ int ddp_main_modules_clk_on(void)
 	m = _get_dst_module_by_lcm(primary_get_lcm());
 	if (m == DISP_MODULE_UNKNOWN)
 		ret = -1;
-	else
+	else if (is_ddp_module(m) &&
+		ddp_get_module_driver(m)->power_on)
 		ddp_get_module_driver(m)->power_on(m, NULL);
 
 	pr_info("CG0 0x%x, CG1 0x%x\n",

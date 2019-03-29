@@ -21,6 +21,11 @@
 #define WORLD_CLK_CNTCV_L        (0x10017008)
 #define WORLD_CLK_CNTCV_H        (0x1001700C)
 static u32 pcm_timer_ramp_max_sec_loop = 1;
+u64 ap_pd_count;
+u64 ap_slp_duration;
+
+u64 spm_26M_off_count;
+u64 spm_26M_off_duration;
 
 char *wakesrc_str[32] = {
 	[0] = " R12_PCM_TIMER_EVENT",
@@ -150,6 +155,8 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	wakesta->req_sta1 = spm_read(SRC_REQ_STA_1);
 	wakesta->req_sta2 = spm_read(SRC_REQ_STA_2);
 	wakesta->req_sta3 = spm_read(SRC_REQ_STA_3);
+	wakesta->req_sta4 = spm_read(SRC_REQ_STA_4);
+
 	/* get debug flag for PCM execution check */
 	wakesta->debug_flag = spm_read(PCM_WDT_LATCH_SPARE_0);
 	wakesta->debug_flag1 = spm_read(PCM_WDT_LATCH_SPARE_1);
@@ -170,7 +177,35 @@ void __spm_get_wakeup_status(struct wake_status *wakesta)
 	/* check abort */
 	wakesta->is_abort = wakesta->debug_flag & DEBUG_ABORT_MASK;
 	wakesta->is_abort |= wakesta->debug_flag1 & DEBUG_ABORT_MASK_1;
+}
 
+#define AVOID_OVERFLOW (0xFFFFFFFF00000000)
+void __spm_save_ap_sleep_info(struct wake_status *wakesta)
+{
+	if (ap_pd_count >= AVOID_OVERFLOW)
+		ap_pd_count = 0;
+	else
+		ap_pd_count++;
+
+	if (ap_slp_duration >= AVOID_OVERFLOW)
+		ap_slp_duration = 0;
+	else
+		ap_slp_duration = ap_slp_duration + wakesta->timer_out;
+}
+
+void __spm_save_26m_sleep_info(void)
+{
+	if (spm_26M_off_count >= AVOID_OVERFLOW)
+		spm_26M_off_count = 0;
+	else
+		spm_26M_off_count = (spm_read(SPM_26M_COUNT) & 0xffff)
+			+ spm_26M_off_count;
+
+	if (spm_26M_off_duration >= AVOID_OVERFLOW)
+		spm_26M_off_duration = 0;
+	else
+		spm_26M_off_duration = spm_26M_off_duration +
+			spm_read(SPM_SW_RSV_4);
 }
 
 void rekick_vcorefs_scenario(void)
@@ -316,16 +351,16 @@ unsigned int __spm_output_wake_reason(
 		wakesta->debug_flag, wakesta->debug_flag1);
 
 	log_size += sprintf(log_buf + log_size,
-		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, 0x%x, 0x%x 0x%x\n",
+		  "r12 = 0x%x, r12_ext = 0x%x, raw_sta = 0x%x, 0x%x, 0x%x 0x%x, ",
 		  wakesta->r12, wakesta->r12_ext,
 		  wakesta->raw_sta, wakesta->idle_sta,
 		  wakesta->md32pcm_wakeup_sta,
 		  wakesta->md32pcm_event_sta);
 
 	log_size += sprintf(log_buf + log_size,
-		  " req_sta =  0x%x 0x%x 0x%x 0x%x, isr = 0x%x, ",
+		  "req_sta =  0x%x 0x%x 0x%x 0x%x 0x%x, isr = 0x%x, ",
 		  wakesta->req_sta0, wakesta->req_sta1, wakesta->req_sta2,
-		  wakesta->req_sta3, wakesta->isr);
+		  wakesta->req_sta3, wakesta->req_sta4, wakesta->isr);
 
 	log_size += sprintf(log_buf + log_size,
 		"raw_ext_sta = 0x%x, wake_misc = 0x%x, sw_flag = 0x%x 0x%x 0x%x 0x%x, req = 0x%x,",

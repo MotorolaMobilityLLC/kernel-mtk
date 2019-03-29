@@ -43,7 +43,7 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 		if (crystal_exist_status() == true) {
 #if 0
 			/* 32k */
-			mt_power_gs_compare("Suspend ", "6358",
+			mt_power_gs_compare("Suspend ", "6359",
 				AP_PMIC_REG_gs_suspend,
 				AP_PMIC_REG_gs_suspend_len);
 #endif
@@ -51,7 +51,7 @@ void mt_power_gs_suspend_compare(unsigned int dump_flag)
 
 			/* 32k-less */
 			pr_debug("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("Suspend ", "6358",
+			mt_power_gs_compare("Suspend ", "6359",
 				AP_PMIC_REG_gs_suspend_32kless,
 				AP_PMIC_REG_gs_suspend_32kless_len);
 		}
@@ -78,14 +78,14 @@ void mt_power_gs_dpidle_compare(unsigned int dump_flag)
 		if (crystal_exist_status() == true) {
 #if 0
 			/* 32k */
-			mt_power_gs_compare("DPIdle  ", "6358",
+			mt_power_gs_compare("DPIdle  ", "6359",
 				AP_PMIC_REG_gs_deepidle___lp_mp3,
 				AP_PMIC_REG_gs_deepidle___lp_mp3_len);
 #endif
 		} else {
 			/* 32k-less */
 			pr_debug("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("DPIdle  ", "6358",
+			mt_power_gs_compare("DPIdle  ", "6359",
 				AP_PMIC_REG_gs_deepidle___lp_mp3_32kless,
 				AP_PMIC_REG_gs_deepidle___lp_mp3_32kless_len);
 		}
@@ -112,14 +112,14 @@ void mt_power_gs_sodi_compare(unsigned int dump_flag)
 		if (crystal_exist_status() == true) {
 #if 0
 			/* 32k */
-			mt_power_gs_compare("SODI    ", "6358",
+			mt_power_gs_compare("SODI    ", "6359",
 				AP_PMIC_REG_gs_sodi3p0,
 				AP_PMIC_REG_gs_sodi3p0_len);
 #endif
 		} else {
 			/* 32k-less */
 			pr_debug("Power_gs: %s in 32k-less\n", __func__);
-			mt_power_gs_compare("SODI    ", "6358",
+			mt_power_gs_compare("SODI    ", "6359",
 				AP_PMIC_REG_gs_sodi3p0_32kless,
 				AP_PMIC_REG_gs_sodi3p0_32kless_len);
 		}

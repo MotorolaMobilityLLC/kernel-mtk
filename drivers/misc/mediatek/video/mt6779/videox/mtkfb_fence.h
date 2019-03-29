@@ -182,7 +182,7 @@ void mtkfb_update_present_fence_ticket(unsigned int session_id, int fence,
 void mtkfb_update_fence_trigger_ticket(unsigned int session_id,
 				       unsigned int layer_id, int fence,
 				       unsigned int ticket);
-void mtkfb_release_present_fence(unsigned int session_id, int fence);
+void mtkfb_release_present_fence(unsigned int session_id, unsigned int fence);
 void mtkfb_release_layer_fence(unsigned int session_id, unsigned int layer_id);
 int mtkfb_fence_clean_thread(void *data);
 int mtkfb_fence_timeline_index(void);

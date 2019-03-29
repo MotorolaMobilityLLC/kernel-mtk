@@ -27,7 +27,7 @@ DECLARE_BITMAP(pmu_bitmap, MDLA_PMU_COUNTERS);
 DEFINE_SPINLOCK(pmu_lock);
 
 /* saved registers, used to restore config after pmu reset */
-static u32 cfg_pmu_event[MDLA_PMU_COUNTERS];
+u32 cfg_pmu_event[MDLA_PMU_COUNTERS];
 static u32 cfg_pmu_clr_mode;
 /* lastest register values, since last command end */
 static u32 l_counters[MDLA_PMU_COUNTERS];
@@ -89,28 +89,43 @@ int pmu_counter_alloc(u32 interface, u32 event)
 {
 	unsigned long flags;
 	int handle;
+	mutex_lock(&cmd_lock);
+	mutex_lock(&power_lock);
 
 	spin_lock_irqsave(&pmu_lock, flags);
 	handle = bitmap_find_free_region(pmu_bitmap, MDLA_PMU_COUNTERS, 0);
 	spin_unlock_irqrestore(&pmu_lock, flags);
 	if (unlikely(handle < 0))
-		return -EFAULT;
+		goto out;
 
 	pmu_counter_event_save(handle, ((interface << 16) | event));
 
+out:
+	mutex_unlock(&power_lock);
+	mutex_unlock(&cmd_lock);
 	return handle;
 }
+EXPORT_SYMBOL(pmu_counter_alloc);
 
 int pmu_counter_free(int handle)
 {
 	if ((handle >= MDLA_PMU_COUNTERS) || (handle < 0))
 		return -EINVAL;
 
+	mutex_lock(&cmd_lock);
+	mutex_lock(&power_lock);
+
 	bitmap_release_region(pmu_bitmap, handle, 0);
-	pmu_event_write(handle, COUNTER_CLEAR);
+
+	if (get_power_on_status())
+		pmu_event_write(handle, COUNTER_CLEAR);
+
+	mutex_unlock(&power_lock);
+	mutex_unlock(&cmd_lock);
 
 	return 0;
 }
+EXPORT_SYMBOL(pmu_counter_free);
 
 int pmu_counter_event_save(u32 handle, u32 val)
 {
@@ -118,6 +133,9 @@ int pmu_counter_event_save(u32 handle, u32 val)
 		return -EINVAL;
 
 	cfg_pmu_event[handle] = val;
+
+	if (!get_power_on_status())
+		return 0;
 
 	return pmu_event_write(handle, val);
 }
@@ -147,8 +165,11 @@ int pmu_counter_event_get_all(u32 out[MDLA_PMU_COUNTERS])
 void pmu_counter_read_all(u32 out[MDLA_PMU_COUNTERS])
 {
 	int i;
-	u32 offset = PMU_CNT_OFFSET;
-	u32 reg = pmu_reg_read(PMU_CFG_PMCR);
+	u32 offset;
+	u32 reg;
+
+	offset = PMU_CNT_OFFSET;
+	reg = pmu_reg_read(PMU_CFG_PMCR);
 
 	if ((1<<PMU_CLR_CMDE_SHIFT) & reg)
 		offset = offset + 4;
@@ -191,6 +212,10 @@ u32 pmu_get_perf_cycle(void)
 static void pmu_reset_counter(void)
 {
 	mdla_pmu_debug("mdla: %s\n", __func__);
+
+	if (!get_power_on_status())
+		return;
+
 	pmu_reg_set(PMU_PMCR_CNT_RST, PMU_CFG_PMCR);
 	while (pmu_reg_read(PMU_CFG_PMCR) &
 		PMU_PMCR_CNT_RST) {
@@ -200,6 +225,10 @@ static void pmu_reset_counter(void)
 static void pmu_reset_cycle(void)
 {
 	mdla_pmu_debug("mdla: %s\n", __func__);
+
+	if (!get_power_on_status())
+		return;
+
 	pmu_reg_set((PMU_PMCR_CCNT_EN | PMU_PMCR_CCNT_RST), PMU_CFG_PMCR);
 	while (pmu_reg_read(PMU_CFG_PMCR) &
 		PMU_PMCR_CCNT_RST) {
@@ -210,6 +239,7 @@ void pmu_reset_saved_counter(void)
 {
 	int i;
 
+
 	for (i = 0; i < MDLA_PMU_COUNTERS; i++)
 		l_counters[i] = 0;
 
@@ -218,8 +248,8 @@ void pmu_reset_saved_counter(void)
 
 void pmu_reset_saved_cycle(void)
 {
-	l_cycle = 0;
 
+	l_cycle = 0;
 	pmu_reset_cycle();
 }
 
@@ -227,6 +257,9 @@ void pmu_reset_saved_cycle(void)
 static void pmu_clr_mode_write(u32 mode)
 {
 	u32 mask = (1 << PMU_CLR_CMDE_SHIFT);
+
+	if (!get_power_on_status())
+		return;
 
 	if (mode)
 		pmu_reg_set(mask, PMU_CFG_PMCR);
@@ -269,6 +302,7 @@ void pmu_reset(void)
 
 void pmu_init(void)
 {
+	cfg_pmu_clr_mode = 0;
 	memset(cfg_pmu_event, 0xFF, sizeof(cfg_pmu_event));
 }
 

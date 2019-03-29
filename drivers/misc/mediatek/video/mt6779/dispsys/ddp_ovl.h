@@ -17,11 +17,19 @@
 #include "ddp_hal.h"
 #include "ddp_info.h"
 
+/*limit 18:9 */
+#define SBCH_WIDTH      (1080)
+#define SBCH_HEIGHT     (2160)
+
 #define OVL_MAX_WIDTH  (4095)
 #define OVL_MAX_HEIGHT (4095)
 
-#define TOTAL_OVL_LAYER_NUM	(4+3+2+3)
+#define TOTAL_OVL_LAYER_NUM	(12) /* 4+3+2+3 */
 #define OVL_NUM			(3)
+#define SBCH_EN_NUM    (1)
+#define OVL_MODULE_MAX_PHY_LAYER (4)
+#define OVL_MODULE_MAX_EXT_LAYER (3)
+
 #define PRIMARY_THREE_OVL_CASCADE
 
 /* start overlay module */
@@ -58,4 +66,11 @@ unsigned int ddp_ovl_get_cur_addr(bool rdma_mode, int layerid);
 unsigned int ovl_set_bg_color(unsigned int bg_color);
 unsigned int ovl_set_dim_color(unsigned int dim_color);
 
+void ovl_cal_golden_setting(enum dst_module_type dst_mod_type,
+	unsigned int *gs);
+unsigned int MMPathTracePrimaryOVL(char *str, unsigned int strlen,
+	unsigned int n);
+unsigned int MMPathTraceSecondOVL(char *str, unsigned int strlen,
+	unsigned int n);
+unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module);
 #endif /* _DDP_OVL_H_ */

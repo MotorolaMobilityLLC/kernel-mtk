@@ -11,9 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#ifdef CONFIG_MTK_HW_FDE
+#include <linux/hie.h>
 #include "mtk_secure_api.h"
-#endif
 
 /* map from AES Spec */
 enum {
@@ -33,6 +32,26 @@ enum {
 	BIT_0 = 4,
 };
 
+static inline bool check_fde_mode(struct request *req,
+	unsigned int *key_idx)
+{
+	if (req->bio && req->bio->bi_hw_fde) {
+		if (key_idx)
+			*key_idx = req->bio->bi_key_idx;
+		return true;
+	}
+
+	return false;
+}
+
+static inline bool check_fbe_mode(struct request *req)
+{
+	if (hie_request_crypted(req))
+		return true;
+
+	return false;
+}
+
 static void msdc_enable_crypto(struct msdc_host *host)
 {
 	void __iomem *base = host->base;
@@ -47,13 +66,178 @@ static void msdc_disable_crypto(struct msdc_host *host)
 	MSDC_SET_BIT32(EMMC52_AES_SWST, EMMC52_AES_BYPASS);
 }
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+/* HCI crypto start */
+
+/* crypto context fields in cmdq data command task descriptor */
+#define DATA_UNIT_NUM(x)	(((u64)(x) & 0xFFFFFFFF) << 0)
+#define CRYPTO_CONFIG_INDEX(x)	(((u64)(x) & 0xFF) << 32)
+#define CRYPTO_ENABLE(x)	(((u64)(x) & 0x1) << 47)
+
+union cqhci_cpt_cap {
+	u32 cap_raw;
+	struct {
+		u8 cap_cnt;
+		u8 cfg_cnt;
+		u8 resv;
+		u8 cfg_ptr;
+	} cap;
+};
+
+union cqhci_cpt_capx {
+	u32 capx_raw;
+	struct {
+		u8 alg_id;
+		u8 du_size;
+		u8 key_size;
+		u8 resv;
+	} capx;
+};
+
+union cqhci_cap_cfg {
+	u32 cfgx_raw[32];
+	struct {
+		u32 key[16];
+		u8 du_size;
+		u8 cap_id;
+		u16 resv0:15;
+		u16 cfg_en:1;
+		u8 mu1ti_host;
+		u8 resv1;
+		u16 vsb;
+		u32 resv2[14];
+	} cfgx;
+};
+
+struct cqhci_crypto {
+	u32 cfg_id;
+	u32 cap_id;
+	union cqhci_cpt_cap cap;
+	union cqhci_cpt_capx capx;
+	union cqhci_cap_cfg cfg;
+};
+
+/* capability id */
+enum {
+	CQHCI_CRYPTO_AES_XTS_128 = 0,
+	CQHCI_CRYPTO_AES_XTS_256 = 1,
+	CQHCI_CRYPTO_BITLOCKER_AES_CBC_128 = 2,
+	CQHCI_CRYPTO_BITLOCKER_AES_CBC_256 = 3,
+	CQHCI_CRYPTO_AES_ECB_128 = 4,
+	CQHCI_CRYPTO_AES_ECB_192 = 5,
+	CQHCI_CRYPTO_AES_ECB_256 = 6,
+	CQHCI_CRYPTO_ESSIV_AES_CBC_128 = 7,
+	CQHCI_CRYPTO_ESSIV_AES_CBC_192 = 8,
+	CQHCI_CRYPTO_ESSIV_AES_CBC_256 = 9,
+};
+
+/* data unit size */
+enum {
+	CQHCI_CRYPTO_DU_SIZE_512B = 0,
+};
+
+static int msdc_cqhci_fde_init(struct msdc_host *host,
+	unsigned int key_idx)
+{
+	if ((!host->is_crypto_init ||
+		(host->key_idx != key_idx))) {
+		/* cqhci fde init */
+		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+			(1 << 5), 4, 1, 0);
+		host->is_crypto_init = true;
+		host->key_idx = key_idx;
+	}
+
+	return 0;
+}
+
+#ifdef CONFIG_HIE
+static int msdc_cqhci_fbe_init(struct msdc_host *host,
+	struct request *req)
+{
+	int err = 0;
+
+	if (!host->is_crypto_init) {
+		/* fbe init */
+		mt_secure_call(MTK_SIP_KERNEL_HW_FDE_MSDC_CTL,
+			(1 << 0), 4, 1, 0);
+		host->is_crypto_init = true;
+	}
+
+	if (rq_data_dir(req) == WRITE)
+		err = hie_encrypt(msdc_hie_get_dev(),
+			req, host);
+	else
+		err = hie_decrypt(msdc_hie_get_dev(),
+			req, host);
+
+	if (err) {
+		err = -EIO;
+		ERR_MSG("%s %d: req: %p, err %d\n",
+			__func__, __LINE__, req, err);
+		WARN_ON(1);
+	}
+
+	return err;
+}
+#endif
+
+static int msdc_cqhci_crypto_cfg(struct mmc_host *mmc,
+		struct mmc_request *mrq, u32 slot, u64 *ctx)
+{
+	struct msdc_host *host = mmc_priv(mmc);
+	sector_t lba = 0;
+	unsigned int key_idx;
+	int err = 0, cc_idx = slot;
+	bool c_en = false;
+	struct request *req;
+
+	if (WARN_ON(!mrq))
+		return -EINVAL;
+
+	req = mrq->req;
+
+	if (req) {
+		lba = blk_rq_pos(req);
+
+		if (check_fde_mode(req, &key_idx)) {
+			err = msdc_cqhci_fde_init(host, key_idx);
+			/* use slot 0 for fde mode */
+			cc_idx = 0;
+			c_en = true;
+		}
+#ifdef CONFIG_HIE
+		else if (check_fbe_mode(req)) {
+			u64 hw_hie_iv_num;
+
+			err = msdc_cqhci_fbe_init(host, req);
+			cc_idx = slot;
+			c_en = true;
+			hw_hie_iv_num = hie_get_iv(req);
+			if (hw_hie_iv_num)
+				lba = hw_hie_iv_num;
+		}
+#endif
+	}
+
+	if (ctx)
+		*ctx = DATA_UNIT_NUM(lba) |
+			CRYPTO_CONFIG_INDEX(cc_idx) |
+			CRYPTO_ENABLE(!!c_en);
+
+	return err;
+}
+#endif
+
 static void msdc_crypto_switch_config(struct msdc_host *host,
-		u32 block_address, u32 dir)
+	struct request *req,
+	u32 block_address, u32 dir)
 {
 	void __iomem *base = host->base;
 	u32 aes_mode_current = 0, aes_sw_reg = 0;
 	u32 ctr[4] = {0};
 	unsigned long polling_tmo = 0;
+	u64 hw_hie_iv_num = 0;
 
 	/* 1. set ctr */
 	aes_sw_reg = MSDC_READ32(EMMC52_AES_EN);
@@ -74,13 +258,19 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 	case MSDC_CRYPTO_XTS_AES:
 	case MSDC_CRYPTO_AES_CBC_ESSIV:
 	case MSDC_CRYPTO_BITLOCKER:
-		ctr[0] = block_address;
+	case MSDC_CRYPTO_AES_CTR:
+		hw_hie_iv_num = hie_get_iv(req);
+		if (hw_hie_iv_num) {
+			ctr[0] = lower_32_bits(hw_hie_iv_num);
+#ifndef CONFIG_MTK_EMMC_HW_CQ
+			ctr[1] = upper_32_bits(hw_hie_iv_num);
+#endif
+		} else {
+			ctr[0] = block_address;
+		}
 		break;
 	case MSDC_CRYPTO_AES_ECB:
 	case MSDC_CRYPTO_AES_CBC:
-		break;
-	case MSDC_CRYPTO_AES_CTR:
-		ctr[0] = block_address;
 		break;
 	case MSDC_CRYPTO_AES_CBC_MAC:
 		break;
@@ -179,18 +369,13 @@ static void msdc_pre_crypto(struct mmc_host *mmc, struct mmc_request *mrq)
 	return;
 
 check_hw_crypto:
-	if (!mq_rq)
-		return;
-
 	dir = cmd->data->flags & MMC_DATA_READ ?
 		DMA_FROM_DEVICE : DMA_TO_DEVICE;
 
-	if (mq_rq->req->bio && mq_rq->req->bio->bi_hw_fde) {
+	if (check_fde_mode(mq_rq->req, &key_idx))
 		is_fde = 1;
-		key_idx = mq_rq->req->bio->bi_key_idx;
-	}
 #ifdef CONFIG_HIE
-	else if (hie_request_crypted(mq_rq->req))
+	else if (check_fbe_mode(mq_rq->req))
 		is_fbe = 1;
 #endif
 
@@ -225,6 +410,20 @@ check_hw_crypto:
 				WARN_ON(1);
 				return;
 			}
+			if (hie_is_nocrypt())
+				return;
+			if (hie_is_dummy()) {
+				struct mmc_data *data = cmd->data;
+
+				if (dir == DMA_TO_DEVICE &&
+				    msdc_use_async_dma(data->host_cookie)) {
+					dma_unmap_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+					dma_map_sg(mmc_dev(mmc), data->sg,
+						data->sg_len, dir);
+				}
+				return;
+			}
 		}
 #endif
 		if (!mmc_card_blockaddr(mmc->card))
@@ -235,7 +434,7 @@ check_hw_crypto:
 		/* Check data addressw with 16bytes alignment */
 		WARN_ON((host->dma.gpd_addr & 0xf) ||
 			(host->dma.bd_addr & 0xf));
-		msdc_crypto_switch_config(host, blk_addr, dir);
+		msdc_crypto_switch_config(host, mq_rq->req, blk_addr, dir);
 	}
 }
 
@@ -245,8 +444,82 @@ static void msdc_post_crypto(struct msdc_host *host)
 }
 
 #ifdef CONFIG_HIE
-/* configure request for HIE */
-static int msdc_hie_cfg_request(unsigned int mode, const char *key,
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+static int _msdc_hie_cqhci_cfg(unsigned int mode, const char *key,
+	int len, struct request *req, void *priv)
+{
+	struct msdc_host *host = (struct msdc_host *)priv;
+	struct mmc_host *mmc = host->mmc;
+	struct cmdq_host *cq_host = (struct cmdq_host *)mmc_cmdq_private(mmc);
+	u32 addr, i, cpt_mode, cc_idx;
+	union cqhci_cpt_cap cpt_cap;
+	union cqhci_cap_cfg cpt_cfg;
+
+	if (mode & BC_AES_256_XTS) {
+		cpt_mode = CQHCI_CRYPTO_AES_XTS_256;
+		WARN_ON(len != 64);
+	} else if (mode & BC_AES_128_XTS) {
+		cpt_mode = CQHCI_CRYPTO_AES_XTS_128;
+		WARN_ON(len != 32);
+	} else {
+		ERR_MSG("%s: unknown mode 0x%x\n", __func__, mode);
+		WARN_ON(1);
+		return -EIO;
+	}
+
+	memset(&cpt_cfg, 0, sizeof(cpt_cfg));
+
+	/* init key */
+	if (len > 64) {
+		pr_notice("Key size is over %d bits\n", len * 8);
+		len = 64;
+	}
+
+	memcpy((void *)&(cpt_cfg.cfgx.key[0]), &key[0], len);
+
+#ifdef _CQHCI_DEBUG
+	for (i = 0; i < len / 4; i++) {
+		pr_notice("%s: REG[%02d] = 0x%x\n", __func__, i,
+			cpt_cfg.cfgx.key[i]);
+	}
+#endif
+
+	/* cc idx is same as slot no. or tag no. */
+	cc_idx = req->tag;
+
+	/* enable this cfg */
+	cpt_cfg.cfgx.cfg_en = 1;
+
+	/* init capability id */
+	cpt_cfg.cfgx.cap_id = (u8)cpt_mode;
+
+	/* init data unit size: fixed as 512 * 2^0) for eMMC */
+	cpt_cfg.cfgx.du_size = (1 << CQHCI_CRYPTO_DU_SIZE_512B);
+
+	/*
+	 * Get address of cfg[cfg_id], this is also
+	 * address of key in cfg[cfg_id].
+	 */
+	cpt_cap.cap_raw = cmdq_readl(cq_host, CRCAP);
+	addr = (cpt_cap.cap.cfg_ptr << 8) + (u32)(cc_idx << 7);
+
+	/* write configuration only to register */
+	for (i = 0; i < 32; i++) {
+		cmdq_writel(cq_host, cpt_cfg.cfgx_raw[i],
+			(addr + i * 4));
+#ifdef _CQHCI_DEBUG
+		pr_notice("%s: (%d)REG[0x%x]=0x%x\n",
+			__func__, cc_idx,
+			(addr + i * 4),
+			cpt_cfg.cfgx_raw[i]);
+#endif
+	}
+
+	return 0;
+}
+#endif
+
+static int _msdc_hie_cfg(unsigned int mode, const char *key,
 	int len, struct request *req, void *priv)
 {
 	struct msdc_host *host = (struct msdc_host *)priv;
@@ -267,7 +540,7 @@ static int msdc_hie_cfg_request(unsigned int mode, const char *key,
 		ERR_MSG("%s: unknown mode 0x%x\n", __func__, mode);
 		WARN_ON(1);
 		return -EIO;
-}
+	}
 
 	/*
 	 * limit half_len as u32 * 8
@@ -301,6 +574,22 @@ static int msdc_hie_cfg_request(unsigned int mode, const char *key,
 	return 0;
 }
 
+/* configure request for HIE */
+static int msdc_hie_cfg_request(unsigned int mode, const char *key,
+	int len, struct request *req, void *priv)
+{
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct msdc_host *host = (struct msdc_host *)priv;
+
+	if (mmc_card_cmdq(host->mmc->card))
+		_msdc_hie_cqhci_cfg(mode, key, len, req, priv);
+	else
+#endif
+		_msdc_hie_cfg(mode, key, len, req, priv);
+
+	return 0;
+}
+
 struct hie_dev msdc_hie_dev = {
 	.name = "msdc",
 	.mode = (BC_AES_256_XTS | BC_AES_128_XTS),
@@ -319,4 +608,4 @@ static void msdc_hie_register(struct msdc_host *host)
 	if (host->hw->host_function == MSDC_EMMC)
 		hie_register_device(&msdc_hie_dev);
 }
-#endif
+#endif /* end of #ifdef CONFIG_HIE */

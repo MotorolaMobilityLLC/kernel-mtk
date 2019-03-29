@@ -178,7 +178,7 @@ static void process_dbg_opt(const char *opt)
 			sprintf(buf, "regr, invalid address 0x%lx\n", addr);
 			goto error;
 		}
-	} else if (strncmp(opt, "lfr_update", 3) == 0) {
+	} else if (strncmp(opt, "lfr_update", 10) == 0) {
 		dsi_lfr_update(DISP_MODULE_DSI0, NULL);
 	} else if (strncmp(opt, "regw:", 5) == 0) {
 		unsigned long addr;
@@ -465,6 +465,7 @@ static void process_dbg_opt(const char *opt)
 		int para_cnt, i;
 		char para[15] = {0};
 		char fmt[256] = "set_dsi_cmd:0x%x";
+		struct cmdqRecStruct *cmdq;
 
 		for (i = 0; i < ARRAY_SIZE(para); i++)
 			strncat(fmt, ",0x%hhx", sizeof(fmt) - strlen(fmt) - 1);
@@ -483,7 +484,12 @@ static void process_dbg_opt(const char *opt)
 
 		para_cnt = ret - 1;
 
-		DSI_set_cmdq_V2(DISP_MODULE_DSI0, NULL, cmd, para_cnt, para, 1);
+		cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK, &cmdq);
+		cmdqRecReset(cmdq);
+		DSI_set_cmdq_V2(DISP_MODULE_DSI0, cmdq, cmd, para_cnt, para, 1);
+
+		cmdqRecFlush(cmdq);
+		cmdqRecDestroy(cmdq);
 
 		DISPMSG("set_dsi_cmd cmd=0x%x\n", cmd);
 		for (i = 0; i < para_cnt; i++)
@@ -514,6 +520,7 @@ static void process_dbg_opt(const char *opt)
 		int hs;
 		int para_cnt;
 		int i;
+		struct LCM_setting_table_V3 test;
 		char para[15] = {0};
 		char fmt[256] = "set_customer_cmd:0x%x,%d";
 
@@ -535,7 +542,13 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		para_cnt = ret - 2;
-		set_lcm(cmd, para, para_cnt, hs);
+		test.id = REGFLAG_ESCAPE_ID;
+		test.cmd = cmd;
+		test.count = para_cnt;
+		for (i = 0 ; i < 15 ; i++)
+			test.para_list[i] = para[i];
+
+		set_lcm(&test, 1, hs);
 		DISPMSG("set_lcm: 0x%x\n", cmd);
 		for (i = 0; i < para_cnt; i++)
 			DISPMSG("para[%d] = 0x%x\n", i, para[i]);
@@ -544,17 +557,19 @@ static void process_dbg_opt(const char *opt)
 		int cmd;
 		int size;
 		int i;
+		int sendhs;
 		char para[15] = {0};
 
-		ret = sscanf(opt, "read_customer_cmd:0x%x,%d\n", &cmd, &size);
+		ret = sscanf(opt, "read_customer_cmd:0x%x,%d,%d\n",
+				&cmd, &size, &sendhs);
 
-		if (ret != 2 || size > ARRAY_SIZE(para)) {
+		if (ret != 3 || size > ARRAY_SIZE(para)) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
 
-		read_lcm(cmd, para, size);
-		DISPMSG("read_lcm: 0x%x\n", cmd);
+		read_lcm(cmd, para, size, sendhs);
+		DISPMSG("read_lcm: 0x%x,%d\n", cmd, sendhs);
 		for (i = 0; i < size; i++)
 			DISPMSG("para[%d] = 0x%x\n", i, para[i]);
 	} else {

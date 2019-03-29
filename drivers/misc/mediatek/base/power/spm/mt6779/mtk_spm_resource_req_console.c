@@ -16,7 +16,7 @@
 #include <mtk_idle.h>
 #include <mtk_spm_internal.h>
 #include <mtk_spm_resource_req_internal.h>
-
+#include <mtk_lp_dts.h>
 
 DEFINE_MUTEX(__spm_mutex);
 
@@ -88,6 +88,36 @@ int spm_resource_req_console_by_id(int id
 	}
 
 	mutex_unlock(&__spm_mutex);
+	return 0;
+}
+
+static const char *res_array[MTK_SPM_RES_EX_MAX] = {
+	"resource-requested-ddren",
+	"resource-requested-apsrc",
+	"resource-requested-vrf18",
+	"resource-requested-infra",
+	"resource-requested-f26m"
+};
+
+int spm_resource_parse_req_console(struct device_node *spm_node)
+{
+	int i = 0, k = 0;
+	u32 spm_request = 0;
+	u32 spm_res_bitmask = 0;
+
+	for (k = 0; k < MTK_SPM_RES_EX_MAX; k++) {
+		i = of_property_read_u32(spm_node,
+			res_array[k], &spm_request);
+
+		if (i == 0) {
+			if (spm_request)
+				spm_res_bitmask |= _RES_MASK(k);
+		}
+		of_node_put(spm_node);
+	}
+	if (spm_res_bitmask)
+		spm_resource_req_console(SPM_RESOURCE_CONSOLE_REQ,
+			spm_res_bitmask);
 	return 0;
 }
 

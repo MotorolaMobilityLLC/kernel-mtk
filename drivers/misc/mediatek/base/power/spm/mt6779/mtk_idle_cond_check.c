@@ -52,9 +52,9 @@ static void __iomem *apmixedsys_base;  /* APMIXEDSYS */
 #define APMIXEDSYS(ofs)     (apmixedsys_base + ofs)
 
 #undef SPM_PWR_STATUS
-#define SPM_PWR_STATUS      SPM_REG(0x016C)
+#define SPM_PWR_STATUS      SPM_REG(0x0160)
 #undef SPM_PWR_STATUS_2ND
-#define SPM_PWR_STATUS_2ND  SPM_REG(0x0170)
+#define SPM_PWR_STATUS_2ND  SPM_REG(0x0164)
 #define SPM_ULPOSC_CON      SPM_REG(0x0440)
 #define	INFRA_SW_CG_0_STA   INFRA_REG(0x0094)
 #define	INFRA_SW_CG_1_STA   INFRA_REG(0x0090)
@@ -146,8 +146,8 @@ static unsigned int *idle_pll_block_mask;
 static unsigned int idle_cond_mask_scenario
 	[NR_IDLE_TYPES][NR_CG_GRPS] = {
 	[IDLE_TYPE_DP] = {
-		0xBEF000B8,	/* MTCMOS1 */
-		0xBEF000B8,	/* MTCMOS2 */
+		0xBE7000B8,	/* MTCMOS1 */
+		0xBE7000B8,	/* MTCMOS2 */
 		0x08040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C5,	/* INFRA2  */
@@ -156,8 +156,8 @@ static unsigned int idle_cond_mask_scenario
 		0x0001FFFF,	/* MMSYS1  */
 	},
 	[IDLE_TYPE_SO3] = {
-		0xBEF000B0,	/* MTCMOS1 */
-		0xBEF000B0,	/* MTCMOS2 */
+		0xBE7000B0,	/* MTCMOS1 */
+		0xBE7000B0,	/* MTCMOS2 */
 		0x0A040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000D1,	/* INFRA2  */
@@ -166,8 +166,8 @@ static unsigned int idle_cond_mask_scenario
 		0x0001FFFF,	/* MMSYS1  */
 	},
 	[IDLE_TYPE_SO] = {
-		0xBEF000B0,	/* MTCMOS1 */
-		0xBEF000B0,	/* MTCMOS2 */
+		0xBE7000B0,	/* MTCMOS1 */
+		0xBE7000B0,	/* MTCMOS2 */
 		0x08040802,	/* INFRA0  */
 		0x03AFB900,	/* INFRA1  */
 		0x000000C1,	/* INFRA2  */
@@ -183,34 +183,34 @@ static unsigned int idle_cond_mask_scenario
 static unsigned int idle_cond_mask_resource
 	[NR_SPM_RES_LEVEL_TYPES][NR_CG_GRPS] = {
 	[SPM_RES_LEVEL_DRAM] = {
-		0xBEF000B0,	/* MTCMOS1 */
-		0xBEF000B0,	/* MTCMOS2 */
+		0xBE7000B0,	/* MTCMOS1 */
+		0xBE7000B0,	/* MTCMOS2 */
 		0x08040802,	/* INFRA0  */
-		0x03803900,	/* INFRA1  */
-		0x000000C0,	/* INFRA2  */
+		0x03AFB900,	/* INFRA1  */
+		0x000000C1,	/* INFRA2  */
 		0x00000000,	/* INFRA3  */
-		0x000DFF00,	/* MMSYS0  */
-		0x00003F7C,	/* MMSYS1  */
+		0x01023000,	/* MMSYS0  */
+		0x00000000,	/* MMSYS1  */
 	},
 	[SPM_RES_LEVEL_SYSPLL] = {
-		0x00000000,	/* MTCMOS1 */
-		0x00000000,	/* MTCMOS2 */
-		0x08000000,	/* INFRA0  */
-		0x002F8000,	/* INFRA1  */
-		0x00000001,	/* INFRA2  */
+		0xBE7000B0,	/* MTCMOS1 */
+		0xBE7000B0,	/* MTCMOS1 */
+		0x08040802,	/* INFRA0  */
+		0x03AFB900,	/* INFRA1  */
+		0x000000C1,	/* INFRA2  */
 		0x00000000,	/* INFRA3  */
-		0x00000000,	/* MMSYS0  */
+		0x03F63000,	/* MMSYS0  */
 		0x00000000,	/* MMSYS1  */
 	},
 	[SPM_RES_LEVEL_BUS_26M] = {
-		0x00000000,	/* MTCMOS1 */
-		0x00000000,	/* MTCMOS2 */
-		0x0A000000,	/* INFRA0  */
-		0x00000000,	/* INFRA1  */
-		0x00000010,	/* INFRA2  */
+		0xBE7000B0,	/* MTCMOS1 */
+		0xBE7000B0,	/* MTCMOS1 */
+		0x08040802,	/* INFRA0  */
+		0x03AFB900,	/* INFRA1  */
+		0x000000D1,	/* INFRA2  */
 		0x08000000,	/* INFRA3  */
-		0xFFF200FF,	/* MMSYS0  */
-		0x00000083,	/* MMSYS1  */
+		0x00000000,	/* MMSYS0  */
+		0x00000000,	/* MMSYS1  */
 	},
 	[SPM_RES_LEVEL_PMIC_LP] = {
 		0, 0, 0, 0, 0, 0, 0, 0},
@@ -232,8 +232,6 @@ static unsigned int idle_value[NR_CG_GRPS];
 #define PLL_MSDCPLL APMIXEDSYS(0x260)
 #define PLL_TVDPLL  APMIXEDSYS(0x270)
 #define PLL_MMPLL   APMIXEDSYS(0x280)
-#define APLL1_CON0  APMIXEDSYS(0x02c0)
-#define APLL2_CON0  APMIXEDSYS(0x02d4)
 
 #define PLL_BIT_UNIVPLL (1 << 0)
 #define PLL_BIT_MFGPLL  (1 << 1)
@@ -288,13 +286,13 @@ unsigned int
 	/* CLK_CFG_0 1000_0020 */
 	[CLKMUX_AXI][VCORE_0P6V]
 		= {
-			3,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_AXI][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	[CLKMUX_MM][VCORE_0P6V]
@@ -614,13 +612,13 @@ unsigned int
 
 	[CLKMUX_POWMCU][VCORE_0P6V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_POWMCU][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	[CLKMUX_DPI0][VCORE_0P6V]
@@ -681,13 +679,13 @@ unsigned int
 
 	[CLKMUX_SPM][VCORE_0P6V]
 		= {
-			3,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_SPM][VCORE_0P575V]
 		= {
-			3,
-			0x80, 0x00, 0x01, 0x00,
+			0,
+			0x00, 0x00, 0x01, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	/* CLK_CFG_9 1000_00B0*/
@@ -738,13 +736,13 @@ unsigned int
 	/* CLK_CFG_10 1000_00C0*/
 	[CLKMUX_DXCC][VCORE_0P6V]
 		= {
-			3,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_DXCC][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	[CLKMUX_AUD_ENGEN1][VCORE_0P6V]
@@ -828,13 +826,13 @@ unsigned int
 	/* CLK_CFG_12 1000_00E0*/
 	[CLKMUX_DPMAIF_MAIN][VCORE_0P6V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_DPMAIF_MAIN][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	[CLKMUX_VENC][VCORE_0P6V]
@@ -895,13 +893,13 @@ unsigned int
 
 	[CLKMUX_BUS_AXIMEM][VCORE_0P6V]
 		= {
-			3,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_BUS_AXIMEM][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 
 	[CLKMUX_CAMTG5][VCORE_0P6V]
@@ -918,13 +916,13 @@ unsigned int
 	/* CLK_CFG_20 1000_0640*/
 	[CLKMUX_MEM][VCORE_0P6V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 	[CLKMUX_MEM][VCORE_0P575V]
 		= {
-			2,
-			0x80, 0x00, 0x00, 0x00,
+			0,
+			0x00, 0x00, 0x00, 0x00,
 			0x00, 0x00, 0x00, 0x00 },
 };
 
@@ -1026,7 +1024,7 @@ void mtk_suspend_cond_info(void)
 				i,
 				idle_cg_info[i].name,
 				idle_block_mask_resource[j][i]);
-				WARN_ON(1);
+				/* WARN_ON(1); */
 			}
 		}
 		if (idle_pll_block_mask[j] && !need_log)
@@ -1035,7 +1033,7 @@ void mtk_suspend_cond_info(void)
 		if (idle_pll_block_mask[j]) {
 			pr_info("idle_pll_block_mask: 0x%08x\n",
 				idle_pll_block_mask[j]);
-			WARN_ON(1);
+			/* WARN_ON(1); */
 		}
 		need_log = false;
 	}
@@ -1072,14 +1070,17 @@ int mtk_idle_cond_append_info(
 			log("idle_pll_block_mask: 0x%08x\n",
 			    idle_pll_block_mask[idle_type]);
 		} else {
+			log("               Value");
+			log("      Condition");
+			log("  Block\n");
 			for (i = 0; i < NR_CG_GRPS; i++) {
-				log("[%02d %s] value/cond/block = 0x%08x "
+				log("[%02d %s] = 0x%08x "
 				, i, idle_cg_info[i].name, idle_value[i]);
 			log("0x%08x 0x%08x\n",
 			    idle_cond_mask_scenario[idle_type][i]
 				, idle_block_mask_scenario[idle_type][i]);
 			}
-			log("[%02d PLLCHK ] value/cond/block = 0x%08x "
+			log("[%02d PLLCHK ] = 0x%08x "
 				, i, idle_pll_value);
 			log("0x%08x 0x%08x\n", idle_pll_cond_mask[idle_type]
 				, idle_pll_block_mask[idle_type]);
@@ -1091,25 +1092,22 @@ int mtk_idle_cond_append_info(
 	/* resource-oriented */
 	/* short log */
 	if (short_log) {
-		for (j = 0; j < NR_SPM_RES_LEVEL_TYPES; j++) {
+		for (j = 0; j < NR_SPM_RES_LEVEL_TYPES - 1; j++) {
 			for (i = 0; i < NR_CG_GRPS; i++) {
-				if (idle_block_mask_resource[j][i]
-				    && !need_log) {
+				if (!need_log) {
 					log("[%s] ",
 					mtk_resource_level_id_string[j]);
 					need_log = true;
 				}
-				if (idle_block_mask_resource[j][i])
-					log("0x%08x, ",
-					    idle_block_mask_resource[j][i]);
+				log("0x%08x, ",
+					idle_block_mask_resource[j][i]);
 			}
-				if (idle_pll_block_mask_resource[j]
-				    && !need_log)
-					log("[%s] ",
+				if (!need_log) {
+					log("%s: ",
 					mtk_resource_level_id_string[j]);
-				if (idle_pll_block_mask[j])
-					log("idle_pll_block_mask: 0x%08x",
-					    idle_pll_block_mask[j]);
+				}
+				log("idle_pll_block_mask: 0x%08x",
+				    idle_pll_block_mask[j]);
 				need_log = false;
 		}
 
@@ -1117,32 +1115,31 @@ int mtk_idle_cond_append_info(
 	}
 
 	/* full log */
-	for (j = 0; j < NR_SPM_RES_LEVEL_TYPES; j++) {
+	for (j = 0; j < NR_SPM_RES_LEVEL_TYPES - 1; j++) {
 		for (i = 0; i < NR_CG_GRPS; i++) {
-			if (idle_block_mask_resource[j][i]
-			    && !need_log) {
-				log("[%s]\n",
+			if (!need_log) {
+				log("%s:\n",
 				mtk_resource_level_id_string[j]);
+				log("               Value");
+				log("      Condition");
+				log("  Block\n");
 				need_log = true;
 			}
-			if (idle_block_mask_resource[j][i]) {
-				log("[%02d %s] value/cond/block = 0x%08x ",
-				    i, idle_cg_info[i].name, idle_value[i]);
+			log("[%02d %s] = 0x%08x ",
+			    i, idle_cg_info[i].name, idle_value[i]);
 
-				log("0x%08x 0x%08x\n",
-				    idle_cond_mask_resource[j][i],
-				    idle_block_mask_resource[j][i]);
-			}
-		}
-		if (idle_pll_block_mask[j] && !need_log)
-			log("[%s]\n", mtk_resource_level_id_string[j]);
-		if (idle_pll_block_mask[j]) {
-			log("[%02d PLLCHK] value/cond/block = 0x%08x ",
-			    i, idle_pll_value);
 			log("0x%08x 0x%08x\n",
+			    idle_cond_mask_resource[j][i],
+			    idle_block_mask_resource[j][i]);
+		}
+		if (!need_log)
+			log("%s:\n", mtk_resource_level_id_string[j]);
+		log("[%02d PLLCHK ] = 0x%08x ",
+		    i, idle_pll_value);
+		log("0x%08x 0x%08x\n",
 			idle_pll_cond_mask[j],
 			idle_pll_block_mask[j]);
-		}
+		log("\n");
 		need_log = false;
 	}
 

@@ -21,7 +21,7 @@
 
 void __iomem *cpc_base;
 
-static bool dt_init_sta;
+static unsigned int dt_init_sta;
 static const char mcdi_node_name[] = "mediatek,mt6779-mcdi";
 
 static int cpu_type_idx_map[NF_CPU] = {
@@ -95,7 +95,7 @@ int cpu_type_idx_get(int cpu)
 void mcdi_status_init(void)
 {
 	if (cpc_base)
-		set_mcdi_enable_status(dt_init_sta);
+		set_mcdi_enable_status(!!dt_init_sta);
 }
 
 void mcdi_of_init(void **base)
@@ -128,7 +128,8 @@ void mcdi_of_init(void **base)
 			*base,
 			cpc_base);
 
-	dt_init_sta = of_property_read_bool(node, "mediatek,enabled");
+	/* The state value is modified only if the property exists */
+	of_property_read_u32(node, "mediatek,enabled", &dt_init_sta);
 
 fail:
 	if (cpc_base == NULL)

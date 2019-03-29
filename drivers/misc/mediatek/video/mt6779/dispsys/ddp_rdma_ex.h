@@ -66,4 +66,13 @@ void rdma_set_color_matrix(enum DISP_MODULE_ENUM module,
 			   struct rdma_color_post *post);
 int rdma_reset_by_cmdq(enum DISP_MODULE_ENUM module, void *handle);
 
+void rdma_cal_golden_setting(unsigned int idx, unsigned int bpp,
+	struct golden_setting_context *gsc, unsigned int *gs,
+	unsigned int is_vdo);
+
+/* for mmpath */
+bool MMPathIsPrimaryDL(void);
+unsigned int MMPathTracePrimaryRDMA(char *str, unsigned int strlen,
+	unsigned int n);
+
 #endif /* _DDP_RDMA_EX_H_ */

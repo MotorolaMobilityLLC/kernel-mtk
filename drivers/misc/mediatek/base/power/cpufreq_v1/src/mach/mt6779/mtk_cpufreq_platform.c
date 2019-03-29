@@ -46,6 +46,16 @@ static unsigned long mcucfg_base	= 0x0c530000;
 #define CKDIV1_L_CFG		(mcucfg_base + 0xa2a4)	/* MP1_PLL_DIVIDER */
 #define CKDIV1_CCI_CFG		(mcucfg_base + 0xa2e0)	/* BUS_PLL_DIVIDER */
 
+struct cpudvfs_doe dvfs_doe = {
+		.doe_flag = 0,
+		.dtsn = {"L-table", "B-table", "CCI-table"},
+		.state = 1,
+		.change_flag = 0,
+		.lt_rs_t = UP_SRATE,
+		.lt_dw_t = DOWN_SRATE,
+		.bg_rs_t = UP_SRATE,
+		.bg_dw_t = DOWN_SRATE,
+};
 struct mt_cpu_dvfs cpu_dvfs[NR_MT_CPU_DVFS] = {
 	[MT_CPU_DVFS_LL] = {
 		.name		= __stringify(MT_CPU_DVFS_LL),
@@ -437,13 +447,12 @@ unsigned int get_cur_phy_freq(struct pll_ctrl_t *pll_p)
 	con1 = cpufreq_read(pll_p->armpll_addr);
 	ckdiv1 = cpufreq_read(pll_p->armpll_div_addr);
 	ckdiv1 = _GET_BITS_VAL_(21:17, ckdiv1);
-
 	cur_khz = _cpu_freq_calc(con1, ckdiv1);
-
+#if 0
 	cpufreq_ver
 	("@%s: (%s) = cur_khz = %u, con1[0x%p] = 0x%x, ckdiv1_val = 0x%x\n",
 	__func__, pll_p->name, cur_khz, pll_p->armpll_addr, con1, ckdiv1);
-
+#endif
 	return cur_khz;
 }
 
@@ -608,14 +617,18 @@ int mt_cpufreq_dts_map(void)
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
+	int val = (get_devinfo_with_index(7) & 0xFF);
 
-	lv = CPU_LEVEL_0;
+	if ((val == 0x09) || (val == 0x90) || (val == 0x08) || (val == 0x10)
+	|| (val == 0x06) || (val == 0x60) || (val == 0x04) || (val == 0x20))
+		lv = CPU_LEVEL_4;
+	else if ((val == 0x07) || (val == 0xE0))
+		lv = CPU_LEVEL_3;
 
 	turbo_flag = 0;
 
-	tag_pr_info("%d, %d, (%d, %d)\n",
-		lv, turbo_flag, UP_SRATE, DOWN_SRATE);
-
+	tag_pr_info("%d, %d, (%d, %d) efuse_val = 0x%x\n",
+		lv, turbo_flag, UP_SRATE, DOWN_SRATE, val);
 	return lv;
 }
 

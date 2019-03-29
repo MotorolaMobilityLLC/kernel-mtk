@@ -20,27 +20,118 @@ static struct SENINF_CLK_CTRL gseninf_mclk_name[SENINF_CLK_IDX_MAX_NUM] = {
 	{"SCP_SYS_CAM"},
 	{"CAMSYS_SENINF_CGPDN"},
 	{"TOP_MUX_SENINF"},
+	{"TOP_MUX_SENINF1"},
+	{"TOP_MUX_SENINF2"},
 	{"TOP_MUX_CAMTG"},
 	{"TOP_MUX_CAMTG2"},
 	{"TOP_MUX_CAMTG3"},
 	{"TOP_MUX_CAMTG4"},
-	{"TOP_UNIVP_192M_D32"},
-	{"TOP_UNIVP_192M_D16"},
-	{"TOP_UNIVP_192M_D8"},
-	{"TOP_CLK26M"},
-	{"TOP_UNIVP_192M_D4"},
-	{"TOP_UNIVPLL_D3_D8"}
+	{"TOP_MUX_CAMTG5"},
+	{"TOP_UNIVP_192M_D32"}, /*   6*/
+	{"TOP_UNIVP_192M_D16"}, /*  12*/
+	{"TOP_F26M_CK_D2"},     /*  13*/
+	{"TOP_UNIVP_192M_D8"},  /*  24*/
+	{"TOP_CLK26M"},         /*  26*/
+	{"TOP_UNIVP_192M_D4"},  /*  48*/
+	{"TOP_UNIVPLL_D3_D8"},  /*  52*/
 };
 
 static enum SENINF_CLK_MCLK_FREQ
 gseninf_clk_freq[SENINF_CLK_IDX_FREQ_IDX_NUM] = {
 	SENINF_CLK_MCLK_FREQ_6MHZ,
 	SENINF_CLK_MCLK_FREQ_12MHZ,
+	SENINF_CLK_MCLK_FREQ_13MHZ,
 	SENINF_CLK_MCLK_FREQ_24MHZ,
 	SENINF_CLK_MCLK_FREQ_26MHZ,
 	SENINF_CLK_MCLK_FREQ_48MHZ,
 	SENINF_CLK_MCLK_FREQ_52MHZ,
 };
+
+#ifdef IMGSENSOR_DFS_CTRL_ENABLE
+struct pm_qos_request imgsensor_qos;
+
+int imgsensor_dfs_ctrl(enum DFS_OPTION option, void *pbuff)
+{
+	int i4RetValue = 0;
+
+	/*pr_info("%s\n", __func__);*/
+
+	switch (option) {
+	case DFS_CTRL_ENABLE:
+		pm_qos_add_request(&imgsensor_qos, PM_QOS_CAM_FREQ, 0);
+		pr_debug("seninf PMQoS turn on\n");
+		break;
+	case DFS_CTRL_DISABLE:
+		pm_qos_remove_request(&imgsensor_qos);
+		pr_debug("seninf PMQoS turn off\n");
+		break;
+	case DFS_UPDATE:
+		pr_debug(
+			"seninf Set isp clock level:%d\n",
+			*(unsigned int *)pbuff);
+		pm_qos_update_request(&imgsensor_qos, *(unsigned int *)pbuff);
+
+		break;
+	case DFS_RELEASE:
+		pr_debug(
+			"seninf release and set isp clk request to 0\n");
+		pm_qos_update_request(&imgsensor_qos, 0);
+		break;
+	case DFS_SUPPORTED_ISP_CLOCKS:
+	{
+		int result = 0;
+		uint64_t freq_steps[ISP_CLK_LEVEL_CNT];
+		struct IMAGESENSOR_GET_SUPPORTED_ISP_CLK *pIspclks;
+		unsigned int lv = 0;
+
+		pIspclks = (struct IMAGESENSOR_GET_SUPPORTED_ISP_CLK *) pbuff;
+
+		/* Call mmdvfs_qos_get_freq_steps
+		 * to get supported frequency
+		 */
+		result = mmdvfs_qos_get_freq_steps(
+			PM_QOS_CAM_FREQ,
+			freq_steps, (u32 *)&pIspclks->clklevelcnt);
+
+		if (result < 0) {
+			pr_err(
+				"ERR: get MMDVFS freq steps failed, result: %d\n",
+				result);
+			i4RetValue = -EFAULT;
+			break;
+		}
+
+		if (pIspclks->clklevelcnt > ISP_CLK_LEVEL_CNT) {
+			pr_err("ERR: clklevelcnt is exceeded");
+			i4RetValue = -EFAULT;
+			break;
+		}
+
+		for (lv = 0; lv < pIspclks->clklevelcnt; lv++) {
+			/* Save clk from low to high */
+			pIspclks->clklevel[lv] = freq_steps[lv];
+			/*pr_debug("DFS Clk level[%d]:%d",
+			 *	lv, pIspclks->clklevel[lv]);
+			 */
+		}
+	}
+		break;
+	case DFS_CUR_ISP_CLOCK:
+	{
+		unsigned int *pGetIspclk;
+
+		pGetIspclk = (unsigned int *) pbuff;
+		*pGetIspclk = (u32)mmdvfs_qos_get_freq(PM_QOS_CAM_FREQ);
+		/*pr_debug("current isp clock:%d", *pGetIspclk);*/
+	}
+		break;
+	default:
+		pr_info("None\n");
+		break;
+	}
+	return i4RetValue;
+}
+#endif
 
 static inline void seninf_clk_check(struct SENINF_CLK *pclk)
 {
@@ -63,9 +154,7 @@ enum SENINF_RETURN seninf_clk_init(struct SENINF_CLK *pclk)
 	}
 	/* get all possible using clocks */
 	for (i = 0; i < SENINF_CLK_IDX_MAX_NUM; i++) {
-		pclk->mclk_sel[i] =
-
-		    devm_clk_get(&pclk->pplatform_device->dev,
+		pclk->mclk_sel[i] = devm_clk_get(&pclk->pplatform_device->dev,
 						gseninf_mclk_name[i].pctrl);
 		atomic_set(&pclk->enable_cnt[i], 0);
 
@@ -74,7 +163,6 @@ enum SENINF_RETURN seninf_clk_init(struct SENINF_CLK *pclk)
 			return SENINF_RETURN_ERROR;
 		}
 	}
-
 #ifdef CONFIG_PM_WAKELOCKS
 	wakeup_source_init(&pclk->seninf_wake_lock, "seninf_lock_wakelock");
 #else
@@ -217,7 +305,7 @@ void seninf_clk_release(struct SENINF_CLK *pclk)
 
 unsigned int seninf_clk_get_meter(struct SENINF_CLK *pclk, unsigned int clk)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING)
+#if SENINF_CLK_CONTROL
 	/* workaround */
 	mt_get_ckgen_freq(1);
 

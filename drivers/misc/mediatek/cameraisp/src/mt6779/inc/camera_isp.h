@@ -16,6 +16,12 @@
 
 #include <linux/ioctl.h>
 
+/**
+ * boot-T timestamp is supported or not.
+ * undef: not supported
+ */
+#define TS_BOOT_T
+
 #ifndef CONFIG_OF
 extern void mt_irq_set_sens(unsigned int irq, unsigned int sens);
 extern void mt_irq_set_polarity(unsigned int irq, unsigned int polarity);
@@ -547,15 +553,19 @@ struct ISP_GET_CLK_INFO {
 	unsigned int targetClk;
 };
 
-struct ISP_PM_QOS_STRUCT {
-	unsigned int       fps;
-	unsigned int       bw_sum;
+struct ISP_BW {
+	unsigned int peak;
+	unsigned int avg;
 };
 
 struct ISP_PM_QOS_INFO_STRUCT {
-	unsigned int       bw_value;
-	unsigned int       module;
-	unsigned int       fps;
+	unsigned int        module;
+	struct ISP_BW       port_bw[_cam_max_];
+};
+
+struct ISP_SV_PM_QOS_INFO_STRUCT {
+	unsigned int        module;
+	struct ISP_BW       port_bw[_camsv_max_];
 };
 
 struct ISP_MULTI_RAW_CONFIG {
@@ -653,7 +663,14 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_GET_DUMP_INFO,
 	ISP_CMD_SET_MEM_INFO,
 	ISP_CMD_SET_PM_QOS,
-	ISP_CMD_SET_PM_QOS_INFO
+	SV_CMD_SET_PM_QOS,
+	ISP_CMD_SET_PM_QOS_INFO,
+	SV_CMD_SET_PM_QOS_INFO,
+	SV_CMD_DFS_UPDATE, /* Update clock at run time */
+	SV_CMD_GET_CUR_ISP_CLOCK, /* Get cur isp clock level */
+	SV_CMD_GET_SUPPORTED_ISP_CLOCKS,
+	ISP_CMD_SET_SEC_DAPC_REG,
+	ISP_CMD_NOTE_CQTHR0_BASE
 };
 
 enum ISP_HALT_DMA_ENUM {
@@ -720,22 +737,42 @@ enum ISP_HALT_DMA_ENUM {
 #define ISP_DFS_UPDATE                           \
 	_IOWR(ISP_MAGIC, ISP_CMD_DFS_UPDATE, unsigned int)
 
+#define SV_DFS_UPDATE                           \
+	_IOWR(ISP_MAGIC, SV_CMD_DFS_UPDATE, unsigned int)
+
 #define ISP_GET_SUPPORTED_ISP_CLOCKS             \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
+
+#define SV_GET_SUPPORTED_ISP_CLOCKS             \
+	_IOWR(ISP_MAGIC, SV_CMD_GET_SUPPORTED_ISP_CLOCKS, struct ISP_CLK_INFO)
 
 #define ISP_GET_CUR_ISP_CLOCK                    \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_CUR_ISP_CLOCK, struct ISP_GET_CLK_INFO)
 
+#define SV_GET_CUR_ISP_CLOCK                    \
+	_IOWR(ISP_MAGIC, SV_CMD_GET_CUR_ISP_CLOCK, struct ISP_GET_CLK_INFO)
+
 #define ISP_GET_GLOBAL_TIME                      \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_GLOBAL_TIME, unsigned long long)
 
+#define ISP_NOTE_CQTHR0_BASE                      \
+	_IOWR(ISP_MAGIC, ISP_CMD_NOTE_CQTHR0_BASE, unsigned int*)
+
 #define ISP_SET_PM_QOS                           \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
+
+#define SV_SET_PM_QOS				 \
+	_IOWR(ISP_MAGIC, SV_CMD_SET_PM_QOS, unsigned int)
 
 #define ISP_SET_PM_QOS_INFO                      \
 	_IOWR(ISP_MAGIC,                         \
 	      ISP_CMD_SET_PM_QOS_INFO,           \
 	      struct ISP_PM_QOS_INFO_STRUCT)
+
+#define SV_SET_PM_QOS_INFO			 \
+	_IOWR(ISP_MAGIC,                         \
+	      SV_CMD_SET_PM_QOS_INFO,            \
+	      struct ISP_SV_PM_QOS_INFO_STRUCT)  \
 
 #define ISP_REGISTER_IRQ_USER_KEY                \
 	_IOR(ISP_MAGIC,                          \
@@ -777,6 +814,9 @@ enum ISP_HALT_DMA_ENUM {
 
 #define ISP_GET_DUMP_INFO                        \
 	_IOWR(ISP_MAGIC, ISP_CMD_GET_DUMP_INFO, struct ISP_GET_DUMP_INFO_STRUCT)
+
+#define ISP_SET_SEC_DAPC_REG                     \
+	_IOW(ISP_MAGIC, ISP_CMD_SET_SEC_DAPC_REG, unsigned int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ISP_READ_REGISTER                 \

@@ -69,6 +69,9 @@ int ddp_convert_ovl_input_to_rdma(struct RDMA_CONFIG_STRUCT *rdma_cfg,
 int ddp_get_module_num_l(int *module_list);
 char *ddp_get_mode_name(enum DDP_MODE ddp_mode);
 
+bool ovl_need_mmsys_sw_reset(enum DISP_MODULE_ENUM module);
+void ddp_path_mmsys_sw_reset(unsigned int sw_rst_id, unsigned int bit);
+
 #include "ddp_mutex.h"
 
 #endif /* __DDP_PATH_H__ */

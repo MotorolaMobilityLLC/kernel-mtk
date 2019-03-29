@@ -33,8 +33,6 @@
 
 #define REG_MMUg_PT_BASE	   (0x0)
 #define F_MMUg_PT_VA_MSK	0xffff0000
-#define REG_MMUg_PT_BASE_SEC	 (0x4)
-#define F_MMUg_PT_VA_MSK_SEC	0xffff0000
 
 #define REG_MMU_PROG_EN		 0x10
 #define F_MMU0_PROG_EN	       1
@@ -45,6 +43,9 @@
 #define F_PROG_VA_SIZE16X_BIT	  F_BIT_SET(8)
 #define F_PROG_VA_SECURE_BIT	   (1<<7)
 #define F_PROG_VA_MASK	    0xfffff000
+#define F_PGD_REG_BIT32     F_BIT_SET(0)
+#define F_PGD_REG_BIT33     F_BIT_SET(1)
+
 
 #define REG_MMU_PROG_DSC		0x18
 
@@ -129,6 +130,12 @@
 #define REG_MMU_DBG0		(0X60)
 #define REG_MMU_DBG1		(0x64)
 #define REG_MMU_DBG2		(0x68)
+#define REG_MMU_DBG3		(0X6c)
+#define REG_MMU_DBG4		(0x70)
+#define REG_MMU_DBG5		(0x74)
+
+#define DEBUG_REG_NR         (6)
+
 
 #define REG_MMU_READ_ENTRY       0x100
 #define F_READ_ENTRY_EN		 F_BIT_SET(31)
@@ -188,8 +195,10 @@
 
 #define REG_MMU_IVRP_PADDR       0x114
 #define F_MMU_IVRP_PA_SET(PA)  \
-	((((unsigned long long)PA) & F_MSK(31, 7)) | \
+	((((unsigned long long)PA) & F_MSK(31, 8)) | \
 	((((unsigned long long)PA) >> 32) & F_MSK(1, 0)))
+#define F_RP_PA_REG_BIT32     F_BIT_SET(0)
+#define F_RP_PA_REG_BIT33     F_BIT_SET(1)
 
 #define REG_MMU_INT_L2_CONTROL      0x120
 #define F_INT_L2_CLR_BIT (1<<12)
@@ -309,7 +318,7 @@
 		(0x908+((mau)*0x20)+((mmu)*0x100))
 #define REG_MMU_MAU_END_BIT32(mmu, mau)	  (0x90C+((mau)*0x20)+((mmu)*0x100))
 
-#define REG_MMU_MAU_LARB_EN(mmu)		(0x910+0x100)
+#define REG_MMU_MAU_LARB_EN(mmu)		(0x910+(mmu*0x100))
 #define F_MAU_LARB_VAL(mau, larb)	 ((larb)<<(mau*8))
 #define F_MAU_LARB_MSK(mau)	     (0xff<<(mau*8))
 #define REG_MMU_MAU_PORT_EN(mmu, mau)	    (0x914+((mau)*0x20)+((mmu)*0x100))
@@ -343,6 +352,36 @@
 #define F_PF_ID_LSB		0
 #define F_PF_EN(en)	      F_BIT_VAL(en, 22)
 
+/* secure bank */
+#define REG_MMU_INT_L2_CONTROL_SEC      0x120
+#define F_INT_L2_CLR_BIT_SEC (1<<12)
+#define F_INT_L2_TABLE_WALK_FAULT_SEC		  F_BIT_SET(1)
+#define F_INT_L2_INVALD_DONE_SEC		       F_BIT_SET(4)
+
+#define REG_MMU_INT_MAIN_CONTROL_SEC    0x124
+#define F_INT_TRANSLATION_FAULT_SEC(MMU)	F_BIT_SET(0+(MMU)*7)
+#define F_INT_INVALID_PA_FAULT_SEC(MMU)		F_BIT_SET(2+(MMU)*7)
+
+#define REG_MMU_L2_FAULT_ST_SEC	 0x130
+
+#define REG_MMU_MAIN_FAULT_ST_SEC       0x134
+#define F_INT_MMU0_MSK_SEC                              F_MSK(2, 0)
+#define F_INT_MMU1_MSK_SEC                              F_MSK(9, 7)
+
+
+#define REG_MMU_TBWALK_FAULT_VA_SEC	 0x138
+#define F_MMU_TBWALK_FAULT_VA_MSK_SEC   F_MSK(31, 12)
+#define F_MMU_TBWALK_FAULT_LAYER_SEC(regval) F_MSK_SHIFT(regval, 0, 0)
+
+#define REG_MMU_FAULT_VA_SEC(mmu)	 (0x13c+((mmu)<<3))
+#define F_MMU_FAULT_VA_MSK_SEC	F_MSK(31, 12)
+#define F_MMU_FAULT_VA_WRITE_BIT_SEC    F_BIT_SET(1)
+#define F_MMU_FAULT_VA_LAYER_BIT_SEC    F_BIT_SET(0)
+
+#define REG_MMU_INVLD_PA_SEC(mmu)	 (0x140+((mmu)<<3))
+#define REG_MMU_INT_ID_SEC(mmu)	     (0x150+((mmu)<<2))
+/* only for MM iommu bit[11:2] */
+#define F_MMU0_INT_ID_TF_MSK_SEC	F_MSK(11, 2)
 
 /* ================================================================ */
 /* SMI larb */

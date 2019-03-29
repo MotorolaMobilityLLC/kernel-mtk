@@ -15,18 +15,17 @@
 #define __ADSP_FEATURE_DEFINE_H__
 
 /* reset recovery feature kernel option*/
-//#define CFG_RECOVERY_SUPPORT
+#define CFG_RECOVERY_SUPPORT
 
 /* adsp platform configs*/
 #define ADSP_BOOT_TIME_OUT_MONITOR       (1)
 #define ADSP_LOGGER_ENABLE               (1)
 #define ADSP_VCORE_TEST_ENABLE           (0)
-#define ADSP_DVFS_ENABLE                 (0)
-#define ADSP_DVFS_INIT_ENABLE            (0)
 #define ADSP_TRAX                        (0)
 
 /* adsp aed definition*/
 #define ADSP_AED_STR_LEN                (1024)
+#define ADSP_RESERVED_DRAM_SIZE         (0x1000000)
 
 /* emi mpu define*/
 #ifdef CONFIG_MTK_EMI
@@ -36,21 +35,38 @@
 #endif
 #define MPU_REGION_ID_ADSP_SMEM          (28)
 
+/* adsp feature PRI list */
+/* The higher number, higher priority */
+enum adsp_feature_pri {
+	AUDIO_HAL_FEATURE_PRI = 0,
+	ADSP_LOGGER_FEATURE_PRI,
+	SPK_PROTECT_FEATURE_PRI,
+	A2DP_PLAYBACK_FEATURE_PRI,
+	AURISYS_FEATURE_PRI,
+	DEEPBUF_FEATURE_PRI,
+	OFFLOAD_FEATURE_PRI,
+	PRIMARY_FEATURE_PRI,
+	VOIP_FEATURE_PRI,
+	CAPTURE_UL1_FEATURE_PRI,
+	AUDIO_DATAPROVIDER_FEATURE_PRI,
+	AUDIO_PLAYBACK_FEATURE_PRI,
+	VOICE_CALL_FEATURE_PRI,
+	AUDIO_CONTROLLER_FEATURE_PRI,
+	SYSTEM_FEATURE_PRI,
+};
+
 /* adsp feature ID list */
 enum adsp_feature_id {
 	SYSTEM_FEATURE_ID             = 0,
 	ADSP_LOGGER_FEATURE_ID        = 1,
 	AURISYS_FEATURE_ID            = 10,
 	AUDIO_CONTROLLER_FEATURE_ID,
-	AUDIO_DUMP_FEATURE_ID         = 20,
-	PRIMARY_FEATURE_ID,
+	PRIMARY_FEATURE_ID            = 20,
 	DEEPBUF_FEATURE_ID,
 	OFFLOAD_FEATURE_ID,
 	AUDIO_PLAYBACK_FEATURE_ID,
-	EFFECT_HIGH_FEATURE_ID,
-	EFFECT_MEDIUM_FEATURE_ID,
-	EFFECT_LOW_FEATURE_ID,
 	A2DP_PLAYBACK_FEATURE_ID,
+	AUDIO_DATAPROVIDER_FEATURE_ID,
 	SPK_PROTECT_FEATURE_ID,
 	VOICE_CALL_FEATURE_ID,
 	VOIP_FEATURE_ID,

@@ -63,6 +63,12 @@ enum mt_eem_cpu_id {
 	NR_MT_EEM_CPU,
 };
 
+enum mt_eem_add_extra_mode {
+	NO_EXTRA,
+	ADD_EXTRA,
+	UNDEF_EXTRA,
+};
+
 /* internal use */
 /* EEM detector is disabled by who */
 enum {
@@ -75,6 +81,7 @@ enum eem_phase {
 	EEM_PHASE_INIT01,
 	EEM_PHASE_INIT02,
 	EEM_PHASE_MON,
+	EEM_PHASE_CORN,
 
 	NR_EEM_PHASE,
 };
@@ -83,6 +90,7 @@ enum eem_features {
 	FEA_INIT01	= BIT(EEM_PHASE_INIT01),
 	FEA_INIT02	= BIT(EEM_PHASE_INIT02),
 	FEA_MON		= BIT(EEM_PHASE_MON),
+	FEA_CORN	= BIT(EEM_PHASE_CORN),
 };
 
 enum {
@@ -102,7 +110,8 @@ enum eem_loo_role {
 #endif
 
 extern u32 get_devinfo_with_index(u32 index);
-extern const unsigned int reg_dump_addr_off[410];
+extern unsigned int eem_corn_flag;
+extern const unsigned int reg_dump_addr_off[DUMP_LEN];
 
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #define CONFIG_EEM_AEE_RR_REC 1
@@ -213,6 +222,9 @@ extern u8 aee_rr_curr_ptp_status(void);
 extern int mt_eem_status(enum eem_det_id id);
 extern unsigned int get_efuse_status(void);
 extern unsigned int mt_eem_is_enabled(void);
+
+extern void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse);
+extern void eem_set_pi_dvtfixed(enum eem_ctrl_id id, unsigned int pi_dvtfixed);
 
 /* DRCC */
 extern unsigned int drcc_offset_done;

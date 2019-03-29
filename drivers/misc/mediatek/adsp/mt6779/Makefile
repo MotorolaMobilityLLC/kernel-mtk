@@ -8,6 +8,7 @@ obj-y += adsp_dvfs.o
 obj-y += adsp_plat.o
 obj-y += adsp_clk.o
 
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(CONFIG_MTK_PLATFORM)/include/mach
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/emi/submodule

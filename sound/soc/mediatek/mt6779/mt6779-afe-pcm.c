@@ -31,6 +31,9 @@
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 #include "../audio_dsp/mtk-dsp-common.h"
 #endif
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+#include "../scp_spk/mtk-scp-spk-common.h"
+#endif
 
 /* FORCE_FPGA_ENABLE_IRQ use irq in fpga */
 /* #define FORCE_FPGA_ENABLE_IRQ */
@@ -124,6 +127,7 @@ int mt6779_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 	struct mtk_base_afe_irq *irqs = &afe->irqs[irq_id];
 	const struct mtk_base_irq_data *irq_data = irqs->irq_data;
 	unsigned int counter = runtime->period_size;
+	unsigned int rate = runtime->rate;
 	int fs;
 	int ret;
 
@@ -133,7 +137,8 @@ int mt6779_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
-#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP) ||\
+	defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
 		/* with dsp enable, not to set when stop_threshold = ~(0U) */
 		if (runtime->stop_threshold == ~(0U))
 			ret = 0;
@@ -142,6 +147,15 @@ int mt6779_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 #else
 		ret = mtk_memif_set_enable(afe, id);
 #endif
+
+		/*
+		 * for small latency record
+		 * ul memif need read some data before irq enable
+		 */
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE) {
+			if ((runtime->period_size * 1000) / rate <= 10)
+				udelay(300);
+		}
 
 		if (ret) {
 			dev_err(afe->dev, "%s(), error, id %d, memif enable, ret %d\n",
@@ -190,7 +204,8 @@ int mt6779_fe_trigger(struct snd_pcm_substream *substream, int cmd,
 				}
 			}
 		}
-#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP) ||\
+	defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
 		if (runtime->stop_threshold == ~(0U))
 			ret = 0;
 		else
@@ -256,13 +271,60 @@ int mt6779_get_memif_pbuf_size(struct snd_pcm_substream *substream)
 		return MT6779_MEMIF_PBUF_SIZE_32_BYTES;
 }
 
+
+#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+int mt6779_fe_prepare(struct snd_pcm_substream *substream,
+		      struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_pcm_runtime * const runtime = substream->runtime;
+	struct mtk_base_afe *afe = snd_soc_dai_get_drvdata(dai);
+	int id = rtd->cpu_dai->id;
+	struct mtk_base_afe_memif *memif = &afe->memif[id];
+	int irq_id = memif->irq_usage;
+	struct mtk_base_afe_irq *irqs = &afe->irqs[irq_id];
+	const struct mtk_base_irq_data *irq_data = irqs->irq_data;
+	unsigned int counter = runtime->period_size;
+	int fs;
+	int ret;
+
+	ret = mtk_afe_fe_prepare(substream, dai);
+	if (ret)
+		goto exit;
+
+	/* set irq counter */
+	mtk_regmap_update_bits(afe->regmap, irq_data->irq_cnt_reg,
+			       irq_data->irq_cnt_maskbit
+			       << irq_data->irq_cnt_shift,
+			       counter << irq_data->irq_cnt_shift);
+
+	/* set irq fs */
+	fs = afe->irq_fs(substream, runtime->rate);
+
+	if (fs < 0)
+		return -EINVAL;
+
+	mtk_regmap_update_bits(afe->regmap, irq_data->irq_fs_reg,
+			       irq_data->irq_fs_maskbit
+			       << irq_data->irq_fs_shift,
+			       fs << irq_data->irq_fs_shift);
+exit:
+	return ret;
+}
+#endif
+
+
 /* FE DAIs */
 static const struct snd_soc_dai_ops mt6779_memif_dai_ops = {
 	.startup	= mt6779_fe_startup,
 	.shutdown	= mt6779_fe_shutdown,
 	.hw_params	= mtk_afe_fe_hw_params,
 	.hw_free	= mtk_afe_fe_hw_free,
+#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
+	.prepare	= mt6779_fe_prepare,
+#else
 	.prepare	= mtk_afe_fe_prepare,
+#endif
 	.trigger	= mt6779_fe_trigger,
 };
 
@@ -545,7 +607,8 @@ static int mt6779_irq_cnt1_get(struct snd_kcontrol *kcontrol,
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
 	struct mt6779_afe_private *afe_priv = afe->platform_priv;
 
-	ucontrol->value.integer.value[0] = afe_priv->irq_cnt[MT6779_MEMIF_DL1];
+	ucontrol->value.integer.value[0] =
+		afe_priv->irq_cnt[MT6779_PRIMARY_MEMIF];
 	return 0;
 }
 
@@ -555,7 +618,7 @@ static int mt6779_irq_cnt1_set(struct snd_kcontrol *kcontrol,
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
 	struct mt6779_afe_private *afe_priv = afe->platform_priv;
-	int memif_num = MT6779_MEMIF_DL1;
+	int memif_num = MT6779_PRIMARY_MEMIF;
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 	int irq_id = memif->irq_usage;
 	int irq_cnt = afe_priv->irq_cnt[memif_num];
@@ -802,6 +865,66 @@ static int mt6779_fast_scene_set(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+static int mt6779_primary_scene_get(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->primary_playback_state;
+	return 0;
+}
+
+static int mt6779_primary_scene_set(struct snd_kcontrol *kcontrol,
+				    struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+	int memif_num = MT6779_PRIMARY_MEMIF;
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	afe_priv->primary_playback_state = ucontrol->value.integer.value[0];
+
+	if (afe_priv->primary_playback_state == 1)
+		memif->use_dram_only = 1;
+	else
+		memif->use_dram_only = 0;
+
+	return 0;
+}
+
+static int mt6779_voip_scene_get(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+
+	ucontrol->value.integer.value[0] = afe_priv->voip_rx_state;
+	return 0;
+}
+
+static int mt6779_voip_scene_set(struct snd_kcontrol *kcontrol,
+				 struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	struct mt6779_afe_private *afe_priv = afe->platform_priv;
+	int memif_num = MT6779_VOIP_MEMIF;
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	afe_priv->voip_rx_state = ucontrol->value.integer.value[0];
+
+	if (afe_priv->voip_rx_state == 1)
+		memif->use_dram_only = 1;
+	else
+		memif->use_dram_only = 0;
+
+	return 0;
+}
+
 static int mt6779_record_xrun_assert_get(struct snd_kcontrol *kcontrol,
 					 struct snd_ctl_elem_value *ucontrol)
 {
@@ -866,6 +989,20 @@ static int mt6779_sram_size_get(struct snd_kcontrol *kcontrol,
 	return 0;
 }
 
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+static int mt6779_vow_barge_in_irq_id_get(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = MT6779_BARGEIN_MEMIF;
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+	int irq_id = memif->irq_usage;
+
+	ucontrol->value.integer.value[0] = irq_id;
+	return 0;
+}
+#endif
 
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 static int mt6779_adsp_primary_mem_get(struct snd_kcontrol *kcontrol,
@@ -873,7 +1010,8 @@ static int mt6779_adsp_primary_mem_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_PRIMARY_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_PRIMARY_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
@@ -886,7 +1024,8 @@ static int mt6779_adsp_primary_mem_set(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_PRIMARY_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_PRIMARY_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
@@ -899,7 +1038,8 @@ static int mt6779_adsp_deepbuffer_mem_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_DEEPBUFFER_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_DEEPBUFFER_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
@@ -912,7 +1052,35 @@ static int mt6779_adsp_deepbuffer_mem_set(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_DEEPBUFFER_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_DEEPBUFFER_ID,
+					  ADSP_TASK_ATTR_MEMDL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+static int mt6779_adsp_voip_mem_get(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_VOIP_ID,
+					  ADSP_TASK_ATTR_MEMDL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
+	return 0;
+
+}
+
+static int mt6779_adsp_voip_mem_set(struct snd_kcontrol *kcontrol,
+					  struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_VOIP_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
@@ -924,7 +1092,8 @@ static int mt6779_adsp_playback_mem_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_PLAYBACKDL_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
@@ -937,8 +1106,10 @@ static int mt6779_adsp_playback_mem_set(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_numdl = MT6779_DSP_PLAYBACKDL_MEMIF;
-	int memif_numul = MT6779_DSP_PLAYBACKUL_MEMIF;
+	int memif_numdl = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMDL);
+	int memif_numul = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMUL);
 	struct mtk_base_afe_memif *memifdl = &afe->memif[memif_numdl];
 	struct mtk_base_afe_memif *memiful = &afe->memif[memif_numul];
 
@@ -953,7 +1124,8 @@ static int mt6779_adsp_offload_mem_get(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int memif_num = MT6779_DSP_OFFLOAD_MEMIF;
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_OFFLOAD_ID,
+					  ADSP_TASK_ATTR_MEMDL);
 	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
@@ -966,12 +1138,94 @@ static int mt6779_adsp_offload_mem_set(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
 	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
-	int mem_num = MT6779_DSP_OFFLOAD_MEMIF;
-	struct mtk_base_afe_memif *memif = &afe->memif[mem_num];
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_OFFLOAD_ID,
+			ADSP_TASK_ATTR_MEMDL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
 
 	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
 	return 0;
 }
+static int mt6779_adsp_capture_mem_get(struct snd_kcontrol *kcontrol,
+				       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_CAPTURE_UL1_ID,
+					  ADSP_TASK_ATTR_MEMUL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
+	return 0;
+
+}
+
+static int mt6779_adsp_capture_mem_set(struct snd_kcontrol *kcontrol,
+				       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_CAPTURE_UL1_ID,
+					  ADSP_TASK_ATTR_MEMUL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+static int mt6779_adsp_ref_mem_get(struct snd_kcontrol *kcontrol,
+				       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_CAPTURE_UL1_ID,
+					  ADSP_TASK_ATTR_MEMREF);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
+	return 0;
+
+}
+
+static int mt6779_adsp_ref_mem_set(struct snd_kcontrol *kcontrol,
+				       struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_CAPTURE_UL1_ID,
+					  ADSP_TASK_ATTR_MEMREF);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	memif->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	return 0;
+}
+
+static int mt6779_adsp_a2dp_mem_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_DATAPROVIDER_ID,
+					  ADSP_TASK_ATTR_MEMUL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
+	return 0;
+
+}
+
+static int mt6779_adsp_a2dp_mem_set(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_numul = get_dsp_task_attr(AUDIO_TASK_DATAPROVIDER_ID,
+					    ADSP_TASK_ATTR_MEMUL);
+	struct mtk_base_afe_memif *memiful = &afe->memif[memif_numul];
+
+	memiful->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	return 0;
+}
+
 #endif
 
 static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
@@ -993,8 +1247,16 @@ static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
 		       mt6779_echo_ref_xrun_assert_set),
 	SOC_SINGLE_EXT("fast_play_scenario", SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_fast_scene_get, mt6779_fast_scene_set),
+	SOC_SINGLE_EXT("primary_play_scenario", SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_primary_scene_get, mt6779_primary_scene_set),
+	SOC_SINGLE_EXT("voip_rx_scenario", SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_voip_scene_get, mt6779_voip_scene_set),
 	SOC_DOUBLE_EXT("sram_size", SND_SOC_NOPM, 0, 1, 0xffffffff, 0,
 		       mt6779_sram_size_get, NULL),
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+	SOC_SINGLE_EXT("vow_barge_in_irq_id", SND_SOC_NOPM, 0, 0x3ffff, 0,
+		       mt6779_vow_barge_in_irq_id_get, NULL),
+#endif
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 	SOC_SINGLE_EXT("adsp_primary_sharemem_scenario",
 		       SND_SOC_NOPM, 0, 0x1, 0,
@@ -1004,6 +1266,10 @@ static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
 		       SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_adsp_deepbuffer_mem_get,
 		       mt6779_adsp_deepbuffer_mem_set),
+	SOC_SINGLE_EXT("adsp_voip_sharemem_scenario",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_adsp_voip_mem_get,
+		       mt6779_adsp_voip_mem_set),
 	SOC_SINGLE_EXT("adsp_playback_sharemem_scenario",
 		       SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_adsp_playback_mem_get,
@@ -1012,6 +1278,18 @@ static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
 		       SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_adsp_offload_mem_get,
 		       mt6779_adsp_offload_mem_set),
+	SOC_SINGLE_EXT("adsp_capture_sharemem_scenario",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_adsp_capture_mem_get,
+		       mt6779_adsp_capture_mem_set),
+	SOC_SINGLE_EXT("adsp_ref_sharemem_scenario",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_adsp_ref_mem_get,
+		       mt6779_adsp_ref_mem_set),
+	SOC_SINGLE_EXT("adsp_a2dp_sharemem_scenario",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_adsp_a2dp_mem_get,
+		       mt6779_adsp_a2dp_mem_set),
 #endif
 };
 
@@ -1057,6 +1335,8 @@ static const struct snd_kcontrol_new memif_ul2_ch1_mix[] = {
 				    I_DL3_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH1", AFE_CONN5_1,
 				    I_DL4_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH1", AFE_CONN5_1,
+				    I_DL6_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("PCM_1_CAP_CH1", AFE_CONN5,
 				    I_PCM_1_CAP_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("PCM_2_CAP_CH1", AFE_CONN5,
@@ -1065,6 +1345,8 @@ static const struct snd_kcontrol_new memif_ul2_ch1_mix[] = {
 				    I_I2S2_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("CONNSYS_I2S_CH1", AFE_CONN5_1,
 				    I_CONNSYS_I2S_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("SRC_1_OUT_CH1", AFE_CONN5_1,
+				    I_SRC_1_OUT_CH1, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul2_ch2_mix[] = {
@@ -1080,6 +1362,8 @@ static const struct snd_kcontrol_new memif_ul2_ch2_mix[] = {
 				    I_DL3_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH2", AFE_CONN6_1,
 				    I_DL4_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH2", AFE_CONN6_1,
+				    I_DL6_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("PCM_1_CAP_CH1", AFE_CONN6,
 				    I_PCM_1_CAP_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("PCM_2_CAP_CH1", AFE_CONN6,
@@ -1088,6 +1372,8 @@ static const struct snd_kcontrol_new memif_ul2_ch2_mix[] = {
 				    I_I2S2_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("CONNSYS_I2S_CH2", AFE_CONN6_1,
 				    I_CONNSYS_I2S_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("SRC_1_OUT_CH2", AFE_CONN6_1,
+				    I_SRC_1_OUT_CH2, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul3_ch1_mix[] = {
@@ -1107,11 +1393,15 @@ static const struct snd_kcontrol_new memif_ul3_ch2_mix[] = {
 static const struct snd_kcontrol_new memif_ul4_ch1_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH1", AFE_CONN38,
 				    I_ADDA_UL_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("I2S0_CH1", AFE_CONN38,
+				    I_I2S0_CH1, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul4_ch2_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("ADDA_UL_CH2", AFE_CONN39,
 				    I_ADDA_UL_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("I2S0_CH2", AFE_CONN39,
+				    I_I2S0_CH2, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul5_ch1_mix[] = {
@@ -1131,6 +1421,8 @@ static const struct snd_kcontrol_new memif_ul6_ch1_mix[] = {
 				    I_DL1_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH1", AFE_CONN46,
 				    I_DL12_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH1", AFE_CONN46_1,
+				    I_DL6_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH1", AFE_CONN46,
 				    I_DL2_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH1", AFE_CONN46,
@@ -1146,6 +1438,8 @@ static const struct snd_kcontrol_new memif_ul6_ch2_mix[] = {
 				    I_DL1_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL12_CH2", AFE_CONN47,
 				    I_DL12_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DL6_CH2", AFE_CONN47_1,
+				    I_DL6_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL2_CH2", AFE_CONN47,
 				    I_DL2_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL3_CH2", AFE_CONN47,
@@ -1195,6 +1489,7 @@ static const struct snd_kcontrol_new mtk_dsp_dl_playback_mix[] = {
 	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL1", SND_SOC_NOPM, 0, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL2", SND_SOC_NOPM, 0, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL12", SND_SOC_NOPM, 0, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL6", SND_SOC_NOPM, 0, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL3", SND_SOC_NOPM, 0, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DSP_DL4", SND_SOC_NOPM, 0, 1, 0),
 };
@@ -1273,14 +1568,14 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 	{"UL1", NULL, "UL1_CH2"},
 	{"UL1", NULL, "UL1_CH3"},
 	{"UL1", NULL, "UL1_CH4"},
-	{"UL1_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL1_CH2", "ADDA_UL_CH2", "ADDA Capture"},
-	{"UL1_CH3", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL1_CH4", "ADDA_UL_CH2", "ADDA Capture"},
-	{"UL1_CH1", "ADDA_UL_CH3", "ADDA Capture"},
-	{"UL1_CH2", "ADDA_UL_CH4", "ADDA Capture"},
-	{"UL1_CH3", "ADDA_UL_CH3", "ADDA Capture"},
-	{"UL1_CH4", "ADDA_UL_CH4", "ADDA Capture"},
+	{"UL1_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL1_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
+	{"UL1_CH3", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL1_CH4", "ADDA_UL_CH2", "ADDA_UL_Mux"},
+	{"UL1_CH1", "ADDA_UL_CH3", "ADDA_CH34_UL_Mux"},
+	{"UL1_CH2", "ADDA_UL_CH4", "ADDA_CH34_UL_Mux"},
+	{"UL1_CH3", "ADDA_UL_CH3", "ADDA_CH34_UL_Mux"},
+	{"UL1_CH4", "ADDA_UL_CH4", "ADDA_CH34_UL_Mux"},
 
 	{"UL2", NULL, "UL2_CH1"},
 	{"UL2", NULL, "UL2_CH2"},
@@ -1290,6 +1585,8 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 	{"UL2_CH2", "DL1_CH2", "Hostless_UL2 UL"},
 	{"UL2_CH1", "DL12_CH1", "Hostless_UL2 UL"},
 	{"UL2_CH2", "DL12_CH2", "Hostless_UL2 UL"},
+	{"UL2_CH1", "DL6_CH1", "Hostless_UL2 UL"},
+	{"UL2_CH2", "DL6_CH2", "Hostless_UL2 UL"},
 	{"UL2_CH1", "DL2_CH1", "Hostless_UL2 UL"},
 	{"UL2_CH2", "DL2_CH2", "Hostless_UL2 UL"},
 	{"UL2_CH1", "DL3_CH1", "Hostless_UL2 UL"},
@@ -1314,13 +1611,16 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 	{"UL_MONO_1_CH1", "PCM_2_CAP_CH1", "PCM 2 Capture"},
 
 	{"UL_MONO_2", NULL, "UL_MONO_2_CH1"},
-	{"UL_MONO_2_CH1", "ADDA_UL_CH1", "ADDA Capture"},
+	{"UL_MONO_2_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
 
 	{"UL_MONO_3", NULL, "UL_MONO_3_CH1"},
-	{"UL_MONO_3_CH1", "ADDA_UL_CH1", "ADDA Capture"},
+	{"UL_MONO_3_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
 
 	{"UL2_CH1", "CONNSYS_I2S_CH1", "Connsys I2S"},
 	{"UL2_CH2", "CONNSYS_I2S_CH2", "Connsys I2S"},
+
+	{"UL2_CH1", "SRC_1_OUT_CH1", "HW_SRC_1_Out"},
+	{"UL2_CH2", "SRC_1_OUT_CH2", "HW_SRC_1_Out"},
 
 	{"UL3", NULL, "UL3_CH1"},
 	{"UL3", NULL, "UL3_CH2"},
@@ -1329,25 +1629,30 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 
 	{"UL4", NULL, "UL4_CH1"},
 	{"UL4", NULL, "UL4_CH2"},
-	{"UL4_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL4_CH2", "ADDA_UL_CH2", "ADDA Capture"},
+
+	{"UL4_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL4_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
+	{"UL4_CH1", "I2S0_CH1", "I2S0"},
+	{"UL4_CH2", "I2S0_CH2", "I2S0"},
 
 	{"UL5", NULL, "UL5_CH1"},
 	{"UL5", NULL, "UL5_CH2"},
-	{"UL5_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL5_CH2", "ADDA_UL_CH2", "ADDA Capture"},
+	{"UL5_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL5_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
 
 	{"UL6", NULL, "UL6_CH1"},
 	{"UL6", NULL, "UL6_CH2"},
 
-	{"UL6_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL6_CH2", "ADDA_UL_CH2", "ADDA Capture"},
+	{"UL6_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL6_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
 	{"UL6_CH1", "DL1_CH1", "Hostless_UL6 UL"},
 	{"UL6_CH2", "DL1_CH2", "Hostless_UL6 UL"},
 	{"UL6_CH1", "DL2_CH1", "Hostless_UL6 UL"},
 	{"UL6_CH2", "DL2_CH2", "Hostless_UL6 UL"},
 	{"UL6_CH1", "DL12_CH1", "Hostless_UL6 UL"},
 	{"UL6_CH2", "DL12_CH2", "Hostless_UL6 UL"},
+	{"UL6_CH1", "DL6_CH1", "Hostless_UL6 UL"},
+	{"UL6_CH2", "DL6_CH2", "Hostless_UL6 UL"},
 	{"UL6_CH1", "DL3_CH1", "Hostless_UL6 UL"},
 	{"UL6_CH2", "DL3_CH2", "Hostless_UL6 UL"},
 	{"UL6_CH1", "DL4_CH1", "Hostless_UL6 UL"},
@@ -1356,13 +1661,13 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 
 	{"UL7", NULL, "UL7_CH1"},
 	{"UL7", NULL, "UL7_CH2"},
-	{"UL7_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL7_CH2", "ADDA_UL_CH2", "ADDA Capture"},
+	{"UL7_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL7_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
 
 	{"UL8", NULL, "UL8_CH1"},
 	{"UL8", NULL, "UL8_CH2"},
-	{"UL8_CH1", "ADDA_UL_CH1", "ADDA Capture"},
-	{"UL8_CH2", "ADDA_UL_CH2", "ADDA Capture"},
+	{"UL8_CH1", "ADDA_UL_CH1", "ADDA_UL_Mux"},
+	{"UL8_CH2", "ADDA_UL_CH2", "ADDA_UL_Mux"},
 
 	{"DL_TO_DSP", NULL, "Hostless_DSP_DL DL"},
 	{"Hostless_DSP_DL DL", NULL, "DSP_DL"},
@@ -1370,6 +1675,7 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 	{"DSP_DL", "DSP_DL1", "DL1"},
 	{"DSP_DL", "DSP_DL2", "DL2"},
 	{"DSP_DL", "DSP_DL12", "DL12"},
+	{"DSP_DL", "DSP_DL6", "DL6"},
 	{"DSP_DL", "DSP_DL3", "DL3"},
 	{"DSP_DL", "DSP_DL4", "DL4"},
 };
@@ -1939,6 +2245,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ0_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ0_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ0_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ0_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_1] = {
 		.id = MT6779_IRQ_1,
@@ -1952,6 +2262,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ1_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ1_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ1_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ1_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_2] = {
 		.id = MT6779_IRQ_2,
@@ -1965,6 +2279,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ2_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ2_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ2_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ2_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_3] = {
 		.id = MT6779_IRQ_3,
@@ -1978,6 +2296,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ3_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ3_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ3_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ3_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_4] = {
 		.id = MT6779_IRQ_4,
@@ -1991,6 +2313,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ4_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ4_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ4_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ4_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_5] = {
 		.id = MT6779_IRQ_5,
@@ -2004,6 +2330,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ5_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ5_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ5_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ5_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_6] = {
 		.id = MT6779_IRQ_6,
@@ -2017,6 +2347,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ6_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ6_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ6_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ6_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_7] = {
 		.id = MT6779_IRQ_7,
@@ -2030,6 +2364,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ7_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ7_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ7_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ7_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_8] = {
 		.id = MT6779_IRQ_8,
@@ -2043,6 +2381,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ8_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ8_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ8_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ8_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_9] = {
 		.id = MT6779_IRQ_9,
@@ -2056,6 +2398,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ9_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ9_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ9_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ9_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_10] = {
 		.id = MT6779_IRQ_10,
@@ -2069,6 +2415,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ10_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ10_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ10_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ10_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_11] = {
 		.id = MT6779_IRQ_11,
@@ -2082,6 +2432,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ11_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ11_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ11_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ11_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_12] = {
 		.id = MT6779_IRQ_12,
@@ -2095,6 +2449,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ12_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ12_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ12_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ12_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_13] = {
 		.id = MT6779_IRQ_13,
@@ -2108,6 +2466,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ13_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ13_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ13_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ13_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_14] = {
 		.id = MT6779_IRQ_14,
@@ -2121,6 +2483,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ14_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ14_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ14_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ14_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_15] = {
 		.id = MT6779_IRQ_15,
@@ -2134,6 +2500,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ15_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ15_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ15_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ15_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_16] = {
 		.id = MT6779_IRQ_16,
@@ -2147,6 +2517,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ16_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ16_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ16_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ16_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_17] = {
 		.id = MT6779_IRQ_17,
@@ -2160,6 +2534,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ17_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ17_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ17_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ17_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_18] = {
 		.id = MT6779_IRQ_18,
@@ -2173,6 +2551,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ18_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ18_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ18_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ18_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_19] = {
 		.id = MT6779_IRQ_19,
@@ -2186,6 +2568,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ19_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ19_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ19_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ19_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_20] = {
 		.id = MT6779_IRQ_20,
@@ -2199,6 +2585,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ20_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ20_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ20_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ20_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_21] = {
 		.id = MT6779_IRQ_21,
@@ -2212,6 +2602,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ21_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ21_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ21_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ21_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_22] = {
 		.id = MT6779_IRQ_22,
@@ -2225,6 +2619,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ22_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ22_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ22_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ22_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_23] = {
 		.id = MT6779_IRQ_23,
@@ -2238,6 +2636,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ23_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ23_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ23_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ23_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_24] = {
 		.id = MT6779_IRQ_24,
@@ -2251,6 +2653,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ24_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ24_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ24_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ24_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_25] = {
 		.id = MT6779_IRQ_25,
@@ -2264,6 +2670,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ25_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ25_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ25_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ25_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_26] = {
 		.id = MT6779_IRQ_26,
@@ -2277,6 +2687,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ26_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ26_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ26_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ26_MCU_SCP_EN_SFT,
 	},
 	[MT6779_IRQ_31] = {
 		.id = MT6779_IRQ_31,
@@ -2290,6 +2704,10 @@ static const struct mtk_base_irq_data irq_data[MT6779_IRQ_NUM] = {
 		.irq_en_shift = IRQ31_MCU_ON_SFT,
 		.irq_clr_reg = AFE_IRQ_MCU_CLR,
 		.irq_clr_shift = IRQ31_MCU_CLR_SFT,
+		.irq_ap_en_reg = AFE_IRQ_MCU_EN,
+		.irq_ap_en_shift = IRQ31_MCU_EN_SFT,
+		.irq_scp_en_reg = AFE_IRQ_MCU_SCP_EN,
+		.irq_scp_en_shift = IRQ31_MCU_SCP_EN_SFT,
 	},
 };
 
@@ -2550,6 +2968,8 @@ static bool mt6779_is_volatile_reg(struct device *dev, unsigned int reg)
 	case AFE_DAC_CON0:
 	case AFE_IRQ_MCU_CON0:
 	case AFE_IRQ_MCU_EN:
+	case AFE_IRQ_MCU_DSP_EN:
+	case AFE_IRQ_MCU_SCP_EN:
 		return true;
 #endif
 	default:
@@ -4717,6 +5137,7 @@ static const dai_register_cb dai_register_cbs[] = {
 	mt6779_dai_adda_register,
 	mt6779_dai_i2s_register,
 	mt6779_dai_hw_gain_register,
+	mt6779_dai_src_register,
 	mt6779_dai_pcm_register,
 	mt6779_dai_tdm_register,
 	mt6779_dai_hostless_register,
@@ -4898,7 +5319,8 @@ static int mt6779_afe_pcm_dev_probe(struct platform_device *pdev)
 		goto err_dai_component;
 	}
 
-#ifdef CONFIG_SND_SOC_MTK_AUDIO_DSP
+#if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP) ||\
+	defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
 	audio_set_dsp_afe(afe);
 #endif
 

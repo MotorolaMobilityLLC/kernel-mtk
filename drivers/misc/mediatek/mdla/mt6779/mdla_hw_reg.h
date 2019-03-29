@@ -23,6 +23,20 @@
 #define MDLA_IRQ_MASK      (0x1FFFFF)
 #define MDLA_AXI_CTRL_MASK ((1 << 7) | (1 << 16))
 
+/* Infra TOPAXI */
+#define INFRA_TOPAXI_PROTECTEN_MCU_SET  (0x2C4)
+#define INFRA_TOPAXI_PROTECTEN_MCU_CLR  (0x2C8)
+#define INFRA_TOPAXI_PROTECTEN_MCU_STA0	(0x2E0)
+#define INFRA_TOPAXI_PROTECTEN_MCU_STA1	(0x2E4)
+#define VPU_CORE2_PROT_STEP1_0_MASK \
+	((0x1 << 8) | (0x1 << 9) | (0x1 << 10))
+#define VPU_CORE2_PROT_STEP1_0_ACK_MASK \
+	((0x1 << 8) | (0x1 << 9) | (0x1 << 10))
+
+/* APU CONN */
+#define APU_CONN_SW_RST    (0x00C)
+#define APU_CORE2_RSTB     (1 << 15)
+
 /* MDLA config */
 #define MDLA_CG_CON        (0x000)
 #define MDLA_CG_SET        (0x004)
@@ -84,6 +98,11 @@
 #define MREG_TOP_G_STREAM0 (0x053C)
 #define MREG_TOP_G_STREAM1 (0x0540)
 #define MREG_TOP_G_IDLE    (0x0544)
+
+#define MREG_TOP_ENG0      (0x0550)
+#define MREG_TOP_ENG1      (0x0554)
+#define MREG_TOP_ENG2      (0x0558)
+#define MREG_TOP_ENG11     (0x057C)
 
 #define MREG_CMD_SIZE      (0x180)
 #define MREG_CMD_SWCMD_ID  (0x150)

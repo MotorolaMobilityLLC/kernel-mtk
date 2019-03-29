@@ -21,10 +21,11 @@ enum {
 	UPD_MEM_ID,
 	QOS_MEM_ID,
 	SWPM_MEM_ID,
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) || defined(CONFIG_MTK_MET_MEM_ALLOC)
 #else
 	MET_MEM_ID,
 #endif
+	SMI_MEM_ID,
 	NUMS_MEM_ID,
 };
 
@@ -37,8 +38,8 @@ enum {
 static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 	{
 		.num = SSPM_MEM_ID,
-		.size = 0x400 + SSPM_PLT_LOGGER_BUF_LEN,
-		/* logger header + timesync header + 1M log buffer */
+		.size = 0x100 + SSPM_PLT_LOGGER_BUF_LEN,
+		/* logger header + 1M log buffer */
 	},
 	{
 		.num = PWRAP_MEM_ID,
@@ -58,16 +59,25 @@ static struct sspm_reserve_mblock sspm_reserve_mblock[NUMS_MEM_ID] = {
 	},
 	{
 		.num = SWPM_MEM_ID,
-		.size = 0xC00,  /* 3K */
+		.size = 0x1800,  /* 6K */
 	},
-#ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
+#if defined(CONFIG_MTK_GMO_RAM_OPTIMIZE) || defined(CONFIG_MTK_MET_MEM_ALLOC)
 #else
 	{
 		.num = MET_MEM_ID,
 		.size = 0x400000, /* 4M */
 	},
 #endif
-    /* TO align 64K, total is 1M+64K. The remaining size = 0xB900. */
+	{
+		.num = SMI_MEM_ID,
+		.size = 0x9000, /* 36K */
+	},
+	/* TO align 64K, total is 1M(5M)+64K. The remaining size = 0x2000. */
 };
 #endif
+#endif
+
+#ifdef SSPM_SHARE_BUFFER_SUPPORT
+#define SSPM_SHARE_REGION_BASE  0x20000
+#define SSPM_SHARE_REGION_SIZE  0x8000
 #endif

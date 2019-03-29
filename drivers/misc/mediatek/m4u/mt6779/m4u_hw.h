@@ -20,8 +20,22 @@
 #define MVA_DOMAIN_NR           TOTAL_M4U_NUM
 #define M4U_SEC_MVA_DOMAIN      0
 
-/* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
-#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 1 : 1)
+/*0x7FF00000 ~ (0x8010 0000 - 1) not use in vpu_iommu*/
+#define VPU_IOMMU_MVA_START     0x7FF00000
+#define VPU_IOMMU_MVA_END       0x80100000
+
+#define VPU_IOMMU_MVA_SIZE      \
+	(VPU_IOMMU_MVA_END - VPU_IOMMU_MVA_START)
+
+/* m4u0 has 2 slaves, iommu(m4u1) has 2 slave */
+#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 2)
+
+/* m4u call atf debug parameter */
+#define M4U_ATF_SECURITY_DEBUG_EN  (20)
+#define M4U_ATF_BANK1_4_TF         (21)
+#define M4U_ATF_DUMP_INFO          (22)
+
+#define M4U_PROTECT_BANK           (3)
 
 /* seq range related */
 #if 0
@@ -42,7 +56,10 @@
 #define MAU_NR_PER_M4U_SLAVE    1
 
 /* smi */
-#define SMI_LARB_NR     9
+#define SMI_LARB_NR     11
+
+/* CCU fault ID */
+#define CCU_FAULT_ID    24
 
 /* prog pfh dist related */
 #define PROG_PFH_DIST    2
@@ -51,6 +68,25 @@
 #define M4U1_PROG_PFH_NR         (PROG_PFH_DIST)
 #define M4U_PROG_PFH_NUM(m4u_id)   \
 	((m4u_id) ? M4U1_PROG_PFH_NR : M4U0_PROG_PFH_NR)
+
+/* VPU_IOMMU AXI_ID */
+#define IDMA_0   0x9
+#define CORE_0   0x1
+#define EDMA     0x5
+#define IDMA_1   0xB
+#define CORE_1   0x3
+#define EDMB     0x7
+#define CORE_2   0x0
+#define EDMC     0x2
+
+#define COM_IDMA_0   F_MSK(3, 0)
+#define COM_CORE_0   (F_MSK(3, 0) | F_MSK(9, 8))
+#define COM_EDMA     (F_MSK(2, 0) | F_BIT_SET(9))
+#define COM_IDMA_1   F_MSK(3, 0)
+#define COM_CORE_1   (F_MSK(3, 0) | F_MSK(9, 8))
+#define COM_EDMB     (F_MSK(2, 0) | F_BIT_SET(9))
+#define COM_CORE_2   (F_MSK(1, 0) | F_BIT_SET(9))
+#define COM_EDMC     (F_MSK(1, 0) | F_MSK(9, 8))
 
 struct M4U_PERF_COUNT {
 	unsigned int transaction_cnt;
@@ -123,9 +159,33 @@ struct M4U_PROG_DIST_T {	/* prog pfh dist */
 extern struct m4u_port_t gM4uPort[];
 extern int gM4u_port_num;
 
+static inline char *m4u_get_vpu_port_name(int fault_id)
+{
+	fault_id &= F_MSK(9, 0);
+
+	if ((fault_id & COM_IDMA_0) == IDMA_0)
+		return "VPU_IDMA_0";
+	else if ((fault_id & COM_CORE_0) == CORE_0)
+		return "VPU_CORE_0";
+	else if ((fault_id & COM_EDMA) == EDMA)
+		return "EDMA";
+	else if ((fault_id & COM_IDMA_1) == IDMA_1)
+		return "VPU_IDMA_1";
+	else if ((fault_id & COM_CORE_1) == CORE_1)
+		return "VPU_CORE_1";
+	else if ((fault_id & COM_EDMB) == EDMB)
+		return "EDMB";
+	else if ((fault_id & COM_CORE_2) == CORE_2)
+		return "MDLA_CORE_2";
+	else if ((fault_id & COM_EDMC) == EDMC)
+		return "EDMC";
+	else
+		return "VPU_UNKNOWN";
+}
+
 static inline char *m4u_get_port_name(int portID)
 {
-	if ((portID < gM4u_port_num) && (portID >= M4U_PORT_DISP_OVL0))
+	if ((portID < gM4u_port_num) && (portID >= M4U_PORT_DISP_POSTMASK0))
 		return gM4uPort[portID].name;
 
 	return "m4u_port_unknown";
@@ -137,15 +197,16 @@ static inline int m4u_get_port_by_tf_id(int m4u_id, int tf_id)
 
 	tf_id_old = tf_id;
 
-	if (m4u_id == 0)
+	if (m4u_id == 0) {
 		tf_id &= F_MMU0_INT_ID_TF_MSK;
-	else if (m4u_id == 1)
+		if ((tf_id >> 7) == CCU_FAULT_ID)
+			return M4U_PORT_CCU0;
+	} else if (m4u_id == 1)
 		return M4U_PORT_VPU;
 
 	for (i = 0; i < gM4u_port_num; i++) {
-		if ((gM4uPort[i].tf_id == tf_id ||
-			(gM4uPort[i].tf_id == (tf_id & F_MMU0_INT_CCU_TF))) &&
-			(gM4uPort[i].m4u_id == m4u_id))
+		if (gM4uPort[i].tf_id == tf_id &&
+			gM4uPort[i].m4u_id == m4u_id)
 			return i;
 	}
 	M4UMSG("error: m4u_id=%d, tf_id=0x%x, domain=%d\n",
@@ -160,7 +221,7 @@ static inline int m4u_port_2_larb_port(int port)
 
 static inline int m4u_port_2_larbid(int port)
 {
-	if ((port < gM4u_port_num) && (port >= M4U_PORT_DISP_OVL0))
+	if ((port < gM4u_port_num) && (port >= M4U_PORT_DISP_POSTMASK0))
 		return gM4uPort[port].larb_id;
 	return 0xff;
 }
@@ -203,6 +264,7 @@ static inline int larb_port_2_m4u_port(int larb, int larb_port)
 
 void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg);
 int m4u_dump_reg(int m4u_index, unsigned int start, unsigned int end);
+void m4u_call_atf_debug(int m4u_debug_id);
 
 extern struct m4u_device *gM4uDev;
 

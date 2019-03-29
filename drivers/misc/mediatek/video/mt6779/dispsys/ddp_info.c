@@ -282,15 +282,6 @@ struct ddp_module ddp_modules[DISP_MODULE_NUM] = {
 		{"mediatek,dpi0", 0x14015000, 293, 3, 0, 0}
 	},
 
-	[DISP_MODULE_DBI] = {
-		DISP_MODULE_DBI,
-		DISP_T_DBI,
-		"dbi",
-		0,
-		NULL,
-		{"mediatek,dbi", 0x1401d000, 0, 0, 0, 0}
-	},
-
 	[DISP_MODULE_DPI_VIRTUAL] = {
 		DISP_MODULE_DPI_VIRTUAL,
 		DISP_T_UNKNOWN,
@@ -514,23 +505,6 @@ ddp_get_module_id_by_idx(enum DISP_MODULE_TYPE_ENUM module_t, unsigned int idx)
 			return i;
 	}
 
-	return DISP_MODULE_UNKNOWN;
-}
-
-enum DISP_MODULE_ENUM disp_irq_to_module(unsigned int irq)
-{
-	int i;
-
-	if (irq == 0)
-		return DISP_MODULE_UNKNOWN;
-
-	for (i = 0; i < DISP_MODULE_NUM; i++) {
-		if (irq == ddp_get_module_irq(i))
-			return i;
-	}
-
-	DDP_PR_ERR("cannot find module for irq %d\n", irq);
-	WARN_ON(1);
 	return DISP_MODULE_UNKNOWN;
 }
 

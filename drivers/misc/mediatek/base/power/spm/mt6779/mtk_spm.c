@@ -82,12 +82,24 @@ int __attribute__((weak)) spm_fs_init(void)
 	return 0;
 }
 
+
+/* Note: implemented in mtk_spm_utils.c */
+ssize_t __attribute__((weak)) get_spm_system_stats(
+	char *ToUserBuf, size_t sz, void *priv) { return 0; }
+
+ssize_t __attribute__((weak)) get_spm_subsystem_stats(
+	char *ToUserBuf, size_t sz, void *priv) { return 0; }
+
 /* Note: implemented in mtk_spm_sleep.c */
 ssize_t __attribute__((weak)) get_spm_last_wakeup_src(
 	char *ToUserBuf, size_t sz, void *priv) { return 0; }
 
 /* Note: implemented in mtk_spm_sleep.c */
 ssize_t __attribute__((weak)) get_spm_sleep_count(
+	char *ToUserBuf, size_t sz, void *priv) { return 0; }
+
+/* Note: implemented in mtk_spm_utils.c */
+ssize_t __attribute__((weak)) get_spmfw_version(
 	char *ToUserBuf, size_t sz, void *priv) { return 0; }
 
 /* Note: implemented in mtk_spm_mcdsr.c */
@@ -249,6 +261,14 @@ static struct notifier_block spm_pm_notifier_func = {
 #endif /* CONFIG_PM */
 #endif /* CONFIG_FPGA_EARLY_PORTING */
 
+static const struct mtk_idle_sysfs_op spm_system_stats_fops = {
+	.fs_read = get_spm_system_stats,
+};
+
+static const struct mtk_idle_sysfs_op spm_subsystem_stats_fops = {
+	.fs_read = get_spm_subsystem_stats,
+};
+
 static const struct mtk_idle_sysfs_op spm_last_wakeup_src_fops = {
 	.fs_read = get_spm_last_wakeup_src,
 };
@@ -259,6 +279,10 @@ static const struct mtk_idle_sysfs_op spm_sleep_count_fops = {
 
 static const struct mtk_idle_sysfs_op spm_last_debug_flag_fops = {
 	.fs_read = get_spm_last_debug_flag,
+};
+
+static const struct mtk_idle_sysfs_op spm_spmfw_version_fops = {
+	.fs_read = get_spmfw_version,
 };
 
 static const struct mtk_idle_sysfs_op spm_mcdsr_state_fops = {
@@ -305,12 +329,18 @@ static int spm_module_init(void)
 	if (mtk_idle_sysfs_entry_root_get(&pParent) == 0) {
 		mtk_idle_sysfs_entry_func_create("spm", 0444
 			, pParent, &pParent2ND);
+		mtk_idle_sysfs_entry_func_node_add("system_stats", 0444
+			, &spm_system_stats_fops, &pParent2ND, NULL);
+		mtk_idle_sysfs_entry_func_node_add("subsystem_stats", 0444
+			, &spm_subsystem_stats_fops, &pParent2ND, NULL);
 		mtk_idle_sysfs_entry_func_node_add("spm_sleep_count", 0444
 			, &spm_sleep_count_fops, &pParent2ND, NULL);
 		mtk_idle_sysfs_entry_func_node_add("spm_last_wakeup_src", 0444
 			, &spm_last_wakeup_src_fops, &pParent2ND, NULL);
 		mtk_idle_sysfs_entry_func_node_add("spm_last_debug_flag", 0444
 			, &spm_last_debug_flag_fops, &pParent2ND, NULL);
+		mtk_idle_sysfs_entry_func_node_add("spmfw_version", 0444
+			, &spm_spmfw_version_fops, &pParent2ND, NULL);
 		mtk_idle_sysfs_entry_func_node_add("spm_mcdsr_state", 0444
 			, &spm_mcdsr_state_fops, &pParent2ND, NULL);
 	}

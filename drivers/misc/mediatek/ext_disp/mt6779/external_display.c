@@ -293,7 +293,8 @@ static int _build_path_direct_link(void)
 	}
 	EXT_DISP_LOG("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
 
-	/* sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB1; */
+	/* todo: correct module */
+	sPort.ePortID = M4U_PORT_UNKNOWN;
 	sPort.Virtuality = ext_disp_use_m4u;
 	sPort.Security = 0;
 	sPort.Distance = 1;
@@ -852,7 +853,7 @@ int ext_disp_init(char *lcm_name, unsigned int session)
 
 	pconfig = dpmgr_path_get_last_config(pgc->dpmgr_handle);
 	if (pconfig) {
-		memset((void *)pconfig, 0, sizeof(pconfig));
+		memset((void *)pconfig, 0, sizeof(struct disp_ddp_path_config));
 		memcpy(&(pconfig->dispif_config), &extd_lcm_params,
 		       sizeof(struct LCM_PARAMS));
 
@@ -1276,7 +1277,7 @@ int ext_disp_frame_cfg_input(struct disp_frame_cfg_t *cfg)
 		if (ext_disp_get_ovl_req_status(session) ==
 		    EXTD_OVL_INSERT_REQ) {
 			EXT_DISP_LOG("config M4U Port DISP_MODULE_OVL1_2L\n");
-			/* sPort.ePortID = M4U_PORT_DISP_2L_OVL0_LARB1; */
+			sPort.ePortID = M4U_PORT_UNKNOWN;
 			sPort.Virtuality = 1;
 			sPort.Security = 0;
 			sPort.Distance = 1;

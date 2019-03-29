@@ -56,9 +56,9 @@ enum adsp_ipi_id {
 	ADSP_IPI_DVFS_SLEEP,
 	ADSP_IPI_DVFS_WAKE,
 	ADSP_IPI_DVFS_SET_FREQ,
-	ADSP_IPI_ADSP_PLL_CTRL,
-	ADSP_IPI_MET_ADSP,
-	ADSP_IPI_ADSP_TIMER,
+	ADSP_IPI_ADSP_PLL_CTRL = 27,
+	ADSP_IPI_MET_ADSP = 30,
+	ADSP_IPI_ADSP_TIMER = 31,
 	ADSP_NR_IPI,
 };
 
@@ -72,21 +72,6 @@ enum adsp_ipi_status {
 
 struct adsp_ipi_desc {
 	void (*handler)(int id, void *data, unsigned int len);
-#if ADSP_IPI_STAMP_SUPPORT
-#define ADSP_IPI_ID_STAMP_SIZE 5
-	/* recv_flag[recv_count] recv_timestamp[Timestamp] */
-	unsigned long long recv_timestamp[ADSP_IPI_ID_STAMP_SIZE];
-	/* recv_flag[recv_count] recv_timestamp[Timestamp] */
-	unsigned long long handler_timestamp[ADSP_IPI_ID_STAMP_SIZE];
-	/* send_flag[send_count] send_timestamp[Timestamp] */
-	unsigned long long send_timestamp[ADSP_IPI_ID_STAMP_SIZE];
-	unsigned int recv_flag[ADSP_IPI_ID_STAMP_SIZE];
-	unsigned int send_flag[ADSP_IPI_ID_STAMP_SIZE];
-#endif
-	unsigned int recv_count;
-	unsigned int success_count;
-	unsigned int busy_count;
-	unsigned int error_count;
 	const char *name;
 };
 
@@ -124,8 +109,8 @@ extern int adsp_awake_dump_list(enum adsp_core_id adsp_id);
 extern int adsp_awake_force_lock(enum adsp_core_id adsp_id);
 extern int adsp_awake_force_unlock(enum adsp_core_id adsp_id);
 extern int adsp_awake_set_normal(enum adsp_core_id adsp_id);
+extern int adsp_awake_unlock_adsppll(enum adsp_core_id adsp_id,
+				     uint32_t unlock);
 
-extern unsigned int is_adsp_ready(enum adsp_core_id adsp_id);
-extern void adsp_ipi_status_dump(void);
-extern void adsp_ipi_status_dump_id(enum adsp_ipi_id id);
+extern int is_adsp_ready(enum adsp_core_id adsp_id);
 #endif

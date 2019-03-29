@@ -47,6 +47,12 @@
 #include <cmdq_record.h>
 #include <smi_public.h>
 
+#define MFB_PMQOS
+#ifdef MFB_PMQOS
+#include <linux/pm_qos.h>
+#include <mmdvfs_pmqos.h>
+#endif
+
 /* Measure the kernel performance
  * #define __MFB_KERNEL_PERFORMANCE_MEASURE__
  */
@@ -73,21 +79,6 @@
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 #include <linux/clk.h>
 struct MFB_CLK_STRUCT {
-#define SMI_CLK
-#ifndef SMI_CLK
-	struct clk *CG_SCP_SYS_MM0;
-	struct clk *CG_MM_SMI_COMMON;
-	struct clk *CG_MM_SMI_COMMON_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M0_2X;
-	struct clk *CG_MM_SMI_COMMON_GALS_M1_2X;
-	struct clk *CG_MM_SMI_COMMON_UPSZ0;
-	struct clk *CG_MM_SMI_COMMON_UPSZ1;
-	struct clk *CG_MM_SMI_COMMON_FIFO0;
-	struct clk *CG_MM_SMI_COMMON_FIFO1;
-	struct clk *CG_MM_LARB5;
-	struct clk *CG_SCP_SYS_ISP;
-	struct clk *CG_IMGSYS_LARB;
-#endif
 	struct clk *CG_IMGSYS_MFB;
 };
 struct MFB_CLK_STRUCT mfb_clk;
@@ -102,9 +93,9 @@ struct MFB_CLK_STRUCT mfb_clk;
 #endif
 
 #define MFB_DEV_NAME                "camera-mfb"
-#define EP_NO_CLKMGR
+/* #define EP_NO_CLKMGR */
 #define BYPASS_REG         (0)
-#define MFB_WAITIRQ_LOG
+/* #define MFB_WAITIRQ_LOG */
 #define MFB_USE_GCE
 #define MFB_DEBUG_USE
 #define DUMMY_MFB	   (0)
@@ -241,6 +232,10 @@ static unsigned int g_u4MfbCnt;
 /* index 0 is for all the user that do not do register irq first */
 #define IRQ_USER_NUM_MAX 32
 
+#ifdef MFB_PMQOS
+static struct pm_qos_request mfb_qos_request;
+static u64 max_img_freq;
+#endif
 
 enum MFB_FRAME_STATUS_ENUM {
 	MFB_FRAME_STATUS_EMPTY,		/* 0 */
@@ -281,6 +276,11 @@ struct MFB_REQUEST_RING_STRUCT {
 
 struct  MFB_CONFIG_STRUCT {
 	MFB_Config MfbFrameConfig[_SUPPORT_MAX_MFB_FRAME_REQUEST_];
+};
+
+struct S_START_T {
+	unsigned int sec;
+	unsigned int usec;
 };
 
 static struct MFB_REQUEST_RING_STRUCT g_MFB_ReqRing;
@@ -348,6 +348,7 @@ struct SV_LOG_STR {
 	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
+	struct S_START_T   _lastIrqTime;
 } *MFB_PSV_LOG_STR;
 
 static void *pLog_kmalloc;
@@ -363,31 +364,89 @@ static struct SV_LOG_STR gSvLog[MFB_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
+	signed int avaLen;\
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
+	unsigned int i = 0;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
-		str_leng = NORMAL_STR_LEN*ERR_PAGE;\
+		str_leng = NORMAL_STR_LEN*ERR_PAGE; \
 	} else if (logT == _LOG_DBG) {\
-		str_leng = NORMAL_STR_LEN*DBG_PAGE;\
+		str_leng = NORMAL_STR_LEN*DBG_PAGE; \
 	} else if (logT == _LOG_INF) {\
 		str_leng = NORMAL_STR_LEN*INF_PAGE;\
 	} else {\
 		str_leng = 0;\
 	} \
-	ptr = pDes = (char *)\
-		&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
+	ptr = pDes = \
+	(char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+	snprintf((char *)(pDes), avaLen, "[%d.%06d]" fmt,\
+		gSvLog[irq]._lastIrqTime.sec, gSvLog[irq]._lastIrqTime.usec,\
+		##__VA_ARGS__);   \
 	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
 		log_err("log str over flow(%d)", irq);\
 	} \
 	while (*ptr++ != '\0') {        \
 		(*ptr2)++;\
 	}     \
+	} else { \
+	log_inf("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+	ptr = pSrc->_str[ppb][logT];\
+	if (pSrc->_cnt[ppb][logT] != 0) {\
+		if (logT == _LOG_DBG) {\
+			for (i = 0; i < DBG_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else if (logT == _LOG_INF) {\
+			for (i = 0; i < INF_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else if (logT == _LOG_ERR) {\
+			for (i = 0; i < ERR_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else {\
+			log_err("N.S.%d", logT);\
+		} \
+		ptr[0] = '\0';\
+		pSrc->_cnt[ppb][logT] = 0;\
+		avaLen = str_leng - 1;\
+		ptr = pDes = \
+		(char *)&(pSrc->_str[ppb][logT][pSrc->_cnt[ppb][logT]]);\
+		ptr2 = &(pSrc->_cnt[ppb][logT]);\
+		snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
+		while (*ptr++ != '\0') {\
+			(*ptr2)++;\
+		} \
+	} \
+	} \
 } while (0)
 #else
-#define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)\
-	xlog_printk(ANDROID_LOG_DEBUG,\
-	"KEEPER", "[%s] " fmt, __func__, ##__VA_ARGS__)
+#define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, args...) \
+pr_debug(IRQTag fmt,  ##args)
 #endif
 
 #if 1
@@ -945,6 +1004,45 @@ static inline unsigned int MFB_JiffiesToMs(unsigned int Jiffies)
 		(unsigned int)MFB_RD32(ISP_MFB_BASE + i+0xc));\
 	} \
 }
+
+#ifdef MFB_PMQOS
+void MFBQOS_Init(void)
+{
+	s32 result = 0;
+	u64 img_freq_steps[MAX_FREQ_STEP];
+	u32 step_size;
+
+	/* Call pm_qos_add_request when initialize module or driver prob */
+	pm_qos_add_request(
+		&mfb_qos_request,
+		PM_QOS_IMG_FREQ,
+		PM_QOS_MM_FREQ_DEFAULT_VALUE);
+
+	/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
+	result = mmdvfs_qos_get_freq_steps(
+		PM_QOS_IMG_FREQ,
+		img_freq_steps,
+		&step_size);
+
+	if (result < 0 || step_size == 0)
+		log_inf("get MMDVFS freq steps failed, result: %d\n", result);
+	else
+		max_img_freq = img_freq_steps[0];
+}
+
+void MFBQOS_Uninit(void)
+{
+	pm_qos_remove_request(&mfb_qos_request);
+}
+
+void MFBQOS_UpdateImgFreq(bool start)
+{
+	if (start) /* start MFB, configure MMDVFS to highest CLK */
+		pm_qos_update_request(&mfb_qos_request, max_img_freq);
+	else /* finish MFB, config MMDVFS to lowest CLK */
+		pm_qos_update_request(&mfb_qos_request, 0);
+}
+#endif
 
 void MFB_DumpUserSpaceReg(MFB_Config *pMfbConfig)
 {
@@ -1609,6 +1707,7 @@ static signed int ConfigMFBHW(MFB_Config *pMfbConfig)
 		struct cmdqRecStruct *handle;
 		uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_MFB);
 #endif
+	/* unsigned int tpipe_index; */
 
 	if (MFB_DBG_DBGLOG == (MFB_DBG_DBGLOG & MFBInfo.DebugMask)) {
 	log_dbg("ConfigMFBHW Start!\n");
@@ -1922,11 +2021,22 @@ static signed int ConfigMFBHW(MFB_Config *pMfbConfig)
 	/* cmdqRecWrite(handle, MFB_MFB_MAIN_DCM_DIS_HW,*/
 	/* 0xFFFFFFFF, CMDQ_REG_MASK); */
 
+	/* for (tpipe_index = 0; */
+	/*	tpipe_index < pMfbConfig->TPIPE_NO; */
+	/*	tpipe_index ++) { */
+	/*	log_inf("TRIGGER TILE: %d\n", tpipe_index); */
+	/*	cmdqRecWrite(handle, MFBDMA_TDRI_BASE_ADDR_HW, */
+	/*	pMfbConfig->MFBDMA_TDRI_BASE_ADDR + 40 * tpipe_index,*/
+	/*	CMDQ_REG_MASK); */
 	cmdqRecWrite(handle, MFB_MFB_TOP_CFG1_HW, 0x1, CMDQ_REG_MASK);
 	cmdqRecWait(handle, CMDQ_EVENT_MFB_DONE);
 	cmdqRecWrite(handle, MFB_MFB_TOP_CFG1_HW, 0x0, CMDQ_REG_MASK);
+	/*}*/
 #endif
 
+#ifdef MFB_PMQOS
+	MFBQOS_UpdateImgFreq(1);
+#endif
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
 	cmdqRecFlushAsync(handle);
 	/* if you want to re-use the handle, please reset the handle */
@@ -1990,24 +2100,407 @@ static signed int MFB_DumpReg(void)
 #if 1
 	signed int Ret = 0;
 	unsigned int i, j;
+	/* unsigned int* tdri_base; */
 
 	log_inf("- E.");
 
 	log_inf("MFB Config Info\n");
 
+	log_inf("[0x%08X %08X]\n", (unsigned int)(C02_CON_HW),
+		(unsigned int)MFB_RD32(C02_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(C02_CROP_CON1_HW),
+		(unsigned int)MFB_RD32(C02_CROP_CON1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(C02_CROP_CON2_HW),
+		(unsigned int)MFB_RD32(C02_CROP_CON2_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_CONTROL_HW),
+		(unsigned int)MFB_RD32(SRZ_CONTROL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_IN_IMG_HW),
+		(unsigned int)MFB_RD32(SRZ_IN_IMG_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_OUT_IMG_HW),
+		(unsigned int)MFB_RD32(SRZ_OUT_IMG_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_HORI_STEP_HW),
+		(unsigned int)MFB_RD32(SRZ_HORI_STEP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_VERT_STEP_HW),
+		(unsigned int)MFB_RD32(SRZ_VERT_STEP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_HORI_INT_OFST_HW),
+		(unsigned int)MFB_RD32(SRZ_HORI_INT_OFST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_HORI_SUB_OFST_HW),
+		(unsigned int)MFB_RD32(SRZ_HORI_SUB_OFST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_VERT_INT_OFST_HW),
+		(unsigned int)MFB_RD32(SRZ_VERT_INT_OFST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(SRZ_VERT_SUB_OFST_HW),
+		(unsigned int)MFB_RD32(SRZ_VERT_SUB_OFST_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(CRSP_CTRL_HW),
+		(unsigned int)MFB_RD32(CRSP_CTRL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(CRSP_OUT_IMG_HW),
+		(unsigned int)MFB_RD32(CRSP_OUT_IMG_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(CRSP_STEP_OFST_HW),
+		(unsigned int)MFB_RD32(CRSP_STEP_OFST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(CRSP_CROP_X_HW),
+		(unsigned int)MFB_RD32(CRSP_CROP_X_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(CRSP_CROP_Y_HW),
+		(unsigned int)MFB_RD32(CRSP_CROP_Y_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TOP_HW),
+		(unsigned int)MFB_RD32(OMC_TOP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_ATPG_HW),
+		(unsigned int)MFB_RD32(OMC_ATPG_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_FRAME_SIZE_HW),
+		(unsigned int)MFB_RD32(OMC_FRAME_SIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TILE_EDGE_HW),
+		(unsigned int)MFB_RD32(OMC_TILE_EDGE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TILE_OFS_HW),
+		(unsigned int)MFB_RD32(OMC_TILE_OFS_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TILE_SIZE_HW),
+		(unsigned int)MFB_RD32(OMC_TILE_SIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TILE_CROP_X_HW),
+		(unsigned int)MFB_RD32(OMC_TILE_CROP_X_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_TILE_CROP_Y_HW),
+		(unsigned int)MFB_RD32(OMC_TILE_CROP_Y_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_MV_RDMA_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(OMC_MV_RDMA_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMC_MV_RDMA_STRIDE_HW),
+		(unsigned int)MFB_RD32(OMC_MV_RDMA_STRIDE_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CFIFO_CTL_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CFIFO_CTL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_RWCTL_CTL_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_RWCTL_CTL_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_CACHI_SPECIAL_FUN_EN_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CACHI_SPECIAL_FUN_EN_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_BASE_ADDR_0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_BASE_ADDR_0_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_OFFSET_ADDR_0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_OFFSET_ADDR_0_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_STRIDE_0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_STRIDE_0_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_BASE_ADDR_1_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_BASE_ADDR_1_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_OFFSET_ADDR_1_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_OFFSET_ADDR_1_REG));
+	log_inf("[0x%08X %08X]\n",
+		(unsigned int)(OMCC_OMC_C_ADDR_GEN_STRIDE_1_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_ADDR_GEN_STRIDE_1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CACHI_CON2_0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CACHI_CON2_0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CACHI_CON3_0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CACHI_CON3_0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CTL_SW_CTL_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CTL_SW_CTL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CTL_CFG_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CTL_CFG_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CTL_FMT_SEL_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CTL_FMT_SEL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(OMCC_OMC_C_CTL_RSV0_HW),
+		(unsigned int)MFB_RD32(OMCC_OMC_C_CTL_RSV0_REG));
+
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_CON_HW),
 		(unsigned int)MFB_RD32(MFB_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON1_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON2_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_EDGE_HW),
+		(unsigned int)MFB_RD32(MFB_EDGE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON5_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON5_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON6_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON6_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON7_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON7_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON8_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON8_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON9_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON9_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_LL_CON10_HW),
+		(unsigned int)MFB_RD32(MFB_LL_CON10_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON0_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON1_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON2_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON3_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON4_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON4_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON5_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON5_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON6_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON6_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON7_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON7_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON8_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON8_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON9_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON9_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MBD_CON10_HW),
+		(unsigned int)MFB_RD32(MFB_MBD_CON10_REG));
+
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_TOP_CFG0_HW),
 		(unsigned int)MFB_RD32(MFB_MFB_TOP_CFG0_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_TOP_CFG1_HW),
 		(unsigned int)MFB_RD32(MFB_MFB_TOP_CFG1_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_TOP_CFG2_HW),
 		(unsigned int)MFB_RD32(MFB_MFB_TOP_CFG2_REG));
-
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_INT_CTL_HW),
 		(unsigned int)MFB_RD32(MFB_MFB_INT_CTL_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_INT_STATUS_HW),
 		(unsigned int)MFB_RD32(MFB_MFB_INT_STATUS_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_SW_RST_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_SW_RST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_MAIN_DCM_ST_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_MAIN_DCM_ST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DMA_DCM_ST_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DMA_DCM_ST_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_MAIN_DCM_DIS_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_MAIN_DCM_DIS_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_CTL0_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_CTL0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_CTL1_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_CTL1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_CTL2_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_CTL2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT0_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT1_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT2_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT3_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT4_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT4_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_MFB_DBG_OUT5_HW),
+		(unsigned int)MFB_RD32(MFB_MFB_DBG_OUT5_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFB_DFTC_HW),
+		(unsigned int)MFB_RD32(MFB_DFTC_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_SOFT_RSTSTAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_SOFT_RSTSTAT_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_TDRI_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_TDRI_BASE_ADDR_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_TDRI_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_TDRI_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_TDRI_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_TDRI_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_VERTICAL_FLIP_EN_HW),
+		(unsigned int)MFB_RD32(MFBDMA_VERTICAL_FLIP_EN_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_SOFT_RESET_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_SOFT_RESET_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_LAST_ULTRA_EN_HW),
+		(unsigned int)MFB_RD32(MFBDMA_LAST_ULTRA_EN_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_SPECIAL_FUN_EN_HW),
+		(unsigned int)MFB_RD32(MFBDMA_SPECIAL_FUN_EN_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_CROP_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_CROP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_CROP_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_CROP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_CON3_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_ERR_CTRL_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_ERR_CTRL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2O_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2O_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB3I_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB3I_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB4I_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB4I_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_ERR_STAT_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_ERR_STAT_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_DEBUG_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_DEBUG_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_RSV1_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_RSV1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_RSV2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_RSV2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_RSV3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_RSV3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_RSV4_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_RSV4_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_DEBUG_SEL_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_DEBUG_SEL_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_DMA_BW_SELF_TEST_HW),
+		(unsigned int)MFB_RD32(MFBDMA_DMA_BW_SELF_TEST_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBO_B_CROP_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBO_B_CROP_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFBI_B_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFBI_B_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_BASE_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_BASE_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_OFST_ADDR_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_OFST_ADDR_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_XSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_XSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_YSIZE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_YSIZE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_STRIDE_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_STRIDE_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_CON_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_CON_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_CON2_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_CON2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(MFBDMA_MFB2I_B_CON3_HW),
+		(unsigned int)MFB_RD32(MFBDMA_MFB2I_B_CON3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(PAK_CONT_Y_HW),
+		(unsigned int)MFB_RD32(PAK_CONT_Y_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(PAK_CONT_C_HW),
+		(unsigned int)MFB_RD32(PAK_CONT_C_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(UNP_OFST_Y_HW),
+		(unsigned int)MFB_RD32(UNP_OFST_Y_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(UNP_CONT_Y_HW),
+		(unsigned int)MFB_RD32(UNP_CONT_Y_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(UNP_OFST_C_HW),
+		(unsigned int)MFB_RD32(UNP_OFST_C_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(UNP_CONT_C_HW),
+		(unsigned int)MFB_RD32(UNP_CONT_C_REG));
 
 	log_inf("MFB:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n",
 		g_MFB_ReqRing.HWProcessIdx,
@@ -2050,85 +2543,16 @@ return 0;
 static inline void MFB_Prepare_Enable_ccf_clock(void)
 {
 	int ret;
-#ifndef SMI_CLK
-	ret = clk_prepare_enable(mfb_clk.CG_SCP_SYS_MM0);
-	if (ret)
-	log_err("cannot prepare and enable CG_SCP_SYS_MM0 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_2X);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_2X clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M0_2X\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_GALS_M1_2X\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_UPSZ0);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ0 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_UPSZ1);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_UPSZ1 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_FIFO0);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_FIFO0 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_SMI_COMMON_FIFO1);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_SMI_COMMON_FIFO1 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_MM_LARB5);
-	if (ret)
-	log_err("cannot prepare and enable CG_MM_LARB5 clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_SCP_SYS_ISP);
-	if (ret)
-	log_err("cannot prepare and enable CG_SCP_SYS_ISP clock\n");
-
-	ret = clk_prepare_enable(mfb_clk.CG_IMGSYS_LARB);
-	if (ret)
-	log_err("cannot prepare and enable CG_IMGSYS_LARB clock\n");
-#else
-	/*smi_bus_enable(SMI_LARB_IMGSYS1, "camera_mfb");*/
 	smi_bus_prepare_enable(SMI_LARB5_REG_INDX, MFB_DEV_NAME, true);
-#endif
-
 	ret = clk_prepare_enable(mfb_clk.CG_IMGSYS_MFB);
 	if (ret)
 	log_err("cannot prepare and enable CG_IMGSYS_MFB clock\n");
-
 }
 
 static inline void MFB_Disable_Unprepare_ccf_clock(void)
 {
 	clk_disable_unprepare(mfb_clk.CG_IMGSYS_MFB);
-#ifndef SMI_CLK
-	clk_disable_unprepare(mfb_clk.CG_IMGSYS_LARB);
-	clk_disable_unprepare(mfb_clk.CG_SCP_SYS_ISP);
-	clk_disable_unprepare(mfb_clk.CG_MM_LARB5);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_FIFO1);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_FIFO0);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_UPSZ1);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_UPSZ0);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON_2X);
-	clk_disable_unprepare(mfb_clk.CG_MM_SMI_COMMON);
-	clk_disable_unprepare(mfb_clk.CG_SCP_SYS_MM0);
-#else
-	/*smi_bus_disable(SMI_LARB_IMGSYS1, "camera_mfb");*/
 	smi_bus_disable_unprepare(SMI_LARB5_REG_INDX, MFB_DEV_NAME, true);
-#endif
 }
 #endif
 
@@ -2153,14 +2577,6 @@ static void MFB_EnableClock(bool En)
 			MFB_WR32(IMGSYS_REG_CG_CLR, setReg);
 #endif
 #else
-			enable_clock(MT_CG_DMFB0_SMI_COMMON, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			enable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			enable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* enable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-			enable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
 #endif
 			break;
 		default:
@@ -2185,15 +2601,6 @@ static void MFB_EnableClock(bool En)
 			MFB_WR32(IMGSYS_REG_CG_SET, setReg);
 #endif
 #else
-			/* do disable clock */
-			disable_clock(MT_CG_IMAGE_CAM_SMI, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_TG, "CAMERA");
-			disable_clock(MT_CG_IMAGE_SEN_CAM, "CAMERA");
-			disable_clock(MT_CG_IMAGE_CAM_SV, "CAMERA");
-			/* disable_clock(MT_CG_IMAGE_FD, "CAMERA"); */
-			disable_clock(MT_CG_IMAGE_LARB2_SMI, "CAMERA");
-			disable_clock(MT_CG_DMFB0_SMI_COMMON, "CAMERA");
 #endif
 			break;
 		default:
@@ -2207,14 +2614,14 @@ static void MFB_EnableClock(bool En)
  **************************************************************/
 static inline void MFB_Reset(void)
 {
-	log_dbg("- E.");
+	log_dbg("- E.\n");
 
 	log_dbg(" MFB Reset start!\n");
 	spin_lock(&(MFBInfo.SpinLockMFBRef));
 
 	if (MFBInfo.UserCount > 1) {
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
-		log_dbg("Curr UserCount(%d) users exist", MFBInfo.UserCount);
+		log_dbg("Curr UserCount(%d) users exist\n", MFBInfo.UserCount);
 	} else {
 		spin_unlock(&(MFBInfo.SpinLockMFBRef));
 
@@ -2244,6 +2651,15 @@ static signed int MFB_ReadReg(MFB_REG_IO_STRUCT *pRegIo)
 	MFB_REG_STRUCT reg;
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	MFB_REG_STRUCT *pData = (MFB_REG_STRUCT *) pRegIo->pData;
+
+	if ((pRegIo->pData == NULL) ||
+		(pRegIo->Count == 0) ||
+		(pRegIo->Count > (MFB_REG_RANGE>>2))) {
+		log_err("ERROR: pRegIo->pData is NULL or Count:%d\n",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
@@ -2346,6 +2762,10 @@ static signed int MFB_WriteReg(MFB_REG_IO_STRUCT *pRegIo)
 		goto EXIT;
 	}
 	pData = kmalloc((pRegIo->Count) * sizeof(MFB_REG_STRUCT), GFP_KERNEL);
+	if (pData == NULL) {
+		Ret = -EFAULT;
+		goto EXIT;
+	}
 	if (copy_from_user(
 		pData,
 		(void __user *)(pRegIo->pData),
@@ -2749,6 +3169,10 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		log_err("MFB_WAIT_IRQ copy_from_user failed");
 		Ret = -EFAULT;
 	}
+
+#ifdef MFB_PMQOS
+	MFBQOS_UpdateImgFreq(0);
+#endif
 	break;
 	}
 	case MFB_CLEAR_IRQ:
@@ -2757,7 +3181,7 @@ static long MFB_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		&ClearIrq,
 		(void *)Param,
 		sizeof(MFB_CLEAR_IRQ_STRUCT)) == 0) {
-		log_dbg("MFB_CLEAR_IRQ Type(%d)", ClearIrq.Type);
+		log_dbg("MFB_CLEAR_IRQ Type(%d)\n", ClearIrq.Type);
 
 		if ((ClearIrq.Type >= MFB_IRQ_TYPE_AMOUNT) ||
 			(ClearIrq.Type < 0)) {
@@ -3471,7 +3895,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	/*int q = 0, p = 0;*/
 	struct MFB_USER_INFO_STRUCT *pUserInfo;
 
-	log_dbg("- E. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- E. UserCount: %d.\n", MFBInfo.UserCount);
 
 
 	/*  */
@@ -3482,7 +3906,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 		sizeof(struct MFB_USER_INFO_STRUCT),
 		GFP_ATOMIC);
 	if (pFile->private_data == NULL) {
-		log_dbg("ERROR: kmalloc failed,(proc,pid,tgid)=(%s,%d,%d)",
+		log_dbg("ERROR: kmalloc failed,(proc,pid,tgid)=(%s,%d,%d)\n",
 			current->comm,
 			current->pid,
 			current->tgid);
@@ -3534,9 +3958,9 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	g_MFB_ReqRing.HWProcessIdx = 0x0;
 
 	/* Enable clock */
-	/*MFB_EnableClock(MTRUE);*/
+	MFB_EnableClock(MTRUE);
 	g_u4MfbCnt = 0;
-	log_dbg("MFB open g_u4EnableClockCount: %d", g_u4EnableClockCount);
+	log_dbg("MFB open g_u4EnableClockCount: %d\n", g_u4EnableClockCount);
 	/*  */
 
 	for (i = 0; i < MFB_IRQ_TYPE_AMOUNT; i++)
@@ -3558,7 +3982,7 @@ static signed int MFB_open(struct inode *pInode, struct file *pFile)
 	/*  */
 EXIT:
 
-	log_dbg("- X. Ret: %d. UserCount: %d.", Ret, MFBInfo.UserCount);
+	log_dbg("- X. Ret: %d. UserCount: %d.\n", Ret, MFBInfo.UserCount);
 	return Ret;
 
 }
@@ -3571,7 +3995,7 @@ static signed int MFB_release(struct inode *pInode, struct file *pFile)
 	struct MFB_USER_INFO_STRUCT *pUserInfo;
 	/*unsigned int Reg;*/
 
-	log_dbg("- E. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- E. UserCount: %d.\n", MFBInfo.UserCount);
 
 	/*  */
 	if (pFile->private_data != NULL) {
@@ -3603,14 +4027,14 @@ static signed int MFB_release(struct inode *pInode, struct file *pFile)
 
 
 	/* Disable clock. */
-	/*MFB_EnableClock(MFALSE);*/
+	MFB_EnableClock(MFALSE);
 	log_dbg("MFB release g_u4EnableClockCount: %d", g_u4EnableClockCount);
 
 	/*  */
 EXIT:
 
 
-	log_dbg("- X. UserCount: %d.", MFBInfo.UserCount);
+	log_dbg("- X. UserCount: %d.\n", MFBInfo.UserCount);
 	return 0;
 }
 
@@ -3690,7 +4114,7 @@ static const struct file_operations MFBFileOper = {
  **************************************************************/
 static inline void MFB_UnregCharDev(void)
 {
-	log_dbg("- E.");
+	log_dbg("- E.\n");
 	/*  */
 	/* Release char driver */
 	if (pMFBCharDrv != NULL) {
@@ -3708,7 +4132,7 @@ static inline signed int MFB_RegCharDev(void)
 {
 	signed int Ret = 0;
 	/*  */
-	log_dbg("- E.");
+	log_dbg("- E.\n");
 	/*  */
 	Ret = alloc_chrdev_region(&MFBDevNo, 0, 1, MFB_DEV_NAME);
 	if (Ret < 0) {
@@ -3739,7 +4163,7 @@ EXIT:
 
 	/*  */
 
-	log_dbg("- X.");
+	log_dbg("- X.\n");
 	return Ret;
 }
 
@@ -3870,90 +4294,13 @@ static signed int MFB_probe(struct platform_device *pDev)
 #ifndef EP_NO_CLKMGR
 #if !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK) /*CCF*/
 		    /*CCF: Grab clock pointer (struct clk*) */
-#ifndef SMI_CLK
-		mfb_clk.CG_SCP_SYS_MM0 = devm_clk_get(
-			&pDev->dev, "MFB_SCP_SYS_MM0");
-		mfb_clk.CG_MM_SMI_COMMON = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG2_B11");
-		mfb_clk.CG_MM_SMI_COMMON_2X = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG2_B12");
-		mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B12");
-		mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B13");
-		mfb_clk.CG_MM_SMI_COMMON_UPSZ0 = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B14");
-		mfb_clk.CG_MM_SMI_COMMON_UPSZ1 = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B15");
-		mfb_clk.CG_MM_SMI_COMMON_FIFO0 = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B16");
-		mfb_clk.CG_MM_SMI_COMMON_FIFO1 = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B17");
-		mfb_clk.CG_MM_LARB5 = devm_clk_get(
-			&pDev->dev, "MFB_CLK_MM_CG1_B10");
-		mfb_clk.CG_SCP_SYS_ISP = devm_clk_get(
-			&pDev->dev, "MFB_SCP_SYS_ISP");
-		mfb_clk.CG_IMGSYS_LARB = devm_clk_get(
-			&pDev->dev, "MFB_CLK_IMG_LARB");
-#endif
 		mfb_clk.CG_IMGSYS_MFB = devm_clk_get(
 			&pDev->dev, "MFB_CLK_IMG_MFB");
-
-#ifndef SMI_CLK
-		if (IS_ERR(mfb_clk.CG_SCP_SYS_MM0)) {
-			log_err("cannot get CG_SCP_SYS_MM0 clock\n");
-			return PTR_ERR(mfb_clk.CG_SCP_SYS_MM0);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON)) {
-			log_err("cannot get CG_MM_SMI_COMMON clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_2X)) {
-			log_err("cannot get CG_MM_SMI_COMMON_2X clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_2X);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X)) {
-			log_err("cannot get CG_MM_SMI_COMMON_GALS_M0_2X\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M0_2X);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X)) {
-			log_err("cannot get CG_MM_SMI_COMMON_GALS_M1_2X\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_GALS_M1_2X);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ0)) {
-			log_err("cannot get CG_MM_SMI_COMMON_UPSZ0 clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ0);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ1)) {
-			log_err("cannot get CG_MM_SMI_COMMON_UPSZ1 clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_UPSZ1);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO0)) {
-			log_err("cannot get CG_MM_SMI_COMMON_FIFO0 clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO0);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO1)) {
-			log_err("cannot get CG_MM_SMI_COMMON_FIFO1 clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_SMI_COMMON_FIFO1);
-		}
-		if (IS_ERR(mfb_clk.CG_MM_LARB5)) {
-			log_err("cannot get CG_MM_LARB5 clock\n");
-			return PTR_ERR(mfb_clk.CG_MM_LARB5);
-		}
-		if (IS_ERR(mfb_clk.CG_SCP_SYS_ISP)) {
-			log_err("cannot get CG_SCP_SYS_ISP clock\n");
-			return PTR_ERR(mfb_clk.CG_SCP_SYS_ISP);
-		}
-		if (IS_ERR(mfb_clk.CG_IMGSYS_LARB)) {
-			log_err("cannot get CG_IMGSYS_LARB clock\n");
-			return PTR_ERR(mfb_clk.CG_IMGSYS_LARB);
-		}
-#endif
 		if (IS_ERR(mfb_clk.CG_IMGSYS_MFB)) {
 			log_err("cannot get CG_IMGSYS_MFB clock\n");
 			return PTR_ERR(mfb_clk.CG_IMGSYS_MFB);
 		}
-#endif /* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
+#endif
 #endif
 
 		/* Create class register */
@@ -4025,7 +4372,7 @@ static signed int MFB_remove(struct platform_device *pDev)
 	signed int IrqNum;
 	int i;
 	/*  */
-	log_dbg("- E.");
+	log_dbg("- E.\n");
 	/* unregister char driver. */
 	MFB_UnregCharDev();
 
@@ -4055,7 +4402,7 @@ static signed int MFB_suspend(
 	struct platform_device *pDev,
 	pm_message_t Mesg)
 {
-	log_dbg("bMFB_Suspend(%d)\n", bMFB_Suspend);
+	/*log_dbg("bMFB_Suspend(%d)\n", bMFB_Suspend);*/
 
 	bMFB_Suspend = 1;
 
@@ -4063,6 +4410,8 @@ static signed int MFB_suspend(
 		MFB_EnableClock(MFALSE);
 		g_u4MfbCnt++;
 	}
+	log_inf("MFB suspend g_u4EnableClockCount: %d, g_u4MfbCnt: %d",
+		g_u4EnableClockCount, g_u4MfbCnt);
 	return 0;
 }
 
@@ -4071,7 +4420,7 @@ static signed int MFB_suspend(
  **************************************************************/
 static signed int MFB_resume(struct platform_device *pDev)
 {
-	log_dbg("bMFB_Suspend(%d).\n", bMFB_Suspend);
+	/*log_dbg("bMFB_Suspend(%d).\n", bMFB_Suspend);*/
 
 	bMFB_Suspend = 0;
 
@@ -4079,6 +4428,8 @@ static signed int MFB_resume(struct platform_device *pDev)
 		MFB_EnableClock(MTRUE);
 		g_u4MfbCnt--;
 	}
+	log_inf("MFB resume g_u4EnableClockCount: %d, g_u4MfbCnt: %d",
+		g_u4EnableClockCount, g_u4MfbCnt);
 	return 0;
 }
 
@@ -4092,9 +4443,6 @@ int MFB_pm_suspend(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/* pr_debug("calling %s()\n", __func__); */
-	log_inf("MFB suspend g_u4EnableClockCount: %d, g_u4MfbCnt: %d",
-		g_u4EnableClockCount,
-		g_u4MfbCnt);
 
 	return MFB_suspend(pdev, PMSG_SUSPEND);
 }
@@ -4106,9 +4454,6 @@ int MFB_pm_resume(struct device *device)
 	WARN_ON(pdev == NULL);
 
 	/* pr_debug("calling %s()\n", __func__); */
-	log_inf("MFB resume g_u4EnableClockCount: %d, g_u4MfbCnt: %d",
-		g_u4EnableClockCount,
-		g_u4MfbCnt);
 
 	return MFB_resume(pdev);
 }
@@ -4420,7 +4765,7 @@ int32_t MFB_ClockOnCallback(uint64_t engineFlag)
 
 int32_t MFB_DumpCallback(uint64_t engineFlag, int level)
 {
-	log_dbg("MFB DumpCallback");
+	log_dbg("MFB DumpCallback\n");
 
 	MFB_DumpReg();
 
@@ -4429,7 +4774,7 @@ int32_t MFB_DumpCallback(uint64_t engineFlag, int level)
 
 int32_t MFB_ResetCallback(uint64_t engineFlag)
 {
-	log_dbg("MFB ResetCallback");
+	log_dbg("MFB ResetCallback\n");
 	MFB_Reset();
 
 	return 0;
@@ -4443,7 +4788,6 @@ int32_t MFB_ClockOffCallback(uint64_t engineFlag)
 	return 0;
 }
 
-
 static signed int __init MFB_Init(void)
 {
 	signed int Ret = 0, j;
@@ -4452,11 +4796,9 @@ static signed int __init MFB_Init(void)
 	/* use proc_create */
 	struct proc_dir_entry *proc_entry;
 	struct proc_dir_entry *isp_mfb_dir;
-
-
 	int i;
 	/*  */
-	log_dbg("- E.");
+	log_dbg("- E.\n");
 	/*  */
 	Ret = platform_driver_register(&MFBDriver);
 	if (Ret < 0) {
@@ -4544,6 +4886,9 @@ static signed int __init MFB_Init(void)
 		MFB_DumpCallback, MFB_ResetCallback, MFB_ClockOffCallback);
 #endif
 
+#ifdef MFB_PMQOS
+	MFBQOS_Init();
+#endif
 	log_dbg("- X. Ret: %d.\n", Ret);
 	return Ret;
 }
@@ -4555,7 +4900,11 @@ static void __exit MFB_Exit(void)
 {
 	/*int i;*/
 
-	log_dbg("- E.");
+	log_dbg("- E.\n");
+
+#ifdef MFB_PMQOS
+	MFBQOS_Uninit();
+#endif
 	/*  */
 	platform_driver_unregister(&MFBDriver);
 	/*  */
@@ -4577,7 +4926,7 @@ static void __exit MFB_Exit(void)
 void MFB_ScheduleWork(struct work_struct *data)
 {
 	if (MFB_DBG_DBGLOG & MFBInfo.DebugMask)
-		log_dbg("- E.");
+		log_dbg("- E.\n");
 
 #ifdef MFB_USE_GCE
 #else
@@ -4595,6 +4944,8 @@ static irqreturn_t ISP_Irq_MFB(signed int Irq, void *DeviceId)
 	MfbStatus = MFB_RD32(MFB_MFB_INT_STATUS_REG);	/* MFB Status */
 	MFB_WR32(MFB_MFB_INT_STATUS_REG, 0x00000001);	/* IRQ Write 1 Clear */
 	MFB_WR32(MFB_MFB_INT_CTL_REG, 0x00000000);	/* IRQ Enable Clear */
+
+	/* MFB_DumpReg(); */
 
 	spin_lock(&(MFBInfo.SpinLockIrq[MFB_IRQ_TYPE_INT_MFB_ST]));
 

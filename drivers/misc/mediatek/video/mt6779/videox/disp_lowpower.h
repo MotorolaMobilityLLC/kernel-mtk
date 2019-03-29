@@ -45,7 +45,8 @@ unsigned int set_idlemgr(unsigned int flag, int need_lock);
 int _blocking_flush(void);
 unsigned int get_us_perline(unsigned int width);
 unsigned int time_to_line(unsigned int ms, unsigned int width);
-unsigned int disp_lp_set_idle_check_interval(unsigned int new_interval);
+unsigned long long disp_lp_set_idle_check_interval(
+	unsigned long long new_interval);
 
 /************************** for met ***********************************/
 /**
@@ -58,6 +59,16 @@ unsigned int is_mipi_enterulps(void);
 unsigned int get_mipi_clk(void);
 
 int primary_display_request_dvfs_perf(int scenario, int req);
+
+int prim_disp_request_hrt_bw(int overlap_num,
+			enum DDP_SCENARIO_ENUM scenario, const char *caller);
+
+int hrt_bw_cond_state(void);
+int hrt_bw_set_state(int sta);
+void hrt_bw_sync_idx(unsigned int cur_idx);
+void hrt_bw_debug(unsigned int v);
+bool pri_disp_leave_privilege(bool need_lock);
+
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) && \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
