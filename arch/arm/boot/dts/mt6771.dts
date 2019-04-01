@@ -3929,15 +3929,15 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				compatible = "android,vbmeta";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 #ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
-				parts = "boot,system,vendor,recovery";
+				parts = "boot,system,vendor,recovery,dtbo,oem";
 #else
-				parts = "vbmeta,boot,system,vendor,recovery";
+				parts = "vbmeta,boot,system,vendor,recovery,dtbo,oem";
 #endif
 #else
 #ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
-				parts = "boot,system,vendor";
+				parts = "boot,system,vendor,dtbo,oem";
 #else
-				parts = "vbmeta,boot,system,vendor";
+				parts = "vbmeta,boot,system,vendor,dtbo,oem";
 #endif
 #endif
 			};
@@ -3965,6 +3965,33 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				vendor {
 					compatible = "android,vendor";
 					dev = "/dev/block/platform/bootdevice/by-name/vendor";
+					type = "ext4";
+					mnt_flags = "ro";
+#ifndef CONFIG_MTK_AB_OTA_UPDATER
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,avb";
+#else
+					fsmgr_flags = "wait,verify";
+#endif
+#else
+					fsmgr_flags = "wait";
+#endif
+#else
+#ifndef CONFIG_MTK_DM_VERITY_OFF
+#ifdef CONFIG_MTK_AVB20_SUPPORT
+					fsmgr_flags = "wait,slotselect,avb";
+#else
+					fsmgr_flags = "wait,slotselect,verify";
+#endif
+#else
+					fsmgr_flags = "wait,slotselect";
+#endif
+#endif
+				};
+				oem {
+					compatible = "android,oem";
+					dev = "/dev/block/platform/bootdevice/by-name/oem";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
