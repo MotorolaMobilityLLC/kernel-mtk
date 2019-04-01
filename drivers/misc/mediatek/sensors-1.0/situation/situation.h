@@ -53,12 +53,13 @@ typedef enum {
 	chopchop,
 	mot_glance,
 	ltv,
+	ftm,
+	offbody,
+	lts,
 	sar_top,
 	sar_bottom_left,
 	sar_bottom,
 	sar_bottom_right,
-	ftm,
-	offbody,
 	max_situation_support,
 } situation_index_table;
 

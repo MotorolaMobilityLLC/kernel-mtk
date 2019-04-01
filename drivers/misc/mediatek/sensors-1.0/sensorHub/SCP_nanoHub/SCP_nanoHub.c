@@ -900,6 +900,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[SENSOR_TYPE_OFFBODY].sensorType = SENSOR_TYPE_OFFBODY;
 	mSensorState[SENSOR_TYPE_OFFBODY].rate = SENSOR_RATE_ONCHANGE;
 	mSensorState[SENSOR_TYPE_OFFBODY].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_LTS].sensorType = SENSOR_TYPE_LTS;
+	mSensorState[SENSOR_TYPE_LTS].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_LTS].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int sensor_type)
@@ -1660,6 +1664,10 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;
 	case ID_OFFBODY:
+		data->time_stamp = data_t->time_stamp;
+		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
+		break;
+	case ID_LTS:
 		data->time_stamp = data_t->time_stamp;
 		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;

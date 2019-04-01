@@ -92,14 +92,16 @@
 #define SENSOR_TYPE_CHOPCHOP_GESTURE                   77
 #define SENSOR_TYPE_MOTO_GLANCE_GESTURE                78
 #define SENSOR_TYPE_LTV                                79
-#define SENSOR_TYPE_SAR_TOP                            80
-#define SENSOR_TYPE_SAR_BOTTOM_LEFT                    81
-#define SENSOR_TYPE_SAR_BOTTOM                         82
-#define SENSOR_TYPE_SAR_BOTTOM_RIGHT                   83
-#define SENSOR_TYPE_FTM                                84
-#define SENSOR_TYPE_OFFBODY                            85
+#define SENSOR_TYPE_FTM                                80
+#define SENSOR_TYPE_OFFBODY                            81
+#define SENSOR_TYPE_LTS                                82
+#define SENSOR_TYPE_SAR_TOP                            83
+#define SENSOR_TYPE_SAR_BOTTOM_LEFT                    84
+#define SENSOR_TYPE_SAR_BOTTOM                         85
+#define SENSOR_TYPE_SAR_BOTTOM_RIGHT                   86
+
 /* end sensor type */
-#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_OFFBODY
+#define SENSOR_TYPE_MAX_NUM                            SENSOR_TYPE_SAR_BOTTOM_RIGHT
 #define SENSOR_TYPE_MAX_NUM_PLUS_ONE                   (SENSOR_TYPE_MAX_NUM + 1)
 
 /*---------------------------------------------------------------------------*/
@@ -173,22 +175,23 @@
 #define ID_SAR                      (ID_BASE + SENSOR_TYPE_SAR - 1)
 
 /*moto sensor algo ID*/
-#define ID_STOWED              (ID_BASE + SENSOR_TYPE_STOWED - 1)
-#define ID_FLATUP              (ID_BASE + SENSOR_TYPE_FLAT_UP - 1)
-#define ID_FLATDOWN            (ID_BASE + SENSOR_TYPE_FLAT_DOWN - 1)
-#define ID_CAMGEST             (ID_BASE + SENSOR_TYPE_CAMERA_ACTIVATE - 1)
-#define ID_CHOPCHOP            (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
-#define ID_MOT_GLANCE          (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
-#define ID_LTV                 (ID_BASE + SENSOR_TYPE_LTV - 1)
+#define ID_STOWED                   (ID_BASE + SENSOR_TYPE_STOWED - 1)
+#define ID_FLATUP                   (ID_BASE + SENSOR_TYPE_FLAT_UP - 1)
+#define ID_FLATDOWN                 (ID_BASE + SENSOR_TYPE_FLAT_DOWN - 1)
+#define ID_CAMGEST                  (ID_BASE + SENSOR_TYPE_CAMERA_ACTIVATE - 1)
+#define ID_CHOPCHOP                 (ID_BASE + SENSOR_TYPE_CHOPCHOP_GESTURE - 1)
+#define ID_MOT_GLANCE               (ID_BASE + SENSOR_TYPE_MOTO_GLANCE_GESTURE  - 1)
+#define ID_LTV                      (ID_BASE + SENSOR_TYPE_LTV - 1)
+#define ID_FTM                      (ID_BASE + SENSOR_TYPE_FTM - 1)
+#define ID_OFFBODY                  (ID_BASE + SENSOR_TYPE_OFFBODY - 1)
+#define ID_LTS                      (ID_BASE + SENSOR_TYPE_LTS - 1)
 #define ID_SAR_TOP                  (ID_BASE + SENSOR_TYPE_SAR_TOP - 1)
 #define ID_SAR_BOTTOM_LEFT          (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_LEFT - 1)
 #define ID_SAR_BOTTOM               (ID_BASE + SENSOR_TYPE_SAR_BOTTOM - 1)
 #define ID_SAR_BOTTOM_RIGHT         (ID_BASE + SENSOR_TYPE_SAR_BOTTOM_RIGHT - 1)
-#define ID_FTM                      (ID_BASE + SENSOR_TYPE_FTM - 1)
-#define ID_OFFBODY                  (ID_BASE + SENSOR_TYPE_OFFBODY - 1)
 
 /* end sensor ID */
-#define ID_SENSOR_MAX_HANDLE    (ID_OFFBODY)
+#define ID_SENSOR_MAX_HANDLE    (ID_SAR_BOTTOM_RIGHT)
 #define ID_SENSOR_MAX_HANDLE_PLUS_ONE    (ID_SENSOR_MAX_HANDLE + 1)
 
 #if (ID_SENSOR_MAX_HANDLE_PLUS_ONE != SENSOR_TYPE_MAX_NUM)
