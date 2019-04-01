@@ -68,6 +68,7 @@
 #define ILITEK_IOCTL_TP_DUMP_FLASH			_IOWR(ILITEK_IOCTL_MAGIC, 21, int)
 
 unsigned char g_user_buf[USER_STR_BUFF] = { 0 };
+unsigned char fw_name_buf[USER_STR_BUFF] = { 0 };
 #define DEBUG_DATA_FILE_SIZE	(10 * 1024)
 #define DEBUG_DATA_FILE_PATH	"/sdcard/ILITEK_log.csv"
 #define REGISTER_READ	0
@@ -2035,8 +2036,8 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 	const char *chip_name = ipd->TP_IC_TYPE;
 
 	ipio_info ("*** %s() ***\n", __func__);
-	memset(g_user_buf, 0, USER_STR_BUFF * sizeof(unsigned char));
-	memcpy(g_user_buf, pBuf, nSize - 1);
+	memset(fw_name_buf, 0, USER_STR_BUFF * sizeof(unsigned char));
+	memcpy(fw_name_buf, pBuf, nSize - 1);
 	ipio_info ("%s g_user_buf=%s\n", __func__, g_user_buf);
 
 	if (ipd->suspended == true) {
@@ -2051,13 +2052,13 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 		goto exit;
 	}
 
-	if (core_firmware->force_upgrad != 1) {
-		if (strnstr(g_user_buf, prefix, strnlen(g_user_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
+	if ((core_firmware->force_upgrad != 1) && (mode_chose == I2C_MODE)) {
+		if (strnstr(fw_name_buf, prefix, strnlen(fw_name_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
 			ipio_err("%s: FW does not belong to %s\n", __func__, prefix);
 			ret = -EINVAL;
 			goto exit;
 		}
-		if (strnstr(g_user_buf, chip_name, strnlen(g_user_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
+		if (strnstr(fw_name_buf, chip_name, strnlen(fw_name_buf, USER_STR_BUFF * sizeof(unsigned char))) <= 0) {
 			ipio_err("%s: FW does not belong to chip %s\n", __func__, chip_name);
 			ret = -EINVAL;
 			goto exit;
@@ -2080,12 +2081,9 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 
 	/* ret = core_firmware_upgrade(g_user_buf, false); */
 	use_g_user_buf = true;
-	if(mode_chose == I2C_MODE)
-		ret = core_firmware_upgrade(UPGRADE_FLASH, HEX_FILE, OPEN_FW_METHOD);
-	else
+	if(mode_chose == SPI_MODE)
 		ret = core_config_switch_fw_mode(&protocol->demo_mode);
-	use_g_user_buf = false;
-
+	ipd->sys_boot_fw = true;
 
 	ilitek_platform_enable_irq();
 
@@ -2105,7 +2103,12 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 	}
 
 	core_firmware->isUpgrading = false;
+	core_fr->isEnableFR = true;
 exit:
+	if (mode_chose == SPI_MODE) {
+		if (core_config_get_chip_id() < 0)
+			ipio_err("Failed to get chip id\n");
+	}
 	return nSize;
 
 }

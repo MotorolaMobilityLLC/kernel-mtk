@@ -119,7 +119,7 @@
 /* Choise open hex file function*/
 #define REQUEST_FIRMWARE	0
 #define FILP_OPEN 			1
-#define OPEN_FW_METHOD FILP_OPEN
+#define OPEN_FW_METHOD REQUEST_FIRMWARE
 
 /* Priority of suspend between TP and DDI */
 #define TP_SUSPEND_PRIO	1

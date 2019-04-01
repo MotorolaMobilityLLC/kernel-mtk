@@ -104,7 +104,7 @@ int core_i2c_write(uint8_t nSlaveId, uint8_t *pBuf, uint16_t nSize)
 	}
 
 	if (i2c_transfer(core_i2c->client->adapter, msgs, 1) < 0) {
-		if (atomic_read(&ipd->do_reset)) {
+		if (ipd->do_reset) {
 			/* ignore i2c error if doing ic reset */
 			ret = 0;
 		} else {

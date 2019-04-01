@@ -492,6 +492,9 @@ static irqreturn_t ilitek_platform_irq_top_half(int irq, void *dev_id)
 
 static irqreturn_t ilitek_platform_irq_bottom_half(int irq, void *dev_id)
 {
+	if (ipd->sys_boot_fw == false)
+		return IRQ_HANDLED;
+
 	mutex_lock(&ipd->touch_mutex);
 
 	ilitek_platform_disable_irq();
@@ -608,7 +611,7 @@ static int ilitek_platform_isr_register(void)
 #endif /* PT_MTK */
 
 	ipio_info("ipd->isr_gpio = %d\n", ipd->isr_gpio);
-
+	ilitek_platform_enable_irq();
 	ret = request_threaded_irq(ipd->isr_gpio,
 				   ilitek_platform_irq_top_half,
 				   ilitek_platform_irq_bottom_half, IRQF_TRIGGER_FALLING | IRQF_ONESHOT, "ilitek", NULL);
@@ -617,8 +620,10 @@ static int ilitek_platform_isr_register(void)
 		ipio_err("Failed to register irq handler, irq = %d, ret = %d\n", ipd->isr_gpio, ret);
 		goto out;
 	}
-
-	ipd->isEnableIRQ = true;
+	if (mode_chose == SPI_MODE) {
+		ilitek_platform_disable_irq();
+		ipd->isEnableIRQ = false;
+	}
 
 out:
 	return ret;
@@ -760,7 +765,7 @@ int ilitek_platform_reset_ctrl(bool rst, int mode)
 {
 	int ret = 0;
 
-	atomic_set(&ipd->do_reset, true);
+	ipd->do_reset = true;
 	ilitek_platform_disable_irq();
 
 	if (ipd->do_otp_check)
@@ -796,7 +801,7 @@ int ilitek_platform_reset_ctrl(bool rst, int mode)
 	}
 
 	core_config->icemodeenable = false;
-	atomic_set(&ipd->do_reset, false);
+	ipd->do_reset = false;
 	if (core_fr->actual_fw_mode != protocol->test_mode)
 		ilitek_platform_enable_irq();
 	return ret;
@@ -951,6 +956,7 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	ipd->delta_count = 10;
 	ipd->bg_count = 0;
 	ipd->debug_data_start_flag = false;
+	ipd->sys_boot_fw = true;
 
 #ifdef REGULATOR_POWER_ON
 	ilitek_regulator_power_reg(ipd);
@@ -1081,6 +1087,8 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	ilitek_regulator_power_reg(ipd);
 #endif
 
+	set_res.width = TOUCH_SCREEN_X_MAX;
+	set_res.height = TOUCH_SCREEN_Y_MAX;
 	/* If kernel failes to allocate memory for the core components, driver will be unloaded. */
 	if (ilitek_platform_core_init() < 0) {
 		ipio_err("Failed to allocate cores' mem\n");
@@ -1100,18 +1108,6 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 		ipd->do_otp_check = true;
 		ilitek_platform_reset_ctrl(true, SW_RST);
 	}
-
-	if (core_config_get_chip_id() < 0)
-		ipio_err("Failed to get chip id\n");
-
-	if (mode_chose != SPI_MODE)
-		core_config_read_flash_info();
-	else
-		ilitek_platform_reset_ctrl(true, RST_METHODS);
-
-
-	if (ilitek_platform_read_tp_info() < 0)
-		ipio_err("Failed to read TP info\n");
 
 	if (ilitek_platform_isr_register() < 0)
 		ipio_err("Failed to register ISR\n");

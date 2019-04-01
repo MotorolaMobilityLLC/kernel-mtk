@@ -56,8 +56,8 @@ struct ilitek_platform_data {
 	bool isEnablePollCheckPower;
 	bool isEnablePollCheckEsd;
 	bool do_otp_check;
-
-	atomic_t do_reset;
+	bool sys_boot_fw;
+	bool do_reset;
 
 #ifdef CONFIG_FB
 	struct notifier_block notifier_fb;

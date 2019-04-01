@@ -470,7 +470,7 @@ int core_spi_write(uint8_t *pBuf, uint16_t nSize)
 	ipio_memcpy(txbuf+1, pBuf, nSize, safe_size + 1);
 
 	if (core_spi->spi_write_then_read(core_spi->spi, txbuf, nSize+1, txbuf, 0) < 0) {
-		if (atomic_read(&ipd->do_reset)) {
+		if (ipd->do_reset) {
 			/* ignore spi error if doing ic reset */
 			ret = 0;
 		} else {
@@ -505,7 +505,7 @@ int core_spi_read(uint8_t *pBuf, uint16_t nSize)
 	}
 
 	if (core_spi->spi_write_then_read(core_spi->spi, txbuf, 1, pBuf, nSize) < 0) {
-		if (atomic_read(&ipd->do_reset)) {
+		if (ipd->do_reset) {
 			/* ignore spi error if doing ic reset */
 			ret = 0;
 		} else {

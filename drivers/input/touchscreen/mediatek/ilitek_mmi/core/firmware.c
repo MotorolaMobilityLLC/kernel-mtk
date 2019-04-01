@@ -64,6 +64,7 @@ struct core_firmware_data *core_firmware;
 u8 gestrue_fw[(10 * K)];
 
 extern unsigned char g_user_buf[PAGE_SIZE];
+extern unsigned char fw_name_buf[PAGE_SIZE];
 extern bool use_g_user_buf;
 
 static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw);
@@ -96,14 +97,14 @@ static int write_download(uint32_t start, uint32_t size, uint8_t *w_buf, uint32_
 	uint32_t end = start + size;
 	uint8_t *buf = NULL;
 
-    buf = (uint8_t *)kmalloc(sizeof(uint8_t) * size + 4, GFP_KERNEL);
+    buf = (uint8_t *)vmalloc(sizeof(uint8_t) * w_len + 4);
 
 	if (ERR_ALLOC_MEM(buf)) {
 		ipio_err("Failed to allocate a buffer to be read, %ld\n", PTR_ERR(buf));
 		return -ENOMEM;
 	}
 
-	memset(buf, 0xFF, (int)sizeof(uint8_t) * size + 4);
+	memset(buf, 0xFF, (int)sizeof(uint8_t) * w_len + 4);
 
 	for (addr = start, i = 0; addr < end; addr += w_len, i += w_len) {
 		if ((addr + w_len) > end)
@@ -119,15 +120,14 @@ static int write_download(uint32_t start, uint32_t size, uint8_t *w_buf, uint32_
 
 		if (core_write(core_config->slave_i2c_addr, buf, w_len + 4)) {
 			ipio_err("Failed to write data via SPI in host download (%x)\n", w_len);
-			ipio_kfree((void **)&buf);
+			ipio_vfree((void **)&buf);
 			return -EIO;
 		}
 
 		update_status = (i * 101) / end;
-		//printk("%cupgrade firmware(mp code), %02d%c", 0x0D, update_status, '%');
 	}
 
-	ipio_kfree((void **)&buf);
+	ipio_vfree((void **)&buf);
 	return 0;
 }
 
@@ -355,12 +355,8 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 
 	switch (open_file_method) {
 	case REQUEST_FIRMWARE:
-		ipio_info("Request_firmware_file, name = %s \n", BOOT_FW_HEX_NAME);
-		msleep(BOOT_UPDATE_FW_DELAY_TIME);
-		if(use_g_user_buf)
-			ret = request_firmware(&fw, g_user_buf, ipd->dev);
-		else
-			ret = request_firmware(&fw, BOOT_FW_HEX_NAME, ipd->dev);
+		ipio_info("Request_firmware_file, name = %s \n", fw_name_buf);
+		ret = request_firmware(&fw, fw_name_buf, ipd->dev);
 		if (ret < 0) {
 			ipio_err("Failed to open the file Name %s,try to open ili file\n", BOOT_FW_HEX_NAME);
 			return -ENOMEM;
@@ -1139,7 +1135,7 @@ static int fw_upgrade_iram(u8 *pfw)
 			ipio_info("%s CRC is %s (%x) : (%x)\n", fbi[i].name, (crc != dma ? "Invalid !" : "Correct !"), crc, dma);
 
 			if (CHECK_EQUAL(crc, dma) == UPDATE_FAIL)
-				ret = UPDATE_FAIL;
+				return UPDATE_FAIL;
 		}
 	}
 
@@ -1151,7 +1147,7 @@ out:
 	}
 
 	core_config_ice_mode_disable();
-	mdelay(10);
+	mdelay(60);
 	return ret;
 }
 

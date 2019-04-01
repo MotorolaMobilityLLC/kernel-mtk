@@ -500,7 +500,7 @@ void core_fr_handler(void)
 		return;
 	}
 
-	if (atomic_read(&ipd->do_reset)) {
+	if (ipd->do_reset) {
 		ipio_err("IC is resetting, do nothing\n");
 		return;
 	}
