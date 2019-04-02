@@ -33,6 +33,7 @@
 * 1.Included header files
 *****************************************************************************/
 #include "focaltech_core.h"
+ #include <linux/major.h>
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
@@ -1146,6 +1147,40 @@ static struct attribute_group fts_attribute_group = {
     .attrs = fts_attributes
 };
 
+/*-----------add to support moto tcmd framework--------------*/
+static ssize_t path_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+        struct fts_ts_data *data = dev_get_drvdata(dev);
+        ssize_t blen;
+        const char *path;
+
+        if (!data) {
+                pr_err("cannot get ft_data pointer\n");
+                return (ssize_t)0;
+        }
+        path = kobject_get_path(&data->client->dev.kobj, GFP_KERNEL);
+        blen = scnprintf(buf, PAGE_SIZE, "%s", path ? path : "na");
+        kfree(path);
+        return blen;
+}
+
+/* Attribute: vendor (RO) */
+static ssize_t vendor_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+{
+        return scnprintf(buf, PAGE_SIZE, "focaltech");
+}
+
+static struct device_attribute touchscreen_attributes[] = {
+        __ATTR_RO(path),
+        __ATTR_RO(vendor),
+        __ATTR_NULL
+};
+#define TSDEV_MINOR_BASE 128
+#define TSDEV_MINOR_MAX 32
+/*-----------------------------------------------------------*/
+
 /************************************************************************
 * Name: fts_create_sysfs
 * Brief: create sysfs interface
@@ -1156,7 +1191,35 @@ static struct attribute_group fts_attribute_group = {
 int fts_create_sysfs(struct i2c_client *client)
 {
     int ret = 0;
+    static int minor;
+    static struct class *touchscreen_class;
+    static struct device *ts_class_dev;
+    struct device_attribute *attrs = touchscreen_attributes;
+    int i, error = 0;
 
+    minor = input_get_new_minor(client->addr,1, false);
+    if (minor < 0)
+        minor = input_get_new_minor(TSDEV_MINOR_BASE,TSDEV_MINOR_MAX, true);
+    touchscreen_class = class_create(THIS_MODULE, "touchscreen");
+    if (IS_ERR(touchscreen_class)) {
+        FTS_ERROR("[touchscreen]: class_create() failed!!");
+        touchscreen_class = NULL;
+        return -ENOMEM;
+    }
+    ts_class_dev = device_create(touchscreen_class, NULL,MKDEV(INPUT_MAJOR, minor),fts_data,fts_data->name);
+    if (IS_ERR(ts_class_dev)) {
+        FTS_ERROR("[touchscreen]: device_create() failed!!");
+        ts_class_dev = NULL;
+        return -ENOMEM;
+    }
+    for (i = 0; attrs[i].attr.name != NULL; ++i) {
+        error = device_create_file(ts_class_dev, &attrs[i]);
+        if (error)
+            break;
+    }
+
+    if (error)
+        goto device_destroy;
     ret = sysfs_create_group(&client->dev.kobj, &fts_attribute_group);
     if (ret) {
         FTS_ERROR("[EX]: sysfs_create_group() failed!!");
@@ -1167,6 +1230,15 @@ int fts_create_sysfs(struct i2c_client *client)
     }
 
     return ret;
+device_destroy:
+    for (--i; i >= 0; --i)
+        device_remove_file(ts_class_dev, &attrs[i]);
+    device_destroy(touchscreen_class, MKDEV(INPUT_MAJOR, minor));
+    ts_class_dev = NULL;
+    class_unregister(touchscreen_class);
+    FTS_ERROR("[touchscreen]: class_ungister()!!");
+    return -ENOMEM;
+
 }
 /************************************************************************
 * Name: fts_remove_sysfs
