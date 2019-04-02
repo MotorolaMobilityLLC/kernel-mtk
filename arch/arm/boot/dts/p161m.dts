@@ -607,14 +607,14 @@
 	};
 	camera_pins_cam_ldo_sub_vcamd_0: cam1@vcamd0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo_sub_vcamd_1: cam1@vcamd1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
 			slew-rate = <1>;
 			output-high;
 		};
