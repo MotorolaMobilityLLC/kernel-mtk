@@ -63,6 +63,7 @@ static struct device_attribute tcpc_device_attributes[] = {
 	TCPC_DEVICE_ATTR(timer, S_IRUGO | S_IWUSR | S_IWGRP),
 	TCPC_DEVICE_ATTR(caps_info, S_IRUGO),
 	TCPC_DEVICE_ATTR(pe_ready, 0444),
+	TCPC_DEVICE_ATTR(cc_orientation, S_IRUGO | S_IWUSR | S_IWGRP),
 };
 
 enum {
@@ -73,6 +74,7 @@ enum {
 	TCPC_DESC_TIMER,
 	TCPC_DESC_CAP_INFO,
 	TCPC_DESC_PE_READY,
+	TCPC_DESC_CC_POLA,
 };
 
 static struct attribute *__tcpc_attrs[ARRAY_SIZE(tcpc_device_attributes) + 1];
@@ -193,6 +195,12 @@ static ssize_t tcpc_show_property(struct device *dev,
 			snprintf(buf, 256, "%s\n", "no");
 		break;
 #endif
+	case TCPC_DESC_CC_POLA:
+		if (tcpm_inquire_cc_polarity(tcpc))
+			snprintf(buf, 256, "%s\n", "CC2");
+		else
+			snprintf(buf, 256, "%s\n", "CC1");
+		break;
 	default:
 		break;
 	}
