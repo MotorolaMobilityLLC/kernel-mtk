@@ -200,6 +200,7 @@ static int vib_probe(struct platform_device *pdev)
 	init_vibr_oc_handler(vibrator_oc_handler);
 	init_cust_vibrator_dtsi(pdev);
 	vibr_power_set();
+	vibrator_enable(&mtk_vibrator,1000);
 	return 0;
 }
 
