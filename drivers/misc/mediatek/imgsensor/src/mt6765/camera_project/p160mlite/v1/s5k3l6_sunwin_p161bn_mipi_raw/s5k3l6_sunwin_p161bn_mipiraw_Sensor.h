@@ -92,7 +92,7 @@ struct imgsensor_struct {
 
 	/*ihdr mode 0: disable, 1: ihdr, 2:mVHDR, 9:zigzag*/
 	kal_uint8  ihdr_mode;
-
+	kal_uint8 pdaf_mode;	/* PDAF enable or disable */
 	kal_uint8 i2c_write_id;			//record current sensor's i2c write id
 };
 

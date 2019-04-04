@@ -214,8 +214,8 @@ static void write_cmos_sensor(kal_uint32 addr, kal_uint32 para)
 #define WINDOW_HEIGHT 		0x079c //1948
 #define REG_ROM_START 		0x62
 #ifdef GC5025_SUNWIN_P161BNOTP_FOR_CUSTOMER
-#define RG_TYPICAL    		0x0611
-#define BG_TYPICAL		0x0588
+#define RG_TYPICAL    		0x4ed//0x0611
+#define BG_TYPICAL		    0x618//0x0588
 #define INFO_ROM_START		0x01
 #define INFO_WIDTH       	0x08
 #define WB_ROM_START      	0x11
