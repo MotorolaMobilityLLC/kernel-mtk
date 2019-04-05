@@ -91,7 +91,7 @@
                 <debounce_en>Disable</debounce_en>
             </eint9>
             <eint11>
-                <varName>FP_INT</varName>
+                <varName>FINGERPRINT_INT</varName>
                 <debounce_time>0</debounce_time>
                 <polarity>High</polarity>
                 <sensitive_level>Edge</sensitive_level>
@@ -104,13 +104,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint12>
-            <eint20>
-                <varName>GOODIX_FP</varName>
-                <debounce_time>0</debounce_time>
-                <polarity>High</polarity>
-                <sensitive_level>Edge</sensitive_level>
-                <debounce_en>Disable</debounce_en>
-            </eint20>
             <eint27>
                 <varName>SMART_PA</varName>
                 <debounce_time>0</debounce_time>
