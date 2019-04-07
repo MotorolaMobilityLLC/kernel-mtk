@@ -36,57 +36,30 @@
 
 #include "s5k4h7yxmipiraw_Sensor.h"
 
+#define OTP_4H7 1
+
+#if OTP_4H7
+#define FLAG_VALUE_PAGE 0x40
+#define INCLUDE_NO_OTP_4H7 0
+#define S5K4H7YX_OFILM_MODULE_ID 0x4f46
+#define BINGO_OTP_CHECKSUM 1
+#define S5K4H7YX_OFILM_MODULE_ID_START_ADD 0x0a12
+#define S5K4H7YX_OFILM_MODULE_ID_LENGTH 0x02
+#define getbit(x,y)   ((x) >> (y)&1)
+#endif
+
 /****************************Modify following Strings for debug****************************/
 #define PFX "s5k4h7yx_camera_sensor"
 
 #define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2664*1500@30fps,888Mbps/lane; video 5328*3000@30fps,1390Mbps/lane; capture 16M@30fps,1390Mbps/lane\n")
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
-#define LOGE(format, args...) xlog_printk(ANDROID_LOG_ERROR, PFX, "[%s]"format, __func__, ##args)
+#define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-#if 0
-#define CONFIG_OTP_MANUAL_CONTROL
-#if defined CONFIG_OTP_MANUAL_CONTROL
-	int tran_otp_manual_control  = 0;
-#endif
-#endif
-
-
-#if 0
-
-#define S5K4H7_OTP_OFILM
-
-
-#ifdef S5K4H7_OTP_OFILM
-#define GAIN_DEFAULT       0x0100
-#define GAIN_GREEN1_ADDR   0x020E
-#define GAIN_BLUE_ADDR     0x0212
-#define GAIN_RED_ADDR      0x0210
-#define GAIN_GREEN2_ADDR   0x0214
-#define CAM_DISABLE_OTP 1
-#if CAM_DISABLE_OTP
-
-#endif
-
-int rg_ratio;
-int bg_ratio;
-int golden_rg_ratio;
-int golden_bg_ratio;
-
-
-static USHORT R_GAIN;
-static USHORT B_GAIN;
-static USHORT Gr_GAIN;
-static USHORT Gb_GAIN;
-static USHORT G_GAIN;
-
-int cqcq_disable_otp = 0;
-#endif
-#endif
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H7YX_SENSOR_ID,
 
@@ -128,17 +101,17 @@ static imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 	},
 	.slim_video = {
-			.pclk = 280000000,				/* record different mode's pclk */
-			.linelength = 3688,			/* record different mode's linelength */
-			.framelength = 2530,		   /* record different mode's framelength */
-			.startx = 0,					/* record different mode's startx of grabwindow */
-			.starty = 0,					/* record different mode's starty of grabwindow */
-			.grabwindow_width = 1280,		/* record different mode's width of grabwindow */
-			.grabwindow_height = 720,		/* record different mode's height of grabwindow */
-			/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
-			.mipi_data_lp2hs_settle_dc = 85,
-			/*	 following for GetDefaultFramerateByScenario()	*/
-			.max_framerate = 300,
+		.pclk = 280000000,				/* record different mode's pclk */
+		.linelength = 3688,			/* record different mode's linelength */
+		.framelength = 2530,		   /* record different mode's framelength */
+		.startx = 0,					/* record different mode's startx of grabwindow */
+		.starty = 0,					/* record different mode's starty of grabwindow */
+		.grabwindow_width = 1280,		/* record different mode's width of grabwindow */
+		.grabwindow_height = 720,		/* record different mode's height of grabwindow */
+		/*	 following for MIPIDataLowPwr2HighSpeedSettleDelayCount by different scenario	*/
+		.mipi_data_lp2hs_settle_dc = 85,
+		/*	 following for GetDefaultFramerateByScenario()	*/
+		.max_framerate = 300,
 
 	},
 	.margin = 4,
@@ -231,10 +204,19 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
+#if OTP_4H7
+static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
+{
+    char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
+
+    //kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iWriteRegI2C(pusendcmd, 4, imgsensor.i2c_write_id);
+}
+#endif
+
 unsigned char S5K4H7_read_cmos_sensor(u32 addr)
 {
 	kal_uint16 get_byte = 0;
-
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
 
 	iReadRegI2C(pu_send_cmd, 2, (u8 *)&get_byte, 1, imgsensor.i2c_write_id);
@@ -248,280 +230,6 @@ void S5K4H7_write_cmos_sensor(u16 addr, u32 para)
 
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-static bool s5k4H7_start_read_otp(BYTE zone)
-{
-	BYTE val = 0;
-	char i = 0;
-
-	write_cmos_sensor_8(0x0A02, zone);
-	write_cmos_sensor_8(0x0A00, 0x01);
-      mdelay(50);
-
-	for (i = 0; i <= 100; i++)
-	{
-		val = read_cmos_sensor_8(0x0A01);
-		if (val == 0x01)
-			break;
-		mdelay(2);
-	}
-
-	if (i == 100)
-	{
-		write_cmos_sensor_8(0x0A00, 0x00);
-		return false;
-	}
-
-	return true;
-}
-
-static void s5k4H7_stop_read_otp(void)
-{
-	char i = 0;
-	BYTE val = 0x00;
-
-	for (i = 0; i <= 100; i++)
-	{
-		val = read_cmos_sensor_8(0x0A01);
-		if (val == 0x01)
-			break;
-		mdelay(2);
-	}
-	LOG_INF("[S5K4H7Y] otp stop i = %d\n", i);
-	write_cmos_sensor_8(0x0A00, 0x00);
-
-	return;
-}
-
-int check_otp(void)
-{
-    int awbgroupflag = 0;
-	int flag1 = 0;
-    int flag2 = 0;
-    int flag3 = 0;
-	BYTE zone = 0x16;
-
-	if (!s5k4H7_start_read_otp(zone))
-	{
-		LOG_INF("[S5K4H7] Start read Page %d Fail!\n", zone);
-		return 0;
-	}
-
-       awbgroupflag = read_cmos_sensor_8(0x0A04);
-
-LOG_INF("[S5K4H7] awbgroupflag=%d\n", awbgroupflag);
-       flag1 = (awbgroupflag>>6)&0x03;
-       flag2 = (awbgroupflag>>4)&0x03;
-       flag3 = (awbgroupflag>>2)&0x03;
-
- LOG_INF("[S5K4H7] otp flag1= %d flag2=%d flag3=%d\n", flag1, flag2, flag3);
-
-   	if (flag1 == 0x01)
-	{
-		return 1;
-  	} else if (flag2 == 0x01)
-	{
-		return 2;
-  	} else if (flag3 == 0x01)
-    {
-
-     return 3;
-    } else{
-
-	return 0;
-    }
-}
-
-static bool read_otp(int index)
-{
-
-    kal_uint32 sumv = 0;
-    kal_uint32 readout = 0;
-    int i = 0;
-
-
-  LOG_INF("[S5K4H7] otp index %d\n", index);
-	switch (index)
-	{
-		case 1:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A05)<<8)|(read_cmos_sensor_8(0x0A06)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A07)<<8)|(read_cmos_sensor_8(0x0A08)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A0B)<<8)|(read_cmos_sensor_8(0x0A0C)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A0D)<<8)|(read_cmos_sensor_8(0x0A0E)));
-
-                readout = read_cmos_sensor_8(0x0A19);
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A05+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7] readout =%d  sumv=%d\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-	    LOG_INF("[S5K4H7] group1\n");
-			break;
-		case 2:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A1A)<<8)|(read_cmos_sensor_8(0x0A1B)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A1C)<<8)|(read_cmos_sensor_8(0x0A1D)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A20)<<8)|(read_cmos_sensor_8(0x0A21)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A22)<<8)|(read_cmos_sensor_8(0x0A23)));
-
-                readout = read_cmos_sensor_8(0x0A2E);
-
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A1A+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7] readout =%d  sumv=%d  we go here 1 group2\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-
-	    LOG_INF("[S5K4H7] 2 group\n");
-			break;
-		case 3:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A2F)<<8)|(read_cmos_sensor_8(0x0A30)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A31)<<8)|(read_cmos_sensor_8(0x0A32)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A35)<<8)|(read_cmos_sensor_8(0x0A36)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A37)<<8)|(read_cmos_sensor_8(0x0A38)));
-
-                readout = read_cmos_sensor_8(0x0A43);
-
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A2F+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7]  readout =%d  sumv=%d group3\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-	    LOG_INF("[S5K4H7] 3 group\n");
-			break;
-		default:
-	    return 0;
-			LOG_INF("[S5K4H7Y] AWB gain value fail!\n");
-			break;
-	}
-
- LOG_INF("[S5K4H7] rg_ratio=%d bg_ratio= %d golden_rg_ratio=%d golden_bg_ratio=%d\n", rg_ratio, bg_ratio, golden_rg_ratio, golden_bg_ratio);
-
-	s5k4H7_stop_read_otp(); /* reset NVM */
-
-	return 1;
-}
-
-static bool update_otp(void)
-{
-	int temp = 0;
-	int rg = 0, bg = 0, golden_rg = 0, golden_bg = 0;
-	kal_uint32 r_ratio = 0;
-	kal_uint32 b_ratio = 0;
-
-	LOG_INF("[S5K4H7Y] R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-if ((R_GAIN == 0) && (B_GAIN == 0) && (G_GAIN == 0))
-{
-    LOG_INF("[S5K4H7Y] R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-    write_cmos_sensor_8(0x0136, 0x18);
-	write_cmos_sensor_8(0x0100, 0x01);
-       mdelay(50);
-
-		temp = check_otp();
-		if (temp == 0)
-	{
-	   return 0;
-	}
-LOG_INF("[S5K4H7Y] otp temp= %d\n", temp);
-
-
-	if (!(read_otp(temp)))
-	{
-		return false;
-	}
-LOG_INF("[S5K4H7Y] otp we get herr\n");
-	rg = rg_ratio;
-	bg = bg_ratio;
-	golden_rg = golden_rg_ratio;
-	golden_bg = golden_bg_ratio;
-
-	r_ratio = ((512*golden_rg)/rg);
-	b_ratio = ((512*golden_bg)/bg);
-	LOG_INF("[S5K4H7Y] otp wb r_ratio = %d, b_ratio = %d\n", r_ratio, b_ratio);
-
-	if (r_ratio >= 512)
-	{
-		if (b_ratio >= 512)
-		{
-			R_GAIN = (USHORT)((GAIN_DEFAULT*r_ratio)/512);
-			G_GAIN = GAIN_DEFAULT;
-			B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/512);
-		} else
-		{
-			R_GAIN = (USHORT)((GAIN_DEFAULT*r_ratio)/b_ratio);
-			G_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-			B_GAIN = GAIN_DEFAULT;
-		}
-	} else
-	{
-		if (b_ratio >= 512)
-		{
-			R_GAIN = GAIN_DEFAULT;
-			G_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-			B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/r_ratio);
-
-		} else
-		{
-			Gr_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-			Gb_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-			if (Gr_GAIN >= Gb_GAIN)
-			{
-				R_GAIN = GAIN_DEFAULT;
-				G_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-				B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/r_ratio);
-    			} else
-			{
-				R_GAIN =  (USHORT)((GAIN_DEFAULT*r_ratio)/b_ratio);
-				G_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-				B_GAIN = GAIN_DEFAULT;
-			}
-		}
-	}
-
-LOG_INF("[S5K4H7Y] otp13otp ssskkk1wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-	   return 1;
-}
-
-	if ((R_GAIN != 0) && (B_GAIN != 0) && (G_GAIN != 0))
-	{
-write_cmos_sensor_8(0x3c0f, 0x00);
-
-write_cmos_sensor_8(0x0210, R_GAIN>>8);
-write_cmos_sensor_8(0x0211, R_GAIN&0xff);
-write_cmos_sensor_8(0x0212, B_GAIN>>8);
-write_cmos_sensor_8(0x0213, B_GAIN&0xff);
-write_cmos_sensor_8(0x020E, G_GAIN>>8);
-write_cmos_sensor_8(0x020F, G_GAIN&0xff);
-write_cmos_sensor_8(0x0214, G_GAIN>>8);
-write_cmos_sensor_8(0x0215, G_GAIN&0xff);
-
-	LOG_INF("[S5K4H7Y] otp0.7 akkkksss otp wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-	}
-
-	LOG_INF("[S5K4H7Y] otp0.1 otp wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-
-	return 1;
-}
-#endif
-
 
 static void set_dummy(void)
 {
@@ -531,7 +239,6 @@ static void set_dummy(void)
 	write_cmos_sensor_8(0x0341, imgsensor.frame_length & 0xFF);
 	write_cmos_sensor_8(0x0342, imgsensor.line_length >> 8);
 	write_cmos_sensor_8(0x0343, imgsensor.line_length & 0xFF);
-
 }	/*	set_dummy  */
 
 static kal_uint32 return_sensor_id(void)
@@ -539,9 +246,7 @@ static kal_uint32 return_sensor_id(void)
     LOG_INF("get here11\n");
     LOG_INF("get here22  0x%x\n", (read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
 	return ((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
-
 }
-
 
 static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 {
@@ -563,7 +268,6 @@ static void set_max_framerate(UINT16 framerate, kal_bool min_framelength_en)
 	spin_unlock(&imgsensor_drv_lock);
 	set_dummy();
 }	/*	set_max_framerate  */
-
 
 static void write_shutter(kal_uint16 shutter)
 {
@@ -602,13 +306,8 @@ static void write_shutter(kal_uint16 shutter)
 	write_cmos_sensor_8(0x0202, shutter >> 8);
 	write_cmos_sensor_8(0x0203, shutter & 0xFF);
 
-
 	LOG_INF("shutter =%d, framelength =%d\n", shutter, imgsensor.frame_length);
-
-
 }	/*	write_shutter  */
-
-
 
 /*************************************************************************
 * FUNCTION
@@ -626,7 +325,6 @@ static void write_shutter(kal_uint16 shutter)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-
 static void set_shutter(kal_uint16 shutter)
 {
 	unsigned long flags;
@@ -637,8 +335,6 @@ static void set_shutter(kal_uint16 shutter)
 
 	write_shutter(shutter);
 }	/*	set_shutter */
-
-
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
 {
@@ -695,8 +391,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
     return gain;
 }	/*	set_gain  */
 
-
-
 /* defined but not used */
 static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gain)
 {
@@ -713,18 +407,12 @@ static void ihdr_write_shutter_gain(kal_uint16 le, kal_uint16 se, kal_uint16 gai
 			spin_unlock(&imgsensor_drv_lock);
 			if (le < imgsensor_info.min_shutter) le = imgsensor_info.min_shutter;
 			if (se < imgsensor_info.min_shutter) se = imgsensor_info.min_shutter;
-
-
 				/* Extend frame length first */
 				write_cmos_sensor(0x380e, imgsensor.frame_length >> 8);
 
-
 		set_gain(gain);
 	}
-
 }
-
-
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -758,7 +446,6 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 		default:
 			LOG_INF("Error image_mirror setting\n");
 	}
-
 }
 
 /*************************************************************************
@@ -777,12 +464,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-#if 0
-static void night_mode(kal_bool enable)
-{
-/*No Need to implement this function*/
-}	/*	night_mode	*/
-#endif
+
 /* #define LSC_cal	1 */
 static void sensor_init(void)
 {
@@ -824,62 +506,27 @@ static void sensor_init(void)
 	write_cmos_sensor_8(0X3C32, 0XFF);
 	write_cmos_sensor_8(0X0100, 0X00);
 
-
-#if 0
-//#if defined CONFIG_OTP_MANUAL_CONTROL
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-
-
-    write_cmos_sensor_8(0x3400, 0x00);
-    write_cmos_sensor_8(0x0B00, 0x01);
-
-
-  LOG_INF("lsc ontran_otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("lsc offtran_otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-
-
-    write_cmos_sensor_8(0x3400, 0x00);
-    write_cmos_sensor_8(0x0B00, 0x01);
-
-    LOG_INF("lsc on tran_otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-
-
-
 	mdelay(1);
 }	/*	sensor_init  */
 
-
 static void preview_setting(void)
 {
-
-  int i = 0;
-  int framecnt = 0;
+	int i = 0;
+	int framecnt = 0;
 
 	write_cmos_sensor_8(0X0100, 0X00);
 	for (i = 0; i < 100; i++)
 	{
-	     framecnt = read_cmos_sensor_8(0x0005); /* waiting for sensor to  stop output  then  set the  setting */
-	     if (framecnt == 0xFF)
-	     {
-		 LOG_INF("stream is off \n");
-		  break;
-	     }
-	      else{
-		  LOG_INF("stream is not off\n");
-		 mdelay(1);
-	      }
+		framecnt = read_cmos_sensor_8(0x0005); /* waiting for sensor to  stop output  then  set the  setting */
+		if (framecnt == 0xFF)
+		{
+			LOG_INF("stream is off \n");
+			break;
+		}
+		else{
+			LOG_INF("stream is not off\n");
+			mdelay(1);
+		}
 	}
 	write_cmos_sensor_8(0X0136, 0X18);
 	write_cmos_sensor_8(0X0137, 0X00);
@@ -931,51 +578,23 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
 
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
 }	/*	preview_setting  */
 
 static void capture_setting(kal_uint16 currefps)
 {
-
-
-      int i = 0;
-      int framecnt = 0;
+	int i = 0;
+	int framecnt = 0;
 
 	write_cmos_sensor_8(0X0100, 0X00);
-
-	 for (i = 0; i < 100; i++)
-	{
+	for (i = 0; i < 100; i++) {
 	    framecnt = read_cmos_sensor_8(0x0005);
-	     if (framecnt == 0xFF)
-	     {
-		 LOG_INF("stream is  off\\n");
-		  break;
-	     }
-	      else{
-		  LOG_INF("stream is not off\\n");
-		 mdelay(1);
-	      }
+	    if (framecnt == 0xFF) {
+			LOG_INF("stream is  off\\n");
+			break;
+	    } else {
+			LOG_INF("stream is not off\\n");
+			mdelay(1);
+	    }
 	}
 	write_cmos_sensor_8(0X0136, 0X18);
 	write_cmos_sensor_8(0X0137, 0X00);
@@ -1028,53 +647,27 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
-    }
-
-
+}
 
 static void normal_video_setting(kal_uint16 currefps)
 {
 
-      int i = 0;
-      int framecnt = 0;
+	int i = 0;
+	int framecnt = 0;
 
 	write_cmos_sensor_8(0x0100, 0x00);
-
 	for (i = 0; i < 100; i++)
 	{
-	    framecnt = read_cmos_sensor_8(0x0005);
-	     if (framecnt == 0xFF)
-	     {
-		 LOG_INF("stream is off\\n");
-		  break;
-	     }
-	      else{
-		 LOG_INF("stream is not off\\n");
-		 mdelay(1);
-	      }
+		framecnt = read_cmos_sensor_8(0x0005);
+		if (framecnt == 0xFF)
+		{
+			LOG_INF("stream is off\\n");
+			break;
+		}
+		else{
+			LOG_INF("stream is not off\\n");
+			mdelay(1);
+		}
 	}
 	write_cmos_sensor_8(0X0100, 0X00);
 	write_cmos_sensor_8(0X0136, 0X18);
@@ -1126,51 +719,22 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
 }
 
 static void slim_video_setting(void)
 {
 	int i = 0;
 	int framecnt = 0;
-
 	write_cmos_sensor_8(0X0100, 0X00);
-
-
-	for (i = 0; i < 100; i++)
-	{
-	     framecnt = read_cmos_sensor_8(0x0005); /* waiting for sensor to  stop output  then  set the  setting */
-	     if (framecnt == 0xFF)
-	     {
-		 LOG_INF("stream is  off\\n");
-		  break;
-	     }
-	      else{
-		  LOG_INF("stream is not off\\n");
-		 mdelay(1);
-	      }
+	for (i = 0; i < 100; i++) {
+		framecnt = read_cmos_sensor_8(0x0005); /* waiting for sensor to  stop output  then  set the  setting */
+		if (framecnt == 0xFF) {
+			LOG_INF("stream is  off\\n");
+			break;
+		} else {
+			LOG_INF("stream is not off\\n");
+			mdelay(1);
+		}
 	}
 	write_cmos_sensor_8(0X0136, 0X18);
 	write_cmos_sensor_8(0X0137, 0X00);
@@ -1221,48 +785,145 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
 }
 
+#if OTP_4H7
+typedef struct s5k4h7yx_otp_data {
+	unsigned char page_flag;
+	unsigned char module_id[2];
+	unsigned short moduleid;
+	unsigned char gloden[8];
+	unsigned char unint[8];
+	unsigned char data[128];
+} S5K4H7YX_OTP_DATA;
+
+S5K4H7YX_OTP_DATA s5k4h7yx_otp_data;
+
+static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
+{
+	unsigned short stram_flag = 0;
+	int i = 0;
+	if (NULL == Buff) return 0;
+
+	stram_flag = read_cmos_sensor_8(0x0100); //3
+	if (stram_flag == 0) {
+		write_cmos_sensor_8(0x0100,0x01);   //3
+	}
+	write_cmos_sensor_8(0x0a02,page);    //3
+	write_cmos_sensor_16(0x0a00,0x0100); //4 otp enable and read start
+	mdelay(100);
+	for ( i = 0; i < size; i++ ) {
+		Buff[i] = read_cmos_sensor_8(start_add+i); //3
+		//LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
+		mdelay(3);
+	}
+	//Sleep(100);
+	mdelay(100);
+	write_cmos_sensor_16(0x0a00,0x0000); //4 //otp enable and read end
+
+	return 0;
+}
+
+static int s5k4h7yx_get_vaild_data_page(void)
+{
+	unsigned char page_flag[2] = {0};
+	unsigned short page = 21;
+	//LOG_INF("read flag .....");
+	for (page = 21;page <= 29; page+=4) {
+		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[0],1);
+		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[1],1);
+		LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
+		mdelay(2);
+		if (page_flag[0] != 0 || page_flag[1] != 0) {
+			LOGE("+++4h7 3 get vaild page success = %d\n",page);
+			s5k4h7yx_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
+			//LOGE("+++4h7====== s5k4h7yx_otp_data.page_flag = 0x%x\n",s5k4h7yx_otp_data.page_flag);
+			break;
+		}
+		memset(page_flag,0,sizeof(page_flag));
+	}
+
+	return page;
+}
+
+static int s5k4h7yx_read_data_kernel(void)
+{
+	unsigned int page = 0;
+	unsigned int i = 0;
+	unsigned int sum = 0;
+
+	if (!s5k4h7yx_get_vaild_data_page())
+		return -1;
+	if (!((getbit(s5k4h7yx_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_otp_data.page_flag,7)))) {
+	//if ((s5k4h7yx_otp_data.page_flag & FLAG_VALUE_PAGE) != FLAG_VALUE_PAGE) {
+		LOGE("+++4h7 error data not valid\n");
+		return -1;
+	}
+	LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_otp_data.page_flag,7),getbit(s5k4h7yx_otp_data.page_flag,6));
+	//read module id
+	for (page = 21; page <= 29; page += 4) {
+		s5k4h7yx_read_otp_page_data(page, S5K4H7YX_OFILM_MODULE_ID_START_ADD, s5k4h7yx_otp_data.module_id, S5K4H7YX_OFILM_MODULE_ID_LENGTH);
+		for (i = 0;i < S5K4H7YX_OFILM_MODULE_ID_LENGTH ; i++ ) {
+			LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_otp_data.module_id[i]);
+			sum += s5k4h7yx_otp_data.module_id[i];
+		}
+		if (sum)
+			break;
+	}
+
+	s5k4h7yx_otp_data.moduleid = ((s5k4h7yx_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_otp_data.module_id[1] & 0x00FF);
+	LOG_INF("s5k4h7yx_otp_data.moduleid= 0x%x",s5k4h7yx_otp_data.moduleid);
+
+#if BINGO_OTP_CHECKSUM
+	//read all awb
+	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_otp_data.data,8);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.data + 8, 51);
+#endif
+	//read awb
+	s5k4h7yx_read_otp_page_data(page, 0x0a3d, s5k4h7yx_otp_data.gloden, 7);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.gloden + 7, 1);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a19, s5k4h7yx_otp_data.unint, 8);
+
+	return 0;
+}
+
+unsigned int S5K4H7_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
+{
+	if (size == 2) { //read module id
+		memcpy(data, s5k4h7yx_otp_data.module_id, size);
+		LOGE("read module id");
+	} else if (size == 8) { //read single awb data
+		if (addr >= 0x0a3D) {
+			memcpy(data, (s5k4h7yx_otp_data.gloden), size);
+			LOGE("read golden");
+		} else {
+			memcpy(data,(s5k4h7yx_otp_data.unint), size);
+			LOGE("read unint");
+		}
+	} else { //read all awb checksum
+		memcpy(data, (s5k4h7yx_otp_data.data), size);
+	}
+
+	return size;
+}
+#endif
 
 /*************************************************************************
-* FUNCTION
-*	get_imgsensor_id
-*
-* DESCRIPTION
-*	This function get the sensor ID
-*
-* PARAMETERS
-*	*sensorID : return the sensor ID
-*
-* RETURNS
-*	None
-*
-* GLOBALS AFFECTED
-*
-*************************************************************************/
+ * FUNCTION
+ *	get_imgsensor_id
+ *
+ * DESCRIPTION
+ *	This function get the sensor ID
+ *
+ * PARAMETERS
+ *	*sensorID : return the sensor ID
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 //extern void app_get_back_sensor_name(char *back_name);
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -1275,31 +936,24 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-		        LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
+			LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
-			//app_get_back_sensor_name("s5k4H7");
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
+#if OTP_4H7
+				s5k4h7yx_read_data_kernel();
+#if INCLUDE_NO_OTP_4H7
+				if ((s5k4h7yx_otp_data.moduleid > 0) && (s5k4h7yx_otp_data.moduleid < 0xFFFF)) {
 #endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
+					if (s5k4h7yx_otp_data.moduleid != S5K4H7YX_OFILM_MODULE_ID) {
+						*sensor_id = 0xFFFFFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					} else
+						LOG_INF("This is ofilm --->s5k4h7 otp data vaild ...");
+#if INCLUDE_NO_OTP_4H7
+				} else {
+					LOG_INF("This is s5k4h7, but no otp data ...");
+				}
 #endif
 #endif
-#endif
-
 				LOG_INF("s5k4h7 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				break;
 			}
@@ -1310,7 +964,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		retry = 2;
 	}
 	if (*sensor_id != imgsensor_info.sensor_id) {
-
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -1318,30 +971,27 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	return ERROR_NONE;
 }
 
-
 /*************************************************************************
-* FUNCTION
-*	open
-*
-* DESCRIPTION
-*	This function initialize the registers of CMOS sensor
-*
-* PARAMETERS
-*	None
-*
-* RETURNS
-*	None
-*
-* GLOBALS AFFECTED
-*
-*************************************************************************/
+ * FUNCTION
+ *	open
+ *
+ * DESCRIPTION
+ *	This function initialize the registers of CMOS sensor
+ *
+ * PARAMETERS
+ *	None
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static kal_uint32 open(void)
 {
-
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
-
 
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1352,6 +1002,21 @@ static kal_uint32 open(void)
 			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+#if OTP_4H7
+#if INCLUDE_NO_OTP_4H7
+				if ((s5k4h7yx_otp_data.moduleid > 0) && (s5k4h7yx_otp_data.moduleid < 0xFFFF)) {
+#endif
+					if (s5k4h7yx_otp_data.moduleid != S5K4H7YX_OFILM_MODULE_ID) {
+						sensor_id = 0xFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					} else
+						LOG_INF("This is ofilm --->s5k4h7 otp data vaild...");
+#if INCLUDE_NO_OTP_4H7
+				} else {
+					LOG_INF("This is s5k4h7, but no otp data ...");
+				}
+#endif
+#endif
 				break;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", sensor_id);
@@ -1391,21 +1056,21 @@ static kal_uint32 open(void)
 
 
 /*************************************************************************
-* FUNCTION
-*	close
-*
-* DESCRIPTION
-*
-*
-* PARAMETERS
-*	None
-*
-* RETURNS
-*	None
-*
-* GLOBALS AFFECTED
-*
-*************************************************************************/
+ * FUNCTION
+ *	close
+ *
+ * DESCRIPTION
+ *
+ *
+ * PARAMETERS
+ *	None
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static kal_uint32 close(void)
 {
 	LOG_INF("E\n");
@@ -1417,22 +1082,22 @@ static kal_uint32 close(void)
 
 
 /*************************************************************************
-* FUNCTION
-* preview
-*
-* DESCRIPTION
-*	This function start the sensor preview.
-*
-* PARAMETERS
-*	*image_window : address pointer of pixel numbers in one period of HSYNC
-*  *sensor_config_data : address pointer of line numbers in one period of VSYNC
-*
-* RETURNS
-*	None
-*
-* GLOBALS AFFECTED
-*
-*************************************************************************/
+ * FUNCTION
+ * preview
+ *
+ * DESCRIPTION
+ *	This function start the sensor preview.
+ *
+ * PARAMETERS
+ *	*image_window : address pointer of pixel numbers in one period of HSYNC
+ *  *sensor_config_data : address pointer of line numbers in one period of VSYNC
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -1452,20 +1117,20 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/*	preview   */
 
 /*************************************************************************
-* FUNCTION
-*	capture
-*
-* DESCRIPTION
-*	This function setup the CMOS sensor in capture MY_OUTPUT mode
-*
-* PARAMETERS
-*
-* RETURNS
-*	None
-*
-* GLOBALS AFFECTED
-*
-*************************************************************************/
+ * FUNCTION
+ *	capture
+ *
+ * DESCRIPTION
+ *	This function setup the CMOS sensor in capture MY_OUTPUT mode
+ *
+ * PARAMETERS
+ *
+ * RETURNS
+ *	None
+ *
+ * GLOBALS AFFECTED
+ *
+ *************************************************************************/
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
@@ -1786,7 +1451,7 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
-/* enable = false; */
+	/* enable = false; */
 	if (enable) {
 		/* 0x5E00[8]: 1 enable,  0 disable */
 		/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
@@ -1810,7 +1475,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
 	UINT32 *feature_return_para_32 = (UINT32 *) feature_para;
 	UINT32 *feature_data_32 = (UINT32 *) feature_para;
-	  unsigned long long *feature_data = (unsigned long long *) feature_para;
+	unsigned long long *feature_data = (unsigned long long *) feature_para;
 
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
@@ -1890,7 +1555,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_GET_CROP_INFO:
 
-	    wininfo = (SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+			wininfo = (SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
 
 			switch (*feature_data_32) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:

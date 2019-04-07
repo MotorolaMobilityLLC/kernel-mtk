@@ -18,6 +18,10 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+#ifdef CONFIG_CAMERA_PROJECT_BINGO
+	{S5K3L6_SENSOR_ID, 0xB0, Common_read_region},
+	{OV02A10_SENSOR_ID, 0xA0, Common_read_region},
+#endif
 	{IMX338_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K4E6_SENSOR_ID, 0xA8, Common_read_region},
 	{IMX386_SENSOR_ID, 0xA0, Common_read_region},

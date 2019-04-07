@@ -42,6 +42,7 @@
 static kal_uint32 streaming_control(kal_bool enable);
 
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOGE(format, args...)	pr_err(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
@@ -116,22 +117,6 @@ static  imgsensor_info_struct imgsensor_info = {
 		.max_framerate = 300,
 		.mipi_pixel_rate = 78000000,
 	},
-/******************************
-    .margin = 4,
-    .min_shutter = 1,
-    .frame_time_delay_frame = 1,
-    .cap_delay_frame = 2,
-    .pre_delay_frame = 2,
-     .video_delay_frame = 2,
-     .hs_video_delay_frame = 2,
-     .slim_video_delay_frame = 2,
-    .custom1_delay_frame = 2,
-
-imgsensor_struct imgsensor中：
-    .shutter = 0x3D0,
-     .gain = 0x100,
-    .current_fps = 300,
-*****************************/
 
 	.margin = 4,//1,			/*sensor framelength & shutter margin*/
 	.min_shutter = 1,		/*min shutter*/
@@ -193,7 +178,6 @@ static struct imgsensor_struct imgsensor = {
 	.ihdr_mode = 0, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x7a, /*record current sensor's i2c write id*/
 };
-
 
 /* Sensor output window information*/
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[4] = {
@@ -307,11 +291,11 @@ static void set_shutter_frame_length(
 		} else {
 			/* Extend frame length*/
 			write_cmos_sensor(0xfd, 0x01);
-		//	write_cmos_sensor(0x4e, imgsensor.frame_length >> 8);
-		//	write_cmos_sensor(0x4f, imgsensor.frame_length & 0xFF);
+			//write_cmos_sensor(0x4e, imgsensor.frame_length >> 8);
+			//write_cmos_sensor(0x4f, imgsensor.frame_length & 0xFF);
 			write_cmos_sensor(0x05, (imgsensor.frame_length-1224) >> 8);
 			write_cmos_sensor(0x06, (imgsensor.frame_length-1224) & 0xFF);
-		//	write_cmos_sensor(0x01, 0x01);
+			//write_cmos_sensor(0x01, 0x01);
 		}
 	} else {
 		/* Extend frame length*/
@@ -331,8 +315,6 @@ static void set_shutter_frame_length(
 	LOG_INF("Add for N3D! shutterlzl =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 
 }
-
-
 
 /*************************************************************************
  * FUNCTION
@@ -397,11 +379,11 @@ static void set_shutter(kal_uint16 shutter)
 		} else {
 			/* Extend frame length*/
 			write_cmos_sensor(0xfd, 0x01);
-		//	write_cmos_sensor(0x4e, imgsensor.frame_length >> 8);
-		//	write_cmos_sensor(0x4f, imgsensor.frame_length & 0xFF);
+			//write_cmos_sensor(0x4e, imgsensor.frame_length >> 8);
+			//write_cmos_sensor(0x4f, imgsensor.frame_length & 0xFF);
 			write_cmos_sensor(0x05, (imgsensor.frame_length-1224) >> 8);
 			write_cmos_sensor(0x06, (imgsensor.frame_length-1224) & 0xFF);
-		//	write_cmos_sensor(0x01, 0x01);
+			//write_cmos_sensor(0x01, 0x01);
 		}
 	} else {
 		/* Extend frame length*/
@@ -439,8 +421,6 @@ static void set_shutter(kal_uint16 shutter)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-
-
 static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
@@ -461,10 +441,6 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	write_cmos_sensor(0x01, 0x01);
 	return gain;
 }	/*	set_gain  */
-
-
-
-
 
 static void set_mirror_flip(kal_uint8 image_mirror)
 {
@@ -519,7 +495,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
  *************************************************************************/
 static void night_mode(kal_bool enable)
 {
-/*No Need to implement this function*/
+	/*No Need to implement this function*/
 }	/*	night_mode	*/
 
 /*************************************************************************
@@ -666,7 +642,6 @@ static void preview_setting(void)
  * GLOBALS AFFECTED
  *
  *************************************************************************/
-
 static void capture_setting(kal_uint16 currefps)
 {
 	LOG_INF("E! currefps:%d\n", currefps);
@@ -675,8 +650,6 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x06, 0xa6);
 	write_cmos_sensor(0xac, 0X00);
 }
-
-
 
 /*************************************************************************
  * FUNCTION
@@ -699,6 +672,44 @@ static void slim_video_setting(void)
 	preview_setting();
 }
 
+
+#define OTP_2A10 1
+#define INCLUDE_NO_OTP_2A10 0
+
+#if OTP_2A10
+#define OV02A10_EEPROM_SLAVE_ADD 0xA0
+#define OV02A10_SENSOR_IIC_SLAVE_ADD 0x7a
+#define OV02A10_OFILM_MODULE_ID  0x4f46
+
+typedef struct ov02a10_otp_data {
+	unsigned short module_id;
+} OV02A10_OTP_DATA;
+
+OV02A10_OTP_DATA ov02a10_otp_data;
+
+static int ov02a10_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, kal_uint8 size)
+{
+	int i = 0;
+	unsigned char module_id[2] = {0};
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = slave;
+	spin_unlock(&imgsensor_drv_lock);
+
+	for (i = 0; i < size; i ++) {
+		module_id[i] = read_cmos_sensor(start_add);
+		LOG_INF("+++OV02A10 otp module_id[%d] = 0x%x\n",i,module_id[i]);
+		start_add ++;
+	}
+	ov02a10_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
+	LOG_INF("ov02a10_otp_data.module_id= 0x%x",ov02a10_otp_data.module_id);
+
+	spin_lock(&imgsensor_drv_lock);
+	imgsensor.i2c_write_id = OV02A10_SENSOR_IIC_SLAVE_ADD;
+	spin_unlock(&imgsensor_drv_lock);
+
+	return 0;
+}
+#endif
 
 /*************************************************************************
  * FUNCTION
@@ -731,6 +742,22 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			write_cmos_sensor(0xfd, 0x00);
 			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
 			if (*sensor_id == imgsensor_info.sensor_id) {
+#if OTP_2A10
+				ov02a10_read_data_from_eeprom(OV02A10_EEPROM_SLAVE_ADD,0x000D,2);
+#if INCLUDE_NO_OTP_2A10
+				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
+#endif
+					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
+						*sensor_id = 0xFFFFFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					} else
+						LOG_INF("This is ofilm --->ov02a10 otp data vaild ...");
+#if INCLUDE_NO_OTP_2A10
+				} else {
+						LOG_INF("This is ofilm --->ov02a10 but no otp ...");
+				}
+#endif
+#endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
@@ -741,7 +768,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		retry = 2;
 	}
 	if (*sensor_id != imgsensor_info.sensor_id) {
-	/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
+		/* if Sensor ID is not correct, Must set *sensor_id to 0xFFFFFFFF */
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
@@ -784,8 +811,21 @@ static kal_uint32 open(void)
 		do {
 			write_cmos_sensor(0xfd, 0x00);
 			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
-
 			if (sensor_id == imgsensor_info.sensor_id) {
+#if OTP_2A10
+#if INCLUDE_NO_OTP_2A10
+				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
+#endif
+					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
+						sensor_id = 0xFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					}
+#if INCLUDE_NO_OTP_2A10
+				} else {
+					LOG_INF("This is ofilm --->ov02a10 but no otp ...");
+				}
+#endif
+#endif
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
@@ -804,16 +844,8 @@ static kal_uint32 open(void)
 	}
 	/* initail sequence write in  */
 	sensor_init();
+
 	mdelay(10);
-	#if defined ov02a10R1AOTP
-	/*	LOG_INF("Apply the sensor OTP\n");
-	 *	struct otp_struct *otp_ptr =
-	 * (struct otp_struct *)kzalloc(sizeof(struct otp_struct), GFP_KERNEL);
-	 *	read_otp(otp_ptr);
-	 *	apply_otp(otp_ptr);
-	 *	kfree(otp_ptr);
-	 */
-	#endif
 	spin_lock(&imgsensor_drv_lock);
 
 	imgsensor.autoflicker_en = KAL_FALSE;
@@ -833,8 +865,6 @@ static kal_uint32 open(void)
 
 	return ERROR_NONE;
 }	/*	open  */
-
-
 
 /*************************************************************************
  * FUNCTION
@@ -858,7 +888,6 @@ static kal_uint32 close(void)
 	/*No Need to implement this function*/
 	return ERROR_NONE;
 }	/*	close  */
-
 
 /*************************************************************************
  * FUNCTION
@@ -1088,7 +1117,6 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	return ERROR_NONE;
 }	/*	get_info  */
 
-
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
 			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
@@ -1098,27 +1126,25 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
 	imgsensor.current_scenario_id = scenario_id;
 	spin_unlock(&imgsensor_drv_lock);
 	switch (scenario_id) {
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			preview(image_window, sensor_config_data);
-			break;
-		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-			capture(image_window, sensor_config_data);
-			break;
-		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-			normal_video(image_window, sensor_config_data);
-			break;
-		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-			slim_video(image_window, sensor_config_data);
-			break;
-		default:
-			LOG_INF("Error ScenarioId setting");
-			preview(image_window, sensor_config_data);
-			return ERROR_INVALID_SCENARIO_ID;
+	case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+		preview(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+		capture(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+		normal_video(image_window, sensor_config_data);
+		break;
+	case MSDK_SCENARIO_ID_SLIM_VIDEO:
+		slim_video(image_window, sensor_config_data);
+		break;
+	default:
+		LOG_INF("Error ScenarioId setting");
+		preview(image_window, sensor_config_data);
+		return ERROR_INVALID_SCENARIO_ID;
 	}
 	return ERROR_NONE;
 }	/* control() */
-
-
 
 static kal_uint32 set_video_mode(UINT16 framerate)
 {
@@ -1154,7 +1180,6 @@ static kal_uint32 set_auto_flicker_mode(kal_bool enable, UINT16 framerate)
 	spin_unlock(&imgsensor_drv_lock);
 	return ERROR_NONE;
 }
-
 
 static kal_uint32 set_max_framerate_by_scenario(
 		MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 framerate)
@@ -1284,13 +1309,13 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	LOG_INF("enable: %d\n", enable);
 
 	if (enable) {
-	//	write_cmos_sensor(0x5000, 0x57);
-	//	write_cmos_sensor(0x5001, 0x02);
-	//	write_cmos_sensor(0x5e00, 0x80);
+		//write_cmos_sensor(0x5000, 0x57);
+		//write_cmos_sensor(0x5001, 0x02);
+		//write_cmos_sensor(0x5e00, 0x80);
 	} else {
-	//	write_cmos_sensor(0x5000, 0x77);
-	//	write_cmos_sensor(0x5001, 0x0a);
-	//	write_cmos_sensor(0x5e00, 0x00);
+		//write_cmos_sensor(0x5000, 0x77);
+		//write_cmos_sensor(0x5001, 0x0a);
+		//write_cmos_sensor(0x5e00, 0x00);
 	}
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.test_pattern = enable;
@@ -1479,7 +1504,6 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	return ERROR_NONE;
 }    /*    feature_control()  */
-
 
 static SENSOR_FUNCTION_STRUCT sensor_func = {
 	open,
