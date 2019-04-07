@@ -1,30 +1,28 @@
-ï»¿/*****************************************************************************
+/*****************************************************************************
  *
  * Filename:
  * ---------
- *	 ov02a10mipiraw_Sensor.h
- *
- * Project:
- * --------
- *	 ALPS
- *
- * Description:
- * ------------
- *	 CMOS sensor header file
+ *	 s5k3l6qtmipiraw_Sensor.h
  *
  ****************************************************************************/
-#ifndef _OV02A10MIPI_SENSOR_H
-#define _OV02A10MIPI_SENSOR_H
+#ifndef _S5K3L6QTMIPI_SENSOR_H
+#define _S5K3L6QTMIPI_SENSOR_H
+#include <linux/types.h>
+#include "kd_camera_typedef.h"
 
 
+
+//±íÊ¾sensorµÄ¼¸ÖÖ¹¤×÷Ä£Ê½×´Ì¬£ºinit preview capture video hvideo svideo
 typedef enum{
 	IMGSENSOR_MODE_INIT,
 	IMGSENSOR_MODE_PREVIEW,
 	IMGSENSOR_MODE_CAPTURE,
 	IMGSENSOR_MODE_VIDEO,
+	IMGSENSOR_MODE_HIGH_SPEED_VIDEO,
 	IMGSENSOR_MODE_SLIM_VIDEO,
 } IMGSENSOR_MODE;
 
+//±íÊ¾¼¸ÖÖ£¨²»Í¬¹¤×÷Ä£Ê½×´Ì¬ÏÂ£©µÄsensor²ÎÊýÐÅÏ¢
 typedef struct imgsensor_mode_struct {
 	kal_uint32 pclk;				//record different mode's pclk
 	kal_uint32 linelength;			//record different mode's linelength
@@ -42,10 +40,9 @@ typedef struct imgsensor_mode_struct {
 	/*	 following for GetDefaultFramerateByScenario()	*/
 	kal_uint16 max_framerate;
 
-	kal_uint32 mipi_pixel_rate;
-
 } imgsensor_mode_struct;
 
+//±íÊ¾£¨µ±Ç°×´Ì¬¹¤×÷Ä£Ê½£©ÏÂµÄsensor²ÎÊýÐÅÏ¢
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
 typedef struct imgsensor_struct {
 	kal_uint8 mirror;				//mirrorflip information
@@ -68,24 +65,25 @@ typedef struct imgsensor_struct {
 	kal_bool   autoflicker_en;		//record autoflicker enable or disable
 	kal_bool test_pattern;			//record test pattern mode or not
 	MSDK_SCENARIO_ID_ENUM current_scenario_id;//current scenario id
-	kal_uint8  ihdr_en;				//ihdr enable or disable
-	kal_uint8 ihdr_mode;
+	kal_bool  ihdr_en;				//ihdr enable or disable
+
 	kal_uint8 i2c_write_id;			//record current sensor's i2c write id
 } imgsensor_struct;
 
+//sensor»ù±¾ÐÅÏ¢£¬datasheetÉÏµÄÐÅÏ¢
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
 typedef struct imgsensor_info_struct {
-    kal_uint32 sensor_id;            //record sensor id defined in Kd_imgsensor.h
+	kal_uint16 sensor_id;			//record sensor id defined in Kd_imgsensor.h
 	kal_uint32 checksum_value;		//checksum value for Camera Auto Test
 	imgsensor_mode_struct pre;		//preview scenario relative information
 	imgsensor_mode_struct cap;		//capture scenario relative information
 	imgsensor_mode_struct normal_video;//normal video  scenario relative information
+	imgsensor_mode_struct hs_video; //high speed video scenario relative information
 	imgsensor_mode_struct slim_video;	//slim video for VT scenario relative information
 
 	kal_uint8  ae_shut_delay_frame;	//shutter delay frame for AE cycle
 	kal_uint8  ae_sensor_gain_delay_frame;	//sensor gain delay frame for AE cycle
 	kal_uint8  ae_ispGain_delay_frame;	//isp gain delay frame for AE cycle
-	kal_uint8  frame_time_delay_frame;
 	kal_uint8  ihdr_support;		//1, support; 0,not support
 	kal_uint8  ihdr_le_firstline;	//1,le first ; 0, se first
 	kal_uint8  sensor_mode_num;		//support sensor mode num
@@ -93,6 +91,7 @@ typedef struct imgsensor_info_struct {
 	kal_uint8  cap_delay_frame;		//enter capture delay frame num
 	kal_uint8  pre_delay_frame;		//enter preview delay frame num
 	kal_uint8  video_delay_frame;	//enter video delay frame num
+	kal_uint8  hs_video_delay_frame;        //enter high speed video  delay frame num
 	kal_uint8  slim_video_delay_frame;	//enter slim video delay frame num
 
 	kal_uint8  margin;				//sensor framelength & shutter margin
@@ -108,7 +107,7 @@ typedef struct imgsensor_info_struct {
 
 	kal_uint8  mipi_lane_num;		//mipi lane num
 	kal_uint8  i2c_addr_table[5];	//record sensor support all write id addr, only supprt 4must end with 0xff
-	kal_uint32  i2c_speed;
+    kal_uint32  i2c_speed;     //i2c speed
 } imgsensor_info_struct;
 
 /* SENSOR READ/WRITE ID */
@@ -117,7 +116,21 @@ typedef struct imgsensor_info_struct {
 //#define IMGSENSOR_WRITE_ID_2 (0x20)
 //#define IMGSENSOR_READ_ID_2  (0x21)
 
-extern int iReadRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u8 * a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
-extern int iWriteRegI2C(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId);
-
+extern void kdSetI2CSpeed(u16 i2cSpeed);
+extern int iReadRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u8 *a_pRecvData, u16 a_sizeRecvData, u16 i2cId);
+extern int iWriteRegI2C(u8 *a_pSendData, u16 a_sizeSendData, u16 i2cId);
+extern int iReadReg(u16 a_u2Addr, u8 *a_puBuff, u16 i2cId);
+extern int iWriteReg(u16 a_u2Addr, u32 a_u4Data, u32 a_u4Bytes, u16 i2cId);
+extern void kdSetI2CSpeed(u16 i2cSpeed);
+//extern bool S5K3L6QT_read_eeprom( kal_uint16 addr, BYTE* data, kal_uint32 size);
 #endif
+
+/*
+PREVIEW:¾¡Á¿ÓÃbinning mode£¬ ²¢¸æÖªÊÇBinning average»¹ÊÇBinning sum£¿AVERAGE
+Ê¹ÓÃGP·½Ê½£¬ shutterµ±Ç°èåÉèÖÃºó£¬ÏÂÏÂèåÉúÐ§£©
+Static  DPC ON
+slim video   ²»ÓÃµ½120fps°É¡£
+get sensor id and Open()  has more code need to reused. need to modify the two place
+20150513 µÚÒ»´ÎºÏÈëPDAF²ÎÊý
+
+*/

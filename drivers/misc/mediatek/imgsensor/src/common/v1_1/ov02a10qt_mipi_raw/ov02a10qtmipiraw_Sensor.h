@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 ov02a10mipiraw_Sensor.h
+ *	 ov02a10qtmipiraw_Sensor.h
  *
  * Project:
  * --------
@@ -13,8 +13,8 @@
  *	 CMOS sensor header file
  *
  ****************************************************************************/
-#ifndef _OV02A10MIPI_SENSOR_H
-#define _OV02A10MIPI_SENSOR_H
+#ifndef _OV02A10QTMIPI_SENSOR_H
+#define _OV02A10QTMIPI_SENSOR_H
 
 
 typedef enum{

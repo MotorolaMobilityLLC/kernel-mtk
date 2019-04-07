@@ -26,7 +26,7 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 #include "kd_camera_typedef.h"
-#include "ov02a10mipiraw_Sensor.h"
+#include "ov02a10qtmipiraw_Sensor.h"
 #ifndef VENDOR_EDIT
 #define VENDOR_EDIT
 #endif
@@ -35,7 +35,7 @@
 //#include <soc/oppo/oppo_project.h>
 #endif
 
-#define PFX "OV02A10_camera_sensor"
+#define PFX "OV02A10QT_camera_sensor"
 //#define LOG_WRN(format, args...) xlog_printk(ANDROID_LOG_WARN ,PFX, "[%S] " format, __FUNCTION__, ##args)
 //#defineLOG_INF(format, args...) xlog_printk(ANDROID_LOG_INFO ,PFX, "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_DBG(format, args...) xlog_printk(ANDROID_LOG_DEBUG ,PFX, "[%S] " format, __FUNCTION__, ##args)
@@ -49,7 +49,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static  imgsensor_info_struct imgsensor_info = {
 
 	/*record sensor id defined in Kd_imgsensor.h*/
-	.sensor_id = OV02A10_SENSOR_ID,
+	.sensor_id = OV02A10QT_SENSOR_ID,
 
 	.checksum_value = 0xb1893b4f, /*checksum value for Camera Auto Test*/
 	.pre = {
@@ -659,22 +659,20 @@ static void slim_video_setting(void)
 	preview_setting();
 }
 
-
 #define OTP_2A10 1
 #define INCLUDE_NO_OTP_2A10 0
-
 #if OTP_2A10
-#define OV02A10_EEPROM_SLAVE_ADD 0xA0
-#define OV02A10_SENSOR_IIC_SLAVE_ADD 0x7a
-#define OV02A10_OFILM_MODULE_ID  0x4f46
+#define OV02A10QT_EEPROM_SLAVE_ADD 0xA0
+#define OV02A10QT_SENSOR_IIC_SLAVE_ADD 0x7a
+#define OV02A10QT_QTECH_MODULE_ID  0x5154
 
-typedef struct ov02a10_otp_data {
+typedef struct ov02a10qt_otp_data {
 	unsigned short module_id;
-} OV02A10_OTP_DATA;
+} OV02A10QT_OTP_DATA;
 
-OV02A10_OTP_DATA ov02a10_otp_data;
+OV02A10QT_OTP_DATA ov02a10qt_otp_data;
 
-static int ov02a10_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, kal_uint8 size)
+static int  ov02a10qt_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add,kal_uint8 size)
 {
 	int i = 0;
 	unsigned char module_id[2] = {0};
@@ -684,14 +682,14 @@ static int ov02a10_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, 
 
 	for (i = 0; i < size; i ++) {
 		module_id[i] = read_cmos_sensor(start_add);
-		LOG_INF("+++OV02A10 otp module_id[%d] = 0x%x\n",i,module_id[i]);
+		LOG_INF("+++OV02A10QT otp module_id[%d] = 0x%x\n",i,module_id[i]);
 		start_add ++;
 	}
-	ov02a10_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
-	LOG_INF("ov02a10_otp_data.module_id= 0x%x",ov02a10_otp_data.module_id);
+	ov02a10qt_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
+	LOG_INF("ov02a10qt_otp_data.module_id= 0x%x",ov02a10qt_otp_data.module_id);
 
 	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = OV02A10_SENSOR_IIC_SLAVE_ADD;
+	imgsensor.i2c_write_id = OV02A10QT_SENSOR_IIC_SLAVE_ADD;
 	spin_unlock(&imgsensor_drv_lock);
 
 	return 0;
@@ -727,21 +725,21 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			write_cmos_sensor(0xfd, 0x00);
-			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
+			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + 1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
 #if OTP_2A10
-				ov02a10_read_data_from_eeprom(OV02A10_EEPROM_SLAVE_ADD,0x000D,2);
+				ov02a10qt_read_data_from_eeprom(OV02A10QT_EEPROM_SLAVE_ADD,0x000D,2);
 #if INCLUDE_NO_OTP_2A10
-				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
+				if ((ov02a10qt_otp_data.module_id > 0) && (ov02a10qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
+					if (ov02a10qt_otp_data.module_id != OV02A10QT_QTECH_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else
-						LOG_INF("This is ofilm --->ov02a10 otp data vaild ...");
+						LOG_INF("This is qtech --->ov02a10qt otp data vaild ...");
 #if INCLUDE_NO_OTP_2A10
 				} else {
-						LOG_INF("This is ofilm --->ov02a10 but no otp ...");
+						LOG_INF("This is ov02a10qt but no otp ...");
 				}
 #endif
 #endif
@@ -797,19 +795,19 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			write_cmos_sensor(0xfd, 0x00);
-			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
+			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + 1;
 			if (sensor_id == imgsensor_info.sensor_id) {
 #if OTP_2A10
 #if INCLUDE_NO_OTP_2A10
-				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
+				if ((ov02a10qt_otp_data.module_id > 0) && (ov02a10qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
+					if (ov02a10qt_otp_data.module_id != OV02A10QT_QTECH_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					}
 #if INCLUDE_NO_OTP_2A10
 				} else {
-					LOG_INF("This is ofilm --->ov02a10 but no otp ...");
+					LOG_INF("This is qtech --->ov02a10qt but no otp ...");
 				}
 #endif
 #endif
@@ -894,7 +892,7 @@ static kal_uint32 close(void)
  *
  *************************************************************************/
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -929,7 +927,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
  *
  *************************************************************************/
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-			     MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
@@ -955,7 +953,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	return ERROR_NONE;
 }	/* capture() */
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
@@ -998,7 +996,7 @@ static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/*	slim_video	 */
 
 static kal_uint32 get_resolution(
-			MSDK_SENSOR_RESOLUTION_INFO_STRUCT(*sensor_resolution))
+		MSDK_SENSOR_RESOLUTION_INFO_STRUCT(*sensor_resolution))
 {
 	LOG_INF("E\n");
 	sensor_resolution->SensorFullWidth = imgsensor_info.cap.grabwindow_width;
@@ -1016,10 +1014,9 @@ static kal_uint32 get_resolution(
 	return ERROR_NONE;
 }	/*	get_resolution	*/
 
-
 static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
-				MSDK_SENSOR_INFO_STRUCT *sensor_info,
-				MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_INFO_STRUCT *sensor_info,
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 
@@ -1105,8 +1102,8 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 }	/*	get_info  */
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id,
-			MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-			MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 	spin_lock(&imgsensor_drv_lock);
@@ -1207,7 +1204,7 @@ static kal_uint32 set_max_framerate_by_scenario(
 		}
 
 		imgsensor.frame_length =
-		imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
+			imgsensor_info.normal_video.framelength + imgsensor.dummy_line;
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
@@ -1267,9 +1264,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 	return ERROR_NONE;
 }
 
-
 static kal_uint32 get_default_framerate_by_scenario(
-			MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
+		MSDK_SCENARIO_ID_ENUM scenario_id, MUINT32 *framerate)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 	switch (scenario_id) {
@@ -1326,7 +1322,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 }
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
-	UINT8 *feature_para, UINT32 *feature_para_len)
+		UINT8 *feature_para, UINT32 *feature_para_len)
 {
 	UINT16 *feature_return_para_16 = (UINT16 *) feature_para;
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
@@ -1336,7 +1332,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 	struct SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data =
-				(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
+		(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
 
 	LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
@@ -1392,14 +1388,14 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
 		get_default_framerate_by_scenario(
-			(MSDK_SCENARIO_ID_ENUM)*(feature_data),
-			(MUINT32 *)(uintptr_t)(*(feature_data + 1)));
+				(MSDK_SCENARIO_ID_ENUM)*(feature_data),
+				(MUINT32 *)(uintptr_t)(*(feature_data + 1)));
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
 		set_test_pattern_mode((BOOL)*feature_data);
 		break;
 
-	/*for factory mode auto testing*/
+		/*for factory mode auto testing*/
 	case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE:
 		*feature_return_para_32 = imgsensor_info.checksum_value;
 		*feature_para_len = 4;
@@ -1501,12 +1497,12 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 OV02A10_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 OV02A10QT_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
-	LOG_INF("OV02A10_MIPI_RAW_SensorInit .....\n");
+	LOG_INF("OV02A10QT_MIPI_RAW_SensorInit .....\n");
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL) {
 		*pfFunc = &sensor_func;
 	}
 	return ERROR_NONE;
-}	/*	OV02A10_MIPI_RAW_SensorInit	*/
+}	/*	OV02A10QT_MIPI_RAW_SensorInit	*/

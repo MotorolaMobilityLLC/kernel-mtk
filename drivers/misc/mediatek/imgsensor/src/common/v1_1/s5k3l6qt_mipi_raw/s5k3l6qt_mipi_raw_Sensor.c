@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 S5K3L6mipiraw_sensor.c
+ *	 S5K3L6QTmipiraw_sensor.c
  *
  * Project:
  * --------
@@ -32,16 +32,16 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k3l6_mipi_raw_Sensor.h"
+#include "s5k3l6qt_mipi_raw_Sensor.h"
 
 //#define FPT_PDAF_SUPPORT   //for pdaf switch
 
 /****************************Modify Following Strings for Debug****************************/
-#define PFX "S5K3L6"
+#define PFX "S5K3L6QT"
 #define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __FUNCTION__, ##args)
 //#define LOG_INF printk
 
-#define LOG_1 LOG_INF("S5K3L6,MIPI 4LANE\n")
+#define LOG_1 LOG_INF("S5K3L6QT,MIPI 4LANE\n")
 //#define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
 
@@ -50,7 +50,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static MUINT32 g_sync_mode = SENSOR_MASTER_SYNC_MODE;
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K3L6_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
+	.sensor_id = S5K3L6QT_SENSOR_ID,		//Sensor ID Value: 0x30C8//record sensor id defined in Kd_imgsensor.h
 	.checksum_value =  0x143d0c73,		/* checksum value for Camera Auto Test */
 	.pre = {
 		.pclk = 480000000,				//record different mode's pclk
@@ -511,7 +511,6 @@ static void sensor_init(void)
 	write_cmos_sensor(0x0100,0x0000);
 }	/*	sensor_init  */
 
-
 static void check_stream_is_off(void)
 {
 	int i = 0;
@@ -887,17 +886,17 @@ static kal_uint32 return_sensor_id(void)
 #define INCLUDE_NO_OTP_3L6 0
 
 #if OTP_3L6
-#define S5K3L6_EEPROM_SLAVE_ADD 0xB0
-#define S5K3L6_SENSOR_IIC_SLAVE_ADD 0x5a
-#define S5K3L6_OFILM_MODULE_ID  0x4f46
+#define S5K3L6QT_EEPROM_SLAVE_ADD 0xB0
+#define S5K3L6QT_SENSOR_IIC_SLAVE_ADD 0x5a
+#define S5K3L6QT_QTECH_MODULE_ID  0x5154  //0x51-->Q 0x54-->T
 
-typedef struct s5k3l6_otp_data {
+typedef struct s5k3l6qt_otp_data {
 	unsigned short module_id;
-} S5K3L6_OTP_DATA;
+} S5K3L6QT_OTP_DATA;
 
-S5K3L6_OTP_DATA s5k3l6_otp_data;
+S5K3L6QT_OTP_DATA s5k3l6qt_otp_data;
 
-static int s5k3l6_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add,kal_uint8 size)
+static int s5k3l6qt_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add,kal_uint8 size)
 {
 	int i = 0;
 	unsigned char module_id[2] = {0};
@@ -908,17 +907,17 @@ static int s5k3l6_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add,ka
 	//read gloden data
 	for (i = 0; i < size; i ++) {
 		module_id[i] = read_cmos_sensor(start_add);
-		LOG_INF("+++3L6 otp module_id[%d] = 0x%x\n",i,module_id[i]);
+		LOG_INF("+++3L6QT otp module_id[%d] = 0x%x\n",i,module_id[i]);
 		start_add ++;
 	}
-	s5k3l6_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
-	LOG_INF("s5k3l6_otp_data.module_id= 0x%x",s5k3l6_otp_data.module_id);
+	s5k3l6qt_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
+	LOG_INF("s5k3l6qt_otp_data.module_id= 0x%x",s5k3l6qt_otp_data.module_id);
 
 	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = S5K3L6_SENSOR_IIC_SLAVE_ADD;
+	imgsensor.i2c_write_id = S5K3L6QT_SENSOR_IIC_SLAVE_ADD;
 	spin_unlock(&imgsensor_drv_lock);
 
-	return s5k3l6_otp_data.module_id;
+	return s5k3l6qt_otp_data.module_id;
 }
 #endif
 
@@ -941,26 +940,27 @@ static int s5k3l6_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add,ka
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
-	kal_uint8 retry = 2;
+	kal_uint8 retry = 1;
 	//sensor have two i2c address 0x5b 0x5a & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id();
+			*sensor_id = return_sensor_id() + 1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
 #if OTP_3L6
-				s5k3l6_read_data_from_eeprom(S5K3L6_EEPROM_SLAVE_ADD,0x000D,2);
+				s5k3l6qt_read_data_from_eeprom(S5K3L6QT_EEPROM_SLAVE_ADD,0x000D,2);
 #if INCLUDE_NO_OTP_3L6
-				if ((s5k3l6_otp_data.module_id > 0) && (s5k3l6_otp_data.module_id < 0xFFFF)) {
+				if ((s5k3l6qt_otp_data.module_id > 0) && (s5k3l6qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (s5k3l6_otp_data.module_id != S5K3L6_OFILM_MODULE_ID) {
+					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_QTECH_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else
-						LOG_INF("This is ofilm --->s5k3l6 otp data vaild ...");
+						LOG_INF("This is qtech --->s5k3l6qt otp data vaild ...");
+					LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x. s5k3l6qt_otp_data.module_id = %d\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id,s5k3l6qt_otp_data.module_id);
+
 #if INCLUDE_NO_OTP_3L6
 				} else {
 					LOG_INF("This is s5k3l6, but no otp data ...");
@@ -1003,7 +1003,7 @@ static kal_uint32 open(void)
 {
 	//const kal_uint8 i2c_addr[] = {IMGSENSOR_WRITE_ID_1, IMGSENSOR_WRITE_ID_2};
 	kal_uint8 i = 0;
-	kal_uint8 retry = 2;
+	kal_uint8 retry = 1;
 	kal_uint32 sensor_id = 0;
 	LOG_1;
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
@@ -1012,20 +1012,20 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
+			sensor_id = return_sensor_id() + 1;
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 #if OTP_3L6
 #if INCLUDE_NO_OTP_3L6
-				if ((s5k3l6_otp_data.module_id > 0) && (s5k3l6_otp_data.module_id < 0xFFFF)) {
+				if ((s5k3l6qt_otp_data.module_id > 0) && (s5k3l6qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (s5k3l6_otp_data.module_id != S5K3L6_OFILM_MODULE_ID) {
+					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_QTECH_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					}
+					LOG_INF("open i2c write id: 0x%x, sensor id: 0x%x, s5k3l6qt_otp_data.module_id = %d\n", imgsensor.i2c_write_id,sensor_id,s5k3l6qt_otp_data.module_id);
 #if INCLUDE_NO_OTP_3L6
 				} else {
-					LOG_INF("This is s5k3l6, but no otp data ...");
+					LOG_INF("This is s5k3l6qt, but no otp data ...");
 				}
 #endif
 #endif
@@ -1106,7 +1106,7 @@ static kal_uint32 close(void)
  *
  *************************************************************************/
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1142,7 +1142,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
  *
  *************************************************************************/
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
@@ -1169,7 +1169,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/* capture() */
 
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1189,7 +1189,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/*	normal_video   */
 
 static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1212,7 +1212,7 @@ static kal_uint32 hs_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/*	hs_video   */
 
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1255,8 +1255,8 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 }	/*	get_resolution	*/
 
 static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
-					  MSDK_SENSOR_INFO_STRUCT *sensor_info,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_INFO_STRUCT *sensor_info,
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 
@@ -1364,7 +1364,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 	spin_lock(&imgsensor_drv_lock);
@@ -1761,14 +1761,14 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K3L6_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K3L6QT_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
-	LOG_INF("S5K3L6_MIPI_RAW_SensorInit in\n");
+	LOG_INF("S5K3L6QT_MIPI_RAW_SensorInit in\n");
 	/* To Do : Check Sensor status here */
 	if (pfFunc!=NULL)
 		*pfFunc=&sensor_func;
 	return ERROR_NONE;
-}	/*	S5K3L6_MIPI_RAW_SensorInit	*/
+}	/*	S5K3L6QT_MIPI_RAW_SensorInit	*/
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("<desuo.lu@reallytek.com>");

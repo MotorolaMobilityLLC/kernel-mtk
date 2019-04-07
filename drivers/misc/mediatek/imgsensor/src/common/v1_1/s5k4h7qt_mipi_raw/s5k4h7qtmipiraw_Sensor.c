@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 s5k4h7yxmipi_Sensor.c
+ *	 s5k4h7qtmipi_Sensor.c
  *
  * Project:
  * --------
@@ -34,34 +34,33 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k4h7yxmipiraw_Sensor.h"
+#include "s5k4h7qtmipiraw_Sensor.h"
 
 #define OTP_4H7 1
 
 #if OTP_4H7
 #define FLAG_VALUE_PAGE 0x40
 #define INCLUDE_NO_OTP_4H7 0
-#define S5K4H7YX_OFILM_MODULE_ID 0x4f46
+#define S5K4H7QT_QTECH_MODULE_ID 0x5154
 #define BINGO_OTP_CHECKSUM 1
-#define S5K4H7YX_OFILM_MODULE_ID_START_ADD 0x0a12
-#define S5K4H7YX_OFILM_MODULE_ID_LENGTH 0x02
+#define S5K4H7QT_QTECH_MODULE_ID_START_ADD 0x0a12
+#define S5K4H7QT_QTECH_MODULE_ID_LENGTH 0x02
 #define getbit(x,y)   ((x) >> (y)&1)
 #endif
 
 /****************************Modify following Strings for debug****************************/
-#define PFX "s5k4h7yx_camera_sensor"
+#define PFX "s5k4h7qt_camera_sensor"
 
-#define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
+#define LOG_1 LOG_INF("s5k4h7qt,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2664*1500@30fps,888Mbps/lane; video 5328*3000@30fps,1390Mbps/lane; capture 16M@30fps,1390Mbps/lane\n")
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
-
-
+//#define LOGE printk
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K4H7YX_SENSOR_ID,
+	.sensor_id = S5K4H7QT_SENSOR_ID,
 
 	.checksum_value = 0xf16e8197,
 
@@ -214,7 +213,7 @@ static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
 }
 #endif
 
-unsigned char S5K4H7_read_cmos_sensor(u32 addr)
+unsigned char S5K4H7QT_read_cmos_sensor(u32 addr)
 {
 	kal_uint16 get_byte = 0;
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
@@ -224,7 +223,7 @@ unsigned char S5K4H7_read_cmos_sensor(u32 addr)
 	return get_byte;
 }
 
-void S5K4H7_write_cmos_sensor(u16 addr, u32 para)
+void S5K4H7QT_write_cmos_sensor(u16 addr, u32 para)
 {
     char pusendcmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
@@ -787,18 +786,18 @@ static void slim_video_setting(void)
 }
 
 #if OTP_4H7
-typedef struct s5k4h7yx_otp_data {
+typedef struct s5k4h7qt_otp_data {
 	unsigned char page_flag;
 	unsigned char module_id[2];
 	unsigned short moduleid;
 	unsigned char gloden[8];
 	unsigned char unint[8];
 	unsigned char data[128];
-} S5K4H7YX_OTP_DATA;
+} S5K4H7QT_OTP_DATA;
 
-S5K4H7YX_OTP_DATA s5k4h7yx_otp_data;
+S5K4H7QT_OTP_DATA s5k4h7qt_otp_data;
 
-static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
+static int s5k4h7qt_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
 {
 	unsigned short stram_flag = 0;
 	int i = 0;
@@ -813,7 +812,7 @@ static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *B
 	mdelay(100);
 	for ( i = 0; i < size; i++ ) {
 		Buff[i] = read_cmos_sensor_8(start_add+i); //3
-		//LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
+		LOG_INF("+++4h7qt 1 start_add = 0x%x, cur page = %d, Buff[%d] = 0x%x\n",(start_add + i),page,i,Buff[i]);
 		mdelay(3);
 	}
 	//Sleep(100);
@@ -823,20 +822,20 @@ static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *B
 	return 0;
 }
 
-static int s5k4h7yx_get_vaild_data_page(void)
+static int s5k4h7qt_get_vaild_data_page(void)
 {
 	unsigned char page_flag[2] = {0};
 	unsigned short page = 21;
 	//LOG_INF("read flag .....");
 	for (page = 21;page <= 29; page+=4) {
-		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[0],1);
-		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[1],1);
-		LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
+		s5k4h7qt_read_otp_page_data(page,0x0a04,&page_flag[0],1);
+		s5k4h7qt_read_otp_page_data(page,0x0a04,&page_flag[1],1);
+		LOG_INF("+++4h7qt 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
 		mdelay(2);
 		if (page_flag[0] != 0 || page_flag[1] != 0) {
-			LOGE("+++4h7 3 get vaild page success = %d\n",page);
-			s5k4h7yx_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
-			//LOGE("+++4h7====== s5k4h7yx_otp_data.page_flag = 0x%x\n",s5k4h7yx_otp_data.page_flag);
+			LOGE("+++4h7qt 3 get vaild page success = %d\n",page);
+			s5k4h7qt_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
+			//LOGE("+++4h7====== s5k4h7qt_otp_data.page_flag = 0x%x\n",s5k4h7qt_otp_data.page_flag);
 			break;
 		}
 		memset(page_flag,0,sizeof(page_flag));
@@ -845,62 +844,64 @@ static int s5k4h7yx_get_vaild_data_page(void)
 	return page;
 }
 
-static int s5k4h7yx_read_data_kernel(void)
+static int s5k4h7qt_read_data_kernel(void)
 {
 	unsigned int page = 0;
 	unsigned int i = 0;
 	unsigned int sum = 0;
 
-	if (!s5k4h7yx_get_vaild_data_page())
+	if (!s5k4h7qt_get_vaild_data_page())
 		return -1;
-	if (!((getbit(s5k4h7yx_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_otp_data.page_flag,7)))) {
-	//if ((s5k4h7yx_otp_data.page_flag & FLAG_VALUE_PAGE) != FLAG_VALUE_PAGE) {
+	if (!((getbit(s5k4h7qt_otp_data.page_flag,6)) && !(getbit(s5k4h7qt_otp_data.page_flag,7)))) {
+	//if ((s5k4h7qt_otp_data.page_flag & FLAG_VALUE_PAGE) != FLAG_VALUE_PAGE) {
 		LOGE("+++4h7 error data not valid\n");
 		return -1;
 	}
-	LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_otp_data.page_flag,7),getbit(s5k4h7yx_otp_data.page_flag,6));
+	LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7qt_otp_data.page_flag,7),getbit(s5k4h7qt_otp_data.page_flag,6));
 	//read module id
 	for (page = 21; page <= 29; page += 4) {
-		s5k4h7yx_read_otp_page_data(page, S5K4H7YX_OFILM_MODULE_ID_START_ADD, s5k4h7yx_otp_data.module_id, S5K4H7YX_OFILM_MODULE_ID_LENGTH);
-		for (i = 0;i < S5K4H7YX_OFILM_MODULE_ID_LENGTH ; i++ ) {
-			LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_otp_data.module_id[i]);
-			sum += s5k4h7yx_otp_data.module_id[i];
+		s5k4h7qt_read_otp_page_data(page, S5K4H7QT_QTECH_MODULE_ID_START_ADD, s5k4h7qt_otp_data.module_id, S5K4H7QT_QTECH_MODULE_ID_LENGTH);
+		for (i = 0;i < S5K4H7QT_QTECH_MODULE_ID_LENGTH ; i++ ) {
+			LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7qt_otp_data.module_id[i]);
+			sum += s5k4h7qt_otp_data.module_id[i];
 		}
 		if (sum)
 			break;
 	}
 
-	s5k4h7yx_otp_data.moduleid = ((s5k4h7yx_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_otp_data.module_id[1] & 0x00FF);
-	LOG_INF("s5k4h7yx_otp_data.moduleid= 0x%x",s5k4h7yx_otp_data.moduleid);
+	s5k4h7qt_otp_data.moduleid = ((s5k4h7qt_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7qt_otp_data.module_id[1] & 0x00FF);
+	LOG_INF("s5k4h7qt_otp_data.moduleid= 0x%x",s5k4h7qt_otp_data.moduleid);
 
 #if BINGO_OTP_CHECKSUM
 	//read all awb
-	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_otp_data.data,8);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.data + 8, 51);
+	LOGE("s5k4h7qt dump all awb start ===\n");
+	s5k4h7qt_read_otp_page_data(page, 0x0a3c, s5k4h7qt_otp_data.data,8);
+	s5k4h7qt_read_otp_page_data(page + 1, 0x0a04, s5k4h7qt_otp_data.data + 8, 51);
+	LOGE("s5k4h7qt dump all awb end ===\n");
 #endif
 	//read awb
-	s5k4h7yx_read_otp_page_data(page, 0x0a3d, s5k4h7yx_otp_data.gloden, 7);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.gloden + 7, 1);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a19, s5k4h7yx_otp_data.unint, 8);
+	s5k4h7qt_read_otp_page_data(page, 0x0a3d, s5k4h7qt_otp_data.gloden, 7);
+	s5k4h7qt_read_otp_page_data(page + 1, 0x0a04, s5k4h7qt_otp_data.gloden + 7, 1);
+	s5k4h7qt_read_otp_page_data(page + 1, 0x0a19, s5k4h7qt_otp_data.unint, 8);
 
 	return 0;
 }
 
-unsigned int S5K4H7_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
+unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
 {
 	if (size == 2) { //read module id
-		memcpy(data, s5k4h7yx_otp_data.module_id, size);
-		LOGE("read module id");
+		memcpy(data, s5k4h7qt_otp_data.module_id, size);
+		LOGE("add = 0x%x,read module id\n",addr);
 	} else if (size == 8) { //read single awb data
 		if (addr >= 0x0a3D) {
-			memcpy(data, (s5k4h7yx_otp_data.gloden), size);
-			LOGE("read golden");
+			memcpy(data, (s5k4h7qt_otp_data.gloden), size);
+			LOGE("add = 0x%x, read golden\n",addr);
 		} else {
-			memcpy(data,(s5k4h7yx_otp_data.unint), size);
-			LOGE("read unint");
+			memcpy(data,(s5k4h7qt_otp_data.unint), size);
+			LOGE("add = 0x%x, read unint\n",addr);
 		}
 	} else { //read all awb checksum
-		memcpy(data, (s5k4h7yx_otp_data.data), size);
+		memcpy(data, (s5k4h7qt_otp_data.data), size);
 	}
 
 	return size;
@@ -934,29 +935,29 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id();
-			LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
+			*sensor_id = return_sensor_id() + 1;
+			LOG_INF("s5k4h7qtmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 #if OTP_4H7
-				s5k4h7yx_read_data_kernel();
+				s5k4h7qt_read_data_kernel();
 #if INCLUDE_NO_OTP_4H7
-				if ((s5k4h7yx_otp_data.moduleid > 0) && (s5k4h7yx_otp_data.moduleid < 0xFFFF)) {
+				if ((s5k4h7qt_otp_data.moduleid > 0) && (s5k4h7qt_otp_data.moduleid < 0xFFFF)) {
 #endif
-					if (s5k4h7yx_otp_data.moduleid != S5K4H7YX_OFILM_MODULE_ID) {
+					if (s5k4h7qt_otp_data.moduleid != S5K4H7QT_QTECH_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else
-						LOG_INF("This is ofilm --->s5k4h7 otp data vaild ...");
+						LOG_INF("This is qtech --->s5k4h7 otp data vaild ...");
 #if INCLUDE_NO_OTP_4H7
 				} else {
 					LOG_INF("This is s5k4h7, but no otp data ...");
 				}
 #endif
 #endif
-				LOG_INF("s5k4h7 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				LOG_INF("s5k4h7qt i2c write id: 0x%x, sensor id: 0x%x,module_id = %d\n", imgsensor.i2c_write_id, *sensor_id,s5k4h7qt_otp_data.moduleid);
 				break;
 			}
-			LOG_INF("s5k4h7 read sensor id fail, id: 0x%x\n", *sensor_id);
+			LOG_INF("s5k4h7qt read sensor id fail, id: 0x%x\n", *sensor_id);
 			retry--;
 		} while (retry > 0);
 		i++;
@@ -966,7 +967,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
-	LOG_INF("S5K4H7_OTP_CheckID successfully...\n");
+	LOG_INF("S5K4H7QT_OTP_CheckID successfully...\n");
 	return ERROR_NONE;
 }
 
@@ -997,15 +998,15 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
-			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
+			sensor_id = return_sensor_id() + 1;
+			LOG_INF("s5k4h7qtmipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 #if OTP_4H7
 #if INCLUDE_NO_OTP_4H7
-				if ((s5k4h7yx_otp_data.moduleid > 0) && (s5k4h7yx_otp_data.moduleid < 0xFFFF)) {
+				if ((s5k4h7qt_otp_data.moduleid > 0) && (s5k4h7qt_otp_data.moduleid < 0xFFFF)) {
 #endif
-					if (s5k4h7yx_otp_data.moduleid != S5K4H7YX_OFILM_MODULE_ID) {
+					if (s5k4h7qt_otp_data.moduleid != S5K4H7QT_QTECH_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else
@@ -1098,7 +1099,7 @@ static kal_uint32 close(void)
  *
  *************************************************************************/
 static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1131,7 +1132,7 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
  *
  *************************************************************************/
 static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-						  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 	spin_lock(&imgsensor_drv_lock);
@@ -1150,7 +1151,7 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	return ERROR_NONE;
 }	/* capture() */
 static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1169,7 +1170,7 @@ static kal_uint32 normal_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 }	/*	normal_video   */
 
 static kal_uint32 slim_video(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("E\n");
 
@@ -1209,8 +1210,8 @@ static kal_uint32 get_resolution(MSDK_SENSOR_RESOLUTION_INFO_STRUCT *sensor_reso
 }	/*	get_resolution	*/
 
 static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
-					  MSDK_SENSOR_INFO_STRUCT *sensor_info,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_INFO_STRUCT *sensor_info,
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 
@@ -1299,7 +1300,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
 
 static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
-					  MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
+		MSDK_SENSOR_CONFIG_STRUCT *sensor_config_data)
 {
 	LOG_INF("scenario_id = %d\n", scenario_id);
 	spin_lock(&imgsensor_drv_lock);
@@ -1468,7 +1469,7 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 }
 
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
-							 UINT8 *feature_para, UINT32 *feature_para_len)
+		UINT8 *feature_para, UINT32 *feature_para_len)
 {
 	UINT16 *feature_return_para_16 = (UINT16 *) feature_para;
 	UINT16 *feature_data_16 = (UINT16 *) feature_para;
@@ -1595,9 +1596,9 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K4H7YX_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K4H7QT_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
-	LOG_INF("s5k4h7yxmipiraw_Sensor...\n");
+	LOG_INF("s5k4h7qtmipiraw_Sensor...\n");
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;
