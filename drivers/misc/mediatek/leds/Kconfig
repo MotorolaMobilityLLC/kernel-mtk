@@ -39,3 +39,12 @@ config BACKLIGHT_SUPPORT_SGM37604A
 	  Set y to support.
 	  Set n to disable.
 	  Charge pump driver for external backlight.
+
+config BACKLIGHT_SUPPORT_SM5306
+	bool "SM5306 Support"
+	default n
+	---help---
+	  LED driver for SM5306 support.
+	  Set y to support.
+	  Set n to disable.
+	  Charge pump driver for external backlight.
