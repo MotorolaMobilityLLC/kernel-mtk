@@ -47,6 +47,11 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
+//add camera info for p160mlite
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
+
 #include "s5k3l6_sunwin_p161bn_mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
         pr_debug(PFX "[%s] " format, __func__, ##args)
@@ -1430,6 +1435,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				//add camera info for p160mlite
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+				FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K3L6_SUNWIN_P161BN_SENSOR_ID, 0, "s5k3l6_sunwin_p160mlite_mipi_raw", 
+								  imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);		
+#endif   
+
 				return ERROR_NONE;
 			}
 			pr_debug("Read sensor id fail, id: 0x%x\n",

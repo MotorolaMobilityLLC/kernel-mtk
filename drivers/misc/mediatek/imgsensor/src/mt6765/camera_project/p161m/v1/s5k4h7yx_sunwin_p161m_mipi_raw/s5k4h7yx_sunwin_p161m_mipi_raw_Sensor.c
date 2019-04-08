@@ -970,7 +970,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	              }
            #endif
 
-//add camera info for p311
+//add camera info for p161m
 #ifdef CONFIG_TINNO_PRODUCT_INFO
          FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P161M_SENSOR_ID, 1, "s5k4h7yx_sunwin_p161m_mipi_raw", 
              imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);       

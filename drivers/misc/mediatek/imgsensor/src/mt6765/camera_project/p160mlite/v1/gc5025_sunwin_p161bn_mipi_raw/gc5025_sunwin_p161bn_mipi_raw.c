@@ -33,6 +33,11 @@
 
 #include "gc5025_sunwin_p161bn_mipi_raw.h"
 
+//add camera info for p160mlite
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
+
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "GC5025_SUNWIN_P161BN_camera_sensor"
 #define LOG_1 LOG_INF("GC5025_SUNWIN_P161BN,MIPI 2LANE\n")
@@ -1320,6 +1325,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				//LOG_INF("gc5025_otp_info.module_id: 0x%x\n", gc5025_sunwin_p161bn_otp_info.module_id);
 				//if(gc5025_sunwin_p161bn_otp_info.module_id == 0x06){  
 					LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+					//add camera info for p161m
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+					FULL_PRODUCT_DEVICE_INFO_CAMERA(GC5025_SUNWIN_P161BN_SENSOR_ID, 1, "gc5025_sunwin_p160mlite_mipi_raw", 
+																  imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);		
+#endif 
+
 					return ERROR_NONE;
 				}
 				else{

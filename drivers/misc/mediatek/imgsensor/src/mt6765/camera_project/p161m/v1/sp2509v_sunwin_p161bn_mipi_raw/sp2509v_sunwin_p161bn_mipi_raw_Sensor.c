@@ -36,6 +36,12 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
+//add camera info for p161m
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
+
+
 #include "sp2509v_sunwin_p161bn_mipi_raw_Sensor.h"
 
 /****************************Modify Following Strings for Debug****************************/
@@ -969,6 +975,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
                 LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
+			   //add camera info for p161m
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+			  FULL_PRODUCT_DEVICE_INFO_CAMERA(SP2509V_SUNWIN_P161BN_SENSOR_ID, 2, "sp2509v_sunwin_p161m_mipi_raw", 
+												  imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);		
+#endif   
+
                 return ERROR_NONE;
             }
             LOG_INF("Read sensor id fail, write id:0x%x id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
