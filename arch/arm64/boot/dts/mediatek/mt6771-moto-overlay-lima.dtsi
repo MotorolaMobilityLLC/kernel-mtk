@@ -219,6 +219,12 @@
 		bias_gpio_enp = <&pio 150 0>;
 		status = "okay";
 	};
+
+	sm5306@36 {
+		compatible = "mediatek,sm5306";
+		reg = <0x36>;
+		status = "okay";
+	};
 };
 
 &bat_gm30 {
