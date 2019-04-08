@@ -4216,20 +4216,23 @@ static int Request_EXT_PA(void)
 	return ret;
 }
 
-static int Set_EXT_PA(int enable)
-{
-	gpio_direction_output(pagpionum, enable);
-	printk("[Simon]%s(), Speaker ext_pa set:%d!\n", __func__,enable);
-
-	return 0;
-}
-
 static void Ext_Speaker_Amp_On(bool enable)
 {
 	if(enable){
-		Set_EXT_PA(1);
+		udelay(1000);
+		gpio_set_value(pagpionum, 1);
+		udelay(1);
+		gpio_set_value(pagpionum, 0);
+		udelay(1);
+		gpio_set_value(pagpionum, 1);
+		udelay(1);
+		gpio_set_value(pagpionum, 0);
+		udelay(1);
+		gpio_set_value(pagpionum, 1);
+		printk("[Simon]%s(), Speaker ext_pa set:%d!\n", __func__,enable);
 	}else{
-		Set_EXT_PA(0);
+		gpio_set_value(pagpionum, enable);
+		printk("[Simon]%s(), Speaker ext_pa set:%d!\n", __func__,enable);
 	}
 }
 
