@@ -124,6 +124,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.ae_shut_delay_frame = 0,	//shutter delay frame for AE cycle, 2 frame with ispGain_delay-shut_delay=2-0=2
 	.ae_sensor_gain_delay_frame = 0,//sensor gain delay frame for AE cycle,2 frame with ispGain_delay-sensor_gain_delay=2-0=2
 	.ae_ispGain_delay_frame = 2,//isp gain delay frame for AE cycle
+	.frame_time_delay_frame = 1, // The delay frame of setting frame length
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
 	.sensor_mode_num = 5,	  //support sensor mode num ,don't support Slow motion
@@ -306,6 +307,60 @@ static void set_shutter(kal_uint16 shutter)
 	// Update Shutter
 	write_cmos_sensor(0X0202, shutter & 0xFFFF);
 	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+}
+
+static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
+{
+	unsigned long flags;
+	kal_uint16 realtime_fps = 0;
+	kal_int32 dummy_line = 0;
+
+	spin_lock_irqsave(&imgsensor_drv_lock, flags);
+	imgsensor.shutter = shutter;
+	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
+	/* LOG_INF("shutter =%d, frame_time =%d\n", shutter, frame_time); */
+
+	/* 0x3500, 0x3501, 0x3502 will increase VBLANK to get exposure larger than frame exposure */
+	/* AE doesn't update sensor gain at capture mode, thus extra exposure lines must be updated here. */
+
+	/* OV Recommend Solution */
+	/* if shutter bigger than frame_length, should extend frame length first */
+	spin_lock(&imgsensor_drv_lock);
+	/*Change frame time */
+	if (frame_length > 1)
+		dummy_line = frame_length - imgsensor.frame_length;
+	imgsensor.frame_length = imgsensor.frame_length + dummy_line;
+
+	/*  */
+	if (shutter > imgsensor.frame_length - imgsensor_info.margin)
+		imgsensor.frame_length = shutter + imgsensor_info.margin;
+
+	if (imgsensor.frame_length > imgsensor_info.max_frame_length)
+		imgsensor.frame_length = imgsensor_info.max_frame_length;
+	spin_unlock(&imgsensor_drv_lock);
+	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
+	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin))
+		? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+
+	if (imgsensor.autoflicker_en) {
+		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
+		if (realtime_fps >= 297 && realtime_fps <= 305)
+			set_max_framerate(296, 0);
+		else if (realtime_fps >= 147 && realtime_fps <= 150)
+			set_max_framerate(146, 0);
+		else {
+			/* Extend frame length */
+			write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+		}
+	} else {
+		/* Extend frame length */
+		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
+	}
+
+	/* Update Shutter */
+	write_cmos_sensor(0X0202, shutter & 0xFFFF);
+
+	LOG_INF("Add for N3D! shutterlzl =%d, framelength =%d\n", shutter, imgsensor.frame_length);
 }
 
 static kal_uint16 gain2reg(const kal_uint16 gain)
@@ -1291,6 +1346,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->AEShutDelayFrame = imgsensor_info.ae_shut_delay_frame; 		 /* The frame of setting shutter default 0 for TG int */
 	sensor_info->AESensorGainDelayFrame = imgsensor_info.ae_sensor_gain_delay_frame;	/* The frame of setting sensor gain */
 	sensor_info->AEISPGainDelayFrame = imgsensor_info.ae_ispGain_delay_frame;
+	sensor_info->FrameTimeDelayFrame = imgsensor_info.frame_time_delay_frame;	/* The delay frame of setting frame length */
 	sensor_info->IHDR_Support = imgsensor_info.ihdr_support;
 	sensor_info->IHDR_LE_FirstLine = imgsensor_info.ihdr_le_firstline;
 	sensor_info->SensorModeNum = imgsensor_info.sensor_mode_num;
@@ -1568,6 +1624,21 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
+	if (enable) {
+		write_cmos_sensor(0x3C1E, 0x0100);
+		write_cmos_sensor(0x0100, 0x0100);
+		write_cmos_sensor(0x3C1E, 0x0000);
+    }
+	else {
+		write_cmos_sensor(0x0100, 0x0000);
+    }
+	mdelay(10);
+	return ERROR_NONE;
+}
+
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -1743,7 +1814,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		g_sync_mode = (MUINT32) (*feature_data_32);
 		LOG_INF("[hwadd]mode = %d\n", g_sync_mode);
 		break;
-
+	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
+		set_shutter_frame_length((UINT16) *feature_data, (UINT16) *(feature_data + 1));
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME\n");
+		streaming_control(KAL_TRUE);
+		break;
 
 	default:
 		break;
