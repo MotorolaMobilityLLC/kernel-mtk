@@ -107,10 +107,14 @@
 	lcm_bl_enable: lcm_bl_enable {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO176__FUNC_GPIO176>;
+		};
+	};
 
 	lcm_bl_disable: lcm_bl_disable {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO176__FUNC_GPIO176>;
+		};
+	};
 };
 
 &spi2{
@@ -154,13 +158,13 @@
 		led_mode = <5>;
 	};
 
-        swtp: swtp {
-            compatible = "mediatek,swtp-eint";
-        };
+	swtp: swtp {
+		compatible = "mediatek,swtp-eint";
+	};
 
-        swtp1: swtp1 {
-            compatible = "mediatek,swtp1-eint";
-        };
+	swtp1: swtp1 {
+		compatible = "mediatek,swtp1-eint";
+	};
 };
 
 &spi0 {
