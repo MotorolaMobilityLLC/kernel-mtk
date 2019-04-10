@@ -11,6 +11,10 @@
 	model = "mt6771";
 	compatible = "mediatek,mt6771";
 
+	aliases: aliases {
+		spi4 = &spi4;
+		spi5 = &spi5;
+	};
 	moto_chg_tcmd: moto_chg_tcmd {
 		compatible = "mmi,moto-chg-tcmd";
 	};

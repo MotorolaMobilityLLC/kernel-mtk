@@ -60,12 +60,14 @@
 			cirrus,gpio-output-enable;
 		};
 	};
-/*
-	cs35l41_rcv: cs35l41@2 {
+};
+
+&spi5 {
+	cs35l41_rcv: cs35l41@0 {
 		#sound-dai-cells = <1>;
 		compatible = "cirrus,cs35l41";
 		spi-max-frequency = <9600000>;
-		reg = <2>;
+		reg = <0>;
 		interrupt-parent = <&pio>;
 		interrupts = <28 IRQ_TYPE_LEVEL_LOW 28 0>;
 
@@ -80,12 +82,10 @@
 		cirrus,asp-sdout-hiz = <0x1>;
 
 		pinctrl-names = "default";
-		pinctrl-0 = <&amp_reset>;
 
 		cirrus,gpio-config2 {
 			cirrus,gpio-src-select = <0x4>;
 			cirrus,gpio-output-enable;
 		};
 	};
-*/
 };
