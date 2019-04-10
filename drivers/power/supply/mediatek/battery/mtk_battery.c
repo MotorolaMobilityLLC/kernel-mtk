@@ -424,7 +424,7 @@ struct battery_data battery_main = {
 	.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING,
 	.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD,
 	.BAT_PRESENT = 1,
-	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION,
+	.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LIPO,
 	.BAT_CAPACITY = -1,
 	.BAT_batt_vol = 0,
 	.BAT_batt_temp = 0,
@@ -435,7 +435,7 @@ void evb_battery_init(void)
 	battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 	battery_main.BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
 	battery_main.BAT_PRESENT = 1;
-	battery_main.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
+	battery_main.BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LIPO;
 	battery_main.BAT_CAPACITY = 100;
 	battery_main.BAT_batt_vol = 4200;
 	battery_main.BAT_batt_temp = 22;
@@ -446,7 +446,7 @@ void battery_update(struct battery_data *bat_data)
 	struct power_supply *bat_psy = bat_data->psy;
 
 	battery_update_psd(&battery_main);
-	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LION;
+	bat_data->BAT_TECHNOLOGY = POWER_SUPPLY_TECHNOLOGY_LIPO;
 	bat_data->BAT_HEALTH = POWER_SUPPLY_HEALTH_GOOD;
 	bat_data->BAT_PRESENT = 1;
 
