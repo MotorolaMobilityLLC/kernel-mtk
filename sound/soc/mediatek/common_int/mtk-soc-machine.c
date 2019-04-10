@@ -110,6 +110,7 @@
 #endif
 #if defined(CONFIG_SND_SOC_CS35L41)
 extern const struct snd_soc_ops cirrus_amp_ops;
+extern int cs35l41_snd_init(struct snd_soc_pcm_runtime *rtd);
 #endif
 
 static struct dentry *mt_sco_audio_debugfs;
@@ -693,13 +694,13 @@ static struct snd_soc_dai_link mt_soc_exthp_dai[] = {
 #if defined(CONFIG_SND_SOC_CS35L41)
 static struct snd_soc_dai_link_component cirrus_spk[] = {
 	{
-		.name = "spi32762.0",
+		.name = "spi4.0",
 		.dai_name = "cs35l41-pcm",
-	}/*,
+	},
 	{
-		.name = "spi4.1",
+		.name = "spi5.0",
 		.dai_name = "cs35l41-pcm",
-	},*/
+	}
 };
 #endif
 
@@ -724,6 +725,7 @@ static struct snd_soc_dai_link mt_soc_extspk_dai[] = {
 #elif defined(CONFIG_SND_SOC_CS35L41)
 		.codecs = cirrus_spk,
 		.num_codecs = ARRAY_SIZE(cirrus_spk),
+		.init=cs35l41_snd_init,
 		.ignore_suspend = 1,
 		.ignore_pmdown_time = true,
 		.dai_fmt = SND_SOC_DAIFMT_I2S |
@@ -754,13 +756,13 @@ static struct snd_soc_dai_link mt_soc_dai_component[
 #if defined(CONFIG_SND_SOC_CS35L41)
 static struct snd_soc_codec_conf cirrus_amp_conf[] = {
 	{
-		.dev_name		= "spi32762.0",
+		.dev_name		= "spi4.0",
 		.name_prefix		= "SPK",
-	}/*,
+	},
 	{
-		.dev_name		= "spi4.1",
+		.dev_name		= "spi5.0",
 		.name_prefix		= "RCV",
-	}*/
+	}
 };
 #endif
 
