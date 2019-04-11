@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="11.06.2018.14:46:26"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.11.2019.12:19:22"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1411,6 +1411,17 @@
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio174>
+            <gpio175>
+                <eint_mode>false</eint_mode>
+                <def_mode>0</def_mode>
+                <inpull_en>false</inpull_en>
+                <inpull_selhigh>false</inpull_selhigh>
+                <def_dir>IN</def_dir>
+                <out_high>false</out_high>
+                <varName0>GPIO_FDD_BAND_SUPPORT_DETECT_1ST_PIN</varName0>
+                <smt>false</smt>
+                <ies>true</ies>
+            </gpio175>
             <gpio176>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
