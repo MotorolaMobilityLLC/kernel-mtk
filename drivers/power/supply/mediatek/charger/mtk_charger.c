@@ -79,6 +79,8 @@
 #include "cust_charging.h"
 #endif
 
+// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+static struct power_supply *chrdet_psy;
 
 static struct charger_manager *pinfo;
 static struct list_head consumer_head = LIST_HEAD_INIT(consumer_head);
@@ -1143,6 +1145,12 @@ void mtk_charger_int_handler(void)
 static int mtk_charger_plug_in(struct charger_manager *info,
 				enum charger_type chr_type)
 {
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	int ret = 0;
+	union power_supply_propval propval;
+	bool plug_in_status = true;
+	// pony.ma, DATE20190411-01 END
+
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
 
@@ -1150,6 +1158,22 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	info->enable_dynamic_cv = true;
 	info->safety_timeout = false;
 	info->vbusov_stat = false;
+
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	chrdet_psy = power_supply_get_by_name("charger");
+	if (!chrdet_psy) {
+		pr_notice("%s: get power supply failed\n", __func__);
+		chr_err("get power supply failed\n");
+		return -EINVAL;
+	}
+	
+	propval.intval = plug_in_status;
+	ret = power_supply_set_property(chrdet_psy,
+			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval);
+	if (ret < 0)
+		pr_notice("%s: psy enable failed, ret = %d\n",
+			__func__, ret);
+	// pony.ma, DATE20190411-01 END
 
 	chr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);
 	if (info->plug_in != NULL)

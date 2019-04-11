@@ -48,6 +48,8 @@
 
 #include "mtk_charger_intf.h"
 
+// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+bool battery_charging_enabled = true;
 
 void __attribute__((weak)) fg_charger_in_handler(void)
 {
@@ -152,13 +154,17 @@ static int mt_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		val->intval = mtk_chg->chg_type;
 		break;
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	case POWER_SUPPLY_PROP_CHARGE_ENABLED:	
+		val->intval = battery_charging_enabled;
+		break;
+	// pony.ma, DATE20190411-01 END
 	default:
 		return -EINVAL;
 	}
 
 	return 0;
 }
-
 
 static int mt_charger_set_property(struct power_supply *psy,
 	enum power_supply_property psp, const union power_supply_propval *val)
@@ -180,7 +186,16 @@ static int mt_charger_set_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		mtk_chg->chg_type = val->intval;
 		g_chr_type = val->intval;
+		break;	
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	case POWER_SUPPLY_PROP_CHARGE_ENABLED:		
+		if(val->intval)
+			battery_charging_enabled = true;
+		else{
+			battery_charging_enabled = false;
+		}
 		break;
+	// pony.ma, DATE20190411-01 END
 	default:
 		return -EINVAL;
 	}
@@ -205,6 +220,20 @@ static int mt_charger_set_property(struct power_supply *psy,
 
 	return 0;
 }
+
+// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+static int battery_property_is_writeable(struct power_supply *psy,
+					enum power_supply_property psp)
+{
+	switch (psp) {
+	case POWER_SUPPLY_PROP_CHARGE_ENABLED:
+		return 1;
+	default:
+		break;
+	}
+	return 0;
+}
+// pony.ma, DATE20190411-01 END
 
 static int mt_ac_get_property(struct power_supply *psy,
 	enum power_supply_property psp, union power_supply_propval *val)
@@ -257,6 +286,8 @@ static int mt_usb_get_property(struct power_supply *psy,
 
 static enum power_supply_property mt_charger_properties[] = {
 	POWER_SUPPLY_PROP_ONLINE,
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+	POWER_SUPPLY_PROP_CHARGE_ENABLED,
 };
 
 static enum power_supply_property mt_ac_properties[] = {
@@ -288,6 +319,8 @@ static int mt_charger_probe(struct platform_device *pdev)
 	mt_chg->chg_desc.num_properties = ARRAY_SIZE(mt_charger_properties);
 	mt_chg->chg_desc.set_property = mt_charger_set_property;
 	mt_chg->chg_desc.get_property = mt_charger_get_property;
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+	mt_chg->chg_desc.property_is_writeable = battery_property_is_writeable;
 	mt_chg->chg_cfg.drv_data = mt_chg;
 
 	mt_chg->ac_desc.name = "ac";

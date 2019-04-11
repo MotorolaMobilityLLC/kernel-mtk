@@ -78,6 +78,9 @@
 #include <linux/scc_drv.h>
 #endif  /* CONFIG_TINNO_SCC_SUPPORT */
 
+// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+static struct power_supply *chrdet_psy;
+
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -430,6 +433,11 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	bool charging_enable = true;
+	
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	union power_supply_propval val;
+	int ret;
+	// pony.ma, DATE20190411-01 END
 
 	if (swchgalg->state == CHR_ERROR) {
 		charging_enable = false;
@@ -455,7 +463,16 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		}
 	}
 
-	charger_dev_enable(info->chg1_dev, charging_enable);
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	ret = power_supply_get_property(chrdet_psy,
+			POWER_SUPPLY_PROP_CHARGE_ENABLED, &val);
+	if (!ret) {
+		if(val.intval)
+			charger_dev_enable(info->chg1_dev, charging_enable);
+		else
+			charger_dev_enable(info->chg1_dev, false);
+	}	
+	// pony.ma, DATE20190411-01 END
 }
 
 static int mtk_switch_charging_plug_in(struct charger_manager *info)
@@ -764,6 +781,15 @@ int mtk_switch_charging_init(struct charger_manager *info)
 		chr_err("*** Error : can't find primary charger ***\n");
 
 	mutex_init(&swch_alg->ichg_aicr_access_mutex);
+	
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	chrdet_psy = power_supply_get_by_name("charger");
+	if (!chrdet_psy) {
+		pr_notice("%s: get power supply failed\n", __func__);
+		chr_err("get power supply failed\n");
+		return -EINVAL;
+	}
+	// pony.ma, DATE20190411-01 END
 
 	info->algorithm_data = swch_alg;
 	info->do_algorithm = mtk_switch_charging_run;
