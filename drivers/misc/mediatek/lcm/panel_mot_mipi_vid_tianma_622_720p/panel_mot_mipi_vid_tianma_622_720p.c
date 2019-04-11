@@ -106,6 +106,8 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_LOW	0xFFFE
 #define REGFLAG_RESET_HIGH	0xFFFF
 
+extern void load_touch_firmware(void);
+extern void touch_reset_before_lcm_init(void);
 
 #ifndef TRUE
 #define TRUE 1
@@ -314,6 +316,8 @@ static void lcm_init(void)
 	SET_RESET_PIN(1);
 	SET_BACKLIGHT_OUT(1);
 	MDELAY(10);
+	load_touch_firmware();
+	touch_reset_before_lcm_init();
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
 	LCM_LOGI("ili9881h----tianma----lcm mode = vdo mode ----\n");
 
