@@ -871,6 +871,18 @@ CAR_TUNE_VALUE = <(100)>;
 	status = "okay";
 
 };
+//add by lijian
+&focal_fp {
+	//compatible = "mediatek,focal_fp";
+	pinctrl-names = "fp_rst_high", "fp_rst_low","eint_as_int", "eint_in_low", "eint_in_high";
+	pinctrl-0 = <&fp_rst_high>;
+	pinctrl-1 = <&fp_rst_low>;
+	pinctrl-2 = <&fp_eint_as_int>;
+	pinctrl-3 = <&fp_eint_in_low>;
+	pinctrl-4 = <&fp_eint_in_high>;
+	status = "okay";
+
+};
 // TINNO END
 #include "bq24157.dtsi"
 
