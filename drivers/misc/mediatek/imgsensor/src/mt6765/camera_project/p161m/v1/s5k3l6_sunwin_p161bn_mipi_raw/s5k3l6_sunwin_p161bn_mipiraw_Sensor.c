@@ -54,7 +54,7 @@
 
 #include "s5k3l6_sunwin_p161bn_mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
-        pr_debug(PFX "[%s] " format, __func__, ##args)
+        pr_err(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
@@ -177,8 +177,8 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 448000000,
 	},
 	
-	.margin = 2,			//sensor framelength & shutter margin
-	.min_shutter = 2,               /*min shutter*/
+	.margin = 8,			//sensor framelength & shutter margin
+	.min_shutter = 5,               /*min shutter*/
 
 	/*max framelength by sensor register's limitation*/
 	.max_frame_length = 0xFFFF,//REG0x0202 <=REG0x0340-5//max framelength by sensor register's limitation
@@ -534,6 +534,7 @@ static void set_shutter(kal_uint32 shutter)
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	//kal_uint32 frame_length = 0;
+	pr_err("thy_debug: set_shutter(): %d\n", shutter);
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
@@ -704,7 +705,7 @@ static void set_shutter(kal_uint32 shutter)
 	}else {
 	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 	write_cmos_sensor_16_16(0x0202, shutter & 0xFFFF);
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+	LOG_INF("thy_debug: shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
 		}
 	}
 }
@@ -738,7 +739,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 	
-	LOG_INF("set_gain %d \n", gain);
+	LOG_INF("thy_debug:set_gain(): %d \n", gain);
   	//gain = 64 = 1x real gain.
 	if (gain < BASEGAIN || gain > 16 * BASEGAIN) {
 		LOG_INF("Error gain setting");
@@ -752,7 +753,7 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain; 
 	spin_unlock(&imgsensor_drv_lock);
-	LOG_INF("gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
+	LOG_INF("thy_debug:gain = %d , reg_gain = 0x%x\n ", gain, reg_gain);
 
 	write_cmos_sensor_16_16(0x0204, (reg_gain&0xFFFF));    
 	return gain;
@@ -814,30 +815,75 @@ static void night_mode(kal_bool enable)
 #endif
 
 static kal_uint16 addr_data_pair_init[] = {
-	0x3084, 0x1314,
-	0x3266, 0x0001,
-	0x3242, 0x2020,
-	0x306A, 0x2F4C,
-	0x306C, 0xCA01,
-	0x307A, 0x0D20,
-	0x309E, 0x002D,
-	0x3072, 0x0013,
-	0x3074, 0x0977,
-	0x3076, 0x9411,
-	0x3024, 0x0016,
-	0x3070, 0x3D00,
-	0x3002, 0x0E00,
-	0x3006, 0x1000,
-	0x300A, 0x0C00,
-	0x3010, 0x0400,
-	0x3018, 0xC500,
-	0x303A, 0x0204,
-	0x345A, 0x0000,
-	0x345C, 0x0000,
-	0x345E, 0x0000,
-	0x3460, 0x0000,
-	0x3066, 0x7E00,
-	0x3004, 0x0800,
+  0x3084, 0x1314,
+  0x3266, 0x0001,
+  0x3242, 0x2020,
+  0x306A, 0x2F4C,
+  0x306C, 0xCA01,
+  0x307A, 0x0D20,
+  0x309E, 0x002D,
+  0x3072, 0x0013,
+  0x3074, 0x0977,
+  0x3076, 0x9411,
+  0x3024, 0x0016,
+  0x3070, 0x3D00,
+  0x3002, 0x0E00,
+  0x3006, 0x1000,
+  0x300A, 0x0C00,
+  0x3010, 0x0400,
+  0x3018, 0xC500,
+  0x303A, 0x0204,
+  0x3452, 0x0001,
+  0x3454, 0x0001,
+  0x3456, 0x0001,
+  0x3458, 0x0001,
+  0x345a, 0x0002,
+  0x345C, 0x0014,
+  0x345E, 0x0002,
+  0x3460, 0x0014,
+  0x3464, 0x0006,
+  0x3466, 0x0012,
+  0x3468, 0x0012,
+  0x346A, 0x0012,
+  0x346C, 0x0012,
+  0x346E, 0x0012,
+  0x3470, 0x0012,
+  0x3472, 0x0008,
+  0x3474, 0x0004,
+  0x3476, 0x0044,
+  0x3478, 0x0004,
+  0x347A, 0x0044,
+  0x347E, 0x0006,
+  0x3480, 0x0010,
+  0x3482, 0x0010,
+  0x3484, 0x0010,
+  0x3486, 0x0010,
+  0x3488, 0x0010,
+  0x348A, 0x0010,
+  0x348E, 0x000C,
+  0x3490, 0x004C,
+  0x3492, 0x000C,
+  0x3494, 0x004C,
+  0x3496, 0x0020,
+  0x3498, 0x0006,
+  0x349A, 0x0008,
+  0x349C, 0x0008,
+  0x349E, 0x0008,
+  0x34A0, 0x0008,
+  0x34A2, 0x0008,
+  0x34A4, 0x0008,
+  0x34A8, 0x001A,
+  0x34AA, 0x002A,
+  0x34AC, 0x001A,
+  0x34AE, 0x002A,
+  0x34B0, 0x0080,
+  0x34B2, 0x0006,
+  0x32A2, 0x0000,
+  0x32A4, 0x0000,
+  0x32A6, 0x0000,
+  0x32A8, 0x0000,
+  0x3066, 0x7E00,
+  0x3004, 0x0800,
 	0x3934, 0x0180, /*bit[9:7] Tr/Tf 000:115ps ,011:60ps */ 	
 };
 
