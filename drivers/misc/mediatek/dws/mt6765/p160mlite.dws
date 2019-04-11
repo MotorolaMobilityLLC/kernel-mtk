@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.10.2019.10:59:44"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.11.2019.12:19:22"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -1414,7 +1414,7 @@
             <gpio175>
                 <eint_mode>false</eint_mode>
                 <def_mode>0</def_mode>
-                <inpull_en>true</inpull_en>
+                <inpull_en>false</inpull_en>
                 <inpull_selhigh>false</inpull_selhigh>
                 <def_dir>IN</def_dir>
                 <out_high>false</out_high>
