@@ -667,7 +667,6 @@ int core_config_ice_mode_enable(bool stop_mcu)
 #ifdef ENABLE_SPI_SPEED_UP
 		core_spi_speed_up(true);
 #endif
-		mdelay(25);
 
 		if (core_config_ice_mode_chipid_check() >= 0) {
 			core_config_ice_mode_write(0x047002, 0x00, 1);

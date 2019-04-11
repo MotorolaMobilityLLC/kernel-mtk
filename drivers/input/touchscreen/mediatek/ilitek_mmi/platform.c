@@ -45,7 +45,7 @@ extern struct tpd_device *tpd;
 #else
 #define DTS_OF_NAME		"tchip,ilitek"
 #endif /* PT_MTK */
-
+extern uint8_t *ilitek_hex_buffer;
 #define DEVICE_ID	"ILITEK_TDDI"
 #define DEVICE_ID_SPI	"ILITEK_TDDI_SPI"
 extern char mtkfb_lcm_name[256];
@@ -125,6 +125,10 @@ int ilitek_platform_tp_hw_reset(bool isEnable)
 		gpio_set_value(ipd->reset_gpio, 1);
 		mdelay(ipd->edge_delay);
 #endif /* PT_MTK */
+		if (mode_chose == SPI_MODE) {
+			ipd->rst_data_frame = 10;
+			wake_up(&(ipd->rst));
+		}
 	} else {
 #if (TP_PLATFORM == PT_MTK)
 		tpd_gpio_output(ipd->reset_gpio, 0);
@@ -293,6 +297,34 @@ static void ilitek_platform_esd_check(struct work_struct *pWork)
 }
 #endif /* ESD_CHECK */
 
+void load_touch_firmware(void)
+{
+	int err;
+	if (!core_firmware->isUpgrading) {
+		err = schedule_work(&ipd->ilitek_resume_work);
+		if (!err) {
+			ipio_err("start touch_resume_workqueue failed\n");
+			return;
+		}
+	}
+	return;
+}
+EXPORT_SYMBOL(load_touch_firmware);
+
+void touch_reset_before_lcm_init(void)
+{
+	int ret = 0;
+	ipd->rst_data_frame = 0;
+
+	ret = wait_event_interruptible_timeout(ipd->rst, ipd->rst_data_frame> 0, msecs_to_jiffies(200));
+	if (ret == 0) {
+		ipio_info("wait_event timeout\n");
+
+	}
+	return;
+}
+EXPORT_SYMBOL(touch_reset_before_lcm_init);
+
 #if (TP_PLATFORM == PT_MTK)
 static void tpd_resume(struct device *h)
 {
@@ -343,12 +375,8 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 
 			ipio_info("TP Suspend\n");
 
-			if (!core_firmware->isUpgrading) {
-			err = cancel_work_sync(&ipd->ilitek_resume_work);
-			if (!err)
-				ipio_err("cancel touch_resume_workqueue err = %d\n", err);
+			if (!core_firmware->isUpgrading)
 				core_config_ic_suspend();
-			}
 		}
 #if (TP_PLATFORM == PT_SPRD)
 		else if (*blank == DRM_MODE_DPMS_ON)
@@ -360,10 +388,12 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 				ipio_info("TP Resuem\n");
 
 				if (!core_firmware->isUpgrading) {
-					err = queue_work(ipd->ilitek_resume_workqueue, &ipd->ilitek_resume_work);
-					if (!err) {
-						ipio_err("start touch_resume_workqueue failed\n");
-						return err;
+					if (mode_chose == I2C_MODE) {
+						err = schedule_work(&ipd->ilitek_resume_work);
+						if (!err) {
+							ipio_err("start touch_resume_workqueue failed\n");
+							return err;
+						}
 					}
 				}
 			}
@@ -531,7 +561,6 @@ static int ilitek_platform_reg_suspend(void)
 	ipio_info("It does nothing if platform is MTK\n");
 	ipd->notifier_fb.notifier_call = ilitek_platform_notifier_fb;
 	ret = fb_register_client(&ipd->notifier_fb);
-	ipd->ilitek_resume_workqueue= create_singlethread_workqueue("ilitek_touch_resume");
 	INIT_WORK(&ipd->ilitek_resume_work, ilitek_resume_workqueue_callback);
 #else
 	ipio_info("Register suspend/resume callback function\n");
@@ -954,6 +983,7 @@ static int ilitek_platform_remove_spi(struct spi_device *spi)
 
 	ilitek_proc_remove();
 	ilitek_sys_remove();
+	ipio_vfree((void **)&ilitek_hex_buffer);
 
 	return 0;
 }
@@ -1147,6 +1177,8 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	mutex_init(&ipd->ilitek_debug_mutex);
 	mutex_init(&ipd->ilitek_debug_read_mutex);
 	init_waitqueue_head(&(ipd->inq));
+	init_waitqueue_head(&(ipd->rst));
+	ipd->rst_data_frame = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;

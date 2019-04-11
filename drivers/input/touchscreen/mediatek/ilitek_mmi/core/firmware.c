@@ -66,7 +66,8 @@ u8 gestrue_fw[(10 * K)];
 extern unsigned char g_user_buf[PAGE_SIZE];
 extern unsigned char fw_name_buf[PAGE_SIZE];
 extern bool use_g_user_buf;
-
+int ilitek_fw_fsize = 0;
+uint8_t *ilitek_hex_buffer = NULL;
 static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw);
 
 static uint32_t HexToDec(char *pHex, int32_t nLength)
@@ -344,8 +345,6 @@ static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw)
 static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 {
 	int ret = 0;
-	int fsize = 1;
-	uint8_t *hex_buffer = NULL;
 	const struct firmware *fw = NULL;
 	struct file *f = NULL;
 	mm_segment_t old_fs;
@@ -355,30 +354,35 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 
 	switch (open_file_method) {
 	case REQUEST_FIRMWARE:
-		ipio_info("Request_firmware_file, name = %s \n", fw_name_buf);
-		ret = request_firmware(&fw, fw_name_buf, ipd->dev);
-		if (ret < 0) {
-			ipio_err("Failed to open the file Name %s,try to open ili file\n", BOOT_FW_HEX_NAME);
-			return -ENOMEM;
-		}
+		if ((ilitek_fw_fsize > 0) && (ilitek_hex_buffer != NULL)) {
+			ipio_info("FW is already request,no need request again\n");
 
-		fsize = fw->size;
-		ipio_info("fsize = %d\n", fsize);
-		if (fsize <= 0) {
-			ipio_err("The size of file is zero\n");
+		} else {
+			ipio_info("Request_firmware_file, name = %s \n", fw_name_buf);
+			ret = request_firmware(&fw, fw_name_buf, ipd->dev);
+			if (ret < 0) {
+				ipio_err("Failed to open the file Name %s,try to open ili file\n", fw_name_buf);
+				return -ENOMEM;
+			}
+
+			ilitek_fw_fsize = fw->size;
+			ipio_info("ilitek_fw_fsize = %d\n", ilitek_fw_fsize);
+			if (ilitek_fw_fsize <= 0) {
+				ipio_err("The size of file is zero\n");
+				release_firmware(fw);
+				return -ENOMEM;
+			}
+
+			ilitek_hex_buffer = vmalloc(ilitek_fw_fsize * sizeof(uint8_t));
+			if (ERR_ALLOC_MEM(ilitek_hex_buffer)) {
+				ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(ilitek_hex_buffer));
+				release_firmware(fw);
+				return -ENOMEM;
+			}
+
+			ipio_memcpy(ilitek_hex_buffer, fw->data, ilitek_fw_fsize * sizeof(*fw->data), ilitek_fw_fsize);
 			release_firmware(fw);
-			return -ENOMEM;
 		}
-
-		hex_buffer = vmalloc(fsize * sizeof(uint8_t));
-		if (ERR_ALLOC_MEM(hex_buffer)) {
-			ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(hex_buffer));
-			release_firmware(fw);
-			return -ENOMEM;
-		}
-
-		ipio_memcpy(hex_buffer, fw->data, fsize * sizeof(*fw->data), fsize);
-		release_firmware(fw);
 		break;
 	case FILP_OPEN:
 		ipio_err("filp_open path %s \n", UPDATE_FW_PATH);
@@ -391,18 +395,18 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 			return -ENOMEM;
 		}
 
-		fsize = f->f_inode->i_size;
-		ipio_info("fsize = %d\n", fsize);
-		if (fsize <= 0) {
+		ilitek_fw_fsize = f->f_inode->i_size;
+		ipio_info("ilitek_fw_fsize = %d\n", ilitek_fw_fsize);
+		if (ilitek_fw_fsize <= 0) {
 			ipio_err("The size of file is invaild\n");
 			filp_close(f, NULL);
 			return -ENOMEM;
 		}
+		/* TODO: evaluate if switch to reserve memory method */
+		ilitek_hex_buffer = vmalloc(ilitek_fw_fsize * sizeof(uint8_t));
 
-		hex_buffer = vmalloc(fsize * sizeof(uint8_t));
-
-		if (ERR_ALLOC_MEM(hex_buffer)) {
-			ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(hex_buffer));
+		if (ERR_ALLOC_MEM(ilitek_hex_buffer)) {
+			ipio_err("Failed to allocate hex_buffer memory, %ld\n", PTR_ERR(ilitek_hex_buffer));
 			filp_close(f, NULL);
 			return -ENOMEM;
 		}
@@ -412,7 +416,7 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 		set_fs(get_ds());
 		set_fs(KERNEL_DS);
 		pos = 0;
-		vfs_read(f, hex_buffer, fsize, &pos);
+		vfs_read(f, ilitek_hex_buffer, ilitek_fw_fsize, &pos);
 		set_fs(old_fs);
 		filp_close(f, NULL);
 		break;
@@ -422,9 +426,8 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 	}
 
 	/* Convert hex and copy data from hex_buffer to pfw */
-	convert_hex_file(hex_buffer, fsize, pfw);
+	convert_hex_file(ilitek_hex_buffer, ilitek_fw_fsize, pfw);
 
-	ipio_vfree((void **)&hex_buffer);
 	return ret;
 }
 
