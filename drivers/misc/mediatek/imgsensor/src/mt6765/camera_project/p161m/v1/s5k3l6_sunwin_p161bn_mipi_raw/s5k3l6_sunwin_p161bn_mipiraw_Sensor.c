@@ -54,7 +54,7 @@
 
 #include "s5k3l6_sunwin_p161bn_mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
-        pr_err(PFX "[%s] " format, __func__, ##args)
+        pr_debug(PFX "[%s] " format, __func__, ##args)
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
@@ -534,7 +534,7 @@ static void set_shutter(kal_uint32 shutter)
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
 	//kal_uint32 frame_length = 0;
-	pr_err("thy_debug: set_shutter(): %d\n", shutter);
+	pr_debug("thy_debug: set_shutter(): %d\n", shutter);
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
 	imgsensor.shutter = shutter;
 	spin_unlock_irqrestore(&imgsensor_drv_lock, flags);
