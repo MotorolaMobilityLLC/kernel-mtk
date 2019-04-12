@@ -2131,7 +2131,7 @@ static ssize_t force_max_chrg_temp_show(struct device *dev,
 	int state;
 
 	if (!mmi_info) {
-		pr_err("[%s]mmi_info not valid\n");
+		pr_err("[%s]mmi_info not valid\n", __func__);
 		return -ENODEV;
 	}
 
