@@ -126,6 +126,10 @@
 	};
 };
 
+&goodix_fp{
+	status = "disabled";
+};
+
 &odm {
 	sar_irq:sar_irq {
 	compatible = "mediatek,sar_irq";
