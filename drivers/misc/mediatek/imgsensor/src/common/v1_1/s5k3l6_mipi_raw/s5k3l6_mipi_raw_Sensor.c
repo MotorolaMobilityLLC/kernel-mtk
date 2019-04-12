@@ -883,8 +883,13 @@ static kal_uint32 return_sensor_id(void)
 	return ((read_cmos_sensor_byte(0x0000) << 8) | read_cmos_sensor_byte(0x0001));
 }
 
+#ifdef CONFIG_CAMERA_PROJECT_BINGO
 #define OTP_3L6 1
 #define INCLUDE_NO_OTP_3L6 0
+#else
+#define OTP_3L6 0
+#define INCLUDE_NO_OTP_3L6 1
+#endif
 
 #if OTP_3L6
 #define S5K3L6_EEPROM_SLAVE_ADD 0xB0
