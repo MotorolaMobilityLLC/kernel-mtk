@@ -172,7 +172,8 @@ struct gf_device {
 	struct cdev cdev;
 	struct device *device;
 	struct class *class;
-	struct spi_device *spi;
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+	struct platform_device *spi;
 	int device_count;
 #ifndef CONFIG_SPI_MT65XX
 	struct mt_chip_conf spi_mcc;

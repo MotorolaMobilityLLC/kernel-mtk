@@ -60,6 +60,7 @@ struct fpc_data {
 	struct pinctrl *pinctrl_fpc;
 	struct pinctrl_state *pinctrl_state[ARRAY_SIZE(pctl_names)];
 	int irq_gpio;
+	int irq_num;
 	int rst_gpio;
 	bool wakeup_enabled;
 	struct wakeup_source ttw_wl;
@@ -172,6 +173,35 @@ static ssize_t wakeup_enable_set(struct device *dev,
 }
 static DEVICE_ATTR(wakeup_enable, S_IWUSR, NULL, wakeup_enable_set);
 
+static ssize_t irq_enable_set(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct  fpc_data *fpc = dev_get_drvdata(dev);
+	ssize_t ret = count;
+
+	dev_info(dev, "%s: enter\n", __func__);
+
+	if (!strncmp(buf, "enable", strlen("enable"))) {
+		//fpc->wakeup_enabled = true;
+		//smp_wmb();
+	} else if (!strncmp(buf, "disable", strlen("disable"))) {
+            dev_info(dev, "%s: disable gpio, irq_num:%d\n", __func__, fpc->irq_num);
+            if(fpc->irq_num) {
+                dev_info(dev, "%s: disable gpio, disabled\n", __func__);
+                disable_irq_wake(fpc->irq_num);
+                disable_irq(fpc->irq_num);
+                devm_free_irq(fpc->dev, fpc->irq_num, fpc);
+                fpc->irq_num = 0;
+            }
+		//fpc->wakeup_enabled = false;
+		//smp_wmb();
+	} else {
+		ret = -EINVAL;
+	}
+	return ret;
+}
+static DEVICE_ATTR(irq_enable, S_IWUSR, NULL, irq_enable_set);
+
 /**
  * sysf node to check the interrupt status of the sensor, the interrupt
  * handler should perform sysf_notify to allow userland to poll the node.
@@ -214,6 +244,7 @@ static struct attribute *fpc_attributes[] = {
 	&dev_attr_wakeup_enable.attr,
 	&dev_attr_clk_enable.attr,
 	&dev_attr_irq.attr,
+	&dev_attr_irq_enable.attr,
 	NULL
 };
 
@@ -288,6 +319,8 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 
 }
 #endif
+/* MMI_STOPSHIP <FPC driver>: Temp extern gspidev */
+struct spi_device* gspidev;
 static int mtk6797_probe(struct spi_device *spidev)
 {
 	struct device *dev = &spidev->dev;
@@ -300,6 +333,8 @@ static int mtk6797_probe(struct spi_device *spidev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
+/* MMI_STOPSHIP <FPC driver>: Temp extern gspidev */
+        gspidev = spidev;
 	spidev->dev.of_node = of_find_compatible_node(NULL,
 						NULL, "mediatek,fingerprint");
 	if (!spidev->dev.of_node) {
@@ -355,6 +390,8 @@ static int mtk6797_probe(struct spi_device *spidev)
 		goto exit;
 	}
 
+	fpc->irq_num = irq_num;
+
 	set_clks(fpc, true);
 
 	dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
@@ -374,7 +411,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 		dev_err(dev, "could not request irq %d\n", irq_num);
 		goto exit;
 	}
-	dev_dbg(dev, "requested irq %d\n", irq_num);
+	dev_info(dev, "requested irq %d\n", irq_num);
 
 	/* Request that the interrupt should be wakeable */
 	enable_irq_wake(irq_num);

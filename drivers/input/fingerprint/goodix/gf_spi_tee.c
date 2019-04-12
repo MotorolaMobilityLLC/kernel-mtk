@@ -95,13 +95,16 @@ MODULE_PARM_DESC(bufsiz, "maximum data bytes for SPI message");
 static const struct of_device_id gf_of_match[] = {
 /*	{ .compatible = "mediatek,fingerprint", },
 	{ .compatible = "mediatek,goodix-fp", },*/
-	{ .compatible = "goodix,goodix-fp", },
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+	{ .compatible = "mediatek,goodix-fp", },
 	{},
 };
 MODULE_DEVICE_TABLE(of, gf_of_match);
 #endif
 
+#ifdef SUPPORT_REE_OSWEGO
 int gf_spi_read_bytes(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *rx_buf);
+#endif
 
 struct regulator *buck;
 /* for netlink use */
@@ -312,7 +315,8 @@ static void gf_hw_power_enable(struct gf_device *gf_dev, u8 onoff)
 		enable = 1;
 	}
 }
-
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver and the global spi devices */
+extern struct spi_device* gspidev;
 static void gf_spi_clk_enable(struct gf_device *gf_dev, u8 bonoff)
 {
 	static int count = 0;
@@ -332,11 +336,11 @@ static void gf_spi_clk_enable(struct gf_device *gf_dev, u8 bonoff)
 
 	if (bonoff && (count == 0)) {
 		pr_err("%s line:%d enable spi clk\n", __func__,__LINE__);
-		mt_spi_enable_master_clk(gf_dev->spi);
+		mt_spi_enable_master_clk(gspidev);
 		count = 1;
 	} else if ((count > 0) && (bonoff == 0)) {
 		pr_err("%s line:%d disable spi clk\n", __func__,__LINE__);
-		mt_spi_disable_master_clk(gf_dev->spi);
+		mt_spi_disable_master_clk(gspidev);
 		count = 0;
 	}
 #endif
@@ -365,6 +369,8 @@ static void gf_irq_gpio_cfg(struct gf_device *gf_dev)
 #endif
 }
 
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+#if 0
 static void gf_reset_gpio_cfg(struct gf_device *gf_dev)
 {
 #ifdef CONFIG_OF
@@ -372,6 +378,7 @@ static void gf_reset_gpio_cfg(struct gf_device *gf_dev)
 #endif
 
 }
+#endif
 
 /* delay ms after reset */
 static void gf_hw_reset(struct gf_device *gf_dev, u8 delay)
@@ -973,8 +980,8 @@ static long gf_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			gf_dev->spi_buffer = NULL;
 		}
 		mutex_unlock(&gf_dev->release_lock);
-
-		spi_set_drvdata(gf_dev->spi, NULL);
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+		//spi_set_drvdata(gf_dev->spi, NULL);
 		gf_dev->spi = NULL;
 		mutex_destroy(&gf_dev->buf_lock);
 		mutex_destroy(&gf_dev->release_lock);
@@ -1079,6 +1086,8 @@ static ssize_t gf_debug_show(struct device *dev,
 static ssize_t gf_debug_store(struct device *dev,
 			struct device_attribute *attr, const char *buf, size_t count)
 {
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+    #if 0
 	struct gf_device *gf_dev =  dev_get_drvdata(dev);
 	int retval = 0;
 	unsigned char rx_test[10] = {0};
@@ -1153,6 +1162,7 @@ static ssize_t gf_debug_store(struct device *dev,
 	} else {
 		gf_debug(ERR_LOG, "%s: wrong parameter!===============\n", __func__);
 	}
+    #endif
 
 	return count;
 }
@@ -1678,6 +1688,7 @@ static const struct file_operations gf_fops = {
 
 /*-------------------------------------------------------------------------*/
 
+#ifdef SUPPORT_REE_OSWEGO
 int gf_spi_read_bytes(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *rx_buf)
  {
 	 struct spi_message msg;
@@ -1797,16 +1808,17 @@ int gf_spi_read_bytes(struct gf_device *gf_dev, u16 addr, u32 data_len, u8 *rx_b
 
 	 return 0;
  }
+#endif
 
 
-static int gf_probe(struct spi_device *spi);
-static int gf_remove(struct spi_device *spi);
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+static int gf_probe(struct platform_device *spi);
+static int gf_remove(struct platform_device *spi);
 
 
-static struct spi_driver gf_spi_driver = {
+static struct platform_driver gf_spi_driver = {
 	.driver = {
 		.name = GF_DEV_NAME,
-		.bus = &spi_bus_type,
 		.owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		.of_match_table = gf_of_match,
@@ -1816,11 +1828,11 @@ static struct spi_driver gf_spi_driver = {
 	.remove = gf_remove,
 };
 
-static int gf_probe(struct spi_device *spi)
+static int gf_probe(struct platform_device *spi)
 {
 	struct gf_device *gf_dev = NULL;
 	int status = -EINVAL;
-	unsigned char rx_test[10] = {0};
+	//unsigned char rx_test[10] = {0};
 
         // int retval = 0;
 
@@ -1865,12 +1877,12 @@ static int gf_probe(struct spi_device *spi)
 
 	/* setup SPI parameters */
 	/* CPOL=CPHA=0, speed 1MHz */
-	gf_dev->spi->mode = SPI_MODE_0;
-	gf_dev->spi->bits_per_word = 8;
-	gf_dev->spi->max_speed_hz = 1 * 1000 * 1000;
+	//gf_dev->spi->mode = SPI_MODE_0;
+	//gf_dev->spi->bits_per_word = 8;
+	//gf_dev->spi->max_speed_hz = 1 * 1000 * 1000;
 #ifndef CONFIG_SPI_MT65XX
-	memcpy(&gf_dev->spi_mcc, &spi_ctrdata, sizeof(struct mt_chip_conf));
-	gf_dev->spi->controller_data = (void *)&gf_dev->spi_mcc;
+	//memcpy(&gf_dev->spi_mcc, &spi_ctrdata, sizeof(struct mt_chip_conf));
+	//gf_dev->spi->controller_data = (void *)&gf_dev->spi_mcc;
 
 	//spi_setup(gf_dev->spi);
 #endif
@@ -1914,7 +1926,8 @@ static int gf_probe(struct spi_device *spi)
 	//pr_err("%s %d now get dts info done!",__func__, __LINE__);
 	//gf_hw_power_enable(gf_dev, 1);
 	//gf_bypass_flash_gpio_cfg();
-
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+#if 0
 	pr_err("%s %d now enable spi clk API",__func__, __LINE__);
 	gf_spi_clk_enable(gf_dev, 1);
 
@@ -1957,6 +1970,7 @@ static int gf_probe(struct spi_device *spi)
 		pr_err("%s %d Goodix fingerprint sensor detected\n", __func__, __LINE__);
 	}
 	}
+#endif
 
 #ifdef SUPPORT_REE_SPI
 #ifdef SUPPORT_REE_OSWEGO
@@ -2151,9 +2165,10 @@ err:
 	return status;
 }
 
-static int gf_remove(struct spi_device *spi)
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+static int gf_remove(struct platform_device *spi)
 {
-	struct gf_device *gf_dev = spi_get_drvdata(spi);
+	struct gf_device *gf_dev = dev_get_drvdata(&spi->dev);
 
 	FUNC_ENTRY();
 
@@ -2201,7 +2216,8 @@ static int gf_remove(struct spi_device *spi)
 	gf_spi_clk_enable(gf_dev, 0);
 
 	spin_lock_irq(&gf_dev->spi_lock);
-	spi_set_drvdata(spi, NULL);
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+	//spi_set_drvdata(spi, NULL);
 	gf_dev->spi = NULL;
 	spin_unlock_irq(&gf_dev->spi_lock);
 
@@ -2214,6 +2230,8 @@ static int gf_remove(struct spi_device *spi)
 }
 
 /*-------------------------------------------------------------------------*/
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+#if 0
 static int __init gf_init(void)
 {
 	int status = 0;
@@ -2245,9 +2263,12 @@ static void __exit gf_exit(void)
 	FUNC_EXIT();
 }
 module_exit(gf_exit);
+#endif
 
+/* MMI_STOPSHIP <Goodix driver>: Temp using platform driver */
+module_platform_driver(gf_spi_driver);
 
 MODULE_AUTHOR("goodix");
 MODULE_DESCRIPTION("Goodix Fingerprint chip GF316M/GF318M/GF3118M/GF518M/GF5118M/GF516M/GF816M/GF3208/GF5206/GF5216/GF5208 TEE driver");
 MODULE_LICENSE("GPL");
-MODULE_ALIAS("spi:gf_spi");
+//MODULE_ALIAS("spi:gf_spi");
