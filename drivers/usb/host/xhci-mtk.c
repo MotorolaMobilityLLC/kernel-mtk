@@ -28,6 +28,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
+#include <linux/debugfs.h>
+#include <linux/uaccess.h>
 
 #include "xhci.h"
 #include "xhci-mtk.h"
@@ -91,6 +93,124 @@
 #define UWK_CTL1_IDDIG_P	BIT(9)  /* polarity */
 #define UWK_CTL1_0P_LS_P	BIT(7)
 #define UWK_CTL1_IS_P		BIT(6)  /* polarity for ip sleep */
+
+/* test mode */
+#define HOST_CMD_TEST_J             0x1
+#define HOST_CMD_TEST_K             0x2
+#define HOST_CMD_TEST_SE0_NAK       0x3
+#define HOST_CMD_TEST_PACKET        0x4
+#define PMSC_PORT_TEST_CTRL_OFFSET  28
+
+static ssize_t xhci_mtk_test_mode_write(struct file *file,
+		const char __user *ubuf, size_t count, loff_t *ppos)
+
+{
+	struct seq_file *s = file->private_data;
+	struct xhci_hcd_mtk *mtk = s->private;
+	struct xhci_hcd *xhci = hcd_to_xhci(mtk->hcd);
+	int ports = HCS_MAX_PORTS(xhci->hcs_params1);
+	char buf[20];
+	u8 test = 0;
+	u32 temp;
+	u32 __iomem *addr;
+	int i;
+
+	memset(buf, 0x00, sizeof(buf));
+
+	if (copy_from_user(buf, ubuf,
+			min_t(size_t, sizeof(buf) - 1, count)))
+		return -EFAULT;
+
+	if (!strncmp(buf, "test packet", 10))
+		test = HOST_CMD_TEST_PACKET;
+	else if (!strncmp(buf, "test K", 6))
+		test = HOST_CMD_TEST_K;
+	else if (!strncmp(buf, "test J", 6))
+		test = HOST_CMD_TEST_J;
+	else if (!strncmp(buf, "test SE0 NAK", 12))
+		test = HOST_CMD_TEST_SE0_NAK;
+
+	if (test) {
+		xhci_info(xhci, "set test mode %d\n", test);
+
+		/* set the Run/Stop in USBCMD to 0 */
+		addr = &xhci->op_regs->command;
+		temp = readl(addr);
+		temp &= ~CMD_RUN;
+		writel(temp, addr);
+
+		/*  wait for HCHalted */
+		xhci_halt(xhci);
+
+		/* test mode */
+		for (i = 0; i < ports; i++) {
+			addr = &xhci->op_regs->port_power_base +
+				NUM_PORT_REGS * (i & 0xff);
+			temp = readl(addr);
+			temp &= ~(0xf << PMSC_PORT_TEST_CTRL_OFFSET);
+			temp |= (test << PMSC_PORT_TEST_CTRL_OFFSET);
+			writel(temp, addr);
+		}
+	} else {
+		xhci_info(xhci, "test mode command error\n");
+	}
+
+	return count;
+}
+
+static int xhci_mtk_test_mode_show(struct seq_file *s, void *unused)
+{
+	seq_puts(s, "xhci_mtk test mode\n");
+	return 0;
+}
+
+
+static int xhci_mtk_test_mode_open(struct inode *inode,
+					struct file *file)
+{
+	return single_open(file, xhci_mtk_test_mode_show,
+					   inode->i_private);
+}
+
+static const struct file_operations xhci_mtk_test_mode_fops = {
+	.open = xhci_mtk_test_mode_open,
+	.write = xhci_mtk_test_mode_write,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
+static int xhci_mtk_dbg_init(struct xhci_hcd_mtk *mtk)
+{
+	int ret = 0;
+	struct dentry *root;
+	struct dentry *file;
+
+	root = debugfs_create_dir("xhci_mtk_dbg", NULL);
+	if (IS_ERR_OR_NULL(root)) {
+		ret = PTR_ERR(root);
+		goto err0;
+	}
+
+	file = debugfs_create_file("testmode", 0644, root,
+						mtk, &xhci_mtk_test_mode_fops);
+	if (IS_ERR_OR_NULL(file)) {
+		ret = PTR_ERR(file);
+		goto err0;
+	}
+
+	mtk->debugfs_root = root;
+
+	return 0;
+err0:
+	return ret;
+}
+
+static int xhci_mtk_dbg_exit(struct xhci_hcd_mtk *mtk)
+{
+	debugfs_remove_recursive(mtk->debugfs_root);
+	return 0;
+}
 
 enum ssusb_wakeup_src {
 	SSUSB_WK_IP_SLEEP = 1,
@@ -852,6 +972,8 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 	if (ret)
 		goto dealloc_usb2_hcd;
 
+	xhci_mtk_dbg_init(mtk);
+
 #ifdef CONFIG_USB_XHCI_MTK_SUSPEND_SUPPORT
 	device_set_wakeup_enable(&hcd->self.root_hub->dev, 1);
 	device_set_wakeup_enable(&xhci->shared_hcd->self.root_hub->dev, 1);
@@ -905,6 +1027,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	usb_remove_hcd(xhci->shared_hcd);
 	device_init_wakeup(&dev->dev, false);
 
+	xhci_mtk_dbg_exit(mtk);
 	usb_remove_hcd(hcd);
 	usb_put_hcd(xhci->shared_hcd);
 	usb_put_hcd(hcd);
