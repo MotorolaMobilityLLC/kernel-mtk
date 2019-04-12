@@ -156,7 +156,7 @@ void AFRegulatorCtrl(int Stage)
 
 			/* check if customer camera node defined */
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
-
+			node = of_find_compatible_node(NULL, NULL, "mediatek,imgsensor");
 #else
 			node = of_find_compatible_node(NULL, NULL, "mediatek,CAMERA_MAIN_AF");
 #endif

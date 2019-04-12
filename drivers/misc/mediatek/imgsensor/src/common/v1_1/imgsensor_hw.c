@@ -157,6 +157,7 @@ static enum IMGSENSOR_RETURN imgsensor_hw_power_sequence(
 }
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
+extern void AFRegulatorCtrl(int Stage);
 int mipiswitch(
 		struct IMGSENSOR_HW             *phw,
 		enum   IMGSENSOR_SENSOR_IDX      sensor_idx,
@@ -258,6 +259,23 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 			phw,
 			sensor_idx,
 			pwr_status, sensor_power_sequence, curr_sensor_name);
+
+#ifdef CONFIG_CAMERA_PROJECT_LIMA
+	if (strcmp(curr_sensor_name,"s5k3l6_mipi_raw")==0)   // add for main eeprom voltage
+	{
+		PK_DBG("AFRegulatorCtrl sensor_idx %d, power %d curr_sensor_name %s\n", sensor_idx, pwr_status, curr_sensor_name);
+
+		if (pwr_status == IMGSENSOR_HW_POWER_STATUS_ON)
+		{
+			AFRegulatorCtrl(0);
+			AFRegulatorCtrl(1);
+		}
+		else
+		{
+			AFRegulatorCtrl(2);
+		}
+	}
+#endif
 
 	return IMGSENSOR_RETURN_SUCCESS;
 }

@@ -810,14 +810,14 @@ static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *B
 	}
 	write_cmos_sensor_8(0x0a02,page);    //3
 	write_cmos_sensor_16(0x0a00,0x0100); //4 otp enable and read start
-	mdelay(100);
+	mdelay(50);
 	for ( i = 0; i < size; i++ ) {
 		Buff[i] = read_cmos_sensor_8(start_add+i); //3
 		//LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
 		mdelay(3);
 	}
 	//Sleep(100);
-	mdelay(100);
+	mdelay(50);
 	write_cmos_sensor_16(0x0a00,0x0000); //4 //otp enable and read end
 
 	return 0;

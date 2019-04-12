@@ -42,8 +42,8 @@
 #define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2664*1500@30fps,888Mbps/lane; video 5328*3000@30fps,1390Mbps/lane; capture 16M@30fps,1390Mbps/lane\n")
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
-#define LOGE(format, args...) xlog_printk(ANDROID_LOG_ERROR, PFX, "[%s]"format, __func__, ##args)
-
+//#define LOGE(format, args...) xlog_printk(ANDROID_LOG_ERROR, PFX, "[%s]"format, __func__, ##args)
+#define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
@@ -1246,6 +1246,148 @@ static void slim_video_setting(void)
 
 }
 
+#define OTP_4H7  1
+
+#if OTP_4H7
+#define FLAG_VALUE_PAGE 0x40
+#define INCLUDE_NO_OTP_4H7 1
+#define S5K4H7YX_SUNNY_MODULE_ID 0x5355
+#define LIMA_OTP_CHECKSUM 1
+#define S5K4H7YX_SUNNY_MODULE_ID_START_ADD 0x0a12
+#define S5K4H7YX_SUNNY_MODULE_ID_LENGTH 0x02
+#define getbit(x,y)   ((x) >> (y)&1)
+
+
+typedef struct s5k4h7yx_sunny_otp_data {
+	unsigned char page_flag;
+	unsigned char module_id[2];
+	unsigned short moduleid;
+	unsigned char gloden[8];
+	unsigned char unint[8];
+	unsigned char data[128];
+} S5K4H7YX_SUNNY_OTP_DATA;
+
+S5K4H7YX_SUNNY_OTP_DATA s5k4h7yx_sunny_otp_data;
+
+
+static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
+{
+    char pusendcmd[4] = {(char)(addr >> 8) , (char)(addr & 0xFF) ,(char)(para >> 8),(char)(para & 0xFF)};
+
+    //kdSetI2CSpeed(imgsensor_info.i2c_speed); // Add this func to set i2c speed by each sensor
+    iWriteRegI2C(pusendcmd , 4, imgsensor.i2c_write_id);
+}
+
+
+static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
+{
+	unsigned short stram_flag = 0;
+	int i = 0;
+	if (NULL == Buff) return 0;
+
+	stram_flag = read_cmos_sensor_8(0x0100); //3
+	if (stram_flag == 0) {
+		write_cmos_sensor_8(0x0100,0x01);   //3
+	}
+	write_cmos_sensor_8(0x0a02,page);    //3
+	write_cmos_sensor_16(0x0a00,0x0100); //4 otp enable and read start
+	mdelay(50);
+	for ( i = 0; i < size; i++ ) {
+		Buff[i] = read_cmos_sensor_8(start_add+i); //3
+		//LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
+		mdelay(3);
+	}
+	//Sleep(100);
+	mdelay(50);
+	write_cmos_sensor_16(0x0a00,0x0000); //4 //otp enable and read end
+
+	return 0;
+}
+
+static int s5k4h7yx_get_vaild_data_page(void)
+{
+	unsigned char page_flag[2] = {0};
+	unsigned short page = 21;
+	//LOG_INF("read flag .....");
+	for (page = 21;page <= 29; page+=4) {
+		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[0],1);
+		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[1],1);
+		LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
+		mdelay(2);
+		if (page_flag[0] != 0 || page_flag[1] != 0) {
+			LOGE("+++4h7 3 get vaild page success = %d\n",page);
+			s5k4h7yx_sunny_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
+			//LOGE("+++4h7====== s5k4h7yx_sunny_otp_data.page_flag = 0x%x\n",s5k4h7yx_sunny_otp_data.page_flag);
+			break;
+		}
+		memset(page_flag,0,sizeof(page_flag));
+	}
+
+	return page;
+}
+
+static int s5k4h7yx_read_data_kernel(void)
+{
+	unsigned int page = 0;
+	unsigned int i = 0;
+	unsigned int sum = 0;
+
+	if (!s5k4h7yx_get_vaild_data_page())
+		return -1;
+	if (!((getbit(s5k4h7yx_sunny_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_sunny_otp_data.page_flag,7)))) {
+	//if ((s5k4h7yx_sunny_otp_data.page_flag & FLAG_VALUE_PAGE) != FLAG_VALUE_PAGE) {
+		LOGE("+++4h7 error data not valid\n");
+		return -1;
+	}
+	LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_sunny_otp_data.page_flag,7),getbit(s5k4h7yx_sunny_otp_data.page_flag,6));
+	//read module id
+	for (page = 21; page <= 29; page += 4) {
+		s5k4h7yx_read_otp_page_data(page, S5K4H7YX_SUNNY_MODULE_ID_START_ADD, s5k4h7yx_sunny_otp_data.module_id, S5K4H7YX_SUNNY_MODULE_ID_LENGTH);
+		for (i = 0;i < S5K4H7YX_SUNNY_MODULE_ID_LENGTH ; i++ ) {
+			LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_sunny_otp_data.module_id[i]);
+			sum += s5k4h7yx_sunny_otp_data.module_id[i];
+		}
+		if (sum)
+			break;
+	}
+
+	s5k4h7yx_sunny_otp_data.moduleid = ((s5k4h7yx_sunny_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_sunny_otp_data.module_id[1] & 0x00FF);
+	LOG_INF("s5k4h7yx_sunny_otp_data.moduleid= 0x%x",s5k4h7yx_sunny_otp_data.moduleid);
+
+#if LIMA_OTP_CHECKSUM
+	//read all awb
+	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_sunny_otp_data.data,8);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_sunny_otp_data.data + 8, 51);
+#endif
+	//read awb
+	s5k4h7yx_read_otp_page_data(page, 0x0a3d, s5k4h7yx_sunny_otp_data.gloden, 7);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_sunny_otp_data.gloden + 7, 1);
+	s5k4h7yx_read_otp_page_data(page + 1, 0x0a19, s5k4h7yx_sunny_otp_data.unint, 8);
+
+	return 0;
+}
+
+unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
+{
+	if (size == 2) { //read module id
+		memcpy(data, s5k4h7yx_sunny_otp_data.module_id, size);
+		LOGE("read module id");
+	} else if (size == 8) { //read single awb data
+		if (addr >= 0x0a3D) {
+			memcpy(data, (s5k4h7yx_sunny_otp_data.gloden), size);
+			LOGE("read golden");
+		} else {
+			memcpy(data,(s5k4h7yx_sunny_otp_data.unint), size);
+			LOGE("read unint");
+		}
+	} else { //read all awb checksum
+		memcpy(data, (s5k4h7yx_sunny_otp_data.data), size);
+	}
+
+	return size;
+}
+
+#endif
 
 /*************************************************************************
 * FUNCTION
@@ -1300,6 +1442,20 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #endif
 #endif
 
+#if OTP_4H7
+				s5k4h7yx_read_data_kernel();
+#if INCLUDE_NO_OTP_4H7
+				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
+					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
+						*sensor_id = 0xFFFFFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					} else
+						LOG_INF("This is sunny --->s5k4h7 otp data vaild ...");
+				} else {
+					LOG_INF("This is s5k4h7, but no otp data ...");
+				}
+ #endif
+ #endif
 				LOG_INF("s5k4h7 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				break;
 			}

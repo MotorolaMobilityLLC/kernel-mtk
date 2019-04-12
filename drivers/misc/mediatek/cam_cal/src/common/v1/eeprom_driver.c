@@ -53,9 +53,10 @@ static struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
 
 static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
-#ifdef CONFIG_CAMERA_PROJECT_BINGO
+#if defined (CONFIG_CAMERA_PROJECT_BINGO) || defined (CONFIG_CAMERA_PROJECT_LIMA)
 extern unsigned int S5K4H7_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
 extern unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
+extern unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
 #endif
 
 /*Note: Must Mapping to IHalSensor.h*/
@@ -655,7 +656,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 	case CAM_CALIOC_G_READ:
 		pr_debug("CAM_CALIOC_G_READ start! offset=%d, length=%d\n",
 			ptempbuf->u4Offset, ptempbuf->u4Length);
-#ifdef CONFIG_CAMERA_PROJECT_BINGO
+#if defined (CONFIG_CAMERA_PROJECT_BINGO)
 		if ((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x487b)) {
 			i4RetValue = S5K4H7_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("s5k4h7 offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
@@ -663,7 +664,16 @@ static long EEPROM_drv_ioctl(struct file *file,
 			i4RetValue = S5K4H7QT_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("s5k4h7qt offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
 		} else {
+#elif defined(CONFIG_CAMERA_PROJECT_LIMA)
+		if ((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x487b)) {
+			i4RetValue = S5K4H7_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+			pr_err("s5k4h7 offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
+		}else if ((ptempbuf->deviceID == 8)&&(ptempbuf->sensorID == 0x487c)) {
+			i4RetValue = S5K4H7_SUNNY_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
+			pr_err("s5k4h7sunny offset = 0x%x, parm = %d,i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
+		} else {
 #endif
+
 #ifdef CAM_CALGETDLT_DEBUG
 		do_gettimeofday(&ktv1);
 #endif
@@ -709,7 +719,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 		pr_debug("Read data %d bytes take %lu us\n",
 			ptempbuf->u4Length, TimeIntervalUS);
 #endif
-#ifdef CONFIG_CAMERA_PROJECT_BINGO
+#if defined (CONFIG_CAMERA_PROJECT_BINGO) || defined (CONFIG_CAMERA_PROJECT_LIMA)
 		}
 #endif
 		break;
