@@ -2028,6 +2028,13 @@ static int rt9471_kick_wdt(struct charger_device *chg_dev)
 	return __rt9471_kick_wdt(chip);
 }
 
+static int rt9471_enable_hz(struct charger_device *chg_dev, bool en)
+{
+	struct rt9471_chip *chip = dev_get_drvdata(&chg_dev->dev);
+
+	return __rt9471_enable_hz(chip, en);
+}
+
 static int rt9471_event(struct charger_device *chg_dev, u32 event, u32 args)
 {
 	switch (event) {
@@ -2248,6 +2255,8 @@ static struct charger_ops rt9471_chg_ops = {
 
 	.is_charging_done = rt9471_is_charging_done,
 	.dump_registers = rt9471_dump_registers,
+
+	.enable_hz = rt9471_enable_hz,
 };
 
 static int rt9471_probe(struct i2c_client *client,
