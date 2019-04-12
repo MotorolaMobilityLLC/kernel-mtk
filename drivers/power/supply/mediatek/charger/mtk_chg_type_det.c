@@ -51,6 +51,9 @@
 // pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
 bool battery_charging_enabled = true;
 
+// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
+static struct power_supply *batdet_psy;
+
 void __attribute__((weak)) fg_charger_in_handler(void)
 {
 	pr_notice("%s not defined\n", __func__);
@@ -170,8 +173,19 @@ static int mt_charger_set_property(struct power_supply *psy,
 	enum power_supply_property psp, const union power_supply_propval *val)
 {
 	struct mt_charger *mtk_chg = power_supply_get_drvdata(psy);
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	int ret = 0;
+	union power_supply_propval propval;
+	// pony.ma, DATE20190411-01 END
 
 	pr_info("%s\n", __func__);
+	
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	batdet_psy = power_supply_get_by_name("battery");
+	if (!batdet_psy) {
+		pr_notice("%s: get power supply failed\n", __func__);
+	}	
+	// pony.ma, DATE20190411-01 END	
 
 	if (!mtk_chg) {
 		pr_notice("%s: no mtk chg data\n", __func__);
@@ -189,10 +203,27 @@ static int mt_charger_set_property(struct power_supply *psy,
 		break;	
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
 	case POWER_SUPPLY_PROP_CHARGE_ENABLED:		
-		if(val->intval)
+		if(val->intval){
 			battery_charging_enabled = true;
+			if (batdet_psy) {				
+				propval.intval = POWER_SUPPLY_STATUS_CHARGING;
+				ret = power_supply_set_property(batdet_psy,
+					POWER_SUPPLY_PROP_STATUS, &propval);
+				if (ret < 0)
+					pr_notice("%s: psy enable failed, ret = %d\n",
+						__func__, ret);
+			}
+		}
 		else{
 			battery_charging_enabled = false;
+			if (batdet_psy) {				
+				propval.intval = POWER_SUPPLY_STATUS_DISCHARGING;
+				ret = power_supply_set_property(batdet_psy,
+					POWER_SUPPLY_PROP_STATUS, &propval);
+				if (ret < 0)
+					pr_notice("%s: psy enable failed, ret = %d\n",
+						__func__, ret);
+			}
 		}
 		break;
 	// pony.ma, DATE20190411-01 END
