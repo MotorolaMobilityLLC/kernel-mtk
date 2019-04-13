@@ -49,6 +49,17 @@ SUPPORT_QOS := false
 obj-y += mmdvfs_mgr_v3.o
 obj-y += mmdvfs_mgr_util.o
 obj-y += mmdvfs_profile_adaptor.o
+else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6763"))
+ccflags-y += -DSMI_BIA
+ccflags-y += -DSPECIAL_BW_CONFIG_MM
+ccflags-y += -DMMDVFS_HOOK
+ccflags-y += -DVCORE_READY
+SUPPORT_QOS := false
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+obj-y += mmdvfs_mgr_v3.o
+obj-y += mmdvfs_mgr_util.o
+obj-y += mmdvfs_profile_adaptor.o
+SUPPORT_USE_DDR_TYPE := true
 else ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
 ccflags-y += -DSMI_CER
 ccflags-y += -DMMDVFS_HOOK
