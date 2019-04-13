@@ -2760,7 +2760,8 @@ void mt_accdet_pm_restore_noirq(void)
 }
 
 /*///////////////////////IPO_Hend/////////////////*/
-long mt_accdet_unlocked_ioctl(unsigned int cmd, unsigned long arg)
+long mt_accdet_unlocked_ioctl(struct file *file, unsigned int cmd,
+	unsigned long arg)
 {
 	switch (cmd) {
 	case ACCDET_INIT:
