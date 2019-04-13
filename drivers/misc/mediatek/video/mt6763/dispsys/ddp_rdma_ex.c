@@ -421,7 +421,7 @@ void rdma_set_ultra_l(unsigned int idx, unsigned int bpp, void *handle,
 		fifo_valid_size = 128;
 	}
 	issue_req_threshold =
-	    min(fifo_valid_size - issue_req_offset, 255);
+	    min(fifo_valid_size - issue_req_offset, 255U);
 
 	/* output valid should < total rdma data size, or hang will happen */
 	temp = rdma_golden_setting->rdma_width;
