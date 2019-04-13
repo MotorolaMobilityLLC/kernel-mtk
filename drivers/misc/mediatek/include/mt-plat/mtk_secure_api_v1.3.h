@@ -16,7 +16,6 @@
 #define _MT_SECURE_API_V1_3_H_
 
 #include <linux/kernel.h>
-#include <mt-plat/sync_write.h>
 
 #if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 #define _STORAGE_HW_CRYPTO
