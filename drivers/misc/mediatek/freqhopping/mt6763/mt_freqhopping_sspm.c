@@ -35,6 +35,8 @@
 #include <linux/seq_file.h>
 #include <linux/of_address.h>
 
+#define FH_BUG_ON WARN_ON
+
 /***********************************/
 /* Other global variable			*/
 /***********************************/
@@ -641,6 +643,7 @@ static int mt_fh_hal_dfs_armpll(unsigned int coreid, unsigned int dds)
 	return 0;
 }
 
+#if 0
 static int mt_fh_hal_dfs_mmpll(unsigned int target_dds)
 {
 	return mt_fh_hal_general_pll_dfs(FH_MM_PLLID, target_dds);
@@ -733,6 +736,7 @@ static int fh_dvfs_proc_write(struct file *file, const char *buffer,
 #endif
 	return count;
 }
+#endif
 
 /* #define UINT_MAX (unsigned int)(-1) */
 static int fh_dumpregs_proc_read(struct seq_file *m, void *v)
@@ -912,13 +916,13 @@ static int __reg_base_addr_init(void)
 static void __global_var_init(void) {}
 
 /* TODO: __init void mt_freqhopping_init(void) */
-static void mt_fh_hal_init(void)
+static int mt_fh_hal_init(void)
 {
 
 	FH_MSG_DEBUG("EN: %s", __func__);
 
 	if (g_initialize == 1)
-		return;
+		return 0;
 
 	/* Init relevant register base address by device tree */
 	__reg_base_addr_init();
@@ -929,6 +933,8 @@ static void mt_fh_hal_init(void)
 	g_initialize = 1;
 
 	FH_MSG("%s done", __func__);
+
+	return 0;
 }
 
 static void mt_fh_hal_lock(unsigned long *flags)
@@ -945,7 +951,7 @@ static void mt_fh_hal_unlock(unsigned long *flags)
 
 static int mt_fh_hal_get_init(void) { return g_initialize; }
 
-static int mt_fh_hal_is_support_DFS_mode(void) { return true; }
+//static int mt_fh_hal_is_support_DFS_mode(void) { return true; }
 
 /* TODO: module_init(mt_freqhopping_init); */
 /* TODO: module_exit(cpufreq_exit); */
@@ -1045,34 +1051,34 @@ static void __ioctl(unsigned int ctlid, void *arg)
 
 static struct mt_fh_hal_driver g_fh_hal_drv = {
 	.fh_pll = g_fh_pll,
-	.fh_usrdef = mt_ssc_fhpll_userdefined,
+	//.fh_usrdef = mt_ssc_fhpll_userdefined,
 	.fh_pll_set = mt_fh_pll_struct_set,
 	.fh_pll_get = mt_fh_pll_struct_get,
 	/*.fh_usrdef = mt_fh_usrdef_set,*/
 	.pll_cnt = FH_PLL_NUM,
-	.proc.dumpregs_read = fh_dumpregs_proc_read,
-	.proc.dvfs_read = fh_dvfs_proc_read,
-	.proc.dvfs_write = fh_dvfs_proc_write,
+	.mt_fh_hal_dumpregs_read = fh_dumpregs_proc_read,
+	//.proc.dvfs_read = fh_dvfs_proc_read,
+	//.proc.dvfs_write = fh_dvfs_proc_write,
 	.mt_fh_hal_init = mt_fh_hal_init,
 	.mt_fh_hal_ctrl = __freqhopping_ctrl,
 	.mt_fh_lock = mt_fh_hal_lock,
 	.mt_fh_unlock = mt_fh_hal_unlock,
 	.mt_fh_get_init = mt_fh_hal_get_init,
-	.mt_fh_popod_restore = mt_fh_hal_popod_restore,
-	.mt_fh_popod_save = mt_fh_hal_popod_save,
-	.mt_l2h_mempll = NULL,
-	.mt_h2l_mempll = NULL,
+	//.mt_fh_popod_restore = mt_fh_hal_popod_restore,
+	//.mt_fh_popod_save = mt_fh_hal_popod_save,
+	//.mt_l2h_mempll = NULL,
+	//.mt_h2l_mempll = NULL,
 	.mt_dfs_armpll = mt_fh_hal_dfs_armpll,
-	.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
-	.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll, /* TODO: should set to NULL */
-	.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
-	.mt_l2h_dvfs_mempll =
-	mt_fh_hal_l2h_dvfs_mempll, /* TODO: should set to NULL */
-	.mt_h2l_dvfs_mempll =
-	mt_fh_hal_h2l_dvfs_mempll, /* TODO: should set to NULL */
-	.mt_dram_overclock = mt_fh_hal_dram_overclock,
-	.mt_get_dramc = mt_fh_hal_get_dramc,
-	.mt_fh_default_conf = mt_fh_hal_default_conf,
+	//.mt_dfs_mmpll = mt_fh_hal_dfs_mmpll,
+	//.mt_dfs_vencpll = mt_fh_hal_dfs_vencpll, /* TODO:set to NULL*/
+	//.mt_is_support_DFS_mode = mt_fh_hal_is_support_DFS_mode,
+	//.mt_l2h_dvfs_mempll =
+	//mt_fh_hal_l2h_dvfs_mempll, /* TODO: should set to NULL */
+	//.mt_h2l_dvfs_mempll =
+	//mt_fh_hal_h2l_dvfs_mempll, /* TODO: should set to NULL */
+	//.mt_dram_overclock = mt_fh_hal_dram_overclock,
+	//.mt_get_dramc = mt_fh_hal_get_dramc,
+	.mt_fh_hal_default_conf = mt_fh_hal_default_conf,
 	.mt_dfs_general_pll = mt_fh_hal_general_pll_dfs,
 	.ioctl = __ioctl};
 
