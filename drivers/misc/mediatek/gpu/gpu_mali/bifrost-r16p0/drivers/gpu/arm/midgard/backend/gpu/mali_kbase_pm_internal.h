@@ -558,6 +558,14 @@ void kbase_pm_cache_snoop_disable(struct kbase_device *kbdev);
 void kbase_devfreq_set_core_mask(struct kbase_device *kbdev, u64 core_mask);
 #endif
 
+#ifdef ENABLE_COMMON_DVFS
+struct kbase_device *mtk_get_mali_dev(void);
+void MTKCalGpuUtilization(unsigned int *pui32Loading, unsigned int *pui32Block, unsigned int *pui32Idle);
+u32 kbasep_get_gl_utilization(void);
+u32 kbasep_get_cl_js0_utilization(void);
+u32 kbasep_get_cl_js1_utilization(void);
+#endif /* ENABLE_COMMON_DVFS */
+
 /**
  * kbase_pm_reset_start_locked - Signal that GPU reset has started
  * @kbdev: Device pointer

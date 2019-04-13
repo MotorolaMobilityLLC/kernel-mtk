@@ -3376,8 +3376,9 @@ static int kbase_jd_user_buf_map(struct kbase_context *kctx,
 	pinned_pages = get_user_pages(NULL, mm,
 			address,
 			alloc->imported.user_buf.nr_pages,
-			reg->flags & KBASE_REG_GPU_WR,
-			0, pages, NULL);
+			/* Modified by MTK to fix build error on a new sub version of kernel-4.4 */
+			reg->flags & KBASE_REG_GPU_WR ? FOLL_WRITE : 0,
+			pages, NULL);
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 	pinned_pages = get_user_pages_remote(NULL, mm,
 			address,

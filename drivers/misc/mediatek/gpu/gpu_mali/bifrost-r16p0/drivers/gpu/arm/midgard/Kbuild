@@ -18,7 +18,8 @@
 # SPDX-License-Identifier: GPL-2.0
 #
 #
-
+#include $(src)/Kbuild-mtk-custom-env
+include $(src)/platform/mtk_platform_common/Kbuild
 
 # Driver version string which is returned to userspace via an ioctl
 MALI_RELEASE_NAME ?= "r16p0-01rel0"
@@ -34,7 +35,8 @@ MALI_USE_CSF ?= 0
 MALI_UNIT_TEST ?= 0
 MALI_KERNEL_TEST_API ?= 0
 MALI_COVERAGE ?= 0
-CONFIG_MALI_PLATFORM_NAME ?= "devicetree"
+MALI_INSTRUMENTATION_LEVEL ?= 0
+CONFIG_MALI_PLATFORM_NAME ?= $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME)
 
 # Set up our defines, which will be passed to gcc
 DEFINES = \
@@ -43,6 +45,7 @@ DEFINES = \
 	-DMALI_KERNEL_TEST_API=$(MALI_KERNEL_TEST_API) \
 	-DMALI_UNIT_TEST=$(MALI_UNIT_TEST) \
 	-DMALI_COVERAGE=$(MALI_COVERAGE) \
+	-DMALI_INSTRUMENTATION_LEVEL=$(MALI_INSTRUMENTATION_LEVEL) \
 	-DMALI_RELEASE_NAME=\"$(MALI_RELEASE_NAME)\"
 
 ifeq ($(KBUILD_EXTMOD),)
@@ -121,6 +124,7 @@ ifeq ($(MALI_CUSTOMER_RELEASE),0)
 	SRC += mali_kbase_regs_dump_debugfs.c
 endif
 
+SRC += mali_gputrace.c
 
 ccflags-y += -I$(KBASE_PATH)
 

@@ -1632,6 +1632,9 @@ struct kbase_device {
 	/* See KBASE_JS_*_PRIORITY_MODE for details. */
 	u32 js_ctx_scheduling_mode;
 
+#if defined(CONFIG_MACH_MT6763)
+	void *mtk_config;
+#endif
 };
 
 /**

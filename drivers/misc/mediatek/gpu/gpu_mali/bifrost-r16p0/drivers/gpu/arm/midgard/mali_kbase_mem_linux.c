@@ -1106,7 +1106,9 @@ static struct kbase_va_region *kbase_mem_from_user_buffer(
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 6, 0)
 	faulted_pages = get_user_pages(current, current->mm, address, *va_pages,
-			reg->flags & KBASE_REG_GPU_WR, 0, pages, NULL);
+			/* Modified by MTK to fix build error on a new sub version of kernek-4.4 */
+			reg->flags & KBASE_REG_GPU_WR ? FOLL_WRITE : 0,
+			pages, NULL);
 #elif LINUX_VERSION_CODE < KERNEL_VERSION(4, 9, 0)
 	faulted_pages = get_user_pages(address, *va_pages,
 			reg->flags & KBASE_REG_GPU_WR, 0, pages, NULL);

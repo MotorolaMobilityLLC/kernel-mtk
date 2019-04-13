@@ -110,6 +110,38 @@ static LIST_HEAD(kbase_dev_list);
 
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"
 
+#ifdef ENABLE_COMMON_DVFS
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include "platform/mtk_platform_common.h"
+
+/* MTK GPU DVFS */
+#include <mali_kbase_pm_internal.h>
+#include <ged_dvfs.h>
+static struct kbase_device *g_malidev;
+
+struct kbase_device *mtk_get_mali_dev(void)
+{
+	return g_malidev;
+}
+
+void mtk_gpu_dvfs_commit(unsigned long ui32NewFreqID, GED_DVFS_COMMIT_TYPE eCommitType, int *pbCommited)
+{
+	int ret;
+
+	ret = mtk_set_mt_gpufreq_target(ui32NewFreqID);
+
+	if (pbCommited) {
+		if (ret == 0) {
+			*pbCommited = true;
+		} else {
+			*pbCommited = false;
+		}
+	}
+
+}
+#endif /* ENABLE_COMMON_DVFS */
+
 static int kbase_api_handshake(struct kbase_context *kctx,
 			       struct kbase_ioctl_version_check *version)
 {
@@ -414,6 +446,7 @@ static int kbase_open(struct inode *inode, struct file *filp)
 
 	init_waitqueue_head(&kctx->event_queue);
 	filp->private_data = kctx;
+	/* Add by MTK to fix mmap fail */
 	filp->f_mode |= FMODE_UNSIGNED_OFFSET;
 	kctx->filp = filp;
 
@@ -3617,6 +3650,8 @@ static int kbase_platform_device_remove(struct platform_device *pdev)
 	}
 #endif
 
+	if (mtk_common_deinit(pdev, kbdev))
+		pr_info("[MALI] fail to mtk_common_deinit\n");
 
 	if (kbdev->inited_subsys & inited_dev_list) {
 		dev_list = kbase_dev_list_get();
@@ -3791,6 +3826,15 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	}
 	kbdev->inited_subsys |= inited_gpu_device;
 #endif /* CONFIG_MALI_NO_MALI */
+
+	/* MTK */
+	err |= mtk_common_init(pdev, kbdev);
+	err |= mtk_platform_init(pdev, kbdev);
+	if (err) {
+		pr_info("[MALI] GPU: mtk_platform_init fail!\n");
+		return err;
+	}
+	/********/
 
 	err = assign_irqs(pdev);
 	if (err) {
@@ -3975,6 +4019,13 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		return err;
 	}
 	kbdev->inited_subsys |= inited_job_fault;
+#ifdef ENABLE_MTK_MEMINFO
+	mtk_kbase_gpu_memory_debug_init();
+#endif /* ENABLE_MTK_MEMINFO */
+
+#ifdef CONFIG_PROC_FS
+	proc_mali_register();
+#endif /* CONFIG_PROC_FS */
 
 	err = kbase_device_debugfs_init(kbdev);
 	if (err) {
@@ -4041,6 +4092,21 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		kbase_platform_device_remove(pdev);
 		return err;
 	}
+
+#ifdef ENABLE_COMMON_DVFS
+	g_malidev = kbdev;
+
+	{
+		extern void (*ged_dvfs_cal_gpu_utilization_fp)(unsigned int *pui32Loading,
+				unsigned int *pui32Block, unsigned int *pui32Idle);
+		extern void (*ged_dvfs_gpu_freq_commit_fp)(unsigned long ui32NewFreqID,
+				GED_DVFS_COMMIT_TYPE eCommitType, int *pbCommited);
+
+		ged_dvfs_cal_gpu_utilization_fp = MTKCalGpuUtilization;
+		ged_dvfs_gpu_freq_commit_fp = mtk_gpu_dvfs_commit;
+
+	}
+#endif /* ENABLE_COMMON_DVFS */
 
 	dev_info(kbdev->dev,
 			"Probed as %s\n", dev_name(kbdev->mdev.this_device));
