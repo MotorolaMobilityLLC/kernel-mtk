@@ -23,6 +23,7 @@
 #include "usb20.h"
 
 #include <mt-plat/mtk_boot_common.h>
+#include <mt-plat/charger_type.h>
 
 #ifdef FPGA_PLATFORM
 #include <linux/i2c.h>
@@ -586,8 +587,8 @@ void do_connection_work(struct work_struct *data)
 
 	if (!mtk_musb->power && (usb_on == true)) {
 		/* enable usb */
-		if (!wake_lock_active(&mtk_musb->usb_lock)) {
-			wake_lock(&mtk_musb->usb_lock);
+		if (!mtk_musb->usb_lock.active) {
+			__pm_stay_awake(&mtk_musb->usb_lock);
 			DBG(0, "lock\n");
 		} else {
 			DBG(0, "already lock\n");
@@ -598,9 +599,9 @@ void do_connection_work(struct work_struct *data)
 	} else if (mtk_musb->power && (usb_on == false)) {
 		/* disable usb */
 		musb_stop(mtk_musb);
-		if (wake_lock_active(&mtk_musb->usb_lock)) {
+		if (mtk_musb->usb_lock.active) {
 			DBG(0, "unlock\n");
-			wake_unlock(&mtk_musb->usb_lock);
+			__pm_relax(&mtk_musb->usb_lock);
 		} else {
 			DBG(0, "lock not active\n");
 		}
@@ -694,25 +695,24 @@ static void do_usb20_test_connect_work(struct work_struct *work)
 }
 void mt_usb_connect_test(int start)
 {
-	static struct wake_lock device_test_wakelock;
+	static struct wakeup_source device_test_wakelock;
 	static int wake_lock_inited;
 
 	if (!wake_lock_inited) {
 		DBG(0, "%s wake_lock_init\n", __func__);
-		wake_lock_init(&device_test_wakelock, WAKE_LOCK_SUSPEND,
-			       "device.test.lock");
+		wakeup_source_init(&device_test_wakelock, "device.test.lock");
 		wake_lock_inited = 1;
 	}
 
 	if (start) {
-		wake_lock(&device_test_wakelock);
+		__pm_stay_awake(&device_test_wakelock);
 		usb20_test_connect = 1;
 		INIT_DELAYED_WORK(&usb20_test_connect_work,
-				  do_usb20_test_connect_work);
+				do_usb20_test_connect_work);
 		schedule_delayed_work(&usb20_test_connect_work, 0);
 	} else {
 		usb20_test_connect = 0;
-		wake_unlock(&device_test_wakelock);
+		__pm_relax(&device_test_wakelock);
 	}
 }
 
@@ -1488,7 +1488,7 @@ static int __init mt_usb_init(struct musb *musb)
 	musb->usb_rev6_setting = usb_rev6_setting;
 #endif
 
-	wake_lock_init(&musb->usb_lock, WAKE_LOCK_SUSPEND, "USB suspend lock");
+	wakeup_source_init(&musb->usb_lock, "USB suspend lock");
 
 #ifndef FPGA_PLATFORM
 	reg_vusb = regulator_get(musb->controller, "vusb");
