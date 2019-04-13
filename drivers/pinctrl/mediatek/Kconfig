@@ -6,6 +6,30 @@ config PINCTRL_MTK
 	select GPIOLIB
 	select OF_GPIO
 
+config PINCTRL_MTK_V2
+	bool "MediaTek Pinctrl Support V2"
+	depends on OF
+	select PINMUX
+	select GENERIC_PINCONF
+	select GPIOLIB
+	select OF_GPIO
+
+config EINT_MTK
+	bool "MediaTek External Interrupt driver that is based on PINCTRL_MTK_V2"
+	depends on PINCTRL_MTK_MOORE || PINCTRL_MTK_PARIS
+	select IRQ_DOMAIN
+	help
+	  Say yes here to enable support for MediaTek External Interrupt
+	  (EINT) driver based on PINCTRL_MTK version 2.
+	  This driver is combined with MediaTek Pinctrl driver version 2
+	  so PINCTRL_MTK_V2 shall be set first.
+
+config PINCTRL_MTK_PARIS
+	bool "MediaTek Paris Core that implements vendor binding"
+	depends on OF
+	select PINCTRL_MTK_V2
+	select EINT_MTK
+
 config PINCTRL_MT6758
 	bool "Mediatek MT6758 pin control"
 	default n
@@ -21,6 +45,12 @@ config PINCTRL_MT6761
 	select PINCTRL_MTK
 	select PINCTRL_MTK_NO_UPSTREAM
 	select MTK_EINT_MULTI_TRIGGER_DESIGN
+
+config PINCTRL_MT6763
+	bool "Mediatek MT6763 pin control"
+	default n
+	depends on MACH_MT6763
+	select PINCTRL_MTK_PARIS
 
 config PINCTRL_MT6765
 	bool "Mediatek MT6765 pin control"
