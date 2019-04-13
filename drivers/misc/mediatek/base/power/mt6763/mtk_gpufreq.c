@@ -2901,6 +2901,12 @@ EXPORT_SYMBOL(mt_gpufreq_get_cur_volt);
 /************************************************
  * register / unregister GPU input boost notifiction CB
  *************************************************/
+
+/*****************
+ * input boost notification
+ ******************/
+typedef void (*gpufreq_input_boost_notify)(unsigned int);
+
 void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB)
 {
 #ifdef MT_GPUFREQ_INPUT_BOOST
