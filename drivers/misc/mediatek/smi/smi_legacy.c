@@ -34,6 +34,9 @@
 #if IS_ENABLED(CONFIG_MACH_MT6758)
 #include <clk-mt6758-pg.h>
 #include "smi_config_default.h"
+#elif IS_ENABLED(CONFIG_MACH_MT6763)
+#include <clk-mt6763-pg.h>
+#include "smi_config_default.h"
 #elif IS_ENABLED(CONFIG_MACH_MT6765)
 #include <clk-mt6765-pg.h>
 #include "smi_config_mt6765.h"
