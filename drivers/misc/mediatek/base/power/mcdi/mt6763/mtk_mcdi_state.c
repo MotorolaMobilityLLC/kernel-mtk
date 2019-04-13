@@ -13,8 +13,9 @@
 
 #include <linux/cpumask.h>
 
-#include <spm/mtk_idle.h>
+#include <mtk_idle.h>
 #include <mtk_mcdi.h>
+#include <mtk_idle_mcdi.h>
 #include <mtk_mcdi_state.h>
 #include <mtk_mcdi_plat.h>
 
