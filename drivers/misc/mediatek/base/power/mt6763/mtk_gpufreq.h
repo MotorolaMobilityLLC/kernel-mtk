@@ -17,6 +17,8 @@
 #include <linux/module.h>
 #include <linux/clk.h>
 
+#define DRV_Reg32(addr) readl(addr)
+
 #define MAX_VCO_VALUE	3800000
 #define MIN_VCO_VALUE	1500000
 

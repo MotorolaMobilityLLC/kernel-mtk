@@ -3099,20 +3099,22 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	mt_gpufreq_clk->clk_mux = devm_clk_get(&pdev->dev, "clk_mux");
 	if (IS_ERR(mt_gpufreq_clk->clk_mux)) {
-		gpufreq_err(&pdev->dev, "cannot get clock mux\n");
+		gpufreq_err("@%s: cannot get clock mux\n", __func_);
 		return PTR_ERR(mt_gpufreq_clk->clk_mux);
 	}
 
 	mt_gpufreq_clk->clk_main_parent = devm_clk_get(&pdev->dev,
 						"clk_main_parent");
 	if (IS_ERR(mt_gpufreq_clk->clk_main_parent)) {
-		gpufreq_err(&pdev->dev, "cannot get main clock parent\n");
+		gpufreq_err("@%s: cannot get main clock parent\n",
+			__func__);
 		return PTR_ERR(mt_gpufreq_clk->clk_main_parent);
 	}
 	mt_gpufreq_clk->clk_sub_parent = devm_clk_get(&pdev->dev,
 						"clk_sub_parent");
 	if (IS_ERR(mt_gpufreq_clk->clk_sub_parent)) {
-		gpufreq_err(&pdev->dev, "cannot get sub clock parent\n");
+		gpufreq_err("@%s: cannot get sub clock parent\n",
+			__func__);
 		return PTR_ERR(mt_gpufreq_clk->clk_sub_parent);
 	}
 
@@ -3153,14 +3155,16 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 		mt_gpufreq_pmic->reg_vproc = regulator_get(&pdev->dev, "vproc");
 		if (IS_ERR(mt_gpufreq_pmic->reg_vproc)) {
-			gpufreq_err(&pdev->dev, "cannot get vproc\n");
+			gpufreq_err("@%s: cannot get vproc\n",
+				__func__);
 			return PTR_ERR(mt_gpufreq_pmic->reg_vproc);
 		}
 
 		mt_gpufreq_pmic->reg_vsram =
 			regulator_get(&pdev->dev, "vsram_gpu");
 		if (IS_ERR(mt_gpufreq_pmic->reg_vsram)) {
-			gpufreq_err(&pdev->dev, "cannot get vsram_gpu\n");
+			gpufreq_err("@%s: cannot get vsram_gpu\n",
+				__func__);
 			return PTR_ERR(mt_gpufreq_pmic->reg_vsram);
 		}
 	} else {
@@ -3168,7 +3172,8 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 			kzalloc(sizeof(struct mt_gpufreq_pmic_t), GFP_KERNEL);
 		mt_gpufreq_pmic->reg_vcore = regulator_get(&pdev->dev, "vcore");
 		if (IS_ERR(mt_gpufreq_pmic->reg_vcore)) {
-			gpufreq_err(&pdev->dev, "cannot get vcore\n");
+			gpufreq_err("@%s: cannot get vcore\n",
+				__func__);
 			return PTR_ERR(mt_gpufreq_pmic->reg_vcore);
 		}
 	}
