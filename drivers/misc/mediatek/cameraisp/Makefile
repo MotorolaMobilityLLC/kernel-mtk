@@ -17,6 +17,6 @@ obj-y += src/
 obj-y += rsc/
 obj-y += wpe/
 obj-y += dpe/
-obj-y += tsf/
+#obj-y += tsf/
 obj-y += mfb/
 obj-y += fdvt/
