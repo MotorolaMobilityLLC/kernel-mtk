@@ -155,4 +155,6 @@ void mt_fh_popod_restore(void);
 void mt_fh_unlock(void);
 void mt_fh_lock(void);
 
+struct mt_fh_hal_driver *mt_get_fh_hal_drv(void);
+
 #endif /* !__MT_FREQHOPPING_H__ */
