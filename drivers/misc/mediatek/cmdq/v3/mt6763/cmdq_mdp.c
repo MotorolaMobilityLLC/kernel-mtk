@@ -13,7 +13,6 @@
 #include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
-#include "cmdq_sec_iwc_common.h"
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
@@ -475,7 +474,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		break;
 	case CMDQ_ENG_MDP_WROT0:
 		if (enable)
-			smi_bus_enable(SMI_LARB_MMSYS0, "MDPSRAM");
+			smi_bus_prepare_enable(SMI_LARB0_REG_INDX,
+				"MDPSRAM", true);
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
 		if (true == enable) {
 			/* Set MDP_WROT0 DCM enable */
@@ -486,7 +486,8 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			CMDQ_REG_SET32(register_address, register_value);
 		}
 		if (!enable)
-			smi_bus_disable(SMI_LARB_MMSYS0, "MDPSRAM");
+			smi_bus_disable_unprepare(SMI_LARB0_REG_INDX,
+				"MDPSRAM", true);
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);
