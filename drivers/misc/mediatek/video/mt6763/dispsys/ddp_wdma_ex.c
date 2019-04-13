@@ -85,7 +85,7 @@ int wdma_reset(enum DISP_MODULE_ENUM module, void *handle)
 	return 0;
 }
 
-unsigned int ddp_wdma_get_cur_addr(void)
+unsigned int ddp_wdma_get_cur_addr(enum DISP_MODULE_ENUM module)
 {
 	return INREG32(DISP_REG_WDMA_DST_ADDR0);
 }
