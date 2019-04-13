@@ -18,8 +18,7 @@
 
 
 /* #define MTK_LCD_HW_3D_SUPPORT */
-#define ALIGN_TO(x, n)  \
-	(((x) + ((n) - 1)) & ~((n) - 1))
+#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
 
 /* #define EXTD_DEBUG_SUPPORT */
 

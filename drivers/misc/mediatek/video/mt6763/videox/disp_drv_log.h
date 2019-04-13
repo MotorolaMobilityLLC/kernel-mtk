@@ -40,6 +40,13 @@
 		pr_debug("[DISP]" string, ##args);                            \
 	} while (0)
 
+#define DISPERR(string, args...)                                             \
+	do {                                                                  \
+		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);          \
+		pr_debug("[DISP][%s #%d]warn:" string, __func__, __LINE__,    \
+			 ##args);                                             \
+	} while (0)
+
 #define DISPWARN(string, args...)                                             \
 	do {                                                                  \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);          \

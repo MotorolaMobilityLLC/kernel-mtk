@@ -24,7 +24,7 @@ static const char *const gM4U_SMILARB[] = {
 		    1                                                         \
 	}
 
-m4u_port_t gM4uPort[] = {
+struct m4u_port_t gM4uPort[] = {
 
 	M4U0_PORT_INIT("DISP_OVL0", 0, 0, 0),
 	M4U0_PORT_INIT("DISP_2L_OVL0_LARB0", 0, 0, 1),

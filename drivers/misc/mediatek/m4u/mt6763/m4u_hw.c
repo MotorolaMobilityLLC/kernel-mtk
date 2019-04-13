@@ -37,17 +37,17 @@ static unsigned int gM4UTagCount[] = {64};
 /* static M4U_RANGE_DES_T gM4u0_seq[M4U0_SEQ_NR] = {{0}}; */
 
 /* static M4U_RANGE_DES_T gM4u1_seq[M4U1_SEQ_NR] = {{0}}; */
-static M4U_RANGE_DES_T *gM4USeq[] = {NULL, NULL};
+static struct M4U_RANGE_DES_T *gM4USeq[] = {NULL, NULL};
 /*static M4U_MAU_STATUS_T gM4u0_mau[M4U0_MAU_NR] = { {0} };*/
 
 /*static int gMAU_candidate_id = M4U0_MAU_NR - 1;*/
 
 static DEFINE_MUTEX(gM4u_seq_mutex);
 
-static M4U_PROG_DIST_T gM4U0_prog_pfh[M4U0_PROG_PFH_NR] = { {0} };
+static struct M4U_PROG_DIST_T gM4U0_prog_pfh[M4U0_PROG_PFH_NR] = { {0} };
 
 /* static M4U_PROG_DIST_T gM4u1_prog_pfh[M4U0_PROG_PFH_NR] = {{0}}; */
-static M4U_PROG_DIST_T *gM4UProgPfh[] = {gM4U0_prog_pfh, NULL};
+static struct M4U_PROG_DIST_T *gM4UProgPfh[] = {gM4U0_prog_pfh, NULL};
 
 static DEFINE_MUTEX(gM4u_prog_pfh_mutex);
 
@@ -275,7 +275,7 @@ int mau_start_monitor(int m4u_id, int m4u_slave_id, int mau_set, int wr,
 	return 0;
 }
 
-int config_mau(M4U_MAU_STRUCT mau)
+int config_mau(struct M4U_MAU_STRUCT mau)
 {
 	return 0;
 }
@@ -429,14 +429,15 @@ unsigned int m4u_get_main_tag(int m4u_id, int m4u_slave_id, int idx)
 	return M4U_ReadReg32(m4u_base, REG_MMU_MAIN_TAG(m4u_slave_id, idx));
 }
 
-void m4u_get_main_tlb(int m4u_id, int m4u_slave_id, int idx, mmu_tlb_t *pTlb)
+void m4u_get_main_tlb(int m4u_id, int m4u_slave_id, int idx,
+				struct mmu_tlb_t *pTlb)
 {
 	pTlb->tag = m4u_get_main_tag(m4u_id, m4u_slave_id, idx);
 	pTlb->desc = m4u_get_main_descriptor(m4u_id, m4u_slave_id, idx);
 }
 
 unsigned int m4u_get_pfh_tlb(int m4u_id, int set, int page, int way,
-			     mmu_tlb_t *pTlb)
+				struct mmu_tlb_t *pTlb)
 {
 	unsigned int regValue = 0;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
@@ -456,7 +457,7 @@ unsigned int m4u_get_pfh_tlb(int m4u_id, int set, int page, int way,
 
 unsigned int m4u_get_pfh_tag(int m4u_id, int set, int page, int way)
 {
-	mmu_tlb_t tlb;
+	struct mmu_tlb_t tlb;
 
 	m4u_get_pfh_tlb(m4u_id, set, page, way, &tlb);
 	return tlb.tag;
@@ -464,7 +465,7 @@ unsigned int m4u_get_pfh_tag(int m4u_id, int set, int page, int way)
 
 unsigned int m4u_get_pfh_descriptor(int m4u_id, int set, int page, int way)
 {
-	mmu_tlb_t tlb;
+	struct mmu_tlb_t tlb;
 
 	m4u_get_pfh_tlb(m4u_id, set, page, way, &tlb);
 	return tlb.desc;
@@ -474,7 +475,7 @@ int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id)
 {
 	/* M4U related */
 	unsigned int i = 0;
-	mmu_tlb_t tlb;
+	struct mmu_tlb_t tlb;
 
 	M4ULOG_HIGH("dump main tlb: m4u %d  ====>\n", m4u_id);
 	for (i = 0; i < gM4UTagCount[m4u_id]; i++) {
@@ -490,7 +491,7 @@ int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id)
 int m4u_dump_invalid_main_tlb(int m4u_id, int m4u_slave_id)
 {
 	unsigned int i = 0;
-	mmu_tlb_t tlb;
+	struct mmu_tlb_t tlb;
 
 	M4UMSG("dump inv main tlb=>\n");
 	for (i = 0; i < gM4UTagCount[m4u_id]; i++) {
@@ -535,7 +536,7 @@ int m4u_dump_pfh_tlb(int m4u_id)
 	for (way = 0; way < way_nr; way++) {
 		for (set = 0; set < set_nr; set++) {
 			int page;
-			mmu_tlb_t tlb;
+			struct mmu_tlb_t tlb;
 
 			regval = M4U_ReadReg32(
 			    m4u_base, REG_MMU_PFH_VLD(m4u_id, set, way));
@@ -561,7 +562,7 @@ int m4u_dump_pfh_tlb(int m4u_id)
 	return result;
 }
 
-int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
+int m4u_get_pfh_tlb_all(int m4u_id, struct mmu_pfh_tlb_t *pfh_buf)
 {
 	unsigned int regval;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
@@ -575,7 +576,7 @@ int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
 	for (way = 0; way < way_nr; way++) {
 		for (set = 0; set < set_nr; set++) {
 			int page;
-			mmu_tlb_t tlb;
+			struct mmu_tlb_t tlb;
 
 			regval = M4U_ReadReg32(
 			    m4u_base, REG_MMU_PFH_VLD(m4u_id, set, way));
@@ -609,7 +610,8 @@ int m4u_get_pfh_tlb_all(int m4u_id, mmu_pfh_tlb_t *pfh_buf)
 	return 0;
 }
 
-unsigned int m4u_get_victim_tlb(int m4u_id, int page, int way, mmu_tlb_t *pTlb)
+unsigned int m4u_get_victim_tlb(int m4u_id, int page, int way,
+				struct mmu_tlb_t *pTlb)
 {
 	unsigned int regValue = 0;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_id];
@@ -652,7 +654,7 @@ int m4u_dump_victim_tlb(int m4u_id)
 
 	for (way = 0; way < way_nr; way++) {
 		int page;
-		mmu_tlb_t tlb;
+		struct mmu_tlb_t tlb;
 
 		regval = M4U_ReadReg32(m4u_base, REG_MMU_VICT_VLD);
 		valid = !!(regval & F_MMU_VICT_VLD_BIT(way));
@@ -957,7 +959,7 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en,
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 	unsigned long larb_base;
 	unsigned int larb, larb_port;
-	M4U_PROG_DIST_T *pProgPfh;
+	struct M4U_PROG_DIST_T *pProgPfh;
 
 	larb = m4u_port_2_larb_id(port);
 	larb_port = m4u_port_2_larb_port(port);
@@ -1038,7 +1040,7 @@ int m4u_invalid_prog_dist_by_id(int port)
 	int m4u_index = m4u_port_2_m4u_id(port);
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
-	M4U_PROG_DIST_T *pProgPfh = gM4UProgPfh[m4u_index] +
+	struct M4U_PROG_DIST_T *pProgPfh = gM4UProgPfh[m4u_index] +
 				    M4U_PROG_PFH_NUM(m4u_index) * m4u_slave_id;
 
 	mutex_lock(&gM4u_prog_pfh_mutex);
@@ -1073,7 +1075,7 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart,
 	int i, free_id = -1;
 	unsigned int m4u_index = m4u_port_2_m4u_id(port);
 	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
-	M4U_RANGE_DES_T *pSeq =
+	struct M4U_RANGE_DES_T *pSeq =
 	    gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index) * m4u_slave_id;
 
 	M4ULOG_MID(
@@ -1105,7 +1107,7 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart,
 			else {
 				M4ULOG_HIGH(
 					"insert range overlap!: larb=%d,module=%s\n",
-					m4u_port_2_larbid(port),
+					m4u_port_2_larb_id(port),
 					m4u_get_port_name(port));
 				M4ULOG_HIGH(
 				"warning: tlb range overlapped with previous ranges, current process=%s,!\n",
@@ -1164,7 +1166,7 @@ int m4u_invalid_seq_range_by_id(int port, int seq_id)
 	int m4u_index = m4u_port_2_m4u_id(port);
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
-	M4U_RANGE_DES_T *pSeq =
+	struct M4U_RANGE_DES_T *pSeq =
 	    gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index) * m4u_slave_id;
 	int ret = 0;
 
@@ -1430,7 +1432,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 }
 
 void m4u_get_perf_counter(int m4u_index, int m4u_slave_id,
-			  M4U_PERF_COUNT *pM4U_perf_count)
+			  struct M4U_PERF_COUNT *pM4U_perf_count)
 {
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
@@ -1470,7 +1472,7 @@ int m4u_monitor_start(int m4u_id)
 
 int m4u_monitor_stop(int m4u_id)
 {
-	M4U_PERF_COUNT cnt;
+	struct M4U_PERF_COUNT cnt;
 	int m4u_index = m4u_id;
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 
@@ -1492,7 +1494,7 @@ int m4u_monitor_stop(int m4u_id)
 
 void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg)
 {
-	M4U_PERF_COUNT cnt;
+	struct M4U_PERF_COUNT cnt;
 
 	M4UINFO("====m4u performance count for %s m4u%d_%d======\n", msg,
 		m4u_index, m4u_slave_id);
@@ -1855,7 +1857,7 @@ int m4u_unregister_fault_callback(int port)
 	return 0;
 }
 
-int m4u_enable_tf(unsigned int port, bool fgenable)
+int m4u_enable_tf(int port, bool fgenable)
 {
 	if (port < 0 || port >= M4U_PORT_UNKNOWN) {
 		M4UMSG("%s fail,m port=%d\n", __func__, port);

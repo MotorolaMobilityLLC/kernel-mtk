@@ -36,6 +36,6 @@ extern unsigned int g_extd_mobilelog;
 
 #define EXTDMSG(string, args...) DISPMSG("[EXTD]" string, ##args)
 
-#define EXTDERR(string, args...) DISPERR("[EXTD]" string, ##args)
+#define EXTDERR(string, args...) pr_debug("[EXTD]" string, ##args)
 
 #endif

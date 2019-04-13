@@ -234,8 +234,8 @@ int m4u_dump_pfh_tlb(int m4u_id);
 int m4u_dump_victim_tlb(int m4u_id);
 int m4u_domain_init(struct m4u_device *m4u_dev, void *priv_reserve);
 
-int config_mau(M4U_MAU_STRUCT mau);
-int m4u_enable_tf(unsigned int port, bool fgenable);
+int config_mau(struct M4U_MAU_STRUCT mau);
+int m4u_enable_tf(int port, bool fgenable);
 
 extern int gM4U_4G_DRAM_Mode;
 

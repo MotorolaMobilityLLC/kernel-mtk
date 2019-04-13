@@ -138,7 +138,7 @@ struct _t_hdmi_context {
 #define MTK_HDMI_NO_FENCE_FD ((int)(-1)) /* ((int)(~0U>>1)) */
 #define MTK_HDMI_NO_ION_FD ((int)(-1))   /* ((int)(~0U>>1)) */
 
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 #define hdmi_abs(a) (((a) < 0) ? -(a) : (a))
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */

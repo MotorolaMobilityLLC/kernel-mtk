@@ -14,7 +14,6 @@
 #include <linux/sched.h>
 #include <linux/dma-mapping.h>
 #include "val_types_private.h"
-#include "val_log.h"
 #include "drv_api.h"
 
 /* #define VCODEC_DEBUG */

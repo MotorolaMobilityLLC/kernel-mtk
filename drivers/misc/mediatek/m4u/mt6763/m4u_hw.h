@@ -114,7 +114,7 @@ struct M4U_PROG_DIST_T { /* prog pfh dist */
 	unsigned int sel;
 };
 
-extern m4u_port_t gM4uPort[];
+extern struct m4u_port_t gM4uPort[];
 extern int gM4u_port_num;
 
 static inline char *m4u_get_port_name(M4U_PORT_ID portID)
