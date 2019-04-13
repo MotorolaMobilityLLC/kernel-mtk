@@ -14,11 +14,11 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
+#include <mach/upmu_sw.h>
+#include <mach/upmu_hw.h>
+#include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_api_buck.h"
-#include <mach/upmu_hw.h>
-#include <mach/upmu_sw.h>
-#include <mt-plat/upmu_common.h>
 
 /* ---------------------------------------------------------------  */
 /* pmic_<type>_<name>_lp (<user>, <op_en>, <op_cfg>) */

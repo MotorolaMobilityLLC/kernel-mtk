@@ -10,13 +10,13 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/kthread.h>
-#include <linux/list.h>
-#include <linux/pm_wakeup.h>
-#include <mt-plat/mtk_battery.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_battery.h>
+#include <linux/list.h>
+#include <linux/device.h>
+#include <linux/delay.h>
+#include <linux/kthread.h>
+#include <linux/pm_wakeup.h>
 
 static struct list_head fgtimer_head = LIST_HEAD_INIT(fgtimer_head);
 static struct mutex fgtimer_lock;

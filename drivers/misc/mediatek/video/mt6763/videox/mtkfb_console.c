@@ -12,13 +12,13 @@
  */
 
 #include <linux/font.h>
+#include <linux/string.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
-#include <linux/string.h>
 
+#include "mtkfb_console.h"
 #include "ddp_hal.h"
 #include "debug.h"
-#include "mtkfb_console.h"
 
 /* ---------------------------------------------------------------------------
  */

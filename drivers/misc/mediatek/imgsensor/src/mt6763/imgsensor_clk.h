@@ -14,10 +14,10 @@
 #ifndef __IMGSENSOR_CLK_H__
 #define __IMGSENSOR_CLK_H__
 
-#include "imgsensor_common.h"
 #include <linux/atomic.h>
-#include <kd_imgsensor_define.h>
 #include <linux/platform_device.h>
+#include <kd_imgsensor_define.h>
+#include "imgsensor_common.h"
 
 extern void mipi_26m_en(unsigned int module_idx, int en);
 

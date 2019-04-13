@@ -13,12 +13,12 @@
 
 #ifndef _DDP_REG_H_
 #define _DDP_REG_H_
-#include "cmdq_core.h"
-#include "cmdq_record.h"
-#include "ddp_hal.h"
-#include "display_recorder.h"
-#include "mt-plat/aee.h"
 #include "mt-plat/sync_write.h"
+#include "mt-plat/aee.h"
+#include "display_recorder.h"
+#include "cmdq_record.h"
+#include "cmdq_core.h"
+#include "ddp_hal.h"
 
 #define UINT32 unsigned int
 

@@ -14,8 +14,8 @@
 #include "ddp_m4u.h"
 #include "ddp_dump.h"
 #include "ddp_hal.h"
-#include "ddp_log.h"
 #include "ddp_reg.h"
+#include "ddp_log.h"
 #include "disp_helper.h"
 
 #ifdef CONFIG_MTK_IOMMU

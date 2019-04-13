@@ -13,15 +13,15 @@
 
 #include <linux/kthread.h>
 
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "display_recorder.h"
-#include "extd_log.h"
 #include "extd_multi_control.h"
-#include "extd_platform.h"
+#include "disp_drv_platform.h"
 #include "external_display.h"
+#include "extd_platform.h"
+#include "extd_log.h"
 #include "mtk_ovl.h"
+#include "display_recorder.h"
 #include "mtkfb_fence.h"
+#include "disp_drv_log.h"
 #ifdef EXTD_DUAL_PIPE_SWITCH_SUPPORT
 #include "layering_rule.h"
 #endif

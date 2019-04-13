@@ -22,11 +22,11 @@
 #include <mach/mtk_clkmgr.h>
 #endif
 /* #include <mach/mt_irq.h> */
-#include "disp_assert_layer.h"
 #include "mt-plat/sync_write.h"
+#include "disp_assert_layer.h"
 
-#include "ddp_drv.h"
 #include "ddp_hal.h"
+#include "ddp_drv.h"
 #include "ddp_path.h"
 
 /* #include <mach/mt6585_pwm.h> */

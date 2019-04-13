@@ -13,9 +13,9 @@
 
 #ifndef _COMPAT_MTK_DISP_MGR_H_
 #define _COMPAT_MTK_DISP_MGR_H_
-#include "mtk_disp_mgr.h"
-#include <linux/compat.h>
 #include <linux/uaccess.h>
+#include <linux/compat.h>
+#include "mtk_disp_mgr.h"
 
 #include "disp_session.h"
 

@@ -11,58 +11,58 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/debugfs.h>
-#include <linux/delay.h>
-#include <linux/fb.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/kthread.h>
-#include <linux/sched.h>
-#include <linux/sched.h>
 #include <linux/string.h>
 #include <linux/time.h>
-#include <linux/time.h>
 #include <linux/uaccess.h>
+#include <linux/fb.h>
 #include <linux/vmalloc.h>
+#include <linux/sched.h>
+#include <linux/debugfs.h>
 #include <linux/wait.h>
+#include <linux/time.h>
+#include <linux/delay.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+#include <linux/sched.h>
+#include <linux/kthread.h>
 
+#include "m4u.h"
 #include "ddp_m4u.h"
+#include "disp_drv_log.h"
+#include "mtkfb.h"
+#include "debug.h"
+#include "lcm_drv.h"
 #include "ddp_ovl.h"
 #include "ddp_path.h"
 #include "ddp_reg.h"
-#include "debug.h"
-#include "disp_drv_log.h"
-#include "display_recorder.h"
-#include "lcm_drv.h"
-#include "m4u.h"
-#include "mtk_disp_mgr.h"
-#include "mtkfb.h"
 #include "primary_display.h"
+#include "mtk_disp_mgr.h"
+#include "display_recorder.h"
 #ifdef CONFIG_MTK_LEGACY
-#include <cust_gpio_usage.h>
 #include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
 #endif
-#include "ddp_dsi.h"
-#include "ddp_log.h"
-#include "ddp_manager.h"
-#include "disp_helper.h"
 #include "mtkfb_fence.h"
+#include "disp_helper.h"
+#include "ddp_manager.h"
+#include "ddp_log.h"
+#include "ddp_dsi.h"
 
-#include "cmdq_core.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include "ddp_clkmgr.h"
-#include "disp_arr.h"
+#include "cmdq_core.h"
 #include "disp_lowpower.h"
-#include "disp_partial.h"
+#include "disp_arr.h"
 #include "disp_recovery.h"
-#include "ion.h"
-#include "ion_drv.h"
-#include "layering_rule.h"
+#include "disp_partial.h"
 #include "mtk_ion.h"
+#include "ion_drv.h"
+#include "ion.h"
+#include "layering_rule.h"
+#include "ddp_clkmgr.h"
 
 static struct dentry *mtkfb_dbgfs;
 unsigned int g_mobilelog;

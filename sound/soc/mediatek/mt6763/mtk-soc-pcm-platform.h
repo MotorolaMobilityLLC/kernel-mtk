@@ -44,59 +44,59 @@
 #ifndef AUDIO_MT6797_SOUND_H
 #define AUDIO_MT6797_SOUND_H
 
+#include "mtk-auddrv-common.h"
+#include "mtk-soc-pcm-common.h"
+#include "mtk-auddrv-def.h"
 #include "mtk-auddrv-afe.h"
 #include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-clk.h"
-#include "mtk-auddrv-common-func.h"
-#include "mtk-auddrv-common.h"
-#include "mtk-auddrv-def.h"
 #include "mtk-auddrv-kernel.h"
 #include "mtk-soc-afe-control.h"
-#include "mtk-soc-pcm-common.h"
 #include "mtk-soc-pcm-platform.h"
+#include "mtk-auddrv-common-func.h"
 
-#include <linux/completion.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
 #include <linux/kernel.h>
-#include <linux/miscdevice.h>
-#include <linux/mm.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/sched.h>
+#include <linux/init.h>
+#include <linux/device.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/fs.h>
+#include <linux/completion.h>
+#include <linux/mm.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/dma-mapping.h>
 #include <linux/vmalloc.h>
+#include <linux/platform_device.h>
+#include <linux/miscdevice.h>
 #include <linux/wait.h>
+#include <linux/spinlock.h>
+#include <linux/sched.h>
 /*#include <linux/wakelock.h>*/
+#include <linux/semaphore.h>
+#include <linux/jiffies.h>
+#include <linux/proc_fs.h>
+#include <linux/string.h>
+#include <linux/mutex.h>
+#include <linux/uaccess.h>
+#include <linux/irq.h>
+#include <linux/io.h>
 #include <asm/div64.h>
+#include <mt-plat/aee.h>
+#include <mt-plat/upmu_common.h>
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/gpio.h>
-#include <linux/io.h>
-#include <linux/irq.h>
-#include <linux/jiffies.h>
-#include <linux/mutex.h>
 #include <linux/platform_device.h>
-#include <linux/proc_fs.h>
-#include <linux/semaphore.h>
 #include <linux/slab.h>
-#include <linux/string.h>
-#include <linux/uaccess.h>
-#include <mt-plat/aee.h>
-#include <mt-plat/upmu_common.h>
 #include <sound/core.h>
-#include <sound/jack.h>
-#include <sound/pcm.h>
-#include <sound/soc-dapm.h>
 #include <sound/soc.h>
+#include <sound/soc-dapm.h>
+#include <sound/pcm.h>
+#include <sound/jack.h>
 
 /* #define EFUSE_HP_TRIM */
-#define CHIP_SRAM_SIZE (60 * 1024)
+#define CHIP_SRAM_SIZE (60*1024)
 
 /*
  *	PCM buffer size and period size setting

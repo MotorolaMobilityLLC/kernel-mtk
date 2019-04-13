@@ -31,14 +31,14 @@
  *============================================================================
  ****************************************************************************/
 
-#include <linux/atomic.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/fs.h>
+#include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
 #include <linux/uaccess.h>
-#include <linux/videodev2.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
 /* #include <asm/system.h> */
 /* #include <linux/xlog.h> */
 #include <linux/types.h>
@@ -51,14 +51,15 @@
 
 #include "imx376mipiraw_Sensor.h"
 
+
 #define PFX "IMX376_camera_sensor"
 
 #define USE_REMOSAIC 1
 #ifdef VENDOR_EDIT /* lanhe add */
 #define USE_KTHREAD
 #ifdef USE_KTHREAD
-#include <linux/kthread.h>
 #include <linux/semaphore.h>
+#include <linux/kthread.h>
 static struct semaphore vendor_sem;
 static struct semaphore close_sem;
 static bool ms_work_mode;

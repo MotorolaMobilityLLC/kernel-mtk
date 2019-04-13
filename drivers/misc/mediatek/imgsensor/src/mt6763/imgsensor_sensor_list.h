@@ -14,8 +14,8 @@
 #ifndef __KD_SENSORLIST_H__
 #define __KD_SENSORLIST_H__
 
-#include "imgsensor_sensor.h"
 #include "kd_camera_typedef.h"
+#include "imgsensor_sensor.h"
 
 struct IMGSENSOR_INIT_FUNC_LIST {
 	MUINT32 id;

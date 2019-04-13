@@ -11,13 +11,13 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "include/regulator_codegen.h"
-#include "include/pmic.h"
-#include "include/pmic_api.h"
-#include "include/pmic_api_buck.h"
-#include "include/pmic_api_ldo.h"
 #include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
+#include "include/pmic.h"
+#include "include/pmic_api.h"
+#include "include/pmic_api_ldo.h"
+#include "include/pmic_api_buck.h"
+#include "include/regulator_codegen.h"
 
 static const int vsim1_voltages[] = {
 	1700000, 1800000, 2700000, 3000000, 3100000,

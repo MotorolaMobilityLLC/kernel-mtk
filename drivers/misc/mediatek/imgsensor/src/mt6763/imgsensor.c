@@ -11,16 +11,16 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
-#include <linux/types.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
 #include <linux/uaccess.h>
+#include <linux/fs.h>
+#include <linux/slab.h>
+#include <linux/module.h>
 #include <linux/workqueue.h>
+#include <linux/init.h>
+#include <linux/types.h>
 
 #ifdef CONFIG_MTK_SMI_EXT
 #include "mmdvfs_mgr.h"
@@ -41,19 +41,19 @@
 #include "ccu_inc.h"
 #endif
 
-#include "kd_camera_feature.h"
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
+#include "kd_camera_feature.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "imgsensor.h"
 #include "imgsensor_cfg_table.h"
-#include "imgsensor_clk.h"
+#include "imgsensor_sensor_list.h"
 #include "imgsensor_hw.h"
 #include "imgsensor_i2c.h"
 #include "imgsensor_proc.h"
-#include "imgsensor_sensor_list.h"
+#include "imgsensor_clk.h"
+#include "imgsensor.h"
 
 #ifdef CONFIG_MTK_SMI_EXT
 static int current_mmsys_clk = MMSYS_CLK_MEDIUM;

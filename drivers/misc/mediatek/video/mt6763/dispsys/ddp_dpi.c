@@ -17,9 +17,9 @@
 #include <asm/arch/disp_drv_platform.h>
 #else
 #include <linux/delay.h>
-#include <linux/mutex.h>
-#include <linux/string.h>
 #include <linux/time.h>
+#include <linux/string.h>
+#include <linux/mutex.h>
 
 #include "cmdq_record.h"
 #include <disp_drv_log.h>
@@ -35,23 +35,24 @@
 #include "ddp_clkmgr.h"
 /* #include <mach/irqs.h> */
 
-#include <linux/interrupt.h>
 #include <linux/sched.h>
+#include <linux/interrupt.h>
 #include <linux/wait.h>
 
-#include "ddp_dpi.h"
-#include "ddp_dpi_reg.h"
+#include "mtkfb.h"
 #include "ddp_drv.h"
 #include "ddp_hal.h"
-#include "ddp_log.h"
 #include "ddp_manager.h"
-#include "ddp_path.h"
+#include "ddp_dpi_reg.h"
+#include "ddp_dpi.h"
 #include "ddp_reg.h"
-#include "mtkfb.h"
+#include "ddp_log.h"
+#include "ddp_path.h"
+
 
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 /*#include <mach/eint.h>*/
 
 #ifndef LOG_TAG

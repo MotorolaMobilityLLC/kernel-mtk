@@ -11,31 +11,31 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/errno.h>
 #include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/ioport.h>
-#include <linux/irqreturn.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
+#include <linux/device.h>
+#include <linux/ioport.h>
+#include <linux/errno.h>
 #include <linux/spi/spi.h>
-#include <linux/types.h>
 #include <linux/workqueue.h>
+#include <linux/dma-mapping.h>
+#include <linux/platform_device.h>
+#include <linux/interrupt.h>
+#include <linux/irqreturn.h>
+#include <linux/types.h>
+#include <linux/delay.h>
 #if !defined(CONFIG_MTK_CLKMGR)
 #include <linux/clk.h>
-#endif /* !defined(CONFIG_MTK_CLKMGR) */
+#endif				/* !defined(CONFIG_MTK_CLKMGR) */
 #include <linux/err.h>
 #include <linux/io.h>
-#include <linux/pm_wakeup.h>
-#include <linux/sched.h>
 #include <linux/spinlock.h>
+#include <linux/sched.h>
+#include <linux/pm_wakeup.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 #endif
 /*#include <mach/irqs.h>*/
 #include "mtk_spi.h"

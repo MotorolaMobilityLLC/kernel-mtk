@@ -17,9 +17,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sspm_define.h"
-#include <linux/module.h> /* needed by all modules */
+#include <linux/module.h>       /* needed by all modules */
 #include <mt-plat/sync_write.h>
+#include "sspm_define.h"
+
 
 #if SSPM_EMI_PROTECTION_SUPPORT
 #include <mt_emi_api.h>

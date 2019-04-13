@@ -11,15 +11,17 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/debugfs.h>
-#include <linux/init.h>
-#include <linux/kernel.h>
+
 #include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/debugfs.h>
 #include <linux/seq_file.h>
 #include <linux/uaccess.h>
-#include <mtk_musb.h>
 #include <musb_core.h>
 #include <musb_debug.h>
+#include <mtk_musb.h>
+
 #define MYDBG(fmt, args...)                                                   \
 	pr_debug("MTK_ICUSB [DBG], <%s(), %d> " fmt, __func__, __LINE__, ##args)
 

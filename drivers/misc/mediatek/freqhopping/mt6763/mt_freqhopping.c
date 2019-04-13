@@ -11,28 +11,28 @@
  * GNU General Public License for more details.
  */
 
-#include "mach/mtk_fhreg.h"
-#include "mach/mtk_freqhopping.h"
-#include "mt_freqhopping_drv.h"
-#include "sync_write.h"
-#include <linux/delay.h>
-#include <linux/dma-mapping.h>
-#include <linux/io.h>
-#include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/miscdevice.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/proc_fs.h>
+#include <linux/kernel.h>
 #include <linux/sched.h>
-#include <linux/sched_clock.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
+#include <linux/proc_fs.h>
 #include <linux/uaccess.h>
+#include <linux/io.h>
+#include <linux/platform_device.h>
+#include <linux/miscdevice.h>
+#include <linux/sched_clock.h>
 #include <linux/vmalloc.h>
+#include <linux/dma-mapping.h>
+#include "mach/mtk_freqhopping.h"
+#include "mach/mtk_fhreg.h"
+#include "sync_write.h"
+#include "mt_freqhopping_drv.h"
 #ifdef HP_EN_REG_SEMAPHORE_PROTECT
 #include "mt_cpufreq_hybrid.h"
 #endif
-#include <linux/of_address.h>
 #include <linux/seq_file.h>
+#include <linux/of_address.h>
 
 /***********************************/
 /* Other global variable			*/

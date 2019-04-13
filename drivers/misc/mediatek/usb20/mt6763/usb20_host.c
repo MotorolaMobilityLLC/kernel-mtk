@@ -12,26 +12,26 @@
  */
 
 #ifdef CONFIG_USB_MTK_OTG
-#include "musb_core.h"
-#include "musbhsdma.h"
-#include "usb20.h"
-#include <linux/gpio.h>
-#include <linux/init.h>
-#include <linux/io.h>
-#include <linux/kernel.h>
-#include <linux/list.h>
 #include <linux/module.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#include <linux/platform_device.h>
+#include <linux/kernel.h>
 #include <linux/sched.h>
+#include <linux/init.h>
+#include <linux/list.h>
+#include <linux/gpio.h>
+#include <linux/io.h>
+#include "musb_core.h"
+#include <linux/platform_device.h>
+#include "musbhsdma.h"
 #include <linux/switch.h>
+#include "usb20.h"
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
 #ifdef CONFIG_USB_C_SWITCH
 #include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
-#include <linux/mutex.h>
 #include <linux/workqueue.h>
+#include <linux/mutex.h>
 static struct notifier_block otg_nb;
 static struct tcpc_device *otg_tcpc_dev;
 static struct delayed_work register_otg_work;

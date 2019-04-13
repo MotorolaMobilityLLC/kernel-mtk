@@ -13,31 +13,31 @@
 
 #define LOG_TAG "DSI"
 
-#include "ddp_dsi.h"
-#include "ddp_drv.h"
-#include "ddp_dump.h"
-#include "ddp_irq.h"
-#include "ddp_log.h"
-#include "ddp_manager.h"
-#include "ddp_mmp.h"
-#include "ddp_reg.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "disp_helper.h"
-#include "mt-plat/sync_write.h"
-#include "mtkfb.h"
-#include <debug.h>
 #include <linux/delay.h>
-#include <linux/interrupt.h>
+#include <linux/time.h>
+#include <linux/string.h>
 #include <linux/mutex.h>
 #include <linux/sched.h>
-#include <linux/string.h>
-#include <linux/time.h>
+#include <linux/interrupt.h>
 #include <linux/wait.h>
+#include "mt-plat/sync_write.h"
+#include <debug.h>
+#include "disp_drv_log.h"
+#include "disp_drv_platform.h"
+#include "mtkfb.h"
+#include "ddp_drv.h"
+#include "ddp_manager.h"
+#include "ddp_dump.h"
+#include "ddp_irq.h"
+#include "ddp_dsi.h"
+#include "ddp_log.h"
+#include "ddp_mmp.h"
+#include "disp_helper.h"
+#include "ddp_reg.h"
 
 #ifdef CONFIG_MTK_LEGACY
-#include <cust_gpio_usage.h>
 #include <mach/mt_gpio.h>
+#include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
 #endif

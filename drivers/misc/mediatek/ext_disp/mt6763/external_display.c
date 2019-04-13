@@ -12,50 +12,51 @@
  */
 
 #include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/vmalloc.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/vmalloc.h>
 
-#include "mtkfb.h"
 #include "mtkfb_info.h"
+#include "mtkfb.h"
 
-#include "ddp_drv.h"
-#include "ddp_dump.h"
 #include "ddp_hal.h"
-#include "ddp_info.h"
+#include "ddp_dump.h"
 #include "ddp_path.h"
+#include "ddp_drv.h"
+#include "ddp_info.h"
 
-#include "cmdq_core.h"
+#include <m4u.h>
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include <m4u.h>
+#include "cmdq_core.h"
 
-#include "ddp_clkmgr.h"
 #include "ddp_manager.h"
 #include "ddp_mmp.h"
 #include "ddp_ovl.h"
 #include "ddp_reg.h"
+#include "ddp_clkmgr.h"
 #include "lcm_drv.h"
 
-#include "extd_hdmi_types.h"
-#include "extd_log.h"
 #include "extd_platform.h"
+#include "extd_log.h"
 #include "extd_utils.h"
+#include "extd_hdmi_types.h"
 #include "external_display.h"
 
+#include "disp_session.h"
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
-#include "disp_session.h"
 #include "display_recorder.h"
 #include "extd_info.h"
 
-#include "disp_drv_log.h"
 #include "mtkfb_fence.h"
+#include "disp_drv_log.h"
+
 
 #if (defined CONFIG_MTK_HDMI_SUPPORT)
 #else

@@ -11,9 +11,9 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "imgsensor_clk.h"
-#include "imgsensor_common.h"
 #include <linux/clk.h>
+#include "imgsensor_common.h"
+#include "imgsensor_clk.h"
 
 char *gimgsensor_mclk_name[IMGSENSOR_MCLK_MAX_NUM] = {
 	"TOP_CAMTG_SEL",    "TOP_CAMTG2_SEL",   "TOP_CLK26M",

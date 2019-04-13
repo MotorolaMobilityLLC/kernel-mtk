@@ -11,9 +11,9 @@
  * GNU General Public License for more details.
  */
 
-#include "ccu_i2c_hw.h"
 #include "ccu_cmn.h"
 #include "ccu_i2c.h"
+#include "ccu_i2c_hw.h"
 #include "ccu_n3d_a.h"
 
 static unsigned long g_n3d_base;

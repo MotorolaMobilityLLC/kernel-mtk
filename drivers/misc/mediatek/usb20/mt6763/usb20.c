@@ -11,22 +11,22 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/dma-mapping.h>
 #include <linux/module.h>
-#include <linux/of_address.h>
-#include <linux/platform_device.h>
 #include <linux/usb/usb_phy_generic.h>
+#include <linux/dma-mapping.h>
+#include <linux/platform_device.h>
+#include <linux/of_address.h>
 
-#include "mtk_musb.h"
 #include "musb_core.h"
+#include "mtk_musb.h"
 #include "musbhsdma.h"
 #include "usb20.h"
 
 #include <mt-plat/mtk_boot_common.h>
 
 #ifdef FPGA_PLATFORM
-#include "mtk-phy-a60810.h"
 #include <linux/i2c.h>
+#include "mtk-phy-a60810.h"
 #endif
 
 #ifdef CONFIG_MTK_MUSB_QMU_SUPPORT

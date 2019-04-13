@@ -11,9 +11,9 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include "disp_drv_log.h"
 #include "disp_rect.h"
 #include "ddp_info.h"
-#include "disp_drv_log.h"
 
 int rect_isEmpty(const struct disp_rect *in)
 {

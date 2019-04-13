@@ -15,14 +15,14 @@
 
 #include "ddp_log.h"
 
-#include "DpDataType.h"
-#include "ddp_irq.h"
-#include "ddp_met.h"
-#include "ddp_ovl.h"
-#include "ddp_path.h"
-#include "ddp_rdma.h"
-#include "ddp_reg.h"
 #include <mt-plat/met_drv.h>
+#include "ddp_irq.h"
+#include "ddp_reg.h"
+#include "ddp_met.h"
+#include "ddp_path.h"
+#include "ddp_ovl.h"
+#include "ddp_rdma.h"
+#include "DpDataType.h"
 
 #define DDP_IRQ_EER_ID (0xFFFF0000)
 #define DDP_IRQ_FPS_ID (DDP_IRQ_EER_ID + 1)

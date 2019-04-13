@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+
 #include <linux/delay.h>
 #include <linux/time.h>
 
@@ -18,18 +19,19 @@
 
 #include <mt-plat/upmu_common.h>
 
-#include "include/pmic_throttling_dlpt.h"
-#include <linux/math64.h>
-#include <linux/proc_fs.h>
 #include <mach/mtk_battery_property.h>
 #include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_battery.h>
-#include <mt-plat/mtk_rtc.h>
-#include <mt-plat/mtk_rtc_hal_common.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_rtc_hal_common.h>
+#include <mt-plat/mtk_rtc.h>
+#include "include/pmic_throttling_dlpt.h"
+#include <linux/proc_fs.h>
+#include <linux/math64.h>
 
-#include <mtk_battery_internal.h>
 #include <mtk_gauge_class.h>
+#include <mtk_battery_internal.h>
+
 
 #define UNIT_FGCURRENT (314331)
 /* mt6356 314.331 uA */

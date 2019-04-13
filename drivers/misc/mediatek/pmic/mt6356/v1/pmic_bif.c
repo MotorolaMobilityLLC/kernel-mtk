@@ -11,11 +11,11 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "include/pmic.h"
-#include <linux/delay.h>
-#include <linux/errno.h>
-#include <mt-plat/charging.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/charging.h>
+#include <linux/errno.h>
+#include <linux/delay.h>
+#include "include/pmic.h"
 
 static bool bif_exist;
 static bool bif_checked;

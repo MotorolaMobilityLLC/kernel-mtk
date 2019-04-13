@@ -11,14 +11,15 @@
  * GNU General Public License for more details.
  */
 
+
 #ifndef __DDP_DRV_H__
 #define __DDP_DRV_H__
-#include "ddp_aal.h"
-#include "ddp_gamma.h"
+#include <linux/ioctl.h>
 #include "ddp_hal.h"
 #include "ddp_info.h"
+#include "ddp_aal.h"
+#include "ddp_gamma.h"
 #include "ddp_pq.h"
-#include <linux/ioctl.h>
 
 struct DISP_WRITE_REG {
 	unsigned int reg;

@@ -15,11 +15,11 @@
 #include <linux/delay.h>
 #include <linux/string.h>
 
-#include "kd_camera_feature.h"
 #include "kd_camera_typedef.h"
+#include "kd_camera_feature.h"
 
-#include "imgsensor_hw.h"
 #include "imgsensor_sensor.h"
+#include "imgsensor_hw.h"
 
 char *imgsensor_sensor_idx_name[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {
 	IMGSENSOR_SENSOR_IDX_NAME_MAIN, IMGSENSOR_SENSOR_IDX_NAME_SUB,

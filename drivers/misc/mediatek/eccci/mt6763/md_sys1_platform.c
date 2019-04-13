@@ -11,15 +11,15 @@
  * GNU General Public License for more details.
  */
 
-#include "ccci_config.h"
-#include <linux/clk.h>
+#include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
-#include <linux/platform_device.h>
+#include <linux/of_address.h>
+#include "ccci_config.h"
+#include <linux/clk.h>
 #include <mach/mtk_pbm.h>
 #include <mt_emi_api.h>
 
@@ -27,16 +27,16 @@
 #include <mach/mt6605.h>
 #endif
 
-#include "ccci_core.h"
-#include "ccci_platform.h"
 #include "include/pmic_api_buck.h"
-#include "port_ipc.h"
 #include <mt-plat/upmu_common.h>
 #include <mtk_spm_sleep.h>
 #include <mtk_vcorefs_manager.h>
+#include "ccci_core.h"
+#include "ccci_platform.h"
+#include "port_ipc.h"
 
-#include "cldma_reg.h"
 #include "md_sys1_platform.h"
+#include "cldma_reg.h"
 #include "modem_reg_base.h"
 
 #define ON 1

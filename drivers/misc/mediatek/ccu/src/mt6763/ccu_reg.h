@@ -14,9 +14,9 @@
 #ifndef _MT6799_CCU_REG_H_
 #define _MT6799_CCU_REG_H_
 
-#include "CCU_A_c_header.h"
-#include "ccu_sw_ver.h"
 #include <sync_write.h>
+#include "ccu_sw_ver.h"
+#include "CCU_A_c_header.h"
 
 /*For CCU_A_c_header_v2*/
 /*

@@ -11,63 +11,63 @@
  * GNU General Public License for more details.
  */
 
-#include "disp_assert_layer.h"
 #include <generated/autoconf.h>
+#include <linux/module.h>
+#include <linux/mm.h>
+#include <linux/init.h>
+#include <linux/fb.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fb.h>
-#include <linux/init.h>
-#include <linux/kthread.h>
-#include <linux/mm.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
 #include <linux/platform_device.h>
-#include <linux/semaphore.h>
+#include <linux/dma-mapping.h>
+#include <linux/kthread.h>
 #include <linux/vmalloc.h>
+#include "disp_assert_layer.h"
+#include <linux/semaphore.h>
+#include <linux/mutex.h>
 /* #include <linux/leds-mt65xx.h> */
-#include <linux/atomic.h>
-#include <linux/dma-buf.h>
+#include <linux/suspend.h>
+#include <linux/of_fdt.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include <linux/of_fdt.h>
-#include <linux/suspend.h>
+#include <linux/dma-buf.h>
 #include <linux/uaccess.h>
+#include <linux/atomic.h>
 /* #include <asm/mach-types.h> */
-#include "ion_drv.h"
-#include "mt-plat/dma.h"
 #include <asm/cacheflush.h>
 #include <linux/io.h>
+#include "ion_drv.h"
+#include "mt-plat/dma.h"
 /* #include <mach/irqs.h> */
-#include "mt-plat/aee.h"
-#include <linux/compat.h>
 #include <linux/dma-mapping.h>
+#include <linux/compat.h>
+#include "mt-plat/aee.h"
 
-#include "compat_mtkfb.h"
-#include "ddp_clkmgr.h"
-#include "ddp_dump.h"
-#include "ddp_hal.h"
-#include "ddp_log.h"
-#include "ddp_m4u.h"
-#include "ddp_ovl.h"
-#include "debug.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "disp_dts_gpio.h"
-#include "disp_helper.h"
-#include "disp_lcm.h"
-#include "disp_recovery.h"
-#include "display_recorder.h"
-#include "extd_multi_control.h"
-#include "fbconfig_kdebug_x.h"
 #include "mt-plat/mtk_boot.h"
-#include "mtk_boot.h"
-#include "mtk_ovl.h"
+#include "debug.h"
+#include "ddp_hal.h"
+#include "disp_drv_log.h"
+#include "disp_lcm.h"
 #include "mtkfb.h"
 #include "mtkfb_console.h"
 #include "mtkfb_fence.h"
 #include "mtkfb_info.h"
+#include "ddp_ovl.h"
+#include "disp_drv_platform.h"
 #include "primary_display.h"
+#include "ddp_dump.h"
+#include "display_recorder.h"
+#include "fbconfig_kdebug_x.h"
+#include "mtk_ovl.h"
+#include "mtk_boot.h"
+#include "disp_helper.h"
+#include "compat_mtkfb.h"
+#include "disp_dts_gpio.h"
+#include "disp_recovery.h"
+#include "ddp_clkmgr.h"
+#include "ddp_log.h"
+#include "ddp_m4u.h"
+#include "extd_multi_control.h"
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) &&                               \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
@@ -75,8 +75,8 @@
 #ifndef _UAPI__ASMARM_SETUP_H
 #define _UAPI__ASMARM_SETUP_H
 #endif
-#include "ddp_dsi.h"
 #include <mt-plat/mtk_ccci_common.h>
+#include "ddp_dsi.h"
 
 /* static variable */
 static u32 MTK_FB_XRES;

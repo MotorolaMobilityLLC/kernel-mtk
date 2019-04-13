@@ -13,13 +13,13 @@
 
 #include <linux/slab.h>
 
-#include "ddp_manager.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "disp_lcm.h"
-#include "lcm_define.h"
-#include "lcm_drv.h"
 #include <linux/types.h>
+#include "disp_drv_log.h"
+#include "lcm_drv.h"
+#include "lcm_define.h"
+#include "disp_drv_platform.h"
+#include "ddp_manager.h"
+#include "disp_lcm.h"
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>

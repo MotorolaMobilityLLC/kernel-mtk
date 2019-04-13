@@ -25,8 +25,8 @@ extern enum UNIFIED_COLOR_FMT force_dc_buf_fmt;
 extern int layer_layout_allow_non_continuous;
 extern unsigned long long idle_check_interval;
 
-#include "ddp_info.h"
 #include "disp_session.h"
+#include "ddp_info.h"
 #include "display_recorder.h"
 extern int disp_layer_info_statistic(struct disp_ddp_path_config *last_config,
 				     struct disp_frame_cfg_t *cfg);

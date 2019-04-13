@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+
 #include <generated/autoconf.h>
 #include <linux/delay.h>
 #include <linux/device.h>
@@ -21,15 +22,15 @@
 #include <linux/of_irq.h>
 #include <linux/sched.h>
 
+#include <mt-plat/aee.h>
+#include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_reboot.h>
+#include <mach/mtk_pmic_wrap.h>
+#include <mach/mtk_pmic.h>
 #include "include/pmic.h"
-#include "include/pmic_debugfs.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
-#include <mach/mtk_pmic.h>
-#include <mach/mtk_pmic_wrap.h>
-#include <mt-plat/aee.h>
-#include <mt-plat/mtk_reboot.h>
-#include <mt-plat/upmu_common.h>
+#include "include/pmic_debugfs.h"
 
 #if defined(CONFIG_MTK_KERNEL_POWER_OFF_CHARGING)
 #include <mt-plat/mtk_boot_common.h>

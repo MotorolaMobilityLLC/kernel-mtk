@@ -12,25 +12,25 @@
  */
 
 #define LOG_TAG "RDMA"
-#include "ddp_rdma_ex.h"
-#include "ddp_clkmgr.h"
-#include "ddp_dump.h"
-#include "ddp_info.h"
 #include "ddp_log.h"
-#include "ddp_m4u.h"
+#include "ddp_clkmgr.h"
+#include <linux/delay.h>
+#include "ddp_info.h"
+#include "ddp_reg.h"
 #include "ddp_matrix_para.h"
 #include "ddp_rdma.h"
-#include "ddp_reg.h"
+#include "ddp_rdma_ex.h"
+#include "ddp_dump.h"
 #include "lcm_drv.h"
 #include "primary_display.h"
-#include <linux/delay.h>
+#include "ddp_m4u.h"
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
-/* #include "pcm_def.h" */    /* FIXME: tmp comment */
-#include "mtk_smi.h"
+/* #include "pcm_def.h" */ /* FIXME: tmp comment */
 #include "mtk_spm.h"
+#include "mtk_smi.h"
 /* #include "mmdvfs_mgr.h" */
-#include "ddp_mmp.h"
 #include "disp_lowpower.h"
+#include "ddp_mmp.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)

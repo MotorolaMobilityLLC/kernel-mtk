@@ -11,16 +11,16 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "cmdq_record.h"
-#include "ddp_manager.h"
-#include "disp_drv_log.h"
-#include "disp_lcm.h"
-#include "disp_rect.h"
-#include "disp_session.h"
-#include "primary_display.h"
-#include <linux/of.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
+#include <linux/of.h>
+#include "disp_session.h"
+#include "disp_drv_log.h"
+#include "cmdq_record.h"
+#include "disp_rect.h"
+#include "ddp_manager.h"
+#include "disp_lcm.h"
+#include "primary_display.h"
 
 #include "disp_partial.h"
 

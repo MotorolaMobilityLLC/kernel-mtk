@@ -12,21 +12,21 @@
  */
 
 #define pr_fmt(fmt) "[" KBUILD_MODNAME "] " fmt
-#include "mtk_chip_common.h"
-#include <linux/cdev.h>
-#include <linux/device.h>
-#include <linux/fs.h>
-#include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/module.h>
-#include <linux/of.h>
-#include <linux/of_address.h>
-#include <linux/platform_device.h>
-#include <linux/printk.h>
-#include <linux/proc_fs.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/interrupt.h>
 #include <linux/spinlock.h>
 #include <linux/uaccess.h>
+#include <linux/platform_device.h>
+#include <linux/proc_fs.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/printk.h>
 #include <mt-plat/mtk_io.h>
+#include "mtk_chip_common.h"
 
 extern u32 __attribute__((weak)) get_devinfo_with_index(u32);
 

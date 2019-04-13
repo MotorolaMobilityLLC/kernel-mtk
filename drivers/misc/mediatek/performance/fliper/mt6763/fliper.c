@@ -11,21 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/kallsyms.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/printk.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/string.h>
-#include <linux/uaccess.h>
+#include <linux/kallsyms.h>
 #include <linux/utsname.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/uaccess.h>
+#include <linux/printk.h>
+#include <linux/string.h>
 
 #include <linux/platform_device.h>
 
-#include <mtk_dramc.h>
 #include <mtk_vcorefs_governor.h>
 #include <mtk_vcorefs_manager.h>
+#include <mtk_dramc.h>
 
 #define SEQ_printf(m, x...)                                                   \
 	do {                                                                  \

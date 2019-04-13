@@ -14,9 +14,9 @@
 #ifndef __DDP_PATH_MANAGER_H__
 #define __DDP_PATH_MANAGER_H__
 
+#include <linux/sched.h>
 #include "ddp_info.h"
 #include "ddp_path.h"
-#include <linux/sched.h>
 
 #include "cmdq_record.h"
 

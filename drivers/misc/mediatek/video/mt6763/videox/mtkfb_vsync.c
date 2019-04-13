@@ -11,30 +11,30 @@
  * GNU General Public License for more details.
  */
 
-#include <generated/autoconf.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/ioport.h>
-#include <linux/kdev_t.h>
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/mm_types.h>
 #include <linux/module.h>
-#include <linux/param.h>
+#include <generated/autoconf.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <linux/cdev.h>
+#include <linux/kdev_t.h>
+#include <linux/delay.h>
+#include <linux/ioport.h>
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/interrupt.h>
+#include <linux/wait.h>
+#include <linux/spinlock.h>
+#include <linux/param.h>
+#include <linux/uaccess.h>
 #include <linux/sched.h>
+#include <linux/workqueue.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
-#include <linux/types.h>
-#include <linux/uaccess.h>
-#include <linux/wait.h>
-#include <linux/workqueue.h>
 
 #include "mtkfb_vsync.h"
 #include "primary_display.h"

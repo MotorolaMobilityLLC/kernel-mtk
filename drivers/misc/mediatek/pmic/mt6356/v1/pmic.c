@@ -13,21 +13,21 @@
 
 #include <generated/autoconf.h>
 #include <linux/cdev.h>
-#include <linux/debugfs.h>
 #include <linux/delay.h>
+#include <linux/debugfs.h>
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/preempt.h>
 #include <linux/uaccess.h>
 
+#include <mt-plat/upmu_common.h>
+#include <mach/mtk_pmic.h>
 #include "include/pmic.h"
-#include "include/pmic_debugfs.h"
 #include "include/pmic_irq.h"
 #include "include/pmic_throttling_dlpt.h"
+#include "include/pmic_debugfs.h"
 #include "pwrap_hal.h"
-#include <mach/mtk_pmic.h>
-#include <mt-plat/upmu_common.h>
 
 #ifdef CONFIG_MTK_AUXADC_INTF
 #include <mt-plat/mtk_auxadc_intf.h>

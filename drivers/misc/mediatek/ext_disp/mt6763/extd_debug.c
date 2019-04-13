@@ -14,33 +14,32 @@
 #if (defined(CONFIG_MTK_HDMI_SUPPORT)) ||	\
 	(defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) &&	\
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2))
-#include <linux/debugfs.h>
-#include <linux/delay.h>
 #include <linux/string.h>
 #include <linux/time.h>
 #include <linux/uaccess.h>
+#include <linux/debugfs.h>
+#include <linux/delay.h>
 /*#include <mach/mt_typedefs.h>*/
 #include <linux/types.h>
 /*#include <mach/mt_gpio.h>*/
 /*#include <mt-plat/mt_gpio.h>*/
 /* #include <cust_gpio_usage.h> */
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) &&                               \
-	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "m4u.h"
 #endif
-#include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/slab.h>
 
-#include "DpDataType.h"
 #include "ddp_hal.h"
-#include "ddp_info.h"
 #include "ddp_reg.h"
-#include "disp_dts_gpio.h"
+#include "ddp_info.h"
 #include "extd_hdmi.h"
-#include "extd_log.h"
-#include "extd_multi_control.h"
 #include "external_display.h"
+#include "extd_multi_control.h"
 #include "mtk_disp_mgr.h"
+#include "DpDataType.h"
+#include "disp_dts_gpio.h"
+#include "extd_log.h"
 
 /* ---------------------------------------------------------------------------
  */

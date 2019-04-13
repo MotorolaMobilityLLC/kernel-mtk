@@ -11,16 +11,16 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <linux/kallsyms.h>
-#include <linux/notifier.h>
-#include <linux/printk.h>
 #include <linux/seq_file.h>
-#include <linux/string.h>
-#include <linux/uaccess.h>
+#include <linux/kallsyms.h>
 #include <linux/utsname.h>
+#include <linux/uaccess.h>
+#include <linux/printk.h>
+#include <linux/string.h>
+#include <linux/notifier.h>
 
-#include <legacy_controller.h>
 #include <linux/platform_device.h>
+#include <legacy_controller.h>
 
 /*--------------DEFAULT SETTING-------------------*/
 

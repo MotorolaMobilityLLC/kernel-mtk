@@ -11,9 +11,9 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <mt-plat/upmu_common.h>
 #include <mt-plat/mtk_chip.h>
 #include <mt-plat/mtk_rtc.h>
-#include <mt-plat/upmu_common.h>
 
 #include <linux/io.h>
 #include <linux/io.h>

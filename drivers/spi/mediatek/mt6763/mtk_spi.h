@@ -14,8 +14,9 @@
 #ifndef __MTK_SPI_H__
 #define __MTK_SPI_H__
 
-#include <linux/io.h>
+
 #include <linux/types.h>
+#include <linux/io.h>
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #include <mobicore_driver_api.h>
 #include <tlspi_Api.h>

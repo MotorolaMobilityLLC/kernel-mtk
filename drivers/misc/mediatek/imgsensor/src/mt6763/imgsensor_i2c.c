@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "imgsensor_i2c.h"
 #include "imgsensor_common.h"
+#include "imgsensor_i2c.h"
 
 struct IMGSENSOR_I2C gi2c;
 

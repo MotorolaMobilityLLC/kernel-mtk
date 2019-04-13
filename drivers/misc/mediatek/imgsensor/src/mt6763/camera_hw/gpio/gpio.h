@@ -17,10 +17,10 @@
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 
-#include "imgsensor_common.h"
-#include "imgsensor_hw.h"
-#include <linux/pinctrl/pinctrl.h>
 #include <linux/platform_device.h>
+#include <linux/pinctrl/pinctrl.h>
+#include "imgsensor_hw.h"
+#include "imgsensor_common.h"
 
 extern struct mutex pinctrl_mutex;
 

@@ -13,44 +13,44 @@
 
 #define LOG_TAG "DEBUG"
 
-#include "disp_assert_layer.h"
-#include "mt-plat/aee.h"
-#include <linux/debugfs.h>
-#include <linux/delay.h>
-#include <linux/dma-mapping.h>
-#include <linux/interrupt.h>
-#include <linux/sched.h>
 #include <linux/string.h>
-#include <linux/time.h>
 #include <linux/uaccess.h>
+#include <linux/debugfs.h>
+#include "mt-plat/aee.h"
+#include "disp_assert_layer.h"
+#include <linux/dma-mapping.h>
+#include <linux/delay.h>
+#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/time.h>
 
 #include "m4u.h"
 
 #include "disp_drv_ddp.h"
 
-#include "ddp_aal.h"
-#include "ddp_color.h"
 #include "ddp_debug.h"
-#include "ddp_dither.h"
-#include "ddp_drv.h"
-#include "ddp_dsi.h"
-#include "ddp_hal.h"
-#include "ddp_info.h"
-#include "ddp_log.h"
-#include "ddp_manager.h"
-#include "ddp_met.h"
-#include "ddp_path.h"
-#include "ddp_pwm.h"
-#include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
 #include "ddp_reg.h"
+#include "ddp_drv.h"
 #include "ddp_wdma.h"
 #include "ddp_wdma_ex.h"
-#include "disp_drv_log.h"
-#include "disp_lowpower.h"
-#include "disp_session.h"
-#include "display_recorder.h"
+#include "ddp_hal.h"
+#include "ddp_path.h"
+#include "ddp_color.h"
+#include "ddp_aal.h"
+#include "ddp_pwm.h"
 #include <ddp_od.h>
+#include "ddp_dither.h"
+#include "ddp_info.h"
+#include "ddp_dsi.h"
+#include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
+#include "ddp_manager.h"
+#include "ddp_log.h"
+#include "ddp_met.h"
+#include "display_recorder.h"
+#include "disp_session.h"
+#include "disp_lowpower.h"
+#include "disp_drv_log.h"
 
 static struct dentry *debugfs;
 static struct dentry *debugDir;

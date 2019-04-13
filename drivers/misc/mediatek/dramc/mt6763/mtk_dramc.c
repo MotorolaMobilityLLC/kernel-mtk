@@ -11,34 +11,34 @@
  * GNU General Public License for more details.
  */
 
-#include <asm/cacheflush.h>
-#include <linux/cpu.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/kallsyms.h>
 #include <linux/kernel.h>
-#include <linux/memblock.h>
+#include <linux/device.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/sched.h>
+#include <linux/kallsyms.h>
+#include <linux/cpu.h>
 #include <linux/smp.h>
 #include <linux/vmalloc.h>
+#include <linux/memblock.h>
+#include <linux/sched.h>
+#include <linux/delay.h>
+#include <asm/cacheflush.h>
 /* #include <mach/mtk_clkmgr.h> */
-#include <asm/setup.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_fdt.h>
-#include <mach/upmu_hw.h>
-#include <mach/upmu_sw.h>
-#include <mt-plat/dma.h>
-#include <mt-plat/mtk_io.h>
-#include <mt-plat/sync_write.h>
+#include <asm/setup.h>
 #include <mt-plat/upmu_common.h>
+#include <mach/upmu_sw.h>
+#include <mach/upmu_hw.h>
+#include <mt-plat/mtk_io.h>
+#include <mt-plat/dma.h>
+#include <mt-plat/sync_write.h>
 #include <mtk_spm_vcore_dvfs.h>
 
-#include "dramc.h"
-#include "mtk_dramc.h"
 #include <mt_emi_api.h>
+#include "mtk_dramc.h"
+#include "dramc.h"
 
 #ifdef CONFIG_OF_RESERVED_MEM
 #define DRAM_R0_DUMMY_READ_RESERVED_KEY "reserve-memory-dram_r0_dummy_read"

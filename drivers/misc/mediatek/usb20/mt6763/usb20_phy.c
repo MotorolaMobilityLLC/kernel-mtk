@@ -16,14 +16,14 @@
 #else
 #include <linux/clk.h>
 #endif
-#include "mtk_devinfo.h"
-#include "usb20.h"
+#include <linux/jiffies.h>
 #include <linux/delay.h>
 #include <linux/io.h>
-#include <linux/jiffies.h>
 #include <linux/spinlock.h>
 #include <mtk_musb.h>
 #include <musb_core.h>
+#include "usb20.h"
+#include "mtk_devinfo.h"
 
 #ifdef CONFIG_OF
 #include <linux/of_address.h>

@@ -12,16 +12,16 @@
  */
 
 /*#include <../drivers/staging/android/sw_sync.h>*/
-#include <linux/kthread.h>
 #include <linux/slab.h>
+#include <linux/kthread.h>
 
-#include "disp_drv_log.h"
 #include "disp_drv_platform.h"
-#include "disp_helper.h"
 #include "frame_queue.h"
-#include "ged_log.h"
-#include "mtk_disp_mgr.h"
+#include "disp_drv_log.h"
 #include "mtkfb_fence.h"
+#include "mtk_disp_mgr.h"
+#include "ged_log.h"
+#include "disp_helper.h"
 
 static struct frame_queue_head_t frame_q_head[MAX_SESSION_COUNT];
 DEFINE_MUTEX(frame_q_head_lock);

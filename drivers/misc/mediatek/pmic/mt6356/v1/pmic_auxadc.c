@@ -11,40 +11,40 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/sched.h>
+#include <linux/spinlock.h>
+#include <linux/interrupt.h>
+#include <linux/list.h>
+#include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
+#include <linux/kdev_t.h>
+#include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/kdev_t.h>
-#include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/list.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
 #include <linux/platform_device.h>
-#include <linux/pm_wakeup.h>
 #include <linux/proc_fs.h>
-#include <linux/ratelimit.h>
-#include <linux/sched.h>
-#include <linux/sched.h>
-#include <linux/seq_file.h>
-#include <linux/slab.h>
-#include <linux/spinlock.h>
 #include <linux/syscalls.h>
-#include <linux/timekeeping.h>
-#include <linux/uaccess.h>
+#include <linux/sched.h>
 #include <linux/writeback.h>
+#include <linux/seq_file.h>
+#include <linux/uaccess.h>
 #include <mach/mtk_pmic_wrap.h>
+#include <linux/ratelimit.h>
+#include <linux/timekeeping.h>
 
 #include "include/pmic.h"
 #include "include/pmic_auxadc.h"
 #include "mtk_idle.h"
-#include <mach/mtk_pmic.h>
 #include <mt-plat/aee.h>
-#include <mt-plat/mtk_auxadc_intf.h>
 #include <mt-plat/upmu_common.h>
+#include <mach/mtk_pmic.h>
+#include <mt-plat/mtk_auxadc_intf.h>
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/mtk_battery.h>
 #endif

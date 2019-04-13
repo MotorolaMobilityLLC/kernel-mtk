@@ -14,9 +14,9 @@
 #ifndef __IMGSENSOR_PWR_CTRL_H__
 #define __IMGSENSOR_PWR_CTRL_H__
 
+#include "imgsensor_sensor.h"
 #include "imgsensor_cfg_table.h"
 #include "imgsensor_common.h"
-#include "imgsensor_sensor.h"
 
 enum IMGSENSOR_HW_POWER_STATUS {
 	IMGSENSOR_HW_POWER_STATUS_OFF,

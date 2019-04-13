@@ -11,9 +11,9 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/kernel.h>
 #include "ddp_info.h"
 #include "ddp_log.h"
-#include <linux/kernel.h>
 
 #undef LOG_TAG
 #define LOG_TAG "color_fmt"

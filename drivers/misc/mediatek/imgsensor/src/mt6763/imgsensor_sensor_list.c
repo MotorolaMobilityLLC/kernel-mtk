@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "imgsensor_sensor_list.h"
 #include "kd_imgsensor.h"
+#include "imgsensor_sensor_list.h"
 
 //! Add Sensor Init function here
 //! Note:

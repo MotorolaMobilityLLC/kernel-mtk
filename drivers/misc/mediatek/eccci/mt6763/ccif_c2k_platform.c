@@ -11,27 +11,27 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/interrupt.h>
 #include <linux/platform_device.h>
-#include <mach/mtk_pbm.h>
+#include <linux/interrupt.h>
 #include <mtk_spm_sleep.h>
+#include <mach/mtk_pbm.h>
 
 #include "ccci_config.h"
 #include "ccci_modem.h"
 #include "ccci_platform.h"
 #include "ccif_c2k_platform.h"
 #include "hif/ccci_hif_ccif.h"
-#include "modem_reg_base.h"
 #include "modem_sys.h"
+#include "modem_reg_base.h"
 
-#include <mt-plat/mtk_boot.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 #endif
 
 #define TAG "cif"

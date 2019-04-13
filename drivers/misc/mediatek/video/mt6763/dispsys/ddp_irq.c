@@ -14,26 +14,26 @@
 #define LOG_TAG "IRQ"
 
 #include <linux/interrupt.h>
-#include <linux/kthread.h>
-#include <linux/spinlock.h>
-#include <linux/timer.h>
 #include <linux/wait.h>
+#include <linux/spinlock.h>
+#include <linux/kthread.h>
+#include <linux/timer.h>
 
 /* #include <mach/mt_irq.h> */
-#include "ddp_aal.h"
-#include "ddp_debug.h"
-#include "ddp_drv.h"
-#include "ddp_dsi.h"
-#include "ddp_irq.h"
+#include "disp_drv_platform.h"	/* must be at the top-most */
 #include "ddp_log.h"
+#include "ddp_debug.h"
 #include "ddp_reg.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h" /* must be at the top-most */
+#include "ddp_irq.h"
+#include "ddp_aal.h"
+#include "ddp_drv.h"
 #include "disp_helper.h"
-#include "disp_lowpower.h"
-#include "layering_rule.h"
+#include "ddp_dsi.h"
+#include "disp_drv_log.h"
 #include "primary_display.h"
 #include "smi_debug.h"
+#include "disp_lowpower.h"
+#include "layering_rule.h"
 #ifdef MTK_FB_MMDVFS_SUPPORT
 #include "mmdvfs_mgr.h"
 #endif

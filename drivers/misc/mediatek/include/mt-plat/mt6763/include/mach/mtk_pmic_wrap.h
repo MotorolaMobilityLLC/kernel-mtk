@@ -15,8 +15,8 @@
 #define __MT_PMIC_WRAP_H__
 /* #include <mach/typedefs.h> */
 /* #include <linux/smp.h> */
-#include <linux/device.h>
 #include <linux/types.h>
+#include <linux/device.h>
 #include <mach/upmu_hw.h>
 struct mt_pmic_wrap_driver {
 

@@ -15,17 +15,17 @@
  *							  Include Files
  *===========================================================================
  */
-#include "val_api_private.h"
 #include "val_types_private.h"
+#include "val_api_private.h"
 /* #include "mfv_reg.h" */
 /* #include "mfv_config.h" */
 #include <linux/jiffies.h>
-#include <linux/mm.h>
 #include <linux/sched.h>
-#include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/time.h>
 #include <linux/wait.h>
+#include <linux/time.h>
+#include <linux/mm.h>
+#include <linux/slab.h>
+#include <linux/semaphore.h>
 
 #define MAX_HEAP_SIZE (0x1000000)
 #ifdef _6573_FPGA

@@ -13,25 +13,25 @@
 
 #include "disp_drv_log.h"
 #include "ion_drv.h"
-#include <linux/delay.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/wait.h>
+#include <linux/sched.h>
+#include <linux/delay.h>
 
-#include <linux/file.h>
 #include <linux/wait.h>
+#include <linux/file.h>
 
-#include "ddp_mmp.h"
-#include "ddp_ovl.h"
-#include "ddp_path.h"
+#include "m4u.h"
+#include "mtk_sync.h"
 #include "debug.h"
+#include "ddp_ovl.h"
+#include "mtkfb_fence.h"
+#include "ddp_path.h"
 #include "disp_drv_platform.h"
 #include "display_recorder.h"
-#include "m4u.h"
-#include "mtk_disp_mgr.h"
-#include "mtk_sync.h"
-#include "mtkfb_fence.h"
+#include "ddp_mmp.h"
 #include "primary_display.h"
+#include "mtk_disp_mgr.h"
 /************************* log*********************/
 
 static bool mtkfb_fence_on;

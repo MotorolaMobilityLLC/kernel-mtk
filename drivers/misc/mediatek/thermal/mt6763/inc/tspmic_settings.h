@@ -14,8 +14,8 @@
 #ifndef __TSPMIC_SETTINGS_H__
 #define __TSPMIC_SETTINGS_H__
 
-#include <mach/mtk_pmic_wrap.h>
 #include <mach/upmu_hw.h>
+#include <mach/mtk_pmic_wrap.h>
 
 /*=============================================================
  * Genernal

@@ -14,9 +14,9 @@
 #include <linux/io.h>
 
 #include "ccu_cmn.h"
+#include "ccu_reg.h"
 #include "ccu_kd_mailbox.h"
 #include "ccu_mailbox_extif.h"
-#include "ccu_reg.h"
 
 static struct ccu_mailbox_t *_ccu_mailbox;
 static struct ccu_mailbox_t *_apmcu_mailbox;

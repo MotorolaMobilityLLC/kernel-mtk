@@ -46,39 +46,39 @@
 /*****************************************************************************
  *				E X T E R N A L	R E F E R E N C E S
  *****************************************************************************
- */
+*/
 
-#include "mtk-soc-afe-connection.h"
-#include "mtk-auddrv-afe.h"
-#include "mtk-auddrv-clk.h"
 #include "mtk-auddrv-common.h"
 #include "mtk-auddrv-def.h"
+#include "mtk-auddrv-afe.h"
+#include "mtk-auddrv-clk.h"
+#include "mtk-soc-afe-connection.h"
 #include "mtk-soc-afe-control.h"
 #include "mtk-soc-digital-type.h"
 
-#include <linux/completion.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
 #include <linux/kernel.h>
-#include <linux/miscdevice.h>
-#include <linux/mm.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/sched.h>
+#include <linux/init.h>
+#include <linux/device.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/fs.h>
+#include <linux/completion.h>
+#include <linux/mm.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/dma-mapping.h>
 #include <linux/vmalloc.h>
+#include <linux/platform_device.h>
+#include <linux/miscdevice.h>
 #include <linux/wait.h>
+#include <linux/spinlock.h>
+#include <linux/sched.h>
 /*#include <linux/wakelock.h>*/
-#include <linux/jiffies.h>
-#include <linux/mutex.h>
-#include <linux/proc_fs.h>
 #include <linux/semaphore.h>
+#include <linux/jiffies.h>
+#include <linux/proc_fs.h>
 #include <linux/string.h>
+#include <linux/mutex.h>
 #include <linux/uaccess.h>
 
 /* mutex lock */

@@ -11,18 +11,18 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/ctype.h>
-#include <linux/delay.h>
-#include <linux/leds.h>
 #include <linux/module.h>
-#include <linux/of.h>
 #include <linux/platform_device.h>
-#include <linux/string.h>
-/* #include <linux/leds-mt65xx.h> */
 #include <linux/delay.h>
+#include <linux/string.h>
+#include <linux/ctype.h>
+#include <linux/leds.h>
+#include <linux/of.h>
+/* #include <linux/leds-mt65xx.h> */
+#include <linux/workqueue.h>
 #include <linux/pm_wakeup.h>
 #include <linux/slab.h>
-#include <linux/workqueue.h>
+#include <linux/delay.h>
 
 #include <ddp_aal.h>
 /* #include <linux/aee.h> */
@@ -32,9 +32,9 @@
 #include <mt-plat/mtk_pwm.h>
 #include <mt-plat/upmu_common.h>
 
-#include "ddp_pwm.h"
-#include "mtk_leds_hal.h"
 #include "mtk_leds_sw.h"
+#include "mtk_leds_hal.h"
+#include "ddp_pwm.h"
 #include "mtkfb.h"
 
 #define MET_USER_EVENT_SUPPORT

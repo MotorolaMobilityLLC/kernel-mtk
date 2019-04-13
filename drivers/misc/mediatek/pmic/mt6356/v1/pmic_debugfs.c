@@ -11,17 +11,17 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "include/pmic_debugfs.h"
-#include "include/pmic.h"
 #include <generated/autoconf.h>
-#include <linux/debugfs.h>
-#include <linux/delay.h>
-#include <linux/init.h>
 #include <linux/kernel.h>
-#include <linux/seq_file.h>
+#include <linux/init.h>
+#include <linux/delay.h>
 #include <linux/slab.h>
+#include <linux/seq_file.h>
 #include <linux/uaccess.h>
+#include <linux/debugfs.h>
 #include <mt-plat/upmu_common.h>
+#include "include/pmic.h"
+#include "include/pmic_debugfs.h"
 
 /*
  * PMIC debug level

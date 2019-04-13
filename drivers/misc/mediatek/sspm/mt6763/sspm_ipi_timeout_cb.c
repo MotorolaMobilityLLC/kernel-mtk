@@ -17,9 +17,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "sspm_define.h"
-#include <linux/module.h> /* needed by all modules */
+#include <linux/module.h>       /* needed by all modules */
 #include <mt-plat/sync_write.h>
+#include "sspm_define.h"
 
 /* debug API */
 __weak void dump_emi_outstanding(void) {}

@@ -11,21 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/device.h>
-#include <linux/interrupt.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/device.h>
+#include <linux/module.h>
+#include <linux/interrupt.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 #endif
-#include "ccci_bm.h"
+#include <mt-plat/mtk_ccci_common.h>
 #include "ccci_config.h"
 #include "ccci_modem.h"
+#include "ccci_bm.h"
 #include "ccci_platform.h"
-#include <mt-plat/mtk_ccci_common.h>
 
 #ifdef ENABLE_EMI_PROTECTION
 #include <mach/emi_mpu.h>
