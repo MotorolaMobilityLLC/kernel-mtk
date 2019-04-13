@@ -33,6 +33,8 @@ ifeq ($(CONFIG_MACH_MT6771),y)
   obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += isp_50/camera_tsf.o
 else ifeq ($(CONFIG_MACH_MT6775),y)
   obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += isp_50/camera_tsf.o
+else ifeq ($(CONFIG_MACH_MT6763),y)
+  obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += isp_50/camera_tsf.o
 else
   obj-$(CONFIG_MTK_CAMERA_ISP_TSF_SUPPORT) += $(MTK_PLATFORM)/camera_tsf.o
 endif

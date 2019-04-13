@@ -863,7 +863,7 @@ static void cpufreq_sched_policy_exit(struct cpufreq_policy *policy)
 	/* struct gov_data *gd = policy->governor_data; */
 
 #ifdef CONFIG_CPU_FREQ_SCHED_ASSIST
-	return 0;
+	return;
 #else
 	clear_sched_freq();
 

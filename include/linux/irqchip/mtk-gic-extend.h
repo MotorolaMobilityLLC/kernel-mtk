@@ -87,7 +87,7 @@ void irq_raise_softirq(const struct cpumask *mask, unsigned int irq);
 void gic_set_primask(void);
 /* restore the priority mask value */
 void gic_clear_primask(void);
-#endif
+
 
 #ifdef CONFIG_MTK_SYSIRQ
 static inline struct irq_data *get_gic_irq_data(struct irq_data *d)
@@ -118,4 +118,5 @@ static inline unsigned int virq_to_hwirq(unsigned int virq)
 
 	return hwirq;
 }
+#endif
 

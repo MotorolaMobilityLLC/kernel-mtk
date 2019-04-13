@@ -77,4 +77,5 @@ extern atomic_t vol_down_long_press_flag;
 #define kpd_info(fmt, arg...)	do {} while (0)
 #endif
 
+#define KPD_HAS_SLIDE_QWERTY	0
 #endif				/* __KPD_H__ */

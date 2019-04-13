@@ -294,6 +294,11 @@ static void gic_eoimode1_eoi_irq(struct irq_data *d)
 	gic_write_dir(gic_irq(d));
 }
 
+/* should be define in mtk-gic-v3-extend.c */
+__weak void _mt_irq_set_polarity(unsigned int irq, unsigned int polarity)
+{
+}
+
 static int gic_set_type(struct irq_data *d, unsigned int type)
 {
 	unsigned int irq = gic_irq(d);
