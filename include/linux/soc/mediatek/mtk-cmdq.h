@@ -32,7 +32,7 @@
 /* GCE provide 26M timer, thus each tick 1/26M second,
  * which is, 1 microsecond = 26 ticks
  */
-#define CMDQ_MS_TO_TICK(_t)		(_t * 26)
+#define CMDQ_US_TO_TICK(_t)		(_t * 26)
 
 
 #if IS_ENABLED(CONFIG_MACH_MT6771) || IS_ENABLED(CONFIG_MACH_MT6765) || \

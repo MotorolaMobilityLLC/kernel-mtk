@@ -19,6 +19,11 @@ else
 MTK_PLATFORM := $(CONFIG_MTK_PLATFORM)
 endif
 
+ifeq ($(CONFIG_MACH_MT6779),y)
+ccflags-y += -DPMQOS_VERSION2
+ccflags-y += -DMDP_MMPATH
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/ \
              -I$(srctree)/drivers/misc/mediatek/mmp/ \
              -I$(srctree)/drivers/misc/mediatek/mach/$(MTK_PLATFORM)/include
@@ -43,7 +48,8 @@ ccflags-y += -DCMDQ_DEBUG_LOOP_IRQ
 endif
 
 # secure path
-ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
+ifeq ($(or $(strip $(CONFIG_TRUSTONIC_TEE_SUPPORT)), $(strip $(CONFIG_MICROTRUST_TEE_SUPPORT))),y)
+ifeq ($(or $(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)), $(strip $(CONFIG_MTK_CAM_SECURITY_SUPPORT))),y)
 
 ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
@@ -63,7 +69,8 @@ ccflags-y += -DCMDQ_GP_SUPPORT
 endif
 
 ccflags-y += -DCMDQ_EVENT_SVP_BACKUP
-endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT or CONFIG_MTK_CAM_SECURITY_SUPPORT
+endif	# end of CONFIG_TRUSTONIC_TEE_SUPPORT or CONFIG_MICROTRUST_TEE_SUPPORT
 
 # platform dependent definition
 ccflags-y += -DCMDQ_SPECIAL_ESD_PRIORITY
@@ -91,7 +98,8 @@ ifeq ($(platformdir_exists), y)
 obj-y += $(subst ",,$(MTK_PLATFORM))/
 endif
 
-ifeq ($(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)),y)
+ifeq ($(or $(strip $(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)), $(strip $(CONFIG_MTK_CAM_SECURITY_SUPPORT))),y)
+
 obj-y += cmdq_sec.o
 ifeq ($(strip $(CONFIG_MTK_TEE_GP_SUPPORT)),y)
 obj-y += cmdq_sec_gp.o
@@ -99,5 +107,5 @@ else ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
 obj-y += cmdq_sec_trustonic.o
 endif
 
-endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+endif	# end of CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT or CONFIG_MTK_CAM_SECURITY_SUPPORT
 

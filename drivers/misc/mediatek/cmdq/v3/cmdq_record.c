@@ -459,7 +459,7 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 		if (last_buf) {
 			va = (u32 *)(last_buf->va_base + CMDQ_CMD_BUFFER_SIZE -
 				CMDQ_INST_SIZE);
-			va[0] = new_buf->pa_base;
+			va[0] = CMDQ_REG_SHIFT_ADDR(new_buf->pa_base);
 		}
 		last_buf = new_buf;
 	}
@@ -492,6 +492,10 @@ s32 cmdq_task_duplicate(struct cmdqRecStruct *handle,
 	handle_new->res_flag_acquire = handle->res_flag_acquire;
 	handle_new->res_flag_release = handle->res_flag_release;
 	handle_new->ctrl = handle->ctrl;
+
+	if (handle->prop_addr)
+		cmdq_task_update_property(handle_new, handle->prop_addr,
+			handle->prop_size);
 
 	if (handle->secData.is_secure) {
 		handle_new->secData = handle->secData;
@@ -1058,6 +1062,8 @@ s32 cmdq_task_set_engine(struct cmdqRecStruct *handle, u64 engineFlag)
 
 static void cmdq_task_release_buffer(struct cmdqRecStruct *handle)
 {
+	u32 i;
+
 	if (handle->pkt)
 		cmdq_pkt_destroy(handle->pkt);
 	handle->pkt = NULL;
@@ -1070,6 +1076,8 @@ static void cmdq_task_release_buffer(struct cmdqRecStruct *handle)
 		handle->secData.addrMetadataMaxCount = 0;
 		handle->secData.addrMetadataCount = 0;
 	}
+	for (i = 0; i < ARRAY_SIZE(handle->secData.ispMeta.ispBufs); i++)
+		vfree(CMDQ_U32_PTR(handle->secData.ispMeta.ispBufs[i].va));
 
 	/* reset local variable setting */
 	handle->replace_instr.number = 0;
@@ -1134,6 +1142,7 @@ s32 cmdq_task_reset(struct cmdqRecStruct *handle)
 	handle->durRelease = 0;
 	handle->prepare = cmdq_task_prepare;
 	handle->unprepare = cmdq_task_unprepare;
+	handle->check_list_del = 0;
 
 	/* store caller info for debug */
 	if (current) {
@@ -1277,6 +1286,21 @@ s32 cmdq_task_secure_enable_port_security(
 	CMDQ_ERR("%s failed since not support secure path\n", __func__);
 	return -EFAULT;
 #endif
+}
+
+s32 cmdq_task_set_secure_meta(struct cmdqRecStruct *handle,
+	enum cmdq_sec_rec_meta_type type, void *meta, u32 size)
+{
+#ifdef CMDQ_SECURE_PATH_SUPPORT
+	if (!cmdq_task_is_secure(handle) || size > CMDQ_SEC_ISP_META_MAX)
+		return -EINVAL;
+
+	handle->sec_meta_type = type;
+	handle->sec_meta_size = size;
+	handle->sec_client_meta = meta;
+#endif
+
+	return 0;
 }
 
 s32 cmdq_op_write_reg(struct cmdqRecStruct *handle, u32 addr,
@@ -1728,7 +1752,8 @@ s32 cmdq_op_finalize_command(struct cmdqRecStruct *handle, bool loop)
 		if (handle->scenario == CMDQ_SCENARIO_TIMER_LOOP)
 			arg_b = 0x0;
 
-#ifdef CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
 		if (handle->secData.is_secure) {
 			status = cmdq_sec_insert_backup_cookie_instr(handle,
 				handle->thread);
@@ -1845,7 +1870,7 @@ s32 cmdq_task_update_property(struct cmdqRecStruct *handle,
 	if (!handle || !prop_addr || !prop_size)
 		return -EINVAL;
 
-	CMDQ_LOG("enter %s, handle=%p, prop_addr=%p, prop_size=%d",
+	CMDQ_MSG("%s handle:0x%p prop_addr:0x%p prop_size:%u",
 		__func__, handle, prop_addr, prop_size);
 
 	pprop_addr = kzalloc(prop_size, GFP_KERNEL);
@@ -1854,7 +1879,7 @@ s32 cmdq_task_update_property(struct cmdqRecStruct *handle,
 
 	cmdq_task_release_property(handle);
 
-	memcpy(prop_addr, pprop_addr, prop_size);
+	memcpy(pprop_addr, prop_addr, prop_size);
 	handle->prop_addr = pprop_addr;
 	handle->prop_size = prop_size;
 
@@ -1969,6 +1994,32 @@ s32 cmdq_task_flush_async_callback(struct cmdqRecStruct *handle,
 	async->handle = flush_handle;
 
 	return cmdq_pkt_flush_async_ex(flush_handle,
+		cmdq_task_async_callback_auto_release,
+			(unsigned long)async, true);
+}
+
+s32 cmdq_task_flush_async_destroy(struct cmdqRecStruct *handle)
+{
+	s32 status;
+	struct cmdq_async_data *async;
+
+	async = kzalloc(sizeof(*async), GFP_KERNEL);
+	if (!async) {
+		CMDQ_ERR("cannot allocate async data\n");
+		return -ENOMEM;
+	}
+
+	status = cmdq_op_finalize_command(handle, false);
+	if (status < 0) {
+		kfree(async);
+		return status;
+	}
+
+	async->cb = NULL;
+	async->user_data = 0;
+	async->handle = handle;
+
+	return cmdq_pkt_flush_async_ex(handle,
 		cmdq_task_async_callback_auto_release,
 			(unsigned long)async, true);
 }
@@ -2204,6 +2255,15 @@ s32 cmdq_task_destroy(struct cmdqRecStruct *handle)
 
 	cmdq_task_release_property(handle);
 
+	if (handle->check_list_del != 2 && handle->trigger != 0) {
+		CMDQ_ERR(
+			"handle:%p scen:%d thd:%d removed without list_del!! check_list_del:%d\n",
+			handle, handle->scenario, handle->thread,
+			handle->check_list_del);
+		CMDQ_ERR("trigger:%llx beginwait:%llx wakeup:%llx\n",
+			handle->trigger, handle->beginWait, handle->wakedUp);
+		dump_stack();
+	}
 	kfree(handle);
 
 	CMDQ_SYSTRACE_END();
@@ -3045,8 +3105,14 @@ s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle,
 
 		/* rewrite actual jump value */
 		op_arg_type = (va_logic[0] & 0xFFFF0000) >> 16;
-		va_logic[0] = (op_arg_type << 16) | (exit_while_pos  -
-			logic_pos  - CMDQ_INST_SIZE);
+		va_logic[0] = (op_arg_type << 16) | CMDQ_REG_SHIFT_ADDR(
+			exit_while_pos  - logic_pos - CMDQ_INST_SIZE);
+
+		CMDQ_VERBOSE(
+			"%s pos logic:%u exit:%u logic:0x%p 0x%016llx jump:0x%p 0x%016llx\n",
+			__func__, logic_pos, exit_while_pos,
+			va_logic, *(u64 *)va_logic,
+			va_jump, *(u64 *)va_jump);
 	} else {
 		va_jump = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
 			logic_pos);
@@ -3059,8 +3125,13 @@ s32 cmdq_op_rewrite_jump_c(struct cmdqRecStruct *handle,
 
 		/* rewrite actual jump value */
 		op_arg_type = (va_jump[1] & 0xFFFF0000) >> 16;
-		va_jump[1] = (op_arg_type << 16) | (((s32)exit_while_pos  -
-			(s32)logic_pos) & 0xFFFF);
+		va_jump[1] = (op_arg_type << 16) | CMDQ_REG_SHIFT_ADDR(
+			((s32)exit_while_pos  - (s32)logic_pos) & 0xFFFF);
+
+		CMDQ_VERBOSE(
+			"%s pos logic:%u exit:%u jump:0x%p 0x%016llx\n",
+			__func__, logic_pos, exit_while_pos,
+			va_jump, *(u64 *)va_jump);
 	}
 
 	return 0;
@@ -3114,6 +3185,8 @@ s32 cmdq_op_end_if(struct cmdqRecStruct *handle)
 
 	if (!handle)
 		return -EFAULT;
+
+	handle->engineFlag |= (1LL << 62);
 
 	do {
 		/* check if-else stack */
