@@ -22,7 +22,6 @@
 
 #include "mtk_spm.h"
 #include <mtk_lpae.h>
-#include <mt-plat/mt_gpio.h>
 
 /**************************************
  * Config and Parameter

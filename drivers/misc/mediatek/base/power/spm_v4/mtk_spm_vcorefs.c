@@ -607,12 +607,11 @@ static int spm_trigger_dvfs(int kicker, int opp, bool fix)
 	/* spm_write(DVFSRC_MD_REQUEST,
 	 * (spm_read(DVFSRC_MD_REQUEST) &
 	 * ~(0x7 << 3)) | (md_req[opp] << 3));
-	 /
+	 */
 
 	vcorefs_crit_mask(
 			log_mask(), kicker,
-			"[%s] fix: %d, opp: %d, vcore: 0x%x,
-			emi: 0x%x, md: 0x%x\n",
+			"[%s] fix: %d, opp: %d, vcore: 0x%x, emi: 0x%x, md: 0x%x\n",
 			__func__, fix, opp,
 			spm_read(DVFSRC_VCORE_REQUEST),
 			spm_read(DVFSRC_EMI_REQUEST),
