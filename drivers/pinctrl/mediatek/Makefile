@@ -1,7 +1,11 @@
 subdir-ccflags-y += -Werror
 
 # Core
-obj-y				+= pinctrl-mtk-common.o
+obj-$(CONFIG_PINCTRL_MTK)       += pinctrl-mtk-common.o
+
+obj-$(CONFIG_EINT_MTK)          += mtk-eint.o
+obj-$(CONFIG_PINCTRL_MTK_MOORE) += pinctrl-moore.o pinctrl-mtk-common-v2.o
+obj-$(CONFIG_PINCTRL_MTK_PARIS) += pinctrl-paris.o pinctrl-mtk-common-v2.o
 
 # SoC Drivers
 obj-$(CONFIG_PINCTRL_MT2701)	+= pinctrl-mt2701.o
