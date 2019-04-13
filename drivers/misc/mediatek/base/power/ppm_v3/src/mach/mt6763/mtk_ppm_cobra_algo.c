@@ -165,7 +165,7 @@ void ppm_cobra_update_limit(void *user_req)
 	if (power_budget >= ppm_get_max_pwr_idx())
 		return;
 
-	ppm_dbg(COBRA_ALGO, "[PREV]Core_Limit=%d%d, policy_limit=%d%d\n",
+	ppm_dbg(COBRA, "[PREV]Core_Limit=%d%d, policy_limit=%d%d\n",
 			Core_limit[PPM_CLUSTER_LL],
 			Core_limit[PPM_CLUSTER_L],
 			req->limit[PPM_CLUSTER_LL].max_cpu_core,
@@ -247,7 +247,7 @@ void ppm_cobra_update_limit(void *user_req)
 	}
 
 #if PPM_COBRA_USE_CORE_LIMIT
-	ppm_dbg(COBRA_ALGO, "[COBRA] max throttle core num = %d,%d\n",
+	ppm_dbg(COBRA, "[COBRA] max throttle core num = %d,%d\n",
 		max_throttle_core_num[PPM_CLUSTER_LL],
 		max_throttle_core_num[PPM_CLUSTER_L]);
 #endif
@@ -255,7 +255,7 @@ void ppm_cobra_update_limit(void *user_req)
 	/* Which Cluster in L and LL is active (1: L is on, 0: LL is on) */
 	LxLL = (ACT_CORE(L) > 0) ? PPM_CLUSTER_L : PPM_CLUSTER_LL;
 
-	ppm_dbg(COBRA_ALGO, "[IN](bgt/delta/cur)=(%d/%d/%d), (opp/act/c_lmt)=(%d,%d/%d%d/%d%d)\n",
+	ppm_dbg(COBRA, "[IN](bgt/delta/cur)=(%d/%d/%d), (opp/act/c_lmt)=(%d,%d/%d%d/%d%d)\n",
 				power_budget, delta_power, curr_power,
 				opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L],
 				ACT_CORE(LL), ACT_CORE(L),
@@ -324,7 +324,7 @@ void ppm_cobra_update_limit(void *user_req)
 
 end:
 #endif
-			ppm_dbg(COBRA_ALGO, "[+]ChoosenCl=-1! delta=%d, (opp/c_lmt)=(%d,%d/%d%d)\n",
+			ppm_dbg(COBRA, "[+]ChoosenCl=-1! delta=%d, (opp/c_lmt)=(%d,%d/%d%d)\n",
 					delta_power, opp[PPM_CLUSTER_LL],
 					opp[PPM_CLUSTER_L],
 					CORE_LIMIT(LL), CORE_LIMIT(L));
@@ -334,7 +334,7 @@ end:
 prepare_next_round:
 			delta_power -= ChoosenPwr;
 
-			ppm_dbg(COBRA_ALGO, "[+](delta/Cl/Pwr)=(%d,%d,%d), opp=%d,%d\n",
+			ppm_dbg(COBRA, "[+](delta/Cl/Pwr)=(%d,%d,%d), opp=%d,%d\n",
 				delta_power, ChoosenCl, ChoosenPwr,
 				opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L]);
 		}
@@ -348,7 +348,7 @@ prepare_next_round:
 			int ChoosenCl = -1;
 			int ChoosenPwr = 0;
 
-			ppm_dbg(COBRA_ALGO, "exclusive_core_flag = %d,%d(LxLL=%d)\n",
+			ppm_dbg(COBRA, "exclusive_core_flag = %d,%d(LxLL=%d)\n",
 				ex_core_flag[PPM_CLUSTER_LL],
 				ex_core_flag[PPM_CLUSTER_L], LxLL);
 
@@ -448,7 +448,7 @@ check_exclusive_core_flag:
 					LxLL = PPM_CLUSTER_L;
 			}
 
-			ppm_dbg(COBRA_ALGO, "[-](delta/Cl/Pwr)=(%d,%d,%d), (opp/act)=(%d,%d/%d%d)\n",
+			ppm_dbg(COBRA, "[-](delta/Cl/Pwr)=(%d,%d,%d), (opp/act)=(%d,%d/%d%d)\n",
 					delta_power, ChoosenCl, ChoosenPwr,
 					opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L],
 					ACT_CORE(LL), ACT_CORE(L));
@@ -472,7 +472,7 @@ check_exclusive_core_flag:
 		req->limit[i].max_cpufreq_idx = opp[LxLL];
 	}
 
-	ppm_dbg(COBRA_ALGO, "[OUT]delta=%d, (opp/act/c_lmt/f_lmt)=(%d,%d/%d%d/%d%d/%d,%d)\n",
+	ppm_dbg(COBRA, "[OUT]delta=%d, (opp/act/c_lmt/f_lmt)=(%d,%d/%d%d/%d%d/%d,%d)\n",
 				delta_power,
 				opp[PPM_CLUSTER_LL], opp[PPM_CLUSTER_L],
 				ACT_CORE(LL), ACT_CORE(L),
