@@ -20,7 +20,6 @@
 
 #include "tzcpu_initcfg.h"
 #include "clatm_initcfg.h"
-#include <mtk_eem.h>
 
 /*=============================================================
  * Genernal
@@ -230,6 +229,16 @@
 			pr_debug(TSCPU_LOG_TAG fmt, ##args);                   \
 		}                                                             \
 	} while (0)
+
+#define tscpu_dprintk(fmt, args...)   \
+	do {                                    \
+		if (tscpu_debug_log == 1) {                \
+			pr_notice(TSCPU_LOG_TAG fmt, ##args); \
+		}                                   \
+	} while (0)
+
+#define tscpu_printk(fmt, args...) pr_notice(TSCPU_LOG_TAG fmt, ##args)
+#define tscpu_warn(fmt, args...)  pr_notice(TSCPU_LOG_TAG fmt, ##args)
 
 /*=============================================================
  * Structures

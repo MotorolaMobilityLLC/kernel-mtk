@@ -36,7 +36,6 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
-#include <linux/irqchip/mtk-eic.h>
 #include <linux/suspend.h>
 #include <mt-plat/mtk_secure_api.h>
 #ifdef CONFIG_MTK_WD_KICKER

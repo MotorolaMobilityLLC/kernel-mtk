@@ -151,7 +151,7 @@ enum {
 	DLPT	= 1 << 3,
 	USER_LIMIT = 1 << 4,
 	TIME_PROFILE = 1 << 5,
-	COBRA = 1 << 6,
+	COBRA_ALGO = 1 << 6,
 	SYS_BOOST = 1 << 7,
 	IPI	= 1 << 8,
 	CPI	= 1 << 9,

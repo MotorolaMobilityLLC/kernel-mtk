@@ -28,7 +28,6 @@
 #include <mtk_spm_sleep.h>
 #include <mtk_spm_idle.h>
 #include <mtk_spm_misc.h>
-#include <mt-plat/mt_gpio.h>
 #include <mtk_power_gs_api.h>
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 #include <mt-plat/upmu_common.h>
