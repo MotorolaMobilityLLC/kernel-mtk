@@ -35,6 +35,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v1/
 obj-y += mcdi_v1/
 endif
 
+ifeq ($(CONFIG_MACH_MT6763), y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v1/
+obj-y += mcdi_v1/
+endif
+
 ifeq ($(CONFIG_MACH_MT6765), y)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/mcdi/include/mcdi_v1/
 obj-y += mcdi_v1/
