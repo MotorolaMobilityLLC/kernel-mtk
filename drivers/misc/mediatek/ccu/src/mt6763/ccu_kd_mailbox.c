@@ -137,9 +137,9 @@ static int ccu_msg_copy(struct ccu_msg_t *dest, struct ccu_msg_t *src)
 	return 0;
 }
 
-static mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task)
+static enum mb_result _mailbox_write_to_buffer(struct ccu_msg_t *task)
 {
-	mb_result result;
+	enum mb_result result;
 	MUINT32 nextWriteSlot =
 	    (_ccu_mailbox->rear + 1) & (CCU_MAILBOX_QUEUE_SIZE - 1);
 
