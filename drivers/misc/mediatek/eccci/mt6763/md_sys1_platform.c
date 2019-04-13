@@ -1116,7 +1116,7 @@ int md_cd_power_on(struct ccci_modem *md)
 	reg_value &= ~((1 << 8) | (1 << 9));
 	ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
 	CCCI_BOOTUP_LOG(md->index, CORE,
-			"%s set md1_clk_mod =0x%x\n", __func__
+			"%s set md1_clk_mod =0x%x\n", __func__,
 			ccci_read32(hw_info->ap_topclkgen_base, 0));
 
 	/* step 1: PMIC setting */
@@ -1208,7 +1208,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		ccci_write32(infra_ao_base, INFRA_AO_MD_SRCCLKENA, reg_value);
 		CCCI_BOOTUP_LOG(
 		    md->index, CORE,
-		    "%s set md1_srcclkena=0x%x\n", __func__
+		    "%s set md1_srcclkena=0x%x\n", __func__,
 		    ccci_read32(infra_ao_base, INFRA_AO_MD_SRCCLKENA));
 		CCCI_BOOTUP_LOG(md->index, TAG, "Call md1_pmic_setting_off\n");
 		md1_pmic_setting_off();
@@ -1217,7 +1217,7 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 		reg_value |= ((1 << 8) | (1 << 9));
 		ccci_write32(hw_info->ap_topclkgen_base, 0, reg_value);
 		CCCI_BOOTUP_LOG(md->index, CORE,
-				"%s set md1_clk_mod =0x%x\n", __func__
+				"%s set md1_clk_mod =0x%x\n", __func__,
 				ccci_read32(hw_info->ap_topclkgen_base, 0));
 
 		kicker_pbm_by_md(KR_MD1, false);
