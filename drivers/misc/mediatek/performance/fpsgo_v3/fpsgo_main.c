@@ -46,6 +46,7 @@ enum FPSGO_NOTIFIER_PUSH_TYPE {
 	FPSGO_NOTIFIER_NN_JOB_BEGIN			= 0x05,
 	FPSGO_NOTIFIER_NN_JOB_END			= 0x06,
 	FPSGO_NOTIFIER_GPU_BLOCK			= 0x07,
+	FPSGO_NOTIFIER_VSYNC				= 0x08,
 };
 
 /* TODO: use union*/
@@ -103,6 +104,16 @@ int fpsgo_is_enable(void)
 
 	FPSGO_LOGI("[FPSGO_CTRL] isenable %d\n", enable);
 	return enable;
+}
+
+static void fpsgo_notifier_wq_cb_vsync(unsigned long long ts)
+{
+	FPSGO_LOGI("[FPSGO_CB] vsync: %llu\n", ts);
+
+	if (!fpsgo_is_enable())
+		return;
+
+	fpsgo_ctrl2fbt_vsync(ts);
 }
 
 static void fpsgo_notifier_wq_cb_dfrc_fps(int dfrc_fps)
@@ -302,6 +313,9 @@ static void fpsgo_notifier_wq_cb(struct work_struct *psWork)
 		fpsgo_notifier_wq_cb_nn_job_end(vpPush->nn_pid, vpPush->nn_tid,
 			vpPush->nn_mid, vpPush->num_step, vpPush->boost,
 			vpPush->device, vpPush->exec_time);
+		break;
+	case FPSGO_NOTIFIER_VSYNC:
+		fpsgo_notifier_wq_cb_vsync(vpPush->cur_ts);
 		break;
 	default:
 		FPSGO_LOGE("[FPSGO_CTRL] unhandled push type = %d\n",
@@ -589,12 +603,32 @@ int fpsgo_notify_gpu_block(int tid, unsigned long long mid, int start)
 
 void fpsgo_notify_vsync(void)
 {
+	struct FPSGO_NOTIFIER_PUSH_TAG *vpPush;
+
 	FPSGO_LOGI("[FPSGO_CTRL] vsync\n");
 
 	if (!fpsgo_is_enable())
 		return;
 
-	fpsgo_ctrl2fbt_vsync();
+	vpPush = (struct FPSGO_NOTIFIER_PUSH_TAG *)
+		fpsgo_alloc_atomic(sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+
+	if (!vpPush) {
+		FPSGO_LOGE("[FPSGO_CTRL] OOM\n");
+		return;
+	}
+
+	if (!g_psNotifyWorkQueue) {
+		FPSGO_LOGE("[FPSGO_CTRL] NULL WorkQueue\n");
+		fpsgo_free(vpPush, sizeof(struct FPSGO_NOTIFIER_PUSH_TAG));
+		return;
+	}
+
+	vpPush->ePushType = FPSGO_NOTIFIER_VSYNC;
+	vpPush->cur_ts = fpsgo_get_time();
+
+	INIT_WORK(&vpPush->sWork, fpsgo_notifier_wq_cb);
+	queue_work(g_psNotifyWorkQueue, &vpPush->sWork);
 }
 
 
