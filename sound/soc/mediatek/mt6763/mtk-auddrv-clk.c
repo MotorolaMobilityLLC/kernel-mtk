@@ -65,8 +65,6 @@
 /*****************************************************************************
  *						 D A T A	T Y P E S
  *****************************************************************************/
-#define pr_debug(format, args...)
-
 static int APLL1Counter;
 static int APLL2Counter;
 static int Aud_APLL_DIV_APLL1_cntr;
@@ -1370,7 +1368,7 @@ unsigned int SetCLkMclk(unsigned int I2snum, unsigned int SampleRate)
 		break;
 	default:
 		pr_debug("[AudioWarn] %s: I2snum = %d not recognized\n",
-			, __func__, I2snum);
+			 __func__, I2snum);
 		break;
 	}
 
