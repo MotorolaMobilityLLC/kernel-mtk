@@ -11,18 +11,18 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "mtk_spi.h"
-#include <linux/delay.h>
-#include <linux/device.h>
+#include <linux/spi/spi.h>
 #include <linux/init.h>
 #include <linux/module.h>
-#include <linux/spi/spi.h>
 #include <linux/types.h>
+#include <linux/device.h>
+#include <linux/delay.h>
+#include "mtk_spi.h"
 
-#include "mtk_spi_hal.h"
 #include <linux/dma-mapping.h>
-#include <linux/kthread.h>
 #include <linux/sched.h>
+#include "mtk_spi_hal.h"
+#include <linux/kthread.h>
 
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #define SPI_TRUSTONIC_TEE_SUPPORT

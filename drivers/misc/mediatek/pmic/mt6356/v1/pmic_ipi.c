@@ -30,16 +30,16 @@
  * Wilma Wu
  *
  ****************************************************************************/
-#include <include/pmic_ipi.h>
-#include <include/pmic_ipi_service_id.h>
 #include <linux/ratelimit.h>
 #include <mt-plat/upmu_common.h>
-#include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
+#include <sspm_ipi.h>
+#include <include/pmic_ipi.h>
+#include <include/pmic_ipi_service_id.h>
 
 #ifdef SSPM_STF
-#include "sspm_stf.h"
 #include <linux/init.h>
+#include "sspm_stf.h"
 #endif /*--SSPM_STF--*/
 
 unsigned int pmic_ipi_to_sspm(void *buffer, void *retbuf, unsigned char lock)

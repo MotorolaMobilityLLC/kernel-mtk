@@ -11,16 +11,16 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/timer.h>
 #include <linux/of.h>
 #include <linux/of_irq.h>
-#include <linux/timer.h>
 #ifdef CONFIG_ACCDET_EINT
 #include <linux/gpio.h>
 #endif
 
 /* for EINT register and enum */
-#include "accdet.h"
 #include <upmu_common.h>
+#include "accdet.h"
 
 #include "mtk_auxadc_intf.h"
 #include <mach/mtk_pmic.h>
@@ -839,7 +839,7 @@ static inline void clear_accdet_interrupt(void)
 	/* it is safe by using polling to adjust when to clear IRQ_CLR_BIT */
 	pmic_pwrap_write(ACCDET_CON12,
 			 pmic_pwrap_read(ACCDET_CON12) | ACCDET_IRQ_CLR_B8);
-	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", ___func__, ACCDET_CON12,
+	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", __func__, ACCDET_CON12,
 		 pmic_pwrap_read(ACCDET_CON12));
 }
 
@@ -860,7 +860,7 @@ static inline void disable_accdet(void)
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
 	while (reg_val & ACCDET_IRQ_B0) {
 		reg_val = pmic_pwrap_read(ACCDET_CON12);
-		ACCDET_DEBUG("[%s]Clear interrupt on-going..\n". __func__);
+		ACCDET_DEBUG("[%s]Clear interrupt on-going..\n", __func__);
 		msleep(20);
 	}
 	irq_temp = reg_val;
@@ -1956,7 +1956,7 @@ void accdet_int_handler(void)
 {
 	int ret = 0;
 
-	ACCDET_INFO("[%s]-Triggered!\n". __func__);
+	ACCDET_INFO("[%s]-Triggered!\n", __func__);
 	ret = accdet_irq_handler();
 	if (ret == 0)
 		ACCDET_ERROR("[%s]don't finished\n", __func__);
@@ -2483,7 +2483,7 @@ static void accdet_delay_callback(unsigned long a)
 		/* queue_work(accdet_workqueue, &accdet_work); */
 	} else {
 		ACCDET_INFO(
-			"[%s]err: accdet have been done or get dts failed!\n"
+			"[%s]err: accdet have been done or get dts failed!\n",
 			__func__);
 	}
 }
@@ -2634,7 +2634,7 @@ void mt_accdet_remove(void)
 	cdev_del(accdet_cdev);
 	unregister_chrdev_region(accdet_devno, 1);
 	input_unregister_device(kpd_accdet_dev);
-	ACCDET_DEBUG("[%s]Done!\n" __func__);
+	ACCDET_DEBUG("[%s]Done!\n", __func__);
 }
 
 #ifdef CONFIG_PM

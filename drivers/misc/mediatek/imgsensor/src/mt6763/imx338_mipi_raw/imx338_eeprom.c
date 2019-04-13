@@ -11,25 +11,25 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "kd_camera_typedef.h"
-#include <linux/atomic.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/fs.h>
+#include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
 #include <linux/uaccess.h>
-#include <linux/videodev2.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
+#include <linux/slab.h>
+#include "kd_camera_typedef.h"
 
 #define PFX "IMX338_pdafotp"
 #define LOG_INF(format, args...) pr_debug(PFX "[%s] " format, __func__, ##args)
 
-#include "imx338_eeprom.h"
 #include "kd_camera_hw.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
+#include "imx338_eeprom.h"
 
 #define USHORT unsigned short
 #define BYTE unsigned char

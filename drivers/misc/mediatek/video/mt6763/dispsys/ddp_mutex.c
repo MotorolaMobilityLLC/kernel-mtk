@@ -11,10 +11,10 @@
  * GNU General Public License for more details.
  */
 
-#include "ddp_mutex.h"
-#include "ddp_info.h"
-#include "ddp_log.h"
 #include "ddp_reg.h"
+#include "ddp_mutex.h"
+#include "ddp_log.h"
+#include "ddp_info.h"
 #include "disp_helper.h"
 
 static module_map_t module_mutex_map[DISP_MODULE_NUM] = {

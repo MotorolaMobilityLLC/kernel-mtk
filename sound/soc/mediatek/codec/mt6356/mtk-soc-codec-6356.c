@@ -49,12 +49,12 @@
 
 #include <linux/delay.h>
 #include <linux/dma-mapping.h>
-#include <linux/kthread.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/platform_device.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
+#include <linux/kthread.h>
+#include <linux/sched.h>
 
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -65,12 +65,12 @@
 #endif
 
 #ifdef CONFIG_MTK_AUXADC_INTF
-#include <mach/mtk_pmic.h>
 #include <mt-plat/mtk_auxadc_intf.h>
+#include <mach/mtk_pmic.h>
 #endif
 
-#include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-def.h"
+#include "mtk-auddrv-ana.h"
 #include "mtk-auddrv-gpio.h"
 
 #include "mtk-soc-analog-type.h"

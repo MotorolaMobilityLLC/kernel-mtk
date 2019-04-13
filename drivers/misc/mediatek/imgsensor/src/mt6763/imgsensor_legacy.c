@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "imgsensor_i2c.h"
 #include "kd_camera_typedef.h"
+#include "imgsensor_i2c.h"
 
 #ifdef IMGSENSOR_LEGACY_COMPAT
 extern struct IMGSENSOR_I2C_CFG *pgi2c_cfg_legacy;

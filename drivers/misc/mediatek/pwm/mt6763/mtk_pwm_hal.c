@@ -18,10 +18,10 @@
 
 #include <linux/types.h>
 
-#include <linux/clk.h>
+#include <mt-plat/mtk_pwm_hal_pub.h>
 #include <mach/mtk_pwm_hal.h>
 #include <mach/mtk_pwm_prv.h>
-#include <mt-plat/mtk_pwm_hal_pub.h>
+#include <linux/clk.h>
 
 #define PWM_PERI_ADDR_SHIFT_CTRL0 0x10003430
 #define PWM_OFFSET 0x3

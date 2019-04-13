@@ -11,18 +11,18 @@
  * GNU General Public License for more details.
  */
 
-#include "mt-plat/met_drv.h"
 #include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/printk.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/string.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/string.h>
+#include <linux/printk.h>
 #include <stdarg.h>
+#include <linux/slab.h>
+#include "mt-plat/met_drv.h"
 
 #include "ddp_mmp.h"
 #include "debug.h"
@@ -31,32 +31,33 @@
 
 #include "disp_lcm.h"
 #include "disp_utils.h"
-#include "mtkfb.h"
 #include "mtkfb_info.h"
+#include "mtkfb.h"
 
-#include "ddp_drv.h"
-#include "ddp_dump.h"
 #include "ddp_hal.h"
+#include "ddp_dump.h"
 #include "ddp_path.h"
+#include "ddp_drv.h"
 
 #include "m4u.h"
 
-#include "cmdq_core.h"
+#include "primary_display.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include "primary_display.h"
+#include "cmdq_core.h"
 
-#include "ddp_log.h"
 #include "ddp_manager.h"
+#include "disp_drv_platform.h"
+#include "display_recorder.h"
+#include "disp_session.h"
 #include "ddp_mmp.h"
+#include <linux/trace_events.h>
 #include "ddp_ovl.h"
 #include "ddp_rdma.h"
-#include "disp_drv_platform.h"
-#include "disp_session.h"
-#include "display_recorder.h"
 #include "ion_drv.h"
-#include <linux/trace_events.h>
+#include "ddp_log.h"
+
 
 enum DPREC_DEBUG_BIT_ENUM {
 	DPREC_DEBUG_BIT_OVERALL_SWITCH = 0,

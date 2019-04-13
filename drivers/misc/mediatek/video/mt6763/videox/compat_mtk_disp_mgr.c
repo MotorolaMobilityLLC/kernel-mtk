@@ -13,12 +13,12 @@
 
 #include "compat_mtk_disp_mgr.h"
 
-#include "debug.h"
 #include "disp_drv_log.h"
-#include "disp_drv_platform.h"
+#include "debug.h"
+#include "primary_display.h"
 #include "display_recorder.h"
 #include "mtkfb_fence.h"
-#include "primary_display.h"
+#include "disp_drv_platform.h"
 
 #ifdef CONFIG_COMPAT
 static int

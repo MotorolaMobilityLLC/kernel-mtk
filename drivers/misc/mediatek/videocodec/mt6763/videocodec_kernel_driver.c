@@ -11,32 +11,32 @@
  * GNU General Public License for more details.
  */
 
-#include <asm/page.h>
-#include <linux/cdev.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fs.h>
 #include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/jiffies.h>
-#include <linux/kdev_t.h>
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/mm_types.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/sched.h>
+#include <linux/kernel.h>
 #include <linux/types.h>
+#include <linux/device.h>
+#include <linux/kdev_t.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
+#include <linux/mm_types.h>
+#include <linux/mm.h>
+#include <linux/jiffies.h>
+#include <linux/sched.h>
 #include <linux/uaccess.h>
+#include <asm/page.h>
 #include <linux/vmalloc.h>
+#include <linux/interrupt.h>
 /* #include <mach/irqs.h> */
 /* #include <mach/x_define_irq.h> */
-#include "mt-plat/sync_write.h"
-#include <linux/delay.h>
+#include <linux/wait.h>
 #include <linux/proc_fs.h>
 #include <linux/semaphore.h>
-#include <linux/wait.h>
 #include <mt-plat/dma.h>
+#include <linux/delay.h>
+#include "mt-plat/sync_write.h"
 /*#include <linux/wakelock.h>*/
 #include <linux/sched.h>
 #include <linux/suspend.h>
@@ -48,19 +48,19 @@
 #endif
 
 #ifdef CONFIG_MTK_HIBERNATION
-#include <mach/diso.h>
 #include <mtk_hibernate_dpm.h>
+#include <mach/diso.h>
 #endif
 
+#include "videocodec_kernel_driver.h"
 #include "../videocodec_kernel.h"
-#include "drv_api.h"
+#include <asm/cacheflush.h>
+#include <linux/io.h>
+#include <asm/sizes.h>
+#include "val_types_private.h"
 #include "val_api_private.h"
 #include "val_log.h"
-#include "val_types_private.h"
-#include "videocodec_kernel_driver.h"
-#include <asm/cacheflush.h>
-#include <asm/sizes.h>
-#include <linux/io.h>
+#include "drv_api.h"
 #ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
 #endif
@@ -70,8 +70,8 @@
 #include <linux/of_irq.h>
 
 #if IS_ENABLED(CONFIG_COMPAT)
-#include <linux/compat.h>
 #include <linux/uaccess.h>
+#include <linux/compat.h>
 #endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING

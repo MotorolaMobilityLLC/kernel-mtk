@@ -13,25 +13,25 @@
 
 #define LOG_TAG "ddp_manager"
 
-#include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/mutex.h>
 #include <linux/spinlock.h>
 
-#include "ddp_clkmgr.h"
-#include "ddp_color.h"
-#include "ddp_debug.h"
-#include "ddp_drv.h"
-#include "ddp_irq.h"
-#include "ddp_log.h"
-#include "ddp_manager.h"
-#include "ddp_ovl.h"
-#include "ddp_path.h"
-#include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
-#include "ddp_reg.h"
-#include "disp_drv_platform.h"
 #include "disp_helper.h"
 #include "lcm_drv.h"
+#include "ddp_reg.h"
+#include "ddp_path.h"
+#include "ddp_irq.h"
+#include "ddp_drv.h"
+#include "ddp_debug.h"
+#include "ddp_manager.h"
+#include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
+#include "ddp_ovl.h"
+#include "ddp_color.h"
+#include "ddp_clkmgr.h"
+#include "ddp_log.h"
+#include "disp_drv_platform.h"
 
 /* #define __GED_NOTIFICATION_SUPPORT__ */
 #ifdef __GED_NOTIFICATION_SUPPORT__

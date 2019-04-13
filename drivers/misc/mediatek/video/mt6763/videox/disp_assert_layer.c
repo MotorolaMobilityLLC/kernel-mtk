@@ -11,21 +11,21 @@
  * GNU General Public License for more details.
  */
 
-#include "disp_assert_layer.h"
+#include <linux/types.h>
+#include "primary_display.h"
 #include "ddp_hal.h"
-#include "ddp_mmp.h"
 #include "disp_drv_log.h"
+#include "disp_assert_layer.h"
+#include <linux/semaphore.h>
+#include <linux/mutex.h>
+#include "ddp_mmp.h"
 #include "disp_drv_platform.h"
 #include "disp_session.h"
-#include "primary_display.h"
-#include <asm/cacheflush.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/semaphore.h>
-#include <linux/semaphore.h>
 #include <linux/slab.h>
 #include <linux/string.h>
-#include <linux/types.h>
+#include <linux/semaphore.h>
+#include <asm/cacheflush.h>
+#include <linux/module.h>
 
 /* /common part */
 #define DAL_BPP (2)

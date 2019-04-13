@@ -13,9 +13,9 @@
 
 #include "kd_imgsensor.h"
 
+#include "regulator/regulator.h"
 #include "gpio/gpio.h"
 #include "mclk/mclk.h"
-#include "regulator/regulator.h"
 
 #include "imgsensor_cfg_table.h"
 

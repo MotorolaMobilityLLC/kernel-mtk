@@ -12,68 +12,68 @@
  */
 
 #include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/kthread.h>
-#include <linux/ktime.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
-#include <linux/pm_wakeup.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/types.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+#include <linux/ktime.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/slab.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
 /*#include <linux/switch.h>*/
 #include <asm/cacheflush.h>
 /* #include "mtk_idle.h" */
-#include "mtk_spm.h" /* for sodi reg addr define */
+#include "mtk_spm.h"	/* for sodi reg addr define */
 /* #include "mtk_spm_idle.h" */
 /* #include "mach/eint.h" */
 /* #include <cust_eint.h> */
+#include "mt-plat/mtk_smi.h"
+#include "mtk_ion.h"
 #include "ion_drv.h"
 #include "m4u.h"
 #include "m4u_priv.h"
-#include "mt-plat/mtk_smi.h"
-#include "mtk_ion.h"
 
-#include "cmdq_core.h"
+#include "ddp_m4u.h"
+#include "disp_drv_platform.h"
+#include "debug.h"
+#include "disp_drv_log.h"
+#include "disp_lcm.h"
+#include "disp_utils.h"
+#include "mtkfb.h"
+#include "ddp_hal.h"
+#include "ddp_dump.h"
+#include "ddp_path.h"
+#include "ddp_drv.h"
+#include "ddp_reg.h"
+#include "disp_session.h"
+#include "primary_display.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include "ddp_drv.h"
-#include "ddp_dsi.h"
-#include "ddp_dump.h"
-#include "ddp_hal.h"
-#include "ddp_irq.h"
-#include "ddp_m4u.h"
-#include "ddp_manager.h"
-#include "ddp_mmp.h"
-#include "ddp_path.h"
+#include "cmdq_core.h"
 #include "ddp_rdma.h"
-#include "ddp_reg.h"
-#include "ddp_reg.h"
-#include "debug.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "disp_helper.h"
-#include "disp_lcm.h"
-#include "disp_session.h"
-#include "disp_session.h"
-#include "disp_utils.h"
+#include "ddp_manager.h"
+#include "mtkfb_fence.h"
 #include "display_recorder.h"
 #include "fbconfig_kdebug_x.h"
-#include "m4u.h"
-#include "mtk_disp_mgr.h"
+#include "ddp_mmp.h"
 #include "mtk_sync.h"
-#include "mtkfb.h"
+#include "ddp_irq.h"
+#include "disp_session.h"
+#include "disp_helper.h"
+#include "ddp_reg.h"
+#include "mtk_disp_mgr.h"
+#include "ddp_dsi.h"
+#include "m4u.h"
 #include "mtkfb_console.h"
-#include "mtkfb_fence.h"
-#include "primary_display.h"
 #if defined(CONFIG_MTK_LEGACY)
-#include <cust_gpio_usage.h>
 #include <mach/mtk_gpio.h>
+#include <cust_gpio_usage.h>
 #else
 #include "disp_dts_gpio.h"
 #endif
@@ -92,13 +92,13 @@
 #include "disp_lowpower.h"
 #include "disp_recovery.h"
 /* #include "mt_spm_sodi_cmdq.h" */
-#include "ddp_aal.h"
-#include "ddp_gamma.h"
 #include "ddp_od.h"
+#include "layering_rule.h"
+#include "disp_rect.h"
 #include "disp_arr.h"
 #include "disp_partial.h"
-#include "disp_rect.h"
-#include "layering_rule.h"
+#include "ddp_aal.h"
+#include "ddp_gamma.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)

@@ -13,8 +13,8 @@
 
 #ifndef __DISP_DRV_LOG_H__
 #define __DISP_DRV_LOG_H__
-#include "ddp_debug.h"
 #include "display_recorder.h"
+#include "ddp_debug.h"
 #include "mt-plat/aee.h"
 
 

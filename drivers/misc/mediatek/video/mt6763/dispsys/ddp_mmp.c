@@ -14,8 +14,8 @@
 #define LOG_TAG "MMP"
 
 #include "ddp_mmp.h"
-#include "ddp_log.h"
 #include "ddp_reg.h"
+#include "ddp_log.h"
 
 #include "ddp_m4u.h"
 

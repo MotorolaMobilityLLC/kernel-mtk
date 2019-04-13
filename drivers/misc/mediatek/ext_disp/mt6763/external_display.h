@@ -16,8 +16,8 @@
 
 #include "ddp_hal.h"
 #include "ddp_manager.h"
-#include "disp_lcm.h"
 #include "extd_info.h"
+#include "disp_lcm.h"
 
 #define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
 

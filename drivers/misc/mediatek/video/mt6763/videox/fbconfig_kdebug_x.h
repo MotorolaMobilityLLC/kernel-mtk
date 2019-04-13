@@ -14,8 +14,8 @@
 #ifndef __FBCONFIG_KDEBUG_H
 #define __FBCONFIG_KDEBUG_H
 
-#include "ddp_ovl.h"
 #include <linux/types.h>
+#include "ddp_ovl.h"
 
 void PanelMaster_Init(void);
 void PanelMaster_Deinit(void);

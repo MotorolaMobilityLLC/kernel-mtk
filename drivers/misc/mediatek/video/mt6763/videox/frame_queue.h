@@ -13,10 +13,10 @@
 
 #ifndef __DISP_FRAME_QUEUE_H__
 
-#include <linux/mutex.h>
-#include <linux/sched.h>
 #include <linux/types.h>
 #include <linux/wait.h>
+#include <linux/sched.h>
+#include <linux/mutex.h>
 
 struct frame_queue_head_t {
 	struct list_head queue;

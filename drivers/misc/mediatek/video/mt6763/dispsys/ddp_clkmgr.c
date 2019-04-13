@@ -11,16 +11,16 @@
  * GNU General Public License for more details.
  */
 
-#include "mt-plat/sync_write.h"
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/types.h>
+#include "mt-plat/sync_write.h"
 
-#include "ddp_clkmgr.h"
+#include "ddp_reg.h"
 #include "ddp_info.h"
 #include "ddp_log.h"
-#include "ddp_reg.h"
 #include "primary_display.h"
+#include "ddp_clkmgr.h"
 
 /* #define READ_REGISTER_UINT32(reg)		(*(volatile uint32_t *
  * const)(reg))

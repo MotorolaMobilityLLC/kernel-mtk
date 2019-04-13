@@ -11,68 +11,69 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include "ion_drv.h"
-#include "mtk_ion.h"
 #include <linux/delay.h>
-#include <linux/interrupt.h>
-#include <linux/kthread.h>
-#include <linux/ktime.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/types.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+#include <linux/ktime.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/slab.h>
+#include <linux/interrupt.h>
+#include "ion_drv.h"
+#include "mtk_ion.h"
 /* #include "mtk_idle.h" */
 #include "mtk_spm_reg.h"
 /* #include "pcm_def.h" */
 /* #include "mtk_spm_idle.h" */
-#include "m4u.h"
 #include "mtk_smi.h"
+#include "m4u.h"
 
-#include "cmdq_core.h"
+#include "disp_drv_platform.h"
+#include "debug.h"
+#include "ddp_debug.h"
+#include "disp_drv_log.h"
+#include "disp_lcm.h"
+#include "disp_utils.h"
+#include "disp_session.h"
+#include "primary_display.h"
+#include "disp_helper.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include "ddp_clkmgr.h"
-#include "ddp_debug.h"
+#include "cmdq_core.h"
 #include "ddp_manager.h"
-#include "debug.h"
-#include "disp_drv_log.h"
-#include "disp_drv_platform.h"
-#include "disp_helper.h"
 #include "disp_lcm.h"
-#include "disp_lcm.h"
-#include "disp_session.h"
-#include "disp_utils.h"
+#include "ddp_clkmgr.h"
 #include "mtk_smi.h"
-#include "primary_display.h"
 /* #include "mmdvfs_mgr.h" */
-#include "ddp_log.h"
 #include "disp_drv_log.h"
+#include "ddp_log.h"
 #include "disp_lowpower.h"
 /* device tree */
-#include <linux/io.h>
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/io.h>
 /* #include "mach/eint.h" */
 #if defined(CONFIG_MTK_LEGACY)
-#include <cust_eint.h>
-#include <cust_gpio_usage.h>
 #include <mach/mtk_gpio.h>
+#include <cust_gpio_usage.h>
+#include <cust_eint.h>
 #else
 #include "disp_dts_gpio.h"
 #include <linux/gpio.h>
 #endif
 
-#include "ddp_dsi.h"
-#include "disp_partial.h"
-#include "disp_recovery.h"
 #include "external_display.h"
+#include "disp_recovery.h"
+#include "disp_partial.h"
+#include "ddp_dsi.h"
+
 
 static struct task_struct *primary_display_check_task; /* For abnormal check */
 static wait_queue_head_t _check_task_wq; /* used for blocking check task  */

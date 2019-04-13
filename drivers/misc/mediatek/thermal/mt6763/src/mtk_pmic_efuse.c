@@ -11,24 +11,24 @@
  * GNU General Public License for more details.
  */
 
-#include "mach/mtk_thermal.h"
-#include "mt-plat/mtk_thermal_monitor.h"
-#include "mtk_thermal_typedefs.h"
-#include <linux/acpi.h>
-#include <linux/delay.h>
-#include <linux/dmi.h>
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/dmi.h>
+#include <linux/acpi.h>
+#include <linux/thermal.h>
 #include <linux/platform_device.h>
+#include <mt-plat/aee.h>
+#include <linux/types.h>
+#include <linux/delay.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/thermal.h>
-#include <linux/types.h>
-#include <linux/version.h>
-#include <mach/mtk_pmic.h>
-#include <mt-plat/aee.h>
-#include <mt-plat/mtk_auxadc_intf.h>
+#include "mt-plat/mtk_thermal_monitor.h"
+#include "mtk_thermal_typedefs.h"
+#include "mach/mtk_thermal.h"
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_auxadc_intf.h>
+#include <mach/mtk_pmic.h>
 #include <tspmic_settings.h>
 /*=============================================================
  *Local variable definition

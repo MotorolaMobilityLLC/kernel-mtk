@@ -15,13 +15,12 @@
 #ifndef _EXTD_HDMI_TYPES_H_
 #define _EXTD_HDMI_TYPES_H_
 
-#include <linux/atomic.h>
 #include <linux/list.h>
+#include <linux/atomic.h>
 
-#include "extd_log.h"
 #include "hdmi_drv.h"
 #include "mtk_sync.h"
-
+#include "extd_log.h"
 /* ~~~~~~typedef definition declare~~~~~~ */
 enum HDMI_STATUS {
 	HDMI_STATUS_OK = 0,

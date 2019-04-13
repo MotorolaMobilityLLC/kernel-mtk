@@ -12,19 +12,19 @@
  */
 
 #define LOG_TAG "OVL"
-#include "ddp_ovl.h"
-#include "ddp_clkmgr.h"
-#include "ddp_hal.h"
-#include "ddp_info.h"
 #include "ddp_log.h"
+#include "ddp_clkmgr.h"
 #include "ddp_m4u.h"
-#include "ddp_mmp.h"
-#include "ddp_reg.h"
-#include "debug.h"
-#include "disp_assert_layer.h"
-#include "disp_rect.h"
-#include "primary_display.h"
 #include <linux/delay.h>
+#include "ddp_info.h"
+#include "ddp_hal.h"
+#include "ddp_reg.h"
+#include "ddp_ovl.h"
+#include "primary_display.h"
+#include "disp_rect.h"
+#include "disp_assert_layer.h"
+#include "ddp_mmp.h"
+#include "debug.h"
 
 #define OVL_REG_BACK_MAX (40)
 #define OVL_LAYER_OFFSET (0x20)

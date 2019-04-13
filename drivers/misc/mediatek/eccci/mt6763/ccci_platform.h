@@ -14,10 +14,10 @@
 #ifndef __CCCI_PLATFORM_H__
 #define __CCCI_PLATFORM_H__
 
-#include "ccci_config.h"
-#include "hif/ccci_hif_cldma.h"
-#include "modem_sys.h"
 #include <mt-plat/sync_write.h>
+#include "ccci_config.h"
+#include "modem_sys.h"
+#include "hif/ccci_hif_cldma.h"
 
 #define INVALID_ADDR (0xF0000000)  /* the last EMI bank, properly not used */
 #define KERN_EMI_BASE (0x40000000) /* Bank4 */

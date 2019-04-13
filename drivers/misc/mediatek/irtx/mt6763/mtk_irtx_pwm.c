@@ -12,31 +12,31 @@
  */
 
 #include <linux/cdev.h>
-#include <linux/clk.h>
-#include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/dma-mapping.h>
 #include <linux/fs.h>
-#include <linux/interrupt.h>
-#include <linux/irq.h>
-#include <linux/kobject.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/poll.h>
-#include <linux/slab.h>
-#include <linux/time.h>
-#include <linux/uaccess.h>
 #include <linux/uaccess.h>
 #include <linux/wait.h>
+#include <linux/module.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
+#include <linux/kthread.h>
+#include <linux/poll.h>
+#include <linux/time.h>
+#include <linux/delay.h>
+#include <linux/kobject.h>
+#include <linux/dma-mapping.h>
+#include <linux/platform_device.h>
+#include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/clk.h>
 
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_fdt.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 
-#include <mach/mtk_pwm_hal.h>
 #include <mt-plat/mtk_pwm.h>
+#include <mach/mtk_pwm_hal.h>
 
 #include "mtk_irtx.h"
 

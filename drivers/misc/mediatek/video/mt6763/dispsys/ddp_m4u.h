@@ -14,11 +14,11 @@
 #ifndef __DSI_M4U_H__
 #define __DSI_M4U_H__
 
-#include "ddp_hal.h"
-#include "ion_drv.h"
 #include "m4u.h"
 #include "m4u_port.h"
+#include "ddp_hal.h"
 #include "mtk_ion.h"
+#include "ion_drv.h"
 
 #ifdef __cplusplus
 extern "C" {

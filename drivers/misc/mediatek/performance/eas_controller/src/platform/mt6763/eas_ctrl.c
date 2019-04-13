@@ -19,9 +19,9 @@
 #include <asm/div64.h>
 #include <linux/kernel.h>
 
-#include <fpsgo_common.h>
 #include <mach/mtk_cpufreq_api.h>
 #include <mach/mtk_ppm_api.h>
+#include <fpsgo_common.h>
 #include <mtk_dramc.h>
 
 /*

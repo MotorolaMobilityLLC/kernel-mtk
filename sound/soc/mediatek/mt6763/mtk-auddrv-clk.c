@@ -47,14 +47,14 @@
  *				E X T E R N A L	R E F E R E N C E S
  *****************************************************************************/
 
+#include <linux/clk.h>
+#include "mtk-auddrv-common.h"
 #include "mtk-auddrv-clk.h"
 #include "mtk-auddrv-afe.h"
-#include "mtk-auddrv-common.h"
 #include "mtk-soc-digital-type.h"
-#include <linux/clk.h>
 
-#include <linux/delay.h>
 #include <linux/spinlock.h>
+#include <linux/delay.h>
 #if defined(_MT_IDLE_HEADER) && !defined(CONFIG_FPGA_EARLY_PORTING)
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"

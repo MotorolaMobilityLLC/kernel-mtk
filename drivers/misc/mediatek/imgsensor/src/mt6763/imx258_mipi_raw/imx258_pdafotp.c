@@ -11,15 +11,15 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/atomic.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/fs.h>
+#include <linux/videodev2.h>
 #include <linux/i2c.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
 #include <linux/uaccess.h>
-#include <linux/videodev2.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
+#include <linux/slab.h>
 
 #define IMX258_PDAFOTP_DEBUG
 

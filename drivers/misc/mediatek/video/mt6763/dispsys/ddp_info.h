@@ -13,14 +13,14 @@
 
 #ifndef _H_DDP_INFO
 #define _H_DDP_INFO
-#include <disp_session.h>
 #include <linux/types.h>
 #include <linux/wait.h>
+#include <disp_session.h>
 
 #include "ddp_hal.h"
+#include "lcm_drv.h"
 #include "ddp_ovl.h"
 #include "disp_event.h"
-#include "lcm_drv.h"
 
 #define _UFMT_ID_SHIFT 0
 #define _UFMT_ID_WIDTH 8

@@ -11,13 +11,13 @@
  * GNU General Public License for more details.
  */
 
-#include "mtk_smi.h"
-#include "smi_common.h"
-#include "smi_configuration.h"
-#include "smi_debug.h"
-#include "smi_reg.h"
 #include <linux/io.h>
 #include <linux/string.h>
+#include "mtk_smi.h"
+#include "smi_configuration.h"
+#include "smi_common.h"
+#include "smi_reg.h"
+#include "smi_debug.h"
 
 /* add static after all platform setting parameters moved to here */
 

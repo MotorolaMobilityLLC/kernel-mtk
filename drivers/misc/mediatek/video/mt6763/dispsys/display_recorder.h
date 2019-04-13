@@ -14,10 +14,10 @@
 #ifndef _DISPLAY_RECOREDR_H_
 #define _DISPLAY_RECOREDR_H_
 
-#include "ddp_info.h"
+#include <linux/types.h>
 #include "mmprofile.h"
 #include "mmprofile_function.h"
-#include <linux/types.h>
+#include "ddp_info.h"
 
 enum DPREC_EVENT {
 	DPREC_EVENT_CMDQ_SET_DIRTY = 0xff00,

@@ -11,27 +11,27 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/debugfs.h>
-#include <linux/fb.h>
-#include <linux/sched.h>
 #include <linux/string.h>
 #include <linux/time.h>
-#include <linux/types.h>
 #include <linux/uaccess.h>
+#include <linux/fb.h>
 #include <linux/vmalloc.h>
+#include <linux/sched.h>
+#include <linux/debugfs.h>
 #include <linux/wait.h>
+#include <linux/types.h>
 
-#include "ddp_dsi.h"
-#include "ddp_irq.h"
-#include "ddp_ovl.h"
-#include "ddp_path.h"
-#include "debug.h"
 #include "disp_drv_platform.h"
-#include "fbconfig_kdebug.h"
-#include "lcm_drv.h"
 #include "m4u_priv.h"
 #include "mtkfb.h"
+#include "debug.h"
+#include "lcm_drv.h"
+#include "ddp_path.h"
+#include "fbconfig_kdebug.h"
 #include "primary_display.h"
+#include "ddp_ovl.h"
+#include "ddp_dsi.h"
+#include "ddp_irq.h"
 
 /* #include "disp_drv.h" */
 /* #include "lcd_drv.h" */

@@ -16,43 +16,43 @@
 #include "extd_info.h"
 
 #if defined(CONFIG_MTK_HDMI_SUPPORT)
-#include <linux/atomic.h>
-#include <linux/cdev.h>
+#include <linux/mm.h>
+#include <linux/init.h>
+#include <linux/fb.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fb.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/io.h>
-#include <linux/kthread.h>
-#include <linux/list.h>
-#include <linux/miscdevice.h>
-#include <linux/mm.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/dma-mapping.h>
+#include <linux/kthread.h>
+#include <linux/vmalloc.h>
+#include <linux/miscdevice.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+#include <linux/cdev.h>
 #include <linux/slab.h>
-#include <linux/string.h>
+#include <linux/module.h>
+#include <linux/list.h>
 #include <linux/switch.h>
 #include <linux/types.h>
 #include <linux/uaccess.h>
-#include <linux/vmalloc.h>
+#include <linux/atomic.h>
+#include <linux/io.h>
+#include <linux/string.h>
 
 #include <asm/cacheflush.h>
-#include <asm/page.h>
 #include <asm/tlbflush.h>
+#include <asm/page.h>
 
 #ifdef CONFIG_MTK_M4U
 #include "m4u.h"
 #endif
 
 #include "mt-plat/mtk_boot_common.h"
-#include "mtkfb.h"
 #include "mtkfb_info.h"
+#include "mtkfb.h"
 
-#include "display_recorder.h"
 #include "mtkfb_fence.h"
+#include "display_recorder.h"
 
 #include "ddp_info.h"
 #include "ddp_irq.h"
@@ -60,17 +60,17 @@
 
 #include "disp_session.h"
 
-#include "extd_factory.h"
-#include "extd_hdmi.h"
-#include "extd_hdmi_types.h"
-#include "extd_log.h"
 #include "extd_platform.h"
+#include "extd_hdmi.h"
+#include "extd_factory.h"
+#include "extd_log.h"
 #include "extd_utils.h"
+#include "extd_hdmi_types.h"
 #include "external_display.h"
 
 #ifdef CONFIG_MTK_SMARTBOOK_SUPPORT
-#include "smartbook.h"
 #include <linux/sbsuspend.h>
+#include "smartbook.h"
 #endif
 
 #ifdef MHL_DYNAMIC_VSYNC_OFFSET

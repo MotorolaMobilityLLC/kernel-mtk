@@ -12,12 +12,13 @@
  */
 
 #include <linux/delay.h>
-#include <linux/string.h>
 #include <linux/uaccess.h>
+#include <linux/string.h>
 
+
+#include "extd_log.h"
 #include "extd_factory.h"
 #include "extd_info.h"
-#include "extd_log.h"
 #include "external_display.h"
 
 #include "dpi_dvt_test.h"

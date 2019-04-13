@@ -13,30 +13,30 @@
 
 /*****************************************************************************/
 /*****************************************************************************/
-#include <linux/cdev.h>
+#include <linux/mm.h>
+#include <linux/init.h>
 #include <linux/delay.h>
 #include <linux/device.h>
-#include <linux/file.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/list.h>
-#include <linux/miscdevice.h>
-#include <linux/mm.h>
-#include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/miscdevice.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+#include <linux/cdev.h>
+#include <linux/module.h>
+#include <linux/list.h>
 /*#include <linux/switch.h>*/
-#include <linux/fb.h>
 #include <linux/types.h>
+#include <linux/fb.h>
 
-#include <linux/atomic.h>
 #include <linux/uaccess.h>
+#include <linux/atomic.h>
 
-#include "extd_factory.h"
 #include "extd_log.h"
-#include "extd_platform.h"
 #include "extd_utils.h"
+#include "extd_factory.h"
 #include "mtk_extd_mgr.h"
 #include <linux/suspend.h>
+#include "extd_platform.h"
 
 #define EXTD_DEVNAME "hdmitx"
 #define EXTD_DEV_ID(id) (((id) >> 16) & 0x0ff)

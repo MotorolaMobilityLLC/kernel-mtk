@@ -14,8 +14,8 @@
 #ifndef __MD_SYS1_PLATFORM_H__
 #define __MD_SYS1_PLATFORM_H__
 
-#include "ccif_hif_platform.h"
 #include <linux/skbuff.h>
+#include "ccif_hif_platform.h"
 
 /* this is the platform header file for CLDMA MODEM, not just CLDMA! */
 

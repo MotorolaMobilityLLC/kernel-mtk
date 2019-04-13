@@ -12,44 +12,44 @@
  */
 
 #include <generated/autoconf.h>
-#include <linux/cdev.h>
-#include <linux/debugfs.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/device.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/kdev_t.h>
 #include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/list.h>
+#include <linux/init.h>
 #include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/pm_wakeup.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
-#include <linux/sched.h>
-#include <linux/seq_file.h>
 #include <linux/slab.h>
+#include <linux/sched.h>
 #include <linux/spinlock.h>
-#include <linux/syscalls.h>
-#include <linux/writeback.h>
+#include <linux/interrupt.h>
+#include <linux/list.h>
+#include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/device.h>
+#include <linux/pm_wakeup.h>
+#include <linux/device.h>
+#include <linux/kdev_t.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/delay.h>
 #include <mt-plat/aee.h>
+#include <linux/proc_fs.h>
+#include <linux/debugfs.h>
+#include <linux/syscalls.h>
+#include <linux/sched.h>
+#include <linux/writeback.h>
+#include <linux/seq_file.h>
 #ifdef CONFIG_OF
 #include <linux/of.h>
-#include <linux/of_device.h>
-#include <linux/of_fdt.h>
 #include <linux/of_irq.h>
 #include <linux/regulator/of_regulator.h>
+#include <linux/of_device.h>
+#include <linux/of_fdt.h>
 #endif
 #include <linux/uaccess.h>
 
-#include "include/pmic.h"
-#include "include/pmic_irq.h"
-#include "include/pmic_throttling_dlpt.h"
-#include <mt-plat/mtk_auxadc_intf.h>
 #include <mt-plat/upmu_common.h>
+#include <mt-plat/mtk_auxadc_intf.h>
+#include "include/pmic.h"
+#include "include/pmic_throttling_dlpt.h"
+#include "include/pmic_irq.h"
 
 #include <mach/mtk_pmic_wrap.h>
 #include <mt-plat/mtk_rtc.h>
@@ -66,14 +66,14 @@
 
 #if defined(CONFIG_MTK_SMART_BATTERY)
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
-#include <linux/reboot.h>
-#include <mach/mtk_battery_property.h>
 #include <mt-plat/mtk_battery.h>
+#include <mach/mtk_battery_property.h>
+#include <linux/reboot.h>
 #include <mtk_battery_internal.h>
 #else
-#include <mach/mtk_battery_meter.h>
-#include <mt-plat/battery_common.h>
 #include <mt-plat/battery_meter.h>
+#include <mt-plat/battery_common.h>
+#include <mach/mtk_battery_meter.h>
 #endif
 #endif
 

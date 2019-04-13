@@ -11,35 +11,35 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/cpu.h>
-#include <linux/cpumask.h>
 #include <linux/jiffies.h>
-#include <linux/kallsyms.h>
-#include <linux/kobject.h>
-#include <linux/kthread.h>
-#include <linux/miscdevice.h>
-#include <linux/module.h>
-#include <linux/moduleparam.h>
-#include <linux/notifier.h>
-#include <linux/printk.h>
+#include <linux/time.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/slab.h>
-#include <linux/string.h>
-#include <linux/suspend.h>
-#include <linux/time.h>
-#include <linux/uaccess.h>
+#include <linux/kallsyms.h>
 #include <linux/utsname.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/uaccess.h>
+#include <linux/printk.h>
+#include <linux/string.h>
+#include <linux/notifier.h>
+#include <linux/suspend.h>
+#include <linux/cpu.h>
+#include <linux/cpumask.h>
+#include <linux/miscdevice.h>
+#include <linux/slab.h>
+#include <linux/kobject.h>
+#include <linux/kthread.h>
 
 #include <linux/ring_buffer.h>
 #include <linux/trace_events.h>
 #include <trace.h>
 
+#include <linux/platform_device.h>
+#include <mt-plat/met_drv.h>
+#include <linux/sched.h>
 #include "mtk_devinfo.h"
 #include "smart.h"
-#include <linux/platform_device.h>
-#include <linux/sched.h>
-#include <mt-plat/met_drv.h>
 
 #define SEQ_printf(m, x...)                                                   \
 	do {                                                                  \

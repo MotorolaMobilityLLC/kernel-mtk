@@ -12,24 +12,24 @@
  */
 
 /* #define DEBUG 1 */
-#include "mach/mtk_thermal.h"
-#include "mt-plat/mtk_thermal_monitor.h"
-#include <linux/acpi.h>
-#include <linux/bug.h>
-#include <linux/delay.h>
-#include <linux/dmi.h>
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/dmi.h>
+#include <linux/acpi.h>
+#include <linux/thermal.h>
 #include <linux/platform_device.h>
+#include <mt-plat/aee.h>
+#include <linux/types.h>
+#include <linux/delay.h>
 #include <linux/proc_fs.h>
+#include <linux/spinlock.h>
+#include <mt-plat/sync_write.h>
+#include "mt-plat/mtk_thermal_monitor.h"
 #include <linux/seq_file.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
-#include <linux/thermal.h>
-#include <linux/types.h>
-#include <linux/version.h>
-#include <mt-plat/aee.h>
-#include <mt-plat/sync_write.h>
+#include "mach/mtk_thermal.h"
+#include <linux/bug.h>
 
 #if defined(CONFIG_MTK_CLKMGR)
 #include <mach/mtk_clkmgr.h>
@@ -39,25 +39,26 @@
 
 #include <mtk_eem.h>
 
-#include <linux/time.h>
 #include <mach/wd_api.h>
 #include <mtk_gpu_utility.h>
+#include <linux/time.h>
 
 #include <mach/mtk_clkmgr.h>
 #define __MT_MTK_TS_CPU_C__
 #include <tscpu_settings.h>
 
-/* 1: turn on RT kthread for thermal protection in this sw module; 0: turn off
+/* 1: turn on RT kthread for thermal protection in this sw module;
+ * 0: turn off
  */
 #if MTK_TS_CPU_RT
-#include <linux/kthread.h>
 #include <linux/sched.h>
+#include <linux/kthread.h>
 #endif
 
 #ifdef CONFIG_OF
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
 #endif
 #define __MT_MTK_TS_CPU_C__
 

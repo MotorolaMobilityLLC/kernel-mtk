@@ -20,7 +20,7 @@
 #define VOLT_DOWN 1
 
 #include \
-"../../../../../base/power/cpufreq_v1/src/mach/mt6761/mtk_cpufreq_config.h"
+"../../../../../base/power/cpufreq_v1/src/mach/mt6763/mtk_cpufreq_config.h"
 
 enum cpu_dvfs_sched_type {
 	SCHE_INVALID,

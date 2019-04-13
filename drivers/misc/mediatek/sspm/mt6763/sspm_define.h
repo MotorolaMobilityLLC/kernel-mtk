@@ -13,8 +13,8 @@
 #ifndef __SSPM_DEFINE_H__
 #define __SSPM_DEFINE_H__
 
-#include <asm/arch_timer.h>
 #include <linux/param.h> /* for HZ */
+#include <asm/arch_timer.h>
 
 #define SSPM_MBOX_MAX 5
 #define SSPM_CFG_OFS_SEMA 0x048

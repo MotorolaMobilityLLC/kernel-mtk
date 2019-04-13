@@ -14,8 +14,8 @@
 #ifndef _MT6798_CCU_HW_H_
 #define _MT6798_CCU_HW_H_
 
-#include "ccu_drv.h"
 #include "ccu_reg.h"
+#include "ccu_drv.h"
 
 /*spare register define*/
 #define CCU_STA_REG_SW_INIT_DONE        CCU_INFO30

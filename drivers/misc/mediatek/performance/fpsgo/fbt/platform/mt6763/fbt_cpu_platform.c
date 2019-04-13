@@ -14,8 +14,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "fbt_cpu_platform.h"
 #include "eas_controller.h"
+#include "fbt_cpu_platform.h"
 
 #define CLUSTER_FREQ 1287000
 

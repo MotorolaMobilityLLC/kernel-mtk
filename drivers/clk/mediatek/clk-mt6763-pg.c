@@ -15,13 +15,13 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include <linux/clkdev.h>
-#include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/clkdev.h>
 
-#include "clk-mt6763-pg.h"
 #include "clk-mtk-v1.h"
+#include "clk-mt6763-pg.h"
 
 #include <dt-bindings/clock/mt6763-clk.h>
 

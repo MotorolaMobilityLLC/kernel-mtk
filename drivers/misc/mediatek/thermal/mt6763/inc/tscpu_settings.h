@@ -18,8 +18,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 
-#include "clatm_initcfg.h"
 #include "tzcpu_initcfg.h"
+#include "clatm_initcfg.h"
 #include <mtk_eem.h>
 
 /*=============================================================

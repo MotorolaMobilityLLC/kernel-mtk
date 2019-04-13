@@ -17,26 +17,26 @@
 
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) &&                               \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 1)
-#include <linux/delay.h>
-#include <linux/dma-mapping.h>
-#include <linux/kthread.h>
 #include <linux/mm.h>
 #include <linux/slab.h>
+#include <linux/dma-mapping.h>
 #include <linux/vmalloc.h>
+#include <linux/delay.h>
+#include <linux/kthread.h>
 
 #include <linux/atomic.h>
 #include <linux/io.h>
 
 #include "mach/irqs.h"
 
-#include "ddp_info.h"
 #include "ddp_irq.h"
-#include "epd_drv.h"
-#include "extd_log.h"
-#include "extd_platform.h"
-#include "external_display.h"
+#include "ddp_info.h"
 #include "mtkfb_fence.h"
 #include "mtkfb_info.h"
+#include "epd_drv.h"
+#include "external_display.h"
+#include "extd_log.h"
+#include "extd_platform.h"
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~the static
  * variable~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

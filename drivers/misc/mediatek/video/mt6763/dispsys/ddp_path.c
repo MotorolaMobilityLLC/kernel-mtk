@@ -14,16 +14,16 @@
 #define LOG_TAG "ddp_path"
 #include "ddp_log.h"
 
+#include <linux/types.h>
 #include "ddp_clkmgr.h"
 #include "ddp_reg.h"
-#include <linux/types.h>
 
 #include "ddp_debug.h"
-#include "ddp_hal.h"
 #include "ddp_path.h"
-#include "ddp_path.h"
-#include "disp_helper.h"
 #include "primary_display.h"
+#include "ddp_hal.h"
+#include "disp_helper.h"
+#include "ddp_path.h"
 
 #include "m4u.h"
 

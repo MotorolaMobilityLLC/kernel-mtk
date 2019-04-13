@@ -11,27 +11,27 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/cdev.h>
-#include <linux/device.h>
-#include <linux/device.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/irq.h>
 #include <linux/kernel.h>
-#include <linux/mm.h>
 #include <linux/module.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#include <linux/of_platform.h>
+#include <linux/interrupt.h>
+#include <linux/device.h>
 #include <linux/platform_device.h>
-#include <linux/platform_device.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
+#include <linux/mm.h>
+#include <linux/uaccess.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
+#include <linux/irq.h>
+#include <linux/sched.h>
+#include <linux/cdev.h>
+#include <linux/init.h>
+#include <linux/fs.h>
+#include <linux/proc_fs.h>
+#include <linux/device.h>
+#include <linux/platform_device.h>
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
 #include <linux/types.h>
-#include <linux/uaccess.h>
 
 #ifdef CONFIG_MTK_HIBERNATION
 #include <mtk_hibernate_dpm.h>
@@ -40,9 +40,9 @@
 /* CCF */
 #include <linux/clk.h>
 
-#include "devapc.h"
 #include "mtk_io.h"
 #include "sync_write.h"
+#include "devapc.h"
 
 /* 0 for early porting */
 #define DEVAPC_TURN_ON 1

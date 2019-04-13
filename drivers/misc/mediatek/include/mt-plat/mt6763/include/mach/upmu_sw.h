@@ -11,8 +11,8 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef _MT_PMIC_UPMU_SW_MT6357_H_
-#define _MT_PMIC_UPMU_SW_MT6357_H_
+#ifndef _MT_PMIC_UPMU_SW_H_
+#define _MT_PMIC_UPMU_SW_H_
 
 #include <mach/upmu_hw.h>
 
@@ -399,3 +399,4 @@ extern void PMIC_INIT_SETTING_V1(void);
 extern int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur);
 
 #endif /* _MT_PMIC_UPMU_SW_H_ */
+

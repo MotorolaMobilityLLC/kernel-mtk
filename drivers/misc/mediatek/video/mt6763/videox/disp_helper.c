@@ -12,24 +12,24 @@
  */
 
 #include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/types.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
 
 #include "disp_drv_log.h"
 #include "primary_display.h"
 
-#include "disp_drv_platform.h"
-#include "disp_helper.h"
-#include "mt-plat/mtk_chip.h"
 #include "mtk_boot.h"
+#include "disp_helper.h"
+#include "disp_drv_platform.h"
 #include "primary_display.h"
+#include "mt-plat/mtk_chip.h"
 
 /* use this magic_code to detect memory corruption */
 #define MAGIC_CODE 0xDEADAAA0U

@@ -14,8 +14,8 @@
 #ifndef __EXTD_MULTI_CONTROL_H__
 #define __EXTD_MULTI_CONTROL_H__
 
-#include "disp_session.h"
 #include "extd_info.h"
+#include "disp_session.h"
 
 void external_display_control_init(void);
 int external_display_trigger(enum EXTD_TRIGGER_MODE trigger,

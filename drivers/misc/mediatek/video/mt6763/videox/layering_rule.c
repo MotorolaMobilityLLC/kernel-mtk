@@ -12,21 +12,21 @@
  */
 
 #include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/types.h>
-#include <linux/vmalloc.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/vmalloc.h>
+#include <linux/slab.h>
 
+#include "mtk_dramc.h"
 #include "layering_rule.h"
 #include "mtk_disp_mgr.h"
-#include "mtk_dramc.h"
 
 static struct layering_rule_ops l_rule_ops;
 static struct layering_rule_info_t l_rule_info;

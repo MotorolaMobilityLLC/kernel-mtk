@@ -13,10 +13,10 @@
 
 #ifndef _H_DDP_LOG_
 #define _H_DDP_LOG_
+#include "mt-plat/aee.h"
+#include "display_recorder.h"
 #include "ddp_debug.h"
 #include "disp_drv_log.h"
-#include "display_recorder.h"
-#include "mt-plat/aee.h"
 
 #ifndef LOG_TAG
 #define LOG_TAG

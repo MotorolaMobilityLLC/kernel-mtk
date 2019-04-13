@@ -11,12 +11,12 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/interrupt.h>
 #include <linux/slab.h>
+#include <linux/interrupt.h>
 
-#include "m4u_hw.h"
-#include "m4u_platform.h"
 #include "m4u_priv.h"
+#include "m4u_platform.h"
+#include "m4u_hw.h"
 
 #include <linux/of.h>
 #include <linux/of_address.h>

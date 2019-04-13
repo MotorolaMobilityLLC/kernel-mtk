@@ -13,16 +13,16 @@
 
 #ifndef __M4U_PRIV_H__
 #define __M4U_PRIV_H__
+#include <linux/ioctl.h>
+#include <linux/fs.h>
 #include <aee.h>
 #include <linux/debugfs.h>
-#include <linux/fs.h>
-#include <linux/ioctl.h>
-#include <linux/miscdevice.h>
 #include <linux/platform_device.h>
+#include <linux/miscdevice.h>
 
-#include "../2.0/m4u_pgtable.h"
 #include "m4u.h"
 #include "m4u_reg.h"
+#include "../2.0/m4u_pgtable.h"
 
 #define M4UMSG(string, args...) pr_debug("[M4U] " string, ##args)
 #define M4UINFO(string, args...) pr_debug("[M4U] " string, ##args)

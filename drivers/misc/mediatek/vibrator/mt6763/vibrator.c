@@ -21,18 +21,18 @@
  *
  ******************************************************************************/
 
-#include "vibrator.h"
-#include <linux/delay.h>
-#include <linux/device.h>
 #include <linux/init.h>
-#include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/of.h>
-#include <linux/platform_device.h>
+#include <linux/kernel.h>
+#include <linux/types.h>
+#include <linux/device.h>
 #include <linux/slab.h>
+#include <linux/of.h>
 #include <linux/types.h>
-#include <linux/types.h>
+#include <linux/platform_device.h>
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
+#include "vibrator.h"
 
 struct vibrator_hw *pvib_cust;
 

@@ -12,17 +12,18 @@
  */
 
 #define LOG_TAG "WDMA"
-#include "ddp_wdma_ex.h"
-#include "ddp_clkmgr.h"
-#include "ddp_info.h"
 #include "ddp_log.h"
-#include "ddp_m4u.h"
-#include "ddp_matrix_para.h"
-#include "ddp_mmp.h"
-#include "ddp_reg.h"
-#include "ddp_wdma.h"
-#include "primary_display.h"
+#include "ddp_clkmgr.h"
 #include <linux/delay.h>
+#include "ddp_reg.h"
+#include "ddp_matrix_para.h"
+#include "ddp_info.h"
+#include "ddp_wdma.h"
+#include "ddp_wdma_ex.h"
+#include "primary_display.h"
+#include "ddp_m4u.h"
+#include "ddp_mmp.h"
+
 
 #define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
 

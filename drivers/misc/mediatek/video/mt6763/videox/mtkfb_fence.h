@@ -14,11 +14,11 @@
 #ifndef __MTKFB_FENCE_H__
 #define __MTKFB_FENCE_H__
 
-#include "disp_drv_platform.h"
-#include "disp_session.h"
-#include "display_recorder.h"
-#include <linux/list.h>
 #include <linux/mutex.h>
+#include <linux/list.h>
+#include "disp_session.h"
+#include "disp_drv_platform.h"
+#include "display_recorder.h"
 
 #ifdef __cplusplus
 extern "C" {

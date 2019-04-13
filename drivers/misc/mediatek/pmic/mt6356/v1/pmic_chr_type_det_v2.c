@@ -12,35 +12,35 @@
  */
 
 #include <generated/autoconf.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/sched.h>
+#include <linux/spinlock.h>
+#include <linux/interrupt.h>
+#include <linux/list.h>
+#include <linux/mutex.h>
+#include <linux/kthread.h>
+#include <linux/device.h>
+#include <linux/kdev_t.h>
 #include <linux/cdev.h>
 #include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/kdev_t.h>
-#include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/list.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
 #include <linux/platform_device.h>
-#include <linux/power_supply.h>
-#include <linux/sched.h>
-#include <linux/sched.h>
-#include <linux/seq_file.h>
-#include <linux/spinlock.h>
 #include <linux/syscalls.h>
+#include <linux/sched.h>
+#include <linux/writeback.h>
+#include <linux/seq_file.h>
+#include <linux/power_supply.h>
 #include <linux/time.h>
 #include <linux/uaccess.h>
-#include <linux/writeback.h>
 
-#include <mach/upmu_hw.h>
-#include <mach/upmu_sw.h>
-#include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
-#include <mt-plat/mtk_boot.h>
-#include <mt-plat/mtk_boot.h>
 #include <mt-plat/upmu_common.h>
+#include <mach/upmu_sw.h>
+#include <mach/upmu_hw.h>
+#include <mt-plat/mtk_boot.h>
+#include <mt-plat/charger_type.h>
+#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 #include <mt-plat/mtk_usb2jtag.h>

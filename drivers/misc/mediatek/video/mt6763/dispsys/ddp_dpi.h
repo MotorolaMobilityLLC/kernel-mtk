@@ -17,9 +17,9 @@
 /*#include <mach/mt_typedefs.h>*/
 #include <linux/types.h>
 
-#include "cmdq_record.h"
-#include "ddp_info.h"
 #include "lcm_drv.h"
+#include "ddp_info.h"
+#include "cmdq_record.h"
 
 #ifdef __cplusplus
 extern "C" {

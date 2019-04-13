@@ -11,22 +11,22 @@
  * GNU General Public License for more details.
  */
 
-#include "disp_drv_platform.h" /* must be at the top-most */
-#include "ion_drv.h"
-#include "mtk_ion.h"
 #include <linux/delay.h>
-#include <linux/kthread.h>
-#include <linux/ktime.h>
-#include <linux/math64.h>
-#include <linux/module.h>
-#include <linux/mutex.h>
-#include <linux/of.h>
-#include <linux/of_irq.h>
 #include <linux/sched.h>
 #include <linux/semaphore.h>
-#include <linux/slab.h>
-#include <linux/types.h>
+#include <linux/module.h>
 #include <linux/wait.h>
+#include <linux/kthread.h>
+#include <linux/mutex.h>
+#include <linux/types.h>
+#include <linux/ktime.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/slab.h>
+#include <linux/math64.h>
+#include "disp_drv_platform.h"	/* must be at the top-most */
+#include "ion_drv.h"
+#include "mtk_ion.h"
 /* #include "mtk_idle.h" */
 /* #include "mt_spm_reg.h" */ /* FIXME: tmp comment */
 #include "mtk_boot_common.h"
@@ -34,45 +34,45 @@
 #ifdef MTK_FB_SPM_SUPPORT
 #include "mtk_spm_idle.h"
 #endif
-#include "m4u.h"
 #include "mt-plat/mtk_smi.h"
+#include "m4u.h"
 
 #include "debug.h"
 #include "disp_drv_log.h"
 #include "disp_lcm.h"
-#include "disp_session.h"
 #include "disp_utils.h"
+#include "disp_session.h"
 #include "primary_display.h"
 #if defined(CONFIG_MTK_DUAL_DISPLAY_SUPPORT) &&                               \
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
 #endif
-#include "cmdq_core.h"
+#include "disp_helper.h"
 #include "cmdq_def.h"
 #include "cmdq_record.h"
 #include "cmdq_reg.h"
-#include "ddp_clkmgr.h"
+#include "cmdq_core.h"
 #include "ddp_manager.h"
-#include "ddp_reg.h"
-#include "disp_arr.h"
-#include "disp_drv_log.h"
-#include "disp_helper.h"
 #include "disp_lcm.h"
+#include "ddp_clkmgr.h"
+#include "mtk_smi.h"
+#include "disp_drv_log.h"
 #include "disp_lowpower.h"
-#include "disp_partial.h"
+#include "disp_arr.h"
 #include "disp_rect.h"
 #include "layering_rule.h"
+#include "ddp_reg.h"
 #include "mtk_dramc.h"
-#include "mtk_smi.h"
+#include "disp_partial.h"
 #ifdef MTK_FB_MMDVFS_SUPPORT
 #include "mmdvfs_mgr.h"
 #endif
 
 /* device tree */
-#include <linux/io.h>
 #include <linux/of.h>
-#include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/io.h>
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)

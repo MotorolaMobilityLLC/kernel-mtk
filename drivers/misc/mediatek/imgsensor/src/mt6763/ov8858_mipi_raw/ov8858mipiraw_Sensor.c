@@ -30,21 +30,21 @@
  *============================================================================
  ****************************************************************************/
 
-#include "kd_camera_feature.h"
+#include <linux/videodev2.h>
+#include <linux/i2c.h>
+#include <linux/platform_device.h>
+#include <linux/delay.h>
+#include <linux/cdev.h>
+#include <linux/uaccess.h>
+#include <linux/fs.h>
+#include <linux/atomic.h>
+#include <linux/types.h>
+#include <mt-plat/mtk_boot.h>
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
-#include <linux/atomic.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/fs.h>
-#include <linux/i2c.h>
-#include <linux/platform_device.h>
-#include <linux/types.h>
-#include <linux/uaccess.h>
-#include <linux/videodev2.h>
-#include <mt-plat/mtk_boot.h>
+#include "kd_camera_feature.h"
 
 #include "ov8858mipiraw_Sensor.h"
 

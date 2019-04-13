@@ -11,8 +11,8 @@
  * GNU General Public License for more details.
  */
 
-#include "imgsensor_common.h"
 #include <linux/atomic.h>
+#include "imgsensor_common.h"
 
 #ifndef __IMGSENSOR_CFG_TABLE_H__
 #define __IMGSENSOR_CFG_TABLE_H__

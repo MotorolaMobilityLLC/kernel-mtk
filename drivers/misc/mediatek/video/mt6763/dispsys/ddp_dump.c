@@ -13,16 +13,17 @@
 
 #define LOG_TAG "dump"
 
-#include "ddp_dump.h"
-#include "ddp_dpi.h"
-#include "ddp_dsi.h"
-#include "ddp_log.h"
-#include "ddp_ovl.h"
-#include "ddp_rdma.h"
-#include "ddp_rdma_ex.h"
 #include "ddp_reg.h"
+#include "ddp_log.h"
+#include "ddp_dump.h"
+#include "ddp_ovl.h"
 #include "ddp_wdma.h"
 #include "ddp_wdma_ex.h"
+#include "ddp_rdma.h"
+#include "ddp_rdma_ex.h"
+#include "ddp_dsi.h"
+#include "ddp_dpi.h"
+
 
 static char *ddp_signal_0(int bit)
 {

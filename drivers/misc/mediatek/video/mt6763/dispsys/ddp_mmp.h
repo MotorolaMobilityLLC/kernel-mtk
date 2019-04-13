@@ -14,10 +14,10 @@
 #ifndef __H_DDP_MMP__
 #define __H_DDP_MMP__
 
-#include "ddp_info.h"
-#include "disp_session.h"
 #include "mmprofile.h"
 #include "mmprofile_function.h"
+#include "ddp_info.h"
+#include "disp_session.h"
 struct DDP_MMP_Events {
 	mmp_event DDP;
 	mmp_event layerParent;

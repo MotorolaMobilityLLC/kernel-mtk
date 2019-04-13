@@ -13,59 +13,59 @@
 
 #define LOG_TAG "ddp_drv"
 
-#include <generated/autoconf.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/fs.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/ioport.h>
-#include <linux/kdev_t.h>
 #include <linux/kernel.h>
-#include <linux/kthread.h>
-#include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/mm_types.h>
 #include <linux/module.h>
-#include <linux/param.h>
+#include <generated/autoconf.h>
+#include <linux/init.h>
+#include <linux/types.h>
+#include <linux/cdev.h>
+#include <linux/kdev_t.h>
+#include <linux/delay.h>
+#include <linux/ioport.h>
 #include <linux/platform_device.h>
-#include <linux/proc_fs.h>
-#include <linux/sched.h>
+#include <linux/dma-mapping.h>
+#include <linux/device.h>
+#include <linux/fs.h>
+#include <linux/interrupt.h>
+#include <linux/wait.h>
+#include <linux/spinlock.h>
+#include <linux/param.h>
+#include <linux/uaccess.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
-#include <linux/spinlock.h>
+#include <linux/sched.h>
+#include <linux/kthread.h>
 #include <linux/timer.h>
-#include <linux/types.h>
-#include <linux/uaccess.h>
-#include <linux/wait.h>
+#include <linux/proc_fs.h>
+#include <linux/miscdevice.h>
 /* ION */
 /* #include <linux/ion.h> */
 /* #include <linux/ion_drv.h> */
 /* #include "m4u.h" */
-#include "mt-plat/mtk_smi.h"
-#include <linux/dma-mapping.h>
-#include <linux/io.h>
-#include <linux/of.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
 #include <linux/vmalloc.h>
+#include <linux/dma-mapping.h>
+#include <linux/of.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/io.h>
+#include "mt-plat/mtk_smi.h"
 /* #include <mach/mt_reg_base.h> */
 /* #include <mach/mt_irq.h> */
 #include "ddp_clkmgr.h"
 /* #include "mach/mt_irq.h" */
-#include "m4u.h"
-#include "mt-plat/mtk_smi.h"
 #include "mt-plat/sync_write.h"
+#include "mt-plat/mtk_smi.h"
+#include "m4u.h"
 
 #include "ddp_drv.h"
-#include "ddp_hal.h"
-#include "ddp_info.h"
-#include "ddp_irq.h"
-#include "ddp_log.h"
-#include "ddp_m4u.h"
 #include "ddp_reg.h"
+#include "ddp_hal.h"
+#include "ddp_log.h"
+#include "ddp_irq.h"
+#include "ddp_info.h"
+#include "ddp_m4u.h"
 #include "display_recorder.h"
 
 /* #define DISP_NO_DPI */

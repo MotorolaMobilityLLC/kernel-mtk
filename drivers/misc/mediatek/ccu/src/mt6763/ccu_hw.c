@@ -10,23 +10,23 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
  */
-#include <linux/fcntl.h>
-#include <linux/init.h>
 #include <linux/kernel.h>
+#include <linux/init.h>
 #include <linux/module.h>
 #include <linux/syscalls.h>
+#include <linux/fcntl.h>
 #include <linux/uaccess.h>
 
-#include <linux/delay.h>
-#include <linux/dma-mapping.h>
-#include <linux/interrupt.h>
-#include <linux/iommu.h>
-#include <linux/kthread.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
+#include <linux/interrupt.h>
+#include <linux/kthread.h>
+#include <linux/dma-mapping.h>
 #include <linux/spinlock.h>
+#include <linux/iommu.h>
 
-#include "ion_drv.h"
 #include "mtk_ion.h"
+#include "ion_drv.h"
 #include <linux/iommu.h>
 
 #ifdef CONFIG_MTK_IOMMU
@@ -38,12 +38,12 @@
 
 #include <linux/io.h> /*for mb();*/
 
-#include "ccu_cmn.h"
-#include "ccu_hw.h"
-#include "ccu_i2c.h"
 #include "ccu_inc.h"
-#include "ccu_kd_mailbox.h"
+#include "ccu_hw.h"
 #include "ccu_reg.h"
+#include "ccu_cmn.h"
+#include "ccu_kd_mailbox.h"
+#include "ccu_i2c.h"
 
 #include "kd_camera_feature.h" /*for sensorType in ccu_set_sensor_info*/
 

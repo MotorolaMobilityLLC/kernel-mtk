@@ -11,30 +11,30 @@
  * GNU General Public License for more details.
  */
 
-#include <linux/delay.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/gpio.h>
-#include <linux/interrupt.h>
-#include <linux/irq.h>
-#include <linux/irqchip/chained_irq.h>
-#include <linux/irqchip/mtk-eic.h>
-#include <linux/irqdesc.h>
-#include <linux/irqdomain.h>
 #include <linux/kernel.h>
+#include <linux/interrupt.h>
 #include <linux/module.h>
+#include <linux/device.h>
+#include <linux/delay.h>
+#include <linux/platform_device.h>
+#include <linux/timer.h>
+#include <linux/delay.h>
+#include <linux/rbtree.h>
+#include <linux/irqchip/mtk-eic.h>
+#include <linux/irqdomain.h>
+#include <linux/irq.h>
+#include <linux/irqdesc.h>
+#include <linux/irqchip/chained_irq.h>
+#include <linux/sched.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#include <linux/platform_device.h>
-#include <linux/pr_err.h>
-#include <linux/rbtree.h>
-#include <linux/sched.h>
 #include <linux/slab.h>
-#include <linux/timer.h>
-#include <mt-plat/mt_gpio.h>
-#include <mt-plat/mtk_io.h>
+#include <linux/gpio.h>
 #include <mt-plat/sync_write.h>
+#include <mt-plat/mtk_io.h>
+#include <mt-plat/mt_gpio.h>
+#include <linux/printk.h>
 
 static unsigned int EINT_IRQ_BASE;
 

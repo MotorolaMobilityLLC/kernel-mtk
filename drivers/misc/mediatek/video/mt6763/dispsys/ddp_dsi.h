@@ -14,9 +14,9 @@
 #ifndef __DSI_DRV_H__
 #define __DSI_DRV_H__
 
+#include "lcm_drv.h"
 #include "ddp_hal.h"
 #include "fbconfig_kdebug_x.h"
-#include "lcm_drv.h"
 
 #ifdef __cplusplus
 extern "C" {

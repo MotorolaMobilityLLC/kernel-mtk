@@ -13,13 +13,13 @@
  */
 
 #include <linux/delay.h>
-#include <linux/mfd/syscon.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/slab.h>
+#include <linux/mfd/syscon.h>
 
-#include "clk-gate.h"
 #include "clk-mtk.h"
+#include "clk-gate.h"
 #include "clk-mux.h"
 
 #include <dt-bindings/clock/mt6763-clk.h>

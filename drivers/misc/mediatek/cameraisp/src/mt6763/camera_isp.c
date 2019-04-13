@@ -21,26 +21,26 @@
 /* MET: define to enable MET*/
 /* #define ISP_MET_READY */
 
-#include <linux/atomic.h>
-#include <linux/cdev.h>
-#include <linux/delay.h>
+#include <linux/types.h>
 #include <linux/device.h>
-#include <linux/init.h>
-#include <linux/interrupt.h>
-#include <linux/kernel.h>
-#include <linux/mm.h>
-#include <linux/module.h>
-#include <linux/of_address.h>
-#include <linux/of_irq.h>
-#include <linux/of_platform.h>
+#include <linux/cdev.h>
 #include <linux/platform_device.h>
-#include <linux/proc_fs.h> /* proc file use */
-#include <linux/sched.h>
+#include <linux/interrupt.h>
+#include <linux/proc_fs.h>  /* proc file use */
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <linux/types.h>
+#include <linux/delay.h>
 #include <linux/uaccess.h>
+#include <linux/atomic.h>
+#include <linux/sched.h>
+#include <linux/mm.h>
 #include <linux/vmalloc.h>
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
+#include <linux/of_address.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+#include <linux/init.h>
 /*for kernel log reduction*/
 #include <linux/printk.h>
 
@@ -66,8 +66,8 @@
 
 #ifdef CONFIG_COMPAT
 /* 64 bit */
-#include <linux/compat.h>
 #include <linux/fs.h>
+#include <linux/compat.h>
 #endif
 
 #ifdef CONFIG_PM_WAKELOCKS
@@ -77,9 +77,9 @@
 #endif
 
 #ifdef CONFIG_OF
-#include <linux/of_address.h>  /* for device tree */
-#include <linux/of_irq.h>      /* for device tree */
-#include <linux/of_platform.h> /* for device tree */
+#include <linux/of_platform.h>  /* for device tree */
+#include <linux/of_irq.h>       /* for device tree */
+#include <linux/of_address.h>   /* for device tree */
 #endif
 
 #if defined(ISP_MET_READY)
