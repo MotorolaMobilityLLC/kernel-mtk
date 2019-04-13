@@ -12,8 +12,8 @@
  * GNU General Public License for more details.
  */
 
-#ifndef _DT_BINDINGS_GCE_MT6769_H
-#define _DT_BINDINGS_GCE_MT6769_H
+#ifndef _DT_BINDINGS_GCE_MT6779_H
+#define _DT_BINDINGS_GCE_MT6779_H
 
 /* assign timeout 0 also means default */
 #define CMDQ_NO_TIMEOUT		0xffffffff
