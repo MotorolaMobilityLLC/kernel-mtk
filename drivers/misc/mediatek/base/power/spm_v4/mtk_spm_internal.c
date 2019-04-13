@@ -252,7 +252,7 @@ unsigned int __spm_output_wake_reason(const struct wake_status *wakesta,
 
 #if defined(CONFIG_MACH_MT6763)
 		if (!(wakesta->debug_flag1 & SPM_DBG1_DRAM_SREF_ACK_TO))
-			aee_kernel_warning(
+			aee_kernel_warning("SPM Warning",
 					"SPM Warning PCM ASSERT AT 0x%x (%s), r13 = 0x%x, debug_flag = 0x%x 0x%x\n",
 					wakesta->assert_pc,
 					scenario, wakesta->r13,
