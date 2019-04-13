@@ -13,6 +13,7 @@
 #include "cmdq_core.h"
 #include "cmdq_reg.h"
 #include "cmdq_mdp_common.h"
+#include "cmdq_sec_iwc_common.h"
 #ifdef CMDQ_MET_READY
 #include <linux/met_drv.h>
 #endif
@@ -22,7 +23,9 @@
 #elif defined(CONFIG_MTK_M4U)
 #include "m4u.h"
 #endif
+#ifdef CONFIG_MTK_SMI_EXT
 #include "smi_public.h"
+#endif
 
 #include "cmdq_device.h"
 struct CmdqMdpModuleBaseVA {
@@ -955,7 +958,7 @@ uint32_t cmdq_mdp_wdma_get_reg_offset_dst_addr(void)
 	return 0xF00;
 }
 
-const char *cmdq_mdp_parse_error_module(const struct TaskStruct *task)
+const char *cmdq_mdp_parse_error_module(const struct cmdqRecStruct *task)
 {
 	const char *module = NULL;
 	const u32 ISP_ONLY[2] = {
@@ -1060,9 +1063,10 @@ void testcase_clkmgr_mdp(void)
 static void cmdq_mdp_enable_common_clock(bool enable)
 {
 #ifdef CMDQ_PWR_AWARE
+#ifdef CONFIG_MTK_SMI_EXT
 	if (enable) {
 		/* Use SMI clock API */
-		smi_bus_enable(SMI_LARB_MMSYS0, "MDP");
+		smi_bus_prepare_enable(SMI_LARB1_REG_INDX, "MDP", true);
 
 		/* reset ovl engine to avoid
 		 * ovl eof event always set and block bus
@@ -1075,8 +1079,9 @@ static void cmdq_mdp_enable_common_clock(bool enable)
 		cmdq_mdp_enable_clock_DISP_OVL1_2L(false);
 	} else {
 		/* disable, reverse the sequence */
-		smi_bus_disable(SMI_LARB_MMSYS0, "MDP");
+		smi_bus_disable_unprepare(SMI_LARB1_REG_INDX, "MDP", true);
 	}
+#endif
 #endif	/* CMDQ_PWR_AWARE */
 }
 
