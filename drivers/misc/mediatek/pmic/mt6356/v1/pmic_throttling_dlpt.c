@@ -578,34 +578,30 @@ void bat_percent_notify_init(void)
 #endif /* #ifdef BATTERY_PERCENT_PROTECT */
 
 /*******************************************************************
- * DLPT service
+ * AuxADC Impedence Measurement
  *******************************************************************/
-#ifndef DISABLE_DLPT_FEATURE
-#define DLPT_FEATURE_SUPPORT
-#endif
+static unsigned int count_time_out_adc_imp = 36;
+static struct wakeup_source ptim_wake_lock;
+static struct mutex ptim_mutex;
 
-#ifdef DLPT_FEATURE_SUPPORT
+static void ptim_lock(void)
+{
+	__pm_stay_awake(&ptim_wake_lock);
+	mutex_lock(&ptim_mutex);
+}
 
-unsigned int ptim_bat_vol;
-signed int ptim_R_curr;
-int ptim_imix;
-int ptim_rac_val_avg;
-
-signed int pmic_ptimretest;
-
-unsigned int ptim_cnt;
-
-signed int count_time_out_adc_imp = 36;
-unsigned int count_adc_imp;
+static void ptim_unlock(void)
+{
+	mutex_unlock(&ptim_mutex);
+	__pm_relax(&ptim_wake_lock);
+}
 
 int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur,
 		     bool *is_charging)
 {
 	unsigned int vbat_reg;
+	unsigned int count_adc_imp = 0;
 	int ret = 0;
-
-	count_adc_imp = 0;
-	/*PMICLOG("[do_ptim] start\n"); */
 
 	pmic_set_register_value(PMIC_AUXADC_SPL_NUM_LARGE, 0x0006);
 
@@ -617,26 +613,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur,
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 1);
 
 	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_PRD, 6);
-#if 0 /* default use hw control, no need to set CK_PDN_HWEN to sw mode */
-	pmic_set_register_value(PMIC_CLK_AUXADC_SMPS_CK_PDN, 0);
-	pmic_set_register_value(PMIC_CLK_AUXADC_SMPS_CK_PDN_HWEN, 0);
-
-	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN_HWEN, 0);
-	pmic_set_register_value(PMIC_RG_AUXADC_CK_PDN, 0);
-#endif
-
-	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN,
-				1); /*Peter-SW:55,56*/
-
-	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 1);
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 1);
-
-	/*restore to initial state */
-	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
-	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
-
-	/*set issue interrupt */
-	/*pmic_set_register_value(PMIC_RG_INT_EN_AUXADC_IMP,1); */
+	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 1);
 
 	while (pmic_get_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_STATUS) ==
 	       0) {
@@ -718,8 +695,6 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur,
 	vbat_reg = pmic_get_register_value(PMIC_AUXADC_ADC_OUT_IMP);
 
 	/*disable */
-	/*pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 0);*/
-	/*Peter-SW:55,56*/
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_MODE, 0);
 
 	/*clear irq */
@@ -728,8 +703,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur,
 	pmic_set_register_value(PMIC_AUXADC_CLR_IMP_CNT_STOP, 0);
 	pmic_set_register_value(PMIC_AUXADC_IMPEDANCE_IRQ_CLR, 0);
 
-	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN,
-				0); /*Peter-SW:55,56*/
+	pmic_set_register_value(PMIC_AUXADC_IMP_AUTORPT_EN, 0);
 
 	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_MODE, 0);
 	pmic_set_register_value(PMIC_RG_AUXADC_IMP_CK_SW_EN, 1);
@@ -744,44 +718,8 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat, signed int *cur,
 	*cur = 0;
 #endif
 
-#if defined(SWCHR_POWER_PATH)
-	pr_info("%s SWCHR_POWER_PATH: bat %d cur %d\n", __func__, *bat,
-		*cur);
-#else
 	pr_info("%s : bat %d cur %d\n", __func__, *bat, *cur);
-#endif
 
-	return ret;
-}
-
-int do_ptim(bool isSuspend)
-{
-	int ret;
-	bool is_charging;
-
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-
-	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr,
-			       &is_charging);
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
-	return ret;
-}
-
-int do_ptim_ex(bool isSuspend, unsigned int *bat, signed int *cur)
-{
-	int ret;
-	bool is_charging;
-
-	if (isSuspend == false)
-		pmic_auxadc_lock();
-
-	ret = do_ptim_internal(isSuspend, bat, cur, &is_charging);
-
-	if (isSuspend == false)
-		pmic_auxadc_unlock();
 	return ret;
 }
 
@@ -794,7 +732,7 @@ int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur,
 	int i, count_do_ptim = 0;
 
 	if (isSuspend == false)
-		pmic_auxadc_lock();
+		ptim_lock();
 
 	for (i = 0; i < ARRAY_SIZE(volt); i++) {
 		do {
@@ -818,18 +756,53 @@ int do_ptim_gauge(bool isSuspend, unsigned int *bat, signed int *cur,
 		 *cur, curr[0], curr[1], curr[2], curr[3], curr[4]);
 
 	if (isSuspend == false)
-		pmic_auxadc_unlock();
+		ptim_unlock();
 	return ret;
 }
+
+/*******************************************************************
+ * DLPT service
+ *******************************************************************/
+#ifndef DISABLE_DLPT_FEATURE
+#define DLPT_FEATURE_SUPPORT
+#endif
+
+#ifdef DLPT_FEATURE_SUPPORT
+
+unsigned int ptim_bat_vol;
+signed int ptim_R_curr;
+int ptim_imix;
+int ptim_rac_val_avg;
+static int g_imix_val;
 
 void get_ptim_value(bool isSuspend, unsigned int *bat, signed int *cur)
 {
 	if (isSuspend == false)
-		pmic_auxadc_lock();
+		ptim_lock();
 	*bat = ptim_bat_vol;
 	*cur = ptim_R_curr;
 	if (isSuspend == false)
-		pmic_auxadc_unlock();
+		ptim_unlock();
+}
+
+int get_rac(void) { return ptim_rac_val_avg; }
+
+int get_imix(void) { return g_imix_val; }
+
+int do_ptim(bool isSuspend)
+{
+	int ret;
+	bool is_charging;
+
+	if (isSuspend == false)
+		ptim_lock();
+
+	ret = do_ptim_internal(isSuspend, &ptim_bat_vol, &ptim_R_curr,
+			       &is_charging);
+
+	if (isSuspend == false)
+		ptim_unlock();
+	return ret;
 }
 
 /* TBD, my change in MT6356 */
@@ -889,9 +862,7 @@ void enable_dummy_load(unsigned int en)
 		/*PMICLOG("[disable dummy load]\n"); */
 	}
 }
-#endif /* #ifdef DLPT_FEATURE_SUPPORT */
 
-#ifdef DLPT_FEATURE_SUPPORT
 static struct hrtimer dlpt_notify_timer;
 static struct task_struct *dlpt_notify_thread;
 static bool dlpt_notify_flag;
@@ -916,8 +887,6 @@ unsigned int g_dlpt_val;
 
 int g_dlpt_start;
 
-int g_imix_val;
-int g_imix_val_pre;
 int g_low_per_timer;
 int g_low_per_timeout_val = 60;
 
@@ -972,71 +941,6 @@ void exec_dlpt_callback(unsigned int dlpt_val)
 	}
 }
 
-#if 0
-int get_dlpt_iavg(int is_use_zcv)
-{
-	int bat_cap_val = 0;
-	int zcv_val = 0;
-	int vsys_min_2_val = POWER_INT2_VOLT;
-	int rbat_val = 0;
-	int rdc_val = 0;
-	int iavg_val = 0;
-
-	bat_cap_val = bat_get_ui_percentage();
-
-	if (is_use_zcv == 1)
-		zcv_val = fgauge_read_v_by_d(100 - bat_cap_val);
-	else {
-#if 0
-#if defined(SWCHR_POWER_PATH)
-		zcv_val = PMIC_IMM_GetOneChannelValue(
-			MT6351_PMIC_AUX_ISENSE_AP, 5, 1);
-#else
-		zcv_val = PMIC_IMM_GetOneChannelValue(
-			MT6351_PMIC_AUX_BATSNS_AP, 5, 1);
-#endif
-#else
-		/* For 55 */
-		zcv_val = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-#endif
-	}
-	rbat_val = fgauge_read_r_bat_by_v(zcv_val);
-	rdc_val = CUST_R_FG_OFFSET + R_FG_VALUE + rbat_val;
-
-	if (rdc_val == 0)
-		rdc_val = 1;
-	iavg_val = ((zcv_val - vsys_min_2_val) * 1000) / rdc_val;
-
-	return iavg_val;
-}
-
-int get_real_volt(int val) /*0.1mV*/
-{
-	int ret = 0;
-
-	ret = val & 0x7FFF;
-	ret = (ret * 4 * 1800 * 10) / 32768;
-
-	return ret;
-}
-
-int get_real_curr(int val) /*0.1mA*/
-{
-	int ret = 0;
-
-	if (val > 32767) {
-		ret = val - 65535;
-		ret = ret - (ret * 2);
-	} else
-		ret = val;
-	ret = ret * 158122;
-	do_div(ret, 100000);
-	ret = (ret * 20) / R_FG_VALUE;
-	ret = ((ret * CAR_TUNE_VALUE) / 100);
-
-	return ret;
-}
-#endif
 int get_rac_val(void)
 {
 	int volt_1 = 0;
@@ -1123,10 +1027,6 @@ int get_rac_val(void)
 
 	return ret;
 }
-
-int get_rac(void) { return ptim_rac_val_avg; }
-
-int get_imix(void) { return g_imix_val; }
 
 int get_dlpt_imix_spm(void)
 {
@@ -1441,8 +1341,8 @@ int dlpt_notify_handler(void *unused)
 				}
 				pre_ui_soc = cur_ui_soc;
 
-				pr_info("[DLPT_final] %d,%d,%d,%d,%d,%d\n",
-					g_imix_val, g_imix_val_pre, pre_ui_soc,
+				pr_info("[DLPT_final] %d,%d,%d,%d,%d\n",
+					g_imix_val, pre_ui_soc,
 					cur_ui_soc, diff_ui_soc,
 					IMAX_MAX_VALUE);
 			}
