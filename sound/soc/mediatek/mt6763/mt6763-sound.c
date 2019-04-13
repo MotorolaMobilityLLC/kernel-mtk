@@ -1378,7 +1378,7 @@ bool EnableSideToneFilter(bool stf_on)
 					udelay(3);
 					if (try_cnt == 9) {
 						AUDIO_AEE(
-						    "%s new_write_ready == old_write_ready");
+						    "new_write_ready == old_write_ready");
 						AudDrv_Clk_Off();
 						return false;
 					}
