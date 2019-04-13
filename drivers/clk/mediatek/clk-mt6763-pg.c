@@ -2420,7 +2420,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 #endif /* !MT_CCF_BRINGUP */
 }
 
-CLK_OF_DECLARE(mtk_pg_regs, "mediatek,scpsys", mt_scpsys_init);
+CLK_OF_DECLARE_DRIVER(mtk_pg_regs, "mediatek,scpsys", mt_scpsys_init);
 
 void subsys_if_on(void)
 {
