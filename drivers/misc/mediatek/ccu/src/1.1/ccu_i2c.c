@@ -59,6 +59,7 @@ static inline void i2c_writel_dma(u32 value, struct mt_i2c *i2c, u16 offset);
 static inline u16 i2c_readw(struct mt_i2c *i2c, u16 offset);
 static inline void i2c_writew(u16 value, struct mt_i2c *i2c, u16 offset);
 static void ccu_i2c_dump_info(struct mt_i2c *i2c);
+static int ccu_reset_i2c_apdma(struct mt_i2c *i2c);
 
 
 static enum CCU_I2C_CHANNEL g_ccuI2cChannel = CCU_I2C_CHANNEL_UNDEF;
@@ -241,6 +242,61 @@ int ccu_i2c_set_channel(enum CCU_I2C_CHANNEL channel)
 		return 0;
 	} else
 		return -EFAULT;
+}
+
+int ccu_i2c_frame_reset(void)
+{
+	struct i2c_client *pClient = NULL;
+	struct mt_i2c *i2c;
+
+	pClient = getCcuI2cClient();
+	i2c = i2c_get_adapdata(pClient->adapter);
+
+	ccu_reset_i2c_apdma(i2c);
+
+	/*--todo:remove dump log on production*/
+	/*ccu_record_i2c_dma_info(i2c);*/
+
+	i2c_writew(I2C_FIFO_ADDR_CLR, i2c, OFFSET_FIFO_ADDR_CLR);
+	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR |
+		I2C_TRANSAC_COMP, i2c, OFFSET_INTR_MASK);
+
+	/**/
+	mb();
+	/*--todo:remove dump log on production*/
+	/*ccu_i2c_dump_info(i2c);*/
+
+	return 0;
+}
+
+
+int ccu_trigger_i2c(int transac_len, MBOOL do_dma_en)
+{
+	struct i2c_client *pClient = NULL;
+	struct mt_i2c *i2c;
+
+	u8 *dmaBufVa;
+
+	pClient = getCcuI2cClient();
+	i2c = i2c_get_adapdata(pClient->adapter);
+
+	dmaBufVa = i2c->dma_buf.vaddr;
+
+	/*set i2c transaction length & enable apdma*/
+	i2c_writew(transac_len, i2c, OFFSET_TRANSAC_LEN);
+
+	/*ccu_record_i2c_dma_info(i2c);*/
+
+	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
+
+	/*ccu_i2c_dump_info(i2c);*/
+
+	/*trigger i2c start from n3d_a*/
+	ccu_trigger_i2c_hw(g_ccuI2cChannel, transac_len, do_dma_en);
+
+	/*ccu_i2c_dump_info(i2c);*/
+
+	return 0;
 }
 
 int ccu_i2c_buf_mode_init(unsigned char i2c_write_id, int transfer_len)
@@ -434,4 +490,29 @@ static void ccu_i2c_dump_info(struct mt_i2c *i2c)
 	       (i2c_readl_dma(i2c, 0x80 + OFFSET_RX_MEM_ADDR2)));
 	pr_info("i2c_dump_info ------------------------------------------\n");
 
+}
+
+/*do i2c apdma warm reset & re-write dma buf addr, txlen*/
+static int ccu_reset_i2c_apdma(struct mt_i2c *i2c)
+{
+	i2c_writel_dma(I2C_DMA_WARM_RST, i2c, OFFSET_RST);
+
+#ifdef CONFIG_MTK_LM_MODE
+	if ((i2c->dev_comp->dma_support == 1) && (enable_4G())) {
+		i2c_writel_dma(0x1, i2c, OFFSET_TX_MEM_ADDR2);
+		i2c_writel_dma(0x1, i2c, OFFSET_RX_MEM_ADDR2);
+	}
+#endif
+
+	i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
+	i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
+	i2c_writel_dma((u32) i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
+	if ((i2c->dev_comp->dma_support >= 2))
+		i2c_writel_dma(i2c->dma_buf.paddr >> 32,
+			i2c, OFFSET_TX_MEM_ADDR2);
+
+	/*write ap mda tx len = 128(must > totoal tx len within a frame)*/
+	i2c_writel_dma(CCU_I2C_APDMA_TXLEN, i2c, OFFSET_TX_LEN);
+
+	return 0;
 }
