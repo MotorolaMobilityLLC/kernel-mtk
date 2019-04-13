@@ -14,6 +14,10 @@
 #ifndef _COMMON_MTK_VCOREFS_GOVERNOR_H
 #define _COMMON_MTK_VCOREFS_GOVERNOR_H
 
+#if defined(CONFIG_MACH_MT6763)
 
+#include "vcorefs_v3/mtk_vcorefs_governor.h"
+
+#endif
 #endif /* _COMMON_MTK_VCOREFS_GOVERNOR_H */
 

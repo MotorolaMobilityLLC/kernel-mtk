@@ -14,7 +14,13 @@
 #ifndef __MTK_IDLE_COMMON_H__
 #define __MTK_IDLE_COMMON_H__
 
+#if defined(CONFIG_MACH_MT6763)
+
+#include "spm_v4/mtk_idle.h"
+
+#else
 #include "spm/mtk_idle.h"
+#endif
 
 #endif /* __MTK_IDLE_COMMON_H__ */
 
