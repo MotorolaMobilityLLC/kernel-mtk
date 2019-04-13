@@ -275,10 +275,6 @@ static int mt635x_auxadc_read_raw(struct iio_dev *indio_dev,
 			"name:%s, channel=%d, adc_out=0x%x, adc_result=%d\n",
 			auxadc_chan->ch_name, auxadc_chan->ch_num,
 			auxadc_out, *val);
-	} else {
-		HKLOG("name:%s, channel=%d, adc_out=0x%x, adc_result=%d\n",
-			auxadc_chan->ch_name, auxadc_chan->ch_num,
-			auxadc_out, *val);
 	}
 	return ret;
 }

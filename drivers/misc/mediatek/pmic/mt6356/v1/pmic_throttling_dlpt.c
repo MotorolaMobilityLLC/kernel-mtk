@@ -64,7 +64,6 @@
 #include <mt-plat/mtk_gpt.h>
 #endif
 
-#if defined(CONFIG_MTK_SMART_BATTERY)
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 #include <mt-plat/mtk_battery.h>
 #include <mach/mtk_battery_property.h>
@@ -74,7 +73,6 @@
 #include <mt-plat/battery_meter.h>
 #include <mt-plat/battery_common.h>
 #include <mach/mtk_battery_meter.h>
-#endif
 #endif
 
 #include <mach/mtk_pmic.h>
@@ -1506,25 +1504,6 @@ enum hrtimer_restart dlpt_notify_task(struct hrtimer *timer)
 	PMICLOG("%s is called\n", __func__);
 
 	return HRTIMER_NORESTART;
-}
-
-int get_system_loading_ma(void)
-{
-	int fg_val = 0;
-
-	if (g_dlpt_start == 0)
-		PMICLOG("%s not ready\n", __func__);
-	else {
-#if defined(CONFIG_MTK_SMART_BATTERY)
-		fg_val = battery_meter_get_battery_current();
-		fg_val = fg_val / 10;
-		if (battery_meter_get_battery_current_sign() == 1)
-			fg_val = 0 - fg_val; /* charging*/
-		PMICLOG("[%s] fg_val = %d\n", __func__, fg_val);
-#endif
-	}
-
-	return fg_val;
 }
 
 void dlpt_notify_init(void)
