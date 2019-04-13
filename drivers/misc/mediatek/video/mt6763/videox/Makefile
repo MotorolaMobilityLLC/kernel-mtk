@@ -43,8 +43,8 @@ obj-$(CONFIG_MTK_FB) += mtkfb_console.o		\
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include/     \
              -I$(srctree)/drivers/misc/mediatek/video/common/   \
-             -I$(srctree)/drivers/misc/mediatek/video/common/rdma10/ \
-             -I$(srctree)/drivers/misc/mediatek/video/common/wdma10/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/rdma20/ \
+             -I$(srctree)/drivers/misc/mediatek/video/common/wdma20/ \
              -I$(srctree)/drivers/misc/mediatek/video/common/layering_rule_base/v1/ \
              -I$(srctree)/drivers/misc/mediatek/video/$(MTK_PLATFORM)/dispsys/   \
              -I$(srctree)/drivers/misc/mediatek/sync/      \

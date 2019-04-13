@@ -17,7 +17,7 @@
 #include "ddp_info.h"
 #include "disp_helper.h"
 
-static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
+static struct module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_OVL0, 9, 0},
 	{DISP_MODULE_OVL1, -1, 0},
 	{DISP_MODULE_OVL0_2L, 10, 0},

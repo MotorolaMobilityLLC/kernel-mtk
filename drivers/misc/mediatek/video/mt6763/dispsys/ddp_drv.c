@@ -356,6 +356,7 @@ static int disp_path_notify_tplay_handle(unsigned int handle_value)
 
 	return ret;
 }
+#endif /* CONFIG_TRUSTONIC_TEE_SUPPORT && CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT */
 
 static long disp_unlocked_ioctl(struct file *file, unsigned int cmd,
 				unsigned long arg)

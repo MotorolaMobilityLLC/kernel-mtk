@@ -1618,7 +1618,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 	default:
 		pr_debug("%s Not support, info=0x%p, cmd=0x%08x, arg=0x%08lx\n",
-		       _-func__, info, (unsigned int)cmd, arg);
+		       __func__, info, (unsigned int)cmd, arg);
 		return -EINVAL;
 	}
 
