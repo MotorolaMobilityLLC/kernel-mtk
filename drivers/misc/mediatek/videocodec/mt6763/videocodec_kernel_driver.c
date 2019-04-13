@@ -279,7 +279,7 @@ void vdec_power_on(void)
 #endif
 #else
 #ifdef CONFIG_MTK_SMI_EXT
-	smi_bus_enable(SMI_LARB_VENCSYS, "vcodec-vdec");
+	smi_bus_prepare_enable(SMI_LARB3_REG_INDX, "VDEC", true);
 #endif
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VDE);
 	if (ret) {
@@ -324,7 +324,7 @@ void vdec_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_VDEC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VDE);
 #ifdef CONFIG_MTK_SMI_EXT
-		smi_bus_disable(SMI_LARB_VENCSYS, "vcodec-vdec");
+		smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, "VDEC", true);
 #endif
 #endif
 #endif
@@ -352,7 +352,7 @@ void venc_power_on(void)
 #endif
 #else
 #ifdef CONFIG_MTK_SMI_EXT
-	smi_bus_enable(SMI_LARB_VENCSYS, "vcodec-venc");
+	smi_bus_prepare_enable(SMI_LARB3_REG_INDX, "VENC", true);
 #endif
 	ret = clk_prepare_enable(clk_MT_SCP_SYS_VEN);
 	if (ret) {
@@ -398,7 +398,7 @@ void venc_power_off(void)
 		clk_disable_unprepare(clk_MT_CG_VENC);
 		clk_disable_unprepare(clk_MT_SCP_SYS_VEN);
 #ifdef CONFIG_MTK_SMI_EXT
-		smi_bus_disable(SMI_LARB_VENCSYS, "vcodec-venc");
+		smi_bus_disable_unprepare(SMI_LARB3_REG_INDX, "VENC", true);
 #endif
 #endif
 #endif
@@ -659,7 +659,7 @@ void enc_isr(void)
 			 __func__);
 	} else {
 		pr_info("[VENC] Invalid lock holder driver type = %d\n",
-				EncHWLock.eDriverType);
+				grVcodecHWLock.eDriverType);
 	}
 
 	eValRet = eVideoSetEvent(&EncIsrEvent, sizeof(struct VAL_EVENT_T));
@@ -739,7 +739,7 @@ static long vcodec_lockhw_enc_fail(struct VAL_HW_LOCK_T rHWLock,
 
 			if (rHWLock.u4TimeoutMs == 0) {
 				MODULE_MFV_PR_DEBUG(
-				pr_info("VENC_LOCKHW - ID %d fail\n",
+				"VENC_LOCKHW - ID %d fail\n",
 						current->pid);
 				pr_debug(
 				    "someone locked HW already 0x%lx,%lx,0x%lx,type:%d\n",
