@@ -211,6 +211,7 @@ extern const struct of_device_id accdet_of_match[];
 extern int accdet_read_audio_res(unsigned int res_value);
 /* just be called by audio module for DC trim */
 extern void accdet_late_init(unsigned long data);
+extern void accdet_modify_vref_volt(void);
 extern const struct file_operations *accdet_get_fops(void);
 extern struct platform_driver accdet_driver_func(void);
 extern void mt_accdet_remove(void);
