@@ -96,21 +96,25 @@ struct imgsensor_struct {
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id; /* record sensor id defined in Kd_imgsensor.h */
 	kal_uint32 checksum_value; /* checksum value for Camera Auto Test */
-	imgsensor_mode_struct pre; /* preview scenario relative information */
-	imgsensor_mode_struct cap; /* capture scenario relative information */
-	imgsensor_mode_struct cap1;
-	/* capture for PIP 24fps relative information,
-	 * capture1 mode must use same framelength,
-	 * linelength with Capture mode for shutter calculate
-	 */
-	imgsensor_mode_struct
-	    normal_video; /* normal video  scenario relative information */
-	imgsensor_mode_struct
-	    hs_video; /* high speed video scenario relative information */
-	imgsensor_mode_struct
-	    slim_video; /* slim video for VT scenario relative information */
-	imgsensor_mode_struct custom1;
-	imgsensor_mode_struct custom2;
+	/* preview scenario relative information */
+	struct imgsensor_mode_struct pre;
+
+	/* capture scenario relative information */
+	struct imgsensor_mode_struct cap;
+
+	struct imgsensor_mode_struct cap1;
+
+	/* normal video  scenario relative information */
+	struct imgsensor_mode_struct normal_video;
+
+	/* high speed video scenario relative information */
+	struct imgsensor_mode_struct hs_video;
+
+	/* slim video for VT scenario relative information */
+	struct imgsensor_mode_struct slim_video;
+
+	struct imgsensor_mode_struct custom1;
+	struct imgsensor_mode_struct custom2;
 
 	kal_uint8 ae_shut_delay_frame; /* shutter delay frame for AE cycle */
 	/* sensor gain delay frame for AE cycle */

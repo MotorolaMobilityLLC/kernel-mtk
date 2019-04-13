@@ -111,6 +111,9 @@ typedef int (*clk_switch_cb)(
 typedef int (*vdec_ctrl_cb)(void);
 typedef int (*mmdvfs_state_change_cb)(struct mmdvfs_state_change_event *event);
 typedef int (*mmdvfs_prepare_cb)(struct mmdvfs_prepare_event *event);
+/* MMDVFS V2 only APIs */
+extern int mmdvfs_register_mmclk_switch_cb(clk_switch_cb notify_cb,
+	int mmdvfs_client_id);
 
 /* Extern from other module */
 extern enum MTK_SMI_BWC_SCEN smi_get_current_profile(void);

@@ -57,14 +57,17 @@
 /****************************	Modify end
  * *******************************************/
 
-enum { OV8858R2A, OV8858R1A } OV8858_VERSION;
+enum OV8858_VERSION {
+	OV8858R2A,
+	OV8858R1A
+};
 
-OV8858_VERSION ov8858version = OV8858R2A;
+enum OV8858_VERSION ov8858version = OV8858R2A;
 enum boot_mode_t bm;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static imgsensor_info_struct imgsensor_info = {
+static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id =
 	OV8858_SENSOR_ID, /* record sensor id defined in Kd_imgsensor.h */
 
@@ -211,7 +214,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.i2c_speed = 400,	 /* i2c read/write speed */
 };
 
-static imgsensor_struct imgsensor = {
+static struct imgsensor_struct imgsensor = {
 	.mirror = IMAGE_NORMAL,		/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 				 /* IMGSENSOR_MODE enum value,

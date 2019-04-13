@@ -74,7 +74,7 @@ static BYTE imx318_SPC_data[352] = {0};
 /* extern void read_imx318_DCC( kal_uint16 addr,BYTE* data, kal_uint32 size);
  */
 
-static imgsensor_info_struct imgsensor_info = {
+static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id =
 	IMX318_SENSOR_ID, /* record sensor id defined in Kd_imgsensor.h */
 
@@ -213,7 +213,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.i2c_addr_table = {0x20, 0x34, 0xff},
 };
 
-static imgsensor_struct imgsensor = {
+static struct imgsensor_struct imgsensor = {
 	.mirror = IMAGE_NORMAL,		/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	.shutter = 0x3D0,			/* current shutter */

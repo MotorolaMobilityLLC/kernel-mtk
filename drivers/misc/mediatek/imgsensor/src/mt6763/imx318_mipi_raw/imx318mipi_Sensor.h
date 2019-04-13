@@ -93,22 +93,34 @@ struct imgsensor_struct {
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id; /* record sensor id defined in Kd_imgsensor.h */
 	kal_uint32 checksum_value; /* checksum value for Camera Auto Test */
-	imgsensor_mode_struct pre; /* preview scenario relative information */
-	imgsensor_mode_struct cap; /* capture scenario relative information */
-	imgsensor_mode_struct cap1;
+	/* preview scenario relative information */
+	struct imgsensor_mode_struct pre;
 
-	imgsensor_mode_struct
-	    normal_video; /* normal video  scenario relative information */
-	imgsensor_mode_struct
-	    hs_video; /* high speed video scenario relative information */
-	imgsensor_mode_struct
-	    slim_video; /* slim video for VT scenario relative information */
+	/* capture scenario relative information */
+	struct imgsensor_mode_struct cap;
 
-	kal_uint8 ae_shut_delay_frame; /* shutter delay frame for AE cycle */
+	struct imgsensor_mode_struct cap1;
+	/* capture for PIP 24fps relative information,
+	 * capture1 mode must use same framelength,
+	 * linelength with Capture mode for shutter calculate
+	 */
+
+	/* normal video  scenario relative information */
+	struct imgsensor_mode_struct normal_video;
+
+	/* high speed video scenario relative information */
+	struct imgsensor_mode_struct hs_video;
+
+	/* slim video for VT scenario relative information */
+	struct imgsensor_mode_struct slim_video;
+
+	kal_uint8 ae_shut_delay_frame;	/* shutter delay frame for AE cycle */
+
+	/* sensor gain delay frame for AE cycle */
 	kal_uint8 ae_sensor_gain_delay_frame;
 
-	kal_uint8
-	    ae_ispGain_delay_frame;    /* isp gain delay frame for AE cycle */
+	/* isp gain delay frame for AE cycle */
+	kal_uint8 ae_ispGain_delay_frame;
 	kal_uint8 ihdr_support;	/* 1, support; 0,not support */
 	kal_uint8 ihdr_le_firstline;   /* 1,le first ; 0, se first */
 	kal_uint8 temperature_support; /* 1, support; 0,not support */
@@ -138,6 +150,7 @@ struct imgsensor_info_struct {
 	kal_uint8 mipi_lane_num; /* mipi lane num */
 	kal_uint8 i2c_addr_table[5];
 };
+
 /* SENSOR READ/WRITE ID */
 /* #define IMGSENSOR_WRITE_ID_1 (0x6c) */
 /* #define IMGSENSOR_READ_ID_1  (0x6d) */
