@@ -541,7 +541,7 @@ static void mlog_meminfo(void)
 	unsigned int gpuuse = 0;
 	unsigned int gpu_page_cache = 0;
 	unsigned long mlock;
-	unsigned long zram;
+	unsigned long zram = 0;
 	unsigned long active, inactive;
 	unsigned long shmem;
 	unsigned long ion = 0;
@@ -571,7 +571,9 @@ static void mlog_meminfo(void)
 #endif
 
 	mlock = P2K(global_page_state(NR_MLOCK));
-	zram = 0;
+#ifdef CONFIG_ZRAM
+	zram = zram_mlog();
+#endif
 
 	active = P2K(global_node_page_state(NR_ACTIVE_ANON) +
 			global_node_page_state(NR_ACTIVE_FILE));
