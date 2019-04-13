@@ -1770,6 +1770,17 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		reg = <0 0x11221000 0 0xc000>;
 	};
 
+	mtk-btcvsd-snd@18050000 {
+		compatible = "mediatek,mtk-btcvsd-snd";
+		reg=<0 0x18000000 0 0x10000>, /*PKV_PHYSICAL_BASE*/
+		    <0 0x18080000 0 0x8000>; /*SRAM_BANK2*/
+		interrupts = <GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>;
+		mediatek,infracfg = <&infracfg_ao>;
+		mediatek,offset =<0xf00 0x800 0xfd0 0xfd4 0xfd8>;
+		/*INFRA MISC, conn_bt_cvsd_mask*/
+		/*cvsd_mcu_read, write, packet_indicator*/
+	};
+
 	ufshci:ufshci@11270000 {
 		compatible = "mediatek,ufshci";
 		reg = <0 0x11270000 0 0x2300>;
@@ -3624,13 +3635,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		reg = <0 0xa020c000 0 0x1000>;
 	};
 
-	mt_soc_btcvsd_rx_pcm {
-		compatible = "mediatek,mt_soc_btcvsd_rx_pcm";
-	};
-	mt_soc_btcvsd_tx_pcm {
-		compatible = "mediatek,mt_soc_btcvsd_tx_pcm";
-	};
-
 	mt_soc_deep_buffer_dl_pcm {
 		compatible = "mediatek,mt_soc_pcm_deep_buffer_dl";
 	};
@@ -3790,18 +3794,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		clocks = <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "wifi-dma";
 	};
-	btcvsd@10001000 {
-		compatible = "mediatek,audio_bt_cvsd";
-		offset =<0xf00 0x800 0xfd0 0xfd4 0xfd8>;
-		/*INFRA MISC, conn_bt_cvsd_mask, cvsd_mcu_read, write,
-		 *packet_indicator
-		 */
-		reg=<0 0x10001000 0 0x1000>, /*AUDIO_INFRA_BASE_PHYSICAL*/
-			  <0 0x18000000 0 0x10000>, /*PKV_PHYSICAL_BASE*/
-			  <0 0x18080000 0 0x8000>; /*SRAM_BANK2*/
-		interrupts = <GIC_SPI 268 IRQ_TYPE_LEVEL_LOW>;
-	};
-
 	irtx_pwm:irtx_pwm {
 		compatible = "mediatek,irtx-pwm";
 		pwm_ch = <1>;
