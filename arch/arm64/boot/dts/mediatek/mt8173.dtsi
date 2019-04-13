@@ -1223,6 +1223,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			clock-names = "apb", "smi";
 		};
 
+		venc@18002000 {
+			compatible = "mediatek,mt8173-venc";
+			reg = <0 0x18002000 0 0x1000>;
+			interrupts = <GIC_SPI 198 IRQ_TYPE_LEVEL_LOW>;
+		};
+
 		vcodec_enc: vcodec@18002000 {
 			compatible = "mediatek,mt8173-vcodec-enc";
 			reg = <0 0x18002000 0 0x1000>,	/* VENC_SYS */
@@ -1277,6 +1283,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			clocks = <&vencltsys CLK_VENCLT_CKE1>,
 				 <&vencltsys CLK_VENCLT_CKE0>;
 			clock-names = "apb", "smi";
+		};
+
+		venclt@19002000 {
+			compatible = "mediatek,mt8173-venclt";
+			reg = <0 0x19002000 0 0x1000>;
+			interrupts = <GIC_SPI 202 IRQ_TYPE_LEVEL_LOW>;
 		};
 
 		mtkfb: MTKFB@bf200000 {
