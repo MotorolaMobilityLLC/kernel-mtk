@@ -475,21 +475,25 @@ void mm_qos_update_larb_bwl(u32 larb_update, bool bw_change)
 				(comm_port_hrt[i] > 0)?true:larb_soft_mode);
 			trace_mmqos__update_larb(i, comm_port_limit[i], larb_bw,
 				(comm_port_hrt[i] > 0)?true:larb_soft_mode);
+#ifdef MMDVFS_MMP
 			if (mmdvfs_log_larb_mmp(i, -1))
 				mmprofile_log_ex(
 					mmdvfs_mmp_events.larb_bwl,
 					MMPROFILE_FLAG_PULSE,
 					(i << 28) | larb_bw, larb_soft_mode);
+#endif
 		} else if (bw_change) {
 			/* if no larb_bw, set default bwl with soft-mode */
 			smi_bwl_update(i, default_bwl, true);
 			trace_mmqos__update_larb(i, comm_port_limit[i],
 				default_bwl, true);
+#ifdef MMDVFS_MMP
 			if (mmdvfs_log_larb_mmp(i, -1))
 				mmprofile_log_ex(
 					mmdvfs_mmp_events.larb_bwl,
 					MMPROFILE_FLAG_PULSE,
 					(i << 28) | default_bwl, 2);
+#endif
 		}
 	}
 }
@@ -1103,9 +1107,11 @@ void mm_qos_update_all_request(struct plist_head *owner_list)
 		trace_mmqos__update_port(larb_id, port_id,
 			req->bw_value, req->ostd);
 		if (larb_port_id && larb_count == 4) {
+#ifdef MMDVFS_MMP
 			mmprofile_log_ex(mmdvfs_mmp_events.larb_port,
 				MMPROFILE_FLAG_PULSE,
 				larb_port_id, larb_port_bw);
+#endif
 			larb_count = larb_port_bw = larb_port_id = 0;
 		}
 		if (mmdvfs_log_larb_mmp(-1, larb_id)) {
@@ -1114,10 +1120,12 @@ void mm_qos_update_all_request(struct plist_head *owner_list)
 			larb_count++;
 		}
 	}
+#ifdef MMDVFS_MMP
 	if (larb_count)
 		mmprofile_log_ex(
 			mmdvfs_mmp_events.larb_port,
 			MMPROFILE_FLAG_PULSE, larb_port_id, larb_port_bw);
+#endif
 	if (!skip_smi_config) {
 		profile = sched_clock();
 		smi_ostd_update(owner_list);
@@ -1696,9 +1704,11 @@ static int system_qos_update(struct notifier_block *nb,
 		unsigned long qos_status, void *v)
 {
 	larb_soft = !(qos_status > QOS_BOUND_BW_FREE);
+#ifdef MMDVFS_MMP
 	mmprofile_log_ex(
 		mmdvfs_mmp_events.larb_soft_mode,
 		MMPROFILE_FLAG_PULSE, larb_soft, qos_status);
+#endif
 	if (likely(force_larb_mode < 0) && !skip_smi_config) {
 		mutex_lock(&bw_mutex);
 		mm_qos_update_larb_bwl(0xFFFF, false);
