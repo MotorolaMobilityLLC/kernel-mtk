@@ -245,7 +245,11 @@ jsctx_queue_foreach_prio(struct kbase_context *kctx, int js, int prio,
 		struct kbase_jd_atom *entry = rb_entry(node,
 				struct kbase_jd_atom, runnable_tree_node);
 
-		rb_erase(node, &queue->runnable_tree);
+		/* MTK fix code-defect: Null pointer dereferences */
+		if (node) {
+			rb_erase(node, &queue->runnable_tree);
+		}
+
 		callback(kctx->kbdev, entry);
 	}
 
