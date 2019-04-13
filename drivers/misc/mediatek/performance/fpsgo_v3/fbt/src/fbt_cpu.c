@@ -1929,13 +1929,13 @@ void fpsgo_ctrl2fbt_cpufreq_cb(int cid, unsigned long freq)
 	spin_unlock_irqrestore(&freq_slock, flags);
 }
 
-void fpsgo_ctrl2fbt_vsync(void)
+void fpsgo_ctrl2fbt_vsync(unsigned long long ts)
 {
 	if (!fbt_is_enable())
 		return;
 
 	mutex_lock(&fbt_mlock);
-	vsync_time = fpsgo_get_time();
+	vsync_time = ts;
 	xgf_trace("vsync_time=%llu", nsec_to_usec(vsync_time));
 	mutex_unlock(&fbt_mlock);
 }
