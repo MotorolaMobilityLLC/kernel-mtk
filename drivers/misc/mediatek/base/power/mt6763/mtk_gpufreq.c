@@ -353,6 +353,12 @@ static sampler_func g_pFreqSampler;
 static sampler_func g_pVoltSampler;
 
 static gpufreq_power_limit_notify g_pGpufreq_power_limit_notify;
+
+/*****************
+ * input boost notification
+ ******************/
+typedef void (*gpufreq_input_boost_notify)(unsigned int);
+
 #ifdef MT_GPUFREQ_INPUT_BOOST
 static gpufreq_input_boost_notify g_pGpufreq_input_boost_notify;
 #endif
@@ -2902,11 +2908,6 @@ EXPORT_SYMBOL(mt_gpufreq_get_cur_volt);
  * register / unregister GPU input boost notifiction CB
  *************************************************/
 
-/*****************
- * input boost notification
- ******************/
-typedef void (*gpufreq_input_boost_notify)(unsigned int);
-
 void mt_gpufreq_input_boost_notify_registerCB(gpufreq_input_boost_notify pCB)
 {
 #ifdef MT_GPUFREQ_INPUT_BOOST
@@ -3099,7 +3100,7 @@ static int mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 
 	mt_gpufreq_clk->clk_mux = devm_clk_get(&pdev->dev, "clk_mux");
 	if (IS_ERR(mt_gpufreq_clk->clk_mux)) {
-		gpufreq_err("@%s: cannot get clock mux\n", __func_);
+		gpufreq_err("@%s: cannot get clock mux\n", __func__);
 		return PTR_ERR(mt_gpufreq_clk->clk_mux);
 	}
 
@@ -4347,7 +4348,7 @@ static int mt_gpufreq_var_dump_proc_show(struct seq_file *m, void *v)
 	 * mt_gpufreq_pbm_limited_gpu_power);
 	 */
 #else
-	seq_printf(m, "g_cur_gpu_freq = %d, g_cur_gpu_volt = %d\n"
+	seq_printf(m, "g_cur_gpu_freq = %d, g_cur_gpu_volt = %d\n",
 			mt_gpufreq_get_cur_freq(),
 			mt_gpufreq_get_cur_volt());
 	seq_printf(m, "g_cur_gpu_idx = %d, g_cur_gpu_OPPidx = %d\n",

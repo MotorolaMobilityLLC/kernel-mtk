@@ -22,6 +22,7 @@
 #include <linux/uaccess.h>
 
 #include "mt-plat/sync_write.h"
+#include "mtk_thermal_typedefs.h"
 #include "mtk_gpufreq.h"
 
 /*
