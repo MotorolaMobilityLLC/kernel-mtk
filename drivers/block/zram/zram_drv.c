@@ -2113,6 +2113,16 @@ static void destroy_devices(void)
 	unregister_blkdev(zram_major, "zram");
 }
 
+unsigned long zram_mlog(void)
+{
+#define P2K(x) (((unsigned long)x) << (PAGE_SHIFT - 10))
+	if (num_devices == 0 && init_done(zram_devices))
+		return P2K(zs_get_total_pages(zram_devices->mem_pool));
+#undef P2K
+
+	return 0;
+}
+
 #ifdef CONFIG_PROC_FS
 static int zraminfo_proc_show(struct seq_file *m, void *v)
 {
