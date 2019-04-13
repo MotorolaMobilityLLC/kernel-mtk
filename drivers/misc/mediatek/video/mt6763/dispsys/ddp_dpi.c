@@ -196,7 +196,7 @@ static void _RestoreDPIRegisters(void)
 /*DPI clock setting - use TVDPLL provide DPI clock*/
 enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq,
 				   unsigned int clk_req,
-				   enum DPI_POLARITY polarity)
+				   enum LCM_POLARITY polarity)
 {
 	unsigned int clksrc = 0;
 	unsigned int con1 = 0;
@@ -267,7 +267,7 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq,
 		INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
 
 	/*DPI output clock polarity */
-	ctrl.CLK_POL = (polarity == DPI_POLARITY_FALLING) ? 1 : 0;
+	ctrl.CLK_POL = (polarity == LCM_POLARITY_FALLING) ? 1 : 0;
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_OUTPUT_SETTING,
 		      DPI_REG->OUTPUT_SETTING, CLK_POL, ctrl.CLK_POL);
 
@@ -275,11 +275,11 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq,
 }
 
 enum DPI_STATUS ddp_dpi_ConfigDE(struct cmdqRecStruct *cmdq,
-				 enum DPI_POLARITY polarity)
+				 enum LCM_POLARITY polarity)
 {
 	struct DPI_REG_OUTPUT_SETTING pol = DPI_REG->OUTPUT_SETTING;
 
-	pol.DE_POL = (polarity == DPI_POLARITY_FALLING) ? 1 : 0;
+	pol.DE_POL = (polarity == LCM_POLARITY_FALLING) ? 1 : 0;
 	DPI_OUTREGBIT(cmdq, struct DPI_REG_OUTPUT_SETTING,
 		      DPI_REG->OUTPUT_SETTING, DE_POL, pol.DE_POL);
 
@@ -297,7 +297,7 @@ enum DPI_STATUS ddp_dpi_ConfigVsync(struct cmdqRecStruct *cmdq,
 	struct DPI_REG_OUTPUT_SETTING pol = DPI_REG->OUTPUT_SETTING;
 	struct DPI_REG_CNTL VS = DPI_REG->CNTL;
 
-	pol.VSYNC_POL = (polarity == DPI_POLARITY_FALLING) ? 1 : 0;
+	pol.VSYNC_POL = (polarity == LCM_POLARITY_FALLING) ? 1 : 0;
 	vwidth_lodd.VPW_LODD = pulseWidth;
 	vporch_lodd.VBP_LODD = backPorch;
 	vporch_lodd.VFP_LODD = frontPorch;
@@ -342,7 +342,7 @@ enum DPI_STATUS ddp_dpi_ConfigHsync(struct cmdqRecStruct *cmdq,
 
 	hporch.HBP = backPorch;
 	hporch.HFP = frontPorch;
-	pol.HSYNC_POL = (polarity == DPI_POLARITY_FALLING) ? 1 : 0;
+	pol.HSYNC_POL = (polarity == LCM_POLARITY_FALLING) ? 1 : 0;
 	DPI_REG->TGEN_HWIDTH = pulseWidth;
 
 	DPI_OUTREG32(cmdq, &DPI_REG->TGEN_HWIDTH, pulseWidth);
