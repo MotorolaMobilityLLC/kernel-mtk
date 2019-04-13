@@ -26,6 +26,7 @@
 #include <helio-dvfsrc-mt3967.h>
 #elif defined(CONFIG_MACH_MT6779)
 #include <helio-dvfsrc-mt6779.h>
+#elif defined(CONFIG_MACH_MT6763)
 #else
 #include <helio-dvfsrc-mt67xx.h>
 #endif

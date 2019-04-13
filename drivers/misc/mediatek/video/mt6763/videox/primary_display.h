@@ -37,7 +37,7 @@ enum DISP_PRIMARY_PATH_MODE {
 #define FALSE (0)
 #endif
 
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 
 #define ASSERT_LAYER (DDP_OVL_LAYER_MUN - 1)
 extern unsigned int FB_LAYER; /* default LCD layer */

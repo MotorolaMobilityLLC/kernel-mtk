@@ -113,7 +113,7 @@ static struct task_struct *esd_recovery_task;
 static struct disp_session_input_config session_input;
 
 /* macro definiton */
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 #define MTK_FB_XRESV (ALIGN_TO(MTK_FB_XRES, MTK_FB_ALIGNMENT))
 #define MTK_FB_YRESV                                                          \
 	(ALIGN_TO(MTK_FB_YRES, MTK_FB_ALIGNMENT) *                            \

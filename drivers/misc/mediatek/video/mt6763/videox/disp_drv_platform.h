@@ -32,7 +32,7 @@
 /* #include <mach/mt6585_pwm.h> */
 /* #include <mach/boot.h> */
 
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 
 #if defined(CONFIG_FPGA_EARLY_PORTING) || !defined(CONFIG_MTK_GPU_SUPPORT)
 #define MTK_FB_ALIGNMENT 1 /* SW 3D */
