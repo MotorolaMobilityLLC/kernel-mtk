@@ -67,7 +67,7 @@
 #ifdef __KERNEL__
 	#include <mt-plat/mtk_chip.h>
 	#include "upmu_common.h"
-	#include "mach/mtk_freqhopping.h"
+	#include "mt_freqhopping.h"
 	#include "mtk_thermal.h"
 	#include "mtk_ppm_api.h"
 	#include "mtk_cpufreq_api.h"

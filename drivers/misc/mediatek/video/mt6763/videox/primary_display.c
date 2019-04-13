@@ -4853,7 +4853,7 @@ int primary_display_suspend(void)
 #endif
 		primary_display_wait_state(DISP_ALIVE, MAX_SCHEDULE_TIMEOUT);
 		_primary_path_lock(__func__);
-		DISPCHECK("%s wait tui done stat=%d\n", __func__
+		DISPCHECK("%s wait tui done stat=%d\n", __func__,
 			  primary_get_state());
 	}
 
