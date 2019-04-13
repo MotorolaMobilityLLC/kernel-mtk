@@ -78,7 +78,7 @@ unsigned int prepare_present_fence_idx[MAX_SESSION_COUNT];
 /* how many counters prior to current timeline real-time counter */
 #define FENCE_STEP_COUNTER (1)
 #define MTK_FB_NO_ION_FD ((int)(~0U >> 1))
-#define DISP_SESSION_TYPE(id) (((id) >> 16) & 0xff)
+#define DISP_SESSION_TYPE(id) (((id)>>16)&0xff)
 
 static LIST_HEAD(info_pool_head);
 static DEFINE_MUTEX(_disp_fence_mutex);
@@ -131,7 +131,6 @@ _get_session_sync_info(unsigned int session_id)
 
 	for (i = 0; i < ARRAY_SIZE(_disp_fence_context); i++) {
 		if (_disp_fence_context[i].session_id == 0xffffffff) {
-			DISPMSG("not found session info for "
 		DISPMSG(
 			"not found session info for session_id:0x%08x,insert %p to array index:%d\n",
 			session_id, &(_disp_fence_context[i]), i);

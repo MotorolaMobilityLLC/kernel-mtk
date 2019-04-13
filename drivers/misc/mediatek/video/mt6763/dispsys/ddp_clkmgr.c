@@ -292,17 +292,17 @@ int ddp_parse_apmixed_base(void)
 	return ret;
 }
 
-static unsigned int _is_main_module(ddp_clk *pclk)
+static unsigned int _is_main_module(struct ddp_clk *pclk)
 {
 	return (pclk->belong_to & 0x1);
 }
 
-static unsigned int _is_ext_module(ddp_clk *pclk)
+static unsigned int _is_ext_module(struct ddp_clk *pclk)
 {
 	return (pclk->belong_to & 0x2);
 }
 
-static unsigned int _is_ovl2mem_module(ddp_clk *pclk)
+static unsigned int _is_ovl2mem_module(struct ddp_clk *pclk)
 {
 	return (pclk->belong_to & 0x4);
 }

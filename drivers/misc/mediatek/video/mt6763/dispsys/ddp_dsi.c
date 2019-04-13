@@ -1191,7 +1191,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module,
 	unsigned int delta1 = 2; /* Delta1 is SSC range, default is 0%~-5% */
 	unsigned int pdelta1 = 0;
 	unsigned long addr = 0;
-	MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM] = {
+	enum MIPITX_PAD_VALUE pad_mapping[MIPITX_PHY_LANE_NUM] = {
 	    PAD_D0P_V, PAD_D1P_V, PAD_D2P_V, PAD_D3P_V, PAD_CKP_V, PAD_CKP_V};
 
 	DISPFUNC();
@@ -1724,14 +1724,14 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 	if (dsi_params->data_rate != 0) {
 		ui = 1000 / dsi_params->data_rate + 0x01;
 		cycle_time = 8000 / dsi_params->data_rate + 0x01;
-		DISP_LOG_PRINT(ANDROID_LOG_INFO,
-			"DSI[DISP] - kernel - %s, CTime = %d(ns), Unit Interval = %d(ns),lane# = %d\n",
+		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
+			"[DISP] - kernel - %s, CTime = %d(ns), Unit Interval = %d(ns),lane# = %d\n",
 			__func__, cycle_time, ui, lane_no);
 	} else if (dsi_params->PLL_CLOCK != 0) {
 		ui = 1000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
 		cycle_time = 8000 / (dsi_params->PLL_CLOCK * 2) + 0x01;
-		DISP_LOG_PRINT(ANDROID_LOG_INFO,
-			"DSI[DISP] - kernel - %s, CTime = %d(ns), Unit Interval = %d(ns), lane# = %d\n",
+		DISP_LOG_PRINT(ANDROID_LOG_INFO, "DSI",
+			"[DISP] - kernel - %s, CTime = %d(ns), Unit Interval = %d(ns), lane# = %d\n",
 			__func__, cycle_time, ui, lane_no);
 	} else {
 		pr_debug("[dsi_dsi.c] PLL clock should not be 0!!!\n");
