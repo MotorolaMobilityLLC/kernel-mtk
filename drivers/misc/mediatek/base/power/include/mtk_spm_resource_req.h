@@ -14,6 +14,13 @@
 #ifndef __MTK_SPM_RESOURCE_REQ_H__
 #define __MTK_SPM_RESOURCE_REQ_H__
 
+#if defined(CONFIG_MACH_MT6763)
+
+#include "spm_v4/mtk_spm_resource_req.h"
+
+#else
 #include "spm/mtk_spm_resource_req.h"
+#endif
+
 
 #endif /* __MTK_SPM_RESOURCE_REQ_H__ */

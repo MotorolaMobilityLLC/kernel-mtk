@@ -13,6 +13,9 @@
 #ifndef MTK_UNIFIED_POWER_DATA_H
 #define MTK_UNIFIED_POWER_DATA_H
 
+#if defined(CONFIG_MACH_MT6763)
+#include "mtk_unified_power_data_mt6763.h"
+#endif
 #if defined(CONFIG_MACH_MT6758)
 #include "mtk_unified_power_data_mt6758.h"
 #endif
