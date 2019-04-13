@@ -15,7 +15,7 @@
 #include <linux/of_address.h>
 #include <linux/regulator/consumer.h>
 
-#include <mach/mtk_freqhopping.h>
+#include <mt_freqhopping.h>
 #include <mt-plat/upmu_common.h>
 #include "mtk_cpufreq_platform.h"
 #include "../../mtk_cpufreq_hybrid.h"

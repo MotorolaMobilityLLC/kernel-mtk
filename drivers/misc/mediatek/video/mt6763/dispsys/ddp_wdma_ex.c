@@ -25,7 +25,7 @@
 #include "ddp_mmp.h"
 
 
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 
 /*****************************************************************************/
 unsigned int wdma_index(enum DISP_MODULE_ENUM module)

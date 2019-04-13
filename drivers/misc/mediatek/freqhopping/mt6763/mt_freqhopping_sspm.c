@@ -24,7 +24,7 @@
 #include <linux/sched_clock.h>
 #include <linux/vmalloc.h>
 #include <linux/dma-mapping.h>
-#include "mach/mtk_freqhopping.h"
+#include "mt_freqhopping.h"
 #include "mach/mtk_fhreg.h"
 #include "sync_write.h"
 #include "mt_freqhopping_drv.h"

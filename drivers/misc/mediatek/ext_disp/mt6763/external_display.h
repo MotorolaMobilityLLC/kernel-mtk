@@ -19,7 +19,7 @@
 #include "extd_info.h"
 #include "disp_lcm.h"
 
-#define ALIGN_TO(x, n) (((x) + ((n)-1)) & ~((n)-1))
+#define ALIGN_TO(x, n) (((x) + ((n) - 1)) & ~((n) - 1))
 
 enum EXT_DISP_PATH_MODE {
 	EXTD_DIRECT_LINK_MODE,

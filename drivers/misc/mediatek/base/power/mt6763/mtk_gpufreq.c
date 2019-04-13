@@ -55,7 +55,7 @@
 #include "mach/mtk_pmic_wrap.h"
 
 #include "mach/mtk_fhreg.h"
-#include "mach/mtk_freqhopping.h"
+#include "mt_freqhopping.h"
 
 static void __iomem *g_apmixed_base;
 
