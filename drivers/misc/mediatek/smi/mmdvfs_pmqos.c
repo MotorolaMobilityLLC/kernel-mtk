@@ -1630,8 +1630,8 @@ static int mmdvfs_probe(struct platform_device *pdev)
 		pm_qos_add_request(&channel_request[i], channel_req_class[i],
 			PM_QOS_MM_MEMORY_BANDWIDTH_DEFAULT_VALUE);
 
-	mmdvfs_qos_get_freq_steps(PM_QOS_DPE_FREQ, freq_steps, &value);
-	pr_notice("dpe step size:%u\n", value);
+	mmdvfs_qos_get_freq_steps(PM_QOS_DISP_FREQ, freq_steps, &value);
+	pr_notice("disp step size:%u\n", value);
 	for (i = 0; i < value && i < MAX_FREQ_STEP; i++)
 		pr_notice(" - step[%d]: %llu\n", i, freq_steps[i]);
 
@@ -2069,7 +2069,7 @@ int set_vote_freq(const char *val, const struct kernel_param *kp)
 
 	if (!vote_req_init) {
 		pm_qos_add_request(
-			&vote_req, PM_QOS_DPE_FREQ,
+			&vote_req, PM_QOS_DISP_FREQ,
 			PM_QOS_MM_FREQ_DEFAULT_VALUE);
 		vote_req_init = true;
 	}
