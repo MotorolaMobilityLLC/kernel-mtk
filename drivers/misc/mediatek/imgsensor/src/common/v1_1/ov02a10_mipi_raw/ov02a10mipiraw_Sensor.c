@@ -661,7 +661,7 @@ static void slim_video_setting(void)
 
 
 #define OTP_2A10 1
-#define INCLUDE_NO_OTP_2A10 0
+#define INCLUDE_NO_OTP_2A10 1
 
 #if OTP_2A10
 #define OV02A10_EEPROM_SLAVE_ADD 0xA0

@@ -884,7 +884,7 @@ static kal_uint32 return_sensor_id(void)
 }
 
 #define OTP_3L6 1
-#define INCLUDE_NO_OTP_3L6 0
+#define INCLUDE_NO_OTP_3L6 1
 
 #if OTP_3L6
 #define S5K3L6_EEPROM_SLAVE_ADD 0xB0
