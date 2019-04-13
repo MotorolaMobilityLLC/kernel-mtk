@@ -23,6 +23,7 @@
 #define camera_info_size 4096
 
 extern char mtk_ccm_name[camera_info_size];
+extern struct IMGSENSOR *pgimgsensor;
 
 enum IMGSENSOR_RETURN imgsensor_proc_init(void);
 #endif

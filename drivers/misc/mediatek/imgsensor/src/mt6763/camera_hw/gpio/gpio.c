@@ -88,15 +88,15 @@ static enum IMGSENSOR_RETURN gpio_init(void *pinstance)
 	}
 
 	for (i = 0; i < GPIO_CTRL_STATE_MAX_NUM; i++, pgpio_pinctrl++) {
-		if (pgpio_pinctrl->ppinctrl_lookup_names)
+		if (pgpio_pinctrl->ppinctrl_lookup_state)
 			pgpio->ppinctrl_state[i] =
 				pinctrl_lookup_state(pgpio->ppinctrl,
-					pgpio_pinctrl->ppinctrl_lookup_names);
+					pgpio_pinctrl->ppinctrl_lookup_state);
 
 		if (pgpio->ppinctrl_state[i] == NULL ||
 			IS_ERR(pgpio->ppinctrl_state[i])) {
 			pr_err("%s: pinctrl err, %s\n",
-				__func__, pgpio_pinctrl->ppinctrl_lookup_names);
+				__func__, pgpio_pinctrl->ppinctrl_lookup_state);
 			ret = IMGSENSOR_RETURN_ERROR;
 		}
 	}

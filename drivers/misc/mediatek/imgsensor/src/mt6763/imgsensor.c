@@ -2040,8 +2040,8 @@ static long imgsensor_ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 	int i4RetValue = 0;
 	void *pBuff = NULL;
 
-	pBuff = kmalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL)
 	if (_IOC_DIR(a_u4Command) != _IOC_NONE) {
+		pBuff = kmalloc(_IOC_SIZE(a_u4Command), GFP_KERNEL);
 		if (pBuff == NULL) {
 			PK_DBG("[CAMERA SENSOR] ioctl allocate mem failed\n");
 			i4RetValue = -ENOMEM;

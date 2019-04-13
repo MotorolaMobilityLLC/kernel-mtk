@@ -68,7 +68,7 @@ struct imgsensor_mode_struct {
 
 /* SENSOR PRIVATE STRUCT FOR VARIABLES*/
 struct imgsensor_struct {
-	kal_uint8 mirror; /* mirrorflip information */
+	kal_uint8 mirror;	/* mirrorflip information */
 
 	kal_uint8 sensor_mode; /* record IMGSENSOR_MODE enum value */
 
@@ -100,29 +100,39 @@ struct imgsensor_struct {
 struct imgsensor_info_struct {
 	kal_uint32 sensor_id; /* record sensor id defined in Kd_imgsensor.h */
 	kal_uint32 checksum_value; /* checksum value for Camera Auto Test */
-	imgsensor_mode_struct pre; /* preview scenario relative information */
-	imgsensor_mode_struct cap; /* capture scenario relative information */
+	/* preview scenario relative information */
+	struct imgsensor_mode_struct pre;
 
-	imgsensor_mode_struct
-	    cap1; /* capture for PIP 24fps relative information,
-		   * capture1 mode must use same framelength,
-		   * linelength with Capture mode for shutter calculate
-		   */
-	imgsensor_mode_struct
-	    normal_video; /* normal video  scenario relative information */
-	imgsensor_mode_struct
-	    hs_video; /* high speed video scenario relative information */
-	imgsensor_mode_struct
-	    slim_video; /* slim video for VT scenario relative information */
-	imgsensor_mode_struct
-	    custom1; /* custom1 scenario relative information */
-	imgsensor_mode_struct
-	    custom2; /* custom2 scenario relative information */
-	imgsensor_mode_struct
-	    custom3; /* custom3 scenario relative information */
-	imgsensor_mode_struct
-	    custom4; /* custom4 scenario relative information */
-	imgsensor_mode_struct custom5;
+	/* capture scenario relative information */
+	struct imgsensor_mode_struct cap;
+
+	/* capture for PIP 24fps relative information,
+	 * capture1 mode must use same framelength,
+	 * linelength with Capture mode for shutter calculate
+	 */
+	struct imgsensor_mode_struct cap1;
+
+	/* normal video  scenario relative information */
+	struct imgsensor_mode_struct normal_video;
+
+	/* high speed video scenario relative information */
+	struct imgsensor_mode_struct hs_video;
+
+	/* slim video for VT scenario relative information */
+	struct imgsensor_mode_struct slim_video;
+
+	/* custom1 scenario relative information */
+	struct imgsensor_mode_struct custom1;
+
+	/* custom2 scenario relative information */
+	struct imgsensor_mode_struct custom2;
+
+	/* custom3 scenario relative information */
+	struct imgsensor_mode_struct custom3;
+
+	/* custom4 scenario relative information */
+	struct imgsensor_mode_struct custom4;
+	struct imgsensor_mode_struct custom5;
 
 	kal_uint8 ae_shut_delay_frame; /* shutter delay frame for AE cycle */
 	kal_uint8 ae_sensor_gain_delay_frame; /* sensor gain delay frame for AE

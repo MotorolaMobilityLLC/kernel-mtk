@@ -106,7 +106,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 static BYTE imx338_SPC_data[352] = {0};
 
-static imgsensor_info_struct imgsensor_info = {
+static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = IMX338_SENSOR_ID, /* record sensor id defined in
 					* Kd_imgsensor.h
 					*/
@@ -331,7 +331,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.i2c_speed = 400,	 /* i2c read/write speed */
 };
 
-static imgsensor_struct imgsensor = {
+static struct imgsensor_struct imgsensor = {
 	.mirror = IMAGE_NORMAL,		/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 	/* IMGSENSOR_MODE enum value,record
@@ -1934,7 +1934,7 @@ static kal_uint32 open(void)
 	if (imgsensor_info.sensor_id != sensor_id)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
-	KD_SENSOR_PROFILE("%s-1", __func__);
+	KD_SENSOR_PROFILE("open-1");
 	/* initail sequence write in  */
 	sensor_init();
 
@@ -1955,7 +1955,7 @@ static kal_uint32 open(void)
 	imgsensor.current_fps = imgsensor_info.pre.max_framerate;
 	spin_unlock(&imgsensor_drv_lock);
 
-	KD_SENSOR_PROFILE("%s-2", __func__);
+	KD_SENSOR_PROFILE("open-2");
 	return ERROR_NONE;
 } /*	open  */
 

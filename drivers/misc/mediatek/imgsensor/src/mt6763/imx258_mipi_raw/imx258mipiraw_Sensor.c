@@ -62,7 +62,7 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static imgsensor_info_struct imgsensor_info = {
+static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id =
 	IMX258_SENSOR_ID, /* record sensor id defined in Kd_imgsensor.h */
 
@@ -260,7 +260,7 @@ static imgsensor_info_struct imgsensor_info = {
 			       */
 };
 
-static imgsensor_struct imgsensor = {
+static struct imgsensor_struct imgsensor = {
 	.mirror = IMAGE_NORMAL,		/* mirrorflip information */
 	.sensor_mode = IMGSENSOR_MODE_INIT,
 			/* IMGSENSOR_MODE enum value,record

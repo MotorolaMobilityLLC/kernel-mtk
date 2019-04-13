@@ -21,8 +21,6 @@
 
 char mtk_ccm_name[camera_info_size] = {0};
 
-struct IMGSENSOR *pgimgsensor;
-
 static int pdaf_type_info_read(struct seq_file *m, void *v)
 {
 #define bufsz 512
