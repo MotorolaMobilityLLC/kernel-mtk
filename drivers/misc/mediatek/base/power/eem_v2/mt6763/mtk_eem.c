@@ -988,7 +988,19 @@ int base_ops_mon_mode(struct eem_det *det)
 		det->MTS = MTS_VAL;
 		det->BTS = BTS_VAL;
 		#else
-		ts_bank = det->ctrl_id;
+		if (det_to_id(det) == EEM_DET_2L)
+			ts_bank = THERMAL_BANK0;
+		else if (det_to_id(det) == EEM_DET_L)
+			ts_bank = THERMAL_BANK1;
+		else if (det_to_id(det) == EEM_DET_CCI)
+			ts_bank = THERMAL_BANK2;
+		else if (det_to_id(det) == EEM_DET_GPU)
+			ts_bank = THERMAL_BANK3;
+		else if (det_to_id(det) == EEM_DET_SOC)
+			ts_bank = THERMAL_BANK4;
+		else
+			ts_bank = THERMAL_BANK0;
+
 		get_thermal_slope_intercept(&ts_info, ts_bank);
 		det->MTS = ts_info.ts_MTS;
 		det->BTS = ts_info.ts_BTS;
@@ -2176,7 +2188,7 @@ static inline void handle_init02_isr(struct eem_det *det)
 			} else {
 				aee_rr_rec_ptp_gpu_volt_1(
 		((unsigned long long)(det->volt_tbl[i]) << (8 * (i - 8))) |
-		aee_rr_curr_ptp_gpu_volt_1() & ~
+		(aee_rr_curr_ptp_gpu_volt_1() & ~
 		((unsigned long long)(0xFF) << (8 * (i - 8)))
 					)
 				);
@@ -3040,8 +3052,8 @@ void eem_init01(void)
 
 			#if defined(__KERNEL__) && !(DVT) && !(EARLY_PORTING)
 			while (det->real_vboot != det->VBOOT) {
-				eem_error("@%s():%d, get_volt(%s) =
-					0x%x, VBOOT = 0x%x\n",
+				eem_error(
+					"@%s():%d, get_volt(%s)=0x%x, VBOOT=0x%x\n",
 					__func__, __LINE__, det->name,
 					det->real_vboot, det->VBOOT);
 
@@ -3368,7 +3380,18 @@ void mt_eem_opp_status(enum eem_det_id id,
 	FUNC_ENTER(FUNC_LV_API);
 
 #if defined(CONFIG_THERMAL) && !(EARLY_PORTING)
-	*temp = tscpu_get_temp_by_bank(id);
+	if (id == EEM_DET_2L)
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK0);
+	else if (id == EEM_DET_L)
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK1);
+	else if (id == EEM_DET_CCI)
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK2);
+	else if (id == EEM_DET_GPU)
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK3);
+	else if (id == EEM_DET_SOC)
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK4);
+	else
+		*temp = tscpu_get_temp_by_bank(THERMAL_BANK0);
 #else
 	*temp = 0;
 #endif
