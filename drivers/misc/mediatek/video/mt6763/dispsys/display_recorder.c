@@ -658,7 +658,7 @@ static void mmp_kernel_trace_begin(char *name)
 void mmp_kernel_trace_counter(char *name, int count)
 {
 	preempt_disable();
-	event_trace_pr_debug(disp_get_tracing_mark(), "C|%d|%s|%d\n",
+	event_trace_printk(disp_get_tracing_mark(), "C|%d|%s|%d\n",
 			   in_interrupt() ? -1 : current->tgid, name, count);
 	preempt_enable();
 }
@@ -680,7 +680,7 @@ void dprec_logger_frame_seq_begin(unsigned int session_id,
 
 	if (dprec_met_info[device_type].begin_frm_seq != frm_sequence) {
 		preempt_disable();
-		event_trace_pr_debug(
+		event_trace_printk(
 		    disp_get_tracing_mark(), "S|%d|%s|%d\n", current->tgid,
 		    dprec_met_info[device_type].log_name, frm_sequence);
 
@@ -705,7 +705,7 @@ void dprec_logger_frame_seq_end(unsigned int session_id,
 	if (dprec_met_info[device_type].end_frm_seq != frm_sequence) {
 
 		preempt_disable();
-		event_trace_pr_debug(
+		event_trace_printk(
 		    disp_get_tracing_mark(), "F|%d|%s|%d\n", current->tgid,
 		    dprec_met_info[device_type].log_name, frm_sequence);
 		preempt_enable();
