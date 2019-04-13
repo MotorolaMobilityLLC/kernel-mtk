@@ -52,6 +52,7 @@ enum dvfs_kicker {
 	KIR_BOOTUP,
 	KIR_FBT,
 	KIR_WIFI,
+	KIR_TLC,
 	KIR_SYSFS,
 	KIR_MM_NON_FORCE,
 	KIR_SYSFS_N,
@@ -141,7 +142,6 @@ struct opp_profile {
 
 extern int kicker_table[LAST_KICKER];
 
-#ifdef KERNEL49_FIX_BUILD_ERROR
 /* Governor extern API */
 extern bool is_vcorefs_feature_enable(void);
 bool vcorefs_vcore_dvs_en(void);
@@ -168,100 +168,5 @@ extern bool governor_autok_check(int kicker);
 extern bool governor_autok_lock_check(int kicker, int opp);
 extern int vcorefs_get_hw_opp(void);
 extern int vcorefs_enable_debug_isr(bool enable);
-#else
-bool __attribute__((weak)) is_vcorefs_feature_enable(void)
-{
-	return 0;
-}
-bool __attribute__((weak)) vcorefs_vcore_dvs_en(void)
-{
-	return 0;
-}
-bool __attribute__((weak)) vcorefs_dram_dfs_en(void)
-{
-	return 0;
-}
-bool __attribute__((weak)) vcorefs_mm_clk_en(void)
-{
-	return 0;
-}
-bool __attribute__((weak)) vcorefs_i_hwpath_en(void)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_module_init(void)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_get_num_opp(void)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_get_sw_opp(void)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_get_curr_vcore(void)
-{
-	return 0;
-}
 
-void __attribute__((weak)) vcorefs_update_opp_table(void)
-{
-}
-char *__attribute__((weak)) governor_get_kicker_name(int id)
-{
-	return 0;
-}
-char *__attribute__((weak)) vcorefs_get_opp_table_info(char *p)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_output_kicker_id(char *name)
-{
-	return 0;
-}
-int __attribute__((weak)) governor_debug_store(const char *p)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_late_init_dvfs(void)
-{
-	return 0;
-}
-int __attribute__((weak)) kick_dvfs_by_opp_index(struct kicker_config *krconf)
-{
-	return 0;
-}
-char *__attribute__((weak)) governor_get_dvfs_info(char *p)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_get_vcore_by_steps(u32 opp)
-{
-	return 0;
-}
-void __attribute__((weak)) vcorefs_init_opp_table(void)
-{
-}
-void __attribute__((weak)) governor_autok_manager(void)
-{
-}
-bool __attribute__((weak)) governor_autok_check(int kicker)
-{
-	return 0;
-}
-bool __attribute__((weak)) governor_autok_lock_check(int kicker, int opp)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_get_hw_opp(void)
-{
-	return 0;
-}
-int __attribute__((weak)) vcorefs_enable_debug_isr(bool enable)
-{
-	return 0;
-}
-#endif
 #endif	/* _MTK_VCOREFS_GOVERNOR_H */
