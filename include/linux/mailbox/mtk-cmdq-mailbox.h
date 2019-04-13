@@ -22,7 +22,7 @@
 #define CMDQ_NO_TIMEOUT			0xffffffff
 #define CMDQ_TIMEOUT_DEFAULT		1000
 
-#if IS_ENABLED(CONFIG_MACH_MT6779)
+#if IS_ENABLED(CONFIG_MACH_MT6779) || IS_ENABLED(CONFIG_MACH_MT6763)
 #define CMDQ_THR_MAX_COUNT		24
 #else
 #define CMDQ_THR_MAX_COUNT		16
@@ -167,6 +167,7 @@ s32 cmdq_mbox_thread_reset(void *chan);
 s32 cmdq_mbox_thread_suspend(void *chan);
 void cmdq_mbox_thread_disable(void *chan);
 u32 cmdq_mbox_set_thread_timeout(void *chan, u32 timeout);
+s32 cmdq_mbox_chan_id(void *chan);
 s32 cmdq_task_get_thread_pc(struct mbox_chan *chan, dma_addr_t *pc_out);
 s32 cmdq_task_get_thread_irq(struct mbox_chan *chan, u32 *irq_out);
 s32 cmdq_task_get_thread_irq_en(struct mbox_chan *chan, u32 *irq_en_out);

@@ -17,7 +17,6 @@
 #include <linux/kernel.h>
 #include <linux/printk.h>
 #include <linux/soc/mediatek/mtk-cmdq.h>
-#include <mt-plat/mtk_lpae.h>
 #include <linux/trace_events.h>
 
 #include "cmdq_def.h"
@@ -53,6 +52,7 @@ enum TASK_STATE_ENUM {
 #define CMDQ_THREAD_SEC_PRIMARY_DISP	(CMDQ_MIN_SECURE_THREAD_ID)
 #define CMDQ_THREAD_SEC_SUB_DISP	(CMDQ_MIN_SECURE_THREAD_ID + 1)
 #define CMDQ_THREAD_SEC_MDP		(CMDQ_MIN_SECURE_THREAD_ID + 2)
+#define CMDQ_THREAD_SEC_ISP		(CMDQ_MIN_SECURE_THREAD_ID + 3)
 
 /* max count of input */
 #define CMDQ_MAX_COMMAND_SIZE		(0x80000000)
@@ -192,23 +192,29 @@ do {if (1) mmprofile_log_ex(args); } while (0);	\
 #endif
 
 /* CMDQ FTRACE */
-#define __CMDQ_SYSTRACE_BEGIN(pid, fmt, args...) do { \
+#define CMDQ_TRACE_FORCE_BEGIN(fmt, args...) do { \
+	preempt_disable(); \
+	event_trace_printk(cmdq_get_tracing_mark(), \
+		"B|%d|"fmt, current->tgid, ##args); \
+	preempt_enable();\
+} while (0)
+
+#define CMDQ_TRACE_FORCE_END() do { \
+	preempt_disable(); \
+	event_trace_printk(cmdq_get_tracing_mark(), "E\n"); \
+	preempt_enable(); \
+} while (0)
+
+
+#define CMDQ_SYSTRACE_BEGIN(fmt, args...) do { \
 	if (cmdq_core_ftrace_enabled()) { \
-		preempt_disable(); \
-		event_trace_printk(cmdq_get_tracing_mark(), \
-			"B|%d|"fmt, pid, ##args); \
-		preempt_enable();\
+		CMDQ_TRACE_FORCE_BEGIN(fmt, ##args); \
 	} \
 } while (0)
 
-#define CMDQ_SYSTRACE_BEGIN(fmt, args...) \
-	__CMDQ_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
-
 #define CMDQ_SYSTRACE_END() do { \
 	if (cmdq_core_ftrace_enabled()) { \
-		preempt_disable(); \
-		event_trace_printk(cmdq_get_tracing_mark(), "E\n"); \
-		preempt_enable(); \
+		CMDQ_TRACE_FORCE_END(); \
 	} \
 } while (0)
 
@@ -324,6 +330,7 @@ enum CMDQ_LOG_LEVEL_ENUM {
 	CMDQ_LOG_LEVEL_FULL_ERROR = 2,
 	CMDQ_LOG_LEVEL_EXTENSION = 3,
 	CMDQ_LOG_LEVEL_PMQOS = 4,
+	CMDQ_LOG_LEVEL_SECURE = 5,
 
 	CMDQ_LOG_LEVEL_MAX	/* ALWAYS keep at the end */
 };
@@ -572,6 +579,7 @@ struct ContextStruct {
 
 	/* Write Address management */
 	struct list_head writeAddrList;
+	atomic_t write_addr_cnt;
 
 	/* Basic information */
 	struct cmdq_core_thread thread[CMDQ_MAX_THREAD_COUNT];
@@ -653,6 +661,15 @@ enum CMDQ_SPM_MODE {
 	CMDQ_PD_MODE,
 };
 
+/* secure world wsm metadata type in message ex,
+ * must sync with cmdq_sec_meta_type in cmdq_sec_iwc_common.h
+ */
+enum cmdq_sec_rec_meta_type {
+	CMDQ_SEC_METAEX_NONE,
+	CMDQ_SEC_METAEX_FD,
+	CMDQ_SEC_METAEX_CQ,
+};
+
 struct cmdqRecStruct {
 	struct list_head list_entry;
 	struct cmdq_pkt *pkt;
@@ -717,6 +734,7 @@ struct cmdqRecStruct {
 	const struct cmdq_controller *ctrl;
 	cmdq_core_handle_cb prepare;
 	cmdq_core_handle_cb unprepare;
+	cmdq_core_handle_cb stop;
 
 	struct cmdq_timeout_info *timeout_info;
 
@@ -742,6 +760,11 @@ struct cmdqRecStruct {
 	/* secure world */
 	struct iwcCmdqSecStatus_t *secStatus;
 	u32 irq;
+	void *sec_client_meta;
+	enum cmdq_sec_rec_meta_type sec_meta_type;
+	u32 sec_meta_size;
+
+	u32 check_list_del;
 };
 
 /* TODO: add controller support */
@@ -814,6 +837,7 @@ s32 cmdq_core_parse_instruction(const u32 *pCmd, char *textBuf, int bufLen);
 bool cmdq_core_should_print_msg(void);
 bool cmdq_core_should_full_error(void);
 bool cmdq_core_should_pmqos_log(void);
+bool cmdq_core_should_secure_log(void);
 bool cmdq_core_aee_enable(void);
 void cmdq_core_set_aee(bool enable);
 
@@ -839,6 +863,7 @@ void cmdq_core_reset_first_dump(void);
 
 /* cmdq_core_save_first_dump - save a CMDQ first error dump to file */
 s32 cmdq_core_save_first_dump(const char *string, ...);
+const char *cmdq_core_query_first_err_mod(void);
 
 /* Allocate/Free HW use buffer, e.g. command buffer forCMDQ HW */
 void *cmdq_core_alloc_hw_buffer(struct device *dev,
@@ -858,6 +883,7 @@ u32 cmdq_core_get_delay_start_cpr(void);
 s32 cmdq_delay_get_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario);
 int cmdqCoreAllocWriteAddress(u32 count, dma_addr_t *paStart);
 u32 cmdqCoreReadWriteAddress(dma_addr_t pa);
+void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out);
 u32 cmdqCoreWriteWriteAddress(dma_addr_t pa, u32 value);
 int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
 
@@ -916,6 +942,8 @@ u32 *cmdq_core_dump_pc(const struct cmdqRecStruct *handle,
 s32 cmdq_core_is_group_flag(enum CMDQ_GROUP_ENUM engGroup, u64 engineFlag);
 s32 cmdq_core_acquire_thread(enum CMDQ_SCENARIO_ENUM scenario, bool exclusive);
 void cmdq_core_release_thread(s32 scenario, s32 thread);
+
+bool cmdq_thread_in_use(void);
 
 s32 cmdq_core_suspend_hw_thread(s32 thread);
 

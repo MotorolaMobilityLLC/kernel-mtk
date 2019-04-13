@@ -178,8 +178,12 @@ u32 cmdq_dev_enable_device_clock(bool enable,
 
 	if (enable) {
 		result = clk_prepare_enable(clk_module);
-		CMDQ_MSG("enable clock with module: %s, result:%d\n",
-			clkName, result);
+		if (result)
+			CMDQ_ERR("enable clock with module:%s result:%d\n",
+				clkName, result);
+		else
+			CMDQ_MSG("enable clock with module:%s result:%d\n",
+				clkName, result);
 	} else {
 		clk_disable_unprepare(clk_module);
 		CMDQ_MSG("disable clock with module:%s\n", clkName);
