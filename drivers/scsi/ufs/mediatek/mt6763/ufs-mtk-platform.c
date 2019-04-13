@@ -17,6 +17,7 @@
 #include "ufs-mtk.h"
 #include "ufs.h"
 #include "ufshcd.h"
+#include "ufs_quirks.h"
 #include "unipro.h"
 
 #include "mtk_clkbuf_ctl.h"
@@ -474,7 +475,7 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 	udelay(156);
 
 	/* Step 1: Set RG_VA09_ON to 1 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 1, 0);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 1, 0, 0);
 
 	/* Step 2: release DA_MP_PLL_PWR_ON */
 	reg = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
@@ -578,7 +579,7 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 	writel(reg, ufs_mtk_mmio_base_ufs_mphy + 0xA08C);
 
 	/* Step 7: Set RG_VA09_ON to 0 */
-	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 0, 0);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, (1 << 0), 0, 0, 0);
 
 	/* delay awhile to satisfy T_HIBERNATE */
 	mdelay(15);
