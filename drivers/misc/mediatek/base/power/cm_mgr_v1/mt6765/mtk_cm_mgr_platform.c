@@ -785,7 +785,9 @@ int cm_mgr_platform_init(void)
 	cm_mgr_ratio_timer.function = cm_mgr_ratio_timer_fn;
 	cm_mgr_ratio_timer.data = 0;
 
+#ifdef CONFIG_MTK_CPU_FREQ
 	mt_cpufreq_set_governor_freq_registerCB(check_cm_mgr_status);
+#endif /* CONFIG_MTK_CPU_FREQ */
 
 	pm_qos_add_request(&ddr_opp_req, PM_QOS_DDR_OPP,
 			PM_QOS_DDR_OPP_DEFAULT_VALUE);
@@ -809,6 +811,15 @@ int cm_mgr_get_dram_opp(void)
 	return dram_opp_cur;
 }
 
-void cm_mgr_emi_latency(int enable)
+int cm_mgr_check_bw_status(void)
 {
+	if (cm_mgr_get_bw() > CM_MGR_BW_VALUE)
+		return 1;
+	else
+		return 0;
+}
+
+int cm_mgr_get_bw(void)
+{
+	return dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL);
 }

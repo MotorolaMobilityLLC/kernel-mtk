@@ -92,5 +92,6 @@ ifeq ($(CONFIG_MTK_CM_MGR), y)
 obj-$(CONFIG_MACH_MT6765) += cm_mgr_v1/
 obj-$(CONFIG_MACH_MT6761) += cm_mgr_v1/
 obj-$(CONFIG_MACH_MT3967) += cm_mgr_v1/
+obj-$(CONFIG_MACH_MT6779) += cm_mgr_v1/
 endif
 obj-$(CONFIG_MTK_SWPM) += swpm_v1/
