@@ -77,6 +77,7 @@ static LCM_UTIL_FUNCS lcm_util;
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/platform_device.h>
+#include <linux/i2c/ocp2131.h>
 #endif
 
 /* static unsigned char lcd_id_pins_value = 0xFF; */
@@ -253,8 +254,35 @@ static void lcm_resume_power(void)
 
 static void lcm_init(void)
 {
-	SET_RESET_PIN(0);
-	MDELAY(15);
+	unsigned char cmd = 0x0;
+	unsigned char data = 0xFF;
+	int ret = 0;
+
+	LCM_LOGD("lcm_init\n");
+
+	OCP2131_GPIO_ENP_enable();
+	MDELAY(2);
+	OCP2131_GPIO_ENN_enable();
+	MDELAY(5);
+
+	/*ENP +5.8v*/
+	cmd = 0x00;
+	data = 0x12;
+	ret = OCP2131_write_bytes(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ocp2131----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ocp2131----cmd=%0x--i2c write success----\n", cmd);
+
+	/*ENN -5.8V*/
+	cmd = 0x01;
+	data = 0x12;
+	ret = OCP2131_write_bytes(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ocp2131----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ocp2131----cmd=%0x--i2c write success----\n", cmd);
+
 	SET_RESET_PIN(1);
 	MDELAY(1);
 	SET_RESET_PIN(0);
@@ -270,6 +298,9 @@ static void lcm_suspend(void)
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
 	MDELAY(10);
 	/* SET_RESET_PIN(0); */
+	OCP2131_GPIO_ENN_disable();
+	MDELAY(1);
+	OCP2131_GPIO_ENP_disable();
 }
 
 static void lcm_resume(void)
