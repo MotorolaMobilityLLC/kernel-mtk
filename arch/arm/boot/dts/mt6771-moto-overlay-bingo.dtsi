@@ -104,6 +104,9 @@
 		pinctrl-3 = <&fpsensor_eint_in_float>;
 		status = "okay";
 	};
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
 };
 &spi0 {
 	#address-cells = <1>;
