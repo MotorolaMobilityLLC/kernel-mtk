@@ -46,6 +46,30 @@
 			bias-disable;
 		};
 	};
+
+	fingerprint_irq: state_irq {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO5__FUNC_GPIO5>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 &odm {
@@ -60,8 +84,13 @@
 	};
 
 	fp_int:fp_int{
-		compatible = "mediatek,fpsensor_fp_eint";
+		compatible = "mediatek,goodix-fp", "mediatek,fpsensor_fp_eint";
+		pinctrl-names = "fingerprint_irq", "reset_high", "reset_low";
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
 		int-gpios = <&pio 5 0>;
+		status = "okay";
 	};
 
 	fpsensor_finger:fpsensor_finger{
@@ -77,8 +106,10 @@
 	};
 };
 &spi0 {
-	fpc_tee@0 {
-		compatible = "fpc,fpc_spi";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fps_tee@0 {
+		compatible = "fpc,fpc_spi", "goodix,goodix-fp";
 		reg = <0>;
 		fpc,enable-wakeup;
 		spi-max-frequency = <10000000>;
