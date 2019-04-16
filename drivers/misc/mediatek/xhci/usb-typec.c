@@ -197,7 +197,6 @@ static int otg_tcp_notifier_call(struct notifier_block *nb,
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VBUS:
-				__func__, noti->vbus_state.mv);
 		if (noti->vbus_state.mv)
 			tcpc_vbus_enable(true);
 		else
