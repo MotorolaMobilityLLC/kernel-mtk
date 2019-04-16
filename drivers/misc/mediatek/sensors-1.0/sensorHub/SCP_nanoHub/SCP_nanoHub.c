@@ -904,6 +904,10 @@ static void SCP_sensorHub_init_sensor_state(void)
 	mSensorState[SENSOR_TYPE_LTS].sensorType = SENSOR_TYPE_LTS;
 	mSensorState[SENSOR_TYPE_LTS].rate = SENSOR_RATE_ONCHANGE;
 	mSensorState[SENSOR_TYPE_LTS].timestamp_filter = false;
+
+	mSensorState[SENSOR_TYPE_PROXCAL].sensorType = SENSOR_TYPE_PROXCAL;
+	mSensorState[SENSOR_TYPE_PROXCAL].rate = SENSOR_RATE_ONCHANGE;
+	mSensorState[SENSOR_TYPE_PROXCAL].timestamp_filter = false;
 }
 
 static void init_sensor_config_cmd(struct ConfigCmd *cmd, int sensor_type)

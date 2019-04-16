@@ -547,6 +547,19 @@ static ssize_t situation_store_params(struct device *dev, struct device_attribut
 }
 #endif
 
+//moto prox cal
+static ssize_t situation_store_proxcal(struct device *dev, struct device_attribute *attr,
+			       const char *buf, size_t count) {
+	int err = 0;
+	uint8_t type = (uint8_t)buf[0];
+	SITUATION_PR_ERR("sensor_cfg_to_hub proxcal type = %d\n",type);
+	err = sensor_cfg_to_hub(ID_PROXCAL, (uint8_t *)&type, sizeof(uint8_t));
+	if (err < 0)
+		SITUATION_PR_ERR("sensor_cfg_to_hub proxcal fail\n");
+
+	return count;
+}
+
 static int situation_real_driver_init(void)
 {
 	int err = -1, i = 0;
@@ -638,6 +651,9 @@ DEVICE_ATTR(situdevnum, S_IWUSR | S_IRUGO, situation_show_devnum, NULL);
 #ifdef CONFIG_MOTO_ALGO_PARAMS
 DEVICE_ATTR(situparams, S_IWUSR | S_IRUGO, NULL, situation_store_params);
 #endif
+//moto add for prox sensor cal
+DEVICE_ATTR(situproxcal, S_IWUSR | S_IRUGO, NULL, situation_store_proxcal);
+
 static struct attribute *situation_attributes[] = {
 	&dev_attr_situactive.attr,
 	&dev_attr_situbatch.attr,
@@ -646,6 +662,8 @@ static struct attribute *situation_attributes[] = {
 #ifdef CONFIG_MOTO_ALGO_PARAMS
 	&dev_attr_situparams.attr,
 #endif
+//moto add for prox sensor cal
+	&dev_attr_situproxcal.attr,
 	NULL
 };
 
