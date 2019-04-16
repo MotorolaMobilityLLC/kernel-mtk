@@ -38,6 +38,7 @@ struct alspshub_ipi_data {
 	u16		als;
 	u8		ps;
 	int		ps_cali;
+	atomic_t	als_cali;
 	atomic_t	ps_thd_val_high;	/*the cmd value can't be read, stored in ram*/
 	atomic_t	ps_thd_val_low;		/*the cmd value can't be read, stored in ram*/
 	atomic_t	als_thd_val_high;	/*the cmd value can't be read, stored in ram*/
@@ -301,6 +302,14 @@ static void alspshub_init_done_work(struct work_struct *work)
 		(uint8_t *)cfg_data, sizeof(cfg_data));
 	if (err < 0)
 		pr_err_ratelimited("sensor_cfg_to_hub ps fail\n");
+
+	spin_lock(&calibration_lock);
+	cfg_data[0] = atomic_read(&obj->als_cali);
+	spin_unlock(&calibration_lock);
+	err = sensor_cfg_to_hub(ID_LIGHT,
+		(uint8_t *)cfg_data, sizeof(cfg_data));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub als fail\n");
 #endif
 }
 
@@ -326,16 +335,25 @@ static int ps_recv_data(struct data_unit_t *event, void *reserved)
 }
 static int als_recv_data(struct data_unit_t *event, void *reserved)
 {
+	int err = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
-	if (READ_ONCE(obj->als_android_enable) == false)
+	if (!obj)
 		return 0;
 
 	if (event->flush_action == FLUSH_ACTION)
-		als_flush_report();
-	else if (event->flush_action == DATA_ACTION)
-		als_data_report(event->light, SENSOR_STATUS_ACCURACY_MEDIUM);
-	return 0;
+		err = als_flush_report();
+	else if ((event->flush_action == DATA_ACTION) &&
+			READ_ONCE(obj->als_android_enable) == true)
+		err = als_data_report(event->light,
+			SENSOR_STATUS_ACCURACY_MEDIUM);
+	else if (event->flush_action == CALI_ACTION) {
+		spin_lock(&calibration_lock);
+		atomic_set(&obj->als_cali, event->data[0]);
+		spin_unlock(&calibration_lock);
+		err = als_cali_report(event->data);
+	}
+	return err;
 }
 
 static int rgbw_recv_data(struct data_unit_t *event, void *reserved)
@@ -402,10 +420,26 @@ static int alshub_factory_clear_cali(void)
 }
 static int alshub_factory_set_cali(int32_t offset)
 {
-	return 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	int err = 0;
+	int32_t cfg_data;
+
+	cfg_data = offset;
+	err = sensor_cfg_to_hub(ID_LIGHT,
+		(uint8_t *)&cfg_data, sizeof(cfg_data));
+	if (err < 0)
+		pr_err("sensor_cfg_to_hub fail\n");
+	atomic_set(&obj->als_cali, offset);
+	als_cali_report(&cfg_data);
+
+	return err;
+
 }
 static int alshub_factory_get_cali(int32_t *offset)
 {
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	*offset = atomic_read(&obj->als_cali);
 	return 0;
 }
 static int pshub_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
@@ -624,6 +658,17 @@ static int als_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportL
 static int als_flush(void)
 {
 	return sensor_flush_to_hub(ID_LIGHT);
+}
+
+static int als_set_cali(uint8_t *data, uint8_t count)
+{
+	int32_t *buf = (int32_t *)data;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+
+	spin_lock(&calibration_lock);
+	atomic_set(&obj->als_cali, buf[0]);
+	spin_unlock(&calibration_lock);
+	return sensor_cfg_to_hub(ID_LIGHT, data, count);
 }
 
 static int rgbw_enable(int en)
@@ -867,6 +912,7 @@ static int alspshub_probe(struct platform_device *pdev)
 	als_ctl.set_delay = als_set_delay;
 	als_ctl.batch = als_batch;
 	als_ctl.flush = als_flush;
+	als_ctl.set_cali = als_set_cali;
 	als_ctl.rgbw_enable = rgbw_enable;
 	als_ctl.rgbw_batch = rgbw_batch;
 	als_ctl.rgbw_flush = rgbw_flush;
