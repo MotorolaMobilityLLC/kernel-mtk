@@ -91,9 +91,8 @@ static int ccci_util_pin_bc_release(struct inode *inode, struct file *filp)
 	struct pin_event_user_ctrl *user_ctrl;
 
 	user_ctrl = filp->private_data;
-	user_ctrl->pin_update = 0;
-
 	spin_lock(&pin_event_update_lock);
+	user_ctrl->pin_update = 0;
 	list_del(&user_ctrl->entry);
 	spin_unlock(&pin_event_update_lock);
 	kfree(user_ctrl);
