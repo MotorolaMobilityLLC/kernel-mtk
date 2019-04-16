@@ -1,0 +1,266 @@
+/* Copyright (c) 2019, Motorola Mobility Inc. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+#include "mt6771-moto-overlay.dtsi"
+#include "mt6771-camera-sensor-moto-bingo.dtsi"
+#include "bq2560x.dtsi"
+#include "sgm37604a.dtsi"
+
+&pio {
+	fpsensor_fpc_rst_low: fpsensor_fpc_rst_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	fpsensor_fpc_rst_high: fpsensor_fpc_rst_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fpsensor_eint_in_low: fpsensor_eint_in_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO5__FUNC_GPIO5>;
+			slew-rate = <0>;
+			bias-pull-down = <00>;
+		};
+	};
+
+	fpsensor_eint_in_float: fpsensor_eint_in_float {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO5__FUNC_GPIO5>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+};
+
+&odm {
+	otg_iddig:otg_iddig  {
+	compatible = "mediatek,usb_iddig_bi_eint";
+	};
+	flashlights_dummy_gpio: flashlights_dummy_gpio {
+	compatible = "mediatek,flashlights_dummy_gpio";
+	};
+	sar_irq:sar_irq {
+	compatible = "mediatek,sar_irq";
+	};
+
+	fp_int:fp_int{
+		compatible = "mediatek,fpsensor_fp_eint";
+		int-gpios = <&pio 5 0>;
+	};
+
+	fpsensor_finger:fpsensor_finger{
+		compatible = "mediatek,fingerprint";
+		fpc,enable-wakeup;
+		pinctrl-names = "fpsensor_fpc_rst_low", "fpsensor_fpc_rst_high",
+				"fpsensor_eint_in_low", "fpsensor_eint_in_float";
+		pinctrl-0 = <&fpsensor_fpc_rst_low>;
+		pinctrl-1 = <&fpsensor_fpc_rst_high>;
+		pinctrl-2 = <&fpsensor_eint_in_low>;
+		pinctrl-3 = <&fpsensor_eint_in_float>;
+		status = "okay";
+	};
+};
+&spi0 {
+	fpc_tee@0 {
+		compatible = "fpc,fpc_spi";
+		reg = <0>;
+		fpc,enable-wakeup;
+		spi-max-frequency = <10000000>;
+		netlink-event = <31>;
+		status = "okay";
+	};
+};
+
+&i2c6 {
+	rt9465@4b {
+		status = "disabled";
+	};
+};
+
+&i2c3 {
+	abov_sar@20 {
+	compatible = "mediatek,sar";
+	reg = <0x20>;
+	gpio-irq = <9>;
+	gpio-irq-std = <&pio 9 0x0>;
+	reg_array_len = <0x03>;
+	reg_array_val = <0x07 0x00 0x08 0x07 0xFB 0x01>;
+		cap,use_channel_bottom = <0x01>;
+		cap,use_channel_top = <0x00>;
+		label = "AbovCapSense";
+		status = "okay";
+	};
+};
+
+&touch {
+	tpd-resolution = <720 1520>;
+	tpd-filter-enable = <0>;
+};
+&lk_charger {
+		max_charger_voltage = <6500000>;
+		fast_charge_voltage = <2000000>;
+
+		/* charging current */
+		usb_charger_current = <500000>;
+		ac_charger_current = <2000000>;
+		ac_charger_input_current = <2000000>;
+		non_std_ac_charger_current = <500000>;
+		charging_host_charger_current = <1500000>;
+		ta_ac_charger_current = <3000000>;
+		pd_charger_current = <500000>;
+
+		/* battery temperature protection */
+		temp_t4_threshold = <50>;
+		temp_t3_threshold = <45>;
+		temp_t1_threshold = <0>;
+};
+&charger {
+		enable_sw_jeita;
+
+		/* common */
+		battery_cv = <4350000>;
+		max_charger_voltage = <6500000>;
+
+		/* charging current */
+		usb_charger_current_suspend = <0>;
+		usb_charger_current_unconfigured = <70000>;
+		usb_charger_current_configured = <500000>;
+		usb_charger_current = <500000>;
+		ac_charger_current = <2000000>;
+		ac_charger_input_current = <2000000>;
+		non_std_ac_charger_current = <500000>;
+		charging_host_charger_current = <1500000>;
+		apple_1_0a_charger_current = <650000>;
+		apple_2_1a_charger_current = <800000>;
+		ta_ac_charger_current = <3000000>;
+
+		/* sw jeita */
+		jeita_temp_above_t4_cv_voltage = <4240000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
+		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
+		jeita_temp_below_t0_cv_voltage = <4040000>;
+		temp_t4_threshold = <50>;
+		temp_t4_thres_minus_x_degree = <47>;
+		temp_t3_threshold = <45>;
+		temp_t3_thres_minus_x_degree = <39>;
+		temp_t2_threshold = <10>;
+		temp_t2_thres_plus_x_degree = <16>;
+		temp_t1_threshold = <0>;
+		temp_t1_thres_plus_x_degree = <6>;
+		temp_t0_threshold = <0>;
+		temp_t0_thres_plus_x_degree = <0>;
+		temp_neg_10_threshold = <0>;
+
+		/* battery temperature protection */
+		enable_min_charge_temperature;
+		min_charge_temperature = <0>;
+		min_charge_temperature_plus_x_degree = <6>;
+		max_charge_temperature = <50>;
+		max_charge_temperature_minus_x_degree = <47>;
+
+		/* PE 2.0 */
+		pe20_ichg_level_threshold = <1000>;
+		ta_start_battery_soc = <0>;
+		ta_stop_battery_soc = <85>;
+
+		/* PE 4.0 single charger*/
+		pe40_single_charger_input_current = <3000000>;
+		pe40_single_charger_current = <3000000>;
+
+		/* PE 4.0 dual charger*/
+		pe40_dual_charger_input_current = <3000000>;
+		pe40_dual_charger_chg1_current = <2000000>;
+		pe40_dual_charger_chg2_current = <2000000>;
+		pe40_stop_battery_soc = <80>;
+
+		/* dual charger */
+		chg1_ta_ac_charger_current = <1500000>;
+		chg2_ta_ac_charger_current = <1500000>;
+
+		/* cable measurement impedance */
+		cable_imp_threshold = <699>;
+		vbat_cable_imp_threshold = <3900>;
+
+		/* bif */
+		bif_threshold1 = <4250000>;
+		bif_threshold2 = <4300000>;
+		bif_cv_under_threshold2 = <4450000>;
+};
+&subpmic_pmu_eint {
+	compatible = "mediatek,sw-charger";
+};
+
+&camera_pins_cam0_vcamd_0 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO169__FUNC_GPIO169>;
+		slew-rate = <1>;
+		output-low;
+	};
+};
+&camera_pins_cam0_vcamd_1 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO169__FUNC_GPIO169>;
+		slew-rate = <1>;
+		output-high;
+	};
+};
+&gpio_u3_switch_sel1 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+		slew-rate = <1>;
+		output-low;
+	};
+};
+&gpio_u3_switch_sel2 {
+	pins_cmd_dat {
+		pins = <PINMUX_GPIO25__FUNC_GPIO25>;
+		slew-rate = <1>;
+		output-high;
+	};
+};
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+};
+&mt_soc_codec_name {
+		ext_pa =  <&pio 153 0>;
+};
+&led6{
+	led_mode = <4>;
+	pwm_config = <0 0 0 0 0>;
+};
+
+&moto_chg_tcmd {
+	status = "okay";
+
+	mmi,ntc_table = <1>;
+	mmi,ntc_v_ref = <1800000>;
+	mmi,ntc_r_pull = <390000>;
+
+	mmi,batid_v_ref = <1800000>;
+	mmi,batid_r_pull = <390000>;
+
+	mmi,adc-channel-cpu = <0>;
+	mmi,adc-channel-charger = <2>;
+	mmi,adc-channel-pa = <1>;
+	mmi,adc-channel-batid = <3>;
+	mmi,adc-channel-vbat = <100>;
+};
