@@ -1431,7 +1431,7 @@ static void cmdq_sec_dump_summary(const struct TaskStruct *task, s32 thread,
 	struct NGTaskInfoStruct *nginfo_out)
 {
 	u32 i;
-	u32 insta, instb, irq_flag;
+	u32 insta, instb;
 	const char *module = "CMDQ";
 	int smi_hang;
 
@@ -1484,7 +1484,7 @@ static void cmdq_sec_dump_summary(const struct TaskStruct *task, s32 thread,
 	nginfo_out->ngtask = task;
 	nginfo_out->buffer_size = 0;
 	nginfo_out->module = module;
-	nginfo_out->irq_flag = irq_flag;
+	nginfo_out->irq_flag = 0;
 	nginfo_out->inst[1] = insta;
 	nginfo_out->inst[0] = instb;
 
