@@ -1360,6 +1360,7 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 		break;
 	case SENSOR_FEATURE_SET_LSC_TBL:
 		{
+#define LSC_TBL_DATA_SIZE 1024
 			unsigned long long *pFeaturePara_64 = (unsigned long long *)pFeaturePara;
 			kal_uint32 u4RegLen = (kal_uint32)(*pFeaturePara_64);
 			void *usr_ptr_Reg = (void *)(uintptr_t) (*(pFeaturePara_64 + 1));
@@ -1367,19 +1368,20 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 			kal_uint8 *pReg = NULL;
 
 			/* buffer size exam */
-			if ((sizeof(kal_uint8) * u4RegLen) > IMGSENSOR_FEATURE_PARA_LEN_MAX) {
+			if ((sizeof(kal_uint8) * u4RegLen) > IMGSENSOR_FEATURE_PARA_LEN_MAX ||
+				(u4RegLen > LSC_TBL_DATA_SIZE || u4RegLen < 0)) {
 				kfree(pFeaturePara);
 				PK_PR_ERR(" buffer size (%u) is too large\n", u4RegLen);
 				return -EINVAL;
 			}
-			pReg = kmalloc_array(u4RegLen, sizeof(kal_uint8), GFP_KERNEL);
+			pReg = kmalloc_array((u4RegLen + 1), sizeof(kal_uint8), GFP_KERNEL);
 			if (pReg == NULL) {
 				kfree(pFeaturePara);
 				PK_PR_ERR(" ioctl allocate mem failed\n");
 				return -ENOMEM;
 			}
 
-			memset(pReg, 0x0, sizeof(kal_uint8) * u4RegLen);
+			memset(pReg, 0x0, sizeof(kal_uint8) * (u4RegLen + 1));
 
 			if (copy_from_user((void *)pReg,
 					   (void *)usr_ptr_Reg, sizeof(kal_uint8) * u4RegLen)) {
@@ -1392,10 +1394,6 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 								   (unsigned char *)pReg,
 								   (unsigned int *)&u4RegLen);
 
-			if (copy_to_user((void __user *)usr_ptr_Reg,
-					 (void *)pReg, sizeof(kal_uint8) * u4RegLen)) {
-				PK_DBG("[CAMERA_HW]ERROR: copy_to_user fail\n");
-			}
 			kfree(pReg);
 		}
 
