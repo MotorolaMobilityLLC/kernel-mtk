@@ -1336,7 +1336,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 			up(&sem_early_suspend);
 			return r;
 		}
-
+#if defined(MTK_CAPTURE_SUPPORT)
 	case MTKFB_CAPTURE_FRAMEBUFFER:
 		{
 			unsigned long *src_pbuf = 0;
@@ -1418,6 +1418,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg
 
 			return r;
 		}
+#endif
 
 	case MTKFB_GET_OVERLAY_LAYER_INFO:
 		{
@@ -1807,6 +1808,8 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			DISPDBG("MTKFB_GET_POWERSTATE success %d\n", power_state);
 			break;
 		}
+
+#if defined(MTK_CAPTURE_SUPPORT)
 	case COMPAT_MTKFB_CAPTURE_FRAMEBUFFER:
 		{
 			compat_ulong_t __user *data32;
@@ -1820,6 +1823,8 @@ static int mtkfb_compat_ioctl(struct fb_info *info, unsigned int cmd, unsigned l
 			ret = mtkfb_ioctl(info, MTKFB_CAPTURE_FRAMEBUFFER, (unsigned long)pbuf);
 			break;
 		}
+#endif
+
 	case COMPAT_MTKFB_TRIG_OVERLAY_OUT:
 		{
 			arg = (unsigned long)compat_ptr(arg);
