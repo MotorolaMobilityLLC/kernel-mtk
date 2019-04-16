@@ -1427,12 +1427,11 @@ static void nl_data_handler(struct sk_buff *skb)
 		if (size > PAGE_SIZE)
 			fgd_ret_msg = vmalloc(size);
 
-		if (fgd_ret_msg == NULL)
+		if (fgd_ret_msg == NULL) {
+			bm_err("Error:%s vmalloc fail!!!\n", __func__);
 			return;
+		}
 	}
-
-	if (!fgd_ret_msg)
-		return;
 
 	memset(fgd_ret_msg, 0, size);
 
@@ -1471,13 +1470,10 @@ int wakeup_fg_algo(unsigned int flow_state)
 			if (size > PAGE_SIZE)
 				fgd_msg = vmalloc(size);
 
-			if (fgd_msg == NULL)
+			if (fgd_msg == NULL) {
+				bm_err("Error:%s vmalloc fail!!!\n", __func__);
 				return -1;
-		}
-
-		if (!fgd_msg) {
-/* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
-			return -1;
+			}
 		}
 
 		bm_debug("[%s] malloc size=%d pid=%d cmd:%d\n",
@@ -1526,14 +1522,12 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 			if (size > PAGE_SIZE)
 				fgd_msg = vmalloc(size);
 
-			if (fgd_msg == NULL)
+			if (fgd_msg == NULL) {
+				bm_err("Error:%s vmalloc fail!!!\n", __func__);
 				return -1;
+			}
 		}
 
-		if (!fgd_msg) {
-/* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
-			return -1;
-		}
 
 		bm_debug(
 			"[wakeup_fg_algo] malloc size=%d pid=%d cmd:%d\n",
