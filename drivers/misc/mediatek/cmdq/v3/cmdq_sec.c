@@ -920,7 +920,7 @@ static s32 cmdq_sec_insert_backup_cookie_instr(
 	const u32 regAddr = CMDQ_THR_EXEC_CNT_PA(thread);
 	struct ContextStruct *context = cmdq_core_get_context();
 	u64 addrCookieOffset = CMDQ_SEC_SHARED_THR_CNT_OFFSET + thread * sizeof(u32);
-	u64 WSMCookieAddr = context->hSecSharedMem->MVABase + addrCookieOffset;
+	u64 WSMCookieAddr;
 	const uint32_t subsysBit = cmdq_get_func()->getSubsysLSBArgA();
 	int32_t subsysCode = cmdq_core_subsys_from_phys_addr(regAddr);
 	u32 highAddr = 0;
@@ -930,6 +930,8 @@ static s32 cmdq_sec_insert_backup_cookie_instr(
 		CMDQ_ERR("%s shared memory is not created\n", __func__);
 		return -EFAULT;
 	}
+
+	WSMCookieAddr = context->hSecSharedMem->MVABase + addrCookieOffset;
 
 	CMDQ_VERBOSE("backup secure cookie for thread:%d task:0x%p\n",
 		thread, task);
