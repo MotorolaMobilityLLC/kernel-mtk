@@ -37,7 +37,6 @@ struct charger_manager;
 #include "mtk_pe20_intf.h"
 #include "mtk_pe30_intf.h"
 #include "mtk_pe40_intf.h"
-#include "mtk_pe50_intf.h"
 #include "mtk_pdc_intf.h"
 
 #define CHARGING_INTERVAL 10
@@ -117,8 +116,6 @@ extern void charger_log_flash(const char *fmt, ...);
 #define	CHR_PE40_TUNING (0x0009)
 #define	CHR_PE40_POSTCC (0x000A)
 #define CHR_PE30	(0x000B)
-#define CHR_PE50_READY	(0x000C)
-#define CHR_PE50_RUNNING	(0x000D)
 
 
 /* charger_algorithm notify charger_dev */
@@ -390,10 +387,6 @@ struct charger_manager {
 	/* pe 4.0 */
 	bool enable_pe_4;
 	struct mtk_pe40 pe4;
-
-	/* pe 5.0 */
-	bool enable_pe_5;
-	struct mtk_pe50 pe5;
 
 	/* type-C*/
 	bool enable_type_c;
