@@ -327,10 +327,9 @@ static int get_devinfo(void)
 	cputurbo = (get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 3) & 0x1;
 	gputurbo = ((get_devinfo_with_index(CPUFREQ_SEG_CODE_IDX_0) >> 6) & 0x1)
 		| cputurbo;
+	((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
 
 	if (cputurbo) {
-		((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
-
 		if ((turbo_bininfo.CPU_T_BIN >= 1) && (turbo_bininfo.CPU_T_BIN <= 4))
 			turbo_bininfo.CPU_T_BIN -= 1;
 		else
@@ -338,8 +337,6 @@ static int get_devinfo(void)
 	}
 
 	if (gputurbo) {
-		((int *)&turbo_bininfo)[0] = get_devinfo_with_index(TURBO_BIN_CODE_IDX_0);
-
 		if ((turbo_bininfo.GPU_OPP0_T_BIN >= 1) && (turbo_bininfo.GPU_OPP0_T_BIN <= 5))
 			turbo_bininfo.GPU_OPP0_T_BIN -= 1;
 		else
@@ -352,9 +349,9 @@ static int get_devinfo(void)
 	}
 
 #ifdef CONFIG_EEM_AEE_RR_REC
-	aee_rr_rec_ptp_devinfo_1(cputurbo | (turbo_bininfo.CPU_T_BIN >> 1) |
-		(turbo_bininfo.GPU_OPP0_T_BIN >> 4) | (turbo_bininfo.GPU_OPP1_T_BIN >> 7) |
-		(gputurbo >> 10));
+	aee_rr_rec_ptp_devinfo_1(cputurbo | (turbo_bininfo.CPU_T_BIN << 1) |
+		(turbo_bininfo.GPU_OPP0_T_BIN << 4) | (turbo_bininfo.GPU_OPP1_T_BIN << 7) |
+		(gputurbo << 10));
 
 #if 0
 	eem_error("t:%d, tbin:%d, g0bin:%d, g1bin:%d, bin data: 0x%x",
