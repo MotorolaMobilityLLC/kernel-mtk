@@ -108,8 +108,10 @@ static ssize_t ccci_util_pin_bc_read(struct file *filp, char __user *buf, size_t
 	user_ctrl = filp->private_data;
 	if (filp->f_flags & O_NONBLOCK) {
 		spin_lock(&pin_event_update_lock);
-		if (user_ctrl->pin_update == 0)
+		if (user_ctrl->pin_update == 0) {
+			spin_unlock(&pin_event_update_lock);
 			return 0;
+		}
 		memcpy(&user_ctrl->pin_event, pin_event, sizeof(struct pin_status_event));
 		spin_unlock(&pin_event_update_lock);
 		if (copy_to_user(buf, &user_ctrl->pin_event, sizeof(struct pin_status_event)))
