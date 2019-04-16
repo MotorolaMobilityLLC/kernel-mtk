@@ -268,6 +268,10 @@ static void lcm_send_cmd(/*enum DISP_MODULE_ENUM module, struct cmdqRecStruct *c
 
 	if (_dbi_context.dbi_params.ctrl == LCM_CTRL_SERIAL_DBI)
 		cmd_addr = &(DBI_REG->DBI_SCMD0);
+	else {
+		DISPERR("Can't find DBI data addr %s:%d\n", __func__, __LINE__);
+		return;
+	}
 
 	DBI_OUTREG32(NULL, cmd_addr, cmd);
 }
@@ -279,6 +283,10 @@ static void lcm_send_data(/*enum DISP_MODULE_ENUM module, struct cmdqRecStruct *
 
 	if (_dbi_context.dbi_params.ctrl == LCM_CTRL_SERIAL_DBI)
 		data_addr = &(DBI_REG->DBI_SDAT0);
+	else {
+		DISPERR("Can't find DBI data addr %s:%d\n", __func__, __LINE__);
+		return;
+	}
 
 	/* DBI-B add here */
 	/* .... */

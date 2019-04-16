@@ -258,8 +258,8 @@ enum DPI_STATUS ddp_dpi_ConfigPclk(struct cmdqRecStruct *cmdq, unsigned int clk_
 	else {
 		DPI_OUTREG32(NULL, TVDPLL_CON0, (INREG32(TVDPLL_CON0) | 0x01)); /*enable TVDPLL */
 		DPI_OUTREG32(NULL, TVDPLL_CON1, con1);	/* set TVDPLL output clock frequency */
+		DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
 	}
-	DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
 
 	/*DPI output clock polarity */
 	ctrl.CLK_POL = (polarity == DPI_POLARITY_FALLING) ? 1 : 0;
@@ -482,9 +482,11 @@ int ddp_dpi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		clk_apmixed_base = of_iomap(node, 0);
 		if (!clk_apmixed_base)
 			DISPERR("[CLK_APMIXED] base failed\n");
-		else
+		else {
 			DPI_OUTREG32(NULL, TVDPLL_CON0, (INREG32(TVDPLL_CON0) | 0x01)); /*enable TVDPLL */
-		DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
+			DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n",
+					INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
+		}
 	}
 	return 0;
 }
@@ -514,9 +516,11 @@ int ddp_dpi_power_off(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		clk_apmixed_base = of_iomap(node, 0);
 		if (!clk_apmixed_base)
 			DISPERR("[CLK_APMIXED] base failed\n");
-		else
+		else {
 			DPI_OUTREG32(NULL, TVDPLL_CON0, (INREG32(TVDPLL_CON0) | 0x00)); /*disable TVDPLL */
-		DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n", INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
+			DISPINFO("DISP/DPI,TVDPLL_CON0 0x%x, TVDPLL_CON1: 0x%x\n",
+					INREG32(TVDPLL_CON0), INREG32(TVDPLL_CON1));
+		}
 
 		ddp_path_top_clock_off();
 		s_isDpiPowerOn = FALSE;
