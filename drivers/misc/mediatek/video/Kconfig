@@ -158,3 +158,22 @@ config MTK_DRE30_SUPPORT
 	  display visual enhancement ver.3.
 	  This feature requires the cowork of AAL user-space algorithm process.
 	  Please also turn on MTK_AAL_SUPPORT amd MTK_DRE30_SUPPORT in ProjectConfig.mk.
+
+config HBM_DCS_ONLY
+	bool "Config hbm use dcs only"
+	default n
+	help
+	  This control hbm use dcs only. Only use panel driver IC to control backlight.
+
+config HBM_DCS_GPIO
+	bool "Config hbm use dcs and gpio"
+	default n
+	help
+	  This control hbm use dcs and gpio. Enable GPIO to control hbm on and off.
+
+config HBM_DCS_WLED
+	bool "Config hbm use dcs and wled"
+	default n
+	help
+	  This control hbm use dcs and wled. Use wled to adjust the brightness.
+	  Use panel driver IC to control hbm on and off.
