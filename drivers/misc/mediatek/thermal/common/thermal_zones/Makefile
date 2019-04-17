@@ -333,7 +333,7 @@ obj-$(CONFIG_THERMAL) += mtk_ts_pmic.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_pmic1.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger.o
 obj-$(CONFIG_THERMAL) += mtk_ts_charger2.o
-
+obj-$(CONFIG_THERMAL) += mtk_ts_charger_ntc.o
 ifneq ($(CONFIG_MTK_COMBO_WIFI),)
     obj-$(CONFIG_THERMAL) += mtk_ts_wmt.o
 endif
