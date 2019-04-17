@@ -212,10 +212,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		};
 	};
 
-	moto_chg_tcmd: moto_chg_tcmd {
-		compatible = "mmi,moto-chg-tcmd";
-	};
-
 	psci {
 		compatible      = "arm,psci-1.0";
 		method          = "smc";
