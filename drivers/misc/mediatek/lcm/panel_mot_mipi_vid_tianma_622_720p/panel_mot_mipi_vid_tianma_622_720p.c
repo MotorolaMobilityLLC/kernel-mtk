@@ -156,6 +156,12 @@ static struct LCM_setting_table bl_level[] = {
 	{ REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
+static struct LCM_setting_table cabc_array[] = {
+	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
+	{ 0x55, 0x01, {0x01} },
+	{ REGFLAG_END_OF_TABLE, 0x00, {} }
+};
+
 static void push_table(void *cmdq, struct LCM_setting_table *table,
 	unsigned int count, unsigned char force_update)
 {
@@ -477,6 +483,13 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
+void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
+		unsigned int *lcm_value)
+{
+	cabc_array[1].para_list[0] = *lcm_value;
+	push_table(NULL, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
+}
+
 static void *lcm_switch_mode(int mode)
 {
 	return NULL;
@@ -514,5 +527,6 @@ LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 #if (LCM_DSI_CMD_MODE)
 	.validate_roi = lcm_validate_roi,
 #endif
+	.set_lcm_cmd = set_lcm_cmd,
 
 };
