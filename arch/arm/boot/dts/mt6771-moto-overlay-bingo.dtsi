@@ -142,6 +142,16 @@
 	};
 };
 
+&i2c5 {
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3e>;
+		bias_gpio_enn = <&pio 14 0>;
+		bias_gpio_enp = <&pio 13 0>;
+		status = "okay";
+	};
+};
+
 &touch {
 	tpd-resolution = <720 1520>;
 	tpd-filter-enable = <0>;
