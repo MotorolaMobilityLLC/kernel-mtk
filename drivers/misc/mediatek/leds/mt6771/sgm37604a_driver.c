@@ -155,12 +155,17 @@ static void SGM37604A_set_backlight_reg_init(void)
 	BACKLIGHT_LOG("[SGM37604A] set backlight current reg = 0x%x \n", data2);
 }
 
+int sgm_last_level;
+extern int hbm_state;
 int sgm37604a_set_backlight_level(unsigned int level)
 {
 	unsigned int level_a = 0;
 	unsigned int ret_code = 0;
 
 	BACKLIGHT_LOG("[SGM37604A] sgm37604a_set_backlight_level  [%d]\n", level);
+	sgm_last_level = level;
+	if (hbm_state)
+		level = 0xFF;
 
 	if (level == 0) {
 		BACKLIGHT_LOG("------backlight_level suspend-----\n");
