@@ -448,7 +448,13 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 	LCM_LOGI("%s,ili9881c backlight: level = %d\n", __func__, level);
 
-	bl_level[0].para_list[0] = level;
+	if (level == 0xFF) {
+		bl_level[0].para_list[0] = 0x0F;
+		bl_level[0].para_list[1] = 0xFF;
+	} else {
+		bl_level[0].para_list[0] = 0x0C;
+		bl_level[0].para_list[1] = 0xCC;
+	}
 
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
