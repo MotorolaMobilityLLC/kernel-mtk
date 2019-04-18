@@ -1148,7 +1148,6 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
 	int ret = 0;
 	union power_supply_propval propval;
-	bool plug_in_status = true;
 	// pony.ma, DATE20190411-01 END
 
 	info->chr_type = chr_type;
@@ -1163,16 +1162,15 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (!chrdet_psy) {
 		pr_notice("%s: get power supply failed\n", __func__);
-		chr_err("get power supply failed\n");
-		return -EINVAL;
 	}
-	
-	propval.intval = plug_in_status;
-	ret = power_supply_set_property(chrdet_psy,
+	else{
+		propval.intval = true;
+		ret = power_supply_set_property(chrdet_psy,
 			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval);
-	if (ret < 0)
-		pr_notice("%s: psy enable failed, ret = %d\n",
-			__func__, ret);
+		if (ret < 0)
+			pr_notice("%s: psy enable failed, ret = %d\n",
+				__func__, ret);
+	}
 	// pony.ma, DATE20190411-01 END
 
 	chr_err("mtk_is_charger_on plug in, tyupe:%d\n", chr_type);

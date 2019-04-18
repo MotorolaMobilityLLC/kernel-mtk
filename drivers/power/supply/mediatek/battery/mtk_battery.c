@@ -343,6 +343,35 @@ void battery_update_psd(struct battery_data *bat_data)
 	bat_data->BAT_batt_temp = battery_get_bat_temperature();
 }
 
+// pony.ma, DATE20190412, add charge_enabled node, DATE20190412-01 START
+static int battery_set_property(struct power_supply *psy,
+		enum power_supply_property psp,
+		const union power_supply_propval *val)
+{
+
+	switch (psp) {
+	case POWER_SUPPLY_PROP_STATUS:
+		switch (val->intval) {
+		case POWER_SUPPLY_STATUS_CHARGING:
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
+			battery_update(&battery_main);
+			break;
+		case POWER_SUPPLY_STATUS_DISCHARGING:
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING;
+			battery_update(&battery_main);
+			break;
+		default:
+			return -EINVAL;
+		}
+		break;
+	default:
+		return -EINVAL;
+	}
+	
+	return 0;
+}
+// pony.ma, DATE20190412-01 END
+
 static int battery_get_property(struct power_supply *psy,
 	enum power_supply_property psp,
 	union power_supply_propval *val)
@@ -411,6 +440,20 @@ static int battery_get_property(struct power_supply *psy,
 	return ret;
 }
 
+// pony.ma, DATE20190412, add charge_enabled node, DATE20190412-01 START
+static int battery_property_is_writeable(struct power_supply *psy,
+					enum power_supply_property psp)
+{
+	switch (psp) {
+	case POWER_SUPPLY_PROP_STATUS:
+		return 1;
+	default:
+		break;
+	}
+	return 0;
+}
+// pony.ma, DATE20190412-01 END
+
 /* battery_data initialization */
 struct battery_data battery_main = {
 	.psd = {
@@ -419,6 +462,10 @@ struct battery_data battery_main = {
 		.properties = battery_props,
 		.num_properties = ARRAY_SIZE(battery_props),
 		.get_property = battery_get_property,
+		// pony.ma, DATE20190412, add charge_enabled node, DATE20190412-01 START
+		.set_property = battery_set_property,
+		.property_is_writeable = battery_property_is_writeable,
+		// pony.ma, DATE20190412-01 END
 		},
 
 	.BAT_STATUS = POWER_SUPPLY_STATUS_DISCHARGING,

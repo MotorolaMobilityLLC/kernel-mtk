@@ -471,7 +471,9 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 			charger_dev_enable(info->chg1_dev, charging_enable);
 		else
 			charger_dev_enable(info->chg1_dev, false);
-	}	
+	}
+	else
+		charger_dev_enable(info->chg1_dev, charging_enable);
 	// pony.ma, DATE20190411-01 END
 }
 
@@ -786,8 +788,6 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (!chrdet_psy) {
 		pr_notice("%s: get power supply failed\n", __func__);
-		chr_err("get power supply failed\n");
-		return -EINVAL;
 	}
 	// pony.ma, DATE20190411-01 END
 
