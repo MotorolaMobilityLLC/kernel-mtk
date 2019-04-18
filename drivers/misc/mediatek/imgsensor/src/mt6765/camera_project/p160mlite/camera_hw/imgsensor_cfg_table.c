@@ -167,14 +167,15 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{
 				SENSOR_DRVNAME_GC5025_SUNWIN_P161BN_MIPI_RAW,
 				{
-					{SensorMCLK, Vol_High, 1},
 					{PDN, Vol_Low, 0},
 					{RST, Vol_Low, 0},
-					{DOVDD, Vol_1800, 0},
-					{DVDD, Vol_1200, 0},
-					{AVDD, Vol_2800, 0},				
-					{PDN, Vol_High, 0},
-					{RST, Vol_High, 10}
+					{DOVDD, Vol_1800, 3},
+					{DVDD, Vol_1200, 1},
+					{AVDD, Vol_2800, 1},				
+					{SensorMCLK, Vol_High, 1},
+					{PDN, Vol_High, 1},
+					{RST, Vol_High, 1},
+					{PDN, Vol_High, 3}
 				},
 			},
 #endif
