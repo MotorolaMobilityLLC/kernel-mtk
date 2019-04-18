@@ -3146,7 +3146,7 @@ static int PMIC_REG_CLEAR_Set(struct snd_kcontrol *kcontrol,
 	Ana_Set_Reg(AFE_DCCLK_CFG1, 0x0100, 0xffff);
 	/* phone mic bias */
 	/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-	Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0xffff);
+	Ana_Set_Reg(AUDENC_ANA_CON8, 0x0051, 0xffff);//0x0021:v1P9V 0x0051:v2P5V
 
 
 	/* Audio L preamplifier DCC precharge */
@@ -4292,7 +4292,7 @@ static bool TurnOnADcPowerACC(int ADCType, bool enable)
 				[AUDIO_MICSOURCE_MUX_IN_1] == 0) {
 				/* phone mic */
 				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0xffff);
+				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0051, 0xffff);//0x0021:v1P9V 0x0051:v2P5V
 			} else if (mCodec_data->mAudio_Ana_Mux
 					[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
@@ -4442,7 +4442,7 @@ static bool TurnOnADcPowerDmic(int ADCType, bool enable)
 			set_capture_gpio(true);
 			/* mic bias */
 			/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-			Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0xffff);
+			Ana_Set_Reg(AUDENC_ANA_CON8, 0x0051, 0xffff);//0x0021:v1P9V 0x0051:v2P5V
 			/* RG_BANDGAPGEN=1'b0 */
 			Ana_Set_Reg(AUDENC_ANA_CON9, 0x0, 0x1 << 12);
 			/* DMIC enable */
@@ -4556,7 +4556,7 @@ static bool TurnOnADcPowerDCC(int ADCType, bool enable, int ECMmode)
 					break;
 				}
 				/* Enable MICBIAS0, MISBIAS0 = 1P9V */
-				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0021, 0x00ff);
+				Ana_Set_Reg(AUDENC_ANA_CON8, 0x0051, 0x00ff);//0x0021:v1P9V 0x0051:v2P5V
 			} else if (mCodec_data->mAudio_Ana_Mux
 					[AUDIO_MICSOURCE_MUX_IN_1] == 1) {
 				/* headset mic */
