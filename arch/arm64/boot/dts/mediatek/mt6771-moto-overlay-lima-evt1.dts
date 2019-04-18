@@ -21,12 +21,16 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "lima";
-			mot,board-id = <0x41 0xA100>;
+			mot,board-id = <0x41 0xA200>;
 		};
 	};
 };
 
 /* Changes for lima EVT1 go here */
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 26 0>;
+};
 
 
 
@@ -34,8 +38,7 @@
 
 
 
-
-#include <lima/cust.dtsi>
+#include <lima/cust_evt1.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
 
 
