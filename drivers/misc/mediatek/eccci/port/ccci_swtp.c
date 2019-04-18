@@ -84,6 +84,7 @@ static int swtp_switch_mode(struct swtp_t *swtp)
 		swtp->curr_mode = SWTP_EINT_PIN_PLUG_IN;
 	}
 	CCCI_LEGACY_ALWAYS_LOG(swtp->md_id, SYS, "%s mode %d\n", __func__, swtp->curr_mode);
+        inject_pin_status_event(swtp->curr_mode, rf_name);
 	spin_unlock_irqrestore(&swtp->spinlock, flags);
 
 	return ret;
