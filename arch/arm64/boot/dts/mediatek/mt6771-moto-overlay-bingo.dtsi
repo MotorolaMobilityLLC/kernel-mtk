@@ -47,6 +47,30 @@
 			bias-disable;
 		};
 	};
+
+	fingerprint_irq: state_irq {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO5__FUNC_GPIO5>;
+			slew-rate = <0>;
+			bias-disable;
+		};
+	};
+
+	fingerprint_reset_high: state_reset_high {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	fingerprint_reset_low: state_reset_low {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO178__FUNC_GPIO178>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 
 &odm {
@@ -61,8 +85,13 @@
 	};
 
 	fp_int:fp_int{
-		compatible = "mediatek,fpsensor_fp_eint";
+		compatible = "mediatek,goodix-fp", "mediatek,fpsensor_fp_eint";
+		pinctrl-names = "fingerprint_irq", "reset_high", "reset_low";
+		pinctrl-0 = <&fingerprint_irq>;
+		pinctrl-1 = <&fingerprint_reset_high>;
+		pinctrl-2 = <&fingerprint_reset_low>;
 		int-gpios = <&pio 5 0>;
+		status = "okay";
 	};
 
 	fpsensor_finger:fpsensor_finger{
@@ -76,10 +105,15 @@
 		pinctrl-3 = <&fpsensor_eint_in_float>;
 		status = "okay";
 	};
+	swtp: swtp {
+		compatible = "mediatek, swtp-eint";
+	};
 };
 &spi0 {
-	fpc_tee@0 {
-		compatible = "fpc,fpc_spi";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	fps_tee@0 {
+		compatible = "fpc,fpc_spi", "goodix,goodix-fp";
 		reg = <0>;
 		fpc,enable-wakeup;
 		spi-max-frequency = <10000000>;
@@ -105,6 +139,16 @@
 		cap,use_channel_bottom = <0x01>;
 		cap,use_channel_top = <0x00>;
 		label = "AbovCapSense";
+		status = "okay";
+	};
+};
+
+&i2c5 {
+	i2c_lcd_bias@3e {
+		compatible = "mediatek,i2c_lcd_bias";
+		reg = <0x3e>;
+		bias_gpio_enn = <&pio 14 0>;
+		bias_gpio_enp = <&pio 13 0>;
 		status = "okay";
 	};
 };
@@ -204,6 +248,18 @@
 		bif_threshold1 = <4250000>;
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
+
+		/*mmi config*/
+		mmi,iterm-ma = <194>;
+		mmi,mmi-temp-zones = <0 4200 776 0>,
+				<10 4200 1940 776>,
+				<15 0 1940 1940>,
+				<45 4200 2000 2000>,
+				<60 4200 1940 0>;
+		mmi,enable-charging-limit;
+		mmi,upper-limit-capacity = <75>;
+		mmi,lower-limit-capacity = <60>;
+		mmi,vfloat-comp-uv = <20000>;
 };
 &subpmic_pmu_eint {
 	compatible = "mediatek,sw-charger";
