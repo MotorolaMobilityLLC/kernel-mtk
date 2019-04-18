@@ -442,6 +442,58 @@ typedef struct {
 	MUINT16 Sensor3DVideoHeightOffset;  /* from effective height to output height */
 } ACDK_SENSOR_RESOLUTION_INFO_STRUCT, *PACDK_SENSOR_RESOLUTION_INFO_STRUCT;
 
+/* IKMTKP-797 Begin*/
+#define MAX_CALIBRATION_STRING 40
+#define CALIBRATION_STATUS_SIZE 200
+typedef struct {
+	MINT32 mnf;
+	MINT32 awb;
+	MINT32 af;
+	MINT32 lsc;
+	MINT32 pdaf;
+	MINT32 dual;
+} mot_calibration_status_t;
+
+typedef struct {
+	char integrator[MAX_CALIBRATION_STRING];
+	char serial_number[MAX_CALIBRATION_STRING];
+	char table_revision[MAX_CALIBRATION_STRING];
+	char mot_part_number[MAX_CALIBRATION_STRING];
+	char actuator_id[MAX_CALIBRATION_STRING];
+	char lens_id[MAX_CALIBRATION_STRING];
+	char factory_id[MAX_CALIBRATION_STRING];
+	char manufacture_line[MAX_CALIBRATION_STRING];
+	char manufacture_date[MAX_CALIBRATION_STRING];
+} mot_calibration_mnf_t;
+
+typedef struct {
+	MUINT16 unit_r;
+	MUINT16 unit_gr;
+	MUINT16 unit_gb;
+	MUINT16 unit_b;
+	MUINT16 golden_r;
+	MUINT16 golden_gr;
+	MUINT16 golden_gb;
+	MUINT16 golden_b;
+	MUINT16 black_level_r;
+	MUINT16 black_level_gr;
+	MUINT16 black_level_gb;
+	MUINT16 black_level_b;
+	float r_over_g;
+	float b_over_g;
+	float gr_over_gb;
+	MUINT16 cie_Ev;
+	MUINT16 cie_u;
+	MUINT16 cie_v;
+} mot_calibration_awb_t;
+
+typedef struct {
+	MINT32 infinity_pos_org;
+	MINT32 infinity_pos_ext;
+	MINT32 macro_pos_org;
+	MINT32 macro_pos_ext;
+} mot_calibration_af_t;
+/* IKMTKP-797 End*/
 
 typedef struct {
 	MUINT16 SensorPreviewResolutionX;
@@ -550,6 +602,14 @@ typedef struct {
 	MUINT16 SensorVerFOV;
 	MUINT16 SensorOrientation;
 	MUINT32 SensorModuleID;
+/* IKMTKP-797 Begin*/
+	mot_calibration_status_t calibration_status;
+	mot_calibration_mnf_t mnf_calibration;
+#if 0
+	mot_calibration_awb_t awb_calibration;
+	mot_calibration_af_t af_calibration;
+#endif
+/* IKMTKP-797 End*/
 } ACDK_SENSOR_INFO_STRUCT, *PACDK_SENSOR_INFO_STRUCT;
 
 #define ACDK_SENSOR_INFO2_STRUCT ACDK_SENSOR_INFO_STRUCT

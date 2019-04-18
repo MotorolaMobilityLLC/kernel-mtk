@@ -107,8 +107,123 @@ typedef struct imgsensor_info_struct {
 
 	kal_uint8  mipi_lane_num;		//mipi lane num
 	kal_uint8  i2c_addr_table[5];	//record sensor support all write id addr, only supprt 4must end with 0xff
-    kal_uint32  i2c_speed;     //i2c speed
+	kal_uint32  i2c_speed;     //i2c speed
 } imgsensor_info_struct;
+
+#define BLACK_LEVEL_SAMSUNG_10B_64 0x40
+
+#define AWB_R_MIN 200
+#define AWB_R_MAX 880
+#define AWB_GR_MIN 760
+#define AWB_GR_MAX 880
+#define AWB_GB_MIN 760
+#define AWB_GB_MAX 880
+#define AWB_B_MIN 200
+#define AWB_B_MAX 880
+
+#define S5K3L6_EEPROM_CRC_MANUFACTURING_SIZE (37)
+#define S5K3L6_EEPROM_CRC_AF_CAL_SIZE (24)
+
+#define S5K3L6_EEPROM_CRC_AWB_CAL_SIZE (43)
+#define S5K3L6_EEPROM_CRC_LSC_SIZE (1868)
+#define S5K3L6_EEPROM_CRC_PDAF_OUTPUT1_SIZE (496)
+#define S5K3L6_EEPROM_CRC_PDAF_OUTPUT2_SIZE (918)
+
+typedef enum {
+	NO_ERRORS,
+	CRC_FAILURE,
+	LIMIT_FAILURE
+} calibration_status_t;
+
+struct s5k3l6_eeprom_t{
+	uint8_t eeprom_table_version[1];
+	uint8_t cal_hw_ver[1];
+	uint8_t cal_sw_ver[1];
+	uint8_t mpn[8];
+	uint8_t actuator_id[1];
+	uint8_t lens_id[1];
+	uint8_t manufacturer_id[2];
+	uint8_t factory_id[2];
+	uint8_t manufacture_line[1];
+	uint8_t manufacture_date[3];
+	uint8_t serial_number[16];
+	uint8_t manufacture_crc16[2];
+	uint8_t af_infinity_cal_dac[2];
+	uint8_t af_macro_cal_dac[2];
+	uint8_t af_infinity_sfr_center[2];
+	uint8_t af_macro_sfr_center[2];
+	uint8_t af_infinity_verify_dac[2];
+	uint8_t af_macro_verify_dac[2];
+	uint8_t af_infinity_verify_sfr_center[2];
+	uint8_t af_macro_verify_sfr_center[2];
+	uint8_t af_infinity_range[2];
+	uint8_t af_macro_range[2];
+	uint8_t af_sensor_temp_is_positive_infinity_cal[1];
+	uint8_t af_sensor_temp_infinity_cal[1];
+	uint8_t af_sensor_temp_is_positive_macro_cal[1];
+	uint8_t af_sensor_temp_macro_cal[1];
+	uint8_t af_cal_crc16[2];
+	uint8_t cie_src_1_ev[2];
+	uint8_t cie_src_1_u[2];
+	uint8_t cie_src_1_v[2];
+	uint8_t awb_r_g_golden_min_limit[1];
+	uint8_t awb_r_g_golden_max_limit[1];
+	uint8_t awb_b_g_golden_min_limit[1];
+	uint8_t awb_b_g_golden_max_limit[1];
+	uint8_t awb_src_1_golden_r[2];
+	uint8_t awb_src_1_golden_gr[2];
+	uint8_t awb_src_1_golden_gb[2];
+	uint8_t awb_src_1_golden_b[2];
+	uint8_t awb_src_1_golden_rg_ratio[2];
+	uint8_t awb_src_1_golden_bg_ratio[2];
+	uint8_t awb_src_1_golden_gr_gb_ratio[2];
+	uint8_t awb_src_1_r[2];
+	uint8_t awb_src_1_gr[2];
+	uint8_t awb_src_1_gb[2];
+	uint8_t awb_src_1_b[2];
+	uint8_t awb_src_1_rg_ratio[2];
+	uint8_t awb_src_1_bg_ratio[2];
+	uint8_t awb_src_1_gr_gb_ratio[2];
+	uint8_t awb_reserve[5];
+	uint8_t awb_crc16[2];
+	uint8_t rgb_optical_center_src_1_X_r[2];
+	uint8_t rgb_optical_center_src_1_Y_r[2];
+	uint8_t rgb_optical_center_src_1_X_gr[2];
+	uint8_t rgb_optical_center_src_1_Y_gr[2];
+	uint8_t rgb_optical_center_src_1_X_gb[2];
+	uint8_t rgb_optical_center_src_1_Y_gb[2];
+	uint8_t rgb_optical_center_src_1_X_b[2];
+	uint8_t rgb_optical_center_src_1_Y_b[2];
+	uint8_t rgb_oc_crc16[2];
+	uint8_t sfr_data[453];
+	uint8_t sfr_crc16[2];
+	uint8_t lsc_data[1868];
+	uint8_t lsc_crc16[2];
+	uint8_t pdaf_output1_data[496];
+	uint8_t pdaf_output2_data[918];
+	uint8_t pdaf_output1_crc16[2];
+	uint8_t pdaf_crc16[2];
+};
+
+typedef struct {
+	uint16_t r;
+	uint16_t gr;
+	uint16_t gb;
+	uint16_t b;
+} awb_t;
+
+typedef struct {
+	float r_over_g;
+	float b_over_g;
+	float gr_over_gb;
+} awb_factors_t;
+
+typedef struct {
+	uint8_t r_g_golden_min;
+	uint8_t r_g_golden_max;
+	uint8_t b_g_golden_min;
+	uint8_t b_g_golden_max;
+} awb_limit_t;
 
 /* SENSOR READ/WRITE ID */
 //#define IMGSENSOR_WRITE_ID_1 (0x6c)

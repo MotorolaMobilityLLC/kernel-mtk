@@ -37,7 +37,7 @@
 #include "s5k4h7yxsunnymipiraw_Sensor.h"
 
 /****************************Modify following Strings for debug****************************/
-#define PFX "s5k4h7yx_camera_sensor"
+#define PFX "s5k4h7yx_sunny_camera_sensor"
 
 #define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
 #define LOG_2 LOG_INF("preview 2664*1500@30fps,888Mbps/lane; video 5328*3000@30fps,1390Mbps/lane; capture 16M@30fps,1390Mbps/lane\n")
@@ -45,48 +45,11 @@
 //#define LOGE(format, args...) xlog_printk(ANDROID_LOG_ERROR, PFX, "[%s]"format, __func__, ##args)
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
+#define S5K4H7YX_EEPROM_SIZE 715
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7yx_sunny_otp_data.bin"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-#if 0
-#define CONFIG_OTP_MANUAL_CONTROL
-#if defined CONFIG_OTP_MANUAL_CONTROL
-	int tran_otp_manual_control  = 0;
-#endif
-#endif
-
-
-#if 0
-
-#define S5K4H7_OTP_OFILM
-
-
-#ifdef S5K4H7_OTP_OFILM
-#define GAIN_DEFAULT       0x0100
-#define GAIN_GREEN1_ADDR   0x020E
-#define GAIN_BLUE_ADDR     0x0212
-#define GAIN_RED_ADDR      0x0210
-#define GAIN_GREEN2_ADDR   0x0214
-#define CAM_DISABLE_OTP 1
-#if CAM_DISABLE_OTP
-
-#endif
-
-int rg_ratio;
-int bg_ratio;
-int golden_rg_ratio;
-int golden_bg_ratio;
-
-
-static USHORT R_GAIN;
-static USHORT B_GAIN;
-static USHORT Gr_GAIN;
-static USHORT Gb_GAIN;
-static USHORT G_GAIN;
-
-int cqcq_disable_otp = 0;
-#endif
-#endif
 static imgsensor_info_struct imgsensor_info = {
 	.sensor_id = S5K4H7YX_SUNNY_SENSOR_ID,
 
@@ -248,280 +211,6 @@ void S5K4H7_SUNNY_write_cmos_sensor(u16 addr, u32 para)
 
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-static bool s5k4H7_start_read_otp(BYTE zone)
-{
-	BYTE val = 0;
-	char i = 0;
-
-	write_cmos_sensor_8(0x0A02, zone);
-	write_cmos_sensor_8(0x0A00, 0x01);
-      mdelay(50);
-
-	for (i = 0; i <= 100; i++)
-	{
-		val = read_cmos_sensor_8(0x0A01);
-		if (val == 0x01)
-			break;
-		mdelay(2);
-	}
-
-	if (i == 100)
-	{
-		write_cmos_sensor_8(0x0A00, 0x00);
-		return false;
-	}
-
-	return true;
-}
-
-static void s5k4H7_stop_read_otp(void)
-{
-	char i = 0;
-	BYTE val = 0x00;
-
-	for (i = 0; i <= 100; i++)
-	{
-		val = read_cmos_sensor_8(0x0A01);
-		if (val == 0x01)
-			break;
-		mdelay(2);
-	}
-	LOG_INF("[S5K4H7Y] otp stop i = %d\n", i);
-	write_cmos_sensor_8(0x0A00, 0x00);
-
-	return;
-}
-
-int check_otp(void)
-{
-    int awbgroupflag = 0;
-	int flag1 = 0;
-    int flag2 = 0;
-    int flag3 = 0;
-	BYTE zone = 0x16;
-
-	if (!s5k4H7_start_read_otp(zone))
-	{
-		LOG_INF("[S5K4H7] Start read Page %d Fail!\n", zone);
-		return 0;
-	}
-
-       awbgroupflag = read_cmos_sensor_8(0x0A04);
-
-LOG_INF("[S5K4H7] awbgroupflag=%d\n", awbgroupflag);
-       flag1 = (awbgroupflag>>6)&0x03;
-       flag2 = (awbgroupflag>>4)&0x03;
-       flag3 = (awbgroupflag>>2)&0x03;
-
- LOG_INF("[S5K4H7] otp flag1= %d flag2=%d flag3=%d\n", flag1, flag2, flag3);
-
-   	if (flag1 == 0x01)
-	{
-		return 1;
-  	} else if (flag2 == 0x01)
-	{
-		return 2;
-  	} else if (flag3 == 0x01)
-    {
-
-     return 3;
-    } else{
-
-	return 0;
-    }
-}
-
-static bool read_otp(int index)
-{
-
-    kal_uint32 sumv = 0;
-    kal_uint32 readout = 0;
-    int i = 0;
-
-
-  LOG_INF("[S5K4H7] otp index %d\n", index);
-	switch (index)
-	{
-		case 1:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A05)<<8)|(read_cmos_sensor_8(0x0A06)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A07)<<8)|(read_cmos_sensor_8(0x0A08)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A0B)<<8)|(read_cmos_sensor_8(0x0A0C)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A0D)<<8)|(read_cmos_sensor_8(0x0A0E)));
-
-                readout = read_cmos_sensor_8(0x0A19);
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A05+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7] readout =%d  sumv=%d\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-	    LOG_INF("[S5K4H7] group1\n");
-			break;
-		case 2:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A1A)<<8)|(read_cmos_sensor_8(0x0A1B)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A1C)<<8)|(read_cmos_sensor_8(0x0A1D)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A20)<<8)|(read_cmos_sensor_8(0x0A21)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A22)<<8)|(read_cmos_sensor_8(0x0A23)));
-
-                readout = read_cmos_sensor_8(0x0A2E);
-
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A1A+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7] readout =%d  sumv=%d  we go here 1 group2\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-
-	    LOG_INF("[S5K4H7] 2 group\n");
-			break;
-		case 3:
-    			rg_ratio = ((read_cmos_sensor_8(0x0A2F)<<8)|(read_cmos_sensor_8(0x0A30)));
-    			bg_ratio = ((read_cmos_sensor_8(0x0A31)<<8)|(read_cmos_sensor_8(0x0A32)));
-    			golden_rg_ratio = ((read_cmos_sensor_8(0x0A35)<<8)|(read_cmos_sensor_8(0x0A36)));
-    			golden_bg_ratio = ((read_cmos_sensor_8(0x0A37)<<8)|(read_cmos_sensor_8(0x0A38)));
-
-                readout = read_cmos_sensor_8(0x0A43);
-
-                for (i = 0; i < 20; i++)
-		{
-                    sumv += read_cmos_sensor_8(0x0A2F+i);
-		}
-     LOG_INF("[S5K4H7] sumv=%d\n", sumv);
-                sumv = (sumv%(0xff))+1;
-     LOG_INF("[S5K4H7]  readout =%d  sumv=%d group3\n", readout, sumv);
-                if (sumv != readout)
-		{
-		    return 0;
-		}
-	    LOG_INF("[S5K4H7] 3 group\n");
-			break;
-		default:
-	    return 0;
-			LOG_INF("[S5K4H7Y] AWB gain value fail!\n");
-			break;
-	}
-
- LOG_INF("[S5K4H7] rg_ratio=%d bg_ratio= %d golden_rg_ratio=%d golden_bg_ratio=%d\n", rg_ratio, bg_ratio, golden_rg_ratio, golden_bg_ratio);
-
-	s5k4H7_stop_read_otp(); /* reset NVM */
-
-	return 1;
-}
-
-static bool update_otp(void)
-{
-	int temp = 0;
-	int rg = 0, bg = 0, golden_rg = 0, golden_bg = 0;
-	kal_uint32 r_ratio = 0;
-	kal_uint32 b_ratio = 0;
-
-	LOG_INF("[S5K4H7Y] R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-if ((R_GAIN == 0) && (B_GAIN == 0) && (G_GAIN == 0))
-{
-    LOG_INF("[S5K4H7Y] R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-    write_cmos_sensor_8(0x0136, 0x18);
-	write_cmos_sensor_8(0x0100, 0x01);
-       mdelay(50);
-
-		temp = check_otp();
-		if (temp == 0)
-	{
-	   return 0;
-	}
-LOG_INF("[S5K4H7Y] otp temp= %d\n", temp);
-
-
-	if (!(read_otp(temp)))
-	{
-		return false;
-	}
-LOG_INF("[S5K4H7Y] otp we get herr\n");
-	rg = rg_ratio;
-	bg = bg_ratio;
-	golden_rg = golden_rg_ratio;
-	golden_bg = golden_bg_ratio;
-
-	r_ratio = ((512*golden_rg)/rg);
-	b_ratio = ((512*golden_bg)/bg);
-	LOG_INF("[S5K4H7Y] otp wb r_ratio = %d, b_ratio = %d\n", r_ratio, b_ratio);
-
-	if (r_ratio >= 512)
-	{
-		if (b_ratio >= 512)
-		{
-			R_GAIN = (USHORT)((GAIN_DEFAULT*r_ratio)/512);
-			G_GAIN = GAIN_DEFAULT;
-			B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/512);
-		} else
-		{
-			R_GAIN = (USHORT)((GAIN_DEFAULT*r_ratio)/b_ratio);
-			G_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-			B_GAIN = GAIN_DEFAULT;
-		}
-	} else
-	{
-		if (b_ratio >= 512)
-		{
-			R_GAIN = GAIN_DEFAULT;
-			G_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-			B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/r_ratio);
-
-		} else
-		{
-			Gr_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-			Gb_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-			if (Gr_GAIN >= Gb_GAIN)
-			{
-				R_GAIN = GAIN_DEFAULT;
-				G_GAIN = (USHORT)((GAIN_DEFAULT*512)/r_ratio);
-				B_GAIN = (USHORT)((GAIN_DEFAULT*b_ratio)/r_ratio);
-    			} else
-			{
-				R_GAIN =  (USHORT)((GAIN_DEFAULT*r_ratio)/b_ratio);
-				G_GAIN = (USHORT)((GAIN_DEFAULT*512)/b_ratio);
-				B_GAIN = GAIN_DEFAULT;
-			}
-		}
-	}
-
-LOG_INF("[S5K4H7Y] otp13otp ssskkk1wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-	   return 1;
-}
-
-	if ((R_GAIN != 0) && (B_GAIN != 0) && (G_GAIN != 0))
-	{
-write_cmos_sensor_8(0x3c0f, 0x00);
-
-write_cmos_sensor_8(0x0210, R_GAIN>>8);
-write_cmos_sensor_8(0x0211, R_GAIN&0xff);
-write_cmos_sensor_8(0x0212, B_GAIN>>8);
-write_cmos_sensor_8(0x0213, B_GAIN&0xff);
-write_cmos_sensor_8(0x020E, G_GAIN>>8);
-write_cmos_sensor_8(0x020F, G_GAIN&0xff);
-write_cmos_sensor_8(0x0214, G_GAIN>>8);
-write_cmos_sensor_8(0x0215, G_GAIN&0xff);
-
-	LOG_INF("[S5K4H7Y] otp0.7 akkkksss otp wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-	}
-
-	LOG_INF("[S5K4H7Y] otp0.1 otp wb R_GAIN = %d, B_GAIN = %d, G_GAIN = %d\n", R_GAIN, B_GAIN, G_GAIN);
-
-	return 1;
-}
-#endif
-
 
 static void set_dummy(void)
 {
@@ -777,12 +466,7 @@ static void set_mirror_flip(kal_uint8 image_mirror)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-#if 0
-static void night_mode(kal_bool enable)
-{
-/*No Need to implement this function*/
-}	/*	night_mode	*/
-#endif
+
 /* #define LSC_cal	1 */
 static void sensor_init(void)
 {
@@ -823,39 +507,6 @@ static void sensor_init(void)
 	write_cmos_sensor_8(0X3C31, 0XFF);
 	write_cmos_sensor_8(0X3C32, 0XFF);
 	write_cmos_sensor_8(0X0100, 0X00);
-
-
-#if 0
-//#if defined CONFIG_OTP_MANUAL_CONTROL
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-
-
-    write_cmos_sensor_8(0x3400, 0x00);
-    write_cmos_sensor_8(0x0B00, 0x01);
-
-
-  LOG_INF("lsc ontran_otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("lsc offtran_otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#if 0
-//#ifdef S5K4H7_OTP_OFILM
-
-
-    write_cmos_sensor_8(0x3400, 0x00);
-    write_cmos_sensor_8(0x0B00, 0x01);
-
-    LOG_INF("lsc on tran_otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-
-
 
 	mdelay(1);
 }	/*	sensor_init  */
@@ -930,28 +581,6 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
 
 }	/*	preview_setting  */
 
@@ -1028,29 +657,6 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
     }
 
 
@@ -1126,29 +732,6 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
 }
 
 static void slim_video_setting(void)
@@ -1221,29 +804,6 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0X0202, 0X02);
 	write_cmos_sensor_8(0X0203, 0X08);
 	write_cmos_sensor_8(0x0100, 0x01);
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
-
 }
 
 #define OTP_4H7  1
@@ -1269,6 +829,21 @@ typedef struct s5k4h7yx_sunny_otp_data {
 
 S5K4H7YX_SUNNY_OTP_DATA s5k4h7yx_sunny_otp_data;
 
+static uint8_t s5k4h7yx_sunny_eeprom[S5K4H7YX_EEPROM_SIZE] = {0};
+
+static calibration_status_t mnf_status;
+static calibration_status_t af_status;
+static calibration_status_t awb_status;
+static calibration_status_t lsc_status;
+static calibration_status_t pdaf_status;
+static calibration_status_t dual_status;
+
+static struct s5k4h7yx_basic_info_t *basic_info_group = NULL;
+static struct s5k4h7yx_awb_info_t *awb_info_group = NULL;
+static struct s5k4h7yx_light_source_t *light_source_group = NULL;
+#if 0
+static struct s5k4h7yx_lsc_info_t *lsc_info_group = NULL;
+#endif
 
 static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
 {
@@ -1367,6 +942,27 @@ static int s5k4h7yx_read_data_kernel(void)
 	return 0;
 }
 
+static int s5k4h7yx_sunny_read_data_from_otp(void)
+{
+	LOGE("s5k4h7yx_read_data_from_otp -E");
+	/* Read otp data of three group*/
+	s5k4h7yx_read_otp_page_data(21, 0x0a04, s5k4h7yx_sunny_eeprom, 64);
+	s5k4h7yx_read_otp_page_data(22, 0x0a04, s5k4h7yx_sunny_eeprom + 64, 64);
+	s5k4h7yx_read_otp_page_data(23, 0x0a04, s5k4h7yx_sunny_eeprom + 128, 64);
+	s5k4h7yx_read_otp_page_data(24, 0x0a04, s5k4h7yx_sunny_eeprom + 192, 46);
+	s5k4h7yx_read_otp_page_data(25, 0x0a04, s5k4h7yx_sunny_eeprom + 238, 64);
+	s5k4h7yx_read_otp_page_data(26, 0x0a04, s5k4h7yx_sunny_eeprom + 302, 64);
+	s5k4h7yx_read_otp_page_data(27, 0x0a04, s5k4h7yx_sunny_eeprom + 366, 64);
+	s5k4h7yx_read_otp_page_data(28, 0x0a04, s5k4h7yx_sunny_eeprom + 430, 46);
+	s5k4h7yx_read_otp_page_data(29, 0x0a04, s5k4h7yx_sunny_eeprom + 476, 64);
+	s5k4h7yx_read_otp_page_data(30, 0x0a04, s5k4h7yx_sunny_eeprom + 540, 64);
+	s5k4h7yx_read_otp_page_data(31, 0x0a04, s5k4h7yx_sunny_eeprom + 604, 64);
+	s5k4h7yx_read_otp_page_data(32, 0x0a04, s5k4h7yx_sunny_eeprom + 668, 46);
+	//TODO: Add LSC data
+	LOGE("s5k4h7yx_read_data_from_otp -X");
+	return 0;
+}
+
 unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
 {
 	if (size == 2) { //read module id
@@ -1387,6 +983,428 @@ unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, u
 	return size;
 }
 
+static void s5k4h7yx_sunny_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+{
+	struct file *fp = NULL;
+	mm_segment_t old_fs;
+	int ret = 0;
+
+	old_fs = get_fs();
+	set_fs(KERNEL_DS);
+
+	fp = filp_open(file_name, O_WRONLY | O_CREAT | O_TRUNC | O_SYNC, 0666);
+	if (IS_ERR_OR_NULL(fp)) {
+		ret = PTR_ERR(fp);
+		LOG_INF("open file error(%s), error(%d)\n",  file_name, ret);
+		goto p_err;
+	}
+
+	ret = vfs_write(fp, (const char *)data, size, &fp->f_pos);
+	if (ret < 0) {
+		LOG_INF("file write fail(%s) to EEPROM data(%d)", file_name, ret);
+		goto p_err;
+	}
+
+	LOG_INF("wirte to file(%s)\n", file_name);
+p_err:
+	if (!IS_ERR_OR_NULL(fp))
+		filp_close(fp, NULL);
+
+	set_fs(old_fs);
+	LOG_INF(" end writing file");
+}
+
+static uint32_t convert_crc(uint8_t *crc_ptr)
+{
+	return (crc_ptr[0] << 8) | (crc_ptr[1]);
+}
+
+static uint8_t crc_reverse_byte(uint32_t data)
+{
+	return ((data * 0x0802LU & 0x22110LU) |
+		(data * 0x8020LU & 0x88440LU)) * 0x10101LU >> 16;
+}
+
+static uint16_t to_uint16_swap(uint8_t *data)
+{
+	uint16_t converted;
+	memcpy(&converted, data, sizeof(uint16_t));
+	return ntohs(converted);
+}
+
+static int32_t eeprom_util_check_crc16(uint8_t *data, uint32_t size, uint32_t ref_crc)
+{
+	int32_t crc_match = 0;
+	uint16_t crc = 0x0000;
+	uint16_t crc_reverse = 0x0000;
+	uint32_t i, j;
+
+	uint32_t tmp;
+	uint32_t tmp_reverse;
+
+	/* Calculate both methods of CRC since integrators differ on
+	* how CRC should be calculated. */
+	for (i = 0; i < size; i++) {
+		tmp_reverse = crc_reverse_byte(data[i]);
+		tmp = data[i] & 0xff;
+		for (j = 0; j < 8; j++) {
+			if (((crc & 0x8000) >> 8) ^ (tmp & 0x80))
+				crc = (crc << 1) ^ 0x8005;
+			else
+				crc = crc << 1;
+			tmp <<= 1;
+
+			if (((crc_reverse & 0x8000) >> 8) ^ (tmp_reverse & 0x80))
+				crc_reverse = (crc_reverse << 1) ^ 0x8005;
+			else
+				crc_reverse = crc_reverse << 1;
+
+			tmp_reverse <<= 1;
+		}
+	}
+
+	crc_reverse = (crc_reverse_byte(crc_reverse) << 8) |
+		crc_reverse_byte(crc_reverse >> 8);
+
+	if (crc == ref_crc || crc_reverse == ref_crc)
+		crc_match = 1;
+
+	LOG_INF("REF_CRC 0x%x CALC CRC 0x%x CALC Reverse CRC 0x%x matches? %d\n",
+		ref_crc, crc, crc_reverse, crc_match);
+
+	return crc_match;
+}
+
+static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
+{
+	uint8_t result = 0;
+
+	if (unit.r < AWB_R_MIN || unit.r > AWB_R_MAX) {
+		LOG_INF("unit r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, unit.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (unit.gr < AWB_GR_MIN || unit.gr > AWB_GR_MAX) {
+		LOG_INF("unit gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, unit.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (unit.gb < AWB_GB_MIN || unit.gb > AWB_GB_MAX) {
+		LOG_INF("unit gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, unit.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (unit.b < AWB_B_MIN || unit.b > AWB_B_MAX) {
+		LOG_INF("unit b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, unit.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	if (golden.r < AWB_R_MIN || golden.r > AWB_R_MAX) {
+		LOG_INF("golden r out of range! MIN: %d, r: %d, MAX: %d",
+			AWB_R_MIN, golden.r, AWB_R_MAX);
+		result = 1;
+	}
+	if (golden.gr < AWB_GR_MIN || golden.gr > AWB_GR_MAX) {
+		LOG_INF("golden gr out of range! MIN: %d, gr: %d, MAX: %d",
+			AWB_GR_MIN, golden.gr, AWB_GR_MAX);
+		result = 1;
+	}
+	if (golden.gb < AWB_GB_MIN || golden.gb > AWB_GB_MAX) {
+		LOG_INF("golden gb out of range! MIN: %d, gb: %d, MAX: %d",
+			AWB_GB_MIN, golden.gb, AWB_GB_MAX);
+		result = 1;
+	}
+	if (golden.b < AWB_B_MIN || golden.b > AWB_B_MAX) {
+		LOG_INF("golden b out of range! MIN: %d, b: %d, MAX: %d",
+			AWB_B_MIN, golden.b, AWB_B_MAX);
+		result = 1;
+	}
+
+	return result;
+}
+
+static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
+		uint16_t black_level, awb_factors_t *result, awb_limit_t limit)
+{
+	float gr_gb_avg;
+	float rg;
+	float bg;
+	float golden_gr_gb_avg;
+	float golden_rg, golden_bg;
+	float r_g_golden_min;
+	float r_g_golden_max;
+	float b_g_golden_min;
+	float b_g_golden_max;
+
+	unit.r -= black_level;
+	unit.gr -= black_level;
+	unit.gb -= black_level;
+	unit.b -= black_level;
+
+	gr_gb_avg = (unit.gr + unit.gb) / 2.0f;
+	rg = unit.r / gr_gb_avg;
+	bg = unit.b / gr_gb_avg;
+
+	golden.r -= black_level;
+	golden.gr -= black_level;
+	golden.gb -= black_level;
+	golden.b -= black_level;
+
+	golden_gr_gb_avg = (golden.gr + golden.gb) / 2.0f;
+	golden_rg = golden.r / golden_gr_gb_avg;
+	golden_bg = golden.b / golden_gr_gb_avg;
+
+	r_g_golden_min = (float)(limit.r_g_golden_min) / 1000;
+	r_g_golden_max = (float)(limit.r_g_golden_max) / 1000;
+	b_g_golden_min = (float)(limit.b_g_golden_min) / 1000;
+	b_g_golden_max = (float)(limit.b_g_golden_max) / 1000;
+
+	if (rg < (golden_rg - r_g_golden_min) || rg > (golden_rg + r_g_golden_max)) {
+		LOG_INF("Final RG calibration factors out of range!");
+		return 1;
+	}
+
+	if (bg < (golden_bg - b_g_golden_min) || bg > (golden_bg + b_g_golden_max)) {
+		LOG_INF("Final BG calibration factors out of range!");
+		return 1;
+	}
+
+	result->r_over_g = rg / golden_rg;
+	result->b_over_g = bg / golden_bg;
+	result->gr_over_gb = (float)unit.gr / unit.gb;
+
+	return 0;
+}
+
+static calibration_status_t s5k4h7yx_sunny_check_manufacturing_data(void *data)
+{
+	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
+
+	uint8_t *crc_start;
+
+	LOG_INF("Check Manufacturing Data Enter basic_info_flag1=%d", eeprom->basic_info_flag1);
+	/*Get valid group and check data crc*/
+	if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->basic_info_flag1;
+		basic_info_group = &eeprom->basic_info_group1;
+	}else if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->basic_info_flag2;
+		basic_info_group = &eeprom->basic_info_group2;
+	}else if(((eeprom->basic_info_flag1>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->basic_info_flag3;
+		basic_info_group = &eeprom->basic_info_group3;
+	}else{
+		LOG_INF("failed: invalid Manufacturing data");
+		return CRC_FAILURE;
+	}
+
+	if(!eeprom_util_check_crc16(crc_start,
+		S5K4H7YX_EEPROM_CRC_MANUFACTURING_SIZE + 1,
+		convert_crc(basic_info_group->manufacture_crc16))) {
+		LOG_INF("Manufacturing CRC Fails!");
+		return CRC_FAILURE;
+	}
+
+	LOG_INF("Manufacturing CRC Pass");
+	return NO_ERRORS;
+}
+
+static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
+{
+	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
+
+	awb_t unit;
+	awb_t golden;
+	awb_limit_t golden_limit;
+	awb_factors_t factors;
+	uint8_t *crc_start;
+
+	LOG_INF("Check AWB Data Enter");
+	/*Get valid group and check data crc*/
+	if(((eeprom->awb_info_flag1>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->awb_info_flag1;
+		awb_info_group = &eeprom->awb_info_group1;
+	}else if(((eeprom->awb_info_flag2>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->awb_info_flag2;
+		awb_info_group = &eeprom->awb_info_group2;
+	}else if(((eeprom->awb_info_flag3>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->awb_info_flag3;
+		awb_info_group = &eeprom->awb_info_group3;
+	}else{
+		LOG_INF("failed: invalid AWB info data");
+		return CRC_FAILURE;
+	}
+
+	if(!eeprom_util_check_crc16(crc_start,
+		S5K4H7YX_EEPROM_CRC_AWB_CAL_SIZE + 1,
+		convert_crc(awb_info_group->awb_crc16))) {
+		LOG_INF("AWB CRC Fails!");
+		return CRC_FAILURE;
+	}
+
+	if(((eeprom->ls_info_flag1>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->ls_info_flag1;
+		light_source_group = &eeprom->ls_info_group1;
+	}else if(((eeprom->ls_info_flag2>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->ls_info_flag2;
+		light_source_group = &eeprom->ls_info_group2;
+	}else if(((eeprom->ls_info_flag3>>6)&0x03) == VALID_FLAG){
+		crc_start = &eeprom->ls_info_flag3;
+		light_source_group = &eeprom->ls_info_group3;
+	}else{
+		LOG_INF("failed: invalid light source info data");
+		return CRC_FAILURE;
+	}
+
+	if(!eeprom_util_check_crc16(crc_start,
+		S5K4H7YX_EEPROM_CRC_LIGHT_SOURCE_SIZE + 1,
+		convert_crc(light_source_group->ls_crc16))) {
+		LOG_INF("light source CRC Fails!");
+		return CRC_FAILURE;
+	}
+
+	unit.r = to_uint16_swap(awb_info_group->awb_src_1_r);
+	unit.gr = to_uint16_swap(awb_info_group->awb_src_1_gr);
+	unit.gb = to_uint16_swap(awb_info_group->awb_src_1_gb);
+	unit.b = to_uint16_swap(awb_info_group->awb_src_1_b);
+
+	golden.r = to_uint16_swap(awb_info_group->awb_src_1_golden_r);
+	golden.gr = to_uint16_swap(awb_info_group->awb_src_1_golden_gr);
+	golden.gb = to_uint16_swap(awb_info_group->awb_src_1_golden_gb);
+	golden.b = to_uint16_swap(awb_info_group->awb_src_1_golden_b);
+
+	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
+		LOG_INF("AWB CRC limit Fails!");
+		return LIMIT_FAILURE;
+	}
+
+	golden_limit.r_g_golden_min = light_source_group->awb_r_g_golden_min_limit[0];
+	golden_limit.r_g_golden_max = light_source_group->awb_r_g_golden_max_limit[0];
+	golden_limit.b_g_golden_min = light_source_group->awb_b_g_golden_min_limit[0];
+	golden_limit.b_g_golden_max = light_source_group->awb_b_g_golden_max_limit[0];
+
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden, BLACK_LEVEL_SAMSUNG_10B_64,
+		&factors, golden_limit)) {
+		LOG_INF("AWB CRC factor limit Fails!");
+		return LIMIT_FAILURE;
+	}
+	LOG_INF("AWB CRC Pass");
+	return NO_ERRORS;
+}
+
+static void s5k4h7yx_sunny_eeprom_format_calibration_data(void *data)
+{
+	if (NULL == data) {
+		LOG_INF("data is NULL");
+		return;
+	}
+
+	mnf_status = s5k4h7yx_sunny_check_manufacturing_data(data);
+	af_status = 0;
+	awb_status = s5k4h7yx_sunny_check_awb_data(data);
+	lsc_status = 0;
+	pdaf_status = 0;
+	dual_status = 0;
+
+	LOG_INF("status mnf:%d, af:%d, awb:%d, lsc:%d, pdaf:%d, dual:%d",
+		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
+}
+
+static void s5k4h7yx_sunny_eeprom_get_mnf_data(void *data,
+		mot_calibration_mnf_t *mnf)
+{
+	int ret;
+
+	if (basic_info_group == NULL) {
+		LOG_INF("basic_info_group is NULL");
+		return;
+	}
+
+	ret = snprintf(mnf->table_revision, MAX_CALIBRATION_STRING, "0x%x",
+		basic_info_group->eeprom_table_version[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->table_revision failed");
+		mnf->table_revision[0] = 0;
+	}
+
+	ret = snprintf(mnf->mot_part_number, MAX_CALIBRATION_STRING, "%c%c%c%c%c%c%c%c",
+		basic_info_group->mpn[0], basic_info_group->mpn[1], basic_info_group->mpn[2],
+		basic_info_group->mpn[3], basic_info_group->mpn[4], basic_info_group->mpn[5],
+		basic_info_group->mpn[6], basic_info_group->mpn[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->mot_part_number failed");
+		mnf->mot_part_number[0] = 0;
+	}
+
+	ret = snprintf(mnf->actuator_id, MAX_CALIBRATION_STRING, "0x%x", basic_info_group->actuator_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->actuator_id failed");
+		mnf->actuator_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->lens_id, MAX_CALIBRATION_STRING, "0x%x", basic_info_group->lens_id[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->lens_id failed");
+		mnf->lens_id[0] = 0;
+	}
+
+	if (basic_info_group->manufacturer_id[0] == 'S' && basic_info_group->manufacturer_id[1] == 'U') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Sunny");
+	} else if (basic_info_group->manufacturer_id[0] == 'O' && basic_info_group->manufacturer_id[1] == 'F') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "OFilm");
+	} else if (basic_info_group->manufacturer_id[0] == 'Q' && basic_info_group->manufacturer_id[1] == 'T') {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Qtech");
+	} else {
+		ret = snprintf(mnf->integrator, MAX_CALIBRATION_STRING, "Unknown");
+		LOG_INF("unknown manufacturer_id");
+	}
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->integrator failed");
+		mnf->integrator[0] = 0;
+	}
+
+	ret = snprintf(mnf->factory_id, MAX_CALIBRATION_STRING, "%c%c",
+		basic_info_group->factory_id[0], basic_info_group->factory_id[1]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->factory_id failed");
+		mnf->factory_id[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_line, MAX_CALIBRATION_STRING, "%u",
+		basic_info_group->manufacture_line[0]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_line failed");
+		mnf->manufacture_line[0] = 0;
+	}
+
+	ret = snprintf(mnf->manufacture_date, MAX_CALIBRATION_STRING, "20%u/%u/%u",
+		basic_info_group->manufacture_date[0], basic_info_group->manufacture_date[1],
+		basic_info_group->manufacture_date[2]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->manufacture_date failed");
+		mnf->manufacture_date[0] = 0;
+	}
+
+	ret = snprintf(mnf->serial_number, MAX_CALIBRATION_STRING, "%02x%02x%02x%02x%02x%02x%02x%02x",
+		basic_info_group->serial_number[0], basic_info_group->serial_number[1],
+		basic_info_group->serial_number[2], basic_info_group->serial_number[3],
+		basic_info_group->serial_number[4], basic_info_group->serial_number[5],
+		basic_info_group->serial_number[6], basic_info_group->serial_number[7]);
+
+	if (ret < 0 || ret >= MAX_CALIBRATION_STRING) {
+		LOG_INF("snprintf of mnf->serial_number failed");
+		mnf->serial_number[0] = 0;
+	}
+}
 #endif
 
 /*************************************************************************
@@ -1420,28 +1438,6 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		        LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 			//app_get_back_sensor_name("s5k4H7");
-
-#if 0
-#if defined CONFIG_OTP_MANUAL_CONTROL
-
-#ifdef S5K4H7_OTP_OFILM
-   if (tran_otp_manual_control) {
-	if (update_otp())
-  LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-   } else{
-  LOG_INF("otp_manual_control [disable otp feature] : %d\n ", tran_otp_manual_control);
-   }
-#endif
-
-#else
-
-#ifdef S5K4H7_OTP_OFILM
-	if (update_otp())
-    LOG_INF("otp_manual_control [enable otp feature] : %d\n ", tran_otp_manual_control);
-#endif
-#endif
-#endif
-
 #if OTP_4H7
 				s5k4h7yx_read_data_kernel();
 #if INCLUDE_NO_OTP_4H7
@@ -1449,8 +1445,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
-					} else
+					} else {
+						s5k4h7yx_sunny_read_data_from_otp();
+						s5k4h7yx_sunny_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7yx_sunny_eeprom);
+						s5k4h7yx_sunny_eeprom_format_calibration_data((void *)s5k4h7yx_sunny_eeprom);
 						LOG_INF("This is sunny --->s5k4h7 otp data vaild ...");
+					}
+
 				} else {
 					LOG_INF("This is s5k4h7, but no otp data ...");
 				}
@@ -1508,6 +1509,21 @@ static kal_uint32 open(void)
 			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+#if OTP_4H7
+#if INCLUDE_NO_OTP_4H7
+				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
+#endif
+					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
+						sensor_id = 0xFFFF;
+						return ERROR_SENSOR_CONNECT_FAIL;
+					} else
+						LOG_INF("This is sunny --->s5k4h7 otp data vaild...");
+#if INCLUDE_NO_OTP_4H7
+				} else {
+					LOG_INF("This is s5k4h7, but no otp data ...");
+				}
+#endif
+#endif
 				break;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", sensor_id);
@@ -1747,6 +1763,14 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->SensorWidthSampling = 0;  /* 0 is default 1x */
 	sensor_info->SensorHightSampling = 0;	/* 0 is default 1x */
 	sensor_info->SensorPacketECCOrder = 1;
+
+	sensor_info->calibration_status.mnf = mnf_status;
+	sensor_info->calibration_status.af = af_status;
+	sensor_info->calibration_status.awb = awb_status;
+	sensor_info->calibration_status.lsc = lsc_status;
+	sensor_info->calibration_status.pdaf = pdaf_status;
+	sensor_info->calibration_status.dual = dual_status;
+	s5k4h7yx_sunny_eeprom_get_mnf_data((void *)s5k4h7yx_sunny_eeprom, &sensor_info->mnf_calibration);
 
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
