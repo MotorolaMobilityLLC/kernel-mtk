@@ -172,13 +172,13 @@ int mipiswitch(
 	cam_mipi_switch_sel_h = pinctrl_lookup_state(camctrl, "cam_mipi_switch_sel_1");
 	cam_mipi_switch_sel_l = pinctrl_lookup_state(camctrl, "cam_mipi_switch_sel_0");
 	if (pwr_status == IMGSENSOR_HW_POWER_STATUS_ON){
-		if (IMGSENSOR_SENSOR_IDX_SUB2 == sensor_idx) {
+		if (IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx) {
 			pinctrl_select_state(camctrl, cam_mipi_switch_sel_h);
 		} else if (IMGSENSOR_SENSOR_IDX_SUB == sensor_idx) {
 			pinctrl_select_state(camctrl, cam_mipi_switch_sel_l);
 		}
 	}else if (pwr_status == IMGSENSOR_HW_POWER_STATUS_OFF) {
-		if (IMGSENSOR_SENSOR_IDX_SUB == sensor_idx || IMGSENSOR_SENSOR_IDX_SUB2 == sensor_idx) {
+		if (IMGSENSOR_SENSOR_IDX_SUB == sensor_idx || IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx) {
 			pinctrl_select_state(camctrl, cam_mipi_switch_sel_l);
 		}
 	}
@@ -242,10 +242,6 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	       curr_sensor_name);
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
-	if (strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 && IMGSENSOR_SENSOR_IDX_SUB2 == sensor_idx){
-	      return IMGSENSOR_RETURN_ERROR;
-	}
-
 	mipiswitch(phw, sensor_idx, pwr_status);
 #endif
 

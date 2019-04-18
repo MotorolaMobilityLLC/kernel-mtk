@@ -668,7 +668,7 @@ static long EEPROM_drv_ioctl(struct file *file,
 		if ((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x487b)) {
 			i4RetValue = S5K4H7_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("s5k4h7 offset = 0x%x, parm = %d, i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
-		}else if ((ptempbuf->deviceID == 8)&&(ptempbuf->sensorID == 0x487c)) {
+		}else if ((ptempbuf->deviceID == 16)&&(ptempbuf->sensorID == 0x487c)) {
 			i4RetValue = S5K4H7_SUNNY_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("s5k4h7sunny offset = 0x%x, parm = %d,i4RetValue = %d\n",ptempbuf->u4Offset, *(pu1Params),i4RetValue);
 		} else {

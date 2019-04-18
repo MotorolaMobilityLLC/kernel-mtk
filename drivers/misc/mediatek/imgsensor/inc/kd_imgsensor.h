@@ -110,6 +110,8 @@
 ********************************************************************************/
 /* SENSOR CHIP VERSION */
 /*HM*/
+#define SUNNY_MID                               0x01
+#define QTECH_MID                               0x06
 #define HM1062_MONO_SENSOR_ID                   0x1061
 #define HM1062_2_MONO_SENSOR_ID                 0x1062
 /*IMX*/
@@ -233,7 +235,7 @@
 #define S5K3L6QT_SENSOR_ID                      0x30C7
 #define S5K4H7YX_SENSOR_ID                      0x487b
 #define S5K4H7QT_SENSOR_ID                      0x487c
-#define S5K4H7YX_SUNNY_SENSOR_ID                0x487c
+#define S5K4H7YX_SUNNY_SENSOR_ID                (S5K4H7YX_SENSOR_ID+SUNNY_MID)
 /*HI*/
 #define HI841_SENSOR_ID                         0x0841
 #define HI707_SENSOR_ID                         0x00b8

@@ -538,7 +538,7 @@ static kal_uint32 return_sensor_id(void)
 {
     LOG_INF("get here11\n");
     LOG_INF("get here22  0x%x\n", (read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
-	return (((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001)) + 1);
+	return (((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001)) + SUNNY_MID);
 
 }
 
