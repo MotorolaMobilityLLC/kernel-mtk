@@ -500,7 +500,17 @@ static int gsensor_factory_get_raw_data(int32_t data[3])
 }
 static int gsensor_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_ACCELEROMETER);
+       int ret = 0;
+	struct accelhub_ipi_data *obj = obj_ipi_data;
+
+	 ret = sensor_calibration_to_hub(ID_ACCELEROMETER);
+	 if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->calibration_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int gsensor_factory_clear_cali(void)
 {
