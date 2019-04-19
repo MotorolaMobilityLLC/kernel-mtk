@@ -40,6 +40,12 @@
 #define BTSCHARGER_RAP_NTC_TABLE			7			/* default is NCP15WF104F03RC(100K) */
 #define BTSCHARGER_RAP_ADC_CHANNEL			AUX_IN2_NTC	/* default is 2 */
 
+#define BTS_CHARGERNTC_RAP_PULL_UP_R		390000 /* 390K, pull up resister */
+#define BTS_CHARGERNTC_TAP_OVER_CRITICAL_LOW	4397119 /* base on 100K NTC temp* default value -40 deg*/
+#define BTS_CHARGERNTC_RAP_PULL_UP_VOLTAGE		1800 /* 1.8V ,pull up voltage */
+#define BTS_CHARGERNTC_RAP_NTC_TABLE		7 /* default is NCP15WF104F03RC(100K) */
+#define BTS_CHARGERNTC_RAP_ADC_CHANNEL		AUX_IN2_NTC /* default is 0 */
+
 extern int IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata);
 extern int IMM_IsAdcInitReady(void);
 
