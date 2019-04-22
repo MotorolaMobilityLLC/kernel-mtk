@@ -345,3 +345,9 @@
 	mmi,adc-channel-batid = <3>;
 	mmi,adc-channel-vbat = <100>;
 };
+
+&bat_gm30 {
+	df-serialnum = "SB18C51711";
+
+	#include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
+};
