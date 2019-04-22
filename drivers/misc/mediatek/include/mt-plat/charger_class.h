@@ -138,6 +138,7 @@ struct charger_ops {
 		int *tchg_max);
 	int (*get_zcv)(struct charger_device *, u32 *uV);
 	int (*set_batfet)(struct charger_device *, bool en);
+	int (*enable_hz)(struct charger_device *dev, bool en);
 };
 
 static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)
@@ -198,6 +199,7 @@ extern int charger_dev_get_zcv(struct charger_device *charger_dev, u32 *uV);
 extern int charger_dev_run_aicl(struct charger_device *charger_dev, u32 *uA);
 extern int charger_dev_reset_eoc_state(struct charger_device *charger_dev);
 extern int charger_dev_safety_check(struct charger_device *charger_dev);
+extern int charger_dev_enable_hz(struct charger_device *charger_dev, bool en);
 
 /* PE */
 extern int charger_dev_send_ta_current_pattern(struct charger_device *charger_dev, bool is_increase);

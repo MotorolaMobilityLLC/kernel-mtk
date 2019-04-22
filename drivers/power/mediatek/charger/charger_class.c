@@ -323,6 +323,16 @@ int charger_dev_enable_safety_timer(struct charger_device *charger_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable_safety_timer);
 
+int charger_dev_enable_hz(struct charger_device *chg_dev, bool en)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->enable_hz)
+		return chg_dev->ops->enable_hz(chg_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_enable_hz);
+
 int charger_dev_is_safety_timer_enabled(struct charger_device *charger_dev, bool *en)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->is_safety_timer_enabled)
