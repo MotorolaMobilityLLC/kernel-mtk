@@ -308,6 +308,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 				info->pe4.pe4_input_current_limit_setting;
 	}
 
+
 	if (pdata->input_current_limit_by_aicl != -1 &&
 	    !mtk_pe20_get_is_connect(info) && !mtk_pe_get_is_connect(info) &&
 	    !mtk_is_TA_support_pd_pps(info)) {
@@ -316,6 +317,13 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pdata->input_current_limit =
 					pdata->input_current_limit_by_aicl;
 	}
+
+	if (pdata->moto_chg_tcmd_ibat != -1)
+		pdata->charging_current_limit = pdata->moto_chg_tcmd_ibat;
+
+	if (pdata->moto_chg_tcmd_ichg != -1)
+		pdata->input_current_limit = pdata->moto_chg_tcmd_ichg;
+
 done:
 	ret = charger_dev_get_min_charging_current(info->chg1_dev, &ichg1_min);
 	if (ret != -ENOTSUPP && pdata->charging_current_limit < ichg1_min)
