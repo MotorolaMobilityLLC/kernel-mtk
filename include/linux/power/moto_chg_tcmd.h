@@ -34,7 +34,7 @@ struct moto_chg_tcmd_client {
 	int (*get_charger_type)(void *input, int* val);
 
 	int (*get_bat_temp)(void *input, int* val);//unit C
-	int (*get_bat_voltage)(void *input, int* val);//unit mV
+	int (*get_bat_voltage)(void *input, int* val);//unit uV
 	int (*get_bat_ocv)(void *input, int* val);//unit mV
 	int (*get_bat_id)(void *input, int* val);
 
