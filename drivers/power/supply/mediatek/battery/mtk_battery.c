@@ -4418,7 +4418,7 @@ static int battery_tcmd_read_bat_id(void *input, int* val)
 
 static int battery_tcmd_read_bat_voltage(void *input, int* val)
 {
-	*val = battery_get_bat_voltage();
+	*val = battery_get_bat_voltage() * 1000;
 
 	return 0;
 }
