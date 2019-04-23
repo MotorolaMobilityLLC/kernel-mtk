@@ -1078,6 +1078,9 @@ LCM_DRIVER *lcm_driver_list[] = {
 #if defined(PANEL_MOT_MIPI_VID_HOLI_571_720P)
 	&mipi_mot_vid_holi_720p_571_lcm_drv,
 #endif
+#if defined(PANEL_MOT_MIPI_VID_HOLI_571_720P_CHIPONE)
+	&mipi_mot_vid_holi_720p_571_chipone_lcm_drv,
+#endif
 #if defined(PANEL_MOT_MIPI_VID_DJN_571_720P)
 	&mipi_mot_vid_djn_720p_571_lcm_drv,
 #endif

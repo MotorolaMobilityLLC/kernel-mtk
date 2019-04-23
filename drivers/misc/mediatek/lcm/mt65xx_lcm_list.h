@@ -278,6 +278,7 @@ extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_hdp_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_cmd_auo_rt5081_qhd_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_lcm_drv;
 extern LCM_DRIVER mipi_mot_vid_holi_720p_571_lcm_drv;
+extern LCM_DRIVER mipi_mot_vid_holi_720p_571_chipone_lcm_drv;
 extern LCM_DRIVER mipi_mot_vid_djn_720p_571_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_720p_lcm_drv;
 extern LCM_DRIVER nt35695B_fhd_dsi_vdo_auo_rt5081_qhd_lcm_drv;
