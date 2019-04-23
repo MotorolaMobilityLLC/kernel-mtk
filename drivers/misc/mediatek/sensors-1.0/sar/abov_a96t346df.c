@@ -2168,10 +2168,10 @@ int abovXX_sar_data_report(pabovXX_t this,int32_t channel)
 		  moto_sar_data_report(value,ID_SAR_TOP);
 		  break;
 		case CHANNEL_BOTTOM_LMB:
-		  moto_sar_data_report(value,ID_SAR_BOTTOM_LEFT);
+		  moto_sar_data_report(value,ID_SAR_BOTTOM_RIGHT);
 		  break;
 		case CHANNEL_BOTTOM_NB:
-		  moto_sar_data_report(value,ID_SAR_BOTTOM_RIGHT);
+		  moto_sar_data_report(value,ID_SAR_BOTTOM_LEFT);
 		  break;
 		default:
 		  pr_err("abovXX_sar_data_report err channel=%d\n",channel);
