@@ -215,7 +215,7 @@
  * if FTS_GET_VENDOR_ID_NUM >= 2, fw corrsponding with FTS_VENDOR_ID2
  * define your own fw_file, the sample one is invalid
  */
-#define FTS_UPGRADE_FW2_FILE                     "include/firmware/focaltech-djn-ft5446dqs-02-0011-bingo.i"
+#define FTS_UPGRADE_FW2_FILE                     "include/firmware/focaltech-djn-ft5446dqs-02-0012-bingo.i"
 
 /*
  * if FTS_GET_VENDOR_ID_NUM >= 3, fw corrsponding with FTS_VENDOR_ID3
