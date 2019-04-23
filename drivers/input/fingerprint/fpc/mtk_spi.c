@@ -49,6 +49,8 @@
 #define FPC_RESET_HIGH2_US 5000
 #define FPC_TTW_HOLD_TIME 1000
 
+#define REE_READ_HWID
+
 static const char * const pctl_names[] = {
 	"fpsensor_fpc_rst_low",
 	"fpsensor_fpc_rst_high",
@@ -63,6 +65,7 @@ struct fpc_data {
 	int irq_num;
 	int rst_gpio;
 	bool wakeup_enabled;
+	bool init;
 	struct wakeup_source ttw_wl;
 };
 
@@ -173,34 +176,20 @@ static ssize_t wakeup_enable_set(struct device *dev,
 }
 static DEVICE_ATTR(wakeup_enable, S_IWUSR, NULL, wakeup_enable_set);
 
-static ssize_t irq_enable_set(struct device *dev,
-	struct device_attribute *attr, const char *buf, size_t count)
+static ssize_t active_get(struct device *device,
+			struct device_attribute *attribute,
+			char *buffer)
 {
-	struct  fpc_data *fpc = dev_get_drvdata(dev);
-	ssize_t ret = count;
+	struct fpc_data *fpc = dev_get_drvdata(device);
+	int result = 0;
 
-	dev_info(dev, "%s: enter\n", __func__);
-
-	if (!strncmp(buf, "enable", strlen("enable"))) {
-		//fpc->wakeup_enabled = true;
-		//smp_wmb();
-	} else if (!strncmp(buf, "disable", strlen("disable"))) {
-            dev_info(dev, "%s: disable gpio, irq_num:%d\n", __func__, fpc->irq_num);
-            if(fpc->irq_num) {
-                dev_info(dev, "%s: disable gpio, disabled\n", __func__);
-                disable_irq_wake(fpc->irq_num);
-                disable_irq(fpc->irq_num);
-                devm_free_irq(fpc->dev, fpc->irq_num, fpc);
-                fpc->irq_num = 0;
-            }
-		//fpc->wakeup_enabled = false;
-		//smp_wmb();
-	} else {
-		ret = -EINVAL;
+	if (fpc->init) {
+		result = 1;
 	}
-	return ret;
+
+	return scnprintf(buffer, PAGE_SIZE, "%i\n", result);
 }
-static DEVICE_ATTR(irq_enable, S_IWUSR, NULL, irq_enable_set);
+static DEVICE_ATTR(active, S_IRUSR, active_get, NULL);
 
 /**
  * sysf node to check the interrupt status of the sensor, the interrupt
@@ -244,7 +233,7 @@ static struct attribute *fpc_attributes[] = {
 	&dev_attr_wakeup_enable.attr,
 	&dev_attr_clk_enable.attr,
 	&dev_attr_irq.attr,
-	&dev_attr_irq_enable.attr,
+	&dev_attr_active.attr,
 	NULL
 };
 
@@ -290,7 +279,7 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 	struct spi_transfer cmd = {
 		.cs_change = 0,
 		.delay_usecs = 0,
-		.speed_hz = 48000000u,
+		.speed_hz = 4800000u,
 		.tx_buf = temp_buffer,
 		.rx_buf = temp_buffer,
 		.len    = 16,
@@ -305,7 +294,7 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 
 	error = spi_sync(spidev, &msg);
 
-	printk("%s : spi_sync failed.\n", __func__);
+	printk("%s : spi_sync error:%d.\n", __func__, error);
 
 	printk("fpc hwid: 0x%x,  0x%x,  0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x,0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
 				temp_buffer[0], temp_buffer[1], temp_buffer[2], temp_buffer[3],
@@ -315,7 +304,18 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 				temp_buffer[10], temp_buffer[11],
 				temp_buffer[12], temp_buffer[13],
 				temp_buffer[14], temp_buffer[15]);
-	return 0;
+
+	if (temp_buffer[1] == 0x10) {
+		if (temp_buffer[2] == 0x12 ||
+			temp_buffer[2] == 0x13 ||
+			temp_buffer[2] == 0x22 ||
+			temp_buffer[2] == 0x23)
+		{
+			return 0;
+		}
+	}
+
+	return -EINVAL;
 
 }
 #endif
@@ -374,6 +374,15 @@ static int mtk6797_probe(struct spi_device *spidev)
 		fpc->pinctrl_state[i] = state;
 	}
 
+	hw_reset(fpc);
+	if (0 != fpc1020_read_hwid(spidev)) {
+		rc = -EINVAL;
+		dev_err(fpc->dev, "fpc1020_read_hwid failed.\n");
+		devm_pinctrl_put(fpc->pinctrl_fpc);
+		devm_kfree(dev, fpc);
+		goto exit;
+	}
+
 	node_eint = of_find_compatible_node(NULL, NULL,
 				"mediatek,fpsensor_fp_eint");
 	if (node_eint == NULL) {
@@ -392,7 +401,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 
 	fpc->irq_num = irq_num;
 
-	set_clks(fpc, true);
+	//set_clks(fpc, true);
 
 	dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
 	dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
@@ -423,9 +432,10 @@ static int mtk6797_probe(struct spi_device *spidev)
 		goto exit;
 	}
 
-	hw_reset(fpc);
+	fpc->init = true;
 
 	dev_info(dev, "%s: ok\n", __func__);
+
 exit:
 	return rc;
 }
