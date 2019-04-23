@@ -3344,7 +3344,7 @@ static int  mtk_charger_tcmd_set_chg_current(void *input, int  val)
 	struct charger_manager *cm = (struct charger_manager *)input;
 	int ret;
 
-	cm->chg1_data.thermal_charging_current_limit = val;
+	cm->chg1_data.moto_chg_tcmd_ibat = val * 1000;
 	ret = _mtk_charger_change_current_setting(cm);
 
 	return ret;
@@ -3355,7 +3355,7 @@ static int  mtk_charger_tcmd_get_chg_current(void *input, int* val)
 	struct charger_manager *cm = (struct charger_manager *)input;
 	int ret = 0;
 
-	*val = cm->chg1_data.thermal_charging_current_limit;
+	*val = cm->chg1_data.moto_chg_tcmd_ibat / 1000;
 
 	return ret;
 }
@@ -3365,7 +3365,7 @@ static int  mtk_charger_tcmd_set_usb_current(void *input, int  val)
 	struct charger_manager *cm = (struct charger_manager *)input;
 	int ret;
 
-	cm->chg1_data.thermal_input_current_limit = val;
+	cm->chg1_data.moto_chg_tcmd_ichg = val * 1000;
 	ret = _mtk_charger_change_current_setting(cm);
 
 	return ret;
@@ -3376,7 +3376,7 @@ static int  mtk_charger_tcmd_get_usb_current(void *input, int* val)
 	struct charger_manager *cm = (struct charger_manager *)input;
 	int ret = 0;
 
-	*val = cm->chg1_data.thermal_input_current_limit;
+	*val = cm->chg1_data.moto_chg_tcmd_ichg / 1000;
 
 	return ret;
 }
@@ -3466,6 +3466,8 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg1_data.input_current_limit_by_aicl = -1;
 	info->chg2_data.thermal_charging_current_limit = -1;
 	info->chg2_data.thermal_input_current_limit = -1;
+	info->chg1_data.moto_chg_tcmd_ibat = -1;
+	info->chg1_data.moto_chg_tcmd_ichg = -1;
 
 	info->sw_jeita.error_recovery_flag = true;
 
