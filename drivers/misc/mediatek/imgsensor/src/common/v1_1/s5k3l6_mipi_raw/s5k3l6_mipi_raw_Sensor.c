@@ -34,7 +34,7 @@
 
 #include "s5k3l6_mipi_raw_Sensor.h"
 
-//#define FPT_PDAF_SUPPORT   //for pdaf switch
+#define FPT_PDAF_SUPPORT   //for pdaf switch
 
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "S5K3L6"
@@ -173,7 +173,6 @@ static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
  { 4208, 3120,	184,  480, 3840, 2160, 1920, 1080,   0,	0, 1920, 1080, 	 0, 0, 1920, 1080},// slim video
 };
 
-#if 0
 #ifdef FPT_PDAF_SUPPORT
 static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
  //for 3L6
@@ -188,10 +187,9 @@ static SET_PD_BLOCK_INFO_T imgsensor_pd_info =
     .i4BlockNumX = 65,
     .i4BlockNumY = 48,
     .iMirrorFlip = 0,
-    .i4PosL = {{28,31},{44,35},{64,35},{80,31},{32,51},{48,51},{60,55},{76,51},{32,67},{48,63},{60,63},{76,67},{28,87},{44,83},{64,83},{80,87}},
-    .i4PosR = {{28,35},{44,39},{64,39},{80,35},{32,47},{48,51},{60,51},{76,47},{32,71},{48,67},{60,67},{76,71},{28,83},{44,79},{64,79},{80,83}},
+    .i4PosL = {{28,31},{80,31},{44,35},{64,35},{32,51},{76,51},{48,55},{60,55},{48,63},{60,63},{32,67},{76,67},{44,83},{64,83},{28,87},{80,87}},
+    .i4PosR = {{28,35},{80,35},{44,39},{64,39},{32,47},{76,47},{48,51},{60,51},{48,67},{60,67},{32,71},{76,71},{44,79},{64,79},{28,83},{80,83}},
 };
-#endif
 #endif
 
 static kal_uint16 read_cmos_sensor_byte(kal_uint16 addr)
@@ -1809,8 +1807,8 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	s5k3l6_eeprom_get_mnf_data((void *)s5k3l6_eeprom, &sensor_info->mnf_calibration);
 
 	//	#ifdef FPT_PDAF_SUPPORT
-#if 0
-	sensor_info->PDAF_Support = PDAF_SUPPORT_RAW_LEGACY;
+#ifdef FPT_PDAF_SUPPORT
+	sensor_info->PDAF_Support = PDAF_SUPPORT_RAW;
 #endif
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2075,10 +2073,10 @@ static kal_uint32 streaming_control(kal_bool enable)
 		write_cmos_sensor(0x3C1E, 0x0100);
 		write_cmos_sensor(0x0100, 0x0100);
 		write_cmos_sensor(0x3C1E, 0x0000);
-    }
+		}
 	else {
 		write_cmos_sensor(0x0100, 0x0000);
-    }
+		}
 	mdelay(10);
 	return ERROR_NONE;
 }
@@ -2095,8 +2093,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data=(MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
-	//	#ifdef FPT_PDAF_SUPPORT
-#if 0
+#ifdef FPT_PDAF_SUPPORT
 	SET_PD_BLOCK_INFO_T *PDAFinfo;
 #endif
 
@@ -2198,8 +2195,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n",(UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
 		ihdr_write_shutter_gain((UINT16)*feature_data,(UINT16)*(feature_data+1),(UINT16)*(feature_data+2));
 		break;
-		//#ifdef FPT_PDAF_SUPPORT
-#if 0
+#ifdef FPT_PDAF_SUPPORT
 	case SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY:
 		LOG_INF("SENSOR_FEATURE_GET_SENSOR_PDAF_CAPACITY scenarioId:%lld\n", *feature_data);
 
@@ -2217,7 +2213,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
 			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
+			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 			break;
 		default:
 			*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
@@ -2229,18 +2225,22 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		PDAFinfo= (SET_PD_BLOCK_INFO_T *)(uintptr_t)(*(feature_data+1));
 
 		switch (*feature_data) {
+		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 		case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
 			memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T));
+			LOG_INF("3L6 get pd data\n");
 			break;
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
-		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			break;
 		}
 		break;
-
+	case SENSOR_FEATURE_SET_PDAF:
+		LOG_INF("PDAF mode :%d\n", *feature_data_16);
+		/*imgsensor.pdaf_mode= *feature_data_16;*/
+		break;
 #endif
 
 	case SENSOR_FEATURE_GET_SENSOR_SYNC_MODE_CAPACITY:

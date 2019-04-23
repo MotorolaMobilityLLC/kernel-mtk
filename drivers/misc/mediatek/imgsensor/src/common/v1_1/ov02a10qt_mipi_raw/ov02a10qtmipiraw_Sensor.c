@@ -1624,6 +1624,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+		    set_dummy();
 		break;
 
 	case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -1639,6 +1641,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+		    set_dummy();
 		break;
 
 	case MSDK_SCENARIO_ID_SLIM_VIDEO:
@@ -1657,7 +1661,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
-
+		if (imgsensor.frame_length > imgsensor.shutter)
+		    set_dummy();
 		break;
 
 	default:  /*coding with  preview scenario by default*/
@@ -1673,6 +1678,8 @@ static kal_uint32 set_max_framerate_by_scenario(
 
 		imgsensor.min_frame_length = imgsensor.frame_length;
 		spin_unlock(&imgsensor_drv_lock);
+		if (imgsensor.frame_length > imgsensor.shutter)
+		    set_dummy();
 
 		LOG_INF("error scenario_id = %d, we use preview scenario\n", scenario_id);
 		break;
