@@ -4184,6 +4184,8 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 }
 
 static int pagpionum;
+static int sel_pa_pinnum;
+static int pa_vendor = 0;
 
 static int Request_EXT_PA(void)
 {
@@ -4213,22 +4215,74 @@ static int Request_EXT_PA(void)
 	}
 
 	gpio_direction_output(pagpionum, 0);
+
+	sel_pa_pinnum = of_get_named_gpio(node, "sel_pa", 0);
+	if (sel_pa_pinnum < 0) {
+		printk("[Simon]%s(), cannot find sel_pa node!\n", __func__);
+		return ret;
+	}
+
+	ret = gpio_request(sel_pa_pinnum, "info");
+	if (ret) {
+		printk("[Simon]%s(), request sel_pa failed!\n", __func__);
+		return ret;
+	}
+
+	gpio_direction_input(sel_pa_pinnum);
+
+	msleep(2);/* delay */
+
+	pa_vendor = gpio_get_value(sel_pa_pinnum);
+	printk("[Simon]%s(), pa_vendor = %d => %s \n", __func__, pa_vendor, (pa_vendor == 1 ? "AW87318L":"WAA2997"));
+
 	return ret;
 }
 
 static void Ext_Speaker_Amp_On(bool enable)
 {
 	if(enable){
-		udelay(1000);
-		gpio_set_value(pagpionum, 1);
-		udelay(1);
-		gpio_set_value(pagpionum, 0);
-		udelay(1);
-		gpio_set_value(pagpionum, 1);
-		udelay(1);
-		gpio_set_value(pagpionum, 0);
-		udelay(1);
-		gpio_set_value(pagpionum, 1);
+		if(pa_vendor == 1)
+			{ /* pa_vendor = 1; AW87318; mode 2*/
+			udelay(1000);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			}
+		else
+			{ /* pa_vendor = 0; WAA2997; mode 8 */
+			udelay(1000);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			udelay(1);
+			gpio_set_value(pagpionum, 0);
+			udelay(1);
+			gpio_set_value(pagpionum, 1);
+			}
 		printk("[Simon]%s(), Speaker ext_pa set:%d!\n", __func__,enable);
 	}else{
 		gpio_set_value(pagpionum, enable);
