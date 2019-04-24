@@ -148,8 +148,8 @@ typedef struct abov_platform_data *pabov_platform_data_t;
 enum channel_index
 {
 	//CHANNEL_STATE = 0x00,
-	CHANNEL_TOP = 0x00,
-	CHANNEL_BOTTOM = 0x01,
+	CHANNEL_TOP = 0x01,
+	CHANNEL_BOTTOM = 0x00,
 };
 
 enum channel_state
