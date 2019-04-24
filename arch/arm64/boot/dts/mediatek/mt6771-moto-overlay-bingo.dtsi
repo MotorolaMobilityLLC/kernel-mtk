@@ -258,6 +258,7 @@
 };
 &mt_soc_codec_name {
 		ext_pa =  <&pio 153 0>;
+		sel_pa =  <&pio 15 0>;
 };
 &led6{
 	led_mode = <4>;
