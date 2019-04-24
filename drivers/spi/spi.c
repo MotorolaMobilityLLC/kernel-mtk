@@ -2513,12 +2513,15 @@ int spi_bus_unlock(struct spi_master *master)
 }
 EXPORT_SYMBOL_GPL(spi_bus_unlock);
 
-/* portable code must never pass more than 32 bytes */
-#define	SPI_BUFSIZ	max(32, SMP_CACHE_BYTES)
 
 /* mtk SPI_DMA requests 4 bytes align */
 #ifdef CONFIG_SND_SOC_CS35L41
+/* portable code must never pass more than 32 bytes */
+#define	SPI_BUFSIZ	min(32, SMP_CACHE_BYTES)
 #define RX_TWO_BYTES_OFFSET 2
+#else
+/* portable code must never pass more than 32 bytes */
+#define	SPI_BUFSIZ	max(32, SMP_CACHE_BYTES)
 #endif
 
 static u8	*buf;
