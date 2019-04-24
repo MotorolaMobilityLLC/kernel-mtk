@@ -550,10 +550,14 @@ static void set_shutter_frame_length(
 		realtime_fps = imgsensor.pclk
 			/ imgsensor.line_length * 10 / imgsensor.frame_length;
 
-		if (realtime_fps >= 297 && realtime_fps <= 305)
+		if (realtime_fps >= 297 && realtime_fps <= 305) {	
 			set_max_framerate(296, 0);
-		else if (realtime_fps >= 147 && realtime_fps <= 150)
+    			set_dummy();   //whl 151120 remove
+		}
+		else if (realtime_fps >= 147 && realtime_fps <= 150) {
 			set_max_framerate(146, 0);
+    			set_dummy();   //whl 151120 remove
+		}
 		else {
 		/* Extend frame length*/
 	write_cmos_sensor(0xfd, 0x01);
