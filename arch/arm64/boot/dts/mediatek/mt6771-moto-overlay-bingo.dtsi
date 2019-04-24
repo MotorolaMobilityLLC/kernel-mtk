@@ -77,9 +77,6 @@
 	otg_iddig:otg_iddig  {
 	compatible = "mediatek,usb_iddig_bi_eint";
 	};
-	flashlights_dummy_gpio: flashlights_dummy_gpio {
-	compatible = "mediatek,flashlights_dummy_gpio";
-	};
 	sar_irq:sar_irq {
 	compatible = "mediatek,sar_irq";
 	};

@@ -61,9 +61,9 @@ static struct pinctrl *dummy_pinctrl;
 //static struct pinctrl_state *dummy_xxx_high;
 //static struct pinctrl_state *dummy_xxx_low;
 
-#define DUMMY_PINCTRL_STATE_HWEN_HIGH "hwen_high"
+#define DUMMY_PINCTRL_STATE_HWEN_HIGH "hwen_high"//ENF flash
 #define DUMMY_PINCTRL_STATE_HWEN_LOW  "hwen_low"
-#define DUMMY_PINCTRL_STATE_STROBE_HIGH "strobe_high" //High is flash mode
+#define DUMMY_PINCTRL_STATE_STROBE_HIGH "strobe_high" //ENM torch
 #define DUMMY_PINCTRL_STATE_STROBE_LOW  "strobe_low" //Low is torch mode
 
 static struct pinctrl_state *dummy_hwen_high;
@@ -168,20 +168,16 @@ static int dummy_pinctrl_set(int pin, int state)
 /* flashlight enable function */
 static int dummy_enable(void)
 {
-	//int pin = 0, state = 0;
-
-	/* TODO: wrap enable function */
-	if(g_duty <= 1) //torch  = 0 video and pre mode = 1
+	//g_duty = 0-6; 0-5:flash; 6:torch
+	if(g_duty == 6) //torch mode
 	{
-		dummy_pinctrl_set(0, 1);//hwen enable
-		dummy_pinctrl_set(1, 0);//torch enable
-	} else { // duty = 2/3 main flash mode
-		dummy_pinctrl_set(0, 1);//hwen enable  //short mode 220ms
+		dummy_pinctrl_set(0, 1);//torch en
+		dummy_pinctrl_set(1, 0);//flash dis
+	} else {//flash mode
+		dummy_pinctrl_set(1, 0);
 		dummy_pinctrl_set(1, 1);//flash enable
-		
-    }
+	}
 	pr_err("FL_enable torch g_duty=%d line=%d\n",g_duty,__LINE__);
-	pr_err("gepeng into dummy_enable ....\n");
 	return 0;
 }
 

@@ -9,7 +9,6 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
 &pio {
 	flashlights_gpio_pins_default: default {
 	};
@@ -42,7 +41,9 @@
 		};
 	};
 };
-&flashlights_dummy_gpio {
+&odm {
+	flashlights_dummy_gpio: flashlights_dummy_gpio {
+	compatible = "mediatek,flashlights_dummy_gpio";
 	pinctrl-names = "default", "hwen_high", "hwen_low", "strobe_high", "strobe_low";
 	pinctrl-0 = <&flashlights_gpio_pins_default>;
 	pinctrl-1 = <&flashlights_gpio_pins_hwen_high>;
@@ -50,6 +51,7 @@
 	pinctrl-3 = <&flashlights_gpio_pins_strobe_high>;
 	pinctrl-4 = <&flashlights_gpio_pins_strobe_low>;
 	status = "okay";
+	};
 };
 
 /* CAMERA GPIO standardization */
