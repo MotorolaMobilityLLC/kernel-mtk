@@ -41,9 +41,11 @@
 };
 
 &mtkfb{
-	pinctrl-names = "lcm_bl_enable", "lcm_bl_disable";
-	pinctrl-0 = <&lcm_bl_enable>;
-	pinctrl-1 = <&lcm_bl_disable>;
+	pinctrl-names = "lcm_rst_out0_gpio", "lcm_rst_out1_gpio", "lcm_bl_enable", "lcm_bl_disable";
+	pinctrl-0 = <&lcm_rst_out0_gpio>;
+	pinctrl-1 = <&lcm_rst_out1_gpio>;
+	pinctrl-2 = <&lcm_bl_enable>;
+	pinctrl-3 = <&lcm_bl_disable>;
 	status = "okay";
 };
 
@@ -107,12 +109,32 @@
 	lcm_bl_enable: lcm_bl_enable {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO176__FUNC_GPIO176>;
+			slew-rate = <1>;
+			output-high;
 		};
 	};
 
 	lcm_bl_disable: lcm_bl_disable {
 		pins_cmd_dat {
 			pins = <PINMUX_GPIO176__FUNC_GPIO176>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_rst_out0_gpio: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	lcm_rst_out1_gpio: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
 		};
 	};
 };
