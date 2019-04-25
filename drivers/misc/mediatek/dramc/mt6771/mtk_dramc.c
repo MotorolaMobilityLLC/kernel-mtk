@@ -497,7 +497,7 @@ static unsigned int dramc_tx_tracking(int channel)
 	temp = Reg_Readl(DRAMC_AO_SPCMDCTRL);
 	mr4_on_off = (temp >> 29) & 0x1;
 	Reg_Sync_Writel(DRAMC_AO_SPCMDCTRL, temp | (1<<29));
-	for (rank = 0; rank < 2; rank++) {
+	for (rank = 0; rank < get_rk_num(); rank++) {
 		res = auto_dram_dqs_osc(rank, dramc_ao_chx_base, dramc_nao_chx_base);
 		if (res != TX_DONE)
 			goto ret_dramc_tx_tracking;
