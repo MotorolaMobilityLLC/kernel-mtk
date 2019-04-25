@@ -32,6 +32,7 @@
 #include <linux/memblock.h>
 #ifdef CONFIG_ARM64
 #include <asm/tlbflush.h>
+#include <asm/pgtable.h>
 #endif
 #include "ssmr_internal.h"
 
@@ -40,8 +41,8 @@
 #define	COUNT_DOWN_LIMIT (COUNT_DOWN_MS / COUNT_DOWN_INTERVAL)
 static atomic_t svp_online_count_down;
 
-/* 64 MB alignment */
-#define SSMR_CMA_ALIGN_PAGE_ORDER 14
+/* 16 MB alignment */
+#define SSMR_CMA_ALIGN_PAGE_ORDER 12
 #define SSMR_ALIGN_SHIFT (SSMR_CMA_ALIGN_PAGE_ORDER + PAGE_SHIFT)
 #define SSMR_ALIGN (1 << (PAGE_SHIFT + (MAX_ORDER - 1)))
 
@@ -60,8 +61,13 @@ static struct task_struct *_svp_online_task; /* NULL */
 static DEFINE_MUTEX(svp_online_task_lock);
 static struct cma *cma;
 
-#define pmd_unmapping(virt, size) set_pmd_mapping(virt, size, 0)
-#define pmd_mapping(virt, size) set_pmd_mapping(virt, size, 1)
+struct page_change_data {
+	pgprot_t set_mask;
+	pgprot_t clear_mask;
+};
+
+#define memory_unmapping(virt, size) set_memory_mapping(virt, size, 0)
+#define memory_mapping(virt, size) set_memory_mapping(virt, size, 1)
 
 /*
  * Use for zone-movable-cma callback
@@ -323,6 +329,92 @@ RESERVEDMEM_OF_DECLARE(prot_sharedmem_memory, "mediatek,memory-prot-sharedmem",
 			dedicate_prot_sharedmem_memory);
 #endif
 
+#ifdef CONFIG_MTK_HAPP_MEM_SUPPORT
+static int __init dedicate_ta_elf_memory(struct reserved_mem *rmem)
+{
+	struct SSMR_Region *region;
+
+	region = &_ssmregs[SSMR_TA_ELF];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(ta_elf_memory, "mediatek,ta_elf",
+			dedicate_ta_elf_memory);
+
+static int __init dedicate_ta_stack_heap_memory(struct reserved_mem *rmem)
+{
+	struct SSMR_Region *region;
+
+	region = &_ssmregs[SSMR_TA_STACK_HEAP];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(ta_stack_heap_memory, "mediatek,ta_stack_heap",
+			dedicate_ta_stack_heap_memory);
+#endif
+
+#ifdef CONFIG_MTK_SDSP_SHARED_MEM_SUPPORT
+static int __init dedicate_sdsp_sharedmem_memory(struct reserved_mem *rmem)
+{
+	struct SSMR_Region *region;
+
+	region = &_ssmregs[SSMR_SDSP_TEE_SHAREDMEM];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(sdsp_sharedmem_memory, "mediatek,sdsp_sharedmem",
+			dedicate_sdsp_sharedmem_memory);
+#endif
+
+#ifdef CONFIG_MTK_SDSP_MEM_SUPPORT
+static int __init dedicate_sdsp_firmware_memory(struct reserved_mem *rmem)
+{
+	struct SSMR_Region *region;
+
+	region = &_ssmregs[SSMR_SDSP_FIRMWARE];
+
+	pr_info("%s, name: %s, base: 0x%pa, size: 0x%pa\n",
+		 __func__, rmem->name,
+		 &rmem->base, &rmem->size);
+
+	region->use_cache_memory = true;
+	region->is_unmapping = true;
+	region->count = rmem->size / PAGE_SIZE;
+	region->cache_page = phys_to_page(rmem->base);
+
+	return 0;
+}
+RESERVEDMEM_OF_DECLARE(sdsp_firmware_memory, "mediatek,sdsp_firmware",
+			dedicate_sdsp_firmware_memory);
+#endif
+
 static bool has_dedicate_resvmem_region(void)
 {
 	bool ret = false;
@@ -348,6 +440,19 @@ bool memory_ssmr_inited(void)
 }
 
 #ifdef CONFIG_ARM64
+#ifdef CONFIG_DEBUG_PAGEALLOC
+static int change_page_range(pte_t *ptep, pgtable_t token, unsigned long addr,
+			void *data)
+{
+	struct page_change_data *cdata = data;
+	pte_t pte = *ptep;
+
+	pte = clear_pte_bit(pte, cdata->clear_mask);
+	pte = set_pte_bit(pte, cdata->set_mask);
+
+	set_pte(ptep, pte);
+	return 0;
+}
 /*
  * Unmapping memory region kernel mapping
  * SSMR protect memory region with EMI MPU. While protecting, memory prefetch
@@ -360,7 +465,28 @@ bool memory_ssmr_inited(void)
  *
  * @return: success return 0, failed return -1;
  */
-static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
+static int set_memory_mapping(unsigned long start, phys_addr_t size, int map)
+{
+	struct page_change_data data;
+	int ret;
+
+	if (map) {
+		data.set_mask = __pgprot(PTE_VALID);
+		data.clear_mask = __pgprot(0);
+	} else {
+		data.set_mask = __pgprot(0);
+		data.clear_mask = __pgprot(PTE_VALID);
+	}
+
+	ret = apply_to_page_range(&init_mm, start, size, change_page_range,
+					&data);
+	flush_tlb_kernel_range(start, start + size);
+
+	return ret;
+
+}
+#else
+static int set_memory_mapping(unsigned long start, phys_addr_t size, int map)
 {
 	unsigned long address = start;
 	pud_t *pud;
@@ -372,7 +498,7 @@ static int set_pmd_mapping(unsigned long start, phys_addr_t size, int map)
 			|| (size != (size & PMD_MASK))
 			|| !memblock_is_memory(virt_to_phys((void *)start))
 			|| !size || !start) {
-		pr_err("[invalid parameter]: start=0x%lx, size=%pa\n",
+		pr_info("[invalid parameter]: start=0x%lx, size=%pa\n",
 				start, &size);
 		return -1;
 	}
@@ -426,8 +552,9 @@ fail:
 	show_pte(NULL, address);
 	return -1;
 }
+#endif
 #else
-static inline int set_pmd_mapping(unsigned long start, phys_addr_t size,
+static inline int set_memory_mapping(unsigned long start, phys_addr_t size,
 					int map)
 {
 	pr_debug("start=0x%lx, size=%pa, map=%d\n", start, &size, map);
@@ -449,7 +576,12 @@ static int memory_region_offline(struct SSMR_Region *region,
 	phys_addr_t page_phys;
 
 	/* Determine alloc pages by feature */
-	alloc_pages = _ssmr_feats[region->cur_feat].req_size / PAGE_SIZE;
+	if (region->cache_page)
+		alloc_pages = region->count;
+	else
+		alloc_pages = _ssmr_feats[region->cur_feat].req_size /
+				PAGE_SIZE;
+
 	region->alloc_pages = alloc_pages;
 
 	/* compare with function and system wise upper limit */
@@ -509,7 +641,8 @@ static int memory_region_offline(struct SSMR_Region *region,
 	}
 
 	ssmr_usage_count += alloc_pages;
-	ret_map = pmd_unmapping((unsigned long)__va((page_to_phys(page))),
+
+	ret_map = memory_unmapping((unsigned long)__va((page_to_phys(page))),
 			alloc_pages << PAGE_SHIFT);
 
 	if (ret_map < 0) {
@@ -562,7 +695,7 @@ static int memory_region_online(struct SSMR_Region *region)
 		unsigned long region_page_va =
 			(unsigned long)__va(page_to_phys(region->page));
 
-		ret_map = pmd_mapping(region_page_va,
+		ret_map = memory_mapping(region_page_va,
 				region->alloc_pages << PAGE_SHIFT);
 
 		if (ret_map < 0) {
@@ -918,7 +1051,7 @@ int ssmr_offline(phys_addr_t *pa, unsigned long *size, bool is_64bit,
 
 	return _ssmr_offline_internal(pa, size,
 		is_64bit ? UPPER_LIMIT64 : UPPER_LIMIT32,
-		_ssmr_feats[feat].region);
+		feat);
 }
 EXPORT_SYMBOL(ssmr_offline);
 
@@ -1037,12 +1170,12 @@ static ssize_t memory_ssmr_write(struct file *file,
 	for (feat = 0; feat < __MAX_NR_SSMR_FEATURES; feat++) {
 		if (!strncmp(buf, _ssmr_feats[feat].cmd_offline,
 			strlen(buf) - 1)) {
-			_ssmr_offline_internal(NULL, NULL, ssmr_upper_limit,
+			ssmr_offline(NULL, NULL, ssmr_upper_limit,
 				feat);
 			break;
 		} else if (!strncmp(buf, _ssmr_feats[feat].cmd_online,
 			strlen(buf) - 1)) {
-			_ssmr_online_internal(feat);
+			ssmr_online(feat);
 			break;
 		}
 	}
@@ -1191,7 +1324,7 @@ static int __init memory_ssmr_init_region(char *name, u64 size,
 		region->use_cache_memory = true;
 		region->cache_page = page;
 		ssmr_usage_count += region->count;
-		ret_map = pmd_unmapping(region_cache_page_va,
+		ret_map = memory_unmapping(region_cache_page_va,
 				region->count << PAGE_SHIFT);
 
 		if (ret_map < 0) {
