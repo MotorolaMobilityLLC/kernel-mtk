@@ -3123,6 +3123,14 @@ static void lcm1_set_reset_pin(UINT32 value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT0);
 }
 
+static void lcm_set_reset_pin_gpio(UINT32 value)
+{
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
+}
+
 static void lcm1_set_te_pin(void)
 {
 	disp_dts_gpio_select_state(DTS_GPIO_STATE_TE1_MODE_TE);
@@ -3272,6 +3280,7 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module, LCM_DRIVER *lcm_drv)
 	}
 
 	utils->set_reset_pin = lcm_set_reset_pin;
+	utils->set_reset_pin_gpio = lcm_set_reset_pin_gpio;
 	utils->set_backlight_out = lcm_set_backlight_out;
 	utils->udelay = lcm_udelay;
 	utils->mdelay = lcm_mdelay;
