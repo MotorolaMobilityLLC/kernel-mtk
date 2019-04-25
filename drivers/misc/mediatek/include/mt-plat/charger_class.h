@@ -139,6 +139,7 @@ struct charger_ops {
 	int (*get_zcv)(struct charger_device *, u32 *uV);
 	int (*set_batfet)(struct charger_device *, bool en);
 	int (*enable_hz)(struct charger_device *dev, bool en);
+	int (*fault_tolerance)(struct charger_device *);
 };
 
 static inline void *charger_dev_get_drvdata(const struct charger_device *charger_dev)
@@ -229,5 +230,7 @@ extern int unregister_charger_device_notifier(struct charger_device *charger_dev
 extern int charger_dev_notify(struct charger_device *charger_dev, int event);
 
 extern int charger_dev_set_batfet(struct charger_device *charger_dev, bool en);
+
+extern int charger_dev_fault_tolerance(struct charger_device *charger_dev);
 
 #endif /*LINUX_POWER_CHARGER_CLASS_H*/

@@ -2270,6 +2270,7 @@ static int charger_routine_thread(void *arg)
 		info->charger_thread_timeout = false;
 		bat_current = battery_get_bat_current();
 		chg_current = pmic_get_charging_current();
+		charger_dev_fault_tolerance(info->chg1_dev);
 		chr_err("Vbat=%d,Ibat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
 			battery_get_bat_voltage(), bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),

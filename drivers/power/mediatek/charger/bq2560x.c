@@ -52,6 +52,9 @@
 #define pr_info pr_debug
 #endif
 
+static bool otg_en_bit = false;
+static bool hiz_en_bit = false;
+
 enum bq2560x_part_no {
 	BQ25600 = 0x00,
 	BQ25601 = 0x02,
@@ -153,10 +156,31 @@ static int bq2560x_update_bits(struct bq2560x *bq, u8 reg,
 	u8 tmp;
 
 	mutex_lock(&bq->i2c_rw_lock);
-	ret = __bq2560x_read_reg(bq, reg, &tmp);
-	if (ret) {
-		pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
-		goto out;
+	if(reg == 0x0){
+		ret = __bq2560x_read_reg(bq, reg, &tmp);
+		if (ret) {
+			pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+			goto out;
+		}
+		pr_err("ti debug1  reg=%02X, value=%02X\n", reg, tmp);
+		if(hiz_en_bit == false)
+			tmp &=0x7f;
+	}
+	if(reg == 0x1){
+		ret = __bq2560x_read_reg(bq, reg, &tmp);
+		if (ret) {
+			pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+			goto out;
+		}
+		pr_err("ti debug1  reg=%02X, value=%02X mask =%02X\n", reg, tmp, mask);
+		if(otg_en_bit == false)
+			tmp &=0xdf;
+	}else{
+		ret = __bq2560x_read_reg(bq, reg, &tmp);
+		if (ret) {
+			pr_err("Failed: reg=%02X, ret=%d\n", reg, ret);
+			goto out;
+		}
 	}
 
 	tmp &= ~mask;
@@ -172,6 +196,13 @@ out:
 	return ret;
 }
 
+static int bq2560x_set_force_dpdm(struct bq2560x *bq)
+{
+	pr_err("ti debug %s: \n", __func__);
+	return bq2560x_update_bits(bq, BQ2560X_REG_07,
+				REG07_FORCE_DPDM_MASK, REG07_FORCE_DPDM_MASK);
+
+}
 static int bq2560x_enable_otg(struct bq2560x *bq)
 {
 	u8 val = REG01_OTG_ENABLE << REG01_OTG_CONFIG_SHIFT;
@@ -331,6 +362,7 @@ EXPORT_SYMBOL_GPL(bq2560x_reset_chip);
 int bq2560x_enter_hiz_mode(struct bq2560x *bq)
 {
 	u8 val = REG00_HIZ_ENABLE << REG00_ENHIZ_SHIFT;
+	hiz_en_bit = true;
 	pr_err("ti bq25601 debug %s: val:%02X \n", __func__,val);
 	return bq2560x_update_bits(bq, BQ2560X_REG_00, REG00_ENHIZ_MASK, val);
 
@@ -339,8 +371,8 @@ EXPORT_SYMBOL_GPL(bq2560x_enter_hiz_mode);
 
 int bq2560x_exit_hiz_mode(struct bq2560x *bq)
 {
-
 	u8 val = REG00_HIZ_DISABLE << REG00_ENHIZ_SHIFT;
+	hiz_en_bit = false;
 	pr_err("ti bq25601 debug %s: val:%02X \n", __func__,val);
 	return bq2560x_update_bits(bq, BQ2560X_REG_00, REG00_ENHIZ_MASK, val);
 
@@ -1072,6 +1104,8 @@ static int bq2560x_set_otg(struct charger_device *chg_dev, bool en)
 {
 	int ret;
 	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+
+	otg_en_bit = en;
 	if (en)
 		ret = bq2560x_enable_otg(bq);
 	else
@@ -1152,6 +1186,63 @@ static int bq2560x_do_event(struct charger_device *chg_dev, u32 event, u32 args)
 	return 0;
 }
 
+static int bq2560x_enable_powerpath(struct charger_device *chg_dev, bool en)
+{
+
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+
+	bq2560x_set_force_dpdm(bq);
+	if (en)
+		bq2560x_set_input_volt_limit(bq,4600);
+	else
+		bq2560x_set_input_volt_limit(bq,5400);
+
+	return 0;
+}
+
+static int bq2560x_is_powerpath_enabled(struct charger_device *chg_dev, bool *en)
+{
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	u8 val;
+
+	ret = bq2560x_read_byte(bq, &val, BQ2560X_REG_06);
+	if (!ret) {
+		val = val & REG06_VINDPM_MASK;
+	}
+
+	*en = (val == 0x0F) ? false : true;
+	return ret;
+}
+
+static int bq2560x_fault_tolerance(struct charger_device *chg_dev)
+{
+	struct bq2560x *bq = dev_get_drvdata(&chg_dev->dev);
+	int ret;
+	u8 reg0_val,reg1_val;
+	u8 hiz_val,otg_val;
+
+	ret = bq2560x_read_byte(bq, &reg0_val, BQ2560X_REG_00);
+	ret = bq2560x_read_byte(bq, &reg1_val, BQ2560X_REG_01);
+
+	hiz_val = (reg0_val & REG00_ENHIZ_MASK);
+	otg_val = (reg1_val & REG01_OTG_CONFIG_MASK);
+
+	pr_err("ti debug bq2560x_fault_tolerance = %d %d %d\n", otg_en_bit,hiz_val,otg_val);
+
+	if(hiz_val == 0x80){
+		if(!hiz_en_bit)
+			bq2560x_exit_hiz_mode(bq);
+	}
+	if(otg_val == 0x20){
+		if(!otg_en_bit)
+			bq2560x_disable_otg(bq);
+	}
+	return ret;
+
+}
+
+
 static struct charger_ops bq2560x_chg_ops = {
 	/* Normal charging */
 	.plug_in = bq2560x_plug_in,
@@ -1175,8 +1266,8 @@ static struct charger_ops bq2560x_chg_ops = {
 	.is_safety_timer_enabled = bq2560x_is_safety_timer_enabled,
 
 	/* Power path */
-	.enable_powerpath = NULL,
-	.is_powerpath_enabled = NULL,
+	.enable_powerpath = bq2560x_enable_powerpath,
+	.is_powerpath_enabled = bq2560x_is_powerpath_enabled,
 
 	/* OTG */
 	.enable_otg = bq2560x_set_otg,
@@ -1194,7 +1285,7 @@ static struct charger_ops bq2560x_chg_ops = {
 	.get_tchg_adc = NULL,
 
 	.set_batfet = bq2560x_set_batfet,
-
+	.fault_tolerance = bq2560x_fault_tolerance,
 	.event = bq2560x_do_event,
 };
 

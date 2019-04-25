@@ -503,6 +503,15 @@ int charger_dev_set_batfet(struct charger_device *charger_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_set_batfet);
 
+int charger_dev_fault_tolerance(struct charger_device *charger_dev)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->fault_tolerance)
+		return charger_dev->ops->fault_tolerance(charger_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_fault_tolerance);
+
 int charger_dev_notify(struct charger_device *charger_dev, int event)
 {
 	return srcu_notifier_call_chain(
