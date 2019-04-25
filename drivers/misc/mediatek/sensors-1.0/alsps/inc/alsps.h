@@ -73,6 +73,7 @@ struct als_control_path {
 	int (*set_delay)(u64 delay);
 	int (*batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 	int (*flush)(void);
+	int (*set_cali)(uint8_t *data, uint8_t count);
 	int (*rgbw_enable)(int en);
 	int (*rgbw_batch)(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs);
 	int (*rgbw_flush)(void);
@@ -192,6 +193,7 @@ extern int ps_report_interrupt_data(int value);
 extern int ps_flush_report(void);
 extern int als_data_report(int value, int status);
 extern int ps_cali_report(int *value);
+extern int als_cali_report(int *value);
 extern int als_flush_report(void);
 extern int rgbw_data_report(int value[4]);
 extern int rgbw_flush_report(void);
