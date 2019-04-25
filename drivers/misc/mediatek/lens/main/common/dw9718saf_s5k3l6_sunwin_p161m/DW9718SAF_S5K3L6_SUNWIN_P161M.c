@@ -150,7 +150,7 @@ static int initAF(void)
 			LOG_INF("I2C send 0x00 failed!!\n");
 			return -1;
 		}
-
+              msleep(1);
 		data = read_data(0x00);
 		LOG_INF("Addr:0x00 Data:0x%x\n", data);
 

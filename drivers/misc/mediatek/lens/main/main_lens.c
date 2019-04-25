@@ -179,8 +179,7 @@ void AFRegulatorCtrl(int Stage)
 
 				#if defined(CONFIG_MACH_MT6765)
 				   if((strncmp(CONFIG_ARCH_MTK_PROJECT, "p310", 4) == 0)
-				   	||(strncmp(CONFIG_ARCH_MTK_PROJECT, "p311", 4) == 0)
-				    ||(strncmp(CONFIG_ARCH_MTK_PROJECT, "p161m", 4) == 0)){
+				   	||(strncmp(CONFIG_ARCH_MTK_PROJECT, "p311", 4) == 0)){
 					  regVCAMAF =
 					     regulator_get(lens_device, "vcama");
 				   }
@@ -739,7 +738,10 @@ static int AF_i2c_probe(struct i2c_client *client,
 	spin_lock_init(&g_AF_SpinLock);
 
 #if !defined(CONFIG_MTK_LEGACY)
-	AFRegulatorCtrl(0);
+       AFRegulatorCtrl(0);
+       AFRegulatorCtrl(1);      //being   xiongdajun add let AF goto power down
+       DW9718SAF_S5K3L6_SUNWIN_P161M_PowerDown(g_pstAF_I2Cclient, &g_s4AF_Opened);
+       AFRegulatorCtrl(0);      //being   xiongdajun add let AF goto power down
 #endif
 
 	LOG_INF("Attached!!\n");
