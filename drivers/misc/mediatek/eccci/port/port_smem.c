@@ -340,8 +340,8 @@ long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 			break;
 		}
 		/*user id counts from ccb start*/
-		if (ctrl_info.user_id + SMEM_USER_CCB_START >
-				SMEM_USER_CCB_END) {
+		if (ctrl_info.user_id < SMEM_USER_CCB_START ||
+			ctrl_info.user_id > SMEM_USER_CCB_END) {
 			CCCI_ERROR_LOG(md_id, TAG,
 				"get ccb ctrl fail: user_id = %d!\n",
 				ctrl_info.user_id);
@@ -421,13 +421,16 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 	struct ccci_smem_port *smem_port =
 		(struct ccci_smem_port *)port->private_data;
 	unsigned char *ptr;
+#ifdef DEBUG_MSG_ON
 	struct ccci_ccb_debug debug_in, debug_out;
 	struct ccci_smem_region *ccb_dhl =
 		ccci_md_get_smem_by_user_id(md_id, SMEM_USER_CCB_DHL);
-
+#endif
 	ptr = NULL;
 
 	switch (cmd) {
+#ifdef DEBUG_MSG_ON
+	/* corresponds to func:ccci_ccb_write_done in ccci_lib */
 	case CCCI_IOC_GET_CCB_DEBUG_VAL:
 		if ((smem_port->addr_phy == 0)
 			|| (smem_port->length == 0)) {
@@ -465,6 +468,7 @@ long port_smem_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 				"copy_to_user ccb failed !!\n");
 
 		break;
+#endif
 	case CCCI_IOC_SMEM_BASE:
 		smem_port = (struct ccci_smem_port *)port->private_data;
 		CCCI_NORMAL_LOG(md_id, TAG, "smem_port->addr_phy=%lx\n",
