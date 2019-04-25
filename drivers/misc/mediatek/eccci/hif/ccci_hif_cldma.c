@@ -1382,8 +1382,8 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl,
 			item->gpd = dma_pool_alloc(md_ctrl->gpd_dmapool,
 				GFP_KERNEL, &item->gpd_addr);
 			if (!item->gpd) {
-				kfree(item);
 				ccci_free_skb(item->skb);
+				kfree(item);
 				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
 					"RX RING_GPD:alloc item->gpd from dma pool fail!!\n");
 				return;
@@ -1507,9 +1507,9 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 				bd_item = kzalloc(sizeof(struct cldma_request),
 					GFP_KERNEL);
 				if (!bd_item) {
-					kfree(item);
 					dma_pool_free(md_ctrl->gpd_dmapool,
 						item->gpd, item->gpd_addr);
+					kfree(item);
 					CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
 						"alloc tx bd_item cldma_request fail!!\n");
 					return;
@@ -1518,10 +1518,10 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 					md_ctrl->gpd_dmapool,
 					GFP_KERNEL, &bd_item->gpd_addr);
 				if (!bd_item->gpd) {
-					kfree(item);
-					kfree(bd_item);
 					dma_pool_free(md_ctrl->gpd_dmapool,
 						item->gpd, item->gpd_addr);
+					kfree(item);
+					kfree(bd_item);
 					CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
 						"alloc tx bd_item->gpd fail!!\n");
 					return;
