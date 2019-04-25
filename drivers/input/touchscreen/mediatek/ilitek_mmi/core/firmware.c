@@ -66,6 +66,8 @@ u8 gestrue_fw[(10 * K)];
 extern unsigned char g_user_buf[PAGE_SIZE];
 extern unsigned char fw_name_buf[PAGE_SIZE];
 extern bool use_g_user_buf;
+extern is_force_upgrade;
+extern bool is_lcd_resume;
 int ilitek_fw_fsize = 0;
 uint8_t *ilitek_hex_buffer = NULL;
 static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw);
@@ -354,7 +356,7 @@ static int hex_file_open_convert(u8 open_file_method, u8 *pfw)
 
 	switch (open_file_method) {
 	case REQUEST_FIRMWARE:
-		if ((ilitek_fw_fsize > 0) && (ilitek_hex_buffer != NULL)) {
+		if ((ilitek_fw_fsize > 0) && (ilitek_hex_buffer != NULL) && (is_force_upgrade == false)) {
 			ipio_info("FW is already request,no need request again\n");
 
 		} else {
@@ -1097,19 +1099,20 @@ static int fw_upgrade_iram(u8 *pfw)
 	u8 *fw_ptr = NULL;
 
 	/* Reset before load AP and MP code*/
-	if (!core_gesture->entry) {
-		if (RST_METHODS == HW_RST_HOST_DOWNLOAD)
-			ilitek_platform_tp_hw_reset(true);
-		else
-			ret = core_config_ic_reset();
+	if (!is_lcd_resume) {
+		if (!core_gesture->entry) {
+			if (RST_METHODS == HW_RST_HOST_DOWNLOAD)
+				ilitek_platform_tp_hw_reset(true);
+			else
+				ret = core_config_ic_reset();
+		}
+		ret = core_config_ice_mode_enable(STOP_MCU);
+		if (ret < 0) {
+			ipio_err("Failed to enter ICE mode, ret = %d\n", ret);
+			return ret;
+		}
 	}
-
-	ret = core_config_ice_mode_enable(STOP_MCU);
-	if (ret < 0) {
-		ipio_err("Failed to enter ICE mode, ret = %d\n", ret);
-		return ret;
-	}
-
+	is_lcd_resume =false;
 	if (core_config_set_watch_dog(false) < 0) {
 		ipio_err("Failed to disable watch dog\n");
 		ret = -EINVAL;

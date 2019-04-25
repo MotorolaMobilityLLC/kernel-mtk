@@ -86,8 +86,6 @@ struct ilitek_platform_data {
 	bool debug_node_open;
 	int debug_data_frame;
 	wait_queue_head_t inq;
-	wait_queue_head_t rst;
-	int rst_data_frame;
 	unsigned char debug_buf[1024][2048];
 	int raw_count;
 	int delta_count;

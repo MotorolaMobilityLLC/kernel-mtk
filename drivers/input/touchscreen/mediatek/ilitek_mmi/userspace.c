@@ -78,7 +78,7 @@ extern char mode_chose;
 static struct class *touchscreen_class;
 static struct device *touchscreen_class_dev;
 extern bool use_g_user_buf;
-
+bool is_force_upgrade =false;
 struct file_buffer {
 	char *ptr;
 	char file_name[128];
@@ -1212,15 +1212,16 @@ static ssize_t ilitek_proc_fw_upgrade_read(struct file *filp, char __user *buff,
 	 memset(g_user_buf, 0, USER_STR_BUFF * sizeof(unsigned char));
 
 	ilitek_platform_disable_irq();
-
+	is_force_upgrade = true;
+	mutex_lock(&ipd->touch_mutex);
 	if (mode_chose == SPI_MODE)
 		ret = ilitek_platform_reset_ctrl(true, RST_METHODS);
 	else
 		ret = core_firmware_upgrade(UPGRADE_FLASH, HEX_FILE, OPEN_FW_METHOD);
 	if (ret < 0)
 		ipio_err("firmware upgrade failed\n");
-
-
+	mutex_unlock(&ipd->touch_mutex);
+	is_force_upgrade = false;
 	ilitek_platform_enable_irq();
 
 	if (ret < 0) {
@@ -1489,7 +1490,7 @@ static long ilitek_proc_ioctl(struct file *filp, unsigned int cmd, unsigned long
 		ipio_err("Failed to allocate mem\n");
 		return -ENOMEM;
 	}
-	
+
 	mutex_lock(&ipd->plat_mutex);
 	switch (cmd) {
 	case ILITEK_IOCTL_I2C_WRITE_DATA:
@@ -2081,8 +2082,11 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 
 	/* ret = core_firmware_upgrade(g_user_buf, false); */
 	use_g_user_buf = true;
-	if(mode_chose == SPI_MODE)
+	if (mode_chose == SPI_MODE) {
+		mutex_lock(&ipd->touch_mutex);
 		ret = core_config_switch_fw_mode(&protocol->demo_mode);
+		mutex_unlock(&ipd->touch_mutex);
+	}
 	ipd->sys_boot_fw = true;
 
 	ilitek_platform_enable_irq();
@@ -2105,10 +2109,12 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 	core_firmware->isUpgrading = false;
 	core_fr->isEnableFR = true;
 exit:
+	mutex_lock(&ipd->touch_mutex);
 	if (mode_chose == SPI_MODE) {
 		if (core_config_get_chip_id() < 0)
 			ipio_err("Failed to get chip id\n");
 	}
+	mutex_unlock(&ipd->touch_mutex);
 	return nSize;
 
 }

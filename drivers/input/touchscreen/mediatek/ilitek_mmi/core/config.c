@@ -576,20 +576,6 @@ EXPORT_SYMBOL(core_config_ic_suspend);
 
 void core_config_ic_resume(void)
 {
-	ipio_info("Starting to resume ...\n");
-	if (!ipd->suspended) {
-		ipio_info("TP already in resume statues ...\n");
-		return;
-	}
-
-	/* we hope there's no any reports during resume */
-	core_fr->isEnableFR = false;
-	ilitek_platform_disable_irq();
-
-	if (core_config->isEnableGesture) {
-		disable_irq_wake(ipd->isr_gpio);
-	}
-
 	if (mode_chose == I2C_MODE)
 		ilitek_platform_reset_ctrl(true, HW_RST);
 	else

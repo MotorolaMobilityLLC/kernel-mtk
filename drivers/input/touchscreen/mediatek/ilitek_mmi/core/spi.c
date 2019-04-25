@@ -180,7 +180,7 @@ int core_rx_lock_check(int *ret_size)
 		//ipio_debug(DEBUG_SPI, "Rx lock = 0x%x, size = %d\n", status, *ret_size);
 
 		if (CHECK_EQUAL(status, lock) == 0) {
-			ipio_info("Rx check lock free!!\n");
+			ipio_debug(DEBUG_SPI, "Rx check lock free!!\n");
 			return 0;
 		}
 

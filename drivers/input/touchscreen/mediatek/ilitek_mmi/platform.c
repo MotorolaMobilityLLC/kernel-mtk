@@ -50,10 +50,11 @@ extern uint8_t *ilitek_hex_buffer;
 #define DEVICE_ID_SPI	"ILITEK_TDDI_SPI"
 extern char mtkfb_lcm_name[256];
 bool use_g_user_buf = false;
+bool is_lcd_resume = false;
 EXPORT_SYMBOL(use_g_user_buf);
 
 /* Debug level */
-uint32_t ipio_debug_level = DEBUG_ALL;
+uint32_t ipio_debug_level = DEBUG_NONE;
 EXPORT_SYMBOL(ipio_debug_level);
 
 struct ilitek_platform_data *ipd;
@@ -125,10 +126,6 @@ int ilitek_platform_tp_hw_reset(bool isEnable)
 		gpio_set_value(ipd->reset_gpio, 1);
 		mdelay(ipd->edge_delay);
 #endif /* PT_MTK */
-		if (mode_chose == SPI_MODE) {
-			ipd->rst_data_frame = 10;
-			wake_up(&(ipd->rst));
-		}
 	} else {
 #if (TP_PLATFORM == PT_MTK)
 		tpd_gpio_output(ipd->reset_gpio, 0);
@@ -300,30 +297,38 @@ static void ilitek_platform_esd_check(struct work_struct *pWork)
 void load_touch_firmware(void)
 {
 	int err;
-	if (!core_firmware->isUpgrading) {
-		err = schedule_work(&ipd->ilitek_resume_work);
-		if (!err) {
-			ipio_err("start touch_resume_workqueue failed\n");
-			return;
-		}
+	if (!ipd->suspended)
+		ipio_info("is in resume now\n");
+
+	if (core_firmware->isUpgrading)
+		return;
+
+	core_fr->isEnableFR =false;
+	ilitek_platform_disable_irq();
+	if (core_config->isEnableGesture)
+		disable_irq_wake(ipd->isr_gpio);
+
+	if (ipd->do_otp_check)
+		core_config_protect_otp_prog_mode(1);
+
+	ilitek_platform_tp_hw_reset(true);
+	err = core_config_ice_mode_enable(STOP_MCU);
+	if (err < 0) {
+		ipio_err("fail to enter ice mode \n");
+		is_lcd_resume = false;
+	}
+	else
+		is_lcd_resume = true;
+
+	err = schedule_work(&ipd->ilitek_resume_work);
+	if (!err) {
+		ipio_err("start touch_resume_workqueue failed\n");
+		return;
 	}
 	return;
 }
 EXPORT_SYMBOL(load_touch_firmware);
 
-void touch_reset_before_lcm_init(void)
-{
-	int ret = 0;
-	ipd->rst_data_frame = 0;
-
-	ret = wait_event_interruptible_timeout(ipd->rst, ipd->rst_data_frame> 0, msecs_to_jiffies(200));
-	if (ret == 0) {
-		ipio_info("wait_event timeout\n");
-
-	}
-	return;
-}
-EXPORT_SYMBOL(touch_reset_before_lcm_init);
 
 #if (TP_PLATFORM == PT_MTK)
 static void tpd_resume(struct device *h)
@@ -868,7 +873,7 @@ int ilitek_platform_reset_ctrl(bool rst, int mode)
 	ipd->do_reset = true;
 	ilitek_platform_disable_irq();
 
-	if (ipd->do_otp_check)
+	if (ipd->do_otp_check && (is_lcd_resume == false))
 		core_config_protect_otp_prog_mode(mode);
 
 	switch (mode) {
@@ -1167,7 +1172,7 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 
 	ipd->delay_time_high = 10;
 	ipd->delay_time_low = 5;
-	ipd->edge_delay = 1;
+	ipd->edge_delay = 5;
 
 	mutex_init(&ipd->plat_mutex);
 	mutex_init(&ipd->touch_mutex);
@@ -1177,8 +1182,6 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	mutex_init(&ipd->ilitek_debug_mutex);
 	mutex_init(&ipd->ilitek_debug_read_mutex);
 	init_waitqueue_head(&(ipd->inq));
-	init_waitqueue_head(&(ipd->rst));
-	ipd->rst_data_frame = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;
