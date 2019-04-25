@@ -9385,7 +9385,7 @@ int display_enter_tui(void)
 	display_vsync_switch_to_dsi(1);
 	mmprofile_log_ex(ddp_mmp_get_events()->tui,
 		MMPROFILE_FLAG_PULSE, 0, 1);
-
+	_cmdq_flush_config_handle(1, NULL, 0);
 	_primary_path_unlock(__func__);
 	return 0;
 
