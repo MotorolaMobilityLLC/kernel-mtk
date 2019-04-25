@@ -182,7 +182,7 @@ static void dpmaif_dump_rxq_remain(struct hif_dpmaif_ctrl *hif_ctrl,
 	unsigned char md_id = hif_ctrl->md_id;
 	struct dpmaif_rx_queue *rxq;
 
-	if (!dump_multi && (qno > DPMAIF_RXQ_NUM)) {
+	if (!dump_multi && (qno >= DPMAIF_RXQ_NUM)) {
 		CCCI_MEM_LOG_TAG(md_id, TAG, "invalid rxq%d\n", qno);
 		return;
 	}

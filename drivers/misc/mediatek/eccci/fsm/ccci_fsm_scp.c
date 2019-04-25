@@ -113,6 +113,11 @@ static void ccci_scp_ipi_rx_work(struct work_struct *work)
 
 	while (!skb_queue_empty(&scp_ipi_rx_skb_list.skb_list)) {
 		skb = ccci_skb_dequeue(&scp_ipi_rx_skb_list);
+		if (!skb) {
+			CCCI_ERROR_LOG(-1, CORE,
+			"dequeue skb fail\n");
+			return;
+		}
 		ipi_msg_ptr = (struct ccci_ipi_msg *)skb->data;
 		if (!get_modem_is_enabled(ipi_msg_ptr->md_id)) {
 			CCCI_ERROR_LOG(ipi_msg_ptr->md_id,

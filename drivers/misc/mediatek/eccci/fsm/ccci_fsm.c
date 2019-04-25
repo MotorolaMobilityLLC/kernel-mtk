@@ -677,6 +677,11 @@ int ccci_fsm_init(int md_id)
 		return -CCCI_ERR_INVALID_PARAM;
 
 	ctl = kzalloc(sizeof(struct ccci_fsm_ctl), GFP_KERNEL);
+	if (!ctl) {
+		CCCI_ERROR_LOG(md_id, FSM,
+				"fail to allocate memory for modem ccci_fsm ctl\n");
+		return -CCCI_ERR_GET_MEM_FAIL;
+	}
 	ctl->md_id = md_id;
 	ctl->last_state = CCCI_FSM_INVALID;
 	ctl->curr_state = CCCI_FSM_GATED;

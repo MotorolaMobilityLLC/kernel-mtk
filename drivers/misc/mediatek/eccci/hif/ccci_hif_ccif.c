@@ -1502,7 +1502,11 @@ int ccci_ccif_hif_init(unsigned char hif_id, unsigned char md_id)
 	struct md_ccif_ctrl *md_ctrl;
 
 	md_ctrl = kzalloc(sizeof(struct md_ccif_ctrl), GFP_KERNEL);
-
+	if (!md_ctrl) {
+		CCCI_ERROR_LOG(md_id, TAG,
+				"fail to allocate memory for modem ccif ctl\n");
+		return -CCCI_ERR_GET_MEM_FAIL;
+	}
 	INIT_WORK(&md_ctrl->ccif_sram_work, md_ccif_sram_rx_work);
 	init_timer(&md_ctrl->traffic_monitor);
 	md_ctrl->traffic_monitor.function = md_ccif_traffic_monitor_func;

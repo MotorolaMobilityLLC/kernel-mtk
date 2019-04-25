@@ -1367,9 +1367,27 @@ static void cldma_rx_ring_init(struct md_cd_ctrl *md_ctrl,
 		for (i = 0; i < ring->length; i++) {
 			item =
 			kzalloc(sizeof(struct cldma_request), GFP_KERNEL);
+			if (!item) {
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+					"alloc rx item cldma_request fail!!\n");
+				return;
+			}
+			item->skb = ccci_alloc_skb(ring->pkt_size, 1, 1);
+			if (!item->skb) {
+				kfree(item);
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+					"alloc rx item->skb fail!!\n");
+				return;
+			}
 			item->gpd = dma_pool_alloc(md_ctrl->gpd_dmapool,
 				GFP_KERNEL, &item->gpd_addr);
-			item->skb = ccci_alloc_skb(ring->pkt_size, 1, 1);
+			if (!item->gpd) {
+				kfree(item);
+				ccci_free_skb(item->skb);
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+					"RX RING_GPD:alloc item->gpd from dma pool fail!!\n");
+				return;
+			}
 			gpd = (struct cldma_rgpd *)item->gpd;
 			memset(gpd, 0, sizeof(struct cldma_rgpd));
 			spin_lock_irqsave(&md_ctrl->cldma_timeout_lock, flags);
@@ -1426,8 +1444,19 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 		for (i = 0; i < ring->length; i++) {
 			item = kzalloc(sizeof(struct cldma_request),
 				GFP_KERNEL);
+			if (!item) {
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"alloc tx item cldma_request fail!!\n");
+				return;
+			}
 			item->gpd = dma_pool_alloc(md_ctrl->gpd_dmapool,
 				GFP_KERNEL, &item->gpd_addr);
+			if (item->gpd == NULL) {
+				kfree(item);
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"alloc tx item->gpd from dma pool fail\n");
+				return;
+			}
 			tgpd = (struct cldma_tgpd *)item->gpd;
 			memset(tgpd, 0, sizeof(struct cldma_tgpd));
 			tgpd->gpd_flags = 0x80;	/* IOC */
@@ -1447,8 +1476,19 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 		for (i = 0; i < ring->length; i++) {
 			item = kzalloc(sizeof(struct cldma_request),
 				GFP_KERNEL);
+			if (!item) {
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"TX RING_GPD_BD:alloc item cldma_request fail!!\n");
+				return;
+			}
 			item->gpd = dma_pool_alloc(md_ctrl->gpd_dmapool,
 				GFP_KERNEL, &item->gpd_addr);
+			if (!item->gpd) {
+				kfree(item);
+				CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+				"TX RING_GPD_BD:alloc item->gpd from dma pool fail\n");
+				return;
+			}
 			tgpd = (struct cldma_tgpd *)item->gpd;
 			memset(tgpd, 0, sizeof(struct cldma_tgpd));
 			tgpd->gpd_flags = 0x82;	/* IOC|BDP */
@@ -1466,9 +1506,26 @@ static void cldma_tx_ring_init(struct md_cd_ctrl *md_ctrl,
 			for (j = 0; j < MAX_BD_NUM + 1; j++) {
 				bd_item = kzalloc(sizeof(struct cldma_request),
 					GFP_KERNEL);
+				if (!bd_item) {
+					kfree(item);
+					dma_pool_free(md_ctrl->gpd_dmapool,
+						item->gpd, item->gpd_addr);
+					CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+						"alloc tx bd_item cldma_request fail!!\n");
+					return;
+				}
 				bd_item->gpd = dma_pool_alloc(
 					md_ctrl->gpd_dmapool,
 					GFP_KERNEL, &bd_item->gpd_addr);
+				if (!bd_item->gpd) {
+					kfree(item);
+					kfree(bd_item);
+					dma_pool_free(md_ctrl->gpd_dmapool,
+						item->gpd, item->gpd_addr);
+					CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+						"alloc tx bd_item->gpd fail!!\n");
+					return;
+				}
 				bd = (struct cldma_tbd *)bd_item->gpd;
 				memset(bd, 0, sizeof(struct cldma_tbd));
 				if (j == 0)
@@ -2378,6 +2435,11 @@ void md_cd_clear_all_queue(unsigned char hif_id, DIRECTION dir)
 					req->skb = ccci_alloc_skb(
 						queue->tr_ring->pkt_size,
 						1, 1);
+					if (!req->skb) {
+						CCCI_ERROR_LOG(md_ctrl->md_id,
+						TAG, "alloc req->skb fail\n");
+						return;
+					}
 					req->data_buffer_ptr_saved =
 						dma_map_single(
 						ccci_md_get_dev_by_id(md_ctrl->md_id),
@@ -3236,6 +3298,11 @@ int md_cd_late_init(unsigned char hif_id)
 	md_ctrl->gpd_dmapool = dma_pool_create("cldma_request_DMA",
 		ccci_md_get_dev_by_id(md_ctrl->md_id),
 		sizeof(struct cldma_tgpd), 16, 0);
+	if (!md_ctrl->gpd_dmapool) {
+		CCCI_ERROR_LOG(md_ctrl->md_id, TAG,
+			"dma_pool_create fail!!\n");
+		return -CCCI_ERR_GET_MEM_FAIL;
+	}
 	for (i = 0; i < NET_TXQ_NUM; i++) {
 		INIT_LIST_HEAD(&md_ctrl->net_tx_ring[i].gpd_ring);
 		md_ctrl->net_tx_ring[i].length =

@@ -260,9 +260,14 @@ struct ccci_modem *ccci_md_alloc(int private_size)
 			"fail to allocate memory for modem structure\n");
 		goto out;
 	}
-	if (private_size > 0)
+	if (private_size > 0) {
 		md->private_data = kzalloc(private_size, GFP_KERNEL);
-	else
+		if (!md->private_data) {
+			CCCI_ERROR_LOG(-1, TAG,
+				"fail to allocate memory for modem private_data\n");
+			goto out;
+		}
+	} else
 		md->private_data = NULL;
 	md->per_md_data.config.setting |= MD_SETTING_FIRST_BOOT;
 	md->per_md_data.is_in_ee_dump = 0;

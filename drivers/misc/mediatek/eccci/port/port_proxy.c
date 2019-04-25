@@ -78,6 +78,8 @@ int port_dev_open(struct inode *inode, struct file *file)
 	struct port_t *port;
 
 	port = port_get_by_node(major, minor);
+	if (port == NULL)
+		return -ENOENT;
 	if (port->rx_ch != CCCI_CCB_CTRL && atomic_read(&port->usage_cnt))
 		return -EBUSY;
 	md_id = port->md_id;
@@ -1074,7 +1076,8 @@ static inline int proxy_dispatch_recv_skb(struct port_proxy *proxy_p,
 		if (channel == CCCI_CONTROL_RX)
 			CCCI_ERROR_LOG(md_id, CORE,
 				"drop on channel %d, ret %d\n", channel, ret);
-		ccci_free_skb(skb);
+		if (ret != -CCCI_ERR_INVALID_PARAM)
+			ccci_free_skb(skb);
 		ret = -CCCI_ERR_DROP_PACKET;
 	}
 
