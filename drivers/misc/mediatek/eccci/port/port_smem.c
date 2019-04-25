@@ -339,9 +339,10 @@ long port_ccb_ioctl(struct port_t *port, unsigned int cmd, unsigned long arg)
 			ret = -EINVAL;
 			break;
 		}
-		/*user id counts from ccb start*/
-		if (ctrl_info.user_id < SMEM_USER_CCB_START ||
-			ctrl_info.user_id > SMEM_USER_CCB_END) {
+		/*user id counts from ccb start
+		 *user id >=0,valid value is 0,1,2
+		 */
+		if (ctrl_info.user_id >= SMEM_USER_CCB_END) {
 			CCCI_ERROR_LOG(md_id, TAG,
 				"get ccb ctrl fail: user_id = %d!\n",
 				ctrl_info.user_id);
