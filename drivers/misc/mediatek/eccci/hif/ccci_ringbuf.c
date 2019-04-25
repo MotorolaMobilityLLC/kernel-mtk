@@ -16,6 +16,7 @@
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/module.h>
+#include <linux/ratelimit.h>
 #include "ccci_ringbuf.h"
 #include "ccci_core.h"
 #include "ccci_debug.h"
@@ -183,6 +184,7 @@ int ccci_ringbuf_writeable(int md_id, struct ccci_ringbuf *ringbuf,
 	unsigned int write_size)
 {
 	int read, write, size, length;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5*HZ, 10);
 
 	if (ringbuf == NULL) {
 		CCCI_ERROR_LOG(md_id, TAG,
@@ -193,9 +195,10 @@ int ccci_ringbuf_writeable(int md_id, struct ccci_ringbuf *ringbuf,
 	write = (unsigned int)(ringbuf->tx_control.write);
 	length = (unsigned int)(ringbuf->tx_control.length);
 	if (write_size > length) {
-		CCCI_ERROR_LOG(md_id, TAG,
-		"rbwb param error,writesize(%d) > length(%d)\n",
-		write_size, length);
+		if (__ratelimit(&ratelimit))
+			CCCI_ERROR_LOG(md_id, TAG,
+			"rbwb param error,writesize(%d) > length(%d)\n",
+			write_size, length);
 		return -CCCI_RINGBUF_PARAM_ERR;
 	}
 	write_size += CCIF_HEADER_LEN + CCIF_FOOTER_LEN;
