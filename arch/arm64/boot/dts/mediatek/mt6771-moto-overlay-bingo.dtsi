@@ -317,3 +317,7 @@
 	mmi,adc-channel-batid = <3>;
 	mmi,adc-channel-vbat = <100>;
 };
+
+&bat_gm30 {
+	R_FG_VALUE = <(10)>;    /* R_sense resistance.*/
+};
