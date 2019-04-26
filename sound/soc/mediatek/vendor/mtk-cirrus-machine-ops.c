@@ -56,9 +56,10 @@ int cs35l41_snd_init(struct snd_soc_pcm_runtime *rtd)
 	struct snd_soc_card *card = rtd->card;
 	struct snd_soc_codec *spk_cdc = rtd->codec_dais[0]->codec;
 	struct snd_soc_dapm_context *spk_dapm = snd_soc_codec_get_dapm(spk_cdc);
+#if defined(CONFIG_SND_SOC_DUAL_CS35L41)
 	struct snd_soc_codec *rcv_cdc = rtd->codec_dais[1]->codec;
 	struct snd_soc_dapm_context *rcv_dapm = snd_soc_codec_get_dapm(rcv_cdc);
-
+#endif
 	dev_info(card->dev, "%s: set cs35l41_mclk_rsc_ref to 0 \n", __func__);
 	atomic_set(&cs35l41_mclk_rsc_ref, 0);
 
@@ -66,12 +67,12 @@ int cs35l41_snd_init(struct snd_soc_pcm_runtime *rtd)
 	snd_soc_dapm_ignore_suspend(spk_dapm, "SPK AMP Playback");
 	snd_soc_dapm_ignore_suspend(spk_dapm, "SPK SPK");
 	snd_soc_dapm_sync(spk_dapm);
-
+#if defined(CONFIG_SND_SOC_DUAL_CS35L41)
 	dev_info(card->dev, "%s: found codec[%s]\n", __func__, dev_name(rcv_cdc->dev));
 	snd_soc_dapm_ignore_suspend(rcv_dapm, "RCV AMP Playback");
 	snd_soc_dapm_ignore_suspend(rcv_dapm, "RCV SPK");
 	snd_soc_dapm_sync(rcv_dapm);
-
+#endif
 	return 0;
 }
 

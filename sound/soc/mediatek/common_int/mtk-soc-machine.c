@@ -696,11 +696,13 @@ static struct snd_soc_dai_link_component cirrus_spk[] = {
 	{
 		.name = "spi4.0",
 		.dai_name = "cs35l41-pcm",
-	},
-	{
+	}
+#if defined(CONFIG_SND_SOC_DUAL_CS35L41)
+	,{
 		.name = "spi5.0",
 		.dai_name = "cs35l41-pcm",
 	}
+#endif
 };
 #endif
 
@@ -758,11 +760,13 @@ static struct snd_soc_codec_conf cirrus_amp_conf[] = {
 	{
 		.dev_name		= "spi4.0",
 		.name_prefix		= "SPK",
-	},
-	{
+	}
+#if defined(CONFIG_SND_SOC_DUAL_CS35L41)
+	,{
 		.dev_name		= "spi5.0",
 		.name_prefix		= "RCV",
 	}
+#endif
 };
 #endif
 
