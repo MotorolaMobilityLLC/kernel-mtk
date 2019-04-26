@@ -741,7 +741,7 @@ static int AF_i2c_probe(struct i2c_client *client,
        AFRegulatorCtrl(0);
        AFRegulatorCtrl(1);      //being   xiongdajun add let AF goto power down
        DW9718SAF_S5K3L6_SUNWIN_P161M_PowerDown(g_pstAF_I2Cclient, &g_s4AF_Opened);
-       AFRegulatorCtrl(0);      //being   xiongdajun add let AF goto power down
+      // AFRegulatorCtrl(0);      //being   xiongdajun add let AF goto power down
 #endif
 
 	LOG_INF("Attached!!\n");
@@ -767,6 +767,10 @@ static int AF_suspend(struct platform_device *pdev, pm_message_t mesg)
 
 static int AF_resume(struct platform_device *pdev)
 {
+        //being   xiongdajun add let AF goto power down
+       AFRegulatorCtrl(1);
+       DW9718SAF_S5K3L6_SUNWIN_P161M_PowerDown(g_pstAF_I2Cclient, &g_s4AF_Opened);
+       //end   xiongdajun add let AF goto power down
 	return 0;
 }
 
