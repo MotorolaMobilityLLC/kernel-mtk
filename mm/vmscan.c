@@ -141,7 +141,15 @@ struct scan_control {
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
+// wangying add for CONFIG_TINNO_LOW_MEMORY_FEATURE DBBOMXA-349 START
+//int vm_swappiness = 0;
+#ifdef CONFIG_TINNO_LOW_MEMORY_FEATURE
+int vm_swappiness = 100;
+#else
 int vm_swappiness = 60;
+#endif
+// END
+
 /*
  * The total number of pages which are beyond the high watermark within all
  * zones.
