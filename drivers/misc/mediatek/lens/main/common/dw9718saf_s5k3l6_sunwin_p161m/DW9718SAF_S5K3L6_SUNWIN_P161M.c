@@ -151,11 +151,13 @@ static int initAF(void)
 			return -1;
 		}
               msleep(1);
-		data = read_data(0x00);
+              //begin;xiongdajun remove;reg 0x00 is only writing;
+		/*data = read_data(0x00);
 		LOG_INF("Addr:0x00 Data:0x%x\n", data);
 
 		if (data != 0x0)
-			return -1;
+			return -1;*/
+		 //end;xiongdajun remove;reg 0x00 is only writing;
 
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
@@ -163,7 +165,7 @@ static int initAF(void)
 			LOG_INF("I2C send 0x01 failed!!\n");
 			return -1;
 		}
-
+             msleep(1);         //xiongdajun remove;need delay 1ms
 		data = read_data(0x01);
 		LOG_INF("thy_debug:read addr:0x01 Data:0x%x\n", data);
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
@@ -263,7 +265,7 @@ int DW9718SAF_S5K3L6_SUNWIN_P161M_Release(struct inode *a_pstInode, struct file 
 
 	if (*g_pAF_Opened == 2) {
 		int i4RetValue = 0;
-		u8 data = 0x0;
+		//u8 data = 0x0;
 		char puSendCmd[2] = {0x00, 0x01};
 
 		LOG_INF("apply\n");
@@ -281,9 +283,10 @@ int DW9718SAF_S5K3L6_SUNWIN_P161M_Release(struct inode *a_pstInode, struct file 
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-
-		data = read_data(0x00);
-		LOG_INF("Addr:0x00 Data:0x%x (%d)\n", data, i4RetValue);
+             //begin;xiongdajun remove;reg 0x00 is only writing;
+		/*data = read_data(0x00);
+		LOG_INF("Addr:0x00 Data:0x%x (%d)\n", data, i4RetValue);*/
+             //end;xiongdajun remove;reg 0x00 is only writing;
 	}
 
 	if (*g_pAF_Opened) {
@@ -308,16 +311,16 @@ int DW9718SAF_S5K3L6_SUNWIN_P161M_PowerDown(struct i2c_client *pstAF_I2Cclient,
 	LOG_INF("+\n");
 	if (*g_pAF_Opened == 0) {
 		int i4RetValue = 0;
-		u8 data = 0x0;
+		//u8 data = 0x0;
 		char puSendCmd[2] = {0x00, 0x01};
 
 		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
 		g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
 		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
-
-		data = read_data(0x00);
-		LOG_INF("Addr:0x00 Data:0x%x\n", data);
-
+             //begin;xiongdajun remove;reg 0x00 is only writing;
+		/*data = read_data(0x00);
+		LOG_INF("Addr:0x00 Data:0x%x\n", data);*/
+             //end;xiongdajun remove;reg 0x00 is only writing;
 		LOG_INF("apply - %d\n", i4RetValue);
 
 		if (i4RetValue < 0)
