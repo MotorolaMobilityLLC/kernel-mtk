@@ -248,15 +248,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 28;
-	params->dsi.horizontal_backporch = 58;
-	params->dsi.horizontal_frontporch = 56;
+	params->dsi.horizontal_backporch = 52;
+	params->dsi.horizontal_frontporch = 52;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 250;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 250;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 255;	/* this value must be in MTK suggested table */
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
