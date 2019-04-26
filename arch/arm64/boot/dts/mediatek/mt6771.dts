@@ -3953,15 +3953,15 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				compatible = "android,vbmeta";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 #ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
-				parts = "boot,system,vendor,recovery,dtbo,oem";
+				parts = "boot,system,vendor,recovery,oem";
 #else
-				parts = "vbmeta,boot,system,vendor,recovery,dtbo,oem";
+				parts = "vbmeta,boot,system,vendor,recovery,oem";
 #endif
 #else
 #ifdef CONFIG_MTK_MAIN_VBMETA_IN_BOOT
-				parts = "boot,system,vendor,dtbo,oem";
+				parts = "boot,system,vendor,oem";
 #else
-				parts = "vbmeta,boot,system,vendor,dtbo,oem";
+				parts = "vbmeta,boot,system,vendor,oem";
 #endif
 #endif
 			};
