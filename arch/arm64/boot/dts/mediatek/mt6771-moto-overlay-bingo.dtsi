@@ -155,8 +155,13 @@
 	tpd-filter-enable = <0>;
 };
 &lk_charger {
+		compatible = "mediatek,lk_charger";
+		power_path_support;
+		enable_anime;
+		blinking_times = <10>;
+		blinking_period = <1000>;
 		max_charger_voltage = <6500000>;
-		fast_charge_voltage = <2000000>;
+		fast_charge_voltage = <3000000>;
 
 		/* charging current */
 		usb_charger_current = <500000>;
@@ -164,17 +169,20 @@
 		ac_charger_input_current = <2000000>;
 		non_std_ac_charger_current = <500000>;
 		charging_host_charger_current = <1500000>;
-		ta_ac_charger_current = <3000000>;
+		ta_ac_charger_current = <2000000>;
 		pd_charger_current = <500000>;
 
 		/* battery temperature protection */
-		temp_t4_threshold = <50>;
+		temp_t4_threshold = <60>;
 		temp_t3_threshold = <45>;
 		temp_t1_threshold = <0>;
 };
+
 &charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
+
+		power_path_support;
 
 		/* common */
 		battery_cv = <4400000>;
@@ -197,9 +205,9 @@
 		/* battery temperature protection */
 		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
-		min_charge_temperature_plus_x_degree = <6>;
+		min_charge_temperature_plus_x_degree = <10>;
 		max_charge_temperature = <60>;
-		max_charge_temperature_minus_x_degree = <57>;
+		max_charge_temperature_minus_x_degree = <45>;
 
 		/*mmi config*/
 		mmi,iterm-ma = <194>;
@@ -276,4 +284,6 @@
 &bat_gm30 {
 	df-serialnum = "SB18C51767";
 	R_FG_VALUE = <(10)>;    /* R_sense resistance.*/
+
+	#include "bat_setting/batterytable_ks40_atl_3000mah.dtsi"
 };
