@@ -531,7 +531,7 @@ static int disp_irq_log_kthread_func(void *data)
 				/* TODO: need more precise data from test */
 				if (considerable_cnt >= 5) {
 					primary_display_diagnose();
-					smi_dumpDebugMsg();
+					/* smi_dumpDebugMsg(); */
 					DDPAEE("RDMA0 underflow!cnt=%d\n",
 					       cnt_rdma_underflow[0]);
 					considerable_cnt = 0;
