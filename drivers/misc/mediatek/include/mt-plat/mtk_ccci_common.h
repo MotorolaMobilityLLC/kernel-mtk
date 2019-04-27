@@ -601,6 +601,7 @@ int get_md_resv_ccb_info(int md_id, phys_addr_t *ccb_data_base,
 int get_md1_md3_resv_smem_info(int md_id, phys_addr_t *rw_base,
 	unsigned int *rw_size);
 unsigned int get_md_resv_phy_cap_size(int md_id);
+int get_md_smem_dfd_size(int md_id);
 unsigned int get_md_smem_cachable_offset(int md_id);
 phys_addr_t get_smem_phy_start_addr(int md_id,
 	enum SMEM_USER_ID user_id, int *size_o);

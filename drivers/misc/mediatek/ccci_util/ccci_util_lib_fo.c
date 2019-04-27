@@ -699,6 +699,7 @@ struct _ccb_layout {
 };
 static struct _ccb_layout ccb_info;
 static unsigned int md1_phy_cap_size;
+static int md1_smem_dfd_size = -1;
 static unsigned int md1_bank4_cache_offset;
 
 /* cacheable share memory */
@@ -798,8 +799,15 @@ static void share_memory_info_parsing(void)
 			!= sizeof(md1_phy_cap_size))
 		CCCI_UTIL_ERR_MSG("using 0 as phy capture size\n");
 
-	CCCI_UTIL_INF_MSG("ccci_util get md1_phy_cap_size: 0x%x\n",
+	CCCI_UTIL_INF_MSG("ccci_util get md1_phy_cap_size: 0x%x;\n",
 				md1_phy_cap_size);
+
+	find_ccci_tag_inf("smem_dfd_size",
+			(char *)&md1_smem_dfd_size,
+			sizeof(md1_smem_dfd_size));
+
+	CCCI_UTIL_INF_MSG("ccci_util md1_smem_dfd_size: %d;\n",
+			md1_smem_dfd_size);
 
 	/* Get smem cachable offset  */
 	md1_bank4_cache_offset = 0;
@@ -1419,6 +1427,14 @@ unsigned int get_md_resv_phy_cap_size(int md_id)
 		return md1_phy_cap_size;
 
 	return 0;
+}
+
+int get_md_smem_dfd_size(int md_id)
+{
+	if (md_id == MD_SYS1)
+		return md1_smem_dfd_size;
+
+	return -1;
 }
 
 unsigned int get_md_smem_cachable_offset(int md_id)
