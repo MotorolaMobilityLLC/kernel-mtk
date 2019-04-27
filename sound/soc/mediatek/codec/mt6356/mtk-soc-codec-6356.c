@@ -4556,7 +4556,7 @@ static int Audio_PGA1_Set(struct snd_kcontrol *kcontrol,
 static int Audio_PGA2_Get(struct snd_kcontrol *kcontrol,
 			  struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s = %d\n", Audio_ADC2_Get,
+	pr_debug("%s = %d\n", __func__,
 	       mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Volume[AUDIO_ANALOG_VOLUME_MICAMP2];
@@ -4611,7 +4611,7 @@ static int Audio_PGA4_Set(struct snd_kcontrol *kcontrol,
 static int Audio_MicSource1_Get(struct snd_kcontrol *kcontrol,
 				struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s = %d\n", Audio_ADC2_Get,
+	pr_debug("%s = %d\n", __func__,
 	       mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_Mux[AUDIO_MICSOURCE_MUX_IN_1];
