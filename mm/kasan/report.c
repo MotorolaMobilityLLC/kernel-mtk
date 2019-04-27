@@ -30,7 +30,6 @@
 
 #include <asm/sections.h>
 
-#include <mt-plat/aee.h>
 
 #include "../../../drivers/misc/mediatek/include/mt-plat/aee.h"
 
