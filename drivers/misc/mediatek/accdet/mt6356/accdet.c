@@ -1408,8 +1408,7 @@ static int accdet_irq_handler(void)
 	eint_type = 0;
 	cur_time = accdet_get_current_time();
 	reg_val = pmic_pwrap_read(ACCDET_CON12);
-	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", ACCDET_CON12,
-		__func__, reg_val);
+	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", __func__, ACCDET_CON12, reg_val);
 
 #ifdef CONFIG_ACCDET_SUPPORT_EINT0
 	if ((reg_val & ACCDET_IRQ_B0) &&
@@ -1922,8 +1921,8 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) |
 					   ACCDET_SEQ_INIT_EN_B1);
 	mdelay(2); /* 2ms */
-	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", ACCDET_CON01,
-		__func__, pmic_pwrap_read(ACCDET_CON01));
+	ACCDET_DEBUG("[%s][0x%x]=0x%x\n", __func__, ACCDET_CON01,
+			pmic_pwrap_read(ACCDET_CON01));
 	pmic_pwrap_write(ACCDET_CON01, pmic_pwrap_read(ACCDET_CON01) &
 					   (~ACCDET_SEQ_INIT_EN_B1));
 	mdelay(1);
