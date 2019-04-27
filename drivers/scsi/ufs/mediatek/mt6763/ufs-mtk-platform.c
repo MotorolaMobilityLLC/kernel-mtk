@@ -106,6 +106,11 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 }
 #endif
 
+int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
+{
+	return 0;
+}
+
 /*
  * In early-porting stage, because of no bootrom, something finished by bootrom
  * shall be finished here instead.
