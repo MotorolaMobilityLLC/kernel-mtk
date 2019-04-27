@@ -17,7 +17,7 @@
 #include <linux/ktime.h>
 #include <linux/hrtimer.h>
 #include <linux/tick.h>
-#include <linux/sched.h>
+#include <linux/sched/loadavg.h>
 #include <linux/math64.h>
 #include <linux/module.h>
 
