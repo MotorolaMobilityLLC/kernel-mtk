@@ -254,6 +254,8 @@
 #define GPIO_MODE2           ((unsigned int)(PMIC_REG_BASE+0x0000+0x00B6))
 #define GPIO_MODE2_SET       ((unsigned int)(PMIC_REG_BASE+0x0000+0x00B8))
 #define GPIO_MODE2_CLR       ((unsigned int)(PMIC_REG_BASE+0x0000+0x00BA))
+#define SMT_CON1           ((unsigned int)(PMIC_REG_BASE+0x0000+0x002c))
+
 /* miso */
 #define GPIO_MODE3           ((unsigned int)(PMIC_REG_BASE+0x0000+0x00BC))
 #define GPIO_MODE3_SET       ((unsigned int)(PMIC_REG_BASE+0x0000+0x00BE))
