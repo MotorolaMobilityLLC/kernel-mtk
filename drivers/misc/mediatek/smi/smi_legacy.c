@@ -1708,9 +1708,12 @@ module_param(disable_freq_hopping, uint, 0644);
 module_param(force_max_mmsys_clk, uint, 0644);
 module_param(clk_mux_mask, uint, 0644);
 
+#ifdef MMDVFS_QOS_SUPPORT
 static struct kernel_param_ops qos_scenario_ops = {
 	.set = set_qos_scenario,
 	.get = get_qos_scenario,
 };
 module_param_cb(qos_scenario, &qos_scenario_ops, NULL, 0644);
+#endif
+
 #endif /* MMDVFS_HOOK */
