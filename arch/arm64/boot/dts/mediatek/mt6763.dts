@@ -629,7 +629,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	pio: pinctrl@10005000 {
-		compatible = "mediatek,pinctrl";
+		compatible = "mediatek,mt6763-pinctrl";
 		reg = <0 0x10005000 0 0x1000>;
 		mediatek,pctl-regmap = <&syscfg_pctl_a>,
 				       <&syscfg_pctl_lt>,
@@ -663,7 +663,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	toprgu@10007000 {
-		compatible = "mediatek,mt6763-toprgu";
+		compatible = "mediatek,toprgu";
 		reg = <0 0x10007000 0 0x1000>;
 		interrupts =
 			<GIC_SPI 139 IRQ_TYPE_NONE>, /* AP RGU interrupt */
@@ -1422,7 +1422,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c0: i2c@11007000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <0>;
 		reg = <0 0x11007000 0 0x1000>,
 			<0 0x11000100 0 0x80>;
@@ -1435,7 +1435,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c1: i2c@11014000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <1>;
 		reg = <0 0x11014000 0 0x1000>,
 			<0 0x11000380 0 0x80>;
@@ -1449,7 +1449,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c2: i2c@11015000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <2>;
 		reg = <0 0x11015000 0 0x1000>,
 			<0 0x11000400 0 0x80>;
@@ -1463,7 +1463,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c5: i2c@1100f000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <5>;
 		reg = <0 0x1100f000 0 0x1000>,
 			<0 0x11000280 0 0x80>;
@@ -1476,7 +1476,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c3: i2c@11011000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <3>;
 		reg = <0 0x11011000 0 0x1000>,
 			<0 0x11000300 0 0x80>;
@@ -1489,7 +1489,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c4: i2c@11017000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <4>;
 		reg = <0 0x11017000 0 0x1000>,
 			<0 0x11000500 0 0x80>;
@@ -1503,7 +1503,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c6: i2c@11005000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <6>;
 		reg = <0 0x11005000 0 0x1000>,
 			<0 0x11000580 0 0x80>;
@@ -1517,7 +1517,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c7: i2c@11008000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <7>;
 		reg = <0 0x11008000 0 0x1000>,
 			<0 0x11000180 0 0x80>;
@@ -1532,7 +1532,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c8: i2c@11009000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <8>;
 		reg = <0 0x11009000 0 0x1000>,
 			<0 0x11000200 0 0x80>;
@@ -1547,7 +1547,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	i2c9: i2c@11016000 {
-		compatible = "mediatek,mt6763-i2c";
+		compatible = "mediatek,i2c";
 		id = <9>;
 		reg = <0 0x11016000 0 0x1000>,
 			<0 0x11000480 0 0x80>;
@@ -2241,6 +2241,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	smi_common@14019000 {
 		compatible = "mediatek,smi_common";
 		reg = <0 0x14019000 0 0x1000>;
+		nr_larbs = <4>;
 		larbs = <&smi_larb0>, <&smi_larb1>, <&smi_larb2>, <&smi_larb3>;
 		clocks = <&scpsys SCP_SYS_DIS>,
 			<&mmsys_config MMSYS_GALS_COMM0>,
@@ -4018,7 +4019,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 &pio {
 	ufshci_pins_state_va09_on: ufshci_va09on {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
+			pinmux = <PINMUX_GPIO131__FUNC_GPIO131>;
 			slew-rate = <1>;  /* direction: output */
 			output-low;      /* output: VA09 ON */
 			bias-disable;     /* pull: disabled */
@@ -4026,7 +4027,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 	ufshci_pins_state_va09_off: ufshci_va09off {
 		pins_cmd_dat {
-			pins = <PINMUX_GPIO131__FUNC_GPIO131>;
+			pinmux = <PINMUX_GPIO131__FUNC_GPIO131>;
 			slew-rate = <1>;  /* direction: output */
 			output-high;       /* output: VA09 OFF */
 			bias-disable;     /* pull: disabled */
