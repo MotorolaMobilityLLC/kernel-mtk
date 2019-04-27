@@ -29,7 +29,7 @@ int get_cur_vcore_dvfs_opp(void)
 #if defined(VCOREFS_LEVEL_POSITIVE)
 	return __builtin_ffs(spm_get_dvfs_level());
 #else
-	return VCORE_DVFS_OPP_NUM - __builtin_ffs(spm_get_dvfs_level());
+	return VCORE_DVFS_OPP_NUM - __builtin_ffs(spm_get_dvfs_final_level());
 #endif
 }
 

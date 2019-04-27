@@ -38,9 +38,21 @@ int spm_dvfs_flag_init(int dvfsrc_en)
 			SPM_FLAG_DIS_VCORE_DFS;
 }
 
+
 u32 spm_get_dvfs_level(void)
 {
 	return spm_read(SPM_SW_RSV_9) & 0xFFFF;
+}
+
+u32 spm_get_dvfs_final_level(void)
+{
+	int rsv9 = spm_read(SPM_SW_RSV_9) & 0xFFFF;
+	int event_sta = spm_read(SPM_DVFS_EVENT_STA) & 0xFFFF;
+
+	if (event_sta != 0)
+		return min(rsv9, event_sta);
+	else
+		return rsv9;
 }
 
 u32 spm_get_pcm_reg9_data(void)
@@ -142,4 +154,3 @@ void spm_freq_hopping_cmd(int gps_on)
 
 	spin_unlock_irqrestore(&__spm_lock, flags);
 }
-

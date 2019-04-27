@@ -145,6 +145,7 @@ extern void get_spm_reg(char *p);
 extern void spm_dvfs_pwrap_cmd(int pwrap_cmd, int pwrap_vcore);
 extern int helio_dvfsrc_platform_init(struct helio_dvfsrc *dvfsrc);
 extern u32 spm_get_dvfs_level(void);
+extern u32 spm_get_dvfs_final_level(void);
 extern u32 spm_get_pcm_reg9_data(void);
 extern void dvfsrc_set_power_model_ddr_request(unsigned int level);
 /* met profile function */

@@ -183,6 +183,7 @@ static int commit_data(int type, int data, int check_spmfw)
 		dvfsrc_set_sw_req(level, EMI_SW_AP_MASK, EMI_SW_AP_SHIFT);
 
 		if (!is_opp_forced() && check_spmfw) {
+			udelay(1);
 			ret = dvfsrc_wait_for_completion(
 					get_cur_ddr_opp() <= opp,
 					DVFSRC_TIMEOUT);
@@ -201,6 +202,7 @@ static int commit_data(int type, int data, int check_spmfw)
 		dvfsrc_set_sw_req(level, VCORE_SW_AP_MASK, VCORE_SW_AP_SHIFT);
 
 		if (!is_opp_forced() && check_spmfw) {
+			udelay(1);
 			ret = dvfsrc_wait_for_completion(
 					get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
@@ -219,6 +221,7 @@ static int commit_data(int type, int data, int check_spmfw)
 				VCORE_SCP_GEAR_MASK, VCORE_SCP_GEAR_SHIFT);
 
 		if (!is_opp_forced() && check_spmfw) {
+			udelay(1);
 			ret = dvfsrc_wait_for_completion(
 					get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
@@ -234,6 +237,13 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		dvfsrc_set_sw_req2(level,
 				EMI_SW_AP2_MASK, EMI_SW_AP2_SHIFT);
+
+		if (!is_opp_forced() && check_spmfw) {
+			udelay(1);
+			ret = dvfsrc_wait_for_completion(
+					get_cur_ddr_opp() <= opp,
+					DVFSRC_TIMEOUT);
+		}
 		break;
 	case PM_QOS_POWER_MODEL_VCORE_REQUEST:
 		if (data >= VCORE_OPP_NUM || data < 0)
@@ -244,6 +254,13 @@ static int commit_data(int type, int data, int check_spmfw)
 
 		dvfsrc_set_sw_req2(level,
 				VCORE_SW_AP2_MASK, VCORE_SW_AP2_SHIFT);
+
+		if (!is_opp_forced() && check_spmfw) {
+			udelay(1);
+			ret = dvfsrc_wait_for_completion(
+					get_cur_vcore_opp() <= opp,
+					DVFSRC_TIMEOUT);
+		}
 		break;
 	case PM_QOS_VCORE_DVFS_FORCE_OPP:
 		spin_lock_irqsave(&force_req_lock, flags);
