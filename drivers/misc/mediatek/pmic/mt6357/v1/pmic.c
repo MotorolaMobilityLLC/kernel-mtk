@@ -45,21 +45,21 @@ void vmd1_pmic_setting_on(void)
 	unsigned int vcore_vosel = 0x2D, vmodem_vosel = 0x30;
 
 	if (pmic_get_register_value(PMIC_DA_VCORE_VOSEL) != vcore_vosel)
-		pr_notice("vmd1_pmic_setting_on vcore vosel = 0x%x, da_vosel = 0x%x"
-		       , pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL)
-		       , pmic_get_register_value(PMIC_DA_VCORE_VOSEL));
+		pr_notice("%s vcore vosel = 0x%x, da_vosel = 0x%x",
+		__func__, pmic_get_register_value(PMIC_RG_BUCK_VCORE_VOSEL),
+		pmic_get_register_value(PMIC_DA_VCORE_VOSEL));
 
 	/* 1.Call PMIC driver API configure VMODEM voltage */
 	pmic_set_register_value(PMIC_RG_BUCK_VMODEM_VOSEL, vmodem_vosel);
 	if (pmic_get_register_value(PMIC_DA_VMODEM_VOSEL) != vmodem_vosel)
-		pr_notice("vmd1_pmic_setting_on vmodem vosel = 0x%x, da_vosel = 0x%x"
-		       , pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL)
-		       , pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
+		pr_notice("%s vmodem vosel = 0x%x, da_vosel = 0x%x",
+		__func__, pmic_get_register_value(PMIC_RG_BUCK_VMODEM_VOSEL),
+		pmic_get_register_value(PMIC_DA_VMODEM_VOSEL));
 }
 
 void vmd1_pmic_setting_off(void)
 {
-	PMICLOG("vmd1_pmic_setting_off\n");
+	PMICLOG("%s\n", __func__);
 }
 
 void wk_pmic_enable_sdn_delay(void)
@@ -106,10 +106,8 @@ void pmic_enable_smart_reset(unsigned char smart_en, unsigned char smart_sdn_en)
 {
 	pmic_set_register_value(PMIC_RG_SMART_RST_MODE, smart_en);
 	pmic_set_register_value(PMIC_RG_SMART_RST_SDN_EN, smart_sdn_en);
-	pr_info("[%s] smart_en:%d, smart_sdn_en:%d\n"
-		, __func__
-		, smart_en
-		, smart_sdn_en);
+	pr_info("[%s] smart_en:%d, smart_sdn_en:%d\n",
+		__func__, smart_en, smart_sdn_en);
 }
 
 int pmic_tracking_init(void)
@@ -146,7 +144,7 @@ unsigned int upmu_get_rgs_chrdet(void)
 	unsigned int val = 0;
 
 	val = pmic_get_register_value(PMIC_RGS_CHRDET);
-	PMICLOG("[upmu_get_rgs_chrdet] CHRDET status = %d\n", val);
+	PMICLOG("[%s] CHRDET status = %d\n", __func__, val);
 
 	return val;
 }

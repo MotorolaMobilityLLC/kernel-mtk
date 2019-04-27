@@ -21,7 +21,7 @@
 #include <linux/mutex.h>
 #include <linux/of_irq.h>
 #include <linux/sched.h>
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
 #endif
 #include <mt-plat/upmu_common.h>
@@ -284,7 +284,7 @@ unsigned int sp_interrupt_size = ARRAY_SIZE(sp_interrupts);
 /* PWRKEY Int Handler */
 void pwrkey_int_handler(void)
 {
-	IRQLOG("[pwrkey_int_handler] Press pwrkey %d\n",
+	IRQLOG("[%s] Press pwrkey %d\n", __func__,
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
@@ -294,7 +294,7 @@ void pwrkey_int_handler(void)
 
 void pwrkey_int_handler_r(void)
 {
-	IRQLOG("[pwrkey_int_handler_r] Release pwrkey %d\n",
+	IRQLOG("[%s] Release pwrkey %d\n", __func__,
 		pmic_get_register_value(PMIC_PWRKEY_DEB));
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_KPD_PWRKEY_USE_PMIC)
@@ -305,7 +305,7 @@ void pwrkey_int_handler_r(void)
 /* Homekey Int Handler */
 void homekey_int_handler(void)
 {
-	IRQLOG("[homekey_int_handler] Press homekey %d\n",
+	IRQLOG("[%s] Press homekey %d\n", __func__,
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	kpd_pmic_rstkey_handler(0x1);
@@ -314,7 +314,7 @@ void homekey_int_handler(void)
 
 void homekey_int_handler_r(void)
 {
-	IRQLOG("[homekey_int_handler_r] Release homekey %d\n",
+	IRQLOG("[%s] Release homekey %d\n", __func__,
 		pmic_get_register_value(PMIC_HOMEKEY_DEB));
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	kpd_pmic_rstkey_handler(0x0);
@@ -325,7 +325,7 @@ void homekey_int_handler_r(void)
 #if (CONFIG_MTK_GAUGE_VERSION != 30)
 void chrdet_int_handler(void)
 {
-	IRQLOG("[chrdet_int_handler]CHRDET status = %d....\n",
+	IRQLOG("[%s]CHRDET status = %d\n", __func__,
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (!upmu_get_rgs_chrdet()) {
@@ -335,7 +335,7 @@ void chrdet_int_handler(void)
 
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			IRQLOG("[chrdet_int_handler] Unplug Charger/USB\n");
+			IRQLOG("[%s] Unplug Charger/USB\n", __func__);
 #ifdef CONFIG_MTK_RTC
 			mt_power_off();
 #endif
@@ -355,7 +355,7 @@ void chrdet_int_handler(void)
 /* General OC Int Handler */
 static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 	char oc_str[30] = "";
 #endif
 
@@ -368,7 +368,7 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 	default:
 		/* issue AEE exception and disable OC interrupt */
 		kernel_dump_exception_reg();
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 		snprintf(oc_str, 30, "PMIC OC:%s", int_name);
 		aee_kernel_warning(oc_str
 				, "\nCRDISPATCH_KEY:PMIC OC\nOC Interrupt: %s"
@@ -385,7 +385,7 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 {
 	int ret = 0;
 	int data_int32 = 0;
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 	char oc_str[30] = "";
 #endif
 
@@ -406,7 +406,7 @@ static void md_oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 		break;
 	}
 #ifdef CONFIG_MTK_CCCI_DEVICES
-#if defined(CONFIG_MTK_SELINUX_AEE_WARNING)
+#if defined(CONFIG_MTK_AEE_FEATURE)
 	snprintf(oc_str, 30, "PMIC OC:%s", int_name);
 	aee_kernel_warning(oc_str, "\nCRDISPATCH_KEY:MD OC\nOC Interrupt: %s"
 			   , int_name);
@@ -447,7 +447,7 @@ void wake_up_pmic(void)
 irqreturn_t mt_pmic_eint_irq(int irq, void *desc)
 {
 	disable_irq_nosync(irq);
-	IRQLOG("[mt_pmic_eint_irq] disable PMIC irq\n");
+	IRQLOG("[%s] disable PMIC irq\n", __func__);
 	wake_up_pmic();
 	return IRQ_HANDLED;
 }
@@ -794,9 +794,9 @@ static void irq_thread_init(void)
 					    , (void *)NULL, "pmic_thread");
 	if (IS_ERR(pmic_thread_handle)) {
 		pmic_thread_handle = NULL;
-		pr_notice(PMICTAG "[pmic_thread_kthread] creation fails\n");
+		pr_notice(PMICTAG "[pmic_thread] creation fails\n");
 	} else {
-		IRQLOG("[pmic_thread_kthread] kthread_create Done\n");
+		IRQLOG("[pmic_thread] kthread_create Done\n");
 	}
 }
 

@@ -19,6 +19,7 @@
 #include <linux/ratelimit.h>
 #include <linux/timekeeping.h>
 #include <linux/math64.h>
+#include <linux/kthread.h>
 
 #include <linux/iio/consumer.h>
 
@@ -180,8 +181,11 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 {
 	int vbif28, bat_temp_new = bat_temp;
 	int arr_bat_temp[5];
-	int bat = 0, bat_cur = 0, is_charging = 0;
+	int bat = 0, bat_cur = 0;
 	unsigned short i;
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	int is_charging = 0;
+#endif
 
 	vbif28 = auxadc_priv_read_channel(AUXADC_VBIF);
 	pr_notice("BAT_TEMP_PREV:%d,BAT_TEMP:%d,VBIF28:%d\n",
@@ -260,7 +264,7 @@ void wake_up_mdrt_thread(void)
 /* dump MDRT related register */
 static void mdrt_reg_dump(void)
 {
-#ifdef CONFIG_MTK_PMIC_WRAP_HAL
+#if defined(CONFIG_MTK_PMIC_WRAP_HAL) && !defined(CONFIG_FPGA_EARLY_PORTING)
 	pwrap_dump_all_register();
 #endif
 	pr_notice("AUXADC_ADC16 = 0x%x\n"
@@ -458,8 +462,10 @@ static void legacy_auxadc_init(struct device *dev)
 
 int pmic_get_auxadc_value(int list)
 {
-	int bat_cur = 0, is_charging = 0;
 	int value = 0, ret = 0;
+#if (CONFIG_MTK_GAUGE_VERSION == 30)
+	int bat_cur = 0, is_charging = 0;
+#endif
 
 	if (list < AUXADC_LIST_START || list > AUXADC_LIST_END) {
 		pr_notice("[%s] Invalid channel list(%d)\n", __func__, list);
@@ -470,14 +476,14 @@ int pmic_get_auxadc_value(int list)
 			__func__, legacy_auxadc[list].channel_name);
 		return PTR_ERR(legacy_auxadc[list].chan);
 	}
-	if (list == AUXADC_LIST_BATTEMP) {
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
+	if (list == AUXADC_LIST_BATTEMP) {
 		is_charging = gauge_get_current(&bat_cur);
-#endif
 		if (is_charging == 0)
 			bat_cur = 0 - bat_cur;
 		pr_notice("[CH3_DBG] bat_cur = %d\n", bat_cur);
 	}
+#endif
 	if (list == AUXADC_LIST_HPOFS_CAL) {
 		ret = iio_read_channel_raw(
 			legacy_auxadc[list].chan, &value);
