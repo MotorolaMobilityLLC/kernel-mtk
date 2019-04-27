@@ -473,9 +473,11 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 		}
 		break;
 	case CMDQ_ENG_MDP_WROT0:
+		#ifdef CONFIG_MTK_SMI_EXT
 		if (enable)
 			smi_bus_prepare_enable(SMI_LARB0_REG_INDX,
 				"MDPSRAM", true);
+		#endif
 		cmdq_mdp_enable_clock_MDP_WROT0(enable);
 		if (true == enable) {
 			/* Set MDP_WROT0 DCM enable */
@@ -485,9 +487,11 @@ void cmdq_mdp_enable_clock(bool enable, enum CMDQ_ENG_ENUM engine)
 			register_value |= (0x1 << 16);
 			CMDQ_REG_SET32(register_address, register_value);
 		}
+		#ifdef CONFIG_MTK_SMI_EXT
 		if (!enable)
 			smi_bus_disable_unprepare(SMI_LARB0_REG_INDX,
 				"MDPSRAM", true);
+		#endif
 		break;
 	case CMDQ_ENG_MDP_TDSHP0:
 		cmdq_mdp_enable_clock_MDP_TDSHP0(enable);

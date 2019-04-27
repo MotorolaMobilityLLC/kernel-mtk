@@ -1122,7 +1122,7 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	clk_writel(cksys_base + CK_CFG_7_SET, 0x00808000);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_topckgen, "mediatek, topckgen", mtk_topckgen_init);
+CLK_OF_DECLARE_DRIVER(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
 
 static void __init mtk_infracfg_ao_init(struct device_node *node)
 {
@@ -1160,7 +1160,7 @@ static void __init mtk_infracfg_ao_init(struct device_node *node)
 #else
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_infracfg_ao, "mediatek, infracfg_ao",
+CLK_OF_DECLARE_DRIVER(mtk_infracfg_ao, "mediatek,infracfg_ao",
 	mtk_infracfg_ao_init);
 
 /* FIXME: modify FMAX */
@@ -1282,7 +1282,7 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
 }
-CLK_OF_DECLARE_DRIVER(mtk_apmixedsys, "mediatek, apmixed", mtk_apmixedsys_init);
+CLK_OF_DECLARE_DRIVER(mtk_apmixedsys, "mediatek,apmixed", mtk_apmixedsys_init);
 
 static void __init mtk_audio_init(struct device_node *node)
 {
@@ -1313,7 +1313,7 @@ static void __init mtk_audio_init(struct device_node *node)
 /*clk_writel(AUDIO_TOP_CON1, AUDIO_DISABLE_CG1);*/
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_audio, "mediatek, audio", mtk_audio_init);
+CLK_OF_DECLARE_DRIVER(mtk_audio, "mediatek,audio", mtk_audio_init);
 
 static void __init mtk_camsys_init(struct device_node *node)
 {
@@ -1343,7 +1343,7 @@ static void __init mtk_camsys_init(struct device_node *node)
 	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_camsys, "mediatek, camsys", mtk_camsys_init);
+CLK_OF_DECLARE_DRIVER(mtk_camsys, "mediatek,camsys", mtk_camsys_init);
 
 static void __init mtk_imgsys_init(struct device_node *node)
 {
@@ -1373,7 +1373,7 @@ static void __init mtk_imgsys_init(struct device_node *node)
 	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_imgsys, "mediatek, imgsys", mtk_imgsys_init);
+CLK_OF_DECLARE_DRIVER(mtk_imgsys, "mediatek,imgsys", mtk_imgsys_init);
 
 static void __init mtk_mfg_cfg_init(struct device_node *node)
 {
@@ -1405,7 +1405,7 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_mfg_cfg, "mediatek, mfgcfg", mtk_mfg_cfg_init);
+CLK_OF_DECLARE_DRIVER(mtk_mfg_cfg, "mediatek,mfgcfg", mtk_mfg_cfg_init);
 
 static void __init mtk_mmsys_config_init(struct device_node *node)
 {
@@ -1436,7 +1436,7 @@ static void __init mtk_mmsys_config_init(struct device_node *node)
 	clk_writel(MM_CG_SET1, MM_CG1);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_mmsys_config, "mediatek, mmsys_config",
+CLK_OF_DECLARE_DRIVER(mtk_mmsys_config, "mediatek,mmsys_config",
 	       mtk_mmsys_config_init);
 
 static void __init mtk_venc_global_con_init(struct device_node *node)
@@ -1468,7 +1468,7 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 	clk_writel(VENC_CG_CLR, VENC_CG);
 #endif
 }
-CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek, venc_gcon",
+CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek,venc_gcon",
 	       mtk_venc_global_con_init);
 
 void check_seninf_ck(void)
