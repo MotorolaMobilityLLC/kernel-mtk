@@ -1827,7 +1827,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			/*CONN_TOP_MISC_ON_BASE */
 		    <0 0x180c1000 0 0x1000>,
 			/*CONN_HIF_PDMA_BASE */
-		    <0 0x18004000 0 0x1000>;
+		    <0 0x18004000 0 0x1000>,
+			/* Add for index sync */
+		    <0 0x00000000 0 0x0000>,
+		    <0 0x00000000 0 0x0000>,
+			/* INFRACFG_REG_BASE */
+		    <0 0x1020E000 0 0x1000>;
 			/*BGF_EINT */
 		interrupts = <GIC_SPI 267 IRQ_TYPE_LEVEL_LOW>,
 			/*WDT_EINT */
