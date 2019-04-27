@@ -2281,7 +2281,10 @@ void cmdqCoreSetEvent(enum cmdq_event event)
 {
 	s32 eventValue = cmdq_core_get_event_value(event);
 
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | eventValue);
+	if (eventValue < 0)
+		return;
+
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, (1L << 16) | (u32)eventValue);
 }
 
 u32 cmdqCoreGetEvent(enum cmdq_event event)
@@ -2289,7 +2292,10 @@ u32 cmdqCoreGetEvent(enum cmdq_event event)
 	u32 regValue = 0;
 	s32 eventValue = cmdq_core_get_event_value(event);
 
-	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF & eventValue));
+	if (eventValue < 0)
+		return -EINVAL;
+
+	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_ID, (0x3FF & (u32)eventValue));
 	regValue = CMDQ_REG_GET32(CMDQ_SYNC_TOKEN_VAL);
 	return regValue;
 }
@@ -2301,7 +2307,7 @@ static void cmdq_core_reset_hw_events_impl(enum cmdq_event event)
 	if (value > 0) {
 		/* Reset GCE event */
 		CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD,
-			CMDQ_SYNC_TOKEN_MAX & value);
+			CMDQ_SYNC_TOKEN_MAX & (u32)value);
 	}
 }
 
@@ -2748,6 +2754,7 @@ u32 *cmdq_core_get_pc_inst(const struct cmdqRecStruct *handle,
 {
 	u32 curr_pc = 0L;
 	void *inst_ptr = NULL;
+	s32 ret = 0;
 
 	if (unlikely(!handle || list_empty(&handle->pkt->buf) ||
 		thread == CMDQ_INVALID_THREAD)) {
@@ -2767,10 +2774,15 @@ u32 *cmdq_core_get_pc_inst(const struct cmdqRecStruct *handle,
 	}
 
 	if (inst_ptr) {
-		cmdq_pkt_get_cmd_by_pc(handle, curr_pc, insts, 2);
+		ret = cmdq_pkt_get_cmd_by_pc(handle, curr_pc, insts, 2);
 
-		insts[0] = CMDQ_REG_GET32(inst_ptr + 0);
-		insts[1] = CMDQ_REG_GET32(inst_ptr + 4);
+		if (!ret) {
+			insts[0] = CMDQ_REG_GET32(inst_ptr + 0);
+			insts[1] = CMDQ_REG_GET32(inst_ptr + 4);
+		} else {
+			insts[0] = 0;
+			insts[1] = 0;
+		}
 	} else {
 		insts[0] = 0;
 		insts[1] = 0;
@@ -2959,7 +2971,7 @@ static void cmdq_core_dump_handle_summary(const struct cmdqRecStruct *handle,
 	s32 irqFlag = 0;
 	u32 insts[2] = { 0 };
 	u32 *pcVA = NULL;
-	dma_addr_t curr_pc;
+	dma_addr_t curr_pc = 0;
 	struct cmdq_client *client;
 
 	if (!handle || !handle->pkt || list_empty(&handle->pkt->buf) ||
@@ -3655,7 +3667,8 @@ void cmdq_core_release_thread(s32 scenario, s32 thread)
 	if (!cmdq_ctx.thread[thread].acquire)
 		CMDQ_ERR("counter fatal error thread:%d scenario:%d\n",
 			thread, scenario);
-	cmdq_ctx.thread[thread].acquire--;
+	else
+		cmdq_ctx.thread[thread].acquire--;
 	if (scenario != cmdq_ctx.thread[thread].scenario) {
 		CMDQ_ERR(
 			"use diff scenario to release thread:%d to %d acquire:%d thread:%d\n",
@@ -3927,6 +3940,11 @@ static void cmdq_core_replace_overwrite_instr(struct cmdqRecStruct *handle,
 	u32 *p_cmd_assign = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
 		(index - 1) * CMDQ_INST_SIZE);
 
+	if (!p_cmd_assign) {
+		CMDQ_ERR("cannot find overwrite instr in %s\n", __func__);
+		return;
+	}
+
 	if ((p_cmd_assign[1] >> 24) == CMDQ_CODE_LOGIC &&
 		((p_cmd_assign[1] >> 23) & 1) == 1 &&
 		cmdq_core_get_subsys_id(p_cmd_assign[1]) ==
@@ -3987,6 +4005,11 @@ static void cmdq_core_v3_replace_jumpc(struct cmdqRecStruct *handle,
 	u32 *p_cmd_logic = (u32 *)cmdq_pkt_get_va_by_offset(handle->pkt,
 		(inst_idx - 1) * CMDQ_INST_SIZE);
 	bool revise_offset = false;
+
+	if (!p_cmd_logic) {
+		CMDQ_ERR("cannot find jump cmd in %s\n", __func__);
+		return;
+	}
 
 	/* logic and jump relative maybe separate by jump cross buffer */
 	if (p_cmd_logic[1] == ((CMDQ_CODE_JUMP << 24) | 1)) {
@@ -4487,9 +4510,16 @@ s32 cmdq_pkt_copy_cmd(struct cmdqRecStruct *handle, void *src, const u32 size,
 	s32 status = 0;
 	u32 remaind_cmd_size = size;
 	u32 copy_size = 0;
-	struct cmdq_pkt *pkt = handle->pkt;
+	struct cmdq_pkt *pkt = NULL;
 	void *va;
 	struct cmdq_pkt_buffer *buf;
+
+
+	if (!handle) {
+		CMDQ_ERR("%s invalid param: handle is NULL\n", __func__);
+		return -EINVAL;
+	}
+	pkt = handle->pkt;
 
 	while (remaind_cmd_size > 0) {
 		/* extend buffer to copy more instruction */

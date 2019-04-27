@@ -389,8 +389,11 @@ static void cmdq_task_exec(struct cmdq_pkt *pkt, struct cmdq_thread *thread)
 	dma_handle = buf->pa_base;
 
 	task = kzalloc(sizeof(*task), GFP_ATOMIC);
-	if (!task)
+	if (!task) {
+		cmdq_task_callback(pkt, -ENOMEM);
+		cmdq_err("callback with error since allocate fail");
 		return;
+	}
 	task->cmdq = cmdq;
 	INIT_LIST_HEAD(&task->list_entry);
 	task->pa_base = dma_handle;

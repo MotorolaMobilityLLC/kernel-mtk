@@ -750,7 +750,8 @@ void cmdq_mdp_unlock_thread(struct cmdqRecStruct *handle)
 			mdp_ctx.thread[thread].allow_dispatch ?
 			"true" : "false",
 			mdp_ctx.thread[thread].acquired ? "true" : "false");
-	mdp_ctx.thread[thread].task_count--;
+	else
+		mdp_ctx.thread[thread].task_count--;
 
 	/* if no task on thread, release to cmdq core */
 	/* no need to release thread since secure path use static thread */
@@ -1059,7 +1060,7 @@ static s32 cmdq_mdp_copy_cmd_to_task(struct cmdqRecStruct *handle,
 static void cmdq_mdp_store_debug(struct cmdqCommandStruct *desc,
 	struct cmdqRecStruct *handle)
 {
-	u32 len;
+	s32 len;
 
 	if (!desc->userDebugStr || !desc->userDebugStrLen)
 		return;
@@ -1088,7 +1089,7 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 {
 	u32 i;
 
-	if (!desc->secData.is_secure)
+	if (!desc->secData.is_secure || !handle)
 		return 0;
 
 	cmdq_task_set_secure(handle, desc->secData.is_secure);
@@ -1105,7 +1106,7 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 		desc->secData.ispMeta.ispBufs[i].va = 0;
 
 	if (handle->secData.addrMetadataCount > 0) {
-		u32 metadata_length;
+		u32 metadata_length = 0;
 		void *p_metadatas;
 
 		metadata_length = (handle->secData.addrMetadataCount) *
@@ -1134,14 +1135,16 @@ static s32 cmdq_mdp_setup_sec(struct cmdqCommandStruct *desc,
 s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	struct cmdqRecStruct **handle_out)
 {
-	struct cmdqRecStruct *handle;
+	struct cmdqRecStruct *handle = NULL;
 	struct task_private *private;
 	s32 err;
 	u32 copy_size;
 
 	CMDQ_TRACE_FORCE_BEGIN("%s\n", __func__);
 
-	cmdq_task_create(desc->scenario, &handle);
+	err = cmdq_task_create(desc->scenario, &handle);
+	if (err < 0)
+		return err;
 
 	/* set secure data */
 	handle->secStatus = NULL;
@@ -1158,9 +1161,15 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	if (desc->prop_size && desc->prop_addr &&
 		desc->prop_size < CMDQ_MAX_USER_PROP_SIZE) {
 		handle->prop_addr = kzalloc(desc->prop_size, GFP_KERNEL);
-		memcpy(handle->prop_addr, (void *)CMDQ_U32_PTR(desc->prop_addr),
-			desc->prop_size);
-		handle->prop_size = desc->prop_size;
+		if (handle->prop_addr) {
+			memcpy(handle->prop_addr,
+				(void *)CMDQ_U32_PTR(desc->prop_addr),
+				desc->prop_size);
+			handle->prop_size = desc->prop_size;
+		} else {
+			handle->prop_addr = NULL;
+			handle->prop_size = 0;
+		}
 	} else {
 		handle->prop_addr = NULL;
 		handle->prop_size = 0;
@@ -1363,8 +1372,9 @@ s32 cmdq_mdp_flush(struct cmdqCommandStruct *desc, bool user_space)
 	s32 status;
 
 	status = cmdq_mdp_flush_async(desc, user_space, &handle);
-	if (!handle) {
-		CMDQ_ERR("mdp flush async failed:%d\n", status);
+	if (status < 0) {
+		CMDQ_ERR("mdp flush async failed:%d handle:%p\n",
+			status, handle);
 		return status;
 	}
 
@@ -2072,6 +2082,10 @@ static void cmdq_mdp_begin_task_virtual(struct cmdqRecStruct *handle,
 
 	pmqos_curr_record =
 		kzalloc(sizeof(struct mdp_pmqos_record), GFP_KERNEL);
+	if (!pmqos_curr_record) {
+		CMDQ_ERR("allocate pmqos_curr_record failed\n");
+		return;
+	}
 	handle->user_private = pmqos_curr_record;
 
 	do_gettimeofday(&curr_time);
