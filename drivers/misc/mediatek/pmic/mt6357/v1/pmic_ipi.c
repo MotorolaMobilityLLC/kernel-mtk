@@ -263,7 +263,7 @@ unsigned int stf_val;
  */
 int stf_pmic_test(void *data)
 {
-	pr_debug("stf_pmic_test\n");
+	pr_debug("%s\n", __func__);
 	stf_val = 0;
 	stf_val = sspm_ipi_send_sync_ex(IPI_ID_PMIC, IPI_OPT_DEFAUT, &stf_send,
 					PMIC_IPI_SEND_SLOT_SIZE, &stf_recv,
@@ -277,7 +277,7 @@ int stf_pmic_chk(void *data)
 	/* Real PMIC service execution result, by each PMIC service */
 	if (stf_val) {
 		ret_val = ((struct pmic_ipi_ret_datas *)(&stf_recv))->data[0];
-		pr_debug("stf_pmic_chk = %d\n", ret_val);
+		pr_debug("%s = %d\n", __func__, ret_val);
 	}
 
 	return ret_val;

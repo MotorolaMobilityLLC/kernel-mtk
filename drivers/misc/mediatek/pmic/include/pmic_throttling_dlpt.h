@@ -18,17 +18,11 @@
 #include <linux/platform_device.h>
 
 /* just use in suspend flow for important log due to console suspend */
-#if defined(CONFIG_MTK_AEE_FEATURE)
+#ifdef CONFIG_MTK_AEE_FEATURE
 #if defined PMIC_DEBUG_PR_DBG
-#define pmic_spm_crit2(fmt, args...)		\
-do {					\
-	pr_notice("[SPM-PMIC] " fmt, ##args);		\
-} while (0)
+#define pmic_spm_crit2(fmt, args...)	pr_notice("[SPM-PMIC] " fmt, ##args)
 #else
-#define pmic_spm_crit2(fmt, args...)		\
-do {					\
-	pr_info("[SPM-PMIC] " fmt, ##args);		\
-} while (0)
+#define pmic_spm_crit2(fmt, args...)	pr_info("[SPM-PMIC] " fmt, ##args)
 #endif
 #else
 #define pmic_spm_crit2(fmt, args...)

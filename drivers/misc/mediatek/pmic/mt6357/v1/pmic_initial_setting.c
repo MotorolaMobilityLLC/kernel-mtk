@@ -27,7 +27,6 @@
 
 #define LP_INIT_SETTING_VERIFIED	1
 
-/* used for Zion E1/E2 PMIC clear interrupt */
 unsigned int g_pmic_chip_version = 1;
 
 int PMIC_MD_INIT_SETTING_V1(void)
@@ -80,15 +79,15 @@ int PMIC_check_battery(void)
 int PMIC_POWER_HOLD(unsigned int hold)
 {
 	if (hold > 1) {
-		pr_notice("[PMIC_KERNEL] PMIC_POWER_HOLD hold = %d only 0 or 1\n"
-		       , hold);
+		pr_notice("[PMIC_KERNEL] %s hold = %d only 0 or 1\n",
+			__func__, hold);
 		return -1;
 	}
 
 	if (hold)
-		PMICLOG("[PMIC_KERNEL] PMIC_POWER_HOLD ON\n");
+		PMICLOG("[PMIC_KERNEL] %s ON\n", __func__);
 	else
-		PMICLOG("[PMIC_KERNEL] PMIC_POWER_HOLD OFF\n");
+		PMICLOG("[PMIC_KERNEL] %s OFF\n", __func__);
 
 	/* MT6357 must keep power hold */
 	pmic_config_interface_nolock(PMIC_RG_PWRHOLD_ADDR, hold
@@ -261,7 +260,7 @@ void PMIC_LP_INIT_SETTING(void)
 #if LP_INIT_SETTING_VERIFIED
 	/*Suspend*/
 	pmic_buck_vproc_lp(SW, 1, SW_OFF);
-	pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);
+	/*pmic_buck_vcore_lp(SRCLKEN0, 1, HW_LP);*/
 	pmic_buck_vmodem_lp(SRCLKEN0, 1, HW_LP);
 	pmic_buck_vs1_lp(SRCLKEN0, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, SW_OFF);
@@ -294,7 +293,7 @@ void PMIC_LP_INIT_SETTING(void)
 	pmic_ldo_tref_lp(SRCLKEN0, 1, HW_OFF);
 	/*Deepidle*/
 	pmic_buck_vproc_lp(SW, 1, SW_OFF);
-	pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);
+	/*pmic_buck_vcore_lp(SRCLKEN2, 1, HW_LP);*/
 	pmic_buck_vmodem_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vs1_lp(SRCLKEN2, 1, HW_LP);
 	pmic_buck_vpa_lp(SW, 1, SW_OFF);
