@@ -27,7 +27,7 @@
 #include "smi_public.h"
 #endif
 
-static m4u_domain_t gM4uDomain;
+static struct m4u_domain gM4uDomain;
 
 static unsigned long gM4UBaseAddr[TOTAL_M4U_NUM];
 static unsigned long gLarbBaseAddr[SMI_LARB_NR];
@@ -109,7 +109,8 @@ static void m4u_invalid_tlb_all(int m4u_id)
 	m4u_invalid_tlb(m4u_id, gM4U_L2_enable, 1, 0, 0);
 }
 
-void m4u_invalid_tlb_by_range(m4u_domain_t *m4u_domain, unsigned int mva_start,
+void m4u_invalid_tlb_by_range(struct m4u_domain *m4u_domain,
+		unsigned int mva_start,
 			      unsigned int mva_end)
 {
 	int i;
@@ -850,7 +851,7 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 	unsigned int larb, larb_port;
 	M4U_PROG_DIST_T *pProgPfh;
 
-	larb = m4u_port_2_larbid(port);
+	larb = m4u_port_2_larb_id(port);
 	larb_port = m4u_port_2_larb_port(port);
 	larb_base = gLarbBaseAddr[larb];
 
@@ -979,7 +980,8 @@ int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int M
 				continue;
 			else {
 				M4ULOG_HIGH("insert range overlap!: larb=%d,module=%s\n",
-					    m4u_port_2_larbid(port), m4u_get_port_name(port));
+					m4u_port_2_larb_id(port),
+					m4u_get_port_name(port));
 				M4ULOG_HIGH
 				("warning: tlb range overlapped with previous ranges, current process=%s,!\n",
 				 current->comm);
@@ -1076,7 +1078,7 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	if (m4u_index == 0) {
 		int mmu_en = 0;
 
-		larb = m4u_port_2_larbid(port);
+		larb = m4u_port_2_larb_id(port);
 		larb_port = m4u_port_2_larb_port(port);
 		larb_base = gLarbBaseAddr[larb];
 		m4uHw_set_field_by_mask(larb_base, SMI_LARB_NON_SEC_CONx(larb_port), F_SMI_MMU_EN, !!(virt));
@@ -1129,7 +1131,7 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 {
 	M4U_PORT_ID PortID = (pM4uPort->ePortID);
 	int m4u_index = m4u_port_2_m4u_id(PortID);
-	int larb = m4u_port_2_larbid(PortID);
+	int larb = m4u_port_2_larb_id(PortID);
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
@@ -1201,7 +1203,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 		if (port_array->ports[port] && M4U_PORT_ATTR_EN != 0) {
 			unsigned int value;
 
-			larb = m4u_port_2_larbid(port);
+			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 			config_larb[larb] |= (1 << larb_port);
 			regNew[larb][larb_port] = value =
@@ -1246,7 +1248,7 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 		if (m4u_index == 0) {
 			unsigned int orig_value;
 
-			larb = m4u_port_2_larbid(port);
+			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 
 			orig_value =
@@ -1564,7 +1566,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 	for (port = 0; port < gM4u_port_num; port++) {
 		m4u_index = m4u_port_2_m4u_id(port);
 		if (m4u_index == 0) {
-			larb = m4u_port_2_larbid(port);
+			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 			larb_base = gLarbBaseAddr[larb];
 
@@ -1599,7 +1601,7 @@ void m4u_print_port_status_ext(struct seq_file *seq, int tf_port)
 	M4U_PRINT_SEQ(seq, "port_status_ext larb %d========>\n", tf_port);
 
 	m4u_index = m4u_port_2_m4u_id(tf_port);
-	larb = m4u_port_2_larbid(tf_port);
+	larb = m4u_port_2_larb_id(tf_port);
 
 	if (larb >= SMI_LARB_NR) {
 		M4U_PRINT_SEQ(seq, "port_status_ext errror larb %d\n", larb);
@@ -1730,7 +1732,7 @@ static void m4u_isr_record(void)
 #define m4u_translation_log_format \
 	"\nCRDISPATCH_KEY:M4U_%s\ntranslation fault:port=%s,mva=0x%x,pa=0x%x\n"
 
-m4u_domain_t *m4u_get_domain_by_port(M4U_PORT_ID port);
+struct m4u_domain *m4u_get_domain_by_port(M4U_PORT_ID port);
 
 void dump_pgd_info(unsigned int mva)
 {
@@ -1934,12 +1936,12 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-m4u_domain_t *m4u_get_domain_by_port(M4U_PORT_ID port)
+struct m4u_domain *m4u_get_domain_by_port(M4U_PORT_ID port)
 {
 	return &gM4uDomain;
 }
 
-m4u_domain_t *m4u_get_domain_by_id(int id)
+struct m4u_domain *m4u_get_domain_by_id(int id)
 {
 	return &gM4uDomain;
 }
@@ -1949,7 +1951,8 @@ int m4u_get_domain_nr(void)
 	return 1;
 }
 
-int m4u_reg_init(m4u_domain_t *m4u_domain, unsigned long ProtectPA, int m4u_id)
+int m4u_reg_init(struct m4u_domain *m4u_domain, unsigned long ProtectPA,
+		int m4u_id)
 {
 	unsigned int regval;
 	int i;

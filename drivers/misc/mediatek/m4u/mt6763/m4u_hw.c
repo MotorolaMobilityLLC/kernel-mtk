@@ -372,7 +372,7 @@ int mau_dump_status(int m4u_id, int m4u_slave_id)
 	return 0;
 }
 
-int m4u_dump_reg(int m4u_index, unsigned int start)
+int m4u_dump_reg(int m4u_index, unsigned int start, unsigned int end)
 {
 	int i;
 
@@ -2410,7 +2410,7 @@ int m4u_dump_reg_for_smi_hang_issue(void)
 		return 0;
 	}
 	M4UMSG("0x44 = 0x%x\n", M4U_ReadReg32(gM4UBaseAddr[0], 0x44));
-	m4u_dump_reg(0, 0);
+	m4u_dump_reg(0, 0, 0);
 	m4u_print_perf_counter(0, 0, "m4u");
 	m4u_dump_rs_info(0, 0);
 

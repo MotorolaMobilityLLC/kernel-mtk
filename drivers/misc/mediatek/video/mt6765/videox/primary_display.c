@@ -8432,7 +8432,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	int buffer_size = h_yres * w_xres * pixel_byte;
 	enum DISP_MODULE_ENUM after_eng = DISP_MODULE_OVL0;
 	int tmp;
-	m4u_client_t *m4uClient = NULL;
+	struct m4u_client_t *m4uClient = NULL;
 	unsigned int mva = 0;
 #endif
 	DISPMSG("primary capture: begin\n");
