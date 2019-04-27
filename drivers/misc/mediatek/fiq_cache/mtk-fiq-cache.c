@@ -18,15 +18,29 @@
 
 unsigned long *aee_rr_rec_fiq_cache_step_pa(void);
 
+#ifdef CONFIG_MACH_MT6763
+DEFINE_SPINLOCK(cache_lock);
+#else
 static DEFINE_MUTEX(cache_mutex);
+#endif
 
 void mt_fiq_cache_flush_all(void)
 {
+#ifdef CONFIG_MACH_MT6763
+	unsigned long flags;
+
+	trace_printk("[FIQ_CACHE] starts\n");
+	spin_lock_irqsave(&cache_lock, flags);
+	mt_secure_call(MTK_SIP_KERNEL_CACHE_FLUSH_FIQ, 0, 0, 0, 0);
+	spin_unlock_irqrestore(&cache_lock, flags);
+	trace_printk("[FIQ_CACHE] done\n");
+#else
 	mutex_lock(&cache_mutex);
 	trace_printk("[FIQ_CACHE] starts\n");
 	mt_secure_call(MTK_SIP_KERNEL_CACHE_FLUSH_FIQ, 0, 0, 0, 0);
 	trace_printk("[FIQ_CACHE] done\n");
 	mutex_unlock(&cache_mutex);
+#endif
 }
 
 static int __init fiq_cache_init(void)
