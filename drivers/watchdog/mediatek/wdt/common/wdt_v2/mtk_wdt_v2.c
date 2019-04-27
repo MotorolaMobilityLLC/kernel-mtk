@@ -309,9 +309,16 @@ void mtk_wdt_restart(enum wd_restart_type type)
 
 void mtk_wd_suspend(void)
 {
+	unsigned int wdt_sta_val = __raw_readl(MTK_WDT_STATUS);
+
 	/* mtk_wdt_ModeSelection(KAL_FALSE, KAL_FALSE, KAL_FALSE); */
 	/* en debug, dis irq, dis ext, low pol, dis wdt */
-	mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, FALSE);
+	if (!(wdt_sta_val & (MTK_WDT_STATUS_SYSRST_RST |
+					MTK_WDT_STATUS_EINT_RST)))
+		mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, FALSE);
+	else
+		pr_info("%s without change mode %x",
+			__func__, wdt_sta_val);
 
 	mtk_wdt_restart(WD_TYPE_NORMAL);
 
@@ -323,7 +330,16 @@ void mtk_wd_resume(void)
 {
 
 	if (wdt_enable == 1) {
+		unsigned int wdt_sta_val;
+
 		mtk_wdt_set_time_out_value(wdt_last_timeout_val);
+		wdt_sta_val = __raw_readl(MTK_WDT_STATUS);
+		if (!(wdt_sta_val & (MTK_WDT_STATUS_SYSRST_RST |
+						MTK_WDT_STATUS_EINT_RST)))
+			mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
+		else
+			pr_info("%s without change mode setting %x",
+				__func__, wdt_sta_val);
 		mtk_wdt_mode_config(TRUE, TRUE, TRUE, FALSE, TRUE);
 		mtk_wdt_restart(WD_TYPE_NORMAL);
 	}
@@ -435,7 +451,7 @@ void wdt_arch_reset(char mode)
 
 	/* make sure WDT mode is hw reboot mode, can not config isr mode */
 	wdt_mode_val &= (~(MTK_WDT_MODE_IRQ | MTK_WDT_MODE_IRQ_LEVEL_EN |
-			MTK_WDT_MODE_ENABLE | MTK_WDT_MODE_DUAL_MODE));
+			MTK_WDT_MODE_DUAL_MODE));
 
 	if (mode & WD_SW_RESET_BYPASS_PWR_KEY) {
 		/* Bypass power key reboot, We using auto_restart bit
