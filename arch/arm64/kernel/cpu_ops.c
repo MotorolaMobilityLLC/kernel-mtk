@@ -34,7 +34,8 @@ const struct cpu_operations *cpu_ops[NR_CPUS] __ro_after_init;
 
 static const struct cpu_operations *dt_supported_cpu_ops[] __initconst = {
 	&smp_spin_table_ops,
-#ifdef CONFIG_MTK_PSCI
+#if defined(CONFIG_ARM_PSCI) &&\
+	(defined(CONFIG_MACH_MT8173) || defined(CONFIG_MACH_MT8163))
 	&mt_cpu_psci_ops,
 #endif
 	&cpu_psci_ops,
