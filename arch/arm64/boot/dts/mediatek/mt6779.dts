@@ -1272,10 +1272,8 @@
 		msdc0 = <&msdc0>;
 		uart = <&apuart0>;
 		mediatek,mailbox-gce = <&gce_mbox>;
-#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
-	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+		thread_count = <24>;
 		secure_thread = <8 11>;
-#endif
 		mboxes = <&gce_mbox 0 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 1 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 2 0 CMDQ_THR_PRIO_5>,
@@ -1299,7 +1297,18 @@
 			<&gce_mbox 12 0 CMDQ_THR_PRIO_1>,
 			<&gce_mbox 13 0 CMDQ_THR_PRIO_1>,
 			<&gce_mbox 14 0 CMDQ_THR_PRIO_1>,
-			<&gce_mbox 15 0 CMDQ_THR_PRIO_1>;
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+			<&gce_mbox 15 CMDQ_NO_TIMEOUT CMDQ_THR_PRIO_1>,
+#else
+			<&gce_mbox 15 0 CMDQ_THR_PRIO_1>,
+#endif
+			<&gce_mbox 18 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 19 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 20 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 21 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 22 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 23 0 CMDQ_THR_PRIO_1>;
 		gce-subsys = <&gce_mbox 0x14000000 SUBSYS_1400XXXX>,
 			<&gce_mbox 14010000 SUBSYS_1401XXXX>,
 			<&gce_mbox 14020000 SUBSYS_1402XXXX>;
