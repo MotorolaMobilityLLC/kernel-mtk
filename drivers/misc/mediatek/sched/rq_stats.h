@@ -30,7 +30,7 @@ struct rq_data {
 	int init;
 };
 
-extern spinlock_t rq_lock;
+extern spinlock_t rq_spinLock;
 extern struct rq_data rq_info;
 extern struct workqueue_struct *rq_wq;
 

@@ -359,6 +359,8 @@ static ssize_t f_hidg_write(struct file *file, const char __user *buffer,
 	hidg->req->complete = f_hidg_req_complete;
 	hidg->req->context  = hidg;
 
+	spin_unlock_irqrestore(&hidg->write_spinlock, flags);
+
 	status = usb_ep_queue(hidg->in_ep, hidg->req, GFP_ATOMIC);
 	if (status < 0) {
 		ERROR(hidg->func.config->cdev,
