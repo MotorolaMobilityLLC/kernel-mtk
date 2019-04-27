@@ -227,7 +227,7 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC, 0, 0));
 	p += sprintf(p, "wake_src_cust = 0x%zx\n",
-			(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
+			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,
 				id, PWR_WAKE_SRC_CUST, 0, 0));
 	p += sprintf(p, "wakelock_timer_val = 0x%zx\n",
 			mt_secure_call(MTK_SIP_KERNEL_SPM_GET_PWR_CTRL_ARGS,

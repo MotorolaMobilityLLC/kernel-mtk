@@ -3599,112 +3599,12 @@ static int eem_cur_volt_proc_show(struct seq_file *m, void *v)
 			det->volt_tbl[i],
 			det->volt_tbl_pmic[i],
 			det->ops->pmic_2_volt(det, det->volt_tbl_pmic[i]));
-		#if 0 /* no record table */
-		for (i = 0; i < NR_FREQ; i++) {
-			seq_printf(m, "(iDVFS, 0x%x)(Vs, 0x%x)
-			(Vp, 0x%x, %d)(F_Setting)(%x,%x,%x,%x,%x)\n",
-			(det->recordRef[i*2] >> 14) & 0x3FFFF,
-			(det->recordRef[i*2] >> 7) & 0x7F,
-			det->recordRef[i*2] & 0x7F,
-			det->ops->pmic_2_volt(det,
-			(det->recordRef[i*2] & 0x7F)),
-			(det->recordRef[i*2+1] >> 21) & 0x1F,
-			(det->recordRef[i*2+1] >> 12) & 0x1FF,
-			(det->recordRef[i*2+1] >> 7) & 0x1F,
-			(det->recordRef[i*2+1] >> 4) & 0x7,
-			det->recordRef[i*2+1] & 0xF
-			);
-		}
-		#endif
 	}
 	FUNC_EXIT(FUNC_LV_HELP);
 
 	return 0;
 }
-#if 0 /* no record table */
-/*
- * set secure DVFS by procfs
- */
-static ssize_t eem_cur_volt_proc_write(struct file *file,
-	const char __user *buffer, size_t count, loff_t *pos)
-{
-	int ret;
-	char *buf = (char *) __get_free_page(GFP_USER);
-	unsigned int voltValue = 0, voltProc = 0,
-		voltSram = 0, voltPmic = 0, index = 0;
-	struct eem_det *det = (struct eem_det *)PDE_DATA(file_inode(file));
 
-	FUNC_ENTER(FUNC_LV_HELP);
-
-	if (!buf) {
-		FUNC_EXIT(FUNC_LV_HELP);
-		return -ENOMEM;
-	}
-
-	ret = -EINVAL;
-
-	if (count >= PAGE_SIZE)
-		goto out;
-
-	ret = -EFAULT;
-
-	if (copy_from_user(buf, buffer, count))
-		goto out;
-
-	buf[count] = '\0';
-
-	/* if (!kstrtoint(buf, 10, &voltValue)) { */
-	if (sscanf(buf, "%u %u", &voltValue, &index) == 2) {
-		if ((det->ctrl_id != EEM_CTRL_GPU) &&
-				(det->ctrl_id != EEM_CTRL_SOC)) {
-			ret = 0;
-			det->recordRef[NR_FREQ * 2] = 0x00000000;
-			mb(); /* SRAM writing */
-			voltPmic = det->ops->volt_2_pmic(det, voltValue);
-			if (det->ctrl_id == EEM_CTRL_BIG)
-				voltProc = clamp(
-				(unsigned int)voltPmic,
-				(unsigned int)det->VMIN,
-				(unsigned int)det->VMAX);
-			else
-				voltProc = clamp(
-				(unsigned int)voltPmic,
-				(unsigned int)(det->ops->eem_2_pmic(det,
-					det->VMIN)),
-				(unsigned int)(det->ops->eem_2_pmic(det,
-					det->VMAX)));
-
-			voltPmic = det->ops->volt_2_pmic(det,
-				voltValue + 10000);
-			voltSram = clamp(
-				(unsigned int)(voltPmic),
-				(unsigned int)(det->ops->volt_2_pmic(det,
-					VMIN_SRAM)),
-				(unsigned int)(det->ops->volt_2_pmic(det,
-					VMAX_SRAM)));
-
-			/* for (i = 0; i < NR_FREQ; i++) */
-			det->recordRef[index * 2] =
-				(det->recordRef[index * 2]  & (~0x3FFF)) |
-				(((PMIC_2_RMIC(det, voltSram) & 0x7F) << 7) |
-				(voltProc & 0x7F));
-
-			det->recordRef[NR_FREQ * 2] = 0xFFFFFFFF;
-			mb(); /* SRAM writing */
-		}
-	} else {
-		ret = -EINVAL;
-		eem_debug("bad argument_1!! voltage =
-			(80000 ~ 115500), index = (0 ~ 15)\n");
-	}
-
-out:
-	free_page((unsigned long)buf);
-	FUNC_EXIT(FUNC_LV_HELP);
-
-	return (ret < 0) ? ret : count;
-}
-#endif /* no record table */
 /*
  * show current EEM status
  */

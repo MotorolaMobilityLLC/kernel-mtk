@@ -1977,19 +1977,11 @@ bool dcm_mcu_misccfg_bus_arm_pll_divider_dcm_is_on(void)
 void dcm_mcu_misccfg_bus_arm_pll_divider_dcm(int on)
 {
 	if (on) {
-#if 0
-		TINFO = "Turn ON DCM
-			'mcu_misccfg_bus_arm_pll_divider_dcm'"
-#endif
 		reg_write(BUS_PLL_DIVIDER_CFG,
 			(reg_read(BUS_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
 			MCU_MISCCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_ON);
 	} else {
-#if 0
-		TINFO = "Turn OFF DCM
-			'mcu_misccfg_bus_arm_pll_divider_dcm'"
-#endif
 		reg_write(BUS_PLL_DIVIDER_CFG,
 			(reg_read(BUS_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_BUS_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
@@ -2271,19 +2263,11 @@ bool dcm_mcu_misccfg_mp0_arm_pll_divider_dcm_is_on(void)
 void dcm_mcu_misccfg_mp0_arm_pll_divider_dcm(int on)
 {
 	if (on) {
-#if 0
-		TINFO = "Turn ON DCM
-			'mcu_misccfg_mp0_arm_pll_divider_dcm'"
-#endif
 		reg_write(MP0_PLL_DIVIDER_CFG,
 			(reg_read(MP0_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
 			MCU_MISCCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_ON);
 	} else {
-#if 0
-		TINFO = "Turn OFF DCM
-			'mcu_misccfg_mp0_arm_pll_divider_dcm'"
-#endif
 		reg_write(MP0_PLL_DIVIDER_CFG,
 			(reg_read(MP0_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_MP0_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
@@ -2457,19 +2441,11 @@ bool dcm_mcu_misccfg_mp1_arm_pll_divider_dcm_is_on(void)
 void dcm_mcu_misccfg_mp1_arm_pll_divider_dcm(int on)
 {
 	if (on) {
-#if 0
-		TINFO = "Turn ON DCM
-			'mcu_misccfg_mp1_arm_pll_divider_dcm'"
-#endif
 		reg_write(MP1_PLL_DIVIDER_CFG,
 			(reg_read(MP1_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
 			MCU_MISCCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_ON);
 	} else {
-#if 0
-		TINFO = "Turn OFF DCM
-			'mcu_misccfg_mp1_arm_pll_divider_dcm'"
-#endif
 		reg_write(MP1_PLL_DIVIDER_CFG,
 			(reg_read(MP1_PLL_DIVIDER_CFG) &
 			~MCU_MISCCFG_MP1_ARM_PLL_DIVIDER_DCM_REG0_MASK) |
