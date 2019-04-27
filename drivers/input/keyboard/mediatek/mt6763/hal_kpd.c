@@ -43,8 +43,9 @@ static void sb_kpd_release_keys(struct input_dev *dev)
 
 	for (code = 0; code <= KEY_MAX; code++) {
 		if (test_bit(code, dev->keybit)) {
-			kpd_print("report release event for sb plug in!
-				keycode:%d\n", code);
+			kpd_print(
+				"report release event for sb plug in!keycode:%d\n",
+				code);
 			input_report_key(dev, code, 0);
 			input_sync(dev);
 		}
