@@ -733,8 +733,8 @@ static void set_shutter(kal_uint32 shutter)
 		shutter = shutter >> l_shift;
 		imgsensor.frame_length =
 		    shutter +
-		    imgsensor_info
-			.margin; /* imgsensor_info.max_frame_length; */
+		    imgsensor_info.margin;
+		/* imgsensor_info.max_frame_length; */
 		/* LOG_INF("0x3028 0x%x l_shift %d l_shift&0x3 %d\n",
 		 * read_cmos_sensor(0x3028),l_shift,l_shift&0x7);
 		 */
