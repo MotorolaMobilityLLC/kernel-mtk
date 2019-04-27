@@ -993,6 +993,9 @@ void cmdqMdpInitialSetting(void)
 #ifdef COFNIG_MTK_IOMMU
 	char *data = kzalloc(MDP_DISPATCH_KEY_STR_LEN, GFP_KERNEL);
 
+	if (!data)
+		return;
+
 	/* Register ION Translation Fault function */
 	mtk_iommu_register_fault_callback(M4U_PORT_MDP_RDMA0,
 		cmdq_TranslationFault_callback, (void *)data);
@@ -1002,6 +1005,9 @@ void cmdqMdpInitialSetting(void)
 		cmdq_TranslationFault_callback, (void *)data);
 #elif defined(CONFIG_MTK_M4U)
 	char *data = kzalloc(MDP_DISPATCH_KEY_STR_LEN, GFP_KERNEL);
+
+	if (!data)
+		return;
 
 	/* Register M4U Translation Fault function */
 	m4u_register_fault_callback(M4U_PORT_MDP_RDMA0,
@@ -1088,6 +1094,7 @@ u64 cmdq_mdp_get_engine_group_bits(u32 engine_group)
 
 void testcase_clkmgr_mdp(void)
 {
+#if 0
 #if defined(CMDQ_PWR_AWARE)
 	/* RDMA clk test with src buffer addr */
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_RDMA0, "CMDQ_TEST_MDP_RDMA0",
@@ -1132,7 +1139,7 @@ void testcase_clkmgr_mdp(void)
 	testcase_clkmgr_impl(CMDQ_ENG_MDP_CCORR0, "CMDQ_TEST_MDP_CCORR",
 		MDP_CCORR_BASE + 0x30, 0x1FFF1FFF, MDP_CCORR_BASE + 0x30,
 		true);
-
+#endif
 #endif
 }
 

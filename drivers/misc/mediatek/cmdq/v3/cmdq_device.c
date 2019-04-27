@@ -480,6 +480,10 @@ void cmdq_dev_init_device_tree(struct device_node *node)
 	dts_setting->prefetch_size = kzalloc(
 		sizeof(*dts_setting->prefetch_size) * gThreadCount,
 		GFP_KERNEL);
+	if (!dts_setting->prefetch_size) {
+		CMDQ_ERR("allocate prefetch_size failed\n");
+		return;
+	}
 	cmdq_dev_get_dts_setting(dts_setting);
 }
 
