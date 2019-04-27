@@ -16,6 +16,7 @@
 #include <dt-bindings/iio/mt635x-auxadc.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gce/mt6763-gce.h>
 #include <dt-bindings/mmc/mt6763-msdc.h>
 /* mt6763-pinfunc.h will be removed after DCT auto gen check-in */
 #include <dt-bindings/pinctrl/mt6763-pinfunc.h>
@@ -1106,6 +1107,34 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		reg = <0 0x10238000 0 0x1000>;
 	};
 
+	gce_mbox: gce_mbox@10238000 {
+		compatible = "mediatek,mailbox-gce";
+		reg = <0 0x10238000 0 0x4000>;
+		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>;
+		#mbox-cells = <3>;
+		#gce-event-cells = <1>;
+		#gce-subsys-cells = <2>;
+		max_prefetch_cnt = <4>;
+		prefetch_size = <256 32 32 32>;
+		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>,
+			<&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
+		clock-names = "gce", "GCE_TIMER";
+	};
+
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+	gce_mbox_svp: gce_mbox_svp@10238000 {
+		compatible = "mediatek,mailbox-gce-svp";
+		reg = <0 0x10238000 0 0x4000>;
+		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>,
+			<GIC_SPI 155 IRQ_TYPE_LEVEL_LOW>;
+		#mbox-cells = <3>;
+		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>,
+			<&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
+		clock-names = "GCE", "GCE_TIMER";
+	};
+#endif
+
 	gce@10238000 {
 		compatible = "mediatek,gce";
 		reg = <0 0x10238000 0 0x1000>;
@@ -1270,6 +1299,44 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		sram_share_cnt = <1>;
 		sram_share_engine = <11>;
 		sram_share_event = <710>;
+		thread_count = <24>;
+		secure_thread = <8 10>;
+		mboxes = <&gce_mbox 0 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 1 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 2 0 CMDQ_THR_PRIO_5>,
+			<&gce_mbox 3 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 4 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 5 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 6 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox 7 CMDQ_NO_TIMEOUT CMDQ_THR_PRIO_2>,
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+			<&gce_mbox_svp 8 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox_svp 9 0 CMDQ_THR_PRIO_4>,
+			<&gce_mbox_svp 10 0 CMDQ_THR_PRIO_1>,
+#else
+			<&gce_mbox 8 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 9 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 10 0 CMDQ_THR_PRIO_1>,
+#endif
+			<&gce_mbox 11 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 12 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 13 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 14 0 CMDQ_THR_PRIO_1>,
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_CAM_SECURITY_SUPPORT)
+			<&gce_mbox 15 CMDQ_NO_TIMEOUT CMDQ_THR_PRIO_1>,
+#else
+			<&gce_mbox 15 0 CMDQ_THR_PRIO_1>,
+#endif
+			<&gce_mbox 16 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 17 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 18 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 19 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 20 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 21 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 22 0 CMDQ_THR_PRIO_1>,
+			<&gce_mbox 23 0 CMDQ_THR_PRIO_1>;
 		clocks = <&infracfg_ao INFRACFG_AO_GCE_CG>,
 			<&infracfg_ao INFRACFG_AO_GCE_26M_CG>;
 		clock-names = "GCE", "GCE_TIMER";
