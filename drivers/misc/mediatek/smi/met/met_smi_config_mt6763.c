@@ -11,11 +11,10 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <met_drv.h>
+#include "met_smi_config.h"
 
-#include "met_smi_configuration.h"
-#include "met_drv.h"
-#include "met_smi_name.h"
-
+#define SMI_MET_LARB0_PORT_NUM 10
 struct smi_desc larb0_desc[SMI_MET_LARB0_PORT_NUM] = {
 	{ 0, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
 	{ 1, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
@@ -29,6 +28,7 @@ struct smi_desc larb0_desc[SMI_MET_LARB0_PORT_NUM] = {
 	{ 9, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE }
 };
 
+#define SMI_MET_LARB1_PORT_NUM 10
 struct smi_desc larb1_desc[SMI_MET_LARB1_PORT_NUM] = {
 	{ 0, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
 	{ 1, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
@@ -42,6 +42,7 @@ struct smi_desc larb1_desc[SMI_MET_LARB1_PORT_NUM] = {
 	{ 9, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE }
 };
 
+#define SMI_MET_LARB2_PORT_NUM 18
 struct smi_desc larb2_desc[SMI_MET_LARB2_PORT_NUM] = {
 	{ 0, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
 	{ 1, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
@@ -63,6 +64,7 @@ struct smi_desc larb2_desc[SMI_MET_LARB2_PORT_NUM] = {
 	{ 17, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE }
 };
 
+#define SMI_MET_LARB3_PORT_NUM 11
 struct smi_desc larb3_desc[SMI_MET_LARB3_PORT_NUM] = {
 	{ 0, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
 	{ 1, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE },
@@ -77,6 +79,7 @@ struct smi_desc larb3_desc[SMI_MET_LARB3_PORT_NUM] = {
 	{ 10, SMI_DEST_ALL, SMI_RW_ALL, SMI_BUS_NONE }
 };
 
+#define SMI_MET_COMMON_PORT_NUM (2+(MET_SMI_LARB_NUM))
 struct smi_desc common_desc[SMI_MET_COMMON_PORT_NUM] = {
 	{ 0, SMI_DEST_NONE, SMI_RW_RESPECTIVE, SMI_BUS_NONE },
 	{ 1, SMI_DEST_NONE, SMI_RW_RESPECTIVE, SMI_BUS_NONE },
