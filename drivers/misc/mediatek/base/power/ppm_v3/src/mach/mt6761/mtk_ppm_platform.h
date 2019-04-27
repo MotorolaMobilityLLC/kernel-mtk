@@ -26,10 +26,6 @@ extern "C" {
 /*==============================================================*/
 /* Macros							*/
 /*==============================================================*/
-#ifdef CONFIG_MTK_FPSGO_FBT_GAME
-#define PPM_CPI_CHECK_ENABLE		(1)
-#endif
-
 #if 0
 #define PPM_VPROC_5A_LIMIT_CHECK	(1)
 #define PPM_5A_LIMIT_FREQ_IDX		(1)
