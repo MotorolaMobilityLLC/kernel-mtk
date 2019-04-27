@@ -404,7 +404,11 @@ void ccci_md_config(struct ccci_modem *md)
 		md_resv_smem_size = 0, md1_md3_smem_size = 0;
 	phys_addr_t base_ap_view_phy;
 	pgprot_t prot;
-
+#if (MD_GENERATION == 6293)
+	int offset_adjust_flag = 0;
+	struct ccci_smem_region *smem_region = NULL;
+	int smem_dfd_size = -1;
+#endif
 	/* setup config */
 	md->per_md_data.config.load_type = get_md_img_type(md->index);
 	if (get_modem_is_enabled(md->index))
@@ -523,10 +527,30 @@ void ccci_md_config(struct ccci_modem *md)
 			/* Runtime adjust md_phy_capture size */
 			unsigned int i;
 
+			smem_dfd_size = get_md_smem_dfd_size(MD_SYS1);
 			for (i = 0; i < (sizeof(md1_6293_noncacheable_fat)/
 				sizeof(struct ccci_smem_region)); i++) {
+
+				if (offset_adjust_flag == 1)
+					md1_6293_noncacheable_fat[i].offset =
+					md1_6293_noncacheable_fat[i-1].offset
+					+ md1_6293_noncacheable_fat[i-1].size;
+
+				smem_region = &md1_6293_noncacheable_fat[i];
+				if (smem_region->id == SMEM_USER_RAW_DFD &&
+					smem_dfd_size > -1 &&
+					smem_dfd_size != smem_region->size) {
+					offset_adjust_flag = 1;
+					smem_region->size = smem_dfd_size;
+
+					CCCI_BOOTUP_LOG(md->index, TAG,
+						"smem_region->size = %d;\n",
+						smem_region->size);
+				}
+
 				if (md1_6293_noncacheable_fat[i].id ==
 					SMEM_USER_RAW_PHY_CAP) {
+					offset_adjust_flag = 1;
 					md1_6293_noncacheable_fat[i].size =
 						get_md_resv_phy_cap_size(MD_SYS1);
 					CCCI_BOOTUP_LOG(md->index, TAG,
