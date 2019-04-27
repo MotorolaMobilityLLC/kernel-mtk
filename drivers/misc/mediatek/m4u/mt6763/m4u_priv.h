@@ -247,12 +247,13 @@ int m4u_map_sgtable(struct m4u_domain *m4u_domain, unsigned int mva,
 		    unsigned int prot);
 int m4u_unmap(struct m4u_domain *domain, unsigned int mva, unsigned int size);
 
-void m4u_get_pgd(m4u_client_t *client, M4U_PORT_ID port, void **pgd_va,
-		 void **pgd_pa, unsigned int *size);
-unsigned long m4u_mva_to_pa(m4u_client_t *client, M4U_PORT_ID port,
-			    unsigned int mva);
+
+void m4u_get_pgd(struct m4u_client_t *client, M4U_PORT_ID port,
+	void **pgd_va, void **pgd_pa, unsigned int *size);
+unsigned long m4u_mva_to_pa(struct m4u_client_t *client,
+	M4U_PORT_ID port, unsigned int mva);
 int m4u_query_mva_info(unsigned int mva, unsigned int size,
-		       unsigned int *real_mva, unsigned int *real_size);
+	unsigned int *real_mva, unsigned int *real_size);
 
 /* ================================= */
 /* ==== define in m4u_debug.c ===== */
@@ -309,12 +310,20 @@ extern int gM4U_log_to_uart;
 	} while (0)
 /*aee_kernel_warning(m4u_name, "[M4U] error:"string,##args); */
 
-#define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...)                          \
-	do {                                                                  \
-		if (seq_file)                                                 \
-			seq_printf(seq_file, fmt, ##args);                    \
-		else                                                          \
-			pr_debug(fmt, ##args);                                \
+#define M4U_PRINT_SEQ(seq_file, fmt, args...) \
+	do {\
+		if (seq_file)\
+			seq_printf(seq_file, fmt, ##args);\
+		else\
+			pr_info(fmt, ##args);\
+	} while (0)
+
+#define M4U_PRINT_LOG_OR_SEQ(seq_file, fmt, args...) \
+	do {\
+		if (seq_file)\
+			seq_printf(seq_file, fmt, ##args);\
+		else\
+			pr_debug(fmt, ##args);\
 	} while (0)
 
 /* ======================================= */
@@ -347,7 +356,7 @@ struct M4U_MOUDLE {
 
 struct M4U_CACHE {
 	M4U_PORT_ID port;
-	M4U_CACHE_SYNC_ENUM eCacheSync;
+	enum M4U_CACHE_SYNC_ENUM eCacheSync;
 	unsigned long va;
 	unsigned int size;
 	unsigned int mva;
@@ -355,8 +364,8 @@ struct M4U_CACHE {
 
 struct M4U_DMA {
 	M4U_PORT_ID port;
-	M4U_DMA_TYPE eDMAType;
-	M4U_DMA_DIR eDMADir;
+	enum M4U_DMA_TYPE eDMAType;
+	enum M4U_DMA_DIR eDMADir;
 	unsigned long va;
 	unsigned int size;
 	unsigned int mva;

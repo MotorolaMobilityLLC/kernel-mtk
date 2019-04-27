@@ -192,7 +192,7 @@ static inline int larb_port_2_m4u_port(int larb, int larb_port)
 }
 
 void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg);
-int m4u_dump_reg(int m4u_index, unsigned int start);
+int m4u_dump_reg(int m4u_index, unsigned int start, unsigned int end);
 void smi_common_clock_on(void);
 void smi_common_clock_off(void);
 /* For build while larb0 clk has not been implemented.*/

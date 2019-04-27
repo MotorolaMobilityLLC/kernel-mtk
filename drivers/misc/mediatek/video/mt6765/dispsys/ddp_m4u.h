@@ -66,7 +66,7 @@ void disp_ion_cache_flush(struct ion_client *client,
 void disp_ion_destroy(struct ion_client *client);
 
 #ifdef CONFIG_MTK_M4U
-int disp_allocate_mva(m4u_client_t *client, enum DISP_MODULE_ENUM module,
+int disp_allocate_mva(struct m4u_client_t *client, enum DISP_MODULE_ENUM module,
 	unsigned long va, struct sg_table *sg_table, unsigned int size,
 	unsigned int prot, unsigned int flags, unsigned int *pMva);
 int disp_hal_allocate_framebuffer(phys_addr_t pa_start, phys_addr_t pa_end,

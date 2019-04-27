@@ -434,7 +434,7 @@ static void bmp_adjust(void *buf, int size, int w, int h)
 
 struct test_buf_info {
 	struct ion_client *ion_client;
-	m4u_client_t *m4u_client;
+	struct m4u_client_t *m4u_client;
 	struct ion_handle *handle;
 	size_t size;
 	void *buf_va;

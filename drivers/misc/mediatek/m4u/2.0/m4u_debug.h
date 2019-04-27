@@ -23,6 +23,6 @@ extern int __attribute__((weak)) __ddp_mem_test(unsigned int *pSrc, unsigned int
 
 #ifdef M4U_TEE_SERVICE_ENABLE
 extern int m4u_sec_init(void);
-extern int m4u_config_port_tee(M4U_PORT_STRUCT *pM4uPort);
+extern int m4u_config_port_tee(struct M4U_PORT_STRUCT *pM4uPort);
 #endif
 #endif
