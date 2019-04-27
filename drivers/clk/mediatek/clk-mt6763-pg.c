@@ -31,6 +31,8 @@
 #define MT_CCF_DEBUG 0
 #define MT_CCF_BRINGUP 0
 #define CONTROL_LIMIT 1
+#define CLK_DEBUG	0
+#define DUMMY_REG_TEST	0
 #endif
 
 #define CHECK_PWR_ST 1

@@ -618,7 +618,7 @@ static const struct mtk_mux_clr_set_upd top_muxes[] __initconst = {
 static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 {
 #if 1
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 val;
 
 	regmap_read(cg->regmap, cg->sta_ofs, &val);
@@ -633,7 +633,7 @@ static int mtk_cg_bit_is_cleared(struct clk_hw *hw)
 static int mtk_cg_bit_is_set(struct clk_hw *hw)
 {
 #if 1
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 	u32 val;
 
 	regmap_read(cg->regmap, cg->sta_ofs, &val);
@@ -647,7 +647,7 @@ static int mtk_cg_bit_is_set(struct clk_hw *hw)
 #if 1
 static void mtk_cg_set_bit(struct clk_hw *hw)
 {
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 
 	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit),
 			   BIT(cg->bit));
@@ -656,7 +656,7 @@ static void mtk_cg_set_bit(struct clk_hw *hw)
 static void mtk_cg_clr_bit(struct clk_hw *hw)
 {
 #if 1
-	struct mtk_clk_gate *cg = to_clk_gate(hw);
+	struct mtk_clk_gate *cg = to_mtk_clk_gate(hw);
 
 	regmap_update_bits(cg->regmap, cg->sta_ofs, BIT(cg->bit), 0);
 #endif
@@ -804,7 +804,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA2(INFRACFG_AO_IRTX_CG, "infra_irtx", "f_f26m_ck", 0),
 	GATE_INFRA2(INFRACFG_AO_DISP_PWM_CG, "infra_disppwm", "axi_sel", 2),
 	GATE_INFRA2(INFRACFG_AO_CLDMA_BCLK_CK, "infra_cldma_bclk",
-		axi_sel", 3),
+		"axi_sel", 3),
 	GATE_INFRA2(INFRACFG_AO_AUDIO_26M_BCLK_CK,
 		"infracfg_ao_audio_26m_bclk_ck", "f_f26m_ck", 4),
 	GATE_INFRA2(INFRACFG_AO_SPI1_CG, "infra_spi1", "spi_sel", 6),
