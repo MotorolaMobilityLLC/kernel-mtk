@@ -202,8 +202,8 @@ check_hw_crypto:
 				mq_rq->req, host);
 			if (err) {
 				err = -EIO;
-				ERR_MSG("%s: fail in crypto hook,
-				req: %p, err %d\n",
+				ERR_MSG(
+					"%s: fail in crypto hook,req: %p, err %d\n",
 					__func__, mq_rq->req, err);
 				WARN_ON(1);
 				return;
