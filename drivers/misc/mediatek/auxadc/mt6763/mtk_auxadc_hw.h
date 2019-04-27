@@ -49,6 +49,8 @@ extern void __iomem *auxadc_efuse_base;
 
 #define AUXADC_CON0             (AUXADC_BASE + 0x000)
 #define AUXADC_CON1             (AUXADC_BASE + 0x004)
+#define AUXADC_CON1_SET         (AUXADC_BASE + 0x008)
+#define AUXADC_CON1_CLR         (AUXADC_BASE + 0x00C)
 #define AUXADC_CON2             (AUXADC_BASE + 0x010)
 #define AUXADC_DAT0             (AUXADC_BASE + 0x014)
 #define AUXADC_TP_CMD           (AUXADC_BASE + 0x005c)
