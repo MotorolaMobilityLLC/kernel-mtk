@@ -4001,7 +4001,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 					mnt_flags = "ro";
 					#ifndef CONFIG_MTK_DM_VERITY_OFF
 					#ifdef CONFIG_MTK_AVB20_SUPPORT
-					fsmgr_flags = "wait,avb";
+					fsmgr_flags = "wait";
 					#else
 					fsmgr_flags = "wait,verify";
 					#endif
@@ -4013,14 +4013,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifndef CONFIG_MTK_LATE_MOUNT
 				vendor {
 					compatible = "android,vendor";
-					dev = "/dev/block/platform/bootdevice \
-					/by-name/vendor";
+			dev = "/dev/block/platform/bootdevice/by-name/vendor";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 					#ifndef CONFIG_MTK_DM_VERITY_OFF
 					#ifdef CONFIG_MTK_AVB20_SUPPORT
-					fsmgr_flags = "wait,avb";
+					fsmgr_flags = "wait";
 					#else
 					fsmgr_flags = "wait,verify";
 					#endif
@@ -4043,14 +4042,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_TARGET_COPY_OUT_ODM
 				odm {
 					compatible = "android,odm";
-					dev = "/dev/block/platform/bootdevice \
-					/by-name/odm";
+			dev = "/dev/block/platform/bootdevice/by-name/odm";
 					type = "ext4";
 					mnt_flags = "ro";
 #ifndef CONFIG_MTK_AB_OTA_UPDATER
 					#ifndef CONFIG_MTK_DM_VERITY_OFF
 					#ifdef CONFIG_MTK_AVB20_SUPPORT
-					fsmgr_flags = "wait,avb";
+					fsmgr_flags = "wait";
 					#else
 					fsmgr_flags = "wait,verify";
 					#endif
