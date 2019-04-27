@@ -735,8 +735,9 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 	struct mmc_request mrq = {NULL};
 	struct scatterlist sg;
 	int err;
-	int is_rpmb = false;
+	int is_rpmb = false, is_switch_part = false;
 	u32 status = 0;
+	u8 *ext_csd = NULL;
 
 	if (!card || !md || !idata)
 		return -EINVAL;
@@ -747,6 +748,10 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 	cmd.opcode = idata->ic.opcode;
 	cmd.arg = idata->ic.arg;
 	cmd.flags = idata->ic.flags;
+
+	if ((MMC_EXTRACT_INDEX_FROM_ARG(cmd.arg) == EXT_CSD_PART_CONFIG) &&
+		(cmd.opcode == MMC_SWITCH))
+		is_switch_part = true;
 
 	if (idata->buf_bytes) {
 		data.sg = &sg;
@@ -853,6 +858,18 @@ static int __mmc_blk_ioctl_cmd(struct mmc_card *card, struct mmc_blk_data *md,
 			dev_err(mmc_dev(card->host),
 					"%s: Card Status=0x%08X, error %d\n",
 					__func__, status, err);
+	}
+
+	if (is_switch_part) {
+		err = mmc_get_ext_csd(card, &ext_csd);
+		if (err)
+			dev_notice(mmc_dev(card->host),
+				"%s:ioctl switch part ext_csd error %d\n",
+				__func__, err);
+		else
+			card->ext_csd.part_config
+				= ext_csd[EXT_CSD_PART_CONFIG];
+		kfree(ext_csd);
 	}
 
 	return err;
