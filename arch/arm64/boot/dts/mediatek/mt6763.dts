@@ -589,7 +589,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	pio: pinctrl@1000b000 {
-		compatible = "mediatek,pinctrl";
+		compatible = "mediatek,mt6763-pinctrl";
 		reg_bases = <&gpio>,
 			    <&iocfg_lt>,
 			    <&iocfg_lm>,
@@ -599,7 +599,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			    <&iocfg_rm>,
 			    <&iocfg_rt>,
 			    <&iocfg_tl>;
-		reg_base_eint = <&eint>;
+		reg_base_eint = <&eintc>;
 		pins-are-numbered;
 		gpio-controller;
 		#gpio-cells = <2>;
