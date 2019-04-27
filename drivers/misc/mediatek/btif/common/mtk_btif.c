@@ -21,6 +21,7 @@
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/poll.h>
+#include <linux/ratelimit.h>
 
 /*#include <mach/eint.h>*/
 /*-----------driver own header files----------------*/
@@ -1092,8 +1093,17 @@ irqreturn_t btif_rx_dma_irq_handler(int irq, void *data)
 	struct _mtk_btif_ *p_btif = (struct _mtk_btif_ *) data;
 	struct _mtk_btif_dma_ *p_rx_dma = p_btif->p_rx_dma;
 	struct _MTK_DMA_INFO_STR_ *p_rx_dma_info = p_rx_dma->p_dma_info;
+	static unsigned long cnt;
+	static DEFINE_RATELIMIT_STATE(_rs, 2 * HZ, 1);
 
 	BTIF_DBG_FUNC("++, p_btif(0x%p)\n", data);
+
+	cnt++;
+	if (__ratelimit(&_rs)) {
+		BTIF_INFO_FUNC("enter irq handler cnt=%d IIR=0x%x", cnt,
+			BTIF_READ32((unsigned long)
+				(p_btif->p_btif_info->base + 0x8)));
+	}
 
 	_btif_irq_ctrl(p_rx_dma_info->p_irq, false);
 
@@ -1118,6 +1128,7 @@ irqreturn_t btif_rx_dma_irq_handler(int irq, void *data)
 #endif
 		_btif_rx_btm_sched(p_btif);
 
+	cnt--;
 	BTIF_DBG_FUNC("--\n");
 
 	return IRQ_HANDLED;
@@ -1633,7 +1644,8 @@ int btif_close(struct _mtk_btif_ *p_btif)
 	if (_btif_state_hold(p_btif))
 		return E_BTIF_INTR;
 /*always set state back to B_S_ON before do close operation*/
-	_btif_exit_dpidle(p_btif);
+	if (_btif_exit_dpidle(p_btif) != 0)
+		BTIF_WARN_FUNC("exit dpidle failed.\n");
 /*set BTIF's state to disable state*/
 	p_btif->enable = false;
 
@@ -2684,17 +2696,24 @@ unsigned int btif_bbs_write(struct _btif_buf_str_ *p_bbs,
 	unsigned int ava_len = emp_len - 1;
 	struct _mtk_btif_ *p_btif = container_of(p_bbs, struct _mtk_btif_,
 						 btif_buf);
+	static DEFINE_RATELIMIT_STATE(_rs, 1 * HZ, 1);
+	bool dump_log = false;
+
+	if (__ratelimit(&_rs))
+		dump_log = true;
 
 	if (ava_len <= 0) {
-		BTIF_ERR_FUNC
-		    ("no empty space for write, (%d)ava_len, (%d)to write\n",
-		     ava_len, buf_len);
-		hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
-		hal_dma_dump_reg(p_btif->p_rx_dma->p_dma_info, REG_ALL);
+		if (dump_log) {
+			BTIF_ERR_FUNC(
+			"no empty space for write, (%d)ava_len, (%d)to write\n",
+				 ava_len, buf_len);
+			hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
+			hal_dma_dump_reg(p_btif->p_rx_dma->p_dma_info, REG_ALL);
+		}
 		return 0;
 	}
 
-	if (ava_len < buf_len) {
+	if (ava_len < buf_len && dump_log) {
 		BTIF_ERR_FUNC("BTIF overrun, (%d)empty, (%d)needed\n",
 			      emp_len, buf_len);
 		hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
@@ -2702,7 +2721,7 @@ unsigned int btif_bbs_write(struct _btif_buf_str_ *p_bbs,
 		_btif_dump_memory("<DMA Rx vFIFO>", p_buf, buf_len);
 	}
 
-	if (buf_len >= g_max_pkg_len) {
+	if (buf_len >= g_max_pkg_len && dump_log) {
 		BTIF_WARN_FUNC("buf_len too long, (%d)ava_len, (%d)to write\n",
 			       ava_len, buf_len);
 		hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
@@ -2714,12 +2733,14 @@ unsigned int btif_bbs_write(struct _btif_buf_str_ *p_bbs,
 	btif_bbs_wr_direct(p_bbs, p_buf, wr_len);
 
 	if (BBS_COUNT(p_bbs) >= g_max_pding_data_size) {
-		BTIF_WARN_FUNC("Rx buf_len too long, size(%d)\n",
+		if (dump_log) {
+			BTIF_WARN_FUNC("Rx buf_len too long, size(%d)\n",
 			       BBS_COUNT(p_bbs));
-		btif_dump_bbs_str("Rx buffer tooo long", p_bbs);
-		hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
-		hal_dma_dump_reg(p_btif->p_rx_dma->p_dma_info, REG_ALL);
-		_btif_dump_memory("<DMA Rx vFIFO>", p_buf, buf_len);
+			btif_dump_bbs_str("Rx buffer tooo long", p_bbs);
+			hal_btif_dump_reg(p_btif->p_btif_info, REG_ALL);
+			hal_dma_dump_reg(p_btif->p_rx_dma->p_dma_info, REG_ALL);
+			_btif_dump_memory("<DMA Rx vFIFO>", p_buf, buf_len);
+		}
 		BBS_INIT(p_bbs);
 	}
 
@@ -2848,7 +2869,7 @@ int _btif_dma_write(struct _mtk_btif_ *p_btif,
 int _btif_pio_write(struct _mtk_btif_ *p_btif,
 		    const unsigned char *p_buf, unsigned int buf_len)
 {
-	unsigned int i_ret = 0;
+	int i_ret = 0;
 	unsigned int sent_len = 0;
 	unsigned int retry = 0;
 	unsigned int max_tx_retry = 10;
