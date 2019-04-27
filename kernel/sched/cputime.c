@@ -411,7 +411,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
 static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
 					 struct rq *rq, int ticks)
 {
-	u64 cputime = (__force u64) cputime_one_jiffy * ticks;
+	u64 cputime = TICK_NSEC * ticks;
 	cputime_t scaled, other;
 
 	/*
@@ -535,7 +535,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
 		return;
 	}
 
-	cputime = cputime_one_jiffy;
+	cputime = TICK_NSEC;
 	steal = steal_account_process_time(ULONG_MAX);
 
 	if (steal >= cputime)
@@ -565,7 +565,7 @@ void account_idle_ticks(unsigned long ticks)
 		return;
 	}
 
-	cputime = jiffies_to_cputime(ticks);
+	cputime = ticks * TICK_NSEC;
 	steal = steal_account_process_time(ULONG_MAX);
 
 	if (steal >= cputime)
