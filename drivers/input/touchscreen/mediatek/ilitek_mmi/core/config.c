@@ -47,6 +47,18 @@ struct core_config_data *core_config;
 
 struct set_res_data set_res;
 
+int core_check_ilitek_ic_exist(void)
+{
+	int ret = 0;
+
+	ilitek_platform_reset_ctrl(true, HW_RST);
+	ret = core_config_ice_mode_enable(STOP_MCU);
+	ipio_info("core_config_get_ic_type ret = %d\n", ret);
+	if (ret < 0)
+		ipio_err("Failed to enter ICE mode,ret = %d\n",ret);
+	return ret;
+}
+
 void core_config_read_flash_info(void)
 {
 	int i;
@@ -673,7 +685,8 @@ int core_config_ice_mode_enable(bool stop_mcu)
 		core_spi_speed_up(true);
 #endif
 
-		if (core_config_ice_mode_chipid_check() >= 0) {
+		ret = core_config_ice_mode_chipid_check();
+		if (ret >= 0) {
 			core_config_ice_mode_write(0x047002, 0x00, 1);
 			return ret;
 		}

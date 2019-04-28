@@ -1113,6 +1113,11 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 		ilitek_platform_reset_ctrl(true, SW_RST);
 	}
 
+	if (core_check_ilitek_ic_exist() < 0) {
+		ipio_info("this is not ilitek IC");
+		return -ENODEV;
+	}
+
 	if (core_config_get_chip_id() < 0)
 		ipio_err("Failed to get chip id\n");
 
@@ -1241,6 +1246,11 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	} else {
 		ipd->do_otp_check = true;
 		ilitek_platform_reset_ctrl(true, SW_RST);
+	}
+
+	if (core_check_ilitek_ic_exist() < 0) {
+		ipio_info("this is not ilitek IC");
+		return -ENODEV;
 	}
 
 	if (ilitek_platform_isr_register() < 0)
