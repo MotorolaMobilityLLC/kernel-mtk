@@ -203,6 +203,22 @@ static int bq2560x_set_force_dpdm(struct bq2560x *bq)
 				REG07_FORCE_DPDM_MASK, REG07_FORCE_DPDM_MASK);
 
 }
+
+static int bq2560x_is_otg_en(struct bq2560x *bq, bool *en)
+{
+	int ret;
+	u8 val;
+
+	ret = bq2560x_read_byte(bq, &val, BQ2560X_REG_01);
+	if (!ret) {
+		val = val & REG01_OTG_CONFIG_MASK;
+		val = val >> REG01_OTG_CONFIG_SHIFT;
+		*en = (val == REG01_OTG_ENABLE);
+	}
+
+	return ret;
+}
+
 static int bq2560x_enable_otg(struct bq2560x *bq)
 {
 	u8 val = REG01_OTG_ENABLE << REG01_OTG_CONFIG_SHIFT;
@@ -845,8 +861,12 @@ static irqreturn_t bq2560x_irq_handler(int irq, void *data)
 {
 	u8 pg_stat = 0;
 	enum charger_type org_chg_type;
+	bool en = false;
 	struct bq2560x *bq = (struct bq2560x *)data;
 
+	bq2560x_is_otg_en(bq,&en);
+	if (en)
+		return IRQ_HANDLED;
 
 	pr_err("ti bq25601 debug %s: \n", __func__);
 	pg_stat = bq2560x_get_pg_state(bq);
