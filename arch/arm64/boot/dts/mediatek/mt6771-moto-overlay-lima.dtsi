@@ -140,11 +140,32 @@
 };
 
 &spi2{
+	mediatek,pad-select = <0>,<1>;
+	#address-cells = <0x1>;
+	#size-cells = <0x0>;
+
 	cap_touch_mtk_spi:cap_touch_spi@0{
 		compatible= "mediatek,cap_touch_spi";
 		spi-max-frequency = <10000000>;
 		reg = <0x0>;
 		status = "okay";
+	};
+
+	novatek@1 {
+		compatible = "novatek,NVT-ts-spi";
+		reg = <1>; /* Same as CS ID */
+		status = "okay";
+
+		spi-max-frequency = <10000000>;
+		novatek,reset-gpio = <&pio 70 0x00>;
+		novatek,irq-gpio = <&pio 6 0x2001>;
+
+		/* 525 */
+		//novatek,swrst-n8-addr = <0x01F01A>;
+
+		/* 672A, 525B */
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
 	};
 };
 
