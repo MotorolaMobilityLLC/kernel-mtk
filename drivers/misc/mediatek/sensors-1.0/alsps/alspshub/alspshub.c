@@ -571,6 +571,11 @@ static int pshub_factory_get_threshold(int32_t threshold[2])
 	spin_unlock(&calibration_lock);
 	return 0;
 }
+static int pshub_factory_do_self_test(void)
+{
+
+	return sensor_selftest_to_hub(ID_PROXIMITY);
+}
 
 static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_enable_sensor = alshub_factory_enable_sensor,
@@ -590,6 +595,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.ps_get_cali = pshub_factory_get_cali,
 	.ps_set_threshold = pshub_factory_set_threshold,
 	.ps_get_threshold = pshub_factory_get_threshold,
+	.do_self_test        = pshub_factory_do_self_test,
 };
 
 static struct alsps_factory_public alspshub_factory_device = {

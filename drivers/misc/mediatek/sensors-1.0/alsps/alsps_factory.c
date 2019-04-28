@@ -231,6 +231,18 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 			return -EINVAL;
 		}
 		return 0;
+	case ALSPS_IOCTL_SELF_TEST:
+		if (alsps_factory.fops != NULL && alsps_factory.fops->do_self_test != NULL) {
+			err = alsps_factory.fops->do_self_test();
+			if (err < 0) {
+				ALSPS_PR_ERR("ALSPS_IOCTL_SELF_TEST FAIL!\n");
+				return -EINVAL;
+			}
+		} else {
+			ALSPS_PR_ERR("ALSPS_IOCTL_SELF_TEST NULL\n");
+			return -EINVAL;
+		}
+		return 0;
 	default:
 		ALSPS_PR_ERR("unknown IOCTL: 0x%08x\n", cmd);
 		return -ENOIOCTLCMD;
