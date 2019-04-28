@@ -110,6 +110,7 @@ config TOUCHSCREEN_FT5X26_WUXGA
 	  module will be called.
 
 source "drivers/input/touchscreen/mediatek/FT5X26/Kconfig"
+source "drivers/input/touchscreen/mediatek/nova_mmi/Kconfig"
 
 config TOUCHSCREEN_FOCALTECH_MMI
 	bool "FT5446 for Mediatek package"
