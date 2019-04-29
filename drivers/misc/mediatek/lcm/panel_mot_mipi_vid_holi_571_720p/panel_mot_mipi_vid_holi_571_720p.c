@@ -461,6 +461,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 
 LCM_DRIVER mipi_mot_vid_holi_720p_571_lcm_drv = {
 	.name = "mipi_mot_vid_holi_720p_571",
+	.supplier = "holi",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
