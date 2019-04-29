@@ -62,7 +62,6 @@ struct upgrade_fw fw_list[] = {
 };
 
 struct upgrade_func *upgrade_func_list[] = {
-    &upgrade_func_ft5x46,
     &upgrade_func_ft5422u,
 };
 struct fts_upgrade *fwupgrade;
@@ -1725,7 +1724,6 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
     struct upgrade_fw *fw = &fw_list[0];
     struct fts_upgrade *upg = fwupgrade;
 
-#if 0
 #if (FTS_GET_VENDOR_ID_NUM > 1)
     int ret = 0;
     int i = 0;
@@ -1750,14 +1748,6 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
         return -ENODATA;
     }
 #endif
-#endif
-
-    extern bool isFT5446DQS_Q02;
-    if(isFT5446DQS_Q02){
-        fw = &fw_list[1];
-    }else{
-        fw = &fw_list[0];
-    }
 
     if (upg) {
         upg->fw = fw->fw_file;
