@@ -1459,6 +1459,11 @@ static ssize_t ilitek_proc_ioctl_write(struct file *filp, const char *buff, size
 		mutex_unlock(&ipd->plat_mutex);
 	} else if (strcmp(cmd, "edge_plam_ctrl") == 0) {
 		core_edge_plam_ctrl(data[1]);
+	} else if (strcmp(cmd, "dumpiramdata") == 0) {
+		ipio_info("Start = 0x%x, End = 0x%x, Dump IRAM path = %s\n", data[1], data[2], DUMP_IRAM_PATH);
+		ret = core_dump_iram(data[1], data[2]);
+		if (ret < 0)
+			ipio_err("Failed to dump iram data\n");
 	} else {
 		ipio_err("Unknown command\n");
 	}

@@ -120,12 +120,12 @@
 #define REQUEST_FIRMWARE	0
 #define FILP_OPEN 			1
 #define OPEN_FW_METHOD REQUEST_FIRMWARE
-
+#define DUMP_IRAM_PATH  "/data/iram_dump"
 /* Priority of suspend between TP and DDI */
 #define TP_SUSPEND_PRIO	1
 
 /* Driver version */
-#define DRIVER_VERSION	"1.0.5.3"
+#define DRIVER_VERSION	"1.2.5.3"
 
 /* Protocol version */
 #define PROTOCOL_MAJOR		0x5

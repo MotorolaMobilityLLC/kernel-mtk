@@ -516,11 +516,28 @@ EXPORT_SYMBOL(core_config_set_phone_cover);
 void core_config_ic_suspend(void)
 {
 	int i;
-
+	int ret = 0;
 	ipio_info("Starting to suspend ...\n");
 	if (ipd->suspended) {
-		ipio_info("TP already in suspend status ...\n");
-		return;
+		ret = wait_event_interruptible_timeout(ipd->load_fw_done_wake, ipd->load_fw_done> 0,msecs_to_jiffies(500));
+		if (!ret) {
+			ipd->suspended = true;
+			ipd->load_fw_done = 0;
+			core_fr->isEnableFR = false;
+			ilitek_platform_disable_irq();
+			ret = cancel_work_sync(&ipd->ilitek_resume_work);
+			if (ret)
+				ipio_err("cancel resume_workqueue err = %d\n", ret);
+			core_firmware->isUpgrading=false;
+			mutex_unlock(&ipd->touch_mutex);
+			if (ipd->isEnablePollCheckPower)
+				cancel_delayed_work_sync(&ipd->check_power_status_work);
+			if (ipd->isEnablePollCheckEsd)
+				cancel_delayed_work_sync(&ipd->check_esd_status_work);
+
+			ipio_info("TP is upgradeing ,can not sleep in ...\n");
+			return;
+		}
 	}
 
 	core_fr->isEnableFR = false;
@@ -530,7 +547,7 @@ void core_config_ic_suspend(void)
 		cancel_delayed_work_sync(&ipd->check_power_status_work);
 	if (ipd->isEnablePollCheckEsd)
 		cancel_delayed_work_sync(&ipd->check_esd_status_work);
-
+	mutex_lock(&ipd->touch_mutex);
 	/* sense stop */
 	core_config_sense_ctrl(false);
 
@@ -556,6 +573,7 @@ void core_config_ic_suspend(void)
 	/* sleep in if gesture is disabled. */
 	core_config_sleep_ctrl(false);
 	ipd->suspended = true;
+	mutex_unlock(&ipd->touch_mutex);
 
 end:
 	/* release all touch points to get rid of locked points on screen. */
@@ -591,7 +609,8 @@ void core_config_ic_resume(void)
 	core_fr->isEnableFR = true;
 	ilitek_platform_enable_irq();
 	ipd->suspended = false;
-
+	ipd->load_fw_done = 1;
+	wake_up(&(ipd->load_fw_done_wake));
 	ipio_info("Resume done\n");
 }
 EXPORT_SYMBOL(core_config_ic_resume);

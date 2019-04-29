@@ -44,9 +44,6 @@
 #include "gesture.h"
 #include "mp_test.h"
 
-/* Firmware data with static array */
-#include "ilitek_fw.h"
-
 #define CHECK_FW_FAIL	-1
 #define UPDATE_FAIL		-1
 #define NEED_UPDATE		 1
@@ -62,7 +59,7 @@ struct flash_sector *g_flash_sector;
 struct flash_block_info fbi[FW_BLOCK_INFO_NUM];
 struct core_firmware_data *core_firmware;
 u8 gestrue_fw[(10 * K)];
-
+bool first_int = false;
 extern unsigned char g_user_buf[PAGE_SIZE];
 extern unsigned char fw_name_buf[PAGE_SIZE];
 extern bool use_g_user_buf;
@@ -211,65 +208,6 @@ static void fw_upgrade_info_setting(u8 *pfw, u8 type)
 	ipio_info("Hex Tag = 0x%x\n", core_firmware->hex_tag);
 	ipio_info("new_fw_cb = 0x%x\n", core_firmware->new_fw_cb);
 	ipio_info("nStartAddr = 0x%06X, nEndAddr = 0x%06X, block_number(AF) = %d\n", core_firmware->start_addr, core_firmware->end_addr, core_firmware->block_number);
-}
-
-static void convert_ili_file(u8 *pfw)
-{
-	int i = 0, block_enable = 0, num = 0;
-	uint8_t ui8B0AssignBLK;
-	uint32_t ui32B0AssignAddr;
-
-	ipio_info("Start to parser ILI file, type = %d, block_count = %d\n", CTPM_FW[32], CTPM_FW[33]);
-
-	memset(fbi, 0x0, sizeof(fbi));
-
-	core_firmware->start_addr = 0;
-	core_firmware->end_addr = 0;
-	core_firmware->hex_tag = 0;
-
-	block_enable = CTPM_FW[32];
-
-	if (block_enable == 0) {
-		core_firmware->hex_tag = BLOCK_TAG_AE;
-		goto out;
-	}
-
-	core_firmware->hex_tag = BLOCK_TAG_AF;
-	for (i = 0; i < FW_BLOCK_INFO_NUM; i++) {
-		if (((block_enable >> i) & 0x01) == 0x01) {
-			num = i + 1;
-			if ((num) == 6) {
-				fbi[num].start = (CTPM_FW[0] << 16) + (CTPM_FW[1] << 8) + (CTPM_FW[2]);
-				fbi[num].end = (CTPM_FW[3] << 16) + (CTPM_FW[4] << 8) + (CTPM_FW[5]);
-				fbi[num].fix_mem_start = INT_MAX;
-			} else {
-				fbi[num].start = (CTPM_FW[34 + i * 6] << 16) + (CTPM_FW[35 + i * 6] << 8) + (CTPM_FW[36 + i * 6]);
-				fbi[num].end = (CTPM_FW[37 + i * 6] << 16) + (CTPM_FW[38 + i * 6] << 8) + (CTPM_FW[39 + i * 6]);
-				fbi[num].fix_mem_start = INT_MAX;
-			}
-			fbi[num].len = fbi[num].end - fbi[num].start + 1;
-			ipio_info("Block[%d]: start_addr = %x, end = %x\n",
-					num, fbi[num].start, fbi[num].end);
-		}
-	}
-
-	if ((block_enable & 0x80) == 0x80) {
-		for (i = 0; i < 3; i++) {
-			ui32B0AssignAddr = (CTPM_FW[6 + i * 4] << 16) + (CTPM_FW[7 + i * 4] << 8) + (CTPM_FW[8 + i * 4]);
-			ui8B0AssignBLK = CTPM_FW[9 + i * 4];
-
-			if ((ui8B0AssignBLK != 0) && (ui32B0AssignAddr != 0x000000)) {
-				fbi[ui8B0AssignBLK].fix_mem_start = ui32B0AssignAddr;
-				ipio_info("Tag 0xB0: change Block[%d] to addr = 0x%x\n", ui8B0AssignBLK, fbi[ui8B0AssignBLK].fix_mem_start);
-			}
-		}
-	}
-
-out:
-	core_firmware->block_number = CTPM_FW[33];
-
-	memcpy(pfw, CTPM_FW + ILI_FILE_HEADER, (sizeof(CTPM_FW) - ILI_FILE_HEADER));
-	core_firmware->end_addr = (sizeof(CTPM_FW) - ILI_FILE_HEADER);
 }
 
 static int convert_hex_file(u8 *phex, uint32_t nSize, u8 *pfw)
@@ -440,14 +378,12 @@ static int fw_upgrade_file_convert(int target, u8 *pfw, int open_file_method)
 	ipio_info("Convert fw data from %s\n", (target == ILI_FILE ? "ILI_FILE" : "HEX_FILE"));
 
 	switch (target) {
-	case ILI_FILE:
-		convert_ili_file(pfw);
-		break;
 	case HEX_FILE:
 		/* Feed ili file if can't find hex file from filesystem. */
 		if (hex_file_open_convert(open_file_method, pfw) < 0) {
 			ipio_err("Open hex file fail, try ili file upgrade");
-			convert_ili_file(pfw);
+			ret = UPDATE_FAIL;
+			break;
 		}
 		break;
 	default:
@@ -1091,10 +1027,133 @@ out:
 	core_config_ice_mode_disable();
 	return ret;
 }
+static int tddi_iram_read(u8 *buf, u32 start, u32 end)
+{
+	int i;
+	int addr = 0, r_len = SPI_UPGRADE_LEN;
+	u8 cmd[4] = {0};
 
+	if (!buf) {
+		ipio_err("buf in null\n");
+		return -ENOMEM;
+	}
+
+	for (addr = start, i = 0; addr < end; i += r_len, addr += r_len) {
+		if ((addr + r_len) > (end + 1))
+			r_len = end % r_len;
+
+		cmd[0] = 0x25;
+		cmd[3] = (char)((addr & 0x00FF0000) >> 16);
+		cmd[2] = (char)((addr & 0x0000FF00) >> 8);
+		cmd[1] = (char)((addr & 0x000000FF));
+
+		if (core_write(core_config->slave_i2c_addr, cmd, 4)) {
+			ipio_err("Failed to write iram data\n");
+			return -ENODEV;
+		}
+
+		if (core_read(core_config->slave_i2c_addr, buf + i, r_len)) {
+			ipio_err("Failed to Read iram data\n");
+			return -ENODEV;
+		}
+	}
+	return 0;
+}
+
+int core_dump_iram(u32 start, u32 end)
+{
+	struct file *f = NULL;
+	u8 *buf = NULL;
+	mm_segment_t old_fs;
+	loff_t pos = 0;
+	int ret, wdt, i;
+	int len;
+
+	f = filp_open(DUMP_IRAM_PATH, O_WRONLY | O_CREAT | O_TRUNC, 666);
+	if (ERR_ALLOC_MEM(f)) {
+		ipio_err("Failed to open the file at %ld.\n", PTR_ERR(f));
+		return -1;
+	}
+
+	ret = core_config_ice_mode_enable(STOP_MCU);
+	if (ret < 0) {
+		filp_close(f, NULL);
+		return ret;
+	}
+	wdt = core_config_ice_mode_read(core_config->wdt_addr);
+	ipio_info("Read WDT: %s\n", (ret ? "ON" : "OFF"));
+	if(wdt)
+	{
+		if (core_config_set_watch_dog(false) < 0) {
+			ipio_err("Failed to disable watch dog\n");
+			filp_close(f, NULL);
+			ret = -EINVAL;
+			return ret;
+		}
+	}
+	len = end - start + 1;
+
+	buf = vmalloc(len * sizeof(u8));
+	if (ERR_ALLOC_MEM(buf)) {
+		ipio_err("Failed to allocate buf memory, %ld\n", PTR_ERR(buf));
+		filp_close(f, NULL);
+		ret = ENOMEM;
+		goto out;
+	}
+
+	for (i = 0; i < len; i++)
+		buf[i] = 0xFF;
+	ipio_info("len= 0x%x\n",len);
+	if (tddi_iram_read(buf, start, end) < 0)
+		ipio_err("Read IRAM data failed\n");
+
+	old_fs = get_fs();
+	set_fs(get_ds());
+	set_fs(KERNEL_DS);
+	pos = 0;
+	vfs_write(f, buf, len, &pos);
+	set_fs(old_fs);
+
+out:
+	if (wdt) {
+		core_config_set_watch_dog(true);
+	}
+	core_config_ice_mode_disable();
+	filp_close(f, NULL);
+	ipio_vfree((void **)&buf);
+	ipio_info("dump iram data success\n");
+	return 0;
+}
+static void tddi_fw_print_iram_data(void)
+{
+	int i, len;
+	int tmp = ipio_debug_level;
+	u8 *buf = NULL;
+	u32 start = 0, end = 0xFFFF;
+
+	len = end - start + 1;
+
+	buf = vmalloc(len * sizeof(u8));
+	if (ERR_ALLOC_MEM(buf)) {
+		ipio_err("Failed to allocate buf memory, %ld\n", PTR_ERR(buf));
+		return;
+	}
+
+	for (i = 0; i < len; i++)
+		buf[i] = 0xFF;
+
+	if (tddi_iram_read(buf, start, end) < 0)
+		ipio_err("Read IRAM data failed\n");
+
+	ipio_debug_level = DEBUG_ALL;
+	dump_data(buf, 8, len, 0, "IRAM");
+	ipio_debug_level = tmp;
+	ipio_vfree((void **)&buf);
+}
 static int fw_upgrade_iram(u8 *pfw)
 {
 	int ret = UPDATE_OK, i;
+	int timeout = 0;
 	uint32_t mode, crc, dma;
 	u8 *fw_ptr = NULL;
 
@@ -1116,7 +1175,7 @@ static int fw_upgrade_iram(u8 *pfw)
 	if (core_config_set_watch_dog(false) < 0) {
 		ipio_err("Failed to disable watch dog\n");
 		ret = -EINVAL;
-		goto out;
+		return ret;
 	}
 
 	fw_ptr = pfw;
@@ -1140,16 +1199,24 @@ static int fw_upgrade_iram(u8 *pfw)
 
 			ipio_info("%s CRC is %s (%x) : (%x)\n", fbi[i].name, (crc != dma ? "Invalid !" : "Correct !"), crc, dma);
 
-			if (CHECK_EQUAL(crc, dma) == UPDATE_FAIL)
+			if (CHECK_EQUAL(crc, dma) == UPDATE_FAIL) {
+				tddi_fw_print_iram_data();
 				return UPDATE_FAIL;
+			}
 		}
 	}
-
-out:
+	if (ipd->sys_boot_fw) {
+		ipio_info("wait for lcm init code download\n");
+		timeout= wait_event_interruptible_timeout(ipd->wait_for_lcm, ipd->lcm_finish> 0,msecs_to_jiffies(500));
+		if (!timeout)
+			ipio_info("initcode not in\n");
+		ipd->lcm_finish = 0;
+	}
 	if (!core_gesture->entry) {
 		/* ice mode code reset */
 		ipio_info("Doing code reset ...\n");
 		core_config_ice_mode_write(0x40040, 0xAE, 1);
+		first_int = true;
 	}
 
 	core_config_ice_mode_disable();

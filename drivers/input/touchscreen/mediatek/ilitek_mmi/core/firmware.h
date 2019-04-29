@@ -95,5 +95,6 @@ extern struct core_firmware_data *core_firmware;
 extern int core_firmware_upgrade(int type, int file_type, int open_file_method);
 extern int core_firmware_init(void);
 extern int core_dump_flash(void);
+extern int core_dump_iram(u32 start, u32 end);
 
 #endif /* __FIRMWARE_H */

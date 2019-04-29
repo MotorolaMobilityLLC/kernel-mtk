@@ -188,7 +188,7 @@ int core_rx_lock_check(int *ret_size)
 	}
 
 out:
-	ipio_err("Rx check lock error, lock = 0x%x, size = %d\n", status, *ret_size);
+	ipio_err("Rx check lock retry, lock = 0x%x, size = %d\n", status, *ret_size);
 	return -EIO;
 }
 
@@ -226,11 +226,11 @@ int core_tx_unlock_check(void)
 			return 0;
 		}
 
-		mdelay(1);
+		mdelay(10);
 	}
 
 out:
-	ipio_err("Tx check unlock error, unlock = 0x%x\n", status);
+	ipio_err("Tx check unlock retry, unlock = 0x%x\n", status);
 	return -EIO;
 }
 

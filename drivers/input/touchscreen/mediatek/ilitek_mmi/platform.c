@@ -51,6 +51,10 @@ extern uint8_t *ilitek_hex_buffer;
 extern char mtkfb_lcm_name[256];
 bool use_g_user_buf = false;
 bool is_lcd_resume = false;
+extern bool first_int;
+extern void primary_display_esd_check_enable(int enable);
+extern void _primary_path_switch_dst_lock(void);
+extern void _primary_path_switch_dst_unlock(void);
 EXPORT_SYMBOL(use_g_user_buf);
 
 /* Debug level */
@@ -299,15 +303,15 @@ void load_touch_firmware(void)
 	int err;
 	if (!ipd->suspended)
 		ipio_info("is in resume now\n");
-
+	ipio_info("load fw begin\n");
 	if (core_firmware->isUpgrading)
 		return;
-
+	ipd->load_fw_done = 0;
 	core_fr->isEnableFR =false;
 	ilitek_platform_disable_irq();
 	if (core_config->isEnableGesture)
 		disable_irq_wake(ipd->isr_gpio);
-
+	mutex_lock(&ipd->touch_mutex);
 	if (ipd->do_otp_check)
 		core_config_protect_otp_prog_mode(1);
 
@@ -319,7 +323,7 @@ void load_touch_firmware(void)
 	}
 	else
 		is_lcd_resume = true;
-
+	mutex_unlock(&ipd->touch_mutex);
 	err = schedule_work(&ipd->ilitek_resume_work);
 	if (!err) {
 		ipio_err("start touch_resume_workqueue failed\n");
@@ -329,6 +333,13 @@ void load_touch_firmware(void)
 }
 EXPORT_SYMBOL(load_touch_firmware);
 
+void wait_for_lcm_initcode(void)
+{
+	ipd->lcm_finish = 1;
+	wake_up(&(ipd->wait_for_lcm));
+	ipio_info("wait_for_lcm_initcode end\n");
+}
+EXPORT_SYMBOL(wait_for_lcm_initcode);
 
 #if (TP_PLATFORM == PT_MTK)
 static void tpd_resume(struct device *h)
@@ -379,9 +390,10 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 			}
 
 			ipio_info("TP Suspend\n");
-
-			if (!core_firmware->isUpgrading)
-				core_config_ic_suspend();
+			_primary_path_switch_dst_lock();
+			primary_display_esd_check_enable(false);
+			_primary_path_switch_dst_unlock();
+			core_config_ic_suspend();
 		}
 #if (TP_PLATFORM == PT_SPRD)
 		else if (*blank == DRM_MODE_DPMS_ON)
@@ -555,7 +567,12 @@ static int ilitek_platform_reg_esd_check(void)
 static void ilitek_resume_workqueue_callback(struct work_struct *work)
 {
 	ipio_info("ilitek touch_resume_workqueue_callback\n");
+	mutex_lock(&ipd->touch_mutex);
 	core_config_ic_resume();
+	mutex_unlock(&ipd->touch_mutex);
+	_primary_path_switch_dst_lock();
+	primary_display_esd_check_enable(true);
+	_primary_path_switch_dst_unlock();
 }
 
 static int ilitek_platform_reg_suspend(void)
@@ -591,7 +608,10 @@ static irqreturn_t ilitek_platform_irq_top_half(int irq, void *dev_id)
 {
 	if (irq != ipd->isr_gpio || core_firmware->isUpgrading)
 		return IRQ_NONE;
-
+	if (first_int) {
+		first_int = false;
+		return IRQ_NONE;
+	}
 	return IRQ_WAKE_THREAD;
 }
 
@@ -1056,6 +1076,10 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	mutex_init(&ipd->ilitek_debug_mutex);
 	mutex_init(&ipd->ilitek_debug_read_mutex);
 	init_waitqueue_head(&(ipd->inq));
+	init_waitqueue_head(&(ipd->load_fw_done_wake));
+	init_waitqueue_head(&(ipd->wait_for_lcm));
+	ipd->lcm_finish = 0;
+	ipd->load_fw_done = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;
@@ -1182,6 +1206,10 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	mutex_init(&ipd->ilitek_debug_mutex);
 	mutex_init(&ipd->ilitek_debug_read_mutex);
 	init_waitqueue_head(&(ipd->inq));
+	init_waitqueue_head(&(ipd->load_fw_done_wake));
+	init_waitqueue_head(&(ipd->wait_for_lcm));
+	ipd->lcm_finish = 0;
+	ipd->load_fw_done = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;
