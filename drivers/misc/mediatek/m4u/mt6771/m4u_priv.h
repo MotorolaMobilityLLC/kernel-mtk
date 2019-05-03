@@ -163,6 +163,7 @@ struct m4u_buf_info_t {
 	unsigned int size_align;
 	int seq_id;
 	unsigned long mapped_kernel_va_for_debug;
+	unsigned long long current_ts;
 };
 
 struct M4U_MAU_STRUCT {
@@ -220,7 +221,7 @@ int m4u_reg_backup(void);
 int m4u_reg_restore(void);
 int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd);
 int m4u_invalid_seq_range_by_id(int port, int seq_id);
-void m4u_print_port_status(struct seq_file *seq, int only_print_active);
+void m4u_print_port_status(struct seq_file *seq, int tf_port);
 
 int m4u_dump_main_tlb(int m4u_id, int m4u_slave_id);
 int m4u_dump_pfh_tlb(int m4u_id);

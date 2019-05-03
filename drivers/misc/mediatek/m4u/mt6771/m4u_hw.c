@@ -1444,7 +1444,7 @@ void m4u_print_perf_counter(int m4u_index, int m4u_slave_id, const char *msg)
 }
 
 
-#define M4U_REG_BACKUP_SIZE     (100*sizeof(unsigned int))
+#define M4U_REG_BACKUP_SIZE     (160*sizeof(unsigned int))
 static unsigned int *pM4URegBackUp;
 static unsigned int gM4u_reg_backup_real_size;
 
@@ -1459,7 +1459,7 @@ int m4u_reg_backup(void)
 	unsigned int *pReg = pM4URegBackUp;
 	unsigned long m4u_base;
 	int m4u_id, m4u_slave;
-	int seq, mau;
+	int mau;
 	unsigned int real_size;
 	int dist;
 
@@ -1484,11 +1484,12 @@ int m4u_reg_backup(void)
 		__M4U_BACKUP(m4u_base, REG_MMU_INT_MAIN_CONTROL, *(pReg++));
 
 		for (m4u_slave = 0; m4u_slave < M4U_SLAVE_NUM(m4u_id); m4u_slave++) {
+#if 0
 			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++) {
 				__M4U_BACKUP(m4u_base, REG_MMU_SQ_START(m4u_slave, seq), *(pReg++));
 				__M4U_BACKUP(m4u_base, REG_MMU_SQ_END(m4u_slave, seq), *(pReg++));
 			}
-
+#endif
 			for (mau = 0; mau < MAU_NR_PER_M4U_SLAVE; mau++) {
 				__M4U_BACKUP(m4u_base, REG_MMU_MAU_START(m4u_slave, mau),
 					     *(pReg++));
@@ -1508,7 +1509,7 @@ int m4u_reg_backup(void)
 	}
 
 	/* check register size (to prevent overflow) */
-	real_size = (pReg - pM4URegBackUp);
+	real_size = (pReg - pM4URegBackUp) * sizeof(unsigned int);
 	if (real_size > M4U_REG_BACKUP_SIZE)
 		m4u_aee_print("m4u_reg overflow! %d>%d\n", real_size, (int)M4U_REG_BACKUP_SIZE);
 
@@ -1522,7 +1523,7 @@ int m4u_reg_restore(void)
 	unsigned int *pReg = pM4URegBackUp;
 	unsigned long m4u_base;
 	int m4u_id, m4u_slave;
-	int seq, mau;
+	int mau;
 	unsigned int real_size;
 	int dist;
 
@@ -1548,13 +1549,13 @@ int m4u_reg_restore(void)
 		__M4U_RESTORE(m4u_base, REG_MMU_INT_MAIN_CONTROL, *(pReg++));
 
 		for (m4u_slave = 0; m4u_slave < M4U_SLAVE_NUM(m4u_id); m4u_slave++) {
-
+#if 0
 			for (seq = 0; seq < M4U_SEQ_NUM(m4u_id); seq++) {
 				__M4U_RESTORE(m4u_base, REG_MMU_SQ_START(m4u_slave, seq),
 					      *(pReg++));
 				__M4U_RESTORE(m4u_base, REG_MMU_SQ_END(m4u_slave, seq), *(pReg++));
 			}
-
+#endif
 			for (mau = 0; mau < MAU_NR_PER_M4U_SLAVE; mau++) {
 				__M4U_RESTORE(m4u_base, REG_MMU_MAU_START(m4u_slave, mau),
 					      *(pReg++));
@@ -1576,7 +1577,7 @@ int m4u_reg_restore(void)
 	}
 
 	/* check register size (to prevent overflow) */
-	real_size = (pReg - pM4URegBackUp);
+	real_size = (pReg - pM4URegBackUp) * sizeof(unsigned int);
 	if (real_size != gM4u_reg_backup_real_size)
 		m4u_aee_print("m4u_reg_retore %d!=%d\n", real_size, gM4u_reg_backup_real_size);
 
@@ -1664,41 +1665,46 @@ void m4u_larb0_disable(char *name)
 	mutex_unlock(&m4u_larb0_mutex);
 }
 
-void m4u_print_port_status(struct seq_file *seq, int only_print_active)
+void m4u_print_port_status(struct seq_file *seq, int tf_port)
 {
-	int port, mmu_en = 0;
-	int m4u_index, larb, larb_port;
+	int mmu_en = 0, mmu_en_sec = 0, sec_en = 0;
+	int m4u_index, larb, l_port;
 	unsigned long larb_base;
 
-	M4U_PRINT_LOG_OR_SEQ(seq, "m4u_print_port_status ========>\n");
+	m4u_index = m4u_port_2_m4u_id(tf_port);
+	larb = m4u_port_2_larb_id(tf_port);
 
-	for (port = 0; port < gM4u_port_num; port++) {
-		m4u_index = m4u_port_2_m4u_id(port);
-		if (m4u_index == 0) {
-			larb = m4u_port_2_larb_id(port);
-			larb_port = m4u_port_2_larb_port(port);
-			larb_base = gLarbBaseAddr[larb];
-			if (larb >= 7)
-				continue;
-			mmu_en =
-				m4uHw_get_field_by_mask(larb_base, SMI_LARB_NON_SEC_CONx(larb_port),
-							F_SMI_NON_SEC_MMU_EN(1));
-
-		} else {
-			larb_port = m4u_port_2_larb_port(port);
-
-			mmu_en =
-				m4uHw_get_field_by_mask(gPericfgBaseAddr, REG_PERIAXI_BUS_CTL3,
-							F_PERI_MMU_EN(larb_port, 1));
-		}
-
-		if (only_print_active && !mmu_en)
-			continue;
-
-		M4U_PRINT_LOG_OR_SEQ(seq, "%s(%d),", m4u_get_port_name(port), !!mmu_en);
+	if (larb >= SMI_LARB_NR) {
+		M4U_PRINT_LOG_OR_SEQ(seq, "port_status_ext errror larb %d\n", larb);
+		return;
 	}
 
-	M4U_PRINT_LOG_OR_SEQ(seq, "\n");
+	M4U_PRINT_LOG_OR_SEQ(seq, "port_status_ext larb %d========>\n", larb);
+
+	if (m4u_index == 0) {
+		l_port = m4u_port_2_larb_port(tf_port);
+		larb_base = gLarbBaseAddr[larb];
+		mmu_en = m4uHw_get_field_by_mask(larb_base,
+						 SMI_LARB_NON_SEC_CONx(l_port),
+						 F_SMI_NON_SEC_MMU_EN(1));
+		mmu_en_sec = m4uHw_get_field_by_mask(larb_base,
+						 SMI_LARB_SEC_CONx(l_port),
+						 F_SMI_SEC_MMU_EN(1));
+		sec_en = m4uHw_get_field_by_mask(larb_base,
+						 SMI_LARB_SEC_CONx(l_port),
+						 F_SMI_SEC_EN(1));
+
+		M4U_PRINT_LOG_OR_SEQ(seq,
+			"%s non_reg:0x%x, sec_reg:0x%x\n",
+			__func__,
+			M4U_ReadReg32(larb_base, SMI_LARB_NON_SEC_CONx(l_port)),
+			M4U_ReadReg32(larb_base, SMI_LARB_SEC_CONx(l_port)));
+	}
+
+	M4U_PRINT_LOG_OR_SEQ(seq,
+			"%s larb:%d, port:%s, mmu_en:%d mmu_en_sec:%d, sec:%d\n",
+			__func__, larb, m4u_get_port_name(tf_port),
+			!!mmu_en, !!mmu_en_sec, !!sec_en);
 }
 
 #if 0
@@ -1968,7 +1974,7 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 
 			if (gM4uPort[m4u_port].enable_tf == 1 && bypass_DISP_TF == 0) {
 				m4u_dump_pte_nolock(m4u_get_domain_by_port(m4u_port), fault_mva);
-				m4u_print_port_status(NULL, 1);
+				m4u_print_port_status(NULL, m4u_port);
 
 				/* call user's callback to dump user registers */
 				if (m4u_port < M4U_PORT_UNKNOWN && gM4uPort[m4u_port].fault_fn) {

@@ -316,7 +316,7 @@
 #define REG_MMU_MAU_VA(mmu)		(0x930+((mmu)*0xa4))
 #define REG_MMU_MAU_ASSERT_ST(mmu)		(0x934+((mmu)*0xa4))
 
-#define MMU_TOTAL_PROG_DIST_NR	 8
+#define MMU_TOTAL_PROG_DIST_NR	 2
 #define REG_MMU_PROG_DIST0	   0xb00
 #define REG_MMU_PROG_DIST1	   0xb04
 #define REG_MMU_PROG_DIST2	   0xb08

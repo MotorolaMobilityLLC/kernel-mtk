@@ -17,7 +17,8 @@
 #define M4U_PGSIZES (SZ_4K | SZ_64K | SZ_1M | SZ_16M)
 
 #define TOTAL_M4U_NUM           1
-#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 1)      /* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
+/* m4u0 has 2 slaves, iommu(m4u1) has 1 slave */
+#define M4U_SLAVE_NUM(m4u_id)   ((m4u_id) ? 2 : 2)
 
 /* seq range related */
 #define SEQ_NR_PER_MM_SLAVE    8
