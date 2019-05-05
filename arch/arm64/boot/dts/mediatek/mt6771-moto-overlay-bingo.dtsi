@@ -74,9 +74,6 @@
 };
 
 &odm {
-	otg_iddig:otg_iddig  {
-	compatible = "mediatek,usb_iddig_bi_eint";
-	};
 	sar_irq:sar_irq {
 	compatible = "mediatek,sar_irq";
 	};
