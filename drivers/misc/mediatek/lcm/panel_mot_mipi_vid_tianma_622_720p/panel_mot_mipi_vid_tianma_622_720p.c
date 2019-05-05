@@ -107,6 +107,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_HIGH	0xFFFF
 
 extern void load_touch_firmware(void);
+extern void wait_for_lcm_initcode(void);
 
 #ifndef TRUE
 #define TRUE 1
@@ -260,7 +261,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
@@ -324,6 +325,7 @@ static void lcm_init(void)
 	load_touch_firmware();
 	MDELAY(10);
 	push_table(NULL, init_setting_vdo, sizeof(init_setting_vdo) / sizeof(struct LCM_setting_table), 1);
+	wait_for_lcm_initcode();
 	LCM_LOGI("ili9881h----tianma----lcm mode = vdo mode ----\n");
 
 }
