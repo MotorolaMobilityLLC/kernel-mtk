@@ -1322,6 +1322,105 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		bm_err("Get battery%d_profile_t4_num failed\n", bat_id);
 #endif
 
+	switch (bat_id) {
+		case 0:
+			ret0 = !of_property_read_u32(np,
+				"battery0_qmax_t0", &val_0);
+			ret1 = !of_property_read_u32(np,
+				"battery0_qmax_t1", &val_1);
+			ret2 = !of_property_read_u32(np,
+				"battery0_qmax_t2", &val_2);
+			ret3 = !of_property_read_u32(np,
+				"battery0_qmax_t3", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np,
+				"battery0_qmax_t4", &val_4);
+#endif
+			break;
+		case 1:
+			ret0 = !of_property_read_u32(np,
+				"battery1_qmax_t0", &val_0);
+			ret1 = !of_property_read_u32(np,
+				"battery1_qmax_t1", &val_1);
+			ret2 = !of_property_read_u32(np,
+				"battery1_qmax_t2", &val_2);
+			ret3 = !of_property_read_u32(np,
+				"battery1_qmax_t3", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np,
+				"battery1_qmax_t4", &val_4);
+#endif
+			break;
+		case 2:
+			ret0 = !of_property_read_u32(np,
+				"battery2_qmax_t0", &val_0);
+			ret1 = !of_property_read_u32(np,
+				"battery2_qmax_t1", &val_1);
+			ret2 = !of_property_read_u32(np,
+				"battery2_qmax_t2", &val_2);
+			ret3 = !of_property_read_u32(np,
+				"battery2_qmax_t3", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np,
+				"battery2_qmax_t4", &val_4);
+#endif
+			break;
+		case 3:
+			ret0 = !of_property_read_u32(np,
+				"battery3_qmax_t0", &val_0);
+			ret1 = !of_property_read_u32(np,
+				"battery3_qmax_t1", &val_1);
+			ret2 = !of_property_read_u32(np,
+				"battery3_qmax_t2", &val_2);
+			ret3 = !of_property_read_u32(np,
+				"battery3_qmax_t3", &val_3);
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = !of_property_read_u32(np,
+				"battery3_qmax_t4", &val_4);
+#endif
+			break;
+		default:
+			ret0 = 0;
+			ret1 = 0;
+			ret2 = 0;
+			ret3 = 0;
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+			ret4 = 0;
+#endif
+			break;
+	}
+	if (ret0) {
+		bm_debug("Get battery%d_qmax_t0: %d\n", bat_id, val_0);
+		fg_table_cust_data.fg_profile[0].q_max = val_0;
+	} else
+		bm_err("Get battery%d_qmax_t0 failed\n", bat_id);
+
+	if (ret1) {
+		bm_debug("Get battery%d_qmax_t1: %d\n", bat_id, val_1);
+		fg_table_cust_data.fg_profile[1].q_max = val_1;
+	} else
+		bm_err("Get battery%d_qmax_t1 failed\n", bat_id);
+
+	if (ret2) {
+		bm_debug("Get battery%d_qmax_t2: %d\n", bat_id, val_2);
+		fg_table_cust_data.fg_profile[2].q_max = val_2;
+	} else
+		bm_err("Get battery%d_qmax_t2 failed\n", bat_id);
+
+	if (ret3) {
+		bm_debug("Get battery%d_qmax_t3: %d\n", bat_id, val_3);
+		fg_table_cust_data.fg_profile[3].q_max = val_3;
+	} else
+		bm_err("Get battery%d_qmax_t3 failed\n", bat_id);
+
+#ifdef CONFIG_MTK_ADDITIONAL_BATTERY_TABLE
+	if (ret4) {
+		bm_debug("Get battery%d_qmax_t4: %d\n", bat_id, val_4);
+		fg_table_cust_data.fg_profile[4].q_max = val_4;
+	} else
+		bm_err("Get battery%d_qmax_t4 failed\n", bat_id);
+#endif
+
 		switch (bat_id) {
 		case 0:
 			fg_custom_parse_table(np, "battery0_profile_t0",
