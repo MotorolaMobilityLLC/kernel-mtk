@@ -47,6 +47,8 @@
 #define B_G_GOLDEN (unsigned int)(2*111.0/(156+156)*512+0.5) //0x0297*5
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 end
 
+extern unsigned int sensor_module_id;
+
 typedef struct {
 	unsigned short	infoflag;
 	unsigned short	lsc_infoflag;
@@ -432,6 +434,11 @@ int otp_group_info_4h7(void)
 		printk("4h7 OTP read data fail flag empty!!!\n");
 		//goto error;
 	}
+
+	otp_data_info.flag_module_integrator_id =
+		otp_4h7_read_cmos_sensor(S5K4H7SUB_OTP_FLAGFLAG_ADDR + otp_data_info.flag_offset + 1);
+
+    sensor_module_id = otp_data_info.flag_module_integrator_id;
 
 	if( (otp_data_info.flag_group ==1) || (otp_data_info.flag_group == 2)){
 		if(otp_data_info.flag_group ==1){

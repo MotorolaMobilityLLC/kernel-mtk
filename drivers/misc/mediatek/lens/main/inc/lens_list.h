@@ -181,6 +181,20 @@ extern int DW9718SAF_S5K3L6_SUNWIN_P161M_PowerDown(struct i2c_client *pstAF_I2Cc
 				int *pAF_Opened);
 extern int DW9718SAF_S5K3L6_SUNWIN_P161M_GetFileName(unsigned char *pFileName);
 
+#define DW9718SAF_S5K3L6_TSP_P161M_SetI2Cclient DW9718SAF_S5K3L6_TSP_P161M_SetI2Cclient_Main
+#define DW9718SAF_S5K3L6_TSP_P161M_Ioctl DW9718SAF_S5K3L6_TSP_P161M_Ioctl_Main
+#define DW9718SAF_S5K3L6_TSP_P161M_Release DW9718SAF_S5K3L6_TSP_P161M_Release_Main
+#define DW9718SAF_S5K3L6_TSP_P161M_PowerDown DW9718SAF_S5K3L6_TSP_P161M_PowerDown_Main
+#define DW9718SAF_S5K3L6_TSP_P161M_GetFileName DW9718SAF_S5K3L6_TSP_P161M_GetFileName_Main
+extern int DW9718SAF_S5K3L6_TSP_P161M_SetI2Cclient(struct i2c_client *pstAF_I2Cclient,
+				  spinlock_t *pAF_SpinLock, int *pAF_Opened);
+extern long DW9718SAF_S5K3L6_TSP_P161M_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
+			    unsigned long a_u4Param);
+extern int DW9718SAF_S5K3L6_TSP_P161M_Release(struct inode *a_pstInode, struct file *a_pstFile);
+extern int DW9718SAF_S5K3L6_TSP_P161M_PowerDown(struct i2c_client *pstAF_I2Cclient,
+				int *pAF_Opened);
+extern int DW9718SAF_S5K3L6_TSP_P161M_GetFileName(unsigned char *pFileName);
+
 #define DW9719TAF_SetI2Cclient DW9719TAF_SetI2Cclient_Main
 #define DW9719TAF_Ioctl DW9719TAF_Ioctl_Main
 #define DW9719TAF_Release DW9719TAF_Release_Main

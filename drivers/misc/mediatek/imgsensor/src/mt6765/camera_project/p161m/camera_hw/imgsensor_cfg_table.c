@@ -164,6 +164,23 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	},
 #endif
 
+#if defined(S5K3L6_TSP_P161M_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_S5K3L6_TSP_P161M_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{AFVDD, Vol_2800, 5},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_2800, 0},
+			{DVDD, Vol_1100, 5},
+			{PDN, Vol_High, 0},
+			{RST, Vol_High, 5}
+		},
+	},
+#endif
+
 #if defined(GC5025_SUNWIN_P161BN_MIPI_RAW)
 			{
 				SENSOR_DRVNAME_GC5025_SUNWIN_P161BN_MIPI_RAW,
@@ -197,6 +214,22 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 #if defined(S5K4H7YX_SUNWIN_P161M_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P161M_MIPI_RAW,
+		{
+		   {SensorMCLK, Vol_High, 1},
+		   {DOVDD, Vol_1800, 1},
+		   //{DVDD, Vol_1200, 2},
+		   {DVDD, Vol_1200, 2},
+		   {AVDD, Vol_2800, 1},
+		   {RST, Vol_Low, 10},
+		   {PDN, Vol_Low, 10},
+		   {RST, Vol_High, 10},
+		   {PDN, Vol_High, 10},
+		},
+	},
+#endif
+#if defined(S5K4H7YX_TSP_P161M_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_S5K4H7YX_TSP_P161M_MIPI_RAW,
 		{
 		   {SensorMCLK, Vol_High, 1},
 		   {DOVDD, Vol_1800, 1},

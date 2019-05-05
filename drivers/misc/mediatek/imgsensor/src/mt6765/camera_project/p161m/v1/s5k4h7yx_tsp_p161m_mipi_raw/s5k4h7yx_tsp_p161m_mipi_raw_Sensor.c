@@ -33,28 +33,28 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k4h7yx_sunwin_p161m_mipi_raw_Sensor.h"
+#include "s5k4h7yx_tsp_p161m_mipi_raw_Sensor.h"
 
 //add camera info for p161m
 #ifdef CONFIG_TINNO_PRODUCT_INFO
 #include <dev_info.h>
 #endif
 
-unsigned int sensor_module_id = 0;
+unsigned int tsp_s5k4h7_module_id = 0;
 
-#define PFX "s5k4h7yx_sunwin_p161m_camera_sensor"
+#define PFX "s5k4h7yx_tsp_p161m_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-extern bool update_otp(void);
-extern bool check_sum_flag_lsc(void);
-extern int apply_4h7_otp_awb(void);
-extern void apply_4h7_otp_enb_lsc(void);
+extern bool update_tsp_otp(void);
+extern bool tsp_4h7_check_sum_flag_lsc(void);
+extern int apply_tsp_4h7_otp_awb(void);
+extern void apply_tsp_4h7_otp_enb_lsc(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K4H7YX_SUNWIN_P161M_SENSOR_ID,
+	.sensor_id = S5K4H7YX_TSP_P161M_SENSOR_ID,
 
 	.checksum_value = 0x138daa55,
 
@@ -205,7 +205,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	return get_byte;
 }
 
-kal_uint16 otp_4h7_read_cmos_sensor(kal_uint32 addr)
+kal_uint16 otp_tsp_4h7_read_cmos_sensor(kal_uint32 addr)
 {
 	char data = 0;
 	data = read_cmos_sensor(addr);
@@ -226,11 +226,11 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
-void otp_4h7_write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
+void otp_tsp_4h7_write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 {
 	write_cmos_sensor_8(addr, para);
 }
-unsigned char S5K4H7_read_cmos_sensor(u32 addr)
+unsigned char TSP_S5K4H7_read_cmos_sensor(u32 addr)
 {
 	kal_uint16 get_byte = 0;
 
@@ -241,7 +241,7 @@ unsigned char S5K4H7_read_cmos_sensor(u32 addr)
 	return get_byte;
 }
 
-void S5K4H7_write_cmos_sensor(u16 addr, u32 para)
+void TSP_S5K4H7_write_cmos_sensor(u16 addr, u32 para)
 {
     char pusendcmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
@@ -962,15 +962,16 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id();
+			*sensor_id = return_sensor_id() + 1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
+
 			#if 1
-	           if (!(update_otp()))
+	           if (!(update_tsp_otp()))
                {
-                   LOG_INF("Demon_otp update_otp error!");
-               }
-            #endif
-                   break;
+                   LOG_INF("Demon_otp update_tsp_otp error!");
+               } 
+               #endif
+              break;         
 			}
 			retry--;
 		} while (retry > 0);
@@ -979,23 +980,25 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	}
 
 	if (*sensor_id != imgsensor_info.sensor_id) {
-
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
-
-    if(sensor_module_id == 0x06) {
+    
+     if (tsp_s5k4h7_module_id == 0x43) {
+         pr_err("tsp 4h7 read sensor module id = 0x%x success.\n", tsp_s5k4h7_module_id);
 //add camera info for p161m
 #ifdef CONFIG_TINNO_PRODUCT_INFO
-        FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P161M_SENSOR_ID, 1, "s5k4h7yx_sunwin_p161m_mipi_raw",
-                imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);
+         FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_TSP_P161M_SENSOR_ID, 1, "s5k4h7yx_tsp_p161m_mipi_raw", 
+                 imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);       
 #endif
-        return ERROR_NONE;
-    } else {
-        pr_err("4h7 sensor module id = 0x%x.\n", sensor_module_id);
-        *sensor_id = 0xFFFFFFFF;
-        return ERROR_SENSOR_CONNECT_FAIL;
-    }
+         return ERROR_NONE;
+     } 
+     else 
+     {
+         pr_err("4h7 sensor module id = 0x%x.\n", tsp_s5k4h7_module_id);
+         *sensor_id = 0xFFFFFFFF;
+         return ERROR_SENSOR_CONNECT_FAIL;
+     }
 }
 
 
@@ -1029,7 +1032,7 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
+			sensor_id = return_sensor_id() + 1;
 			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
@@ -1047,13 +1050,15 @@ static kal_uint32 open(void)
 		return ERROR_SENSOR_CONNECT_FAIL;
 
 #if 0
-	if (!(update_otp()))
+	if (!(update_tsp_otp()))
 	{
-		LOG_INF("Demon_otp update_otp error!");
+		LOG_INF("Demon_otp update_tsp_otp error!");
 	}
 #endif
-	apply_4h7_otp_awb();
-	apply_4h7_otp_enb_lsc();
+#if 0 //dashao.su del.
+	apply_tsp_4h7_otp_awb();
+	apply_tsp_4h7_otp_enb_lsc();
+#endif
 
 	/* initail sequence write in  */
 	sensor_init();
@@ -1778,7 +1783,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K4H7YX_SUNWIN_P161M_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 S5K4H7YX_TSP_P161M_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
