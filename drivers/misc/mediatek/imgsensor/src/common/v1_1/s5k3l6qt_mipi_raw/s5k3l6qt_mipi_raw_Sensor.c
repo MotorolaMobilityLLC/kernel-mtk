@@ -49,6 +49,8 @@
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
+static bool bIsLongExposure = KAL_FALSE;
+
 static MUINT32 g_sync_mode = SENSOR_MASTER_SYNC_MODE;
 
 static imgsensor_info_struct imgsensor_info = {
@@ -66,6 +68,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 480000000,
 	},
 	.cap = {
 		.pclk = 480000000,				//record different mode's pclk
@@ -79,6 +82,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 480000000,
 	},
 	.normal_video = {
 		.pclk = 480000000,				//record different mode's pclk
@@ -92,6 +96,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 480000000,
 	},
 	.hs_video = {
 		.pclk = 480000000,				//record different mode's pclk
@@ -105,6 +110,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 1200,
+		.mipi_pixel_rate = 480000000,
 	},
 	.slim_video = {
 		.pclk = 480000000,				//record different mode's pclk
@@ -118,6 +124,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
+		.mipi_pixel_rate = 208000000,
 	},
 
 	.margin = 5,			//sensor framelength & shutter margin
@@ -161,6 +168,7 @@ static imgsensor_struct imgsensor = {
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,//current scenario id
 	.ihdr_en = KAL_FALSE, //sensor need support LE, SE with HDR feature
 	.i2c_write_id = 0x5a,//record current sensor's i2c write id
+	.current_ae_effective_frame = 1, //number of frames in effect for long exposure。if N+1 take effect，the value is 1；
 };
 
 /* Sensor output window information*/
@@ -263,7 +271,36 @@ static void set_max_framerate(UINT16 framerate,kal_bool min_framelength_en)
 	set_dummy();
 }	/*	set_max_framerate  */
 
-static void set_shutter(kal_uint16 shutter)
+
+
+static kal_uint32 streaming_control(kal_bool enable)
+{
+    int timeout = 200;//(10000 / imgsensor.current_fps) + 1;
+    int i = 0;
+    int framecnt = 0;
+
+    LOG_INF("streaming_enable(0= Sw Standby,1= streaming): %d\n", enable);
+    if (enable) {
+        write_cmos_sensor_byte(0x3C1E, 0x01);
+        write_cmos_sensor_byte(0x0100, 0x01);
+        write_cmos_sensor_byte(0x3C1E, 0x00);
+        mdelay(10);
+    } else {
+        write_cmos_sensor_byte(0x0100, 0x00);
+        for (i = 0; i < timeout; i++) {
+            mdelay(10);
+            framecnt = read_cmos_sensor_byte(0x0005);
+            if ( framecnt == 0xFF) {
+                LOG_INF(" Stream Off OK at i=%d.\n", i);
+                return ERROR_NONE;
+            }
+        }
+        LOG_INF("Stream Off Fail! framecnt= %d.\n", framecnt);
+    }
+    return ERROR_NONE;
+}
+
+static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
 	kal_uint16 realtime_fps = 0;
@@ -287,7 +324,6 @@ static void set_shutter(kal_uint16 shutter)
 		imgsensor.frame_length = imgsensor_info.max_frame_length;
 	spin_unlock(&imgsensor_drv_lock);
 	shutter = (shutter < imgsensor_info.min_shutter) ? imgsensor_info.min_shutter : shutter;
-	shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
 
 	if (imgsensor.autoflicker_en) {
 		realtime_fps = imgsensor.pclk / imgsensor.line_length * 10 / imgsensor.frame_length;
@@ -304,9 +340,136 @@ static void set_shutter(kal_uint16 shutter)
 		write_cmos_sensor(0x0340, imgsensor.frame_length & 0xFFFF);
 	}
 
-	// Update Shutter
-	write_cmos_sensor(0X0202, shutter & 0xFFFF);
-	LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+	if(shutter > 65530) {  //linetime=10160/960000000<< maxshutter=3023622-line=32s
+		/*enter long exposure mode */
+		kal_uint32 exposure_time;
+		kal_uint32 new_framelength;
+		kal_uint32 long_shutter;
+		kal_uint32 temp1_0342 = 0, temp2_0343 = 0;
+		kal_uint32 long_shutter_linelenght = 0;
+		int timeout = 200;
+		int framecnt = 0;
+
+		bIsLongExposure = KAL_TRUE;
+		LOG_INF(" enter long exposure mode\n");
+
+		/* Calculate value need by long exposure setting*/
+		exposure_time = shutter/100;//ms
+		if(exposure_time < 6500) {
+			temp1_0342 = 0x13;
+			temp2_0343 = 0x20;
+			long_shutter_linelenght = 4896;
+			LOG_INF("  1s~7s exposure_time = %d\n",exposure_time);
+		} else if (6500 <= exposure_time  && exposure_time <= 22200) {
+			temp1_0342 = 0x3f;
+			temp2_0343 = 0x90;
+			long_shutter_linelenght = 16272;
+			LOG_INF("  7s~22.2s exposure_time = %d\n",exposure_time);
+		} else if (22200 < exposure_time  && exposure_time <= 23500) {
+			temp1_0342 = 0x3f;
+			temp2_0343 = 0x90;
+			long_shutter_linelenght = 17216;
+			LOG_INF("  22.2s~23.5s exposure_time = %d\n",exposure_time);
+		}
+		 //shutter unit is S.used by 0x202 and 0x20
+		long_shutter = (shutter*48)/(long_shutter_linelenght/10);
+		new_framelength = long_shutter+2; //used by 0x340 and 0x341
+		LOG_INF(" Calc long exposure_time=%dms,long_shutter=%d, framelength=%d.\n",\
+			      exposure_time,long_shutter, new_framelength);
+
+		/*stream off */
+		streaming_control(KAL_FALSE);
+
+		/*setting for long exposure*/
+		write_cmos_sensor_byte(0x0307, 0x60);
+		write_cmos_sensor_byte(0x3C1F, 0x03);
+		write_cmos_sensor_byte(0x030D, 0x03);
+		write_cmos_sensor_byte(0x030E, 0x00);
+		write_cmos_sensor_byte(0x030F, 0x78);
+		write_cmos_sensor_byte(0x3C17, 0x04);
+		write_cmos_sensor_byte(0x0820, 0x00);
+		write_cmos_sensor_byte(0x0821, 0x78);
+		write_cmos_sensor_byte(0x38C5, 0x03);
+		write_cmos_sensor_byte(0x38D9, 0x00);
+		write_cmos_sensor_byte(0x38DB, 0x08);
+		write_cmos_sensor_byte(0x38DD, 0x13);
+		write_cmos_sensor_byte(0x38C3, 0x06);
+		write_cmos_sensor_byte(0x38C1, 0x00);
+		write_cmos_sensor_byte(0x38D7, 0x0F);
+		write_cmos_sensor_byte(0x38D5, 0x03);
+		write_cmos_sensor_byte(0x38B1, 0x01);
+		write_cmos_sensor_byte(0x3932, 0x20);
+		write_cmos_sensor_byte(0x3938, 0x20);
+		write_cmos_sensor_byte(0x0340, (new_framelength&0xFF00)>>8);
+		write_cmos_sensor_byte(0x0341, (new_framelength&0x00FF));
+		write_cmos_sensor_byte(0x0342, temp1_0342);
+		write_cmos_sensor_byte(0x0343, temp2_0343);
+		write_cmos_sensor_byte(0x0202, (long_shutter&0xFF00)>>8);
+		write_cmos_sensor_byte(0x0203, (long_shutter&0x00FF));
+
+		/*stream on*/
+		write_cmos_sensor_byte(0x3C1E, 0x01);
+		write_cmos_sensor_byte(0x0100, 0x01);
+		write_cmos_sensor_byte(0x3C1E, 0x00);
+		for (int i = 0; i < timeout; i++) {
+			mdelay(10);
+			framecnt = read_cmos_sensor_byte(0x0005);
+			if ( framecnt == 0xFF) {
+				LOG_INF(" Stream On OK at i=%d.\n", i);
+				break;
+			}
+		}
+
+		/* Frame exposure mode customization for LE*/
+		imgsensor.ae_frm_mode.frame_mode_1 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.ae_frm_mode.frame_mode_2 = IMGSENSOR_AE_MODE_SE;
+		imgsensor.current_ae_effective_frame = 1;
+		LOG_INF(" long exposure stream on-\n");
+	} else {
+		/*normal mode*/
+		if (bIsLongExposure == KAL_TRUE) {
+			bIsLongExposure = KAL_FALSE;
+			LOG_INF("[Exit long shutter + ]  shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+			/*stream off*/
+			streaming_control(KAL_FALSE);
+			/*setting for normal*/
+			write_cmos_sensor_byte(0x0307, 0x78);
+			write_cmos_sensor_byte(0x3C1F, 0x00);
+			write_cmos_sensor_byte(0x030D, 0x03);
+			write_cmos_sensor_byte(0x030E, 0x00);
+			write_cmos_sensor_byte(0x030F, 0x4B);
+			write_cmos_sensor_byte(0x3C17, 0x00);
+			write_cmos_sensor_byte(0x0820, 0x04);
+			write_cmos_sensor_byte(0x0821, 0xB0);
+			write_cmos_sensor_byte(0x38C5, 0x09);
+			write_cmos_sensor_byte(0x38D9, 0x2A);
+			write_cmos_sensor_byte(0x38DB, 0x0A);
+			write_cmos_sensor_byte(0x38DD, 0x0B);
+			write_cmos_sensor_byte(0x38C3, 0x0A);
+			write_cmos_sensor_byte(0x38C1, 0x0F);
+			write_cmos_sensor_byte(0x38D7, 0x0A);
+			write_cmos_sensor_byte(0x38D5, 0x09);
+			write_cmos_sensor_byte(0x38B1, 0x0F);
+			write_cmos_sensor_byte(0x3932, 0x18);
+			write_cmos_sensor_byte(0x3938, 0x00);
+
+			write_cmos_sensor_byte(0x0340, 0x0C);
+			write_cmos_sensor_byte(0x0341, 0xBC);
+			write_cmos_sensor_byte(0x0342, 0x13);
+			write_cmos_sensor_byte(0x0343, 0x20);
+			write_cmos_sensor_byte(0x0202, 0x03);
+			write_cmos_sensor_byte(0x0203, 0xDE);
+			/*stream on*/
+			streaming_control(KAL_TRUE);
+			LOG_INF("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+
+		} else {
+			shutter = (shutter > (imgsensor_info.max_frame_length - imgsensor_info.margin)) ? (imgsensor_info.max_frame_length - imgsensor_info.margin) : shutter;
+			write_cmos_sensor(0x0202, shutter & 0xFFFF);
+			LOG_INF("Exit! shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
+		}
+		imgsensor.current_ae_effective_frame = 1;
+	}
 }
 
 static void set_shutter_frame_length(kal_uint16 shutter, kal_uint16 frame_length)
@@ -2072,21 +2235,6 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	return ERROR_NONE;
 }
 
-static kal_uint32 streaming_control(kal_bool enable)
-{
-	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
-	if (enable) {
-		write_cmos_sensor(0x3C1E, 0x0100);
-		write_cmos_sensor(0x0100, 0x0100);
-		write_cmos_sensor(0x3C1E, 0x0000);
-		}
-	else {
-		write_cmos_sensor(0x0100, 0x0000);
-		}
-	mdelay(10);
-	return ERROR_NONE;
-}
-
 static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		UINT8 *feature_para,UINT32 *feature_para_len)
 {
@@ -2105,6 +2253,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	LOG_INF("feature_id = %d\n", feature_id);
 	switch (feature_id) {
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+		*feature_return_para_32 = imgsensor.current_ae_effective_frame;
+		break;
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
+		memcpy(feature_return_para_32, &imgsensor.ae_frm_mode,
+                         sizeof(struct IMGSENSOR_AE_FRM_MODE));
+		break;
 	case SENSOR_FEATURE_GET_PERIOD:
 		*feature_return_para_16++ = imgsensor.line_length;
 		*feature_return_para_16 = imgsensor.frame_length;
@@ -2162,15 +2317,15 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		*feature_para_len=4;
 		break;
 	case SENSOR_FEATURE_SET_FRAMERATE:
-		LOG_INF("current fps :%d\n", (UINT32)*feature_data);
+		LOG_INF("current fps :%d\n", (UINT32)*feature_data_32);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.current_fps = *feature_data;
+		imgsensor.current_fps = *feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_SET_HDR:
 		LOG_INF("ihdr enable :%d\n", (BOOL)*feature_data);
 		spin_lock(&imgsensor_drv_lock);
-		imgsensor.ihdr_en = (BOOL)*feature_data;
+		imgsensor.ihdr_en = (BOOL)*feature_data_32;
 		spin_unlock(&imgsensor_drv_lock);
 		break;
 	case SENSOR_FEATURE_GET_CROP_INFO:
@@ -2275,6 +2430,32 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		LOG_INF("SENSOR_FEATURE_SET_STREAMING_RESUME\n");
 		streaming_control(KAL_TRUE);
 		break;
+    case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
+
+            switch (*feature_data) {
+            case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
+                    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+                            imgsensor_info.cap.mipi_pixel_rate;
+                    break;
+            case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+                    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+                            imgsensor_info.normal_video.mipi_pixel_rate;
+                    break;
+            case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
+                    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+                            imgsensor_info.hs_video.mipi_pixel_rate;
+                    break;
+            case MSDK_SCENARIO_ID_SLIM_VIDEO:
+                    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+                            imgsensor_info.slim_video.mipi_pixel_rate;
+                    break;
+            case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
+            default:
+                    *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
+                            imgsensor_info.pre.mipi_pixel_rate;
+                    break;
+            }
+            break;
 
 	default:
 		break;
