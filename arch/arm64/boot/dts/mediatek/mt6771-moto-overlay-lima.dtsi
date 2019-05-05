@@ -278,10 +278,6 @@
 	};
 };
 
-&bat_gm30 {
-	R_FG_VALUE = <(10)>;	/*	R_sense resistance.*/
-};
-
 &lk_charger {
 	compatible = "mediatek,lk_charger";
 	power_path_support;
@@ -369,6 +365,8 @@
 };
 
 &bat_gm30 {
+	EMBEDDED_SEL = <(1)>;	/* embedded battery.*/
+	R_FG_VALUE = <(10)>;	/* R_sense resistance.*/
 	DIFFERENCE_FULLOCV_ITH = <(244)>;	/*Charging termination current.*/
 
 	df-serialnum = "SB18C51711";
