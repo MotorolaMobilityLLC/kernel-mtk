@@ -14,6 +14,12 @@
 	/* 0 means battery id is 0 */
 	serialnum_0	= "SB18C51711";
 
+	battery0_qmax_t0 = <3925>;
+	battery0_qmax_t1 = <3923>;
+	battery0_qmax_t2 = <3923>;
+	battery0_qmax_t3 = <3929>;
+	battery0_qmax_t4 = <3955>;
+
 	battery0_profile_t0_num = <100>;
 	battery0_profile_t0 =
 	<
