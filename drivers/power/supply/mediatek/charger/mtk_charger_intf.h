@@ -341,6 +341,12 @@ struct charger_manager {
 
 	/* ATM */
 	bool atm_enabled;
+	
+	// pony.ma, DATE20190507, stop charging when reach 70% on factory SW, DATE20190507-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	int flag_soc70;
+	#endif
+	// pony.ma, DATE20190507-01 END
 };
 
 /* charger related module interface */

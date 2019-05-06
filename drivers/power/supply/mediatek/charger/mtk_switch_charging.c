@@ -81,6 +81,12 @@
 // pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
 static struct power_supply *chrdet_psy;
 
+// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+static struct power_supply *batdet_psy;
+#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+// pony.ma, DATE20190506-01 END
+
 static int _uA_to_mA(int uA)
 {
 	if (uA == -1)
@@ -439,6 +445,14 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	int ret;
 	// pony.ma, DATE20190411-01 END
 
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	static int soc = 0;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+	static int flag1_adb = 0;
+	static int flag2_usb = 1;
+	// pony.ma, DATE20190506-01 END
+
 	if (swchgalg->state == CHR_ERROR) {
 		charging_enable = false;
 		chr_err("[charger]Charger Error, turn OFF charging !\n");
@@ -463,18 +477,46 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		}
 	}
 
-	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	ret = power_supply_get_property(batdet_psy,
+			POWER_SUPPLY_PROP_CAPACITY, &val);
+	soc = val.intval;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+
+	ret = power_supply_get_property(chrdet_psy,
+			POWER_SUPPLY_PROP_USB_CHARGE_ENABLED, &val);
+	flag2_usb = val.intval;
+	
 	ret = power_supply_get_property(chrdet_psy,
 			POWER_SUPPLY_PROP_CHARGE_ENABLED, &val);
+	flag1_adb = val.intval;	
+	
 	if (!ret) {
-		if(val.intval)
-			charger_dev_enable(info->chg1_dev, charging_enable);
-		else
-			charger_dev_enable(info->chg1_dev, false);
+		if(!flag1_adb){
+			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+			if(flag2_usb){ 
+				if (!((soc < 70) && (info->flag_soc70))){
+					info->flag_soc70 = 0;
+					charging_enable = false;
+				}
+				if((soc <= 65) && (!info->flag_soc70))
+					info->flag_soc70 = 1;
+			}
+			else{
+				info->flag_soc70 = 1;
+			#else
+			if(!flag2_usb)
+			#endif 
+				charging_enable = false;
+			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+			}
+			#endif
+		}
 	}
-	else
-		charger_dev_enable(info->chg1_dev, charging_enable);
-	// pony.ma, DATE20190411-01 END
+	charger_dev_enable(info->chg1_dev, charging_enable);
+	// pony.ma, DATE20190506-01 END
+	
 }
 
 static int mtk_switch_charging_plug_in(struct charger_manager *info)
@@ -790,6 +832,15 @@ int mtk_switch_charging_init(struct charger_manager *info)
 		pr_notice("%s: get power supply failed\n", __func__);
 	}
 	// pony.ma, DATE20190411-01 END
+	
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	batdet_psy = power_supply_get_by_name("battery");
+	if (!batdet_psy) {
+		pr_notice("%s: get batdet_psy power supply failed\n", __func__);
+	}
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+	// pony.ma, DATE20190506-01 END
 
 	info->algorithm_data = swch_alg;
 	info->do_algorithm = mtk_switch_charging_run;
