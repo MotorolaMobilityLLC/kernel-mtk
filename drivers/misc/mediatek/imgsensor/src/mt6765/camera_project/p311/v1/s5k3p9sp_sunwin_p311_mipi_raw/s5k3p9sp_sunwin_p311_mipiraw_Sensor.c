@@ -66,7 +66,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static imgsensor_info_struct imgsensor_info = {
 		.sensor_id = S5K3P9SP_SUNWIN_P311_SENSOR_ID,
 
-		.checksum_value = 0xffb1ec31,
+		.checksum_value = 0x138daa55,
 
 		.pre = {
 			.pclk = 560000000,
