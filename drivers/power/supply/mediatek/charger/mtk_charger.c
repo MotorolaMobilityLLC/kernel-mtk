@@ -2527,6 +2527,8 @@ static DEVICE_ATTR(force_max_chrg_temp, 0644,
 		force_max_chrg_temp_show,
 		force_max_chrg_temp_store);
 
+static int  mtk_charger_tcmd_set_usb_current(void *input, int  val);
+
 void mmi_init(struct charger_manager *info)
 {
 	int rc;
@@ -2535,6 +2537,13 @@ void mmi_init(struct charger_manager *info)
 		return;
 
 	info->mmi.factory_mode = !strcmp(atm_mode, "enable");
+
+	if (info->mmi.factory_mode) {
+		/* Disable charging when enter ATM mode(factory mode) */
+		charging_enable_flag = 0;
+		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
+	}
+
 	info->mmi.is_factory_image = false;
 	info->mmi.charging_limit_modes = CHARGING_LIMIT_UNKNOWN;
 
@@ -4847,10 +4856,6 @@ static int mtk_charger_probe(struct platform_device *pdev)
 				boot_mode = tag->bootmode;
 		}
 	}
-
-	/* Disable charging when enter ATM mode(factory mode) */
-	if (!strcmp(atm_mode, "enable"))
-		charging_enable_flag = 0;
 
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
 
