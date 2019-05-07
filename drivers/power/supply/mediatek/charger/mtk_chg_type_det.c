@@ -47,6 +47,8 @@
 #include <pmic.h>
 
 #include "mtk_charger_intf.h"
+// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 LINE
+bool adb_charging_enabled = true;
 
 // pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
 bool battery_charging_enabled = true;
@@ -119,6 +121,12 @@ struct mt_charger {
 	struct power_supply *usb_psy;
 	bool chg_online; /* Has charger in or not */
 	enum charger_type chg_type;
+	
+// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	struct hrtimer charge_timer;
+#endif
+// pony.ma, DATE20190506-01 END
 };
 
 static int mt_charger_online(struct mt_charger *mtk_chg)
@@ -141,6 +149,19 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 	return ret;
 }
 
+// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+static enum hrtimer_restart adb_charge_timer_func(struct hrtimer *timer)
+{
+    pr_info("%s: enter\n", __func__);
+
+	adb_charging_enabled = false;
+    
+    return HRTIMER_NORESTART;
+}
+#endif
+// pony.ma, DATE20190506-01 END
+
 /* Power Supply Functions */
 static int mt_charger_get_property(struct power_supply *psy,
 	enum power_supply_property psp, union power_supply_propval *val)
@@ -157,8 +178,13 @@ static int mt_charger_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		val->intval = mtk_chg->chg_type;
 		break;
-	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
 	case POWER_SUPPLY_PROP_CHARGE_ENABLED:	
+		val->intval = adb_charging_enabled;
+		break;
+	// pony.ma, DATE20190506-01 END
+	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
+	case POWER_SUPPLY_PROP_USB_CHARGE_ENABLED:	
 		val->intval = battery_charging_enabled;
 		break;
 	// pony.ma, DATE20190411-01 END
@@ -177,7 +203,13 @@ static int mt_charger_set_property(struct power_supply *psy,
 	int ret = 0;
 	union power_supply_propval propval;
 	// pony.ma, DATE20190411-01 END
-
+	
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	int charge_timer_gap = 180000;     			 //180s ---3m	
+	#endif	/* FEATURE_ADB_DISCHARGE_CONTROL */
+	// pony.ma, DATE20190506-01 END
+	
 	pr_info("%s\n", __func__);
 	
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
@@ -201,8 +233,42 @@ static int mt_charger_set_property(struct power_supply *psy,
 		mtk_chg->chg_type = val->intval;
 		g_chr_type = val->intval;
 		break;	
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	case POWER_SUPPLY_PROP_CHARGE_ENABLED:
+		if(val->intval){
+			adb_charging_enabled = true;
+			battery_charging_enabled = true;
+			if (batdet_psy) {				
+				propval.intval = POWER_SUPPLY_STATUS_CHARGING;
+				ret = power_supply_set_property(batdet_psy,
+					POWER_SUPPLY_PROP_STATUS, &propval);
+				if (ret < 0)
+					pr_notice("%s: psy enable failed, ret = %d\n",
+						__func__, ret);
+			}
+			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+			hrtimer_start(&mtk_chg->charge_timer, 
+				ktime_set(charge_timer_gap/1000, (charge_timer_gap%1000)*1000000), 
+					HRTIMER_MODE_REL);
+			pr_info("%s:start adb charge hrtimer\n", __func__);		
+			#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+		}
+		else{			
+			adb_charging_enabled = false;		
+			battery_charging_enabled = false;
+			if (batdet_psy) {				
+				propval.intval = POWER_SUPPLY_STATUS_DISCHARGING;
+				ret = power_supply_set_property(batdet_psy,
+					POWER_SUPPLY_PROP_STATUS, &propval);
+				if (ret < 0)
+					pr_notice("%s: psy enable failed, ret = %d\n",
+						__func__, ret);
+			}
+		}
+		break;	
+	// pony.ma, DATE20190506-01 END
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
-	case POWER_SUPPLY_PROP_CHARGE_ENABLED:		
+	case POWER_SUPPLY_PROP_USB_CHARGE_ENABLED:		
 		if(val->intval){
 			battery_charging_enabled = true;
 			if (batdet_psy) {				
@@ -257,6 +323,8 @@ static int battery_property_is_writeable(struct power_supply *psy,
 					enum power_supply_property psp)
 {
 	switch (psp) {
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 LINE
+	case POWER_SUPPLY_PROP_USB_CHARGE_ENABLED:
 	case POWER_SUPPLY_PROP_CHARGE_ENABLED:
 		return 1;
 	default:
@@ -319,6 +387,8 @@ static enum power_supply_property mt_charger_properties[] = {
 	POWER_SUPPLY_PROP_ONLINE,
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 LINE
 	POWER_SUPPLY_PROP_CHARGE_ENABLED,
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 LINE
+	POWER_SUPPLY_PROP_USB_CHARGE_ENABLED,
 };
 
 static enum power_supply_property mt_ac_properties[] = {
@@ -397,6 +467,13 @@ static int mt_charger_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mt_chg);
 	device_init_wakeup(&pdev->dev, 1);
+	
+	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	hrtimer_init(&mt_chg->charge_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	mt_chg->charge_timer.function = adb_charge_timer_func;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+	// pony.ma, DATE20190506-01 END
 
 	pr_info("%s\n", __func__);
 	return 0;

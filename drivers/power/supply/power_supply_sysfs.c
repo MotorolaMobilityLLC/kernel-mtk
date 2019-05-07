@@ -205,7 +205,8 @@ static struct device_attribute power_supply_attrs[] = {
 	/* Local extensions */
 	POWER_SUPPLY_ATTR(usb_hc),
 	POWER_SUPPLY_ATTR(usb_otg),
-	POWER_SUPPLY_ATTR(charge_enabled),
+	POWER_SUPPLY_ATTR(charge_enabled),	
+	POWER_SUPPLY_ATTR(usb_charge_enabled),    /*stop charging when reach 70% on factory SW*/
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */

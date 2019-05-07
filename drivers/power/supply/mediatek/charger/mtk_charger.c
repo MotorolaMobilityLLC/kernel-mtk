@@ -1150,6 +1150,13 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	union power_supply_propval propval;
 	// pony.ma, DATE20190411-01 END
 
+	// pony.ma, DATE20190507, stop charging when reach 70% on factory SW, DATE20190507-01 START
+	union power_supply_propval propval1;
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	info->flag_soc70 = 1;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+	// pony.ma, DATE20190507-01 END
+
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
 
@@ -1165,8 +1172,11 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	}
 	else{
 		propval.intval = true;
+		propval1.intval = false;
 		ret = power_supply_set_property(chrdet_psy,
-			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval);
+			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval1);
+		ret = power_supply_set_property(chrdet_psy,
+			POWER_SUPPLY_PROP_USB_CHARGE_ENABLED, &propval);
 		if (ret < 0)
 			pr_notice("%s: psy enable failed, ret = %d\n",
 				__func__, ret);
