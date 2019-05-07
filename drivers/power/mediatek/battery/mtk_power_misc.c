@@ -176,7 +176,9 @@ int set_shutdown_cond(int shutdown_cond)
 		mutex_lock(&sdc.lock);
 		sdc.shutdown_status.is_overheat = true;
 		mutex_unlock(&sdc.lock);
+	#ifdef MTK_BASE
 		kernel_power_off();
+	#endif
 		break;
 	case SOC_ZERO_PERCENT:
 		if (sdc.shutdown_status.is_soc_zero_percent != true) {

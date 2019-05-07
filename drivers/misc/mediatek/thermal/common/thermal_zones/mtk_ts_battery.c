@@ -455,8 +455,9 @@ static int tsbat_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
-
+#ifdef MTK_BASE
 		BUG();
+#endif
 	}
 	return 0;
 }
