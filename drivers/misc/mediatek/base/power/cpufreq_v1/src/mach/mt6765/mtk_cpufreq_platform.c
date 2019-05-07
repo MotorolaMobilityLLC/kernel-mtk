@@ -570,7 +570,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 		lv = CPU_LEVEL_3;
 	else if ((val == 0x1) || (val == 0x7))
 		lv = CPU_LEVEL_4;
-	else if ((val == 0x8) || (val == 0x9) || (val == 0xF))
+	else if ((val == 0x8) || (val == 0x9) || (val == 0xF) || (val == 0x19))
 		lv = CPU_LEVEL_4;
 	else
 		lv = CPU_LEVEL_3;
