@@ -466,10 +466,14 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		pr_debug("*****************************************");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
+
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+
+#ifdef MTK_BASE
 		BUG();
+#endif
 	}
 	return 0;
 }
