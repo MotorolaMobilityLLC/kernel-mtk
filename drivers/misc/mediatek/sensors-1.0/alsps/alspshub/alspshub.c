@@ -49,6 +49,7 @@ struct alspshub_ipi_data {
 	bool ps_factory_enable;
 	bool als_android_enable;
 	bool ps_android_enable;
+	struct completion als_cali_done;/*moto add for als cali sync*/
 };
 
 static struct alspshub_ipi_data *obj_ipi_data;
@@ -353,6 +354,8 @@ static int als_recv_data(struct data_unit_t *event, void *reserved)
 		atomic_set(&obj->als_cali, event->data[0]);
 		spin_unlock(&calibration_lock);
 		err = als_cali_report(event->data);
+		//moto add
+		complete(&obj->als_cali_done);
 	}
 	return err;
 }
@@ -398,7 +401,23 @@ static int alshub_factory_enable_sensor(bool enable_disable, int64_t sample_peri
 	mutex_unlock(&alspshub_mutex);
 	return 0;
 }
-static int alshub_factory_get_data(int32_t *data)
+
+//moto modify
+static int alshub_factory_get_data(struct als_data *data)
+{
+	int err = 0;
+	struct data_unit_t data_t;
+
+	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
+	if (err < 0)
+		return -1;
+	data->als_channel= data_t.data[0];
+	data->ir_channel= data_t.data[1];
+	data->lux = data_t.data[2];
+	APS_PR_ERR("als get als=%d IR=%d lux=%d light=%d!\n",data->als_channel,data->ir_channel,data->lux,data_t.light);
+	return 0;
+}
+static int alshub_factory_get_raw_data(int32_t *data)
 {
 	int err = 0;
 	struct data_unit_t data_t;
@@ -409,13 +428,20 @@ static int alshub_factory_get_data(int32_t *data)
 	*data = data_t.light;
 	return 0;
 }
-static int alshub_factory_get_raw_data(int32_t *data)
-{
-	return alshub_factory_get_data(data);
-}
+
+//moto modify
 static int alshub_factory_enable_calibration(void)
 {
-	return sensor_calibration_to_hub(ID_LIGHT);
+	int ret = 0;
+	struct alspshub_ipi_data *obj = obj_ipi_data;
+	ret = sensor_calibration_to_hub(ID_LIGHT);
+	if (ret < 0)
+		return -1;
+	 ret = wait_for_completion_timeout(&obj->als_cali_done,
+					  msecs_to_jiffies(3000));
+	if (!ret)
+		return -1;
+	return 0;
 }
 static int alshub_factory_clear_cali(void)
 {
@@ -884,6 +910,8 @@ static int alspshub_probe(struct platform_device *pdev)
 	WRITE_ONCE(obj->als_android_enable, false);
 	WRITE_ONCE(obj->ps_factory_enable, false);
 	WRITE_ONCE(obj->ps_android_enable, false);
+	//moto add
+	init_completion(&obj->als_cali_done);
 
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);

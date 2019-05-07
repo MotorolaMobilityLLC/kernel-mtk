@@ -39,6 +39,8 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	int data = 0;
 	uint32_t enable = 0;
 	int threshold_data[2] = {0, 0};
+	//moto add
+	struct als_data als_value;
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
@@ -95,6 +97,21 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 			return -EINVAL;
 		}
 		return 0;
+        //moto add
+        case ALSPS_GET_ALS_DATA:
+            if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_data != NULL) {
+                err = alsps_factory.fops->als_get_data(&als_value);
+                if (err < 0) {
+                    ALSPS_PR_ERR("ALSPS_GET_ALS_DATA read data fail!\n");
+                    return -EINVAL;
+                }
+                if (copy_to_user(ptr, &als_value, sizeof(als_value)))
+                    return -EFAULT;
+            } else {
+                ALSPS_PR_ERR("ALSPS_GET_ALS_DATA NULL\n");
+                return -EINVAL;
+            }
+            return 0;
 	case ALSPS_GET_ALS_RAW_DATA:
 		if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_raw_data != NULL) {
 			err = alsps_factory.fops->als_get_raw_data(&data);
@@ -118,6 +135,21 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 			}
 		} else {
 			ALSPS_PR_ERR("ALSPS_ALS_ENABLE_CALI NULL\n");
+                return -EINVAL;
+            }
+            return 0;
+        //moto add
+        case ALSPS_IOCTL_ALS_GET_CALI:
+            if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_cali != NULL) {
+                err = alsps_factory.fops->als_get_cali(&data);
+                if (err < 0) {
+                    ALSPS_PR_ERR("ALSPS_IOCTL_ALS_GET_CALI read data fail!\n");
+                    return -EINVAL;
+                }
+                if (copy_to_user(ptr, &data, sizeof(data)))
+                    return -EFAULT;
+            } else {
+                ALSPS_PR_ERR("ALSPS_IOCTL_ALS_GET_CALI NULL\n");
 			return -EINVAL;
 		}
 		return 0;
@@ -263,6 +295,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 	case COMPAT_ALSPS_SET_PS_MODE:
 	case COMPAT_ALSPS_GET_PS_RAW_DATA:
 	case COMPAT_ALSPS_SET_ALS_MODE:
+	case COMPAT_ALSPS_GET_ALS_DATA://moto add
 	case COMPAT_ALSPS_GET_ALS_RAW_DATA:
 	case COMPAT_ALSPS_GET_PS_TEST_RESULT:
 	case COMPAT_ALSPS_GET_PS_THRESHOLD_HIGH:
@@ -272,6 +305,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 	case COMPAT_ALSPS_IOCTL_GET_CALI:
 	case COMPAT_ALSPS_IOCTL_CLR_CALI:
 	case COMPAT_ALSPS_ALS_ENABLE_CALI:
+	case COMPAT_ALSPS_IOCTL_ALS_GET_CALI://moto add
 	case COMPAT_ALSPS_PS_ENABLE_CALI:
 		err = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)arg32);
 		break;

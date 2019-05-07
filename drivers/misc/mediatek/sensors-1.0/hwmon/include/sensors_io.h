@@ -76,6 +76,13 @@ struct compat_biometric_threshold {
 
 #endif
 
+//moto add
+struct als_data{
+  int als_channel;
+  int ir_channel;
+  int lux;
+};
+
 #define GSENSOR							0x85
 #define GSENSOR_IOCTL_INIT				_IO(GSENSOR, 0x01)
 #define GSENSOR_IOCTL_READ_CHIPINFO		_IOR(GSENSOR, 0x02, int)
@@ -176,12 +183,18 @@ struct compat_biometric_threshold {
 #define AAL_GET_ALS_DATA					_IOR(ALSPS, 0x16, int)
 #define ALSPS_ALS_ENABLE_CALI				_IO(ALSPS, 0x17)
 #define ALSPS_PS_ENABLE_CALI				_IO(ALSPS, 0x18)
-#define ALSPS_IOCTL_ALS_GET_CALI			_IOW(ALSPS, 0x19, int)
+#define ALSPS_IOCTL_ALS_GET_CALI			_IOR(ALSPS, 0x19, int)//moto modify
 #define ALSPS_IOCTL_SELF_TEST				_IO(ALSPS, 0x21)
+//moto add
+#define ALSPS_GET_ALS_DATA				_IOR(ALSPS, 0x22, struct als_data)
+
 #ifdef CONFIG_COMPAT
 #define COMPAT_ALSPS_SET_PS_MODE			_IOW(ALSPS, 0x01, compat_int_t)
 #define COMPAT_ALSPS_GET_PS_RAW_DATA		_IOR(ALSPS, 0x04, compat_int_t)
 #define COMPAT_ALSPS_SET_ALS_MODE			_IOW(ALSPS, 0x05, compat_int_t)
+//moto add
+#define COMPAT_ALSPS_GET_ALS_DATA		_IOR(ALSPS, 0x22, struct als_data)
+
 #define COMPAT_ALSPS_GET_ALS_RAW_DATA		_IOR(ALSPS, 0x08, compat_int_t)
 
 /*-------------------MTK add-------------------------------------------*/

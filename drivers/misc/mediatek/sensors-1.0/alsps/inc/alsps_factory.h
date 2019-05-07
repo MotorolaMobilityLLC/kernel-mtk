@@ -41,7 +41,7 @@
 
 struct alsps_factory_fops {
 	int (*als_enable_sensor)(bool enable_disable, int64_t sample_periods_ms);
-	int (*als_get_data)(int32_t *data);
+	int (*als_get_data)(struct als_data *data);//moto modify
 	int (*als_get_raw_data)(int32_t *data);
 	int (*als_enable_calibration)(void);
 	int (*als_clear_cali)(void);
