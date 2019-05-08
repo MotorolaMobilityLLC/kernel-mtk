@@ -4580,8 +4580,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mutex_init(&info->charger_lock);
 	mutex_init(&info->charger_pd_lock);
 	mutex_init(&info->cable_out_lock);
-	atomic_set(&info->enable_kpoc_shdn, 1);
+	atomic_set(&info->enable_kpoc_shdn, 0);
 	wakeup_source_init(&info->charger_wakelock, "charger suspend wakelock");
+
 	spin_lock_init(&info->slock);
 
 	/* init thread */
