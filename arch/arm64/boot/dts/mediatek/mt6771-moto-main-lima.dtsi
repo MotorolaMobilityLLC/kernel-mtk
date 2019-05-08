@@ -11,6 +11,8 @@
 	model = "mt6771";
 	compatible = "mediatek,mt6771";
 
+	mt_soc_codec_name: mt_soc_codec_name {
+	};
 	aliases: aliases {
 		spi4 = &spi4;
 		spi5 = &spi5;
