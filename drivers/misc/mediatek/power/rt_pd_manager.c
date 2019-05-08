@@ -48,7 +48,7 @@ static int pd_sink_voltage_new;
 static int pd_sink_voltage_old;
 static int pd_sink_current_new;
 static int pd_sink_current_old;
-static bool tcpc_kpoc;
+static bool tcpc_kpoc = false;
 #if 0 /* vconn is from vsys on mt6763 */
 /* vconn boost gpio pin */
 static int vconn_gpio;
@@ -86,6 +86,7 @@ void pd_chrdet_int_handler(void)
 	pr_notice("[%s] CHRDET status = %d....\n", __func__,
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
+#ifdef MTK_BASE
 	if (!upmu_get_rgs_chrdet()) {
 		int boot_mode = 0;
 
@@ -97,6 +98,7 @@ void pd_chrdet_int_handler(void)
 			kernel_power_off();
 		}
 	}
+#endif
 
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 	do_chrdet_int_task();
