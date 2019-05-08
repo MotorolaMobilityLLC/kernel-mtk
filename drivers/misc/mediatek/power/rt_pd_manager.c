@@ -54,7 +54,7 @@ static int pd_sink_voltage_old;
 static int pd_sink_current_new;
 static int pd_sink_current_old;
 static unsigned char pd_sink_type;
-static bool tcpc_kpoc;
+static bool tcpc_kpoc = false;
 static unsigned char bc12_chr_type;
 #if 0 /* vconn is from vsys on mt6763 */
 /* vconn boost gpio pin */
@@ -69,9 +69,11 @@ static struct charger_consumer *chg_consumer;
 
 static void tcpc_mt_power_off(void)
 {
+#ifdef MTK_BASE
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	kernel_power_off();
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+#endif
 }
 
 #if CONFIG_MTK_GAUGE_VERSION == 20
@@ -112,6 +114,7 @@ void pd_chrdet_int_handler(void)
 	pr_notice("[pd_chrdet_int_handler]CHRDET status = %d....\n",
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
+#ifdef MTK_BASE
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (!upmu_get_rgs_chrdet()) {
 		int boot_mode = 0;
@@ -124,6 +127,7 @@ void pd_chrdet_int_handler(void)
 			kernel_power_off();
 		}
 	}
+#endif
 #endif
 
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
@@ -186,9 +190,11 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 	struct tcp_notify *noti = data;
 	u32 vbus = 0;
 	int ret = 0;
+#ifdef MTK_BASE
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	int boot_mode = 0;
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+#endif
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VCONN:
@@ -336,6 +342,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mtk_pmic_enable_chr_type_det(false);
 #endif
 
+#ifdef MTK_BASE
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 			boot_mode = get_boot_mode();
 			if (ret < 0) {
@@ -346,6 +353,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				}
 			}
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+#endif
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			/* source to sink */
@@ -409,13 +417,14 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 		pr_err("%s devicd of node not exist\n", __func__);
 		return -ENODEV;
 	}
-
+#ifdef MTK_BASE
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	ret = get_boot_mode();
 	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
 	    ret == LOW_POWER_OFF_CHARGING_BOOT)
 		tcpc_kpoc = true;
 #endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
+#endif
 	pr_info("%s KPOC(%d)\n", __func__, tcpc_kpoc);
 
 
