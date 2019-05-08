@@ -135,6 +135,7 @@ struct mt_charger {
 	enum charger_type chg_type;
 };
 
+#ifdef MTK_BASE
 static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
@@ -154,6 +155,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 
 	return ret;
 }
+#endif
 
 /* Power Supply Functions */
 static int mt_charger_get_property(struct power_supply *psy,
@@ -195,7 +197,9 @@ static int mt_charger_set_property(struct power_supply *psy,
 	switch (psp) {
 	case POWER_SUPPLY_PROP_ONLINE:
 		mtk_chg->chg_online = val->intval;
+		#ifdef MTK_BASE
 		mt_charger_online(mtk_chg);
+		#endif
 		return 0;
 	case POWER_SUPPLY_PROP_CHARGE_TYPE:
 		mtk_chg->chg_type = val->intval;

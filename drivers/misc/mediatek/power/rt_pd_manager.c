@@ -49,7 +49,7 @@ static int pd_sink_voltage_old;
 static int pd_sink_current_new;
 static int pd_sink_current_old;
 static unsigned char pd_sink_type;
-static bool tcpc_kpoc;
+static bool tcpc_kpoc = false;
 static unsigned char bc12_chr_type;
 #if 0 /* vconn is from vsys on mt6763 */
 /* vconn boost gpio pin */
@@ -88,6 +88,7 @@ void pd_chrdet_int_handler(void)
 	pr_notice("[%s] CHRDET status = %d....\n", __func__,
 		pmic_get_register_value(PMIC_RGS_CHRDET));
 
+#ifdef MTK_BASE
 	if (!upmu_get_rgs_chrdet()) {
 		int boot_mode = 0;
 
@@ -99,6 +100,7 @@ void pd_chrdet_int_handler(void)
 			kernel_power_off();
 		}
 	}
+#endif
 
 	pmic_set_register_value(PMIC_RG_USBDL_RST, 1);
 	do_chrdet_int_task();
@@ -253,6 +255,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
 			/* AUDIO plug out */
 			pr_info("%s audio plug out\n", __func__);
+
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
@@ -321,7 +324,6 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 		pr_err("%s devicd of node not exist\n", __func__);
 		return -ENODEV;
 	}
-
 	ret = get_boot_mode();
 	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
 	    ret == LOW_POWER_OFF_CHARGING_BOOT)
