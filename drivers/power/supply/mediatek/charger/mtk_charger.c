@@ -1655,6 +1655,9 @@ static int tinno_custom_charger_init(struct charger_manager *info)
 	info->data.ac_charger_current = CUSTOM_AC_CHARGER_CURRENT;
 	info->data.ac_charger_input_current = CUSTOM_AC_CHARGER_INPUT_CURRENT;
 	
+	// pony.ma, DATE20190508, adjust CDP charge current, DATE20190508-01 LINE
+	info->data.charging_host_charger_current = CUSTOM_CHARGING_HOST_CHARGER_CURRENT;
+	
 	info->thermal.min_charge_temp = CUSTOM_MIN_CHARGE_TEMPERATURE;   //effect notify_code status when poweroff charge 
 	info->thermal.min_charge_temp_plus_x_degree = CUSTOM_MIN_CHARGE_TEMPERATURE_PLUS_X_DEGREE;
 	info->thermal.max_charge_temp = CUSTOM_MAX_CHARGE_TEMPERATURE;   //effect notify_code status when poweroff charge 
