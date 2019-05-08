@@ -411,7 +411,8 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 		else
 			return -ENOTSUPP;
 
-		pdata->thermal_input_current_limit = input_current;
+	//	pdata->thermal_input_current_limit = input_current;
+		pdata->thermal_input_current_limit = -1;              //revolve poweroff warm current limit
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
 			dev_name(consumer->dev), idx, input_current);
 		_mtk_charger_change_current_setting(info);
@@ -436,7 +437,8 @@ int charger_manager_set_charging_current_limit(
 		else
 			return -ENOTSUPP;
 
-		pdata->thermal_charging_current_limit = charging_current;
+	//	pdata->thermal_charging_current_limit = charging_current;
+		pdata->thermal_charging_current_limit = -1;			//revolve poweroff warm current limit
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
 			dev_name(consumer->dev), idx, charging_current);
 		_mtk_charger_change_current_setting(info);
@@ -1151,7 +1153,6 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	// pony.ma, DATE20190411-01 END
 
 	// pony.ma, DATE20190507, stop charging when reach 70% on factory SW, DATE20190507-01 START
-	union power_supply_propval propval1;
 	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	info->flag_soc70 = 1;
 	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
@@ -1171,10 +1172,10 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 		pr_notice("%s: get power supply failed\n", __func__);
 	}
 	else{
-		propval.intval = true;
-		propval1.intval = false;
+		propval.intval = false;
 		ret = power_supply_set_property(chrdet_psy,
-			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval1);
+			POWER_SUPPLY_PROP_CHARGE_ENABLED, &propval);
+		propval.intval = true;
 		ret = power_supply_set_property(chrdet_psy,
 			POWER_SUPPLY_PROP_USB_CHARGE_ENABLED, &propval);
 		if (ret < 0)

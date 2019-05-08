@@ -447,10 +447,10 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
 	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-	static int soc = 0;
+	int soc = 0;
 	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
-	static int flag1_adb = 0;
-	static int flag2_usb = 1;
+	int flag1_adb = 0;
+	int flag2_usb = 1;
 	// pony.ma, DATE20190506-01 END
 
 	if (swchgalg->state == CHR_ERROR) {
