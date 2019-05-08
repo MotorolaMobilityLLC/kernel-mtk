@@ -4773,8 +4773,9 @@ static int mtk_charger_probe(struct platform_device *pdev)
 		info->force_disable_pp[i] = false;
 		info->enable_pp[i] = true;
 	}
-	atomic_set(&info->enable_kpoc_shdn, 1);
+	atomic_set(&info->enable_kpoc_shdn, 0);
 	wakeup_source_init(&info->charger_wakelock, "charger suspend wakelock");
+
 	spin_lock_init(&info->slock);
 
 	/* init thread */
