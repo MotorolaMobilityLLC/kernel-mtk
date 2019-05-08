@@ -13,6 +13,7 @@
 
 #define pr_fmt(fmt) "<SEN_LIST> " fmt
 
+#include <linux/fs.h>
 #include <linux/module.h>
 #include <linux/miscdevice.h>
 #include <linux/types.h>
