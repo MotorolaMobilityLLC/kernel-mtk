@@ -4050,6 +4050,70 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 	return 0;
 }
 
+#ifdef CONFIG_AW8155_HAC_SUPPORT
+static int hac_sel_pinnum;
+
+static int Request_HAC_Select_Pin(void)
+{
+	struct device_node *node = NULL;
+	int ret = -1;
+
+	node = of_find_compatible_node(NULL, NULL,
+				       "mediatek,mt_soc_codec_63xx");
+
+	if (!node) {
+		pr_err("%s(), cannot find dts node!\n", __func__);
+		return ret;
+	}
+
+	hac_sel_pinnum = of_get_named_gpio(node, "hac_sel", 0);
+	if (hac_sel_pinnum < 0) {
+		pr_err("%s(), cannot find hac_sel node!\n", __func__);
+		return ret;
+	}
+
+	ret = gpio_request(hac_sel_pinnum, "info");
+	if (ret) {
+		pr_err("%s(), request hac_sel failed!\n", __func__);
+		return ret;
+	}
+	pr_info("%s: hac_sel_pinnum = %x\n", __func__, hac_sel_pinnum);
+	gpio_direction_output(hac_sel_pinnum, 0);
+
+	return ret;
+}
+
+static int Voice_HAC_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	pr_aud("Voice_HAC_Amp_Get = %d\n",
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL]);
+	ucontrol->value.integer.value[0] =
+	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL];
+	return 0;
+}
+
+static int Voice_HAC_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
+{
+	mutex_lock(&Ana_Ctrl_Mutex);
+	if ((ucontrol->value.integer.value[0] == true)
+	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] == false)) {
+		gpio_set_value(hac_sel_pinnum, 1);
+		Voice_Amp_Change(true);
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] =
+		    ucontrol->value.integer.value[0];
+	} else if ((ucontrol->value.integer.value[0] == false)
+		   && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] ==
+		       true)) {
+		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EARPIECEL] =
+		    ucontrol->value.integer.value[0];
+		Voice_Amp_Change(false);
+		gpio_set_value(hac_sel_pinnum, 0);
+	}
+	mutex_unlock(&Ana_Ctrl_Mutex);
+	return 0;
+}
+#endif
+
 static void Speaker_Amp_Change(bool enable)
 {
 	if (enable) {
@@ -5321,6 +5385,10 @@ static const struct snd_kcontrol_new mt6358_snd_controls[] = {
 		     Audio_AmpL_Set),
 	SOC_ENUM_EXT("Voice_Amp_Switch", Audio_DL_Enum[2], Voice_Amp_Get,
 		     Voice_Amp_Set),
+#ifdef CONFIG_AW8155_HAC_SUPPORT
+	SOC_ENUM_EXT("Voice_HAC_Amp_Switch", Audio_DL_Enum[2], Voice_HAC_Amp_Get,
+		     Voice_HAC_Amp_Set),
+#endif
 	SOC_ENUM_EXT("Speaker_Amp_Switch", Audio_DL_Enum[3],
 		     Speaker_Amp_Get, Speaker_Amp_Set),
 	SOC_ENUM_EXT("Headset_Speaker_Amp_Switch", Audio_DL_Enum[4],
@@ -7792,7 +7860,9 @@ static int mtk_mt6358_codec_dev_probe(struct platform_device *pdev)
 	}
 
 	Request_EXT_PA();
-
+#ifdef CONFIG_AW8155_HAC_SUPPORT
+	Request_HAC_Select_Pin();
+#endif
 	pr_debug("%s: dev name %s\n", __func__, dev_name(&pdev->dev));
 	return snd_soc_register_codec(&pdev->dev,
 				      &soc_mtk_codec, mtk_6358_dai_codecs,

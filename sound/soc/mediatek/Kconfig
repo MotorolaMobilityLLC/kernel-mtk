@@ -248,3 +248,8 @@ config MT8183_QUERY_PCB_ID_METHOD
 	  STM1 is 0v which is DCC mode,SMT2 is about 0.9v which is ACC mode
 	  If you say Y, enable MT8183_QUERY_PCB_ID_METHOD
 
+config AW8155_HAC_SUPPORT
+	bool "Add external audio amplifier AW8155 for HAC"
+	default n
+	help
+	  select Y to support aw8155 chip.
