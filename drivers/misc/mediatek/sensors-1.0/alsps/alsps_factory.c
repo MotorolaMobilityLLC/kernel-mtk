@@ -307,6 +307,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 	case COMPAT_ALSPS_ALS_ENABLE_CALI:
 	case COMPAT_ALSPS_IOCTL_ALS_GET_CALI://moto add
 	case COMPAT_ALSPS_PS_ENABLE_CALI:
+	case COMPAT_ALSPS_IOCTL_SELF_TEST:
 		err = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)arg32);
 		break;
 	default:

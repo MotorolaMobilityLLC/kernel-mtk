@@ -211,6 +211,7 @@ struct als_data{
 #define COMPAT_ALSPS_ALS_ENABLE_CALI		_IO(ALSPS, 0x17)
 #define COMPAT_ALSPS_PS_ENABLE_CALI			_IO(ALSPS, 0x18)
 #define COMPAT_ALSPS_IOCTL_ALS_GET_CALI		_IOR(ALSPS, 0x19, compat_int_t)
+#define COMPAT_ALSPS_IOCTL_SELF_TEST               _IO(ALSPS, 0x21)
 #endif
 
 #define GYROSCOPE							0x86
