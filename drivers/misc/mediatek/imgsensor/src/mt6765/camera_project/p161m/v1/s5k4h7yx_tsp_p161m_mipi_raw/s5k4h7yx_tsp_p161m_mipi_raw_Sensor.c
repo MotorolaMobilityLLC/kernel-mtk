@@ -1055,10 +1055,8 @@ static kal_uint32 open(void)
 		LOG_INF("Demon_otp update_tsp_otp error!");
 	}
 #endif
-#if 0 //dashao.su del.
 	apply_tsp_4h7_otp_awb();
 	apply_tsp_4h7_otp_enb_lsc();
-#endif
 
 	/* initail sequence write in  */
 	sensor_init();
