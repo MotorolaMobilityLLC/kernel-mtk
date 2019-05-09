@@ -178,6 +178,20 @@
 	compatible = "mediatek,sar_irq";
 	};
 
+	usb_phy_tuning:devices_phy_tuning {
+		compatible = "mediatek,devices_phy_tuning";
+		u2_vrt_ref = <7>;
+		u2_term_ref = <7>;
+		u2_enhance = <10>;
+	};
+
+	usb_phy_tuning:host_phy_tuning {
+		compatible = "mediatek,host_phy_tuning";
+		u2_vrt_ref = <6>;
+		u2_term_ref = <6>;
+		u2_enhance = <11>;
+	};
+
 	fingerprint_int: fingerprint_int {
 		compatible = "mediatek,goodix-fp", "mediatek,fpsensor_fp_eint";
 		pinctrl-names = "fingerprint_irq", "reset_high", "reset_low";
