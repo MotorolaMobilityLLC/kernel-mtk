@@ -1338,3 +1338,16 @@ int ccu_query_power_status(void)
 {
 	return ccuInfo.IsCcuPoweredOn;
 }
+
+void ccu_get_timestamp(uint32_t *low, uint32_t *high)
+{
+	if (IS_KERNEL_32) {
+		LOG_DBG_MUST("ccu kernel 32 bits, return 0\n");
+		*low  = 0;
+		*high = 0;
+	} else {
+		LOG_DBG_MUST("ccu kernel 64 bits\n");
+		*low  = ccu_read_reg(ccu_base, CCU_INFO04);
+		*high = ccu_read_reg(ccu_base, CCU_INFO05);
+	}
+}
