@@ -97,7 +97,7 @@
 #include "mtk_sched_mon.h"
 #endif
 
-#include "mtk_perf.h"
+#include <mt-plat/perf_tracker.h>
 
 #define CREATE_TRACE_POINTS
 #include <trace/events/sched.h>
@@ -4236,10 +4236,7 @@ void scheduler_tick(void)
 #ifdef CONFIG_MTK_SCHED_MONITOR
 	mt_save_irq_counts(SCHED_TICK);
 #endif
-
-#ifdef CONFIG_MTK_PERF_TRACKER
 	perf_tracker(sched_ktime_clock());
-#endif
 
 #ifdef CONFIG_SMP
 	rq->idle_balance = idle_cpu(cpu);
