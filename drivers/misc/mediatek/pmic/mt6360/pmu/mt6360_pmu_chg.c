@@ -261,18 +261,6 @@ static inline u32 mt6360_trans_usbid_src_ton(u32 src_ton)
 	return maxidx;
 }
 
-static inline int mt6360_get_mivr(struct mt6360_pmu_chg_info *mpci, u32 *uV)
-{
-	int ret = 0;
-
-	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_CTRL6);
-	if (ret < 0)
-		return ret;
-	ret = (ret & MT6360_MASK_MIVR) >> MT6360_SHFT_MIVR;
-	*uV = 3900000 + (ret * 100000);
-	return 0;
-}
-
 static inline int mt6360_get_ieoc(struct mt6360_pmu_chg_info *mpci, u32 *uA)
 {
 	int ret = 0;
@@ -798,6 +786,31 @@ static int mt6360_set_mivr(struct charger_device *chg_dev, u32 uV)
 					  MT6360_PMU_CHG_CTRL6,
 					  MT6360_MASK_MIVR,
 					  data << MT6360_SHFT_MIVR);
+}
+
+static inline int mt6360_get_mivr(struct charger_device *chg_dev, u32 *uV)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	int ret = 0;
+
+	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_CTRL6);
+	if (ret < 0)
+		return ret;
+	ret = (ret & MT6360_MASK_MIVR) >> MT6360_SHFT_MIVR;
+	*uV = 3900000 + (ret * 100000);
+	return 0;
+}
+
+static int mt6360_get_mivr_state(struct charger_device *chg_dev, bool *in_loop)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	int ret = 0;
+
+	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT1);
+	if (ret < 0)
+		return ret;
+	*in_loop = (ret & MT6360_MASK_MIVR_EVT) >> MT6360_SHFT_MIVR_EVT;
+	return 0;
 }
 
 static int mt6360_enable_te(struct charger_device *chg_dev, bool en)
@@ -1431,7 +1444,7 @@ static int mt6360_dump_registers(struct charger_device *chg_dev)
 	dev_dbg(mpci->dev, "%s\n", __func__);
 	ret = mt6360_get_ichg(chg_dev, &ichg);
 	ret |= mt6360_get_aicr(chg_dev, &aicr);
-	ret |= mt6360_get_mivr(mpci, &mivr);
+	ret |= mt6360_get_mivr(chg_dev, &mivr);
 	ret |= mt6360_get_cv(chg_dev, &cv);
 	ret |= mt6360_get_ieoc(mpci, &ieoc);
 	ret |= mt6360_get_charging_status(mpci, &chg_stat);
@@ -1612,6 +1625,8 @@ static const struct charger_ops mt6360_chg_ops = {
 	.set_eoc_current = mt6360_set_ieoc,
 	/* charging mivr */
 	.set_mivr = mt6360_set_mivr,
+	.get_mivr = mt6360_get_mivr,
+	.get_mivr_state = mt6360_get_mivr_state,
 	/* charing termination */
 	.enable_termination = mt6360_enable_te,
 	/* PE+/PE+20 */
