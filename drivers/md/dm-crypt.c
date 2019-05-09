@@ -1234,15 +1234,18 @@ static void kcryptd_io_read_work(struct work_struct *work)
  *   1: External storage, for example: SD card.
  *  -1: Unrecognizable storage.
  */
+#define BOOTDEV_PREFIX  "/dev/block/by-name"
 static int crypt_dev_id(const char *path)
 {
 	int type = -1;
 
-	if (strstr(path, "bootdevice")) {
-
+	if ((strlen(path) > strlen(BOOTDEV_PREFIX))
+		&& !strncmp(path, BOOTDEV_PREFIX, strlen(BOOTDEV_PREFIX))) {
+		/* example: /dev/block/by-name/userdata */
+		type = 0;
+	} else if (strstr(path, "bootdevice")) {
 		/* example: /dev/block/platform/bootdevice/by-name/userdata */
 		type = 0;
-
 	} else if (strstr(path, "externdevice") || strstr(path, "vold")) {
 
 		/* example: /dev/block/vold/private:179,2 */
