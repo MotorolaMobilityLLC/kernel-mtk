@@ -34,8 +34,8 @@
 / {
 	mt6360_pmu: mt6360_pmu_dts {
 		status = "ok";
-		mt6360,irq_gpio_num = <3>; /* direct defined GPIO num */
-		mt6360,irq_gpio = <&pio 3 0x0>; /* GPIO */
+		mt6360,intr_gpio_num = <3>; /* direct defined GPIO num */
+		mt6360,intr_gpio = <&pio 3 0x0>; /* GPIO */
 		interrupt-controller;
 		#interrupt-cells = <2>;
 		adc: adc {
@@ -64,10 +64,10 @@
 					  "chg_termi", "chg_ieoci",
 					  "pumpx_donei", "attachi",
 					  "chrdet_ext_evt";
-			io-channels = <&adc 1>, <&adc 3>, <&adc 4>, <&adc 5>,
-				      <&adc 6>, <&adc 8>;
-			io-channel-names = "VBUSDIV5", "VSYS", "VBAT", "IBUS",
-					   "IBAT", "TEMP_JC";
+			io-channels = <&adc 0>, <&adc 1>, <&adc 3>, <&adc 4>,
+				      <&adc 5>, <&adc 6>, <&adc 8>, <&adc 10>;
+			io-channel-names = "USBID", "VBUSDIV5", "VSYS", "VBAT",
+					   "IBUS", "IBAT", "TEMP_JC", "TS";
 			chg_name = "primary_chg";
 			ichg = <2000000>;		/* uA */
 			aicr = <500000>;		/* uA */

@@ -130,5 +130,4 @@ extern void tcpc_reset_typec_try_timer(struct tcpc_device *tcpc);
 extern void tcpc_reset_typec_debounce_timer(struct tcpc_device *tcpc);
 
 extern void tcpc_reset_pe_timer(struct tcpc_device *tcpc);
-
 #endif /* TCPC_TIMER_H_INCLUDED */

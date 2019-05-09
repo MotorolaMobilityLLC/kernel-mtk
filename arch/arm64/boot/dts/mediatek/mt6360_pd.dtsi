@@ -15,30 +15,23 @@
 	mt6360_typec: type_c_port0 {
 		mt-dual,supported_modes = <0>; /* 0: dfp/ufp, 1: dfp, 2: ufp */
 		mt-tcpc,name = "type_c_port0"; /* tcpc_device's name */
-		mt-tcpc,role_def = <4>;
 		/* 0: SNK Only, 1: SRC Only, 2: DRP, 3: Try.SRC, 4: Try.SNK */
+		mt-tcpc,role_def = <4>;
 		mt-tcpc,rp_level = <0>; /* 0: Default, 1: 1.5, 2: 3.0 */
-		mt-tcpc,vconn_supply  = <1>;
 		/* 0: Never, 1: Always, 2: EMarkOnly, 3: StartOnly */
+		mt-tcpc,vconn_supply  = <1>;
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
+		/* the number of notifier supply */
 		mt-tcpc,notifier_supply_num = <3>;
-		/* the number of notifier supply */
 #else
-		mt-tcpc,notifier_supply_num = <2>;
 		/* the number of notifier supply */
+		mt-tcpc,notifier_supply_num = <2>;
 #endif
 		mt6360pd,intr_gpio = <&pio 24 0x0>;
 		mt6360pd,intr_gpio_num = <24>;
 		interrupt-parent = <&mt6360_pmu>;
-		/*
-		 * interrupts = <42 0>, <56 0>, <57 0>, <61 0>, <62 0>, <63 0>;
-		 * interrupt-names = "typec_otp_evt", "fod_done_evt",
-		 * "fod_ov_evt", "fod_lr_evt", "fod_hr_evt",
-		 * "fod_dischg_fail_evt";
-		 */
-		interrupts = <42 0>, <56 0>, <57 0>, <63 0>;
-		interrupt-names = "typec_otp_evt", "fod_done_evt",
-				  "fod_ov_evt", "fod_dischg_fail_evt";
+		interrupts = <64 0>;
+		interrupt-names = "usbid_evt";
 		pd-data {
 			/*
 			 *	VSAFE5V = 0, MAX_POWER = 1, CUSTOM = 2,

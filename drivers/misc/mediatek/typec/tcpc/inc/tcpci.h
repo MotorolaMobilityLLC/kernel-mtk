@@ -100,18 +100,9 @@ int tcpci_is_vsafe0v(struct tcpc_device *tcpc);
 
 #ifdef CONFIG_WATER_DETECTION
 int tcpci_is_water_detected(struct tcpc_device *tcpc);
-int tcpci_enable_wd_oneshot(struct tcpc_device *tcpc);
 int tcpci_set_water_protection(struct tcpc_device *tcpc, bool en);
 int tcpci_notify_wd_status(struct tcpc_device *tcpc, bool water_detected);
 #endif /* CONFIG_WATER_DETECTION */
-
-#ifdef CONFIG_FOREIGN_OBJECT_DETECTION
-int tcpci_enable_fod_oneshot(struct tcpc_device *tcpc, bool en);
-int tcpci_set_cc_hidet(struct tcpc_device *tcpc, bool en);
-int tcpci_notify_fod_status(struct tcpc_device *tcpc);
-#endif /* CONFIG_FOREIGN_OBJECT_DETECTION */
-
-int tcpci_notify_typec_ot(struct tcpc_device *tcpc, bool ot);
 
 #ifdef CONFIG_CABLE_TYPE_DETECTION
 int tcpci_notify_cable_type(struct tcpc_device *tcpc);

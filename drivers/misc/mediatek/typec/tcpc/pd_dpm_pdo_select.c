@@ -291,8 +291,8 @@ static bool dpm_select_pdo_from_pps(
 	if (overload) {
 		select_info->max_uw = uw;
 		select_info->cur_mv = diff_mv;
-	return true;
-}
+		return true;
+	}
 
 	return false;
 }

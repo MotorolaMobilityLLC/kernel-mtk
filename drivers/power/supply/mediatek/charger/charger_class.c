@@ -355,6 +355,16 @@ int charger_dev_enable_safety_timer(struct charger_device *chg_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable_safety_timer);
 
+int charger_dev_get_adc(struct charger_device *charger_dev, int *min, int *max)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL &&
+	    charger_dev->ops->get_adc)
+		return charger_dev->ops->get_adc(charger_dev, min, max);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_adc);
+
 int charger_dev_is_safety_timer_enabled(struct charger_device *chg_dev,
 					bool *en)
 {
@@ -545,35 +555,37 @@ int charger_dev_notify(struct charger_device *chg_dev, int event)
 		&chg_dev->evt_nh, event, &chg_dev->noti);
 }
 
-int charger_dev_get_fod_status(struct charger_device *charger_dev, u8 *status)
+int charger_dev_enable_usbid(struct charger_device *charger_dev, bool en)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL &&
-					       charger_dev->ops->get_fod_status)
-		return charger_dev->ops->get_fod_status(charger_dev, status);
+	    charger_dev->ops->enable_usbid)
+		return charger_dev->ops->enable_usbid(charger_dev, en);
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_get_fod_status);
+EXPORT_SYMBOL(charger_dev_enable_usbid);
 
-int charger_dev_enable_fod_oneshot(struct charger_device *charger_dev, bool en)
+int charger_dev_set_usbid_rup(struct charger_device *charger_dev, u32 rup)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL &&
-					   charger_dev->ops->enable_fod_oneshot)
-		return charger_dev->ops->enable_fod_oneshot(charger_dev, en);
+	    charger_dev->ops->set_usbid_rup)
+		return charger_dev->ops->set_usbid_rup(charger_dev, rup);
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_enable_fod_oneshot);
+EXPORT_SYMBOL(charger_dev_set_usbid_rup);
 
-int charger_dev_is_typec_ot(struct charger_device *charger_dev, bool *ot)
+int charger_dev_set_usbid_src_ton(struct charger_device *charger_dev,
+				  u32 src_ton)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL &&
-						  charger_dev->ops->is_typec_ot)
-		return charger_dev->ops->is_typec_ot(charger_dev, ot);
+	    charger_dev->ops->set_usbid_src_ton)
+		return charger_dev->ops->set_usbid_src_ton(charger_dev,
+							   src_ton);
 
 	return -ENOTSUPP;
 }
-EXPORT_SYMBOL(charger_dev_is_typec_ot);
+EXPORT_SYMBOL(charger_dev_set_usbid_src_ton);
 
 static DEVICE_ATTR(name, 0444, charger_show_name, NULL);
 
