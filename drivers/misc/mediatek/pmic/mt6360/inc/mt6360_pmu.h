@@ -244,7 +244,7 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_BASE_MASK			(0xF8)
 #define MT6360_PMU_FLED_MASK1			(0xF9)
 #define MT6360_PMU_FLED_MASK2			(0xFA)
-#define MT6360_PMU_RGB_MASK			(0xFB)
+#define MT6360_PMU_FAULTB_MASK			(0xFB)
 #define MT6360_PMU_BUCK1_MASK			(0xFC)
 #define MT6360_PMU_BUCK2_MASK			(0xFD)
 #define MT6360_PMU_LDO_MASK1			(0xFE)

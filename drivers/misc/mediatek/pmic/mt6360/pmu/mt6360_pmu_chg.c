@@ -140,7 +140,8 @@ static const struct mt6360_chg_platform_data def_platform_data = {
 #endif
 	.en_te = true,
 	.en_wdt = true,
-	.chg_name = "primary_chg"
+	.aicc_once = true,
+	.chg_name = "primary_chg",
 };
 
 /* ================== */
@@ -452,8 +453,6 @@ static int mt6360_chgdet_pre_process(struct mt6360_pmu_chg_info *mpci,
 		mpci->chg_type = CHARGER_UNKNOWN;
 		mt6360_psy_chg_type_changed(mpci);
 	}
-/* TODO : skip for meta mode condition */
-#if 0
 	if (attach && is_meta_mode()) {
 		/* Skip charger type detection to speed up meta boot.*/
 		dev_notice(mpci->dev, "%s: force Standard USB Host in meta\n",
@@ -462,7 +461,6 @@ static int mt6360_chgdet_pre_process(struct mt6360_pmu_chg_info *mpci,
 		mpci->chg_type = STANDARD_HOST;
 		return mt6360_psy_chg_type_changed(mpci);
 	}
-#endif
 	return __mt6360_enable_usbchgen(mpci, attach);
 }
 
@@ -729,7 +727,7 @@ static int mt6360_charger_set_mivr(struct charger_device *chg_dev, u32 uV)
 	int ret = 0;
 
 	dev_dbg(mpci->dev, "%s\n", __func__);
-	if (uV < 3900000 || uV > 1340000) {
+	if (uV < 3900000 || uV > 13400000) {
 		dev_err(mpci->dev,
 			"%s: unsuitable mivr val(%d)\n", __func__, uV);
 		return -EINVAL;
@@ -801,6 +799,8 @@ static int mt6360_enable_pump_express(struct mt6360_pmu_chg_info *mpci,
 		ret = -ETIMEDOUT;
 	else if (timeout < 0)
 		ret = -EINTR;
+	else
+		ret = 0;
 	if (ret < 0)
 		dev_err(mpci->dev,
 			"%s: wait pumpx timeout, ret = %d\n", __func__, ret);
@@ -971,10 +971,24 @@ static int mt6360_charger_run_aicc(struct charger_device *chg_dev, u32 *uA)
 	int ret = 0;
 	u32 aicc_val = 0;
 	long timeout;
+	bool mivr_stat = false;
 
 	dev_info(mpci->dev, "%s: aicc_once = %d\n", __func__, pdata->aicc_once);
-	if (pdata->aicc_once) {
-		if (try_wait_for_completion(&mpci->aicc_done)) {
+	/* check MIVR stat is act */
+	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT1);
+	if (ret < 0) {
+		dev_info(mpci->dev, "%s: read mivr stat fail\n", __func__);
+		return ret;
+	}
+	mivr_stat = (ret & MT6360_MASK_MIVR_EVT) ? true : false;
+	if (!mivr_stat) {
+		dev_info(mpci->dev, "%s: mivr stat not act\n", __func__);
+		return ret;
+	}
+
+	/* Auto run aicc */
+	if (!pdata->aicc_once) {
+		if (!try_wait_for_completion(&mpci->aicc_done)) {
 			dev_info(mpci->dev, "%s: aicc is not act\n", __func__);
 			return 0;
 		}
@@ -1006,6 +1020,8 @@ static int mt6360_charger_run_aicc(struct charger_device *chg_dev, u32 *uA)
 		ret = -ETIMEDOUT;
 	else if (timeout < 0)
 		ret = -EINTR;
+	else
+		ret = 0;
 	if (ret < 0) {
 		dev_err(mpci->dev,
 			"%s: wait AICC time out, ret = %d\n", __func__, ret);
@@ -1018,13 +1034,13 @@ static int mt6360_charger_run_aicc(struct charger_device *chg_dev, u32 *uA)
 		goto out;
 	} else
 		dev_info(mpci->dev, "%s: aicc val = %d\n", __func__, aicc_val);
+	*uA = aicc_val;
+out:
 	/* Clear EN_AICC */
 	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,
 				      MT6360_MASK_RG_EN_AICC);
 	if (ret < 0)
 		goto out;
-	*uA = aicc_val;
-out:
 	mutex_unlock(&mpci->pe_lock);
 	return ret;
 }
@@ -1136,24 +1152,27 @@ static int mt6360_charger_enable_discharge(struct charger_device *chg_dev,
 		goto out;
 	}
 
-	for (i = 0; i < dischg_retry_cnt; i++) {
-		ret = mt6360_pmu_reg_read(mpci->mpi,
-					  MT6360_PMU_CHG_HIDDEN_CTRL2);
-		is_dischg = (ret & MT6360_MASK_DISCHG) ? true : false;
-		if (!is_dischg)
-			break;
-		ret = mt6360_pmu_reg_clr_bits(mpci->mpi,
-					      MT6360_PMU_CHG_HIDDEN_CTRL2,
-					      MT6360_MASK_DISCHG);
-		if (ret < 0) {
-			dev_err(mpci->dev,
-				"%s: disable dischg failed\n", __func__);
-			goto out;
+	if (!en) {
+		for (i = 0; i < dischg_retry_cnt; i++) {
+			ret = mt6360_pmu_reg_read(mpci->mpi,
+						  MT6360_PMU_CHG_HIDDEN_CTRL2);
+			is_dischg = (ret & MT6360_MASK_DISCHG) ? true : false;
+			if (!is_dischg)
+				break;
+			ret = mt6360_pmu_reg_clr_bits(mpci->mpi,
+						MT6360_PMU_CHG_HIDDEN_CTRL2,
+						MT6360_MASK_DISCHG);
+			if (ret < 0) {
+				dev_info(mpci->dev,
+					"%s: disable dischg failed\n",
+					__func__);
+				goto out;
+			}
 		}
-	}
-	if (i == dischg_retry_cnt) {
-		dev_err(mpci->dev, "%s: dischg failed\n", __func__);
-		ret = -EINVAL;
+		if (i == dischg_retry_cnt) {
+			dev_info(mpci->dev, "%s: dischg failed\n", __func__);
+			ret = -EINVAL;
+		}
 	}
 out:
 	mt6360_enable_hidden_mode(mpci, false);
@@ -1314,7 +1333,6 @@ static int mt6360_charger_get_zcv(struct charger_device *chg_dev, u32 *uV)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
 
-	/* TODO : need get zcv at init sw workaround */
 	dev_info(mpci->dev, "%s: zcv = %dmV\n", __func__, mpci->zcv / 1000);
 	*uV = mpci->zcv;
 	return 0;
@@ -2207,10 +2225,9 @@ static int mt6360_chg_init_setting(struct mt6360_pmu_chg_info *mpci)
 		dev_warn(mpci->dev, "%s: BATSYSUV occurred\n", __func__);
 		ret = mt6360_pmu_reg_set_bits(mpci->mpi, MT6360_PMU_CHG_STAT,
 					      MT6360_MASK_CHG_BATSYSUV);
-		if (ret < 0) {
+		if (ret < 0)
 			dev_err(mpci->dev,
 				"%s: clear BATSYSUV fail\n", __func__);
-		}
 	}
 	return ret;
 }
@@ -2298,7 +2315,6 @@ static int mt6360_pmu_chg_probe(struct platform_device *pdev)
 		dev_err(mpci->dev, "charger device register fail\n");
 		return PTR_ERR(mpci->chg_dev);
 	}
-	/* TODO: is_polling_mode is not to use mt6360 irq to report event ? */
 
 	/* irq register */
 	mt6360_pmu_chg_irq_register(pdev);

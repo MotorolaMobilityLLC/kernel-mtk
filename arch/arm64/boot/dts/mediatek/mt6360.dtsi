@@ -148,8 +148,8 @@
 				  "buck2_ov_evt", "buck2_uv_evt",
 				  "ldo6_oc_evt", "ldo7_oc_evt",
 				  "ldo6_pgb_evt", "ldo7_pgb_evt";
-		buck1_ctrls = [ab 80 82 6c 00 80 02 70];
-		buck2_ctrls = [ab 80 81 6c 30 80 02 70];
+		buck1_ctrls = [a9 80 82 6c 00 80 02 70];
+		buck2_ctrls = [a9 80 81 6c 30 80 02 70];
 		ldo6_ctrls = [30 80 02 cc 44];
 		ldo7_ctrls = [30 80 02 cc 44];
 		buck1 {
@@ -191,9 +191,10 @@
 				  "ldo3_oc_evt", "ldo5_oc_evt",
 				  "ldo1_pgb_evt", "ldo2_pgb_evt",
 				  "ldo3_pgb_evt", "ldo5_pgb_evt";
-		ldo1_ctrls = [00 80 01 25 44];
-		ldo2_ctrls = [00 80 01 25 44];
-		ldo5_ctrls = [00 80 c1 25 84];
+		ldo1_ctrls = [00 80 01 2d 44];
+		ldo2_ctrls = [00 80 01 2d 44];
+		ldo3_ctrls = [00 80 01 2d a4];
+		ldo5_ctrls = [00 80 c1 2d a4];
 		ldo1 {
 			regulator-compatible = "LDO1";
 			regulator-name = "VFP";

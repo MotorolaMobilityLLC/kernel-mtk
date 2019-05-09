@@ -44,6 +44,9 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 		dev_err(mpi->dev, "fail to read irq masks\n");
 		goto out_irq_handler;
 	}
+	/* make faultb reg, it's not irq mask, 0xfb[7:0] & 0xfc[7] */
+	irq_masks[11] = 0xff;
+	irq_masks[12] |= 0x80;
 	for (i = 0; i < MT6360_PMU_IRQ_REGNUM; i++) {
 		irq_events[i] &= ~irq_masks[i];
 		for (j = 0; j < 8; j++) {
@@ -193,7 +196,7 @@ static int mt6360_pmu_gpio_irq_init(struct mt6360_pmu_info *mpi)
 
 static int mt6360_pmu_irq_maskall(struct mt6360_pmu_info *mpi)
 {
-	u8 irq_mask[MT6360_PMU_IRQ_REGNUM] = {0};
+	u8 irq_mask[MT6360_PMU_IRQ_REGNUM] = {0}, faultb_mask[2] = {0};
 	int i, ret;
 
 	/* mask all indicator */
@@ -202,8 +205,18 @@ static int mt6360_pmu_irq_maskall(struct mt6360_pmu_info *mpi)
 		dev_err(mpi->dev, "write irq ind mask fail\n");
 		return ret;
 	}
+	/* read faultb_mask */
+	ret = mt6360_pmu_reg_block_read(mpi,
+					MT6360_PMU_FAULTB_MASK, 2, faultb_mask);
+	if (ret < 0) {
+		dev_info(mpi->dev, "read faultb mask fail\n");
+		return ret;
+	}
 	/* mask all irq events*/
 	memset(irq_mask, 0xff, sizeof(irq_mask));
+	/* keep faultb default value */
+	irq_mask[11] = faultb_mask[0];
+	irq_mask[12] = (irq_mask[12] & ~0x80) | (faultb_mask[1] & 0x80);
 	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_MASK1,
 					 MT6360_PMU_IRQ_REGNUM, irq_mask);
 	if (ret < 0) {

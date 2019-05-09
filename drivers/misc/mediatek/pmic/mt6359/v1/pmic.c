@@ -116,7 +116,7 @@ int pmic_scp_ctrl_enable(bool vcore_en, bool vsram_en, bool is_pmrc_mode)
 	pmic_set_register_value(PMIC_RG_BUCK_VCORE_SSHUB_EN, vcore_en);
 	pmic_set_register_value(PMIC_RG_LDO_VSRAM_OTHERS_SSHUB_EN, vsram_en);
 	pmic_set_register_value(PMIC_RG_VR_SSHUB_MODE, is_pmrc_mode);
-	pr_info("[%s]_vcore_en:%d vsram_en:%d is_pmic_mode:%d\n",
+	pr_info("[%s] vcore_en:%d vsram_en:%d is_pmic_mode:%d\n",
 		__func__, vcore_en, vsram_en, is_pmrc_mode);
 	return ret;
 }
