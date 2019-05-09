@@ -1978,7 +1978,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	touch: touch {
-		compatible = "mediatek,mt6763-touch";
+		compatible = "mediatek,touch";
 		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 	};
 
