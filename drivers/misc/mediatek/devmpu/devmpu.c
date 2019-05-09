@@ -102,7 +102,7 @@ static int devmpu_vio_get(struct devmpu_vio_stat *vio, bool do_clear)
 	arm_smccc_smc(MTK_SIP_KERNEL_DEVMPU_VIO_GET,
 			do_clear, 0, 0, 0, 0, 0, 0, &res);
 	if (res.a0) {
-		pr_err("%s:%d failed to get violation, ret=%lu\n",
+		pr_err("%s:%d failed to get violation, ret=0x%lx\n",
 				__func__, __LINE__, res.a0);
 		return -1;
 	}
@@ -338,7 +338,7 @@ static int devmpu_probe(struct platform_device *pdev)
 	pr_info("reg_base=0x%pK\n", devmpu_ctx->reg_base);
 	pr_info("prot_base=0x%llx\n", devmpu_ctx->prot_base);
 	pr_info("prot_size=0x%llx\n", devmpu_ctx->prot_size);
-	pr_info("page_size=0x%llx\n", devmpu_ctx->page_size);
+	pr_info("page_size=0x%x\n", devmpu_ctx->page_size);
 	pr_info("virq=0x%x\n", devmpu_ctx->virq);
 
 	return 0;
