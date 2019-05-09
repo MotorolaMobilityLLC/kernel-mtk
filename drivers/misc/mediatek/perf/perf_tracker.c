@@ -142,15 +142,20 @@ void __perf_tracker(u64 wallclock,
 		stall[i] = cpu_stall_ratio(i);
 
 	/* trace for long msg */
+
 	trace_perf_index_l(
 			K(mm_free),
 			K(mm_available),
+#ifdef CONFIG_MTK_BLOCK_TAG
 			iostat->wl,
 			iostat->tp_req_r, iostat->tp_all_r,
 			iostat->reqsize_r, iostat->reqcnt_r,
 			iostat->tp_req_w, iostat->tp_all_w,
 			iostat->reqsize_w, iostat->reqcnt_w,
 			iostat->duration, iostat->q_depth,
+#else
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#endif
 			stall
 			);
 }
