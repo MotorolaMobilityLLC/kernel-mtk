@@ -852,6 +852,7 @@ subsys_initcall(tcpc_class_init);
 module_exit(tcpc_class_exit);
 
 
+#ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 #ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
 static int fg_bat_notifier_call(struct notifier_block *nb,
@@ -872,15 +873,18 @@ static int fg_bat_notifier_call(struct notifier_block *nb,
 }
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 #endif /* CONFIG_TCPC_NOTIFIER_LATE_SYNC */
+#endif /* CONFIG_USB_POWER_DELIVERY */
 
 #ifdef CONFIG_TCPC_NOTIFIER_LATE_SYNC
 static int __tcpc_class_complete_work(struct device *dev, void *data)
 {
 	struct tcpc_device *tcpc = dev_get_drvdata(dev);
+#ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
 	struct notifier_block *fg_bat_nb = &tcpc->pd_port.fg_bat_nb;
 	int ret = 0;
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
+#endif /* CONFIG_USB_POWER_DELIVERY */
 
 	if (tcpc != NULL) {
 		pr_info("%s = %s\n", __func__, dev_name(dev));
@@ -891,6 +895,7 @@ static int __tcpc_class_complete_work(struct device *dev, void *data)
 			msecs_to_jiffies(1000));
 #endif
 
+#ifdef CONFIG_USB_POWER_DELIVERY
 #ifdef CONFIG_RECV_BAT_ABSENT_NOTIFY
 		fg_bat_nb->notifier_call = fg_bat_notifier_call;
 		ret = register_battery_notifier(fg_bat_nb);
@@ -899,6 +904,7 @@ static int __tcpc_class_complete_work(struct device *dev, void *data)
 			return -EINVAL;
 		}
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
+#endif /* CONFIG_USB_POWER_DELIVERY */
 	}
 	return 0;
 }
