@@ -540,7 +540,8 @@ static const struct regulator_linear_range ldo_volt_ranges2[] = {
 #define LDO5_VOUT_CNT		(128)
 
 #define MT6360_LDO_DESC(_name, vreg, vmask, enreg, enmask, enstreg,\
-			enstmask, modereg, modemask, moderreg, modermask) \
+			enstmask, modereg, modemask, moderreg, modermask,\
+			offon_delay) \
 {\
 	.desc = {\
 		.name = #_name,					\
@@ -556,6 +557,7 @@ static const struct regulator_linear_range ldo_volt_ranges2[] = {
 		.vsel_mask = vmask,				\
 		.enable_reg = enreg,				\
 		.enable_mask = enmask,				\
+		.off_on_delay = offon_delay,			\
 	},							\
 	.enst_reg = enstreg,					\
 	.enst_mask = enstmask,					\
@@ -567,13 +569,13 @@ static const struct regulator_linear_range ldo_volt_ranges2[] = {
 
 static const struct mt6360_regulator_desc mt6360_ldo_descs[] =  {
 	MT6360_LDO_DESC(LDO1, 0x1b, 0xff, 0x17, 0x40,
-			0x17, 0x04, 0x17, 0x30, 0x17, 0x03),
+			0x17, 0x04, 0x17, 0x30, 0x17, 0x03, 0),
 	MT6360_LDO_DESC(LDO2, 0x15, 0xff, 0x11, 0x40,
-			0x11, 0x04, 0x11, 0x30, 0x11, 0x03),
+			0x11, 0x04, 0x11, 0x30, 0x11, 0x03, 0),
 	MT6360_LDO_DESC(LDO3, 0x09, 0xff, 0x05, 0x40,
-			0x05, 0x04, 0x05, 0x30, 0x05, 0x03),
+			0x05, 0x04, 0x05, 0x30, 0x05, 0x03, 120),
 	MT6360_LDO_DESC(LDO5, 0x0f, 0x7f, 0x0b, 0x40,
-			0x0b, 0x04, 0x0b, 0x30, 0x0b, 0x03),
+			0x0b, 0x04, 0x0b, 0x30, 0x0b, 0x03, 120),
 };
 
 static inline int mt6360_pdata_apply_helper(void *info, void *pdata,

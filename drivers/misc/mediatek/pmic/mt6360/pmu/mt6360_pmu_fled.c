@@ -442,6 +442,8 @@ static int mt6360_fled_strobe_current_list(struct rt_fled_dev *fled,
 		return -EINVAL;
 	if (selector < 117)
 		return 25000 + selector * 6250;
+	/* make the base 762.5 mA */
+	selector -= 60;
 	return 750000 + selector * 12500;
 }
 
@@ -489,9 +491,11 @@ static int mt6360_fled_set_strobe_current_sel(struct rt_fled_dev *fled,
 	if (selector < 117) /* 25 ~ 750mA */
 		ret = mt6360_pmu_reg_set_bits(fi->mpi, reg_strb_cur,
 					     MT6360_UTRAL_ISTRB_MASK);
-	else /* 762.5 ~ 1500mA */
+	else { /* 762.5 ~ 1500mA */
 		ret = mt6360_pmu_reg_clr_bits(fi->mpi, reg_strb_cur,
 					     MT6360_UTRAL_ISTRB_MASK);
+		selector -= 60; /* make the base 762.5 mA */
+	}
 
 	return mt6360_pmu_reg_update_bits(fi->mpi, reg_strb_cur,
 					  MT6360_ISTRB_MASK,

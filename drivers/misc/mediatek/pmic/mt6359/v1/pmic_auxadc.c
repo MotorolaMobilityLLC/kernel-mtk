@@ -450,7 +450,7 @@ int pmic_get_auxadc_value(int list)
 		pr_notice("[%s] Invalid channel list(%d)\n", __func__, list);
 		return -EINVAL;
 	}
-	if (IS_ERR(legacy_auxadc[list].chan)) {
+	if (!(legacy_auxadc[list].chan) || IS_ERR(legacy_auxadc[list].chan)) {
 		pr_notice("[%s] iio channel consumer error(%s)\n",
 			__func__, legacy_auxadc[list].channel_name);
 		return PTR_ERR(legacy_auxadc[list].chan);

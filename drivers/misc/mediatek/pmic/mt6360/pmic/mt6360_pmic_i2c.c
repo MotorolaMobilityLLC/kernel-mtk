@@ -24,6 +24,9 @@
 #include <linux/regulator/driver.h>
 #include <linux/regulator/machine.h>
 
+#include <mach/mtk_pmic_wrap.h>
+#include <mt-plat/upmu_common.h>
+
 #include "../inc/mt6360_pmic.h"
 
 struct mt6360_regulator_desc {
@@ -426,6 +429,8 @@ static int mt6360_pmic_set_voltage_sel(struct regulator_dev *rdev,
 	/* for LDO6/7 vocal add */
 	if (id > MT6360_PMIC_BUCK2)
 		sel = (sel >= 160) ? 0xfa : (((sel / 10) << 4) + sel % 10);
+	if (id == MT6360_PMIC_BUCK1)
+		pwrap_write(MT6359_RG_SPI_CON12, sel);
 	ret = mt6360_pmic_reg_update_bits(mpi, desc->vsel_reg,
 					  desc->vsel_mask, sel << shift);
 	if (ret < 0) {
@@ -790,6 +795,13 @@ static int mt6360_pmic_i2c_probe(struct i2c_client *client,
 	}
 	mt6360_pmic_irq_register(mpi);
 	dev_info(&client->dev, "%s: successfully probed\n", __func__);
+
+	/* MT6359 record VMDLA vosel */
+	ret = mt6360_pmic_reg_read(mpi,
+		mt6360_pmic_descs[MT6360_PMIC_BUCK1].desc.vsel_reg);
+	if (ret < 0)
+		return ret;
+	pwrap_write(MT6359_RG_SPI_CON12, ret);
 	return 0;
 out_pdata:
 	mt6360_pmic_regmap_unregister(mpi);
@@ -807,6 +819,48 @@ static int mt6360_pmic_i2c_remove(struct i2c_client *client)
 	mt6360_pmic_regmap_unregister(mpi);
 	mutex_destroy(&mpi->io_lock);
 	return 0;
+}
+
+static int mt6360_pmic_enable_poweroff_sequence(struct mt6360_pmic_info *mpi,
+						bool en)
+{
+	int i, ret = 0;
+	u8 off_delay[4] = { 0x06, 0x04, 0x00, 0x02 };
+
+	dev_dbg(mpi->dev, "%s: en = %d\n", __func__, en);
+	for (i = 0; i < 4; i++) {
+		ret = mt6360_pmic_reg_write(mpi, 0x07 + i,
+					    en ? off_delay[i] : 0);
+		if (ret < 0) {
+			dev_notice(mpi->dev, "%s: set buck(%d) fail\n",
+				__func__, i);
+			return ret;
+		}
+	}
+	return ret;
+}
+
+static void mt6360_pmic_shutdown(struct i2c_client *client)
+{
+	struct mt6360_pmic_info *mpi = i2c_get_clientdata(client);
+	int ret = 0;
+
+	dev_dbg(mpi->dev, "%s\n", __func__);
+	if (mpi == NULL)
+		return;
+	ret = mt6360_pmic_enable_poweroff_sequence(mpi, true);
+	if (ret < 0) {
+		dev_notice(mpi->dev, "%s: enable power off sequence fail\n",
+			__func__);
+		return;
+	}
+#if 1
+	/* reset buck1 voltage to default for pgb trigger */
+	ret = mt6360_pmic_reg_write(mpi, 0x10, 0x32);
+	if (ret < 0)
+		dev_notice(mpi->dev,
+			   "%s: reset buck1 voltage fail\n", __func__);
+#endif
 }
 
 static int __maybe_unused mt6360_pmic_i2c_suspend(struct device *dev)
@@ -846,6 +900,7 @@ static struct i2c_driver mt6360_pmic_i2c_driver = {
 	},
 	.probe = mt6360_pmic_i2c_probe,
 	.remove = mt6360_pmic_i2c_remove,
+	.shutdown = mt6360_pmic_shutdown,
 	.id_table = mt6360_pmic_i2c_id,
 };
 module_i2c_driver(mt6360_pmic_i2c_driver);
