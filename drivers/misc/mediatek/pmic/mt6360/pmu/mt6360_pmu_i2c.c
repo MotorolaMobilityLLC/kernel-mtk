@@ -25,6 +25,9 @@
 
 #include "../inc/mt6360_pmu.h"
 
+bool dbg_log_en; /* module param to enable/disable debug log */
+module_param(dbg_log_en, bool, 0644);
+
 static const struct mt6360_pmu_platform_data def_platform_data = {
 	.irq_gpio = -1,
 };
@@ -51,7 +54,7 @@ int mt6360_pmu_reg_read(struct mt6360_pmu_info *mpi, u8 addr)
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mpi->dev, "%s: reg[%02x]\n", __func__, addr);
+	mt_dbg(mpi->dev, "%s: reg[%02x]\n", __func__, addr);
 	mutex_lock(&mpi->io_lock);
 	ret = rt_regmap_reg_read(mpi->regmap, &rrd, addr);
 	mutex_unlock(&mpi->io_lock);
@@ -60,7 +63,7 @@ int mt6360_pmu_reg_read(struct mt6360_pmu_info *mpi, u8 addr)
 	u8 data = 0;
 	int ret;
 
-	dev_dbg(mpi->dev, "%s: reg[%02x]\n", __func__, addr);
+	mt_dbg(mpi->dev, "%s: reg[%02x]\n", __func__, addr);
 	mutex_lock(&mpi->io_lock);
 	ret = mt6360_pmu_read_device(mpi->i2c, addr, 1, &data);
 	mutex_unlock(&mpi->io_lock);
@@ -75,15 +78,17 @@ int mt6360_pmu_reg_write(struct mt6360_pmu_info *mpi, u8 addr, u8 data)
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mpi->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
+	mt_dbg(mpi->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
 	mutex_lock(&mpi->io_lock);
 	ret = rt_regmap_reg_write(mpi->regmap, &rrd, addr, data);
+	if (ret < 0)
+		rt_regmap_cache_reload(mpi->regmap);
 	mutex_unlock(&mpi->io_lock);
 	return ret;
 #else
 	int ret;
 
-	dev_dbg(mpi->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
+	mt_dbg(mpi->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
 	mutex_lock(&mpi->io_lock);
 	ret = mt6360_pmu_write_device(mpi->i2c, addr, 1, &data);
 	mutex_unlock(&mpi->io_lock);
@@ -99,7 +104,7 @@ int mt6360_pmu_reg_update_bits(struct mt6360_pmu_info *mpi,
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mpi->dev,
+	mt_dbg(mpi->dev,
 		"%s reg[%02x], mask[%02x], data[%02x]\n",
 		__func__, addr, mask, data);
 	mutex_lock(&mpi->io_lock);
@@ -110,7 +115,7 @@ int mt6360_pmu_reg_update_bits(struct mt6360_pmu_info *mpi,
 	u8 org = 0;
 	int ret;
 
-	dev_dbg(mpi->dev,
+	mt_dbg(mpi->dev,
 		"%s reg[%02x], mask[%02x], data[%02x]\n",
 		__func__, addr, mask, data);
 	mutex_lock(&mpi->io_lock);
@@ -133,7 +138,7 @@ int mt6360_pmu_reg_block_read(struct mt6360_pmu_info *mpi,
 #ifdef CONFIG_RT_REGMAP
 	int ret;
 
-	dev_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
+	mt_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
 	mutex_lock(&mpi->io_lock);
 	ret = rt_regmap_block_read(mpi->regmap, addr, len, dst);
 	mutex_unlock(&mpi->io_lock);
@@ -141,7 +146,7 @@ int mt6360_pmu_reg_block_read(struct mt6360_pmu_info *mpi,
 #else
 	int ret;
 
-	dev_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
+	mt_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
 	mutex_lock(&mpi->io_lock);
 	ret = mt6360_pmu_read_device(mpi->i2c, addr, len, dst);
 	mutex_unlock(&mpi->io_lock);
@@ -156,7 +161,7 @@ int mt6360_pmu_reg_block_write(struct mt6360_pmu_info *mpi,
 #ifdef CONFIG_RT_REGMAP
 	int ret = 0;
 
-	dev_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
+	mt_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
 	mutex_lock(&mpi->io_lock);
 	ret = rt_regmap_block_write(mpi->regmap, addr, len, src);
 	mutex_unlock(&mpi->io_lock);
@@ -164,7 +169,7 @@ int mt6360_pmu_reg_block_write(struct mt6360_pmu_info *mpi,
 #else
 	int ret = 0;
 
-	dev_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
+	mt_dbg(mpi->dev, "%s addr[%02x], len[%d]\n", __func__, addr, len);
 	mutex_lock(&mpi->io_lock);
 	ret = mt6360_pmu_write_device(mpi->i2c, addr, len, src);
 	mutex_unlock(&mpi->io_lock);

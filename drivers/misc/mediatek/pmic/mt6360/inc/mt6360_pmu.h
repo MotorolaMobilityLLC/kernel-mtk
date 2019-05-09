@@ -23,6 +23,13 @@
 #include "config.h"
 #include "rt-regmap.h"
 
+extern bool dbg_log_en;
+#define mt_dbg(dev, fmt, ...) \
+	do { \
+		if (dbg_log_en) \
+			dev_dbg(dev, fmt, ##__VA_ARGS__); \
+	} while (0)
+
 enum {
 	MT6360_PMUDEV_CORE = 0,
 	MT6360_PMUDEV_ADC,
@@ -87,13 +94,9 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_CHG_CTRL16			(0x20)
 #define MT6360_PMU_CHG_AICC_RESULT		(0x21)
 #define MT6360_PMU_DEVICE_TYPE			(0x22)
-#define MT6360_PMU_QC_CONTROL1			(0x23)
-#define MT6360_PMU_QC_CONTROL2			(0x24)
-#define MT6360_PMU_QC30_CONTROL1		(0x25)
-#define MT6360_PMU_QC30_CONTROL2		(0x26)
+#define MT6360_PMU_DCP_CONTROL			(0x24)
 #define MT6360_PMU_USB_STATUS1			(0x27)
-#define MT6360_PMU_QC_STATUS1			(0x28)
-#define MT6360_PMU_QC_STATUS2			(0x29)
+#define MT6360_PMU_DPDM_CTRL			(0x28)
 #define MT6360_PMU_CHG_PUMP			(0x2A)
 #define MT6360_PMU_CHG_CTRL17			(0x2B)
 #define MT6360_PMU_CHG_CTRL18			(0x2C)
@@ -128,10 +131,7 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_BC12_CTRL			(0x49)
 #define MT6360_PMU_CHG_STAT			(0x4A)
 #define MT6360_PMU_RESV1			(0x4B)
-#define MT6360_PMU_TYPEC_OTP_TH_SEL_CODEH	(0x4E)
-#define MT6360_PMU_TYPEC_OTP_TH_SEL_CODEL	(0x4F)
-#define MT6360_PMU_TYPEC_OTP_HYST_TH		(0x50)
-#define MT6360_PMU_TYPEC_OTP_CTRL		(0x51)
+#define MT6360_PMU_OTHERS_CTRL			(0x51)
 #define MT6360_PMU_ADC_BAT_DATA_H		(0x52)
 #define MT6360_PMU_ADC_BAT_DATA_L		(0x53)
 #define MT6360_PMU_IMID_BACKBST_ON		(0x54)
@@ -149,8 +149,7 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_CHG_CTRL19			(0x61)
 #define MT6360_PMU_VDDASUPPLY			(0x62)
 #define MT6360_PMU_BC12_MANUAL			(0x63)
-#define MT6360_PMU_CHGDET_FUNC			(0x64)
-#define MT6360_PMU_FOD_CTRL			(0x65)
+#define MT6360_PMU_CTD_CTRL			(0x65)
 #define MT6360_PMU_CHG_CTRL20			(0x66)
 #define MT6360_PMU_CHG_HIDDEN_CTRL26		(0x67)
 #define MT6360_PMU_CHG_HIDDEN_CTRL27		(0x68)
@@ -207,8 +206,8 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_CHG_IRQ4			(0xD3)
 #define MT6360_PMU_CHG_IRQ5			(0xD4)
 #define MT6360_PMU_CHG_IRQ6			(0xD5)
-#define MT6360_PMU_QC_IRQ			(0xD6)
-#define MT6360_PMU_FOD_IRQ			(0xD7)
+#define MT6360_PMU_DPDM_IRQ			(0xD6)
+#define MT6360_PMU_CHRDET_IRQ			(0xD7)
 #define MT6360_PMU_BASE_IRQ			(0xD8)
 #define MT6360_PMU_FLED_IRQ1			(0xD9)
 #define MT6360_PMU_FLED_IRQ2			(0xDA)
@@ -223,8 +222,8 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_CHG_STAT4			(0xE3)
 #define MT6360_PMU_CHG_STAT5			(0xE4)
 #define MT6360_PMU_CHG_STAT6			(0xE5)
-#define MT6360_PMU_QC_STAT			(0xE6)
-#define MT6360_PMU_FOD_STAT			(0xE7)
+#define MT6360_PMU_DPDM_STAT			(0xE6)
+#define MT6360_PMU_CHRDET_STAT			(0xE7)
 #define MT6360_PMU_BASE_STAT			(0xE8)
 #define MT6360_PMU_FLED_STAT1			(0xE9)
 #define MT6360_PMU_FLED_STAT2			(0xEA)
@@ -239,8 +238,8 @@ struct mt6360_pmu_irq_desc {
 #define MT6360_PMU_CHG_MASK4			(0xF3)
 #define MT6360_PMU_CHG_MASK5			(0xF4)
 #define MT6360_PMU_CHG_MASK6			(0xF5)
-#define MT6360_PMU_QC_MASK			(0xF6)
-#define MT6360_PMU_FOD_MASK			(0xF7)
+#define MT6360_PMU_DPDM_MASK			(0xF6)
+#define MT6360_PMU_CHRDET_MASK			(0xF7)
 #define MT6360_PMU_BASE_MASK			(0xF8)
 #define MT6360_PMU_FLED_MASK1			(0xF9)
 #define MT6360_PMU_FLED_MASK2			(0xFA)
@@ -261,7 +260,7 @@ struct mt6360_pmu_info {
 	struct device *dev;
 	struct rt_regmap_device *regmap;
 	struct irq_domain *irq_domain;
-	u8 cache_irq_mask[MT6360_PMU_IRQ_REGNUM];
+	u8 cache_irq_masks[MT6360_PMU_IRQ_REGNUM];
 	struct mutex io_lock;
 	int irq;
 	u8 chip_rev;
