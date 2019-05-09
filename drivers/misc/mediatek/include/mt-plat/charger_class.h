@@ -96,6 +96,7 @@ struct charger_ops {
 	int (*enable_cable_drop_comp)(struct charger_device *dev, bool en);
 
 	int (*set_mivr)(struct charger_device *dev, u32 uV);
+	int (*get_mivr)(struct charger_device *dev, u32 *uV);
 	int (*get_mivr_state)(struct charger_device *dev, bool *in_loop);
 
 	/* enable/disable powerpath */
@@ -216,6 +217,8 @@ extern int charger_dev_enable_vbus_ovp(
 	struct charger_device *charger_dev, bool en);
 extern int charger_dev_set_mivr(
 	struct charger_device *charger_dev, u32 uV);
+extern int charger_dev_get_mivr(
+	struct charger_device *charger_dev, u32 *uV);
 extern int charger_dev_get_mivr_state(
 	struct charger_device *charger_dev, bool *in_loop);
 extern int charger_dev_do_event(

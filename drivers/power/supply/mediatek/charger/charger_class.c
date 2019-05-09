@@ -325,6 +325,15 @@ int charger_dev_set_mivr(struct charger_device *chg_dev, u32 uV)
 }
 EXPORT_SYMBOL(charger_dev_set_mivr);
 
+int charger_dev_get_mivr(struct charger_device *chg_dev, u32 *uV)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->set_mivr)
+		return chg_dev->ops->get_mivr(chg_dev, uV);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_mivr);
+
 int charger_dev_enable_powerpath(struct charger_device *chg_dev, bool en)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
