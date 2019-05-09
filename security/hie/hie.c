@@ -218,7 +218,7 @@ static void hie_dump_bio(struct bio *bio, const char *prefix)
 
 	iv = bio_bc_iv_get(bio);
 
-	pr_debug("HIE: %s: bio: %p %s, flag: %x, size: %d, file: %s, ino: %ld, iv: %lu\n",
+	pr_info("HIE: %s: bio: %p %s, flag: %x, size: %d, file: %s, ino: %ld, iv: %lu\n",
 		prefix, bio, __rw_str(bio),
 		bio->bi_crypt_ctx.bc_flags,
 		size, ptr?ptr:"", ino, iv);
@@ -295,7 +295,7 @@ static unsigned long hie_dummy_crypt_bio(const char *prefix, struct bio *bio,
 			ptr = get_page_name(bv.bv_page, path, 255, &ino);
 
 		if (hie_debug(HIE_DBG_CRY)) {
-			pr_debug("HIE: %s: %s bio: %p, base: %p %s len: %d, file: %s, ino: %ld, sec: %lu, iv: %llx, pgidx: %u\n",
+			pr_info("HIE: %s: %s bio: %p, base: %p %s len: %d, file: %s, ino: %ld, sec: %lu, iv: %llx, pgidx: %u\n",
 			  __func__, prefix, bio, data,
 			  __rw_str(bio), bv.bv_len,
 			  ptr, ino, (unsigned long)iter.bi_sector, *iv,
@@ -349,7 +349,7 @@ static int hie_dummy_crypt_req(const char *prefix, struct request *req,
 	blksize = queue_physical_block_size(req->q);
 
 	if (hie_debug(HIE_DBG_CRY)) {
-		pr_debug("HIE: %s: %s req: %p, req_iv: %llx\n",
+		pr_info("HIE: %s: %s req: %p, req_iv: %llx\n",
 		  __func__, prefix, req, iv);
 	}
 
@@ -361,7 +361,7 @@ static int hie_dummy_crypt_req(const char *prefix, struct request *req,
 			u64 bio_iv;
 
 			bio_iv = bio_bc_iv_get(bio);
-			pr_debug("HIE: %s: %s req: %p, req_iv: %llx, bio: %p, %s, bio_iv: %llu\n",
+			pr_info("HIE: %s: %s req: %p, req_iv: %llx, bio: %p, %s, bio_iv: %llu\n",
 			  __func__, prefix, req, iv, bio,
 			  __rw_str(bio),
 			  bio_iv);
@@ -566,7 +566,7 @@ try_lock_key:
 
 #ifdef CONFIG_HIE_DEBUG
 	if (key && hie_debug(HIE_DBG_KEY)) {
-		pr_debug("HIE: %s: master key\n", __func__);
+		pr_info("HIE: %s: master key\n", __func__);
 		print_hex_dump(KERN_DEBUG, "fs-key: ", DUMP_PREFIX_ADDRESS,
 			16, 1, key, key_size, 0);
 	}
@@ -603,7 +603,7 @@ int hie_decrypt(struct hie_dev *dev, struct request *req, void *priv)
 	ret = hie_req_key_act(dev, req, dev->decrypt, priv);
 #ifdef CONFIG_HIE_DEBUG
 	if (hie_debug(HIE_DBG_HIE))
-		pr_debug("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
+		pr_info("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
 #endif
 	return ret;
 }
@@ -616,7 +616,7 @@ int hie_encrypt(struct hie_dev *dev, struct request *req, void *priv)
 	ret = hie_req_key_act(dev, req, dev->encrypt, priv);
 #ifdef CONFIG_HIE_DEBUG
 	if (hie_debug(HIE_DBG_HIE))
-		pr_debug("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
+		pr_info("HIE: %s: req: %p, ret=%d\n", __func__, req, ret);
 #endif
 	return ret;
 }
