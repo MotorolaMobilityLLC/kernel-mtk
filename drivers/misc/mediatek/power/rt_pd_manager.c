@@ -260,7 +260,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
-			(noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
+		    (noti->typec_state.new_state == TYPEC_ATTACHED_SNK ||
 		    noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 		    noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
@@ -358,27 +358,41 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 
 	case TCP_NOTIFY_HARD_RESET_STATE:
 		if (noti->hreset_state.state == TCP_HRESET_RESULT_DONE ||
-			noti->hreset_state.state == TCP_HRESET_RESULT_FAIL) {
+			noti->hreset_state.state == TCP_HRESET_RESULT_FAIL)
 			charger_manager_enable_kpoc_shutdown(chg_consumer,
-				true);
-		} else if (noti->hreset_state.state == TCP_HRESET_SIGNAL_SEND ||
-			noti->hreset_state.state == TCP_HRESET_SIGNAL_RECV) {
+							     true);
+		else if (noti->hreset_state.state == TCP_HRESET_SIGNAL_SEND ||
+			noti->hreset_state.state == TCP_HRESET_SIGNAL_RECV)
 			charger_manager_enable_kpoc_shutdown(chg_consumer,
-				false);
-		}
+							     false);
 		break;
 	case TCP_NOTIFY_WD_STATUS:
 		pr_err("%s wd status = %d\n",
-		       __func__, noti->wd_status.water_detected);
-		break;
-	case TCP_NOTIFY_FOD_STATUS:
-		pr_err("%s fod status = %d\n", __func__, noti->fod_status.fod);
+			__func__, noti->wd_status.water_detected);
+
+		if (tcpc_kpoc) {
+			if (noti->wd_status.water_detected == true) {
+				pr_info("Water is detected in KPOC, disable HV charging\n");
+				charger_manager_enable_high_voltage_charging(
+					chg_consumer, false);
+			} else {
+				pr_info("Water is removed in KPOC, enable HV charging\n");
+				charger_manager_enable_high_voltage_charging(
+					chg_consumer, true);
+			}
+		}
 		break;
 	case TCP_NOTIFY_CABLE_TYPE:
 		pr_err("%s cable type = %d\n", __func__, noti->cable_type.type);
 		break;
-	case TCP_NOTIFY_TYPEC_OT:
-		pr_err("%s typec ot = %d\n", __func__, noti->typec_ot.ot);
+	case TCP_NOTIFY_PLUG_OUT:
+		pr_info("%s typec plug out\n", __func__);
+
+		if (tcpc_kpoc) {
+			pr_info("[%s] typec cable plug out, power off\n",
+				__func__);
+			kernel_power_off();
+		}
 		break;
 	default:
 		break;

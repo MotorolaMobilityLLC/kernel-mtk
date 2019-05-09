@@ -237,6 +237,7 @@ static int tcpci_alert_recv_hard_reset(struct tcpc_device *tcpc_dev)
 {
 	TCPC_INFO("HardResetAlert\r\n");
 	pd_put_recv_hard_reset_event(tcpc_dev);
+	tcpci_init_alert_mask(tcpc_dev);
 	return 0;
 }
 
@@ -408,7 +409,7 @@ static inline void tcpci_attach_wake_lock(struct tcpc_device *tcpc)
 {
 #ifdef CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT
 	__pm_wakeup_event(&tcpc->attach_wake_lock,
-		CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT * HZ);
+					     CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT);
 #else
 	__pm_stay_awake(&tcpc->attach_wake_lock);
 #endif	/* CONFIG_TCPC_ATTACH_WAKE_LOCK_TOUT */
@@ -462,7 +463,7 @@ static inline int tcpci_set_wake_lock_pd(
 		wake_lock_pd--;
 
 	if (wake_lock_pd == 0)
-		__pm_wakeup_event(&tcpc->dettach_temp_wake_lock, 5 * HZ);
+		__pm_wakeup_event(&tcpc->dettach_temp_wake_lock, 5000);
 
 	tcpci_set_wake_lock(tcpc, wake_lock_pd, tcpc->wake_lock_user);
 

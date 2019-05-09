@@ -347,6 +347,7 @@ DECL_TCPC_TIMEOUT(TYPEC_RT_TIMER_LOW_POWER_MODE, 500),
 #ifdef CONFIG_USB_POWER_DELIVERY
 DECL_TCPC_TIMEOUT(TYPEC_RT_TIMER_PE_IDLE, 1),
 #endif	/* CONFIG_USB_POWER_DELIVERY */
+
 /* TYPEC-TRY-TIMER */
 DECL_TCPC_TIMEOUT_RANGE(TYPEC_TRY_TIMER_DRP_TRY, 75, 150),
 DECL_TCPC_TIMEOUT_RANGE(TYPEC_TRY_TIMER_DRP_TRYWAIT, 400, 800),
@@ -952,7 +953,6 @@ static enum hrtimer_restart tcpc_timer_rt_pe_idle(struct hrtimer *timer)
 	TCPC_TIMER_TRIGGER();
 	return HRTIMER_NORESTART;
 }
-
 #endif	/* CONFIG_USB_POWER_DELIVERY */
 
 /* TYPEC-TRY-TIMER */
@@ -1051,7 +1051,7 @@ static enum alarmtimer_restart
 	struct tcpc_device *tcpc_dev =
 		container_of(alarm, struct tcpc_device, wake_up_timer);
 
-	__pm_wakeup_event(&tcpc_dev->wakeup_wake_lock, 1*HZ);
+	__pm_wakeup_event(&tcpc_dev->wakeup_wake_lock, 1000);
 	schedule_delayed_work(&tcpc_dev->wake_up_work, 0);
 	return ALARMTIMER_NORESTART;
 }

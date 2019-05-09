@@ -437,7 +437,7 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 		return -EINVAL;
 	}
 
-	ret = tcpci_init(tcpc, true);
+	ret = tcpci_init(tcpc, false);
 	if (ret < 0) {
 		pr_err("%s tcpc init fail\n", __func__);
 		return ret;
@@ -446,11 +446,12 @@ static int tcpc_device_irq_enable(struct tcpc_device *tcpc)
 	tcpci_lock_typec(tcpc);
 	ret = tcpc_typec_init(tcpc, tcpc->desc.role_def + 1);
 	tcpci_unlock_typec(tcpc);
-
 	if (ret < 0) {
 		pr_err("%s : tcpc typec init fail\n", __func__);
 		return ret;
 	}
+	if (tcpc->ops->init_alert_mask)
+		tcpci_init_alert_mask(tcpc);
 
 	schedule_delayed_work(
 		&tcpc->event_init_work, msecs_to_jiffies(10*1000));

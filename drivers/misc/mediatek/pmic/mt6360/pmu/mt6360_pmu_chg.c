@@ -49,11 +49,13 @@ enum mt6360_adc_channel {
 	MT6360_ADC_IBUS,
 	MT6360_ADC_IBAT,
 	MT6360_ADC_TEMP_JC,
+	MT6360_ADC_USBID,
+	MT6360_ADC_TS,
 	MT6360_ADC_MAX,
 };
 
 static const char * const mt6360_adc_chan_list[] = {
-	"VBUSDIV5", "VSYS", "VBAT", "IBUS", "IBAT", "TEMP_JC",
+	"VBUSDIV5", "VSYS", "VBAT", "IBUS", "IBAT", "TEMP_JC", "USBID", "TS",
 };
 
 struct mt6360_pmu_chg_info {
@@ -252,6 +254,67 @@ static inline u32 mt6360_trans_ircmp_vclamp_sel(u32 uV)
 	if (data > MT6360_VCLAMP_MAXVAL)
 		data = MT6360_VCLAMP_MAXVAL;
 	return data;
+}
+
+static const u32 mt6360_usbid_rup[] = {
+	500000, 75000, 5000, 1000
+};
+
+static inline u32 mt6360_trans_usbid_rup(u32 rup)
+{
+	int i;
+	int maxidx = ARRAY_SIZE(mt6360_usbid_rup) - 1;
+
+	if (rup >= mt6360_usbid_rup[0])
+		return 0;
+	if (rup <= mt6360_usbid_rup[maxidx])
+		return maxidx;
+
+	for (i = 0; i < maxidx; i++) {
+		if (rup == mt6360_usbid_rup[i])
+			return i;
+		if (rup < mt6360_usbid_rup[i] &&
+		    rup > mt6360_usbid_rup[i + 1]) {
+			if ((mt6360_usbid_rup[i] - rup) <=
+			    (rup - mt6360_usbid_rup[i + 1]))
+				return i;
+			else
+				return i + 1;
+		}
+	}
+	return maxidx;
+}
+
+static const u32 mt6360_usbid_src_ton[] = {
+	400, 1000, 4000, 10000, 40000, 100000, 400000,
+};
+
+static inline u32 mt6360_trans_usbid_src_ton(u32 src_ton)
+{
+	int i;
+	int maxidx = ARRAY_SIZE(mt6360_usbid_src_ton) - 1;
+
+	/* There is actually an option, always on, after 400000 */
+	if (src_ton == 0)
+		return maxidx + 1;
+	if (src_ton < mt6360_usbid_src_ton[0])
+		return 0;
+	if (src_ton > mt6360_usbid_src_ton[maxidx])
+		return maxidx;
+
+	for (i = 0; i < maxidx; i++) {
+		if (src_ton == mt6360_usbid_src_ton[i])
+			return i;
+		if (src_ton > mt6360_usbid_src_ton[i] &&
+		    src_ton < mt6360_usbid_src_ton[i + 1]) {
+			if ((src_ton - mt6360_usbid_src_ton[i]) <=
+			    (mt6360_usbid_src_ton[i + 1] - src_ton))
+				return i;
+			else
+				return i + 1;
+		}
+	}
+	return maxidx;
 }
 
 static inline int mt6360_get_mivr(struct mt6360_pmu_chg_info *mpci, u32 *uV)
@@ -1034,13 +1097,13 @@ static int mt6360_charger_run_aicc(struct charger_device *chg_dev, u32 *uA)
 		goto out;
 	} else
 		dev_info(mpci->dev, "%s: aicc val = %d\n", __func__, aicc_val);
+	if (ret < 0)
+		goto out;
 	*uA = aicc_val;
 out:
 	/* Clear EN_AICC */
 	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,
 				      MT6360_MASK_RG_EN_AICC);
-	if (ret < 0)
-		goto out;
 	mutex_unlock(&mpci->pe_lock);
 	return ret;
 }
@@ -1469,35 +1532,46 @@ static int mt6360_charger_plug_out(struct charger_device *chg_dev)
 	return ret;
 }
 
-static int mt6360_enable_fod_oneshot(struct charger_device *chg_dev, bool en)
+static int mt6360_enable_usbid(struct charger_device *chg_dev, bool en)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
 
 	return (en ? mt6360_pmu_reg_set_bits : mt6360_pmu_reg_clr_bits)
-		(mpci->mpi, MT6360_PMU_FOD_CTRL, MT6360_MASK_FOD_SWEN);
+		(mpci->mpi, MT6360_PMU_USBID_CTRL1, MT6360_MASK_USBID_EN);
 }
 
-static int mt6360_get_fod_status(struct charger_device *chg_dev, u8 *status)
+static int mt6360_set_usbid_rup(struct charger_device *chg_dev, u32 rup)
 {
-	int ret;
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	u32 data = mt6360_trans_usbid_rup(rup);
 
-	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_FOD_STAT);
-	if (ret < 0)
-		return ret;
-	*status = ret & MT6360_MASK_FOD_ALL_STAT;
-	return 0;
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_USBID_CTRL1,
+					  MT6360_MASK_ID_RPULSEL,
+					  data << MT6360_SHFT_ID_RPULSEL);
 }
 
-static int mt6360_is_typec_ot(struct charger_device *chg_dev, bool *ot)
+static int mt6360_set_usbid_src_ton(struct charger_device *chg_dev, u32 src_ton)
 {
-	int ret;
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	u32 data = mt6360_trans_usbid_src_ton(src_ton);
 
-	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT6);
-	if (ret < 0)
+	return mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_USBID_CTRL1,
+					  MT6360_MASK_ISTDET,
+					  data << MT6360_SHFT_ISTDET);
+}
+
+static int mt6360_get_adc(struct charger_device *chg_dev, int *min, int *max)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+	int ret;
+
+	ret = iio_read_channel_processed(mpci->channels[MT6360_ADC_USBID], min);
+	if (ret < 0) {
+		dev_info(mpci->dev, "%s fail (%d)\n", __func__, ret);
 		return ret;
-	*ot = (ret & MT6360_MASK_TYPEC_OTP) ? true : false;
+	}
+	*max = *min;
+	dev_info(mpci->dev, "%s %dmV\n", __func__, *min / 1000);
 	return 0;
 }
 
@@ -1547,6 +1621,7 @@ static const struct charger_ops mt6360_chg_ops = {
 	.get_vbus_adc = mt6360_charger_get_vbus,
 	.get_ibus_adc = mt6360_charger_get_ibus,
 	.get_tchg_adc = mt6360_charger_get_tchg,
+	.get_adc = mt6360_get_adc,
 	/* kick wdt */
 	.kick_wdt = mt6360_charger_kick_wdt,
 	/* misc */
@@ -1558,9 +1633,9 @@ static const struct charger_ops mt6360_chg_ops = {
 	/* event */
 	.event = mt6360_charger_do_event,
 	/* TypeC */
-	.enable_fod_oneshot = mt6360_enable_fod_oneshot,
-	.get_fod_status = mt6360_get_fod_status,
-	.is_typec_ot = mt6360_is_typec_ot,
+	.enable_usbid = mt6360_enable_usbid,
+	.set_usbid_rup = mt6360_set_usbid_rup,
+	.set_usbid_src_ton = mt6360_set_usbid_src_ton,
 };
 
 static const struct charger_properties mt6360_chg_props = {
@@ -2210,10 +2285,20 @@ static int mt6360_chg_init_setting(struct mt6360_pmu_chg_info *mpci)
 	}
 	/* enable AICC_EN if aicc_once = 0 */
 	if (!pdata->aicc_once) {
+		ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,
+					      MT6360_MASK_RG_AICC_ONCE);
+		if (ret < 0) {
+			dev_notice(mpci->dev,
+				"%s: disable aicc_once fail\n", __func__);
+			return ret;
+		}
 		ret = mt6360_pmu_reg_set_bits(mpci->mpi, MT6360_PMU_CHG_CTRL14,
 					      MT6360_MASK_RG_EN_AICC);
-		if (ret < 0)
-			dev_err(mpci->dev, "%s: enable aicc fail\n", __func__);
+		if (ret < 0) {
+			dev_notice(mpci->dev,
+				"%s: enable en_aicc fail\n", __func__);
+			return ret;
+		}
 	}
 	/* Check BATSYSUV occurred last time boot-on */
 	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_STAT);
@@ -2229,6 +2314,10 @@ static int mt6360_chg_init_setting(struct mt6360_pmu_chg_info *mpci)
 			dev_err(mpci->dev,
 				"%s: clear BATSYSUV fail\n", __func__);
 	}
+
+	/* USBID ID_TD = 32T */
+	ret = mt6360_pmu_reg_update_bits(mpci->mpi, MT6360_PMU_USBID_CTRL2,
+					 MT6360_MASK_IDTD, 0x60);
 	return ret;
 }
 
