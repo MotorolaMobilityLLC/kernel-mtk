@@ -126,7 +126,7 @@ void init_tplay_handle(struct device *dev)
 static int write_tplay_handle(unsigned int handle_value)
 {
 	if (tplay_handle_virt_addr != NULL) {
-		DDPDBG("[SVP] %s 0x%x\n", handle_value, __func__);
+		DDPDBG("[SVP] %s 0x%x\n", __func__, handle_value);
 		*tplay_handle_virt_addr = handle_value;
 		return 0;
 	}
@@ -401,7 +401,7 @@ static int disp_open(struct inode *inode, struct file *file)
 {
 	struct disp_node_struct *pNode = NULL;
 
-	DDPDBG("enter %s process:%s\n", current->comm, __func__);
+	DDPDBG("enter %s process:%s\n", __func__, current->comm);
 
 	/* Allocate and initialize private data */
 	file->private_data =
@@ -430,7 +430,7 @@ static int disp_release(struct inode *inode, struct file *file)
 {
 	struct disp_node_struct *pNode = NULL;
 	/* unsigned int index = 0; */
-	DDPDBG("enter %s process:%s\n", current->comm, __func__);
+	DDPDBG("enter %s process:%s\n", __func__, current->comm);
 
 	pNode = (struct disp_node_struct *)file->private_data;
 

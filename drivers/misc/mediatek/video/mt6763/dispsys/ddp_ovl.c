@@ -252,8 +252,8 @@ int ovl_roi(enum DISP_MODULE_ENUM module, unsigned int bg_w, unsigned int bg_h,
 	unsigned long ovl_base = ovl_base_addr(module);
 
 	if ((bg_w > OVL_MAX_WIDTH) || (bg_h > OVL_MAX_HEIGHT)) {
-		DDPERR("%s,exceed OVL max size, w=%d, h=%d\n", bg_w,
-		       __func__, bg_h);
+		DDPERR("%s,exceed OVL max size, w=%d, h=%d\n", __func__,
+		       bg_w, bg_h);
 		ASSERT(0);
 	}
 
