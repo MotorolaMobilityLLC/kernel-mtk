@@ -270,7 +270,7 @@ static void process_dbg_opt(const char *opt)
 		}
 		ddp_init_met_tag(met_on, rdma0_mode, rdma1_mode);
 		DDPMSG("%s, met_on=%d,rdma0_mode %d, rdma1 %d\n",
-		       met_on, rdma0_mode, rdma1_mode, __func__);
+		       __func__, met_on, rdma0_mode, rdma1_mode);
 		sprintf(buf, "met_on:%d,rdma0_mode:%d,rdma1_mode:%d\n", met_on,
 			rdma0_mode, rdma1_mode);
 	} else if (strncmp(opt, "backlight:", 10) == 0) {
@@ -298,15 +298,16 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 		DDPMSG("%s, partial force=%d (%d,%d,%d,%d)\n",
-		       dbg_force_roi, dbg_partial_x, dbg_partial_y,
-		       dbg_partial_w, dbg_partial_h, __func__);
+		       __func__, dbg_force_roi,
+		       dbg_partial_x, dbg_partial_y,
+		       dbg_partial_w, dbg_partial_h);
 	} else if (strncmp(opt, "partial_s:", 10) == 0) {
 		ret = sscanf(opt, "partial_s:%d\n", &dbg_partial_statis);
 		if (ret != 5) {
 			snprintf(buf, 50, "error to parse cmd %s\n", opt);
 			return;
 		}
-		DDPMSG("%s, partial_s:%d\n", dbg_partial_statis, __func__);
+		DDPMSG("%s, partial_s:%d\n", __func__, dbg_partial_statis);
 	} else if (strncmp(opt, "pwm0:", 5) == 0 ||
 		   strncmp(opt, "pwm1:", 5) == 0) {
 		char *p = (char *)opt + 5;
@@ -409,7 +410,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		DDPMSG("%s, module=%d\n", module, __func__);
+		DDPMSG("%s, module=%d\n", __func__, module);
 		if (module < DISP_MODULE_NUM) {
 			ddp_dump_reg(module);
 			sprintf(buf, "dump_reg: %d\n", module);
@@ -427,7 +428,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 
-		DDPMSG("%s, path mutex=%d\n", mutex_idx, __func__);
+		DDPMSG("%s, path mutex=%d\n", __func__, mutex_idx);
 		dpmgr_debug_path_status(mutex_idx);
 		sprintf(buf, "dump_path: %d\n", mutex_idx);
 

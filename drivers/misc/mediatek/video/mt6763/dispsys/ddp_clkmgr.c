@@ -145,14 +145,15 @@ int ddp_clk_check(void)
 			ret++;
 
 		DDPDBG("%s %s is %s refcnt=%d\n",
+		       __func__,
 		       ddp_clks[i].clk_name,
 		       ddp_clks[i].refcnt == 0 ? "off" : "on",
-		       ddp_clks[i].refcnt, __func__);
+		       ddp_clks[i].refcnt);
 	}
 
 	DDPDBG("%s mipitx pll clk is %s refcnt=%d\n",
-	       apmixed_refcnt == 0 ? "off" : "on", apmixed_refcnt,
-		   __func__);
+	       __func__,
+	       apmixed_refcnt == 0 ? "off" : "on", apmixed_refcnt);
 	return ret;
 }
 
@@ -160,7 +161,7 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
-	DDPDBG("%s, clkid = %d\n", id, __func__);
+	DDPDBG("%s, clkid = %d\n", __func__, id);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
@@ -187,7 +188,7 @@ int ddp_clk_disable_unprepare(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
-	DDPDBG("%s, clkid = %d\n", id, __func__);
+	DDPDBG("%s, clkid = %d\n", __func__, id);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
@@ -397,7 +398,7 @@ int ddp_ext_modules_clk_on(void)
 									NULL);
 			} else {
 				DDPERR("[%s] %s no power on(off) function\n",
-				       ddp_get_module_name(module), __func__);
+				       __func__, ddp_get_module_name(module));
 				ret = -1;
 			}
 		}
@@ -618,7 +619,7 @@ int ddp_module_clk_enable(enum DISP_MODULE_TYPE_ENUM module_t)
 		__func__, module_t, number);
 	for (i = 0; i < number; i++) {
 		module_id = ddp_get_module_id_by_idx(module_t, i);
-		pr_debug("[%s] module id = %d\n", module_id, __func__);
+		pr_debug("[%s] module id = %d\n", __func__, module_id);
 		for (j = 0; j < MAX_DISP_CLK_CNT; j++) {
 			if (ddp_clks[j].module_id == module_id)
 				ddp_clk_prepare_enable(j);
@@ -641,7 +642,7 @@ int ddp_module_clk_disable(enum DISP_MODULE_TYPE_ENUM module_t)
 		 __func__, module_t, number);
 	for (i = 0; i < number; i++) {
 		module_id = ddp_get_module_id_by_idx(module_t, i);
-		pr_debug("[%s] module id = %d\n", module_id, __func__);
+		pr_debug("[%s] module id = %d\n", __func__, module_id);
 		for (j = 0; j < MAX_DISP_CLK_CNT; j++) {
 			if (ddp_clks[j].module_id == module_id)
 				ddp_clk_disable_unprepare(j);
