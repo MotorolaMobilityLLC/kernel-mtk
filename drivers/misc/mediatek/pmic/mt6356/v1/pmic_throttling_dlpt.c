@@ -2318,6 +2318,8 @@ int pmic_throttling_dlpt_init(void)
 #endif
 #endif
 
+	wakeup_source_init(&ptim_wake_lock, "PTIM_wakelock");
+	mutex_init(&ptim_mutex);
 #if !defined CONFIG_HAS_WAKELOCKS
 	wakeup_source_init(&bat_percent_notify_lock,
 			   "bat_percent_notify_lock wakelock");
