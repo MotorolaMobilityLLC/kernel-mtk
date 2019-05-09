@@ -508,7 +508,7 @@ static int ccu_reset_i2c_apdma(struct mt_i2c *i2c)
 	i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
 	i2c_writel_dma((u32) i2c->dma_buf.paddr, i2c, OFFSET_TX_MEM_ADDR);
 	if ((i2c->dev_comp->dma_support >= 2))
-		i2c_writel_dma(i2c->dma_buf.paddr >> 32,
+		i2c_writel_dma(upper_32_bits(i2c->dma_buf.paddr),
 			i2c, OFFSET_TX_MEM_ADDR2);
 
 	/*write ap mda tx len = 128(must > totoal tx len within a frame)*/
