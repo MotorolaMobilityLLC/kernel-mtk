@@ -655,37 +655,68 @@ void usb_phy_tuning(void)
 {
 	static bool inited;
 	static s32 u2_vrt_ref, u2_term_ref, u2_enhance;
+	static s32 host_vrt_ref, host_term_ref, host_enhance;
 	static struct device_node *of_node;
+	bool is_host = !mt_usb_is_device();
 
 	if (!inited) {
 		u2_vrt_ref = u2_term_ref = u2_enhance = -1;
-		of_node = of_find_compatible_node(NULL, NULL, "mediatek,phy_tuning");
+		host_vrt_ref =  host_term_ref = host_enhance = -1;
+		of_node = of_find_compatible_node(NULL, NULL, "mediatek,devices_phy_tuning");
 		if (of_node) {
 			/* value won't be updated if property not being found */
 			of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &u2_vrt_ref);
 			of_property_read_u32(of_node, "u2_term_ref", (u32 *) &u2_term_ref);
 			of_property_read_u32(of_node, "u2_enhance", (u32 *) &u2_enhance);
 		}
+		of_node = of_find_compatible_node(NULL, NULL, "mediatek,host_phy_tuning");
+		if (of_node) {
+			/* value won't be updated if property not being found */
+			of_property_read_u32(of_node, "u2_vrt_ref", (u32 *) &host_vrt_ref);
+			of_property_read_u32(of_node, "u2_term_ref", (u32 *) &host_term_ref);
+			of_property_read_u32(of_node, "u2_enhance", (u32 *) &host_enhance);
+		}
 		inited = true;
 	} else if (!of_node)
 		return;
 
-	if (u2_vrt_ref != -1) {
-		if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
-					  RG_USB20_VRT_VREF_SEL, u2_vrt_ref);
+	if (is_host) {
+		if (host_vrt_ref != -1) {
+			if (host_vrt_ref <= VAL_MAX_WIDTH_3) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
+						RG_USB20_VRT_VREF_SEL, host_vrt_ref);
+			}
 		}
-	}
-	if (u2_term_ref != -1) {
-		if (u2_term_ref <= VAL_MAX_WIDTH_3) {
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
-					  RG_USB20_TERM_VREF_SEL, u2_term_ref);
+		if (host_term_ref != -1) {
+			if (host_term_ref <= VAL_MAX_WIDTH_3) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
+						RG_USB20_TERM_VREF_SEL, host_term_ref);
+			}
 		}
-	}
-	if (u2_enhance != -1) {
-		if (u2_enhance <= VAL_MAX_WIDTH_2) {
-			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
-				RG_USB20_PHY_REV_6, u2_enhance);
+		if (host_enhance != -1) {
+			if (host_enhance <= VAL_MAX_WIDTH_2) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+						RG_USB20_PHY_REV_6, host_enhance);
+			}
+		}
+	} else {
+		if (u2_vrt_ref != -1) {
+			if (u2_vrt_ref <= VAL_MAX_WIDTH_3) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_VRT_VREF_SEL_OFST,
+						RG_USB20_VRT_VREF_SEL, u2_vrt_ref);
+			}
+		}
+		if (u2_term_ref != -1) {
+			if (u2_term_ref <= VAL_MAX_WIDTH_3) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_TERM_VREF_SEL_OFST,
+						RG_USB20_TERM_VREF_SEL, u2_term_ref);
+			}
+		}
+		if (u2_enhance != -1) {
+			if (u2_enhance <= VAL_MAX_WIDTH_2) {
+				U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR6, RG_USB20_PHY_REV_6_OFST,
+						RG_USB20_PHY_REV_6, u2_enhance);
+			}
 		}
 	}
 }
