@@ -170,12 +170,6 @@ struct ISP_REGISTER_USERKEY_STRUCT {
 			    */
 };
 
-struct ISP_TEMP_CQ_STRUCT {
-	unsigned int *pCQ_dup0;
-	unsigned int *pCQ_dup1;
-	unsigned int *pCQ_dup2;
-};
-
 struct ISP_CLEAR_IRQ_ST {
 	int UserKey; /* user key for doing interrupt operation */
 	enum ISP_ST_ENUM St_type;
@@ -693,8 +687,6 @@ enum ISP_CMD_ENUM {
 	ISP_CMD_SET_MEM_INFO,
 	ISP_CMD_SET_PM_QOS,
 	ISP_CMD_SET_PM_QOS_INFO,
-	ISP_CMD_SET_VIR_CQ,
-	ISP_CMD_GET_VIR_CQ,
 	ISP_CMD_TRANSFOR_CCU_REG
 };
 
@@ -774,10 +766,6 @@ enum ISP_HALT_DMA_ENUM {
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS, unsigned int)
 #define ISP_SET_PM_QOS_INFO         \
 	_IOWR(ISP_MAGIC, ISP_CMD_SET_PM_QOS_INFO, struct ISP_PM_QOS_INFO_STRUCT)
-#define ISP_SET_VIR_CQ  \
-	_IOWR(ISP_MAGIC, ISP_CMD_SET_VIR_CQ,  struct ISP_TEMP_CQ_STRUCT)
-#define ISP_GET_VIR_CQ  \
-	_IOWR(ISP_MAGIC, ISP_CMD_GET_VIR_CQ,  struct ISP_TEMP_CQ_STRUCT)
 #define ISP_REGISTER_IRQ_USER_KEY   \
 	_IOR(ISP_MAGIC, ISP_CMD_REGISTER_IRQ_USER_KEY,\
 					   struct ISP_REGISTER_USERKEY_STRUCT)
