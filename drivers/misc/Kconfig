@@ -561,4 +561,5 @@ source "drivers/misc/cxl/Kconfig"
 source "drivers/misc/mediatek/Kconfig"
 source "drivers/misc/mmi/Kconfig
 source "drivers/misc/aw8624_haptic/Kconfig"
+source "drivers/misc/drv2624/Kconfig"
 endmenu

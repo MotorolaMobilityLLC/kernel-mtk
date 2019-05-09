@@ -60,4 +60,5 @@ obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mediatek/
 obj-$(CONFIG_MEMORY_STATE_TIME) += memory_state_time.o
 obj-y				+= mmi/
 obj-$(CONFIG_AW8624_HAPTIC) 	+= aw8624_haptic/
+obj-$(CONFIG_DRV2624) 		+= drv2624/
 

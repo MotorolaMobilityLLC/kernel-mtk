@@ -1,0 +1,11 @@
+#
+# Mediatek DRV2624 Driver
+#
+
+config DRV2624
+	tristate "DRV2624 haptic driver"
+	depends on I2C
+
+	help
+	  Say Y here if you have DRV2624 haptic controller
+	  chip in your system.
