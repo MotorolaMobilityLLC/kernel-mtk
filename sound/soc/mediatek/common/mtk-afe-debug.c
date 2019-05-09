@@ -30,21 +30,39 @@ ssize_t mtk_afe_debugfs_write(struct file *f, const char __user *buf,
 {
 	struct mtk_base_afe *afe = f->private_data;
 	char input[MAX_DEBUG_WRITE_INPUT];
-	char *temp = input;
+	char *temp = NULL;
 	char *command = NULL;
-	char delim[] = " ,\n";
+	char *str_begin = NULL;
+	char delim[] = " ,";
 	const struct mtk_afe_debug_cmd *cf;
 
-	memset((void *)input, 0, MAX_DEBUG_WRITE_INPUT);
+	if (!count) {
+		dev_info(afe->dev, "%s(), count is 0, return directly\n",
+			 __func__);
+		goto exit;
+	}
 
 	if (count > MAX_DEBUG_WRITE_INPUT)
 		count = MAX_DEBUG_WRITE_INPUT;
+
+	memset((void *)input, 0, MAX_DEBUG_WRITE_INPUT);
 
 	if (copy_from_user(input, buf, count))
 		dev_warn(afe->dev, "%s(), copy_from_user fail, count = %zu\n",
 			 __func__, count);
 
+	str_begin = kstrndup(input, MAX_DEBUG_WRITE_INPUT - 1,
+			     GFP_KERNEL);
+	if (!str_begin) {
+		dev_info(afe->dev, "%s(), kstrdup fail\n", __func__);
+		goto exit;
+	}
+	temp = str_begin;
+
 	command = strsep(&temp, delim);
+
+	dev_info(afe->dev, "%s(), command %s, content %s\n",
+		 __func__, command, temp);
 
 	for (cf = afe->debug_cmds; cf->cmd; cf++) {
 		if (strcmp(cf->cmd, command) == 0) {
@@ -53,6 +71,8 @@ ssize_t mtk_afe_debugfs_write(struct file *f, const char __user *buf,
 		}
 	}
 
+	kfree(str_begin);
+exit:
 	return count;
 }
 
