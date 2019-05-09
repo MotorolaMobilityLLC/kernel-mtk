@@ -483,7 +483,7 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
-void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
+static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
 	cabc_array[1].para_list[0] = *lcm_value;
