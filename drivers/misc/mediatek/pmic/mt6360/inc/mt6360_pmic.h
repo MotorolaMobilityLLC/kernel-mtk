@@ -24,6 +24,12 @@
 #include "config.h"
 #include "rt-regmap.h"
 
+#define mt_dbg(dev, fmt, ...) \
+	do { \
+		if (dbg_log_en) \
+			dev_dbg(dev, fmt, ##__VA_ARGS__); \
+	} while (0)
+
 enum {
 	MT6360_PMIC_BUCK1,
 	MT6360_PMIC_BUCK2,
@@ -56,6 +62,8 @@ struct mt6360_pmic_info {
 	struct regulator_dev *rdev[MT6360_PMIC_MAX];
 	struct mutex io_lock;
 	u8 crc8_table[CRC8_TABLE_SIZE];
+	struct charger_device *chg_dev;
+	u8 chip_rev;
 };
 
 struct mt6360_pmic_irq_desc {

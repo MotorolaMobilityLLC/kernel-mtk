@@ -393,7 +393,7 @@
  **********************************************************/
 
 
-#define CONFIG_WATER_DETECTION
+/* #define CONFIG_WATER_DETECTION */
 #ifdef CONFIG_WATER_DETECTION
 #define CONFIG_WD_SBU_POLLING
 /* #define CONFIG_WATER_CALIBRATION */

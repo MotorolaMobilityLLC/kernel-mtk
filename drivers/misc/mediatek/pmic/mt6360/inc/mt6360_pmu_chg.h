@@ -69,9 +69,6 @@ struct mt6360_chg_platform_data {
 #define MT6360_SHFT_ICHG	(2)
 #define MT6360_ICHG_MAXVAL	(0x31)
 
-/* MT6360_PMU_CHG_CTRL8 : 0x18 */
-#define MT6360_BAT_COMP_MAXVAL	(0x07)
-
 /* MT6360_PMU_CHG_CTRL9 : 0x19 */
 #define MT6360_MASK_IEOC	(0xF0)
 #define MT6360_SHFT_IEOC	(4)
@@ -162,6 +159,7 @@ struct mt6360_chg_platform_data {
 
 /* MT6360_PMU_USBID_CTRL2 : 0x6E */
 #define MT6360_MASK_IDTD	0xE0
+#define MT6360_MASK_USBID_FLOAT	BIT(1)
 
 /* MT6360_PMU_FLED_EN : 0x7E */
 #define MT6360_MASK_STROBE_EN	BIT(2)
@@ -173,5 +171,8 @@ struct mt6360_chg_platform_data {
 #define MT6360_SHFT_MIVR_EVT	(6)
 #define MT6360_MASK_CHG_TREG	BIT(4)
 #define MT6360_SHFT_CHG_TREG	(4)
+
+/* MT6360_PMU_CHG_STAT4 : 0xE3 */
+#define MT6360_MASK_CHG_TMRI	BIT(3)
 
 #endif /* __MT6360_PMU_CHG_H */

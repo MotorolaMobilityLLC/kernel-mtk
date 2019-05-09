@@ -367,7 +367,8 @@ static int typec_check_water_status(struct tcpc_device *tcpc_dev)
 
 static bool typec_try_enter_norp_src(struct tcpc_device *tcpc_dev)
 {
-	if (tcpci_check_vbus_valid(tcpc_dev)) {
+	if (tcpci_check_vbus_valid(tcpc_dev) &&
+	    (tcpc_dev->typec_state == typec_unattached_snk)) {
 		TYPEC_DBG("norp_src=1\r\n");
 		tcpc_enable_timer(tcpc_dev, TYPEC_TIMER_NORP_SRC);
 		return true;

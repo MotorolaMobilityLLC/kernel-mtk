@@ -30,7 +30,7 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 	u8 irq_masks[MT6360_PMU_IRQ_REGNUM] = {0};
 	int i, j, ret;
 
-	dev_dbg(mpi->dev, "%s ++\n", __func__);
+	mt_dbg(mpi->dev, "%s ++\n", __func__);
 	pm_runtime_get_sync(mpi->dev);
 	ret = mt6360_pmu_reg_block_read(mpi, MT6360_PMU_CHG_IRQ1,
 					MT6360_PMU_IRQ_REGNUM, irq_events);
@@ -38,12 +38,7 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 		dev_err(mpi->dev, "fail to read irq events\n");
 		goto out_irq_handler;
 	}
-	ret = mt6360_pmu_reg_block_read(mpi, MT6360_PMU_CHG_MASK1,
-					MT6360_PMU_IRQ_REGNUM, irq_masks);
-	if (ret < 0) {
-		dev_err(mpi->dev, "fail to read irq masks\n");
-		goto out_irq_handler;
-	}
+	memcpy(irq_masks, mpi->cache_irq_masks, MT6360_PMU_IRQ_REGNUM);
 	/* make faultb reg, it's not irq mask, 0xfb[7:0] & 0xfc[7] */
 	irq_masks[11] = 0xff;
 	irq_masks[12] |= 0x80;
@@ -54,7 +49,13 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 				continue;
 			ret = irq_find_mapping(mpi->irq_domain, i * 8 + j);
 			if (ret) {
-				dev_dbg(mpi->dev, "handle_irq [%d,%d]\n", i, j);
+				/* bypass adc donei irq */
+				if (i == 5 && j == 4)
+					mt_dbg(mpi->dev,
+					       "handle_irq [%d,%d]\n", i, j);
+				else
+					dev_dbg(mpi->dev,
+						"handle_irq [%d,%d]\n", i, j);
 				handle_nested_irq(ret);
 			} else
 				dev_err(mpi->dev, "unmapped [%d,%d]\n", i, j);
@@ -72,7 +73,7 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 		dev_err(mpi->dev, "fail to retrig interrupt\n");
 out_irq_handler:
 	pm_runtime_put(mpi->dev);
-	dev_dbg(mpi->dev, "%s --\n", __func__);
+	mt_dbg(mpi->dev, "%s --\n", __func__);
 	return IRQ_HANDLED;
 }
 
@@ -81,45 +82,49 @@ static void mt6360_pmu_irq_bus_lock(struct irq_data *data)
 	struct mt6360_pmu_info *mpi = data->chip_data;
 	int ret;
 
-	ret = mt6360_pmu_reg_block_read(mpi, MT6360_PMU_CHG_MASK1,
-					MT6360_PMU_IRQ_REGNUM,
-					mpi->cache_irq_mask);
+	/* mask all irq indicator mask */
+	ret = mt6360_pmu_reg_write(mpi, MT6360_PMU_IRQ_MASK, 0xff);
 	if (ret < 0)
-		dev_err(mpi->dev, "%s: fail to read irq mask\n", __func__);
+		dev_notice(mpi->dev, "%s: fail to write irq ind_mask\n",
+			__func__);
 }
 
 static void mt6360_pmu_irq_bus_sync_unlock(struct irq_data *data)
 {
 	struct mt6360_pmu_info *mpi = data->chip_data;
-	int ret;
+	int offset = data->hwirq, ret;
 
-	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_MASK1,
-					 MT6360_PMU_IRQ_REGNUM,
-					 mpi->cache_irq_mask);
+	/* force clear current irq event */
+	ret = mt6360_pmu_reg_write(mpi, MT6360_PMU_CHG_IRQ1 + offset / 8,
+				   1 << (offset % 8));
+	if (ret < 0)
+		dev_notice(mpi->dev, "%s: fail to write clr irq\n", __func__);
+	/* unmask current irq */
+	ret = mt6360_pmu_reg_write(mpi, MT6360_PMU_CHG_MASK1 + offset / 8,
+				   mpi->cache_irq_masks[offset / 8]);
 	if (ret < 0)
 		dev_err(mpi->dev, "%s: fail to write irq mask\n", __func__);
-	/* force clear disabled irq */
-	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_IRQ1,
-					 MT6360_PMU_IRQ_REGNUM,
-					 mpi->cache_irq_mask);
+	/* unmask all irq indicator mask */
+	ret = mt6360_pmu_reg_write(mpi, MT6360_PMU_IRQ_MASK, 0);
 	if (ret < 0)
-		dev_err(mpi->dev, "%s: fail to write clr irq\n", __func__);
+		dev_notice(mpi->dev, "%s: fail to write irq ind_mask\n",
+			__func__);
 }
 
 static void mt6360_pmu_irq_enable(struct irq_data *data)
 {
 	struct mt6360_pmu_info *mpi = data->chip_data;
 
-	dev_dbg(mpi->dev, "%s: hwirq[%d]\n", __func__, (int)data->hwirq);
-	mpi->cache_irq_mask[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
+	mt_dbg(mpi->dev, "%s: hwirq[%d]\n", __func__, (int)data->hwirq);
+	mpi->cache_irq_masks[data->hwirq / 8] &= ~(1 << (data->hwirq % 8));
 }
 
 static void mt6360_pmu_irq_disable(struct irq_data *data)
 {
 	struct mt6360_pmu_info *mpi = data->chip_data;
 
-	dev_dbg(mpi->dev, "%s: hwirq[%d]\n", __func__, (int)data->hwirq);
-	mpi->cache_irq_mask[data->hwirq / 8] |= (1 << (data->hwirq % 8));
+	mt_dbg(mpi->dev, "%s: hwirq[%d]\n", __func__, (int)data->hwirq);
+	mpi->cache_irq_masks[data->hwirq / 8] |= (1 << (data->hwirq % 8));
 }
 
 static struct irq_chip mt6360_pmu_irq_chip = {
@@ -196,9 +201,11 @@ static int mt6360_pmu_gpio_irq_init(struct mt6360_pmu_info *mpi)
 
 static int mt6360_pmu_irq_maskall(struct mt6360_pmu_info *mpi)
 {
-	u8 irq_mask[MT6360_PMU_IRQ_REGNUM] = {0}, faultb_mask[2] = {0};
+	u8 irq_events[MT6360_PMU_IRQ_REGNUM] = {0}, faultb_mask[2] = {0};
 	int i, ret;
 
+	/* init cache irq events*/
+	memset(mpi->cache_irq_masks, 0xff, MT6360_PMU_IRQ_REGNUM);
 	/* mask all indicator */
 	ret = mt6360_pmu_reg_write(mpi, MT6360_PMU_IRQ_MASK, 0xff);
 	if (ret < 0) {
@@ -209,34 +216,34 @@ static int mt6360_pmu_irq_maskall(struct mt6360_pmu_info *mpi)
 	ret = mt6360_pmu_reg_block_read(mpi,
 					MT6360_PMU_FAULTB_MASK, 2, faultb_mask);
 	if (ret < 0) {
-		dev_info(mpi->dev, "read faultb mask fail\n");
+		dev_notice(mpi->dev, "read faultb mask fail\n");
 		return ret;
 	}
-	/* mask all irq events*/
-	memset(irq_mask, 0xff, sizeof(irq_mask));
 	/* keep faultb default value */
-	irq_mask[11] = faultb_mask[0];
-	irq_mask[12] = (irq_mask[12] & ~0x80) | (faultb_mask[1] & 0x80);
+	mpi->cache_irq_masks[11] = faultb_mask[0];
+	mpi->cache_irq_masks[12] &= ~0x80;
+	mpi->cache_irq_masks[12] |= (faultb_mask[1] & 0x80);
 	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_MASK1,
-					 MT6360_PMU_IRQ_REGNUM, irq_mask);
+					 MT6360_PMU_IRQ_REGNUM,
+					 mpi->cache_irq_masks);
 	if (ret < 0) {
 		dev_err(mpi->dev, "write irq mask all to 0xff fail\n");
 		return ret;
 	}
 	/* read booton status */
 	ret = mt6360_pmu_reg_block_read(mpi, MT6360_PMU_CHG_IRQ1,
-					 MT6360_PMU_IRQ_REGNUM, irq_mask);
+					MT6360_PMU_IRQ_REGNUM, irq_events);
 	if (ret < 0) {
 		dev_err(mpi->dev, "read booton irq status fail\n");
 		return ret;
 	}
 	dev_info(mpi->dev, "booton irq status ++\n");
 	for (i = 0; i < MT6360_PMU_IRQ_REGNUM; i++)
-		dev_info(mpi->dev, "irq[%02x], %02x\n", i, irq_mask[i]);
+		dev_info(mpi->dev, "irq[%02x], %02x\n", i, irq_events[i]);
 	dev_info(mpi->dev, "booton irq status --\n");
 	/* write clear for booton events */
 	ret = mt6360_pmu_reg_block_write(mpi, MT6360_PMU_CHG_IRQ1,
-					 MT6360_PMU_IRQ_REGNUM, irq_mask);
+					 MT6360_PMU_IRQ_REGNUM, irq_events);
 	if (ret < 0) {
 		dev_err(mpi->dev, "write already irq events to clear fail\n");
 		return ret;

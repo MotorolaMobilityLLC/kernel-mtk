@@ -26,6 +26,9 @@
 
 #include "../inc/mt6360_ldo.h"
 
+static bool dbg_log_en; /* module param to enable/disable debug log */
+module_param(dbg_log_en, bool, 0644);
+
 struct mt6360_regulator_desc {
 	const struct regulator_desc desc;
 	unsigned int enst_reg;
@@ -104,7 +107,7 @@ static int __maybe_unused mt6360_ldo_reg_read(struct mt6360_ldo_info *mli,
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mli->dev, "%s: reg[%02x]\n", __func__, addr);
+	mt_dbg(mli->dev, "%s: reg[%02x]\n", __func__, addr);
 	mutex_lock(&mli->io_lock);
 	ret = rt_regmap_reg_read(mli->regmap, &rrd, addr);
 	mutex_unlock(&mli->io_lock);
@@ -113,7 +116,7 @@ static int __maybe_unused mt6360_ldo_reg_read(struct mt6360_ldo_info *mli,
 	u8 data = 0;
 	int ret;
 
-	dev_dbg(mli->dev, "%s: reg[%02x]\n", __func__, addr);
+	mt_dbg(mli->dev, "%s: reg[%02x]\n", __func__, addr);
 	mutex_lock(&mli->io_lock);
 	ret = mt6360_ldo_read_device(mli->i2c, addr, 1, &data);
 	mutex_unlock(&mli->io_lock);
@@ -128,7 +131,7 @@ static int __maybe_unused mt6360_ldo_reg_write(struct mt6360_ldo_info *mli,
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mli->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
+	mt_dbg(mli->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
 	mutex_lock(&mli->io_lock);
 	ret = rt_regmap_reg_write(mli->regmap, &rrd, addr, data);
 	mutex_unlock(&mli->io_lock);
@@ -136,7 +139,7 @@ static int __maybe_unused mt6360_ldo_reg_write(struct mt6360_ldo_info *mli,
 #else
 	int ret;
 
-	dev_dbg(mli->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
+	mt_dbg(mli->dev, "%s reg[%02x] data [%02x]\n", __func__, addr, data);
 	mutex_lock(&mli->io_lock);
 	ret = mt6360_ldo_write_device(mli->i2c, addr, 1, &data);
 	mutex_unlock(&mli->io_lock);
@@ -151,7 +154,7 @@ static int mt6360_ldo_reg_update_bits(struct mt6360_ldo_info *mli,
 	struct rt_reg_data rrd = {0};
 	int ret;
 
-	dev_dbg(mli->dev,
+	mt_dbg(mli->dev,
 		"%s reg[%02x], mask[%02x], data[%02x]\n",
 		__func__, addr, mask, data);
 	mutex_lock(&mli->io_lock);
@@ -162,7 +165,7 @@ static int mt6360_ldo_reg_update_bits(struct mt6360_ldo_info *mli,
 	u8 org = 0;
 	int ret;
 
-	dev_dbg(mli->dev,
+	mt_dbg(mli->dev,
 		"%s reg[%02x], mask[%02x], data[%02x]\n",
 		__func__, addr, mask, data);
 	mutex_lock(&mli->io_lock);
@@ -320,12 +323,22 @@ static int mt6360_ldo_enable(struct regulator_dev *rdev)
 	const struct regulator_desc *desc = rdev->desc;
 	int id = rdev_get_id(rdev), ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
+	mt_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
 					 desc->enable_mask, 0xff);
 	if (ret < 0) {
 		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
 		return ret;
+	}
+	/* when LDO5 enable, enable SDCARD_DET */
+	if (id == MT6360_LDO_LDO5) {
+		ret = mt6360_ldo_reg_update_bits(mli, MT6360_LDO_LDO5_CTRL0,
+						 0x40, 0xff);
+		if (ret < 0) {
+			dev_notice(&rdev->dev,
+				"%s: en sdcard_det fail (%d)\n", __func__, ret);
+			return ret;
+		}
 	}
 	return 0;
 }
@@ -336,12 +349,22 @@ static int mt6360_ldo_disable(struct regulator_dev *rdev)
 	const struct regulator_desc *desc = rdev->desc;
 	int id = rdev_get_id(rdev), ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
+	mt_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_update_bits(mli, desc->enable_reg,
 					 desc->enable_mask, 0);
 	if (ret < 0) {
 		dev_err(&rdev->dev, "%s: fail (%d)\n", __func__, ret);
 		return ret;
+	}
+	/* when LDO5 disable, disable SDCARD_DET */
+	if (id == MT6360_LDO_LDO5) {
+		ret = mt6360_ldo_reg_update_bits(mli, MT6360_LDO_LDO5_CTRL0,
+						 0x40, 0);
+		if (ret < 0) {
+			dev_notice(&rdev->dev,
+				"%s: di sdcard_det fail (%d)\n", __func__, ret);
+			return ret;
+		}
 	}
 	return 0;
 }
@@ -354,7 +377,7 @@ static int mt6360_ldo_is_enabled(struct regulator_dev *rdev)
 	int id = rdev_get_id(rdev);
 	int ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
+	mt_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_read(mli, desc->enst_reg);
 	if (ret < 0)
 		return ret;
@@ -369,7 +392,7 @@ static int mt6360_ldo_set_voltage_sel(struct regulator_dev *rdev,
 	int id = rdev_get_id(rdev);
 	int shift = ffs(desc->vsel_mask) - 1, ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d, sel %d\n", __func__, id, sel);
+	mt_dbg(&rdev->dev, "%s, id = %d, sel %d\n", __func__, id, sel);
 	ret = mt6360_ldo_reg_update_bits(mli, desc->vsel_reg,
 					 desc->vsel_mask, sel << shift);
 	if (ret < 0) {
@@ -387,7 +410,7 @@ static int mt6360_ldo_get_voltage_sel(struct regulator_dev *rdev)
 	int shift = ffs(desc->vsel_mask) - 1;
 	int ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
+	mt_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_read(mli, desc->vsel_reg);
 	if (ret < 0)
 		return ret;
@@ -405,7 +428,7 @@ static int mt6360_ldo_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	int shift = ffs(desc->mode_mask) - 1, ret;
 	u8 val;
 
-	dev_dbg(&rdev->dev, "%s, id = %d, mode = %d\n", __func__, id, mode);
+	mt_dbg(&rdev->dev, "%s, id = %d, mode = %d\n", __func__, id, mode);
 	if (!mode)
 		return -EINVAL;
 	switch (1 << (ffs(mode) - 1)) {
@@ -439,7 +462,7 @@ static unsigned int mt6360_ldo_get_mode(struct regulator_dev *rdev)
 	int shift = ffs(desc->moder_mask) - 1;
 	int ret;
 
-	dev_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
+	mt_dbg(&rdev->dev, "%s, id = %d\n", __func__, id);
 	ret = mt6360_ldo_reg_read(mli, desc->moder_reg);
 	if (ret < 0)
 		return ret;
@@ -675,6 +698,21 @@ bypass_irq_res:
 	return 0;
 }
 
+static inline int mt6360_pmic_chip_id_check(struct i2c_client *i2c)
+{
+	struct i2c_client pmu_client;
+	int ret;
+
+	memcpy(&pmu_client, i2c, sizeof(*i2c));
+	pmu_client.addr = 0x34;
+	ret = i2c_smbus_read_byte_data(&pmu_client, 0x00);
+	if (ret < 0)
+		return ret;
+	if ((ret & 0xf0) != 0x50)
+		return -ENODEV;
+	return (ret & 0x0f);
+}
+
 static inline void mt6360_config_of_node(struct device *dev, const char *name)
 {
 	struct device_node *np = NULL;
@@ -696,9 +734,16 @@ static int mt6360_ldo_i2c_probe(struct i2c_client *client,
 	bool use_dt = client->dev.of_node;
 	struct regulator_config config = {};
 	struct regulation_constraints *constraints;
+	u8 chip_rev;
 	int i, ret;
 
 	dev_dbg(&client->dev, "%s\n", __func__);
+	ret = mt6360_pmic_chip_id_check(client);
+	if (ret < 0) {
+		dev_notice(&client->dev, "no device found\n");
+		return ret;
+	}
+	chip_rev = (u8)ret;
 	if (use_dt) {
 		mt6360_config_of_node(&client->dev, "mt6360_ldo_dts");
 		pdata = devm_kzalloc(&client->dev, sizeof(*pdata), GFP_KERNEL);
@@ -720,9 +765,11 @@ static int mt6360_ldo_i2c_probe(struct i2c_client *client,
 		return -ENOMEM;
 	mli->i2c = client;
 	mli->dev = &client->dev;
+	mli->chip_rev = chip_rev;
 	crc8_populate_msb(mli->crc8_table, 0x7);
 	mutex_init(&mli->io_lock);
 	i2c_set_clientdata(client, mli);
+	dev_info(&client->dev, "chip_rev [%02x]\n", mli->chip_rev);
 
 	/* regmap regiser */
 	ret = mt6360_ldo_regmap_register(mli, &mt6360_ldo_regmap_fops);

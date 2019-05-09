@@ -359,7 +359,6 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 	int rv, i;
 	uint32_t alert_status;
 	uint32_t alert_mask;
-	int org_vbus_level = tcpc_dev->vbus_level;
 
 	rv = tcpci_get_alert_status(tcpc_dev, &alert_status);
 	if (rv)
@@ -399,8 +398,7 @@ static inline int __tcpci_alert(struct tcpc_device *tcpc_dev)
 #endif /* CONFIG_USB_PD_DBG_SKIP_ALERT_HANDLER */
 
 	tcpci_vbus_level_refresh(tcpc_dev);
-	if (org_vbus_level != tcpc_dev->vbus_level)
-		tcpci_vbus_level_changed(tcpc_dev);
+	tcpci_vbus_level_changed(tcpc_dev);
 	return 0;
 }
 

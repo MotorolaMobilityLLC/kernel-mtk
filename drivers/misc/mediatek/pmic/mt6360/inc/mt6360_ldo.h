@@ -24,6 +24,12 @@
 #include "config.h"
 #include "rt-regmap.h"
 
+#define mt_dbg(dev, fmt, ...) \
+	do { \
+		if (dbg_log_en) \
+			dev_dbg(dev, fmt, ##__VA_ARGS__); \
+	} while (0)
+
 enum {
 	MT6360_LDO_LDO1,
 	MT6360_LDO_LDO2,
@@ -51,6 +57,7 @@ struct mt6360_ldo_info {
 	struct regulator_dev *rdev[MT6360_LDO_MAX];
 	struct mutex io_lock;
 	u8 crc8_table[CRC8_TABLE_SIZE];
+	u8 chip_rev;
 };
 
 struct mt6360_ldo_irq_desc {

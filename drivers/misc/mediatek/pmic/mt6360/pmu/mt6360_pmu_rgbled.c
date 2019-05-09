@@ -932,7 +932,6 @@ static void mt6360_led_bright_set(
 				dev_get_drvdata(led->dev->parent);
 	int led_index = mt6360_led_get_index(led);
 	uint8_t reg_addr = 0, reg_mask = 0xf, reg_shift = 0, en_mask = 0;
-	bool need_enable_timer = true;
 	int ret = 0;
 
 	switch (led_index) {
@@ -962,17 +961,14 @@ static void mt6360_led_bright_set(
 		return;
 	}
 
-	if (!bright)
-		need_enable_timer = false;
-	if (need_enable_timer) {
+	if (!bright) {
+		ret = mt6360_pmu_reg_update_bits(
+			rgbled_info->mpi, MT6360_PMU_RGB_EN,
+			en_mask, ~en_mask);
+		if (ret < 0)
+			dev_notice(led->dev, "update enable bit fail\n");
+	} else
 		mt6360_led_enable_dwork(led);
-		return;
-	}
-
-	ret = mt6360_pmu_reg_update_bits(rgbled_info->mpi, MT6360_PMU_RGB_EN,
-			en_mask, (bright > 0) ? en_mask : ~en_mask);
-	if (ret < 0)
-		dev_err(led->dev, "update enable bit fail\n");
 }
 
 static enum led_brightness mt6360_led_bright_get(struct led_classdev *led)
