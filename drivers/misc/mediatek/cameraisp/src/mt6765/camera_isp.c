@@ -123,6 +123,7 @@ static u32 target_clk;
 #endif
 
 #include <archcounter_timesync.h>
+#include <ccu_inc.h>
 
 /*  */
 #ifndef MTRUE
@@ -133,7 +134,7 @@ static u32 target_clk;
 #endif
 
 #define ISP_DEV_NAME           "camera-isp"
-#define SMI_LARB_MMU_CTL       (0)
+#define SMI_LARB_MMU_CTL       (1)
 
 /*#define ENABLE_WAITIRQ_LOG*/       /* wait irq debug logs */
 /*#define ENABLE_STT_IRQ_LOG*/       /*show STT irq debug logs */
@@ -546,8 +547,6 @@ static unsigned int DumpBufferField;
 static bool g_bDumpPhyISPBuf = MFALSE;
 static unsigned int g_tdriaddr = 0xffffffff;
 static unsigned int g_cmdqaddr = 0xffffffff;
-static struct ISP_TEMP_CQ_STRUCT pCQ_dup = {NULL, NULL, NULL};
-
 static struct ISP_GET_DUMP_INFO_STRUCT g_dumpInfo
 		= {0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF};
 static struct ISP_MEM_INFO_STRUCT g_TpipeBaseAddrInfo = {0x0, 0x0, NULL, 0x0};
@@ -4388,11 +4387,6 @@ static signed int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 	/* unsigned char* pData = NULL; */
 	struct ISP_REG_STRUCT *pData = NULL;
 
-	if (pRegIo == NULL) {
-		pr_err("pRegIo null pointer");
-		Ret = -EFAULT;
-		goto EXIT;
-	}
 	if (pRegIo->Count > 0xFFFFFFFF) {
 		pr_err("pRegIo->Count error");
 		Ret = -EFAULT;
@@ -7035,7 +7029,6 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	}
 	/*  */
 	pUserInfo = (struct ISP_USER_INFO_STRUCT *)(pFile->private_data);
-	memset((void *)&ispclks, 0, sizeof(ispclks));
 	/*  */
 	switch (Cmd) {
 	case ISP_WAKELOCK_CTRL:
@@ -7127,27 +7120,6 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				pr_err("copy to user fail\n");
 				Ret = -EFAULT;
 			}
-		}
-		break;
-	case ISP_SET_VIR_CQ:
-		{
-			if (copy_from_user(&pCQ_dup, (void *)Param,
-			    sizeof(struct ISP_TEMP_CQ_STRUCT)) != 0) {
-				pr_info("get module fail\n");
-				Ret = -EFAULT;
-			} else {
-				pr_info("P1 VirCQ (%p_%p_%p)\n",
-					pCQ_dup.pCQ_dup0,
-					pCQ_dup.pCQ_dup1,
-					pCQ_dup.pCQ_dup2);
-			}
-		}
-		break;
-	case ISP_GET_VIR_CQ:
-		{
-			if (copy_to_user((void *)Param, &pCQ_dup,
-				sizeof(struct ISP_TEMP_CQ_STRUCT)) != 0)
-				pr_info("get CQ_STRUCT fail\n");
 		}
 		break;
 	case ISP_GET_INT_ERR:
@@ -8056,38 +8028,40 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 
 	case ISP_TRANSFOR_CCU_REG:
 		{
-			unsigned int hwTickCnt[2];
+			uint32_t hwTickCnt_ccu_direct[2];
 			unsigned int globaltime[2];
 			unsigned long long reg_trans_Time;
 			unsigned long long sum;
 
-			if (copy_from_user(hwTickCnt, (void *)Param,
-				sizeof(unsigned int)*2) == 0) {
+			ccu_get_timestamp(&hwTickCnt_ccu_direct[0],
+				&hwTickCnt_ccu_direct[1]);
 
-				pr_debug("hwTickCnt[0]:%u , hwTickCnt[1]:%u",
-					hwTickCnt[0], hwTickCnt[1]);
+			pr_debug("hwTickCnt_ccu_direct[0]:%u,hwTickCnt_ccu_direct[1]:%u",
+				hwTickCnt_ccu_direct[0],
+				hwTickCnt_ccu_direct[1]);
 
-				sum =
-				(unsigned long long)hwTickCnt[0] +
-				((unsigned long long)hwTickCnt[1]<<32);
+			sum =
+			(unsigned long long)hwTickCnt_ccu_direct[0] +
+			((unsigned long long)hwTickCnt_ccu_direct[1]<<32);
 
-				pr_debug("sum of hwTickCnt:%llu", sum);
-				reg_trans_Time =
-				archcounter_timesync_to_boot(sum);
+			pr_debug("sum of hwTickCnt:%llu", sum);
 
-				globaltime[1] =
-				do_div(reg_trans_Time, 1000000000);
-				globaltime[1] = globaltime[1]/1000;
-				globaltime[0] = reg_trans_Time;
-				pr_debug("sec:%u , usec:%u",
-					globaltime[0], globaltime[1]);
-
-				if (copy_to_user((void *)Param,
-					globaltime,
-					sizeof(unsigned int)*2) != 0) {
-					Ret = -EFAULT;
-				}
+			if (sum == 0) {
+				globaltime[0] = 0;
+				globaltime[1] = 0;
 			} else {
+				reg_trans_Time =
+					archcounter_timesync_to_boot(sum);
+				globaltime[1] =
+					do_div(reg_trans_Time, 1000000000);
+				globaltime[1] =
+					globaltime[1]/1000;
+				globaltime[0] =
+					reg_trans_Time;
+			}
+
+			if (copy_to_user((void *)Param, globaltime,
+				sizeof(unsigned int)*2) != 0) {
 				Ret = -EFAULT;
 			}
 		}
@@ -9163,8 +9137,6 @@ static long ISP_ioctl_compat(struct file *filp, unsigned int cmd,
 	case ISP_GET_CUR_ISP_CLOCK:
 	case ISP_SET_PM_QOS_INFO:
 	case ISP_SET_PM_QOS:
-	case ISP_SET_VIR_CQ:
-	case ISP_GET_VIR_CQ:
 		return filp->f_op->unlocked_ioctl(filp, cmd, arg);
 	default:
 		return -ENOIOCTLCMD;
