@@ -351,6 +351,7 @@ class MT6763(ChipObj):
     def init_objs(self):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'gpio', GpioObj_MT6763())
+        ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
         ChipObj.refresh_eintGpioMap(self)
 
