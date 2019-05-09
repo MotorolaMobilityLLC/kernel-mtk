@@ -152,7 +152,7 @@ obj-$(CONFIG_MTK_USB2JTAG_SUPPORT) += usb2jtag/
 obj-$(CONFIG_MTK_WATCHPOINT) += watchpoint/
 
 obj-$(CONFIG_TRUSTKERNEL_TEE_SUPPORT) += tkcore/
-obj-$(CONFIG_MTK_PERF_TRACKER) += perf/
+obj-y += perf/
 
 #io boost
 obj-y += io_boost/

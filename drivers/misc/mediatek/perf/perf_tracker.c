@@ -20,12 +20,15 @@
 #include <linux/swap.h>
 #include <mt-plat/mtk_blocktag.h>
 #include <helio-dvfsrc.h>
+#ifdef CONFIG_MTK_QOS_FRAMEWORK
+#include <mtk_qos_sram.h>
+#endif
+#include <mt-plat/perf_tracker.h>
+#include <linux/topology.h>
 
 static int perf_tracker_on, perf_tracker_init;
-static u64 checked_timestamp;
-static u64 ms_interval = 2 * NSEC_PER_MSEC;
-static DEFINE_SPINLOCK(check_lock);
 static DEFINE_MUTEX(perf_ctl_mutex);
+static int cluster_nr = -1;
 
 #if !defined(CONFIG_MTK_BLOCK_TAG) || !defined(MTK_BTAG_FEATURE_MICTX_IOSTAT)
 struct mtk_btag_mictx_iostat_struct {
@@ -65,48 +68,15 @@ unsigned int __attribute__((weak)) get_dram_data_rate(void)
 	return 0;
 }
 
-int __attribute__((weak)) dvfsrc_get_emi_bw(int type)
+u32 __attribute__((weak)) qos_sram_read(u32 offset)
 {
 	return 0;
 }
 
-static int check_cnt;
-static inline bool do_check(u64 wallclock)
-{
-	bool do_check = false;
-	unsigned long flags;
-
-	/* check interval */
-	spin_lock_irqsave(&check_lock, flags);
-	if ((s64)(wallclock - checked_timestamp)
-			>= (s64)ms_interval) {
-		checked_timestamp = wallclock;
-		check_cnt++;
-		do_check = true;
-	}
-	spin_unlock_irqrestore(&check_lock, flags);
-
-	return do_check;
-}
-static inline bool hit_long_check(void)
-{
-	bool do_check = false;
-	unsigned long flags;
-
-	spin_lock_irqsave(&check_lock, flags);
-	if (check_cnt >= 2) {
-		check_cnt = 0;
-		do_check = true;
-	}
-	spin_unlock_irqrestore(&check_lock, flags);
-
-	return do_check;
-}
-
 static inline u32 cpu_stall_ratio(int cpu)
 {
-#ifdef QOS_CM_STALL_RATIO
-	return dvfsrc_sram_read(QOS_CM_STALL_RATIO(cpu));
+#ifdef CM_STALL_RATIO_OFFSET
+	return qos_sram_read(CM_STALL_RATIO_OFFSET + cpu * 4);
 #else
 	return 0;
 #endif
@@ -115,41 +85,50 @@ static inline u32 cpu_stall_ratio(int cpu)
 #define K(x) ((x) << (PAGE_SHIFT - 10))
 #define max_cpus 8
 
-void perf_tracker(u64 wallclock)
+void __perf_tracker(u64 wallclock,
+		  long mm_available,
+		  long mm_free)
 {
 	int dram_rate = 0;
-	long mm_free_pages = 0;
 #ifdef CONFIG_MTK_BLOCK_TAG
 	struct mtk_btag_mictx_iostat_struct *iostat = &iostatptr;
 #endif
-	int bw_c, bw_g, bw_mm, bw_total;
+	int bw_c = 0, bw_g = 0, bw_mm = 0, bw_total = 0;
 	int i;
 	int stall[max_cpus] = {0};
-	long mm_available;
+	unsigned int sched_freq[3] = {0};
+	int cid;
 
 	if (!perf_tracker_on || !perf_tracker_init)
-		return;
-
-	if (!do_check(wallclock))
 		return;
 
 	/* dram freq */
 	dram_rate = get_dram_data_rate();
 
 	/* emi */
-	bw_c  = dvfsrc_get_emi_bw(QOS_EMI_BW_CPU);
-	bw_g  = dvfsrc_get_emi_bw(QOS_EMI_BW_GPU);
-	bw_mm = dvfsrc_get_emi_bw(QOS_EMI_BW_MM);
-	bw_total = dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL);
+#ifdef CONFIG_MTK_QOS_FRAMEWORK
+	bw_c  = qos_sram_read(QOS_CPU_BW);
+	bw_g  = qos_sram_read(QOS_GPU_BW);
+	bw_mm = qos_sram_read(QOS_MM_BW);
+	bw_total = qos_sram_read(QOS_TOTAL_BW);
+#endif
+
+	/* sched: cpu freq */
+	for (cid = 0; cid < cluster_nr; cid++)
+		sched_freq[cid] =
+			mt_cpufreq_get_cur_freq(cid);
 
 	/* trace for short msg */
-	trace_perf_index_s(dram_rate, bw_c, bw_g, bw_mm, bw_total);
+	trace_perf_index_s(
+			sched_freq[0], sched_freq[1], sched_freq[2],
+			dram_rate, bw_c, bw_g, bw_mm, bw_total
+			);
 
 	if (!hit_long_check())
 		return;
 
 	/* free mem */
-	mm_free_pages = global_page_state(NR_FREE_PAGES);
+	mm_free = global_page_state(NR_FREE_PAGES);
 	mm_available = si_mem_available();
 
 #ifdef CONFIG_MTK_BLOCK_TAG
@@ -164,7 +143,7 @@ void perf_tracker(u64 wallclock)
 
 	/* trace for long msg */
 	trace_perf_index_l(
-			K(mm_free_pages),
+			K(mm_free),
 			K(mm_available),
 			iostat->wl,
 			iostat->tp_req_r, iostat->tp_all_r,
@@ -232,6 +211,9 @@ static int init_perf_tracker(void)
 	struct kobject *kobj = NULL;
 
 	perf_tracker_init = 1;
+	cluster_nr = arch_get_nr_clusters();
+	if (unlikely(cluster_nr <= 0 || cluster_nr > 3))
+		cluster_nr = 3;
 
 	kobj = kobject_create_and_add("perf", &cpu_subsys.dev_root->kobj);
 
@@ -245,4 +227,4 @@ static int init_perf_tracker(void)
 
 	return 0;
 }
-late_initcall_sync(init_perf_tracker)
+late_initcall_sync(init_perf_tracker);
