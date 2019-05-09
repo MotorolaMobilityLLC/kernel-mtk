@@ -256,7 +256,7 @@ int disp_destroy_session(struct disp_session_config *config)
 	unsigned int session = config->session_id;
 	int i;
 
-	DISPMSG("%s, 0x%x", config->session_id, __func__);
+	DISPMSG("%s, 0x%x", __func__, config->session_id);
 
 	/* 1.To check if this session exists already, and remove it */
 	mutex_lock(&disp_session_lock);
