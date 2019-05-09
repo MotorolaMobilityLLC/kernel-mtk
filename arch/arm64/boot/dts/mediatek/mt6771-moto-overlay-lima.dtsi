@@ -252,6 +252,19 @@
 		vib_func_parameter1 = < 1000 >;
 		status = "okay";
 	};
+
+	drv2624@5b {
+		compatible = "ti,drv2624";
+		reg = <0x5b>;
+		ti,reset-gpio = <&pio 165 0x0>;
+		/*ti,irq-gpio = <&msmgpio 59 0>;*/
+		ti,smart-loop = <0>; /* 0-closeloop, 1-openloop */
+		ti,actuator = <1>; /* 0-ERM, 1-LRA */
+		ti,rated-voltage = <0x53>;
+		ti,odclamp-voltage = <0x9b>;
+		ti,lra-frequency = <235>; /* DON'T Care if ERM */
+		status = "okay";
+	};
 };
 
 &msdc1 {
