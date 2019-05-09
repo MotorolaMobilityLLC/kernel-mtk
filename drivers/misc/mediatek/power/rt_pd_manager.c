@@ -50,6 +50,8 @@ struct pd_manager_info {
 	wait_queue_head_t waitq;
 	struct kthread_work chgdet_task_threadfn;
 	struct task_struct *chgdet_task;
+	struct workqueue_struct *pwr_off_wq;
+	struct work_struct pwr_off_work;
 };
 
 struct pd_manager_info *pmi;
@@ -171,6 +173,15 @@ bool mtk_is_pep30_en_unlock(void)
 	return false;
 }
 
+static void tcpc_power_off_work_handler(struct work_struct *work)
+{
+	struct pd_manager_info *pmi = (struct pd_manager_info *)container_of(
+				    work, struct pd_manager_info, pwr_off_work);
+
+	dev_info(pmi->dev, "%s\n", __func__);
+	tcpc_mt_power_off();
+}
+
 static int pd_tcp_notifier_call(struct notifier_block *nb,
 					unsigned long event, void *data)
 {
@@ -289,7 +300,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
 					__func__, vbus);
-				tcpc_mt_power_off();
+				schedule_work(&pmi->pwr_off_work);
 				break;
 			}
 			pr_info("%s USB Plug out\n", __func__);
@@ -520,6 +531,9 @@ static int rt_pd_manager_probe(struct platform_device *pdev)
 		pr_err("%s: create chg det work fail\n", __func__);
 		return ret;
 	}
+	/* Init power off work */
+	pmi->pwr_off_wq = create_singlethread_workqueue("tcpc_power_off");
+	INIT_WORK(&pmi->pwr_off_work, tcpc_power_off_work_handler);
 	platform_set_drvdata(pdev, pmi);
 
 	pd_nb.notifier_call = pd_tcp_notifier_call;
