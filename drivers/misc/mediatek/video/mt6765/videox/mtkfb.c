@@ -1232,6 +1232,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 	}
 	case MTKFB_CAPTURE_FRAMEBUFFER:
 	{
+#if 0 /* comment this for iofuzzer security issue */
 		unsigned long *src_pbuf = 0;
 		unsigned int pixel_bpp = primary_display_get_bpp() / 8;
 		unsigned int fbsize = DISP_GetScreenHeight() *
@@ -1258,10 +1259,12 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 			r = -EFAULT;
 		}
 		vfree(src_pbuf);
+#endif
 		return r;
 	}
 	case MTKFB_SLT_AUTO_CAPTURE:
 	{
+#if 0 /* please open this when need SLT */
 		struct fb_slt_catpure capConfig;
 		unsigned long *src_pbuf = 0;
 		unsigned int format;
@@ -1318,6 +1321,7 @@ static int mtkfb_ioctl(struct fb_info *info, unsigned int cmd,
 			r = -EFAULT;
 		}
 		vfree(src_pbuf);
+#endif
 		return r;
 	}
 	case MTKFB_GET_OVERLAY_LAYER_INFO:
