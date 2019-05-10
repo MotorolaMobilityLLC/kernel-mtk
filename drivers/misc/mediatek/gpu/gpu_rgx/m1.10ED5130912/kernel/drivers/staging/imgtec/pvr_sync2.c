@@ -720,12 +720,16 @@ static void pvr_sync_debug_request(void *hDebugRequestHandle,
 	};
 
 	if (ui32VerbLevel == DEBUG_REQUEST_VERBOSITY_MEDIUM) {
+		/* if timeline_list_mutex and pvr_sync_pt_active_list_spinlock
+		 * are acquired together timeline_list_mutex must be always acquired
+		 * first */
+		mutex_lock(&timeline_list_mutex);
 		spin_lock_irqsave(&pvr_sync_pt_active_list_spinlock, flags);
 
-		PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile, "------[ Native Fence Sync: timelines ]------");
-
 		PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile,
-				  "foreign timeline:");
+		                  "------[ Native Fence Sync: timelines ]------");
+		PVR_DUMPDEBUG_LOG(pfnDumpDebugPrintf, pvDumpDebugFile,
+		                  "foreign timeline:");
 
 		list_for_each_entry(sync, &pvr_sync_pt_active_list, list) {
 			BUG_ON(sync->type >= ARRAY_SIZE(type_names));
@@ -776,6 +780,7 @@ static void pvr_sync_debug_request(void *hDebugRequestHandle,
 		}
 
 		spin_unlock_irqrestore(&pvr_sync_pt_active_list_spinlock, flags);
+		mutex_unlock(&timeline_list_mutex);
 	}
 }
 
@@ -887,10 +892,16 @@ static void pvr_sync_timeline_defer_free(struct pvr_sync_timeline_kernel_pair *k
 
 static void pvr_sync_destroy_timeline_locked(struct kref *kref)
 {
+	unsigned long flags;
 	struct pvr_sync_timeline *timeline = (struct pvr_sync_timeline *)
 		container_of(kref, struct pvr_sync_timeline, kref);
 
 	pvr_sync_timeline_defer_free(timeline->kernel);
+	/* timeline_list_mutex is already locked so it's safe to acquire
+	 * this here */
+	spin_lock_irqsave(&pvr_sync_pt_active_list_spinlock, flags);
+	list_del(&timeline->sync_list);
+	spin_unlock_irqrestore(&pvr_sync_pt_active_list_spinlock, flags);
 	list_del(&timeline->list);
 	kfree(timeline);
 }
