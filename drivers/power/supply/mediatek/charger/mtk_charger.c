@@ -1155,6 +1155,7 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	// pony.ma, DATE20190507, stop charging when reach 70% on factory SW, DATE20190507-01 START
 	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	info->flag_soc70 = 1;
+	info->atm_enabled = false;						//atm mode may charge with usb
 	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 	// pony.ma, DATE20190507-01 END
 
@@ -1200,6 +1201,11 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	chr_err("mtk_charger_plug_out\n");
 	info->chr_type = CHARGER_UNKNOWN;
 	info->charger_thread_polling = false;
+
+	// pony.ma, DATE20190510, atm mode may charge with usb, DATE20190510-01 LINE
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	info->atm_enabled = true;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
