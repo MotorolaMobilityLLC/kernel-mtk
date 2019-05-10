@@ -41,6 +41,7 @@ typedef struct imgsensor_mode_struct {
 
 	/*	 following for GetDefaultFramerateByScenario()	*/
 	kal_uint16 max_framerate;
+	kal_uint32 mipi_pixel_rate;
 
 } imgsensor_mode_struct;
 
@@ -69,6 +70,8 @@ typedef struct imgsensor_struct {
 	kal_uint8  ihdr_en;				/* ihdr enable or disable */
 
 	kal_uint8 i2c_write_id;			/* record current sensor's i2c write id */
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
+	kal_uint8 current_ae_effective_frame;
     kal_uint8 update_sensor_otp_awb;          /* Update sensor awb from otp or not */
     kal_uint8 update_sensor_otp_lsc;          /* Update sensor lsc from otp or not */
 } imgsensor_struct;
