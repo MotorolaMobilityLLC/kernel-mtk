@@ -89,10 +89,10 @@ OTP otp_data_info = {0};
  * get page data
  * return true or false
  * *******************************************************/
-void get_4h7_page_data(int pageidx, unsigned char *pdata)
+void get_4h7_page_data(int pageidx, unsigned int addr_start, unsigned char *pdata)
 {
 	unsigned short get_byte=0;
-	unsigned int addr = 0x0A05;
+	unsigned int addr = addr_start;
 	int i = 0;
 	otp_4h7_write_cmos_sensor_8(0x0A02,pageidx);
 	otp_4h7_write_cmos_sensor_8(0x0A00,0x01);
@@ -112,10 +112,10 @@ void get_4h7_page_data(int pageidx, unsigned char *pdata)
 	otp_4h7_write_cmos_sensor_8(0x0A00,0x00);
 }
 
-void get_4h7_page_data_lsc(int pageidx, unsigned char *pdata)
+void get_4h7_page_data_lsc(int pageidx, unsigned int start_addr, unsigned char *pdata)
 {
 	unsigned short get_byte=0;
-	unsigned int addr = 0x0A04;
+	unsigned int addr = start_addr;
 	int i = 0;
 	otp_4h7_write_cmos_sensor_8(0x0A02,pageidx);
 	otp_4h7_write_cmos_sensor_8(0x0A00,0x01);
@@ -427,9 +427,13 @@ int otp_group_info_4h7(void)
 		otp_data_info.flag_group = 1;
 	}
 	else if ( (otp_data_info.flag_infoflag>>4 & 0x03) == 0x01 ){
-		otp_data_info.flag_offset = 4;
+		otp_data_info.flag_offset = 11;
 		otp_data_info.flag_group = 2;
 	}
+	else if ( (otp_data_info.flag_infoflag & 0x04) == 0x04 ){
+		otp_data_info.flag_offset = 22;
+		otp_data_info.flag_group = 3;
+    }
 	else{
 		printk("4h7 OTP read data fail flag empty!!!\n");
 		//goto error;
@@ -440,11 +444,13 @@ int otp_group_info_4h7(void)
 
     sensor_module_id = otp_data_info.flag_module_integrator_id;
 
-	if( (otp_data_info.flag_group ==1) || (otp_data_info.flag_group == 2)){
-		if(otp_data_info.flag_group ==1){
+	otp_data_info.flag_infoflag =
+		selective_read_region(S5K4H7SUB_AWB_PAGE,S5K4H7SUB_OTP_FLAGFLAG_ADDR);
+
+	if((otp_data_info.flag_infoflag>>4 & 0x0c) == 0x04){
 			otp_data_info.flag_offset = 0;
 			otp_data_info.flag_group = 1;
-			otp_data_info.flag_infoflag = 1;
+			otp_data_info.flag_infoflag = 0x40;
 			otp_data_info.group = 1;
 			
 			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A05);//0x11f;
@@ -452,11 +458,11 @@ int otp_group_info_4h7(void)
 
 			otp_data_info.awb_flag_sum = selective_read_region(S5K4H7SUB_AWB_PAGE,0x0A19);
 			printk("4h7 OTP read group 1 frgcur=0x%x fbgcur=0x%x awb_flag_sum=0x%x!\n", otp_data_info.frgcur,otp_data_info.fbgcur,otp_data_info.awb_flag_sum);
-		}
-		else if(otp_data_info.flag_group == 2){
-			otp_data_info.flag_offset = 4;
+	}
+	else if ((otp_data_info.flag_infoflag>>4 & 0x03) == 0x01){
+			otp_data_info.flag_offset = 21;
 			otp_data_info.flag_group = 2;
-			otp_data_info.flag_infoflag = 1;
+			otp_data_info.flag_infoflag = 0xd0;
 			otp_data_info.group = 2;
 			
 			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A1A);
@@ -464,7 +470,17 @@ int otp_group_info_4h7(void)
 
 			otp_data_info.awb_flag_sum = selective_read_region(S5K4H7SUB_AWB_PAGE,0x0A2E);
 			printk("4h7 OTP read group 2 frgcur=0x%x fbgcur=0x%x awb_flag_sum=0x%x!\n", otp_data_info.frgcur,otp_data_info.fbgcur,otp_data_info.awb_flag_sum);
-		}
+	}
+	else if ((otp_data_info.flag_infoflag & 0x04) == 0x04){
+			otp_data_info.flag_offset = 42;
+			otp_data_info.flag_group = 3;
+			otp_data_info.flag_infoflag = 0xf4;
+			otp_data_info.group = 3;
+
+			otp_data_info.frgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A2F);
+			otp_data_info.fbgcur = selective_read_region_16(S5K4H7SUB_AWB_PAGE,0x0A31);
+			otp_data_info.awb_flag_sum = selective_read_region(S5K4H7SUB_AWB_PAGE,0x0A43);
+			printk("4h7 OTP read group 3 frgcur=0x%x fbgcur=0x%x awb_flag_sum=0x%x!\n", otp_data_info.frgcur,otp_data_info.fbgcur,otp_data_info.awb_flag_sum);
 	}
 	else{
 		printk("4h7 OTP read AWB_Group1_flag 0x%x  AWB_Group2_flag 0x%x data fail flag empty!!!\n", AWB_Group1_flag, AWB_Group2_flag);
@@ -480,7 +496,7 @@ int otp_group_info_4h7(void)
  * read_Page1~Page21 of data
  * return true or false
  ********************************************************/
-bool read_4h7_page(int page_start,int page_end,unsigned char *pdata)
+bool read_4h7_page(int page_start,int page_end, unsigned int addr_start, unsigned char *pdata)
 {
 	bool bresult = true;
 	int st_page_start = page_start;
@@ -491,7 +507,7 @@ bool read_4h7_page(int page_start,int page_end,unsigned char *pdata)
 	}
 	for(; st_page_start <= page_end; st_page_start++){
                 printk("OTP st_page_start=%d!",st_page_start);
-		get_4h7_page_data(st_page_start, pdata);
+		get_4h7_page_data(st_page_start, addr_start, pdata);
 	}
 	return bresult;
 }
@@ -499,7 +515,7 @@ bool read_4h7_page(int page_start,int page_end,unsigned char *pdata)
 
 
 
-bool read_4h7_page_lsc(int page_start,int page_end,unsigned char *pdata)
+bool read_4h7_page_lsc(int page_start,int page_end, unsigned int start_addr, unsigned char *pdata)
 {
 	bool bresult = true;
 	int st_page_start = page_start;
@@ -510,7 +526,7 @@ bool read_4h7_page_lsc(int page_start,int page_end,unsigned char *pdata)
 	}
 	for(; st_page_start <= page_end; st_page_start++){
                 printk("OTP st_page_start=%d page_end=%d ",st_page_start,page_end);
-		get_4h7_page_data_lsc(st_page_start, pdata);
+		get_4h7_page_data_lsc(st_page_start, start_addr, pdata);
 	}
 	return bresult;
 }
@@ -520,7 +536,7 @@ unsigned int sum_awb_flag(unsigned int sum_start, unsigned int sum_end, unsigned
 	int i = 0;
 	unsigned int start;
 	unsigned int re_sum = 0;
-	for(start = 0x0A05; i < 20; i++, start++){
+	for(start = sum_start; i < sum_end; i++, start++){
 		if((start >= sum_start) && (start <= sum_end)){
 			re_sum += pdata[i];
 		}
@@ -549,21 +565,31 @@ bool check_sum_flag_awb(void)
 	unsigned char data_p[22][20] = {};
 	bool bresult = 0;
 	unsigned int  sum_awbfg = 0;
-        unsigned int  checksum = 0;
+    unsigned int  checksum = 0;
 
-	bresult &= read_4h7_page(page_start, page_end, data_p[page_start-1]);
-        //printk("OTP 4h7 bresult = %d ");
 	if(otp_data_info.group == 1){
+	    bresult &= read_4h7_page(page_start, page_end, 0x0A05, data_p[page_start-1]);
 
 		sum_awbfg = sum_awb_flag(0x0A05, 0X0A18, data_p[page_start-1]);
 		//sum_awbfg += sum_awb_flag(0x0A0E, 0X0A1D, data_p[page_start-1]);
-                checksum=(sum_awbfg%0xff)+1;
-                printk("OTP 4h7 check awb flag sum_awbfg=0x%x  checksum = 0x%x !!!",sum_awbfg,checksum);
+        checksum=(sum_awbfg%0xff)+1;
+        printk("OTP 4h7 check awb flag sum_awbfg=0x%x  checksum = 0x%x !!!",sum_awbfg,checksum);
 	}
 	else if (otp_data_info.group == 2){
-		sum_awbfg = sum_awb_flag(0x0A09, 0X0A0C, data_p[page_start-1]);
+	    bresult &= read_4h7_page(page_start, page_end, 0x0A1A, data_p[page_start-1]);
+		sum_awbfg = sum_awb_flag(0x0A1A, 0X0A2D, data_p[page_start-1]);
+		//sum_awbfg = sum_awb_flag(0x0A09, 0X0A0C, data_p[page_start-1]);
 		//sum_awbfg += sum_awb_flag(0x0A1E, 0X0A2D, data_p[page_start-1]);
+        checksum=(sum_awbfg%0xff)+1;
+        printk("OTP 4h7 check awb flag sum_awbfg=0x%x  checksum = 0x%x !!!",sum_awbfg,checksum);
 	}
+	else if (otp_data_info.group == 3){
+	    bresult &= read_4h7_page(page_start, page_end, 0x0A2F, data_p[page_start-1]);
+		sum_awbfg = sum_awb_flag(0x0A2F, 0X0A42, data_p[page_start-1]);
+        checksum=(sum_awbfg%0xff)+1;
+        printk("OTP 4h7 check awb flag sum_awbfg=0x%x  checksum = 0x%x !!!",sum_awbfg,checksum);
+	}
+
 	if(checksum == otp_data_info.awb_flag_sum){
                 printk("OTP 4h7 checksum awb ok\n");
 		//apply_4h7_otp_awb();
@@ -587,7 +613,7 @@ bool  check_sum_flag_lsc(void)
 
 	if(otp_data_info.lsc_group == 1){
 		for(page_start = 1, page_end = 6; page_start <= page_end; page_start++){
-			bresult &= read_4h7_page_lsc(page_start, page_start, data_p[page_start-1]);
+			bresult &= read_4h7_page_lsc(page_start, page_start, 0x0A04, data_p[page_start-1]);
 			if(page_start == 6){
 				sum_slc += sum_awb_flag_lsc(0x0A04, 0x0A2B, data_p[page_start-1]);
 				continue;
@@ -597,12 +623,15 @@ bool  check_sum_flag_lsc(void)
 	}
 	else if(otp_data_info.lsc_group == 2){
 		for(page_start = 6, page_end = 12; page_start <= page_end; page_start++){
-			bresult &= read_4h7_page(page_start, page_start, data_p[page_start-1]);
+            /*lsc group2 start addr.*/
+			//bresult &= read_4h7_page(page_start, page_start, 0x0A2C,data_p[page_start-1]);
 			if(page_start == 6){
+			    bresult &= read_4h7_page_lsc(page_start, page_start, 0x0A2C, data_p[page_start-1]);
 				sum_slc += sum_awb_flag_lsc(0x0A2C, 0x0A43, data_p[page_start-1]);
 				continue;
 			}
 			else if(page_start <12){
+			    bresult &= read_4h7_page_lsc(page_start, page_start, 0x0A04, data_p[page_start-1]);
 				sum_slc += sum_awb_flag_lsc(0x0A04, 0X0A43, data_p[page_start-1]);
 			}
 			else{
