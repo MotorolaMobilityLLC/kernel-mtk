@@ -23,6 +23,10 @@
 #include <mtk_charger.h>
 #include "include/pmic_auxadc.h"
 
+#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+#include "cust_charging.h"
+#endif
+
 bool __attribute__ ((weak)) is_power_path_supported(void)
 {
 	pr_notice_once("%s: check mtk_charger\n", __func__);
@@ -133,7 +137,12 @@ int __attribute__ ((weak))
 	charger_get_rsense(void)
 {
 	pr_notice_once("%s: do not define r_sense\n", __func__);
+	
+	#ifdef CONFIG_TINNO_CUSTOM_CHARGER_PARA
+	return CUSTOM_R_SENSE;
+	#else
 	return 56;
+	#endif  /* CONFIG_TINNO_CUSTOM_CHARGER_PARA */
 }
 
 
@@ -147,7 +156,7 @@ int pmic_get_charging_current(void)
 	if (is_isense_supported() && !is_power_path_supported()) {
 		v_isense = pmic_get_auxadc_value(AUXADC_LIST_ISENSE);
 		v_batsns = pmic_get_auxadc_value(AUXADC_LIST_BATADC);
-
+	//	printk("r_sense=%d\n",charger_get_rsense());
 		return (v_isense - v_batsns) * 1000 / charger_get_rsense();
 	}
 
