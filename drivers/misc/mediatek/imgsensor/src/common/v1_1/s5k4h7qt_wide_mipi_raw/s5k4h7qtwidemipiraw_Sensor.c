@@ -2,7 +2,7 @@
  *
  * Filename:
  * ---------
- *	 s5k4h7yxsunnymipi_Sensor.c
+ *	 s5k4h7qt_widemipi_Sensor.c
  *
  * Project:
  * --------
@@ -34,23 +34,23 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k4h7yxsunnymipiraw_Sensor.h"
+#include "s5k4h7qtwidemipiraw_Sensor.h"
 
 /****************************Modify following Strings for debug****************************/
-#define PFX "s5k4h7yx_sunny_camera_sensor"
+#define PFX "s5k4h7qt_wide_camera_sensor"
 
 #define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
-#define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
+#define LOG_INF(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 //#define LOGE(format, args...) xlog_printk(ANDROID_LOG_ERROR, PFX, "[%s]"format, __func__, ##args)
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
 #define S5K4H7YX_EEPROM_SIZE 715
-#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7yx_sunny_otp_data.bin"
+#define EEPROM_DATA_PATH "/data/vendor/camera_dump/s5k4h7qt_wide_otp_data.bin"
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
 static imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K4H7YX_SUNNY_SENSOR_ID,
+	.sensor_id = S5K4H7QT_WIDE_SENSOR_ID,
 
 	.checksum_value = 0xf16e8197,
 
@@ -198,7 +198,7 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
     iWriteRegI2C(pusendcmd, 3, imgsensor.i2c_write_id);
 }
 
-unsigned char S5K4H7_SUNNY_read_cmos_sensor(u32 addr)
+unsigned char S5K4H7QT_WIDE_read_cmos_sensor(u32 addr)
 {
 	kal_uint16 get_byte = 0;
 
@@ -209,7 +209,7 @@ unsigned char S5K4H7_SUNNY_read_cmos_sensor(u32 addr)
 	return get_byte;
 }
 
-void S5K4H7_SUNNY_write_cmos_sensor(u16 addr, u32 para)
+void S5K4H7QT_WIDE_write_cmos_sensor(u16 addr, u32 para)
 {
     char pusendcmd[3] = {(char)(addr >> 8), (char)(addr & 0xFF), (char)(para & 0xFF)};
 
@@ -229,9 +229,9 @@ static void set_dummy(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-    LOG_INF("get here11\n");
-    LOG_INF("get here22  0x%x\n", (read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
-	return (((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001)) + SUNNY_MID);
+	LOG_INF("get here11\n");
+	LOG_INF("get here22  0x%x\n", (read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001));
+	return (((read_cmos_sensor(0x0000) << 8) | read_cmos_sensor(0x0001)) + QTECH_MID + WIDE_MID);
 
 }
 
@@ -912,25 +912,23 @@ static void slim_video_setting(void)
 #if OTP_4H7
 #define FLAG_VALUE_PAGE 0x40
 #define INCLUDE_NO_OTP_4H7 1
-#define S5K4H7YX_SUNNY_MODULE_ID 0x5355
-#define LIMA_OTP_CHECKSUM 1
-#define S5K4H7YX_SUNNY_MODULE_ID_START_ADD 0x0a12
-#define S5K4H7YX_SUNNY_MODULE_ID_LENGTH 0x02
+#define S5K4H7QT_WIDE_MODULE_ID 0x3231
+#define S5K4H7QT_WIDE_MODULE_ID_START_ADD 0x0a0e
+#define S5K4H7QT_WIDE_MODULE_ID_LENGTH 0x02
 #define getbit(x,y)   ((x) >> (y)&1)
 
-
-typedef struct s5k4h7yx_sunny_otp_data {
+typedef struct s5k4h7qt_wide_otp_data {
 	unsigned char page_flag;
 	unsigned char module_id[2];
 	unsigned short moduleid;
 	unsigned char gloden[8];
 	unsigned char unint[8];
 	unsigned char data[128];
-} S5K4H7YX_SUNNY_OTP_DATA;
+} S5K4H7QT_WIDE_OTP_DATA;
 
-S5K4H7YX_SUNNY_OTP_DATA s5k4h7yx_sunny_otp_data;
+S5K4H7QT_WIDE_OTP_DATA s5k4h7qt_wide_otp_data;
 
-static uint8_t s5k4h7yx_sunny_eeprom[S5K4H7YX_EEPROM_SIZE] = {0};
+static uint8_t s5k4h7qt_wide_eeprom[S5K4H7YX_EEPROM_SIZE] = {0};
 
 static calibration_status_t mnf_status;
 static calibration_status_t af_status;
@@ -955,7 +953,7 @@ static void write_cmos_sensor_16(kal_uint16 addr, kal_uint16 para)
 }
 
 
-static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
+static int s5k4h7qt_wide_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
 {
 	unsigned short stram_flag = 0;
 	unsigned short val = 0;
@@ -983,7 +981,7 @@ static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *B
 
 	for ( i = 0; i < size; i++ ) {
 		Buff[i] = read_cmos_sensor_8(start_add+i); //3
-		LOG_INF("+++4h7_sunny 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
+		LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
 	}
 	write_cmos_sensor_16(0x0a00,0x0400);
 	write_cmos_sensor_16(0x0a00,0x0000); //4 //otp enable and read end
@@ -991,35 +989,35 @@ static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *B
 	return 0;
 }
 
-static bool s5k4h7yx_read_valid_data(int page, int start_add)
+static bool s5k4h7qt_wide_read_valid_data(int page, int start_add)
 {
 	unsigned char page_flag[2] = {0};
-	s5k4h7yx_read_otp_page_data(page,start_add,&page_flag[0],1);
-	s5k4h7yx_read_otp_page_data(page,start_add,&page_flag[1],1);
+	s5k4h7qt_wide_read_otp_page_data(page,start_add,&page_flag[0],1);
+	s5k4h7qt_wide_read_otp_page_data(page,start_add,&page_flag[1],1);
 	LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
 	if (page_flag[0] != 0 || page_flag[1] != 0) {
 		//LOGE("+++4h7 3 get vaild page success = %d\n",page);
-		s5k4h7yx_sunny_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
-		//LOGE("+++4h7====== s5k4h7yx_otp_data.page_flag = 0x%x\n",s5k4h7yx_otp_data.page_flag);
-		if (!((getbit(s5k4h7yx_sunny_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_sunny_otp_data.page_flag,7)))) {
-			LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_sunny_otp_data.page_flag,7),getbit(s5k4h7yx_sunny_otp_data.page_flag,6));
+		s5k4h7qt_wide_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
+		//LOGE("+++4h7====== s5k4h7qt_wide_otp_data.page_flag = 0x%x\n",s5k4h7qt_wide_otp_data.page_flag);
+		if (!((getbit(s5k4h7qt_wide_otp_data.page_flag,6)) && !(getbit(s5k4h7qt_wide_otp_data.page_flag,7)))) {
+			LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7qt_wide_otp_data.page_flag,7),getbit(s5k4h7qt_wide_otp_data.page_flag,6));
 			LOGE("+++4h7 error data not valid\n");
 			return false;
 		}else{
 			return true;
 		}
 	}else{
-		s5k4h7yx_sunny_otp_data.page_flag = 0;
+		s5k4h7qt_wide_otp_data.page_flag = 0;
 		return false;
 	}
 }
 
-static int s5k4h7yx_get_vaild_data_page(int start_add)
+static int s5k4h7qt_wide_get_vaild_data_page(int start_add)
 {
 	unsigned short page = 21;
 	LOG_INF("read flag .....");
 	for (page = 21;page <= 29; page+=4) {
-		if(s5k4h7yx_read_valid_data(page, start_add)){
+		if(s5k4h7qt_wide_read_valid_data(page, start_add)){
 			break;
 		}else if (29 == page){
 			return 0;
@@ -1029,84 +1027,83 @@ static int s5k4h7yx_get_vaild_data_page(int start_add)
 	return page;
 }
 
-static int s5k4h7yx_read_data_kernel(void)
+static int s5k4h7qt_wide_read_data_kernel(void)
 {
 	unsigned int page = 0;
 	unsigned int i = 0;
 	unsigned int sum = 0;
 
-	page = s5k4h7yx_get_vaild_data_page(0x0a04);
+	page = s5k4h7qt_wide_get_vaild_data_page(0x0a04);
 	if(!page) return -1;
 
 	//read module id
-	s5k4h7yx_read_otp_page_data(page, S5K4H7YX_SUNNY_MODULE_ID_START_ADD, s5k4h7yx_sunny_otp_data.module_id, S5K4H7YX_SUNNY_MODULE_ID_LENGTH);
-	for (i = 0;i < S5K4H7YX_SUNNY_MODULE_ID_LENGTH ; i++ ) {
-		LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_sunny_otp_data.module_id[i]);
-		sum += s5k4h7yx_sunny_otp_data.module_id[i];
+
+	s5k4h7qt_wide_read_otp_page_data(page, S5K4H7QT_WIDE_MODULE_ID_START_ADD, s5k4h7qt_wide_otp_data.module_id, S5K4H7QT_WIDE_MODULE_ID_LENGTH);
+	for (i = 0;i < S5K4H7QT_WIDE_MODULE_ID_LENGTH ; i++ ) {
+		LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7qt_wide_otp_data.module_id[i]);
+		sum += s5k4h7qt_wide_otp_data.module_id[i];
 	}
 	if (!sum) return -1;
 
-	s5k4h7yx_sunny_otp_data.moduleid = ((s5k4h7yx_sunny_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_sunny_otp_data.module_id[1] & 0x00FF);
-	LOG_INF("s5k4h7yx_sunny_otp_data.moduleid= 0x%x",s5k4h7yx_sunny_otp_data.moduleid);
+	s5k4h7qt_wide_otp_data.moduleid = ((s5k4h7qt_wide_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7qt_wide_otp_data.module_id[1] & 0x00FF);
+	LOG_INF("s5k4h7qt_wide_otp_data.moduleid= 0x%x",s5k4h7qt_wide_otp_data.moduleid);
 
-	page = s5k4h7yx_get_vaild_data_page(0x0a3c);
+	page = s5k4h7qt_wide_get_vaild_data_page(0x0a3c);
 	if(!page) return -1;
 
-#if LIMA_OTP_CHECKSUM
 	//read all awb
-	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_sunny_otp_data.data,8);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_sunny_otp_data.data + 8, 51);
-#endif
+	s5k4h7qt_wide_read_otp_page_data(page, 0x0a3c, s5k4h7qt_wide_otp_data.data,8);
+	s5k4h7qt_wide_read_otp_page_data(page + 1, 0x0a04, s5k4h7qt_wide_otp_data.data + 8, 51);
 	//read awb
-	s5k4h7yx_read_otp_page_data(page, 0x0a3d, s5k4h7yx_sunny_otp_data.gloden, 7);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_sunny_otp_data.gloden + 7, 1);
-	s5k4h7yx_read_otp_page_data(page + 1, 0x0a19, s5k4h7yx_sunny_otp_data.unint, 8);
+	s5k4h7qt_wide_read_otp_page_data(page, 0x0a3d, s5k4h7qt_wide_otp_data.gloden, 7);
+	s5k4h7qt_wide_read_otp_page_data(page + 1, 0x0a04, s5k4h7qt_wide_otp_data.gloden + 7, 1);
+	s5k4h7qt_wide_read_otp_page_data(page + 1, 0x0a19, s5k4h7qt_wide_otp_data.unint, 8);
 
 	return 0;
 }
 
-static int s5k4h7yx_sunny_read_data_from_otp(void)
+static int s5k4h7qt_wide_read_data_from_otp(void)
 {
-	LOGE("s5k4h7yx_read_data_from_otp -E");
+	LOGE("s5k4h7qt_wide_read_data_from_otp -E");
 	/* Read otp data of three group*/
-	s5k4h7yx_read_otp_page_data(21, 0x0a04, s5k4h7yx_sunny_eeprom, 64);
-	s5k4h7yx_read_otp_page_data(22, 0x0a04, s5k4h7yx_sunny_eeprom + 64, 64);
-	s5k4h7yx_read_otp_page_data(23, 0x0a04, s5k4h7yx_sunny_eeprom + 128, 64);
-	s5k4h7yx_read_otp_page_data(24, 0x0a04, s5k4h7yx_sunny_eeprom + 192, 46);
-	s5k4h7yx_read_otp_page_data(25, 0x0a04, s5k4h7yx_sunny_eeprom + 238, 64);
-	s5k4h7yx_read_otp_page_data(26, 0x0a04, s5k4h7yx_sunny_eeprom + 302, 64);
-	s5k4h7yx_read_otp_page_data(27, 0x0a04, s5k4h7yx_sunny_eeprom + 366, 64);
-	s5k4h7yx_read_otp_page_data(28, 0x0a04, s5k4h7yx_sunny_eeprom + 430, 46);
-	s5k4h7yx_read_otp_page_data(29, 0x0a04, s5k4h7yx_sunny_eeprom + 476, 64);
-	s5k4h7yx_read_otp_page_data(30, 0x0a04, s5k4h7yx_sunny_eeprom + 540, 64);
-	s5k4h7yx_read_otp_page_data(31, 0x0a04, s5k4h7yx_sunny_eeprom + 604, 64);
-	s5k4h7yx_read_otp_page_data(32, 0x0a04, s5k4h7yx_sunny_eeprom + 668, 46);
+	s5k4h7qt_wide_read_otp_page_data(21, 0x0a04, s5k4h7qt_wide_eeprom, 64);
+	s5k4h7qt_wide_read_otp_page_data(22, 0x0a04, s5k4h7qt_wide_eeprom + 64, 64);
+	s5k4h7qt_wide_read_otp_page_data(23, 0x0a04, s5k4h7qt_wide_eeprom + 128, 64);
+	s5k4h7qt_wide_read_otp_page_data(24, 0x0a04, s5k4h7qt_wide_eeprom + 192, 46);
+	s5k4h7qt_wide_read_otp_page_data(25, 0x0a04, s5k4h7qt_wide_eeprom + 238, 64);
+	s5k4h7qt_wide_read_otp_page_data(26, 0x0a04, s5k4h7qt_wide_eeprom + 302, 64);
+	s5k4h7qt_wide_read_otp_page_data(27, 0x0a04, s5k4h7qt_wide_eeprom + 366, 64);
+	s5k4h7qt_wide_read_otp_page_data(28, 0x0a04, s5k4h7qt_wide_eeprom + 430, 46);
+	s5k4h7qt_wide_read_otp_page_data(29, 0x0a04, s5k4h7qt_wide_eeprom + 476, 64);
+	s5k4h7qt_wide_read_otp_page_data(30, 0x0a04, s5k4h7qt_wide_eeprom + 540, 64);
+	s5k4h7qt_wide_read_otp_page_data(31, 0x0a04, s5k4h7qt_wide_eeprom+ 604, 64);
+	s5k4h7qt_wide_read_otp_page_data(32, 0x0a04, s5k4h7qt_wide_eeprom + 668, 46);
 	//TODO: Add LSC data
-	LOGE("s5k4h7yx_read_data_from_otp -X");
+	LOGE("s5k4h7qt_wide_read_data_from_otp -X");
 	return 0;
 }
 
-unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
+unsigned int S5K4H7QT_WIDE_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size)
 {
 	if (size == 2) { //read module id
-		memcpy(data, s5k4h7yx_sunny_otp_data.module_id, size);
+		memcpy(data, s5k4h7qt_wide_otp_data.module_id, size);
 		LOGE("read module id");
 	} else if (size == 8) { //read single awb data
 		if (addr >= 0x0a3D) {
-			memcpy(data, (s5k4h7yx_sunny_otp_data.gloden), size);
+			memcpy(data, (s5k4h7qt_wide_otp_data.gloden), size);
 			LOGE("read golden");
 		} else {
-			memcpy(data,(s5k4h7yx_sunny_otp_data.unint), size);
+			memcpy(data,(s5k4h7qt_wide_otp_data.unint), size);
 			LOGE("read unint");
 		}
 	} else { //read all awb checksum
-		memcpy(data, (s5k4h7yx_sunny_otp_data.data), size);
+		memcpy(data, (s5k4h7qt_wide_otp_data.data), size);
 	}
 
 	return size;
 }
 
-static void s5k4h7yx_sunny_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
+static void s5k4h7qt_wide_eeprom_dump_bin(const char *file_name, uint32_t size, const void *data)
 {
 	struct file *fp = NULL;
 	mm_segment_t old_fs;
@@ -1300,7 +1297,7 @@ static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t gol
 	return 0;
 }
 
-static calibration_status_t s5k4h7yx_sunny_check_manufacturing_data(void *data)
+static calibration_status_t s5k4h7qt_wide_check_manufacturing_data(void *data)
 {
 	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
 
@@ -1333,7 +1330,7 @@ static calibration_status_t s5k4h7yx_sunny_check_manufacturing_data(void *data)
 	return NO_ERRORS;
 }
 
-static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
+static calibration_status_t s5k4h7qt_wide_check_awb_data(void *data)
 {
 	struct s5k4h7yx_eeprom_t *eeprom = (struct s5k4h7yx_eeprom_t*)data;
 
@@ -1416,16 +1413,16 @@ static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
 	return NO_ERRORS;
 }
 
-static void s5k4h7yx_sunny_eeprom_format_calibration_data(void *data)
+static void s5k4h7qt_wide_eeprom_format_calibration_data(void *data)
 {
 	if (NULL == data) {
 		LOG_INF("data is NULL");
 		return;
 	}
 
-	mnf_status = s5k4h7yx_sunny_check_manufacturing_data(data);
+	mnf_status = s5k4h7qt_wide_check_manufacturing_data(data);
 	af_status = 0;
-	awb_status = s5k4h7yx_sunny_check_awb_data(data);
+	awb_status = s5k4h7qt_wide_check_awb_data(data);
 	lsc_status = 0;
 	pdaf_status = 0;
 	dual_status = 0;
@@ -1434,7 +1431,7 @@ static void s5k4h7yx_sunny_eeprom_format_calibration_data(void *data)
 		mnf_status, af_status, awb_status, lsc_status, pdaf_status, dual_status);
 }
 
-static void s5k4h7yx_sunny_eeprom_get_mnf_data(void *data,
+static void s5k4h7qt_wide_eeprom_get_mnf_data(void *data,
 		mot_calibration_mnf_t *mnf)
 {
 	int ret;
@@ -1558,25 +1555,24 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-		        LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
+		        LOG_INF("s5k4h7qt_widemipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 			//app_get_back_sensor_name("s5k4H7");
 #if OTP_4H7
-				s5k4h7yx_read_data_kernel();
+				s5k4h7qt_wide_read_data_kernel();
 #if INCLUDE_NO_OTP_4H7
-				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
-					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
+				if ((s5k4h7qt_wide_otp_data.moduleid > 0) && (s5k4h7qt_wide_otp_data.moduleid < 0xFFFF)) {
+					if (s5k4h7qt_wide_otp_data.moduleid != S5K4H7QT_WIDE_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else {
-						s5k4h7yx_sunny_read_data_from_otp();
-						s5k4h7yx_sunny_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7yx_sunny_eeprom);
-						s5k4h7yx_sunny_eeprom_format_calibration_data((void *)s5k4h7yx_sunny_eeprom);
-						LOG_INF("This is sunny --->s5k4h7 otp data vaild ...");
+						s5k4h7qt_wide_read_data_from_otp();
+						s5k4h7qt_wide_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7qt_wide_eeprom);
+						s5k4h7qt_wide_eeprom_format_calibration_data((void *)s5k4h7qt_wide_eeprom);
+						LOG_INF("This is qtech wide --->s5k4h7 otp data vaild ...");
 					}
-
 				} else {
-					LOG_INF("This is s5k4h7 sunny, but no otp data ...");
+					LOG_INF("This is s5k4h7 wide, but no otp data ...");
 				}
  #endif
  #endif
@@ -1629,24 +1625,25 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			sensor_id = return_sensor_id();
-			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
+			LOG_INF("s5k4h7qt_widemipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 #if OTP_4H7
 #if INCLUDE_NO_OTP_4H7
-				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
+				if ((s5k4h7qt_wide_otp_data.moduleid > 0) && (s5k4h7qt_wide_otp_data.moduleid < 0xFFFF)) {
 #endif
-					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
+					if (s5k4h7qt_wide_otp_data.moduleid != S5K4H7QT_WIDE_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else
-						LOG_INF("This is sunny --->s5k4h7 otp data vaild...");
+						LOG_INF("This is qtech wide --->s5k4h7 otp data vaild...");
 #if INCLUDE_NO_OTP_4H7
 				} else {
 					LOG_INF("This is s5k4h7, but no otp data ...");
 				}
 #endif
 #endif
+
 				break;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", sensor_id);
@@ -1893,7 +1890,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 	sensor_info->calibration_status.lsc = lsc_status;
 	sensor_info->calibration_status.pdaf = pdaf_status;
 	sensor_info->calibration_status.dual = dual_status;
-	s5k4h7yx_sunny_eeprom_get_mnf_data((void *)s5k4h7yx_sunny_eeprom, &sensor_info->mnf_calibration);
+	s5k4h7qt_wide_eeprom_get_mnf_data((void *)s5k4h7qt_wide_eeprom, &sensor_info->mnf_calibration);
 
 	switch (scenario_id) {
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
@@ -2118,15 +2115,9 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 
 	SENSOR_WINSIZE_INFO_STRUCT *wininfo;
 	MSDK_SENSOR_REG_INFO_STRUCT *sensor_reg_data = (MSDK_SENSOR_REG_INFO_STRUCT *) feature_para;
+
 	LOG_INF("feature_id = %d", feature_id);
 	switch (feature_id) {
-		case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
-			*feature_return_para_32 = imgsensor.current_ae_effective_frame;
-			break;
-		case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
-			memcpy(feature_return_para_32, &imgsensor.ae_frm_mode,
-			sizeof(struct IMGSENSOR_AE_FRM_MODE));
-			break;
 		case SENSOR_FEATURE_GET_PERIOD:
 			*feature_return_para_16++ = imgsensor.line_length;
 			*feature_return_para_16 = imgsensor.frame_length;
@@ -2138,12 +2129,12 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*feature_para_len = 4;
 			break;
 		case SENSOR_FEATURE_SET_ESHUTTER:
-			set_shutter(*feature_data);
+		    set_shutter(*feature_data);
 			break;
 		case SENSOR_FEATURE_SET_NIGHTMODE:
 			break;
 		case SENSOR_FEATURE_SET_GAIN:
-			set_gain((UINT16) *feature_data);
+		    set_gain((UINT16) *feature_data);
 			break;
 		case SENSOR_FEATURE_SET_FLASHLIGHT:
 			break;
@@ -2151,7 +2142,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_SET_REGISTER:
 			if ((sensor_reg_data->RegData>>8) > 0)
-				write_cmos_sensor(sensor_reg_data->RegAddr, sensor_reg_data->RegData);
+			   write_cmos_sensor(sensor_reg_data->RegAddr, sensor_reg_data->RegData);
 			else
 				write_cmos_sensor_8(sensor_reg_data->RegAddr, sensor_reg_data->RegData);
 			break;
@@ -2165,7 +2156,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			*feature_para_len = 4;
 			break;
 		case SENSOR_FEATURE_SET_VIDEO_MODE:
-			set_video_mode(*feature_data);
+			    set_video_mode(*feature_data);
 			break;
 		case SENSOR_FEATURE_CHECK_SENSOR_ID:
 			get_imgsensor_id(feature_return_para_32);
@@ -2174,13 +2165,13 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			set_auto_flicker_mode((BOOL)*feature_data_16, *(feature_data_16+1));
 			break;
 		case SENSOR_FEATURE_SET_MAX_FRAME_RATE_BY_SCENARIO:
-			set_max_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*feature_data, *(feature_data+1));
+			    set_max_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*feature_data, *(feature_data+1));
 			break;
 		case SENSOR_FEATURE_GET_DEFAULT_FRAME_RATE_BY_SCENARIO:
-			get_default_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*(feature_data), (MUINT32 *)(uintptr_t)(*(feature_data+1)));
+			    get_default_framerate_by_scenario((MSDK_SCENARIO_ID_ENUM)*(feature_data), (MUINT32 *)(uintptr_t)(*(feature_data+1)));
 			break;
 		case SENSOR_FEATURE_SET_TEST_PATTERN:
-			set_test_pattern_mode((BOOL)*feature_data);
+		    set_test_pattern_mode((BOOL)*feature_data);
 			break;
 		case SENSOR_FEATURE_GET_TEST_PATTERN_CHECKSUM_VALUE: /* for factory mode auto testing */
 			*feature_return_para_32 = imgsensor_info.checksum_value;
@@ -2188,17 +2179,19 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			break;
 		case SENSOR_FEATURE_SET_FRAMERATE:
 			spin_lock(&imgsensor_drv_lock);
-			imgsensor.current_fps = *feature_data_32;
+			 imgsensor.current_fps = *feature_data;
 			spin_unlock(&imgsensor_drv_lock);
 			break;
 		case SENSOR_FEATURE_SET_HDR:
 			LOG_INF("Warning! Not Support IHDR Feature");
 			spin_lock(&imgsensor_drv_lock);
-			imgsensor.ihdr_en = KAL_FALSE;
+			 imgsensor.ihdr_en = KAL_FALSE;
 			spin_unlock(&imgsensor_drv_lock);
 			break;
 		case SENSOR_FEATURE_GET_CROP_INFO:
-			wininfo = (SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+
+	    wininfo = (SENSOR_WINSIZE_INFO_STRUCT *)(uintptr_t)(*(feature_data+1));
+
 			switch (*feature_data_32) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 					memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[1], sizeof(SENSOR_WINSIZE_INFO_STRUCT));
@@ -2217,32 +2210,11 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					memcpy((void *)wininfo, (void *)&imgsensor_winsize_info[0], sizeof(SENSOR_WINSIZE_INFO_STRUCT));
 					break;
 			}
-			break;
+	    break;
 		case SENSOR_FEATURE_SET_IHDR_SHUTTER_GAIN:
-			LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n", (UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
-			ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
-			break;
-		case SENSOR_FEATURE_GET_MIPI_PIXEL_RATE:
-			switch (*feature_data) {
-				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
-					*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-					imgsensor_info.cap.mipi_pixel_rate;
+		            LOG_INF("SENSOR_SET_SENSOR_IHDR LE=%d, SE=%d, Gain=%d\n", (UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
+		            ihdr_write_shutter_gain((UINT16)*feature_data, (UINT16)*(feature_data+1), (UINT16)*(feature_data+2));
 					break;
-				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-					*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-					imgsensor_info.normal_video.mipi_pixel_rate;
-					 break;
-				case MSDK_SCENARIO_ID_SLIM_VIDEO:
-					*(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-					imgsensor_info.slim_video.mipi_pixel_rate;
-					break;
-				case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
-				default:
-					 *(MUINT32 *)(uintptr_t)(*(feature_data + 1)) =
-					imgsensor_info.pre.mipi_pixel_rate;
-					break;
-			}
-			break;
 		default:
 			break;
 	}
@@ -2259,9 +2231,9 @@ static SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K4H7YX_SUNNY_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
+UINT32 S5K4H7QT_WIDE_MIPI_RAW_SensorInit(PSENSOR_FUNCTION_STRUCT *pfFunc)
 {
-	LOG_INF("s5k4h7yxmipiraw_Sensor...\n");
+	LOG_INF("s5k4h7qt_widemipiraw_Sensor...\n");
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
 		*pfFunc =  &sensor_func;

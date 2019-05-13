@@ -666,7 +666,7 @@ static void slim_video_setting(void)
 #if OTP_2A10
 #define OV02A10QT_EEPROM_SLAVE_ADD 0xA0
 #define OV02A10QT_SENSOR_IIC_SLAVE_ADD 0x7a
-#define OV02A10QT_QTECH_MODULE_ID  0x5154
+#define OV02A10QT_MODULE_ID  0x5154
 
 typedef struct ov02a10qt_otp_data {
 	unsigned short module_id;
@@ -1128,14 +1128,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			write_cmos_sensor(0xfd, 0x00);
-			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + 1;
+			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + QTECH_MID;
 			if (*sensor_id == imgsensor_info.sensor_id) {
 #if OTP_2A10
 				ov02a10qt_read_module_id_from_eeprom(OV02A10QT_EEPROM_SLAVE_ADD,0x000D,2);
 #if INCLUDE_NO_OTP_2A10
 				if ((ov02a10qt_otp_data.module_id > 0) && (ov02a10qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (ov02a10qt_otp_data.module_id != OV02A10QT_QTECH_MODULE_ID) {
+					if (ov02a10qt_otp_data.module_id != OV02A10QT_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else {
@@ -1147,7 +1147,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 #if INCLUDE_NO_OTP_2A10
 				} else {
-						LOG_INF("This is ov02a10qt but no otp ...");
+						LOG_INF("This is qtech --->ov02a10qt but no otp ...");
 				}
 #endif
 #endif
@@ -1203,13 +1203,14 @@ static kal_uint32 open(void)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			write_cmos_sensor(0xfd, 0x00);
-			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + 1;
+			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300)) + QTECH_MID;
+
 			if (sensor_id == imgsensor_info.sensor_id) {
 #if OTP_2A10
 #if INCLUDE_NO_OTP_2A10
 				if ((ov02a10qt_otp_data.module_id > 0) && (ov02a10qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (ov02a10qt_otp_data.module_id != OV02A10QT_QTECH_MODULE_ID) {
+					if (ov02a10qt_otp_data.module_id != OV02A10QT_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					}

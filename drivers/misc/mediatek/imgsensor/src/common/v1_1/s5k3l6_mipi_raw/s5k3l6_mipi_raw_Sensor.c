@@ -1617,7 +1617,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 					}
 				} else {
 					LOG_INF("This is s5k3l6, but no otp data ...");
-                }
+				}
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);

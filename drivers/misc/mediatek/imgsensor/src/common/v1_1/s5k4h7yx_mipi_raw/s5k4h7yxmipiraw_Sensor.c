@@ -42,7 +42,6 @@
 #define FLAG_VALUE_PAGE 0x40
 #define INCLUDE_NO_OTP_4H7 1
 #define S5K4H7YX_OFILM_MODULE_ID 0x4f46
-#define BINGO_OTP_CHECKSUM 1
 #define S5K4H7YX_OFILM_MODULE_ID_START_ADD 0x0a12
 #define S5K4H7YX_OFILM_MODULE_ID_LENGTH 0x02
 #define getbit(x,y)   ((x) >> (y)&1)
@@ -996,11 +995,9 @@ static int s5k4h7yx_read_data_kernel(void)
 	s5k4h7yx_otp_data.moduleid = ((s5k4h7yx_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_otp_data.module_id[1] & 0x00FF);
 	LOG_INF("s5k4h7yx_otp_data.moduleid= 0x%x",s5k4h7yx_otp_data.moduleid);
 
-#if BINGO_OTP_CHECKSUM
 	//read all awb
 	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_otp_data.data,8);
 	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.data + 8, 51);
-#endif
 	//read awb
 	s5k4h7yx_read_otp_page_data(page, 0x0a3d, s5k4h7yx_otp_data.gloden, 7);
 	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.gloden + 7, 1);

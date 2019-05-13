@@ -242,7 +242,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	       curr_sensor_name);
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
-	if (strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 && IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx){
+	if ((strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 || strcmp(curr_sensor_name,"s5k4h7qt_mipi_raw")==0)
+		&& IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx){
 	      return IMGSENSOR_RETURN_ERROR;
 	}
 
@@ -261,7 +262,7 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 			pwr_status, sensor_power_sequence, curr_sensor_name);
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
-	if (strcmp(curr_sensor_name,"s5k3l6_mipi_raw")==0)   // add for main eeprom voltage
+	if (strcmp(curr_sensor_name,"s5k3l6_mipi_raw")==0 || strcmp(curr_sensor_name,"s5k3l6qt_mipi_raw")==0)
 	{
 		PK_DBG("AFRegulatorCtrl sensor_idx %d, power %d curr_sensor_name %s\n", sensor_idx, pwr_status, curr_sensor_name);
 

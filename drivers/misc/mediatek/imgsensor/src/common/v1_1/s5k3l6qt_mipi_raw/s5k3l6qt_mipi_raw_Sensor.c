@@ -1097,7 +1097,7 @@ static void slim_video_setting(void)
 
 static kal_uint32 return_sensor_id(void)
 {
-	return ((read_cmos_sensor_byte(0x0000) << 8) | read_cmos_sensor_byte(0x0001));
+	return (((read_cmos_sensor_byte(0x0000) << 8) | read_cmos_sensor_byte(0x0001)) + QTECH_MID);
 }
 
 #define OTP_3L6 1
@@ -1106,7 +1106,7 @@ static kal_uint32 return_sensor_id(void)
 #if OTP_3L6
 #define S5K3L6QT_EEPROM_SLAVE_ADD 0xB0
 #define S5K3L6QT_SENSOR_IIC_SLAVE_ADD 0x5a
-#define S5K3L6QT_QTECH_MODULE_ID  0x5154  //0x51-->Q 0x54-->T
+#define S5K3L6QT_MODULE_ID  0x5154
 
 typedef struct s5k3l6qt_otp_data {
 	unsigned short module_id;
@@ -1593,21 +1593,21 @@ static void s5k3l6qt_eeprom_get_mnf_data(void *data,
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
-	kal_uint8 retry = 1;
+	kal_uint8 retry = 2;
 	//sensor have two i2c address 0x5b 0x5a & 0x21 0x20, we should detect the module used i2c address
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id() + 1;
+			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 #if OTP_3L6
 				s5k3l6qt_read_module_id_from_eeprom(S5K3L6QT_EEPROM_SLAVE_ADD,0x000D,2);
 #if INCLUDE_NO_OTP_3L6
 				if ((s5k3l6qt_otp_data.module_id > 0) && (s5k3l6qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_QTECH_MODULE_ID) {
+					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_MODULE_ID) {
 						*sensor_id = 0xFFFFFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					} else {
@@ -1620,7 +1620,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 
 #if INCLUDE_NO_OTP_3L6
 				} else {
-					LOG_INF("This is s5k3l6, but no otp data ...");
+					LOG_INF("This is s5k3l6qt, but no otp data ...");
 				}
 #endif
 #endif
@@ -1660,7 +1660,7 @@ static kal_uint32 open(void)
 {
 	//const kal_uint8 i2c_addr[] = {IMGSENSOR_WRITE_ID_1, IMGSENSOR_WRITE_ID_2};
 	kal_uint8 i = 0;
-	kal_uint8 retry = 1;
+	kal_uint8 retry = 2;
 	kal_uint32 sensor_id = 0;
 	LOG_1;
 	//sensor have two i2c address 0x6c 0x6d & 0x21 0x20, we should detect the module used i2c address
@@ -1669,13 +1669,13 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id() + 1;
+			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
 #if OTP_3L6
 #if INCLUDE_NO_OTP_3L6
 				if ((s5k3l6qt_otp_data.module_id > 0) && (s5k3l6qt_otp_data.module_id < 0xFFFF)) {
 #endif
-					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_QTECH_MODULE_ID) {
+					if (s5k3l6qt_otp_data.module_id != S5K3L6QT_MODULE_ID) {
 						sensor_id = 0xFFFF;
 						return ERROR_SENSOR_CONNECT_FAIL;
 					}

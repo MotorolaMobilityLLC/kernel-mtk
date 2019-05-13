@@ -112,6 +112,7 @@
 /*HM*/
 #define SUNNY_MID                               0x01
 #define QTECH_MID                               0x06
+#define WIDE_MID                                0x01
 #define HM1062_MONO_SENSOR_ID                   0x1061
 #define HM1062_2_MONO_SENSOR_ID                 0x1062
 /*IMX*/
@@ -193,7 +194,7 @@
 #define OV2650_SENSOR_ID_3                      0x2655
 #define OV20880MIPI_SENSOR_ID                   0x20880
 #define OV02A10_SENSOR_ID                       0x2509
-#define OV02A10QT_SENSOR_ID                     0x250a
+#define OV02A10QT_SENSOR_ID                     (OV02A10_SENSOR_ID+QTECH_MID)
 /*S5K*/
 #define S5K2XASP_SENSOR_ID                      0x218A
 #define S5K3P8SP_SENSOR_ID                      0x3108
@@ -232,10 +233,12 @@
 #define S5K8AAYX_SENSOR_ID                      0x08aa
 #define S5K5E8YX_SENSOR_ID                      0x5e80
 #define S5K3L6_SENSOR_ID                        0x30C6
-#define S5K3L6QT_SENSOR_ID                      0x30C7
+#define S5K3L6QT_SENSOR_ID                      (S5K3L6_SENSOR_ID+QTECH_MID)
 #define S5K4H7YX_SENSOR_ID                      0x487b
-#define S5K4H7QT_SENSOR_ID                      0x487c
 #define S5K4H7YX_SUNNY_SENSOR_ID                (S5K4H7YX_SENSOR_ID+SUNNY_MID)
+#define S5K4H7QT_SENSOR_ID                      (S5K4H7YX_SENSOR_ID+QTECH_MID)
+#define S5K4H7QT_WIDE_SENSOR_ID                 (S5K4H7YX_SENSOR_ID+QTECH_MID+WIDE_MID)
+
 /*HI*/
 #define HI841_SENSOR_ID                         0x0841
 #define HI707_SENSOR_ID                         0x00b8
@@ -441,8 +444,9 @@
 #define SENSOR_DRVNAME_S5K3L6_MIPI_RAW          "s5k3l6_mipi_raw"
 #define SENSOR_DRVNAME_S5K3L6QT_MIPI_RAW        "s5k3l6qt_mipi_raw"
 #define SENSOR_DRVNAME_S5K4H7YX_MIPI_RAW        "s5k4h7yx_mipi_raw"
-#define SENSOR_DRVNAME_S5K4H7QT_MIPI_RAW        "s5k4h7qt_mipi_raw"
 #define SENSOR_DRVNAME_S5K4H7YX_SUNNY_MIPI_RAW  "s5k4h7yx_sunny_mipi_raw"
+#define SENSOR_DRVNAME_S5K4H7QT_MIPI_RAW        "s5k4h7qt_mipi_raw"
+#define SENSOR_DRVNAME_S5K4H7QT_WIDE_MIPI_RAW   "s5k4h7qt_wide_mipi_raw"
 /*HI*/
 #define SENSOR_DRVNAME_HI841_MIPI_RAW           "hi841_mipi_raw"
 #define SENSOR_DRVNAME_HI707_YUV                "hi707_yuv"
