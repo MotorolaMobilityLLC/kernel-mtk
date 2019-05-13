@@ -491,11 +491,11 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	ret = power_supply_get_property(chrdet_psy,
 			POWER_SUPPLY_PROP_CHARGE_ENABLED, &val);
 	flag1_adb = val.intval;	
-	
 	if (!ret) {
 		if(!flag1_adb){
 			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-			if(flag2_usb){ 
+			if(flag2_usb){ 				
+				chr_err("ccc soc=%d,flag1_adb=%d,flag2_usb=%d,soc70=%d\n",soc,flag1_adb,flag2_usb,info->flag_soc70);
 				if (!((soc < 70) && (info->flag_soc70))){
 					info->flag_soc70 = 0;
 					charging_enable = false;
