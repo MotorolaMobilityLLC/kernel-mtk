@@ -831,6 +831,7 @@ static int cs35l41_main_amp_event(struct snd_soc_dapm_widget *w,
 	struct snd_soc_codec *codec = snd_soc_dapm_to_codec(w->dapm);
 	struct cs35l41_private *cs35l41 = snd_soc_codec_get_drvdata(codec);
 	int ret = 0,status = -1;
+	int i = 0;
 
 	switch (event) {
 	case SND_SOC_DAPM_POST_PMU:
@@ -893,7 +894,7 @@ static int cs35l41_main_amp_event(struct snd_soc_dapm_widget *w,
 					ARRAY_SIZE(cs35l41_pdn_patch));
 		cs35l41->enabled = false;
 
-		for (int i = 0; i < 5; i++) {
+		for (i = 0; i < 5; i++) {
 			msleep(5);
 			regmap_read(cs35l41->regmap, CS35L41_IRQ1_STATUS1 , &status);
 			dev_dbg(cs35l41->dev, "%s  cs35l41_main_amp_event status=%x\n",__func__,status);

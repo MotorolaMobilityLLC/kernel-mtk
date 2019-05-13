@@ -1,0 +1,33 @@
+/*
+ * MT6771 limal main dts override
+ * Things can done here:
+ * 	Add nodes or properties to root node
+ * 	Delete nodes or properties
+*/
+
+#include "rt1711.dtsi"
+
+/ {
+	model = "mt6771";
+	compatible = "mediatek,mt6771";
+
+	mt_soc_codec_name: mt_soc_codec_name {
+	};
+	aliases: aliases {
+		spi4 = &spi4;
+		spi5 = &spi5;
+	};
+	moto_chg_tcmd: moto_chg_tcmd {
+		compatible = "mmi,moto-chg-tcmd";
+	};
+};
+
+&lk_charger {
+	/delete-property/ enable_pe_plus;
+};
+&charger {
+	/delete-property/ enable_pe_plus;
+	/delete-property/ enable_pe_2;
+	/delete-property/ enable_pe_3;
+	/delete-property/ enable_pe_4;
+};

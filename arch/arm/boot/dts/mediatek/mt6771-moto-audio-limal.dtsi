@@ -1,0 +1,95 @@
+/ {
+	dummy_vreg: dummy_vreg {
+		compatible = "regulator-fixed";
+		status = "ok";
+		regulator-name = "dummy_vreg";
+		regulator-always-on;
+	};
+};
+
+&pio {
+	amp_reset:amp_reset_cfg {
+		combo_pins {
+			pins = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-high;
+		};
+        };
+
+	amp_spk_irq:amp_spk_irq_cfg {
+		combo_pins {
+			pins = <PINMUX_GPIO27__FUNC_GPIO27>;
+			slew-rate = <0>;
+			output-high;
+		};
+        };
+};
+
+&spi4 {
+	cs35l41_spk: cs35l41@0 {
+		#sound-dai-cells = <1>;
+		compatible = "cirrus,cs35l41";
+		spi-max-frequency = <9600000>;
+		reg = <0>;
+		reset-gpios = <&pio 153 0>;
+		interrupt-parent = <&pio>;
+		interrupts = <27 IRQ_TYPE_LEVEL_LOW 27 0>;
+
+		status = "ok";
+		VA-supply = <&dummy_vreg>;
+		VP-supply = <&dummy_vreg>;
+		cirrus,boost-peak-milliamp = <4500>;
+		cirrus,boost-ind-nanohenry = <1000>;
+		cirrus,boost-cap-microfarad = <15>;
+		cirrus,dsp-force-reload = <1> ;
+
+		cirrus,asp-sdout-hiz = <0x1>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&amp_reset>;
+
+		cirrus,gpio-config2 {
+			cirrus,gpio-src-select = <0x4>;
+			cirrus,gpio-output-enable;
+		};
+
+		adsps {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			prince_l_dsp: adsp@2b80000 {
+				reg = <0x2b80000>;
+				firmware {
+				        protectionsp_music {
+						cirrus,full-name;
+						cirrus,wmfw-file = "cs35l41-dsp1-prot.wmfw";
+						cirrus,bin-file = "cs35l41-dsp1-spk-prot-music.bin";
+					};
+					protectionsp_voice {
+						cirrus,full-name;
+						cirrus,wmfw-file = "cs35l41-dsp1-prot.wmfw";
+						cirrus,bin-file = "cs35l41-dsp1-spk-prot-voice.bin";
+					};
+					protectionsp_ringtone {
+						cirrus,full-name;
+						cirrus,wmfw-file = "cs35l41-dsp1-prot.wmfw";
+						cirrus,bin-file = "cs35l41-dsp1-spk-prot-ringtone.bin";
+					};
+					protectionsp_notification {
+						cirrus,full-name;
+						cirrus,wmfw-file = "cs35l41-dsp1-prot.wmfw";
+						cirrus,bin-file = "cs35l41-dsp1-spk-prot-notification.bin";
+					};
+					calibration {
+						cirrus,full-name;
+						cirrus,wmfw-file = "cs35l41-dsp1-diag.wmfw";
+						cirrus,bin-file = "cs35l41-dsp1-diag-spk-cali.bin";
+					};
+				};
+			};
+		};
+	};
+};
+
+&mt_soc_codec_name {
+	hac_sel =  <&pio 28 0>;
+};

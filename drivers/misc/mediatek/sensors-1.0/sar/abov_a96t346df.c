@@ -1121,8 +1121,8 @@ static int abov_tk_i2c_read_checksum(struct i2c_client *client)
 		return -EIO;
 	}
 
-	LOG_INFO("Verify checksum  succ - addr:%#x checksum:%#x,%#x,%#x,%#,%#x,%# \n", client->addr, checksum[0], checksum[1],
-		    checksum[2], checksum[3], checksum[4], checksum[5]);
+	//LOG_INFO("Verify checksum  succ - addr:%#x checksum:%#x,%#x,%#x,%#,%#x,%# \n", client->addr, checksum[0], checksum[1],
+	//	    checksum[2], checksum[3], checksum[4], checksum[5]);
 	checksum_h = checksum[4];
 	checksum_l = checksum[5];
 

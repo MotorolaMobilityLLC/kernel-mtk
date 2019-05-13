@@ -303,6 +303,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 static void set_shutter(kal_uint32 shutter)
 {
 	unsigned long flags;
+	int i = 0;
 	kal_uint16 realtime_fps = 0;
 	//kal_uint32 frame_length = 0;
 	spin_lock_irqsave(&imgsensor_drv_lock, flags);
@@ -411,7 +412,7 @@ static void set_shutter(kal_uint32 shutter)
 		write_cmos_sensor_byte(0x3C1E, 0x01);
 		write_cmos_sensor_byte(0x0100, 0x01);
 		write_cmos_sensor_byte(0x3C1E, 0x00);
-		for (int i = 0; i < timeout; i++) {
+		for (i = 0; i < timeout; i++) {
 			mdelay(10);
 			framecnt = read_cmos_sensor_byte(0x0005);
 			if ( framecnt == 0xFF) {
