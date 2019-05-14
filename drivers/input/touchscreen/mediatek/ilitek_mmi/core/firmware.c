@@ -63,7 +63,7 @@ bool first_int = false;
 extern unsigned char g_user_buf[PAGE_SIZE];
 extern unsigned char fw_name_buf[PAGE_SIZE];
 extern bool use_g_user_buf;
-extern is_force_upgrade;
+extern bool is_force_upgrade;
 extern bool is_lcd_resume;
 int ilitek_fw_fsize = 0;
 uint8_t *ilitek_hex_buffer = NULL;
