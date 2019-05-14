@@ -549,7 +549,7 @@ unsigned int sum_awb_flag_lsc(unsigned int sum_start, unsigned int sum_end, unsi
 	int i = 0;
 	unsigned int start;
 	unsigned int re_sum = 0;
-	for(start = 0x0A04; i < 64; i++, start++){
+	for(start = sum_start; i < sum_end; i++, start++){
 		if((start >= sum_start) && (start <= sum_end)){
 			re_sum += pdata[i];
 		}
