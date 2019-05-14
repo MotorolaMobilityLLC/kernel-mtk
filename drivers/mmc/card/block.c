@@ -3498,6 +3498,12 @@ static const struct mmc_fixup blk_fixups[] =
 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_SANDISK_EMMC, CID_OEMID_ANY,
 		add_quirk_mmc, MMC_QUIRK_DISABLE_SNO),
 
+#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+    //Tinno:CJ see PBGAM-1121
+    MMC_FIXUP("GNBGEA", CID_MANFID_KINGSTON, CID_OEMID_ANY,
+        add_quirk_mmc, MMC_QUIRK_SEC_ERASE_TRIM_BROKEN),
+#endif
+
 	END_FIXUP
 };
 
@@ -3513,6 +3519,16 @@ static int mmc_blk_probe(struct mmc_card *card)
 		return -ENODEV;
 
 	mmc_fixup_device(card, blk_fixups);
+
+#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+    pr_info("mmc_blk_probe card info:\n");
+    pr_info(" manfid: 0x%x\n", card->cid.manfid);
+    pr_info(" oemid: 0x%x\n", card->cid.oemid);
+    pr_info(" oemid: %s\n", card->cid.prod_name);
+    pr_info(" vendor: 0x%x\n", card->cis.vendor);
+    pr_info(" device: 0x%x\n", card->cis.device);
+    pr_info(" rev: 0x%x\n", card->ext_csd.rev);
+#endif
 
 	md = mmc_blk_alloc(card);
 	if (IS_ERR(md))
