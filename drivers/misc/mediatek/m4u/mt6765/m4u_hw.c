@@ -1865,7 +1865,8 @@ irqreturn_t MTK_M4U_isr(int irq, void *dev_id)
 				if (valid_mva_end != 0 && fault_mva < valid_mva_end + SZ_4K) {
 					M4UMSG("bypass disp TF, valid mva=0x%x, size=0x%x, mva_end=0x%x\n",
 					 valid_mva, valid_size, valid_mva_end);
-					bypass_DISP_TF = 1;
+					// Jake.L, DATE20190514, ALPS04422123 test, DATE20190514-01 LINE
+					bypass_DISP_TF = 0; // 1;
 				}
 			}
 
