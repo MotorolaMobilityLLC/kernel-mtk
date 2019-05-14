@@ -90,6 +90,8 @@ struct ilitek_platform_data {
 	wait_queue_head_t wait_for_lcm;
 	int lcm_finish;
 	int load_fw_done;
+	wait_queue_head_t boot_download_fw;
+	int boot_download_fw_done;
 	unsigned char debug_buf[1024][2048];
 	int raw_count;
 	int delta_count;

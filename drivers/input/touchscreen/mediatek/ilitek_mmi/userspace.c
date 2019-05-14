@@ -2093,6 +2093,8 @@ static ssize_t do_reflash_store(struct device *pDevice, struct device_attribute 
 		mutex_unlock(&ipd->touch_mutex);
 	}
 	ipd->sys_boot_fw = true;
+	ipd->boot_download_fw_done = 1;
+	wake_up(&(ipd->boot_download_fw));
 
 	ilitek_platform_enable_irq();
 

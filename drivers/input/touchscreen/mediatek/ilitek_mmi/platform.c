@@ -32,6 +32,7 @@
 #include "platform.h"
 #include "core/mp_test.h"
 #include "core/gesture.h"
+#include <mt-plat/mtk_boot_common.h>
 
 #define DTS_INT_GPIO	"touch,irq-gpio"
 #define DTS_RESET_GPIO	"touch,reset-gpio"
@@ -1080,6 +1081,8 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	init_waitqueue_head(&(ipd->wait_for_lcm));
 	ipd->lcm_finish = 0;
 	ipd->load_fw_done = 0;
+	init_waitqueue_head(&(ipd->boot_download_fw));
+	ipd->boot_download_fw_done = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;
@@ -1215,6 +1218,8 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	init_waitqueue_head(&(ipd->wait_for_lcm));
 	ipd->lcm_finish = 0;
 	ipd->load_fw_done = 0;
+	init_waitqueue_head(&(ipd->boot_download_fw));
+	ipd->boot_download_fw_done = 0;
 	ipd->debug_data_frame = 0;
 	ipd->debug_node_open = false;
 	ipd->raw_count = 1;
@@ -1261,8 +1266,12 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 		ipio_err("Failed to init input device in kernel\n");
 #endif
 
-	if (ilitek_platform_reg_suspend() < 0)
-		ipio_err("Failed to register suspend/resume function\n");
+	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+		ipio_err("boot mode is not Charger\n");
+		if (ilitek_platform_reg_suspend() < 0)
+			ipio_err("Failed to register suspend/resume function\n");
+	}
 
 	if (ilitek_platform_reg_power_check() < 0)
 		ipio_err("Failed to register power check function\n");

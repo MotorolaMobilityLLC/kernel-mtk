@@ -530,6 +530,14 @@ void core_config_ic_suspend(void)
 	int i;
 	int ret = 0;
 	ipio_info("Starting to suspend ...\n");
+	if (ipd->sys_boot_fw == false) {
+		ret = wait_event_interruptible_timeout(ipd->boot_download_fw, ipd->boot_download_fw_done> 0,msecs_to_jiffies(2000));
+		if (!ret) {
+			ipd->sys_boot_fw = true;
+			ipio_info("TP is booting ,cannot sleep ...\n");
+			return;
+		}
+	}
 	if (ipd->suspended) {
 		ret = wait_event_interruptible_timeout(ipd->load_fw_done_wake, ipd->load_fw_done> 0,msecs_to_jiffies(500));
 		if (!ret) {
