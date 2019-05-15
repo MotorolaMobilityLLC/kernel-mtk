@@ -216,7 +216,7 @@ void kpd_pmic_pwrkey_hal(unsigned long pressed)
 {
 	input_report_key(kpd_input_dev, kpd_dts_data.kpd_sw_pwrkey, pressed);
 	input_sync(kpd_input_dev);
-	kpd_print(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
+	printk(KPD_SAY "(%s) HW keycode =%d using PMIC\n",
 		pressed ? "pressed" : "released", kpd_dts_data.kpd_sw_pwrkey);
 
 #ifdef CONFIG_LONG_PRESS_MODE_EN
