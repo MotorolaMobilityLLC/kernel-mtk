@@ -42,9 +42,9 @@
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 begin
 #define S5K4H7SUB_OTP_FLAGFLAG_ADDR_G2	0x0A24
 
-#define G_G_GOLDEN (unsigned int)(512+0.5) //1024
-#define R_G_GOLDEN (unsigned int)(2*88.0/(156+156)*512+0.5)//1600//0x020d*5
-#define B_G_GOLDEN (unsigned int)(2*111.0/(156+156)*512+0.5) //0x0297*5
+#define G_G_GOLDEN (unsigned int) 1024 //(512+0.5) //1024
+#define R_G_GOLDEN (unsigned int) 587  //(2*88.0/(156+156)*512+0.5)//1600//0x020d*5
+#define B_G_GOLDEN (unsigned int) 668  //(2*111.0/(156+156)*512+0.5) //0x0297*5
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 end
 
 extern unsigned int tsp_s5k4h7_module_id;
@@ -246,7 +246,8 @@ void tsp_4h7_cal_rgb_gain(int* r_gain, int* g_gain, int* b_gain, unsigned int r_
 void apply_tsp_4h7_otp_awb(void)
 {
 	char r_gain_h, r_gain_l, g_gain_h, g_gain_l, b_gain_h, b_gain_l;
-	unsigned int r_ratio, b_ratio;
+	//unsigned int r_ratio, b_ratio;
+    int R_gain, G_gain, B_gain, Base_gain;
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 begin
 #ifdef ORIGINAL
 	tsp_4h7_otp_data_info.ngcur = (unsigned int)((tsp_4h7_otp_data_info.ngrcur + tsp_4h7_otp_data_info.ngbcur)*1000/2 + 500);
@@ -271,21 +272,40 @@ void apply_tsp_4h7_otp_awb(void)
 #endif
 //Chenyee camera pangfei 20180608 modify for CSW1802A-9 end
 
-	r_ratio = (unsigned int)((tsp_4h7_otp_data_info.frggolden * 1000 / tsp_4h7_otp_data_info.frgcur + 500)/1000);
-	b_ratio = (unsigned int)((tsp_4h7_otp_data_info.fbggolden * 1000 / tsp_4h7_otp_data_info.fbgcur + 500)/1000);
+	//r_ratio = (unsigned int)((tsp_4h7_otp_data_info.frggolden * 1000 / tsp_4h7_otp_data_info.frgcur + 500)/1000);
+	//b_ratio = (unsigned int)((tsp_4h7_otp_data_info.fbggolden * 1000 / tsp_4h7_otp_data_info.fbgcur + 500)/1000);
 
-        printk("OTP apply_tsp_4h7_otp_awb  tsp_4h7_otp_data_info.frggolden=0x%x  tp_data_info.fbggolden=0x%x  tp_data_info.frgcur=0x%x  tsp_4h7_otp_data_info.fbgcur=0x%x  r_ratio=0x%x  b_ratio=0x%x \n",tsp_4h7_otp_data_info.frggolden,tsp_4h7_otp_data_info.fbggolden,tsp_4h7_otp_data_info.frgcur,tsp_4h7_otp_data_info.fbgcur,r_ratio,b_ratio);
+        //printk("OTP apply_tsp_4h7_otp_awb  tsp_4h7_otp_data_info.frggolden=0x%x  tp_data_info.fbggolden=0x%x  tp_data_info.frgcur=0x%x  tsp_4h7_otp_data_info.fbgcur=0x%x  r_ratio=0x%x  b_ratio=0x%x \n",tsp_4h7_otp_data_info.frggolden,tsp_4h7_otp_data_info.fbggolden,tsp_4h7_otp_data_info.frgcur,tsp_4h7_otp_data_info.fbgcur,r_ratio,b_ratio);
+//add begin
+    R_gain = (tsp_4h7_otp_data_info.frggolden*1000)/tsp_4h7_otp_data_info.frgcur;
+    B_gain = (tsp_4h7_otp_data_info.fbggolden*1000)/tsp_4h7_otp_data_info.fbgcur;
+    G_gain = 1000;
 
-	tsp_4h7_cal_rgb_gain(&tsp_4h7_otp_data_info.nr_gain, &tsp_4h7_otp_data_info.ng_gain, &tsp_4h7_otp_data_info.nb_gain, r_ratio, b_ratio);
+    if (R_gain < 1000 || B_gain < 1000)
+    {
+        if (R_gain < B_gain)
+            Base_gain = R_gain;
+        else
+            Base_gain = B_gain;
+    } else {
+        Base_gain = G_gain;
+    }
+    R_gain = 0x0100 * R_gain/Base_gain;
+    B_gain = 0x0100 * B_gain/Base_gain;
+    G_gain = 0x0100 * G_gain/Base_gain;
 
-	r_gain_h = (tsp_4h7_otp_data_info.nr_gain >> 8) & 0xff;
-	r_gain_l = (tsp_4h7_otp_data_info.nr_gain >> 0) & 0xff;
+    printk("OTP apply_tsp_4h7_otp_awb  tsp_4h7_otp_data_info.frggolden=0x%x  tp_data_info.fbggolden=0x%x  tp_data_info.frgcur=0x%x  tsp_4h7_otp_data_info.fbgcur=0x%x  R_gain=0x%x  B_gain=0x%x G_gain=0x%x \n",tsp_4h7_otp_data_info.frggolden,tsp_4h7_otp_data_info.fbggolden,tsp_4h7_otp_data_info.frgcur,tsp_4h7_otp_data_info.fbgcur,R_gain, B_gain, G_gain);
+//add end.
+	//tsp_4h7_cal_rgb_gain(&tsp_4h7_otp_data_info.nr_gain, &tsp_4h7_otp_data_info.ng_gain, &tsp_4h7_otp_data_info.nb_gain, r_ratio, b_ratio);
 
-	g_gain_h = (tsp_4h7_otp_data_info.ng_gain >> 8) & 0xff;
-	g_gain_l = (tsp_4h7_otp_data_info.ng_gain >> 0) & 0xff;
+	r_gain_h = (R_gain >> 8) & 0xff;
+	r_gain_l = (R_gain >> 0) & 0xff;
 
-	b_gain_h = (tsp_4h7_otp_data_info.nb_gain >> 8) & 0xff;
-	b_gain_l = (tsp_4h7_otp_data_info.nb_gain >> 0) & 0xff;
+	g_gain_h = (G_gain >> 8) & 0xff;
+	g_gain_l = (G_gain >> 0) & 0xff;
+
+	b_gain_h = (B_gain >> 8) & 0xff;
+	b_gain_l = (B_gain >> 0) & 0xff;
 	
 	otp_tsp_4h7_write_cmos_sensor_8(0x3C0F,0x00);
 
