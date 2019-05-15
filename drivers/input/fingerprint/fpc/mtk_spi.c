@@ -52,8 +52,8 @@
 #define REE_READ_HWID
 
 static const char * const pctl_names[] = {
-	"fpsensor_fpc_rst_low",
-	"fpsensor_fpc_rst_high",
+	"fingerprint_reset_low",
+	"fingerprint_reset_high",
 };
 
 struct fpc_data {
@@ -120,13 +120,13 @@ static int hw_reset(struct  fpc_data *fpc)
 	int irq_gpio;
 	struct device *dev = fpc->dev;
 
-	select_pin_ctl(fpc, "fpsensor_fpc_rst_high");
+	select_pin_ctl(fpc, "fingerprint_reset_high");
 	usleep_range(FPC_RESET_HIGH1_US, FPC_RESET_HIGH1_US + 100);
 
-	select_pin_ctl(fpc, "fpsensor_fpc_rst_low");
+	select_pin_ctl(fpc, "fingerprint_reset_low");
 	usleep_range(FPC_RESET_LOW_US, FPC_RESET_LOW_US + 100);
 
-	select_pin_ctl(fpc, "fpsensor_fpc_rst_high");
+	select_pin_ctl(fpc, "fingerprint_reset_high");
 	usleep_range(FPC_RESET_HIGH2_US, FPC_RESET_HIGH2_US + 100);
 
 	irq_gpio = gpio_get_value(fpc->irq_gpio);
@@ -294,16 +294,12 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 
 	error = spi_sync(spidev, &msg);
 
-	printk("%s : spi_sync error:%d.\n", __func__, error);
+	if (0 != error) {
+		dev_err(&spidev->dev, "%s, spi_sync error:%d.\n", __func__, error);
+	}
 
-	printk("fpc hwid: 0x%x,  0x%x,  0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x,0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n",
-				temp_buffer[0], temp_buffer[1], temp_buffer[2], temp_buffer[3],
-				temp_buffer[4], temp_buffer[5],
-				temp_buffer[6], temp_buffer[7],
-				temp_buffer[8], temp_buffer[9],
-				temp_buffer[10], temp_buffer[11],
-				temp_buffer[12], temp_buffer[13],
-				temp_buffer[14], temp_buffer[15]);
+	dev_info(&spidev->dev, "fpc hwid: 0x%x,  0x%x,  0x%x, 0x%x\n",
+				temp_buffer[0], temp_buffer[1], temp_buffer[2], temp_buffer[3]);
 
 	if (temp_buffer[1] == 0x10) {
 		if (temp_buffer[2] == 0x12 ||
@@ -319,8 +315,7 @@ int fpc1020_read_hwid(struct spi_device *spidev)
 
 }
 #endif
-/* MMI_STOPSHIP <FPC driver>: Temp extern gspidev */
-struct spi_device* gspidev;
+
 static int mtk6797_probe(struct spi_device *spidev)
 {
 	struct device *dev = &spidev->dev;
@@ -333,8 +328,6 @@ static int mtk6797_probe(struct spi_device *spidev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-/* MMI_STOPSHIP <FPC driver>: Temp extern gspidev */
-        gspidev = spidev;
 	spidev->dev.of_node = of_find_compatible_node(NULL,
 						NULL, "mediatek,fingerprint");
 	if (!spidev->dev.of_node) {
@@ -384,7 +377,7 @@ static int mtk6797_probe(struct spi_device *spidev)
 	}
 
 	node_eint = of_find_compatible_node(NULL, NULL,
-				"mediatek,fpsensor_fp_eint");
+				"mediatek,fingerprint");
 	if (node_eint == NULL) {
 		rc = -EINVAL;
 		dev_err(fpc->dev, "cannot find node_eint rc = %d.\n", rc);
