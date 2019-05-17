@@ -285,6 +285,7 @@ static kal_uint32 streaming_control(kal_bool enable)
 static void write_shutter(kal_uint32 shutter)
 {
 	kal_uint16 realtime_fps = 0;
+	int i = 0;
 
 	spin_lock(&imgsensor_drv_lock);
 	if (shutter > imgsensor.min_frame_length - imgsensor_info.margin)
@@ -349,7 +350,7 @@ static void write_shutter(kal_uint32 shutter)
 
 		write_cmos_sensor_8(0x0100, 0x01);
 
-		for (int i = 0; i < timeout; i++) {
+		for (i = 0; i < timeout; i++) {
 			mdelay(10);
 			framecnt = read_cmos_sensor_8(0x0005);
 			if ( framecnt == 0xFF) {
