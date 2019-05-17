@@ -765,6 +765,7 @@ static int AF_remove(struct platform_device *pdev)
 
 static int AF_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
+       AFRegulatorCtrl(2);      //suspend close AF power
 	return 0;
 }
 
