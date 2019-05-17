@@ -298,11 +298,22 @@ static void probe_death_signal(void *ignore, int sig, struct siginfo *info,
 			return;
 
 		state = task->state ? __ffs(task->state) + 1 : 0;
+		// [JSTINNO_SRC xiaoyan.yu,  modify for get extra uid info, DATE20190516-01 START
+		#ifdef JOURNEY_DEBUG_ENHANCED
+		pr_debug("[signal][%d-%d:%s]send %s sig %d to[%d:%s:%c]\n",
+			 current->pid, from_kuid(&init_user_ns, current_cred()->uid), current->comm,
+			 (sig == SIGCONT) ? "continue" : "stop",
+			 sig, task->pid, task->comm,
+			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+		#else
+		/*Original source code*/
 		pr_debug("[signal][%d:%s]send %s sig %d to[%d:%s:%c]\n",
 			 current->pid, current->comm,
 			 (sig == SIGCONT) ? "continue" : "stop",
 			 sig, task->pid, task->comm,
 			 state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+		#endif/*JOURNEY_DEBUG_ENHANCED*/
+		// JSTINNO_SRC xiaoyan.yu, DATE20190516-01 END]
 	}
 }
 
