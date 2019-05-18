@@ -421,7 +421,7 @@ static ssize_t als_store_active(struct device *dev,
 		return err;
 	}
 
-	pr_debug("als_store_active buf=%s\n", buf);
+	printk("als_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	if (handle == ID_LIGHT) {
 		if (en) {
@@ -717,7 +717,7 @@ static ssize_t ps_store_active(struct device *dev,
 	struct alsps_context *cxt = alsps_context_obj;
 	int err = 0;
 
-	pr_debug("ps_store_active buf=%s\n", buf);
+	printk("ps_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 
 	if (!strncmp(buf, "1", 1))
