@@ -5636,6 +5636,11 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
 #ifdef CONFIG_MTK_SCHED_TRACERS
 	bool do_drop_cache = false;
 #endif
+#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+    bool do_reduce_size = false;
+    bool do_reduce_default = false;
+    #define MONITOR_TRACE_BUF_SIZE_DEFAULT 4194304UL // this is the default value from monitor
+#endif
 	int ret;
 
 	ret = kstrtoul_from_user(ubuf, cnt, 10, &val);
@@ -5655,8 +5660,25 @@ resize_ring_buffer:
 		do_drop_cache = true;
 		/* drop_pagecache(); */
 		goto resize_ring_buffer;
-	} else if (ret < 0)
+	} else if (ret < 0) {
+#ifdef JOURNEY_FEATURE_SYSTEM_ENHANCED
+        // CJ:PBGAM-1329 , in 2G device, buffer 16000K (*8) is too large. so let try to reduce it. better than atrace failed.
+        if(ret == -ENOMEM && !do_reduce_size) {
+            pr_warning("tracing_entries_write -> tracing_resize_ring_buffer size %ld reduce to half %ld\n", val,val / 2);
+            do_reduce_size = true;
+            val = val / 2;
+            goto resize_ring_buffer;
+        } else if(ret == -ENOMEM && !do_reduce_default){
+            pr_warning("tracing_entries_write -> tracing_resize_ring_buffer size %ld reduce to default %ld\n", val, MONITOR_TRACE_BUF_SIZE_DEFAULT);
+            do_reduce_default = true;
+            val = MONITOR_TRACE_BUF_SIZE_DEFAULT; // this is the default value from monitor
+            goto resize_ring_buffer;
+        } else {
+            pr_warning("tracing_resize_ring_buffer size %ld return %d\n", val, ret);
+        }
+#endif
 		return ret;
+    }
 #else
 	ret = tracing_resize_ring_buffer(tr, val, tracing_get_cpu(inode));
 	if (ret < 0)
