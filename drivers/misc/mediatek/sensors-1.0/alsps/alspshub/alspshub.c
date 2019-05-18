@@ -400,6 +400,7 @@ static int alshub_factory_enable_sensor(bool enable_disable,
 	int err = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
+    printk("%s(%d, %lld)\n", __func__, enable_disable, sample_periods_ms);
 	if (enable_disable == true)
 		WRITE_ONCE(obj->als_factory_enable, true);
 	else
@@ -477,6 +478,8 @@ static int pshub_factory_enable_sensor(bool enable_disable,
 {
 	int err = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
+    
+    printk("%s(%d, %lld)\n", __func__, enable_disable, sample_periods_ms);
 
 	if (enable_disable == true) {
 		err = sensor_set_delay_to_hub(ID_PROXIMITY, sample_periods_ms);
@@ -639,7 +642,7 @@ static int als_enable_nodata(int en)
 	int res = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
-	pr_debug("obj_ipi_data als enable value = %d\n", en);
+	printk("obj_ipi_data als enable value = %d\n", en);
 
 	if (en == true)
 		WRITE_ONCE(obj->als_android_enable, true);
@@ -761,7 +764,7 @@ static int ps_enable_nodata(int en)
 	int res = 0;
 	struct alspshub_ipi_data *obj = obj_ipi_data;
 
-	pr_debug("obj_ipi_data als enable value = %d\n", en);
+	printk("obj_ipi_data ps enable value = %d\n", en);
 	if (en == true)
 		WRITE_ONCE(obj->ps_android_enable, true);
 	else
@@ -769,7 +772,7 @@ static int ps_enable_nodata(int en)
 
 	res = sensor_enable_to_hub(ID_PROXIMITY, en);
 	if (res < 0) {
-		pr_err("als_enable_nodata is failed!!\n");
+		pr_err("ps_enable_nodata is failed!!\n");
 		return -1;
 	}
 
