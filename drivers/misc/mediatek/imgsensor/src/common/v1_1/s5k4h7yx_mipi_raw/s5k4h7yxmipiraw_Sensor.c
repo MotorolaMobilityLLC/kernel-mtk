@@ -51,7 +51,6 @@
 #define PFX "s5k4h7yx_camera_sensor"
 
 #define LOG_1 LOG_INF("s5k4H7yx,MIPI 4LANE\n")
-#define LOG_2 LOG_INF("preview 2664*1500@30fps,888Mbps/lane; video 5328*3000@30fps,1390Mbps/lane; capture 16M@30fps,1390Mbps/lane\n")
 #define LOG_INF(format, args...)    pr_debug(PFX "[%s] " format, __func__, ##args)
 #define LOGE(format, args...)    pr_err(PFX "[%s] " format, __func__, ##args)
 
@@ -899,6 +898,7 @@ typedef struct s5k4h7yx_otp_data {
 	unsigned char gloden[8];
 	unsigned char unint[8];
 	unsigned char data[128];
+	unsigned char lscdata[1871];
 } S5K4H7YX_OTP_DATA;
 
 S5K4H7YX_OTP_DATA s5k4h7yx_otp_data;
@@ -923,77 +923,114 @@ static struct s5k4h7yx_lsc_info_t *lsc_info_group = NULL;
 static int s5k4h7yx_read_otp_page_data(int page, int start_add, unsigned char *Buff, int size)
 {
 	unsigned short stram_flag = 0;
+	unsigned short val = 0;
 	int i = 0;
 	if (NULL == Buff) return 0;
 
 	stram_flag = read_cmos_sensor_8(0x0100); //3
 	if (stram_flag == 0) {
 		write_cmos_sensor_8(0x0100,0x01);   //3
+		mdelay(50);
 	}
 	write_cmos_sensor_8(0x0a02,page);    //3
+	write_cmos_sensor_8(0x3b41,0x01);
+	write_cmos_sensor_8(0x3b42,0x03);
+	write_cmos_sensor_8(0x3b40,0x01);
 	write_cmos_sensor_16(0x0a00,0x0100); //4 otp enable and read start
-	mdelay(50);
+
+	for (i = 0; i <= 100; i++)
+	{
+		mdelay(1);
+		val = read_cmos_sensor_8(0x0A01);
+		if (val == 0x01)
+			break;
+	}
+
 	for ( i = 0; i < size; i++ ) {
 		Buff[i] = read_cmos_sensor_8(start_add+i); //3
-		//LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
-		mdelay(3);
+		LOG_INF("+++4h7 1 cur page = %d, Buff[%d] = 0x%x\n",page,i,Buff[i]);
 	}
-	//Sleep(100);
-	mdelay(50);
+	write_cmos_sensor_16(0x0a00,0x0400);
 	write_cmos_sensor_16(0x0a00,0x0000); //4 //otp enable and read end
 
 	return 0;
 }
 
-static int s5k4h7yx_get_vaild_data_page(void)
+static bool s5k4h7yx_read_valid_data(int page, int start_add)
 {
 	unsigned char page_flag[2] = {0};
-	unsigned short page = 21;
-	//LOG_INF("read flag .....");
-	for (page = 21;page <= 29; page+=4) {
-		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[0],1);
-		s5k4h7yx_read_otp_page_data(page,0x0a04,&page_flag[1],1);
-		LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
-		mdelay(2);
-		if (page_flag[0] != 0 || page_flag[1] != 0) {
-			LOGE("+++4h7 3 get vaild page success = %d\n",page);
-			s5k4h7yx_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
-			//LOGE("+++4h7====== s5k4h7yx_otp_data.page_flag = 0x%x\n",s5k4h7yx_otp_data.page_flag);
-			break;
+	s5k4h7yx_read_otp_page_data(page,start_add,&page_flag[0],1);
+	s5k4h7yx_read_otp_page_data(page,start_add,&page_flag[1],1);
+	LOG_INF("+++4h7 2 page = %d,page_flag0 = 0x%x,f1 = 0x%x\n",page,page_flag[0],page_flag[1]);
+	if (page_flag[0] != 0 || page_flag[1] != 0) {
+		//LOGE("+++4h7 3 get vaild page success = %d\n",page);
+		s5k4h7yx_otp_data.page_flag = ((page_flag[0] > page_flag[1])? page_flag[0] : page_flag[1]);
+		//LOGE("+++4h7====== s5k4h7yx_otp_data.page_flag = 0x%x\n",s5k4h7yx_otp_data.page_flag);
+		if (!((getbit(s5k4h7yx_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_otp_data.page_flag,7)))) {
+			LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_otp_data.page_flag,7),getbit(s5k4h7yx_otp_data.page_flag,6));
+			LOGE("+++4h7 error data not valid\n");
+			return false;
+		}else{
+			return true;
 		}
-		memset(page_flag,0,sizeof(page_flag));
+	}else{
+		s5k4h7yx_otp_data.page_flag = 0;
+		return false;
+	}
+}
+
+static int s5k4h7yx_get_vaild_data_page(int start_add)
+{
+	unsigned short page = 21;
+	LOG_INF("read flag .....");
+	for (page = 21;page <= 29; page+=4) {
+		if(s5k4h7yx_read_valid_data(page, start_add)){
+			break;
+		}else if (29 == page){
+			return 0;
+		}
 	}
 
 	return page;
 }
 
+static int s5k4h7yx_get_vaild_lsc_data_page(int start_add)
+{
+	unsigned short page = 33;
+	LOG_INF("read flag .....");
+	for (page = 33;page <= 93; page+=30) {
+		if(s5k4h7yx_read_valid_data(page, start_add)){
+			break;
+		}else if (93 == page){
+			return 0;
+		}
+	}
+
+	return page;
+}
 static int s5k4h7yx_read_data_kernel(void)
 {
 	unsigned int page = 0;
 	unsigned int i = 0;
 	unsigned int sum = 0;
 
-	if (!s5k4h7yx_get_vaild_data_page())
-		return -1;
-	if (!((getbit(s5k4h7yx_otp_data.page_flag,6)) && !(getbit(s5k4h7yx_otp_data.page_flag,7)))) {
-	//if ((s5k4h7yx_otp_data.page_flag & FLAG_VALUE_PAGE) != FLAG_VALUE_PAGE) {
-		LOGE("+++4h7 error data not valid\n");
-		return -1;
-	}
-	LOG_INF("valid bit 7 = %d,bit 6 = %d\n",getbit(s5k4h7yx_otp_data.page_flag,7),getbit(s5k4h7yx_otp_data.page_flag,6));
+	page = s5k4h7yx_get_vaild_data_page(0x0a04);
+	if(!page) return -1;
+
 	//read module id
-	for (page = 21; page <= 29; page += 4) {
-		s5k4h7yx_read_otp_page_data(page, S5K4H7YX_OFILM_MODULE_ID_START_ADD, s5k4h7yx_otp_data.module_id, S5K4H7YX_OFILM_MODULE_ID_LENGTH);
-		for (i = 0;i < S5K4H7YX_OFILM_MODULE_ID_LENGTH ; i++ ) {
-			LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_otp_data.module_id[i]);
-			sum += s5k4h7yx_otp_data.module_id[i];
-		}
-		if (sum)
-			break;
+
+	s5k4h7yx_read_otp_page_data(page, S5K4H7YX_OFILM_MODULE_ID_START_ADD, s5k4h7yx_otp_data.module_id, S5K4H7YX_OFILM_MODULE_ID_LENGTH);
+	for (i = 0;i < S5K4H7YX_OFILM_MODULE_ID_LENGTH ; i++ ) {
+		LOG_INF ("+++4h7 6 page = %d modulue_id[%d] = 0x%x",page,i,s5k4h7yx_otp_data.module_id[i]);
+		sum += s5k4h7yx_otp_data.module_id[i];
 	}
+	if (!sum) return -1;
 
 	s5k4h7yx_otp_data.moduleid = ((s5k4h7yx_otp_data.module_id[0] << 8)& 0xFF00) | (s5k4h7yx_otp_data.module_id[1] & 0x00FF);
 	LOG_INF("s5k4h7yx_otp_data.moduleid= 0x%x",s5k4h7yx_otp_data.moduleid);
+
+	page = s5k4h7yx_get_vaild_data_page(0x0a3c);
+	if(!page) return -1;
 
 	//read all awb
 	s5k4h7yx_read_otp_page_data(page, 0x0a3c, s5k4h7yx_otp_data.data,8);
@@ -1003,6 +1040,17 @@ static int s5k4h7yx_read_data_kernel(void)
 	s5k4h7yx_read_otp_page_data(page + 1, 0x0a04, s5k4h7yx_otp_data.gloden + 7, 1);
 	s5k4h7yx_read_otp_page_data(page + 1, 0x0a19, s5k4h7yx_otp_data.unint, 8);
 
+	page = s5k4h7yx_get_vaild_lsc_data_page(0x0a04);
+	if(!page) return -1;
+
+	for (i = 0; i < 30 ; i++ ) {
+		if (i == 29) {
+			s5k4h7yx_read_otp_page_data(page + i, 0x0a04, s5k4h7yx_otp_data.lscdata + (64*i), 15);
+		} else {
+			s5k4h7yx_read_otp_page_data(page + i, 0x0a04, s5k4h7yx_otp_data.lscdata + (64*i), 64);
+		}
+
+	}
 	return 0;
 }
 
@@ -1039,6 +1087,12 @@ unsigned int S5K4H7_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigne
 		} else {
 			memcpy(data,(s5k4h7yx_otp_data.unint), size);
 			LOGE("read unint");
+		}
+	} else if (size >=1868){
+		if (addr == 0x0a04) {
+			memcpy(data, (s5k4h7yx_otp_data.lscdata), size);
+		}else {
+			memcpy(data, (s5k4h7yx_otp_data.lscdata + 1), size);
 		}
 	} else { //read all awb checksum
 		memcpy(data, (s5k4h7yx_otp_data.data), size);

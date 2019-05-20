@@ -925,6 +925,7 @@ typedef struct s5k4h7qt_wide_otp_data {
 	unsigned char gloden[8];
 	unsigned char unint[8];
 	unsigned char data[128];
+	unsigned char lscdata[1871];
 } S5K4H7QT_WIDE_OTP_DATA;
 
 S5K4H7QT_WIDE_OTP_DATA s5k4h7qt_wide_otp_data;
@@ -964,8 +965,8 @@ static int s5k4h7qt_wide_read_otp_page_data(int page, int start_add, unsigned ch
 	stram_flag = read_cmos_sensor_8(0x0100); //3
 	if (stram_flag == 0) {
 		write_cmos_sensor_8(0x0100,0x01);   //3
+		mdelay(50);
 	}
-	mdelay(50);
 	write_cmos_sensor_8(0x0a02,page);    //3
 	write_cmos_sensor_8(0x3b41,0x01);
 	write_cmos_sensor_8(0x3b42,0x03);
@@ -1028,6 +1029,20 @@ static int s5k4h7qt_wide_get_vaild_data_page(int start_add)
 	return page;
 }
 
+static int s5k4h7qt_wide_get_vaild_lsc_data_page(int start_add)
+{
+	unsigned short page = 33;
+	LOG_INF("read flag .....");
+	for (page = 33;page <= 93; page+=30) {
+		if(s5k4h7qt_wide_read_valid_data(page, start_add)){
+			break;
+		}else if (93 == page){
+			return 0;
+		}
+	}
+
+	return page;
+}
 static int s5k4h7qt_wide_read_data_kernel(void)
 {
 	unsigned int page = 0;
@@ -1060,6 +1075,17 @@ static int s5k4h7qt_wide_read_data_kernel(void)
 	s5k4h7qt_wide_read_otp_page_data(page + 1, 0x0a04, s5k4h7qt_wide_otp_data.gloden + 7, 1);
 	s5k4h7qt_wide_read_otp_page_data(page + 1, 0x0a19, s5k4h7qt_wide_otp_data.unint, 8);
 
+	page = s5k4h7qt_wide_get_vaild_lsc_data_page(0x0a04);
+	if(!page) return -1;
+
+	for (i = 0; i < 30 ; i++ ) {
+		if (i == 29) {
+			s5k4h7qt_wide_read_otp_page_data(page + i, 0x0a04, s5k4h7qt_wide_otp_data.lscdata + (64*i), 15);
+		} else {
+			s5k4h7qt_wide_read_otp_page_data(page + i, 0x0a04, s5k4h7qt_wide_otp_data.lscdata + (64*i), 64);
+		}
+
+	}
 	return 0;
 }
 
@@ -1096,6 +1122,12 @@ unsigned int S5K4H7QT_WIDE_OTP_Read_Data(unsigned int addr,unsigned char *data, 
 		} else {
 			memcpy(data,(s5k4h7qt_wide_otp_data.unint), size);
 			LOGE("read unint");
+		}
+	} else if (size >=1868){
+		if (addr == 0x0a04) {
+			memcpy(data, (s5k4h7qt_wide_otp_data.lscdata), size);
+		}else {
+			memcpy(data, (s5k4h7qt_wide_otp_data.lscdata + 1), size);
 		}
 	} else { //read all awb checksum
 		memcpy(data, (s5k4h7qt_wide_otp_data.data), size);
