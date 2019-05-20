@@ -644,3 +644,6 @@
 	};
 };
 
+&disp_aal0 {
+	aal_support = <0>;
+};
