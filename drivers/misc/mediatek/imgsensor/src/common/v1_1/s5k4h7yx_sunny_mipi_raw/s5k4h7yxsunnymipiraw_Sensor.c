@@ -1249,55 +1249,37 @@ static uint8_t mot_eeprom_util_check_awb_limits(awb_t unit, awb_t golden)
 }
 
 static uint8_t mot_eeprom_util_calculate_awb_factors_limit(awb_t unit, awb_t golden,
-		uint16_t black_level, awb_factors_t *result, awb_limit_t limit)
+		awb_limit_t limit)
 {
-	float gr_gb_avg;
-	float rg;
-	float bg;
-	float golden_gr_gb_avg;
-	float golden_rg, golden_bg;
-	float r_g_golden_min;
-	float r_g_golden_max;
-	float b_g_golden_min;
-	float b_g_golden_max;
+	uint32_t r_g;
+	uint32_t b_g;
+	uint32_t golden_rg, golden_bg;
+	uint32_t r_g_golden_min;
+	uint32_t r_g_golden_max;
+	uint32_t b_g_golden_min;
+	uint32_t b_g_golden_max;
 
-	unit.r -= black_level;
-	unit.gr -= black_level;
-	unit.gb -= black_level;
-	unit.b -= black_level;
+	r_g = unit.r_g * 1000;
+	b_g = unit.b_g*1000;
 
-	gr_gb_avg = (unit.gr + unit.gb) / 2.0f;
-	rg = unit.r / gr_gb_avg;
-	bg = unit.b / gr_gb_avg;
+	golden_rg = golden.r_g* 1000;
+	golden_bg = golden.b_g* 1000;
 
-	golden.r -= black_level;
-	golden.gr -= black_level;
-	golden.gb -= black_level;
-	golden.b -= black_level;
-
-	golden_gr_gb_avg = (golden.gr + golden.gb) / 2.0f;
-	golden_rg = golden.r / golden_gr_gb_avg;
-	golden_bg = golden.b / golden_gr_gb_avg;
-
-	r_g_golden_min = (float)(limit.r_g_golden_min) / 1000;
-	r_g_golden_max = (float)(limit.r_g_golden_max) / 1000;
-	b_g_golden_min = (float)(limit.b_g_golden_min) / 1000;
-	b_g_golden_max = (float)(limit.b_g_golden_max) / 1000;
-
-	if (rg < (golden_rg - r_g_golden_min) || rg > (golden_rg + r_g_golden_max)) {
+	r_g_golden_min = limit.r_g_golden_min*16384;
+	r_g_golden_max = limit.r_g_golden_max*16384;
+	b_g_golden_min = limit.b_g_golden_min*16384;
+	b_g_golden_max = limit.b_g_golden_max*16384;
+	LOG_INF("rg = %d, bg=%d,rgmin=%d,bgmax =%d\n",r_g,b_g,r_g_golden_min,r_g_golden_max);
+	LOG_INF("grg = %d, gbg=%d,bgmin=%d,bgmax =%d\n",golden_rg,golden_bg,b_g_golden_min,b_g_golden_max);
+	if (r_g < (golden_rg - r_g_golden_min) || r_g > (golden_rg + r_g_golden_max)) {
 		LOG_INF("Final RG calibration factors out of range!");
 		return 1;
 	}
 
-	if (bg < (golden_bg - b_g_golden_min) || bg > (golden_bg + b_g_golden_max)) {
+	if (b_g < (golden_bg - b_g_golden_min) || b_g > (golden_bg + b_g_golden_max)) {
 		LOG_INF("Final BG calibration factors out of range!");
 		return 1;
 	}
-
-	result->r_over_g = rg / golden_rg;
-	result->b_over_g = bg / golden_bg;
-	result->gr_over_gb = (float)unit.gr / unit.gb;
-
 	return 0;
 }
 
@@ -1341,7 +1323,6 @@ static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
 	awb_t unit;
 	awb_t golden;
 	awb_limit_t golden_limit;
-	awb_factors_t factors;
 	uint8_t *crc_start;
 
 	LOG_INF("Check AWB Data Enter");
@@ -1392,12 +1373,17 @@ static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
 	unit.gr = to_uint16_swap(awb_info_group->awb_src_1_gr);
 	unit.gb = to_uint16_swap(awb_info_group->awb_src_1_gb);
 	unit.b = to_uint16_swap(awb_info_group->awb_src_1_b);
-
+	unit.r_g = to_uint16_swap(awb_info_group->awb_src_1_rg_ratio);
+	unit.b_g = to_uint16_swap(awb_info_group->awb_src_1_bg_ratio);
+	unit.gr_gb = to_uint16_swap(awb_info_group->awb_src_1_gr_gb_ratio);
+	
 	golden.r = to_uint16_swap(awb_info_group->awb_src_1_golden_r);
 	golden.gr = to_uint16_swap(awb_info_group->awb_src_1_golden_gr);
 	golden.gb = to_uint16_swap(awb_info_group->awb_src_1_golden_gb);
 	golden.b = to_uint16_swap(awb_info_group->awb_src_1_golden_b);
-
+	golden.r_g = to_uint16_swap(awb_info_group->awb_src_1_golden_rg_ratio);
+	golden.b_g = to_uint16_swap(awb_info_group->awb_src_1_golden_bg_ratio);
+	golden.gr_gb = to_uint16_swap(awb_info_group->awb_src_1_golden_gr_gb_ratio);
 	if (mot_eeprom_util_check_awb_limits(unit, golden)) {
 		LOG_INF("AWB CRC limit Fails!");
 		return LIMIT_FAILURE;
@@ -1408,8 +1394,7 @@ static calibration_status_t s5k4h7yx_sunny_check_awb_data(void *data)
 	golden_limit.b_g_golden_min = light_source_group->awb_b_g_golden_min_limit[0];
 	golden_limit.b_g_golden_max = light_source_group->awb_b_g_golden_max_limit[0];
 
-	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden, BLACK_LEVEL_SAMSUNG_10B_64,
-		&factors, golden_limit)) {
+	if (mot_eeprom_util_calculate_awb_factors_limit(unit, golden,golden_limit)) {
 		LOG_INF("AWB CRC factor limit Fails!");
 		return LIMIT_FAILURE;
 	}

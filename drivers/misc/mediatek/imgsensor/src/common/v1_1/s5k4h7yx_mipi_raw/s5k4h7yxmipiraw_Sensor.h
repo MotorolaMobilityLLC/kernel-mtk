@@ -278,6 +278,9 @@ typedef struct {
 	uint16_t gr;
 	uint16_t gb;
 	uint16_t b;
+	uint16_t r_g;
+	uint16_t b_g;
+	uint16_t gr_gb;
 } awb_t;
 
 typedef struct {
