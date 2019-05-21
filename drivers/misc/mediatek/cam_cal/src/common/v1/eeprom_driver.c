@@ -59,9 +59,6 @@ extern unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data
 extern unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
 #endif
 
-#if defined (CONFIG_CAMERA_PROJECT_BINGO) || defined (CONFIG_CAMERA_PROJECT_LIMA)
-extern unsigned int S5K4H7QT_WIDE_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
-#endif
 /*Note: Must Mapping to IHalSensor.h*/
 enum {
 	SENSOR_DEV_NONE = 0x00,
