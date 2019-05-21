@@ -66,7 +66,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.checksum_value = 0xf16e8197,
 
 	.pre = {
-	.pclk = 280000000,              /* record different mode's pclk */
+	.pclk = 292800000,              /* record different mode's pclk */
 	.linelength = 3688,				/* record different mode's linelength */
 	.framelength = 2530,         /* record different mode's framelength */
 		.startx = 0,					/* record different mode's startx of grabwindow */
@@ -77,10 +77,10 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 28000000,
+		.mipi_pixel_rate = 292800000,
 	},
 	.cap = {
-		.pclk = 280000000,
+		.pclk = 292800000,
 		.linelength = 3688,
 		.framelength = 2530,
 		.startx = 0,
@@ -89,10 +89,10 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 280000000,
+		.mipi_pixel_rate = 292800000,
 	},
 	.normal_video = {	/* Full 30fps */
-		.pclk = 280000000,
+		.pclk = 292800000,
 		.linelength = 3688,
 		.framelength = 2530,
 		.startx = 0,
@@ -101,10 +101,10 @@ static imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 2448,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.max_framerate = 300,
-		.mipi_pixel_rate = 280000000,
+		.mipi_pixel_rate = 292800000,
 	},
 	.slim_video = {
-		.pclk = 280000000,				/* record different mode's pclk */
+		.pclk = 292800000,				/* record different mode's pclk */
 		.linelength = 3688,			/* record different mode's linelength */
 		.framelength = 2530,		   /* record different mode's framelength */
 		.startx = 0,					/* record different mode's startx of grabwindow */
@@ -115,8 +115,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 280000000,
-
+		.mipi_pixel_rate = 292800000,
 	},
 	.margin = 4,
 	.min_shutter = 4,
@@ -641,7 +640,7 @@ static void preview_setting(void)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XAF);
+	write_cmos_sensor_8(0X030F, 0XB7);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -709,7 +708,7 @@ static void capture_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XAF);
+	write_cmos_sensor_8(0X030F, 0XB7);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -782,7 +781,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XAF);
+	write_cmos_sensor_8(0X030F, 0XB7);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
@@ -848,7 +847,7 @@ static void slim_video_setting(void)
 	write_cmos_sensor_8(0X0307, 0X8C);
 	write_cmos_sensor_8(0X030D, 0X06);
 	write_cmos_sensor_8(0X030E, 0X00);
-	write_cmos_sensor_8(0X030F, 0XAF);
+	write_cmos_sensor_8(0X030F, 0XB7);
 	write_cmos_sensor_8(0X3C1F, 0X00);
 	write_cmos_sensor_8(0X3C17, 0X00);
 	write_cmos_sensor_8(0X3C1C, 0X05);
