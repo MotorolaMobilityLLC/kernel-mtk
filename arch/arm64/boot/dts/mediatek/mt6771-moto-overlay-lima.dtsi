@@ -341,6 +341,7 @@
 	apple_1_0a_charger_current = <650000>;
 	apple_2_1a_charger_current = <800000>;
 	ta_ac_charger_current = <2000000>;
+	typec_limit_aicr = <2000000>;
 
 	/* battery temperature protection */
 	enable_min_charge_temperature;
