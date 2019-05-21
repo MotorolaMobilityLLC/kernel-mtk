@@ -2856,6 +2856,15 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 		info->data.max_charging_time = MAX_CHARGING_TIME;
 	}
 
+	if (of_property_read_u32(np, "typec_limit_aicr", &val) >= 0) {
+		info->chg1_data.typec_input_current_limit = val;
+		chr_debug("%s: typec_input_current_limit: %d\n", __func__,
+			info->chg1_data.typec_input_current_limit);
+	} else {
+		chr_err("Dont limit type C aicr\n");
+		info->chg1_data.typec_input_current_limit = -1;
+	}
+
 	chr_err("algorithm name:%s\n", info->algorithm_name);
 
 	return 0;

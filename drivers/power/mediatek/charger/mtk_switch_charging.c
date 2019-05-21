@@ -158,10 +158,16 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n", __func__,
 			vbus, cur, idx, info->data.pd_charger_current);
 	} else if (is_typec_adapter(info)) {
-
 		if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 3000) {
-			pdata->input_current_limit = 3000000;
+			if (pdata->typec_input_current_limit > 1500000
+				&& pdata->typec_input_current_limit < 3000000)
+				pdata->input_current_limit =
+					pdata->typec_input_current_limit;
+			else
+				pdata->input_current_limit = 3000000;
+
 			pdata->charging_current_limit = 3000000;
+			chr_err("type-C:aicr:%d\n", pdata->input_current_limit);
 		} else if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 1500) {
 			pdata->input_current_limit = 1500000;
 			pdata->charging_current_limit = 2000000;
