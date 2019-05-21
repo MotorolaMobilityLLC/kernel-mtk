@@ -283,6 +283,7 @@ struct charger_data {
 	int junction_temp_max;
 	int moto_chg_tcmd_ichg;
 	int moto_chg_tcmd_ibat;
+	int typec_input_current_limit;
 };
 
 struct mmi_temp_zone {
