@@ -5668,7 +5668,7 @@ resize_ring_buffer:
             do_reduce_size = true;
             val = val / 2;
             goto resize_ring_buffer;
-        } else if(ret == -ENOMEM && !do_reduce_default){
+        } else if(ret == -ENOMEM && !do_reduce_default && val >= MONITOR_TRACE_BUF_SIZE_DEFAULT){
             pr_warning("tracing_entries_write -> tracing_resize_ring_buffer size %ld reduce to default %ld\n", val, MONITOR_TRACE_BUF_SIZE_DEFAULT);
             do_reduce_default = true;
             val = MONITOR_TRACE_BUF_SIZE_DEFAULT; // this is the default value from monitor
