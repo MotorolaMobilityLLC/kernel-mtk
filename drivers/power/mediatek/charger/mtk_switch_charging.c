@@ -143,6 +143,20 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	if (mtk_is_TA_support_pd_pps(info)) {
 		pdata->input_current_limit = info->data.pe40_single_charger_input_current;
 		pdata->charging_current_limit = info->data.pe40_single_charger_current;
+	} else if (mtk_pdc_check_charger(info) == true) {
+		int vbus = 0, cur = 0, idx = 0;
+
+		mtk_pdc_get_setting(info, &vbus, &cur, &idx);
+		if (idx != -1) {
+		pdata->input_current_limit = cur * 1000;
+		pdata->charging_current_limit = info->data.pd_charger_current;
+			mtk_pdc_setup(info, idx);
+		} else {
+			pdata->input_current_limit = info->data.usb_charger_current_configured;
+			pdata->charging_current_limit = info->data.usb_charger_current_configured;
+		}
+		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n", __func__,
+			vbus, cur, idx, info->data.pd_charger_current);
 	} else if (is_typec_adapter(info)) {
 
 		if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) == 3000) {
@@ -159,21 +173,6 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 		chr_err("type-C:%d current:%d\n",
 			info->pd_type, tcpm_inquire_typec_remote_rp_curr(info->tcpc));
-	} else if (mtk_pdc_check_charger(info) == true) {
-		int vbus = 0, cur = 0, idx = 0;
-
-		mtk_pdc_get_setting(info, &vbus, &cur, &idx);
-		if (idx != -1) {
-		pdata->input_current_limit = cur * 1000;
-		pdata->charging_current_limit = info->data.pd_charger_current;
-			mtk_pdc_setup(info, idx);
-		} else {
-			pdata->input_current_limit = info->data.usb_charger_current_configured;
-			pdata->charging_current_limit = info->data.usb_charger_current_configured;
-		}
-		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n", __func__,
-			vbus, cur, idx, info->data.pd_charger_current);
-
 	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
 			if (info->usb_state == USB_SUSPEND)
