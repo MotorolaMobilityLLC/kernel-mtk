@@ -167,24 +167,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			info->data.pe40_single_charger_input_current;
 		pdata->charging_current_limit =
 			info->data.pe40_single_charger_current;
-	} else if (is_typec_adapter(info)) {
-		if (adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL)
-			== 3000) {
-			pdata->input_current_limit = 3000000;
-			pdata->charging_current_limit = 3000000;
-		} else if (adapter_dev_get_property(info->pd_adapter,
-			TYPEC_RP_LEVEL) == 1500) {
-			pdata->input_current_limit = 1500000;
-			pdata->charging_current_limit = 2000000;
-		} else {
-			chr_err("type-C: inquire rp error\n");
-			pdata->input_current_limit = 500000;
-			pdata->charging_current_limit = 500000;
-		}
 
-		chr_err("type-C:%d current:%d\n",
-			info->pd_type,
-			adapter_dev_get_property(info->pd_adapter,
 				TYPEC_RP_LEVEL));
 	} else if (mtk_pdc_check_charger(info)) {
 		int vbus = 0, cur = 0, idx = 0;
@@ -204,6 +187,25 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		chr_err("[%s]vbus:%d input_cur:%d idx:%d current:%d\n",
 			__func__, vbus, cur, idx,
 			info->data.pd_charger_current);
+	} else if (is_typec_adapter(info)) {
+		if (adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL)
+			== 3000) {
+			pdata->input_current_limit = 3000000;
+			pdata->charging_current_limit = 3000000;
+		} else if (adapter_dev_get_property(info->pd_adapter,
+			TYPEC_RP_LEVEL) == 1500) {
+			pdata->input_current_limit = 1500000;
+			pdata->charging_current_limit = 2000000;
+		} else {
+			chr_err("type-C: inquire rp error\n");
+			pdata->input_current_limit = 500000;
+			pdata->charging_current_limit = 500000;
+		}
+
+		chr_err("type-C:%d current:%d\n",
+			info->pd_type,
+			adapter_dev_get_property(info->pd_adapter,
+				TYPEC_RP_LEVEL));
 
 	} else if (info->chr_type == STANDARD_HOST) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
