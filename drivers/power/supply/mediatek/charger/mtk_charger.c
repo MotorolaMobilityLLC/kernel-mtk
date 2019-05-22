@@ -899,8 +899,7 @@ bool is_typec_adapter(struct charger_manager *info)
 	int rp;
 
 	rp = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
-	if (info->pd_type == MTK_PD_CONNECT_TYPEC_ONLY_SNK &&
-			rp != 500 &&
+	if (rp > 500 &&
 			info->chr_type != STANDARD_HOST &&
 			info->chr_type != CHARGING_HOST &&
 			mtk_pe20_get_is_connect(info) == false &&
