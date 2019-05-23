@@ -66,6 +66,9 @@
 #include "ufs.h"
 #include "ufshci.h"
 
+/* MTK PATCH */
+#include <linux/rpmb.h>
+
 #define UFSHCD "ufshcd"
 #define UFSHCD_DRIVER_VERSION "0.2"
 
@@ -174,17 +177,19 @@ struct ufshcd_lrb {
 	int task_tag;
 	u8 lun; /* UPIU LUN id field is only 8-bit wide */
 	bool intr_cmd;
-	ktime_t issue_time_stamp;
-	ktime_t complete_time_stamp;
 
+	/*
+	 * Use sched_clock instead of ktime_get to align with
+	 * kernel log timestamp and command history.
+	 */
+	u64 issue_time_stamp;
+	u64 complete_time_stamp; /* only in memory dump */
 	bool req_abort_skip;
 
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
 	u32 crypto_en;
 	u32 crypto_cfgid;
 	u32 crypto_dunl;
 	u32 crypto_dunu;
-#endif
 };
 
 /**
@@ -376,6 +381,34 @@ struct ufs_init_prefetch {
 	u32 icc_level;
 };
 
+#define UIC_ERR_REG_HIST_LENGTH 20
+/**
+ * struct ufs_uic_err_reg_hist - keeps history of uic errors
+ * @pos: index to indicate cyclic buffer position
+ * @reg: cyclic buffer for registers value
+ * @tstamp: cyclic buffer for time stamp
+ */
+struct ufs_uic_err_reg_hist {
+	int pos;
+	u32 reg[UIC_ERR_REG_HIST_LENGTH];
+	u64 tstamp[UIC_ERR_REG_HIST_LENGTH];
+};
+
+/**
+ * struct ufs_stats - keeps usage/err statistics
+ * @pa_err: tracks pa-uic errors
+ * @dl_err: tracks dl-uic errors
+ * @nl_err: tracks nl-uic errors
+ * @tl_err: tracks tl-uic errors
+ * @dme_err: tracks dme errors
+ */
+struct ufs_stats {
+	struct ufs_uic_err_reg_hist pa_err;
+	struct ufs_uic_err_reg_hist dl_err;
+	struct ufs_uic_err_reg_hist nl_err;
+	struct ufs_uic_err_reg_hist tl_err;
+	struct ufs_uic_err_reg_hist dme_err;
+};
 
 /* UFS Host Controller debug print bitmask */
 #define UFSHCD_DBG_PRINT_CLK_FREQ_EN		UFS_BIT(0)
@@ -453,6 +486,7 @@ enum ufs_crypto_state {
  * @clk_list_head: UFS host controller clocks list node head
  * @pwr_info: holds current power mode
  * @max_pwr_info: keeps the device max valid pwm
+ * @scsi_block_reqs_cnt: reference counting for scsi block requests
  */
 struct ufs_hba {
 	void __iomem *mmio_base;
@@ -589,12 +623,14 @@ struct ufs_hba {
 	/* Work Queues */
 	struct work_struct eh_work;
 	struct work_struct eeh_work;
+	struct work_struct rls_work;
 
 	/* HBA Errors */
 	u32 errors;
 	u32 uic_error;
 	u32 saved_err;
 	u32 saved_uic_err;
+	struct ufs_stats ufs_stats;
 
 	/* Device management request data */
 	struct ufs_dev_cmd dev_cmd;
@@ -670,6 +706,16 @@ struct ufs_hba {
 	int			latency_hist_enabled;
 	struct io_latency_state io_lat_read;
 	struct io_latency_state io_lat_write;
+	struct mutex rpmb_lock;
+
+	u16 wmanufacturerid;
+
+	atomic_t scsi_block_reqs_cnt;
+	bool restore_needed;
+
+	bool full_init_linereset;
+	bool force_host_reset;
+	unsigned long shutdown_in_prog;
 };
 
 /*
@@ -1021,5 +1067,21 @@ int   ufshcd_send_uic_cmd(struct ufs_hba *hba, struct uic_command *uic_cmd);
 int   ufshcd_uic_change_pwr_mode(struct ufs_hba *hba, u8 mode);
 int   ufshcd_uic_hibern8_exit(struct ufs_hba *hba);
 void  ufshcd_utrl_clear(struct ufs_hba *hba, u32 pos);
+void ufshcd_print_all_uic_err_hist(struct ufs_hba *hba,
+	struct seq_file *m, char **buff, unsigned long *size);
+int ufshcd_rpmb_security_out(struct scsi_device *sdev,
+			 struct rpmb_frame *frames, u32 cnt);
+int ufshcd_rpmb_security_in(struct scsi_device *sdev,
+			struct rpmb_frame *frames, u32 cnt);
 
+/**
+ * ufshcd_upiu_wlun_to_scsi_wlun - maps UPIU W-LUN id to SCSI W-LUN ID
+ * @scsi_lun: UPIU W-LUN id
+ *
+ * Returns SCSI W-LUN id
+ */
+static inline u16 ufshcd_upiu_wlun_to_scsi_wlun(u8 upiu_wlun_id)
+{
+	return (upiu_wlun_id & ~UFS_UPIU_WLUN_ID) | SCSI_W_LUN_BASE;
+}
 #endif /* End of Header */

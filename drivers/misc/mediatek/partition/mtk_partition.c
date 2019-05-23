@@ -13,6 +13,7 @@
 
 #include <linux/types.h>
 #include <linux/genhd.h>
+#include <mt-plat/mtk_boot.h>
 
 struct hd_struct *get_part(char *name)
 {
@@ -21,14 +22,17 @@ struct hd_struct *get_part(char *name)
 	struct disk_part_iter piter;
 	struct gendisk *disk;
 	struct hd_struct *part = NULL;
+	int boot_type;
 
 	if (!name)
 		return part;
-#if defined(CONFIG_MTK_UFS_SUPPORT)
-	devt = blk_lookup_devt("sdc", 0);
-#else
-	devt = blk_lookup_devt("mmcblk0", 0);
-#endif
+
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS)
+		devt = blk_lookup_devt("sdc", 0);
+	else
+		devt = blk_lookup_devt("mmcblk0", 0);
+
 	disk = get_gendisk(devt, &partno);
 
 	if (!disk || get_capacity(disk) == 0)

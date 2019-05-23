@@ -535,11 +535,21 @@ struct ufs_vreg {
 	int max_uA;
 };
 
+enum ufs_vreg_state {
+	UFS_REG_HBA_INIT,
+	UFS_REG_HBA_EXIT,
+	UFS_REG_SUSPEND_SET_LPM,
+	UFS_REG_SUSPEND_SET_HPM,
+	UFS_REG_RESUME_SET_LPM,
+	UFS_REG_RESUME_SET_HPM,
+};
+
 struct ufs_vreg_info {
 	struct ufs_vreg *vcc;
 	struct ufs_vreg *vccq;
 	struct ufs_vreg *vccq2;
 	struct ufs_vreg *vdd_hba;
+	enum ufs_vreg_state state;
 };
 
 struct ufs_dev_info {

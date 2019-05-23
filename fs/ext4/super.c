@@ -52,7 +52,7 @@
 #include "mballoc.h"
 
 #ifdef CONFIG_MTK_UFS_SUPPORT
-#include "ufs-dbg.h"
+#include "ufs-mtk-dbg.h"
 #else
 #define ufs_mtk_dbg_hang_detect_dump(...)
 #endif

@@ -65,6 +65,8 @@
 #endif
 
 #include "mtk_mcdi_governor.h"
+#include <mt-plat/mtk_boot.h>
+
 
 #define IDLE_GPT GPT4
 #define NR_CMD_BUF		128
@@ -886,9 +888,13 @@ unsigned int ufs_cb_before_xxidle(void)
 
 #if defined(CONFIG_MTK_UFS_SUPPORT)
 	bool ufs_in_hibernate = false;
+	int boot_type;
 
-	ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
-	op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS) {
+		ufs_in_hibernate = !ufs_mtk_deepidle_hibern8_check();
+		op_cond = ufs_in_hibernate ? DEEPIDLE_OPT_XO_UFS_ON_OFF : 0;
+	}
 #endif
 
 	bblpm_check = !clk_buf_bblpm_enter_cond();
@@ -900,7 +906,11 @@ unsigned int ufs_cb_before_xxidle(void)
 void ufs_cb_after_xxidle(void)
 {
 #if defined(CONFIG_MTK_UFS_SUPPORT)
-	ufs_mtk_deepidle_leave();
+	int boot_type;
+
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS)
+		ufs_mtk_deepidle_leave();
 #endif
 }
 
@@ -1037,6 +1047,7 @@ int mtk_idle_select(int cpu)
 #if defined(CONFIG_MTK_UFS_SUPPORT)
 	unsigned long flags = 0;
 	unsigned int ufs_locked;
+	int boot_type;
 #endif
 #ifdef CONFIG_MTK_DCS
 	int ch = 0, ret = -1;
@@ -1080,13 +1091,16 @@ int mtk_idle_select(int cpu)
 	}
 
 #if defined(CONFIG_MTK_UFS_SUPPORT)
-	spin_lock_irqsave(&idle_ufs_spin_lock, flags);
-	ufs_locked = idle_ufs_lock;
-	spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
+	boot_type = get_boot_type();
+	if (boot_type == BOOTDEV_UFS) {
+		spin_lock_irqsave(&idle_ufs_spin_lock, flags);
+		ufs_locked = idle_ufs_lock;
+		spin_unlock_irqrestore(&idle_ufs_spin_lock, flags);
 
-	if (ufs_locked) {
-		reason = BY_UFS;
-		goto get_idle_idx;
+		if (ufs_locked) {
+			reason = BY_UFS;
+			goto get_idle_idx;
+		}
 	}
 #endif
 

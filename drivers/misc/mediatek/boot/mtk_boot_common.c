@@ -66,15 +66,10 @@ static int __init dt_get_boot_common(unsigned long node, const char *uname, int 
 
 	if (tags) {
 		g_boot_mode = tags->bootmode;
-
-#if defined(CONFIG_MTK_EMMC_SUPPORT)
-		g_boot_type = BOOTDEV_SDMMC;
-#elif defined(CONFIG_MTK_UFS_SUPPORT)
-		g_boot_type = BOOTDEV_UFS;
-#else
-		g_boot_type = BOOTDEV_NAND;
-#endif
-
+		g_boot_type = tags->boottype;
+		/* Add default value if no lk pass storage type */
+		if ((g_boot_type > 2) || (g_boot_type < 0))
+			g_boot_type = BOOTDEV_SDMMC;
 		atomic_set(&g_boot_status, 1);
 	} else {
 		pr_warn("'atag,boot' is not found\n");

@@ -27,12 +27,6 @@
 
 /* UFS device quirks */
 /*
- * Toshiba Gen5 Gen6 UFS memory device need 100us delay before disable REF_CLK.
- * If thoshiba can improve this delay in the future(ex: Gen7), this quirk can be removed then.
- */
-#define UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK UFS_BIT(29)
-
-/*
  * Some UFS memory device needs limited RPMB max rw size otherwise
  * device issue, for example, device hang, may happen in some scenarios.
  */
@@ -53,7 +47,8 @@ struct ufs_crypto_map {
 
 #define UFS_CRYPTO_FLAG_NON_ENCRYPTED (0x10)
 #define UFS_CRYPTO_FLAG_ENCRYPTED     (0x20)
-#define UFS_CRYPTO_FLAG_VALID         (UFS_CRYPTO_FLAG_ENCRYPTED | UFS_CRYPTO_FLAG_NON_ENCRYPTED)
+#define UFS_CRYPTO_FLAG_VALID         (UFS_CRYPTO_FLAG_ENCRYPTED | \
+	UFS_CRYPTO_FLAG_NON_ENCRYPTED)
 
 #define UFS_HIE_PARAM_OFS_CFG_ID         (24)
 #define UFS_HIE_PARAM_OFS_MODE           (16)
@@ -73,7 +68,13 @@ enum ufs_trace_event {
 	UFS_TRACE_DEV_COMPLETED,
 	UFS_TRACE_TM_SEND,
 	UFS_TRACE_TM_COMPLETED,
-	UFS_TRACE_ABORTING
+	UFS_TRACE_UIC_SEND,
+	UFS_TRACE_UIC_CMPL_GENERAL,
+	UFS_TRACE_UIC_CMPL_PWR_CTRL,
+	UFS_TRACE_REG_TOGGLE,
+	UFS_TRACE_ABORTING,
+	UFS_TRACE_DI_FAIL,
+	UFS_TRACE_DEVICE_RESET
 };
 
 enum {
@@ -90,8 +91,10 @@ enum {
 };
 
 enum {
-	UFS_MTK_RESREQ_DMA_OP,      /* request resource for DMA operations, e.g., DRAM */
-	UFS_MTK_RESREQ_MPHY_NON_H8  /* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
+	/* request resource for DMA operations, e.g., DRAM */
+	UFS_MTK_RESREQ_DMA_OP,
+	/* request resource for mphy not in H8, e.g., main PLL, 26 mhz clock */
+	UFS_MTK_RESREQ_MPHY_NON_H8
 };
 
 enum {
@@ -102,16 +105,6 @@ enum {
 struct ufs_cmd_str_struct {
 	char str[32];
 	char cmd;
-};
-
-struct ufs_mtk_trace_cmd_hlist_struct {
-	enum ufs_trace_event event;
-	u8 opcode;
-	u8 lun;
-	u32 tag;
-	u32 transfer_len;
-	sector_t lba;
-	u64 time;
 };
 
 #ifdef MTK_UFS_HQA
@@ -126,8 +119,12 @@ struct ufs_cached_region {
 	sector_t end_sect;
 };
 
-/* Hynix device need max 3 seconds to clear fDeviceInit, each fDeviceInit transaction takes */
-/* around 1~2ms to get response from UFS. Max fDeviceInit clear time = 5000*(1~2)ms > 3seconds */
+/*
+ * Hynix device need max 3 seconds to clear fDeviceInit,
+ * each fDeviceInit transaction takes
+ * around 1~2ms to get response from UFS.
+ * Max fDeviceInit clear time = 5000*(1~2)ms > 3seconds
+ */
 #define UFS_FDEVICEINIT_RETRIES    (5000)
 
 #define ASCII_STD true
@@ -308,7 +305,8 @@ struct ufs_crypt_info {
  */
 #define UFS_DEVICE_QUIRK_INCORRECT_PWM_BURST_CLOSURE_EXTENSION    (1 << 30)
 
-extern u32							ufs_mtk_auto_hibern8_timer_ms;
+extern u32  ufs_mtk_auto_hibern8_timer_ms;
+extern bool ufs_mtk_auto_hibern8_enabled;
 extern enum ufs_dbg_lvl_t			ufs_mtk_dbg_lvl;
 extern struct ufs_hba              *ufs_mtk_hba;
 extern bool							ufs_mtk_host_deep_stall_enable;
@@ -342,7 +340,9 @@ bool             ufs_mtk_is_data_write_cmd(char cmd_op);
 void             ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
 struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
 void             ufs_mtk_runtime_pm_init(struct scsi_device *sdev);
-
+int ufs_mtk_ioctl_rpmb(struct ufs_hba *hba, void __user *buf_user);
+void ufs_mtk_device_quiesce(struct ufs_hba *hba);
+void ufs_mtk_device_resume(struct ufs_hba *hba);
 #ifdef CONFIG_HIE
 struct hie_dev  *ufs_mtk_hie_get_dev(void);
 #else

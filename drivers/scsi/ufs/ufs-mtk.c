@@ -18,6 +18,7 @@
 #include <linux/rpmb.h>
 #include <linux/blkdev.h>
 #include <linux/blk_types.h>
+#include <linux/reboot.h>
 
 #include "ufshcd.h"
 #include "ufshcd-pltfrm.h"
@@ -25,10 +26,11 @@
 #include "ufs-mtk.h"
 #include "ufs-mtk-block.h"
 #include "ufs-mtk-platform.h"
-#include "ufs-dbg.h"
+#include "ufs-mtk-dbg.h"
 
 #include <mt-plat/mtk_partition.h>
 #include <mt-plat/mtk_secure_api.h>
+#include <mt-plat/mtk_boot.h>
 #include <scsi/ufs/ufs-mtk-ioctl.h>
 
 /* Query request retries */
@@ -36,7 +38,6 @@
 
 static struct ufs_dev_fix ufs_fixups[] = {
 	/* UFS cards deviations table */
-	UFS_FIX(UFS_VENDOR_TOSHIBA, UFS_ANY_MODEL, UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK),
 	UFS_FIX(UFS_VENDOR_SKHYNIX, UFS_ANY_MODEL, UFS_DEVICE_QUIRK_LIMITED_RPMB_MAX_RW_SIZE),
 	END_FIX
 };
@@ -379,28 +380,6 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 	ufs_mtk_hba = hba;
 	hba->crypto_hwfde_key_idx = -1;
 
-#ifdef CONFIG_MTK_UFS_SUPPORT
-	/*
-	 * Rename device to unify device path for booting storage device.
-	 *
-	 * Device rename shall be prior to any pinctrl operation to avoid
-	 * known kernel panic issue which can be triggered by dumping pin
-	 * information, for example,
-	 *
-	 * "cat /sys/kernel/debug/pinctrl/10005000.pinctrl/pinmux-pins".
-	 *
-	 * The panic is because create_pinctrl() will keep the original
-	 * device name string instance in kobject. However, old name string
-	 * instance will be freed during device_rename() but NOT awared by
-	 * pinctrl.
-	 *
-	 * Please also remove default pin state in device tree and related
-	 * code because create_pinctrl() will be activated before device
-	 * probing if default pin state is declared.
-	 */
-	device_rename(hba->dev, "bootdevice");
-#endif
-
 	ufs_mtk_pltfrm_init();
 
 	ufs_mtk_pltfrm_parse_dt(hba);
@@ -427,6 +406,9 @@ static int ufs_mtk_init(struct ufs_hba *hba)
 
 	/* Get auto-hibern8 timeout from device tree */
 	ufs_mtk_parse_auto_hibern8_timer(hba);
+
+	/* Rename device to unify device path for booting storage device */
+	device_rename(hba->dev, "bootdevice");
 
 	return 0;
 
@@ -504,25 +486,19 @@ static int ufs_mtk_init_mphy(struct ufs_hba *hba)
 	return 0;
 }
 
-static int ufs_mtk_reset_host(struct ufs_hba *hba)
+static int ufs_mtk_init_crypto(struct ufs_hba *hba)
 {
-	if (!(hba->quirks & UFSHCD_QUIRK_UFS_HCI_VENDOR_HOST_RST))
-		return 0;
-
 	/* avoid resetting host during resume flow or when link is not off */
 	if (hba->pm_op_in_progress || !ufshcd_is_link_off(hba))
 		return 0;
-
-	dev_info(hba->dev, "reset host\n");
-
-	/* do host sw reset */
-	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 6), 0, 0);
 
 #ifdef CONFIG_MTK_HW_FDE
 
 	/* restore HW FDE related settings by re-using resume operation */
 	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 2), 0, 0);
 
+
+	dev_info(hba->dev, "crypto cfg initialized\n");
 #endif
 
 	return 0;
@@ -556,9 +532,9 @@ static int ufs_mtk_hce_enable_notify(struct ufs_hba *hba,
 
 	switch (stage) {
 	case PRE_CHANGE:
-		ret = ufs_mtk_reset_host(hba);
 		break;
 	case POST_CHANGE:
+		ret = ufs_mtk_init_crypto(hba);
 		break;
 	default:
 		break;
@@ -614,13 +590,6 @@ static int ufs_mtk_post_link(struct ufs_hba *hba)
 		dev_err(hba->dev, "dme_setting_after_link fail\n");
 		ret = 0;	/* skip error */
 	}
-
-#ifdef CONFIG_MTK_HW_FDE
-
-	/* init HW FDE feature inlined in HCI */
-	mt_secure_call(MTK_SIP_KERNEL_HW_FDE_UFS_CTL, (1 << 0), 0, 0);
-
-#endif
 
 #ifdef CONFIG_HIE
 
@@ -898,6 +867,8 @@ void ufs_mtk_advertise_fixup_device(struct ufs_hba *hba)
 		return;
 	}
 
+	hba->wmanufacturerid = card_data.wmanufacturerid;
+
 	for (f = ufs_fixups; f->quirk; f++) {
 		if (((f->card.wmanufacturerid == card_data.wmanufacturerid) ||
 			(f->card.wmanufacturerid == UFS_ANY_VENDOR)) &&
@@ -1092,6 +1063,56 @@ out:
 	return 0;
 }
 
+void ufs_mtk_device_quiesce(struct ufs_hba *hba)
+{
+	struct scsi_device *scsi_d;
+	int i;
+
+	/*
+	 * Wait all cmds done & block user issue cmds to
+	 * general LUs, wlun device, wlun rpmb and wlun boot.
+	 * To avoid new cmds coming after device has been
+	 * stopped by SSU cmd in ufshcd_suspend().
+	 */
+	for (i = 0; i < UFS_UPIU_MAX_GENERAL_LUN; i++) {
+		scsi_d = scsi_device_lookup(hba->host, 0, 0, i);
+		if (scsi_d)
+			scsi_device_quiesce(scsi_d);
+	}
+
+	scsi_d = scsi_device_lookup(hba->host, 0, 0,
+		ufshcd_upiu_wlun_to_scsi_wlun(UFS_UPIU_BOOT_WLUN));
+	if (scsi_d)
+		scsi_device_quiesce(scsi_d);
+
+	if (hba->sdev_ufs_device)
+		scsi_device_quiesce(hba->sdev_ufs_device);
+	if (hba->sdev_ufs_rpmb)
+		scsi_device_quiesce(hba->sdev_ufs_rpmb);
+}
+
+void ufs_mtk_device_resume(struct ufs_hba *hba)
+{
+	struct scsi_device *scsi_d;
+	int i;
+
+	for (i = 0; i < UFS_UPIU_MAX_GENERAL_LUN; i++) {
+		scsi_d = scsi_device_lookup(hba->host, 0, 0, i);
+		if (scsi_d)
+			scsi_device_resume(scsi_d);
+	}
+
+	scsi_d = scsi_device_lookup(hba->host, 0, 0,
+	ufshcd_upiu_wlun_to_scsi_wlun(UFS_UPIU_BOOT_WLUN));
+	if (scsi_d)
+		scsi_device_resume(scsi_d);
+
+	if (hba->sdev_ufs_device)
+		scsi_device_resume(hba->sdev_ufs_device);
+	if (hba->sdev_ufs_rpmb)
+		scsi_device_resume(hba->sdev_ufs_rpmb);
+}
+
 /**
  * ufs_mtk_ioctl_ffu - perform user ffu
  * @hba: per-adapter instance
@@ -1123,7 +1144,8 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	}
 
 	/* extract struct idata from user buffer */
-	err = copy_from_user(idata_user, buf_user, sizeof(struct ufs_ioctl_ffu_data));
+	err = copy_from_user(idata_user, buf_user,
+		sizeof(struct ufs_ioctl_ffu_data));
 
 	if (err) {
 		dev_err(hba->dev,
@@ -1136,8 +1158,9 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 
 	/* extract firmware from user buffer */
 	if (idata->buf_byte > (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES) {
-		dev_err(hba->dev, "%s: idata->buf_byte:0x%x > max 0x%x bytes\n", __func__,
-				idata->buf_byte, (u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES);
+		dev_err(hba->dev, "%s: idata->buf_byte:0x%x > max 0x%x bytes\n",
+				__func__, idata->buf_byte,
+				(u32)UFS_IOCTL_FFU_MAX_FW_SIZE_BYTES);
 		err = -ENOMEM;
 		goto out_release_mem;
 	}
@@ -1148,18 +1171,24 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 		goto out_release_mem;
 	}
 
-	if (copy_from_user(idata->buf_ptr, (void __user *)idata_user->buf_ptr, idata->buf_byte)) {
+	if (copy_from_user(idata->buf_ptr,
+		(void __user *)idata_user->buf_ptr, idata->buf_byte)) {
 		err = -EFAULT;
 		goto out_release_mem;
 	}
 
+	ufs_mtk_device_quiesce(hba);
+
 	/* do FFU */
 	err = ufs_mtk_ffu_send_cmd(dev, idata);
 
-	if (err)
+	if (err) {
 		dev_err(hba->dev, "%s: ffu failed, err %d\n", __func__, err);
-	else
-		dev_err(hba->dev, "%s: ffu ok\n", __func__);
+		ufs_mtk_device_resume(hba);
+
+	} else {
+		dev_info(hba->dev, "%s: ffu ok\n", __func__);
+	}
 
 	/*
 	 * Check bDeviceFFUStatus attribute
@@ -1167,16 +1196,24 @@ int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user)
 	 * For reference only since UFS spec. said the status is valid after
 	 * device power cycle.
 	 */
-
-	err = ufshcd_query_attr(hba, UPIU_QUERY_OPCODE_READ_ATTR, QUERY_ATTR_IDN_DEVICE_FFU_STATUS, 0, 0, &attr);
+	err = ufshcd_query_attr(hba, UPIU_QUERY_OPCODE_READ_ATTR,
+		QUERY_ATTR_IDN_DEVICE_FFU_STATUS, 0, 0, &attr);
 
 	if (err) {
-		dev_err(hba->dev, "%s: query bDeviceFFUStatus failed, err %d\n", __func__, err);
+		dev_err(hba->dev, "%s: query bDeviceFFUStatus failed, err %d\n",
+			__func__, err);
+		/*
+		 * UFS might not be used normally after FFU.
+		 * Just reboot system (including device) to avoid following
+		 * false alarm. For example, I/O errors.
+		 */
+		emergency_restart();
 		goto out_release_mem;
 	}
 
 	if (attr > UFS_FFU_STATUS_OK)
-		dev_err(hba->dev, "%s: bDeviceFFUStatus shows fail %d (ref only)\n", __func__, attr);
+		dev_err(hba->dev, "%s: bDeviceFFUStatus shows fail %d (ref only)\n",
+			__func__, attr);
 
 out_release_mem:
 	kfree(idata->buf_ptr);
@@ -1374,7 +1411,145 @@ out:
 	return err;
 }
 
-static int ufs_mtk_scsi_dev_cfg(struct scsi_device *sdev, enum ufs_scsi_dev_cfg op)
+/**
+ * ufs_mtk_ioctl_rpmb - perform user rpmb read/write request
+ * @hba: per-adapter instance
+ * @buf_user: user space buffer for ioctl rpmb_cmd data
+ * @return: 0 for success negative error code otherwise
+ *
+ * Expected/Submitted buffer structure is struct rpmb_cmd.
+ * It will read/write data to rpmb
+ */
+int ufs_mtk_ioctl_rpmb(struct ufs_hba *hba, void __user *buf_user)
+{
+	struct rpmb_cmd cmd[3];
+	struct rpmb_frame *frame_buf = NULL;
+	struct rpmb_frame *frames = NULL;
+	int size = 0;
+	int nframes = 0;
+	unsigned long flags;
+	struct scsi_device *sdev;
+	int ret;
+	int i;
+
+	/* Get scsi device */
+	spin_lock_irqsave(hba->host->host_lock, flags);
+	sdev = hba->sdev_ufs_rpmb;
+	if (sdev) {
+		ret = scsi_device_get(sdev);
+		if (!ret && !scsi_device_online(sdev)) {
+			ret = -ENODEV;
+			scsi_device_put(sdev);
+		}
+	} else {
+		ret = -ENODEV;
+	}
+	spin_unlock_irqrestore(hba->host->host_lock, flags);
+	if (ret) {
+		dev_info(hba->dev,
+			"%s: failed get rpmb device, ret %d\n",
+			__func__, ret);
+		goto out;
+	}
+
+	/* Get cmd params from user buffer */
+	ret = copy_from_user((void *) cmd,
+		buf_user, sizeof(struct rpmb_cmd) * 3);
+	if (ret) {
+		dev_info(hba->dev,
+			"%s: failed copying cmd buffer from user, ret %d\n",
+			__func__, ret);
+		goto out_put;
+	}
+
+	/* Check number of rpmb frames */
+	for (i = 0; i < 3; i++) {
+		ret = (int)rpmb_get_rw_size(ufs_mtk_rpmb_get_raw_dev());
+		if (cmd[i].nframes > ret) {
+			dev_info(hba->dev,
+				"%s: number of rpmb frames %u exceeds limit %d\n",
+				__func__, cmd[i].nframes, ret);
+			ret = -EINVAL;
+			goto out_put;
+		}
+	}
+
+	/* Prepaer frame buffer */
+	for (i = 0; i < 3; i++)
+		nframes += cmd[i].nframes;
+	frame_buf = kcalloc(nframes, sizeof(struct rpmb_frame), GFP_KERNEL);
+	if (!frame_buf) {
+		ret = -ENOMEM;
+		goto out_put;
+	}
+	frames = frame_buf;
+
+	/*
+	 * Send all command one by one.
+	 * Use rpmb lock to prevent other rpmb read/write threads cut in line.
+	 * Use mutex not spin lock because in/out function might sleep.
+	 */
+	mutex_lock(&hba->rpmb_lock);
+	for (i = 0; i < 3; i++) {
+		if (cmd[i].nframes == 0)
+			break;
+
+		/* Get frames from user buffer */
+		size = sizeof(struct rpmb_frame) * cmd[i].nframes;
+		ret = copy_from_user((void *) frames, cmd[i].frames, size);
+		if (ret) {
+			dev_err(hba->dev,
+				"%s: failed from user, ret %d\n",
+				__func__, ret);
+			break;
+		}
+
+		/* Do rpmb in out */
+		if (cmd[i].flags & RPMB_F_WRITE) {
+			ret = ufshcd_rpmb_security_out(sdev, frames,
+						       cmd[i].nframes);
+			if (ret) {
+				dev_err(hba->dev,
+					"%s: failed rpmb out, err %d\n",
+					__func__, ret);
+				break;
+			}
+
+		} else {
+			ret = ufshcd_rpmb_security_in(sdev, frames,
+						      cmd[i].nframes);
+			if (ret) {
+				dev_err(hba->dev,
+					"%s: failed rpmb in, err %d\n",
+					__func__, ret);
+				break;
+			}
+
+			/* Copy frames to user buffer */
+			ret = copy_to_user((void *) cmd[i].frames,
+				frames, size);
+			if (ret) {
+				dev_err(hba->dev,
+					"%s: failed to user, err %d\n",
+					__func__, ret);
+				break;
+			}
+		}
+
+		frames += cmd[i].nframes;
+	}
+	mutex_unlock(&hba->rpmb_lock);
+
+	kfree(frame_buf);
+
+out_put:
+	scsi_device_put(sdev);
+out:
+	return ret;
+}
+
+static int ufs_mtk_scsi_dev_cfg(struct scsi_device *sdev,
+	enum ufs_scsi_dev_cfg op)
 {
 	if (op == UFS_SCSI_DEV_SLAVE_CONFIGURE) {
 		if (ufs_mtk_rpm_enabled) {
@@ -1417,15 +1592,6 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 		return;
 
 	if (enable) {
-		/*
-		 * For UFSHCI 2.0 (in Elbrus), ensure hibernate enter/exit interrupts are disabled during
-		 * auto hibern8.
-		 *
-		 * For UFSHCI 2.1 (in future projects), keep these 2 interrupts for auto-hibern8
-		 * error handling.
-		 */
-		ufshcd_disable_intr(hba, (UIC_HIBERNATE_ENTER | UIC_HIBERNATE_EXIT));
-
 		/* set timer scale as "ms" and timer */
 		ufshcd_writel(hba, (0x03 << 10 | ufs_mtk_auto_hibern8_timer_ms), REG_AHIT);
 
@@ -1433,9 +1599,6 @@ static void ufs_mtk_auto_hibern8(struct ufs_hba *hba, bool enable)
 	} else {
 		/* disable auto-hibern8 */
 		ufshcd_writel(hba, 0, REG_AHIT);
-
-		/* ensure hibernate enter/exit interrupts are enabled for future manual-hibern8 */
-		ufshcd_enable_intr(hba, (UIC_HIBERNATE_ENTER | UIC_HIBERNATE_EXIT));
 
 		ufs_mtk_auto_hibern8_enabled = false;
 	}
@@ -2016,6 +2179,12 @@ static int ufs_mtk_probe(struct platform_device *pdev)
 	int err;
 	struct ufs_hba *hba;
 	struct device *dev = &pdev->dev;
+	int boot_type;
+
+	/* Add get_boot_type check and return ENODEV if not ufs boot */
+	boot_type = get_boot_type();
+	if (boot_type != BOOTDEV_UFS)
+		return -ENODEV;
 
 	ufs_mtk_biolog_init();
 

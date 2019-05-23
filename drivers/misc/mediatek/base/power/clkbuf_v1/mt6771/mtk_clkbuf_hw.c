@@ -23,6 +23,7 @@
 #ifdef CONFIG_MTK_UFS_SUPPORT
 #include "ufs-mtk.h"
 #endif
+#include <mt-plat/mtk_boot.h>
 
 static void __iomem *pwrap_base;
 
@@ -342,7 +343,9 @@ static void clk_buf_ctrl_bblpm_mask(enum clk_buf_id id, bool onoff)
 u32 clk_buf_bblpm_enter_cond(void)
 {
 	u32 bblpm_cond = 0, pwr_sta = 0;
-
+#if defined(CONFIG_MTK_UFS_SUPPORT) && defined(CLKBUF_USE_BBLPM)
+	int boot_type;
+#endif
 #ifdef CLKBUF_USE_BBLPM
 	if (!is_clkbuf_initiated || !is_pmic_clkbuf || !bblpm_switch) {
 		bblpm_cond |= BBLPM_COND_SKIP;
@@ -364,9 +367,12 @@ u32 clk_buf_bblpm_enter_cond(void)
 		if (pmic_clk_buf_swctrl[XO_NFC] == CLK_BUF_SW_ENABLE)
 			bblpm_cond |= BBLPM_COND_NFC;
 
-#ifdef CONFIG_MTK_UFS_SUPPORT
-		if (ufs_mtk_deepidle_hibern8_check() < 0)
-			bblpm_cond |= BBLPM_COND_EXT;
+#if defined(CONFIG_MTK_UFS_SUPPORT)
+		boot_type = get_boot_type();
+		if (boot_type == BOOTDEV_UFS) {
+			if (ufs_mtk_deepidle_hibern8_check() < 0)
+				bblpm_cond |= BBLPM_COND_EXT;
+		}
 #endif
 	}
 #else /* !CLKBUF_USE_BBLPM */
@@ -1478,10 +1484,12 @@ short is_clkbuf_bringup(void)
 
 void clk_buf_post_init(void)
 {
-#ifndef CONFIG_MTK_UFS_SUPPORT
+	int boot_type;
+
+	boot_type = get_boot_type();
 	/* no need to use XO_EXT if storage is emmc */
-	clk_buf_ctrl_internal(CLK_BUF_UFS, false);
-#endif
+	if (boot_type != BOOTDEV_UFS)
+		clk_buf_ctrl_internal(CLK_BUF_UFS, false);
 #ifndef CONFIG_NFC_CHIP_SUPPORT
 	/* no need to use XO_NFC if no NFC */
 	clk_buf_ctrl_internal(CLK_BUF_NFC, false);
@@ -1489,7 +1497,7 @@ void clk_buf_post_init(void)
 #ifdef CLKBUF_USE_BBLPM
 	if (bblpm_switch == 2) {
 		clk_buf_ctrl_bblpm_mask(CLK_BUF_BB_MD, true);
-		clk_buf_ctrl_bblpm_mask(CLK_BUF_UFS, true);
+		clk_buf_ctrl_bblpm_mask(CLK_BUF_UFS, false);
 		if (CLK_BUF4_STATUS_PMIC == CLOCK_BUFFER_DISABLE) {
 			clk_buf_ctrl_bblpm_mask(CLK_BUF_RF, true);
 			clk_buf_ctrl_bblpm_hw(true);
