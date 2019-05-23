@@ -92,6 +92,20 @@ struct upower_tbl_info upower_tbl_list[NR_UPOWER_TBL_LIST][NR_UPOWER_BANK] = {
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_SB),
 	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_SB),
 	},
+
+	[2] = {
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_FY2),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_FY2),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_FY2),
+	},
+
+	[3] = {
+	/*INIT_UPOWER_TBL_INFOS(UPOWER_BANK_L, upower_tbl_l_SB), */
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_LL, upower_tbl_ll_LITE),
+	/*INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_L, upower_tbl_cluster_l_SB),*/
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CLS_LL, upower_tbl_cluster_ll_LITE),
+	INIT_UPOWER_TBL_INFOS(UPOWER_BANK_CCI, upower_tbl_cci_LITE),
+	},
 	/* C65T */
 #if 0
 	[2] = {

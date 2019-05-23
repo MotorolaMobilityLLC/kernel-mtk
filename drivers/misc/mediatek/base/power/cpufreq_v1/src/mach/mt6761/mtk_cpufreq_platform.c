@@ -479,6 +479,7 @@ int mt_cpufreq_dts_map(void)
 unsigned int _mt_cpufreq_get_cpu_level(void)
 {
 	unsigned int lv = CPU_LEVEL_0;
+	int seg = get_devinfo_with_index(30);
 	int val = mt_get_chip_sw_ver(); /* = get_devinfo_with_index(num); */
 
 	if (val == CHIP_SW_VER_01)
@@ -487,6 +488,8 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 #if defined(CONFIG_MTK_LP_OPP)
 		lv = CPU_LEVEL_0;
 #endif
+	if ((seg == 0x10) || (seg == 0x11) || (seg == 0x90) || (seg == 0x91))
+		lv = CPU_LEVEL_3;
 
 	turbo_flag = 0;
 	tag_pr_info("%d,%d,0x%x,%d,%d,%d,%d\n",
