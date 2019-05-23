@@ -166,9 +166,7 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 	}
 
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
-		/* delay 100us before DeepIdle/SODI disable XO_UFS for Toshiba device */
-		if (ufs_mtk_hba->dev_quirks & UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK)
-			udelay(100);
+		udelay(100);
 		/* Disable MPHY 26MHz ref clock in H8 mode */
 		/* SSPM project will disable MPHY 26MHz ref clock in SSPM deepidle/SODI IPI handler*/
 	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
