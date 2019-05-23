@@ -1553,7 +1553,7 @@ PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
 	psFreeList->uiFreeListPMROffset = uiFreeListPMROffset;
 	psFreeList->psFWFreelistMemDesc = psFWFreelistMemDesc;
 	RGXSetFirmwareAddress(&psFreeList->sFreeListFWDevVAddr, psFWFreelistMemDesc, 0, RFW_FWADDR_FLAG_NONE);
-	psFreeList->ui32FreelistID = psDevInfo->ui32FreelistCurrID++;
+	/* psFreeList->ui32FreelistID set below with lock... */
 	psFreeList->ui32FreelistGlobalID = (psGlobalFreeList ? psGlobalFreeList->ui32FreelistID : 0);
 	psFreeList->ui32MaxFLPages = ui32MaxFLPages;
 	psFreeList->ui32InitFLPages = ui32InitFLPages;
@@ -1571,6 +1571,7 @@ PVRSRV_ERROR RGXCreateFreeList(CONNECTION_DATA      *psConnection,
 
 	/* Add to list of freelists */
 	OSLockAcquire(psDevInfo->hLockFreeList);
+	psFreeList->ui32FreelistID = psDevInfo->ui32FreelistCurrID++;
 	dllist_add_to_tail(&psDevInfo->sFreeListHead, &psFreeList->sNode);
 	OSLockRelease(psDevInfo->hLockFreeList);
 
@@ -1938,10 +1939,11 @@ PVRSRV_ERROR RGXCreateZSBufferKM(CONNECTION_DATA * psConnection,
 	psZSBuffer->bOnDemand = bOnDemand;
     if (bOnDemand)
     {
-    	psZSBuffer->ui32ZSBufferID = psDevInfo->ui32ZSBufferCurrID++;
+        /* psZSBuffer->ui32ZSBufferID set below with lock... */	
 		psZSBuffer->psMapping = NULL;
 
 		OSLockAcquire(psDevInfo->hLockZSBuffer);
+        psZSBuffer->ui32ZSBufferID = psDevInfo->ui32ZSBufferCurrID++;
     	dllist_add_to_tail(&psDevInfo->sZSBufferHead, &psZSBuffer->sNode);
 		OSLockRelease(psDevInfo->hLockZSBuffer);
     }
