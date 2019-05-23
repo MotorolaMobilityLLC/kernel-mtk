@@ -740,7 +740,7 @@ int hie_kh_register(struct hie_dev *dev, unsigned int key_bits, unsigned int key
 			key_bits, BITS_PER_LONG);
 	}
 
-	size = ((key_bits / BITS_PER_BYTE) / sizeof(unsigned long)) * key_slot;
+	size = (key_bits / BITS_PER_BYTE) * key_slot;
 
 	pr_info("kh: key_bits=%u, key_slot=%u, size=%u bytes\n",
 		key_bits, key_slot, size);
