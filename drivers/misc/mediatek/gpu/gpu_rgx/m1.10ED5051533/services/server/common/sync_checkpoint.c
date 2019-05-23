@@ -2520,19 +2520,17 @@ static IMG_UINT32 _CleanCheckpointPool(_SYNC_CHECKPOINT_CONTEXT *psContext)
 			PVR_DPF((PVR_DBG_ERROR, "%s psSyncCheckpoint->psSyncCheckpointBlock->psContext=<%p>", __FUNCTION__, (void*)psSyncCheckpointInt->psSyncCheckpointBlock->psContext));
 			PVR_DPF((PVR_DBG_ERROR, "%s psSyncCheckpoint->psSyncCheckpointBlock->psContext->psSubAllocRA=<%p>", __FUNCTION__, (void*)psSyncCheckpointInt->psSyncCheckpointBlock->psContext->psSubAllocRA));
 #endif
-			OSAtomicDecrement(&psContext->hCheckpointCount);
-			psSyncCheckpointInt->ui32ValidationCheck = SYNC_CHECKPOINT_PATTERN_FREED;
 #if (ENABLE_SYNC_CHECKPOINT_POOL_DEBUG == 1)
 			PVR_DPF((PVR_DBG_ERROR,
-					"%s CALLING RA_Free(psSyncCheckpoint(ID:%d)<%p>), psSubAllocRA=<%p>, ui32SpanAddr=0x%llx",
+					"%s CALLING RA_Free(psSyncCheckpoint(ID:%d)<%p>), "
+					"psSubAllocRA=<%p>, ui32SpanAddr=0x%llx",
 					__FUNCTION__,
 					psSyncCheckpointInt->ui32UID,
 					(void*)psSyncCheckpointInt,
 					(void*)psSyncCheckpointInt->psSyncCheckpointBlock->psContext->psSubAllocRA,
 					psSyncCheckpointInt->uiSpanAddr));
 #endif
-			RA_Free(psSyncCheckpointInt->psSyncCheckpointBlock->psContext->psSubAllocRA,
-			        psSyncCheckpointInt->uiSpanAddr);
+			_FreeSyncCheckpoint(psSyncCheckpointInt);
 			ui32ItemsFreed++;
 		}
 		else
