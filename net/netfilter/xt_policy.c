@@ -90,7 +90,7 @@ match_policy_out(const struct sk_buff *skb, const struct xt_policy_info *info,
 	int strict = info->flags & XT_POLICY_MATCH_STRICT;
 	int i, pos;
 
-	if (!dst || !dst->xfrm)
+	if (!dst->xfrm)
 		return -1;
 
 	for (i = 0; dst && dst->xfrm; dst = dst->child, i++) {
