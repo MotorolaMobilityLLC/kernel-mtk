@@ -747,6 +747,7 @@ CONFIG_MTK_PDRHUB,PROJECT,xuexi.bai,new config in this commit 3a2f062b1bd2f8919b
 CONFIG_MTK_PEDOHUB,PROJECT,weiqi.fu,new config in this commit 6cf72299191fe832dffff96cd9233bcf981b52a0,,,,,,,,,
 CONFIG_MTK_PERFMGR_TOUCH_BOOST,PROJECT,Ian-y.Chen,new config 43786717db098bca3f4db77be0893b4feeba8cc8,,,,,,,,,
 CONFIG_MTK_PERF_TRACKER,PROJECT,Michael.Jiang,new config I65b8d05c80ee7819dcb3c9f075c7dd0bb7a4add7,X,X,X,X,X,X,y,y,
+CONFIG_MTK_LOWMEM_HINT,PROJECT,Michael.Jiang,new config a38b48b4a4dad2b99e912d207d7a4da99c68e2cf,X,X,y,y,y,y,X,X,
 CONFIG_MTK_PERIODIC_DATA_COLLECTION,PROJECT,,,,,,,,,,,
 CONFIG_MTK_PICKUPHUB,PROJECT,weiqi.fu,,,,,,,,,,
 CONFIG_MTK_PID_MAP,PLATFORM,stanley.chu,,X,X,y,y,y,y,y,y,
