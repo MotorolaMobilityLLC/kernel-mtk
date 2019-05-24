@@ -43,7 +43,7 @@ int kh_register(struct kh_dev *dev, unsigned int key_bits,
 			key_bits, BITS_PER_LONG);
 	}
 
-	size = ((key_bits / BITS_PER_BYTE) / sizeof(unsigned long)) * key_slot;
+	size = (key_bits / BITS_PER_BYTE) * key_slot;
 
 	kh_info("key_bits=%u, key_slot=%u, size=%u bytes\n",
 		key_bits, key_slot, size);
@@ -69,6 +69,9 @@ int kh_register(struct kh_dev *dev, unsigned int key_bits,
 	dev->kh_unit_per_key = (key_bits / BITS_PER_BYTE) /
 		sizeof(unsigned long);
 	dev->kh_slot_active_cnt = 0;
+
+	kh_info("kh=%p, kh_last_access=%p, kh_slot_usage_cnt=%p\n",
+		dev->kh, dev->kh_last_access, dev->kh_slot_usage_cnt);
 
 	goto exit;
 
