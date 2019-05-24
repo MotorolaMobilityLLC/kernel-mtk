@@ -292,7 +292,7 @@ inline void aee_print_regs(struct pt_regs *regs)
 	aee_nested_printf("\n");
 }
 
-#define AEE_MAX_EXCP_FRAME	32
+#define AEE_MAX_EXCP_FRAME	64
 inline void aee_print_bt(struct pt_regs *regs)
 {
 	int i;
@@ -310,9 +310,9 @@ inline void aee_print_bt(struct pt_regs *regs)
 	cur_frame.fp = regs->reg_fp;
 	cur_frame.pc = regs->reg_pc;
 	cur_frame.sp = regs->reg_sp;
-	aee_nested_printf("\n[<%p>] %pS\n", (void *)cur_frame.pc,
+	aee_nested_printf("\n[<%px>] %pS\n", (void *)cur_frame.pc,
 			(void *)cur_frame.pc);
-	aee_nested_printf("[<%p>] %pS\n", (void *)regs->reg_lr,
+	aee_nested_printf("[<%px>] %pS\n", (void *)regs->reg_lr,
 			(void *)regs->reg_lr);
 	for (i = 0; i < AEE_MAX_EXCP_FRAME; i++) {
 		fp = cur_frame.fp;
@@ -343,7 +343,7 @@ inline void aee_print_bt(struct pt_regs *regs)
 #endif
 			cur_frame.pc = excp_regs->reg_pc;
 		}
-		aee_nested_printf("[<%p>] %pS\n", (void *)cur_frame.pc,
+		aee_nested_printf("[<%px>] %pS\n", (void *)cur_frame.pc,
 				(void *)cur_frame.pc);
 
 	}
