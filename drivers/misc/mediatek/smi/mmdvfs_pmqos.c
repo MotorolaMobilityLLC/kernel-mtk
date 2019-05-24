@@ -2003,13 +2003,14 @@ int get_larbs_info(char *buf)
 void mmdvfs_print_larbs_info(void)
 {
 	int len;
-	char *ptr;
+	char *ptr, *tmp_str;
 	char *log_str = kmalloc(PAGE_SIZE, GFP_KERNEL);
 
 	if (log_str) {
 		len = get_larbs_info(log_str);
+		tmp_str = log_str;
 		if (len > 0) {
-			while ((ptr = strsep(&log_str, "\n")) != NULL)
+			while ((ptr = strsep(&tmp_str, "\n")) != NULL)
 				pr_notice("%s\n", ptr);
 		} else
 			pr_notice("no larbs info to print\n");
@@ -2021,7 +2022,6 @@ void mmdvfs_print_larbs_info(void)
 int get_dump_larbs(char *buf, const struct kernel_param *kp)
 {
 	int len;
-
 	smi_debug_bus_hang_detect(1, true, false, false);
 	len = get_larbs_info(buf);
 	return len;
@@ -2081,6 +2081,7 @@ static struct kernel_param_ops vote_freq_ops = {
 	.set = set_vote_freq,
 	.get = param_get_int,
 };
+
 module_param_cb(vote_freq, &vote_freq_ops, &vote_freq, 0644);
 MODULE_PARM_DESC(vote_freq, "vote mmdvfs to specified freq, 0 for unset");
 
