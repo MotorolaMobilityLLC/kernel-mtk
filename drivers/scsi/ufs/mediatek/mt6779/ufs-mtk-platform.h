@@ -23,7 +23,7 @@
 #define UPMU_READY
 
 /* If srclkenRC function not ready, comment this define */
-#define SR_CLKEN_RC_READY
+/* #define SR_CLKEN_RC_READY */
 #endif
 
 #define HIE_CHANGE_KEY_IN_NORMAL_WORLD
