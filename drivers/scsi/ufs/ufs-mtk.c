@@ -875,8 +875,7 @@ static int ufs_mtk_suspend(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 #endif
 
 #ifdef CONFIG_HIE
-		/* hie suspend handling: reset key hint */
-		kh_reset(ufs_mtk_get_kh());
+		kh_suspend(ufs_mtk_get_kh());
 #endif
 	}
 
