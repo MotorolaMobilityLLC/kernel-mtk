@@ -21,6 +21,7 @@
 #include <linux/pm_wakeup.h>
 #include <linux/reboot.h>
 #include <linux/pm.h>
+#include <linux/cpumask.h>
 
 #include "tcpm.h"
 
@@ -280,7 +281,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&pmi->chgdet_lock);
 			pmi->chgdet_en = true;
 			atomic_inc(&pmi->chgdet_cnt);
-			wake_up(&pmi->waitq);
+			wake_up_interruptible(&pmi->waitq);
 			mutex_unlock(&pmi->chgdet_lock);
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
@@ -300,7 +301,9 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 				vbus = battery_get_vbus();
 				pr_info("%s KPOC Plug out, vbus = %d\n",
 					__func__, vbus);
-				schedule_work(&pmi->pwr_off_work);
+				queue_work_on(cpumask_first(cpu_online_mask),
+					      pmi->pwr_off_wq,
+					      &pmi->pwr_off_work);
 				break;
 			}
 			pr_info("%s USB Plug out\n", __func__);
@@ -318,7 +321,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&pmi->chgdet_lock);
 			pmi->chgdet_en = false;
 			atomic_inc(&pmi->chgdet_cnt);
-			wake_up(&pmi->waitq);
+			wake_up_interruptible(&pmi->waitq);
 			mutex_unlock(&pmi->chgdet_lock);
 
 			boot_mode = get_boot_mode();
@@ -337,7 +340,7 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&pmi->chgdet_lock);
 			pmi->chgdet_en = true;
 			atomic_inc(&pmi->chgdet_cnt);
-			wake_up(&pmi->waitq);
+			wake_up_interruptible(&pmi->waitq);
 			mutex_unlock(&pmi->chgdet_lock);
 		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
@@ -346,8 +349,17 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			mutex_lock(&pmi->chgdet_lock);
 			pmi->chgdet_en = false;
 			atomic_inc(&pmi->chgdet_cnt);
-			wake_up(&pmi->waitq);
+			wake_up_interruptible(&pmi->waitq);
 			mutex_unlock(&pmi->chgdet_lock);
+		} else if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
+			noti->typec_state.new_state == TYPEC_ATTACHED_AUDIO) {
+			/* AUDIO plug in */
+			pr_info("%s audio plug in\n", __func__);
+
+		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_AUDIO
+			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
+			/* AUDIO plug out */
+			pr_info("%s audio plug out\n", __func__);
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:
@@ -414,38 +426,43 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 static int chgdet_task_threadfn(void *data)
 {
 	struct pd_manager_info *pmi = data;
+	bool attach = false;
 	int ret = 0;
 
 	dev_info(pmi->dev, "%s: ++\n", __func__);
 	while (!kthread_should_stop()) {
 		ret = wait_event_interruptible(pmi->waitq,
 					     atomic_read(&pmi->chgdet_cnt) > 0);
-		if (ret < 0)
+		if (ret < 0) {
+			pr_info("%s: wait event been interrupted(%d)\n",
+				__func__, ret);
 			continue;
-		atomic_set(&pmi->chgdet_cnt, 0);
+		}
 		dev_dbg(pmi->dev, "%s: enter chgdet thread\n", __func__);
 		pm_stay_awake(pmi->dev);
-
+		mutex_lock(&pmi->chgdet_lock);
+		atomic_set(&pmi->chgdet_cnt, 0);
+		attach = pmi->chgdet_en;
+		mutex_unlock(&pmi->chgdet_lock);
 #ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
 #if CONFIG_MTK_GAUGE_VERSION == 30
-		ret = charger_dev_enable_chg_type_det(primary_charger,
-						      pmi->chgdet_en);
+		ret = charger_dev_enable_chg_type_det(primary_charger, attach);
 		if (ret < 0) {
 			dev_err(pmi->dev, "%s: en chgdet fail, en = %d\n",
-				__func__, pmi->chgdet_en);
+				__func__, attach);
 			goto out;
 		}
 #else
-		ret = mtk_chr_enable_chr_type_det(pmi->chgdet_en);
+		ret = mtk_chr_enable_chr_type_det(attach);
 		if (ret < 0) {
 			dev_err(pmi->dev, "%s: en chgdet fail(gm20), en = %d\n",
-				__func__, en);
+				__func__, attach);
 			goto out;
 		}
 #endif
 out:
 #else
-		mtk_pmic_enable_chr_type_det(pmi->chgdet_en);
+		mtk_pmic_enable_chr_type_det(attach);
 #endif
 		pm_relax(pmi->dev);
 	}
@@ -570,7 +587,7 @@ static int rt_pd_manager_remove(struct platform_device *pdev)
 	if (pmi->chgdet_task) {
 		kthread_stop(pmi->chgdet_task);
 		atomic_inc(&pmi->chgdet_cnt);
-		wake_up(&pmi->waitq);
+		wake_up_interruptible(&pmi->waitq);
 	}
 	return 0;
 }

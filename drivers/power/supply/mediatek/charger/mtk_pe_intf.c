@@ -370,11 +370,6 @@ int mtk_pe_check_charger(struct charger_manager *pinfo)
 		return ret;
 	}
 
-	if (mtk_pe20_get_is_connect(pinfo)) {
-		chr_info("%s: stop, PE+20 is connected\n", __func__);
-		return ret;
-	}
-
 	if (!pinfo->enable_pe_plus)
 		return -ENOTSUPP;
 
@@ -456,11 +451,6 @@ int mtk_pe_start_algorithm(struct charger_manager *pinfo)
 		return ret;
 	}
 
-	if (mtk_pe20_get_is_connect(pinfo)) {
-		chr_info("%s: stop, PE+20 is connected\n", __func__);
-		return ret;
-	}
-
 	if (!pe->is_enabled) {
 		chr_info("%s: stop, PE+ is disabled\n", __func__);
 		return ret;
@@ -471,9 +461,6 @@ int mtk_pe_start_algorithm(struct charger_manager *pinfo)
 	__pm_stay_awake(&pe->suspend_lock);
 
 	chr_debug("%s: starts\n", __func__);
-
-	if (mt_get_charger_type() == CHARGER_UNKNOWN || pe->is_cable_out_occur)
-		mtk_pe_plugout_reset(pinfo);
 
 	/* TA is not connected */
 	if (!pe->is_connect) {

@@ -68,7 +68,6 @@
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
 #include <mt-plat/mtk_boot.h>
-/* #include <musb_core.h> */ /* FIXME */
 #include <pmic.h>
 #include <mtk_gauge_time_service.h>
 
@@ -777,6 +776,7 @@ int charger_get_vbus(void)
 	if (ret < 0)
 		return 0;
 
+	vchr = vchr / 1000;
 	return vchr;
 }
 
@@ -1131,6 +1131,16 @@ void mtk_charger_int_handler(void)
 		chr_err("charger is not rdy ,skip2\n");
 		return;
 	}
+
+	if (mt_get_charger_type() == CHARGER_UNKNOWN) {
+		mutex_lock(&pinfo->cable_out_lock);
+		pinfo->cable_out_cnt++;
+		chr_err("cable_out_cnt=%d\n", pinfo->cable_out_cnt);
+		mutex_unlock(&pinfo->cable_out_lock);
+		charger_manager_notifier(pinfo, CHARGER_NOTIFY_STOP_CHARGING);
+	} else
+		charger_manager_notifier(pinfo, CHARGER_NOTIFY_START_CHARGING);
+
 	chr_err("wake_up_charger\n");
 	_wake_up_charger(pinfo);
 }
@@ -1170,7 +1180,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	if (info->plug_out != NULL)
 		info->plug_out(info);
 
-	charger_dev_set_input_current(info->chg1_dev, 500000);
+	charger_dev_set_input_current(info->chg1_dev, 100000);
 	charger_dev_plug_out(info->chg1_dev);
 	return 0;
 }
@@ -1181,13 +1191,25 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 
 	chr_type = mt_get_charger_type();
 	if (chr_type == CHARGER_UNKNOWN) {
-		if (info->chr_type != CHARGER_UNKNOWN)
+		if (info->chr_type != CHARGER_UNKNOWN) {
 			mtk_charger_plug_out(info);
+			mutex_lock(&info->cable_out_lock);
+			info->cable_out_cnt = 0;
+			mutex_unlock(&info->cable_out_lock);
+		}
 	} else {
 		if (info->chr_type == CHARGER_UNKNOWN)
 			mtk_charger_plug_in(info, chr_type);
 		else
 			info->chr_type = chr_type;
+
+		if (info->cable_out_cnt > 0) {
+			mtk_charger_plug_out(info);
+			mtk_charger_plug_in(info, chr_type);
+			mutex_lock(&info->cable_out_lock);
+			info->cable_out_cnt--;
+			mutex_unlock(&info->cable_out_lock);
+		}
 	}
 
 	if (chr_type == CHARGER_UNKNOWN)
@@ -1199,6 +1221,19 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 static void charger_update_data(struct charger_manager *info)
 {
 	info->battery_temp = battery_get_bat_temperature();
+}
+
+static int mtk_chgstat_notify(struct charger_manager *info)
+{
+	int ret = 0;
+	char *env[2] = { "CHGSTAT=1", NULL };
+
+	chr_err("%s: 0x%x\n", __func__, info->notify_code);
+	ret = kobject_uevent_env(&info->pdev->dev.kobj, KOBJ_CHANGE, env);
+	if (ret)
+		chr_err("%s: kobject_uevent_fail, ret=%d", __func__, ret);
+
+	return ret;
 }
 
 /* return false if vbus is over max_charger_voltage */
@@ -1223,11 +1258,12 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 
 	vchr = battery_get_vbus() * 1000; /* uV */
 	if (vchr < info->data.max_charger_voltage)
-		info->notify_code &= ~(0x0001);
+		info->notify_code &= ~CHG_VBUS_OV_STATUS;
 	else {
-		info->notify_code |= 0x0001;
+		info->notify_code |= CHG_VBUS_OV_STATUS;
 		chr_err("[BATTERY] charger_vol(%d mV) > %d mV\n",
 			vchr / 1000, info->data.max_charger_voltage / 1000);
+		mtk_chgstat_notify(info);
 	}
 #endif
 }
@@ -1236,23 +1272,32 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
 	if (info->battery_temp >= info->thermal.max_charge_temp) {
-		info->notify_code |= 0x0002;
+		info->notify_code |= CHG_BAT_OT_STATUS;
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
 			info->battery_temp);
+		mtk_chgstat_notify(info);
+	} else {
+		info->notify_code &= ~CHG_BAT_OT_STATUS;
 	}
 
 	if (info->enable_sw_jeita == true) {
 		if (info->battery_temp < info->data.temp_neg_10_thres) {
-			info->notify_code |= 0x0020;
+			info->notify_code |= CHG_BAT_LT_STATUS;
 			chr_err("bat_temp(%d) out of range(too low)\n",
 				info->battery_temp);
+			mtk_chgstat_notify(info);
+		} else {
+			info->notify_code &= ~CHG_BAT_LT_STATUS;
 		}
 	} else {
 #ifdef BAT_LOW_TEMP_PROTECT_ENABLE
 		if (info->battery_temp < info->thermal.min_charge_temp) {
-			info->notify_code |= 0x0020;
+			info->notify_code |= CHG_BAT_LT_STATUS;
 			chr_err("bat_temp(%d) out of range(too low)\n",
 				info->battery_temp);
+			mtk_chgstat_notify(info);
+		} else {
+			info->notify_code &= ~CHG_BAT_LT_STATUS;
 		}
 #endif
 	}
@@ -1263,35 +1308,42 @@ static void mtk_battery_notify_UI_test(struct charger_manager *info)
 {
 	switch (info->notify_test_mode) {
 	case 1:
-		info->notify_code = 0x0001;
+		info->notify_code = CHG_VBUS_OV_STATUS;
 		pr_debug("[%s] CASE_0001_VCHARGER\n", __func__);
 		break;
 	case 2:
-		info->notify_code = 0x0002;
+		info->notify_code = CHG_BAT_OT_STATUS;
 		pr_debug("[%s] CASE_0002_VBATTEMP\n", __func__);
 		break;
 	case 3:
-		info->notify_code = 0x0004;
+		info->notify_code = CHG_OC_STATUS;
 		pr_debug("[%s] CASE_0003_ICHARGING\n", __func__);
 		break;
 	case 4:
-		info->notify_code = 0x0008;
+		info->notify_code = CHG_BAT_OV_STATUS;
 		pr_debug("[%s] CASE_0004_VBAT\n", __func__);
 		break;
 	case 5:
-		info->notify_code = 0x0010;
+		info->notify_code = CHG_ST_TMO_STATUS;
 		pr_debug("[%s] CASE_0005_TOTAL_CHARGINGTIME\n", __func__);
+		break;
+	case 6:
+		info->notify_code = CHG_BAT_LT_STATUS;
+		pr_debug("[%s] CASE6: VBATTEMP_LOW\n", __func__);
+		break;
+	case 7:
+		info->notify_code = CHG_TYPEC_WD_STATUS;
+		pr_debug("[%s] CASE7: Moisture Detection\n", __func__);
 		break;
 	default:
 		pr_debug("[%s] Unknown BN_TestMode Code: %x\n",
 			__func__, info->notify_test_mode);
 	}
+	mtk_chgstat_notify(info);
 }
 
 static void mtk_battery_notify_check(struct charger_manager *info)
 {
-	info->notify_code = 0x0000;
-
 	if (info->notify_test_mode == 0x0000) {
 		mtk_battery_notify_VCharger_check(info);
 		mtk_battery_notify_VBatTemp_check(info);
@@ -2285,7 +2337,7 @@ static ssize_t show_BatNotify(struct device *dev,
 {
 	struct charger_manager *pinfo = dev->driver_data;
 
-	pr_debug("[Battery] show_BatteryNotify: %x\n", pinfo->notify_code);
+	pr_debug("[Battery] show_BatteryNotify: 0x%x\n", pinfo->notify_code);
 
 	return sprintf(buf, "%u\n", pinfo->notify_code);
 }
@@ -2302,7 +2354,8 @@ static ssize_t store_BatNotify(struct device *dev,
 		pr_debug("[Battery] buf is %s and size is %Zu\n", buf, size);
 		ret = kstrtouint(buf, 16, &reg);
 		pinfo->notify_code = reg;
-		pr_debug("[Battery] store code: %x\n", pinfo->notify_code);
+		pr_debug("[Battery] store code: 0x%x\n", pinfo->notify_code);
+		mtk_chgstat_notify(pinfo);
 	}
 	return size;
 }
@@ -2569,7 +2622,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			pinfo->pd_type = PD_CONNECT_NONE;
 			mutex_unlock(&pinfo->charger_pd_lock);
 			/* reset PE40 */
-		break;
+			break;
 
 		case PD_CONNECT_HARD_RESET:
 			mutex_lock(&pinfo->charger_pd_lock);
@@ -2578,44 +2631,60 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			pinfo->pd_reset = true;
 			mutex_unlock(&pinfo->charger_pd_lock);
 			_wake_up_charger(pinfo);
-		/* reset PE40 */
-		break;
+			/* reset PE40 */
+			break;
 
 		case PD_CONNECT_PE_READY_SNK:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify fixe voltage ready\n");
 			pinfo->pd_type = PD_CONNECT_PE_READY_SNK;
 			mutex_unlock(&pinfo->charger_pd_lock);
-		/* PD is ready */
-		break;
+			/* PD is ready */
+			break;
 
 		case PD_CONNECT_PE_READY_SNK_PD30:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify PD30 ready\r\n");
 			pinfo->pd_type = PD_CONNECT_PE_READY_SNK_PD30;
 			mutex_unlock(&pinfo->charger_pd_lock);
-		/* PD30 is ready */
-		break;
+			/* PD30 is ready */
+			break;
 
 		case PD_CONNECT_PE_READY_SNK_APDO:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify APDO Ready\n");
 			pinfo->pd_type = PD_CONNECT_PE_READY_SNK_APDO;
 			mutex_unlock(&pinfo->charger_pd_lock);
-		/* PE40 is ready */
+			/* PE40 is ready */
 			_wake_up_charger(pinfo);
-		break;
+			break;
 
 		case PD_CONNECT_TYPEC_ONLY_SNK:
 			mutex_lock(&pinfo->charger_pd_lock);
 			chr_err("PD Notify Type-C Ready\n");
 			pinfo->pd_type = PD_CONNECT_TYPEC_ONLY_SNK;
 			mutex_unlock(&pinfo->charger_pd_lock);
-		/* type C is ready */
+			/* type C is ready */
 			_wake_up_charger(pinfo);
+			break;
+		};
 		break;
 
-		};
+	case TCP_NOTIFY_WD_STATUS:
+		chr_err("%s wd status = %d\n", __func__,
+			noti->wd_status.water_detected);
+		mutex_lock(&pinfo->charger_pd_lock);
+		pinfo->water_detected = noti->wd_status.water_detected;
+		mutex_unlock(&pinfo->charger_pd_lock);
+
+		if (pinfo->water_detected == true) {
+			pinfo->notify_code |= CHG_TYPEC_WD_STATUS;
+			mtk_chgstat_notify(pinfo);
+		} else {
+			pinfo->notify_code &= ~CHG_TYPEC_WD_STATUS;
+			mtk_chgstat_notify(pinfo);
+		}
+		break;
 	}
 	return NOTIFY_OK;
 }
@@ -2642,6 +2711,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 
 	mutex_init(&info->charger_lock);
 	mutex_init(&info->charger_pd_lock);
+	mutex_init(&info->cable_out_lock);
 	atomic_set(&info->enable_kpoc_shdn, 1);
 	wakeup_source_init(&info->charger_wakelock, "charger suspend wakelock");
 	spin_lock_init(&info->slock);
@@ -2682,7 +2752,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	if (pinfo->tcpc != NULL) {
 		pinfo->pd_nb.notifier_call = pd_tcp_notifier_call;
 		ret = register_tcp_dev_notifier(pinfo->tcpc, &pinfo->pd_nb,
-						TCP_NOTIFY_TYPE_USB);
+				TCP_NOTIFY_TYPE_USB | TCP_NOTIFY_TYPE_MISC);
 	} else {
 		chr_err("get PD dev fail\n");
 	}

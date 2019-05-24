@@ -79,6 +79,15 @@ do {								\
 #define	CHR_PE40_POSTCC	(0x000A)
 #define CHR_PE30	(0x000B)
 
+/* charging abnormal status */
+#define CHG_VBUS_OV_STATUS	(1 << 0)
+#define CHG_BAT_OT_STATUS	(1 << 1)
+#define CHG_OC_STATUS		(1 << 2)
+#define CHG_BAT_OV_STATUS	(1 << 3)
+#define CHG_ST_TMO_STATUS	(1 << 4)
+#define CHG_BAT_LT_STATUS	(1 << 5)
+#define CHG_TYPEC_WD_STATUS	(1 << 6)
+
 /* charger_algorithm notify charger_dev */
 enum {
 	EVENT_EOC,
@@ -257,6 +266,7 @@ struct charger_manager {
 
 	enum charger_type chr_type;
 	bool can_charging;
+	int cable_out_cnt;
 
 	int (*do_algorithm)(struct charger_manager *);
 	int (*plug_in)(struct charger_manager *);
@@ -315,6 +325,9 @@ struct charger_manager {
 	/* type-C*/
 	bool enable_type_c;
 
+	/* water detection */
+	bool water_detected;
+
 	/* pd */
 	struct mtk_pdc pdc;
 
@@ -330,6 +343,7 @@ struct charger_manager {
 	struct wakeup_source charger_wakelock;
 	struct mutex charger_lock;
 	struct mutex charger_pd_lock;
+	struct mutex cable_out_lock;
 	spinlock_t slock;
 	unsigned int polling_interval;
 	bool charger_thread_timeout;

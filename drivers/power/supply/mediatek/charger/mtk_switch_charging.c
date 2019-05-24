@@ -134,6 +134,12 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
+	if (info->water_detected) {
+		pdata->input_current_limit = info->data.usb_charger_current;
+		pdata->charging_current_limit = info->data.usb_charger_current;
+		goto done;
+	}
+
 	if ((get_boot_mode() == META_BOOT) ||
 	    (get_boot_mode() == ADVMETA_BOOT)) {
 		pdata->input_current_limit = 200000; /* 200mA */
@@ -380,7 +386,8 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 		chr_err("In meta mode, disable charging and set input current limit to 200mA\n");
 	} else {
 		mtk_pe20_start_algorithm(info);
-		mtk_pe_start_algorithm(info);
+		if (mtk_pe20_get_is_connect(info) == false)
+			mtk_pe_start_algorithm(info);
 
 		swchg_select_charging_current_limit(info);
 		if (info->chg1_data.input_current_limit == 0
@@ -403,7 +410,6 @@ static int mtk_switch_charging_plug_in(struct charger_manager *info)
 	info->polling_interval = CHARGING_INTERVAL;
 	swchgalg->disable_charging = false;
 	get_monotonic_boottime(&swchgalg->charging_begin_time);
-	charger_manager_notifier(info, CHARGER_NOTIFY_START_CHARGING);
 
 	return 0;
 }
@@ -418,7 +424,7 @@ static int mtk_switch_charging_plug_out(struct charger_manager *info)
 	mtk_pe_set_is_cable_out_occur(info, true);
 	mtk_pdc_plugout(info);
 	mtk_pe40_plugout_reset(info);
-	charger_manager_notifier(info, CHARGER_NOTIFY_STOP_CHARGING);
+
 	return 0;
 }
 
@@ -610,7 +616,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 	if (mtk_pdc_check_charger(info) == false &&
 	    mtk_is_TA_support_pd_pps(info) == false) {
 		mtk_pe20_check_charger(info);
-		mtk_pe_check_charger(info);
+		if (mtk_pe20_get_is_connect(info) == false)
+			mtk_pe_check_charger(info);
 	}
 
 	do {

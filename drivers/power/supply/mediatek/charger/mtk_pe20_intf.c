@@ -588,9 +588,6 @@ int mtk_pe20_start_algorithm(struct charger_manager *pinfo)
 	__pm_stay_awake(&pe20->suspend_lock);
 	chr_debug("%s\n", __func__);
 
-	if (pe20->is_cable_out_occur)
-		mtk_pe20_plugout_reset(pinfo);
-
 	if (!pe20->is_connect) {
 		ret = -EIO;
 		chr_info("%s: stop, PE+20 is not connected\n",
