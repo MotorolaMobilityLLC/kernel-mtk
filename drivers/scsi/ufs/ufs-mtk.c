@@ -100,7 +100,7 @@ struct kh_dev *ufs_mtk_get_kh(void)
 #if defined(HIE_CHANGE_KEY_IN_NORMAL_WORLD)
 static int ufs_crypto_hie_get_cap(struct ufs_hba *hba, unsigned int hie_cap)
 {
-	dev_info(hba->dev, "hie_cap: 0x%x\n", hie_cap);
+	dev_dbg(hba->dev, "hie_cap: 0x%x\n", hie_cap);
 
 	if (hie_cap & BC_AES_128_XTS)
 		return 0;
@@ -202,7 +202,7 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode,
 		for (i = 0; i < 32; i++) {
 			ufshcd_writel(info->hba, cpt_cfg.cfgx_raw[i],
 				(addr + i * 4));
-			dev_info(info->hba->dev, "0x%x=0x%x\n",
+			dev_dbg(info->hba->dev, "0x%x=0x%x\n",
 				(addr + i * 4), cpt_cfg.cfgx_raw[i]);
 		}
 
