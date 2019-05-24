@@ -101,6 +101,7 @@ uint32_t audio_get_opendsp_id(const uint8_t task)
 	case TASK_SCENE_DATAPROVIDER:
 	case TASK_SCENE_AUD_DAEMON:
 	case TASK_SCENE_AUDIO_CONTROLLER_HIFI3:
+	case TASK_SCENE_CALL_FINAL:
 		opendsp_id = AUDIO_OPENDSP_USE_HIFI3;
 		break;
 	default:
@@ -218,15 +219,15 @@ int get_reserve_mem_size(const uint8_t opendsp_id,
 }
 
 
-phys_addr_t get_reserve_mem_virt(const uint8_t opendsp_id,
+void *get_reserve_mem_virt(const uint8_t opendsp_id,
 	const uint32_t mem_id)
 {
-	phys_addr_t addr_mem_virt = 0;
+	void *addr_mem_virt = NULL;
 
 	switch (opendsp_id) {
 #if defined(CONFIG_MTK_AUDIO_CM4_SUPPORT)
 	case AUDIO_OPENDSP_USE_CM4_A:
-		addr_mem_virt = scp_get_reserve_mem_virt(mem_id);
+		addr_mem_virt = (void *)scp_get_reserve_mem_virt(mem_id);
 		break;
 #endif
 #if defined(CONFIG_MTK_AUDIODSP_SUPPORT)

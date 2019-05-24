@@ -639,7 +639,9 @@ static int adsp_system_sleep_suspend(struct device *dev)
 {
 	mutex_lock(&adsp_suspend_mutex);
 	if ((is_adsp_ready(ADSP_A_ID) == 1) || adsp_feature_is_active()) {
+#ifdef CONFIG_MTK_TIMER_TIMESYNC
 		sys_timer_timesync_sync_adsp(SYS_TIMER_TIMESYNC_FLAG_FREEZE);
+#endif
 		adsp_awake_unlock_adsppll(ADSP_A_ID, 1);
 	}
 	mutex_unlock(&adsp_suspend_mutex);
@@ -652,7 +654,9 @@ static int adsp_system_sleep_resume(struct device *dev)
 	if ((is_adsp_ready(ADSP_A_ID) == 1) || adsp_feature_is_active()) {
 		/*wake adsp up*/
 		adsp_awake_unlock_adsppll(ADSP_A_ID, 0);
+#ifdef CONFIG_MTK_TIMER_TIMESYNC
 		sys_timer_timesync_sync_adsp(SYS_TIMER_TIMESYNC_FLAG_UNFREEZE);
+#endif
 	}
 	mutex_unlock(&adsp_suspend_mutex);
 
@@ -681,7 +685,9 @@ static void adsp_syscore_resume(void)
 		writel((ADSP_A_SW_RSTN | ADSP_A_SW_DBG_RSTN), ADSP_A_REBOOT);
 		udelay(1);
 		writel(0, ADSP_A_REBOOT);
+#ifdef CONFIG_MTK_TIMER_TIMESYNC
 		sys_timer_timesync_sync_adsp(SYS_TIMER_TIMESYNC_FLAG_UNFREEZE);
+#endif
 #if ADSP_BUS_MONITOR_INIT_ENABLE
 		adsp_bus_monitor_init(); /* reinit bus monitor hw */
 #endif
