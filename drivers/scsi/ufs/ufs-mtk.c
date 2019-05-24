@@ -441,8 +441,7 @@ void ufs_mtk_hwfde_cfg_cmd(struct ufs_hba *hba,
 				hba->crypto_hwfde_key_idx);
 		}
 
-		lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
-		((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
+		lba = blk_rq_pos(cmd->request) >> 3;
 
 		ufs_mtk_crypto_cal_dun(UFS_CRYPTO_ALGO_ESSIV_AES_CBC,
 			lba, &dunl, &dunu);
