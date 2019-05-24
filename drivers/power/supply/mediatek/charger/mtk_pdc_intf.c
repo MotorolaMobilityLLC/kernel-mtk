@@ -103,7 +103,8 @@ static bool mtk_is_pdc_ready(struct charger_manager *info)
 		return false;
 
 	if (info->pd_type == PD_CONNECT_PE_READY_SNK ||
-		info->pd_type == PD_CONNECT_PE_READY_SNK_PD30)
+		info->pd_type == PD_CONNECT_PE_READY_SNK_PD30 ||
+		info->pd_type == PD_CONNECT_PE_READY_SNK_APDO)
 		return true;
 
 	return false;

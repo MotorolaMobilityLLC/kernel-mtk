@@ -49,8 +49,8 @@ static irqreturn_t mt6360_pmu_irq_handler(int irq, void *data)
 				continue;
 			ret = irq_find_mapping(mpi->irq_domain, i * 8 + j);
 			if (ret) {
-				/* bypass adc donei irq */
-				if (i == 5 && j == 4)
+				/* bypass adc donei & mivr irq */
+				if ((i == 5 && j == 4) || (i == 0 && j == 6))
 					mt_dbg(mpi->dev,
 					       "handle_irq [%d,%d]\n", i, j);
 				else

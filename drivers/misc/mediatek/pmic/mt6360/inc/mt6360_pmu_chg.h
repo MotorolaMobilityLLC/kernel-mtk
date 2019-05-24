@@ -17,6 +17,9 @@
 #ifndef __MT6360_PMU_CHG_H
 #define __MT6360_PMU_CHG_H
 
+/* Define this macro if DCD timeout is supported */
+#define CONFIG_MT6360_DCDTOUT_SUPPORT
+
 struct mt6360_chg_platform_data {
 	u32 ichg;
 	u32 aicr;
@@ -29,6 +32,7 @@ struct mt6360_chg_platform_data {
 	u32 en_te;
 	u32 en_wdt;
 	u32 aicc_once;
+	u32 post_aicc;
 	const char *chg_name;
 };
 
@@ -97,6 +101,8 @@ struct mt6360_chg_platform_data {
 /* MT6360_PMU_DEVICE_TYPE : 0x22 */
 #define MT6360_MASK_USBCHGEN	BIT(7)
 #define MT6360_SHFT_USBCHGEN	(7)
+#define MT6360_MASK_DCDTOUTEN	BIT(6)
+#define MT6360_SHFT_DCDTOUTEN	6
 
 /* MT6360_PMU_USB_STATUS1 : 0x27 */
 #define MT6360_MASK_USB_STATUS	(0x70)

@@ -38,6 +38,7 @@ struct mt6360_pmu_adc_info {
 	struct task_struct *scan_task;
 	struct completion adc_complete;
 	struct mutex adc_lock;
+	ktime_t last_off_timestamps[MAX_CHANNEL];
 };
 
 static const struct mt6360_adc_platform_data def_platform_data = {
@@ -115,7 +116,8 @@ static int mt6360_adc_read_raw(struct iio_dev *iio_dev,
 					 MT6360_PMU_ADC_CONFIG, 2, tmp);
 	if (ret < 0)
 		goto err_adc_init;
-	predict_end_t = ktime_add_ms(ktime_get(), 25);
+	predict_end_t = ktime_add_ms(mpai->last_off_timestamps[chan->channel],
+				     50);
 	mt6360_pmu_adc_irq_enable("adc_donei", 1);
 retry:
 	if (retry_cnt++ > ADC_RETRY_CNT) {
@@ -145,7 +147,7 @@ retry:
 		goto retry;
 	}
 	if (!ktime_after(ktime_get(), predict_end_t)) {
-		dev_dbg(&iio_dev->dev, "time is not after 26ms chan_time\n");
+		dev_dbg(&iio_dev->dev, "time is not after 50ms chan_time\n");
 		goto retry;
 	}
 	switch (mask) {
@@ -168,6 +170,7 @@ err_adc_conv:
 	memset(tmp, 0, sizeof(tmp));
 	tmp[0] |= (1 << 7);
 	mt6360_pmu_reg_block_write(mpai->mpi, MT6360_PMU_ADC_CONFIG, 2, tmp);
+	mpai->last_off_timestamps[chan->channel] = ktime_get();
 err_adc_init:
 	mutex_unlock(&mpai->adc_lock);
 	mt_dbg(&iio_dev->dev, "%s: channel [%d] e\n", __func__, chan->channel);
@@ -257,7 +260,7 @@ static void mt6360_pmu_adc_irq_enable(const char *name, int en)
 			if (en)
 				enable_irq(irq_desc->irq);
 			else
-				disable_irq(irq_desc->irq);
+				disable_irq_nosync(irq_desc->irq);
 			break;
 		}
 	}
@@ -386,7 +389,12 @@ static int mt6360_adc_iio_device_register(struct iio_dev *indio_dev)
 static inline int mt6360_pmu_adc_reset(struct mt6360_pmu_adc_info *info)
 {
 	u8 tmp[3] = {0x80, 0, 0};
+	ktime_t all_off_time;
+	int i;
 
+	all_off_time = ktime_get();
+	for (i = 0; i < MAX_CHANNEL; i++)
+		info->last_off_timestamps[i] = all_off_time;
 	/* enable adc_en, clear adc_chn_en/zcv/en/adc_wait_t/adc_idle_t */
 	return mt6360_pmu_reg_block_write(info->mpi,
 					  MT6360_PMU_ADC_CONFIG, 3, tmp);

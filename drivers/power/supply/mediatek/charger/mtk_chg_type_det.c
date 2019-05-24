@@ -119,7 +119,6 @@ struct mt_charger {
 static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
-
 	int boot_mode = 0;
 
 	if (!mtk_chg->chg_online) {
