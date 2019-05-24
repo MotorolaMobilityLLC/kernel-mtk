@@ -222,21 +222,9 @@ static void spm_idle_pcm_setup_before_wfi(
 {
 	unsigned int resource_usage = 0;
 
-/* scenario-oriented */
-#if 0
 	resource_usage = (op_cond & MTK_IDLE_OPT_SLEEP_DPIDLE) ?
 		spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP)
 		: spm_get_resource_usage();
-/* resource-oriented */
-#else
-	resource_usage = spm_get_resource_usage();
-
-	if (resource_usage & SPM_RESOURCE_CK_26M)
-		resource_usage &= (~SPM_RESOURCE_CK_26M);
-
-	resource_usage |= spm_get_resource_usage_by_user(SPM_RESOURCE_USER_SCP);
-#endif
-
 
 	mt_secure_call(smc_id[idle_type], pwrctrl->pcm_flags,
 		pwrctrl->pcm_flags1, resource_usage, 0);
