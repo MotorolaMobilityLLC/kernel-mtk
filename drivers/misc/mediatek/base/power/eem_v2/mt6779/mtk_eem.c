@@ -928,12 +928,17 @@ void base_ops_set_phase(struct eem_det *det, enum eem_phase phase)
 
 	case EEM_PHASE_INIT02:
 		eem_debug("EEM_SET_PHASE02\n ");
+		/* check if DCVALUES is minus and set DCVOFFSETIN to zero */
+		if ((det->DCVOFFSETIN & 0x8000) || (eem_devinfo.FT_PGM <= 2)
+			|| (eem_devinfo.FT_PGM == 9)
+			|| (eem_devinfo.FT_PGM == 10))
+			det->DCVOFFSETIN = 0;
+
 		eem_write(EEMINTEN, 0x00005f01);
 
 		eem_write(EEM_INIT2VALS,
-			  ((det->AGEVOFFSETIN << 16) & 0xffff0000) |
-			  ((eem_devinfo.FT_PGM <= 2) ? 0 :
-			   det->DCVOFFSETIN & 0xffff));
+			((det->AGEVOFFSETIN << 16) & 0xffff0000) |
+			(det->DCVOFFSETIN & 0xffff));
 
 		/* enable EEM INIT measurement */
 		eem_write(EEMEN, 0x00000005 | SEC_MOD_SEL);
@@ -2324,10 +2329,6 @@ static inline void handle_init01_isr(struct eem_det *det)
 	 */
 	 /* hw bug, workaround */
 	det->DCVOFFSETIN = ~(eem_read(EEM_DCVALUES) & 0xffff) + 1;
-	/* check if DCVALUES is minus and set DCVOFFSETIN to zero */
-
-	if (det->DCVOFFSETIN & 0x8000)
-		det->DCVOFFSETIN = 0;
 
 #ifdef CORN_LOAD
 	if (corn_init)
