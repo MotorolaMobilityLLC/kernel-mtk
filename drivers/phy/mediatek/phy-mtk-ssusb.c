@@ -62,7 +62,7 @@ static bool usb_enable_clock(struct mtk_phy_drv *u3phy, bool enable)
 
 	if (enable && count == 0) {
 		if (clk_prepare_enable(u3phy->clk) != 0)
-			phy_printk(K_ERR, "u3phy->clk enable fail\n");
+			phy_printk(K_ERR, "ssusb_clk enable fail\n");
 	} else if (!enable && count == 1) {
 		clk_disable_unprepare(u3phy->clk);
 	}
