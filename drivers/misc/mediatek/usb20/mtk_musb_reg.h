@@ -473,7 +473,7 @@ static inline void musb_write_rxfunaddr(void __iomem *mbase,
 	DBG(4, "%s ep%d 0x%X 0x%X\n", __func__, epnum, qh_addr_reg,
 							new_qh_addr_reg);
 
-	musb_writew(mbase, MUSB_RXFUNCADDR + 8 * epnum, qh_addr_reg);
+	musb_writew(mbase, MUSB_RXFUNCADDR + 8 * epnum, new_qh_addr_reg);
 }
 
 static inline void musb_write_rxhubaddr(void __iomem *mbase,
