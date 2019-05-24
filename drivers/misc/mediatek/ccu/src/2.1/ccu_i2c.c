@@ -363,7 +363,7 @@ static int ccu_i2c_controller_en(enum CCU_I2C_CHANNEL
 	struct i2c_client *pClient = NULL;
 	struct mt_i2c *i2c;
 
-	LOG_INF_MUST("%s, id(%d):(%d)->(%d)\n", __func,
+	LOG_INF_MUST("%s, id(%d):(%d)->(%d)\n", __func__,
 		     i2c_controller_id, ccu_i2c_initialized[i2c_controller_id],
 		     enable);
 

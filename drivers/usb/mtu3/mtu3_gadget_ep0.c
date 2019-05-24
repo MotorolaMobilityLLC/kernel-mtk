@@ -70,8 +70,10 @@ __acquires(mtu->lock)
 {
 	int ret;
 
-	if (!mtu->gadget_driver)
+	if (!mtu->gadget_driver || !mtu->softconnect) {
+		pr_info("%s !softconnect\n", __func__);
 		return -EOPNOTSUPP;
+	}
 
 	spin_unlock(&mtu->lock);
 	ret = mtu->gadget_driver->setup(&mtu->g, setup);

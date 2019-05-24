@@ -22,18 +22,12 @@
 #include "mtu3.h"
 #include "mtu3_dr.h"
 #include "mtu3_hal.h"
+#include <mt-plat/charger_type.h>
 
 #define USB2_PORT 2
 #define USB3_PORT 3
 
 struct otg_switch_mtk *g_otg_sx;
-
-enum mtu3_vbus_id_state {
-	MTU3_ID_FLOAT = 1,
-	MTU3_ID_GROUND,
-	MTU3_VBUS_OFF,
-	MTU3_VBUS_VALID,
-};
 
 enum {
 	DUAL_PROP_HOST = 0,
@@ -49,21 +43,88 @@ static void toggle_opstate(struct ssusb_mtk *ssusb)
 #if !defined(CONFIG_USB_MU3D_DRV)
 bool mt_usb_is_device(void)
 {
-#if !defined(CONFIG_FPGA_EARLY_PORTING) && defined(CONFIG_USB_XHCI_MTK)
-	return true;
-#else
-	return true;
-#endif
+	bool host_mode = false;
+
+	if (g_otg_sx != NULL && g_otg_sx->usb_mode == DUAL_PROP_HOST)
+		host_mode = true;
+
+	mtu3_printk(K_CRIT, "%s mode\n", host_mode ? "HOST" : "DEV");
+	return !host_mode;
 }
+
+static enum charger_type mtu3_hal_get_charger_type(void)
+{
+	enum charger_type chg_type;
+
+	chg_type = mt_get_charger_type();
+
+	return chg_type;
+}
+
+static bool mtu3_hal_is_vbus_exist(void)
+{
+	bool vbus_exist;
+
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
+#endif
+
+	return vbus_exist;
+}
+
 
 bool usb_cable_connected(void)
 {
-	if (g_otg_sx)
-		return (g_otg_sx->usb_mode == DUAL_PROP_DEVICE);
-	else
-		return false;
+	enum charger_type chg_type = CHARGER_UNKNOWN;
+	bool connected = true, vbus_exist = false;
+
+	/* TYPE CHECK*/
+	chg_type = mtu3_hal_get_charger_type();
+
+	/* VBUS CHECK to avoid type miss-judge */
+	vbus_exist = mtu3_hal_is_vbus_exist();
+
+	mtu3_printk(K_CRIT, "%s vbus_exist=%d type=%d\n",
+		__func__, vbus_exist, chg_type);
+
+	if (mtu3_cable_mode == CABLE_MODE_CHRG_ONLY || (mtu3_cable_mode ==
+		CABLE_MODE_HOST_ONLY && chg_type != CHARGING_HOST))
+		connected = false;
+
+	return connected;
 }
 #endif
+
+static bool mtu3_mode_check(enum mtu3_vbus_id_state status)
+{
+	switch (status) {
+	case MTU3_ID_GROUND:
+	case MTU3_ID_FLOAT:
+		/*For host event, keep original behavior so return false*/
+		break;
+	case MTU3_VBUS_VALID:
+	case MTU3_CMODE_VBUS_VALID:
+		/*Check charger status*/
+#if !defined(CONFIG_USB_MU3D_DRV)
+		if (!usb_cable_connected()) {
+			mtu3_printk(K_CRIT, "cable not connected\n");
+			return true;
+		}
+#endif
+		break;
+	case MTU3_VBUS_OFF:
+		/*Disconnection case, only need to check force on*/
+		if (mtu3_cable_mode == CABLE_MODE_FORCEON)
+			return true;
+		break;
+	default:
+		pr_info("invalid status\n");
+	}
+
+	return false;
+}
 
 static void ssusb_ip_sw_reset(struct ssusb_mtk *ssusb)
 {
@@ -265,20 +326,28 @@ static void ssusb_set_mode(struct work_struct *work)
  * switch to host: -> MTU3_VBUS_OFF --> MTU3_ID_GROUND
  * switch to device: -> MTU3_ID_FLOAT --> MTU3_VBUS_VALID
  */
-static void ssusb_set_mailbox(struct otg_switch_mtk *otg_sx,
+void ssusb_set_mailbox(struct otg_switch_mtk *otg_sx,
 	enum mtu3_vbus_id_state status)
 {
 	struct ssusb_mtk *ssusb =
 		container_of(otg_sx, struct ssusb_mtk, otg_switch);
 	unsigned long flags;
+	int i;
 
 	mtu3_printk(K_CRIT, "mailbox state(%d)\n", status);
+
+	if (mtu3_mode_check(status)) {
+		mtu3_printk(K_CRIT, "skip set mode\n");
+		return;
+	}
+
 	spin_lock_irqsave(&otg_sx->dr_lock, flags);
 	switch (status) {
 	case MTU3_ID_GROUND:
 		otg_sx->desire_usb_mode = DUAL_PROP_HOST;
 		break;
 	case MTU3_VBUS_VALID:
+	case MTU3_CMODE_VBUS_VALID:
 		otg_sx->desire_usb_mode = DUAL_PROP_DEVICE;
 		break;
 	case MTU3_ID_FLOAT:
@@ -289,8 +358,18 @@ static void ssusb_set_mailbox(struct otg_switch_mtk *otg_sx,
 		dev_err(ssusb->dev, "invalid state\n");
 	}
 	spin_unlock_irqrestore(&otg_sx->dr_lock, flags);
-	queue_delayed_work(otg_sx->dr_workq,
-			&otg_sx->dr_work, 0);
+
+	for (i = 0; i < 20; i++) {
+		if (!otg_sx->dr_workq) {
+			mtu3_printk(K_CRIT, "dr_wq not ready\n");
+			msleep(500);
+		} else {
+			mtu3_printk(K_CRIT, "dr_wq is ready\n");
+			queue_delayed_work(otg_sx->dr_workq,
+				&otg_sx->dr_work, 0);
+			break;
+		}
+	}
 }
 
 static int ssusb_id_notifier(struct notifier_block *nb,
@@ -373,16 +452,17 @@ int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 	struct otg_switch_mtk *otg_sx = &ssusb->otg_switch;
 
 	otg_sx->usb_mode = DUAL_PROP_NONE;
-	/*switch_port_to_none(ssusb);*/
-
+#if !defined(CONFIG_USB_MU3D_DRV)
+	switch_port_to_none(ssusb);
+#endif
 	spin_lock_init(&otg_sx->dr_lock);
 
 	INIT_DELAYED_WORK(&otg_sx->extcon_reg_dwork, extcon_register_dwork);
 
-	/*ssusb_debugfs_init(ssusb);*/
+	ssusb_debugfs_init(ssusb);
 
 	/* It is enough to delay 1s for waiting for host initialization */
-	schedule_delayed_work(&otg_sx->extcon_reg_dwork, HZ);
+	schedule_delayed_work(&otg_sx->extcon_reg_dwork, HZ/2);
 	g_otg_sx = otg_sx;
 
 	return 0;
