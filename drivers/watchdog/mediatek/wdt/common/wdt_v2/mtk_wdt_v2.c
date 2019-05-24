@@ -96,6 +96,19 @@ static struct wdt_kick_info_t wdt_kick_info[MTK_WDT_KEEP_LAST_INFO];
 static unsigned int timeout;
 #endif
 
+static enum wdt_rst_modes mtk_wdt_get_rst_mode(struct device_node *node)
+{
+	u32 rst_mode = 0;
+	int err;
+
+	err = of_property_read_u32(node, "rstmode", &rst_mode);
+	if (err < 0)
+		return WDT_RST_MODE_DEFAULT;
+	if (rst_mode)
+		return WDT_RST_MODE_PMIC;
+	return WDT_RST_MODE_DEFAULT;
+}
+
 static void mtk_wdt_mark_stage(unsigned int stage)
 {
 	unsigned int reg = __raw_readl(MTK_WDT_NONRST_REG2);
@@ -446,15 +459,17 @@ void wdt_arch_reset(char mode)
 {
 	unsigned int wdt_mode_val;
 	struct device_node *np_rgu;
+	enum wdt_rst_modes rst_mode = WDT_RST_MODE_DEFAULT;
 
 	pr_debug("%s: mode=0x%x\n", __func__, mode);
 
+	for_each_matching_node(np_rgu, rgu_of_match) {
+		pr_info("%s: compatible node found: %s\n",
+			__func__, np_rgu->name);
+		break;
+	}
+
 	if (!toprgu_base) {
-		for_each_matching_node(np_rgu, rgu_of_match) {
-			pr_info("%s: compatible node found: %s\n",
-				__func__, np_rgu->name);
-			break;
-		}
 		toprgu_base = of_iomap(np_rgu, 0);
 		if (!toprgu_base)
 			pr_info("RGU iomap failed\n");
@@ -462,9 +477,11 @@ void wdt_arch_reset(char mode)
 			toprgu_base, wdt_irq_id);
 	}
 
+	if (np_rgu)
+		rst_mode = mtk_wdt_get_rst_mode(np_rgu);
+
 	/* Watchdog Rest */
 	mt_reg_sync_writel(MTK_WDT_RESTART_KEY, MTK_WDT_RESTART);
-
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_MTK_PMIC
 	/*
@@ -480,7 +497,6 @@ void wdt_arch_reset(char mode)
 	pmic_pre_wdt_reset();
 #endif
 #endif
-
 	wdt_mode_val = __raw_readl(MTK_WDT_MODE);
 
 	pr_debug("%s: wdt_mode=0x%x\n", __func__, wdt_mode_val);
@@ -529,7 +545,7 @@ void wdt_arch_reset(char mode)
 
 	udelay(100);
 
-	pr_debug("%s: sw reset happen!\n", __func__);
+	pr_debug("%s: sw reset happen! rst_mode %d\n", __func__, rst_mode);
 
 	__inner_flush_dcache_all();
 
@@ -539,8 +555,14 @@ void wdt_arch_reset(char mode)
 	/* delay awhile to make above dump as complete as possible */
 	udelay(100);
 
-	/* trigger SW reset */
-	mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
+	if (rst_mode == WDT_RST_MODE_PMIC &&
+	    mode == WD_SW_RESET_BYPASS_PWR_KEY)
+		pmic_config_interface_nolock(PMIC_RG_CRST_ADDR, 1,
+						 PMIC_RG_CRST_MASK,
+						 PMIC_RG_CRST_SHIFT);
+	else
+		/* trigger SW reset */
+		mt_reg_sync_writel(MTK_WDT_SWRST_KEY, MTK_WDT_SWRST);
 
 	while (1) {
 		/* check if system is alive for debugging */
@@ -549,7 +571,6 @@ void wdt_arch_reset(char mode)
 		wdt_dump_reg();
 		cpu_relax();
 	}
-
 }
 
 int mtk_rgu_dram_reserved(int enable)
