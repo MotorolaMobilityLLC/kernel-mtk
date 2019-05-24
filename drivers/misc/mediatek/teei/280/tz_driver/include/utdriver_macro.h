@@ -101,6 +101,7 @@
 #define LOCK_PM_MUTEX			0x0C
 #define UNLOCK_PM_MUTEX			0x0D
 #define SWITCH_CORE			0x0E
+#define MOVE_CORE			0x0F
 #define NT_DUMP_T			(0x10)
 #define VFS_SYS_NO			0x08
 #define REETIME_SYS_NO			0x07
