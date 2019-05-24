@@ -58,6 +58,7 @@
 
 #define D0_SEL 0	/* not implement */
 #define AGING_SEL 0	/* not implement */
+#define DLPT_UI_REMAP_EN 0
 
 /* ADC resistor  */
 #define R_BAT_SENSE	4
