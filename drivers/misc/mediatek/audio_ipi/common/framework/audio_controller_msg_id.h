@@ -28,9 +28,17 @@ enum AUD_CTL_MSG_id_call_t {
 	AUD_CTL_MSG_A2D_AURISYS_ENABLE      = AUD_CTL_MSG_A2D_BASE + 0xA3,
 
 
+	/* Boot & recovery */
+	AUD_CTL_MSG_A2D_HAL_REBOOT          = AUD_CTL_MSG_A2D_BASE + 0xB0,
+
+
 	/* DMA control msg, 0xADD- */
 	AUD_CTL_MSG_A2D_DMA_INIT            = AUD_CTL_MSG_A2D_BASE + 0xD0,
 	AUD_CTL_MSG_A2D_DMA_UPDATE_REGION   = AUD_CTL_MSG_A2D_BASE + 0xD1,
+
+
+	/* Aurisys dump msg, 0xDAA- */
+	AUD_CTL_MSG_D2A_AURISYS_DUMP        = AUD_CTL_MSG_D2A_BASE + 0xA0,
 
 
 	/* IRQ, DSP to DSP, 0xDDD- */

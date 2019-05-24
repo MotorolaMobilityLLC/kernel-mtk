@@ -23,12 +23,30 @@ enum opendsp_id {
 	NUM_OPENDSP_TYPE,
 	AUDIO_OPENDSP_ID_INVALID
 };
-unsigned int audio_ipi_check_scp_status(void);
-unsigned int get_audio_ipi_scp_location(void);
 
+bool audio_opendsp_id_ready(const uint8_t opendsp_id);
 
 bool audio_opendsp_ready(const uint8_t task);
+
 uint32_t audio_get_opendsp_id(const uint8_t task);
+
 uint32_t audio_get_ipi_id(const uint8_t task);
+
+bool audio_get_opendsp_support(const uint8_t opendsp_id);
+
+uint8_t get_audio_controller_task(const uint8_t opendsp_id);
+
+int get_reserve_mem_size(const uint8_t opendsp_id,
+	uint32_t *mem_id, uint32_t *size);
+
+void *get_reserve_mem_virt(const uint8_t opendsp_id,
+	const uint32_t mem_id);
+
+phys_addr_t get_reserve_mem_phys(const uint8_t opendsp_id,
+	const uint32_t mem_id);
+
+uint8_t get_cache_aligned_order(const uint8_t opendsp_id);
+
+uint8_t get_cache_aligned_mask(const uint8_t opendsp_id);
 
 #endif /*__AUDIO_IPI_PLATFORM_H__ */

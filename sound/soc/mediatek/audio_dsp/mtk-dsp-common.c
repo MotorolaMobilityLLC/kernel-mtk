@@ -8,6 +8,7 @@
 
 /* ipi message related*/
 #include <audio_ipi_dma.h>
+#include <audio_ipi_platform.h>
 #include <audio_messenger_ipi.h>
 #include <audio_task_manager.h>
 #include <audio_task.h>
@@ -95,27 +96,22 @@ int mtk_scp_ipi_send(int task_scene, int data_type, int ack_type,
 {
 	struct ipi_msg_t ipi_msg;
 	int send_result = 0;
-	int retry_count = 20; // 5 x 20 = 100ms
-
-	/* pr_warn("%s(), scp_ipi send payload = %p\n", __func__, payload); */
 
 	memset((void *)&ipi_msg, 0, sizeof(struct ipi_msg_t));
 
-	do {
-		send_result = audio_send_ipi_msg(
-			&ipi_msg, task_scene,
-			AUDIO_IPI_LAYER_TO_DSP, data_type,
-			ack_type, msg_id, param1, param2,
-			(char *)payload);
-
-		if (send_result != 0)
-			pr_warn("%s(), scp_ipi send retry\n", __func__);
-	} while (send_result != 0 && retry_count);
-
-	if (send_result) {
-		pr_info("%s(), scp_ipi send fail\n", __func__);
-		AUD_ASSERT(false);
+	if (is_adsp_ready(ADSP_A_ID) != 1) {
+		pr_info("%s(), is_adsp_ready send false\n", __func__);
+		return send_result;
 	}
+
+	send_result = audio_send_ipi_msg(
+		&ipi_msg, task_scene,
+		AUDIO_IPI_LAYER_TO_DSP, data_type,
+		ack_type, msg_id, param1, param2,
+		(char *)payload);
+
+	if (send_result)
+		pr_info("%s(), scp_ipi send fail\n", __func__);
 
 	return send_result;
 }
