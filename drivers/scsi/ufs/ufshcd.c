@@ -8156,7 +8156,7 @@ ufshcd_init_latency_hist(struct ufs_hba *hba)
 static void
 ufshcd_exit_latency_hist(struct ufs_hba *hba)
 {
-	device_create_file(hba->dev, &dev_attr_latency_hist);
+	device_remove_file(hba->dev, &dev_attr_latency_hist);
 }
 
 /**
