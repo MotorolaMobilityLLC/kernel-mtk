@@ -229,8 +229,8 @@ static int ufs_mtk_hie_cfg_request(unsigned int mode,
 	}
 
 	cmd = info->cmd;
-	lba = ((cmd->cmnd[2]) << 24) | ((cmd->cmnd[3]) << 16) |
-			((cmd->cmnd[4]) << 8) | (cmd->cmnd[5]);
+
+	lba = blk_rq_pos(req) >> 3;
 
 	/* Get iv from hie */
 	iv = hie_get_iv(req);
