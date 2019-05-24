@@ -855,6 +855,52 @@ out:
 	return ret;
 }
 
+static void rpmb_req_copy_data_for_hmac(
+	u8 *buf, struct rpmb_frame *f)
+{
+	u32 size;
+
+	/*
+	 * Copy below members for HMAC calculation
+	 * one by one with specifically assigning
+	 * buf to each member to pass buffer-overrun checker.
+	 *
+	 * __u8   data[256];
+	 * __u8   nonce[16];
+	 * __be32 write_counter;
+	 * __be16 addr;
+	 * __be16 block_count;
+	 * __be16 result;
+	 * __be16 req_resp;
+	 */
+
+	memcpy(buf, f->data, RPMB_SZ_DATA);
+	buf += RPMB_SZ_DATA;
+
+	size = sizeof(f->nonce);
+	memcpy(buf, f->nonce, size);
+	buf += size;
+
+	size = sizeof(f->write_counter);
+	memcpy(buf, &f->write_counter, size);
+	buf += size;
+
+	size = sizeof(f->addr);
+	memcpy(buf, &f->addr, size);
+	buf += size;
+
+	size = sizeof(f->block_count);
+	memcpy(buf, &f->block_count, size);
+	buf += size;
+
+	size = sizeof(f->result);
+	memcpy(buf, &f->result, size);
+	buf += size;
+
+	size = sizeof(f->req_resp);
+	memcpy(buf, &f->req_resp, size);
+	buf += size;
+}
 
 int rpmb_req_ioctl_write_data_ufs(struct rpmb_ioc_param *param)
 {
@@ -862,10 +908,10 @@ int rpmb_req_ioctl_write_data_ufs(struct rpmb_ioc_param *param)
 	struct rpmb_dev *rawdev_ufs_rpmb;
 	u32 tran_size, left_size = param->data_len;
 	u32 wc = 0xFFFFFFFF;
-	u16 iCnt, total_blkcnt, tran_blkcnt, left_blkcnt;
+	u16 iCnt, tran_blkcnt, left_blkcnt;
 	u16 blkaddr;
 	u8 hmac[RPMB_SZ_MAC];
-	u8 *dataBuf, *dataBuf_start, *data_for_hmac;
+	u8 *dataBuf, *dataBuf_start;
 	u32 size_for_hmac;
 	int i, ret = 0;
 	u8 user_param_data;
@@ -885,7 +931,7 @@ int rpmb_req_ioctl_write_data_ufs(struct rpmb_ioc_param *param)
 	dataBuf = NULL;
 	dataBuf_start = NULL;
 
-	left_blkcnt = total_blkcnt = ((param->data_len % RPMB_SZ_DATA) ?
+	left_blkcnt = ((param->data_len % RPMB_SZ_DATA) ?
 					(param->data_len / RPMB_SZ_DATA + 1) :
 					(param->data_len / RPMB_SZ_DATA));
 
@@ -992,18 +1038,10 @@ param->data + i * MAX_RPMB_TRANSFER_BLK * RPMB_SZ_DATA + (iCnt * RPMB_SZ_DATA),
 				 tran_size);
 			left_size -= tran_size;
 
-			data_for_hmac = data.icmd.frames[iCnt].data;
+			rpmb_req_copy_data_for_hmac(
+				dataBuf, &data.icmd.frames[iCnt]);
 
-			/* copy data part */
-			memcpy(dataBuf, data_for_hmac, RPMB_SZ_DATA);
-
-			/* copy left part */
-			memcpy(dataBuf + RPMB_SZ_DATA,
-				data_for_hmac + RPMB_SZ_DATA,
-				size_for_hmac - RPMB_SZ_DATA);
-
-			dataBuf = dataBuf + size_for_hmac;
-
+			dataBuf += size_for_hmac;
 		}
 
 		iCnt--;
