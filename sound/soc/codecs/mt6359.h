@@ -2763,6 +2763,7 @@ struct mt6359_codec_ops {
 	int (*enable_dc_compensation)(bool enable);
 	int (*set_lch_dc_compensation)(int value);
 	int (*set_rch_dc_compensation)(int value);
+	int (*adda_dl_gain_control)(bool mute);
 };
 
 int mt6359_set_codec_ops(struct snd_soc_component *cmpnt,
