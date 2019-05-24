@@ -89,6 +89,7 @@
 #include <teei_secure_api.h>
 
 #include <fdrv.h>
+#include <linux/topology.h>
 
 #if CONFIG_MICROTRUST_TZ_DRIVER_MTK_BOOTPROF
 #define TEEI_BOOT_FOOTPRINT(str) log_boot(str)
@@ -215,8 +216,21 @@ unsigned long boot_vfs_addr;
 unsigned long boot_soter_flag;
 unsigned long ut_pm_count;
 unsigned long device_file_cnt;
-static int teei_cpu_id[] = {0x0000, 0x0001, 0x0002, 0x0003, 0x0100, 0x0101,
-				0x0102, 0x0103, 0x0200, 0x0201, 0x0202, 0x0203};
+
+/* ARMv8.2 for CA55, CA75 etc */
+static int teei_cpu_id_arm82[] = {
+	0x81000000, 0x81000100, 0x81000200, 0x81000300,
+	0x81000400, 0x81000500, 0x81000600, 0x81000700,
+	0x81000800, 0x81000900, 0x81000a00, 0x81000b00};
+
+/* ARMv8 */
+static int teei_cpu_id_arm80[] = {
+		0x0000, 0x0001, 0x0002, 0x0003,
+		0x0100, 0x0101, 0x0102, 0x0103,
+		0x0200, 0x0201, 0x0202, 0x0203};
+
+static int *teei_cpu_id;
+
 unsigned int teei_flags;
 static dev_t teei_config_device_no;
 static struct cdev teei_config_cdev;
@@ -497,7 +511,7 @@ int handle_switch_core(int cpu)
 
 	switch_to_cpu_id = find_prefer_core(cpu);
 
-	IMSG_DEBUG("[%s][%d]brefore cpumask set cpu, find %d\n",
+	IMSG_DEBUG("[%s][%d]before cpumask set cpu, find %d\n",
 				__func__, __LINE__, switch_to_cpu_id);
 
 	set_cpus_allowed_ptr(teei_switch_task, cpumask_of(switch_to_cpu_id));
@@ -506,7 +520,46 @@ int handle_switch_core(int cpu)
 			teei_cpu_id[switch_to_cpu_id], teei_cpu_id[cpu], 0);
 
 	current_cpu_id = switch_to_cpu_id;
-	IMSG_DEBUG("change cpu id from [%d] to [%d]\n", cpu, switch_to_cpu_id);
+
+	IMSG_DEBUG("change cpu id from %d(0x%lx) to %d(0x%lx)\n",
+		cpu, teei_cpu_id[cpu],
+		switch_to_cpu_id, teei_cpu_id[switch_to_cpu_id]);
+
+	return 0;
+}
+
+int handle_move_core(int cpu)
+{
+	int original_cpu_id = 0;
+	int target_cpu_id = cpu;
+
+	original_cpu_id = get_current_cpuid();
+
+	IMSG_DEBUG("[%s][%d]before cpumask set cpu, find %d\n",
+					__func__, __LINE__, target_cpu_id);
+
+	set_cpus_allowed_ptr(teei_switch_task, cpumask_of(target_cpu_id));
+
+	teei_secure_call(N_SWITCH_CORE,
+		teei_cpu_id[target_cpu_id], teei_cpu_id[original_cpu_id], 0);
+
+	current_cpu_id = target_cpu_id;
+	IMSG_DEBUG("change cpu id from [%d] to [%d]\n",
+		target_cpu_id, original_cpu_id);
+
+	return 0;
+}
+
+int tz_move_core(uint32_t cpu_id)
+{
+	ut_pm_mutex_lock(&pm_mutex);
+	if (!cpu_online(cpu_id)) {
+		IMSG_ERROR("The CPU %d is offline !\n", cpu_id);
+		ut_pm_mutex_unlock(&pm_mutex);
+		return -EINVAL;
+	}
+	add_work_entry(MOVE_CORE, (unsigned long)cpu_id);
+	ut_pm_mutex_unlock(&pm_mutex);
 
 	return 0;
 }
@@ -2105,6 +2158,11 @@ static int teei_client_init(void)
 		/* break when first active cpu has been selected */
 		break;
 	}
+
+	if (read_cpuid_mpidr() & MPIDR_MT_BITMASK)
+		teei_cpu_id = teei_cpu_id_arm82;
+	else
+		teei_cpu_id = teei_cpu_id_arm80;
 
 	IMSG_DEBUG("begin to create sub_thread.\n");
 
