@@ -1836,6 +1836,9 @@ struct bio *bio_split(struct bio *bio, int sectors,
 
 	bio_advance(bio, split->bi_iter.bi_size);
 
+	/* also advance bc_iv in behind bio for hie */
+	bio->bi_crypt_ctx.bc_iv += (split->bi_iter.bi_size >> PAGE_SHIFT);
+
 	return split;
 }
 EXPORT_SYMBOL(bio_split);
