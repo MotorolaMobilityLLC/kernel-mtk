@@ -140,6 +140,7 @@ static int g_init_done;
 static int g_forbid_vsync;
 static int g_use_video_mode;
 static struct DFRC_DRV_PANEL_INFO_LIST g_fps_info;
+static struct DFRC_DRV_REFRESH_RANGE g_default_fps_info = {0, 60, 60};
 static struct DFRC_DRV_WINDOW_STATE g_window_state;
 static struct DFRC_DRV_FOREGROUND_WINDOW_INFO g_fg_window_info;
 
@@ -1802,26 +1803,31 @@ static int dfrc_probe(struct platform_device *pdev)
 	g_fps_info.num = 1;
 	g_fps_info.range = vmalloc(sizeof(struct DFRC_DRV_REFRESH_RANGE) *
 					g_fps_info.num);
+	if (g_fps_info.range != NULL) {
 #ifdef PLATFORM_SUPPORT_ARR
-	g_fps_info.range[0].min_fps =
-		primary_display_arr20_get_min_refresh_rate(0);
-	g_fps_info.range[0].max_fps =
-		primary_display_arr20_get_max_refresh_rate(0);
-#else
-	if (primary_display_get_min_refresh_rate) {
 		g_fps_info.range[0].min_fps =
-			primary_display_get_min_refresh_rate();
-	} else {
-		g_fps_info.range[0].min_fps = 60;
-	}
-
-	if (primary_display_get_max_refresh_rate) {
+			primary_display_arr20_get_min_refresh_rate(0);
 		g_fps_info.range[0].max_fps =
-			primary_display_get_max_refresh_rate();
-	} else {
-		g_fps_info.range[0].max_fps = 60;
-	}
+			primary_display_arr20_get_max_refresh_rate(0);
+#else
+		if (primary_display_get_min_refresh_rate) {
+			g_fps_info.range[0].min_fps =
+				primary_display_get_min_refresh_rate();
+		} else {
+			g_fps_info.range[0].min_fps = 60;
+		}
+
+		if (primary_display_get_max_refresh_rate) {
+			g_fps_info.range[0].max_fps =
+				primary_display_get_max_refresh_rate();
+		} else {
+			g_fps_info.range[0].max_fps = 60;
+		}
 #endif
+	} else {
+		pr_info("failed to create REFRESH_RANGE, use default value");
+		g_fps_info.range = &g_default_fps_info;
+	}
 
 	dfrc_init_kernel_policy();
 
