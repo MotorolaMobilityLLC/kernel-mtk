@@ -191,36 +191,21 @@ static inline cycle_t timekeeping_get_delta(struct tk_read_base *tkr)
 	struct timekeeper *tk = &tk_core.timekeeper;
 	cycle_t now, last, mask, max, delta;
 	unsigned int seq;
-	int retry = 50;
 
+	/*
+	 * Since we're called holding a seqlock, the data may shift
+	 * under us while we're doing the calculation. This can cause
+	 * false positives, since we'd note a problem but throw the
+	 * results away. So nest another seqlock here to atomically
+	 * grab the points we are checking with.
+	 */
 	do {
-		/*
-		 * Since we're called holding a seqlock, the data may shift
-		 * under us while we're doing the calculation. This can cause
-		 * false positives, since we'd note a problem but throw the
-		 * results away. So nest another seqlock here to atomically
-		 * grab the points we are checking with.
-		 */
-		do {
-			seq = read_seqcount_begin(&tk_core.seq);
-			now = tk_clock_read(tkr);
-			last = tkr->cycle_last;
-			mask = tkr->mask;
-			max = tkr->clock->max_cycles;
-		} while (read_seqcount_retry(&tk_core.seq, seq));
-
-		if (now < last)
-			pr_info("cycle last=%lld, now=%lld\n", last, now);
-		else
-			break;
-		retry--;
-	} while (retry);
-
-	if (now < last || (retry < 40)) {
-		pr_err("cycle last=%lld, now=%lld, retry=%d\n",
-			last, now, retry);
-		BUG_ON(1);
-	}
+		seq = read_seqcount_begin(&tk_core.seq);
+		now = tk_clock_read(tkr);
+		last = tkr->cycle_last;
+		mask = tkr->mask;
+		max = tkr->clock->max_cycles;
+	} while (read_seqcount_retry(&tk_core.seq, seq));
 
 	delta = clocksource_delta(now, last, mask);
 
@@ -2115,10 +2100,9 @@ void update_wall_time(void)
 	struct timekeeper *real_tk = &tk_core.timekeeper;
 	struct timekeeper *tk = &shadow_timekeeper;
 	cycle_t offset;
-	int shift = 0, maxshift, backupshift = 0;
+	int shift = 0, maxshift;
 	unsigned int clock_set = 0;
 	unsigned long flags;
-	u64 cycle_now = 0, backupoffset = 0;
 
 	raw_spin_lock_irqsave(&timekeeper_lock, flags);
 
@@ -2129,7 +2113,7 @@ void update_wall_time(void)
 #ifdef CONFIG_ARCH_USES_GETTIMEOFFSET
 	offset = real_tk->cycle_interval;
 #else
-	backupoffset = offset = clocksource_delta(tk_clock_read(&tk->tkr_mono),
+	offset = clocksource_delta(tk_clock_read(&tk->tkr_mono),
 				   tk->tkr_mono.cycle_last, tk->tkr_mono.mask);
 #endif
 
@@ -2152,7 +2136,7 @@ void update_wall_time(void)
 	shift = max(0, shift);
 	/* Bound shift to one less than what overflows tick_length */
 	maxshift = (64 - (ilog2(ntp_tick_length())+1)) - 1;
-	backupshift = shift = min(shift, maxshift);
+	shift = min(shift, maxshift);
 	while (offset >= tk->cycle_interval) {
 		offset = logarithmic_accumulation(tk, offset, shift,
 							&clock_set);
@@ -2174,18 +2158,6 @@ void update_wall_time(void)
 	 * xtime_nsec isn't larger than NSEC_PER_SEC
 	 */
 	clock_set |= accumulate_nsecs_to_secs(tk);
-
-	cycle_now = tk_clock_read(&tk->tkr_mono);
-	if (cycle_now < tk->tkr_mono.cycle_last) {
-		pr_err("cycle_now=%lld, cycle_last=%lld, realcycle_last=%lld\n",
-			cycle_now, tk->tkr_mono.cycle_last,
-			real_tk->tkr_mono.cycle_last);
-		pr_err("boffset=%lld, bshift=%d, maxshift=%d, shift=%d\n",
-			backupoffset, backupshift, maxshift, shift);
-		pr_err("offset=%lld, cycle_interval=%lld, clock_set=0x%x\n",
-			offset, tk->cycle_interval, clock_set);
-		BUG_ON(1);
-	}
 
 	write_seqcount_begin(&tk_core.seq);
 	/*
