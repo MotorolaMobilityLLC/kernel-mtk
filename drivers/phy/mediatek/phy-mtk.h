@@ -57,8 +57,10 @@ struct mtk_phy_interface {
 	int  (*usb_phy_io_write)(struct mtk_phy_instance *, u32, u32);
 	void (*usb_phy_switch_to_usb)(struct mtk_phy_instance *);
 	void (*usb_phy_switch_to_uart)(struct mtk_phy_instance *);
-	bool (*usb_phy_check_in_uart_mode)(struct mtk_phy_instance *);
+	bool (*usb_phy_check_in_uart_mode)(struct mtk_phy_instance *instance);
+	void (*usb_phy_dump_usb2uart_reg)(struct mtk_phy_instance *instance);
 	void (*usb_phy_sib_enable_switch)(struct mtk_phy_instance *, bool);
+	bool (*usb_phy_sib_switch_status)(struct mtk_phy_instance *instance);
 	bool (*usb_phy_u3_loop_back_test)(struct mtk_phy_instance *);
 	int (*usb_phy_inst_init)(struct mtk_phy_instance *);
 	unsigned int reg_offset;
@@ -109,5 +111,5 @@ extern u32 phy_debug_level;
 
 extern const struct of_device_id mtk_phy_of_match[];
 
-#endif
 
+#endif
