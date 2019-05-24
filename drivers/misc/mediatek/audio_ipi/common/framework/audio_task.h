@@ -31,6 +31,7 @@ enum {
 	TASK_SCENE_CAPTURE_UL1          = 10,
 	TASK_SCENE_A2DP                 = 11,
 	TASK_SCENE_DATAPROVIDER         = 12,
+	TASK_SCENE_CALL_FINAL           = 13,
 
 	/* control for driver */
 	TASK_SCENE_AUD_DAEMON,
