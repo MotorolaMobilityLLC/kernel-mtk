@@ -710,8 +710,8 @@
 
 	dvfsrc@10012000 {
 		compatible = "mediatek,dvfsrc";
-		reg = <0 0x10012000 0 0x1000>,
-			<0 0x0011bb80 0 0x80>;
+		reg = <0 0x10012000 0 0x1000>;
+		interrupts = <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>;
 	};
 
 	mbist_ao@10013000 {

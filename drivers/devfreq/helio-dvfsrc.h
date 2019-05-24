@@ -74,6 +74,7 @@ struct helio_dvfsrc {
 
 #define DVFSRC_TIMEOUT		1000
 
+#ifndef CONFIG_MTK_QOS_FRAMEWORK
 #define QOS_TOTAL_BW_BUF_SIZE	8
 
 #define QOS_TOTAL_BW_BUF(idx)	(idx * 4)
@@ -84,6 +85,7 @@ struct helio_dvfsrc {
 #define QOS_OTHER_BW		(QOS_TOTAL_BW_BUF_SIZE * 4 + 0x10)
 
 #define QOS_CM_STALL_RATIO(idx) (idx * 4 + 0x60)
+#endif
 
 /* PMIC */
 #define vcore_pmic_to_uv(pmic)	\
@@ -118,6 +120,7 @@ enum {
 extern int is_qos_enabled(void);
 extern int is_dvfsrc_enabled(void);
 extern int is_opp_forced(void);
+extern int is_dvfsrc_opp_fixed(void);
 extern int dvfsrc_get_emi_bw(int type);
 extern int get_vcore_dvfs_level(void);
 extern void mtk_spmfw_init(int dvfsrc_en, int skip_check);

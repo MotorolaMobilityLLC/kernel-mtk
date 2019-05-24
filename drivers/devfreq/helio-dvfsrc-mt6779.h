@@ -17,9 +17,19 @@
 #include <mach/upmu_hw.h>
 
 #define PMIC_VCORE_ADDR		PMIC_RG_BUCK_VCORE_VOSEL
-
 #define VCORE_BASE_UV		400000
 #define VCORE_STEP_UV		6250
+
+#define PMIC_VSRAM_OTHERS_ADDR	PMIC_RG_LDO_VSRAM_OTHERS_VOSEL
+#define VSRAM_BASE_UV	500000
+#define VSRAM_STEP_UV	6250
+
+/* VSRAM_OTHERS */
+#define vsram_pmic_to_uv(pmic)	\
+	(((pmic) * VSRAM_STEP_UV) + VSRAM_BASE_UV)
+#define vsram_uv_to_pmic(uv)	/* pmic >= uv */	\
+	((((uv) - VSRAM_BASE_UV) + (VSRAM_STEP_UV - 1)) / VSRAM_STEP_UV)
+
 #define VCOREFS_LEVEL_POSITIVE
 
 /* met profile table index */
@@ -43,6 +53,8 @@ enum met_src_index {
 	DDR_EMI_TOTAL_IDX,
 	DDR_HRT_BW_IDX,
 	DDR_HIFI_IDX,
+	DDR_HIFI_LATENCY_IDX,
+	DDR_MD_LATENCY_IDX,
 	VCORE_OPP_IDX,
 	VCORE_SW_REQ3_PMQOS_IDX,
 	VCORE_SCP_IDX,
@@ -59,6 +71,8 @@ enum met_src_index {
 	SRC_HRT_DISP_BW_IDX,
 	SRC_HRT_ISP_BW_IDX,
 	SRC_MD_SCENARIO_IDX,
+	SRC_HIFI_SCENARIO_IDX,
+	SRC_MD_EMI_LATENCY_IDX,
 	SRC_MAX
 };
 
