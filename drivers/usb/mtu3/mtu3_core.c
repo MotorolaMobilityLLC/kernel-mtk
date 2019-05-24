@@ -97,7 +97,7 @@ static inline void mtu3_hs_softconn_set(struct mtu3 *mtu, bool enable)
 		mtu3_clrbits(mtu->mac_base, U3D_POWER_MANAGEMENT,
 			SOFT_CONN | SUSPENDM_ENABLE);
 	}
-	dev_dbg(mtu->dev, "SOFTCONN = %d\n", !!enable);
+	dev_info(mtu->dev, "SOFTCONN = %d\n", !!enable);
 }
 
 /* only port0 of U2/U3 supports device mode */
@@ -246,10 +246,17 @@ void mtu3_ep_stall_set(struct mtu3_ep *mep, bool set)
 
 void mtu3_dev_on_off(struct mtu3 *mtu, int is_on)
 {
-	if (mtu->is_u3_ip && (mtu->max_speed == USB_SPEED_SUPER))
-		mtu3_ss_func_set(mtu, is_on);
-	else
-		mtu3_hs_softconn_set(mtu, is_on);
+	if (is_on) {
+		if (mtu->is_u3_ip && (mtu->max_speed == USB_SPEED_SUPER))
+			mtu3_ss_func_set(mtu, true);
+		else {
+			mtu3_ss_func_set(mtu, false);
+			mtu3_hs_softconn_set(mtu, true);
+		}
+	} else {
+		mtu3_ss_func_set(mtu, false);
+		mtu3_hs_softconn_set(mtu, false);
+	}
 
 	dev_info(mtu->dev, "gadget (%s) pullup D%s\n",
 		usb_speed_string(mtu->max_speed), is_on ? "+" : "-");
@@ -605,6 +612,7 @@ static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
 	u32 maxpkt = 64;
 	u32 link;
 	u32 speed;
+	struct mtu3_ep *mep;
 
 	link = mtu3_readl(mbase, U3D_DEV_LINK_INTR);
 	link &= mtu3_readl(mbase, U3D_DEV_LINK_INTR_ENABLE);
@@ -640,7 +648,7 @@ static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
 		udev_speed = USB_SPEED_UNKNOWN;
 		break;
 	}
-	dev_dbg(mtu->dev, "%s: %s\n", __func__, usb_speed_string(udev_speed));
+	dev_info(mtu->dev, "%s: %s\n", __func__, usb_speed_string(udev_speed));
 
 	mtu->g.speed = udev_speed;
 	mtu->g.ep0->maxpacket = maxpkt;
@@ -654,6 +662,14 @@ static irqreturn_t mtu3_link_isr(struct mtu3 *mtu)
 	else
 		mtu3_ep0_setup(mtu);
 #endif
+
+	if (udev_speed == USB_SPEED_SUPER) {
+		mep = mtu->ep0;
+		if (!list_empty(&mep->req_list)) {
+			pr_info("%s reinit EP[0] req_list\n", __func__);
+			INIT_LIST_HEAD(&mep->req_list);
+		}
+	}
 
 	return IRQ_HANDLED;
 }
@@ -704,8 +720,8 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		link_err_cnt = mtu3_readl(mtu->mac_base,
 			U3D_LINK_ERR_COUNT);
 		mtu3_printk(K_INFO, "LTSSM: link_err_cnt=%x\n", link_err_cnt);
-		mtu3_writel(mtu->mac_base, CLR_LINK_ERR_CNT,
-			U3D_LINK_ERR_COUNT);
+		mtu3_writel(mtu->mac_base, U3D_LINK_ERR_COUNT,
+			CLR_LINK_ERR_CNT);
 
 		/* Clear U1 & U2 Enable */
 		mtu3_clrbits(mtu->mac_base, U3D_LINK_POWER_CONTROL,
@@ -732,8 +748,8 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		link_err_cnt = mtu3_readl(mtu->mac_base,
 			U3D_LINK_ERR_COUNT);
 		mtu3_printk(K_INFO, "LTSSM: link_err_cnt=%x\n", link_err_cnt);
-		mtu3_writel(mtu->mac_base, CLR_LINK_ERR_CNT,
-			U3D_LINK_ERR_COUNT);
+		mtu3_writel(mtu->mac_base, U3D_LINK_ERR_COUNT,
+			CLR_LINK_ERR_CNT);
 		cancel_delayed_work(&mtu->check_ltssm_work);
 		sts_ltssm = WARM_RST_INTR;
 	}
@@ -742,8 +758,10 @@ static irqreturn_t mtu3_u3_ltssm_isr(struct mtu3 *mtu)
 		mtu3_printk(K_INFO, "LTSSM: SS_INACTIVE_INTR\n");
 	if (ltssm & RECOVERY_INTR)
 		mtu3_printk(K_INFO, "LTSSM: RECOVERY_INTR\n");
-	if (ltssm & U3_RESUME_INTR)
+	if (ltssm & U3_RESUME_INTR) {
+		mtu3_setbits(mtu->mac_base, U3D_LINK_POWER_CONTROL, UX_EXIT);
 		mtu3_printk(K_INFO, "LTSSM: U3_RESUME_INTR\n");
+	}
 	if (ltssm & ENTER_U2_INTR)
 		mtu3_printk(K_INFO, "LTSSM: ENTER_U2_INTR\n");
 	if (ltssm & ENTER_U1_INTR)
@@ -768,8 +786,10 @@ static irqreturn_t mtu3_u2_common_isr(struct mtu3 *mtu)
 	mtu3_writel(mbase, U3D_COMMON_USB_INTR, u2comm); /* W1C */
 	dev_dbg(mtu->dev, "=== U2COMM[%x] ===\n", u2comm);
 
-	if (u2comm & SUSPEND_INTR)
+	if (u2comm & SUSPEND_INTR) {
 		mtu3_gadget_suspend(mtu);
+		disconnect_check(mtu);
+	}
 
 	if (u2comm & RESUME_INTR)
 		mtu3_gadget_resume(mtu);
@@ -791,6 +811,50 @@ static irqreturn_t mtu3_irq(int irq, void *data)
 	/* U3D_LV1ISR is RU */
 	level1 = mtu3_readl(mtu->mac_base, U3D_LV1ISR);
 	level1 &= mtu3_readl(mtu->mac_base, U3D_LV1IER);
+
+	if (unlikely(!mtu->softconnect) && (level1 & MAC2_INTR)) {
+		u32 u2comm;
+
+		pr_info("%s !softconnect MAC2_INTR\n", __func__);
+		u2comm = mtu3_readl(mtu->mac_base, U3D_COMMON_USB_INTR);
+		u2comm &= mtu3_readl(mtu->mac_base, U3D_COMMON_USB_INTR_ENABLE);
+		mtu3_writel(mtu->mac_base, U3D_COMMON_USB_INTR, u2comm);
+		spin_unlock_irqrestore(&mtu->lock, flags);
+		return IRQ_HANDLED;
+	}
+
+	if (unlikely(!mtu->softconnect) && (level1 & BMU_INTR)) {
+		u32 int_status;
+
+		pr_info("%s !softconnect BMU_INTR\n", __func__);
+		int_status = mtu3_readl(mtu->mac_base, U3D_EPISR);
+		int_status &= mtu3_readl(mtu->mac_base, U3D_EPIER);
+		mtu3_writel(mtu->mac_base, U3D_EPISR, int_status);
+		spin_unlock_irqrestore(&mtu->lock, flags);
+		return IRQ_HANDLED;
+	}
+
+	if (unlikely(!mtu->softconnect) && (level1 & QMU_INTR)) {
+		u32 qmu_done_status;
+
+		pr_info("%s !softconnect QMU_INTR\n", __func__);
+		qmu_done_status = mtu3_readl(mtu->mac_base, U3D_QISAR0);
+		qmu_done_status &= mtu3_readl(mtu->mac_base, U3D_QIER0);
+		mtu3_writel(mtu->mac_base, U3D_QISAR0, qmu_done_status);
+		spin_unlock_irqrestore(&mtu->lock, flags);
+		return IRQ_HANDLED;
+	}
+
+	if (unlikely(!mtu->softconnect) && (level1 & MAC3_INTR)) {
+		u32 ltssm;
+
+		pr_info("%s !softconnect MAC3_INTR\n", __func__);
+		ltssm = mtu3_readl(mtu->mac_base, U3D_LTSSM_INTR);
+		ltssm &= mtu3_readl(mtu->mac_base, U3D_LTSSM_INTR_ENABLE);
+		mtu3_writel(mtu->mac_base, U3D_LTSSM_INTR, ltssm); /* W1C */
+		spin_unlock_irqrestore(&mtu->lock, flags);
+		return IRQ_HANDLED;
+	}
 
 	if (level1 & EP_CTRL_INTR)
 		mtu3_link_isr(mtu);
@@ -891,6 +955,7 @@ int ssusb_gadget_init(struct ssusb_mtk *ssusb)
 	ssusb->u3d = mtu;
 	mtu->ssusb = ssusb;
 	mtu->max_speed = usb_get_maximum_speed(dev);
+	mtu3_cable_mode = CABLE_MODE_NORMAL;
 
 	INIT_DELAYED_WORK(&mtu->check_ltssm_work, mtu3_check_ltssm_work);
 
@@ -934,9 +999,8 @@ int ssusb_gadget_init(struct ssusb_mtk *ssusb)
 	}
 
 	/* init as host mode, power down device IP for power saving */
-	//TODO
-	//if (mtu->ssusb->dr_mode == USB_DR_MODE_OTG)
-	//	mtu3_stop(mtu);
+	if (mtu->ssusb->dr_mode == USB_DR_MODE_OTG)
+		mtu3_stop(mtu);
 
 	dev_dbg(dev, " %s() done...\n", __func__);
 
@@ -976,5 +1040,36 @@ void mtu3_check_ltssm_work(struct work_struct *data)
 		mdelay(10);
 		mtu3_ss_func_set(mtu, true);
 	}
+}
+
+void disconnect_check(struct mtu3 *mtu)
+{
+	bool vbus_exist = false;
+
+	if (!(mtu3_cable_mode == CABLE_MODE_FORCEON))
+		return;
+
+	mdelay(50);
+
+#ifdef CONFIG_POWER_EXT
+	vbus_exist = upmu_get_rgs_chrdet();
+#else
+	vbus_exist = upmu_is_chr_det();
+#endif
+	pr_info("vbus_exist:<%d>\n", vbus_exist);
+	if (vbus_exist)
+		return;
+
+	pr_info("speed <%d>\n", mtu->g.speed);
+	/* notify gadget driver, g.speed judge is very important */
+	if (!mtu->ssusb->is_host && mtu->g.speed != USB_SPEED_UNKNOWN) {
+		if (mtu->gadget_driver && mtu->gadget_driver->disconnect) {
+			spin_unlock(&mtu->lock);
+			mtu->gadget_driver->disconnect(&mtu->g);
+			spin_lock(&mtu->lock);
+			mtu->g.speed = USB_SPEED_UNKNOWN;
+		}
+	}
+	pr_info("speed <%d>\n", mtu->g.speed);
 }
 

@@ -68,6 +68,20 @@ static inline void ssusb_wakeup_disable(struct ssusb_mtk *ssusb)
 
 #endif
 
+enum mtu3_vbus_id_state {
+	MTU3_ID_FLOAT = 1,
+	MTU3_ID_GROUND,
+	MTU3_VBUS_OFF,
+	MTU3_VBUS_VALID,
+	MTU3_CMODE_VBUS_VALID,
+};
+
+extern bool upmu_is_chr_det(void);
+extern u32 upmu_get_rgs_chrdet(void);
+
+void ssusb_set_mailbox(struct otg_switch_mtk *otg_sx,
+	enum mtu3_vbus_id_state status);
+
 
 #if IS_ENABLED(CONFIG_USB_MTU3_GADGET) || IS_ENABLED(CONFIG_USB_MTU3_DUAL_ROLE)
 int ssusb_gadget_init(struct ssusb_mtk *ssusb);

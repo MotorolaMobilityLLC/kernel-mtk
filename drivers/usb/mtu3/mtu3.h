@@ -466,5 +466,18 @@ void mtu3_gadget_disconnect(struct mtu3 *mtu);
 irqreturn_t mtu3_ep0_isr(struct mtu3 *mtu);
 extern const struct usb_ep_ops mtu3_ep0_ops;
 extern void mtu3_check_ltssm_work(struct work_struct *data);
+extern bool upmu_is_chr_det(void);
+extern u32 upmu_get_rgs_chrdet(void);
+extern void disconnect_check(struct mtu3 *mtu);
+extern bool is_saving_mode(void);
+extern unsigned int mtu3_cable_mode;
+/* USB working mode */
+enum cable_mode {
+	CABLE_MODE_CHRG_ONLY = 0,
+	CABLE_MODE_NORMAL,
+	CABLE_MODE_HOST_ONLY,
+	CABLE_MODE_FORCEON,
+	CABLE_MODE_MAX
+};
 
 #endif

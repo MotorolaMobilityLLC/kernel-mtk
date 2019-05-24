@@ -27,6 +27,11 @@
 #include "mtu3.h"
 #include "mtu3_dr.h"
 
+bool is_saving_mode(void)
+{
+	return false;
+}
+
 /* u2-port0 should be powered on and enabled; */
 int ssusb_check_clocks(struct ssusb_mtk *ssusb, u32 ex_clks)
 {
