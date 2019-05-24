@@ -90,7 +90,7 @@ int get_reserve_mem_size(const uint8_t opendsp_id,
 }
 
 
-phys_addr_t get_reserve_mem_virt(const uint8_t opendsp_id,
+void *get_reserve_mem_virt(const uint8_t opendsp_id,
 	const uint32_t mem_id)
 {
 	if (opendsp_id != AUDIO_OPENDSP_USE_CM4_A) {
@@ -99,7 +99,7 @@ phys_addr_t get_reserve_mem_virt(const uint8_t opendsp_id,
 		WARN_ON(1);
 		return 0;
 	}
-	return scp_get_reserve_mem_virt(mem_id);
+	return (void *)scp_get_reserve_mem_virt(mem_id);
 }
 
 
