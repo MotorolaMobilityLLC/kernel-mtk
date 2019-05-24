@@ -761,5 +761,11 @@
 	pinctrl-2 = <&flashlights_aw3644_pins_hwen_low>;
 	status = "okay";
 };
+
+&msdc1 {
+	cd_level = /bits/ 8 <MSDC_CD_HIGH>;
+	cd-gpios = <&pio 0 0>;
+};
+
 #include <k61v1_hdp_ref/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
