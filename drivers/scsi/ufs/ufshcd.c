@@ -7950,7 +7950,7 @@ int ufshcd_system_resume(struct ufs_hba *hba)
 	 * MTK PATCH:
 	 * Calculate time cost by PM callback.
 	 */
-	int ret;
+	int ret = 0;
 	ktime_t start = ktime_get();
 
 	if (!hba || !hba->is_powered || pm_runtime_suspended(hba->dev))
@@ -7958,13 +7958,15 @@ int ufshcd_system_resume(struct ufs_hba *hba)
 		 * Let the runtime resume take care of resuming
 		 * if runtime suspended.
 		 */
-		return 0;
+		goto out;
 
 	ret = ufshcd_resume(hba, UFS_SYSTEM_PM);
 
 	dev_dbg(hba->dev, "sr,ret %d,%d us\n", ret,
 		(int)ktime_to_us(ktime_sub(ktime_get(), start)));
-
+out:
+	if (!ret)
+		hba->is_sys_suspended = false;
 	return ret;
 }
 EXPORT_SYMBOL(ufshcd_system_resume);
