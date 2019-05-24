@@ -96,12 +96,8 @@ extern enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 					  enum adsp_core_id adsp_id);
 
 extern void adsp_A_ipi_handler(void);
-extern int wake_up_adsp(void);
 
-extern unsigned char *adsp_send_buff[ADSP_CORE_TOTAL];
-extern unsigned char *adsp_recv_buff[ADSP_CORE_TOTAL];
 extern char *adsp_core_ids[ADSP_CORE_TOTAL];
-
 extern int adsp_awake_lock(enum adsp_core_id adsp_id);
 extern int adsp_awake_unlock(enum adsp_core_id adsp_id);
 extern void adsp_awake_init(void);

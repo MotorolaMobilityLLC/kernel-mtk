@@ -20,11 +20,11 @@
 /* adsp platform configs*/
 #define ADSP_BOOT_TIME_OUT_MONITOR       (1)
 #define ADSP_LOGGER_ENABLE               (1)
-#define ADSP_VCORE_TEST_ENABLE           (0)
 #define ADSP_TRAX                        (0)
+#define ADSP_BUS_MONITOR_INIT_ENABLE     (1)
 
 /* adsp aed definition*/
-#define ADSP_AED_STR_LEN                (1024)
+#define ADSP_AED_STR_LEN                (512)
 #define ADSP_RESERVED_DRAM_SIZE         (0x1000000)
 
 /* emi mpu define*/
@@ -33,7 +33,7 @@
 #else
 #define ENABLE_ADSP_EMI_PROTECTION       (0)
 #endif
-#define MPU_REGION_ID_ADSP_SMEM          (28)
+#define MPU_REGION_ID_ADSP_SMEM          (30)
 
 /* adsp feature PRI list */
 /* The higher number, higher priority */
@@ -71,6 +71,7 @@ enum adsp_feature_id {
 	VOICE_CALL_FEATURE_ID,
 	VOIP_FEATURE_ID,
 	CAPTURE_UL1_FEATURE_ID,
+	CALL_FINAL_FEATURE_ID,
 	ADSP_NUM_FEATURE_ID,
 };
 

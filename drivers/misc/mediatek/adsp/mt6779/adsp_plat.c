@@ -53,7 +53,6 @@
 #if ENABLE_ADSP_EMI_PROTECTION
 #include <mt_emi_api.h>
 #endif
-#include "mtk_devinfo.h"
 
 #ifdef CONFIG_ARM64
 #define IOMEM(a)                     ((void __force __iomem *)((a)))
@@ -74,12 +73,12 @@
 #define adsp_reg_sync_write(addr, val)  mt_reg_sync_writel(val, addr)
 
 #if ENABLE_ADSP_EMI_PROTECTION
-void set_adsp_mpu(void)
+void set_adsp_mpu(phys_addr_t phys_addr, size_t size)
 {
 	struct emi_region_info_t region_info;
 
-	region_info.start = adsp_mem_base_phys;
-	region_info.end = adsp_mem_base_phys + adsp_mem_size - 0x1;
+	region_info.start = phys_addr;
+	region_info.end = phys_addr + size - 0x1;
 	region_info.region = MPU_REGION_ID_ADSP_SMEM;
 	SET_ACCESS_PERMISSION(region_info.apc, UNLOCK,
 			      FORBIDDEN, FORBIDDEN, FORBIDDEN, FORBIDDEN,
@@ -100,7 +99,12 @@ int adsp_dts_mapping(void)
 		pr_info("error: cannot find node %s\n", INFRACFG_AO_NODE);
 		return -1;
 	}
+
 	adspreg.infracfg_ao = of_iomap(node, 0);
+	if (IS_ERR(adspreg.infracfg_ao)) {
+		pr_info("error: cannot iomap infra cfg\n");
+		return -1;
+	}
 
 	/* pericfg */
 	node = of_find_compatible_node(NULL, NULL, PERICFG_NODE);
@@ -108,7 +112,12 @@ int adsp_dts_mapping(void)
 		pr_info("error: cannot find node %s\n", PERICFG_NODE);
 		return -1;
 	}
+
 	adspreg.pericfg = of_iomap(node, 0);
+	if (IS_ERR(adspreg.pericfg)) {
+		pr_info("error: cannot iomap peri cfg\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -146,13 +155,77 @@ void adsp_way_en_ctrl(uint32_t enable)
 			adsp_reg_read(ADSP_WAY_EN_CTRL) & ~ADSP_WAY_EN_MASK);
 }
 
-void adsp_get_devinfo(void)
+#define SEMAPHORE_TIMEOUT 5000
+/*
+ * acquire a hardware semaphore
+ * @param flag: semaphore id
+ * return  1 :get sema success
+ *        -1 :get sema timeout
+ */
+int get_adsp_semaphore(int flag)
 {
-	unsigned int val = (get_devinfo_with_index(7) & 0xFF);
+	int read_back;
+	int count = 0;
+	int ret = -1;
 
-	if ((val == 0x09) || (val == 0x90) || (val == 0x08) || (val == 0x10)
-	|| (val == 0x06) || (val == 0x60) || (val == 0x04) || (val == 0x20))
-		adspreg.segment = ADSP_SEGMENT_P95;
-	else
-		adspreg.segment = ADSP_SEGMENT_P90;
+	/* return 1 to prevent from access when driver not ready */
+	if (is_adsp_ready(ADSP_A_ID) != 1)
+		return -1;
+
+	flag = (flag * 2) + 1;
+	read_back = (readl(ADSP_SEMAPHORE) >> flag) & 0x1;
+
+	if (read_back == 0) {
+		writel((1 << flag), ADSP_SEMAPHORE);
+
+		while (count != SEMAPHORE_TIMEOUT) {
+			/* repeat test if we get semaphore */
+			read_back = (readl(ADSP_SEMAPHORE) >> flag) & 0x1;
+
+			if (read_back == 1) {
+				ret = 1;
+				break;
+			}
+			writel((1 << flag), ADSP_SEMAPHORE);
+			count++;
+		}
+
+		if (ret < 0)
+			pr_debug("[ADSP] get adsp sema. %d TIMEOUT..!\n", flag);
+	} else
+		pr_debug("[ADSP] already hold adsp sema. %d\n", flag);
+
+	return ret;
+}
+
+/*
+ * release a hardware semaphore
+ * @param flag: semaphore id
+ * return  1 :release sema success
+ *        -1 :release sema fail
+ */
+int release_adsp_semaphore(int flag)
+{
+	int read_back;
+	int ret = -1;
+
+	/* return 1 to prevent from access when driver not ready */
+	if (is_adsp_ready(ADSP_A_ID) != 1)
+		return -1;
+
+	flag = (flag * 2) + 1;
+	read_back = (readl(ADSP_SEMAPHORE) >> flag) & 0x1;
+
+	if (read_back == 1) {
+		/* Write 1 clear */
+		writel((1 << flag), ADSP_SEMAPHORE);
+		read_back = (readl(ADSP_SEMAPHORE) >> flag) & 0x1;
+		if (read_back == 0)
+			ret = 1;
+		else
+			pr_debug("[ADSP] %s %d failed\n", __func__, flag);
+	} else
+		pr_debug("[ADSP] %s %d not own by me\n", __func__, flag);
+
+	return ret;
 }

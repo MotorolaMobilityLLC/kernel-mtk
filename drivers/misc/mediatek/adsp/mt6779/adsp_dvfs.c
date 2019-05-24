@@ -74,12 +74,13 @@
 #define DRV_SetReg32(addr, val)   DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
 #define DRV_ClrReg32(addr, val)   DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
 
+/* new implement for adsp */
 static DEFINE_MUTEX(adsp_timer_mutex);
 DEFINE_MUTEX(adsp_suspend_mutex);
 
 static struct timer_list adsp_suspend_timer;
-static struct adsp_work_struct adsp_suspend_work;
-static int adsp_is_suspend;
+static struct adsp_work_t adsp_suspend_work;
+int adsp_is_suspend;
 
 static int adsp_is_force_freq;
 static int adsp_is_force_trigger_latmon;
@@ -289,34 +290,34 @@ static inline ssize_t adsp_dvfs_trigger_latmon_store(struct device *kobj,
 	return count;
 }
 
-DEVICE_ATTR(adsp_force_adsppll, 0220, NULL, adsp_force_adsppll_store);
-DEVICE_ATTR(adsp_spm_req, 0220, NULL, adsp_spm_req_store);
-DEVICE_ATTR(adsp_keep_adspll_on, 0220, NULL, adsp_keep_adsppll_on_store);
+DEVICE_ATTR_WO(adsp_force_adsppll);
+DEVICE_ATTR_WO(adsp_spm_req);
+DEVICE_ATTR_WO(adsp_keep_adsppll_on);
+DEVICE_ATTR_RW(adsp_dvfs_force_opp);
+DEVICE_ATTR_RW(adsp_dvfs_set_freq);
+DEVICE_ATTR_RW(adsp_dvfs_trigger_latmon);
 
+static struct attribute *adsp_dvfs_attrs[] = {
+#if ADSP_SLEEP_ENABLE
+	&dev_attr_adsp_force_adsppll.attr,
+	&dev_attr_adsp_spm_req.attr,
+	&dev_attr_adsp_keep_adsppll_on.attr,
+#endif
+	&dev_attr_adsp_dvfs_force_opp.attr,
+	&dev_attr_adsp_dvfs_set_freq.attr,
+	&dev_attr_adsp_dvfs_trigger_latmon.attr,
+	NULL,
+};
 
-DEVICE_ATTR(adsp_dvfs_force_opp, 0644, adsp_dvfs_force_opp_show,
-	    adsp_dvfs_force_opp_store);
-
-DEVICE_ATTR(adsp_dvfs_set_freq, 0644, adsp_dvfs_set_freq_show,
-	    adsp_dvfs_set_freq_store);
-
-DEVICE_ATTR(adsp_dvfs_trigger_latmon, 0644, adsp_dvfs_trigger_latmon_show,
-	    adsp_dvfs_trigger_latmon_store);
+struct attribute_group adsp_dvfs_attr_group = {
+	.attrs = adsp_dvfs_attrs,
+};
 
 static bool is_adsp_suspend(void)
 {
 	return (readl(ADSP_A_SYS_STATUS) == ADSP_STATUS_SUSPEND)
 		&& (readl(ADSP_SLEEP_STATUS_REG) & ADSP_A_IS_WFI)
 		&& (readl(ADSP_SLEEP_STATUS_REG) & ADSP_A_AXI_BUS_IS_IDLE);
-}
-
-uint32_t mt_adsp_freq_meter(void)
-{
-#if ADSP_VCORE_TEST_ENABLE
-	return mt_get_ckgen_freq(ADSP_FREQ_METER_ID);
-#else
-	return 0;
-#endif
 }
 
 DEFINE_MUTEX(adsp_sw_reset_mutex);
@@ -350,19 +351,11 @@ void adsp_release_runstall(uint32_t release)
 
 void adsp_set_clock_freq(enum adsp_clk clk)
 {
-	uint32_t mclk_div_val = readl(ADSP_MCLK_DIV_REG) & ~ADSP_MCLK_DIV_MASK;
-
 	switch (clk) {
 	case CLK_ADSP_CLK26M:
 	case CLK_TOP_MMPLL_D4:
-	case CLK_TOP_ADSPPLL_D6:
-		writel(mclk_div_val, ADSP_MCLK_DIV_REG);
-		adsp_set_top_mux(clk);
-		break;
 	case CLK_TOP_ADSPPLL_D4:
-		if (adspreg.segment == ADSP_SEGMENT_P95)
-			mclk_div_val |= CLK_DIV_2;
-		writel(mclk_div_val, ADSP_MCLK_DIV_REG);
+	case CLK_TOP_ADSPPLL_D6:
 		adsp_set_top_mux(clk);
 		break;
 	default:
@@ -414,7 +407,7 @@ void adsp_A_send_spm_request(uint32_t enable)
 static void adsp_delay_off_handler(unsigned long data)
 {
 	if (!adsp_feature_is_active())
-		adsp_schedule_work(&adsp_suspend_work);
+		queue_work(adsp_workqueue, &adsp_suspend_work.work);
 }
 
 void adsp_start_suspend_timer(void)
@@ -446,9 +439,8 @@ void adsp_stop_suspend_timer(void)
 
 static void adsp_suspend_ws(struct work_struct *ws)
 {
-	struct adsp_work_struct *sws = container_of(ws, struct adsp_work_struct,
-						    work);
-	enum adsp_core_id core_id = (enum adsp_core_id) sws->id;
+	struct adsp_work_t *sws = container_of(ws, struct adsp_work_t, work);
+	enum adsp_core_id core_id = sws->id;
 
 	mutex_lock(&adsp_feature_mutex);
 	if (!adsp_feature_is_active())
@@ -607,7 +599,7 @@ void adsp_suspend(enum adsp_core_id core_id)
 {
 	enum adsp_ipi_status ret;
 	int value = 0;
-	int timeout = 2000;
+	int timeout = 20000;
 #if ADSP_DVFS_PROFILE
 	ktime_t begin, end;
 #endif
@@ -621,10 +613,11 @@ void adsp_suspend(enum adsp_core_id core_id)
 					    &value, sizeof(value), 100);
 
 		while (--timeout && !is_adsp_suspend())
-			usleep_range(50, 100);
+			usleep_range(100, 200);
 
 		if (!is_adsp_suspend()) {
-			pr_warn("[%s]wait adsp suspend timeout\n", __func__);
+			pr_info("[%s]wait adsp suspend timeout ret(%d,%d)\n",
+				__func__, ret, timeout);
 #ifdef CFG_RECOVERY_SUPPORT
 			adsp_send_reset_wq(ADSP_RESET_TYPE_AWAKE, core_id);
 #else
@@ -632,9 +625,8 @@ void adsp_suspend(enum adsp_core_id core_id)
 #endif
 		} else {
 			adsp_release_runstall(false);
-			adsp_power_on(false);
 			adsp_sram_gtable_backup();
-			adsp_disable_clock();
+			adsp_power_on(false);
 			adsp_is_suspend = 1;
 		}
 		adsp_reset_ready(core_id);
@@ -650,7 +642,7 @@ void adsp_suspend(enum adsp_core_id core_id)
 
 int adsp_resume(void)
 {
-	int retry = 2000;
+	int retry = 20000;
 	int ret = 0;
 	int tcm_ret = 0;
 #if ADSP_DVFS_PROFILE
@@ -670,7 +662,7 @@ int adsp_resume(void)
 
 		/* busy waiting until adsp is ready */
 		while (--retry && (is_adsp_ready(ADSP_A_ID) != 1))
-			usleep_range(50, 100);
+			usleep_range(100, 200);
 
 		if (is_adsp_ready(ADSP_A_ID) != 1) {
 			pr_warn("[%s]wait for adsp ready timeout\n", __func__);
@@ -704,17 +696,17 @@ void adsp_reset(void)
 #endif
 	adsp_reset_ready(ADSP_A_ID);
 	adsp_release_runstall(false);
-	adsp_sw_reset();
+
+	adsp_power_on(false);
+	adsp_power_on(true);
+
 	writel(0, CREG_BOOTUP_MARK);
-	/** default disable irq after reset*/
 	writel(0x0, ADSP_A_IRQ_EN);
 	DRV_ClrReg32(ADSP_A_WDT_REG, WDT_EN_BIT);
-	/** request system resource **/
-	adsp_set_clock_freq(CLK_DEFAULT_26M_CK);
-	adsp_set_clock_freq(CLK_DEFAULT_ACTIVE_CK);
-	adsp_A_send_spm_request(true);
+
 	/** TCM back to initial state **/
 	adsp_sram_reset_init();
+
 	dsb(SY);
 	adsp_release_runstall(true);
 	adsp_is_suspend = 0;
@@ -733,11 +725,6 @@ int __init adsp_dvfs_init(void)
 {
 	adsp_is_force_freq = 0;
 	adsp_is_force_trigger_latmon = 0;
-
-	if (adspreg.segment == ADSP_SEGMENT_P95)
-		adspreg.active_clksrc = CLK_TOP_ADSPPLL_D4;
-	else
-		adspreg.active_clksrc = CLK_TOP_ADSPPLL_D6;
 	return 0;
 }
 void __exit adsp_dvfs_exit(void)

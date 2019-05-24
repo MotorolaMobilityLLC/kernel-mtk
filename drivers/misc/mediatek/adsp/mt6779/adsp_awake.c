@@ -70,6 +70,7 @@
 
 struct mutex adsp_awake_mutexs[ADSP_CORE_TOTAL];
 int adsp_awake_counts[ADSP_CORE_TOTAL];
+DEFINE_SPINLOCK(adsp_awake_spinlock);
 
 static int adsp_awake_send_swint (int ret, uint32_t reg_val, uint32_t mask)
 {
@@ -384,3 +385,89 @@ int adsp_awake_set_normal(enum adsp_core_id adsp_id)
 	return adsp_awake_set_state(adsp_id, AP_AWAKE_STATE_NORMAL);
 }
 EXPORT_SYMBOL_GPL(adsp_awake_set_normal);
+
+static inline ssize_t adsp_awake_force_lock_show(struct device *kobj,
+						 struct device_attribute *att,
+						 char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_force_lock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake force lock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_force_lock);
+
+static inline ssize_t adsp_awake_force_unlock_show(struct device *kobj,
+						   struct device_attribute *att,
+						   char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_force_unlock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake force unlock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_force_unlock);
+
+static inline ssize_t adsp_awake_set_normal_show(struct device *kobj,
+						 struct device_attribute *att,
+						 char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_set_normal(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake set normal\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_set_normal);
+
+static inline ssize_t adsp_awake_dump_list_show(struct device *kobj,
+						struct device_attribute *att,
+						char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_dump_list(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake dump list\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_dump_list);
+
+static inline ssize_t adsp_awake_lock_show(struct device *kobj,
+					   struct device_attribute *att,
+					   char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_lock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake lock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_lock);
+
+static inline ssize_t adsp_awake_unlock_show(struct device *kobj,
+					     struct device_attribute *att,
+					     char *buf)
+{
+	if (is_adsp_ready(ADSP_A_ID) == 1) {
+		adsp_awake_unlock(ADSP_A_ID);
+		return scnprintf(buf, PAGE_SIZE, "ADSP awake unlock\n");
+	} else
+		return scnprintf(buf, PAGE_SIZE, "ADSP is not ready\n");
+}
+DEVICE_ATTR_RO(adsp_awake_unlock);
+
+static struct attribute *adsp_awake_attrs[] = {
+	&dev_attr_adsp_awake_force_lock.attr,
+	&dev_attr_adsp_awake_force_unlock.attr,
+	&dev_attr_adsp_awake_set_normal.attr,
+	&dev_attr_adsp_awake_dump_list.attr,
+	&dev_attr_adsp_awake_lock.attr,
+	&dev_attr_adsp_awake_unlock.attr,
+	NULL,
+};
+
+struct attribute_group adsp_awake_attr_group = {
+	.attrs = adsp_awake_attrs,
+};

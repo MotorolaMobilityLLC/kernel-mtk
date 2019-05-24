@@ -30,45 +30,55 @@
  * handler for wdt irq for adsp
  * dump adsp register
  */
-static int reboot;
+
+#define DRV_Reg32(addr)           readl(addr)
+#define DRV_WriteReg32(addr, val) writel(val, addr)
+#define DRV_SetReg32(addr, val)   DRV_WriteReg32(addr, DRV_Reg32(addr) | (val))
+#define DRV_ClrReg32(addr, val)   DRV_WriteReg32(addr, DRV_Reg32(addr) & ~(val))
+#ifdef CFG_RECOVERY_SUPPORT
+#define ADSP_WDT_TIMEOUT (60 * HZ) /* 60 seconds*/
+static struct timer_list adsp_wdt_timer;
+unsigned int wdt_counter;
+#endif
 
 irqreturn_t  adsp_A_wdt_handler(int irq, void *dev_id)
 {
+	/*  disable wdt  */
+	DRV_ClrReg32(ADSP_A_WDT_REG, WDT_EN_BIT);
+
 #ifdef CFG_RECOVERY_SUPPORT
-	int retry;
-#endif
-	unsigned int reg = readl(ADSP_A_WDT_REG);
+	if (!wdt_counter && !timer_pending(&adsp_wdt_timer))
+		mod_timer(&adsp_wdt_timer, jiffies + ADSP_WDT_TIMEOUT);
 
-	reg &= 0x7FFFFFFF; /* set WDT_EN(bit31) to 0 */
-	writel(reg, ADSP_A_WDT_REG);
+	/* recovery failed reboot*/
+	if (wdt_counter > WDT_LAST_WAIT_COUNT)
+		BUG_ON(1);
 
-	pr_debug("[ADSP] WDT exception\n");
+	if (adsp_set_reset_status() == ADSP_RESET_STATUS_STOP) {
+		wdt_counter++;
+		pr_info("[ADSP] WDT exception (%u)\n", wdt_counter);
+		adsp_send_reset_wq(ADSP_RESET_TYPE_WDT, ADSP_A_ID);
+	} else
+		pr_notice("[ADSP] resetting (%u)\n", wdt_counter);
+
+#else
 	adsp_aed_reset(EXCEP_RUNTIME, ADSP_A_ID);
-	reboot = 1;
+#endif
+
 	/* clear spm wakeup src */
 	writel(0x0, ADSP_TO_SPM_REG);
-#ifdef CFG_RECOVERY_SUPPORT
-
-	/* clr after ADSP side INT trigger, or ADSP may lost INT
-	 * max wait 5000*40u = 200ms
-	 */
-	for (retry = ADSP_AWAKE_TIMEOUT; retry > 0; retry--) {
-#ifdef Liang_Check
-		spin_lock_irqsave(&adsp_awake_spinlock, spin_flags);
-		tmp = readl(ADSP_A_REBOOT);
-		spin_unlock_irqrestore(&adsp_awake_spinlock, spin_flags);
-		if (tmp == ADSP_A_READY_TO_REBOOT)
-			break;
-#endif
-		udelay(40);
-	}
-	if (retry == 0)
-		pr_debug("[ADSP] ADSP_A wakeup timeout\n");
-	udelay(10);
-#endif
 
 	return IRQ_HANDLED;
 }
+
+#ifdef CFG_RECOVERY_SUPPORT
+static void adsp_wdt_counter_reset(unsigned long data)
+{
+	del_timer(&adsp_wdt_timer);
+	wdt_counter = 0;
+	pr_info("[ADSP] %s\n", __func__);
+}
+#endif
 
 /*
  * dispatch adsp irq
@@ -78,11 +88,9 @@ irqreturn_t  adsp_A_wdt_handler(int irq, void *dev_id)
  */
 irqreturn_t adsp_A_irq_handler(int irq, void *dev_id)
 {
-	if (!reboot)
-		adsp_A_ipi_handler();
+	adsp_A_ipi_handler();
 	/* write 1 clear */
 	writel(ADSP_IRQ_ADSP2HOST, ADSP_A_TO_HOST_REG);
-	dsb(SY);
 
 	return IRQ_HANDLED;
 }
@@ -93,4 +101,7 @@ irqreturn_t adsp_A_irq_handler(int irq, void *dev_id)
 void adsp_A_irq_init(void)
 {
 	writel(ADSP_IRQ_ADSP2HOST, ADSP_A_TO_HOST_REG); /* clear adsp irq */
+#ifdef CFG_RECOVERY_SUPPORT
+	setup_timer(&adsp_wdt_timer, adsp_wdt_counter_reset, 0);
+#endif
 }
