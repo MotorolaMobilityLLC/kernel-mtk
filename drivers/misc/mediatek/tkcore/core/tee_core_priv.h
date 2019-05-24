@@ -55,4 +55,14 @@ int tee_core_alloc_uuid(void *ptr);
 void tee_core_free_uuid(int id);
 void *tee_core_uuid2ptr(int id);
 
+#ifdef CONFIG_COMPAT
+
+int convert_compat_tee_cmd(struct tee_cmd_io __user *u_cmd);
+
+int convert_compat_tee_shm_io(struct tee_shm_io __user *shm_io);
+
+int convert_compat_tee_spta_inst(struct tee_spta_inst_desc __user *spta);
+
+#endif
+
 #endif

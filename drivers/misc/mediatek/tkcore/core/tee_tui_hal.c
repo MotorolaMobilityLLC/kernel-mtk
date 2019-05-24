@@ -61,7 +61,6 @@ void __weak hal_tui_exit(void)
  */
 uint32_t  __weak hal_tui_deactivate(void)
 {
-	pr_info("hal_tui_deactivate()\n");
 	/* Set linux TUI flag */
 	trustedui_set_mask(TRUSTEDUI_MODE_TUI_SESSION);
 
@@ -84,7 +83,6 @@ uint32_t  __weak hal_tui_deactivate(void)
  */
 uint32_t  __weak hal_tui_activate(void)
 {
-	pr_info("hal_tui_activate()\n");
 	/* Protect NWd */
 	trustedui_clear_mask(TRUSTEDUI_MODE_VIDEO_SECURED|
 		TRUSTEDUI_MODE_INPUT_SECURED);

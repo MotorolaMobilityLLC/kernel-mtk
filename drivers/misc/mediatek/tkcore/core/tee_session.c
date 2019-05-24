@@ -119,8 +119,6 @@ static int tee_session_open_be(struct tee_session *sess,
 
 out:
 	_release_tee_cmd(sess, &cmd);
-	pr_debug("< ret=%d, sessid=%08x",
-		ret, sess->sessid);
 	return ret;
 }
 
@@ -133,9 +131,6 @@ int tee_session_invoke_be(struct tee_session *sess, struct tee_cmd_io *cmd_io)
 	WARN_ON(!sess || !sess->ctx || !sess->ctx->tee);
 
 	tee = sess->ctx->tee;
-
-	pr_debug("> sessid=%08x, cmd=0x%08x\n",
-		sess->sessid, cmd_io->cmd);
 
 	ret = _init_tee_cmd(sess, cmd_io, &cmd);
 	if (ret)
@@ -206,7 +201,6 @@ static int tee_do_invoke_command(struct tee_session *sess,
 	WARN_ON(!sess->ctx->tee);
 	ctx = sess->ctx;
 	tee = sess->ctx->tee;
-
 
 	WARN_ON(!sess->sessid);
 
@@ -328,7 +322,6 @@ static uint32_t send_cmd_to_user(uint32_t command_id)
 
 	g_tui_obj.cmd_id = command_id;
 	complete(&io_comp);
-	pr_debug("send_cmd_to_user: cmd %d done!\n", command_id);
 
 	return ret;
 }
@@ -336,9 +329,6 @@ static uint32_t send_cmd_to_user(uint32_t command_id)
 bool teec_notify_event(uint32_t event_type)
 {
 	bool ret = false;
-
-	/* Currently we only support TUI cancel event type */
-	pr_info("TUI teec_notify_event: event_type is %d\n", event_type);
 
 	/* Cancel the TUI session if exists */
 	if (g_tui_obj.status)
@@ -392,7 +382,7 @@ static long tee_session_internal_ioctl(struct tee_session *sess,
 			(struct tee_cmd_io __user *)arg == NULL) {
 			ret = -EBUSY;
 			mutex_unlock(&g_tui_obj.lock);
-			pr_debug(
+			pr_warn(
 				"TEE_TUI_OPEN_SESSION_IOC: tui busy or invalid argument\n");
 			break;
 		}
@@ -474,23 +464,10 @@ static long tee_session_compat_ioctl(struct file *filp, unsigned int cmd,
 	switch (cmd) {
 	case TEE_INVOKE_COMMAND_IOC:
 	case TEE_REQUEST_CANCELLATION_IOC:
-	case TEE_TUI_OPEN_SESSION_IOC: {
-		struct tee_cmd_io __user *u_cmd =
-			(struct tee_cmd_io __user *) arg;
-
-		if (unlikely(put_user(0, ((uint32_t *) &u_cmd->uuid) + 1)))
+	case TEE_TUI_OPEN_SESSION_IOC:
+		if (convert_compat_tee_cmd((struct tee_cmd_io __user *) arg))
 			return -EFAULT;
-
-		if (unlikely(put_user(0, ((uint32_t *) &u_cmd->data) + 1)))
-			return -EFAULT;
-
-		if (unlikely(put_user(0, ((uint32_t *) &u_cmd->op) + 1)))
-			return -EFAULT;
-
-		if (unlikely(put_user(1, ((uint32_t *) &u_cmd->reserved))))
-			return -EFAULT;
-	}
-	break;
+		break;
 	default:
 		break;
 	}
@@ -614,7 +591,7 @@ int tee_session_create_fd(struct tee_context *ctx, struct tee_cmd_io *cmd_io)
 	sess = tee_session_create_and_open(ctx, cmd_io);
 	if (IS_ERR_OR_NULL(sess)) {
 		ret = PTR_ERR(sess);
-		pr_debug(
+		pr_warn(
 			"ERROR can't create the session (ret=%d, err=0x%08x, org=%d)\n",
 			ret, cmd_io->err, cmd_io->origin);
 		cmd_io->fd_sess = -1;
@@ -635,8 +612,6 @@ int tee_session_create_fd(struct tee_context *ctx, struct tee_cmd_io *cmd_io)
 	ret = 0;
 
 out:
-	pr_debug("< ret=%d, sess=%p, fd=%d\n",
-		ret, sess, cmd_io->fd_sess);
 	return ret;
 }
 
@@ -672,18 +647,8 @@ static int to_memref_type(int flags)
 	if (flag_set(flags, TEEC_MEM_OUTPUT))
 		return TEEC_MEMREF_TEMP_OUTPUT;
 
-	pr_err("to_memref_type: bad flags=%x\n", flags);
+	pr_warn("tkcoredrv: %s: bad flags=%x\n", __func__, flags);
 	return 0;
-}
-
-static bool from_lower_abi(struct tee_cmd_io *cmd_io)
-{
-	return cmd_io->reserved == 1;
-}
-
-static void clr_hi32bit(void *v)
-{
-	*((uint32_t *) v + 1) = 0;
 }
 
 static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
@@ -713,12 +678,6 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 	if (tee_context_copy_from_client(ctx, &op, cmd_io->op, sizeof(op)))
 		goto out;
 
-	/* check whether this command from user
-	 * programs of different abi
-	 */
-	if (from_lower_abi(cmd_io))
-		clr_hi32bit(&op.session);
-
 	cmd->param.type_original = op.paramTypes;
 
 	for (idx = 0; idx < TEEC_CONFIG_PAYLOAD_REF_COUNT; ++idx) {
@@ -734,25 +693,11 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 		case TEEC_VALUE_OUTPUT:
 		case TEEC_VALUE_INOUT:
 			param->params[idx].value = op.params[idx].value;
-			pr_debug(
-				"param[%d]:type=%d,a=%08x,b=%08x (VALUE)\n",
-				idx, type, param->params[idx].value.a,
-				param->params[idx].value.b);
 			break;
 
 		case TEEC_MEMREF_TEMP_INPUT:
 		case TEEC_MEMREF_TEMP_OUTPUT:
 		case TEEC_MEMREF_TEMP_INOUT:
-			pr_debug(
-				"> param[%d]:type=%d,buffer=%p,s=%zu (TMPREF)\n",
-				idx, type,
-				op.params[idx].tmpref.buffer,
-				op.params[idx].tmpref.size);
-			if (from_lower_abi(cmd_io)) {
-				clr_hi32bit(&(op.params[idx].tmpref.size));
-				clr_hi32bit(&(op.params[idx].tmpref.buffer));
-			}
-
 			param->params[idx].shm =
 				tee_context_create_tmpref_buffer(
 				ctx, op.params[idx].tmpref.size,
@@ -761,32 +706,16 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 			if (IS_ERR_OR_NULL(param->params[idx].shm))
 				goto out;
 
-			pr_debug("< %d %p:%zd\n", idx, (void *)
-				(unsigned long)
-				param->params[idx].shm->resv.paddr,
-				param->params[idx].shm->size_alloc);
 			break;
 
 		case TEEC_MEMREF_PARTIAL_INPUT:
 		case TEEC_MEMREF_PARTIAL_OUTPUT:
 		case TEEC_MEMREF_PARTIAL_INOUT:
 		case TEEC_MEMREF_WHOLE:
-			if (from_lower_abi(cmd_io)) {
-				clr_hi32bit(&(op.params[idx].memref.parent));
-				clr_hi32bit(&(op.params[idx].memref.size));
-				clr_hi32bit(&(op.params[idx].memref.offset));
-			}
-
 			if (tee_copy_from_user(ctx, &param->c_shm[idx],
 						op.params[idx].memref.parent,
 						sizeof(param->c_shm[idx])))
 				goto out;
-
-			if (from_lower_abi(cmd_io)) {
-				clr_hi32bit(&(param->c_shm[idx].buffer));
-				clr_hi32bit(&(param->c_shm[idx].size));
-				clr_hi32bit(&(param->c_shm[idx].d.fd));
-			}
 
 			if (type == TEEC_MEMREF_WHOLE) {
 				offset = 0;
@@ -802,11 +731,6 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 					goto out;
 				}
 			}
-
-			pr_debug(
-				"> param[%d]:type=%d,buffer=%p, offset=%d size=%d\n",
-				idx, type, param->c_shm[idx].buffer,
-				offset, size);
 
 			type = to_memref_type(param->c_shm[idx].flags);
 			if (type == 0)
@@ -826,12 +750,7 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 					goto out;
 			}
 
-			pr_debug("< %d %p:%zd\n", idx, (void *)
-				(unsigned long)
-				param->params[idx].shm->resv.paddr,
-				param->params[idx].shm->size_req);
 			break;
-
 		default:
 			WARN_ON(1);
 		}
@@ -840,7 +759,6 @@ static int _init_tee_cmd(struct tee_session *sess, struct tee_cmd_io *cmd_io,
 	}
 
 	if (cmd_io->uuid != NULL) {
-		pr_debug("copy UUID value...\n");
 		cmd->uuid = tee_context_alloc_shm_tmp(sess->ctx,
 			sizeof(*cmd_io->uuid), cmd_io->uuid, TEEC_MEM_INPUT);
 		if (IS_ERR_OR_NULL(cmd->uuid)) {
@@ -893,7 +811,6 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 		size_t size_new;
 		struct TEEC_SharedMemory *parent;
 
-		pr_debug("id=%d type=%d\n", idx, type);
 		WARN_ON(!tee_session_is_supported_type(sess, type));
 		switch (type) {
 		case TEEC_NONE:
@@ -903,9 +820,6 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 			break;
 		case TEEC_VALUE_OUTPUT:
 		case TEEC_VALUE_INOUT:
-			pr_debug("a=%08x, b=%08x\n",
-				cmd->param.params[idx].value.a,
-				cmd->param.params[idx].value.b);
 			if (tee_copy_to_user
 				(ctx, &cmd_io->op->params[idx].value,
 				&cmd->param.params[idx].value,
@@ -922,15 +836,9 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 			size_new = cmd->param.params[idx].shm->size_req;
 			if (size_new !=
 				tmp_op.params[idx].tmpref.size) {
-				pr_debug(
-					"Size has been updated by the TA %zd != %zd\n",
-					size_new,
-					tmp_op.params[idx].tmpref.size);
 				tee_put_user(ctx, size_new,
 					&cmd_io->op->params[idx].tmpref.size);
 			}
-			pr_debug("tmpref %p\n",
-				cmd->param.params[idx].shm->resv.kaddr);
 
 			/* ensure we do not exceed the shared buffer length */
 			if (size_new > tmp_op.params[idx].tmpref.size) {
