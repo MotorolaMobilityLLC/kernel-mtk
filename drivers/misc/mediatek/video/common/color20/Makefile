@@ -70,7 +70,7 @@ ifeq (y, $(filter y, $(CONFIG_MACH_MT6799)))
     endif
 endif
 
-ifeq (y, $(filter y, $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775)))
+ifeq (y, $(filter y, $(CONFIG_MACH_MT6771) $(CONFIG_MACH_MT6775) $(CONFIG_MACH_MT6779)))
     ccflags-y += -DSUPPORT_MDP_AAL
 endif
 
