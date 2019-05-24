@@ -21,6 +21,9 @@
 
 /* If UPMU function not ready, comment this define */
 #define UPMU_READY
+
+/* If srclkenRC function not ready, comment this define */
+#define SR_CLKEN_RC_READY
 #endif
 
 #define HIE_CHANGE_KEY_IN_NORMAL_WORLD
@@ -41,25 +44,25 @@
 #endif
 
 enum {
-	REG_UFS_PERICFG             = 0x448,
-	REG_UFS_PERICFG_RST_N_BIT   = 3,
-};
+	REG_UFSHCI_SW_RST_SET       = 0x130,
+	REG_UFSHCI_SW_RST_SET_BIT   = 15,
+	REG_UFSHCI_SW_RST_CLR       = 0x134,
+	REG_UFSHCI_SW_RST_CLR_BIT   = 15,
 
-enum {
 	REG_UNIPRO_SW_RST_SET       = 0x140,
-	REG_UNIPRO_SW_RST_SET_BIT   = 4,
+	REG_UNIPRO_SW_RST_SET_BIT   = 7,
 	REG_UNIPRO_SW_RST_CLR       = 0x144,
-	REG_UNIPRO_SW_RST_CLR_BIT   = 4,
+	REG_UNIPRO_SW_RST_CLR_BIT   = 7,
 
-	REG_UFSHCI_SW_RST_SET       = 0x120,
-	REG_UFSHCI_SW_RST_SET_BIT   = 14,
-	REG_UFSHCI_SW_RST_CLR       = 0x124,
-	REG_UFSHCI_SW_RST_CLR_BIT   = 14,
+	REG_UFSPHY_SW_RST_SET       = 0x140,
+	REG_UFSPHY_SW_RST_SET_BIT   = 9,
+	REG_UFSPHY_SW_RST_CLR       = 0x144,
+	REG_UFSPHY_SW_RST_CLR_BIT   = 9,
 
-	REG_UFSCPT_SW_RST_SET       = 0x130,
-	REG_UFSCPT_SW_RST_SET_BIT   = 15,
-	REG_UFSCPT_SW_RST_CLR       = 0x134,
-	REG_UFSCPT_SW_RST_CLR_BIT   = 15,
+	REG_UFSCPT_SW_RST_SET       = 0x150,
+	REG_UFSCPT_SW_RST_SET_BIT   = 21,
+	REG_UFSCPT_SW_RST_CLR       = 0x154,
+	REG_UFSCPT_SW_RST_CLR_BIT   = 21,
 };
 
 enum {
@@ -69,7 +72,7 @@ enum {
 	SW_RST_TARGET_MPHY          = 0x8,
 };
 #define SW_RST_TARGET_ALL (SW_RST_TARGET_UFSHCI | \
-	SW_RST_TARGET_UNIPRO | SW_RST_TARGET_UFSCPT)
+	SW_RST_TARGET_UNIPRO | SW_RST_TARGET_UFSCPT | SW_RST_TARGET_MPHY)
 
 
 /*
@@ -78,6 +81,7 @@ enum {
 void ufs_mtk_pltfrm_pwr_change_final_gear(struct ufs_hba *hba,
 	struct ufs_pa_layer_attr *final);
 int  ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba);
+int  ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target);
 int  ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba);
 int  ufs_mtk_pltfrm_deepidle_check_h8(void);
 void ufs_mtk_pltfrm_deepidle_leave(void);

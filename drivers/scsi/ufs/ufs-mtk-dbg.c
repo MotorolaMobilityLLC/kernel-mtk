@@ -42,7 +42,7 @@
 #ifdef CONFIG_MTK_UFS_DEBUG
 #define MAX_UFS_CMD_HLIST_ENTRY_CNT (500)
 /* max dump size is 40KB whitch can be adjusted */
-#define UFS_AEE_BUFFER_SIZE (40 * 1024)
+#define UFS_AEE_BUFFER_SIZE (100 * 1024)
 
 struct ufs_cmd_hlist_struct ufs_cmd_hlist[MAX_UFS_CMD_HLIST_ENTRY_CNT];
 int ufs_cmd_ptr = MAX_UFS_CMD_HLIST_ENTRY_CNT - 1;
@@ -68,8 +68,10 @@ static void ufs_mtk_dbg_dump_feature(struct ufs_hba *hba, struct seq_file *m)
 }
 #endif
 
-void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
-	u8 lun, u32 transfer_len, sector_t lba, u8 opcode)
+void ufs_mtk_dbg_add_trace(struct ufs_hba *hba,
+	enum ufs_trace_event event, u32 tag,
+	u8 lun, u32 transfer_len, sector_t lba, u8 opcode,
+	unsigned long long ppn, u32 region, u32 subregion, u32 resv)
 {
 #ifdef CONFIG_MTK_UFS_DEBUG
 	int ptr;
@@ -89,6 +91,7 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 
 	ptr = ufs_cmd_ptr;
 
+	ufs_cmd_hlist[ptr].pid = current->pid;
 	ufs_cmd_hlist[ptr].event = event;
 	ufs_cmd_hlist[ptr].tag = tag;
 	ufs_cmd_hlist[ptr].transfer_len = transfer_len;
@@ -97,9 +100,28 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 	ufs_cmd_hlist[ptr].opcode = opcode;
 	ufs_cmd_hlist[ptr].time = sched_clock();
 	ufs_cmd_hlist[ptr].duration = 0;
+	ufs_cmd_hlist[ptr].rq = NULL;
+#if defined(CONFIG_UFSHPB)
+	ufs_cmd_hlist[ptr].ppn = ppn;
+	ufs_cmd_hlist[ptr].region = region;
+	ufs_cmd_hlist[ptr].subregion = subregion;
+	ufs_cmd_hlist[ptr].resv = resv;
+#endif
+
+	/* keep request pointer to dig out block layer status */
+	if ((event == UFS_TRACE_SEND) || (event == UFS_TRACE_COMPLETED)) {
+		if (hba->lrb[tag].cmd && hba->lrb[tag].cmd->request) {
+			ufs_cmd_hlist[ptr].rq =
+				hba->lrb[tag].cmd->request;
+		}
+	}
 
 	if (event == UFS_TRACE_COMPLETED) {
-		ptr = ufs_cmd_ptr - 1;
+		if (ufs_cmd_ptr == 0)
+			ptr = MAX_UFS_CMD_HLIST_ENTRY_CNT - 1;
+		else
+			ptr = ufs_cmd_ptr - 1;
+
 		while (1) {
 			if (ufs_cmd_hlist[ptr].tag == tag) {
 				ufs_cmd_hlist[ufs_cmd_ptr].duration =
@@ -112,19 +134,19 @@ void ufs_mtk_dbg_add_trace(enum ufs_trace_event event, u32 tag,
 				ptr = MAX_UFS_CMD_HLIST_ENTRY_CNT - 1;
 
 
-			if (ptr == ufs_cmd_ptr - 1)
-				break;
+			if (ufs_cmd_ptr == 0) {
+				if (ptr == (MAX_UFS_CMD_HLIST_ENTRY_CNT - 1))
+					break;
+			} else {
+				if (ptr == ufs_cmd_ptr - 1)
+					break;
+			}
 		}
 	}
 
 	ufs_cmd_cnt++;
 
 	spin_unlock_irqrestore(&ufs_mtk_cmd_dump_lock, flags);
-	/*
-	 * pr_info("[ufs]%d,%d,op=0x%x,lun=%u,t=%d,lba=%llu,len=%u,time=%llu\n",
-	 * ptr, event, opcode, lun, tag, (u64)(lba >> 3),
-	 * transfer_len, sched_clock());
-	 */
 #endif
 }
 
@@ -154,17 +176,45 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 	ptr = ufs_cmd_ptr;
 
 	SPREAD_PRINTF(buff, size, m,
-		"[ufs]cmd history:req_cnt=%d,real_cnt=%d,ptr=%d\n",
+		"[ufs] CMD History: req_cnt=%d, real_cnt=%d, ptr=%d\n",
 		latest_cnt, dump_cnt, ptr);
 
 	while (dump_cnt > 0) {
 
-		if (ufs_cmd_hlist[ptr].event == UFS_TRACE_TM_SEND ||
+		if ((ufs_cmd_hlist[ptr].event >= UFS_TRACE_UIC_SEND) &&
+			(ufs_cmd_hlist[ptr].event <=
+			UFS_TRACE_UIC_CMPL_PWR_CTRL)) {
+
+			SPREAD_PRINTF(buff, size, m,
+				"%3d-u,%5d,%2d,0x%2X,arg1=0x%X,arg2=0x%X,arg3=0x%X,%llu\n",
+				ptr,
+				ufs_cmd_hlist[ptr].pid,
+				ufs_cmd_hlist[ptr].event,
+				ufs_cmd_hlist[ptr].opcode,       /* command */
+				ufs_cmd_hlist[ptr].tag,          /* argument1 */
+				ufs_cmd_hlist[ptr].transfer_len, /* argument2 */
+				(u32)ufs_cmd_hlist[ptr].lba,     /* argument3 */
+				(u64)ufs_cmd_hlist[ptr].time
+				);
+
+		} else if (ufs_cmd_hlist[ptr].event == UFS_TRACE_REG_TOGGLE) {
+
+			SPREAD_PRINTF(buff, size, m,
+				"%3d-g,%5d,state=%d,on=%d,%llu\n",
+				ptr,
+				ufs_cmd_hlist[ptr].pid,
+				ufs_cmd_hlist[ptr].tag,          /* state */
+				ufs_cmd_hlist[ptr].transfer_len, /* on or off */
+				(u64)ufs_cmd_hlist[ptr].time
+				);
+
+		} else if (ufs_cmd_hlist[ptr].event == UFS_TRACE_TM_SEND ||
 			ufs_cmd_hlist[ptr].event == UFS_TRACE_TM_COMPLETED) {
 
 			SPREAD_PRINTF(buff, size, m,
-				"[ufs]%d-t,%d,tm=0x%x,t=%d,lun=0x%x,data=0x%x,%llu\n",
+				"%3d-t,%5d,%2d,tm=0x%x,t=%2d,lun=0x%x,data=0x%x,%llu\n",
 				ptr,
+				ufs_cmd_hlist[ptr].pid,
 				ufs_cmd_hlist[ptr].event,
 				ufs_cmd_hlist[ptr].opcode,
 				ufs_cmd_hlist[ptr].tag,
@@ -177,8 +227,9 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 			ufs_cmd_hlist[ptr].event == UFS_TRACE_DEV_COMPLETED) {
 
 			SPREAD_PRINTF(buff, size, m,
-				"[ufs]%d-d,%d,0x%x,t=%d,lun=0x%x,idn=0x%x,idx=0x%x,sel=0x%x,%llu\n",
+				"%3d-d,%5d,%2d,0x%2x,t=%2d,lun=0x%x,idn=0x%x,idx=0x%x,sel=0x%x,%llu\n",
 				ptr,
+				ufs_cmd_hlist[ptr].pid,
 				ufs_cmd_hlist[ptr].event,
 				ufs_cmd_hlist[ptr].opcode,
 				ufs_cmd_hlist[ptr].tag,
@@ -190,10 +241,10 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 				);
 
 		} else {
-
 			SPREAD_PRINTF(buff, size, m,
-				"[ufs]%3d-r,%d,0x%x,t=%2d,lun=0x%x,lba=%lld,len=%6d,%llu,\t%llu\n",
+				"%3d-r,%5d,%2d,0x%2x,t=%2d,lun=0x%x,lba=0x%llx,len=%6d,%llu,\t%llu",
 				ptr,
+				ufs_cmd_hlist[ptr].pid,
 				ufs_cmd_hlist[ptr].event,
 				ufs_cmd_hlist[ptr].opcode,
 				ufs_cmd_hlist[ptr].tag,
@@ -203,6 +254,16 @@ void ufs_mtk_dbg_dump_trace(char **buff, unsigned long *size,
 				(u64)ufs_cmd_hlist[ptr].time,
 				(u64)ufs_cmd_hlist[ptr].duration
 				);
+#if defined(CONFIG_UFSHPB)
+			SPREAD_PRINTF(buff, size, m,
+				",\tppn=0x%llx,\tregion=0x%x,\tsubregion=0x%x,\tresv=0x%x",
+				ufs_cmd_hlist[ptr].ppn,
+				ufs_cmd_hlist[ptr].region,
+				ufs_cmd_hlist[ptr].subregion,
+				ufs_cmd_hlist[ptr].resv
+				);
+#endif
+			SPREAD_PRINTF(buff, size, m, "\n");
 		}
 
 		dump_cnt--;
@@ -235,6 +296,8 @@ void ufs_mtk_dbg_hang_detect_dump(void)
 
 	ufs_mtk_dbg_dump_trace(NULL, NULL,
 		ufs_mtk_hba->nutrs + ufs_mtk_hba->nutrs / 2, NULL);
+
+	ufshcd_print_all_uic_err_hist(ufs_mtk_hba, NULL, NULL, NULL);
 #endif
 }
 
@@ -254,6 +317,8 @@ void ufs_mtk_dbg_proc_dump(struct seq_file *m)
 
 	ufs_mtk_dbg_dump_trace(NULL, NULL,
 		MAX_UFS_CMD_HLIST_ENTRY_CNT, m);
+
+	ufshcd_print_all_uic_err_hist(ufs_mtk_hba, m, NULL, NULL);
 #endif
 }
 
@@ -272,6 +337,9 @@ void get_ufs_aee_buffer(unsigned long *vaddr, unsigned long *size)
 	ufshcd_print_host_state(ufs_mtk_hba, 0, NULL, &buff, &free_size);
 	ufs_mtk_dbg_dump_trace(&buff, &free_size,
 		MAX_UFS_CMD_HLIST_ENTRY_CNT, NULL);
+
+	ufshcd_print_all_uic_err_hist(ufs_mtk_hba,
+		NULL, &buff, &free_size);
 
 	/* retrun start location */
 	*vaddr = (unsigned long)ufs_aee_buffer;
@@ -323,6 +391,8 @@ static int ufsdbg_dump_health_desc(struct seq_file *file)
 
 out:
 	return err;
+#else
+	return 0;
 #endif
 }
 
