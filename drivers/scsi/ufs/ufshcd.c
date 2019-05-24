@@ -6783,9 +6783,10 @@ static int ufshcd_ioctl(struct scsi_device *dev, int cmd, void __user *buffer)
 		err = ufs_mtk_ioctl_get_fw_ver(dev, buffer);
 		break;
 	default:
-		err = -EINVAL;
-		dev_err(hba->dev, "%s: illegal ufs ioctl cmd %d\n", __func__,
-				cmd);
+		err = -ENOIOCTLCMD;
+		dev_dbg(hba->dev,
+			"%s: Unsupported ioctl cmd %d\n",
+			__func__, cmd);
 		break;
 	}
 
