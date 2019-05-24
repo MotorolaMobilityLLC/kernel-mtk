@@ -606,6 +606,8 @@
 		compatible = "mediatek,apxgpt";
 		reg = <0 0x10008000 0 0x1000>;
 		interrupts = <GIC_SPI 203 IRQ_TYPE_LEVEL_LOW>;
+		clocks =
+			<&clk32k>;
 	};
 
 	sej@1000a000 {
