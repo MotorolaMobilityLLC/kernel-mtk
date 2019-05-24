@@ -56,7 +56,8 @@ struct ufs_mtk_bio_context {
 	int id;
 	int state;
 	pid_t pid;
-	__u32 qid;
+	__u16 qid;
+	__u16 q_depth;
 	spinlock_t lock;
 	uint64_t busy_start_t;
 	uint64_t period_start_t;

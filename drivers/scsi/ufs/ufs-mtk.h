@@ -14,6 +14,10 @@
 
 #define CONFIG_MTK_UFS_DEBUG
 /* #define CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER */
+#ifdef CONFIG_MTK_ENG_BUILD
+#define CONFIG_MTK_UFS_LBA_CRC16_CHECK
+#endif
+/* #define CONFIG_MTK_UFS_LBA_CRC16_BUG_ON */
 
 #include <linux/of.h>
 #include <linux/rpmb.h>
@@ -58,7 +62,13 @@ enum ufs_trace_event {
 	UFS_TRACE_DEV_COMPLETED,
 	UFS_TRACE_TM_SEND,
 	UFS_TRACE_TM_COMPLETED,
-	UFS_TRACE_ABORTING
+	UFS_TRACE_UIC_SEND,
+	UFS_TRACE_UIC_CMPL_GENERAL,
+	UFS_TRACE_UIC_CMPL_PWR_CTRL,
+	UFS_TRACE_REG_TOGGLE,
+	UFS_TRACE_ABORTING,
+	UFS_TRACE_DI_FAIL,
+	UFS_TRACE_DEVICE_RESET
 };
 
 enum {
@@ -170,6 +180,7 @@ struct ufs_crypt_info {
 
 
 extern u32 ufs_mtk_auto_hibern8_timer_ms;
+extern bool ufs_mtk_auto_hibern8_enabled;
 extern enum ufs_dbg_lvl_t ufs_mtk_dbg_lvl;
 extern struct ufs_hba *ufs_mtk_hba;
 extern bool ufs_mtk_host_deep_stall_enable;
@@ -197,10 +208,20 @@ void ufs_mtk_perf_heurisic_req_done(struct ufs_hba *hba, struct scsi_cmnd *cmd);
 int ufs_mtk_ioctl_ffu(struct scsi_device *dev, void __user *buf_user);
 int ufs_mtk_ioctl_get_fw_ver(struct scsi_device *dev, void __user *buf_user);
 int ufs_mtk_ioctl_query(struct ufs_hba *hba, u8 lun, void __user *buf_user);
+int ufs_mtk_ioctl_rpmb(struct ufs_hba *hba, void __user *buf_user);
 bool ufs_mtk_is_data_write_cmd(char cmd_op);
 void ufs_mtk_rpmb_dump_frame(struct scsi_device *sdev, u8 *data_frame, u32 cnt);
 struct rpmb_dev *ufs_mtk_rpmb_get_raw_dev(void);
 void ufs_mtk_runtime_pm_init(struct scsi_device *sdev);
+void ufs_mtk_device_quiesce(struct ufs_hba *hba);
+void ufs_mtk_device_resume(struct ufs_hba *hba);
+
+#ifdef CONFIG_MTK_UFS_LBA_CRC16_CHECK
+void ufs_mtk_di_init(struct ufs_hba *hba);
+int ufs_mtk_di_clr(struct scsi_cmnd *cmd);
+int ufs_mtk_di_cmp(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+int ufs_mtk_di_inspect(struct ufs_hba *hba, struct scsi_cmnd *cmd);
+#endif
 
 #ifdef CONFIG_HIE
 struct hie_dev *ufs_mtk_hie_get_dev(void);

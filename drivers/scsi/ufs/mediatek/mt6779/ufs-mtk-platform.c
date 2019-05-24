@@ -21,6 +21,7 @@
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"
 #include "mtk_secure_api.h"
+#include "mtk_srclken_rc.h"
 
 #ifdef MTK_UFS_HQA
 #include <mtk_reboot.h>
@@ -108,8 +109,59 @@ void ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(struct ufs_hba *hba)
 }
 
 #ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
-#include <mt-plat/mtk_gpio.h>
-#define gpioPin (177UL)
+#include <mt-plat/sync_write.h>
+
+struct device_node *msdc_gpio_node;
+void __iomem *msdc_gpio_base;
+static struct regulator *vmc;
+
+#define MSDC1_GPIO_MODE17           (msdc_gpio_base + 0x410)
+#define MSDC1_GPIO_DIR4             (msdc_gpio_base + 0x40)
+#define MSDC1_GPIO_DOUT4            (msdc_gpio_base + 0x140)
+
+#define MSDC1_GPIO_DOUT             (MSDC1_GPIO_DOUT4)
+#define MSDC1_GPIO_DOUT_DIR_FIELD   (0x00000F00)
+#define MSDC1_GPIO_DOUT_DIR_VAL_SET (0x0000000F)
+#define MSDC1_GPIO_DOUT_DIR_VAL_CLR (0x00000000)
+
+#define MSDC_READ32(reg)          __raw_readl(reg)
+#define MSDC_WRITE32(reg, val)    mt_reg_sync_writel(val, reg)
+static inline unsigned int uffs(unsigned int x)
+{
+	unsigned int r = 1;
+
+	if (!x)
+		return 0;
+	if (!(x & 0xffff)) {
+		x >>= 16;
+		r += 16;
+	}
+	if (!(x & 0xff)) {
+		x >>= 8;
+		r += 8;
+	}
+	if (!(x & 0xf)) {
+		x >>= 4;
+		r += 4;
+	}
+	if (!(x & 3)) {
+		x >>= 2;
+		r += 2;
+	}
+	if (!(x & 1)) {
+		x >>= 1;
+		r += 1;
+	}
+	return r;
+}
+#define MSDC_SET_FIELD(reg, field, val) \
+	do { \
+		unsigned int tv = MSDC_READ32(reg); \
+		tv &= ~(field); \
+		tv |= ((val) << (uffs((unsigned int)field) - 1)); \
+		MSDC_WRITE32(reg, tv); \
+	} while (0)
+
 void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 {
 	/* Need porting for UFS Debug*/
@@ -118,19 +170,125 @@ void ufs_mtk_pltfrm_gpio_trigger_init(struct ufs_hba *hba)
 	/* Set gpio default low */
 	dev_info(hba->dev, "%s: trigger_gpio_init!!!\n",
 				__func__);
+
+	if (msdc_gpio_node == NULL) {
+		msdc_gpio_node = of_find_compatible_node(NULL, NULL,
+			"mediatek,GPIO");
+		msdc_gpio_base = of_iomap(msdc_gpio_node, 0);
+		pr_notice("of_iomap for gpio base @ 0x%p\n", msdc_gpio_base);
+	};
+
+	/*
+	 * Power on
+	 * Be sure add dts in ufs node
+	 * vqmmc-supply = <&mt_pmic_vmc_ldo_reg>;
+	 */
+
+	while (1) {
+		vmc = regulator_get(hba->dev, "vqmmc");
+
+		if (!IS_ERR(vmc)) {
+			regulator_set_voltage(
+				vmc, VOL_3000 * 1000, VOL_3000 * 1000);
+			regulator_enable(vmc);
+			break;
+		}
+
+		if (-EPROBE_DEFER == PTR_ERR(vmc)) {
+			/* retry if regulator is temporarily not available */
+			pr_info("vqmmc is not ready, waiting ...\n");
+			msleep(1000);
+		} else {
+			/* ignore any other errors */
+			pr_info("get vqmmc failed, ret %d\n", PTR_ERR(vmc));
+			break;
+		}
+	}
+
+	/*
+	 * Set gpio to gpio mode. (dat0/dat1/dat2/dat3 in GPIO)
+	 * Be sure remove msdc_set_pin_mode in msdc_cust.c set mode
+	 * back to msdc.
+	 */
+	MSDC_SET_FIELD(MSDC1_GPIO_MODE17, 0x0000FFFF, 0x0);
+
+	/*
+	 * Set gpio dir output. (dat0/dat1/dat2/dat3 in GPIO)
+	 */
+	MSDC_SET_FIELD(MSDC1_GPIO_DIR4,
+		MSDC1_GPIO_DOUT_DIR_FIELD,
+		MSDC1_GPIO_DOUT_DIR_VAL_SET);
+
+	/*
+	 * Set gpio output 0. (dat0/dat1/dat2/dat3 in GPIO)
+	 */
+	MSDC_SET_FIELD(MSDC1_GPIO_DOUT,
+		MSDC1_GPIO_DOUT_DIR_FIELD,
+		MSDC1_GPIO_DOUT_DIR_VAL_CLR);
+}
+
+void ufs_mtk_pltfrm_gpio_trigger(int value)
+{
+	pr_notice("cmp error trigger, %d\n", value);
+
+	if (value == 1) {
+		MSDC_SET_FIELD(MSDC1_GPIO_DOUT,
+			MSDC1_GPIO_DOUT_DIR_FIELD,
+			MSDC1_GPIO_DOUT_DIR_VAL_SET);
+	} else {
+		MSDC_SET_FIELD(MSDC1_GPIO_DOUT,
+			MSDC1_GPIO_DOUT_DIR_FIELD,
+			MSDC1_GPIO_DOUT_DIR_VAL_CLR);
+	}
 }
 #endif
 
+int ufs_mtk_pltfrm_xo_ufs_req(struct ufs_hba *hba, bool on)
+{
+	u32 value;
+	int retry;
+
+	/* enable after srclkenRC ready */
+	if (srclken_get_stage() == SRCLKEN_FULL_SET) {
+		/*
+		 * REG_UFS_ADDR_XOUFS_ST[0] is xoufs_req_s
+		 * REG_UFS_ADDR_XOUFS_ST[1] is xoufs_ack_s
+		 * xoufs_req_s is used for XOUFS Clock request to SPI
+		 * SW set xoufs_ack_s to trigger Clock Request for XOUFS, and
+		 * check xoufs_ack_s set for clock avialable.
+		 * SW clear xoufs_ack_s to trigger Clock Release for XOUFS, and
+		 * check xoufs_ack_s clear for clock off.
+		 */
+
+		if (on)
+			ufshcd_writel(hba, 1, REG_UFS_ADDR_XOUFS_ST);
+		else
+			ufshcd_writel(hba, 0, REG_UFS_ADDR_XOUFS_ST);
+
+		retry = 3; /* 2.4ms wosrt case */
+		do {
+			value = ufshcd_readl(hba, REG_UFS_ADDR_XOUFS_ST);
+
+			if ((value == 0x3) || (value == 0))
+				break;
+
+			mdelay(1);
+			if (retry) {
+				retry--;
+			} else {
+				dev_err(hba->dev, "XO_UFS ack failed\n");
+				return -EIO;
+			}
+		} while (1);
+	} else
+		ufshcd_writel(hba, 0, REG_UFS_ADDR_XOUFS_ST);
+
+	return 0;
+}
+
 int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
 {
-	u32 reg;
-
-	if (!ufs_mtk_mmio_base_pericfg)
-		return 1;
-
-	reg = readl(ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
-	reg = reg & ~(1 << REG_UFS_PERICFG_RST_N_BIT);
-	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 0, 0, 0);
 
 	/*
 	 * The reset signal is active low.
@@ -140,11 +298,12 @@ int ufs_mtk_pltfrm_ufs_device_reset(struct ufs_hba *hba)
 	 */
 	usleep_range(10, 15);
 
-	reg = reg | (1 << REG_UFS_PERICFG_RST_N_BIT);
-	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
+	mt_secure_call(MTK_SIP_KERNEL_UFS_CTL, 2, 1, 0, 0);
 
 	/* same as assert, wait for at least 10us after deassert */
 	usleep_range(10, 15);
+
+	dev_info(hba->dev, "%s: UFS device reset done\n", __func__);
 
 	return 0;
 }
@@ -199,8 +358,10 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 	 * is because
 	 * hba->uic_link_state also used by ufshcd_gate_work()
 	 */
-	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE)
+	if (ufs_mtk_hba->curr_dev_pwr_mode != UFS_ACTIVE_PWR_MODE) {
+		spm_resource_req(SPM_RESOURCE_USER_UFS, SPM_RESOURCE_RELEASE);
 		return UFS_H8_SUSPEND;
+	}
 
 	/* Release all resources if entering H8 mode */
 	ret = ufs_mtk_generic_read_dme(UIC_CMD_DME_GET,
@@ -218,12 +379,27 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 	}
 
 	if (tmp == VENDOR_POWERSTATE_HIBERNATE) {
-		/* delay 100us before DeepIdle/SODI
-		 * disable XO_UFS for Toshiba device
+		/*
+		 * Delay before disable XO_UFS: H8 -> delay A -> disable XO_UFS
+		 *		delayA
+		 * Hynix	30us
+		 * Samsung	1us
+		 * Toshiba	100us
 		 */
-		if (ufs_mtk_hba->dev_quirks &
-			UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK)
+		switch (ufs_mtk_hba->card->wmanufacturerid) {
+		case UFS_VENDOR_TOSHIBA:
 			udelay(100);
+			break;
+		case UFS_VENDOR_SKHYNIX:
+			udelay(30);
+			break;
+		case UFS_VENDOR_SAMSUNG:
+			udelay(1);
+			break;
+		default:
+			break;
+		}
+
 		/*
 		 * Disable MPHY 26MHz ref clock in H8 mode
 		 * SSPM project will disable MPHY 26MHz ref clock
@@ -232,8 +408,10 @@ int ufs_mtk_pltfrm_deepidle_check_h8(void)
 	#if !defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT)
 	#ifdef CLKBUF_READY
 		clk_buf_ctrl(CLK_BUF_UFS, false);
+		ufs_mtk_pltfrm_xo_ufs_req(ufs_mtk_hba, false);
 	#endif
 	#endif
+		spm_resource_req(SPM_RESOURCE_USER_UFS, SPM_RESOURCE_RELEASE);
 		return UFS_H8;
 	}
 
@@ -265,8 +443,16 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
 		return;
 
 	clk_buf_ctrl(CLK_BUF_UFS, true);
+	ufs_mtk_pltfrm_xo_ufs_req(ufs_mtk_hba, true);
 #endif
 #endif
+	/* Delay after enable XO_UFS: enable XO_UFS -> delay B -> leave H8
+	 *		delayB
+	 * Hynix	30us
+	 * Samsung	max(1us,32us)
+	 * Toshiba	32us
+	 */
+	udelay(32);
 }
 
 /**
@@ -278,19 +464,7 @@ void ufs_mtk_pltfrm_deepidle_leave(void)
 void ufs_mtk_pltfrm_deepidle_resource_req(struct ufs_hba *hba,
 	unsigned int resource)
 {
-	/*
-	 * No need request SPM resource.
-	 *
-	 * When mp_xtal_req = 1, SPM HW turn on main PLL, SYS 26 MHz, and Vcore
-	 * cannot scale down. Otherwise SPM HW turn off main PLL, SYS 26M and
-	 * Vcore can scale down.
-	 * When UIC command send, UFS HW set mp_xtal_req(1).
-	 * After UIC command done, UFS HW clear mp_xtal_req(0).
-	 *
-	 * When ufs_dram_en = 1, SPM HW turn on DRAM, otherwise turn off DRAM.
-	 * When ufshci queue command send, UFS HW set ufs_dram_en(1).
-	 * After ufshci queue command finish, UFS HW clear ufs_dram_en(0).
-	 */
+	spm_resource_req(SPM_RESOURCE_USER_UFS, resource);
 }
 
 /**
@@ -346,10 +520,12 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 	}
 
 	if (target & SW_RST_TARGET_MPHY) {
-		writel((readl(ufs_mtk_mmio_base_ufs_mphy + 0x001C) &
-		~(0x01 << 2)) |
-		(0x01 << 2),
-		(ufs_mtk_mmio_base_ufs_mphy + 0x001C));
+		/* reset Mphy */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSPHY_SW_RST_SET);
+		reg = reg | (1 << REG_UFSPHY_SW_RST_SET_BIT);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSPHY_SW_RST_SET);
 	}
 
 	udelay(100);
@@ -382,10 +558,12 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 	}
 
 	if (target & SW_RST_TARGET_MPHY) {
-		writel((readl(ufs_mtk_mmio_base_ufs_mphy + 0x001C) &
-		~(0x01 << 2)) |
-		 (0x00 << 2),
-		 (ufs_mtk_mmio_base_ufs_mphy + 0x001C));
+		/* clear Mphy reset */
+		reg = readl(ufs_mtk_mmio_base_infracfg_ao +
+			REG_UFSPHY_SW_RST_CLR);
+		reg = reg | (1 << REG_UFSPHY_SW_RST_CLR_BIT);
+		writel(reg,
+			ufs_mtk_mmio_base_infracfg_ao + REG_UFSPHY_SW_RST_CLR);
 	}
 
 	udelay(100);
@@ -403,6 +581,7 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 	struct device_node *node_gpio;
 	struct device_node *node_pericfg;
 	struct device_node *node_ufs_mphy;
+	struct device_node *node_infracfg_ao;
 	int err = 0;
 
 	/* get ufs_mtk_gpio */
@@ -451,6 +630,21 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 	} else
 		dev_err(hba->dev, "error: ufs_mtk_mmio_base_ufs_mphy init fail\n");
 
+
+	/* get ufs_mtk_mmio_base_infracfg_ao */
+	node_infracfg_ao =
+		of_find_compatible_node(NULL, NULL, "mediatek,infracfg_ao");
+	if (node_infracfg_ao) {
+		ufs_mtk_mmio_base_infracfg_ao = of_iomap(node_infracfg_ao, 0);
+
+		if (IS_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao)) {
+			err = PTR_ERR(*(void **)&ufs_mtk_mmio_base_infracfg_ao);
+			dev_err(hba->dev, "error: ufs_mtk_mmio_base_infracfg_ao init fail\n");
+			ufs_mtk_mmio_base_infracfg_ao = NULL;
+		}
+	} else
+		dev_err(hba->dev, "error: ufs_mtk_mmio_base_infracfg_ao init fail\n");
+
 	/* get va09 regulator and enable it */
 	reg_va09 = regulator_get(hba->dev, "va09");
 	if (!reg_va09) {
@@ -469,19 +663,31 @@ int ufs_mtk_pltfrm_parse_dt(struct ufs_hba *hba)
 
 int ufs_mtk_pltfrm_res_req(struct ufs_hba *hba, u32 option)
 {
-	/*
-	 * No need request SPM resource.
-	 *
-	 * When mp_xtal_req = 1, SPM HW turn on main PLL, SYS 26 MHz, and Vcore
-	 * cannot scale down. Otherwise SPM HW turn off main PLL, SYS 26M and
-	 * Vcore can scale down.
-	 * When UIC command send, UFS HW set mp_xtal_req(1).
-	 * After UIC command done, UFS HW clear mp_xtal_req(0).
-	 *
-	 * When ufs_dram_en = 1, SPM HW turn on DRAM, otherwise turn off DRAM.
-	 * When ufshci queue command send, UFS HW set ufs_dram_en(1).
-	 * After ufshci queue command finish, UFS HW clear ufs_dram_en(0).
-	 */
+	if (option == UFS_MTK_RESREQ_DMA_OP) {
+
+		/*
+		 * request resource for DMA operations, e.g., DRAM
+		 * SPM_RESOURCE_MAINPLL | SPM_RESOURCE_DRAM |
+		 * SPM_RESOURCE_CK_26M
+		 */
+		/*
+		 * Request SPM_RESOURCE_ALL anyway to avoid
+		 * entering low-power state, e.g., MCUSYS on/off,
+		 * because latency of leaving low-power state
+		 * may impact I/O performance
+		 */
+		ufshcd_vops_deepidle_resource_req(hba,
+			SPM_RESOURCE_ALL);
+
+	} else if (option == UFS_MTK_RESREQ_MPHY_NON_H8) {
+
+		/*
+		 * request resource for mphy not in H8, e.g.,
+		 * main PLL, 26 mhz clock
+		 */
+		ufshcd_vops_deepidle_resource_req(hba,
+		  SPM_RESOURCE_MAINPLL | SPM_RESOURCE_CK_26M);
+	}
 
 	return 0;
 }
@@ -494,6 +700,7 @@ int ufs_mtk_pltfrm_resume(struct ufs_hba *hba)
 #ifdef CLKBUF_READY
 	/* Enable MPHY 26MHz ref clock */
 	clk_buf_ctrl(CLK_BUF_UFS, true);
+	ufs_mtk_pltfrm_xo_ufs_req(ufs_mtk_hba, true);
 #endif
 	/* Set regulator to turn on VA09 LDO */
 	ret = regulator_enable(reg_va09);
@@ -619,6 +826,7 @@ int ufs_mtk_pltfrm_suspend(struct ufs_hba *hba)
 #ifdef CLKBUF_READY
 	/* Disable MPHY 26MHz ref clock in H8 mode */
 	clk_buf_ctrl(CLK_BUF_UFS, false);
+	ufs_mtk_pltfrm_xo_ufs_req(ufs_mtk_hba, false);
 #endif
 	/* Set regulator to turn off VA09 LDO */
 	ret = regulator_disable(reg_va09);

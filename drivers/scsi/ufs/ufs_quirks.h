@@ -131,13 +131,6 @@ struct ufs_dev_fix {
  */
 #define UFS_DEVICE_QUIRK_HOST_PA_SAVECONFIGTIME	(1 << 8)
 
-/*
- * MTK PATCH
- * Toshiba Gen5 Gen6 UFS memory device need 100us delay before disable REF_CLK.
- * If thoshiba can improve this delay in the future(ex: Gen7),
- * this quirk can be removed then.
- */
-#define UFS_DEVICE_QUIRK_DELAY_BEFORE_DISABLE_REF_CLK	(1 << 29)
 
 /*
  * MTK PATCH

@@ -39,11 +39,18 @@
 
 #include <mt-plat/mtk_blocktag.h>
 
+/*
+ * snprintf may return a value of size or "more" to indicate
+ * that the output was truncated, thus be careful of "more"
+ * case.
+ */
 #define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
 do { \
 	if (buff && size && *(size)) { \
 		unsigned long var = snprintf(*(buff), *(size), fmt, ##args); \
 		if (var > 0) { \
+			if (var > *(size)) \
+				var = *(size); \
 			*(size) -= var; \
 			*(buff) += var; \
 		} \
@@ -74,8 +81,10 @@ struct dentry *mtk_btag_droot;
 struct dentry *mtk_btag_dlog;
 
 /* mini context for major embedded storage only */
+#define MICTX_PROC_CMD_BUF_SIZE (1)
 static struct mtk_btag_mictx_struct *mtk_btag_mictx;
 static bool mtk_btag_mictx_ready;
+static bool mtk_btag_mictx_debug;
 
 static void mtk_btag_init_debugfs(void);
 
@@ -295,6 +304,26 @@ void mtk_btag_vmstat_eval(struct mtk_btag_vmstat *vm)
 }
 EXPORT_SYMBOL_GPL(mtk_btag_vmstat_eval);
 
+void mtk_btag_mictx_dump(void)
+{
+	struct mtk_btag_mictx_iostat_struct iostat;
+	int ret;
+
+	ret = mtk_btag_mictx_get_data(&iostat);
+
+	if (ret) {
+		pr_info("[BLOCK_TAG] Mictx: Get data failed %d\n", ret);
+		return;
+	}
+
+	pr_info("[BLOCK_TAG] Mictx: %llu|%u|%u|%u|%u|%u|%u|%u|%u|%u|%u\n",
+		iostat.duration, iostat.q_depth, iostat.wl,
+		iostat.tp_req_r, iostat.tp_req_w,
+		iostat.tp_all_r, iostat.tp_all_w,
+		iostat.reqcnt_r, iostat.reqcnt_w,
+		iostat.reqsize_r, iostat.reqsize_w);
+}
+
 /* evaluate pidlog trace from context */
 void mtk_btag_pidlog_eval(struct mtk_btag_pidlogger *pl,
 	struct mtk_btag_pidlogger *ctx_pl)
@@ -312,6 +341,10 @@ void mtk_btag_pidlog_eval(struct mtk_btag_pidlogger *pl,
 		memcpy(&pl->info[0], &ctx_pl->info[0], size);
 		memset(&ctx_pl->info[0], 0, size);
 	}
+
+	if (mtk_btag_mictx_debug)
+		mtk_btag_mictx_dump();
+
 }
 EXPORT_SYMBOL_GPL(mtk_btag_pidlog_eval);
 
@@ -845,6 +878,71 @@ static const struct file_operations mtk_btag_sub_fops = {
 	.write		= mtk_btag_sub_write,
 };
 
+static ssize_t mtk_btag_mictx_sub_write(struct file *file,
+	const char __user *ubuf,
+	size_t count, loff_t *ppos)
+{
+	int ret;
+	char cmd[MICTX_PROC_CMD_BUF_SIZE];
+
+	if (count == 0)
+		goto err;
+	else if (count > MICTX_PROC_CMD_BUF_SIZE)
+		count = MICTX_PROC_CMD_BUF_SIZE;
+
+	ret = copy_from_user(cmd, ubuf, count);
+
+	if (ret < 0)
+		goto err;
+
+	if (cmd[0] == '1')
+		mtk_btag_mictx_enable(1);
+	else if (cmd[0] == '2')
+		mtk_btag_mictx_enable(0);
+	else if (cmd[0] == '3')
+		mtk_btag_mictx_debug = 1;
+	else if (cmd[0] == '4')
+		mtk_btag_mictx_debug = 0;
+	else {
+		pr_info("[pidmap] invalid arg: 0x%x\n", cmd[0]);
+		goto err;
+	}
+
+	return count;
+
+err:
+	return -1;
+}
+
+/* The debugfs functions are optimized away when CONFIG_DEBUG_FS isn't set. */
+static int mtk_btag_mctx_sub_show(struct seq_file *s, void *data)
+{
+	seq_puts(s, "<MTK Blocktag Mini Context>\n");
+	seq_puts(s, "Status:\n");
+	seq_printf(s, "  Ready: %d\n", mtk_btag_mictx_ready);
+	seq_printf(s, "  Mictx Instance: %p\n", mtk_btag_mictx);
+	seq_puts(s, "Commands:\n");
+	seq_puts(s, "  Enable Mini Context : echo 1 > blocktag_mictx\n");
+	seq_puts(s, "  Disable Mini Context: echo 2 > blocktag_mictx\n");
+	seq_puts(s, "  Enable Self-Test    : echo 3 > blocktag_mictx\n");
+	seq_puts(s, "  Disable Self-Test   : echo 4 > blocktag_mictx\n");
+	return 0;
+}
+
+static int mtk_btag_mictx_sub_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, mtk_btag_mctx_sub_show, inode->i_private);
+}
+
+static const struct file_operations mtk_btag_mictx_sub_fops = {
+	.owner		= THIS_MODULE,
+	.open		= mtk_btag_mictx_sub_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= seq_release,
+	.write		= mtk_btag_mictx_sub_write,
+};
+
 struct mtk_blocktag *mtk_btag_alloc(const char *name,
 	unsigned int ringtrace_count, size_t ctx_size, unsigned int ctx_count,
 	mtk_btag_seq_f seq_show)
@@ -925,6 +1023,14 @@ struct mtk_blocktag *mtk_btag_alloc(const char *name,
 
 	if (IS_ERR(btag->dentry.dlog))
 		pr_warn("[BLOCK_TAG] %s: fail to create blockio at debugfs\n",
+			name);
+
+	btag->dentry.dlog_mictx = debugfs_create_file("blockio_mictx",
+		S_IFREG | 0444,
+		btag->dentry.droot, (void *)0, &mtk_btag_mictx_sub_fops);
+
+	if (IS_ERR(btag->dentry.dlog_mictx))
+		pr_info("[BLOCK_TAG] %s: fail to create blockio_mictx at debugfs\n",
 			name);
 
 out:
@@ -1097,6 +1203,7 @@ void mtk_btag_mictx_eval_tp(
 		return;
 
 	tprw = (write) ? &ctx->tp.w : &ctx->tp.r;
+
 	spin_lock_irqsave(&ctx->lock, flags);
 	tprw->size += size;
 	tprw->usage += usage;
@@ -1131,8 +1238,7 @@ void mtk_btag_mictx_eval_req(
 	spin_unlock_irqrestore(&ctx->lock, flags);
 }
 
-void mtk_btag_mictx_update_ctx(
-	__u32 q_depth)
+void mtk_btag_mictx_update_ctx(__u32 q_depth)
 {
 	struct mtk_btag_mictx_struct *ctx;
 	unsigned long flags;
@@ -1217,7 +1323,8 @@ int mtk_btag_mictx_get_data(
 	if (ctx->idle_begin)
 		ctx->idle_total += (time_cur - ctx->idle_begin);
 
-	iostat->wl = 100 - ((__u32)(ctx->idle_total * 100) / (__u32)dur);
+	iostat->wl = 100 -
+		((__u32)((ctx->idle_total >> 10) * 100) / (__u32)(dur >> 10));
 
 	/* fill-in cmdq depth */
 	iostat->q_depth = ctx->q_depth;
@@ -1246,7 +1353,6 @@ void mtk_btag_mictx_enable(int enable)
 		spin_lock_init(&mtk_btag_mictx->lock);
 		mtk_btag_mictx_reset(mtk_btag_mictx, 0);
 		mtk_btag_mictx_ready = 1;
-
 	} else {
 		if (!mtk_btag_mictx)
 			return;

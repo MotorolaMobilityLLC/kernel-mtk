@@ -106,6 +106,7 @@ int mtk_btag_pidlog_add_ufs(struct request_queue *q, pid_t pid,
 
 	spin_lock_irqsave(&ctx->lock, flags);
 	mtk_btag_pidlog_insert(&ctx->pidlog, pid, len, rw);
+	mtk_btag_mictx_eval_req(rw, 1, len);
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
 	return 1;
@@ -162,6 +163,10 @@ void ufs_mtk_biolog_queue_command(unsigned int task_id, struct scsi_cmnd *cmd)
 	spin_lock_irqsave(&ctx->lock, flags);
 	if (!ctx->period_start_t)
 		ctx->period_start_t = tsk->t[tsk_request_start];
+
+	ctx->q_depth++;
+	mtk_btag_mictx_update_ctx(ctx->q_depth);
+
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
 	ufs_mtk_pr_tsk(tsk, tsk_request_start);
@@ -236,7 +241,12 @@ void ufs_mtk_biolog_scsi_done_end(unsigned int task_id)
 		size = tsk->len << SECTOR_SHIFT;
 		tp->usage += busy_time;
 		tp->size += size;
+		mtk_btag_mictx_eval_tp(rw, busy_time, size);
 	}
+
+	ctx->q_depth--;
+	mtk_btag_mictx_update_ctx(ctx->q_depth);
+
 	spin_unlock_irqrestore(&ctx->lock, flags);
 
 	ufs_mtk_pr_tsk(tsk, tsk_scsi_done_end);
@@ -346,11 +356,18 @@ void ufs_mtk_biolog_check(unsigned long req_mask)
 	mtk_btag_klog(ufs_mtk_btag, tr);
 }
 
+/*
+ * snprintf may return a value of size or "more" to indicate
+ * that the output was truncated, thus be careful of "more"
+ * case.
+ */
 #define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
 do { \
 	if (buff && size && *(size)) { \
 		unsigned long var = snprintf(*(buff), *(size), fmt, ##args); \
 		if (var > 0) { \
+			if (var > *(size)) \
+				var = *(size); \
 			*(size) -= var; \
 			*(buff) += var; \
 		} \

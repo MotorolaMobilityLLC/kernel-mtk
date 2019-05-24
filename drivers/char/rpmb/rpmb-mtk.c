@@ -139,8 +139,6 @@ struct task_struct *rpmb_gp_Dci_th;
 static struct cdev rpmb_dev;
 static struct class *mtk_rpmb_class;
 
-static DEFINE_MUTEX(rpmb_lock);
-
 /*
  * This is an alternative way to get mmc_card strcuture from mmc_host which set
  * from msdc driver with this callback function.
