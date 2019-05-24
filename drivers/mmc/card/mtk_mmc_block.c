@@ -319,28 +319,20 @@ static struct mt_bio_context_task *mt_bio_get_task(struct mt_bio_context *ctx,
 	unsigned int task_id)
 {
 	struct mt_bio_context_task *tsk;
-	int i, avail = -1;
 
 	if (!ctx)
 		return NULL;
 
-	for (i = 0; i < MMC_BIOLOG_CONTEXT_TASKS; i++) {
-		tsk = &ctx->task[i];
-		if (tsk->task_id == task_id)
-			return tsk;
-		if ((tsk->task_id < 0) && (avail < 0))
-			avail = i;
+	if (task_id >= MMC_BIOLOG_CONTEXT_TASKS) {
+		pr_notice("%s: invalid task id %d\n",
+			__func__, task_id);
+		return NULL;
 	}
 
-	if (avail >= 0) {
-		tsk = &ctx->task[avail];
-		tsk->task_id = task_id;
-		return tsk;
-	}
+	tsk = &ctx->task[task_id];
+	tsk->task_id = task_id;
 
-	pr_notice("mt_bio_get_task: out of task in context %s\n", ctx->comm);
-
-	return NULL;
+	return tsk;
 }
 
 static struct mt_bio_context_task *mt_bio_curr_task(unsigned int task_id,

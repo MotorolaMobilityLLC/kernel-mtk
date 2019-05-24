@@ -60,39 +60,18 @@ static struct ufs_mtk_bio_context_task *ufs_mtk_bio_get_task(
 	struct ufs_mtk_bio_context *ctx, unsigned int task_id)
 {
 	struct ufs_mtk_bio_context_task *tsk = NULL;
-	unsigned long flags;
-	int i, avail = -1;
 
 	if (!ctx)
 		return NULL;
 
-	spin_lock_irqsave(&ctx->lock, flags);
-
-	for (i = 0; i < UFS_BIOLOG_CONTEXT_TASKS; i++) {
-		tsk = &ctx->task[i];
-		if (tsk->task_id == task_id)
-			goto out;
-		if ((tsk->task_id < 0) && (avail < 0))
-			avail = i;
+	if (task_id >= UFS_BIOLOG_CONTEXT_TASKS) {
+		pr_notice("[BLOCK_TAG] %s: invalid task id %d\n",
+			__func__, task_id);
+		return NULL;
 	}
 
-	if (avail >= 0) {
-		tsk = &ctx->task[avail];
-		tsk->task_id = task_id;
-		tsk->pid = current->pid;
-		tsk->cpu_id = smp_processor_id();
-		goto out;
-	}
+	tsk = &ctx->task[task_id];
 
-	pr_debug("ufs_mtk_bio_get_task: out of task, incoming task id = %d\n",
-		task_id);
-
-	for (i = 0; i < UFS_BIOLOG_CONTEXT_TASKS; i++)
-		pr_warn("ufs_mtk_bio_get_task: task[%d]=%d\n", i,
-			ctx->task[i].task_id);
-
-out:
-	spin_unlock_irqrestore(&ctx->lock, flags);
 	return tsk;
 }
 
@@ -156,10 +135,6 @@ static void ufs_mtk_pr_tsk(struct ufs_mtk_bio_context_task *tsk,
 	bytes = ((__u32)tsk->len) << SECTOR_SHIFT;
 	mtk_btag_task_timetag(buf, 256, stage, tsk_max, task_name, tsk->t,
 		bytes);
-
-	pr_debug("[BLOCK_TAG] ufs: tsk[%d]-(%d),%d,%s,%02X,pid=%u,len=%d%s\n",
-		tsk->task_id, tsk->cpu_id,
-		stage+1, rw, tsk->cmd, tsk->pid, bytes, buf);
 }
 
 void ufs_mtk_biolog_queue_command(unsigned int task_id, struct scsi_cmnd *cmd)
@@ -412,14 +387,9 @@ static size_t ufs_mtk_bio_seq_debug_show_info(char **buff, unsigned long *size,
 
 static void ufs_mtk_bio_init_ctx(struct ufs_mtk_bio_context *ctx)
 {
-	int i;
-
 	memset(ctx, 0, sizeof(struct ufs_mtk_bio_context));
 	spin_lock_init(&ctx->lock);
 	ctx->period_start_t = sched_clock();
-
-	for (i = 0; i < UFS_BIOLOG_CONTEXT_TASKS; i++)
-		ctx->task[i].task_id = -1;
 }
 
 int ufs_mtk_biolog_init(void)
