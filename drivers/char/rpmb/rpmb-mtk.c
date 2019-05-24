@@ -902,10 +902,14 @@ int rpmb_req_ioctl_write_data_ufs(struct rpmb_ioc_param *param)
 
 	while (left_blkcnt) {
 
+#if (MAX_RPMB_TRANSFER_BLK > 1)
 		if (left_blkcnt >= MAX_RPMB_TRANSFER_BLK)
 			tran_blkcnt = MAX_RPMB_TRANSFER_BLK;
 		else
 			tran_blkcnt = left_blkcnt;
+#else
+		tran_blkcnt = 1;
+#endif
 
 		MSG(DBG_INFO, "%s, total_blkcnt = 0x%x, tran_blkcnt = 0x%x\n",
 			__func__, left_blkcnt, tran_blkcnt);
