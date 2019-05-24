@@ -21,7 +21,8 @@
 #include "mtk_secure_api_v1.3.h"
 #elif defined(CONFIG_MACH_MT6761) \
 	|| defined(CONFIG_MACH_MT6765) \
-	|| defined(CONFIG_MACH_MT6779)
+	|| defined(CONFIG_MACH_MT6779) \
+	|| defined(CONFIG_MACH_MT8173)
 #include "mtk_secure_api_v1.4.h"
 #elif defined(CONFIG_MACH_MT6768)
 #include "mtk_secure_api_v1.6.h"
