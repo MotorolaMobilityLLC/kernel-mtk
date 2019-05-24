@@ -30,6 +30,7 @@
 
 #include "linux/tee_core.h"
 #include "linux/tee_ioc.h"
+#include <linux/tee_client_api.h>
 
 #include "tee_core_priv.h"
 #include "tee_sysfs.h"
@@ -44,6 +45,8 @@
 #include "tee_clkmgr_priv.h"
 
 #include "pm.h"
+
+static uint32_t nsdrv_feature_flags;
 
 #if defined(CONFIG_ARM)
 
@@ -76,6 +79,12 @@ void *tee_map_cached_shm(unsigned long pa, size_t len)
 }
 EXPORT_SYMBOL(tee_map_cached_shm);
 
+void tee_unmap_cached_shm(void *va)
+{
+	iounmap(va);
+}
+EXPORT_SYMBOL(tee_unmap_cached_shm);
+
 #define _TEE_CORE_FW_VER "1:0.1"
 
 static char *_tee_supp_app_name = "teed";
@@ -85,16 +94,16 @@ static struct class *misc_class;
 
 static int device_match(struct device *device, const void *devname)
 {
-	struct tee *tee = dev_get_drvdata(device);
 	int ret;
+	struct tee *tee = dev_get_drvdata(device);
 
 	WARN_ON(!tee);
 
 	/*
-	 * we shall always fail the check
-	 * if tee is a NULL pointer
+	 * It shall always return
+	 * 0 if tee is a null
+	 * ptr
 	 */
-
 	if (tee == NULL)
 		return 0;
 
@@ -186,7 +195,6 @@ int tee_get(struct tee *tee)
 	} else {
 		int count = (int) atomic_read(&tee->refcount);
 
-		pr_debug("refcount=%d\n", count);
 		if (count > tee->max_refcount)
 			tee->max_refcount = count;
 	}
@@ -215,16 +223,12 @@ int tee_put(struct tee *tee)
 	}
 
 	count = (int)atomic_read(&tee->refcount);
-	pr_debug("refcount=%d\n", count);
 	return ret;
 }
 
 static int tee_supp_open(struct tee *tee)
 {
 	int ret = 0;
-
-	pr_debug("appclient=\"%s\" pid=%d\n",
-		current->comm, current->pid);
 
 	WARN_ON(!tee->rpc);
 
@@ -242,9 +246,6 @@ static int tee_supp_open(struct tee *tee)
 
 static void tee_supp_release(struct tee *tee)
 {
-	pr_debug("appclient=\"%s\" pid=%d\n",
-		current->comm, current->pid);
-
 	WARN_ON(!tee->rpc);
 
 	if ((atomic_read(&tee->rpc->used) == 1) &&
@@ -263,7 +264,6 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 
 	WARN_ON(!tee);
 	WARN_ON(tee->miscdev.minor != iminor(inode));
-	pr_debug("> name=\"%s\"\n", tee->name);
 
 	ret = tee_supp_open(tee);
 	if (ret)
@@ -275,7 +275,6 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 
 	ctx->usr_client = 1;
 	filp->private_data = ctx;
-	pr_debug("< ctx=%p is created\n", (void *) ctx);
 
 	return 0;
 }
@@ -292,12 +291,9 @@ static int tee_ctx_release(struct inode *inode, struct file *filp)
 	tee = ctx->tee;
 	WARN_ON(tee->miscdev.minor != iminor(inode));
 
-	pr_debug("> ctx=%p\n", ctx);
-
 	tee_context_destroy(ctx);
 	tee_supp_release(tee);
 
-	pr_debug("< ctx=%p is destroyed\n", ctx);
 	return 0;
 }
 
@@ -338,8 +334,6 @@ static int tee_do_create_session(struct tee_context *ctx,
 	put_user(k_cmd.fd_sess, &u_cmd->fd_sess);
 
 exit:
-	pr_debug("< ret=%d, sessfd=%d\n", ret,
-		k_cmd.fd_sess);
 	return ret;
 }
 
@@ -366,8 +360,6 @@ static int tee_do_shm_alloc_perm(struct tee_context *ctx,
 	put_user(k_shm.flags, &u_shm->flags);
 
 exit:
-	pr_debug("< ret=%d, shmfd=%d\n", ret,
-		k_shm.fd_shm);
 	return ret;
 }
 
@@ -407,7 +399,6 @@ static int tee_do_shm_alloc(struct tee_context *ctx,
 	put_user(k_shm.flags, &u_shm->flags);
 
 exit:
-	pr_debug("< ret=%d, shmfd=%d\n", ret, k_shm.fd_shm);
 	return ret;
 }
 
@@ -454,7 +445,6 @@ static int tee_do_get_fd_for_rpc_shm(struct tee_context *ctx,
 
 exit:
 
-	pr_debug("< ret=%d, shmfd=%d\n", ret, k_shm.fd_shm);
 	return ret;
 }
 
@@ -486,7 +476,6 @@ static long tee_internal_ioctl(struct tee_context *ctx,
 				void __user *u_arg)
 {
 	int ret = -EINVAL;
-
 
 	switch (cmd) {
 	case TEE_OPEN_SESSION_IOC:
@@ -532,6 +521,19 @@ static long tee_internal_ioctl(struct tee_context *ctx,
 		ret = tee_delete_sp_ta(ctx, u_arg);
 		break;
 
+	case TEE_QUERY_DRV_FEATURE_IOC:
+		if (u_arg) {
+			pr_info("tkcoredrv: nsdrv feature = 0x%x\n",
+					nsdrv_feature_flags);
+			if (copy_to_user(u_arg, &nsdrv_feature_flags,
+					sizeof(nsdrv_feature_flags))) {
+				ret = -EFAULT;
+			}
+		} else
+			ret = -EINVAL;
+
+		break;
+
 	default:
 		pr_err("internal_ioctl: Unknown command: %u\n", cmd);
 		ret = -EINVAL;
@@ -541,6 +543,145 @@ static long tee_internal_ioctl(struct tee_context *ctx,
 }
 
 #ifdef CONFIG_COMPAT
+
+static int convert_compat_tee_shm(struct TEEC_SharedMemory __user *shm)
+{
+	if (unlikely(put_user(0, ((uint32_t __user *) &(shm->buffer)) + 1)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &(shm->size)) + 1)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &(shm->d.fd)) + 1)))
+		return -EFAULT;
+
+	return 0;
+}
+
+static int convert_compat_tee_param(union TEEC_Parameter __user *p,
+	uint32_t type)
+{
+	struct TEEC_SharedMemory __user *p_shm;
+
+	switch (type) {
+	case TEEC_MEMREF_TEMP_INPUT:
+	case TEEC_MEMREF_TEMP_OUTPUT:
+	case TEEC_MEMREF_TEMP_INOUT:
+
+		if (unlikely(put_user(0,
+				((uint32_t __user *) &(p->tmpref.buffer)) + 1)))
+			return -EFAULT;
+
+		if (unlikely(put_user(0,
+				((uint32_t __user *) &(p->tmpref.size)) + 1)))
+			return -EFAULT;
+
+		break;
+
+	case TEEC_MEMREF_PARTIAL_INPUT:
+	case TEEC_MEMREF_PARTIAL_OUTPUT:
+	case TEEC_MEMREF_PARTIAL_INOUT:
+	case TEEC_MEMREF_WHOLE:
+
+		if (unlikely(put_user(0,
+				((uint32_t __user *) &(p->memref.parent)) + 1)))
+			return -EFAULT;
+
+		if (unlikely(put_user(0,
+				((uint32_t __user *) &(p->memref.size)) + 1)))
+			return -EFAULT;
+
+		if (unlikely(put_user(0,
+				((uint32_t __user *) &(p->memref.offset)) + 1)))
+			return -EFAULT;
+
+		if ((copy_from_user(&p_shm, &p->memref.parent,
+				sizeof(p_shm))))
+			return -EFAULT;
+
+		if (p_shm == NULL)
+			break;
+
+		if (convert_compat_tee_shm(p_shm))
+			return -EFAULT;
+
+		break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
+int convert_compat_tee_cmd(struct tee_cmd_io __user *u_cmd)
+{
+	uint32_t i;
+	struct TEEC_Operation __user *p_op;
+	uint32_t paramTypes;
+
+	if (u_cmd == NULL)
+		return -EINVAL;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &u_cmd->uuid) + 1)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &u_cmd->data) + 1)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &u_cmd->op) + 1)))
+		return -EFAULT;
+
+	if (copy_from_user(&p_op, &u_cmd->op, sizeof(p_op)))
+		return -EFAULT;
+
+	if (p_op == NULL)
+		return -EINVAL;
+
+	if (copy_from_user(&paramTypes, (uint32_t __user *) &p_op->paramTypes,
+			sizeof(p_op->paramTypes)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &p_op->session) + 1)))
+		return -EFAULT;
+
+	for (i = 0; i < TEEC_CONFIG_PAYLOAD_REF_COUNT; i++) {
+		if (convert_compat_tee_param(&p_op->params[i],
+			TEEC_PARAM_TYPE_GET(paramTypes, i))) {
+			pr_err("bad param %u\n", i);
+			return -EFAULT;
+		}
+	}
+
+	return 0;
+}
+
+int convert_compat_tee_shm_io(struct tee_shm_io __user *shm_io)
+{
+	if (shm_io == NULL)
+		return -EINVAL;
+
+	if (unlikely(put_user(0, ((uint32_t __user *) &shm_io->buffer) + 1)))
+		return -EFAULT;
+
+	return 0;
+}
+
+int convert_compat_tee_spta_inst(struct tee_spta_inst_desc __user *spta)
+{
+	if (spta == NULL)
+		return -EINVAL;
+
+	if (unlikely(put_user(0,
+		((uint32_t __user *) &spta->ta_binary) + 1)))
+		return -EFAULT;
+
+	if (unlikely(put_user(0,
+		((uint32_t __user *) &spta->response_len) + 1)))
+		return -EFAULT;
+
+	return 0;
+}
 
 static long tee_compat_ioctl(struct file *filp, unsigned int cmd,
 			unsigned long arg)
@@ -558,55 +699,22 @@ static long tee_compat_ioctl(struct file *filp, unsigned int cmd,
 
 	switch (cmd) {
 	case TEE_OPEN_SESSION_IOC:
-		{
-			struct tee_cmd_io __user *u_cmd =
-				(struct tee_cmd_io __user *) u_arg;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_cmd->uuid) + 1)))
-				return -EFAULT;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_cmd->data) + 1)))
-				return -EFAULT;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_cmd->op) + 1)))
-				return -EFAULT;
-
-			if (unlikely(put_user(1,
-				((uint32_t *) &u_cmd->reserved))))
-				return -EFAULT;
-		}
+		if (convert_compat_tee_cmd((struct tee_cmd_io __user *) u_arg))
+			return -EFAULT;
 		break;
 
 	case TEE_ALLOC_SHM_PERM_IOC:
 	case TEE_ALLOC_SHM_IOC:
 	case TEE_GET_FD_FOR_RPC_SHM_IOC:
-		{
-			struct tee_shm_io __user *u_shm =
-				(struct tee_shm_io __user *) u_arg;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_shm->buffer) + 1)))
-				return -EFAULT;
-		}
+		if (convert_compat_tee_shm_io(
+				(struct tee_shm_io __user *) u_arg))
+			return -EFAULT;
 		break;
 
 	case TEE_INSTALL_TA_IOC:
-		{
-			struct tee_spta_inst_desc __user *u_spta =
-				(struct tee_spta_inst_desc __user *) u_arg;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_spta->ta_binary) + 1)))
-				return -EFAULT;
-
-			if (unlikely(put_user(0,
-				((uint32_t __user *) &u_spta->response_len)
-					+ 1)))
-				return -EFAULT;
-		}
+		if (convert_compat_tee_spta_inst(
+			(struct tee_spta_inst_desc __user *) u_arg))
+			return -EFAULT;
 		break;
 
 	default:
@@ -641,7 +749,7 @@ const struct file_operations tee_fops = {
 
 static void tee_plt_device_release(struct device *dev)
 {
-	pr_debug("(dev=%p)....\n", dev);
+	(void) dev;
 }
 
 static spinlock_t tee_idr_lock;

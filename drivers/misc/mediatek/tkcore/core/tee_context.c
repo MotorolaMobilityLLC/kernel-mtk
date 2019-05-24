@@ -186,9 +186,6 @@ void tee_context_get(struct tee_context *ctx)
 	WARN_ON(!ctx || !ctx->tee);
 
 	kref_get(&ctx->refcount);
-
-	pr_debug("ctx=%p, kref=%d\n",
-		ctx, (int) atomic_read(&ctx->refcount.refcount));
 }
 
 static int is_in_list(struct tee *tee, struct list_head *entry)
@@ -218,9 +215,6 @@ void tee_context_put(struct tee_context *ctx)
 		return;
 
 	kref_put(&ctx->refcount, _tee_context_do_release);
-
-	pr_debug("ctx=%p, kref=%d\n",
-		_ctx, (int) atomic_read(&ctx->refcount.refcount));
 }
 
 /**

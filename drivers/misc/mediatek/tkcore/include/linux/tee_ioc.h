@@ -139,6 +139,9 @@ struct tee_spta_inst_desc {
 #define TEE_DELETE_TA_IOC \
 	_IOWR('t', 176, struct TEEC_UUID)
 
+#define TEE_QUERY_DRV_FEATURE_IOC \
+	_IOR('t', 183, uint32_t)
+
 /* Command IDs */
 #define TEEC_TUI_CMD_NONE				0
 #define TEEC_TUI_CMD_START_ACTIVITY		1

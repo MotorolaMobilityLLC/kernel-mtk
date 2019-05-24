@@ -32,17 +32,3 @@ tkcore_drv-objs:= \
 		tee_smc_xfer.o \
 		tee_mem.o \
 		handle.o
-
-ifeq ($(CONFIG_ARM),y)
-# "smc" assembly intruction requires dedicated "armv7 secure extension"
-secext := $(call as-instr,.arch_extension sec,+sec)
-AFLAGS_tee_smc-arm.o := -Wa,-march=armv7-a$(secext)
-tkcore_drv-objs += \
-	tee_smc-arm.o
-endif
-
-ifeq ($(CONFIG_ARM64),y)
-tkcore_drv-objs += \
-	tee_smc-arm64.o
-endif
-

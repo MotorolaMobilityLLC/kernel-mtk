@@ -139,9 +139,6 @@ static void handle_rpc_func_cmd_to_supplicant(struct tee_tz *ptee,
 		return;
 	}
 
-	pr_debug("arg32=%p cmd=0x%x num_param=0x%x\n",
-		arg32, arg32->cmd, arg32->num_params);
-
 	params = TEESMC32_GET_PARAMS(arg32);
 
 	memset(&inv, 0, sizeof(inv));
@@ -160,7 +157,6 @@ static void handle_rpc_func_cmd_to_supplicant(struct tee_tz *ptee,
 		/* Fall through */
 		case TEESMC_ATTR_TYPE_VALUE_OUTPUT:
 			inv.cmds[n].type = TEE_RPC_VALUE;
-			pr_debug("param of type value\n");
 			break;
 		case TEESMC_ATTR_TYPE_MEMREF_INPUT:
 		case TEESMC_ATTR_TYPE_MEMREF_OUTPUT:
@@ -169,8 +165,6 @@ static void handle_rpc_func_cmd_to_supplicant(struct tee_tz *ptee,
 				(void *)(uintptr_t)params[n].u.memref.buf_ptr;
 			inv.cmds[n].size = params[n].u.memref.size;
 			inv.cmds[n].type = TEE_RPC_BUFFER;
-			pr_debug("param memref buffer %p size 0x%x\n",
-				inv.cmds[n].buffer, inv.cmds[n].size);
 			break;
 		default:
 			arg32->ret = TEEC_ERROR_GENERIC;
@@ -352,7 +346,6 @@ static void handle_rpc_func_cmd(struct tee_tz *ptee, u32 parg32)
 	struct teesmc32_arg *arg32;
 
 	arg32 = tee_shm_pool_p2v(DEV, ptee->shm_pool, parg32);
-	pr_debug("rpc_func parg32=0x%x\n", parg32);
 	if (!arg32)
 		return;
 
@@ -640,14 +633,8 @@ static int tz_open(struct tee_session *sess, struct tee_cmd *cmd)
 	else
 		uuid = NULL;
 
-	pr_debug("> ta kaddr %p, uuid=%08x-%04x-%04x\n",
-		(cmd->ta) ? cmd->ta->resv.kaddr : NULL,
-		((uuid) ? uuid->timeLow : 0xDEAD),
-		((uuid) ? uuid->timeMid : 0xDEAD),
-		((uuid) ? uuid->timeHiAndVersion : 0xDEAD));
-
 	if (!CAPABLE(ptee->tee)) {
-		pr_err("tz_open: not capable\n");
+		pr_err("tkcoredrv: %s: not capable\n", __func__);
 		return -EBUSY;
 	}
 
@@ -732,11 +719,8 @@ static int tz_invoke(struct tee_session *sess, struct tee_cmd *cmd)
 	tee = sess->ctx->tee;
 	ptee = tee->priv;
 
-	pr_debug("> sessid %x cmd %x type %x\n",
-		sess->sessid, cmd->cmd, cmd->param.type);
-
 	if (!CAPABLE(tee)) {
-		pr_err("tz_invoke: not capable\n");
+		pr_err("tkcoredrv: %s: not capable\n", __func__);
 		return -EBUSY;
 	}
 
@@ -829,13 +813,13 @@ static int tz_close(struct tee_session *sess)
 
 
 	if (!CAPABLE(tee)) {
-		pr_err("tz_close: not capable\n");
+		pr_err("tkcoredrv: %s: not capable\n", __func__);
 		return -EBUSY;
 	}
 
 	arg32 = alloc_tee_arg(ptee, &parg32, TEESMC32_GET_ARG_SIZE(0));
 	if (arg32 == NULL) {
-		pr_err("Failed to allocate tee arg\n");
+		pr_err("tkcoredrv: failed to allocate tee arg\n");
 		free_tee_arg(ptee, parg32);
 		return TEEC_ERROR_OUT_OF_MEMORY;
 	}
@@ -880,15 +864,16 @@ static struct tee_shm *tz_alloc(struct tee *tee, size_t size, uint32_t flags)
 	shm->resv.paddr = tee_shm_pool_alloc(tee->dev, ptee->shm_pool,
 						shm->size_alloc, ALLOC_ALIGN);
 	if (!shm->resv.paddr) {
-		pr_err("tz_alloc: cannot alloc memory, size 0x%lx\n",
-			(unsigned long)shm->size_alloc);
+		pr_err("tkcoredrv: %s cannot alloc memory, size 0x%lx\n",
+			__func__, (unsigned long) shm->size_alloc);
 		devm_kfree(tee->dev, shm);
 		return ERR_PTR(-ENOMEM);
 	}
 	shm->resv.kaddr =
 		tee_shm_pool_p2v(tee->dev, ptee->shm_pool, shm->resv.paddr);
 	if (!shm->resv.kaddr) {
-		pr_err("tz_alloc: p2v(%p)=0\n",
+		pr_err("tkcoredrv: %s: p2v(%p)=0\n",
+			__func__,
 			(void *) (unsigned long) shm->resv.paddr);
 		tee_shm_pool_free(tee->dev,
 			ptee->shm_pool, shm->resv.paddr, NULL);
@@ -898,13 +883,6 @@ static struct tee_shm *tz_alloc(struct tee *tee, size_t size, uint32_t flags)
 	shm->flags = flags;
 	if (ptee->shm_cached)
 		shm->flags |= TEE_SHM_CACHED;
-
-	pr_debug(
-		"kaddr=%p, paddr=%p, shm=%p, size %x:%x\n",
-		shm->resv.kaddr,
-		(void *)(unsigned long) shm->resv.paddr, shm,
-		(unsigned int) shm->size_req,
-		(unsigned int) shm->size_alloc);
 
 	return shm;
 }
@@ -925,8 +903,6 @@ static void tz_free(struct tee_shm *shm)
 	ret = tee_shm_pool_free(tee->dev, ptee->shm_pool,
 		shm->resv.paddr, &size);
 	if (!ret) {
-		pr_debug("tee_shm_pool_free ret: 0x%x\n",
-			ret);
 		devm_kfree(tee->dev, shm);
 		shm = NULL;
 	}
@@ -992,7 +968,6 @@ static int register_outercache_mutex(struct tee_tz *ptee, bool reg)
 		goto out;
 	}
 	paddr = param.a2;
-	pr_debug("outer cache shared mutex paddr=0x%lx\n", paddr);
 
 	vaddr = tee_map_cached_shm(paddr, sizeof(u32));
 	if (vaddr == NULL) {
@@ -1001,7 +976,6 @@ static int register_outercache_mutex(struct tee_tz *ptee, bool reg)
 		goto out;
 	}
 
-	pr_debug("outer cache shared mutex vaddr=%p\n", vaddr);
 	if (outer_tz_mutex(vaddr) == false) {
 		pr_err("TZ l2cc mutex disabled: outer cache refused\n");
 		goto out;
@@ -1028,11 +1002,8 @@ out:
 		if (vaddr)
 			iounmap(vaddr);
 
-		pr_debug("outer cache shared mutex disabled\n");
 	}
 
-	pr_debug("< teetz outer mutex: ret=%d pa=0x%lX va=0x%p %sabled\n",
-		ret, paddr, vaddr, ptee->tz_outer_cache_mutex ? "en" : "dis");
 	return ret;
 }
 #endif
@@ -1083,9 +1054,6 @@ static int configure_shm(struct tee_tz *ptee)
 	if (ptee->shm_cached)
 		tee_shm_pool_set_cached(ptee->shm_pool);
 out:
-	pr_debug("< ret=%d pa=0x%lX va=0x%p size=%zu, %scached",
-		ret, ptee->shm_paddr, ptee->shm_vaddr, shm_size,
-		(ptee->shm_cached == 1) ? "" : "un");
 	return ret;
 }
 
@@ -1109,6 +1077,21 @@ static int tz_start(struct tee *tee)
 	if (ret)
 		goto exit;
 
+	{
+#define TKCORE_GET_ROOT_OF_TRUST_INFO 0xBF000202
+		struct smc_param param = { 0 };
+
+		/* tell tos to get root of trust
+		 *
+		 * we are not insterested in the
+		 * return value. the availability
+		 * of RoT will affect the behavior of
+		 * other trust apps anyhow
+		 */
+
+		param.a0 = TKCORE_GET_ROOT_OF_TRUST_INFO;
+		smc_xfer(&param);
+	}
 
 #ifdef CONFIG_OUTER_CACHE
 	ret = register_outercache_mutex(ptee, true);
@@ -1120,7 +1103,6 @@ exit:
 	if (ret)
 		ptee->started = false;
 
-	pr_debug("< ret=%d dev=%s\n", ret, tee->name);
 	return ret;
 }
 
@@ -1131,8 +1113,6 @@ static int tz_stop(struct tee *tee)
 	WARN_ON(!tee || !tee->priv);
 
 	ptee = tee->priv;
-
-	pr_debug("> dev=%s\n", tee->name);
 
 	if (!CAPABLE(tee)) {
 		pr_err("tee: bad state\n");
@@ -1146,8 +1126,12 @@ static int tz_stop(struct tee *tee)
 	iounmap(ptee->shm_vaddr);
 	ptee->started = false;
 
-	pr_debug("< ret=0 dev=%s\n", tee->name);
 	return 0;
+}
+
+static void __tee_smc_call(struct smc_param *p)
+{
+	tee_smc_call(p);
 }
 
 /******************************************************************************/
@@ -1166,7 +1150,7 @@ const struct tee_ops tee_tz_fops = {
 	.shm_inc_ref = tz_shm_inc_ref,
 
 	.call_tee = smc_xfer,
-	.raw_call_tee = tee_smc_call,
+	.raw_call_tee = __tee_smc_call,
 };
 
 static int tz_tee_init(struct platform_device *pdev)
@@ -1199,9 +1183,6 @@ static void tz_tee_deinit(struct platform_device *pdev)
 		return;
 
 	tee_wait_queue_exit(&ptee->wait_queue);
-
-	pr_debug("dev=%s started=%d\n",
-		tee->name, ptee->started);
 }
 
 static int tz_tee_probe(struct platform_device *pdev)
@@ -1228,9 +1209,6 @@ static int tz_tee_probe(struct platform_device *pdev)
 	ret = tee_core_add(tee);
 	if (ret)
 		goto bail1;
-
-	pr_debug("tee=%p, id=%d, iminor=%d\n", tee, tee->id,
-		 tee->miscdev.minor);
 
 	ret = __tee_get(tee);
 	if (ret) {

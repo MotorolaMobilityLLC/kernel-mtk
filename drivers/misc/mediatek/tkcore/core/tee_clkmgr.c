@@ -109,6 +109,9 @@ int tee_clkmgr_register(const char *clkname, int id, void *e, void *d,
 
 	struct clkmgr_handle *h, *w;
 
+	pr_info("tkcoredrv: clkname=%s id=%d\n",
+		clkname, id);
+
 	if (argnum > 3) {
 		pr_err("does not support argnum %zu\n", argnum);
 		return -EINVAL;
@@ -147,7 +150,7 @@ int tee_clkmgr_register(const char *clkname, int id, void *e, void *d,
 	/* check for duplication */
 	list_for_each_entry(w, &clk_list, le) {
 		if (w->token == h->token) {
-			pr_err("clk 0x%x already registerred\n",
+			pr_err("clk 0x%x already registered\n",
 				h->token);
 			spin_unlock(&clk_list_lock);
 			return -EINVAL;
