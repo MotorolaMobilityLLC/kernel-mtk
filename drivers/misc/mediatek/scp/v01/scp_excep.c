@@ -121,7 +121,6 @@ static uint8_t *core_write_cpu_note(int cpu, struct elf32_phdr *nhdr,
 				sizeof(prstatus.pr_reg));
 	}
 
-
 	if (prstatus.pr_reg[15] == 0x0 && (id == SCP_A_ID))
 		prstatus.pr_reg[15] = readl(SCP_A_DEBUG_PC_REG);
 	if (prstatus.pr_reg[14] == 0x0 && (id == SCP_A_ID))
@@ -283,6 +282,7 @@ uint32_t scp_dump_lr(void)
 	else
 		return 0xFFFFFFFF;
 }
+
 /*
  * return last pc for debugging
  */
@@ -293,6 +293,7 @@ uint32_t scp_dump_pc(void)
 	else
 		return 0xFFFFFFFF;
 }
+
 /*
  * dump scp register for debugging
  */
@@ -330,7 +331,6 @@ void scp_A_dump_regs(void)
 	pr_debug("[SCP]BUS:ICACHE LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
 	writel(tmp | (3 << dbg_irq_info_sel_shift), SCP_BUS_CTRL);
 	pr_debug("[SCP]BUS:PC LATCH,  0x%x\n", readl(SCP_DEBUG_IRQ_INFO));
-
 }
 
 /*
@@ -339,7 +339,7 @@ void scp_A_dump_regs(void)
  */
 void scp_aee_last_reg(void)
 {
-	pr_debug("scp_aee_last_reg\n");
+	pr_debug("[SCP] %s begins\n", __func__);
 
 	scp_A_aee_status.pc = readl(SCP_A_DEBUG_PC_REG);
 	scp_A_aee_status.lr = readl(SCP_A_DEBUG_LR_REG);
@@ -348,7 +348,7 @@ void scp_aee_last_reg(void)
 	scp_A_aee_status.m2h = readl(SCP_A_TO_HOST_REG);
 	scp_A_aee_status.h2m = readl(SCP_GIPC_IN_REG);
 
-	pr_debug("scp_aee_last_reg end\n");
+	pr_debug("[SCP] %s ends\n", __func__);
 }
 
 /*
@@ -372,7 +372,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 	scp_awake_fail_flag = 0;
 	/*check SRAM lock ,awake scp*/
 	if (scp_awake_lock(id) == -1) {
-		pr_err("scp_crash_dump: awake scp fail, scp id=%u\n", id);
+		pr_err("[SCP] %s: awake scp fail, scp id=%u\n", __func__, id);
 		scp_awake_fail_flag = 1;
 	}
 
@@ -399,6 +399,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 #else
 	scp_dump_size = 0;
 #endif
+
 	exception_header_init(pMemoryDump, id);
 	/* init sub header*/
 	scp_sub_header_init(&(pMemoryDump->scp_dump_header));
@@ -434,7 +435,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 	if (scp_awake_fail_flag != 1) {
 		if (scp_awake_unlock(id) == -1)
 			pr_debug("[SCP]%s awake unlock fail, scp id=%u\n",
-					__func__, id);
+				__func__, id);
 	}
 
 	return scp_dump_size;
@@ -450,7 +451,7 @@ static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
 	u8 *phy;
 	u32 log_size, phy_size;
 
-	pr_debug("scp_prepare_aed\n");
+	pr_debug("[SCP] %s begins\n", __func__);
 
 	aed->detail = NULL;
 	detail = vmalloc(SCP_AED_STR_LEN);
@@ -473,7 +474,7 @@ static void scp_prepare_aed(char *aed_str, struct scp_aed_cfg *aed)
 	aed->phy_size = phy_size;
 	aed->detail = detail;
 
-	pr_debug("scp_prepare_aed end\n");
+	pr_debug("[SCP] %s ends\n", __func__);
 }
 
 /*
@@ -494,7 +495,7 @@ static void scp_prepare_aed_dump(char *aed_str,
 
 	char *scp_A_log = NULL;
 
-	pr_debug("scp_prepare_aed_dump:%s\n", aed_str);
+	pr_debug("[SCP] %s begins:%s\n", __func__, aed_str);
 	scp_aee_last_reg();
 
 	scp_A_log = scp_get_last_log(SCP_A_ID);
@@ -550,7 +551,7 @@ static void scp_prepare_aed_dump(char *aed_str,
 	aed->pMemoryDump = NULL;
 	aed->memory_dump_size = 0;
 
-	pr_debug("scp_prepare_aed_dump end\n");
+	pr_debug("[SCP] %s ends\n", __func__);
 }
 
 /*
@@ -624,10 +625,9 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
  * should not be called in interrupt context
  * @param type: exception type
  */
-void scp_aed_reset_inplace(enum scp_excep_id type,
-		enum scp_core_id id)
+void scp_aed_reset_inplace(enum scp_excep_id type, enum scp_core_id id)
 {
-	pr_debug("[SCP]scp_aed_reset_inplace\n");
+	pr_debug("[SCP] %s begins\n", __func__);
 	if (scp_ee_enable)
 		scp_aed(type, id);
 	else
@@ -647,7 +647,6 @@ void scp_aed_reset_inplace(enum scp_excep_id type,
 		complete(&scp_sys_reset_cp);
 	}
 #endif
-
 }
 
 /*
@@ -664,8 +663,8 @@ static void scp_aed_reset_ws(struct work_struct *ws)
 	enum scp_excep_id type = (enum scp_excep_id) sws->flags;
 	enum scp_core_id id = (enum scp_core_id) sws->id;
 
-	pr_debug("[SCP]scp_aed_reset_ws: scp_excep_id=%u scp_core_id=%u\n",
-			type, id);
+	pr_debug("[SCP] %s begins: scp_excep_id=%u scp_core_id=%u\n",
+		__func__, type, id);
 	scp_aed_reset_inplace(type, id);
 }
 
@@ -738,10 +737,11 @@ int scp_excep_init(void)
 
 	INIT_WORK(&scp_aed_work.work, scp_aed_reset_ws);
 
-	/* alloc dump memory*/
+	/* alloc dump memory */
 	scp_A_detail_buffer = vmalloc(SCP_AED_STR_LEN);
 	if (!scp_A_detail_buffer)
 		return -1;
+
 #if SCP_RECOVERY_SUPPORT
 	/* support L1C or not? */
 	if ((int)(scp_region_info->ap_dram_size) > 0)
@@ -760,14 +760,15 @@ int scp_excep_init(void)
 	if (!scp_A_dump_buffer_last)
 		return -1;
 
-
 	/* init global values */
 	scp_A_dump_length = 0;
-	/* 1: ee on, 0: ee disable*/
+	/* 1: ee on, 0: ee disable */
 	scp_ee_enable = 1;
 
 	return 0;
 }
+
+
 /*
  * ram dump init
  */
@@ -783,6 +784,7 @@ void scp_ram_dump_init(void)
 	pr_debug("[SCP] ram_dump_init() done\n");
 }
 
+
 /*
  * cleanup scp exception
  */
@@ -794,5 +796,6 @@ void scp_excep_cleanup(void)
 
 	scp_A_task_context_addr = 0;
 
-	pr_debug("[SCP] scp_excep_cleanup() done\n");
+	pr_debug("[SCP] %s ends\n", __func__);
 }
+
