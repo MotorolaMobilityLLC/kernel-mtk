@@ -114,6 +114,47 @@ static void mtk_wdt_update_last_restart(void *last, int cpu_id)
 	wdt_kick_info_idx = (wdt_kick_info_idx + 1) % MTK_WDT_KEEP_LAST_INFO;
 }
 
+static int mtk_rgu_pause_dvfsrc(int enable)
+{
+#ifdef CONFIG_MACH_MT6779
+	unsigned int tmp;
+	unsigned int count = 100;
+
+	if (!(__raw_readl(MTK_WDT_DEBUG_CTL2)
+		& MTK_WDT_DEBUG_CTL_DVFSRC_EN)) {
+		pr_info("%s: DVFSRC NOT ENABLE\n", __func__);
+		return 0;
+	}
+
+	if (enable == 1) {
+		/* enable dvfsrc pause */
+		tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+		tmp |= (MTK_WDT_DVFSRC_PAUSE_PULSE | MTK_WDT_DEBUG_CTL_KEY);
+		mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
+		while (count--) {
+			if ((__raw_readl(MTK_WDT_DEBUG_CTL)
+				& MTK_WDT_DVFSRC_SUCECESS_ACK))
+				break;
+			udelay(10);
+		}
+
+		pr_info("%s: DVFSRC PAUSE RESULT(0x%x)\n",
+			__func__, __raw_readl(MTK_WDT_DEBUG_CTL));
+
+	} else if (enable == 0) {
+		/* disable dvfsrc pause */
+		tmp = __raw_readl(MTK_WDT_DEBUG_CTL);
+		tmp &= (~MTK_WDT_DVFSRC_PAUSE_PULSE);
+		tmp |= MTK_WDT_DEBUG_CTL_KEY;
+		mt_reg_sync_writel(tmp, MTK_WDT_DEBUG_CTL);
+	}
+
+	pr_info("%s: MTK_WDT_DEBUG_CTL(0x%x)\n",
+		__func__, __raw_readl(MTK_WDT_DEBUG_CTL));
+#endif
+	return 0;
+}
+
 /*
  *   this function set the timeout value.
  *   value: second
@@ -483,6 +524,8 @@ void wdt_arch_reset(char mode)
 	 */
 	if (!(mode & WD_SW_RESET_KEEP_DDR_RESERVE))
 		mtk_rgu_dram_reserved(0);
+	else
+		mtk_rgu_pause_dvfsrc(1);
 
 	udelay(100);
 
