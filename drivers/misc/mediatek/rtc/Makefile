@@ -39,7 +39,7 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/rtc/$(MDI_IP_FOLDER)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/rtc/include
 
 #Top level common code
-obj-$(CONFIG_MTK_RTC) += mtk_rtc_common.o mtk_rtc_hal_common.o
+obj-$(CONFIG_MTK_RTC) += mtk_rtc_common.o mtk_rtc_hal_common.o mtk_rtc_debug.o
 
 MTK_MDI_IP_SRC:= $(MDI_IP_FOLDER)/
 
