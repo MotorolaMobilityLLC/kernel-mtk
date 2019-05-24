@@ -346,7 +346,8 @@ static void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
 			transfer_len = lrbp->cmd->request->__data_len;
 			lba = lrbp->cmd->request->__sector;
 		}
-	} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE) {
+	} else if (lrbp->command_type == UTP_CMD_TYPE_DEV_MANAGE ||
+			lrbp->command_type == UTP_CMD_TYPE_UFS_STORAGE) {
 		/* device command */
 		request = &hba->dev_cmd.query.request;
 
@@ -355,6 +356,8 @@ static void ufshcd_cond_add_cmd_trace(struct ufs_hba *hba,
 		lba = request->upiu_req.idn |
 			(request->upiu_req.index << 8) |
 			(request->upiu_req.selector << 16);
+
+		lun = lrbp->lun; /* shall be 0 */
 	}
 
 	ufs_mtk_dbg_add_trace(event, tag, lun, transfer_len,
