@@ -1021,7 +1021,34 @@ static int ilitek_platform_remove_spi(struct spi_device *spi)
  * The reason for why we allow it passing the process is because users/developers
  * might want to have access to ICE mode to upgrade a firwmare forcelly.
  */
-
+static void ipio_free_dev_mem(struct i2c_client *client,struct spi_device *spi,void **mem)
+{
+	switch (mode_chose) {
+	case SPI_MODE:
+		if (*mem != NULL) {
+			if (spi == NULL) {
+				ipio_err("spi dev not right\n");
+				return;
+			}
+			devm_kfree(&spi->dev,*mem);
+			*mem = NULL;
+		}
+		break;
+	case I2C_MODE:
+		if (*mem != NULL) {
+			if (client == NULL) {
+				ipio_err("i2c dev not right\n");
+				return;
+			}
+			devm_kfree(&client->dev,*mem);
+			*mem = NULL;
+		}
+		break;
+	default:
+		ipio_err("chose mode error\n");
+		break;
+	}
+}
 static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret = 0;
@@ -1066,7 +1093,12 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	ipd->delay_time_low = 5;
 	ipd->edge_delay = 100;
 
-	ipd->TP_IC_TYPE = kzalloc(128, GFP_KERNEL);
+	ipd->TP_IC_TYPE = devm_kzalloc(&client->dev,128, GFP_KERNEL);
+	if (ERR_ALLOC_MEM(ipd->TP_IC_TYPE)) {
+		ipio_err("Failed to allocate ipd->TP_IC_TYPE memory, %ld\n", PTR_ERR(ipd->TP_IC_TYPE));
+		goto fail_alloc_ic_type;
+	}
+
 	ipd->TP_IC_TYPE = "ili9881";
 
 	mutex_init(&ipd->plat_mutex);
@@ -1098,7 +1130,7 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	/* If kernel failes to allocate memory for the core components, driver will be unloaded. */
 	if (ilitek_platform_core_init() < 0) {
 		ipio_err("Failed to allocate cores' mem\n");
-		return -ENOMEM;
+		goto fail_alloc_core;
 	}
 
 	if (ilitek_platform_gpio() < 0)
@@ -1118,42 +1150,56 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 
 	if (core_check_ilitek_ic_exist() < 0) {
 		ipio_info("this is not ilitek IC");
-		return -ENODEV;
+		goto not_match_ic;
 	}
 
-	if (core_config_get_chip_id() < 0)
+	if (core_config_get_chip_id() < 0)  {
 		ipio_err("Failed to get chip id\n");
-
+		goto fail_get_chipid;
+	}
 	if (mode_chose != SPI_MODE)
 		core_config_read_flash_info();
 	else
 		ilitek_platform_reset_ctrl(true, RST_METHODS);
 
-	if (ilitek_platform_read_tp_info() < 0)
+	if (ilitek_platform_read_tp_info() < 0) {
 		ipio_err("Failed to read TP info\n");
-
-	if (ilitek_platform_isr_register() < 0)
+		goto fail_get_tpinfo;
+	}
+	if (ilitek_platform_isr_register() < 0) {
 		ipio_err("Failed to register ISR\n");
-
+		goto fail_register_int;
+	}
 #ifndef BOOT_FW_UPGRADE
-	if (ilitek_platform_input_init() < 0)
+	if (ilitek_platform_input_init() < 0) {
 		ipio_err("Failed to init input device in kernel\n");
+		goto fail_alloc_input;
+	}
 #endif
 
-	if (ilitek_platform_reg_suspend() < 0)
+	if (ilitek_platform_reg_suspend() < 0) {
 		ipio_err("Failed to register suspend/resume function\n");
+		goto fail_reg_suspend;
+	}
 
-	if (ilitek_platform_reg_power_check() < 0)
+	if (ilitek_platform_reg_power_check() < 0) {
 		ipio_err("Failed to register power check function\n");
+		goto fail_reg_power_check;
+	}
 
-	if (ilitek_platform_reg_esd_check() < 0)
+	if (ilitek_platform_reg_esd_check() < 0) {
 		ipio_err("Failed to register esd check function\n");
+		goto fail_reg_esd_check;
+	}
 
-	if (ilitek_proc_init() < 0)
+	if (ilitek_proc_init() < 0) {
 		ipio_err("Failed to create ilitek device nodes\n");
+		goto fail_init_proc;
+	}
 	ret = ilitek_sys_init() ;
 	if (ret < 0) {
 		ipio_err("sys class files creation failed\n");
+		goto fail_init_sys;
 	}
 
 	ipd->suspended = false;
@@ -1169,6 +1215,46 @@ static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c
 	}
 #endif
 	return 0;
+
+fail_init_sys:
+	ilitek_proc_remove();
+
+fail_init_proc:
+fail_reg_esd_check:
+fail_reg_power_check:
+	fb_unregister_client(&ipd->notifier_fb);
+
+fail_reg_suspend:
+	if (ipd->input_device != NULL) {
+		input_unregister_device(ipd->input_device);
+		input_free_device(ipd->input_device);
+	}
+
+fail_alloc_input:
+	free_irq(ipd->isr_gpio, (void *)ipd->i2c_id);
+
+fail_register_int:
+not_match_ic:
+fail_get_chipid:
+fail_get_tpinfo:
+fail_alloc_core:
+	ipio_free_dev_mem(client,NULL,(void **)&core_i2c);
+	ipio_free_dev_mem(client,NULL,(void **)&core_gesture);
+	ipio_free_dev_mem(client,NULL,(void **)&core_fr);
+	ipio_free_dev_mem(client,NULL,(void **)&core_firmware);
+	ipio_free_dev_mem(client,NULL,(void **)&protocol);
+	ipio_free_dev_mem(client,NULL,(void **)&core_config->tp_info);
+	ipio_free_dev_mem(client,NULL,(void **)&core_config);
+	mutex_destroy(&ipd->ilitek_debug_read_mutex);
+	mutex_destroy(&ipd->ilitek_debug_mutex);
+	mutex_destroy(&ipd->touch_mutex);
+	mutex_destroy(&ipd->plat_mutex);
+
+fail_alloc_ic_type:
+	ipio_free_dev_mem(client,NULL,(void **)&ipd->TP_IC_TYPE);
+	ipio_free_dev_mem(client,NULL,(void **)&ipd);
+
+	return -ENOMEM;
 }
 
 static int ilitek_platform_probe_spi(struct spi_device *spi)
@@ -1199,7 +1285,11 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	ipio_info("Driver on platform :  %x\n", TP_PLATFORM);
 	ipio_info("Driver interface :  SPI\n");
 
-	ipd->TP_IC_TYPE = kzalloc(128, GFP_KERNEL);
+	ipd->TP_IC_TYPE = devm_kzalloc(&spi->dev,128, GFP_KERNEL);
+	if (ERR_ALLOC_MEM(ipd->TP_IC_TYPE)) {
+		ipio_err("Failed to allocate ipd->TP_IC_TYPE memory, %ld\n", PTR_ERR(ipd->TP_IC_TYPE));
+		goto fail_alloc_ic_type;
+	}
 	ipd->TP_IC_TYPE = "ili9881";
 
 	ipd->delay_time_high = 1;
@@ -1236,7 +1326,7 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	/* If kernel failes to allocate memory for the core components, driver will be unloaded. */
 	if (ilitek_platform_core_init() < 0) {
 		ipio_err("Failed to allocate cores' mem\n");
-		return -ENOMEM;
+		goto fail_alloc_core;
 	}
 
 	if (ilitek_platform_gpio() < 0)
@@ -1255,35 +1345,47 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 
 	if (core_check_ilitek_ic_exist() < 0) {
 		ipio_info("this is not ilitek IC");
-		return -ENODEV;
+		goto not_match_ic;
 	}
 
-	if (ilitek_platform_isr_register() < 0)
+	if (ilitek_platform_isr_register() < 0) {
 		ipio_err("Failed to register ISR\n");
-
+		goto fail_register_int;
+	}
 #ifndef BOOT_FW_UPGRADE
-	if (ilitek_platform_input_init() < 0)
+	if (ilitek_platform_input_init() < 0) {
 		ipio_err("Failed to init input device in kernel\n");
+		goto fail_alloc_input;
+	}
 #endif
 
 	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
 		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
 		ipio_err("boot mode is not Charger\n");
-		if (ilitek_platform_reg_suspend() < 0)
+		if (ilitek_platform_reg_suspend() < 0) {
 			ipio_err("Failed to register suspend/resume function\n");
+			goto fail_reg_suspend;
+		}
 	}
 
-	if (ilitek_platform_reg_power_check() < 0)
+	if (ilitek_platform_reg_power_check() < 0) {
 		ipio_err("Failed to register power check function\n");
+		goto fail_reg_power_check;
+	}
 
-	if (ilitek_platform_reg_esd_check() < 0)
+	if (ilitek_platform_reg_esd_check() < 0) {
 		ipio_err("Failed to register esd check function\n");
+		goto fail_reg_esd_check;
+	}
 
-	if (ilitek_proc_init() < 0)
+	if (ilitek_proc_init() < 0) {
 		ipio_err("Failed to create ilitek device nodes\n");
+		goto fail_init_proc;
+	}
 	ret = ilitek_sys_init() ;
 	if (ret < 0) {
 		ipio_err("sys class files creation failed\n");
+		goto fail_init_sys;
 	}
 	ipd->suspended = false;
 #if (TP_PLATFORM == PT_MTK)
@@ -1299,6 +1401,44 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 #endif
 
 	return 0;
+
+fail_init_sys:
+		ilitek_proc_remove();
+
+fail_init_proc:
+fail_reg_esd_check:
+fail_reg_power_check:
+	fb_unregister_client(&ipd->notifier_fb);
+
+fail_reg_suspend:
+	if (ipd->input_device != NULL) {
+		input_unregister_device(ipd->input_device);
+		input_free_device(ipd->input_device);
+	}
+
+fail_alloc_input:
+	free_irq(ipd->isr_gpio, (void *)ipd->i2c_id);
+
+fail_register_int:
+not_match_ic:
+fail_alloc_core:
+	ipio_free_dev_mem(NULL,spi,(void **)&core_spi);
+	ipio_free_dev_mem(NULL,spi,(void **)&core_gesture);
+	ipio_free_dev_mem(NULL,spi,(void **)&core_fr);
+	ipio_free_dev_mem(NULL,spi,(void **)&core_firmware);
+	ipio_free_dev_mem(NULL,spi,(void **)&protocol);
+	ipio_free_dev_mem(NULL,spi,(void **)&core_config->tp_info);
+	ipio_free_dev_mem(NULL,spi,(void **)&core_config);
+	mutex_destroy(&ipd->ilitek_debug_read_mutex);
+	mutex_destroy(&ipd->ilitek_debug_mutex);
+	mutex_destroy(&ipd->touch_mutex);
+	mutex_destroy(&ipd->plat_mutex);
+
+fail_alloc_ic_type:
+	ipio_free_dev_mem(NULL,spi,(void **)&ipd->TP_IC_TYPE);
+	ipio_free_dev_mem(NULL,spi,(void **)&ipd);
+
+	return -ENOMEM;
 }
 
 
