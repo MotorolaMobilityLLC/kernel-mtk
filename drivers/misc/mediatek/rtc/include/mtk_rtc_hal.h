@@ -35,4 +35,5 @@ extern void hal_rtc_set_lp_irq(void);
 extern void hal_rtc_save_pwron_time(bool enable,
 	struct rtc_time *tm, bool logo);
 extern int mmc_charge_shutdown(void);
+extern int __init rtc_debug_init(void);
 #endif
