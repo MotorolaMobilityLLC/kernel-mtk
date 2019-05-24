@@ -280,6 +280,7 @@ config MACH_MT6779
 	select MTK_LM_MODE if !MTK_GMO_RAM_OPTIMIZE
 	select DEBUG_TIMEKEEPING
 	select MTK_DEVMPU
+        select PM_DEVFREQ
 	help
 	  This enables support for MediaTek - MT6779
 	  Highly power-efficient, performance-oriented 4G LTE processor for premium,

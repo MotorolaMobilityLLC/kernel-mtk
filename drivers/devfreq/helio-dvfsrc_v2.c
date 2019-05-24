@@ -29,6 +29,7 @@
 #include <spm/mtk_spm.h>
 
 #include "helio-dvfsrc.h"
+#include "mtk_qos_ipi.h"
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
@@ -38,7 +39,6 @@
 static struct helio_dvfsrc *dvfsrc;
 
 #define DVFSRC_REG(offset) (dvfsrc->regs + offset)
-#define DVFSRC_SRAM_REG(offset) (dvfsrc->sram_regs + offset)
 
 u32 dvfsrc_read(u32 offset)
 {
@@ -50,22 +50,6 @@ void dvfsrc_write(u32 offset, u32 val)
 	writel(val, DVFSRC_REG(offset));
 }
 
-u32 dvfsrc_sram_read(u32 offset)
-{
-	if (!is_qos_enabled())
-		return -1;
-
-	return readl(DVFSRC_SRAM_REG(offset));
-}
-
-void dvfsrc_sram_write(u32 offset, u32 val)
-{
-	if (!is_qos_enabled())
-		return;
-
-	writel(val, DVFSRC_SRAM_REG(offset));
-}
-
 static void dvfsrc_restore(void)
 {
 	int i;
@@ -73,6 +57,17 @@ static void dvfsrc_restore(void)
 	for (i = PM_QOS_CPU_MEMORY_BANDWIDTH; i < PM_QOS_NUM_CLASSES; i++)
 		commit_data(i, pm_qos_request(i), 0);
 }
+
+#ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
+static void helio_dvfsrc_sspm_init(int dvfsrc_en)
+{
+	struct qos_ipi_data qos_d;
+
+	qos_d.cmd = QOS_IPI_DVFSRC_ENABLE;
+	qos_d.u.dvfsrc_enable.dvfsrc_en = dvfsrc_en;
+	qos_ipi_to_sspm_command(&qos_d, 2);
+}
+#endif
 
 void helio_dvfsrc_enable(int dvfsrc_en)
 {
@@ -83,10 +78,9 @@ void helio_dvfsrc_enable(int dvfsrc_en)
 		return;
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
-	helio_dvfsrc_sspm_ipi_init(dvfsrc_en);
+	helio_dvfsrc_sspm_init(dvfsrc_en);
 #endif
 
-	dvfsrc->qos_enabled = 1;
 	dvfsrc->dvfsrc_enabled = dvfsrc_en;
 	dvfsrc->opp_forced = 0;
 	sprintf(dvfsrc->force_start, "0");
@@ -119,28 +113,6 @@ static int helio_dvfsrc_common_init(void)
 		return -ENODEV;
 	}
 
-	return 0;
-}
-
-int dvfsrc_get_emi_bw(int type)
-{
-	int ret = 0;
-	int i;
-
-	if (type == QOS_EMI_BW_TOTAL_AVE) {
-		for (i = 0; i < QOS_TOTAL_BW_BUF_SIZE; i++)
-			ret += dvfsrc_sram_read(QOS_TOTAL_BW_BUF(i));
-		ret /= QOS_TOTAL_BW_BUF_SIZE;
-	} else
-		ret = dvfsrc_sram_read(QOS_TOTAL_BW + 4 * type);
-
-	return ret;
-}
-
-int is_qos_enabled(void)
-{
-	if (dvfsrc)
-		return dvfsrc->qos_enabled == 1;
 	return 0;
 }
 
@@ -187,22 +159,9 @@ static void get_pm_qos_info(char *p)
 	p += sprintf(p, "%-24s: 0x%x\n",
 			"PM_QOS_FORCE_OPP",
 			pm_qos_request(PM_QOS_VCORE_DVFS_FORCE_OPP));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_TOTAL_AVE",
-			dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL_AVE));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_TOTAL", dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_TOTAL_W",
-			dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL_W));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_CPU", dvfsrc_get_emi_bw(QOS_EMI_BW_CPU));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_GPU", dvfsrc_get_emi_bw(QOS_EMI_BW_GPU));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_MM", dvfsrc_get_emi_bw(QOS_EMI_BW_MM));
-	p += sprintf(p, "%-24s: %d\n",
-			"EMI_BW_OTHER", dvfsrc_get_emi_bw(QOS_EMI_BW_OTHER));
+	p += sprintf(p, "%-24s: 0x%x\n",
+			"PM_QOS_ISP_HRT",
+			pm_qos_request(PM_QOS_ISP_HRT_BANDWIDTH));
 }
 
 char *dvfsrc_dump_reg(char *ptr)
@@ -250,14 +209,6 @@ char *dvfsrc_dump_reg(char *ptr)
 static struct devfreq_dev_profile helio_devfreq_profile = {
 	.polling_ms	= 0,
 };
-
-void helio_dvfsrc_sram_reg_init(void)
-{
-	int i;
-
-	for (i = 0; i < 0x80; i += 4)
-		dvfsrc_sram_write(i, 0);
-}
 
 void dvfsrc_set_power_model_ddr_request(unsigned int level)
 {
@@ -461,12 +412,6 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 	dvfsrc->regs = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(dvfsrc->regs))
 		return PTR_ERR(dvfsrc->regs);
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-
-	dvfsrc->sram_regs = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(dvfsrc->sram_regs))
-		return PTR_ERR(dvfsrc->sram_regs);
 
 	platform_set_drvdata(pdev, dvfsrc);
 	dvfsrc->dev = &pdev->dev;
