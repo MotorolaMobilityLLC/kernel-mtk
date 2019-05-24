@@ -19,9 +19,6 @@
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/pinctrl/mt6779-pinfunc.h>
 
-&reserved_memory {
-};
-
 /* chosen */
 &chosen {
 
