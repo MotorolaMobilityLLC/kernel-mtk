@@ -131,11 +131,18 @@ static struct g_opp_table_info *g_opp_table;
 static struct g_opp_table_info *g_opp_table_default;
 static struct g_pmic_info *g_pmic;
 static struct g_clk_info *g_clk;
+
 static struct g_opp_table_info g_opp_table_6761[] = {
 GPUOP(GPU_DVFS_FREQ0, GPU_DVFS_VOLT0, GPU_DVFS_VSRAM0, 0),
 GPUOP(GPU_DVFS_FREQ1, GPU_DVFS_VOLT1, GPU_DVFS_VSRAM1, 1),
 GPUOP(GPU_DVFS_FREQ2, GPU_DVFS_VOLT2, GPU_DVFS_VSRAM2, 2),
 };
+static struct g_opp_table_info g_opp_table_6761D[] = {
+GPUOP(SEG5_GPU_DVFS_FREQ0, SEG5_GPU_DVFS_VOLT0, SEG5_GPU_DVFS_VSRAM0, 0),
+GPUOP(SEG5_GPU_DVFS_FREQ1, SEG5_GPU_DVFS_VOLT1, SEG5_GPU_DVFS_VSRAM1, 1),
+GPUOP(SEG5_GPU_DVFS_FREQ2, SEG5_GPU_DVFS_VOLT2, SEG5_GPU_DVFS_VSRAM2, 2),
+};
+
 static const struct of_device_id g_gpufreq_of_match[] = {
 	{ .compatible = "mediatek,mt6761-gpufreq" },
 	{ /* sentinel */ }
@@ -2457,6 +2464,18 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	pr_info("mtcmos_mfg is at 0x%p, mtcmos_mfg_core0 is at 0x%p, ",
 		g_clk->mtcmos_mfg, g_clk->mtcmos_mfg_core0);
 
+	g_efuse_id = get_devinfo_with_index(30);
+	if (g_efuse_id == 0x10 || g_efuse_id == 0x11
+		|| g_efuse_id == 0x90 || g_efuse_id == 0x91) {
+		/* 6761D */
+		g_segment_id = MT6761D_SEGMENT;
+	} else {
+		/* Other Version, set default segment */
+		g_segment_id = MT6761_SEGMENT;
+	}
+	gpufreq_pr_info("@%s: g_efuse_id = 0x%08X, g_segment_id = %d\n",
+		__func__, g_efuse_id, g_segment_id);
+
 	/* alloc PMIC regulator */
 	g_pmic = kzalloc(sizeof(struct g_pmic_info), GFP_KERNEL);
 	if (g_pmic == NULL)
@@ -2491,10 +2510,16 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 	mt_spower_init();
 #endif /* ifdef MT_GPUFREQ_STATIC_PWR_READY2USE */
 
-
-	__mt_gpufreq_setup_opp_table(g_opp_table_6761,
+	/* setup OPP table by device ID */
+	if (g_segment_id == MT6761D_SEGMENT) {
+		__mt_gpufreq_setup_opp_table(g_opp_table_6761D,
+			ARRAY_SIZE(g_opp_table_6761D));
+		g_fixed_vsram_volt_idx = 0;
+	} else if (g_segment_id == MT6761_SEGMENT) {
+		__mt_gpufreq_setup_opp_table(g_opp_table_6761,
 			ARRAY_SIZE(g_opp_table_6761));
 		g_fixed_vsram_volt_idx = 0;
+	}
 
 	/* setup PMIC init value */
 #ifdef USE_STAND_ALONE_VGPU
