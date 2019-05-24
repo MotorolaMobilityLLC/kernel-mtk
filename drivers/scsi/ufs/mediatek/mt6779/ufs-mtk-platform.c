@@ -21,7 +21,9 @@
 #include "mtk_idle.h"
 #include "mtk_spm_resource_req.h"
 #include "mtk_secure_api.h"
+#ifdef SR_CLKEN_RC_READY
 #include "mtk_srclken_rc.h"
+#endif
 
 #ifdef MTK_UFS_HQA
 #include <mtk_reboot.h>
@@ -245,10 +247,10 @@ void ufs_mtk_pltfrm_gpio_trigger(int value)
 
 int ufs_mtk_pltfrm_xo_ufs_req(struct ufs_hba *hba, bool on)
 {
+#ifdef SR_CLKEN_RC_READY
 	u32 value;
 	int retry;
 
-	/* enable after srclkenRC ready */
 	if (srclken_get_stage() == SRCLKEN_FULL_SET) {
 		/*
 		 * REG_UFS_ADDR_XOUFS_ST[0] is xoufs_req_s
@@ -282,6 +284,9 @@ int ufs_mtk_pltfrm_xo_ufs_req(struct ufs_hba *hba, bool on)
 		} while (1);
 	} else
 		ufshcd_writel(hba, 0, REG_UFS_ADDR_XOUFS_ST);
+#else
+	ufshcd_writel(hba, 0, REG_UFS_ADDR_XOUFS_ST);
+#endif
 
 	return 0;
 }
