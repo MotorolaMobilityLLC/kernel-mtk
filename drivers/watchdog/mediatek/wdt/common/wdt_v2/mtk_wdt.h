@@ -162,6 +162,11 @@
 #define MTK_WDT_SYSDBG_DEG_EN1_KEY		(0x1b2a)
 #define MTK_WDT_SYSDBG_DEG_EN2_KEY		(0x4f59)
 
+enum wdt_rst_modes {
+	WDT_RST_MODE_DEFAULT,
+	WDT_RST_MODE_PMIC,
+};
+
 extern void __inner_flush_dcache_all(void);
 
 
