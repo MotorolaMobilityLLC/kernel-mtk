@@ -16,8 +16,12 @@
 
 #include <linux/types.h>
 
+#define ADSP_IPI_QUEUE_DEFAULT_WAIT_MS (20)
+
+
 
 int scp_ipi_queue_init(uint32_t opendsp_id); /* enum opendsp_id */
+bool is_scp_ipi_queue_init(const uint32_t opendsp_id);
 
 int scp_flush_msg_queue(uint32_t opendsp_id);
 

@@ -53,7 +53,7 @@
 
 void phone_call_recv_message(struct ipi_msg_t *p_ipi_msg)
 {
-	print_msg_info(__func__, "phone call d2k msg", p_ipi_msg);
+	DUMP_IPI_MSG("phone call d2k msg", p_ipi_msg);
 }
 
 

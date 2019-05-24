@@ -802,7 +802,6 @@ static inline ssize_t adsp_ipi_test_show(struct device *kobj,
 	enum adsp_ipi_status ret;
 
 	if (adsp_ready[ADSP_A_ID]) {
-		adsp_ipi_status_dump();
 		ret = adsp_ipi_send(ADSP_IPI_TEST1, &value, sizeof(value),
 				    0, ADSP_A_ID);
 		return scnprintf(buf, PAGE_SIZE, "ADSP ipi send ret=%d\n", ret);

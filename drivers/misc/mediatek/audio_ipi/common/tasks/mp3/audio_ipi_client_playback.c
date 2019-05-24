@@ -293,7 +293,8 @@ static int dump_kthread(void *data)
 						  dump_package->rw_idx);
 			pcm_dump = (struct pcm_dump_t *)data_buf;
 			pr_debug("pcm_dump = %p size = %d\n", pcm_dump, size);
-
+			if (pcm_dump == NULL)
+				break;
 			while (size > 0) {
 				if (size < FRAME_BUF_SIZE)
 					writedata = size;

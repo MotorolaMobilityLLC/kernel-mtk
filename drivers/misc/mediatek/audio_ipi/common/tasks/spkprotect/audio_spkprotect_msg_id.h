@@ -75,7 +75,7 @@ enum {
 	/* debug */
 	SPK_IPI_MSG_A2D_PCM_DUMP_ON = SPK_IPI_MSG_A2D_BASE + 0xA0,
 	SPK_IPI_MSG_A2D_LIB_LOG_ON,
-
+	SPK_PROTECT_GET_TCM_BUF,
 };
 
 #endif /* end of AUDIO_SPKPROTECT_MSG_ID_H */

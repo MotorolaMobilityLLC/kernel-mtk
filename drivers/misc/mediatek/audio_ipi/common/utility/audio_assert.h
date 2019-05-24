@@ -14,11 +14,11 @@
 #ifndef AUDIO_ASSERT_H
 #define AUDIO_ASSERT_H
 
-#ifdef CONFIG_MTK_AEE_FEATURE
+#if 0 /* def CONFIG_MTK_AEE_FEATURE */
 #include <mt-plat/aee.h>
 #endif
 
-#ifdef CONFIG_MTK_AEE_FEATURE
+#if 0 /* def CONFIG_MTK_AEE_FEATURE */
 #define AUD_ASSERT(exp) \
 	do { \
 		if (!(exp)) { \
