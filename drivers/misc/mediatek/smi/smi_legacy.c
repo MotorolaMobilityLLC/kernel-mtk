@@ -862,7 +862,6 @@ static s32 smi_debug_bus_hang_detect_k414(const bool gce)
 	u32 time = 5, busy[SMI_LARB_NUM + 1] = {0};
 	s32 i, j, ret = 0;
 
-	mmdvfs_print_larbs_info();
 #if IS_ENABLED(CONFIG_MACH_MT6779)
 	dump_emi_outstanding();
 #endif
