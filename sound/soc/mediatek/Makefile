@@ -13,10 +13,11 @@
 subdir-ccflags-y += -Werror
 
 # dsp related code
+obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += audio_dsp/
 obj-$(CONFIG_SND_SOC_MTK_AUDIO_DSP) += audio_dsp/
 # btcvsd
 obj-$(CONFIG_SND_SOC_MTK_BTCVSD) += common/
-
+obj-$(CONFIG_MTK_AUDIO_TUNNELING_SUPPORT) += common_int/
 obj-$(CONFIG_SND_SOC_MEDIATEK) += common/
 obj-$(CONFIG_SND_SOC_MT2701) += mt2701/
 obj-$(CONFIG_SND_SOC_MT3967) += mt3967/
@@ -24,10 +25,12 @@ obj-$(CONFIG_SND_SOC_MT6779) += mt6779/
 obj-$(CONFIG_SND_SOC_MT8173) += mt8173/
 obj-$(CONFIG_SND_SOC_MT8163) += mt_soc_audio_8163/
 
+# adsp
 ifeq ($(CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/framework/
-subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/mt3967/
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/adsp/$(MTK_PLATFORM)/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/audio_ipi/common/tasks/call/
+subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/audio_dsp
 endif
 
 ifeq ($(CONFIG_SND_SOC_MTK_SMART_PHONE),y)

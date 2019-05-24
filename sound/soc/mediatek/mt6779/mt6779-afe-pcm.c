@@ -1110,11 +1110,59 @@ static int mt6779_adsp_playback_mem_set(struct snd_kcontrol *kcontrol,
 					    ADSP_TASK_ATTR_MEMDL);
 	int memif_numul = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
 					    ADSP_TASK_ATTR_MEMUL);
+	int memif_numref = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMREF);
 	struct mtk_base_afe_memif *memifdl = &afe->memif[memif_numdl];
 	struct mtk_base_afe_memif *memiful = &afe->memif[memif_numul];
+	struct mtk_base_afe_memif *memifref;
 
 	memifdl->use_adsp_share_mem = ucontrol->value.integer.value[0];
 	memiful->use_adsp_share_mem = ucontrol->value.integer.value[0];
+
+	if (memif_numref > 0) {
+		memifref = &afe->memif[memif_numref];
+		memifref->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	}
+
+	return 0;
+}
+
+static int mt6779_adsp_call_final_mem_get(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_num = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					  ADSP_TASK_ATTR_MEMDL);
+	struct mtk_base_afe_memif *memif = &afe->memif[memif_num];
+
+	ucontrol->value.integer.value[0] = memif->use_adsp_share_mem;
+	return 0;
+
+}
+
+static int mt6779_adsp_call_final_mem_set(struct snd_kcontrol *kcontrol,
+					struct snd_ctl_elem_value *ucontrol)
+{
+	struct snd_soc_component *cmpnt = snd_soc_kcontrol_component(kcontrol);
+	struct mtk_base_afe *afe = snd_soc_component_get_drvdata(cmpnt);
+	int memif_numdl = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMDL);
+	int memif_numul = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMUL);
+	int memif_numref = get_dsp_task_attr(AUDIO_TASK_PLAYBACK_ID,
+					    ADSP_TASK_ATTR_MEMREF);
+	struct mtk_base_afe_memif *memifdl = &afe->memif[memif_numdl];
+	struct mtk_base_afe_memif *memiful = &afe->memif[memif_numul];
+	struct mtk_base_afe_memif *memifref;
+
+	memifdl->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	memiful->use_adsp_share_mem = ucontrol->value.integer.value[0];
+
+	if (memif_numref > 0) {
+		memifref = &afe->memif[memif_numref];
+		memifref->use_adsp_share_mem = ucontrol->value.integer.value[0];
+	}
 
 	return 0;
 }
@@ -1274,6 +1322,10 @@ static const struct snd_kcontrol_new mt6779_pcm_kcontrols[] = {
 		       SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_adsp_playback_mem_get,
 		       mt6779_adsp_playback_mem_set),
+	SOC_SINGLE_EXT("adsp_call_final_sharemem_scenario",
+		       SND_SOC_NOPM, 0, 0x1, 0,
+		       mt6779_adsp_call_final_mem_get,
+		       mt6779_adsp_call_final_mem_set),
 	SOC_SINGLE_EXT("adsp_offload_sharemem_scenario",
 		       SND_SOC_NOPM, 0, 0x1, 0,
 		       mt6779_adsp_offload_mem_get,
@@ -1429,6 +1481,10 @@ static const struct snd_kcontrol_new memif_ul6_ch1_mix[] = {
 				    I_DL3_CH1, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH1", AFE_CONN46_1,
 				    I_DL4_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("PCM_1_CAP_CH1", AFE_CONN46,
+				    I_PCM_1_CAP_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("PCM_2_CAP_CH1", AFE_CONN46,
+				    I_PCM_2_CAP_CH1, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul6_ch2_mix[] = {
@@ -1446,6 +1502,10 @@ static const struct snd_kcontrol_new memif_ul6_ch2_mix[] = {
 				    I_DL3_CH2, 1, 0),
 	SOC_DAPM_SINGLE_AUTODISABLE("DL4_CH2", AFE_CONN47_1,
 				    I_DL4_CH2, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("PCM_1_CAP_CH1", AFE_CONN47,
+				    I_PCM_1_CAP_CH1, 1, 0),
+	SOC_DAPM_SINGLE_AUTODISABLE("PCM_2_CAP_CH1", AFE_CONN47,
+				    I_PCM_2_CAP_CH1, 1, 0),
 };
 
 static const struct snd_kcontrol_new memif_ul7_ch1_mix[] = {
@@ -1658,6 +1718,10 @@ static const struct snd_soc_dapm_route mt6779_memif_routes[] = {
 	{"UL6_CH1", "DL4_CH1", "Hostless_UL6 UL"},
 	{"UL6_CH2", "DL4_CH2", "Hostless_UL6 UL"},
 	{"Hostless_UL6 UL", NULL, "UL6_VIRTUAL_INPUT"},
+	{"UL6_CH1", "PCM_1_CAP_CH1", "PCM 1 Capture"},
+	{"UL6_CH2", "PCM_1_CAP_CH1", "PCM 1 Capture"},
+	{"UL6_CH1", "PCM_2_CAP_CH1", "PCM 2 Capture"},
+	{"UL6_CH2", "PCM_2_CAP_CH1", "PCM 2 Capture"},
 
 	{"UL7", NULL, "UL7_CH1"},
 	{"UL7", NULL, "UL7_CH2"},

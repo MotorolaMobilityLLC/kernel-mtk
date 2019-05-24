@@ -24,6 +24,10 @@
 #include "mtk-afe-fe-dai.h"
 #include "mtk-base-afe.h"
 
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+#include "../scp_vow/mtk-scp-vow-common.h"
+#endif
+
 #if defined(CONFIG_SND_SOC_MTK_SRAM)
 #include "mtk-sram-manager.h"
 #endif
@@ -32,6 +36,10 @@
 #if defined(CONFIG_SND_SOC_MTK_AUDIO_DSP)
 #include "../audio_dsp/mtk-dsp-common_define.h"
 #include "../audio_dsp/mtk-dsp-common.h"
+#endif
+
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+#include "../scp_spk/mtk-scp-spk-mem-control.h"
 #endif
 
 #define AFE_BASE_END_OFFSET 8
@@ -157,6 +165,37 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 	mtk_audio_sram_free(afe->sram, substream);
 
 	substream->runtime->dma_bytes = params_buffer_bytes(params);
+
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+	if (memif->vow_bargein_enable) {
+		ret = allocate_vow_bargein_mem(substream,
+					       &substream->runtime->dma_addr,
+					       &substream->runtime->dma_area,
+					       substream->runtime->dma_bytes,
+					       params_format(params),
+					       afe);
+		if (ret < 0)
+			return ret;
+
+		goto BYPASS_AFE_FE_ALLOCATE_MEM;
+	}
+#endif
+
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+	if (memif->scp_spk_enable) {
+		ret = mtk_scp_spk_allocate_mem(substream,
+					       &substream->runtime->dma_addr,
+					       &substream->runtime->dma_area,
+					       substream->runtime->dma_bytes,
+					       params_format(params),
+					       afe);
+		if (ret < 0)
+			return ret;
+
+		goto BYPASS_AFE_FE_ALLOCATE_MEM;
+	}
+#endif
+
 	if (memif->use_dram_only == 0 &&
 	    mtk_audio_sram_allocate(afe->sram,
 				    &substream->runtime->dma_addr,
@@ -226,6 +265,10 @@ int mtk_afe_fe_hw_params(struct snd_pcm_substream *substream,
 		return ret;
 	}
 
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT) ||\
+	defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+BYPASS_AFE_FE_ALLOCATE_MEM:
+#endif
 	/* set channel */
 	ret = mtk_memif_set_channel(afe, id, channels);
 	if (ret) {
@@ -274,6 +317,11 @@ int mtk_afe_fe_hw_free(struct snd_pcm_substream *substream,
 		afe->release_dram_resource(afe->dev);
 
 #if defined(CONFIG_SND_SOC_MTK_SRAM)
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+	if (memif->scp_spk_enable) {
+		return mtk_scp_spk_free_mem(substream, afe);
+	}
+#endif
 	if (memif->using_sram) {
 		memif->using_sram = 0;
 		return mtk_audio_sram_free(afe->sram, substream);
@@ -559,9 +607,10 @@ int mtk_memif_set_addr(struct mtk_base_afe *afe, int id,
 	}
 
 	/* set MSB to 33-bit */
-	mtk_regmap_update_bits(afe->regmap, memif->data->msb_reg,
-			       1 << memif->data->msb_shift,
-			       msb_at_bit33 << memif->data->msb_shift);
+	if (memif->data->msb_reg >= 0)
+		mtk_regmap_update_bits(afe->regmap, memif->data->msb_reg,
+				       1 << memif->data->msb_shift,
+				       msb_at_bit33 << memif->data->msb_shift);
 
 	return 0;
 }

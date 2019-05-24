@@ -37,6 +37,8 @@ int get_mtk_adsp_dram(struct audio_dsp_dram *dsp_dram, int id);
 /* dump dsp reserved dram stats */
 void dump_mtk_adsp_dram(struct audio_dsp_dram buffer);
 void dump_all_adsp_dram(void);
+void dump_task_attr(struct mtk_adsp_task_attr *task_attr);
+void dump_all_task_attr(void);
 
 /* gen pool create */
 int mtk_adsp_gen_pool_create(int min_alloc_order, int nid);
@@ -48,11 +50,13 @@ int wrap_dspdram_sndbuffer(struct snd_dma_buffer *dma_audio_buffer,
 
 int scp_reservedid_to_dsp_daiid(int id);
 int dsp_daiid_to_scp_reservedid(int task_dai_id);
-int get_taskid_by_afe_daiid(int afe_dai_id);
+int get_taskid_by_afe_daiid(int task_dai_id);
 int get_afememdl_by_afe_taskid(int task_dai_id);
 int get_afememul_by_afe_taskid(int task_dai_id);
 int get_afememref_by_afe_taskid(int task_dai_id);
 int get_featureid_by_dsp_daiid(int dspid);
+int set_task_attr(int task_id, int task_enum, int param);
+int get_task_attr(int dspid, int task_enum);
 
 
 int dump_mtk_adsp_gen_pool(void);
@@ -69,11 +73,15 @@ int mtk_init_adsp_msg_sharemem(struct audio_dsp_dram *msg_atod_share_buf,
 				unsigned long vaddr, unsigned long long paddr,
 				int size);
 
+/* get struct of sharemem_block */
 unsigned int mtk_get_adsp_sharemem_size(int audio_task_id,
 					int task_sharemem_id);
 
 /* init dsp share memory */
+int mtk_adsp_init_gen_pool(struct mtk_base_dsp *dsp);
 int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp);
+int mtk_reinit_adsp_audio_share_mem(void);
+
 
 int dsp_dram_request(struct device *dev);
 int dsp_dram_release(struct device *dev);

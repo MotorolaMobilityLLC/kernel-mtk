@@ -535,12 +535,15 @@ int set_audiobuffer_attribute(struct audio_hw_buffer *audio_hwbuf,
 {
 	int ret = 0;
 
+	if (params == NULL)
+		return 0;
+
 	audio_hwbuf->aud_buffer.buffer_attr.channel = params_channels(params);
 	audio_hwbuf->aud_buffer.buffer_attr.format = params_format(params);
 	audio_hwbuf->aud_buffer.buffer_attr.rate = params_rate(params);
 	audio_hwbuf->aud_buffer.buffer_attr.direction = direction;
 
-	AUD_LOG_D("%s ch = %u fmt = %u rate = %u\n dir = %d",
+	AUD_LOG_D("%s ch = %u fmt = %u rate = %u dir = %d\n",
 		  __func__,
 		  audio_hwbuf->aud_buffer.buffer_attr.channel,
 		  audio_hwbuf->aud_buffer.buffer_attr.format,

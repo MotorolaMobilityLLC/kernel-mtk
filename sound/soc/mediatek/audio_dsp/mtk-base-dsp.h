@@ -64,10 +64,13 @@ struct mtk_base_dsp {
 };
 
 struct mtk_adsp_task_attr {
+	int default_enable; /* default setting */
 	int afe_memif_dl;
 	int afe_memif_ul;
 	int afe_memif_ref;
 	int adsp_feature_id;
+	int runtime_enable;
+	unsigned int spk_protect_in_dsp;
 };
 
 #endif
