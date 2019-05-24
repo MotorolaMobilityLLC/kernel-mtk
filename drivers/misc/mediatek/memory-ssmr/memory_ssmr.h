@@ -14,7 +14,10 @@
 #define __MEMORY_SSMR_H__
 
 enum ssmr_feature_type {
+#if defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT) || \
+	defined(CONFIG_MTK_TEE_GP_SUPPORT)
 	SSMR_FEAT_SVP,
+#endif
 #ifdef CONFIG_MTK_IRIS_SUPPORT
 	SSMR_FEAT_IRIS,
 #endif
