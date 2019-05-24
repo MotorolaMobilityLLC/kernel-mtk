@@ -22,22 +22,23 @@
 	max-frequency = <200000000>;
 	cap-mmc-highspeed;
 	mmc-ddr-1_8v;
-	/*mmc-hs200-1_8v;*/
-	/*mmc-hs400-1_8v;*/
+	mmc-hs200-1_8v;
+	mmc-hs400-1_8v;
 	no-sd;
 	no-sdio;
 	non-removable;
 	pinctl = <&msdc0_pins_default>;
-	/*pinctl_hs400 = <&msdc0_pins_hs400>;*/
-	/*pinctl_hs200 = <&msdc0_pins_hs200>;*/
+	pinctl_hs400 = <&msdc0_pins_hs400>;
+	pinctl_hs200 = <&msdc0_pins_hs200>;
 	register_setting = <&msdc0_register_setting_default>;
 	host_function = /bits/ 8 <MSDC_EMMC>;
 	bootable;
 	status = "okay";
 	vmmc-supply = <&mt_pmic_vemc_ldo_reg>;
 	clocks = <&infracfg_ao INFRACFG_AO_MSDC0_SCK_CG>,
-		<&infracfg_ao INFRACFG_AO_MSDC0_CG>;
-	clock-names = "msdc0-clock", "msdc0-hclock";
+		<&infracfg_ao INFRACFG_AO_MSDC0_CG>,
+		<&infracfg_ao INFRACFG_AO_AES_UFSFDE_CG>;
+	clock-names = "msdc0-clock", "msdc0-hclock", "msdc0-aes-clock";
 	hw_dvfs = /bits/ 8 <0>;
 };
 
