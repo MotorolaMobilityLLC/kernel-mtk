@@ -1844,7 +1844,7 @@
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
-                <address>0x1A</address>
+                <address>0x10</address>
             </device4>
             <device5>
                 <varName>CAMERA_MAIN_EEPROM</varName>
@@ -1927,7 +1927,7 @@
         </module>
         <module name="pmic">
             <chip>PMIC_MT6357PMUMP</chip>
-            <count>6</count>
+            <count>7</count>
             <pmic0>
                 <ldoVar>VCAMA</ldoVar>
                 <defEn>OFF</defEn>
@@ -1946,8 +1946,8 @@
             <pmic3>
                 <ldoVar>VCAMD</ldoVar>
                 <defEn>OFF</defEn>
-                <varName0>MAIN_CAMERA_2_POWER_D</varName0>
-                <varName1>SUB_CAMERA_POWER_D</varName1>
+                <varName0>MAIN_CAMERA_POWER_D</varName0>
+                <varName2>MAIN_CAMERA_2_POWER_D</varName2>
             </pmic3>
             <pmic4>
                 <ldoVar>VCAMIO</ldoVar>
@@ -1960,10 +1960,13 @@
                 <ldoVar>VLDO28</ldoVar>
                 <defEn>OFF</defEn>
                 <varName0>MAIN_CAMERA_POWER_AF</varName0>
-                <varName1>SUB_CAMERA_POWER_AF</varName1>
-                <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
                 <varName3>CAP_TOUCH_VDD</varName3>
             </pmic5>
+            <pmic6>
+                <ldoVar>VDRAM</ldoVar>
+                <defEn>OFF</defEn>
+                <varName1>SUB_CAMERA_POWER_D</varName1>
+            </pmic6>
         </module>
         <module name="kpd">
             <row>8</row>
