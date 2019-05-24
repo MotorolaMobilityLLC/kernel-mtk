@@ -141,14 +141,9 @@ struct mmc_request {
 	struct completion	cmd_completion;
 	void			(*done)(struct mmc_request *);/* completion function */
 	struct mmc_host		*host;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	struct mmc_async_req	*areq;
-	int			flags;
-	struct list_head	link;
-	struct list_head	hlist;
-#endif
 
-#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE)
+#if defined(CONFIG_MTK_HW_FDE) || defined(CONFIG_HIE) \
+	|| defined(CONFIG_MTK_EMMC_HW_CQ)
 	struct request          *req;
 	bool			is_mmc_req; /* request is from mmc layer */
 #endif
@@ -156,6 +151,15 @@ struct mmc_request {
 	/* Allow other commands during this ongoing data transfer or busy wait */
 	bool			cap_cmd_during_tfr;
 
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+	struct mmc_async_req	*areq;
+	int			flags;
+	struct list_head	link;
+	struct list_head	hlist;
+#endif
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct mmc_cmdq_req	*cmdq_req;
+#endif
 	ktime_t			io_start;
 #ifdef CONFIG_BLOCK
 	int			lat_hist_enabled;
@@ -164,7 +168,22 @@ struct mmc_request {
 
 struct mmc_card;
 struct mmc_async_req;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+struct mmc_cmdq_req;
 
+extern int mmc_cmdq_discard_queue(struct mmc_host *host, u32 tasks);
+extern int mmc_cmdq_halt(struct mmc_host *host, bool enable);
+extern int mmc_cmdq_halt_on_empty_queue(struct mmc_host *host);
+extern void mmc_cmdq_post_req(struct mmc_host *host, int tag, int err);
+extern int mmc_cmdq_start_req(struct mmc_host *host,
+			      struct mmc_cmdq_req *cmdq_req);
+extern int mmc_cmdq_prepare_flush(struct mmc_command *cmd);
+extern int mmc_cmdq_wait_for_dcmd(struct mmc_host *host,
+			struct mmc_cmdq_req *cmdq_req);
+extern int mmc_cmdq_erase(struct mmc_cmdq_req *cmdq_req,
+	      struct mmc_card *card, unsigned int from, unsigned int nr,
+	      unsigned int arg);
+#endif
 extern int mmc_stop_bkops(struct mmc_card *);
 extern int mmc_read_bkops_status(struct mmc_card *);
 extern struct mmc_async_req *mmc_start_req(struct mmc_host *,
@@ -180,6 +199,11 @@ extern int mmc_wait_for_app_cmd(struct mmc_host *, struct mmc_card *,
 	struct mmc_command *, int);
 extern void mmc_start_bkops(struct mmc_card *card, bool from_exception);
 extern int mmc_switch(struct mmc_card *, u8, u8, u8, unsigned int);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+extern int __mmc_switch_cmdq_mode(struct mmc_command *cmd, u8 set, u8 index,
+				  u8 value, unsigned int timeout_ms,
+				  bool use_busy_signal, bool ignore_timeout);
+#endif
 extern int mmc_send_tuning(struct mmc_host *host, u32 opcode, int *cmd_error);
 extern int mmc_get_ext_csd(struct mmc_card *card, u8 **new_ext_csd);
 
@@ -208,6 +232,9 @@ extern int mmc_set_blocklen(struct mmc_card *card, unsigned int blocklen);
 extern int mmc_set_blockcount(struct mmc_card *card, unsigned int blockcount,
 			      bool is_rel_write);
 extern int mmc_hw_reset(struct mmc_host *host);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+extern int mmc_cmdq_hw_reset(struct mmc_host *host);
+#endif
 extern int mmc_can_reset(struct mmc_card *card);
 
 extern void mmc_set_data_timeout(struct mmc_data *, const struct mmc_card *);
@@ -227,10 +254,12 @@ extern int mmc_detect_card_removed(struct mmc_host *host);
 extern int mmc_reinit_oldcard(struct mmc_host *host);
 #endif
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 extern int mmc_blk_cmdq_switch(struct mmc_card *card, int enable);
 #endif
-
+#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+extern int mmc_run_queue_thread(void *data);
+#endif
 
 /**
  *	mmc_claim_host - exclusively claim a host

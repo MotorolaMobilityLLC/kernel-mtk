@@ -39,6 +39,10 @@ void mt_biolog_cmdq_dma_end(unsigned int task_id);
 void mt_biolog_cmdq_isdone_start(unsigned int task_id, struct mmc_request *req);
 void mt_biolog_cmdq_isdone_end(unsigned int task_id);
 
+void mt_biolog_cqhci_check(void);
+void mt_biolog_cqhci_queue_task(unsigned int task_id, struct mmc_request *req);
+void mt_biolog_cqhci_complete(unsigned int task_id);
+
 #define MMC_BIOLOG_RINGBUF_MAX 120
 #define MMC_BIOLOG_CONTEXTS 10       /* number of request queues */
 #define MMC_BIOLOG_CONTEXT_TASKS 32  /* number concurrent tasks in cmdq */
@@ -103,7 +107,10 @@ struct mt_bio_context {
 #define mt_biolog_cmdq_isdone_start(...)
 #define mt_biolog_cmdq_isdone_end(...)
 
-#endif
+#define mt_biolog_cqhci_check(...)
+#define mt_biolog_cqhci_queue_task(...)
+#define mt_biolog_cqhci_complete(...)
 
 #endif
 
+#endif

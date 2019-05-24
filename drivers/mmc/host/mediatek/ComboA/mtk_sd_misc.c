@@ -158,6 +158,10 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 
 	mmc_get_card(mmc->card);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 0);
+#endif
+
 	MMC_IOCTL_PR_DBG("user want set boot partition in msdc slot%d\n",
 		msdc_ctl->host_num);
 
@@ -199,6 +203,9 @@ static int simple_sd_ioctl_set_bootpart(struct msdc_ioctl *msdc_ctl)
 end:
 	msdc_ctl->result = ret;
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 1);
+#endif
 	mmc_put_card(mmc->card);
 
 	kfree(l_buf);
@@ -215,7 +222,7 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	char part_id;
 	int no_single_rw;
 	u32 total_size;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 	int is_cmdq_en = false;
 #endif
 
@@ -275,8 +282,8 @@ int simple_sd_ioctl_rw(struct msdc_ioctl *msdc_ctl)
 	MMC_IOCTL_PR_DBG("user want access %d partition\n",
 		msdc_ctl->partition);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (mmc->card->ext_csd.cmdq_mode_en) {
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	if (mmc_card_cmdq(mmc->card)) {
 		/* cmdq enabled, turn it off first */
 		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
 		ret = mmc_blk_cmdq_switch(mmc->card, 0);
@@ -398,10 +405,10 @@ skip_sbc_prepare:
 	if (msdc_ctl->partition)
 		msdc_switch_part(host_ctl, 0);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
-		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
+		ret = mmc_blk_cmdq_switch(mmc->card, 1);
 		if (ret)
 			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
 		else
@@ -430,7 +437,7 @@ skip_sbc_prepare:
 
 rw_end:
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 	if (is_cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
 		ret = mmc_blk_cmdq_switch(mmc->card, 1);
@@ -532,6 +539,10 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 
 	mmc_get_card(mmc->card);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 0);
+#endif
+
 	MMC_IOCTL_PR_DBG("user want get boot partition info in msdc slot%d\n",
 		msdc_ctl->host_num);
 
@@ -557,6 +568,10 @@ static int simple_sd_ioctl_get_bootpart(struct msdc_ioctl *msdc_ctl)
 
 end:
 	msdc_ctl->result = ret;
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 1);
+#endif
 
 	mmc_put_card(mmc->card);
 
@@ -720,6 +735,10 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 
 	mmc_get_card(mmc->card);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 0);
+#endif
+
 	if (mmc_can_discard(mmc->card)) {
 		arg = __MMC_DISCARD_ARG;
 	} else if (mmc_can_trim(mmc->card)) {
@@ -743,6 +762,10 @@ static int simple_mmc_erase_func(unsigned int start, unsigned int size)
 	MMC_IOCTL_PR_DBG("[%s]: erase done....arg=0x%x\n", __func__, arg);
 
 end:
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 1);
+#endif
+
 	mmc_put_card(mmc->card);
 
 	return 0;
@@ -773,6 +796,10 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 	mmc = host_ctl->mmc;
 
 	mmc_get_card(mmc->card);
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 0);
+#endif
 
 	msdc_switch_part(host_ctl, 0);
 
@@ -808,6 +835,9 @@ static int simple_sd_ioctl_erase_selected_area(struct msdc_ioctl *msdc_ctl)
 
 	err = mmc_erase(mmc->card, from, nr, arg);
 out:
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	(void)mmc_blk_cmdq_switch(mmc->card, 1);
+#endif
 
 	mmc_put_card(mmc->card);
 

@@ -136,11 +136,18 @@ do { \
 #define IRQ_MSG(fmt, args...)
 #endif
 
+/*
+ * snprintf may return a value of size or "more" to indicate
+ * that the output was truncated, thus be careful of "more"
+ * case.
+ */
 #define SPREAD_PRINTF(buff, size, evt, fmt, args...) \
 do { \
 	if (buff && size && *(size)) { \
 		unsigned long var = snprintf(*(buff), *(size), fmt, ##args); \
 		if (var > 0) { \
+			if (var > *(size)) \
+				var = *(size); \
 			*(size) -= var; \
 			*(buff) += var; \
 		} \
@@ -152,8 +159,16 @@ do { \
 	} \
 } while (0)
 
+#define MAGIC_CQHCI_DBG_TYPE 5
+#define MAGIC_CQHCI_DBG_NUM_L 100
+#define MAGIC_CQHCI_DBG_NUM_U 200
+#define MAGIC_CQHCI_DBG_NUM_RI 500
+
+#define MAGIC_CQHCI_DBG_TYPE_DCMD 60
+
 void msdc_dump_gpd_bd(int id);
 int msdc_debug_proc_init(void);
+int msdc_debug_proc_init_bootdevice(void);
 
 #ifdef MTK_MMC_SDIO_DEBUG
 void msdc_performance(u32 opcode, u32 sizes, u32 bRx, u32 ticks);

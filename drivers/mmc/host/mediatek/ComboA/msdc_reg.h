@@ -244,6 +244,10 @@
 #define OFFSET_EMMC51_CQCB_CURCMD       (0x514)
 #endif
 
+
+#define OFFSET_MSDC_DEBUG               (0xF20)
+
+
 /*--------------------------------------------------------------------------*/
 /* Register Address                                                         */
 /*--------------------------------------------------------------------------*/
@@ -490,6 +494,18 @@
 #define EMMC51_CQCB_CURCMD              REG_ADDR(EMMC51_CQCB_CURCMD)
 #endif
 
+#define MSDC_DEBUG                      REG_ADDR(MSDC_DEBUG)
+
+#define MSDC_DBG_MSDC_DEBUG_WR_EN       (0x1 << 31)
+
+#define MSDC_DBG_CQHCI_STOP_SERV_TASK   (0x1 << 5)
+#define MSDC_DBG_FORCE_DAT_TIMEOUT      (0x1 << 4)
+#define MSDC_DBG_FORCE_DAT_CRC          (0x1 << 3)
+#define MSDC_DBG_FORCE_CMD_RED_ERR      (0x1 << 2)
+#define MSDC_DBG_FORCE_CMD_TIMEOUT      (0x1 << 1)
+#define MSDC_DBG_FORCE_CMD_CRC          (0x1 << 0)
+
+
 /*--------------------------------------------------------------------------*/
 /* Register Mask                                                            */
 /*--------------------------------------------------------------------------*/
@@ -577,6 +593,7 @@
 #define MSDC_INT_ACMD53_DONE            (0x1  << 21)    /* W1C */
 #define MSDC_INT_ACMD53_FAIL            (0x1  << 22)    /* W1C */
 #define MSDC_INT_AXI_RESP_ERR           (0x1  << 23)    /* W1C */
+#define MSDC_INT_CMDQ                   (0x1  << 28)    /* W1C */
 
 /* MSDC_FIFOCS mask */
 #define MSDC_FIFOCS_RXCNT               (0xff << 0)     /* R  */
@@ -1044,8 +1061,12 @@
 #define EMMC51_CQCB_CURCMD_ID                   (0x3F << 0)
 #endif
 
-#define MSDC_DEBUG_REGISTER_COUNT               0x27
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+#define MSDC_DEBUG_REGISTER_COUNT               0x63
+#else
+#define MSDC_DEBUG_REGISTER_COUNT               0x27
+#endif
 
 /*
  *MSDC TOP REG

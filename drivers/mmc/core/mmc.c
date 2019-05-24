@@ -525,6 +525,7 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 		 * take into account the value of boot_locked below.
 		 */
 		card->ext_csd.boot_ro_lock = ext_csd[EXT_CSD_BOOT_WP];
+		card->ext_csd.boot_wp_status = ext_csd[EXT_CSD_BOOT_WP_STATUS];
 		card->ext_csd.boot_ro_lockable = true;
 
 		/* Save power class values */
@@ -554,7 +555,8 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 			card->cid.year += 16;
 
 		/* check whether the eMMC card supports BKOPS */
-		if (ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
+		if (!mmc_card_broken_hpi(card) &&
+		    ext_csd[EXT_CSD_BKOPS_SUPPORT] & 0x1) {
 			card->ext_csd.bkops = 1;
 			card->ext_csd.man_bkops_en =
 					(ext_csd[EXT_CSD_BKOPS_EN] &
@@ -667,31 +669,24 @@ static int mmc_decode_ext_csd(struct mmc_card *card, u8 *ext_csd)
 			ext_csd[EXT_CSD_DEVICE_LIFE_TIME_EST_TYP_B];
 	}
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (card->ext_csd.rev > 7) {
-		card->ext_csd.cmdq_support = ext_csd[EXT_CSD_CMDQ_SUPPORT];
-		/*
-		 * Workaround: disable cmdq in sensitive situations (like OTA)
-		 * in case cmdq making data wrong because of devices having
-		 * bug(like Samsung:KMRD60014M-B512).
-		 * Use no quirks because we don't want suffer more on weak
-		 * chips in future.
-		 */
-		if (card->ext_csd.cmdq_support
-				&& get_boot_mode() != RECOVERY_BOOT) {
-			pr_notice("[CQ] card support CMDQ\n");
-			card->ext_csd.cmdq_depth =
-				ext_csd[EXT_CSD_CMDQ_DEPTH] + 1;
-			pr_notice("[CQ] cmdq depth %d\n",
-				card->ext_csd.cmdq_depth);
-		} else {
-			pr_notice("[CQ] card NOT support CMDQ\n");
-			card->ext_csd.cmdq_support = 0;
-			card->ext_csd.cmdq_depth = 16;
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	/* eMMC v5.1 or later */
+	if (card->ext_csd.rev >= 8) {
+		card->ext_csd.cmdq_support = ext_csd[EXT_CSD_CMDQ_SUPPORT] &
+						 EXT_CSD_CMDQ_SUPPORTED;
+		card->ext_csd.cmdq_depth = (ext_csd[EXT_CSD_CMDQ_DEPTH] &
+						EXT_CSD_CMDQ_DEPTH_MASK) + 1;
+		/* Exclude inefficiently small queue depths */
+		if (card->ext_csd.cmdq_depth <= 2) {
+			card->ext_csd.cmdq_support = false;
+			/* need for sg buffer */
+			card->ext_csd.cmdq_depth = 2;
 		}
-	} else {
-		card->ext_csd.cmdq_support = 0;
-		card->ext_csd.cmdq_depth = 16;
+		if (card->ext_csd.cmdq_support) {
+			pr_notice("%s: Command Queue supported depth %u\n",
+				 mmc_hostname(card->host),
+				 card->ext_csd.cmdq_depth);
+		}
 	}
 #endif
 
@@ -1547,6 +1542,58 @@ bus_speed:
 	return 0;
 }
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+static int mmc_select_cmdq(struct mmc_card *card)
+{
+	struct mmc_host *host = card->host;
+	int ret = 0;
+
+#if !defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	/* if cqhci driver is enabled,
+	 * but host does not support.
+	 * return fail at this case.
+	 */
+	if (!(host->caps2 & MMC_CAP2_CQE)) {
+		pr_notice("%s: host \"cqe\" capability missing\n",
+			mmc_hostname(host));
+		ret = -EBADMSG;
+		goto out;
+	}
+#endif
+
+	ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+			EXT_CSD_CMDQ_MODE_EN, 1,
+			card->ext_csd.generic_cmd6_time);
+	if (ret)
+		goto out;
+
+	mmc_card_set_cmdq(card);
+	card->ext_csd.cmdq_en = true;
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (host->caps2 & MMC_CAP2_CQE) {
+		ret = host->cmdq_ops->enable(card->host);
+		if (ret) {
+			pr_notice("%s: failed (%d) enabling CMDQ on host\n",
+				mmc_hostname(host), ret);
+			mmc_card_clr_cmdq(card);
+			card->ext_csd.cmdq_en = false;
+			ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				EXT_CSD_CMDQ_MODE_EN, 0,
+				card->ext_csd.generic_cmd6_time);
+			if (ret)
+				goto out;
+		}
+	}
+#endif
+out:
+	pr_notice("%s: CMDQ enable %s\n",
+		mmc_hostname(host), ret ? "fail":"done");
+
+	return ret;
+}
+#endif
+
 /*
  * Execute tuning sequence to seek the proper bus operating
  * conditions for HS200 and HS400, which sends CMD21 to the device.
@@ -1567,7 +1614,6 @@ static int mmc_hs200_tuning(struct mmc_card *card)
 	return mmc_execute_tuning(card);
 }
 
-static struct mmc_host *mmc_host_g;
 /*
  * Handle the detection and initialisation of a card.
  *
@@ -1584,7 +1630,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
-	mmc_host_g = host;
 
 	/* Set correct bus mode for MMC before attempting init */
 	if (!mmc_host_is_spi(host))
@@ -1923,6 +1968,25 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 	if (!oldcard)
 		host->card = card;
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	/*
+	 * Enable Command Queue if supported. Note that Packed Commands cannot
+	 * be used with Command Queue.
+	 */
+	card->ext_csd.cmdq_en = false;
+	if (card->ext_csd.cmdq_support) {
+		err = mmc_select_cmdq(card);
+		if (err && err != -EBADMSG)
+			goto free_card;
+		if (err) {
+			pr_notice("%s: Enabling CMDQ failed\n",
+				mmc_hostname(card->host));
+			card->ext_csd.cmdq_support = false;
+			card->ext_csd.cmdq_depth = 2;
+			err = 0;
+		}
+	}
+#endif
 	return 0;
 
 free_card:
@@ -2138,6 +2202,9 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	int err = 0;
 	unsigned int notify_type = is_suspend ? EXT_CSD_POWER_OFF_SHORT :
 					EXT_CSD_POWER_OFF_LONG;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	int ret;
+#endif
 
 	BUG_ON(!host);
 	BUG_ON(!host->card);
@@ -2147,10 +2214,23 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	if (mmc_card_suspended(host->card))
 		goto out;
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (host->card->cqe_init) {
+		WARN_ON(host->cmdq_ctx.active_reqs); /*bug*/
+
+		err = mmc_cmdq_halt(host, true);
+		if (err) {
+			pr_notice("%s: halt: failed: %d\n", __func__, err);
+			goto out;
+		}
+		host->cmdq_ops->disable(host, true);
+	}
+#endif
+
 	if (mmc_card_doing_bkops(host->card)) {
 		err = mmc_stop_bkops(host->card);
 		if (err)
-			goto out;
+			goto out_err;
 	}
 
 	/*
@@ -2161,7 +2241,7 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	else
 		err = mmc_flush_cache(host->card);
 	if (err)
-		goto out;
+		goto out_err;
 
 	if (mmc_can_poweroff_notify(host->card) &&
 		((host->caps2 & MMC_CAP2_FULL_PWR_CYCLE) || !is_suspend))
@@ -2172,6 +2252,10 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 	} else if (!mmc_host_is_spi(host))
 		err = mmc_deselect_cards(host);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (err)
+		goto out_err;
+#endif
 	/*
 	 * Workaround for Hynix(H9TQ27ADFTMCUR)'s and others' issue:
 	 * not power off vcc when shutdown
@@ -2180,7 +2264,34 @@ static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 		mmc_power_off(host);
 		mmc_card_set_suspended(host->card);
 	}
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	goto out;
+
+out_err:
+	/*
+	 * In case of err let's put controller back in cmdq mode and unhalt
+	 * the controller.
+	 * We expect cmdq_enable and unhalt won't return any error
+	 * since it is anyway enabling few registers.
+	 */
+	if (host->card->cqe_init) {
+		ret = host->cmdq_ops->enable(host);
+		if (ret)
+			pr_notice("%s: %s: enabling CMDQ mode failed (%d)\n",
+				mmc_hostname(host), __func__, ret);
+		mmc_cmdq_halt(host, false);
+	}
+
 out:
+	/* Kick CMDQ thread to process any requests came in while suspending */
+	if (host->card->cqe_init)
+		wake_up(&host->cmdq_ctx.wait);
+#else
+out_err:
+out:
+#endif
+
 	mmc_release_host(host);
 	return err;
 }
@@ -2237,6 +2348,19 @@ static int _mmc_resume(struct mmc_host *host)
 	if (!err && host->card->ext_csd.rev < 7)
 		err = mmc_cache_ctrl(host, 1);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (host->card->cqe_init &&
+		host->caps2 & MMC_CAP2_CQE) {
+		/* enable for cqhci */
+		host->cmdq_ops->enable(host);
+		/* un-halt when enable */
+		if (mmc_host_halt(host) &&
+			mmc_cmdq_halt(host, false))
+			pr_notice("%s: %s: cmdq unhalt failed\n",
+				mmc_hostname(host), __func__);
+	}
+#endif
+
 out:
 	mmc_card_clr_suspended(host->card);
 	mmc_release_host(host);
@@ -2263,19 +2387,6 @@ static int mmc_shutdown(struct mmc_host *host)
 
 	return err;
 }
-
-/*
- * WARNING: Can modified or removed in future, because this code design is bad,
- * instead of this, alarm awake should be optimized to go system shutdown
- * flow.
- * Send PON(power off notify) if PON enabled when alarm awake phone(rtc reset)
- * under charge mode.
- */
-int mmc_charge_shutdown(void)
-{
-	return (mmc_host_g && mmc_host_g->card) ? mmc_shutdown(mmc_host_g) : -1;
-}
-EXPORT_SYMBOL(mmc_charge_shutdown);
 
 /*
  * Callback for resume.
@@ -2357,6 +2468,11 @@ static int mmc_reset(struct mmc_host *host)
 		 * keeping power-on wp
 		 */
 		mmc_set_clock(host, host->f_init);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+		/* reset here, host driver will check MMC_CAP_HW_RESET */
+		if (host->ops->hw_reset)
+			host->ops->hw_reset(host);
+#endif
 		mmc_set_initial_state(host);
 	}
 	return mmc_init_card(host, card->ocr, card);
@@ -2381,9 +2497,6 @@ int mmc_attach_mmc(struct mmc_host *host)
 {
 	int err;
 	u32 ocr, rocr;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int i;
-#endif
 
 	BUG_ON(!host);
 	WARN_ON(!host->claimed);
@@ -2427,28 +2540,6 @@ int mmc_attach_mmc(struct mmc_host *host)
 		goto err;
 
 	mmc_release_host(host);
-
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	pr_debug("[MSDC_EMMC_CQ] init polling status threading\n");
-	atomic_set(&host->cq_rw, false);
-	atomic_set(&host->cq_w, false);
-	atomic_set(&host->cq_wait_rdy, 0);
-	host->wp_error = 0;
-	host->task_id_index = 0;
-	host->is_data_dma = 0;
-	host->cur_rw_task = 99;
-	host->cmdq_support_changed = 1;
-	atomic_set(&host->cq_tuning_now, 0);
-#ifdef CONFIG_MMC_FFU
-	atomic_set(&host->stop_queue, 0);
-#endif
-
-	for (i = 0; i < 32; i++)
-		host->data_mrq_queued[i] = false;
-
-	host->cmdq_thread = kthread_run(mmc_run_queue_thread, host, "exe_cq");
-
-#endif
 
 	err = mmc_add_card(host->card);
 	if (err)

@@ -37,6 +37,22 @@
 #include <fde_aes_dbg.h>
 #endif
 
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) && defined(CONFIG_MTK_EMMC_HW_CQ)
+#error "MTK_EMMC_CQ_SUPPORT & MTK_EMMC_HW_CQ cannot define at the same time."
+#endif
+
+#ifdef CONFIG_PWR_LOSS_MTK_TEST
+#include <mach/power_loss_test.h>
+#else
+#define MVG_EMMC_CHECK_BUSY_AND_RESET(...) do {} while (0)
+#define MVG_EMMC_SETUP(...) do {} while (0)
+#define MVG_EMMC_RESET(...) do {} while (0)
+#define MVG_EMMC_WRITE_MATCH(...) do {} while (0)
+#define MVG_EMMC_ERASE_MATCH(...) do {} while (0)
+#define MVG_EMMC_ERASE_RESET(...) do {} while (0)
+#define MVG_EMMC_DECLARE_INT32(...)
+#endif
+
 /* #define MSDC_SWITCH_MODE_WHEN_ERROR */
 #define TUNE_NONE                (0)        /* No need tune */
 #define TUNE_ASYNC_CMD           (0x1 << 0) /* async transfer cmd crc */
@@ -50,12 +66,19 @@
 
 #ifdef CONFIG_MTK_MMC_DEBUG
 #define MSDC_DMA_ADDR_DEBUG
+#define MTK_MSDC_LOW_IO_DEBUG
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+#undef MTK_MSDC_LOW_IO_DEBUG
+#endif
+
 #endif
 /* #define MTK_MMC_SDIO_DEBUG */
 
 
 #define MTK_MSDC_USE_CMD23
-#if !defined(CONFIG_PWR_LOSS_MTK_TEST) && defined(MTK_MSDC_USE_CMD23)
+#if !defined(CONFIG_PWR_LOSS_MTK_TEST) && defined(MTK_MSDC_USE_CMD23) \
+	|| defined(CONFIG_MTK_EMMC_HW_CQ)
 #define MTK_MSDC_USE_CACHE
 #endif
 
@@ -312,7 +335,7 @@ struct msdc_host {
 	 * race condition with hot-plug enable
 	 */
 	spinlock_t              remove_bad_card;
-
+	spinlock_t              cmd_dump_lock;
 	 /* avoid race condition at DAT1 interrupt case*/
 	spinlock_t              sdio_irq_lock;
 	int                     clk_gate_count;
@@ -419,6 +442,11 @@ struct msdc_host {
 	u64                     stop_dma_time;
 	/* flag to record if eMMC will enter hs400 mode */
 	bool                    hs400_mode;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct cmdq_host *cq_host;
+#endif
+	/* For sd vmch and vmc oc callback */
+	struct notifier_block sd_oc_nb;
 };
 
 enum {

@@ -208,8 +208,10 @@ static void msdc_init_dma_latest_address(void)
 
 #ifdef CONFIG_MTK_MMC_DEBUG
 #define dbg_max_cnt (500)
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 #define dbg_max_cnt_low_io (5000)
 #define criterion_low_io (10 * 1024) /* unit: KB/s */
+#endif
 #define MSDC_AEE_BUFFER_SIZE (300 * 1024)
 struct dbg_run_host_log {
 	unsigned long long time_sec;
@@ -219,6 +221,7 @@ struct dbg_run_host_log {
 	int arg;
 	int skip;
 };
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 struct dbg_run_host_log_low_io {
 	int cmd;
 	u32 address;
@@ -227,6 +230,7 @@ struct dbg_run_host_log_low_io {
 	unsigned long long time_diff;
 	int continuous_count;
 };
+#endif
 struct dbg_task_log {
 	u32 address;
 	unsigned long long size;
@@ -239,14 +243,15 @@ struct dbg_dma_cmd_log {
 
 static struct dbg_run_host_log dbg_run_host_log_dat[dbg_max_cnt];
 
-
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 static struct dbg_run_host_log_low_io
 	dbg_run_host_log_dat_low_io[dbg_max_cnt_low_io];
+static int dbg_host_cnt_low_io;
+#endif
 static struct dbg_dma_cmd_log dbg_dma_cmd_log_dat;
 static struct dbg_task_log dbg_task_log_dat[32];
 char msdc_aee_buffer[MSDC_AEE_BUFFER_SIZE];
 static int dbg_host_cnt;
-static int dbg_host_cnt_low_io;
 
 static unsigned int printk_cpu_test = UINT_MAX;
 
@@ -258,20 +263,24 @@ inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 {
 	unsigned long long t, tn;
 	unsigned long long nanosec_rem;
+	unsigned long flags;
 	static int last_cmd, last_arg, skip;
 	int l_skip = 0;
 	struct msdc_host *host = mmc_priv(mmc);
 	static int tag = -1;
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 	static int continuous_count_low_io;
+#endif
 
 	/* only log msdc0 */
 	if (!host || host->id != 0)
 		return;
 
 	t = cpu_clock(printk_cpu_test);
+	spin_lock_irqsave(&host->cmd_dump_lock, flags);
 
 	switch (type) {
-	case 0:
+	case 0: /*normal - cmd*/
 		tn = t;
 		nanosec_rem = do_div(t, 1000000000)/1000;
 		if (cmd == 44) {
@@ -295,7 +304,10 @@ inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 		if (dbg_host_cnt >= dbg_max_cnt)
 			dbg_host_cnt = 0;
 		break;
-	case 1:
+	case 1: /*normal - rsp*/
+	case 5: /*cqhci - data*/
+	case 60: /*cqhci - dcmd*/
+	case 61: /*cqhci - dcmd rsp*/
 		nanosec_rem = do_div(t, 1000000000)/1000;
 		/*skip log if last cmd rsp are the same*/
 		if (last_cmd == cmd &&
@@ -322,6 +334,7 @@ inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 		if (dbg_host_cnt >= dbg_max_cnt)
 			dbg_host_cnt = 0;
 		break;
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 	case 3:
 		/*
 		 * try to reduce executing time in case 3 to keep performance
@@ -356,11 +369,14 @@ inline void dbg_add_host_log(struct mmc_host *mmc, int type, int cmd, int arg)
 		} else
 			continuous_count_low_io = 0;
 		break;
+#endif
 	default:
 		break;
 	}
+	spin_unlock_irqrestore(&host->cmd_dump_lock, flags);
 }
 
+#ifdef MTK_MSDC_LOW_IO_DEBUG
 void mmc_low_io_dump(char **buff, unsigned long *size, struct seq_file *m,
 	struct mmc_host *mmc)
 {
@@ -403,6 +419,13 @@ void mmc_low_io_dump(char **buff, unsigned long *size, struct seq_file *m,
 			i = dbg_max_cnt_low_io - 1;
 	}
 }
+#else
+void mmc_low_io_dump(char **buff, unsigned long *size, struct seq_file *m,
+	struct mmc_host *mmc)
+{
+}
+#endif
+
 void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	struct mmc_host *mmc, u32 latest_cnt)
 {
@@ -413,6 +436,9 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 	int type, cmd, arg, skip, cnt;
 	struct msdc_host *host;
 	u32 dump_cnt;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	unsigned long curr_state;
+#endif
 
 	if (!mmc || !mmc->card)
 		return;
@@ -441,7 +467,7 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 			is_rel = (arg >> 31) & 0x1;
 			is_fprg = (arg >> 24) & 0x1;
 			SPREAD_PRINTF(buff, size, m,
-		"%03d [%5llu.%06llu]%2d %2d %08x id=%02d %s cnt=%d %d %d\n",
+		"%03d [%5llu.%06llu]%2d %3d %08x id=%02d %s cnt=%d %d %d\n",
 				j, time_sec, time_usec,
 				type, cmd, arg, tag,
 				is_read ? "R" : "W",
@@ -449,12 +475,12 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		} else if ((cmd == 46 || cmd == 47) && !type) {
 			tag = (arg >> 16) & 0x1f;
 			SPREAD_PRINTF(buff, size, m,
-				"%03d [%5llu.%06llu]%2d %2d %08x id=%02d\n",
+				"%03d [%5llu.%06llu]%2d %3d %08x id=%02d\n",
 				j, time_sec, time_usec,
 				type, cmd, arg, tag);
 		} else
 			SPREAD_PRINTF(buff, size, m,
-			"%03d [%5llu.%06llu]%2d %2d %08x (%d)\n",
+			"%03d [%5llu.%06llu]%2d %3d %08x (%d)\n",
 				j, time_sec, time_usec,
 				type, cmd, arg, skip);
 		i--;
@@ -468,6 +494,38 @@ void mmc_cmd_dump(char **buff, unsigned long *size, struct seq_file *m,
 		mmc->task_id_index,
 		atomic_read(&mmc->cq_wait_rdy),
 		atomic_read(&mmc->cq_rdy_cnt));
+#endif
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	curr_state = mmc->cmdq_ctx.curr_state;
+
+	SPREAD_PRINTF(buff, size, m,
+		"active_reqs : 0x%lx\n",
+		mmc->cmdq_ctx.active_reqs);
+	SPREAD_PRINTF(buff, size, m,
+		"curr_state  : 0x%lx\n",
+		curr_state);
+	SPREAD_PRINTF(buff, size, m,
+		"%s %s %s %s %s %s\n",
+		curr_state & (1 << CMDQ_STATE_ERR) ?
+			"ERR":"",
+		curr_state & (1 << CMDQ_STATE_DCMD_ACTIVE) ?
+			"DCMD_ACTIVE":"",
+		curr_state & (1 << CMDQ_STATE_HALT) ?
+			"HALT":"",
+		curr_state & (1 << CMDQ_STATE_CQ_DISABLE) ?
+			"CQ_DISABLE":"",
+		curr_state & (1 << CMDQ_STATE_REQ_TIMED_OUT) ?
+			"REQ_TIMED_OUT":"",
+		curr_state & (1 << CMDQ_STATE_FETCH_QUEUE) ?
+			"FETCH_QUEUE":"");
+	SPREAD_PRINTF(buff, size, m,
+		"part_curr  : %d\n",
+		mmc->card->part_curr);
+	SPREAD_PRINTF(buff, size, m,
+		"claimed(%d),claim_cnt(%d),claimer pid(%d) comm %s\n",
+		mmc->claimed, mmc->claim_cnt,
+		mmc->claimer ? mmc->claimer->pid : 0,
+		mmc->claimer ? mmc->claimer->comm : "NULL");
 #endif
 }
 void msdc_dump_host_state(char **buff, unsigned long *size,
@@ -551,69 +609,29 @@ void get_msdc_aee_buffer(unsigned long *vaddr, unsigned long *size)
 }
 #endif
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#ifdef CONFIG_MTK_EMMC_CQ_MET_USR_DEF
-void emmc_cq_state(void)
-{
-#define MET_CMDQ_STATE_PR \
-	"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d"\
-	"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d"
-
-	MET_PRINTK(MET_CMDQ_STATE_PR,
-		dbg_cq_state[0], dbg_cq_state[1], dbg_cq_state[2],
-		dbg_cq_state[3], dbg_cq_state[4], dbg_cq_state[5],
-		dbg_cq_state[6], dbg_cq_state[7], dbg_cq_state[8],
-		dbg_cq_state[9], dbg_cq_state[10], dbg_cq_state[11],
-		dbg_cq_state[12], dbg_cq_state[13], dbg_cq_state[14],
-		dbg_cq_state[15], dbg_cq_state[16], dbg_cq_state[17],
-		dbg_cq_state[18], dbg_cq_state[19], dbg_cq_state[20],
-		dbg_cq_state[21], dbg_cq_state[22], dbg_cq_state[23],
-		dbg_cq_state[24], dbg_cq_state[25], dbg_cq_state[26],
-		dbg_cq_state[27], dbg_cq_state[28], dbg_cq_state[29],
-		dbg_cq_state[30], dbg_cq_state[31]);
-}
-
-void emmc_cq_state_log(struct mmc_host *mmc, unsigned int idx,
-	unsigned int val)
-{
-	dbg_cq_state[idx] = val;
-	emmc_cq_state();
-}
-
-void emmc_cq_state_pr(struct mmc_host *mmc, unsigned int idx,
-	unsigned int val)
-{
-	dbg_cq_state[idx] = val;
-}
-#else
-void emmc_cq_state_log(struct mmc_host *mmc, unsigned int idx,
-	unsigned int val)
-{
-}
-
-void emmc_cq_state_pr(struct mmc_host *mmc, unsigned int idx,
-	unsigned int val)
-{
-}
-#endif
-#endif
-
 void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 {
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 	struct mmc_host *mmc = host->mmc;
+#if defined(CONFIG_MTK_EMMC_HW_CQ)
+	unsigned long curr_state;
+#endif
 
 	if (!mmc || !mmc->card)
 		return;
+
+	seq_printf(m, "host->need_tune : %d\n",
+		host->need_tune);
 
 	seq_puts(m, "===============================\n");
 	seq_printf(m, "cmdq support : %s\n",
 		mmc->card->ext_csd.cmdq_support ? "yes":"no");
 	seq_printf(m, "cmdq mode	: %s\n",
-		mmc->card->ext_csd.cmdq_mode_en ? "enable" : "disable");
+		mmc->card->ext_csd.cmdq_en ? "enable" : "disable");
 	seq_printf(m, "cmdq depth	: %d\n",
 		mmc->card->ext_csd.cmdq_depth);
 	seq_puts(m, "===============================\n");
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT)
 	seq_printf(m, "areq_cnt	: %d\n",
 		atomic_read(&mmc->areq_cnt));
 	seq_printf(m, "task_id_index: %08lx\n",
@@ -624,6 +642,40 @@ void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 		atomic_read(&mmc->cq_rdy_cnt));
 	seq_printf(m, "cq_tuning_now: %d\n",
 		atomic_read(&mmc->cq_tuning_now));
+#endif
+#if defined(CONFIG_MTK_EMMC_HW_CQ)
+	curr_state = mmc->cmdq_ctx.curr_state;
+
+	seq_printf(m, "active_reqs : 0x%lx\n",
+		mmc->cmdq_ctx.active_reqs);
+	seq_printf(m, "curr_state  : 0x%lx\n",
+		curr_state);
+	seq_printf(m, "%s %s %s %s %s %s\n",
+		curr_state & (1 << CMDQ_STATE_ERR) ?
+			"ERR":"",
+		curr_state & (1 << CMDQ_STATE_DCMD_ACTIVE) ?
+			"DCMD_ACTIVE":"",
+		curr_state & (1 << CMDQ_STATE_HALT) ?
+			"HALT":"",
+		curr_state & (1 << CMDQ_STATE_CQ_DISABLE) ?
+			"CQ_DISABLE":"",
+		curr_state & (1 << CMDQ_STATE_REQ_TIMED_OUT) ?
+			"REQ_TIMED_OUT":"",
+		curr_state & (1 << CMDQ_STATE_FETCH_QUEUE) ?
+			"FETCH_QUEUE":"");
+	seq_printf(m, "part_curr  : %d\n",
+		mmc->card->part_curr);
+	seq_printf(m, "host claimed : %d\n",
+		mmc->claimed);
+	seq_printf(m, "host claim cnt : %d\n",
+		mmc->claim_cnt);
+	seq_printf(m, "host claimer pid : %d\n",
+		mmc->claimer ? mmc->claimer->pid : 0);
+	seq_printf(m, "host claimer comm : %s\n",
+		mmc->claimer ? mmc->claimer->comm : "NULL");
+	seq_puts(m, "hardware cq support\n");
+#endif
+
 #else
 	seq_puts(m, "driver not supported\n");
 #endif
@@ -637,31 +689,27 @@ void msdc_cmdq_status_print(struct msdc_host *host, struct seq_file *m)
 
 void msdc_cmdq_func(struct msdc_host *host, const int num, struct seq_file *m)
 {
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	void __iomem *base;
-#endif
 
 	if (!host || !host->mmc || !host->mmc->card)
 		return;
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	base = host->base;
-#endif
 
 	switch (num) {
 	case 0:
 		msdc_cmdq_status_print(host, m);
 		break;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	case 1:
-		pr_info("force enable cmdq\n");
-		host->mmc->card->ext_csd.cmdq_support = 1;
-		host->mmc->cmdq_support_changed = 1;
-		break;
-#endif
 	case 2:
 		mmc_cmd_dump(NULL, NULL, m, host->mmc, 500);
 		break;
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	case 32:
+		if (host->mmc->cmdq_ops &&
+			host->mmc->cmdq_ops->dumpstate)
+			host->mmc->cmdq_ops->dumpstate(host->mmc, true);
+		break;
+#endif
 	default:
 		seq_printf(m, "unknown function id %d\n", num);
 		break;
@@ -1132,8 +1180,8 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	struct msdc_host *host_ctl;
 	struct mmc_host *mmc;
 	int result = 0, forIndex = 0;
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	int is_cmdq_en;
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	bool cmdq_en;
 	int ret;
 #endif
 
@@ -1180,19 +1228,18 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 
 	mmc_get_card(mmc->card);
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	is_cmdq_en = false;
-	if (host_num == 0 && host_ctl->mmc->card->ext_csd.cmdq_mode_en) {
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	cmdq_en = !!mmc_card_cmdq(mmc->card);
+	if (cmdq_en) {
 		/* cmdq enabled, turn it off first */
-		pr_debug("[MSDC_DBG] cmdq enabled, turn it off\n");
+		pr_debug("[MSDC] cmdq enabled, turn it off\n");
 		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 0);
 		if (ret) {
-			pr_debug("[MSDC_DBG] turn off cmdq en failed\n");
+			pr_notice("[MSDC] turn off cmdq en failed\n");
 			mmc_put_card(host_ctl->mmc->card);
 			result = -1;
 			goto free;
-		} else
-			is_cmdq_en = true;
+		}
 	}
 #endif
 
@@ -1267,14 +1314,12 @@ static int multi_rw_compare_core(int host_num, int read, uint address,
 	}
 
 skip_check:
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-	if (is_cmdq_en) {
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
+	if (cmdq_en) {
 		pr_debug("[MSDC_DBG] turn on cmdq\n");
 		ret = mmc_blk_cmdq_switch(host_ctl->mmc->card, 1);
 		if (ret)
-			pr_debug("[MSDC_DBG] turn on cmdq en failed\n");
-		else
-			is_cmdq_en = false;
+			pr_notice("[MSDC] turn on cmdq en failed\n");
 	}
 #endif
 
@@ -2805,13 +2850,39 @@ static const struct file_operations *proc_fops_list[] = {
 #define PROC_PERM		0440
 #endif
 
-int msdc_debug_proc_init(void)
+int msdc_debug_proc_init_bootdevice(void)
 {
 	struct proc_dir_entry *prEntry;
 	struct proc_dir_entry *bootdevice_dir;
+	int i, num;
+
+	bootdevice_dir = proc_mkdir("bootdevice", NULL);
+
+	if (!bootdevice_dir) {
+		pr_notice("[%s]: failed to create /proc/bootdevice\n",
+			__func__);
+		return -1;
+	}
+
+	num = ARRAY_SIZE(msdc_proc_list);
+	for (i = 0; i < num; i++) {
+		prEntry = proc_create(msdc_proc_list[i], 0440,
+			bootdevice_dir, proc_fops_list[i]);
+		if (prEntry)
+			continue;
+		pr_notice(
+			"[%s]: failed to create /proc/bootdevice/%s\n",
+			__func__, msdc_proc_list[i]);
+	}
+
+	return 0;
+}
+
+int msdc_debug_proc_init(void)
+{
 	kuid_t uid;
 	kgid_t gid;
-	int i, num;
+	struct proc_dir_entry *prEntry;
 
 	uid = make_kuid(&init_user_ns, 0);
 	gid = make_kgid(&init_user_ns, 1001);
@@ -2836,20 +2907,6 @@ int msdc_debug_proc_init(void)
 		pr_notice("[%s]: failed to create /proc/sdcard_intr_gpio_value\n",
 			__func__);
 
-	/*boot device*/
-	bootdevice_dir = proc_mkdir("bootdevice", NULL);
-	if (bootdevice_dir) {
-		num = ARRAY_SIZE(msdc_proc_list);
-		for (i = 0; i < num; i++) {
-			prEntry = proc_create(msdc_proc_list[i], 0440,
-				bootdevice_dir, proc_fops_list[i]);
-			if (!prEntry)
-				pr_notice("[%s]: failed to create /proc/bootdevice/%s\n",
-					__func__, msdc_proc_list[i]);
-		}
-	} else
-		pr_notice("[%s]: failed to create /proc/bootdevice\n",
-			__func__);
 #ifdef MSDC_DMA_ADDR_DEBUG
 	msdc_init_dma_latest_address();
 #endif

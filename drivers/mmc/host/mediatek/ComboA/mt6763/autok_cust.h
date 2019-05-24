@@ -155,6 +155,7 @@ struct AUTOK_PLAT_FUNC {
 	u8 new_path_hs;
 	u8 multi_sync;
 	u8 rx_enhance;
+	u8 latch_enhance;
 	u8 msdc0_bypass_duty_modify;
 	u8 msdc1_bypass_duty_modify;
 	u8 msdc2_bypass_duty_modify;
