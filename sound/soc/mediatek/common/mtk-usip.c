@@ -20,13 +20,17 @@
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/dma-mapping.h>
+#include <linux/notifier.h>
+
 #include <mt-plat/mtk_ccci_common.h>
 #include <mt-plat/mtk_meminfo.h>
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+#include <adsp_helper.h>
 #include "audio_messenger_ipi.h"
 #include "audio_task.h"
 #include "adsp_ipi.h"
 #include "audio_speech_msg_id.h"
+#include "mtk-dsp-common.h"
 #endif
 
 #define USIP_EMP_IOC_MAGIC 'D'
@@ -192,6 +196,70 @@ static struct miscdevice usip_miscdevice = {
 };
 #endif
 
+
+#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
+static void usip_send_emi_info_to_dsp(void)
+{
+	int send_result = 0;
+	struct ipi_msg_t ipi_msg;
+	long long usip_emi_phy = 0;
+	phys_addr_t offset = 0;
+
+	offset = EMI_TABLE[SP_EMI_ADSP_USIP_PHONECALL][SP_EMI_OFFSET];
+	usip_emi_phy = usip.addr_phy + offset;
+
+	ipi_msg.magic      = IPI_MSG_MAGIC_NUMBER;
+	ipi_msg.task_scene = TASK_SCENE_PHONE_CALL;
+	ipi_msg.source_layer  = AUDIO_IPI_LAYER_FROM_KERNEL;
+	ipi_msg.target_layer  = AUDIO_IPI_LAYER_TO_DSP;
+	ipi_msg.data_type  = AUDIO_IPI_PAYLOAD;
+	ipi_msg.ack_type   = AUDIO_IPI_MSG_BYPASS_ACK;
+	ipi_msg.msg_id     = IPI_MSG_A2D_GET_EMI_ADDRESS;
+	ipi_msg.param1     = sizeof(usip_emi_phy);
+	ipi_msg.param2     = 0;
+
+
+	/* Send EMI Address to Hifi3 Via IPI*/
+	adsp_register_feature(VOICE_CALL_FEATURE_ID);
+	send_result = audio_send_ipi_msg(
+			&ipi_msg, TASK_SCENE_PHONE_CALL,
+			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
+			AUDIO_IPI_MSG_BYPASS_ACK, IPI_MSG_A2D_GET_EMI_ADDRESS,
+			sizeof(usip_emi_phy), 0, (char *)&usip_emi_phy);
+	adsp_deregister_feature(VOICE_CALL_FEATURE_ID);
+
+	if (send_result != 0)
+		pr_info("%s(), scp_ipi send fail\n", __func__);
+	else
+		pr_debug("%s(), scp_ipi send succeed\n", __func__);
+}
+
+#ifdef CFG_RECOVERY_SUPPORT
+static int audio_call_event_receive(
+	struct notifier_block *this,
+	unsigned long event,
+	void *ptr)
+{
+	switch (event) {
+	case ADSP_EVENT_STOP:
+		break;
+	case ADSP_EVENT_READY:
+		usip_send_emi_info_to_dsp();
+		break;
+	default:
+		pr_info("event %lu err", event);
+	}
+	return 0;
+}
+
+
+static struct notifier_block audio_call_notifier = {
+	.notifier_call = audio_call_event_receive,
+	.priority = VOICE_CALL_FEATURE_PRI,
+};
+#endif /* end of CFG_RECOVERY_SUPPORT */
+#endif /* end of CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT */
+
 static int __init usip_init(void)
 {
 	int ret;
@@ -205,13 +273,6 @@ static int __init usip_init(void)
 
 	phys_addr_t phys_addr;
 
-
-#ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
-	int send_result = 0;
-	struct ipi_msg_t ipi_msg;
-	long long usip_emi_phy = 0;
-	phys_addr_t offset = 0;
-#endif
 
 #ifdef CONFIG_MTK_ECCCI_DRIVER
 	phys_addr = get_smem_phy_start_addr(MD_SYS1,
@@ -245,31 +306,10 @@ static int __init usip_init(void)
 	usip.memory_ready = true;
 
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
-	offset = EMI_TABLE[SP_EMI_ADSP_USIP_PHONECALL][SP_EMI_OFFSET];
-	usip_emi_phy = usip.addr_phy + offset;
-
-	ipi_msg.magic      = IPI_MSG_MAGIC_NUMBER;
-	ipi_msg.task_scene = TASK_SCENE_PHONE_CALL;
-	ipi_msg.source_layer  = AUDIO_IPI_LAYER_FROM_KERNEL;
-	ipi_msg.target_layer  = AUDIO_IPI_LAYER_TO_DSP;
-	ipi_msg.data_type  = AUDIO_IPI_PAYLOAD;
-	ipi_msg.ack_type   = AUDIO_IPI_MSG_BYPASS_ACK;
-	ipi_msg.msg_id     = IPI_MSG_A2D_GET_EMI_ADDRESS;
-	ipi_msg.param1     = sizeof(usip_emi_phy);
-	ipi_msg.param2     = 0;
-
-
-	/* Send EMI Address to Hifi3 Via IPI*/
-	send_result = audio_send_ipi_msg(
-			&ipi_msg, TASK_SCENE_PHONE_CALL,
-			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
-			AUDIO_IPI_MSG_BYPASS_ACK, IPI_MSG_A2D_GET_EMI_ADDRESS,
-			sizeof(usip_emi_phy), 0, (char *)&usip_emi_phy);
-
-	if (send_result != 0)
-		pr_err("%s(), scp_ipi send fail\n", __func__);
-	else
-		pr_debug("%s(), scp_ipi send succeed\n", __func__);
+#ifdef CFG_RECOVERY_SUPPORT
+	adsp_A_register_notify(&audio_call_notifier);
+#endif
+	usip_send_emi_info_to_dsp();
 #endif
 
 	return ret;

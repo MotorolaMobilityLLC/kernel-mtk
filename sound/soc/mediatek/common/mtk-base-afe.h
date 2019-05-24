@@ -66,6 +66,10 @@ struct mtk_base_irq_data {
 	int irq_en_shift;
 	int irq_clr_reg;
 	int irq_clr_shift;
+	int irq_ap_en_reg;
+	int irq_ap_en_shift;
+	int irq_scp_en_reg;
+	int irq_scp_en_shift;
 };
 
 struct dentry;
@@ -134,7 +138,12 @@ struct mtk_base_afe_memif {
 	int using_sram;
 	int use_dram_only;
 	int use_adsp_share_mem;
-
+#if defined(CONFIG_MTK_VOW_BARGE_IN_SUPPORT)
+	bool vow_bargein_enable;
+#endif
+#if defined(CONFIG_SND_SOC_MTK_SCP_SMARTPA)
+	bool scp_spk_enable;
+#endif
 	bool ack_enable;
 	int (*ack)(struct snd_pcm_substream *substream);
 };

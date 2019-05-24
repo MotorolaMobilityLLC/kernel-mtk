@@ -1798,10 +1798,7 @@ static int mt6779_afe_vow_bargein_set(struct snd_kcontrol *kcontrol,
 	val = ucontrol->value.integer.value[0];
 	dev_info(afe->dev, "%s(), %d\n", __func__, val);
 
-	if (ucontrol->value.integer.value[0] > 0)
-		afe->memif[id].vow_bargein_enable = true;
-	else
-		afe->memif[id].vow_bargein_enable = false;
+	afe->memif[id].vow_bargein_enable = (val > 0) ? true : false;
 
 	return 0;
 }

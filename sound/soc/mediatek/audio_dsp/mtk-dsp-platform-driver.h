@@ -13,5 +13,6 @@
 struct mtk_base_afe;
 
 extern const struct snd_soc_platform_driver mtk_dsp_pcm_platform;
+extern unsigned int SmartpaSwdspProcessEnable;
 
 #endif
