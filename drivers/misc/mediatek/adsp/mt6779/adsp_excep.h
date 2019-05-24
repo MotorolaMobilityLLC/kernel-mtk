@@ -31,13 +31,10 @@ extern void adsp_aed(enum adsp_excep_id type, enum adsp_core_id id);
 extern void adsp_aed_reset(enum adsp_excep_id type, enum adsp_core_id id);
 extern void adsp_aed_reset_inplace(enum adsp_excep_id type,
 				   enum adsp_core_id id);
-extern void adsp_get_log(enum adsp_core_id id);
-extern char *adsp_get_last_log(enum adsp_core_id id);
 extern uint32_t adsp_dump_pc(void);
 extern int adsp_get_trax_initiated(void);
 extern int adsp_get_trax_done(void);
 extern int adsp_get_trax_length(void);
-extern void adsp_dump_cfgreg(void);
 
 extern void aed_scp_exception_api(const int *log, int log_size, const int *phy,
 				   int phy_size, const char *detail,
@@ -69,12 +66,10 @@ struct TaskContextType {
 
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
-#define CRASH_MEMORY_ITCM_LENGTH  (36 * 1024)
-#define CRASH_MEMORY_DTCM_LENGTH  (32 * 1024)
-#define CRASH_MEMORY_DRAM_LENGTH  (400 * 1024)  /* 4M */
 #define CRASH_MEMORY_LENGTH (68 * 1024)  /* 36k+32k */
 #define CRASH_MEMORY_OFFSET  (0x800)
-#define CRASH_REG_SIZE  (9 * 32)
+#define CRASH_CORE_REG_SIZE  (9 * 32)
+#define CRASH_CFG_REG_SIZE   (64 * 1024)
 
 #include <linux/elf.h>
 #define ELF_NGREGS 18
@@ -150,15 +145,15 @@ struct elf32_prpsinfo {
 };
 
 /* adsp reg dump */
-struct adsp_reg_dump_list {
-	uint32_t adsp_reg_magic;
-	uint32_t ap_resource;
-	uint32_t bus_resource;
-	uint32_t cpu_sleep_status;
-	uint32_t clk_sw_sel;
-	uint32_t clk_enable;
-	uint32_t clk_high_core;
-	uint32_t adsp_reg_magic_end;
+struct adsp_coredump {
+	u32 reserved_0[67];
+	u32 pc;
+	u32 exccause;
+	u32 excvaddr;
+	u32 reserved_1[7];
+	u8 task_name[16];
+	u32 reserved_2[47];
+	u8 assert_log[512];
 };
 
 struct MemoryDump {
@@ -170,11 +165,9 @@ struct MemoryDump {
 	/* ram dump total header size (elf+nhdr+phdr
 	 * must be fixed at CRASH_MEMORY_HEADER_SIZE
 	 */
-	/* adsp sram */
-	char memory[CRASH_MEMORY_LENGTH];
-	/* adsp reg */
-	struct adsp_reg_dump_list adsp_reg_dump;
+	char memory[CRASH_MEMORY_LENGTH];    /* adsp tcm */
+	char core_reg[CRASH_CORE_REG_SIZE];  /* core reg */
+	char cfg_reg[CRASH_CFG_REG_SIZE];    /* cfg reg */
 };
-
 
 #endif

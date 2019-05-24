@@ -56,8 +56,6 @@
 
 #define ADSP_CFGREG_RSV_RW_REG0     (adspreg.cfg + 0x008C)
 #define ADSP_CFGREG_RSV_RW_REG1     (adspreg.cfg + 0x0090)
-#define ADSP_CFGREG_RSV_RW_REG2     (adspreg.cfg + 0x0094)
-#define ADSP_SEGMENT_CON            ADSP_CFGREG_RSV_RW_REG2
 
 /* Latch Debug info after WDT */
 #define ADSP_A_WDT_DEBUG_PC_REG     (adspreg.cfg + 0x0170)
@@ -88,6 +86,8 @@
 #define ADSP_A_DEBUG_PC_REG         (adspreg.cfg + 0x013C)
 #define ADSP_DBG_PEND_CNT           (adspreg.cfg + 0x015C)
 #define ADSP_SLEEP_STATUS_REG       (adspreg.cfg + 0x0158)
+#define ADSP_BUS_MON_BASE           (adspreg.cfg + 0x5000)
+
 /* adsp power state*/
 #define ADSP_A_IS_RESET             (0x00)
 #define ADSP_A_IS_ACTIVE            (0x10)
@@ -101,14 +101,12 @@
 
 #define ADSP_A_AXI_BUS_IS_IDLE      (1 << 1)
 
-/* clk reg - Liang check */
+/* clk reg */
 #define ADSP_CLK_CTRL_OFFSET        (0x1000)
 #define ADSP_CLK_CTRL_BASE          (adspreg.clkctrl)
 #define ADSP_CLK_UART_EN            (1 << 5)
 #define ADSP_CLK_DMA_EN             (1 << 4)
 #define ADSP_CLK_TIMER_EN           (1 << 3)
-#define ADSP_MCLK_DIV_REG           (adspreg.clkctrl + 0x0004)
-#define ADSP_MCLK_DIV_MASK          (0x3 << 0)
 #define ADSP_UART_CTRL              (adspreg.clkctrl + 0x0010)
 #define ADSP_UART_RST_N             (1 << 3)
 #define ADSP_UART_CLK_SEL           (1 << 1)
@@ -129,15 +127,5 @@
 #define ADSPPLL_UNLOCK_BIT          (8)
 
 #define ADSP_ADSP2SPM_VOL_LV         (adspreg.cfg + 0x0094)
-
-/* Below CG can be replaced by CCF API, defined here is only for debug */
-/* INFRA_PDN_SET3/CLR3/STA3 REG defined in clk-mt3967.c */
-#define FADSP_CK_CG_SET_BIT          (1 << 27)
-#define FADSP_CK_CG_CLR_BIT          (1 << 27)
-#define FADSP_CK_CG_STA_BIT          (1 << 27)
-
-#define ADSPPLL_CLK_SEL_BITS         (0x5 << 16)
-#define ADSPPLL_CLK_PDN_BIT          (1 << 23)       // set 1 to power down
-#define ADSPPLL_CLK_UPDATE_BIT       (1 << 11)
 
 #endif

@@ -17,6 +17,7 @@
 #include <linux/mutex.h>
 #include <mt-plat/sync_write.h>
 
+#include <linux/io.h>
 #include <linux/hrtimer.h>
 #include <linux/ktime.h>
 
@@ -61,6 +62,8 @@ void adsp_A_ipi_handler(void)
 {
 	enum adsp_ipi_id ipi_id;
 	struct ipi_msg_t *ipi_msg = NULL;
+	u8 share_buf[SHARE_BUF_SIZE - 16];
+	u32 len;
 
 	ktime_t start_time;
 	s64 stop_time;
@@ -68,13 +71,13 @@ void adsp_A_ipi_handler(void)
 	start_time = ktime_get();
 
 	ipi_id = adsp_rcv_obj[ADSP_A_ID]->id;
+	len = adsp_rcv_obj[ADSP_A_ID]->len;
 
 	if (ipi_id >= ADSP_NR_IPI)
 		pr_debug("[ADSP] A ipi handler id abnormal, id=%d", ipi_id);
 	else if (adsp_ipi_desc[ipi_id].handler) {
-		memcpy_from_adsp(adsp_recv_buff[ADSP_A_ID],
-				 (void *)adsp_rcv_obj[ADSP_A_ID]->share_buf,
-				 adsp_rcv_obj[ADSP_A_ID]->len);
+		memcpy_fromio(share_buf,
+			(void *)adsp_rcv_obj[ADSP_A_ID]->share_buf, len);
 
 		if (ipi_id == ADSP_IPI_ADSP_A_READY ||
 		    ipi_id == ADSP_IPI_LOGGER_INIT_A) {
@@ -83,27 +86,20 @@ void adsp_A_ipi_handler(void)
 			 * queue and do callback directly. (which will in isr)
 			 * Must ensure the callback can do in isr
 			 */
-			adsp_ipi_desc[ipi_id].handler(
-				ipi_id,
-				adsp_recv_buff[ADSP_A_ID],
-				adsp_rcv_obj[ADSP_A_ID]->len);
+			adsp_ipi_desc[ipi_id].handler(ipi_id, share_buf, len);
 		} else if (is_scp_ipi_queue_init(AUDIO_OPENDSP_USE_HIFI3)) {
 			scp_dispatch_ipi_hanlder_to_queue(
 				AUDIO_OPENDSP_USE_HIFI3,
-				ipi_id,
-				adsp_recv_buff[ADSP_A_ID],
-				adsp_rcv_obj[ADSP_A_ID]->len,
+				ipi_id, share_buf, len,
 				adsp_ipi_desc[ipi_id].handler);
 		} else {
-			ipi_msg = (struct ipi_msg_t *)adsp_recv_buff[ADSP_A_ID];
+			ipi_msg = (struct ipi_msg_t *)share_buf;
 			if (ipi_msg->magic == IPI_MSG_MAGIC_NUMBER)
 				DUMP_IPI_MSG("ipi queue not ready!", ipi_msg);
 			else
 				pr_info("ipi queue not ready!! opendsp_id: %u, ipi_id: %u, buf: %p, len: %u, ipi_handler: %p",
 					AUDIO_OPENDSP_USE_HIFI3,
-					ipi_id,
-					adsp_recv_buff[ADSP_A_ID],
-					adsp_rcv_obj[ADSP_A_ID]->len,
+					ipi_id, share_buf, len,
 					adsp_ipi_desc[ipi_id].handler);
 			WARN_ON(1);
 		}
@@ -205,6 +201,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 	ktime_t start_time;
 	s64     time_ipc_us;
 	static bool busy_log_flag;
+	static u8 share_buf[SHARE_BUF_SIZE - 16];
 
 	if (in_interrupt() && wait) {
 		pr_info("adsp_ipi_send: cannot use in isr");
@@ -215,6 +212,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 			  adsp_core_ids[adsp_id], id);
 		return ADSP_IPI_ERROR;
 	}
+
 	if (len > sizeof(adsp_send_obj[adsp_id]->share_buf) || buf == NULL) {
 		pr_info("adsp_ipi_send: %s buffer error",
 			adsp_core_ids[adsp_id]);
@@ -234,7 +232,7 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 	if ((readl(ADSP_SWINT_REG) & (1 << adsp_id)) > 0) {
 		if (busy_log_flag == false) {
 			busy_log_flag = true;
-			p_ipi_msg = (struct ipi_msg_t *)adsp_send_buff[adsp_id];
+			p_ipi_msg = (struct ipi_msg_t *)share_buf;
 			if (p_ipi_msg->magic == IPI_MSG_MAGIC_NUMBER)
 				DUMP_IPI_MSG("busy. ipc owner", p_ipi_msg);
 			else
@@ -250,9 +248,9 @@ enum adsp_ipi_status adsp_ipi_send_ipc(enum adsp_ipi_id id, void *buf,
 	/* get adsp ipi send owner */
 	adsp_ipi_owner[adsp_id] = id;
 
-	memcpy(adsp_send_buff[adsp_id], buf, len);
-	memcpy_to_adsp((void *)adsp_send_obj[adsp_id]->share_buf,
-		       adsp_send_buff[adsp_id], len);
+	memcpy(share_buf, buf, len);
+	memcpy_toio((void *)adsp_send_obj[adsp_id]->share_buf, buf, len);
+
 	adsp_send_obj[adsp_id]->len = len;
 	adsp_send_obj[adsp_id]->id = id;
 	dsb(SY);
