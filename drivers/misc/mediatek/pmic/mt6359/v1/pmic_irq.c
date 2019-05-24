@@ -848,7 +848,10 @@ static int list_pmic_irq(struct seq_file *s)
 
 	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
 	for (i = 0; i < INT_ENUM_MAX; i++) {
-		pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo);
+		if (pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo)) {
+			pr_notice(PMICTAG "[%s] fail intNo=%d\n", __func__, i);
+			return -1;
+		}
 		en = upmu_get_reg_value(sp_interrupts[spNo].enable +
 						0x6 * sp_conNo);
 		mask = upmu_get_reg_value(sp_interrupts[spNo].mask +
@@ -884,7 +887,10 @@ static int list_enabled_pmic_irq(struct seq_file *s)
 
 	seq_printf(s, "Num: %20s, %8s, event times\n", "INT Name", "Status");
 	for (i = 0; i < INT_ENUM_MAX; i++) {
-		pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo);
+		if (pmic_check_intNo(i, &spNo, &sp_conNo, &sp_irqNo)) {
+			pr_notice(PMICTAG "[%s] fail intNo=%d\n", __func__, i);
+			return -1;
+		}
 		en = upmu_get_reg_value(sp_interrupts[spNo].enable +
 					0x6 * sp_conNo);
 		mask = upmu_get_reg_value(sp_interrupts[spNo].mask +
