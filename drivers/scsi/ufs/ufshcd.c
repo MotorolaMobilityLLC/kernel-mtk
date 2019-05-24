@@ -385,6 +385,21 @@ static void ufshcd_print_clk_freqs(struct ufs_hba *hba)
 	}
 }
 
+static void ufshcd_print_uic_err_hist(struct ufs_hba *hba,
+		struct ufs_uic_err_reg_hist *err_hist, char *err_name)
+{
+	int i;
+
+	for (i = 0; i < UIC_ERR_REG_HIST_LENGTH; i++) {
+		int p = (i + err_hist->pos - 1) % UIC_ERR_REG_HIST_LENGTH;
+
+		if (err_hist->reg[p] == 0)
+			continue;
+		dev_info(hba->dev, "%s[%d] = 0x%x at %llu ns\n", err_name, i,
+			err_hist->reg[p], err_hist->tstamp[p]);
+	}
+}
+
 /* MTK PATCH */
 static void ufshcd_print_host_regs(struct ufs_hba *hba)
 {
@@ -414,6 +429,12 @@ static void ufshcd_print_host_regs(struct ufs_hba *hba)
 	dev_info(hba->dev,
 		"hba->outstanding_reqs = 0x%x, hba->outstanding_tasks = 0x%x",
 		(u32)hba->outstanding_reqs, (u32)hba->outstanding_tasks);
+
+	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.pa_err, "pa_err");
+	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.dl_err, "dl_err");
+	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.nl_err, "nl_err");
+	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.tl_err, "tl_err");
+	ufshcd_print_uic_err_hist(hba, &hba->ufs_stats.dme_err, "dme_err");
 
 	ufshcd_print_clk_freqs(hba);
 
@@ -4250,7 +4271,9 @@ ufshcd_transfer_rsp_status(struct ufs_hba *hba, struct ufshcd_lrb *lrbp)
 	default:
 		result |= DID_ERROR << 16;
 		dev_err(hba->dev,
-		"OCS error from controller = %x\n", ocs);
+				"OCS error from controller = %x for tag %d\n",
+				ocs, lrbp->task_tag);
+		ufshcd_print_host_regs(hba);
 		break;
 	} /* end of switch */
 
@@ -4968,6 +4991,14 @@ out:
 	pm_runtime_put_sync(hba->dev);
 }
 
+static void ufshcd_update_uic_reg_hist(struct ufs_uic_err_reg_hist *reg_hist,
+		u32 reg)
+{
+	reg_hist->reg[reg_hist->pos] = reg;
+	reg_hist->tstamp[reg_hist->pos] = sched_clock();
+	reg_hist->pos = (reg_hist->pos + 1) % UIC_ERR_REG_HIST_LENGTH;
+}
+
 /**
  * ufshcd_update_uic_error - check and set fatal UIC error flags.
  * @hba: per-adapter instance
@@ -4975,77 +5006,83 @@ out:
 static void ufshcd_update_uic_error(struct ufs_hba *hba)
 {
 	u32 reg;
-/* MTK PATCH */
+	unsigned long reg_ul; /* for test_bit */
+
+	/* PHY layer lane error */
+	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
 #ifdef CONFIG_MTK_UFS_DEBUG
-	unsigned long reg_l;
-
-	reg_l = ufshcd_readl(hba, REG_UIC_ERROR_CODE_PHY_ADAPTER_LAYER);
-
-	if (reg_l) {
+	if (reg) {
 		dev_err(hba->dev,
-			"Host UIC Error Code PHY Adpter Layer: %lx\n", reg_l);
-
-		if (test_bit(0, &reg_l))
+			"Host UIC Error Code PHY Adpter Layer: %08x\n", reg);
+		reg_ul = reg;
+		if (test_bit(0, &reg_ul))
 			dev_err(hba->dev, "PHY error on Lane 0\n");
-		if (test_bit(1, &reg_l))
+		if (test_bit(1, &reg_ul))
 			dev_err(hba->dev, "PHY error on Lane 1\n");
-		if (test_bit(2, &reg_l))
+		if (test_bit(2, &reg_ul))
 			dev_err(hba->dev, "PHY error on Lane 2\n");
-		if (test_bit(3, &reg_l))
+		if (test_bit(3, &reg_ul))
 			dev_err(hba->dev, "PHY error on Lane 3\n");
-		if (test_bit(4, &reg_l)) {
+		if (test_bit(4, &reg_ul)) {
 			dev_err(hba->dev, "Generic PHY Adapter Error.\n");
 			dev_err(hba->dev, "This should be the LINERESET indication\n");
 		}
 	}
 #endif
+	/* Ignore LINERESET indication, as this is not an error */
+	if ((reg & UIC_PHY_ADAPTER_LAYER_ERROR) &&
+		(reg & UIC_PHY_ADAPTER_LAYER_LANE_ERR_MASK)) {
+		/*
+		 * To know whether this error is fatal or not, DB timeout
+		 * must be checked but this error is handled separately.
+		 */
+		dev_dbg(hba->dev, "%s: UIC Lane error reported\n", __func__);
+		ufshcd_update_uic_reg_hist(&hba->ufs_stats.pa_err, reg);
+	}
 
 	/* PA_INIT_ERROR is fatal and needs UIC reset */
 	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_DATA_LINK_LAYER);
-
-/* MTK PATCH */
+	if (reg)
+		ufshcd_update_uic_reg_hist(&hba->ufs_stats.dl_err, reg);
 #ifdef CONFIG_MTK_UFS_DEBUG
-	reg_l = reg;
-
-	if (reg_l) {
+	if (reg) {
 		/* MTK PATCH: dump ufs debug Info like XO_UFS/VEMC/VUFS18 */
 		ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
 		dev_err(hba->dev,
 			"Host UIC Error Code Data Link Layer: %08x\n", reg);
-
-		if (test_bit(0, &reg_l))
+		reg_ul = reg;
+		if (test_bit(0, &reg_ul))
 			dev_err(hba->dev, "NAC_RECEIVED\n");
-		if (test_bit(1, &reg_l))
+		if (test_bit(1, &reg_ul))
 			dev_err(hba->dev, "TCx_REPLAY_TIMER_EXPIRED\n");
-		if (test_bit(2, &reg_l))
+		if (test_bit(2, &reg_ul))
 			dev_err(hba->dev, "AFCx_REQUEST_TIMER_EXPIRED\n");
-		if (test_bit(3, &reg_l))
+		if (test_bit(3, &reg_ul))
 			dev_err(hba->dev, "FCx_PROTECTION_TIMER_EXPIRED\n");
-		if (test_bit(4, &reg_l))
+		if (test_bit(4, &reg_ul))
 			dev_err(hba->dev, "CRC_ERROR\n");
-		if (test_bit(5, &reg_l))
+		if (test_bit(5, &reg_ul))
 			dev_err(hba->dev, "RX_BUFFER_OVERFLOW\n");
-		if (test_bit(6, &reg_l))
+		if (test_bit(6, &reg_ul))
 			dev_err(hba->dev, "MAX_FRAME_LENGTH_EXCEEDEDn");
-		if (test_bit(7, &reg_l))
+		if (test_bit(7, &reg_ul))
 			dev_err(hba->dev, "WRONG_SEQUENCE_NUMBER\n");
-		if (test_bit(8, &reg_l))
+		if (test_bit(8, &reg_ul))
 			dev_err(hba->dev, "AFC_FRAME_SYNTAX_ERROR\n");
-		if (test_bit(9, &reg_l))
+		if (test_bit(9, &reg_ul))
 			dev_err(hba->dev, "NAC_FRAME_SYNTAX_ERROR\n");
-		if (test_bit(10, &reg_l))
+		if (test_bit(10, &reg_ul))
 			dev_err(hba->dev, "EOF_SYNTAX_ERROR\n");
-		if (test_bit(11, &reg_l))
+		if (test_bit(11, &reg_ul))
 			dev_err(hba->dev, "FRAME_SYNTAX_ERROR\n");
-		if (test_bit(12, &reg_l))
+		if (test_bit(12, &reg_ul))
 			dev_err(hba->dev, "BAD_CTRL_SYMBOL_TYPE\n");
-		if (test_bit(13, &reg_l))
+		if (test_bit(13, &reg_ul))
 			dev_err(hba->dev, "PA_INIT_ERROR (FATAL ERROR)\n");
-		if (test_bit(14, &reg_l))
+		if (test_bit(14, &reg_ul))
 			dev_err(hba->dev, "PA_ERROR_IND_RECEIVED\n");
 	}
 #endif
-
 	if (reg & UIC_DATA_LINK_LAYER_ERROR_PA_INIT)
 		hba->uic_error |= UFSHCD_UIC_DL_PA_INIT_ERROR;
 	else if (hba->dev_quirks &
@@ -5060,8 +5097,8 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 	/* UIC NL/TL/DME errors needs software retry */
 	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_NETWORK_LAYER);
 	if (reg) {
+		ufshcd_update_uic_reg_hist(&hba->ufs_stats.nl_err, reg);
 		hba->uic_error |= UFSHCD_UIC_NL_ERROR;
-/* MTK PATCH */
 #ifdef CONFIG_MTK_UFS_DEBUG
 		dev_err(hba->dev,
 			"Host UIC Error Code Network Layer: %08x\n", reg);
@@ -5070,8 +5107,8 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 
 	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_TRANSPORT_LAYER);
 	if (reg) {
+		ufshcd_update_uic_reg_hist(&hba->ufs_stats.tl_err, reg);
 		hba->uic_error |= UFSHCD_UIC_TL_ERROR;
-/* MTK PATCH */
 #ifdef CONFIG_MTK_UFS_DEBUG
 		dev_err(hba->dev,
 			"Host UIC Error Code Transport Layer: %08x\n", reg);
@@ -5080,8 +5117,8 @@ static void ufshcd_update_uic_error(struct ufs_hba *hba)
 
 	reg = ufshcd_readl(hba, REG_UIC_ERROR_CODE_DME);
 	if (reg) {
+		ufshcd_update_uic_reg_hist(&hba->ufs_stats.dme_err, reg);
 		hba->uic_error |= UFSHCD_UIC_DME_ERROR;
-/* MTK PATCH */
 #ifdef CONFIG_MTK_UFS_DEBUG
 		dev_err(hba->dev,
 			"Host UIC Error Code: %08x\n", reg);
@@ -5520,8 +5557,8 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 				UFS_QUERY_TASK, &resp);
 		if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_SUCCEEDED) {
 			/* cmd pending in the device */
-			/* MTK PATCH */
-			dev_info(hba->dev, "%s: cmd pending in the device. tag = %d",
+			dev_info(hba->dev,
+				"%s: cmd pending in the device. tag = %d\n",
 				__func__, tag);
 			break;
 		} else if (!err && resp == UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
@@ -5529,8 +5566,8 @@ static int ufshcd_abort(struct scsi_cmnd *cmd)
 			 * cmd not pending in the device, check if it is
 			 * in transition.
 			 */
-			/* MTK PATCH */
-			dev_info(hba->dev, "%s: cmd at tag %d not pending in the device.",
+			dev_info(hba->dev,
+				"%s: cmd at tag %d not pending in the device.\n",
 				__func__, tag);
 			reg = ufshcd_readl(hba, REG_UTP_TRANSFER_REQ_DOOR_BELL);
 			if (reg & (1 << tag)) {
@@ -6547,6 +6584,17 @@ static void ufshcd_tune_unipro_params(struct ufs_hba *hba)
 	ufshcd_vops_apply_dev_quirks(hba);
 }
 
+static void ufshcd_clear_dbg_ufs_stats(struct ufs_hba *hba)
+{
+	int err_reg_hist_size = sizeof(struct ufs_uic_err_reg_hist);
+
+	memset(&hba->ufs_stats.pa_err, 0, err_reg_hist_size);
+	memset(&hba->ufs_stats.dl_err, 0, err_reg_hist_size);
+	memset(&hba->ufs_stats.nl_err, 0, err_reg_hist_size);
+	memset(&hba->ufs_stats.tl_err, 0, err_reg_hist_size);
+	memset(&hba->ufs_stats.dme_err, 0, err_reg_hist_size);
+}
+
 static void ufshcd_init_desc_sizes(struct ufs_hba *hba)
 {
 	int err;
@@ -6612,6 +6660,9 @@ static int ufshcd_probe_hba(struct ufs_hba *hba)
 	/* set the default level for urgent bkops */
 	hba->urgent_bkops_lvl = BKOPS_STATUS_PERF_IMPACT;
 	hba->is_urgent_bkops_lvl_checked = false;
+
+	/* Debug counters initialization */
+	ufshcd_clear_dbg_ufs_stats(hba);
 
 	/* UniPro link is active now */
 	ufshcd_set_link_active(hba);
