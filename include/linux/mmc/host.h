@@ -83,6 +83,19 @@ struct mmc_ios {
 	bool enhanced_strobe;			/* hs400es selection */
 };
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+struct mmc_cmdq_host_ops {
+	int (*init)(struct mmc_host *host);
+	int (*enable)(struct mmc_host *host);
+	void (*disable)(struct mmc_host *host, bool soft);
+	int (*request)(struct mmc_host *host, struct mmc_request *mrq);
+	void (*post_req)(struct mmc_host *host, int tag, int err);
+	int (*halt)(struct mmc_host *host, bool halt);
+	void (*reset)(struct mmc_host *host, bool soft);
+	void (*dumpstate)(struct mmc_host *host, bool more);
+};
+#endif
+
 struct mmc_host_ops {
 	/*
 	 * It is optional for the host to implement pre_req and post_req in
@@ -167,6 +180,35 @@ struct mmc_host_ops {
 struct mmc_card;
 struct device;
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+struct mmc_cmdq_req {
+	unsigned int cmd_flags;
+	u32 blk_addr;
+	/* active mmc request */
+	struct mmc_request	mrq;
+	struct mmc_data		data;
+	struct mmc_command	cmd;
+#define DCMD		(1 << 0)
+#define QBR		(1 << 1)
+#define DIR		(1 << 2)
+#define PRIO		(1 << 3)
+#define REL_WR		(1 << 4)
+#define DAT_TAG	(1 << 5)
+#define FORCED_PRG	(1 << 6)
+	unsigned int		cmdq_req_flags;
+
+	unsigned int		resp_idx;
+	unsigned int		resp_arg;
+	unsigned int		dev_pend_tasks;
+	bool			resp_err;
+	bool			skip_err_handling;
+	bool			skip_dump; /* for skip dump info */
+	bool			skip_reset; /* for skip autok */
+	int			tag; /* used for command queuing */
+	u8			ctx_id;
+};
+#endif
+
 struct mmc_async_req {
 	/* active mmc request */
 	struct mmc_request	*mrq;
@@ -179,19 +221,6 @@ struct mmc_async_req {
 	 * Returns 0 if success otherwise non zero.
 	 */
 	int (*err_check) (struct mmc_card *, struct mmc_async_req *);
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
-#define MMC_QUEUE_BEFORE_ENQ			(0)	/* mrq is entered in driver */
-#define MMC_QUEUE_ENQ				(1)	/* mrq is enqueued in device */
-#define MMC_QUEUE_BEFORE_QRDY			(2)	/* mrq is 44/45 issue & wait for qrdy */
-#define MMC_QUEUE_BEFORE_TRAN			(3)	/* mrq is checking qrdy & ready to transfer */
-#define MMC_QUEUE_TRAN				(4)	/* mrq is transfer */
-#define MMC_QUEUE_BUSY				(5)	/* mrq is transfer done & cheking busy in case of write */
-#define MMC_QUEUE_BEFORE_POST			(7)	/* mrq is terminated transfer
-							 * including busy check & ready to post process
-							 */
-	unsigned long		state;
-	unsigned int		prio;
-#endif
 };
 
 /**
@@ -209,6 +238,35 @@ struct mmc_slot {
 	int cd_irq;
 	void *handler_priv;
 };
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+/**
+ * mmc_cmdq_context_info - describes the contexts of cmdq
+ * @active_reqs		requests being processed
+ * @data_active_reqs	data requests being processed
+ * @curr_state		state of cmdq engine
+ * @cmdq_ctx_lock	acquire this before accessing this structure
+ * @queue_empty_wq	workqueue for waiting for all
+ *			the outstanding requests to be completed
+ * @wait		waiting for all conditions described in
+ *			mmc_cmdq_ready_wait to be satisified before
+ *			issuing the new request to LLD.
+ */
+struct mmc_cmdq_context_info {
+	unsigned long	active_reqs; /* in-flight requests */
+	unsigned long	data_active_reqs; /* in-flight data requests */
+	unsigned long	curr_state;
+#define	CMDQ_STATE_ERR 0
+#define	CMDQ_STATE_DCMD_ACTIVE 1
+#define	CMDQ_STATE_HALT 2
+#define	CMDQ_STATE_CQ_DISABLE 3
+#define	CMDQ_STATE_REQ_TIMED_OUT 4
+#define	CMDQ_STATE_FETCH_QUEUE 5
+	wait_queue_head_t	queue_empty_wq;
+	wait_queue_head_t	wait;
+	int active_small_sector_read_reqs;
+};
+#endif
 
 /**
  * mmc_context_info - synchronization details for mmc context
@@ -335,6 +393,8 @@ struct mmc_host {
 #define MMC_CAP2_HS400_ES	(1 << 20)	/* Host supports enhanced strobe */
 #define MMC_CAP2_NO_SD		(1 << 21)	/* Do not send SD commands during initialization */
 #define MMC_CAP2_NO_MMC		(1 << 22)	/* Do not send (e)MMC commands during initialization */
+#define MMC_CAP2_CQE		(1 << 23)	/* Command queue engine */
+#define MMC_CAP2_CQE_DCMD	(1 << 24)	/* Support direct cmd */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
@@ -421,7 +481,6 @@ struct mmc_host {
 	struct list_head	cmd_que;
 	struct list_head	dat_que;
 
-	unsigned long		state;
 	wait_queue_head_t	cmp_que;
 	wait_queue_head_t	cmdq_que;
 	struct mmc_request	*volatile done_mrq;
@@ -444,15 +503,11 @@ struct mmc_host {
 	atomic_t		cq_rdy_cnt;
 	unsigned long	task_id_index;
 	int				cur_rw_task;
+#define CQ_TASK_IDLE 99
 
 	volatile int		is_data_dma;
 	atomic_t		cq_tuning_now;
-#ifdef CONFIG_MMC_FFU
-	atomic_t		stop_queue;
-#endif
-	unsigned int	data_mrq_queued[32];
-	unsigned int	cmdq_support_changed;
-	int			align_size;
+	unsigned int	data_mrq_queued[EMMC_MAX_QUEUE_DEPTH];
 #endif
 
 #ifdef CONFIG_FAIL_MMC_REQUEST
@@ -481,6 +536,22 @@ struct mmc_host {
 	struct io_latency_state io_lat_write;
 #endif
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	const struct mmc_cmdq_host_ops *cmdq_ops;
+	struct mmc_cmdq_context_info	cmdq_ctx;
+	int num_cq_slots;
+	int dcmd_cq_slot;
+	bool			cmdq_thist_enabled;
+	/*
+	 * several cmdq supporting host controllers are extensions
+	 * of legacy controllers. This variable can be used to store
+	 * a reference to the cmdq extension of the existing host
+	 * controller.
+	 */
+	void *cmdq_private;
+	struct mmc_request	*err_mrq;
+#endif
+
 	unsigned long		private[0] ____cacheline_aligned;
 };
 
@@ -503,6 +574,13 @@ static inline void *mmc_priv(struct mmc_host *host)
 	return (void *)host->private;
 }
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+static inline void *mmc_cmdq_private(struct mmc_host *host)
+{
+	return host->cmdq_private;
+}
+#endif
+
 #define mmc_host_is_spi(host)	((host)->caps & MMC_CAP_SPI)
 
 #define mmc_dev(x)	((x)->parent)
@@ -521,7 +599,6 @@ void mmc_handle_queued_request(struct mmc_host *host);
 int mmc_blk_end_queued_req(struct mmc_host *host,
 	struct mmc_async_req *areq, int index, int status);
 /* add for emmc reset when error happen */
-extern int current_mmc_part_type;
 extern int emmc_resetting_when_cmdq;
 #endif
 
@@ -600,6 +677,38 @@ static inline int mmc_host_packed_wr(struct mmc_host *host)
 {
 	return host->caps2 & MMC_CAP2_PACKED_WR;
 }
+
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+static inline void mmc_host_set_halt(struct mmc_host *host)
+{
+	set_bit(CMDQ_STATE_HALT, &host->cmdq_ctx.curr_state);
+}
+
+static inline void mmc_host_clr_halt(struct mmc_host *host)
+{
+	clear_bit(CMDQ_STATE_HALT, &host->cmdq_ctx.curr_state);
+}
+
+static inline int mmc_host_halt(struct mmc_host *host)
+{
+	return test_bit(CMDQ_STATE_HALT, &host->cmdq_ctx.curr_state);
+}
+
+static inline void mmc_host_set_cq_disable(struct mmc_host *host)
+{
+	set_bit(CMDQ_STATE_CQ_DISABLE, &host->cmdq_ctx.curr_state);
+}
+
+static inline void mmc_host_clr_cq_disable(struct mmc_host *host)
+{
+	clear_bit(CMDQ_STATE_CQ_DISABLE, &host->cmdq_ctx.curr_state);
+}
+
+static inline int mmc_host_cq_disable(struct mmc_host *host)
+{
+	return test_bit(CMDQ_STATE_CQ_DISABLE, &host->cmdq_ctx.curr_state);
+}
+#endif
 
 static inline int mmc_card_hs(struct mmc_card *card)
 {

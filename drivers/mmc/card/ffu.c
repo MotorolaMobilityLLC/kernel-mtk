@@ -245,6 +245,10 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 		goto exit;
 	}
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (card)
+		(void)mmc_blk_cmdq_switch(card, 0);
+#endif
 	/* read ext_csd */
 	while (retry--) {
 		err = mmc_get_ext_csd(card, &ext_csd_new);
@@ -254,6 +258,10 @@ int mmc_ffu_install(struct mmc_card *card, u8 *ext_csd)
 		else
 			break;
 	}
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	if (card)
+		(void)mmc_blk_cmdq_switch(card, 1);
+#endif
 	if (err) {
 		pr_notice("FFU: %s: sending ext_csd error %d\n",
 			mmc_hostname(card->host), err);

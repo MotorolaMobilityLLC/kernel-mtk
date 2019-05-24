@@ -313,7 +313,15 @@ static int mmc_ext_csd_open(struct inode *inode, struct file *filp)
 		return -ENOMEM;
 
 	mmc_get_card(card);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	/* disable cqhci before xf */
+	(void)mmc_blk_cmdq_switch(card, 0);
+#endif
 	err = mmc_get_ext_csd(card, &ext_csd);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	/* enable cqhci after xf */
+	(void)mmc_blk_cmdq_switch(card, 1);
+#endif
 	mmc_put_card(card);
 	if (err)
 		goto out_free;

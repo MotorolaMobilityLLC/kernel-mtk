@@ -57,6 +57,9 @@ struct mmc_queue_req {
 #ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
 	atomic_t		index;
 #endif
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct mmc_cmdq_req	cmdq_req;
+#endif
 };
 
 struct mmc_queue {
@@ -83,17 +86,36 @@ struct mmc_queue {
 	atomic_long_t cache_used;
 	unsigned long cache_jiffies;
 #endif
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+	struct mmc_queue_req	*mqrq_cmdq;
+	struct work_struct	cmdq_err_work;
+	struct completion	cmdq_pending_req_done;
+	struct completion	cmdq_shutdown_complete;
+	struct request		*cmdq_req_peeked;
+	int (*err_check_fn)(struct mmc_card *card, struct mmc_async_req *areq);
+	void (*cmdq_shutdown)(struct mmc_queue *mq);
+	int (*issue_fn)(struct mmc_queue *mq, struct request *req);
+	int (*cmdq_issue_fn)(struct mmc_queue *mq,
+			     struct request *req);
+	void (*cmdq_complete_fn)(struct request *req);
+	void (*cmdq_error_fn)(struct mmc_queue *mq);
+	enum blk_eh_timer_return (*cmdq_req_timed_out)(struct request *req);
+#endif
 };
 
-#ifdef CONFIG_MTK_EMMC_CQ_SUPPORT
+#if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
 #define IS_RT_CLASS_REQ(x)	\
 	(IOPRIO_PRIO_CLASS(req_get_ioprio(x)) == IOPRIO_CLASS_RT)
 #endif
 
 extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
-			  const char *);
+			  const char *, int);
 extern void mmc_cleanup_queue(struct mmc_queue *);
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+extern int mmc_queue_suspend(struct mmc_queue *mq, int wait);
+#else
 extern void mmc_queue_suspend(struct mmc_queue *);
+#endif
 extern void mmc_queue_resume(struct mmc_queue *);
 
 extern unsigned int mmc_queue_map_sg(struct mmc_queue *,
@@ -109,4 +131,8 @@ extern void mmc_wait_cmdq_empty(struct mmc_host *host);
 extern bool mmc_blk_part_cmdq_en(struct mmc_queue *mq);
 extern int mmc_access_rpmb(struct mmc_queue *);
 
+#ifdef CONFIG_MTK_EMMC_HW_CQ
+extern int mmc_cmdq_init(struct mmc_queue *mq, struct mmc_card *card);
+extern void mmc_cmdq_clean(struct mmc_queue *mq, struct mmc_card *card);
+#endif
 #endif

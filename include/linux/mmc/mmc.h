@@ -67,6 +67,7 @@
 #define MMC_SET_WRITE_PROT       28   /* ac   [31:0] data addr   R1b */
 #define MMC_CLR_WRITE_PROT       29   /* ac   [31:0] data addr   R1b */
 #define MMC_SEND_WRITE_PROT      30   /* adtc [31:0] wpdata addr R1  */
+#define MMC_SEND_WRITE_PROT_TYPE 31   /* adtc [31:0] wpdata addr R1  */
 
   /* class 5 */
 #define MMC_ERASE_GROUP_START    35   /* ac   [31:0] data addr   R1  */
@@ -89,6 +90,8 @@
 #define MMC_READ_REQUESTED_QUEUE 46   /* adtc                    R1  */
 #define MMC_WRITE_REQUESTED_QUEUE 47  /* adtc                    R1  */
 #define MMC_CMDQ_TASK_MGMT       48   /* ac                      R1b */
+#define DISCARD_QUEUE		0x1
+#define DISCARD_TASK		0x2
 
 static inline bool mmc_op_multi(u32 opcode)
 {
@@ -303,6 +306,7 @@ struct _mmc_csd {
 #define EXT_CSD_RPMB_MULT		168	/* RO */
 #define EXT_CSD_FW_CONFIG		169	/* R/W */
 #define EXT_CSD_BOOT_WP			173	/* R/W */
+#define EXT_CSD_BOOT_WP_STATUS		174	/* RO */
 #define EXT_CSD_ERASE_GROUP_DEF		175	/* R/W */
 #define EXT_CSD_PART_CONFIG		179	/* R/W */
 #define EXT_CSD_ERASED_MEM_CONT		181	/* RO */
@@ -458,6 +462,13 @@ struct _mmc_csd {
  */
 #define EXT_CSD_MANUAL_BKOPS_MASK	0x01
 #define EXT_CSD_AUTO_BKOPS_MASK		0x02
+
+/*
+ * Command Queue
+ */
+#define EXT_CSD_CMDQ_MODE_ENABLED	BIT(0)
+#define EXT_CSD_CMDQ_DEPTH_MASK		GENMASK(4, 0)
+#define EXT_CSD_CMDQ_SUPPORTED		BIT(0)
 
 /*
  * MMC_SWITCH access modes
