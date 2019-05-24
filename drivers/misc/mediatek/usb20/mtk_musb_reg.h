@@ -468,6 +468,11 @@ static inline u16 musb_read_hwvers(void __iomem *mbase)
 static inline void musb_write_rxfunaddr(void __iomem *mbase,
 						u8 epnum, u8 qh_addr_reg)
 {
+	u16 new_qh_addr_reg = (qh_addr_reg | 0x200);
+
+	DBG(4, "%s ep%d 0x%X 0x%X\n", __func__, epnum, qh_addr_reg,
+							new_qh_addr_reg);
+
 	musb_writew(mbase, MUSB_RXFUNCADDR + 8 * epnum, qh_addr_reg);
 }
 
