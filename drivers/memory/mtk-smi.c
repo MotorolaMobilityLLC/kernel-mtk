@@ -175,8 +175,9 @@ static int mtk_smi_clks_get(struct mtk_smi_dev *smi)
 	if (nr_clks <= 0)
 		return 0;
 	smi->nr_clks = nr_clks;
-#if IS_ENABLED(CONFIG_MACH_MT6758) || IS_ENABLED(CONFIG_MACH_MT6765)
-	/* workaround for mmdvfs at mt6758/mt6765 */
+#if IS_ENABLED(CONFIG_MACH_MT6758) || IS_ENABLED(CONFIG_MACH_MT6763) \
+	|| IS_ENABLED(CONFIG_MACH_MT6765)
+	/* workaround for mmdvfs at mt6758/mt6763/mt6765 */
 	if (smi->index == common->index)
 		smi->nr_clks = 4;
 #endif

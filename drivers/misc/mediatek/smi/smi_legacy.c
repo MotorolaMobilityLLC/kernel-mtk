@@ -36,7 +36,7 @@
 #include "smi_config_default.h"
 #elif IS_ENABLED(CONFIG_MACH_MT6763)
 #include <clk-mt6763-pg.h>
-#include "smi_config_default.h"
+#include "smi_config_mt6763.h"
 #elif IS_ENABLED(CONFIG_MACH_MT6765)
 #include <clk-mt6765-pg.h>
 #include "smi_config_mt6765.h"
@@ -407,6 +407,19 @@ static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 		return 0x80; /* larb 7 */
 	case SYS_VDE:
 		return 0x10; /* larb 4 */
+	default:
+		return 0x0;
+	}
+#elif IS_ENABLED(CONFIG_MACH_MT6763)
+	switch (sys) {
+	case SYS_DIS:
+		return 0x1; /* larb 0 */
+	case SYS_CAM:
+		return 0x4; /* larb 2 */
+	case SYS_ISP:
+		return 0x2; /* larb 1 */
+	case SYS_VEN:
+		return 0x8; /* larb 3 */
 	default:
 		return 0x0;
 	}

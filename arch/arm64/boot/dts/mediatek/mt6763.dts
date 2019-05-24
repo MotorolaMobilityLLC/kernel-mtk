@@ -2265,11 +2265,12 @@
 	};
 
 	smi_larb0: smi_larb0@14017000 {
-		compatible = "mediatek,smi_larb0";
+		compatible = "mediatek,smi_larb0", "mediatek,smi_larb";
 		reg = <0 0x14017000 0 0x1000>;
 		interrupts = <GIC_SPI 229 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&scpsys SCP_SYS_DIS>, <&mmsys_config MMSYS_SMI_LARB0>;
 		clock-names = "mtcmos-mm", "mm-larb0";
+		cell-index = <0>;
 	};
 
 	smi_common@14019000 {
@@ -2287,6 +2288,7 @@
 			"smi-common-gals1","smi-common",
 			"MMDVFS_CLK_TOP_MMPLL_CK", "MMDVFS_CLK_MUX_TOP_CAM_SEL",
 			"mmdvfs_clk_top_mmpll_ck", "mmdvfs_clk_top_tvdpll_ck";
+		mmsys_config = <&mmsys_config>;
 	};
 
 	disp_rsz@1401a000 {
@@ -2408,13 +2410,14 @@
 	};
 
 	smi_larb3: smi_larb3@17010000 {
-		compatible = "mediatek,smi_larb3";
+		compatible = "mediatek,smi_larb3", "mediatek,smi_larb";
 		reg = <0 0x17010000 0 0x1000>;
 		interrupts = <GIC_SPI 231 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&scpsys SCP_SYS_VEN>,
 			<&venc_gcon VENC_GCON_LARB>,
 			<&venc_gcon VENC_GCON_VENC>;
 		clock-names = "mtcmos-ven", "venc-larb", "venc-venc";
+		cell-index = <3>;
 	};
 
 	venc: venc@17020000 {
@@ -2490,11 +2493,12 @@
 	};
 
 	smi_larb1: smi_larb1@15021000 {
-		compatible = "mediatek,smi_larb1";
+		compatible = "mediatek,smi_larb1", "mediatek,smi_larb";
 		reg = <0 0x15021000 0 0x1000>;
 		interrupts = <GIC_SPI 250 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&scpsys SCP_SYS_ISP>, <&imgsys IMG_LARB5>;
 		clock-names = "mtcmos-isp", "img-larb1";
+		cell-index = <1>;
 	};
 
 	dip1@15022000 {
@@ -2568,13 +2572,14 @@
 	};
 
 	smi_larb2: smi_larb2@1a001000 {
-		compatible = "mediatek,smi_larb2";
+		compatible = "mediatek,smi_larb2", "mediatek,smi_larb";
 		reg = <0 0x1a001000 0 0x1000>;
 		interrupts = <GIC_SPI 246 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&scpsys SCP_SYS_CAM>,
 			<&mmsys_config MMSYS_GALS_CAM2MM>,
 			<&camsys CAMSYS_LARB2_CGPDN>;
 		clock-names = "mtcmos-cam", "gals-cam2mm", "cam-larb2";
+		cell-index = <2>;
 	};
 
 	cam1@1a003000 {
