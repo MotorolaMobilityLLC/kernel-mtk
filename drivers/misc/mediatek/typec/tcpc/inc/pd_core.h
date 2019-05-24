@@ -1035,6 +1035,7 @@ struct pd_port {
 	struct notifier_block fg_bat_nb;
 #endif /* CONFIG_RECV_BAT_ABSENT_NOTIFY */
 
+	uint8_t cap_miss_match; /* For src_cap miss match */
 };
 
 static inline struct dp_data *pd_get_dp_data(struct pd_port *pd_port)
