@@ -263,6 +263,7 @@ int mt6359_set_codec_ops(struct snd_soc_component *cmpnt,
 	priv->ops.enable_dc_compensation = ops->enable_dc_compensation;
 	priv->ops.set_lch_dc_compensation = ops->set_lch_dc_compensation;
 	priv->ops.set_rch_dc_compensation = ops->set_rch_dc_compensation;
+	priv->ops.adda_dl_gain_control = ops->adda_dl_gain_control;
 	return 0;
 }
 
@@ -4570,6 +4571,14 @@ static int detect_impedance(struct mt6359_priv *priv)
 	/* Resistance Threshold of phase 1 and phase 0 */
 	int resistance_2nd_threshold = 1000;
 
+	if (priv->ops.adda_dl_gain_control) {
+		priv->ops.adda_dl_gain_control(true);
+	} else {
+		dev_warn(priv->dev, "%s(), adda_dl_gain_control ops not ready\n",
+			 __func__);
+		return 0;
+	}
+
 	if (priv->ops.enable_dc_compensation &&
 	    priv->ops.set_lch_dc_compensation &&
 	    priv->ops.set_rch_dc_compensation) {
@@ -4716,6 +4725,7 @@ static int detect_impedance(struct mt6359_priv *priv)
 	priv->ops.set_lch_dc_compensation(0);
 	priv->ops.set_rch_dc_compensation(0);
 	priv->ops.enable_dc_compensation(false);
+	priv->ops.adda_dl_gain_control(false);
 
 	set_trim_buf_in_mux(priv, TRIM_BUF_MUX_GROUND);
 	enable_trim_buf(priv, false);
