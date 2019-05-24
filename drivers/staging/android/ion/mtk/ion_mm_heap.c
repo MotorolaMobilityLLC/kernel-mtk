@@ -135,7 +135,7 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 	page = ion_page_pool_alloc(pool);
 
 	if (!page) {
-		IONDBG("[ion_dbg] alloc_pages order=%lu cache=%d\n",
+		IONMSG("[ion_dbg] alloc_pages order=%lu cache=%d\n",
 		       order, cached);
 		alloc_large_fail_ts = sched_clock();
 		return NULL;
