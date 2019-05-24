@@ -132,6 +132,7 @@ enum VAL_RESULT_T eVideoWaitEvent(struct VAL_EVENT_T *a_prParam,
 	 * timeout = %ld\n",
 	 * a_prParam->u4TimeoutMs,timeout_jiff);
 	 */
+	timeout_jiff = (timeout_jiff == 0) ? 1 : timeout_jiff;
 	i4Ret = wait_event_interruptible_timeout(
 	    *pWaitQueue,
 	    *((unsigned char *)
