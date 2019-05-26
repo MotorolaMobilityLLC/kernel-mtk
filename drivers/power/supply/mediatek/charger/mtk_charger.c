@@ -2537,12 +2537,6 @@ void mmi_init(struct charger_manager *info)
 
 	info->mmi.factory_mode = !strcmp(atm_mode, "enable");
 
-	if (info->mmi.factory_mode) {
-		/* Disable charging when enter ATM mode(factory mode) */
-		charging_enable_flag = 0;
-		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
-	}
-
 	info->mmi.is_factory_image = false;
 	info->mmi.charging_limit_modes = CHARGING_LIMIT_UNKNOWN;
 
@@ -5004,6 +4998,11 @@ static int mtk_charger_probe(struct platform_device *pdev)
 			info->chg1_consumer, MAIN_CHARGER, true);
 
 	info->init_done = true;
+	if (info->mmi.factory_mode) {
+		/* Disable charging when enter ATM mode(factory mode) */
+		charging_enable_flag = 0;
+		mtk_charger_tcmd_set_usb_current((void *)info, 2000);
+	}
 	_wake_up_charger(info);
 
 	return 0;
