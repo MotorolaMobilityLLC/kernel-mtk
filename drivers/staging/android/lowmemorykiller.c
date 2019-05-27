@@ -378,7 +378,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		}
 #endif
 		spin_unlock(&lowmem_shrink_lock);
-		return 0;
+		return SHRINK_STOP;
 	}
 
 	selected_oom_score_adj = min_score_adj;
@@ -647,7 +647,7 @@ log_again:
 		mtklmk_uevent(min_score_adj, minfree);
 #endif
 
-	return rem;
+	return (rem != 0) ? rem : SHRINK_STOP;
 
 #undef LOWMEM_P_STATE_D
 #undef LOWMEM_P_STATE_R
