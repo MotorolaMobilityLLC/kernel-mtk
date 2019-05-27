@@ -144,7 +144,7 @@ static imgsensor_info_struct imgsensor_info = {
 	.hs_video_delay_frame = 3,	//enter high speed video  delay frame num
 	.slim_video_delay_frame = 3,//enter slim video delay frame num
 
-	.isp_driving_current = ISP_DRIVING_6MA, //mclk driving current
+	.isp_driving_current = ISP_DRIVING_4MA, //mclk driving current
 	.sensor_interface_type = SENSOR_INTERFACE_TYPE_MIPI,//sensor_interface_type
 	.mipi_sensor_type = MIPI_OPHY_NCSI2, //0,MIPI_OPHY_NCSI2;  1,MIPI_OPHY_CSI2
 	.mipi_settle_delay_mode = 1,//0,MIPI_SETTLEDELAY_AUTO; 1,MIPI_SETTLEDELAY_MANNUAL
