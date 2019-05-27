@@ -547,6 +547,7 @@ ext4_read_block_bitmap(struct super_block *sb, ext4_group_t block_group)
 
 #ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
 #define GLOBAL_SHELL_UID KUIDT_INIT(2000)
+#define GLOBAL_MEDIA_UID KUIDT_INIT(1023)
 #define GLOBAL_NOBODY_UID KUIDT_INIT(9999)
 #endif
 
@@ -622,9 +623,6 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	s64 free_clusters, dirty_clusters, rsv, resv_clusters;
 	struct percpu_counter *fcc = &sbi->s_freeclusters_counter;
 	struct percpu_counter *dcc = &sbi->s_dirtyclusters_counter;
-#ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
-    bool disable_reserved_storage = 0;
-#endif
 	free_clusters  = percpu_counter_read_positive(fcc);
 	dirty_clusters = percpu_counter_read_positive(dcc);
 	resv_clusters = atomic64_read(&sbi->s_resv_clusters);
@@ -650,8 +648,11 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 	/* Hm, nope.  Are (enough) root reserved clusters available? */
 #ifdef JOURNEY_FEATURE_USE_RESERVED_DISK
     if(uid_gte(GLOBAL_NOBODY_UID, current_fsuid())) {
-        if(uid_eq(sbi->s_resuid, GLOBAL_SHELL_UID)) {
+        if(uid_eq(current_fsuid(), GLOBAL_SHELL_UID)) {
             // shell unable use dd to fill the reserved storage.
+            //printk("current_fsuid() %d request free_clusters %d resv_clusters %d\n",__kuid_val(current_fsuid()),free_clusters,resv_clusters);
+        } else if(uid_eq(current_fsuid(), GLOBAL_MEDIA_UID)) {
+            // media unable use the reserved storage.
         } else {
             // fstabe tell use which uid should reserved.
             flags |= EXT4_MB_USE_ROOT_BLOCKS;
@@ -676,10 +677,9 @@ static int ext4_has_free_clusters(struct ext4_sb_info *sbi,
 #ifdef JOURNEY_FEATURE_LOG_AEE_NO_RESERVED
         {
             //this will only run in very low storage.
-            disable_reserved_storage = if_current_disable_reserved_storage();
-
-            if(!disable_reserved_storage)
+            if(!if_current_disable_reserved_storage()) {
                 return 1;
+            }
         }
 #else
 			return 1;
