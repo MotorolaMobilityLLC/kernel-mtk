@@ -125,8 +125,6 @@ uint32_t core_config_read_write_onebyte(uint32_t addr)
 	if (ret < 0)
 		goto out;
 
-	mdelay(1);
-
 	ret = core_read(core_config->slave_i2c_addr, szOutBuf, 1);
 	if (ret < 0)
 		goto out;
@@ -155,8 +153,6 @@ uint32_t core_config_ice_mode_read(uint32_t addr)
 	ret = core_write(core_config->slave_i2c_addr, szOutBuf, 4);
 	if (ret < 0)
 		goto out;
-
-	mdelay(10);
 
 	ret = core_read(core_config->slave_i2c_addr, szOutBuf, 4);
 	if (ret < 0)
@@ -746,6 +742,7 @@ int core_config_set_watch_dog(bool enable)
 	}
 
 	while (timeout > 0) {
+		mdelay(1);
 		ret = core_config_ice_mode_read(0x51018);
 		ipio_debug(DEBUG_CONFIG, "bit = %x\n", ret);
 
@@ -762,7 +759,6 @@ int core_config_set_watch_dog(bool enable)
 		}
 
 		timeout--;
-		mdelay(10);
 	}
 
 	if (timeout > 0) {

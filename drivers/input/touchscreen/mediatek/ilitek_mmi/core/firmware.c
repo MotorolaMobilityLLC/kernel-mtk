@@ -1206,7 +1206,7 @@ static int fw_upgrade_iram(u8 *pfw)
 		}
 	}
 	if (ipd->sys_boot_fw) {
-		ipio_info("wait for lcm init code download\n");
+		ipio_debug(DEBUG_FIRMWARE, "wait for lcm init code download\n");
 		timeout= wait_event_interruptible_timeout(ipd->wait_for_lcm, ipd->lcm_finish> 0,msecs_to_jiffies(500));
 		if (!timeout)
 			ipio_info("initcode not in\n");

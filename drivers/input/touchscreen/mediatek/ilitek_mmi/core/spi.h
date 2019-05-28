@@ -27,7 +27,7 @@
 
 #define SPI_WRITE 		0x82
 #define SPI_READ 		0x83
-#define SPI_CLK_HZ		(10 * M)
+#define SPI_CLK_HZ		(12 * M)
 #define SPI_RETRY		5
 #define DMA_TRANSFER_MAX_TIMES 2
 #define DMA_TRANSFER_MAX_SIZE 1024

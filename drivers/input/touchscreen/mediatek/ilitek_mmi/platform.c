@@ -345,7 +345,7 @@ EXPORT_SYMBOL(wait_for_lcm_initcode);
 #if (TP_PLATFORM == PT_MTK)
 static void tpd_resume(struct device *h)
 {
-	ipio_info("TP Resume\n");
+	ipio_debug(DEBUG_CONFIG, "TP Resume\n");
 
 	/*if (!core_firmware->isUpgrading) {
 		core_config_ic_resume();
@@ -354,7 +354,7 @@ static void tpd_resume(struct device *h)
 
 static void tpd_suspend(struct device *h)
 {
-	ipio_info("TP Suspend\n");
+	ipio_debug(DEBUG_CONFIG, "TP Suspend\n");
 
 	/*if (!core_firmware->isUpgrading) {
 		core_config_ic_suspend();
@@ -367,7 +367,7 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 	int err;
 	struct fb_event *evdata = data;
 
-	ipio_info("Notifier's event = %ld\n", event);
+	ipio_debug(DEBUG_CONFIG, "Notifier's event = %ld\n", event);
 
 	/*
 	 *  FB_EVENT_BLANK(0x09): A hardware display blank change occurred.
@@ -390,7 +390,7 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 					return NOTIFY_DONE;
 			}
 
-			ipio_info("TP Suspend\n");
+			ipio_debug(DEBUG_CONFIG, "TP Suspend\n");
 			_primary_path_switch_dst_lock();
 			primary_display_esd_check_enable(false);
 			_primary_path_switch_dst_unlock();
@@ -403,7 +403,7 @@ static int ilitek_platform_notifier_fb(struct notifier_block *self, unsigned lon
 #endif /* PT_SPRD */
 		{
 			if (event == FB_EVENT_BLANK) {
-				ipio_info("TP Resuem\n");
+				ipio_debug(DEBUG_CONFIG, "TP Resuem\n");
 
 				if (!core_firmware->isUpgrading) {
 					if (mode_chose == I2C_MODE) {
@@ -1202,7 +1202,7 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 	ipd->TP_IC_TYPE = kzalloc(128, GFP_KERNEL);
 	ipd->TP_IC_TYPE = "ili9881";
 
-	ipd->delay_time_high = 10;
+	ipd->delay_time_high = 1;
 	ipd->delay_time_low = 5;
 	ipd->edge_delay = 5;
 

@@ -222,7 +222,7 @@ int core_tx_unlock_check(void)
 		//ipio_debug(DEBUG_SPI, "Tx unlock = 0x%x\n", status);
 
 		if (CHECK_EQUAL(status, unlock) == 0) {
-			ipio_info("Tx check unlock free!\n");
+			ipio_debug(DEBUG_SPI,"Tx check unlock free!\n");
 			return 0;
 		}
 
