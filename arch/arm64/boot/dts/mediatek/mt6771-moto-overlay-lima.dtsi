@@ -114,7 +114,7 @@
 
 	cap_touch_mtk_spi:cap_touch_spi@0{
 		compatible= "mediatek,cap_touch_spi";
-		spi-max-frequency = <10000000>;
+		spi-max-frequency = <12000000>;
 		reg = <0x0>;
 		status = "okay";
 	};
@@ -124,7 +124,7 @@
 		reg = <1>; /* Same as CS ID */
 		status = "okay";
 
-		spi-max-frequency = <10000000>;
+		spi-max-frequency = <12000000>;
 		novatek,reset-gpio = <&pio 70 0x00>;
 		novatek,irq-gpio = <&pio 6 0x2001>;
 
