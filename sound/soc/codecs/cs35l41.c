@@ -1291,6 +1291,8 @@ static int cs35l41_pcm_hw_params(struct snd_pcm_substream *substream,
 			cs35l41_fs_rates[i].fs_cfg << CS35L41_GLOBAL_FS_SHIFT);
 
 	asp_wl = params_width(params);
+	/* Maximum ASP RX/TX active data width is 24 */
+	asp_wl =  asp_wl > CS35L41_SP_WL_MAX ? CS35L41_SP_WL_MAX : asp_wl;
 	asp_width = params_physical_width(params);
 
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
