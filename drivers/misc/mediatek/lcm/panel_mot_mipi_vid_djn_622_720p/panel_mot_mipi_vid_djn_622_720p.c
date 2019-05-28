@@ -137,6 +137,14 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{ 0x04, 0x01, {0x05} },
 	{ 0x05, 0x01, {0x2D} },
 	{ 0x06, 0x01, {0x01} },
+	{ 0x07, 0x01, {0x20} },
+	{ 0x08, 0x01, {0x03} },
+	{ 0x09, 0x01, {0xD5} },
+
+	{ 0xFF, 0x01, {0x26} },
+	{ REGFLAG_DELAY, 1, {} },
+	{ 0xFB, 0x01, {0x01} },
+	{ 0x45, 0x01, {0x0E} },
 
 	{ 0xFF, 0x01, {0x10} },
 	{ REGFLAG_DELAY, 10, {} },
@@ -246,15 +254,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 78;
-	params->dsi.horizontal_frontporch = 78;
+	params->dsi.horizontal_backporch = 113;
+	params->dsi.horizontal_frontporch = 113;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 250;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 255;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 275;	/* this value must be in MTK suggested table */
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
