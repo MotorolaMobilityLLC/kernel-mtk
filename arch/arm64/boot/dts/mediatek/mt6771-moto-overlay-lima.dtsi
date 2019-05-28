@@ -177,11 +177,11 @@
 	};
 
 	swtp: swtp {
-		compatible = "mediatek,swtp-eint";
+		compatible = "mediatek, swtp-eint";
 	};
 
 	swtp1: swtp1 {
-		compatible = "mediatek,swtp1-eint";
+		compatible = "mediatek, swtp1-eint";
 	};
 };
 
