@@ -34,7 +34,7 @@
 
 #include "mtk_charger_intf.h"
 #include "rt9471.h"
-#define RT9471_DRV_VERSION	"1.0.2_MTK"
+#define RT9471_DRV_VERSION	"1.0.5_MTK"
 
 enum rt9471_stat_idx {
 	RT9471_STATIDX_STAT0 = 0,
@@ -177,6 +177,7 @@ struct rt9471_chip {
 	struct device *dev;
 	struct charger_device *chg_dev;
 	struct charger_properties chg_props;
+	struct semaphore suspend_lock;
 	struct mutex io_lock;
 	struct mutex bc12_lock;
 	struct mutex hidden_mode_lock;
@@ -201,6 +202,7 @@ struct rt9471_chip {
 	struct rt_regmap_device *rm_dev;
 	struct rt_regmap_properties *rm_prop;
 #endif /* CONFIG_RT_REGMAP */
+	u32 mivr;
 };
 
 static const u8 rt9471_reg_addr[] = {
@@ -232,13 +234,31 @@ static const u8 rt9471_reg_addr[] = {
 
 static int rt9471_read_device(void *client, u32 addr, int len, void *dst)
 {
-	return i2c_smbus_read_i2c_block_data(client, addr, len, dst);
+	int ret = 0;
+	struct rt9471_chip *chip = i2c_get_clientdata(client);
+
+	pm_stay_awake(chip->dev);
+	down(&chip->suspend_lock);
+	ret = i2c_smbus_read_i2c_block_data(client, addr, len, dst);
+	up(&chip->suspend_lock);
+	pm_relax(chip->dev);
+
+	return ret;
 }
 
 static int rt9471_write_device(void *client, u32 addr, int len,
 			       const void *src)
 {
-	return i2c_smbus_write_i2c_block_data(client, addr, len, src);
+	int ret = 0;
+	struct rt9471_chip *chip = i2c_get_clientdata(client);
+
+	pm_stay_awake(chip->dev);
+	down(&chip->suspend_lock);
+	ret = i2c_smbus_write_i2c_block_data(client, addr, len, src);
+	up(&chip->suspend_lock);
+	pm_relax(chip->dev);
+
+	return ret;
 }
 
 #ifdef CONFIG_RT_REGMAP
@@ -373,7 +393,8 @@ static int rt9471_i2c_write_byte(struct rt9471_chip *chip, u8 cmd, u8 data)
 static inline int __rt9471_i2c_read_byte(struct rt9471_chip *chip, u8 cmd,
 					 u8 *data)
 {
-	int ret, regval;
+	int ret;
+	u8 regval;
 
 #ifdef CONFIG_RT_REGMAP
 	ret = rt_regmap_block_read(chip->rm_dev, cmd, 1, &regval);
@@ -481,15 +502,14 @@ static int rt9471_i2c_update_bits(struct rt9471_chip *chip, u8 cmd, u8 data,
 
 	mutex_lock(&chip->io_lock);
 	ret = __rt9471_i2c_read_byte(chip, cmd, &regval);
-	if (ret < 0) {
-		mutex_unlock(&chip->io_lock);
-		return ret;
-	}
+	if (ret < 0)
+		goto out;
 
 	regval &= ~mask;
 	regval |= (data & mask);
 
 	ret = __rt9471_i2c_write_byte(chip, cmd, regval);
+out:
 	mutex_unlock(&chip->io_lock);
 
 	return ret;
@@ -675,7 +695,8 @@ static int __rt9471_get_mivr(struct rt9471_chip *chip, u32 *mivr)
 	ret = rt9471_i2c_read_byte(chip, RT9471_REG_VBUS, &regval);
 	if (ret < 0)
 		return ret;
-	regval = ((regval & RT9471_MIVR_MASK) >> RT9471_MIVR_SHIFT) & 0xFF;
+
+	regval = (regval & RT9471_MIVR_MASK) >> RT9471_MIVR_SHIFT;
 	*mivr = rt9471_closest_value(RT9471_MIVR_MIN, RT9471_MIVR_MAX,
 				     RT9471_MIVR_STEP, regval);
 	return 0;
@@ -911,12 +932,8 @@ static int __rt9471_set_aicr(struct rt9471_chip *chip, u32 aicr)
 	dev_info(chip->dev, "%s aicr = %d(0x%02X)\n", __func__, aicr, regval);
 
 	ret = rt9471_i2c_update_bits(chip, RT9471_REG_IBUS,
-				      regval << RT9471_AICR_SHIFT,
-				      RT9471_AICR_MASK);
-#if 0
-	/* Store AICR */
-	__rt9471_get_aicr(chip, &chip->desc->aicr);
-#endif
+				     regval << RT9471_AICR_SHIFT,
+				     RT9471_AICR_MASK);
 	return ret;
 }
 
@@ -950,6 +967,7 @@ static int __rt9471_set_cv(struct rt9471_chip *chip, u32 cv)
 
 static int __rt9471_set_ieoc(struct rt9471_chip *chip, u32 ieoc)
 {
+	int ret;
 	u8 regval;
 
 	regval = rt9471_closest_reg(RT9471_IEOC_MIN, RT9471_IEOC_MAX,
@@ -957,9 +975,12 @@ static int __rt9471_set_ieoc(struct rt9471_chip *chip, u32 ieoc)
 
 	dev_info(chip->dev, "%s ieoc = %d(0x%02X)\n", __func__, ieoc, regval);
 
-	return rt9471_i2c_update_bits(chip, RT9471_REG_EOC,
-				      regval << RT9471_IEOC_SHIFT,
-				      RT9471_IEOC_MASK);
+	ret = rt9471_i2c_update_bits(chip, RT9471_REG_EOC,
+				     regval << RT9471_IEOC_SHIFT,
+				     RT9471_IEOC_MASK);
+	if (ret < 0)
+		return ret;
+	return rt9471_set_bit(chip, RT9471_REG_EOC, RT9471_EOC_RST_MASK);
 }
 
 static int __rt9471_set_safe_tmr(struct rt9471_chip *chip, u32 hr)
@@ -1086,7 +1107,8 @@ static int rt9471_bc12_postprocess(struct rt9471_chip *chip)
 		break;
 	}
 out:
-	rt9471_enable_bc12(chip, false);
+	if (chip->chg_type != STANDARD_CHARGER)
+		rt9471_enable_bc12(chip, false);
 	rt9471_inform_psy_changed(chip);
 	return 0;
 }
@@ -1223,9 +1245,11 @@ static int rt9471_chg_mivr_irq_handler(struct rt9471_chip *chip)
 
 	ret = rt9471_i2c_test_bit(chip, RT9471_REG_STAT1, RT9471_ST_MIVR_SHIFT,
 				  &mivr);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_notice(chip->dev, "%s check stat fail(%d)\n",
 				      __func__, ret);
+		return ret;
+	}
 	dev_info(chip->dev, "%s mivr = %d\n", __func__, mivr);
 	return 0;
 }
@@ -1297,19 +1321,12 @@ static int rt9471_vac_ov_irq_handler(struct rt9471_chip *chip)
 
 	ret = rt9471_i2c_test_bit(chip, RT9471_REG_STAT3, RT9471_ST_VACOV_SHIFT,
 				  &vacov);
-	if (ret < 0)
+	if (ret < 0) {
 		dev_notice(chip->dev, "%s check stat fail(%d)\n",
 				      __func__, ret);
-	dev_info(chip->dev, "%s vacov = %d\n", __func__, vacov);
-#if 0
-	if (vacov) {
-		/* Rewrite AICR */
-		ret = __rt9471_set_aicr(chip, chip->desc->aicr);
-		if (ret < 0)
-			dev_notice(chip->dev, "%s set aicr fail(%d)\n",
-					      __func__, ret);
+		return ret;
 	}
-#endif
+	dev_info(chip->dev, "%s vacov = %d\n", __func__, vacov);
 	return 0;
 }
 
@@ -1576,7 +1593,7 @@ static int rt9471_parse_dt(struct rt9471_chip *chip)
 	/* Register map */
 	if (of_property_read_u8(np, "rm-slave-addr", &desc->rm_slave_addr) < 0)
 		dev_info(chip->dev, "%s no regmap slave addr\n", __func__);
-	if (of_property_read_string(np, "rm-name", &(desc->rm_name)) < 0)
+	if (of_property_read_string(np, "rm-name", &desc->rm_name) < 0)
 		dev_info(chip->dev, "%s no regmap name\n", __func__);
 
 	/* Charger parameter */
@@ -2057,7 +2074,7 @@ static int rt9471_set_mivr(struct charger_device *chg_dev, u32 uV)
 
 	ret = __rt9471_set_mivr(chip, uV);
 	if (ret >= 0)
-		chip->desc->mivr = uV;
+		chip->mivr = uV;
 	return ret;
 }
 
@@ -2072,7 +2089,7 @@ static int rt9471_get_mivr_state(struct charger_device *chg_dev, bool *in_loop)
 static int rt9471_enable_powerpath(struct charger_device *chg_dev, bool en)
 {
 	struct rt9471_chip *chip = dev_get_drvdata(&chg_dev->dev);
-	u32 mivr = (en ? chip->desc->mivr : RT9471_MIVR_MAX);
+	u32 mivr = (en ? chip->mivr : RT9471_MIVR_MAX);
 
 	dev_info(chip->dev, "%s en = %d\n", __func__, en);
 	return __rt9471_set_mivr(chip, mivr);
@@ -2259,17 +2276,52 @@ static struct charger_ops rt9471_chg_ops = {
 	.enable_hz = rt9471_enable_hz,
 };
 
+static ssize_t shipping_mode_store(struct device *dev,
+				   struct device_attribute *attr,
+				   const char *buf, size_t count)
+{
+	int ret = 0, tmp = 0;
+	struct rt9471_chip *chip = dev_get_drvdata(dev);
+
+	ret = kstrtoint(buf, 10, &tmp);
+	if (ret < 0) {
+		dev_notice(dev, "%s parsing number fail(%d)\n", __func__, ret);
+		return -EINVAL;
+	}
+	if (tmp != 5526789)
+		return -EINVAL;
+	ret = rt9471_reset_register(chip);
+	if (ret < 0) {
+		dev_notice(chip->dev, "%s reset register fail(%d)\n",
+				      __func__, ret);
+		return ret;
+	}
+	/* enter shipping mode */
+	ret = rt9471_set_bit(chip, RT9471_REG_FUNCTION, RT9471_BATFETDIS_MASK);
+	if (ret < 0) {
+		dev_notice(dev, "%s enter shipping mode fail(%d)\n",
+				__func__, ret);
+		return ret;
+	}
+	return count;
+}
+
+static const DEVICE_ATTR_WO(shipping_mode);
+
 static int rt9471_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
 	int ret;
 	struct rt9471_chip *chip;
 
+	dev_info(&client->dev, "%s (%s)\n", __func__, RT9471_DRV_VERSION);
+
 	chip = devm_kzalloc(&client->dev, sizeof(*chip), GFP_KERNEL);
 	if (!chip)
 		return -ENOMEM;
 	chip->client = client;
 	chip->dev = &client->dev;
+	sema_init(&chip->suspend_lock, 1);
 	mutex_init(&chip->io_lock);
 	mutex_init(&chip->bc12_lock);
 	mutex_init(&chip->hidden_mode_lock);
@@ -2289,13 +2341,19 @@ static int rt9471_probe(struct i2c_client *client,
 	}
 
 	ret = rt9471_parse_dt(chip);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_notice(chip->dev, "%s parse dt fail(%d)\n", __func__, ret);
 		goto err_parse_dt;
+	}
+	chip->mivr = chip->desc->mivr;
 
 #ifdef CONFIG_RT_REGMAP
 	ret = rt9471_register_rt_regmap(chip);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_notice(chip->dev, "%s register rt regmap fail(%d)\n",
+				      __func__, ret);
 		goto err_register_rm;
+	}
 #endif
 
 	ret = rt9471_reset_register(chip);
@@ -2341,15 +2399,23 @@ static int rt9471_probe(struct i2c_client *client,
 		goto err_init_irq;
 	}
 
-	rt9471_dump_registers(chip->chg_dev);
+	ret = device_create_file(chip->dev, &dev_attr_shipping_mode);
+	if (ret < 0) {
+		dev_notice(chip->dev, "%s create file fail(%d)\n",
+				      __func__, ret);
+		goto err_create_file;
+	}
 
 #ifndef CONFIG_TCPC_CLASS
 	if (strcmp(chip->desc->chg_name, "primary_chg") == 0)
 		schedule_work(&chip->init_work);
+#else
+	__rt9471_dump_registers(chip);
 #endif
 	dev_info(chip->dev, "%s successfully\n", __func__);
 	return 0;
 
+err_create_file:
 err_init_irq:
 err_register_irq:
 	charger_device_unregister(chip->chg_dev);
@@ -2357,15 +2423,15 @@ err_register_chg_dev:
 	power_supply_put(chip->psy);
 err_psy:
 err_init:
-	mutex_destroy(&chip->io_lock);
-	mutex_destroy(&chip->bc12_lock);
-	mutex_destroy(&chip->hidden_mode_lock);
 #ifdef CONFIG_RT_REGMAP
 	rt_regmap_device_unregister(chip->rm_dev);
 err_register_rm:
 #endif /* CONFIG_RT_REGMAP */
 err_parse_dt:
 err_nodev:
+	mutex_destroy(&chip->io_lock);
+	mutex_destroy(&chip->bc12_lock);
+	mutex_destroy(&chip->hidden_mode_lock);
 	devm_kfree(chip->dev, chip);
 	return ret;
 }
@@ -2385,9 +2451,10 @@ static int rt9471_remove(struct i2c_client *client)
 
 	if (chip) {
 		dev_info(chip->dev, "%s\n", __func__);
-		mutex_destroy(&chip->hidden_mode_lock);
+		device_remove_file(chip->dev, &dev_attr_shipping_mode);
 		mutex_destroy(&chip->io_lock);
 		mutex_destroy(&chip->bc12_lock);
+		mutex_destroy(&chip->hidden_mode_lock);
 	}
 	return 0;
 }
@@ -2397,6 +2464,7 @@ static int rt9471_suspend(struct device *dev)
 	struct rt9471_chip *chip = dev_get_drvdata(dev);
 
 	dev_info(dev, "%s\n", __func__);
+	down(&chip->suspend_lock);
 	if (device_may_wakeup(dev))
 		enable_irq_wake(chip->irq);
 
@@ -2408,6 +2476,7 @@ static int rt9471_resume(struct device *dev)
 	struct rt9471_chip *chip = dev_get_drvdata(dev);
 
 	dev_info(dev, "%s\n", __func__);
+	up(&chip->suspend_lock);
 	if (device_may_wakeup(dev))
 		disable_irq_wake(chip->irq);
 	return 0;
@@ -2449,6 +2518,16 @@ MODULE_DESCRIPTION("RT9471 Charger Driver");
 MODULE_VERSION(RT9471_DRV_VERSION);
 /*
  * Release Note
+ * 1.0.5
+ * (1) Add suspend_lock
+ *
+ * 1.0.4
+ * (1) Use type u8 for regval in __rt9471_i2c_read_byte()
+ *
+ * 1.0.3
+ * (1) Add shipping mode sys node
+ * (2) Keep D+ at 0.6V after DCP got detected
+ *
  * 1.0.2
  * (1) Kick WDT in __rt9471_dump_registers()
  *
