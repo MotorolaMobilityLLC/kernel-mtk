@@ -1352,6 +1352,33 @@ int sensor_cfg_to_hub(uint8_t handle, uint8_t *data, uint8_t count)
 	return ret;
 }
 
+int sensor_cali_data_to_hub(uint8_t handle, uint8_t *data, uint8_t count)
+{
+	struct ConfigCmd *cmd = NULL;
+	int ret = 0;
+
+	if (handle > ID_SENSOR_MAX_HANDLE) {
+		SCP_PR_ERR("invalid handle %d\n", handle);
+		ret = -1;
+	} else {
+		cmd = vzalloc(sizeof(struct ConfigCmd) + count);
+		if (cmd == NULL)
+			return -1;
+		cmd->evtType = EVT_NO_SENSOR_CONFIG_EVENT;
+		cmd->sensorType = handle + ID_OFFSET;
+		cmd->cmd = CONFIG_CMD_CALI_DATA;
+		memcpy(cmd->data, data, count);
+		ret = nanohub_external_write((const uint8_t *)cmd, sizeof(struct ConfigCmd) + count);
+		if (ret < 0) {
+			SCP_PR_ERR("failed cfg data handle:%d, cmd:%d\n",
+				handle, cmd->cmd);
+			ret =  -1;
+		}
+		vfree(cmd);
+	}
+	return ret;
+}
+
 int sensor_calibration_to_hub(uint8_t handle)
 {
 	uint8_t sensor_type = handle + ID_OFFSET;

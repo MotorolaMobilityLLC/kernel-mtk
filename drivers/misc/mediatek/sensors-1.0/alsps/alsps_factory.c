@@ -41,6 +41,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	int threshold_data[2] = {0, 0};
 	//moto add
 	struct als_data als_value;
+	int cali_data[3] = {0, 0,0};
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
 		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
@@ -139,6 +140,20 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
             }
             return 0;
         //moto add
+        case ALSPS_SET_ALS_CALIDATA:
+		if (copy_from_user(cali_data, ptr, sizeof(cali_data)))
+			return -EFAULT;
+		if (alsps_factory.fops != NULL && alsps_factory.fops->als_set_cali_data != NULL) {
+			err = alsps_factory.fops->als_set_cali_data(cali_data);
+			if (err < 0) {
+				ALSPS_PR_ERR("ALSPS_SET_ALS_CALIDATA read data fail!\n");
+				return -EINVAL;
+			}
+		} else {
+			ALSPS_PR_ERR("ALSPS_SET_ALS_CALIDATA NULL\n");
+			return -EINVAL;
+		}
+		return 0;
         case ALSPS_IOCTL_ALS_GET_CALI:
             if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_cali != NULL) {
                 err = alsps_factory.fops->als_get_cali(&data);
@@ -308,6 +323,7 @@ static long alsps_factory_compat_ioctl(struct file *file, unsigned int cmd, unsi
 	case COMPAT_ALSPS_IOCTL_ALS_GET_CALI://moto add
 	case COMPAT_ALSPS_PS_ENABLE_CALI:
 	case COMPAT_ALSPS_IOCTL_SELF_TEST:
+	case COMPAT_ALSPS_SET_ALS_CALIDATA://moto add
 		err = file->f_op->unlocked_ioctl(file, cmd, (unsigned long)arg32);
 		break;
 	default:

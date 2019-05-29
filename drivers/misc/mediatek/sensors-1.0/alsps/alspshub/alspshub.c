@@ -471,6 +471,22 @@ static int alshub_factory_get_cali(int32_t *offset)
 	*offset = atomic_read(&obj->als_cali);
 	return 0;
 }
+
+static int alshub_factory_set_cali_data(int32_t data[3])
+{
+	int err = 0;
+	int32_t cali_data[3] = {0};
+
+	cali_data[0] = data[0];
+	cali_data[1] = data[1];
+	cali_data[2] = data[2];
+	err = sensor_cali_data_to_hub(ID_LIGHT,
+		(uint8_t *)&cali_data, sizeof(cali_data));
+	if (err < 0)
+		pr_err("sensor_cali_data_to_hub fail\n");
+	return err;
+
+}
 static int pshub_factory_enable_sensor(bool enable_disable, int64_t sample_periods_ms)
 {
 	int err = 0;
@@ -611,6 +627,7 @@ static struct alsps_factory_fops alspshub_factory_fops = {
 	.als_clear_cali = alshub_factory_clear_cali,
 	.als_set_cali = alshub_factory_set_cali,
 	.als_get_cali = alshub_factory_get_cali,
+	.als_set_cali_data = alshub_factory_set_cali_data,
 
 	.ps_enable_sensor = pshub_factory_enable_sensor,
 	.ps_get_data = pshub_factory_get_data,

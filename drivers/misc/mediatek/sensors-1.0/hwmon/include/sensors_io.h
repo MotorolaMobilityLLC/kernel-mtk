@@ -187,6 +187,7 @@ struct als_data{
 #define ALSPS_IOCTL_SELF_TEST				_IO(ALSPS, 0x21)
 //moto add
 #define ALSPS_GET_ALS_DATA				_IOR(ALSPS, 0x22, struct als_data)
+#define ALSPS_SET_ALS_CALIDATA _IOW(ALSPS, 0x23, int)
 
 #ifdef CONFIG_COMPAT
 #define COMPAT_ALSPS_SET_PS_MODE			_IOW(ALSPS, 0x01, compat_int_t)
@@ -194,6 +195,7 @@ struct als_data{
 #define COMPAT_ALSPS_SET_ALS_MODE			_IOW(ALSPS, 0x05, compat_int_t)
 //moto add
 #define COMPAT_ALSPS_GET_ALS_DATA		_IOR(ALSPS, 0x22, struct als_data)
+#define COMPAT_ALSPS_SET_ALS_CALIDATA _IOW(ALSPS, 0x23, int)
 
 #define COMPAT_ALSPS_GET_ALS_RAW_DATA		_IOR(ALSPS, 0x08, compat_int_t)
 
