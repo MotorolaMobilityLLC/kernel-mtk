@@ -183,6 +183,7 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO174__FUNC_GPIO174>;
 			slew-rate = <1>;
+			drive-strength = <MTK_DRIVE_16mA>;
 			output-low;
 		};
 	};
