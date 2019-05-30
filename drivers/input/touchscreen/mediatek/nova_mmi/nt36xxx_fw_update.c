@@ -302,6 +302,7 @@ static int32_t update_firmware_request(char *filename)
 		if ((strcmp(filename, ts->normal_firmware_name)) &&
 			(strcmp(filename, ts->mp_firmware_name))) {
 			NVT_ERR("filename %s not support\n", filename);
+			ret = -1;
 			goto request_fail;
 		}
 
