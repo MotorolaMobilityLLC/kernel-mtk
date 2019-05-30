@@ -24,6 +24,7 @@
 #include <linux/input/mt.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
+#include <mt-plat/mtk_boot_common.h>
 
 #if defined(CONFIG_FB)
 #ifdef CONFIG_DRM_MSM
@@ -1992,14 +1993,20 @@ void nvt_nvt_update_firmware_work(struct completion *load_fw_completion) {
 
 void nvt_lcm_update_firmware_work(void)
 {
-	nvt_nvt_update_firmware_work(&load_fw_completion);
+	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+		nvt_nvt_update_firmware_work(&load_fw_completion);
+	}
 }
 EXPORT_SYMBOL(nvt_lcm_update_firmware_work);
 
 void wait_nvt_update_firmware(void)
 {
-	if (!wait_for_completion_timeout(&load_fw_completion, msecs_to_jiffies(300))) {
-		NVT_ERR("TP load fw flow is not finished!\n");
+	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+		if (!wait_for_completion_timeout(&load_fw_completion, msecs_to_jiffies(300))) {
+			NVT_ERR("TP load fw flow is not finished!\n");
+		}
 	}
 }
 EXPORT_SYMBOL(wait_nvt_update_firmware);
@@ -2174,11 +2181,14 @@ static int32_t __init nvt_driver_init(void)
 
 	NVT_LOG("start\n");
 
-	/* ---add spi driver--- */
-	ret = spi_register_driver(&nvt_spi_driver);
-	if (ret) {
-		NVT_ERR("failed to add spi driver");
-		goto err_driver;
+	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
+		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
+		/* ---add spi driver--- */
+		ret = spi_register_driver(&nvt_spi_driver);
+		if (ret) {
+			NVT_ERR("failed to add spi driver");
+			goto err_driver;
+		}
 	}
 
 	NVT_LOG("finished\n");
