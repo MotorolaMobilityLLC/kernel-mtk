@@ -422,8 +422,15 @@ void fg_custom_init_from_header(void)
 #else
 	fg_cust_data.car_tune_value = UNIT_TRANS_10 * CAR_TUNE_VALUE;
 #endif
+
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_TABLE
+	fg_cust_data.fg_meter_resistance = CUST_FG_METER_RESISTANCE;
+	fg_cust_data.com_fg_meter_resistance = CUST_FG_METER_RESISTANCE;
+#else	
 	fg_cust_data.fg_meter_resistance = FG_METER_RESISTANCE;
 	fg_cust_data.com_fg_meter_resistance = FG_METER_RESISTANCE;
+#endif
+	
 	fg_cust_data.r_fg_value = UNIT_TRANS_10 * R_FG_VALUE;
 	fg_cust_data.com_r_fg_value = UNIT_TRANS_10 * R_FG_VALUE;
 
@@ -594,7 +601,11 @@ void fg_custom_init_from_header(void)
 	fg_cust_data.ui_full_limit_time = UI_FULL_LIMIT_TIME;
 
 	/* voltage limit for uisoc 1% */
+#ifdef CONFIG_TINNO_CUSTOM_BATTERY_PROP
+	fg_cust_data.ui_low_limit_en = CUST_UI_LOW_LIMIT_EN;
+#else
 	fg_cust_data.ui_low_limit_en = UI_LOW_LIMIT_EN;
+#endif
 	fg_cust_data.ui_low_limit_soc0 = UI_LOW_LIMIT_SOC0;
 	fg_cust_data.ui_low_limit_vth0 = UI_LOW_LIMIT_VTH0;
 	fg_cust_data.ui_low_limit_soc1 = UI_LOW_LIMIT_SOC1;
