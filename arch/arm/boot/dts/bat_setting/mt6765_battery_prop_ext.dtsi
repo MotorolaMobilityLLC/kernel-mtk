@@ -23,7 +23,7 @@ bat_gm30: battery{
 	/*	Configures whether using embedded battery or not.*/
 	EMBEDDED_SEL = <(1)>;
 	PMIC_SHUTDOWN_CURRENT = <(20)>;	/*	System shutdown current.*/
-	FG_METER_RESISTANCE = <(75)>;	/*	The resistance of PCB*/
+	FG_METER_RESISTANCE = <(600)>;	/*	The resistance of PCB*/
 	/*	Tune value for current measurement.*/
 	CAR_TUNE_VALUE = <(100)>;
 	PMIC_MIN_VOL = <(33500)>;
