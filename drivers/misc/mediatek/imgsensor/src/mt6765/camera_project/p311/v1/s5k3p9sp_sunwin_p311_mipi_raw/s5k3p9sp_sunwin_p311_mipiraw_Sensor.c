@@ -58,15 +58,15 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
 //Tinno Begin Ramiel add camera info ++++
-//#ifdef  CONFIG_TINNO_PRODUCT_INFO
-//#include <dev_info.h>
-//#endif
+#ifdef  CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 //Tinno Begin Ramiel add camera info ----
 
 static imgsensor_info_struct imgsensor_info = {
 		.sensor_id = S5K3P9SP_SUNWIN_P311_SENSOR_ID,
 
-		.checksum_value = 0xffb1ec31,
+		.checksum_value = 0x138daa55,
 
 		.pre = {
 			.pclk = 560000000,
@@ -3981,10 +3981,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				/*vivo hope  add end*/
 
 				//add for TinnoProductInfo
-				//#ifdef CONFIG_TINNO_PRODUCT_INFO
- 				//LOG_INF(" s5k3p9sp_mipi_raw FULL_PRODUCT_DEVICE_INFO_CAMERA \n"); 
- 				//FULL_PRODUCT_DEVICE_INFO_CAMERA( S5K3P9SP_SENSOR_ID, 1, "s5k3p9sp_mipi_raw", imgsensor_info.cap.grabwindow_width,imgsensor_info.cap.grabwindow_height);
-				//#endif
+				#ifdef CONFIG_TINNO_PRODUCT_INFO
+ 				LOG_INF(" s5k3p9sp_mipi_raw FULL_PRODUCT_DEVICE_INFO_CAMERA \n");
+ 				FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K3P9SP_SUNWIN_P311_SENSOR_ID, 1, "s5k3p9sp_sunwin_p311_mipi_raw", imgsensor_info.cap.grabwindow_width,imgsensor_info.cap.grabwindow_height);
+				#endif
 				
 				return ERROR_NONE;
 			}

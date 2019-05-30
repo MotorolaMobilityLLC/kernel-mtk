@@ -84,7 +84,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+		#if !defined (FEATURE_MASK_THERMAL_RESET)
 		BUG();
+		#endif  /* FEATURE_MASK_THERMAL_RESET */
 
 
 	}
@@ -122,7 +124,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+		#if !defined (FEATURE_MASK_THERMAL_RESET)
 		BUG();
+		#endif  /* FEATURE_MASK_THERMAL_RESET */
 
 	}
 	return 0;
@@ -159,7 +163,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+		#if !defined (FEATURE_MASK_THERMAL_RESET)
 		BUG();
+		#endif  /* FEATURE_MASK_THERMAL_RESET */
 
 	}
 	return 0;
@@ -196,7 +202,9 @@ struct thermal_cooling_device *cdev, unsigned long state)
 		/* To trigger data abort to reset the system
 		 * for thermal protection.
 		 */
+		#if !defined (FEATURE_MASK_THERMAL_RESET)
 		BUG();
+		#endif  /* FEATURE_MASK_THERMAL_RESET */
 
 	}
 	return 0;

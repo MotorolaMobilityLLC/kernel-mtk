@@ -119,15 +119,15 @@ static struct imgsensor_info_struct imgsensor_info = {
 			 .max_framerate = 300,	/* modify */
 	},
 	.hs_video = {		/*slow motion */
-		     .pclk = 300000000,	/* 518400000, */
+		     .pclk = 332000000,	/* 518400000, */
 		     .linelength = 2096,
-		     .framelength = 1100,	/* 806, */
+		     .framelength = 1318,	/* 806, */
 		     .startx = 0,
 		     .starty = 0,
-		     .grabwindow_width = 1280,	/* 1400, */
-		     .grabwindow_height = 720,	/* 752, */
+		     .grabwindow_width = 2016,	/* 1400, */
+		     .grabwindow_height = 1136,	/* 752, */
 		     .mipi_data_lp2hs_settle_dc = 85,	/* unit , ns */
-		     .max_framerate = 1280,	/* modify */
+		     .max_framerate = 1200,	/* modify */
 
 	},
 	.slim_video = {		/*VT Call */
@@ -243,8 +243,8 @@ static struct SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
 	 0000, 0000, 4032, 3016, 0, 0, 4032, 3016},	/*capture */
 	{4032, 3016, 0, 0, 4032, 3016, 4032, 3016,
 	 0000, 0000, 4032, 3016, 0, 0, 4032, 3016},	/*video */
-	{4032, 3016, 0, 0, 4032, 3016, 1280, 720,
-	 0000, 0000, 1280, 720, 0, 0, 1280, 720},	/*hight speed video */
+	{4032, 3016, 0, 0, 4032, 3016, 2016, 1136,
+	 0000, 0000, 2016, 1136, 0, 0, 2016, 1136},	/*hight speed video */
 	{4032, 3016, 0, 0, 4032, 3016, 2016, 1508,
 	 0000, 0000, 2016, 1508, 0, 0, 2016, 1508},	/*slim video */
 	{4032, 3016, 0, 0, 4032, 3016, 2016, 1508,
@@ -1587,45 +1587,51 @@ kal_uint16 addr_data_pair_hs_video_imx486[] = {
 	0x0114, 0x03,
 	0x0342, 0x08,
 	0x0343, 0x30,
-	0x0340, 0x04,
-	0x0341, 0x6A,
+	0x0340, 0x05,
+	0x0341, 0x26,
 	0x0344, 0x00,
-	0x0345, 0x60,
+	0x0345, 0x00,
 	0x0346, 0x01,
-	0x0347, 0xA8,
-	0x0348, 0x0F,
-	0x0349, 0x5F,
-	0x034A, 0x0A,
-	0x034B, 0x17,
+	0x0347, 0x70,
+	0x0348, 0x0f,
+	0x0349, 0xbf,
+	0x034A, 0x0a,
+	0x034B, 0x4f,
 	0x0220, 0x00,
 	0x0222, 0x01,
 	0x0900, 0x01,
 	0x0901, 0x22,
 	0x0902, 0x00,
 	0x3130, 0x01,
+
 	0x034C, 0x07,
-	0x034D, 0x80,
+	0x034D, 0xe0,
 	0x034E, 0x04,
-	0x034F, 0x38,
+	0x034F, 0x70,
+
 	0x0301, 0x06,
 	0x0303, 0x02,
-	0x0305, 0x04,
+	0x0305, 0x02,
 	0x0306, 0x00,
-	0x0307, 0x8F,
+
+	0x0307, 0x53,
 	0x030B, 0x01,
-	0x030D, 0x04,
+	0x030D, 0x02,
 	0x030E, 0x00,
-	0x030F, 0x85,
+
+	0x030F, 0x50,
 	0x0310, 0x01,
-	0x0700, 0x00,
-	0x0701, 0xC8,
-	0x0820, 0x0C,
-	0x0821, 0x78,
+	0x0700, 0x01,
+	0x0701, 0x18,
+
+	0x0820, 0x0f,
+	0x0821, 0x00,
 	0x3100, 0x04,
-	0x7036, 0x02,
-	0x704E, 0x02,
-	0x0202, 0x04,
-	0x0203, 0x60,
+	0x7036, 0x00,
+
+	0x704E, 0x00,
+	0x0202, 0x05,
+	0x0203, 0x1c,
 	0x0224, 0x01,
 	0x0225, 0xF4,
 	0x0204, 0x00,
@@ -2727,11 +2733,14 @@ static kal_uint32 get_sensor_temperature(void)
 static kal_uint32 streaming_control(kal_bool enable)
 {
 	LOG_INF("streaming_enable(0=Sw Standby,1=streaming): %d\n", enable);
-	if (enable)
+	if (enable) {
 		write_cmos_sensor(0x0100, 0X01);
-	else
+		mdelay(10);
+	} else {
 		write_cmos_sensor(0x0100, 0x00);
-	mdelay(10);
+		mdelay(50);
+	}
+
 	return ERROR_NONE;
 }
 
