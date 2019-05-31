@@ -150,14 +150,14 @@
 		compatible = "mediatek,devices_phy_tuning";
 		u2_vrt_ref = <7>;
 		u2_term_ref = <7>;
-		u2_enhance = <10>;
+		u2_enhance = <2>;
 	};
 
 	host_phy_tuning: host_phy_tuning {
 		compatible = "mediatek,host_phy_tuning";
-		u2_vrt_ref = <6>;
-		u2_term_ref = <6>;
-		u2_enhance = <11>;
+		u2_vrt_ref = <7>;
+		u2_term_ref = <7>;
+		u2_enhance = <3>;
 	};
 
 	fingerprint_int: fingerprint_int {
