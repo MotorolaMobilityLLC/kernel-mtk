@@ -102,7 +102,8 @@ static int moto_glance_recv_data(struct data_unit_t *event, void *reserved)
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&moto_glance_wake_lock, msecs_to_jiffies(100));
 		//situation_notify(ID_MOT_GLANCE);
-    situation_data_report(ID_MOT_GLANCE, event->gesture_data_t.probability);
+		MOTO_GLANCE_PR_ERR("event = %x \n",event->gesture_data_t.probability);
+		situation_data_report(ID_MOT_GLANCE, event->gesture_data_t.probability);
 	}
 	return 0;
 }

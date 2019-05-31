@@ -97,16 +97,14 @@ static int moto_stowed_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatc
 
 static int moto_stowed_recv_data(struct data_unit_t *event, void *reserved)
 {
-int ret;
-MOTO_STOWED_LOG("%s : \n", __func__);
+	int ret;
 	if (event->flush_action == FLUSH_ACTION)
 		MOTO_STOWED_PR_ERR("moto_stowed do not support flush\n");
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&stowed_wake_lock, msecs_to_jiffies(100));
-		//situation_notify(ID_STOWED);
-MOTO_STOWED_LOG("%s : %d\n", __func__,event->gesture_data_t.probability);
-    ret=situation_data_report(ID_STOWED, event->gesture_data_t.probability);
-	MOTO_STOWED_LOG(" %d\n",ret);
+		MOTO_STOWED_PR_ERR("%s : %d\n", __func__,event->gesture_data_t.probability);
+		ret=situation_data_report(ID_STOWED, event->gesture_data_t.probability);
+		MOTO_STOWED_LOG(" %d\n",ret);
 	}
 	return 0;
 }
