@@ -984,8 +984,8 @@ static void ov02a10_eeprom_format_calibration_data(void *data)
 
 	mnf_status = ov02a10_check_manufacturing_data(data);
 	af_status = 0;
-	awb_status = ov02a10_check_awb_data(data);
-	lsc_status = ov02a10_check_lsc_data(data);
+	awb_status = 0;
+	lsc_status = 0;
 	pdaf_status = 0;
 	dual_status = 0;
 
