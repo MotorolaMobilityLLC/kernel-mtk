@@ -678,6 +678,8 @@ void arch_reset(char mode, const char *cmd)
 		/* do nothing */
 	} else if (cmd && !strcmp(cmd, "recovery")) {
 		rtc_mark_recovery();
+	} else if (cmd && !strcmp(cmd, "meta")) {
+		rtc_mark_meta();
 	} else if (cmd && !strcmp(cmd, "bootloader")) {
 		rtc_mark_fast();
 	} else if (cmd && !strcmp(cmd, "dm-verity device corrupted")) {

@@ -48,6 +48,7 @@ extern void rtc_enable_writeif(void);
 extern void rtc_disable_writeif(void);
 
 extern void rtc_mark_recovery(void);
+extern void rtc_mark_meta(void);
 extern void rtc_mark_kpoc(void);
 extern void rtc_mark_fast(void);
 extern u16 rtc_rdwr_uart_bits(u16 *val);
