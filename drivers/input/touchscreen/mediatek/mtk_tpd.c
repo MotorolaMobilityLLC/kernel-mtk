@@ -449,38 +449,46 @@ static int tpd_fb_notifier_callback(
 
 	TPD_DEBUG("tpd_fb_notifier_callback\n");
 
+	//{ Modify by TINNO, move tp suspend to FB_EARLY_EVENT_BLANK
 	evdata = data;
+	blank = *(int *)evdata->data;
+	TPD_DMESG("fb_notify(event=%ld blank=%d)\n", event, blank);
+
 	/* If we aren't interested in this event, skip it immediately ... */
-	if (event != FB_EVENT_BLANK)
+	if (event != FB_EVENT_BLANK
+		&& event != FB_EARLY_EVENT_BLANK)
 		return 0;
 
-	blank = *(int *)evdata->data;
-	TPD_DMESG("fb_notify(blank=%d)\n", blank);
 	switch (blank) {
 	case FB_BLANK_UNBLANK:
-		TPD_DMESG("LCD ON Notify\n");
-		if (g_tpd_drv && tpd_suspend_flag) {
-			err = queue_work(touch_resume_workqueue,
-						&touch_resume_work);
-			if (!err) {
-				TPD_DMESG("start resume_workqueue failed\n");
-				return err;
+		if (event == FB_EVENT_BLANK) {
+			TPD_DMESG("LCD ON Notify\n");
+			if (g_tpd_drv && tpd_suspend_flag) {
+				err = queue_work(touch_resume_workqueue,
+							&touch_resume_work);
+				if (!err) {
+					TPD_DMESG("start resume_workqueue failed\n");
+					return err;
+				}
 			}
 		}
 		break;
 	case FB_BLANK_POWERDOWN:
-		TPD_DMESG("LCD OFF Notify\n");
-		if (g_tpd_drv && !tpd_suspend_flag) {
-			err = cancel_work_sync(&touch_resume_work);
-			if (!err)
-				TPD_DMESG("cancel resume_workqueue failed\n");
-			g_tpd_drv->suspend(NULL);
+		if (event == FB_EARLY_EVENT_BLANK) {
+			TPD_DMESG("LCD OFF Notify\n");
+			if (g_tpd_drv && !tpd_suspend_flag) {
+				err = cancel_work_sync(&touch_resume_work);
+				if (!err)
+					TPD_DMESG("cancel resume_workqueue failed\n");
+				g_tpd_drv->suspend(NULL);
+			}
+			tpd_suspend_flag = 1;
 		}
-		tpd_suspend_flag = 1;
 		break;
 	default:
 		break;
 	}
+	//}
 	return 0;
 }
 /* Add driver: if find TPD_TYPE_CAPACITIVE driver successfully, loading it */
