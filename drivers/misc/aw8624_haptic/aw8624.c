@@ -714,6 +714,52 @@ static int aw8624_haptic_brake_config(struct aw8624 *aw8624)
     return 0;
 }
 
+static int aw8624_haptic_ram_config(struct aw8624 *aw8624)
+{
+    unsigned char wavseq1 = 0;
+    unsigned char wavseq2 = 0;
+    unsigned char wavloop1 = 0;
+    unsigned char wavloop2= 0;
+    unsigned int wavtime = 0;
+    unsigned int wavcycle = 0;
+
+    wavtime = (1000*10*100) / aw8624_dts_data.aw8624_f0_pre;
+    wavcycle = (aw8624->duration * 100) / wavtime + 1;
+    if(wavcycle < 16)//short  < 60ms
+    {
+	aw8624_haptic_set_gain(aw8624, 0x80);
+	if(wavcycle > 7)
+	{
+		wavseq1 = 1;
+		wavseq2 = 2;
+		wavloop1 = 6;
+		wavloop2 = wavcycle - 8;
+	}
+	else
+	{
+		wavseq1 = 1;
+		wavseq2 = 0;
+		wavloop1 = wavcycle - 1;
+		wavloop2 = 0;
+	}
+    }
+    else	//long
+    {
+	aw8624_haptic_set_gain(aw8624, 0x98);
+        wavseq1 = 2;
+	wavseq2 = 0;
+	wavloop1 = 15;
+	wavloop2 = 0;
+    }
+
+    aw8624_haptic_set_wav_seq(aw8624, 0, wavseq1);
+    aw8624_haptic_set_wav_seq(aw8624, 1, wavseq2);
+    aw8624_haptic_set_wav_loop(aw8624, 0, wavloop1);
+    aw8624_haptic_set_wav_loop(aw8624, 1, wavloop2);
+
+    return 0;
+}
+
 static int aw8624_vbat_monitor_detector(struct aw8624 *aw8624)
 {
     unsigned char reg_val = 0;
@@ -1489,6 +1535,8 @@ static int aw8624_vibrator_get_time(struct timed_output_dev *dev)
 static void aw8624_vibrator_enable( struct timed_output_dev *dev, int value)
 {
     struct aw8624 *aw8624 = container_of(dev, struct aw8624, to_dev);
+    if(value == 0)
+	return ;
 
     mutex_lock(&aw8624->lock);
     hrtimer_cancel(&aw8624->timer);
@@ -2698,6 +2746,7 @@ static void aw8624_vibrator_work_routine(struct work_struct *work)
     aw8624_haptic_stop(aw8624);
     if(aw8624->state) {
         aw8624_haptic_brake_config(aw8624);
+        aw8624_haptic_ram_config(aw8624);
        // aw8624_haptic_ram_vbat_comp(aw8624, true);
         aw8624_haptic_play_repeat_seq(aw8624, true);
         /* run ms timer */
