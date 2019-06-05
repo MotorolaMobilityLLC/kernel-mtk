@@ -14,7 +14,43 @@
 	flashlights_dummy_gpio: flashlights_dummy_gpio {
 	compatible = "mediatek,flashlights_dummy_gpio";
 	};
+
+	laser_stmvl53l0_gpio: laser_stmvl53l0_gpio {
+		compatible = "mediatek,laser_stmvl53l0";
+		laser-gpio-rst = <&pio 15 0x0>;
+	};
 };
+
+
+&pio {
+	laser_gpio_pins_default: laser_default {
+	};
+
+	laser_gpio_pins_reset_output1: reset_output1 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO15__FUNC_GPIO15>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	laser_gpio_pins_reset_output0: reset_output0 {
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO15__FUNC_GPIO15>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+};
+
+&laser_stmvl53l0_gpio {
+	pinctrl-names = "default", "reset_output1", "reset_output0";
+	pinctrl-0 = <&laser_gpio_pins_default>;
+	pinctrl-1 = <&laser_gpio_pins_reset_output1>;
+	pinctrl-2 = <&laser_gpio_pins_reset_output0>;
+	status = "okay";
+};
+
 
 &pio {
 	flashlights_gpio_pins_default: default {
