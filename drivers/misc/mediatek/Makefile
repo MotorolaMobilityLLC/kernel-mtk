@@ -110,6 +110,7 @@ obj-y += cameraisp/
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
 obj-$(CONFIG_MTK_LENS)   += lens/
+obj-$(CONFIG_MTK_LASER)  += laser/
 obj-$(CONFIG_MTK_FLASHLIGHT)	+= flashlight/
 obj-$(CONFIG_RT_FLASHLIGHT)	+= flashlight/richtek/
 obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu/

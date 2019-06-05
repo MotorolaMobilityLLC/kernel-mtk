@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.12.2019.15:36:17"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="06.11.2019.12:06:25"-->
 <dct_cfg>
     <general chip="MT6771">
         <proj>Sylvia</proj>
@@ -139,7 +139,6 @@
                 <sensitive_level>Level</sensitive_level>
                 <debounce_en>Enable</debounce_en>
             </eint74>
-
             <eint182>
                 <varName>MAIN_PMIC</varName>
                 <debounce_time>0</debounce_time>
@@ -291,11 +290,11 @@
             </gpio12>
             <gpio13>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
-                <def_dir>IN</def_dir>
-                <out_high>false</out_high>
+                <inpull_selhigh>true</inpull_selhigh>
+                <def_dir>OUT</def_dir>
+                <out_high>true</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio13>
@@ -311,11 +310,11 @@
             </gpio14>
             <gpio15>
                 <eint_mode>false</eint_mode>
-                <def_mode>2</def_mode>
+                <def_mode>0</def_mode>
                 <inpull_en>true</inpull_en>
-                <inpull_selhigh>false</inpull_selhigh>
+                <inpull_selhigh>true</inpull_selhigh>
                 <def_dir>OUT</def_dir>
-                <out_high>false</out_high>
+                <out_high>true</out_high>
                 <smt>false</smt>
                 <ies>true</ies>
             </gpio15>
@@ -2211,6 +2210,11 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x3E</address>
             </device24>
+            <device25>
+                <varName>LASER_MAIN</varName>
+                <channel>I2C_CHANNEL_5</channel>
+                <address>0x52</address>
+            </device25>
         </module>
         <module name="md1_eint">
             <count>3</count>
@@ -2280,6 +2284,7 @@
                 <varName1>SUB_CAMERA_POWER_AF</varName1>
                 <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
                 <varName3>CAP_TOUCH_VDD</varName3>
+                <varName4>LASER_MAIN_POWER</varName4>
             </pmic6>
         </module>
         <module name="kpd">
