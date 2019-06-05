@@ -403,7 +403,7 @@ static int alshub_factory_enable_sensor(bool enable_disable, int64_t sample_peri
 }
 
 //moto modify
-static int alshub_factory_get_data(struct als_data *data)
+static int alshub_factory_get_data(int32_t *data)
 {
 	int err = 0;
 	struct data_unit_t data_t;
@@ -411,10 +411,10 @@ static int alshub_factory_get_data(struct als_data *data)
 	err = sensor_get_data_from_hub(ID_LIGHT, &data_t);
 	if (err < 0)
 		return -1;
-	data->als_channel= data_t.data[0];
-	data->ir_channel= data_t.data[1];
-	data->lux = data_t.data[2];
-	APS_PR_ERR("als get als=%d IR=%d lux=%d light=%d!\n",data->als_channel,data->ir_channel,data->lux,data_t.light);
+	data[0] = data_t.data[0];
+	data[1] = data_t.data[1];
+	data[2] = data_t.data[2];
+	APS_PR_ERR("als get data[0]=%d data[1]=%d data[2]=%d \n",data[0],data[1],data[2]);
 	return 0;
 }
 static int alshub_factory_get_raw_data(int32_t *data)

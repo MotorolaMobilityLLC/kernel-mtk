@@ -40,7 +40,7 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
 	uint32_t enable = 0;
 	int threshold_data[2] = {0, 0};
 	//moto add
-	struct als_data als_value;
+	uint32_t als_value[3] = {0, 0,0};
 	int cali_data[3] = {0, 0,0};
 
 	if (_IOC_DIR(cmd) & _IOC_READ)
@@ -101,12 +101,12 @@ static long alsps_factory_unlocked_ioctl(struct file *file, unsigned int cmd, un
         //moto add
         case ALSPS_GET_ALS_DATA:
             if (alsps_factory.fops != NULL && alsps_factory.fops->als_get_data != NULL) {
-                err = alsps_factory.fops->als_get_data(&als_value);
+                err = alsps_factory.fops->als_get_data(als_value);
                 if (err < 0) {
                     ALSPS_PR_ERR("ALSPS_GET_ALS_DATA read data fail!\n");
                     return -EINVAL;
                 }
-                if (copy_to_user(ptr, &als_value, sizeof(als_value)))
+                if (copy_to_user(ptr, als_value, sizeof(als_value)))
                     return -EFAULT;
             } else {
                 ALSPS_PR_ERR("ALSPS_GET_ALS_DATA NULL\n");
