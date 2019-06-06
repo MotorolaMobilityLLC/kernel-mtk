@@ -196,6 +196,9 @@ int mtk_irq_domain_xlate_fourcell(struct irq_domain *d,
 	eint->eintmux = mode;
 	eint->eintnum = intspec[0];
 
+#ifdef CONFIG_PROJECT_P161BN
+	if(gpio != 44)		//44 id lcd te for p160 ,more log 
+#endif
 	pr_debug("[pinctrl] mtk_pin[%d], eint=%d, mode=%d\n",
 		gpio, eint->eintnum, eint->eintmux);
 	return 0;

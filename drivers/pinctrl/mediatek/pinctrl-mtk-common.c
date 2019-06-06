@@ -1175,8 +1175,12 @@ static int mtk_pinctrl_irq_request_resources(struct irq_data *d)
 			irqd_to_hwirq(d));
 		return ret;
 	}
-	pr_debug("%s eint %d, mode%d\n", __func__,
-		pin->eint.eintnum, pin->eint.eintmux);
+
+#ifdef CONFIG_PROJECT_P161BN
+	if(pin->eint.eintnum != 44)		//44 id lcd te for p160 ,more log 
+#endif
+		pr_debug("%s eint %d, mode%d\n", __func__,
+			pin->eint.eintnum, pin->eint.eintmux);
 
 	/* set mux to INT mode */
 	mtk_pmx_set_mode(pctl->pctl_dev,
