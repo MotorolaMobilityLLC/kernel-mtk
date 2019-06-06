@@ -2005,7 +2005,7 @@ void composite_disconnect(struct usb_gadget *gadget)
 
 	/* ALPS00235316 and ALPS00234976 */
 	/* reset the complet function */
-	if (cdev->req->complete) {
+	if (cdev->req != NULL && cdev->req->complete) {
 		INFO(cdev, "[COM]%s: reassign the complete function!!\n", __func__);
 		cdev->req->complete = composite_setup_complete;
 	}
