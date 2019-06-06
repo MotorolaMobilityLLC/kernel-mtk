@@ -35,6 +35,6 @@ obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pe20_intf.o
 obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
 
 # Special requirement for stop charging when reach 70% on factory SW
-ifeq ($(MOTO_FACTORY_SUPPORT),true)
-ccflags-y := -DFEATURE_ADB_DISCHARGE_CONTROL
-endif
+#ifeq ($(MOTO_FACTORY_SUPPORT),true)
+#ccflags-y := -DFEATURE_ADB_DISCHARGE_CONTROL
+#endif
