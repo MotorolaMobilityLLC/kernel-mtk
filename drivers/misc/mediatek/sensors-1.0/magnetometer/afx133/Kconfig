@@ -1,0 +1,9 @@
+
+config MTK_AFX133
+	tristate "AFX133 for MediaTek package"
+	default n
+	help
+	  It support different magnetometer sensor.
+	  If this option is set, it will support
+	  AFX133 magnetometer which is a 3-axis electronic
+	  compass IC with high sensitive Hall sensor technology.

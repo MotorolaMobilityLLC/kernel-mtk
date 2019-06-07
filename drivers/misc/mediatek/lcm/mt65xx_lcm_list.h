@@ -301,6 +301,13 @@ extern LCM_DRIVER otm1901a_fhd_dsi_vdo_tpv_lcm_drv;
 extern LCM_DRIVER st7789h2_dbi_c_3wire_lcm_drv;
 extern LCM_DRIVER ssd2858_kd097d05_qxga_dsi_vdo_lcm_drv;
 extern LCM_DRIVER es6311_anx6585_zigzag_wxga_lcm_drv;
+extern LCM_DRIVER nt35521z_hd_dsi_vdo_truly_lcm_drv;
+extern LCM_DRIVER ili9881c_hd_dsi_vdo_holitek_lcm_drv;
+extern LCM_DRIVER ili9881c_hd_dsi_vdo_txd_lcm_drv;
+extern LCM_DRIVER ft8006u_dsi_cmd_lcm_drv;
+extern LCM_DRIVER HX83102_dsi_cmd_lcm_drv;
+extern LCM_DRIVER ft8006u_dsi_cmd_lcm_drv_holitech;
+extern LCM_DRIVER gc9305_dbi_c_4wire_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif

@@ -2167,6 +2167,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,mt-charger";
 	};
 
+	torch: torch {
+		compatible = "ontim,torch";
+	};
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";

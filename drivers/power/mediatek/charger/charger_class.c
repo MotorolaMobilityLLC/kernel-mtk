@@ -70,6 +70,16 @@ int charger_dev_enable(struct charger_device *charger_dev, bool en)
 }
 EXPORT_SYMBOL(charger_dev_enable);
 
+int charger_dev_set_hz_mode(struct charger_device *charger_dev, bool en)
+{
+	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->set_hz_mode)
+		return charger_dev->ops->set_hz_mode(charger_dev, en);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_set_hz_mode);
+
+
 int charger_dev_is_enabled(struct charger_device *charger_dev, bool *en)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->is_enabled)
@@ -133,6 +143,14 @@ int charger_dev_get_min_charging_current(struct charger_device *charger_dev, u32
 }
 EXPORT_SYMBOL(charger_dev_get_min_charging_current);
 
+int charger_dev_hw_init(struct charger_device *chg_dev)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->hw_init)
+		return chg_dev->ops->hw_init(chg_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_hw_init);
 int charger_dev_enable_chip(struct charger_device *charger_dev, bool en)
 {
 	if (charger_dev != NULL && charger_dev->ops != NULL && charger_dev->ops->enable_chip)

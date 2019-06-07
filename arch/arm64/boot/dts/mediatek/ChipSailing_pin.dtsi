@@ -1,0 +1,108 @@
+/*******************finger pin start ****************/
+
+
+/*FINGERPRINT GPIO standardization*/
+#define __CS_FINGERPRINT_EINT_EN_PIN_NUM__           0
+#define __CS_FINGERPRINT_EINT_PIN__                  PINMUX_GPIO0__FUNC_GPIO0            //PINMUX_GPIO9__FUNC_GPIO9
+#define __CS_FINGERPRINT_RESET_PIN__                 PINMUX_GPIO52__FUNC_GPIO52          //PINMUX_GPIO86__FUNC_GPIO86  
+#define __CS_FINGERPRINT_MI_PIN__          			 PINMUX_GPIO33__FUNC_SPI0_A_MI	     //PINMUX_GPIO67__FUNC_SPI_MIA   /*PINMUX_GPIO68__FUNC_SPI_MIA  */
+#define __CS_FINGERPRINT_MO_PIN__     				 PINMUX_GPIO34__FUNC_SPI0_A_MO		 //PINMUX_GPIO68__FUNC_SPI_MOA   /*PINMUX_GPIO67__FUNC_SPI_MOA  */
+#define __CS_FINGERPRINT_CLK_PIN__    				 PINMUX_GPIO32__FUNC_SPI0_A_CLK		 //PINMUX_GPIO66__FUNC_SPI_CKA  
+#define __CS_FINGERPRINT_CS_PIN__    				 PINMUX_GPIO31__FUNC_SPI0_A_CSB		 //PINMUX_GPIO65__FUNC_SPI_CSA  
+
+ 
+ 
+&cs_finger{
+	pinctrl-names = "cs_finger_pins_default", "cs_finger_reset_en0","cs_finger_reset_en1","cs_finger_spi0_mi_as_spi0_mi",
+                          "cs_finger_spi0_mo_as_spi0_mo","cs_finger_spi0_clk_as_spi0_clk","cs_finger_spi0_cs_as_spi0_cs",
+                          "cs_finger_int_as_int";
+	pinctrl-0 = <&cs_finger_pins_default>;
+	pinctrl-1 = <&cs_finger_reset_en0>;
+	pinctrl-2 = <&cs_finger_reset_en1>;
+	pinctrl-3 = <&cs_finger_spi0_mi_as_spi0_mi>;
+	pinctrl-4 = <&cs_finger_spi0_mo_as_spi0_mo>;
+	pinctrl-5 = <&cs_finger_spi0_clk_as_spi0_clk>;
+	pinctrl-6= <&cs_finger_spi0_cs_as_spi0_cs>;
+	pinctrl-7= <&cs_finger_int_as_int>;
+	interrupt-parent = <&pio>;
+	interrupts = <__CS_FINGERPRINT_EINT_EN_PIN_NUM__ IRQ_TYPE_EDGE_RISING 1 0>;
+	debounce = <0>;
+	gpio-irq-std = <&pio __CS_FINGERPRINT_EINT_EN_PIN_NUM__ 0x0>;
+
+	status = "okay";
+}; 
+
+
+/*   GPIO standardization */
+&pio {
+	cs_finger_pins_default:cs_finger_pins_default{
+	};
+ 
+	cs_finger_reset_en0:cs_finger_reset_en@0{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_RESET_PIN__>;
+			slew-rate = <1>;
+			output-low; 
+		};
+	};
+	cs_finger_reset_en1:cs_finger_reset_en@1{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_RESET_PIN__>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	cs_finger_spi0_mi_as_spi0_mi:cs_finger_spi0_mi_as_spi0_mi@0{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_MI_PIN__>;
+			slew-rate = <0>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};	
+ 
+	cs_finger_spi0_mo_as_spi0_mo:cs_finger_spi0_mo_as_spi0_mo@0{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_MO_PIN__>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+ 
+
+	cs_finger_spi0_clk_as_spi0_clk:cs_finger_spi0_clk_as_spi0_clk@0{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_CLK_PIN__>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	cs_finger_spi0_cs_as_spi0_cs:cs_finger_spi0_cs_as_spi0_cs@0{
+		    pins_cmd_dat {
+			pins = <__CS_FINGERPRINT_CS_PIN__>;
+			slew-rate = <1>;
+			bias-disable;
+			output-low;
+			input-schmitt-enable = <0>;
+		};
+	};
+
+	cs_finger_int_as_int: cs_finger_int_as_int@0{
+			pins_cmd_dat {
+				pins = <__CS_FINGERPRINT_EINT_PIN__>;
+				slew-rate = <0>;
+				bias-disable; 
+			};
+	};
+
+};
+
+
+/*******************finger pin end****************/
+ 

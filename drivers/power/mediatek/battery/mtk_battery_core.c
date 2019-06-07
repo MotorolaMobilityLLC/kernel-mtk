@@ -86,6 +86,7 @@
 /* global variable */
 /* ============================================================ */
 struct mtk_battery gm;
+extern char battery_vendor_name[50];
 
 /* ============================================================ */
 /* gauge hal interface */
@@ -317,6 +318,7 @@ int gauge_get_nag_vbat(void)
 /* custom setting */
 /* ============================================================ */
 #ifdef MTK_GET_BATTERY_ID_BY_AUXADC
+extern int IMM_GetOneChannelValue_Cali(int Channel, int *voltage);
 void fgauge_get_profile_id(void)
 {
 	int id_volt = 0;
@@ -344,6 +346,8 @@ void fgauge_get_profile_id(void)
 			gm.battery_id = TOTAL_BATTERY_NUMBER - 1;
 		}
 	}
+	gm.battery_id = 0;
+	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],20);
 
 	bm_debug("[%s]Battery id (%d)\n",
 		__func__,

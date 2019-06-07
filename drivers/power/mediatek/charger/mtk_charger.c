@@ -1586,6 +1586,10 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 	/* common */
 	if (of_property_read_u32(np, "battery_cv", &val) >= 0) {
 		info->data.battery_cv = val;
+		#ifdef CONFIG_PFP_BATTERY
+		//#if 0
+		info->data.battery_cv = 4200000;
+		#endif
 	} else {
 		chr_err(
 			"use default BATTERY_CV:%d\n",
@@ -1731,6 +1735,10 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 
 	if (of_property_read_u32(np, "jeita_temp_t2_to_t3_cv_voltage", &val) >= 0) {
 		info->data.jeita_temp_t2_to_t3_cv_voltage = val;
+		#ifdef CONFIG_PFP_BATTERY
+		//#if 0
+		info->data.jeita_temp_t2_to_t3_cv_voltage = 4200000;
+		#endif
 	} else {
 		chr_err(
 			"use default JEITA_TEMP_T2_TO_T3_CV_VOLTAGE:%d\n", JEITA_TEMP_T2_TO_T3_CV_VOLTAGE);
@@ -1739,6 +1747,10 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 
 	if (of_property_read_u32(np, "jeita_temp_t1_to_t2_cv_voltage", &val) >= 0) {
 		info->data.jeita_temp_t1_to_t2_cv_voltage = val;
+		#ifdef CONFIG_PFP_BATTERY
+		//#if 0
+		info->data.jeita_temp_t1_to_t2_cv_voltage = 4200000;
+		#endif
 	} else {
 		chr_err(
 			"use default JEITA_TEMP_T1_TO_T2_CV_VOLTAGE:%d\n", JEITA_TEMP_T1_TO_T2_CV_VOLTAGE);

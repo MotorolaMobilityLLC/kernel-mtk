@@ -1776,7 +1776,8 @@ static kal_uint32 open(void)
 *************************************************************************/
 static kal_uint32 close(void)
 {
-	write_cmos_sensor(0x0100, 0x0000);
+
+	/*No Need to implement this function */
 
 	return ERROR_NONE;
 }				/*      close  */

@@ -22,6 +22,15 @@
 #define MAX_THRESHOLD_HIGH 0xffff
 #define MIN_THRESHOLD_LOW 0x0
 
+typedef enum
+{
+        CWF_TEMP=0,
+        D65_TEMP,
+        A_TEMP,
+        TEMP_COUNT,
+}color_t;
+#define TP_COUNT 2
+
 struct alsps_hw {
 	int i2c_num;                                    /*!< the i2c bus used by ALS/PS */
 	int power_id;                                   /*!< the VDD power id of the als chip */
@@ -34,11 +43,17 @@ struct alsps_hw {
 	unsigned int    als_level[C_CUST_ALS_LEVEL-1];
 	unsigned int    als_value[C_CUST_ALS_LEVEL];    /*!< the value reported in each level */
 	unsigned int    ps_threshold;                   /*!< the threshold of proximity sensor */
+	unsigned int    state_val;
+    unsigned int    psctrl_val;
+    unsigned int    alsctrl_val;
+    unsigned int    ledctrl_val;
+    unsigned int    wait_val;
 	unsigned int    als_window_loss;                /*!< the window loss  */
 	unsigned int    ps_threshold_high;
 	unsigned int    ps_threshold_low;
 	unsigned int    als_threshold_high;
 	unsigned int    als_threshold_low;
+	int ps_irq_use_old;
 	int als_power_vio_id;                                   /*!< the VIO power id of the als chip */
 	int als_power_vio_vol;                                  /*!< the VIO power voltage of the als chip */
 	int ps_power_vdd_id;                                   /*!< the VDD power id of the ps chip */

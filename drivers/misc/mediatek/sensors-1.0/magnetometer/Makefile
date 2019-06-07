@@ -9,4 +9,6 @@ obj-y   +=  mag_factory.o
 obj-$(CONFIG_MTK_MAGHUB)        +=  maghub/
 obj-$(CONFIG_MTK_AKM09911)         +=  akm09911/
 obj-$(CONFIG_MTK_ST480)         +=  st480/
+obj-$(CONFIG_MTK_AFX133)         +=  afx133/
+obj-$(CONFIG_MTK_MMC3680X)         +=  mmc3680kj/
 obj-$(CONFIG_MTK_AKM09918)      +=  akm09918/

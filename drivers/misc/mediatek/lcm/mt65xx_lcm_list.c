@@ -34,6 +34,33 @@ LCM_DSI_MODE_CON lcm_dsi_mode;
 #endif
 
 LCM_DRIVER *lcm_driver_list[] = {
+
+#if defined(NT35521Z_HD_DSI_VDO_TRULY)
+	&nt35521z_hd_dsi_vdo_truly_lcm_drv,
+#endif
+#if defined(ILI9881C_HD_DSI_VDO_HOLITEK)
+	&ili9881c_hd_dsi_vdo_holitek_lcm_drv,
+#endif
+#if defined(ILI9881C_HD_DSI_VDO_TXD)
+	&ili9881c_hd_dsi_vdo_txd_lcm_drv,
+#endif
+
+#if defined(ONTIM_FT8006U_DT)
+        &ft8006u_dsi_cmd_lcm_drv,
+#endif
+
+#if defined(ONTIM_HX83102_BOYI)
+        &HX83102_dsi_cmd_lcm_drv,
+#endif
+
+#if defined(ONTIM_FT8006U_DT_HOLITECH)
+        &ft8006u_dsi_cmd_lcm_drv_holitech,
+#endif
+
+#if defined(GC9305_DBI_C_4WIRE)
+        &gc9305_dbi_c_4wire_lcm_drv,
+#endif
+
 #if defined(OTM1284A_HD720_DSI_VDO_TM)
 	&otm1284a_hd720_dsi_vdo_tm_lcm_drv,
 #endif

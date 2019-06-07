@@ -492,6 +492,7 @@ typedef struct {
 	unsigned char cmd;
 	unsigned char count;
 	unsigned char para_list[RT_MAX_NUM];
+	unsigned char type;
 } LCM_esd_check_item;
 typedef enum {
 	DUAL_DSI_NONE = 0x0,
@@ -786,6 +787,8 @@ typedef struct {
 
 typedef struct {
 	void (*set_reset_pin)(unsigned int value);
+	void (*set_bl_kpad_pin)(unsigned int value);
+	void (*set_blen_pin)(unsigned int value);
 	void (*set_chip_select)(unsigned int value);
 	int (*set_gpio_out)(unsigned int gpio, unsigned int value);
 	void (*set_te_pin)(void);
@@ -820,6 +823,7 @@ typedef struct {
 	int (*set_gpio_dir)(unsigned int pin, unsigned int dir);
 	int (*set_gpio_pull_enable)(unsigned int pin, unsigned char pull_en);
 	long (*set_gpio_lcd_enp_bias)(unsigned int value);
+	long (*set_gpio_lcd_enn_bias)(unsigned int value);
 	void (*dsi_set_cmdq_V11)(void *cmdq, unsigned int *pdata, unsigned int queue_size,
 				  unsigned char force_update);
 	void (*dsi_set_cmdq_V22)(void *cmdq, unsigned cmd, unsigned char count,
