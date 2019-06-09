@@ -839,7 +839,8 @@
 
 	devapc@10207000 {
 		compatible = "mediatek,devapc";
-		reg = <0 0x10207000 0 0x1000>;
+		reg = <0 0x10207000 0 0x1000>,
+		      <0 0x1000e000 0 0x1000>;
 		interrupts = <GIC_SPI 142 IRQ_TYPE_LEVEL_LOW>;
 		clocks = <&infracfg_ao CLK_IFR_DEVICE_APC>;
 		clock-names = "devapc-infra-clock";
