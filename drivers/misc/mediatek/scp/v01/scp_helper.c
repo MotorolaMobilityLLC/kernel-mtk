@@ -63,6 +63,7 @@
 /* scp ready timeout definition */
 #define SCP_READY_TIMEOUT (30 * HZ) /* 30 seconds*/
 #define SCP_A_TIMER 0
+#define CLK_BANK_LEN		(0x00A8)
 
 
 /* scp ready status for notify*/
@@ -1322,6 +1323,37 @@ unsigned int scp_set_reset_status(void)
 	return 0;
 }
 
+
+/******************************************************************************
+ *****************************************************************************/
+void print_clk_registers(void)
+{
+	void __iomem *loader_base = (void __iomem *)scp_loader_base_virt;
+	void __iomem *cfg = scpreg.cfg;          // 0x105C_0000
+	void __iomem *clkctrl = scpreg.clkctrl;  // 0x105C_4000
+	unsigned int offset;
+	unsigned int value;
+
+	// Print the first few bytes of the loader binary.
+	if (loader_base) {
+		for (offset = 0; offset < 16; offset += 4) {
+			value = (unsigned int)readl(loader_base + offset);
+			pr_notice("[SCP] loader[%u]: 0x%08x\n", offset, value);
+		}
+	}
+
+	// 0x0000 ~ 0x01CC (inclusive)
+	for (offset = 0x0000; offset <= 0x01CC; offset += 4) {
+		value = (unsigned int)readl(cfg + offset);
+		pr_notice("[SCP] cfg[0x%04x]: 0x%08x\n", offset, value);
+	}
+	// 0x4000 ~ 0x40A4 (inclusive)
+	for (offset = 0x0000; offset < CLK_BANK_LEN; offset += 4) {
+		value = (unsigned int)readl(clkctrl + offset);
+		pr_notice("[SCP] clk[%p]: 0x%08x\n", clkctrl + offset, value);
+	}
+}
+
 /*
  * callback function for work struct
  * NOTE: this function may be blocked
@@ -1382,6 +1414,8 @@ void scp_sys_reset_ws(struct work_struct *ws)
 	 */
 	pr_debug("[SCP] %s(): disable logger\n", __func__);
 	scp_logger_init_set(0);
+
+	print_clk_registers();
 
 	/* scp reset by CMD, WDT or awake fail */
 	if (scp_reset_type == RESET_TYPE_WDT) {
