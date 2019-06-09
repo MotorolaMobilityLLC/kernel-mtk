@@ -1041,7 +1041,7 @@ static inline void FDVT_Reset(void)
 			 0x20000));
 		while (((FDVT_RD32(FDVT_START_REG) & 0x20000) != 0x0))
 			log_dbg("FDVT resetting...\n");
-		FDVT_WR32(FDVT_START_REG, 0x10000);
+		FDVT_WR32(FDVT_START_REG, 0x30000);
 		FDVT_WR32(FDVT_START_REG, 0x0);
 		log_dbg(" FDVT Reset end!\n");
 	}
