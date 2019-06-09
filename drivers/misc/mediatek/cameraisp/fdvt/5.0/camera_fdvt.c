@@ -130,9 +130,9 @@ struct FDVT_CLK_STRUCT {
 	struct clk *CG_MM_SMI_COMMON_FIFO1;
 	struct clk *CG_MM_LARB5;
 	struct clk *CG_SCP_SYS_ISP;
-	struct clk *CG_IMGSYS_LARB;
+	struct clk *CG_IPESYS_LARB;
 #endif
-	struct clk *CG_IMGSYS_FDVT;
+	struct clk *CG_IPESYS_FD;
 };
 struct FDVT_CLK_STRUCT fdvt_clk;
 #endif
@@ -146,7 +146,7 @@ struct FDVT_CLK_STRUCT fdvt_clk;
 #endif
 
 #define FDVT_DEV_NAME                "camera-fdvt"
-#define EP_NO_CLKMGR // GASPER ADD
+//#define EP_NO_CLKMGR // GASPER ADD
 #define BYPASS_REG         (0)
 /* #define FDVT_WAITIRQ_LOG  */
 #define FDVT_USE_GCE
@@ -288,19 +288,18 @@ static int nr_FDVT_devs;
 
 /* Get HW modules' base address from device nodes */
 #define FDVT_DEV_NODE_IDX 0
-#define IMGSYS_DEV_MODE_IDX 1
+#define IPESYS_DEV_MODE_IDX 1
 /* static unsigned long gISPSYS_Reg[FDVT_IRQ_TYPE_AMOUNT]; */
 
 
 #define ISP_FDVT_BASE                  (FDVT_devs[FDVT_DEV_NODE_IDX].regs)
-#define ISP_IMGSYS_BASE               (FDVT_devs[IMGSYS_DEV_MODE_IDX].regs)
-
+#define ISP_IPESYS_BASE               (FDVT_devs[IPESYS_DEV_MODE_IDX].regs)
 /* #define ISP_FDVT_BASE                  (gISPSYS_Reg[FDVT_DEV_NODE_IDX]) */
 
 
 
 #else
-#define ISP_FDVT_BASE                        (IMGSYS_BASE + 0x1000)
+#define ISP_FDVT_BASE                        (ISP_IPESYS_BASE + 0x1000)
 
 #endif
 
@@ -530,9 +529,10 @@ xlog_printk(ANDROID_LOG_DEBUG,\
 #define IRQ_LOG_PRINTER(irq, ppb, logT)
 #endif
 
-#define IMGSYS_REG_CG_CON             (ISP_IMGSYS_BASE + 0x0)
-#define IMGSYS_REG_CG_SET             (ISP_IMGSYS_BASE + 0x4)
-#define IMGSYS_REG_CG_CLR             (ISP_IMGSYS_BASE + 0x8)
+#define IPESYS_REG_CG_CON             (ISP_IPESYS_BASE + 0x0)
+#define IPESYS_REG_CG_SET             (ISP_IPESYS_BASE + 0x4)
+#define IPESYS_REG_CG_CLR             (ISP_IPESYS_BASE + 0x8)
+
 
 /* FDVT unmapped base address macro for GCE to access */
 #define FDVT_START_HW                       (FDVT_BASE_HW)
@@ -1625,13 +1625,12 @@ static inline void FDVT_Prepare_Enable_ccf_clock(void)
 	if (ret)
 		log_err("cannot prepare and enable CG_IMGSYS_LARB clock\n");
 #else
-	//smi_bus_enable(SMI_LARB_IMGSYS1, "camera_fdvt"); //modified by Gasper
-	smi_bus_prepare_enable(SMI_LARB5_REG_INDX, "camera-fdvt", true);
+	smi_bus_prepare_enable(SMI_LARB8_REG_INDX, "camera-fdvt", true);
 #endif
 
-	ret = clk_prepare_enable(fdvt_clk.CG_IMGSYS_FDVT);
+	ret = clk_prepare_enable(fdvt_clk.CG_IPESYS_FD);
 	if (ret)
-		log_err("cannot prepare and enable CG_IMGSYS_FDVT clock\n");
+		log_err("cannot prepare and enable CG_IPESYS_FD clock\n");
 
 }
 
@@ -1641,7 +1640,7 @@ static inline void FDVT_Disable_Unprepare_ccf_clock(void)
 	 * FDVT clk -> CG_SCP_SYS_ISP ->
 	 * CG_MM_SMI_COMMON -> CG_SCP_SYS_MM0
 	 */
-	clk_disable_unprepare(fdvt_clk.CG_IMGSYS_FDVT);
+	clk_disable_unprepare(fdvt_clk.CG_IPESYS_FD);
 #ifndef SMI_CLK
 	clk_disable_unprepare(fdvt_clk.CG_IMGSYS_LARB);
 	clk_disable_unprepare(fdvt_clk.CG_SCP_SYS_ISP);
@@ -1656,8 +1655,7 @@ static inline void FDVT_Disable_Unprepare_ccf_clock(void)
 	clk_disable_unprepare(fdvt_clk.CG_MM_SMI_COMMON);
 	clk_disable_unprepare(fdvt_clk.CG_SCP_SYS_MM0);
 #else
-	//smi_bus_disable(SMI_LARB_IMGSYS1, "camera_fdvt"); // marked by gasper
-	smi_bus_disable_unprepare(SMI_LARB5_REG_INDX, "camera-fdvt", true);
+	smi_bus_disable_unprepare(SMI_LARB8_REG_INDX, "camera-fdvt", true);
 #endif
 }
 #endif
@@ -1686,7 +1684,7 @@ static void FDVT_EnableClock(bool En)
 			 * 2. IMG_CG_CLR (0x15000008) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
-			FDVT_WR32(IMGSYS_REG_CG_CLR, setReg);
+			//FDVT_WR32(IPESYS_REG_CG_CLR, setReg);
 
 #endif
 #else
@@ -1725,7 +1723,7 @@ static void FDVT_EnableClock(bool En)
 			 *  2. IMG_CG_SET (0x15000004) = 0xffffffff;
 			 */
 			setReg = 0xFFFFFFFF;
-			FDVT_WR32(IMGSYS_REG_CG_SET, setReg);
+			//FDVT_WR32(IPESYS_REG_CG_SET, setReg);
 
 #endif
 #else
@@ -3625,8 +3623,8 @@ static signed int FDVT_probe(struct platform_device *pDev)
 		fdvt_clk.CG_IMGSYS_LARB =
 		    devm_clk_get(&pDev->dev, "FDVT_CLK_IMG_LARB");
 #endif
-		fdvt_clk.CG_IMGSYS_FDVT =
-		    devm_clk_get(&pDev->dev, "FD_CLK_IMG_FDVT");
+		fdvt_clk.CG_IPESYS_FD =
+		    devm_clk_get(&pDev->dev, "FD_CLK_IPE_FD");
 
 #ifndef SMI_CLK
 		if (IS_ERR(fdvt_clk.CG_SCP_SYS_MM0)) {
@@ -3678,9 +3676,9 @@ static signed int FDVT_probe(struct platform_device *pDev)
 			return PTR_ERR(fdvt_clk.CG_IMGSYS_LARB);
 		}
 #endif
-		if (IS_ERR(fdvt_clk.CG_IMGSYS_FDVT)) {
-			log_err("cannot get CG_IMGSYS_FDVT clock\n");
-			return PTR_ERR(fdvt_clk.CG_IMGSYS_FDVT);
+		if (IS_ERR(fdvt_clk.CG_IPESYS_FD)) {
+			log_err("cannot get CG_IPESYS_FD clock\n");
+			return PTR_ERR(fdvt_clk.CG_IPESYS_FD);
 		}
 #endif	/* !defined(CONFIG_MTK_LEGACY) && defined(CONFIG_COMMON_CLK)  */
 #endif
@@ -3904,7 +3902,7 @@ int FDVT_pm_restore_noirq(struct device *device)
  * must be the same with FDVT_DEV_NODE_IDX
  */
 static const struct of_device_id FDVT_of_ids[] = {
-/*	{.compatible = "mediatek,imgsyscq",},*/
+/*	{.compatible = "mediatek,ipesyscq",},*/
 	{.compatible = "mediatek,fdvt",},
 	{}
 };
