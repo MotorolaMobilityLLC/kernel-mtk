@@ -379,7 +379,9 @@ static void scp_A_notify_ws(struct work_struct *ws)
 #if SCP_RECOVERY_SUPPORT
 	/*clear reset status and unlock wake lock*/
 	pr_debug("[SCP] clear scp reset flag and unlock\n");
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	spm_resource_req(SPM_RESOURCE_USER_SCP, SPM_RESOURCE_RELEASE);
+#endif  // CONFIG_FPGA_EARLY_PORTING
 	/* register scp dvfs*/
 	msleep(2000);
 	__pm_relax(&scp_reset_lock);
@@ -452,6 +454,7 @@ static int params_to_scp(void)
 static void scp_A_set_ready(void)
 {
 	pr_debug("[SCP] %s()\n", __func__);
+	scp_timeout_times = 0;
 #if SCP_BOOT_TIME_OUT_MONITOR
 	del_timer(&scp_ready_timer[SCP_A_ID]);
 #endif
