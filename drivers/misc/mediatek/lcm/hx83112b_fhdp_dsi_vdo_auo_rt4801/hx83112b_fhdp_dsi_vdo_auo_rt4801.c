@@ -233,7 +233,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 		      0x14, 0x33} },
 	{0xD2, 0x02, {0x2C, 0x2C} },
 	{0xB2, 0x0B, {0x80, 0x02, 0x00, 0x80, 0x70, 0x00, 0x08, 0x1C,
-		      0x05, 0x01, 0x04} },
+		      0x09, 0x01, 0x04} },
 	{0xE9, 0x01, {0xD1} },
 	{0xB2, 0x02, {0x00, 0x08} },
 	{0xE9, 0x01, {0x00} },
@@ -252,6 +252,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xBD, 0x01, {0x00} },
 	{0xB6, 0x03, {0x81, 0x81, 0xE3} },
 	{0xC0, 0x01, {0x44} },
+	{0xC2, 0x01, {0x83} },
 	{0xCC, 0x01, {0x08} },
 	{0xBD, 0x01, {0x03} },
 	{0xC1, 0x39, {0xFF, 0xFA, 0xF6, 0xF3, 0xEF, 0xEB, 0xE7, 0xE0,
@@ -283,8 +284,8 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xBD, 0x01, {0x00} },
 	{0xC1, 0x01, {0x01} },
 	{0xD3, 0x16, {0x01, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x0A,
-		      0x0A, 0x07, 0x00, 0x00, 0x08, 0x09, 0x09, 0x09,
-		      0x09, 0x32, 0x10, 0x09, 0x00, 0x09} },
+		      0x0A, 0x07, 0x00, 0x00, 0x08, 0x08, 0x08, 0x08,
+		      0x08, 0x32, 0x10, 0x08, 0x00, 0x08} },
 	{0xE9, 0x01, {0xE3} },
 	{0xD3, 0x03, {0x05, 0x08, 0x86} },
 	{0xE9, 0x01, {0x00} },
@@ -328,7 +329,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xE7, 0x02, {0x17, 0x69} },
 	{0xE9, 0x01, {0x00} },
 	{0xBD, 0x01, {0x01} },
-	{0xE7, 0x09, {0x02, 0x00, 0x01, 0x20, 0x01, 0x0E, 0x08, 0xEE,
+	{0xE7, 0x09, {0x00, 0x00, 0x01, 0x20, 0x01, 0x0E, 0x08, 0xEE,
 		      0x09} },
 	{0xBD, 0x01, {0x02} },
 	{0xE7, 0x03, {0x20, 0x20, 0x00} },
@@ -339,7 +340,6 @@ static struct LCM_setting_table init_setting_vdo[] = {
 	{0xE9, 0x01, {0x00} },
 	{0xBD, 0x01, {0x00} },
 	{0xD1, 0x01, {0x27} },
-	{0xBC, 0x01, {0x07} },
 	{0xBD, 0x01, {0x01} },
 	{0xE9, 0x01, {0xC2} },
 	{0xCB, 0x01, {0x27} },
@@ -429,9 +429,9 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
 	params->density = LCM_DENSITY;
 
-	params->dsi.mode = CMD_MODE;
-	params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
-	lcm_dsi_mode = CMD_MODE;
+	params->dsi.mode = SYNC_PULSE_VDO_MODE;
+	params->dsi.switch_mode = CMD_MODE;
+	lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
 	LCM_LOGI("%s: lcm_dsi_mode %d\n", __func__, lcm_dsi_mode);
 	params->dsi.switch_mode_enable = 0;
 
@@ -452,8 +452,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->dsi.vertical_sync_active = 2;
 	params->dsi.vertical_backporch = 8;
-	params->dsi.vertical_frontporch = 40;
-	params->dsi.vertical_frontporch_for_low_power = 620;
+	params->dsi.vertical_frontporch = 20;
+	params->dsi.vertical_frontporch_for_low_power = 750;
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 10;
@@ -463,8 +463,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	/* params->dsi.ssc_disable = 1; */
 #ifndef CONFIG_FPGA_EARLY_PORTING
 	/* this value must be in MTK suggested table */
-	params->dsi.PLL_CLOCK = 480;
-	params->dsi.PLL_CK_VDO = 440;
+	params->dsi.PLL_CLOCK = 490;
+	params->dsi.PLL_CK_CMD = 480;
 #else
 	params->dsi.pll_div1 = 0;
 	params->dsi.pll_div2 = 0;
@@ -486,11 +486,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->round_corner_en = 1;
 	params->corner_pattern_height = ROUND_CORNER_H_TOP;
 	params->corner_pattern_height_bot = ROUND_CORNER_H_BOT;
-	params->round_corner_params.tp_size = sizeof(top_rc_pattern);
-	params->round_corner_params.lt_addr = (void *)top_rc_pattern;
-	params->round_corner_params.rt_addr = NULL;
-	params->round_corner_params.lb_addr = NULL;
-	params->round_corner_params.rb_addr = NULL;
+	params->corner_pattern_tp_size = sizeof(top_rc_pattern);
+	params->corner_pattern_lt_addr = (void *)top_rc_pattern;
 #endif
 }
 
@@ -625,8 +622,8 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width,
 	dsi_set_cmdq(data_array, 1, 0);
 }
 
-struct LCM_DRIVER hx83112b_fhdp_dsi_cmd_auo_rt4801_lcm_drv = {
-	.name = "hx83112b_fhdp_dsi_cmd_auo_rt4801_drv",
+struct LCM_DRIVER hx83112b_fhdp_dsi_vdo_auo_rt4801_lcm_drv = {
+	.name = "hx83112b_fhdp_dsi_vdo_auo_rt4801_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
