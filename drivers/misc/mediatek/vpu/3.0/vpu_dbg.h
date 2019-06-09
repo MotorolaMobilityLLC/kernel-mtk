@@ -21,11 +21,13 @@
  * level 9: dump log buffer
  */
 extern int g_vpu_log_level;
+extern int g_vpu_internal_log_level;
 extern unsigned int g_func_mask;
 
 enum VpuFuncMask {
 	VFM_NEED_WAIT_VCORE		= 0x1,
-	VFM_ROUTINE_PRT_SYSLOG = 0x2
+	VFM_ROUTINE_PRT_SYSLOG = 0x2,
+	VFM_ROUTINE_SET_MPU		= 0x4
 };
 
 enum VpuLogThre {
