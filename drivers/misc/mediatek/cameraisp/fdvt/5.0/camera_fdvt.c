@@ -172,9 +172,9 @@ pr_info(MyTag "[%s] " format, __func__, ##args)
 #define log_notice(format, args...) \
 pr_notice(MyTag "[%s] " format, __func__, ##args)
 #define log_wrn(format, args...) \
-pr_debug(MyTag "[%s] " format, __func__, ##args)
+pr_info(MyTag "[%s] " format, __func__, ##args)
 #define log_err(format, args...) \
-pr_debug(MyTag "[%s] " format, __func__, ##args)
+pr_info(MyTag "[%s] " format, __func__, ##args)
 #define log_ast(format, args...) \
 pr_debug(MyTag "[%s] " format, __func__, ##args)
 
@@ -2148,7 +2148,7 @@ static signed int FDVT_WaitIrq(FDVT_WAIT_IRQ_STRUCT *WaitIrq)
 		(!FDVT_GetIRQState(WaitIrq->Type, WaitIrq->UserKey,
 				   WaitIrq->Status, whichReq,
 				   WaitIrq->ProcessID))) {
-		log_dbg("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
+		log_err("interrupted by system, timeout(%d),irq Type/User/Sts/whichReq/Pid(0x%x/%d/0x%x/%d/%d)\n",
 		Timeout, WaitIrq->Type, WaitIrq->UserKey,
 		WaitIrq->Status, whichReq, WaitIrq->ProcessID);
 		/* actually it should be -ERESTARTSYS */
