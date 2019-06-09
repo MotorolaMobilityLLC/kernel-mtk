@@ -188,7 +188,7 @@
 #define TS_MS_TO_NS(x) (x * 1000 * 1000)
 
 /*cpu core nums*/
-#define TZCPU_NO_CPU_CORES              (8)
+#define TZCPU_NO_CPU_CORES              CONFIG_NR_CPUS
 
 #if THERMAL_GET_AHB_BUS_CLOCK
 #define THERMAL_MODULE_SW_CG_SET	(therm_clk_infracfg_ao_base + 0x80)
@@ -752,5 +752,6 @@ extern void lvts_dump_time_profiling_result(struct seq_file *m);
 #define THERMAL_MSRCTL0_MASK    0x00000007
 #define THERMAL_MSRCTL1_MASK    0x00000038
 #define THERMAL_MSRCTL2_MASK    0x000001C0
+
 
 #endif	/* __TSCPU_SETTINGS_H__ */
