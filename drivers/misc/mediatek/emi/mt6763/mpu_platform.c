@@ -25,7 +25,7 @@ enum { MASTER_APMCU_CH1 = 0,
 	   MASTER_PERI = 7,
 	   MASTER_ALL = 8 };
 
-int is_md_master(unsigned int master_id)
+int is_md_master(unsigned int master_id, unsigned int domain_id)
 {
 	if (((master_id & 0x7) == MASTER_MDMCU) ||
 	    ((master_id & 0x7) == MASTER_MDDMA))
