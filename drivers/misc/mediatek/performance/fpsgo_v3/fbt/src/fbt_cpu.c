@@ -364,6 +364,19 @@ int fbt_cpu_set_floor_opp(int new_opp)
 	return 0;
 }
 
+static int fbt_get_L_min_ceiling(void)
+{
+	int opp, freq;
+
+	opp = upower_get_turn_point();
+	if (opp >= NR_FREQ_CPU || opp < 0)
+		return 0;
+
+	freq = cpu_dvfs[fbt_get_L_cluster_num()].power[opp];
+
+	return freq;
+}
+
 static int fbt_is_enable(void)
 {
 	int enable;
@@ -475,7 +488,7 @@ static void fbt_free_bhr(void)
 	int i;
 
 	pld =
-		kcalloc(cluster_num, sizeof(struct ppm_limit_data),
+		kzalloc(cluster_num * sizeof(struct ppm_limit_data),
 				GFP_KERNEL);
 	if (!pld) {
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
@@ -642,7 +655,6 @@ static int fbt_get_dep_list(struct render_info *thr)
 
 	memset(dep_new, 0,
 		MAX_DEP_NUM * sizeof(struct fpsgo_loading));
-
 	if (!thr)
 		return 1;
 
@@ -1315,7 +1327,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	int min_ceiling = 0;
 
 	pld =
-		kcalloc(cluster_num, sizeof(struct ppm_limit_data),
+		kzalloc(cluster_num * sizeof(struct ppm_limit_data),
 				GFP_KERNEL);
 	if (!pld) {
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
@@ -1497,7 +1509,7 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 	int max_cluster = 0;
 
 	clus_max_idx =
-		kcalloc(cluster_num, sizeof(int), GFP_KERNEL);
+		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
 
 	if (!clus_max_idx)
 		return 100U;
@@ -1723,10 +1735,12 @@ static int fbt_boost_policy(
 
 			timer = &(boost_info->proc.jerks[active_jerk_id].timer);
 			if (timer) {
-				if (boost_info->proc.jerks[
-					active_jerk_id].jerking == 0) {
-					boost_info->proc.jerks[
-						active_jerk_id].jerking = 1;
+				if (boost_info->
+						proc.jerks[active_jerk_id].
+						jerking == 0) {
+					boost_info->
+						proc.jerks[active_jerk_id].
+						jerking = 1;
 					hrtimer_start(timer,
 							ns_to_ktime(t2wnt),
 							HRTIMER_MODE_REL);
