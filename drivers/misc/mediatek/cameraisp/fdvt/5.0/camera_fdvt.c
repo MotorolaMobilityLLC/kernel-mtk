@@ -1186,6 +1186,16 @@ static bool UpdateFDVT(pid_t *ProcessID)
 				FDVTReq_Struct[i].
 				FdvtFrameStatus[j] =
 				    FDVT_FRAME_STATUS_FINISHED;
+				g_FDVT_ReqRing.
+				FDVTReq_Struct[i].
+				FdvtFrameConfig[j].
+				RESULT =
+				    FDVT_RD32(FDVT_RESULT_REG);
+				g_FDVT_ReqRing.
+				FDVTReq_Struct[i].
+				FdvtFrameConfig[j].
+				RESULT1 =
+				    FDVT_RD32(FDVT_RESULT_1_REG);
 				if ((_SUPPORT_MAX_FDVT_FRAME_REQUEST_ ==
 				    (next_idx))
 				    || ((_SUPPORT_MAX_FDVT_FRAME_REQUEST_ >
@@ -1398,6 +1408,7 @@ static signed int ConfigFDVTHW(FDVT_Config *pFdvtConfig)
 		cmdqRecWrite(handle, FDVT_RS_HW, 0x00000403, CMDQ_REG_MASK);
 		cmdqRecWrite(handle, FDVT_FD_HW, 0x04000012, CMDQ_REG_MASK);
 	}
+	cmdqRecWrite(handle, FDVT_RPN_HW, 0x0, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, FDVT_YUV2RGB_HW,
 		     pFdvtConfig->FDVT_YUV2RGB, CMDQ_REG_MASK);
 	cmdqRecWrite(handle, FDVT_YUV_SRC_WD_HT_HW,
@@ -1764,7 +1775,7 @@ static inline void FDVT_Reset(void)
 		FDVT_WR32(FDVT_START_REG,
 			 (FDVT_RD32(FDVT_START_REG) |
 			 0x20000));
-		while ((FDVT_RD32(FDVT_START_REG) && 0x20000 != 0x0))
+		while (((FDVT_RD32(FDVT_START_REG) & 0x20000) != 0x0))
 			log_dbg("FDVT resetting...\n");
 		FDVT_WR32(FDVT_START_REG, 0x10000);
 		FDVT_WR32(FDVT_START_REG, 0x0);
