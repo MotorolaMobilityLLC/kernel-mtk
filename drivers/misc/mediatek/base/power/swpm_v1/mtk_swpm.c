@@ -87,7 +87,7 @@ static unsigned char avg_window = DEFAULT_AVG_WINDOW;
 struct swpm_rec_data *swpm_info_ref;
 unsigned int swpm_status;
 bool swpm_debug;
-DEFINE_SPINLOCK(swpm_spinlock);
+DEFINE_MUTEX(swpm_mutex);
 
 /****************************************************************************
  *  Static Function
@@ -366,14 +366,13 @@ unsigned int swpm_get_avg_power(enum power_rail type, unsigned int avg_window)
 {
 	unsigned int *ptr;
 	unsigned int cnt, idx, sum = 0, pwr = 0;
-	unsigned long flags;
 
 	if (type >= NR_POWER_RAIL) {
 		swpm_err("Invalid SWPM type = %d\n", type);
 		return 0;
 	}
 
-	swpm_lock(&swpm_spinlock, flags);
+	swpm_lock(&swpm_mutex);
 
 	/* window should be 1 to MAX_RECORD_CNT */
 	avg_window = MAX(avg_window, 1);
@@ -394,7 +393,7 @@ unsigned int swpm_get_avg_power(enum power_rail type, unsigned int avg_window)
 
 	pwr = sum / avg_window;
 
-	swpm_unlock(&swpm_spinlock, flags);
+	swpm_unlock(&swpm_mutex);
 
 	swpm_dbg("avg pwr of meter %d = %d mA\n", type, pwr);
 

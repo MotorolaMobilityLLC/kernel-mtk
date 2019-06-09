@@ -14,10 +14,8 @@
 #ifndef __MTK_IDLE_SYSFS__
 #define __MTK_IDLE_SYSFS__
 
-typedef ssize_t (*f_mtk_idle_sysfs_show)(char *ToUserBuf
-			, size_t sz, void *priv);
-typedef ssize_t (*f_mtk_idle_sysfs_write)(char *FromUserBuf
-			, size_t sz, void *priv);
+#include "mtk_lp_sysfs.h"
+#include "mtk_lp_kernfs.h"
 
 struct mtk_idle_sysfs_op {
 	f_mtk_idle_sysfs_show	fs_read;
@@ -31,6 +29,17 @@ struct mtk_idle_sysfs_handle {
 
 /*Creat the root entry for mtk idle systme fs*/
 int mtk_idle_sysfs_entry_create(void);
+/* For legacy definition*/
+#define mtk_idle_sysfs_handle	mtk_lp_sysfs_handle
+#define mtk_idle_sysfs_op		mtk_lp_sysfs_op
+
+
+
+
+/*Creat the entry for mtk idle systme fs*/
+int mtk_idle_sysfs_entry_group_add(const char *name
+		, int mode, struct mtk_lp_sysfs_group *_group
+		, struct mtk_lp_sysfs_handle *handle);
 
 /*Add the child file node to mtk idle system*/
 int mtk_idle_sysfs_entry_node_add(const char *name, int mode
@@ -39,6 +48,8 @@ int mtk_idle_sysfs_entry_node_add(const char *name, int mode
 
 /*Get the mtk idle system fs root entry handle*/
 int mtk_idle_sysfs_entry_root_get(struct mtk_idle_sysfs_handle **handle);
+int mtk_idle_sysfs_power_create_group(struct attribute_group *grp);
+size_t get_mtk_idle_sysfs_power_bufsz_max(void);
 
 int mtk_idle_sysfs_entry_func_create(const char *name, int mode
 			, struct mtk_idle_sysfs_handle *parent

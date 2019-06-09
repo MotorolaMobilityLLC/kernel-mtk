@@ -936,7 +936,7 @@ static void execute_aee(unsigned int i, unsigned int domain_id,
 			unsigned int dbg1)
 {
 	char subsys_str[48] = {0};
-	char *mtk_platform = MTK_PLATFORM;
+	const char *mtk_platform = "mt6779";
 
 	DEVAPC_MSG("[DEVAPC] Executing AEE Exception...\n");
 	DEVAPC_MSG("[DEVAPC] aee_trigger_times: %d\n",

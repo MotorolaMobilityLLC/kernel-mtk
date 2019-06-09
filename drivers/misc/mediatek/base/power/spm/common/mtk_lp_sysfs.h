@@ -13,7 +13,6 @@
 
 #ifndef __MTK_LP_SYSFS__
 #define __MTK_LP_SYSFS__
-
 typedef ssize_t (*f_mtk_idle_sysfs_show)(char *ToUserBuf
 			, size_t sz, void *priv);
 typedef ssize_t (*f_mtk_idle_sysfs_write)(char *FromUserBuf

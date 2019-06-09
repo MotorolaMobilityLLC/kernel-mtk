@@ -118,4 +118,3 @@ endif
 obj-$(CONFIG_MACH_MT6779) += srclken_rc_v1/
 obj-$(CONFIG_MTK_SWPM) += swpm_v1/
 obj-$(CONFIG_MTK_QOS_FRAMEWORK) += qos/
-obj-$(CONFIG_MACH_MT6779) += ppm_v3/
