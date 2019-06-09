@@ -721,6 +721,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 			"invalid input reg count:%u block size:%u prop size:%u\n",
 			job.command.regRequest.count,
 			job.command.blockSize, job.command.prop_size);
+		kfree(mapping_job);
 		return -EINVAL;
 	}
 
@@ -735,6 +736,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 	status = cmdq_driver_create_reg_address_buffer(&job.command);
 	if (status != 0) {
 		CMDQ_ERR("create reg buffer fail:%d\n", status);
+		kfree(mapping_job);
 		return status;
 	}
 
@@ -757,6 +759,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 			job.command.regRequest.regAddresses = 0;
 		}
 		CMDQ_ERR("create secure meta fail:%d\n", status);
+		kfree(mapping_job);
 		return status;
 	}
 
@@ -772,6 +775,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 			job.command.regRequest.regAddresses = 0;
 		}
 		cmdq_driver_destroy_secure_medadata(&job.command);
+		kfree(mapping_job);
 		return status;
 	}
 
@@ -801,6 +805,7 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 			cmdq_task_destroy(handle);
 		}
 
+		kfree(mapping_job);
 		return status;
 	}
 
