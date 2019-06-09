@@ -85,6 +85,8 @@ enum CMDQ_ENG_ENUM {
 	CMDQ_ENG_DISP_DSI1_CMD,	/* 53 */
 	CMDQ_ENG_DISP_DSI1,	/* 54 */
 
+	CMDQ_ENG_INORDER,	/* 55 */
+
 	CMDQ_MAX_ENGINE_COUNT	/* ALWAYS keep at the end */
 };
 
