@@ -19,7 +19,7 @@
 //#define SW_ZQCS
 //#define SW_TX_TRACKING
 //#define DVFS_READY
-#if 0 /* def CONFIG_MTK_EMI */
+#ifdef CONFIG_MTK_EMI
 #define EMI_READY
 #endif
 //#define RUNTIME_SHMOO
