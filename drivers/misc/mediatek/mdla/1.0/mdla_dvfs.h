@@ -70,9 +70,6 @@ enum MDLA_OPP_INDEX {
 	MDLA_OPP_10 = 10,
 	MDLA_OPP_11 = 11,
 	MDLA_OPP_12 = 12,
-	MDLA_OPP_13 = 13,
-	MDLA_OPP_14 = 14,
-	MDLA_OPP_15 = 15,
 	MDLA_OPP_NUM
 };
 
@@ -84,6 +81,7 @@ struct MDLA_OPP_INFO {
 #define MDLA_MAX_NUM_STEPS               (16)
 #define MDLA_MAX_NUM_OPPS                (16)
 //#define MTK_MDLA_CORE (1)
+#define MTK_MDLA_USER (2)
 #define MTK_VPU_CORE_NUM (2)
 struct mdla_dvfs_steps {
 	uint32_t values[MDLA_MAX_NUM_STEPS];
@@ -127,6 +125,9 @@ int get_mdlacore_opp(void);
 int get_mdla_platform_floor_opp(void);
 int get_mdla_ceiling_opp(void);
 int get_mdla_opp_to_freq(uint8_t step);
+void mdla_put_power(int core);
+int mdla_get_power(int core);
+void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index);
 
 #ifndef MTK_MDLA_FPGA_PORTING
 int mdla_init_hw(int core, struct platform_device *pdev);
@@ -137,7 +138,7 @@ int mdla_dump_opp_table(struct seq_file *s);
 
 long mdla_dvfs_ioctl(struct file *filp, unsigned int command,
 		unsigned long arg);
-int mdla_dvfs_cmd_start(struct command_entry *ce, struct list_head *cmd_list);
+int mdla_dvfs_cmd_start(struct command_entry *ce);
 int mdla_dvfs_cmd_end_info(struct command_entry *ce);
 int mdla_dvfs_cmd_end_shutdown(void);
 

@@ -32,36 +32,36 @@
 #include <linux/regulator/consumer.h>
 #include "vpu_dvfs.h"
 #include <mtk_devinfo.h>
-#ifdef MTK_SWPM
-#include <mtk_swpm.h>
-#endif
+#include "mtk_qos_bound.h"
+#include <linux/pm_qos.h>
 
+#ifdef MTK_PERF_OBSERVER
+#include <mt-plat/mtk_perfobserver.h>
+#endif
+#include <mt-plat/mtk_secure_api.h>
 
 #ifdef CONFIG_PM_WAKELOCKS
-struct wakeup_source mdla_wake_lock[MTK_MDLA_CORE];
+struct wakeup_source mdla_wake_lock[MTK_MDLA_USER];
 #else
-struct wake_lock mdla_wake_lock[MTK_MDLA_CORE];
+struct wake_lock mdla_wake_lock[MTK_MDLA_USER];
 #endif
 
 
 /* opp, mW */
 struct MDLA_OPP_INFO mdla_power_table[MDLA_OPP_NUM] = {
-	{MDLA_OPP_0, 336 * 4},
-	{MDLA_OPP_1, 250 * 4},
-	{MDLA_OPP_2, 221 * 4},
-	{MDLA_OPP_3, 208 * 4},
-	{MDLA_OPP_4, 140 * 4},
-	{MDLA_OPP_5, 120 * 4},
-	{MDLA_OPP_6, 114 * 4},
-	{MDLA_OPP_7, 84 * 4},
-	{MDLA_OPP_8, 336 * 4},
-	{MDLA_OPP_9, 250 * 4},
-	{MDLA_OPP_10, 221 * 4},
-	{MDLA_OPP_11, 208 * 4},
-	{MDLA_OPP_12, 140 * 4},
-	{MDLA_OPP_13, 120 * 4},
-	{MDLA_OPP_14, 114 * 4},
-	{MDLA_OPP_15, 84 * 4},
+	{MDLA_OPP_0, 688},
+	{MDLA_OPP_1, 611},
+	{MDLA_OPP_2, 544},
+	{MDLA_OPP_3, 400},
+	{MDLA_OPP_4, 392},
+	{MDLA_OPP_5, 360},
+	{MDLA_OPP_6, 346},
+	{MDLA_OPP_7, 297},
+	{MDLA_OPP_8, 274},
+	{MDLA_OPP_9, 192},
+	{MDLA_OPP_10, 164},
+	{MDLA_OPP_11, 144},
+	{MDLA_OPP_12, 109},
 
 };
 #define CMD_WAIT_TIME_MS    (3 * 1000)
@@ -172,7 +172,7 @@ struct my_struct_t {
 };
 static struct workqueue_struct *wq;
 static void mdla_power_counter_routine(struct work_struct *);
-static struct my_struct_t power_counter_work[MTK_MDLA_CORE];
+static struct my_struct_t power_counter_work[MTK_MDLA_USER];
 
 /* static struct workqueue_struct *opp_wq; */
 static void mdla_opp_keep_routine(struct work_struct *);
@@ -180,49 +180,55 @@ static DECLARE_DELAYED_WORK(opp_keep_work, mdla_opp_keep_routine);
 
 
 /* power */
-static struct mutex power_mutex[MTK_MDLA_CORE];
-static bool is_power_on[MTK_MDLA_CORE];
+static struct mutex power_mutex[MTK_MDLA_USER];
+static bool is_power_on[MTK_MDLA_USER];
 static bool is_power_debug_lock;
-static struct mutex power_counter_mutex[MTK_MDLA_CORE];
-static int power_counter[MTK_MDLA_CORE];
+static struct mutex power_counter_mutex[MTK_MDLA_USER];
+static int power_counter[MTK_MDLA_USER];
 static struct mutex opp_mutex;
-static bool force_change_vcore_opp[MTK_MDLA_CORE];
-static bool force_change_vvpu_opp[MTK_MDLA_CORE];
-static bool force_change_vmdla_opp[MTK_MDLA_CORE];
-static bool force_change_dsp_freq[MTK_MDLA_CORE];
-static bool change_freq_first[MTK_MDLA_CORE];
+static bool force_change_vcore_opp[MTK_MDLA_USER];
+static bool force_change_vvpu_opp[MTK_MDLA_USER];
+static bool force_change_vmdla_opp[MTK_MDLA_USER];
+static bool force_change_dsp_freq[MTK_MDLA_USER];
+static bool change_freq_first[MTK_MDLA_USER];
 static bool opp_keep_flag;
 static uint8_t max_vcore_opp;
 //static uint8_t max_vvpu_opp;
 static uint8_t max_vmdla_opp;
 static uint8_t max_dsp_freq;
-static struct mdla_lock_power lock_power[MDLA_OPP_PRIORIYY_NUM][MTK_MDLA_CORE];
-static uint8_t max_opp[MTK_MDLA_CORE];
-static uint8_t min_opp[MTK_MDLA_CORE];
+static struct mdla_lock_power lock_power[MDLA_OPP_PRIORIYY_NUM][MTK_MDLA_USER];
+static uint8_t max_opp[MTK_MDLA_USER];
+static uint8_t min_opp[MTK_MDLA_USER];
+static uint8_t maxboost[MTK_MDLA_USER];
+static uint8_t minboost[MTK_MDLA_USER];
 static struct mutex power_lock_mutex;
 
 /* dvfs */
 static struct mdla_dvfs_opps opps;
 #ifdef ENABLE_PMQOS
-static struct pm_qos_request mdla_qos_bw_request[MTK_MDLA_CORE];
-static struct pm_qos_request mdla_qos_vcore_request[MTK_MDLA_CORE];
-//static struct pm_qos_request mdla_qos_vvpu_request[MTK_MDLA_CORE];
-static struct pm_qos_request mdla_qos_vmdla_request[MTK_MDLA_CORE];
+static struct pm_qos_request mdla_qos_bw_request[MTK_MDLA_USER];
+static struct pm_qos_request mdla_qos_vcore_request[MTK_MDLA_USER];
+static struct pm_qos_request mdla_qos_vvpu_request[MTK_MDLA_USER];
+static struct pm_qos_request mdla_qos_vmdla_request[MTK_MDLA_USER];
 #endif
 
 /*regulator id*/
 static struct regulator *vvpu_reg_id;
 static struct regulator *vmdla_reg_id;
 
+static int mdla_init_done;
+static uint8_t segment_max_opp;
+static uint8_t segment_index;
+
 /* static function prototypes */
 static int mdla_boot_up(int core);
 static int mdla_shut_down(int core);
-static void mdla_put_power(int core, enum mdlaPowerOnType type);
 static bool mdla_update_lock_power_parameter
 	(struct mdla_lock_power *mdla_lock_power);
 static bool mdla_update_unlock_power_parameter
 	(struct mdla_lock_power *mdla_lock_power);
 static uint8_t mdla_boost_value_to_opp(uint8_t boost_value);
+static int mdla_lock_set_power(struct mdla_lock_power *mdla_lock_power);
 
 static inline int Map_MDLA_Freq_Table(int freq_opp)
 {
@@ -231,10 +237,16 @@ static inline int Map_MDLA_Freq_Table(int freq_opp)
 	switch (freq_opp) {
 	case 0:
 	default:
-		freq_value = 788;
+		if (segment_index == SEGMENT_95)
+			freq_value = 884;
+		else
+			freq_value = 788;
 		break;
 	case 1:
-		freq_value = 700;
+		if (segment_index == SEGMENT_95)
+			freq_value = 788;
+		else
+			freq_value = 700;
 		break;
 	case 2:
 		freq_value = 624;
@@ -282,6 +294,27 @@ static inline int Map_MDLA_Freq_Table(int freq_opp)
 
 	return freq_value;
 }
+#if defined(MDLA_MET_READY)
+void MDLA_MET_Events_Trace(bool enter, int core)
+{
+	int vmdla_opp = 0;
+	int dsp_freq = 0, ipu_if_freq = 0, mdla_freq = 0;
+
+	if (enter) {
+		/* only read for debug purpose*/
+		/*mutex_lock(&opp_mutex);*/
+		vmdla_opp = opps.vmdla.index;
+		dsp_freq = Map_MDLA_Freq_Table(opps.dsp.index);
+		ipu_if_freq = Map_MDLA_Freq_Table(opps.ipu_if.index);
+		mdla_freq = Map_MDLA_Freq_Table(opps.mdlacore.index);
+		/*mutex_unlock(&opp_mutex);*/
+		mdla_met_event_enter(core, vmdla_opp, dsp_freq,
+					ipu_if_freq, mdla_freq);
+	} else {
+		mdla_met_event_leave(core);
+	}
+}
+#endif
 
 static int mdla_set_clock_source(struct clk *clk, uint8_t step)
 {
@@ -295,10 +328,16 @@ static int mdla_set_clock_source(struct clk *clk, uint8_t step)
 
 	switch (step) {
 	case 0:
-		clk_src = clk_top_mmpll_d4;
+		if (segment_index == SEGMENT_95)
+			clk_src = clk_top_adsppll_d4;
+		else
+			clk_src = clk_top_mmpll_d4;
 		break;
 	case 1:
-		clk_src = clk_top_adsppll_d4;
+		if (segment_index == SEGMENT_95)
+			clk_src = clk_top_mmpll_d4;
+		else
+			clk_src = clk_top_adsppll_d4;
 		break;
 	case 2:
 		clk_src = clk_top_univpll_d2;
@@ -441,10 +480,33 @@ static int mdla_get_hw_vcore_opp(int core)
 }
 #endif
 
+int mdla_get_bw(void)
+{
+	struct qos_bound *bound = get_qos_bound();
+	int bw = 0;
+
+	bw = bound->stats[bound->idx].smibw_mon[QOS_SMIBM_MDLA];
+
+	mdla_dvfs_debug("[mdla] cmd bw=%d\n", bw);
+
+	return bw;
+
+}
+
+int mdla_get_lat(void)
+{
+	struct qos_bound *bound = get_qos_bound();
+	int lat = 0;
+
+	lat = bound->stats[bound->idx].lat_mon[QOS_LAT_MDLA];
+	mdla_dvfs_debug("[mdla] cmd latency=%d\n", lat);
+	return lat;
+}
+
 int mdla_get_opp(void)
 {
-	LOG_INF("[mdla] mdlacore.index:%d\n", opps.mdlacore.index);
-	LOG_INF("[mdla] opps.dsp.index:%d\n", opps.dsp.index);
+	LOG_DBG("[mdla] mdlacore.index:%d\n", opps.mdlacore.index);
+	LOG_DBG("[mdla] opps.dsp.index:%d\n", opps.dsp.index);
 	return opps.dsp.index;
 }
 EXPORT_SYMBOL(mdla_get_opp);
@@ -478,10 +540,16 @@ int get_mdla_opp_to_freq(uint8_t step)
 
 	switch (step) {
 	case 0:
+		if (segment_index == SEGMENT_95)
+		freq = 884;
+		else
 		freq = 788;
 		break;
 	case 1:
-		freq = 700;
+		if (segment_index == SEGMENT_95)
+			freq = 788;
+		else
+			freq = 700;
 		break;
 	case 2:
 		freq = 606;
@@ -534,97 +602,6 @@ int get_mdla_opp_to_freq(uint8_t step)
 }
 EXPORT_SYMBOL(get_mdla_opp_to_freq);
 
-static int mdla_get_hw_vvpu_opp(int core)
-{
-	int opp_value = 0;
-	int get_vvpu_value = 0;
-	int vvpu_opp_0;
-	int vvpu_opp_1;
-	int vvpu_opp_2;
-	int vvpu_opp_0_vol;
-	int vvpu_opp_1_vol;
-	int vvpu_opp_2_vol;
-
-//index63:PTPOD 0x11C105B4
-	vvpu_opp_0 = (get_devinfo_with_index(63) & (0x7<<15))>>15;
-	vvpu_opp_1 = (get_devinfo_with_index(63) & (0x7<<12))>>12;
-	vvpu_opp_2 = (get_devinfo_with_index(63) & (0x7<<9))>>9;
-
-	if ((vvpu_opp_0 <= 7) && (vvpu_opp_0 >= 2))
-		vvpu_opp_0_vol = 800000;
-	else
-		vvpu_opp_0_vol = 825000;
-
-	if ((vvpu_opp_1 <= 7) && (vvpu_opp_1 >= 2))
-		vvpu_opp_1_vol = 700000;
-	else
-		vvpu_opp_1_vol = 725000;
-
-	if ((vvpu_opp_2 <= 7) && (vvpu_opp_2 >= 2))
-		vvpu_opp_2_vol = 625000;
-	else
-		vvpu_opp_2_vol = 650000;
-
-	get_vvpu_value = (int)regulator_get_voltage(vvpu_reg_id);
-	if (get_vvpu_value >= vvpu_opp_0_vol)
-		opp_value = 0;
-	else if (get_vvpu_value > vvpu_opp_1_vol)
-		opp_value = 0;
-	else if (get_vvpu_value > vvpu_opp_2_vol)
-		opp_value = 1;
-	else
-		opp_value = 2;
-
-	LOG_DBG("[mdla_%d] vvpu(%d->%d)\n", core, get_vvpu_value, opp_value);
-
-	return opp_value;
-}
-
-static int mdla_get_hw_vmdla_opp(int core)
-{
-	int opp_value = 0;
-	int get_vmdla_value = 0;
-	int vmdla_opp_0;
-	int vmdla_opp_1;
-	int vmdla_opp_2;
-	int vmdla_opp_0_vol;
-	int vmdla_opp_1_vol;
-	int vmdla_opp_2_vol;
-
-	//index63:PTPOD 0x11C105B4
-	vmdla_opp_0 =  (get_devinfo_with_index(63) & (0x7<<24))>>24;
-	vmdla_opp_1 =  (get_devinfo_with_index(63) & (0x7<<21))>>21;
-	vmdla_opp_2 =  (get_devinfo_with_index(63) & (0x7<<18))>>18;
-	if ((vmdla_opp_0 <= 7) && (vmdla_opp_0 >= 2))
-		vmdla_opp_0_vol = 800000;
-	else
-		vmdla_opp_0_vol = 825000;
-
-	if ((vmdla_opp_1 <= 7) && (vmdla_opp_1 >= 2))
-		vmdla_opp_1_vol = 700000;
-	else
-		vmdla_opp_1_vol = 725000;
-
-	if ((vmdla_opp_2 <= 7) && (vmdla_opp_2 >= 2))
-		vmdla_opp_2_vol = 625000;
-	else
-		vmdla_opp_2_vol = 650000;
-
-	get_vmdla_value = (int)regulator_get_voltage(vmdla_reg_id);
-	if (get_vmdla_value >= vmdla_opp_0_vol)
-		opp_value = 0;
-	else if (get_vmdla_value > vmdla_opp_1_vol)
-		opp_value = 0;
-	else if (get_vmdla_value > vmdla_opp_2_vol)
-		opp_value = 1;
-	else
-		opp_value = 2;
-
-	LOG_INF("[mdla_%d] vmdla(%d->%d)\n", core, get_vmdla_value, opp_value);
-
-	return opp_value;
-}
-
 static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 {
 	uint8_t vpu0_opp;
@@ -642,46 +619,46 @@ static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 	vpu1_opp = 15;
 	vvpu_opp = 15;
 #endif
-	LOG_INF("[mdla] vpu0_opp %d, vpu1_opp %d, vvpu_opp %d\n",
+	mdla_dvfs_debug("[mdla] vpu0_opp %d, vpu1_opp %d, vvpu_opp %d\n",
 	vpu0_opp, vpu1_opp, vvpu_opp);
 	switch (vmdla_index) {
 	case 0:
 		opps.dsp.index = 0;
-		opps.ipu_if.index = 0;
+		opps.ipu_if.index = 5;
 		break;
 	case 1:
 		opps.dsp.index = 0;
-		opps.ipu_if.index = 0;
+		opps.ipu_if.index = 5;
 		break;
 	case 2:
 		opps.dsp.index = 0;
-		opps.ipu_if.index = 0;
+		opps.ipu_if.index = 5;
 		break;
 	case 3:
 	case 4:
 	case 5:
 	case 6:
 		opps.dsp.index = 5;
-		opps.ipu_if.index = 5;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 5) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 7:
 		opps.dsp.index = 6;
-		opps.ipu_if.index = 6;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 6) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 8:
 		opps.dsp.index = 7;
-		opps.ipu_if.index = 7;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 7) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 9:
@@ -689,55 +666,55 @@ static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 9) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 10:
 		opps.dsp.index = 10;
-		opps.ipu_if.index = 10;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 10) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 11:
 		opps.dsp.index = 11;
-		opps.ipu_if.index = 11;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 11) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 12:
 		opps.dsp.index = 12;
-		opps.ipu_if.index = 12;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 12) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 13:
 		opps.dsp.index = 13;
-		opps.ipu_if.index = 13;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 13) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 14:
 		opps.dsp.index = 14;
-		opps.ipu_if.index = 14;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 14) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	case 15:
 		opps.dsp.index = 15;
-		opps.ipu_if.index = 15;
+		opps.ipu_if.index = 9;
 		if (vvpu_opp <= 15) {
 			opps.dsp.index = vvpu_opp;
-			opps.ipu_if.index = vvpu_opp;
+			//opps.ipu_if.index = vvpu_opp;
 		}
 		break;
 	default:
@@ -747,10 +724,42 @@ static void mdla_dsp_if_freq_check(int core, uint8_t vmdla_index)
 
 }
 
+static void get_segment_from_efuse(void)
+{
+	int segment = 0;
+
+	segment = get_devinfo_with_index(7) & 0xFF;
+	switch (segment) {
+	case 0x7://segment p90M 5mode
+		segment_max_opp = 0;
+		segment_index = SEGMENT_90M;
+		break;
+	case 0xE0://segment p90M 6mode 525M
+		segment_max_opp = 0;
+		segment_index = SEGMENT_90M;
+		break;
+	case 0x20://p95
+	case 0x4:
+	case 0x60:
+	case 0x6:
+	case 0x10:
+	case 0x8:
+	case 0x90:
+	case 0x9:
+		segment_max_opp = 0;
+		segment_index = SEGMENT_95;
+		break;
+	default: //segment p90
+		segment_max_opp = 0;
+		segment_index = SEGMENT_90;
+		break;
+	}
+	mdla_dvfs_debug("mdla segment_max_opp %d\n", segment_max_opp);
+}
 
 /* expected range, vmdla_index: 0~15 */
 /* expected range, freq_index: 0~15 */
-static void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
+void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
 {
 	int i = 0;
 	bool freq_check = false;
@@ -769,14 +778,18 @@ static void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
 
 	log_freq = Map_MDLA_Freq_Table(freq_index);
 
-	LOG_INF("opp_check + (%d/%d/%d), ori vmdla(%d)\n", core,
+	mdla_dvfs_debug("opp_check + (%d/%d/%d), ori vmdla(%d)\n", core,
 			vmdla_index, freq_index, opps.vmdla.index);
 
 	mutex_lock(&opp_mutex);
 	change_freq_first[core] = false;
 	log_max_freq = Map_MDLA_Freq_Table(max_dsp_freq);
-	/* vcore opp */
-	//get_vcore_opp = mdla_get_hw_vcore_opp(core);
+	/*segment limitation*/
+	if (vmdla_index < opps.vmdla.opp_map[segment_max_opp])
+		vmdla_index = opps.vmdla.opp_map[segment_max_opp];
+	if (freq_index < segment_max_opp)
+		freq_index = segment_max_opp;
+
 	/* vmdla opp*/
 	get_vmdla_opp = mdla_get_hw_vmdla_opp(core);
 #if 0
@@ -820,14 +833,14 @@ static void mdla_opp_check(int core, uint8_t vmdla_index, uint8_t freq_index)
 				freq_index = max_opp[core];
 			if (freq_index > min_opp[core])
 				freq_index = min_opp[core];
-LOG_INF("opp_check + max_opp%d,min_opp%d,(%d/%d/%d),ori vmdla(%d)",
+mdla_dvfs_debug("opp_check + max_opp%d,min_opp%d,(%d/%d/%d),ori vmdla(%d)",
 	max_opp[core], min_opp[core], core,
 	vmdla_index, freq_index, opps.vmdla.index);
 
 
-if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
+	if (vmdla_index == 0xFF) {
 
-	LOG_INF("no need, vmdla opp(%d), hw vore opp(%d)\n",
+	mdla_dvfs_debug("no need, vmdla opp(%d), hw vore opp(%d)\n",
 			vmdla_index, get_vmdla_opp);
 
 	force_change_vmdla_opp[core] = false;
@@ -838,7 +851,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 		change_freq_first[core] = true;
 
 	if (vmdla_index < max_vmdla_opp) {
-		LOG_INF("mdla bound vmdla opp(%d) to %d",
+		mdla_dvfs_debug("mdla bound vmdla opp(%d) to %d",
 				vmdla_index, max_vmdla_opp);
 
 		vmdla_index = max_vmdla_opp;
@@ -862,11 +875,11 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 #endif
 	/* dsp freq opp */
 	if (freq_index == 0xFF) {
-		LOG_INF("no request, freq opp(%d)", freq_index);
+		mdla_dvfs_debug("no request, freq opp(%d)", freq_index);
 		force_change_dsp_freq[core] = false;
 	} else {
 		if (freq_index < max_dsp_freq) {
-			LOG_INF("mdla bound dsp freq(%dMHz) to %dMHz",
+			mdla_dvfs_debug("mdla bound dsp freq(%dMHz) to %dMHz",
 					log_freq, log_max_freq);
 			freq_index = max_dsp_freq;
 		}
@@ -882,7 +895,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 				(freq_index > opps.mdlacore.index) &&
 				(opp_keep_flag)) {
 				force_change_dsp_freq[core] = false;
-					LOG_INF("%s(%d) %s (%d/%d_%d/%d)\n",
+					mdla_dvfs_debug("%s(%d) %s (%d/%d_%d/%d)\n",
 						__func__,
 						core,
 						"dsp keep high",
@@ -913,7 +926,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 				opps.dsp.index = 15;
 				opps.ipu_if.index = 15;
 				for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
-					LOG_INF("%s %s[%d].%s(%d->%d)\n",
+					mdla_dvfs_debug("%s %s[%d].%s(%d->%d)\n",
 						__func__,
 						"opps.mdlacore",
 						core,
@@ -951,7 +964,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 			}
 		} else {
 			/* vcore not change & dsp not change */
-				LOG_INF("opp_check(%d) vcore/dsp no change\n",
+				mdla_dvfs_debug("opp_check(%d) vcore/dsp no change\n",
 						core);
 
 			opp_keep_flag = true;
@@ -963,7 +976,7 @@ if ((vmdla_index == 0xFF) || (vmdla_index == get_vmdla_opp)) {
 	}
 	mutex_unlock(&opp_mutex);
 out:
-	LOG_INF("%s(%d)(%d/%d_%d)(%d/%d)(%d.%d.%d)(%d/%d)(%d/%d/%d/%d)%d\n",
+	mdla_dvfs_debug("%s(%d)(%d/%d_%d)(%d/%d)(%d.%d.%d)(%d/%d)(%d/%d/%d/%d)%d\n",
 		"opp_check",
 		core,
 		is_power_debug_lock,
@@ -982,11 +995,12 @@ out:
 		change_freq_first[core],
 		opp_keep_flag);
 }
+EXPORT_SYMBOL(mdla_opp_check);
 
 static bool mdla_change_opp(int core, int type)
 {
 #ifdef MTK_MDLA_FPGA_PORTING
-	LOG_INF("[mdla_%d] %d Skip at FPGA", core, type);
+	mdla_dvfs_debug("[mdla_%d] %d Skip at FPGA", core, type);
 
 	return true;
 #else
@@ -996,7 +1010,7 @@ static bool mdla_change_opp(int core, int type)
 	switch (type) {
 	/* vcore opp */
 	case OPPTYPE_VCORE:
-		LOG_INF("[mdla_%d] wait for changing vcore opp", core);
+		mdla_dvfs_debug("[mdla_%d] wait for changing vcore opp", core);
 #if 0
 		ret = wait_to_do_change_vcore_opp(core);
 		if (ret) {
@@ -1042,7 +1056,7 @@ static bool mdla_change_opp(int core, int type)
 			goto out;
 		}
 
-		LOG_INF("[mdla_%d] cgopp vmdla=%d\n",
+		mdla_dvfs_debug("[mdla_%d] cgopp vmdla=%d\n",
 				core,
 				regulator_get_voltage(vmdla_reg_id));
 
@@ -1054,7 +1068,7 @@ static bool mdla_change_opp(int core, int type)
 	/* dsp freq opp */
 	case OPPTYPE_DSPFREQ:
 		mutex_lock(&opp_mutex);
-		LOG_INF("[mdla] %s setclksrc(%d/%d/%d)\n",
+		mdla_dvfs_debug("[mdla] %s setclksrc(%d/%d/%d)\n",
 				__func__,
 				opps.dsp.index,
 				opps.mdlacore.index,
@@ -1090,10 +1104,22 @@ static bool mdla_change_opp(int core, int type)
 
 		force_change_dsp_freq[core] = false;
 		mutex_unlock(&opp_mutex);
+
+#ifdef MTK_PERF_OBSERVER
+		{
+			struct pob_xpufreq_info pxi;
+
+			pxi.id = core;
+			pxi.opp = opps.mdlacore.index;
+
+			pob_xpufreq_update(POB_XPUFREQ_MDLA, &pxi);
+		}
+#endif
+
 		break;
 	/* vmdla opp */
 	case OPPTYPE_VMDLA:
-		LOG_INF("[mdla_%d] wait for changing vmdla opp", core);
+		mdla_dvfs_debug("[mdla_%d] wait for changing vmdla opp", core);
 #if 0
 		ret = wait_to_do_change_vcore_opp(core);
 		if (ret) {
@@ -1115,21 +1141,27 @@ static bool mdla_change_opp(int core, int type)
 		#ifdef ENABLE_PMQOS
 		switch (opps.vmdla.index) {
 		case 0:
+			pm_qos_update_request(&mdla_qos_vcore_request[core],
+								VCORE_OPP_1);
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_0);
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_0);
-			pm_qos_update_request(&mdla_qos_vcore_request[core],
-								VCORE_OPP_0);
 			break;
 		case 1:
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_1);
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_1);
 			pm_qos_update_request(&mdla_qos_vcore_request[core],
-								VCORE_OPP_1);
+								VCORE_OPP_2);
 			break;
 		case 2:
 		default:
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_2);
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_2);
 			pm_qos_update_request(&mdla_qos_vcore_request[core],
 								VCORE_OPP_2);
 			break;
@@ -1150,7 +1182,7 @@ static bool mdla_change_opp(int core, int type)
 			goto out;
 		}
 
-		LOG_INF("[mdla_%d] cgopp vmdla=%d\n",
+		mdla_dvfs_debug("[mdla_%d] cgopp vmdla=%d\n",
 				core,
 				regulator_get_voltage(vmdla_reg_id));
 
@@ -1161,7 +1193,7 @@ static bool mdla_change_opp(int core, int type)
 		//wake_up_interruptible(&waitq_do_core_executing);
 		break;
 	default:
-		LOG_INF("unexpected type(%d)", type);
+		mdla_dvfs_debug("unexpected type(%d)", type);
 		break;
 	}
 
@@ -1177,6 +1209,8 @@ int32_t mdla_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t mdla_opp)
 	int vmdla_opp_index = 0;
 	int mdla_freq_index = 0;
 
+	if (mdla_init_done != 1)
+		return ret;
 	#if 0
 	bool mdla_down = true;
 
@@ -1187,7 +1221,7 @@ int32_t mdla_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t mdla_opp)
 		mutex_unlock(&power_counter_mutex[i]);
 	}
 	if (vpu_down) {
-		LOG_INF("[vpu] all vpu are off currently, do nothing\n");
+		mdla_dvfs_debug("[vpu] all vpu are off currently, do nothing\n");
 		return ret;
 	}
 	#endif
@@ -1209,14 +1243,14 @@ int32_t mdla_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t mdla_opp)
 		return -1;
 	}
 	#endif
-	LOG_INF("%s, opp(%d)->(%d/%d)\n",
+	mdla_dvfs_debug("%s, opp(%d)->(%d/%d)\n",
 	__func__, mdla_opp, vmdla_opp_index, mdla_freq_index);
 
 	mutex_lock(&opp_mutex);
 	max_dsp_freq = mdla_freq_index;
 	max_vmdla_opp = vmdla_opp_index;
 	mutex_unlock(&opp_mutex);
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		mutex_lock(&opp_mutex);
 
 		/* force change for all core under thermal request */
@@ -1226,7 +1260,7 @@ int32_t mdla_thermal_en_throttle_cb(uint8_t vcore_opp, uint8_t mdla_opp)
 		mdla_opp_check(i, vmdla_opp_index, mdla_freq_index);
 	}
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (force_change_dsp_freq[i]) {
 			/* force change freq while running */
 			switch (mdla_freq_index) {
@@ -1301,6 +1335,9 @@ int32_t mdla_thermal_dis_throttle_cb(void)
 {
 	int ret = 0;
 
+	if (mdla_init_done != 1)
+		return ret;
+
 	LOG_INF("%s +\n", __func__);
 	mutex_lock(&opp_mutex);
 	max_vcore_opp = 0;
@@ -1327,13 +1364,7 @@ static int mdla_prepare_regulator_and_clock(struct device *pdev)
 		ret = -ENOENT;
 		LOG_ERR("regulator_get vmdla_reg_id failed\n");
 	}
-	/*--enable regulator--*/
-	ret = regulator_enable(vmdla_reg_id);
-	udelay(200);
-	if (ret) {
-	LOG_ERR("regulator_enable vmdla_reg_id failed\n");
-	//goto out;
-	}
+
 
 #ifdef MTK_MDLA_FPGA_PORTING
 	LOG_INF("%s skip at FPGA\n", __func__);
@@ -1447,39 +1478,52 @@ static int mdla_enable_regulator_and_clock(int core)
 	return 0;
 #else
 	int ret = 0;
+	int ret1 = 0;
 	//int get_vcore_opp = 0;
 	int get_vmdla_opp = 0;
 	//bool adjust_vcore = false;
 	bool adjust_vmdla = false;
 
-	LOG_INF("[mdla] bypass setvoltage\n");
-	LOG_INF("[mdla_%d] en_rc + (%d)\n", core, is_power_debug_lock);
+	mdla_dvfs_debug("[mdla] bypass setvoltage\n");
+	mdla_dvfs_debug("[mdla_%d] en_rc + (%d)\n", core, is_power_debug_lock);
 
 	mdla_trace_tag_begin("%s");
 
-	if (is_power_debug_lock)
-		goto clk_on;
 #if 0
 	get_vcore_opp = mdla_get_hw_vcore_opp(core);
 	if (opps.vcore.index != get_vcore_opp)
 		adjust_vcore = true;
 #else
+
+#if 1
+
 	/*--enable regulator--*/
-	ret = regulator_enable(vmdla_reg_id);
-	udelay(200);
-	if (ret) {
-	LOG_ERR("regulator_enable vmdla_reg_id failed\n");
-	goto out;
-	}
+	ret1 = vvpu_regulator_set_mode(true);
+	udelay(100);//slew rate:rising10mV/us
+	mdla_dvfs_debug("enable vvpu ret:%d\n", ret1);
+	ret1 = vmdla_regulator_set_mode(true);
+	udelay(100);//slew rate:rising10mV/us
+	mdla_dvfs_debug("enable vmdla ret:%d\n", ret1);
+	vvpu_vmdla_vcore_checker();
+#else
+	/*--enable regulator--*/
+ret = regulator_enable(vmdla_reg_id);
+udelay(200);
+if (ret) {
+LOG_ERR("regulator_enable vmdla_reg_id failed\n");
+goto out;
+}
+
+#endif
+
 
 	get_vmdla_opp = mdla_get_hw_vmdla_opp(core);
-	if (opps.vmdla.index != get_vmdla_opp)
-		adjust_vmdla = true;
+	adjust_vmdla = true;
 #endif
 	mdla_trace_tag_begin("vcore:request");
 	//if (adjust_vcore) {
 	if (adjust_vmdla) {
-		LOG_INF("[mdla_%d] en_rc wait for changing vcore opp", core);
+		mdla_dvfs_debug("[mdla_%d] adjust_vmdla", core);
 #if 0
 		ret = wait_to_do_change_vcore_opp(core);
 		if (ret) {
@@ -1500,21 +1544,27 @@ static int mdla_enable_regulator_and_clock(int core)
 #ifdef ENABLE_PMQOS
 		switch (opps.vmdla.index) {
 		case 0:
+			pm_qos_update_request(&mdla_qos_vcore_request[core],
+								VCORE_OPP_1);
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_0);
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_0);
-			pm_qos_update_request(&mdla_qos_vcore_request[core],
-								VCORE_OPP_0);
 			break;
 		case 1:
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_1);
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_1);
 			pm_qos_update_request(&mdla_qos_vcore_request[core],
-								VCORE_OPP_1);
+								VCORE_OPP_2);
 				break;
 		case 2:
 		default:
 			pm_qos_update_request(&mdla_qos_vmdla_request[core],
 								VMDLA_OPP_2);
+			pm_qos_update_request(&mdla_qos_vvpu_request[core],
+								VVPU_OPP_2);
 			pm_qos_update_request(&mdla_qos_vcore_request[core],
 								VCORE_OPP_2);
 			break;
@@ -1530,7 +1580,7 @@ static int mdla_enable_regulator_and_clock(int core)
 				core, opps.vcore.index);
 		goto out;
 	}
-	LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
+	mdla_dvfs_debug("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 			core,
 			adjust_vmdla,
 			opps.vmdla.index,
@@ -1538,9 +1588,8 @@ static int mdla_enable_regulator_and_clock(int core)
 
 	LOG_DBG("[mdla_%d] en_rc setmmdvfs(%d) done\n", core, opps.vcore.index);
 
-clk_on:
-//@@ henry
-LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
+
+mdla_dvfs_debug("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 		core,
 		adjust_vmdla,
 		opps.vmdla.index,
@@ -1565,6 +1614,9 @@ LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 			LOG_WRN("clk not existed: %s\n", #clk); \
 		} \
 	}
+	/*move vcore cg ctl to atf*/
+#define vcore_cg_ctl(poweron) \
+		mt_secure_call(MTK_APU_VCORE_CG_CTL, poweron, 0, 0, 0)
 
 	mdla_trace_tag_begin("clock:enable_source");
 	ENABLE_MDLA_CLK(clk_top_dsp_sel);
@@ -1605,6 +1657,8 @@ LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 	ENABLE_MDLA_CLK(clk_apu_vcore_axi_cg);
 	ENABLE_MDLA_CLK(clk_apu_vcore_adl_cg);
 	ENABLE_MDLA_CLK(clk_apu_vcore_qos_cg);
+	/*move vcore cg ctl to atf*/
+	vcore_cg_ctl(1);
 	ENABLE_MDLA_CLK(clk_apu_conn_apu_cg);
 	ENABLE_MDLA_CLK(clk_apu_conn_ahb_cg);
 	ENABLE_MDLA_CLK(clk_apu_conn_axi_cg);
@@ -1637,7 +1691,7 @@ LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 #undef ENABLE_MDLA_MTCMOS
 #undef ENABLE_MDLA_CLK
 
-	LOG_INF("[mdla_%d] en_rc setclksrc(%d/%d/%d)\n",
+	mdla_dvfs_debug("[mdla_%d] en_rc setclksrc(%d/%d/%d)\n",
 			core,
 			opps.dsp.index,
 			opps.mdlacore.index,
@@ -1666,6 +1720,8 @@ LOG_INF("[mdla_%d] adjust(%d,%d) result vmdla=%d\n",
 
 out:
 	mdla_trace_tag_end();
+	if (mdla_klog & MDLA_DBG_DVFS)
+		apu_get_power_info();
 	is_power_on[core] = true;
 	force_change_vcore_opp[core] = false;
 	force_change_vmdla_opp[core] = false;
@@ -1678,9 +1734,10 @@ out:
 static int mdla_disable_regulator_and_clock(int core)
 {
 	int ret = 0;
+	int ret1 = 0;
 
 #ifdef MTK_MDLA_FPGA_PORTING
-	LOG_INF("%s skip at FPGA\n", __func__);
+	mdla_dvfs_debug("%s skip at FPGA\n", __func__);
 
 	is_power_on[core] = false;
 	if (!is_power_debug_lock)
@@ -1696,13 +1753,13 @@ static int mdla_disable_regulator_and_clock(int core)
 #ifdef MTK_VPU_SMI_DEBUG_ON
 	smi_bus_vpu_value = vpu_read_smi_bus_debug(core);
 
-	LOG_INF("[vpu_%d] dis_rc 1 (0x%x)\n", core, smi_bus_vpu_value);
+	mdla_dvfs_debug("[vpu_%d] dis_rc 1 (0x%x)\n", core, smi_bus_vpu_value);
 
 	if ((int)smi_bus_vpu_value != 0) {
 		mdelay(1);
 		smi_bus_vpu_value = vpu_read_smi_bus_debug(core);
 
-		LOG_INF("[vpu_%d] dis_rc again (0x%x)\n", core,
+		mdla_dvfs_debug("[vpu_%d] dis_rc again (0x%x)\n", core,
 				smi_bus_vpu_value);
 
 		if ((int)smi_bus_vpu_value != 0) {
@@ -1714,7 +1771,7 @@ static int mdla_disable_regulator_and_clock(int core)
 		}
 	}
 #else
-	LOG_INF("[mdla_%d] dis_rc + (0x%x)\n", core, smi_bus_vpu_value);
+	mdla_dvfs_debug("[mdla_%d] dis_rc + (0x%x)\n", core, smi_bus_vpu_value);
 #endif
 
 #define DISABLE_MDLA_CLK(clk) \
@@ -1773,7 +1830,7 @@ static int mdla_disable_regulator_and_clock(int core)
 	DISABLE_MDLA_CLK(clk_mmsys_gals_comm0);
 	DISABLE_MDLA_CLK(clk_mmsys_gals_comm1);
 	DISABLE_MDLA_CLK(clk_mmsys_smi_common);
-	LOG_INF("[mdla_%d] dis_rc flag4\n", core);
+	mdla_dvfs_debug("[mdla_%d] dis_rc flag4\n", core);
 
 #define DISABLE_MDLA_MTCMOS(clk) \
 	{ \
@@ -1796,8 +1853,10 @@ static int mdla_disable_regulator_and_clock(int core)
 #undef DISABLE_MDLA_MTCMOS
 #undef DISABLE_MDLA_CLK
 #ifdef ENABLE_PMQOS
-	pm_qos_update_request(&mdla_qos_vmdla_request[core], VMDLA_OPP_UNREQ);
+	pm_qos_update_request(&mdla_qos_vmdla_request[core], VMDLA_OPP_2);
+	pm_qos_update_request(&mdla_qos_vvpu_request[core], VVPU_OPP_2);
 	pm_qos_update_request(&mdla_qos_vcore_request[core], VCORE_OPP_UNREQ);
+	mdla_dvfs_debug("[mdla_%d]vvpu, vmdla unreq\n", core);
 #else
 	ret = mmdvfs_set_fine_step(MMDVFS_SCEN_VPU_KERNEL,
 						MMDVFS_FINE_STEP_UNREQUEST);
@@ -1809,14 +1868,24 @@ static int mdla_disable_regulator_and_clock(int core)
 	LOG_DBG("[mdla_%d] disable result vmdla=%d\n",
 		core, regulator_get_voltage(vmdla_reg_id));
 out:
+
 	/*--disable regulator--*/
-	ret = regulator_disable(vmdla_reg_id);
-	if (ret)
-	LOG_ERR("regulator_disable vmdla_reg_id failed\n");
+	ret1 = vmdla_regulator_set_mode(false);
+	udelay(100);//slew rate:rising10mV/us
+	mdla_dvfs_debug("disable vmdla ret:%d\n", ret1);
+	ret1 = vvpu_regulator_set_mode(false);
+	udelay(100);//slew rate:rising10mV/us
+	mdla_dvfs_debug("disable vvpu ret:%d\n", ret1);
+
+	vvpu_vmdla_vcore_checker();
+
 	is_power_on[core] = false;
-	if (!is_power_debug_lock)
+	if (!is_power_debug_lock) {
 		opps.mdlacore.index = 15;
-	LOG_INF("[mdla_%d] dis_rc -\n", core);
+		opps.dsp.index = 9;
+		opps.ipu_if.index = 9;
+		}
+	mdla_dvfs_debug("[mdla_%d] dis_rc -\n", core);
 	return ret;
 #endif
 }
@@ -1825,7 +1894,7 @@ static void mdla_unprepare_regulator_and_clock(void)
 {
 
 #ifdef MTK_MDLA_FPGA_PORTING
-	LOG_INF("%s skip at FPGA\n", __func__);
+	mdla_dvfs_debug("%s skip at FPGA\n", __func__);
 #else
 #define UNPREPARE_MDLA_CLK(clk) \
 	{ \
@@ -1905,29 +1974,29 @@ static void mdla_unprepare_regulator_and_clock(void)
 #endif
 }
 
-static int mdla_get_power(int core)
+int mdla_get_power(int core)
 {
 	int ret = 0;
 
-	LOG_INF("[mdla_%d/%d] gp +\n", core, power_counter[core]);
+	mdla_dvfs_debug("[mdla_%d/%d] gp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex[core]);
 	power_counter[core]++;
 	ret = mdla_boot_up(core);
-	mdla_reset(REASON_POWERON);
+	mdla_reset_lock(REASON_POWERON);
 	mutex_unlock(&power_counter_mutex[core]);
-	LOG_INF("[mdla_%d/%d] gp + 2\n", core, power_counter[core]);
+	mdla_dvfs_debug("[mdla_%d/%d] gp + 2\n", core, power_counter[core]);
 
 	if (ret == POWER_ON_MAGIC) {
 		mutex_lock(&opp_mutex);
 		if (change_freq_first[core]) {
-			LOG_INF("[mdla_%d] change freq first(%d)\n",
+			mdla_dvfs_debug("[mdla_%d] change freq first(%d)\n",
 					core, change_freq_first[core]);
 			/*mutex_unlock(&opp_mutex);*/
 			/*mutex_lock(&opp_mutex);*/
 			if (force_change_dsp_freq[core]) {
 				mutex_unlock(&opp_mutex);
 				/* force change freq while running */
-				LOG_INF("mdla_%d force change dsp freq", core);
+		mdla_dvfs_debug("mdla_%d force change dsp freq", core);
 				mdla_change_opp(core, OPPTYPE_DSPFREQ);
 			} else {
 				mutex_unlock(&opp_mutex);
@@ -1938,7 +2007,7 @@ static int mdla_get_power(int core)
 			if (force_change_vmdla_opp[core]) {
 				mutex_unlock(&opp_mutex);
 				/* vcore change should wait */
-				LOG_INF("mdla_%d force change vmdla opp", core);
+		mdla_dvfs_debug("mdla_%d force change vmdla opp", core);
 				//mdla_change_opp(core, OPPTYPE_VCORE);
 				mdla_change_opp(core, OPPTYPE_VMDLA);
 			} else {
@@ -1951,7 +2020,7 @@ static int mdla_get_power(int core)
 			if (force_change_vmdla_opp[core]) {
 				mutex_unlock(&opp_mutex);
 				/* vcore change should wait */
-				LOG_INF("mdla_%d force change vcore opp", core);
+		mdla_dvfs_debug("mdla_%d force change vcore opp", core);
 				//mdla_change_opp(core, OPPTYPE_VCORE);
 				mdla_change_opp(core, OPPTYPE_VMDLA);
 			} else {
@@ -1962,7 +2031,7 @@ static int mdla_get_power(int core)
 			if (force_change_dsp_freq[core]) {
 				mutex_unlock(&opp_mutex);
 				/* force change freq while running */
-				LOG_INF("mdla_%d force change dsp freq", core);
+		mdla_dvfs_debug("mdla_%d force change dsp freq", core);
 				mdla_change_opp(core, OPPTYPE_DSPFREQ);
 			} else {
 				mutex_unlock(&opp_mutex);
@@ -1970,43 +2039,36 @@ static int mdla_get_power(int core)
 		}
 	}
 	LOG_DBG("[mdla_%d/%d] gp -\n", core, power_counter[core]);
-
+	if (mdla_klog & MDLA_DBG_DVFS)
+		apu_get_power_info();
+	enable_apu_bw(0);
+	enable_apu_bw(1);
+	enable_apu_bw(2);
+	enable_apu_latency(0);
+	enable_apu_latency(1);
+	enable_apu_latency(2);
+	if (core == 0)
+		apu_power_count_enable(true, USER_MDLA);
+	else if (core == 1)
+		apu_power_count_enable(true, USER_EDMA);
 	if (ret == POWER_ON_MAGIC)
 		return 0;
 	else
 		return ret;
 }
+EXPORT_SYMBOL(mdla_get_power);
 
-static void mdla_put_power(int core, enum mdlaPowerOnType type)
+void mdla_put_power(int core)
 {
-	LOG_INF("[mdla_%d/%d] pp +\n", core, power_counter[core]);
+	mdla_dvfs_debug("[mdla_%d/%d] pp +\n", core, power_counter[core]);
 	mutex_lock(&power_counter_mutex[core]);
-	if (--power_counter[core] == 0) {
-		switch (type) {
-		case MDLA_PRE_ON:
-			LOG_DBG("[mdla_%d] MDLA_PRE_ON\n", core);
-			mod_delayed_work(wq,
-				&(power_counter_work[core].my_work),
-				msecs_to_jiffies(10 * PWR_KEEP_TIME_MS));
-			break;
-		case MDLA_IMT_OFF:
-			LOG_INF("[mdla_%d] MDLA_IMT_OFF\n", core);
-			mod_delayed_work(wq,
-				&(power_counter_work[core].my_work),
-				msecs_to_jiffies(0));
-			break;
-		case MDLA_ENQUE_ON:
-		default:
-			LOG_INF("[mdla_%d] MDLA_ENQUE_ON\n", core);
-			mod_delayed_work(wq,
-				&(power_counter_work[core].my_work),
-				msecs_to_jiffies(PWR_KEEP_TIME_MS));
-			break;
-		}
-	}
+	if (--power_counter[core] == 0)
+		mdla_shut_down(core);
+
 	mutex_unlock(&power_counter_mutex[core]);
 	LOG_DBG("[mdla_%d/%d] pp -\n", core, power_counter[core]);
 }
+EXPORT_SYMBOL(mdla_put_power);
 
 static int mdla_set_power(struct mdla_power *power)
 {
@@ -2034,8 +2096,8 @@ static int mdla_set_power(struct mdla_power *power)
 	mutex_unlock(&(mdla_service_cores[core].state_mutex));
 #endif
 	/* to avoid power leakage, power on/off need be paired */
-	mdla_put_power(0, MDLA_PRE_ON);
-	LOG_INF("[mdla] %s -\n", __func__);
+	mdla_put_power(0);
+	mdla_dvfs_debug("[mdla] %s -\n", __func__);
 	return ret;
 }
 
@@ -2046,7 +2108,7 @@ static void mdla_power_counter_routine(struct work_struct *work)
 			container_of(work, struct my_struct_t, my_work.work);
 
 	core = my_work_core->core;
-	LOG_INF("mdla_%d counterR (%d)+\n", core, power_counter[core]);
+	mdla_dvfs_debug("mdla_%d counterR (%d)+\n", core, power_counter[core]);
 
 	mutex_lock(&power_counter_mutex[core]);
 	if (power_counter[core] == 0)
@@ -2055,13 +2117,13 @@ static void mdla_power_counter_routine(struct work_struct *work)
 		LOG_DBG("mdla_%d no need this time.\n", core);
 	mutex_unlock(&power_counter_mutex[core]);
 
-	LOG_INF("mdla_%d counterR -", core);
+	mdla_dvfs_debug("mdla_%d counterR -", core);
 }
 int mdla_quick_suspend(int core)
 {
-	LOG_INF("[mdla_%d] q_suspend +\n", core);
+	mdla_dvfs_debug("[mdla_%d] q_suspend +\n", core);
 	mutex_lock(&power_counter_mutex[core]);
-	//LOG_INF("[mdla_%d] q_suspend (%d/%d)\n", core,
+	//mdla_dvfs_debug("[mdla_%d] q_suspend (%d/%d)\n", core,
 		//power_counter[core], mdla_service_cores[core].state);
 
 	if (power_counter[core] == 0) {
@@ -2080,11 +2142,11 @@ int mdla_quick_suspend(int core)
 
 static void mdla_opp_keep_routine(struct work_struct *work)
 {
-	LOG_INF("%s flag (%d) +\n", __func__, opp_keep_flag);
+	mdla_dvfs_debug("%s flag (%d) +\n", __func__, opp_keep_flag);
 	mutex_lock(&opp_mutex);
 	opp_keep_flag = false;
 	mutex_unlock(&opp_mutex);
-	LOG_INF("%s flag (%d) -\n", __func__, opp_keep_flag);
+	mdla_dvfs_debug("%s flag (%d) -\n", __func__, opp_keep_flag);
 }
 int mdla_init_hw(int core, struct platform_device *pdev)
 {
@@ -2093,7 +2155,7 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 #if 0
 	struct vpu_shared_memory_param mem_param;
 
-	LOG_INF("[vpu] core : %d\n", core);
+	mdla_dvfs_debug("[vpu] core : %d\n", core);
 
 	vpu_service_cores[core].vpu_base = device->mdla_base[core];
 	mdla_service_cores[core].bin_base = device->bin_base;
@@ -2138,9 +2200,10 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 		//mdla_dev = device;
 		is_power_debug_lock = false;
 
-		for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 			mutex_init(&(power_mutex[i]));
 			mutex_init(&(power_counter_mutex[i]));
+			mutex_init(&power_lock_mutex);
 			power_counter[i] = 0;
 			power_counter_work[i].core = i;
 			is_power_on[i] = false;
@@ -2345,11 +2408,9 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 			opps.index = 5; /* user space usage*/
 			opps.vcore.index = 1;
 			opps.vmdla.index = 1;
-			opps.dsp.index = 5;
-			opps.dspcore[0].index = 5;
-			opps.dspcore[1].index = 5;
-			opps.ipu_if.index = 5;
-			opps.mdlacore.index = 3;
+			opps.dsp.index = 9;
+			opps.ipu_if.index = 9;
+			opps.mdlacore.index = 9;
 #undef DEFINE_APU_OPP
 #undef DEFINE_APU_STEP
 
@@ -2363,9 +2424,9 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 
 		/* pmqos  */
 		#ifdef ENABLE_PMQOS
-		for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+		for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 			pm_qos_add_request(&mdla_qos_bw_request[i],
-						PM_QOS_MM_MEMORY_BANDWIDTH,
+						PM_QOS_APU_MEMORY_BANDWIDTH,
 						PM_QOS_DEFAULT_VALUE);
 
 			pm_qos_add_request(&mdla_qos_vcore_request[i],
@@ -2375,10 +2436,21 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 		    pm_qos_add_request(&mdla_qos_vmdla_request[i],
 					    PM_QOS_VMDLA_OPP,
 					    PM_QOS_VMDLA_OPP_DEFAULT_VALUE);
+		    pm_qos_add_request(&mdla_qos_vvpu_request[i],
+					    PM_QOS_VVPU_OPP,
+					    PM_QOS_VVPU_OPP_DEFAULT_VALUE);
+			pm_qos_update_request(&mdla_qos_vvpu_request[i],
+								VVPU_OPP_2);
+			pm_qos_update_request(&mdla_qos_vmdla_request[i],
+								VMDLA_OPP_2);
 		}
-		pm_qos_update_request(&mdla_qos_vmdla_request[0],
-						VMDLA_OPP_0);
-		LOG_INF("init set voltage\n");
+		mdla_dvfs_debug("[mdla]init vvpu, vmdla to opp2\n");
+		ret = vmdla_regulator_set_mode(true);
+		udelay(100);
+		mdla_dvfs_debug("vvpu set sleep mode ret=%d\n", ret);
+		ret = vmdla_regulator_set_mode(false);
+		mdla_dvfs_debug("vvpu set sleep mode ret=%d\n", ret);
+		udelay(100);
 		#endif
 
 	}
@@ -2390,11 +2462,14 @@ int mdla_init_hw(int core, struct platform_device *pdev)
 	lock_power[i][0].lock = false;
 	lock_power[i][0].priority = MDLA_OPP_NORMAL;
 		}
-	for (j = 0 ; j < MTK_MDLA_CORE ; j++) {
+	for (j = 0 ; j < MTK_MDLA_USER ; j++) {
 		min_opp[j] = MDLA_MAX_NUM_OPPS-1;
 		max_opp[j] = 0;
+		minboost[j] = 0;
+		maxboost[j] = 100;
 	}
-
+	get_segment_from_efuse();
+	mdla_init_done = 1;
 	return 0;
 
 out:
@@ -2416,7 +2491,7 @@ int mdla_uninit_hw(void)
 {
 	int i;
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		cancel_delayed_work(&(power_counter_work[i].my_work));
 #if 0
 		if (mdla_service_cores[i].srvc_task != NULL) {
@@ -2434,10 +2509,11 @@ int mdla_uninit_hw(void)
 	cancel_delayed_work(&opp_keep_work);
 	/* pmqos  */
 	#ifdef ENABLE_PMQOS
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		pm_qos_remove_request(&mdla_qos_bw_request[i]);
 		pm_qos_remove_request(&mdla_qos_vcore_request[i]);
 		pm_qos_remove_request(&mdla_qos_vmdla_request[i]);
+		pm_qos_remove_request(&mdla_qos_vvpu_request[i]);
 	}
 	#endif
 
@@ -2458,7 +2534,7 @@ int mdla_uninit_hw(void)
 		destroy_workqueue(wq);
 		wq = NULL;
 	}
-
+	mdla_init_done = 0;
 	return 0;
 }
 
@@ -2466,22 +2542,19 @@ static int mdla_boot_up(int core)
 {
 	int ret = 0;
 
-	LOG_INF("[mdla_%d] boot_up +\n", core);
+	mdla_dvfs_debug("[mdla_%d] boot_up +\n", core);
 	mutex_lock(&power_mutex[core]);
-	LOG_INF("[mdla_%d] is_power_on(%d)\n", core, is_power_on[core]);
+	mdla_dvfs_debug("[mdla_%d] is_power_on(%d)\n", core, is_power_on[core]);
 	if (is_power_on[core]) {
 		mutex_unlock(&power_mutex[core]);
 		//mutex_lock(&(mdla_service_cores[core].state_mutex));
 		//mdla_service_cores[core].state = VCT_BOOTUP;
 		//mutex_unlock(&(mdla_service_cores[core].state_mutex));
 		//wake_up_interruptible(&waitq_change_vcore);
-		LOG_INF("[mdla_%d] already power on\n", core);
-#ifdef MTK_SWPM
-		swpm_mdla_onoff_notify(1);
-#endif
+		mdla_dvfs_debug("[mdla_%d] already power on\n", core);
 		return POWER_ON_MAGIC;
 	}
-	LOG_INF("[mdla_%d] boot_up flag2\n", core);
+	mdla_dvfs_debug("[mdla_%d] boot_up flag2\n", core);
 
 	mdla_trace_tag_begin("%s", __func__);
 	//mutex_lock(&(mdla_service_cores[core].state_mutex));
@@ -2514,49 +2587,38 @@ out:
 	}
 #endif
 	mdla_trace_tag_end();
-#ifdef MTK_SWPM
-	swpm_mdla_onoff_notify(1);
-#endif
 	mutex_unlock(&power_mutex[core]);
+
+#ifdef MTK_PERF_OBSERVER
+	if (!ret) {
+		struct pob_xpufreq_info pxi;
+
+		pxi.id = core;
+		pxi.opp = opps.mdlacore.index;
+
+		pob_xpufreq_update(POB_XPUFREQ_MDLA, &pxi);
+	}
+#endif
+
 	return ret;
 }
 
 static int mdla_shut_down(int core)
 {
 	int ret = 0;
+	if (core == 0)
+	apu_power_count_enable(false, USER_MDLA);
+	else if (core == 1)
+	apu_power_count_enable(false, USER_EDMA);
+	apu_shut_down();
 
-	LOG_INF("[mdla_%d] shutdown +\n", core);
+
+	mdla_dvfs_debug("[mdla_%d] shutdown +\n", core);
 	mutex_lock(&power_mutex[core]);
 	if (!is_power_on[core]) {
-#ifdef MTK_SWPM
-	swpm_mdla_onoff_notify(0);
-#endif
 		mutex_unlock(&power_mutex[core]);
 		return 0;
 	}
-#if 0
-	mutex_lock(&(mdla_service_cores[core].state_mutex));
-	switch (mdla_service_cores[core].state) {
-	case VCT_SHUTDOWN:
-	case VCT_IDLE:
-	case VCT_NONE:
-#ifdef MTK_mdla_FPGA_PORTING
-	case VCT_BOOTUP:
-#endif
-		mdla_service_cores[core].current_algo = 0;
-		mdla_service_cores[core].state = VCT_SHUTDOWN;
-		mutex_unlock(&(mdla_service_cores[core].state_mutex));
-		break;
-#ifndef MTK_VPU_FPGA_PORTING
-	case VCT_BOOTUP:
-#endif
-	case VCT_EXECUTING:
-	case VCT_VCORE_CHG:
-		mutex_unlock(&(mdla_service_cores[core].state_mutex));
-		goto out;
-		/*break;*/
-	}
-#endif
 #ifdef MET_POLLING_MODE
 	ret = mdla_profile_state_set(core, 0);
 	if (ret) {
@@ -2566,22 +2628,31 @@ static int mdla_shut_down(int core)
 #endif
 
 	mdla_trace_tag_begin("%s", __func__);
-	LOG_INF("[mdla_%d] mdla_disable_regulator_and_clock +\n", core);
+	mdla_dvfs_debug("[mdla_%d] mdla_disable_regulator_and_clock +\n", core);
 	ret = mdla_disable_regulator_and_clock(core);
 	if (ret) {
 		LOG_ERR("[mdla_%d]fail to disable regulator and clock\n", core);
 		goto out;
 	}
-	LOG_INF("[mdla_%d] mdla_disable_regulator_and_clock -\n", core);
+	mdla_dvfs_debug("[mdla_%d] mdla_disable_regulator_and_clock -\n", core);
 
 	//wake_up_interruptible(&waitq_change_vcore);
 out:
 	mdla_trace_tag_end();
-#ifdef MTK_SWPM
-	swpm_mdla_onoff_notify(0);
-#endif
 	mutex_unlock(&power_mutex[core]);
 	LOG_DBG("[mdla_%d] shutdown -\n", core);
+
+#ifdef MTK_PERF_OBSERVER
+	if (!ret) {
+		struct pob_xpufreq_info pxi;
+
+		pxi.id = core;
+		pxi.opp = -1;
+
+		pob_xpufreq_update(POB_XPUFREQ_MDLA, &pxi);
+	}
+#endif
+
 	return ret;
 }
 
@@ -2592,8 +2663,8 @@ int mdla_dump_opp_table(struct seq_file *s)
 #define LINE_BAR "  +-----+----------+----------+------------+-----------+-----------+\n"
 	mdla_print_seq(s, LINE_BAR);
 	mdla_print_seq(s, "  |%-5s|%-10s|%-10s|%-10s|%-10s|%-12s|\n",
-				"OPP", "VCORE(uV)", "VVPU(uV)",
-				"VMDLA(uV)", "DSP(KHz)",
+				"OPP", "VVPU(uV)",
+				"VMDLA(uV)", "MDLA(KHz)", "DSP(KHz)",
 				"IPU_IF(KHz)");
 	mdla_print_seq(s, LINE_BAR);
 
@@ -2601,12 +2672,12 @@ int mdla_dump_opp_table(struct seq_file *s)
 		mdla_print_seq(s,
 "  |%-5d|[%d]%-7d|[%d]%-7d|[%d]%-7d|[%d]%-7d|[%d]%-9d\n",
 			i,
-			opps.vcore.opp_map[i],
-			opps.vcore.values[opps.vcore.opp_map[i]],
 			opps.vvpu.opp_map[i],
 			opps.vvpu.values[opps.vvpu.opp_map[i]],
 			opps.vmdla.opp_map[i],
 			opps.vmdla.values[opps.vmdla.opp_map[i]],
+			opps.mdlacore.opp_map[i],
+			opps.mdlacore.values[opps.mdlacore.opp_map[i]],
 			opps.dsp.opp_map[i],
 			opps.dsp.values[opps.dsp.opp_map[i]],
 			opps.ipu_if.opp_map[i],
@@ -2621,10 +2692,8 @@ int mdla_dump_opp_table(struct seq_file *s)
 
 int mdla_dump_power(struct seq_file *s)
 {
-	int vvpu_opp = 0;
 	int vmdla_opp = 0;
 
-	vvpu_opp = mdla_get_hw_vvpu_opp(0);
 	vmdla_opp = mdla_get_hw_vmdla_opp(0);
 
 
@@ -2633,7 +2702,8 @@ mdla_print_seq(s, "%s(rw): %s[%d/%d]\n",
 			"vmdla", opps.vmdla.index, vmdla_opp);
 mdla_print_seq(s, "dvfs_debug(rw): min/max opp[0][%d/%d]\n",
 	min_opp[0], max_opp[0]);
-
+mdla_print_seq(s, "dvfs_debug(rw): min/max boost[0][%d/%d]\n",
+	minboost[0], maxboost[0]);
 mdla_print_seq(s, "%s[%d], %s[%d], %s[%d]\n",
 			"dsp", opps.dsp.index,
 			"ipu_if", opps.ipu_if.index,
@@ -2697,18 +2767,14 @@ int mdla_set_power_parameter(uint8_t param, int argc, int *args)
 		opps.vmdla.index = opps.vmdla.opp_map[args[0]];
 		opps.dsp.index = opps.dsp.opp_map[args[0]];
 		opps.ipu_if.index = opps.ipu_if.opp_map[args[0]];
-		opps.dspcore[0].index = opps.dspcore[0].opp_map[args[0]];
-		opps.dspcore[1].index = opps.dspcore[1].opp_map[args[0]];
+		opps.mdlacore.index = opps.mdlacore.opp_map[args[0]];
 
 		is_power_debug_lock = true;
-		mdla_opp_check(0, opps.dsp.index, opps.dsp.index);
-		//user->power_opp = power->opp_step;
 
-		ret = mdla_get_power(0);
 
 		break;
 	case MDLA_POWER_PARAM_JTAG:
-		mdla_put_power(0, MDLA_PRE_ON);
+		mdla_put_power(0);
 		#if 0
 		ret = (argc == 1) ? 0 : -EINVAL;
 		if (ret) {
@@ -2752,8 +2818,7 @@ int mdla_set_power_parameter(uint8_t param, int argc, int *args)
 		opps.vmdla.index = opps.vmdla.opp_map[args[0]];
 		opps.dsp.index = opps.dsp.opp_map[args[0]];
 		opps.ipu_if.index = opps.ipu_if.opp_map[args[0]];
-		opps.dspcore[0].index = opps.dspcore[0].opp_map[args[0]];
-		opps.dspcore[1].index = opps.dspcore[1].opp_map[args[0]];
+		opps.mdlacore.index = opps.mdlacore.opp_map[args[0]];
 
 
 		mdla_opp_check(0, opps.dsp.index, opps.dsp.index);
@@ -2766,6 +2831,78 @@ int mdla_set_power_parameter(uint8_t param, int argc, int *args)
 
 
 		break;
+	case MDLA_POWER_HAL_CTL:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		ret = (argc == 2) ? 0 : -EINVAL;
+		if (ret) {
+			LOG_ERR("invalid argument, expected:2, received:%d\n",
+				argc);
+				goto out;
+		}
+
+		if (args[0] > 100 || args[0] < 0) {
+			LOG_ERR("min boost(%d) is out-of-bound\n",
+					(int)(args[0]));
+			goto out;
+		}
+		if (args[1] > 100 || args[1] < 0) {
+			LOG_ERR("max boost(%d) is out-of-bound\n",
+					(int)(args[1]));
+			goto out;
+		}
+		mdla_lock_power.core = 1;
+		mdla_lock_power.lock = true;
+		mdla_lock_power.priority = MDLA_OPP_POWER_HAL;
+		mdla_lock_power.max_boost_value = args[1];
+		mdla_lock_power.min_boost_value = args[0];
+		mdla_dvfs_debug("[mdla]POWER_HAL_LOCK+core:%d, maxb:%d, minb:%d\n",
+			mdla_lock_power.core, mdla_lock_power.max_boost_value,
+				mdla_lock_power.min_boost_value);
+		ret = mdla_lock_set_power(&mdla_lock_power);
+		if (ret) {
+			LOG_ERR("[POWER_HAL_LOCK]failed, ret=%d\n", ret);
+			goto out;
+		}
+		break;
+	}
+	case MDLA_EARA_CTL:
+	{
+		struct mdla_lock_power mdla_lock_power;
+
+		ret = (argc == 2) ? 0 : -EINVAL;
+		if (ret) {
+			LOG_ERR("invalid argument, expected:3, received:%d\n",
+					argc);
+			goto out;
+		}
+		if (args[0] > 100 || args[0] < 0) {
+			LOG_ERR("min boost(%d) is out-of-bound\n",
+					(int)(args[0]));
+			goto out;
+		}
+		if (args[1] > 100 || args[1] < 0) {
+			LOG_ERR("max boost(%d) is out-of-bound\n",
+					(int)(args[1]));
+			goto out;
+		}
+		mdla_lock_power.core = 1;
+		mdla_lock_power.lock = true;
+		mdla_lock_power.priority = MDLA_OPP_EARA_QOS;
+		mdla_lock_power.max_boost_value = args[1];
+		mdla_lock_power.min_boost_value = args[0];
+		mdla_dvfs_debug("[mdla]EARA_LOCK+core:%d, maxb:%d, minb:%d\n",
+			mdla_lock_power.core, mdla_lock_power.max_boost_value,
+				mdla_lock_power.min_boost_value);
+		ret = mdla_lock_set_power(&mdla_lock_power);
+		if (ret) {
+			LOG_ERR("[POWER_HAL_LOCK]failed, ret=%d\n", ret);
+			goto out;
+		}
+		break;
+		}
+
 	default:
 		LOG_ERR("unsupport the power parameter:%d\n", param);
 		break;
@@ -2838,7 +2975,7 @@ static uint8_t mdla_boost_value_to_opp(uint8_t boost_value)
 	else
 		ret = 15;
 
-	LOG_INF("%s opp %d\n", __func__, ret);
+	mdla_dvfs_debug("%s opp %d\n", __func__, ret);
 	return ret;
 }
 
@@ -2849,16 +2986,16 @@ static bool mdla_update_lock_power_parameter
 	int i, core = -1;
 	unsigned int priority = mdla_lock_power->priority;
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
 			core = i;
 			break;
 		}
 	}
 
-	if (core >= MTK_MDLA_CORE || core < 0) {
+	if (core >= MTK_MDLA_USER || core < 0) {
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
-			mdla_lock_power->core, core, MTK_MDLA_CORE);
+			mdla_lock_power->core, core, MTK_MDLA_USER);
 		ret = false;
 		return ret;
 	}
@@ -2870,7 +3007,7 @@ static bool mdla_update_lock_power_parameter
 	lock_power[priority][core].lock = true;
 	lock_power[priority][core].priority =
 		mdla_lock_power->priority;
-LOG_INF("power_para core %d, maxboost:%d, minboost:%d pri%d\n",
+mdla_dvfs_debug("power_para core %d, maxboost:%d, minboost:%d pri%d\n",
 		lock_power[priority][core].core,
 		lock_power[priority][core].max_boost_value,
 		lock_power[priority][core].min_boost_value,
@@ -2884,16 +3021,16 @@ static bool mdla_update_unlock_power_parameter
 	int i, core = -1;
 	unsigned int priority = mdla_lock_power->priority;
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
 			core = i;
 			break;
 		}
 	}
 
-	if (core >= MTK_MDLA_CORE || core < 0) {
+	if (core >= MTK_MDLA_USER || core < 0) {
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
-			mdla_lock_power->core, core, MTK_MDLA_CORE);
+			mdla_lock_power->core, core, MTK_MDLA_USER);
 		ret = false;
 		return ret;
 	}
@@ -2907,7 +3044,7 @@ static bool mdla_update_unlock_power_parameter
 	lock_power[priority][core].lock = false;
 	lock_power[priority][core].priority =
 		mdla_lock_power->priority;
-	LOG_INF("%s\n", __func__);
+	mdla_dvfs_debug("%s\n", __func__);
 	return ret;
 }
 uint8_t mdla_min_of(uint8_t value1, uint8_t value2)
@@ -2939,16 +3076,16 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 	uint8_t min_boost = 0;
 	uint8_t priority = MDLA_OPP_NORMAL;
 
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
 			core = i;
 			break;
 		}
 	}
 
-	if (core >= MTK_MDLA_CORE || core < 0) {
+	if (core >= MTK_MDLA_USER || core < 0) {
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
-			mdla_lock_power->core, core, MTK_MDLA_CORE);
+			mdla_lock_power->core, core, MTK_MDLA_USER);
 		ret = false;
 		return ret;
 	}
@@ -2991,7 +3128,9 @@ bool mdla_update_max_opp(struct mdla_lock_power *mdla_lock_power)
 		}
 	max_opp[core] = mdla_boost_value_to_opp(temp_max_boost_value);
 	min_opp[core] = mdla_boost_value_to_opp(temp_min_boost_value);
-	LOG_INF("final_min_boost_value:%d final_max_boost_value:%d\n",
+	maxboost[core] = temp_max_boost_value;
+	minboost[core] = temp_min_boost_value;
+	mdla_dvfs_debug("final_min_boost_value:%d final_max_boost_value:%d\n",
 		temp_min_boost_value, temp_max_boost_value);
 	return ret;
 }
@@ -3002,17 +3141,17 @@ static int mdla_lock_set_power(struct mdla_lock_power *mdla_lock_power)
 	int i, core = -1;
 
 	mutex_lock(&power_lock_mutex);
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
 			core = i;
 			break;
 		}
 	}
 
-	if (core >= MTK_MDLA_CORE || core < 0) {
+	if (core >= MTK_MDLA_USER || core < 0) {
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
-			mdla_lock_power->core, core, MTK_MDLA_CORE);
-		ret = false;
+			mdla_lock_power->core, core, MTK_MDLA_USER);
+		ret = -1;
 		mutex_unlock(&power_lock_mutex);
 		return ret;
 	}
@@ -3035,7 +3174,7 @@ static int mdla_lock_set_power(struct mdla_lock_power *mdla_lock_power)
 	}
 #endif
 	mutex_unlock(&power_lock_mutex);
-	return ret;
+	return 0;
 }
 
 static int mdla_unlock_set_power(struct mdla_lock_power *mdla_lock_power)
@@ -3044,16 +3183,16 @@ static int mdla_unlock_set_power(struct mdla_lock_power *mdla_lock_power)
 	int i, core = -1;
 
 	mutex_lock(&power_lock_mutex);
-	for (i = 0 ; i < MTK_MDLA_CORE ; i++) {
+	for (i = 0 ; i < MTK_MDLA_USER ; i++) {
 		if (mdla_lock_power->core == (0x1 << i)) {
 			core = i;
 			break;
 		}
 	}
 
-	if (core >= MTK_MDLA_CORE || core < 0) {
+	if (core >= MTK_MDLA_USER || core < 0) {
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
-			mdla_lock_power->core, core, MTK_MDLA_CORE);
+			mdla_lock_power->core, core, MTK_MDLA_USER);
 		ret = false;
 		return ret;
 	}
@@ -3069,23 +3208,23 @@ static int mdla_unlock_set_power(struct mdla_lock_power *mdla_lock_power)
 	return ret;
 
 }
-static __u8 mdla_get_first_priority_cmd(struct list_head *cmd_list)
-{
-	struct command_entry *iter, *n;
-	__u8 first_priority = MDLA_REQ_MAX_NUM_PRIORITY-1;
-
-	if (!list_empty(cmd_list)) {
-		list_for_each_entry_safe(iter, n, cmd_list, list) {
-			if (iter->priority < first_priority)
-				first_priority = iter->priority;
-		}
-	} else
-	first_priority = 0;
-
-
-	LOG_INF("%s:first_priority=%d\n", __func__, first_priority);
-	return first_priority;
-}
+//static __u8 mdla_get_first_priority_cmd(struct list_head *cmd_list)
+//{
+//	struct command_entry *iter, *n;
+//	__u8 first_priority = MDLA_REQ_MAX_NUM_PRIORITY-1;
+//
+//	if (!list_empty(cmd_list)) {
+//		list_for_each_entry_safe(iter, n, cmd_list, list) {
+//			if (iter->priority < first_priority)
+//				first_priority = iter->priority;
+//		}
+//	} else
+//	first_priority = 0;
+//
+//
+//	LOG_INF("%s:first_priority=%d\n", __func__, first_priority);
+//	return first_priority;
+//}
 
 long mdla_dvfs_ioctl(struct file *filp, unsigned int command,
 		unsigned long arg)
@@ -3189,42 +3328,46 @@ LOG_INF("[mdla] IOCTL_POWER_HAL_LOCK_POWER +, maxboost:%d, minboost:%d\n",
 }
 
 /* command start: enable power & clock */
-int mdla_dvfs_cmd_start(struct command_entry *ce,
-	struct list_head *cmd_list)
+int mdla_dvfs_cmd_start(struct command_entry *ce)
 {
 	int ret = 0;
 	uint8_t opp_step = 0;
 	uint8_t vmdla_opp_index = 0xFF;
 	uint8_t dsp_freq_index = 0xFF;
 
-	opp_step = mdla_boost_value_to_opp(ce->boost_value);
-	vmdla_opp_index = opps.vmdla.opp_map[opp_step];
-	dsp_freq_index = opps.mdlacore.opp_map[opp_step];
-	/*if running cmd priority < priority list, increase opp*/
-	if (ce->priority < mdla_get_first_priority_cmd(cmd_list)) {
-		LOG_INF("opp to 0 to speed up low priority cmd:%d\n",
-			ce->priority);
-		vmdla_opp_index = 0;
-		dsp_freq_index = 0;
+	if (ce) {
+		opp_step = mdla_boost_value_to_opp(ce->boost_value);
+		vmdla_opp_index = opps.vmdla.opp_map[opp_step];
+		dsp_freq_index = opps.mdlacore.opp_map[opp_step];
+
+		mdla_opp_check(0, vmdla_opp_index, dsp_freq_index);
 	}
 
-	mdla_opp_check(0, vmdla_opp_index, dsp_freq_index);
-
 	/* step1, enable clocks and boot-up if needed */
+
 	ret = mdla_get_power(0);
+
 	if (ret) {
+		apu_get_power_info();
 		LOG_ERR("[mdla] fail to get power!\n");
 		return ret;
 	}
-
+#if defined(MDLA_MET_READY)
+	MDLA_MET_Events_Trace(1, 0);
+#endif
 	return ret;
 }
 
 /* command end: save bandwidth info to command entry */
 int mdla_dvfs_cmd_end_info(struct command_entry *ce)
 {
+	int i;	// TODO: remove me
+
 	if (ce == NULL)
 		return 0;
+
+	for (i = 0; i < 16; i++)  // TODO: remove me
+		ce->bandwidth = i;
 
 	// TODO: Put bandwidth to ce->bandwidth.
 
@@ -3234,7 +3377,11 @@ int mdla_dvfs_cmd_end_info(struct command_entry *ce)
 /* command end: fifo empty, shutdown */
 int mdla_dvfs_cmd_end_shutdown(void)
 {
-	mdla_shut_down(0);
+
+	mdla_put_power(0);
+#if defined(MDLA_MET_READY)
+		MDLA_MET_Events_Trace(0, 0);
+#endif
 
 	return 0;
 }

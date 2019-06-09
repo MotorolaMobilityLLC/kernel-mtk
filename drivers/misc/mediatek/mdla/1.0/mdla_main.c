@@ -12,6 +12,8 @@
  */
 
 #include "mdla_debug.h"
+#include <linux/semaphore.h>
+#include <linux/completion.h>
 #include "mdla.h"
 #include "gsm.h"
 #include "mdla_pmu.h"
@@ -47,10 +49,8 @@
 #include <linux/timer.h>
 #include <linux/interrupt.h>
 #include <linux/spinlock.h>
-
-// #define MTK_MDLA_ALWAYS_POWER_ON
-
-u32 power_on;
+#include <linux/delay.h>
+#include <linux/jiffies.h>
 
 #define DRIVER_NAME "mtk_mdla"
 #define DEVICE_NAME "mdlactl"
@@ -61,31 +61,63 @@ MODULE_AUTHOR("Chen, Wen");
 MODULE_DESCRIPTION("MDLA driver");
 MODULE_VERSION("0.1");
 
-static void *apu_mdla_cmde_mreg_top;
-static void *apu_mdla_config_top;
+/* internal function prototypes */
+static int mdla_open(struct inode *, struct file *);
+static int mdla_release(struct inode *, struct file *);
+static long mdla_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+static long mdla_compat_ioctl(struct file *file,
+	unsigned int cmd, unsigned long arg);
+//static int mdla_wait_command_sync(struct ioctl_wait_cmd *wt);
+static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
+static int mdla_process_command(struct command_entry *ce);
+//static void mdla_timeup(unsigned long data);
+static void mdla_power_timeup(unsigned long data);
+static void mdla_start_power_off(struct work_struct *work);
+
+/* TODO: move these global control vaiables into device specific data.
+ * to support multiple instance (multiple MDLA).
+ */
+#define MDLA_TIMEOUT_DEFAULT 6000 /* ms */
+#define MDLA_POWEROFF_TIME_DEFAULT 2000 /* ms */
+#define MDLA_POLLING_LATENCY (5) /* ms */
+u32 mdla_timeout = MDLA_TIMEOUT_DEFAULT;
+u32 mdla_e1_detect_timeout = MDLA_POLLING_LATENCY;
+u32 mdla_e1_detect_count;
+u32 mdla_poweroff_time = MDLA_POWEROFF_TIME_DEFAULT;
+u32 async_cmd_id;
+
+static void *infracfg_ao_top;
+void *apu_conn_top;
+void *apu_mdla_cmde_mreg_top;
+void *apu_mdla_config_top;
 void *apu_mdla_biu_top;
 void *apu_mdla_gsm_top;
 void *apu_mdla_gsm_base;
 
 int mdla_irq;
 
-/* TODO: move these global control vaiables into device specific data.
- * to support multiple instance (multiple MDLA).
- */
+//static DEFINE_TIMER(mdla_timer, mdla_timeup, 0, 0);
+static DEFINE_TIMER(mdla_power_timer, mdla_power_timeup, 0, 0);
+
 static int majorNumber;
 static int numberOpens;
 static struct class *mdlactlClass;
 static struct device *mdlactlDevice;
 static struct platform_device *mdlactlPlatformDevice;
 static u32 cmd_id;
-static u32 max_cmd_id;
-static u32 sw_max_cmd_id;
-static u32 cmd_list_len;
+static u32 last_reset_id;
+static u32 max_cmd_id;    /* latest cmd id from MREG_TOP_G_FIN0 */
+static u32 sw_max_cmd_id; /* post-processed sw cmd id after fifo_out */
 struct work_struct mdla_queue;
-struct work_struct mdla_power_off_queue;
+struct work_struct mdla_power_off_work;
+
+struct completion command_done;
 
 #define UINT32_MAX (0xFFFFFFFF)
 
+static DEFINE_SPINLOCK(hw_lock);
+DEFINE_MUTEX(power_lock);
+DEFINE_MUTEX(cmd_lock);
 DEFINE_MUTEX(cmd_list_lock);
 static DECLARE_WAIT_QUEUE_HEAD(mdla_cmd_queue);
 static LIST_HEAD(cmd_list);
@@ -103,173 +135,12 @@ struct mtk_mdla_local {
 	void __iomem *base_addr;
 };
 
-static inline void command_entry_end(struct command_entry *ce)
+/* command entry functions */
+static inline u32 ce_last_id(struct command_entry *ce)
 {
-	if (ce && ce->id <= max_cmd_id)
-		ce->req_end_t = sched_clock();
+	return (ce->id + ce->count - 1);
 }
 
-static inline void command_entry_result(
-	struct command_entry *ce, int result)
-{
-	if (ce)
-		ce->result = result;
-}
-
-/* MDLA internal FIFO, protected by cmd_list_lock */
-#define MDLA_FIFO_SIZE 2
-
-#if (MDLA_FIFO_SIZE == 1)
-static u32 last_cmd_id = UINT32_MAX;
-static struct command_entry *last_cmd_ent;
-static inline
-struct command_entry *mdla_fifo_head(void)
-{
-	return last_cmd_ent;
-}
-
-static inline u32 mdla_fifo_head_id(void)
-{
-	return last_cmd_id;
-}
-
-static inline u32 mdla_fifo_tail_id(void)
-{
-	return last_cmd_id;
-}
-
-static inline bool mdla_fifo_is_empty(void)
-{
-	return (cmd_list_len == 0);
-}
-
-static int mdla_fifo_in(u32 id, struct command_entry *ce)
-{
-	if (cmd_list_len == 0) {
-		mdla_cmd_debug("cmd_list_len == 0\n");
-		last_cmd_id = id;
-		last_cmd_ent = ce;
-		cmd_list_len++;
-		return 1;
-	}
-
-	mdla_cmd_debug("cmd_list_len == %d\n", cmd_list_len);
-	return 0;
-}
-
-static void mdla_fifo_out(void)
-{
-	if (!cmd_list_len)
-		mdla_cmd_debug("%s: MDLA FIFO is already empty\n", __func__);
-
-	cmd_list_len--;
-	last_cmd_id = UINT32_MAX;
-	last_cmd_ent = NULL;
-}
-
-static inline void mdla_fifo_mark_fail(void)
-{
-	command_entry_result(last_cmd_ent, MDLA_CMD_TIMEOUT);
-}
-
-static inline void mdla_fifo_mark_time(void)
-{
-	command_entry_end(last_cmd_ent);
-}
-
-#elif (MDLA_FIFO_SIZE == 2)
-static u32 last_cmd_id0 = UINT32_MAX;
-static u32 last_cmd_id1 = UINT32_MAX;
-static struct command_entry *last_cmd_ent0;
-static struct command_entry *last_cmd_ent1;
-static inline
-struct command_entry *mdla_fifo_head(void)
-{
-	return last_cmd_ent0;
-}
-static inline u32 mdla_fifo_head_id(void)
-{
-	return last_cmd_id0;
-}
-
-static inline u32 mdla_fifo_tail_id(void)
-{
-	return (last_cmd_id1 == UINT32_MAX) ?
-		last_cmd_id0 : last_cmd_id1;
-}
-
-static inline bool mdla_fifo_is_empty(void)
-{
-	return (cmd_list_len == 0);
-}
-
-static int mdla_fifo_in(u32 id, struct command_entry *ce)
-{
-	if (cmd_list_len == 0) {
-		mdla_cmd_debug("cmd_list_len == 0\n");
-		last_cmd_id0 = id;
-		last_cmd_id1 = UINT32_MAX;
-		last_cmd_ent0 = ce;
-		last_cmd_ent1 = NULL;
-		cmd_list_len++;
-		return 1;
-	}
-
-	if (cmd_list_len == 1) {
-		mdla_cmd_debug("cmd_list_len == 1\n");
-		last_cmd_id1 = id;
-		last_cmd_ent1 = ce;
-		cmd_list_len++;
-		return 2;
-	}
-
-	mdla_cmd_debug("cmd_list_len == %d\n", cmd_list_len);
-	return 0;
-}
-static void mdla_fifo_out(void)
-{
-	if (!cmd_list_len)
-		mdla_cmd_debug("%s: MDLA FIFO is already empty\n", __func__);
-
-	cmd_list_len--;
-	last_cmd_id0 = last_cmd_id1;
-	last_cmd_id1 = UINT32_MAX;
-	last_cmd_ent0 = last_cmd_ent1;
-	last_cmd_ent1 = NULL;
-}
-
-static inline void mdla_fifo_mark_fail(void)
-{
-	command_entry_result(last_cmd_ent0, MDLA_CMD_TIMEOUT);
-	command_entry_result(last_cmd_ent1, MDLA_CMD_TIMEOUT);
-}
-
-static inline void mdla_fifo_mark_time(void)
-{
-	command_entry_end(last_cmd_ent0);
-	command_entry_end(last_cmd_ent1);
-}
-#else
-#error "mdla: wrong FIFO size"
-#endif
-
-static int mdla_open(struct inode *, struct file *);
-static int mdla_release(struct inode *, struct file *);
-static long mdla_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
-static long mdla_compat_ioctl(struct file *file,
-	unsigned int cmd, unsigned long arg);
-static int mdla_wait_command(struct ioctl_wait_cmd *wt);
-static int mdla_mmap(struct file *filp, struct vm_area_struct *vma);
-static int mdla_process_command(struct command_entry *ce);
-static void mdla_timeup(unsigned long data);
-static void mdla_power_timeup(unsigned long data);
-
-#define MDLA_TIMEOUT_DEFAULT 10000 /* ms */
-#define MDLA_POWEROFF_TIME_DEFAULT 2000 /* ms */
-u32 mdla_timeout = MDLA_TIMEOUT_DEFAULT;
-u32 mdla_poweroff_time = MDLA_POWEROFF_TIME_DEFAULT;
-static DEFINE_TIMER(mdla_timer, mdla_timeup, 0, 0);
-static DEFINE_TIMER(mdla_power_timer, mdla_power_timeup, 0, 0);
 
 static const struct file_operations fops = {
 	.open = mdla_open,
@@ -280,6 +151,26 @@ static const struct file_operations fops = {
 	.mmap = mdla_mmap,
 	.release = mdla_release,
 };
+
+static u32 reg_read(void *base, u32 offset)
+{
+	return ioread32(base + offset);
+}
+
+static void reg_write(void *base, u32 offset, u32 value)
+{
+	iowrite32(value, base + offset);
+}
+
+static void reg_set(void *base, u32 offset, u32 value)
+{
+	reg_write(base, offset, reg_read(base, offset) | value);
+}
+
+static void reg_clr(void *base, u32 offset, u32 value)
+{
+	reg_write(base, offset, reg_read(base, offset) & (~value));
+}
 
 unsigned int mdla_cfg_read(u32 offset)
 {
@@ -304,6 +195,84 @@ void mdla_reg_write(u32 value, u32 offset)
 	iowrite32(value, apu_mdla_cmde_mreg_top + offset);
 }
 
+
+/* power on/off warpper function, protected by cmd_list_lock */
+enum MDLA_POWER_STAT {
+	PWR_OFF = 0,
+	PWR_ON = 1,
+};
+
+
+static int mdla_power_status;
+
+int get_power_on_status(void)
+{
+	return mdla_power_status == PWR_ON ? 1:0;
+}
+
+static int mdla_power_on(struct command_entry *ce)
+{
+	int ret = 0;
+
+	mutex_lock(&power_lock);
+	if (timer_pending(&mdla_power_timer))
+		del_timer(&mdla_power_timer);
+
+	if (mdla_power_status == PWR_ON) {
+		mdla_cmd_debug("%s: already on.\n", __func__);
+		goto power_on_done;
+	}
+
+	mdla_cmd_debug("%s:mdla_dvfs_cmd_start <ENTER>\n", __func__);
+	ret = mdla_dvfs_cmd_start(ce);
+	mdla_cmd_debug("%s:mdla_dvfs_cmd_start <EXIT>: %d\n",
+		__func__, ret);
+	if (ret)
+		goto power_on_done;
+
+	mdla_cmd_debug("%s: powered on\n", __func__);
+	mdla_qos_counter_start(0);
+	mdla_power_status = PWR_ON;
+
+power_on_done:
+	/* EARA QoS*/
+	mdla_cmd_qos_start(0);
+	mdla_profile_start();
+	mutex_unlock(&power_lock);
+	return ret;
+}
+
+static int mdla_power_off(const char *reason)
+{
+	int ret = 0;
+
+
+	mutex_lock(&power_lock);
+
+	if (mdla_power_status == PWR_OFF)
+		goto power_off_done;
+
+	pmu_reg_save();
+	mdla_qos_counter_end(0);
+
+	mdla_cmd_debug("%s: mdla_dvfs_cmd_end_shutdown <ENTER>: %s\n",
+		__func__, reason);
+	ret = mdla_dvfs_cmd_end_shutdown();
+	mdla_cmd_debug("%s: mdla_dvfs_cmd_end_shutdown <EXIT>: %s, %d\n",
+		__func__, reason, ret);
+
+	if (ret)
+		goto power_off_done;
+
+	mdla_cmd_debug("%s: powered off\n", __func__);
+	mdla_power_status = PWR_OFF;
+
+power_off_done:
+	mutex_unlock(&power_lock);
+
+	return ret;
+}
+
 static const char *reason_str[REASON_MAX+1] = {
 	"others",
 	"driver_init",
@@ -320,50 +289,65 @@ static const char *mdla_get_reason_str(int res)
 	return reason_str[res];
 }
 
-void mdla_reset(int res)
+static void mdla_reset(int res)
 {
 	const char *str = mdla_get_reason_str(res);
 
 	pr_info("%s: MDLA RESET: %s(%d)\n", __func__,
 		str, res);
-	mdla_cfg_write(0x03f, MDLA_SW_RST);
-	mdla_cfg_write(0x000, MDLA_SW_RST);
+
+	// Enable Bus prot, start to turn off, set bus protect - step 1:0
+	reg_write(infracfg_ao_top,
+		INFRA_TOPAXI_PROTECTEN_MCU_SET,
+		VPU_CORE2_PROT_STEP1_0_MASK);
+
+	while ((reg_read(infracfg_ao_top, INFRA_TOPAXI_PROTECTEN_MCU_STA1) &
+		VPU_CORE2_PROT_STEP1_0_ACK_MASK) !=
+		VPU_CORE2_PROT_STEP1_0_ACK_MASK) {
+	}
+
+	// Reset
+	reg_set(apu_conn_top, APU_CONN_SW_RST, APU_CORE2_RSTB);
+	reg_clr(apu_conn_top, APU_CONN_SW_RST, APU_CORE2_RSTB);
+
+	// Release Bus Prot
+	reg_write(infracfg_ao_top, INFRA_TOPAXI_PROTECTEN_MCU_CLR,
+		VPU_CORE2_PROT_STEP1_0_MASK);
+
 	mdla_cfg_write(0xffffffff, MDLA_CG_CLR);
 	mdla_reg_write(MDLA_IRQ_MASK & ~(MDLA_IRQ_SWCMD_DONE),
 		MREG_TOP_G_INTP2);
+
+	/* for DCM and CG */
+	mdla_reg_write(cfg_eng0, MREG_TOP_ENG0);
+	mdla_reg_write(cfg_eng1, MREG_TOP_ENG1);
+	mdla_reg_write(cfg_eng2, MREG_TOP_ENG2);
+	mdla_reg_write(cfg_eng11, MREG_TOP_ENG11);
 
 #ifdef CONFIG_MTK_MDLA_ION
 	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI_CTRL);
 	mdla_cfg_set(MDLA_AXI_CTRL_MASK, MDLA_AXI1_CTRL);
 #endif
 
-	pmu_reset();
 	mdla_profile_reset(str);
+}
+
+void mdla_reset_lock(int res)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&hw_lock, flags);
+	mdla_reset(res);
+
+	if (res == REASON_TIMEOUT)
+		last_reset_id = cmd_id;
+
+	spin_unlock_irqrestore(&hw_lock, flags);
 }
 
 static void mdla_power_timeup(unsigned long data)
 {
-	schedule_work(&mdla_power_off_queue);
-}
-
-static void mdla_timeup(unsigned long data)
-{
-
-	pr_info("%s: MDLA Timeout: %u ms, max_cmd_id: %u, fifo_head_id: %u, fifo_tail_id: %u\n",
-		__func__, mdla_timeout, max_cmd_id,
-		mdla_fifo_head_id(), mdla_fifo_tail_id());
-
-	mdla_dump_reg();
-	mdla_reset(REASON_TIMEOUT);
-
-	mdla_fifo_mark_fail();
-	max_cmd_id = mdla_fifo_tail_id();
-	mdla_fifo_mark_time();
-
-	/* wake up those who were waiting on id0 or id1. */
-	wake_up_interruptible_all(&mdla_cmd_queue);
-	/* resume execution of the command queue */
-	schedule_work(&mdla_queue);
+	schedule_work(&mdla_power_off_work);
 }
 
 static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
@@ -382,86 +366,74 @@ static int mdla_mmap(struct file *filp, struct vm_area_struct *vma)
 	return 0;
 }
 
-static void mdla_start_power_off(struct work_struct *work)
-{
-	mdla_drv_debug("%s: start timer shutdown\n", __func__);
-	mutex_lock(&cmd_list_lock);
-	if (mdla_fifo_is_empty() && list_empty(&cmd_list)) {
-		mdla_dvfs_cmd_end_shutdown();
-		power_on = 0;
-	}
-	mutex_unlock(&cmd_list_lock);
-
-}
 
 static void mdla_start_queue(struct work_struct *work)
 {
-	struct command_entry *ce;
-	u64 end;
-
 	mutex_lock(&cmd_list_lock);
-
-	ce = mdla_fifo_head();
-	end = ce ? ce->req_end_t : 0;
-
-	mdla_trace_end(max_cmd_id, end, MDLA_TRACE_MODE_INT);
-
-	while (max_cmd_id >= mdla_fifo_head_id()) {
-		mdla_trace_end(max_cmd_id, end, MDLA_TRACE_MODE_CMD);
-		mdla_dvfs_cmd_end_info(mdla_fifo_head());
-		mdla_fifo_out();
-		if (!list_empty(&cmd_list)) {
-			ce = list_first_entry(&cmd_list,
-					struct command_entry, list);
-			if (mdla_fifo_in(
-				ce->id + ce->count - 1,
-				ce)) {
-				list_del(&ce->list);
-				mdla_process_command(ce);
-			} else {
-				mdla_cmd_debug("%s: MDLA FIFO full\n",
-					__func__);
-				break;
-			}
-		}
-	}
-	if (mdla_fifo_is_empty() && timer_pending(&mdla_timer)) {
-		mdla_profile_stop(1);
-		mdla_cmd_debug("%s: del_timer().\n", __func__);
-		del_timer(&mdla_timer);
-#ifdef MTK_MDLA_ALWAYS_POWER_ON
-		if (!mdla_profile_power_mode(NULL))
-			mdla_dvfs_cmd_end_shutdown();
-#else
-		if (mdla_poweroff_time) {
-			mdla_drv_debug("%s: start power_timer\n", __func__);
-			mod_timer(&mdla_power_timer,
-				jiffies + msecs_to_jiffies(mdla_poweroff_time));
-		}
-#endif
-	}
-	sw_max_cmd_id = max_cmd_id;
 	mutex_unlock(&cmd_list_lock);
-	wake_up_interruptible_all(&mdla_cmd_queue);
-	mdla_cmd_debug(
-			"mdla_start_queue max_cmd_id: %d, fifo_head_id: %d, fifo_tail_id: %d\n",
-			max_cmd_id, mdla_fifo_head_id(), mdla_fifo_tail_id());
+
+}
+static void mdla_start_power_off(struct work_struct *work)
+{
+	mutex_lock(&cmd_lock);
+	mdla_power_off("timer shutdown");
+	mutex_unlock(&cmd_lock);
+}
+
+/* if there's no more reqeusts
+ * 1. delete command timeout timer
+ * 2. setup delay power off timer
+ * this function is protected by cmd_list_lock
+ */
+static void mdla_command_done(void)
+{
+	mutex_lock(&power_lock);
+	mdla_profile_stop(1);
+	if (mdla_poweroff_time) {
+		mdla_drv_debug("%s: start power_timer\n", __func__);
+		mod_timer(&mdla_power_timer,
+			jiffies + msecs_to_jiffies(mdla_poweroff_time));
+	}
+	mutex_unlock(&power_lock);
 }
 
 static irqreturn_t mdla_interrupt(int irq, void *dev_id)
 {
 	u32 status_int = mdla_reg_read(MREG_TOP_G_INTP0);
+	unsigned long flags;
+	u32 id;
+
+	spin_lock_irqsave(&hw_lock, flags);
+	id = mdla_reg_read(MREG_TOP_G_FIN0);
+	pmu_reg_save();
+
+	if (id > max_cmd_id) /* avoid max_cmd_id lost after timeout reset */
+		max_cmd_id = id;
 
 	if (status_int & MDLA_IRQ_PMU_INTE)
 		mdla_reg_write(MDLA_IRQ_PMU_INTE, MREG_TOP_G_INTP0);
 
-	max_cmd_id = mdla_reg_read(MREG_TOP_G_FIN0);
-	mdla_fifo_mark_time();
-	pmu_reg_save();
-	schedule_work(&mdla_queue);
+	spin_unlock_irqrestore(&hw_lock, flags);
+
+	mdla_cmd_debug("%s: max_cmd_id: %d, id: %d\n",
+		__func__, max_cmd_id, id);
+
+	complete(&command_done);
 	return IRQ_HANDLED;
 }
 
+static int mdla_resume(struct platform_device *pdev)
+{
+	mutex_unlock(&cmd_lock);
+	mdla_cmd_debug("%s: resume\n", __func__);
+	return 0;
+}
+static int mdla_suspend(struct platform_device *pdev, pm_message_t mesg)
+{
+	mutex_lock(&cmd_lock);
+	mdla_power_off("mdla suspend\n");
+	return 0;
+}
 static int mdla_probe(struct platform_device *pdev)
 {
 	struct resource *r_irq; /* Interrupt resources */
@@ -469,6 +441,8 @@ static int mdla_probe(struct platform_device *pdev)
 	struct resource *apu_mdla_config; /* IO mem resources */
 	struct resource *apu_mdla_biu; /* IO mem resources */
 	struct resource *apu_mdla_gsm; /* IO mem resources */
+	struct resource *apu_conn; /* IO mem resources */
+	struct resource *infracfg_ao; /* IO mem resources */
 	int rc = 0;
 	struct device *dev = &pdev->dev;
 
@@ -479,7 +453,7 @@ static int mdla_probe(struct platform_device *pdev)
 	/* Get iospace for MDLA Config */
 	apu_mdla_config = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!apu_mdla_config) {
-		dev_err(dev, "invalid address\n");
+		mdla_drv_debug("invalid address\n");
 		return -ENODEV;
 	}
 
@@ -491,7 +465,7 @@ static int mdla_probe(struct platform_device *pdev)
 	}
 	/* Get iospace for MDAL PMU */
 	apu_mdla_biu = platform_get_resource(pdev, IORESOURCE_MEM, 2);
-	if (!apu_mdla_command) {
+	if (!apu_mdla_biu) {
 		dev_err(dev, "apu_mdla_biu address\n");
 		return -ENODEV;
 	}
@@ -500,6 +474,20 @@ static int mdla_probe(struct platform_device *pdev)
 	apu_mdla_gsm = platform_get_resource(pdev, IORESOURCE_MEM, 3);
 	if (!apu_mdla_gsm) {
 		dev_err(dev, "apu_mdla_biu address\n");
+		return -ENODEV;
+	}
+
+	/* Get iospace APU CONN */
+	apu_conn = platform_get_resource(pdev, IORESOURCE_MEM, 4);
+	if (!apu_conn) {
+		mdla_drv_debug("apu_conn address\n");
+		return -ENODEV;
+	}
+
+	/* Get INFRA CFG */
+	infracfg_ao = platform_get_resource(pdev, IORESOURCE_MEM, 5);
+	if (!infracfg_ao) {
+		mdla_drv_debug("infracfg_ao address\n");
 		return -ENODEV;
 	}
 
@@ -538,6 +526,22 @@ static int mdla_probe(struct platform_device *pdev)
 	pr_info("%s: apu_mdla_gsm_top: %p, apu_mdla_gsm_base: %p\n",
 		__func__, apu_mdla_gsm_top, apu_mdla_gsm_base);
 
+	apu_conn_top = ioremap_nocache(apu_conn->start,
+			apu_conn->end - apu_conn->start + 1);
+	if (!apu_conn_top) {
+		mdla_drv_debug("mtk_mdla: Could not allocate apu_conn_top\n");
+		rc = -EIO;
+		return rc;
+	}
+
+	infracfg_ao_top = ioremap_nocache(infracfg_ao->start,
+			infracfg_ao->end - infracfg_ao->start + 1);
+	if (!infracfg_ao_top) {
+		mdla_drv_debug("mtk_mdla: Could not allocate infracfg_ao_top\n");
+		rc = -EIO;
+		return rc;
+	}
+
 	/* Get IRQ for the device */
 	r_irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!r_irq) {
@@ -572,11 +576,17 @@ static int mdla_probe(struct platform_device *pdev)
 	dev_info(dev, "apu_mdla_biu_top at 0x%08lx mapped to 0x%08lx\n",
 			(unsigned long __force)apu_mdla_biu->start,
 			(unsigned long __force)apu_mdla_biu->end);
+	dev_info(dev, "apu_conn_top at 0x%08lx mapped to 0x%08lx\n",
+			(unsigned long __force)apu_conn->start,
+			(unsigned long __force)apu_conn->end);
+	dev_info(dev, "infracfg_ao_top at 0x%08lx mapped to 0x%08lx\n",
+			(unsigned long __force)infracfg_ao->start,
+			(unsigned long __force)infracfg_ao->end);
 
 	mdla_ion_init();
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
-	mdla_reset(REASON_DRVINIT);
+	mdla_reset_lock(REASON_DRVINIT);
 #endif
 
 	return 0;
@@ -589,6 +599,8 @@ static int mdla_remove(struct platform_device *pdev)
 
 	mdla_uninit_hw();
 	free_irq(mdla_irq, dev);
+	iounmap(infracfg_ao_top);
+	iounmap(apu_conn_top);
 	iounmap(apu_mdla_config_top);
 	iounmap(apu_mdla_cmde_mreg_top);
 	iounmap(apu_mdla_biu_top);
@@ -612,6 +624,8 @@ static struct platform_driver mdla_driver = {
 		.of_match_table = mdla_of_match,
 	},
 	.probe = mdla_probe,
+	.suspend = mdla_suspend,
+	.resume = mdla_resume,
 	.remove = mdla_remove,
 };
 
@@ -625,10 +639,12 @@ static int mdlactl_init(void)
 
 	numberOpens = 0;
 	cmd_id = 1;
-	max_cmd_id = 1;
+	max_cmd_id = 0;
+	last_reset_id = 0;
 	sw_max_cmd_id = 0;
-	cmd_list_len = 0;
-	power_on = 0;
+	mdla_power_status = 0;
+	mdla_e1_detect_count = 0;
+	async_cmd_id = 0;
 
 	// Try to dynamically allocate a major number for the device
 	//  more difficult but worth it
@@ -674,10 +690,13 @@ static int mdlactl_init(void)
 	}
 
 	INIT_WORK(&mdla_queue, mdla_start_queue);
-	INIT_WORK(&mdla_power_off_queue, mdla_start_power_off);
+	INIT_WORK(&mdla_power_off_work, mdla_start_power_off);
+	init_completion(&command_done);
+
 	mdla_debugfs_init();
 	mdla_profile_init();
 	pmu_init();
+	mdla_qos_counter_init();
 
 	return 0;
 }
@@ -698,170 +717,50 @@ static int mdla_release(struct inode *inodep, struct file *filep)
 	return 0;
 }
 
-static void exec_info_eval(struct command_entry *ce,
-	struct ioctl_wait_cmd *wt, u64 *t, int cnt)
-{
-#define _CE(a, b) ((ce->b##_t > ce->a##_t) ? (ce->b##_t - ce->a##_t) : 0)
-	if (t && cnt >= MDLA_WAIT_CMD_ARRAY_SIZE) {
-		t[0] = ce->receive_t;
-		t[1] = _CE(receive, queue);
-		t[2] = _CE(queue, poweron);
-		t[3] = _CE(poweron, req_start);
-		t[4] = _CE(req_start, req_end);
-		t[5] = _CE(req_end, wait);
-	} else {
-		wt->queue_time = _CE(receive, poweron);
-		wt->busy_time = _CE(poweron, wait);
-	}
-#undef _CE
-	wt->result = ce->result;
-	wt->bandwidth = ce->bandwidth;
-}
-
-static int mdla_wait_command(struct ioctl_wait_cmd *wt)
-{
-	struct command_entry *ce;
-	__u32 id = wt->id;
-	int ret = 0;
-	u64 t[MDLA_WAIT_CMD_ARRAY_SIZE];
-	u32 cnt;
-
-	cnt = MDLA_IOC_GET_ARRAY_CNT(wt->queue_time);
-
-	mdla_cmd_debug("%s: enter id:[%d], eix:%d\n",
-		__func__, id, cnt);
-	// @suppress("Type cannot be resolved")
-	wait_event_interruptible(mdla_cmd_queue, sw_max_cmd_id >= id);
-
-	mutex_lock(&cmd_list_lock);
-	while (!list_empty(&cmd_fin_list)) {
-		ce = list_first_entry(&cmd_fin_list,
-			struct command_entry, list);
-		if (max_cmd_id < ce->id)
-			break;
-
-		ce->wait_t = sched_clock();
-		exec_info_eval(ce, wt, (cnt ? t : NULL), cnt);
-
-		mdla_perf_debug("%s: wait_id: %d, id: %u, receive: %llu, queue: %llu, poweron: %llu, start: %llu, end: %llu, wait: %llu, result=%d\n",
-			__func__, id, ce->id,
-			(unsigned long long)ce->receive_t,
-			(unsigned long long)ce->queue_t,
-			(unsigned long long)ce->poweron_t,
-			(unsigned long long)ce->req_start_t,
-			(unsigned long long)ce->req_end_t,
-			(unsigned long long)ce->wait_t,
-			ce->result);
-
-		if (ce->result != MDLA_CMD_SUCCESS)
-			ret = -EIO;
-
-		list_del(&ce->list);
-		kfree(ce);
-	}
-	mutex_unlock(&cmd_list_lock);
-
-	mdla_cmd_debug("%s: exit (%s)\n",
-		__func__, ret ? "timeout" : "success");
-
-	if (cnt >= MDLA_WAIT_CMD_ARRAY_SIZE) {
-		void *ptr = MDLA_IOC_GET_ARRAY_PTR(wt->busy_time);
-
-		cnt = MDLA_WAIT_CMD_ARRAY_SIZE;
-		if (copy_to_user(ptr, t, sizeof(t))) {
-			ret = -EFAULT;
-			cnt = 0;
-		}
-		wt->queue_time = MDLA_IOC_SET_ARRAY_CNT(cnt);
-	}
-
-	return ret;
-}
-
-static void mdla_mark_command_id(struct command_entry *ce)
-{
-	int i;
-	u32 count = ce->count;
-	u32 *cmd = ce->kva;
-
-	ce->id = cmd_id;
-
-	/* Patch SW command ID */
-	for (i = 0; i < count; i++) {
-		mdla_cmd_debug("%s: add command: %d\n", __func__, cmd_id);
-		cmd[(MREG_CMD_SWCMD_ID / sizeof(u32)) +
-			(i * (MREG_CMD_SIZE / sizeof(u32)))] = cmd_id++;
-	}
-
-	mdla_mem_debug("%s: kva=%p, mva=0x%08x, phys_to_dma=0x%lx\n",
-			__func__,
-			ce->kva,
-			ce->mva,
-			(unsigned long)phys_to_dma(mdlactlDevice, ce->mva));
-
-#ifdef CONFIG_MTK_MDLA_ION
-	if (ce->khandle) {
-		mdla_ion_sync(ce->khandle);
-		return;
-	}
-#endif
-	dma_sync_single_for_device(mdlactlDevice,
-			phys_to_dma(mdlactlDevice, ce->mva),
-			count * 0x180, DMA_TO_DEVICE);
-}
 
 static int mdla_process_command(struct command_entry *ce)
 {
-	dma_addr_t addr = ce->mva;
-	u32 count = ce->count;
-	u32 *cmd = (u32 *) ce->kva;
+	dma_addr_t addr;
+	u32 count;
 	int ret = 0;
+	unsigned long flags;
 
-	mdla_cmd_debug("%s: id: %d, count: %d, addr: %lx\n",
-		__func__, cmd[84], ce->count,
+	mdla_timeout_debug("mdla_run\n");
+
+	if (ce == NULL) {
+		mdla_cmd_debug("%s: invalid command entry: ce=%p\n",
+			__func__, ce);
+		return 0;
+	}
+
+	addr = ce->mva;
+	count = ce->count;
+
+	mdla_cmd_debug("%s: count: %d, addr: %lx\n",
+		__func__, ce->count,
 		(unsigned long)addr);
 
-	ce->poweron_t = sched_clock();
-
-	if (power_on) {
-		if (mdla_profile_power_mode(&power_on))
-			goto skip_power;
-	}
-	ret = mdla_dvfs_cmd_start(ce, &cmd_list);
 	if (ret)
 		return ret;
-	power_on = 1;
-skip_power:
-
-	if (mdla_timeout) {
-		mdla_cmd_debug("%s: mod_timer(), cmd id=%u, [%u]\n",
-			__func__, ce->id, cmd[84]);
-		mod_timer(&mdla_timer,
-			jiffies + msecs_to_jiffies(mdla_timeout));
-	}
-
-	if (timer_pending(&mdla_power_timer))
-		del_timer(&mdla_power_timer);
-
-	mdla_profile_start();
-	mdla_trace_begin(count, cmd);
-	ce->req_start_t = sched_clock();
 
 	/* Issue command */
+	spin_lock_irqsave(&hw_lock, flags);
+	ce->state = CE_RUN;
 	mdla_reg_write(addr, MREG_TOP_G_CDMA1);
 	mdla_reg_write(count, MREG_TOP_G_CDMA2);
-	mdla_reg_write(ce->id, MREG_TOP_G_CDMA3);
+	mdla_reg_write(count, MREG_TOP_G_CDMA3);
+	spin_unlock_irqrestore(&hw_lock, flags);
 
-	list_add_tail(&ce->list, &cmd_fin_list);
+//	list_add_tail(&ce->list, &cmd_fin_list);
 
 	return ret;
 }
 
-static int mdla_run_command_async(struct ioctl_run_cmd *cd)
+static void
+mdla_run_command_prepare(struct ioctl_run_cmd *cd, struct command_entry *ce)
 {
-	u32 id;
-	struct command_entry *ce =
-		kmalloc(sizeof(struct command_entry), GFP_KERNEL);
+	if (!ce)
+		return;
 
 	ce->mva = cd->buf.mva + cd->offset;
 	mdla_cmd_debug("%s: mva=%08x, offset=%08x, count: %u, priority: %u, boost: %u\n",
@@ -872,51 +771,180 @@ static int mdla_run_command_async(struct ioctl_run_cmd *cd)
 			cd->priority,
 			cd->boost_value);
 
-	if (cd->buf.ion_khandle) {
-		ce->kva = (void *)cd->buf.kva + cd->offset;
-		mdla_mem_debug("%s: <ion> kva=%p, mva=%08x\n",
-				__func__,
-				ce->kva,
-				ce->mva);
-	} else if (is_gsm_mva(ce->mva)) {
-		ce->kva = gsm_mva_to_virt(ce->mva);
-	} else {
-		ce->kva = phys_to_virt(ce->mva);
-		mdla_mem_debug("%s: <dram> kva: phys_to_virt(mva:%08x) = %p\n",
-			__func__, ce->mva, ce->kva);
-	}
-
+	ce->state = CE_NONE;
+	ce->flags = CE_NOP;
+	ce->bandwidth = 0;
+	ce->result = MDLA_CMD_SUCCESS;
 	ce->count = cd->count;
 	ce->khandle = cd->buf.ion_khandle;
 	ce->type = cd->buf.type;
 	ce->priority = cd->priority;
 	ce->boost_value = cd->boost_value;
-	ce->bandwidth = 0;
-	ce->result = MDLA_CMD_SUCCESS;
 	ce->receive_t = sched_clock();
-
-	mutex_lock(&cmd_list_lock);
-
-	/* Increate cmd_id*/
-	mdla_mark_command_id(ce);
-
-	id = cmd_id - 1;
-
-	ce->queue_t = sched_clock();
-
-	if (mdla_fifo_in(id, ce))
-		mdla_process_command(ce);
-	else
-		list_add_tail(&ce->list, &cmd_list);
-
-	mutex_unlock(&cmd_list_lock);
-
-	return id;
+	ce->kva = NULL;
 }
 
+
+static void mdla_performance_index(struct ioctl_wait_cmd *wt,
+		struct command_entry *ce)
+{
+	wt->queue_time = ce->poweron_t - ce->receive_t;
+	wt->busy_time = ce->wait_t - ce->poweron_t;
+	wt->bandwidth = ce->bandwidth;
+}
+
+static int hw_e1_timeout_detect(void)
+{
+	u32 ste_debug_if_1;
+
+	ste_debug_if_1 = mdla_reg_read(0x0EA8);
+	if (((ste_debug_if_1&0x1C0) != 0x0 &&
+			(ste_debug_if_1&0x3) == 0x3)) {
+		mdla_timeout_debug("%s: match E1 timeout issue\n",
+				__func__);
+		mdla_e1_detect_count++;
+		return -1;
+	}
+	return 0;
+}
+
+static int mdla_run_command_sync(struct ioctl_run_cmd *cd,
+	struct ioctl_wait_cmd *wt)
+{
+	int ret = 0;
+	struct command_entry ce;
+	u32 id;
+	u64 deadline;
+
+	ce.queue_t = sched_clock();
+
+	/* The critical region of command enqueue */
+	mutex_lock(&cmd_lock);
+
+	mdla_run_command_prepare(cd, &ce);
+
+	/* Trace start */
+	mdla_trace_begin(&ce);
+
+process_command:
+	/* Compute deadline */
+	deadline = get_jiffies_64() + msecs_to_jiffies(mdla_timeout);
+
+	max_cmd_id = 0;
+	id = ce.count;
+
+	mdla_timeout_debug("%s: max_cmd_id: %d id: %d\n",
+			__func__, max_cmd_id, id);
+
+	mdla_power_on(&ce);
+	ce.poweron_t = sched_clock();
+	ce.req_start_t = sched_clock();
+
+	/* Fill HW reg */
+	mdla_process_command(&ce);
+
+	/* Wait for timeout */
+	while (max_cmd_id < id && time_before64(get_jiffies_64(), deadline)) {
+		unsigned long wait_event_timeouts;
+
+		if (cfg_timer_en)
+			wait_event_timeouts =
+				usecs_to_jiffies(cfg_period);
+		else
+			wait_event_timeouts =
+				msecs_to_jiffies(mdla_e1_detect_timeout);
+
+		wait_for_completion_interruptible_timeout(&command_done,
+				wait_event_timeouts);
+
+		/* E1 HW timeout check here */
+		if (hw_e1_timeout_detect() != 0) {
+			mdla_reset_lock(REASON_TIMEOUT);
+			goto process_command;
+		}
+	}
+	ce.req_end_t = sched_clock();
+	mdla_trace_iter();
+
+	wt->id = id;
+
+	if (max_cmd_id >= id)
+		wt->result = 0;
+	else { // Command timeout
+		mdla_timeout_debug("%s: command: %u, max_cmd_id: %u deadline:%llu, jiffies: %lu\n",
+				__func__, id, max_cmd_id, deadline, jiffies);
+		mdla_dump_reg();
+		mdla_dump_ce(&ce);
+		mdla_reset_lock(REASON_TIMEOUT);
+		wt->result = 1;
+	}
+
+	/* Start power off timer */
+	mdla_command_done();
+	ce.wait_t = sched_clock();
+
+	/* Trace stop */
+	mdla_trace_end(&ce);
+
+	mutex_unlock(&cmd_lock);
+
+	/* Calculate all performance index */
+	mdla_performance_index(wt, &ce);
+
+
+	return ret;
+}
+
+void mdla_wait_command(struct ioctl_wait_cmd *wt)
+{
+	struct list_head *ele, *next;
+	struct wait_entry *we;
+
+	wt->result = -1;
+	mdla_cmd_debug("%s: id: %u\n", __func__, wt->id);
+	mutex_lock(&cmd_list_lock);
+	list_for_each_safe(ele, next, &cmd_list) {
+		mdla_cmd_debug("%s: loop id: %u\n", __func__, wt->id);
+		we = list_entry(ele, struct wait_entry, list);
+		if (wt->id == we->async_id) {
+			mdla_cmd_debug("%s: found id: %u\n", __func__, wt->id);
+			memcpy(wt, &we->wt, sizeof(struct ioctl_wait_cmd));
+			list_del(&we->list);
+			kfree(we);
+			break;
+		}
+	}
+	mutex_unlock(&cmd_list_lock);
+}
+
+static int mdla_run_command_async(struct ioctl_run_cmd *cd)
+{
+	struct wait_entry *we = kmalloc(sizeof(struct wait_entry),
+			GFP_KERNEL);
+
+	if (we == NULL)
+		return -1;
+
+	mdla_run_command_sync(cd, &we->wt);
+	if (we->wt.result != 0) {
+		kfree(we);
+		return -1;
+	}
+	mutex_lock(&cmd_list_lock);
+	we->async_id = async_cmd_id++;
+	list_add_tail(&we->list, &cmd_list);
+	mutex_unlock(&cmd_list_lock);
+	mdla_cmd_debug("%s: %d\n", __func__, we->async_id);
+	return we->async_id;
+}
+
+#define MAX_ALLOC_SIZE (128 * 1024 * 1024)
 static int mdla_dram_alloc(struct ioctl_malloc *malloc_data)
 {
 	dma_addr_t phyaddr = 0;
+
+	if (malloc_data->size > MAX_ALLOC_SIZE)
+		malloc_data->size = MAX_ALLOC_SIZE;
 
 	malloc_data->kva = dma_alloc_coherent(mdlactlDevice, malloc_data->size,
 			&phyaddr, GFP_KERNEL);
@@ -957,7 +985,7 @@ static long mdla_ioctl_config(unsigned long arg)
 			mdla_timeout = cfg.arg[0];
 		break;
 	case MDLA_CFG_FIFO_SZ_GET:
-		cfg.arg[0] = MDLA_FIFO_SIZE;
+		cfg.arg[0] = 1;
 		cfg.arg_count = 1;
 		break;
 	case MDLA_CFG_FIFO_SZ_SET:
@@ -985,7 +1013,6 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 	long retval = 0;
 	struct ioctl_malloc malloc_data;
 	struct ioctl_perf perf_data;
-	u32 id;
 
 	switch (command) {
 	case IOCTL_MALLOC:
@@ -1045,10 +1072,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			(void *)cmd_data.req.buf.kva,
 			cmd_data.req.buf.mva,
 			phys_to_virt(cmd_data.req.buf.mva));
-		id = mdla_run_command_async(&cmd_data.req);
-		cmd_data.res.id = cmd_data.req.id;
-		retval = mdla_wait_command(&cmd_data.res);
-
+		retval = mdla_run_command_sync(&cmd_data.req, &cmd_data.res);
 		if (copy_to_user((void *) arg, &cmd_data, sizeof(cmd_data)))
 			return -EFAULT;
 		break;
@@ -1061,15 +1085,9 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 				sizeof(cmd_data))) {
 			return -EFAULT;
 		}
-		mdla_cmd_debug("%s: RUN_CMD_ASYNC: kva=%p, mva=0x%08x, phys_to_virt=%p\n",
-			__func__,
-			(void *)cmd_data.buf.kva,
-			cmd_data.buf.mva,
-			phys_to_virt(cmd_data.buf.mva));
-		id = mdla_run_command_async(&cmd_data);
-		cmd_data.id = id;
+		cmd_data.id = mdla_run_command_async(&cmd_data);
 		if (copy_to_user((void *) arg, &cmd_data,
-			sizeof(cmd_data)))
+				sizeof(cmd_data)))
 			return -EFAULT;
 		break;
 	}
@@ -1078,13 +1096,14 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 		struct ioctl_wait_cmd wait_data;
 
 		if (copy_from_user(&wait_data, (void *) arg,
-				sizeof(wait_data))) {
+			sizeof(struct ioctl_wait_cmd))) {
 			return -EFAULT;
 		}
-		retval = mdla_wait_command(&wait_data);
+		mdla_wait_command(&wait_data);
 		if (copy_to_user((void *) arg, &wait_data, sizeof(wait_data)))
 			return -EFAULT;
 		break;
+
 	}
 	case IOCTL_PERF_SET_EVENT:
 		if (copy_from_user(&perf_data, (void *) arg,
@@ -1121,6 +1140,7 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			return -EFAULT;
 		}
 		pmu_counter_free(perf_data.handle);
+
 		break;
 	case IOCTL_PERF_GET_START:
 		if (copy_from_user(&perf_data, (void *) arg,
@@ -1150,17 +1170,35 @@ static long mdla_ioctl(struct file *filp, unsigned int command,
 			return -EFAULT;
 		break;
 	case IOCTL_PERF_RESET_CNT:
+		mutex_lock(&cmd_lock);
+		mutex_lock(&power_lock);
+
 		pmu_reset_saved_counter();
+
+		mutex_unlock(&power_lock);
+		mutex_unlock(&cmd_lock);
 		break;
 	case IOCTL_PERF_RESET_CYCLE:
+		mutex_lock(&cmd_lock);
+		mutex_lock(&power_lock);
+
 		pmu_reset_saved_cycle();
+
+		mutex_unlock(&power_lock);
+		mutex_unlock(&cmd_lock);
 		break;
 	case IOCTL_PERF_SET_MODE:
 		if (copy_from_user(&perf_data, (void *) arg,
 				sizeof(perf_data))) {
 			return -EFAULT;
 		}
+		mutex_lock(&cmd_lock);
+		mutex_lock(&power_lock);
+
 		pmu_clr_mode_save(perf_data.mode);
+
+		mutex_unlock(&power_lock);
+		mutex_unlock(&cmd_lock);
 		break;
 	case IOCTL_ION_KMAP:
 		return mdla_ion_kmap(arg);
@@ -1188,6 +1226,7 @@ static long mdla_compat_ioctl(struct file *file,
 
 static void mdlactl_exit(void)
 {
+	mdla_qos_counter_destroy();
 	mdla_debugfs_exit();
 	platform_driver_unregister(&mdla_driver);
 	device_destroy(mdlactlClass, MKDEV(majorNumber, 0));
