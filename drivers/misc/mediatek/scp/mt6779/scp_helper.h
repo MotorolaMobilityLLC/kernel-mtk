@@ -215,6 +215,7 @@ extern phys_addr_t scp_mem_base_phys;
 extern phys_addr_t scp_mem_base_virt;
 extern phys_addr_t scp_mem_size;
 extern atomic_t scp_reset_status;
+extern spinlock_t scp_awake_spinlock;
 
 /*extern scp notify*/
 extern void scp_send_reset_wq(enum SCP_RESET_TYPE type);

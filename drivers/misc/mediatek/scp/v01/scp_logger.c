@@ -548,7 +548,7 @@ static void scp_A_logger_init_handler(int id, void *data, unsigned int len)
 	last_log_info.scp_log_buf_addr = log_info->scp_log_buf_addr;
 	last_log_info.scp_log_start_addr = log_info->scp_log_start_addr;
 	last_log_info.scp_log_end_addr = log_info->scp_log_end_addr;
-	// last_log_info.scp_log_buf_maxlen = log_info->scp_log_buf_maxlen;
+	last_log_info.scp_log_buf_maxlen = log_info->scp_log_buf_maxlen;
 	/* setting dram ctrl config to scp*/
 	/* scp side get wakelock, AP to write info to scp sram*/
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_A_LOGGER_MEM_ID),
@@ -594,7 +594,7 @@ static void scp_logger_notify_ws(struct work_struct *ws)
 		if ((retrytimes % 500) == 0)
 			pr_debug("[SCP] %s: ipi ret=%d\n", __func__, ret);
 
-		if (ret == SCP_IPI_DONE)
+		if ((ret == SCP_IPI_DONE) || (ret == SCP_IPI_ERROR))
 			break;
 		retrytimes--;
 		udelay(2000);
