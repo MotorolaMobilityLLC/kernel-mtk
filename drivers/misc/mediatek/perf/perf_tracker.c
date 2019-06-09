@@ -107,10 +107,10 @@ void __perf_tracker(u64 wallclock,
 
 	/* emi */
 #ifdef CONFIG_MTK_QOS_FRAMEWORK
-	bw_c  = qos_sram_read(QOS_CPU_BW);
-	bw_g  = qos_sram_read(QOS_GPU_BW);
-	bw_mm = qos_sram_read(QOS_MM_BW);
-	bw_total = qos_sram_read(QOS_TOTAL_BW);
+	bw_c  = qos_sram_read(QOS_DEBUG_1);
+	bw_g  = qos_sram_read(QOS_DEBUG_2);
+	bw_mm = qos_sram_read(QOS_DEBUG_3);
+	bw_total = qos_sram_read(QOS_DEBUG_0);
 #endif
 
 	/* sched: cpu freq */
