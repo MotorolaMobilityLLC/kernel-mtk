@@ -395,7 +395,6 @@ static int __init mtk_timer_init(struct device_node *node)
 
 err_clk_disable_evt:
 	clk_disable_unprepare(clk_evt);
-	clk_put(clk_evt);
 err_clk_disable_src:
 	clk_disable_unprepare(clk_src);
 err_clk_evt:
