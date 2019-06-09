@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.04.2018.15:37:20"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="06.03.2019.17:25:16"-->
 <dct_cfg>
     <general chip="MT6761">
         <proj>Merlot_Phone</proj>
@@ -1841,6 +1841,11 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x6B</address>
             </device2>
+            <device3>
+                <varName>STROBE_MAIN</varName>
+                <channel>I2C_CHANNEL_5</channel>
+                <address>0x63</address>
+            </device3>
             <device4>
                 <varName>CAMERA_MAIN</varName>
                 <channel>I2C_CHANNEL_2</channel>
