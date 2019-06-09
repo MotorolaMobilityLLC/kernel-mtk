@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--dct_version="2.5" buid_sn="161102" dws_modification_time="04.11.2019.12:19:22"-->
+<!--dct_version="2.5" buid_sn="161102" dws_modification_time="05.24.2019.14:34:14"-->
 <dct_cfg>
     <general chip="MT6765">
         <proj>Cervino</proj>
@@ -76,6 +76,13 @@
                 <sensitive_level>Edge</sensitive_level>
                 <debounce_en>Disable</debounce_en>
             </eint41>
+            <eint44>
+                <varName>DSI_TE</varName>
+                <debounce_time>0</debounce_time>
+                <polarity>High</polarity>
+                <sensitive_level>Edge</sensitive_level>
+                <debounce_en>Disable</debounce_en>
+            </eint44>
             <eint144>
                 <varName>MAIN_PMIC</varName>
                 <debounce_time>0</debounce_time>
@@ -1466,7 +1473,7 @@
                 <pullPushEn>false</pullPushEn>
             </i2c_bus4>
             <i2c_bus5>
-                <speed_kbps>3400</speed_kbps>
+                <speed_kbps>400</speed_kbps>
                 <pullPushEn>true</pullPushEn>
             </i2c_bus5>
             <i2c_bus6>
