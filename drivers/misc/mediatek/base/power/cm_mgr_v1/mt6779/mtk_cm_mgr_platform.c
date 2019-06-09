@@ -775,6 +775,14 @@ int cm_mgr_register_init(void)
 	return 0;
 }
 
+#ifdef USE_CPU_TO_DRAM_MAP
+static void cm_mgr_add_cpu_opp_to_ddr_req(void)
+{
+	pm_qos_add_request(&ddr_opp_req_by_cpu_opp, PM_QOS_DDR_OPP,
+			PM_QOS_DDR_OPP_DEFAULT_VALUE);
+}
+#endif /* USE_CPU_TO_DRAM_MAP */
+
 int cm_mgr_platform_init(void)
 {
 	int r;
@@ -818,8 +826,7 @@ int cm_mgr_platform_init(void)
 			PM_QOS_DDR_OPP_DEFAULT_VALUE);
 
 #ifdef USE_CPU_TO_DRAM_MAP
-	pm_qos_add_request(&ddr_opp_req_by_cpu_opp, PM_QOS_DDR_OPP,
-			PM_QOS_DDR_OPP_DEFAULT_VALUE);
+	cm_mgr_add_cpu_opp_to_ddr_req();
 
 	INIT_DELAYED_WORK(&cm_mgr_work, cm_mgr_process);
 #endif /* USE_CPU_TO_DRAM_MAP */
