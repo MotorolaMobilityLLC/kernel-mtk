@@ -64,7 +64,8 @@ static inline u16 _i2c_readw(struct mt_i2c *i2c, u16 offset)
 
 #define raw_i2c_writew(val, i2c, ch_ofs, ofs) \
 	do { \
-		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+		if (((i2c)->dev_comp->ver != 0x2 && (ofs != 0xfff)) || \
+		    (((i2c)->dev_comp->ver == 0x2) && (V2_##ofs != 0xfff))) \
 			_i2c_writew(val, i2c, ch_ofs + \
 				    (((i2c)->dev_comp->ver == 0x2) ? \
 				    (V2_##ofs) : ofs)); \
@@ -73,7 +74,8 @@ static inline u16 _i2c_readw(struct mt_i2c *i2c, u16 offset)
 #define raw_i2c_readw(i2c, ch_ofs, ofs) \
 	({ \
 		u16 value = 0; \
-		if (((i2c)->dev_comp->ver != 0x2) || (V2_##ofs != 0xfff)) \
+		if (((i2c)->dev_comp->ver != 0x2 && (ofs != 0xfff)) || \
+		    (((i2c)->dev_comp->ver == 0x2) && (V2_##ofs != 0xfff))) \
 			value = _i2c_readw(i2c, ch_ofs + \
 					   (((i2c)->dev_comp->ver == 0x2) ? \
 					   (V2_##ofs) : ofs)); \
