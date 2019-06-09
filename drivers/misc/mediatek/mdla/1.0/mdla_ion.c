@@ -137,7 +137,7 @@ int mdla_ion_kunmap(unsigned long arg)
 	return 0;
 }
 
-void mdla_ion_sync(u64 hndl)
+void mdla_ion_sync(u64 hndl, void *kva, u32 size)
 {
 	struct ion_sys_data sys_data;
 	int ret;
@@ -146,6 +146,9 @@ void mdla_ion_sync(u64 hndl)
 	sys_data.cache_sync_param.kernel_handle =
 		(struct ion_handle *)hndl;
 	sys_data.cache_sync_param.sync_type = ION_CACHE_FLUSH_BY_RANGE;
+	sys_data.cache_sync_param.va = kva;
+	sys_data.cache_sync_param.size = size;
+
 
 	ret = ion_kernel_ioctl(ion_client, ION_CMD_SYSTEM,
 		(unsigned long)&sys_data);

@@ -49,6 +49,47 @@ TRACE_EVENT(mdla_polling,
 		__entry->c[14])
 );
 
+TRACE_EVENT(mdla_cmd_enter,
+	TP_PROTO(int core, int vmdla_opp, int dsp_freq,
+		int ipu_if_freq, int mdla_freq),
+	TP_ARGS(core, vmdla_opp, dsp_freq, ipu_if_freq,
+		mdla_freq),
+	TP_STRUCT__entry(
+		__field(int, core)
+		__field(int, vmdla_opp)
+		__field(int, dsp_freq)
+		__field(int, ipu_if_freq)
+		__field(int, mdla_freq)
+		),
+	TP_fast_assign(
+		__entry->core = core;
+		__entry->vmdla_opp = vmdla_opp;
+		__entry->dsp_freq = dsp_freq;
+		__entry->ipu_if_freq = ipu_if_freq;
+		__entry->mdla_freq = mdla_freq;
+	),
+	TP_printk("_id=c%d, %s=%d, %s=%d, %s=%d, %s=%d",
+			__entry->core,
+			"vmdla_opp", __entry->vmdla_opp,
+			"dsp_freq", __entry->dsp_freq,
+			"ipu_if_freq", __entry->ipu_if_freq,
+			"mdla_freq", __entry->mdla_freq)
+);
+
+TRACE_EVENT(mdla_cmd_leave,
+	TP_PROTO(int core, int dummy),
+	TP_ARGS(core, dummy),
+	TP_STRUCT__entry(
+		__field(int, core)
+		__field(int, dummy)
+	),
+	TP_fast_assign(
+		__entry->core = core;
+		__entry->dummy = dummy;
+	),
+	TP_printk("_id=c%d", __entry->core)
+);
+
 #endif /* _TRACE_MET_MDLASYS_EVENTS_H */
 
 /* This part must be outside protection */
