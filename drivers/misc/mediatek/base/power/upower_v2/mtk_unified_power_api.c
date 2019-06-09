@@ -107,6 +107,22 @@ struct upower_tbl_info **upower_get_tbl(void)
 }
 EXPORT_SYMBOL(upower_get_tbl);
 
+int upower_get_turn_point(void)
+{
+	int turn_point;
+#ifdef UPOWER_BANK_L
+	struct upower_tbl *L_tbl;
+
+	L_tbl = &upower_tbl_ref[UPOWER_BANK_L];
+	turn_point = L_tbl->turn_point;
+#else
+	turn_point = 0;
+#endif
+	return turn_point;
+
+}
+EXPORT_SYMBOL(upower_get_turn_point);
+
 /* for EAS to get pointer of core's tbl */
 struct upower_tbl *upower_get_core_tbl(unsigned int cpu)
 {

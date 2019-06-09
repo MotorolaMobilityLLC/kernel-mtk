@@ -74,6 +74,7 @@ struct upower_tbl {
 	unsigned int row_num;
 	struct idle_state idle_states[NR_UPOWER_DEGREE][NR_UPOWER_CSTATES];
 	unsigned int nr_idle_states;
+	int turn_point;
 };
 
 struct upower_tbl_info {
