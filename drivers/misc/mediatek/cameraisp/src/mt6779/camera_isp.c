@@ -5506,6 +5506,7 @@ static inline void ISP_StopSVHW(int module)
 	m_sec = time.tv64;
 
 	/* Reset*/
+	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x0);
 	ISP_WR32(CAMSV_REG_SW_CTL(module), 0x1);
 	while ((ISP_RD32(CAMSV_REG_SW_CTL(module)) & 0x3) != 0x3) {
 		/* camsv_top0 DMA2, camsv_2 need additional polling */
@@ -8573,7 +8574,7 @@ ISP_Irq_CAMSV(
 			}
 
 			IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-				       "%s P1_SOF_%d_%d(0x%08x_0x%08x,0x%08x),int_us:0x%08x, stamp[0x%08x]\n",
+				       "%s P1_SOF_%d_%d(0x%08x_0x%08x,0x%08x),int_us: %d, stamp[%d]\n",
 				       str,
 				       sof_count[module], cur_v_cnt,
 				       (unsigned int)(ISP_RD32(
