@@ -2937,6 +2937,8 @@ static signed int RSC_probe(struct platform_device *pDev)
 							cmdq_pm_qos_stop);
 #endif
 
+		seqlock_init(&(rsc_reqs.seqlock));
+
 	}
 
 EXIT:
