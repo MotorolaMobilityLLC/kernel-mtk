@@ -168,7 +168,7 @@ static enum IMGSENSOR_RETURN mclk_set(
 	} else {
 		pin_state = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0)
 		? pinst->drive_current[sensor_idx]
-		: (int)MCLK_STATE_DISABLE;
+		: IMGSENSOR_HW_PIN_STATE_LEVEL_0;
 
 		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][pin_state];
 #if 0
@@ -186,8 +186,8 @@ static enum IMGSENSOR_RETURN mclk_set(
 		if (!IS_ERR(ppinctrl_state))
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		else
-			PK_DBG(
-				"%s : sensor_idx %d pinctrl, PinIdx %d, Val %d, drive current %d\n",
+			pr_info(
+				"Error: %s : sensor_idx %d pinctrl, PinIdx %d, Val %d, drive current %d\n",
 				__func__,
 				sensor_idx,
 				pin,

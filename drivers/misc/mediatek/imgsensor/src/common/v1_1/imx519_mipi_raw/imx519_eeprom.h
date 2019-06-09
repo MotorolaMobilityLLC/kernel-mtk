@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 MediaTek Inc.
+ * Copyright (C) 2016 MediaTek Inc.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,24 +11,26 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#ifndef __SENINF_H__
-#define __SENINF_H__
+#ifndef __IMX519_EEPROM_H__
+#define __IMX519_EEPROM_H__
 
-#include "seninf_cfg.h"
-#include "seninf_clk.h"
+#include "kd_camera_typedef.h"
 
-#define SENINF_DEV_NAME "seninf"
+/*
+ * LRC
+ *
+ * @param data Buffer
+ * @return size of data
+ */
+unsigned int read_imx519_LRC(BYTE *data);
 
-struct SENINF {
-	dev_t dev_no;
-	struct cdev *pchar_dev;
-	struct class *pclass;
-
-	struct SENINF_CLK clk;
-
-	void __iomem *pseninf_base[SENINF_MAX_NUM];
-};
-extern MINT32 seninf_dump_reg(void);
+/*
+ * DCC
+ *
+ * @param data Buffer
+ * @return size of data
+ */
+unsigned int read_imx519_DCC(BYTE *data);
 
 #endif
 

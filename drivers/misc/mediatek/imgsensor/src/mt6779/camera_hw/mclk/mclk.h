@@ -26,7 +26,6 @@
 #include "imgsensor.h"
 
 extern struct IMGSENSOR gimgsensor;
-extern struct mutex pinctrl_mutex;
 
 enum MCLK_STATE {
 	MCLK_STATE_DISABLE = 0,
