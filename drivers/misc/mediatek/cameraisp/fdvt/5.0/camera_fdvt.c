@@ -1531,7 +1531,7 @@ static signed int ConfigFDVTHW(FDVT_Config *pFdvtConfig)
 	/* if you want to re-use the handle, please reset the handle */
 	cmdqRecReset(handle);
 	cmdqRecDestroy(handle); /* recycle the memory */
-	FDVT_DumpReg(); // ADD by gasper
+	//FDVT_DumpReg(); // ADD by gasper
 #ifdef __FDVT_KERNEL_PERFORMANCE_MEASURE__
 	mt_kernel_trace_end();
 #endif
