@@ -68,6 +68,7 @@ config MACH_MT6763
 	select ARM_CRYPTO
 	select CRYPTO_SHA2_ARM_CE
 	select CRYPTO_AES_ARM_CE
+	select OVERLAY_FS
 	help
 	  This enables support for MediaTek MT6763
 	  Highly power-efficient, performance-oriented processor for premium,
