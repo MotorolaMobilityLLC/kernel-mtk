@@ -5212,7 +5212,7 @@ static int ISP_open(
 		IrqUserKey_UserInfo[i].userKey = -1;
 	}
 
-	IspInfo.BufInfo.Read.pData = kmalloc(ISP_BUF_SIZE, GFP_ATOMIC);
+	IspInfo.BufInfo.Read.pData = kmalloc(ISP_BUF_SIZE, GFP_KERNEL);
 	IspInfo.BufInfo.Read.Size = ISP_BUF_SIZE;
 	IspInfo.BufInfo.Read.Status = ISP_BUF_STATUS_EMPTY;
 	if (IspInfo.BufInfo.Read.pData == NULL) {
@@ -10400,6 +10400,21 @@ static void SMI_INFO_DUMP(enum ISP_IRQ_TYPE_ENUM irq_module)
 			g_ISPIntStatus_SMI[irq_module].ispIntErr =
 				g_ISPIntStatus_SMI[irq_module].ispInt4Err = 0;
 		}
+		if (g_ISPIntStatus_SMI[irq_module].ispIntErr &
+			TG_ERR_ST) {
+
+			LOG_NOTICE("TG_ERR:SMI_DUMP by module:%d\n",
+				irq_module);
+
+			if (smi_debug_bus_hang_detect(
+					SMI_PARAM_BUS_OPTIMIZATION,
+					true, false, true) != 0)
+				LOG_NOTICE("TG_ERR:smi_debug_bus_hang_detect");
+
+			g_ISPIntStatus_SMI[irq_module].ispIntErr =
+				g_ISPIntStatus_SMI[irq_module].ispInt4Err = 0;
+		}
+
 		break;
 	case ISP_IRQ_TYPE_INT_CAMSV_0_ST:
 	case ISP_IRQ_TYPE_INT_CAMSV_1_ST:
