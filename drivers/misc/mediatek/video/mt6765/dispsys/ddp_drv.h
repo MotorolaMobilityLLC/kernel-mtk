@@ -142,6 +142,10 @@ struct disp_iommu_device *disp_get_iommu_dev(void);
 /* Get CCORR interrupt */
 #define DISP_IOCTL_CCORR_GET_IRQ \
 	_IOR(DISP_IOCTL_MAGIC, 111, int)
+/* Get color transform support */
+#define DISP_IOCTL_SUPPORT_COLOR_TRANSFORM \
+	_IOW(DISP_IOCTL_MAGIC, 112, struct DISP_COLOR_TRANSFORM)
+
 
 /*---------------------------------------------------------------------------*/
 /*  DDP Kernel Mode API  (for Kernel Trap) */
