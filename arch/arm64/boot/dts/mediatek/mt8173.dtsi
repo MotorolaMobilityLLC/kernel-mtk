@@ -224,6 +224,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			      (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>;
 	};
 
+	ice: ice_debug {
+		compatible = "mediatek,mt8173-ice_debug",
+			     "mediatek,mt2701-ice_debug";
+		clocks = <&infracfg CLK_INFRA_DBGCLK>;
+		clock-names = "ice_dbg";
+	};
+
 	soc {
 		#address-cells = <2>;
 		#size-cells = <2>;
