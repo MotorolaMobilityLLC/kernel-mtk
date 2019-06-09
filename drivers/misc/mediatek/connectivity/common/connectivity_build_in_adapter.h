@@ -54,6 +54,7 @@
 	defined(CONFIG_MACH_MT6765) || \
 	defined(CONFIG_MACH_MT6761) || \
 	defined(CONFIG_MACH_MT3967) || \
+	defined(CONFIG_MACH_MT6779) || \
 	defined(CONFIG_MACH_KIBOPLUS) || \
 	defined(CONFIG_MACH_ELBRUS)
 #define CONNADP_HAS_CLOCK_BUF_CTRL
