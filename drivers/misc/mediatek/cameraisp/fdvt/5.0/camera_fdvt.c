@@ -1884,6 +1884,15 @@ static signed int FDVT_ReadReg(FDVT_REG_IO_STRUCT *pRegIo)
 	/* unsigned int* pData = (unsigned int*)pRegIo->Data; */
 	FDVT_REG_STRUCT *pData = (FDVT_REG_STRUCT *) pRegIo->pData;
 
+	if ((pRegIo->pData == NULL) ||
+		(pRegIo->Count == 0) ||
+		(pRegIo->Count > (FDVT_REG_RANGE>>2))) {
+		log_err("pRegIo->pData is NULL, Count:%d!!",
+			pRegIo->Count);
+		Ret = -EFAULT;
+		goto EXIT;
+	}
+
 	for (i = 0; i < pRegIo->Count; i++) {
 		if (get_user(reg.Addr, (unsigned int *) &pData->Addr) != 0) {
 			log_err("get_user failed");
