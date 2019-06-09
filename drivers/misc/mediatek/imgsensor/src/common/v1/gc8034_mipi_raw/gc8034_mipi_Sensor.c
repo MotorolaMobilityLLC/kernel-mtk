@@ -1450,6 +1450,19 @@ static void slim_video_setting(void)
 	binning_setting();
 }
 
+static kal_uint32 streaming_control(kal_bool enable)
+{
+	pr_info("streaming_enable(0=Standby,1=streaming): %d\n", enable);
+	if (enable) {
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3f, 0x91);
+	} else {
+		write_cmos_sensor(0xfe, 0x00);
+		write_cmos_sensor(0x3f, 0x00);
+	}
+	return ERROR_NONE;
+}
+
 static kal_uint32 set_test_pattern_mode(kal_bool enable)
 {
 	LOG_INF("enable: %d\n", enable);
@@ -2140,6 +2153,17 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM
 		get_default_framerate_by_scenario((enum MSDK_SCENARIO_ID_ENUM)
 						  *(feature_data),
 						  (MUINT32 *)(uintptr_t)(*(feature_data + 1)));
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_SUSPEND:
+		pr_info("SENSOR_FEATURE_SET_STREAMING_SUSPEND\n");
+		streaming_control(KAL_FALSE);
+		break;
+	case SENSOR_FEATURE_SET_STREAMING_RESUME:
+		pr_info("SENSOR_FEATURE_SET_STREAMING_RESUME, shutter:%llu\n",
+				*feature_data);
+		if (*feature_data != 0)
+			set_shutter(*feature_data);
+		streaming_control(KAL_TRUE);
 		break;
 	case SENSOR_FEATURE_SET_TEST_PATTERN:
 		set_test_pattern_mode((BOOL)*feature_data);
