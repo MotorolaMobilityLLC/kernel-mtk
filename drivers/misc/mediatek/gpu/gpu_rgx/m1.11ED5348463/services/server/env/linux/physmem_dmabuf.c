@@ -828,7 +828,7 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 
 	/* Get the buffer handle */
 	psDmaBuf = dma_buf_get(fd);
-        dump_stack();
+
 	if (IS_ERR_OR_NULL(psDmaBuf))
 	{
 		PVR_DPF((PVR_DBG_ERROR, "fd=%d,%s: Failed to get dma-buf from fd (err=%ld)",
