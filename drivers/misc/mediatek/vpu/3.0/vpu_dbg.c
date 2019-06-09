@@ -21,9 +21,9 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/uaccess.h>
-
+#ifdef CONFIG_MTK_M4U
 #include <m4u.h>
-
+#endif
 #include "vpu_dbg.h"
 #include "vpu_drv.h"
 #include "vpu_cmn.h"
@@ -32,6 +32,7 @@
 
 /* global variables */
 int g_vpu_log_level = 1;
+int g_vpu_internal_log_level;
 unsigned int g_func_mask;
 
 #ifdef MTK_VPU_DVT
@@ -441,7 +442,7 @@ static int vpu_test_set(void *data, u64 val)
 	{
 		vpu_id_t id = (int) val - 10;
 
-		if (vpu_find_algo_by_id(TEMP_CORE, id, &algo)) {
+		if (vpu_find_algo_by_id(TEMP_CORE, id, &algo, NULL)) {
 			LOG_DBG("vpu test: algo(%d) is not existed\n", id);
 		} else {
 			LOG_INF("vpu test: load algo(%d)\n", id);
@@ -587,6 +588,26 @@ static int vpu_log_level_get(void *data, u64 *val)
 DEFINE_SIMPLE_ATTRIBUTE(vpu_debug_log_level_fops, vpu_log_level_get,
 				vpu_log_level_set, "%llu\n");
 
+static int vpu_internal_log_level_set(void *data, u64 val)
+{
+	g_vpu_internal_log_level = val;
+	LOG_INF("g_vpu_internal_log_level: %d\n", g_vpu_internal_log_level);
+
+	return 0;
+}
+
+static int vpu_internal_log_level_get(void *data, u64 *val)
+{
+	*val = g_vpu_internal_log_level;
+
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(vpu_debug_internal_log_level_fops,
+	vpu_internal_log_level_get,
+	vpu_internal_log_level_set,
+	"%llu\n");
+
 static int vpu_func_mask_set(void *data, u64 val)
 {
 	g_func_mask = val & 0xffffffff;
@@ -632,7 +653,8 @@ IMPLEMENT_VPU_DEBUGFS(image_file);
 IMPLEMENT_VPU_DEBUGFS(mesg);
 IMPLEMENT_VPU_DEBUGFS(opp_table);
 IMPLEMENT_VPU_DEBUGFS(device_dbg);
-
+IMPLEMENT_VPU_DEBUGFS(user_algo);
+IMPLEMENT_VPU_DEBUGFS(vpu_memory);
 
 #undef IMPLEMENT_VPU_DEBUGFS
 
@@ -682,6 +704,12 @@ static ssize_t vpu_debug_power_write(struct file *flip,
 		param = VPU_POWER_PARAM_LOCK;
 	else if (strcmp(token, "volt_step") == 0)
 		param = VPU_POWER_PARAM_VOLT_STEP;
+	else if (strcmp(token, "power_hal") == 0)
+		param = VPU_POWER_HAL_CTL;
+	else if (strcmp(token, "eara") == 0)
+		param = VPU_EARA_CTL;
+	else if (strcmp(token, "ct") == 0)
+		param = VPU_CT_INFO;
 	else {
 		ret = -EINVAL;
 		LOG_ERR("no power param[%s]!\n", token);
@@ -809,6 +837,7 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	CREATE_VPU_DEBUGFS(algo);
 	CREATE_VPU_DEBUGFS(func_mask);
 	CREATE_VPU_DEBUGFS(log_level);
+	CREATE_VPU_DEBUGFS(internal_log_level);
 	CREATE_VPU_DEBUGFS(register);
 	CREATE_VPU_DEBUGFS(user);
 	CREATE_VPU_DEBUGFS(image_file);
@@ -817,6 +846,8 @@ int vpu_init_debug(struct vpu_device *vpu_dev)
 	CREATE_VPU_DEBUGFS(opp_table);
 	CREATE_VPU_DEBUGFS(power);
 	CREATE_VPU_DEBUGFS(device_dbg);
+	CREATE_VPU_DEBUGFS(user_algo);
+	CREATE_VPU_DEBUGFS(vpu_memory);
 
 #ifdef MTK_VPU_DVT
 	CREATE_VPU_DEBUGFS(test);

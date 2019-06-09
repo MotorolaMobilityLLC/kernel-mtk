@@ -15,10 +15,14 @@
 #define __VPU_DRV_H__
 
 #include <linux/types.h>
+#include <vpu_dvfs.h>
 
 #define VPU_MAX_NUM_PORTS 32
 #define VPU_MAX_NUM_PROPS 32
 #define VPU_MAX_NUM_CORES 3
+
+#define VPU_TRYLOCK_CORENUM 0x87
+
 extern unsigned int efuse_data;
 extern struct ion_client *my_ion_client;
 
@@ -88,7 +92,7 @@ typedef uint8_t vpu_id_t;
  *     strncpy(algo_n->name, "algo_name", sizeof(algo_n->name));
  *     ioctl(fd, VPU_IOCTL_GET_ALGO_INFO, algo);
  *
- * - VPU_IOCTL_ENQUE_REQUEST: enque a request to user?™s own queue.
+ * - VPU_IOCTL_ENQUE_REQUEST: enque a request to user?Â™s own queue.
  *
  *     struct vpu_request req;
  *     struct vpu_buffer *buf;
@@ -235,6 +239,13 @@ struct vpu_algo {
 	struct vpu_port ports[VPU_MAX_NUM_PORTS];
 };
 
+struct vpu_create_algo {
+	uint32_t core;
+	char name[32];
+	uint32_t algo_length;
+	uint64_t algo_ptr;
+};
+
 /*---------------------------------------------------------------------------*/
 /*  VPU Register                                                             */
 /*---------------------------------------------------------------------------*/
@@ -320,7 +331,7 @@ enum vpu_req_status {
 	VPU_REQ_STATUS_FAILURE,
 };
 /*3 prioritys of req*/
-#define VPU_REQ_MAX_NUM_PRIORITY 3
+#define VPU_REQ_MAX_NUM_PRIORITY 21
 
 struct vpu_request {
 	/* to recognize the request is from which user */
@@ -382,6 +393,10 @@ struct vpu_lock_power {
 	enum VPU_OPP_PRIORIYY priority;
 };
 
+#ifdef CONFIG_GZ_SUPPORT_SDSP
+extern int mtee_sdsp_enable(u32 on);
+#endif
+
 /*---------------------------------------------------------------------------*/
 /*  IOCTL Command                                                            */
 /*---------------------------------------------------------------------------*/
@@ -404,7 +419,10 @@ struct vpu_lock_power {
 #define VPU_IOCTL_EARA_UNLOCK_POWER         _IOW(VPU_MAGICNO,   15, int)
 #define VPU_IOCTL_POWER_HAL_UNLOCK_POWER         _IOW(VPU_MAGICNO,   16, int)
 
+#define VPU_IOCTL_CREATE_ALGO       _IOWR(VPU_MAGICNO,  17, int)
+#define VPU_IOCTL_FREE_ALGO         _IOWR(VPU_MAGICNO,  18, int)
 
-
+#define VPU_IOCTL_SDSP_SEC_LOCK     _IOW(VPU_MAGICNO,   60, int)
+#define VPU_IOCTL_SDSP_SEC_UNLOCK   _IOW(VPU_MAGICNO,   61, int)
 
 #endif
