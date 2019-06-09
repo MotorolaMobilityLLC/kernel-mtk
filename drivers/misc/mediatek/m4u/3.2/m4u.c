@@ -89,11 +89,12 @@ static int m4u_buf_show(void *priv,
 	struct m4u_buf_info_t *pMvaInfo = priv;
 
 	M4U_PRINT_SEQ(data,
-		"0x%-8x, 0x%-8x, 0x%lx, 0x%-8x, 0x%x, %s, 0x%x, 0x%x, 0x%x\n",
+		"0x%-8x, 0x%-8x, 0x%lx, 0x%-8x, 0x%x, %s, 0x%x, 0x%x, 0x%x, %llu ns\n",
 		pMvaInfo->mva, pMvaInfo->mva+pMvaInfo->size-1, pMvaInfo->va,
 		pMvaInfo->size, pMvaInfo->prot,
 		m4u_get_port_name(pMvaInfo->port),
-		pMvaInfo->flags, mva_start, mva_end);
+		pMvaInfo->flags, mva_start, mva_end,
+		pMvaInfo->current_ts);
 
 	return 0;
 }
@@ -104,7 +105,7 @@ int m4u_dump_buf_info(struct seq_file *seq, unsigned int domain_idx)
 
 	M4U_PRINT_SEQ(seq, "\ndump mva allocated info ========>\n");
 	M4U_PRINT_SEQ(seq,
-	"mva_start   mva_end          va       size     prot   module   flags   debug1  debug2\n");
+	"mva_start   mva_end          va       size     prot   module   flags   debug1  debug2  ts\n");
 
 	mva_foreach_priv((void *) m4u_buf_show, seq, domain_idx);
 
@@ -830,6 +831,7 @@ int m4u_alloc_mva(struct m4u_client_t *client,
 	pMvaInfo->mva_align = mva_align;
 	pMvaInfo->size_align = size_align;
 	pMvaInfo->domain_idx = domain_idx;
+	pMvaInfo->current_ts = sched_clock();
 	*pMva = mva;
 
 	if (flags & M4U_FLAGS_SEQ_ACCESS)
