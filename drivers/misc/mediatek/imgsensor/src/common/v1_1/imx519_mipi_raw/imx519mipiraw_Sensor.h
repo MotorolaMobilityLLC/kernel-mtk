@@ -39,6 +39,7 @@ enum IMGSENSOR_MODE {
 	IMGSENSOR_MODE_SLIM_VIDEO,
 	IMGSENSOR_MODE_CUSTOM1,
 	IMGSENSOR_MODE_CUSTOM2,
+	IMGSENSOR_MODE_CUSTOM3
 };
 
 struct imgsensor_mode_struct {
@@ -86,6 +87,8 @@ struct imgsensor_struct {
 	kal_uint8 ihdr_mode; /* ihdr enable or disable */
 	kal_uint8 pdaf_mode; /* ihdr enable or disable */
 	kal_uint8 i2c_write_id; /* record current sensor's i2c write id */
+	struct IMGSENSOR_AE_FRM_MODE ae_frm_mode;
+	kal_uint8 current_ae_effective_frame;
 };
 
 /* SENSOR PRIVATE STRUCT FOR CONSTANT*/
@@ -99,6 +102,7 @@ struct imgsensor_info_struct {
 	struct imgsensor_mode_struct slim_video;
 	struct imgsensor_mode_struct custom1;
 	struct imgsensor_mode_struct custom2;
+	struct imgsensor_mode_struct custom3;
 
 	kal_uint8 ae_shut_delay_frame; /* shutter delay frame for AE cycle */
 	kal_uint8 ae_sensor_gain_delay_frame;
@@ -115,6 +119,7 @@ struct imgsensor_info_struct {
 	kal_uint8 slim_video_delay_frame; /* enter slim video delay frame num */
 	kal_uint8 custom1_delay_frame; /* enter custom1 delay frame num */
 	kal_uint8 custom2_delay_frame; /* enter custom2 delay frame num */
+	kal_uint8 custom3_delay_frame; /* enter custom3 delay frame num */
 	kal_uint8  frame_time_delay_frame;
 	kal_uint8 margin; /* sensor framelength & shutter margin */
 	kal_uint32 min_shutter; /* min shutter */
