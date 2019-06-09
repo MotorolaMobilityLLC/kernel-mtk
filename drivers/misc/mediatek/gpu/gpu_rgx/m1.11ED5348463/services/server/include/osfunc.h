@@ -1776,7 +1776,7 @@ void OSUserModeAccessToPerfCountersEn(void);
 */ /**************************************************************************/
 PVRSRV_ERROR OSDebugSignalPID(IMG_UINT32 ui32PID);
 
-
+int * OSGetBridgeLockOwnerID(void);
 
 /* MTK internal cahce flush */
 extern void __inner_flush_dcache_all(void);
