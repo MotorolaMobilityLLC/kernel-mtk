@@ -19,7 +19,7 @@
 #endif
 
 #include <mtk_boot.h>
-#include "pvr_gputrace.h"
+#include "ospvr_gputrace.h"
 #include "rgxdevice.h"
 #include "osfunc.h"
 #include "pvrsrv.h"
@@ -451,7 +451,7 @@ static IMG_BOOL MTKDoGpuDVFS(IMG_UINT32 ui32NewFreqID, IMG_BOOL bIdleDevice)
 		gpu_freq = ui32GPUFreq;
 #if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS)
 
-		if (PVRGpuTraceEnabled())
+		if (PVRGpuTraceIsEnabled())
 			trace_gpu_freq(ui32GPUFreq);
 
 #endif
@@ -511,7 +511,7 @@ static void MTKFDVFSCommitFreqIdx(unsigned long ui32NewFreqID,
 #if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS)
 
 
-			if (PVRGpuTraceEnabled())
+			if (PVRGpuTraceIsEnabled())
 				trace_gpu_freq(ui32GPUFreq);
 #endif
 			MTKWriteBackFreqToRGX(psDevNode, ui32GPUFreq);
@@ -577,7 +577,7 @@ static void MTKCommitFreqIdx(unsigned long ui32NewFreqID,
 	#if defined(CONFIG_TRACING) && defined(CONFIG_MTK_SCHED_TRACERS)
 
 
-			if (PVRGpuTraceEnabled())
+			if (PVRGpuTraceIsEnabled())
 				trace_gpu_freq(ui32GPUFreq);
 
 
