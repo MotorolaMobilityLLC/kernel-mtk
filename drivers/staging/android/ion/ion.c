@@ -15,7 +15,6 @@
  *
  */
 
-#include <linux/atomic.h>
 #include <linux/device.h>
 #include <linux/err.h>
 #include <linux/file.h>
@@ -182,6 +181,17 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	buffer->size = len;
 	INIT_LIST_HEAD(&buffer->vmas);
 	mutex_init(&buffer->lock);
+#ifdef CONFIG_MTK_PSEUDO_M4U_V2
+	if (heap->id < ION_HEAP_TYPE_MULTIMEDIA) {
+		for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents,
+			    i) {
+			sg_dma_address(sg) = sg_phys(sg);
+			sg_dma_len(sg) = sg->length;
+		}
+	}
+#else
+	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA_PA2MVA)
+		goto exit;
 	/*
 	 * this will set up dma addresses for the sglist -- it is not
 	 * technically correct as per the dma api -- a specific
@@ -201,10 +211,11 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 				continue;
 			}
 		}
-
 		sg_dma_address(sg) = sg_phys(sg);
 		sg_dma_len(sg) = sg->length;
 	}
+exit:
+#endif
 	mutex_lock(&dev->buffer_lock);
 	ion_buffer_add(dev, buffer);
 	mutex_unlock(&dev->buffer_lock);
@@ -337,16 +348,6 @@ static void ion_handle_get(struct ion_handle *handle)
 	kref_get(&handle->ref);
 }
 
-/* Must hold the client lock */
-static struct ion_handle *ion_handle_get_check_overflow(
-					struct ion_handle *handle)
-{
-	if (atomic_read(&handle->ref.refcount) + 1 == 0)
-		return ERR_PTR(-EOVERFLOW);
-	ion_handle_get(handle);
-	return handle;
-}
-
 int ion_handle_put_nolock(struct ion_handle *handle)
 {
 	return kref_put(&handle->ref, ion_handle_destroy);
@@ -389,9 +390,22 @@ struct ion_handle *ion_handle_get_by_id_nolock(struct ion_client *client,
 
 	handle = idr_find(&client->idr, id);
 	if (handle)
-		return ion_handle_get_check_overflow(handle);
+		ion_handle_get(handle);
+	else
+		IONMSG("%s: can't get handle by id:%d\n", __func__, id);
+	return handle ? handle : ERR_PTR(-EINVAL);
+}
 
-	return ERR_PTR(-EINVAL);
+struct ion_handle *ion_handle_get_by_id(struct ion_client *client,
+					int id)
+{
+	struct ion_handle *handle;
+
+	mutex_lock(&client->lock);
+	handle = ion_handle_get_by_id_nolock(client, id);
+	mutex_unlock(&client->lock);
+
+	return handle;
 }
 
 static bool ion_handle_validate(struct ion_client *client,
@@ -716,7 +730,7 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	}
 
 	if (!down_read_trylock(&dev->lock)) {
-		pr_notice("%s get lock fail\n", __func__);
+		IONMSG("%s get lock fail\n", __func__);
 		kfree(sizes);
 		kfree(names);
 		return 0;
@@ -1158,28 +1172,24 @@ static struct dma_buf_ops dma_buf_ops = {
 	.kunmap = ion_dma_buf_kunmap,
 };
 
-static struct dma_buf *__ion_share_dma_buf(struct ion_client *client,
-					   struct ion_handle *handle,
-					   bool lock_client)
+struct dma_buf *ion_share_dma_buf(struct ion_client *client,
+				  struct ion_handle *handle)
 {
 	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
 	struct ion_buffer *buffer;
 	struct dma_buf *dmabuf;
 	bool valid_handle;
 
-	if (lock_client)
-		mutex_lock(&client->lock);
+	mutex_lock(&client->lock);
 	valid_handle = ion_handle_validate(client, handle);
 	if (!valid_handle) {
 		WARN(1, "%s: invalid handle passed to share.\n", __func__);
-		if (lock_client)
-			mutex_unlock(&client->lock);
+		mutex_unlock(&client->lock);
 		return ERR_PTR(-EINVAL);
 	}
 	buffer = handle->buffer;
 	ion_buffer_get(buffer);
-	if (lock_client)
-		mutex_unlock(&client->lock);
+	mutex_unlock(&client->lock);
 
 	exp_info.ops = &dma_buf_ops;
 	exp_info.size = buffer->size;
@@ -1196,23 +1206,16 @@ static struct dma_buf *__ion_share_dma_buf(struct ion_client *client,
 
 	return dmabuf;
 }
-
-struct dma_buf *ion_share_dma_buf(struct ion_client *client,
-				  struct ion_handle *handle)
-{
-	return __ion_share_dma_buf(client, handle, true);
-}
 EXPORT_SYMBOL(ion_share_dma_buf);
 
-static int __ion_share_dma_buf_fd(struct ion_client *client,
-				  struct ion_handle *handle, bool lock_client)
+int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle)
 {
 	struct dma_buf *dmabuf;
 	int fd;
 
 	mmprofile_log_ex(ion_mmp_events[PROFILE_SHARE], MMPROFILE_FLAG_START,
 			 (unsigned long)client, (unsigned long)handle);
-	dmabuf = __ion_share_dma_buf(client, handle, lock_client);
+	dmabuf = ion_share_dma_buf(client, handle);
 	if (IS_ERR(dmabuf)) {
 		IONMSG("%s dmabuf is err 0x%p.\n", __func__, dmabuf);
 		return PTR_ERR(dmabuf);
@@ -1228,18 +1231,7 @@ static int __ion_share_dma_buf_fd(struct ion_client *client,
 	handle->dbg.fd = fd;
 	return fd;
 }
-
-int ion_share_dma_buf_fd(struct ion_client *client, struct ion_handle *handle)
-{
-	return __ion_share_dma_buf_fd(client, handle, true);
-}
 EXPORT_SYMBOL(ion_share_dma_buf_fd);
-
-int ion_share_dma_buf_fd_nolock(struct ion_client *client,
-				struct ion_handle *handle)
-{
-	return __ion_share_dma_buf_fd(client, handle, false);
-}
 
 struct ion_handle *ion_import_dma_buf(struct ion_client *client,
 				      struct dma_buf *dmabuf)
@@ -1261,7 +1253,7 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client,
 	/* if a handle exists for this buffer just take a reference to it */
 	handle = ion_handle_lookup(client, buffer);
 	if (!IS_ERR(handle)) {
-		handle = ion_handle_get_check_overflow(handle);
+		ion_handle_get(handle);
 		mutex_unlock(&client->lock);
 		goto end;
 	}
@@ -1463,11 +1455,14 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	struct ion_heap *heap = s->private;
 	struct ion_device *dev = heap->dev;
 	struct rb_node *n;
+	struct ion_heap *cam_heap = NULL;
+	struct ion_heap *map_mva_heap = NULL;
 	size_t total_size = 0;
 	size_t camera_total_size = 0;
 	size_t va2mva_total_size = 0;
 	size_t total_orphaned_size = 0;
 	unsigned int cam_id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA;
+	unsigned int map_mva_id = ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA;
 
 	seq_printf(s, "%16.s(%16.s) %16.s %16.s %s\n",
 		   "client", "dbg_name", "pid", "size", "address");
@@ -1486,7 +1481,9 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 
 			get_task_comm(task_comm, client->task);
 			seq_printf(s, "%16.s(%16.s) %16u %16zu 0x%p\n",
-				   task_comm, client->dbg_name,
+				   task_comm,
+				   (*client->dbg_name) ? client->
+					dbg_name : client->name,
 				   client->pid, size, client);
 		} else {
 			seq_printf(s, "%16.s(%16.s) %16u %16zu 0x%p\n",
@@ -1505,11 +1502,15 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 
 		if (buffer->heap->id != heap->id) {
 			if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA) &&
-			    (buffer->heap->id == cam_id))
+			    (buffer->heap->id == cam_id)) {
+				cam_heap = buffer->heap;
 				camera_total_size += buffer->size;
+			}
 			else if ((heap->id == ION_HEAP_TYPE_MULTIMEDIA) &&
-				 (buffer->heap->id == cam_id))
+				 (buffer->heap->id == map_mva_id)) {
+				map_mva_heap = buffer->heap;
 				va2mva_total_size += buffer->size;
+			}
 			else
 				continue;
 		}
@@ -1531,8 +1532,21 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 		seq_printf(s, "%16.s %16zu %16zu\n", "cam-va2mva total",
 			   camera_total_size, va2mva_total_size);
 	if (heap->flags & ION_HEAP_FLAG_DEFER_FREE)
-		seq_printf(s, "%16.s %16zu\n", "deferred free",
-			   heap->free_list_size);
+		seq_printf(s, "%16.s %u %16zu\n",
+			   "deferred free heap_id",
+				heap->id, heap->free_list_size);
+	if (cam_heap) {
+		if (cam_heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+		seq_printf(s, "%16.s %u %16zu\n",
+			   "cam heap deferred free heap_id",
+				cam_heap->id, cam_heap->free_list_size);
+	}
+	if (map_mva_heap) {
+		if (map_mva_heap->flags & ION_HEAP_FLAG_DEFER_FREE)
+		seq_printf(s, "%16.s %u %16zu\n",
+			   "map_mva_heap deferred free heap_id",
+				map_mva_heap->id, map_mva_heap->free_list_size);
+	}
 	seq_puts(s, "----------------------------------------------------\n");
 
 	if (heap->debug_show)
@@ -1730,8 +1744,9 @@ int ion_phys(struct ion_client *client, struct ion_handle *handle,
 		return -ENODEV;
 	}
 	mutex_unlock(&client->lock);
+	mutex_lock(&buffer->lock);
 	ret = buffer->heap->ops->phys(buffer->heap, buffer, addr, len);
-
+	mutex_unlock(&buffer->lock);
 	/*avoid camelcase, will modify in a letter*/
 	mmprofile_log_ex(ion_mmp_events[PROFILE_GET_PHYS], MMPROFILE_FLAG_END,
 			 buffer->size, (unsigned long)*addr);
@@ -1775,16 +1790,11 @@ struct ion_handle *ion_drv_get_handle(struct ion_client *client,
 		ion_handle_get(handle);
 		mutex_unlock(&client->lock);
 	} else {
-		mutex_lock(&client->lock);
-		handle = ion_handle_get_by_id_nolock(client, user_handle);
-		if (!handle) {
-			IONMSG("%s handle invalid, handle_id=%d\n",
-			       __func__,
-			       user_handle);
-			mutex_unlock(&client->lock);
+		handle = ion_handle_get_by_id(client, user_handle);
+		if (IS_ERR_OR_NULL(handle)) {
+			IONMSG("%s user_handle invalid\n", __func__);
 			return ERR_PTR(-EINVAL);
 		}
-		mutex_unlock(&client->lock);
 	}
 	return handle;
 }
@@ -1802,7 +1812,7 @@ struct ion_heap *ion_drv_get_heap(struct ion_device *dev,
 
 	if (need_lock) {
 		if (!down_read_trylock(&dev->lock)) {
-			pr_notice("%s get lock fail\n", __func__);
+			IONMSG("%s get lock fail\n", __func__);
 			return NULL;
 		}
 	}
