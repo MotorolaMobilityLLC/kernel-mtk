@@ -94,7 +94,6 @@ void scp_A_ipi_handler(void)
  */
 void scp_A_ipi_init(void)
 {
-	int i = 0;
 #if SCP_IPI_STAMP_SUPPORT
 	int j = 0;
 #endif
@@ -107,22 +106,6 @@ void scp_A_ipi_init(void)
 	memset_io(scp_send_obj[SCP_A_ID], 0, SHARE_BUF_SIZE);
 	scp_to_ap_ipi_count = 0;
 	ap_to_scp_ipi_count = 0;
-
-	for (i = 0; i < SCP_NR_IPI; i++) {
-		scp_ipi_desc[i].recv_count	 = 0;
-		scp_ipi_desc[i].success_count  = 0;
-		scp_ipi_desc[i].busy_count	 = 0;
-		scp_ipi_desc[i].error_count	= 0;
-#if SCP_IPI_STAMP_SUPPORT
-		for (j = 0; j < SCP_IPI_ID_STAMP_SIZE; j++) {
-			scp_ipi_desc[i].recv_timestamp[j] = 0;
-			scp_ipi_desc[i].send_timestamp[j] = 0;
-			scp_ipi_desc[i].recv_flag[j] = 0;
-			scp_ipi_desc[i].send_flag[j] = 0;
-			scp_ipi_desc[i].handler_timestamp[j] = 0;
-		}
-#endif
-	}
 }
 
 
