@@ -303,3 +303,12 @@ config MTK_SYSIRQ
 	  GIC only support IRQ_TYPE_LEVEL_HIGH and IRQ_TYPE_EDGE_RISING, so this driver is designed for
 	  polarity configuration in order to make GIC driver support various trigger type
 	  including IRQ_TYPE_LEVEL_LOW and IRQ_TYPE_EDGE_FALLING.
+
+config MTK_INDIRECT_ACCESS
+	bool
+	depends on MTK_SYSIRQ
+	help
+	  Support indirect access for polairty/mask control in order to avoid
+	  race condition.
+
+	  If you want to execute gic600 in Mediatek platform, say Y.
