@@ -889,7 +889,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		mmc0: mmc@11230000 {
 			compatible = "mediatek,mt8173-mmc";
-			reg = <0 0x11230000 0 0x1000>;
+			reg = <0 0x11230000 0 0x1000>,
+			      <0 0x10000400 0 0x10>;
 			interrupts = <GIC_SPI 71 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&pericfg CLK_PERI_MSDC30_0>,
 				 <&topckgen CLK_TOP_MSDC50_0_H_SEL>;
@@ -899,7 +900,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		mmc1: mmc@11240000 {
 			compatible = "mediatek,mt8173-mmc";
-			reg = <0 0x11240000 0 0x1000>;
+			reg = <0 0x11240000 0 0x1000>,
+			      <0 0x10000400 0 0x10>;
 			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&pericfg CLK_PERI_MSDC30_1>,
 				 <&topckgen CLK_TOP_AXI_SEL>;
@@ -909,7 +911,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		mmc2: mmc@11250000 {
 			compatible = "mediatek,mt8173-mmc";
-			reg = <0 0x11250000 0 0x1000>;
+			reg = <0 0x11250000 0 0x1000>,
+			      <0 0x10000400 0 0x10>;
 			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_LOW>;
 			clocks = <&pericfg CLK_PERI_MSDC30_2>,
 				 <&topckgen CLK_TOP_AXI_SEL>;
