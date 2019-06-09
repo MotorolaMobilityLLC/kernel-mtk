@@ -116,6 +116,8 @@ int m4u_mva_map_kernel(unsigned int mva, unsigned int size,
 int m4u_mva_unmap_kernel(unsigned int mva,
 	unsigned int size, unsigned long va);
 
+void m4u_call_atf_debug(int m4u_debug_id);
+
 enum m4u_callback_ret_t {
 	M4U_CALLBACK_HANDLED,
 	M4U_CALLBACK_NOT_HANDLED,
