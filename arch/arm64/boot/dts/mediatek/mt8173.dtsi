@@ -60,6 +60,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		cpu0: cpu@0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
+			next-level-cache = <&L2_0>;
 			reg = <0x000>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
@@ -69,6 +70,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		cpu1: cpu@1 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a53";
+			next-level-cache = <&L2_0>;
 			reg = <0x001>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
@@ -76,7 +78,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		cpu2: cpu@100 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57";
+			compatible = "arm,cortex-a72";
+			next-level-cache = <&L2_0>;
 			reg = <0x100>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
@@ -85,7 +88,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 		cpu3: cpu@101 {
 			device_type = "cpu";
-			compatible = "arm,cortex-a57";
+			compatible = "arm,cortex-a72";
+			next-level-cache = <&L2_0>;
 			reg = <0x101>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
@@ -102,6 +106,10 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				min-residency-us = <1088>;
 				arm,psci-suspend-param = <0x0010000>;
 			};
+		};
+
+		L2_0: l2-cache0 {
+			compatible = "cache";
 		};
 	};
 
