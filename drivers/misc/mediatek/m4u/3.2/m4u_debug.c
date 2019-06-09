@@ -27,12 +27,14 @@
 #include "trustzone/kree/mem.h"
 #endif
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
-	defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_MTK_LEGACY_SECMEM_SUPPORT)
 #include "secmem.h"
+#elif defined(CONFIG_MTK_SECURE_MEM_SUPPORT)
+#include "secmem_api.h"
 #endif
 
-#define M4U_TEST_DOMAIN 1
+int m4u_test_domain;
+int test_mva;
 
 /* global variables */
 int gM4U_log_to_uart = 2;
@@ -146,7 +148,7 @@ int m4u_test_reclaim(unsigned int size)
 	for (i = 0; i < 10; i++)
 		vfree((void *)va[i]);
 
-	m4u_dump_buf_info(NULL, M4U_TEST_DOMAIN);
+	m4u_dump_buf_info(NULL, m4u_test_domain);
 	m4u_dump_pgtable(m4u_get_domain_by_port(M4U_PORT_DISP_OVL0), NULL);
 
 	m4u_destroy_client(client);
@@ -541,30 +543,30 @@ static int m4u_debug_set(void *data, u64 val)
 	case 9:                /* m4u_alloc_mvausingkmallocbuffer */
 	{
 		m4u_test_reclaim(SZ_16K);
-		m4u_mvaGraph_dump(M4U_TEST_DOMAIN);
+		m4u_mvaGraph_dump(m4u_test_domain);
 	}
 	break;
 	case 10:
 	{
 		unsigned int mva;
 
-		mva = m4u_do_mva_alloc_fix(M4U_TEST_DOMAIN, 0,
+		mva = m4u_do_mva_alloc_fix(m4u_test_domain, 0,
 				0x90000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(M4U_TEST_DOMAIN, 0,
+		mva = m4u_do_mva_alloc_fix(m4u_test_domain, 0,
 				0xb0000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(M4U_TEST_DOMAIN, 0,
+		mva = m4u_do_mva_alloc_fix(m4u_test_domain, 0,
 				0xa0000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		mva = m4u_do_mva_alloc_fix(M4U_TEST_DOMAIN, 0,
+		mva = m4u_do_mva_alloc_fix(m4u_test_domain, 0,
 				0xa4000000, 0x10000000, NULL);
 		M4UINFO("mva alloc fix done:mva=0x%x\n", mva);
-		m4u_mvaGraph_dump(M4U_TEST_DOMAIN);
-		m4u_do_mva_free(M4U_TEST_DOMAIN, 0x90000000, 0x10000000);
-		m4u_do_mva_free(M4U_TEST_DOMAIN, 0xa0000000, 0x10000000);
-		m4u_do_mva_free(M4U_TEST_DOMAIN, 0xb0000000, 0x10000000);
-		m4u_mvaGraph_dump(M4U_TEST_DOMAIN);
+		m4u_mvaGraph_dump(m4u_test_domain);
+		m4u_do_mva_free(m4u_test_domain, 0x90000000, 0x10000000);
+		m4u_do_mva_free(m4u_test_domain, 0xa0000000, 0x10000000);
+		m4u_do_mva_free(m4u_test_domain, 0xb0000000, 0x10000000);
+		m4u_mvaGraph_dump(m4u_test_domain);
 	}
 	break;
 	case 11:    /* map unmap kernel */
@@ -590,7 +592,7 @@ static int m4u_debug_set(void *data, u64 val)
 		break;
 	case 18:
 	{
-		if (TOTAL_M4U_NUM > 1)
+		if (TOTAL_M4U_NUM > 2)
 			m4u_dump_main_tlb(1, 0);
 		break;
 	}
@@ -694,10 +696,11 @@ static int m4u_debug_set(void *data, u64 val)
 		m4u_monitor_stop(0);
 		break;
 	case 27:
-		/*m4u_dump_reg_for_smi_hang_issue();*/
+		m4u_dump_reg_for_smi_hang_issue();
 		break;
 	case 28:
 	{
+		m4u_dump_reg_for_vpu_hang_issue();
 #if 0
 		unsigned char *pSrc;
 		unsigned char *pDst;
@@ -763,12 +766,23 @@ static int m4u_debug_set(void *data, u64 val)
 #endif
 		break;
 	}
-
+	case 29:
+	{
+		m4u_test_domain = 0;
+		M4UMSG("debug m4u domain set 0\n");
+	}
+	break;
+	case 30:
+	{
+		m4u_test_domain = 1;
+		M4UMSG("debug m4u domain set 1\n");
+	}
+	break;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	case 50:
 	{
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) &&
-		defined(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) &&   \
+		defined(CONFIG_MTK_TEE_GP_SUPPORT)
 		u32 sec_handle = 0;
 		u32 refcount;
 
@@ -836,6 +850,25 @@ static int m4u_debug_get(void *data, u64 *val)
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(m4u_debug_fops, m4u_debug_get, m4u_debug_set, "%llu\n");
+
+static int m4u_mva_set(void *data, u64 val)
+{
+	int valid = 0;
+
+	test_mva = (int)val;
+	valid = m4u_mva_check(1, test_mva);
+	M4UMSG("debug m4u mva check, valid:%d, mva:0x%x\n", valid, test_mva);
+
+	return 0;
+}
+
+static int m4u_mva_get(void *data, u64 *val)
+{
+	*val = 0;
+	return 0;
+}
+
+DEFINE_SIMPLE_ATTRIBUTE(m4u_mva_debug, m4u_mva_get, m4u_mva_set, "%llu\n");
 
 #if (M4U_DVT != 0)
 static void m4u_test_init(void)
@@ -1421,7 +1454,7 @@ static int m4u_test_set(void *data, u64 val)
 
 static int m4u_test_get(void *data, u64 *val)
 {
-	gM4U_seed_mva = get_first_valid_mva(M4U_TEST_DOMAIN) + 0x200000;
+	gM4U_seed_mva = get_first_valid_mva(m4u_test_domain) + 0x200000;
 
 	*val = gM4U_seed_mva;
 	return 0;
@@ -1457,10 +1490,10 @@ static int m4u_debug_freemva_set(void *data, u64 val)
 	unsigned int mva = (unsigned int)val;
 
 	M4UMSG("free mva: 0x%x\n", mva);
-	pMvaInfo = mva_get_priv(mva, M4U_TEST_DOMAIN);
+	pMvaInfo = mva_get_priv(mva, m4u_test_domain);
 	if (pMvaInfo) {
 		m4u_unmap(domain, mva, pMvaInfo->size);
-		m4u_do_mva_free(M4U_TEST_DOMAIN, mva, pMvaInfo->size);
+		m4u_do_mva_free(m4u_test_domain, mva, pMvaInfo->size);
 	}
 	return 0;
 }
@@ -1493,7 +1526,7 @@ const struct file_operations m4u_debug_port_fops = {
 
 int m4u_debug_mva_show(struct seq_file *s, void *unused)
 {
-	m4u_mvaGraph_dump(M4U_TEST_DOMAIN);
+	m4u_mvaGraph_dump(m4u_test_domain);
 	return 0;
 }
 
@@ -1511,7 +1544,7 @@ const struct file_operations m4u_debug_mva_fops = {
 
 int m4u_debug_buf_show(struct seq_file *s, void *unused)
 {
-	m4u_dump_buf_info(s, M4U_TEST_DOMAIN);
+	m4u_dump_buf_info(s, m4u_test_domain);
 	return 0;
 }
 
@@ -1582,6 +1615,12 @@ int m4u_debug_init(struct m4u_device *m4u_dev)
 		0644, m4u_dev->debug_root, domain, &m4u_debug_fops);
 	if (IS_ERR_OR_NULL(debug_file))
 		M4UMSG("m4u: failed to create debug files 2.\n");
+#if 0
+	debug_file = debugfs_create_file("mva_test",
+		0644, m4u_dev->debug_root, domain, &m4u_mva_debug);
+	if (IS_ERR_OR_NULL(debug_file))
+		M4UMSG("m4u: failed to create mva_test files 2-1.\n");
+#endif
 
 #if (M4U_DVT != 0)
 	debug_file = debugfs_create_file("test",

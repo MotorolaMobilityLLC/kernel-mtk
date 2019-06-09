@@ -21,7 +21,7 @@
 #define M4U_SEC_MVA_DOMAIN      0
 
 /*0x7FF00000 ~ (0x8010 0000 - 1) not use in vpu_iommu*/
-#define VPU_IOMMU_MVA_START     0x7FF00000
+#define VPU_IOMMU_MVA_START     0x7FC00000
 #define VPU_IOMMU_MVA_END       0x80100000
 
 #define VPU_IOMMU_MVA_SIZE      \

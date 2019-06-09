@@ -58,6 +58,7 @@ struct m4u_client_t *m4u_create_client(void);
 int m4u_destroy_client(struct m4u_client_t *client);
 
 int m4u_dump_reg_for_smi_hang_issue(void);
+int m4u_dump_reg_for_vpu_hang_issue(void);
 int m4u_display_fake_engine_test(unsigned long ulFakeReadAddr,
 				 unsigned long ulFakeWriteAddr);
 
