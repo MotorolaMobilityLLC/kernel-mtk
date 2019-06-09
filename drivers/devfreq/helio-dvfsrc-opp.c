@@ -31,7 +31,7 @@ static int ddr_table[DDR_OPP_NUM];
 int get_cur_vcore_dvfs_opp(void)
 {
 #if defined(VCOREFS_LEVEL_POSITIVE)
-	int val = __builtin_ffs(spm_get_dvfs_level());
+	int val = __builtin_ffs(get_dvfs_final_level());
 
 	if (val == 0)
 		return VCORE_DVFS_OPP_NUM;
