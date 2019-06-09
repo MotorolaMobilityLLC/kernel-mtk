@@ -977,7 +977,7 @@ static void msdc_request_done(struct msdc_host *host, struct mmc_request *mrq)
 	bool ret;
 
 	ret = cancel_delayed_work(&host->req_timeout);
-	if (!ret) {
+	if (!ret && in_interrupt()) {
 		/* delay work already running */
 		return;
 	}
