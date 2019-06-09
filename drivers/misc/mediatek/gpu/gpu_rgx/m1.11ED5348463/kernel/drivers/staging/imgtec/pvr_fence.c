@@ -239,7 +239,9 @@ pvr_fence_context_signal_fences(void *data)
 		PVR_FENCE_TRACE(&pvr_fence->base, "signalled fence (%s)\n",
 				pvr_fence->name);
 		trace_pvr_fence_signal_fence(pvr_fence);
+		spin_lock_irqsave(&pvr_fence->fctx->list_lock, flags1);
 		list_del(&pvr_fence->signal_head);
+		spin_unlock_irqrestore(&pvr_fence->fctx->list_lock, flags1);
 		dma_fence_signal(pvr_fence->fence);
 		dma_fence_put(pvr_fence->fence);
 	}
@@ -1004,7 +1006,9 @@ enum tag_img_bool pvr_fence_checkpoint_ufo_has_signalled(u32 fwaddr, u32 value)
 			pvr_fence->name);
 
 	trace_pvr_fence_signal_fence(pvr_fence);
+	spin_lock_irqsave(&pvr_fence->fctx->list_lock, flags);
 	list_del(&pvr_fence->signal_head);
+	spin_unlock_irqrestore(&pvr_fence->fctx->list_lock, flags);
 	dma_fence_signal(pvr_fence->fence);
 	dma_fence_put(pvr_fence->fence);
 
@@ -1039,7 +1043,9 @@ pvr_fence_check_state(void)
 				pvr_fence->name);
 
 		trace_pvr_fence_signal_fence(pvr_fence);
+		spin_lock_irqsave(&pvr_fence->fctx->list_lock, flags);
 		list_del(&pvr_fence->signal_head);
+		spin_unlock_irqrestore(&pvr_fence->fctx->list_lock, flags);
 		dma_fence_signal(pvr_fence->fence);
 		dma_fence_put(pvr_fence->fence);
 	}
