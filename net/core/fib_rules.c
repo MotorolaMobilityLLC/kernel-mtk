@@ -489,6 +489,8 @@ int fib_nl_newrule(struct sk_buff *skb, struct nlmsghdr *nlh)
 	if (rule_exists(ops, frh, tb, rule)) {
 		if (nlh->nlmsg_flags & NLM_F_EXCL)
 			err = -EEXIST;
+		else
+			err = 0;
 		goto errout_free;
 	}
 
