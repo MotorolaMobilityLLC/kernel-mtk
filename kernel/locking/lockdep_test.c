@@ -46,7 +46,7 @@ void lockdep_test_suspicious_rcu(void)
 	rcu_p = kmalloc(sizeof(struct lockdep_test_rcu), GFP_KERNEL);
 	if (rcu_p == NULL)
 		return;
-	rcu_assign_pointer(lockdep_test_rcu_data, rcu_p);
+	RCU_INIT_POINTER(lockdep_test_rcu_data, rcu_p);
 	synchronize_rcu();
 
 	/* rcu_read_lock() should be here */
