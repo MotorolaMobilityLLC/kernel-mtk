@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2016 MediaTek Inc.
  *
@@ -872,27 +873,52 @@ static signed int DIP_DumpDIPReg(void)
 	CMDQ_ERR("dip: 0x15022224(0x%x)-0x1502101C(0x%x)\n",
 		DIP_RD32(DIP_A_BASE + 0x1224), DIP_RD32(DIP_A_BASE + 0x001C));
 
-	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x200);
+	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x1200);
 	d1a_cq_en = d1a_cq_en & 0xEFFFFFFF;
-	DIP_WR32(DIP_A_BASE + 0x200, d1a_cq_en);
+	DIP_WR32(DIP_A_BASE + 0x1200, d1a_cq_en);
 	cmdqdebugcmd = 0x6;
-	DIP_WR32(DIP_A_BASE + 0x190, cmdqdebugcmd);
+	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("thread state:0x%x : dip: 0x15022194(0x%x)\n",
-		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x194));
+		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
 	cmdqdebugcmd = 0x1006;
-	DIP_WR32(DIP_A_BASE + 0x190, cmdqdebugcmd);
+	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("cq state:0x%x : dip: 0x15022194(0x%x)\n",
-		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x194));
-	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x200);
+		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
+	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x1200);
 	d1a_cq_en = d1a_cq_en | 0x10000000;
-	DIP_WR32(DIP_A_BASE + 0x200, d1a_cq_en);
-	cmdqdebugcmd = 0x6;
+	DIP_WR32(DIP_A_BASE + 0x1200, d1a_cq_en);
 	for (cmdqdebugidx = 0; cmdqdebugidx < 16; cmdqdebugidx++) {
+		cmdqdebugcmd = 0x6;
 		cmdqdebugcmd = cmdqdebugcmd | (cmdqdebugidx << 16);
-		DIP_WR32(DIP_A_BASE + 0x190, cmdqdebugcmd);
+		DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 		CMDQ_ERR("cq checksum:0x%x : dip: 0x15022194(0x%x)\n",
-			cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x194));
+			cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
 	}
+	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x1200);
+	DIP_WR32(DIP_A_BASE + 0x1200, (d1a_cq_en | 0x00010000));
+	DIP_WR32(DIP_A_BASE + 0x1200, d1a_cq_en);
+	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x1200);
+	d1a_cq_en = d1a_cq_en & 0xEFFFFFFF;
+	DIP_WR32(DIP_A_BASE + 0x1200, d1a_cq_en);
+	cmdqdebugcmd = 0x6;
+	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
+	CMDQ_ERR("thread state:0x%x : dip: 0x15022194(0x%x)\n",
+		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
+	cmdqdebugcmd = 0x1006;
+	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
+	CMDQ_ERR("cq state:0x%x : dip: 0x15022194(0x%x)\n",
+		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
+	d1a_cq_en = DIP_RD32(DIP_A_BASE + 0x1200);
+	d1a_cq_en = d1a_cq_en | 0x10000000;
+	DIP_WR32(DIP_A_BASE + 0x1200, d1a_cq_en);
+	for (cmdqdebugidx = 0; cmdqdebugidx < 16; cmdqdebugidx++) {
+		cmdqdebugcmd = 0x6;
+		cmdqdebugcmd = cmdqdebugcmd | (cmdqdebugidx << 16);
+		DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
+		CMDQ_ERR("cq checksum:0x%x : dip: 0x15022194(0x%x)\n",
+			cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
+	}
+
 
 	/* 0x15022190, DIPCTL_D1A_DIPCTL_DBG_SEL*/
 	/* HUNG-WEN */
