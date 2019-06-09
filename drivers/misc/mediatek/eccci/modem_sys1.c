@@ -412,12 +412,6 @@ static int md_cd_start(struct ccci_modem *md)
 	int ret = 0;
 
 	if (md->per_md_data.config.setting & MD_SETTING_FIRST_BOOT) {
-		ret = md_start_platform(md);
-		if (ret) {
-			CCCI_BOOTUP_LOG(md->index, TAG,
-				"power on MD BROM fail %d\n", ret);
-			goto out;
-		}
 		md_cd_io_remap_md_side_register(md);
 		md_sys1_sw_init(md);
 
@@ -430,6 +424,12 @@ static int md_cd_start(struct ccci_modem *md)
 #if (MD_GENERATION >= 6293)
 		md_ccif_ring_buf_init(CCIF_HIF_ID);
 #endif
+		ret = md_start_platform(md);
+		if (ret) {
+			CCCI_BOOTUP_LOG(md->index, TAG,
+				"power on MD BROM fail %d\n", ret);
+			goto out;
+		}
 		md->per_md_data.config.setting &= ~MD_SETTING_FIRST_BOOT;
 	} else
 		ccci_md_clear_smem(md->index, 0);
