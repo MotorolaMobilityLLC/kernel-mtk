@@ -69,7 +69,6 @@ unsigned int CBT_MODE;
 #define Reg_Sync_Writel(addr, val)   writel(val, IOMEM(addr))
 #define Reg_Readl(addr) readl(IOMEM(addr))
 
-static unsigned int dram_rank_num;
 static unsigned int dram_mr_mode;
 #ifdef SW_TX_TRACKING
 static unsigned int dram_sw_tx;
@@ -1948,18 +1947,22 @@ unsigned int mt_dramc_chp_get(unsigned int emi_cona)
 
 phys_addr_t mt_dramc_rankbase_get(unsigned int rank)
 {
-	if (!get_dram_info)
+	int rank_num = get_rk_num(),
+	i = 0;
+	phys_addr_t rank_base = 0x40000000;
+
+	if (rank >= rank_num)
 		return 0;
 
-	if (rank >= get_dram_info->rank_num)
-		return 0;
+	for (i = rank; i > 0; i--)
+		rank_base += get_rank_size(i-1) * 0x8000000;
 
-	return get_dram_info->rank_info[rank].start;
+	return rank_base;
 }
 
 unsigned int mt_dramc_ta_support_ranks(void)
 {
-	return dram_rank_num;
+	return get_rk_num();
 }
 
 MODULE_DESCRIPTION("MediaTek DRAMC Driver v0.1");

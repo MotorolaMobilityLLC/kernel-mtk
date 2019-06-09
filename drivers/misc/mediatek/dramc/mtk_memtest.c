@@ -306,7 +306,7 @@ int dramc_dram_address_get(phys_addr_t phys_addr,
 			ch_width++;
 		}
 
-		temp = (phys_addr & ~(((0x1<<ch_width)-1)<<ch_pos)) >> ch_width;
+		temp = (phys_addr&~((((0x1<<ch_width)-1)<<ch_pos)-1))>>ch_width;
 		phys_addr = temp | (phys_addr & ((0x1<<ch_pos)-1));
 	}
 
