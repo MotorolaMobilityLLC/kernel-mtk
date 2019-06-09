@@ -78,6 +78,15 @@
  *   although ARP RX wins.  (That test was done with a full speed link.)
  */
 
+/*
+ * Scnenario: FS USB Audio device attached to a HS Hub.
+ * To fix playback/record issue with ISOC/INTR SSplit transaction scheduled
+ * in the same SOF.
+ */
+
+int isoc_tx_offset = 0x100;
+module_param(isoc_tx_offset, uint, 0644);
+MODULE_PARM_DESC(isoc_tx_offset, "ISOC TX OFFSET");
 
 /*
  * NOTE on endpoint usage:
