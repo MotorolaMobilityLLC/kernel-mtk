@@ -160,41 +160,28 @@ static enum IMGSENSOR_RETURN mclk_set(
 	struct mclk *pinst = (struct mclk *)pinstance;
 	struct pinctrl_state *ppinctrl_state;
 	enum   IMGSENSOR_RETURN ret = IMGSENSOR_RETURN_SUCCESS;
+	enum MCLK_STATE state_index = MCLK_STATE_DISABLE;
 
 
 	if (pin_state < IMGSENSOR_HW_PIN_STATE_LEVEL_0 ||
 	    pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_HIGH) {
 		ret = IMGSENSOR_RETURN_ERROR;
 	} else {
-		pin_state = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0)
-		? pinst->drive_current[sensor_idx]
-		: MCLK_STATE_DISABLE;
+		state_index = (pin_state > IMGSENSOR_HW_PIN_STATE_LEVEL_0)
+		? MCLK_STATE_ENABLE : MCLK_STATE_DISABLE;
 
-		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][pin_state];
-#if 0
-		pr_debug(
-			"%s : sensor_idx %d mclk_set pinctrl, pin %d, pin_state %d, drive_current %d\n",
-			__func__,
-			sensor_idx,
-			pin,
-			pin_state,
-			pinst->drive_current[sensor_idx]);
-
-#endif
-		mutex_lock(pinst->pmclk_mutex);
-
-		if (!IS_ERR(ppinctrl_state))
+		ppinctrl_state = pinst->ppinctrl_state[sensor_idx][state_index];
+		mutex_lock(&pinctrl_mutex);
+		if (ppinctrl_state != NULL && !IS_ERR(ppinctrl_state))
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		else
-			PK_PR_ERR(
-				"%s : sensor_idx %d pinctrl, PinIdx %d, Val %d, drive current %d\n",
+			PK_DBG(
+			    "%s : sensor_idx %d fail to set pinctrl, PinIdx %d, Val %d\n",
 				__func__,
 				sensor_idx,
 				pin,
-				pin_state,
-				pinst->drive_current[sensor_idx]);
-
-		mutex_unlock(pinst->pmclk_mutex);
+			    pin_state);
+		mutex_unlock(&pinctrl_mutex);
 	}
 	return ret;
 }
