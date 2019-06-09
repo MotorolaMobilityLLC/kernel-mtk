@@ -26,6 +26,15 @@ config MTK_CPU_CTRL_CFP
 	  Ceiling-Fool-Proof Mechanism designed by MTK. CPU controller
 	  will free CPU frequency ceiling during heavy CPU loading.
 
+config MTK_PERF_OBSERVER
+	bool "MTK system performance observer support"
+	default n
+	help
+	  MTK_PERF_OBSERVER define if system performance observer should
+	  be built-in or not. It supports system related performance index
+	  via notifier. If you are not sure about whether to enable it or not,
+	  please set n.
+
 config MTK_FPSGO_V3
 	bool "Support FPSGO_V3 framework"
 	default n
