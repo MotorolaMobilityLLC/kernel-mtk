@@ -267,6 +267,12 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVPollForValueKM(
 		IMG_UINT32                   ui32Value,
 		IMG_UINT32                   ui32Mask);
 
+#ifdef MTK_POWER_OFF_TIMING
+IMG_EXPORT
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPollForGEValueKM (volatile IMG_UINT32	*pui32LinMemAddr,
+														  IMG_UINT32			ui32Value);
+#endif
+
 /*!
 ******************************************************************************
  @Function	PVRSRVWaitForValueKM

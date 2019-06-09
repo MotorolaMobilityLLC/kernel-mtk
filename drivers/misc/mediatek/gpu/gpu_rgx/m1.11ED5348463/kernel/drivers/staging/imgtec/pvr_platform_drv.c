@@ -309,6 +309,7 @@ static int __init pvr_init(void)
 	err = platform_driver_register(&pvr_platform_driver);
 	if (err)
 		return err;
+
 	err = pvr_devices_register();
 
 #if defined(CONFIG_MACH_MT8167)

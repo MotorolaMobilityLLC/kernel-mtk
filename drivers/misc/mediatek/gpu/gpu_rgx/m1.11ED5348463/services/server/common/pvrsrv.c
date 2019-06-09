@@ -90,6 +90,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "rgxfwutils.h"
 #endif
 
+#include "mtk_pp.h"
 #if defined(PVRSRV_ENABLE_GPU_MEMORY_INFO)
 #include "ri_server.h"
 #endif
@@ -3137,6 +3138,80 @@ PVRSRV_ERROR IMG_CALLCONV PVRSRVDevInitCompatCheck(PVRSRV_DEVICE_NODE *psDeviceN
 		return PVRSRV_OK;
 }
 
+#ifdef MTK_POWER_OFF_TIMING
+/*
+	PollForGEValueKM
+*/
+static
+PVRSRV_ERROR IMG_CALLCONV PollForGEValueKM (volatile IMG_UINT32*	pui32LinMemAddr,
+										  IMG_UINT32			ui32Value,
+										  IMG_UINT32			ui32Mask,
+										  IMG_UINT32			ui32Timeoutus,
+										  IMG_UINT32			ui32PollPeriodus,
+										  IMG_BOOL				bAllowPreemption)
+{
+#if defined(NO_HARDWARE)
+	PVR_UNREFERENCED_PARAMETER(pui32LinMemAddr);
+	PVR_UNREFERENCED_PARAMETER(ui32Value);
+	PVR_UNREFERENCED_PARAMETER(ui32Mask);
+	PVR_UNREFERENCED_PARAMETER(ui32Timeoutus);
+	PVR_UNREFERENCED_PARAMETER(ui32PollPeriodus);
+	PVR_UNREFERENCED_PARAMETER(bAllowPreemption);
+	return PVRSRV_OK;
+#else
+	IMG_UINT32	ui32ActualValue = 0xFFFFFFFFU; /* Initialiser only required to prevent incorrect warning */
+    IMG_UINT32	const ui32MaxValue = ui32Value+16;
+
+	if (bAllowPreemption)
+	{
+		PVR_ASSERT(ui32PollPeriodus >= 1000);
+	}
+
+	LOOP_UNTIL_TIMEOUT(ui32Timeoutus)
+	{
+		ui32ActualValue = OSReadHWReg32((void *)pui32LinMemAddr, 0) & ui32Mask;
+
+        if ((ui32MaxValue>ui32Value) ?  (ui32ActualValue >= ui32Value && ui32ActualValue<= ui32MaxValue) : (ui32ActualValue >= ui32Value || ui32ActualValue <=ui32MaxValue))
+		{
+			return PVRSRV_OK;
+		}
+
+		if (gpsPVRSRVData->eServicesState != PVRSRV_SERVICES_STATE_OK)
+		{
+			return PVRSRV_ERROR_TIMEOUT;
+		}
+
+		if (bAllowPreemption)
+		{
+			OSSleepms(ui32PollPeriodus / 1000);
+		}
+		else
+		{
+			OSWaitus(ui32PollPeriodus);
+		}
+	} END_LOOP_UNTIL_TIMEOUT();
+
+	PVR_DPF((PVR_DBG_ERROR,"PollForValueKM: Timeout. Expected 0x%x but found 0x%x (mask 0x%x).",
+			ui32Value, ui32ActualValue, ui32Mask));
+
+	return PVRSRV_ERROR_TIMEOUT;
+#endif /* NO_HARDWARE */
+}
+
+/*
+	PVRSRVPollForGEValueKM
+*/
+IMG_EXPORT
+PVRSRV_ERROR IMG_CALLCONV PVRSRVPollForGEValueKM (volatile IMG_UINT32	*pui32LinMemAddr,
+												IMG_UINT32			ui32Value)
+{
+	return PollForGEValueKM(pui32LinMemAddr, ui32Value,
+						  MAX_HW_TIME_US,
+						  MAX_HW_TIME_US/WAIT_TRY_COUNT,
+						  IMG_FALSE);
+}
+#endif /* MTK_POWER_OFF_TIMING */
+
 /*
 	PollForValueKM
 */
@@ -3428,6 +3503,9 @@ PVRSRV_ERROR PVRSRVSystemInstallDeviceLISR(void *pvOSDevice,
 				 __func__, pvOSDevice, ui32IRQ));
 		return PVRSRV_ERROR_INVALID_DEVICE;
 	}
+
+	PVR_DPF((PVR_DBG_MESSAGE, "%s: device %p with irq %d / %s ",
+                                 __func__, pvOSDevice, ui32IRQ, pszName));
 
 	return SysInstallDeviceLISR(psDeviceNode->psDevConfig->hSysData, ui32IRQ,
 								pszName, pfnLISR, pvData, phLISRData);
