@@ -54,7 +54,7 @@ const struct flashlight_device_id flashlight_id[] = {
 	{0, 1, 0, "flashlights-rt5081", 1, 0},
 };
 #elif defined(mt6761)
-	#if defined(k61v1_hdp_ref_1g)
+	#ifdef CONFIG_MTK_FLASHLIGHT_AW3644
 	const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
 		{0, 0, 0, "flashlights-aw3644", 0, 1},

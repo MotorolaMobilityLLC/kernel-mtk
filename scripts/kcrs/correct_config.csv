@@ -610,6 +610,7 @@ CONFIG_MTK_FINGERPRINT_SELECT,PROJECT,luhua.xu,new config in this commit ff5fd17
 CONFIG_MTK_FINGERPRINT_SUPPORT,PROJECT,luhua.xu,new config in this commit ff5fd1753a830032f4c8a5d075c4b2de17e563bc,,,,,,,,,
 CONFIG_MTK_FIQ_CACHE,PLATFORM,mars.cheng,,X,X,X,X,X,X,X,X,
 CONFIG_MTK_FLASHLIGHT,COMMON,simon-tch.wang,,y,y,y,y,y,y,y,y,
+CONFIG_MTK_FLASHLIGHT_AW3644,PROJECT,yi.zhao,,X,X,X,X,X,X,X,X,
 CONFIG_MTK_FLASHLIGHT_DLPT,COMMON,simon-tch.wang,,y,y,y,y,y,y,y,y,
 CONFIG_MTK_FLASHLIGHT_LM3643,PROJECT,simon-tch.wang,,X,X,X,X,X,X,X,X,
 CONFIG_MTK_FLASHLIGHT_MT6336,PROJECT,simon-tch.wang,,X,X,X,X,X,X,X,X,
