@@ -354,6 +354,11 @@ struct  FDVT_CONFIG_STRUCT {
 	FDVT_Config FdvtFrameConfig[_SUPPORT_MAX_FDVT_FRAME_REQUEST_];
 };
 
+struct S_START_T {
+	unsigned int sec;
+	unsigned int usec;
+};
+
 static struct FDVT_REQUEST_RING_STRUCT g_FDVT_ReqRing;
 static struct FDVT_CONFIG_STRUCT g_FdvtEnqueReq_Struct;
 static struct FDVT_CONFIG_STRUCT g_FdvtDequeReq_Struct;
@@ -422,6 +427,7 @@ struct SV_LOG_STR {
 	unsigned int _cnt[LOG_PPNUM][_LOG_MAX];
 	/* char   _str[_LOG_MAX][SV_LOG_STR_LEN]; */
 	char *_str[LOG_PPNUM][_LOG_MAX];
+	struct S_START_T   _lastIrqTime;
 } *FDVT_PSV_LOG_STR;
 
 static void *pLog_kmalloc;
@@ -437,8 +443,11 @@ static struct SV_LOG_STR gSvLog[FDVT_IRQ_TYPE_AMOUNT];
 #define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...) do {\
 	char *ptr; \
 	char *pDes;\
+	signed int avaLen;\
 	unsigned int *ptr2 = &gSvLog[irq]._cnt[ppb][logT];\
 	unsigned int str_leng;\
+	unsigned int i = 0;\
+	struct SV_LOG_STR *pSrc = &gSvLog[irq];\
 	if (logT == _LOG_ERR) {\
 		str_leng = NORMAL_STR_LEN*ERR_PAGE;\
 	} else if (logT == _LOG_DBG) {\
@@ -448,20 +457,75 @@ static struct SV_LOG_STR gSvLog[FDVT_IRQ_TYPE_AMOUNT];
 	} else {\
 		str_leng = 0;\
 	} \
-	ptr = pDes = (char *)\
-		&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
-	sprintf((char *)(pDes), fmt, ##__VA_ARGS__);   \
+	ptr = pDes = \
+	(char *)&(gSvLog[irq]._str[ppb][logT][gSvLog[irq]._cnt[ppb][logT]]);\
+	avaLen = str_leng - 1 - gSvLog[irq]._cnt[ppb][logT];\
+	if (avaLen > 1) {\
+	snprintf((char *)(pDes), avaLen, "[%d.%06d]" fmt,\
+		gSvLog[irq]._lastIrqTime.sec, gSvLog[irq]._lastIrqTime.usec,\
+		##__VA_ARGS__);   \
 	if ('\0' != gSvLog[irq]._str[ppb][logT][str_leng - 1]) {\
 		log_err("log str over flow(%d)", irq);\
 	} \
 	while (*ptr++ != '\0') {        \
 		(*ptr2)++;\
 	}     \
+	} else { \
+	log_inf("(%d)(%d)log str avalible=0, print log\n", irq, logT);\
+	ptr = pSrc->_str[ppb][logT];\
+	if (pSrc->_cnt[ppb][logT] != 0) {\
+		if (logT == _LOG_DBG) {\
+			for (i = 0; i < DBG_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_dbg("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else if (logT == _LOG_INF) {\
+			for (i = 0; i < INF_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_inf("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else if (logT == _LOG_ERR) {\
+			for (i = 0; i < ERR_PAGE; i++) {\
+				if (ptr[NORMAL_STR_LEN*(i+1) - 1] != '\0') {\
+					ptr[NORMAL_STR_LEN*(i+1) - 1] = '\0';\
+					log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
+				} else{\
+					log_err("%s", &ptr[NORMAL_STR_LEN*i]);\
+					break;\
+				} \
+			} \
+		} \
+		else {\
+			log_err("N.S.%d", logT);\
+		} \
+		ptr[0] = '\0';\
+		pSrc->_cnt[ppb][logT] = 0;\
+		avaLen = str_leng - 1;\
+		ptr = pDes = \
+		(char *)&(pSrc->_str[ppb][logT][pSrc->_cnt[ppb][logT]]);\
+		ptr2 = &(pSrc->_cnt[ppb][logT]);\
+		snprintf((char *)(pDes), avaLen, fmt, ##__VA_ARGS__);   \
+		while (*ptr++ != '\0') {\
+			(*ptr2)++;\
+		} \
+	} \
+	} \
 } while (0)
 #else
-#define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, ...)  \
-xlog_printk(ANDROID_LOG_DEBUG,\
-"KEEPER", "[%s] " fmt, __func__, ##__VA_ARGS__)
+#define IRQ_LOG_KEEPER(irq, ppb, logT, fmt, args...) \
+pr_debug(IRQTag fmt,  ##args)
 #endif
 
 #if 1
