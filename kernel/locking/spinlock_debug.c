@@ -285,9 +285,9 @@ static void __spin_lock_debug(raw_spinlock_t *lock)
 			continue;
 		t2 = sched_clock();
 
-		/* lockup suspected: */
-		if (lock->owner && lock->owner != SPINLOCK_OWNER_INIT)
-			owner = lock->owner;
+		owner = lock->owner;
+		if (owner == SPINLOCK_OWNER_INIT)
+			owner = NULL;
 
 		pr_info("(%s)(%p) spin time: %llu ms(from %lld.%06lu), raw_lock: 0x%08x, magic: %08x, held by %s/%d on CPU#%d(from %lld.%06lu)\n",
 		lock->name, lock,
