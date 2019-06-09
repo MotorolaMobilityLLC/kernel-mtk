@@ -111,6 +111,9 @@ struct mt6397_rtc {
 };
 
 static struct mt6397_rtc *mt_rtc;
+#if defined(CONFIG_MACH_MT8163)
+static bool rtc_probe_done;
+#endif
 
 static int mtk_rtc_write_trigger(struct mt6397_rtc *rtc)
 {
@@ -456,6 +459,14 @@ static irqreturn_t mtk_rtc_irq_handler_thread(int irq, void *data)
 	mutex_unlock(&rtc->lock);
 	return IRQ_NONE;
 }
+
+#if defined(CONFIG_MACH_MT8163)
+void rtc_irq_handler(void)
+{
+	if (rtc_probe_done)
+		mtk_rtc_irq_handler_thread(0, mt_rtc);
+}
+#endif /* defined(CONFIG_MACH_MT8163) */
 
 static int __mtk_rtc_read_time(struct mt6397_rtc *rtc,
 			       struct rtc_time *tm, int *sec)
@@ -894,10 +905,12 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	rtc->addr_base = res->start;
 
+#if !defined(CONFIG_MACH_MT8163)
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	rtc->irq = irq_create_mapping(mt6397_chip->irq_domain, res->start);
 	if (rtc->irq <= 0)
 		return -EINVAL;
+#endif /* !defined(CONFIG_MACH_MT8163) */
 
 	rtc->regmap = mt6397_chip->regmap;
 	rtc->dev = &pdev->dev;
@@ -906,6 +919,7 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 	mt_rtc = rtc;
 	platform_set_drvdata(pdev, rtc);
 
+#if !defined(CONFIG_MACH_MT8163)
 	ret = request_threaded_irq(rtc->irq, NULL,
 				   mtk_rtc_irq_handler_thread,
 				   IRQF_ONESHOT | IRQF_TRIGGER_HIGH,
@@ -915,6 +929,7 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 			rtc->irq, ret);
 		goto out_dispose_irq;
 	}
+#endif /* !defined(CONFIG_MACH_MT8163) */
 
 	device_init_wakeup(&pdev->dev, 1);
 
@@ -925,13 +940,18 @@ static int mtk_rtc_probe(struct platform_device *pdev)
 		ret = PTR_ERR(rtc->rtc_dev);
 		goto out_free_irq;
 	}
+#if defined(CONFIG_MACH_MT8163)
+	rtc_probe_done = true;
+#endif
 
 	return 0;
 
 out_free_irq:
+#if !defined(CONFIG_MACH_MT8163)
 	free_irq(rtc->irq, rtc->rtc_dev);
 out_dispose_irq:
 	irq_dispose_mapping(rtc->irq);
+#endif /* !defined(CONFIG_MACH_MT8163) */
 	return ret;
 }
 
@@ -940,8 +960,10 @@ static int mtk_rtc_remove(struct platform_device *pdev)
 	struct mt6397_rtc *rtc = platform_get_drvdata(pdev);
 
 	rtc_device_unregister(rtc->rtc_dev);
+#if !defined(CONFIG_MACH_MT8163)
 	free_irq(rtc->irq, rtc->rtc_dev);
 	irq_dispose_mapping(rtc->irq);
+#endif /* !defined(CONFIG_MACH_MT8163) */
 
 	return 0;
 }
@@ -949,20 +971,24 @@ static int mtk_rtc_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_SLEEP
 static int mt6397_rtc_suspend(struct device *dev)
 {
+#if !defined(CONFIG_MACH_MT8163)
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
 
 	if (device_may_wakeup(dev))
 		enable_irq_wake(rtc->irq);
+#endif /* !defined(CONFIG_MACH_MT8163) */
 
 	return 0;
 }
 
 static int mt6397_rtc_resume(struct device *dev)
 {
+#if !defined(CONFIG_MACH_MT8163)
 	struct mt6397_rtc *rtc = dev_get_drvdata(dev);
 
 	if (device_may_wakeup(dev))
 		disable_irq_wake(rtc->irq);
+#endif /* !defined(CONFIG_MACH_MT8163) */
 
 	return 0;
 }
@@ -972,9 +998,9 @@ static SIMPLE_DEV_PM_OPS(mt6397_pm_ops, mt6397_rtc_suspend,
 			mt6397_rtc_resume);
 
 static const struct of_device_id mt6397_rtc_of_match[] = {
-	{ .compatible = "mediatek,mt6397-rtc", },
 	{ .compatible = "mediatek,mt6323-rtc", },
 	{ .compatible = "mediatek,mt6392-rtc", },
+	{ .compatible = "mediatek,mt6397-rtc", },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, mt6397_rtc_of_match);

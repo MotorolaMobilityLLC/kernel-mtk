@@ -79,7 +79,11 @@ extern void mt_power_off(void);
 #define set_rtc_spare_fg_value(val)	({ 0; })
 #define get_rtc_spare0_fg_value()	({ 0; })
 #define set_rtc_spare0_fg_value(val)	({ 0; })
-#define rtc_irq_handler()			({ 0; })
+#if defined(CONFIG_MACH_MT8163) && defined(CONFIG_RTC_DRV_MT6397)
+extern void rtc_irq_handler(void);
+#else
+#define rtc_irq_handler()		({ 0; })
+#endif
 #define crystal_exist_status()		({ 0; })
 /* __weak void mt_power_off(void); */
 #endif/*ifdef CONFIG_MTK_RTC*/
