@@ -16,6 +16,7 @@ ccflags-y  += -I$(THERMAL_CHIP_DRIVER_DIR)/inc
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/fakeHeader/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/$(MTK_PLATFORM)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/video/include
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/gpu/ged/include
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/thermal/common/inc/
@@ -26,6 +27,9 @@ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT),y)
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/sspm/
 ccflags-y  += -I$(srctree)/drivers/misc/mediatek/sspm/$(MTK_PLATFORM)
 endif
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/vpu/$(MTK_PLATFORM)
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/mdla/1.0
+ccflags-y  += -I$(srctree)/drivers/misc/mediatek/smi
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6735"))
 ifeq ($(CONFIG_ARCH_MT6735),y)
@@ -138,11 +142,15 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 endif
 
-ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799" "mt6759" "mt6763" "mt6758" "mt6739" "mt6765" "mt6761"))
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6799" "mt6759" "mt6763" "mt6758" "mt6739" "mt6765" "mt6761" "mt6779"))
 ifeq ($(CONFIG_MTK_THERMAL_PA_VIA_ATCMD),y)
     obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
 endif
+
+ifeq (,$(filter $(CONFIG_MTK_PLATFORM),"mt6779"))
 obj-$(CONFIG_THERMAL) += mtk_cooler_fps.o
+endif
+
 ifeq ($(CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT),y)
 	obj-$(CONFIG_THERMAL) += mtk_cooler_bcct_v1.o
 else
@@ -167,4 +175,9 @@ obj-$(CONFIG_THERMAL) += mtk_cooler_atm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_dtm.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_sysrst.o
 obj-$(CONFIG_THERMAL) += mtk_cooler_mutt.o
+endif
+
+
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6779"))
+obj-$(CONFIG_THERMAL) += mtk_cooler_ISP.o
 endif

@@ -67,11 +67,10 @@ static struct proc_dir_entry *clVR_ISP_status;
 
 
 void __attribute__ ((weak))
-mmdvfs_qos_thermal_config(u32 pm_qos_class, s32 thermal_score,
-	const char *caller)
+mmdvfs_qos_limit_config(u32 pm_qos_class, u32 limit_value,
+	enum mmdvfs_limit_source source)
 {
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
-	return 0;
 }
 
 static ssize_t clVR_ISP_status_write(
@@ -151,7 +150,8 @@ static int clVR_ISP_get_cur_state(
 struct thermal_cooling_device *cdev, unsigned long *state)
 {
 	*state = cl_dev_VR_ISP_state;
-	clVR_ISP_dprintk("%s %d\n", cl_dev_VR_ISP_state, __func__);
+	clVR_ISP_dprintk("%s %d, %d\n", __func__,
+		cl_dev_VR_ISP_state, cl_dev_VR_ISP_cur_state);
 	return 0;
 }
 
@@ -165,13 +165,15 @@ struct thermal_cooling_device *cdev, unsigned long state)
 
 	if ((cl_dev_VR_ISP_state == 1) && (cl_dev_VR_ISP_cur_state == 0)) {
 		clVR_ISP_dprintk("mtkclVR_ISP triggered\n");
-		mmdvfs_qos_thermal_config(PM_QOS_IMG_FREQ, 1, "thermal");
+		mmdvfs_qos_limit_config(PM_QOS_IMG_FREQ, 1,
+			MMDVFS_LIMIT_THERMAL);
 		cl_dev_VR_ISP_cur_state = 1;
 	}
 
 	if ((cl_dev_VR_ISP_state == 0) && (cl_dev_VR_ISP_cur_state == 1)) {
 		clVR_ISP_dprintk("mtkclVR_ISP exited\n");
-		mmdvfs_qos_thermal_config(PM_QOS_IMG_FREQ, -1, "thermal");
+		mmdvfs_qos_limit_config(PM_QOS_IMG_FREQ, 0,
+			MMDVFS_LIMIT_THERMAL);
 		cl_dev_VR_ISP_cur_state = 0;
 	}
 	return 0;

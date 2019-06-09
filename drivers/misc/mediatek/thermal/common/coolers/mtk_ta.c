@@ -79,6 +79,7 @@ static int g_tad_pid;
 static bool init_flag;
 static int g_tad_ttj;
 struct SPA_T thermal_spa_t;
+struct DCTM_T thermal_dctm_t;
 static struct tad_nl_msg_t tad_ret_msg;
 
 /*=============================================================
@@ -147,6 +148,49 @@ void atm_ctrl_cmd_from_user(void *nl_data, struct tad_nl_msg_t *ret_msg)
 			tsta_dprintk(
 				"[atm_ctrl_cmd_from_user] curr_tpcb = %d\n",
 								curr_tpcb);
+		}
+		break;
+
+	case TA_DAEMON_CMD_GET_DCTM_DRCCFG:
+		{
+			memcpy(ret_msg->tad_data, &thermal_dctm_t,
+							sizeof(thermal_dctm_t));
+
+			ret_msg->tad_data_len += sizeof(thermal_dctm_t);
+
+			tsta_dprintk(
+			"[atm_ctrl_cmd_from_user] ret_msg->tad_data_len %d\n",
+			ret_msg->tad_data_len);
+		}
+		break;
+
+	case TA_DAEMON_CMD_GET_DTCM:
+		{
+			int curr_tdctm = mtk_thermal_get_temp(
+					MTK_THERMAL_SENSOR_DCTM);
+
+			ret_msg->tad_data_len += sizeof(curr_tdctm);
+			memcpy(ret_msg->tad_data, &curr_tdctm,
+						sizeof(curr_tdctm));
+
+			tsta_dprintk(
+				"[atm_ctrl_cmd_from_user] curr_tdctm = %d\n",
+						curr_tdctm);
+		}
+		break;
+
+	case TA_DAEMON_CMD_GET_TSCPU:
+		{
+			int curr_tscpu = mtk_thermal_get_temp(
+							MTK_THERMAL_SENSOR_CPU);
+
+			ret_msg->tad_data_len += sizeof(curr_tscpu);
+			memcpy(ret_msg->tad_data, &curr_tscpu,
+						sizeof(curr_tscpu));
+
+			tsta_dprintk(
+				"[atm_ctrl_cmd_from_user] curr_tscpu = %d\n",
+								curr_tscpu);
 		}
 		break;
 
