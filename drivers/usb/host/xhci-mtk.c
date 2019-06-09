@@ -753,6 +753,8 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	struct usb_hcd	*hcd = mtk->hcd;
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 
+	xhci->xhc_state |= XHCI_STATE_REMOVING;
+
 	usb_remove_hcd(xhci->shared_hcd);
 	xhci_mtk_phy_power_off(mtk);
 	xhci_mtk_phy_exit(mtk);
