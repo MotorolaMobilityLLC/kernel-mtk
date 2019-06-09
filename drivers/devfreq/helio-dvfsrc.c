@@ -31,12 +31,13 @@
 
 #include "helio-dvfsrc.h"
 #include "mtk_dvfsrc_reg.h"
+#include <linux/regulator/consumer.h>
 
 #ifdef CONFIG_MTK_TINYSYS_SSPM_SUPPORT
 #include <sspm_ipi.h>
 #include <sspm_ipi_pin.h>
 #endif
-
+static struct regulator *vcore_reg_id;
 static struct helio_dvfsrc *dvfsrc;
 static DEFINE_MUTEX(sw_req1_mutex);
 static DEFINE_SPINLOCK(force_req_lock);
@@ -150,11 +151,23 @@ static void dvfsrc_set_sw_bw(int type, int data)
 	}
 }
 
+static int get_target_level(void)
+{
+	return (dvfsrc_read(DVFSRC_LEVEL) & 0xFFFF);
+}
+
+u32 get_dvfs_final_level(void)
+{
+	return dvfsrc_read(DVFSRC_LEVEL) >> CURRENT_LEVEL_SHIFT;
+}
+
 static int commit_data(int type, int data, int check_spmfw)
 {
 	int ret = 0;
 	int level = 16, opp = 16;
 	unsigned long flags;
+	int opp_uv = 0;
+	int vcore_uv = 0;
 
 	if (!is_dvfsrc_enabled())
 		return ret;
@@ -204,8 +217,25 @@ static int commit_data(int type, int data, int check_spmfw)
 		if (!is_opp_forced() && check_spmfw) {
 			udelay(1);
 			ret = dvfsrc_wait_for_completion(
+					(get_target_level() == 0),
+					DVFSRC_TIMEOUT);
+			udelay(1);
+			ret = dvfsrc_wait_for_completion(
 					get_cur_vcore_opp() <= opp,
 					DVFSRC_TIMEOUT);
+		}
+		if (!is_opp_forced() && check_spmfw) {
+			if (vcore_reg_id) {
+				vcore_uv = regulator_get_voltage(vcore_reg_id);
+				opp_uv = get_vcore_uv_table(opp);
+				if (vcore_uv < opp_uv) {
+					pr_info("DVFS FAIL = %d %d 0x%x\n",
+				vcore_uv, opp_uv, dvfsrc_read(DVFSRC_LEVEL));
+					dvfsrc_dump_reg(NULL);
+					aee_kernel_warning("DVFSRC",
+						"%s: failed.", __func__);
+				}
+			}
 		}
 
 		mutex_unlock(&sw_req1_mutex);
@@ -729,6 +759,9 @@ static int helio_dvfsrc_probe(struct platform_device *pdev)
 	pm_qos_notifier_register();
 
 	helio_dvfsrc_common_init();
+	vcore_reg_id = regulator_get(&pdev->dev, "vcore");
+	if (!vcore_reg_id)
+		pr_info("regulator_get vcore_reg_id failed\n");
 
 	if (of_property_read_u32(np, "dvfsrc_flag",
 		(u32 *) &dvfsrc->dvfsrc_flag))

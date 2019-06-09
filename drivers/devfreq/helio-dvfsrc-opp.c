@@ -38,7 +38,7 @@ int get_cur_vcore_dvfs_opp(void)
 	else
 		return val - 1;
 #else
-	return VCORE_DVFS_OPP_NUM - __builtin_ffs(spm_get_dvfs_final_level());
+	return VCORE_DVFS_OPP_NUM - __builtin_ffs(get_dvfs_final_level());
 #endif
 }
 
