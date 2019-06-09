@@ -1048,6 +1048,23 @@ static inline void FDVT_Reset(void)
 
 }
 
+static inline void FDVT_Reset_Every_Frame(void)
+{
+	log_dbg("- E.");
+
+	log_dbg(" FDVT Reset Every Frame start!\n");
+
+	/* Reset FDVT flow */
+	FDVT_WR32(FDVT_DMA_CTL_REG, 0x11111111);
+	FDVT_WR32(FDVT_START_REG,
+		 (FDVT_RD32(FDVT_START_REG) |
+		 0x20000));
+	while (((FDVT_RD32(FDVT_START_REG) & 0x20000) != 0x0))
+		log_dbg("FDVT resetting...\n");
+	FDVT_WR32(FDVT_START_REG, 0x10000);
+	FDVT_WR32(FDVT_START_REG, 0x0);
+	log_dbg(" FDVT Reset Every Frame end!\n");
+}
 /*****************************************************************************
  *
  *****************************************************************************/
@@ -1294,7 +1311,7 @@ static bool UpdateFDVT(pid_t *ProcessID)
 				FdvtFrameConfig[j].
 				RESULT1 =
 				    FDVT_RD32(FDVT_RESULT_1_REG);
-				FDVT_Reset();
+				FDVT_Reset_Every_Frame();
 				if ((_SUPPORT_MAX_FDVT_FRAME_REQUEST_ ==
 				    (next_idx))
 				    || ((_SUPPORT_MAX_FDVT_FRAME_REQUEST_ >
