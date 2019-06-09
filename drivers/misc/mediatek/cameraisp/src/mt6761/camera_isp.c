@@ -3019,6 +3019,12 @@ static signed int ISP_DumpReg(void)
 		(unsigned int)ISP_RD32(ISP_ADDR + 0xd10));
 	log_err("0x%08X	%08X", (unsigned int)(ISP_ADDR + 0xd20),
 		(unsigned int)ISP_RD32(ISP_ADDR + 0xd20));
+
+	ISP_WR32(ISP_IMGSYS_BASE + 0x4160, 0x3014);
+	log_err("0x%08X	%08X (0x15004160=0x3014)",
+		(unsigned int)(ISP_TPIPE_ADDR + 0x4164),
+		(unsigned int)ISP_RD32(ISP_IMGSYS_BASE + 0x4164));
+
 	/* cq */
 	log_err("CQ	Related");
 	ISP_WR32(ISP_IMGSYS_BASE + 0x4160, 0x6000);
