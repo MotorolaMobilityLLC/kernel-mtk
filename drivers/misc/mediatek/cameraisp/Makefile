@@ -13,10 +13,14 @@
 
 obj-y += dip/
 obj-y += src/
-#obj-y += owe/
+ifeq ($(CONFIG_MACH_MT6763),y)
+obj-y += owe/
+endif
 obj-y += rsc/
 obj-y += wpe/
 obj-y += dpe/
-#obj-y += tsf/
+ifeq ($(CONFIG_MACH_MT6763),y)
+obj-y += tsf/
+endif
 obj-y += mfb/
 obj-y += fdvt/
