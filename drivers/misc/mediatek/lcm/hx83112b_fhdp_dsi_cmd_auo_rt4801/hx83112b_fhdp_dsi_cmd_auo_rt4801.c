@@ -486,11 +486,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->round_corner_en = 1;
 	params->corner_pattern_height = ROUND_CORNER_H_TOP;
 	params->corner_pattern_height_bot = ROUND_CORNER_H_BOT;
-	params->round_corner_params.tp_size = sizeof(top_rc_pattern);
-	params->round_corner_params.lt_addr = (void *)top_rc_pattern;
-	params->round_corner_params.rt_addr = NULL;
-	params->round_corner_params.lb_addr = NULL;
-	params->round_corner_params.rb_addr = NULL;
+	params->corner_pattern_tp_size = sizeof(top_rc_pattern);
+	params->corner_pattern_lt_addr = (void *)top_rc_pattern;
 #endif
 }
 

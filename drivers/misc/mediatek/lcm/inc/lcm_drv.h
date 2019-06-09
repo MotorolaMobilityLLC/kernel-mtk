@@ -701,6 +701,9 @@ struct LCM_PARAMS {
 	unsigned int corner_pattern_height;
 	unsigned int corner_pattern_height_bot;
 	struct LCM_ROUND_CORNER round_corner_params;
+	unsigned int corner_pattern_tp_size;
+	void *corner_pattern_lt_addr;
+
 	int lcm_color_mode;
 	unsigned int min_luminance;
 	unsigned int average_luminance;
