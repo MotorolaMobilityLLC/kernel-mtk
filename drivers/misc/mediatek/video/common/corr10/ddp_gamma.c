@@ -1295,7 +1295,8 @@ static int ddp_simple_strtoul(char *ptr, unsigned long *res)
 		strncpy(buffer, ptr, end);
 		buffer[end] = '\0';
 		ret = kstrtoul(buffer, 0, res);
-
+		if (ret != 0)
+			CCORR_ERR("kstrtoul ret[%d]\n", ret);
 	}
 	return end;
 
