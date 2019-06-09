@@ -44,6 +44,12 @@
 void __iomem *GIC_DIST_BASE;
 void __iomem *INT_POL_CTL0;
 void __iomem *INT_POL_CTL1;
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+void __iomem *INT_MSK_CTL0;
+#else
+void __iomem *INDIRECT_ACCESS_BASE;
+void __iomem *INDIRECT_ACCESS_EN_BASE;
+#endif
 static void __iomem *GIC_REDIST_BASE;
 void __iomem *MCUSYS_BASE;
 static u32 reg_len_pol0;
@@ -69,6 +75,10 @@ void __iomem *get_dist_base(void)
 }
 #endif
 
+static unsigned int gicd_read_iidr(void __iomem *gicd_base)
+{
+	return readl(gicd_base + GICD_IIDR);
+}
 
 static int gic_populate_rdist(void __iomem **rdist_base)
 {
@@ -248,6 +258,8 @@ int mt_irq_mask_restore(struct mtk_irq_mask *mask)
 	writel(mask->mask10, (dist_base + GIC_DIST_ENABLE_SET + 0x28));
 	writel(mask->mask11, (dist_base + GIC_DIST_ENABLE_SET + 0x2c));
 	writel(mask->mask12, (dist_base + GIC_DIST_ENABLE_SET + 0x30));
+
+
 	/* make the writes prior to the writes behind */
 	mb();
 
@@ -354,6 +366,9 @@ void mt_irq_unmask_for_sleep_ex(unsigned int virq)
 	void __iomem *dist_base;
 	u32 mask;
 	unsigned int hwirq;
+#ifdef CONFIG_MTK_INDIRECT_ACCESS
+	unsigned int value;
+#endif
 
 	hwirq = virq_to_hwirq(virq);
 	dist_base = GIC_DIST_BASE;
@@ -365,6 +380,23 @@ void mt_irq_unmask_for_sleep_ex(unsigned int virq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_SET + hwirq / 32 * 4);
+
+
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+	if (INT_MSK_CTL0 && hwirq >= 32)
+		writel(~mask, INT_MSK_CTL0 + hwirq / 32 * 4);
+#else
+	if (INDIRECT_ACCESS_BASE && hwirq >= 32) {
+		/* set unmask */
+		value = 0;
+		/* select spi id */
+		value |= (hwirq << 16);
+		/* select mask control */
+		value |= (1 << 30);
+		writel(value, INDIRECT_ACCESS_BASE);
+	}
+#endif
+
 	/* make the writes prior to the writes behind */
 	mb();
 }
@@ -377,7 +409,7 @@ void mt_irq_unmask_for_sleep_ex(unsigned int virq)
 void mt_irq_unmask_for_sleep(unsigned int hwirq)
 {
 	void __iomem *dist_base;
-	u32 mask;
+	u32 mask, value;
 
 	mask = 1 << (hwirq % 32);
 	dist_base = GIC_DIST_BASE;
@@ -388,6 +420,23 @@ void mt_irq_unmask_for_sleep(unsigned int hwirq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_SET + hwirq / 32 * 4);
+
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+	if (INT_MSK_CTL0 && hwirq >= 32) {
+		value = ~mask & readl(INT_MSK_CTL0 + hwirq / 32 * 4);
+		writel(value, INT_MSK_CTL0 + hwirq / 32 * 4);
+	}
+#else
+	if (INDIRECT_ACCESS_BASE && hwirq >= 32) {
+		/* set unmask */
+		value = 0;
+		/* select spi id */
+		value |= (hwirq << 16);
+		/* select mask control */
+		value |= (1 << 30);
+		writel(value, INDIRECT_ACCESS_BASE);
+	}
+#endif
 	/* make the writes prior to the writes behind */
 	mb();
 }
@@ -400,7 +449,7 @@ void mt_irq_unmask_for_sleep(unsigned int hwirq)
 void mt_irq_mask_for_sleep(unsigned int irq)
 {
 	void __iomem *dist_base;
-	u32 mask;
+	u32 mask, value;
 
 	irq = virq_to_hwirq(irq);
 	mask = 1 << (irq % 32);
@@ -412,6 +461,23 @@ void mt_irq_mask_for_sleep(unsigned int irq)
 	}
 
 	writel(mask, dist_base + GIC_DIST_ENABLE_CLEAR + irq / 32 * 4);
+
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+	if (INT_MSK_CTL0 && irq >= 32) {
+		value = mask | readl(INT_MSK_CTL0 + irq / 32 * 4);
+		writel(value, INT_MSK_CTL0 + irq / 32 * 4);
+	}
+#else
+	if (INDIRECT_ACCESS_BASE && irq >= 32) {
+		/* set unmask */
+		value = 1;
+		/* select spi id */
+		value |= (irq << 16);
+		/* select mask control */
+		value |= (1 << 30);
+		writel(value, INDIRECT_ACCESS_BASE);
+	}
+#endif
 	/* make the writes prior to the writes behind */
 	mb();
 }
@@ -421,6 +487,7 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	unsigned long rc;
 	unsigned int result;
 	char *ptr = buf;
+	unsigned int is_gic600;
 
 	irq = virq_to_hwirq(irq);
 
@@ -430,6 +497,11 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 	ptr += sprintf(ptr, "[mt gic dump] irq = %d\n", irq);
 
 	rc = mt_secure_call(MTK_SIP_KERNEL_GIC_DUMP, irq, 0, 0, 0);
+
+
+	result = gicd_read_iidr(GIC_DIST_BASE);
+	is_gic600 =
+		((result >> GICD_V3_IIDR_PROD_ID) == GICD_V3_IIDR_GIC600) ? 1:0;
 
 	/* get mask */
 	result = rc & 0x1;
@@ -463,8 +535,20 @@ char *mt_irq_dump_status_buf(int irq, char *buf)
 		"[mt gic dump] polarity = %x (0x0: high, 0x1:low)\n",
 		result);
 
+	/* get irq mask from mcusys */
+	if (is_gic600 == 1) {
+		result = (rc >> 14) & 0x1;
+		ptr += sprintf(ptr,
+			"[mt gic dump] irq_mask = %x (0x0: unmask, 0x1:mask)\n",
+			result);
+	}
+
 	/* get target cpu mask */
-	result = (rc >> 14) & 0xffff;
+	if (is_gic600 == 1)
+		result = (rc >> 15) & 0xffff;
+	else
+		result = (rc >> 14) & 0xffff;
+
 	ptr += sprintf(ptr, "[mt gic dump] tartget cpu mask = 0x%x\n", result);
 
 	return ptr;
@@ -635,6 +719,11 @@ static void gic_sched_hoplug_init(void){};
 int __init mt_gic_ext_init(void)
 {
 	struct device_node *node;
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+	const char *need_unmask_str = NULL;
+#else
+	const char *enable_indirect_str = NULL;
+#endif
 
 	node = of_find_compatible_node(NULL, NULL, "arm,gic-v3");
 	if (!node) {
@@ -666,6 +755,63 @@ int __init mt_gic_ext_init(void)
 
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 	MCUSYS_BASE = of_iomap(node, 0);
+
+	/* XXX */
+	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-sysirq");
+	if (!node)
+		return -EINVAL;
+
+#ifndef CONFIG_MTK_INDIRECT_ACCESS
+	INT_MSK_CTL0 = NULL;
+	if (!of_property_read_string(node,
+				"need_unmask", &need_unmask_str)) {
+		if (need_unmask_str && !strncmp(need_unmask_str, "yes", 3)) {
+			unsigned int tmp_base, offset;
+
+			if (of_property_read_u32(node,
+						"mask_base", &tmp_base))
+				return -EINVAL;
+			if (of_property_read_u32(node,
+						"mask_offset", &offset))
+				return -EINVAL;
+
+			INT_MSK_CTL0 = ioremap(tmp_base, offset);
+			if (!INT_MSK_CTL0)
+				return -EINVAL;
+		}
+	}
+#else
+	INDIRECT_ACCESS_BASE = NULL;
+	if (!of_property_read_string(node,
+				"enable_indirect", &enable_indirect_str)) {
+		if (enable_indirect_str &&
+				!strncmp(enable_indirect_str, "yes", 3)) {
+			unsigned int indirect_base, en_base;
+
+			if (of_property_read_u32(node,
+					"indirect_base", &indirect_base))
+				return -EINVAL;
+			if (of_property_read_u32(node,
+					"indirect_en_base", &en_base))
+				return -EINVAL;
+
+			pr_debug("[%s] indirect : 0x%x, indirect_en : 0x%x\n",
+					__func__, indirect_base, en_base);
+
+			INDIRECT_ACCESS_BASE = ioremap(indirect_base, 0x4);
+			INDIRECT_ACCESS_EN_BASE = ioremap(en_base, 0x4);
+
+			if (!INDIRECT_ACCESS_BASE || !INDIRECT_ACCESS_EN_BASE)
+				return -EINVAL;
+		}
+
+	} else {
+		pr_notice("[%s]: indirect access not specified\n", __func__);
+		return -EINVAL;
+	}
+
+#endif
+
 	spin_lock_init(&domain_lock);
 	gic_sched_pm_init();
 	gic_sched_hoplug_init();

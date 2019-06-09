@@ -25,6 +25,10 @@
 #define FIQ_SMP_CALL_SGI	13
 #endif
 
+#define GICD_V3_IIDR_PROD_ID	(24)
+#define GICD_V3_IIDR_GIC500	(0x0)
+#define GICD_V3_IIDR_GIC600	(0x2)
+
 #include <linux/irq.h>
 
 typedef void (*fiq_isr_handler) (void *arg, void *regs, void *svc_sp);
