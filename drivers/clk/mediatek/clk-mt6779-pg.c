@@ -11,7 +11,7 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  */
-
+#include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 
@@ -29,7 +29,7 @@
 
 
 #define MT_CCF_DEBUG	0
-#define MT_CCF_BRINGUP  1
+#define MT_CCF_BRINGUP  0
 #define CONTROL_LIMIT 1
 
 #define	CHECK_PWR_ST	1
@@ -62,18 +62,22 @@ while (0)
 void __attribute__((weak)) mtk_wcn_cmb_stub_clock_fail_dump(void) {}
 
 /*MM Bus*/
-#if 0
+#if 1
 #ifdef CONFIG_OF
 void __iomem *clk_mmsys_config_base;
 void __iomem *clk_imgsys_base;
+void __iomem *clk_ipesys_base;
 void __iomem *clk_vdec_gcon_base;
 void __iomem *clk_venc_gcon_base;
 void __iomem *clk_camsys_base;
+void __iomem *clk_apu_vcore_base;
+void __iomem *clk_apu_conn_base;
 #endif
 
 
 #define MM_CG_CLR0 (clk_mmsys_config_base + 0x108)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
+#define IPE_CG_CLR	(clk_ipesys_base + 0x0008)
 #define VDEC_CKEN_SET	(clk_vdec_gcon_base + 0x0000)
 #define VDEC_GALS_CFG (clk_vdec_gcon_base + 0x0168)
 #define VENC_CG_SET	(clk_venc_gcon_base + 0x0004)
@@ -83,6 +87,10 @@ void __iomem *clk_camsys_base;
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
+#define APU_VCORE_CG_CON	(clk_apu_vcore_base)
+#define APU_CONN_CG_CON	(clk_apu_conn_base)
+#define APU_VCORE_CG_CLR	(clk_apu_vcore_base + 0x0008)
+#define APU_CONN_CG_CLR	(clk_apu_conn_base + 0x0008)
 #endif
 
 /*
@@ -115,6 +123,7 @@ struct subsys {
 /*static struct subsys_ops general_sys_ops;*/
 static struct subsys_ops MD1_sys_ops;
 static struct subsys_ops CONN_sys_ops;
+static struct subsys_ops CONN_W_sys_ops;
 
 static struct subsys_ops DIS_sys_ops;
 static struct subsys_ops CAM_sys_ops;
@@ -183,11 +192,11 @@ static void __iomem *smi_common_base;
 #define VPU_CORE1_PWR_CON	SPM_REG(0x348)
 #define VPU_CORE2_PWR_CON	SPM_REG(0x34C)
 
-#define VPU_VCORE_SRAM_CON	SPM_REG(0x380)
-#define VPU_CONN_SRAM_CON	SPM_REG(0x384)
-#define VPU_CORE0_SRAM_CON	SPM_REG(0x388)
-#define VPU_CORE1_SRAM_CON	SPM_REG(0x38C)
-#define VPU_CORE2_SRAM_CON	SPM_REG(0x38C)
+#define VPU_VCORE_SRAM_CON	SPM_REG(0x384)
+#define VPU_CONN_SRAM_CON	SPM_REG(0x388)
+#define VPU_CORE0_SRAM_CON	SPM_REG(0x38C)
+#define VPU_CORE1_SRAM_CON	SPM_REG(0x390)
+#define VPU_CORE2_SRAM_CON	SPM_REG(0x394)
 
 #define VPU_CORE0_SRAM_STA	SPM_REG(0x398)
 #define VPU_CORE1_SRAM_STA	SPM_REG(0x39C)
@@ -273,6 +282,8 @@ static void __iomem *smi_common_base;
 					  |(0x1 << 4))
 #define MD1_PROT_STEP2_1_MASK            ((0x1 << 6))
 #define MD1_PROT_STEP2_1_ACK_MASK        ((0x1 << 6))
+#define CONN_PROT_STEP1_0_13_MASK        ((0x1 << 13))
+#define CONN_PROT_STEP1_0_13_ACK_MASK    ((0x1 << 13))
 #define CONN_PROT_STEP1_0_MASK           ((0x1 << 13) \
 					  |(0x1 << 18))
 #define CONN_PROT_STEP1_0_ACK_MASK       ((0x1 << 13) \
@@ -603,7 +614,7 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 		     },
 	[SYS_CONN] = {
 		      .name = __stringify(SYS_CONN),
-		      .sta_mask = CONN_PWR_STA_MASK,
+		      .sta_mask = CONN_PROT_STEP2_0_ACK_MASK,
 		     /* .ctl_addr = NULL,  */
 		      .sram_pdn_bits = 0,
 		      .sram_pdn_ack_bits = 0,
@@ -808,6 +819,15 @@ static struct subsys syss[] =	/* NR_SYSS *//* FIXME: set correct value */
 		     .bus_prot_mask = 0,
 		     .ops = &IPE_sys_ops,
 		     },
+	[SYS_CONN_W] = {
+		      .name = __stringify(SYS_CONN_W),
+		      .sta_mask = CONN_PROT_STEP2_0_ACK_MASK,
+		     /* .ctl_addr = NULL,  */
+		      .sram_pdn_bits = 0,
+		      .sram_pdn_ack_bits = 0,
+		      .bus_prot_mask = 0,
+		      .ops = &CONN_W_sys_ops,
+		      },
 };
 
 LIST_HEAD(pgcb_list);
@@ -863,6 +883,7 @@ static void aee_clk_data_rest(void)
 #define DBG_ID_VPU_CORE2_DORMANT 21
 #define DBG_ID_VPU_CORE2_SHUTDOWN 22
 #define DBG_ID_IPE 23
+#define DBG_ID_CONN_W 24
 
 #define ID_MADK   0xFF000000
 #define STA_MASK  0x00F00000
@@ -871,6 +892,7 @@ static void aee_clk_data_rest(void)
 #define INCREASE_STEPS \
 	do { DBG_STEP++; } while (0)
 
+static int first_conn = 1;
 static int DBG_ID;
 static int DBG_STA;
 static int DBG_STEP;
@@ -897,10 +919,13 @@ static void ram_console_update(void)
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_1);
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1);
-	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);
-	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_MM);
+	/*data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1);*/
+	/*data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_MM);*/
 	data[++i] = clk_readl(INFRA_TOPAXI_PROTECTEN_MM_STA1);
-	data[++i] = clk_readl(SMI_COMMON_SMI_CLAMP);
+	/*data[++i] = clk_readl(SMI_COMMON_SMI_CLAMP);*/
+	data[++i] = clk_readl(PWR_STATUS);
+	data[++i] = clk_readl(PWR_STATUS_2ND);
+	data[++i] = clk_readl(CAM_PWR_CON);
 
 
 	if (pre_data == data[0])
@@ -908,22 +933,37 @@ static void ram_console_update(void)
 	else if (pre_data != data[0]) {
 		k = 0;
 		pre_data = data[0];
+		print_once = true;
 	}
 
 	if (k > 10000 && print_once) {
 		print_once = false;
 		k = 0;
+
+		if (DBG_ID == DBG_ID_CONN) {
+			if (DBG_STEP == 0 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Release bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_CLR,
+					CONN_PROT_STEP1_0_13_MASK);
+			}
+		}
 		print_enabled_clks_once();
 
 		pr_notice("%s: clk = 0x%08x\n", __func__, data[0]);
 		pr_notice("%s: INFRA_TOPAXI_PROTECTEN = 0x%08x\n",
 			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN));
+		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_STA0 = 0x%08x\n",
+			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_STA0));
+		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_STA1 = 0x%08x\n",
+			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_STA1));
+
 		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_1 = 0x%08x\n",
 			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_1));
 		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_STA0_1 = 0x%08x\n",
 			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_STA0_1));
-		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_STA1 = 0x%08x\n",
-			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_STA1));
+		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_STA1_1 = 0x%08x\n",
+			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_STA1_1));
+
 		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_MM = 0x%08x\n",
 			__func__, clk_readl(INFRA_TOPAXI_PROTECTEN_MM));
 		pr_notice("%s: INFRA_TOPAXI_PROTECTEN_MM_STA1 = 0x%08x\n",
@@ -931,9 +971,47 @@ static void ram_console_update(void)
 		pr_notice("%s: SMI_COMMON_SMI_CLAMP = 0x%08x\n",
 			__func__, clk_readl(SMI_COMMON_SMI_CLAMP));
 
+		if (DBG_ID == DBG_ID_CAM)
+			check_cam_clk_sts();
+#if 0
+		if (DBG_ID == DBG_ID_VPU_CONN_SHUTDOWN) {
+			pr_notice("%s: APU_VCORE_CG_CON = 0x%08x\n",
+			__func__, clk_readl(APU_VCORE_CG_CON));
+			pr_notice("%s: APU_CONN_CG_CON = 0x%08x\n",
+			__func__, clk_readl(APU_CONN_CG_CON));
+		}
+#endif
+
 		list_for_each_entry_reverse(pgcb, &pgcb_list, list) {
 			if (pgcb->debug_dump)
 				pgcb->debug_dump(DBG_ID);
+		}
+
+		if (DBG_ID == DBG_ID_CONN) {
+			if (DBG_STEP == 0 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Set bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_SET,
+					CONN_PROT_STEP1_0_13_MASK);
+				j = 0;
+				while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
+					& CONN_PROT_STEP1_0_13_ACK_MASK)
+					!= CONN_PROT_STEP1_0_13_ACK_MASK) {
+					udelay(1);
+					if (j > 1000)
+						break;
+					j++;
+				}
+
+				if (j > 1000)
+					DBG_STEP = CONN_TIMEOUT_STEP1;
+				else
+					DBG_STEP = CONN_TIMEOUT_RECOVERY;
+
+				data[0] = ((DBG_ID << 24) & ID_MADK)
+					| ((DBG_STA << 20) & STA_MASK)
+					| (DBG_STEP & STEP_MASK);
+				pre_data = data[0];
+			}
 		}
 	}
 	for (j = 0; j <= i; j++)
@@ -1044,7 +1122,7 @@ int spm_mtcmos_ctrl_conn(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CONN" */
@@ -1053,8 +1131,11 @@ int spm_mtcmos_ctrl_conn(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
 			& CONN_PROT_STEP1_0_ACK_MASK)
-			!= CONN_PROT_STEP1_0_ACK_MASK)
+			!= CONN_PROT_STEP1_0_ACK_MASK) {
 			ram_console_update();
+			if (DBG_STEP == CONN_TIMEOUT_RECOVERY)
+				break;
+		}
 		INCREASE_STEPS;
 #endif
 		/* TINFO="Set bus protect - step2 : 0" */
@@ -1077,6 +1158,7 @@ int spm_mtcmos_ctrl_conn(int state)
 #endif
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
+#if 0
 		/* TINFO="Set PWR_ISO = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ISO);
 		/* TINFO="Set PWR_CLK_DIS = 1" */
@@ -1095,8 +1177,37 @@ int spm_mtcmos_ctrl_conn(int state)
 		}
 		INCREASE_STEPS;
 #endif
+#endif
 		/* TINFO="Finish to turn off CONN" */
 	} else {    /* STA_POWER_ON */
+		if (first_conn) {
+			first_conn = 0;
+		} else {
+			/* TINFO="Set PWR_ISO = 1" */
+			spm_write(CONN_PWR_CON,
+				spm_read(CONN_PWR_CON) | PWR_ISO);
+			/* TINFO="Set PWR_CLK_DIS = 1" */
+			spm_write(CONN_PWR_CON,
+				spm_read(CONN_PWR_CON) | PWR_CLK_DIS);
+			/* TINFO="Set PWR_RST_B = 0" */
+			spm_write(CONN_PWR_CON,
+				spm_read(CONN_PWR_CON) & ~PWR_RST_B);
+			/* TINFO="Set PWR_ON = 0" */
+			spm_write(CONN_PWR_CON,
+				spm_read(CONN_PWR_CON) & ~PWR_ON);
+			/* TINFO="Set PWR_ON_2ND = 0" */
+			spm_write(CONN_PWR_CON,
+				spm_read(CONN_PWR_CON) & ~PWR_ON_2ND);
+#ifndef IGNORE_MTCMOS_CHECK
+
+			while ((spm_read(PWR_STATUS) & CONN_PWR_STA_MASK)
+			       || (spm_read(PWR_STATUS_2ND)
+				& CONN_PWR_STA_MASK)) {
+				ram_console_update();
+			}
+			INCREASE_STEPS;
+#endif
+		}
 		/* TINFO="Start to turn on CONN" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ON);
@@ -1137,6 +1248,113 @@ int spm_mtcmos_ctrl_conn(int state)
 	return err;
 }
 
+int spm_mtcmos_ctrl_conn_workaround(int state)
+{
+	int err = 0;
+
+	DBG_ID = DBG_ID_CONN_W;
+	DBG_STA = state;
+	DBG_STEP = 0;
+
+	/* TINFO="enable SPM register control" */
+
+
+	if (state == STA_POWER_DOWN) {
+		/* TINFO="Start to turn off CONN" */
+		/* TINFO="Set bus protect - step1 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_SET, CONN_PROT_STEP1_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
+			& CONN_PROT_STEP1_0_ACK_MASK)
+			!= CONN_PROT_STEP1_0_ACK_MASK)
+			ram_console_update();
+		INCREASE_STEPS;
+#endif
+		/* TINFO="Set bus protect - step2 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_SET, CONN_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
+			& CONN_PROT_STEP2_0_ACK_MASK)
+			!= CONN_PROT_STEP2_0_ACK_MASK)
+			ram_console_update();
+		INCREASE_STEPS;
+#endif
+		/* TINFO="Set bus protect - step2 : 1" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_SET, CONN_PROT_STEP2_1_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+		while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1_1)
+			& CONN_PROT_STEP2_1_ACK_MASK)
+			!= CONN_PROT_STEP2_1_ACK_MASK)
+			ram_console_update();
+		INCREASE_STEPS;
+#endif
+#ifndef IGNORE_MTCMOS_CHECK
+#endif
+		/* TINFO="Finish to turn off CONN" */
+	} else {    /* STA_POWER_ON */
+		/* TINFO="Start to turn on CONN" */
+		/* TINFO="Set PWR_ISO = 1" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ISO);
+		/* TINFO="Set PWR_CLK_DIS = 1" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_CLK_DIS);
+		/* TINFO="Set PWR_RST_B = 0" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) & ~PWR_RST_B);
+		/* TINFO="Set PWR_ON = 0" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) & ~PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 0" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) & ~PWR_ON_2ND);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* TINFO="Wait until PWR_STATUS = 0 and PWR_STATUS_2ND = 0" */
+		while ((spm_read(PWR_STATUS) & CONN_PWR_STA_MASK)
+		       || (spm_read(PWR_STATUS_2ND) & CONN_PWR_STA_MASK)) {
+			ram_console_update();
+		}
+		INCREASE_STEPS;
+#endif
+		/* TINFO="Set PWR_ON = 1" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ON);
+		/* TINFO="Set PWR_ON_2ND = 1" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_ON_2ND);
+#ifndef IGNORE_MTCMOS_CHECK
+		/* TINFO="Wait until PWR_STATUS = 1 and PWR_STATUS_2ND = 1" */
+		while (((spm_read(PWR_STATUS) & CONN_PWR_STA_MASK)
+			!= CONN_PWR_STA_MASK)
+			|| ((spm_read(PWR_STATUS_2ND)
+			& CONN_PWR_STA_MASK)
+			!= CONN_PWR_STA_MASK))
+			ram_console_update();
+		INCREASE_STEPS;
+#endif
+		/* TINFO="Set PWR_CLK_DIS = 0" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) & ~PWR_CLK_DIS);
+		/* TINFO="Set PWR_ISO = 0" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) & ~PWR_ISO);
+		/* TINFO="Set PWR_RST_B = 1" */
+		spm_write(CONN_PWR_CON, spm_read(CONN_PWR_CON) | PWR_RST_B);
+#ifndef IGNORE_MTCMOS_CHECK
+#endif
+		/* TINFO="Release bus protect - step2 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, CONN_PROT_STEP2_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+#endif
+		/* TINFO="Release bus protect - step2 : 1" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_1_CLR, CONN_PROT_STEP2_1_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+#endif
+		/* TINFO="Release bus protect - step1 : 0" */
+		spm_write(INFRA_TOPAXI_PROTECTEN_CLR, CONN_PROT_STEP1_0_MASK);
+#ifndef IGNORE_MTCMOS_CHECK
+#endif
+		/* TINFO="Finish to turn on CONN" */
+	}
+	return err;
+}
+
+void enable_mm_clk(void)
+{
+	clk_writel(MM_CG_CLR0, 0x000003ff);
+}
+
 int spm_mtcmos_ctrl_dis(int state)
 {
 	int err = 0;
@@ -1146,7 +1364,7 @@ int spm_mtcmos_ctrl_dis(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off DIS" */
@@ -1314,6 +1532,7 @@ int spm_mtcmos_ctrl_dis(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on DIS" */
+		enable_mm_clk();
 	}
 	return err;
 }
@@ -1327,7 +1546,7 @@ int spm_mtcmos_ctrl_mfg0(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG0" */
@@ -1380,6 +1599,11 @@ int spm_mtcmos_ctrl_mfg0(int state)
 	return err;
 }
 
+void enable_isp_clk(void)
+{
+	clk_writel(IMG_CG_CLR, 0x00000003);
+}
+
 int spm_mtcmos_ctrl_isp(int state)
 {
 	int err = 0;
@@ -1389,7 +1613,7 @@ int spm_mtcmos_ctrl_isp(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off ISP" */
@@ -1494,6 +1718,7 @@ int spm_mtcmos_ctrl_isp(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on ISP" */
+		enable_isp_clk();
 	}
 	return err;
 }
@@ -1507,7 +1732,7 @@ int spm_mtcmos_ctrl_mfg1(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG1" */
@@ -1614,6 +1839,11 @@ int spm_mtcmos_ctrl_mfg1(int state)
 	return err;
 }
 
+void enable_ipe_clk(void)
+{
+	clk_writel(IPE_CG_CLR, 0x00000007);
+}
+
 int spm_mtcmos_ctrl_ipe(int state)
 {
 	int err = 0;
@@ -1623,7 +1853,7 @@ int spm_mtcmos_ctrl_ipe(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off IPE" */
@@ -1715,6 +1945,7 @@ int spm_mtcmos_ctrl_ipe(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on IPE" */
+		enable_ipe_clk();
 	}
 	return err;
 }
@@ -1728,7 +1959,7 @@ int spm_mtcmos_ctrl_mfg2(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG2" */
@@ -1800,6 +2031,11 @@ int spm_mtcmos_ctrl_mfg2(int state)
 	return err;
 }
 
+void enable_ven_clk(void)
+{
+	clk_writel(VENC_CG_SET, 0x10000111);
+}
+
 int spm_mtcmos_ctrl_ven(int state)
 {
 	int err = 0;
@@ -1809,7 +2045,7 @@ int spm_mtcmos_ctrl_ven(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VEN" */
@@ -1929,6 +2165,7 @@ int spm_mtcmos_ctrl_ven(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on VEN" */
+		enable_ven_clk();
 	}
 	return err;
 }
@@ -1942,7 +2179,7 @@ int spm_mtcmos_ctrl_mfg3(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG3" */
@@ -2022,7 +2259,7 @@ int spm_mtcmos_ctrl_mfg4(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off MFG4" */
@@ -2101,7 +2338,7 @@ int spm_mtcmos_ctrl_audio(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off AUDIO" */
@@ -2185,16 +2422,23 @@ int spm_mtcmos_ctrl_audio(int state)
 	return err;
 }
 
+void enable_cam_clk(void)
+{
+	/*clk_writel(CAM_CG_CLR, 0x1f05);*/
+	clk_writel(CAM_CG_CLR, 0x7fcf);
+}
+
 int spm_mtcmos_ctrl_cam(int state)
 {
 	int err = 0;
+	struct clk *ccu_mux = __clk_lookup("ccu_sel");
 
 	DBG_ID = DBG_ID_CAM;
 	DBG_STA = state;
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off CAM" */
@@ -2263,7 +2507,10 @@ int spm_mtcmos_ctrl_cam(int state)
 		INCREASE_STEPS;
 #endif
 		/* TINFO="Finish to turn off CAM" */
+		clk_disable_unprepare(ccu_mux);
 	} else {    /* STA_POWER_ON */
+		if (clk_prepare_enable(ccu_mux))
+			pr_debug("%s: prepare ccu fail\r\n", __func__);
 		/* TINFO="Start to turn on CAM" */
 		/* TINFO="Set PWR_ON = 1" */
 		spm_write(CAM_PWR_CON, spm_read(CAM_PWR_CON) | PWR_ON);
@@ -2321,6 +2568,7 @@ int spm_mtcmos_ctrl_cam(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on CAM" */
+		enable_cam_clk();
 	}
 	return err;
 }
@@ -2434,6 +2682,11 @@ int spm_mtcmos_ctrl_vpu_vcore_dormant(int state)
 	return err;
 }
 
+void enable_apu_vcore_clk(void)
+{
+	/*clk_writel(APU_VCORE_CG_CLR, 0x0000000F);*/
+}
+
 int spm_mtcmos_ctrl_vpu_vcore_shut_down(int state)
 {
 	int err = 0;
@@ -2522,6 +2775,7 @@ int spm_mtcmos_ctrl_vpu_vcore_shut_down(int state)
 		spm_write(VPU_VCORE_SRAM_CON,
 			spm_read(VPU_VCORE_SRAM_CON) & ~(0x1 << 19));
 		/* TINFO="Finish to turn on VPU_VCORE" */
+		/*enable_apu_vcore_clk();*/
 	}
 	return err;
 }
@@ -2725,6 +2979,11 @@ int spm_mtcmos_ctrl_vpu_conn_dormant(int state)
 	return err;
 }
 
+void enable_apu_conn_clk(void)
+{
+	clk_writel(APU_CONN_CG_CLR, 0x0000FF);
+}
+
 int spm_mtcmos_ctrl_vpu_conn_shut_down(int state)
 {
 	int err = 0;
@@ -2917,6 +3176,8 @@ int spm_mtcmos_ctrl_vpu_conn_shut_down(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on VPU_CONN" */
+		enable_apu_vcore_clk();
+		enable_apu_conn_clk();
 	}
 	return err;
 }
@@ -3531,7 +3792,7 @@ int spm_mtcmos_ctrl_vpu_core1_shut_down(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE1" */
@@ -3725,7 +3986,7 @@ int spm_mtcmos_ctrl_vpu_core2_dormant(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE2" */
@@ -3887,7 +4148,7 @@ int spm_mtcmos_ctrl_vpu_core2_shut_down(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VPU_CORE2" */
@@ -4057,6 +4318,13 @@ int spm_mtcmos_ctrl_vpu_core2_shut_down(int state)
 	return err;
 }
 
+#if 0
+void enable_vde_clk(void)
+{
+	clk_writel(VDEC_CKEN_SET, 0x00000001);
+}
+#endif
+
 int spm_mtcmos_ctrl_vde(int state)
 {
 	int err = 0;
@@ -4066,7 +4334,7 @@ int spm_mtcmos_ctrl_vde(int state)
 	DBG_STEP = 0;
 
 	/* TINFO="enable SPM register control" */
-	spm_write(POWERON_CONFIG_EN, (SPM_PROJECT_CODE << 16) | (0x1 << 0));
+
 
 	if (state == STA_POWER_DOWN) {
 		/* TINFO="Start to turn off VDE" */
@@ -4159,6 +4427,7 @@ int spm_mtcmos_ctrl_vde(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on VDE" */
+		/*enable_vde_clk();*/
 	}
 	return err;
 }
@@ -4180,6 +4449,11 @@ static int MD1_sys_enable_op(struct subsys *sys)
 static int CONN_sys_enable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_conn(STA_POWER_ON);
+}
+
+static int CONN_W_sys_enable_op(struct subsys *sys)
+{
+	return spm_mtcmos_ctrl_conn_workaround(STA_POWER_ON);
 }
 
 static int DIS_sys_enable_op(struct subsys *sys)
@@ -4309,6 +4583,11 @@ static int CONN_sys_disable_op(struct subsys *sys)
 	return spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
 }
 
+static int CONN_W_sys_disable_op(struct subsys *sys)
+{
+	return spm_mtcmos_ctrl_conn_workaround(STA_POWER_DOWN);
+}
+
 static int DIS_sys_disable_op(struct subsys *sys)
 {
 	return spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
@@ -4431,7 +4710,17 @@ static int sys_get_md1_state_op(struct subsys *sys)
 {
 	unsigned int sta = clk_readl(MD1_PWR_CON);
 
-	return (sta & sys->sta_mask) && (sta & sys->sta_mask);
+	return (sta & sys->sta_mask);
+}
+
+static int sys_get_conn_state_op(struct subsys *sys)
+{
+	unsigned int sta = clk_readl(INFRA_TOPAXI_PROTECTEN);
+
+	if (first_conn)
+		return 0;
+	else
+		return !(sta & sys->sta_mask);
 }
 
 /* ops */
@@ -4452,7 +4741,13 @@ static struct subsys_ops MD1_sys_ops = {
 static struct subsys_ops CONN_sys_ops = {
 	.enable = CONN_sys_enable_op,
 	.disable = CONN_sys_disable_op,
-	.get_state = sys_get_state_op,
+	.get_state = sys_get_conn_state_op,
+};
+
+static struct subsys_ops CONN_W_sys_ops = {
+	.enable = CONN_W_sys_enable_op,
+	.disable = CONN_W_sys_disable_op,
+	.get_state = sys_get_conn_state_op,
 };
 
 static struct subsys_ops DIS_sys_ops = {
@@ -4871,6 +5166,7 @@ struct clk *mt_clk_register_power_gate(const char *name,
 
 #define pg_md1	"pg_md1"
 #define pg_conn	"pg_conn"
+#define pg_conn_w	"pg_conn_w"
 #define pg_dis	"pg_dis"
 #define pg_cam	"pg_cam"
 #define pg_isp	"pg_isp"
@@ -4929,6 +5225,7 @@ struct mtk_power_gate {
 struct mtk_power_gate scp_clks[] __initdata = {
 	PGATE(SCP_SYS_MD1, pg_md1, NULL, NULL, SYS_MD1),
 	PGATE(SCP_SYS_CONN, pg_conn, NULL, NULL, SYS_CONN),
+	PGATE(SCP_SYS_CONN_W, pg_conn_w, NULL, NULL, SYS_CONN_W),
 	PGATE(SCP_SYS_DIS, pg_dis, NULL, mm_sel, SYS_DIS),
 	PGATE(SCP_SYS_CAM, pg_cam, pg_dis, cam_sel, SYS_CAM),
 	PGATE(SCP_SYS_ISP, pg_isp, pg_dis, img_sel, SYS_ISP),
@@ -5051,7 +5348,7 @@ static void __iomem *get_reg(struct device_node *np, int index)
 	return of_iomap(np, index);
 }
 
-#if 0
+#if 1
 #ifdef CONFIG_OF
 void iomap_mm(void)
 {
@@ -5071,6 +5368,13 @@ void iomap_mm(void)
 	clk_imgsys_base = of_iomap(node, 0);
 	if (!clk_imgsys_base)
 		pr_debug("[CLK_IMGSYS_CONFIG] base failed\n");
+/*ipesys*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,ipesys_config");
+	if (!node)
+		pr_debug("[CLK_IPESYS_CONFIG] find node failed\n");
+	clk_ipesys_base = of_iomap(node, 0);
+	if (!clk_ipesys_base)
+		pr_debug("[CLK_IPESYS_CONFIG] base failed\n");
 /*vdec_gcon*/
 	node = of_find_compatible_node(NULL, NULL, "mediatek,vdec_gcon");
 	if (!node)
@@ -5093,6 +5397,20 @@ void iomap_mm(void)
 	clk_camsys_base = of_iomap(node, 0);
 	if (!clk_camsys_base)
 		pr_debug("[CLK_CAM] base failed\n");
+/*apu vcore*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apu_vcore");
+	if (!node)
+		pr_debug("[CLK_APU_VCORE] find node failed\n");
+	clk_apu_vcore_base = of_iomap(node, 0);
+	if (!clk_apu_vcore_base)
+		pr_debug("[CLK_APU_VCORE] base failed\n");
+/*apu conn*/
+	node = of_find_compatible_node(NULL, NULL, "mediatek,apu_conn");
+	if (!node)
+		pr_debug("[CLK_APU_CONN] find node failed\n");
+	clk_apu_conn_base = of_iomap(node, 0);
+	if (!clk_apu_conn_base)
+		pr_debug("[CLK_APU_VCORE] base failed\n");
 }
 #endif
 #endif
@@ -5138,7 +5456,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 
 	ckgen_base = ckgen_reg;
 	/*MM Bus*/
-	/*iomap_mm();*/
+	iomap_mm();
 #if 0/*!MT_CCF_BRINGUP*/
 	/* subsys init: per modem owner request, disable modem power first */
 	disable_subsys(SYS_MD1);
@@ -5148,7 +5466,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 	spm_mtcmos_ctrl_mfg1(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_ON);
 	spm_mtcmos_ctrl_mfg3(STA_POWER_ON);
-#if 1
+#if 0
 	spm_mtcmos_ctrl_dis(STA_POWER_ON);
 	spm_mtcmos_ctrl_cam(STA_POWER_ON);
 	spm_mtcmos_ctrl_ven(STA_POWER_ON);
@@ -5165,7 +5483,7 @@ static void __init mt_scpsys_init(struct device_node *node)
 #endif
 	/*spm_mtcmos_ctrl_md1(STA_POWER_ON);*/
 	/*spm_mtcmos_ctrl_md1(STA_POWER_DOWN);*/
-	spm_mtcmos_ctrl_audio(STA_POWER_ON);
+	/*spm_mtcmos_ctrl_audio(STA_POWER_ON);*/
 #endif
 #endif				/* !MT_CCF_BRINGUP */
 }
@@ -5529,6 +5847,7 @@ void subsys_if_on(void)
 #if 1 /*only use for suspend test*/
 void mtcmos_force_off(void)
 {
+#if 0
 	spm_mtcmos_ctrl_mfg3(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg2(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_mfg1(STA_POWER_DOWN);
@@ -5546,11 +5865,9 @@ void mtcmos_force_off(void)
 	spm_mtcmos_ctrl_ipe(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_isp(STA_POWER_DOWN);
 	spm_mtcmos_ctrl_dis(STA_POWER_DOWN);
-
-	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
-
-	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
-
 	spm_mtcmos_ctrl_audio(STA_POWER_DOWN);
+#endif
+	spm_mtcmos_ctrl_conn(STA_POWER_DOWN);
+	spm_mtcmos_ctrl_md1(STA_POWER_DOWN);
 }
 #endif

@@ -39,6 +39,8 @@
 	#define BUS_DBG_BUS_MHZ             (135)
 #elif defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6761)
 	#define BUS_DBG_BUS_MHZ             (156)
+#elif defined(CONFIG_MACH_MT6779)
+	#define BUS_DBG_BUS_MHZ             (273)
 #else
 	#define BUS_DBG_BUS_MHZ             (266)
 #endif
@@ -47,7 +49,7 @@
 #define BUS_DBG_CON_BUS_DBG_EN      (0x00000001)
 #define BUS_DBG_CON_TIMEOUT_EN      (0x00000002)
 #define BUS_DBG_CON_SLV_ERR_EN      (0x00000004)
-#define BUS_DBG_CON_WP_EN           (0x00000008)
+#define BUS_DBG_CON_WP_EN           (0x00000108)
 #define BUS_DBG_CON_IRQ_AR_EN       (0x00000010)
 #define BUS_DBG_CON_IRQ_AW_EN       (0x00000020)
 #define BUS_DBG_CON_SW_RST_DN       (0x00000040)
@@ -183,6 +185,8 @@ extern int systracker_resume(struct platform_device *pdev);
 extern void systracker_reset(void);
 extern void systracker_enable(void);
 extern void systracker_test_cleanup(void);
+extern int systracker_watchpoint_disable(void);
+extern int systracker_watchpoint_enable(void);
 extern void consys_print
 	(unsigned long long time_stamp, unsigned int cpu, unsigned int t);
 

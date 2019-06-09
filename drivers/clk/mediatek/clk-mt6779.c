@@ -24,7 +24,7 @@
 
 #include <dt-bindings/clock/mt6779-clk.h>
 
-#define MT_CCF_BRINGUP	1
+#define MT_CCF_BRINGUP	0
 #ifdef CONFIG_ARM64
 #define IOMEM(a)	((void __force __iomem *)((a)))
 #endif
@@ -54,6 +54,7 @@ while (0)
 #define PLL_EN  (0x1 << 0)
 #define PLL_PWR_ON  (0x1 << 0)
 #define PLL_ISO_EN  (0x1 << 1)
+#define ADSPPLL_DIV_RSTB  (0x1 << 23)
 
 static DEFINE_SPINLOCK(mt6779_clk_lock);
 
@@ -79,6 +80,9 @@ void __iomem *apu_mdla_base;
 /* CKSYS */
 #define CLK_CFG_UPDATE		(cksys_base + 0x004)
 #define CLK_CFG_0		(cksys_base + 0x020)
+#define CLK_CFG_1		(cksys_base + 0x030)
+#define CLK_CFG_2		(cksys_base + 0x040)
+#define CLK_CFG_3		(cksys_base + 0x050)
 #define CLK_CFG_6		(cksys_base + 0x080)
 #define CLK_CFG_6_SET		(cksys_base + 0x084)
 #define CLK_CFG_6_CLR		(cksys_base + 0x088)
@@ -202,12 +206,12 @@ void __iomem *apu_mdla_base;
 #define APU_MDLA_CG_CLR              (apu_mdla_base + 0x0008)
 
 
-#if MT_CCF_BRINGUP
+
 #define INFRA_CG0 0x03afb900/*[25:23][21][19:15][13:11][8]*/
 /*#define INFRA_CG0 0x03af8100 [25:23][21][19:15][i2c][8]*/
 #define INFRA_CG1 0x0a040806/*[27][25][18][11][2][1]*/
 #define INFRA_CG2 0x00000881/*[11][7:6adb_reboot][4atf][0]*/
-#define INFRA_CG3 0x000001c7/*[2:0], [8:6]*/
+#define INFRA_CG3 0x080001c7/*[27][2:0], [8:6]*/
 #define CAMSYS_CG 0x7fcf
 #define IMG_CG	0xc7
 #define IPE_CG	0x7f
@@ -222,9 +226,6 @@ void __iomem *apu_mdla_base;
 #define APU_CORE1_CG 0x7
 #define APU_VCORE_CG 0xf
 #define APU_MDLA_CG 0x3FFF
-#else
-/*add normal cg init setting*/
-#endif
 
 
 #define CK_CFG_UPDATE	0x04
@@ -353,8 +354,8 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 	FACTOR(TOP_UNIVPLL_D7, "univpll_d7", "univpll", 1,
 		7),
 
-	FACTOR(TOP_UNIVP_192M_CK, "univpll_192m_ck", "univpll_192m", 1,
-		1),
+	FACTOR(TOP_UNIVP_192M_CK, "univpll_192m_ck", "univ2pll", 1,
+		13),
 	FACTOR(TOP_UNIVP_192M_D2, "univpll_192m_d2", "univpll_192m_ck", 1,
 		2),
 	FACTOR(TOP_UNIVP_192M_D4, "univpll_192m_d4", "univpll_192m_ck", 1,
@@ -452,7 +453,7 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 	FACTOR(TOP_OSC2_D3, "osc2_d3", "osc2", 1,
 		3),
 
-	FACTOR(TOP_TVDPLL_MAINPLL_D2_CK, "tvdpll_mainpll_d2_ck", "tvd_main", 1,
+	FACTOR(TOP_TVDPLL_MAINPLL_D2_CK, "tvdpll_mainpll_d2_ck", "tvdpll", 1,
 		1),
 
 	FACTOR(TOP_FMEM_466M_CK, "fmem_466m_ck", "fmem", 1,
@@ -462,13 +463,13 @@ static const struct mtk_fixed_factor top_divs[] __initconst = {
 static const char * const axi_parents[] __initconst = {
 	"clk26m",
 	"mainpll_d2_d4",
-	"syspll_d7",
+	"mainpll_d7",
 	"osc_d4"
 };
 
 static const char * const mm_parents[] __initconst = {
 	"clk26m",
-	"tvdpll_syspll_d2_ck",
+	"tvdpll_mainpll_d2_ck",
 	"mmpll_d7",
 	"mmpll_d5_d2",
 	"mainpll_d2_d2",
@@ -487,12 +488,13 @@ static const char * const scp_parents[] __initconst = {
 };
 
 static const char * const img_parents[] __initconst = {
+	"clk26m",
 	"mainpll_d2",
 	"mainpll_d2",
 	"univpll_d3",
 	"mainpll_d3",
 	"mmpll_d5_d2",
-	"tvdpll_syspll_d2_ck",
+	"tvdpll_mainpll_d2_ck",
 	"mainpll_d5"
 };
 
@@ -1671,6 +1673,16 @@ static void mtk_cg_disable(struct clk_hw *hw)
 	mtk_cg_set_bit(hw);
 }
 
+static int mtk_cg_bit_is_cleared_dummy(struct clk_hw *hw)
+{
+	return 0;
+}
+
+static int mtk_cg_enable_dummy(struct clk_hw *hw)
+{
+	return 0;
+}
+
 static void mtk_cg_disable_dummy(struct clk_hw *hw)
 {
 }
@@ -1693,6 +1705,26 @@ static void mtk_cg_disable_inv_dummy(struct clk_hw *hw)
 {
 }
 
+static int mtk_cg_enable_dump(struct clk_hw *hw)
+{
+	mtk_cg_clr_bit(hw);
+
+	/*if (!strcmp(__clk_get_name(hw->clk), "mm_mdp_tdshp"))*/
+	pr_notice("%s: %s (%08x)\r\n", __func__,
+		__clk_get_name(hw->clk), clk_readl(MM_CG_CON0));
+
+	return 0;
+}
+
+static void mtk_cg_disable_dump(struct clk_hw *hw)
+{
+	mtk_cg_set_bit(hw);
+
+	/*if (!strcmp(__clk_get_name(hw->clk), "mm_mdp_tdshp"))*/
+	pr_notice("%s: %s (%08x)\r\n", __func__,
+		__clk_get_name(hw->clk), clk_readl(MM_CG_CON0));
+}
+
 const struct clk_ops mtk_clk_gate_ops = {
 	.is_enabled	= mtk_cg_bit_is_cleared,
 	.enable		= mtk_cg_enable,
@@ -1702,6 +1734,12 @@ const struct clk_ops mtk_clk_gate_ops = {
 const struct clk_ops mtk_clk_gate_ops_dummy = {
 	.is_enabled	= mtk_cg_bit_is_cleared,
 	.enable		= mtk_cg_enable,
+	.disable	= mtk_cg_disable_dummy,
+};
+
+const struct clk_ops mtk_clk_gate_ops_dummy_all = {
+	.is_enabled	= mtk_cg_bit_is_cleared_dummy,
+	.enable		= mtk_cg_enable_dummy,
 	.disable	= mtk_cg_disable_dummy,
 };
 
@@ -1721,6 +1759,12 @@ const struct clk_ops mtk_clk_gate_ops_setclr_inv_dummy = {
 	.is_enabled	= mtk_cg_bit_is_set,
 	.enable		= mtk_cg_enable_inv,
 	.disable	= mtk_cg_disable_inv_dummy,
+};
+
+const struct clk_ops mtk_clk_gate_ops_setclr_dump = {
+	.is_enabled	= mtk_cg_bit_is_cleared,
+	.enable		= mtk_cg_enable_dump,
+	.disable	= mtk_cg_disable_dump,
 };
 
 static const struct mtk_gate_regs infra0_cg_regs = {
@@ -1851,17 +1895,17 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA0_DUMMY(INFRACFG_AO_I2C3_CG, "infra_i2c3",
 		"i2c_sel", 14),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM_HCLK_CG, "infra_pwm_hclk",
-		"axi_sel", 15),
+		"pwm_sel", 15),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM1_CG, "infra_pwm1",
-		"i2c_sel", 16),
+		"pwm_sel", 16),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM2_CG, "infra_pwm2",
-		"i2c_sel", 17),
+		"pwm_sel", 17),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM3_CG, "infra_pwm3",
-		"i2c_sel", 18),
+		"pwm_sel", 18),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM4_CG, "infra_pwm4",
-		"i2c_sel", 19),
+		"pwm_sel", 19),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_PWM_CG, "infra_pwm",
-		"i2c_sel", 21),
+		"pwm_sel", 21),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_UART0_CG, "infra_uart0",
 		"uart_sel", 22),
 	GATE_INFRA0_DUMMY(INFRACFG_AO_UART1_CG, "infra_uart1",
@@ -1950,7 +1994,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA2_DUMMY(INFRACFG_AO_SPI3_CG, "infra_spi3",
 		"spi_sel", 10),
 	GATE_INFRA2_DUMMY(INFRACFG_AO_UNIPRO_SCK_CG, "infra_unipro_sck",
-		"ssusb_top_xhci_sel", 11),
+		"fufs_sel", 11),
 	GATE_INFRA2_DUMMY(INFRACFG_AO_UNIPRO_TICK_CG, "infra_unipro_tick",
 		"fufs_sel", 12),
 	GATE_INFRA2_DUMMY(INFRACFG_AO_UFS_MP_SAP_BCLK_CG,
@@ -2074,17 +2118,17 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA0(INFRACFG_AO_I2C3_CG, "infra_i2c3",
 		"i2c_sel", 14),
 	GATE_INFRA0(INFRACFG_AO_PWM_HCLK_CG, "infra_pwm_hclk",
-		"axi_sel", 15),
+		"pwm_sel", 15),
 	GATE_INFRA0(INFRACFG_AO_PWM1_CG, "infra_pwm1",
-		"i2c_sel", 16),
+		"pwm_sel", 16),
 	GATE_INFRA0(INFRACFG_AO_PWM2_CG, "infra_pwm2",
-		"i2c_sel", 17),
+		"pwm_sel", 17),
 	GATE_INFRA0(INFRACFG_AO_PWM3_CG, "infra_pwm3",
-		"i2c_sel", 18),
+		"pwm_sel", 18),
 	GATE_INFRA0(INFRACFG_AO_PWM4_CG, "infra_pwm4",
-		"i2c_sel", 19),
+		"pwm_sel", 19),
 	GATE_INFRA0(INFRACFG_AO_PWM_CG, "infra_pwm",
-		"i2c_sel", 21),
+		"pwm_sel", 21),
 	GATE_INFRA0(INFRACFG_AO_UART0_CG, "infra_uart0",
 		"uart_sel", 22),
 	GATE_INFRA0(INFRACFG_AO_UART1_CG, "infra_uart1",
@@ -2172,7 +2216,7 @@ static const struct mtk_gate infra_clks[] __initconst = {
 	GATE_INFRA2(INFRACFG_AO_SPI3_CG, "infra_spi3",
 		"spi_sel", 10),
 	GATE_INFRA2(INFRACFG_AO_UNIPRO_SCK_CG, "infra_unipro_sck",
-		"ssusb_top_xhci_sel", 11),
+		"fufs_sel", 11),
 	GATE_INFRA2(INFRACFG_AO_UNIPRO_TICK_CG, "infra_unipro_tick",
 		"fufs_sel", 12),
 	GATE_INFRA2(INFRACFG_AO_UFS_MP_SAP_BCLK_CG, "infra_ufs_mp_sap_bck",
@@ -2724,6 +2768,15 @@ static const struct mtk_gate_regs mm1_cg_regs = {
 		.ops = &mtk_clk_gate_ops_dummy,	\
 	}
 
+#define GATE_MM0_DUMP(_id, _name, _parent, _shift) {	\
+		.id = _id,			\
+		.name = _name,			\
+		.parent_name = _parent,		\
+		.regs = &mm0_cg_regs,		\
+		.shift = _shift,		\
+		.ops = &mtk_clk_gate_ops_setclr_dump,	\
+	}
+
 #define GATE_MM1(_id, _name, _parent, _shift) {	\
 		.id = _id,			\
 		.name = _name,			\
@@ -2821,7 +2874,7 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM0(MMSYS_MDP_RDMA1, "mm_mdp_rdma1", "mm_sel", 13),
 	GATE_MM0(MMSYS_MDP_RSZ0, "mm_mdp_rsz0", "mm_sel", 14),
 	GATE_MM0(MMSYS_MDP_RSZ1, "mm_mdp_rsz1", "mm_sel", 15),
-	GATE_MM0(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
+	GATE_MM0_DUMP(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
 	GATE_MM0(MMSYS_MDP_WROT0, "mm_mdp_wrot0", "mm_sel", 17),
 	GATE_MM0(MMSYS_MDP_WROT1, "mm_mdp_wrot1", "mm_sel", 18),
 
@@ -2957,13 +3010,13 @@ static const struct mtk_gate venc_global_con_clks[] __initconst = {
 	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_GALS, "venc_gals",
 		"venc_sel", 28),
 #else
-	GATE_VENC_GLOBAL_CON(VENC_GCON_LARB, "venc_larb",
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_LARB, "venc_larb",
 		"venc_sel", 0),
-	GATE_VENC_GLOBAL_CON(VENC_GCON_VENC, "venc_venc",
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_VENC, "venc_venc",
 		"venc_sel", 4),
-	GATE_VENC_GLOBAL_CON(VENC_GCON_JPGENC, "venc_jpgenc",
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_JPGENC, "venc_jpgenc",
 		"venc_sel", 8),
-	GATE_VENC_GLOBAL_CON(VENC_GCON_GALS, "venc_gals",
+	GATE_VENC_GLOBAL_CON_DUMMY(VENC_GCON_GALS, "venc_gals",
 		"venc_sel", 28),
 #endif
 };
@@ -3100,11 +3153,11 @@ static const struct mtk_gate_regs apu_vcore_cg_regs = {
 		.parent_name = _parent,		\
 		.regs = &apu_vcore_cg_regs,	\
 		.shift = _shift,		\
-		.ops = &mtk_clk_gate_ops_dummy,	\
+		.ops = &mtk_clk_gate_ops_dummy_all,	\
 	}
 
 static const struct mtk_gate apu_vcore_clks[] __initconst = {
-#if MT_CCF_BRINGUP
+#if 1/*MT_CCF_BRINGUP*/
 	GATE_APU_VCORE_DUMMY(APU_VCORE_AHB_CG, "apu_vcore_ahb",
 		"ipu_if_sel", 0),
 	GATE_APU_VCORE_DUMMY(APU_VCORE_AXI_CG, "apu_vcore_axi",
@@ -3146,7 +3199,7 @@ static const struct mtk_gate_regs mdla_cg_regs = {
 	}
 
 static const struct mtk_gate mdla_clks[] __initconst = {
-#if MT_CCF_BRINGUP
+#if 1/*MT_CCF_BRINGUP*/
 	GATE_MDLA_DUMMY(APU_MDLA_CG_B0, "mdla_b0", "dsp3_sel", 0),
 	GATE_MDLA_DUMMY(APU_MDLA_CG_B1, "mdla_b1", "dsp3_sel", 1),
 	GATE_MDLA_DUMMY(APU_MDLA_CG_B2, "mdla_b2", "dsp3_sel", 2),
@@ -3211,37 +3264,48 @@ static void __init mtk_topckgen_init(struct device_node *node)
 	/* Need Confirm */
 	clk_writel(CLK_SCP_CFG_0, clk_readl(CLK_SCP_CFG_0) | 0x3FF);
 	clk_writel(CLK_SCP_CFG_1, clk_readl(CLK_SCP_CFG_1) | 0x11);
-#if 0
+
+	clk_writel(cksys_base + CK_CFG_0_CLR, 0x80000000);
+	clk_writel(cksys_base + CK_CFG_0_SET, 0x80000000);
+
 	clk_writel(cksys_base + CK_CFG_1_CLR, 0x80808080);
 	clk_writel(cksys_base + CK_CFG_1_SET, 0x80808080);
-
-	clk_writel(cksys_base + CK_CFG_2_CLR, 0x00008000);
-	clk_writel(cksys_base + CK_CFG_2_SET, 0x00008000);
-
-	clk_writel(cksys_base + CK_CFG_3_CLR, 0x00808080);
-	clk_writel(cksys_base + CK_CFG_3_SET, 0x00808080);
+#if 1
+	clk_writel(cksys_base + CK_CFG_2_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_2_SET, 0x80808080);
+#endif
+	clk_writel(cksys_base + CK_CFG_3_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_3_SET, 0x80808080);
 
 	clk_writel(cksys_base + CK_CFG_4_CLR, 0x80808080);
 	clk_writel(cksys_base + CK_CFG_4_SET, 0x80808080);
 
-	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00800080);
-	clk_writel(cksys_base + CK_CFG_6_SET, 0x00800080);
+	clk_writel(cksys_base + CK_CFG_5_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_5_SET, 0x80808080);
 
-	clk_writel(cksys_base + CK_CFG_7_CLR, 0x00808000);
-	clk_writel(cksys_base + CK_CFG_7_SET, 0x00808000);
+	clk_writel(cksys_base + CK_CFG_6_CLR, 0x00808080);/*pwrap_ulposc*/
+	clk_writel(cksys_base + CK_CFG_6_SET, 0x00808080);
 
-	clk_writel(cksys_base + CK_CFG_8_CLR, 0x00008000);
-	clk_writel(cksys_base + CK_CFG_8_SET, 0x00008000);
+	clk_writel(cksys_base + CK_CFG_7_CLR, 0x80800080);/*sspm*/
+	clk_writel(cksys_base + CK_CFG_7_SET, 0x80800080);
 
-	clk_writel(cksys_base + CK_CFG_9_CLR, 0x80008080);
-	clk_writel(cksys_base + CK_CFG_9_SET, 0x80008080);
+	clk_writel(cksys_base + CK_CFG_8_CLR, 0x00808080);/*spm*/
+	clk_writel(cksys_base + CK_CFG_8_SET, 0x00808080);
+
+	clk_writel(cksys_base + CK_CFG_9_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_9_SET, 0x80808080);
 
 	clk_writel(cksys_base + CK_CFG_10_CLR, 0x80808080);
-	clk_writel(cksys_base + CK_CFG_10_SET, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_10_SET, 0x80808000);/*dxcc*/
 
-	clk_writel(cksys_base + CK_CFG_11_CLR, 0x80808000);
-	clk_writel(cksys_base + CK_CFG_11_SET, 0x80808000);
-#endif
+	clk_writel(cksys_base + CK_CFG_11_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_11_SET, 0x80808080);
+
+	clk_writel(cksys_base + CK_CFG_12_CLR, 0x80808080);
+	clk_writel(cksys_base + CK_CFG_12_SET, 0x80808080);
+
+	clk_writel(cksys_base + CK_CFG_13_CLR, 0x80008080);/*busaximem*/
+	clk_writel(cksys_base + CK_CFG_13_SET, 0x80008080);
 }
 CLK_OF_DECLARE_DRIVER(mtk_topckgen, "mediatek,topckgen", mtk_topckgen_init);
 
@@ -3331,14 +3395,13 @@ CLK_OF_DECLARE_DRIVER(mtk_infracfg_ao, "mediatek,infracfg_ao",
 
 static const struct mtk_pll_data plls[] = {
 	/* FIXME: need to fix flags/div_table/tuner_reg/table */
-#if 1
+#if MT_CCF_BRINGUP
 	PLL(APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, BIT(0),
 		(HAVE_RST_BAR | PLL_AO), BIT(24),
 		22,
 		0x0234, 24,
 		0, 0, 0,
 		0x0234, 0),
-#endif
 	PLL(APMIXED_UNIV2PLL, "univ2pll", 0x0240, 0x024C, BIT(0),
 		(HAVE_RST_BAR | PLL_AO), BIT(24),
 		22,
@@ -3373,14 +3436,12 @@ static const struct mtk_pll_data plls[] = {
 		0x02b4, 24,
 		0, 0, 0,
 		0x02b4, 0),
-#if 1
 	PLL(APMIXED_MMPLL, "mmpll", 0x0280, 0x028C, BIT(0),
 		(HAVE_RST_BAR | PLL_AO), BIT(23),
 		22,
 		0x0284, 24,
 		0, 0, 0,
 		0x0284, 0),
-#endif
 	PLL(APMIXED_APLL1, "apll1", 0x02C0, 0x02D0, BIT(0),
 		PLL_AO, 0,
 		32,
@@ -3394,6 +3455,70 @@ static const struct mtk_pll_data plls[] = {
 		0x02D4, 1,
 		0, 0x14, 1,
 		0x02D8, 0),
+#else
+	PLL(APMIXED_MAINPLL, "mainpll", 0x0230, 0x023C, BIT(0),
+		(HAVE_RST_BAR | PLL_AO), BIT(24),
+		22,
+		0x0234, 24,
+		0, 0, 0,
+		0x0234, 0),
+
+	PLL(APMIXED_UNIV2PLL, "univ2pll", 0x0240, 0x024C, BIT(0),
+		(HAVE_RST_BAR), BIT(24),
+		22,
+		0x0244, 24,
+		0, 0, 0,
+		0x0244, 0),
+
+	PLL(APMIXED_MFGPLL, "mfgpll", 0x0250, 0x025C, BIT(0),
+		0, 0,
+		22,
+		0x0254, 24,
+		0, 0, 0,
+		0x0254, 0),
+
+	PLL(APMIXED_MSDCPLL, "msdcpll", 0x0260, 0x026C, BIT(0),
+		0, 0,
+		22,
+		0x0264, 24,
+		0, 0, 0,
+		0x0264, 0),
+
+	PLL(APMIXED_TVDPLL, "tvdpll", 0x0270, 0x027C, BIT(0),
+		0, 0,
+		22,
+		0x0274, 24,
+		0, 0, 0,
+		0x0274, 0),
+
+	PLL(APMIXED_ADSPPLL, "adsppll", 0x02b0, 0x02bC, BIT(0),
+		(HAVE_RST_BAR), BIT(23),
+		22,
+		0x02b4, 24,
+		0, 0, 0,
+		0x02b4, 0),
+
+	PLL(APMIXED_MMPLL, "mmpll", 0x0280, 0x028C, BIT(0),
+		(HAVE_RST_BAR), BIT(23),
+		22,
+		0x0284, 24,
+		0, 0, 0,
+		0x0284, 0),
+
+	PLL(APMIXED_APLL1, "apll1", 0x02C0, 0x02D0, BIT(0),
+		0, 0,
+		32,
+		0x02C0, 1,
+		0, 0x14, 0,
+		0x02C4, 0),
+
+	PLL(APMIXED_APLL2, "apll2", 0x02D4, 0x02E4, BIT(0),
+		0, 0,
+		32,
+		0x02D4, 1,
+		0, 0x14, 1,
+		0x02D8, 0),
+#endif
 };
 
 static void __init mtk_apmixedsys_init(struct device_node *node)
@@ -3453,14 +3578,11 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_setl(UNIVPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(UNIVPLL_PWR_CON0, PLL_PWR_ON);
 /*#endif*/
-/*ADSPPLL*/
-	clk_clrl(ADSPPLL_CON0, PLL_EN);
-	clk_setl(ADSPPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(ADSPPLL_PWR_CON0, PLL_PWR_ON);
 /*TVDPLL*/
 	clk_clrl(TVDPLL_CON0, PLL_EN);
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
+#endif
 /*APLL1*/
 	clk_clrl(APLL1_CON0, PLL_EN);
 	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
@@ -3469,7 +3591,11 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(APLL2_CON0, PLL_EN);
 	clk_setl(APLL2_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(APLL2_PWR_CON0, PLL_PWR_ON);
-#endif
+/*ADSPPLL*/
+	clk_clrl(ADSPPLL_CON0, PLL_EN);
+	clk_setl(ADSPPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(ADSPPLL_PWR_CON0, PLL_PWR_ON);
+	clk_clrl(ADSPPLL_CON0, ADSPPLL_DIV_RSTB);
 }
 CLK_OF_DECLARE_DRIVER(mtk_apmixedsys, "mediatek,apmixed",
 		mtk_apmixedsys_init);
@@ -3531,8 +3657,6 @@ static void __init mtk_camsys_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(CAMSYS_CG_CLR, CAMSYS_CG);
-#else
-	clk_writel(CAMSYS_CG_SET, CAMSYS_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_camsys, "mediatek,camsys", mtk_camsys_init);
@@ -3561,8 +3685,6 @@ static void __init mtk_imgsys_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(IMG_CG_CLR, IMG_CG);
-#else
-	clk_writel(IMG_CG_SET, IMG_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_imgsys, "mediatek,imgsys", mtk_imgsys_init);
@@ -3591,8 +3713,6 @@ static void __init mtk_ipesys_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(IPE_CG_CLR, IPE_CG);
-#else
-	clk_writel(IPE_CG_SET, IPE_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_ipesys, "mediatek,ipesys_config", mtk_ipesys_init);
@@ -3623,8 +3743,6 @@ static void __init mtk_mfg_cfg_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	/*clk_writel(MFG_CG_CLR, MFG_CG);*/
-#else
-	clk_writel(MFG_CG_SET, MFG_CG);
 #endif
 
 }
@@ -3716,8 +3834,6 @@ static void __init mtk_venc_global_con_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(VENC_CG_SET, VENC_CG);
-#else
-	clk_writel(VENC_CG_CLR, VENC_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_venc_global_con, "mediatek,venc_gcon",
@@ -3748,8 +3864,6 @@ static void __init mtk_apu_conn_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(APU_CONN_CG_CLR, APU_CONN_CG);
-#else
-	clk_writel(APU_CONN_CG_SET, APU_CONN_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apu_conn, "mediatek,apu_conn", mtk_apu_conn_init);
@@ -3779,8 +3893,6 @@ static void __init mtk_apu0_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(APU_CORE0_CG_CLR, APU_CORE0_CG);
-#else
-	clk_writel(APU_CORE0_CG_SET, APU_CORE0_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apu0, "mediatek,apu0", mtk_apu0_init);
@@ -3810,8 +3922,6 @@ static void __init mtk_apu1_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(APU_CORE1_CG_CLR, APU_CORE1_CG);
-#else
-	clk_writel(APU_CORE1_CG_SET, APU_CORE1_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apu1, "mediatek,apu1", mtk_apu1_init);
@@ -3841,8 +3951,6 @@ static void __init mtk_apu_vcore_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(APU_VCORE_CG_CLR, APU_VCORE_CG);
-#else
-	clk_writel(APU_VCORE_CG_SET, APU_VCORE_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apu_vcore, "mediatek,apu_vcore", mtk_apu_vcore_init);
@@ -3872,8 +3980,6 @@ static void __init mtk_apu_mdla_init(struct device_node *node)
 
 #if MT_CCF_BRINGUP
 	clk_writel(APU_MDLA_CG_CLR, APU_MDLA_CG);
-#else
-	clk_writel(APU_MDLA_CG_SET, APU_MDLA_CG);
 #endif
 }
 CLK_OF_DECLARE_DRIVER(mtk_apu_mdla, "mediatek,apu_mdla", mtk_apu_mdla_init);
@@ -4096,26 +4202,38 @@ void univpll_192m_en(int en)
 
 void pll_if_on(void)
 {
+	int ret = 0;
+
 	if (clk_readl(ARMPLL_LL_CON0) & 0x1)
 		pr_notice("suspend warning: ARMPLL_LL is on!!!\n");
 	if (clk_readl(ARMPLL_BL_CON0) & 0x1)
 		pr_notice("suspend warning: ARMPLL_BL is on!!!\n");
-	if (clk_readl(UNIVPLL_CON0) & 0x1)
+	if (clk_readl(UNIVPLL_CON0) & 0x1) {
 		pr_notice("suspend warning: UNIVPLL is on!!!\n");
-	if (clk_readl(MFGPLL_CON0) & 0x1)
+		ret++;
+	}
+	if (clk_readl(MFGPLL_CON0) & 0x1) {
 		pr_notice("suspend warning: MFGPLL is on!!!\n");
-	if (clk_readl(MMPLL_CON0) & 0x1)
+		ret++;
+	}
+	if (clk_readl(MMPLL_CON0) & 0x1) {
 		pr_notice("suspend warning: MMPLL is on!!!\n");
+		ret++;
+	}
 	if (clk_readl(ADSPPLL_CON0) & 0x1)
 		pr_notice("suspend warning: ADSPPLL is on!!!\n");
 	if (clk_readl(MSDCPLL_CON0) & 0x1)
 		pr_notice("suspend warning: MSDCPLL is on!!!\n");
-	if (clk_readl(TVDPLL_CON0) & 0x1)
+	if (clk_readl(TVDPLL_CON0) & 0x1) {
 		pr_notice("suspend warning: TVDPLL is on!!!\n");
+		ret++;
+	}
 	if (clk_readl(APLL1_CON0) & 0x1)
 		pr_notice("suspend warning: APLL1 is on!!!\n");
 	if (clk_readl(APLL2_CON0) & 0x1)
 		pr_notice("suspend warning: APLL2 is on!!!\n");
+	if (ret > 0)
+		WARN_ON(1);
 
 #if 0
 	pr_notice("%s: AP_PLL_CON3 = 0x%08x\r\n", __func__,
@@ -4266,6 +4384,44 @@ void check_mm0_clk_sts(void)
 		clk_readl(MMPLL_CON1));
 }
 
+void check_vpu_clk_sts(void)
+{
+	int temp = 10;
+
+	/* confirm vpu clk */
+	pr_notice("CLK_CFG_2 = 0x%08x\r\n", clk_readl(CLK_CFG_2));
+	pr_notice("CLK_CFG_3 = 0x%08x\r\n", clk_readl(CLK_CFG_3));
+	temp = mt_get_abist_freq(24);
+	pr_notice("univ freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_abist_freq(23);
+
+	temp = mt_get_ckgen_freq(14);
+	pr_notice("ipu freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_ckgen_freq(1);
+
+	temp = mt_get_ckgen_freq(13);
+	pr_notice("dsp3 freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_ckgen_freq(1);
+
+	temp = mt_get_ckgen_freq(12);
+	pr_notice("dsp2 freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_ckgen_freq(1);
+
+	temp = mt_get_ckgen_freq(11);
+	pr_notice("dsp1 freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_ckgen_freq(1);
+
+	temp = mt_get_ckgen_freq(10);
+	pr_notice("dsp freq = %d\n", temp);
+	if (temp == 0)
+		temp = mt_get_ckgen_freq(1);
+}
+
 void check_img_clk_sts(void)
 {
 	/* confirm mm0 clk */
@@ -4287,6 +4443,9 @@ void check_ven_clk_sts(void)
 void check_cam_clk_sts(void)
 {
 	/* confirm mm0 clk */
+	pr_notice("CLK_CFG_1 = 0x%08x\n", clk_readl(CLK_CFG_1));
+	pr_notice("cam freq = %d\n", mt_get_ckgen_freq(8));
+	pr_notice("MM_CG_CON0 = 0x%08x\n", clk_readl(MM_CG_CON0));
 	pr_notice("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
 }
 #endif

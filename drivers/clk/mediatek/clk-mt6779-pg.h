@@ -39,7 +39,8 @@ enum subsys_id {
 	SYS_VPU_CORE2_DORMANT = 21,
 	SYS_VPU_CORE2_SHUTDOWN = 22,
 	SYS_IPE = 23,
-	NR_SYSS = 24,
+	SYS_CONN_W = 24,
+	NR_SYSS = 25,
 };
 
 struct pg_callbacks {

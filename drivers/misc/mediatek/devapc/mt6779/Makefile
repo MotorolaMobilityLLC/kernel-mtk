@@ -11,5 +11,6 @@
 # GNU General Public License for more details.
 #
 
+MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
 obj-y += devapc.o
 obj-y += busid_to_mast.o

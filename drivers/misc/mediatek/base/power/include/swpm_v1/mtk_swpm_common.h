@@ -40,8 +40,8 @@
 #define swpm_readl(addr)	__raw_readl(addr)
 #define swpm_writel(addr, val)	mt_reg_sync_writel(val, addr)
 
-#define swpm_lock(lock, flags)		spin_lock_irqsave(lock, flags)
-#define swpm_unlock(lock, flags)	spin_unlock_irqrestore(lock, flags)
+#define swpm_lock(lock)		mutex_lock(lock)
+#define swpm_unlock(lock)	mutex_unlock(lock)
 
 #define swpm_get_status(type)	((swpm_status & (1 << type)) >> type)
 #define swpm_set_status(type)	(swpm_status |= (1 << type))
@@ -50,7 +50,7 @@
 
 extern bool swpm_debug;
 extern unsigned int swpm_status;
-extern struct spinlock swpm_spinlock;
+extern struct mutex swpm_mutex;
 extern const struct of_device_id swpm_of_ids[];
 
 extern char *swpm_power_rail_to_string(enum power_rail p);
