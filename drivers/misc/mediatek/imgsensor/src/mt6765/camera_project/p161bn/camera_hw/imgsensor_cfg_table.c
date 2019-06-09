@@ -51,7 +51,7 @@ struct IMGSENSOR_HW_CFG imgsensor_custom_config[] = {
 			{IMGSENSOR_HW_ID_MCLK, IMGSENSOR_HW_PIN_MCLK},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_AVDD},
 			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DOVDD},
-			{IMGSENSOR_HW_ID_REGULATOR, IMGSENSOR_HW_PIN_DVDD},
+			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_DVDD},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_PDN},
 			{IMGSENSOR_HW_ID_GPIO, IMGSENSOR_HW_PIN_RST},
 			{IMGSENSOR_HW_ID_NONE, IMGSENSOR_HW_PIN_NONE},
@@ -154,11 +154,29 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{SensorMCLK, Vol_High, 0},
 			{PDN, Vol_Low, 0},
 			{RST, Vol_Low, 0},
+			{AFVDD, Vol_2800, 5},
 			{DOVDD, Vol_1800, 0},
 			{AVDD, Vol_2800, 0},
-			{DVDD, Vol_1200, 0},
+			{DVDD, Vol_1100, 5},
 			{PDN, Vol_High, 0},
-			{RST, Vol_High, 0}
+			{RST, Vol_High, 5}
+		},
+	},
+#endif
+
+#if defined(S5K3L6_TSP_P161M_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_S5K3L6_TSP_P161M_MIPI_RAW,
+		{
+			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 0},
+			{RST, Vol_Low, 0},
+			{AFVDD, Vol_2800, 5},
+			{DOVDD, Vol_1800, 0},
+			{AVDD, Vol_2800, 0},
+			{DVDD, Vol_1100, 5},
+			{PDN, Vol_High, 0},
+			{RST, Vol_High, 5}
 		},
 	},
 #endif
@@ -167,14 +185,15 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{
 				SENSOR_DRVNAME_GC5025_SUNWIN_P161BN_MIPI_RAW,
 				{
-					{SensorMCLK, Vol_High, 1},
 					{PDN, Vol_Low, 0},
 					{RST, Vol_Low, 0},
-					{DOVDD, Vol_1800, 0},
-					{DVDD, Vol_1200, 0},
-					{AVDD, Vol_2800, 0},				
-					{PDN, Vol_High, 0},
-					{RST, Vol_High, 10}
+					{DOVDD, Vol_1800, 3},
+					{DVDD, Vol_1200, 1},
+					{AVDD, Vol_2800, 1},
+					{SensorMCLK, Vol_High, 1},
+					{PDN, Vol_High, 1},
+					{RST, Vol_High, 1},
+                    {PDN, Vol_High, 3}
 				},
 			},
 #endif
@@ -182,29 +201,45 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 	{
 		SENSOR_DRVNAME_SP2509V_SUNWIN_P161BN_MIPI_RAW,
 		{
-                        {PDN, Vol_High, 0},
-                        {RST, Vol_Low, 0},
-                        {DOVDD, Vol_1800, 5},
-                        {AVDD, Vol_High, 5},
-                        {SensorMCLK, Vol_High, 1},
-                        {PDN, Vol_Low, 10},
-                        {RST, Vol_High, 20}
+                        {PDN, Vol_High, 0, Vol_High, 0},
+                        {RST, Vol_Low, 0, Vol_Low, 0},
+                        {DOVDD, Vol_1800, 5, Vol_Low, 0},
+                        {AVDD, Vol_High, 5, Vol_Low, 0},
+                        {SensorMCLK, Vol_High, 1, Vol_Low, 0},
+                        {PDN, Vol_Low, 10, Vol_High,0},
+                        {RST, Vol_High, 20, Vol_Low, 0}
 		},
 	},
 #endif
-#if defined(S5K4H7YX_SUNWIN_P310_MIPI_RAW)
+#if defined(S5K4H7YX_SUNWIN_P161M_MIPI_RAW)
 	{
-		SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P310_MIPI_RAW,
+		SENSOR_DRVNAME_S5K4H7YX_SUNWIN_P161M_MIPI_RAW,
 		{
 		   {SensorMCLK, Vol_High, 1},
+		   {RST, Vol_Low, 1},
+		   {PDN, Vol_Low, 1},
 		   {DOVDD, Vol_1800, 1},
 		   //{DVDD, Vol_1200, 2},
-		   {DVDD, Vol_1100, 2},
-		   {AVDD, Vol_2800, 1},
-		   {RST, Vol_Low, 10},
-		   {PDN, Vol_Low, 10},
-		   {RST, Vol_High, 10},
-		   {PDN, Vol_High, 10},
+		   {DVDD, Vol_1200, 5},
+		   {AVDD, Vol_2800, 5},
+		   {RST, Vol_High, 3},
+		   {PDN, Vol_High, 3},
+		},
+	},
+#endif
+#if defined(S5K4H7YX_TSP_P161M_MIPI_RAW)
+	{
+		SENSOR_DRVNAME_S5K4H7YX_TSP_P161M_MIPI_RAW,
+		{
+		   {SensorMCLK, Vol_High, 1},
+		   {RST, Vol_Low, 1},
+		   {PDN, Vol_Low, 1},
+		   {DOVDD, Vol_1800, 1},
+		   //{DVDD, Vol_1200, 2},
+		   {DVDD, Vol_1200, 5},
+		   {AVDD, Vol_2800, 5},
+		   {RST, Vol_High, 3},
+		   {PDN, Vol_High, 3},
 		},
 	},
 #endif

@@ -1,4 +1,3 @@
 #include $(srctree)/drivers/misc/mediatek/Makefile.custom
 
-obj-y += sp2509v_sunwin_p161bn_mipi_raw_Sensor.o
-
+obj-y += s5k3l6_tsp_p161m_mipiraw_Sensor.o

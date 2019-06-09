@@ -33,10 +33,16 @@
 #include "kd_imgsensor_define.h"
 #include "kd_imgsensor_errcode.h"
 
-#include "s5k4h7yx_sunwin_p310_mipi_raw_Sensor.h"
+#include "s5k4h7yx_sunwin_p161m_mipi_raw_Sensor.h"
 
+//add camera info for p161m
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+#include <dev_info.h>
+#endif
 
-#define PFX "s5k4h7yx_sunwin_p310_camera_sensor"
+unsigned int sensor_module_id = 0;
+
+#define PFX "s5k4h7yx_sunwin_p161m_camera_sensor"
 #define LOG_INF(format, args...)	pr_debug(PFX "[%s] " format, __func__, ##args)
 
 
@@ -44,11 +50,13 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 extern bool update_otp(void);
 extern bool check_sum_flag_lsc(void);
+extern int apply_4h7_otp_awb(void);
+extern void apply_4h7_otp_enb_lsc(void);
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K4H7YX_SUNWIN_P310_SENSOR_ID,
+	.sensor_id = S5K4H7YX_SUNWIN_P161M_SENSOR_ID,
 
-	.checksum_value = 0xf16e8197,
+	.checksum_value = 0x138daa55,
 
 	.pre = {
 		.pclk = 280000000,				/* record different mode's pclk */
@@ -155,7 +163,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_output_dataformat = SENSOR_OUTPUT_FORMAT_RAW_Gr,
 	.mclk = 24,
 	.mipi_lane_num = SENSOR_MIPI_4_LANE,
-	.i2c_addr_table = {0x5a, 0xff},
+	.i2c_addr_table = {0x20, 0xff},
 	.i2c_speed = 400,
 };
 
@@ -172,7 +180,7 @@ static struct imgsensor_struct imgsensor = {
 	.test_pattern = KAL_FALSE,		/* test pattern mode or not. KAL_FALSE for in test pattern mode, KAL_TRUE for normal output */
 	.current_scenario_id = MSDK_SCENARIO_ID_CAMERA_PREVIEW,/* current scenario id */
 	.ihdr_en = 0, /* sensor need support LE, SE with HDR feature */
-	.i2c_write_id = 0x5a,
+	.i2c_write_id = 0x20,
 };
 
 
@@ -614,7 +622,7 @@ static void preview_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 }	/*	preview_setting  */
 
@@ -699,7 +707,7 @@ static void capture_setting(kal_uint16 currefps)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 }
 
@@ -773,7 +781,7 @@ static void normal_video_setting(kal_uint16 currefps)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x00);
   write_cmos_sensor_8(0x0203, 0x02);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -846,7 +854,7 @@ static void hs_video_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x02);
   write_cmos_sensor_8(0x0203, 0x08);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -922,7 +930,7 @@ static void slim_video_setting(void)
   write_cmos_sensor_8(0x0201, 0xD8);
   write_cmos_sensor_8(0x0202, 0x02);
   write_cmos_sensor_8(0x0203, 0x08);
-  write_cmos_sensor_8(0x3400, 0x01);
+  write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 
 }
@@ -956,21 +964,38 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				/* return ERROR_NONE; */
-				break;
+			#if 1
+	           if (!(update_otp()))
+               {
+                   LOG_INF("Demon_otp update_otp error!");
+               }
+            #endif
+                   break;
 			}
 			retry--;
 		} while (retry > 0);
 		i++;
 		retry = 2;
 	}
+
 	if (*sensor_id != imgsensor_info.sensor_id) {
 
 		*sensor_id = 0xFFFFFFFF;
 		return ERROR_SENSOR_CONNECT_FAIL;
 	}
 
-	return ERROR_NONE;
+    if(sensor_module_id == 0x06) {
+//add camera info for p161m
+#ifdef CONFIG_TINNO_PRODUCT_INFO
+        FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K4H7YX_SUNWIN_P161M_SENSOR_ID, 1, "s5k4h7yx_sunwin_p161m_mipi_raw",
+                imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);
+#endif
+        return ERROR_NONE;
+    } else {
+        pr_err("4h7 sensor module id = 0x%x.\n", sensor_module_id);
+        *sensor_id = 0xFFFFFFFF;
+        return ERROR_SENSOR_CONNECT_FAIL;
+    }
 }
 
 
@@ -992,6 +1017,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 *************************************************************************/
 static kal_uint32 open(void)
 {
+
 	/* const kal_uint8 i2c_addr[] = {IMGSENSOR_WRITE_ID_1, IMGSENSOR_WRITE_ID_2}; */
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
@@ -1026,6 +1052,9 @@ static kal_uint32 open(void)
 		LOG_INF("Demon_otp update_otp error!");
 	}
 #endif
+	apply_4h7_otp_awb();
+	apply_4h7_otp_enb_lsc();
+
 	/* initail sequence write in  */
 	sensor_init();
 
@@ -1541,7 +1570,25 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
 	if (enable) {
 		/* 0x5E00[8]: 1 enable,  0 disable */
 		/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
-		write_cmos_sensor_8(0x0601, 0x02);
+    write_cmos_sensor_8(0x3200, 0x00);
+    write_cmos_sensor_8(0x3462, 0x00);
+    write_cmos_sensor_8(0x3230, 0x01);
+    write_cmos_sensor_8(0x3290, 0x01);
+    write_cmos_sensor_8(0x3201, 0x01);
+    write_cmos_sensor_8(0x0b05, 0x00);
+    write_cmos_sensor_8(0x0b00, 0x00);
+    write_cmos_sensor_8(0x3400, 0x00);
+    write_cmos_sensor_8(0x3C0F, 0x01);
+    write_cmos_sensor_8(0x020E, 0x01);
+    write_cmos_sensor_8(0x020F, 0x00);
+    write_cmos_sensor_8(0x0210, 0x01);
+    write_cmos_sensor_8(0x0211, 0x00);
+    write_cmos_sensor_8(0x0212, 0x01);
+    write_cmos_sensor_8(0x0213, 0x00);
+    write_cmos_sensor_8(0x0214, 0x01);
+    write_cmos_sensor_8(0x0215, 0x00);
+    write_cmos_sensor_8(0x3c60, 0x00);
+    write_cmos_sensor_8(0x0601, 0x02);
 	} else {
 		/* 0x5E00[8]: 1 enable,  0 disable */
 		/* 0x5E00[1:0]; 00 Color bar, 01 Random Data, 10 Square, 11 BLACK */
@@ -1731,7 +1778,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K4H7YX_SUNWIN_P310_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 S5K4H7YX_SUNWIN_P161M_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)

@@ -14,7 +14,7 @@
  *
  * Filename:
  * ---------
- *	s5k3l6_sunwin_p161bn_mipiraw_Sensor.c 
+ *	s5k3l6_tsp_p161m_mipiraw_Sensor.c 
  *
  * Project:
  * --------
@@ -52,7 +52,7 @@
 #include <dev_info.h>
 #endif
 
-#include "s5k3l6_sunwin_p161bn_mipiraw_Sensor.h"
+#include "s5k3l6_tsp_p161m_mipiraw_Sensor.h"
 #define LOG_INF(format, args...)    \
         pr_debug(PFX "[%s] " format, __func__, ##args)
 
@@ -60,7 +60,7 @@ static DEFINE_SPINLOCK(imgsensor_drv_lock);
 static bool bIsLongExposure = KAL_FALSE;
 
 static struct imgsensor_info_struct imgsensor_info = {
-	.sensor_id = S5K3L6_SUNWIN_P161BN_SENSOR_ID,
+	.sensor_id = S5K3L6_TSP_P161M_SENSOR_ID,
 
 	.checksum_value = 0x56e2e48b,
 
@@ -285,6 +285,7 @@ static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 	iReadRegI2C(pusendcmd , 2, (u8*)&get_byte, 2, imgsensor.i2c_write_id);
 	return ((get_byte<<8)&0xff00)|((get_byte>>8)&0x00ff);
 }
+
 
 static kal_uint16 read_cmos_sensor_16_8(kal_uint16 addr)
 {
@@ -1508,16 +1509,16 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			*sensor_id = return_sensor_id();
+			*sensor_id = return_sensor_id() + 1;
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				pr_info("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
                 module_id = return_module_id();
-				LOG_INF("module id: 0x%x\n", module_id);
-                if (module_id == 0x06) {
+				pr_err("TSP sensor module id: 0x%x\n", module_id);
+                if (module_id == 0x43) {
 				//add camera info for p161m
 #ifdef CONFIG_TINNO_PRODUCT_INFO
-				    FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K3L6_SUNWIN_P161BN_SENSOR_ID, 0, "s5k3l6_sunwin_p161m_mipi_raw", 
-								    imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);
+				    FULL_PRODUCT_DEVICE_INFO_CAMERA(S5K3L6_TSP_P161M_SENSOR_ID, 0, "s5k3l6_tsp_p161m_mipi_raw", 
+								    imgsensor_info.cap.grabwindow_width, imgsensor_info.cap.grabwindow_height);		
 #endif   
 
 				    return ERROR_NONE;
@@ -1576,7 +1577,7 @@ static kal_uint32 open(void)
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
-			sensor_id = return_sensor_id();
+			sensor_id = return_sensor_id() + 1;
 			if (sensor_id == imgsensor_info.sensor_id) {
 				pr_debug("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 				break;
@@ -2563,7 +2564,7 @@ static struct SENSOR_FUNCTION_STRUCT sensor_func = {
 	close
 };
 
-UINT32 S5K3L6_SUNWIN_P161BN_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
+UINT32 S5K3L6_TSP_P161M_MIPI_RAW_SensorInit(struct SENSOR_FUNCTION_STRUCT **pfFunc)
 {
 	/* To Do : Check Sensor status here */
 	if (pfFunc != NULL)
