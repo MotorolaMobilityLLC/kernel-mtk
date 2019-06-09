@@ -665,13 +665,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_trigger_warning(selected, selected_oom_score_adj);
 
 		rem += selected_tasksize;
+
+		handle_lmk_event(selected, min_score_adj);
 	} else {
 		if (d_state_is_found == 1)
 			lowmem_print(2,
 				     "No selected (full of D-state processes at %d)\n",
 				     (int)min_score_adj);
-
-		handle_lmk_event(selected, min_score_adj);
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
