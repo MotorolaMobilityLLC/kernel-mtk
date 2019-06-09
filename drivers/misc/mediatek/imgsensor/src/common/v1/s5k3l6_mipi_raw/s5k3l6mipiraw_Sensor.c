@@ -54,7 +54,8 @@
 #include "s5k3l6mipiraw_Sensor.h"
 
 /*===FEATURE SWITH===*/
-//#define FPT_PDAF_SUPPORT   //for pdaf switch
+#define FPT_PDAF_SUPPORT   //for pdaf switch
+#define MT6761
 
 #define MULTI_WRITE 1
 
