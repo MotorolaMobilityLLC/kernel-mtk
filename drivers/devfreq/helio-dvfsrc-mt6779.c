@@ -337,6 +337,10 @@ u32 dvfsrc_calc_isp_hrt_opp(int data)
 	return dvfsrc_calc_hrt_opp(((data + 29) /  30) * 30);
 }
 
+u32 get_dvfs_final_level(void)
+{
+	return dvfsrc_read(DVFSRC_CURRENT_LEVEL);
+}
 
 int commit_data(int type, int data, int check_spmfw)
 {

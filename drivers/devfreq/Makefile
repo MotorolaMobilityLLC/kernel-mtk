@@ -31,8 +31,8 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(CONFIG_MTK_PLATFORM
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/mmp/
 
 ifneq ($(CONFIG_MACH_MT6779),)
-#obj-y					+= helio-dvfsrc-opp.o helio-dvfsrc-sysfs.o
-#obj-$(CONFIG_MACH_MT6779)		+= helio-dvfsrc_v2.o helio-dvfsrc-mt6779.o helio-dvfsrc-opp-mt6779.o
+obj-y					+= helio-dvfsrc-opp.o helio-dvfsrc-sysfs.o
+obj-$(CONFIG_MACH_MT6779)		+= helio-dvfsrc_v2.o helio-dvfsrc-mt6779.o helio-dvfsrc-opp-mt6779.o
 else ifeq ($(CONFIG_MACH_MT6763),y)
 # no helio-dvfsrc driver
 else
