@@ -668,18 +668,6 @@ static void scp_aed_reset_ws(struct work_struct *ws)
 	scp_aed_reset_inplace(type, id);
 }
 
-/* IPI for ramdump config
- * @param id:   IPI id
- * @param data: IPI data
- * @param len:  IPI data length
- */
-static void scp_A_ram_dump_ipi_handler(int id, void *data,
-		unsigned int len)
-{
-	scp_A_task_context_addr = *(unsigned int *)data;
-	pr_debug("[SCP]get scp_A_task_context_addr: 0x%x\n",
-			scp_A_task_context_addr);
-}
 
 /*
  * schedule a work to generate an exception and reset scp
@@ -769,19 +757,20 @@ int scp_excep_init(void)
 }
 
 
-/*
- * ram dump init
- */
+/******************************************************************************
+ * This function is called in the interrupt context. Note that scp_region_info
+ * was initialized in scp_region_info_init() which must be called before this
+ * function is called.
+ *****************************************************************************/
 void scp_ram_dump_init(void)
 {
-	/* init global values */
+#if SCP_RECOVERY_SUPPORT
+	scp_A_task_context_addr = scp_region_info->TaskContext_ptr;
+	pr_debug("[SCP] get scp_A_task_context_addr: 0x%x\n",
+		scp_A_task_context_addr);
+#else
 	scp_A_task_context_addr = 0;
-
-	/* ipi handler registration */
-	scp_ipi_registration(IPI_SCP_A_RAM_DUMP,
-		scp_A_ram_dump_ipi_handler, "A_ramdp");
-
-	pr_debug("[SCP] ram_dump_init() done\n");
+#endif
 }
 
 

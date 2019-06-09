@@ -467,6 +467,8 @@ static void scp_wait_ready_timeout(unsigned long data)
 /*
  * handle notification from scp
  * mark scp is ready for running tasks
+ * It is important to call scp_ram_dump_init() in this IPI handler. This
+ * timing is necessary to ensure that the region_info has been initialized.
  * @param id:   ipi id
  * @param data: ipi data
  * @param len:  length of ipi data
@@ -484,6 +486,9 @@ static void scp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 					SCP_A_TCM_SIZE, scp_image_size);
 		WARN_ON(1);
 	}
+
+	pr_debug("[SCP] ramdump init\n");
+	scp_ram_dump_init();
 }
 
 
@@ -1735,9 +1740,6 @@ static int __init scp_init(void)
 	scp_ipi_registration(IPI_SCP_ERROR_INFO,
 			 scp_err_info_handler, "scp_err_info_handler");
 
-	/* scp ramdump initialise */
-	pr_debug("[SCP] ramdump init\n");
-	scp_ram_dump_init();
 	ret = register_pm_notifier(&scp_pm_notifier_block);
 	if (ret)
 		pr_err("[SCP] failed to register PM notifier %d\n", ret);
