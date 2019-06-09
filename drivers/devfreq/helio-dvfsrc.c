@@ -67,7 +67,7 @@ void dvfsrc_write(u32 offset, u32 val)
 
 u32 dvfsrc_sram_read(u32 offset)
 {
-	if (!is_qos_enabled())
+	if (!is_qos_enabled() || offset >= QOS_SRAM_MAX_SIZE)
 		return -1;
 
 	return readl(DVFSRC_SRAM_REG(offset));
@@ -75,10 +75,20 @@ u32 dvfsrc_sram_read(u32 offset)
 
 void dvfsrc_sram_write(u32 offset, u32 val)
 {
-	if (!is_qos_enabled())
+	if (!is_qos_enabled() || offset >= QOS_SRAM_MAX_SIZE)
 		return;
 
 	writel(val, DVFSRC_SRAM_REG(offset));
+}
+
+u32 qos_sram_read(u32 offset)
+{
+	return dvfsrc_sram_read(offset);
+}
+
+void qos_sram_write(u32 offset, u32 val)
+{
+	dvfsrc_sram_write(offset, val);
 }
 
 static void dvfsrc_set_sw_req(int data, int mask, int shift)
