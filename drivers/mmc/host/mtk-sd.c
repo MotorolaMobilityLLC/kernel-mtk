@@ -430,8 +430,10 @@ struct msdc_host {
 	struct msdc_tune_para saved_tune_para; /* tune result of CMD21/CMD19 */
 };
 
+#ifdef CONFIG_MACH_MT8173
 spinlock_t msdc_top_lock;
 static bool msdc_top_lock_inited;
+#endif
 static const struct mtk_mmc_compatible mt8135_compat = {
 	.clk_div_bits = 8,
 	.hs400_tune = false,
@@ -1379,6 +1381,7 @@ static irqreturn_t msdc_irq(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_MACH_MT8173
 /* MT8173E1 Chip do not support SD data tune */
 static bool is_e1_chip(void)
 {
@@ -1389,6 +1392,7 @@ static bool is_e1_chip(void)
 
 	return e1_chip;
 }
+#endif
 
 static void msdc_init_hw(struct msdc_host *host)
 {
@@ -1632,6 +1636,7 @@ static struct msdc_delay_phase get_best_delay(struct msdc_host *host, u32 delay)
 	return delay_phase;
 }
 
+#ifdef CONFIG_MACH_MT8173
 static int sd_tune_response(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -1715,7 +1720,10 @@ static int sd_tune_data(struct mmc_host *mmc, u32 opcode)
 		 edge, data_delay);
 	return final_delay == 0xff ? -EIO : 0;
 }
+#endif
 
+#ifdef CONFIG_MACH_MT8173
+/* Only MT8173E1 chip need this func */
 static int msdc_tune_response(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
@@ -1921,7 +1929,7 @@ skip_fall:
 	dev_dbg(host->dev, "Final data pad delay: %x\n", final_delay);
 	return final_delay == 0xff ? -EIO : 0;
 }
-
+#endif
 /*
  * MSDC IP which supports data tune + async fifo can do CMD/DAT tune
  * together, which can save the tuning time.
@@ -2001,7 +2009,7 @@ skip_fall:
 static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 {
 	struct msdc_host *host = mmc_priv(mmc);
-	int ret;
+	int ret = 0;
 	u32 tune_reg = host->dev_comp->pad_tune_reg;
 
 	if (host->dev_comp->data_tune && host->dev_comp->async_fifo) {
@@ -2014,6 +2022,8 @@ static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		}
 		goto tune_done;
 	}
+
+#ifdef CONFIG_MACH_MT8173
 	/*
 	 * Note that I assume that the code go here is running at MT8173
 	 */
@@ -2038,6 +2048,7 @@ static int msdc_execute_tuning(struct mmc_host *mmc, u32 opcode)
 		if (ret == -EIO)
 			dev_err(host->dev, "Tune data fail!\n");
 	}
+#endif
 
 tune_done:
 	host->saved_tune_para.iocon = readl(host->base + MSDC_IOCON);
