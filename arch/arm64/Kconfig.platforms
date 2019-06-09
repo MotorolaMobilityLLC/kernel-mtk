@@ -244,6 +244,7 @@ config MACH_MT6763
 	select CRYPTO_SHA2_ARM64_CE
 	select CRYPTO_AES_ARM64_CE_BLK
 	select FAST_CIRQ_CLONE_FLUSH
+	select OVERLAY_FS
 	help
 	  This enables support for MediaTek MT6763
 	  Support for aarch64 Architecture
@@ -268,6 +269,7 @@ config MACH_MT6779
 	select EXT4_FS_ENCRYPTION
 	select EXT4_FS_SECURITY
 	select EXT4_ENCRYPTION
+	select OVERLAY_FS
 	select HIE
 	select HIE_DEBUG
 	select PINCTRL
