@@ -92,6 +92,7 @@ static struct clk *dapc_infra_clk;
 static struct cdev *g_devapc_ctrl;
 static unsigned int devapc_infra_irq;
 static void __iomem *devapc_pd_infra_base;
+static void __iomem *devapc_ao_base;
 
 static unsigned int enable_dynamic_one_core_violation_debug;
 
@@ -493,9 +494,20 @@ static int check_infra_vio_status(unsigned int module)
 static void start_devapc(void)
 {
 	unsigned int i;
+	uint32_t vio_shift_sta;
 
 	mt_reg_sync_writel(0x80000000, DEVAPC_PD_INFRA_APC_CON);
-	mt_reg_sync_writel(0x3FFFFF, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
+
+	vio_shift_sta = readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA);
+	if (vio_shift_sta) {
+		DEVAPC_MSG("(Pre) clear VIO_SHIFT_STA = 0x%x\n", vio_shift_sta);
+
+		writel(vio_shift_sta, DEVAPC_PD_INFRA_VIO_SHIFT_STA);
+
+		DEVAPC_MSG("(Post) clear VIO_SHIFT_STA = 0x%x\n",
+				readl(DEVAPC_PD_INFRA_VIO_SHIFT_STA));
+	} else
+		DEVAPC_MSG("No violation happened before booting kernel\n");
 
 	/* SMC call is called to set Device APC in LK instead */
 
@@ -868,6 +880,8 @@ static int devapc_probe(struct platform_device *pdev)
 		if (node) {
 			devapc_pd_infra_base = of_iomap(node,
 				DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
+			devapc_ao_base = of_iomap(node,
+				DAPC_DEVICE_TREE_NODE_AO_INFRA_INDEX);
 			devapc_infra_irq = irq_of_parse_and_map(node,
 				DAPC_DEVICE_TREE_NODE_PD_INFRA_INDEX);
 			DEVAPC_MSG("[DEVAPC] PD_INFRA_ADDRESS: %p, IRQ: %d\n",
@@ -935,6 +949,8 @@ static int check_debug_input_type(const char *str)
 		return DAPC_INPUT_TYPE_DEBUG_ON;
 	else if (sysfs_streq(str, "0"))
 		return DAPC_INPUT_TYPE_DEBUG_OFF;
+	else if (sysfs_streq(str, "2"))
+		return DAPC_INPUT_TYPE_VIO_UT;
 	else
 		return 0;
 }
@@ -955,7 +971,7 @@ static ssize_t devapc_dbg_read(struct file *file, char __user *buffer,
 
 	retval = simple_read_from_buffer(buffer, count, ppos, msg, strlen(msg));
 
-	ret = mt_secure_call(MTK_SIP_LK_DAPC, 1, 0, 0, 0);
+	ret = mt_secure_call(MTK_SIP_KERNEL_DAPC_DUMP, 0, 0, 0, 0);
 	if (ret == 0)
 		pr_info("dump devapc reg success !\n");
 	else
@@ -985,9 +1001,24 @@ static ssize_t devapc_dbg_write(struct file *file, const char __user *buffer,
 	if (input_type == DAPC_INPUT_TYPE_DEBUG_ON) {
 		enable_dynamic_one_core_violation_debug = 1;
 		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Enabled\n");
+
 	} else if (input_type == DAPC_INPUT_TYPE_DEBUG_OFF) {
 		enable_dynamic_one_core_violation_debug = 0;
 		DEVAPC_MSG("[DEVAPC] One-Core Debugging: Disabled\n");
+
+	} else if (input_type == DAPC_INPUT_TYPE_VIO_UT) {
+		DEVAPC_MSG("%s, test violation...\n", __func__);
+		if (unlikely(devapc_ao_base == NULL)) {
+			DEVAPC_MSG("%s:%d NULL pointer\n", __func__, __LINE__);
+			return -EINVAL;
+		}
+
+		DEVAPC_MSG("%s, devapc_ao_infra_base = 0x%x\n",
+				__func__,
+				readl(devapc_ao_base));
+
+		DEVAPC_MSG("%s, test done, it should generate violation!\n",
+				__func__);
 	}
 
 	return count;
