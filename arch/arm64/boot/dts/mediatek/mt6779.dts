@@ -290,21 +290,6 @@
 		#size-cells = <2>;
 		ranges;
 
-		pstore-reserved-memory@47c90000 {
-			compatible = "mediatek,pstore";
-			reg = <0 0x47c90000 0 0xe0000>;
-		};
-
-		ram_console-reserved-memory@47c80000 {
-			compatible = "mediatek,ram_console";
-			reg = <0 0x47c80000 0 0x10000>;
-		};
-
-		minirdump-reserved-memory@47d70000{
-			compatible = "mediatek,minirdump";
-			reg = <0 0x47d70000 0 0x10000>;
-		};
-
 		ion_carveout_heap {
 			compatible = "mediatek,ion_carveout_heap";
 			no-map;

@@ -253,21 +253,6 @@
 			alloc-ranges = <0 0xc0000000 1 0x00000000>;
 		};
 
-		ram_console-reserved-memory@47c80000 {
-			compatible = "mediatek,ram_console";
-			reg = <0 0x47c80000 0 0x10000>;
-		};
-
-		pstore-reserved-memory@47c90000 {
-			compatible = "mediatek,pstore";
-			reg = <0 0x47c90000 0 0xe0000>;
-		};
-
-		minirdump-reserved-memory@47d70000{
-			compatible = "mediatek,minirdump";
-			reg = <0 0x47d70000 0 0x10000>;
-		};
-
 		reserve-memory-sspm_share {
 			compatible = "mediatek,reserve-memory-sspm_share";
 			no-map;
