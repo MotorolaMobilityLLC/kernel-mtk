@@ -56,7 +56,11 @@
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
 
+#ifdef CONFIG_MTK_IOMMU_V2
+#include <mach/mt_iommu.h>
+#else
 #include <m4u.h>
+#endif
 #include <cmdq_core.h>
 #include <cmdq_record.h>
 #include <smi_public.h>
@@ -1634,6 +1638,8 @@ static signed int FDVT_DumpReg(void)
 		(unsigned int)FDVT_RD32(FDVT_RS_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_INT_EN_HW),
 		(unsigned int)FDVT_RD32(FDVT_INT_EN_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_DEBUG_INFO_1_HW),
+		(unsigned int)FDVT_RD32(FDVT_DEBUG_INFO_1_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_YUV2RGB_HW),
 		(unsigned int)FDVT_RD32(FDVT_YUV2RGB_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_FD_HW),
@@ -1649,6 +1655,27 @@ static signed int FDVT_DumpReg(void)
 		(unsigned int)FDVT_RD32(FDVT_YUV2RGBCON_BASE_ADR_REG));
 	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_FD_RLT_BASE_ADR_HW),
 		(unsigned int)FDVT_RD32(FDVT_FD_RLT_BASE_ADR_REG));
+
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_IN_BASE_ADR_0_HW),
+		(unsigned int)FDVT_RD32(FDVT_IN_BASE_ADR_0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_IN_BASE_ADR_1_HW),
+		(unsigned int)FDVT_RD32(FDVT_IN_BASE_ADR_1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_IN_BASE_ADR_2_HW),
+		(unsigned int)FDVT_RD32(FDVT_IN_BASE_ADR_2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_IN_BASE_ADR_3_HW),
+		(unsigned int)FDVT_RD32(FDVT_IN_BASE_ADR_3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_OUT_BASE_ADR_0_HW),
+		(unsigned int)FDVT_RD32(FDVT_OUT_BASE_ADR_0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_OUT_BASE_ADR_1_HW),
+		(unsigned int)FDVT_RD32(FDVT_OUT_BASE_ADR_1_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_OUT_BASE_ADR_2_HW),
+		(unsigned int)FDVT_RD32(FDVT_OUT_BASE_ADR_2_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_OUT_BASE_ADR_3_HW),
+		(unsigned int)FDVT_RD32(FDVT_OUT_BASE_ADR_3_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_KERNEL_BASE_ADR_0_HW),
+		(unsigned int)FDVT_RD32(FDVT_KERNEL_BASE_ADR_0_REG));
+	log_inf("[0x%08X %08X]\n", (unsigned int)(FDVT_KERNEL_BASE_ADR_1_HW),
+		(unsigned int)FDVT_RD32(FDVT_KERNEL_BASE_ADR_1_REG));
 #if 0
 	log_inf("FDVT:HWProcessIdx:%d, WriteIdx:%d, ReadIdx:%d\n",
 		g_FDVT_ReqRing.HWProcessIdx,
@@ -3517,6 +3544,47 @@ static const struct file_operations FDVTFileOper = {
 #endif
 };
 
+/**************************************************************
+ *
+ **************************************************************/
+#ifdef CONFIG_MTK_IOMMU_V2
+enum mtk_iommu_callback_ret_t FDVT_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#else
+enum m4u_callback_ret_t FDVT_M4U_TranslationFault_callback(int port,
+	unsigned int mva, void *data)
+#endif
+{
+
+	pr_info("[FDVT_M4U]fault call port=%d, mva=0x%x", port, mva);
+
+	switch (port) {
+	case M4U_PORT_FDVT_RDA:
+	case M4U_PORT_FDVT_RDB:
+	case M4U_PORT_FDVT_WRA:
+	case M4U_PORT_FDVT_WRB:
+	default:  //ISP_FDVT_BASE = 0x1b001000
+		pr_info("FDVT_IN_BASE_ADR_0:0x%08x, FDVT_IN_BASE_ADR_1:0x%08x, FDVT_IN_BASE_ADR_2:0x%08x, FDVT_IN_BASE_ADR_3:0x%08x\n",
+			FDVT_RD32(FDVT_IN_BASE_ADR_0_REG),
+			FDVT_RD32(FDVT_IN_BASE_ADR_1_REG),
+			FDVT_RD32(FDVT_IN_BASE_ADR_2_REG),
+			FDVT_RD32(FDVT_IN_BASE_ADR_3_REG));
+		pr_info("FDVT_OUT_BASE_ADR_0:0x%08x, FDVT_OUT_BASE_ADR_1:0x%08x, FDVT_OUT_BASE_ADR_2:0x%08x, FDVT_OUT_BASE_ADR_3:0x%08x\n",
+			FDVT_RD32(FDVT_OUT_BASE_ADR_0_REG),
+			FDVT_RD32(FDVT_OUT_BASE_ADR_1_REG),
+			FDVT_RD32(FDVT_OUT_BASE_ADR_2_REG),
+			FDVT_RD32(FDVT_OUT_BASE_ADR_3_REG));
+		pr_info("FDVT_KERNEL_BASE_ADR_0:0x%08x, FDVT_KERNEL_BASE_ADR_1:0x%08x\n",
+			FDVT_RD32(FDVT_KERNEL_BASE_ADR_0_REG),
+			FDVT_RD32(FDVT_KERNEL_BASE_ADR_1_REG));
+	break;
+	}
+#ifdef CONFIG_MTK_IOMMU_V2
+	return MTK_IOMMU_CALLBACK_HANDLED;
+#else
+	return M4U_CALLBACK_HANDLED;
+#endif
+}
 /*****************************************************************************
  *
  *****************************************************************************/
@@ -4419,6 +4487,30 @@ static signed int __init FDVT_Init(void)
 			   FDVT_DumpCallback,
 			   FDVT_ResetCallback,
 			   FDVT_ClockOffCallback);
+#endif
+
+#ifdef CONFIG_MTK_IOMMU_V2
+	mtk_iommu_register_fault_callback(M4U_PORT_FDVT_RDA,
+					  FDVT_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_FDVT_RDB,
+					  FDVT_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_FDVT_WRA,
+					  FDVT_M4U_TranslationFault_callback,
+					  NULL);
+	mtk_iommu_register_fault_callback(M4U_PORT_FDVT_WRB,
+					  FDVT_M4U_TranslationFault_callback,
+					  NULL);
+#else
+	m4u_register_fault_callback(M4U_PORT_FDVT_RDA,
+			FDVT_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_FDVT_RDB,
+			FDVT_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_FDVT_WRA,
+			FDVT_M4U_TranslationFault_callback, NULL);
+	m4u_register_fault_callback(M4U_PORT_FDVT_WRB,
+			FDVT_M4U_TranslationFault_callback, NULL);
 #endif
 
 	log_dbg("- X. Ret: %d.", Ret);
