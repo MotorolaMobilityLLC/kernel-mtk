@@ -21,6 +21,8 @@
 #include <linux/of.h>
 #include <linux/of_fdt.h>
 #include <linux/iio/consumer.h>
+#include <linux/math64.h>
+#include <asm/div64.h>
 
 #include <mt-plat/upmu_common.h>
 #if defined(CONFIG_MTK_AEE_FEATURE)
@@ -46,6 +48,7 @@
 #include <linux/reboot.h>
 #include <mtk_battery_internal.h>
 #endif
+#include "mt635x-auxadc-internal.h"
 
 /*****************************************************************************
  * PMIC related define
@@ -256,10 +259,35 @@ int __attribute__ ((weak)) dlpt_check_power_off(void)
  * / fg_cust_data.car_tune_value / UNIT_FGCURRENT * 95 / 100)
  *
  */
-#define bat_oc_h_thd(cur)   \
-(65535-(cur*1000*fg_cust_data.r_fg_value/DEFAULT_RFG*1000000 \
-	/fg_cust_data.car_tune_value/UNIT_FGCURRENT*95*100))
+static unsigned int bat_oc_h_thd(unsigned int cur)
+{
+	long long oc_thd_val = (long long)cur;
 
+	oc_thd_val = (long long)(oc_thd_val * 1000 * fg_cust_data.r_fg_value);
+
+#if defined(__LP64__) || defined(_LP64)
+	do_div(oc_thd_val, DEFAULT_RFG);
+#else
+	oc_thd_val = div_s64(oc_thd_val, DEFAULT_RFG);
+#endif
+	oc_thd_val *= 1000000;
+
+#if defined(__LP64__) || defined(_LP64)
+	do_div(oc_thd_val, fg_cust_data.car_tune_value);
+	do_div(oc_thd_val, UNIT_FGCURRENT);
+#else
+	oc_thd_val = div_s64(oc_thd_val, fg_cust_data.car_tune_value);
+	oc_thd_val = div_s64(oc_thd_val, UNIT_FGCURRENT);
+#endif
+	oc_thd_val *= 95;
+#if defined(__LP64__) || defined(_LP64)
+	do_div(oc_thd_val, 100);
+#else
+	oc_thd_val = div_s64(oc_thd_val, 100);
+#endif
+
+	return (65535 - oc_thd_val);
+}
 #endif /* end of #if CONFIG_MTK_GAUGE_VERSION == 30 */
 
 #define bat_oc_l_thd(cur) bat_oc_h_thd(cur)
@@ -618,6 +646,7 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 	unsigned int vbat_reg;
 	unsigned int count_adc_imp = 0;
 	int ret = 0;
+	unsigned char *r_ratio;
 
 	/* selection setting, move to LK pmic_dlpt_init */
 
@@ -637,7 +666,8 @@ int do_ptim_internal(bool isSuspend, unsigned int *bat,
 	/* stop setting */
 	pmic_set_hk_reg_value(PMIC_AUXADC_IMP_EN, 0);
 
-	*bat = (vbat_reg * 3 * 18000) / 32768;
+	r_ratio = auxadc_get_r_ratio(AUXADC_BATADC);
+	*bat = (vbat_reg * 18000 * r_ratio[0] / r_ratio[1]) >> 15;
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 	gauge_get_ptim_current(cur, is_charging);
 #else
@@ -962,10 +992,6 @@ int get_dlpt_imix(void)
 				pr_notice("do_ptim more than twice times\n");
 			else if (count_do_ptim > 3) {
 				pr_notice("do_ptim more than five times\n");
-				ptim_lock();
-				pmic_set_hk_reg_value(PMIC_RG_AUXADC_RST, 1);
-				pmic_set_hk_reg_value(PMIC_RG_AUXADC_RST, 0);
-				ptim_unlock();
 #if defined(CONFIG_MTK_AEE_FEATURE)
 				aee_kernel_warning("PTIM timeout", "PTIM");
 #endif
@@ -1788,7 +1814,7 @@ int pmic_throttling_dlpt_init(void)
 	u32 val;
 	char *path;
 
-	path = "/bat_gm30";
+	path = "/battery";
 	np = of_find_node_by_path(path);
 	if (of_property_read_u32(np, "CAR_TUNE_VALUE", &val) == 0) {
 		fg_cust_data.car_tune_value = (int)val*10;

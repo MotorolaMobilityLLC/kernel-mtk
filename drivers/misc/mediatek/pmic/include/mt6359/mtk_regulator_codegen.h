@@ -75,7 +75,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 }
 
 #define REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(_name, _type, min, max,  \
-			step, min_sel, mode, _modeset_reg, use)	\
+	step, min_sel, mode, _modeset_reg, _lp_mode_reg, use)  \
 {	\
 	.desc = {	\
 		.name = #_name,	\
@@ -88,7 +88,9 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 	},	\
 	.constraints = {	\
 		.valid_ops_mask = (mode),	\
-		.valid_modes_mask = REGULATOR_MODE_NORMAL|REGULATOR_MODE_FAST,\
+		.valid_modes_mask = REGULATOR_MODE_FAST | \
+				    REGULATOR_MODE_NORMAL | \
+				    REGULATOR_MODE_IDLE, \
 	},	\
 	.en_att = __ATTR(_type##_##_name##_status, 0664, \
 			 show_regulator_status, store_regulator_status), \
@@ -99,6 +101,7 @@ extern int pmic_regulator_ldo_matches_size, pmic_regulator_buck_matches_size;
 	.da_en_cb = mt6359_upmu_get_rg_##_type##_##_name##_en,	\
 	.da_vol_cb = mt6359_upmu_get_da_##_name##_vosel,  \
 	.modeset_reg = _modeset_reg, \
+	.lp_mode_reg = _lp_mode_reg, \
 	.isUsedable = (use),	\
 }
 /* Fixed voltage regulator */

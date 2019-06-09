@@ -31,6 +31,9 @@ extern unsigned int pmic_ipi_test_code(void);
  */
 #define PMICTAG                "[PMIC] "
 extern unsigned int gPMICDbgLvl;
+extern unsigned int gPMICHKDbgLvl;
+extern unsigned int gPMICIRQDbgLvl;
+extern unsigned int gPMICREGDbgLvl;
 
 #define PMIC_LOG_DBG     4
 #define PMIC_LOG_INFO    3
@@ -43,6 +46,20 @@ extern unsigned int gPMICDbgLvl;
 		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
 } while (0)
 
+#define HKLOG(fmt, arg...) do { \
+	if (gPMICHKDbgLvl >= PMIC_LOG_DBG) \
+		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
+} while (0)
+
+#define IRQLOG(fmt, arg...) do { \
+	if (gPMICIRQDbgLvl >= PMIC_LOG_DBG) \
+		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
+} while (0)
+
+#define RGLTRLOG(fmt, arg...) do { \
+	if (gPMICREGDbgLvl >= PMIC_LOG_DBG) \
+		pr_notice(PMICTAG "%s: " fmt, __func__, ##arg); \
+} while (0)
 
 
 #endif				/* _MT_PMIC_INFO_H_ */

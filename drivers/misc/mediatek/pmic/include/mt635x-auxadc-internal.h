@@ -36,6 +36,7 @@ extern void auxadc_set_convert_fn(int channel,
 extern void auxadc_set_cali_fn(int channel,
 			       int (*cali_fn)(int val, int precision_factor));
 extern int auxadc_priv_read_channel(int channel);
+extern unsigned char *auxadc_get_r_ratio(int channel);
 
 extern void pmic_auxadc_chip_timeout_handler(struct device *dev,
 					     bool is_timeout,
