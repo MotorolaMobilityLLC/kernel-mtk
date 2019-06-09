@@ -1198,8 +1198,11 @@ static int FDVT_probe(struct platform_device *dev)
 #if LDVT_EARLY_PORTING_NO_CCF
 #else
     /*CCF: Grab clock pointer (struct clk*) */
+#if IS_ENABLED(CONFIG_MACH_MT6763)
+	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "IMG_FDVT");
+#else
 	fd_clk.CG_IMGSYS_FDVT = devm_clk_get(&dev->dev, "FD_CLK_CAM_FDVT");
-
+#endif
 	if (IS_ERR(fd_clk.CG_IMGSYS_FDVT)) {
 		log_err("cannot get CG_IMGSYS_FDVT clock\n");
 		return PTR_ERR(fd_clk.CG_IMGSYS_FDVT);
