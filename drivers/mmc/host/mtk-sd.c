@@ -421,6 +421,9 @@ struct msdc_host {
 	u32 hs400_cmd_int_delay; /* cmd internal delay for HS400 */
 #ifdef CONFIG_MACH_MT8173
 	u32 hs200_cmd_resp_sel; /* cmd response sample selection */
+	/* valid after tune response && final delay != 0xffffffff */
+	bool tune_response_valid;
+	u8 tune_response_delay; /* saved tune response value */
 #endif
 	bool hs400_cmd_resp_sel_rising;
 				 /* cmd response sample selection for HS400 */
@@ -952,6 +955,9 @@ static int msdc_auto_cmd_done(struct msdc_host *host, int events,
 		if (events & MSDC_INT_ACMDCRCERR) {
 			cmd->error = -EILSEQ;
 			host->error |= REQ_STOP_EIO;
+#ifdef CONFIG_MACH_MT8173
+			host->tune_response_valid = false;
+#endif
 		} else if (events & MSDC_INT_ACMDTMO) {
 			cmd->error = -ETIMEDOUT;
 			host->error |= REQ_STOP_TMO;
@@ -1042,6 +1048,10 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 			 */
 			msdc_reset_hw(host);
 		if (events & MSDC_INT_RSPCRCERR) {
+#ifdef CONFIG_MACH_MT8173
+			if (cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200)
+				host->tune_response_valid = false;
+#endif
 			cmd->error = -EILSEQ;
 			host->error |= REQ_CMD_EIO;
 		} else if (events & MSDC_INT_CMDTMO) {
@@ -1049,11 +1059,11 @@ static bool msdc_cmd_done(struct msdc_host *host, int events,
 			host->error |= REQ_CMD_TMO;
 		}
 	}
-	if (cmd->error)
-		dev_dbg(host->dev,
-				"%s: cmd=%d arg=%08X; rsp %08X; cmd_error=%d\n",
-				__func__, cmd->opcode, cmd->arg, rsp[0],
-				cmd->error);
+	if (cmd->error && cmd->opcode != MMC_SEND_TUNING_BLOCK &&
+	    cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200)
+		dev_err(host->dev,
+			"%s: cmd=%d arg=%08X; rsp %08X; cmd_error=%d\n",
+			__func__, cmd->opcode, cmd->arg, rsp[0], cmd->error);
 
 	msdc_cmd_next(host, mrq, cmd);
 	return true;
@@ -1241,10 +1251,14 @@ static bool msdc_data_xfer_done(struct msdc_host *host, u32 events,
 			else if (events & MSDC_INT_DATCRCERR)
 				data->error = -EILSEQ;
 
-			dev_dbg(host->dev, "%s: cmd=%d; blocks=%d",
-				__func__, mrq->cmd->opcode, data->blocks);
-			dev_dbg(host->dev, "data_error=%d xfer_size=%d\n",
-				(int)data->error, data->bytes_xfered);
+			if (mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK &&
+			    mrq->cmd->opcode != MMC_SEND_TUNING_BLOCK_HS200) {
+				dev_err(host->dev, "%s: cmd=%d; blocks=%d",
+					__func__, mrq->cmd->opcode,
+					data->blocks);
+				dev_err(host->dev, "data_error=%d xf_size=%d\n",
+					(int)data->error, data->bytes_xfered);
+			}
 		}
 
 		msdc_data_xfer_next(host, mrq, data);
@@ -1865,6 +1879,15 @@ static int hs400_tune_response(struct mmc_host *mmc, u32 opcode)
 		sdr_clr_bits(host->base + MSDC_IOCON, MSDC_IOCON_RSPL);
 	else
 		sdr_set_bits(host->base + MSDC_IOCON, MSDC_IOCON_RSPL);
+
+	/*
+	 * As Now tune 10 times for each pad macro, will tune 320 times for
+	 * all steps and will cost more than 20ms, so do not re-tune if current
+	 * result is valid and no response CRC error occurs.
+	 */
+	if (host->tune_response_valid)
+		goto skip_tune;
+
 	for (i = 0 ; i < PAD_DELAY_MAX; i++) {
 		sdr_set_field(host->base + PAD_CMD_TUNE,
 			      PAD_CMD_TUNE_RX_DLY3, i);
@@ -1873,7 +1896,7 @@ static int hs400_tune_response(struct mmc_host *mmc, u32 opcode)
 		 * but sometimes it may fail. To make sure the parameters are
 		 * more stable, we test each set of parameters 3 times.
 		 */
-		for (j = 0; j < 3; j++) {
+		for (j = 0; j < 10; j++) {
 			mmc_send_tuning(mmc, opcode, &cmd_err);
 			if (!cmd_err) {
 				cmd_delay |= (1 << i);
@@ -1888,8 +1911,17 @@ static int hs400_tune_response(struct mmc_host *mmc, u32 opcode)
 		      final_cmd_delay.final_phase);
 	final_delay = final_cmd_delay.final_phase;
 
+	if (cmd_delay != 0xffffffff && final_delay != 0xff) {
+		host->tune_response_delay = final_delay;
+		host->tune_response_valid = true;
+	}
 	dev_dbg(host->dev, "Final cmd pad delay: %x\n", final_delay);
 	return final_delay == 0xff ? -EIO : 0;
+
+skip_tune:
+	sdr_set_field(host->base + PAD_CMD_TUNE, PAD_CMD_TUNE_RX_DLY3,
+		      host->tune_response_delay);
+	return 0;
 }
 
 static int msdc_tune_data(struct mmc_host *mmc, u32 opcode)
