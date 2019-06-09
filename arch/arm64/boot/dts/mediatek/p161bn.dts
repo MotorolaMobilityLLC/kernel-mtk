@@ -305,12 +305,6 @@
 /* accdet end */
 
 
-/* battery end */
-&bat_gm30 {
-	EMBEDDED_SEL = <(0)>;
-};
-/* battery end */
-
 /* IRTX GPIO end */
 &irtx_pwm {
 	pinctrl-names = "irtx_gpio_led_default", "irtx_gpio_led_set";
@@ -466,32 +460,21 @@
 	mt6370pd,intr_gpio = <&pio 41 0x0>;
 };
 
-&charger {
-	algorithm_name = "SwitchCharging";
-	chg1_ta_ac_charger_current = <2000000>;
-	chg2_ta_ac_charger_current = <2000000>;
-};
+&lk_charger {
+	fast_charge_voltage = <3000000>;
+	/* charging current */
+	usb_charger_current = <500000>;
+	ac_charger_current = <550000>;
+	ac_charger_input_current = <550000>;
+	non_std_ac_charger_current = <550000>;
+	charging_host_charger_current = <550000>;
+	ta_ac_charger_current = <3000000>;
+	pd_charger_current = <500000>;
 
-&i2c3 {
-	rt9465@4b {
-		compatible = "richtek,rt9465";
-		reg = <0x4b>;
-		status = "okay";
-		rt,en_gpio_num = <176>;
-		rt,en_gpio = <&pio 176 0x0>;
-		rt,intr_gpio_num = <23>; /* direct defined GPIO num */
-		rt,intr_gpio = <&pio 23 0x0>;
-		interrupt-names = "wdtmri";
-		charger_name = "secondary_chg";
-		ichg = <1500000>; /* uA */
-		mivr = <4500000>; /* uV */
-		cv = <4550000>; /* uV */
-		ieoc = <700000>; /* uA */
-		safety_timer = <12>; /* hour */
-		en_st; /* safety timer */
-		/* en_te; */
-		en_wdt;
-	};
+	/* battery temperature protection */
+		temp_t4_threshold = <57>;
+		temp_t3_threshold = <45>;
+		temp_t1_threshold = <3>;
 };
 
 &pio {
@@ -625,14 +608,14 @@
 	};
 	camera_pins_cam_ldo_sub_vcamd_0: cam1@vcamd0 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	camera_pins_cam_ldo_sub_vcamd_1: cam1@vcamd1 {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			pinmux = <PINMUX_GPIO92__FUNC_GPIO92>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -886,6 +869,18 @@ CAR_TUNE_VALUE = <(100)>;
 	pinctrl-4 = <&fp_eint_in_low>;
 	pinctrl-5 = <&fp_eint_in_float>;
 	pinctrl-6 = <&fp_eint_in_high>;
+	status = "okay";
+
+};
+//add by lijian
+&focal_fp {
+	//compatible = "mediatek,focal_fp";
+	pinctrl-names = "fp_rst_high", "fp_rst_low","eint_as_int", "eint_in_low", "eint_in_high";
+	pinctrl-0 = <&fp_rst_high>;
+	pinctrl-1 = <&fp_rst_low>;
+	pinctrl-2 = <&fp_eint_as_int>;
+	pinctrl-3 = <&fp_eint_in_low>;
+	pinctrl-4 = <&fp_eint_in_high>;
 	status = "okay";
 
 };
