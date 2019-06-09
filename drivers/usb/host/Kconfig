@@ -804,3 +804,14 @@ config USB_HCD_TEST_MODE
 	  This option is of interest only to developers who need to validate
 	  their USB hardware designs.  It is not needed for normal use.  If
 	  unsure, say N.
+
+config USB_XHCI_MTK_SUSPEND
+	tristate "MediaTek XHCI SUSPEND SUPPORT"
+	default n
+	depends on USB_XHCI_MTK
+	---help---
+	  Enable Mediatek OTG function Switch mechanism.
+	  The default OTG DUALROLE function is disabled.
+	  User can switch to enable or disable by command.
+
+	  If unsure, say N.
