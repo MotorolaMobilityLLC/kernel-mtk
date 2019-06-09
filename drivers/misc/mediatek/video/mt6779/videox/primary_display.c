@@ -4052,21 +4052,22 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 
 			DISPINFO("%s mem:(0x%p,%d)\n",
 				   __func__,
-				   lcm_param->corner_pattern_lt_addr,
-				   lcm_param->corner_pattern_tp_size);
+				   lcm_param->round_corner_params.lt_addr,
+				   lcm_param->round_corner_params.tp_size);
 
-			rc_va_addr = vmalloc(lcm_param->corner_pattern_tp_size);
+			rc_va_addr = vmalloc(lcm_param->
+					round_corner_params.tp_size);
 			if (!rc_va_addr)
 				DISP_PR_ERR("[RC]: vmalloc failed! line\n");
 
 			memcpy(rc_va_addr,
-				lcm_param->corner_pattern_lt_addr,
-				lcm_param->corner_pattern_tp_size);
+				lcm_param->round_corner_params.lt_addr,
+				lcm_param->round_corner_params.tp_size);
 
 			ion_handle = disp_ion_alloc(ion_client,
 				ION_HEAP_MULTIMEDIA_MAP_MVA_MASK,
 				(unsigned long)rc_va_addr,
-				lcm_param->corner_pattern_tp_size);
+				lcm_param->round_corner_params.tp_size);
 
 			if (!ion_handle)
 				DISP_PR_ERR("allocate buffer fail\n");

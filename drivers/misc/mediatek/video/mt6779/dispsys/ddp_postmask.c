@@ -225,8 +225,8 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 		   disp_helper_get_option(DISP_OPT_ROUND_CORNER_MODE),
 		   lcm_param->corner_pattern_height,
 		   lcm_param->corner_pattern_height_bot,
-		   lcm_param->corner_pattern_lt_addr,
-		   lcm_param->corner_pattern_tp_size);
+		   lcm_param->round_corner_params.lt_addr,
+		   lcm_param->round_corner_params.tp_size);
 
 	value = (REG_FLD_VAL((PM_BLEND_CFG_FLD_A_EN), 1) |
 		 REG_FLD_VAL((PM_BLEND_CFG_FLD_PARGB_BLD), 0) |
@@ -319,7 +319,7 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 			 top_mva);
 		DISP_REG_SET(handle, DISP_REG_POSTMASK_MEM_LENGTH +
 			 base_addr,
-			 lcm_param->corner_pattern_tp_size);
+			 lcm_param->round_corner_params.tp_size);
 #else
 		value = (REG_FLD_VAL((PM_CFG_FLD_RELAY_MODE), 0) |
 			 REG_FLD_VAL((PM_CFG_FLD_DRAM_MODE), 0) |
@@ -349,7 +349,7 @@ static int postmask_config(enum DISP_MODULE_ENUM module,
 		}
 
 #if 0
-		num = lcm_param->corner_pattern_tp_size >> 2;
+		num = lcm_param->round_corner_params.tp_size >> 2;
 		for (i = 0; i < num; i++) {
 			p = lcm_param->corner_pattern_lt_addr + (i * 4);
 

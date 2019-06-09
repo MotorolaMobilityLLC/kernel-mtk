@@ -637,6 +637,20 @@ struct LCM_DSI_PARAMS {
 	unsigned int PHY_SEL1;
 	unsigned int PHY_SEL2;
 	unsigned int PHY_SEL3;
+
+	unsigned int dynamic_switch_mipi;
+	unsigned int vertical_sync_active_dyn;
+	unsigned int vertical_backporch_dyn;
+	unsigned int vertical_frontporch_dyn;
+	unsigned int vertical_active_line_dyn;
+
+	unsigned int horizontal_sync_active_dyn;
+	unsigned int horizontal_backporch_dyn;
+	unsigned int horizontal_frontporch_dyn;
+	unsigned int horizontal_active_pixel_dyn;
+
+	unsigned int PLL_CLOCK_dyn;	/* PLL_CLOCK = (int) PLL_CLOCK */
+	unsigned int data_rate_dyn;	/* data_rate = PLL_CLOCK x 2 */
 };
 
 /* ------------------------------------------------------------------------- */
@@ -687,6 +701,10 @@ struct LCM_PARAMS {
 	unsigned int corner_pattern_height;
 	unsigned int corner_pattern_height_bot;
 	struct LCM_ROUND_CORNER round_corner_params;
+	int lcm_color_mode;
+	unsigned int min_luminance;
+	unsigned int average_luminance;
+	unsigned int max_luminance;
 };
 
 

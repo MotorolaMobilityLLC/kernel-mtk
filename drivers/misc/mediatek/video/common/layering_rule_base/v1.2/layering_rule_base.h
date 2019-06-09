@@ -89,6 +89,10 @@ enum HRT_DEBUG_LAYER_DATA {
 	HRT_LAYER_DATA_DST_HEIGHT,
 	HRT_LAYER_DATA_SRC_WIDTH,
 	HRT_LAYER_DATA_SRC_HEIGHT,
+	HRT_LAYER_DATA_SRC_OFFSET_X,
+	HRT_LAYER_DATA_SRC_OFFSET_Y,
+	HRT_LAYER_DATA_COMPRESS,
+	HRT_LAYER_DATA_CAPS,
 	HRT_LAYER_DATA_NUM,
 };
 
@@ -123,6 +127,11 @@ enum LYE_HELPER_OPT {
 	LYE_OPT_NUM
 };
 
+enum ADJUST_LAYOUT_PURPOSE {
+	ADJUST_LAYOUT_EXT_GROUPING,
+	ADJUST_LAYOUT_OVERLAP_CAL,
+};
+
 struct hrt_sort_entry {
 	struct hrt_sort_entry *head, *tail;
 	struct layer_config *layer_info;
@@ -139,6 +148,7 @@ struct layering_rule_info_t {
 	int primary_fps;
 	int hrt_sys_state;
 	int wrot_sram;
+	unsigned int hrt_idx;
 };
 
 struct layering_rule_ops {
@@ -147,7 +157,10 @@ struct layering_rule_ops {
 	int *(*get_bound_table)(enum DISP_HW_MAPPING_TB_TYPE tb_type);
 	int (*get_mapping_table)(enum DISP_HW_MAPPING_TB_TYPE tb_type,
 				 int param);
+	/* should be removed */
 	int (*get_hrt_bound)(int is_larb, int hrt_level);
+
+	void (*copy_hrt_bound_table)(int is_larb, int *hrt_table);
 	void (*rsz_by_gpu_info_change)(void);
 	bool (*rollback_to_gpu_by_hw_limitation)(
 					struct disp_layer_info *disp_info);
@@ -155,6 +168,15 @@ struct layering_rule_ops {
 				    int disp_idx);
 	bool (*adaptive_dc_enabled)(void);
 	bool (*rollback_all_to_GPU_for_idle)(void);
+	bool (*frame_has_wcg)(struct disp_layer_info *disp_info,
+			      enum HRT_DISP_TYPE di);
+	/* for fbdc */
+	void (*fbdc_pre_calculate)(struct disp_layer_info *disp_info);
+	void (*fbdc_adjust_layout)(struct disp_layer_info *disp_info,
+		enum ADJUST_LAYOUT_PURPOSE p);
+	void (*fbdc_restore_layout)(struct disp_layer_info *dst_info,
+		enum ADJUST_LAYOUT_PURPOSE p);
+	void (*fbdc_rule)(struct disp_layer_info *disp_info);
 };
 
 #define HRT_GET_DVFS_LEVEL(hrt_num) (hrt_num & 0xF)
@@ -209,5 +231,12 @@ int get_layering_opt(enum LYE_HELPER_OPT opt);
 void set_round_corner_opt(enum LYE_HELPER_OPT opt, int value);
 int get_round_corner_opt(enum LYE_HELPER_OPT opt);
 #endif
+void rollback_layer_to_GPU(struct disp_layer_info *disp_info, int disp_idx,
+	int i);
 
+/* rollback and set NO_FBDC flag */
+void rollback_compress_layer_to_GPU(struct disp_layer_info *disp_info,
+	int disp_idx, int i);
+bool is_layer_id_valid(struct disp_layer_info *disp_info,
+	int disp_idx, int i);
 #endif
