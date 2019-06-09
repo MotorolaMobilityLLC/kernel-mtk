@@ -633,6 +633,61 @@ static unsigned int lcm_compare_id(void)
 	return 1;
 }
 
+static unsigned int lcm_ata_check(unsigned char *buffer)
+{
+#if 0
+#ifndef BUILD_LK
+	unsigned int ret = 0;
+	unsigned int x0 = FRAME_WIDTH / 4;
+	unsigned int x1 = FRAME_WIDTH * 3 / 4;
+
+	unsigned char x0_MSB = ((x0 >> 8) & 0xFF);
+	unsigned char x0_LSB = (x0 & 0xFF);
+	unsigned char x1_MSB = ((x1 >> 8) & 0xFF);
+	unsigned char x1_LSB = (x1 & 0xFF);
+
+	unsigned int data_array[3];
+	unsigned char read_buf[4];
+
+	LCM_LOGI("ATA check size = 0x%x,0x%x,0x%x,0x%x\n",
+		x0_MSB, x0_LSB, x1_MSB, x1_LSB);
+	data_array[0] = 0x0005390A;	/* HS packet */
+	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
+	data_array[2] = (x1_LSB);
+	dsi_set_cmdq(data_array, 3, 1);
+
+	/* read id return two byte,version and id */
+	data_array[0] = 0x00043700;
+	dsi_set_cmdq(data_array, 1, 1);
+
+	read_reg_v2(0x2A, read_buf, 4);
+
+	if ((read_buf[0] == x0_MSB) && (read_buf[1] == x0_LSB)
+	    && (read_buf[2] == x1_MSB) && (read_buf[3] == x1_LSB))
+		ret = 1;
+	else
+		ret = 0;
+
+	x0 = 0;
+	x1 = FRAME_WIDTH - 1;
+
+	x0_MSB = ((x0 >> 8) & 0xFF);
+	x0_LSB = (x0 & 0xFF);
+	x1_MSB = ((x1 >> 8) & 0xFF);
+	x1_LSB = (x1 & 0xFF);
+
+	data_array[0] = 0x0005390A;	/* HS packet */
+	data_array[1] = (x1_MSB << 24) | (x0_LSB << 16) | (x0_MSB << 8) | 0x2a;
+	data_array[2] = (x1_LSB);
+	dsi_set_cmdq(data_array, 3, 1);
+	return ret;
+#else
+	return 0;
+#endif
+#endif
+	/*skip ata check*/
+	return 1;
+}
 struct LCM_DRIVER nt36672ah_hdp_dsi_vdo_tcl_csot_lcm_drv = {
 	.name		= "nt36672ah_hdp_dsi_vdo_tcl_csot",
 	.set_util_funcs = lcm_set_util_funcs,
@@ -645,5 +700,6 @@ struct LCM_DRIVER nt36672ah_hdp_dsi_vdo_tcl_csot_lcm_drv = {
 #ifndef BUILD_LK
 	.resume_power	= lcm_resume_power,
 	.suspend_power	= lcm_suspend_power,
+	.ata_check	= lcm_ata_check,
 #endif
 };
