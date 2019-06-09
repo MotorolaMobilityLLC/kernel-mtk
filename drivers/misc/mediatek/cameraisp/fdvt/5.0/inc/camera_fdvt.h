@@ -112,6 +112,8 @@ struct FDVT_Config {
 	unsigned int FDVT_FD_CON_BASE_ADR;
 	unsigned int FDVT_YUV_SRC_WD_HT;
 	unsigned int FD_MODE;
+	unsigned int RESULT;
+	unsigned int RESULT1;
 };
 #define FDVT_Config struct FDVT_Config
 
