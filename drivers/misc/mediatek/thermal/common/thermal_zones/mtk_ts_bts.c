@@ -50,12 +50,17 @@ IMM_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 	pr_notice("E_WF: %s doesn't exist\n", __func__);
 	return -1;
 }
+int __attribute__ ((weak))
+tsdctm_thermal_get_ttj_on(void)
+{
+	return 0;
+}
 /*=============================================================*/
 static kuid_t uid = KUIDT_INIT(0);
 static kgid_t gid = KGIDT_INIT(1000);
 static DEFINE_SEMAPHORE(sem_mutex);
 
-static unsigned int interval;	/* seconds, 0 : no auto polling */
+static unsigned int interval = 1;	/* seconds, 0 : no auto polling */
 static int trip_temp[10] = { 120000, 110000, 100000, 90000, 80000,
 				70000, 65000, 60000, 55000, 50000 };
 
@@ -65,7 +70,7 @@ static int kernelmode;
 static int g_THERMAL_TRIP[10] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static int num_trip;
-static char g_bind0[20] = { 0 };
+static char g_bind0[20] = {"mtktsAP-sysrst"};
 static char g_bind1[20] = { 0 };
 static char g_bind2[20] = { 0 };
 static char g_bind3[20] = { 0 };
@@ -683,7 +688,8 @@ int mtkts_bts_get_hw_temp(void)
 	mutex_unlock(&BTS_lock);
 
 
-	if (tsatm_thermal_get_catm_type() == 2)
+	if ((tsatm_thermal_get_catm_type() == 2) &&
+		(tsdctm_thermal_get_ttj_on() == 0))
 		t_ret2 = wakeup_ta_algo(TA_CATMPLUS_TTJ);
 
 	if (t_ret2 < 0)
@@ -1381,6 +1387,8 @@ static int __init mtkts_bts_init(void)
 			proc_set_user(entry, uid, gid);
 
 	}
+
+	mtkts_bts_register_thermal();
 #if 0
 	mtkTTimer_register("mtktsAP", mtkts_bts_start_thermal_timer,
 					mtkts_bts_cancel_thermal_timer);

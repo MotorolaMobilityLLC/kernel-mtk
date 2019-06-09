@@ -21,7 +21,7 @@
 #include "mtk_ppm_platform.h"
 #include "mtk_ppm_internal.h"
 #include "mtk_upower.h"
-
+#include "mtk_ppm_api.h"
 
 struct ppm_cobra_data cobra_tbl;
 struct ppm_cobra_lookup cobra_lookup_data;

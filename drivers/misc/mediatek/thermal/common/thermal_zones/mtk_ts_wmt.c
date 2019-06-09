@@ -232,8 +232,8 @@ static int wmt_send_signal(int level)
 		siginfo_t info;
 
 		info.si_signo = SIGIO;
-		info.si_errno = 0;
-		info.si_code = thro;
+		info.si_code = 4;
+		info.si_errno = thro;
 		info.si_addr = NULL;
 		ret = send_sig_info(SIGIO, &info, pg_task);
 	}
@@ -1179,6 +1179,7 @@ static int wmt_wifi_tx_thro_limit_open(struct inode *inode, struct file *file)
 	return single_open(file, wmt_wifi_tx_thro_limit_read, PDE_DATA(inode));
 }
 
+int wmt_test_thro;
 /* New Wifi throttling Algo+ */
 ssize_t wmt_wifi_algo_write(
 struct file *filp, const char __user *buf, size_t len, loff_t *data)
@@ -1236,6 +1237,14 @@ struct file *filp, const char __user *buf, size_t len, loff_t *data)
 		else
 			wmt_tm_debug_log = 0;
 
+		return len;
+	}
+
+	if (sscanf(desc, "thro=%d", &wmt_test_thro) == 1) {
+		if (wmt_test_thro ==  0)
+			wmt_test_thro = -1;
+		wmt_tm_printk("set wmt thro = %d\n", wmt_test_thro);
+		wmt_send_signal(wmt_test_thro);
 		return len;
 	}
 
@@ -1871,7 +1880,7 @@ static int wmt_tm_proc_register(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 
-		entry = proc_create("clwmt_pid", 0660, wmt_tm_proc_dir,
+		entry = proc_create("clwmtx_pid", 0660, wmt_tm_proc_dir,
 								&_tm_pid_fops);
 
 		if (entry)

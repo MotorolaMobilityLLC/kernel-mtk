@@ -32,6 +32,7 @@
 #include <tmp_bts.h>
 #include <linux/slab.h>
 #include <linux/math64.h>
+#include "mt-plat/mtk_thermal_platform.h"
 
 #ifdef CONFIG_PM
 #include <linux/suspend.h>
@@ -127,6 +128,35 @@ static long long AcMatrixNz[ACNZ] = {3397825, 2473916, 45481, 2473916, 4136358,
 76043, 45481, 76043, 156376};
 static long long CapMatrix[NUMNODE] = {0, 0, 63135};
 
+/* =============================================================
+ * Dynamic RC for Tskin to TTj Model Parameters
+ * =============================================================
+ */
+#define INIT_R1_R2  1543 //unit = 1000
+#define INIT_R1C1   5000 //unit = 1000
+#define DTSKIN_THRES 1000 // dtskin = 1C
+#define DRC_UNIT 1000 // R1/R2, R1C1 unit = 1000
+#define DRC_Bound 50000
+#define TTSKIN 42000 // Target tskin
+#define TTj_Limit 85000
+#define AVE_WINDOW 100
+#define DRC_AVE_WINDOW 50
+static int mtkts_dctm_ttj_on;
+static int mtkts_dctm_drc_reset;
+
+/* =============================================================
+ * Runtime Changeable Variables
+ * =============================================================
+ */
+static int init_r1_r2 = INIT_R1_R2;
+static int init_r1c1 = INIT_R1C1;
+static int dtskin_thres = DTSKIN_THRES;
+static int drc_bound = DRC_Bound;
+static int ttskin = TTSKIN;
+static int ave_window = AVE_WINDOW;
+static int drc_ave_window = DRC_AVE_WINDOW;
+static int ttj_limit = TTj_Limit;
+
 static DEFINE_MUTEX(dctm_mutex);
 
 /* =============================================================
@@ -199,6 +229,32 @@ static int tskinTransient(int tpcb)
 	return tn[TSKINNODE];
 }
 
+int tsdctm_thermal_get_ttj_on(void)
+{
+	mtkts_dctm_dprintk("%s dctm_ttj_on = %d\n",
+				__func__, mtkts_dctm_ttj_on);
+	return mtkts_dctm_ttj_on;
+}
+
+
+static void dctmdrc_update_params(void)
+{
+	int ret = 0;
+
+	thermal_dctm_t.t_drc_par.tamb = tamb;
+	thermal_dctm_t.t_drc_par.init_r1_r2 = init_r1_r2;
+	thermal_dctm_t.t_drc_par.init_r1c1 = init_r1c1;
+	thermal_dctm_t.t_drc_par.dtskin_thres = dtskin_thres;
+	thermal_dctm_t.t_drc_par.drc_bound = drc_bound;
+	thermal_dctm_t.t_drc_par.ttskin = ttskin;
+	thermal_dctm_t.t_drc_par.ave_window = ave_window;
+	thermal_dctm_t.t_drc_par.drc_ave_window = drc_ave_window;
+	thermal_dctm_t.t_drc_par.ttj_limit = ttj_limit;
+
+	ret = wakeup_ta_algo(TA_DCTM_DRC_CFG);
+	mtkts_dctm_printk("%s : ret %d\n", __func__, ret);
+}
+
 /* =============================================================
  * Thermal zone functions
  * =============================================================
@@ -207,6 +263,7 @@ static int mtkts_dctm_get_temp(struct thermal_zone_device *thermal, int *t)
 {
 	int temp = 0;
 	int tpcb = 0;
+	int t_ret = 0;
 
 	if (!g_resume_done) {
 		mtkts_dctm_printk("%s error , g_resume_done = %d\n",
@@ -223,6 +280,17 @@ static int mtkts_dctm_get_temp(struct thermal_zone_device *thermal, int *t)
 	/* temp *= 1000; */
 
 	*t = temp;
+
+	if (mtkts_dctm_ttj_on) {
+		if (mtkts_dctm_drc_reset) {
+			t_ret = wakeup_ta_algo(TA_DCTM_DRC_RST);
+			mtkts_dctm_drc_reset = 0;
+		} else
+			t_ret = wakeup_ta_algo(TA_DCTM_TTJ);
+	}
+
+	if (t_ret < 0)
+		pr_notice("%s, wakeup_ta_algo out of memory\n", __func__);
 
 	if ((int)*t >= polling_trip_temp1)
 		thermal->polling_delay = interval * 1000;
@@ -544,6 +612,7 @@ static int dctm_pm_event(
 		mutex_unlock(&dctm_mutex);
 		break;
 	case PM_POST_SUSPEND:
+		mtkts_dctm_drc_reset = 1;
 		tskinInit(mtk_thermal_get_temp(
 					MTK_THERMAL_SENSOR_AP)/1000);
 		mutex_lock(&dctm_mutex);
@@ -678,6 +747,9 @@ struct file *file, const char __user *buffer, size_t count, loff_t *data)
 
 		mutex_unlock(&dctm_mutex);
 
+		/* Reset DRC and related parameters */
+		mtkts_dctm_drc_reset = 1;
+
 		/* Reinit */
 		tskinInit(mtk_thermal_get_temp(MTK_THERMAL_SENSOR_AP)/1000);
 
@@ -766,6 +838,99 @@ static const struct file_operations tzdctm_cfg_fops = {
 	.release = single_release,
 };
 
+static int tzdctm_drc_cfg_read(struct seq_file *m, void *v)
+{
+		seq_printf(m, "dctm_ttj_on=%d\n", mtkts_dctm_ttj_on);
+
+		seq_printf(m,
+			"init_r1_r2=%d, init_r1c1=%d, dtskin_thres=%d, drc_bound=%d\n",
+			init_r1_r2, init_r1c1, dtskin_thres, drc_bound);
+
+		seq_printf(m,
+			"ttskin=%d, ave_window=%d, drc_ave_window=%d, ttj_limit=%d\n",
+			ttskin, ave_window, drc_ave_window, ttj_limit);
+
+		return 0;
+}
+
+static ssize_t tzdctm_drc_cfg_write(struct file *file,
+		const char __user *buffer,
+		size_t count,
+		loff_t *data)
+{
+	char desc[64];
+	int len = 0;
+
+	int dctm_ttj_on = 0;
+	int t_init_r1_r2 = INIT_R1_R2;
+	int t_init_r1c1 = INIT_R1C1;
+	int t_dtskin_thres = DTSKIN_THRES;
+	int t_drc_bound = DRC_Bound;
+	int t_ttskin = TTSKIN;
+	int t_ave_window = AVE_WINDOW;
+	int t_drc_ave_window = DRC_AVE_WINDOW;
+	int t_ttj_limit = TTj_Limit;
+
+	len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+	if (copy_from_user(desc, buffer, len))
+		return -EFAULT;
+
+	desc[len] = '\0';
+
+	if (sscanf(desc, "%d %d %d %d %d %d %d %d %d",
+		&dctm_ttj_on,
+		&t_init_r1_r2, &t_init_r1c1, &t_dtskin_thres, &t_drc_bound,
+		&t_ttskin, &t_ave_window, &t_drc_ave_window, &t_ttj_limit
+		) == 9) {
+
+		mtkts_dctm_printk("%s dctm_ttj_on %d\n",
+			__func__, dctm_ttj_on);
+
+		if (dctm_ttj_on == 0 || dctm_ttj_on == 1)
+			mtkts_dctm_ttj_on = dctm_ttj_on;
+
+		mtkts_dctm_printk("%s input2 %d %d %d %d %d %d %d %d\n",
+			__func__,
+			t_init_r1_r2, t_init_r1c1, t_dtskin_thres, t_drc_bound,
+			t_ttskin, t_ave_window, t_drc_ave_window, t_ttj_limit);
+
+		init_r1_r2 = t_init_r1_r2;
+		init_r1c1 = t_init_r1c1;
+		dtskin_thres = t_dtskin_thres;
+		drc_bound = t_drc_bound;
+		ttskin = t_ttskin;
+		ave_window = t_ave_window;
+		drc_ave_window = t_drc_ave_window;
+		ttj_limit = t_ttj_limit;
+
+		/* Reset DRC and related parameters */
+		mtkts_dctm_drc_reset = 1;
+
+		/* Reinit */
+		tskinInit(mtk_thermal_get_temp(MTK_THERMAL_SENSOR_AP)/1000);
+
+		dctmdrc_update_params();
+
+		return count;
+	}
+	mtkts_dctm_printk("%s bad argument\n", __func__);
+	return -EINVAL;
+}
+
+static int tzdctm_drc_cfg_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, tzdctm_drc_cfg_read, NULL);
+}
+
+static const struct file_operations tzdctm_drc_cfg_fops = {
+	.owner = THIS_MODULE,
+	.open = tzdctm_drc_cfg_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.write = tzdctm_drc_cfg_write,
+	.release = single_release,
+};
+
 static int __init mtkts_dctm_init(void)
 {
 	struct proc_dir_entry *entry = NULL;
@@ -791,12 +956,18 @@ static int __init mtkts_dctm_init(void)
 		if (entry)
 			proc_set_user(entry, uid, gid);
 
+		entry = proc_create("tzdctm_drc_cfg", 0664, mtkts_dir,
+			&tzdctm_drc_cfg_fops);
+		if (entry)
+			proc_set_user(entry, uid, gid);
+
 		entry = proc_create("tzdctm_cfg_matrix", 0664, mtkts_dir,
 			&tzdctm_cfg_matrix_fops);
 		if (entry)
 			proc_set_user(entry, uid, gid);
 	}
 
+	mtkts_dctm_drc_reset = 1;
 	tskinInit(tpcbinit);
 
 	mtkts_dctm_register_thermal();

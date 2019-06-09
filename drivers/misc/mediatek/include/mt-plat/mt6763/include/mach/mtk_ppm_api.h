@@ -142,6 +142,7 @@ extern void mt_ppm_thermal_tskin_ctrl_enable(bool enable);
 extern unsigned int mt_ppm_thermal_get_min_power(void);
 extern unsigned int mt_ppm_thermal_get_max_power(void);
 extern unsigned int mt_ppm_thermal_get_cur_power(void);
+extern int ppm_find_pwr_idx(struct ppm_cluster_status *cluster_status);
 
 /* User limit policy */
 extern unsigned int mt_ppm_userlimit_cpu_core(unsigned int cluster_num,
