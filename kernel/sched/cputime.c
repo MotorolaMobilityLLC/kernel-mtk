@@ -741,7 +741,7 @@ static cputime_t vtime_delta(struct task_struct *tsk)
 	if (time_before(now, (unsigned long)tsk->vtime_snap))
 		return 0;
 
-	return jiffies_to_cputime(now - tsk->vtime_snap);
+	return (now - tsk->vtime_snap) * TICK_NSEC;
 }
 
 static cputime_t get_vtime_delta(struct task_struct *tsk)
@@ -756,7 +756,7 @@ static cputime_t get_vtime_delta(struct task_struct *tsk)
 	 * elapsed time. Limit account_other_time to prevent rounding
 	 * errors from causing elapsed vtime to go negative.
 	 */
-	delta = jiffies_to_cputime(now - tsk->vtime_snap);
+	delta = (now - tsk->vtime_snap) * TICK_NSEC;
 	other = account_other_time(delta);
 	WARN_ON_ONCE(tsk->vtime_snap_whence == VTIME_INACTIVE);
 	tsk->vtime_snap = now;
