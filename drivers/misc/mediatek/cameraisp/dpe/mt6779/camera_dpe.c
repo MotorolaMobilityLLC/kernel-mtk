@@ -61,9 +61,10 @@
 #include <smi_public.h>
 #include "engine_request.h"
 
-/*#define DPE_PMQOS_EN*/
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
+#define DPE_PMQOS
+#ifdef DPE_PMQOS
 #include <linux/pm_qos.h>
+#include <mmdvfs_pmqos.h>
 #endif
 
 /* Measure the kernel performance
@@ -279,6 +280,12 @@ static unsigned int g_SuspendCnt;
 bool g_isDvpInUse;
 bool g_DPE_PMState;
 
+#ifdef DPE_PMQOS
+static struct pm_qos_request dpe_qos_request;
+static u64 max_dpe_freq;
+static u64 mid_dpe_freq;
+#endif
+
 enum DPE_FRAME_STATUS_ENUM {
 	DPE_FRAME_STATUS_EMPTY,    /* 0 */
 	DPE_FRAME_STATUS_ENQUE,    /* 1 */
@@ -366,10 +373,6 @@ struct DPE_INFO_STRUCT {
 };
 
 static struct DPE_INFO_STRUCT DPEInfo;
-
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-struct pm_qos_request dpe_pm_qos_request;
-#endif
 
 enum eLOG_TYPE {
 	_LOG_DBG = 0,
@@ -1142,6 +1145,51 @@ signed int dpe_deque_cb(struct frame *frames, void *req)
 	return 0;
 }
 
+#ifdef DPE_PMQOS
+void DPEQOS_Init(void)
+{
+	s32 result = 0;
+	u64 dpe_freq_steps[MAX_FREQ_STEP];
+	u32 step_size;
+
+	/* Call pm_qos_add_request when initialize module or driver prob */
+	pm_qos_add_request(
+		&dpe_qos_request,
+		PM_QOS_DPE_FREQ,
+		PM_QOS_MM_FREQ_DEFAULT_VALUE);
+
+	/* Call mmdvfs_qos_get_freq_steps to get supported frequency */
+	result = mmdvfs_qos_get_freq_steps(
+		PM_QOS_DPE_FREQ,
+		dpe_freq_steps,
+		&step_size);
+
+	if (result < 0 || step_size == 0)
+		LOG_INF("get MMDVFS freq steps failed, result: %d\n", result);
+	else {
+		max_dpe_freq = dpe_freq_steps[0];
+		mid_dpe_freq = dpe_freq_steps[1];
+	}
+}
+
+void DPEQOS_Uninit(void)
+{
+	pm_qos_remove_request(&dpe_qos_request);
+}
+
+void DPEQOS_UpdateDpeFreq(bool start, unsigned int vopp)
+{
+	/* start DPE, configure MMDVFS to highest CLK */
+	if (start) {
+		if (vopp == 0)
+			pm_qos_update_request(&dpe_qos_request, max_dpe_freq);
+		else
+			pm_qos_update_request(&dpe_qos_request, mid_dpe_freq);
+	} else /* finish DPE, config MMDVFS to lowest CLK */
+		pm_qos_update_request(&dpe_qos_request, 0);
+}
+#endif
+
 void DPE_DumpUserSpaceReg(struct DPE_Config *pDpeConfig)
 {
 	LOG_INF("DPE Config From User Space\n");
@@ -1344,14 +1392,10 @@ signed int CmdqDPEHW(struct frame *frame)
 	struct DPE_Config *pDpeConfig;
 	unsigned int prevFrm;
 	unsigned int curFrm;
-#if 1
+
 	struct cmdqRecStruct *handle;
 	uint64_t engineFlag = (uint64_t)(1LL << CMDQ_ENG_DPE);
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-	unsigned int w_imgi, h_imgi, w_mvio, h_mvio, w_bvo, h_bvo;
-	unsigned int dma_bandwidth, trig_num;
-#endif
-#endif
+
 	if (frame == NULL || frame->data == NULL)
 		return -1;
 
@@ -1515,9 +1559,9 @@ if (g_isDvpInUse == 0) {
 	/* cmdqRecWrite(handle, DVP_CRC_CTRL_HW, 0x00000010, 0x00000010); */
 	/* CRC CLEAR  = 0 */
 	/* cmdqRecWrite(handle, DVP_CRC_CTRL_HW, 0x00000000, 0x00000010); */
-	spin_lock(&(DPEInfo.SpinLockDPE));
+	spin_lock_irq(&(DPEInfo.SpinLockDPE));
 	g_isDvpInUse = 1;
-	spin_unlock(&(DPEInfo.SpinLockDPE));
+	spin_unlock_irq(&(DPEInfo.SpinLockDPE));
 }
 	/* Double Buffer Mask = 1 */
 	cmdqRecWrite(handle, DVP_CTRL01_HW, 0x00020000, 0x00020000);
@@ -1582,21 +1626,14 @@ if (g_isDvpInUse == 0) {
 		cmdqRecWrite(handle, DVS_CTRL00_HW, 0x00000000, 0x40000000);
 	}
 
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-	trig_num = (pDpeConfig->DPE_CTRL & 0x00000F00) >> 8;
-	w_imgi = pDpeConfig->DPE_SIZE & 0x000001FF;
-	h_imgi = (pDpeConfig->DPE_SIZE & 0x01FF0000) >> 16;
-
-	w_mvio = ((w_imgi + 1) >> 1) - 1;
-	w_mvio = ((w_mvio / 7) << 4) + (((((w_mvio % 7) + 1) * 18) + 7) >> 3);
-	h_mvio = (h_imgi + 1) >> 1;
-
-	w_bvo =  (w_imgi + 1) >> 1;
-	h_bvo =  (h_imgi + 1) >> 1;
-
-	dma_bandwidth = ((w_imgi * h_imgi) * 2 + (w_mvio * h_mvio) * 2 * 16 +
-			(w_bvo * h_bvo)) * trig_num * 30 / 1000000;
-	cmdq_task_update_property(handle, &dma_bandwidth, sizeof(unsigned int));
+#ifdef DPE_PMQOS
+	if (((pDpeConfig->DVS_SRC_00 & 0x20000000) == 0x20000000) ||
+		((pDpeConfig->DVP_CTRL04 & 0x00040000) == 0x00040000))
+		/*  16Bit Mode, use high vopp */
+		DPEQOS_UpdateDpeFreq(1, 0);
+	else
+		/*  Non-16Bit Mode, use mid vopp */
+		DPEQOS_UpdateDpeFreq(1, 1);
 #endif
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
 	cmdq_task_flush_async_destroy(handle);	/* flush and destroy in cmdq */
@@ -1621,28 +1658,6 @@ static const struct engine_ops dpe_ops = {
 	.frame_handler = CmdqDPEHW,
 	.req_feedback_cb = dpe_feedback,
 };
-
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-void cmdq_pm_qos_start(struct TaskStruct *task, struct TaskStruct *task_list[],
-								u32 size)
-{
-	unsigned int dma_bandwidth;
-
-	dma_bandwidth = *(unsigned int *) task->prop_addr;
-	pm_qos_update_request(&dpe_pm_qos_request, dma_bandwidth);
-	LOG_INF("+ PMQOS Bandwidth : %d MB/sec\n", dma_bandwidth);
-}
-
-void cmdq_pm_qos_stop(struct TaskStruct *task, struct TaskStruct *task_list[],
-								u32 size)
-{
-	pm_qos_update_request(&dpe_pm_qos_request, 0);
-	LOG_DBG("- PMQOS Bandwidth : %d\n", 0);
-}
-#endif
-
-
-
 
 /*
  *
@@ -2346,6 +2361,9 @@ static long DPE_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 				LOG_ERR("DPE_WAIT_IRQ copy_from_user failed");
 				Ret = -EFAULT;
 			}
+#ifdef DPE_PMQOS
+	DPEQOS_UpdateDpeFreq(0, 0);
+#endif
 			break;
 		}
 	case DPE_CLEAR_IRQ:
@@ -3445,12 +3463,6 @@ static signed int DPE_probe(struct platform_device *pDev)
 		/*  */
 		DPEInfo.IrqInfo.Mask[DPE_IRQ_TYPE_INT_DVP_ST] = INT_ST_MASK_DPE;
 
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-		pm_qos_add_request(&dpe_pm_qos_request,
-			PM_QOS_MM_MEMORY_BANDWIDTH, PM_QOS_DEFAULT_VALUE);
-		cmdqCoreRegisterTaskCycleCB(CMDQ_GROUP_DPE, cmdq_pm_qos_start,
-							cmdq_pm_qos_stop);
-#endif
 		seqlock_init(&(dpe_reqs.seqlock));
 	}
 
@@ -3528,10 +3540,6 @@ static signed int DPE_remove(struct platform_device *pDev)
 	class_destroy(pDPEClass);
 	pDPEClass = NULL;
 	/*  */
-
-#if defined(DPE_PMQOS_EN) && defined(CONFIG_MTK_QOS_SUPPORT)
-	pm_qos_remove_request(&dpe_pm_qos_request);
-#endif
 
 	return 0;
 }
@@ -4064,6 +4072,10 @@ static signed int __init DPE_Init(void)
 			   DPE_DumpCallback, DPE_ResetCallback,
 							DPE_ClockOffCallback);
 
+#ifdef DPE_PMQOS
+	DPEQOS_Init();
+#endif
+
 	LOG_DBG("- X. Ret: %d.", Ret);
 	return Ret;
 }
@@ -4076,6 +4088,10 @@ static void __exit DPE_Exit(void)
 	/*int i;*/
 
 	LOG_DBG("- E.");
+
+#ifdef DPE_PMQOS
+	DPEQOS_Uninit();
+#endif
 	/*  */
 	platform_driver_unregister(&DPEDriver);
 	/*  */
@@ -4123,9 +4139,9 @@ static irqreturn_t ISP_Irq_DVP(signed int Irq, void *DeviceId)
 		DPE_WR32(DVP_IRQ_00_REG, 0x000000F0); /* Clear DVP IRQ */
 		DPE_WR32(DVP_IRQ_00_REG, 0x00000E00);
 		isDvpDone = MTRUE;
-		spin_lock(&(DPEInfo.SpinLockDPE));
+		spin_lock_irq(&(DPEInfo.SpinLockDPE));
 		g_isDvpInUse = 0;
-		spin_unlock(&(DPEInfo.SpinLockDPE));
+		spin_unlock_irq(&(DPEInfo.SpinLockDPE));
 	/* } */
 
 	spin_lock(&(DPEInfo.SpinLockIrq[DPE_IRQ_TYPE_INT_DVP_ST]));
@@ -4273,5 +4289,5 @@ static void logPrint(struct work_struct *data)
 module_init(DPE_Init);
 module_exit(DPE_Exit);
 MODULE_DESCRIPTION("Camera DPE driver");
-MODULE_AUTHOR("MM3SW2");
+MODULE_AUTHOR("MM3SW5");
 MODULE_LICENSE("GPL");
