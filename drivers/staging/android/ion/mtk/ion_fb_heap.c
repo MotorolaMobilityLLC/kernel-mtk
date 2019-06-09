@@ -120,7 +120,7 @@ static int ion_fb_heap_phys(struct ion_heap *heap, struct ion_buffer *buffer,
 	}
 
 	memset((void *)&port_info, 0, sizeof(port_info));
-	port_info.eModuleID = buffer_info->module_id;
+	port_info.module_id = buffer_info->module_id;
 	port_info.cache_coherent = buffer_info->coherent;
 	port_info.security = buffer_info->security;
 #if defined(CONFIG_MTK_M4U)
@@ -158,7 +158,12 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 {
 	struct ion_fb_buffer_info *buffer_info = NULL;
 	ion_phys_addr_t paddr;
-
+#ifdef CONFIG_MTK_PSEUDO_M4U
+	ion_phys_addr_t iova = 0;
+	dma_addr_t offset = 0;
+	struct scatterlist *sg;
+	int i = 0;
+#endif
 	if (align > PAGE_SIZE)
 		return -EINVAL;
 
@@ -190,6 +195,18 @@ static int ion_fb_heap_allocate(struct ion_heap *heap,
 	buffer->size = size;
 	buffer->sg_table = ion_fb_heap_map_dma(heap, buffer);
 
+#ifdef CONFIG_MTK_PSEUDO_M4U
+	buffer_info->module_id = 0;
+	ion_fb_heap_phys(heap, buffer, &iova, &size);
+
+	sg = buffer->sg_table->sgl;
+	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
+		sg_dma_address(sg) = iova + offset;
+		sg_dma_len(sg) = sg->length;
+		offset += sg->length;
+	}
+	buffer->priv_virt = buffer_info;
+#endif
 	return buffer_info->priv_phys == ION_FB_ALLOCATE_FAIL ? -ENOMEM : 0;
 }
 

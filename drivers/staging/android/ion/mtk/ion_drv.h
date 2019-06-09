@@ -53,9 +53,9 @@ enum ION_CACHE_SYNC_TYPE {
 	ION_CACHE_CLEAN_BY_RANGE,
 	ION_CACHE_INVALID_BY_RANGE,
 	ION_CACHE_FLUSH_BY_RANGE,
-	ION_CACHE_CLEAN_BY_RANGE_USE_VA,
-	ION_CACHE_INVALID_BY_RANGE_USE_VA,
-	ION_CACHE_FLUSH_BY_RANGE_USE_VA,
+	ION_CACHE_CLEAN_BY_RANGE_USE_PA,
+	ION_CACHE_INVALID_BY_RANGE_USE_PA,
+	ION_CACHE_FLUSH_BY_RANGE_USE_PA,
 	ION_CACHE_CLEAN_ALL,
 	ION_CACHE_INVALID_ALL,
 	ION_CACHE_FLUSH_ALL
@@ -121,7 +121,7 @@ struct ion_sys_get_phys_param {
 		ion_user_handle_t handle;
 		struct ion_handle *kernel_handle;
 	};
-	unsigned int phy_addr;
+	unsigned long phy_addr;
 	unsigned long len;
 };
 

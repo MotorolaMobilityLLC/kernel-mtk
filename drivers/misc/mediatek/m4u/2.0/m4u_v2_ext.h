@@ -84,7 +84,7 @@ struct m4u_client_t {
 };
 
 struct port_mva_info_t {
-	int eModuleID;
+	int module_id;
 	unsigned long va;
 	unsigned int BufSize;
 	int security;
@@ -100,7 +100,7 @@ struct sg_table *m4u_create_sgtable(unsigned long va, unsigned int size);
 int m4u_alloc_mva_sg(struct port_mva_info_t *port_info,
 		struct sg_table *sg_table);
 
-int m4u_dealloc_mva_sg(int eModuleID,
+int m4u_dealloc_mva_sg(int module_id,
 						struct sg_table *sg_table,
 						const unsigned int BufSize,
 						const unsigned int MVA);

@@ -958,18 +958,18 @@ int m4u_alloc_mva_sg(struct port_mva_info_t *port_info,
 #ifdef M4U_TEE_SERVICE_ENABLE
 static int m4u_unmap_nonsec_buffer(unsigned int mva, unsigned int size);
 
-int m4u_register_mva_share(int eModuleID, unsigned int mva)
+int m4u_register_mva_share(int module_id, unsigned int mva)
 {
 	struct m4u_buf_info_t *pMvaInfo;
 	unsigned int domain_idx = 0;
 
-	if (eModuleID >= M4U_PORT_VPU)
+	if (module_id >= M4U_PORT_VPU)
 		domain_idx = 1;
 
 	pMvaInfo = mva_get_priv(mva, domain_idx);
 	if (!pMvaInfo) {
 		M4UMSG("%s cannot find mva: module=%s, mva=0x%x, domain=%u\n",
-			__func__, m4u_get_port_name(eModuleID),
+			__func__, m4u_get_port_name(module_id),
 			mva, domain_idx);
 		return -1;
 	}
@@ -980,7 +980,7 @@ int m4u_register_mva_share(int eModuleID, unsigned int mva)
 #endif
 
 
-int m4u_dealloc_mva_sg(int eModuleID, struct sg_table *sg_table,
+int m4u_dealloc_mva_sg(int module_id, struct sg_table *sg_table,
 			const unsigned int BufSize, const unsigned int MVA)
 {
 	if (!ion_m4u_client) {
@@ -988,7 +988,7 @@ int m4u_dealloc_mva_sg(int eModuleID, struct sg_table *sg_table,
 		return -1;
 	}
 
-	return m4u_dealloc_mva(ion_m4u_client, eModuleID, MVA);
+	return m4u_dealloc_mva(ion_m4u_client, module_id, MVA);
 }
 
 /* should not hold client->dataMutex here. */

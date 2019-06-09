@@ -49,6 +49,9 @@ static int ion_comm_cache_pool(void *data)
 	ion_cam_heap = ion_drv_get_heap(g_ion_device,
 					ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA,
 					1);
+	if (!ion_cam_heap)
+		return -1;
+
 	while (1) {
 		if (kthread_should_stop()) {
 			IONMSG("stop ion history threak\n");
