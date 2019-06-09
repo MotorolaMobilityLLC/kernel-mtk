@@ -551,6 +551,23 @@ TRACE_EVENT(perf_index_l,
 		__entry->stall[6], __entry->stall[7])
 );
 
+TRACE_EVENT(swpm_power,
+
+	TP_PROTO(char *power),
+
+	TP_ARGS(power),
+
+	TP_STRUCT__entry(
+		 __string(power_str, power)
+	),
+
+	TP_fast_assign(
+		__assign_str(power_str, power);
+	),
+
+	TP_printk("%s", __get_str(power_str))
+);
+
 #endif /* _TRACE_MTK_EVENTS_H */
 
 /* This part must be outside protection */

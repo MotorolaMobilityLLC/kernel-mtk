@@ -17,6 +17,5 @@
 
 extern unsigned int swpm_get_avg_power(unsigned int type,
 				unsigned int avg_window);
-extern void swpm_mdla_onoff_notify(unsigned int on);
 #endif /* __MTK_SWPM_H__ */
 
