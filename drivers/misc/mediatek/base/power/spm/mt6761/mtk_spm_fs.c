@@ -177,52 +177,52 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 {
 	char *p = buf;
 
-	p += sprintf(p, "pcm_flags = 0x%zx\n",
+	p += sprintf(p, "pcm_flags = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS, 0));
-	p += sprintf(p, "pcm_flags_cust = 0x%zx\n",
+	p += sprintf(p, "pcm_flags_cust = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS_CUST, 0));
-	p += sprintf(p, "pcm_flags_cust_set = 0x%zx\n",
+	p += sprintf(p, "pcm_flags_cust_set = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags_cust_clr = 0x%zx\n",
+	p += sprintf(p, "pcm_flags_cust_clr = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS_CUST_CLR, 0));
-	p += sprintf(p, "pcm_flags1 = 0x%zx\n",
+	p += sprintf(p, "pcm_flags1 = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS1, 0));
-	p += sprintf(p, "pcm_flags1_cust = 0x%zx\n",
+	p += sprintf(p, "pcm_flags1_cust = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS1_CUST, 0));
-	p += sprintf(p, "pcm_flags1_cust_set = 0x%zx\n",
+	p += sprintf(p, "pcm_flags1_cust_set = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS1_CUST_SET, 0));
-	p += sprintf(p, "pcm_flags1_cust_clr = 0x%zx\n",
+	p += sprintf(p, "pcm_flags1_cust_clr = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_PCM_FLAGS1_CUST_CLR, 0));
-	p += sprintf(p, "timer_val = 0x%zx\n",
+	p += sprintf(p, "timer_val = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_TIMER_VAL, 0));
-	p += sprintf(p, "timer_val_cust = 0x%zx\n",
+	p += sprintf(p, "timer_val_cust = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_TIMER_VAL_CUST, 0));
-	p += sprintf(p, "timer_val_ramp_en = 0x%zx\n",
+	p += sprintf(p, "timer_val_ramp_en = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_TIMER_VAL_RAMP_EN, 0));
-	p += sprintf(p, "timer_val_ramp_en_sec = 0x%zx\n",
+	p += sprintf(p, "timer_val_ramp_en_sec = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_TIMER_VAL_RAMP_EN_SEC, 0));
-	p += sprintf(p, "wake_src = 0x%zx\n",
+	p += sprintf(p, "wake_src = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_WAKE_SRC, 0));
-	p += sprintf(p, "wake_src_cust = 0x%zx\n",
+	p += sprintf(p, "wake_src_cust = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_WAKE_SRC_CUST, 0));
-	p += sprintf(p, "wakelock_timer_val = 0x%zx\n",
+	p += sprintf(p, "wakelock_timer_val = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_WAKELOCK_TIMER_VAL, 0));
-	p += sprintf(p, "wdt_disable = 0x%zx\n",
+	p += sprintf(p, "wdt_disable = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_WDT_DISABLE, 0));
 	/* SPM_AP_STANDBY_CON */
@@ -333,49 +333,49 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 	p += sprintf(p, "md_srcclkena_0_infra_mask_b = 0x%zx\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_SRCCLKENA_0_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_srcclkena_1_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "md_srcclkena_1_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_SRCCLKENA_1_INFRA_MASK_B, 0));
-	p += sprintf(p, "conn_srcclkena_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "conn_srcclkena_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_CONN_SRCCLKENA_INFRA_MASK_B, 0));
-	p += sprintf(p, "ufs_infra_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "ufs_infra_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_UFS_INFRA_REQ_MASK_B, 0));
-	p += sprintf(p, "srcclkeni_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "srcclkeni_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_SRCCLKENI_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_apsrc_req_0_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "md_apsrc_req_0_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_APSRC_REQ_0_INFRA_MASK_B, 0));
-	p += sprintf(p, "md_apsrc_req_1_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "md_apsrc_req_1_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_APSRC_REQ_1_INFRA_MASK_B, 0));
-	p += sprintf(p, "conn_apsrcreq_infra_mask_b = 0x%zx\n",
+	p += sprintf(p, "conn_apsrcreq_infra_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_CONN_APSRCREQ_INFRA_MASK_B, 0));
-	p += sprintf(p, "ufs_srcclkena_mask_b = 0x%zx\n",
+	p += sprintf(p, "ufs_srcclkena_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_UFS_SRCCLKENA_MASK_B, 0));
-	p += sprintf(p, "md_vrf18_req_0_mask_b = 0x%zx\n",
+	p += sprintf(p, "md_vrf18_req_0_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_VRF18_REQ_0_MASK_B, 0));
-	p += sprintf(p, "md_vrf18_req_1_mask_b = 0x%zx\n",
+	p += sprintf(p, "md_vrf18_req_1_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MD_VRF18_REQ_1_MASK_B, 0));
-	p += sprintf(p, "ufs_vrf18_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "ufs_vrf18_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_UFS_VRF18_REQ_MASK_B, 0));
-	p += sprintf(p, "gce_vrf18_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "gce_vrf18_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_GCE_VRF18_REQ_MASK_B, 0));
-	p += sprintf(p, "conn_infra_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "conn_infra_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_CONN_INFRA_REQ_MASK_B, 0));
-	p += sprintf(p, "gce_apsrc_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "gce_apsrc_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_GCE_APSRC_REQ_MASK_B, 0));
-	p += sprintf(p, "disp0_apsrc_req_mask_b = 0x%zx\n",
+	p += sprintf(p, "disp0_apsrc_req_mask_b = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_DISP0_APSRC_REQ_MASK_B, 0));
 	p += sprintf(p, "disp1_apsrc_req_mask_b = 0x%zx\n",
@@ -494,11 +494,11 @@ static ssize_t show_pwr_ctrl(int id, const struct pwr_ctrl *pwrctrl, char *buf)
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MP1_CPU1_WFI_EN, 0));
 	/* MP1_CPU2_WFI_EN */
-	p += sprintf(p, "mp1_cpu2_wfi_en = 0x%zx\n",
+	p += sprintf(p, "mp1_cpu2_wfi_en = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MP1_CPU2_WFI_EN, 0));
 	/* MP0_CPU3_WFI_EN */
-	p += sprintf(p, "mp1_cpu3_wfi_en = 0x%zx\n",
+	p += sprintf(p, "mp1_cpu3_wfi_en = 0x%x\n",
 			SMC_CALL(GET_PWR_CTRL_ARGS,
 				id, PW_MP1_CPU3_WFI_EN, 0));
 
