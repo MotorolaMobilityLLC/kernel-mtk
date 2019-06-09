@@ -41,6 +41,7 @@
 #define C_3D_CNT 4 /* COLOR_3D_CNT */
 #define C_3D_WINDOW_CNT 3
 #define C_3D_WINDOW_SIZE 45
+#define DISP_COLOR_TM_MAX 4
 
 enum TONE_ENUM { PURP_TONE = 0, SKIN_TONE = 1, GRASS_TONE = 2, SKY_TONE = 3 };
 
@@ -236,6 +237,10 @@ enum PQ_DC_index_t {
 
 struct DISP_PQ_DC_PARAM {
 	int param[PQDC_INDEX_MAX];
+};
+
+struct DISP_COLOR_TRANSFORM {
+	int matrix[DISP_COLOR_TM_MAX][DISP_COLOR_TM_MAX];
 };
 
 /* OD */
