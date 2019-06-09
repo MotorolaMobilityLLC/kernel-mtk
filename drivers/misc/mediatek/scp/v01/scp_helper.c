@@ -432,9 +432,11 @@ static int params_to_scp(void)
 {
 #ifdef CFG_SENSOR_PARAMS_TO_SCP_SUPPORT
 	int ret = 0;
+	struct scp_region_info_st *region_info =
+		(struct scp_region_info_st *)(SCP_TCM + SCP_REGION_INFO_OFFSET);
 
 	mt_reg_sync_writel(scp_get_reserve_mem_phys(SCP_DRV_PARAMS_MEM_ID),
-			(SCP_TCM + SCP_REGION_INFO_OFFSET + OFF_PARAM_START));
+			&(region_info->ap_params_start));
 
 	ret = sensor_params_to_scp(
 		scp_get_reserve_mem_virt(SCP_DRV_PARAMS_MEM_ID),

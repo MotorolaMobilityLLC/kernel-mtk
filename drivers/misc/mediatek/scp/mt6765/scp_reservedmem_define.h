@@ -69,12 +69,14 @@ static struct scp_reserve_mblock scp_reserve_mblock[] = {
 		.size = 0x18000,  /* 96 KB */
 	},
 #endif
+#ifdef SCP_PARAMS_TO_SCP_SUPPORT
 	{
 		.num = SCP_DRV_PARAMS_MEM_ID,
 		.start_phys = 0x0,
 		.start_virt = 0x0,
-		.size = 0x100,  /* 192 KB */
+		.size = 0x100,  /* 256 bytes */
 	},
+#endif
 };
 
 

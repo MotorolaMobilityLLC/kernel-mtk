@@ -16,26 +16,28 @@
 
 
 /* scp platform configs*/
-#define SCP_BOOT_TIME_OUT_MONITOR       (0)
-#define SCP_LOGGER_ENABLE               (1)
-#define SCP_DVFS_INIT_ENABLE			(1)
-#define SCP_RESERVED_MEM				(1)
+#define SCP_BOOT_TIME_OUT_MONITOR	(1)
+#define SCP_LOGGER_ENABLE		(1)
+#define SCP_DVFS_INIT_ENABLE		(1)
+#define SCP_RESERVED_MEM		(1)
 /* scp rescovery feature option*/
-#define SCP_RECOVERY_SUPPORT			(1)
+#define SCP_RECOVERY_SUPPORT		(1)
 /* scp recovery timeout value (ms)*/
 #define SCP_PARAMS_TO_SCP_SUPPORT
+#define SCP_SYSTEM_RESET_SUPPORT	(0)
 
-#define SCP_SYS_RESET_TIMEOUT			1000
+
+#define SCP_SYS_RESET_TIMEOUT		1000
 
 /* scp aed definition*/
-#define SCP_AED_STR_LEN		(512)
+#define SCP_AED_STR_LEN			(512)
 
 /* scp sub feature register API marco*/
-#define SCP_REGISTER_SUB_SENSOR         (1)
+#define SCP_REGISTER_SUB_SENSOR		(1)
 
 /* emi mpu define*/
-#define ENABLE_SCP_EMI_PROTECTION       (1)
-#define MPU_REGION_ID_SCP_SMEM          (27)
+#define ENABLE_SCP_EMI_PROTECTION	(1)
+#define MPU_REGION_ID_SCP_SMEM		(27)
 
 /* scp feature ID list */
 enum feature_id {
