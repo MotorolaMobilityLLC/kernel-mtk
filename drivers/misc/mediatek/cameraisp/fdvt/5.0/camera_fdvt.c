@@ -1506,14 +1506,12 @@ static signed int ConfigFDVTHW(FDVT_Config *pFdvtConfig)
 	mt_kernel_trace_begin("ConfigFDVTHW");
 #endif
 
-	cmdqRecCreate(CMDQ_SCENARIO_KERNEL_CONFIG_GENERAL, &handle);
+	cmdqRecCreate(CMDQ_SCENARIO_ISP_FDVT, &handle);
 	/* CMDQ driver dispatches CMDQ HW thread
 	 * and HW thread's priority according to scenario
 	 */
 
 	cmdqRecSetEngine(handle, engineFlag);
-
-	cmdqRecReset(handle);
 
 #if 1
 	/* Use command queue to write register */
@@ -1559,10 +1557,7 @@ static signed int ConfigFDVTHW(FDVT_Config *pFdvtConfig)
 	cmdqRecWrite(handle, FDVT_START_HW, 0x0, CMDQ_REG_MASK);
 #endif
 	/* non-blocking API, Please  use cmdqRecFlushAsync() */
-	cmdqRecFlushAsync(handle);
-	/* if you want to re-use the handle, please reset the handle */
-	cmdqRecReset(handle);
-	cmdqRecDestroy(handle); /* recycle the memory */
+	cmdq_task_flush_async_destroy(handle);	/* flush and destroy in cmdq */
 	//FDVT_DumpReg(); // ADD by gasper
 #ifdef __FDVT_KERNEL_PERFORMANCE_MEASURE__
 	mt_kernel_trace_end();
