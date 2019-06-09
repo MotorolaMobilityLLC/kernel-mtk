@@ -609,6 +609,8 @@ struct ContextStruct {
 	/* Delay set CPR start information */
 	u32 delay_cpr_start;
 
+	void *inst_check_buffer;
+
 #ifdef CMDQ_INSTRUCTION_COUNT
 	/* GCE instructions count information */
 	s32 instructionCountLevel;
@@ -801,7 +803,7 @@ u32 cmdq_event_get_table_size(void);
 
 /* CMDQ core feature functions */
 
-bool cmdq_core_check_pkt_valid(struct cmdq_pkt *pkt);
+bool cmdq_core_check_user_valid(void *src, u32 size);
 
 void cmdq_core_deinit_group_cb(void);
 
