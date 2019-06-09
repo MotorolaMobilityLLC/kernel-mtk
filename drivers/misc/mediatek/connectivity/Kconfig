@@ -141,6 +141,7 @@ config MTK_COMBO_CHIP
 	default "CONSYS_8163" if MTK_COMBO_CHIP_CONSYS_8163
 	default "CONSYS_8167" if MTK_COMBO_CHIP_CONSYS_8167
 	default "CONSYS_3967" if MTK_COMBO_CHIP_CONSYS_3967
+	default "CONSYS_6779" if MTK_COMBO_CHIP_CONSYS_6779
 	help
 	  this feature is used to identify combo chip version or SOC chip
 	  consys version.
