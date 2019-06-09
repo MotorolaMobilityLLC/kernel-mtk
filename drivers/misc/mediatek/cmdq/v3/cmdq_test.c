@@ -7161,7 +7161,7 @@ void testcase_stress_reorder(void)
 #define TESTMBOX_CLT_IDX 15
 #define TESTMBOX_CLT_IDX_LOOP 7
 
-static void testmbox_write(unsigned long dummy_va, unsigned long dummy_pa,
+void testmbox_write(unsigned long dummy_va, unsigned long dummy_pa,
 	u32 mask)
 {
 	const u32 pattern = (1 << 0) | (1 << 2) | (1 << 16);
@@ -7199,7 +7199,7 @@ static void testmbox_write(unsigned long dummy_va, unsigned long dummy_pa,
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_write_gce(void)
+void testmbox_write_gce(void)
 {
 	unsigned long dummy_va, dummy_pa;
 
@@ -7214,7 +7214,7 @@ static void testmbox_write_gce(void)
 	testmbox_write(dummy_va, dummy_pa, ~0);
 }
 
-static void testmbox_write_with_mask(void)
+void testmbox_write_with_mask(void)
 {
 	unsigned long dummy_va, dummy_pa;
 	const u32 mask = (1 << 16);
@@ -7230,7 +7230,7 @@ static void testmbox_write_with_mask(void)
 	testmbox_write(dummy_va, dummy_pa, mask);
 }
 
-static void testmbox_loop(void)
+void testmbox_loop(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(
 		TESTMBOX_CLT_IDX_LOOP);
@@ -7270,7 +7270,7 @@ static void testmbox_loop(void)
 	CMDQ_LOG("%s end\n", __func__);
 }
 
-static void testmbox_dma_access(void)
+void testmbox_dma_access(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
@@ -7358,7 +7358,7 @@ static void testmbox_dma_access(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_cmplt_cb_destroy(struct cmdq_cb_data data)
+void testmbox_cmplt_cb_destroy(struct cmdq_cb_data data)
 {
 	struct cmdq_flush_completion *cmplt = data.data;
 
@@ -7371,7 +7371,7 @@ static void testmbox_cmplt_cb_destroy(struct cmdq_cb_data data)
 	complete(&cmplt->cmplt);
 }
 
-static void testmbox_cmplt_cb(struct cmdq_cb_data data)
+void testmbox_cmplt_cb(struct cmdq_cb_data data)
 {
 	struct cmdq_flush_completion *cmplt = data.data;
 
@@ -7383,7 +7383,7 @@ static void testmbox_cmplt_cb(struct cmdq_cb_data data)
 	complete(&cmplt->cmplt);
 }
 
-static void testmbox_async_flush(bool threaded)
+void testmbox_async_flush(bool threaded)
 {
 #define TEST_REQ_COUNT 24
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
@@ -7452,7 +7452,7 @@ static void testmbox_async_flush(bool threaded)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_large_command(void)
+void testmbox_large_command(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
@@ -7483,7 +7483,7 @@ static void testmbox_large_command(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_poll_run(u32 poll_value, u32 poll_mask,
+void testmbox_poll_run(u32 poll_value, u32 poll_mask,
 	bool use_mmsys_dummy)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
@@ -7528,7 +7528,7 @@ static void testmbox_poll_run(u32 poll_value, u32 poll_mask,
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_poll(void)
+void testmbox_poll(void)
 {
 	testmbox_poll_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00, false);
 	testmbox_poll_run(0xdada1818, 0xFFFFFFFF, false);
@@ -7543,7 +7543,7 @@ static void testmbox_poll(void)
 #endif
 }
 
-static void testmbox_verify_cpr(void)
+void testmbox_verify_cpr(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
@@ -7603,7 +7603,7 @@ static void testmbox_verify_cpr(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_dump_err(void)
+void testmbox_dump_err(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_pkt *pkt;
@@ -7635,7 +7635,7 @@ static void testmbox_dump_err(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_poll_timeout_run(u32 poll_value, u32 poll_mask,
+void testmbox_poll_timeout_run(u32 poll_value, u32 poll_mask,
 	bool use_mmsys_dummy, bool timeout)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
@@ -7718,7 +7718,7 @@ static void testmbox_poll_timeout_run(u32 poll_value, u32 poll_mask,
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_poll_timeout(void)
+void testmbox_poll_timeout(void)
 {
 	testmbox_poll_timeout_run(0xdada1818 & 0xFF00FF00, 0xFF00FF00,
 		false, false);
@@ -7738,7 +7738,7 @@ static void testmbox_poll_timeout(void)
 #endif
 }
 
-static void testmbox_gpr_timer(void)
+void testmbox_gpr_timer(void)
 {
 #define CMDQ_TPR_TIMEOUT_EN		0xDC
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
@@ -7815,7 +7815,7 @@ static void testmbox_gpr_timer(void)
 	CMDQ_LOG("%s END\n", __func__);
 }
 
-static void testmbox_sleep(void)
+void testmbox_sleep(void)
 {
 	struct cmdq_client *clt = cmdq_helper_mbox_client(TESTMBOX_CLT_IDX);
 	struct cmdq_base *clt_base = cmdq_helper_mbox_base();
@@ -7933,8 +7933,10 @@ enum CMDQ_TESTCASE_ENUM {
 	CMDQ_TESTCASE_END,	/* always at the end */
 };
 
-static void testcase_general_handling_mbox(s32 testID)
+void testcase_general_handling(s32 testID)
 {
+	u32 i;
+
 	switch (testID) {
 	case 510:
 		testmbox_gpr_timer();
@@ -7980,17 +7982,6 @@ static void testcase_general_handling_mbox(s32 testID)
 		testmbox_poll();
 		testmbox_verify_cpr();
 		break;
-	default:
-		CMDQ_LOG(
-			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
-			 gCmdqTestSecure, gCmdqTestConfig[0]);
-		break;
-	}
-}
-
-static void testcase_general_handling_stress(s32 testID)
-{
-	switch (testID) {
 	case 304:
 		testcase_stress_reorder();
 		break;
@@ -8006,19 +7997,6 @@ static void testcase_general_handling_stress(s32 testID)
 	case 300:
 		testcase_stress_basic();
 		break;
-	default:
-		CMDQ_LOG(
-			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
-			 gCmdqTestSecure, gCmdqTestConfig[0]);
-		break;
-	}
-}
-
-static void testcase_general_handling_case(s32 testID)
-{
-	u32 i = 0;
-
-	switch (testID) {
 	case 162:
 		testcase_write_dma();
 		break;
@@ -8274,32 +8252,6 @@ static void testcase_general_handling_case(s32 testID)
 	case 70:
 		testcase_write_reg_from_slot();
 		break;
-	default:
-		CMDQ_LOG(
-			"[TESTCASE]CONFIG Not Found: gCmdqTestSecure:%d testType:%lld\n",
-			 gCmdqTestSecure, gCmdqTestConfig[0]);
-		break;
-	}
-}
-
-static void testcase_general_handling(s32 testID)
-{
-	if (testID >= 500) {
-		testcase_general_handling_mbox(testID);
-		return;
-	}
-
-	if (testID >= 300) {
-		testcase_general_handling_stress(testID);
-		return;
-	}
-
-	if (testID >= CMDQ_TESTCASE_END) {
-		testcase_general_handling_case(testID);
-		return;
-	}
-
-	switch (testID) {
 	case CMDQ_TESTCASE_FPGA:
 		CMDQ_LOG("FPGA Verify Start!\n");
 		testcase_write();
