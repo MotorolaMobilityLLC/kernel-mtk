@@ -2003,6 +2003,7 @@ int mmc_reinit_oldcard(struct mmc_host *host)
 }
 #endif
 
+#ifdef CONFIG_MMC_MTK_PRO
 static int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
 {
 	struct mmc_card *card = host->card;
@@ -2029,6 +2030,7 @@ static int mmc_cache_ctrl(struct mmc_host *host, u8 enable)
 
 	return err;
 }
+#endif
 
 static int mmc_can_sleep(struct mmc_card *card)
 {
@@ -2099,6 +2101,7 @@ out_release:
 	return err;
 }
 
+#ifdef CONFIG_MMC_MTK_PRO
 static int mmc_awake(struct mmc_host *host)
 {
 	struct mmc_command cmd = {0};
@@ -2118,6 +2121,7 @@ static int mmc_awake(struct mmc_host *host)
 	return err;
 
 }
+#endif
 
 static int mmc_can_poweroff_notify(const struct mmc_card *card)
 {
@@ -2197,6 +2201,49 @@ static void mmc_detect(struct mmc_host *host)
 	}
 }
 
+#ifndef CONFIG_MMC_MTK_PRO
+/* Chaotian: Do not change common code on not smartphone project */
+static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
+{
+	int err = 0;
+	unsigned int notify_type = is_suspend ? EXT_CSD_POWER_OFF_SHORT :
+					EXT_CSD_POWER_OFF_LONG;
+
+	BUG_ON(!host);
+	BUG_ON(!host->card);
+
+	mmc_claim_host(host);
+
+	if (mmc_card_suspended(host->card))
+		goto out;
+
+	if (mmc_card_doing_bkops(host->card)) {
+		err = mmc_stop_bkops(host->card);
+		if (err)
+			goto out;
+	}
+
+	err = mmc_flush_cache(host->card);
+	if (err)
+		goto out;
+
+	if (mmc_can_poweroff_notify(host->card) &&
+		((host->caps2 & MMC_CAP2_FULL_PWR_CYCLE) || !is_suspend))
+		err = mmc_poweroff_notify(host->card, notify_type);
+	else if (mmc_can_sleep(host->card))
+		err = mmc_sleep(host);
+	else if (!mmc_host_is_spi(host))
+		err = mmc_deselect_cards(host);
+
+	if (!err) {
+		mmc_power_off(host);
+		mmc_card_set_suspended(host->card);
+	}
+out:
+	mmc_release_host(host);
+	return err;
+}
+#else
 static int _mmc_suspend(struct mmc_host *host, bool is_suspend)
 {
 	int err = 0;
@@ -2295,6 +2342,7 @@ out:
 	mmc_release_host(host);
 	return err;
 }
+#endif
 
 /*
  * Suspend callback
@@ -2312,6 +2360,32 @@ static int mmc_suspend(struct mmc_host *host)
 	return err;
 }
 
+#ifndef CONFIG_MMC_MTK_PRO
+/*
+ * This function tries to determine if the same card is still present
+ * and, if so, restore all state to it.
+ */
+static int _mmc_resume(struct mmc_host *host)
+{
+	int err = 0;
+
+	BUG_ON(!host);
+	BUG_ON(!host->card);
+
+	mmc_claim_host(host);
+
+	if (!mmc_card_suspended(host->card))
+		goto out;
+
+	mmc_power_up(host, host->card->ocr);
+	err = mmc_init_card(host, host->card->ocr, host->card);
+	mmc_card_clr_suspended(host->card);
+
+out:
+	mmc_release_host(host);
+	return err;
+}
+#else
 /*
  * This function tries to determine if the same card is still present
  * and, if so, restore all state to it.
@@ -2366,6 +2440,7 @@ out:
 	mmc_release_host(host);
 	return err;
 }
+#endif
 
 /*
  * Shutdown callback
@@ -2441,6 +2516,31 @@ int mmc_can_reset(struct mmc_card *card)
 }
 EXPORT_SYMBOL(mmc_can_reset);
 
+#ifndef CONFIG_MMC_MTK_PRO
+static int mmc_reset(struct mmc_host *host)
+{
+	struct mmc_card *card = host->card;
+
+	/*
+	 * In the case of recovery, we can't expect flushing the cache to work
+	 * always, but we have a go and ignore errors.
+	 */
+	mmc_flush_cache(host->card);
+
+	if ((host->caps & MMC_CAP_HW_RESET) && host->ops->hw_reset &&
+	     mmc_can_reset(card)) {
+		/* If the card accept RST_n signal, send it. */
+		mmc_set_clock(host, host->f_init);
+		host->ops->hw_reset(host);
+		/* Set initial state and call mmc_set_ios */
+		mmc_set_initial_state(host);
+	} else {
+		/* Do a brute force power cycle */
+		mmc_power_cycle(host, card->ocr);
+	}
+	return mmc_init_card(host, card->ocr, card);
+}
+#else
 static int mmc_reset(struct mmc_host *host)
 {
 	struct mmc_card *card = host->card;
@@ -2477,6 +2577,7 @@ static int mmc_reset(struct mmc_host *host)
 	}
 	return mmc_init_card(host, card->ocr, card);
 }
+#endif
 
 static const struct mmc_bus_ops mmc_ops = {
 	.remove = mmc_remove,
