@@ -1518,6 +1518,16 @@ static signed int ConfigFDVTHW(FDVT_Config *pFdvtConfig)
 #if 1
 	/* Use command queue to write register */
 	/* BIT0 for INT_EN */
+	cmdqRecWrite(handle, FDVT_WRA_0_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_WRA_1_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_RDA_0_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_RDA_1_CON3_HW, 0x0, CMDQ_REG_MASK);
+
+	cmdqRecWrite(handle, FDVT_WRB_0_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_WRB_1_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_RDB_0_CON3_HW, 0x0, CMDQ_REG_MASK);
+	cmdqRecWrite(handle, FDVT_RDB_1_CON3_HW, 0x0, CMDQ_REG_MASK);
+
 	cmdqRecWrite(handle, FDVT_ENABLE_HW, 0x00000111, CMDQ_REG_MASK);
 	if (pFdvtConfig->FD_MODE == 0) {
 		cmdqRecWrite(handle, FDVT_RS_HW, 0x00000409, CMDQ_REG_MASK);
