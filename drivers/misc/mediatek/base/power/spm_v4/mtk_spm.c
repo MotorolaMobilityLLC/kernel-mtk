@@ -259,16 +259,6 @@ static void spm_register_init(void)
 			spm_err("get mediatek,kp failed\n");
 	}
 
-	/* conn_wdt_irq_b */
-	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6763-consys");
-	if (!node) {
-		spm_err("find mediatek,mt6763-consys node failed\n");
-	} else {
-		edge_trig_irqs[3] = irq_of_parse_and_map(node, 1);
-		if (!edge_trig_irqs[3])
-			spm_err("get mediatek,mt6763-consys failed\n");
-	}
-
 	/* md_wdt_int_ao */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mdcldma");
 	if (!node) {
@@ -598,6 +588,9 @@ int __init spm_module_init(void)
 	int ret = -1;
 	int is_ext_buck = 0;
 
+	int i;
+	unsigned int irq_type;
+
 #if defined(CONFIG_MACH_MT6739)
 #if defined(CONFIG_MTK_PMIC) || defined(CONFIG_MTK_PMIC_NEW_ARCH)
 	spm_crit2("pmic_ver %d\n", PMIC_LP_CHIP_VER());
@@ -613,6 +606,13 @@ int __init spm_module_init(void)
 	if (spm_fs_init() != 0)
 		r = -EPERM;
 #endif
+	/* Note: Initialize irq type to avoid pending irqs */
+	for (i = 0; i < NF_EDGE_TRIG_IRQS; i++) {
+		if (edge_trig_irqs[i]) {
+			irq_type = irq_get_trigger_type(edge_trig_irqs[i]);
+			irq_set_irq_type(edge_trig_irqs[i], irq_type);
+		}
+	}
 
 #ifdef CONFIG_FAST_CIRQ_CLONE_FLUSH
 	set_wakeup_sources(edge_trig_irqs, NF_EDGE_TRIG_IRQS);
