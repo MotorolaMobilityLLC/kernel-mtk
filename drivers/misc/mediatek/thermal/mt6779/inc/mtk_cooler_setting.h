@@ -46,5 +46,12 @@
 #define FEATURE_MUTT_INTERFACE_VER	(2)
 
 
+/*APU(mdla/vpu) throttle*/
+#define THERMAL_APU_UNLIMIT
+
+#if defined(THERMAL_APU_UNLIMIT)
+extern unsigned int cl_get_apu_status(void);
+extern void cl_set_apu_status(int vv);
+#endif
 
 #endif				/* _MTK_COOLER_SETTING_H */

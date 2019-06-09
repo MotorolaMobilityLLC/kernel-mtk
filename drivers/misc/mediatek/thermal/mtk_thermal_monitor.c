@@ -233,6 +233,8 @@ static int mtk_thermal_get_tz_idx(char *type)
 		return MTK_THERMAL_SENSOR_XTAL;
 	else if (strncmp(type, "mtktsbtsmdpa", 12) == 0)
 		return MTK_THERMAL_SENSOR_MD_PA;
+	else if (strncmp(type, "mtktsdctm", 9) == 0)
+		return MTK_THERMAL_SENSOR_DCTM;
 
 	return -1;
 }
@@ -2010,7 +2012,7 @@ int mtk_thermal_get_temp(enum mtk_thermal_sensor_id id)
 {
 	int ret = 0;
 
-	if (id >= MTK_THERMAL_SENSOR_COUNT)
+	if (id < 0 || id >= MTK_THERMAL_SENSOR_COUNT)
 		return -127000;
 
 	mutex_lock(&MTM_GET_TEMP_LOCK);
