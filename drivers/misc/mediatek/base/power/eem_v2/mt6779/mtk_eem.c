@@ -263,6 +263,7 @@ static int get_devinfo(void)
 	eem_debug("M_HW_RES23 = 0x%08X\n", val[8]);
 	eem_debug("M_HW_RES24 = 0x%08X\n", val[9]);
 
+
 	/* Update MTDES/BDES/MDES if they are modified by PICACHU. */
 	for (p = &pi_efuse_idx[0]; p->mdes_bdes_index != 0; p++) {
 
@@ -270,7 +271,7 @@ static int get_devinfo(void)
 		p->orig_mdes_bdes = val[p->mdes_bdes_index];
 		p->orig_mtdes = val[p->mtdes_index];
 
-		det = id_to_eem_det(p->ctrl_id);
+		det = id_to_eem_det((int)p->ctrl_id);
 
 		if (det == NULL)
 			break;
@@ -4281,14 +4282,14 @@ static int create_procfs(void)
 
 void eem_set_pi_efuse(enum eem_ctrl_id id, unsigned int pi_efuse)
 {
-	struct eem_det *det = id_to_eem_det(id);
+	struct eem_det *det = id_to_eem_det((int)id);
 
 	det->pi_efuse = pi_efuse;
 }
 
 void eem_set_pi_dvtfixed(enum eem_ctrl_id id, unsigned int pi_dvtfixed)
 {
-	struct eem_det *det = id_to_eem_det(id);
+	struct eem_det *det = id_to_eem_det((int)id);
 
 	det->pi_dvtfixed = pi_dvtfixed;
 }
