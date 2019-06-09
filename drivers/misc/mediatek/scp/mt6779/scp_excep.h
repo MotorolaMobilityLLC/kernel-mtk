@@ -16,6 +16,8 @@
 
 #include <linux/sizes.h>
 #include "scp_helper.h"
+#include "scp_feature_define.h"
+
 
 #define AED_LOG_PRINT_SIZE	SZ_16K
 #define SCP_LOCK_OFS	0xE0
@@ -71,9 +73,10 @@ struct TaskContextType {
 #define CRASH_SUMMARY_LENGTH 12
 #define CRASH_MEMORY_HEADER_SIZE  (8 * 1024)
 #define CRASH_MEMORY_OFFSET  (0x800)
-#define CRASH_MEMORY_LENGTH  (512 * 1024 - CRASH_MEMORY_OFFSET)
+#define CRASH_MEMORY_LENGTH  (SCP_SRAM_SIZE - CRASH_MEMORY_OFFSET)
 
 #define CRASH_REG_SIZE  (9 * 32)
+
 
 #include <linux/elf.h>
 #define ELF_NGREGS 18

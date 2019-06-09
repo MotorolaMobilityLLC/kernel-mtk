@@ -318,6 +318,9 @@ void scp_A_dump_regs(void)
 	pr_debug("[SCP]IRQ_STATUS 0x%x\n", readl(SCP_INTC_IRQ_STATUS));
 	pr_debug("[SCP]IRQ_ENABLE 0x%x\n", readl(SCP_INTC_IRQ_ENABLE));
 	pr_debug("[SCP]IRQ_SLEEP 0x%x\n", readl(SCP_INTC_IRQ_SLEEP));
+	pr_debug("[SCP]IRQ_STATUS_MSB 0x%x\n", readl(SCP_INTC_IRQ_STATUS_MSB));
+	pr_debug("[SCP]IRQ_ENABLE_MSB 0x%x\n", readl(SCP_INTC_IRQ_ENABLE_MSB));
+	pr_debug("[SCP]IRQ_SLEEP_MSB 0x%x\n", readl(SCP_INTC_IRQ_SLEEP_MSB));
 	pr_debug("[SCP]CLK_CTRL_SEL 0x%x\n", readl(SCP_CLK_SW_SEL));
 	pr_debug("[SCP]CLK_ENABLE  0x%x\n", readl(SCP_CLK_ENABLE));
 	pr_debug("[SCP]SLEEP_DEBUG 0x%x\n", readl(SCP_A_SLEEP_DEBUG_REG));
@@ -365,7 +368,9 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 	unsigned int *reg;
 	unsigned int scp_dump_size;
 	unsigned int scp_awake_fail_flag;
+#if SCP_RECOVERY_SUPPORT
 	uint32_t dram_start = 0;
+#endif
 	uint32_t dram_size = 0;
 
 	/*flag use to indicate scp awake success or not*/

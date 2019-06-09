@@ -15,6 +15,11 @@
 #define __SCP_FEATURE_DEFINE_H__
 
 
+/******************************************************************************
+ * PORT: The following definitions need to be ported.
+ *****************************************************************************/
+#define SCP_SRAM_SIZE			(512 * 1024)
+
 /* scp platform configs*/
 #define SCP_BOOT_TIME_OUT_MONITOR	(1)
 #define SCP_LOGGER_ENABLE		(1)

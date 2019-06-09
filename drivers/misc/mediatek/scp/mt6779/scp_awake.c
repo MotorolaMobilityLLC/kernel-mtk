@@ -42,7 +42,9 @@
 #include "scp_ipi.h"
 #include "scp_helper.h"
 #include "scp_excep.h"
+#if SCP_DVFS_INIT_ENABLE
 #include "scp_dvfs.h"
+#endif
 
 struct mutex scp_awake_mutexs[SCP_CORE_TOTAL];
 
@@ -89,11 +91,12 @@ int scp_awake_lock(enum scp_core_id scp_id)
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
+#if SCP_RECOVERY_SUPPORT
 		if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
 			pr_notice("%s: resetting scp, break\n", __func__);
 			break;
 		}
-
+#endif  // SCP_RECOVERY_SUPPORT
 		tmp = readl(INFRA_IRQ_SET);
 		if ((tmp & 0xf0) != 0xA0) {
 			pr_notice("%s: INFRA_IRQ_SET %x\n", __func__, tmp);
@@ -172,6 +175,12 @@ int scp_awake_unlock(enum scp_core_id scp_id)
 
 	count = 0;
 	while (++count != SCP_AWAKE_TIMEOUT) {
+#if SCP_RECOVERY_SUPPORT
+		if (atomic_read(&scp_reset_status) == RESET_STATUS_START) {
+			pr_notice("%s: scp is being reset, break\n", __func__);
+			break;
+		}
+#endif  // SCP_RECOVERY_SUPPORT
 		tmp = readl(INFRA_IRQ_SET);
 		if ((tmp & 0xf0) != 0xA0) {
 			pr_notice("%s: INFRA7_IRQ_SET %x\n", __func__, tmp);
@@ -290,11 +299,11 @@ int scp_sys_full_reset(void)
 
 	pr_notice("[SCP]copy scp to sram\n");
 	/*copy loader to scp sram*/
-	memcpy_to_scp(SCP_TCM, (const void *)(size_t)scp_loader_base_virt
-		, scp_region_info_copy.ap_loader_size);
+	memcpy_to_scp(SCP_TCM, (const void *)(size_t)scp_loader_base_virt,
+		scp_region_info_copy.ap_loader_size);
 	/*set info to sram*/
-	memcpy_to_scp(scp_region_info, (const void *)&scp_region_info_copy
-		, sizeof(scp_region_info_copy));
+	memcpy_to_scp(scp_region_info, (const void *)&scp_region_info_copy,
+		sizeof(scp_region_info_copy));
 
 #if SCP_SYSTEM_RESET_SUPPORT
 	pr_notice("[SCP]disable sleep protection\n");
