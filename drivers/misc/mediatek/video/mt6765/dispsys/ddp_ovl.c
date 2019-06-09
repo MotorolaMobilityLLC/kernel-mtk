@@ -101,9 +101,8 @@ static inline unsigned long ovl_layer_num(enum DISP_MODULE_ENUM module)
 		return 2;
 	default:
 		DDPERR("invalid ovl module=%d\n", module);
-		return -1;
+		return 0;
 	}
-	return 0;
 }
 
 enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
