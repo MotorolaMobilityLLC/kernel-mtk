@@ -719,7 +719,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 			"set_%s_buffer, conf_layer_num invalid=%d, max_layer_num=%d!\n",
 			disp_session_mode_spy(session_id), cfg->input_layer_num,
 			_get_max_layer(session_id));
-		return 0;
+		return -1;
 	}
 
 	disp_input_get_dirty_roi(cfg);
@@ -1033,7 +1033,10 @@ long _frame_config(unsigned long arg)
 	DISPDBG("%s\n", __func__);
 	frame_cfg->setter = SESSION_USER_HWC;
 
-	input_config_preprocess(frame_cfg);
+	if (input_config_preprocess(frame_cfg) != 0) {
+		kfree(frame_cfg);
+		return -EINVAL;
+	}
 	if (frame_cfg->output_en)
 		output_config_preprocess(frame_cfg);
 
