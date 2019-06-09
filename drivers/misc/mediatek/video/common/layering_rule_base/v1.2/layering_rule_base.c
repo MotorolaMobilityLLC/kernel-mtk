@@ -129,7 +129,7 @@ static int get_bpp(enum DISP_FORMAT format)
 	int id = format >> 8;
 
 	if (id <= (DISP_FORMAT_UNKNOWN >> 8) || id >= (DISP_FORMAT_NUM >> 8)) {
-		DISP_PR_WARN("Invalid color format: 0x%x\n", format);
+		DISP_PR_ERR("Invalid color format: 0x%x\n", format);
 		goto err;
 	}
 
@@ -1930,14 +1930,14 @@ static void handle_for_set_disp_info_fail(struct disp_layer_info *info)
 		for (j = 0; j < l_num; j++) {
 			if (copy_from_user(&tmp, &info->input_config[i][j],
 				sizeof(struct layer_config)))
-				DISP_PR_WARN("%s: copy_from_user fail\n",
+				DISP_PR_ERR("%s: copy_from_user fail\n",
 					__func__);
 
 			tmp.ovl_id = 0;
 
 			if (copy_to_user(&info->input_config[i][j], &tmp,
 				sizeof(struct layer_config)))
-				DISP_PR_WARN("%s: copy_to_user fail\n",
+				DISP_PR_ERR("%s: copy_to_user fail\n",
 					__func__);
 		}
 	}
@@ -1970,7 +1970,7 @@ int layering_rule_start(struct disp_layer_info *disp_info_user, int debug_mode)
 	 */
 	ret = set_disp_info(disp_info_user, debug_mode);
 	if (ret) {
-		DISP_PR_WARN("%s: set_disp_info fail, ret=%d\n",
+		DISP_PR_ERR("%s: set_disp_info fail, ret=%d\n",
 			__func__, ret);
 
 		handle_for_set_disp_info_fail(disp_info_user);

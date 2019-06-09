@@ -15,6 +15,7 @@
 #define __SSPM_RESERVED_H__
 
 #include <linux/types.h>
+#include "sspm_define.h"
 
 struct sspm_reserve_mblock {
 	u32 num;
@@ -29,5 +30,11 @@ phys_addr_t sspm_reserve_mem_get_size(unsigned int id);
 int sspm_reserve_memory_init(void);
 void sspm_set_emi_mpu(phys_addr_t base, phys_addr_t size);
 void sspm_lock_emi_mpu(void);
+
+#ifdef SSPM_SHARE_BUFFER_SUPPORT
+extern struct platform_device *sspm_pdev;
+phys_addr_t sspm_sbuf_get(unsigned int offset);
+int sspm_sbuf_init(void);
+#endif
 
 #endif

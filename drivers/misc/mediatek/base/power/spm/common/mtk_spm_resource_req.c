@@ -48,6 +48,12 @@ static struct mtk_idle_sysfs_handle spm_resource_req_file;
  * This function's implementation depend on platform
  */
 int __attribute__((weak))
+	spm_resource_parse_req_console(struct device_node *np)
+{
+	return -1;
+}
+
+int __attribute__((weak))
 	spm_resource_req_console(unsigned int req, unsigned int res_bitmask)
 {
 	return -1;
