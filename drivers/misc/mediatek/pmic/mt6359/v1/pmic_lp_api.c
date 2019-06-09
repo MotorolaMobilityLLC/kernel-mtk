@@ -45,7 +45,7 @@
 #define pmic_set_buck_op_mode(user, addr, val)   \
 			pmic_config_interface_nolock(addr, val, 1, user)
 #define pmic_set_ldo_op_mode(user, addr, val)    \
-			pmic_config_interface_nolock(addr, val, 1, user)
+			pmic_config_interface_nolock(addr, val, 1, (user) + 10)
 #define pmic_set_op_en(user, addr, val)       \
 			pmic_config_interface_nolock(addr, val, 1, user)
 #define pmic_set_op_cfg(user, addr, val)      \
@@ -53,7 +53,7 @@
 #define pmic_get_buck_op_mode(user, addr, pval)      \
 			pmic_read_interface_nolock(addr, pval, 1, user)
 #define pmic_get_ldo_op_mode(user, addr, pval)      \
-			pmic_read_interface_nolock(addr, pval, 1, user)
+			pmic_read_interface_nolock(addr, pval, 1, (user) + 10)
 #define pmic_get_op_en(user, addr, pval)      \
 			pmic_read_interface_nolock(addr, pval, 1, user)
 #define pmic_get_op_cfg(user, addr, pval)     \

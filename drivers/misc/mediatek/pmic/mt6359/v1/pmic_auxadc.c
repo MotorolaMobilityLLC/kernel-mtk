@@ -65,6 +65,9 @@ bool is_isense_supported(void)
 
 void pmic_auxadc_suspend(void)
 {
+	/* only enable MDRT wakeup when enter suspend */
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 1);
+
 	/* no need to disable BAT_TEMP detect, remove wk_auxadc_bgd_ctrl */
 	/* special call to restore bat_temp_prev when enter suspend */
 	auxadc_bat_temp_cali(-1, -1);
@@ -72,6 +75,9 @@ void pmic_auxadc_suspend(void)
 
 void pmic_auxadc_resume(void)
 {
+	/* disable MDRT wakeup when leave suspend */
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 0);
+
 	/* no need to disable BAT_TEMP detect, remove wk_auxadc_bgd_ctrl */
 }
 
@@ -85,6 +91,22 @@ void unlockadcch3(void)
 	mutex_unlock(&auxadc_ch3_mutex);
 }
 
+void wk_auxadc_reset(void)
+{
+	pmic_set_register_value(PMIC_HK_AUXADC_KEY, 0x6359);
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
+	pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
+	pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+	pmic_set_register_value(PMIC_HK_AUXADC_KEY, 0);
+	/* avoid GPS can't receive AUXADC ready after reset, request again */
+	if (PMIC_CHIP_VER() != 0x5910)
+		pmic_set_register_value(PMIC_AUXADC_RQST_CH7_BY_GPS, 1);
+	pmic_set_register_value(PMIC_AUXADC_RQST_DCXO_BY_GPS, 1);
+	pr_notice("reset AUXADC done\n");
+	/* special call to restore bat_temp_prev after reset AUXADC */
+	auxadc_bat_temp_cali(-1, -1);
+}
 /*********************************
  * PMIC AUXADC debug register dump
  *********************************/
@@ -136,7 +158,7 @@ static void wk_auxadc_dbg_dump(void)
 				pmic_adc_dbg[dbg_stamp].reg[j]);
 			strncat(reg_log, reg_str, 860);
 		}
-		pr_notice("%d %s\n",
+		pr_notice("%d %s\n\n",
 			pmic_adc_dbg[dbg_stamp].ktime_sec,
 			reg_log);
 		strncpy(reg_log, "", 860);
@@ -187,10 +209,7 @@ static int wk_bat_temp_dbg(int bat_temp_prev, int bat_temp)
 			arr_bat_temp[0], arr_bat_temp[1], arr_bat_temp[2],
 			arr_bat_temp[3], arr_bat_temp[4], bat_temp_new);
 		/* Reset AuxADC to observe VBAT/IBAT/BAT_TEMP */
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
-		pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 1);
-		pmic_set_register_value(PMIC_BANK_AUXADC_SWRST, 0);
+		wk_auxadc_reset();
 		for (i = 0; i < 5; i++) {
 			vbat = auxadc_priv_read_channel(AUXADC_BATADC);
 			arr_bat_temp[i] =
@@ -236,7 +255,7 @@ static struct mutex mdrt_mutex;
 static struct task_struct *mdrt_thread_handle;
 
 /* wake up the thread to polling MDRT data in ms period */
-void wake_up_mdrt_thread(void)
+static void wake_up_mdrt_thread(void)
 {
 	HKLOG("[%s]\n", __func__);
 	if (mdrt_thread_handle != NULL) {
@@ -327,6 +346,7 @@ static int mdrt_polling_rdy(unsigned int *trig_prd,
 	while (pmic_get_register_value(PMIC_AUXADC_ADC_RDY_MDRT) == 0) {
 		if (*rdy_time > 100) {
 			pr_notice("[MDRT_ADC] no ready\n");
+			wk_auxadc_reset();
 			return -2;
 		}
 		(*rdy_time)++;
@@ -363,8 +383,7 @@ static int mdrt_kthread(void *x)
 			if (polling_cnt == 156) { /* 156 * 32ms ~= 5s*/
 				pr_notice("[MDRT_ADC] (%d) reset AUXADC\n",
 					polling_cnt);
-				pmic_set_register_value(PMIC_RG_AUXADC_RST, 1);
-				pmic_set_register_value(PMIC_RG_AUXADC_RST, 0);
+				wk_auxadc_reset();
 			}
 			if (polling_cnt >= 312) { /* 312 * 32ms ~= 10s*/
 				mdrt_reg_dump();
@@ -496,13 +515,7 @@ static void auxadc_bat_temp_convert(unsigned char convert)
 		mutex_unlock(&auxadc_ch3_mutex);
 }
 
-static void auxadc_vbif_convert(unsigned char convert)
-{
-	if (convert == 1)
-		pmic_set_hk_reg_value(PMIC_RG_BATON_TDET_EN, 0);
-	else if (convert == 0)
-		pmic_set_hk_reg_value(PMIC_RG_BATON_TDET_EN, 1);
-}
+/* MT6359 no need to set RG_BATON_TDET_EN */
 
 static int auxadc_bat_temp_cali(int bat_temp, int precision_factor)
 {
@@ -550,14 +563,6 @@ static struct auxadc_regs_map pmic_auxadc_regs_map[] = {
 			PMIC_AUXADC_RQST_CH0,
 			PMIC_AUXADC_ADC_RDY_CH0_BY_AP,
 			PMIC_AUXADC_ADC_OUT_CH0_BY_AP
-		},
-	},
-	{
-		.channel = AUXADC_VCDT,
-		.regs = {
-			PMIC_AUXADC_RQST_CH2,
-			PMIC_AUXADC_ADC_RDY_CH2,
-			PMIC_AUXADC_ADC_OUT_CH2
 		},
 	},
 	{
@@ -619,9 +624,9 @@ static struct auxadc_regs_map pmic_auxadc_regs_map[] = {
 	{
 		.channel = AUXADC_TSX_TEMP,
 		.regs = {
-			PMIC_AUXADC_RQST_CH7_BY_GPS,
-			PMIC_AUXADC_ADC_RDY_CH7_BY_GPS,
-			PMIC_AUXADC_ADC_OUT_CH7_BY_GPS
+			-1,
+			PMIC_AUXADC_ADC_RDY_MDRT,
+			PMIC_AUXADC_ADC_OUT_MDRT
 		},
 	},
 	{
@@ -664,14 +669,37 @@ void pmic_auxadc_chip_timeout_handler(
 		return;
 	}
 	timeout_times++;
-	dev_notice(dev, "(%d)Time out!STA0=0x%x,STA1=0x%x,STA2=0x%x\n",
+	dev_notice(dev, "(%d)Time out!STA0=0x%x,STA1=0x%x,STA2=0x%x, (%d)\n",
 		ch_num,
 		upmu_get_reg_value(MT6359_AUXADC_STA0),
 		upmu_get_reg_value(MT6359_AUXADC_STA1),
-		upmu_get_reg_value(MT6359_AUXADC_STA2));
+		upmu_get_reg_value(MT6359_AUXADC_STA2),
+		timeout_times);
+	dev_notice(dev, "CON5=0x%x,CON9=0x%x,LDO_STATUS=0x%x,STATE_CS_S=%d\n",
+		upmu_get_reg_value(MT6359_AUXADC_CON5),
+		upmu_get_reg_value(MT6359_AUXADC_CON9),
+		upmu_get_reg_value(MT6359_HK_TOP_LDO_STATUS),
+		pmic_get_register_value(PMIC_AUXADC_STATE_CS_S));
+	dev_notice(dev, "LBAT0=0x%x,1=0x%x,2=0x%x,3=0x%x\n",
+		upmu_get_reg_value(MT6359_AUXADC_LBAT0),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT1),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT2),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT3));
+	dev_notice(dev, "LBAT4=0x%x,5=0x%x,6=0x%x,7=0x%x,8=0x%x\n",
+		upmu_get_reg_value(MT6359_AUXADC_LBAT4),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT5),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT6),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT7),
+		upmu_get_reg_value(MT6359_AUXADC_LBAT8));
+	dev_notice(dev, "busy NAG=%d,IMP=%d,LBAT=%d,BAT_TEMP=%d,LBAT2=%d\n",
+		pmic_get_register_value(PMIC_AUXADC_ADC_BUSY_IN_NAG),
+		pmic_get_register_value(PMIC_AUXADC_ADC_BUSY_IN_IMP),
+		pmic_get_register_value(PMIC_AUXADC_ADC_BUSY_IN_LBAT),
+		pmic_get_register_value(PMIC_AUXADC_ADC_BUSY_IN_BAT_TEMP),
+		pmic_get_register_value(PMIC_AUXADC_ADC_BUSY_IN_LBAT2));
 	dev_notice(dev, "RST: Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
-		MT6359_STRUP_CON6,
-		upmu_get_reg_value(MT6359_STRUP_CON6),
+		MT6359_HK_TOP_STRUP,
+		upmu_get_reg_value(MT6359_HK_TOP_STRUP),
 		MT6359_HK_TOP_RST_CON0,
 		upmu_get_reg_value(MT6359_HK_TOP_RST_CON0));
 	dev_notice(dev, "CLK: Reg[0x%x]=0x%x, Reg[0x%x]=0x%x\n",
@@ -679,13 +707,24 @@ void pmic_auxadc_chip_timeout_handler(
 		upmu_get_reg_value(MT6359_HK_TOP_CLK_CON0),
 		MT6359_HK_TOP_CLK_CON1,
 		upmu_get_reg_value(MT6359_HK_TOP_CLK_CON1));
+	dev_notice(dev, "PRI_NEW=%d,AVG_NUM_CH7=%d,AVG_NUM_CH7_WAKEUP=%d\n",
+		pmic_get_register_value(PMIC_AUXADC_NEW_PRIORITY_LIST_SEL),
+		pmic_get_register_value(PMIC_AUXADC_AVG_NUM_CH7),
+		pmic_get_register_value(PMIC_AUXADC_AVG_NUM_CH7_WAKEUP));
 
-	if (timeout_times > 10 && timeout_times < 13) {
+	if (timeout_times == 2) {
+		wk_auxadc_dbg_dump();
+		wk_auxadc_reset();
+		timeout_times = 0;
+	}
+	if (timeout_times == 11) {
+		mdrt_reg_dump();
 		pmic_set_hk_reg_value(PMIC_AUXADC_DATA_REUSE_EN, 1);
 		pr_notice("AUXADC timeout, enable DATA REUSE\n");
 #if defined(CONFIG_MTK_AEE_FEATURE)
 		aee_kernel_warning("PMIC AUXADC:TIMEOUT", "");
 #endif
+		wk_auxadc_reset();
 	}
 }
 
@@ -704,13 +743,16 @@ int pmic_auxadc_chip_init(struct device *dev)
 	}
 	auxadc_set_convert_fn(AUXADC_BATADC, auxadc_batadc_convert);
 	auxadc_set_convert_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_convert);
-	auxadc_set_convert_fn(AUXADC_VBIF, auxadc_vbif_convert);
 	auxadc_set_cali_fn(AUXADC_BAT_TEMP, auxadc_bat_temp_cali);
 
 	legacy_auxadc_init(dev);
 
 	wk_auxadc_dbg_init();
 	mdrt_monitor_init();
+	/* only enable MDRT wakeup when enter suspend */
+	pmic_set_register_value(PMIC_AUXADC_MDRT_DET_WKUP_EN, 0);
+	/* set MDRT_WAKEUP AVG_NUM to the same with Ch7(128 samples) */
+	pmic_set_register_value(PMIC_AUXADC_AVG_NUM_CH7_WAKEUP, 0x6);
 
 	/* update VBIF28 by AUXADC */
 	chan_vbif = iio_channel_get(dev, "AUXADC_VBIF");

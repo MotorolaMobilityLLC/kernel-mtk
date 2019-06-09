@@ -11,6 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
+#include <linux/delay.h>
 #include <mt-plat/upmu_common.h>
 #include "include/pmic.h"
 #include "include/pmic_api.h"
@@ -109,8 +110,9 @@ static const int vxo22_voltages[] = {
 };
 
 static const int vrfck_voltages[] = {
-	1800000,
+	1500000,
 	1600000,
+	1700000,
 };
 
 static const int vbif28_voltages[] = {
@@ -231,7 +233,7 @@ static const int vxo22_idx[] = {
 };
 
 static const int vrfck_idx[] = {
-	0, 15,
+	2, 7, 12,
 };
 
 static const int vio28_idx[] = {
@@ -4914,7 +4916,63 @@ static int pmic_ldo_vsim2_list_voltage(
 	return voltage;
 }
 
+static unsigned int pmic_buck_get_mode(struct regulator_dev *rdev)
+{
+	struct mtk_regulator *mreg = rdev_get_drvdata(rdev);
+	unsigned int mode;
 
+	if (pmic_get_register_value(mreg->modeset_reg) == 1)
+		mode = REGULATOR_MODE_FAST;
+	else if (pmic_get_register_value(mreg->lp_mode_reg) == 1)
+		mode = REGULATOR_MODE_IDLE;
+	else
+		mode = REGULATOR_MODE_NORMAL;
+	return mode;
+}
+
+static int pmic_buck_set_mode(struct regulator_dev *rdev, unsigned int mode)
+{
+	struct mtk_regulator *mreg = rdev_get_drvdata(rdev);
+	int curr_mode;
+
+	curr_mode = pmic_buck_get_mode(rdev);
+	switch (mode) {
+	case REGULATOR_MODE_FAST:
+		if (curr_mode == REGULATOR_MODE_IDLE) {
+			WARN_ON(1);
+			pr_notice("BUCK %s is LP mode, can't FPWM\n",
+				mreg->desc.name);
+			return -EIO;
+		}
+		if (pmic_get_register_value(mreg->modeset_reg) == 0)
+			pmic_set_register_value(mreg->modeset_reg, 1);
+		PMICLOG("BUCK %s set FPWM mode pass\n",
+			mreg->desc.name);
+		break;
+	case REGULATOR_MODE_NORMAL:
+		if (curr_mode == REGULATOR_MODE_FAST)
+			pmic_set_register_value(mreg->modeset_reg, 0);
+		else if (curr_mode == REGULATOR_MODE_IDLE) {
+			pmic_set_register_value(mreg->lp_mode_reg, 0);
+			udelay(100);
+			PMICLOG("BUCK %s leave LP mode pass\n",
+				mreg->desc.name);
+		}
+		break;
+	case REGULATOR_MODE_IDLE:
+		if (curr_mode == REGULATOR_MODE_FAST) {
+			WARN_ON(1);
+			pr_notice("BUCK %s is FPWM mode, can't enter LP\n",
+				mreg->desc.name);
+			return -EIO;
+		}
+		pmic_set_register_value(mreg->lp_mode_reg, 1);
+		break;
+	default:
+		return -EINVAL;
+	}
+	return 0;
+}
 
 /* Regulator vaud18 ops */
 static struct regulator_ops pmic_ldo_vaud18_ops = {
@@ -4954,6 +5012,8 @@ static struct regulator_ops pmic_buck_vgpu11_ops = {
 	.get_voltage_sel = pmic_buck_vgpu11_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vgpu11_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vgpu11_enable_time, */
 };
 
@@ -5096,6 +5156,8 @@ static struct regulator_ops pmic_buck_vpu_ops = {
 	.get_voltage_sel = pmic_buck_vpu_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vpu_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vpu_enable_time, */
 };
 
@@ -5107,6 +5169,8 @@ static struct regulator_ops pmic_buck_vcore_ops = {
 	.get_voltage_sel = pmic_buck_vcore_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vcore_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vcore_enable_time, */
 };
 
@@ -5192,6 +5256,8 @@ static struct regulator_ops pmic_buck_vproc2_ops = {
 	.get_voltage_sel = pmic_buck_vproc2_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vproc2_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vproc2_enable_time, */
 };
 
@@ -5258,6 +5324,8 @@ static struct regulator_ops pmic_buck_vproc1_ops = {
 	.get_voltage_sel = pmic_buck_vproc1_get_voltage_sel,
 	.set_voltage_sel = pmic_buck_vproc1_set_voltage_sel,
 	.list_voltage = regulator_list_voltage_linear,
+	.set_mode = pmic_buck_set_mode,
+	.get_mode = pmic_buck_get_mode,
 	/* .enable_time = pmic_buck_vproc1_enable_time, */
 };
 
@@ -5459,47 +5527,56 @@ struct mtk_regulator mt_bucks[] = {
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vs1, buck,
 			800000, 2200000, 12500, 0,
-			BUCK_VOL_EN, PMIC_RG_VS1_FPWM, 1
+			BUCK_VOL_EN, PMIC_RG_VS1_FPWM,
+			PMIC_RG_BUCK_VS1_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vgpu11, buck,
 			400000, 1193750, 6250, 0,
-			BUCK_VOL_EN_MODE, PMIC_RG_VGPU11_FCCM, 1
+			BUCK_VOL_EN_MODE, PMIC_RG_VGPU11_FCCM,
+			PMIC_RG_BUCK_VGPU11_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vmodem, buck,
 			400000, 1100000, 6250, 0,
-			BUCK_VOL_EN, PMIC_RG_VMODEM_FCCM, 1
+			BUCK_VOL_EN, PMIC_RG_VMODEM_FCCM,
+			PMIC_RG_BUCK_VMODEM_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vpu, buck,
 			400000, 1193750, 6250, 0,
-			BUCK_VOL_EN_MODE, PMIC_RG_VPU_FCCM, 1
+			BUCK_VOL_EN_MODE, PMIC_RG_VPU_FCCM,
+			PMIC_RG_BUCK_VPU_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vcore, buck,
 			400000, 1193750, 6250, 0,
-			BUCK_VOL_EN_MODE, PMIC_RG_VCORE_FCCM, 1
+			BUCK_VOL_EN_MODE, PMIC_RG_VCORE_FCCM,
+			PMIC_RG_BUCK_VCORE_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vs2, buck,
 			800000, 1600000, 12500, 0,
-			BUCK_VOL_EN, PMIC_RG_VS2_FPWM, 1
+			BUCK_VOL_EN, PMIC_RG_VS2_FPWM,
+			PMIC_RG_BUCK_VS2_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vpa, buck,
 			500000, 3650000, 50000, 0,
-			BUCK_VOL_EN, PMIC_RG_VPA_MODESET, 1
+			BUCK_VOL_EN, PMIC_RG_VPA_MODESET,
+			PMIC_RG_BUCK_VPA_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vproc2, buck,
 			400000, 1193750, 6250, 0,
-			BUCK_VOL_EN_MODE, PMIC_RG_VPROC2_FCCM, 1
+			BUCK_VOL_EN_MODE, PMIC_RG_VPROC2_FCCM,
+			PMIC_RG_BUCK_VPROC2_LP, 1
 	),
 	REGULAR_VOLTAGE_REGULATOR_BUCK_GEN(
 			vproc1, buck,
 			400000, 1193750, 6250, 0,
-			BUCK_VOL_EN_MODE, PMIC_RG_VPROC1_FCCM, 1
+			BUCK_VOL_EN_MODE, PMIC_RG_VPROC1_FCCM,
+			PMIC_RG_BUCK_VPROC1_LP, 1
 	),
 };
 
@@ -5520,7 +5597,7 @@ struct mtk_regulator mt_ldos[] = {
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vusb, ldo,
 			3000000, LDO_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_proc2, ldo,
-			400000, 1193750, 6250, 0, LDO_VOL_EN, 1),
+			500000, 1193750, 6250, 0, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vio18, ldo,
 			vio18_voltages, vio18_idx, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vcamio, ldo,
@@ -5538,7 +5615,7 @@ struct mtk_regulator mt_ldos[] = {
 	FIXED_REGULAR_VOLTAGE_REGULATOR_GEN(vaux18, ldo,
 			1800000, LDO_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_others, ldo,
-			400000, 1193750, 6250, 0, LDO_VOL_EN, 1),
+			500000, 1193750, 6250, 0, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vefuse, ldo,
 			vefuse_voltages, vefuse_idx, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vxo22, ldo,
@@ -5562,7 +5639,7 @@ struct mtk_regulator mt_ldos[] = {
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vrf18, ldo,
 			vrf18_voltages, vrf18_idx, LDO_VOL_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_md, ldo,
-			400000, 1100000, 6250, 0, LDO_VOL_EN, 1),
+			500000, 1100000, 6250, 0, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vufs, ldo,
 			vufs_voltages, vufs_idx, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vm18, ldo,
@@ -5570,7 +5647,7 @@ struct mtk_regulator mt_ldos[] = {
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vbbck, ldo,
 			vbbck_voltages, vbbck_idx, LDO_VOL_EN, 1),
 	REGULAR_VOLTAGE_REGULATOR_LDO_GEN(vsram_proc1, ldo,
-			400000, 1193750, 6250, 0, LDO_VOL_EN, 1),
+			500000, 1193750, 6250, 0, LDO_VOL_EN, 1),
 	NON_REGULAR_VOLTAGE_REGULATOR_GEN(vsim2, ldo,
 			vsim2_voltages, vsim2_idx, LDO_VOL_EN, 1),
 

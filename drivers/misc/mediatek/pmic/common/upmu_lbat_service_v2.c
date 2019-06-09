@@ -24,12 +24,11 @@
 #include <linux/slab.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
+#include <linux/of.h>
 
 #include <mt-plat/upmu_common.h>
 #include "pmic_lbat_service.h"
 
-#define VOLT_TO_RAW(volt)	(((volt) << 12) / 5400)
-#define RAW_TO_VOLT(thd)	(((thd) * 5400) >> 12)
 #define USER_SIZE	16
 
 #define LBAT_SERVICE_DBG 0
@@ -57,6 +56,13 @@ struct lbat_thd_t {
 static struct lbat_thd_t *cur_hv_ptr;
 static struct lbat_thd_t *cur_lv_ptr;
 static struct lbat_user *lbat_user_table[USER_SIZE];
+
+static unsigned int r_ratio[2];
+
+static unsigned int VOLT_TO_RAW(unsigned int volt)
+{
+	return (volt << 12) / (1800 * r_ratio[0] / r_ratio[1]);
+}
 
 static void lbat_max_en_setting(int en_val)
 {
@@ -252,7 +258,7 @@ static int lbat_user_update(struct lbat_user *user)
 	 */
 	modify_lbat_list(LBAT_LV, user->lv1_thd);
 	if (user_count == 0)
-		lbat_min_en_setting(1);
+		lbat_irq_enable();
 	lbat_user_table[user_count++] = user;
 
 	return 0;
@@ -420,6 +426,7 @@ void lbat_resume(void)
 int lbat_service_init(void)
 {
 	int ret = 0;
+	struct device_node *np;
 
 	pr_info("[%s]\n", __func__);
 	/* Selects debounce as 8 */
@@ -432,7 +439,21 @@ int lbat_service_init(void)
 	pmic_register_interrupt_callback(INT_BAT_L, bat_l_int_handler);
 	pmic_register_interrupt_callback(INT_BAT_H, bat_h_int_handler);
 
+	pmic_enable_interrupt(INT_BAT_H, 1, "lbat_service");
+	pmic_enable_interrupt(INT_BAT_L, 1, "lbat_service");
+
 	lbat_wq = create_singlethread_workqueue("lbat_service");
+
+	/* get LBAT r_ratio */
+	np = of_find_node_by_name(NULL, "batadc");
+	if (!np) {
+		pr_notice("[%s] get batadc node fail\n", __func__);
+		r_ratio[0] = 7;
+		r_ratio[1] = 2;
+		return 0;
+	}
+	ret = of_property_read_u32_array(np, "resistance-ratio", r_ratio, 2);
+	pr_info("[%s] r_ratio = %d/%d\n", __func__, r_ratio[0], r_ratio[1]);
 
 	return ret;
 }
@@ -446,7 +467,7 @@ unsigned int lbat_read_volt(void)
 {
 	unsigned int raw_data = lbat_read_raw();
 
-	return RAW_TO_VOLT(raw_data);
+	return (raw_data * 1800 * r_ratio[0] / r_ratio[1]) >> 12;
 }
 
 /*
