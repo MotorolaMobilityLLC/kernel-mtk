@@ -1399,8 +1399,8 @@ static void msdc_init_hw(struct msdc_host *host)
 	u32 val;
 	u32 tune_reg = host->dev_comp->pad_tune_reg;
 
-	/* Configure to MMC/SD mode, clock free running */
-	sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_MODE | MSDC_CFG_CKPDN);
+	/* Configure to MMC/SD mode */
+	sdr_set_bits(host->base + MSDC_CFG, MSDC_CFG_MODE);
 
 	/* Reset */
 	msdc_reset_hw(host);
@@ -1833,7 +1833,8 @@ static int hs400_tune_response(struct mmc_host *mmc, u32 opcode)
 
 	/* select EMMC50 PAD CMD tune */
 	sdr_set_bits(host->base + PAD_CMD_TUNE, BIT(0));
-
+	/* set cmd ta to 2 */
+	sdr_set_field(host->base + MSDC_PATCH_BIT1, MSDC_PATCH_BIT1_CMDTA, 2);
 	if (mmc->ios.timing == MMC_TIMING_MMC_HS200 ||
 	    mmc->ios.timing == MMC_TIMING_UHS_SDR104)
 		sdr_set_field(host->base + MSDC_PAD_TUNE,
