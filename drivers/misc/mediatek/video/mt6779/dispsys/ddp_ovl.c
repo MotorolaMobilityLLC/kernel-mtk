@@ -150,7 +150,7 @@ enum CMDQ_EVENT_ENUM ovl_to_cmdq_event_nonsec_end(enum DISP_MODULE_ENUM module)
 		DDP_PR_ERR("invalid ovl module=%d, get cmdq event nonsecure fail\n",
 			   module);
 		ASSERT(0);
-		return DISP_MODULE_UNKNOWN;
+		return CMDQ_SYNC_TOKEN_INVALID;
 	}
 	return 0;
 }
