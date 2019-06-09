@@ -41,8 +41,10 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6775" "mt6771"))
 ccflags-y += -DGED_KPI_CPU_INFO
 endif
 
+ifeq ($(CONFIG_MTK_DYNAMIC_FPS_FRAMEWORK_SUPPORT),y)
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799" "mt6763" "mt6775" "mt6771"))
 ccflags-y += -DGED_KPI_DFRC
+endif
 endif
 
 ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6759" "mt6799"))
