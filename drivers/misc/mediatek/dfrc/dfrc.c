@@ -1131,7 +1131,7 @@ static void dfrc_dump_info(void)
 			g_hwc_info.num_display, g_hwc_info.single_layer);
 	dfrc_idump("Force window pid[%d]\n", g_input_window_info.pid);
 	dfrc_idump("Foreground window pid[%d]\n", g_fg_window_info.pid);
-	dfrc_idump("Window state[%08x]\n", g_window_state);
+	dfrc_idump("Window state[%08x]\n", g_window_state.window_flag);
 	dfrc_idump("Forbid adjusting VSync[%d]\n", g_forbid_vsync);
 	dfrc_idump("Allow RRC policy[0x%x]\n", g_allow_rrc_policy);
 	dfrc_idump("Use video mode[%d]\n", g_use_video_mode);
@@ -1157,7 +1157,7 @@ static void dfrc_dump_policy_list(void)
 				node->policy.pid);
 		dfrc_idump("  fps[%d]  mode[%d]",
 				node->policy.fps, node->policy.mode);
-		dfrc_idump("  target_pid[%d]  context_id[%p]  flag[0x%x]\n",
+		dfrc_idump("  target_pid[%d]  context_id[%llu  flag[0x%x]\n",
 				node->policy.target_pid,
 				node->policy.gl_context_id,
 				node->policy.flag);
@@ -1194,7 +1194,7 @@ static void dfrc_dump_statistics_set(void)
 						policy->pid);
 				dfrc_idump("    fps[%d]  mode[%d]",
 						policy->fps, policy->mode);
-				dfrc_idump("  t_pid[%d]  context_id[%d]\n",
+				dfrc_idump("  t_pid[%d]  context_id[%llu]\n",
 						policy->target_pid,
 						policy->gl_context_id);
 			}
