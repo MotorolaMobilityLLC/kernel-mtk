@@ -23,6 +23,7 @@
 #include <linux/vmalloc.h>
 #include <linux/trace_events.h>
 #include <linux/module.h>
+#include <linux/cpumask.h>
 
 #include <mt-plat/fpsgo_common.h>
 
@@ -149,6 +150,12 @@ void xgf_atomic_set(atomic_t *val, int i)
 	atomic_set(val, i);
 }
 EXPORT_SYMBOL(xgf_atomic_set);
+
+unsigned int xgf_cpumask_next(int cpu,  const struct cpumask *srcp)
+{
+	return cpumask_next(cpu, srcp);
+}
+EXPORT_SYMBOL(xgf_cpumask_next);
 
 int xgf_get_task_wake_cpu(struct task_struct *t)
 {
