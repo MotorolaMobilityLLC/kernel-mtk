@@ -158,6 +158,7 @@ extern unsigned int *vcorefs_get_opp_info(void);
 extern int vcorefs_get_src_req_num(void);
 extern char **vcorefs_get_src_req_name(void);
 extern unsigned int *vcorefs_get_src_req(void);
+extern u32 get_dvfs_final_level(void);
 extern u32 vcorefs_get_md_scenario(void);
 #endif /* __HELIO_DVFSRC_H */
 
