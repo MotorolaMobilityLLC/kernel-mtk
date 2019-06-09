@@ -932,6 +932,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_CMD_TRULY_NT50358_QHD)
 	&nt35695_fhd_dsi_cmd_truly_nt50358_qhd_lcm_drv,
 #endif
+#if defined(NT35695_FHD_DSI_CMD_TRULY_RT4801)
+	&nt35695_fhd_dsi_cmd_truly_rt4801_lcm_drv,
+#endif
 #if defined(NT35695_FHD_DSI_CMD_TRULY_RT5081)
 	&nt35695_fhd_dsi_cmd_truly_rt5081_lcm_drv,
 #endif
@@ -1028,6 +1031,9 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(NT35695_FHD_DSI_VDO_AUO_NT50358_LANESWAP_MT6799)
 	&nt35695_fhd_dsi_vdo_auo_nt50358_laneswap_mt6799_lcm_drv,
 #endif
+#if defined(NT35695B_FHD_DSI_CMD_AUO_RT4801)
+	&nt35695B_fhd_dsi_cmd_auo_rt4801_lcm_drv,
+#endif
 #if defined(NT35695B_FHD_DSI_CMD_AUO_RT5081)
 	&nt35695B_fhd_dsi_cmd_auo_rt5081_lcm_drv,
 #endif
@@ -1121,7 +1127,17 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(ILI9881H_HDP_DSI_VDO_ILITEK_RT5081_19_9)
 	&ili9881h_hdp_dsi_vdo_ilitek_rt5081_19_9_lcm_drv,
 #endif
+#if defined(HX83112B_FHDP_DSI_CMD_AUO_RT4801)
+	&hx83112b_fhdp_dsi_cmd_auo_rt4801_lcm_drv,
+#endif
 
+#if defined(HX83112B_FHDP_DSI_CMD_FHD_AUO_RT4801)
+	&hx83112b_fhdp_dsi_cmd_fhd_auo_rt4801_lcm_drv,
+#endif
+
+#if defined(HX83112B_FHDP_DSI_VDO_AUO_RT4801)
+	&hx83112b_fhdp_dsi_vdo_auo_rt4801_lcm_drv,
+#endif
 #if defined(HX83112B_FHDP_DSI_CMD_AUO_RT5081)
 	&hx83112b_fhdp_dsi_cmd_auo_rt5081_lcm_drv,
 #endif

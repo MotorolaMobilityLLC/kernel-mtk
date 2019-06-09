@@ -80,7 +80,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 #include <linux/i2c-dev.h>
 
 #define FRAME_WIDTH			(1080)
-#define FRAME_HEIGHT			(2160)
+#define FRAME_HEIGHT			(1920)
 
 /* physical size in um */
 #define LCM_PHYSICAL_WIDTH		(64500)
@@ -233,7 +233,7 @@ static struct LCM_setting_table init_setting_vdo[] = {
 		      0x14, 0x33} },
 	{0xD2, 0x02, {0x2C, 0x2C} },
 	{0xB2, 0x0B, {0x80, 0x02, 0x00, 0x80, 0x70, 0x00, 0x08, 0x1C,
-		      0x05, 0x01, 0x04} },
+		      0x09, 0x01, 0x04} },
 	{0xE9, 0x01, {0xD1} },
 	{0xB2, 0x02, {0x00, 0x08} },
 	{0xE9, 0x01, {0x00} },
@@ -486,11 +486,8 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->round_corner_en = 1;
 	params->corner_pattern_height = ROUND_CORNER_H_TOP;
 	params->corner_pattern_height_bot = ROUND_CORNER_H_BOT;
-	params->round_corner_params.tp_size = sizeof(top_rc_pattern);
-	params->round_corner_params.lt_addr = (void *)top_rc_pattern;
-	params->round_corner_params.rt_addr = NULL;
-	params->round_corner_params.lb_addr = NULL;
-	params->round_corner_params.rb_addr = NULL;
+	params->corner_pattern_tp_size = sizeof(top_rc_pattern);
+	params->corner_pattern_lt_addr = (void *)top_rc_pattern;
 #endif
 }
 
@@ -625,8 +622,8 @@ static void lcm_update(unsigned int x, unsigned int y, unsigned int width,
 	dsi_set_cmdq(data_array, 1, 0);
 }
 
-struct LCM_DRIVER hx83112b_fhdp_dsi_cmd_auo_rt4801_lcm_drv = {
-	.name = "hx83112b_fhdp_dsi_cmd_auo_rt4801_drv",
+struct LCM_DRIVER hx83112b_fhdp_dsi_cmd_fhd_auo_rt4801_lcm_drv = {
+	.name = "hx83112b_fhdp_dsi_cmd_fhd_auo_rt4801_drv",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,
