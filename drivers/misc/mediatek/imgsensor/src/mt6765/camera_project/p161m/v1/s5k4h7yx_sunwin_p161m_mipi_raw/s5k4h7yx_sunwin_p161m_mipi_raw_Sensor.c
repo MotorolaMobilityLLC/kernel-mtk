@@ -579,16 +579,16 @@ static void preview_setting(void)
   write_cmos_sensor_8(0x0305, 0x06);
   write_cmos_sensor_8(0x0306, 0x00);
   write_cmos_sensor_8(0x0307, 0x8C);
-  write_cmos_sensor_8(0x030D, 0x06);
+  write_cmos_sensor_8(0x030D, 0x04);
   write_cmos_sensor_8(0x030E, 0x00);
-  write_cmos_sensor_8(0x030F, 0xAF);
+  write_cmos_sensor_8(0x030F, 0x7A);
   write_cmos_sensor_8(0x3C1F, 0x00);
   write_cmos_sensor_8(0x3C17, 0x00);
-  write_cmos_sensor_8(0x3C1C, 0x05);
+  write_cmos_sensor_8(0x3C1C, 0x04);
   write_cmos_sensor_8(0x3C1D, 0x15);
   write_cmos_sensor_8(0x0301, 0x04);
   write_cmos_sensor_8(0x0820, 0x02);
-  write_cmos_sensor_8(0x0821, 0xBC);
+  write_cmos_sensor_8(0x0821, 0xDC);
   write_cmos_sensor_8(0x0822, 0x00);
   write_cmos_sensor_8(0x0823, 0x00);
   write_cmos_sensor_8(0x0112, 0x0A);
@@ -620,8 +620,8 @@ static void preview_setting(void)
   write_cmos_sensor_8(0x0343, 0x68);
   write_cmos_sensor_8(0x0200, 0x0D);
   write_cmos_sensor_8(0x0201, 0xD8);
-  write_cmos_sensor_8(0x0202, 0x00);
-  write_cmos_sensor_8(0x0203, 0x02);
+  write_cmos_sensor_8(0x0202, 0x02);
+  write_cmos_sensor_8(0x0203, 0x08);
   write_cmos_sensor_8(0x3400, 0x00);
   write_cmos_sensor_8(0x0100, 0x01);
 }	/*	preview_setting  */
@@ -654,16 +654,16 @@ static void capture_setting(kal_uint16 currefps)
   write_cmos_sensor_8(0x0305, 0x06);
   write_cmos_sensor_8(0x0306, 0x00);
   write_cmos_sensor_8(0x0307, 0x8C);
-  write_cmos_sensor_8(0x030D, 0x06);
+  write_cmos_sensor_8(0x030D, 0x04);
   write_cmos_sensor_8(0x030E, 0x00);
-  write_cmos_sensor_8(0x030F, 0xAF);
+  write_cmos_sensor_8(0x030F, 0x7A);
   write_cmos_sensor_8(0x3C1F, 0x00);
   write_cmos_sensor_8(0x3C17, 0x00);
-  write_cmos_sensor_8(0x3C1C, 0x05);
+  write_cmos_sensor_8(0x3C1C, 0x04);
   write_cmos_sensor_8(0x3C1D, 0x15);
   write_cmos_sensor_8(0x0301, 0x04);
   write_cmos_sensor_8(0x0820, 0x02);
-  write_cmos_sensor_8(0x0821, 0xBC);
+  write_cmos_sensor_8(0x0821, 0xDC);
   write_cmos_sensor_8(0x0822, 0x00);
   write_cmos_sensor_8(0x0823, 0x00);
   write_cmos_sensor_8(0x0112, 0x0A);
@@ -695,10 +695,10 @@ static void capture_setting(kal_uint16 currefps)
 		write_cmos_sensor_8(0x0341, 0xE2);
 	} else if(currefps==240){	//24fps
 		write_cmos_sensor_8(0x0340, 0x0C);
-		write_cmos_sensor_8(0x0341, 0x4E);
+		write_cmos_sensor_8(0x0341, 0x5B);
 	} else{ //15fps
 		write_cmos_sensor_8(0x0340, 0x13);
-		write_cmos_sensor_8(0x0341, 0xC4);
+		write_cmos_sensor_8(0x0341, 0xC5);
 	}
 
   write_cmos_sensor_8(0x0342, 0x0E);
