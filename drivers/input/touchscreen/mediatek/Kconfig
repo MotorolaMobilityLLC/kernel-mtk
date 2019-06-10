@@ -21,6 +21,12 @@ config TOUCHSCREEN_MTK
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
 
+config ONTIM_CTP_PROC_INTERFACE
+    bool "ontim touchscreen proc interface for tplink"
+    default n
+    help
+      If unsure, say N.
+
 config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 	bool "MediaTek Touch Panel Rotation With LCM"
 	default y
@@ -31,6 +37,18 @@ config TOUCHSCREEN_PHYSICAL_ROTATION_WITH_LCM
 
 	  If unsure, say Y.
 
+config TOUCHSCREEN_MTK_FOCALTECH_TS
+	bool "FOCALTECH_TS for Mediatek package"
+	default n
+	help
+	  Say Y here if you have focaltech_touch touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/focaltech_touch/Kconfig"
 config TOUCHSCREEN_MTK_GT1151
 	bool "GT1151 for Mediatek package"
 	default n
@@ -66,6 +84,15 @@ config TOUCHSCREEN_MTK_GT911
 
 source "drivers/input/touchscreen/mediatek/GT911/Kconfig"
 
+config TOUCHSCREEN_MTK_GT917D
+	bool "GT917D for Mediatek package"
+	help
+	  Say Y here if you have GT917D touch panel.
+
+	  If unsure, say N.
+
+source "drivers/input/touchscreen/mediatek/GT917D/Kconfig"
+
 config TOUCHSCREEN_MTK_GT9XX_LM
 	bool "GT9XX_LM for Mediatek package"
 	help
@@ -88,6 +115,32 @@ config TOUCHSCREEN_FT5X26
 
 	  To compile this dirver as a module, choose M here: the
 	  module will be called.
+
+config TOUCHSCREEN_FT8006U
+	bool "FT8006u for Mediatek package"
+	default n
+	help
+	  Say Y here if you have FT8006u touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/FT8006U/Kconfig"
+
+config TOUCHSCREEN_HIMAX_CHIPSET
+	bool "HX83102 for Mediatek linux 4.4 package"
+	default n
+	help
+	  Say Y here if you have HX83102 touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/HX83102/Kconfig"
 
 config TOUCHSCREEN_FT5X26_WUXGA
 	bool "FT5X26 WUXGA for Mediatek package"

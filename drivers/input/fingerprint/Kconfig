@@ -17,6 +17,13 @@ config MTK_FINGERPRINT_SELECT
 	string "sensor type"
 	default "GF318M"
 
+if MTK_FINGERPRINT_SELECT = "CHIPSAILING"
+config CHIPSAILING_FINGERPRINT
+	bool "Chipsailing Fingerprint"
+	default y
+	---help---
+	Chipsailing fingerprint device.
+endif
 
 if MTK_FINGERPRINT_SELECT = "FPC1145"
 config FPC_FINGERPRINT
@@ -24,6 +31,15 @@ config FPC_FINGERPRINT
 	default y
 	---help---
 	FPC fingerprint FPC's 102x/104x device.
+endif
+
+if MTK_FINGERPRINT_SELECT = "FPSENSOR"
+config FPSENSOR_FINGERPRINT
+    bool "FPSENSOR Fingerprint"
+	default y
+	---help---
+	  fpsensor fingerprint driver.
+	  Say N if unsure.
 endif
 
 if MTK_FINGERPRINT_SELECT = "GF318M" ||  MTK_FINGERPRINT_SELECT = "GF5216"

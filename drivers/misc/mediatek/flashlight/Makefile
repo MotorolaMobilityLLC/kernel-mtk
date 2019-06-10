@@ -8,6 +8,7 @@ flashlight-y += flashlight-device.o
 obj-$(CONFIG_MTK_FLASHLIGHT)             += flashlight.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LED191)      += flashlights-led191.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3642)      += flashlights-lm3642.o
+obj-$(CONFIG_MTK_FLASHLIGHT_AW3643)      += flashlights-aw3643.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3643)      += flashlights-lm3643.o
 obj-$(CONFIG_MTK_FLASHLIGHT_LM3644)      += flashlights-lm3644.o
 obj-$(CONFIG_MTK_FLASHLIGHT_RT4505)      += flashlights-rt4505.o
