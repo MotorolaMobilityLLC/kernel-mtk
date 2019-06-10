@@ -1159,6 +1159,10 @@ static int mtk_charger_plug_in(struct charger_manager *info,
 	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 	// pony.ma, DATE20190507-01 END
 
+	#ifdef FEATURE_FTM_USBCHARGE_CONTROL
+	info->atm_enabled = false;						//atm mode may charge with usb
+	#endif
+
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
 

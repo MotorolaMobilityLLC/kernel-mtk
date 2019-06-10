@@ -38,3 +38,8 @@ obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
 #ifeq ($(MOTO_FACTORY_SUPPORT),true)
 #ccflags-y := -DFEATURE_ADB_DISCHARGE_CONTROL
 #endif
+
+# Special usb charge fail on factory SW
+ifeq ($(MOTO_FACTORY_SUPPORT),true)
+ccflags-y := -DFEATURE_FTM_USBCHARGE_CONTROL
+endif
