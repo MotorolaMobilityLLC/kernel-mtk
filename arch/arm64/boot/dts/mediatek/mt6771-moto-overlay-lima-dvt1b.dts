@@ -33,7 +33,11 @@
 };
 
 
-
+&i2c3 {
+	abov_sar@20 {
+	   label = "AbovCapSense05";
+	 };
+};
 
 
 
