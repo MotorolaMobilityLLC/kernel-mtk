@@ -99,7 +99,7 @@
 		iris-recognition-size = <0 0>;
 		2d_fr-size = <0 0>;
 		tui-size = <0 0>;
-		wfd-size = <0 0x4000000>;
+		wfd-size = <0 0>;
 		prot-sharedmem-size = <0 0>;
 	};
 	usb_c_pinctrl:usb_c_pinctrl {
