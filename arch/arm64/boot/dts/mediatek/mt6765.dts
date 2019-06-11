@@ -2763,7 +2763,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,lk_charger";
 		enable_anime;
 		enable_pe_plus;
-		power_path_support;
+//		power_path_support;
 		max_charger_voltage = <6500000>;
 		fast_charge_voltage = <3000000>;
 
@@ -2791,7 +2791,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		enable_pe_3;
 		enable_pe_4;
 		enable_type_c;
-		power_path_support;
+//		power_path_support;
 
 		/* common */
 		battery_cv = <4350000>;
