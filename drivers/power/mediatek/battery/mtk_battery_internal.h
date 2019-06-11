@@ -935,5 +935,6 @@ extern struct BAT_EC_Struct *get_ec(void);
 int en_intr_VBATON_UNDET(int en);
 int reg_VBATON_UNDET(void (*callback)(void));
 
+extern int mmi_chrg_rate_check(void);
 
 #endif /* __MTK_BATTERY_INTF_H__ */
