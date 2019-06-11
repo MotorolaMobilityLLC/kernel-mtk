@@ -1229,7 +1229,7 @@ static int abov_fw_update(bool force)
 	checksum_h_bin = fw->data[8];
 	checksum_l_bin = fw->data[9];
 
-	if ((force) || (fw_version < fw_file_version) || (fw_modelno != fw_file_modeno))
+	if ((force) || (fw_version != fw_file_version) || (fw_modelno != fw_file_modeno))
 		fw_upgrade = true;
 	else {
 		LOG_INFO("Exiting fw upgrade...\n");
