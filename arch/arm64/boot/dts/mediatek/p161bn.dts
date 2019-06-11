@@ -170,6 +170,7 @@
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO174__FUNC_GPIO174>;
 			slew-rate = <1>;
+			drive-strength = <MTK_DRIVE_16mA>;
 			output-low;
 		};
 	};
@@ -448,7 +449,6 @@
 	};
 };
 /* AUDIO end */
-
 
 &mt6370_pmu {
 	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
