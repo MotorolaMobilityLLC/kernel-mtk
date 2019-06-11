@@ -1399,6 +1399,7 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 
 	memset(&pinfo->sc.data, 0, sizeof(struct scd_cmd_param_t_1));
 	wakeup_sc_algo_cmd(&pinfo->sc.data, SC_EVENT_PLUG_OUT, 0);
+	pdata1->input_current_limit = 500000;
 	charger_dev_set_input_current(info->chg1_dev, 500000);
 	charger_dev_set_mivr(info->chg1_dev, info->data.min_charger_voltage);
 	charger_dev_plug_out(info->chg1_dev);
@@ -1891,6 +1892,59 @@ void update_charging_limit_modes(struct charger_manager *info, int batt_soc)
 
 	if (charging_limit_modes != info->mmi.charging_limit_modes)
 		info->mmi.charging_limit_modes = charging_limit_modes;
+}
+
+#define WEAK_CHRG_THRSH 450
+#define TURBO_CHRG_THRSH 2500
+int mmi_chrg_rate_check(void)
+{
+	int chg_rate, icl, icl_c, rc;
+	union power_supply_propval val;
+	char *charge_rate[] = {
+		"None", "Normal", "Weak", "Turbo"
+	};
+
+	if (pinfo == NULL) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	}
+
+	icl = pinfo->chg1_data.input_current_limit / 1000;
+	icl_c = pinfo->chg1_data.typec_input_current_limit;
+
+	rc = mmi_get_prop_from_charger(pinfo,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+	if (rc < 0) {
+		pr_err("[%s]Error get chg online rc = %d\n", __func__, rc);
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	} else if (!val.intval) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_NONE;
+		goto end_rate_check;
+	}
+
+	if (is_typec_adapter(pinfo)
+		&& adapter_dev_get_property(pinfo->pd_adapter, TYPEC_RP_LEVEL)
+			== 3000) {
+			if (icl_c == -1 || icl_c > TURBO_CHRG_THRSH * 1000) {
+				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+				goto end_rate_check;
+			}
+	}
+
+	if (icl >= TURBO_CHRG_THRSH) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
+		goto end_rate_check;
+	} else if (icl < WEAK_CHRG_THRSH) {
+		chg_rate = POWER_SUPPLY_CHARGE_RATE_WEAK;
+		goto end_rate_check;
+	}
+
+	chg_rate =  POWER_SUPPLY_CHARGE_RATE_NORMAL;
+
+end_rate_check:
+	pr_info("%s Charger Detected\n", charge_rate[chg_rate]);
+	return chg_rate;
 }
 
 #define MIN_TEMP_C -20
