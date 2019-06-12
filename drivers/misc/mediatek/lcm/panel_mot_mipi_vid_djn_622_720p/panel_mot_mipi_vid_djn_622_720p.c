@@ -254,15 +254,15 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
 
 	params->dsi.horizontal_sync_active = 4;
-	params->dsi.horizontal_backporch = 113;
-	params->dsi.horizontal_frontporch = 113;
+	params->dsi.horizontal_backporch = 81;
+	params->dsi.horizontal_frontporch = 81;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 1;
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.PLL_CLOCK = 250;	/* this value must be in MTK suggested table */
 #else
-	params->dsi.PLL_CLOCK = 275;	/* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 257;	/* this value must be in MTK suggested table */
 #endif
 
 	params->dsi.clk_lp_per_line_enable = 0;
@@ -322,6 +322,10 @@ static void lcm_init(void)
 
 	SET_RESET_PIN(1);
 	MDELAY(1);
+	SET_RESET_PIN(0);
+	MDELAY(5);
+	SET_RESET_PIN(1);
+	MDELAY(10);
 	SET_RESET_PIN(0);
 	MDELAY(5);
 	SET_RESET_PIN(1);
@@ -491,6 +495,13 @@ static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_c
 	push_table(NULL, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
+static void lcm_set_reset()
+{
+	SET_RESET_PIN(0);
+	MDELAY(5);
+	SET_RESET_PIN(1);
+}
+
 static void *lcm_switch_mode(int mode)
 {
 	return NULL;
@@ -529,5 +540,6 @@ LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv = {
 	.validate_roi = lcm_validate_roi,
 #endif
 	.set_lcm_cmd = set_lcm_cmd,
+	.set_gpio_reset = lcm_set_reset,
 
 };
