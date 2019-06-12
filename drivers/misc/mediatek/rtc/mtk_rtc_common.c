@@ -395,6 +395,16 @@ void rtc_mark_recovery(void)
 	spin_unlock_irqrestore(&rtc_lock, flags);
 }
 
+void rtc_mark_meta(void)
+{
+	unsigned long flags;
+
+	rtc_xinfo("%s\n", __func__);
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_spare_register(RTC_FAC_RESET, 0x2);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+}
+
 void rtc_mark_kpoc(void)
 {
 	unsigned long flags;
