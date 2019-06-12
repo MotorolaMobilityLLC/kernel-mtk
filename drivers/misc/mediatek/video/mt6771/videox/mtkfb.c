@@ -466,6 +466,7 @@ static int mtkfb_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_HBM_DCS_ONLY)
 int mtkfb_set_backlight_level(unsigned int level)
 {
+	unsigned int temp_level;
 	MTKFB_FUNC();
 	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
 	if (hbm_state) {
@@ -474,7 +475,10 @@ int mtkfb_set_backlight_level(unsigned int level)
 	       primary_display_setbacklight(0xFF);
 	} else {
 		last_level = level;
-		primary_display_setbacklight(level * 8 / 10);
+		temp_level = level * 8 / 10;
+		if ((level > 0) && (temp_level < 1))
+			temp_level = 1;
+		primary_display_setbacklight(temp_level);
 	}
 	DISPDBG("mtkfb_set_backlight_level End\n");
 	return 0;
