@@ -143,6 +143,7 @@ const struct mtk_chip_config spi_ctrdata = {
     .rx_mlsb = 1,
     .tx_mlsb = 1,
     .cs_pol = 0,
+    .cs_setuptime = 25,
 };
 #endif
 
