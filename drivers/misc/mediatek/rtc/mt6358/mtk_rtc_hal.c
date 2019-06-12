@@ -429,3 +429,16 @@ void rtc_lpsd_restore_al_mask(void)
 	rtc_write_trigger();
 	hal_rtc_xinfo("2nd RTC_AL_MASK = 0x%x\n", rtc_read(RTC_AL_MASK));
 }
+
+void hal_rtc_set_irq(unsigned int enabled)
+{
+	u16 irqen;
+
+	if (enabled)
+		irqen = rtc_read(RTC_IRQ_EN) | RTC_IRQ_EN_ONESHOT_AL;
+	else
+		irqen = rtc_read(RTC_IRQ_EN) & ~RTC_IRQ_EN_AL;
+
+	rtc_write(RTC_IRQ_EN, irqen);
+	rtc_write_trigger();
+}

@@ -47,4 +47,6 @@ extern void hal_rtc_save_pwron_time(bool enable, struct rtc_time *tm, bool logo)
 #ifdef VRTC_PWM_ENABLE
 extern void hal_rtc_pwm_enable(void);
 #endif
+extern void hal_rtc_set_irq(unsigned int enabled);
+
 #endif

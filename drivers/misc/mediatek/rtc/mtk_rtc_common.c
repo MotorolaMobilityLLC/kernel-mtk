@@ -751,12 +751,24 @@ static int rtc_ops_ioctl(struct device *dev, unsigned int cmd, unsigned long arg
 	return -ENOIOCTLCMD;
 }
 
+static int rtc_ops_irq_enable(struct device *dev, unsigned int enabled)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&rtc_lock, flags);
+	hal_rtc_set_irq(enabled);
+	spin_unlock_irqrestore(&rtc_lock, flags);
+
+	return 0;
+}
+
 static struct rtc_class_ops rtc_ops = {
 	.read_time = rtc_ops_read_time,
 	.set_time = rtc_ops_set_time,
 	.read_alarm = rtc_ops_read_alarm,
 	.set_alarm = rtc_ops_set_alarm,
 	.ioctl = rtc_ops_ioctl,
+	.alarm_irq_enable = rtc_ops_irq_enable,
 };
 
 static int rtc_pdrv_probe(struct platform_device *pdev)
