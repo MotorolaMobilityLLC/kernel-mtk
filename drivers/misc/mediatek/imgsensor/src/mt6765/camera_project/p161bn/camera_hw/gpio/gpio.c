@@ -34,8 +34,8 @@ struct GPIO_PINCTRL gpio_pinctrl_list[GPIO_CTRL_STATE_MAX_NUM] = {
 	{"cam1_rst0"},
 	{"cam1_vcama_on"},
 	{"cam1_vcama_off"},
-	{NULL},
-	{NULL},
+	{"cam1_vcamd_on"},
+	{"cam1_vcamd_off"},
 	/* Main2 */
 	{"cam2_pnd1"},
 	{"cam2_pnd0"},

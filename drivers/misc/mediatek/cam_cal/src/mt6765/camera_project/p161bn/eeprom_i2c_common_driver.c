@@ -225,7 +225,7 @@ unsigned int Common_write_region(struct i2c_client *client, unsigned int addr,
 
 	g_pstI2CclientG = client;//for i2c  read
 
-	addr = 0xce0;
+	addr = 0xd20;
 	
 	i2c_write_reg(client, 0x8000, 0x00);
 	mdelay(30);
