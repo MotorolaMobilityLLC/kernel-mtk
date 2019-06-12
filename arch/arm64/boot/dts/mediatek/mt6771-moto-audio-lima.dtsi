@@ -29,7 +29,7 @@
 	cs35l41_spk: cs35l41@0 {
 		#sound-dai-cells = <1>;
 		compatible = "cirrus,cs35l41";
-		spi-max-frequency = <9600000>;
+		spi-max-frequency = <5000000>;
 		reg = <0>;
 		reset-gpios = <&pio 153 0>;
 		interrupt-parent = <&pio>;
@@ -41,7 +41,6 @@
 		cirrus,boost-peak-milliamp = <4500>;
 		cirrus,boost-ind-nanohenry = <1000>;
 		cirrus,boost-cap-microfarad = <15>;
-		cirrus,dsp-force-reload = <1> ;
 
 		cirrus,asp-sdout-hiz = <0x1>;
 
