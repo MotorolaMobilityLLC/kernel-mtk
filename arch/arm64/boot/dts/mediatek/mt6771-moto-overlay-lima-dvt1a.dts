@@ -21,7 +21,7 @@
 		target-path = "/";
 		__overlay__ {
 			mot,model = "lima";
-			mot,board-id = <0x41 0xB1B0>,<0x43 0xB100>;
+			mot,board-id = <0x41 0xB1A0>;
 		};
 	};
 };
@@ -33,11 +33,7 @@
 };
 
 
-&i2c3 {
-	abov_sar@20 {
-	   label = "AbovCapSense05";
-	 };
-};
+
 
 
 
