@@ -844,6 +844,8 @@ typedef struct {
 	void (*suspend)(void);
 	void (*resume)(void);
 
+	void (*set_gpio_reset)(void);
+
 	/* for power-on sequence refinement */
 	void (*init_power)(void);
 	void (*suspend_power)(void);

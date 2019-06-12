@@ -5387,6 +5387,9 @@ int primary_display_resume(void)
 			DSI_ForceConfig(1);
 	}
 
+	if (pgc->plcm->drv->set_gpio_reset)
+		pgc->plcm->drv->set_gpio_reset();
+
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
