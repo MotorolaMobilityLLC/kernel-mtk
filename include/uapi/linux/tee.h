@@ -62,16 +62,6 @@
  */
 #define TEE_OPTEE_CAP_TZ	(1 << 0)
 
-/*
- * Rongcard TEE Implementation ID
- */
-#define TEE_IMPL_ID_RSEE	0x52 /* 'R' */
-
-/*
- * Rongcard TEE specific capabilities
- */
-#define TEE_RSEE_CAP_TZ	(1 << 0)
-
 /**
  * struct tee_ioctl_version_data - TEE version
  * @impl_id:	[out] TEE implementation id
@@ -86,11 +76,6 @@ struct tee_ioctl_version_data {
 	__u32 impl_id;
 	__u32 impl_caps;
 	__u32 gen_caps;
-// rongcard add, for version control
-#ifdef CONFIG_RSEE
-	__u8 tee_os_vstring[128];
-	__u8 client_drv_vstring[128];
-#endif
 };
 
 /**

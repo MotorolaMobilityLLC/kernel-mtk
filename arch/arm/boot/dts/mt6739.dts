@@ -1792,10 +1792,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		compatible = "mediatek,flashlights_rt4505";
 	};
 
-	flashlights_aw3643: flashlights_aw3643 {
-		compatible = "mediatek,flashlights_aw3643";
-	};
-
 	mtkfb: mtkfb {
 		compatible = "mediatek,mtkfb";
 	};
@@ -2163,23 +2159,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	#if (CONFIG_MTK_ADDITIONAL_BATTERY_TABLE == 1)
 		#include "bat_setting/mt6739_battery_prop_ext.dtsi"
 	#else
-		#ifdef CONFIG_PFP_BATTERY
-			#include "bat_setting/mt6739_battery_prop_PFP1022.dtsi"
-		#else
-			#include "bat_setting/mt6739_battery_prop.dtsi"
-		#endif
+		#include "bat_setting/mt6739_battery_prop.dtsi"
 	#endif
 #endif
 
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
-	led_simple: led_simple {
-		compatible = "leds-mt65xx";
-	};
-	torch: torch {
-		compatible = "ontim,torch";
-	};
+
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
@@ -2232,16 +2219,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		max_charge_temperature_minus_x_degree = <47>;
 
 		/* PE 2.0 */
-		/*
 		pe20_ichg_level_threshold = <1000>;
 		ta_start_battery_soc = <0>;
 		ta_stop_battery_soc = <85>;
 
-		*/
-		/* dual charger 
+		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;
 		chg2_ta_ac_charger_current = <1500000>;
-		*/
+
 		/* cable measurement impedance */
 		cable_imp_threshold = <699>;
 		vbat_cable_imp_threshold = <3900>;
@@ -2374,18 +2359,6 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint {
-	};
-	
-	fp_int_n:fp_int_n{
-	};
-	eint_alps:eint_alps{
-		compatible = "mediatek,als-eint";
-	};
-	eint_acc:eint_acc{
-	};
-	int_sar_sensor:int_sar_sensor{
-	};
-	eint_ear:eint_ear{
 	};
 
 	irtx_pwm:irtx_pwm {

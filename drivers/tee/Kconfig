@@ -13,7 +13,7 @@ if TEE
 menu "TEE drivers"
 
 source "drivers/tee/optee/Kconfig"
-source "drivers/tee/rsee/Kconfig"
+
 endmenu
 
 endif
