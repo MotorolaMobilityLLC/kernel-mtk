@@ -210,7 +210,7 @@ static struct alsps_init_info ltr577_init_info = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{.compatible = "mediatek,alsps"},
+	{.compatible = "mediatek,alsps_ltr577"},
 	{},
 };
 #endif
@@ -2662,6 +2662,10 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	struct ps_data_path ps_data={0};
 	int err = 0;
 
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+            return -EIO;
+        }
 	APS_FUN();
 	/* get customization and power on */
 	err = get_alsps_dts_func(client->dev.of_node, hw);

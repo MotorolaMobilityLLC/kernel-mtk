@@ -5369,7 +5369,10 @@ static int stk3x1x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	struct ps_control_path ps_ctl={0};
 	struct ps_data_path ps_data={0};
 
-
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+            return -EIO;
+        }
 	err = get_alsps_dts_func(client->dev.of_node, hw);
 	if (err < 0) {
 		APS_LOG("get customization info from dts failed\n");
@@ -5627,6 +5630,11 @@ APS_LOG("obj->hw->polling_mode_ps=0x%x,obj->hw->polling_mode_als=0x%x;\n",obj->h
         als_ch0_expect = obj->hw->als_ch0_expect;
         als_ch1_expect = obj->hw->als_ch1_expect;
 #endif
+#ifdef ontim_debug_info
+        REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+	proximity_probe_ok=1;//add by liuxinyuan
+#endif
+
 	APS_LOG("%s: OK\n", __FUNCTION__);
 	return 0;
 
