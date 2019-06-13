@@ -262,8 +262,8 @@
 		/*ti,irq-gpio = <&msmgpio 59 0>;*/
 		ti,smart-loop = <0>; /* 0-closeloop, 1-openloop */
 		ti,actuator = <1>; /* 0-ERM, 1-LRA */
-		ti,rated-voltage = <0x53>;
-		ti,odclamp-voltage = <0x9b>;
+		ti,rated-voltage = <0x46>;
+		ti,odclamp-voltage = <0x92>;
 		ti,lra-frequency = <235>; /* DON'T Care if ERM */
 		status = "okay";
 	};
