@@ -1,4 +1,4 @@
-/ {
+&odm {
 	dummy_vreg: dummy_vreg {
 		compatible = "regulator-fixed";
 		status = "ok";
