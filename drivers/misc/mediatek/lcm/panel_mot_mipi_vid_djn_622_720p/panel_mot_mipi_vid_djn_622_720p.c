@@ -495,7 +495,7 @@ static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_c
 	push_table(NULL, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
-static void lcm_set_reset()
+static void lcm_set_reset(void)
 {
 	SET_RESET_PIN(0);
 	MDELAY(5);
