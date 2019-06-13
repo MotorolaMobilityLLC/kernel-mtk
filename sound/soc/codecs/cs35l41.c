@@ -1929,7 +1929,7 @@ static int cs35l41_handle_of_data(struct device *dev,
 	} else {
 		/* Device tree provides file name */
 		num_fast_switch			= (size_t)ret;
-		dev_info(dev, "num_fast_switch:%lu\n", num_fast_switch);
+		//dev_info(dev, "num_fast_switch:%lu\n", num_fast_switch);
 		cs35l41->fast_switch_names =
 			devm_kmalloc(dev, num_fast_switch * sizeof(char *),
 				     GFP_KERNEL);
