@@ -1236,6 +1236,14 @@ static int drv2624_i2c_probe(struct i2c_client* client, const struct i2c_device_
 	Haptics_init(pDRV2624);
 	request_firmware_nowait(THIS_MODULE, FW_ACTION_HOTPLUG, "drv2624.bin",
 		&(client->dev), GFP_KERNEL, pDRV2624, drv2624_firmware_load);
+
+	nResult = dev_auto_calibrate(pDRV2624);
+	if( nResult <0 )
+	{
+		dev_err(pDRV2624->dev, "%s failed, err=%d\n", __func__, nResult);
+	}
+	dev_info(pDRV2624->dev, "dev_auto_calibrate  \n");
+
 	dev_info(pDRV2624->dev, "drv2624 probe succeeded\n");
 	return 0;
 //exit_gpio_request_failed2:
