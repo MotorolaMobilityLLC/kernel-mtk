@@ -92,6 +92,9 @@ enum rt9471_reg_addr {
 #define RT9471_MIVR_STEP	100000
 #define RT9471_MIVRTRACK_SHIFT	4
 #define RT9471_MIVRTRACK_MASK	0x30
+#define RT9471_VACOVP_SHIFT	6
+#define RT9471_VACOVP_MASK	0xC0
+
 
 /* ========== VCHG 0x07 ============ */
 #define RT9471_VRECHG_MASK	BIT(7)

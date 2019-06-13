@@ -105,6 +105,7 @@ struct rt9471_desc {
 	u32 ichg;
 	u32 aicr;
 	u32 mivr;
+	u8  vac_ovp;
 	u32 cv;
 	u32 ieoc;
 	u32 safe_tmr;
@@ -127,6 +128,7 @@ static struct rt9471_desc rt9471_default_desc = {
 	.ichg = 2000000,
 	.aicr = 500000,
 	.mivr = 4500000,
+	.vac_ovp = 2,
 	.cv = 4200000,
 	.ieoc = 200000,
 	.safe_tmr = 10,
@@ -937,6 +939,18 @@ static int __rt9471_set_aicr(struct rt9471_chip *chip, u32 aicr)
 	return ret;
 }
 
+static int __rt9471_set_vacovp(struct rt9471_chip *chip, u8 ovp)
+{
+	if (ovp > 3)
+		ovp = 3;
+
+	dev_info(chip->dev, "%s ovp = %d\n", __func__, ovp);
+
+	return rt9471_i2c_update_bits(chip, RT9471_REG_VBUS,
+				      ovp << RT9471_VACOVP_SHIFT,
+				      RT9471_VACOVP_MASK);
+}
+
 static int __rt9471_set_mivr(struct rt9471_chip *chip, u32 mivr)
 {
 	u8 regval;
@@ -1723,6 +1737,10 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 	ret = __rt9471_set_mivr(chip, desc->mivr);
 	if (ret < 0)
 		dev_notice(chip->dev, "%s set mivr fail(%d)\n", __func__, ret);
+
+	ret = __rt9471_set_vacovp(chip, desc->vac_ovp);
+	if (ret < 0)
+		dev_notice(chip->dev, "%s vac vop fail(%d)\n", __func__, ret);
 
 	ret = __rt9471_set_cv(chip, desc->cv);
 	if (ret < 0)
