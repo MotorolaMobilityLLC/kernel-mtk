@@ -211,7 +211,7 @@ int platform_can_hotplug_cpu(unsigned int cpu)
 	if (smp_ops.cpu_can_disable)
 		return smp_ops.cpu_can_disable(cpu);
 
-#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_MT6763) || defined(CONFIG_MACH_MT6771)
 	return 1;
 #else
 	/*
