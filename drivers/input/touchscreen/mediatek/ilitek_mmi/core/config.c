@@ -490,8 +490,8 @@ EXPORT_SYMBOL(core_config_proximity_ctrl);
 void core_config_plug_ctrl(bool out)
 {
 	ipio_info("Plug Out = %d\n", out);
-
-	return core_protocol_func_control(12, out);
+	core_protocol_func_control(12, out);
+	return;
 }
 EXPORT_SYMBOL(core_config_plug_ctrl);
 
@@ -526,6 +526,7 @@ void core_config_ic_suspend(void)
 	int i;
 	int ret = 0;
 	ipio_info("Starting to suspend ...\n");
+	ipd->bTouchIsAwake = false;
 	if (ipd->sys_boot_fw == false) {
 		ret = wait_event_interruptible_timeout(ipd->boot_download_fw, ipd->boot_download_fw_done> 0,msecs_to_jiffies(2000));
 		if (!ret) {

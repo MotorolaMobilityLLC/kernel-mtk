@@ -127,6 +127,8 @@
 /* Driver version */
 #define DRIVER_VERSION	"1.2.5.3"
 
+#define USB_DETECT_IN 1
+#define USB_DETECT_OUT 0
 /* Protocol version */
 #define PROTOCOL_MAJOR		0x5
 #define PROTOCOL_MID		0x6

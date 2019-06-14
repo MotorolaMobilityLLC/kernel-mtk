@@ -1049,6 +1049,48 @@ static void ipio_free_dev_mem(struct i2c_client *client,struct spi_device *spi,v
 		break;
 	}
 }
+
+static int ilitek_charger_notifier_callback(struct notifier_block *nb,
+		unsigned long val, void *v)
+{
+	int ret = 0;
+	int usb_detect_flag = 0;
+
+	struct power_supply *psy = NULL;
+	struct ilitek_charger_detection *charger_detection =
+			container_of(nb, struct ilitek_charger_detection, ilitek_charger_notif);
+	union power_supply_propval prop;
+	psy= power_supply_get_by_name("charger");
+	if (!psy){
+		return -EINVAL;
+		ipio_err("Couldn't get usbpsy\n");
+	}
+	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
+	if (ret < 0) {
+		return -EINVAL;
+		ipio_err("Couldn't get usbpsy\n");
+	}
+	else {
+		usb_detect_flag = prop.intval;
+		if (usb_detect_flag != charger_detection->ilitek_usb_connected) {
+			if (USB_DETECT_IN == usb_detect_flag)
+				 charger_detection->ilitek_usb_connected = USB_DETECT_IN;
+			else
+				 charger_detection->ilitek_usb_connected = USB_DETECT_OUT;
+
+			if (ipd->bTouchIsAwake) {
+				mutex_lock(&ipd->touch_mutex);
+				if (USB_DETECT_IN == charger_detection->ilitek_usb_connected)
+					core_config_plug_ctrl(true);
+				else
+					core_config_plug_ctrl(false);
+				mutex_unlock(&ipd->touch_mutex);
+			}
+		}
+	}
+	return 0;
+}
+
 static int ilitek_platform_probe_i2c(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret = 0;
@@ -1260,6 +1302,8 @@ fail_alloc_ic_type:
 static int ilitek_platform_probe_spi(struct spi_device *spi)
 {
 	int ret = 0;
+	int usb_detect_flag = 0;
+
 	if (spi == NULL) {
 		ipio_err("spi device is NULL\n");
 		return -ENODEV;
@@ -1291,6 +1335,52 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 		goto fail_alloc_ic_type;
 	}
 	ipd->TP_IC_TYPE = "ili9881";
+
+	if (of_property_read_bool(spi->dev.of_node, "ilitek,usb_charger")) {
+		ipio_info("ilitek,usb_charger set");
+		ipd->charger_detection_enable = 1;
+	}
+	else {
+		ipd->charger_detection_enable = 0;
+	}
+	if (ipd->charger_detection_enable) {
+		ipd->charger_detection = devm_kzalloc(&spi->dev,sizeof(struct ilitek_charger_detection), GFP_KERNEL);
+		if (ipd->charger_detection == NULL) {
+			ipio_err("failed to allocated memory for usb_charger_detection\n");
+			goto err_charger_detection_alloc_failed;
+		}
+	}
+	if (ipd->charger_detection) {
+		struct power_supply *psy = NULL;
+		union power_supply_propval prop = {0};
+
+		ipio_info("charger_detection on");
+		ipd->charger_detection->ilitek_usb_connected = 0;
+
+		ipd->charger_detection->ilitek_charger_notif.notifier_call = ilitek_charger_notifier_callback;
+		ret = power_supply_reg_notifier(&ipd->charger_detection->ilitek_charger_notif);
+		if (ret) {
+			ipio_err("Unable to register charger_notifier:%d\n", ret);
+			goto err_register_charger_notify_failed;
+		}
+		psy = power_supply_get_by_name("charger");
+		if (psy) {
+			ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
+			if (ret < 0) {
+				ipio_err("Couldn't get POWER_SUPPLY_PROP_ONLINE rc=%d\n", ret);
+				goto err_register_charger_notify_failed;
+			}
+			else{
+				usb_detect_flag = prop.intval;
+				if (usb_detect_flag != ipd->charger_detection->ilitek_usb_connected) {
+					if (USB_DETECT_IN == usb_detect_flag)
+						 ipd->charger_detection->ilitek_usb_connected = USB_DETECT_IN;
+					else
+						 ipd->charger_detection->ilitek_usb_connected = USB_DETECT_OUT;
+				}
+			}
+		}
+	}
 
 	ipd->delay_time_high = 1;
 	ipd->delay_time_low = 5;
@@ -1434,6 +1524,14 @@ fail_alloc_core:
 	mutex_destroy(&ipd->touch_mutex);
 	mutex_destroy(&ipd->plat_mutex);
 
+err_register_charger_notify_failed:
+	if (ipd->charger_detection) {
+		if (ipd->charger_detection->ilitek_charger_notif.notifier_call)
+			power_supply_unreg_notifier(&ipd->charger_detection->ilitek_charger_notif);
+	}
+err_charger_detection_alloc_failed:
+	if (ipd->charger_detection_enable)
+		ipio_free_dev_mem(NULL,spi,(void **)&ipd->charger_detection);
 fail_alloc_ic_type:
 	ipio_free_dev_mem(NULL,spi,(void **)&ipd->TP_IC_TYPE);
 	ipio_free_dev_mem(NULL,spi,(void **)&ipd);

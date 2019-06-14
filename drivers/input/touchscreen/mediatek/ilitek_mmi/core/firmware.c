@@ -1333,6 +1333,14 @@ int core_firmware_upgrade(int upgrade_type, int file_type, int open_file_method)
 	core_config_get_tp_info();
 	core_config_get_key_info();
 
+	if ((core_fr->actual_fw_mode == protocol->demo_mode ) && (!core_gesture->entry) && (ipd->charger_detection_enable)) {
+		ipd->bTouchIsAwake = true;
+		if (USB_DETECT_IN == ipd->charger_detection->ilitek_usb_connected)
+			core_config_plug_ctrl(true);
+		else
+			core_config_plug_ctrl(false);
+	}
+
 out:
 	if (power) {
 		ipd->isEnablePollCheckPower = true;

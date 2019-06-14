@@ -25,6 +25,11 @@
 #ifndef __PLATFORM_H
 #define __PLATFORM_H
 
+struct ilitek_charger_detection {
+	struct notifier_block ilitek_charger_notif;
+	uint8_t ilitek_usb_connected;
+};
+
 struct ilitek_platform_data {
 
 	struct i2c_client *client;
@@ -58,6 +63,9 @@ struct ilitek_platform_data {
 	bool do_otp_check;
 	bool sys_boot_fw;
 	bool do_reset;
+	bool bTouchIsAwake;
+	bool charger_detection_enable;
+	struct ilitek_charger_detection *charger_detection;
 
 #ifdef CONFIG_FB
 	struct notifier_block notifier_fb;
