@@ -549,7 +549,7 @@ static int rt1711_tcpc_init(struct tcpc_device *tcpc, bool sw_reset)
 	/* For No-GoodRC Case */
 	rt1711_i2c_write8(tcpc, RT1711_REG_PHYCTRL3, 0x70);
 	rt1711_i2c_write8(tcpc, RT1711_REG_DRPTOGGLECYCLE, 0x02);
-	rt1711_i2c_write8(tcpc, RT1711_REG_DRPDUTYCTRL, (1 << 4) | 10);
+	rt1711_i2c_write8(tcpc, RT1711_REG_DRPDUTYCTRL, 10);
 
 	/* Clear Rx Count */
 	rt1711_i2c_write8(tcpc, RT1711_REG_RCVBYTECNT, 0);
