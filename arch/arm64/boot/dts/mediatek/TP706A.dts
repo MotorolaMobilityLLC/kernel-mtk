@@ -12,8 +12,9 @@
 #include "mt6739.dts"
 #endif
 
-
-//#include "ChipSailing_pin.dtsi"
+#ifdef CONFIG_RSEE
+#include "ChipSailing_pin.dtsi"
+#endif
 &chosen {
 	/* fpga may has no lk, we need to specify display info here */
 	/* fb buffer is reserved using this dts by memory node above */
@@ -175,7 +176,7 @@
 
 
     alsps@53 {
-        compatible = "mediatek,alsps_ltr577";
+        compatible = "mediatek,alsps";
 
         pinctrl-names = "pin_default", "pin_cfg";
         pinctrl-0 = <&alsps_intpin_default>;

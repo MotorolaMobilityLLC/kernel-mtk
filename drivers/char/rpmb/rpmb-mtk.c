@@ -75,6 +75,15 @@ static struct dciMessage_t *rpmb_gp_dci;
 
 #endif
 
+#ifdef CONFIG_RSEE
+typedef struct {
+	__user struct s_rpmb * req;
+	uint32_t n_req_frm;
+	__user struct s_rpmb * resp;	
+	uint32_t n_resp_frm;
+}rsee_rpmb_req_t;
+#endif
+
 /*
  * Dummy definition for MAX_RPMB_TRANSFER_BLK.
  *
@@ -2035,7 +2044,206 @@ EXPORT_SYMBOL(ut_rpmb_req_write_data);
  *
  **********************************************************************************/
 
+/*************************************/
+/************* by rsee ***************/
+#ifdef CONFIG_RSEE
+int rsee_rpmb_req_write_data(struct mmc_card *card, rsee_rpmb_req_t * st_req)
+{
+	struct emmc_rpmb_req rpmb_req;
+	struct s_rpmb *rpmb_frame;
+	u16 total_blkcnt = st_req->n_req_frm;
+	int ret = 0;
 
+	MSG(INFO, "%s start!!!\n", __func__);
+
+
+	total_blkcnt = st_req->n_req_frm;
+
+//#ifdef RPMB_MULTI_BLOCK_ACCESS
+#if 1
+	/*
+	 * For RPMB write data, the elements we need in the data frame is
+	 * 1. address.
+	 * 2. write counter.
+	 * 3. data.
+	 * 4. block count.
+	 * 5. MAC
+	 *
+	 */
+	rpmb_frame = kzalloc(sizeof(struct s_rpmb) * total_blkcnt, 0);
+	if (rpmb_frame == NULL)
+		return RPMB_ALLOC_ERROR;
+	
+	do {		
+		ret = copy_from_user(rpmb_frame, (void *)st_req->req, sizeof(struct s_rpmb) * total_blkcnt);
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			break;
+		}
+			 
+		rpmb_req.type = RPMB_WRITE_DATA;
+		rpmb_req.blk_cnt = total_blkcnt;
+		rpmb_req.data_frame = (u8 *)rpmb_frame;
+
+		/*
+		 * STEP 4, send write data request.
+		 */
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret) {
+			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			break;
+		}
+
+		ret = copy_to_user((void *)st_req->resp, rpmb_frame, sizeof(struct s_rpmb));
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			break;
+		}
+	}while(0);
+	
+	kfree(rpmb_frame);
+#else
+
+
+#endif
+
+	MSG(INFO, "%s end!!!\n", __func__);
+
+	return ret;
+}
+
+int rsee_rpmb_req_get_wc(struct mmc_card *card, rsee_rpmb_req_t * st_req)
+{
+	struct emmc_rpmb_req rpmb_req;
+	struct s_rpmb *rpmb_frame;
+	int ret;
+
+	MSG(INFO, "%s start!!!\n", __func__);
+
+	do {
+		rpmb_frame = kzalloc(sizeof(struct s_rpmb), 0);
+		if (rpmb_frame == NULL)
+			return RPMB_ALLOC_ERROR;
+
+		ret = copy_from_user(rpmb_frame, (void *)st_req->req, sizeof(struct s_rpmb));
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			return -1;
+		}
+
+		/*
+		 * Prepare request. Get write counter.
+		 */
+		rpmb_req.type = RPMB_GET_WRITE_COUNTER;
+		rpmb_req.blk_cnt = 1;
+		rpmb_req.data_frame = (u8 *)rpmb_frame;
+
+		/*
+		 * Prepare get write counter frame. only need nonce.
+		 */
+		rpmb_frame->request = cpu_to_be16p(&rpmb_req.type);
+/*
+{
+		int i = 0;
+		uint32_t * datafrm = (uint32_t *)rpmb_frame;
+		printk("Dumping data frame %d:\n", i);
+		for (i = 0; i < (512/16); i++) {
+			printk("[ %p ] %x %x %x %x \n",
+				(void *) (datafrm + i * 4),
+				datafrm [(i << 2)],
+				datafrm [(i << 2) + 1],
+				datafrm [(i << 2) + 2],
+				datafrm [(i << 2) + 3]);
+		}
+}
+*/
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret) {
+			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			break;
+		}
+
+		ret = copy_to_user((void *)st_req->resp, rpmb_frame, sizeof(struct s_rpmb));
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			break;
+		}
+	} while (0);
+
+	MSG(INFO, "%s end!!!\n", __func__);
+
+	kfree(rpmb_frame);
+
+	return ret;
+}
+
+int rsee_rpmb_req_read_data(struct mmc_card *card, rsee_rpmb_req_t * st_req)
+{
+	struct emmc_rpmb_req rpmb_req;
+	struct s_rpmb *rpmb_frame;
+	int ret;
+
+	MSG(INFO, "%s start!!!\n", __func__);
+
+	do {
+		rpmb_frame = kzalloc(sizeof(struct s_rpmb) * st_req->n_resp_frm, 0);
+		if (rpmb_frame == NULL)
+			return RPMB_ALLOC_ERROR;
+
+		ret = copy_from_user(rpmb_frame, (void *)st_req->req, sizeof(struct s_rpmb));
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			return -1;
+		}
+
+		/*
+		 * Prepare request. Get write counter.
+		 */
+		rpmb_req.type = RPMB_READ_DATA;
+		rpmb_req.blk_cnt = st_req->n_resp_frm;
+		rpmb_req.data_frame = (u8 *)rpmb_frame;
+
+		/*
+		 * Prepare get write counter frame. only need nonce.
+		 */
+		rpmb_frame->request = cpu_to_be16p(&rpmb_req.type);
+/*
+{
+		int i = 0;
+		uint32_t * datafrm = (uint32_t *)rpmb_frame;
+		printk("Dumping data frame %d:\n", i);
+		for (i = 0; i < (512/16); i++) {
+			printk("[ %p ] %x %x %x %x \n",
+				(void *) (datafrm + i * 4),
+				datafrm [(i << 2)],
+				datafrm [(i << 2) + 1],
+				datafrm [(i << 2) + 2],
+				datafrm [(i << 2) + 3]);
+		}
+}
+*/
+		ret = emmc_rpmb_req_handle(card, &rpmb_req);
+		if (ret) {
+			MSG(ERR, "%s, emmc_rpmb_req_handle IO error!!!(%x)\n", __func__, ret);
+			break;
+		}
+
+		ret = copy_to_user((void *)st_req->resp, rpmb_frame, sizeof(struct s_rpmb) * st_req->n_resp_frm);
+		if (ret < 0) {
+			MSG(ERR, "%s, err=%x\n", __func__, ret);
+			break;
+		}
+	} while (0);
+
+	MSG(INFO, "%s end!!!\n", __func__);
+
+	kfree(rpmb_frame);
+
+	return ret;
+}
+
+#endif
+/****************** rsee end ****************/
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 
 #ifdef CONFIG_MTK_UFS_SUPPORT
@@ -2808,12 +3016,22 @@ long rpmb_ioctl_emmc(struct file *file, unsigned int cmd, unsigned long arg)
 	memset(&rpmbinfor, 0, sizeof(struct rpmb_infor));
 #endif
 
+#ifdef CONFIG_RSEE
+	rsee_rpmb_req_t rpmbreq;
+
+	err = copy_from_user(&rpmbreq, (void *)arg, sizeof(rsee_rpmb_req_t));
+	if (err < 0) {
+		MSG(ERR, "%s, err=%x\n", __func__, err);
+		return -1;
+	}
+#else
 	err = copy_from_user(&param, (void *)arg, sizeof(param));
 
 	if (err) {
 		MSG(ERR, "%s, copy from user failed: %x\n", __func__, err);
 		return -EFAULT;
 	}
+#endif
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) || (cmd == RPMB_IOCTL_SOTER_READ_DATA)) {
@@ -2954,6 +3172,26 @@ long rpmb_ioctl_emmc(struct file *file, unsigned int cmd, unsigned long arg)
 
 		break;
 
+#endif
+#ifdef CONFIG_RSEE
+	case RSEE_RPMB_IOCTL_GET_WC:		
+		ret = rsee_rpmb_req_get_wc(card, &rpmbreq);
+		if (ret) {
+			MSG(ERR, "RSEE_RPMB_IOCTL_GET_WC : %x\n", ret);
+		}
+		break;
+	case RSEE_RPMB_IOCTL_WRITE_DATA:		
+		ret = rsee_rpmb_req_write_data(card, &rpmbreq);
+		if (ret) {
+			MSG(ERR, "RSEE_RPMB_IOCTL_WRITE_DATA : %x\n", ret);
+		}
+	break;
+		case RSEE_RPMB_IOCTL_READ_DATA:		
+		ret = rsee_rpmb_req_read_data(card, &rpmbreq);
+		if (ret) {
+			MSG(ERR, "RSEE_RPMB_IOCTL_READ_DATA : %x\n", ret);
+		}
+	break;
 #endif
 	default:
 		MSG(ERR, "%s, wrong ioctl code (%d)!!!\n", __func__, cmd);
