@@ -99,6 +99,18 @@ extern const uint16_t gesture_key_array[];
 #define NVT_TOUCH_ESD_CHECK_PERIOD 1500	/* ms */
 #define NVT_TOUCH_WDT_RECOVERY 1
 
+#define USB_DETECT_IN 1
+#define USB_DETECT_OUT 0
+#define CMD_CHARGER_ON (0x53)
+#define CMD_CHARGER_OFF (0x51)
+
+struct usb_charger_detection {
+	struct notifier_block charger_notif;
+	uint8_t usb_connected;
+	struct workqueue_struct *nvt_charger_notify_wq;
+	struct work_struct charger_notify_work;
+};
+
 struct nvt_ts_data {
 	struct spi_device *client;
 	struct input_dev *input_dev;
@@ -141,6 +153,8 @@ struct nvt_ts_data {
 #ifdef CONFIG_SPI_MT65XX
     struct mtk_chip_config spi_ctrl;
 #endif
+	uint32_t charger_detection_enable;
+	struct usb_charger_detection *charger_detection;
 #if NVT_TOUCH_FW
 	int8_t product_id[10];
 	uint8_t suspended;

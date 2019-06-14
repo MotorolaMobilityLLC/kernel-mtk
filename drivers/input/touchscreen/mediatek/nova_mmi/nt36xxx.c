@@ -25,6 +25,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <mt-plat/mtk_boot_common.h>
+#include <linux/power_supply.h>
 
 #if defined(CONFIG_FB)
 #ifdef CONFIG_DRM_MSM
@@ -81,6 +82,11 @@ static int nvt_fb_notifier_callback(struct notifier_block *self, unsigned long e
 static void nvt_ts_early_suspend(struct early_suspend *h);
 static void nvt_ts_late_resume(struct early_suspend *h);
 #endif
+
+static int charger_notifier_callback(struct notifier_block *nb, unsigned long val, void *v);
+int32_t nvt_set_charger(uint8_t charger_on_off);
+static void nvt_charger_notify_work(struct work_struct *work);
+int usb_detect_flag = 0;
 
 DECLARE_COMPLETION(load_fw_completion);
 void nvt_nvt_update_firmware_work(struct completion *load_fw_completion);
@@ -148,6 +154,112 @@ const struct mtk_chip_config spi_ctrdata = {
 #endif
 
 static uint8_t bTouchIsAwake = 0;
+
+int32_t nvt_set_charger(uint8_t charger_on_off)
+{
+	uint8_t buf[8] = {0};
+	int32_t ret = 0;
+
+	NVT_LOG("set charger: %d\n", charger_on_off);
+
+	msleep(20);
+	/* ---set xdata index to EVENT BUF ADDR--- */
+	ret = nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
+	if (ret < 0) {
+		NVT_ERR("Set event buffer index fail!\n");
+		goto nvt_set_charger_out;
+	}
+
+	if (charger_on_off == USB_DETECT_IN) {
+		buf[0] = EVENT_MAP_HOST_CMD;
+		buf[1] = CMD_CHARGER_ON;
+		ret = CTP_SPI_WRITE(ts->client, buf, 2);
+		if (ret < 0) {
+			NVT_ERR("Write set charger command fail!\n");
+			goto nvt_set_charger_out;
+		}
+	} else if (charger_on_off == USB_DETECT_OUT) {
+		buf[0] = EVENT_MAP_HOST_CMD;
+		buf[1] = CMD_CHARGER_OFF;
+		ret = CTP_SPI_WRITE(ts->client, buf, 2);
+		if (ret < 0) {
+			NVT_ERR("Write set charger command fail!\n");
+			goto nvt_set_charger_out;
+		}
+	} else {
+		NVT_ERR("Invalid charger parameter!\n");
+		ret = -EINVAL;
+	}
+
+    nvt_set_charger_out:
+
+	return ret;
+}
+
+static void nvt_charger_notify_work(struct work_struct *work)
+{
+	if (NULL == work) {
+		NVT_ERR("%s:  parameter work are null!\n", __func__);
+		return;
+	}
+	NVT_LOG("enter\n");
+	if (USB_DETECT_IN == usb_detect_flag) {
+		if (mutex_lock_interruptible(&ts->lock)) {
+			NVT_ERR("Failed to lock in mutex_lock_interruptible(&ts->lock).\n");
+			return;
+		}
+		nvt_set_charger(USB_DETECT_IN);
+		mutex_unlock(&ts->lock);
+	} else  {
+		if (mutex_lock_interruptible(&ts->lock)) {
+			NVT_ERR("Failed to lock in mutex_lock_interruptible(&ts->lock).\n");
+			return;
+		}
+		nvt_set_charger(USB_DETECT_OUT);
+		mutex_unlock(&ts->lock);
+	}
+}
+
+static int charger_notifier_callback(struct notifier_block *nb,
+		unsigned long val, void *v)
+{
+	int ret = 0;
+	struct power_supply *psy = NULL;
+	struct usb_charger_detection *charger_detection =
+			container_of(nb, struct usb_charger_detection, charger_notif);
+	union power_supply_propval prop;
+
+	psy= power_supply_get_by_name("charger");
+	if (!psy){
+		return -EINVAL;
+		NVT_ERR("Couldn't get usbpsy\n");
+	}
+
+	if (!strcmp(psy->desc->name, "charger")) {
+		if (psy && charger_detection && val == POWER_SUPPLY_PROP_STATUS) {
+			ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
+			if (ret < 0) {
+				NVT_ERR("Couldn't get POWER_SUPPLY_PROP_ONLINE rc=%d\n", ret);
+				return ret;
+			} else {
+				usb_detect_flag = prop.intval;
+				NVT_LOG("prop.intval: %d\n", prop.intval);
+				NVT_LOG("charger_detection->usb_connected: %d\n", charger_detection->usb_connected);
+				if(usb_detect_flag != charger_detection->usb_connected) {
+					if (USB_DETECT_IN == usb_detect_flag)
+						  charger_detection->usb_connected = USB_DETECT_IN;
+					else
+						  charger_detection->usb_connected = USB_DETECT_OUT;
+					if (bTouchIsAwake)
+						 queue_work(charger_detection->nvt_charger_notify_wq,
+								&charger_detection->charger_notify_work);
+				}
+			}
+		}
+	}
+
+	return 0;
+}
 
 /*******************************************************
 Description:
@@ -1026,6 +1138,13 @@ static int32_t nvt_parse_dt(struct device *dev)
 		NVT_LOG("SPI_RD_FAST_ADDR=0x%06X\n", SPI_RD_FAST_ADDR);
 	}
 
+	if (of_property_read_bool(np, "novatek,usb_charger")) {
+		NVT_LOG("novatek,usb_charger set");
+		ts->charger_detection_enable = 1;
+	}
+	else
+		ts->charger_detection_enable = 0;
+
 	return ret;
 }
 #else
@@ -1594,6 +1713,60 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	device_init_wakeup(&ts->input_dev->dev, 1);
 #endif
 
+	if (ts->charger_detection_enable) {
+		ts->charger_detection = kzalloc(sizeof(struct usb_charger_detection), GFP_KERNEL);
+		if (ts->charger_detection == NULL) {
+			NVT_ERR("failed to allocated memory for usb_charger_detection\n");
+			goto err_charger_detection_alloc_failed;
+		}
+	}
+
+	if (ts->charger_detection) {
+		struct power_supply *psy = NULL;
+		union power_supply_propval prop = {0};
+
+		NVT_LOG("charger_detection on");
+		ts->charger_detection->usb_connected = 0;
+		ts->charger_detection->nvt_charger_notify_wq = create_singlethread_workqueue("nvt_charger_wq");
+		if (!ts->charger_detection->nvt_charger_notify_wq){
+			NVT_ERR("allocate nvt_charger_notify_wq failed\n");
+			goto err_charger_notify_wq_failed;
+		}
+		INIT_WORK(&ts->charger_detection->charger_notify_work, nvt_charger_notify_work);
+
+		ts->charger_detection->charger_notif.notifier_call = charger_notifier_callback;
+		ret = power_supply_reg_notifier(&ts->charger_detection->charger_notif);
+		if (ret) {
+			NVT_ERR("Unable to register charger_notifier:%d\n", ret);
+			goto err_register_charger_notify_failed;
+		}
+
+		/* if power supply supplier registered brfore TP
+		 * ps_notify_callback will not receive PSY_EVENT_PROP_ADDED
+		 * event, and will cause miss to set TP into charger state.
+		 * So check PS state in probe.
+		 */
+		psy = power_supply_get_by_name("charger");
+		if (psy) {
+			ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
+			if (ret < 0) {
+				NVT_ERR("Couldn't get POWER_SUPPLY_PROP_ONLINE rc=%d\n", ret);
+				goto err_register_charger_notify_failed;
+			} else {
+				usb_detect_flag = prop.intval;
+				NVT_LOG("prop.intval: %d\n", prop.intval);
+				NVT_LOG("ts->charger_detection->usb_connected: %d\n", ts->charger_detection->usb_connected);
+				if(usb_detect_flag != ts->charger_detection->usb_connected) {
+					 if (USB_DETECT_IN == usb_detect_flag)
+						  ts->charger_detection->usb_connected = USB_DETECT_IN;
+					 else
+						  ts->charger_detection->usb_connected = USB_DETECT_OUT;
+					 nvt_set_charger(ts->charger_detection->usb_connected);
+				}
+			}
+		}
+	}
+
 #if BOOT_UPDATE_FIRMWARE
 	nvt_fwu_wq = alloc_workqueue("nvt_fwu_wq", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!nvt_fwu_wq) {
@@ -1743,6 +1916,16 @@ err_create_nvt_fwu_wq_failed:
 	device_init_wakeup(&ts->input_dev->dev, 0);
 #endif
 	free_irq(client->irq, ts);
+err_register_charger_notify_failed:
+	if (ts->charger_detection) {
+		if (ts->charger_detection->charger_notif.notifier_call)
+			power_supply_unreg_notifier(&ts->charger_detection->charger_notif);
+		destroy_workqueue(ts->charger_detection->nvt_charger_notify_wq);
+		ts->charger_detection->nvt_charger_notify_wq = NULL;
+		kfree(ts->charger_detection);
+	}
+err_charger_detection_alloc_failed:
+err_charger_notify_wq_failed:
 err_int_request_failed:
 	input_unregister_device(ts->input_dev);
 	ts->input_dev = NULL;
@@ -2051,6 +2234,8 @@ static int32_t nvt_ts_resume(struct device *dev)
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	bTouchIsAwake = 1;
+	if(ts->charger_detection_enable)
+		nvt_set_charger(usb_detect_flag);
 #if NVT_TOUCH_FW
 	ts->suspended = 0;
 #endif
