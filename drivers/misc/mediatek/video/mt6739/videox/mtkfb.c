@@ -828,7 +828,7 @@ static int mtkfb_check_var(struct fb_var_screeninfo *var, struct fb_info *fbi)
 		MTKFB_LOG("[%s]unsupported bpp: %d", __func__, bpp);
 		return -1;
 	}
-
+    MTKFB_LOG("ycx111:[%s]var->rotate =%d", __func__, var->rotate);
 	switch (var->rotate) {
 	case 0:
 	case 180:
@@ -947,12 +947,20 @@ static int mtkfb_set_par(struct fb_info *fbi)
 
 	/* DISPFUNC(); */
 	memset(&fb_layer, 0, sizeof(struct fb_overlay_layer));
+    //bpp = 18;
+    printk("ycx111:RGB bit= %d\n",bpp);
 	switch (bpp) {
 	case 16:
 		fb_layer.src_fmt = MTK_FB_FORMAT_RGB565;
 		fb_layer.src_use_color_key = 1;
 		fb_layer.src_color_key = 0xFF000000;
 		break;
+
+   	//case 18:
+		//fb_layer.src_fmt = MTK_FB_FORMAT_RGB565;
+		//fb_layer.src_use_color_key = 1;
+		//fb_layer.src_color_key = 0xFF000000;
+		//break;
 
 	case 24:
 		fb_layer.src_use_color_key = 1;
@@ -981,7 +989,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	fb_layer.layer_enable = 1;
 	fb_layer.src_base_addr =
 	    (void *)((unsigned long)fbdev->fb_va_base + var->yoffset * fbi->fix.line_length);
-	DISPDBG("fb_pa=0x%08lx, var->yoffset=0x%08x,fbi->fix.line_length=0x%08x\n",
+	DISPMSG("fb_pa=0x%08lx, var->yoffset=0x%08x,fbi->fix.line_length=0x%08x\n",
 		fb_pa, var->yoffset, fbi->fix.line_length);
 	fb_layer.src_phy_addr = (void *)(fb_pa + var->yoffset * fbi->fix.line_length);
 	fb_layer.src_direct_link = 0;
@@ -994,7 +1002,7 @@ static int mtkfb_set_par(struct fb_info *fbi)
 	/* fb_layer.src_color_key = 0; */
 	fb_layer.layer_rotation = MTK_FB_ORIENTATION_0;
 	fb_layer.layer_type = LAYER_2D;
-	DISPDBG("mtkfb_set_par, fb_layer.src_fmt=%x\n", fb_layer.src_fmt);
+	DISPMSG("mtkfb_set_par, fb_layer.src_fmt=%x\n", fb_layer.src_fmt);
 
 	session_input = kzalloc(sizeof(*session_input), GFP_KERNEL);
 	if (!session_input)
@@ -2262,6 +2270,7 @@ static int __parse_tag_videolfb(struct device_node *node)
 			lcd_fps = 6000;
 
 		islcmconnected = videolfb_tag->islcmfound;
+        //islcmconnected = 1; //test by ycx
 		vramsize = videolfb_tag->vram;
 		fb_base = videolfb_tag->fb_base;
 		is_lcm_inited = 1;
@@ -2280,7 +2289,7 @@ static int _parse_tag_videolfb(void)
 	struct device_node *chosen_node;
 
 	DISPCHECK("[DT][videolfb]isvideofb_parse_done = %d\n", is_videofb_parse_done);
-
+	//debug for make sure init lcm in kernel
 	if (is_videofb_parse_done)
 		return 0;
 
@@ -2298,6 +2307,7 @@ static int _parse_tag_videolfb(void)
 	} else {
 		DISPCHECK("[DT][videolfb] of_chosen not found\n");
 	}
+	//debug for make sure init lcm in kernel
 	return -1;
 
 found:
@@ -2308,6 +2318,7 @@ found:
 	DISPCHECK("[DT][videolfb] fb_base    = 0x%lx\n", (unsigned long)fb_base);
 	DISPCHECK("[DT][videolfb] vram       = 0x%x (%d)\n", vramsize, vramsize);
 	DISPCHECK("[DT][videolfb] lcmname    = %s\n", mtkfb_lcm_name);
+	//whz debug
 	return 0;
 }
 

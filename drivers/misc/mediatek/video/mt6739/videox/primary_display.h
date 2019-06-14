@@ -335,6 +335,7 @@ void _cmdq_start_trigger_loop(void);
 void *primary_get_ovl2mem_handle(void);
 int primary_display_is_decouple_mode(void);
 int primary_display_is_mirror_mode(void);
+int primary_display_is_directlink_mode(void);
 unsigned int primary_display_get_option(const char *option);
 enum CMDQ_SWITCH primary_display_cmdq_enabled(void);
 int primary_display_switch_cmdq_cpu(enum CMDQ_SWITCH use_cmdq);

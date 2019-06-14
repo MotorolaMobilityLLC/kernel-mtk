@@ -72,7 +72,7 @@
 #include "disp_recovery.h"
 #include "disp_partial.h"
 
-
+extern unsigned int esd_recovery_level;
 static struct task_struct *primary_display_check_task; /* For abnormal check */
 static wait_queue_head_t _check_task_wq;	/* used for blocking check task  */
 static atomic_t _check_task_wakeup = ATOMIC_INIT(0);	/* For  Check Task */
@@ -192,12 +192,12 @@ int _esd_check_config_handle_vdo(struct cmdqRecStruct *handle)
 	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(primary_get_dpmgr_handle()),
 				handle, 0);
 
-	primary_display_manual_unlock();
 
 	/* 6.flush instruction */
 	dprec_logger_start(DPREC_LOGGER_ESD_CMDQ, 0, 0);
 	ret = cmdqRecFlush(handle);
 	dprec_logger_done(DPREC_LOGGER_ESD_CMDQ, 0, 0);
+	primary_display_manual_unlock();
 
 	DISPINFO("[ESD]_esd_check_config_handle_vdo ret=%d\n", ret);
 
@@ -675,12 +675,14 @@ int primary_display_esd_recovery(void)
 	DISPDBG("[POWER]lcm suspend[begin]\n");
 	disp_lcm_suspend(primary_get_lcm());
 	DISPCHECK("[POWER]lcm suspend[end]\n");
+	mdelay(20);
 
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 7);
 
 	DISPDBG("[ESD]lcm force init[begin]\n");
 	disp_lcm_init(primary_get_lcm(), 1);
 	DISPCHECK("[ESD]lcm force init[end]\n");
+	disp_lcm_set_backlight(primary_get_lcm(),NULL,esd_recovery_level);
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 8);
 
 	DISPDBG("[ESD]start dpmgr path[begin]\n");

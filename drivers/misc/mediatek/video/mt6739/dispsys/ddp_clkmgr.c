@@ -55,6 +55,8 @@ static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 	{NULL, "CLK_MM_DISP_DITHER0", 0, (1), DISP_MODULE_DITHER0},
 	{NULL, "CLK_MM_DSI_MM_CLOCK", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
 	{NULL, "CLK_MM_DSI_INTERF", 0, (0), DISP_MODULE_UNKNOWN}, /* set 0, particular case */
+	{NULL, "CLK_MM_DBI_MM_CLOCK", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "CLK_MM_DBI_INTERF", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "CLK_MM_F26M_HRT", 0, (1), DISP_MODULE_UNKNOWN}, /* cg */
 	{NULL, "MDP_WROT0", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "DISP_PWM", 0, (1), DISP_MODULE_PWM0},
@@ -63,6 +65,8 @@ static ddp_clk ddp_clks[MAX_DISP_CLK_CNT] = {
 	{NULL, "UNIVPLL2_D4", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "UNIVPLL2_D8", 0, (0), DISP_MODULE_UNKNOWN},
 	{NULL, "UNIVPLL3_D8", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "MUX_DBI", 0, (0), DISP_MODULE_UNKNOWN},
+	{NULL, "UNIVPLL3_D2", 0, (0), DISP_MODULE_UNKNOWN},
 };
 
 static void __iomem *ddp_apmixed_base;
@@ -113,7 +117,7 @@ int ddp_clk_prepare_enable(enum DDP_CLK_ID id)
 {
 	int ret = 0;
 
-	DDPDBG("ddp_clk_prepare_enable, clkid = %d\n", id);
+	//printk("ycx111:ddp_clk_prepare_enable, clkid = %d\n", id);
 
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL)
 		return ret;
@@ -267,6 +271,7 @@ int ddp_main_modules_clk_on(void)
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
 	ddp_clk_prepare_enable(DISP0_DISP_26M);
 	ddp_clk_prepare_enable(MDP_WROT0);
+    //printk("ycx111:ddp_main_modules_clk_on\n");
 
 	/* --MODULE CLK-- */
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
@@ -279,7 +284,7 @@ int ddp_main_modules_clk_on(void)
 			/* module driver power on */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				DDPDBG("%s power_on\n", ddp_get_module_name(module));
+				//printk("ycx111:%s power_on\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_on(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));
@@ -291,9 +296,15 @@ int ddp_main_modules_clk_on(void)
 	/* DISP_DSI */
 	module = _get_dst_module_by_lcm(primary_get_lcm());
 	if (module == DISP_MODULE_UNKNOWN)
+    {  
+      //  printk("ycx111:module unknown\n");
 		ret = -1;
+       }
 	else
+    {  
+        //printk("ycx111:module kown, modle = %d\n",module); 
 		ddp_get_module_driver(module)->power_on(module, NULL);
+       }
 
 	DDPMSG("CG0 0x%x, CG1 0x%x\n", clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON0),
 									clk_readl(DISP_REG_CONFIG_MMSYS_CG_CON1));
@@ -314,6 +325,7 @@ int ddp_ext_modules_clk_on(void)
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM0);
 	ddp_clk_prepare_enable(CLK_MM_GALS_COMM1);
 	ddp_clk_prepare_enable(DISP0_DISP_26M);
+    //printk("ycx111:ddp_ext_modules_clk_on \n");
 
 	/* --MODULE CLK-- */
 	for (i = 0; i < MAX_DISP_CLK_CNT; i++) {
@@ -326,7 +338,7 @@ int ddp_ext_modules_clk_on(void)
 			/* module driver power on */
 			if (ddp_get_module_driver(module)->power_on != 0
 				&& ddp_get_module_driver(module)->power_off != 0) {
-				DDPDBG("%s power_on\n", ddp_get_module_name(module));
+				//printk("%s ycx1111:power_on\n", ddp_get_module_name(module));
 				ddp_get_module_driver(module)->power_on(module, NULL);
 			} else {
 				DDPERR("[modules_clk_on] %s no power on(off) function\n", ddp_get_module_name(module));

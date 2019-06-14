@@ -1573,7 +1573,8 @@ void DSI_Set_VM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
 {
 	int i = 0;
-
+	if (cmdq)
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000000);
 	if (module != DISP_MODULE_DSIDUAL) {
 		for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
 			DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[i]->DSI_START, VM_CMD_START, 0);
@@ -1582,6 +1583,10 @@ enum DSI_STATUS DSI_EnableVM_CMD(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	} else {
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 0);
 		DSI_OUTREGBIT(cmdq, struct DSI_START_REG, DSI_REG[0]->DSI_START, VM_CMD_START, 1);
+	}
+	if (cmdq) {
+		DSI_POLLREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000020);
+		DSI_MASKREG32(cmdq, &DSI_REG[0]->DSI_INTSTA, 0x00000020, 0x00000000);
 	}
 	return DSI_STATUS_OK;
 }
@@ -2281,7 +2286,7 @@ int DSI_Send_ROI(enum DISP_MODULE_ENUM module, void *handle, unsigned int x, uns
 
 static void lcm_set_reset_pin(UINT32 value)
 {
-#if 1
+#if 0
 	DSI_OUTREG32(NULL, DISPSYS_CONFIG_BASE + 0x150, value);
 #else
 #if !defined(CONFIG_MTK_LEGACY)

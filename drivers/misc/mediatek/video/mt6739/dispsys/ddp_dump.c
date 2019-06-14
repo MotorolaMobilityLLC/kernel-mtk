@@ -22,6 +22,7 @@
 #include "ddp_rdma.h"
 #include "ddp_rdma_ex.h"
 #include "ddp_dsi.h"
+#include "ddp_dbi.h"
 
 #include "disp_helper.h"
 
@@ -132,6 +133,7 @@ static char *ddp_get_mutex_module0_name(unsigned int bit)
 	case 14: return "disp-dsi";
 	case 15: return "disp-dbi";
 	case 16: return "disp-pwm";
+	case 25: return "DBI";
 
 	default:
 		return "mutex-unknown";
@@ -1825,7 +1827,84 @@ void mmsys_config_dump_reg(enum DISP_MODULE_ENUM module)
 	DDPDUMP("-- END: DISP %s REGS --\n", ddp_get_module_name(module));
 }
 
+void disp_dbi_dump_reg(enum DISP_MODULE_ENUM module)
+{
+	unsigned long module_base = ddp_get_module_va(module);
 
+	DDPDUMP("== START: DISP %s REGS ==\n", ddp_get_module_name(module));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x000, INREG32(module_base + 0x000),
+		0x004, INREG32(module_base + 0x004),
+		0x008, INREG32(module_base + 0x008),
+		0x00c, INREG32(module_base + 0x00c));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x010, INREG32(module_base + 0x010),
+		0x018, INREG32(module_base + 0x018),
+		0x01c, INREG32(module_base + 0x01c),
+		0x020, INREG32(module_base + 0x020));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x028, INREG32(module_base + 0x028),
+		0x02c, INREG32(module_base + 0x02c),
+		0x030, INREG32(module_base + 0x030),
+		0x034, INREG32(module_base + 0x034));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x038, INREG32(module_base + 0x038),
+		0x03c, INREG32(module_base + 0x03c),
+		0x040, INREG32(module_base + 0x040),
+		0x044, INREG32(module_base + 0x044));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x048, INREG32(module_base + 0x048),
+		0x04c, INREG32(module_base + 0x04c),
+		0x058, INREG32(module_base + 0x058),
+		0x060, INREG32(module_base + 0x060));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x064, INREG32(module_base + 0x064),
+		0x068, INREG32(module_base + 0x068),
+		0x06c, INREG32(module_base + 0x06c),
+		0x070, INREG32(module_base + 0x070));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x080, INREG32(module_base + 0x080),
+		0x084, INREG32(module_base + 0x084),
+		0x088, INREG32(module_base + 0x088),
+		0x090, INREG32(module_base + 0x090));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x094, INREG32(module_base + 0x094),
+		0x098, INREG32(module_base + 0x098),
+		0x0a8, INREG32(module_base + 0x0a8),
+		0x0e0, INREG32(module_base + 0x0e0));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x0e4, INREG32(module_base + 0x0e4),
+		0x0e8, INREG32(module_base + 0x0e8),
+		0x260, INREG32(module_base + 0x260),
+		0x270, INREG32(module_base + 0x270));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x278, INREG32(module_base + 0x278),
+		0x27c, INREG32(module_base + 0x27c),
+		0x290, INREG32(module_base + 0x290),
+		0x294, INREG32(module_base + 0x294));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x298, INREG32(module_base + 0x298),
+		0x29c, INREG32(module_base + 0x29c),
+		0x300, INREG32(module_base + 0x300),
+		0x304, INREG32(module_base + 0x304));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0x310, INREG32(module_base + 0x310),
+		0xe00, INREG32(module_base + 0xe00),
+		0xe14, INREG32(module_base + 0xe14),
+		0xe18, INREG32(module_base + 0xe18));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0xe1c, INREG32(module_base + 0xe1c),
+		0xe20, INREG32(module_base + 0xe20),
+		0xe24, INREG32(module_base + 0xe24),
+		0xe28, INREG32(module_base + 0xe28));
+	DDPDUMP("dbi: 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x, 0x%04x=0x%08x\n",
+		0xe2c, INREG32(module_base + 0xe2c),
+		0xe30, INREG32(module_base + 0xe30),
+		0xe34, INREG32(module_base + 0xe34),
+		0xe38, INREG32(module_base + 0xe38));
+
+	DDPDUMP("-- END: DISP %s REGS --\n", ddp_get_module_name(module));
+}
 void disp_split_dump_regs(enum DISP_MODULE_ENUM module)
 {
 	DDPDUMP("No support the mdoule: %s\n", __func__);
@@ -1883,6 +1962,9 @@ int ddp_dump_reg(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_PWM0:
 		if (disp_helper_get_option(DISP_OPT_REG_PARSER_RAW_DUMP))
 			disp_pwm_dump_reg(module);
+		break;
+	case DISP_MODULE_DBI:
+		disp_dbi_dump_reg(module);
 		break;
 /******PQ start****/
 	case DISP_MODULE_GAMMA0:
@@ -1953,6 +2035,9 @@ int ddp_dump_analysis(enum DISP_MODULE_ENUM module)
 	case DISP_MODULE_DSIDUAL:
 		dsi_analysis(module);
 		break;
+	case DISP_MODULE_DBI:
+		dbi_analysis(module);
+		break;	
 	case DISP_MODULE_CCORR0:
 		ccorr_dump_analyze(module);
 		break;

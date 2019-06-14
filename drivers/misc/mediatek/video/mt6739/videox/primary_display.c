@@ -98,6 +98,7 @@
 #include "disp_partial.h"
 #include "ddp_aal.h"
 #include "ddp_gamma.h"
+#include "disp_dts_gpio.h"
 
 #define MMSYS_CLK_LOW (0)
 #define MMSYS_CLK_HIGH (1)
@@ -105,7 +106,7 @@
 /* #define _DEBUG_DITHER_HANG_ */
 
 #define FRM_UPDATE_SEQ_CACHE_NUM (DISP_INTERNAL_BUFFER_COUNT+1)
-
+unsigned int esd_recovery_level = 0;
 static struct disp_internal_buffer_info *decouple_buffer_info[DISP_INTERNAL_BUFFER_COUNT];
 
 static struct RDMA_CONFIG_STRUCT decouple_rdma_config;
@@ -938,6 +939,8 @@ enum DISP_MODULE_ENUM _get_dst_module_by_lcm(struct disp_lcm_handle *plcm)
 
 	} else if (plcm->params->type == LCM_TYPE_DPI) {
 		return DISP_MODULE_DPI;
+	} else if (plcm->params->type == LCM_TYPE_DBI) {
+		return DISP_MODULE_DBI;
 	}
 	DISPERR("can't find primary path dst module\n");
 	return DISP_MODULE_UNKNOWN;
@@ -1256,8 +1259,8 @@ static void _cmdq_build_trigger_loop(void)
 		/* for operations before frame transfer, such as waiting for DSI TE */
 #ifndef CONFIG_FPGA_EARLY_PORTING		/* fpga has no TE signal */
 		if (islcmconnected)
-			dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_LCM_TE, 0);
-#endif
+			dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger, CMDQ_WAIT_LCM_TE, 0);	
+#endif	
 		ret = cmdqRecWaitNoClear(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_CABC_EOF);
 		/* cleat frame done token, now the config thread will not allowed to config registers. */
 		/* remember that config thread's priority is higher than trigger thread,*/
@@ -1290,15 +1293,26 @@ static void _cmdq_build_trigger_loop(void)
 		*		CMDQ_WAIT_STREAM_EOF_EVENT, 0);
 		*/
 		ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_RDMA0_EOF);
-		DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
-						  0x80000000, 0x0);
+//add by ycx debug
+		//DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
+		//				  0x80000000, 0x0);
+//add by ycx end
+		if (pgc->plcm->params->type == LCM_TYPE_DBI)
+		{
+			printk("ycx:type DBI, wait for CMDQ_EVENT_DISP_DBI0_EOF");
+			ret = cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_EVENT_DISP_DBI0_EOF);
+			}
+		else 
+            {
+			DISP_REG_CMDQ_POLLING(pgc->cmdq_handle_trigger, DISPSYS_DSI0_BASE + 0x0c,
+ 						  0x80000000, 0x0);
 
-		/* dsi is not idle rightly after rdma frame done,*/
-		/* so we need to polling about 1us for dsi returns to idle */
-		/* do not polling dsi idle directly which will decrease CMDQ performance*/
-		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
-				      CMDQ_CHECK_IDLE_AFTER_STREAM_EOF, 0);
-
+			/* dsi is not idle rightly after rdma frame done,*/
+			/* so we need to polling about 1us for dsi returns to idle */
+			/* do not polling dsi idle directly which will decrease CMDQ performance*/
+			dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
+						  CMDQ_CHECK_IDLE_AFTER_STREAM_EOF, 0);
+			}
 		/* for some module(like COLOR) to read hw register to GPR after frame done */
 		dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_trigger,
 				      CMDQ_AFTER_STREAM_EOF, 0);
@@ -2263,7 +2277,7 @@ static int _build_path_direct_link(void)
 
 	DISPFUNC();
 	pgc->mode = DIRECT_LINK_MODE;
-
+    printk("ycx111:_build_path_direct_link \n");
 	pgc->dpmgr_handle = dpmgr_create_path(DDP_SCENARIO_PRIMARY_DISP, pgc->cmdq_handle_config);
 	if (pgc->dpmgr_handle) {
 		DISPDBG("dpmgr create path SUCCESS(%p)\n", pgc->dpmgr_handle);
@@ -2272,7 +2286,14 @@ static int _build_path_direct_link(void)
 		return -1;
 	}
 	dpmgr_set_lcm_utils(pgc->dpmgr_handle, pgc->plcm->drv);
-
+//add by ycx debug
+	if (pgc->plcm->params->type == LCM_TYPE_DBI)
+    {   
+        printk("ycx111:_build_path_direct_link type == LCM_TYPE_DBI\n ");
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+							   DDP_IRQ_DBI_EXT_TE);
+       }
+//add by ycx debug end
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_DONE);
 	dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_FRAME_START);
@@ -3218,6 +3239,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 
 	/* Part2: CMDQ */
 	if (use_cmdq) {
+        printk("ycx111 use cmdq\n");
 		ret = cmdqCoreRegisterCB(CMDQ_GROUP_DISP, (CmdqClockOnCB)cmdqDdpClockOn,
 					 (CmdqDumpInfoCB)cmdqDdpDumpInfo, (CmdqResetEngCB)cmdqDdpResetEng,
 					 (CmdqClockOffCB)cmdqDdpClockOff);
@@ -3264,7 +3286,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	if (likely(primary_display_mode == DIRECT_LINK_MODE)) {
 		_build_path_direct_link();
 		pgc->session_mode = DISP_SESSION_DIRECT_LINK_MODE;
-		DISPINFO("primary display is DIRECT LINK MODE\n");
+		DISPINFO("ycx111--primary display is DIRECT LINK MODE\n");
 	} else {
 		DISPINFO("primary display mode is WRONG\n");
 	}
@@ -3289,12 +3311,17 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 					IS_ERR(init_decouple_buffer_thread));
 
 	dpmgr_path_set_video_mode(pgc->dpmgr_handle, primary_display_is_video_mode());
-	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_DSI_SW_INIT, &(pgc->plcm->params->dsi));
 
+	if (pgc->plcm->params->type == LCM_TYPE_DBI) {
+        printk("ycx111 dpmgr_path_ioctl\n ");
+		dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_DBI_SW_INIT, &(pgc->plcm->params->dbi));
+	}else{
+	    dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_DSI_SW_INIT, &(pgc->plcm->params->dsi));
+       }
 	primary_display_power_control(1);
-	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL)
+	if (disp_helper_get_stage() == DISP_HELPER_STAGE_NORMAL) {
 		ddp_clk_force_on(0);
-
+	}
 	/* Part4: Path OP */
 	DISPDBG("primary_display_init->dpmgr_path_init\n");
 	dpmgr_path_init(pgc->dpmgr_handle, use_cmdq);
@@ -3332,7 +3359,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	data_config->dst_w = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	data_config->dst_h = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
 	data_config->p_golden_setting_context = get_golden_setting_pgc();
-
+    DISPMSG("ycx111:lcm_param->type == %d\n",lcm_param->type);
 	if (lcm_param->type == LCM_TYPE_DSI) {
 		if (lcm_param->dsi.data_format.format == LCM_DSI_FORMAT_RGB888)
 			data_config->lcm_bpp = 24;
@@ -3347,7 +3374,14 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 			data_config->lcm_bpp = 16;
 		if (lcm_param->dpi.format == LCM_DPI_FORMAT_RGB666)
 			data_config->lcm_bpp = 18;
-	}
+	} else if (lcm_param->type == LCM_TYPE_DBI) {
+		if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB888)
+			data_config->lcm_bpp = 24;
+		else if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB565)
+			data_config->lcm_bpp = 16;
+		else if (lcm_param->dbi.data_format.format == LCM_DBI_FORMAT_RGB666)
+			data_config->lcm_bpp = 18;
+ 	}
 
 	data_config->fps = lcm_fps;
 	data_config->dst_dirty = 1;
@@ -3357,6 +3391,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	gset_arg.dst_mod_type = dpmgr_path_get_dst_module_type(pgc->dpmgr_handle);
 	gset_arg.is_decouple_mode = 0;
 	dpmgr_path_ioctl(pgc->dpmgr_handle, pgc->cmdq_handle_config, DDP_OVL_GOLDEN_SETTING, &gset_arg);
+	if (lcm_param->type == LCM_TYPE_DBI)
+		{
+			//is_lcm_inited = 0;
+		}
 	if (is_lcm_inited) {
 		/* ??? why need */
 		/* no need lcm power on,because lk power on lcm */
@@ -3370,6 +3408,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 		}
 
 		ret = disp_lcm_init(pgc->plcm, 1);
+		islcmconnected = 1;
 	}
 	if (!ret)
 		primary_display_set_lcm_power_state_nolock(LCM_ON);
@@ -3391,7 +3430,10 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps, int is_lcm_inited
 	/* set_enterulps(0); */
 
 	/* Part5: Top sw init */
-	primary_display_check_recovery_init();
+	if (lcm_param->type == LCM_TYPE_DSI)
+		primary_display_check_recovery_init();
+	if (lcm_param->type == LCM_TYPE_DBI)
+		DISPERR("dbi esd check to do!\n");
 
 	if (disp_helper_get_option(DISP_OPT_SWITCH_DST_MODE)) {
 		primary_display_switch_dst_mode_task = kthread_create(_disp_primary_path_switch_dst_mode_thread,
@@ -3792,6 +3834,8 @@ int primary_display_wait_for_vsync(void *config)
 		has_vsync = 0;	/* fpga has no TE signal */
 #endif
 
+	//debug for DBI: marked not wait Vsync first
+	islcmconnected = 1;
 	if (!islcmconnected || !has_vsync) {
 		DISPCHECK("use fake vsync: lcm_connect=%d, has_vsync=%d\n",
 			  islcmconnected, has_vsync);
@@ -4331,7 +4375,14 @@ int primary_display_resume(void)
 		if (_should_insert_wait_frame_done_token())
 			_cmdq_insert_wait_frame_done_token_mira(pgc->cmdq_handle_config);
 
-		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
+		if (_get_dst_module_by_lcm(pgc->plcm) == DISP_MODULE_DBI) {
+            printk("ycx:DBI TYPe wait DDP_IRQ_DBI_EXT_TE ");
+			
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+								   DDP_IRQ_DBI_EXT_TE);
+		}else {
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC, DDP_IRQ_DSI0_EXT_TE);
+          }
 		dpmgr_enable_event(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC);
 
 		if (primary_display_get_power_mode_nolock() == FB_RESUME && !skip_update) {
@@ -6233,7 +6284,11 @@ int primary_display_vsync_switch(int method)
 		pr_debug("Vsync map DSI FRAME DONE %d\n", method);
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 				       DDP_IRQ_DSI0_FRAME_DONE);
-	}
+	} else if (method == 3) {
+		pr_debug("Vsync map DBI TE %d\n", method);
+		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+							   DDP_IRQ_DBI_EXT_TE);
+ 	}
 
 	return ret;
 }
@@ -6336,13 +6391,145 @@ int _set_backlight_by_cpu(unsigned int level)
 	mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl, MMPROFILE_FLAG_PULSE, 0, 7);
 	return ret;
 }
+static void lcm_set_blen_pin_for_backlight(UINT32 value)
 
+{
+
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_BLEN_OUT1);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_BLEN_OUT0);
+
+}
+#if 0
+int _set_backlight_for_gc9305(unsigned int level,unsigned int last_level)
+{
+    int ret = 0;
+    unsigned int last_level_16;
+    unsigned int level_16;
+    unsigned int last_level_flag;
+    printk("ycx-backlight: level = %d,last_level=%d\n",level,last_level);
+        if(0 == level)
+            {
+            lcm_set_blen_pin_for_backlight(0);
+            return ret;
+            }
+
+        if(level!=0&&last_level==0)
+           {
+              lcm_set_blen_pin_for_backlight(1);
+              mdelay(1);
+           }
+        last_level_16 = last_level/16;
+        level_16 = level/16;
+        if (last_level_16 == level_16)
+            return ret;
+
+        if(level < last_level)
+        {
+            if((last_level -level)>=16)
+            {
+            lcm_set_blen_pin_for_backlight(0);
+            udelay(2);
+            lcm_set_blen_pin_for_backlight(1);
+            udelay(2);
+            last_level_flag = level;
+            return ret;
+            }
+        }
+        else{
+            if((level-last_level)>=16)
+                {
+            //lcm_set_blen_pin_for_backlight(0);
+           // udelay(2);
+            //lcm_set_blen_pin_for_backlight(1);
+            //udelay(2);
+            //last_level = level;
+            return ret;    
+                 }
+            
+        }
+        
+return ret;
+}
+#endif
+
+
+extern LCM_DRIVER *lcm_kernel_detect_drv;
 int primary_display_setbacklight(unsigned int level)
 {
 	int ret = 0;
 	static unsigned int last_level;
+    unsigned int last_level_16;
+    unsigned int level_16;
+    int n;
+    DISPFUNC();
+	//printk("ycx-backlight-from-framework: level = %d\n",level);
+    if(!(strcmp(lcm_kernel_detect_drv->name,"gc9305_dbi_c_4wire")))
+       {
+       
+      //  printk("ycx-backlight: level = %d,last_level=%d\n",level,last_level);
+        if(0 == level)
+            {
+            lcm_set_blen_pin_for_backlight(0);
+            last_level = level;
+            return ret;
+            }
 
-	DISPFUNC();
+        if(level!=0&&last_level==0)
+           {
+              lcm_set_blen_pin_for_backlight(1);
+              udelay(50);
+              for(n=0;n<(15-level/16);n++)
+                {
+                    lcm_set_blen_pin_for_backlight(0);
+                    udelay(1);
+                    lcm_set_blen_pin_for_backlight(1);
+                    udelay(1);
+                }
+              udelay(50);
+              last_level = level;
+              return ret;
+           }
+        last_level_16 = last_level/16;
+        level_16 = level/16;
+        if (last_level_16 == level_16)
+            return ret;
+        printk("ycx-backlight last level: last_level = %d, current level = %d\n",last_level,level);
+        if(level < last_level)
+        {
+            if((last_level -level)>=16)
+            {
+                printk("ycx-backlight need to reduce the bl level_16 = %d,last_level_16=%d,\n",level_16,last_level_16);
+                lcm_set_blen_pin_for_backlight(0);
+                udelay(1);
+                lcm_set_blen_pin_for_backlight(1);
+                udelay(50);
+                last_level = level;
+                return ret;
+            }
+        }
+        else{
+            if((level-last_level)>=16)
+                {
+                for(n=0;n<15;n++)
+                    {
+                        printk("ycx-backlight need to enhance the bl level_16 = %d,last_level_16=%d\n",level_16,last_level_16);
+                        lcm_set_blen_pin_for_backlight(0);
+                        udelay(1);
+                        lcm_set_blen_pin_for_backlight(1);
+                        if(n==14)
+                        udelay(50);
+                        else
+                        udelay(1);                            
+                    }
+                last_level = level;
+                return ret;    
+                 }
+            
+        }     
+        return ret;
+       }
 	if (disp_helper_get_stage() != DISP_HELPER_STAGE_NORMAL) {
 		DISPMSG("%s skip due to stage %s\n", __func__, disp_helper_stage_spy());
 		return 0;
@@ -6366,12 +6553,16 @@ int primary_display_setbacklight(unsigned int level)
 				mmprofile_log_ex(ddp_mmp_get_events()->primary_set_bl,
 					       MMPROFILE_FLAG_PULSE, 0, 7);
 				disp_lcm_set_backlight(pgc->plcm, NULL, level);
+                //DISPERR("ycx-setbacklight-disp_lcm_set_backlight\n");
 			} else {
+			   // disp_lcm_set_backlight(pgc->plcm, NULL, level);
 				_set_backlight_by_cmdq(level);
+                //DISPERR("ycx-setbacklight-_set_backlight_by_cmdq\n");
 			}
 			atomic_set(&delayed_trigger_kick, 1);
 		} else {
 			_set_backlight_by_cpu(level);
+            //DISPERR("ycx-setbacklight-_set_backlight_by_cpu\n");
 		}
 		last_level = level;
 	}
@@ -6861,7 +7052,7 @@ int primary_display_capture_framebuffer(unsigned long pbuf)
 	return -1;
 }
 
-static UINT32 disp_fb_bpp = 32;
+static UINT32 disp_fb_bpp = 32; //test by ycx
 static UINT32 disp_fb_pages = 3;
 
 UINT32 DISP_GetScreenBpp(void)
@@ -7291,11 +7482,23 @@ int primary_display_switch_dst_mode(int mode)
 	primary_display_cur_dst_mode = mode;
 	DISPMSG("primary_display_cur_dst_mode %d\n", primary_display_cur_dst_mode);
 	if (primary_display_is_video_mode())
+    {   
+        printk("ycx111:primary_display_is_video_mode");
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 		   DDP_IRQ_RDMA0_DONE);
-	else
+       }
+	else{
+            printk("ycx111:primary_display_isnot_video_mode");
+			if (_get_dst_module_by_lcm(pgc->plcm) == DISP_MODULE_DBI) {
+			printk("ycx1111:dpmgr_map_event_to_irq DBI TE");
+			dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
+							   DDP_IRQ_DBI_EXT_TE);
+			}
+			else {			
 		dpmgr_map_event_to_irq(pgc->dpmgr_handle, DISP_PATH_EVENT_IF_VSYNC,
 			DDP_IRQ_DSI0_EXT_TE);
+			}
+	}
 
 	ret = DISP_STATUS_OK;
 done:

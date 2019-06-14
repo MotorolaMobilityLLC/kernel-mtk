@@ -20,6 +20,7 @@
 #include "disp_drv_platform.h"
 #include "ddp_manager.h"
 #include "disp_lcm.h"
+#include "../../../pmic/include/mt6357/mtk_pmic_api.h"
 
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 #include <linux/of.h>
@@ -884,6 +885,8 @@ void load_lcm_resources_from_DT(LCM_DRIVER *lcm_drv)
 }
 #endif
 
+#define LCM_NAME_NEED_TO_POWERON_LDO28 "gc9305_dbi_c_4wire"
+LCM_DRIVER *lcm_kernel_detect_drv = NULL;
 struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id, int is_lcm_inited)
 {
 	int lcmindex = 0;
@@ -897,14 +900,21 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 	LCM_DRIVER *lcm_drv = NULL;
 	LCM_PARAMS *lcm_param = NULL;
 	struct disp_lcm_handle *plcm = NULL;
-
+    lcm_kernel_detect_drv = lcm_driver_list[0];
 	DISPFUNC();
 	DISPCHECK("plcm_name=%s is_lcm_inited %d\n", plcm_name, is_lcm_inited);
-
+	if(!strcmp(LCM_NAME_NEED_TO_POWERON_LDO28, plcm_name))
+		{
+			DISPCHECK("gc9305_dbi_c_4wire lcm need to poweron ldo28\n");
+			//mt6357_upmu_set_rg_ldo_vldo28_sw_op_en(1);
+			//mt6357_upmu_set_rg_ldo_vldo28_en(1);
+		}
+	
 #if defined(MTK_LCM_DEVICE_TREE_SUPPORT)
 	if (check_lcm_node_from_DT() == 0) {
 		lcm_drv = &lcm_common_drv;
 		lcm_drv->name = lcm_name_list[0];
+        //printk("ycx111:kernel lcm found 1 \n");
 		if (strcmp(lcm_drv->name, plcm_name)) {
 			DISPERR
 			    ("FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
@@ -928,6 +938,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 		DISPERR("no lcm driver defined in linux kernel driver\n");
 		return NULL;
 	} else if (_lcm_count() == 1) {
+	   // printk("ycx111:kernel lcm found 2 \n");
 		if (plcm_name == NULL) {
 			lcm_drv = lcm_driver_list[0];
 
@@ -965,6 +976,7 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name, LCM_INTERFACE_ID lcm_id,
 					isLCMFound = true;
 					isLCMInited = true;
 					lcmindex = i;
+                    lcm_kernel_detect_drv = lcm_driver_list[i];
 					break;
 				}
 			}

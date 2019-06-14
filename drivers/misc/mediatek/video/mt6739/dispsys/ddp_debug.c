@@ -452,11 +452,11 @@ static void process_dbg_opt(const char *opt)
 			sprintf(buf, "gUltraEnable: %d\n", gUltraEnable);
 		}
 	} else if (strncmp(opt, "mmp", 3) == 0) {
-#ifdef SUPPORT_MMPROFILE	 /* FIXME: remove when MMP ready */
+//#ifdef SUPPORT_MMPROFILE	 /* FIXME: remove when MMP ready */
 		init_ddp_mmp_events();
-#else
+//#else
 		;
-#endif
+//#endif
 	} else if (strncmp(opt, "low_power_mode:", 15) == 0) {
 		char *p = (char *)opt + 15;
 		unsigned int mode;

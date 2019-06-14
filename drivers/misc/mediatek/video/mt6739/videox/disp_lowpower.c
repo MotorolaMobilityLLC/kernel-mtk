@@ -318,12 +318,18 @@ void _acquire_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 
 	DISPINFO("[disp_lowpower]%s\n", __func__);
-	if (use_wrot_sram())
+	if (use_wrot_sram()) {
+		DISPERR("already acquired sram!!!");
 		return;
-
-	if (is_mipi_enterulps())
+	}
+	if (is_mipi_enterulps()) {
+		DISPERR("ULPS mode, cannot acquire sram");
+ 		return;
+	}
+	if (!primary_display_is_video_mode() && primary_display_is_idle()) {
+		DISPDBG("cmd in idle, no need acquire sram");
 		return;
-
+	}
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
 
@@ -371,16 +377,19 @@ static int32_t _acquire_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 }
 
 
-static int32_t _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
+void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 {
 	struct cmdqRecStruct *handle;
 	struct disp_ddp_path_config *pconfig = dpmgr_path_get_last_config_notclear(primary_get_dpmgr_handle());
 	unsigned int rdma0_shadow_mode = 0;
 
-	DISPMSG("[disp_lowpower]%s:use_wrot_sram:%d\n", __func__, use_wrot_sram());
+	DISPMSG("[disp_lowpower]%s\n", __func__);
 
-	if (use_wrot_sram() == 0)
-		return -1;
+	if (use_wrot_sram() == 0) {
+		DISPMSG("no acquired sram to release!!!\n");
+ 		return;
+
+	}
 
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
@@ -389,6 +398,7 @@ static int32_t _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 2.wait eof */
 	_cmdq_insert_wait_frame_done_token_mira(handle);
+
 
 	if (disp_helper_get_option(DISP_OPT_SHADOW_REGISTER) &&
 		(disp_helper_get_option(DISP_OPT_SHADOW_MODE)) != 2) {
@@ -420,19 +430,16 @@ static int32_t _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	cmdqRecFlushAsync(handle);
 	cmdqRecDestroy(handle);
-
-	return 0;
 }
 
 static int32_t _release_wrot_resource(enum CMDQ_EVENT_ENUM resourceEvent)
 {
-	int32_t ret = 0;
 	/* need lock  */
 	primary_display_manual_lock();
-	ret = _release_wrot_resource_nolock(resourceEvent);
+	_release_wrot_resource_nolock(resourceEvent);
 	primary_display_manual_unlock();
 
-	return ret;
+	return 0;
 }
 
 int _switch_mmsys_clk_callback(unsigned int need_disable_pll)

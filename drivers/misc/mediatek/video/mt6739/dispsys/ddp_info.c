@@ -343,7 +343,7 @@ static ddp_module  ddp_modules[DISP_MODULE_NUM] = {
 	 DISP_T_DBI,
 	 "dbi0",
 	 1,
-	 NULL,	/*TODO: will be filled later */
+	 &ddp_driver_dbi0,
 	 {"mediatek,dbi0",
 	  0x14013000,
 	  242,

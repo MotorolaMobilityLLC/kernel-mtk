@@ -30,6 +30,7 @@
 #include "ddp_drv.h"
 #include "disp_helper.h"
 #include "ddp_dsi.h"
+#include "ddp_dbi.h"
 #include "disp_drv_log.h"
 
 /* IRQ log print kthread */
@@ -439,7 +440,17 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 			DDPERR("PWM APB TX Error!\n");
 
 		DISP_CPU_REG_SET(DISP_REG_CONFIG_MMSYS_INTSTA, ~reg_val);
-	} else {
+	} else if (irq == ddp_get_module_irq(DISP_MODULE_DBI)) {
+		module = DISP_MODULE_DBI;
+		reg_val = (DISP_REG_GET(DISPSYS_DBI_BASE + 0x8) & 0x3f);
+		if (reg_val & (1 << 0))
+			DDPIRQ("DBI frame done irq !\n");
+		if (reg_val & (1 << 3))
+			DDPIRQ("DBI TE received irq !\n");
+		DISP_CPU_REG_SET(DISPSYS_DBI_BASE + 0x8, ~reg_val);
+		DDPIRQ("%s irq_status = 0x%x\n", ddp_get_module_name(module), reg_val);
+		
+	}else {
 		module = DISP_MODULE_UNKNOWN;
 		reg_val = 0;
 		DDPERR("invalid irq=%d\n ", irq);

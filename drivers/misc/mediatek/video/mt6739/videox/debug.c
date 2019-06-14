@@ -43,6 +43,7 @@
 #include "ddp_manager.h"
 #include "ddp_log.h"
 #include "ddp_dsi.h"
+#include "ddp_dbi.h"
 
 #include "cmdq_def.h"
 #include "cmdq_record.h"
@@ -447,11 +448,11 @@ static void process_dbg_opt(const char *opt)
 		}
 
 		if (pattern) {
-			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, true, pattern);
-			DISPMSG("enable dsi pattern: 0x%08x\n", pattern);
+			ddp_dbi_pattern_test(1);
+			DISPMSG("enable dbi pattern: 0x%08x\n", pattern);
 		} else {
-			primary_display_manual_lock();
-			DSI_BIST_Pattern_Test(DISP_MODULE_DSI0, NULL, false, 0);
+primary_display_manual_lock();
+			ddp_dbi_pattern_test(0);
 			primary_display_manual_unlock();
 			return;
 		}

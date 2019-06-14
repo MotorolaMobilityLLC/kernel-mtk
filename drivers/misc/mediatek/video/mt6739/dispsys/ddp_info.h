@@ -21,6 +21,7 @@
 #include "lcm_drv.h"
 #include "ddp_ovl.h"
 #include "disp_event.h"
+//#include "ddp_dbi.h"
 
 #define _UFMT_ID_SHIFT			0
 #define _UFMT_ID_WIDTH			8
@@ -346,6 +347,7 @@ enum DDP_IOCTL_NAME {
 	DDP_DSI_PORCH_ADDR,
 	DDP_DSI_SW_INIT,
 	DDP_DSI_MIPI_POWER_ON,
+	DDP_DBI_SW_INIT,
 };
 
 struct ddp_io_golden_setting_arg {
@@ -391,7 +393,8 @@ struct DDP_MODULE_DRIVER {
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi0;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsi1;
 extern struct DDP_MODULE_DRIVER ddp_driver_dsidual;
-
+/* dbi  */
+extern struct DDP_MODULE_DRIVER ddp_driver_dbi0;
 /* ovl */
 extern struct DDP_MODULE_DRIVER ddp_driver_ovl;
 /* rdma */

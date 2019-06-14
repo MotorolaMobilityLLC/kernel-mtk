@@ -58,7 +58,7 @@ static module_map_t module_mutex_map[DISP_MODULE_NUM] = {
 	{DISP_MODULE_SPLIT0, -1, 0},
 
 	{DISP_MODULE_DPI, -1, 0},
-	{DISP_MODULE_DBI, -1, 0},
+	{DISP_MODULE_DBI, 15, 0},
 
 	{DISP_MODULE_DSI0, 14, 0},
 	{DISP_MODULE_DSI1, -1, 0},
@@ -100,6 +100,8 @@ static int ddp_get_mutex_src(enum DISP_MODULE_ENUM dest_module, enum DDP_MODE dd
 
 	if (dest_module == DISP_MODULE_DSI0 || dest_module == DISP_MODULE_DSIDUAL) {
 		src_from_dst_module = SOF_VAL_MUTEX0_SOF_FROM_DSI0;
+	} else if (dest_module == DISP_MODULE_DBI) {
+		src_from_dst_module = SOF_VAL_MUTEX0_SOF_SINGLE_MODE;
 	} else {
 		DDPERR("get mutex sof, invalid param dst module = %s(%d), dsi mode %s\n",
 		       ddp_get_module_name(dest_module), dest_module, ddp_get_mode_name(ddp_mode));

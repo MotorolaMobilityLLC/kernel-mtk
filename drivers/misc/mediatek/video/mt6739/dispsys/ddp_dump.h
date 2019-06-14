@@ -24,6 +24,7 @@ void disp_ccorr_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_color_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_dither_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_dsi_dump_reg(enum DISP_MODULE_ENUM module);
+void disp_dbi_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_gamma_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_mutex_dump_reg(enum DISP_MODULE_ENUM module);
 void disp_ovl_dump_reg(enum DISP_MODULE_ENUM module);
