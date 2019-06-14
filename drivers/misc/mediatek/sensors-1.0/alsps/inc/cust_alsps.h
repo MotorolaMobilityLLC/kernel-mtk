@@ -40,7 +40,7 @@ struct alsps_hw {
 	int polling_mode_als;                               /*!< 1: polling mode ; 0:interrupt mode*/
 	unsigned char   i2c_addr[C_CUST_I2C_ADDR_NUM];/*!< i2c address list, some chip will have multiple address */
 	/*!< (C_CUST_ALS_LEVEL-1) levels divides all range into C_CUST_ALS_LEVEL levels*/
-	unsigned int    als_level[C_CUST_ALS_LEVEL-1];
+	unsigned int    als_level[TP_COUNT][TEMP_COUNT][C_CUST_ALS_LEVEL];
 	unsigned int    als_value[C_CUST_ALS_LEVEL];    /*!< the value reported in each level */
 	unsigned int    ps_threshold;                   /*!< the threshold of proximity sensor */
 	unsigned int    state_val;
