@@ -1683,6 +1683,7 @@ static struct i2c_driver abov_driver = {
 		.owner  = THIS_MODULE,
 		.of_match_table = abov_match_tbl,
 		.name   = DRIVER_NAME,
+		.pm = &abov_pm_ops,
 	},
 	.id_table = abov_idtable,
 	.probe	  = abov_probe,
