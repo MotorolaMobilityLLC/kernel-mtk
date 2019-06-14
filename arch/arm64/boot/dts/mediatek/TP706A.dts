@@ -12,6 +12,8 @@
 #include "mt6739.dts"
 #endif
 
+
+//#include "ChipSailing_pin.dtsi"
 &chosen {
 	/* fpga may has no lk, we need to specify display info here */
 	/* fb buffer is reserved using this dts by memory node above */

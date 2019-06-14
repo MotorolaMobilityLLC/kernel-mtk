@@ -68,6 +68,14 @@
  *****************************************************************************/
 #include <linux/gpio.h>
 
+enum switch_work_mode{
+	SWITCH_MODE_OFF = 0,
+	SWITCH_MODE_SPK =SWITCH_MODE_OFF,
+	SWITCH_MODE_SUPREV,
+	SWITCH_MODE_REV,
+	SWITCH_MODE_ON,
+	SWITCH_MODE_NUM = SWITCH_MODE_ON,
+};
 void AudDrv_GPIO_probe(void *dev);
 
 int AudDrv_GPIO_Request(bool _enable, enum soc_aud_digital_block _usage);
@@ -80,6 +88,6 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode);
 int AudDrv_GPIO_EXTAMP2_Select(int bEnable, int mode);
 int AudDrv_GPIO_RCVSPK_Select(int bEnable);
 int AudDrv_GPIO_HPDEPOP_Select(int bEnable);
-
+void Switch_Apply(int mode);
 int audio_drv_gpio_aud_clk_pull(bool high);
 #endif

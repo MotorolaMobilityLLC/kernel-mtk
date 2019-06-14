@@ -12,7 +12,8 @@
 
  
  
-&cs_finger{
+&cs_finger {
+
 	pinctrl-names = "cs_finger_pins_default", "cs_finger_reset_en0","cs_finger_reset_en1","cs_finger_spi0_mi_as_spi0_mi",
                           "cs_finger_spi0_mo_as_spi0_mo","cs_finger_spi0_clk_as_spi0_clk","cs_finger_spi0_cs_as_spi0_cs",
                           "cs_finger_int_as_int";
@@ -29,7 +30,7 @@
 	debounce = <0>;
 	gpio-irq-std = <&pio __CS_FINGERPRINT_EINT_EN_PIN_NUM__ 0x0>;
 
-	status = "okay";
+	status = "disable";
 }; 
 
 

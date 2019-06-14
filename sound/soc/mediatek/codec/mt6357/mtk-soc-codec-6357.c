@@ -3241,6 +3241,7 @@ static int Voice_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_valu
 
 static void Speaker_Amp_Change(bool enable)
 {
+	pr_err("zsk %s \n",__func__);
 	if (enable) {
 		if (GetDLStatus() == false)
 			TurnOnDacPower(AUDIO_ANALOG_DEVICE_OUT_SPEAKERL);
@@ -3346,7 +3347,7 @@ static int Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 }
 static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s() value = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_err("zsk %s() value = %ld\n ", __func__, ucontrol->value.integer.value[0]);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_SPEAKERL] == false)) {
 		Speaker_Amp_Change(true);
@@ -3361,10 +3362,25 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 	}
 	return 0;
 }
+
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-	pr_debug("%s(), enable %d\n", __func__, enable);
+	pr_err("zsk %s(), enable %d %d \n", __func__, enable,mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH]);
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
+#if 1
+	if (enable) {
+
+		if(mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true){
+			Switch_Apply(SWITCH_MODE_REV);
+			AudDrv_GPIO_EXTAMP_Select(true, 8);
+		}else{
+			Switch_Apply(SWITCH_MODE_SPK);
+			AudDrv_GPIO_EXTAMP_Select(true, 3);
+
+	}
+
+#else
+
 	if (enable) {
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 		/*udelay(1000); */
@@ -3372,21 +3388,30 @@ static void Ext_Speaker_Amp_Change(bool enable)
 		AudDrv_GPIO_EXTAMP_Select(true, 3);
 		/* msleep(SPK_WARM_UP_TIME); */
 		usleep_range(5 * 1000, 10 * 1000);
+
+#endif
 	} else {
-		AudDrv_GPIO_EXTAMP_Select(false, 3);
-		udelay(500);
+		if(mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true){
+			AudDrv_GPIO_EXTAMP_Select(false, 8);
+			Switch_Apply(1);
+			udelay(500);
+		}else{
+			AudDrv_GPIO_EXTAMP_Select(false, 3);
+			Switch_Apply(1);
+			udelay(500);
+		}
 	}
 }
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s()\n", __func__);
+	pr_err("%s()\n", __func__);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP];
 	return 0;
 }
 static int Ext_Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
 {
-	pr_aud("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
+	pr_err("%s() gain = %ld\n ", __func__, ucontrol->value.integer.value[0]);
 	if (ucontrol->value.integer.value[0]) {
 		Ext_Speaker_Amp_Change(true);
 		mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_OUT_EXTSPKAMP] =
@@ -3413,7 +3438,7 @@ static void Receiver_Speaker_Switch_Change(bool enable)
 static int Receiver_Speaker_Switch_Get(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s() : %d\n", __func__,
+	pr_err("zsk %s() : %d\n", __func__,
 		 mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH]);
 	ucontrol->value.integer.value[0] =
 	    mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH];
@@ -3422,7 +3447,7 @@ static int Receiver_Speaker_Switch_Get(struct snd_kcontrol *kcontrol,
 static int Receiver_Speaker_Switch_Set(struct snd_kcontrol *kcontrol,
 				       struct snd_ctl_elem_value *ucontrol)
 {
-	pr_debug("%s()\n", __func__);
+	pr_err("zsk %s()\n", __func__);
 	if ((ucontrol->value.integer.value[0] == true)
 	    && (mCodec_data->mAudio_Ana_DevicePower
 		[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == false)) {

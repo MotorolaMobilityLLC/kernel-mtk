@@ -42,6 +42,8 @@
 #endif
 
 struct cust_mt65xx_led *bl_setting;
+struct pinctrl *pinctrled;
+struct pinctrl_state *red_led_output_low, *red_led_output_high;
 static unsigned int bl_div = CLK_DIV1;
 #define PWM_DIV_NUM 8
 static unsigned int div_array[PWM_DIV_NUM];
@@ -59,7 +61,7 @@ static int debug_enable_led = 1;
 /* #define pr_fmt(fmt) "[LED_DRV]"fmt */
 #define LEDS_DRV_DEBUG(format, args...) do { \
 	if (debug_enable_led) {	\
-		pr_debug(format, ##args);\
+		pr_err(format, ##args);\
 	} \
 } while (0)
 #define LEDS_DRV_INFO(format, args...) do { \
@@ -628,6 +630,29 @@ static int led_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 #endif
+
+int red_led_get_gpio_info(struct platform_device *pdev)
+{
+	int ret;
+	pinctrled = devm_pinctrl_get(&pdev->dev);
+ 	if (IS_ERR(pinctrled)) {
+ 		ret = PTR_ERR(pinctrled);
+ 		dev_info(&pdev->dev, "fwq Cannot find pinctrled!\n");
+ 		return ret;
+ 	}
+ 	red_led_output_low = pinctrl_lookup_state(pinctrled, "red_led_output0");
+ 	if (IS_ERR(red_led_output_low)) {
+ 		ret = PTR_ERR(red_led_output_low);
+ 		LEDS_DRV_DEBUG("Cannot find pinctrl red_led_output_low %d!\n", ret);
+ 	}
+ 	red_led_output_high = pinctrl_lookup_state(pinctrled, "red_led_output1");
+ 	if (IS_ERR(red_led_output_high)) {
+ 		ret = PTR_ERR(red_led_output_high);
+ 		LEDS_DRV_DEBUG("Cannot find pinctrl red_led_output_high!\n");
+ 		return ret;
+ 	}
+	return 0;
+}
 /****************************************************************************
  * driver functions
  ***************************************************************************/
@@ -723,7 +748,9 @@ static int mt65xx_leds_probe(struct platform_device *pdev)
 	    ("led probe last_level = %d, limit = %d, limit_flag = %d, current_level = %d\n",
 	     last_level, limit, limit_flag, current_level);
 #endif
-
+	ret = red_led_get_gpio_info(pdev);
+	if (ret)
+		LEDS_DRV_DEBUG("unable to get red led gpio info.\n");
 	return 0;
 
  err:
@@ -819,11 +846,19 @@ static void mt65xx_leds_shutdown(struct platform_device *pdev)
 	}
 
 }
-
+#ifdef CONFIG_OF
+static const struct of_device_id red_led_of_match[] = {
+ 	{.compatible = "leds-mt65xx"},
+ 	{},
+ };
+#endif
 static struct platform_driver mt65xx_leds_driver = {
 	.driver = {
 		   .name = "leds-mt65xx",
 		   .owner = THIS_MODULE,
+#ifdef CONFIG_OF
+		   .of_match_table = red_led_of_match,
+#endif
 		   },
 	.probe = mt65xx_leds_probe,
 	.remove = mt65xx_leds_remove,
@@ -831,7 +866,7 @@ static struct platform_driver mt65xx_leds_driver = {
 	.shutdown = mt65xx_leds_shutdown,
 };
 
-#ifdef CONFIG_OF
+#if 0
 static struct platform_device mt65xx_leds_device = {
 	.name = "leds-mt65xx",
 	.id = -1
@@ -845,7 +880,7 @@ static int __init mt65xx_leds_init(void)
 
 	LEDS_DRV_DEBUG("%s\n", __func__);
 
-#ifdef CONFIG_OF
+#if 0
 	ret = platform_device_register(&mt65xx_leds_device);
 	if (ret)
 		LEDS_DRV_DEBUG("mt65xx_leds_init:dev:E%d\n", ret);
