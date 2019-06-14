@@ -91,14 +91,19 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 	u32 power_vol[] = {0};
 	u32 polling_mode_ps[] = {0};
 	u32 polling_mode_als[] = {0};
-	u32 als_level[C_CUST_ALS_LEVEL-1] = {0};
+	u32 als_level[TP_COUNT*TEMP_COUNT*C_CUST_ALS_LEVEL] = {0};
 	u32 als_value[C_CUST_ALS_LEVEL] = {0};
 	u32 ps_threshold_high[] = {0};
 	u32 ps_threshold_low[] = {0};
+	u32 als_threshold_high[] = {0};
+        u32 als_threshold_low[] = {0};
 	u32 is_batch_supported_ps[] = {0};
 	u32 is_batch_supported_als[] = {0};
+	u32 ps_irq_use_old[] = {0};
+	u32 get_val[] = {0};
 
-	SENSOR_LOG("Device Tree get alsps info!\n");
+	SENSOR_PR_ERR("Device Tree get alsps info!\n");
+
 	if (node) {
 		ret = of_property_read_u32_array(node, "i2c_num", i2c_num, ARRAY_SIZE(i2c_num));
 	if (ret == 0)
@@ -117,15 +122,17 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 		else
 			hw->power_id	=	power_id[0];
 	}
-
 	ret = of_property_read_u32_array(node, "power_vol", power_vol, ARRAY_SIZE(power_vol));
 	if (ret == 0)
 		hw->power_vol	=	power_vol[0];
 
 	ret = of_property_read_u32_array(node, "als_level", als_level, ARRAY_SIZE(als_level));
 	if (ret == 0) {
+		memcpy(hw->als_level,als_level,sizeof(als_level));
+#if 0
 		for (i = 0; i < ARRAY_SIZE(als_level); i++)
 			hw->als_level[i]		 = als_level[i];
+#endif
 	}
 
 	ret = of_property_read_u32_array(node, "als_value", als_value, ARRAY_SIZE(als_value));
@@ -133,6 +140,22 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 		for (i = 0; i < ARRAY_SIZE(als_value); i++)
 			hw->als_value[i]		 = als_value[i];
 	}
+
+	ret = of_property_read_u32_array(node , "state_val", get_val, ARRAY_SIZE(get_val));
+        if (ret == 0)
+                hw->state_val            = get_val[0];
+        ret = of_property_read_u32_array(node , "psctrl_val", get_val, ARRAY_SIZE(get_val));
+        if (ret == 0)
+                hw->psctrl_val           = get_val[0];
+        ret = of_property_read_u32_array(node , "alsctrl_val", get_val, ARRAY_SIZE(get_val));
+        if (ret == 0)
+                hw->alsctrl_val          = get_val[0];
+        ret = of_property_read_u32_array(node , "ledctrl_val", get_val, ARRAY_SIZE(get_val));
+        if (ret == 0)
+                hw->ledctrl_val          = get_val[0];
+        ret = of_property_read_u32_array(node , "wait_val", get_val, ARRAY_SIZE(get_val));
+        if (ret == 0)
+                hw->wait_val             = get_val[0];
 
 	ret = of_property_read_u32_array(node, "polling_mode_ps", polling_mode_ps, ARRAY_SIZE(polling_mode_ps));
 	if (ret == 0)
@@ -142,6 +165,11 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 	if (ret == 0)
 		hw->polling_mode_als		 = polling_mode_als[0];
 
+	ret = of_property_read_u32_array(node, "ps_irq_use_old", ps_irq_use_old, ARRAY_SIZE(ps_irq_use_old));
+	if (ret == 0)
+		hw->ps_irq_use_old		 = ps_irq_use_old[0];
+
+
 	ret = of_property_read_u32_array(node, "ps_threshold_high", ps_threshold_high, ARRAY_SIZE(ps_threshold_high));
 	if (ret == 0)
 		hw->ps_threshold_high		 = ps_threshold_high[0];
@@ -149,6 +177,14 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 	ret = of_property_read_u32_array(node, "ps_threshold_low", ps_threshold_low, ARRAY_SIZE(ps_threshold_low));
 	if (ret == 0)
 		hw->ps_threshold_low		 = ps_threshold_low[0];
+
+	ret = of_property_read_u32_array(node , "als_threshold_high", als_threshold_high, ARRAY_SIZE(als_threshold_high));
+        if (ret == 0)
+                hw->als_threshold_high            = als_threshold_high[0];
+
+        ret = of_property_read_u32_array(node , "als_threshold_low", als_threshold_low, ARRAY_SIZE(als_threshold_low));
+        if (ret == 0)
+                hw->als_threshold_low             = als_threshold_low[0];
 
 	ret = of_property_read_u32_array(node, "is_batch_supported_ps", is_batch_supported_ps,
 		ARRAY_SIZE(is_batch_supported_ps));

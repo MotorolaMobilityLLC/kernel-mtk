@@ -87,6 +87,8 @@ static int button_flag_isink0;
 static int button_flag_isink1;
 
 struct wake_lock leds_suspend_lock;
+extern struct pinctrl *pinctrled;
+extern struct pinctrl_state *red_led_output_low, *red_led_output_high;
 
 char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"red",
@@ -105,7 +107,7 @@ struct cust_mt65xx_led *pled_dtsi;
 static int debug_enable_led_hal = 1;
 #define LEDS_DEBUG(format, args...) do { \
 	if (debug_enable_led_hal) {	\
-		pr_debug("[LED]"format, ##args);\
+		pr_err("[LED]"format, ##args);\
 	} \
 } while (0)
 
@@ -767,6 +769,7 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 #endif
 			first_time = false;
 		}
+#ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 		pmic_set_register_value(PMIC_RG_DRV_128K_CK_PDN, 0x0);	/* Disable power down */
 		pmic_set_register_value(PMIC_RG_DRV_ISINK1_CK_PDN, 0);
 		pmic_set_register_value(PMIC_ISINK_CH1_MODE, ISINK_PWM_MODE);
@@ -780,8 +783,16 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_ON);
 		else
 			pmic_set_register_value(PMIC_ISINK_CH1_EN, NLED_OFF);
+#endif
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
+	}
+	else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK0)
+	{
+		if (level)
+			pinctrl_select_state(pinctrled, red_led_output_high);
+		else
+			pinctrl_select_state(pinctrled, red_led_output_low);
 	}
 	mutex_unlock(&leds_pmic_mutex);
 	return -1;

@@ -98,6 +98,10 @@ enum audio_system_gpio_type {
 	GPIO_HPDEPOP_LOW,
 	GPIO_AUD_CLK_MOSI_HIGH,
 	GPIO_AUD_CLK_MOSI_LOW,
+	GPIO_AUD_SWITCH_EN_HIGH,
+	GPIO_AUD_SWITCH_EN_LOW,
+	GPIO_AUD_RCV_EN_HIGH,
+	GPIO_AUD_RCV_EN_LOW,
 	GPIO_NUM
 };
 
@@ -147,6 +151,10 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 	[GPIO_HPDEPOP_LOW] = {"hpdepop-pulllow", false, NULL},
 	[GPIO_AUD_CLK_MOSI_HIGH] = {"aud_clk_mosi_pull_high", false, NULL},
 	[GPIO_AUD_CLK_MOSI_LOW] = {"aud_clk_mosi_pull_low", false, NULL},
+	[GPIO_AUD_SWITCH_EN_HIGH] = {"aud_switch_en_high", false, NULL},
+	[GPIO_AUD_SWITCH_EN_LOW] = {"aud_switch_en_low", false, NULL},
+	[GPIO_AUD_RCV_EN_HIGH] = {"aud_rcv_en_high", false, NULL},
+	[GPIO_AUD_RCV_EN_LOW] = {"aud_rcv_en_low", false, NULL},
 };
 #endif
 
@@ -242,6 +250,26 @@ static bool AudDrv_GPIO_IsValid(enum audio_system_gpio_type _type)
 }
 
 
+void Switch_Apply(int mode)
+{
+	switch(mode) {
+		case SWITCH_MODE_SPK:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_HIGH);
+			AudDrv_GPIO_Select(GPIO_AUD_RCV_EN_LOW);
+			break;
+		case SWITCH_MODE_SUPREV:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_HIGH);
+			AudDrv_GPIO_Select(GPIO_AUD_RCV_EN_HIGH);
+			break;
+		case SWITCH_MODE_REV:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_LOW);
+			break;
+		default:
+			pr_err("%s,switch mode error !\n",__func__);
+	break;
+	}
+}
+
 static int set_aud_clk_mosi(bool _enable)
 {
 /*
@@ -250,7 +278,6 @@ static int set_aud_clk_mosi(bool _enable)
  */
 #ifndef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 	static int aud_clk_mosi_counter;
-
 	if (_enable) {
 		aud_clk_mosi_counter++;
 		if (aud_clk_mosi_counter == 1)
@@ -477,13 +504,19 @@ int AudDrv_GPIO_I2S_Select(int bEnable)
 	mutex_unlock(&gpio_request_mutex);
 	return retval;
 }
-
+#define ONTIM_DEFAULT_MODE_SPEK 3
 int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 {
 	int retval = 0;
 #if MT6755_PIN
-	int extamp_mode;
 	int i;
+	 int extamp_mode;
+	unsigned long flags;
+	if((mode < 0) || (mode >10)){
+		extamp_mode = ONTIM_DEFAULT_MODE_SPEK;
+	}else{
+		extamp_mode =mode;
+	}
 	mutex_lock(&gpio_request_mutex);
 	if (bEnable == 1) {
 		if (mode == 1)
@@ -494,6 +527,11 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 			extamp_mode = 3;	/* default mode is 3 */
 
 		if (aud_gpios[GPIO_EXTAMP_HIGH].gpio_prepare) {
+			local_irq_save(flags);
+			retval = pinctrl_select_state(pinctrlaud, aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
+			if (retval)
+				pr_err("could not set aud_gpios[GPIO_EXTAMP_LOW] pins\n");
+			udelay(1000);
 			for (i = 0; i < extamp_mode; i++) {
 				retval = pinctrl_select_state(pinctrlaud,
 						aud_gpios[GPIO_EXTAMP_LOW].gpioctrl);
@@ -506,6 +544,7 @@ int AudDrv_GPIO_EXTAMP_Select(int bEnable, int mode)
 					pr_err("could not set aud_gpios[GPIO_EXTAMP_HIGH] pins\n");
 				udelay(2);
 			}
+			local_irq_restore(flags);
 		}
 	} else {
 		if (aud_gpios[GPIO_EXTAMP_LOW].gpio_prepare) {
