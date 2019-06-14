@@ -472,22 +472,20 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,ili9881h backlight: level = %d\n", __func__, level);
-
-	LCM_LOGI("%s,ili9881h backlight: get default level = %d\n", __func__, bl_level[1].para_list[0]);
+	pr_info("%s,ili9881h backlight: level = %d\n", __func__, level);
 
 	//for 12bit switch to 8bit
 	bl_level[1].para_list[0] = (level&0xF0)>>4;
 	bl_level[1].para_list[1] = (level&0xF)<<4;
 
-	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
 	cabc_array[1].para_list[0] = *lcm_value;
-	push_table(NULL, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void *lcm_switch_mode(int mode)

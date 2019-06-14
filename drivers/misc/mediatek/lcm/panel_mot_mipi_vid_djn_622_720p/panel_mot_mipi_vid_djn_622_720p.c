@@ -481,18 +481,18 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 {
 
-	LCM_LOGI("%s,nt35695 backlight: level = %d\n", __func__, level);
+	pr_info("%s,nt35695 backlight: level = %d\n", __func__, level);
 
 	bl_level[0].para_list[0] = level;
 
-	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
 	cabc_array[1].para_list[0] = *lcm_value;
-	push_table(NULL, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
+	push_table(handle, cabc_array, sizeof(cabc_array) / sizeof(struct LCM_setting_table), 1);
 }
 
 static void lcm_set_reset(void)
