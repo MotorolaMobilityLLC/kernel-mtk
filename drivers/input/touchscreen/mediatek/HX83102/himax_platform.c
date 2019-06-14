@@ -18,11 +18,13 @@
 #include "himax_ic.h"
 
 #include <ontim/ontim_dev_dgb.h>
-char  version[20]="himax83102 ver 1.0";
+char  version[20]="1.0";
 static char vendor_name[50]="boyi-hx83102";
+static char lcdname[64]="hx83102";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 

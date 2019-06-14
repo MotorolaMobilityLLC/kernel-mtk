@@ -1717,8 +1717,7 @@ static void apply_hi556_otp(void)
 */
 #endif
 
-extern int front_camera_find_success;
-extern bool camera_front_probe_ok;//bit1
+extern char front_cam_name[64];
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id) 
 {    
@@ -1732,8 +1731,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		do {
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
-				front_camera_find_success=5;
-				camera_front_probe_ok=1;
+                          memset(front_cam_name, 0x00, sizeof(front_cam_name));
+                        memcpy(front_cam_name, "hi556", 64);
 			LOG_INF("i2c write id : 0x%x, sensor id: 0x%x\n",
 			imgsensor.i2c_write_id, *sensor_id);
 			return ERROR_NONE;

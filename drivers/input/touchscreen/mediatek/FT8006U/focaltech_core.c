@@ -51,11 +51,13 @@
 #define FTS_I2C_SLAVE_ADDR                  0x38
 
 #include <ontim/ontim_dev_dgb.h>
-static char version[20]="ft8006u ver 1.0";
-static char vendor_name[50]="txd-ft8006u";
+static char version[64]="1.0";
+static char vendor_name[64]="txd-ft8006u";
+static char lcdname[64]="ft8006u";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 

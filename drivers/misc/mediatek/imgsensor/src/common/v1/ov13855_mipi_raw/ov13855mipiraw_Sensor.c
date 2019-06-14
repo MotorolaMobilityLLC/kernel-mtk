@@ -903,8 +903,7 @@ static kal_uint32 return_sensor_id(void)
     return ( (read_cmos_sensor(0x300a) << 16) | (read_cmos_sensor(0x300b) << 8) | read_cmos_sensor(0x300c));
 }
 
-extern int back_camera_find_success;
-extern bool camera_back_probe_ok;//bit2
+extern char back_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
     kal_uint8 i = 0;
@@ -917,8 +916,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
-		back_camera_find_success=2;
-		camera_back_probe_ok=1;
+                memset(back_cam_name, 0x00, sizeof(back_cam_name));
+                memcpy(back_cam_name, "ov13855",64);
                 LOG_INF("Read sensor id ok  i2c write id: 0x%x, sensor id: 0x%x  info.sensor_id=0x%x\n", 
 				imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
                 return ERROR_NONE;

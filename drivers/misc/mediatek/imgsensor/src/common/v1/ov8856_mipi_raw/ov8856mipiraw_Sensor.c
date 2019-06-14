@@ -224,7 +224,7 @@ static int read_otp(struct otp_struct *otp_ptr)
 	int checksum2 = 0;
 	int temp1;
 	
-	//set 0x5002[3] to ¡°0¡±
+	//set 0x5002[3] to \A1\B00\A1\B1
 	temp1 = read_cmos_sensor(0x5001);
 	write_cmos_sensor(0x5001, (0x00 & 0x08) | (temp1 & (~0x08)));
 	// read OTP into buffer
@@ -301,7 +301,7 @@ static int read_otp(struct otp_struct *otp_ptr)
 	{
 		write_cmos_sensor(i,0); // clear OTP buffer, recommended use continuous write to accelarate
 	}
-	//set 0x5002[3] to ¡°1¡±
+	//set 0x5002[3] to \A1\B01\A1\B1
 	temp1 = read_cmos_sensor(0x5001);
 	write_cmos_sensor(0x5001, (0x08 & 0x08) | (temp1 & (~0x08)));
 	return 0;
@@ -1317,8 +1317,7 @@ static void slim_video_setting(void)
 	preview_setting();
 }
 
-extern int front_camera_find_success;
-extern bool camera_front_probe_ok;//bit1
+
 /*************************************************************************
 * FUNCTION
 *	get_imgsensor_id
@@ -1335,6 +1334,7 @@ extern bool camera_front_probe_ok;//bit1
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id) 
 {
 	kal_uint8 i = 0;
@@ -1351,16 +1351,16 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             {
 				if((read_cmos_sensor(0x302A)) == 0XB0)
                 {
-                    front_camera_find_success=4;
-                    camera_front_probe_ok=1;
+                    memset(front_cam_name, 0x00, sizeof(front_cam_name));
+                    memcpy(front_cam_name, "ov8856", 64);
                     ov8856version = OV8856R1A;
                     LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856version = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856version);	
                     return ERROR_NONE;
 				}
 				else if((read_cmos_sensor(0x302A)) == 0XB1)
                 {
-                    front_camera_find_success=4;
-                    camera_front_probe_ok=1;
+                    memset(front_cam_name, 0x00, sizeof(front_cam_name));
+                    memcpy(front_cam_name, "ov8856", 64);
                     ov8856version = OV8856R2A;
                     LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856version = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856version);	
                     return ERROR_NONE;

@@ -743,8 +743,6 @@ static void slim_video_setting(void)
 
     video_720p_setting();
 }
-extern int back_camera_find_success;
-extern bool camera_back_probe_ok;//bit2
 /*************************************************************************
 * FUNCTION
 *    get_imgsensor_id
@@ -761,6 +759,7 @@ extern bool camera_back_probe_ok;//bit2
 * GLOBALS AFFECTED
 *
 *************************************************************************/
+extern char back_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
     kal_uint8 i = 0;
@@ -773,8 +772,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
         do {
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
-                back_camera_find_success=4;
-				camera_back_probe_ok=1;
+                memset(back_cam_name, 0x00, sizeof(back_cam_name));
+                memcpy(back_cam_name, "sp250a");
                 LOG_INF("gpw i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 return ERROR_NONE;
             }

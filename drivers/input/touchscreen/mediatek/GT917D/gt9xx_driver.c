@@ -37,11 +37,13 @@
 #include <linux/atomic.h>
 
 #include <ontim/ontim_dev_dgb.h>
-static char version[]="gt917d ver 1.0";
+static char version[]="1.0";
 static char vendor_name[50]="truly-gt917d";
+static char lcdname[64]="gt917d";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
 
