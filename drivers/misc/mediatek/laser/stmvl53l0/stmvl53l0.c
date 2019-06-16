@@ -42,8 +42,8 @@
 
 #define VL53l0_NORMAL_MODE	0x00
 #define VL53l0_OFFSET_CALIB	0x02
-#define VL53l0_XTALK_CALIB	0x03
-
+#define VL53l0_XTALK_CALIB		0x03
+#define VL53l0_DEFAULT_CALIB		0x06
 #define VL53l0_MAGIC 'A'
 
 #define VL53l0_IOCTL_INIT 			_IO(VL53l0_MAGIC, 	0x01)
@@ -52,7 +52,7 @@
 #define VL53l0_IOCTL_SETOFFCALB		_IOW(VL53l0_MAGIC, 	0x04, int)
 #define VL53l0_IOCTL_SETXTALKCALB	_IOW(VL53l0_MAGIC, 	0x05, int)
 #define VL53l0_IOCTL_GETDATA 		_IOR(VL53l0_MAGIC, 	0x0a, LaserInfo)
-
+#define VL53l0_IOCTL_GETDEFAULTOFFCALB 		_IOR(VL53l0_MAGIC, 	VL53l0_DEFAULT_CALIB, int)
 #define LASER_DRVNAME 		"laser"/*"stmvl53l0"*/
 #define I2C_SLAVE_ADDRESS	0x52
 
@@ -153,10 +153,11 @@ void VL53l0_SystemInit(int CalibMode)
 	VL53L0_DeviceInfo_t VL53L0_DeviceInfo;
 	uint8_t VhvSetting, PhaseCal, isApertureSpads;
 	uint32_t refSpadCount;
-	/* int32_t defaultOffset;
+/*
+	int32_t defaultOffset;
 	int32_t defaultXtalk;
-	uint8_t val; */
-
+	uint8_t val;
+*/
 	MyDevice.I2cDevAddr = 0x52;
 	/*MyDevice.comms_type = I2C;
 	MyDevice.comms_speed_khz 	= 400;
@@ -195,8 +196,8 @@ void VL53l0_SystemInit(int CalibMode)
 #if 0
 		VL53L0_GetOffsetCalibrationDataMicroMeter(&MyDevice, &defaultOffset);
 		printk("[VL53L0] Default offset = %d before set offset calibration\n", defaultOffset);
-		//VL53l0_SetOffsetValue(3000);
-		VL53L0_SetOffsetCalibrationDataMicroMeter(&MyDevice,3000);
+		VL53l0_SetOffsetValue(3000);
+		VL53L0_SetOffsetCalibrationDataMicroMeter(&MyDevice,g_Laser_OffsetCalib);
 		printk("[VL53L0] VL53l0_SetOffsetValue = 3000\n");
 		VL53L0_GetOffsetCalibrationDataMicroMeter(&MyDevice, &defaultOffset);
 		printk("[VL53L0] Default offset = %d after set offset calibration\n", defaultOffset);
@@ -304,9 +305,9 @@ int VL53l0_GetOffsetValue(int32_t *pOffsetValue)
 {
 	// TODO...
 	// should be not necessary
-	camera_flight_gpio(true);
-	gpio_direction_output(rst_gpio, 1);
-	msleep(5);
+	//camera_flight_gpio(true);
+	//gpio_direction_output(rst_gpio, 1);
+	//msleep(5);
 	//VL53l0_SystemInit();
 	// end of TODO ...
 
@@ -325,10 +326,10 @@ int VL53l0_SetOffsetValue(int32_t OffsetValue)
 {
 	// TODO...
 	// should be not necessary
-	camera_flight_gpio(true);
-	gpio_direction_output(rst_gpio, 1);
-	msleep(5);
-	//VL53l0_SystemInit();
+//	camera_flight_gpio(true);
+//	gpio_direction_output(rst_gpio, 1);
+//	msleep(5);
+//	VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
 	// end of TODO
 
 	if( MyDevice.chip_version == 1 ){
@@ -489,7 +490,7 @@ static long Laser_Ioctl(
 		{
 			PK_INF("VL53l0_IOCTL_GETDATA, g_s4Laser_Opened = 1\n");
 			VL53l0_SystemInit(VL53l0_NORMAL_MODE);
-			//VL53l0_SetOffsetValue(g_Laser_OffsetCalib);
+			VL53l0_SetOffsetValue(g_Laser_OffsetCalib);
 			//VL53l0_SetCrosstalkValue(g_Laser_XTalkCalib);
 			spin_lock(&g_Laser_SpinLock);
 			g_s4Laser_Opened = 2;
@@ -500,15 +501,15 @@ static long Laser_Ioctl(
 			__user LaserInfo * p_u4Param = (__user LaserInfo *)a_u4Param;
 			/* void __user *p_u4Param = (void __user *)a_u4Param; */
 			LaserInfo ParamVal;
+			FixPoint1616_t CalibratedValue;
 			VL53L0_RangingMeasurementData_t RangingMeasurementData;
-
-			PK_INF("VL53l0_IOCTL_GETDATA, g_s4Laser_Opened = 2\n");
-
+			PK_INF("VL53l0_IOCTL_GETDATA, g_s4Laser_Opened = 2 g_Laser_OffsetCalib = %d\n",g_Laser_OffsetCalib);
 			ParamVal = VL53l0_GetRangeInfo(&RangingMeasurementData);
+			VL53l0_GetOffsetValue(&CalibratedValue);
 			PK_INF("[stmvl53l0]Get current position:%d\n", ParamVal.u4LaserCurPos);
 			PK_INF("[stmvl53l0]Get laser status:%d\n", ParamVal.u4LaserStatus);
 			PK_INF("[stmvl53l0]Get DMAX:%d\n", ParamVal.u4LaserDMAX);
-
+			PK_INF("[stmvl53l0]Get CalibratedValue:%d\n", CalibratedValue);
 			if(copy_to_user(p_u4Param , &ParamVal , sizeof(LaserInfo)))
 			{
 				PK_INF("copy to user failed when getting motor information \n");
@@ -529,7 +530,7 @@ static long Laser_Ioctl(
 		g_s4Laser_Opened = 3;
 		spin_unlock(&g_Laser_SpinLock);
 
-		//VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
+		VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
 		VL53l0_OffsetCalibration(&CalibratedValue);
 		g_Laser_OffsetCalib = CalibratedValue;
 
@@ -543,6 +544,24 @@ static long Laser_Ioctl(
 		}
 
 		PK_INF("[stmvl53l0]CalibratedValue:%d\n", CalibratedValue);
+	}
+	break;
+
+	case VL53l0_IOCTL_GETDEFAULTOFFCALB:  //Offset Calibrate place white target at 100mm from glass
+	{
+		void __user *p_u4Param = (void __user *)a_u4Param;
+		FixPoint1616_t CalibratedValue;
+
+		PK_INF("VL53l0_IOCTL_GETDEFAULTOFFCALB\n");
+		VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
+		VL53l0_GetOffsetValue(&CalibratedValue);
+		//g_Laser_OffsetCalib = CalibratedValue;
+		if(copy_to_user(p_u4Param , &CalibratedValue , sizeof(FixPoint1616_t)))
+		{
+			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETDEFAULTOFFCALB \n");
+		}
+
+		PK_INF("[stmvl53l0]default CalibratedValue:%d\n", CalibratedValue);
 	}
 	break;
 
@@ -703,11 +722,16 @@ static ssize_t flight_offset_info_show(struct device *dev,
 		struct device_attribute *attr,
 		char *buf)
 {
-	int32_t OffsetValue;
+	FixPoint1616_t OffsetValue;
 	char *p = buf;
-	//VL53l0_SystemInit(VL53l0_NORMAL_MODE);
+	gpio_direction_output(rst_gpio, 1);
+	msleep(5);
+	VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
+	VL53l0_SetOffsetValue(g_Laser_OffsetCalib);
 	VL53l0_GetOffsetValue(&OffsetValue);
-
+	printk("[VL53L0] OffsetValue offset = %d after set offset calibration\n", OffsetValue);
+	printk("[VL53L0] g_Laser_OffsetCalib offset = %d after set offset calibration\n", g_Laser_OffsetCalib);
+	gpio_direction_output(rst_gpio, 0);
 	p += sprintf(p, "Offset=%X\n", OffsetValue);
 
 	return (p - buf);
@@ -721,8 +745,12 @@ static ssize_t flight_offset_info_store(struct device *dev,
 
 	sscanf(buf, "%d", &val);
 	printk("[VL53L0] %s : %d\n", __func__, val);
-	//VL53l0_SystemInit(VL53l0_NORMAL_MODE);
+	gpio_direction_output(rst_gpio, 1);
+	msleep(5);
+	VL53l0_SystemInit(VL53l0_OFFSET_CALIB);
+	g_Laser_OffsetCalib = val;
 	VL53l0_SetOffsetValue(val);
+	gpio_direction_output(rst_gpio, 0);
 	//VL53l0_SystemInit(VL53l0_NORMAL_MODE);
 	return count;
 }
