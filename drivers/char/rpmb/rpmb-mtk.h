@@ -53,6 +53,14 @@ struct rpmb_infor {
 };
 #endif /* CONFIG_MICROTRUST_TEE_SUPPORT */
 
+#ifdef CONFIG_RSEE
+#define 	RSEE_RPMB_IOCTL_BASE		200
+#define 	RSEE_RPMB_IOCTL(cmd)		(RSEE_RPMB_IOCTL_BASE + cmd)
+#define 	RSEE_RPMB_IOCTL_GET_WC	  RSEE_RPMB_IOCTL(0)
+#define 	RSEE_RPMB_IOCTL_WRITE_DATA  RSEE_RPMB_IOCTL(1)
+#define 	RSEE_RPMB_IOCTL_READ_DATA   RSEE_RPMB_IOCTL(2)
+#endif
+
 struct rpmb_ioc_param {
 	unsigned char *key;
 	unsigned char *data;

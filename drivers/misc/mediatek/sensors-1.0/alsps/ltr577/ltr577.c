@@ -210,7 +210,7 @@ static struct alsps_init_info ltr577_init_info = {
 
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] = {
-	{.compatible = "mediatek,alsps_ltr577"},
+	{.compatible = "mediatek,alsps"},
 	{},
 };
 #endif

@@ -30,7 +30,7 @@
 	debounce = <0>;
 	gpio-irq-std = <&pio __CS_FINGERPRINT_EINT_EN_PIN_NUM__ 0x0>;
 
-	status = "disable";
+	status = "okay";
 }; 
 
 

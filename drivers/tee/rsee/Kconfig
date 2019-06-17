@@ -1,0 +1,7 @@
+# RSEE Trusted Execution Environment Configuration
+config RSEE
+	tristate "RSEE"
+	#depends on HAVE_ARM_SMCCC
+	help
+	  This implements the RSEE Trusted Execution Environment (TEE)
+	  driver.
