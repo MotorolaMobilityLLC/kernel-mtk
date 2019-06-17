@@ -80,8 +80,10 @@ static void vibrator_enable(unsigned int dur, unsigned int activate)
 
 	spin_lock_irqsave(&g_mt_vib->vibr_lock, flags);
 	hrtimer_cancel(&g_mt_vib->vibr_timer);
-	pr_debug(VIB_TAG "cancel hrtimer, cust:%dms, value:%u, shutdown:%d\n",
-			hw->vib_timer, dur, g_mt_vib->shutdown_flag);
+
+// pony.ma, DATE20190617, optimize log, DATE20190617-01 LINE
+//	pr_debug(VIB_TAG "cancel hrtimer, cust:%dms, value:%u, shutdown:%d\n",
+//			hw->vib_timer, dur, g_mt_vib->shutdown_flag);
 
 	if (activate == 0 || g_mt_vib->shutdown_flag == 1) {
 		atomic_set(&g_mt_vib->vibr_state, 0);
