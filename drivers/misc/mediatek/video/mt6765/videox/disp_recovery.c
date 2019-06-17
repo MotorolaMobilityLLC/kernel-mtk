@@ -742,15 +742,16 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 				break;
 
 			DISPERR(
-				"[ESD]esd check fail, will do esd recovery. try=%d\n",
+				"[ESD]esd check fail, will do esd recovery1. try=%d\n",
 				i);
 			primary_display_esd_recovery();
+			msleep(1000); /* 1s */		//tinno add
 			recovery_done = 1;
 		} while (++i < esd_try_cnt);
 
 		if (ret == 1) {
 			DISPERR(
-				"[ESD]LCM recover fail. Try time:%d. Disable esd check\n",
+				"[ESD]LCM recover fail. Try time:%d. Disable esd check1\n",
 				esd_try_cnt);
 			primary_display_esd_check_enable(0);
 		} else if (recovery_done == 1) {
