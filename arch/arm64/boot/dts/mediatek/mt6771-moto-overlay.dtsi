@@ -10,6 +10,7 @@
  * GNU General Public License for more details.
  */
 
+#include "carrier-channel-ids.dtsi"
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/pinctrl/mt6771-pinfunc.h>
