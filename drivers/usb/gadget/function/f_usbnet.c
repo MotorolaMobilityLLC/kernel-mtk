@@ -49,10 +49,10 @@
 #define USBNET_SET_HOST_IP      0x07
 
 /* Linux Network Interface */
-#define USB_MTU                 1536
-#define MAX_BULK_TX_REQ_NUM	8
-#define MAX_BULK_RX_REQ_NUM	8
-#define MAX_INTR_RX_REQ_NUM	8
+#define USB_MTU                 15360
+#define MAX_BULK_TX_REQ_NUM	80
+#define MAX_BULK_RX_REQ_NUM	80
+#define MAX_INTR_RX_REQ_NUM	80
 #define INTERFACE_STRING_INDEX  0
 
 struct usbnet_context {
@@ -975,7 +975,7 @@ static struct usb_function_instance *usbnet_alloc_inst(void)
 		kfree(dev);
 		return ERR_PTR(-ENOMEM);
 	}
-
+	net_dev->mtu = 15000;
 	ret = register_netdev(net_dev);
 	if (ret) {
 		pr_err("%s: register_netdev error\n", __func__);
