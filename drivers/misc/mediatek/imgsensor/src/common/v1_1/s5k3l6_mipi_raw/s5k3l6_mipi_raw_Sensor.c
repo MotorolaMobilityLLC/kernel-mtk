@@ -1110,12 +1110,6 @@ static kal_uint32 return_sensor_id(void)
 #define S5K3L6_SENSOR_IIC_SLAVE_ADD 0x5a
 #define S5K3L6_OFILM_MODULE_ID  0x4f46
 
-typedef struct s5k3l6_otp_data {
-	unsigned short module_id;
-} S5K3L6_OTP_DATA;
-
-S5K3L6_OTP_DATA s5k3l6_otp_data;
-
 static uint8_t s5k3l6_eeprom[S5K3L6_EEPROM_SIZE] = {0};
 
 static calibration_status_t mnf_status;
@@ -1124,30 +1118,6 @@ static calibration_status_t awb_status;
 static calibration_status_t lsc_status;
 static calibration_status_t pdaf_status;
 static calibration_status_t dual_status;
-
-static int s5k3l6_read_module_id_from_eeprom(kal_uint8 slave, kal_uint32 start_add,kal_uint8 size)
-{
-	int i = 0;
-	unsigned char module_id[2] = {0};
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = slave;
-	spin_unlock(&imgsensor_drv_lock);
-
-	//read module id data
-	for (i = 0; i < size; i ++) {
-		module_id[i] = read_cmos_sensor(start_add);
-		LOG_INF("+++3L6 otp module_id[%d] = 0x%x\n",i,module_id[i]);
-		start_add ++;
-	}
-	s5k3l6_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
-	LOG_INF("s5k3l6_otp_data.module_id= 0x%x",s5k3l6_otp_data.module_id);
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = S5K3L6_SENSOR_IIC_SLAVE_ADD;
-	spin_unlock(&imgsensor_drv_lock);
-
-	return s5k3l6_otp_data.module_id;
-}
 
 static void s5k3l6_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
 {
@@ -1590,20 +1560,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			*sensor_id = return_sensor_id();
 			if (*sensor_id == imgsensor_info.sensor_id) {
 				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
-				s5k3l6_read_module_id_from_eeprom(S5K3L6_EEPROM_SLAVE_ADD,0x000D,2);
-				if ((s5k3l6_otp_data.module_id > 0) && (s5k3l6_otp_data.module_id < 0xFFFF)) {
-					if (s5k3l6_otp_data.module_id != S5K3L6_OFILM_MODULE_ID) {
-						*sensor_id = 0xFFFFFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					} else {
-						s5k3l6_read_data_from_eeprom(S5K3L6_EEPROM_SLAVE_ADD, 0x0000, S5K3L6_EEPROM_SIZE);
-						s5k3l6_eeprom_dump_bin(EEPROM_DATA_PATH, S5K3L6_EEPROM_SIZE, (void *)s5k3l6_eeprom);
-						s5k3l6_eeprom_format_calibration_data((void *)s5k3l6_eeprom);
-						LOG_INF("This is ofilm --->s5k3l6 otp data vaild ...");
-					}
-				} else {
-					LOG_INF("This is s5k3l6, but no otp data ...");
-				}
+				s5k3l6_read_data_from_eeprom(S5K3L6_EEPROM_SLAVE_ADD, 0x0000, S5K3L6_EEPROM_SIZE);
+				s5k3l6_eeprom_dump_bin(EEPROM_DATA_PATH, S5K3L6_EEPROM_SIZE, (void *)s5k3l6_eeprom);
+				s5k3l6_eeprom_format_calibration_data((void *)s5k3l6_eeprom);
+				LOG_INF("This is s5k3l6");
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail, i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
@@ -1651,21 +1611,7 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
-#if OTP_3L6
-#if INCLUDE_NO_OTP_3L6
-				if ((s5k3l6_otp_data.module_id > 0) && (s5k3l6_otp_data.module_id < 0xFFFF)) {
-#endif
-					if (s5k3l6_otp_data.module_id != S5K3L6_OFILM_MODULE_ID) {
-						sensor_id = 0xFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					}
-#if INCLUDE_NO_OTP_3L6
-				} else {
-					LOG_INF("This is s5k3l6, but no otp data ...");
-				}
-#endif
-#endif
+				LOG_INF("This is s5k3l6, i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
 				break;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);

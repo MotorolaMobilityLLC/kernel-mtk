@@ -66,7 +66,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 28000000,
+		.mipi_pixel_rate = 280000000,
 	},
 	.cap = {
 		.pclk = 280000000,

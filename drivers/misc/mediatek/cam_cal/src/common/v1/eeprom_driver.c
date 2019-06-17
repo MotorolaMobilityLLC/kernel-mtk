@@ -55,9 +55,7 @@ static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
 
 #if defined (CONFIG_CAMERA_PROJECT_BINGO) || defined (CONFIG_CAMERA_PROJECT_LIMA)
 extern unsigned int S5K4H7_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
-extern unsigned int S5K4H7QT_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
 extern unsigned int S5K4H7_SUNNY_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
-extern unsigned int S5K4H7QT_WIDE_OTP_Read_Data(unsigned int addr,unsigned char *data, unsigned int size);
 #endif
 
 /*Note: Must Mapping to IHalSensor.h*/
@@ -669,14 +667,8 @@ static long EEPROM_drv_ioctl(struct file *file,
 		if ((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x487b)) {
 			i4RetValue = S5K4H7_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("pu1Params = %d,i4RetValue = %d\n",*(pu1Params),i4RetValue);
-		}else if ((ptempbuf->deviceID == 2)&&(ptempbuf->sensorID == 0x4881)) {
-			i4RetValue = S5K4H7QT_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
-			pr_err("pu1Params = %d,i4RetValue = %d\n",*(pu1Params),i4RetValue);
 		}else if ((ptempbuf->deviceID == 16)&&(ptempbuf->sensorID == 0x487c)) {
 			i4RetValue = S5K4H7_SUNNY_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
-			pr_err("pu1Params = %d,i4RetValue = %d\n",*(pu1Params),i4RetValue);
-		}else if ((ptempbuf->deviceID == 16)&&(ptempbuf->sensorID == 0x4882)) {
-			i4RetValue = S5K4H7QT_WIDE_OTP_Read_Data(ptempbuf->u4Offset,pu1Params,ptempbuf->u4Length);
 			pr_err("pu1Params = %d,i4RetValue = %d\n",*(pu1Params),i4RetValue);
 		} else {
 #endif

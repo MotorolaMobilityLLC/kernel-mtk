@@ -66,7 +66,7 @@ static imgsensor_info_struct imgsensor_info = {
 		.mipi_data_lp2hs_settle_dc = 85,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
-		.mipi_pixel_rate = 28000000,
+		.mipi_pixel_rate = 280000000,
 	},
 	.cap = {
 		.pclk = 280000000,
@@ -1576,25 +1576,19 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-		        LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
+			LOG_INF("s5k4h7yxmipiraw_Sensor get_imgsensor_id *sensor_id = %x\r\n", *sensor_id);
 			if (*sensor_id == imgsensor_info.sensor_id) {
 			//app_get_back_sensor_name("s5k4H7");
 #if OTP_4H7
 				s5k4h7yx_read_data_kernel();
 #if INCLUDE_NO_OTP_4H7
 				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
-					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
-						*sensor_id = 0xFFFFFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					} else {
-						s5k4h7yx_sunny_read_data_from_otp();
-						s5k4h7yx_sunny_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7yx_sunny_eeprom);
-						s5k4h7yx_sunny_eeprom_format_calibration_data((void *)s5k4h7yx_sunny_eeprom);
-						LOG_INF("This is sunny --->s5k4h7 otp data vaild ...");
-					}
-
+					s5k4h7yx_sunny_read_data_from_otp();
+					s5k4h7yx_sunny_eeprom_dump_bin(EEPROM_DATA_PATH, S5K4H7YX_EEPROM_SIZE, (void *)s5k4h7yx_sunny_eeprom);
+					s5k4h7yx_sunny_eeprom_format_calibration_data((void *)s5k4h7yx_sunny_eeprom);
+					LOG_INF("This is s5k4h7 otp data vaild ...");
 				} else {
-					LOG_INF("This is s5k4h7 sunny, but no otp data ...");
+					LOG_INF("This is s5k4h7, but no otp data ...");
 				}
  #endif
  #endif
@@ -1649,22 +1643,7 @@ static kal_uint32 open(void)
 			sensor_id = return_sensor_id();
 			LOG_INF("s5k4h7yxmipiraw open sensor_id = %x\r\n", sensor_id);
 			if (sensor_id == imgsensor_info.sensor_id) {
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
-#if OTP_4H7
-#if INCLUDE_NO_OTP_4H7
-				if ((s5k4h7yx_sunny_otp_data.moduleid > 0) && (s5k4h7yx_sunny_otp_data.moduleid < 0xFFFF)) {
-#endif
-					if (s5k4h7yx_sunny_otp_data.moduleid != S5K4H7YX_SUNNY_MODULE_ID) {
-						sensor_id = 0xFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					} else
-						LOG_INF("This is sunny --->s5k4h7 otp data vaild...");
-#if INCLUDE_NO_OTP_4H7
-				} else {
-					LOG_INF("This is s5k4h7, but no otp data ...");
-				}
-#endif
-#endif
+				LOG_INF("This is s5k4h7 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
 			LOG_INF("Read sensor id fail, id: 0x%x\n", sensor_id);

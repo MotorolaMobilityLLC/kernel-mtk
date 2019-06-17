@@ -670,12 +670,6 @@ static void slim_video_setting(void)
 #define OV02A10_SENSOR_IIC_SLAVE_ADD 0x7a
 #define OV02A10_OFILM_MODULE_ID  0x4f46
 
-typedef struct ov02a10_otp_data {
-	unsigned short module_id;
-} OV02A10_OTP_DATA;
-
-OV02A10_OTP_DATA ov02a10_otp_data;
-
 static uint8_t ov02a10_eeprom[OV02A10_EEPROM_SIZE] = {0};
 
 static calibration_status_t mnf_status;
@@ -684,29 +678,6 @@ static calibration_status_t awb_status;
 static calibration_status_t lsc_status;
 static calibration_status_t pdaf_status;
 static calibration_status_t dual_status;
-
-static int ov02a10_read_module_id_from_eeprom(kal_uint8 slave, kal_uint32 start_add, kal_uint8 size)
-{
-	int i = 0;
-	unsigned char module_id[2] = {0};
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = slave;
-	spin_unlock(&imgsensor_drv_lock);
-
-	for (i = 0; i < size; i ++) {
-		module_id[i] = read_cmos_sensor(start_add);
-		LOG_INF("+++OV02A10 otp module_id[%d] = 0x%x\n",i,module_id[i]);
-		start_add ++;
-	}
-	ov02a10_otp_data.module_id = ((module_id[0] << 8)& 0xFF00) | (module_id[1] & 0x00FF);
-	LOG_INF("ov02a10_otp_data.module_id= 0x%x",ov02a10_otp_data.module_id);
-
-	spin_lock(&imgsensor_drv_lock);
-	imgsensor.i2c_write_id = OV02A10_SENSOR_IIC_SLAVE_ADD;
-	spin_unlock(&imgsensor_drv_lock);
-
-	return 0;
-}
 
 static void ov02a10_read_data_from_eeprom(kal_uint8 slave, kal_uint32 start_add, uint32_t size)
 {
@@ -967,27 +938,10 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			write_cmos_sensor(0xfd, 0x00);
 			*sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
 			if (*sensor_id == imgsensor_info.sensor_id) {
-#if OTP_2A10
-				ov02a10_read_module_id_from_eeprom(OV02A10_EEPROM_SLAVE_ADD,0x000D,2);
-#if INCLUDE_NO_OTP_2A10
-				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
-#endif
-					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
-						*sensor_id = 0xFFFFFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					} else {
-						ov02a10_read_data_from_eeprom(OV02A10_EEPROM_SLAVE_ADD, 0x0000, OV02A10_EEPROM_SIZE);
-						ov02a10_eeprom_dump_bin(EEPROM_DATA_PATH, OV02A10_EEPROM_SIZE, (void *)ov02a10_eeprom);
-						ov02a10_eeprom_format_calibration_data((void *)ov02a10_eeprom);
-						LOG_INF("This is ofilm --->ov02a10 otp data vaild ...");
-					}
-#if INCLUDE_NO_OTP_2A10
-				} else {
-						LOG_INF("This is ofilm --->ov02a10 but no otp ...");
-				}
-#endif
-#endif
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
+				ov02a10_read_data_from_eeprom(OV02A10_EEPROM_SLAVE_ADD, 0x0000, OV02A10_EEPROM_SIZE);
+				ov02a10_eeprom_dump_bin(EEPROM_DATA_PATH, OV02A10_EEPROM_SIZE, (void *)ov02a10_eeprom);
+				ov02a10_eeprom_format_calibration_data((void *)ov02a10_eeprom);
+				LOG_INF("This is ov02a10 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
 				return ERROR_NONE;
 			}
 			LOG_INF("Read sensor id fail,write_id:0x%x, id: 0x%x\n", imgsensor.i2c_write_id, *sensor_id);
@@ -1041,21 +995,7 @@ static kal_uint32 open(void)
 			write_cmos_sensor(0xfd, 0x00);
 			sensor_id = ((read_cmos_sensor(0x0200) << 8) | read_cmos_sensor(0x0300));
 			if (sensor_id == imgsensor_info.sensor_id) {
-#if OTP_2A10
-#if INCLUDE_NO_OTP_2A10
-				if ((ov02a10_otp_data.module_id > 0) && (ov02a10_otp_data.module_id < 0xFFFF)) {
-#endif
-					if (ov02a10_otp_data.module_id != OV02A10_OFILM_MODULE_ID) {
-						sensor_id = 0xFFFF;
-						return ERROR_SENSOR_CONNECT_FAIL;
-					}
-#if INCLUDE_NO_OTP_2A10
-				} else {
-					LOG_INF("This is ofilm --->ov02a10 but no otp ...");
-				}
-#endif
-#endif
-				LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
+				LOG_INF("This is ov02a10 i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id, sensor_id);
 				break;
 			}
 
