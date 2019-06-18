@@ -1310,7 +1310,7 @@ int force_get_tbat(bool update)
 {
 	int bat_temperature_val = 0;
 	int counts = 0;
-	static int last_tmp=0;
+//	static int last_tmp=0;
 
 	if (is_fg_disabled()) {
 		bm_debug("[%s] fixed TBAT=25 t\n",
@@ -1382,13 +1382,13 @@ int force_get_tbat(bool update)
        }
 #endif
 
-	if( bat_temperature_val != last_tmp )
-	{
-		bm_err("[force_get_tbat] battery_update bat_temp=%d\n",  bat_temperature_val);
-		last_tmp = bat_temperature_val;
-		battery_main.BAT_batt_temp = bat_temperature_val;
-		battery_update(&battery_main);
-	}
+//	if( bat_temperature_val != last_tmp )
+//	{
+//		bm_err("[force_get_tbat] battery_update bat_temp=%d\n",  bat_temperature_val);
+//		last_tmp = bat_temperature_val;
+//		battery_main.BAT_batt_temp = bat_temperature_val;
+//		battery_update(&battery_main);
+//	}
 	return bat_temperature_val;
 #endif
 }
