@@ -242,14 +242,14 @@
 		vib_cont_num_brk = < 3 >;
 		vib_f0_coeff = < 260 >; /*Don't modify it*/
 		vib_duration_time = < 19 60 0 0 0 >;
-		vib_brake_ram_config = < 1 0 110 80 0 3 1 0 1 0 110 60 0 5 3 0 0 0 0 0 0 0 0 0 >;
+		vib_brake_ram_config = < 1 1 110 80 25 2 2 3 1 1 110 60 40 5 3 1 0 0 0 0 0 0 0 0 >;
 		vib_brake_cont_config = < 1 1 90 42 20 5 2 2 0 0 0  0  0  0 0 0 0 0 0   0  0  0 0 0 >;
 		vib_f0_trace_parameter = < 9 3 1 31 >;
 		vib_bemf_config = < 0 8 3 0xf8 >;
 		vib_sw_brake = < 0x2c >;
 		vib_wavseq = < 0 1 1 2 0 0 0 0 0 0 0 0 0 0 0 0 >; /*wavseq1-seq8 0x07-0x0E*/
 		vib_wavloop = < 0 6 1 15 0 0 0 0 0 0>;/*loop1-mainloog 0x0f-0x13*/
-		vib_td_brake = < 38848 38848 38848 >; /*level0  level1  level2*/
+		vib_td_brake = < 38448 38448 38448 >; /*level0  level1  level2*/
 		vib_tset = < 0x11 >;
 		vib_func_parameter1 = < 1000 >;
 		status = "okay";
