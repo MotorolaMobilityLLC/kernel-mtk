@@ -865,6 +865,7 @@ int _atoi(char * str)
 #define EMMC_CID_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/cid"
 #define EMMC_MANFID_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/manfid"
 #define EMMC_SIZE_FILE   "/sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/size"
+#define EMMC_LIFE_TIME_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/life_time"
 #define LPDDR_SIZE_FILE   "/proc/meminfo"
 static void get_emmc_info(void)
 {
@@ -877,13 +878,16 @@ static void get_emmc_info(void)
 	char* q = buf;
 	int ret = 0;
 
+    #if 0
 	if (pMeminfo[0] > '1')
 	{
 		hwinfo_value = _atoi(pMeminfo);
 		lpddr_mid = hwinfo_value >> BYTE(0) & 0xFF;
 		emmc_cap = hwinfo_value >> BYTE(1) & 0xFF;
 		emmc_mid = hwinfo_value >> BYTE(2) & 0xFF;
-	} else {
+	} else
+    #endif
+    {
 		ret = hwinfo_read_file(EMMC_MANFID_FILE, buf, sizeof(buf));
 		if (ret != 0) {
 			printk(KERN_CRIT "EMMC_MANFID_FILE failed.");
@@ -990,7 +994,18 @@ static void get_emmc_info(void)
 	//strncpy(hwinfo[lpddr_mfr].hwinfo_buf, lpddr_mid_name, strlen(lpddr_mid_name));
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGb", lpddr_cap);
-
+   
+    //read emmc life_time
+    memset(buf, 0x00, sizeof(buf));
+    ret = hwinfo_read_file(EMMC_LIFE_TIME_FILE, buf, sizeof(buf));
+    if (ret != 0) {
+        printk(KERN_CRIT "EMMC_LIFE_TIME_FILE failed.");
+        return;
+    }
+    if (buf[strlen(buf) - 1] == '\n')
+    buf[strlen(buf) - 1] = '\0';
+    strncpy(hwinfo[emmc_life].hwinfo_buf, buf, strlen(buf));
+    printk("%s:emmc life %s \n", __func__, buf);
 }
 
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
@@ -1032,11 +1047,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case qcn_type:
 		get_qcn_type();
 		break;
-#if 1
 	case LCD_MFR:
 		get_lcd_type();
 		break;
-#endif
 	case TP_MFR:
 		get_tp_info();
 		break;
@@ -1099,6 +1112,7 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case emmc_capacity:
 	case lpddr_mfr:
 	case lpddr_capacity:
+        case emmc_life:
 		get_emmc_info();
 		break;
 	default:
