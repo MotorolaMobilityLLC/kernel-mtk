@@ -130,7 +130,7 @@ struct eta6937_info {
 static struct eta6937_info *g_info;
 static struct i2c_client *new_client;
 static const struct i2c_device_id eta6937_i2c_id[] = { {"eta6937", 0}, {} };
-static bool hw_init_flag = false;
+
 static void enable_boost_polling(bool poll_en);
 static void usbotg_boost_kick_work(struct work_struct *work);
 static int usbotg_gtimer_func(struct gtimer *data);
@@ -217,18 +217,18 @@ static int eta6937_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 
 	*w_buf = reg_addr;
 
-	msg[0].addr = ETA6937_SLAVE_ADDR;
+	msg[0].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
 	msg[0].flags = 0;
 	msg[0].len = 1;
 	msg[0].buf = w_buf;
 
-	msg[1].addr = ETA6937_SLAVE_ADDR;
+	msg[1].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
 	msg[1].flags = 1;
 	msg[1].len = rd_len;
 	msg[1].buf = r_buf;
-	mutex_lock(&eta6937_access_lock);
+
 	ret = i2c_transfer(adap, msg, 2);
-	mutex_unlock(&eta6937_access_lock);
+
 	memcpy(rd_buf, r_buf, rd_len);
 
 	kfree(w_buf);
@@ -252,13 +252,13 @@ int eta6937_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
 	w_buf[0] = reg_num;
 	memcpy(w_buf + 1, wr_buf, wr_len);
 
-	msg.addr = ETA6937_SLAVE_ADDR;
+	msg.addr = ETA6937_SLAVE_ADDR;//new_client->addr;
 	msg.flags = 0;
 	msg.len = wr_len;
 	msg.buf = w_buf;
-	mutex_lock(&eta6937_access_lock);
+
 	ret = i2c_transfer(adap, &msg, 1);
-	mutex_unlock(&eta6937_access_lock);
+
 	kfree(w_buf);
 	return ret;
 }
@@ -285,6 +285,7 @@ unsigned int eta6937_config_interface(unsigned char reg_num, unsigned char val, 
 	unsigned char eta6937_reg_ori = 0;
 	unsigned int ret = 0;
 
+	mutex_lock(&eta6937_access_lock);
 	ret = eta6937_read_byte(reg_num, &eta6937_reg, 1);
 	eta6937_reg_ori = eta6937_reg;
 	eta6937_reg &= ~(MASK << SHIFT);
@@ -293,7 +294,7 @@ unsigned int eta6937_config_interface(unsigned char reg_num, unsigned char val, 
 		eta6937_reg &= ~(1 << CON4_RESET_SHIFT);
 
 	ret = eta6937_write_byte(reg_num, &eta6937_reg, 2);
-
+	mutex_unlock(&eta6937_access_lock);
 	pr_debug_ratelimited("[eta6937_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
 			eta6937_reg, eta6937_reg_ori);
 	/* Check */
@@ -428,15 +429,13 @@ void eta6937_set_ce(unsigned int val)
 				);
 }
 
-int eta6937_set_hz_mode(struct charger_device *chg_dev, bool en)
+void eta6937_set_hz_mode(unsigned int val)
 {
-	unsigned char val = en ?1:0;
 	eta6937_config_interface((unsigned char)(ETA6937_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_HZ_MODE_MASK),
 				(unsigned char)(CON1_HZ_MODE_SHIFT)
 				);
-	return 0;
 }
 
 void eta6937_set_opa_mode(unsigned int val)
@@ -668,40 +667,52 @@ static int eta6937_do_event(struct charger_device *chg_dev, unsigned int event, 
 
 	return 0;
 }
-
-int eta6937_hw_init(struct charger_device *chg_dev)
+static void eta6937_wirte_reg6(void)
 {
-	unsigned int status = 0;
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
+	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				0xac,
+				0xff,
+				0
+				);/* ISAFE = 2550mA, VSAFE = 4.44V */
 
-	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
+	eta6937_read_byte((unsigned char)(ETA6937_CON6), &eta6937_reg[0], 1);
 	
-	if (!hw_init_flag)
+	if(eta6937_reg[0] != 0xac)
 	{
-		eta6937_reg_config_interface(0x04, 0x12);	/* ioffset=0  iterm=150ma*/
-		eta6937_reg_config_interface(0x01, 0x78);	/* 146mA */
-		hw_init_flag = true;
+		eta6937_set_tmr_rst(1);
+		pr_err("eta6937_wirte_reg6 again =%x;\n",eta6937_reg[0]);
+		
+		eta6937_config_interface((unsigned char)(ETA6937_CON6),
+				0xac,
+				0xff,
+				0
+				);
 	}
-	eta6937_dump_register(chg_dev);
-	return status;
 }
+
 static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
 {
 	unsigned int status = 0;
 
 	if (en) {
-		eta6937_set_ce(0);
-		eta6937_set_hz_mode(chg_dev, false);
-		eta6937_set_opa_mode(0);
-		eta6937_set_te(1);
+
+	eta6937_wirte_reg6();
+//		eta6937_set_ce(0);
+//		eta6937_set_hz_mode(0);
+//		eta6937_set_opa_mode(0);
+//		eta6937_set_te(1);
+	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+				0x08,
+				0x0f,
+				0
+				);
 		eta6937_set_iterm(2);
 		eta6937_set_ioffset(0);
 		eta6937_set_vsp(3);
 
 
 //	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
+//	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
 
 	} else {
 		eta6937_set_ce(1);
@@ -801,19 +812,11 @@ static int eta6937_get_charging_status(struct charger_device *chg_dev, bool *is_
 {
 	unsigned int status = 0;
 	unsigned int ret_val;
-	struct charger_manager *info = (struct charger_manager *)chg_dev->driver_data;
-	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
-	int soc = 0, uisoc = 0;
-	soc = battery_get_bat_soc();
-	uisoc = battery_get_bat_uisoc();
+
 	ret_val = eta6937_get_chip_status();
 
 	if (ret_val == 0x2)
-	{
 		*is_done = true;
-		if(swchgalg->state == CHR_BATFULL && soc <= 98 && uisoc == 100)
-			*is_done = false;
-	}
 	else
 		*is_done = false;
 
@@ -828,8 +831,6 @@ static int eta6937_reset_watch_dog_timer(struct charger_device *chg_dev)
 
 static int eta6937_charger_enable_otg(struct charger_device *chg_dev, bool en)
 {
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
 	eta6937_set_opa_mode(en);
 	enable_boost_polling(en);
 	return 0;
@@ -880,9 +881,7 @@ static struct charger_ops eta6937_chg_ops = {
 
 	/* Normal charging */
 	.dump_registers = eta6937_dump_register,
-	.hw_init = eta6937_hw_init,
 	.enable = eta6937_enable_charging,
-	.set_hz_mode = eta6937_set_hz_mode,
 	.get_charging_current = eta6937_get_current,
 	.set_charging_current = eta6937_set_current,
 	.get_input_current = eta6937_get_input_current,
@@ -901,8 +900,8 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 	int ret = 0;
 	struct eta6937_info *info = NULL;
 
-	pr_err("[eta6937_driver_probe]\n");
-	pr_err(".................................\n");
+	pr_info("[eta6937_driver_probe]\n");
+
 //+add by hzb for ontim debug
         if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
         {
@@ -917,14 +916,11 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 		pr_err("%s: get vendor id failed\n", __func__);
 		return -ENODEV;
 	}
-
 	ret=eta6937_get_pn();
 	if (ret != 0x02) {
 		pr_err("%s: get pn failed\n", __func__);
 		return -ENODEV;
 	}
-
-	pr_err("%s %d", __func__, __LINE__);
 
 	
 	info = devm_kzalloc(&client->dev, sizeof(struct eta6937_info), GFP_KERNEL);
@@ -960,7 +956,6 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 	}
 
 //	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
 	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
 
 	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */

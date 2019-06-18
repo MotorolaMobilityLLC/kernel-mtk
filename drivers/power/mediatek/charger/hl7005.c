@@ -54,7 +54,7 @@
 #include "hl7005.h"
 #include "mtk_charger_intf.h"
 
-const unsigned int VBAT_CVTH[] = {
+static const unsigned int VBAT_CVTH[] = {
 	3500000, 3520000, 3540000, 3560000,
 	3580000, 3600000, 3620000, 3640000,
 	3660000, 3680000, 3700000, 3720000,
@@ -69,20 +69,29 @@ const unsigned int VBAT_CVTH[] = {
 	4380000, 4400000, 4420000, 4440000
 };
 
-const unsigned int CSTH[] = {
+static const unsigned int CSTH[] = {
 	550000, 650000, 750000, 850000,
-	950000, 1050000, 1150000, 1250000
+	1050000, 1150000, 1350000, 1450000,
+	1550000, 1650000, 1750000, 1850000,
+	2050000, 2150000, 2350000, 2450000,
 };
 
 /*hl7005 REG00 IINLIM[5:0]*/
-const unsigned int INPUT_CSTH[] = {
+static const unsigned int INPUT_CSTH[] = {
 	100000, 500000, 800000, 5000000
 };
 
 /* hl7005 REG0A BOOST_LIM[2:0], mA */
-const unsigned int BOOST_CURRENT_LIMIT[] = {
+static const unsigned int BOOST_CURRENT_LIMIT[] = {
 	500, 750, 1200, 1400, 1650, 1875, 2150,
 };
+
+#include <ontim/ontim_dev_dgb.h>
+static  char charge_ic_vendor_name[50]="HL7007";
+DEV_ATTR_DECLARE(charge_ic)
+DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
 #ifdef CONFIG_OF
 #else
@@ -120,7 +129,7 @@ static void enable_boost_polling(bool poll_en);
 static void usbotg_boost_kick_work(struct work_struct *work);
 static int usbotg_gtimer_func(struct gtimer *data);
 
-unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size,
+static unsigned int charging_value_to_parameter(const unsigned int *parameter, const unsigned int array_size,
 					const unsigned int val)
 {
 	if (val < array_size)
@@ -129,7 +138,7 @@ unsigned int charging_value_to_parameter(const unsigned int *parameter, const un
 	return parameter[0];
 }
 
-unsigned int charging_parameter_to_value(const unsigned int *parameter, const unsigned int array_size,
+static unsigned int charging_parameter_to_value(const unsigned int *parameter, const unsigned int array_size,
 					const unsigned int val)
 {
 	unsigned int i;
@@ -181,7 +190,7 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 unsigned char hl7005_reg[HL7005_REG_NUM] = { 0 };
 static DEFINE_MUTEX(hl7005_i2c_access);
 static DEFINE_MUTEX(hl7005_access_lock);
-
+#define HL7005_SLAVE_ADDR 0x6a
 static int hl7005_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 {
 	int ret = 0;
@@ -201,12 +210,12 @@ static int hl7005_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 
 	*w_buf = reg_addr;
 
-	msg[0].addr = new_client->addr;
+	msg[0].addr = HL7005_SLAVE_ADDR;//new_client->addr;
 	msg[0].flags = 0;
 	msg[0].len = 1;
 	msg[0].buf = w_buf;
 
-	msg[1].addr = new_client->addr;
+	msg[1].addr = HL7005_SLAVE_ADDR;//new_client->addr;
 	msg[1].flags = 1;
 	msg[1].len = rd_len;
 	msg[1].buf = r_buf;
@@ -236,7 +245,7 @@ int hl7005_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
 	w_buf[0] = reg_num;
 	memcpy(w_buf + 1, wr_buf, wr_len);
 
-	msg.addr = new_client->addr;
+	msg.addr = HL7005_SLAVE_ADDR;//new_client->addr;
 	msg.flags = 0;
 	msg.len = wr_len;
 	msg.buf = w_buf;
@@ -653,6 +662,7 @@ static int hl7005_enable_charging(struct charger_device *chg_dev, bool en)
 		hl7005_set_ce(0);
 		hl7005_set_hz_mode(0);
 		hl7005_set_opa_mode(0);
+		hl7005_set_te(1);
 	} else {
 		hl7005_set_ce(1);
 	}
@@ -700,8 +710,12 @@ static int hl7005_set_current(struct charger_device *chg_dev, u32 current_value)
 	unsigned int array_size;
 	unsigned int register_value;
 
-	if (current_value <= 35000) {
+	if (current_value <= 500000) {
 		hl7005_set_io_level(1);
+		array_size = ARRAY_SIZE(CSTH);
+		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
+		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
+		hl7005_set_iocharge(register_value);
 	} else {
 		hl7005_set_io_level(0);
 		array_size = ARRAY_SIZE(CSTH);
@@ -733,7 +747,7 @@ static int hl7005_set_input_current(struct charger_device *chg_dev, u32 current_
 	unsigned int array_size;
 	unsigned int register_value;
 
-	if (current_value > 50000) {
+	if (current_value > 500000) {
 		register_value = 0x3;
 	} else {
 		array_size = ARRAY_SIZE(INPUT_CSTH);
@@ -840,12 +854,34 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 	struct hl7005_info *info = NULL;
 
 	pr_info("[hl7005_driver_probe]\n");
+
+//+add by hzb for ontim debug
+        if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+        {
+           return -EIO;
+        }
+//-add by hzb for ontim debug
+	new_client = client;
+
+	ret = hl7005_get_vender_code();
+
+	if (ret != 2) {
+		pr_err("%s: get vendor id failed\n", __func__);
+		return -ENODEV;
+	}
+
+	ret=hl7005_get_pn();
+	if (ret != 0) {
+		pr_err("%s: get pn failed\n", __func__);
+		return -ENODEV;
+	}
+
+	
 	info = devm_kzalloc(&client->dev, sizeof(struct hl7005_info), GFP_KERNEL);
 
 	if (!info)
 		return -ENOMEM;
 
-	new_client = client;
 	info->dev = &client->dev;
 	ret = hl7005_parse_dt(info, &client->dev);
 
@@ -862,12 +898,6 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 		return ret;
 	}
 
-	ret = hl7005_get_vender_code();
-
-	if (ret != 2) {
-		pr_err("%s: get vendor id failed\n", __func__);
-		return -ENODEV;
-	}
 
 	/* hl7005_hw_init(); //move to charging_hw_xxx.c */
 	info->psy = power_supply_get_by_name("charger");
@@ -877,13 +907,10 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 		return -EINVAL;
 	}
 
-#if defined(HIGH_BATTERY_VOLTAGE_SUPPORT)
-	hl7005_reg_config_interface(0x06, 0x77);	/* ISAFE = 1250mA, VSAFE = 4.34V */
-#else
-	hl7005_reg_config_interface(0x06, 0x70);
-#endif
+	hl7005_reg_config_interface(0x06, 0x7c);	/* ISAFE = 2450mA, VSAFE = 4.4V */
+
 	hl7005_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	hl7005_reg_config_interface(0x01, 0xb8);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
+	hl7005_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
 	hl7005_reg_config_interface(0x05, 0x03);
 
 	hl7005_reg_config_interface(0x04, 0x1A);	/* 146mA */
@@ -897,6 +924,10 @@ static int hl7005_driver_probe(struct i2c_client *client, const struct i2c_devic
 	INIT_WORK(&info->kick_work, usbotg_boost_kick_work);
 	info->polling_interval = 20;
 	g_info = info;
+
+//+add by hzb for ontim debug
+        REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 
 	return 0;
 }

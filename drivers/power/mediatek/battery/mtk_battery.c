@@ -375,6 +375,12 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+#ifdef    CONFIG_ONTIM_DUAL_85_TEST
+              if(data->BAT_CAPACITY<30)
+              {
+                   val->intval  = 30;    
+              }
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -400,7 +406,25 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    CONFIG_ONTIM_DUAL_85_TEST
+              if(data->BAT_batt_temp>=44)
+              {
+                   val->intval  = 440;    
+              }
+		else
+		{
+              	if(data->BAT_batt_temp<=10)
+              	{
+                   		val->intval  = 100;    
+              	}
+			else
+			{
+		           val->intval = data->BAT_batt_temp* 10;
+			}
+		}
+#else
 		val->intval = data->BAT_batt_temp * 10;
+#endif
 		break;
 
 	default:
@@ -1128,6 +1152,7 @@ int BattVoltToTemp(int dwVolt, int volt_cali)
 		vbif28, volt_cali);
 	return sBaTTMP;
 }
+int ontim_get_battery_temperature_debug(void);
 
 int force_get_tbat_internal(bool update)
 {
@@ -1148,6 +1173,13 @@ int force_get_tbat_internal(bool update)
 	static int pre_bat_temperature_val2;
 	static struct timespec pre_time;
 	struct timespec ctime, dtime;
+
+	if(ontim_get_battery_temperature_debug()!=-500)
+	{
+		return ontim_get_battery_temperature_debug();
+	}
+
+
 
 	if (is_battery_init_done() == false)
 		return 25;
@@ -1278,6 +1310,7 @@ int force_get_tbat(bool update)
 {
 	int bat_temperature_val = 0;
 	int counts = 0;
+	static int last_tmp=0;
 
 	if (is_fg_disabled()) {
 		bm_debug("[%s] fixed TBAT=25 t\n",
@@ -1327,10 +1360,35 @@ int force_get_tbat(bool update)
 			bat_temperature_val,
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
+		if(bat_temperature_val == -40)
+		{
+		bm_err("[force_get_tbat] think ntc dnp ;%d;\n", bat_temperature_val);
+			battery_main.BAT_CAPACITY = 50;	
+			gm.ui_soc=50;
+			gm.soc=50;
+		strncpy(battery_vendor_name,"BATTERY NTC ERROR",20);
+			return 36;     //ntc dnp, so fix 36 degree
+		}
+
 		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	}
 
 	gm.ntc_disable_nafg = false;
+
+#ifdef CONFIG_ONTIM_DUAL_85_TEST
+       if(bat_temperature_val>59)
+       {
+            bat_temperature_val = 59;
+       }
+#endif
+
+	if( bat_temperature_val != last_tmp )
+	{
+		bm_err("[force_get_tbat] battery_update bat_temp=%d\n",  bat_temperature_val);
+		last_tmp = bat_temperature_val;
+		battery_main.BAT_batt_temp = bat_temperature_val;
+		battery_update(&battery_main);
+	}
 	return bat_temperature_val;
 #endif
 }
@@ -2834,6 +2892,33 @@ static DEVICE_ATTR(
 	shutdown_condition_enable, 0664,
 	show_shutdown_cond_enable, store_shutdown_cond_enable);
 
+static int  battery_temperature_debug = -500;
+static ssize_t show_battery_temperature_debug(struct device *dev, struct device_attribute *attr,
+					char *buf)
+{
+	bm_trace("[FG] show battery_temperature_debug : %d\n", battery_temperature_debug);
+	return sprintf(buf, "%d\n", battery_temperature_debug);
+}
+
+static ssize_t store_battery_temperature_debug(struct device *dev, struct device_attribute *attr,
+					 const char *buf, size_t size)
+{
+
+	bm_debug("[battery_temperature_debug]\n");
+
+	if (buf != NULL && size != 0) {
+		bm_debug("battery_temperature_debug buf is %s\n", buf);
+		sscanf(buf, "%d", &battery_temperature_debug);
+		bm_debug("battery_temperature_debug=%d\n", battery_temperature_debug);
+	}
+	return size;
+}
+int ontim_get_battery_temperature_debug(void)
+{
+	return battery_temperature_debug;
+}
+static DEVICE_ATTR(battery_temperature_debug, 0664, show_battery_temperature_debug, store_battery_temperature_debug);
+
 static ssize_t show_reset_battery_cycle(
 	struct device *dev, struct device_attribute *attr, char *buf)
 {
@@ -3498,6 +3583,7 @@ static int __init battery_probe(struct platform_device *dev)
 		&dev_attr_shutdown_condition_enable);
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_reset_battery_cycle);
+	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_temperature_debug);
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		fg_swocv_v =
