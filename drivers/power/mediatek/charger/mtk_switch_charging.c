@@ -214,8 +214,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
 		else {
 			if (info->sw_jeita.sm == TEMP_T0_TO_T1) {
-				pdata->input_current_limit = 500000;
-				pdata->charging_current_limit = 350000;
+				pdata->input_current_limit = 800000;
+				pdata->charging_current_limit = 650000;
 			}
 		}
 	}
@@ -569,6 +569,8 @@ static int mtk_switch_charging_run(struct charger_manager *info)
 		mtk_pe_check_charger(info);
 	}
 
+	charger_dev_kick_wdt(info->chg1_dev);
+	
 	do {
 		switch (swchgalg->state) {
 			chr_err("mtk_switch_charging_run2 [%d] %d\n", swchgalg->state, info->pd_type);

@@ -346,7 +346,7 @@ void fgauge_get_profile_id(void)
 			gm.battery_id = TOTAL_BATTERY_NUMBER - 1;
 		}
 	}
-	gm.battery_id = 0;
+	
 	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],20);
 
 	bm_debug("[%s]Battery id (%d)\n",
@@ -801,6 +801,43 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 	unsigned int val_4;
 	int ret4;
 #endif
+
+       const char *battery_id_name = NULL ;
+	if (!of_property_read_u32(np, "battery_total_number", &val)) {
+		bm_debug("%s;battery_total_number: %d\n",__func__
+			 ,val);
+		battery_total_number=val;
+		if (of_property_read_string(np, "battery0_name",
+			&battery_id_name) >= 0) {
+			strncpy(g_battery_id_vendor_name[0],battery_id_name,20);				
+				bm_debug("%s;battery name: %s\n",__func__
+				 ,g_battery_id_vendor_name[0]);		
+			}
+
+		if (of_property_read_string(np, "battery1_name",
+			&battery_id_name) >= 0) {
+			strncpy(g_battery_id_vendor_name[1],battery_id_name,20);				
+				bm_debug("%s;battery name: %s\n",__func__
+				 ,g_battery_id_vendor_name[1]);		
+			}
+		if (of_property_read_string(np, "battery2_name",
+			&battery_id_name) >= 0) {
+			strncpy(g_battery_id_vendor_name[2],battery_id_name,20);				
+				bm_debug("%s;battery name: %s\n",__func__
+				 ,g_battery_id_vendor_name[2]);		
+			}
+	      battery_id_name = g_battery_id_vendor_name[3];	
+		if (of_property_read_string(np, "battery3_name",
+			&battery_id_name) >= 0) {
+			strncpy(g_battery_id_vendor_name[3],battery_id_name,20);				
+				bm_debug("%s;battery name: %s\n",__func__
+				 ,g_battery_id_vendor_name[3]);		
+			}						
+		
+	} else {
+		bm_err("battery_total_number failed\n");
+	}
+
 
 	fgauge_get_profile_id();
 	bat_id = gm.battery_id;

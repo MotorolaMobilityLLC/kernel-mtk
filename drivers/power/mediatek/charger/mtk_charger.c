@@ -1226,12 +1226,15 @@ static void mtk_battery_notify_VCharger_check(struct charger_manager *info)
 static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 {
 #if defined(BATTERY_NOTIFY_CASE_0002_VBATTEMP)
+#ifdef CONFIG_ONTIM_DUAL_85_TEST
+
+#else
 	if (info->battery_temperature >= info->thermal.max_charge_temperature) {
 		info->notify_code |= 0x0002;
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
 			info->battery_temperature);
 	}
-
+#endif
 	if (info->enable_sw_jeita == true) {
 		if (info->battery_temperature < info->data.temp_neg_10_threshold) {
 			info->notify_code |= 0x0020;
@@ -1335,7 +1338,11 @@ static void charger_check_status(struct charger_manager *info)
 	if (info->enable_sw_jeita == true) {
 		do_sw_jeita_state_machine(info);
 		if (info->sw_jeita.charging == false) {
+#ifdef CONFIG_ONTIM_DUAL_85_TEST
+			charging = true;
+#else
 			charging = false;
+#endif
 			goto stop_charging;
 		}
 	} else {
@@ -1390,8 +1397,9 @@ static void charger_check_status(struct charger_manager *info)
 
 	if (info->cmd_discharging)
 		charging = false;
-	if (info->safety_timeout)
-		charging = false;
+//close charge timeout	
+//	if (info->safety_timeout)
+//		charging = false;
 	if (info->vbusov_stat)
 		charging = false;
 
@@ -1483,7 +1491,7 @@ static int charger_routine_thread(void *arg)
 {
 	struct charger_manager *info = arg;
 	unsigned long flags;
-	bool is_charger_on;
+	bool curr_sign, is_charger_on;
 	int bat_current, chg_current;
 
 	while (1) {
@@ -1496,10 +1504,12 @@ static int charger_routine_thread(void *arg)
 		spin_unlock_irqrestore(&info->slock, flags);
 
 		info->charger_thread_timeout = false;
+		curr_sign = battery_get_bat_current_sign();
 		bat_current = battery_get_bat_current();
 		chg_current = pmic_get_charging_current();
-		chr_err("Vbat=%d,Ibat=%d,I=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
-			battery_get_bat_voltage(), bat_current, chg_current,
+		chr_err("Vbat=%d,Ibat=%d,ChrI=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
+			battery_get_bat_voltage(), 
+			curr_sign ? bat_current : -1 * bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type, info->enable_hv_charging,
@@ -1775,6 +1785,8 @@ static int mtk_charger_parse_dt(struct charger_manager *info, struct device *dev
 
 	if (of_property_read_u32(np, "temp_t4_threshold", &val) >= 0) {
 		info->data.temp_t4_threshold = val;
+		chr_err(
+			"use lsytest TEMP_T4_THRESHOLD:%d\n", val);
 	} else {
 		chr_err(
 			"use default TEMP_T4_THRESHOLD:%d\n", TEMP_T4_THRESHOLD);
@@ -2184,6 +2196,63 @@ static ssize_t store_input_current(struct device *dev, struct device_attribute *
 }
 static DEVICE_ATTR(input_current, 0664, show_input_current, store_input_current);
 
+static int ontim_runin_onoff_control = -200;
+int ontim_get_ontim_runin_onoff_control(void)
+{
+	return ontim_runin_onoff_control;
+}
+static ssize_t show_runin_onoff_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_runin_onoff_control);
+}
+static ssize_t store_runin_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &ontim_runin_onoff_control);
+	return size;
+}
+static DEVICE_ATTR(runin_onoff_ctrl, 0664, show_runin_onoff_ctrl, store_runin_onoff_ctrl);
+
+static unsigned int ontim_charge_limit = 0;
+static ssize_t show_charge_current_limit(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    chr_info("[Battery] show_charge_current_limit %d;\n",ontim_charge_limit);
+    return sprintf(buf, "%d\n", ontim_charge_limit);
+}
+static ssize_t store_charge_current_limit(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	struct charger_manager *pinfo = dev->driver_data;
+	struct charger_data *pdata;
+
+	chr_info("[Battery] store_charge_current_limit\n");
+
+	if (pinfo != NULL) {
+		pdata = &pinfo->chg1_data;
+
+		if (kstrtoint(buf, 10, &ontim_charge_limit) == 0) {
+			if (ontim_charge_limit == 0)
+			{
+				pdata->thermal_charging_current_limit = -1;
+			}
+			else
+			{
+				pdata->thermal_charging_current_limit = 1050*1000;
+			}
+			chr_err("%s: dev:%s limit:%d cur:%d\n", __func__, dev_name(dev),
+			ontim_charge_limit, pdata->thermal_charging_current_limit);
+			_mtk_charger_change_current_setting(pinfo);
+			_wake_up_charger(pinfo);
+
+		} else {
+			chr_err("[Battery] store_charge_current_limit: format error!\n");
+		}
+
+	}
+
+	return size;
+}
+static DEVICE_ATTR(charge_current_limit, 0664, show_charge_current_limit, store_charge_current_limit);
+
+
 static ssize_t show_chg1_current(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct charger_manager *pinfo = dev->driver_data;
@@ -2446,6 +2515,14 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 	if (ret)
 		goto _out;
 
+	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_charge_current_limit);
+	if (ret)
+		goto _out;
+	
 	ret = device_create_file(&(pdev->dev), &dev_attr_input_current);
 	if (ret)
 		goto _out;
@@ -2588,6 +2665,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	info->chg2_data.thermal_input_current_limit = -1;
 
 	info->sw_jeita.error_recovery_flag = true;
+	info->sw_jeita.sm = TEMP_T2_TO_T3;
 
 	mtk_charger_init_timer(info);
 
