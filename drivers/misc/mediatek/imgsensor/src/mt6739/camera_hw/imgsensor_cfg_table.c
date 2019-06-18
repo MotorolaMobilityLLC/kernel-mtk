@@ -260,7 +260,10 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{DVDD, Vol_1200, 0},
 			{AFVDD, Vol_2800, 0},
 			{PDN, Vol_High, 0},
-			{RST, Vol_High, 2}
+			{RST, Vol_High, 2},
+        },
+    },
+#endif
 #if defined(GC8024_MIPI_RAW)
 	{
         SENSOR_DRVNAME_GC8024_MIPI_RAW,
@@ -273,10 +276,7 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 			{AFVDD, Vol_2800, 5},
 			{SensorMCLK, Vol_High, 5},
 			{PDN, Vol_Low, 0},
-			{RST, Vol_High, 0}
-		},
-	},
-#endif
+			{RST, Vol_High, 0},
 		},
 	},
 #endif
