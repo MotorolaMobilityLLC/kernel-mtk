@@ -1185,7 +1185,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             *sensor_id = return_sensor_id();
             if (*sensor_id == imgsensor_info.sensor_id) {
                 memset(back_cam_name, 0x00, sizeof(back_cam_name));
-                memcpy(back_cam_name, "ov13855", 64);
+                memcpy(back_cam_name, "0_s5k3l6", 64);
 #ifdef CONFIG_MTK_CAM_CAL
 		//read_imx135_otp_mtk_fmt();
 #endif
