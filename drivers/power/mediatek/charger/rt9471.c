@@ -193,6 +193,7 @@ struct rt9471_chip {
 	int irq;
 	u8 irq_mask[RT9471_IRQIDX_MAX];
 	atomic_t vbus_gd;
+	bool attach;
 #ifndef CONFIG_TCPC_CLASS
 	struct work_struct init_work;
 #endif
@@ -1070,14 +1071,20 @@ static int rt9471_inform_psy_changed(struct rt9471_chip *chip)
 static int rt9471_bc12_postprocess(struct rt9471_chip *chip)
 {
 	int ret = 0;
-	bool attach = false;
+	bool attach = false, inform_psy = true;
 	u8 port = RT9471_PORTSTAT_NOINFO;
 
 	if (chip->dev_id != RT9471D_DEVID)
 		return 0;
 
 	attach = atomic_read(&chip->vbus_gd);
-
+	if (chip->attach == attach) {
+		dev_info(chip->dev, "%s attach(%d) is the same\n",
+				    __func__, attach);
+		inform_psy = false;
+		goto out;
+	}
+	chip->attach = attach;
 	dev_info(chip->dev, "%s attach = %d\n", __func__, attach);
 
 	if (!attach) {
@@ -1123,7 +1130,8 @@ static int rt9471_bc12_postprocess(struct rt9471_chip *chip)
 out:
 	if (chip->chg_type != STANDARD_CHARGER)
 		rt9471_enable_bc12(chip, false);
-	rt9471_inform_psy_changed(chip);
+	if (inform_psy)
+		rt9471_inform_psy_changed(chip);
 	return 0;
 }
 
@@ -1145,38 +1153,43 @@ static int rt9471_rechg_irq_handler(struct rt9471_chip *chip)
 	return 0;
 }
 
-static int rt9471_bc12_done_irq_handler(struct rt9471_chip *chip)
+static void rt9471_bc12_done_handler(struct rt9471_chip *chip)
 {
-	int ret;
-	u8 data = 0;
+	int ret = 0;
+	u8 regval = 0;
 	bool bc12_done = false, chg_rdy = false;
 
 	if (chip->dev_id != RT9471D_DEVID)
-		return 0;
+		return;
 
-	mutex_lock(&chip->bc12_lock);
 	dev_info(chip->dev, "%s\n", __func__);
-	ret = rt9471_i2c_read_byte(chip, RT9471_REG_STAT0, &data);
+
+	ret = rt9471_i2c_read_byte(chip, RT9471_REG_STAT0, &regval);
 	if (ret < 0)
 		dev_notice(chip->dev, "%s check stat fail(%d)\n",
 				      __func__, ret);
-	bc12_done = (data & RT9471_ST_BC12_DONE_MASK ? true : false);
-	chg_rdy = (data & RT9471_ST_CHGRDY_MASK ? true : false);
+	bc12_done = (regval & RT9471_ST_BC12_DONE_MASK ? true : false);
+	chg_rdy = (regval & RT9471_ST_CHGRDY_MASK ? true : false);
 	dev_info(chip->dev, "%s bc12_done = %d, chg_rdy = %d\n",
 			    __func__, bc12_done, chg_rdy);
 	if (bc12_done) {
 		if (chip->chip_rev <= 3 && !chg_rdy) {
-			/* Workaround waiting for ST_CHG_RDY */
-			dev_info(chip->dev, "%s wait ST_CHG_RDY, block 2ms\n",
-					    __func__);
-			mdelay(2);
+			/* Workaround waiting for chg_rdy */
+			dev_info(chip->dev, "%s wait chg_rdy\n", __func__);
+			return;
 		}
+		mutex_lock(&chip->bc12_lock);
 		ret = rt9471_bc12_postprocess(chip);
 		dev_info(chip->dev, "%s %d %s\n", __func__, chip->port,
-				rt9471_port_name[chip->port]);
+				    rt9471_port_name[chip->port]);
+		mutex_unlock(&chip->bc12_lock);
 	}
-	mutex_unlock(&chip->bc12_lock);
+}
 
+static int rt9471_bc12_done_irq_handler(struct rt9471_chip *chip)
+{
+	dev_info(chip->dev, "%s\n", __func__);
+	rt9471_bc12_done_handler(chip);
 	return 0;
 }
 
@@ -1201,6 +1214,8 @@ static int rt9471_ieoc_irq_handler(struct rt9471_chip *chip)
 static int rt9471_chg_rdy_irq_handler(struct rt9471_chip *chip)
 {
 	dev_info(chip->dev, "%s\n", __func__);
+	if (chip->chip_rev <= 3)
+		rt9471_bc12_done_handler(chip);
 	return 0;
 }
 
@@ -2345,6 +2360,7 @@ static int rt9471_probe(struct i2c_client *client,
 	mutex_init(&chip->hidden_mode_lock);
 	chip->hidden_mode_cnt = 0;
 	atomic_set(&chip->vbus_gd, 0);
+	chip->attach = false;
 #ifndef CONFIG_TCPC_CLASS
 	INIT_WORK(&chip->init_work, rt9471_init_work_handler);
 #endif
@@ -2538,6 +2554,7 @@ MODULE_VERSION(RT9471_DRV_VERSION);
  * Release Note
  * 1.0.5
  * (1) Add suspend_lock
+ * (2) Use IRQ to wait chg_rdy
  *
  * 1.0.4
  * (1) Use type u8 for regval in __rt9471_i2c_read_byte()
