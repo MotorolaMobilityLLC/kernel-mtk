@@ -324,8 +324,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 #ifdef CONFIG_SWAP
 	swap_pages = atomic_long_read(&nr_swap_pages);
 	/* More than 1/2 swap usage */
-	if (swap_pages * 2 < total_swap_pages)
-		to_be_aggressive++;
+	// Moto: no need to be that aggressive on 1/2 swap usage.
+	//if (swap_pages * 2 < total_swap_pages)
+	//	to_be_aggressive++;
 	/* More than 3/4 swap usage */
 	if (swap_pages * 4 < total_swap_pages)
 		to_be_aggressive++;
