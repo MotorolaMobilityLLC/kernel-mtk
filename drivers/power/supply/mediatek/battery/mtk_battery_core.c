@@ -2017,8 +2017,7 @@ void fg_bat_plugout_int_handler_gm25(void)
 		gauge_dev_set_info(gm.gdev, GAUGE_BAT_PLUG_STATUS, 0);
 		en_intr_VBATON_UNDET(0);
 		battery_notifier(EVENT_BATTERY_PLUG_OUT);
-	// pony.ma, DATE20190614, test require for laohua pony.ma 2019.06.14, DATE20190614-01 LINE
-	//	kernel_power_off(); 
+		kernel_power_off();
 	}
 }
 
