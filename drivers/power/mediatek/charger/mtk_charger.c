@@ -767,8 +767,6 @@ bool is_typec_adapter(struct charger_manager *info)
 		return false;
 
 	if (tcpm_inquire_typec_remote_rp_curr(info->tcpc) > 500 &&
-			info->chr_type != STANDARD_HOST &&
-			info->chr_type != CHARGING_HOST &&
 			mtk_pe20_get_is_connect(info) == false &&
 			mtk_pe_get_is_connect(info) == false &&
 			info->enable_type_c == true)
