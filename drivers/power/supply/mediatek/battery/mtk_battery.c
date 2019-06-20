@@ -1356,8 +1356,7 @@ int force_get_tbat(bool update)
 
 	bat_temperature_val = force_get_tbat_internal(update);
 
-	// pony.ma, DATE20190617, test require for laohua, DATE20190617-01 LINE
-	while (counts < 5 && bat_temperature_val >= 75) {
+	while (counts < 5 && bat_temperature_val >= 60) {
 		bm_err("[%s]over60 count=%d, bat_temp=%d\n",
 			__func__,
 			counts, bat_temperature_val);

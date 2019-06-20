@@ -39,12 +39,7 @@ obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
 #ccflags-y := -DFEATURE_ADB_DISCHARGE_CONTROL
 #endif
 
-# Special usb charge fail on moto factory SW
+# Special usb charge fail on factory SW
 ifeq ($(MOTO_FACTORY_SUPPORT),true)
-ccflags-y := -DFEATURE_FTM_USBCHARGE_CONTROL
-endif
-
-# Special usb charge fail on tinno factory SW
-ifeq ($(TINNO_FACTORY_SUPPORT),true)
 ccflags-y := -DFEATURE_FTM_USBCHARGE_CONTROL
 endif
