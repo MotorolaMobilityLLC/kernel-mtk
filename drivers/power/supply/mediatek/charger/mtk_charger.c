@@ -903,8 +903,6 @@ bool is_typec_adapter(struct charger_manager *info)
 
 	rp = adapter_dev_get_property(info->pd_adapter, TYPEC_RP_LEVEL);
 	if (rp > 500 &&
-			info->chr_type != STANDARD_HOST &&
-			info->chr_type != CHARGING_HOST &&
 			mtk_pe20_get_is_connect(info) == false &&
 			mtk_pe_get_is_connect(info) == false &&
 			info->enable_type_c == true)
