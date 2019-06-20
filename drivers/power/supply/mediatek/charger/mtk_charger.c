@@ -286,7 +286,8 @@ int charger_manager_enable_high_voltage_charging(
 
 	if (!info)
 		return -EINVAL;
-
+	if (info->mmi.factory_mode)
+		return 0;
 	pr_debug("[%s] %s, %d\n", __func__, dev_name(consumer->dev), en);
 
 	if (!en && consumer->hv_charging_disabled == false)
@@ -458,6 +459,9 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	if (info != NULL) {
 		struct charger_data *pdata;
 
+		if (info->mmi.factory_mode)
+			return -EBUSY;
+
 		if (info->data.parallel_vbus) {
 			if (idx == TOTAL_CHARGER) {
 				info->chg1_data.thermal_input_current_limit =
@@ -499,6 +503,8 @@ int charger_manager_set_charging_current_limit(
 	if (info != NULL) {
 		struct charger_data *pdata;
 
+		if (info->mmi.factory_mode)
+			return -EBUSY;
 		if (idx == MAIN_CHARGER)
 			pdata = &info->chg1_data;
 		else if (idx == SLAVE_CHARGER)
@@ -2635,6 +2641,54 @@ static int parse_mmi_dt(struct charger_manager *info, struct device *dev)
 	return rc;
 }
 
+static int chg_reboot(struct notifier_block *nb,
+			 unsigned long event, void *unused)
+{
+	struct charger_manager *info = container_of(nb, struct charger_manager,
+						mmi.chg_reboot);
+	union power_supply_propval val;
+	int rc;
+
+	pr_info("chg Reboot\n");
+	if (!info) {
+		pr_info("called before chip valid!\n");
+		return NOTIFY_DONE;
+	}
+
+	if (info->mmi.factory_mode) {
+		switch (event) {
+		case SYS_POWER_OFF:
+			aee_kernel_RT_Monitor_api_factory();
+			pinfo->is_suspend = true;
+			/* Disable Factory Kill */
+			info->disable_charger = true;
+			info->chg_tcmd_client.factory_kill_disable = true;
+			/* Disable Charging */
+			charger_dev_enable(info->chg1_dev, false);
+			/* Suspend USB */
+			charger_dev_enable_hz(info->chg1_dev, true);
+
+			rc = mmi_get_prop_from_charger(info,
+				POWER_SUPPLY_PROP_ONLINE, &val);
+			while (rc >= 0 && val.intval) {
+				msleep(100);
+				rc = mmi_get_prop_from_charger(info,
+					POWER_SUPPLY_PROP_ONLINE, &val);
+				pr_info("Wait for VBUS to decay\n");
+			}
+
+			pr_info("VBUS UV wait 1 sec!\n");
+			/* Delay 1 sec to allow more VBUS decay */
+			msleep(1000);
+			break;
+		default:
+			break;
+		}
+	}
+
+	return NOTIFY_DONE;
+}
+
 #define CHG_SHOW_MAX_SIZE 50
 static ssize_t factory_image_mode_store(struct device *dev,
 				struct device_attribute *attr,
@@ -2813,6 +2867,13 @@ void mmi_init(struct charger_manager *info)
 	rc = parse_mmi_dt(info, &info->pdev->dev);
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
+
+	info->mmi.chg_reboot.notifier_call = chg_reboot;
+	info->mmi.chg_reboot.next = NULL;
+	info->mmi.chg_reboot.priority = 1;
+	rc = register_reboot_notifier(&info->mmi.chg_reboot);
+	if (rc)
+		pr_err("SMB register for reboot failed\n");
 
 	rc = device_create_file(&info->pdev->dev,
 				&dev_attr_force_demo_mode);
