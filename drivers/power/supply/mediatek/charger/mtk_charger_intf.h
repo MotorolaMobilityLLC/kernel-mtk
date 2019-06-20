@@ -359,6 +359,7 @@ struct mmi_params {
 	bool			chg_disable;
 	int			target_fcc;
 	int			target_usb;
+	struct notifier_block	chg_reboot;
 };
 
 struct charger_manager {
@@ -552,6 +553,8 @@ bool __attribute__((weak)) is_usb_rdy(void)
 	pr_info("%s is not defined\n", __func__);
 	return false;
 }
+
+extern void aee_kernel_RT_Monitor_api_factory(void);
 
 /* procfs */
 #define PROC_FOPS_RW(name)						\
