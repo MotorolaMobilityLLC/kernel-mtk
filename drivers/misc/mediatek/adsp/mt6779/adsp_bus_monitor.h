@@ -24,6 +24,7 @@
 #define ADSP_BUS_DBG_TIMER1                   (ADSP_BUS_MON_BASE + 0x0010)
 #define ADSP_BUS_DBG_WP                       (ADSP_BUS_MON_BASE + 0x0014)
 #define ADSP_BUS_DBG_WP_MASK                  (ADSP_BUS_MON_BASE + 0x0018)
+#define ADSP_BUS_DBG_EN_LOCK                  (ADSP_BUS_MON_BASE + 0x0024)
 
 /* bus monitor enum */
 enum bus_monitor_stage {

@@ -47,11 +47,14 @@
 #endif
 #include <mt-plat/sync_write.h>
 #include <mt-plat/aee.h>
+#ifdef CONFIG_MTK_TIMER_TIMESYNC
 #include <mtk_sys_timer.h>
 #include <mtk_sys_timer_typedefs.h>
+#endif
 #include <mtk_spm_sleep.h>
+#ifdef CONFIG_MTK_EMI
 #include <plat_debug_api.h>
-
+#endif
 #include "adsp_helper.h"
 #include "adsp_excep.h"
 #include "adsp_dvfs.h"
@@ -203,8 +206,10 @@ void adsp_sys_reset_ws(struct work_struct *ws)
 	/* dump bus status if has bus hang*/
 	if (is_adsp_bus_monitor_alert()) {
 #ifdef CONFIG_MTK_EMI
+#ifdef CONFIG_MTK_LASTBUS_INTERFACE
 		dump_emi_outstanding(); /* check infra, dump all info*/
 		lastbus_timeout_dump(); /* check infra/peri, dump both info */
+#endif
 #endif
 		adsp_bus_monitor_dump();
 	}
@@ -336,7 +341,7 @@ void adsp_A_ready_ipi_handler(int id, void *data, unsigned int len)
 	}
 	/* verify adsp image size */
 	if (adsp_image_size != ADSP_A_TCM_SIZE) {
-		pr_info("[ADSP]image size ERROR! AP=0x%x,ADSP=0x%x\n",
+		pr_info("[ADSP]image size ERROR! AP=0x%zx,ADSP=0x%x\n",
 			ADSP_A_TCM_SIZE, adsp_image_size);
 		WARN_ON(1);
 	}

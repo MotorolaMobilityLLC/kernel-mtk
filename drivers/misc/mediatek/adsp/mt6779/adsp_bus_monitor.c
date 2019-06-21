@@ -38,6 +38,7 @@ int adsp_bus_monitor_init(void)
 		  (size_t)ADSP_BUS_MON_BACKUP_SIZE);
 
 	/* initialize bus monitor */
+	writel(0xacce55, ADSP_BUS_DBG_EN_LOCK);
 	writel(BUS_MON_STAGE1_TIMEOUT_VALUE, ADSP_BUS_DBG_TIMER_CON0);
 	writel(BUS_MON_STAGE2_TIMEOUT_VALUE, ADSP_BUS_DBG_TIMER_CON1);
 	writel(0x0, ADSP_BUS_DBG_WP);

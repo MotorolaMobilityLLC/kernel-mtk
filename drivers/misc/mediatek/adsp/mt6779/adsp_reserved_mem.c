@@ -112,7 +112,7 @@ void *adsp_reserve_memory_ioremap(phys_addr_t phys_addr, size_t size)
 	size_t acc_size = 0;
 
 	if (!phys_addr || !size) {
-		pr_info("[ADSP] set reserve memory illegal addr:%llu, size:%llu",
+		pr_info("[ADSP] set reserve memory illegal addr:%llu, size:%zu",
 			phys_addr, size);
 		return NULL;
 	}
@@ -142,13 +142,13 @@ ssize_t adsp_reserve_memory_dump(char *buffer, int size)
 	struct adsp_reserve_mblock *mem = &adsp_reserve_mem;
 
 	n += scnprintf(buffer + n, size - n,
-		"Reserve-memory-all:0x%x 0x%p 0x%x\n",
+		"Reserve-memory-all:0x%llx 0x%p 0x%zx\n",
 		mem->phys_addr, mem->virt_addr, mem->size);
 
 	for (i = 0; i < ADSP_NUMS_MEM_ID; i++) {
 		mem = &adsp_reserve_mblocks[i];
 		n += scnprintf(buffer + n, size - n,
-			"Reserve-memory-Block[%02d]:0x%x 0x%p 0x%x\n",
+			"Reserve-memory-Block[%02d]:0x%llx 0x%p 0x%zx\n",
 			i, mem->phys_addr, mem->virt_addr, mem->size);
 	}
 	return n;
@@ -166,6 +166,6 @@ static int __init adsp_reserve_mem_of_init(struct reserved_mem *rmem)
 }
 
 RESERVEDMEM_OF_DECLARE(adsp_reserve_mem_init,
-			ADSP_MEM_RESERVED_KEY, adsp_reserve_mem_of_init);
+		       ADSP_MEM_RESERVED_KEY, adsp_reserve_mem_of_init);
 #endif  /* defined(CONFIG_OF_RESERVED_MEM) */
 
