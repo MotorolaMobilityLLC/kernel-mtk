@@ -43,6 +43,7 @@ static struct mm_qos_request wdma0_request;
 
 static struct pm_qos_request ddr_opp_request;
 static struct pm_qos_request mm_freq_request;
+static u64 g_freq_steps[MAX_FREQ_STEP];
 
 static struct plist_head hrt_request_list;
 static struct mm_qos_request ovl0_hrt_request;
@@ -115,6 +116,7 @@ static int __get_cmdq_slots(cmdqBackupSlotHandle Slot,
 void disp_pm_qos_init(void)
 {
 	unsigned long long bandwidth;
+	u32 step_size;
 
 	/* initialize display slot */
 	__init_cmdq_slots(&(dispsys_slot), DISP_SLOT_NUM, 0);
@@ -139,6 +141,8 @@ void disp_pm_qos_init(void)
 			   PM_QOS_DDR_OPP_DEFAULT_VALUE);
 	pm_qos_add_request(&mm_freq_request, PM_QOS_DISP_FREQ,
 			   PM_QOS_MM_FREQ_DEFAULT_VALUE);
+	/* 0: 60611; 1:45011; 2: 31511*/
+	mmdvfs_qos_get_freq_steps(PM_QOS_DISP_FREQ, g_freq_steps, &step_size);
 
 	plist_head_init(&hrt_request_list);
 
@@ -538,3 +542,10 @@ int disp_pm_qos_set_rdma_bw(unsigned long long out_fps,
 	return ret;
 }
 
+void disp_pm_qos_set_mmclk(int level)
+{
+	if (level < 0 || level > 2)
+		pm_qos_update_request(&mm_freq_request, 0);
+	else
+		pm_qos_update_request(&mm_freq_request, g_freq_steps[level]);
+}
