@@ -1673,6 +1673,7 @@
 		sram_share_engine = <21>, <22>;
 		sram_share_event = <710>, <711>;
 		thread_count = <24>;
+		secure_thread = <8 10>;
 		mediatek,mailbox-gce = <&gce_mbox>;
 		mboxes = <&gce_mbox 0 0 CMDQ_THR_PRIO_4>,
 			<&gce_mbox 1 0 CMDQ_THR_PRIO_4>,
