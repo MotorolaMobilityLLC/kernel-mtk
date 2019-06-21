@@ -22,7 +22,7 @@ bat_gm30: battery{
 	/*	R_sense resistance.*/
 	R_FG_VALUE = <(10)>;
 	/*	Configures whether using embedded battery or not.*/
-	EMBEDDED_SEL = <(0)>;
+	EMBEDDED_SEL = <(1)>;
 	/*	System shutdown current.*/
 	PMIC_SHUTDOWN_CURRENT = <(20)>;
 	/*	The resistance of PCB*/

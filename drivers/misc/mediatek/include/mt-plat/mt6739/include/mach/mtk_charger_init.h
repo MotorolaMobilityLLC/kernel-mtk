@@ -83,7 +83,7 @@
 #define BIF_CV_UNDER_THRESHOLD2 4450000	/* UV */
 #define BIF_CV BATTERY_CV /* UV */
 
-#define R_SENSE 56 /* mohm */
+#define R_SENSE 33 /* mohm */
 
 #define MAX_CHARGING_TIME (12 * 60 * 60) /* 12 hours */
 
