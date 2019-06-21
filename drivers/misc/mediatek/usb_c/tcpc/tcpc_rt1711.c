@@ -1149,24 +1149,12 @@ static int rt1711_i2c_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	struct rt1711_chip *chip = i2c_get_clientdata(client);
-	int status;
 
 	RT1711_INFO("\n");
 	down(&chip->suspend_lock);
 	if (device_may_wakeup(dev))
 		enable_irq_wake(chip->irq);
-	status = rt1711_reg_read(client, RT1711_REG_CCSTATUS);
-	if (status < 0)
-		return 0;
-	if ((status & RT1711_DRP_TOGGLING_MASK) ||
-		(RT1711_REG_CC_STATUS_CC1(status) == TYPEC_CC_VOLT_OPEN &&
-		 RT1711_REG_CC_STATUS_CC2(status) == TYPEC_CC_VOLT_OPEN)) {
-		dev_info(chip->dev,
-			"%s: disable Band Gap when suspend, status = 0x%02X\n",
-			__func__, status);
-		rt1711_clr_bit(client, RT1711_REG_LOW_POWER_CTRL,
-				RT1711_BMCIO_BG_EN | RT1711_REG_VBUS_DETEN);
-	}
+
 	return 0;
 }
 
@@ -1176,9 +1164,6 @@ static int rt1711_i2c_resume(struct device *dev)
 	struct rt1711_chip *chip = i2c_get_clientdata(client);
 
 	RT1711_INFO("\n");
-	dev_info(chip->dev, "%s: enable Band Gap when resume\n", __func__);
-	rt1711_set_bit(client, RT1711_REG_LOW_POWER_CTRL,
-			RT1711_BMCIO_BG_EN | RT1711_REG_VBUS_DETEN);
 	if (device_may_wakeup(dev))
 		disable_irq_wake(chip->irq);
 	up(&chip->suspend_lock);
@@ -1287,8 +1272,7 @@ MODULE_VERSION(RT1711_DRV_VERSION);
 /**** Release Note ****
  * 1.0.6_MTK
  * (1) enable low power mode at shutdown
- * (2) disable/enable Band Gate when suspend/resume
- * (3) Rename & modify I2C API
+ * (2) Rename & modify I2C API
  *
  * 1.0.5_MTK
  * (1) Change compatible to usb_type_c
