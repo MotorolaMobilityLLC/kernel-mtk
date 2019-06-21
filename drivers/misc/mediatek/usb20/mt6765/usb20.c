@@ -432,6 +432,13 @@ bool mt_usb_is_device(void)
 	return true;
 #endif
 }
+
+/* to avoid build error due to PMIC module not ready */
+#ifndef CONFIG_MTK_CHARGER
+#define BYPASS_PMIC_LINKAGE
+#endif
+
+#ifdef BYPASS_PMIC_LINKAGE
 static struct delayed_work disconnect_check_work;
 static bool musb_hal_is_vbus_exist(void);
 void do_disconnect_check_work(struct work_struct *data)
@@ -477,11 +484,8 @@ void trigger_disconnect_check_work(void)
 	}
 	queue_delayed_work(mtk_musb->st_wq, &disconnect_check_work, 0);
 }
-
-/* to avoid build error due to PMIC module not ready */
-#ifndef CONFIG_MTK_CHARGER
-#define BYPASS_PMIC_LINKAGE
 #endif
+
 static enum charger_type musb_hal_get_charger_type(void)
 {
 	enum charger_type chg_type;
@@ -1808,8 +1812,9 @@ static int mt_usb_probe(struct platform_device *pdev)
 #ifndef FPGA_PLATFORM
 	register_usb_hal_dpidle_request(usb_6765_dpidle_request);
 #endif
+#ifdef BYPASS_PMIC_LINKAGE
 	register_usb_hal_disconnect_check(trigger_disconnect_check_work);
-
+#endif
 	INIT_DELAYED_WORK(&idle_work, do_idle_work);
 
 	DBG(0, "keep musb->power & mtk_usb_power in the samae value\n");
