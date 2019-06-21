@@ -2866,6 +2866,7 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		enable_pe_4;
 		enable_type_c;
 		power_path_support;
+		disable_pd_dual;
 
 		/* common */
 		battery_cv = <4350000>;
@@ -2966,7 +2967,7 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 
 		/* PD */
 		pd_vbus_low_bound = <5000000>;
-		pd_vbus_upper_bound = <12000000>;
+		pd_vbus_upper_bound = <5000000>;
 		pd_ichg_level_threshold = <1000000>; /* uA */
 		pd_stop_battery_soc = <80>;
 

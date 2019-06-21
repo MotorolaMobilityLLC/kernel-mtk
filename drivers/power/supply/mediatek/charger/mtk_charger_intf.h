@@ -358,6 +358,7 @@ struct charger_manager {
 
 	/* pd */
 	struct mtk_pdc pdc;
+	bool disable_pd_dual;
 
 	int pd_type;
 	//struct tcpc_device *tcpc;
