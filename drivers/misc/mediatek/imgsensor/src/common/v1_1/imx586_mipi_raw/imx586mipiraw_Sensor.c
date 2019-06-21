@@ -3635,6 +3635,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 		case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 		case MSDK_SCENARIO_ID_SLIM_VIDEO:
 			*feature_return_para_32 = 4; /*BINNING_SUMMED*/
+			break;
 		case MSDK_SCENARIO_ID_CAMERA_PREVIEW:
 		default:
 			*feature_return_para_32 = 2; /*BINNING_AVERAGED*/
