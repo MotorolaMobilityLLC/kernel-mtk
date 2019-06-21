@@ -22,6 +22,8 @@ KEYWORD(lpddr_mfr)
 KEYWORD(lpddr_capacity)
 KEYWORD(SPEAKER_MFR)    //Speaker box mfr
 KEYWORD(FP_MFR)         //Fingerprint mfr
+KEYWORD(GSENSOR_MFR)         //Fingerprint mfr
+KEYWORD(ALSPS_MFR)         //Fingerprint mfr
 KEYWORD(LCD_MFR)        //LCD mfr
 KEYWORD(TP_MFR)         //Touch mfr
 KEYWORD(BATTARY_MFR)    //battary  mfr

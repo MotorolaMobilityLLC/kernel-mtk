@@ -13,3 +13,5 @@ obj-$(CONFIG_MTK_BMI160_I2C)   += bmi160-i2c/
 obj-$(CONFIG_MTK_MC3410_I2C) += mc3410-i2c/
 obj-$(CONFIG_MTK_MPU6050G)   += mpu6050g/
 obj-$(CONFIG_MTK_LIS3DH_NEW) += lis3dh/
+obj-$(CONFIG_MTK_KX126_1063)   +=  KX126_1063/
+obj-$(CONFIG_MTK_BMA455)   +=  bma455/

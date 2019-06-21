@@ -1,0 +1,5 @@
+
+config MTK_LTR578
+	bool "ltr578 for MediaTek package"
+	default n
+

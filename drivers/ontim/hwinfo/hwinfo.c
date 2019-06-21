@@ -601,7 +601,7 @@ static void get_charger_ic(void)
 }
 //add end
 
-#define FINGERPRINT_VENDOR_FILE "/sys/ontim_dev_debug/fingersensor/vendor"
+#define FINGERPRINT_VENDOR_FILE "/sys/ontim_dev_debug/fpsensor/vendor"
 static ssize_t get_fingerprint_id(void)
 {
 	char buf[MAX_HWINFO_SIZE] = {};
@@ -617,6 +617,46 @@ static ssize_t get_fingerprint_id(void)
 		buf[strlen(buf) - 1] = '\0';
 
 	strcpy(hwinfo[FP_MFR].hwinfo_buf, buf);
+
+	return 0;
+}
+
+#define GSENSOR_VENDOR_FILE "/sys/ontim_dev_debug/gsensor/vendor"
+static ssize_t get_gsensor_id(void)
+{
+	char buf[MAX_HWINFO_SIZE] = {};
+	int ret = 0;
+
+	ret = hwinfo_read_file(GSENSOR_VENDOR_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "gsensor failed.");
+		return -1;
+	}
+	printk(KERN_INFO "gsensor vendor: %s\n", buf);
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+
+	strcpy(hwinfo[GSENSOR_MFR].hwinfo_buf, buf);
+
+	return 0;
+}
+
+#define ALSPS_VENDOR_FILE "/sys/ontim_dev_debug/als_prox/vendor"
+static ssize_t get_alsps_id(void)
+{
+	char buf[MAX_HWINFO_SIZE] = {};
+	int ret = 0;
+
+	ret = hwinfo_read_file(ALSPS_VENDOR_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "als_prox failed.");
+		return -1;
+	}
+	printk(KERN_INFO "als_prox vendor: %s\n", buf);
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+
+	strcpy(hwinfo[ALSPS_MFR].hwinfo_buf, buf);
 
 	return 0;
 }
@@ -1095,9 +1135,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case BACKAUX_CAM_EFUSE:
 		get_backaux_camera_efuse_id();
 		break;
-    case BACKAUX2_CAM_EFUSE:
-        get_backaux2_camera_efuse_id();
-        break;
+	case BACKAUX2_CAM_EFUSE:
+		get_backaux2_camera_efuse_id();
+		break;
 	case FRONT_CAM_EFUSE:
 		get_front_camera_efuse_id();
 		break;
@@ -1110,11 +1150,17 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case BACKAUX_CAM_MFR:
 		get_backaux_camera_id();
 		break;
-    case BACKAUX2_CAM_MFR:
-        get_backaux2_camera_id();
-        break;
+	case BACKAUX2_CAM_MFR:
+		get_backaux2_camera_id();
+		break;
 	case FP_MFR:
 		get_fingerprint_id();
+		break;
+	case GSENSOR_MFR:
+		get_gsensor_id();
+		break;
+	case ALSPS_MFR:
+		get_alsps_id();
 		break;
 	case CARD_HOLDER_PRESENT:
 		get_card_present();

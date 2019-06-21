@@ -1,0 +1,32 @@
+
+config MTK_KX126_1063
+  bool "KX126_1063 for MediaTek package"
+  default n
+	help
+	  It support different accelerometer sensor.
+          If this option is set,
+	  it will support
+          MTK_KX126_1063 Accelerometer.
+
+
+config KX126_1063_LOWPASS
+	bool "MTK_KX126_1063 for Mediatek package"
+	default n
+	help
+	Say Y here if you have MTK_KX126_1063 accelerometer sensor KX126_1063_LOWPASS.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.
+
+config CUSTOM_KERNEL_SENSORHUB
+	bool "MTK_KX126_1063 for Mediatek package"
+	default n
+	help
+	Say Y here if you have MTK_KX126_1063 accelerometer sensor CUSTOM_KERNEL_SENSORHUB.
+
+	If unsure, say N.
+
+	To compile this dirver as a module, choose M here: the
+	module will be called.

@@ -23,6 +23,7 @@ static const char * const boardid_gpios[] = {
 	"gpio,boardid1",
 	"gpio,boardid2",
 	"gpio,boardid3",
+	"gpio,boardid4",
 };
 struct gpio_data {
 	int value;

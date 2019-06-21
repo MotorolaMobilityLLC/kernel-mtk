@@ -8,7 +8,7 @@ obj-$(CONFIG_MTK_ALSPSHUB)      +=  alspshub/
 obj-$(CONFIG_MTK_CM36558)	+=  cm36558/
 obj-$(CONFIG_MTK_EPL2182)	+=  epl2182/
 obj-$(CONFIG_MTK_LTR303)	+=  ltr303/
-
+obj-$(CONFIG_MTK_LTR578)	+=  ltr578/
 obj-$(CONFIG_MTK_LTR577)	+=  ltr577/
 obj-$(CONFIG_MTK_STK3x1x)	+=  stk3x1x/
 
