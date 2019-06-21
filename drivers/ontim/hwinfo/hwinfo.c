@@ -752,10 +752,31 @@ unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
-#if 1
+    unsigned int gpio_base =343;
+
+	unsigned int pin0=121;
+	unsigned int pin1=54;
+	unsigned int pin2=53;
+	unsigned int pin3=5;
+	unsigned int pin4=11;
+	int pin_val = 0;
+	int hw_ver=0;
+
+	
+	pin_val =    gpio_get_value(gpio_base+pin0) & 0x01;
+	pin_val |= (gpio_get_value(gpio_base+pin1) & 0x01) << 1;
+	pin_val |= (gpio_get_value(gpio_base+pin2) & 0x01) << 2;
+	pin_val |= (gpio_get_value(gpio_base+pin3) & 0x01) << 3;
+	pin_val |= (gpio_get_value(gpio_base+pin4) & 0x01) << 4;
+	hw_ver = pin_val;
+	
+	printk(KERN_ERR "%s: hw_ver is %x ;\n",__func__, hw_ver);
+
+	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", hw_ver);
+#if 0
 	int id = platform_board_id;
 	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", id);
-#else
+
 	int rc = 0;
 	int voltage = 0;
 	int board_id_num = 0;
