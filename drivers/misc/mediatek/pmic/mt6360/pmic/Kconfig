@@ -4,4 +4,6 @@ config MT6360_PMIC
 	select RT_REGMAP
 	help
 	  This selects for MediaTek(R) Sub PMIC MT6360 PMU parts.
+	  2-Channel Buck with Thermal Shutdown and Overlord Protection
+	  2-Channel LDO used to DRAM Power
 	  Select Y to enable support for MT6360 PMU.
