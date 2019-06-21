@@ -278,35 +278,14 @@ long DW9718SAF_Ioctl(struct file *a_pstFile, unsigned int a_u4Command,
 /* Q1 : Try release multiple times. */
 int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
-	int i4RetValue = 0;
 	/* power down mode */
 	char puSendCmd[2] = {0x00, 0x01};
-	/* set lsc mode */
-	char puSendCmd1[2] = {0x01, 0x33};
-	/* TLSC(1-step period) = 126us + SACT[5:0] * 2us */
-	char puSendCmd3[2] = {0x05, 0x40};
-
-	unsigned long currPosition = g_u4CurrPosition;
 
 	LOG_INF("Start\n");
 
 	if (*g_pAF_Opened == 2) {
-
-		LOG_INF("apply\n");
-		if (currPosition > 400) {
-			s4AF_WriteReg(400);
-			mdelay(12);
-			currPosition = 400;
-		}
-		g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR >> 1;
-		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd1, 2);
-		mdelay(1);
-		i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
-		while (currPosition > 100) {
-			currPosition -= 50;
-			s4AF_WriteReg(currPosition);
-			mdelay(7);
-		}
+		LOG_INF("apply +\n");
+		LOG_INF("apply -\n");
 	}
 
 	if (*g_pAF_Opened) {
@@ -316,7 +295,7 @@ int DW9718SAF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 		*g_pAF_Opened = 0;
 		spin_unlock(g_pAF_SpinLock);
 	}
-	mdelay(1);
+
 	if (i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2) < 0)
 		LOG_INF("DW9718S Power down mode fail!\n");
 
