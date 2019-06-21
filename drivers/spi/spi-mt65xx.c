@@ -407,7 +407,7 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 {
 	u32 spi_clk_hz, div, sck_time, cs_time, reg_val = 0;
 	struct mtk_spi *mdata = spi_master_get_devdata(master);
-	u32 cs_setuptime, cs_holdtime, cs_idletime, cs_lowtime, cs_hightime = 0;
+	u32 cs_setuptime, cs_holdtime, cs_idletime = 0;
 	struct mtk_chip_config *chip_config = spi->controller_data;
 
 	spi_clk_hz = clk_get_rate(mdata->spi_clk);
@@ -418,8 +418,6 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 
 	sck_time = (div + 1) / 2;
 	cs_time = sck_time * 2;
-	cs_hightime = sck_time;
-	cs_lowtime = sck_time;
 
 	if (chip_config->cs_setuptime)
 		cs_setuptime = chip_config->cs_setuptime;
@@ -437,9 +435,9 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 		cs_idletime = cs_time;
 
 	if (mdata->dev_comp->enhance_timing) {
-		reg_val |= (((cs_hightime - 1) & 0xffff)
+		reg_val |= (((sck_time - 1) & 0xffff)
 			   << SPI_CFG0_SCK_HIGH_OFFSET);
-		reg_val |= (((cs_lowtime - 1) & 0xffff)
+		reg_val |= (((sck_time - 1) & 0xffff)
 			   << SPI_ADJUST_CFG0_SCK_LOW_OFFSET);
 		writel(reg_val, mdata->base + SPI_CFG2_REG);
 
@@ -450,9 +448,9 @@ static void mtk_spi_prepare_transfer(struct spi_master *master,
 			   << SPI_ADJUST_CFG0_CS_SETUP_OFFSET);
 		writel(reg_val, mdata->base + SPI_CFG0_REG);
 	} else {
-		reg_val |= (((cs_hightime - 1) & 0xff)
+		reg_val |= (((sck_time - 1) & 0xff)
 			   << SPI_CFG0_SCK_HIGH_OFFSET);
-		reg_val |= (((cs_lowtime - 1) & 0xff) <<
+		reg_val |= (((sck_time - 1) & 0xff) <<
 			SPI_CFG0_SCK_LOW_OFFSET);
 		reg_val |= (((cs_holdtime - 1) & 0xff) <<
 			SPI_CFG0_CS_HOLD_OFFSET);
