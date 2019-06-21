@@ -203,6 +203,8 @@ static int get_sw_round_corner_param(unsigned int *tp_mva, unsigned int *bt_mva,
 				unsigned int *pitch, unsigned int *height);
 #endif
 
+static bool g_mmclk_450;
+
 /* hold the wakelock to make kernel awake when primary display is on */
 /* Must manipulate wake lock through lock_primary_wake_lock() */
 struct wakeup_source pri_wk_lock;
@@ -3429,12 +3431,14 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 	int stable = 0;
 #endif
 	unsigned int hrt_idx;
+	unsigned int mmclk_450;
 
 	mmprofile_log_ex(ddp_mmp_get_events()->session_release,
 			 MMPROFILE_FLAG_START, 1, userdata);
 
 	/* mmdvfs: check overlap layer */
 	cmdqBackupReadSlot(pgc->subtractor_when_free, 0, &real_hrt_level);
+	cmdqBackupReadSlot(pgc->request_mmclk_450, 0, &mmclk_450);
 	real_hrt_level >>= 16;
 	_primary_path_lock(__func__);
 #ifdef MTK_FB_MMDVFS_SUPPORT
@@ -3447,6 +3451,10 @@ static int _ovl_fence_release_callback(unsigned long userdata)
 			primary_display_request_dvfs_perf(MMDVFS_SCEN_DISP,
 							  dvfs_last_ovl_req);
 	}
+
+	/* un-requests mmclk */
+	if (mmclk_450 == 0 && g_mmclk_450 == 0)
+		disp_pm_qos_set_mmclk(-1);
 #endif
 	_primary_path_unlock(__func__);
 
@@ -3903,6 +3911,8 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	if (disp_helper_get_option(DISP_OPT_HRT_MODE) == 1)
 		dvfs_last_ovl_req = 0;
 #endif
+	/* un-requests mmclk */
+	disp_pm_qos_set_mmclk(-1);
 
 	init_cmdq_slots(&(pgc->ovl_config_time), 3, 0);
 	init_cmdq_slots(&(pgc->cur_config_fence),
@@ -3916,6 +3926,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 	init_cmdq_slots(&(pgc->hrt_idx_id), 1, 0);
 	init_cmdq_slots(&(pgc->ovl_dummy_info), OVL_NUM, 0);
+	init_cmdq_slots(&(pgc->request_mmclk_450), 1, 0);
 
 	/* init night light params */
 	mem_config.m_ccorr_config.is_dirty = 1;
@@ -4908,6 +4919,9 @@ int primary_display_suspend(void)
 #ifdef MTK_FB_MMDVFS_SUPPORT
 	disp_pm_qos_set_default_bw(&bandwidth);
 	disp_pm_qos_update_bw(bandwidth);
+	/* un-requests mmclk */
+	disp_pm_qos_set_mmclk(-1);
+	g_mmclk_450 = 0;
 #endif
 
 	DISPCHECK("[POWER]dpmanager path power off[end]\n");
@@ -6435,6 +6449,49 @@ static bool has_secure_layer(struct disp_frame_cfg_t *cfg)
 	return secure_layer;
 }
 
+bool is_yuv_overlap(struct disp_frame_cfg_t *cfg)
+{
+	int ret = 0, i;
+	int yuv_tb = -1, yuv_bb = -1;
+
+	for (i = 0; i < cfg->input_layer_num; i++) {
+		struct disp_input_config *l = &cfg->input_cfg[i];
+
+		if (!l->layer_enable)
+			continue;
+
+		if (!is_yuv(l->src_fmt))
+			continue;
+
+		if (yuv_tb == -1) {
+			yuv_tb = l->tgt_offset_y;
+			yuv_tb = (yuv_tb < 2) ? 0 : yuv_tb - 2;
+			yuv_bb = yuv_tb + l->tgt_height + 1;
+		} else {
+			unsigned int firs_tb, firs_bb, seco_tb, seco_bb;
+			unsigned int tmp_tb, tmp_bb;
+			bool sort_res;
+
+			tmp_tb = l->tgt_offset_y;
+			tmp_tb = (tmp_tb < 2) ? 0 : tmp_tb - 2;
+			tmp_bb = tmp_tb + l->tgt_height + 1;
+
+			sort_res = yuv_tb < l->tgt_offset_y;
+
+			firs_tb = sort_res ? yuv_tb : tmp_tb;
+			firs_bb = sort_res ? yuv_bb : tmp_bb;
+			seco_tb = sort_res ? tmp_tb : yuv_tb;
+			seco_bb = sort_res ? tmp_bb : yuv_bb;
+
+			if (seco_tb <= firs_bb) {
+				ret = 1;
+				break;
+			}
+		}
+	}
+	return ret;
+}
+
 static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			     disp_path_handle disp_handle,
 			     struct cmdqRecStruct *cmdq_handle)
@@ -6541,6 +6598,19 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			max_layer_id_configed = l_id;
 
 		pconfig->ovl_layer_dirty |= (1 << i);
+	}
+
+	/* two YUV need set MMCLK to OPP1: 450 */
+	if (is_yuv_overlap(cfg)) {
+		DISPINFO("overlapped yuv layer, set MMCLK to 450\n");
+		cmdqRecBackupUpdateSlot(cmdq_handle,
+			pgc->request_mmclk_450, 0, 1);
+		disp_pm_qos_set_mmclk(1);
+		g_mmclk_450 = 1;
+	} else {
+		cmdqRecBackupUpdateSlot(cmdq_handle,
+			pgc->request_mmclk_450, 0, 0);
+		g_mmclk_450 = 0;
 	}
 
 	hrt_level = HRT_GET_DVFS_LEVEL(cfg->overlap_layer_num);
@@ -6710,7 +6780,6 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		}
 	}
 #endif
-
 
 	if (disp_helper_get_option(DISP_OPT_DYNAMIC_SWITCH_MMSYSCLK)) {
 		if (bypass) {
