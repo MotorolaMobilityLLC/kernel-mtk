@@ -57,6 +57,9 @@
 #include <sspm_ipi.h>
 #endif /* CONFIG_MTK_TINYSYS_SSPM_SUPPORT */
 
+__attribute__((weak))
+void cm_mgr_update_dram_by_cpu_opp(int cpu_opp) {};
+
 spinlock_t cm_mgr_lock;
 
 static unsigned long long test_diff;
@@ -639,6 +642,8 @@ void check_cm_mgr_status(unsigned int cluster, unsigned int freq)
 	prev_freq_idx[cluster] = 0;
 	prev_freq[cluster] = 0;
 #endif /* CONFIG_MTK_CPU_FREQ */
+
+	cm_mgr_update_dram_by_cpu_opp(prev_freq_idx[CM_MGR_CPU_CLUSTER - 1]);
 
 	check_cm_mgr_status_internal();
 }
