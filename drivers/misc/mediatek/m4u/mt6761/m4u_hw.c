@@ -789,7 +789,7 @@ char *smi_clk_name[] = {
 };
 
 
-static int larb_clock_on(int larb, bool config_mtcmos)
+int larb_clock_on(int larb, bool config_mtcmos)
 {
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;
@@ -805,7 +805,7 @@ static int larb_clock_on(int larb, bool config_mtcmos)
 }
 
 
-static int larb_clock_off(int larb, bool config_mtcmos)
+int larb_clock_off(int larb, bool config_mtcmos)
 {
 #ifdef CONFIG_MTK_SMI_EXT
 	int ret = -1;

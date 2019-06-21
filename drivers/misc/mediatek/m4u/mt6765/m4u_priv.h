@@ -373,6 +373,8 @@ int m4u_larb_backup_sec(unsigned int larb_idx);
 int m4u_larb_restore_sec(unsigned int larb_idx);
 int m4u_config_port_array_tee(unsigned char *port_array);
 int m4u_sec_init(void);
+int larb_clock_on(int larb, bool config_mtcmos);
+int larb_clock_off(int larb, bool config_mtcmos);
 #endif
 
 #endif
