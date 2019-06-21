@@ -5010,6 +5010,21 @@ void RGXDebugRequestProcess(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 		PVR_DPF((PVR_DBG_ERROR, "Failed to acquire kernel FW IF Init struct"));
 		goto ExitUnlock;
 	}
+	if (!pfnDumpDebugPrintf)
+	{
+		switch (ui32VerbLevel)
+		{
+			case DEBUG_REQUEST_VERBOSITY_LOW:
+				MTKPP_LOGTIME(g_use_id, "DEBUG_REQUEST_VERBOSITY_LOW");
+				break;
+			case DEBUG_REQUEST_VERBOSITY_MEDIUM:
+				MTKPP_LOGTIME(g_use_id, "DEBUG_REQUEST_VERBOSITY_MEDIUM");
+				break;
+			case DEBUG_REQUEST_VERBOSITY_HIGH:
+				MTKPP_LOGTIME(g_use_id, "DEBUG_REQUEST_VERBOSITY_HIGH");
+				break;
+		}
+	}
 
 	ui8FwOsCount = psRGXFWInit->sRGXCompChecks.sInitOptions.ui8OsCountSupport;
 

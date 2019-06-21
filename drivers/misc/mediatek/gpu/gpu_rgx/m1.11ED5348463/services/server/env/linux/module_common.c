@@ -211,6 +211,10 @@ int PVRSRVCommonDriverInit(void)
 
 	MTKMFGSystemInit();
 
+#if defined(MTK_DEBUG_PROC_PRINT)
+	MTKPP_Init();
+#endif
+
 	return 0;
 }
 
@@ -221,14 +225,17 @@ int PVRSRVCommonDriverInit(void)
 */ /***************************************************************************/
 void PVRSRVCommonDriverDeinit(void)
 {
-	MTKMFGSystemDeInit();
-
 	PVRSRVDriverDeInit();
 
 #if defined(SUPPORT_RGX)
 	PVRGpuTraceSupportDeInit();
 #endif
 
+#if defined(MTK_DEBUG_PROC_PRINT)
+	MTKPP_Deinit();
+#endif
+
+	MTKMFGSystemDeInit();
 	pvr_apphint_deinit();
 
 	PVROSFuncDeInit();

@@ -16,7 +16,9 @@
 
 #include <linux/version.h>
 #include <linux/sched.h>
-//#include <linux/sched/clock.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+#include <linux/sched/clock.h>
+#endif
 #include <linux/string.h>
 #include <linux/vmalloc.h>
 #include <linux/proc_fs.h>

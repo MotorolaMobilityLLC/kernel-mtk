@@ -828,11 +828,10 @@ PhysmemImportDmaBuf(CONNECTION_DATA *psConnection,
 
 	/* Get the buffer handle */
 	psDmaBuf = dma_buf_get(fd);
-
 	if (IS_ERR_OR_NULL(psDmaBuf))
 	{
-		PVR_DPF((PVR_DBG_ERROR, "fd=%d,%s: Failed to get dma-buf from fd (err=%ld)",
-				 fd,__func__, psDmaBuf ? PTR_ERR(psDmaBuf) : -ENOMEM));
+		PVR_DPF((PVR_DBG_ERROR, "%s: Failed to get dma-buf from fd (err=%ld)",
+				 __func__, psDmaBuf ? PTR_ERR(psDmaBuf) : -ENOMEM));
 		return PVRSRV_ERROR_BAD_MAPPING;
 
 	}

@@ -1288,13 +1288,13 @@ PVRSRV_ERROR MTKMFGSystemInit(void)
 
 
 #ifndef ENABLE_COMMON_DVFS
-	error = OSLockCreate(&ghDVFSLock, LOCK_TYPE_PASSIVE);
+	error = OSLockCreate(&ghDVFSLock);
 	if (error != PVRSRV_OK) {
 		PVR_DPF((PVR_DBG_ERROR, "Create DVFS Lock Failed"));
 		goto ERROR;
 	}
 
-	error = OSLockCreate(&ghDVFSTimerLock, LOCK_TYPE_PASSIVE);
+	error = OSLockCreate(&ghDVFSTimerLock);
 
 	if (error != PVRSRV_OK)	{
 		PVR_DPF((PVR_DBG_ERROR, "Create DVFS Timer Lock Failed"));
