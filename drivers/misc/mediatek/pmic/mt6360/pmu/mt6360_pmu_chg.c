@@ -2475,9 +2475,12 @@ static int mt6360_chg_init_setting(struct mt6360_pmu_chg_info *mpci)
 	ret = mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHRDET_STAT);
 	if (ret >= 0)
 		mpci->ctd_dischg_status = ret & 0xE3;
-	mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CTD_CTRL, 0x40);
-	mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_OTHERS_CTRL, 0x01);
-
+	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_CTD_CTRL, 0x40);
+	if (ret < 0)
+		dev_err(mpci->dev, "%s: disable ctd ctrl fail\n", __func__);
+	ret = mt6360_pmu_reg_clr_bits(mpci->mpi, MT6360_PMU_OTHERS_CTRL, 0x01);
+	if (ret < 0)
+		dev_err(mpci->dev, "%s: disable otp ctrl fail\n", __func__);
 	ret = mt6360_select_input_current_limit(mpci, MT6360_IINLMTSEL_AICR);
 	if (ret < 0) {
 		dev_err(mpci->dev, "%s: select iinlmtsel by aicr fail\n",
