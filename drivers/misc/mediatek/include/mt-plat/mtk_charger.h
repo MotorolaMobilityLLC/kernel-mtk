@@ -24,7 +24,6 @@
 //#include <mach/mtk_charger_init.h>
 
 #include <mt-plat/charger_type.h>
-#include <mt-plat/charger_class.h>
 
 /* charger_manager notify charger_consumer */
 enum {
@@ -107,6 +106,9 @@ extern int charger_manager_get_zcv(
 	int idx,
 	u32 *uV);
 extern int charger_manager_enable_kpoc_shutdown(
+	struct charger_consumer *consumer,
+	bool en);
+extern int charger_manager_enable_chg_type_det(
 	struct charger_consumer *consumer,
 	bool en);
 extern int mtk_chr_is_charger_exist(unsigned char *exist);

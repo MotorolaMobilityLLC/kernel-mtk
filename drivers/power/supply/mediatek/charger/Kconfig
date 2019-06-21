@@ -105,6 +105,7 @@ config MTK_CHARGER_UNLIMITED
 	depends on MTK_CHARGER
 	help
 	  Say Yes to release charging current restrictions.
+	  Say No to not release charging current restrictions.
 	  It is mainly used for long-term tests.
 	  It depends on config MTK_CHARGER.
 

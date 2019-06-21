@@ -327,7 +327,7 @@ EXPORT_SYMBOL(charger_dev_set_mivr);
 
 int charger_dev_get_mivr(struct charger_device *chg_dev, u32 *uV)
 {
-	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->set_mivr)
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->get_mivr)
 		return chg_dev->ops->get_mivr(chg_dev, uV);
 
 	return -ENOTSUPP;
@@ -685,7 +685,7 @@ struct charger_device *charger_device_register(const char *name,
 	struct srcu_notifier_head *head;
 	int rc;
 
-	pr_debug("charger_device_register: name=%s\n", name);
+	pr_debug("%s: name=%s\n", __func__, name);
 	chg_dev = kzalloc(sizeof(*chg_dev), GFP_KERNEL);
 	if (!chg_dev)
 		return ERR_PTR(-ENOMEM);
