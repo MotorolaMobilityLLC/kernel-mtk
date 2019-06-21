@@ -278,7 +278,7 @@ static struct SENSOR_ATR_INFO sensorATR_Info[4] = {	/* Strength Range Min */
 };
 #endif
 
-#define IMX230MIPI_MaxGainIndex (115)
+#define IMX230MIPI_MaxGainIndex (116)
 kal_uint16 IMX230MIPI_sensorGainMapping[IMX230MIPI_MaxGainIndex][2] = {
 	{64, 0},
 	{65, 8},
@@ -394,6 +394,7 @@ kal_uint16 IMX230MIPI_sensorGainMapping[IMX230MIPI_MaxGainIndex][2] = {
 	{437, 437},
 	{449, 439},
 	{468, 442},
+	{489, 445},
 	{512, 448},
 };
 
