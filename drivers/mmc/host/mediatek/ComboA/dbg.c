@@ -400,7 +400,10 @@ void mmc_low_io_dump(char **buff, unsigned long *size, struct seq_file *m,
 		t = dbg_run_host_log_dat_low_io[i].time;
 		nanosec_rem = do_div(t, 1000000000)/1000;
 		speed = dbg_run_host_log_dat_low_io[i].size * 1000000000;
-		do_div(speed, dbg_run_host_log_dat_low_io[i].time_diff);
+		if (dbg_run_host_log_dat_low_io[i].time_diff != 0)
+			do_div(speed, dbg_run_host_log_dat_low_io[i].time_diff);
+		else
+			speed = 0;
 
 		if (dbg_run_host_log_dat_low_io[i].cmd == 46)
 			dir = 'R';
