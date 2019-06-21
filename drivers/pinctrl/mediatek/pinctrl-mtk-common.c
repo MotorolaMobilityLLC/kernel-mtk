@@ -1469,9 +1469,6 @@ static int mtk_pullen_get(struct gpio_chip *chip, unsigned int offset)
 	if (pctl->devdata->mtk_pctl_get_pull_en)
 		return pctl->devdata->mtk_pctl_get_pull_en(pctl, offset);
 
-	if (!pctl->devdata->spec_pull_get)
-		return -1;
-
 	if (pctl->devdata->spec_pull_get) {
 		samereg = pctl->devdata->spec_pull_get(
 			mtk_get_regmap(pctl, offset), offset);
@@ -1528,9 +1525,6 @@ static int mtk_pullsel_get(struct gpio_chip *chip, unsigned int offset)
 
 	if (pctl->devdata->mtk_pctl_get_pull_sel)
 		return pctl->devdata->mtk_pctl_get_pull_sel(pctl, offset);
-
-	if (!pctl->devdata->spec_pull_get)
-		return -1;
 
 	if (pctl->devdata->spec_pull_get) {
 		pull_sel = pctl->devdata->spec_pull_get(
