@@ -54,6 +54,10 @@ void init_md_section_level(enum pbm_kicker kicker)
 #if defined(CONFIG_MTK_ECCCI_DRIVER)
 	share_mem =
 		(u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM, NULL);
+	if (share_mem == NULL) {
+		pr_info_ratelimited("can't get dbm share memory\n");
+		return;
+	}
 #else
 	return;
 #endif
@@ -68,7 +72,10 @@ void init_md_section_level(enum pbm_kicker kicker)
 
 int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 {
-	u32 share_reg, *share_mem;
+#if defined(MD_POWER_UT) || !defined(MD_SCEANRIO_USE_SHARE_MEMORY)
+	u32 share_reg;
+#endif
+	u32 *share_mem;
 	enum md_scenario scenario;
 	int scenario_power, tx_power;
 
@@ -89,23 +96,29 @@ int get_md1_power(enum mdpm_power_type power_type, bool need_update)
 	memset((void *)&mdpm_power_sta, 0, sizeof(struct md_power_status));
 
 #ifdef MD_POWER_UT
+	share_mem = fake_share_mem;
 	share_reg = fake_share_reg;
 #else
 	if (!md1_ccci_ready)
 		return MAX_MD1_POWER;
 
 	share_reg = get_md1_status_reg();
+	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, SMEM_USER_RAW_DBM,
+		NULL);
+	if (share_mem == NULL) {
+		pr_info_ratelimited("can't get dbm share memory\n");
+		return MAX_MD1_POWER;
+	}
 #endif
 
+#ifdef GET_MD_SCEANRIO_BY_SHARE_MEMORY
+	scenario = get_md1_scenario_by_shm(share_mem);
+#else
 	scenario = get_md1_scenario(share_reg, power_type);
+#endif
 	scenario_power = get_md1_scenario_power(scenario, power_type,
 		&mdpm_power_sta);
 
-#ifdef MD_POWER_UT
-	share_mem = fake_share_mem;
-#else
-	share_mem = (u32 *)get_smem_start_addr(MD_SYS1, 0, NULL);
-#endif
 	tx_power = get_md1_tx_power(scenario, share_mem, power_type,
 		&mdpm_power_sta);
 
