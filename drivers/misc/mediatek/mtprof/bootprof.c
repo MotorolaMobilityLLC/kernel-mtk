@@ -114,7 +114,7 @@ void bootprof_initcall(initcall_t fn, unsigned long long ts)
 
 	if (ts > INITCALL_THRESHOLD) {
 		msec_rem = do_div(ts, NSEC_PER_MSEC);
-		snprintf(msgbuf, MSG_SIZE, "initcall: %pf %5llu.%06lums",
+		snprintf(msgbuf, MSG_SIZE, "initcall: %ps %5llu.%06lums",
 			 fn, ts, msec_rem);
 		log_boot(msgbuf);
 	}
@@ -133,13 +133,13 @@ void bootprof_probe(unsigned long long ts, struct device *dev,
 		return;
 	msec_rem = do_div(ts, NSEC_PER_MSEC);
 
-	pos += snprintf(msgbuf, MSG_SIZE, "probe: probe=%pf", (void *)probe);
+	pos += snprintf(msgbuf, MSG_SIZE, "probe: probe=%ps", (void *)probe);
 	if (drv)
-		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " drv=%s(%p)",
+		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " drv=%s(%ps)",
 				drv->name ? drv->name : "",
 				(void *)drv);
 	if (dev && dev->init_name)
-		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " dev=%s(%p)",
+		pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " dev=%s(%ps)",
 				dev->init_name, (void *)dev);
 	pos += snprintf(msgbuf + pos, MSG_SIZE - pos, " %5llu.%06lums",
 			ts, msec_rem);
@@ -156,7 +156,7 @@ void bootprof_pdev_register(unsigned long long ts, struct platform_device *pdev)
 	if (ts <= PROBE_THRESHOLD || !pdev)
 		return;
 	msec_rem = do_div(ts, NSEC_PER_MSEC);
-	snprintf(msgbuf, MSG_SIZE, "probe: pdev=%s(%p) %5llu.%06lums",
+	snprintf(msgbuf, MSG_SIZE, "probe: pdev=%s(%ps) %5llu.%06lums",
 		 pdev->name, (void *)pdev, ts, msec_rem);
 	log_boot(msgbuf);
 }
