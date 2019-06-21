@@ -309,19 +309,19 @@ int mtk_pe40_get_setting_by_watt(struct charger_manager *pinfo, int *voltage,
 			if (watt > pe40_cap->pdp * 1000000)
 				watt = pe40_cap->pdp * 1000000;
 
-		if (max_vbus * (pe40->max_charger_ibus - 200) >= watt) {
-			ibus = pe40->max_charger_ibus - 200;
-			vbus = watt / ibus;
-			ibus_setting = max_ibus;
-			ta_ibus = pe40_cap->ma[i];
+			if (max_vbus * (pe40->max_charger_ibus - 200) >= watt) {
+				ibus = pe40->max_charger_ibus - 200;
+				vbus = watt / ibus;
+				ibus_setting = max_ibus;
+				ta_ibus = pe40_cap->ma[i];
 				if (vbus > max_vbus)
 					vbus = max_vbus;
-			if (vbus < pe40_cap->min_mv[i])
-				vbus = pe40_cap->min_mv[i];
+				if (vbus < pe40_cap->min_mv[i])
+					vbus = pe40_cap->min_mv[i];
 
 				idx = 4;
-			break;
-		}
+				break;
+			}
 		}
 		vbus = max_vbus;
 		ibus = pe40->max_charger_ibus;

@@ -264,6 +264,16 @@ static int pd_get_cap(struct adapter_device *dev,
 	int i;
 	struct mtk_pd_adapter_info *info;
 
+	pd_cap.nr = 0;
+	pd_cap.selected_cap_idx = 0;
+
+	for (i = 0; i < PDO_MAX_NR; i++) {
+		pd_cap.max_mv[i] = 0;
+		pd_cap.min_mv[i] = 0;
+		pd_cap.ma[i] = 0;
+		pd_cap.type[i] = 0;
+	}
+
 	info = (struct mtk_pd_adapter_info *)adapter_dev_get_drvdata(dev);
 	if (info == NULL || info->tcpc == NULL)
 		return MTK_ADAPTER_ERROR;
