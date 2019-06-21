@@ -85,7 +85,7 @@ long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange, unsigned long uaddr,
 out:
 	up_read(&current->mm->mmap_sem);
 	if (res < 0) {
-		pr_debug("_map_user_pages error = %d\n", res);
+		pr_debug("map user pages error = %d\n", res);
 		goto out_free;
 	}
 
@@ -97,7 +97,7 @@ out:
 	return 0;
 
 out_unmap:
-	pr_debug("_map_user_pages fail\n");
+	pr_debug("map user pages fail\n");
 	if (pinRange->isPage) {
 		for (j = 0; j < res; j++)
 			put_page(pages[j]);
