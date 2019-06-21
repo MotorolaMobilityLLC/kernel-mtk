@@ -60,6 +60,14 @@
 #include "mtk_idle.h"
 #endif /* USE_IDLE_NOTIFY */
 
+#ifdef USE_CPU_TO_DRAM_MAP
+static struct delayed_work cm_mgr_work;
+static struct pm_qos_request ddr_opp_req_by_cpu_opp;
+static int cm_mgr_cpu_to_dram_opp;
+
+static void cm_mgr_process(struct work_struct *work);
+#endif /* USE_CPU_TO_DRAM_MAP */
+
 struct cm_mgr_met_data {
 	unsigned int cm_mgr_power[14];
 	unsigned int cm_mgr_count[4];
@@ -746,6 +754,13 @@ int cm_mgr_platform_init(void)
 	pm_qos_add_request(&ddr_opp_req, PM_QOS_DDR_OPP,
 			PM_QOS_DDR_OPP_DEFAULT_VALUE);
 
+#ifdef USE_CPU_TO_DRAM_MAP
+	pm_qos_add_request(&ddr_opp_req_by_cpu_opp, PM_QOS_DDR_OPP,
+			PM_QOS_DDR_OPP_DEFAULT_VALUE);
+
+	INIT_DELAYED_WORK(&cm_mgr_work, cm_mgr_process);
+#endif /* USE_CPU_TO_DRAM_MAP */
+
 	return r;
 }
 
@@ -783,3 +798,49 @@ int cm_mgr_get_bw(void)
 {
 	return dvfsrc_get_emi_bw(QOS_EMI_BW_TOTAL);
 }
+
+#ifdef USE_CPU_TO_DRAM_MAP
+static int cm_mgr_cpu_opp_to_dram[CM_MGR_CPU_OPP_SIZE] = {
+/* star from cpu opp 0 */
+	0,
+	0,
+	0,
+	0,
+	1,
+	1,
+	1,
+	1,
+	1,
+	2,
+	2,
+	2,
+	2,
+	2,
+	2,
+	2,
+};
+
+static void cm_mgr_process(struct work_struct *work)
+{
+	pm_qos_update_request(&ddr_opp_req_by_cpu_opp, cm_mgr_cpu_to_dram_opp);
+}
+
+void cm_mgr_update_dram_by_cpu_opp(int cpu_opp)
+{
+	int ret = 0;
+	int dram_opp = 0;
+
+	if (!is_dvfsrc_enabled())
+		return;
+
+	if ((cpu_opp >= 0) && (cpu_opp < CM_MGR_CPU_OPP_SIZE))
+		dram_opp = cm_mgr_cpu_opp_to_dram[cpu_opp];
+
+	if (cm_mgr_cpu_to_dram_opp == dram_opp)
+		return;
+
+	cm_mgr_cpu_to_dram_opp = dram_opp;
+
+	ret = schedule_delayed_work(&cm_mgr_work, 1);
+}
+#endif /* USE_CPU_TO_DRAM_MAP */
