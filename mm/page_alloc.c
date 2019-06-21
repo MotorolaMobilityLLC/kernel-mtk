@@ -6610,7 +6610,7 @@ void __init mem_init_print_info(const char *str)
 
 #ifdef CONFIG_MTK_MEMCFG
 		kernel_reserve_meminfo.available =
-			(unsigned long long)nr_free_pages() << PAGE_SHIFT;
+			(unsigned long long)(nr_free_pages()) << PAGE_SHIFT;
 		kernel_reserve_meminfo.total = physpages << PAGE_SHIFT;
 		kernel_reserve_meminfo.kernel_code = codesize;
 		kernel_reserve_meminfo.rwdata = datasize;
