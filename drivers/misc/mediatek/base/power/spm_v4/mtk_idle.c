@@ -77,7 +77,7 @@
 #define log2buf(p, s, fmt, args...) \
 	(p += scnprintf(p, sizeof(s) - strlen(s), fmt, ##args))
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 static atomic_t is_in_hotplug = ATOMIC_INIT(0);
 #else
 #define USING_STD_TIMER_OPS
@@ -438,7 +438,7 @@ static void timer_setting_after_wfi(bool f26m_off)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool mtk_idle_cpu_criteria(void)
 {
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	return ((atomic_read(&is_in_hotplug) == 1)
 			|| (num_online_cpus() != 1)) ? false : true;
 #else
@@ -919,7 +919,7 @@ unsigned int soidle_pre_handler(void)
 	op_cond = ufs_cb_before_xxidle();
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	hps_del_timer();
 #endif
 #endif
@@ -940,7 +940,7 @@ unsigned int soidle_pre_handler(void)
 void soidle_post_handler(void)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	hps_restart_timer();
 #endif
 #endif
@@ -968,7 +968,7 @@ static unsigned int dpidle_pre_process(int cpu)
 	dpidle_profile_time(DPIDLE_PROFILE_IDLE_NOTIFIER_END);
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	hps_del_timer();
 #endif
 
@@ -994,7 +994,7 @@ static void dpidle_post_process(int cpu)
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 	timer_setting_after_wfi(false);
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	hps_restart_timer();
 #endif
 
@@ -1075,7 +1075,7 @@ int mtk_idle_select(int cpu)
 #endif
 #endif
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	/* only check for non-acao case */
 	if (cpu % 4) {
 		reason = BY_CPU;
@@ -1343,7 +1343,7 @@ int rgidle_enter(int cpu)
 {
 	int ret = CPUIDLE_STATE_RG;
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+#if 1 /*removed : #ifdef CONFIG_MTK_ACAO_SUPPORT*/
 	mtk_idle_dump_cnt_in_interval();
 	mcdi_heart_beat_log_dump();
 #endif
@@ -1976,7 +1976,7 @@ static int mtk_cpuidle_debugfs_init(void)
 	return 0;
 }
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 /* CPU hotplug notifier, for informing whether CPU hotplug is working */
 static int mtk_idle_cpu_callback(struct notifier_block *nfb,
 				   unsigned long action, void *hcpu)
@@ -2127,7 +2127,7 @@ void __init mtk_cpuidle_framework_init(void)
 	iomap_init();
 	mtk_cpuidle_debugfs_init();
 
-#ifndef CONFIG_MTK_ACAO_SUPPORT
+#if 0 /*removed : #ifndef CONFIG_MTK_ACAO_SUPPORT*/
 	mtk_idle_hotplug_cb_init();
 #endif
 

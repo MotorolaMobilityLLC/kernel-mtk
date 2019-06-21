@@ -61,7 +61,7 @@
 
 #include <mt-plat/mtk_io.h>
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
+#if 1 /*removed : #ifdef CONFIG_MTK_ACAO_SUPPORT*/
 #include <mtk_mcdi_api.h>
 #endif
 
