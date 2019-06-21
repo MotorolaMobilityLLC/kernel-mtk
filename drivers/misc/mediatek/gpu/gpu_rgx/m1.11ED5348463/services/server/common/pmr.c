@@ -264,6 +264,8 @@ struct _PMR_
 	 */
 	void		*hRIHandle;
 #endif
+
+	atomic_t ispvrivalid;
 };
 
 /* do we need a struct for the export handle?  I'll use one for now, but if nothing goes in it, we'll lose it */
@@ -276,6 +278,119 @@ struct _PMR_PAGELIST_
 {
 	struct _PMR_ *psReferencePMR;
 };
+
+
+#include <linux/stacktrace.h>
+#include <linux/sched.h>
+/* ----- debug start -------------------------------------------------------- */
+#define VALID_PRIV 0x8888beef
+#define INVALID_PRIV 0xdead4444
+#define SKIP_STACK_FRAMES 2
+#define MAX_STACK_FRAMES 25
+#define DEBUG_BUFFER_SIZE 0x1000
+#define DEBUG_BUFFER_MASK (DEBUG_BUFFER_SIZE - 1)
+
+#define DEBUG_OPS \
+	_O(INC), \
+	_O(DEC), \
+	_O(ALLOC), \
+	_O(FREE), \
+	_O(COUNT) // needs to be last
+
+typedef enum {
+#define _O(x) DEBUG_OPS_##x
+	DEBUG_OPS,
+#undef _O
+} debug_ops_t;
+
+static const char *debug_ops_str[] = {
+#define _O(x) #x
+	DEBUG_OPS
+#undef _O
+};
+
+struct debug_item {
+	uintptr_t id;
+	uintptr_t id2;
+	u64 ts;
+	u32 pid;
+	u32 line;
+	int value;
+	debug_ops_t op;
+	unsigned long entries[MAX_STACK_FRAMES];
+	struct stack_trace call_stack;
+};
+
+static DEFINE_SPINLOCK(g_debug_lock);
+static struct debug_item g_debug_buffer[DEBUG_BUFFER_SIZE] = {{0}};
+static unsigned int g_debug_head = 0;
+
+static void __add_record(uintptr_t id, uintptr_t id2, debug_ops_t op, int value, int line)
+{
+	struct debug_item item = {
+		.id = (uintptr_t) id,
+		.id2 = (uintptr_t) id2,
+		.ts = sched_clock(),
+		.op = op,
+		.pid = task_pid_nr(current),
+		.line = line,
+		.value = value,
+		/* save the stack trace */
+		.call_stack.entries = item.entries,
+		.call_stack.skip = SKIP_STACK_FRAMES,
+		.call_stack.max_entries = MAX_STACK_FRAMES,
+		.call_stack.nr_entries = 0
+	};
+
+	save_stack_trace(&item.call_stack);
+
+	spin_lock(&g_debug_lock);
+	g_debug_buffer[g_debug_head] = item;
+	// fix pointer to entries
+	g_debug_buffer[g_debug_head].call_stack.entries =
+	        g_debug_buffer[g_debug_head].entries;
+	g_debug_head = (g_debug_head + 1) & DEBUG_BUFFER_MASK;
+	spin_unlock(&g_debug_lock);
+}
+
+#define _add_record(id, id2, op, value) __add_record((uintptr_t) (id), (uintptr_t) (id2), DEBUG_OPS_##op, value, __LINE__)
+
+static void _dump_debug_history(uintptr_t id)
+{
+	unsigned i, j;
+	int found = 0;
+
+	pr_err("------[ history ]------\n");
+
+	printk("Current stack trace:\n");
+	dump_stack();
+
+	spin_lock(&g_debug_lock);
+
+	for (i = 0, j = g_debug_head;
+	     i < DEBUG_BUFFER_SIZE;
+		 i++, j = (j + 1) & DEBUG_BUFFER_MASK)
+	{
+		struct debug_item *item = &g_debug_buffer[j];
+
+		if (item->id == id) {
+			found = 1;
+			pr_err("PrivData: %016llx; PMR: %016llx; Op: %s; PID: %u; Ts: %llu, iRefCount:%d, Line: %u\n",
+			       (long long unsigned) item->id, (long long unsigned) item->id2,
+			       debug_ops_str[item->op], item->pid, (long long unsigned) item->ts,
+			       item->value, item->line);
+			print_stack_trace(&item->call_stack, 4);
+		}
+	}
+
+	spin_unlock(&g_debug_lock);
+
+	if (!found)
+		pr_err("No entries found.\n");
+
+	pr_err("------[ end of history ]------\n");
+}
+/* ----- debug end ---------------------------------------------------------- */
 
 PPVRSRV_DEVICE_NODE PMRGetExportDeviceNode(PMR_EXPORT *psExportPMR)
 {
@@ -433,6 +548,7 @@ _Ref(PMR *psPMR)
 	/* We need to ensure that this function is always executed under
 	 * PMRLock. The only exception acceptable is the unloading of the driver.
 	 */
+	_add_record(psPMR->pvFlavourData, psPMR, INC, OSAtomicRead(&psPMR->iRefCount));
 	return OSAtomicIncrement(&psPMR->iRefCount);
 }
 
@@ -443,6 +559,7 @@ _Unref(PMR *psPMR)
 	/* We need to ensure that this function is always executed under
 	 * PMRLock. The only exception acceptable is the unloading of the driver.
 	 */
+	_add_record(psPMR->pvFlavourData, psPMR, DEC, OSAtomicRead(&psPMR->iRefCount));
 	return OSAtomicDecrement(&psPMR->iRefCount);
 }
 
@@ -461,6 +578,12 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 	{
 		if (psPMR->psFuncTab->pfnFinalize != NULL)
 		{
+			if(atomic_read(&psPMR->ispvrivalid) != VALID_PRIV)
+			{
+				_dump_debug_history((uintptr_t)psPMR->pvFlavourData);
+			}
+
+			_add_record(psPMR->pvFlavourData, psPMR, FREE, OSAtomicRead(&psPMR->iRefCount));
 			eError2 = psPMR->psFuncTab->pfnFinalize(psPMR->pvFlavourData);
 
 			/* PMR unref can be called asynchronously by the kernel or other
@@ -480,6 +603,9 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 			{
 				return;
 			}
+
+			atomic_set(&psPMR->ispvrivalid, INVALID_PRIV);
+
 			PVR_ASSERT (eError2 == PVRSRV_OK); /* can we do better? */
 		}
 #if defined(PDUMP)
@@ -582,6 +708,8 @@ PMRCreatePMR(PVRSRV_DEVICE_NODE *psDevNode,
 	psPMR->pszPDumpDefaultMemspaceName = PhysHeapPDumpMemspaceName(psPhysHeap);
 	psPMR->pvFlavourData = pvPrivData;
 	psPMR->eFlavour = eType;
+	atomic_set(&psPMR->ispvrivalid, VALID_PRIV);
+	_add_record(psPMR->pvFlavourData, psPMR, ALLOC, OSAtomicRead(&psPMR->iRefCount));
 	OSAtomicWrite(&psPMR->iRefCount, 1);
 
 	OSStringLCopy(psPMR->szAnnotation, pszAnnotation, DEVMEM_ANNOTATION_MAX_LEN);
