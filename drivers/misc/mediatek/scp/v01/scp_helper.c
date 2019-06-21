@@ -882,6 +882,7 @@ DEVICE_ATTR(recovery_flag, 0600, scp_recovery_flag_r, scp_recovery_flag_w);
 #endif
 
 
+#if SCP_LOG_FILTER_SUPPORT
 /******************************************************************************
  *****************************************************************************/
 static ssize_t scp_set_log_filter(struct device *dev,
@@ -911,6 +912,7 @@ static ssize_t scp_set_log_filter(struct device *dev,
 	}
 }
 DEVICE_ATTR(log_filter, 0200, NULL, scp_set_log_filter);
+#endif  /* SCP_LOG_FILTER_SUPPORT */
 
 
 /******************************************************************************
@@ -1021,9 +1023,11 @@ static int create_files(void)
 		return ret;
 #endif  // SCP_RECOVERY_SUPPORT
 
+#if SCP_LOG_FILTER_SUPPORT
 	ret = device_create_file(scp_device.this_device, &dev_attr_log_filter);
 	if (unlikely(ret != 0))
 		return ret;
+#endif  /* SCP_LOG_FILTER_SUPPORT */
 
 	return 0;
 }
