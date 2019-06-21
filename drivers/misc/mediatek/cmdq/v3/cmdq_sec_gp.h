@@ -18,7 +18,12 @@
 #include <linux/delay.h>
 
 #include "tee_client_api.h"
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT)
+#include "teei_client_main.h"
+#endif
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 #include "mobicore_driver_api.h"
+#endif
 
 /* context for tee vendor */
 struct cmdq_sec_tee_context {
