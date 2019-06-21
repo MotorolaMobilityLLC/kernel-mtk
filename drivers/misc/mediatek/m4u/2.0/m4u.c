@@ -52,8 +52,10 @@
 
 
 #ifdef M4U_TEE_SERVICE_ENABLE
-
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
+	!defined(CONFIG_MTK_TEE_GP_SUPPORT)
 #include "mobicore_driver_api.h"
+#endif
 #include "tz_m4u.h"
 #ifdef __M4U_SECURE_SYSTRACE_ENABLE__
 #include <linux/sectrace.h>
@@ -1796,8 +1798,6 @@ out:
 /* ------------------------------------------------------------- */
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
 	!defined(CONFIG_MTK_TEE_GP_SUPPORT)
-#include "mobicore_driver_api.h"
-
 static const struct mc_uuid_t m4u_drv_uuid = M4U_DRV_UUID;
 static struct mc_session_handle m4u_dci_session;
 static struct m4u_msg *m4u_dci_msg;
