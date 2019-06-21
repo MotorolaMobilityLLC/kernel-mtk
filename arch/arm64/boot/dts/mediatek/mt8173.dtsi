@@ -260,11 +260,21 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			#clock-cells = <1>;
 		};
 
+		disp_tvdpll_cfg6: disp_tvdpll_cfg6@100000a0 {
+			compatible = "mediatek,mt8173-disp_tvdpll_cfg6";
+			reg = <0 0x100000a0 0 0x1000>;
+		};
+
 		infracfg: power-controller@10001000 {
 			compatible = "mediatek,mt8173-infracfg", "syscon";
 			reg = <0 0x10001000 0 0x1000>;
 			#clock-cells = <1>;
 			#reset-cells = <1>;
+		};
+
+		disp_io_driving: disp_io_driving@100020f0 {
+			compatible = "mediatek,mt8173-disp_io_driving";
+			reg = <0 0x100020f0 0 0x1000>;
 		};
 
 		pericfg: power-controller@10003000 {
@@ -379,6 +389,16 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				 <&topckgen CLK_TOP_RTC_SEL>;
 			clock-names = "clk13m",
 				      "clk32k";
+		};
+
+		disp_tvdpll_con0: disp_tvdpll_con0@1000c270 {
+			compatible = "mediatek,mt8173-disp_tvdpll_con0";
+			reg = <0 0x1000c270 0 0x1000>;
+		};
+
+		disp_tvdpll_con1: disp_tvdpll_con1@1000c274 {
+			compatible = "mediatek,mt8173-disp_tvdpll_con1";
+			reg = <0 0x1000c274 0 0x1000>;
 		};
 
 		pwrap: pwrap@1000d000 {
@@ -1120,7 +1140,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			interrupts = <GIC_SPI 197 IRQ_TYPE_LEVEL_LOW>;
 		};
 
-		pwm: pwm@1401e000 {
+		disp_pwm: pwm@1401e000 {
 			compatible = "mediatek,mt8173-disp_pwm";
 			reg = <0 0x1401e000 0 0x2000>;
 		};
