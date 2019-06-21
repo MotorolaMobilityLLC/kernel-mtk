@@ -17,7 +17,7 @@
 #include "adsp_reg.h"
 
 #define SHARE_BUF_SIZE 288
-/* adsp awake timout count definition*/
+/* adsp awake timeout count definition*/
 #define ADSP_AWAKE_TIMEOUT 5000
 #define ADSP_IPI_STAMP_SUPPORT 0
 

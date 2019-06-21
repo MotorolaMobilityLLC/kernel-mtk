@@ -102,6 +102,8 @@ static int adsp_is_force_trigger_latmon;
 /* if equal, bypass clear bss and some init */
 #define MAGIC_PATTERN      (0xfafafafa)
 
+struct wakeup_source adsp_suspend_lock;
+
 static inline ssize_t adsp_force_adsppll_store(struct device *kobj,
 		struct device_attribute *attr,
 		const char *buf, size_t count)
@@ -408,6 +410,7 @@ static void adsp_delay_off_handler(unsigned long data)
 {
 	if (!adsp_feature_is_active())
 		queue_work(adsp_workqueue, &adsp_suspend_work.work);
+	__pm_relax(&adsp_suspend_lock);
 }
 
 void adsp_start_suspend_timer(void)
@@ -417,18 +420,22 @@ void adsp_start_suspend_timer(void)
 	adsp_suspend_timer.data = (unsigned long)ADSP_DELAY_TIMER;
 	adsp_suspend_timer.expires =
 		jiffies + ADSP_DELAY_OFF_TIMEOUT;
-	if (timer_pending(&adsp_suspend_timer)) {
+	if (timer_pending(&adsp_suspend_timer))
 		pr_debug("adsp_suspend_timer has set\n");
-	} else
+	else {
+		__pm_stay_awake(&adsp_suspend_lock);    /* wake lock AP */
 		add_timer(&adsp_suspend_timer);
+	}
 	mutex_unlock(&adsp_timer_mutex);
 }
 
 void adsp_stop_suspend_timer(void)
 {
 	mutex_lock(&adsp_timer_mutex);
-	if (timer_pending(&adsp_suspend_timer))
+	if (timer_pending(&adsp_suspend_timer)) {
 		del_timer(&adsp_suspend_timer);
+		__pm_relax(&adsp_suspend_lock);
+	}
 	mutex_unlock(&adsp_timer_mutex);
 }
 
@@ -585,6 +592,7 @@ int adsp_sram_gtable_check(void)
 int adsp_suspend_init(void)
 {
 	INIT_WORK(&adsp_suspend_work.work, adsp_suspend_ws);
+	wakeup_source_init(&adsp_suspend_lock, "adsp suspend wakelock");
 	init_timer(&adsp_suspend_timer);
 	adsp_is_suspend = 0;
 	adsp_sram_gtable_init();

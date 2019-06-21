@@ -91,6 +91,7 @@ irqreturn_t adsp_A_irq_handler(int irq, void *dev_id)
 	adsp_A_ipi_handler();
 	/* write 1 clear */
 	writel(ADSP_IRQ_ADSP2HOST, ADSP_A_TO_HOST_REG);
+	dsb(SY);
 
 	return IRQ_HANDLED;
 }

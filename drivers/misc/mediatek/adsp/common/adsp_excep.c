@@ -278,7 +278,7 @@ static u32 adsp_crash_dump(struct MemoryDump *pMemoryDump,
 			       CRASH_CFG_REG_SIZE);
 
 	if (n != sizeof(struct MemoryDump))
-		pr_info("%s(), size not match n(%x) != MemoryDump(%d)",
+		pr_info("%s(), size not match n(%x) != MemoryDump(%zd)",
 			__func__, n, sizeof(struct MemoryDump));
 
 	mutex_unlock(&adsp_sw_reset_mutex);

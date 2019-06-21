@@ -126,8 +126,8 @@ int adsp_deregister_feature(enum adsp_feature_id id)
 		pr_err("[%s] error to deregister id=%d\n", __func__, id);
 		mutex_unlock(&adsp_feature_mutex);
 		return -EINVAL;
-	} else
-		adsp_feature_table[id].counter -= 1;
+	}
+	adsp_feature_table[id].counter -= 1;
 
 	/* no feature registered, delay 1s and then suspend adsp. */
 	if (!adsp_feature_is_active() && (is_adsp_ready(ADSP_A_ID) == 1)) {
