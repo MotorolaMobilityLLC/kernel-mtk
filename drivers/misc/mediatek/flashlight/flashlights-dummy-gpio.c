@@ -169,7 +169,7 @@ static int dummy_pinctrl_set(int pin, int state)
 static int dummy_enable(void)
 {
 	//g_duty = 0-6; 0-5:flash; 6:torch
-	if(g_duty == 6) //torch mode
+	if(g_duty == 0) //torch mode
 	{
 		dummy_pinctrl_set(0, 1);//torch en
 		dummy_pinctrl_set(1, 0);//flash dis
