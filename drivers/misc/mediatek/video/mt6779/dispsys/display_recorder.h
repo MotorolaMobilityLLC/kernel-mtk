@@ -193,11 +193,6 @@ unsigned int dprec_get_vsync_count(void);
 void dprec_logger_submit(enum DPREC_LOGGER_ENUM source,
 			unsigned long long period, unsigned int fence_idx);
 
-void dprec_logger_dump(char *string);
-void dprec_logger_vdump(const char *fmt, ...);
-void dprec_logger_dump_reset(void);
-char *dprec_logger_get_dump_addr(void);
-unsigned int dprec_logger_get_dump_len(void);
 unsigned long long
 dprec_logger_get_current_hold_period(unsigned int type_logsrc);
 int dprec_logger_get_buf(enum DPREC_LOGGER_PR_TYPE type, char *stringbuf,

@@ -189,11 +189,6 @@ static unsigned char dprec_string_buffer[dprec_string_max_length] = { 0 };
 struct dprec_logger logger[DPREC_LOGGER_NUM] = { { 0 } };
 struct dprec_logger old_logger[DPREC_LOGGER_NUM] = { { 0 } };
 
-#define dprec_dump_max_length (1024*8*4)
-static unsigned char dprec_string_buffer_analysize[dprec_dump_max_length];
-
-static unsigned int analysize_length;
-
 char dprec_error_log_buffer[DPREC_ERROR_LOG_BUFFER_LENGTH];
 static struct dprec_logger_event dprec_vsync_irq_event;
 static struct met_log_map dprec_met_info[DISP_SESSION_MEMORY + 2] = {
@@ -1070,53 +1065,6 @@ void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val,
 	pr_debug("%s\n", dprec_string_buffer);
 }
 
-void dprec_logger_vdump(const char *fmt, ...)
-{
-	va_list vargs;
-	int tmp;
-
-	va_start(vargs, fmt);
-
-	if (analysize_length >= dprec_dump_max_length - 10) {
-		va_end(vargs);
-		return;
-	}
-
-	tmp = vscnprintf(dprec_string_buffer_analysize + analysize_length,
-		      dprec_dump_max_length - analysize_length, fmt, vargs);
-
-	analysize_length += tmp;
-	if (analysize_length > dprec_dump_max_length)
-		analysize_length = dprec_dump_max_length;
-
-	va_end(vargs);
-}
-
-void dprec_logger_dump(char *string)
-{
-	dprec_logger_vdump(string);
-}
-
-void dprec_logger_dump_reset(void)
-{
-	analysize_length = 0;
-
-	memset(dprec_string_buffer_analysize, 0,
-	       sizeof(dprec_string_buffer_analysize));
-}
-
-char *dprec_logger_get_dump_addr()
-{
-	return dprec_string_buffer_analysize;
-}
-
-unsigned int dprec_logger_get_dump_len(void)
-{
-	pr_debug("dump_len %d\n", analysize_length);
-
-	return analysize_length;
-}
-
 enum DPREC_DEBUG_BIT_ENUM {
 	DPREC_DEBUG_BIT_OVERALL_SWITCH = 0,
 	DPREC_DEBUG_BIT_CMM_DUMP_SWITCH,
@@ -1509,28 +1457,6 @@ unsigned int dprec_get_vsync_count(void)
 void dprec_reg_op(void *cmdq, unsigned int reg, unsigned int val,
 		  unsigned int mask)
 {
-}
-
-void dprec_logger_vdump(const char *fmt, ...)
-{
-}
-
-void dprec_logger_dump(char *string)
-{
-}
-
-void dprec_logger_dump_reset(void)
-{
-}
-
-char *dprec_logger_get_dump_addr()
-{
-	return NULL;
-}
-
-unsigned int dprec_logger_get_dump_len(void)
-{
-	return 0;
 }
 
 int dprec_handle_option(unsigned int option)
