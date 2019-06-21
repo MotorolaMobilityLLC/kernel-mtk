@@ -697,7 +697,7 @@ loop.max_part=7";
 
 	gce@10238000 {
 		compatible = "mediatek,gce";
-		reg = <0 0x10238000 0 0x1000>;
+		reg = <0 0x10238000 0 0x4000>;
 		interrupts = <GIC_SPI 154 IRQ_TYPE_LEVEL_LOW>,
 			<GIC_SPI 155 IRQ_TYPE_LEVEL_LOW>;
 		g3d_config_base = <0x13000000 0 0xffff0000>;
