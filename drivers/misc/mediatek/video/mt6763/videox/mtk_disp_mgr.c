@@ -751,7 +751,7 @@ static int input_config_preprocess(struct disp_frame_cfg_t *cfg)
 			"set_%s_buffer, conf_layer_num invalid=%d, max_layer_num=%d!\n",
 			disp_session_mode_spy(session_id), cfg->input_layer_num,
 			_get_max_layer(session_id));
-		return 0;
+		return -1;
 	}
 
 	disp_input_get_dirty_roi(cfg);
@@ -999,7 +999,13 @@ static int __frame_config(struct frame_queue_t *frame_node)
 
 	frame_node->do_frame_cfg = do_frame_config;
 
-	input_config_preprocess(frame_cfg);
+	if (input_config_preprocess(frame_cfg) != 0) {
+		if (session_info)
+			dprec_done(&session_info->event_frame_cfg,
+				   frame_cfg->present_fence_idx, 0);
+		return -EINVAL;
+	}
+
 	if (frame_cfg->output_en)
 		output_config_preprocess(frame_cfg);
 
