@@ -1762,6 +1762,7 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 	info->enable_type_c = of_property_read_bool(np, "enable_type_c");
 	info->enable_dynamic_mivr =
 			of_property_read_bool(np, "enable_dynamic_mivr");
+	info->disable_pd_dual = of_property_read_bool(np, "disable_pd_dual");
 
 	info->enable_hv_charging = true;
 

@@ -76,6 +76,9 @@ static bool dual_swchg_check_pd_leave(struct charger_manager *info)
 	struct mtk_pdc *pd = &info->pdc;
 	int ichg = 0;
 
+	if (info->disable_pd_dual)
+		return true;
+
 	if (pd->pd_cap_max_watt < 10000000)
 		return true;
 
