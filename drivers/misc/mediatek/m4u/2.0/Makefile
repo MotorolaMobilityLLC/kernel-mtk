@@ -33,9 +33,5 @@ endif
 
 obj-y += m4u.o m4u_mva.o m4u_pgtable.o m4u_debug.o
 ifeq ($(CONFIG_MTK_TEE_GP_SUPPORT),y)
-ifeq ($(CONFIG_MTK_SEC_VIDEO_PATH_SUPPORT),y)
 obj-y += m4u_sec_gp.o
-else ifeq ($(CONFIG_MTK_CAM_SECURITY_SUPPORT),y)
-obj-y += m4u_sec_gp.o
-endif
 endif
