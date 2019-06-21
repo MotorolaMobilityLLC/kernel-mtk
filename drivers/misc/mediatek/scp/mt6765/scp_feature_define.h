@@ -25,6 +25,7 @@
 #define SCP_LOGGER_ENABLE		(1)
 #define SCP_DVFS_INIT_ENABLE		(1)
 #define SCP_RESERVED_MEM		(1)
+#define SCP_LOG_FILTER_SUPPORT		(0)
 /* scp rescovery feature option*/
 #define SCP_RECOVERY_SUPPORT		(1)
 /* scp recovery timeout value (ms)*/
