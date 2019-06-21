@@ -85,7 +85,7 @@ const struct flashlight_device_id flashlight_id[] = {
 #endif
 const struct flashlight_device_id flashlight_id[] = {
 	/* {TYPE, CT, PART, "NAME", CHANNEL, DECOUPLE} */
-	{0, 0, 0, "flashlights-dummy-gpio", 0, 0},
+	{0, 0, 0, "flashlights-dummy-gpio", 0, 1},
 	{0, 1, 0, "flashlights-none", -1, 0},
 	{1, 0, 0, "flashlights-none", -1, 0},
 	{1, 1, 0, "flashlights-none", -1, 0},
