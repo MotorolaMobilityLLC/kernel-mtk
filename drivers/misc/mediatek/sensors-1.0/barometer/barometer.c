@@ -57,7 +57,7 @@ static void startTimer(struct hrtimer *timer, int delay_ms, bool first)
 	hrtimer_start(timer, obj->target_ktime, HRTIMER_MODE_ABS);
 }
 
-#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_BAROHUB)
+#if !defined(CONFIG_NANOHUB)
 static void stopTimer(struct hrtimer *timer)
 {
 	hrtimer_cancel(timer);
@@ -177,7 +177,7 @@ static struct baro_context *baro_context_alloc_object(void)
 	pr_debug("baro_context_alloc_object----\n");
 	return obj;
 }
-#if !defined(CONFIG_NANOHUB) || !defined(CONFIG_MTK_BAROHUB)
+#if !defined(CONFIG_NANOHUB)
 static int baro_enable_and_batch(void)
 {
 	struct baro_context *cxt = baro_context_obj;
@@ -276,7 +276,7 @@ static ssize_t baro_store_active(struct device *dev,
 		err = -1;
 		goto err_out;
 	}
-#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_BAROHUB)
+#if defined(CONFIG_NANOHUB)
 	err = cxt->baro_ctl.enable_nodata(cxt->enable);
 	if (err) {
 		pr_err("baro turn on power err = %d\n", err);
@@ -323,7 +323,7 @@ static ssize_t baro_store_batch(struct device *dev,
 	}
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
-#if defined(CONFIG_NANOHUB) && defined(CONFIG_MTK_BAROHUB)
+#if defined(CONFIG_NANOHUB)
 	if (cxt->baro_ctl.is_support_batch)
 		err = cxt->baro_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
 	else
