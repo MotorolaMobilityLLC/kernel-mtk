@@ -31,7 +31,7 @@
 		if (_uts_failed > 0) {                                         \
 			UT_LOG("===========> UT FAILED\n");                    \
 		} else {                                                       \
-			UT_LOG("===========> UT SUCCESSED\n");                 \
+			UT_LOG("===========> UT SUCCEEDED\n");                 \
 		}                                                              \
 	}
 
