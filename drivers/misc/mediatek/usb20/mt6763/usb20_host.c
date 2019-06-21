@@ -25,7 +25,7 @@
 #include "usb20.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 #include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
@@ -294,7 +294,7 @@ void mt_usb_host_disconnect(int delay)
 	DBG(0, "%s\n", typec_req_host ? "connect" : "disconnect");
 	issue_host_work(CONNECTION_OPS_DISC, delay, true);
 }
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 #ifdef CONFIG_TCPC_CLASS
 static void do_vbus_work(struct work_struct *data)
 {
@@ -748,7 +748,7 @@ void mt_usb_otg_init(struct musb *musb)
 	ktime_start = ktime_get();
 
 /* CONNECTION MANAGEMENT*/
-#ifdef CONFIG_USB_C_SWITCH
+#ifdef CONFIG_MTK_USB_TYPEC
 	DBG(0, "host controlled by TYPEC\n");
 	typec_control = 1;
 #ifdef CONFIG_TCPC_CLASS
