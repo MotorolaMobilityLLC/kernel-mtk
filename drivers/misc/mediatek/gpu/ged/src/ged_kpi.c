@@ -53,6 +53,10 @@
 int (*ged_kpi_PushAppSelfFcFp_fbt)(int is_game_control_frame_rate, pid_t pid);
 EXPORT_SYMBOL(ged_kpi_PushAppSelfFcFp_fbt);
 
+void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu, unsigned int cur_freq
+	, unsigned int cur_max_freq, u64 ulID);
+EXPORT_SYMBOL(ged_kpi_output_gfx_info2_fp);
+
 #ifdef MTK_GED_KPI
 
 #define GED_TAG "[GED_KPI]"
@@ -309,10 +313,6 @@ void (*ged_kpi_cpu_boost_check_01)(
 	int ismainhead);
 EXPORT_SYMBOL(ged_kpi_cpu_boost_check_01);
 /* ---------------------------------------------------------------------- */
-void (*ged_kpi_output_gfx_info2_fp)(long long t_gpu, unsigned int cur_freq
-	, unsigned int cur_max_freq, u64 ulID);
-EXPORT_SYMBOL(ged_kpi_output_gfx_info2_fp);
-
 static void ged_kpi_output_gfx_info2(long long t_gpu, unsigned int cur_freq
 	, unsigned int cur_max_freq, u64 ulID)
 {
