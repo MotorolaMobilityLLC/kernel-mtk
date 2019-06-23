@@ -96,7 +96,7 @@ void TEEC_FinalizeContext(struct TEEC_Context *context)
 
 	if (!context || !context->fd) {
 		pr_err("can't release context %p:[%s]\n",
-			context, (context && context->devname) ?
+			context, (context /*&& context->devname*/) ?
 			context->devname : "");
 		return;
 	}

@@ -868,7 +868,7 @@ static void _update_client_tee_cmd(struct tee_session *sess,
 
 	WARN_ON(!cmd_io);
 	WARN_ON(!cmd_io->op);
-	WARN_ON(!cmd_io->op->params);
+	//WARN_ON(!cmd_io->op->params);
 	WARN_ON(!cmd);
 	WARN_ON(!sess->ctx);
 	ctx = sess->ctx;

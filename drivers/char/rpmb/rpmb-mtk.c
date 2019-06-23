@@ -55,6 +55,10 @@
 /* #define __RPMB_MTK_DEBUG_MSG */
 /* #define __RPMB_MTK_DEBUG_HMAC_VERIFY */
 
+#ifdef CONFIG_TRUSTKERNEL_TEE_RPMB_SUPPORT
+#include "tee_rpmb.h"
+#endif
+
 /* TEE usage */
 #ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
 #include "mobicore_driver_api.h"
@@ -2772,6 +2776,123 @@ static int rpmb_thread(void *context)
 	return 0;
 }
 #endif
+
+#if defined(CONFIG_TRUSTKERNEL_TEE_RPMB_SUPPORT)
+
+static int tkcore_emmc_switch_normal_part(struct mmc_card *card)
+{
+	int ret = -1;
+	struct emmc_rpmb_blk_data *main_md = dev_get_drvdata(&card->dev);
+
+	if (main_md->part_curr == 0U)
+		return 0;
+
+	mmc_claim_host(card->host);
+
+	if (mmc_card_mmc(card)) {
+		u8 part_config = card->ext_csd.part_config;
+
+		part_config &= ~EXT_CSD_PART_CONFIG_ACC_MASK;
+
+		ret = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
+				 EXT_CSD_PART_CONFIG, part_config,
+				 0);
+		if (ret)
+			goto error;
+
+		card->ext_csd.part_config = part_config;
+	}
+
+error:
+	mmc_release_host(card->host);
+
+	if (ret) {
+		pr_err("%s() failed with %d\n", __func__, ret);
+	}
+
+	return ret;
+}
+
+int tkcore_emmc_rpmb_execute(struct tkcore_rpmb_request *req)
+{
+    int ret = -1;
+
+    struct mmc_card *card = mtk_msdc_host[0]->mmc->card;//emmc_rpmb_host->card;
+    struct emmc_rpmb_req rpmb_req;
+
+    memset(&rpmb_req, 0, sizeof(struct emmc_rpmb_req));
+
+    switch (req->type) {
+
+        case TEE_RPMB_GET_DEV_INFO:
+            {
+                struct tee_rpmb_dev_info *dev_info = (struct tee_rpmb_dev_info *) req->data_frame;
+                memcpy(dev_info->cid, card->raw_cid, TEE_RPMB_EMMC_CID_SIZE);
+                dev_info->rpmb_size_mult = card->ext_csd.raw_rpmb_size_mult;
+                dev_info->rel_wr_sec_c = card->ext_csd.rel_sectors;
+                ret = 0;
+            }
+            break;
+
+        case TEE_RPMB_READ_DATA:
+            MSG(INFO, "%s: TEE_RPMB_READ_DATA.\n", __func__);
+
+            rpmb_req.type       = RPMB_READ_DATA;
+            rpmb_req.blk_cnt    = req->blk_cnt;
+            rpmb_req.addr       = req->addr;
+            rpmb_req.data_frame = req->data_frame;
+
+            ret = emmc_rpmb_req_handle(card, &rpmb_req);
+            if (ret)
+                MSG(ERR, "%s cmd 0x%x failed!!(0x%x)\n", __func__, req->type, ret);
+
+            break;
+
+        case TEE_RPMB_GET_WRITE_COUNTER:
+            MSG(INFO, "%s: TEE_RPMB_GET_WRITE_COUNTER.\n", __func__);
+
+            rpmb_req.type       = RPMB_GET_WRITE_COUNTER;
+            rpmb_req.blk_cnt    = req->blk_cnt;
+            rpmb_req.addr       = req->addr;
+            rpmb_req.data_frame = req->data_frame;
+
+            ret = emmc_rpmb_req_handle(card, &rpmb_req);
+            if (ret)
+                MSG(ERR, "%s cmd 0x%x failed!!(0x%x)\n", __func__, req->type, ret);
+
+            break;
+
+        case TEE_RPMB_WRITE_DATA:
+            MSG(INFO, "%s: TEE_RPMB_CMD_WRITE_DATA.\n", __func__);
+
+            rpmb_req.type       = RPMB_WRITE_DATA;
+            rpmb_req.blk_cnt    = req->blk_cnt;
+            rpmb_req.addr       = req->addr;
+            rpmb_req.data_frame = req->data_frame;
+            ret = emmc_rpmb_req_handle(card, &rpmb_req);
+            if (ret)
+                MSG(ERR, "%s cmd 0x%x failed!!(0x%x)\n", __func__, req->type, ret);
+
+            break;
+
+        case TEE_RPMB_SWITCH_NORMAL:
+            tkcore_emmc_switch_normal_part(card);
+            break;
+
+        default:
+            MSG(ERR, "%s receive an unknown command id(0x%x).\n", __func__, req->type);
+            break;
+
+    }
+
+    return ret;
+}
+
+EXPORT_SYMBOL_GPL(tkcore_emmc_rpmb_execute);
+
+#endif
+
+
 
 static int rpmb_open(struct inode *inode, struct file *file)
 {
