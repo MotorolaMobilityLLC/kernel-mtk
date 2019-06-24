@@ -1706,6 +1706,10 @@ int sensor_get_data_from_hub(uint8_t sensorType, struct data_unit_t *data)
 		data->time_stamp = data_t->time_stamp;
 		data->gesture_data_t.probability = data_t->gesture_data_t.probability;
 		break;
+	case ID_DEVICE_ORIENTATION:
+		data->time_stamp = data_t->time_stamp;
+		data->tilt_event.state = data_t->tilt_event.state;
+		break;
 	default:
 		err = -1;
 		break;
