@@ -100,6 +100,9 @@ do {                                    \
 #define mtkts_bts_printk(fmt, args...) \
 pr_debug("[Thermal/TZ/BTS]" fmt, ##args)
 
+#define mtkts_bts_nprintk(fmt, args...) \
+pr_notice("[Thermal/TZ/BTS]" fmt, ##args)
+
 
 /* #define INPUT_PARAM_FROM_USER_AP */
 
@@ -630,7 +633,7 @@ int mtkts_bts_get_hw_temp(void)
 	bts_cur_temp = t_ret;
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtkts_bts_printk("T_AP=%d\n", t_ret);
+		mtkts_bts_nprintk("T_AP=%d\n", t_ret);
 
 	mtkts_bts_dprintk("[mtkts_bts_get_hw_temp] T_AP, %d\n", t_ret);
 	return t_ret;

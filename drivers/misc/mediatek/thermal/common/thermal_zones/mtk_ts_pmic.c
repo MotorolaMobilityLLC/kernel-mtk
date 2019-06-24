@@ -252,8 +252,9 @@ static int tspmic_sysrst_set_cur_state(struct thermal_cooling_device *cdev, unsi
 		mtktspmic_info("*****************************************");
 		mtktspmic_info("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@");
 
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
-
+#endif
 	}
 	return 0;
 }

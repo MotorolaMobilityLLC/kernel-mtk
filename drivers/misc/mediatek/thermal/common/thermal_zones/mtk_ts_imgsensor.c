@@ -722,7 +722,9 @@ static int mtk_imgs_sysrst_set_cur_state(struct thermal_cooling_device *cdev, un
 		pr_debug("*****************************************\n");
 		pr_debug("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
+#endif
 	}
 	return 0;
 }

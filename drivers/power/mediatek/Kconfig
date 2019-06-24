@@ -3,6 +3,12 @@
 	help
 	  Check this to enable MediaTek charging configuration.
 
+config ONTIM_DUAL_85_TEST
+	bool "ontim dual 85 switch"
+	default n
+	help
+	  Say Y here to enable dual 85 test.
+
 config LOAD_SWITCH_RT9750
 	bool "Richtek Load Switch"
 	help
@@ -397,3 +403,9 @@ config MTK_DUAL_CHARGER_SUPPORT
           IC is conneceted to PMID pin from the master and VBAT.
 	  Say Yes to enable dual charger support.
 	  Say No to disable dual charger support.
+
+config CHARGE_STOP_DEGREE55
+	bool "Charger stop while battery temprature over 55 degree "
+	default n
+	help
+	  Say Y to enable

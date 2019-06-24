@@ -78,9 +78,9 @@ static int sysrst_cpu_set_cur_state(struct thermal_cooling_device *cdev, unsigne
 		tscpu_printk("*****************************************\n");
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
-
+#endif
 
 	}
 	return 0;
@@ -110,9 +110,9 @@ static int sysrst_buck_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		tscpu_printk("*****************************************\n");
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
-
+#endif
 	}
 	return 0;
 }
@@ -142,9 +142,9 @@ static int sysrst_tsap_set_cur_state(struct thermal_cooling_device *cdev, unsign
 		tscpu_printk("*****************************************\n");
 		tscpu_printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
-
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
-
+#endif
 	}
 	return 0;
 }
@@ -174,8 +174,9 @@ static int sysrst_tsbif_set_cur_state(struct thermal_cooling_device *cdev, unsig
 		pr_err("*****************************************\n");
 		pr_err("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
-
+#endif
 	}
 	return 0;
 }

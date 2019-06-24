@@ -361,7 +361,9 @@ static int mtktscharger_sysrst_set_cur_state(struct thermal_cooling_device *cdev
 		pr_err("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
 		/* To trigger data abort to reset the system for thermal protection. */
+#ifndef CONFIG_ONTIM_DUAL_85_TEST 
 		BUG();
+#endif
 	}
 
 	return 0;
