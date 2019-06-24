@@ -469,12 +469,10 @@ int mtkfb_set_backlight_level(unsigned int level)
 	unsigned int temp_level;
 	MTKFB_FUNC();
 	DISPDBG("mtkfb_set_backlight_level:%d Start\n", level);
+	last_level = level;
 	if (hbm_state) {
-		if (level < 0xFF)
-			last_level = level;
 	       primary_display_setbacklight(0xFF);
 	} else {
-		last_level = level;
 		temp_level = level * 8 / 10;
 		if ((level > 0) && (temp_level < 1))
 			temp_level = 1;
