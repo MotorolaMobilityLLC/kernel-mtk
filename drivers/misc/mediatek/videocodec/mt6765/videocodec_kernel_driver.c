@@ -443,16 +443,15 @@ void vdec_power_off(void)
 {
 
 	mutex_lock(&VdecPWRLock);
-	/* cervino VCODEC_SEL reset */
-	do {
-		VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
-	} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
-
 	if (gu4VdecPWRCounter == 0) {
 		pr_debug("[VCODEC] gu4VdecPWRCounter = 0\n");
 	} else {
-
 		vdec_polling_status();
+		/* VCODEC_SEL reset */
+		do {
+			VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 0x20, 0);
+		} while (VDO_HW_READ(KVA_VDEC_GCON_BASE + 0x20) != 0);
+
 		gu4VdecPWRCounter--;
 
 		clk_disable_unprepare(clk_MT_CG_VDEC);
