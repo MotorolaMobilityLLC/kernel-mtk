@@ -23,6 +23,7 @@ config KVM
 	bool "Kernel-based Virtual Machine (KVM) support"
 	depends on OF
 	depends on !ARM64_16K_PAGES
+	depends on (!HARDEN_BRANCH_PREDICTOR || BROKEN)
 	select MMU_NOTIFIER
 	select PREEMPT_NOTIFIERS
 	select ANON_INODES
