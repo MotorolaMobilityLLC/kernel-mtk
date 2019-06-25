@@ -214,7 +214,7 @@ static unsigned long aee_pressed_keys;
 static bool aee_timer_started;
 
 #if AEE_ENABLE_5_15
-#define AEE_DELAY_TIME_5S	7
+#define AEE_DELAY_TIME_5S	5
 static struct hrtimer aee_timer_5s;
 static bool aee_timer_5s_started;
 static bool flags_5s;
