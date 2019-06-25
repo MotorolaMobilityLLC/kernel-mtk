@@ -602,6 +602,10 @@ GED_ERROR ged_dvfs_vsync_offset_event_switch(GED_DVFS_VSYNC_OFFSET_SWITCH_CMD eE
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_VR) :
 				(g_ui32EventStatus &= (~GED_EVENT_VR));
 			break;
+		case GED_DVFS_VSYNC_OFFSET_DHWC_EVENT:
+			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_DHWC) :
+				(g_ui32EventStatus &= (~GED_EVENT_DHWC));
+			break;
 		case GED_DVFS_VSYNC_OFFSET_GAS_EVENT:
 			(bSwitch) ? (g_ui32EventStatus |= GED_EVENT_GAS) :
 				(g_ui32EventStatus &= (~GED_EVENT_GAS));
