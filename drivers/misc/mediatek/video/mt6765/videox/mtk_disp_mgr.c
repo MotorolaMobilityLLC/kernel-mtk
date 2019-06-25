@@ -356,7 +356,7 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 	struct disp_present_fence pnt_fence;
 	static unsigned int fence_idx;
 	struct disp_sync_info *layer_info = NULL;
-	int timeline_id = disp_sync_get_present_timeline_id();
+	int timeline_id = 0;
 
 	if (copy_from_user(&pnt_fence, (void __user *)arg,
 			sizeof(struct disp_present_fence))) {
@@ -364,6 +364,8 @@ int _ioctl_prepare_present_fence(unsigned long arg)
 			__LINE__);
 		return -EFAULT;
 	}
+
+	timeline_id = disp_sync_get_present_timeline_id();
 
 	if (DISP_SESSION_TYPE(pnt_fence.session_id) !=
 		DISP_SESSION_PRIMARY) {
@@ -457,7 +459,8 @@ int _ioctl_prepare_buffer(unsigned long arg, enum PREPARE_FENCE_TYPE type)
 	if (type == PREPARE_INPUT_FENCE)
 		DISPDBG("There is do nothing in input fence.\n");
 	else if (type == PREPARE_PRESENT_FENCE)
-		info.layer_id = disp_sync_get_present_timeline_id();
+		info.layer_id =
+			disp_sync_get_present_timeline_id();
 	else if (type == PREPARE_OUTPUT_FENCE)
 		info.layer_id = disp_sync_get_output_timeline_id();
 	else
