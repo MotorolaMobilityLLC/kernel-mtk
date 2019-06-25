@@ -275,14 +275,9 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 
 		f_render->buffer_id = buffer_id;
 		ret = fpsgo_com_update_render_api_info(f_render);
-		if (!ret) {
-			fpsgo_render_tree_unlock(__func__);
-			fpsgo_thread_unlock(&f_render->thr_mlock);
-			return;
-		}
+		if (!ret)
+			goto exit;
 	}
-
-	fpsgo_render_tree_unlock(__func__);
 
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
@@ -347,7 +342,10 @@ void fpsgo_ctrl2comp_enqueue_start(int pid,
 			pid, f_render->frame_type);
 		break;
 	}
+
+exit:
 	fpsgo_thread_unlock(&f_render->thr_mlock);
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_ctrl2comp_enqueue_end(int pid,
@@ -381,7 +379,7 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
-	fpsgo_render_tree_unlock(__func__);
+
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
 		f_render->t_enqueue_end = enqueue_end_time;
@@ -425,7 +423,7 @@ void fpsgo_ctrl2comp_enqueue_end(int pid,
 		break;
 	}
 	fpsgo_thread_unlock(&f_render->thr_mlock);
-
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_ctrl2comp_dequeue_start(int pid,
@@ -458,7 +456,6 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
-	fpsgo_render_tree_unlock(__func__);
 
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
@@ -495,7 +492,7 @@ void fpsgo_ctrl2comp_dequeue_start(int pid,
 		break;
 	}
 	fpsgo_thread_unlock(&f_render->thr_mlock);
-
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_ctrl2comp_dequeue_end(int pid,
@@ -529,7 +526,6 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 	}
 
 	fpsgo_thread_lock(&f_render->thr_mlock);
-	fpsgo_render_tree_unlock(__func__);
 
 	switch (f_render->frame_type) {
 	case VSYNC_ALIGNED_TYPE:
@@ -575,7 +571,7 @@ void fpsgo_ctrl2comp_dequeue_end(int pid,
 		break;
 	}
 	fpsgo_thread_unlock(&f_render->thr_mlock);
-
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_ctrl2comp_vysnc_aligned_frame_start(int pid,
@@ -820,8 +816,8 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 		ui = fpsgo_com_search_and_add_ui_pid_info(ui_pid, 1);
 
 		if (!ui) {
-			fpsgo_render_tree_unlock(__func__);
 			fpsgo_thread_unlock(&f_render->thr_mlock);
+			fpsgo_render_tree_unlock(__func__);
 			FPSGO_COM_TRACE("%s: store ui info fail : %d !!!!\n",
 				__func__, pid);
 			return;
@@ -842,16 +838,16 @@ void fpsgo_ctrl2comp_vysnc_aligned_frame_done(int pid,
 
 		ret = fpsgo_com_update_render_api_info(f_render);
 		if (!ret) {
-			fpsgo_render_tree_unlock(__func__);
 			fpsgo_thread_unlock(&f_render->thr_mlock);
+			fpsgo_render_tree_unlock(__func__);
 			return;
 		}
 	}
 
-	fpsgo_render_tree_unlock(__func__);
 
 	if (f_render->frame_type == BY_PASS_TYPE) {
 		fpsgo_thread_unlock(&f_render->thr_mlock);
+		fpsgo_render_tree_unlock(__func__);
 		return;
 	}
 
@@ -904,7 +900,7 @@ out:
 		pid, f_render->ui_pid, f_render->frame_type,
 		frame_time, render, render_method);
 	fpsgo_thread_unlock(&f_render->thr_mlock);
-
+	fpsgo_render_tree_unlock(__func__);
 }
 
 void fpsgo_ctrl2comp_connect_api(int pid, unsigned long long buffer_id, int api)
