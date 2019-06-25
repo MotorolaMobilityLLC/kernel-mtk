@@ -78,5 +78,7 @@ extern void __iomem *pwm_infracfg_base;
 
 /* PWM infracfg control register */
 #define PWM_CLK_SRC_CTRL  (pwm_infracfg_base + 0x410)
+#define PWM_BCLK_SW_CTRL_OFFSET     12
+
 void mt_pwm_platform_init(void);
 #endif
