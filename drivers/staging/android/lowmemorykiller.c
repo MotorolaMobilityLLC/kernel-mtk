@@ -201,6 +201,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 #define LOWMEM_P_STATE_R	(0x2)
 #define LOWMEM_P_STATE_OTHER	(0x4)
 
+	static struct task_struct *task_in_lowmem_scan;
+	static int pid_in_lowmem_scan;
+	static DEFINE_RATELIMIT_STATE(ratelimit, 5 * HZ, 1);
 	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
 	unsigned long rem = 0;
@@ -241,9 +244,13 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			other_free -= global_page_state(NR_FREE_CMA_PAGES);
 
 	if (!spin_trylock(&lowmem_shrink_lock)) {
-		lowmem_print(4, "lowmem_shrink lock failed\n");
+		if (__ratelimit(&ratelimit))
+			pr_info("lowmem_shrink lock failed (by %p:%d)\n",
+				task_in_lowmem_scan, pid_in_lowmem_scan);
 		return SHRINK_STOP;
 	}
+	task_in_lowmem_scan = current;
+	pid_in_lowmem_scan = current->pid;
 
 	/*
 	 * Check whether it is caused by low memory in lower zone(s)!
@@ -624,11 +631,11 @@ log_again:
 		rem += selected_tasksize;
 	} else {
 		if (p_state_is_found & LOWMEM_P_STATE_D)
-			lowmem_print(2, "No selected (full of D-state processes at %d)\n", (int)min_score_adj);
+			lowmem_print(1, "No selected (full of D-state processes at %d)\n", (int)min_score_adj);
 		if (p_state_is_found & LOWMEM_P_STATE_R)
-			lowmem_print(2, "No selected (full of R-state processes at %d)\n", (int)min_score_adj);
+			lowmem_print(1, "No selected (full of R-state processes at %d)\n", (int)min_score_adj);
 		if (p_state_is_found & LOWMEM_P_STATE_OTHER)
-			lowmem_print(2, "No selected (full of OTHER-state processes at %d)\n", (int)min_score_adj);
+			lowmem_print(1, "No selected (full of OTHER-state processes at %d)\n", (int)min_score_adj);
 	}
 
 	lowmem_print(4, "lowmem_scan %lu, %x, return %lu\n",
