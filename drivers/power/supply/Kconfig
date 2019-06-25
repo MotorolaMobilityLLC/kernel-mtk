@@ -540,6 +540,13 @@ config TINNO_CUSTOM_BATTERY_PROP
 	  tinno project need to custom battery prop for defference project
 # pony.ma, DATE20190102-01 END
 
+config TINNO_DEMOMODECHG_CONTROL
+	bool "tinno demomode charge control"
+	default n
+	help
+	  Say Y to enable
+	  tinno project charging is stop when soc is to 70.
+	  
 config TINNO_REDETECT_CHARGER_SUPPORT
 	bool "TINNO_REDETECT_CHARGER_SUPPORT"
 	default n

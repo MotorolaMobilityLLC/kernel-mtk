@@ -123,9 +123,9 @@ struct mt_charger {
 	enum charger_type chg_type;
 	
 // pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	struct hrtimer charge_timer;
-#endif
+//#endif
 // pony.ma, DATE20190506-01 END
 };
 
@@ -150,7 +150,7 @@ static int mt_charger_online(struct mt_charger *mtk_chg)
 }
 
 // pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 static enum hrtimer_restart adb_charge_timer_func(struct hrtimer *timer)
 {
     pr_info("%s: enter\n", __func__);
@@ -159,7 +159,7 @@ static enum hrtimer_restart adb_charge_timer_func(struct hrtimer *timer)
     
     return HRTIMER_NORESTART;
 }
-#endif
+//#endif
 // pony.ma, DATE20190506-01 END
 
 /* Power Supply Functions */
@@ -205,9 +205,9 @@ static int mt_charger_set_property(struct power_supply *psy,
 	// pony.ma, DATE20190411-01 END
 	
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	int charge_timer_gap = 180000;     			 //180s ---3m	
-	#endif	/* FEATURE_ADB_DISCHARGE_CONTROL */
+//	#endif	/* FEATURE_ADB_DISCHARGE_CONTROL */
 	// pony.ma, DATE20190506-01 END
 	
 	pr_info("%s\n", __func__);
@@ -246,12 +246,14 @@ static int mt_charger_set_property(struct power_supply *psy,
 					pr_notice("%s: psy enable failed, ret = %d\n",
 						__func__, ret);
 			}
-			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-			hrtimer_start(&mtk_chg->charge_timer, 
-				ktime_set(charge_timer_gap/1000, (charge_timer_gap%1000)*1000000), 
-					HRTIMER_MODE_REL);
-			pr_info("%s:start adb charge hrtimer\n", __func__);		
-			#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+			#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+			if(demomode_chg_enable){
+				hrtimer_start(&mtk_chg->charge_timer, 
+					ktime_set(charge_timer_gap/1000, (charge_timer_gap%1000)*1000000), 
+						HRTIMER_MODE_REL);
+				pr_info("%s:start adb charge hrtimer\n", __func__);		
+			}
+			#endif  /* CONFIG_TINNO_DEMOMODECHG_CONTROL */
 		}
 		else{			
 			adb_charging_enabled = false;		
@@ -469,10 +471,10 @@ static int mt_charger_probe(struct platform_device *pdev)
 	device_init_wakeup(&pdev->dev, 1);
 	
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	hrtimer_init(&mt_chg->charge_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	mt_chg->charge_timer.function = adb_charge_timer_func;
-	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+//	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 	// pony.ma, DATE20190506-01 END
 
 	pr_info("%s\n", __func__);
