@@ -295,6 +295,18 @@ static struct ipv6_devconf ipv6_devconf_dflt __read_mostly = {
 	.keep_addr_on_down	= 0,
 };
 
+/* this is save current operator value */
+int sysctl_optr __read_mostly;
+
+/* this operator is vzw ? */
+int ip6_operator_isop12(void)
+{
+#ifdef CONFIG_MTK_IPV6_VZW
+	return 1;
+#endif
+	return (sysctl_optr == 12);
+}
+
 /* Check if link is ready: is it up and is a valid qdisc available */
 static inline bool addrconf_link_ready(const struct net_device *dev)
 {
@@ -3762,12 +3774,15 @@ static void addrconf_rs_timer(unsigned long data)
 			goto put;
 
 		write_lock(&idev->lock);
-#ifdef CONFIG_MTK_IPV6_VZW
-		idev->rs_interval = idev->cnf.rtr_solicit_interval;
-#else
-		idev->rs_interval = rfc3315_s14_backoff_update(
-			idev->rs_interval, idev->cnf.rtr_solicit_max_interval);
-#endif
+
+		if (ip6_operator_isop12() &&
+		    (strncmp(dev->name, "ccmni", 2) == 0))
+			idev->rs_interval = idev->cnf.rtr_solicit_interval;
+		else
+			idev->rs_interval = rfc3315_s14_backoff_update(
+				idev->rs_interval,
+				idev->cnf.rtr_solicit_max_interval);
+
 		/* The wait after the last probe can be shorter */
 		addrconf_mod_rs_timer(idev, (idev->rs_probes ==
 					     idev->cnf.rtr_solicits) ?
@@ -4050,12 +4065,15 @@ static void addrconf_dad_completed(struct inet6_ifaddr *ifp, bool bump_id)
 
 		write_lock_bh(&ifp->idev->lock);
 		spin_lock(&ifp->lock);
-#ifdef CONFIG_MTK_IPV6_VZW
-		ifp->idev->rs_interval = ifp->idev->cnf.rtr_solicit_interval;
-#else
+
+		if (ip6_operator_isop12() &&
+		    (strncmp(dev->name, "ccmni", 2) == 0)) {
+			ifp->idev->rs_interval =
+				ifp->idev->cnf.rtr_solicit_interval;
+		} else {
 		ifp->idev->rs_interval = rfc3315_s14_backoff_init(
 			ifp->idev->cnf.rtr_solicit_interval);
-#endif
+		}
 		ifp->idev->rs_probes = 1;
 		ifp->idev->if_flags |= IF_RS_SENT;
 		addrconf_mod_rs_timer(ifp->idev, ifp->idev->rs_interval);
@@ -5317,12 +5335,14 @@ update_lft:
 
 	if (update_rs) {
 		idev->if_flags |= IF_RS_SENT;
-#ifdef CONFIG_MTK_IPV6_VZW
-		idev->rs_interval = idev->cnf.rtr_solicit_interval;
-#else
-		idev->rs_interval = rfc3315_s14_backoff_init(
-			idev->cnf.rtr_solicit_interval);
-#endif
+
+		if (ip6_operator_isop12() &&
+		    (strncmp(dev->name, "ccmni", 2) == 0))
+			idev->rs_interval = idev->cnf.rtr_solicit_interval;
+		else
+			idev->rs_interval = rfc3315_s14_backoff_init(
+				idev->cnf.rtr_solicit_interval);
+
 		idev->rs_probes = 1;
 		addrconf_mod_rs_timer(idev, idev->rs_interval);
 	}
