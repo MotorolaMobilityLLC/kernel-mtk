@@ -32,6 +32,8 @@
 #include <linux/of_gpio.h>
 #include <linux/of_address.h>
 #include "ccci_config.h"
+#include <mt-plat/mtk_secure_api.h>
+#include <trng.h>
 
 #ifdef FEATURE_INFORM_NFC_VSIM_CHANGE
 #include <mach/mt6605.h>
@@ -977,6 +979,32 @@ static void ccci_rpc_work_helper(struct port_t *port, struct rpc_pkt *pkt,
 			/* 0xF for failure */
 			memset(output, 0xF, sizeof(struct ccci_rpc_md_dtsi_output));
 			get_md_dtsi_val(input, output);
+			break;
+		}
+	case IPC_RPC_TRNG:
+		{
+			unsigned int trng;
+
+			if (pkt_num != 1) {
+				CCCI_ERROR_LOG(md_id, RPC, "invalid parameter for [0x%X]: pkt_num=%d!\n",
+					     p_rpc_buf->op_id, pkt_num);
+				tmp_data[0] = FS_PARAM_ERROR;
+				pkt_num = 0;
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				pkt[pkt_num].len = sizeof(unsigned int);
+				pkt[pkt_num++].buf = (void *)&tmp_data[0];
+				break;
+			}
+			trng = mt_secure_call_ret1(MTK_SIP_KERNEL_GET_RND,
+					TRNG_MAGIC, 0, 0, 0);
+			pkt_num = 0;
+			tmp_data[0] = 0;
+			tmp_data[1] = trng;
+			pkt[pkt_num].len = sizeof(unsigned int);
+			pkt[pkt_num++].buf = (void *)&tmp_data[0];
+			pkt[pkt_num].len = sizeof(unsigned int);
+			pkt[pkt_num++].buf = (void *)&tmp_data[1];
 			break;
 		}
 	case IPC_RPC_IT_OP:
