@@ -340,14 +340,19 @@ struct charger_manager {
 	atomic_t enable_kpoc_shdn;
 
 	/* ATM */
-	bool atm_enabled;
+	bool atm_enabled;	
 	
-	// pony.ma, DATE20190507, stop charging when reach 70% on factory SW, DATE20190507-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-	int flag_soc70;
+	// pony.ma, DATE20190625, demomode require for charging is stop when soc is to 70, DATE20190625-01 LINE
+	#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+	int demomode_enable;
+	int flag_soc70;	
 	#endif
-	// pony.ma, DATE20190507-01 END
 };
+
+// pony.ma, DATE20190625, demomode require for charging is stop when soc is to 70, DATE20190625-01 LINE
+#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+extern int demomode_chg_enable;
+#endif
 
 /* charger related module interface */
 extern int charger_manager_notifier(struct charger_manager *info, int event);

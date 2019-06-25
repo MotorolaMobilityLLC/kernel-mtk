@@ -82,9 +82,9 @@
 static struct power_supply *chrdet_psy;
 
 // pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 static struct power_supply *batdet_psy;
-#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+//#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 // pony.ma, DATE20190506-01 END
 
 static int _uA_to_mA(int uA)
@@ -435,6 +435,77 @@ static void swchg_select_cv(struct charger_manager *info)
 	charger_dev_set_constant_voltage(info->chg1_dev, constant_voltage);
 }
 
+// pony.ma, DATE20190625, demomode require for charging is stop when soc is to 70, DATE20190625-01 START
+#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+
+/**********************************************************************************************************
+* Add demomode charge require.
+* Command: adb shell "echo 'VALUE' > /proc/tinno_demomode_charge/enable"
+* enable=1:charging is stop when soc is 70%. enable=0:normal charge.
+**********************************************************************************************************/
+	
+static struct charger_manager *demomode_info = NULL;
+int demomode_chg_enable = 0;
+
+static int proc_utilization_show(struct seq_file *m, void *v)
+{
+    seq_printf(m,"demomode_enable=%d\n",demomode_info->demomode_enable);
+    return 0;
+}
+
+static ssize_t demomode_enable_write(struct file *file, const char *buffer, size_t count, loff_t *data)
+{
+    int len = 0, enable= 0;
+    char desc[32];
+	printk("demomode_enable_write\n");		
+
+    len = (count < (sizeof(desc) - 1)) ? count : (sizeof(desc) - 1);
+    if (copy_from_user(desc, buffer, len))
+        return 0;
+    desc[len] = '\0';
+
+    if (sscanf(desc, "%d", &enable) == 1)
+    {
+        printk("enable=%d\n", enable);		
+		demomode_info->demomode_enable = enable;
+		demomode_chg_enable = enable;
+		demomode_info->flag_soc70 = 1;
+		return count;
+    }
+	
+    return -EINVAL;
+
+}
+
+static int proc_utilization_open(struct inode *inode, struct file *file)
+{
+    return single_open(file, proc_utilization_show, NULL);
+}
+
+static const struct file_operations demomode_enable_ops = {
+    .open = proc_utilization_open,
+    .read = seq_read,
+	.write = demomode_enable_write,
+};
+
+
+static void mtk_demomode_charge_init(void)
+{
+    struct proc_dir_entry *demomode_dir = NULL;
+
+    demomode_dir = proc_mkdir("tinno_demomode_charge", NULL);
+    if (NULL == demomode_dir)
+    {
+        printk("create tinno_demomode_charge error!\n");
+        return ;
+    }
+
+    proc_create("enable", S_IRUGO | S_IWUSR, demomode_dir, &demomode_enable_ops);
+        
+}
+#endif
+// pony.ma, DATE20190625-01 END
+
 static void swchg_turn_on_charging(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
@@ -446,9 +517,7 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	// pony.ma, DATE20190411-01 END
 
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	int soc = 0;
-	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 	int flag1_adb = 0;
 	int flag2_usb = 1;
 	// pony.ma, DATE20190506-01 END
@@ -478,11 +547,13 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	}
 
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-	ret = power_supply_get_property(batdet_psy,
-			POWER_SUPPLY_PROP_CAPACITY, &val);
-	soc = val.intval;
-	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+	#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+	if(info->demomode_enable){
+		ret = power_supply_get_property(batdet_psy,
+				POWER_SUPPLY_PROP_CAPACITY, &val);
+		soc = val.intval;
+	}
+	#endif  /* CONFIG_TINNO_DEMOMODECHG_CONTROL */
 
 	ret = power_supply_get_property(chrdet_psy,
 			POWER_SUPPLY_PROP_USB_CHARGE_ENABLED, &val);
@@ -493,25 +564,29 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	flag1_adb = val.intval;	
 	if (!ret) {
 		if(!flag1_adb){
-			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
-			if(flag2_usb){ 				
-				chr_err("ccc soc=%d,flag1_adb=%d,flag2_usb=%d,soc70=%d\n",soc,flag1_adb,flag2_usb,info->flag_soc70);
-				if (!((soc < 70) && (info->flag_soc70))){
-					info->flag_soc70 = 0;
+			#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+			if(info->demomode_enable){
+				if(flag2_usb){				
+					chr_err("ccc soc=%d,flag1_adb=%d,flag2_usb=%d,soc70=%d\n",soc,flag1_adb,flag2_usb,info->flag_soc70);
+					if (!((soc < 70) && (info->flag_soc70))){
+						info->flag_soc70 = 0;
+						charging_enable = false;
+					}
+					if((soc <= 65) && (!info->flag_soc70))
+						info->flag_soc70 = 1;
+					}
+				else{
+					info->flag_soc70 = 1;
 					charging_enable = false;
 				}
-				if((soc <= 65) && (!info->flag_soc70))
-					info->flag_soc70 = 1;
 			}
 			else{
-				info->flag_soc70 = 1;
-			#else
-			if(!flag2_usb)
-			#endif 
-				charging_enable = false;
-			#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+			#endif  /* CONFIG_TINNO_DEMOMODECHG_CONTROL */
+				if(!flag2_usb)
+					charging_enable = false;
+			#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
 			}
-			#endif
+			#endif  /* CONFIG_TINNO_DEMOMODECHG_CONTROL */
 		}
 	}
 	charger_dev_enable(info->chg1_dev, charging_enable);
@@ -834,13 +909,27 @@ int mtk_switch_charging_init(struct charger_manager *info)
 	// pony.ma, DATE20190411-01 END
 	
 	// pony.ma, DATE20190506, stop charging when reach 70% on factory SW, DATE20190506-01 START
-	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+//	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
 	batdet_psy = power_supply_get_by_name("battery");
 	if (!batdet_psy) {
 		pr_notice("%s: get batdet_psy power supply failed\n", __func__);
 	}
-	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+//	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
 	// pony.ma, DATE20190506-01 END
+
+// pony.ma, DATE20190625, demomode require for charging is stop when soc is to 70, DATE20190625-01 START
+	#ifdef CONFIG_TINNO_DEMOMODECHG_CONTROL
+	#ifdef FEATURE_ADB_DISCHARGE_CONTROL
+	info->demomode_enable = 1;
+	#else
+	info->demomode_enable = 0;
+	#endif  /* FEATURE_ADB_DISCHARGE_CONTROL */
+
+    // Initialize variable and create node /proc/tinno_demomode_charge/enable
+    demomode_info = info;
+    mtk_demomode_charge_init();
+    #endif  
+// pony.ma, DATE20190625-01 END 
 
 	info->algorithm_data = swch_alg;
 	info->do_algorithm = mtk_switch_charging_run;
