@@ -3365,41 +3365,22 @@ static int Speaker_Amp_Set(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_va
 
 static void Ext_Speaker_Amp_Change(bool enable)
 {
-	pr_err("zsk %s(), enable %d %d \n", __func__, enable,mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH]);
+	pr_err("%s(), enable %d\n", __func__, enable);
 #define SPK_WARM_UP_TIME        (25)	/* unit is ms */
-#if 1
-	if (enable) {
-
-		if(mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true){
-			Switch_Apply(SWITCH_MODE_REV);
-			AudDrv_GPIO_EXTAMP_Select(true, 8);
-		}else{
-			Switch_Apply(SWITCH_MODE_SPK);
-			AudDrv_GPIO_EXTAMP_Select(true, 3);
-
-	}
-
-#else
-
 	if (enable) {
 		AudDrv_GPIO_EXTAMP_Select(false, 3);
 		/*udelay(1000); */
 		usleep_range(1 * 1000, 2 * 1000);
-		AudDrv_GPIO_EXTAMP_Select(true, 3);
+		if(mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true){
+			AudDrv_GPIO_EXTAMP_Select(true, 9);
+		}else{
+			AudDrv_GPIO_EXTAMP_Select(true, 3);
+		}
 		/* msleep(SPK_WARM_UP_TIME); */
 		usleep_range(5 * 1000, 10 * 1000);
-
-#endif
 	} else {
-		if(mCodec_data->mAudio_Ana_DevicePower[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true){
-			AudDrv_GPIO_EXTAMP_Select(false, 8);
-			Switch_Apply(1);
-			udelay(500);
-		}else{
-			AudDrv_GPIO_EXTAMP_Select(false, 3);
-			Switch_Apply(1);
-			udelay(500);
-		}
+		AudDrv_GPIO_EXTAMP_Select(false, 3);
+		udelay(500);
 	}
 }
 static int Ext_Speaker_Amp_Get(struct snd_kcontrol *kcontrol, struct snd_ctl_elem_value *ucontrol)
@@ -3427,7 +3408,7 @@ static void Receiver_Speaker_Switch_Change(bool enable)
 {
 #ifndef CONFIG_FPGA_EARLY_PORTING
 #ifdef CONFIG_OF
-	pr_debug("%s\n", __func__);
+	pr_debug("%s\n",__func__);
 	if (enable)
 		AudDrv_GPIO_RCVSPK_Select(true);
 	else
@@ -3453,15 +3434,15 @@ static int Receiver_Speaker_Switch_Set(struct snd_kcontrol *kcontrol,
 		[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == false)) {
 		Receiver_Speaker_Switch_Change(true);
 		mCodec_data->mAudio_Ana_DevicePower
-		    [AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] =
-		    ucontrol->value.integer.value[0];
+		[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] =
+		ucontrol->value.integer.value[0];
 	} else if ((ucontrol->value.integer.value[0] == false)
 		   &&
 		   (mCodec_data->mAudio_Ana_DevicePower
-		    [AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true)) {
+		[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] == true)) {
 		mCodec_data->mAudio_Ana_DevicePower
-		    [AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] =
-		    ucontrol->value.integer.value[0];
+		[AUDIO_ANALOG_DEVICE_RECEIVER_SPEAKER_SWITCH] =
+		ucontrol->value.integer.value[0];
 		Receiver_Speaker_Switch_Change(false);
 	}
 	return 0;
