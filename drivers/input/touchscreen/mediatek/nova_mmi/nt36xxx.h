@@ -86,7 +86,7 @@ extern const uint16_t touch_key_array[TOUCH_KEY_NUM];
 #define NVT_TOUCH_FW 1
 #define NVT_TOUCH_MP 1
 #define MT_PROTOCOL_B 1
-#define WAKEUP_GESTURE 1
+#define WAKEUP_GESTURE 0
 #if WAKEUP_GESTURE
 extern const uint16_t gesture_key_array[];
 #endif
