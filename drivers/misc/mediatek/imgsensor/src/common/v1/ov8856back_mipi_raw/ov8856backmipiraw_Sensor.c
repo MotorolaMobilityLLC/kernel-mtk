@@ -1352,7 +1352,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				if((read_cmos_sensor(0x302A)) == 0XB0)
                 {
                     memset(back_cam_name, 0x00, sizeof(back_cam_name));
-                    memcpy(back_cam_name, "ov8856");
+                    memcpy(back_cam_name, "0_ov8856");
                     ov8856backversion = OV8856BACKR1A;
                     LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856backversion = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856backversion);	
 					*sensor_id = OV8856BACK_SENSOR_ID;
@@ -1360,8 +1360,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 				}
 				else if((read_cmos_sensor(0x302A)) == 0XB1)
                 {
-                    back_camera_find_success=3;
-                    camera_back_probe_ok=1;
+                    memset(back_cam_name, 0x00, sizeof(back_cam_name));
+                    memcpy(back_cam_name, "0_ov8856");
                     ov8856backversion = OV8856BACKR2A;
                     LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856backversion = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856backversion);	
                     *sensor_id = OV8856BACK_SENSOR_ID;
