@@ -759,6 +759,10 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 #endif
+		if (level)
+			pinctrl_select_state(pinctrled, red_led_output_high);
+		else
+			pinctrl_select_state(pinctrled, red_led_output_low);
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK1) {
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
@@ -786,13 +790,6 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 #endif
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
-	}
-	else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK0)
-	{
-		if (level)
-			pinctrl_select_state(pinctrled, red_led_output_high);
-		else
-			pinctrl_select_state(pinctrled, red_led_output_low);
 	}
 	mutex_unlock(&leds_pmic_mutex);
 	return -1;
