@@ -381,6 +381,11 @@
 };
 
 &bat_gm30 {
+	g_FG_PSEUDO100_T0 = <(101)>;	/*	Pseudo 100% percentage at T0.*/
+	g_FG_PSEUDO100_T1 = <(101)>;	/*	Pseudo 100% percentage at T1.*/
+	g_FG_PSEUDO100_T2 = <(101)>;	/*	Pseudo 100% percentage at T2.*/
+	g_FG_PSEUDO100_T3 = <(101)>;	/*	Pseudo 100% percentage at T3.*/
+	g_FG_PSEUDO100_T4 = <(101)>;	/*	Pseudo 100% percentage at T4.*/
 	EMBEDDED_SEL = <(1)>;	/* embedded battery.*/
 	R_FG_VALUE = <(10)>;	/* R_sense resistance.*/
 	DIFFERENCE_FULLOCV_ITH = <(244)>;	/*Charging termination current.*/
