@@ -80,13 +80,13 @@ VL53L0_Error VL53L0_perform_xtalk_calibration(VL53L0_DEV Dev,
 				VL53L0_CHECKENABLE_RANGE_IGNORE_THRESHOLD, 0);
 	}
 
-	/* Perform 50 measurements and compute the averages */
+	/* Perform 12 measurements and compute the averages */
 	if (Status == VL53L0_ERROR_NONE) {
 		sum_ranging = 0;
 		sum_spads = 0;
 		sum_signalRate = 0;
 		total_count = 0;
-		for (xtalk_meas = 0; xtalk_meas < 50; xtalk_meas++) {
+		for (xtalk_meas = 0; xtalk_meas < 12; xtalk_meas++) {
 			Status = VL53L0_PerformSingleRangingMeasurement(Dev,
 				&RangingMeasurementData);
 
@@ -203,6 +203,8 @@ VL53L0_Error VL53L0_perform_offset_calibration(VL53L0_DEV Dev,
 	uint32_t CalDistanceAsInt_mm;
 	uint8_t SequenceStepEnabled;
 	int meas = 0;
+	uint32_t oldMeasurementTimingBudgetMicroSeconds;
+	uint32_t MeasurementTimingBudgetMicroSeconds = 100000;
 
 	if (CalDistanceMilliMeter <= 0)
 		Status = VL53L0_ERROR_INVALID_PARAMS;
@@ -228,11 +230,22 @@ VL53L0_Error VL53L0_perform_offset_calibration(VL53L0_DEV Dev,
 		Status = VL53L0_SetLimitCheckEnable(Dev,
 				VL53L0_CHECKENABLE_RANGE_IGNORE_THRESHOLD, 0);
 
-	/* Perform 50 measurements and compute the averages */
+
+	if (Status == VL53L0_ERROR_NONE)
+		Status = VL53L0_GetMeasurementTimingBudgetMicroSeconds(Dev,
+		&oldMeasurementTimingBudgetMicroSeconds);
+
+
+	if (Status == VL53L0_ERROR_NONE)
+		Status = VL53L0_SetMeasurementTimingBudgetMicroSeconds(Dev,
+		MeasurementTimingBudgetMicroSeconds);
+
+
+	/* Perform 3 measurements and compute the averages */
 	if (Status == VL53L0_ERROR_NONE) {
 		sum_ranging = 0;
 		total_count = 0;
-		for (meas = 0; meas < 50; meas++) {
+		for (meas = 0; meas < 3; meas++) {
 			Status = VL53L0_PerformSingleRangingMeasurement(Dev,
 					&RangingMeasurementData);
 
@@ -252,6 +265,9 @@ VL53L0_Error VL53L0_perform_offset_calibration(VL53L0_DEV Dev,
 			Status = VL53L0_ERROR_RANGE_ERROR;
 	}
 
+	if (Status == VL53L0_ERROR_NONE)
+		Status = VL53L0_SetMeasurementTimingBudgetMicroSeconds(Dev,
+		oldMeasurementTimingBudgetMicroSeconds);
 
 	if (Status == VL53L0_ERROR_NONE) {
 		/* FixPoint1616_t / uint16_t = FixPoint1616_t */
