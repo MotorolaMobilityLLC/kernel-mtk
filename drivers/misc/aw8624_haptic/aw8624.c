@@ -735,6 +735,7 @@ static int aw8624_haptic_ram_config(struct aw8624 *aw8624)
     }
     if(wavcycle < 16)//short  < 60ms
     {
+    	aw8624_haptic_set_gain(aw8624, 0x80);
 	if(wavcycle > 7)
 	{
 		wavseq1 = 1;
@@ -759,6 +760,7 @@ static int aw8624_haptic_ram_config(struct aw8624 *aw8624)
     }
     else//long
     {
+    	aw8624_haptic_set_gain(aw8624, 0x98);
     	wavseq1 = 2;
     	wavseq2 = 0;
     	wavloop1 = 15;
@@ -1466,6 +1468,7 @@ static int aw8624_haptic_init(struct aw8624 *aw8624)
     aw8624->activate_mode = AW8624_HAPTIC_ACTIVATE_RAM_MODE;
     ret = aw8624_i2c_read(aw8624, AW8624_REG_WAVSEQ1, &reg_val);
     aw8624->index = reg_val & 0x7F;
+    aw8624_haptic_set_gain(aw8624, 0x98);
     ret = aw8624_i2c_read(aw8624, AW8624_REG_DATDBG, &reg_val);
     aw8624->gain = reg_val & 0xFF;
     for(i=0; i<AW8624_SEQUENCER_SIZE; i++) {
