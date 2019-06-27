@@ -23,6 +23,7 @@
 #define AF_MAGIC 'A'
 
 /* AFDRV_XXXX be the same as AF_DRVNAME in (*af).c */
+#define AFDRV_GT9772AF "GT9772AF"
 #define AFDRV_AD5820AF "AD5820AF"
 #define AFDRV_AD5823 "AD5823"
 #define AFDRV_AD5823AF "AD5823AF"

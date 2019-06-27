@@ -28,6 +28,7 @@ ifeq ($(CONFIG_MTK_LENS_USE_MODULE), y)
 MAIN3_CFILES += main3_lens.c
 
 #MAIN3_CFILES  += common/ak7371af/AK7371AF.c
+MAIN3_CFILES  += common/gt9772af/GT9772AF.c
 
 obj-m := main3af.o
 main3af-objs := $(MAIN3_CFILES:.c=.o)
@@ -36,6 +37,7 @@ else
 
 obj-y += main3_lens.o
 #obj-y += common/ak7371af/
+obj-y += common/gt9772af/
 
 
 endif
