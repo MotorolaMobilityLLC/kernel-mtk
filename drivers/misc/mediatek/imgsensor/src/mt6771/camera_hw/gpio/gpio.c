@@ -121,7 +121,7 @@ static enum IMGSENSOR_RETURN gpio_release(void *pinstance)
 		ppinctrl_state = pgpio->ppinctrl_state[i];
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
 		if (ppinctrl_state != NULL && !IS_ERR(ppinctrl_state)) {
-			if (i != GPIO_CTRL_STATE_CAM2_RST_L)
+			if (!(i == GPIO_CTRL_STATE_CAM2_RST_L || i == GPIO_CTRL_STATE_CAM4_RST_L))
 				pinctrl_select_state(pgpio->ppinctrl, ppinctrl_state);
 		}
 #else

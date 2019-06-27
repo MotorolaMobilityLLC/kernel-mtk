@@ -369,6 +369,17 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(OV02A10_MACRO_MIPI_RAW)
+	{SENSOR_DRVNAME_OV02A10_MACRO_MIPI_RAW,
+		{
+			{RST, Vol_High, 1, Vol_High, 1},
+			{DOVDD, Vol_1800, 1},
+			{AVDD, Vol_2800, 8},
+			{RST, Vol_Low, 4, Vol_High, 1},
+			{SensorMCLK, Vol_High, 5},
+		},
+	},
+#endif
 #else
 #if defined(S5K3L6_MIPI_RAW)
 	{

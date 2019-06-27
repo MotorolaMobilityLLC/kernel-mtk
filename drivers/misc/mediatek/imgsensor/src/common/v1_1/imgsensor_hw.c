@@ -242,8 +242,8 @@ enum IMGSENSOR_RETURN imgsensor_hw_power(
 	       curr_sensor_name);
 
 #ifdef CONFIG_CAMERA_PROJECT_LIMA
-	if ((strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 || strcmp(curr_sensor_name,"s5k4h7qt_mipi_raw")==0)
-		&& IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx){
+	if ((strcmp(curr_sensor_name,"s5k4h7yx_mipi_raw")==0 || strcmp(curr_sensor_name,"s5k4h7qt_mipi_raw")==0 ||
+	      strcmp(curr_sensor_name,"ov02a10_mipi_raw")==0) && IMGSENSOR_SENSOR_IDX_MAIN3 == sensor_idx){
 	      return IMGSENSOR_RETURN_ERROR;
 	}
 
