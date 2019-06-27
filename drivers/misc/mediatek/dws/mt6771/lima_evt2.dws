@@ -2215,6 +2215,16 @@
                 <channel>I2C_CHANNEL_5</channel>
                 <address>0x52</address>
             </device25>
+            <device26>
+                <varName>CAMERA_MAIN_THREE_AF</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x18</address>
+            </device26>
+            <device27>
+                <varName>CAMERA_MAIN_THREE_EEPROM</varName>
+                <channel>I2C_CHANNEL_4</channel>
+                <address>0x16</address>
+            </device27>
         </module>
         <module name="md1_eint">
             <count>3</count>
@@ -2285,6 +2295,7 @@
                 <varName2>MAIN_CAMERA_2_POWER_AF</varName2>
                 <varName3>CAP_TOUCH_VDD</varName3>
                 <varName4>LASER_MAIN_POWER</varName4>
+                <varName5>MAIN_CAMERA_3_POWER_AF</varName5>
             </pmic6>
         </module>
         <module name="kpd">
