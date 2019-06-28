@@ -1230,36 +1230,41 @@ static bool mtk_is_charger_on(struct charger_manager *info)
 {
 	enum charger_type chr_type;
 
-#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT
-	static int s_detect_counter=0;
+	#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT
+	static int s_detect_counter = 0;
 	extern void do_charger_detect(void);
 
 	chr_type = mt_get_charger_type();
-  pr_err("%s: chr_type =%d, info->chr_type=%d, s_detect_counter=%d\n", __func__, chr_type, info->chr_type, s_detect_counter);
-  if (chr_type ==  NONSTANDARD_CHARGER && s_detect_counter < 8)  //8s
-  {
-      s_detect_counter ++;
-      do_charger_detect();
-		  chr_type =mt_get_charger_type();
- //     info->chr_type = chr_type;
+	
+	if (chr_type ==  NONSTANDARD_CHARGER && s_detect_counter < 8)  //8s
+	{
+  	pr_err("%s: chr_type =%d, info->chr_type=%d, s_detect_counter=%d\n", 
+		__func__, chr_type, info->chr_type, s_detect_counter);
+        s_detect_counter ++;
+        do_charger_detect();
+  	chr_type =mt_get_charger_type();
+   //     info->chr_type = chr_type;
 	}
 	else
 	{
-	        s_detect_counter=0;
+		s_detect_counter=0;
 	}
-#else
-       chr_type = mt_get_charger_type();
-#endif
+	
+	#else
+        chr_type = mt_get_charger_type();
+	#endif
 
 	if (chr_type == CHARGER_UNKNOWN) {
 		if (info->chr_type != CHARGER_UNKNOWN)
 			mtk_charger_plug_out(info);
-	} else {
-#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT	
-		if (info->chr_type == CHARGER_UNKNOWN || info->chr_type == NONSTANDARD_CHARGER)
-#else
+	} 
+	else {
+		#ifdef CONFIG_TINNO_REDETECT_CHARGER_SUPPORT	
+		if (info->chr_type == CHARGER_UNKNOWN || 
+			((info->chr_type == NONSTANDARD_CHARGER) && (chr_type != NONSTANDARD_CHARGER)))
+		#else
 		if (info->chr_type == CHARGER_UNKNOWN)
-#endif		
+		#endif		
 			mtk_charger_plug_in(info, chr_type);
 		else
 			info->chr_type = chr_type;
