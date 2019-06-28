@@ -132,6 +132,7 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
 	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_CHARGE_RATE,
+	POWER_SUPPLY_PROP_AGE,
 };
 
 /* weak function */
@@ -504,6 +505,11 @@ static int battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_RATE:
 		val->intval = mmi_chrg_rate_check();
+		break;
+	case POWER_SUPPLY_PROP_AGE:
+		if (gm.aging_factor > 10000)
+			gm.aging_factor = 10000;
+		val->intval = gm.aging_factor /100;
 		break;
 
 	default:
