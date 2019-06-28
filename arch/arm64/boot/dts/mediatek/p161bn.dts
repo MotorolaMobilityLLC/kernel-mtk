@@ -470,7 +470,7 @@
 	charging_host_charger_current = <550000>;
 	ta_ac_charger_current = <3000000>;
 	pd_charger_current = <500000>;
-	enable_anime = <0>;
+//	enable_anime = <0>;
 
 	/* battery temperature protection */
 		temp_t4_threshold = <57>;
