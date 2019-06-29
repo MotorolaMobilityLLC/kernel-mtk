@@ -363,8 +363,8 @@ int VL53l0_OffsetCalibration(int32_t *pCalibratedValue)
 		// TODO...
 		// need to know what the exactly calibration position is.
 		// ref to calibration guide.
-		// assume calibration_position is 10cm
-		calibration_position = 100*65536;
+		// assume calibration_position is 5cm
+		calibration_position = 50*65536;
 
 		Status = VL53L0_PerformOffsetCalibration(&MyDevice,
 				 calibration_position,
