@@ -124,14 +124,21 @@ static inline int getAFInfo(__user struct stAF_MotorInfo *pstMotorInfo)
 	return 0;
 }
 
-#if 0
 static int initdrv(void)
 {
 	int i4RetValue = 0;
-	char puSendCmd2[2] = { 0x01, 0x39 };
-	char puSendCmd3[2] = { 0x05, 0x65 };
+	char puSendCmd2[2] = { 0x02, 0x01 };
+	char puSendCmd3[2] = { 0x02, 0x00 };
+	char puSendCmd4[2] = { 0x02, 0x02 };
+	char puSendCmd5[2] = { 0x06, 0x61 };
+	char puSendCmd6[2] = { 0x07, 0x39 };
 
 	LOG_INF("DW9763AF initdrv ...\n");
+
+	g_pstAF_I2Cclient->addr = AF_I2C_SLAVE_ADDR;
+
+	g_pstAF_I2Cclient->addr = g_pstAF_I2Cclient->addr >> 1;
+
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd2, 2);
 
 	if (i4RetValue < 0)
@@ -139,9 +146,23 @@ static int initdrv(void)
 
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd3, 2);
 
+	if (i4RetValue < 0)
+		return -1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd4, 2);
+
+	if (i4RetValue < 0)
+		return -1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd5, 2);
+
+	if (i4RetValue < 0)
+		return -1;
+
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd6, 2);
+
 	return i4RetValue;
 }
-#endif
 
 static inline int moveAF(unsigned long a_u4Position)
 {
@@ -155,7 +176,7 @@ static inline int moveAF(unsigned long a_u4Position)
 	if (*g_pAF_Opened == 1) {
 		unsigned short InitPos;
 
-		//initdrv();
+		initdrv();
 		ret = s4DW9763AF_ReadReg(&InitPos);
 
 		if (ret == 0) {
@@ -256,8 +277,17 @@ int DW9763AF_Release(struct inode *a_pstInode, struct file *a_pstFile)
 {
 	LOG_INF("Start\n");
 
-	if (*g_pAF_Opened == 2)
+	if (*g_pAF_Opened == 2){
 		LOG_INF("Wait\n");
+		s4AF_WriteReg(300);
+		msleep(12);
+		s4AF_WriteReg(250);
+		msleep(12);
+		s4AF_WriteReg(200);
+		msleep(12);
+		s4AF_WriteReg(150);
+		msleep(12);
+	}
 
 	if (*g_pAF_Opened) {
 		LOG_INF("Free\n");
