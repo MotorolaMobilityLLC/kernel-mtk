@@ -1847,6 +1847,15 @@ end_rate_check:
 	return chg_rate;
 }
 
+int mmi_batt_health_check(void)
+{
+	if (pinfo == NULL) {
+		pr_err("[%s]called before charger_manager valid!\n", __func__);
+		return POWER_SUPPLY_HEALTH_GOOD;
+	}
+	return pinfo->mmi.batt_health;
+}
+
 #define MIN_TEMP_C -20
 #define MAX_TEMP_C 60
 #define MIN_MAX_TEMP_C 47
@@ -2549,6 +2558,7 @@ void mmi_init(struct charger_manager *info)
 	if (rc < 0)
 		pr_info("[%s]Error getting mmi dt items rc = %d\n",__func__, rc);
 
+	info->mmi.batt_health = POWER_SUPPLY_HEALTH_GOOD;
 	info->mmi.chg_reboot.notifier_call = chg_reboot;
 	info->mmi.chg_reboot.next = NULL;
 	info->mmi.chg_reboot.priority = 1;
