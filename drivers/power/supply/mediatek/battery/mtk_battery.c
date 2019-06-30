@@ -466,6 +466,7 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_STATUS;
 		break;
 	case POWER_SUPPLY_PROP_HEALTH:
+		data->BAT_HEALTH = mmi_batt_health_check();
 		val->intval = data->BAT_HEALTH;/* do not change before*/
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
@@ -3992,6 +3993,7 @@ static int battery_callback(
 	case CHARGER_NOTIFY_EOC:
 		{
 /* CHARGING FULL */
+			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_FULL;
 			notify_fg_chr_full();
 		}
 		break;
@@ -4511,6 +4513,8 @@ static int __init battery_probe(struct platform_device *dev)
 		return ret;
 	}
 	bm_err("[BAT_probe] power_supply_register Battery Success !!\n");
+	if (is_kernel_power_off_charging())
+		battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_CHARGING;
 #endif
 	ret = device_create_file(&(dev->dev), &dev_attr_Battery_Temperature);
 	ret = device_create_file(&(dev->dev), &dev_attr_UI_SOC);
