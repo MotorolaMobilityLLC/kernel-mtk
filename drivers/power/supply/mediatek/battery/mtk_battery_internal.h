@@ -1082,5 +1082,6 @@ bool zcv_check(struct zcv_filter *zf);
 void zcv_filter_init(struct zcv_filter *zf);
 
 extern int mmi_chrg_rate_check(void);
+extern int mmi_batt_health_check(void);
 
 #endif /* __MTK_BATTERY_INTF_H__ */
