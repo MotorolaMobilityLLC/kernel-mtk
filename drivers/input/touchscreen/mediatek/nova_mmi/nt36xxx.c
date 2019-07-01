@@ -1713,6 +1713,8 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	device_init_wakeup(&ts->input_dev->dev, 1);
 #endif
 
+	ts->charger_detection = NULL;
+
 	if (ts->charger_detection_enable) {
 		ts->charger_detection = kzalloc(sizeof(struct usb_charger_detection), GFP_KERNEL);
 		if (ts->charger_detection == NULL) {
