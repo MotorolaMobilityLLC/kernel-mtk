@@ -305,6 +305,10 @@ struct mmc_card {
 	unsigned int		erase_size;	/* erase size in sectors */
  	unsigned int		erase_shift;	/* if erase unit is power 2 */
  	unsigned int		pref_erase;	/* in sectors */
+#ifdef JOURNEY_FEATURE_FSTRIM
+    // only use for discard_granularity
+    unsigned int        discard_granularity_size; /* in sectors */
+#endif    
 	unsigned int		eg_boundary;	/* don't cross erase-group boundaries */
  	u8			erased_byte;	/* value of erased bytes */
 	unsigned int		wp_grp_size;    /* write group size in sectors */

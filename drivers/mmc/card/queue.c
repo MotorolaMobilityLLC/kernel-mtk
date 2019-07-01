@@ -273,6 +273,15 @@ static void mmc_queue_setup_discard(struct request_queue *q,
 	if (card->erased_byte == 0 && !mmc_can_discard(card))
 		q->limits.discard_zeroes_data = 1;
 	q->limits.discard_granularity = card->pref_erase << 9;
+    #ifdef JOURNEY_FEATURE_FSTRIM
+    if(card->discard_granularity_size != 0) {
+        q->limits.discard_granularity = card->discard_granularity_size << 9;
+        printk("mmc_queue_setup_discard: discard_granularity_size %u q->limits.discard_granularity %u max_discard %u\n",
+            card->discard_granularity_size,
+            q->limits.discard_granularity,
+            max_discard);
+    }
+    #endif
 	/* granularity must not be greater than max. discard */
 	if (card->pref_erase > max_discard)
 		q->limits.discard_granularity = 0;
