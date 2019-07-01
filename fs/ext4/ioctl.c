@@ -770,6 +770,9 @@ resizefs_out:
 		range.minlen = max((unsigned int)range.minlen,
 				   q->limits.discard_granularity);
 #endif
+#ifdef JOURNEY_FEATURE_FSTRIM
+        printk("FITRIM: range.minlen %u discard_granularity %u\n",range.minlen,q->limits.discard_granularity);
+#endif
 		ret = ext4_trim_fs(sb, &range, flags);
 		if (ret < 0)
 			return ret;

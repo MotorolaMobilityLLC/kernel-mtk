@@ -2920,6 +2920,26 @@ void mmc_init_erase(struct mmc_card *card)
 			if (sz)
 				card->pref_erase += card->erase_size - sz;
 		}
+
+#ifdef JOURNEY_FEATURE_FSTRIM
+        //CJ: see ALPS04681174 back to the kernel original code
+        sz = (card->csd.capacity << (card->csd.read_blkbits - 9)) >> 11;
+        if(sz >= 1024) {
+            card->discard_granularity_size = 4 * 1024 * 1024 / 512;
+
+            if (card->discard_granularity_size < card->erase_size)
+                card->discard_granularity_size = card->erase_size;
+            else {
+                sz = card->discard_granularity_size % card->erase_size;
+                if (sz)
+                    card->discard_granularity_size += card->erase_size - sz;
+            }
+            printk("mmc_init_erase: pref_erase %u discard_granularity_size %u erase_size %u\n",card->pref_erase,card->discard_granularity_size,card->erase_size);
+        } else {
+            card->discard_granularity_size = 0;
+        }
+#endif
+
 	} else
 		card->pref_erase = 0;
 }
