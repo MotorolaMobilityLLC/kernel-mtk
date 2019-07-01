@@ -513,6 +513,7 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	
 	// pony.ma, DATE20190411, add charge_enabled node, DATE20190411-01 START
 	union power_supply_propval val;
+	union power_supply_propval propval;
 	int ret;
 	// pony.ma, DATE20190411-01 END
 
@@ -571,10 +572,17 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 					if (!((soc < 70) && (info->flag_soc70))){
 						info->flag_soc70 = 0;
 						charging_enable = false;
+						propval.intval = POWER_SUPPLY_STATUS_DISCHARGING;
+						ret = power_supply_set_property(batdet_psy,
+							POWER_SUPPLY_PROP_STATUS, &propval);
 					}
-					if((soc <= 65) && (!info->flag_soc70))
+					if((soc <= 65) && (!info->flag_soc70)){
 						info->flag_soc70 = 1;
+						propval.intval = POWER_SUPPLY_STATUS_CHARGING;
+						ret = power_supply_set_property(batdet_psy,
+							POWER_SUPPLY_PROP_STATUS, &propval);
 					}
+				}
 				else{
 					info->flag_soc70 = 1;
 					charging_enable = false;
