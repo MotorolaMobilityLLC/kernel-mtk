@@ -1,9 +1,26 @@
-#ifndef __MT_SPI_H__
-#define __MT_SPI_H__
+/*
+* Copyright (C) 2016 MediaTek Inc.
+*
+* This program is free software; you can redistribute it and/or modify
+* it under the terms of the GNU General Public License version 2 as
+* published by the Free Software Foundation.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+* See http://www.gnu.org/licenses/gpl-2.0.html for more details.
+*/
+
+#ifndef __MTK_SPI_H__
+#define __MTK_SPI_H__
 
 
 #include <linux/types.h>
 #include <linux/io.h>
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+#include <mobicore_driver_api.h>
+#include <tlspi_Api.h>
+#endif
 /*******************************************************************************
 * define struct for spi driver
 ********************************************************************************/
@@ -91,5 +108,11 @@ struct mt_chip_conf {
 	enum spi_ulthigh ulthigh;
 	enum spi_tckdly tckdly;
 };
+
+//void secspi_enable_clk(struct spi_device *spidev);
+#ifdef CONFIG_TRUSTONIC_TEE_SUPPORT
+int secspi_session_open(u32 spinum);
+int secspi_execute(u32 cmd, tciSpiMessage_t *param);
+#endif
 
 #endif

@@ -601,7 +601,7 @@ static void get_charger_ic(void)
 }
 //add end
 
-#define FINGERPRINT_VENDOR_FILE "/sys/ontim_dev_debug/fpsensor/vendor"
+#define FINGERPRINT_VENDOR_FILE "/sys/ontim_dev_debug/fingersensor/vendor"
 static ssize_t get_fingerprint_id(void)
 {
 	char buf[MAX_HWINFO_SIZE] = {};

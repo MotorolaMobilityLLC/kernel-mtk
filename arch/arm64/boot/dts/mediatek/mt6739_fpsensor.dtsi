@@ -141,7 +141,7 @@
 	pinctrl-names = "fpsensor_spi_default", "fpsensor_spi_cs_low","fpsensor_spi_cs_high","fpsensor_spi_mi_low","fpsensor_spi_mi_high",
 					"fpsensor_spi_mo_low","fpsensor_spi_mo_high","fpsensor_spi_mclk_low","fpsensor_spi_mclk_high",
 					"fpsensor_finger_rst_low","fpsensor_finger_rst_high","fpsensor_finger_power_low","fpsensor_finger_power_high",
-					"fpsensor_eint","fpsensor_eint_in_low","fpsensor_eint_in_float","fpsensor_finger_cs_low","fpsensor_finger_cs_high";
+					"fpsensor_eint_as_int","fpsensor_eint_in_low","fpsensor_eint_in_float","fpsensor_finger_cs_low","fpsensor_finger_cs_high";
 	pinctrl-0 = <&fpsensor_spi_default>;
 	pinctrl-1 = <&fpsensor_spi_cs_en0>;
 	pinctrl-2 = <&fpsensor_spi_cs_en1>;
