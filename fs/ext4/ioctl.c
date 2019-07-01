@@ -758,8 +758,18 @@ resizefs_out:
 		    sizeof(range)))
 			return -EFAULT;
 
+#ifdef JOURNEY_DEBUG_ENHANCED
+        //CJ: see Trim in vold
+        if(range.minlen != 1) {
+            range.minlen = max((unsigned int)range.minlen,
+                       q->limits.discard_granularity);
+        } else {
+            printk("FITRIM: range.minlen force set to 1\n");
+        }
+#else
 		range.minlen = max((unsigned int)range.minlen,
 				   q->limits.discard_granularity);
+#endif
 		ret = ext4_trim_fs(sb, &range, flags);
 		if (ret < 0)
 			return ret;
