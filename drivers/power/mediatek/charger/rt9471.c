@@ -24,6 +24,7 @@
 #include <linux/irq.h>
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
+#include <linux/kthread.h>
 
 #include <mt-plat/upmu_common.h>
 #include <mt-plat/charger_class.h>
@@ -182,6 +183,7 @@ struct rt9471_chip {
 	struct semaphore suspend_lock;
 	struct mutex io_lock;
 	struct mutex bc12_lock;
+	struct mutex bc12_en_lock;
 	struct mutex hidden_mode_lock;
 	u32 hidden_mode_cnt;
 	u8 dev_id;
@@ -197,7 +199,10 @@ struct rt9471_chip {
 #ifndef CONFIG_TCPC_CLASS
 	struct work_struct init_work;
 #endif
-	bool bc12_en;
+	struct task_struct *bc12_en_kthread;
+	int bc12_en_buf[2];
+	int bc12_en_buf_idx;
+	struct completion bc12_en_req;
 	enum rt9471_port_stat port;
 	enum charger_type chg_type;
 	struct power_supply *psy;
@@ -566,6 +571,7 @@ static inline u32 rt9471_closest_value(u32 min, u32 max, u32 step, u8 reg_val)
 	return ret_val;
 }
 
+#ifndef CONFIG_TCPC_CLASS
 static bool rt9471_is_vbusgd(struct rt9471_chip *chip)
 {
 	int ret;
@@ -580,8 +586,9 @@ static bool rt9471_is_vbusgd(struct rt9471_chip *chip)
 	dev_dbg(chip->dev, "%s vbus_gd = %d\n", __func__, vbus_gd);
 	return vbus_gd;
 }
+#endif
 
-static int rt9471_set_usbsw_state(struct rt9471_chip *chip, int state)
+static void rt9471_set_usbsw_state(struct rt9471_chip *chip, int state)
 {
 	dev_info(chip->dev, "%s state = %d\n", __func__, state);
 
@@ -589,21 +596,31 @@ static int rt9471_set_usbsw_state(struct rt9471_chip *chip, int state)
 		Charger_Detect_Init();
 	else
 		Charger_Detect_Release();
-
-	return 0;
 }
 
-static int rt9471_enable_bc12(struct rt9471_chip *chip, bool en)
+static int rt9471_bc12_en_kthread(void *data)
 {
-	int ret = 0, i = 0;
+	int ret = 0, i = 0, en = 0;
+	struct rt9471_chip *chip = data;
 	const int max_wait_cnt = 200;
-	enum rt9471_usbsw_state usbsw =
-		en ? RT9471_USBSW_CHG : RT9471_USBSW_USB;
 
-	if (chip->dev_id != RT9471D_DEVID)
-		return 0;
+	dev_info(chip->dev, "%s\n", __func__);
+wait:
+	wait_for_completion(&chip->bc12_en_req);
+
+	mutex_lock(&chip->bc12_en_lock);
+	en = chip->bc12_en_buf[chip->bc12_en_buf_idx];
+	chip->bc12_en_buf[chip->bc12_en_buf_idx] = -1;
+	if (en == -1) {
+		chip->bc12_en_buf_idx = 1 - chip->bc12_en_buf_idx;
+		en = chip->bc12_en_buf[chip->bc12_en_buf_idx];
+		chip->bc12_en_buf[chip->bc12_en_buf_idx] = -1;
+	}
+	mutex_unlock(&chip->bc12_en_lock);
 
 	dev_info(chip->dev, "%s en = %d\n", __func__, en);
+	if (en == -1)
+		goto wait;
 
 	if (en) {
 		/* Workaround for CDP port */
@@ -611,9 +628,9 @@ static int rt9471_enable_bc12(struct rt9471_chip *chip, bool en)
 			if (is_usb_rdy())
 				break;
 			dev_dbg(chip->dev, "%s CDP block\n", __func__);
-			if (!rt9471_is_vbusgd(chip)) {
+			if (!atomic_read(&chip->vbus_gd)) {
 				dev_info(chip->dev, "%s plug out\n", __func__);
-				return 0;
+				goto wait;
 			}
 			msleep(100);
 		}
@@ -622,12 +639,29 @@ static int rt9471_enable_bc12(struct rt9471_chip *chip, bool en)
 		else
 			dev_info(chip->dev, "%s CDP free\n", __func__);
 	}
-	rt9471_set_usbsw_state(chip, usbsw);
+	rt9471_set_usbsw_state(chip, en ? RT9471_USBSW_CHG : RT9471_USBSW_USB);
 	ret = (en ? rt9471_set_bit : rt9471_clr_bit)
 		(chip, RT9471_REG_DPDMDET, RT9471_BC12_EN_MASK);
-	if (ret >= 0)
-		chip->bc12_en = en;
-	return ret;
+	if (ret < 0)
+		dev_notice(chip->dev, "%s en = %d fail(%d)\n",
+				      __func__, en, ret);
+	goto wait;
+
+	return 0;
+}
+
+static void rt9471_enable_bc12(struct rt9471_chip *chip, bool en)
+{
+	if (chip->dev_id != RT9471D_DEVID)
+		return;
+
+	dev_info(chip->dev, "%s en = %d\n", __func__, en);
+
+	mutex_lock(&chip->bc12_en_lock);
+	chip->bc12_en_buf[chip->bc12_en_buf_idx] = en;
+	chip->bc12_en_buf_idx = 1 - chip->bc12_en_buf_idx;
+	mutex_unlock(&chip->bc12_en_lock);
+	complete(&chip->bc12_en_req);
 }
 
 static int rt9471_enable_hidden_mode(struct rt9471_chip *chip, bool en)
@@ -1807,9 +1841,7 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 		dev_notice(chip->dev, "%s en autoaicr fail(%d)\n",
 				      __func__, ret);
 
-	ret = rt9471_enable_bc12(chip, false);
-	if (ret < 0)
-		dev_notice(chip->dev, "%s dis bc12 fail(%d)\n", __func__, ret);
+	rt9471_enable_bc12(chip, false);
 
 	ret = rt9471_sw_workaround(chip);
 	if (ret < 0)
@@ -2357,6 +2389,7 @@ static int rt9471_probe(struct i2c_client *client,
 	sema_init(&chip->suspend_lock, 1);
 	mutex_init(&chip->io_lock);
 	mutex_init(&chip->bc12_lock);
+	mutex_init(&chip->bc12_en_lock);
 	mutex_init(&chip->hidden_mode_lock);
 	chip->hidden_mode_cnt = 0;
 	atomic_set(&chip->vbus_gd, 0);
@@ -2372,6 +2405,21 @@ static int rt9471_probe(struct i2c_client *client,
 	if (!rt9471_check_devinfo(chip)) {
 		ret = -ENODEV;
 		goto err_nodev;
+	}
+
+	if (chip->dev_id == RT9471D_DEVID) {
+		chip->bc12_en_kthread =
+			kthread_run(rt9471_bc12_en_kthread, chip,
+				    "rt9471.%s", dev_name(chip->dev));
+		if (IS_ERR_OR_NULL(chip->bc12_en_kthread)) {
+			ret = PTR_ERR(chip->bc12_en_kthread);
+			dev_notice(chip->dev, "%s kthread run fail(%d)\n",
+					      __func__, ret);
+			goto err_kthread_run;
+		}
+		chip->bc12_en_buf[0] = chip->bc12_en_buf[1] = -1;
+		chip->bc12_en_buf_idx = 0;
+		init_completion(&chip->bc12_en_req);
 	}
 
 	ret = rt9471_parse_dt(chip);
@@ -2462,9 +2510,11 @@ err_init:
 err_register_rm:
 #endif /* CONFIG_RT_REGMAP */
 err_parse_dt:
+err_kthread_run:
 err_nodev:
 	mutex_destroy(&chip->io_lock);
 	mutex_destroy(&chip->bc12_lock);
+	mutex_destroy(&chip->bc12_en_lock);
 	mutex_destroy(&chip->hidden_mode_lock);
 	devm_kfree(chip->dev, chip);
 	return ret;
@@ -2488,6 +2538,7 @@ static int rt9471_remove(struct i2c_client *client)
 		device_remove_file(chip->dev, &dev_attr_shipping_mode);
 		mutex_destroy(&chip->io_lock);
 		mutex_destroy(&chip->bc12_lock);
+		mutex_destroy(&chip->bc12_en_lock);
 		mutex_destroy(&chip->hidden_mode_lock);
 	}
 	return 0;
@@ -2555,6 +2606,7 @@ MODULE_VERSION(RT9471_DRV_VERSION);
  * 1.0.5
  * (1) Add suspend_lock
  * (2) Use IRQ to wait chg_rdy
+ * (3) bc12_en in the kthread
  *
  * 1.0.4
  * (1) Use type u8 for regval in __rt9471_i2c_read_byte()
