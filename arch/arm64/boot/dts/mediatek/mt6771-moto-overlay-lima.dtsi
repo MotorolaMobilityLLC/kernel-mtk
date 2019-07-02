@@ -397,3 +397,7 @@
 	#include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
 	#include "bat_setting/batterytable_kg40_scud_4000mah_ext.dtsi"
 };
+
+&mrdump_ext_rst {
+	source = "SYSRST";
+};
