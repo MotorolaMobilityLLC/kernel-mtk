@@ -302,6 +302,10 @@ static void ilitek_platform_esd_check(struct work_struct *pWork)
 void load_touch_firmware(void)
 {
 	int err;
+
+	if (!ipd)
+		return;
+
 	if (!ipd->suspended)
 		ipio_info("is in resume now\n");
 	ipio_info("load fw begin\n");
@@ -336,6 +340,9 @@ EXPORT_SYMBOL(load_touch_firmware);
 
 void wait_for_lcm_initcode(void)
 {
+	if (!ipd)
+		return;
+
 	ipd->lcm_finish = 1;
 	wake_up(&(ipd->wait_for_lcm));
 	ipio_info("wait_for_lcm_initcode end\n");
