@@ -2179,6 +2179,9 @@ void nvt_nvt_update_firmware_work(struct completion *load_fw_completion) {
 
 void nvt_lcm_update_firmware_work(void)
 {
+	if (!ts)
+		return;
+
 	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
 		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
 		nvt_nvt_update_firmware_work(&load_fw_completion);
@@ -2188,6 +2191,9 @@ EXPORT_SYMBOL(nvt_lcm_update_firmware_work);
 
 void wait_nvt_update_firmware(void)
 {
+	if (!ts)
+		return;
+
 	if (get_boot_mode() != KERNEL_POWER_OFF_CHARGING_BOOT
 		&& get_boot_mode() != LOW_POWER_OFF_CHARGING_BOOT) {
 		if (!wait_for_completion_timeout(&load_fw_completion, msecs_to_jiffies(300))) {
