@@ -26,11 +26,11 @@ char frontaux_cam_name[64] = "Unknown";
 char back_cam_name[64] = "Unknown";
 char backaux_cam_name[64] = "Unknown";
 char backaux2_cam_name[64] = "Unknown";
-char front_cam_efuse_id[64]={0};
-char frontaux_cam_efuse_id[64]={0};
-char back_cam_efuse_id[64]={0};
-char backaux_cam_efuse_id[64]={0};
-char backaux2_cam_efuse_id[64]={0};
+char front_cam_efuse_id[64] = {0};
+char frontaux_cam_efuse_id[64] = {0};
+char back_cam_efuse_id[64] = {0};
+char backaux_cam_efuse_id[64] = {0};
+char backaux2_cam_efuse_id[64] = {0};
 
 
 #if 0
@@ -135,28 +135,6 @@ static mid_match_t emmc_table[] = {
 	},
 };
 
-static mid_match_t lpddr_table[] = {
-	{
-		.index = 0,
-		.name = "UNKNOWN"
-	},
-	{
-		.index = 0xff,
-		.name = "Micron"
-	},
-	{
-		.index = 6,
-		.name = "Hynix"
-	},
-	{
-		.index = 1,
-		.name = "Samsung"
-	},
-	{
-		.index = 3,
-		.name = "Micron"
-	},
-};
 
 #define MAX_HWINFO_SIZE 64
 #include "hwinfo.h"
@@ -175,22 +153,10 @@ static hwinfo_t hwinfo[HWINFO_MAX] =
 };
 #undef KEYWORD
 
-static const char *foreach_lpddr_table(int index)
-{
-	int i = 0;
-
-	for (; i < sizeof(lpddr_table) / sizeof(mid_match_t); i++) {
-		if (index == lpddr_table[i].index)
-			return lpddr_table[i].name;
-	}
-
-	return lpddr_table[0].name;
-}
 
 static const char *foreach_emmc_table(int index)
 {
 	int i = 0;
-
 	for (; i < sizeof(emmc_table) / sizeof(mid_match_t); i++) {
 		if (index == emmc_table[i].index)
 			return emmc_table[i].name;
@@ -216,7 +182,7 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 
 	fs = get_fs();
 	set_fs(KERNEL_DS);
-    memset(buf, 0x00,buf_size);
+	memset(buf, 0x00, buf_size);
 	len = vfs_read(fp, buf, buf_size, &pos);
 	buf[buf_size - 1] = '\n';
 	printk(KERN_INFO "buf= %s,size = %ld \n", buf, len);
@@ -228,30 +194,30 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 
 static int hwinfo_write_file(char *file_name, const char buf[], int buf_size)
 {
-    struct file *fp;
-    mm_segment_t fs;
-    loff_t pos = 0;
-    ssize_t len = 0;
+	struct file *fp;
+	mm_segment_t fs;
+	loff_t pos = 0;
+	ssize_t len = 0;
 
-    if (file_name == NULL || buf == NULL || buf_size < 1)
-        return -1;
+	if (file_name == NULL || buf == NULL || buf_size < 1)
+		return -1;
 
-    fp = filp_open(file_name, O_RDWR | O_CREAT, 0644);
-    if (IS_ERR(fp)) {
-        printk(KERN_CRIT "file not found/n");
-        return -1;
+	fp = filp_open(file_name, O_RDWR | O_CREAT, 0644);
+	if (IS_ERR(fp)) {
+		printk(KERN_CRIT "file not found/n");
+		return -1;
 
-    }
+	}
 
-    fs = get_fs();
-    set_fs(KERNEL_DS);
-    pos = fp->f_pos;
-    len = vfs_write(fp, buf, buf_size, &pos);
-    fp->f_pos = pos;
-    printk(KERN_INFO "buf = %s,size = %ld \n", buf, len);
-    filp_close(fp, NULL);
-    set_fs(fs);
-    return 0;
+	fs = get_fs();
+	set_fs(KERNEL_DS);
+	pos = fp->f_pos;
+	len = vfs_write(fp, buf, buf_size, &pos);
+	fp->f_pos = pos;
+	printk(KERN_INFO "buf = %s,size = %ld \n", buf, len);
+	filp_close(fp, NULL);
+	set_fs(fs);
+	return 0;
 }
 #if 0
 /*Android:Settings->About phone->CPU  register function to distinguish the CPU model*/
@@ -325,7 +291,7 @@ static int get_tp_info(void)
 {
 	char buf[BUF_SIZE] = {0};
 	char buf2[BUF_SIZE] = {0};
-	char str[BUF_SIZE+BUF_SIZE] = {0};
+	char str[BUF_SIZE + BUF_SIZE] = {0};
 	int  ret = 0;
 
 	ret = hwinfo_read_file(TP_VENDOR_FILE, buf, sizeof(buf));
@@ -348,12 +314,33 @@ static int get_tp_info(void)
 	if (buf2[strlen(buf2) - 1] == '\n')
 		buf2[strlen(buf2) - 1] = '\0';
 
-    sprintf(str, "%s-version:%s", buf, buf2);
+	sprintf(str, "%s-version:%s", buf, buf2);
 	memcpy(hwinfo[TP_MFR].hwinfo_buf, str , strlen(str));
 	return 0;
 }
 
-#define BATTARY_RESISTANCE_FILE "/sys/ontim_dev_debug/battery/vendor"
+#define POWER_USB_TYPE_FILE "/sys/class/power_supply/usb/type"
+static int get_power_usb_type(void)
+{
+	char buf[64] = {0};
+	int ret = 0;
+
+	ret = hwinfo_read_file(POWER_USB_TYPE_FILE, buf, sizeof(buf));
+	if (ret != 0)
+	{
+		printk(KERN_CRIT "get_power usb type failed.");
+		return -1;
+	}
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	printk(KERN_INFO "power usb %s\n", buf);
+
+	strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, buf);
+
+	return 0;
+}
+
+#define BATTARY_RESISTANCE_FILE "/sys/class/power_supply/bms/battery_type"
 static int get_battary_mfr(void)
 {
 	char buf[64] = {0};
@@ -923,150 +910,160 @@ int _atoi(char * str)
 
 #define BYTE(_x) (_x<<0x03)
 #define EMMC_SN_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/serial"
-#define EMMC_CID_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/cid"
-#define EMMC_MANFID_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/manfid"
-#define EMMC_SIZE_FILE   "/sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/size"
-#define EMMC_LIFE_TIME_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/life_time"
-#define LPDDR_SIZE_FILE   "/proc/meminfo"
-static void get_emmc_info(void)
+static void get_emmc_sn(void)
 {
-	unsigned int  hwinfo_value = 0;
-	unsigned char emmc_mid = 0, lpddr_mid = 0;
-	int lpddr_cap = 0, emmc_cap = 0;
-	const char *emmc_mid_name, *lpddr_mid_name;
+	char buf[MAX_HWINFO_SIZE] = {'\0'};
+	int ret = 0;
+
+	//read emmc sn
+	memset(buf, 0x00, sizeof(buf));
+	ret = hwinfo_read_file(EMMC_SN_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "EMMC_SN_FILE failed.");
+		return;
+	}
+
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	memset(hwinfo[emmc_sn].hwinfo_buf, 0x00, sizeof(hwinfo[emmc_sn].hwinfo_buf));
+	strncpy(hwinfo[emmc_sn].hwinfo_buf, buf, strlen(buf));
+	printk("%s: emmc_sn_buf:%s\n", __func__, buf);
+}
+
+#define EMMC_CID_FILE     "/sys/class/mmc_host/mmc0/mmc0:0001/cid"
+static void get_emmc_cid(void)
+{
+	char buf[MAX_HWINFO_SIZE] = {'\0'};
+	int ret = 0;
+
+	//read emmc cid
+	memset(buf, 0x00, sizeof(buf));
+	ret = hwinfo_read_file(EMMC_CID_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "EMMC_CID_FILE failed.");
+		return;
+	}
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	memset(hwinfo[emmc_cid].hwinfo_buf, 0x00, sizeof(hwinfo[emmc_cid].hwinfo_buf));
+	strncpy(hwinfo[emmc_cid].hwinfo_buf, buf, strlen(buf));
+	printk("%s: emmc_cid_buf:%s\n", __func__, buf);
+}
+
+#define LPDDR_SIZE_FILE   "/proc/meminfo"
+static void get_ddr_cap(void)
+{
+	int lpddr_cap = 0;
 	char buf[MAX_HWINFO_SIZE] = {'\0'};
 	char* p = buf;
 	char* q = buf;
 	int ret = 0;
 
-    #if 0
-	if (pMeminfo[0] > '1')
-	{
-		hwinfo_value = _atoi(pMeminfo);
-		lpddr_mid = hwinfo_value >> BYTE(0) & 0xFF;
-		emmc_cap = hwinfo_value >> BYTE(1) & 0xFF;
-		emmc_mid = hwinfo_value >> BYTE(2) & 0xFF;
-	} else
-    #endif
-    {
-		ret = hwinfo_read_file(EMMC_MANFID_FILE, buf, sizeof(buf));
-		if (ret != 0) {
-			printk(KERN_CRIT "EMMC_MANFID_FILE failed.");
-			return;
-		}
-		if (buf[strlen(buf) - 1] == '\n')
-			buf[strlen(buf) - 1] = '\0';
-		emmc_mid = _atoi(buf);
+	memset(buf, 0x00, sizeof(buf));
+	ret = hwinfo_read_file(LPDDR_SIZE_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "LPDDR_SIZE_FILE failed.");
+		return;
+	}
 
-		memset(buf, 0x00, sizeof(buf));
-		ret = hwinfo_read_file(EMMC_SIZE_FILE, buf, sizeof(buf));
-		if (ret != 0) {
-			printk(KERN_CRIT "EMMC_SIZE_FILE failed.");
-			return;
-		}
-		if (buf[strlen(buf) - 1] == '\n')
-			buf[strlen(buf) - 1] = '\0';
-		emmc_cap = _atoi(buf) / (1024 * 1024 * 2);
+	while (*p++ != ':' && p < buf + MAX_HWINFO_SIZE);
+	while (*p++ == ' ' && p < buf + MAX_HWINFO_SIZE);
+	p = p - 1;
+	q = p;
+	while (*q++ != ' ' && q < buf + MAX_HWINFO_SIZE);
+	memcpy(buf, p, q - p - 1);
+	buf[q - p - 1] = '\0';
+	buf[q - p]   = '\0';
+	lpddr_cap = _atoi(buf) / (1024 * 1024);
+	printk("%s: buf:%s i = %d\n", __func__, buf, lpddr_cap);
+	if (lpddr_cap < 2)
+		lpddr_cap = 2;
+	else if (lpddr_cap < 3 && lpddr_cap >= 2)
+		lpddr_cap = 3;
+	else if (lpddr_cap < 4 && lpddr_cap >= 3)
+		lpddr_cap = 4;
+	else if (lpddr_cap < 6 && lpddr_cap >= 5)
+		lpddr_cap = 6;
+	else if (lpddr_cap < 8 && lpddr_cap >= 7)
+		lpddr_cap = 8;
+	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGb", lpddr_cap);
+}
 
-		memset(buf, 0x00, sizeof(buf));
-		ret = hwinfo_read_file(LPDDR_SIZE_FILE, buf, sizeof(buf));
-		if (ret != 0) {
-			printk(KERN_CRIT "LPDDR_SIZE_FILE failed.");
-			return;
-		}
+#define EMMC_LIFE_TIME_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/life_time"
+static void get_emmc_lifetime(void)
+{
+	char buf[MAX_HWINFO_SIZE] = {'\0'};
+	int ret = 0;
 
-		while (*p++ != ':' && p < buf + MAX_HWINFO_SIZE);
-		while (*p++ == ' ' && p < buf + MAX_HWINFO_SIZE);
-		p = p-1;
-		q = p;
-		while (*q++ != ' ' && q < buf + MAX_HWINFO_SIZE);
-		memcpy(buf, p, q-p-1);
-		buf[q-p-1] = '\0';
-		buf[q-p]   = '\0';
-		lpddr_cap = _atoi(buf)/(1024*1024);
-		printk("%s: buf:%s i = %d\n", __func__,buf, lpddr_cap);
-    };
-    //read emmc sn
-    memset(buf, 0x00, sizeof(buf));
-    ret = hwinfo_read_file(EMMC_SN_FILE, buf, sizeof(buf));
-    if (ret != 0) {
-        printk(KERN_CRIT "EMMC_MANFID_FILE failed.");
-        return;
-    }
+	//read emmc life_time
+	memset(buf, 0x00, sizeof(buf));
+	ret = hwinfo_read_file(EMMC_LIFE_TIME_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "EMMC_LIFE_TIME_FILE failed.");
+		return;
+	}
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	strncpy(hwinfo[emmc_life].hwinfo_buf, buf, strlen(buf));
+	printk("%s:emmc life %s \n", __func__, buf);
+}
 
-    if (buf[strlen(buf) - 1] == '\n')
-        buf[strlen(buf) - 1] = '\0';
-    memset(hwinfo[emmc_sn].hwinfo_buf, 0x00, sizeof(hwinfo[emmc_sn].hwinfo_buf));
-    strncpy(hwinfo[emmc_sn].hwinfo_buf, buf, strlen(buf));
-	printk("%s: emmc_sn_buf:%s\n", __func__,buf);
+#define EMMC_SIZE_FILE   "/sys/class/mmc_host/mmc0/mmc0:0001/block/mmcblk0/size"
+static void get_emmc_size(void)
+{
+	int emmc_cap = 0;
+	char buf[MAX_HWINFO_SIZE] = {'\0'};
+	int ret = 0;
 
-    //read emmc cid
-    memset(buf, 0x00, sizeof(buf));
-    ret = hwinfo_read_file(EMMC_CID_FILE, buf, sizeof(buf));
-    if (ret != 0) {
-        printk(KERN_CRIT "EMMC_CID_FILE failed.");
-        return;
-    }
-    if (buf[strlen(buf) - 1] == '\n')
-        buf[strlen(buf) - 1] = '\0';
-    memset(hwinfo[emmc_cid].hwinfo_buf, 0x00, sizeof(hwinfo[emmc_cid].hwinfo_buf));
-    strncpy(hwinfo[emmc_cid].hwinfo_buf, buf, strlen(buf));
-	printk("%s: emmc_cid_buf:%s\n", __func__,buf);
+	memset(buf, 0x00, sizeof(buf));
+	ret = hwinfo_read_file(EMMC_SIZE_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "EMMC_SIZE_FILE failed.");
+		return;
+	}
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	emmc_cap = _atoi(buf) / (1024 * 1024 * 2);
 
-    printk("%s:hwinfo_value=0x%08x, lpddr_mid=%#x lpddr_cap=%#x emmc_cap=%#x emmc_mid=%#x\n", \
-           __func__, hwinfo_value, lpddr_mid, lpddr_cap, emmc_cap, emmc_mid);
-
-
-	if(emmc_cap < 4)
+	if (emmc_cap < 4)
 		emmc_cap = 4;
-	else if(emmc_cap > 6 && emmc_cap < 8)
+	else if (emmc_cap > 6 && emmc_cap < 8)
 		emmc_cap = 8;
-	else if(emmc_cap > 8 && emmc_cap < 16)
+	else if (emmc_cap > 8 && emmc_cap < 16)
 		emmc_cap = 16;
-	else if(emmc_cap < 32 && emmc_cap > 16)
+	else if (emmc_cap < 32 && emmc_cap > 16)
 		emmc_cap = 32;
-	else if(emmc_cap < 64 && emmc_cap > 32)
+	else if (emmc_cap < 64 && emmc_cap > 32)
 		emmc_cap = 64;
-	else if(emmc_cap < 128 && emmc_cap > 100)
+	else if (emmc_cap < 128 && emmc_cap > 100)
 		emmc_cap = 128;
 
-	if(lpddr_cap < 2)
-		lpddr_cap = 2;
-	else if(lpddr_cap < 3 && lpddr_cap >= 2)
-		lpddr_cap = 3;
-	else if(lpddr_cap < 4 && lpddr_cap >= 3)
-		lpddr_cap = 4;
-	else if(lpddr_cap < 6 && lpddr_cap >= 5)
-		lpddr_cap = 6;
-    else if(lpddr_cap < 8 && lpddr_cap >= 7)
-		lpddr_cap = 8;
+	sprintf(hwinfo[emmc_capacity].hwinfo_buf, "%dGB", emmc_cap);
+}
 
-    emmc_mid_name = foreach_emmc_table(emmc_mid);
-    WARN((emmc_mid_name == NULL), "cannot recognize emmc mid=0x%x", emmc_mid);
-    if (emmc_mid_name == NULL)
-        emmc_mid_name = "Unknown";
-    strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
-    sprintf(hwinfo[emmc_capacity].hwinfo_buf, "%dGB", emmc_cap);
+#define EMMC_MANFID_FILE "/sys/class/mmc_host/mmc0/mmc0:0001/manfid"
+static void get_emmc_mfr(void)
+{
+	unsigned char emmc_mid = 0;
+	const char *emmc_mid_name;
+	char buf[MAX_HWINFO_SIZE] = {'\0'};
+	int ret = 0;
 
-	lpddr_mid_name = foreach_lpddr_table(lpddr_mid);
-	WARN((lpddr_mid_name == NULL), "cannot recognize lpddr mid=0x%x", lpddr_mid);
-	if (lpddr_mid_name == NULL)
-		lpddr_mid_name = "Unknown";
-	//strncpy(hwinfo[lpddr_mfr].hwinfo_buf, lpddr_mid_name, strlen(lpddr_mid_name));
+	ret = hwinfo_read_file(EMMC_MANFID_FILE, buf, sizeof(buf));
+	if (ret != 0) {
+		printk(KERN_CRIT "EMMC_MANFID_FILE failed.");
+		return;
+	}
+	if (buf[strlen(buf) - 1] == '\n')
+		buf[strlen(buf) - 1] = '\0';
+	emmc_mid = _atoi(buf);
+
+	emmc_mid_name = foreach_emmc_table(emmc_mid);
+	WARN((emmc_mid_name == NULL), "cannot recognize emmc mid=0x%x", emmc_mid);
+	if (emmc_mid_name == NULL)
+		emmc_mid_name = "Unknown";
+	strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
-	sprintf(hwinfo[lpddr_capacity].hwinfo_buf, "%dGb", lpddr_cap);
-   
-    //read emmc life_time
-    memset(buf, 0x00, sizeof(buf));
-    ret = hwinfo_read_file(EMMC_LIFE_TIME_FILE, buf, sizeof(buf));
-    if (ret != 0) {
-        printk(KERN_CRIT "EMMC_LIFE_TIME_FILE failed.");
-        return;
-    }
-    if (buf[strlen(buf) - 1] == '\n')
-    buf[strlen(buf) - 1] = '\0';
-    strncpy(hwinfo[emmc_life].hwinfo_buf, buf, strlen(buf));
-    printk("%s:emmc life %s \n", __func__, buf);
 }
 
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
@@ -1086,6 +1083,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case SPEAKER_MFR:
 		get_speaker_mfr();
+		break;
+	case POWER_USB_TYPE:
+		get_power_usb_type();
 		break;
 	case BATTARY_MFR:
 		get_battary_mfr();
@@ -1174,13 +1174,24 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 	case secboot_version:
 		get_secure_boot_version();
 		break;
-	case emmc_mfr:
 	case emmc_sn:
-	case emmc_capacity:
+		get_emmc_sn();
+		break;
+	case emmc_cid:
+		get_emmc_cid();
+		break;
+	case emmc_mfr:
 	case lpddr_mfr:
+		get_emmc_mfr();
+		break;
+	case emmc_capacity:
+		get_emmc_size();
+		break;
 	case lpddr_capacity:
-        case emmc_life:
-		get_emmc_info();
+		get_ddr_cap();
+		break;
+	case emmc_life:
+		get_emmc_lifetime();
 		break;
 	default:
 		break;

@@ -257,7 +257,6 @@ static char ltr577_prox_vendor_name[20]="LITE-ON-ltr577";
 	DEV_ATTR_DEFINE("vendor",ltr577_prox_vendor_name)
 	DEV_ATTR_DECLARE_END;
 	ONTIM_DEBUG_DECLARE_AND_INIT(als_prox,als_prox,8);
-extern bool proximity_probe_ok;//bit4//add by liuwei
 
 #endif
 
@@ -2825,7 +2824,6 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	}	
 #ifdef ontim_debug_info
         REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	proximity_probe_ok=1;//add by liuxinyuan
 #endif
 
 	ltr577_init_flag =0;
@@ -2841,9 +2839,6 @@ exit_init_failed:
 exit:
 	ltr577_i2c_client = NULL;           
 	APS_ERR("%s: err = %d\n", __func__, err);
-#ifdef ontim_debug_info
-	proximity_probe_ok=-1;//add by liuxinyuan
-#endif
 	ltr577_init_flag =-1;
 	return err;
 }

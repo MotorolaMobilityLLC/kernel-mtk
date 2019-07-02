@@ -9,19 +9,35 @@
 
 
 static struct kobject *bootinfo_kobj = NULL;
+int gesture_dubbleclick_en =0;
 
-int back_camera_find_success=0;
-int front_camera_find_success=0;
-int torch_flash_level=0;
-bool tp_probe_ok;//bit0
-bool camera_front_probe_ok;//bit1
-bool camera_back_probe_ok;//bit2
-bool gsensor_probe_ok;//bit3
-bool proximity_probe_ok;//bit4
-bool charger_probe_ok;//bit5
-bool pmu_probe_ok=1;//bit6
-bool compass_probe_ok;//bit7
-bool fingerprint_probe_ok;//bit31
+static ssize_t gesture_enable_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
+{
+	char *s = buf;
+	return (s - buf);
+}
+
+static ssize_t gesture_enable_store(struct kobject *kobj, struct kobj_attribute *attr, const char * buf, size_t n)
+
+{
+    int enable=0,ret;
+    ret = kstrtouint(buf, 10, &enable);
+	if(ret != 0)
+		return 0;
+    gesture_dubbleclick_en =enable;
+
+	return n;
+}
+static struct kobj_attribute gesture_enable_attr = {
+	.attr = {
+		.name = "gesture_enable",
+		.mode = 0644,
+	},
+	.show =&gesture_enable_show,
+	.store= &gesture_enable_store,
+};
+
+
 static ssize_t i2c_devices_info_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
 {
 	char *s = buf;
@@ -37,6 +53,7 @@ static struct kobj_attribute i2c_devices_info_attr = {
 
 static struct attribute * g[] = {
 	&i2c_devices_info_attr.attr,//+add by liuwei
+	&gesture_enable_attr.attr,
 	NULL,
 };
 

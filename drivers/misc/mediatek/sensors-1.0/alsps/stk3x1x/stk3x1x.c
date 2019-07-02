@@ -474,7 +474,6 @@ static char stk3x1x_prox_vendor_name[20]="stk_ps";//"stk3x1x";
 #endif
     DEV_ATTR_DECLARE_END;
     ONTIM_DEBUG_DECLARE_AND_INIT(als_prox,als_prox,8);
-extern bool proximity_probe_ok;//bit4//add by liuwei
 #endif
 
 #ifdef ONTIM_CALI
@@ -5619,7 +5618,6 @@ APS_LOG("obj->hw->polling_mode_ps=0x%x,obj->hw->polling_mode_als=0x%x;\n",obj->h
 
 #ifdef ontim_debug_info
         REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	proximity_probe_ok=1;//add by liuwei
 #endif
 
 #ifdef ONTIM_ALS_CALI
@@ -5632,7 +5630,6 @@ APS_LOG("obj->hw->polling_mode_ps=0x%x,obj->hw->polling_mode_als=0x%x;\n",obj->h
 #endif
 #ifdef ontim_debug_info
         REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
-	proximity_probe_ok=1;//add by liuxinyuan
 #endif
 
 	APS_LOG("%s: OK\n", __FUNCTION__);
@@ -5653,9 +5650,6 @@ APS_LOG("obj->hw->polling_mode_ps=0x%x,obj->hw->polling_mode_als=0x%x;\n",obj->h
 		#if defined(MTK_AUTO_DETECT_ALSPS)
 		    	stk3x1x_init_flag = -1;
 		#endif
-	#ifdef ontim_debug_info
-		proximity_probe_ok=-1;//add by liuwei
-	#endif
 		APS_ERR("%s: err = %d\n", __FUNCTION__, err);
 	return err;
 }

@@ -26,6 +26,7 @@ KEYWORD(GSENSOR_MFR)         //Fingerprint mfr
 KEYWORD(ALSPS_MFR)         //Fingerprint mfr
 KEYWORD(LCD_MFR)        //LCD mfr
 KEYWORD(TP_MFR)         //Touch mfr
+KEYWORD(POWER_USB_TYPE)    //battary  mfr
 KEYWORD(BATTARY_MFR)    //battary  mfr
 KEYWORD(BATTARY_VOL)    //battary  voltage_now
 KEYWORD(BATTARY_CAP)    //battary  capacity
