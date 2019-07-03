@@ -1803,7 +1803,7 @@ void exec_BAT_EC(int cmd, int param)
 				bm_err(
 					"exe_BAT_EC cmd %d, param %d, enable\n",
 					cmd, param);
-				fg_custom_init_from_header();
+				//fg_custom_init_from_header();
 			}
 		}
 		break;
