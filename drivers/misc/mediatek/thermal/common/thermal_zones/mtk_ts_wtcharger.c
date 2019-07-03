@@ -716,7 +716,7 @@ int mtkts_wtcharger_get_hw_temp(void)
 	mutex_unlock(&WTCHARGER_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtkts_wtcharger_printk("T_wtcharger=%d\n", t_ret);
+		pr_info("T_wtcharger=%d\n", t_ret);
 
 	mtkts_wtcharger_dprintk("[%s] T_wtcharger, %d\n", __func__,
 									t_ret);
