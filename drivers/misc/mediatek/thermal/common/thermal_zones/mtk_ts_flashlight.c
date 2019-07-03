@@ -759,7 +759,7 @@ int mtkts_flashlight_get_hw_temp(void)
 	mutex_unlock(&FLASHLIGHT_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtkts_flashlight_printk("T_flashlight=%d\n", t_ret);
+		pr_info("T_flashlight=%d\n", t_ret);
 
 	mtkts_flashlight_dprintk("[%s] T_flashlight, %d\n", __func__,
 									t_ret);
