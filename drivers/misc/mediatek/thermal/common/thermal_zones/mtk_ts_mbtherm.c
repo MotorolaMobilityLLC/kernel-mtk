@@ -759,7 +759,7 @@ int mtkts_mbtherm_get_hw_temp(void)
 	mutex_unlock(&MBTHERM_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtkts_mbtherm_printk("T_mbtherm=%d\n", t_ret);
+		pr_info("T_mbtherm=%d\n", t_ret);
 
 	mtkts_mbtherm_dprintk("[%s] T_mbtherm, %d\n", __func__,
 									t_ret);
