@@ -622,7 +622,7 @@ static int mtktscharger_get_hw_charger_temp(void)
 	mutex_unlock(&CHARGER_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtktscharger2_dprintk("T_charger=%d\n", t_ret);
+		pr_info("T_charger=%d\n", t_ret);
 
 	mtktscharger2_dprintk("[mtkts_charger_get_hw_temp] T_charger, %d\n", t_ret);
 	return t_ret;
