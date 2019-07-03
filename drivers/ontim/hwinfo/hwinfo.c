@@ -320,11 +320,14 @@ static int get_tp_info(void)
 }
 
 #define POWER_USB_TYPE_FILE "/sys/class/power_supply/usb/type"
+#define POWER_USB_ONLINE_FILE "/sys/class/power_supply/usb/online"
 static int get_power_usb_type(void)
 {
 	char buf[64] = {0};
+	char online[64] = {0};
 	int ret = 0;
 
+	memset(buf, 0x00, 64);
 	ret = hwinfo_read_file(POWER_USB_TYPE_FILE, buf, sizeof(buf));
 	if (ret != 0)
 	{
@@ -335,7 +338,19 @@ static int get_power_usb_type(void)
 		buf[strlen(buf) - 1] = '\0';
 	printk(KERN_INFO "power usb %s\n", buf);
 
-	strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, buf);
+	memset(online, 0x00, 64);
+	ret = hwinfo_read_file(POWER_USB_ONLINE_FILE, online, sizeof(online));
+	if (ret != 0)
+	{
+		printk(KERN_CRIT "get_power usb online failed.");
+		return -1;
+	}
+	if (online[strlen(online) - 1] == '\n')
+		online[strlen(online) - 1] = '\0';
+	printk(KERN_INFO "power usb online %s\n", online);
+
+	if (!strcmp(online, "1"))
+		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, buf);
 
 	return 0;
 }
@@ -723,16 +738,16 @@ static void get_backaux2_camera_efuse_id(void)
 
 static void get_card_present(void)
 {
-    char card_holder_present[BUF_SIZE];
+	char card_holder_present[BUF_SIZE];
 
-    memset(card_holder_present, '\0', BUF_SIZE);
-    strncpy(card_holder_present, "truly", 5);
-    if (gpio_get_value(133) == 0)
-    {
-        memset(card_holder_present, '\0', BUF_SIZE);
-        strncpy(card_holder_present, "false", 5);
-    }
-    memset(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, 0x00,sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf));
+	memset(card_holder_present, '\0', BUF_SIZE);
+	strncpy(card_holder_present, "truly", 5);
+	if (gpio_get_value(133) == 0)
+	{
+		memset(card_holder_present, '\0', BUF_SIZE);
+		strncpy(card_holder_present, "false", 5);
+	}
+	memset(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, 0x00, sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf));
 	strncpy(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf, card_holder_present,
 	        ((strlen(card_holder_present) >= sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf) ?
 	          sizeof(hwinfo[CARD_HOLDER_PRESENT].hwinfo_buf) : strlen(card_holder_present))));
@@ -779,25 +794,25 @@ unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
-    unsigned int gpio_base =343;
+	unsigned int gpio_base = 343;
 
-	unsigned int pin0=121;
-	unsigned int pin1=54;
-	unsigned int pin2=53;
-	unsigned int pin3=5;
-	unsigned int pin4=11;
+	unsigned int pin0 = 121;
+	unsigned int pin1 = 54;
+	unsigned int pin2 = 53;
+	unsigned int pin3 = 5;
+	unsigned int pin4 = 11;
 	int pin_val = 0;
-	int hw_ver=0;
+	int hw_ver = 0;
 
-	
-	pin_val =    gpio_get_value(gpio_base+pin0) & 0x01;
-	pin_val |= (gpio_get_value(gpio_base+pin1) & 0x01) << 1;
-	pin_val |= (gpio_get_value(gpio_base+pin2) & 0x01) << 2;
-	pin_val |= (gpio_get_value(gpio_base+pin3) & 0x01) << 3;
-	pin_val |= (gpio_get_value(gpio_base+pin4) & 0x01) << 4;
+
+	pin_val =    gpio_get_value(gpio_base + pin0) & 0x01;
+	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 1;
+	pin_val |= (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
+	pin_val |= (gpio_get_value(gpio_base + pin3) & 0x01) << 3;
+	pin_val |= (gpio_get_value(gpio_base + pin4) & 0x01) << 4;
 	hw_ver = pin_val;
-	
-	printk(KERN_ERR "%s: hw_ver is %x ;\n",__func__, hw_ver);
+
+	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, hw_ver);
 
 	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", hw_ver);
 #if 0
