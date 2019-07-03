@@ -777,7 +777,7 @@ int mtkts_btsnrpa_get_hw_temp(void)
 	mutex_unlock(&BTSNRPA_lock);
 
 	if (t_ret > 40000)	/* abnormal high temp */
-		mtkts_btsnrpa_printk("T_btsnrpa=%d\n", t_ret);
+		pr_info("T_btsnrpa=%d\n", t_ret);
 
 	mtkts_btsnrpa_dprintk("[%s] T_btsnrpa, %d\n", __func__,
 									t_ret);
