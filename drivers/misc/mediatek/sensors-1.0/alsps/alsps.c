@@ -50,7 +50,7 @@ int als_data_report(int value, int status)
 			pr_err_ratelimited("event buffer full, so drop this data\n");
 		cxt->is_get_valid_als_data_after_enable = true;
 	}
-	//if (value != last_als_report_data) {
+	if (value != last_als_report_data) {
 		event.handle = ID_LIGHT;
 		event.flush_action = DATA_ACTION;
 		event.word[0] = value;
@@ -59,7 +59,7 @@ int als_data_report(int value, int status)
 		if (err < 0)
 			pr_err_ratelimited("event buffer full, so drop this data\n");
 		last_als_report_data = value;
-	//}
+	}
 	return err;
 }
 
