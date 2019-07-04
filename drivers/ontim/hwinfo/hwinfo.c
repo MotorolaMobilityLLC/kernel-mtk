@@ -185,7 +185,7 @@ static int hwinfo_read_file(char *file_name, char buf[], int buf_size)
 	memset(buf, 0x00, buf_size);
 	len = vfs_read(fp, buf, buf_size, &pos);
 	buf[buf_size - 1] = '\n';
-	printk(KERN_INFO "buf= %s,size = %ld \n", buf, len);
+	printk(KERN_INFO "buf= %s,size = %ld \n", buf, (long int)len);
 	filp_close(fp, NULL);
 	set_fs(fs);
 
@@ -214,7 +214,7 @@ static int hwinfo_write_file(char *file_name, const char buf[], int buf_size)
 	pos = fp->f_pos;
 	len = vfs_write(fp, buf, buf_size, &pos);
 	fp->f_pos = pos;
-	printk(KERN_INFO "buf = %s,size = %ld \n", buf, len);
+	printk(KERN_INFO "buf = %s,size = %ld \n", buf, (long int)len);
 	filp_close(fp, NULL);
 	set_fs(fs);
 	return 0;

@@ -467,7 +467,7 @@ static int CM36558_get_als_value(struct CM36558_priv *obj, u16 als)
 			invalid = 1;
 	}
 	for (idx = 0; idx < obj->als_level_num; idx++) {
-		if (als < obj->hw.als_level[idx])
+		if (als < obj->als_level[idx])
 			break;
 	}
 	if (idx >= obj->als_level_num || idx >= obj->als_value_num) {
@@ -476,8 +476,8 @@ static int CM36558_get_als_value(struct CM36558_priv *obj, u16 als)
 		else
 			value = obj->hw.als_value[obj->als_value_num-1];
 	} else {
-		level_high = obj->hw.als_level[idx];
-		level_low = (idx > 0) ? obj->hw.als_level[idx-1] : 0;
+		level_high = obj->als_level[idx];
+		level_low = (idx > 0) ? obj->als_level[idx-1] : 0;
 		level_diff = level_high - level_low;
 		value_high = obj->hw.als_value[idx];
 		value_low = (idx > 0) ? obj->hw.als_value[idx-1] : 0;
@@ -745,7 +745,7 @@ static ssize_t CM36558_show_alslv(struct device_driver *ddri, char *buf)
 	}
 
 	for (idx = 0; idx < CM36558_obj->als_level_num; idx++)
-		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->hw.als_level[idx]);
+		len += snprintf(buf + len, PAGE_SIZE - len, "%d ", CM36558_obj->als_level[idx]);
 	len += snprintf(buf + len, PAGE_SIZE - len, "\n");
 	return len;
 }
@@ -759,7 +759,7 @@ static ssize_t CM36558_store_alslv(struct device_driver *ddri, const char *buf, 
 	} else if (!strcmp(buf, "def")) {
 		memcpy(CM36558_obj->als_level, CM36558_obj->hw.als_level, sizeof(CM36558_obj->als_level));
 	} else if (CM36558_obj->als_level_num != read_int_from_buf(CM36558_obj, buf, count,
-								   CM36558_obj->hw.als_level,
+								   CM36558_obj->als_level,
 								   CM36558_obj->als_level_num)) {
 		APS_PR_ERR("invalid format: '%s'\n", buf);
 	}
