@@ -2277,260 +2277,7 @@ static int KX126_1063_setup_irq(void)
 	return err;
 }
 #endif
-/*----------------------------------------------------------------------------*/
-static int KX126_1063_open(struct inode *inode, struct file *file)
-{
-	file->private_data = KX126_1063_i2c_client;
 
-	if (file->private_data == NULL) {
-		GSE_ERR("null pointer!!\n");
-		return -EINVAL;
-	}
-	return nonseekable_open(inode, file);
-}
-
-/*----------------------------------------------------------------------------*/
-static int KX126_1063_release(struct inode *inode, struct file *file)
-{
-	file->private_data = NULL;
-	return 0;
-}
-
-#ifdef CONFIG_COMPAT
-static long KX126_1063_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	long err = 0;
-
-	void __user *arg32 = compat_ptr(arg);
-
-	if (!file->f_op || !file->f_op->unlocked_ioctl)
-		return -ENOTTY;
-
-	switch (cmd) {
-	case COMPAT_GSENSOR_IOCTL_READ_SENSORDATA:
-		if (arg32 == NULL) {
-			err = -EINVAL;
-			break;
-		}
-
-		err =
-		    file->f_op->unlocked_ioctl(file, GSENSOR_IOCTL_READ_SENSORDATA,
-					       (unsigned long)arg32);
-		if (err) {
-			GSE_ERR("GSENSOR_IOCTL_READ_SENSORDATA unlocked_ioctl failed.");
-			return err;
-		}
-		break;
-	
-	case COMPAT_GSENSOR_IOCTL_SET_CALI:
-                if (arg32 == NULL) {
-                        err = -EINVAL;
-                        break;
-                }
-                err = file->f_op->unlocked_ioctl(file,
-                        GSENSOR_IOCTL_SET_CALI, (unsigned long)arg32);
-                if (err) {
-                        GSE_ERR("GSENSOR_IOCTL_SET_CALI failed.");
-                        return err;
-                }
-                break;
-        case COMPAT_GSENSOR_IOCTL_GET_CALI:
-                if (arg32 == NULL) {
-                        err = -EINVAL;
-                        break;
-                }
-                err = file->f_op->unlocked_ioctl(file,
-                        GSENSOR_IOCTL_GET_CALI, (unsigned long)arg32);
-                if (err) {
-                        GSE_ERR("GSENSOR_IOCTL_GET_CALI failed.");
-                        return err;
-                }
-                break;
-        case COMPAT_GSENSOR_IOCTL_CLR_CALI:
-                if (arg32 == NULL) {
-                        err = -EINVAL;
-                        break;
-                }
-                err = file->f_op->unlocked_ioctl(file,
-                        GSENSOR_IOCTL_CLR_CALI, (unsigned long)arg32);
-                if (err) {
-                        GSE_ERR("GSENSOR_IOCTL_CLR_CALI failed.");
-                        return err;
-                }
-                break;
-	default:
-		GSE_ERR("unknown IOCTL: 0x%08x\n", cmd);
-		err = -ENOIOCTLCMD;
-		break;
-
-	}
-
-	return err;
-}
-#endif
-
-/*----------------------------------------------------------------------------*/
-/*static int KX126_1063_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
-       unsigned long arg)*/
-static long KX126_1063_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct i2c_client *client = (struct i2c_client *)file->private_data;
-	struct KX126_1063_i2c_data *obj = (struct KX126_1063_i2c_data *)i2c_get_clientdata(client);
-	char strbuf[KX126_1063_BUFSIZE];
-	void __user *data;
-	struct SENSOR_DATA sensor_data;
-	long err = 0;
-	int cali[3];
-
-	if (_IOC_DIR(cmd) & _IOC_READ)
-		err = !access_ok(VERIFY_WRITE, (void __user *)arg, _IOC_SIZE(cmd));
-	else if (_IOC_DIR(cmd) & _IOC_WRITE)
-		err = !access_ok(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
-
-	if (err) {
-		GSE_ERR("access error: %08X, (%2d, %2d)\n", cmd, _IOC_DIR(cmd), _IOC_SIZE(cmd));
-		return -EFAULT;
-	}
-
-	switch (cmd) {
-	case GSENSOR_IOCTL_INIT:
-		KX126_1063_init_client(client, 0);
-		break;
-
-	case GSENSOR_IOCTL_READ_CHIPINFO:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-
-		KX126_1063_ReadChipInfo(client, strbuf, KX126_1063_BUFSIZE);
-		if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	case GSENSOR_IOCTL_READ_SENSORDATA:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		KX126_1063_SetPowerMode(obj->client, true);
-		KX126_1063_ReadSensorData(client, strbuf, KX126_1063_BUFSIZE);
-		if (copy_to_user(data, strbuf, strlen(strbuf) + 1)) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	case GSENSOR_IOCTL_READ_GAIN:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-
-		if (copy_to_user(data, &gsensor_gain, sizeof(struct GSENSOR_VECTOR3D))) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	case GSENSOR_IOCTL_READ_RAW_DATA:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		KX126_1063_ReadRawData(client, strbuf);
-		if (copy_to_user(data, &strbuf, strlen(strbuf) + 1)) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-	case GSENSOR_IOCTL_SET_CALI:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		if (copy_from_user(&sensor_data, data, sizeof(sensor_data))) {
-			err = -EFAULT;
-			break;
-		}
-		if (atomic_read(&obj->suspend)) {
-			GSE_ERR("Perform calibration in suspend state!!\n");
-			err = -EINVAL;
-		} else {
-			cali[KX126_1063_AXIS_X] =
-			    sensor_data.x * obj->reso->sensitivity / GRAVITY_EARTH_1000;
-			cali[KX126_1063_AXIS_Y] =
-			    sensor_data.y * obj->reso->sensitivity / GRAVITY_EARTH_1000;
-			cali[KX126_1063_AXIS_Z] =
-			    sensor_data.z * obj->reso->sensitivity / GRAVITY_EARTH_1000;
-			err = KX126_1063_WriteCalibration(client, cali);
-		}
-		break;
-
-	case GSENSOR_IOCTL_CLR_CALI:
-		err = KX126_1063_ResetCalibration(client);
-		break;
-
-	case GSENSOR_IOCTL_GET_CALI:
-		data = (void __user *)arg;
-		if (data == NULL) {
-			err = -EINVAL;
-			break;
-		}
-		err = KX126_1063_ReadCalibration(client, cali);
-		if (err != 0)
-			break;
-
-		sensor_data.x =
-		    cali[KX126_1063_AXIS_X] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		sensor_data.y =
-		    cali[KX126_1063_AXIS_Y] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		sensor_data.z =
-		    cali[KX126_1063_AXIS_Z] * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
-		if (copy_to_user(data, &sensor_data, sizeof(sensor_data))) {
-			err = -EFAULT;
-			break;
-		}
-		break;
-
-
-	default:
-		GSE_ERR("unknown IOCTL: 0x%08x\n", cmd);
-		err = -ENOIOCTLCMD;
-		break;
-
-	}
-	return err;
-}
-
-/*----------------------------------------------------------------------------*/
-static struct file_operations KX126_1063_fops = {
-	.owner = THIS_MODULE,
-	.open = KX126_1063_open,
-	.release = KX126_1063_release,
-	.unlocked_ioctl = KX126_1063_unlocked_ioctl,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl = KX126_1063_compat_ioctl,
-#endif
-};
-
-/*----------------------------------------------------------------------------*/
-static struct miscdevice KX126_1063_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "gsensor",
-	.fops = &KX126_1063_fops,
-};
-
-
-/*----------------------------------------------------------------------------*/
 #if !defined(CONFIG_HAS_EARLYSUSPEND) || !defined(USE_EARLY_SUSPEND)
 /*----------------------------------------------------------------------------*/
 static int KX126_1063_suspend(struct device *dev)
@@ -2859,6 +2606,132 @@ static int KX126_1063_get_data(int *x, int *y, int *z, int *status)
 	return 0;
 }
 
+static int gsensor_acc_batch(int flag, int64_t samplingPeriodNs,
+						int64_t maxBatchReportLatencyNs)
+{
+	int value = 0;
+
+	value = (int)samplingPeriodNs / 1000 / 1000;
+
+	GSE_LOG("kx126_1063 acc set delay = (%d) ok.\n", value);
+	return KX126_1063_set_delay(samplingPeriodNs);
+}
+
+static int KX126_1063_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+
+	err = KX126_1063_SetPowerMode(KX126_1063_i2c_client, 1);
+	if (err) {
+		GSE_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = gsensor_acc_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GSE_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+
+static int KX126_1063_factory_get_data(int32_t data[3], int *status)
+{
+	return KX126_1063_get_data(&data[0], &data[1], &data[2], status);
+}
+
+static int KX126_1063_factory_get_raw_data(int32_t data[3])
+{
+	char strbuf[KX126_1063_BUFSIZE] = {0};
+
+	KX126_1063_ReadRawData(KX126_1063_i2c_client, strbuf);
+	data[0] = strbuf[0];
+	data[1] = strbuf[1];
+	data[2] = strbuf[2];
+
+	return 0;
+}
+
+static int KX126_1063_factory_enable_calibration(void)
+{
+	return 0;
+}
+
+static int KX126_1063_factory_clear_cali(void)
+{
+	int err = 0;
+	err = KX126_1063_ResetCalibration(KX126_1063_i2c_client);
+	return 0;
+}
+
+static int KX126_1063_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+	struct KX126_1063_i2c_data *obj =
+			(struct KX126_1063_i2c_data *)i2c_get_clientdata(KX126_1063_i2c_client);
+
+	cali[KX126_1063_AXIS_X] =
+	    data[0] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[KX126_1063_AXIS_Y] =
+	    data[1] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[KX126_1063_AXIS_Z] =
+	    data[2] * obj->reso->sensitivity / GRAVITY_EARTH_1000;
+
+	err = KX126_1063_WriteCalibration(KX126_1063_i2c_client, cali);
+	if (err) {
+		GSE_ERR("KX126_1063_WriteCalibration failed!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int KX126_1063_factory_get_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+	struct KX126_1063_i2c_data *obj =
+			(struct KX126_1063_i2c_data *)i2c_get_clientdata(KX126_1063_i2c_client);
+
+	err = KX126_1063_ReadCalibration(KX126_1063_i2c_client, cali);
+	if (err) {
+		GSE_ERR("bmi160_ReadCalibration failed!\n");
+		return -1;
+	}
+	data[0] = cali[KX126_1063_AXIS_X]
+	    * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	data[1] = cali[KX126_1063_AXIS_X]
+	    * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	data[2] = cali[KX126_1063_AXIS_X]
+	    * GRAVITY_EARTH_1000 / obj->reso->sensitivity;
+	return 0;
+}
+
+static int KX126_1063_factory_do_self_test(void)
+{
+	return 0;
+}
+/*----------------------------------------------------------------------------*/
+static struct accel_factory_fops KX126_1063_factory_fops = {
+	.enable_sensor = KX126_1063_factory_enable_sensor,
+	.get_data = KX126_1063_factory_get_data,
+	.get_raw_data = KX126_1063_factory_get_raw_data,
+	.enable_calibration = KX126_1063_factory_enable_calibration,
+	.clear_cali = KX126_1063_factory_clear_cali,
+	.set_cali = KX126_1063_factory_set_cali,
+	.get_cali = KX126_1063_factory_get_cali,
+	.do_self_test = KX126_1063_factory_do_self_test,
+};
+
+/*----------------------------------------------------------------------------*/
+static struct accel_factory_public KX126_1063_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &KX126_1063_factory_fops,
+};
+
+
+
 /*----------------------------------------------------------------------------*/
 static int KX126_1063_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -2938,11 +2811,13 @@ static int KX126_1063_i2c_probe(struct i2c_client *client, const struct i2c_devi
 		goto exit_init_failed;
 	}
 
-	err = misc_register(&KX126_1063_device);
-	if (0 != err) {
-		GSE_ERR("KX126_1063_device register failed\n");
+
+	err = accel_factory_device_register(&KX126_1063_factory_device);
+	if (err) {
+		GSE_ERR("kx126_1063_device register failed\n");
 		goto exit_misc_device_register_failed;
 	}
+
 	err = KX126_1063_create_attr(&KX126_1063_init_info.platform_diver_addr->driver);
 	if (0 != err) {
 		GSE_ERR("create attribute err = %d\n", err);
@@ -2991,7 +2866,7 @@ static int KX126_1063_i2c_probe(struct i2c_client *client, const struct i2c_devi
 	return 0;
 
 exit_create_attr_failed:
-	misc_deregister(&KX126_1063_device);
+	accel_factory_device_deregister(&KX126_1063_factory_device);
 exit_misc_device_register_failed:
 exit_init_failed:
 exit_kfree:
@@ -3011,7 +2886,7 @@ static int KX126_1063_i2c_remove(struct i2c_client *client)
 	if (0 != err)
 		GSE_ERR("KX126_1063_delete_attr fail: %d\n", err);
 
-	 misc_deregister(&KX126_1063_device);
+	accel_factory_device_deregister(&KX126_1063_factory_device);
 
 	KX126_1063_i2c_client = NULL;
 	i2c_unregister_device(client);

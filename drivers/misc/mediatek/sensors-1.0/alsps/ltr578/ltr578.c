@@ -1843,6 +1843,25 @@ EXIT_INTR:
 
 				APS_DBG("cmd= %x\n", cmd);
 				switch (cmd) {
+//add by fanxzh for calibration begin
+						case ALSPS_IOCTL_CLR_CALI:
+							if(copy_from_user(&cali_value, ptr, sizeof(cali_value)))
+							{
+								err = -EFAULT;
+								goto err_out;
+							}
+							if(cali_value == 0)
+								obj->ps_cali = 0;
+						break;
+						case ALSPS_IOCTL_GET_CALI:
+							cali_value = obj->ps_cali ;
+							if(copy_to_user(ptr, &cali_value, sizeof(cali_value)))
+							{
+								err = -EFAULT;
+								goto err_out;
+							}
+						break;
+//add by fanxzh for calibration end
 						case ALSPS_IOCTL_SET_CALI:
 								if (copy_from_user(&cali_value, ptr, sizeof(cali_value))) {
 										err = -EFAULT;

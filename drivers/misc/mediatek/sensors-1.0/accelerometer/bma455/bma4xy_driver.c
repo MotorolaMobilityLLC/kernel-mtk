@@ -3939,12 +3939,6 @@ static const struct file_operations bma4xy_fops = {
 #endif
 };
 
-static struct miscdevice bma4xy_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = "gsensor",
-	.fops = &bma4xy_fops,
-};
-
 static int bma4xy_i2c_suspend(struct device *dev)
 {
 	int err = 0;
@@ -4463,6 +4457,16 @@ static int gsensor_set_delay(u64 ns)
 	return 0;
 }
 
+static int gsensor_acc_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReportLatencyNs)
+{
+	int value = 0;
+
+	value = (int)samplingPeriodNs / 1000 / 1000;
+
+	GSE_LOG("bma acc set delay = (%d) ok.\n", value);
+	return gsensor_set_delay(samplingPeriodNs);
+}
+
 static int gsensor_get_data(int *x, int *y, int *z, int *status)
 {
 	char buff[BMA4XY_BUFSIZE];
@@ -4485,6 +4489,110 @@ static struct acc_init_info bma4xy_init_info = {
 	.init = gsensor_local_init,
 	.uninit = gsensor_remove,
 };
+static int bma4xy_factory_enable_sensor(bool enabledisable, int64_t sample_periods_ms)
+{
+	int err;
+	
+	err = BMA4XY_SetPowerMode(bma4_obj_i2c_data->client, 1);
+	if (err) {
+		GSE_ERR("%s enable sensor failed!\n", __func__);
+		return -1;
+	}
+	err = gsensor_acc_batch(0, sample_periods_ms * 1000000, 0);
+	if (err) {
+		GSE_ERR("%s enable set batch failed!\n", __func__);
+		return -1;
+	}
+	return 0;
+}
+
+static int bma4xy_factory_get_data(int32_t data[3], int *status)
+{
+	return gsensor_get_data(&data[0], &data[1], &data[2], status);
+}
+
+static int bma4xy_factory_get_raw_data(int32_t data[3])
+{
+	char strbuf[BMA4XY_BUFSIZE] = {0};
+
+	BMA4XY_ReadRawData(bma4_obj_i2c_data->client, strbuf);
+	data[0] = strbuf[0];
+	data[1] = strbuf[1];
+	data[2] = strbuf[2];
+
+	return 0;
+}
+
+static int bma4xy_factory_enable_calibration(void)
+{
+	return 0;
+}
+static int bma4xy_factory_clear_cali(void)
+{
+	int err = 0;
+	err = BMA4XY_ResetCalibration(bma4_obj_i2c_data->client);
+	return 0;
+}
+
+static int bma4xy_factory_set_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+	cali[BMA4XY_ACC_AXIS_X] = data[0]
+	    * bma4_obj_i2c_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[BMA4XY_ACC_AXIS_Y] = data[1]
+	    * bma4_obj_i2c_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	cali[BMA4XY_ACC_AXIS_Z] = data[2]
+	    * bma4_obj_i2c_data->reso->sensitivity / GRAVITY_EARTH_1000;
+	err = BMA4XY_WriteCalibration(bma4_obj_i2c_data->client, cali);
+	if (err) {
+		GSE_ERR("bma_WriteCalibration failed!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static int bma4xy_factory_get_cali(int32_t data[3])
+{
+	int err = 0;
+	int cali[3] = { 0 };
+	err = BMA4XY_ReadCalibration(bma4_obj_i2c_data->client, cali);
+	if (err) {
+		GSE_ERR("bmi160_ReadCalibration failed!\n");
+		return -1;
+	}
+	data[0] = cali[BMA4XY_ACC_AXIS_X]
+	    * GRAVITY_EARTH_1000 / bma4_obj_i2c_data->reso->sensitivity;
+	data[1] = cali[BMA4XY_ACC_AXIS_X]
+	    * GRAVITY_EARTH_1000 / bma4_obj_i2c_data->reso->sensitivity;
+	data[2] = cali[BMA4XY_ACC_AXIS_X]
+	    * GRAVITY_EARTH_1000 / bma4_obj_i2c_data->reso->sensitivity;
+	return 0;
+}
+
+static int bma4xy_factory_do_self_test(void)
+{
+	return 0;
+}
+
+static struct accel_factory_fops bma4xy_factory_fops = {
+	.enable_sensor = bma4xy_factory_enable_sensor,
+	.get_data = bma4xy_factory_get_data,
+	.get_raw_data = bma4xy_factory_get_raw_data,
+	.enable_calibration = bma4xy_factory_enable_calibration,
+	.clear_cali = bma4xy_factory_clear_cali,
+	.set_cali = bma4xy_factory_set_cali,
+	.get_cali = bma4xy_factory_get_cali,
+	.do_self_test = bma4xy_factory_do_self_test,
+};
+
+static struct accel_factory_public bma4xy_factory_device = {
+	.gain = 1,
+	.sensitivity = 1,
+	.fops = &bma4xy_factory_fops,
+};
+
 static int bma4xy_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
@@ -4590,8 +4698,7 @@ static int bma4xy_i2c_probe(struct i2c_client *client,
 	err = bma4xy_init_client(new_client, 1);
 	if (err)
 		GSE_ERR("bma4xy_device init cilent fail time\n");
-
-	err = misc_register(&bma4xy_device);
+	err = accel_factory_device_register(&bma4xy_factory_device);
 	if (err) {
 		GSE_ERR("bma4xy_device register failed\n");
 		goto exit_err_clean;
@@ -4648,8 +4755,9 @@ static int bma4xy_i2c_remove(struct i2c_client *client)
 	if (err != 0)
 		GSE_ERR("bma150_delete_attr fail: %d\n", err);
 
-	misc_deregister(&bma4xy_device);
-
+	accel_factory_device_deregister(&bma4xy_factory_device);
+	if (0 != err)
+		GSE_ERR("acc_deregister fail: %d\n", err);
 	bma4xy_i2c_client = NULL;
 	i2c_unregister_device(client);
 	kfree(i2c_get_clientdata(client));
