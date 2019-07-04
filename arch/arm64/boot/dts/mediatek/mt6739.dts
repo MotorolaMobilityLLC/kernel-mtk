@@ -2535,6 +2535,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_CHARGER_HL7005
 #include "hl7005.dtsi"
 #endif
+#ifdef CONFIG_CHARGER_HL7007
+#include "hl7007.dtsi"
+#endif
 #ifdef CONFIG_CHARGER_ETA6937
 #include "eta6937.dtsi"
 #endif
