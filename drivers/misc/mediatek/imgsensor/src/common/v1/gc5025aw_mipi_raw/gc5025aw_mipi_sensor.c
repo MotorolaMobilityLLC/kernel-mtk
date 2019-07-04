@@ -1294,7 +1294,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             	if (*sensor_id == imgsensor_info.sensor_id) 
                 {
                         memset(front_cam_name, 0x00, sizeof(front_cam_name));
-                        memcpy(front_cam_name, "gc5025", 64);
+                        memcpy(front_cam_name, "1_gc5025", 64);
                 	LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
                 	return ERROR_NONE;
             	}
