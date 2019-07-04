@@ -53,6 +53,7 @@ static const char *const typec_wait_ps_name[] = {
 	"SNK_VSafe5V",
 	"SRC_VSafe0V",
 	"SRC_VSafe5V",
+	"DBG_VSafe5V",
 };
 #endif	/* TYPEC_INFO2_ENABLE */
 
