@@ -356,9 +356,6 @@ static long fpsensor_ioctl(struct file *filp, unsigned int cmd, unsigned long ar
         fpsensor_dev->irq_enabled = 1;
         fpsensor_disable_irq(fpsensor_dev);
         fpsensor_debug(INFO_LOG, "%s: fpsensor init finished======\n", __func__);
-		fpsensor_debug(ERR_LOG, "add fpvendor for hwinfo on init, must delete\n");
-		CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
-		REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
         break;
 
     case FPSENSOR_IOC_EXIT:
