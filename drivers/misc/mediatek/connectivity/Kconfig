@@ -227,6 +227,20 @@ config MTK_WAPI_SUPPORT
 	  if it is set to TRUE: Support WAPI (WLAN Authentication and
 	  Privacy Infrastructure)
 
+config WIFI_LATAM_HOTSPOT_FCC
+        bool "WIFI_LATAM_HOTSPOT_FCC"
+        depends on MTK_COMBO_WIFI
+        default n
+        help
+          if it is set to TRUE: Support wifi hotspot close 12-14 channels
+
+config WIFI_LATAM_CHANNELS_NEW
+        bool "WIFI_LATAM_CHANNELS_NEW"
+        depends on MTK_COMBO_WIFI
+        default n
+        help
+          if it is set to TRUE: Support wifi LATAM channels
+
 config MTK_PASSPOINT_R1_SUPPORT
 	bool "MTK_PASSPOINT_R1_SUPPORT"
 	depends on MTK_COMBO_WIFI
