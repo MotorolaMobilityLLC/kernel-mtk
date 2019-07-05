@@ -351,6 +351,8 @@ static int get_power_usb_type(void)
 
 	if (!strcmp(online, "1"))
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, buf);
+    else
+		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "Unknow");
 
 	return 0;
 }
