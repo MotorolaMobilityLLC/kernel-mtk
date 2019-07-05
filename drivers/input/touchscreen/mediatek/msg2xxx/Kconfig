@@ -1,0 +1,11 @@
+#
+# Touchscreen driver configuration
+#
+config TOUCHSCREEN_MTK_MSTAR_TS
+    bool "MSTAR Ts for Mediatek"
+    depends on I2C
+    default n
+    help
+      Say Y here if you have Focaltech touch panel.
+      If unsure, say N.
+    

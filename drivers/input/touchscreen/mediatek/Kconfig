@@ -129,6 +129,19 @@ config TOUCHSCREEN_FT8006U
 
 source "drivers/input/touchscreen/mediatek/FT8006U/Kconfig"
 
+config TOUCHSCREEN_MTK_MSTAR_TS
+	bool "msg2xxx for Mediatek package"
+	default n
+	help
+	  Say Y here if you have FT8006u touch panel.
+
+	  If unsure, say N.
+
+	  To compile this dirver as a module, choose M here: the
+	  module will be called.
+
+source "drivers/input/touchscreen/mediatek/msg2xxx/Kconfig"
+
 config TOUCHSCREEN_HIMAX_CHIPSET
 	bool "HX83102 for Mediatek linux 4.4 package"
 	default n

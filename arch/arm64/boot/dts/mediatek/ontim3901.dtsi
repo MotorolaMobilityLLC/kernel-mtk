@@ -620,6 +620,11 @@
 		reg = <0x48>;
 		status = "okay";
 	};
+	cap_touch_msg2xxx:msg2xxx_touch@26 {
+		compatible = "mediatek,msg2xxx_touch";
+                reg = <0x26>;
+                status = "okay";
+	};
 };
 &pio {
 	ctp_pins_default: eint0default {
