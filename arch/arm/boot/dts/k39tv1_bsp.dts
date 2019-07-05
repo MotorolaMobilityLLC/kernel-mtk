@@ -9,6 +9,7 @@
 #include "mt6739.dts"
 #endif
 
+#ifdef NOT_ONTIM
 /* chosen */
 &chosen {
 	/* fpga may has no lk, we need to specify display info here */
@@ -674,6 +675,8 @@
 
 };
 /* AUDIO end */
-
 #include <k39tv1_bsp/cust.dtsi>
+#else
+#include "ontim3901.dtsi"
+#endif
 /*End of this file, DO NOT ADD ANYTHING HERE*/
