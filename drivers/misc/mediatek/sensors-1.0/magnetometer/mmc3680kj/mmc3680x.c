@@ -815,7 +815,7 @@ static ssize_t store_trace_value(struct device_driver *ddri, const char *buf, si
 	}
 	else
 	{
-		MEMSIC_ERR("invalid content: '%s', length = %ld\n", buf, count);
+		MEMSIC_ERR("invalid content: '%s', length = %d\n", buf, count);
 	}
 
 	return count;
