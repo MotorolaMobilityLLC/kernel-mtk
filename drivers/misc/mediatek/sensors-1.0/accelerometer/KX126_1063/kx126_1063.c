@@ -79,9 +79,9 @@ static int KX126_1063_setup_irq(void);
 
 /*----------------------------------------------------------------------------*/
 #define GSE_TAG                  "[Gsensor] "
-#define GSE_FUN(f)               pr_warn(GSE_TAG"%s\n", __func__)
+#define GSE_FUN(f)               pr_err(GSE_TAG"%s\n", __func__)
 #define GSE_ERR(fmt, args...)    pr_err(GSE_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
-#define GSE_LOG(fmt, args...)    pr_debug(fmt, ##args)
+#define GSE_LOG(fmt, args...)    pr_err(fmt, ##args)
 /*----------------------------------------------------------------------------*/
 static struct i2c_client *KX126_1063_i2c_client;
 

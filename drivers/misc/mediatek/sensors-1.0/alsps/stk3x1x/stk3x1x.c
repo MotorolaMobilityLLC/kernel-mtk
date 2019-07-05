@@ -5378,7 +5378,7 @@ static int stk3x1x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		goto exit_init_failed;
 	}
 
-	//APS_LOG("i2c_num=0x%x,I2C_ADDRS=0x%x;0x%x;\n",hw->i2c_num,hw->i2c_addr[0]);
+	APS_LOG("i2c_num=%d,I2C_ADDRS=%d;\n",hw->i2c_num,hw->i2c_addr[0]);
 
 	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
 	{
