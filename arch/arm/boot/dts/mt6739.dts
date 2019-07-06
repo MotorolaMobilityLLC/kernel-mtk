@@ -2548,3 +2548,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #ifdef CONFIG_CHARGER_ETA6937
 #include "eta6937.dtsi"
 #endif
+
+#if defined(CONFIG_TRUSTKERNEL_TEE_SUPPORT) && defined(CONFIG_FPSENSOR_FINGERPRINT)
+#include "mt6739_fpsensor.dtsi"
+#endif
