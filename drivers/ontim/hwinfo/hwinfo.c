@@ -535,7 +535,7 @@ static ssize_t get_typec_cc_status(void)
 	return 0;
 }
 
-#define ADB_SN_FILE "/config/usb_gadget/g2/strings/0x409/serialnumber"
+#define ADB_SN_FILE "/config/usb_gadget/g1/strings/0x409/serialnumber"
 static ssize_t get_adb_sn(void)
 {
 	char buf[BUF_SIZE] = {};
