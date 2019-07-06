@@ -64,6 +64,10 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debug.h"
 #include "connection_server.h"
 
+#ifdef HANDLE_JOURNEY_TRACE
+#include <linux/trace_events.h>
+#endif
+
 #define	HANDLE_HASH_TAB_INIT_SIZE		32
 
 #define	SET_FLAG(v, f)				((void)((v) |= (f)))
@@ -158,8 +162,37 @@ static HANDLE_IMPL_FUNCTAB const *gpsHandleFuncs;
 static POS_LOCK gHandleLock;
 static IMG_BOOL gbLockInitialised = IMG_FALSE;
 
-void LockHandle(void)
+#ifdef HANDLE_JOURNEY_TRACE
+static unsigned long __read_mostly mark_addr;
+static inline void update_tracing_mark_write_addr(void)
 {
+	if (unlikely(mark_addr == 0))
+		mark_addr = kallsyms_lookup_name("tracing_mark_write");
+}
+
+inline void trace_begin(const char *name)
+{
+    update_tracing_mark_write_addr();
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "B|%d|__LockHandle:%s\n",current->tgid, name);
+	preempt_enable();
+}
+
+inline void trace_end(void)
+{
+	preempt_disable();
+	event_trace_printk(mark_addr, "E|%d\n",current->tgid);
+	preempt_enable();
+}
+void _LockHandle(const char* from)
+#else
+void LockHandle(void)
+#endif
+{
+#ifdef HANDLE_JOURNEY_TRACE
+    trace_begin(from);
+#endif
 	lockdep_off();
 	OSLockAcquire(gHandleLock);
 	lockdep_on();
@@ -167,6 +200,9 @@ void LockHandle(void)
 
 void UnlockHandle(void)
 {
+#ifdef HANDLE_JOURNEY_TRACE
+    trace_end();
+#endif
 	lockdep_off();
 	OSLockRelease(gHandleLock);
 	lockdep_on();

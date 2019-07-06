@@ -193,7 +193,14 @@ PVRSRV_ERROR PVRSRVHandleInit(void);
 
 PVRSRV_ERROR PVRSRVHandleDeInit(void);
 
+//CJ some GPU lock trace
+//#define HANDLE_JOURNEY_TRACE
+#ifdef HANDLE_JOURNEY_TRACE
+void _LockHandle(const char*);
+#define LockHandle() _LockHandle(__func__);
+#else
 void LockHandle(void);
+#endif
 void UnlockHandle(void);
 
 
