@@ -990,8 +990,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		mdp_wdma0 = <&mdp_wdma0>;
 		mdp_wrot0 = <&mdp_wrot0>;
 		mdp_tdshp0 = <&mdp_tdshp0>;
-		mm_mutex = <&disp_mutex>;
 		disp_ovl0 = <&disp_ovl0>;
+		mm_mutex = <&disp_mutex>;
 		sram_share_cnt = <1>;
 		sram_share_engine = <8>;
 		sram_share_event = <710>;
@@ -1333,7 +1333,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				<&topckgen CLK_TOP_SPI_SEL>,
 				<&infracfg_ao CLK_INFRA_SPI0>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
+
+		spidev@0 {
+			compatible = "mediatek,fpsensor";
+			spi-max-frequency = <500000>;
+			reg = <0>;
+			status = "ok";
 		};
+	};
 
 	spi1: spi@11010000 {
 		compatible = "mediatek,mt6739-spi";
@@ -1784,12 +1791,19 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		/* VTOUCH-supply = <&mt_pmic_vgp1_ldo_reg>; */
 	};
 
+	fpsensor_finger:fpsensor_finger{
+			compatible = "mediatek,fingerprint";
+			#interrupt-parent = <&pio>;
+			interrupts = <0 IRQ_TYPE_EDGE_RISING>;
+			debounce = <2 0>;
+		};
+
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
 
-	flashlights_rt4505: flashlights_rt4505 {
-		compatible = "mediatek,flashlights_rt4505";
+	flashlights_aw3643: flashlights_aw3643 {
+		compatible = "mediatek,flashlights_aw3643";
 	};
 
 	mtkfb: mtkfb {
@@ -2166,57 +2180,60 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
-
+	led_simple: led_simple {
+		compatible = "leds-mt65xx";
+	};
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
-		/* enable_sw_jeita; */
+		enable_sw_jeita;
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
+/*		battery_cv = <4440000>;*/
+		max_charger_voltage = <6100000>;
+		min_charger_voltage = <4600000>;
 
 		/* charging current */
 		usb_charger_current_suspend = <0>;
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
+		/*ac_charger_current = <2050000>;*/
 		ac_charger_input_current = <3200000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <1500000>;
+		charging_host_charger_current = <500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv_voltage = <4240000>;
-		jeita_temp_t3_to_t4_cv_voltage = <4240000>;
-		jeita_temp_t2_to_t3_cv_voltage = <4340000>;
-		jeita_temp_t1_to_t2_cv_voltage = <4240000>;
-		jeita_temp_t0_to_t1_cv_voltage = <4040000>;
-		jeita_temp_below_t0_cv_voltage = <4040000>;
-		temp_t4_threshold = <50>;
-		temp_t4_thres_minus_x_degree = <47>;
+/*		jeita_temp_above_t4_cv_voltage = <4100000>;
+		jeita_temp_t3_to_t4_cv_voltage = <4100000>;
+		jeita_temp_t2_to_t3_cv_voltage = <4440000>;
+		jeita_temp_t1_to_t2_cv_voltage = <4440000>;
+		jeita_temp_t0_to_t1_cv_voltage = <4440000>;
+		jeita_temp_below_t0_cv_voltage = <4040000>;*/
+/*		temp_t4_threshold = <55>;
+		temp_t4_thres_minus_x_degree = <52>;
 		temp_t3_threshold = <45>;
 		temp_t3_thres_minus_x_degree = <39>;
-		temp_t2_threshold = <10>;
-		temp_t2_thres_plus_x_degree = <16>;
-		temp_t1_threshold = <0>;
-		temp_t1_thres_plus_x_degree = <6>;
+		temp_t2_threshold = <15>;
+		temp_t2_thres_plus_x_degree = <18>;
+		temp_t1_threshold = <15>;
+		temp_t1_thres_plus_x_degree = <18>;
 		temp_t0_threshold = <0>;
-		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_threshold = <0>;
+		temp_t0_thres_plus_x_degree = <6>;
+		temp_neg_10_threshold = <0>;*/
 
 		/* battery temperature protection */
-		enable_min_charge_temperature;
+/*		enable_min_charge_temperature;
 		min_charge_temperature = <0>;
 		min_charge_temperature_plus_x_degree = <6>;
-		max_charge_temperature = <50>;
-		max_charge_temperature_minus_x_degree = <47>;
+		max_charge_temperature = <55>;
+		max_charge_temperature_minus_x_degree = <52>;*/
 
 		/* PE 2.0 */
 		pe20_ichg_level_threshold = <1000>;
@@ -2266,11 +2283,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		clocks = <&scpsys SCP_SYS_CONN>;
 		clock-names = "conn";
 	};
-
-	goodix_fp: fingerprint {
-		compatible = "mediatek,goodix-fp";
+#ifdef CONFIG_RSEE
+	/*add by chipsailing*/
+	cs_finger: cs_finger {
+		compatible = "mediatek,cs_finger";
 	};
-
+#endif
 	gps {
 		compatible = "mediatek,gps";
 	};
@@ -2360,9 +2378,12 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	md1_sim2_hot_plug_eint:md1_sim2_hot_plug_eint {
 	};
-
 	eint_alps:eint_alps{
 		compatible = "mediatek,als-eint";
+	};
+	eint_acc:eint_acc{
+	};
+	int_sar_sensor:int_sar_sensor{
 	};
 
 	irtx_pwm:irtx_pwm {
@@ -2497,6 +2518,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 #include "cust_mt6739_msdc.dtsi"
 #include "trusty.dtsi"
+#ifdef CONFIG_RSEE
+#include "rsee.dtsi"
+#endif
+
+#if defined(CONFIG_TRUSTKERNEL_TEE_SUPPORT) && defined(CONFIG_FPSENSOR_FINGERPRINT)
+#include "mt6739_fpsensor.dtsi"
+#endif
 
 #ifdef CONFIG_MTK_PMIC_CHIP_MT6357
 #include "mt6357.dtsi"
@@ -2510,4 +2538,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 #ifdef CONFIG_CHARGER_RT9466
 #include "rt9466.dtsi"
+#endif
+#ifdef CONFIG_CHARGER_HL7005
+#include "hl7005.dtsi"
+#endif
+#ifdef CONFIG_CHARGER_HL7007
+#include "hl7007.dtsi"
+#endif
+#ifdef CONFIG_CHARGER_ETA6937
+#include "eta6937.dtsi"
 #endif
