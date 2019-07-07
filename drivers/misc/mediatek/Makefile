@@ -22,6 +22,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MTK_EMI) += emi/
+obj-y += emi_mbw/
 obj-$(CONFIG_MTK_EMI_MPU) += emi_mpu/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
 obj-$(CONFIG_MTK_BASE_POWER) += base/
