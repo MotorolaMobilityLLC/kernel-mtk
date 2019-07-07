@@ -1543,8 +1543,16 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			compatible = "mediatek,mt8173-accdet";
 		};
 
-		clkao: clkao {
-			compatible = "simple-bus";
+		battery_meter: mediatek,battery_meter {
+			compatible = "mediatek,battery_meter";
+		};
+
+		battery_common: mediatek,battery_common {
+			compatible = "mediatek,battery_common";
+		};
+
+		touch: touch@ {
+			compatible = "mediatek,mt8173-touch";
 		};
 
 		mtee: mtee {
@@ -1553,4 +1561,3 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	};
 };
 
-#include "mt8173-clkao.dtsi"
