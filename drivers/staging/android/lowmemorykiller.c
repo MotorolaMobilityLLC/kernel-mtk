@@ -357,6 +357,10 @@ static void dump_memory_status(short selected_oom_score_adj)
 
 static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 {
+#define LOWMEM_P_STATE_D	(0x1)
+#define LOWMEM_P_STATE_R	(0x2)
+#define LOWMEM_P_STATE_OTHER	(0x4)
+
 	struct task_struct *tsk;
 	struct task_struct *selected = NULL;
 	unsigned long rem = 0;
@@ -373,7 +377,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				global_node_page_state(NR_UNEVICTABLE) -
 				total_swapcache_pages();
 	enum zone_type high_zoneidx = gfp_zone(sc->gfp_mask);
-	int d_state_is_found = 0;
+	int p_state_is_found = 0;
 	short other_min_score_adj = OOM_SCORE_ADJ_MAX + 1;
 	int to_be_aggressive = 0;
 
@@ -445,6 +449,18 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 			rcu_read_unlock();
 			spin_unlock(&lowmem_shrink_lock);
 			return 0;
+		} else if (task_lmk_waiting(tsk)) {
+#ifdef CONFIG_MTK_ENG_BUILD
+			lowmem_print(1,
+				     "%d (%s) is dying, find next candidate\n",
+				     tsk->pid, tsk->comm);
+#endif
+			if (tsk->state == TASK_RUNNING)
+				p_state_is_found |= LOWMEM_P_STATE_R;
+			else
+				p_state_is_found |= LOWMEM_P_STATE_OTHER;
+
+			continue;
 		}
 
 		p = find_lock_task_mm(tsk);
@@ -457,7 +473,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 				     "lowmem_scan filter D state process: %d (%s) state:0x%lx\n",
 				     p->pid, p->comm, p->state);
 			task_unlock(p);
-			d_state_is_found = 1;
+			p_state_is_found |= LOWMEM_P_STATE_D;
 			continue;
 		}
 
@@ -512,9 +528,17 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 
 		rem += selected_tasksize;
 	} else {
-		if (d_state_is_found == 1)
+		if (p_state_is_found & LOWMEM_P_STATE_D)
 			lowmem_print(2,
 				     "No selected (full of D-state processes at %d)\n",
+				     (int)min_score_adj);
+		if (p_state_is_found & LOWMEM_P_STATE_R)
+			lowmem_print(2,
+				     "No selected (full of R-state processes at %d)\n",
+				     (int)min_score_adj);
+		if (p_state_is_found & LOWMEM_P_STATE_OTHER)
+			lowmem_print(2,
+				     "No selected (full of OTHER-state processes at %d)\n",
 				     (int)min_score_adj);
 	}
 
@@ -535,6 +559,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 #endif
 
 	return rem;
+
+#undef LOWMEM_P_STATE_D
+#undef LOWMEM_P_STATE_R
+#undef LOWMEM_P_STATE_OTHER
 }
 
 static struct shrinker lowmem_shrinker = {
