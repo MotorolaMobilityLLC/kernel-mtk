@@ -8,6 +8,7 @@
 #ifdef CONFIG_TRUSTY
 #define NR_IPI	17
 #else
+/* number of IPIS _not_ including IPI_CPU_BACKTRACE */
 #define NR_IPI	7
 #endif
 
