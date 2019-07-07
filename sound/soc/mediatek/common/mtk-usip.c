@@ -70,18 +70,20 @@ static long usip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	int ret = 0;
 	long size_for_spe = 0;
 
-	pr_debug("%s(), cmd 0x%x, arg %lu\n", __func__, cmd, arg);
-	pr_debug("%s(), memory_size = %ld addr_phy = %lld\n", __func__,
-	usip.memory_size, usip.addr_phy);
+	pr_debug("%s(), cmd 0x%x, arg %lu, memory_size = %ld addr_phy = 0x%llx\n",
+		 __func__, cmd, arg, usip.memory_size, usip.addr_phy);
 
 	size_for_spe = EMI_TABLE[SP_EMI_AP_USIP_PARAMETER][SP_EMI_SIZE];
 	switch (cmd) {
 
 	case GET_USIP_EMI_SIZE:
-		if (copy_to_user((void __user *)arg, &size_for_spe,
+		if (usip.addr_phy == 0) {
+			pr_info("no phy addr from ccci");
+			ret = -1;
+		} else if (copy_to_user((void __user *)arg, &size_for_spe,
 			sizeof(size_for_spe))) {
 			pr_warn("Fail copy to user Ptr:%p, r_sz:%zu",
-			(char *)&size_for_spe, sizeof(size_for_spe));
+				(char *)&size_for_spe, sizeof(size_for_spe));
 			ret = -1;
 		}
 		break;
@@ -145,9 +147,9 @@ int usip_mmap_data(struct usip_info *usip, struct vm_area_struct *area)
 			pfn, size, area->vm_page_prot);
 	if (ret)
 		pr_err("%s(), ret %d, remap failed 0x%lx, phys_addr %pa -> vm_start 0x%lx\n",
-				__func__, ret, pfn,
-				&usip->addr_phy,
-				area->vm_start);
+		       __func__, ret, pfn,
+		       &usip->addr_phy,
+		       area->vm_start);
 
 
 	/*Comment*/
@@ -162,7 +164,7 @@ static int usip_mmap(struct file *file, struct vm_area_struct *area)
 	struct usip_info *usip = file->private_data;
 
 	pr_debug("%s(), vm_flags 0x%lx, vm_pgoff 0x%lx\n",
-			__func__, area->vm_flags, area->vm_pgoff);
+		 __func__, area->vm_flags, area->vm_pgoff);
 
 	offset = area->vm_pgoff << PAGE_SHIFT;
 	switch (offset) {
@@ -196,7 +198,6 @@ static struct miscdevice usip_miscdevice = {
 };
 #endif
 
-
 #ifdef CONFIG_MTK_AURISYS_PHONE_CALL_SUPPORT
 static void usip_send_emi_info_to_dsp(void)
 {
@@ -204,6 +205,11 @@ static void usip_send_emi_info_to_dsp(void)
 	struct ipi_msg_t ipi_msg;
 	long long usip_emi_phy = 0;
 	phys_addr_t offset = 0;
+
+	if (usip.addr_phy == 0) {
+		pr_info("%s(), cannot get emi addr from ccci", __func__);
+		return;
+	}
 
 	offset = EMI_TABLE[SP_EMI_ADSP_USIP_PHONECALL][SP_EMI_OFFSET];
 	usip_emi_phy = usip.addr_phy + offset;
@@ -217,7 +223,6 @@ static void usip_send_emi_info_to_dsp(void)
 	ipi_msg.msg_id     = IPI_MSG_A2D_GET_EMI_ADDRESS;
 	ipi_msg.param1     = sizeof(usip_emi_phy);
 	ipi_msg.param2     = 0;
-
 
 	/* Send EMI Address to Hifi3 Via IPI*/
 	adsp_register_feature(VOICE_CALL_FEATURE_ID);
@@ -252,7 +257,6 @@ static int audio_call_event_receive(
 	return 0;
 }
 
-
 static struct notifier_block audio_call_notifier = {
 	.notifier_call = audio_call_event_receive,
 	.priority = VOICE_CALL_FEATURE_PRI,
@@ -278,10 +282,13 @@ static int __init usip_init(void)
 	phys_addr = get_smem_phy_start_addr(MD_SYS1,
 	SMEM_USER_RAW_USIP, &size_o);
 
+	if (phys_addr == 0)
+		pr_info("%s(), cannot get emi addr from ccci", __func__);
+
 	ret = misc_register(&usip_miscdevice);
 	if (ret) {
 		pr_err("%s(), cannot register miscdev on minor %d, ret %d\n",
-				__func__, usip_miscdevice.minor, ret);
+		       __func__, usip_miscdevice.minor, ret);
 	}
 
 	get_md_resv_mem_info(MD_SYS1, &r_rw_base, &r_rw_size,
@@ -296,8 +303,8 @@ static int __init usip_init(void)
 	srw_size = 0;
 #endif
 
-	pr_debug("%s(), %lld %d %lld %d %lld", __func__,
-	r_rw_base, r_rw_size, srw_base, srw_size, phys_addr);
+	pr_debug("%s(), 0x%llx %d 0x%llx %d 0x%llx", __func__,
+		 r_rw_base, r_rw_size, srw_base, srw_size, phys_addr);
 
 	/* init usip info */
 	usip.memory_size = size_o;
