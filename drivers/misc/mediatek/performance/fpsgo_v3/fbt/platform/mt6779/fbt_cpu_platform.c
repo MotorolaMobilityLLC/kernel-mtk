@@ -100,3 +100,8 @@ int fbt_get_L_cluster_num(void)
 	return 0;
 }
 
+int fbt_get_L_min_ceiling(void)
+{
+	return 0;
+}
+
