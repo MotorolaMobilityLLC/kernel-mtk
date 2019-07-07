@@ -24,12 +24,13 @@
  * @vsi         : driver structure allocated by VCU side and shared to AP side
  *                for control and info share
  * @failure     : VCU execution result status, 0: success, others: fail
- * @inst_addr	: VCU decoder instance address
+ * @inst_addr   : VCU decoder instance address
  * @signaled    : 1 - Host has received ack message from VCU, 0 - not received
  * @ctx         : context for v4l2 layer integration
- * @dev	        : platform device of VCU
+ * @dev         : platform device of VCU
  * @wq          : wait queue to wait VCU message ack
  * @handler     : ipi handler for each decoder
+ * @abort       : abort when vpud crashed stop this instance ipi_msg
  */
 struct vdec_vcu_inst {
 	enum ipi_id id;
@@ -41,6 +42,7 @@ struct vdec_vcu_inst {
 	struct platform_device *dev;
 	wait_queue_head_t wq;
 	ipi_handler_t handler;
+	bool abort;
 };
 
 /**
@@ -93,7 +95,11 @@ int vcu_dec_reset(struct vdec_vcu_inst *vcu);
  * @priv: callback private data which is passed by decoder when register.
  */
 int vcu_dec_ipi_handler(void *data, unsigned int len, void *priv);
+int vcu_dec_query_cap(struct vdec_vcu_inst *vcu, unsigned int id, void *out);
 int vcu_dec_set_param(struct vdec_vcu_inst *vcu, unsigned int id,
-		      void *param, unsigned int size);
+					  void *param, unsigned int size);
+int vcu_dec_set_ctx_for_gce(struct vdec_vcu_inst *vcu);
 int get_mapped_fd(struct dma_buf *dmabuf);
+void close_mapped_fd(unsigned int target_fd);
+
 #endif
