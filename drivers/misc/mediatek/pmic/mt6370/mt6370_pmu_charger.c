@@ -36,7 +36,7 @@
 #include "inc/mt6370_pmu_charger.h"
 #include "inc/mt6370_pmu.h"
 
-#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.24_MTK"
+#define MT6370_PMU_CHARGER_DRV_VERSION	"1.1.25_MTK"
 
 static bool dbg_log_en;
 module_param(dbg_log_en, bool, 0644);
@@ -128,6 +128,8 @@ struct mt6370_pmu_charger_data {
 #else
 	struct work_struct chgdet_work;
 #endif /* CONFIG_TCPC_CLASS */
+	bool mivr_irq_en;
+	struct delayed_work mivr_irqen_work;
 };
 
 /* These default values will be used if there's no property in dts */
@@ -417,6 +419,29 @@ static inline void mt6370_enable_irq(struct mt6370_pmu_charger_data *chg_data,
 		(en ? enable_irq : disable_irq_nosync)(res->start);
 	else
 		dev_err(chg_data->dev, "%s: get plat res fail\n", __func__);
+}
+
+static void mt6370_mivr_irqen_work_handler(struct work_struct *work);
+static inline void mt6370_enable_mivr_irq(
+			      struct mt6370_pmu_charger_data *chg_data, bool en)
+{
+	cancel_delayed_work(&chg_data->mivr_irqen_work);
+	if (en && !chg_data->mivr_irq_en) {
+		mt6370_enable_irq(chg_data, "chg_mivr", true);
+		chg_data->mivr_irq_en = true;
+	} else if (!en && chg_data->mivr_irq_en) {
+		mt6370_enable_irq(chg_data, "chg_mivr", false);
+		chg_data->mivr_irq_en = false;
+	}
+}
+
+static void mt6370_mivr_irqen_work_handler(struct work_struct *work)
+{
+	struct mt6370_pmu_charger_data *chg_data = container_of(work,
+		struct mt6370_pmu_charger_data, mivr_irqen_work.work);
+
+	dev_info(chg_data->dev, "%s\n", __func__);
+	mt6370_enable_mivr_irq(chg_data, true);
 }
 
 static int mt6370_set_fast_charge_timer(
@@ -1792,12 +1817,12 @@ static int mt6370_enable_power_path(struct charger_device *chg_dev, bool en)
 	 * mask mivr irq -> disable power path
 	 */
 	if (!en)
-		mt6370_enable_irq(chg_data, "chg_mivr", false);
+		mt6370_enable_mivr_irq(chg_data, false);
 
 	ret = __mt6370_set_mivr(chg_data, mivr);
 
 	if (en)
-		mt6370_enable_irq(chg_data, "chg_mivr", true);
+		mt6370_enable_mivr_irq(chg_data, true);
 
 	return ret;
 }
@@ -2373,7 +2398,7 @@ static int mt6370_enable_direct_charge(struct charger_device *chg_dev, bool en)
 	dev_info(chg_data->dev, "%s: en = %d\n", __func__, en);
 
 	if (en) {
-		mt6370_enable_irq(chg_data, "chg_mivr", false);
+		mt6370_enable_mivr_irq(chg_data, false);
 
 		/* Enable bypass mode */
 		ret = mt6370_pmu_reg_set_bit(chg_data->chip,
@@ -2412,7 +2437,7 @@ disable_bypass:
 			__func__);
 
 out:
-	mt6370_enable_irq(chg_data, "chg_mivr", true);
+	mt6370_enable_mivr_irq(chg_data, true);
 	return ret;
 }
 
@@ -2928,6 +2953,9 @@ static irqreturn_t mt6370_pmu_chg_mivr_irq_handler(int irq, void *data)
 		(struct mt6370_pmu_charger_data *)data;
 
 	mt_dbg(chg_data->dev, "%s\n", __func__);
+	mt6370_enable_mivr_irq(chg_data, false);
+	schedule_delayed_work(&chg_data->mivr_irqen_work,
+			      msecs_to_jiffies(500));
 	ret = mt6370_pmu_reg_test_bit(chg_data->chip, MT6370_PMU_REG_CHGSTAT1,
 		MT6370_SHIFT_MIVR_STAT, &mivr_stat);
 	if (ret < 0) {
@@ -3884,6 +3912,7 @@ static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 	chg_data->ieoc_wkard = false;
 	chg_data->ieoc = 250000; /* register default value 250mA */
 	chg_data->ichg = 2000000;
+	chg_data->mivr_irq_en = 1;
 	atomic_set(&chg_data->bc12_cnt, 0);
 	atomic_set(&chg_data->bc12_wkard, 0);
 #ifdef CONFIG_TCPC_CLASS
@@ -3905,6 +3934,8 @@ static int mt6370_pmu_charger_probe(struct platform_device *pdev)
 && !defined(CONFIG_TCPC_CLASS)
 	INIT_WORK(&chg_data->chgdet_work, mt6370_chgdet_work_handler);
 #endif /* CONFIG_MT6370_PMU_CHARGER_TYPE_DETECT && !CONFIG_TCPC_CLASS */
+	INIT_DELAYED_WORK(&chg_data->mivr_irqen_work,
+			  mt6370_mivr_irqen_work_handler);
 
 	/* Get chg type det power supply */
 	chg_data->psy = power_supply_get_by_name("charger");
@@ -4039,6 +4070,9 @@ MODULE_VERSION(MT6370_PMU_CHARGER_DRV_VERSION);
 
 /*
  * Version Note
+ * 1.1.25_MTK
+ * (1) Mask mivr irq until mivr task has run an iteration
+ *
  * 1.1.24_MTK
  * (1) Add debug information for ADC
  *
