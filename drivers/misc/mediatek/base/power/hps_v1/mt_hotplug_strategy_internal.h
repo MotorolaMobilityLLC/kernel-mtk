@@ -189,6 +189,7 @@ struct hps_ctxt_struct {
 	}
 
 #define NUM_BASE_BIG_LIST	{				\
+		&hps_ctxt.cur_nr_heavy_task,			\
 		&hps_ctxt.big_num_base_perf_serv,		\
 		&hps_ctxt.big_num_base_custom1,			\
 		&hps_ctxt.big_num_base_custom2			\
