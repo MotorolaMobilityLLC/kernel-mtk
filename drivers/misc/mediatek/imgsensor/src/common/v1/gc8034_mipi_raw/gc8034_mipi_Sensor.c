@@ -67,7 +67,7 @@ static int otp_read_success;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-static kal_uint32 Dgain_ratio = 1;
+static kal_uint32 Dgain_ratio = 256;
 static kal_uint8  BorF = 1;
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = GC8034_SENSOR_ID,       /*record sensor id defined in Kd_imgsensor.h*/
@@ -152,7 +152,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.mipi_pixel_rate = 134400000,
 		.max_framerate = 300,
 	},
-	.margin = 4,                          /* sensor framelength & shutter margin */
+	.margin = 16,            /* sensor framelength & shutter margin */
 	.min_shutter = 4,                     /* min shutter */
 	.max_frame_length = 0x2800,           /* max framelength by sensor register's limitation */
 	.ae_shut_delay_frame = 0,
@@ -217,8 +217,10 @@ static struct SENSOR_WINSIZE_INFO_STRUCT
 	{ 3264, 2448,   0,   0, 3264, 2448, 1632, 1224, 0, 0, 1632, 1224, 0, 0, 1632, 1224}, /* Preview */
 	{ 3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* capture */
 	{ 3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 3264, 2448, 0, 0, 3264, 2448}, /* video */
-	{ 3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 1632, 1224, 0, 0, 1632, 1224}, /* hight speed video */
-	{ 3264, 2448,   0,   0, 3264, 2448, 3264, 2448, 0, 0, 1632, 1224, 0, 0, 1632, 1224}  /* slim video */
+	{ 3264, 2448,   0,   0, 3264, 2448, 1632, 1224,
+	0, 0, 1632, 1224, 0, 0, 1632, 1224},
+	{ 3264, 2448,   0,   0, 3264, 2448, 1632, 1224,
+	0, 0, 1632, 1224, 0, 0, 1632, 1224}
 };
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
@@ -1348,7 +1350,7 @@ static void binning_setting(void)
 	write_cmos_sensor(0x2a, 0x08);
 	write_cmos_sensor(0x2b, 0x07);
 	write_cmos_sensor(0xfe, 0x00);
-	write_cmos_sensor(0x3f, 0x91);
+	write_cmos_sensor(0x3f, 0x00);
 	BorF = 0;
 }
 
@@ -1416,7 +1418,7 @@ static void fullsize_setting(void)
 	write_cmos_sensor(0x2a, 0x24);
 	write_cmos_sensor(0x2b, 0x0b);
 	write_cmos_sensor(0xfe, 0x00);
-	write_cmos_sensor(0x3f, 0x91);
+	write_cmos_sensor(0x3f, 0x00);
 	BorF = 1;
 }
 
