@@ -159,7 +159,6 @@ u16 hal_rtc_get_spare_register(enum rtc_spare_enum cmd)
 
 static void rtc_get_tick(struct rtc_time *tm)
 {
-	tm->tm_cnt = rtc_read(RTC_INT_CNT);
 	tm->tm_sec = rtc_read(RTC_TC_SEC);
 	tm->tm_min = rtc_read(RTC_TC_MIN);
 	tm->tm_hour = rtc_read(RTC_TC_HOU);
@@ -179,7 +178,7 @@ void hal_rtc_get_tick_time(struct rtc_time *tm)
 	bbpu = rtc_read(RTC_BBPU) | RTC_BBPU_KEY | RTC_BBPU_RELOAD;
 	rtc_write(RTC_BBPU, bbpu);
 	rtc_write_trigger();
-	if (rtc_read(RTC_INT_CNT) < tm->tm_cnt) {	/* SEC has carried */
+	if (rtc_read(RTC_TC_SEC) < tm->tm_sec) {	/* SEC has carried */
 		rtc_get_tick(tm);
 	}
 }
