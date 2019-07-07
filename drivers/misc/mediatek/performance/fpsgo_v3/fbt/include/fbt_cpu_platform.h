@@ -27,6 +27,7 @@ void fbt_set_boost_value(unsigned int base_blc);
 void fbt_clear_boost_value(void);
 void fbt_set_per_task_min_cap(int pid, unsigned int base_blc);
 int fbt_get_L_cluster_num(void);
+int fbt_get_L_min_ceiling(void);
 void fbt_notify_CM_limit(int reach_limit);
 void fbt_reg_dram_request(int reg);
 void fbt_boost_dram(int boost);
