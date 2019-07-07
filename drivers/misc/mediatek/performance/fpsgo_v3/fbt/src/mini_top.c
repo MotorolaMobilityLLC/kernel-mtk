@@ -331,7 +331,7 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 	ratio >>= (25 + __warmup_order);
 	mr->ratio = div_u64(ratio, mr->life);
 
-	minitop_trace(" %5d %3d%% %12llu->%12llu life-%d debnc-%d",
+	minitop_trace(" %5d %3llu%% %12llu->%12llu life-%d debnc-%d",
 		      mr->tid, mr->ratio, mr->init_runtime, runtime,
 		      mr->life, mr->debnc);
 
@@ -339,7 +339,7 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 		if (mr->debnc_fteh > 0)
 			keep |= 1;
 		else
-			minitop_trace(" %5d %3d%% end debnc FTEH",
+			minitop_trace(" %5d %3llu%% end debnc FTEH",
 				      mr->tid, mr->ratio);
 	}
 
@@ -385,8 +385,8 @@ static int __minitop_has_heavy(struct minitop_rec *mr, int *heavy)
 end_sched_nomi:
 	ret = keep ? 0 : -EAGAIN;
 	if (mr->ever)
-		minitop_trace(" %5d %3d%% end debnc heavy",
-			      mr->tid, (int)mr->ratio);
+		minitop_trace(" %5d %3llu%% end debnc heavy",
+			      mr->tid, mr->ratio);
 
 err_cleanup:
 	*heavy = 0;
