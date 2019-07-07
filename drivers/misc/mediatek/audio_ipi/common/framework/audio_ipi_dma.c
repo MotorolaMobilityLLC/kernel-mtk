@@ -680,8 +680,8 @@ int audio_ipi_dma_free_region(const uint8_t task)
 			continue;
 		}
 		phy_value = offset_to_phy_addr(region->offset, opendsp_id);
-		ipi_dbg("task %d, region[%d] sz 0x%x, offset 0x%x",
-			task, i, region->size, region->offset);
+		ipi_dbg("task %d, region[%d] sz 0x%x, offset 0x%x, phy_value 0x%x",
+			task, i, region->size, region->offset, phy_value);
 
 		gen_pool_free(g_dma_pool[opendsp_id],
 			      phy_addr_to_vir_addr_val(phy_value, opendsp_id),
