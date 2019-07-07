@@ -749,26 +749,6 @@ static int aw3644_ioctl(unsigned int cmd, unsigned long arg)
 				channel, (int)fl_arg->arg);
 		aw3644_operate(channel, fl_arg->arg);
 		break;
-//ITD:modify CBQHLES-5,sysfs_strobe by quan.chang 181018 start
-	case FLASH_IOC_SET_TORCH_REG:
-		fl_arg->arg =
-			fl_arg->arg < 0?0:(fl_arg->arg > 0x7f?0x7f:fl_arg->arg);
-		if (channel == AW3644_CHANNEL_CH1)
-			aw3644_level_ch1 = AW3644_LEVEL_TORCH - 1;
-		if (channel == AW3644_CHANNEL_CH2)
-			aw3644_level_ch2 = AW3644_LED2_LEVEL_TORCH - 1;
-		aw3644_set_torch_brightness(channel, fl_arg->arg);
-		break;
-	case FLASH_IOC_SET_FLASH_REG:
-		fl_arg->arg =
-			fl_arg->arg < 0?0:(fl_arg->arg > 0x7f?0x7f:fl_arg->arg);
-		if (channel == AW3644_CHANNEL_CH1)
-			aw3644_level_ch1 = AW3644_LEVEL_TORCH;
-		if (channel == AW3644_CHANNEL_CH2)
-			aw3644_level_ch2 = AW3644_LED2_LEVEL_TORCH;
-		aw3644_set_strobe_brightness(channel, fl_arg->arg);
-		break;
-//ITD:modify CBQHLES-5,sysfs_strobe by quan.chang 181018 end
 	default:
 		pr_info("No such command and arg(%d): (%d, %d)\n",
 				channel, _IOC_NR(cmd), (int)fl_arg->arg);
