@@ -1225,13 +1225,17 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 	if (!md)
 		return -EINVAL;
 
-	if (!md->queue.card)
-		return -EINVAL;
+	if (!md->queue.card) {
+		err = -EINVAL;
+		goto out2;
+	}
 
 	card = md->queue.card;
 	if (!mmc_card_mmc(card) ||
-		md->part_type == EXT_CSD_PART_CONFIG_ACC_RPMB)
-		return MMC_BLK_NO_WP;
+		md->part_type == EXT_CSD_PART_CONFIG_ACC_RPMB) {
+		err = MMC_BLK_NO_WP;
+		goto out2;
+	}
 
 	/* BOOT_WP_STATUS in EXT_CSD:
 	 * |-----bit[7:4]-----|-------bit[3:2]--------|-------bit[1:0]--------|
@@ -1246,9 +1250,11 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 		if (boot_wp_status == 0x1 || boot_wp_status == 0x2) {
 			pr_notice("%s is fully write protected\n",
 				disk->disk_name);
-			return MMC_BLK_FULLY_WP;
+			err = MMC_BLK_FULLY_WP;
+			goto out2;
 		} else
-			return MMC_BLK_NO_WP;
+			err = MMC_BLK_NO_WP;
+			goto out2;
 	}
 
 	/* EXT_CSD_PART_CONFIG_ACC_BOOT0 + 1 <=> BOOT1 */
@@ -1257,13 +1263,16 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 		if (boot_wp_status == 0x1 || boot_wp_status == 0x2) {
 			pr_notice("%s is fully write protected\n",
 				disk->disk_name);
-			return MMC_BLK_FULLY_WP;
+			err = MMC_BLK_FULLY_WP;
+			goto out2;
 		} else
-			return MMC_BLK_NO_WP;
+			err = MMC_BLK_NO_WP;
+			goto out2;
 	}
 	if (!card->wp_grp_size) {
 		pr_notice("Write protect group size cannot be 0!\n");
-		return -EINVAL;
+		err = -EINVAL;
+		goto out2;
 	}
 
 	start = part_start;
@@ -1292,8 +1301,10 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 	cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_AC;
 
 	buf = kmalloc(8, GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
+	if (!buf) {
+		err = -ENOMEM;
+		goto out2;
+	}
 	sg_init_one(&sg, buf, 8);
 
 	data.blksz = 8;
@@ -1397,6 +1408,8 @@ out:
 
 	kfree(buf);
 
+out2:
+	mmc_blk_put(md);
 	return err;
 }
 
