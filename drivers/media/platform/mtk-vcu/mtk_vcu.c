@@ -21,6 +21,7 @@
 #include <linux/fs.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
+#include <linux/list.h>
 #include <linux/kernel.h>
 #include <linux/kthread.h>
 #include <linux/module.h>
@@ -197,6 +198,12 @@ struct map_hw_reg {
 	unsigned long len;
 };
 
+struct vcu_pa_pages {
+	unsigned long pa;
+	struct list_head list;
+};
+
+
 /**
  * struct mtk_vcu - vcu driver data
  * @extmem:             VCU extended memory information
@@ -268,6 +275,7 @@ struct mtk_vcu {
 	struct cmdq_base *clt_base;
 	struct cmdq_client *clt_vdec;
 	struct cmdq_client *clt_venc;
+	struct vcu_pa_pages pa_pages;
 	int gce_codec_eid[GCE_EVENT_MAX];
 	wait_queue_head_t gce_wq[VCU_CODEC_MAX];
 	atomic_t gce_flush_done[VCU_CODEC_MAX];
@@ -1046,6 +1054,8 @@ static int mtk_vcu_mmap(struct file *file, struct vm_area_struct *vma)
 	struct mtk_vcu *vcu_dev;
 	struct mtk_vcu_queue *vcu_queue =
 		(struct mtk_vcu_queue *)file->private_data;
+	struct vcu_pa_pages *tmp;
+	struct list_head *p, *q;
 
 	vcu_dev = (struct mtk_vcu *)vcu_queue->vcu;
 	pr_debug("[VCU] vma->start 0x%lx, vma->end 0x%lx, vma->pgoff 0x%lx\n",
@@ -1108,9 +1118,15 @@ static int mtk_vcu_mmap(struct file *file, struct vm_area_struct *vma)
 
 	if (pa_start_base >= MAP_SHMEM_PA_BASE) {
 		pa_start -= MAP_SHMEM_PA_BASE;
-		vma->vm_pgoff = pa_start >> PAGE_SHIFT;
-		vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
-		goto valid_map;
+		list_for_each_safe(p, q, &vcu_dev->pa_pages.list) {
+			tmp = list_entry(p, struct vcu_pa_pages, list);
+			if (tmp->pa == pa_start && length <= PAGE_SIZE) {
+				vma->vm_pgoff = pa_start >> PAGE_SHIFT;
+				vma->vm_page_prot =
+					pgprot_writecombine(vma->vm_page_prot);
+				goto valid_map;
+			}
+		}
 	}
 	dev_dbg(vcu_dev->dev, "[VCU] Invalid argument\n");
 
@@ -1142,6 +1158,8 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 	struct mem_obj mem_buff_data;
 	struct mtk_vcu_queue *vcu_queue =
 		(struct mtk_vcu_queue *)file->private_data;
+	struct vcu_pa_pages *tmp;
+	struct list_head *p, *q;
 
 	vcu_dev = (struct mtk_vcu *)vcu_queue->vcu;
 	dev = vcu_dev->dev;
@@ -1191,6 +1209,9 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 				cmdq_mbox_buf_alloc(dev, &mem_buff_data.pa);
 			mem_buff_data.va = (uint64_t)mem_priv;
 			mem_buff_data.iova = 0;
+			tmp = kmalloc(sizeof(struct vcu_pa_pages), GFP_KERNEL);
+			tmp->pa = temp_pa;
+			list_add_tail(&tmp->list, &vcu_dev->pa_pages.list);
 		}
 
 		pr_debug("[VCU] VCU_ALLOCATION %d va %llx, pa %llx, iova %x\n",
@@ -1232,10 +1253,18 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 
 		if (cmd == VCU_MVA_FREE)
 			ret = mtk_vcu_free_buffer(vcu_queue, &mem_buff_data);
-		else
+		else {
 			cmdq_mbox_buf_free(dev,
 				(void *)mem_buff_data.va,
 				(dma_addr_t)mem_buff_data.pa);
+			list_for_each_safe(p, q, &vcu_dev->pa_pages.list) {
+				tmp = list_entry(p, struct vcu_pa_pages, list);
+				if (tmp->pa == mem_buff_data.pa) {
+					list_del(p);
+					kfree(tmp);
+				}
+			}
+		}
 
 		pr_debug("[VCU] VCU_FREE %d va %llx, pa %llx, iova %x\n",
 			cmd == VCU_MVA_FREE, mem_buff_data.va,
@@ -1666,6 +1695,7 @@ static int mtk_vcu_probe(struct platform_device *pdev)
 	atomic_set(&vcu->gce_flush_done[VCU_VENC], 0);
 	atomic_set(&vcu->gce_job_cnt[VCU_VDEC], 0);
 	atomic_set(&vcu->gce_job_cnt[VCU_VENC], 0);
+	INIT_LIST_HEAD(&vcu->pa_pages.list);
 	/* init character device */
 
 	ret = alloc_chrdev_region(&vcu_mtkdev[vcuid]->vcu_devno, 0, 1,
