@@ -50,11 +50,27 @@ ifneq ($(strip $(TARGET_NO_KERNEL)),true)
     TARGET_KERNEL_CROSS_COMPILE ?= $(KERNEL_ROOT_DIR)/prebuilts/gcc/$(HOST_PREBUILT_TAG)/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
     ifeq ($(strip $(TARGET_KERNEL_USE_CLANG)),true)
       CLANG_PATH=$(KERNEL_ROOT_DIR)/prebuilts/clang/host/linux-x86/clang-r353983c
-      TARGET_KERNEL_CLANG_COMPILE := CLANG_TRIPLE=aarch64-linux-gnu- CC=$(CLANG_PATH)/bin/clang
+      TARGET_KERNEL_CLANG_COMPILE := CLANG_TRIPLE=aarch64-linux-gnu-
+      CC := $(CLANG_PATH)/bin/clang
     endif
   else
     TARGET_KERNEL_CROSS_COMPILE ?= $(KERNEL_ROOT_DIR)/prebuilts/gcc/$(HOST_PREBUILT_TAG)/arm/arm-linux-androideabi-4.9/bin/arm-linux-androidkernel-
+    TARGET_KERNEL_CLANG_COMPILE :=
+    CC := $(TARGET_KERNEL_CROSS_COMPILE)gcc
   endif
+
+  ifeq ($(USE_CCACHE), true)
+    CCACHE_EXEC ?= /usr/bin/ccache
+    CCACHE_EXEC := $(abspath $(wildcard $(CCACHE_EXEC)))
+  else
+    CCACHE_EXEC :=
+  endif
+  ifneq ($(CCACHE_EXEC),)
+    TARGET_KERNEL_CLANG_COMPILE += CCACHE_CPP2=yes CC=$(CCACHE_EXEC)\ $(CC)
+  else
+    TARGET_KERNEL_CLANG_COMPILE += CC=$(CC)
+  endif
+
   KERNEL_HOST_GCC_PREFIX := $(patsubst %strip,%,$(HOST_STRIP))
   ifeq (yes,yes)
   KERNEL_HOSTCC := $(KERNEL_ROOT_DIR)/$(KERNEL_HOST_GCC_PREFIX)gcc
