@@ -683,7 +683,6 @@ int md_cd_power_off(struct ccci_modem *md, unsigned int timeout)
 	switch (md->index) {
 	case MD_SYS1:
 		/* 1. power off MD MTCMOS */
-//md1_subsys_debug_dump(SYS_MD1);
 		clk_disable_unprepare(clk_table[0].clk_ref);
 		/* 2. disable srcclkena */
 		CCCI_BOOTUP_LOG(md->index, TAG, "disble md1 clk\n");
