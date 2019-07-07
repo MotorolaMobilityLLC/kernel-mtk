@@ -48,7 +48,7 @@ static struct dentry* gpsDvfsPreFreqEntry = NULL;
 static struct dentry* gpsDvfsGpuUtilizationEntry = NULL;
 static struct dentry* gpsFpsUpperBoundEntry = NULL;
 static struct dentry* gpsIntegrationReportReadEntry = NULL;
-
+static struct dentry *gpsBoostLevelEntry;
 
 #ifdef GED_FDVFS_ENABLE
 static struct dentry *gpsGpuFreqHintEntry;
@@ -979,6 +979,22 @@ static const struct seq_operations gsDvfs_boost_level_ReadOps = {
 };
 
 #define MAX_BOOST_DIGITS 10
+static ssize_t ged_boost_level_write(const char __user *pszBuffer,
+	size_t uiCount, loff_t uiPosition, void *pvData)
+{
+	char str_num[MAX_BOOST_DIGITS];
+	long val;
+
+	if (uiCount > 0 && uiCount < MAX_BOOST_DIGITS) {
+		if (ged_copy_from_user(str_num, pszBuffer, uiCount) == 0) {
+			str_num[uiCount] = '\0';
+			if (kstrtol(str_num, 10, &val) == 0)
+				_boost_level = (int32_t)val;
+		}
+	}
+
+	return uiCount;
+}
 
 int ged_dvfs_boost_value(void)
 {
@@ -1548,6 +1564,16 @@ GED_ERROR ged_hal_init(void)
 			&gpsFpsUpperBoundEntry
 			);
 
+	/* Get GPU boost level */
+	err = ged_debugFS_create_entry(
+			"gpu_boost_level",
+			gpsHALDir,
+			&gsDvfs_boost_level_ReadOps,
+			ged_boost_level_write,
+			NULL,
+			&gpsBoostLevelEntry
+			);
+
 	if (unlikely(err != GED_OK))
 	{
 		GED_LOGE("ged: failed to create vsync_offset_level entry!\n");
@@ -1669,6 +1695,7 @@ void ged_hal_exit(void)
 	ged_debugFS_remove_entry(gpsDvfsCurFreqEntry);
 	ged_debugFS_remove_entry(gpsDvfsPreFreqEntry);
 	ged_debugFS_remove_entry(gpsDvfsGpuUtilizationEntry);
+	ged_debugFS_remove_entry(gpsBoostLevelEntry);
 #ifdef MTK_GED_KPI
 	ged_debugFS_remove_entry(gpsGedInfoKPIEntry);
 #endif
