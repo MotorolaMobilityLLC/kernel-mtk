@@ -1251,10 +1251,9 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 			pr_notice("%s is fully write protected\n",
 				disk->disk_name);
 			err = MMC_BLK_FULLY_WP;
-			goto out2;
 		} else
 			err = MMC_BLK_NO_WP;
-			goto out2;
+		goto out2;
 	}
 
 	/* EXT_CSD_PART_CONFIG_ACC_BOOT0 + 1 <=> BOOT1 */
@@ -1264,10 +1263,9 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 			pr_notice("%s is fully write protected\n",
 				disk->disk_name);
 			err = MMC_BLK_FULLY_WP;
-			goto out2;
 		} else
 			err = MMC_BLK_NO_WP;
-			goto out2;
+		goto out2;
 	}
 	if (!card->wp_grp_size) {
 		pr_notice("Write protect group size cannot be 0!\n");
