@@ -123,12 +123,14 @@
  */
 
 struct audio_ipi_reg_dma_t {
+	uint32_t magic_header;
 	uint8_t task;
 	uint8_t reg_flag; /* 1: register, 0: unregister */
 	uint16_t __reserved;
 
 	uint32_t a2d_size;
 	uint32_t d2a_size;
+	uint32_t magic_footer;
 };
 
 struct audio_ipi_reg_feature_t {
@@ -479,10 +481,10 @@ static struct notifier_block audio_ctrl_notifier_scp = {
 
 static int audio_ipi_init_dsp_cm4(void)
 {
-	struct ipi_msg_t ipi_msg;
 	int ret = 0;
 
 #if defined(CONFIG_MTK_AUDIO_CM4_DMA_SUPPORT)
+	struct ipi_msg_t ipi_msg;
 	static bool init_flag;
 
 	/* check phone boot */
@@ -492,7 +494,7 @@ static int audio_ipi_init_dsp_cm4(void)
 		audio_ipi_dma_init_dsp(TASK_SCENE_AUDIO_CONTROLLER_CM4);
 		return 0;
 	}
-#endif
+
 	/* not first init => HAL reboot */
 	pr_info("audio hal reinit");
 
@@ -514,7 +516,6 @@ static int audio_ipi_init_dsp_cm4(void)
 		0,
 		NULL);
 
-#if defined(CONFIG_MTK_AUDIO_CM4_DMA_SUPPORT)
 	/* release DMA */
 	audio_ipi_dma_free_region_all_task(AUDIO_OPENDSP_USE_CM4_A);
 #endif
@@ -528,6 +529,7 @@ static long audio_ipi_driver_ioctl(
 {
 	struct audio_ipi_reg_dma_t dma_reg;
 	int retval = 0;
+	uint32_t check_sum = 0;
 
 	AUD_LOG_V("cmd = %u, arg = %lu", cmd, arg);
 
@@ -573,6 +575,14 @@ static long audio_ipi_driver_ioctl(
 				 sizeof(struct audio_ipi_reg_dma_t));
 		if (retval != 0) {
 			pr_notice("dma reg copy_from_user retval %d", retval);
+			break;
+		}
+		check_sum = dma_reg.magic_footer + dma_reg.magic_header;
+		if (check_sum != 0xFFFFFFFF) {
+			pr_notice("dma reg check fail! header(0x%x) footer(0x%x)",
+				  dma_reg.magic_header,
+				  dma_reg.magic_footer);
+			retval = -1;
 			break;
 		}
 
