@@ -203,7 +203,7 @@ static void usip_send_emi_info_to_dsp(void)
 {
 	int send_result = 0;
 	struct ipi_msg_t ipi_msg;
-	long long usip_emi_phy = 0;
+	long long usip_emi_info[2]; //idx0 for addr, idx1 for size
 	phys_addr_t offset = 0;
 
 	if (usip.addr_phy == 0) {
@@ -212,7 +212,8 @@ static void usip_send_emi_info_to_dsp(void)
 	}
 
 	offset = EMI_TABLE[SP_EMI_ADSP_USIP_PHONECALL][SP_EMI_OFFSET];
-	usip_emi_phy = usip.addr_phy + offset;
+	usip_emi_info[0] = usip.addr_phy + offset;
+	usip_emi_info[1] = EMI_TABLE[SP_EMI_ADSP_USIP_PHONECALL][SP_EMI_SIZE];
 
 	ipi_msg.magic      = IPI_MSG_MAGIC_NUMBER;
 	ipi_msg.task_scene = TASK_SCENE_PHONE_CALL;
@@ -221,16 +222,20 @@ static void usip_send_emi_info_to_dsp(void)
 	ipi_msg.data_type  = AUDIO_IPI_PAYLOAD;
 	ipi_msg.ack_type   = AUDIO_IPI_MSG_BYPASS_ACK;
 	ipi_msg.msg_id     = IPI_MSG_A2D_GET_EMI_ADDRESS;
-	ipi_msg.param1     = sizeof(usip_emi_phy);
+	ipi_msg.param1     = sizeof(usip_emi_info);
 	ipi_msg.param2     = 0;
 
 	/* Send EMI Address to Hifi3 Via IPI*/
 	adsp_register_feature(VOICE_CALL_FEATURE_ID);
 	send_result = audio_send_ipi_msg(
-			&ipi_msg, TASK_SCENE_PHONE_CALL,
-			AUDIO_IPI_LAYER_TO_DSP, AUDIO_IPI_PAYLOAD,
-			AUDIO_IPI_MSG_BYPASS_ACK, IPI_MSG_A2D_GET_EMI_ADDRESS,
-			sizeof(usip_emi_phy), 0, (char *)&usip_emi_phy);
+					 &ipi_msg, TASK_SCENE_PHONE_CALL,
+					 AUDIO_IPI_LAYER_TO_DSP,
+					 AUDIO_IPI_PAYLOAD,
+					 AUDIO_IPI_MSG_BYPASS_ACK,
+					 IPI_MSG_A2D_GET_EMI_ADDRESS,
+					 sizeof(usip_emi_info),
+					 0,
+					 (char *)&usip_emi_info);
 	adsp_deregister_feature(VOICE_CALL_FEATURE_ID);
 
 	if (send_result != 0)
@@ -240,10 +245,9 @@ static void usip_send_emi_info_to_dsp(void)
 }
 
 #ifdef CFG_RECOVERY_SUPPORT
-static int audio_call_event_receive(
-	struct notifier_block *this,
-	unsigned long event,
-	void *ptr)
+static int audio_call_event_receive(struct notifier_block *this,
+				    unsigned long event,
+				    void *ptr)
 {
 	switch (event) {
 	case ADSP_EVENT_STOP:
