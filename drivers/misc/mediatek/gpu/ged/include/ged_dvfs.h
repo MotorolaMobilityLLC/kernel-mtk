@@ -149,6 +149,8 @@ int ged_dvfs_boost_value(void);
 #if (defined(GED_ENABLE_FB_DVFS) && defined(GED_ENABLE_DYNAMIC_DVFS_MARGIN))
 extern void (*mtk_dvfs_margin_value_fp)(int i32MarginValue);
 extern int (*mtk_get_dvfs_margin_value_fp)(void);
+extern int gx_fb_dvfs_margin;
+extern unsigned int dvfs_margin_mode;
 #endif
 
 #ifdef GED_CONFIGURE_LOADING_BASE_DVFS_STEP
