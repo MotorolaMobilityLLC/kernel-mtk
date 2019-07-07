@@ -77,6 +77,7 @@ struct IMGSENSOR_HW {
 	struct IMGSENSOR_HW_DEVICE       *pdev[IMGSENSOR_HW_ID_MAX_NUM];
 	struct IMGSENSOR_HW_SENSOR_POWER
 				sensor_pwr[IMGSENSOR_SENSOR_IDX_MAX_NUM];
+	const char *enable_sensor_by_index[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 };
 
 enum IMGSENSOR_RETURN imgsensor_hw_init(struct IMGSENSOR_HW *phw);
@@ -92,6 +93,7 @@ extern struct IMGSENSOR_HW_POWER_SEQ platform_power_sequence[];
 extern struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[];
 extern enum IMGSENSOR_RETURN (*hw_open[IMGSENSOR_HW_ID_MAX_NUM])
 					(struct IMGSENSOR_HW_DEVICE **);
+
 
 #endif
 
