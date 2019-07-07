@@ -271,13 +271,6 @@ extern struct ccci_ccb_config ccb_configs[];
 #define CCCI_IOC_GET_CCB_DEBUG_VAL		\
 	_IOWR(CCCI_IOC_MAGIC, 67, struct ccci_ccb_debug)
 
-/* modem log for S */
-#define CCCI_IOC_ENTER_UPLOAD			_IO(CCCI_IOC_MAGIC, 68)
-#define CCCI_IOC_GET_RAT_STR			\
-	_IOR(CCCI_IOC_MAGIC, 69, unsigned int[16])
-#define CCCI_IOC_SET_RAT_STR		\
-	_IOW(CCCI_IOC_MAGIC, 70, unsigned int[16])
-
 #define CCCI_IOC_CCB_CTRL_INFO			\
 	_IOWR(CCCI_IOC_MAGIC, 71, struct ccb_ctrl_info)
 
@@ -489,6 +482,10 @@ typedef enum {
 	CCCI_BIP_TX			= 176,
 	CCCI_UDC_RX			= 177,
 	CCCI_UDC_TX			= 178,
+	CCCI_TCHE_RX			= 181,
+	CCCI_TCHE_TX			= 182,
+	CCCI_DISP_RX			= 183,
+	CCCI_DISP_TX			= 184,
 
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
 

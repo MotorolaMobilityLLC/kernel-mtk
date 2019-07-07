@@ -400,6 +400,7 @@ enum {
 	LWA_CONTROL_MSG = 0x11E,
 	C2K_PPP_LINE_STATUS = 0x11F,	/*usb bypass for 93 and later*/
 	MD_DISPLAY_DYNAMIC_MIPI = 0x120, /* MIPI for TC16 */
+	MD_RF_HOPPING_NOTIFY = 0x121,
 
 	/*c2k ctrl msg start from 0x200*/
 	C2K_STATUS_IND_MSG = 0x201, /* for usb bypass */
@@ -680,8 +681,6 @@ struct _mpu_cfg *get_mpu_region_cfg_info(int region_id);
 int ccci_get_opt_val(char *opt_name);
 
 /* RAT configure relate */
-int ccci_get_rat_str_from_drv(int md_id, char rat_str[], int size);
-void ccci_set_rat_str_to_drv(int md_id, char rat_str[]);
 unsigned int get_wm_bitmap_for_ubin(void); /* Universal bin */
 void update_rat_bit_map_to_drv(int md_id, unsigned int val);
 int get_md_img_type(int md_id);
@@ -692,4 +691,6 @@ int get_md_resv_csmem_info(int md_id, phys_addr_t *buf_base,
 	unsigned int *buf_size);
 int get_md_cache_region_info(int region_id, unsigned int *buf_base,
 	unsigned int *buf_size);
+void __iomem *ccci_map_phy_addr(phys_addr_t phy_addr, unsigned int size);
+unsigned int get_mtee_is_enabled(void);
 #endif
