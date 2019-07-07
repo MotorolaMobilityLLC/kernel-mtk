@@ -139,6 +139,21 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 		/* Make sure that the UM will never break the KM.
 		 * Check IO size are both matched the size of IO sturct.
 		 */
+#define SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(func, struct_name) do { \
+		pFunc = (ged_bridge_func_type *) func; \
+		if (sizeof(struct GED_BRIDGE_IN_##struct_name) > \
+			psBridgePackageKM->i32InBufferSize || \
+			sizeof(struct GED_BRIDGE_OUT_##struct_name) > \
+			psBridgePackageKM->i32OutBufferSize) { \
+			GED_LOGE("%s fail io_size:%d/%d, expected: %zu/%zu", \
+				"GED_BRIDGE_COMMAND_##cmd", \
+				psBridgePackageKM->i32InBufferSize, \
+				psBridgePackageKM->i32OutBufferSize, \
+				sizeof(struct GED_BRIDGE_IN_##struct_name), \
+				sizeof(struct GED_BRIDGE_OUT_##struct_name)); \
+			goto dispatch_exit; \
+		} } while (0)
+
 #define SET_FUNC_AND_CHECK(func, struct_name) do { \
 		pFunc = (ged_bridge_func_type *) func; \
 		if (sizeof(GED_BRIDGE_IN_##struct_name) > psBridgePackageKM->i32InBufferSize || \
@@ -180,6 +195,11 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 			break;
 		case GED_BRIDGE_COMMAND_EVENT_NOTIFY:
 			SET_FUNC_AND_CHECK(ged_bridge_event_notify, EVENT_NOTIFY);
+			break;
+		case GED_BRIDGE_COMMAND_GPU_HINT_TO_CPU:
+			SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(
+				ged_bridge_gpu_hint_to_cpu,
+				GPU_HINT_TO_CPU);
 			break;
 		case GED_BRIDGE_COMMAND_GE_ALLOC:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
