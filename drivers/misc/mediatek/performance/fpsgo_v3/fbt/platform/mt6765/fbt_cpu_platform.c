@@ -96,7 +96,7 @@ void fbt_set_per_task_min_cap(int pid, unsigned int base_blc)
 
 int fbt_get_L_cluster_num(void)
 {
-	return 0;
+	return 1;
 }
 
 int fbt_get_L_min_ceiling(void)
