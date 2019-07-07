@@ -856,6 +856,11 @@ int m4u_config_prog_dist(M4U_PORT_ID port, int dir, int dist, int en, int mm_id,
 
 	larb = m4u_port_2_larb_id(port);
 	larb_port = m4u_port_2_larb_port(port);
+
+	if (unlikely(larb >= SMI_LARB_NR)) {
+		M4UMSG("%s %d err port[%d]\n", __func__, __LINE__, port);
+		return -1;
+	}
 	larb_base = gLarbBaseAddr[larb];
 
 	pProgPfh = gM4UProgPfh[m4u_index];
@@ -1085,6 +1090,12 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 
 		larb = m4u_port_2_larb_id(port);
 		larb_port = m4u_port_2_larb_port(port);
+
+		if (unlikely(larb >= SMI_LARB_NR)) {
+			M4UMSG("%s %d err port[%d]\n",
+				   __func__, __LINE__, port);
+			return -1;
+		}
 		larb_base = gLarbBaseAddr[larb];
 		m4uHw_set_field_by_mask(larb_base, SMI_LARB_NON_SEC_CONx(larb_port), F_SMI_MMU_EN, !!(virt));
 
@@ -1136,12 +1147,16 @@ int m4u_config_port(M4U_PORT_STRUCT *pM4uPort)	/* native */
 {
 	M4U_PORT_ID PortID = (pM4uPort->ePortID);
 	int m4u_index = m4u_port_2_m4u_id(PortID);
-	int larb = m4u_port_2_larb_id(PortID);
+	unsigned int larb = m4u_port_2_larb_id(PortID);
 	int ret;
 #ifdef M4U_TEE_SERVICE_ENABLE
 	unsigned int larb_port, mmu_en = 0, sec_en = 0;
 #endif
 
+	if (unlikely(larb >= SMI_LARB_NR)) {
+		M4UMSG("%s %d err port[%d]\n", __func__, __LINE__, PortID);
+		return -1;
+	}
 	_m4u_port_clock_toggle(m4u_index, larb, 1);
 
 
@@ -1194,7 +1209,7 @@ int m4u_port_array_add(struct m4u_port_array *port_array, int port, int m4u_en, 
 
 int m4u_config_port_array(struct m4u_port_array *port_array)
 {
-	int port, larb, larb_port;
+	unsigned int port, larb, larb_port;
 	int ret = 0;
 	int m4u_index;
 
@@ -1210,6 +1225,12 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
+
+			if (unlikely(larb >= SMI_LARB_NR)) {
+				M4UMSG("%s %d err port[%d]\n",
+					   __func__, __LINE__, port);
+				return -1;
+			}
 			config_larb[larb] |= (1 << larb_port);
 			regNew[larb][larb_port] = value =
 				!!port_array->ports[port] &&
@@ -1256,6 +1277,11 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
 
+			if (unlikely(larb >= SMI_LARB_NR)) {
+				M4UMSG("%s %d err port[%d]\n",
+					   __func__, __LINE__, port);
+				return -1;
+			}
 			orig_value =
 				m4uHw_get_field_by_mask(gLarbBaseAddr[larb], SMI_LARB_NON_SEC_CONx(larb_port),
 							F_SMI_NON_SEC_MMU_EN(1));
@@ -1564,7 +1590,7 @@ void m4u_larb0_disable(char *name)
 void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 {
 	int port, mmu_en = 0;
-	int m4u_index, larb, larb_port;
+	unsigned int m4u_index, larb, larb_port;
 	unsigned long larb_base;
 
 	M4U_PRINT_SEQ(seq, "m4u_print_port_status ========>\n");
@@ -1574,6 +1600,12 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 		if (m4u_index == 0) {
 			larb = m4u_port_2_larb_id(port);
 			larb_port = m4u_port_2_larb_port(port);
+
+			if (unlikely(larb >= SMI_LARB_NR)) {
+				M4U_PRINT_SEQ(seq, "%s %d err port[%d]\n",
+					   __func__, __LINE__, port);
+				return;
+			}
 			larb_base = gLarbBaseAddr[larb];
 
 			mmu_en =
@@ -1601,7 +1633,7 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 void m4u_print_port_status_ext(struct seq_file *seq, int tf_port)
 {
 	int mmu_en = 0;
-	int m4u_index, larb, l_port;
+	unsigned int m4u_index, larb, l_port;
 	unsigned long larb_base;
 
 	M4U_PRINT_SEQ(seq, "port_status_ext larb %d========>\n", tf_port);
@@ -1609,10 +1641,12 @@ void m4u_print_port_status_ext(struct seq_file *seq, int tf_port)
 	m4u_index = m4u_port_2_m4u_id(tf_port);
 	larb = m4u_port_2_larb_id(tf_port);
 
-	if (larb >= SMI_LARB_NR) {
-		M4U_PRINT_SEQ(seq, "port_status_ext errror larb %d\n", larb);
+	if (unlikely(larb >= SMI_LARB_NR)) {
+		M4U_PRINT_SEQ(seq, "%s %d err port[%d]\n",
+				__func__, __LINE__, tf_port);
 		return;
 	}
+
 	if (m4u_index == 0) {
 		l_port = m4u_port_2_larb_port(tf_port);
 		larb_base = gLarbBaseAddr[larb];
