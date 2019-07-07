@@ -341,6 +341,8 @@ void kasan_report_double_free(struct kmem_cache *cache, void *object,
 	pr_err("\n");
 	print_shadow_for_address(object);
 	kasan_end_report(&flags);
+	/* trigger KE to get the KAsan corruption message */
+	BUG();
 }
 
 static void kasan_report_error(struct kasan_access_info *info)
