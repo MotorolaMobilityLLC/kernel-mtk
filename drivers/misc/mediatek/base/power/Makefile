@@ -77,6 +77,7 @@ obj-$(CONFIG_MACH_MT3967) += mdpm_v2/
 obj-$(CONFIG_MACH_MT6779) += mdpm_v2/
 endif
 obj-$(CONFIG_MACH_MT8163) += hps_v1/
+obj-$(CONFIG_MACH_MT8173) += hps_v1/
 obj-$(CONFIG_MACH_MT6763) += hps_v3/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
 obj-$(CONFIG_MACH_MT6765) += hps_v3/
