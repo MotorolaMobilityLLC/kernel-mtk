@@ -16,6 +16,11 @@
 /* MT6359_DCXO_CW11 */
 #define RG_XO_VOW_EN_SFT 9
 
+/* LDO_VAUD18_CON0 */
+#define RG_LDO_VAUD18_EN_SFT                        0
+#define RG_LDO_VAUD18_EN_MASK                       0x1
+#define RG_LDO_VAUD18_EN_MASK_SFT                   (0x1 << 0)
+
 /* AUD_TOP_CKPDN_CON0 */
 #define RG_VOW13M_CK_PDN_SFT                        13
 #define RG_VOW13M_CK_PDN_MASK                       0x1
