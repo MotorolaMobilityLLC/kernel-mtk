@@ -65,6 +65,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			#cooling-cells = <2>;
+			sched-energy-costs = <&MT8173_CPU_COST_0
+					      &MT8173_CLUSTER_COST_0>;
 		};
 
 		cpu1: cpu@1 {
@@ -74,6 +76,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			reg = <0x001>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
+			sched-energy-costs = <&MT8173_CPU_COST_0
+					      &MT8173_CLUSTER_COST_0>;
 		};
 
 		cpu2: cpu@100 {
@@ -84,6 +88,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
 			#cooling-cells = <2>;
+			sched-energy-costs = <&MT8173_CPU_COST_1
+					      &MT8173_CLUSTER_COST_1>;
 		};
 
 		cpu3: cpu@101 {
@@ -93,6 +99,50 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 			reg = <0x101>;
 			enable-method = "psci";
 			cpu-idle-states = <&CPU_SLEEP_0>;
+			sched-energy-costs = <&MT8173_CPU_COST_1
+					      &MT8173_CLUSTER_COST_1>;
+		};
+
+		energy-costs {
+			MT8173_CPU_COST_0: mt8173-core-cost0 {
+				busy-cost-data = <
+					1024	0
+				>;
+				idle-cost-data = <
+					0
+					0
+				>;
+			};
+
+			MT8173_CPU_COST_1: mt8173-core-cost1 {
+				busy-cost-data = <
+					1024	0
+				>;
+				idle-cost-data = <
+					0
+					0
+				>;
+			};
+
+			MT8173_CLUSTER_COST_0: mt8173-cluster-cost0 {
+				busy-cost-data = <
+					1024	0
+				>;
+				idle-cost-data = <
+					0
+					0
+				>;
+			};
+
+			MT8173_CLUSTER_COST_1: mt8173-cluster-cost1 {
+				busy-cost-data = <
+					1024	0
+				>;
+				idle-cost-data = <
+					0
+					0
+				>;
+			};
 		};
 
 		idle-states {
