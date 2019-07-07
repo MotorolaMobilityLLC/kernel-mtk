@@ -14,9 +14,20 @@
 #ifndef __MTK_SWPM_PLATFORM_H__
 #define __MTK_SWPM_PLATFORM_H__
 
+#define USE_GPU_POWER_TABLE		(1)
+#ifdef USE_GPU_POWER_TABLE
+#include <mtk_gpufreq.h>
+#endif
+
 #define MAX_RECORD_CNT                  (64)
 #define DEFAULT_LOG_INTERVAL_MS         (1000)
-#define DEFAULT_LOG_MASK                (0x13) /* VPROC2 + VPROC1 + VDRAM */
+#ifdef USE_GPU_POWER_TABLE
+/* VPROC2 + VPROC1 + VGPU + VDRAM */
+#define DEFAULT_LOG_MASK                (0x17)
+#else
+/* VPROC2 + VPROC1 + VDRAM */
+#define DEFAULT_LOG_MASK                (0x13)
+#endif
 
 #define NR_CPU_OPP                      (16)
 #define NR_CPU_L_CORE                   (6)
@@ -162,6 +173,12 @@ extern struct swpm_rec_data *swpm_info_ref;
 
 #ifdef CONFIG_MTK_CACHE_CONTROL
 extern int ca_force_stop_set_in_kernel(int val);
+#endif
+#ifdef USE_GPU_POWER_TABLE
+extern unsigned int swpm_get_gpu_power(void);
+/* from GPU driver */
+extern bool mtk_get_gpu_loading(unsigned int *pLoading);
+extern struct mt_gpufreq_power_table_info *pass_gpu_table_to_eara(void);
 #endif
 
 #endif

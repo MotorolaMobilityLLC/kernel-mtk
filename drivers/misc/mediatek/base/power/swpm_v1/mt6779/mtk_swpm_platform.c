@@ -379,6 +379,11 @@ static struct dram_pwr_conf dram_def_pwr_conf[] = {
 	},
 };
 
+#ifdef USE_GPU_POWER_TABLE
+static struct mt_gpufreq_power_table_info *gpu_pwr_tbl;
+static unsigned int gpu_opp_num;
+#endif
+
 /****************************************************************************
  *  Global Variables
  ****************************************************************************/
@@ -623,6 +628,14 @@ char *swpm_power_rail_to_string(enum power_rail p)
 
 int swpm_platform_init(void)
 {
+#ifdef USE_GPU_POWER_TABLE
+	gpu_pwr_tbl = pass_gpu_table_to_eara();
+	if (!gpu_pwr_tbl)
+		swpm_err("Ptr of GPU power table is NULL!\n");
+	else
+		gpu_opp_num = mt_gpufreq_get_dvfs_table_num();
+#endif
+
 	/* copy pwr data */
 	memcpy(swpm_info_ref->aphy_pwr_tbl, aphy_def_pwr_tbl,
 		sizeof(aphy_def_pwr_tbl));
@@ -737,4 +750,34 @@ void swpm_update_lkg_table(void)
 		}
 	}
 }
+
+#ifdef USE_GPU_POWER_TABLE
+unsigned int swpm_get_gpu_power(void)
+{
+	unsigned int pwr, loading, freq, i;
+
+	if (!gpu_pwr_tbl || !gpu_opp_num) {
+		swpm_err("Lookup GPU pwr tbl failed!\n");
+		return 0;
+	}
+
+	if (!mtk_get_gpu_loading(&loading)) {
+		swpm_err("Get GPU loading failed!\n");
+		return 0;
+	}
+
+	freq = mt_gpufreq_get_cur_freq();
+	for (i = (gpu_opp_num - 1); i >= 0; i--) {
+		if (gpu_pwr_tbl[i].gpufreq_khz >= freq || i == 0)
+			break;
+	}
+
+	pwr = gpu_pwr_tbl[i].gpufreq_power * loading * 130 / 32;
+
+	swpm_dbg("GPU power = %duA, opp = %d, loading = %d\n",
+		pwr, i, loading);
+
+	return pwr;
+}
+#endif
 

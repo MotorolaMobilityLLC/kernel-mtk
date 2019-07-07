@@ -624,6 +624,11 @@ unsigned int swpm_get_avg_power(enum power_rail type, unsigned int avg_window)
 		return 0;
 	}
 
+#ifdef USE_GPU_POWER_TABLE
+	if (type == VGPU)
+		return swpm_get_gpu_power();
+#endif
+
 	/* window should be 1 to MAX_RECORD_CNT */
 	avg_window = MAX(avg_window, 1);
 	avg_window = MIN(avg_window, MAX_RECORD_CNT);
