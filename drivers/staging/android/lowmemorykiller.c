@@ -120,12 +120,24 @@ void handle_lmk_event(struct task_struct *selected, short min_score_adj)
 	struct lmk_event *event;
 	int res;
 	long rss_in_pages = -1;
+	char taskname[MAX_TASKNAME];
 	struct mm_struct *mm = get_task_mm(selected);
 
 	if (mm) {
 		rss_in_pages = get_mm_rss(mm);
 		mmput(mm);
 	}
+
+	res = get_cmdline(selected, taskname, MAX_TASKNAME - 1);
+
+	/* No valid process name means this is definitely not associated with a
+	 * userspace activity.
+	 */
+
+	if (res <= 0 || res >= MAX_TASKNAME)
+		return;
+
+	taskname[res] = '\0';
 
 	spin_lock(&lmk_event_lock);
 
@@ -141,18 +153,8 @@ void handle_lmk_event(struct task_struct *selected, short min_score_adj)
 	events = (struct lmk_event *)event_buffer.buf;
 	event = &events[head];
 
-	res = get_cmdline(selected, event->taskname, MAX_TASKNAME - 1);
+	memcpy(event->taskname, taskname, res + 1);
 
-	/* No valid process name means this is definitely not associated with a
-	 * userspace activity.
-	 */
-
-	if (res <= 0 || res >= MAX_TASKNAME) {
-		spin_unlock(&lmk_event_lock);
-		return;
-	}
-
-	event->taskname[res] = '\0';
 	event->pid = selected->pid;
 	event->uid = from_kuid_munged(current_user_ns(), task_uid(selected));
 	if (selected->group_leader)
@@ -680,8 +682,6 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_trigger_warning(selected, selected_oom_score_adj);
 
 		rem += selected_tasksize;
-
-		handle_lmk_event(selected, min_score_adj);
 	} else {
 		if (p_state_is_found & LOWMEM_P_STATE_D)
 			lowmem_print(2,
@@ -701,6 +701,9 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		     sc->nr_to_scan, sc->gfp_mask, rem);
 	rcu_read_unlock();
 	spin_unlock(&lowmem_shrink_lock);
+
+	if (selected)
+		handle_lmk_event(selected, min_score_adj);
 
 	/* dump more memory info outside the lock */
 	if (selected && selected_oom_score_adj <= lowmem_no_warn_adj &&
