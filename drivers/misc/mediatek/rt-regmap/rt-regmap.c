@@ -373,6 +373,10 @@ static int rt_cache_block_write(struct rt_regmap_device *rd, u32 reg,
 					rm->addr+rio.offset,
 					size,
 					&wdata[count]);
+			if (ret < 0) {
+				dev_err(&rd->dev, "rd->rt_block_write fail\n");
+				goto ERR;
+			}
 			count += size;
 		} else {
 			blk_index = (rd->props.rt_regmap_mode &
