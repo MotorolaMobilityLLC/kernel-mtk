@@ -412,6 +412,7 @@ config MACH_MT8173
 	select MTK_GIC_EXT
 	select MTK_SYSIRQ
 	select CPU_IDLE
+	select CPU_IDLE_GOV_MTK
 	help
 	  This enable support for MediaTek MT8173. If you need support
 	  for MediaTek MT8173, say Y here.
