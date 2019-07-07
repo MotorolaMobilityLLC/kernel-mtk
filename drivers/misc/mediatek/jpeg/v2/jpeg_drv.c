@@ -1514,7 +1514,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	class_dev =
 	    (struct class_device *)device_create(jenc_class, NULL, jenc_devno, NULL, JPEG_DEVNAME);
 #else
-	proc_create("mtk_jpeg", 0x644, NULL, &jpeg_fops);
+	proc_create("mtk_jpeg", 0664, NULL, &jpeg_fops);
 #endif
 }
 
@@ -1710,7 +1710,7 @@ static int jdec_probe(struct platform_device *pdev)
 	class_dev =
 		(struct class_device *)device_create(jdec_class, NULL, jdec_devno, NULL, JDEC_DEVNAME);
 #else
-	proc_create(JDEC_DEVNAME, 0x644, NULL, &jdec_fops);
+	proc_create(JDEC_DEVNAME, 0664, NULL, &jdec_fops);
 #endif
 	/* venc_power_on(); */
 	return 0;
