@@ -233,6 +233,7 @@ config MACH_MT6763
 	select MTK_EIC_HISTORY_DUMP
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
+	select HIE
 	select MTK_SYSTRACKER_V2
 	select MTK_TIMER_APXGPT
 	select MTK_PLAT_SRAM_FLAG
