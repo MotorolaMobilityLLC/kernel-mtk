@@ -8468,7 +8468,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	disp_ion_get_mva(ion_display_client, ion_display_handle, &mva,
 			 DISP_M4U_PORT_DISP_WDMA0);
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
-			     ION_CACHE_FLUSH_ALL);
+			     ION_CACHE_INVALID_BY_RANGE);
 
 	tmp = disp_helper_get_option(DISP_OPT_SCREEN_CAP_FROM_DITHER);
 	if (tmp == 0)

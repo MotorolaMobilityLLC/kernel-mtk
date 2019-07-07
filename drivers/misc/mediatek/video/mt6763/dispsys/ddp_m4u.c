@@ -17,6 +17,7 @@
 #include "ddp_reg.h"
 #include "ddp_log.h"
 #include "disp_helper.h"
+#include <ion_priv.h>
 
 #ifdef CONFIG_MTK_IOMMU
 #include "mtk_iommu.h"
@@ -207,7 +208,7 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 {
 	struct ion_mm_data mm_data;
 	size_t mva_size;
-	ion_phys_addr_t phy_addr;
+	ion_phys_addr_t phy_addr = 0;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	mm_data.config_buffer_param.module_id = port;
@@ -287,16 +288,28 @@ void disp_ion_cache_flush(struct ion_client *client, struct ion_handle *handle,
 			  enum ION_CACHE_SYNC_TYPE sync_type)
 {
 	struct ion_sys_data sys_data;
+	void *buffer_va;
 
 	if (!client || !handle)
 		return;
 
+	if (sync_type == ION_CACHE_FLUSH_ALL) {
+		DDPERR("Cannot use ion cache flush anymore\n");
+		return;
+	}
+
 	sys_data.sys_cmd = ION_SYS_CACHE_SYNC;
 	sys_data.cache_sync_param.kernel_handle = handle;
-	sys_data.cache_sync_param.sync_type = sync_type;
+	sys_data.cache_sync_param.sync_type = ION_CACHE_INVALID_BY_RANGE;
+
+	buffer_va = ion_map_kernel(client, handle);
+	sys_data.cache_sync_param.va = buffer_va;
+	sys_data.cache_sync_param.size = handle->buffer->size;
 
 	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM, (unsigned long)&sys_data))
 		DDPERR("ion cache flush failed!\n");
+
+	ion_unmap_kernel(client, handle);
 }
 
 #ifndef CONFIG_MTK_IOMMU
