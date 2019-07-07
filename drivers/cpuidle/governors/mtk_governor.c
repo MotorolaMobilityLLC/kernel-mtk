@@ -85,7 +85,7 @@ static int mtk_governor_enable_device(struct cpuidle_driver *drv,
 
 static struct cpuidle_governor mtk_governor = {
 	.name =		"mtk_governor",
-	.rating =	100,
+	.rating =	101,		/* keep it higher than mtk_menu */
 	.enable =	mtk_governor_enable_device,
 	.select =	mtk_governor_select,
 	.reflect =	mtk_governor_reflect,
