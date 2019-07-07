@@ -702,8 +702,10 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	rcu_read_unlock();
 	spin_unlock(&lowmem_shrink_lock);
 
-	if (selected)
+	lockdep_off();
+	if (current_is_kswapd() && selected)
 		handle_lmk_event(selected, min_score_adj);
+	lockdep_on();
 
 	/* dump more memory info outside the lock */
 	if (selected && selected_oom_score_adj <= lowmem_no_warn_adj &&
