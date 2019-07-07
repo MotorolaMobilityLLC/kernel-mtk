@@ -1679,5 +1679,8 @@ void ged_hal_exit(void)
 #ifdef GED_CONFIGURE_LOADING_BASE_DVFS_STEP
 	ged_debugFS_remove_entry(gpsLoadingBaseDvfsStepEntry);
 #endif
+#ifdef GED_ENABLE_TIMER_BASED_DVFS_MARGIN
+	ged_debugFS_remove_entry(gpsTimerBaseDvfsMarginEntry);
+#endif
 }
 //-----------------------------------------------------------------------------
