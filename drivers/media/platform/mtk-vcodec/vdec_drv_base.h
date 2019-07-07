@@ -35,7 +35,7 @@ struct vdec_common_if {
 	 * @src_chg : [out] some changed flags
 	 */
 	int (*decode)(unsigned long h_vdec, struct mtk_vcodec_mem *bs,
-		      struct vdec_fb *fb, unsigned int *src_chg);
+				  struct vdec_fb *fb, unsigned int *src_chg);
 
 	/**
 	 * (*get_param)() - get driver's parameter
@@ -44,7 +44,7 @@ struct vdec_common_if {
 	 * @out    : [out] buffer to store query result
 	 */
 	int (*get_param)(unsigned long h_vdec, enum vdec_get_param_type type,
-			 void *out);
+					 void *out);
 
 	/**
 	 * (*set_param)() - set driver's parameter
@@ -53,7 +53,7 @@ struct vdec_common_if {
 	 * @in     : [in] buffer to store query
 	 */
 	int (*set_param)(unsigned long h_vdec, enum vdec_set_param_type type,
-			 void *in);
+					 void *in);
 	/**
 	 * (*deinit)() - deinitialize driver.
 	 * @h_vdec : [in] driver handle to be deinit
