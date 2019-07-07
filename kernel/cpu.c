@@ -928,6 +928,8 @@ static int take_cpu_down(void *_param)
 	return 0;
 }
 
+void wait_rq(unsigned int cpu);
+
 static int takedown_cpu(unsigned int cpu)
 {
 	struct cpuhp_cpu_state *st = per_cpu_ptr(&cpuhp_state, cpu);
@@ -935,6 +937,8 @@ static int takedown_cpu(unsigned int cpu)
 
 	/* Park the smpboot threads */
 	kthread_park(per_cpu_ptr(&cpuhp_state, cpu)->thread);
+
+	wait_rq(cpu);
 
 	/*
 	 * Prevent irq alloc/free while the dying cpu reorganizes the

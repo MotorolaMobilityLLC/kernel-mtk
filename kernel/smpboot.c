@@ -530,4 +530,26 @@ bool cpu_report_death(void)
 	return newstate == CPU_DEAD;
 }
 
+void wait_rq(unsigned int cpu)
+{
+	struct smp_hotplug_thread *cur;
+	struct task_struct *tsk;
+	int cnt;
+
+next:
+	cnt = 0;
+	list_for_each_entry(cur, &hotplug_threads, list) {
+		tsk = *per_cpu_ptr(cur->store, cpu);
+		cnt += tsk->on_rq;
+	}
+	if (cnt) {
+		if (cpu == raw_smp_processor_id()) {
+			set_current_state(TASK_INTERRUPTIBLE);
+			schedule_timeout(1);
+		}
+		goto next;
+	}
+
+}
+
 #endif /* #ifdef CONFIG_HOTPLUG_CPU */
