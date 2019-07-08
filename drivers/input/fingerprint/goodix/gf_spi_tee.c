@@ -221,19 +221,9 @@ static int gf_get_gpio_dts_info(struct gf_device *gf_dev)
 		gf_debug(ERR_LOG, "%s can't find fingerprint pinctrl reset_low\n", __func__);
 		return ret;
 	}
-	
+
 	gf_debug(DEBUG_LOG, "%s success\n", __func__);
 #endif
-	return 0;
-}
-
-static int gf_release_gpio_dts_info(struct gf_device *gf_dev)
-{
-	if (gf_dev->pinctrl_gpios) {
-		devm_pinctrl_put(gf_dev->pinctrl_gpios);
-		gf_dev->pinctrl_gpios = NULL;
-	}
-
 	return 0;
 }
 
@@ -1081,7 +1071,6 @@ static int gf_probe(struct spi_device *spi)
 {
 	struct gf_device *gf_dev = NULL;
 	int status = -EINVAL;
-	unsigned char rx_test[10] = {0};
 
 	FUNC_ENTRY();
 
@@ -1131,26 +1120,6 @@ static int gf_probe(struct spi_device *spi)
 		status = -ENOMEM;
 		goto err_buf;
 	}
-
-	if (0 != gf_get_gpio_dts_info(gf_dev)) {
-		status = -EINVAL;
-		goto err_gpio;
-	}
-
-#ifdef REE_READ_HWID
-	gf_hw_power_enable(gf_dev, 1);
-	mdelay(1);
-	gf_spi_read_bytes(gf_dev, 0x0000, 4, rx_test);
-	gf_debug(INFO_LOG, "%s GF hwid:0x%x 0x%x 0x%x 0x%x \n", __func__,
-		rx_test[0], rx_test[1], rx_test[2], rx_test[3]);
-	// For gf3658, buffer is 0x4 & 0x25.
-	if((rx_test[0] != 0x4) || (rx_test[3] != 0x25))
-	{
-		gf_release_gpio_dts_info(gf_dev);
-		status = -EINVAL;
-		goto err_class;
-	}
-#endif
 
 	/* create class */
 	gf_dev->class = class_create(THIS_MODULE, GF_CLASS_NAME);
@@ -1281,7 +1250,6 @@ err_devno:
 err_class:
 	pr_err("%s cannot find the sensor,now exit\n", __func__);
 	gf_hw_power_enable(gf_dev, 0);
-err_gpio:
 	kfree(gf_dev->spi_buffer);
 err_buf:
 	mutex_destroy(&gf_dev->buf_lock);

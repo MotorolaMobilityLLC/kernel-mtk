@@ -49,8 +49,6 @@
 #define FPC_RESET_HIGH2_US 5000
 #define FPC_TTW_HOLD_TIME 1000
 
-#define REE_READ_HWID
-
 static const char * const pctl_names[] = {
 	"fingerprint_reset_low",
 	"fingerprint_reset_high",
@@ -65,6 +63,7 @@ struct fpc_data {
 	int irq_num;
 	int rst_gpio;
 	bool wakeup_enabled;
+	bool request_irq;
 	bool init;
 	struct wakeup_source ttw_wl;
 };
@@ -73,6 +72,8 @@ static DEFINE_MUTEX(spidev_set_gpio_mutex);
 
 extern void mt_spi_disable_master_clk(struct spi_device *spidev);
 extern void mt_spi_enable_master_clk(struct spi_device *spidev);
+
+static irqreturn_t fpc_irq_handler(int irq, void *handle);
 
 static int select_pin_ctl(struct fpc_data *fpc, const char *name)
 {
@@ -191,6 +192,136 @@ static ssize_t active_get(struct device *device,
 }
 static DEVICE_ATTR(active, S_IRUSR, active_get, NULL);
 
+static int fpc_dts_request(struct fpc_data *fpc)
+{
+	struct spi_device *spidev = fpc->spidev;
+	int rc = 0;
+	size_t i;
+
+	if (NULL == fpc->pinctrl_fpc) {
+		fpc->pinctrl_fpc = devm_pinctrl_get(&spidev->dev);
+		if (IS_ERR(fpc->pinctrl_fpc)) {
+			rc = PTR_ERR(fpc->pinctrl_fpc);
+			dev_err(fpc->dev, "Cannot find pinctrl_fpc rc = %d.\n", rc);
+			goto exit;
+		}
+
+		for (i = 0; i < ARRAY_SIZE(fpc->pinctrl_state); i++) {
+			const char *n = pctl_names[i];
+			struct pinctrl_state *state = pinctrl_lookup_state(fpc->pinctrl_fpc, n);
+			if (IS_ERR(state)) {
+				dev_err(fpc->dev, "cannot find '%s'\n", n);
+				rc = -EINVAL;
+				goto exit;
+			}
+			dev_info(fpc->dev, "found pin control %s\n", n);
+			fpc->pinctrl_state[i] = state;
+		}
+	}
+
+exit:
+	return rc;
+}
+
+static int fpc_dts_release(struct fpc_data *fpc)
+{
+	if (NULL != fpc->pinctrl_fpc) {
+		devm_pinctrl_put(fpc->pinctrl_fpc);
+		fpc->pinctrl_fpc = NULL;
+	}
+
+	return 0;
+}
+
+static int fpc_irq_request(struct fpc_data *fpc)
+{
+	struct spi_device *spidev = fpc->spidev;
+	struct device *dev = &spidev->dev;
+	int irqf = 0;
+	int irq_num = 0;
+	int rc = 0;
+
+	if (!fpc->request_irq) {
+		fpc->irq_gpio = of_get_named_gpio(dev->of_node, "int-gpios", 0);
+		irq_num = irq_of_parse_and_map(dev->of_node, 0);/*get irq num*/
+		if (!irq_num) {
+			rc = -EINVAL;
+			dev_err(fpc->dev, "get irq_num error rc = %d.\n", rc);
+			goto exit;
+		}
+
+		fpc->irq_num = irq_num;
+
+		//set_clks(fpc, true);
+
+		dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
+		dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
+
+		fpc->wakeup_enabled = false;
+
+		irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
+		if (of_property_read_bool(dev->of_node, "fpc,enable-wakeup")) {
+			irqf |= IRQF_NO_SUSPEND;
+			device_init_wakeup(dev, 1);
+		}
+
+		rc = devm_request_threaded_irq(dev, irq_num,
+			NULL, fpc_irq_handler, irqf,
+			dev_name(dev), fpc);
+		if (rc) {
+			dev_err(dev, "could not request irq %d\n", irq_num);
+			goto exit;
+		}
+		dev_info(dev, "requested irq %d\n", irq_num);
+
+		/* Request that the interrupt should be wakeable */
+		enable_irq_wake(irq_num);
+
+		fpc->request_irq = true;
+	}
+
+exit:
+	return rc;
+}
+
+static int fpc_irq_release(struct fpc_data *fpc)
+{
+	if (fpc->request_irq) {
+		//disable_irq_wake(fpc->irq_num);
+		//disable_irq(fpc->irq_num);
+		devm_free_irq(fpc->dev, fpc->irq_num, fpc);
+		fpc->request_irq = false;
+	}
+
+	return 0;
+}
+
+static ssize_t hw_enable_set(struct device *dev,
+	struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct  fpc_data *fpc = dev_get_drvdata(dev);
+	ssize_t ret = count;
+
+	dev_info(dev, "%s: enter\n", __func__);
+
+	if (!strncmp(buf, "enable", strlen("enable"))) {
+		dev_info(dev, "%s: enable\n", __func__);
+		fpc_dts_request(fpc);
+		fpc_irq_request(fpc);
+		hw_reset(fpc);
+	} else if (!strncmp(buf, "disable", strlen("disable"))) {
+		dev_info(dev, "%s: disable\n", __func__);
+		fpc_irq_release(fpc);
+		fpc_dts_release(fpc);
+	} else {
+		dev_info(dev, "%s: unkown!\n", __func__);
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
+static DEVICE_ATTR(hw_enable, S_IWUSR, NULL, hw_enable_set);
 /**
  * sysf node to check the interrupt status of the sensor, the interrupt
  * handler should perform sysf_notify to allow userland to poll the node.
@@ -234,6 +365,7 @@ static struct attribute *fpc_attributes[] = {
 	&dev_attr_clk_enable.attr,
 	&dev_attr_irq.attr,
 	&dev_attr_active.attr,
+	&dev_attr_hw_enable.attr,
 	NULL
 };
 
@@ -269,62 +401,11 @@ static irqreturn_t fpc_irq_handler(int irq, void *handle)
 	return IRQ_HANDLED;
 }
 
-#ifdef REE_READ_HWID
-int fpc1020_read_hwid(struct spi_device *spidev)
-{
-	struct spi_message msg;
-	u8 temp_buffer[32];
-	int error = 0;
-
-	struct spi_transfer cmd = {
-		.cs_change = 0,
-		.delay_usecs = 0,
-		.speed_hz = 4800000u,
-		.tx_buf = temp_buffer,
-		.rx_buf = temp_buffer,
-		.len    = 16,
-		.tx_dma = 0,
-		.rx_dma = 0,
-		.bits_per_word = 8,
-	};
-
-	temp_buffer[0] = 0xFC;
-	spi_message_init(&msg);
-	spi_message_add_tail(&cmd,  &msg);
-
-	error = spi_sync(spidev, &msg);
-
-	if (0 != error) {
-		dev_err(&spidev->dev, "%s, spi_sync error:%d.\n", __func__, error);
-	}
-
-	dev_info(&spidev->dev, "fpc hwid: 0x%x,  0x%x,  0x%x, 0x%x\n",
-				temp_buffer[0], temp_buffer[1], temp_buffer[2], temp_buffer[3]);
-
-	if (temp_buffer[1] == 0x10) {
-		if (temp_buffer[2] == 0x12 ||
-			temp_buffer[2] == 0x13 ||
-			temp_buffer[2] == 0x22 ||
-			temp_buffer[2] == 0x23)
-		{
-			return 0;
-		}
-	}
-
-	return -EINVAL;
-
-}
-#endif
-
 static int mtk6797_probe(struct spi_device *spidev)
 {
 	struct device *dev = &spidev->dev;
-	struct device_node *node_eint;
 	struct fpc_data *fpc;
-	int irqf = 0;
-	int irq_num = 0;
 	int rc = 0;
-	size_t i;
 
 	dev_dbg(dev, "%s\n", __func__);
 
@@ -348,75 +429,6 @@ static int mtk6797_probe(struct spi_device *spidev)
 	fpc->spidev = spidev;
 	fpc->spidev->irq = 0; /*SPI_MODE_0*/
 
-	fpc->pinctrl_fpc = devm_pinctrl_get(&spidev->dev);
-	if (IS_ERR(fpc->pinctrl_fpc)) {
-		rc = PTR_ERR(fpc->pinctrl_fpc);
-		dev_err(fpc->dev, "Cannot find pinctrl_fpc rc = %d.\n", rc);
-		goto exit;
-	}
-
-	for (i = 0; i < ARRAY_SIZE(fpc->pinctrl_state); i++) {
-		const char *n = pctl_names[i];
-		struct pinctrl_state *state = pinctrl_lookup_state(fpc->pinctrl_fpc, n);
-		if (IS_ERR(state)) {
-			dev_err(dev, "cannot find '%s'\n", n);
-			rc = -EINVAL;
-			goto exit;
-		}
-		dev_info(dev, "found pin control %s\n", n);
-		fpc->pinctrl_state[i] = state;
-	}
-
-	hw_reset(fpc);
-	if (0 != fpc1020_read_hwid(spidev)) {
-		rc = -EINVAL;
-		dev_err(fpc->dev, "fpc1020_read_hwid failed.\n");
-		devm_pinctrl_put(fpc->pinctrl_fpc);
-		devm_kfree(dev, fpc);
-		goto exit;
-	}
-
-	node_eint = of_find_compatible_node(NULL, NULL,
-				"mediatek,fingerprint");
-	if (node_eint == NULL) {
-		rc = -EINVAL;
-		dev_err(fpc->dev, "cannot find node_eint rc = %d.\n", rc);
-		goto exit;
-	}
-
-	fpc->irq_gpio = of_get_named_gpio(node_eint, "int-gpios", 0);
-	irq_num = irq_of_parse_and_map(node_eint, 0);/*get irq num*/
-	if (!irq_num) {
-		rc = -EINVAL;
-		dev_err(fpc->dev, "get irq_num error rc = %d.\n", rc);
-		goto exit;
-	}
-
-	fpc->irq_num = irq_num;
-
-	//set_clks(fpc, true);
-
-	dev_dbg(dev, "Using GPIO#%d as IRQ.\n", fpc->irq_gpio);
-	dev_dbg(dev, "Using GPIO#%d as RST.\n", fpc->rst_gpio);
-
-	fpc->wakeup_enabled = false;
-
-	irqf = IRQF_TRIGGER_RISING | IRQF_ONESHOT;
-	if (of_property_read_bool(dev->of_node, "fpc,enable-wakeup")) {
-		irqf |= IRQF_NO_SUSPEND;
-		device_init_wakeup(dev, 1);
-	}
-	rc = devm_request_threaded_irq(dev, irq_num,
-		NULL, fpc_irq_handler, irqf,
-		dev_name(dev), fpc);
-	if (rc) {
-		dev_err(dev, "could not request irq %d\n", irq_num);
-		goto exit;
-	}
-	dev_info(dev, "requested irq %d\n", irq_num);
-
-	/* Request that the interrupt should be wakeable */
-	enable_irq_wake(irq_num);
 	wakeup_source_init(&fpc->ttw_wl, "fpc_ttw_wl");
 
 	rc = sysfs_create_group(&dev->kobj, &fpc_attribute_group);

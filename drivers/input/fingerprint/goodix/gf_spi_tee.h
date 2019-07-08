@@ -222,8 +222,6 @@ struct gf_device {
 #endif
 };
 
-/**************************REE READ HWID******************************/
-#define REE_READ_HWID	
 
 /**********************function defination**********************/
 #ifdef CONFIG_SPI_MT65XX
