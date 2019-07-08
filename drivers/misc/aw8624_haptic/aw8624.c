@@ -701,10 +701,10 @@ static int aw8624_haptic_brake_config(struct aw8624 *aw8624)
     brake1_p_num = aw8624_dts_data.aw8624_ram_brake[level][6];
     brake2_p_num = aw8624_dts_data.aw8624_ram_brake[level][7];
 
-    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE0_CTRL, (brake0_level<<0));
-    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE1_CTRL, (en_brake1<<7)|(brake1_level<< 0));
-    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE2_CTRL, (en_brake2<<7)|(brake2_level<< 0));
-    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE_NUM, ((brake2_p_num<<6)|(brake1_p_num<<3)|(brake0_p_num<<0)));
+    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE0_CTRL, 0);
+    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE1_CTRL, 0);
+    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE2_CTRL, 0);
+    aw8624_i2c_write(aw8624, AW8624_REG_BRAKE_NUM, 0);
 
     td_brake = (char)(aw8624_dts_data.aw8624_td_brake[level] / 4160 );
 
@@ -716,62 +716,49 @@ static int aw8624_haptic_brake_config(struct aw8624 *aw8624)
 
 static int aw8624_haptic_ram_config(struct aw8624 *aw8624)
 {
-    unsigned char wavseq1 = 0;
-    unsigned char wavseq2 = 0;
-    unsigned char wavloop1 = 0;
-    unsigned char wavloop2= 0;
-    unsigned int wavtime = 0;
-    unsigned int wavcycle = 0;
+    unsigned char wavseq = 0;
+    unsigned char wavloop = 0;
 
-    wavtime = (1000*10*100) / aw8624_dts_data.aw8624_f0_pre;
-    wavcycle = (aw8624->duration * 1000) / wavtime;
-    if(wavcycle % 10 >= 5)
+    pr_info("%s aw8624->duration :%d\n", __func__ ,aw8624->duration );
+
+    if((aw8624->duration  > 0) && (aw8624->duration  < 20))
     {
-    	wavcycle = wavcycle / 10 + 1;
+        wavseq = 2;
+        wavloop = 0;
+    }
+    else if((aw8624->duration  >= 20) && (aw8624->duration  < 30))
+    {
+        wavseq = 3;
+        wavloop = 0;
+    }
+    else if((aw8624->duration  >= 30) && (aw8624->duration  < 60))
+    {
+        wavseq = 4;
+        wavloop = 0;
+    }
+    else if(aw8624->duration  >= 60)
+    {
+        wavseq = 1;
+        wavloop = 15;
     }
     else
     {
-    	wavcycle = wavcycle / 10;
-    }
-    if(wavcycle < 16)//short  < 60ms
-    {
-    	aw8624_haptic_set_gain(aw8624, 0x80);
-	if(wavcycle > 7)
-	{
-		wavseq1 = 1;
-		wavseq2 = 2;
-		wavloop1 = 6;
-		wavloop2 = wavcycle - 8;
-	}
-	else
-	{
-		wavseq1 = 1;
-		wavseq2 = 0;
-		if(wavcycle > 0)
-		{
-       		wavloop1 = wavcycle - 1;
-		}
-		else
-		{
-       		wavloop1 = 0;
-		}
-		wavloop2 = 0;
-	}
-    }
-    else//long
-    {
-    	aw8624_haptic_set_gain(aw8624, 0x98);
-    	wavseq1 = 2;
-    	wavseq2 = 0;
-    	wavloop1 = 15;
-    	wavloop2 = 0;
+        wavseq = 0;
+        wavloop = 0;
     }
 
-    aw8624_haptic_set_wav_seq(aw8624, 0, wavseq1);
-    aw8624_haptic_set_wav_seq(aw8624, 1, wavseq2);
-    aw8624_haptic_set_wav_loop(aw8624, 0, wavloop1);
-    aw8624_haptic_set_wav_loop(aw8624, 1, wavloop2);
-
+    if((aw8624->duration  > 0) && (aw8624->duration  < 60))
+    {
+        aw8624_haptic_set_gain(aw8624, 0x55);
+    }
+    else
+    {
+        aw8624_haptic_set_gain(aw8624, 0x98);
+    }
+    aw8624_haptic_set_wav_seq(aw8624, 0, wavseq);
+    aw8624_haptic_set_wav_loop(aw8624, 0, wavloop);
+    aw8624_haptic_set_wav_seq(aw8624, 1, 0);
+    aw8624_haptic_set_wav_loop(aw8624, 1, 0);
     return 0;
 }
 
