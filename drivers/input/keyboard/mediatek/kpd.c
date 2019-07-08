@@ -208,7 +208,7 @@ static const u16 kpd_auto_keymap[] = {
 #define AEE_VOLUMEDOWN_BIT	1
 #define AEE_DELAY_TIME		15
 /* enable volup + voldown was pressed 5~15 s Trigger aee manual dump */
-#define AEE_ENABLE_5_15		1
+#define AEE_ENABLE_5_15		0
 static struct hrtimer aee_timer;
 static unsigned long aee_pressed_keys;
 static bool aee_timer_started;
