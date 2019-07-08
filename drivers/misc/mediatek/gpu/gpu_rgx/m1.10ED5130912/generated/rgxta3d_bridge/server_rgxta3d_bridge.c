@@ -346,7 +346,9 @@ PVRSRVBridgeRGXDestroyHWRTData(IMG_UINT32 ui32DispatchTableEntry,
 			       psRGXDestroyHWRTDataOUT,
 			       CONNECTION_DATA * psConnection)
 {
-
+#ifdef GPU_LOCK_HANDLE_JOURNEY_DESTORY_ENHANCE
+    LockDestoryHandle();
+#endif
 	/* Lock over handle destruction. */
 	LockHandle();
 
@@ -1832,7 +1834,9 @@ PVRSRVBridgeRGXKickTA3D(IMG_UINT32 ui32DispatchTableEntry,
 
 	/* Lock over handle lookup. */
 	LockHandle();
-
+#ifdef GPU_LOCK_HANDLE_JOURNEY_DESTORY_ENHANCE
+    DelayDestoryHandle();
+#endif
 	/* Look up the address from the handle */
 	psRGXKickTA3DOUT->eError =
 	    PVRSRVLookupHandleUnlocked(psConnection->psHandleBase,

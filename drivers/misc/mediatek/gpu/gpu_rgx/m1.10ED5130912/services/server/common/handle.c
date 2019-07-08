@@ -64,7 +64,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include "pvr_debug.h"
 #include "connection_server.h"
 
-#ifdef HANDLE_JOURNEY_TRACE
+#ifdef GPU_LOCK_HANDLE_JOURNEY_TRACE
 #include <linux/trace_events.h>
 #endif
 
@@ -162,7 +162,7 @@ static HANDLE_IMPL_FUNCTAB const *gpsHandleFuncs;
 static POS_LOCK gHandleLock;
 static IMG_BOOL gbLockInitialised = IMG_FALSE;
 
-#ifdef HANDLE_JOURNEY_TRACE
+#ifdef GPU_LOCK_HANDLE_JOURNEY_TRACE
 static unsigned long __read_mostly mark_addr;
 static inline void update_tracing_mark_write_addr(void)
 {
@@ -175,7 +175,7 @@ inline void trace_begin(const char *name)
     update_tracing_mark_write_addr();
 
 	preempt_disable();
-	event_trace_printk(mark_addr, "B|%d|__LockHandle:%s\n",current->tgid, name);
+	event_trace_printk(mark_addr, "B|%d|%s\n",current->tgid, name);
 	preempt_enable();
 }
 
@@ -185,12 +185,53 @@ inline void trace_end(void)
 	event_trace_printk(mark_addr, "E|%d\n",current->tgid);
 	preempt_enable();
 }
+
+inline void trace_count(const char *name, int value)
+{
+    update_tracing_mark_write_addr();
+
+	preempt_disable();
+	event_trace_printk(mark_addr, "C|%d|%s|%d\n",current->tgid, name, value);
+	preempt_enable();
+}
+
+#endif
+
+#ifdef GPU_LOCK_HANDLE_JOURNEY_DESTORY_ENHANCE
+#include <linux/delay.h>
+static u64 destory_limit_jiffies = 0;
+void LockDestoryHandle(void)
+{
+    unsigned int timeout = 0;
+    unsigned now = 0;    
+    if(destory_limit_jiffies != 0) {
+        timeout = jiffies_to_msecs(destory_limit_jiffies);
+        now = jiffies_to_msecs(jiffies);
+        while(now < timeout) {
+            trace_count("LockDestoryHandle-Wait",timeout - now);
+            msleep(timeout - now);
+            now = jiffies_to_msecs(jiffies);
+        }
+        trace_count("LockDestoryHandle-Wait",0);
+        destory_limit_jiffies = 0;
+    }
+}
+void DelayDestoryHandle(void)
+{
+    if(destory_limit_jiffies == 0) {
+        destory_limit_jiffies = get_jiffies_64() + 1*HZ;
+        trace_count("LockDestoryHandle-Wait",jiffies_to_msecs(destory_limit_jiffies));        
+    }
+}
+#endif
+
+#ifdef GPU_LOCK_HANDLE_JOURNEY_TRACE
 void _LockHandle(const char* from)
 #else
 void LockHandle(void)
 #endif
 {
-#ifdef HANDLE_JOURNEY_TRACE
+#ifdef GPU_LOCK_HANDLE_JOURNEY_TRACE
     trace_begin(from);
 #endif
 	lockdep_off();
@@ -200,7 +241,7 @@ void LockHandle(void)
 
 void UnlockHandle(void)
 {
-#ifdef HANDLE_JOURNEY_TRACE
+#ifdef GPU_LOCK_HANDLE_JOURNEY_TRACE
     trace_end();
 #endif
 	lockdep_off();
