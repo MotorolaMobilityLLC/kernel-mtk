@@ -88,6 +88,19 @@
 		firlen = <16>;
 		is_batch_supported = <1>;
 	};
+    gsensor_k:gsensor_kxtj2@0e {
+        compatible = "mediatek,gsensor_kxtj2";
+        reg = <0x0e>;
+        status = "okay";
+        i2c_num = <1>;
+        i2c_addr = <0x0e 0 0 0>;
+        direction = <4>;
+        power_id = <0xffff>;
+        power_vol = <0>;
+        firlen = <16>;
+        is_batch_supported = <1>;
+     };
+
 	gsensor_kx126:gsensor_kx126_1063@1e {
 		compatible = "mediatek,gsensor_kx126_1063";
 		reg = <0x1e>;
