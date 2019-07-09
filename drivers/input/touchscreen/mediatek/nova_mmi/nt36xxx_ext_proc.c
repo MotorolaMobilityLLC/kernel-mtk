@@ -28,6 +28,10 @@
 #define NVT_RAW "nvt_raw"
 #define NVT_DIFF "nvt_diff"
 #define NVT_UPDATE "nvt_update"
+#define NVT_POWERMAX "touch_powermax"
+#define NVT_POWERON "touch_poweron"
+#define NVT_SLEEP "touch_sleep"
+#define NVT_RESET "touch_reset"
 
 #define SPI_TANSFER_LENGTH  256
 
@@ -48,6 +52,10 @@ static struct proc_dir_entry *NVT_proc_baseline_entry;
 static struct proc_dir_entry *NVT_proc_raw_entry;
 static struct proc_dir_entry *NVT_proc_diff_entry;
 static struct proc_dir_entry *NVT_proc_fwupdate_entry;
+static struct proc_dir_entry *NVT_proc_powermax_enter;
+static struct proc_dir_entry *NVT_proc_poweron_enter;
+static struct proc_dir_entry *NVT_proc_sleep_entry;
+static struct proc_dir_entry *NVT_proc_reset_entry;
 
 /*******************************************************
 Description:
@@ -629,7 +637,165 @@ static const struct file_operations nvt_fwupdate_fops = {
 	.read = nvt_fwupdate_read,
 };
 
+uint8_t status = 1;
+#define ENABBLE_MONITOR 1
+#define DISABLE_MONITOR 0
+#define ENABLE_DOZE_MODE_CMD 0xB7
+#define DISABLE_DOZE_MODE_CMD 0xB8
+int32_t nvt_monitor_control(uint8_t status)
+{
+	uint8_t buf[8] = {0};
+	int32_t ret = 0;
 
+	NVT_LOG("set monitor control: %d\n", status);
+
+	/* ---set xdata index to EVENT BUF ADDR--- */
+	ret = nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
+	if (ret < 0) {
+		NVT_ERR("Set event buffer index fail!\n");
+		goto nvt_monitor_control_out;
+	}
+
+	if (status == ENABBLE_MONITOR) {
+		buf[0] = EVENT_MAP_HOST_CMD;
+		buf[1] = ENABLE_DOZE_MODE_CMD;
+		ret = CTP_SPI_WRITE(ts->client, buf, 2);
+		if (ret < 0) {
+			NVT_ERR("Write enable doze mode command fail!\n");
+			goto nvt_monitor_control_out;
+		} else {
+			NVT_LOG("set enable doze mode cmd succeeded\n");
+		}
+	} else if (status == DISABLE_MONITOR) {
+		buf[0] = EVENT_MAP_HOST_CMD;
+		buf[1] = DISABLE_DOZE_MODE_CMD;
+		ret = CTP_SPI_WRITE(ts->client, buf, 2);
+		if (ret < 0) {
+			NVT_ERR("Write disable doze mode command fail!\n");
+			goto nvt_monitor_control_out;
+		} else {
+			NVT_LOG("set disable doze mode cmd succeeded\n");
+		}
+	} else {
+		NVT_ERR("Invalid monitor_control parameter!\n");
+		ret = -EINVAL;
+	}
+
+    nvt_monitor_control_out:
+
+	return ret;
+}
+
+
+static int nvt_monitor_control_show(struct seq_file *sfile, void *v) {
+	if(status == ENABBLE_MONITOR)
+		seq_printf(sfile, "Enable Doze MODE!\n");
+	else if (status == DISABLE_MONITOR)
+		seq_printf(sfile, "Disable Doze MODE!\n");
+	else
+		seq_printf(sfile, "UNKNOW MODE!\n");
+	return 0;
+}
+static ssize_t nvt_monitor_control_store(struct file *file, const char *buffer, size_t count, loff_t *pos) {
+	char *tmp = kzalloc((count+1), GFP_KERNEL);
+
+	if (!tmp)
+		return -ENOMEM;
+
+	if (copy_from_user(tmp,buffer,1)) {
+		kfree(tmp);
+		return -EINVAL;
+	}
+
+	if(tmp[0] == '0') {
+		status = 0;
+	} else {
+		status = 1;
+	}
+
+	nvt_monitor_control(status);
+	kfree(tmp);
+	return count;
+
+}
+static int32_t nvt_monitor_control_open(struct inode *inode, struct file *file) {
+	return single_open(file, nvt_monitor_control_show, NULL);
+}
+static const struct file_operations monitor_control_fops = {
+	.owner = THIS_MODULE,
+	.open = nvt_monitor_control_open,
+	.read = seq_read,
+	.write = nvt_monitor_control_store,
+	.llseek = seq_lseek,
+	.release = seq_release,
+};
+
+static int nvt_sleep_show(struct seq_file *sfile, void *v) {
+	seq_printf(sfile, "nvt_sleep!\n");
+	return 0;
+}
+static ssize_t nvt_sleep_store(struct file *file, const char *buffer, size_t count, loff_t *pos) {
+	char *tmp = kzalloc((count+1), GFP_KERNEL);
+
+	if (!tmp)
+		return -ENOMEM;
+
+	if (copy_from_user(tmp,buffer,1)) {
+		kfree(tmp);
+		return -EINVAL;
+	}
+
+	if(tmp[0] == '1') {
+		nvt_ts_sleep_proc();
+	}
+
+	return count;
+
+}
+static int32_t nvt_sleep_open(struct inode *inode, struct file *file) {
+	return single_open(file, nvt_sleep_show, NULL);
+}
+static const struct file_operations sleep_fops = {
+	.owner = THIS_MODULE,
+	.open = nvt_sleep_open,
+	.read = seq_read,
+	.write = nvt_sleep_store,
+	.llseek = seq_lseek,
+	.release = seq_release,
+};
+
+static int nvt_reset_show(struct seq_file *sfile, void *v) {
+	seq_printf(sfile, "nvt_reset!\n");
+	return 0;
+}
+static ssize_t nvt_reset_store(struct file *file, const char *buffer, size_t count, loff_t *pos) {
+	char *tmp = kzalloc((count+1), GFP_KERNEL);
+
+	if (!tmp)
+		return -ENOMEM;
+
+	if (copy_from_user(tmp,buffer,1)) {
+		kfree(tmp);
+		return -EINVAL;
+	}
+
+	if(tmp[0] == '1') {
+		nvt_reset_store_proc();
+	}
+
+	return count;
+}
+static int32_t nvt_reset_open(struct inode *inode, struct file *file) {
+	return single_open(file, nvt_reset_show, NULL);
+}
+static const struct file_operations reset_fops = {
+	.owner = THIS_MODULE,
+	.open = nvt_reset_open,
+	.read = seq_read,
+	.write = nvt_reset_store,
+	.llseek = seq_lseek,
+	.release = seq_release,
+};
 /*******************************************************
 Description:
 	Novatek touchscreen extra function proc. file node
@@ -681,6 +847,37 @@ int32_t nvt_extra_proc_init(void)
 		NVT_LOG("create proc/nvt_update Succeeded!\n");
 	}
 
+	NVT_proc_powermax_enter = proc_create(NVT_POWERMAX, 0644, NULL,&monitor_control_fops);
+	if (NVT_proc_powermax_enter == NULL) {
+		NVT_ERR("create proc/nvt_monitor_control Failed!\n");
+		return -ENOMEM;
+	} else {
+		NVT_LOG("create proc/nvt_monitor_control Succeeded!\n");
+	}
+
+	NVT_proc_poweron_enter = proc_create(NVT_POWERON, 0644, NULL,&monitor_control_fops);
+	if (NVT_proc_poweron_enter == NULL) {
+		NVT_ERR("create proc/nvt_monitor_control Failed!\n");
+		return -ENOMEM;
+	} else {
+		NVT_LOG("create proc/nvt_monitor_control Succeeded!\n");
+	}
+
+	NVT_proc_sleep_entry = proc_create(NVT_SLEEP, 0644, NULL,&sleep_fops);
+	if (NVT_proc_sleep_entry == NULL) {
+		NVT_ERR("create proc/nvt_sleep Failed!\n");
+		return -ENOMEM;
+	} else {
+		NVT_LOG("create proc/nvt_sleep Succeeded!\n");
+	}
+
+	NVT_proc_reset_entry = proc_create(NVT_RESET, 0644, NULL,&reset_fops);
+	if (NVT_proc_reset_entry == NULL) {
+		NVT_ERR("create proc/nvt_reset Failed!\n");
+		return -ENOMEM;
+	} else {
+		NVT_LOG("create proc/nvt_reset Succeeded!\n");
+	}
 	return 0;
 }
 
@@ -723,5 +920,30 @@ void nvt_extra_proc_deinit(void)
 		NVT_proc_fwupdate_entry = NULL;
 		NVT_LOG("Removed /proc/%s\n", NVT_UPDATE);
 	}
+
+	if (NVT_proc_powermax_enter != NULL) {
+		remove_proc_entry(NVT_POWERMAX, NULL);
+		NVT_proc_powermax_enter = NULL;
+		NVT_LOG("Removed /proc/%s\n", NVT_POWERMAX);
+	}
+
+	if (NVT_proc_poweron_enter != NULL) {
+		remove_proc_entry(NVT_POWERON, NULL);
+		NVT_proc_poweron_enter = NULL;
+		NVT_LOG("Removed /proc/%s\n", NVT_POWERON);
+	}
+
+	if (NVT_proc_sleep_entry != NULL) {
+		remove_proc_entry(NVT_SLEEP, NULL);
+		NVT_proc_sleep_entry = NULL;
+		NVT_LOG("Removed /proc/%s\n", NVT_SLEEP);
+	}
+
+	if (NVT_proc_reset_entry != NULL) {
+		remove_proc_entry(NVT_RESET, NULL);
+		NVT_proc_reset_entry = NULL;
+		NVT_LOG("Removed /proc/%s\n", NVT_RESET);
+	}
+
 }
 #endif

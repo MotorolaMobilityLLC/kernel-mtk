@@ -1211,3 +1211,42 @@ void nvt_fw_sysfs_deinit(void)
 	nvt_fw_class_init(false);
 }
 #endif
+
+int nvt_reset_store_proc(void)
+{
+	int retval;
+	NVT_LOG("%s enter\n", __func__);
+	NVT_LOG("++\n");
+
+	if (ts->suspended) {
+		NVT_ERR("In suspend state, try again later\n");
+		retval = -EINVAL;
+		goto exit;
+	}
+
+	if (ts->loading_fw) {
+		NVT_ERR("In FW flashing state, try again later\n");
+		retval = -EINVAL;
+		goto exit;
+	}
+
+	NVT_LOG("normal filename: %s, mp filename: %s\n", ts->normal_firmware_name, ts->mp_firmware_name);
+
+	mutex_lock(&ts->lock);
+#if NVT_TOUCH_ESD_PROTECT
+	nvt_esd_check_enable(false);
+#endif
+	ts->loading_fw = 1;
+
+	update_firmware_release();
+
+	nvt_update_firmware(ts->normal_firmware_name);
+
+	nvt_check_fw_reset_state(RESET_STATE_REK);
+
+	ts->loading_fw = 0;
+	mutex_unlock(&ts->lock);
+
+exit:
+	return retval;
+}

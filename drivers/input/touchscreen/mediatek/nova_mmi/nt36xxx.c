@@ -2164,6 +2164,12 @@ static int32_t nvt_ts_suspend(struct device *dev)
 	return 0;
 }
 
+void nvt_ts_sleep_proc(void)
+{
+	NVT_LOG("%s enter\n", __func__);
+	nvt_ts_suspend(&ts->client->dev);
+}
+
 void nvt_nvt_update_firmware_work(struct completion *load_fw_completion) {
 	NVT_LOG("nvt_nvt_update_firmware_work start\n");
 #if NVT_TOUCH_FW
