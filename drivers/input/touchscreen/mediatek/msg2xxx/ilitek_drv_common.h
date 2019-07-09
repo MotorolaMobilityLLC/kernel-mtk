@@ -123,7 +123,7 @@
  * The below compile option is used to enable the specific device driver code handling to make sure main board can supply power to touch ic for some specific BB chip of MTK(EX. MT6582)/SPRD(EX. SC7715)/QCOM(EX. MSM8610).
  * By default, this compile option is disabled.
  */
-//#define CONFIG_ENABLE_REGULATOR_POWER_ON
+#define CONFIG_ENABLE_REGULATOR_POWER_ON
 
 /*
  * Note.
@@ -969,7 +969,7 @@ extern struct ctp_config_info config_info;
  * If the debug log level is set as 0, the function for output log will be disabled.
  * By default, the debug log level is set as 1.
  */
-#define CONFIG_TOUCH_DRIVER_DEBUG_LOG_LEVEL (1)   // 1 : Default, 0 : No log. The bigger value, the more detailed log is output.
+#define CONFIG_TOUCH_DRIVER_DEBUG_LOG_LEVEL (0)   // 1 : Default, 0 : No log. The bigger value, the more detailed log is output.
 
 /*=============================================================*/
 // EXTERN VARIABLE DECLARATION

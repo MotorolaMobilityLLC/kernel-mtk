@@ -59,6 +59,17 @@
 
 #define TPD_OK (0)
 
+/* #define TPD_DEBUG_TRACK */
+#if defined(TPD_DMESG)
+#undef TPD_DMESG
+#define TPD_DMESG(a, arg...) pr_info(TP_IC_NAME ": " a, ##arg)
+#endif
+
+#if defined(TPD_DEBUG)
+#undef TPD_DEBUG
+#define TPD_DEBUG(a, arg...) pr_info(TP_IC_NAME ": " a, ##arg)
+#endif
+
 /*=============================================================*/
 // EXTERN VARIABLE DECLARATION
 /*=============================================================*/
@@ -168,7 +179,7 @@ MODULE_DEVICE_TABLE(i2c, tpd_device_id);
 
 #ifdef CONFIG_PLATFORM_USE_ANDROID_SDK_6_UPWARD
 const struct of_device_id touch_dt_match_table[] = {
-    { .compatible = "mediatek,msg2xxx__touch",},
+    { .compatible = "mediatek,msg2xxx_touch",},
     {},
 };
 
@@ -213,7 +224,7 @@ static int tpd_local_init(void)
          
         return -1;
     }
-    
+
     if (tpd_load_status == 0) 
     {
         TPD_DMESG("Add error touch panel driver.\n");
