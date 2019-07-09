@@ -45,9 +45,14 @@ LCM_DRIVER *lcm_driver_list[] = {
 	&ili9881c_hd_dsi_vdo_txd_lcm_drv,
 #endif
 
-#if defined(ONTIM_ILI9881C_DT_HOLITECH)
-      &ontim_ILI9881C_lcm_drv_dt_holitech,
+#if defined(ONTIM_ILI9881C_BOE_HLT)
+      &ontim_ILI9881C_lcm_drv_boe_hlt,
 #endif 
+
+#if defined(ONTIM_ILI9881C_HC_HLT)
+      &ontim_ILI9881C_lcm_drv_hc_hlt,
+#endif 
+
 
 #if defined(ONTIM_FT8006U_DT)
         &ft8006u_dsi_cmd_lcm_drv,

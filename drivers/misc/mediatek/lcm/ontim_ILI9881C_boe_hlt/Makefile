@@ -3,6 +3,6 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
-obj-y += ontim_ILI9881C_dt_holitech.o
+obj-y += ontim_ILI9881C_boe_hlt.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
