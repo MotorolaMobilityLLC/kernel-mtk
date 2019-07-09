@@ -111,6 +111,7 @@ struct ilitek_platform_data {
 	struct mutex ilitek_debug_read_mutex;
 	const char *TP_IC_TYPE;
 	bool suspended;
+	uint8_t radio_frequency_test;
 };
 
 extern struct ilitek_platform_data *ipd;

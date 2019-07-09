@@ -59,6 +59,77 @@ int core_check_ilitek_ic_exist(void)
 	return ret;
 }
 
+void core_config_goto_sleep_mode(void)
+{
+	ipio_info("tp go to sleep mode\n");
+	if ((ipd->suspended) ||(ipd->radio_frequency_test==RADIO_FRE_SLEEP)) {
+		ipio_info("TP not need go to sleep,suspend=%d,freq_test = %d\n",ipd->suspended,(ipd->radio_frequency_test));
+		return;
+	}
+	ilitek_platform_disable_irq();
+	mutex_lock(&ipd->touch_mutex);
+	/* sense stop */
+	core_config_sense_ctrl(false);
+	if (core_config_check_cdc_busy(50, 50) < 0)
+		ipio_err("Check busy is timout !\n");
+	core_config_sleep_ctrl(false);
+	ipd->radio_frequency_test = RADIO_FRE_SLEEP;
+	mutex_unlock(&ipd->touch_mutex);
+}
+
+void core_config_goto_active_mode(void)
+{
+	u8 cmd[3] = {0};
+	int ret = 0;
+	cmd[0] = 0x01;
+	cmd[1] = 0x19;
+	cmd[2] = 0x00;
+
+	ipio_info("tp go to active mode\n");
+	if ((ipd->suspended) ||(ipd->radio_frequency_test==RADIO_FRE_ACTIVE)) {
+		ipio_info("TP not need go to sleep,suspend=%d,freq_test = %d\n",ipd->suspended,(ipd->radio_frequency_test));
+		return;
+	}
+
+	mutex_lock(&ipd->touch_mutex);
+	/* sense stop */
+	if (mode_chose == I2C_MODE)
+		ilitek_platform_reset_ctrl(true, HW_RST);
+	else
+		core_config_switch_fw_mode(&protocol->demo_mode);
+	mdelay(60);
+	ret = core_write(core_config->slave_i2c_addr, cmd, 3);
+	if(ret) {
+		ipio_info("tp go to active mode success\n");
+	}
+	ilitek_platform_enable_irq();
+	ipd->radio_frequency_test = RADIO_FRE_ACTIVE;
+	mutex_unlock(&ipd->touch_mutex);
+}
+
+void core_config_goto_monitor_mode(void)
+{
+	u8 cmd[3] = {0};
+	int ret = 0;
+	cmd[0] = 0x01;
+	cmd[1] = 0x19;
+	cmd[2] = 0x01;
+
+	ipio_info("tp go to monitor mode\n");
+	if ((ipd->suspended) ||(ipd->radio_frequency_test==RADIO_FRE_MONITOR)) {
+		ipio_info("TP not need go to sleep,suspend=%d,freq_test = %d\n",ipd->suspended,(ipd->radio_frequency_test));
+		return;
+	}
+
+	mutex_lock(&ipd->touch_mutex);
+	ret = core_write(core_config->slave_i2c_addr, cmd, 3);
+	mutex_unlock(&ipd->touch_mutex);
+	if(ret) {
+		ipd->radio_frequency_test = RADIO_FRE_MONITOR;
+		ipio_info("tp go to monitor mode success\n");
+	}
+}
+
 void core_config_read_flash_info(void)
 {
 	int i;

@@ -263,6 +263,12 @@ enum ili7807_types {
 #define VDD_VOLTAGE			1800000
 #define VDD_I2C_VOLTAGE		1800000
 
+enum {
+	RADIO_FRE_ACTIVE = 0,
+	RADIO_FRE_SLEEP = 1,
+	RADIO_FRE_MONITOR = 2,
+};
+
  /* define the width and heigth of a screen. */
 #define TOUCH_SCREEN_X_MIN 0
 #define TOUCH_SCREEN_Y_MIN 0

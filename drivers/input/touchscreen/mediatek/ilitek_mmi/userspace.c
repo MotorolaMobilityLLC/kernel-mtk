@@ -902,6 +902,82 @@ static ssize_t ilitek_proc_read_write_register_read(struct file *pFile, char __u
 
 }
 
+static ssize_t ilitek_proc_sleep_mode_write(struct file *filp, const char *buff, size_t size, loff_t *pPos)
+{
+	int ret = 0;
+	char cmd[256] = { 0 };
+
+	if (buff != NULL) {
+		ret = copy_from_user(cmd, buff, size - 1);
+		if (ret < 0) {
+			ipio_info("copy data from user space, failed\n");
+			return -1;
+		}
+	}
+
+	if (cmd[0] == '1')
+		core_config_goto_sleep_mode();
+
+	return size;
+}
+
+static ssize_t ilitek_proc_reset_mode_write(struct file *filp, const char *buff, size_t size, loff_t *pPos)
+{
+	int ret = 0;
+	char cmd[256] = { 0 };
+
+	if (buff != NULL) {
+		ret = copy_from_user(cmd, buff, size - 1);
+		if (ret < 0) {
+			ipio_info("copy data from user space, failed\n");
+			return -1;
+		}
+	}
+
+	if (cmd[0] == '1')
+	ilitek_platform_reset_ctrl(true, RST_METHODS);
+
+	return size;
+}
+
+static ssize_t ilitek_proc_active_mode_write(struct file *filp, const char *buff, size_t size, loff_t *pPos)
+{
+	int ret = 0;
+	char cmd[256] = { 0 };
+
+	if (buff != NULL) {
+		ret = copy_from_user(cmd, buff, size - 1);
+		if (ret < 0) {
+			ipio_info("copy data from user space, failed\n");
+			return -1;
+		}
+	}
+
+	if (cmd[0] == '1')
+		core_config_goto_active_mode();
+
+	return size;
+}
+
+static ssize_t ilitek_proc_monitor_mode_write(struct file *filp, const char *buff, size_t size, loff_t *pPos)
+{
+	int ret = 0;
+	char cmd[256] = { 0 };
+
+	if (buff != NULL) {
+		ret = copy_from_user(cmd, buff, size - 1);
+		if (ret < 0) {
+			ipio_info("copy data from user space, failed\n");
+			return -1;
+		}
+	}
+
+	if (cmd[0] == '1')
+		core_config_goto_monitor_mode();
+
+	return size;
+}
+
 static ssize_t ilitek_proc_read_write_register_write(struct file *filp, const char *buff, size_t size, loff_t *pPos)
 {
 	int ret = 0;
@@ -1750,6 +1826,10 @@ struct proc_dir_entry *proc_debug_message;
 struct proc_dir_entry *proc_debug_message_switch;
 struct proc_dir_entry *proc_fw_pc_counter;
 struct proc_dir_entry *proc_get_debug_mode_data;
+struct proc_dir_entry *proc_sleep_mode;
+struct proc_dir_entry *proc_reset_mode;
+struct proc_dir_entry *proc_active_mode;
+struct proc_dir_entry *proc_monitor_mode;
 
 struct file_operations proc_ioctl_fops = {
 	.unlocked_ioctl = ilitek_proc_ioctl,
@@ -1822,6 +1902,22 @@ struct file_operations proc_read_write_register_fops = {
 	.read = ilitek_proc_read_write_register_read,
 	.write = ilitek_proc_read_write_register_write,
 };
+
+struct file_operations proc_sleep_mode_fops = {
+	.write = ilitek_proc_sleep_mode_write,
+};
+
+struct file_operations proc_active_mode_fops = {
+	.write = ilitek_proc_active_mode_write,
+};
+
+struct file_operations proc_reset_mode_fops = {
+	.write = ilitek_proc_reset_mode_write,
+};
+
+struct file_operations proc_monitor_mode_fops = {
+	.write = ilitek_proc_monitor_mode_write,
+};
 /**
  * This struct lists all file nodes will be created under /proc filesystem.
  *
@@ -1855,6 +1951,10 @@ proc_node_t proc_table[] = {
 	{"show_raw_data", NULL, &proc_get_raw_data_fops, false},
 	{"get_debug_mode_data", NULL, &proc_get_debug_mode_data_fops, false},
 	{"read_write_register", NULL, &proc_read_write_register_fops, false},
+	{"touch_sleep", NULL, &proc_sleep_mode_fops, false},
+	{"touch_reset", NULL, &proc_reset_mode_fops, false},
+	{"touch_powermax", NULL, &proc_active_mode_fops, false},
+	{"touch_poweron", NULL, &proc_monitor_mode_fops, false},
 };
 
 #define NETLINK_USER 21
