@@ -372,14 +372,16 @@ static void write_shutter(kal_uint32 shutter)
 			/*stream off*/
 			streaming_control(KAL_FALSE);
 			/*setting for normal*/
-			write_cmos_sensor_8(0x0340, 0x09);
-			write_cmos_sensor_8(0x0341, 0xE2);
+			//write_cmos_sensor_8(0x0340, 0x09);
+			//write_cmos_sensor_8(0x0341, 0xE2);
+			write_cmos_sensor_8(0x0340, imgsensor.frame_length & 0xFFFF);
 			write_cmos_sensor_8(0x0342, 0x0E);
 			write_cmos_sensor_8(0x0343, 0x68);
 			write_cmos_sensor_8(0x0200, 0x0D);
 			write_cmos_sensor_8(0x0201, 0xD8);
-			write_cmos_sensor_8(0x0202, 0x02);
-			write_cmos_sensor_8(0x0203, 0x08);
+			//write_cmos_sensor_8(0x0202, 0x02);
+			//write_cmos_sensor_8(0x0203, 0x08);
+			write_cmos_sensor_8(0x0202, shutter & 0xFFFF);
 			/*stream on*/
 			streaming_control(KAL_TRUE);
 			LOG_INF("[Exit long shutter - ] shutter =%d, framelength =%d\n", shutter,imgsensor.frame_length);
