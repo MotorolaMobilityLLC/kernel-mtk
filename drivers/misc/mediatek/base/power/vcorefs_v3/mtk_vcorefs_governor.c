@@ -216,7 +216,9 @@ bool is_vcorefs_feature_enable(void)
 {
 #if !defined(CONFIG_MACH_MT6759) && !defined(CONFIG_MACH_MT6758)  && !defined(CONFIG_MACH_MT6775)
 	if (!dram_can_support_fh()) {
+#if !defined(CONFIG_MTK_DISABLE_DRAM_FH_ERROR_LOG)
 		vcorefs_err("DISABLE DVFS DUE TO NOT SUPPORT DRAM FH\n");
+#endif
 		return false;
 	}
 #endif
