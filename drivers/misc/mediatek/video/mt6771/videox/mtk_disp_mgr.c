@@ -1500,6 +1500,7 @@ const char *_session_ioctl_spy(unsigned int cmd)
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = -1;
+	void __user *argp = (void __user *)arg;
 
 	/* DISPMSG("mtk_disp_mgr_ioctl, cmd=%s, arg=0x%08x\n", _session_ioctl_spy(cmd), arg); */
 
@@ -1557,7 +1558,13 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		return _ioctl_wait_all_jobs_done(arg);
 	case DISP_IOCTL_GET_LCMINDEX:
 		{
-			return primary_display_get_lcm_index();
+			int lcm_index;
+			lcm_index = primary_display_get_lcm_index();
+			if (copy_to_user(argp, &lcm_index, sizeof(lcm_index))) {
+				DISPERR("copy_to_user_failed!get_lcm_index");
+				return -EFAULT;
+			}
+			return 0;
 		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		{
