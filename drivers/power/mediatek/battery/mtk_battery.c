@@ -3095,6 +3095,24 @@ static DEVICE_ATTR(
 	Power_Off_Voltage, 0664,
 	show_Power_Off_Voltage, store_Power_Off_Voltage);
 
+static ssize_t show_FG_aging_factor(
+	struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show FG disable : %d\n", gm.aging_factor);
+	return sprintf(buf, "%d\n", gm.aging_factor);
+}
+
+static ssize_t store_FG_aging_factor(
+	struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	bm_err("[aging_factor]\n");
+	return size;
+}
+static DEVICE_ATTR(
+	FG_aging_factor, 0664,
+	show_FG_aging_factor, store_FG_aging_factor);
+
 
 static int battery_callback(
 	struct notifier_block *nb, unsigned long event, void *v)
@@ -3584,7 +3602,9 @@ static int __init battery_probe(struct platform_device *dev)
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_reset_battery_cycle);
 	ret_device_file = device_create_file(&(dev->dev), &dev_attr_battery_temperature_debug);
-
+	ret_device_file = device_create_file(&(dev->dev),
+		&dev_attr_FG_aging_factor);
+	
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		fg_swocv_v =
 		of_get_flat_dt_prop(
