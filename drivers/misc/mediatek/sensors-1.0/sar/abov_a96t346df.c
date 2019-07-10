@@ -889,7 +889,7 @@ static int ps_notify_callback(struct notifier_block *self,
 		return -ENODEV;
 	if ((event == PSY_EVENT_PROP_CHANGED)
 			&& psy && psy->desc->get_property && psy->desc->name &&
-			!strncmp(psy->desc->name, "usb", sizeof("usb"))) {
+			!strncmp(psy->desc->name, "charger", sizeof("charger"))) {
 		LOG_INFO("ps notification: event = %lu\n", event);
 		retval = ps_get_state(psy, &present);
 		if (retval) {
@@ -1560,7 +1560,7 @@ static int abov_probe(struct i2c_client *client, const struct i2c_device_id *id)
 			goto free_ps_notifier;
 		}
 
-		psy = power_supply_get_by_name("usb");
+		psy = power_supply_get_by_name("charger");
 		if (psy) {
 			ret = ps_get_state(psy, &this->ps_is_present);
 			if (ret) {
