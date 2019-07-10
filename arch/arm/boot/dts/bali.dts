@@ -506,9 +506,9 @@
 		reg = <0x48>;
 		status = "okay";
 	};
-	cap_touch_msg2xxx:msg2xxx_touch@26 {
+	cap_touch_msg2xxx:msg2xxx_touch@4c {
 		compatible = "mediatek,msg2xxx_touch";
-                reg = <0x26>;
+                reg = <0x4c>;
                 status = "okay";
 	};
 };
