@@ -459,7 +459,7 @@ static int put_battery_input_suspend(const char * buf, int n)
 
 	return 0;
 }
-#define BATTARY_CHARGING_EN_FILE "/sys/class/power_supply/battery/battery_charging_enabled"
+#define BATTARY_CHARGING_EN_FILE "/sys/bus/platform/devices/charger/input_current"
 static int get_battery_charging_enabled(void)
 {
 	char buf[64] = {0};
@@ -485,7 +485,7 @@ static int put_battery_charging_enabled(const char * buf, int n)
 {
 	int ret = 0;
 
-	ret = hwinfo_write_file(BATTARY_CHARGING_EN_FILE, buf, 1);
+	ret = hwinfo_write_file(BATTARY_CHARGING_EN_FILE, buf, n > 0 ? n : 1);
 	if (ret != 0)
 	{
 		printk(KERN_CRIT "battery_charging_enabled failed.");
@@ -792,6 +792,19 @@ static int get_secure_boot_version(void)
 	return sprintf(hwinfo[secboot_version].hwinfo_buf, "%s", is_secureboot);
 }
 
+static int get_dual_sim(void)
+{
+	unsigned int gpio_base = 343;
+	unsigned int pin4 = 11;
+	int pin_val = 0;
+
+	pin_val |= (gpio_get_value(gpio_base + pin4) & 0x01) << 4;
+
+	printk(KERN_ERR "%s: pin_val is %x ;\n", __func__, pin_val);
+
+	return sprintf(hwinfo[dual_sim].hwinfo_buf, "%s", pin_val? "sig":"dual");
+}
+
 unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
@@ -801,8 +814,6 @@ static int get_version_id(void)
 	unsigned int pin0 = 121;
 	unsigned int pin1 = 54;
 	unsigned int pin2 = 53;
-	unsigned int pin3 = 5;
-	unsigned int pin4 = 11;
 	int pin_val = 0;
 	int hw_ver = 0;
 
@@ -810,43 +821,12 @@ static int get_version_id(void)
 	pin_val =    gpio_get_value(gpio_base + pin0) & 0x01;
 	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 1;
 	pin_val |= (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
-	pin_val |= (gpio_get_value(gpio_base + pin3) & 0x01) << 3;
-	pin_val |= (gpio_get_value(gpio_base + pin4) & 0x01) << 4;
+
 	hw_ver = pin_val;
 
 	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, hw_ver);
 
 	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", hw_ver);
-#if 0
-	int id = platform_board_id;
-	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", id);
-
-	int rc = 0;
-	int voltage = 0;
-	int board_id_num = 0;
-	int id = 0;
-
-	if (NULL == chip_adc) {
-		pr_err("ontim: %s: chip_adc is NULL\n", __func__);
-		return -ENOMEM;
-	}
-
-	rc = qpnp_vadc_read(chip_adc->vadc_dev, chip_adc->vadc_mux, &chip_adc_result);
-	if (rc) {
-		pr_err("ontim: %s: qpnp_vadc_read failed(%d)\n",
-		       __func__, rc);
-	} else {
-		voltage = (int)chip_adc_result.physical / 1000;
-	}
-	for (board_id_num = 0; board_id_num < sizeof(boardid_table) / sizeof(adc_boardid_match); board_id_num++) {
-		if ( voltage > boardid_table[board_id_num].min_voltage &&
-		        voltage < boardid_table[board_id_num].max_voltage ) {
-			id = board_id_num;
-		}
-	}
-	printk("hwinfo id=%04d,board_id_num=%d,chip_adc->voltage=%d\n", id, board_id_num, voltage);
-	return sprintf(hwinfo[board_id].hwinfo_buf, "%d", id);
-#endif
 }
 
 static int get_qcn_type(void)
@@ -1118,6 +1098,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case battery_charging_enabled:
 		get_battery_charging_enabled();
+		break;
+	case dual_sim:
+		get_dual_sim();
 		break;
 	case board_id:
 		get_version_id();

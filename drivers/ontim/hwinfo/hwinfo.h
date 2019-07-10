@@ -19,6 +19,7 @@ KEYWORD(emmc_sn)
 KEYWORD(emmc_cid)
 KEYWORD(emmc_capacity)
 KEYWORD(lpddr_mfr)
+KEYWORD(dual_sim)
 KEYWORD(lpddr_capacity)
 KEYWORD(SPEAKER_MFR)    //Speaker box mfr
 KEYWORD(FP_MFR)         //Fingerprint mfr
