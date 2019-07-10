@@ -16,7 +16,7 @@
 
 #include <linux/types.h>
 
-#define C_CUST_ALS_LEVEL    16
+#define C_CUST_ALS_LEVEL    8
 #define C_CUST_I2C_ADDR_NUM 4
 
 #define MAX_THRESHOLD_HIGH 0xffff
