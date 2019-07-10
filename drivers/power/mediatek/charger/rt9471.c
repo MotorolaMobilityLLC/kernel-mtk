@@ -2549,10 +2549,10 @@ static int rt9471_suspend(struct device *dev)
 	struct rt9471_chip *chip = dev_get_drvdata(dev);
 
 	dev_info(dev, "%s\n", __func__);
-	down(&chip->suspend_lock);
 	if (device_may_wakeup(dev))
 		enable_irq_wake(chip->irq);
-
+	disable_irq(chip->irq);
+	down(&chip->suspend_lock);
 	return 0;
 }
 
@@ -2562,6 +2562,7 @@ static int rt9471_resume(struct device *dev)
 
 	dev_info(dev, "%s\n", __func__);
 	up(&chip->suspend_lock);
+	enable_irq(chip->irq);
 	if (device_may_wakeup(dev))
 		disable_irq_wake(chip->irq);
 	return 0;
@@ -2607,6 +2608,7 @@ MODULE_VERSION(RT9471_DRV_VERSION);
  * (1) Add suspend_lock
  * (2) Use IRQ to wait chg_rdy
  * (3) bc12_en in the kthread
+ * (4) disable_irq()/enable_irq() in suspend()/resume()
  *
  * 1.0.4
  * (1) Use type u8 for regval in __rt9471_i2c_read_byte()
