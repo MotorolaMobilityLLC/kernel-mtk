@@ -1516,6 +1516,7 @@ const char *_session_ioctl_str(unsigned int cmd)
 long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret = -1;
+	void __user *argp = (void __user *)arg;
 
 	switch (cmd) {
 	case DISP_IOCTL_CREATE_SESSION:
@@ -1545,7 +1546,15 @@ long mtk_disp_mgr_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case DISP_IOCTL_WAIT_ALL_JOBS_DONE:
 		return _ioctl_wait_all_jobs_done(arg);
 	case DISP_IOCTL_GET_LCMINDEX:
-		return primary_display_get_lcm_index();
+		{
+			int lcm_index;
+			lcm_index = primary_display_get_lcm_index();
+			if (copy_to_user(argp, &lcm_index, sizeof(lcm_index))) {
+				DISPERR("copy_to_user_failed!get_lcm_index");
+				return -EFAULT;
+			}
+			return 0;
+		}
 	case DISP_IOCTL_QUERY_VALID_LAYER:
 		return _ioctl_query_valid_layer(arg);
 	case DISP_IOCTL_SET_SCENARIO:
