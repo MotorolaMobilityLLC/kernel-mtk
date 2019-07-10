@@ -336,6 +336,7 @@ static int mt_charger_set_property(struct power_supply *psy,
 #endif
 	power_supply_changed(mtk_chg->ac_psy);
 	power_supply_changed(mtk_chg->usb_psy);
+	power_supply_changed(mtk_chg->chg_psy);
 
 	return 0;
 }
