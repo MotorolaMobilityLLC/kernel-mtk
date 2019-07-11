@@ -109,6 +109,7 @@ struct rt9471_desc {
 	u8  vac_ovp;
 	u32 cv;
 	u32 ieoc;
+	u8 dcdt;
 	u32 safe_tmr;
 	u32 wdt;
 	u32 mivr_track;
@@ -133,6 +134,7 @@ static struct rt9471_desc rt9471_default_desc = {
 	.cv = 4200000,
 	.ieoc = 200000,
 	.safe_tmr = 10,
+	.dcdt = 2,
 	.wdt = 40,
 	.mivr_track = RT9471_MIVRTRACK_REG,
 	.en_safe_tmr = true,
@@ -1046,6 +1048,15 @@ static int __rt9471_set_safe_tmr(struct rt9471_chip *chip, u32 hr)
 				      RT9471_SAFETMR_MASK);
 }
 
+static int __rt9471_set_dcdt(struct rt9471_chip *chip, u8 dcdt)
+{
+	dev_info(chip->dev, "%s dcdt = %d \n", __func__,dcdt);
+
+	return rt9471_i2c_update_bits(chip, RT9471_REG_DPDMDET,
+				      dcdt << RT9471_DCDT_SHIFT,
+				      RT9471_DCDT_MASK);
+}
+
 static int __rt9471_set_mivrtrack(struct rt9471_chip *chip, u32 mivr_track)
 {
 	if (mivr_track >= RT9471_MIVRTRACK_MAX)
@@ -1803,6 +1814,10 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 	if (ret < 0)
 		dev_notice(chip->dev, "%s set safe tmr fail(%d)\n",
 				      __func__, ret);
+
+	ret = __rt9471_set_dcdt(chip, desc->dcdt);
+	if (ret < 0)
+		dev_notice(chip->dev, "%s set dcdt fail(%d)\n",__func__, ret);
 
 	ret = __rt9471_set_wdt(chip, desc->wdt);
 	if (ret < 0)

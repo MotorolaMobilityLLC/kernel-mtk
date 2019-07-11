@@ -142,6 +142,8 @@ enum rt9471_reg_addr {
 
 /* ========== DPDMDET 0x0E ============ */
 #define RT9471_BC12_EN_MASK	BIT(7)
+#define RT9471_DCDT_SHIFT	5
+#define RT9471_DCDT_MASK	0x60
 
 /* ========== STATUS 0x0F ============ */
 #define RT9471_ICSTAT_SHIFT	0
