@@ -43,6 +43,17 @@
 
 #include "new_mp_test/mp_common.h"
 
+#include <ontim/ontim_dev_dgb.h>
+static char version[64]="1.0";
+static char vendor_name[64]="msg2xxx";
+static char lcdname[64]="Ili8991C-boe";
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
 /*=============================================================*/
 // VARIABLE DECLARATION
 /*=============================================================*/
@@ -14496,9 +14507,14 @@ void MsDrvInterfaceTouchDeviceResume(struct early_suspend *pSuspend)
 s32 /*__devinit*/ MsDrvInterfaceTouchDeviceProbe(struct i2c_client *pClient, const struct i2c_device_id *pDeviceId)
 {
     s32 nRetVal = 0;
-	u16 nMajor = 0, nMinor = 0;
+    u16 nMajor = 0, nMinor = 0;
     DBG(&g_I2cClient->dev, "*** %s() ***\n", __func__);
-  
+
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+            return -EIO;
+    }
+
     DrvMutexVariableInitialize(); 
 
     DrvTouchDeviceRequestGPIO(pClient);
@@ -14559,6 +14575,9 @@ s32 /*__devinit*/ MsDrvInterfaceTouchDeviceProbe(struct i2c_client *pClient, con
 #ifdef CONFIG_ENABLE_GESTURE_WAKEUP
 	device_init_wakeup(&g_I2cClient->dev, 1);
 #endif //CONFIG_ENABLE_GESTURE_WAKEUP
+
+    REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+
     DBG(&g_I2cClient->dev, "*** ILITEK/MStar touch driver registered ***\n");
     return nRetVal;
 }

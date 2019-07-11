@@ -52,8 +52,8 @@
 
 #include <ontim/ontim_dev_dgb.h>
 static char version[64]="1.0";
-static char vendor_name[64]="txd-ft8006u";
-static char lcdname[64]="ft8006u";
+static char vendor_name[64]="ft8006u";
+static char lcdname[64]="Ili9881C-mtd";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
