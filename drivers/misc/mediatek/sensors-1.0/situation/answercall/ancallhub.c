@@ -87,13 +87,15 @@ static int answer_call_gesture_batch(int flag, int64_t samplingPeriodNs, int64_t
 }
 static int answer_call_recv_data(struct data_unit_t *event, void *reserved)
 {
+	int err = 0;
+
 	if (event->flush_action == FLUSH_ACTION)
 		ANCALLHUB_LOG("answer_call do not support flush\n");
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&answer_c_wake_lock, msecs_to_jiffies(100));
-		situation_notify(ID_ANSWER_CALL);
+		err = situation_notify(ID_ANSWER_CALL);
 	}
-	return 0;
+	return err;
 }
 
 static int ancallhub_local_init(void)

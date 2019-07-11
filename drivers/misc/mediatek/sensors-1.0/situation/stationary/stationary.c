@@ -83,13 +83,15 @@ static int stat_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchReport
 }
 static int stat_recv_data(struct data_unit_t *event, void *reserved)
 {
+	int err = 0;
+
 	if (event->flush_action == FLUSH_ACTION)
 		STATHUB_LOG("stat do not support flush\n");
 	else if (event->flush_action == DATA_ACTION) {
 		__pm_wakeup_event(&stationary_wake_lock, msecs_to_jiffies(100));
-		situation_notify(ID_STATIONARY_DETECT);
+		err = situation_notify(ID_STATIONARY_DETECT);
 	}
-	return 0;
+	return err;
 }
 
 static int stat_local_init(void)
