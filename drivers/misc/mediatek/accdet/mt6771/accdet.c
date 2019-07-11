@@ -158,7 +158,7 @@ static int s_eint_accdet_sync_flag;
 #ifdef CONFIG_FOUR_KEY_HEADSET
 static int s_4_key_efuse_flag;
 #endif
-static int s_button_press_debounce = 0x400;
+static int s_button_press_debounce = 0x800;
 static int s_pre_status = PLUG_OUT;
 static int s_pre_state_swctrl;
 static int s_accdet_status = PLUG_OUT;
