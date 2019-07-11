@@ -1189,10 +1189,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef CONFIG_MTK_CAM_CAL
 		//read_imx135_otp_mtk_fmt();
 #endif
-				LOG_INF("i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);	
+				pr_err("s5k3l6mipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
                 return ERROR_NONE;
             }
-			LOG_INF("Read sensor id fail, i2c write id: 0x%x, ReadOut sensor id: 0x%x, imgsensor_info.sensor_id:0x%x.\n", imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);	
+			pr_err("s5k3l6mipiraw_Sensor.c[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+            __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -1238,10 +1240,12 @@ static kal_uint32 open(void)
         do {
             sensor_id = return_sensor_id();
             if (sensor_id == imgsensor_info.sensor_id) {
-                LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+				pr_err("s5k3l6[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id);
                 break;
             }
-            LOG_INF("Read sensor id fail, id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+				pr_err("s5k3l6[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id);
             retry--;
         } while(retry > 0);
         i++;

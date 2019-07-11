@@ -1354,7 +1354,14 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                     memset(front_cam_name, 0x00, sizeof(front_cam_name));
                     memcpy(front_cam_name, "1_ov8856", 64);
                     ov8856version = OV8856R1A;
-                    LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856version = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856version);	
+                    
+                    pr_err("gc8024mipi_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,\
+                    read sensor id: 0x%x    need id: 0x%x  ov8856version = %d(0=r2a,1=r1a)\n", 
+                    __FUNCTION__,__LINE__, 
+                    imgsensor.i2c_write_id,  
+                    *sensor_id, 
+                    imgsensor_info.sensor_id,
+                    ov8856version);
                     return ERROR_NONE;
 				}
 				else if((read_cmos_sensor(0x302A)) == 0XB1)
@@ -1362,7 +1369,13 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                     memset(front_cam_name, 0x00, sizeof(front_cam_name));
                     memcpy(front_cam_name, "1_ov8856", 64);
                     ov8856version = OV8856R2A;
-                    LOG_INF("i2c write id: 0x%x, sensor id: 0x%x, ov8856version = %d(0=r2a,1=r1a)\n", imgsensor.i2c_write_id,*sensor_id,ov8856version);	
+                    pr_err("gc8024mipi_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,\
+                    read sensor id: 0x%x    need id: 0x%x  ov8856version = %d(0=r2a,1=r1a)\n", 
+                    __FUNCTION__,__LINE__, 
+                    imgsensor.i2c_write_id,  
+                    *sensor_id, 
+                    imgsensor_info.sensor_id,
+                    ov8856version);
                     return ERROR_NONE;
 				}
 			}	
