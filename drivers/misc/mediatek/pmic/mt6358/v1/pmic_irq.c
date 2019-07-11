@@ -337,7 +337,9 @@ void homekey_int_handler_r(void)
 }
 
 #if ENABLE_ALL_OC_IRQ
+#define VIO18_OC_TIME_DELTA	20
 static unsigned int vio18_oc_times;
+static ktime_t vio18_oc_time_prev;
 
 /* General OC Int Handler */
 static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
@@ -345,6 +347,8 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 	char oc_str[30] = "";
 	unsigned int spNo, sp_conNo, sp_irqNo;
 	unsigned int times;
+	s64 time_delta;
+	ktime_t now_time;
 
 	if (pmic_check_intNo(intNo, &spNo, &sp_conNo, &sp_irqNo)) {
 		pr_notice(PMICTAG "[%s] fail intNo=%d\n", __func__, intNo);
@@ -359,6 +363,9 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 		pr_notice(PMICTAG "[PMIC_INT] PMIC OC: %s\n", int_name);
 		break;
 	case INT_VIO18_OC:
+		now_time = ktime_get();
+		pr_notice("VIO18_PG_DEB=%d\n",
+			pmic_get_register_value(PMIC_VIO18_PG_DEB));
 		pr_notice("LDO_DEGTD_SEL=0x%x\n",
 			pmic_get_register_value(PMIC_LDO_DEGTD_SEL));
 		pr_notice("RG_INT_EN_VIO18_OC=0x%x\n",
@@ -368,13 +375,29 @@ static void oc_int_handler(enum PMIC_IRQ_ENUM intNo, const char *int_name)
 		pr_notice("RG_INT_STATUS_VIO18_OC=0x%x\n",
 			pmic_get_register_value(PMIC_RG_INT_STATUS_VIO18_OC));
 		pr_notice("RG_INT_RAW_STATUS_VIO18_OC=0x%x\n",
-			pmic_get_register_value(PMIC_RG_INT_RAW_STATUS_VIO18_OC));
+			pmic_get_register_value(
+				PMIC_RG_INT_RAW_STATUS_VIO18_OC));
 		pr_notice("DA_VIO18_OCFB_EN=0x%x\n",
 			pmic_get_register_value(PMIC_DA_VIO18_OCFB_EN));
 		pr_notice("RG_LDO_VIO18_OCFB_EN=0x%x\n",
 			pmic_get_register_value(PMIC_RG_LDO_VIO18_OCFB_EN));
+		pr_notice("LDO_VIO18_CON0=0x%x,LDO_VIO18_CON1=0x%x\n",
+			upmu_get_reg_value(MT6358_LDO_VIO18_CON0),
+			upmu_get_reg_value(MT6358_LDO_VIO18_CON1));
+		pr_notice("LDO_VIO18_OP_EN=0x%x,LDO_VIO18_OP_CFG=0x%x\n",
+			upmu_get_reg_value(MT6358_LDO_VIO18_OP_EN),
+			upmu_get_reg_value(MT6358_LDO_VIO18_OP_CFG));
+		pr_notice("VIO18_ANA_CON0=0x%x,VIO18_ANA_CON1=0x%x\n",
+			upmu_get_reg_value(MT6358_VIO18_ANA_CON0),
+			upmu_get_reg_value(MT6358_VIO18_ANA_CON1));
+
+		time_delta = ktime_ms_delta(now_time, vio18_oc_time_prev);
+		pr_notice("time_delta=%lld\n", time_delta);
+		if (time_delta > VIO18_OC_TIME_DELTA)
+			vio18_oc_times = 0;
+		vio18_oc_time_prev = now_time;
 		vio18_oc_times++;
-		if (vio18_oc_times >= 2) {
+		if (vio18_oc_times > 1) {
 			snprintf(oc_str, 30, "PMIC OC:%s", int_name);
 			aee_kernel_warning(
 				oc_str,
