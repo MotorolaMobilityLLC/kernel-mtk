@@ -28,6 +28,8 @@
 struct ilitek_charger_detection {
 	struct notifier_block ilitek_charger_notif;
 	uint8_t ilitek_usb_connected;
+	struct workqueue_struct *ilitek_charger_notify_wq;
+	struct work_struct ilitek_charger_notify_work;
 };
 
 struct ilitek_platform_data {

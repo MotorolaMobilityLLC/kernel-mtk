@@ -1057,41 +1057,62 @@ static void ipio_free_dev_mem(struct i2c_client *client,struct spi_device *spi,v
 	}
 }
 
+static void ilitek_charger_notify_work(struct work_struct *work)
+{
+	if (NULL == work) {
+		ipio_err("parameter work are null!\n");
+		return;
+	}
+	ipio_info("enter usb charger judge\n");
+	mutex_lock(&ipd->touch_mutex);
+	if (USB_DETECT_IN == ipd->charger_detection->ilitek_usb_connected) {
+		core_config_plug_ctrl(true);
+	}
+	else  {
+		core_config_plug_ctrl(false);
+	}
+	mutex_unlock(&ipd->touch_mutex);
+}
+
 static int ilitek_charger_notifier_callback(struct notifier_block *nb,
 		unsigned long val, void *v)
 {
 	int ret = 0;
 	int usb_detect_flag = 0;
+	union power_supply_propval prop;
 
-	struct power_supply *psy = NULL;
+	struct power_supply *psy = v;
 	struct ilitek_charger_detection *charger_detection =
 			container_of(nb, struct ilitek_charger_detection, ilitek_charger_notif);
-	union power_supply_propval prop;
-	psy= power_supply_get_by_name("charger");
-	if (!psy){
-		return -EINVAL;
-		ipio_err("Couldn't get usbpsy\n");
-	}
-	ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
-	if (ret < 0) {
-		return -EINVAL;
-		ipio_err("Couldn't get usbpsy\n");
-	}
-	else {
-		usb_detect_flag = prop.intval;
-		if (usb_detect_flag != charger_detection->ilitek_usb_connected) {
-			if (USB_DETECT_IN == usb_detect_flag)
-				 charger_detection->ilitek_usb_connected = USB_DETECT_IN;
-			else
-				 charger_detection->ilitek_usb_connected = USB_DETECT_OUT;
 
-			if (ipd->bTouchIsAwake) {
-				mutex_lock(&ipd->touch_mutex);
-				if (USB_DETECT_IN == charger_detection->ilitek_usb_connected)
-					core_config_plug_ctrl(true);
+	if (!psy)
+		return -ENODEV;
+	if (!psy->desc)
+		return -ENODEV;
+
+	if ((val == PSY_EVENT_PROP_CHANGED) && psy &&psy->desc->get_property
+			&& psy->desc->name && charger_detection &&
+			!strncmp(psy->desc->name, "charger", sizeof("charger"))) {
+		ipio_info("ilitek chgrger notification : event = %lu\n", val);
+
+		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,&prop);
+		if (ret) {
+			ipio_err("Couldn't get property\n");
+			return -EINVAL;
+		}
+
+		if (val == PSY_EVENT_PROP_CHANGED) {
+			usb_detect_flag = prop.intval;
+			if (usb_detect_flag != charger_detection->ilitek_usb_connected) {
+				if (USB_DETECT_IN == usb_detect_flag)
+					charger_detection->ilitek_usb_connected = USB_DETECT_IN;
 				else
-					core_config_plug_ctrl(false);
-				mutex_unlock(&ipd->touch_mutex);
+					charger_detection->ilitek_usb_connected = USB_DETECT_OUT;
+
+				if (ipd->bTouchIsAwake) {
+					queue_work(ipd->charger_detection->ilitek_charger_notify_wq,
+						&ipd->charger_detection->ilitek_charger_notify_work);
+				}
 			}
 		}
 	}
@@ -1364,6 +1385,13 @@ static int ilitek_platform_probe_spi(struct spi_device *spi)
 		ipio_info("charger_detection on");
 		ipd->charger_detection->ilitek_usb_connected = 0;
 
+		ipd->charger_detection->ilitek_charger_notify_wq= create_singlethread_workqueue("ilitek_charger_wq");
+		if (!ipd->charger_detection->ilitek_charger_notify_wq){
+			ipio_err("allocate ilitek_charger_notify_wq failed\n");
+			goto err_charger_notify_wq_failed;
+		}
+		INIT_WORK(&ipd->charger_detection->ilitek_charger_notify_work, ilitek_charger_notify_work);
+
 		ipd->charger_detection->ilitek_charger_notif.notifier_call = ilitek_charger_notifier_callback;
 		ret = power_supply_reg_notifier(&ipd->charger_detection->ilitek_charger_notif);
 		if (ret) {
@@ -1535,7 +1563,10 @@ err_register_charger_notify_failed:
 	if (ipd->charger_detection) {
 		if (ipd->charger_detection->ilitek_charger_notif.notifier_call)
 			power_supply_unreg_notifier(&ipd->charger_detection->ilitek_charger_notif);
+			destroy_workqueue(ipd->charger_detection->ilitek_charger_notify_wq);
+			ipd->charger_detection->ilitek_charger_notify_wq = NULL;
 	}
+err_charger_notify_wq_failed:
 err_charger_detection_alloc_failed:
 	if (ipd->charger_detection_enable)
 		ipio_free_dev_mem(NULL,spi,(void **)&ipd->charger_detection);
