@@ -1224,7 +1224,6 @@ static void slim_video_setting(void)
 #ifdef S5K5E9_OTP_ENABLE
 extern char camera_f_info[40]; //add front camera module info
 #endif
-extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id) 
 {
 	kal_uint8 i = 0;
@@ -1252,9 +1251,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             #else
               //strcpy(camera_f_info,"5M-Camera S5K5E9-HLT"); //module info: HLT
             #endif
-                memset(front_cam_name, 0x00, sizeof(front_cam_name));
-                memcpy(front_cam_name, "1_s5k5e9yx", 64); 
-				pr_err("s5k5e9[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+
+				pr_err("s5k5e9yxmipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 				return ERROR_NONE;
 			}	
