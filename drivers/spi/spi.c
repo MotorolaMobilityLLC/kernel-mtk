@@ -959,7 +959,9 @@ static int spi_transfer_one_message(struct spi_master *master,
 			if (ret > 0) {
 				ret = 0;
 				ms = xfer->len * 8 * 1000 / xfer->speed_hz;
-				ms += ms + 100; /* some tolerance */
+				/* Increase spi transfer tolerance to 2s */
+				/* To aviod timeout when OS is busy.*/
+				ms += 2000;
 
 				ms = wait_for_completion_timeout(&master->xfer_completion,
 								 msecs_to_jiffies(ms));
