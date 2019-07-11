@@ -483,6 +483,21 @@ static enum DSI_STATUS DSI_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 	return DSI_STATUS_OK;
 }
 
+static enum DSI_STATUS DPHY_Reset(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq)
+{
+	int i = 0;
+
+	/* do reset */
+	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+				DSI_REG[i]->DSI_COM_CTRL, DPHY_RESET, 1);
+		DSI_OUTREGBIT(cmdq, struct DSI_COM_CTRL_REG,
+				DSI_REG[i]->DSI_COM_CTRL, DPHY_RESET, 0);
+	}
+
+	return DSI_STATUS_OK;
+}
+
 static enum DSI_STATUS DSI_SetMode(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq, unsigned int mode)
 {
 	int i = 0;
@@ -575,11 +590,10 @@ void DSI_enter_ULPS(enum DISP_MODULE_ENUM module)
 
 		DSI_OUTREGBIT(NULL, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 			      Lx_ULPM_AS_L0, 1);
-		DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
-			      LC_ULPM_EN, 1);
-		udelay(1);
 		DSI_OUTREGBIT(NULL, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON,
 			      L0_ULPM_EN, 1);
+		DSI_OUTREGBIT(NULL, struct DSI_PHY_LCCON_REG, DSI_REG[i]->DSI_PHY_LCCON,
+			      LC_ULPM_EN, 1);
 
 		waitq = &(_dsi_context[i].sleep_in_done_wq);
 		ret = wait_event_timeout(waitq->wq, atomic_read(&(waitq->condition)), 2 * HZ);
@@ -618,6 +632,9 @@ void DSI_exit_ULPS(enum DISP_MODULE_ENUM module)
 		DSI_OUTREGBIT(NULL, struct DSI_PHY_LD0CON_REG, DSI_REG[i]->DSI_PHY_LD0CON, Lx_ULPM_AS_L0, 1);
 		DSI_OUTREGBIT(NULL, struct DSI_INT_ENABLE_REG, DSI_REG[i]->DSI_INTEN, SLEEPOUT_DONE, 1);
 
+		DSI_OUTREGBIT(NULL, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 1);
+		DSI_OUTREGBIT(NULL, struct DSI_TIME_CON0_REG, DSI_REG[i]->DSI_TIME_CON0, UPLS_WAKEUP_PRD, wake_up_prd);
+
 		switch (_dsi_context[i].dsi_params.LANE_NUM) {
 		case LCM_ONE_LANE:
 			lane_num_bitvalue = 0x1;
@@ -637,8 +654,6 @@ void DSI_exit_ULPS(enum DISP_MODULE_ENUM module)
 
 		DSI_OUTREGBIT(NULL, struct DSI_TXRX_CTRL_REG, DSI_REG[i]->DSI_TXRX_CTRL,
 			      LANE_NUM, lane_num_bitvalue);
-		DSI_OUTREGBIT(NULL, struct DSI_MODE_CTRL_REG, DSI_REG[i]->DSI_MODE_CTRL, SLEEP_MODE, 1);
-		DSI_OUTREGBIT(NULL, struct DSI_TIME_CON0_REG, DSI_REG[i]->DSI_TIME_CON0, UPLS_WAKEUP_PRD, wake_up_prd);
 
 		DSI_OUTREGBIT(NULL, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 0);
 		DSI_OUTREGBIT(NULL, struct DSI_START_REG, DSI_REG[i]->DSI_START, SLEEPOUT_START, 1);
@@ -1465,6 +1480,7 @@ static void _DSI_PHY_clk_setting(enum DISP_MODULE_ENUM module, struct cmdqRecStr
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 1);
 
 		mdelay(1);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_SW_CTRL_CON4, FLD_MIPI_TX_SW_ANA_CK_EN, 1);
 	}
 }
 
@@ -1845,6 +1861,7 @@ void DSI_PHY_clk_switch(enum DISP_MODULE_ENUM module, struct cmdqRecStruct *cmdq
 		/* disable mipi clock */
 		/* step 0: PLL DISABLE */
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_CON1, FLD_RG_DSI_PLL_EN, 0);
+		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_SW_CTRL_CON4, FLD_MIPI_TX_SW_ANA_CK_EN, 0);
 
 		/* step 1: SDM_RWR_ON / SDM_ISO_EN */
 		MIPITX_OUTREGBIT(DSI_PHY_REG[i] + MIPITX_PLL_PWR, FLD_AD_DSI_PLL_SDM_ISO_EN, 1);
@@ -4394,6 +4411,7 @@ int ddp_dsi_power_on(enum DISP_MODULE_ENUM module, void *cmdq_handle)
 		ddp_clk_prepare_enable(DISP1_DSI0_INTERFACE_CLOCK);
 	}
 
+	DPHY_Reset(module, cmdq_handle);
 	/* DSI_RestoreRegisters(module, NULL); */
 	DSI_exit_ULPS(module);
 	DSI_Reset(module, NULL);
