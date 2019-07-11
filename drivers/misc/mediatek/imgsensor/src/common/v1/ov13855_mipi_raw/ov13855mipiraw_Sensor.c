@@ -918,12 +918,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             if (*sensor_id == imgsensor_info.sensor_id) {
                 memset(back_cam_name, 0x00, sizeof(back_cam_name));
                 memcpy(back_cam_name, "0_ov13855",64);
-                LOG_INF("Read sensor id ok  i2c write id: 0x%x, sensor id: 0x%x  info.sensor_id=0x%x\n", 
-				imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
+				pr_err("ov13855mipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
                 return ERROR_NONE;
             }
-            LOG_INF("Read sensor id fail:0x%x, sensor_id: 0x%x   info.sensor_id=0x%x\n", 
-			imgsensor.i2c_write_id,*sensor_id,imgsensor_info.sensor_id);
+			pr_err("ov13855mipiraw_Sensor.c[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+            __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
             retry--;
         } while(retry > 0);
         i++;
@@ -951,10 +951,12 @@ static kal_uint32 open(void)
         do {
             sensor_id = return_sensor_id();
             if (sensor_id == imgsensor_info.sensor_id) {
-                LOG_INF("i2c write id: 0x%x, sensor id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+				pr_err("ov13855[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+                __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id);
                 break;
             }
-            LOG_INF("Read sensor id fail: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,sensor_id);
+            pr_err("ov13855[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+            __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id);
             retry--;
         } while(retry > 0);
         i++;

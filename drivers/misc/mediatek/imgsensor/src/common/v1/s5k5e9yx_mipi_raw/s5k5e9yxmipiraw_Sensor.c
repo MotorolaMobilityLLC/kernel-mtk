@@ -1252,12 +1252,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
               //strcpy(camera_f_info,"5M-Camera S5K5E9-HLT"); //module info: HLT
             #endif
 
-				pr_err("s5k5e9[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err("s5k5e9yxmipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 				return ERROR_NONE;
 			}	
 
-            pr_err("s5k5e9[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+            pr_err("s5k5e9yxmipiraw_Sensor.c[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
             __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 			retry--;
 		} while(retry > 0);
