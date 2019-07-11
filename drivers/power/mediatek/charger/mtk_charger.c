@@ -1326,6 +1326,7 @@ static void mtk_chg_get_tchg(struct charger_manager *info)
 	}
 }
 
+static int ontim_charge_onoff_control = 1;/*1=enable charge  0 or other=disable charge*/
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1401,6 +1402,8 @@ static void charger_check_status(struct charger_manager *info)
 //	if (info->safety_timeout)
 //		charging = false;
 	if (info->vbusov_stat)
+		charging = false;
+	if(ontim_charge_onoff_control  !=  1)	
 		charging = false;
 
 stop_charging:
@@ -2212,6 +2215,19 @@ static ssize_t store_runin_onoff_ctrl(struct device *dev,struct device_attribute
 }
 static DEVICE_ATTR(runin_onoff_ctrl, 0664, show_runin_onoff_ctrl, store_runin_onoff_ctrl);
 
+
+static ssize_t show_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr,char *buf)
+{
+    return sprintf(buf, "%d\n", ontim_charge_onoff_control);
+}
+static ssize_t store_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	return size;
+}
+static DEVICE_ATTR(charge_onoff_ctrl, 0664, show_charge_onoff_ctrl, store_charge_onoff_ctrl);
+
+
 static unsigned int ontim_charge_limit = 0;
 static ssize_t show_charge_current_limit(struct device *dev,struct device_attribute *attr,char *buf)
 {
@@ -2516,6 +2532,10 @@ static int mtk_charger_setup_files(struct platform_device *pdev)
 		goto _out;
 
 	ret = device_create_file(&(pdev->dev), &dev_attr_runin_onoff_ctrl);
+	if (ret)
+		goto _out;
+
+	ret = device_create_file(&(pdev->dev), &dev_attr_charge_onoff_ctrl);
 	if (ret)
 		goto _out;
 
