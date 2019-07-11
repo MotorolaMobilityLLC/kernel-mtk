@@ -679,8 +679,8 @@ extern struct ctp_config_info config_info;
  * Note.
  * Please change the below touch screen resolution according to the touch panel that you are using.
  */
-#define TOUCH_SCREEN_X_MAX   (1080)  //LCD_WIDTH
-#define TOUCH_SCREEN_Y_MAX   (1920) //LCD_HEIGHT
+#define TOUCH_SCREEN_X_MAX   (720)  //LCD_WIDTH
+#define TOUCH_SCREEN_Y_MAX   (1440) //LCD_HEIGHT
 /*
  * Note.
  * Please do not change the below setting.
