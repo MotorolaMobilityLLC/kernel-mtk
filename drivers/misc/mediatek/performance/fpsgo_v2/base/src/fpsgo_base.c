@@ -238,6 +238,7 @@ void fpsgo_delete_render_info(int pid)
 {
 	struct render_info *data;
 	int delete = 0;
+	int check_max_blc = 0;
 
 	fpsgo_lockprove(__func__);
 
@@ -247,6 +248,9 @@ void fpsgo_delete_render_info(int pid)
 		return;
 
 	fpsgo_thread_lock(&data->thr_mlock);
+	if (pid == fpsgo_base2fbt_get_max_blc_pid())
+		check_max_blc = 1;
+
 	rb_erase(&data->pid_node, &render_pid_tree);
 	list_del(&(data->bufferid_list));
 	list_del(&(data->ui_list));
@@ -260,6 +264,9 @@ void fpsgo_delete_render_info(int pid)
 		data->linger = 1;
 	}
 	fpsgo_thread_unlock(&data->thr_mlock);
+
+	if (check_max_blc)
+		fpsgo_base2fbt_check_max_blc();
 
 	if (delete == 1)
 		kfree(data);
