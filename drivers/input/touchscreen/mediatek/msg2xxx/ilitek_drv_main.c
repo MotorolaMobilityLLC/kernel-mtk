@@ -14575,7 +14575,7 @@ s32 /*__devinit*/ MsDrvInterfaceTouchDeviceProbe(struct i2c_client *pClient, con
 #ifdef CONFIG_ENABLE_GESTURE_WAKEUP
 	device_init_wakeup(&g_I2cClient->dev, 1);
 #endif //CONFIG_ENABLE_GESTURE_WAKEUP
-
+    memcpy(version,  _gFwVersion,  63);
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 
     DBG(&g_I2cClient->dev, "*** ILITEK/MStar touch driver registered ***\n");

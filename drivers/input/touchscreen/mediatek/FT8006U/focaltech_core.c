@@ -867,7 +867,7 @@ static void  ontim_refresh_fw_ver(struct fts_ts_data *ts_data)
     do {
         if (fts_i2c_read_reg(client, FTS_REG_FW_VER, &fwver) >= 0) {
             if ((fwver != 0xFF) && (fwver != 0x00)) {
-                snprintf(version, sizeof(version),"ft8006u ver %d.0",fwver );
+                snprintf(version, sizeof(version),"ver %d.0",fwver );
                 break;
             }
         }
