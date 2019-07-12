@@ -133,6 +133,7 @@ struct mot_offbody {
     float theta_exit;
     float theta_low;
     float theta_high;
+    bool qual_mode;
 };
 struct mot_params {
 #ifdef CONFIG_MOTO_CHOPCHOP
