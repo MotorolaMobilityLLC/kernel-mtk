@@ -15,8 +15,15 @@ config MTK_FINGERPRINT_SUPPORT
 if MTK_FINGERPRINT_SUPPORT
 config MTK_FINGERPRINT_SELECT
        string "sensor type"
-       default "FPSENSOR"
+       default "fpsensor&focaltech"
 
+source drivers/input/fingerprint/fpsensor_tee/Kconfig
+source drivers/input/fingerprint/focaltech/Kconfig
+
+#########################################################
+#########################################################
+#########################################################
+#not use MTK_FINGERPRINT_SELECT
 if MTK_FINGERPRINT_SELECT = "CHIPSAILING"
 config CHIPSAILING_FINGERPRINT
 	bool "Chipsailing Fingerprint"
@@ -55,5 +62,6 @@ config GOODIX_SENSOR_TYPE
 	---help---
 	Must input sensor type, or default is GF316M GF318M GF3118M GF518M GF5118M GF516M GF816M GF3208 GF3206 GF3266 GF3288 GF5206 GF5216 GF5208
 endif
+#########################################################
 endif
 endmenu

@@ -4,6 +4,4 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/spi/mediatek/$(MTK_PLATFORM)
 
-
-obj-y += fpsensor_spi_tee.o
-
+obj-$(CONFIG_FPSENSOR_FINGERPRINT)	+= fpsensor_spi_tee.o

@@ -1,0 +1,6 @@
+config FOCALTECH_FINGERPRINT
+	tristate "Focaltech Finger Print Driver"
+   	help
+		Focaltech Finger Print Supported
+
+
