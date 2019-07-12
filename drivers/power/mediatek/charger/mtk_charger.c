@@ -120,8 +120,11 @@ void BATTERY_SetUSBState(int usb_state_value)
 		} else {
 			chr_err("[BATTERY] BAT_SetUSBState Success! Set %d\r\n",
 					usb_state_value);
-			if (pinfo)
+			if (pinfo) {
 				pinfo->usb_state = usb_state_value;
+				chr_err("Wake up charger\n");
+				_wake_up_charger(pinfo);
+			}
 		}
 	}
 }
@@ -1139,11 +1142,25 @@ void mtk_charger_int_handler(void)
 		chr_err("charger is not rdy ,skip2\n");
 		return;
 	}
+	if ((mt_get_charger_type() == STANDARD_HOST
+		|| mt_get_charger_type() == CHARGING_HOST)
+		&& pinfo->usb_state == USB_SUSPEND) {
+		chr_err("%s; USB is in suspend state, skip\n", __func__);
+		return;
+	}
 	_wake_up_charger(pinfo);
 }
 
 static int mtk_charger_plug_in(struct charger_manager *info, enum charger_type chr_type)
 {
+
+	if ((mt_get_charger_type() == STANDARD_HOST
+		|| mt_get_charger_type() == CHARGING_HOST)
+		&& pinfo->usb_state == USB_SUSPEND) {
+		chr_err("%s; USB is in suspend state, skip\n", __func__);
+		return 0;
+	}
+
 	info->chr_type = chr_type;
 	info->charger_thread_polling = true;
 
@@ -1166,6 +1183,10 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	struct charger_data *pdata2 = &info->chg2_data;
 
 	chr_err("mtk_charger_plug_out\n");
+
+	/* HZ,charging,OTG only one is active */
+	charger_dev_enable_hz(info->chg1_dev, false);
+
 	info->chr_type = CHARGER_UNKNOWN;
 	info->charger_thread_polling = false;
 

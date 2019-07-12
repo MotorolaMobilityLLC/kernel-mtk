@@ -2094,6 +2094,7 @@ void musb_g_resume(struct musb *musb)
 			musb->gadget_driver->resume(&musb->g);
 			spin_lock(&musb->lock);
 		}
+		musb_sync_with_bat(musb, USB_CONFIGURED);
 		break;
 	default:
 		dev_warn(musb->controller, "unhandled RESUME transition (%s)\n",

@@ -179,22 +179,31 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 		chr_err("type-C:%d current:%d\n",
 			info->pd_type, tcpm_inquire_typec_remote_rp_curr(info->tcpc));
-	} else if (info->chr_type == STANDARD_HOST) {
-		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE)) {
-			if (info->usb_state == USB_SUSPEND)
-				pdata->input_current_limit = info->data.usb_charger_current_suspend;
-			else if (info->usb_state == USB_UNCONFIGURED)
-				pdata->input_current_limit = info->data.usb_charger_current_unconfigured;
-			else if (info->usb_state == USB_CONFIGURED)
-				pdata->input_current_limit = info->data.usb_charger_current_configured;
-			else
-				pdata->input_current_limit = info->data.usb_charger_current_unconfigured;
-
-			pdata->charging_current_limit = pdata->input_current_limit;
+	} else if (info->chr_type == STANDARD_HOST ||
+			   info->chr_type == CHARGING_HOST) {
+		chr_err("chr_type =%d, usb_state =%d\n",
+			info->chr_type, info->usb_state);
+		if (info->usb_state == USB_SUSPEND) {
+			pdata->input_current_limit = 0;
+			charger_manager_notifier(info,
+				CHARGER_NOTIFY_STOP_CHARGING);
+		} else if (info->usb_state == USB_UNCONFIGURED) {
+			pdata->input_current_limit =
+				info->data.usb_charger_current_unconfigured;
+			charger_manager_notifier(info,
+				CHARGER_NOTIFY_START_CHARGING);
 		} else {
-			pdata->input_current_limit = info->data.usb_charger_current;
-			pdata->charging_current_limit = info->data.usb_charger_current;	/* it can be larger */
+			if (info->chr_type == STANDARD_HOST) {
+				pdata->input_current_limit =
+					info->data.usb_charger_current;
+			} else {
+				pdata->input_current_limit =
+				info->data.charging_host_charger_current;
+			}
+			charger_manager_notifier(info,
+				CHARGER_NOTIFY_START_CHARGING);
 		}
+		pdata->charging_current_limit = pdata->input_current_limit;
 	} else if (info->chr_type == NONSTANDARD_CHARGER) {
 		pdata->input_current_limit = info->data.non_std_ac_charger_current;
 		pdata->charging_current_limit = info->data.non_std_ac_charger_current;
@@ -203,15 +212,15 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->charging_current_limit = info->data.ac_charger_current;
 		mtk_pe20_set_charging_current(info, &pdata->charging_current_limit, &pdata->input_current_limit);
 		mtk_pe_set_charging_current(info, &pdata->charging_current_limit, &pdata->input_current_limit);
-	} else if (info->chr_type == CHARGING_HOST) {
-		pdata->input_current_limit = info->data.charging_host_charger_current;
-		pdata->charging_current_limit = info->data.charging_host_charger_current;
 	} else if (info->chr_type == APPLE_1_0A_CHARGER) {
 		pdata->input_current_limit = info->data.apple_1_0a_charger_current;
 		pdata->charging_current_limit = info->data.apple_1_0a_charger_current;
 	} else if (info->chr_type == APPLE_2_1A_CHARGER) {
 		pdata->input_current_limit = info->data.apple_2_1a_charger_current;
 		pdata->charging_current_limit = info->data.apple_2_1a_charger_current;
+	} else {
+		pdata->input_current_limit = 500000;
+		pdata->charging_current_limit = pdata->input_current_limit;
 	}
 
 	if (info->enable_sw_jeita) {
@@ -227,6 +236,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 	pdata->charging_current_limit = ((info->mmi.target_fcc < 0) ? 0 : info->mmi.target_fcc);
 
+	if (info->mmi.demo_discharging)
+		pdata->input_current_limit = 0;
 	info->mmi.target_usb = pdata->input_current_limit;
 
 	if (pdata->thermal_charging_current_limit != -1)
@@ -286,7 +297,10 @@ done:
 	charger_dev_set_input_current(info->chg1_dev, pdata->input_current_limit);
 	charger_dev_set_charging_current(info->chg1_dev, pdata->charging_current_limit);
 
-	charger_dev_enable_hz(info->chg1_dev, info->mmi.demo_discharging);
+	if (pdata->input_current_limit == 0)
+		charger_dev_enable_hz(info->chg1_dev, true);
+	else
+		charger_dev_enable_hz(info->chg1_dev, false);
 
 	/* If AICR < 300mA, stop PE+/PE+20 */
 	if (pdata->input_current_limit < 300000) {
