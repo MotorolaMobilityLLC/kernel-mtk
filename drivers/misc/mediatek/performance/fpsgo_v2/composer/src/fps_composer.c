@@ -904,7 +904,10 @@ void fpsgo_com_clear_connect_api_render_list(struct connect_api_info *connect_ap
 	fpsgo_lockprove(__func__);
 
 	list_for_each_entry_safe(pos, next, &connect_api->render_list, bufferid_list) {
+		int ui_pid = pos->ui_pid;
+
 		fpsgo_delete_render_info(pos->pid);
+		fpsgo_base2com_delete_ui_pid_info(ui_pid);
 	}
 
 }
@@ -1003,6 +1006,7 @@ static int fspgo_com_connect_api_info_show
 	struct connect_api_info *iter;
 	struct task_struct *tsk;
 	struct render_info *pos, *next;
+	struct ui_pid_info *ui_iter;
 
 	seq_puts(m, "=================================\n");
 
@@ -1029,6 +1033,20 @@ static int fspgo_com_connect_api_info_show
 		}
 		seq_puts(m, "***********************\n");
 		seq_puts(m, "=================================\n");
+	}
+
+	n = rb_first(&ui_pid_tree);
+
+	while (n) {
+		struct render_info *pos, *next;
+
+		ui_iter = rb_entry(n, struct ui_pid_info, rb_node);
+		seq_printf(m, "%5d:", ui_iter->ui_pid);
+		list_for_each_entry_safe(pos, next,
+				&ui_iter->render_list, ui_list)
+			seq_printf(m, "[%d]", pos->pid);
+		seq_puts(m, "\n***********************\n");
+		n = rb_next(n);
 	}
 
 	rcu_read_unlock();
