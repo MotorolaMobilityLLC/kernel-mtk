@@ -952,6 +952,7 @@ static void normal_video_setting(kal_uint16 currefps)
 	write_cmos_sensor(0x3C1E,0x0100);
 	write_cmos_sensor(0x0100,0x0100);
 	write_cmos_sensor(0x3C1E,0x0000);
+	write_cmos_sensor(0x0202,0x07A8);
 }
 
 static void hs_video_setting(void)
