@@ -357,7 +357,7 @@ static int get_power_usb_type(void)
 	return 0;
 }
 
-#define BATTARY_RESISTANCE_FILE "/sys/class/power_supply/bms/battery_type"
+#define BATTARY_RESISTANCE_FILE "/sys/ontim_dev_debug/battery/vendor"
 static int get_battary_mfr(void)
 {
 	char buf[64] = {0};
