@@ -58,8 +58,6 @@ static adc_boardid_match boardid_table[] = {
 };
 #endif
 
-
-
 typedef struct board_id {
 	int index;
 	const char *hw_version;
@@ -319,8 +317,8 @@ static int get_tp_info(void)
 	return 0;
 }
 
-#define POWER_USB_TYPE_FILE "/sys/class/power_supply/usb/type"
 #define POWER_USB_ONLINE_FILE "/sys/class/power_supply/usb/online"
+#define POWER_AC_ONLINE_FILE "/sys/class/power_supply/ac/online"
 static int get_power_usb_type(void)
 {
 	char buf[64] = {0};
@@ -328,7 +326,7 @@ static int get_power_usb_type(void)
 	int ret = 0;
 
 	memset(buf, 0x00, 64);
-	ret = hwinfo_read_file(POWER_USB_TYPE_FILE, buf, sizeof(buf));
+	ret = hwinfo_read_file(POWER_AC_ONLINE_FILE, buf, sizeof(buf));
 	if (ret != 0)
 	{
 		printk(KERN_CRIT "get_power usb type failed.");
@@ -336,7 +334,7 @@ static int get_power_usb_type(void)
 	}
 	if (buf[strlen(buf) - 1] == '\n')
 		buf[strlen(buf) - 1] = '\0';
-	printk(KERN_INFO "power usb %s\n", buf);
+	printk(KERN_INFO "power ac %s\n", buf);
 
 	memset(online, 0x00, 64);
 	ret = hwinfo_read_file(POWER_USB_ONLINE_FILE, online, sizeof(online));
@@ -350,8 +348,10 @@ static int get_power_usb_type(void)
 	printk(KERN_INFO "power usb online %s\n", online);
 
 	if (!strcmp(online, "1"))
-		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, buf);
-    else
+		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "USB");
+    else if(!strcmp(buf, "1"))
+		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "AC");
+	else
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "Unknow");
 
 	return 0;
