@@ -2522,6 +2522,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 			CHECK_RET("core(%d):fail to allocate kernel_lib buffer!\n", i);
 
 		}
+		#if 0
 		/* multi-core shared  */
 		/* need in reserved region, set end as the end of reserved address, m4u use start-from */
 		mem_param.require_pa = true;
@@ -2532,6 +2533,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		LOG_DBG("shared_data va (0x%lx),pa(0x%x)",
 			(unsigned long)(core_shared_data->va), core_shared_data->pa);
 		CHECK_RET("fail to allocate working buffer!\n");
+		#endif
 
 
 		wq = create_workqueue("vpu_wq");
@@ -2637,6 +2639,12 @@ int vpu_uninit_hw(void)
 		if (vpu_service_cores[i].work_buf) {
 			vpu_free_shared_memory(vpu_service_cores[i].work_buf);
 			vpu_service_cores[i].work_buf = NULL;
+		}
+
+		if (vpu_service_cores[i].exec_kernel_lib) {
+			vpu_free_shared_memory(
+				vpu_service_cores[i].exec_kernel_lib);
+			vpu_service_cores[i].exec_kernel_lib = NULL;
 		}
 	}
 	cancel_delayed_work(&opp_keep_work);
