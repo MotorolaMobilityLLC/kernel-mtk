@@ -2423,6 +2423,9 @@ static int rt9471_probe(struct i2c_client *client,
 	}
 
 	if (chip->dev_id == RT9471D_DEVID) {
+		chip->bc12_en_buf[0] = chip->bc12_en_buf[1] = -1;
+		chip->bc12_en_buf_idx = 0;
+		init_completion(&chip->bc12_en_req);
 		chip->bc12_en_kthread =
 			kthread_run(rt9471_bc12_en_kthread, chip,
 				    "rt9471.%s", dev_name(chip->dev));
@@ -2432,9 +2435,6 @@ static int rt9471_probe(struct i2c_client *client,
 					      __func__, ret);
 			goto err_kthread_run;
 		}
-		chip->bc12_en_buf[0] = chip->bc12_en_buf[1] = -1;
-		chip->bc12_en_buf_idx = 0;
-		init_completion(&chip->bc12_en_req);
 	}
 
 	ret = rt9471_parse_dt(chip);
