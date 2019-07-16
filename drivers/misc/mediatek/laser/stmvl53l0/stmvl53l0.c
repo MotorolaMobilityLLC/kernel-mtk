@@ -53,6 +53,7 @@
 #define VL53l0_IOCTL_SETXTALKCALB	_IOW(VL53l0_MAGIC, 	0x05, int)
 #define VL53l0_IOCTL_GETDATA 		_IOR(VL53l0_MAGIC, 	0x0a, LaserInfo)
 #define VL53l0_IOCTL_GETDEFAULTOFFCALB 		_IOR(VL53l0_MAGIC, 	VL53l0_DEFAULT_CALIB, int)
+#define VL53l0_IOCTL_GETDEFAULTXTALKCALB 		_IOR(VL53l0_MAGIC, 	0x07, int)
 #define LASER_DRVNAME 		"laser"/*"stmvl53l0"*/
 #define I2C_SLAVE_ADDRESS	0x52
 
@@ -543,7 +544,7 @@ static long Laser_Ioctl(
 			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETOFFCALB \n");
 		}
 
-		PK_INF("[stmvl53l0]CalibratedValue:%d\n", CalibratedValue);
+		PK_INF("[stmvl53l0]GETOFFSETCALB:%d\n", CalibratedValue);
 	}
 	break;
 
@@ -561,7 +562,7 @@ static long Laser_Ioctl(
 			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETDEFAULTOFFCALB \n");
 		}
 
-		PK_INF("[stmvl53l0]default CalibratedValue:%d\n", CalibratedValue);
+		PK_INF("[stmvl53l0]default offset CalibratedValue:%d\n", CalibratedValue);
 	}
 	break;
 
@@ -583,7 +584,7 @@ static long Laser_Ioctl(
 		g_s4Laser_Opened = 3;
 		spin_unlock(&g_Laser_SpinLock);
 
-		//VL53l0_SystemInit(VL53l0_XTALK_CALIB);
+		VL53l0_SystemInit(VL53l0_XTALK_CALIB);
 		VL53l0_XtalkCalibration(&CalibratedValue);
 		g_Laser_XTalkCalib = CalibratedValue;
 
@@ -593,10 +594,27 @@ static long Laser_Ioctl(
 
 		if(copy_to_user(p_u4Param , &CalibratedValue , sizeof(FixPoint1616_t)))
 		{
-			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETOFFCALB \n");
+			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETxtalkCALB \n");
 		}
 
 		PK_INF("[stmvl53l0]GETXTALKCALB: %d\n", CalibratedValue);
+	}
+	break;
+
+	case VL53l0_IOCTL_GETDEFAULTXTALKCALB:  //Place a dark target at 400mm ~ Lower reflectance target recommended, e.g. 17% gray card
+	{
+		void __user *p_u4Param = (void __user *)a_u4Param;
+		FixPoint1616_t CalibratedValue;
+		PK_INF("VL53l0_IOCTL_GETDEFAULTxtalkCALB\n");
+		VL53l0_SystemInit(VL53l0_XTALK_CALIB);
+                VL53l0_SetCrosstalkValue(40000);
+		VL53l0_GetCrosstalkValue(&CalibratedValue);
+		//g_Laser_OffsetCalib = CalibratedValue;
+		if(copy_to_user(p_u4Param , &CalibratedValue , sizeof(FixPoint1616_t)))
+		{
+			PK_INF("copy to user failed when getting VL53l0_IOCTL_GETDEFAULTxtalkCALB \n");
+		}
+		PK_INF("[stmvl53l0]default xtalk CalibratedValue:%d\n", CalibratedValue);
 	}
 	break;
 
