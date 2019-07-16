@@ -39,14 +39,15 @@
 /****************************Modify following Strings for debug****************************/
 #define PFX "s5k5e9yxmipiraw_Sensor.c"
 
-#define LOG_INF(fmt, args...)	pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+//#define LOG_INF(fmt, args...)	pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+#define LOG_INF(fmt, args...)	pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
 
 
 #define LOG_1 LOG_INF("s5k5e9yx,MIPI 2LANE\n")
 #define LOG_2 LOG_INF("preview 1296*972@30fps,876Mbps/lane; video 2592*1944@30fps,876Mbps/lane; capture 5M@30fps,876Mbps/lane\n")
 /****************************   Modify end    *******************************************/
 //  #define LOG_INF(fmt, args...)	pr_debug(PFX "[%s] " fmt, __FUNCTION__, ##args)
-// #define S5K5E9_OTP_ENABLE //otp function
+ #define S5K5E9_OTP_ENABLE //otp function
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
 
@@ -213,37 +214,41 @@ static void write_cmos_sensor_8(kal_uint16 addr, kal_uint8 para)
 /////////////////////////otp function/////////////////////////////
 #ifdef S5K5E9_OTP_ENABLE
 
-#define HLT_MODULE_ID 0x42
+#define HLT_MODULE_ID       0x42
+#define SUNRISE_MODULE_ID   0xc
 
 struct s5k5e9_otp_struct
 {
-    kal_uint8 flag; //0x00:empty, 0x55:valid, other:invalid
-    kal_uint8 mid;  //module id
-    kal_uint8 lid;  //lens id
+    // //Bit[1:0]:Flag of Group1      Bit[3:2]:Flag of Group2
+    kal_uint8   mi_flag; // 00:empty, 01:valid,  10 11:invalid
+    kal_uint8   mid;     //module id
+    kal_uint8   year;
+    kal_uint8   month;
+    kal_uint8   day;
 
-    kal_uint16 UnitRGRatio;	//unit awb
-    kal_uint16 UnitBGRatio;
-    kal_uint16 TypicalRGRatio; //golden awb
-    kal_uint16 TypicalBGRatio;
+    
+    kal_uint8   awb_flag;
+    kal_uint16  Unit_R_Ratio_Gr;	//unit awb
+    kal_uint16  Unit_B_Ratio_Gr;
+    kal_uint16  Unit_Gr_Ratio_Gb;
+    kal_uint16  Golden_R_Ratio_Gr;	//golden awb
+    kal_uint16  Golden_B_Ratio_Gr;
+    kal_uint16  Golden_Gr_Ratio_Gb;
 
-    bool awb_valid;
-    bool lsc_valid;
+    kal_uint8   lsc_flag;
+    
+    
 };
 
 static struct s5k5e9_otp_struct current_5e9_otp;
 
-/*************************************************************************************************
-*
-* Function    :  s5k5e9_start_read_otp
-*
-**************************************************************************************************/
+
 static void s5k5e9_start_read_otp(u8 page)
 {
     int n = 0;
     uint temp;
 
-    //if(read_cmos_sensor(0x0100) == 0x00)
-      write_cmos_sensor(0x0100,0x01);
+    write_cmos_sensor(0x0100,0x01);
     mdelay(80);
 
     write_cmos_sensor(0x0a02,page);
@@ -256,11 +261,7 @@ static void s5k5e9_start_read_otp(u8 page)
 		n++;
     }while((temp!= 0x01)&& (n<12));
 }
-/*************************************************************************************************
-*
-* Function    :  s5k5e9_stop_read_otp
-*
-**************************************************************************************************/
+
 static void s5k5e9_stop_read_otp(void)
 {
     write_cmos_sensor(0x0a00,0x04); //clear error bits
@@ -268,89 +269,140 @@ static void s5k5e9_stop_read_otp(void)
     write_cmos_sensor(0x0100,0x00);
 }
 
-static void s5k5e9_read_otp_wb(struct s5k5e9_otp_struct *otp)
+static void s5k5e9_read_otp(struct s5k5e9_otp_struct *otp)
 {
     u8 group_id = 0;
-    UINT16 basic_address = 0x0A05;
-    UINT16 temp_address = 0x0A05;
+    UINT16 temp_address  = 0;
 
     s5k5e9_start_read_otp(17);//page 17
 
-    //--------Basic Info--------
-    if(read_cmos_sensor(0x0A0C) == 0x55) { //group 2 ?
-      group_id = 2;
-    } else if (read_cmos_sensor(0x0A04) == 0x55) { //group 1 ?
-	  group_id = 1;
+    // ---------------- Module Info ----------------
+    otp->mi_flag = read_cmos_sensor(0x0A04);
+    
+    if( (otp->mi_flag & 0x3) == 1)
+    {
+        group_id = 1;
+        temp_address = 0x0a05;
+    }
+    else if( (otp->mi_flag & 0xc) == 4)
+    {
+        group_id = 2;
+        temp_address = 0x0a0f;
+    }
+    else
+    {
+        otp->mi_flag = 0;
     }
 
     if(group_id != 0)
     {
-      temp_address = basic_address + (group_id - 1) * 8;//0x0A05,0x0A0D
-      otp->mid = read_cmos_sensor(temp_address++);
-      otp->lid = read_cmos_sensor(temp_address++);
-      LOG_INF("mid=%d, lid=%d.\n",otp->mid,otp->lid);
+        otp->mid = read_cmos_sensor(temp_address++);
+        otp->year = read_cmos_sensor(temp_address++);
+        otp->month = read_cmos_sensor(temp_address++);
+        otp->day = read_cmos_sensor(temp_address++);
+        LOG_INF("mid=%d,  year=%d   month=%d   day=%d   \n",
+        otp->mid, otp->year, otp->month, otp->day);
     }
 
-    //--------AWB Info--------
+    // ---------------- AWB Info ----------------
     group_id = 0;
-    basic_address = 0x0A15;
-    temp_address = 0x0A15;
-
-    if(read_cmos_sensor(0x0A1E) == 0x55) { //group 2 ?
-	  group_id = 2;
-    } else if (read_cmos_sensor(0x0A14) == 0x55) { //group 1 ?
-	  group_id = 1;
+    otp->awb_flag = read_cmos_sensor(0x0A26);
+    
+    if( (otp->awb_flag & 0x3) == 1)
+    {
+        group_id = 1;
+        temp_address = 0x0a27;
+    }
+    else if( (otp->awb_flag & 0xc) == 4)
+    {
+        group_id = 2;
+        temp_address = 0x0a34;
+    }
+    else
+    {
+        otp->awb_flag = 0;
     }
 
     if(group_id != 0)
     {
-      temp_address = basic_address + (group_id - 1) * 10;//0x0A15,0x0A1F
-      otp->UnitRGRatio = (read_cmos_sensor(temp_address) | read_cmos_sensor(temp_address+1)<<8);
-      otp->UnitBGRatio = (read_cmos_sensor(temp_address+2) | read_cmos_sensor(temp_address+3)<<8);
-      otp->TypicalRGRatio = (read_cmos_sensor(temp_address+4) | read_cmos_sensor(temp_address+5)<<8);
-      otp->TypicalBGRatio = (read_cmos_sensor(temp_address+6) | read_cmos_sensor(temp_address+7)<<8);
-	  LOG_INF("UnitRGRatio=0x%x, UnitBGRatio=0x%x, TypicalRGRatio=0x%x, TypicalBGRatio=0x%x.\n",otp->UnitRGRatio,otp->UnitBGRatio,otp->TypicalRGRatio,otp->TypicalBGRatio);
 
-	  otp->awb_valid = 1;
+        otp->Unit_R_Ratio_Gr = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+        temp_address += 2;
+        otp->Unit_B_Ratio_Gr = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+        temp_address += 2;
+        otp->Unit_Gr_Ratio_Gb = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+        temp_address += 2;
+        otp->Golden_R_Ratio_Gr = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+        temp_address += 2;
+        otp->Golden_B_Ratio_Gr = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+        temp_address += 2;
+        otp->Golden_Gr_Ratio_Gb = (read_cmos_sensor(temp_address)<<8 | read_cmos_sensor(temp_address+1));
+
+        LOG_INF("Unit_R_Ratio_Gr=0x%x, Unit_B_Ratio_Gr=0x%x, Unit_Gr_Ratio_Gb=0x%x \n",
+        otp->Unit_R_Ratio_Gr, otp->Unit_B_Ratio_Gr, otp->Unit_Gr_Ratio_Gb);
+        LOG_INF("Golden_R_Ratio_Gr=0x%x, Golden_B_Ratio_Gr=0x%x, Golden_Gr_Ratio_Gb=0x%x \n",
+        otp->Golden_R_Ratio_Gr, otp->Golden_B_Ratio_Gr, otp->Golden_Gr_Ratio_Gb);
     }
 
-    //--------LSC Info--------
+    // ---------------- LSC Info ----------------
     group_id = 0;
+    otp->lsc_flag = read_cmos_sensor(0x0A41);
 
-    if(read_cmos_sensor(0x0A30) == 0x55) { //group 2 ?
-	  group_id = 2;
-    } else if (read_cmos_sensor(0x0A28) == 0x55) { //group 1 ?
-	  group_id = 1;
-    }
-
-    if(group_id != 0)
+    if( (otp->lsc_flag & 0x3) == 1)
     {
-      otp->lsc_valid = 1;
+        group_id = 1;
+    }
+    else if( (otp->lsc_flag & 0xc) == 4)
+    {
+        group_id = 2;
+    }
+    else
+    {
+        otp->lsc_flag = 0;
     }
     //------------------------
 
     s5k5e9_stop_read_otp();
 }
 
-static void s5k5e9_write_otp_wb(struct s5k5e9_otp_struct *otp)
+static void s5k5e9_read_from_otp(void)
 {
-    kal_uint16 R_gain,B_gain,Gb_gain,Gr_gain,Base_gain;
+    memset(&current_5e9_otp, 0, sizeof(struct s5k5e9_otp_struct));
+    s5k5e9_read_otp(&current_5e9_otp);
+}
 
-    R_gain = (512*otp->TypicalRGRatio)/otp->UnitRGRatio;
-    B_gain = (512*otp->TypicalBGRatio)/otp->UnitBGRatio;
-    Gb_gain = 512;
-    Gr_gain = 512;
+
+
+
+static void s5k5e9_apply_otp_wb(struct s5k5e9_otp_struct *otp)
+{
+    kal_uint16  R_gain, B_gain, Gb_gain, Gr_gain, Base_gain;
+
+/*     
+    kal_uint16  Unit_R_Ratio_Gr;	//unit awb
+    kal_uint16  Unit_B_Ratio_Gr;
+    kal_uint16  Unit_Gr_Ratio_Gb;
+    kal_uint16  Golden_R_Ratio_Gr;	//golden awb
+    kal_uint16  Golden_B_Ratio_Gr;
+    kal_uint16  Golden_Gr_Ratio_Gb;
+     */
+    R_gain = (otp->Golden_R_Ratio_Gr * 1000)/otp->Unit_R_Ratio_Gr;
+    B_gain = (otp->Golden_B_Ratio_Gr * 1000)/otp->Unit_B_Ratio_Gr;
+    Gb_gain = (otp->Golden_Gr_Ratio_Gb * 1000)/otp->Unit_Gr_Ratio_Gb;
+    Gr_gain = 1000;
+     
     Base_gain = R_gain;
+    if(Base_gain > B_gain) Base_gain = B_gain;
+    if(Base_gain > Gb_gain) Base_gain = Gb_gain;
+    if(Base_gain > Gr_gain) Base_gain = Gr_gain;
+    
+    R_gain = 0x100 * R_gain / Base_gain;
+    B_gain = 0x100 * B_gain / Base_gain;
+    Gb_gain = 0x100 * Gb_gain / Base_gain;
+    Gr_gain = 0x100 * Gr_gain / Base_gain;
 
-    if(Base_gain>B_gain) Base_gain=B_gain;
-    if(Base_gain>Gb_gain) Base_gain=Gb_gain;
-    if(Base_gain>Gr_gain) Base_gain=Gr_gain;
-    R_gain = (0x100*R_gain) / Base_gain;
-    B_gain = (0x100*B_gain) / Base_gain;
-    Gb_gain = (0x100*Gb_gain) / Base_gain;
-    Gr_gain = (0x100*Gr_gain) / Base_gain;
-
-    LOG_INF("Gr_gain = 0x%x, Gb_gain = 0x%x, R_gain = 0x%x, B_gain = 0x%x.\n", Gr_gain, Gb_gain, R_gain, B_gain);
+    LOG_INF(" R_gain = 0x%x, B_gain = 0x%x, Gb_gain = 0x%x, Gr_gain = 0x%x  \n", 
+    R_gain, B_gain, Gb_gain, Gr_gain);
 
     //digital gain Gr
     if(Gr_gain > 0x100) {
@@ -374,27 +426,26 @@ static void s5k5e9_write_otp_wb(struct s5k5e9_otp_struct *otp)
     }
 }
 
-static void s5k5e9_read_register_from_otp(void)
-{
-    memset(&current_5e9_otp, 0, sizeof(struct s5k5e9_otp_struct));
 
-    s5k5e9_read_otp_wb(&current_5e9_otp);
-}
 
-/*************************************************************************************************
-* Function    :  s5k5e9_otp_lsc_update
-* Description :  Update lens correction
-**************************************************************************************************/
 static void s5k5e9_otp_lsc_update(void)
 {
     //LSC auto apply
-    if(current_5e9_otp.lsc_valid)
+    if(current_5e9_otp.lsc_flag != 0)
     {
-      write_cmos_sensor(0x3400,0x00); //auto load
-      write_cmos_sensor(0x0B00,0x01); //lsc on
-      LOG_INF("LSC Auto Correct OK!\n");
+        write_cmos_sensor(0x3400,0x00); //auto load
+        write_cmos_sensor(0x0B00,0x01); //lsc on
+        LOG_INF("LSC Auto Correct OK!\n");
     }
+/*     else
+    {
+        write_cmos_sensor(0x3400,0x01);
+        write_cmos_sensor(0x0B00,0x00); 
+        LOG_INF("LSC off\n");
+    } */
 }
+
+
 #endif
 //////////////////////////////////////////////////////////////////
 
@@ -1221,9 +1272,9 @@ static void slim_video_setting(void)
 * GLOBALS AFFECTED
 *
 *************************************************************************/
-#ifdef S5K5E9_OTP_ENABLE
+/* #ifdef S5K5E9_OTP_ENABLE
 extern char camera_f_info[40]; //add front camera module info
-#endif
+#endif */
 extern char front_cam_name[64];
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id) 
 {
@@ -1236,14 +1287,21 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {				
+			if (*sensor_id == imgsensor_info.sensor_id) {
+				
             #ifdef S5K5E9_OTP_ENABLE
               sensor_init();
-              s5k5e9_read_register_from_otp(); //read otp data only one time
+              s5k5e9_read_from_otp(); //read otp data only one time
               LOG_INF("module_id = 0x%x\n", current_5e9_otp.mid);
+              
+              if(SUNRISE_MODULE_ID == current_5e9_otp.mid){
+                  LOG_INF("find SUNRISE, s5k5e9.\n");
+              }
+              
+              
               //if(HLT_MODULE_ID == current_5e9_otp.mid) {
-                strcpy(camera_f_info,"5M-Camera S5K5E9-HOLITECH"); //module info: HLT
-                LOG_INF("find HLT,s5k5e9.\n");
+              //strcpy(camera_f_info,"5M-Camera S5K5E9-HOLITECH"); //module info: HLT
+              //LOG_INF("find HLT,s5k5e9.\n");
               //}else{
               //  LOG_INF("not find HLT,s5k5e9!\n");
               //  *sensor_id = 0xFFFFFFFF;
@@ -1252,6 +1310,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             #else
               //strcpy(camera_f_info,"5M-Camera S5K5E9-HLT"); //module info: HLT
             #endif
+            
                 memset(front_cam_name, 0x00, sizeof(front_cam_name));
                 memcpy(front_cam_name, "1_s5k5e9yx", 64); 
 				pr_err("s5k5e9[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
@@ -1330,9 +1389,12 @@ static kal_uint32 open(void)
 
 	//otp function
 	#ifdef S5K5E9_OTP_ENABLE
-	if(1 == current_5e9_otp.awb_valid) {
-	  s5k5e9_write_otp_wb(&current_5e9_otp);//apply awb otp
-	  s5k5e9_otp_lsc_update();//apply lsc otp
+	if(0 != current_5e9_otp.awb_flag) 
+    {
+        LOG_INF(" apply_otp   \n");
+
+        s5k5e9_apply_otp_wb(&current_5e9_otp);//apply awb otp
+        s5k5e9_otp_lsc_update();//apply lsc otp
 	}
 	#endif
 
