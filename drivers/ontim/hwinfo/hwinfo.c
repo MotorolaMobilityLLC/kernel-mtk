@@ -349,7 +349,7 @@ static int get_power_usb_type(void)
 
 	if (!strcmp(online, "1"))
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "USB");
-    else if(!strcmp(buf, "1"))
+	else if (!strcmp(buf, "1"))
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "AC");
 	else
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "Unknow");
@@ -802,7 +802,29 @@ static int get_dual_sim(void)
 
 	printk(KERN_ERR "%s: pin_val is %x ;\n", __func__, pin_val);
 
-	return sprintf(hwinfo[dual_sim].hwinfo_buf, "%s", pin_val? "sig":"dual");
+	return sprintf(hwinfo[dual_sim].hwinfo_buf, "%s", pin_val ? "sig" : "dual");
+}
+
+static int get_band_id(void)
+{
+	unsigned int gpio_base = 343;
+
+	unsigned int pin2 = 53;
+	unsigned int pin3 = 5;
+	int pin_val = 0;
+
+	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 1;
+	pin_val |= (gpio_get_value(gpio_base + pin3) & 0x01);
+
+	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
+
+	if (pin_val == 3)
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-2");
+	else if (pin_val == 0)
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-1");
+	else
+		strcpy(hwinfo[band_id].hwinfo_buf, "XT2029-3");
+	return 0;
 }
 
 unsigned int platform_board_id = 0;
@@ -810,23 +832,16 @@ EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
 	unsigned int gpio_base = 343;
-
 	unsigned int pin0 = 121;
 	unsigned int pin1 = 54;
-	unsigned int pin2 = 53;
 	int pin_val = 0;
-	int hw_ver = 0;
 
+	pin_val  = (gpio_get_value(gpio_base + pin0) & 0x01) << 3;
+	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 2;
 
-	pin_val =    gpio_get_value(gpio_base + pin0) & 0x01;
-	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 1;
-	pin_val |= (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
+	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
 
-	hw_ver = pin_val;
-
-	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, hw_ver);
-
-	return sprintf(hwinfo[board_id].hwinfo_buf, "%04d", hw_ver);
+	return sprintf(hwinfo[board_id].hwinfo_buf, "0x%x", pin_val);
 }
 
 static int get_qcn_type(void)
@@ -1101,6 +1116,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case dual_sim:
 		get_dual_sim();
+		break;
+	case band_id:
+		get_band_id();
 		break;
 	case board_id:
 		get_version_id();
