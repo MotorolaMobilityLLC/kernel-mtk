@@ -433,9 +433,20 @@ static int aw8624_haptic_play_mode(struct aw8624 *aw8624, unsigned char play_mod
 
 static int aw8624_haptic_play_go(struct aw8624 *aw8624, bool flag)
 {
+    pr_debug("%s enter\n", __func__);
+    if (!flag) {
+       do_gettimeofday(&aw8624->current_time);
+        aw8624->interval_us = (aw8624->current_time.tv_sec-aw8624->pre_enter_time.tv_sec) * 1000000
+          + (aw8624->current_time.tv_usec-aw8624->pre_enter_time.tv_usec);
+       if (aw8624->interval_us < 2000) {
+           pr_info("aw8624->interval_us t=%d\n",aw8624->interval_us);
+           mdelay(2);
+       }
+    }
     if(flag == true) {
         aw8624_i2c_write_bits(aw8624, AW8624_REG_GO,
             AW8624_BIT_GO_MASK, AW8624_BIT_GO_ENABLE);
+        do_gettimeofday(&aw8624->pre_enter_time);
     } else {
         aw8624_i2c_write_bits(aw8624, AW8624_REG_GO,
             AW8624_BIT_GO_MASK, AW8624_BIT_GO_DISABLE);
@@ -452,8 +463,8 @@ static int aw8624_haptic_stop_delay(struct aw8624 *aw8624)
     aw8624_i2c_read(aw8624, AW8624_REG_GLB_STATE, &reg_val);
     if((reg_val&0x0f) == 0x00) {
         return 0;
-    msleep(2);
     }
+    msleep(2);
 
     pr_info("%s wait for standby, reg glb_state=0x%02x\n",
         __func__, reg_val);

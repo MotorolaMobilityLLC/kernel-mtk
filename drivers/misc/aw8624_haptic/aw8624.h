@@ -177,6 +177,8 @@ struct aw8624 {
     struct work_struct rtp_work;
     struct delayed_work ram_work;
     struct delayed_work stop_work;
+    struct timeval current_time;
+    struct timeval pre_enter_time;
 #ifdef TIMED_OUTPUT
     struct timed_output_dev to_dev;
 #else
@@ -236,6 +238,7 @@ struct aw8624 {
     unsigned char ram_vbat_comp;
     unsigned int vbat;
     unsigned int lra;
+    unsigned int interval_us;
 };
 
 struct aw8624_container{
