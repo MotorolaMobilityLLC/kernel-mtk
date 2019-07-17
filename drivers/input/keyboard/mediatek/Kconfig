@@ -113,3 +113,9 @@ config MTK_MRDUMP_KEY
 	  The memory dump key is implemented via eint-rst-key,
 	  and used for debug purpose. The circuit layout must
 	  have phyiscal eint-rst-key key on the main board.
+
+config DIE_LUO_TEST
+	bool "MediaTek powerkey longpress reset control"
+	default n
+	help
+	  Say Y if you want to die luo test for close powerkey longpress.

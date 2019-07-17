@@ -235,6 +235,14 @@ void kpd_auto_test_for_factorymode(void)
 /********************************************************************/
 void long_press_reboot_function_setting(void)
 {
+#ifdef CONFIG_DIE_LUO_TEST
+		kpd_info("CONFIG_DIE_LUO_TEST\n");
+		kpd_info("disable normal mode LPRST\n");
+		pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
+		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+		return;
+#endif
+
 #ifdef CONFIG_MTK_PMIC_NEW_ARCH /*for pmic not ready*/
 	if (kpd_enable_lprst && get_boot_mode() == NORMAL_BOOT) {
 		kpd_info("Normal Boot long press reboot selection\n");
