@@ -420,6 +420,12 @@
 		reg = <0x60>;
 		status = "okay";
 	};
+    
+	camera_main_eeprom@50 {
+		compatible = "mediatek,camera_main_eeprom";
+		reg = <0x50>;
+	};
+    
 };
 
 /* UART GPIO */
