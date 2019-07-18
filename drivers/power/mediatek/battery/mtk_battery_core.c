@@ -1355,22 +1355,22 @@ void fg_custom_init_from_dts(struct platform_device *dev)
 		}
 
 		fg_table_cust_data.fg_profile[0].q_max=
-			fg_table_cust_data.fg_profile[0].fg_profile[fg_table_cust_data.fg_profile[0].size-1].mah;
+			fg_table_cust_data.fg_profile[0].fg_profile[fg_table_cust_data.fg_profile[0].size-1].mah/10;
 		fg_table_cust_data.fg_profile[1].q_max=
-			fg_table_cust_data.fg_profile[1].fg_profile[fg_table_cust_data.fg_profile[1].size-1].mah;
+			fg_table_cust_data.fg_profile[1].fg_profile[fg_table_cust_data.fg_profile[1].size-1].mah/10;
 		fg_table_cust_data.fg_profile[2].q_max=
-			fg_table_cust_data.fg_profile[2].fg_profile[fg_table_cust_data.fg_profile[2].size-1].mah;
+			fg_table_cust_data.fg_profile[2].fg_profile[fg_table_cust_data.fg_profile[2].size-1].mah/10;
 		fg_table_cust_data.fg_profile[3].q_max=
-			fg_table_cust_data.fg_profile[3].fg_profile[fg_table_cust_data.fg_profile[3].size-1].mah;
+			fg_table_cust_data.fg_profile[3].fg_profile[fg_table_cust_data.fg_profile[3].size-1].mah/10;
 
 		fg_table_cust_data.fg_profile[0].q_max_h_current=
-			fg_table_cust_data.fg_profile[0].fg_profile[fg_table_cust_data.fg_profile[0].size-2].mah;
+			fg_table_cust_data.fg_profile[0].fg_profile[fg_table_cust_data.fg_profile[0].size-2].mah/10;
 		fg_table_cust_data.fg_profile[1].q_max_h_current=
-			fg_table_cust_data.fg_profile[1].fg_profile[fg_table_cust_data.fg_profile[1].size-2].mah;
+			fg_table_cust_data.fg_profile[1].fg_profile[fg_table_cust_data.fg_profile[1].size-2].mah/10;
 		fg_table_cust_data.fg_profile[2].q_max_h_current=
-			fg_table_cust_data.fg_profile[2].fg_profile[fg_table_cust_data.fg_profile[2].size-2].mah;
+			fg_table_cust_data.fg_profile[2].fg_profile[fg_table_cust_data.fg_profile[2].size-2].mah/10;
 		fg_table_cust_data.fg_profile[3].q_max_h_current=
-			fg_table_cust_data.fg_profile[3].fg_profile[fg_table_cust_data.fg_profile[3].size-2].mah;
+			fg_table_cust_data.fg_profile[3].fg_profile[fg_table_cust_data.fg_profile[3].size-2].mah/10;
 		
 	}
 }
