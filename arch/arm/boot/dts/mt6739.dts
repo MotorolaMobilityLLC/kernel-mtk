@@ -2552,3 +2552,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 #if defined(CONFIG_TRUSTKERNEL_TEE_SUPPORT) && defined(CONFIG_FPSENSOR_FINGERPRINT)
 #include "mt6739_fpsensor.dtsi"
 #endif
+
+#if defined(CONFIG_TRUSTKERNEL_TEE_SUPPORT) && defined(CONFIG_FOCALTECH_FINGERPRINT)
+#include "mt6739_focaltech.dtsi"
+#endif
