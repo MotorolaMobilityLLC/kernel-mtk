@@ -21,11 +21,15 @@
 #include <linux/atomic.h>
 #include <linux/types.h>
 
+#include <linux/slab.h>
+
 #include "hi556mipiraw_Sensor.h"
 
-#define PFX "hi556_camera_sensor"
-#define LOG_INF(format, args...)    \
-	pr_debug(PFX "[%s] " format, __func__, ##args)
+#define PFX "hi556mipiraw_Sensor.c"
+
+#define LOG_INF(fmt, args...)	pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+//#define LOG_INF(fmt, args...)	pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+
 #define HI556_OTP
 #ifdef HI556_OTP
 int hi556_otp_flag=0;
@@ -1603,6 +1607,120 @@ static void read_hi556_otp(void)
 	write_cmos_sensor_8(0x003e,0x00);
 	write_cmos_sensor_8(0x0a00,0x01);
 }
+
+static u8 * ontim_read_otp(void)
+{
+    u8 * pu1Params = NULL;
+    u8 * p_dummy = NULL;
+    int i = 0;
+    int otp_flag=0, start_addr=0;
+    int awb_flag=0, awb_start_addr=0;
+	int data[17]={0};
+	int data_awb[30]={0};
+    
+    pu1Params = kmalloc(18+31, GFP_KERNEL);
+    p_dummy = pu1Params;
+    if (pu1Params == NULL)
+    {
+        pr_err(PFX"[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+        __FUNCTION__, __LINE__);
+        return NULL;
+    }
+    
+    
+    
+	write_cmos_sensor_8(0x0a02,0x01);
+	write_cmos_sensor_8(0x0a00,0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x0f02,0x00);
+	write_cmos_sensor_8(0x011a,0x01);
+	write_cmos_sensor_8(0x011b,0x09);
+	write_cmos_sensor_8(0x0d04,0x01);
+	write_cmos_sensor_8(0x0d00,0x07);
+	write_cmos_sensor_8(0x003e,0x10);
+	write_cmos_sensor_8(0x0a00,0x01);
+
+// ----------------------------  module info   ----------------------------
+	write_cmos_sensor_8(0x010a,((0x0401)>>8)&0xff);
+	write_cmos_sensor_8(0x010b,(0x0401)&0xff);
+	write_cmos_sensor_8(0x0102,0x01);
+	otp_flag=read_cmos_sensor(0x0108);
+	LOG_INF("otp_flag=0x%x\n", otp_flag);
+	if(otp_flag==0x01)
+		start_addr=0x0402;
+	else if (otp_flag==0x13)
+		start_addr=0x0413;
+	else if(otp_flag==0x37)
+		start_addr=0x0424;
+	else
+    {
+        pr_err(PFX"[%s](%d)  error  no otp data \n", 
+        __FUNCTION__,__LINE__);
+        kfree(pu1Params);
+        return NULL;
+    }
+    *pu1Params = otp_flag;
+    pu1Params++;
+	if(start_addr!=0)
+    {
+		write_cmos_sensor_8(0x010a,((start_addr)>>8)&0xff);
+		write_cmos_sensor_8(0x010b,(start_addr)&0xff);
+		write_cmos_sensor_8(0x0102,0x01);
+		for(i=0; i<17; i++)
+		{
+			data[i]=read_cmos_sensor(0x0108);
+            *pu1Params = data[i];
+            pu1Params++;
+            LOG_INF("  data[%d]=0x%x  \n", i, data[i]);
+		}
+    }
+// ----------------------------  module info   end ----------------------------
+
+// ---------------------------- awb ----------------------------
+	write_cmos_sensor_8(0x010a,((0x0435)>>8)&0xff);
+	write_cmos_sensor_8(0x010b,(0x0435)&0xff);
+	write_cmos_sensor_8(0x0102,0x01);
+	awb_flag=read_cmos_sensor(0x0108);
+	if(awb_flag==0x01)
+		awb_start_addr=0x0436;
+	else if (awb_flag==0x13)
+		awb_start_addr=0x0454;
+	else if(awb_flag==0x37)
+		awb_start_addr=0x0472;
+	else
+    {
+        pr_err(PFX"[%s](%d)  error  no awb otp data \n", 
+        __FUNCTION__,__LINE__);
+        kfree(pu1Params);
+        return NULL;
+    }
+    *pu1Params = awb_flag;
+    pu1Params++;
+
+	if(awb_flag!=0)
+	{
+		write_cmos_sensor_8(0x010a,((awb_start_addr)>>8)&0xff);
+		write_cmos_sensor_8(0x010b,(awb_start_addr)&0xff);
+		write_cmos_sensor_8(0x0102,0x01);
+		for(i=0; i<30; i++)
+		{
+			data_awb[i]=read_cmos_sensor(0x0108);
+            *pu1Params = data_awb[i];
+            pu1Params++;
+            LOG_INF("  data_awb[%d]=0x%x  \n", i, data_awb[i]);
+		}
+    }
+// ---------------------------- awb end ---------------------------- 
+
+	write_cmos_sensor_8(0x0a00,0x00);
+	mdelay(10);
+	write_cmos_sensor_8(0x003e,0x00);
+	write_cmos_sensor_8(0x0a00,0x01);
+
+    return p_dummy;
+}
+
+
 static void apply_hi556_otp(void)
 {
 	int RG_unit,BG_unit,RG_golden,BG_golden;
@@ -1724,16 +1842,27 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
 
+#ifdef HI556_OTP
+     u8 * p_buf = NULL;
+#endif
+    
+    
 	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
 		imgsensor.i2c_write_id = imgsensor_info.i2c_addr_table[i];
 		spin_unlock(&imgsensor_drv_lock);
 		do {
 			*sensor_id = return_sensor_id();
-			if (*sensor_id == imgsensor_info.sensor_id) {
+			if (*sensor_id == imgsensor_info.sensor_id) 
+            {
                 memset(front_cam_name, 0x00, sizeof(front_cam_name));
                 memcpy(front_cam_name, "1_hi556", 64);
-                pr_err("hi556mipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+#ifdef HI556_OTP
+                sensor_init();
+                p_buf = ontim_read_otp();
+                ontim_get_otp_data(*sensor_id, p_buf, 18+31);
+#endif
+                pr_err(PFX"[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
                 return ERROR_NONE;
 			}

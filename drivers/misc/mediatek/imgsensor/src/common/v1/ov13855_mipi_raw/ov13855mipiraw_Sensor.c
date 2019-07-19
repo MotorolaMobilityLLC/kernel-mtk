@@ -48,8 +48,9 @@
 #include "kd_imgsensor_errcode.h"
 #include "ov13855mipiraw_Sensor.h"
 
-#define PFX "OV13855_camera_sensor"
-#define LOG_INF(fmt, args...)   pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+#define PFX "ov13855mipiraw_Sensor.c"
+#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+//#define LOG_INF(fmt, args...)   pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
 
 
 
@@ -918,6 +919,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             if (*sensor_id == imgsensor_info.sensor_id) {
                 memset(back_cam_name, 0x00, sizeof(back_cam_name));
                 memcpy(back_cam_name, "0_ov13855",64);
+                
+                ontim_get_otp_data(*sensor_id, NULL, 0);
+                
 				pr_err("ov13855mipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
                 return ERROR_NONE;

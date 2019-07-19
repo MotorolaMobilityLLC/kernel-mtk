@@ -35,7 +35,7 @@
 #include <linux/compat.h>
 #endif
 
-
+#include "kd_imgsensor.h"
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -751,6 +751,162 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	return 0;
 }
+
+
+int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
+{
+
+    const char * str_ov13855_path = "/data/vendor/camera_dump/sunwin_ov13855.data";
+    const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
+    const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
+    const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
+    const char * str_dump_path = NULL;
+    
+	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+	u32 u4Offset;
+	u32 u4Length;
+	u8 *pu1Params = NULL;
+	int i4RetValue = 0;
+    
+	static mm_segment_t oldfs;
+	struct file *fp;
+	loff_t pos;
+    
+    
+    switch(sensorid)
+    {
+        case OV13855_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
+            str_dump_path = str_ov13855_path;
+            break;
+        }
+        
+        case S5K3L6_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
+            str_dump_path = str_s5k3l6_path;
+            break;
+        }
+        
+        case S5K5E9YX_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_s5k5e9_path;
+            break;
+        }    
+        
+        case HI556_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_hi556_path;
+            break;
+        }
+        
+        default:
+            pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
+            __FUNCTION__, __LINE__,  sensorid);
+            if(p_buf != NULL)
+            {
+				kfree(p_buf);
+            }
+            return -1;
+    }
+    
+    
+    
+    if((sensorid == OV13855_SENSOR_ID) ||
+       (sensorid == S5K3L6_SENSOR_ID))
+   {
+		pu1Params = kmalloc(u4Length, GFP_KERNEL);
+		if (pu1Params == NULL) 
+        {
+            pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+            __FUNCTION__, __LINE__);
+            return -1;
+        }
+        
+		pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
+		if (pcmdInf != NULL && g_lastDevID != 1)
+        {
+			if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+            {
+				pr_debug("deviceID Error!\n");
+				kfree(pu1Params);
+				return -1;
+			}
+			g_lastDevID = 1;
+		}
+
+		if (pcmdInf != NULL) 
+        {
+			if (pcmdInf->readCMDFunc != NULL)
+            {
+                i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
+                u4Offset,
+                pu1Params,
+                u4Length);
+                pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
+                __FUNCTION__, __LINE__, i4RetValue);
+                
+                pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
+                __FUNCTION__, __LINE__, 
+                *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
+
+            }
+			else
+            {
+                pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",
+                __FUNCTION__, __LINE__);
+				kfree(pu1Params);
+				return -1;
+			}
+		}
+   }
+    
+    
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+    if (IS_ERR(fp))
+    {
+        pr_err("eeprom_driver.c[%s](%d)file open %s error",
+         __FUNCTION__, __LINE__, str_dump_path);
+    }
+    else
+    {
+        pos = 0;
+        vfs_write(fp, pu1Params, u4Length, &pos);
+        filp_close(fp, NULL);
+    }
+    set_fs(oldfs);
+    
+    kfree(pu1Params);
+    
+    
+    
+    return 0;
+}
+
+
+
+
 
 static const struct file_operations g_stCAM_CAL_fops1 = {
 	.owner = THIS_MODULE,

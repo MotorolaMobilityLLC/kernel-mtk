@@ -28,6 +28,8 @@
 #include <asm/atomic.h>
 //#include <asm/system.h>
 //#include <linux/xlog.h>
+#include <linux/slab.h>
+
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -39,8 +41,8 @@
 /****************************Modify following Strings for debug****************************/
 #define PFX "s5k5e9yxmipiraw_Sensor.c"
 
-//#define LOG_INF(fmt, args...)	pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
-#define LOG_INF(fmt, args...)	pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+#define LOG_INF(fmt, args...)	pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+//#define LOG_INF(fmt, args...)	pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
 
 
 #define LOG_1 LOG_INF("s5k5e9yx,MIPI 2LANE\n")
@@ -371,7 +373,40 @@ static void s5k5e9_read_from_otp(void)
     s5k5e9_read_otp(&current_5e9_otp);
 }
 
-
+static u8 * ontim_read_otp(void)
+{
+    u8 * pu1Params = NULL;
+    u8 * p_dummy = NULL;
+    int i = 0, page = 0;
+    
+    pu1Params = kmalloc(13*64, GFP_KERNEL);
+    p_dummy = pu1Params;
+    if (pu1Params == NULL)
+    {
+        pr_err(PFX"[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+        __FUNCTION__, __LINE__);
+        return NULL;
+    }
+    for(page=1; page<13; page++)
+    {
+        s5k5e9_start_read_otp(page);
+        for(i=0; i<64; i++)
+        {
+            *pu1Params = read_cmos_sensor(0x0A04 + i);
+            pu1Params++;
+        }
+    }
+    
+    s5k5e9_start_read_otp(17);
+    for(i=0; i<64; i++)
+    {
+        *pu1Params = read_cmos_sensor(0x0A04 + i);
+        pu1Params++;
+    }
+    
+    s5k5e9_stop_read_otp();
+    return p_dummy;
+}
 
 
 static void s5k5e9_apply_otp_wb(struct s5k5e9_otp_struct *otp)
@@ -1280,6 +1315,11 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
 	kal_uint8 i = 0;
 	kal_uint8 retry = 2;
+    
+#ifdef S5K5E9_OTP_ENABLE
+    u8 * p_buf = NULL;
+#endif
+
 	//sensor have two i2c address 0x5a, we should detect the module used i2c address
 	while(imgsensor_info.i2c_addr_table[i] != 0xff) {
 		spin_lock(&imgsensor_drv_lock);
@@ -1298,6 +1338,8 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                   LOG_INF("find SUNRISE, s5k5e9.\n");
               }
               
+                p_buf = ontim_read_otp();
+                ontim_get_otp_data(*sensor_id, p_buf, 13*64);
               
               //if(HLT_MODULE_ID == current_5e9_otp.mid) {
               //strcpy(camera_f_info,"5M-Camera S5K5E9-HOLITECH"); //module info: HLT
@@ -1313,12 +1355,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
             
                 memset(front_cam_name, 0x00, sizeof(front_cam_name));
                 memcpy(front_cam_name, "1_s5k5e9yx", 64); 
-				pr_err("s5k5e9[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err(PFX"[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 				return ERROR_NONE;
 			}	
 
-            pr_err("s5k5e9yxmipiraw_Sensor.c[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+            pr_err(PFX"[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
             __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
 			retry--;
 		} while(retry > 0);
@@ -1368,11 +1410,11 @@ static kal_uint32 open(void)
 		do {
 			sensor_id = return_sensor_id();
 			if (sensor_id == imgsensor_info.sensor_id) {				
-				pr_err("s5k5e9[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err(PFX"[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id); 
 				break;
 			}	
-				pr_err("s5k5e9[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
+				pr_err(PFX"[%s](%d)    match  fail    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  sensor_id, imgsensor_info.sensor_id); 
 			retry--;
 		} while(retry > 0);

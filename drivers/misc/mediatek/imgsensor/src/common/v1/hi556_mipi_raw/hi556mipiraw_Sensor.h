@@ -154,4 +154,6 @@ extern int iBurstWriteReg(u8 *pData, u32 bytes, u16 i2cId);
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId,
 	u16 transfer_length, u16 timing);
 
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+    
 #endif
