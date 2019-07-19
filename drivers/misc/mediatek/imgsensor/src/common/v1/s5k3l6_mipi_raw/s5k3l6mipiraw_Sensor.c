@@ -59,7 +59,8 @@
 
 /****************************Modify Following Strings for Debug****************************/
 #define PFX "s5k3l6mipiraw_Sensor.c"
-#define LOG_INF(format, args...)    pr_err(PFX "[%s](%d) " format, __FUNCTION__, __LINE__, ##args)
+#define LOG_INF(format, args...)    pr_debug(PFX "[%s](%d) " format, __FUNCTION__, __LINE__, ##args)
+//#define LOG_INF(format, args...)    pr_err(PFX "[%s](%d) " format, __FUNCTION__, __LINE__, ##args)
 #define LOG_1 LOG_INF("S5K3l6,MIPI 4LANE\n")
 #define SENSORDB LOG_INF
 /****************************   Modify end    *******************************************/
@@ -1189,6 +1190,9 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 #ifdef CONFIG_MTK_CAM_CAL
 		//read_imx135_otp_mtk_fmt();
 #endif
+
+                ontim_get_otp_data(*sensor_id, NULL, 0);
+                
 				pr_err("s5k3l6mipiraw_Sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                 __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
                 return ERROR_NONE;

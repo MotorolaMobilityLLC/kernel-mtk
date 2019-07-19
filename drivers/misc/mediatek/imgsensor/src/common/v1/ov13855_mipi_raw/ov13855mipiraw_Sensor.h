@@ -152,4 +152,7 @@ extern int iWriteRegI2CTiming(u8 *a_pSendData , u16 a_sizeSendData, u16 i2cId, u
 extern int iBurstWriteReg_multi(u8 *pData, u32 bytes, u16 i2cId, u16 transfer_length, u16 timing);
 extern bool read_ov13855_eeprom( kal_uint16 addr, unsigned char * data, kal_uint32 size);
 extern void kdSetI2CSpeed(u16 i2cSpeed);
+
+extern int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
+
 #endif 
