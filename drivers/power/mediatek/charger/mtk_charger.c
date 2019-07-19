@@ -1234,7 +1234,6 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 		chr_err("[BATTERY] bat_temp(%d) out of range(too high)\n",
 			info->battery_temperature);
 	}
-#endif
 	if (info->enable_sw_jeita == true) {
 		if (info->battery_temperature < info->data.temp_neg_10_threshold) {
 			info->notify_code |= 0x0020;
@@ -1250,6 +1249,9 @@ static void mtk_battery_notify_VBatTemp_check(struct charger_manager *info)
 		}
 #endif
 	}
+
+#endif
+
 #endif
 }
 
