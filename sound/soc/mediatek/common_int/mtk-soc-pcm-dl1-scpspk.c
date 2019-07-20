@@ -811,7 +811,7 @@ static int mtk_pcm_dl1spk_prepare(struct snd_pcm_substream *substream)
 	payloadlen =
 		spkproc_ipi_pack_payload(SPK_PROTECT_PREPARE, 0, 0,
 					 NULL, substream);
-	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_BYPASS_ACK,
+	spkproc_service_ipicmd_send(AUDIO_IPI_PAYLOAD, AUDIO_IPI_MSG_NEED_ACK,
 				    SPK_PROTECT_PREPARE, payloadlen,
 				    dl1spk_prepare_count,
 				    (char *)spkproc_ipi_get_payload());
