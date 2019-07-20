@@ -1275,7 +1275,7 @@ static int dpmaif_rx_start(struct dpmaif_rx_queue *rxq, unsigned short pit_cnt,
 				notify_hw.frag_cnt++;
 			}
 #endif
-			if (pkt_inf_t->c_bit == 0 && rxq->skb_idx != -1) {
+			if (pkt_inf_t->c_bit == 0) {
 				/* last one, not msg pit, && data had rx. */
 				ret = dpmaif_send_skb_to_net(rxq,
 					rxq->skb_idx);
