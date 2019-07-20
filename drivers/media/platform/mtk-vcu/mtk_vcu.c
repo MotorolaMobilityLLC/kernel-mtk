@@ -1210,6 +1210,8 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 			mem_buff_data.va = (uint64_t)mem_priv;
 			mem_buff_data.iova = 0;
 			tmp = kmalloc(sizeof(struct vcu_pa_pages), GFP_KERNEL);
+			if (!tmp)
+				return -ENOMEM;
 			tmp->pa = temp_pa;
 			list_add_tail(&tmp->list, &vcu_dev->pa_pages.list);
 		}
