@@ -42,7 +42,6 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include <linux/module.h>
 #include <linux/slab.h>
-#include <linux/string.h>
 
 #include <pvr_debugfs.h>
 #include <hash.h>
@@ -651,11 +650,7 @@ int PVRDebugFSCreateFile(const char *pszName,
 
 	uiMode = S_IFREG;
 
-	if(!strcmp(pszName, "driver_stats") || !strcmp(pszName, "memtrack_stats")){
-		uiMode |= S_IRUGO;
-	}
-
-	if (psReadOps != NULL)
+	if (psReadOps != NULL || pfnStatsPrint != NULL)
 	{
 		uiMode |= S_IRUGO;
 	}
