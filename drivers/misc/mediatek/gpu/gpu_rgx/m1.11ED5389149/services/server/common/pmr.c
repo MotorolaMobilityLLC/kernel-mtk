@@ -455,6 +455,11 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 
 	PVR_ASSERT(psPMR != NULL);
 
+	if(psPMR->psFuncTab->pfnGetPMRFactoryLock)
+	{
+		psPMR->psFuncTab->pfnGetPMRFactoryLock();
+	}
+
 	iRefCount = _Unref(psPMR);
 
 	if (iRefCount == 0)
@@ -478,6 +483,10 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 			 * */
 			if (PVRSRV_ERROR_PMR_STILL_REFERENCED == eError2)
 			{
+				if(psPMR->psFuncTab->pfnReleasePMRFactoryLock)
+				{
+					psPMR->psFuncTab->pfnReleasePMRFactoryLock();
+				}
 				return;
 			}
 			PVR_ASSERT (eError2 == PVRSRV_OK); /* can we do better? */
@@ -527,6 +536,11 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 
 		OSLockDestroy(psPMR->hLock);
 
+		if(psPMR->psFuncTab->pfnReleasePMRFactoryLock)
+		{
+			psPMR->psFuncTab->pfnReleasePMRFactoryLock();
+		}
+
 		OSFreeMem(psPMR);
 
 		/* Decrement live PMR count.  Probably only of interest for debugging */
@@ -535,6 +549,13 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 		OSLockAcquire(psCtx->hLock);
 		psCtx->uiNumLivePMRs --;
 		OSLockRelease(psCtx->hLock);
+	}
+	else
+	{
+		if(psPMR->psFuncTab->pfnReleasePMRFactoryLock)
+		{
+			psPMR->psFuncTab->pfnReleasePMRFactoryLock();
+		}
 	}
 }
 

@@ -496,6 +496,9 @@ typedef PVRSRV_ERROR (*PFN_MMAP_FN)(PMR_IMPL_PRIVDATA pPriv,
 /*****************************************************************************/
 typedef PVRSRV_ERROR (*PFN_FINALIZE_FN)(PMR_IMPL_PRIVDATA pvPriv);
 
+typedef void (*PFN_ACQUIRE_PMR_FACTORY_LOCK)(void);
+typedef void (*PFN_RELEASE_PMR_FACTORY_LOCK)(void);
+
 /*! PMR factory callback table.
  */
 struct _PMR_IMPL_FUNCTAB_ {
@@ -550,6 +553,8 @@ struct _PMR_IMPL_FUNCTAB_ {
 
     /*! Callback function pointer, see ::PFN_FINALIZE_FN */
     PFN_FINALIZE_FN pfnFinalize;
+    PFN_ACQUIRE_PMR_FACTORY_LOCK	pfnGetPMRFactoryLock;
+    PFN_RELEASE_PMR_FACTORY_LOCK	pfnReleasePMRFactoryLock;
 };
 
 /*! PMR factory callback table.

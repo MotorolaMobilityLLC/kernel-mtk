@@ -189,7 +189,7 @@ static PVRSRV_ERROR PMRFinalizeDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 	PMR *psPMR;
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-	mutex_lock(&g_HashLock);
+//	mutex_lock(&g_HashLock);
 
 	if (psDmaBuf->ops != &sPVRDmaBufOps)
 	{
@@ -228,7 +228,7 @@ static PVRSRV_ERROR PMRFinalizeDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 
 	if (PVRSRV_OK != eError)
 	{
-		mutex_unlock(&g_HashLock);
+//		mutex_unlock(&g_HashLock);
 		return eError;
 	}
 
@@ -286,12 +286,12 @@ exit:
 		eError = psPrivData->pfnDestroy(psPrivData->psPhysHeap, psPrivData->psAttachment);
 		if (eError != PVRSRV_OK)
 		{
-			mutex_unlock(&g_HashLock);
+		//	mutex_unlock(&g_HashLock);
 			return eError;
 		}
 	}
 
-	mutex_unlock(&g_HashLock);
+	//mutex_unlock(&g_HashLock);
 	OSFreeMem(psPrivData->pasDevPhysAddr);
 	OSFreeMem(psPrivData);
 
@@ -308,6 +308,16 @@ static PVRSRV_ERROR PMRUnlockPhysAddressesDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 {
 	PVR_UNREFERENCED_PARAMETER(pvPriv);
 	return PVRSRV_OK;
+}
+
+static void PMRGetFactoryLock(void)
+{
+	mutex_lock(&g_HashLock);
+}
+
+static void PMRReleaseFactoryLock(void)
+{
+	mutex_unlock(&g_HashLock);
 }
 
 static PVRSRV_ERROR PMRDevPhysAddrDmaBuf(PMR_IMPL_PRIVDATA pvPriv,
@@ -449,6 +459,8 @@ static PMR_IMPL_FUNCTAB _sPMRDmaBufFuncTab =
 	.pfnReleaseKernelMappingData	= PMRReleaseKernelMappingDataDmaBuf,
 	.pfnMMap			= PMRMMapDmaBuf,
 	.pfnFinalize			= PMRFinalizeDmaBuf,
+	.pfnGetPMRFactoryLock = PMRGetFactoryLock,
+	.pfnReleasePMRFactoryLock = PMRReleaseFactoryLock,
 };
 
 /*****************************************************************************
@@ -803,8 +815,8 @@ fail_dma_buf:
 	dma_buf_put(psDmaBuf);
 
 fail_pmr_ref:
-	PMRUnrefPMR(psPMR);
 	mutex_unlock(&g_HashLock);
+	PMRUnrefPMR(psPMR);
 
 	PVR_ASSERT(eError != PVRSRV_OK);
 	return eError;
