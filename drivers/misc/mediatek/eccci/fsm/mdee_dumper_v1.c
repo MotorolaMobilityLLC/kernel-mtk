@@ -18,6 +18,7 @@
 #include <mt-plat/aee.h>
 #endif
 #include "mdee_dumper_v1.h"
+#include "ccci_aee_handle.h"
 
 #ifndef DB_OPT_DEFAULT
 #define DB_OPT_DEFAULT    (0)	/* Dummy macro define to avoid build error */
@@ -92,20 +93,20 @@ static void ccci_aed_v1(struct ccci_fsm_ee *mdee, unsigned int dump_flag,
 	if (buff == NULL) {
 #if defined(CONFIG_MTK_AEE_FEATURE)
 		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
-			aed_md_exception_api(ex_log_addr, ex_log_len,
+			ccci_aed_md_exception_api(ex_log_addr, ex_log_len,
 				md_img_addr, md_img_len, buf_fail, db_opt);
 		else
-			aed_md_exception_api(NULL, 0, md_img_addr, md_img_len,
-				buf_fail, db_opt);
+			ccci_aed_md_exception_api(NULL, 0, md_img_addr,
+				md_img_len, buf_fail, db_opt);
 #endif
 	} else {
 #if defined(CONFIG_MTK_AEE_FEATURE)
 		if (md_dbg_dump_flag & (1 << MD_DBG_DUMP_SMEM))
-			aed_md_exception_api(ex_log_addr, ex_log_len,
+			ccci_aed_md_exception_api(ex_log_addr, ex_log_len,
 				md_img_addr, md_img_len, buff, db_opt);
 		else
-			aed_md_exception_api(NULL, 0, md_img_addr, md_img_len,
-				buff, db_opt);
+			ccci_aed_md_exception_api(NULL, 0, md_img_addr,
+				md_img_len, buff, db_opt);
 #endif
 		kfree(buff);
 	}

@@ -52,6 +52,7 @@
 #include "modem_reg_base.h"
 #include "ccci_fsm.h"
 #include "ccci_port.h"
+#include "ccci_aee_handle.h"
 
 #if defined(CCCI_SKB_TRACE)
 #undef TRACE_SYSTEM
@@ -2231,7 +2232,7 @@ static void dpmaif_irq_cb(struct hif_dpmaif_ctrl *hif_ctrl)
 	}
 #if 0/* def CONFIG_MTK_AEE_FEATURE */
 	if (hif_ctrl->traffic_info.isr_cnt > 20000) {
-		aed_md_exception_api(NULL, 0, NULL,
+		ccci_aed_md_exception_api(NULL, 0, NULL,
 			0, "DPMAIF isr > 20000\n",
 			DB_OPT_DEFAULT);
 	}

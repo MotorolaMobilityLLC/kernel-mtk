@@ -45,6 +45,8 @@
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
 #endif
+#include "ccci_aee_handle.h"
+
 #define ENABLE_MEM_SIZE_CHECK
 #define MAX_MD_NUM (6)		/* Max 4 internal + Max 2 exteranl */
 
@@ -248,7 +250,8 @@ static int check_md_header_v3(int md_id, void *parse_addr,
 							md_id + 1, image->size,
 							head->md_img_size);
 #if defined(CONFIG_MTK_AEE_FEATURE)
-						aed_md_exception_api(NULL, 0,
+						ccci_aed_md_exception_api(
+							NULL, 0,
 							(const int *)info,
 							sizeof(info),
 							(const char *)title,
@@ -525,7 +528,7 @@ static int md_check_header_parser(int md_id, void *parse_addr,
 						md_id + 1, image->size,
 						head->md_img_size);
 #if defined(CONFIG_MTK_AEE_FEATURE)
-					aed_md_exception_api(NULL, 0,
+					ccci_aed_md_exception_api(NULL, 0,
 						(const int *)info, sizeof(info),
 						(const char *)title,
 						DB_OPT_DEFAULT);
@@ -1011,7 +1014,7 @@ TRY_LOAD_IMG:
 			CCCI_UTIL_ERR_MSG_WITH_ID(md_id,
 			     "Try to load all md image failed:ret=%d!\n", ret);
 #if defined(CONFIG_MTK_AEE_FEATURE)
-			aed_md_exception_api(NULL, 0, NULL, 0,
+			ccci_aed_md_exception_api(NULL, 0, NULL, 0,
 				"Try to load all md image failed!",
 				DB_OPT_DEFAULT);
 #endif
