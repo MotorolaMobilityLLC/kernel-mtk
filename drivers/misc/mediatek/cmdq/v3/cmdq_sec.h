@@ -104,7 +104,6 @@ int32_t cmdq_sec_destroy_shared_memory(
  */
 typedef int32_t(*CmdqSecFillIwcCB) (int32_t, void *, int32_t, void *, void *);
 
-
 /*
  * Entry secure world to handle secure path jobs
  * .submit task
