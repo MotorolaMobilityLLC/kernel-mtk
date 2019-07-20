@@ -81,6 +81,11 @@
 #include <linux/netlink.h>
 #include <linux/tcp.h>
 
+#ifdef CONFIG_MTK_MIX_DEVICES
+void inject_mix_event(struct sk_buff *skb,
+		      struct net_device *dev,
+		      struct iphdr *iph);
+#endif
 
 /* Generate a checksum for an outgoing IP datagram. */
 void ip_send_check(struct iphdr *iph)
@@ -393,6 +398,13 @@ int ip_output(struct net *net, struct sock *sk, struct sk_buff *skb)
 
 	skb->dev = dev;
 	skb->protocol = htons(ETH_P_IP);
+
+#ifdef CONFIG_MTK_MIX_DEVICES
+	if (skb->sk && dev)
+		inject_mix_event(skb,
+				 dev,
+				 ip_hdr(skb));
+#endif
 
 	return NF_HOOK_COND(NFPROTO_IPV4, NF_INET_POST_ROUTING,
 			    net, sk, skb, NULL, dev,
