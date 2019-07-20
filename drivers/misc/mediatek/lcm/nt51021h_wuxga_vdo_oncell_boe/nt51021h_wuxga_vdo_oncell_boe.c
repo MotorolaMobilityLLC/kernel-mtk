@@ -129,7 +129,6 @@ static unsigned int GPIO_LCD_RST;
 static unsigned int GPIO_LCD_LED_EN;
 static unsigned int GPIO_LCD_PWR_ENP;
 static unsigned int GPIO_LCD_PWR_ENN;
-static unsigned int GPIO_LCD_CTP_RST;
 struct pinctrl *lcd_pinctrl1;
 struct pinctrl_state *lcd_disp_pwm;
 struct pinctrl_state *lcd_disp_pwm_gpio;
@@ -150,9 +149,6 @@ void lcm_request_gpio_control(struct device *dev)
 	GPIO_LCD_PWR_ENN = of_get_named_gpio(dev->of_node,
 		"gpio_lcd_pwr_enn", 0);
 	gpio_request(GPIO_LCD_PWR_ENN, "GPIO_LCD_PWR_ENN");
-	GPIO_LCD_CTP_RST = of_get_named_gpio(dev->of_node,
-		"gpio_lcd_ctp_rst", 0);
-	gpio_request(GPIO_LCD_CTP_RST, "GPIO_LCD_CTP_RST");
 
 	lcd_pinctrl1 = devm_pinctrl_get(dev);
 	if (IS_ERR(lcd_pinctrl1)) {
