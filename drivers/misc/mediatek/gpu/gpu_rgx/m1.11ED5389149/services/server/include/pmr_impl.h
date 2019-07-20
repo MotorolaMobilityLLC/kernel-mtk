@@ -496,8 +496,34 @@ typedef PVRSRV_ERROR (*PFN_MMAP_FN)(PMR_IMPL_PRIVDATA pPriv,
 /*****************************************************************************/
 typedef PVRSRV_ERROR (*PFN_FINALIZE_FN)(PMR_IMPL_PRIVDATA pvPriv);
 
-typedef void (*PFN_ACQUIRE_PMR_FACTORY_LOCK)(void);
-typedef void (*PFN_RELEASE_PMR_FACTORY_LOCK)(void);
+/*************************************************************************/ /*!
+@Brief          Callback function type PFN_ACQUIRE_PMR_FACTORY_LOCK_FN
+
+@Description    Called to acquire the PMR factory's global lock, if it has one,
+				hence callback optional. Factories which support entry points
+				in addition to the normal bridge calls, for example, from the
+				native OS that manipulate the PMR reference count should
+				create a factory lock and implementations for these call backs.
+
+				Implementation of this callback is optional.
+
+@Return			void.
+*/
+/*****************************************************************************/
+typedef void (*PFN_ACQUIRE_PMR_FACTORY_LOCK_FN)(void);
+
+/*************************************************************************/ /*!
+@Brief			Callback function type PFN_RELEASE_PMR_FACTORY_LOCK_FN
+
+@Description	Called to release the PMR factory's global lock acquired by calling
+				pfn_acquire_pmr_factory_lock callback.
+
+				Implementation of this callback is optional.
+
+@Return			void.
+*/
+/*****************************************************************************/
+typedef void (*PFN_RELEASE_PMR_FACTORY_LOCK_FN)(void);
 
 /*! PMR factory callback table.
  */
@@ -553,8 +579,12 @@ struct _PMR_IMPL_FUNCTAB_ {
 
     /*! Callback function pointer, see ::PFN_FINALIZE_FN */
     PFN_FINALIZE_FN pfnFinalize;
-    PFN_ACQUIRE_PMR_FACTORY_LOCK	pfnGetPMRFactoryLock;
-    PFN_RELEASE_PMR_FACTORY_LOCK	pfnReleasePMRFactoryLock;
+
+    /*! Callback function pointer, see ::PFN_ACQUIRE_PMR_FACTORY_LOCK_FN */
+    PFN_ACQUIRE_PMR_FACTORY_LOCK_FN	pfnGetPMRFactoryLock;
+
+    /*! Callback function pointer, see ::PFN_RELEASE_PMR_FACTORY_LOCK_FN */
+    PFN_RELEASE_PMR_FACTORY_LOCK_FN	pfnReleasePMRFactoryLock;
 };
 
 /*! PMR factory callback table.

@@ -455,6 +455,7 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 
 	PVR_ASSERT(psPMR != NULL);
 
+	/* Acquire PMR factory lock if provided */
 	if(psPMR->psFuncTab->pfnGetPMRFactoryLock)
 	{
 		psPMR->psFuncTab->pfnGetPMRFactoryLock();
@@ -536,6 +537,7 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 
 		OSLockDestroy(psPMR->hLock);
 
+		/* Release PMR factory lock acquired if any */
 		if(psPMR->psFuncTab->pfnReleasePMRFactoryLock)
 		{
 			psPMR->psFuncTab->pfnReleasePMRFactoryLock();
@@ -552,6 +554,7 @@ _UnrefAndMaybeDestroy(PMR *psPMR)
 	}
 	else
 	{
+		/* Release PMR factory lock acquired if any */
 		if(psPMR->psFuncTab->pfnReleasePMRFactoryLock)
 		{
 			psPMR->psFuncTab->pfnReleasePMRFactoryLock();
