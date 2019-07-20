@@ -1119,9 +1119,7 @@ static long vpu_ioctl(struct file *flip, unsigned int cmd, unsigned long arg)
 		if (req->priority >= VPU_REQ_MAX_NUM_PRIORITY) {
 			LOG_ERR("%s: ENQUE: invalid priority (%d)\n",
 				__func__, req->priority);
-			vpu_free_request(req);
-			ret = -EINVAL;
-			goto out;
+			req->priority = 0;
 		}
 
 		/*opp_step counted by vpu driver*/
