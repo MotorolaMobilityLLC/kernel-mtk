@@ -81,6 +81,10 @@ typedef int (*ipi_handler_t)(void *data,
  *                      handle RV40 video decoder job, and vice versa.
  *                      Decode output format is always MT21 no matter what
  *                      the input format is.
+ * @IPI_VDEC_AV1:       The interrupt from vcu is to notify kernel to
+ *                      handle AV1 video decoder job, and vice versa.
+ *                      Decode output format is always MT21 no matter what
+ *                      the input format is.
  * @IPI_VENC_COMMON:    The interrupt from vcu is to notify kernel to
  *                      handle video codecs job, and vice versa.
  * @IPI_VENC_H264:      The interrupt from vcu is to notify kernel to
@@ -119,6 +123,7 @@ enum ipi_id {
 	IPI_VDEC_WMV,
 	IPI_VDEC_RV30,
 	IPI_VDEC_RV40,
+	IPI_VDEC_AV1,
 	IPI_VENC_COMMON,
 	IPI_VENC_H264,
 	IPI_VENC_H265,
