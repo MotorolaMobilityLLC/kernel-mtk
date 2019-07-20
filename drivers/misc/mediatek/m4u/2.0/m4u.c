@@ -1858,11 +1858,12 @@ int m4u_sec_init(void)
 	if (ret < 0) {
 		m4u_sec_context_deinit();
 		M4UMSG("deinit sec context %d\n", ret);
+		m4u_tee_en = 0;
 		return ret;
 	}
 
 	/* don't deinit ta because of multiple init operation */
-
+	M4UMSG("%s:normal init done\n", __func__);
 	return 0;
 }
 
