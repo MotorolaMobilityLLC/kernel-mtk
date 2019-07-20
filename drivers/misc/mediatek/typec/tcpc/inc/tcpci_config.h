@@ -393,8 +393,10 @@
  * TypeC Shield Protection
  **********************************************************/
 
+#ifdef CONFIG_MTK_TYPEC_WATER_DETECT
+#define CONFIG_WATER_DETECTION
+#endif /* CONFIG_MTK_TYPEC_WATER_DETECT */
 
-/* #define CONFIG_WATER_DETECTION */
 #ifdef CONFIG_WATER_DETECTION
 #define CONFIG_WD_SBU_POLLING
 /* #define CONFIG_WATER_CALIBRATION */
@@ -402,8 +404,10 @@
 #define CONFIG_WD_SBU_PL_BOUND		200 /* mV */
 #define CONFIG_WD_SBU_PH_AUDDEV		200 /* mV */
 #define CONFIG_WD_SBU_PH_LBOUND		1200 /* mV */
-#define CONFIG_WD_SBU_PH_UBOUND_C2C	3800 /* mV */
-#define CONFIG_WD_SBU_AUD_UBOUND	1500 /* mV */
+#define CONFIG_WD_SBU_PH_LBOUND1_C2C	2850 /* mV */
+#define CONFIG_WD_SBU_PH_UBOUND1_C2C	3150 /* mV */
+#define CONFIG_WD_SBU_PH_UBOUND2_C2C	3800 /* mV */
+#define CONFIG_WD_SBU_AUD_UBOUND	1600 /* mV */
 #define CONFIG_WD_PROTECT_RETRY_COUNT	3
 #endif /* CONFIG_WATER_DETECTION */
 

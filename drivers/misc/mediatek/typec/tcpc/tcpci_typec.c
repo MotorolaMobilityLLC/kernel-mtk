@@ -2777,7 +2777,7 @@ out:
 	}
 	return ret;
 }
-#endif	/* CONFIG_WATER_DETECTION */
+#endif /* CONFIG_WATER_DETECTION */
 
 #ifdef CONFIG_CABLE_TYPE_DETECTION
 int tcpc_typec_handle_ctd(struct tcpc_device *tcpc_dev,

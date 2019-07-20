@@ -209,6 +209,7 @@ enum mt6360_id_rupsel {
  * MT6360_REG_MT_MASK1				(0x91)
  */
 
+#define MT6360_M_VCONN_SHT_GND			BIT(3)
 #define MT6360_M_VBUS_SAFE0V			BIT(1)
 #define MT6360_M_WAKEUP				BIT(0)
 
@@ -218,6 +219,11 @@ enum mt6360_id_rupsel {
 
 #define MT6360_M_WD_ONESHOT_EVT			BIT(7)
 #define MT6360_M_WD_EVT				BIT(6)
+#define MT6360_M_VCONN_INVALID			BIT(4)
+#define MT6360_M_VCONOCP_CLIMIT			BIT(3)
+#define MT6360_M_VCONN_OCR			BIT(2)
+#define MT6360_M_VCONN_OV_CC2			BIT(1)
+#define MT6360_M_VCONN_OV_CC1			BIT(0)
 
 /*
  * MT6360_REG_MT_MASK3				(0x93)
@@ -255,6 +261,7 @@ enum mt6360_id_rupsel {
  * MT6360_REG_MT_ST1				(0x9B)
  */
 
+#define MT6360_ST_VCONN_SHT_GND			BIT(3)
 #define MT6360_ST_VBUS_SAFE0V			BIT(1)
 
 /*
@@ -262,7 +269,13 @@ enum mt6360_id_rupsel {
  */
 
 #define MT6360_ST_WATER_DET			0xC0
-
+#define MT6360_ST_VCONN_INVALID			BIT(4)
+#define MT6360_ST_VCONN_RV			BIT(2)
+#define MT6360_ST_VCONN_OV_CC2			BIT(1)
+#define MT6360_ST_VCONN_OV_CC1			BIT(0)
+#define MT6360_ST_VCONN_FAULT \
+	(MT6360_ST_VCONN_RV | MT6360_ST_VCONN_OV_CC2 | \
+	 MT6360_ST_VCONN_OV_CC1 | MT6360_ST_VCONN_INVALID)
 
 /*
  * MT6360_REG_MT_ST3				(0x9D)
@@ -337,6 +350,12 @@ enum mt6360_id_rupsel {
 	(time & MT6360_WD_SLEEP_TIME)
 
 /*
+ * MT6360_REG_RX_CTRL2				(0xCF)
+ */
+
+#define MT6360_OPEN400MS_EN			BIT(7)
+
+/*
  * MT6360_REG_HILO_CTRL5			(0xDB)
  */
 #define MT6360_CMPEN_HIDET_CC2			BIT(4)
@@ -349,7 +368,20 @@ enum mt6360_id_rupsel {
 	(MT6360_CMPEN_LODET_CC2 | MT6360_CMPEN_LODET_CC1)
 
 /*
- * MT6360_REG_CTD_CTRL2			(0xCE)
+ * MT6360_REG_VCONN_CTRL2		(0xE2)
+ */
+#define MT6360_VCONN_OVP_CC1_EN		BIT(4)
+#define MT6360_VCONN_OVP_CC2_EN		BIT(3)
+#define MT6360_VCONN_OVP_CC_EN \
+	(MT6360_VCONN_OVP_CC1_EN | MT6360_VCONN_OVP_CC2_EN)
+
+/*
+ * MT6360_REG_VCONN_CTRL3		(0xE3)
+ */
+#define MT6360_VCONN_RVP_EN		BIT(7)
+
+/*
+ * MT6360_REG_CTD_CTRL2			(0xEC)
  */
 #define MT6360_DIS_RPDET			BIT(7)
 #define MT6360_RPDET_ONESHOT			BIT(6)

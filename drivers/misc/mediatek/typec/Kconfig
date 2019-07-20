@@ -43,4 +43,22 @@ config TCPC_ALERT_V20
 	  should be handled by
 	  tcpc driver itself
 
+config MTK_TYPEC_WATER_DETECT
+	bool "Water detection function for type-c connector"
+	depends on TCPC_CLASS
+	help
+	  Say Yes to enable water detection on type-c connector.
+	  If water is detected on the connector, it will show
+	  warning to notify end user.
+	  If unsure, say N.
+
+config MTK_TYPEC_WATER_DETECT_BY_PCB
+	bool "Let PCB decides enabling water detection or not"
+	depends on MTK_TYPEC_WATER_DETECT
+	help
+	  Query GPIO on PCB to judge whether type-c water detection
+	  need to be enabled. (0: EVB; 1: Phone)
+	  Say Yes to let PCB decides enabling water detection or not.
+	  If unsure, say N.
+
 source "drivers/misc/mediatek/typec/tcpc/Kconfig"
