@@ -534,8 +534,8 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 		return -EFAULT;
 	}
 
-	if (pREGIO->u4Count > FDVT_DRAM_REGCNT) {
-		LOG_DBG("Buffer Size Exceeded!\n");
+	if ((pREGIO->u4Count == 0) || (pREGIO->u4Count > FDVT_DRAM_REGCNT)) {
+		LOG_DBG("Abnormal Register Count!\n");
 		return -EFAULT;
 	}
 
