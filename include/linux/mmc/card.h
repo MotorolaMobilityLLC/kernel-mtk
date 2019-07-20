@@ -482,7 +482,7 @@ static inline void __maybe_unused remove_quirk(struct mmc_card *card, int data)
 #define mmc_card_doing_bkops(c)	((c)->state & MMC_STATE_DOING_BKOPS)
 #define mmc_card_suspended(c)	((c)->state & MMC_STATE_SUSPENDED)
 #if defined(CONFIG_MTK_EMMC_CQ_SUPPORT) || defined(CONFIG_MTK_EMMC_HW_CQ)
-#define mmc_card_cmdq(c)       ((c) && ((c)->state & MMC_STATE_CMDQ))
+#define mmc_card_cmdq(c)       ((c)->state & MMC_STATE_CMDQ)
 #endif
 
 #define mmc_card_set_present(c)	((c)->state |= MMC_STATE_PRESENT)
