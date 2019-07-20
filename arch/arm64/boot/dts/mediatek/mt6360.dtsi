@@ -11,26 +11,6 @@
  * GNU General Public License for more details.
  */
 
-&i2c5 {
-	#address-cells = <1>;
-	#size-cells = <0>;
-	mt6360_pmu@34 {
-		status = "ok";
-		compatible = "mediatek,mt6360_pmu";
-		reg = <0x34>;
-		wakeup-source;
-	};
-	mt6360_pmic@1a {
-		status = "ok";
-		compatible = "mediatek,mt6360_pmic";
-		reg = <0x1a>;
-	};
-	mt6360_ldo@64 {
-		status = "ok";
-		compatible = "mediatek,mt6360_ldo";
-		reg = <0x64>;
-	};
-};
 / {
 	mt6360_pmu: mt6360_pmu_dts {
 		status = "ok";
