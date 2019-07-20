@@ -4488,7 +4488,7 @@ void RGXDumpFirmwareTrace(DUMPDEBUG_PRINTF_FUNC *pfnDumpDebugPrintf,
 					 * printf function will be able to use. We have already checked
 					 * that no string uses more than this.
 					 */
-					OSStringCopy(&szBuffer[OSStringLength(szBuffer)], SFs[ui32DataToId].sName);
+					OSStringCopy(&szBuffer[OSStringLength(szBuffer)], SFs[ui32DataToId].psName);
 					uiLen = OSStringLength(szBuffer);
 					szBuffer[uiLen ? uiLen - 1 : 0] = '\0';
 					ui64Timestamp = (IMG_UINT64)(pui32TraceBuf[(ui32TracePtr + 0) % ui32TraceBufSizeInDWords]) << 32 |

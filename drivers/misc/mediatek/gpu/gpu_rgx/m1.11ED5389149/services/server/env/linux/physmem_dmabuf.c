@@ -189,8 +189,6 @@ static PVRSRV_ERROR PMRFinalizeDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 	PMR *psPMR;
 	PVRSRV_ERROR eError = PVRSRV_OK;
 
-//	mutex_lock(&g_HashLock);
-
 	if (psDmaBuf->ops != &sPVRDmaBufOps)
 	{
 		if (g_psDmaBufHash)
@@ -228,7 +226,6 @@ static PVRSRV_ERROR PMRFinalizeDmaBuf(PMR_IMPL_PRIVDATA pvPriv)
 
 	if (PVRSRV_OK != eError)
 	{
-//		mutex_unlock(&g_HashLock);
 		return eError;
 	}
 
@@ -286,12 +283,10 @@ exit:
 		eError = psPrivData->pfnDestroy(psPrivData->psPhysHeap, psPrivData->psAttachment);
 		if (eError != PVRSRV_OK)
 		{
-		//	mutex_unlock(&g_HashLock);
 			return eError;
 		}
 	}
 
-	//mutex_unlock(&g_HashLock);
 	OSFreeMem(psPrivData->pasDevPhysAddr);
 	OSFreeMem(psPrivData);
 
@@ -906,6 +901,8 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 		pszName0[ui32NameSize-1] = '\0';
 	}
 
+	mutex_lock(&g_HashLock);
+
 	/* Get the buffer handle */
 	psDmaBuf = dma_buf_get(fd);
 	if (IS_ERR_OR_NULL(psDmaBuf))
@@ -915,8 +912,6 @@ PhysmemImportSparseDmaBuf(CONNECTION_DATA *psConnection,
 		eError = PVRSRV_ERROR_BAD_MAPPING;
 		goto errReturn;
 	}
-
-	mutex_lock(&g_HashLock);
 
 	if (psDmaBuf->ops == &sPVRDmaBufOps)
 	{
