@@ -770,6 +770,8 @@ config SPI_TLE62X0
 
 endif # SPI_MASTER
 
+source "drivers/spi/mediatek/Kconfig"
+
 # (slave support would go here)
 
 endif # SPI
