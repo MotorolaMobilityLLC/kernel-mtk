@@ -497,9 +497,6 @@
 };
 /* AUDIO end */
 
-
-
-
 &pio {
 	flashlights_aw3644_pins_default: aw3644default {
 	};
@@ -535,4 +532,5 @@
 };
 
 #include <k61v1_hdp_ref_1g/cust.dtsi>
+#include <cust_mt6761_project_camera.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
