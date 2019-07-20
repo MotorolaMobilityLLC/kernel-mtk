@@ -950,7 +950,7 @@ unsigned int mtkfb_fm_auto_test(void)
 	struct fb_var_screeninfo var;
 
 	int idle_state_backup =
-		disp_helper_get_option(DISP_OPT_IDLE_MGR);
+		disp_helper_get_option(DISP_OPT_IDLEMGR_ENTER_ULPS);
 
 	if (primary_display_is_sleepd()) {
 		DISPWARN("primary display path is already sleep, skip\n");
@@ -958,8 +958,8 @@ unsigned int mtkfb_fm_auto_test(void)
 	}
 
 	if (idle_state_backup) {
-		primary_display_idlemgr_kick(__func__, 1);
-		disp_helper_set_option(DISP_OPT_IDLE_MGR, 0);
+		primary_display_idlemgr_kick(__func__, 0);
+		disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 0);
 	}
 	fbVirAddr = (unsigned long)fbdev->fb_va_base;
 	fb_buffer = (unsigned int *)fbVirAddr;
@@ -992,11 +992,11 @@ unsigned int mtkfb_fm_auto_test(void)
 
 	mtkfb_pan_display_impl(&mtkfb_fbi->var, mtkfb_fbi);
 	msleep(100);
-
+	primary_display_idlemgr_kick(__func__, 0);
 	result = primary_display_lcm_ATA();
 
 	if (idle_state_backup)
-		disp_helper_set_option(DISP_OPT_IDLE_MGR, idle_state_backup);
+		disp_helper_set_option(DISP_OPT_IDLEMGR_ENTER_ULPS, 1);
 
 	if (result == 0)
 		DISPERR("ATA LCM failed\n");
