@@ -43,6 +43,159 @@ static void __iomem *ufs_mtk_mmio_base_pericfg;
 static void __iomem *ufs_mtk_mmio_base_ufs_mphy;
 static struct regulator *reg_va09;
 
+
+#define PA_Local_TX_LCC_Enable          (0x155E)
+#define PA_Peer_TX_LCC_Enable           (0x155F)
+#define TxBurstClosureDelay             (0xD084)
+#define AdjustTrailingClocks            (0xD086)
+#define DebugOMC                        (0xD09E)
+#define DebugSaveConfigTime             (0xD0A0)
+#define Debug1USClkSel                  (0xD0A5)
+#define SavePowerControl                (0xD0A6)
+#define LinkStarUpControl               (0xD0AD)
+#define ForceModeControl                (0xD0AE)
+#define MPHYParamForce                  (0xD0AF)
+#define AutoBurstEndCtrl                (0xD0B5)
+
+static u32 mphy[22];
+static u32 unipro[12];
+static u32 unipro_attr[12] = {
+	PA_Local_TX_LCC_Enable,
+	PA_Peer_TX_LCC_Enable,
+	TxBurstClosureDelay,
+	AdjustTrailingClocks,
+	DebugOMC,
+	DebugSaveConfigTime,
+	Debug1USClkSel,
+	SavePowerControl,
+	LinkStarUpControl,
+	ForceModeControl,
+	MPHYParamForce,
+	AutoBurstEndCtrl
+};
+
+void ufs_backup_setting(struct ufs_hba *hba)
+{
+	int ret = 0;
+	int i;
+	static int backup_done;
+
+	if (backup_done)
+		return;
+
+	/* Backup mphy BROM setting */
+	mphy[0]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x1000);
+	mphy[1]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x9000);
+	mphy[2]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0xB000);
+	mphy[3]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x0018);
+	mphy[4]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x0058);
+	mphy[5]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x2008);
+	mphy[6]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x2028);
+	mphy[7]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x202C);
+	mphy[8]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x2084);
+	mphy[9]  = readl(ufs_mtk_mmio_base_ufs_mphy + 0x208C);
+	mphy[10] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x20C4);
+	mphy[11] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x20C8);
+	mphy[12] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x20D0);
+	mphy[13] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x8004);
+	mphy[14] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x80A4);
+	mphy[15] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA008);
+	mphy[16] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA01C);
+	mphy[17] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA020);
+	mphy[18] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA098);
+	mphy[19] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+	mphy[20] = readl(ufs_mtk_mmio_base_ufs_mphy + 0xB080);
+
+	/* Backup mphy preloader setting */
+	mphy[21] = readl(ufs_mtk_mmio_base_ufs_mphy + 0x9008);
+
+	/* Backup unipro BROM setting */
+	for (i = 0; i < 12; i++) {
+		ret = ufshcd_dme_get(hba, UIC_ARG_MIB(unipro_attr[i]),
+			&unipro[i]);
+		if (ret)
+			dev_err(hba->dev, "ufshcd_dme_get 0x%x fail, ret %d!\n",
+				unipro_attr[i], ret);
+	}
+
+	backup_done = 1;
+	dev_info(hba->dev, "ufs backup done!\n");
+}
+
+void ufs_restore_setting_mphy(struct ufs_hba *hba)
+{
+	/* Restore mphy BROM setting */
+	writel(mphy[0],  ufs_mtk_mmio_base_ufs_mphy + 0x1000);
+	writel(mphy[1],  ufs_mtk_mmio_base_ufs_mphy + 0x9000);
+	writel(mphy[2],  ufs_mtk_mmio_base_ufs_mphy + 0xB000);
+	writel(mphy[3],  ufs_mtk_mmio_base_ufs_mphy + 0x0018);
+	writel(mphy[4],  ufs_mtk_mmio_base_ufs_mphy + 0x0058);
+	writel(mphy[5],  ufs_mtk_mmio_base_ufs_mphy + 0x2008);
+	writel(mphy[6],  ufs_mtk_mmio_base_ufs_mphy + 0x2028);
+	writel(mphy[7],  ufs_mtk_mmio_base_ufs_mphy + 0x202C);
+	writel(mphy[8],  ufs_mtk_mmio_base_ufs_mphy + 0x2084);
+	writel(mphy[9],  ufs_mtk_mmio_base_ufs_mphy + 0x208C);
+	writel(mphy[10], ufs_mtk_mmio_base_ufs_mphy + 0x20C4);
+	writel(mphy[11], ufs_mtk_mmio_base_ufs_mphy + 0x20C8);
+	writel(mphy[12], ufs_mtk_mmio_base_ufs_mphy + 0x20D0);
+	writel(mphy[13], ufs_mtk_mmio_base_ufs_mphy + 0x8004);
+	writel(mphy[14], ufs_mtk_mmio_base_ufs_mphy + 0x80A4);
+	writel(mphy[15], ufs_mtk_mmio_base_ufs_mphy + 0xA008);
+	writel(mphy[16], ufs_mtk_mmio_base_ufs_mphy + 0xA01C);
+	writel(mphy[17], ufs_mtk_mmio_base_ufs_mphy + 0xA020);
+	writel(mphy[18], ufs_mtk_mmio_base_ufs_mphy + 0xA098);
+	writel(mphy[19], ufs_mtk_mmio_base_ufs_mphy + 0xA09C);
+	writel(mphy[20], ufs_mtk_mmio_base_ufs_mphy + 0xB080);
+
+	/* Restore mphy preloader setting */
+	writel(mphy[21], ufs_mtk_mmio_base_ufs_mphy + 0x9008);
+
+	dev_info(hba->dev, "ufs restore mphy done!\n");
+}
+
+int ufs_restore_setting_unipro(struct ufs_hba *hba)
+{
+	int ret = 0;
+	int i, retry;
+
+	ufshcd_writel(hba, CONTROLLER_ENABLE, REG_CONTROLLER_ENABLE);
+	/* wait for the host controller to complete initialization */
+	retry = 10;
+	while (!(ufshcd_readl(hba, REG_CONTROLLER_ENABLE) &
+		CONTROLLER_ENABLE)) {
+		if (retry) {
+			retry--;
+			dev_err(hba->dev, "wait active...\n");
+		} else {
+			dev_err(hba->dev,
+				"Controller enable failed\n");
+			ret = -EIO;
+			goto out;
+		}
+		msleep(5);
+	}
+
+	/* enable UIC related interrupts */
+	ufshcd_writel(hba, ufshcd_readl(hba,
+		REG_INTERRUPT_ENABLE) | UFSHCD_UIC_MASK, REG_INTERRUPT_ENABLE);
+
+	/* Restore unipro BROM setting */
+	for (i = 0; i < 12; i++) {
+		ret = ufshcd_dme_set(hba, UIC_ARG_MIB(unipro_attr[i]),
+			unipro[i]);
+		if (ret) {
+			dev_err(hba->dev, "ufshcd_dme_set 0x%x fail, ret %d!\n",
+				unipro_attr[i], ret);
+			goto out;
+		}
+	}
+
+	dev_info(hba->dev, "ufs restore unipro done!\n");
+
+out:
+	return ret;
+}
+
 /**
  * ufs_mtk_pltfrm_pwr_change_final_gear - change pwr mode fianl gear value.
  */
@@ -334,6 +487,9 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 	writel(reg, ufs_mtk_mmio_base_pericfg + REG_UFS_PERICFG);
 
 #endif
+
+	ufs_backup_setting(hba);
+
 #ifdef CONFIG_MTK_UFS_DEGUG_GPIO_TRIGGER
 	ufs_mtk_pltfrm_gpio_trigger_init(hba);
 #endif
@@ -488,11 +644,13 @@ void ufs_mtk_pltfrm_deepidle_lock(struct ufs_hba *hba, bool lock)
 int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 {
 	u32 reg;
+	int ret = 0;
 
 	if (!ufs_mtk_mmio_base_infracfg_ao) {
 		dev_info(hba->dev,
 			"ufs_mtk_host_sw_rst: failed, null ufs_mtk_mmio_base_infracfg_ao.\n");
-		return 1;
+		ret = -1;
+		goto out;
 	}
 
 	dev_dbg(hba->dev, "ufs_mtk_host_sw_rst: 0x%x\n", target);
@@ -571,9 +729,19 @@ int ufs_mtk_pltfrm_host_sw_rst(struct ufs_hba *hba, u32 target)
 			ufs_mtk_mmio_base_infracfg_ao + REG_UFSPHY_SW_RST_CLR);
 	}
 
+	if (target & SW_RST_TARGET_MPHY)
+		ufs_restore_setting_mphy(hba);
+
+	if (target & SW_RST_TARGET_UNIPRO) {
+		ret = ufs_restore_setting_unipro(hba);
+		if (ret)
+			goto out;
+	}
+
 	udelay(100);
 
-	return 0;
+out:
+	return ret;
 }
 
 int ufs_mtk_pltfrm_init(void)

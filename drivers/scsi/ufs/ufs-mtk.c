@@ -1200,7 +1200,6 @@ static int ufs_mtk_resume(struct ufs_hba *hba, enum ufs_pm_op pm_op)
 		 */
 		if (ret) {
 			ufs_mtk_pltfrm_gpio_trigger_and_debugInfo_dump(hba);
-			ufs_mtk_pltfrm_host_sw_rst(hba, SW_RST_TARGET_ALL);
 			ret = ufshcd_host_reset_and_restore(hba);
 			if (ret) {
 				dev_err(hba->dev, "%s: Host reset and restore failed %d\n",
