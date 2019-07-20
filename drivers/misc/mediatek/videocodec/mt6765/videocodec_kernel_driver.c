@@ -626,6 +626,11 @@ void vdec_break(void)
 	/* Step 3: software reset */
 	VDO_HW_WRITE(KVA_VDEC_BASE + 66*4, 0x1);
 	VDO_HW_WRITE(KVA_VDEC_BASE + 66*4, 0x0);
+
+	/* Step 4: VCODEC reset control, include VDEC/VENC/JPGENC */
+	VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 5*4, 0x1);
+	VDO_HW_WRITE(KVA_VDEC_GCON_BASE + 3*4, 0x1);
+
 }
 
 void venc_break(void)
@@ -1065,18 +1070,7 @@ static long vcodec_lockhw_vdec(struct VAL_HW_LOCK_T *pHWLock, char *bLockedHW)
 			 */
 
 			*bLockedHW = VAL_TRUE;
-			if (eValRet == VAL_RESULT_INVALID_ISR &&
-				FirstUseDecHW != 1) {
-				pr_info("[WARN] reset pwr/irq when HWLock");
-#ifdef CONFIG_PM
-				pm_runtime_put_sync(vcodec_device);
-#else
-#ifndef KS_POWER_WORKAROUND
-				vdec_power_off();
-#endif
-#endif
-				disable_irq(VDEC_IRQ_ID);
-			}
+
 #ifdef VCODEC_DVFS_V2
 			mutex_lock(&VcodecDVFSLock);
 			if (cur_job == 0) {
