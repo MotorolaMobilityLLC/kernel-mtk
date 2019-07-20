@@ -473,7 +473,7 @@ static const struct mtk_pinctrl_devdata mtk_pinctrl_data = {
 		.port_mask = 7,
 		.ports     = 6,
 	},
-	.ap_num = 183,
+	.ap_num = 194,
 	.db_cnt = 16,
 };
 
