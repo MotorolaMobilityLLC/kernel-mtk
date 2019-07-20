@@ -1469,6 +1469,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	size_t camera_total_size = 0;
 	size_t va2mva_total_size = 0;
 	size_t total_orphaned_size = 0;
+	size_t cam_orphaned_size = 0;
 	unsigned long long current_ts = 0;
 	unsigned int cam_id = ION_HEAP_TYPE_MULTIMEDIA_FOR_CAMERA;
 	unsigned int map_mva_id = ION_HEAP_TYPE_MULTIMEDIA_MAP_MVA;
@@ -1535,17 +1536,18 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 		}
 		total_size += buffer->size;
 		if (!buffer->handle_count) {
-			seq_printf(s, "%16.s %16u %16zu %d %d\n",
+			seq_printf(s, "%16.s %16u %16zu\n",
 				   buffer->task_comm, buffer->pid,
-				   buffer->size, buffer->kmap_cnt,
-				   atomic_read(&buffer->ref.refcount));
+				   buffer->size);
 			total_orphaned_size += buffer->size;
+			if (buffer->heap->id == cam_id)
+				cam_orphaned_size +=  buffer->size;
 		}
 	}
 	mutex_unlock(&dev->buffer_lock);
 	seq_puts(s, "----------------------------------------------------\n");
-	seq_printf(s, "%16.s %16zu\n", "total orphaned",
-		   total_orphaned_size);
+	seq_printf(s, "%16.s %16zu, %16zu\n", "total orphaned, cam orphaned",
+		   total_orphaned_size, cam_orphaned_size);
 	seq_printf(s, "%16.s %16zu\n", "total ", total_size);
 	if (heap->id == ION_HEAP_TYPE_MULTIMEDIA)
 		seq_printf(s, "%16.s %16zu %16zu\n", "cam-va2mva total",
