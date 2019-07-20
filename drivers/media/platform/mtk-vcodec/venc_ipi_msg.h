@@ -19,6 +19,7 @@
 #define _VENC_IPI_MSG_H_
 
 #include <linux/videodev2.h>
+#include "vcodec_ipi_msg.h"
 
 #define MTK_MAX_ENC_CODECS_SUPPORT       (32)
 #define AP_IPIMSG_VENC_BASE 0xC000
@@ -55,7 +56,7 @@ enum venc_ipi_msg_id {
  *                            venc_if_get_param()
  * GET_PARAM_CAPABILITY_SUPPORTED_FORMATS: get codec supported format capability
  * GET_PARAM_CAPABILITY_FRAME_SIZES:
- *         get codec supported frame size & aligment info
+ *         get codec supported frame size & alignment info
  */
 enum venc_get_param_type {
 	GET_PARAM_CAPABILITY_SUPPORTED_FORMATS,
