@@ -1681,16 +1681,18 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 		       struct cmdqRecStruct *cmdq,
 		       struct LCM_DSI_PARAMS *dsi_params)
 {
+	int i = 0;
+#ifndef CONFIG_FPGA_EARLY_PORTING
 	struct DSI_PHY_TIMCON0_REG timcon0;
 	struct DSI_PHY_TIMCON1_REG timcon1;
 	struct DSI_PHY_TIMCON2_REG timcon2;
 	struct DSI_PHY_TIMCON3_REG timcon3;
-	int i = 0;
 	unsigned int lane_no;
 	unsigned int cycle_time = 0;
 	unsigned int ui = 0;
 	unsigned int hs_trail_m, hs_trail_n;
 	unsigned char timcon_temp;
+#endif
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
 	/* sync from cmm */
@@ -1708,7 +1710,7 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 			  INREG32(&DSI_REG[i]->DSI_PHY_TIMECON3));
 	}
 	return;
-#endif
+#else
 
 #if 0
 	for (i = DSI_MODULE_BEGIN(module); i <= DSI_MODULE_END(module); i++) {
@@ -1880,6 +1882,7 @@ void DSI_PHY_TIMCONFIG(enum DISP_MODULE_ENUM module,
 			 INREG32(&DSI_REG[i]->DSI_PHY_TIMECON2),
 			 INREG32(&DSI_REG[i]->DSI_PHY_TIMECON3));
 	}
+#endif
 }
 
 int DSI_enable_checksum(enum DISP_MODULE_ENUM module,
