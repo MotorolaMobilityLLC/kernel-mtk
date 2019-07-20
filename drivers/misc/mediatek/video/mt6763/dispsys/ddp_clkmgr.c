@@ -356,7 +356,7 @@ int ddp_main_modules_clk_on(void)
 	module = _get_dst_module_by_lcm(primary_get_lcm());
 	if (module == DISP_MODULE_UNKNOWN)
 		ret = -1;
-	else
+	else if (ddp_get_module_driver(module))
 		ddp_get_module_driver(module)->power_on(module, NULL);
 
 	pr_debug("CG0 0x%x, CG1 0x%x\n",
@@ -495,7 +495,7 @@ int ddp_main_modules_clk_off(void)
 	module = _get_dst_module_by_lcm(primary_get_lcm());
 	if (module == DISP_MODULE_UNKNOWN)
 		ret = -1;
-	else
+	else if (ddp_get_module_driver(module))
 		ddp_get_module_driver(module)->power_off(module, NULL);
 
 	/* --TOP CLK-- */
