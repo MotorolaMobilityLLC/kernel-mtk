@@ -158,6 +158,25 @@ static enum UT_RET_STATE pmem_alloc_multithread_test(struct ut_params *params)
 	END_UT_TEST;
 }
 
+static enum UT_RET_STATE pmem_alloc_mixed_size(struct ut_params *params)
+{
+	int ret;
+	int reg_final_state = params->param1;
+
+	UNUSED(reg_final_state);
+
+	BEGIN_UT_TEST;
+
+	ASSERT_EQ(0, mem_handle_list_init(TRUSTED_MEM_PROT),
+		  "alloc handle list check");
+	ret = mem_alloc_mixed_size_test(TRUSTED_MEM_PROT, NULL,
+					reg_final_state);
+	mem_handle_list_deinit();
+	ASSERT_EQ(0, ret, "pmem alloc mixed size test");
+
+	END_UT_TEST;
+}
+
 static enum UT_RET_STATE pmem_regmgr_run_all(struct ut_params *params)
 {
 	int ret;
@@ -235,6 +254,8 @@ DEFINE_TEST_CASE_PARAM2(PMEM_UT_PROC_REGION_STRESS,
 			MEM_REGION_ON_OFF_STREE_ROUND)
 DEFINE_TEST_CASE_PARAM1(PMEM_UT_PROC_ALLOC_MULTITHREAD,
 			pmem_alloc_multithread_test,
+			REGMGR_REGION_FINAL_STATE_OFF)
+DEFINE_TEST_CASE_PARAM1(PMEM_UT_PROC_ALLOC_MIXED_SIZE, pmem_alloc_mixed_size,
 			REGMGR_REGION_FINAL_STATE_OFF)
 DEFINE_TEST_CASE_PARAM1(PMEM_UT_PROC_ALL, pmem_regmgr_run_all,
 			REGMGR_REGION_FINAL_STATE_OFF)
