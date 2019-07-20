@@ -1193,7 +1193,7 @@ store_offline_mode(
 	int offline_mode;
 	int num;
 
-	num = sscanf(buf, "%d, %s", &offline_mode, file_name);
+	num = sscanf(buf, "%d, %127s", &offline_mode, file_name);
 
 	if (num == 2 && offline_mode == 1) {
 		offline_mode_en = true;
