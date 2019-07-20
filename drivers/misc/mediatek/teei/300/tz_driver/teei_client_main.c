@@ -16,6 +16,7 @@
 #include <imsg_log.h>
 
 #include <linux/vmalloc.h>
+#include <linux/version.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/module.h>
@@ -31,7 +32,6 @@
 #include <linux/interrupt.h>
 #include <linux/wait.h>
 #include <asm/cacheflush.h>
-#include <asm/cputype.h>
 #include <linux/delay.h>
 #include <linux/irq.h>
 #include <linux/of.h>
@@ -44,6 +44,14 @@
 #include <linux/smp.h>
 #include <linux/cpu.h>
 #include <linux/of_platform.h>
+
+#ifdef TEEI_FIND_PREFER_CORE_AUTO
+#include <kernel/sched/sched.h>
+#endif
+
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+#include <uapi/linux/sched/types.h>
+#endif
 
 #include "teei_client.h"
 #include "teei_common.h"
@@ -91,6 +99,7 @@
 
 #include <fdrv.h>
 #include <linux/topology.h>
+#include <asm/cputype.h>
 
 #ifdef CONFIG_MTPROF
 #include "bootprof.h"
@@ -114,6 +123,12 @@ DECLARE_SEMA(api_lock, 1);
 DECLARE_SEMA(tui_notify_sema, 0);
 #endif
 DECLARE_COMPLETION(boot_decryto_lock);
+
+#ifdef TEEI_FIND_PREFER_CORE_AUTO
+int TZ_PREFER_BIND_CORE;
+#else
+#define TZ_PREFER_BIND_CORE (4)
+#endif
 
 enum {
 	TEEI_BOOT_OK = 0,
@@ -177,7 +192,7 @@ unsigned long bdrv_message_buff;
 unsigned long fdrv_message_buff;
 static int current_cpu_id;
 
-#if !defined(CONFIG_ARCH_MT6580) && !defined(CONFIG_ARCH_MT6570)
+#if KERNEL_VERSION(4, 14, 0) >= LINUX_VERSION_CODE
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
 		unsigned long action, void *hcpu);
 static struct notifier_block tz_driver_cpu_notifer = {
@@ -397,14 +412,14 @@ void set_sch_load_img_cmd(void)
 
 int t_os_load_image(void)
 {
-	ut_pm_mutex_lock(&pm_mutex);
+	lock_system_sleep();
 	down(&smc_lock);
 	forward_call_flag = GLSCH_LOW;
 	set_sch_load_img_cmd();
 	load_tee();
 
 	down(&(boot_sema));
-	ut_pm_mutex_unlock(&pm_mutex);
+	unlock_system_sleep();
 
 	return 0;
 }
@@ -445,7 +460,6 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	rmb();
 }
 
-#define TZ_PREFER_BIND_CORE (4)
 static bool is_prefer_core(int cpu)
 {
 	/* bind to a specific core */
@@ -557,17 +571,65 @@ int handle_move_core(int cpu)
 
 int tz_move_core(uint32_t cpu_id)
 {
-	ut_pm_mutex_lock(&pm_mutex);
+	lock_system_sleep();
 	if (!cpu_online(cpu_id)) {
 		IMSG_ERROR("The CPU %d is offline !\n", cpu_id);
-		ut_pm_mutex_unlock(&pm_mutex);
+		unlock_system_sleep();
 		return -EINVAL;
 	}
 	add_work_entry(MOVE_CORE, (unsigned long)cpu_id);
-	ut_pm_mutex_unlock(&pm_mutex);
+	unlock_system_sleep();
 
 	return 0;
 }
+
+
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+static int nq_cpu_up_prep(unsigned int cpu)
+{
+#ifdef TEEI_SWITCH_BIG_CORE
+	int retVal = 0;
+	unsigned int sched_cpu = get_current_cpuid();
+
+	IMSG_DEBUG("current_cpu_id = %d power on %d\n",
+				sched_cpu, cpu);
+
+	if (cpu == TZ_PREFER_BIND_CORE) {
+		IMSG_DEBUG("cpu up: prepare for changing %d to %d\n",
+			sched_cpu, cpu);
+
+		retVal = add_work_entry(SWITCH_CORE,
+			(unsigned long)(unsigned long)sched_cpu);
+	}
+	return retVal;
+#else
+	return 0;
+#endif
+}
+
+
+static int nq_cpu_down_prep(unsigned int cpu)
+{
+	int retVal = 0;
+	unsigned int sched_cpu = get_current_cpuid();
+
+	if (cpu == sched_cpu) {
+		IMSG_DEBUG("cpu down prepare for %d.\n", cpu);
+		retVal = add_work_entry(SWITCH_CORE,
+				(unsigned long)(unsigned long)cpu);
+	} else if (is_prefer_core(cpu))
+		IMSG_DEBUG("cpu down prepare for prefer %d.\n", cpu);
+	else if (!is_prefer_core_binded()
+			&& is_prefer_core_onlined()) {
+		IMSG_DEBUG("cpu down prepare for changing %d %d.\n",
+							sched_cpu, cpu);
+		retVal = add_work_entry(SWITCH_CORE,
+			(unsigned long)(unsigned long)sched_cpu);
+	}
+	return retVal;
+}
+
+#elif KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE
 
 static int tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
@@ -592,11 +654,26 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 				(unsigned long)(unsigned long)sched_cpu);
 		}
 		break;
+
+#ifdef TEEI_SWITCH_BIG_CORE
+	case CPU_ONLINE:
+		if (cpu == TZ_PREFER_BIND_CORE) {
+			IMSG_DEBUG("cpu up: prepare for changing %d to %d.\n",
+					sched_cpu, cpu);
+			add_work_entry(SWITCH_CORE,
+				(unsigned long)(unsigned long)sched_cpu);
+		}
+
+		break;
+#endif
+
 	default:
 		break;
 	}
 	return NOTIFY_OK;
 }
+
+#endif
 
 struct init_cmdbuf_struct {
 	unsigned long phy_addr;
@@ -988,6 +1065,18 @@ int is_teei_ready(void)
 }
 EXPORT_SYMBOL(is_teei_ready);
 
+#ifdef TEEI_FIND_PREFER_CORE_AUTO
+int teei_get_max_freq(int cpu_index)
+{
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+	return arch_max_cpu_freq(NULL, cpu_index);
+#elif KERNEL_VERSION(4, 4, 0) <= LINUX_VERSION_CODE
+	return arch_scale_get_max_freq(cpu_index);
+#endif
+	return 0;
+}
+#endif
+
 static long teei_config_ioctl(struct file *file,
 				unsigned int cmd, unsigned long arg)
 {
@@ -1000,6 +1089,31 @@ static long teei_config_ioctl(struct file *file,
 		if (teei_flags != 1) {
 			long res;
 			int i;
+#ifdef TEEI_SWITCH_BIG_CORE
+			unsigned int sched_cpu = get_current_cpuid();
+#endif
+
+#ifdef TEEI_FIND_PREFER_CORE_AUTO
+			int current_max_freq = 0;
+			int cpu_max_freq = 0;
+
+			/* Find the prefer core */
+			for_each_online_cpu(i) {
+				cpu_max_freq = teei_get_max_freq(i);
+				IMSG_DEBUG("The max freq of cpu[%d] = %lx.\n",
+					i, cpu_max_freq);
+				if (cpu_max_freq > current_max_freq) {
+					current_max_freq = cpu_max_freq;
+					TZ_PREFER_BIND_CORE = i;
+				}
+			}
+#endif
+
+#ifdef TEEI_SWITCH_BIG_CORE
+			IMSG_DEBUG("cpu prefer %d\n", TZ_PREFER_BIND_CORE);
+			retVal = add_work_entry(SWITCH_CORE,
+				(unsigned long)(unsigned long)sched_cpu);
+#endif
 
 			res = copy_from_user(&param, (void *)arg,
 					sizeof(struct init_param));
@@ -1016,10 +1130,14 @@ static long teei_config_ioctl(struct file *file,
 
 			teei_flags = 1;
 
+			TEEI_BOOT_FOOTPRINT("TEEI start to load driver TAs");
+
 			for (i = 0; i < param.uuid_count; i++)
 				tz_load_drv_by_str(param.uuids[i]);
 
 			param.flag = teei_flags;
+
+			TEEI_BOOT_FOOTPRINT("TEEI end of load driver TAs");
 
 			res = copy_to_user((void *)arg, &param,
 					sizeof(struct init_param));
@@ -1181,19 +1299,14 @@ static long teei_client_ioctl(struct file *file,
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND beginning.\n",
 						__func__, __LINE__);
 
-		/*ut_pm_mutex_lock(&pm_mutex);*/
-
 		if (copy_from_user((void *)cancel_message_buff,
-					(void *)argp, MAX_BUFF_SIZE)) {
-			/*ut_pm_mutex_unlock(&pm_mutex);*/
+					(void *)argp, MAX_BUFF_SIZE))
 			return -EINVAL;
-		}
+
 		if ((void *)cancel_message_buff != NULL)
 			return -EINVAL;
 
 		send_cancel_command(0);
-
-		/*ut_pm_mutex_unlock(&pm_mutex);*/
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end.\n",
 						__func__, __LINE__);
@@ -1201,7 +1314,7 @@ static long teei_client_ioctl(struct file *file,
 	}
 
 	down(&api_lock);
-	ut_pm_mutex_lock(&pm_mutex);
+	lock_system_sleep();
 	switch (cmd) {
 
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
@@ -1483,7 +1596,7 @@ static long teei_client_ioctl(struct file *file,
 						__func__, __LINE__, cmd);
 		retVal = -EINVAL;
 	}
-	ut_pm_mutex_unlock(&pm_mutex);
+	unlock_system_sleep();
 	up(&api_lock);
 	return retVal;
 }
@@ -1503,19 +1616,14 @@ static long teei_client_unioctl(struct file *file,
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND begin.\n",
 						__func__, __LINE__);
 
-		/*ut_pm_mutex_lock(&pm_mutex);*/
-
 		if (copy_from_user((void *)cancel_message_buff,
-						(void *)argp, MAX_BUFF_SIZE)) {
-			/*ut_pm_mutex_unlock(&pm_mutex);*/
+						(void *)argp, MAX_BUFF_SIZE))
 			return -EINVAL;
-		}
+
 		if ((void *)cancel_message_buff != NULL)
 			return -EINVAL;
 
 		send_cancel_command(0);
-
-		/*ut_pm_mutex_unlock(&pm_mutex);*/
 
 		IMSG_DEBUG("[%s][%d] TEEI_CANCEL_COMMAND end.\n",
 						__func__, __LINE__);
@@ -1523,7 +1631,7 @@ static long teei_client_unioctl(struct file *file,
 	}
 
 	down(&api_lock);
-	ut_pm_mutex_lock(&pm_mutex);
+	lock_system_sleep();
 	switch (cmd) {
 
 	case TEEI_CLIENT_IOCTL_INITCONTEXT_REQ:
@@ -1809,7 +1917,7 @@ static long teei_client_unioctl(struct file *file,
 						__func__, __LINE__, cmd);
 		retVal = -EINVAL;
 	}
-	ut_pm_mutex_unlock(&pm_mutex);
+	unlock_system_sleep();
 	up(&api_lock);
 	return retVal;
 }
@@ -1895,16 +2003,6 @@ void show_utdriver_lock_status(void)
 		IMSG_PRINTK("[%s][%d] smc_lock is up\n",
 							__func__, __LINE__);
 		up(&smc_lock);
-	}
-
-	retVal = mutex_trylock(&pm_mutex);
-	if (retVal == 0)
-		IMSG_PRINTK("[%s][%d] pm_mutex is locked\n",
-							__func__, __LINE__);
-	else {
-		IMSG_PRINTK("[%s][%d] pm_mutex is unlocked\n",
-							__func__, __LINE__);
-		mutex_unlock(&pm_mutex);
 	}
 
 	IMSG_PRINTK("[%s][%d] how_utdriver_lock_status end.\n",
@@ -2088,6 +2186,7 @@ static int teei_client_init(void)
 #ifdef TUI_SUPPORT
 	int pwr_pid = 0;
 #endif
+	/* struct sched_param param = {.sched_priority = 50 }; */
 
 	/* IMSG_DEBUG("TEEI Agent Driver Module Init ...\n"); */
 
@@ -2169,7 +2268,9 @@ static int teei_client_init(void)
 		IMSG_DEBUG("init stage : current_cpu_id = %d\n",
 							current_cpu_id);
 		/* break when first active cpu has been selected */
+#ifdef TEEI_CPU_0
 		break;
+#endif
 	}
 
 	if (read_cpuid_mpidr() & MPIDR_MT_BITMASK)
@@ -2190,17 +2291,19 @@ static int teei_client_init(void)
 		goto class_device_destroy;
 	}
 
+	/* sched_setscheduler_nocheck(teei_switch_task, SCHED_FIFO, &param); */
 	wake_up_process(teei_switch_task);
 	cpumask_set_cpu(get_current_cpuid(), &mask);
 	set_cpus_allowed_ptr(teei_switch_task, &mask);
 
 	IMSG_DEBUG("create the sub_thread successfully!\n");
 
-#if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
-	/* Core migration not supported */
-#else
+#if KERNEL_VERSION(4, 14, 0) <= LINUX_VERSION_CODE
+	cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
+				"tee/teei:online",
+				nq_cpu_up_prep, nq_cpu_down_prep);
+#elif KERNEL_VERSION(3, 18, 0) <= LINUX_VERSION_CODE
 	register_cpu_notifier(&tz_driver_cpu_notifer);
-
 	IMSG_DEBUG("after  register cpu notify\n");
 #endif
 
