@@ -682,6 +682,7 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		lowmem_trigger_warning(selected, selected_oom_score_adj);
 
 		rem += selected_tasksize;
+		get_task_struct(selected);
 	} else {
 		if (p_state_is_found & LOWMEM_P_STATE_D)
 			lowmem_print(2,
@@ -703,8 +704,11 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 	spin_unlock(&lowmem_shrink_lock);
 
 	lockdep_off();
-	if (current_is_kswapd() && selected)
-		handle_lmk_event(selected, min_score_adj);
+	if (selected) {
+		if (current_is_kswapd())
+			handle_lmk_event(selected, min_score_adj);
+		put_task_struct(selected);
+	}
 	lockdep_on();
 
 	/* dump more memory info outside the lock */
