@@ -45,6 +45,7 @@ CONFIG_BACKLIGHT_SUPPORT_LM3697,PROJECT,joan.cho,new config in this commit c1d83
 CONFIG_BLK_DEV_BSG,COMMON,,,N,N,N,N,N,N,N,N,
 CONFIG_BLK_DEV_DM,COMMON,,,y,y,y,y,y,y,y,y,
 CONFIG_BLK_DEV_INITRD,COMMON,,,y,y,y,y,y,y,y,y,
+CONFIG_BLK_DEV_RAM,COMMON,,,y,y,y,y,y,y,y,y,
 CONFIG_BLK_DEV_LOOP_MIN_COUNT,COMMON,miles.chen,,16,16,16,16,16,16,16,16,
 CONFIG_BLK_DEV_LOOP,PROJECT,,,y,y,y,y,O,y,y,y,
 CONFIG_BLK_DEV_MD,PROJECT,pangyen.chen,,,,,,,,,,
