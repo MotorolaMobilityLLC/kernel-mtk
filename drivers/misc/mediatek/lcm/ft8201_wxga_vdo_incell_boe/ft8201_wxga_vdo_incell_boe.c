@@ -101,24 +101,47 @@ static struct LCM_UTIL_FUNCS lcm_util;
 
 #ifndef BUILD_LK
 static unsigned int GPIO_LCD_RST;
+static unsigned int GPIO_LCD_LED_EN;
 static unsigned int GPIO_LCD_PWR_ENP;
 static unsigned int GPIO_LCD_PWR_ENN;
-static unsigned int GPIO_LCD_CTP_RST;
+struct pinctrl *lcd_pinctrl1;
+struct pinctrl_state *lcd_disp_pwm;
+struct pinctrl_state *lcd_disp_pwm_gpio;
 
 void lcm_request_gpio_control(struct device *dev)
 {
+	int ret;
+
+	pr_notice("[Kernel/LCM] %s enter\n", __func__);
+
 	GPIO_LCD_RST = of_get_named_gpio(dev->of_node, "gpio_lcd_rst", 0);
 	gpio_request(GPIO_LCD_RST, "GPIO_LCD_RST");
+	GPIO_LCD_LED_EN = of_get_named_gpio(dev->of_node, "gpio_lcd_led_en", 0);
+	gpio_request(GPIO_LCD_LED_EN, "GPIO_LCD_LED_EN");
 	GPIO_LCD_PWR_ENP = of_get_named_gpio(dev->of_node,
 		"gpio_lcd_pwr_enp", 0);
 	gpio_request(GPIO_LCD_PWR_ENP, "GPIO_LCD_PWR_ENP");
 	GPIO_LCD_PWR_ENN = of_get_named_gpio(dev->of_node,
 		"gpio_lcd_pwr_enn", 0);
 	gpio_request(GPIO_LCD_PWR_ENN, "GPIO_LCD_PWR_ENN");
-	GPIO_LCD_CTP_RST = of_get_named_gpio(dev->of_node,
-		"gpio_lcd_ctp_rst", 0);
-	gpio_request(GPIO_LCD_CTP_RST, "GPIO_LCD_CTP_RST");
 
+	lcd_pinctrl1 = devm_pinctrl_get(dev);
+	if (IS_ERR(lcd_pinctrl1)) {
+		ret = PTR_ERR(lcd_pinctrl1);
+		pr_notice(" Cannot find lcd_pinctrl1 %d!\n", ret);
+	}
+
+	lcd_disp_pwm = pinctrl_lookup_state(lcd_pinctrl1, "disp_pwm");
+	if (IS_ERR(lcd_pinctrl1)) {
+		ret = PTR_ERR(lcd_pinctrl1);
+		pr_notice(" Cannot find lcd_disp_pwm %d!\n", ret);
+	}
+
+	lcd_disp_pwm_gpio = pinctrl_lookup_state(lcd_pinctrl1, "disp_pwm_gpio");
+	if (IS_ERR(lcd_pinctrl1)) {
+		ret = PTR_ERR(lcd_pinctrl1);
+		pr_notice(" Cannot find lcd_disp_pwm_gpio %d!\n", ret);
+	}
 }
 
 static int lcm_driver_probe(struct device *dev, void const *data)
@@ -489,8 +512,6 @@ static void lcm_init(void)
 
 	MDELAY(8);
 #endif
-	lcm_set_gpio_output(GPIO_LCD_CTP_RST, GPIO_OUT_ONE);
-	MDELAY(10);
 
 	/* after 6ms reset HLH */
 	lcm_set_gpio_output(GPIO_LCD_RST, GPIO_OUT_ONE);
@@ -499,6 +520,11 @@ static void lcm_init(void)
 	MDELAY(1);
 	lcm_set_gpio_output(GPIO_LCD_RST, GPIO_OUT_ONE);
 	MDELAY(50);
+
+	lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ONE);
+	MDELAY(2);
+
+	pinctrl_select_state(lcd_pinctrl1, lcd_disp_pwm);
 
 	push_table(NULL,
 		init_setting_vdo,
@@ -517,7 +543,15 @@ static void lcm_suspend(void)
 		1);
 	MDELAY(10);
 
-	/* SET_RESET_PIN(0); */
+	pinctrl_select_state(lcd_pinctrl1, lcd_disp_pwm_gpio);
+
+	lcm_set_gpio_output(GPIO_LCD_LED_EN, GPIO_OUT_ZERO);
+	MDELAY(2);
+	lcm_set_gpio_output(GPIO_LCD_RST, GPIO_OUT_ZERO);
+	lcm_set_gpio_output(GPIO_LCD_PWR_ENP, GPIO_OUT_ZERO);
+	MDELAY(1);
+	lcm_set_gpio_output(GPIO_LCD_PWR_ENN, GPIO_OUT_ZERO);
+	MDELAY(5);
 }
 
 static void lcm_resume(void)
