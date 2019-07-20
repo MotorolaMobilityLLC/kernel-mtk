@@ -982,7 +982,7 @@ static int _primary_path_idlemgr_monitor_thread(void *data)
 			    idlemgr_pgc->idlemgr_wait_queue,
 			    atomic_read(&idlemgr_task_wakeup));
 
-			interval = idle_check_interval * 1000 * 1000 -
+			interval = idle_check_interval * 1000ULL * 1000ULL -
 				   (local_clock() -
 				    idlemgr_pgc->idlemgr_last_kick_time);
 			do_div(interval, 1000000);
