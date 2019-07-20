@@ -41,17 +41,15 @@
 #include "mtk_devinfo.h"
 #include "smart.h"
 
-#define SEQ_printf(m, x...)                                                   \
-	do {                                                                  \
-		if (m)                                                        \
+#define SEQ_printf(m, x...)                                       \
+	do {                                                          \
+		if (m)                                                    \
 			seq_printf(m, x);                                     \
-		else                                                          \
+		else                                                      \
 			pr_debug(x);                                          \
 	} while (0)
 #undef TAG
 #define TAG "[SMART]"
-
-#define S_LOG(fmt, args...) pr_debug(TAG fmt, ##args)
 
 struct smart_det {
 	spinlock_t smart_lock;
@@ -64,10 +62,8 @@ struct smart_det {
 
 /*--------------------------------------------*/
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 static struct smart_det tsmart;
 #define SMART_TIMER_INTERVAL_MS (40)
-#endif /* CONFIG_MTK_ACAO_SUPPORT */
 
 #define CLUSTER_NUM (2)
 
@@ -75,7 +71,6 @@ static int turbo_support;
 static int log_enable;
 static int trace_enable;
 static int uevent_enable;
-static unsigned long __read_mostly mark_addr;
 /* Is foreground enter sports mode? set from perfservice */
 static int app_is_sports;
 static int app_is_running; /* Is app running */
@@ -91,9 +86,7 @@ static unsigned long app_down_count;
 static unsigned long turbo_util_thresh;
 static int turbo_mode_enable;
 static int force_isolate;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 struct cpumask turbo_cpus;
-#endif
 
 struct smart_data {
 	int is_hps_heavy;
@@ -111,71 +104,6 @@ struct smart_context {
 
 struct smart_context *smart_context_obj;
 
-/* Operaton */
-#if 0
-static struct attribute_group smart_attribute_group = {
-	.attrs = NULL
-};
-#endif
-
-inline void smart_tracer(int pid, char *name, int count)
-{
-	if (!trace_enable || !name)
-		return;
-#if 0
-	preempt_disable();
-	event_trace_printk(mark_addr, "C|%d|%s|%d\n",
-				pid, name, count);
-	preempt_enable();
-#else
-	met_tag_oneshot(0, name, count);
-#endif
-}
-
-int set_cpuset(int cluster)
-{
-	int ret;
-	char event_ll[10] = "DETECT=11";   /* HPS*/
-	char event_l[10] = "DETECT=10";    /* HPS*/
-	char event_all[10] = "DETECT=12";  /* HPS*/
-	char event_act_up[9] = "ACTION=1"; /* up	*/
-	char *envp_clu0[3] = {event_ll, event_act_up, NULL};
-	char *envp_clu1[3] = {event_l, event_act_up, NULL};
-	char *envp_cluall[3] = {event_all, event_act_up, NULL};
-	char **envp;
-
-	switch (cluster) {
-	case 0:
-		/* send 0-3 */
-		envp = &envp_clu0[0];
-		break;
-
-	case 1:
-		/* send 4-7 */
-		envp = &envp_clu1[0];
-		break;
-
-	case -1:
-		/* send 0-7 */
-		envp = &envp_cluall[0];
-		break;
-
-	default:
-		return -EINVAL;
-	}
-
-	if (!smart_context_obj)
-		return 0;
-
-	ret = kobject_uevent_env(&smart_context_obj->mdev.this_device->kobj,
-				 KOBJ_CHANGE, envp);
-	if (ret) {
-		pr_debug(TAG "kobject_uevent error:%d\n", ret);
-		return -EINVAL;
-	}
-
-	return 0;
-}
 
 /******* FLIPER SETTING *********/
 
@@ -398,16 +326,12 @@ static ssize_t mt_smart_force_isolate_write(struct file *filp,
 		ret = 0;
 		if (arg == 0) {
 			force_isolate = 0;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 			unset_cpu_isolation(ISO_TURBO);
-#endif
 		}
 		if (arg == 1) {
 			force_isolate = 1;
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 			if (turbo_support)
 				set_cpu_isolation(ISO_TURBO, &turbo_cpus);
-#endif
 		}
 	} else
 		ret = -EINVAL;
@@ -725,12 +649,8 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp,
 						    turbo_mode_enable, htask,
 						    ll_util, ll_cap,
 						    turbo_util_thresh);
-					smart_tracer(0, "turbo_mode_enable",
-						     1);
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 					set_cpu_isolation(ISO_TURBO,
-							  &turbo_cpus);
-#endif
+						&turbo_cpus);
 				}
 			} else {
 				turbo_mode_enable = 0;
@@ -741,11 +661,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp,
 						    turbo_mode_enable, htask,
 						    ll_util, ll_cap,
 						    turbo_util_thresh);
-					smart_tracer(0, "turbo_mode_enable",
-						     0);
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 					unset_cpu_isolation(ISO_TURBO);
-#endif
 				}
 			}
 		}
@@ -799,15 +715,12 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp,
 			}
 		}
 	} else {
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 		if (turbo_mode_enable)
 			unset_cpu_isolation(ISO_TURBO);
-#endif
 		turbo_mode_enable = 0; /* reset */
 	}
 }
 
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 static void smart_get_sysinfo(unsigned int *loads, unsigned int *tlp,
 			      unsigned int *btask, unsigned int *htask)
 {
@@ -924,48 +837,13 @@ static int tsmart_thread(void *ptr)
 	}
 	return 0;
 }
-#endif /* CONFIG_MTK_ACAO_SUPPORT */
 
 /*--------------------INIT------------------------*/
-static int init_smart_obj(void)
-{
-	int ret;
-
-	/* dev init */
-	struct smart_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
-
-	mutex_init(&obj->s_op_mutex);
-	smart_context_obj = obj;
-	smart_context_obj->mdev.minor = MISC_DYNAMIC_MINOR;
-	smart_context_obj->mdev.name = "m_smart_misc";
-	ret = misc_register(&smart_context_obj->mdev);
-	if (ret) {
-		pr_debug(TAG "misc_register error:%d\n", ret);
-		return -2;
-	}
-
-	ret = kobject_uevent(&smart_context_obj->mdev.this_device->kobj,
-			     KOBJ_ADD);
-	if (ret) {
-		pr_debug(TAG "kobject_uevent error:%d\n", ret);
-		return -4;
-	}
-
-	/* init data */
-	smart_context_obj->s_data.check_duration = 5000;
-	smart_context_obj->s_data.valid_duration = 0;
-	smart_context_obj->s_data.is_hps_heavy = 0;
-
-	return 0;
-}
 
 static int __init init_smart(void)
 {
 	struct proc_dir_entry *pe;
 	struct proc_dir_entry *smart_dir = NULL;
-
-	/* dev init */
-	init_smart_obj();
 
 	/* poting */
 	smart_dir = proc_mkdir("perfmgr/smart", NULL);
@@ -1044,12 +922,8 @@ static int __init init_smart(void)
 	if (get_devinfo_with_index(30) == 0x10) /* 63n */
 		turbo_support = 0;
 	else
-		turbo_support =
-		    (get_devinfo_with_index(54) & (1 << 3)) ? 1 : 0;
+		turbo_support = (get_devinfo_with_index(54) & (1 << 3)) ? 1 : 0;
 
-	mark_addr = kallsyms_lookup_name("tracing_mark_write");
-
-#ifdef CONFIG_MTK_ACAO_SUPPORT
 	spin_lock_init(&tsmart.smart_lock);
 	init_waitqueue_head(&tsmart.wq);
 	atomic_set(&tsmart.event, 0);
@@ -1076,10 +950,10 @@ static int __init init_smart(void)
 	cpumask_set_cpu(2, &turbo_cpus);
 	cpumask_set_cpu(3, &turbo_cpus);
 	cpumask_set_cpu(7, &turbo_cpus);
-#endif /* CONFIG_MTK_ACAO_SUPPORT */
 
 	pr_debug(TAG "init smart driver done\n");
 
 	return 0;
 }
 late_initcall(init_smart);
+
