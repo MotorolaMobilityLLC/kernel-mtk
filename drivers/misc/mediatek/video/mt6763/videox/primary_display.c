@@ -699,7 +699,7 @@ static void add_layer_info(void)
 	memset(disp_tmp, 0, sizeof(disp_tmp));
 	/* show hrt */
 	if (dbg_disp.show_hrt_en) {
-		snprintf(p, sizeof(disp_tmp), "hrt:%01d.%01d ",
+		snprintf(p, sizeof(disp_tmp), "hrt:%01lld.%01lld ",
 			 dbg_disp.hrt_high, dbg_disp.hrt_low);
 		j = strlen(p);
 		p = p + j;
@@ -724,7 +724,7 @@ static void add_layer_info(void)
 			dbg_disp.layer_size_low *= 10;
 			do_div(dbg_disp.layer_size_low, full_layer_size);
 
-			snprintf(p, sizeof(disp_tmp), "Lsize:%01d.%01d ",
+			snprintf(p, sizeof(disp_tmp), "Lsize:%01lld.%01lld ",
 				 dbg_disp.layer_size_high,
 				 dbg_disp.layer_size_low);
 			j = strlen(p);

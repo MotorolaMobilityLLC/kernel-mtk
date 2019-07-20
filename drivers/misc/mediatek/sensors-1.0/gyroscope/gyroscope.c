@@ -165,7 +165,7 @@ static struct gyro_context *gyro_context_alloc_object(void)
 
 	struct gyro_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 
-	pr_debug("gyro_context_alloc_object++++\n");
+	pr_debug("%s start\n", __func__);
 	if (!obj) {
 		pr_err("Alloc gyro object error!\n");
 		return NULL;
@@ -193,7 +193,7 @@ static struct gyro_context *gyro_context_alloc_object(void)
 	obj->delay_ns = -1;
 	obj->latency_ns = -1;
 	mutex_init(&obj->gyro_op_mutex);
-	pr_debug("gyro_context_alloc_object----\n");
+	pr_debug("%s end\n", __func__);
 	return obj;
 }
 
@@ -271,7 +271,7 @@ static int gyro_enable_and_batch(void)
 		/* start polling, if needed */
 		if (cxt->is_active_data == true &&
 		    cxt->gyro_ctl.is_report_input_direct == false) {
-			int mdelay = cxt->delay_ns;
+			uint64_t mdelay = cxt->delay_ns;
 
 			do_div(mdelay, 1000000);
 			atomic_set(&cxt->delay, mdelay);
@@ -354,7 +354,7 @@ static ssize_t gyro_store_active(struct device *dev,
 	struct gyro_context *cxt = gyro_context_obj;
 	int err = 0;
 
-	pr_debug("gyro_store_active buf=%s\n", buf);
+	pr_debug("%s buf=%s\n", __func__, buf);
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	if (!strncmp(buf, "1", 1)) {
 		cxt->enable = 1;
@@ -363,7 +363,7 @@ static ssize_t gyro_store_active(struct device *dev,
 		cxt->enable = 0;
 		cxt->is_active_data = false;
 	} else {
-		pr_err(" gyro_store_active error !!\n");
+		pr_err("%s error !!\n", __func__);
 		err = -1;
 		goto err_out;
 	}
@@ -388,7 +388,7 @@ static ssize_t gyro_store_active(struct device *dev,
 #endif
 err_out:
 	mutex_unlock(&gyro_context_obj->gyro_op_mutex);
-	pr_debug(" gyro_store_active done\n");
+	pr_debug("%s done\n", __func__);
 	if (err)
 		return err;
 	else
@@ -416,11 +416,11 @@ static ssize_t gyro_store_batch(struct device *dev,
 	struct gyro_context *cxt = gyro_context_obj;
 	int handle = 0, flag = 0, err = 0;
 
-	pr_debug("gyro_store_batch %s\n", buf);
+	pr_debug("%s %s\n", __func__, buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &cxt->delay_ns,
 		     &cxt->latency_ns);
 	if (err != 4) {
-		pr_info("gyro_store_batch param error: err = %d\n", err);
+		pr_info("%s param error: err = %d\n", __func__, err);
 		return -1;
 	}
 
@@ -457,9 +457,9 @@ static ssize_t gyro_store_flush(struct device *dev,
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		pr_info("gyro_store_flush param error: err = %d\n", err);
+		pr_info("%s param error: err = %d\n", __func__, err);
 
-	pr_debug("gyro_store_flush param: handle %d\n", handle);
+	pr_debug("%s param: handle %d\n", __func__, handle);
 
 	mutex_lock(&gyro_context_obj->gyro_op_mutex);
 	cxt = gyro_context_obj;
@@ -523,13 +523,13 @@ static ssize_t gyro_show_devnum(struct device *dev,
 }
 static int gyroscope_remove(struct platform_device *pdev)
 {
-	pr_debug("gyroscope_remove\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int gyroscope_probe(struct platform_device *pdev)
 {
-	pr_debug("gyroscope_probe\n");
+	pr_debug("%s\n", __func__);
 	pltfm_dev = pdev;
 	return 0;
 }
@@ -559,7 +559,7 @@ static int gyro_real_driver_init(struct platform_device *pdev)
 	int i = 0;
 	int err = 0;
 
-	pr_debug("gyro_real_driver_init +\n");
+	pr_debug("%s start\n", __func__);
 	for (i = 0; i < MAX_CHOOSE_GYRO_NUM; i++) {
 		pr_debug("i=%d\n", i);
 		if (gyroscope_init_list[i] != 0) {
@@ -575,7 +575,7 @@ static int gyro_real_driver_init(struct platform_device *pdev)
 	}
 
 	if (i == MAX_CHOOSE_GYRO_NUM) {
-		pr_debug(" gyro_real_driver_init fail\n");
+		pr_debug("%s fail\n", __func__);
 		err = -1;
 	}
 	return err;
@@ -587,7 +587,7 @@ int gyro_driver_add(struct gyro_init_info *obj)
 	int i = 0;
 
 	if (!obj) {
-		pr_err("gyro driver add fail, gyro_init_info is NULL\n");
+		pr_err("%s fail, gyro_init_info is NULL\n", __func__);
 		return -1;
 	}
 
@@ -855,7 +855,7 @@ static int gyro_probe(void)
 
 	int err;
 
-	pr_debug("+++++++++++++gyro_probe!!\n");
+	pr_debug("%s +++!!\n", __func__);
 
 	gyro_context_obj = gyro_context_alloc_object();
 	if (!gyro_context_obj) {
@@ -870,14 +870,14 @@ static int gyro_probe(void)
 		pr_err("gyro real driver init fail\n");
 		goto real_driver_init_fail;
 	}
-	pr_debug("----gyro_probe OK !!\n");
+	pr_debug("%s OK !!\n", __func__);
 	return 0;
 
 real_driver_init_fail:
 	kfree(gyro_context_obj);
 
 exit_alloc_data_failed:
-	pr_err("----gyro_probe fail !!!\n");
+	pr_err("%s--- fail !!!\n", __func__);
 	return err;
 }
 
@@ -898,7 +898,7 @@ static int gyro_remove(void)
 
 static int __init gyro_init(void)
 {
-	pr_debug("gyro_init\n");
+	pr_debug("%s\n", __func__);
 
 	if (gyro_probe()) {
 		pr_err("failed to register gyro driver\n");

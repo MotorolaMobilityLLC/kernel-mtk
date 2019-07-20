@@ -150,7 +150,7 @@ static struct baro_context *baro_context_alloc_object(void)
 
 	struct baro_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 
-	pr_debug("baro_context_alloc_object++++\n");
+	pr_debug("%s start\n", __func__);
 	if (!obj) {
 		pr_err("Alloc baro object error!\n");
 		return NULL;
@@ -174,7 +174,7 @@ static struct baro_context *baro_context_alloc_object(void)
 	obj->delay_ns = -1;
 	obj->latency_ns = -1;
 
-	pr_debug("baro_context_alloc_object----\n");
+	pr_debug("%s end\n", __func__);
 	return obj;
 }
 #if !defined(CONFIG_NANOHUB)
@@ -239,7 +239,7 @@ static int baro_enable_and_batch(void)
 		pr_debug("baro set ODR, fifo latency done\n");
 		/* start polling, if needed */
 		if (cxt->baro_ctl.is_report_input_direct == false) {
-			int mdelay = cxt->delay_ns;
+			uint64_t mdelay = cxt->delay_ns;
 
 			do_div(mdelay, 1000000);
 			atomic_set(&cxt->delay, mdelay);
@@ -265,14 +265,14 @@ static ssize_t baro_store_active(struct device *dev,
 	struct baro_context *cxt = baro_context_obj;
 	int err = 0;
 
-	pr_debug("baro_store_active buf=%s\n", buf);
+	pr_debug("%s buf=%s\n", __func__, buf);
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 	if (!strncmp(buf, "1", 1))
 		cxt->enable = 1;
 	else if (!strncmp(buf, "0", 1))
 		cxt->enable = 0;
 	else {
-		pr_err(" baro_store_active error !!\n");
+		pr_err("%s error !!\n", __func__);
 		err = -1;
 		goto err_out;
 	}
@@ -287,7 +287,7 @@ static ssize_t baro_store_active(struct device *dev,
 #endif
 err_out:
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
-	pr_debug(" baro_store_active done\n");
+	pr_debug("%s done\n", __func__);
 	if (err)
 		return err;
 	else
@@ -334,7 +334,7 @@ static ssize_t baro_store_batch(struct device *dev,
 	err = baro_enable_and_batch();
 #endif
 	mutex_unlock(&baro_context_obj->baro_op_mutex);
-	pr_debug(" baro_store_batch done: %d\n", cxt->is_batch_enable);
+	pr_debug("%s done: %d\n", __func__, cxt->is_batch_enable);
 	if (err)
 		return err;
 	else
@@ -356,9 +356,9 @@ static ssize_t baro_store_flush(struct device *dev,
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		pr_err("baro_store_flush param error: err = %d\n", err);
+		pr_err("%s param error: err = %d\n", __func__, err);
 
-	pr_debug("baro_store_flush param: handle %d\n", handle);
+	pr_debug("%s param: handle %d\n", __func__, handle);
 
 	mutex_lock(&baro_context_obj->baro_op_mutex);
 	cxt = baro_context_obj;
@@ -390,13 +390,13 @@ static ssize_t baro_show_devnum(struct device *dev,
 
 static int barometer_remove(struct platform_device *pdev)
 {
-	pr_debug("barometer_remove\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int barometer_probe(struct platform_device *pdev)
 {
-	pr_debug("barometer_probe\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -425,7 +425,7 @@ static int baro_real_driver_init(void)
 	int i = 0;
 	int err = 0;
 
-	pr_debug(" baro_real_driver_init +\n");
+	pr_debug("%s start\n", __func__);
 	for (i = 0; i < MAX_CHOOSE_BARO_NUM; i++) {
 		pr_debug(" i=%d\n", i);
 		if (barometer_init_list[i] != 0) {
@@ -441,7 +441,7 @@ static int baro_real_driver_init(void)
 	}
 
 	if (i == MAX_CHOOSE_BARO_NUM) {
-		pr_debug(" baro_real_driver_init fail\n");
+		pr_debug("%s fail\n", __func__);
 		err = -1;
 	}
 	return err;
@@ -633,7 +633,7 @@ static int baro_probe(void)
 {
 	int err;
 
-	pr_debug("+++++++++++++baro_probe!!\n");
+	pr_debug("%s+++!!\n", __func__);
 
 	baro_context_obj = baro_context_alloc_object();
 	if (!baro_context_obj) {
@@ -649,7 +649,7 @@ static int baro_probe(void)
 		goto real_driver_init_fail;
 	}
 
-	pr_debug("----baro_probe OK !!\n");
+	pr_debug("%s--- OK !!\n", __func__);
 	return 0;
 
 real_driver_init_fail:
@@ -657,7 +657,7 @@ real_driver_init_fail:
 	baro_context_obj = NULL;
 exit_alloc_data_failed:
 
-	pr_debug("----baro_probe fail !!!\n");
+	pr_debug("%s----fail !!!\n", __func__);
 	return err;
 }
 

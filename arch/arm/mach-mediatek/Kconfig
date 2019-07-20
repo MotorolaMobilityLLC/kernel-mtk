@@ -62,7 +62,18 @@ config MACH_MT6763
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
 	select HIE
+	select MTK_PLAT_SRAM_FLAG
+	select MTK_L2C_PARITY_CHECK
 	select MTK_SYSTRACKER_V2
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
+	help
+	  This enables support for MediaTek MT6763
+	  Support for arm Architecture
+	  Support for k63v1 related projects
 	select MTK_TIMER_APXGPT
 	select MTK_IRQ_NEW_DESIGN
 	select MTK_IRQ_NEW_DESIGN_DEBUG

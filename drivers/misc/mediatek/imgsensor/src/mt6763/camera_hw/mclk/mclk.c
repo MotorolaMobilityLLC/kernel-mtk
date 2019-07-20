@@ -121,7 +121,7 @@ static enum IMGSENSOR_RETURN mclk_set(void *pinstance,
 			pinctrl_select_state(pinst->ppinctrl, ppinctrl_state);
 		} else
 			pr_err(
-				"err sensor_idx %d, %s, pinctrl, PinIdx %d, Val %d\n",
+				"%s : err sensor_idx %d, pinctrl, PinIdx %d, Val %d\n",
 				__func__, sensor_idx, pin, pin_state);
 		mutex_unlock(&pinctrl_mutex);
 	}

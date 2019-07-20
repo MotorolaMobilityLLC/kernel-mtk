@@ -218,7 +218,11 @@ void read_fg_hw_info_current_1(struct gauge_device *gauge_dev)
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 100000);
+#else
+	Temp_Value = div_s64(Temp_Value, 100000);
+#endif
 	dvalue = (unsigned int)Temp_Value;
 
 	if (gauge_dev->fg_cust_data->r_fg_value != 100)
@@ -256,7 +260,11 @@ void read_fg_hw_info_current_2(struct gauge_device *gauge_dev)
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 100000);
+#else
+	Temp_Value = div_s64(Temp_Value, 100000);
+#endif
 	dvalue = (unsigned int)Temp_Value;
 
 	if (gauge_dev->fg_cust_data->r_fg_value != 100)
@@ -306,8 +314,18 @@ static void read_fg_hw_info_Iavg(struct gauge_device *gauge_dev,
 
 		fg_iavg_ma = fg_iavg_reg * UNIT_FG_IAVG *
 			     gauge_dev->fg_cust_data->car_tune_value;
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, 1000000);
+		/* LSB UNIT_FG_IAVG and cartune */
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma, 1000000);
+#endif
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, gauge_dev->fg_cust_data->r_fg_value);
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma,
+				gauge_dev->fg_cust_data->r_fg_value);
+#endif
 
 		if (sign_bit == 1)
 			fg_iavg_ma = 0 - fg_iavg_ma;
@@ -381,11 +399,21 @@ static signed int fg_get_current_iavg(struct gauge_device *gauge_dev,
 			 "[%s] fg_iavg_ma %lld fg_iavg_reg %lld fg_iavg_reg_tmp %lld\n",
 			 __func__, fg_iavg_ma, fg_iavg_reg, fg_iavg_reg_tmp);
 
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, 1000000);
+		/* LSB UNIT_FG_IAVG , cartune */
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma, 1000000);
+#endif
 		bm_trace("[%s] fg_iavg_ma %lld\n", __func__,
 			 fg_iavg_ma);
 
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, gauge_dev->fg_cust_data->r_fg_value);
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma,
+				gauge_dev->fg_cust_data->r_fg_value);
+#endif
 		bm_trace("[%s] fg_iavg_ma %lld\n", __func__,
 			 fg_iavg_ma);
 
@@ -468,8 +496,15 @@ static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 	} else
 		sign_bit_ht = 0;
 
+#if defined(__LP64__) || defined(_LP64)
 	do_div(fg_iavg_reg_ht, UNIT_FG_IAVG);
 	do_div(fg_iavg_reg_ht, gauge_dev->fg_cust_data->car_tune_value);
+#else
+	fg_iavg_reg_ht = div_s64(fg_iavg_reg_ht, UNIT_FG_IAVG);
+	fg_iavg_reg_ht = div_s64(fg_iavg_reg_ht,
+				gauge_dev->fg_cust_data->car_tune_value);
+#endif
+
 	if (sign_bit_ht == 1)
 		fg_iavg_reg_ht = fg_iavg_reg_ht - (fg_iavg_reg_ht * 2);
 
@@ -481,8 +516,15 @@ static signed int fg_set_iavg_intr(struct gauge_device *gauge_dev, void *data)
 	} else
 		sign_bit_lt = 0;
 
+#if defined(__LP64__) || defined(_LP64)
 	do_div(fg_iavg_reg_lt, UNIT_FG_IAVG);
 	do_div(fg_iavg_reg_lt, gauge_dev->fg_cust_data->car_tune_value);
+#else
+	fg_iavg_reg_lt = div_s64(fg_iavg_reg_lt, UNIT_FG_IAVG);
+	fg_iavg_reg_lt = div_s64(fg_iavg_reg_lt,
+				gauge_dev->fg_cust_data->car_tune_value);
+#endif
+
 	if (sign_bit_lt == 1)
 		fg_iavg_reg_lt = fg_iavg_reg_lt - (fg_iavg_reg_lt * 2);
 
@@ -563,9 +605,15 @@ void read_fg_hw_info_ncar(struct gauge_device *gauge_dev)
 #else
 	Temp_Value = div_s64(Temp_Value * UNIT_FGCAR, 1000);
 #endif
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 10);
 	Temp_Value = Temp_Value + 5;
 	do_div(Temp_Value, 10);
+#else
+	Temp_Value = div_s64(Temp_Value, 10);
+	Temp_Value = Temp_Value + 5;
+	Temp_Value = div_s64(Temp_Value, 10);
+#endif
 
 	if (uvalue32_NCAR_MSB == 0x1)
 		dvalue_NCAR =
@@ -716,7 +764,11 @@ static int fgauge_read_current(struct gauge_device *gauge_dev,
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 100000);
+#else
+	Temp_Value = div_s64(Temp_Value, 100000);
+#endif
 	dvalue = (unsigned int)Temp_Value;
 
 	if (*fg_is_charging == true)
@@ -802,11 +854,20 @@ static int fgauge_get_average_current(struct gauge_device *gauge_dev,
 			 "[%s] fg_iavg_ma %lld fg_iavg_reg %lld fg_iavg_reg_tmp %lld\n",
 			 __func__, fg_iavg_ma, fg_iavg_reg, fg_iavg_reg_tmp);
 
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, 1000000);
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma, 1000000);
+#endif
 		bm_trace("[%s] fg_iavg_ma %lld\n", __func__,
 			 fg_iavg_ma);
 
+#if defined(__LP64__) || defined(_LP64)
 		do_div(fg_iavg_ma, gauge_dev->fg_cust_data->r_fg_value);
+#else
+		fg_iavg_ma = div_s64(fg_iavg_ma,
+				gauge_dev->fg_cust_data->r_fg_value);
+#endif
 		bm_trace("[%s] fg_iavg_ma %lld\n", __func__,
 			 fg_iavg_ma);
 
@@ -970,9 +1031,15 @@ static int fgauge_get_coulomb(struct gauge_device *gauge_dev, int *data)
 #else
 	Temp_Value = div_s64(Temp_Value * UNIT_FGCAR, 1000);
 #endif
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 10);
 	Temp_Value = Temp_Value + 5;
 	do_div(Temp_Value, 10);
+#else
+	Temp_Value = div_s64(Temp_Value, 10);
+	Temp_Value = Temp_Value + 5;
+	Temp_Value = div_s64(Temp_Value, 10);
+#endif
 
 	if (uvalue32_CAR_MSB == 0x1)
 		dvalue_CAR =
@@ -1693,7 +1760,11 @@ static int fgauge_get_ptim_current(struct gauge_device *gauge_dev,
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
-	do_div(Temp_Value, 100000);
+#if defined(__LP64__) || defined(_LP64)
+		do_div(Temp_Value, 100000);
+#else
+		Temp_Value = div_s64(Temp_Value, 100000);
+#endif
 	dvalue = (unsigned int)Temp_Value;
 
 	if (*is_charging == true)
@@ -1748,7 +1819,11 @@ static int fgauge_get_zcv_current(struct gauge_device *gauge_dev,
 	}
 
 	Temp_Value = Temp_Value * UNIT_FGCURRENT;
+#if defined(__LP64__) || defined(_LP64)
 	do_div(Temp_Value, 100000);
+#else
+	Temp_Value = div_s64(Temp_Value, 100000);
+#endif
 	dvalue = (unsigned int)Temp_Value;
 
 	/* Auto adjust value */
@@ -1984,7 +2059,11 @@ static void fgauge_set_zcv_intr_internal(struct gauge_device *gauge_dev,
 	 * UNIT_FGCAR_ZCV;
 	 */
 	fg_zcv_car_th_reg = (fg_zcv_car_th_reg * 100 * 3600 * 1000);
+#if defined(__LP64__) || defined(_LP64)
 	do_div(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
+#else
+	fg_zcv_car_th_reg = div_s64(fg_zcv_car_th_reg, UNIT_FGCAR_ZCV);
+#endif
 
 	if (gauge_dev->fg_cust_data->r_fg_value != 100)
 #if defined(__LP64__) || defined(_LP64)
@@ -2751,7 +2830,11 @@ fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_dev,
 		       sum_all, temp_sum, avg_cnt, current_from_ADC);
 
 		if (avg_cnt != 0)
+#if defined(__LP64__) || defined(_LP64)
 			do_div(temp_sum, avg_cnt);
+#else
+			temp_sum = div_s64(temp_sum, avg_cnt);
+#endif
 		current_from_ADC = temp_sum;
 
 		bm_err(
@@ -2766,8 +2849,11 @@ fgauge_enable_car_tune_value_calibration(struct gauge_device *gauge_dev,
 
 		/* Move 100 from denominator to cali_car_tune's numerator */
 		/*do_div(Temp_Value2, 1000000);*/
+#if defined(__LP64__) || defined(_LP64)
 		do_div(Temp_Value2, 10000);
-
+#else
+		Temp_Value2 = div_s64(Temp_Value2, 10000);
+#endif
 		bm_err(
 		       "[666]Temp_Value2 %lld current_from_ADC %lld UNIT_FGCURRENT %d\n",
 		       Temp_Value2, current_from_ADC, UNIT_FGCURRENT);
@@ -3009,14 +3095,26 @@ int fgauge_set_battery_cycle_interrupt(struct gauge_device *gauge_dev,
 	car = car * CAR_TO_REG_FACTOR;
 	if (fg_cust_data.r_fg_value != 100) {
 		car = (car * fg_cust_data.r_fg_value);
+#if defined(__LP64__) || defined(_LP64)
 		do_div(car, 100);
+#else
+		car = div_s64(car, 100);
+#endif
 	}
 
 	car = car * 1000;
+#if defined(__LP64__) || defined(_LP64)
 	do_div(car, fg_cust_data.car_tune_value);
+#else
+	car = div_s64(car, fg_cust_data.car_tune_value);
+#endif
 
 	carReg = car + 5;
-	do_div(carReg, 10);
+#if defined(__LP64__) || defined(_LP64)
+		do_div(carReg, 10);
+#else
+		carReg = div_s64(carReg, 10);
+#endif
 	carReg = 0 - carReg;
 
 	pmic_set_register_value(PMIC_FG_N_CHARGE_LTH_15_14,
