@@ -137,6 +137,7 @@ static int m4u_sec_gp_deinit(struct m4u_sec_context *ctx)
 	TEEC_FinalizeContext(&gp_ctx->ctx);
 	gp_ctx->init = 0;
 
+	M4UMSG("%s done\n", __func__);
 	return 0;
 }
 
