@@ -350,7 +350,7 @@ static int get_power_usb_type(void)
 	if (!strcmp(online, "1"))
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "USB");
 	else if (!strcmp(buf, "1"))
-		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "AC");
+		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "USB_DCP");
 	else
 		strcpy(hwinfo[POWER_USB_TYPE].hwinfo_buf, "Unknow");
 
