@@ -51,6 +51,7 @@
 #if (MD_GENERATION >= 6293)
 #include "hif/ccci_hif_ccif.h"
 #endif
+#include "ccci_aee_handle.h"
 
 #define TAG "mcd"
 
@@ -579,7 +580,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 					md_cd_dump_debug_register(md);
 					/* cldma_dump_register(CLDMA_HIF_ID);*/
 #if defined(CONFIG_MTK_AEE_FEATURE)
-					aed_md_exception_api(
+					ccci_aed_md_exception_api(
 					mdss_dbg->base_ap_view_vir,
 					mdss_dbg->size, NULL, 0,
 					"After AP send EPOF, MD didn't go to sleep in 4 seconds.",
@@ -612,7 +613,7 @@ static int md_cd_pre_stop(struct ccci_modem *md, unsigned int stop_type)
 			md_cd_dump_debug_register(md);
 			/* cldma_dump_register(CLDMA_HIF_ID);*/
 #if defined(CONFIG_MTK_AEE_FEATURE)
-			aed_md_exception_api(NULL, 0, NULL, 0,
+			ccci_aed_md_exception_api(NULL, 0, NULL, 0,
 				"WDT IRQ occur.", DB_OPT_DEFAULT);
 #endif
 		}

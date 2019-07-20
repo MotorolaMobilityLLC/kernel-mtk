@@ -16,6 +16,7 @@
 #if defined(CONFIG_MTK_AEE_FEATURE)
 #include <mt-plat/aee.h>
 #endif
+#include "ccci_aee_handle.h"
 
 void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl,
 	unsigned int type, char *str)
@@ -87,7 +88,7 @@ void fsm_md_exception_stage(struct ccci_fsm_ee *ee_ctl, int stage)
 
 		CCCI_ERROR_LOG(md_id, FSM, "MD exception stage 1!\n");
 #if defined(CONFIG_MTK_AEE_FEATURE)
-		tracing_off();
+		ccci_tracing_off();
 #endif
 		CCCI_MEM_LOG_TAG(md_id, FSM,
 			"MD exception stage 1! ee=%x\n",
@@ -306,7 +307,7 @@ void fsm_ee_message_handler(struct ccci_fsm_ee *ee_ctl, struct sk_buff *skb)
 		CCCI_ERROR_LOG(ee_ctl->md_id, FSM,
 			"AP/MD driver version mis-match\n");
 #ifdef CONFIG_MTK_AEE_FEATURE
-		aed_md_exception_api(NULL, 0, NULL,
+		ccci_aed_md_exception_api(NULL, 0, NULL,
 			0, "AP/MD driver version mis-match\n",
 			DB_OPT_DEFAULT);
 #endif
