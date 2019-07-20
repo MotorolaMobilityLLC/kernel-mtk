@@ -417,7 +417,13 @@ int disable_ovl_layers(enum DISP_MODULE_ENUM module, void *handle)
 	unsigned int ovl_idx = ovl_to_index(module);
 
 	/* physical layer control */
-	DISP_REG_SET(handle,
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L0_EN,
+		ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L1_EN,
+		ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L2_EN,
+		ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
+	DISP_REG_SET_FIELD(handle, SRC_CON_FLD_L3_EN,
 		ovl_base_addr(module) + DISP_REG_OVL_SRC_CON, 0);
 	/* ext layer control */
 	DISP_REG_SET(handle,
