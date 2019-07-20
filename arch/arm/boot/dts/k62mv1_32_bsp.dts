@@ -455,4 +455,5 @@
 
 
 #include <k62mv1_32_bsp/cust.dtsi>
+#include "cust_mt6765_camera.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
