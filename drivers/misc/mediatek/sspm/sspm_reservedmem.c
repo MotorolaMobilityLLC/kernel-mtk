@@ -38,7 +38,6 @@
 #include <linux/platform_device.h>
 #include "sspm_define.h"
 #include "sspm_helper.h"
-#include "sspm_excep.h"
 #include "sspm_reservedmem.h"
 #define _SSPM_INTERNAL_
 #include "sspm_reservedmem_define.h"

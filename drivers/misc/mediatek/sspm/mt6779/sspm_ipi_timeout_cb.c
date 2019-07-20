@@ -16,6 +16,7 @@
 #include "sspm_define.h"
 
 __weak void dump_emi_outstanding(void) {}
+__weak void ccci_md_debug_dump(char *user_info) {}
 
 /* platform callback when ipi timeout */
 void sspm_ipi_timeout_cb(int ipi_id)
@@ -23,5 +24,7 @@ void sspm_ipi_timeout_cb(int ipi_id)
 	/* for debug EMI */
 	dump_emi_outstanding();
 
+	/* for debug CCCI */
+	ccci_md_debug_dump("sspm");
 }
 
