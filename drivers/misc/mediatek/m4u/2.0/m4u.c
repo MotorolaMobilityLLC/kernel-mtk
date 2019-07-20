@@ -2149,7 +2149,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 	M4U_PORT_ID ModuleID;
 	struct M4U_CACHE m4u_cache_data;
 	struct M4U_DMA m4u_dma_data;
-	struct m4u_client_t *client = filp->private_data;
+	/* struct m4u_client_t *client = filp->private_data; */
 
 	switch (cmd) {
 	case MTK_M4U_T_POWER_ON:
@@ -2199,6 +2199,8 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 			       m4u_module.port);
 			return -EFAULT;
 		}
+		M4UMSG("alloc mva by ioctl is not support\n");
+/*
 		ret = m4u_alloc_mva(client, m4u_module.port, m4u_module.BufAddr,
 				    NULL,
 				    m4u_module.BufSize, m4u_module.prot,
@@ -2206,7 +2208,7 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 
 		if (ret)
 			return ret;
-
+*/
 		ret = copy_to_user(&(((struct M4U_MOUDLE *) arg)->MVAStart),
 				 &(m4u_module.MVAStart), sizeof(unsigned int));
 		if (ret) {
@@ -2231,10 +2233,13 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 			       m4u_module.port);
 			return -EFAULT;
 		}
+		M4UMSG("dealloc mva by ioctl is not support\n");
+/*
 		ret = m4u_dealloc_mva(client, m4u_module.port,
 				      m4u_module.MVAStart);
 		if (ret)
 			return ret;
+*/
 		}
 		break;
 
@@ -2268,11 +2273,13 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 			       m4u_cache_data.port);
 			return -EFAULT;
 		}
-
+		M4UMSG("m4u cache sync by ioctl is not support\n");
+/*
 		ret = m4u_cache_sync(client, m4u_cache_data.port,
 				     m4u_cache_data.va,
 				     m4u_cache_data.size, m4u_cache_data.mva,
 				     m4u_cache_data.eCacheSync);
+*/
 		break;
 
 	case MTK_M4U_T_DMA_OP:
@@ -2290,10 +2297,12 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 			       m4u_dma_data.port);
 			return -EFAULT;
 		}
-
+		M4UMSG("m4u dma sync by ioctl is not support\n");
+/*
 		ret = m4u_dma_op(client, m4u_dma_data.port, m4u_dma_data.va,
 				 m4u_dma_data.size, m4u_dma_data.mva,
 				 m4u_dma_data.eDMAType, m4u_dma_data.eDMADir);
+*/
 		break;
 #ifdef M4U_FPGAPORTING
 	case MTK_M4U_T_CONFIG_PORT:
@@ -2338,7 +2347,8 @@ static long MTK_M4U_ioctl(struct file *filp, unsigned int cmd,
 #ifdef M4U_TEE_SERVICE_ENABLE
 		mutex_lock(&gM4u_sec_init);
 #endif
-		ret = m4u_config_port_array(&port_array);
+		M4UMSG("config port_array by ioctl is not support\n");
+		/* ret = m4u_config_port_array(&port_array); */
 #ifdef M4U_TEE_SERVICE_ENABLE
 		mutex_unlock(&gM4u_sec_init);
 #endif
