@@ -857,16 +857,17 @@ static int __do_dump_share_fd(const void *data, struct file *file,
 	if (!buffer->handle_count) {
 		if (bug_info)
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %9d %16s %5d %5d %16s %4d %8x %8d %8x %8d\n",
-				     buffer, bug_info->pid, buffer->alloc_dbg,
-				     p->pid, p->tgid, p->comm, fd,
+				     "0x%p %9d %9d %16s %5d %16s %4d %8x %8d %8x %8d\n",
+				     buffer, buffer->size, bug_info->pid,
+				     buffer->alloc_dbg, p->pid, p->comm, fd,
 				     mva[MM_DOMAIN], block_nr[MM_DOMAIN],
 				     mva[VPU_DOMAIN], block_nr[VPU_DOMAIN]);
 		else
 		ION_PRINT_LOG_OR_SEQ(s,
-				     "0x%p %9d %16s %5d %5d %16s %4d %8x %8d %8x %8d\n",
-				     buffer, -1, buffer->alloc_dbg,
-				     p->pid, p->tgid, p->comm, fd,
+				     "0x%p %9d %9d %16s %5d %16s %4d %8x %8d %8x %8d\n",
+				     buffer, buffer->size, -1,
+				     buffer->alloc_dbg,
+				     p->pid,  p->comm, fd,
 				     mva[MM_DOMAIN], block_nr[MM_DOMAIN],
 				     mva[VPU_DOMAIN], block_nr[VPU_DOMAIN]);
 	}
@@ -884,9 +885,9 @@ static int ion_dump_all_share_fds(struct seq_file *s)
 		return 0;
 
 	ION_PRINT_LOG_OR_SEQ(s,
-			     "%18s %9s %16s %5s %5s %16s %4s %8s %8s %8s %9s\n",
-			     "buffer", "alloc_pid", "alloc_client", "pid",
-			     "tgid", "process", "fd",
+			     "%18s %8.s %9s %16s %5s %16s %4s %8s %8s %8s %9s\n",
+			     "buffer", "size", "alloc_pid", "alloc_client",
+			     "pid", "process", "fd",
 			     "mva1", "nr1", "mva2", "nr2");
 	data.s = s;
 
