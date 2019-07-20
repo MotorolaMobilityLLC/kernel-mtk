@@ -69,6 +69,21 @@
 #define SEG4_GPU_DVFS_VSRAM2			(87500)		/* mV x 100 */
 
 /**************************************************
+ * MT6762D segment_5 : GPU DVFS OPP table Setting
+ **************************************************/
+#define SEG5_GPU_DVFS_FREQ0			(600000)/* KHz */
+#define SEG5_GPU_DVFS_FREQ1			(500000)/* KHz */
+#define SEG5_GPU_DVFS_FREQ2			(400000)/* KHz */
+
+#define SEG5_GPU_DVFS_VOLT0			(80000)	/* mV x 100 */
+#define SEG5_GPU_DVFS_VOLT1			(70000)	/* mV x 100 */
+#define SEG5_GPU_DVFS_VOLT2			(65000)	/* mV x 100 */
+
+#define SEG5_GPU_DVFS_VSRAM0			(87500)	/* mV x 100 */
+#define SEG5_GPU_DVFS_VSRAM1			(87500)	/* mV x 100 */
+#define SEG5_GPU_DVFS_VSRAM2			(87500)	/* mV x 100 */
+
+/**************************************************
  * PMIC Setting
  **************************************************/
 #define VGPU_MAX_VOLT				(SEG3_GPU_DVFS_VOLT0)
@@ -216,6 +231,7 @@ enum g_segment_id_enum {
 	MT6762_SEGMENT,
 	MT6765_SEGMENT,
 	MT6765T_SEGMENT,
+	MT6762D_SEGMENT,
 };
 enum g_post_divider_power_enum  {
 	POST_DIV2 = 1,
