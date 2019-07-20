@@ -1166,34 +1166,16 @@ static void _RGXDecodeBIFReqTags(PVRSRV_RGXDEV_INFO	*psDevInfo,
 		}
 		case 0x5:
 		{
-			if (RGX_IS_FEATURE_SUPPORTED(psDevInfo, CLUSTER_GROUPING))
-			{
-				pszTagID = "PBE";
-			}else
-			{
-				pszTagID = "PBE";
-				break;
-			}
+			pszTagID = "PBE";
 			break;
 		}
 		case 0x6:
 		{
-			if (RGX_IS_FEATURE_SUPPORTED(psDevInfo, CLUSTER_GROUPING))
+			pszTagID = "ISP";
+			switch (ui32TagSB)
 			{
-				pszTagID = "ISP";
-				switch (ui32TagSB)
-				{
-					case 0x00: pszTagSB = "ZLS"; break;
-					case 0x20: pszTagSB = "Occlusion Query"; break;
-				}
-			}else
-			{
-				pszTagID = "ISP";
-				switch (ui32TagSB)
-				{
-					case 0x00: pszTagSB = "ZLS"; break;
-					case 0x20: pszTagSB = "Occlusion Query"; break;
-				}
+				case 0x00: pszTagSB = "ZLS"; break;
+				case 0x20: pszTagSB = "Occlusion Query"; break;
 			}
 			break;
 		}
