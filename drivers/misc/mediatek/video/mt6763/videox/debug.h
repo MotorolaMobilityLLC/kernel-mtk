@@ -42,15 +42,14 @@ struct dbg_disp_info {
 	struct fps_debug fps_info_dbg;
 
 	/* hrt */
-	int hrt_high;
-	int hrt_low;
+	unsigned long long hrt_high, hrt_low;
 	int show_hrt_en;
 
 	/* layer_en */
 	int layer_en_num;
 	int layer_num_en;
-	int layer_size_high;
-	int layer_size_low;
+	uint64_t layer_size_high;
+	uint64_t layer_size_low;
 	int layer_size_en;
 
 	/* path mode */

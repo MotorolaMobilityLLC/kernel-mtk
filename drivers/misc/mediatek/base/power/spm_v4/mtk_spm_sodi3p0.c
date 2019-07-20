@@ -229,7 +229,7 @@ static void spm_sodi3_atf_time_sync(void)
 	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC, time_to_sync, 0, 0, 0);
 #else
 	mt_secure_call(MTK_SIP_KERNEL_TIME_SYNC,
-			(u32)time_to_sync, (u32)(time_to_sync >> 32), 0);
+			(u32)time_to_sync, (u32)(time_to_sync >> 32), 0, 0);
 #endif
 }
 

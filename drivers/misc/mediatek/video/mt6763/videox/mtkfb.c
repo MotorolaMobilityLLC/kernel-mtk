@@ -72,9 +72,7 @@
 	(CONFIG_MTK_DUAL_DISPLAY_SUPPORT == 2)
 #include "external_display.h"
 #endif
-#ifndef _UAPI__ASMARM_SETUP_H
-#define _UAPI__ASMARM_SETUP_H
-#endif
+
 #include <mt-plat/mtk_ccci_common.h>
 #include "ddp_dsi.h"
 
@@ -2120,7 +2118,7 @@ int _mtkfb_internal_test(unsigned long va, unsigned int w, unsigned int h)
 }
 
 #ifdef CONFIG_OF
-struct tag_videolfb {
+struct tag_video_lfb {
 	u64 fb_base;
 	u32 islcmfound;
 	u32 fps;
@@ -2216,11 +2214,11 @@ static int __parse_tag_videolfb_extra(struct device_node *node)
 
 static int __parse_tag_videolfb(struct device_node *node)
 {
-	struct tag_videolfb *videolfb_tag = NULL;
+	struct tag_video_lfb *videolfb_tag = NULL;
 	unsigned long size = 0;
 
-	videolfb_tag = (struct tag_videolfb *)of_get_property(
-	    node, "atag,videolfb", (int *)&size);
+	videolfb_tag = (struct tag_video_lfb *)of_get_property(node,
+		"atag,videolfb", (int *)&size);
 	if (videolfb_tag) {
 		memset((void *)mtkfb_lcm_name, 0, sizeof(mtkfb_lcm_name));
 		strncpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname,

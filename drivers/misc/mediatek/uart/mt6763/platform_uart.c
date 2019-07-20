@@ -727,11 +727,11 @@ static void mtk_uart_dma_vfifo_tx_tasklet_byte(unsigned long arg)
 			for (; idx < 4; idx++)
 				str[idx] = 0;
 		}
-		MSG(DMA, "TX[%4d]: %4d/%4d [%05X-%05X]\n",
+		MSG(DMA,
+		    "TX[%4d]: %4d/%4d [%05X-%05X] (%02X %02X .. %02X %02X)\n",
 		    size, count, left, UART_READ32(VFF_WPT(vfifo->base)),
-			UART_READ32(VFF_RPT(vfifo->base)));
-		MSG(DMA, "TX[%4d]:(%02X %02X .. %02X %02X)\n",
-				str[0], str[1], str[2], str[3]);
+			UART_READ32(VFF_RPT(vfifo->base)),
+			str[0], str[1], str[2], str[3]);
 	} else {
 		MSG(DMA, "TX[%4d]: %4d/%4d [%05X-%05X]\n",
 		    size, count, left, UART_READ32(VFF_WPT(vfifo->base)),
@@ -1116,7 +1116,7 @@ static void mtk_uart_dma_vfifo_rx_tasklet_str(unsigned long arg)
 		MSG(DMA, "RX[%4d]: [%5X..%5X] [%5X..%5X]\n",
 		    left, rxreg, txreg, UART_READ32(VFF_RPT(base)),
 			UART_READ32(VFF_WPT(base)));
-		MSG(DMA, "RX[%4d] (%02X %02X .. %02X %02X) [%d]\n",
+		MSG(DMA, "(%02X %02X .. %02X %02X) [%d]\n",
 		    str[0], str[1], str[2], str[3],
 			UART_READ32(VFF_FLUSH(base)));
 	} else {
@@ -1661,11 +1661,9 @@ void mtk_uart_power_up(struct mtk_uart *uart)
 #ifdef POWER_FEATURE
 		clk_en_ret = clk_enable(setting->clk_uart_main);
 		if (clk_en_ret) {
-			pr_notice("[UART%d]enable clk_uart_main failed.\n",
-					uart->nport);
-			pr_notice("ret:%d, clk_main:%p\n",
-					uart->nport,
-					clk_en_ret, setting->clk_uart_main);
+			pr_notice(
+			       "[UART%d]enable clk_uart_main failed. ret:%d, clk_main:%p\n",
+			       uart->nport, clk_en_ret, setting->clk_uart_main);
 		} else {
 			if (__ratelimit(&ratelimit)) {
 				pr_debug("[UART%d][CCF]enabled clk_uart_main:%p\n",

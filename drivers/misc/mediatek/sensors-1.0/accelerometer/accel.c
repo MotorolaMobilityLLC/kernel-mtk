@@ -164,7 +164,7 @@ static struct acc_context *acc_context_alloc_object(void)
 
 	struct acc_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
 
-	pr_debug("acc_context_alloc_object++++\n");
+	pr_debug("%s start\n", __func__);
 	if (!obj) {
 		pr_err("Alloc accel object error!\n");
 		return NULL;
@@ -192,7 +192,7 @@ static struct acc_context *acc_context_alloc_object(void)
 	obj->enable = 0;
 	obj->delay_ns = -1;
 	obj->latency_ns = -1;
-	pr_debug("acc_context_alloc_object----\n");
+	pr_debug("%s end\n", __func__);
 	return obj;
 }
 
@@ -267,7 +267,7 @@ static int acc_enable_and_batch(void)
 		/* start polling, if needed */
 		if (cxt->is_active_data == true &&
 		    cxt->acc_ctl.is_report_input_direct == false) {
-			int mdelay = cxt->delay_ns;
+			uint64_t mdelay = cxt->delay_ns;
 
 			do_div(mdelay, 1000000);
 			atomic_set(&cxt->delay, mdelay);
@@ -335,7 +335,7 @@ static ssize_t acc_store_active(struct device *dev,
 	struct acc_context *cxt = acc_context_obj;
 	int err = 0;
 
-	pr_debug("acc_store_active buf=%s\n", buf);
+	pr_debug("%s buf=%s\n", __func__, buf);
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	if (!strncmp(buf, "1", 1)) {
 		cxt->enable = 1;
@@ -344,7 +344,7 @@ static ssize_t acc_store_active(struct device *dev,
 		cxt->enable = 0;
 		cxt->is_active_data = false;
 	} else {
-		pr_err(" acc_store_active error !!\n");
+		pr_err("%s error !!\n", __func__);
 		err = -1;
 		goto err_out;
 	}
@@ -402,11 +402,11 @@ static ssize_t acc_store_batch(struct device *dev,
 	struct acc_context *cxt = acc_context_obj;
 	int handle = 0, flag = 0, err = 0;
 
-	pr_debug(" acc_store_batch %s\n", buf);
+	pr_debug("%s %s\n", __func__, buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag, &cxt->delay_ns,
 		     &cxt->latency_ns);
 	if (err != 4) {
-		pr_err("acc_store_batch param error: err = %d\n", err);
+		pr_err("%s param error: err = %d\n", __func__, err);
 		return -1;
 	}
 
@@ -443,9 +443,9 @@ static ssize_t acc_store_flush(struct device *dev,
 
 	err = kstrtoint(buf, 10, &handle);
 	if (err != 0)
-		pr_err("acc_store_flush param error: err = %d\n", err);
+		pr_err("%s param error: err = %d\n", __func__, err);
 
-	pr_debug("acc_store_flush param: handle %d\n", handle);
+	pr_debug("%s param: handle %d\n", __func__, handle);
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
@@ -501,13 +501,13 @@ static ssize_t acc_store_cali(struct device *dev, struct device_attribute *attr,
 
 static int gsensor_remove(struct platform_device *pdev)
 {
-	pr_debug("gsensor_remove\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
 static int gsensor_probe(struct platform_device *pdev)
 {
-	pr_debug("gsensor_probe\n");
+	pr_debug("%s\n", __func__);
 	return 0;
 }
 
@@ -535,7 +535,7 @@ static int acc_real_driver_init(void)
 	int i = 0;
 	int err = 0;
 
-	pr_debug(" acc_real_driver_init +\n");
+	pr_debug("%s start\n", __func__);
 	for (i = 0; i < MAX_CHOOSE_G_NUM; i++) {
 		pr_debug(" i=%d\n", i);
 		if (gsensor_init_list[i] != 0) {
@@ -551,7 +551,7 @@ static int acc_real_driver_init(void)
 	}
 
 	if (i == MAX_CHOOSE_G_NUM) {
-		pr_debug(" acc_real_driver_init fail\n");
+		pr_debug("%s fail\n", __func__);
 		err = -1;
 	}
 	return err;

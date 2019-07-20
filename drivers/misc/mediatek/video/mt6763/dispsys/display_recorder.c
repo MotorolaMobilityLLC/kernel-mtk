@@ -1039,7 +1039,7 @@ void caculate_fps(void)
 	struct dprec_logger_fps *l = &logger_fps;
 	int i;
 	unsigned long long fps_high_tmp = 0;
-	unsigned long fps_low_tmp = 0;
+	unsigned long long fps_low_tmp = 0;
 	unsigned long long total = 0;
 
 	total = l->ts_end_update - l->ts_start_update;
@@ -1078,7 +1078,7 @@ int dprec_logger_get_result_value(enum DPREC_LOGGER_ENUM source,
 	int len = 0;
 	struct dprec_logger *l = &logger[source];
 	unsigned long long fps_high = 0;
-	unsigned long fps_low = 0;
+	unsigned long long fps_low = 0;
 	unsigned long long avg;
 	unsigned long long count;
 	unsigned long long total = 0;

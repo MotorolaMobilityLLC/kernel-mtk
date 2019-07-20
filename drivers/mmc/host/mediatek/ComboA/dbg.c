@@ -2227,7 +2227,8 @@ static int msdc_debug_proc_show(struct seq_file *m, void *v)
 			msdc_dump_info(NULL, 0, NULL, host->id);
 		}
 	} else if (cmd == SD_TOOL_SET_DRIVING) {
-		char *device_str, *get_set_str;
+		char *device_str = NULL;
+		char *get_set_str = NULL;
 
 		id = p2;
 		if (id >= HOST_MAX_NUM || id < 0)

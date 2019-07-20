@@ -1426,7 +1426,7 @@ static void process_dbg_opt(const char *opt)
 			return;
 		}
 	} else if (strncmp(opt, "idle_wait:", 10) == 0) {
-		ret = sscanf(opt, "idle_wait:%d\n", &idle_check_interval);
+		ret = sscanf(opt, "idle_wait:%lld\n", &idle_check_interval);
 		if (ret != 1) {
 			pr_debug("%d error to parse cmd %s\n", __LINE__, opt);
 			return;

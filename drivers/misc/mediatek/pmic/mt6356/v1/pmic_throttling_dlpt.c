@@ -163,7 +163,7 @@ void register_low_battery_notify(
 
 	lbcb_tb[prio_val].lbcb = low_battery_callback;
 
-	pr_info("[, __func__] prio_val=%d\n", __func__, prio_val);
+	pr_info("[%s] prio_val=%d\n", __func__, prio_val);
 #endif /*end of #ifdef LOW_BATTERY_PROTECT */
 }
 #ifdef LOW_BATTERY_PROTECT
@@ -300,7 +300,7 @@ void register_battery_oc_notify(void (*battery_oc_callback)(BATTERY_OC_LEVEL),
 
 	occb_tb[prio_val].occb = battery_oc_callback;
 
-	pr_info("[, __func__] prio_val=%d\n", __func__, prio_val);
+	pr_info("[%s] prio_val=%d\n", __func__, prio_val);
 #endif
 }
 
@@ -1552,7 +1552,7 @@ static ssize_t store_low_battery_protect_stop(struct device *dev,
 			val = 0;
 		g_low_battery_stop = val;
 		pr_info(
-		    "[%s] g_low_battery_stop = d\n", __func__,
+		    "[%s] g_low_battery_stop = %d\n", __func__,
 		    g_low_battery_stop);
 	}
 	return size;
