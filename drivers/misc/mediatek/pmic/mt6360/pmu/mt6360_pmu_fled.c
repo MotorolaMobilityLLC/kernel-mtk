@@ -352,12 +352,16 @@ static int mt6360_fled_set_mode(struct rt_fled_dev *fled,
 		if (mt6360_global_mode == FLASHLIGHT_MODE_FLASH)
 			break;
 		/* Fled en/Strobe off/Torch on */
-		val = en_bit | MT6360_FL_TORCH_MASK;
-		mask = val | MT6360_FL_STROBE_MASK;
-		ret = mt6360_pmu_reg_update_bits(fi->mpi, MT6360_PMU_FLED_EN,
-						 mask, val);
+		ret = mt6360_pmu_reg_clr_bits(fi->mpi, MT6360_PMU_FLED_EN,
+					      MT6360_FL_STROBE_MASK);
 		if (ret < 0)
 			break;
+		udelay(500);
+		val = en_bit | MT6360_FL_TORCH_MASK;
+		ret = mt6360_pmu_reg_set_bits(fi->mpi, MT6360_PMU_FLED_EN, val);
+		if (ret < 0)
+			break;
+		udelay(500);
 		mt6360_global_mode = mode;
 		mt6360_fled_on |= 1 << fi->id;
 		break;
@@ -375,6 +379,7 @@ static int mt6360_fled_set_mode(struct rt_fled_dev *fled,
 						 mask, val);
 		if (ret < 0)
 			break;
+		mdelay(5);
 		mt6360_global_mode = mode;
 		mt6360_fled_on |= 1 << fi->id;
 		break;
