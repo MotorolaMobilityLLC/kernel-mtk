@@ -529,6 +529,11 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 
 	pREGIO = (FDVTRegIO *)a_pstCfg;
 
+	if (pREGIO == NULL) {
+		LOG_DBG("pREGIO is NULL!\n");
+		return -EFAULT;
+	}
+
 	if (pREGIO->u4Count > FDVT_DRAM_REGCNT) {
 		LOG_DBG("Buffer Size Exceeded!\n");
 		return -EFAULT;
@@ -545,7 +550,7 @@ static int FDVT_SetRegHW(FDVTRegIO *a_pstCfg)
 	if (copy_from_user(
 		(void *)pFDVTWriteBuffer.u4Data,
 		(void *) pREGIO->pData,
-		pREGIO->u4Count * sizeof(u32))) {
+		pREGIO->u4Count * sizeof(u32)) != 0) {
 		LOG_DBG("ioctl copy from user failed\n");
 		return -EFAULT;
 	}
