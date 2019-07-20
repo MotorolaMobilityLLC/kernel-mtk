@@ -797,12 +797,14 @@ static int fts_irq_registration(struct fts_ts_data *ts_data)
 
 static int fts_input_init(struct fts_ts_data *ts_data)
 {
-	int ret = 0;
+/*	int ret = 0; */
 	int key_num = 0;
 	struct fts_ts_platform_data *pdata = ts_data->pdata;
 	struct input_dev *input_dev;
 
 	FTS_FUNC_ENTER();
+	input_dev = tpd->dev;
+#if 0
 	input_dev = input_allocate_device();
 	if (!input_dev) {
 		FTS_ERROR("Failed to allocate memory for input device");
@@ -816,7 +818,7 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 	input_dev->dev.parent = ts_data->dev;
 
 	input_set_drvdata(input_dev, ts_data);
-
+#endif
 	__set_bit(EV_SYN, input_dev->evbit);
 	__set_bit(EV_ABS, input_dev->evbit);
 	__set_bit(EV_KEY, input_dev->evbit);
@@ -845,6 +847,7 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 	input_set_abs_params(input_dev, ABS_MT_PRESSURE, 0, 0xFF, 0, 0);
 #endif
 
+#if 0
 	ret = input_register_device(input_dev);
 	if (ret) {
 		FTS_ERROR("Input device registration failed");
@@ -853,7 +856,7 @@ static int fts_input_init(struct fts_ts_data *ts_data)
 		input_dev = NULL;
 		return ret;
 	}
-
+#endif
 	ts_data->input_dev = input_dev;
 
 	FTS_FUNC_EXIT();
@@ -1178,7 +1181,7 @@ err_power_init:
 	kfree_safe(ts_data->point_buf);
 	kfree_safe(ts_data->events);
 err_report_buffer:
-	input_unregister_device(ts_data->input_dev);
+	/* input_unregister_device(ts_data->input_dev); */
 err_input_init:
 	if (ts_data->ts_workqueue)
 		destroy_workqueue(ts_data->ts_workqueue);
@@ -1225,7 +1228,7 @@ static int fts_ts_remove_entry(struct fts_ts_data *ts_data)
 	fts_bus_exit(ts_data);
 
 	free_irq(ts_data->irq, ts_data);
-	input_unregister_device(ts_data->input_dev);
+	/* input_unregister_device(ts_data->input_dev); */
 
 	if (ts_data->ts_workqueue)
 		destroy_workqueue(ts_data->ts_workqueue);
