@@ -16,6 +16,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/performance/perf_ioctl/ \
 
 
 obj-y += perfmgr_main.o
+obj-y += smart/
 obj-y += base/
 obj-y += cpu_loading/
 obj-$(CONFIG_MTK_PERF_OBSERVER) += observer/

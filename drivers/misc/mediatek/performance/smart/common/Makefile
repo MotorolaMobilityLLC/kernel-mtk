@@ -12,8 +12,3 @@
 #
 
 obj-y += smart.o
-ccflags-y += \
-	-I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)/ \
-	-I$(srctree)/kernel/trace/ \
-	-I$(srctree)/drivers/misc/mediatek/include/mt-plat/ \
-
