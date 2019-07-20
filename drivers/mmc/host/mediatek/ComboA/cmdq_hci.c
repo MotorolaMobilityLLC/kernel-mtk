@@ -272,7 +272,7 @@ static int cmdq_enable(struct mmc_host *mmc)
 	bool dcmd_enable = FALSE;
 	struct cmdq_host *cq_host = mmc_cmdq_private(mmc);
 
-	if (!cq_host || !mmc_card_cmdq(mmc->card)) {
+	if (!cq_host || !mmc->card || !mmc_card_cmdq(mmc->card)) {
 		err = -EINVAL;
 		goto out;
 	}
