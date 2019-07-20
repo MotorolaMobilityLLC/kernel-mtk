@@ -280,6 +280,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		 */
 		if (bio && (last_block_in_bio != blocks[0] - 1)) {
 		submit_and_realloc:
+			ext4_set_bio_ctx(inode, bio);
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		}
@@ -304,7 +305,6 @@ int ext4_mpage_readpages(struct address_space *mapping,
 			bio->bi_iter.bi_sector = blocks[0] << (blkbits - 9);
 			bio->bi_end_io = mpage_end_io;
 			bio->bi_private = ctx;
-			ext4_set_bio_ctx(inode, bio);
 			bio_set_op_attrs(bio, REQ_OP_READ, 0);
 		}
 
@@ -315,6 +315,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		if (((map.m_flags & EXT4_MAP_BOUNDARY) &&
 		     (relative_block == map.m_len)) ||
 		    (first_hole != blocks_per_page)) {
+			ext4_set_bio_ctx(inode, bio);
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		} else
@@ -322,6 +323,7 @@ int ext4_mpage_readpages(struct address_space *mapping,
 		goto next_page;
 	confused:
 		if (bio) {
+			ext4_set_bio_ctx(inode, bio);
 			ext4_submit_bio_read(bio);
 			bio = NULL;
 		}
@@ -334,7 +336,9 @@ int ext4_mpage_readpages(struct address_space *mapping,
 			put_page(page);
 	}
 	BUG_ON(pages && !list_empty(pages));
-	if (bio)
+	if (bio) {
+		ext4_set_bio_ctx(inode, bio);
 		ext4_submit_bio_read(bio);
+	}
 	return 0;
 }
