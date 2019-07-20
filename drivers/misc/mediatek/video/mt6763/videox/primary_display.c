@@ -6622,6 +6622,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 			    TOTAL_OVL_LAYER_NUM, 1, 0);
 	}
 #endif
+#if defined(CONFIG_MTK_ENG_BUILD) || !defined(CONFIG_MTK_GMO_RAM_OPTIMIZE)
 	/* config disp info layer to show screen for debug*/
 	if (on_screen_en()) {
 		primary_show_info_to_screen(data_config);
@@ -6633,7 +6634,7 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 		}
 	} else if (!dbg_disp.show_fps_en && dbg_disp.create_thread_flg)
 		dbg_disp.create_thread_flg = 0;
-
+#endif
 	if (dump_output) {
 		kfree(draw_info);
 		draw_info = NULL;
