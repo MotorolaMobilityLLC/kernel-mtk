@@ -5989,6 +5989,8 @@ int ufshcd_host_reset_and_restore(struct ufs_hba *hba)
 	unsigned long flags;
 
 	/* Reset the host controller */
+	ufs_mtk_pltfrm_host_sw_rst(hba, SW_RST_TARGET_UFSHCI);
+
 	spin_lock_irqsave(hba->host->host_lock, flags);
 	ufshcd_hba_stop(hba, false);
 #if defined(CONFIG_UFSHPB)
