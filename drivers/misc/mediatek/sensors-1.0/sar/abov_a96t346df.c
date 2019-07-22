@@ -2003,6 +2003,11 @@ static irqreturn_t abovXX_interrupt_thread(int irq, void *data)
 	pabovXX_t this = 0;
 	this = data;
 
+	if (mEnabled == 0) {
+		LOG_INFO("abovXX_irq sensor not enable\n");
+		return IRQ_HANDLED;
+	}
+
 	mutex_lock(&this->mutex);
 	LOG_INFO("abovXX_irq\n");
 	if ((!this->get_nirq_low) || this->get_nirq_low(this->board->irq_gpio))

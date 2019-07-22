@@ -194,6 +194,11 @@ int moto_sar_data_report(int32_t value, int32_t sar_id)
 	struct sensor_event event;
 	struct situation_context *cxt = situation_context_obj;
 
+	if (situation_context_obj == NULL) {
+		pr_err("[%s] probe not Ok\n", __func__);
+		return -1;
+	}
+
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	index = handle_to_index(sar_id);
