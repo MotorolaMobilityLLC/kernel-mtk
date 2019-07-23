@@ -215,8 +215,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
 		else {
 			if (info->sw_jeita.sm == TEMP_T0_TO_T1) {
-				pdata->input_current_limit = 800000;
-				pdata->charging_current_limit = 650000;
+			//	pdata->input_current_limit = 800000;
+				pdata->charging_current_limit = 1050000;
 			}
 		}
 	}
