@@ -209,6 +209,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		pdata->charging_current_limit = info->data.apple_2_1a_charger_current;
 	}
 
+#ifndef    CONFIG_ONTIM_DUAL_85_TEST
 	if (info->enable_sw_jeita) {
 		if (IS_ENABLED(CONFIG_USBIF_COMPLIANCE) && info->chr_type == STANDARD_HOST)
 			pr_debug("USBIF & STAND_HOST skip current check\n");
@@ -219,6 +220,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			}
 		}
 	}
+#endif
 
 	if (pdata->thermal_charging_current_limit != -1)
 		if (pdata->thermal_charging_current_limit < pdata->charging_current_limit)
