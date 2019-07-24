@@ -13,7 +13,7 @@
 
 /*
  * GT9772SAF voice coil motor driver
- *20190523 for VIVO
+ *20190723 for wuhan lenovo
  *
  */
 
@@ -107,6 +107,13 @@ static int gt9772_init(void)
 	   printk("[GT9772AF] I2C send failed!! \n");
 	}
 	mdelay(5);
+	puSendCmd[0] = 0x02;
+	puSendCmd[1] = 0x00;   //PD up
+	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
+	if (i4RetValue < 0)
+	{
+	   printk("[GT9772AF] I2C send failed!! \n");
+	}
 	puSendCmd[0] = 0x06;
 	puSendCmd[1] = 0x84;   //AAC4
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
@@ -122,7 +129,7 @@ static int gt9772_init(void)
 	   printk("[GT9772AF] I2C send failed!! \n");
 	}
 	puSendCmd[0] = 0x08;
-	puSendCmd[1] = 0x49;   //12ms
+	puSendCmd[1] = 0x20;   //T=9.6ms
 	i4RetValue = i2c_master_send(g_pstAF_I2Cclient, puSendCmd, 2);
 	if (i4RetValue < 0)
 	{
