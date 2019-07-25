@@ -170,11 +170,15 @@ static int  stk3x1x_local_uninit(void);
 #define PS_READ_PROINIF_VALUE
 
   #ifdef PS_READ_PROINIF_VALUE
-	#define PROINFO_CALI_DATA_OFFSET        210
+	#define PROINFO_CALI_DATA_OFFSET        2684
 	#define PS_BUF_SIZE    256
 	#define PS_CALI_DATA_LEN  6
 	//static char backup_file_path[PS_BUF_SIZE] ="/dev/block/mmcblk0p13";  ///"/dev/block/platform/bootdevice/by-name/proinfo";
 	static char backup_file_path[PS_BUF_SIZE] ="/dev/block/platform/bootdevice/by-name/proinfo";
+//add by fanxzh for ps dynamic cali begin
+	static unsigned int ps_cali_factor = 68;
+	static unsigned int ps_cali_per = 100;
+//add by fanxzh for ps dynamic cali end
 	static mm_segment_t oldfs;
 	static unsigned int ps_nvraw_none_value = 0;
 	static unsigned int ps_nvraw_40mm_value = 0;
@@ -1879,9 +1883,12 @@ static int stk3x1x_read_cali_file(struct i2c_client *client)
 
 	closeFile(fd_file);
 	set_fs(oldfs);
+//add by fanxzh for dynamic cali begin
 	mRaw   = (int)(((int)buf[0])<<8|(0xFF&(int)buf[1]));
-	mRaw40 = (int)(((int)buf[2])<<8|(0xFF&(int)buf[3]));
+	//mRaw40 = (int)(((int)buf[2])<<8|(0xFF&(int)buf[3]));
 	mRaw25 = (int)(((int)buf[4])<<8|(0xFF&(int)buf[5]));
+	mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
+//add by fanxzh for dynamic cali end
 
 	if(mRaw + 8 <mRaw40 && mRaw40 + 8 <mRaw25){
 	ps_nvraw_none_value = mRaw;
