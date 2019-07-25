@@ -51,10 +51,8 @@
 #include <linux/of_device.h>
 #endif
 #include "upmu_common.h"
-#include "eta6937.h"
+#include "bq24157.h"
 #include "mtk_charger_intf.h"
-#include "mtk_switch_charging.h"
-
 
 static const unsigned int VBAT_CVTH[] = {
 	3500000, 3520000, 3540000, 3560000,
@@ -74,26 +72,22 @@ static const unsigned int VBAT_CVTH[] = {
 static const unsigned int CSTH[] = {
 	550000, 650000, 750000, 850000,
 	950000, 1050000, 1150000, 1250000,
-	1350000, 1450000, 1550000, 1650000,
-	1750000, 1850000, 1950000, 2050000,
-	2150000, 2250000, 2350000, 2450000,
-	2550000, 2650000, 2750000, 2850000,
-	2950000, 3050000, 3050000, 3050000,
-	3050000, 3050000, 3050000, 3050000,
 };
 
-/*eta6937 REG00 IINLIM[5:0]*/
+/*bq24157 REG00 IINLIM[5:0]*/
 static const unsigned int INPUT_CSTH[] = {
 	100000, 500000, 800000, 5000000
 };
 
-/* eta6937 REG0A BOOST_LIM[2:0], mA */
+/* bq24157 REG0A BOOST_LIM[2:0], mA */
 static const unsigned int BOOST_CURRENT_LIMIT[] = {
 	500, 750, 1200, 1400, 1650, 1875, 2150,
 };
 
+static u32 max_charge_current=0;
+
 #include <ontim/ontim_dev_dgb.h>
-static  char charge_ic_vendor_name[50]="ETA6937CSU";
+static  char charge_ic_vendor_name[50]="BQ24157";
 DEV_ATTR_DECLARE(charge_ic)
 DEV_ATTR_DEFINE("vendor",charge_ic_vendor_name)
 DEV_ATTR_DECLARE_END;
@@ -101,16 +95,16 @@ ONTIM_DEBUG_DECLARE_AND_INIT(charge_ic,charge_ic,8);
 
 #ifdef CONFIG_OF
 #else
-#define eta6937_SLAVE_ADDR_WRITE 0xD4
-#define eta6937_SLAVE_ADDR_Read	0xD5
+#define bq24157_SLAVE_ADDR_WRITE0xD4
+#define bq24157_SLAVE_ADDR_Read	0xD5
 #ifdef I2C_SWITHING_CHARGER_CHANNEL
-#define eta6937_BUSNUM I2C_SWITHING_CHARGER_CHANNEL
+#define bq24157_BUSNUM I2C_SWITHING_CHARGER_CHANNEL
 #else
-#define eta6937_BUSNUM 0
+#define bq24157_BUSNUM 0
 #endif
 #endif
 
-struct eta6937_info {
+struct bq24157_info {
 	struct charger_device *chg_dev;
 	struct power_supply *psy;
 	struct charger_properties chg_props;
@@ -127,9 +121,9 @@ struct eta6937_info {
 	int irq;
 };
 
-static struct eta6937_info *g_info;
+static struct bq24157_info *g_info;
 static struct i2c_client *new_client;
-static const struct i2c_device_id eta6937_i2c_id[] = { {"eta6937", 0}, {} };
+static const struct i2c_device_id bq24157_i2c_id[] = { {"bq24157", 0}, {} };
 
 static void enable_boost_polling(bool poll_en);
 static void usbotg_boost_kick_work(struct work_struct *work);
@@ -193,12 +187,11 @@ static unsigned int bmt_find_closest_level(const unsigned int *pList, unsigned i
 	}
 }
 
-unsigned char eta6937_reg[ETA6937_REG_NUM] = { 0 };
-static DEFINE_MUTEX(eta6937_i2c_access);
-static DEFINE_MUTEX(eta6937_access_lock);
-
-#define ETA6937_SLAVE_ADDR 0x6a
-static int eta6937_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
+unsigned char bq24157_reg[BQ24157_REG_NUM] = { 0 };
+static DEFINE_MUTEX(bq24157_i2c_access);
+static DEFINE_MUTEX(bq24157_access_lock);
+#define BQ24157_SLAVE_ADDR 0x6a
+static int bq24157_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 {
 	int ret = 0;
 	struct i2c_adapter *adap = new_client->adapter;
@@ -217,12 +210,12 @@ static int eta6937_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 
 	*w_buf = reg_addr;
 
-	msg[0].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg[0].addr = BQ24157_SLAVE_ADDR;//new_client->addr;
 	msg[0].flags = 0;
 	msg[0].len = 1;
 	msg[0].buf = w_buf;
 
-	msg[1].addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg[1].addr = BQ24157_SLAVE_ADDR;//new_client->addr;
 	msg[1].flags = 1;
 	msg[1].len = rd_len;
 	msg[1].buf = r_buf;
@@ -236,7 +229,7 @@ static int eta6937_read_byte(u8 reg_addr, u8 *rd_buf, int rd_len)
 	return ret;
 }
 
-int eta6937_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
+int bq24157_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
 {
 	int ret = 0;
 	struct i2c_adapter *adap = new_client->adapter;
@@ -252,7 +245,7 @@ int eta6937_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
 	w_buf[0] = reg_num;
 	memcpy(w_buf + 1, wr_buf, wr_len);
 
-	msg.addr = ETA6937_SLAVE_ADDR;//new_client->addr;
+	msg.addr = BQ24157_SLAVE_ADDR;//new_client->addr;
 	msg.flags = 0;
 	msg.len = wr_len;
 	msg.buf = w_buf;
@@ -263,69 +256,69 @@ int eta6937_write_byte(unsigned char reg_num, u8 *wr_buf, int wr_len)
 	return ret;
 }
 
-unsigned int eta6937_read_interface(unsigned char reg_num, unsigned char *val, unsigned char MASK,
+unsigned int bq24157_read_interface(unsigned char reg_num, unsigned char *val, unsigned char MASK,
 				unsigned char SHIFT)
 {
-	unsigned char eta6937_reg = 0;
+	unsigned char bq24157_reg = 0;
 	unsigned int ret = 0;
 
-	ret = eta6937_read_byte(reg_num, &eta6937_reg, 1);
-	pr_debug_ratelimited("[eta6937_read_interface] Reg[%x]=0x%x\n", reg_num, eta6937_reg);
-	eta6937_reg &= (MASK << SHIFT);
-	*val = (eta6937_reg >> SHIFT);
-	pr_debug_ratelimited("[eta6937_read_interface] val=0x%x\n", *val);
+	ret = bq24157_read_byte(reg_num, &bq24157_reg, 1);
+	pr_debug_ratelimited("[bq24157_read_interface] Reg[%x]=0x%x\n", reg_num, bq24157_reg);
+	bq24157_reg &= (MASK << SHIFT);
+	*val = (bq24157_reg >> SHIFT);
+	pr_debug_ratelimited("[bq24157_read_interface] val=0x%x\n", *val);
 
 	return ret;
 }
 
-unsigned int eta6937_config_interface(unsigned char reg_num, unsigned char val, unsigned char MASK,
+unsigned int bq24157_config_interface(unsigned char reg_num, unsigned char val, unsigned char MASK,
 					unsigned char SHIFT)
 {
-	unsigned char eta6937_reg = 0;
-	unsigned char eta6937_reg_ori = 0;
+	unsigned char bq24157_reg = 0;
+	unsigned char bq24157_reg_ori = 0;
 	unsigned int ret = 0;
 
-	mutex_lock(&eta6937_access_lock);
-	ret = eta6937_read_byte(reg_num, &eta6937_reg, 1);
-	eta6937_reg_ori = eta6937_reg;
-	eta6937_reg &= ~(MASK << SHIFT);
-	eta6937_reg |= (val << SHIFT);
-	if (reg_num == ETA6937_CON4)
-		eta6937_reg &= ~(1 << CON4_RESET_SHIFT);
+	mutex_lock(&bq24157_access_lock);
+	ret = bq24157_read_byte(reg_num, &bq24157_reg, 1);
+	bq24157_reg_ori = bq24157_reg;
+	bq24157_reg &= ~(MASK << SHIFT);
+	bq24157_reg |= (val << SHIFT);
+	if (reg_num == BQ24157_CON4)
+		bq24157_reg &= ~(1 << CON4_RESET_SHIFT);
 
-	ret = eta6937_write_byte(reg_num, &eta6937_reg, 2);
-	mutex_unlock(&eta6937_access_lock);
-	pr_debug_ratelimited("[eta6937_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
-			eta6937_reg, eta6937_reg_ori);
+	ret = bq24157_write_byte(reg_num, &bq24157_reg, 2);
+	mutex_unlock(&bq24157_access_lock);
+	pr_debug_ratelimited("[bq24157_config_interface] write Reg[%x]=0x%x from 0x%x\n", reg_num,
+			bq24157_reg, bq24157_reg_ori);
 	/* Check */
-	/* eta6937_read_byte(reg_num, &eta6937_reg, 1); */
-	/* printk("[eta6937_config_interface] Check Reg[%x]=0x%x\n", reg_num, eta6937_reg); */
+	/* bq24157_read_byte(reg_num, &bq24157_reg, 1); */
+	/* printk("[bq24157_config_interface] Check Reg[%x]=0x%x\n", reg_num, bq24157_reg); */
 
 	return ret;
 }
 
 /* write one register directly */
-unsigned int eta6937_reg_config_interface(unsigned char reg_num, unsigned char val)
+unsigned int bq24157_reg_config_interface(unsigned char reg_num, unsigned char val)
 {
-	unsigned char eta6937_reg = val;
+	unsigned char bq24157_reg = val;
 
-	return eta6937_write_byte(reg_num, &eta6937_reg, 2);
+	return bq24157_write_byte(reg_num, &bq24157_reg, 2);
 }
 
-void eta6937_set_tmr_rst(unsigned int val)
+void bq24157_set_tmr_rst(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON0),
+	bq24157_config_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char)(val),
 				(unsigned char)(CON0_TMR_RST_MASK),
 				(unsigned char)(CON0_TMR_RST_SHIFT)
 				);
 }
 
-unsigned int eta6937_get_otg_status(void)
+unsigned int bq24157_get_otg_status(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+	bq24157_read_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char *)(&val),
 				(unsigned char)(CON0_OTG_MASK),
 				(unsigned char)(CON0_OTG_SHIFT)
@@ -333,20 +326,20 @@ unsigned int eta6937_get_otg_status(void)
 	return val;
 }
 
-void eta6937_set_en_stat(unsigned int val)
+void bq24157_set_en_stat(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON0),
+	bq24157_config_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char)(val),
 				(unsigned char)(CON0_EN_STAT_MASK),
 				(unsigned char)(CON0_EN_STAT_SHIFT)
 				);
 }
 
-unsigned int eta6937_get_chip_status(void)
+unsigned int bq24157_get_chip_status(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+	bq24157_read_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char *)(&val),
 				(unsigned char)(CON0_STAT_MASK),
 				(unsigned char)(CON0_STAT_SHIFT)
@@ -354,11 +347,11 @@ unsigned int eta6937_get_chip_status(void)
 	return val;
 }
 
-unsigned int eta6937_get_boost_status(void)
+unsigned int bq24157_get_boost_status(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+	bq24157_read_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char *)(&val),
 				(unsigned char)(CON0_BOOST_MASK),
 				(unsigned char)(CON0_BOOST_SHIFT)
@@ -367,11 +360,11 @@ unsigned int eta6937_get_boost_status(void)
 
 }
 
-unsigned int eta6937_get_fault_status(void)
+unsigned int bq24157_get_fault_status(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON0),
+	bq24157_read_interface((unsigned char)(BQ24157_CON0),
 				(unsigned char *)(&val),
 				(unsigned char)(CON0_FAULT_MASK),
 				(unsigned char)(CON0_FAULT_SHIFT)
@@ -379,20 +372,20 @@ unsigned int eta6937_get_fault_status(void)
 	return val;
 }
 
-void eta6937_set_input_charging_current(unsigned int val)
+void bq24157_set_input_charging_current(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_LIN_LIMIT_MASK),
 				(unsigned char)(CON1_LIN_LIMIT_SHIFT)
 				);
 }
 
-unsigned int eta6937_get_input_charging_current(void)
+unsigned int bq24157_get_input_charging_current(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON1),
+	bq24157_read_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char *)(&val),
 				(unsigned char)(CON1_LIN_LIMIT_MASK),
 				(unsigned char)(CON1_LIN_LIMIT_SHIFT)
@@ -401,93 +394,93 @@ unsigned int eta6937_get_input_charging_current(void)
 	return val;
 }
 
-void eta6937_set_v_low(unsigned int val)
+void bq24157_set_v_low(unsigned int val)
 {
 
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_LOW_V_MASK),
 				(unsigned char)(CON1_LOW_V_SHIFT)
 				);
 }
 
-void eta6937_set_te(unsigned int val)
+void bq24157_set_te(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_TE_MASK),
 				(unsigned char)(CON1_TE_SHIFT)
 				);
 }
 
-void eta6937_set_ce(unsigned int val)
+void bq24157_set_ce(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_CE_MASK),
 				(unsigned char)(CON1_CE_SHIFT)
 				);
 }
 
-void eta6937_set_hz_mode(unsigned int val)
+void bq24157_set_hz_mode(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_HZ_MODE_MASK),
 				(unsigned char)(CON1_HZ_MODE_SHIFT)
 				);
 }
 
-void eta6937_set_opa_mode(unsigned int val)
+void bq24157_set_opa_mode(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
+	bq24157_config_interface((unsigned char)(BQ24157_CON1),
 				(unsigned char)(val),
 				(unsigned char)(CON1_OPA_MODE_MASK),
 				(unsigned char)(CON1_OPA_MODE_SHIFT)
 				);
 }
 
-void eta6937_set_oreg(unsigned int val)
+void bq24157_set_oreg(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+	bq24157_config_interface((unsigned char)(BQ24157_CON2),
 				(unsigned char)(val),
 				(unsigned char)(CON2_OREG_MASK),
 				(unsigned char)(CON2_OREG_SHIFT)
 				);
 }
-void eta6937_set_otg_pl(unsigned int val)
+void bq24157_set_otg_pl(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+	bq24157_config_interface((unsigned char)(BQ24157_CON2),
 				(unsigned char)(val),
 				(unsigned char)(CON2_OTG_PL_MASK),
 				(unsigned char)(CON2_OTG_PL_SHIFT)
 				);
 }
-void eta6937_set_otg_en(unsigned int val)
+void bq24157_set_otg_en(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON2),
+	bq24157_config_interface((unsigned char)(BQ24157_CON2),
 				(unsigned char)(val),
 				(unsigned char)(CON2_OTG_EN_MASK),
 				(unsigned char)(CON2_OTG_EN_SHIFT)
 				);
 }
 
-unsigned int eta6937_get_vender_code(void)
+unsigned int bq24157_get_vender_code(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+	bq24157_read_interface((unsigned char)(BQ24157_CON3),
 				(unsigned char *)(&val),
 				(unsigned char)(CON3_VENDER_CODE_MASK),
 				(unsigned char)(CON3_VENDER_CODE_SHIFT)
 				);
 	return val;
 }
-unsigned int eta6937_get_pn(void)
+unsigned int bq24157_get_pn(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+	bq24157_read_interface((unsigned char)(BQ24157_CON3),
 				(unsigned char *)(&val),
 				(unsigned char)(CON3_PIN_MASK),
 				(unsigned char)(CON3_PIN_SHIFT)
@@ -495,11 +488,11 @@ unsigned int eta6937_get_pn(void)
 	return val;
 }
 
-unsigned int eta6937_get_revision(void)
+unsigned int bq24157_get_revision(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON3),
+	bq24157_read_interface((unsigned char)(BQ24157_CON3),
 				(unsigned char *)(&val),
 				(unsigned char)(CON3_REVISION_MASK),
 				(unsigned char)(CON3_REVISION_SHIFT)
@@ -507,63 +500,56 @@ unsigned int eta6937_get_revision(void)
 	return val;
 }
 
-void eta6937_set_reset(unsigned int val)
+void bq24157_set_reset(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+	bq24157_config_interface((unsigned char)(BQ24157_CON4),
 				(unsigned char)(val),
 				(unsigned char)(CON4_RESET_MASK),
 				(unsigned char)(CON4_RESET_SHIFT)
 				);
 }
 
-void eta6937_set_iocharge(unsigned int val)
+void bq24157_set_iocharge(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON4),
-				(unsigned char)(val & 0x07),
+	bq24157_config_interface((unsigned char)(BQ24157_CON4),
+				(unsigned char)(val),
 				(unsigned char)(CON4_I_CHR_MASK),
 				(unsigned char)(CON4_I_CHR_SHIFT)
 				);
-	eta6937_config_interface((unsigned char)(ETA6937_CON5),
-				(unsigned char)((val >> 3) & 0x03),
-				(unsigned char)(CON5_I_CHR_MASK),
-				(unsigned char)(CON5_I_CHR_SHIFT)
-				);
-
 }
 
-void eta6937_set_iterm(unsigned int val)
+void bq24157_set_iterm(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+	bq24157_config_interface((unsigned char)(BQ24157_CON4),
 				(unsigned char)(val),
 				(unsigned char)(CON4_I_TERM_MASK),
 				(unsigned char)(CON4_I_TERM_SHIFT)
 				);
 }
 
-void eta6937_set_ioffset(unsigned int val)
+void bq24157_set_dis_vreg(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON4),
+	bq24157_config_interface((unsigned char)(BQ24157_CON5),
 				(unsigned char)(val),
-				(unsigned char)(CON4_I_OFFSET_MASK),
-				(unsigned char)(CON4_I_OFFSET_SHIFT)
+				(unsigned char)(CON5_DIS_VREG_MASK),
+				(unsigned char)(CON5_DIS_VREG_SHIFT)
 				);
 }
 
-
-void eta6937_set_io_level(unsigned int val)
+void bq24157_set_io_level(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+	bq24157_config_interface((unsigned char)(BQ24157_CON5),
 				(unsigned char)(val),
 				(unsigned char)(CON5_IO_LEVEL_MASK),
 				(unsigned char)(CON5_IO_LEVEL_SHIFT)
 				);
 }
 
-unsigned int eta6937_get_sp_status(void)
+unsigned int bq24157_get_sp_status(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON5),
+	bq24157_read_interface((unsigned char)(BQ24157_CON5),
 				(unsigned char *)(&val),
 				(unsigned char)(CON5_SP_STATUS_MASK),
 				(unsigned char)(CON5_SP_STATUS_SHIFT)
@@ -571,11 +557,11 @@ unsigned int eta6937_get_sp_status(void)
 	return val;
 }
 
-unsigned int eta6937_get_en_level(void)
+unsigned int bq24157_get_en_level(void)
 {
 	unsigned char val = 0;
 
-	eta6937_read_interface((unsigned char)(ETA6937_CON5),
+	bq24157_read_interface((unsigned char)(BQ24157_CON5),
 				(unsigned char *)(&val),
 				(unsigned char)(CON5_EN_LEVEL_MASK),
 				(unsigned char)(CON5_EN_LEVEL_SHIFT)
@@ -583,47 +569,47 @@ unsigned int eta6937_get_en_level(void)
 	return val;
 }
 
-void eta6937_set_vsp(unsigned int val)
+void bq24157_set_vsp(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON5),
+	bq24157_config_interface((unsigned char)(BQ24157_CON5),
 				(unsigned char)(val),
 				(unsigned char)(CON5_VSP_MASK),
 				(unsigned char)(CON5_VSP_SHIFT)
 				);
 }
 
-void eta6937_set_i_safe(unsigned int val)
+void bq24157_set_i_safe(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+	bq24157_config_interface((unsigned char)(BQ24157_CON6),
 				(unsigned char)(val),
 				(unsigned char)(CON6_ISAFE_MASK),
 				(unsigned char)(CON6_ISAFE_SHIFT)
 				);
 }
 
-void eta6937_set_v_safe(unsigned int val)
+void bq24157_set_v_safe(unsigned int val)
 {
-	eta6937_config_interface((unsigned char)(ETA6937_CON6),
+	bq24157_config_interface((unsigned char)(BQ24157_CON6),
 				(unsigned char)(val),
 				(unsigned char)(CON6_VSAFE_MASK),
 				(unsigned char)(CON6_VSAFE_SHIFT)
 				);
 }
 
-static int eta6937_dump_register(struct charger_device *chg_dev)
+static int bq24157_dump_register(struct charger_device *chg_dev)
 {
 	int i;
 
-	for (i = 0; i < ETA6937_REG_NUM; i++) {
-		eta6937_read_byte(i, &eta6937_reg[i], 1);
-		pr_debug("[0x%x]=0x%x ", i, eta6937_reg[i]);
+	for (i = 0; i < BQ24157_REG_NUM; i++) {
+		bq24157_read_byte(i, &bq24157_reg[i], 1);
+		pr_debug("[0x%x]=0x%x ", i, bq24157_reg[i]);
 	}
 	pr_debug("\n");
 
 	return 0;
 }
 
-static int eta6937_parse_dt(struct eta6937_info *info, struct device *dev)
+static int bq24157_parse_dt(struct bq24157_info *info, struct device *dev)
 {
 	struct device_node *np = dev->of_node;
 
@@ -640,14 +626,18 @@ static int eta6937_parse_dt(struct eta6937_info *info, struct device *dev)
 	}
 
 	if (of_property_read_string(np, "alias_name", &(info->chg_props.alias_name)) < 0) {
-		info->chg_props.alias_name = "eta6937";
+		info->chg_props.alias_name = "bq24157";
 		pr_warn("%s: no alias name\n", __func__);
 	}
+	if (!of_property_read_u32(np, "ichg", &max_charge_current)) {
+		pr_warn("%s: max_charge_current=%d;\n", __func__,max_charge_current);
+	}
+
 
 	return 0;
 }
 
-static int eta6937_do_event(struct charger_device *chg_dev, unsigned int event, unsigned int args)
+static int bq24157_do_event(struct charger_device *chg_dev, unsigned int event, unsigned int args)
 {
 	if (chg_dev == NULL)
 		return -EINVAL;
@@ -667,61 +657,28 @@ static int eta6937_do_event(struct charger_device *chg_dev, unsigned int event, 
 
 	return 0;
 }
-static void eta6937_wirte_reg6(void)
-{
-	eta6937_config_interface((unsigned char)(ETA6937_CON6),
-				0xac,
-				0xff,
-				0
-				);/* ISAFE = 2550mA, VSAFE = 4.44V */
 
-	eta6937_read_byte((unsigned char)(ETA6937_CON6), &eta6937_reg[0], 1);
-	
-	if(eta6937_reg[0] != 0xac)
-	{
-		eta6937_set_tmr_rst(1);
-		pr_err("eta6937_wirte_reg6 again =%x;\n",eta6937_reg[0]);
-		
-		eta6937_config_interface((unsigned char)(ETA6937_CON6),
-				0xac,
-				0xff,
-				0
-				);
-	}
-}
-
-static int eta6937_enable_charging(struct charger_device *chg_dev, bool en)
+static int bq24157_enable_charging(struct charger_device *chg_dev, bool en)
 {
 	unsigned int status = 0;
 
 	if (en) {
+		bq24157_set_ce(0);
+		bq24157_set_hz_mode(0);
+		bq24157_set_opa_mode(0);
+		bq24157_set_te(1);
 
-	eta6937_wirte_reg6();
-//		eta6937_set_ce(0);
-//		eta6937_set_hz_mode(0);
-//		eta6937_set_opa_mode(0);
-//		eta6937_set_te(1);
-	eta6937_config_interface((unsigned char)(ETA6937_CON1),
-				0x08,
-				0x0f,
-				0
-				);
-		eta6937_set_iterm(2);
-		eta6937_set_ioffset(0);
-		eta6937_set_vsp(3);
-
-
-//	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
-//	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
-
+		bq24157_set_iterm(2);
+		bq24157_set_vsp(3);
+		
 	} else {
-		eta6937_set_ce(1);
+		bq24157_set_ce(1);
 	}
 
 	return status;
 }
 
-static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
+static int bq24157_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 {
 	int status = 0;
 	unsigned short int array_size;
@@ -736,58 +693,68 @@ static int eta6937_set_cv_voltage(struct charger_device *chg_dev, u32 cv)
 	charging_parameter_to_value(VBAT_CVTH, array_size, set_cv_voltage);
 	pr_info("charging_set_cv_voltage register_value=0x%x %d %d\n",
 	 register_value, cv, set_cv_voltage);
-	eta6937_set_oreg(register_value);
+	bq24157_set_oreg(register_value);
 
 	return status;
 }
 
-static int eta6937_get_current(struct charger_device *chg_dev, u32 *ichg)
+static int bq24157_get_current(struct charger_device *chg_dev, u32 *ichg)
 {
 	int status = 0;
 	unsigned int array_size;
 	unsigned char reg_value;
 
 	array_size = ARRAY_SIZE(CSTH);
-	eta6937_read_interface(0x1, &reg_value, 0x3, 0x6);	/* IINLIM */
+	bq24157_read_interface(0x1, &reg_value, 0x3, 0x6);	/* IINLIM */
 	*ichg = charging_value_to_parameter(CSTH, array_size, reg_value);
 
 	return status;
 }
 
-static int eta6937_set_current(struct charger_device *chg_dev, u32 current_value)
+static int bq24157_set_current(struct charger_device *chg_dev, u32 current_value)
 {
 	unsigned int status = 0;
 	unsigned int set_chr_current;
 	unsigned int array_size;
 	unsigned int register_value;
 
-	if (current_value <= 35000) {
-		eta6937_set_io_level(1);
+	if (current_value <= 500000) {
+		bq24157_set_io_level(1);
+//		array_size = ARRAY_SIZE(CSTH);
+//		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
+//		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
+//		bq24157_set_iocharge(register_value);
 	} else {
-		eta6937_set_io_level(0);
+
+		if(max_charge_current != 0  && current_value > max_charge_current)	
+		{
+			pr_info("%s;%d;%d;\n",__func__,current_value,max_charge_current);
+			current_value = max_charge_current;			
+		}
+		bq24157_set_io_level(0);
 		array_size = ARRAY_SIZE(CSTH);
 		set_chr_current = bmt_find_closest_level(CSTH, array_size, current_value);
 		register_value = charging_parameter_to_value(CSTH, array_size, set_chr_current);
-		eta6937_set_iocharge(register_value);
+		bq24157_set_iocharge(register_value);
 	}
 
 	return status;
 }
 
-static int eta6937_get_input_current(struct charger_device *chg_dev, u32 *aicr)
+static int bq24157_get_input_current(struct charger_device *chg_dev, u32 *aicr)
 {
 	unsigned int status = 0;
 	unsigned int array_size;
 	unsigned int register_value;
 
 	array_size = ARRAY_SIZE(INPUT_CSTH);
-	register_value = eta6937_get_input_charging_current();
+	register_value = bq24157_get_input_charging_current();
 	*aicr = charging_parameter_to_value(INPUT_CSTH, array_size, register_value);
 
 	return status;
 }
 
-static int eta6937_set_input_current(struct charger_device *chg_dev, u32 current_value)
+static int bq24157_set_input_current(struct charger_device *chg_dev, u32 current_value)
 {
 	unsigned int status = 0;
 	unsigned int set_chr_current;
@@ -803,17 +770,17 @@ static int eta6937_set_input_current(struct charger_device *chg_dev, u32 current
 	 charging_parameter_to_value(INPUT_CSTH, array_size, set_chr_current);
 	}
 
-	eta6937_set_input_charging_current(register_value);
+	bq24157_set_input_charging_current(register_value);
 
 	return status;
 }
 
-static int eta6937_get_charging_status(struct charger_device *chg_dev, bool *is_done)
+static int bq24157_get_charging_status(struct charger_device *chg_dev, bool *is_done)
 {
 	unsigned int status = 0;
 	unsigned int ret_val;
 
-	ret_val = eta6937_get_chip_status();
+	ret_val = bq24157_get_chip_status();
 
 	if (ret_val == 0x2)
 		*is_done = true;
@@ -823,15 +790,15 @@ static int eta6937_get_charging_status(struct charger_device *chg_dev, bool *is_
 	return status;
 }
 
-static int eta6937_reset_watch_dog_timer(struct charger_device *chg_dev)
+static int bq24157_reset_watch_dog_timer(struct charger_device *chg_dev)
 {
-	eta6937_set_tmr_rst(1);
+	bq24157_set_tmr_rst(1);
 	return 0;
 }
 
-static int eta6937_charger_enable_otg(struct charger_device *chg_dev, bool en)
+static int bq24157_charger_enable_otg(struct charger_device *chg_dev, bool en)
 {
-	eta6937_set_opa_mode(en);
+	bq24157_set_opa_mode(en);
 	enable_boost_polling(en);
 	return 0;
 }
@@ -853,12 +820,12 @@ static void enable_boost_polling(bool poll_en)
 static void usbotg_boost_kick_work(struct work_struct *work)
 {
 
-	struct eta6937_info *boost_manager =
-		container_of(work, struct eta6937_info, kick_work);
+	struct bq24157_info *boost_manager =
+		container_of(work, struct bq24157_info, kick_work);
 
 	pr_debug_ratelimited("usbotg_boost_kick_work\n");
 
-	eta6937_set_tmr_rst(1);
+	bq24157_set_tmr_rst(1);
 
 	if (boost_manager->polling_enabled == true)
 		gtimer_start(&boost_manager->otg_kthread_gtimer,
@@ -867,8 +834,8 @@ static void usbotg_boost_kick_work(struct work_struct *work)
 
 static int usbotg_gtimer_func(struct gtimer *data)
 {
-	struct eta6937_info *boost_manager =
-		container_of(data, struct eta6937_info,
+	struct bq24157_info *boost_manager =
+		container_of(data, struct bq24157_info,
 			     otg_kthread_gtimer);
 
 	queue_work(boost_manager->otg_boost_workq,
@@ -877,30 +844,30 @@ static int usbotg_gtimer_func(struct gtimer *data)
 	return 0;
 }
 
-static struct charger_ops eta6937_chg_ops = {
+static struct charger_ops bq24157_chg_ops = {
 
 	/* Normal charging */
-	.dump_registers = eta6937_dump_register,
-	.enable = eta6937_enable_charging,
-	.get_charging_current = eta6937_get_current,
-	.set_charging_current = eta6937_set_current,
-	.get_input_current = eta6937_get_input_current,
-	.set_input_current = eta6937_set_input_current,
-	/*.get_constant_voltage = eta6937_get_battery_voreg,*/
-	.set_constant_voltage = eta6937_set_cv_voltage,
-	.kick_wdt = eta6937_reset_watch_dog_timer,
-	.is_charging_done = eta6937_get_charging_status,
+	.dump_registers = bq24157_dump_register,
+	.enable = bq24157_enable_charging,
+	.get_charging_current = bq24157_get_current,
+	.set_charging_current = bq24157_set_current,
+	.get_input_current = bq24157_get_input_current,
+	.set_input_current = bq24157_set_input_current,
+	/*.get_constant_voltage = bq24157_get_battery_voreg,*/
+	.set_constant_voltage = bq24157_set_cv_voltage,
+	.kick_wdt = bq24157_reset_watch_dog_timer,
+	.is_charging_done = bq24157_get_charging_status,
 	/* OTG */
-	.enable_otg = eta6937_charger_enable_otg,
-	.event = eta6937_do_event,
+	.enable_otg = bq24157_charger_enable_otg,
+	.event = bq24157_do_event,
 };
 
-static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
+static int bq24157_driver_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	int ret = 0;
-	struct eta6937_info *info = NULL;
+	struct bq24157_info *info = NULL;
 
-	pr_info("[eta6937_driver_probe]\n");
+	pr_info("[bq24157_driver_probe]\n");
 
 //+add by hzb for ontim debug
         if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
@@ -910,39 +877,39 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 //-add by hzb for ontim debug
 	new_client = client;
 
-	ret = eta6937_get_vender_code();
-	pr_err("%s: get vendor id %x\n", __func__, ret);
+	ret = bq24157_get_vender_code();
+
 	if (ret != 2) {
 		pr_err("%s: get vendor id failed\n", __func__);
 		return -ENODEV;
 	}
-	ret=eta6937_get_pn();
-	if (ret != 0x02) {
+
+	ret=bq24157_get_pn();
+	if (ret != 2) {
 		pr_err("%s: get pn failed\n", __func__);
 		return -ENODEV;
 	}
 
-	ret=eta6937_get_revision();
-	if (ret != 0x04) {
+	ret=bq24157_get_revision();
+	if (ret != 0x01) {
 		pr_err("%s: get revision failed\n", __func__);
 		return -ENODEV;
 	}
 	
-	
-	info = devm_kzalloc(&client->dev, sizeof(struct eta6937_info), GFP_KERNEL);
+	info = devm_kzalloc(&client->dev, sizeof(struct bq24157_info), GFP_KERNEL);
 
 	if (!info)
 		return -ENOMEM;
 
 	info->dev = &client->dev;
-	ret = eta6937_parse_dt(info, &client->dev);
+	ret = bq24157_parse_dt(info, &client->dev);
 
 	if (ret < 0)
 		return ret;
 
 	/* Register charger device */
 	info->chg_dev = charger_device_register(info->chg_dev_name,
-		&client->dev, info, &eta6937_chg_ops, &info->chg_props);
+		&client->dev, info, &bq24157_chg_ops, &info->chg_props);
 
 	if (IS_ERR_OR_NULL(info->chg_dev)) {
 		pr_err("%s: register charger device failed\n", __func__);
@@ -951,9 +918,7 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 	}
 
 
-		
-
-	/* eta6937_hw_init(); //move to charging_hw_xxx.c */
+	/* bq24157_hw_init(); //move to charging_hw_xxx.c */
 	info->psy = power_supply_get_by_name("charger");
 
 	if (!info->psy) {
@@ -961,16 +926,17 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 		return -EINVAL;
 	}
 
-//	eta6937_reg_config_interface(0x06, 0xaa);	/* ISAFE = 2550mA, VSAFE = 4.4V */
-	eta6937_reg_config_interface(0x06, 0xac);	/* ISAFE = 2550mA, VSAFE = 4.44V */
+	bq24157_reg_config_interface(0x06, 0xac);	/* ISAFE = 1550mA, VSAFE = 4.4V */
 
-	eta6937_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
-	eta6937_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=0, HZ_MODE=0, OPA_MODE=0 */
-	eta6937_reg_config_interface(0x05, 0x03);
+	bq24157_reg_config_interface(0x00, 0xC0);	/* kick chip watch dog */
+	bq24157_reg_config_interface(0x01, 0xbc);	/* TE=1, CE=1, HZ_MODE=0, OPA_MODE=0 */
+	bq24157_reg_config_interface(0x05, 0x03);
 
-	eta6937_reg_config_interface(0x04, 0x12);	/* ioffset=0  iterm=150ma*/
+	bq24157_reg_config_interface(0x04, 0x02);	
 
-	eta6937_dump_register(info->chg_dev);
+	bq24157_set_otg_pl(1);
+
+	bq24157_dump_register(info->chg_dev);
 
 	gtimer_init(&info->otg_kthread_gtimer, info->dev, "otg_boost");
 	info->otg_kthread_gtimer.callback = usbotg_gtimer_func;
@@ -981,52 +947,52 @@ static int eta6937_driver_probe(struct i2c_client *client, const struct i2c_devi
 	g_info = info;
 
 //+add by hzb for ontim debug
-	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+        REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 //-add by hzb for ontim debug
 
 	return 0;
 }
 
 #ifdef CONFIG_OF
-static const struct of_device_id eta6937_of_match[] = {
-	{.compatible = "halo,eta6937"},
+static const struct of_device_id bq24157_of_match[] = {
+	{.compatible = "halo,bq24157"},
 	{},
 };
 #else
-static struct i2c_board_info i2c_eta6937 __initdata = {
-	I2C_BOARD_INFO("eta6937", (eta6937_SLAVE_ADDR_WRITE >> 1))
+static struct i2c_board_info i2c_bq24157 __initdata = {
+	I2C_BOARD_INFO("bq24157", (bq24157_SLAVE_ADDR_WRITE >> 1))
 };
 #endif
 
-static struct i2c_driver eta6937_driver = {
+static struct i2c_driver bq24157_driver = {
 	.driver = {
-		.name = "eta6937",
+		.name = "bq24157",
 #ifdef CONFIG_OF
-		.of_match_table = eta6937_of_match,
+		.of_match_table = bq24157_of_match,
 #endif
 		},
-	.probe = eta6937_driver_probe,
-	.id_table = eta6937_i2c_id,
+	.probe = bq24157_driver_probe,
+	.id_table = bq24157_i2c_id,
 };
 
-static int __init eta6937_init(void)
+static int __init bq24157_init(void)
 {
 
-	if (i2c_add_driver(&eta6937_driver) != 0)
-		pr_info("Failed to register eta6937 i2c driver.\n");
+	if (i2c_add_driver(&bq24157_driver) != 0)
+		pr_info("Failed to register bq24157 i2c driver.\n");
 	else
-		pr_info("Success to register eta6937 i2c driver.\n");
+		pr_info("Success to register bq24157 i2c driver.\n");
 
 	return 0;
 }
 
-static void __exit eta6937_exit(void)
+static void __exit bq24157_exit(void)
 {
-	i2c_del_driver(&eta6937_driver);
+	i2c_del_driver(&bq24157_driver);
 }
 
-module_init(eta6937_init);
-module_exit(eta6937_exit);
+module_init(bq24157_init);
+module_exit(bq24157_exit);
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("I2C eta6937 Driver");
+MODULE_DESCRIPTION("I2C bq24157 Driver");
 MODULE_AUTHOR("Henry Chen<henryc.chen@mediatek.com>");
