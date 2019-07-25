@@ -130,6 +130,8 @@ static unsigned long one_ul = 1;
 static int one_hundred = 100;
 #ifdef CONFIG_MTK_GMO_RAM_OPTIMIZE
 static int two_hundred = 200;
+#else
+static int two_hundred = 200;
 #endif
 #ifdef CONFIG_PRINTK
 static int ten_thousand = 10000;
@@ -1402,7 +1404,7 @@ static struct ctl_table vm_table[] = {
 		.proc_handler	= proc_dointvec_minmax,
 		.extra1		= &zero,
 #ifndef CONFIG_MTK_GMO_RAM_OPTIMIZE
-		.extra2		= &one_hundred,
+		.extra2		= &two_hundred,
 #else
 		.extra2		= &two_hundred,
 #endif
