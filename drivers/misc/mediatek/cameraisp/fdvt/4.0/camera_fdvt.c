@@ -1296,13 +1296,13 @@ static int FDVT_suspend(struct platform_device *dev, pm_message_t state)
 
 static int FDVT_resume(struct platform_device *dev)
 {
-	spin_lock(&g_spinLock);
+	/*spin_lock(&g_spinLock);*/
 	if (g_isSuspend) {
 		LOG_INF("[FDVT_DEBUG] FDVT_resume\n");
 		mt_fdvt_clk_ctrl(1);
 		g_isSuspend = 0;
 	}
-	spin_unlock(&g_spinLock);
+	/*spin_unlock(&g_spinLock);*/
 	return 0;
 }
 
