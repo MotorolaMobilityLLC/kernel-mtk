@@ -14,76 +14,54 @@
 #include <linux/kernel.h>
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
-
 #include "mtk_idle_sysfs.h"
-
-#ifndef __weak
-#define __weak __attribute__((weak))
-#endif
 
 #define MTK_IDLE_SYS_FS_NAME	"cpuidle"
 #define MTK_IDLE_SYS_FS_MODE	0644
 
-int __weak mtk_idle_sysfs_entry_create_plat(const char *name
-		, int mode, struct mtk_idle_sysfs_handle *parent
-		, struct mtk_idle_sysfs_handle *handle)
-{
-	return 0;
-}
-int __weak mtk_idle_sysfs_entry_node_add_plat(const char *name
-		, int mode, const struct mtk_idle_sysfs_op *op
-		, struct mtk_idle_sysfs_handle *parent
-		, struct mtk_idle_sysfs_handle *handle)
-{
-	return 0;
-}
-
-static struct mtk_idle_sysfs_handle mtk_idle_fs_root = {
+static struct mtk_lp_sysfs_handle mtk_idle_fs_root = {
 	NULL
 };
 
-int mtk_idle_sysfs_entry_func_create(const char *name
-		, int mode, struct mtk_idle_sysfs_handle *parent
-		, struct mtk_idle_sysfs_handle *handle)
+int mtk_idle_sysfs_entry_group_add(const char *name
+		, int mode, struct mtk_lp_sysfs_group *_group
+		, struct mtk_lp_sysfs_handle *handle)
 {
-	return mtk_idle_sysfs_entry_create_plat(name, mode, parent, handle);
+	if (!IS_MTK_LP_SYS_HANDLE_VALID(&mtk_idle_fs_root))
+		mtk_idle_sysfs_root_entry_create();
+
+	return mtk_lp_sysfs_entry_func_group_create(name
+			, mode, _group, &mtk_idle_fs_root, handle);
 }
 
-int mtk_idle_sysfs_entry_func_node_add(const char *name
-		, int mode, const struct mtk_idle_sysfs_op *op
-		, struct mtk_idle_sysfs_handle *parent
-		, struct mtk_idle_sysfs_handle *node)
+int mtk_idle_sysfs_entry_node_add(const char *name
+		, int mode, const struct mtk_lp_sysfs_op *op
+		, struct mtk_lp_sysfs_handle *handle)
 {
-	return mtk_idle_sysfs_entry_node_add_plat(name
-			, mode, op, parent, node);
+	if (!IS_MTK_LP_SYS_HANDLE_VALID(&mtk_idle_fs_root))
+		mtk_idle_sysfs_root_entry_create();
+
+	return mtk_lp_sysfs_entry_func_node_add(name
+			, mode, op, &mtk_idle_fs_root, handle);
 }
 
-int mtk_idle_sysfs_entry_create(void)
+int mtk_idle_sysfs_root_entry_create(void)
 {
 	int bRet = 0;
 
-	if (!mtk_idle_fs_root._current) {
-		bRet = mtk_idle_sysfs_entry_create_plat(
+	if (!IS_MTK_LP_SYS_HANDLE_VALID(&mtk_idle_fs_root)) {
+		bRet = mtk_lp_sysfs_entry_func_create(
 			MTK_IDLE_SYS_FS_NAME, MTK_IDLE_SYS_FS_MODE
 			, NULL, &mtk_idle_fs_root);
 	}
 	return bRet;
 }
 
-int mtk_idle_sysfs_entry_node_add(const char *name
-		, int mode, const struct mtk_idle_sysfs_op *op
-		, struct mtk_idle_sysfs_handle *handle)
+int mtk_idle_sysfs_entry_root_get(struct mtk_lp_sysfs_handle **handle)
 {
-	if (!mtk_idle_fs_root._current)
-		mtk_idle_sysfs_entry_create();
-
-	return mtk_idle_sysfs_entry_node_add_plat(name
-			, mode, op, &mtk_idle_fs_root, handle);
-}
-
-int mtk_idle_sysfs_entry_root_get(struct mtk_idle_sysfs_handle **handle)
-{
-	if (!handle || !mtk_idle_fs_root._current)
+	if (!handle ||
+		!IS_MTK_LP_SYS_HANDLE_VALID(&mtk_idle_fs_root)
+	)
 		return -1;
 	*handle = &mtk_idle_fs_root;
 	return 0;
@@ -93,8 +71,8 @@ int mtk_idle_sysfs_power_create_group(struct attribute_group *grp)
 {
 	return mtk_lp_kernfs_create_group(power_kobj, grp);
 }
-
 size_t get_mtk_idle_sysfs_power_bufsz_max(void)
 {
 	return get_mtk_lp_kernfs_bufsz_max();
 }
+
