@@ -19,6 +19,7 @@
 #include <linux/interrupt.h>
 #include "vpu_drv.h"
 #include "vpu_dbg.h"
+#include "vpu_pool.h"
 
 #ifdef CONFIG_MTK_AEE_FEATURE
 #include <aee.h>
@@ -50,13 +51,10 @@ struct vpu_device {
 	struct list_head user_list;
 	/* pool for each vpu core and common part */
 	/* need error handle, pop all requests in pool */
-	struct mutex servicepool_mutex[MTK_VPU_CORE];
-	struct list_head pool_list[MTK_VPU_CORE];
-	int servicepool_list_size[MTK_VPU_CORE];
 	bool service_core_available[MTK_VPU_CORE];
-	struct mutex commonpool_mutex;
-	struct list_head cmnpool_list;
-	int commonpool_list_size;
+	struct vpu_pool pool[MTK_VPU_CORE];
+	struct vpu_pool pool_common;
+	struct vpu_pool pool_multiproc;
 	/* notify enque thread */
 	wait_queue_head_t req_wait;
 	/*priority number list*/
@@ -107,6 +105,7 @@ enum vpu_power_param {
 	VPU_POWER_HAL_CTL,
 	VPU_EARA_CTL,
 	VPU_CT_INFO,
+	VPU_POWER_PARAM_DISABLE_OFF,
 };
 
 enum vpu_debug_algo_param {
@@ -132,6 +131,9 @@ enum VpuPowerOnType {
 
 	/* power on by enque, but want to immediately off(when exception) */
 	VPT_IMT_OFF		= 3,
+
+	/* same as VPT_IMT_OFF, from secure DSP */
+	VPT_SDSP_OFF	= 4,
 };
 
 
@@ -171,12 +173,10 @@ struct type ## _list { \
  */
 #define vlist_node(ptr, type) ((type *) ptr)
 
-
 DECLARE_VLIST(vpu_user);
 DECLARE_VLIST(vpu_algo);
 DECLARE_VLIST(vpu_request);
 DECLARE_VLIST(vpu_dev_debug_info);
-
 
 /* ========================= define in vpu_emu.c  ========================= */
 
