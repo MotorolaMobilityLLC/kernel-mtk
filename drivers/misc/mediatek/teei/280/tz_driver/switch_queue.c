@@ -124,6 +124,7 @@ static int check_work_type(int work_type)
 	case LOCK_PM_MUTEX:
 	case UNLOCK_PM_MUTEX:
 	case SWITCH_CORE:
+	case MOVE_CORE:
 	case NT_DUMP_T:
 #ifdef TUI_SUPPORT
 	case POWER_DOWN_CALL:
@@ -412,6 +413,9 @@ static void switch_fn(struct kthread_work *work)
 #endif
 	case SWITCH_CORE:
 		handle_switch_core((int)(switch_ent->buff_addr));
+		break;
+	case MOVE_CORE:
+		handle_move_core((int)(switch_ent->buff_addr));
 		break;
 	case NT_DUMP_T:
 		retVal = handle_dump_call((void *)(switch_ent->buff_addr));

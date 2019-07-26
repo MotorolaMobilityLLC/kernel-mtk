@@ -19,13 +19,8 @@
 void cmdq_sec_setup_tee_context(struct cmdq_sec_tee_context *tee)
 {
 	/* 09010000 0000 0000 0000000000000000 */
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	tee->uuid = (struct TEEC_UUID) { 0x09010000, 0x0, 0x0,
 		{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 } };
-#else
-	tee->uuid = (TEEC_UUID) { 0x09010000, 0x0, 0x0,
-		{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 } };
-#endif
 }
 
 s32 cmdq_sec_init_context(struct cmdq_sec_tee_context *tee)

@@ -115,6 +115,7 @@ void *tz_malloc_shared_mem(size_t size, int flags);
 void secondary_init_cmdbuf(void *info);
 void secondary_boot_stage2(void *info);
 int handle_switch_core(int cpu);
+int handle_move_core(int cpu);
 void *tz_malloc(size_t size, int flags);
 void secondary_load_tee(void *info);
 void secondary_load_tee(void *info);
@@ -126,5 +127,5 @@ int teei_new_capi_init(void);
 int handle_new_capi_call(void *args);
 void notify_smc_completed(void);
 int tz_load_drv_by_str(const char *buf);
-
+int tz_move_core(uint32_t cpu_id);
 #endif /* __TEEI_CLIENT_MAIN_H__ */

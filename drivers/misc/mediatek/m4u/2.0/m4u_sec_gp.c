@@ -20,7 +20,8 @@
 #include "m4u_sec_gp.h"
 
 static struct m4u_sec_gp_context m4u_gp_ta_ctx = {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) || \
+	defined(CONFIG_MICROTRUST_TEE_SUPPORT)
 		.uuid = (struct TEEC_UUID)M4U_TA_UUID,
 #else
 		.uuid = (TEEC_UUID)M4U_TA_UUID,
@@ -50,7 +51,6 @@ static int m4u_exec_session(struct m4u_sec_context *ctx)
 	M4ULOG_HIGH("%s, Notify 0x%x\n", __func__, ctx->m4u_msg->cmd);
 
 	memset(&m4u_operation, 0, sizeof(struct TEEC_Operation));
-
 #if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 	m4u_operation.param_types = TEEC_PARAM_TYPES(
 		TEEC_MEMREF_PARTIAL_INPUT, TEEC_NONE, TEEC_NONE, TEEC_NONE);
