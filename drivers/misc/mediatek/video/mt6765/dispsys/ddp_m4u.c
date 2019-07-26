@@ -18,7 +18,7 @@
 #include "ddp_log.h"
 #include "disp_helper.h"
 #include "disp_drv_platform.h"
-
+#include <ion_priv.h>
 #ifdef CONFIG_MTK_IOMMU_V2
 #include "mach/mt_iommu.h"
 #include <soc/mediatek/smi.h>
@@ -215,11 +215,12 @@ struct ion_handle *disp_ion_alloc(struct ion_client *client,
 }
 
 int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
-	unsigned long *mva, int port)
+		     unsigned long *mva, int port)
 {
 #if defined(MTK_FB_ION_SUPPORT)
 	struct ion_mm_data mm_data;
 	size_t mva_size;
+	ion_phys_addr_t phy_addr = 0;
 
 	memset((void *)&mm_data, 0, sizeof(struct ion_mm_data));
 	mm_data.config_buffer_param.module_id = port;
@@ -234,12 +235,10 @@ int disp_ion_get_mva(struct ion_client *client, struct ion_handle *handle,
 		return -1;
 	}
 
-	ion_phys(client, handle,
-		(ion_phys_addr_t *)mva, &mva_size);
-
-	if (*mva == 0)
-		DDPERR("alloc mmu addr hnd=0x%p,mva=0x%08lx\n",
-			handle, *mva);
+	ion_phys(client, handle, &phy_addr, &mva_size);
+	*mva = (unsigned int)phy_addr;
+	DDPDBG("alloc mmu addr hnd=0x%p,mva=0x%08x\n",
+		   handle, (unsigned int)*mva);
 #endif
 	return 0;
 }
@@ -305,22 +304,28 @@ void disp_ion_destroy(struct ion_client *client)
 #endif
 }
 
-void disp_ion_cache_flush(struct ion_client *client,
-	struct ion_handle *handle, enum ION_CACHE_SYNC_TYPE sync_type)
+void disp_ion_cache_flush(struct ion_client *client, struct ion_handle *handle,
+			  enum ION_CACHE_SYNC_TYPE sync_type)
 {
 #if defined(MTK_FB_ION_SUPPORT)
 	struct ion_sys_data sys_data;
+	void *buffer_va;
 
 	if (!client || !handle)
 		return;
 
 	sys_data.sys_cmd = ION_SYS_CACHE_SYNC;
 	sys_data.cache_sync_param.kernel_handle = handle;
-	sys_data.cache_sync_param.sync_type = sync_type;
+	sys_data.cache_sync_param.sync_type = ION_CACHE_FLUSH_BY_RANGE;
 
-	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM,
-		(unsigned long)&sys_data))
+	buffer_va = ion_map_kernel(client, handle);
+	sys_data.cache_sync_param.va = buffer_va;
+	sys_data.cache_sync_param.size = handle->buffer->size;
+
+	if (ion_kernel_ioctl(client, ION_CMD_SYSTEM, (unsigned long)&sys_data))
 		DDPERR("ion cache flush failed!\n");
+
+	ion_unmap_kernel(client, handle);
 #endif
 }
 
