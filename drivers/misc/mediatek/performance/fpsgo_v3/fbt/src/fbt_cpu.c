@@ -486,7 +486,7 @@ static void fbt_free_bhr(void)
 	int i;
 
 	pld =
-		kzalloc(cluster_num * sizeof(struct ppm_limit_data),
+		kcalloc(cluster_num, sizeof(struct ppm_limit_data),
 				GFP_KERNEL);
 	if (!pld) {
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
@@ -653,6 +653,7 @@ static int fbt_get_dep_list(struct render_info *thr)
 
 	memset(dep_new, 0,
 		MAX_DEP_NUM * sizeof(struct fpsgo_loading));
+
 	if (!thr)
 		return 1;
 
@@ -1328,7 +1329,7 @@ static void fbt_do_boost(unsigned int blc_wt, int pid)
 	int min_ceiling = 0;
 
 	pld =
-		kzalloc(cluster_num * sizeof(struct ppm_limit_data),
+		kcalloc(cluster_num, sizeof(struct ppm_limit_data),
 				GFP_KERNEL);
 	if (!pld) {
 		FPSGO_LOGE("ERROR OOM %d\n", __LINE__);
@@ -1510,7 +1511,7 @@ static unsigned int fbt_get_max_userlimit_freq(void)
 	int max_cluster = 0;
 
 	clus_max_idx =
-		kzalloc(cluster_num * sizeof(int), GFP_KERNEL);
+		kcalloc(cluster_num, sizeof(int), GFP_KERNEL);
 
 	if (!clus_max_idx)
 		return 100U;
@@ -2985,6 +2986,7 @@ int __init fbt_cpu_init(void)
 	fbt_down_throttle_enable = 1;
 	sync_flag = -1;
 	fbt_sync_flag_enable = 1;
+	boost_ta = fbt_get_default_boost_ta();
 
 	cluster_num = arch_get_nr_clusters();
 	max_cap_cluster = min((cluster_num - 1), 0);

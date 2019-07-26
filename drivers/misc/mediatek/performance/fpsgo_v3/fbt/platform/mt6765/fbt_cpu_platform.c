@@ -105,3 +105,7 @@ int fbt_get_L_min_ceiling(void)
 	return 1100000;
 }
 
+int fbt_get_default_boost_ta(void)
+{
+	return 0;
+}
