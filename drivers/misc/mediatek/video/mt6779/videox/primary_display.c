@@ -1926,7 +1926,7 @@ static int sec_buf_ion_alloc(int buf_size)
 	if (IS_ERR_OR_NULL(sec_ion_handle)) {
 		DISP_PR_ERR("Fatal Error, ion_alloc for size %d failed\n",
 			    buf_size);
-		goto err;
+		goto err1;
 	}
 
 	/* Query (PA/mva addr)/ sec_hnd */
@@ -1964,6 +1964,7 @@ static int sec_buf_ion_alloc(int buf_size)
 #ifdef MTK_FB_ION_SUPPORT
 err:
 	ion_free(ion_client, sec_ion_handle);
+err1:
 	ion_client_destroy(ion_client);
 #endif
 	return -1;
@@ -3925,7 +3926,7 @@ int primary_display_init(char *lcm_name, unsigned int lcm_fps,
 	init_cmdq_slots(&(pgc->dsi_vfp_line), 1, 0);
 	init_cmdq_slots(&(pgc->night_light_params), 17, 0);
 	init_cmdq_slots(&(pgc->hrt_idx_id), 1, 0);
-	init_cmdq_slots(&(pgc->ovl_dummy_info), OVL_NUM, 0);
+	init_cmdq_slots(&(pgc->ovl_sbch_info), OVL_NUM, 0);
 	init_cmdq_slots(&(pgc->request_mmclk_450), 1, 0);
 
 	/* init night light params */
@@ -5417,8 +5418,17 @@ done:
 int primary_display_aod_backlight(int level)
 {
 	int ret;
+	enum mtkfb_power_mode cur_pm;
 
 	_primary_path_lock(__func__);
+
+	cur_pm = primary_display_get_power_mode_nolock();
+
+	if (cur_pm != DOZE_SUSPEND && cur_pm != DOZE) {
+		DISP_PR_INFO("%s not in AOD, skip it\n", __func__);
+		_primary_path_unlock(__func__);
+		return 0;
+	}
 
 	lock_primary_wake_lock(1);
 
@@ -5516,6 +5526,13 @@ int primary_display_aod_backlight(int level)
 	}
 
 	cmdqRecReset(pgc->cmdq_handle_trigger);
+
+	/* Wait a non-used token for dummy trigger loop to prevent that
+	 * the busy trigger loop affects other modules
+	 */
+	cmdqRecWait(pgc->cmdq_handle_trigger, CMDQ_SYNC_TOKEN_FREEZE_EOF);
+
+	DISPCHECK("%s start trig loop\n", __func__);
 	cmdqRecStartLoop(pgc->cmdq_handle_trigger);
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_STREAM_EOF);
 	cmdqCoreSetEvent(CMDQ_SYNC_TOKEN_CABC_EOF);
@@ -5525,6 +5542,12 @@ int primary_display_aod_backlight(int level)
 skip_resume:
 
 	primary_display_setbacklight_nolock(level);
+
+	/* If set backlight under DOZE mode, skip power down display */
+	if (cur_pm == DOZE)
+		goto skip_suspend;
+
+	/* Power down display if cur_pm is DOZE_SUSPEND */
 
 	/* blocking flush before stop trigger loop */
 	_blocking_flush();
@@ -5549,6 +5572,9 @@ skip_resume:
 			ret = -1;
 		}
 	}
+
+	DISPCHECK("%s stop trig loop\n", __func__);
+	_cmdq_stop_trigger_loop();
 
 	dpmgr_path_stop(pgc->dpmgr_handle, CMDQ_DISABLE);
 
@@ -5581,6 +5607,7 @@ skip_resume:
 
 	lock_primary_wake_lock(0);
 
+skip_suspend:
 	_primary_path_unlock(__func__);
 
 	DISPCHECK("%s end\n", __func__);
@@ -6943,9 +6970,9 @@ static int _config_ovl_input(struct disp_frame_cfg_t *cfg,
 
 			/* full transparent layer */
 			cmdqRecBackupRegisterToSlot(cmdq_handle,
-				pgc->ovl_dummy_info, i,
+				pgc->ovl_sbch_info, i,
 				disp_addr_convert
-				(DISP_REG_OVL_DUMMY_REG + ovl_base));
+				(DISP_REG_OVL_SBCH_STS + ovl_base));
 		}
 	}
 
@@ -8349,55 +8376,6 @@ int primary_display_ccci_osc_callback(int en, unsigned int usrdata)
 	return 0;
 }
 EXPORT_SYMBOL(primary_display_ccci_osc_callback);
-
-int primary_display_mipi_clk_change(unsigned int clk_value)
-{
-	struct cmdqRecStruct *cmdq_handle = NULL;
-
-	if (pgc->state == DISP_SLEPT) {
-		DISPCHECK("Sleep State clk change invald\n");
-		return 0;
-	}
-
-	_primary_path_lock(__func__);
-
-	if (!primary_display_is_video_mode()) {
-		DISPCHECK("clk change CMD Mode return\n");
-		return 0;
-	}
-
-	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &cmdq_handle);
-	cmdqRecReset(cmdq_handle);
-
-	_cmdq_insert_wait_frame_done_token_mira(cmdq_handle);
-	pgc->plcm->params->dsi.PLL_CLOCK = clk_value;
-
-	dpmgr_path_build_cmdq(pgc->dpmgr_handle, cmdq_handle,
-			      CMDQ_STOP_VDO_MODE, 0);
-
-	dpmgr_path_ioctl(primary_get_dpmgr_handle(), cmdq_handle,
-			 DDP_PHY_CLK_CHANGE, &clk_value);
-
-	dpmgr_path_build_cmdq(pgc->dpmgr_handle, cmdq_handle,
-			      CMDQ_START_VDO_MODE, 0);
-
-	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_MUTEX0_STREAM_EOF);
-	cmdqRecClearEventToken(cmdq_handle, CMDQ_EVENT_DISP_RDMA0_EOF);
-
-	dpmgr_path_trigger(pgc->dpmgr_handle, cmdq_handle, CMDQ_ENABLE);
-	ddp_mutex_set_sof_wait(dpmgr_path_get_mutex(pgc->dpmgr_handle),
-			       pgc->cmdq_handle_config_esd, 0);
-	_cmdq_flush_config_handle_mira(cmdq_handle, 1);
-
-	cmdqRecDestroy(cmdq_handle);
-	cmdq_handle = NULL;
-
-	DISPCHECK("%s return\n", __func__);
-
-	_primary_path_unlock(__func__);
-
-	return 0;
-}
 
 /********************** Legacy DISP API ****************************/
 UINT32 DISP_GetScreenWidth(void)

@@ -35,6 +35,7 @@
 #include "primary_display.h"
 #include "ddp_misc.h"
 #include "disp_recovery.h"
+#include "ddp_manager.h"
 
 /* IRQ log print kthread */
 static struct task_struct *disp_irq_log_task;
@@ -199,6 +200,11 @@ irqreturn_t disp_irq_handler(int irq, void *dev_id)
 	unsigned int reg_val = 0;
 	unsigned int index = 0;
 	unsigned int reg_temp_val = 0;
+
+	if (!dpmgr_is_power_on()) {
+		DDPMSG("disp off... skip irq handle");
+		return IRQ_NONE;
+	}
 
 	if (irq == ddp_get_module_irq(DISP_MODULE_DSI0)) {
 		if (ddp_get_module_irq(DISP_MODULE_DSI0) == irq) {
