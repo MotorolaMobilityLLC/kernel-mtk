@@ -1726,7 +1726,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	consys: consys@18070000 {
 		compatible = "mediatek,mt6771-consys";
-		reg = <0 0x18070000 0 0x0200>,	/*CONN_MCU_CONFIG_BASE */
+		reg = <0 0x18070000 0 0x1000>,	/*CONN_MCU_CONFIG_BASE */
 		    <0 0x10007000 0 0x0100>,	/*TOP_RGU_BASE */
 		    <0 0x10001000 0 0x1000>,	/*INFRACFG_AO_BASE */
 		    <0 0x10006000 0 0x1000>;	/*SPM_BASE */
