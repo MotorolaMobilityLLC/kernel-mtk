@@ -1858,7 +1858,7 @@ static int mt_usb_probe(struct platform_device *pdev)
 #endif
 
 #ifndef FPGA_PLATFORM
-	if (get_boot_mode() == META_BOOT) {
+	if (get_boot_mode() == META_BOOT || get_boot_mode() == RECOVERY_BOOT) {
 		DBG(0, "in special mode %d\n", get_boot_mode());
 		musb_force_on = 1;
 	}
