@@ -1160,6 +1160,10 @@ struct LCM_DRIVER *lcm_driver_list[] = {
 #if defined(SOFEG01_FHDPLUS_DSI_CMD_SAMSUNG)
 	&sofeg01_fhdplus_dsi_cmd_samsung_lcm_drv,
 #endif
+
+#if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_RT5081)
+	&oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv,
+#endif
 };
 
 unsigned char lcm_name_list[][128] = {
@@ -1224,6 +1228,14 @@ unsigned char lcm_name_list[][128] = {
 
 #if defined(NT35695B_FHD_DSI_VDO_AUO_RT5081_HDP)
 	"nt35695B_fhd_dsi_vdo_auo_rt5081_hdp_drv",
+#endif
+
+#if defined(NT35695B_FHD_DSI_CMD_TRULY_RT5081_720P)
+	"nt35695B_fhd_dsi_cmd_truly_rt5081_720p_lcm_drv",
+#endif
+
+#if defined(OPPO_TIANMA_TD4310_FHDP_DSI_VDO_RT5081)
+	"oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_drv",
 #endif
 };
 

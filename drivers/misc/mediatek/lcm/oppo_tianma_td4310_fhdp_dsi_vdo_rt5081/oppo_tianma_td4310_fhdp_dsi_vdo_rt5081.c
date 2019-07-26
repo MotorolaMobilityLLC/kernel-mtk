@@ -42,7 +42,7 @@
 
 #define LCM_ID_NT35695 (0xf5)
 
-static LCM_UTIL_FUNCS lcm_util;
+static struct LCM_UTIL_FUNCS lcm_util;
 
 #define SET_RESET_PIN(v)	(lcm_util.set_reset_pin((v)))
 #define MDELAY(n)		(lcm_util.mdelay(n))
@@ -96,7 +96,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_RESET_LOW  0xFE
 #define REGFLAG_RESET_HIGH  0xFF
 
-static LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
+static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 
 #ifndef TRUE
 #define TRUE 1
@@ -227,15 +227,15 @@ static void push_tableV22(void *cmdq, struct LCM_setting_table *table,
 	}
 }
 
-static void lcm_set_util_funcs(const LCM_UTIL_FUNCS *util)
+static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
-	memcpy(&lcm_util, util, sizeof(LCM_UTIL_FUNCS));
+	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
 
-static void lcm_get_params(LCM_PARAMS *params)
+static void lcm_get_params(struct LCM_PARAMS *params)
 {
-	memset(params, 0, sizeof(LCM_PARAMS));
+	memset(params, 0, sizeof(struct LCM_PARAMS));
 
 	params->type = LCM_TYPE_DSI;
 
@@ -638,11 +638,11 @@ static void lcm_validate_roi(int *x, int *y, int *width, int *height)
 #endif
 
 #if (LCM_DSI_CMD_MODE)
-LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_cmd_rt5081_lcm_drv = {
+struct LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_cmd_rt5081_lcm_drv = {
 	.name = "oppo_tianma_td4310_fhdp_dsi_cmd_rt5081_drv",
 #else
 
-LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv = {
+struct LCM_DRIVER oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_lcm_drv = {
 	.name = "oppo_tianma_td4310_fhdp_dsi_vdo_rt5081_drv",
 #endif
 	.set_util_funcs = lcm_set_util_funcs,
