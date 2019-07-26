@@ -79,7 +79,7 @@
 #define CMDQ_JUMP_BY_OFFSET		0x10000000
 #define CMDQ_JUMP_BY_PA			0x10000001
 
-#define CMDQ_MIN_AGE_VALUE              (0)	/* currently disable age */
+#define CMDQ_MIN_AGE_VALUE              5	/* currently disable age */
 
 #define CMDQ_DRIVER_NAME		"mtk_cmdq_mbox"
 
