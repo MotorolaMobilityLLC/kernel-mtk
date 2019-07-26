@@ -1514,7 +1514,7 @@ static int charger_routine_thread(void *arg)
 		chg_current = pmic_get_charging_current();
 		chr_err("Vbat=%d,Ibat=%d,ChrI=%d,VChr=%d,T=%d,Soc=%d:%d,CT:%d:%d hv:%d pd:%d:%d\n",
 			battery_get_bat_voltage(), 
-			curr_sign ? bat_current : -1 * bat_current, chg_current,
+			curr_sign ? bat_current :  bat_current, chg_current,
 			battery_get_vbus(), battery_get_bat_temperature(),
 			battery_get_bat_soc(), battery_get_bat_uisoc(),
 			mt_get_charger_type(), info->chr_type, info->enable_hv_charging,
