@@ -179,6 +179,12 @@ static enum UT_RET_STATE pmem_alloc_mixed_size(struct ut_params *params)
 
 	BEGIN_UT_TEST;
 
+	/* Make sure region online/offline is okay for single item tests */
+	ASSERT_EQ(0, tmem_core_regmgr_online(TRUSTED_MEM_PROT),
+		  "regmgr region online");
+	ASSERT_EQ(0, tmem_core_regmgr_offline(TRUSTED_MEM_PROT),
+		  "regmgr region offline");
+
 	ASSERT_EQ(0, mem_handle_list_init(TRUSTED_MEM_PROT),
 		  "alloc handle list check");
 	ret = mem_alloc_mixed_size_test(TRUSTED_MEM_PROT, NULL,

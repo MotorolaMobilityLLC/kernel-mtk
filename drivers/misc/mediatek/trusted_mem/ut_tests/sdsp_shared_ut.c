@@ -95,6 +95,12 @@ sdsp_shared_alloc_saturation_test(struct ut_params *params)
 
 	BEGIN_UT_TEST;
 
+	/* Make sure region online/offline is okay for single item tests */
+	ASSERT_EQ(0, tmem_core_regmgr_online(TRUSTED_MEM_SDSP_SHARED),
+		  "regmgr region online");
+	ASSERT_EQ(0, tmem_core_regmgr_offline(TRUSTED_MEM_SDSP_SHARED),
+		  "regmgr region offline");
+
 	ASSERT_EQ(0, mem_handle_list_init(TRUSTED_MEM_SDSP_SHARED),
 		  "sdsp_shared alloc handle list check");
 	ret = mem_alloc_saturation_test(TRUSTED_MEM_SDSP_SHARED,
