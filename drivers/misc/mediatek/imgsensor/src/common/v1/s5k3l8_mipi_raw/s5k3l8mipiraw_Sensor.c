@@ -67,7 +67,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	#else //CONTINUEMODE
 	.cap = {
-		.pclk = 566400000,
+		.pclk = 563680000,
 		.linelength  = 5808,
 		.framelength = 3234,
 		.startx = 24,
@@ -81,7 +81,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 	},
 	#endif
 	.cap1 = {
-		.pclk = 566400000,
+		.pclk = 563680000,
 		.linelength  = 5808,
 		.framelength = 6490,
 		.startx = 24,
