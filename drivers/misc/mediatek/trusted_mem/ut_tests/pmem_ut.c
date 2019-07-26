@@ -91,6 +91,12 @@ static enum UT_RET_STATE pmem_alloc_saturation_test(struct ut_params *params)
 
 	BEGIN_UT_TEST;
 
+	/* Make sure region online/offline is okay for single item tests */
+	ASSERT_EQ(0, tmem_core_regmgr_online(TRUSTED_MEM_PROT),
+		  "regmgr region online");
+	ASSERT_EQ(0, tmem_core_regmgr_offline(TRUSTED_MEM_PROT),
+		  "regmgr region offline");
+
 	ASSERT_EQ(0, mem_handle_list_init(TRUSTED_MEM_PROT),
 		  "pmem alloc handle list check");
 	ret = mem_alloc_saturation_test(TRUSTED_MEM_PROT, PMEM_UT_OWNER,
@@ -151,6 +157,12 @@ static enum UT_RET_STATE pmem_alloc_multithread_test(struct ut_params *params)
 	UNUSED(reg_final_state);
 
 	BEGIN_UT_TEST;
+
+	/* Make sure region online/offline is okay for single item tests */
+	ASSERT_EQ(0, tmem_core_regmgr_online(TRUSTED_MEM_PROT),
+		  "regmgr region online");
+	ASSERT_EQ(0, tmem_core_regmgr_offline(TRUSTED_MEM_PROT),
+		  "regmgr region offline");
 
 	ASSERT_EQ(0, mem_alloc_multithread_test(TRUSTED_MEM_PROT),
 		  "pmem alloc multithread test");
