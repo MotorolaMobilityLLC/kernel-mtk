@@ -301,6 +301,7 @@ PVRSRV_ERROR SysDevInit(void *pvOSDevice, PVRSRV_DEVICE_CONFIG **ppsDevConfig)
 
 	gsDevices[0].hDevData = &gsRGXData;
 	gsDevices[0].eCacheSnoopingMode = PVRSRV_DEVICE_SNOOP_NONE;
+	gsDevices[0].bHasFBCDCVersion31 = IMG_TRUE;
 
 #if defined(CONFIG_MACH_MT6739)
 	gsDevices[0].pfnSysDevFeatureDepInit = NULL;
