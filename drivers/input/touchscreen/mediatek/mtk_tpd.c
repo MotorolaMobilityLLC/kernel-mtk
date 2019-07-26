@@ -433,10 +433,13 @@ static struct platform_driver tpd_driver = {
 /* hh: use fb_notifier */
 static struct notifier_block tpd_fb_notifier;
 /* use fb_notifier */
+static DEFINE_MUTEX(tpd_suspend_resume_mutex);
 static void touch_resume_workqueue_callback(struct work_struct *work)
 {
 	TPD_DEBUG("GTP touch_resume_workqueue_callback\n");
+	mutex_lock(&tpd_suspend_resume_mutex);
 	g_tpd_drv->resume(NULL);
+	mutex_unlock(&tpd_suspend_resume_mutex);
 	tpd_suspend_flag = 0;
 }
 static int tpd_fb_notifier_callback(
@@ -463,7 +466,8 @@ static int tpd_fb_notifier_callback(
 	case FB_BLANK_UNBLANK:
 		if (event == FB_EVENT_BLANK) {
 			TPD_DMESG("LCD ON Notify\n");
-			if (g_tpd_drv && tpd_suspend_flag) {
+//			if (g_tpd_drv && tpd_suspend_flag) {
+			if (g_tpd_drv) {
 				err = queue_work(touch_resume_workqueue,
 							&touch_resume_work);
 				if (!err) {
@@ -476,13 +480,17 @@ static int tpd_fb_notifier_callback(
 	case FB_BLANK_POWERDOWN:
 		if (event == FB_EARLY_EVENT_BLANK) {
 			TPD_DMESG("LCD OFF Notify\n");
-			if (g_tpd_drv && !tpd_suspend_flag) {
+//			if (g_tpd_drv && !tpd_suspend_flag) {
+			if (g_tpd_drv) {
 				err = cancel_work_sync(&touch_resume_work);
+//				err = flush_work_sync(&touch_resume_work);
 				if (!err)
 					TPD_DMESG("cancel resume_workqueue failed\n");
+				mutex_lock(&tpd_suspend_resume_mutex);
 				g_tpd_drv->suspend(NULL);
+				mutex_unlock(&tpd_suspend_resume_mutex);
+				tpd_suspend_flag = 1;
 			}
-			tpd_suspend_flag = 1;
 		}
 		break;
 	default:
