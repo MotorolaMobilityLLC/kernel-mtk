@@ -2778,30 +2778,13 @@ irqreturn_t vpu1_isr_handler(int irq, void *dev_id)
 }
 #endif
 
-static bool service_pool_is_empty(int core)
+static int pools_are_empty(int core)
 {
-	bool is_empty = true;
-
-	mutex_lock(&vpu_dev->servicepool_mutex[core]);
-	if (!list_empty(&vpu_dev->pool_list[core]))
-		is_empty = false;
-
-	mutex_unlock(&vpu_dev->servicepool_mutex[core]);
-
-	return is_empty;
+	return (vpu_pool_is_empty(&vpu_dev->pool[core]) &&
+		vpu_pool_is_empty(&vpu_dev->pool_common) &&
+		vpu_pool_is_empty(&vpu_dev->pool_multiproc));
 }
-static bool common_pool_is_empty(void)
-{
-	bool is_empty = true;
 
-	mutex_lock(&vpu_dev->commonpool_mutex);
-	if (!list_empty(&vpu_dev->cmnpool_list))
-		is_empty = false;
-
-	mutex_unlock(&vpu_dev->commonpool_mutex);
-
-	return is_empty;
-}
 static void vpu_hw_ion_free_handle(struct ion_client *client,
 	struct ion_handle *handle)
 {
@@ -2842,8 +2825,7 @@ static int vpu_service_routine(void *arg)
 		/* wait for requests if there is no one in user's queue */
 		add_wait_queue(&vpu_dev->req_wait, &wait);
 		while (1) {
-			if ((!service_pool_is_empty(service_core)) ||
-						(!common_pool_is_empty()))
+			if (!pools_are_empty(service_core))
 				break;
 			wait_woken(&wait, TASK_INTERRUPTIBLE,
 						MAX_SCHEDULE_TIMEOUT);
@@ -2861,49 +2843,18 @@ static int vpu_service_routine(void *arg)
 		get = false;
 		cnt = 0;
 
-		mutex_lock(&vpu_dev->servicepool_mutex[service_core]);
-		if (!(list_empty(&vpu_dev->pool_list[service_core]))) {
+		/* 1. multi-process pool */
+		req = vpu_pool_dequeue(&vpu_dev->pool_multiproc, NULL);
 
-			req = vlist_node_of(
-					vpu_dev->pool_list[service_core].next,
-					struct vpu_request);
+		/* 2. self pool */
+		if (!req)
+			req = vpu_pool_dequeue(
+				&vpu_dev->pool[service_core],
+				&vpu_dev->priority_list[service_core][i]);
 
-			list_del_init(vlist_link(req, struct vpu_request));
-
-			vpu_dev->servicepool_list_size[service_core] -= 1;
-/*priority list*/
-	vpu_dev->priority_list[service_core][req->priority] -= 1;
-			LOG_DBG("[vpu] flag - : selfpool(%d)_size(%d)\n",
-				service_core,
-				vpu_dev->servicepool_list_size[service_core]);
-			for (i = 0 ; i < VPU_REQ_MAX_NUM_PRIORITY ; i++) {
-				LOG_DBG("[vpu_%d] priority_list num[%d]:%d\n",
-				service_core, i,
-				vpu_dev->priority_list[service_core][i]);
-			}
-			mutex_unlock(&vpu_dev->servicepool_mutex[service_core]);
-
-			LOG_DBG("[vpu] flag - 2: get selfpool\n");
-		} else {
-			mutex_unlock(&vpu_dev->servicepool_mutex[service_core]);
-
-			mutex_lock(&vpu_dev->commonpool_mutex);
-			if (!(list_empty(&vpu_dev->cmnpool_list))) {
-				req = vlist_node_of(vpu_dev->cmnpool_list.next,
-					struct vpu_request);
-
-				list_del_init(vlist_link(req,
-						struct vpu_request));
-
-				vpu_dev->commonpool_list_size -= 1;
-
-				LOG_DBG("[vpu] flag - :common pool_size(%d)\n",
-					vpu_dev->commonpool_list_size);
-
-				LOG_DBG("[vpu] flag - 3: get common pool\n");
-			}
-			mutex_unlock(&vpu_dev->commonpool_mutex);
-		}
+		/* 3. common pool */
+		if (!req)
+			req = vpu_pool_dequeue(&vpu_dev->pool_common, NULL);
 
 		/* suppose that req is null would not happen
 		 * due to we check service_pool_is_empty and
@@ -2968,6 +2919,11 @@ for (j = 0 ; j < req->buffers[i].plane_count ; j++) { \
 					ION_FREE_HANDLE
 
 #undef ION_FREE_HANDLE
+
+				vpu_hw_ion_free_handle(my_ion_client,
+					(struct ion_handle *)
+					((uintptr_t)(req->sett.sett_ion_fd)));
+
 				continue;
 			}
 
@@ -3041,8 +2997,8 @@ for (j = 0 ; j < req->buffers[i].plane_count ; j++) { \
 				dsp_freq_index,
 				opps.dspcore[service_core].index,
 				g_func_mask,
-				vpu_dev->servicepool_list_size[service_core],
-				vpu_dev->commonpool_list_size,
+				vpu_dev->pool[service_core].size,
+				vpu_dev->pool_common.size,
 				is_locked,
 				efuse_data);
 
@@ -3084,8 +3040,8 @@ for (j = 0 ; j < req->buffers[i].plane_count ; j++) { \
 			 */
 			LOG_WRN("[vpu_%d] get null request, %d/%d/%d\n",
 				service_core,
-				vpu_dev->servicepool_list_size[service_core],
-				vpu_dev->commonpool_list_size, is_locked);
+				vpu_dev->pool[service_core].size,
+				vpu_dev->pool_common.size, is_locked);
 			continue;
 		}
 out:
@@ -5225,9 +5181,9 @@ int vpu_hw_enque_request(int core, struct vpu_request *request)
 	vpu_write_field(core, FLD_XTENSA_INFO13,
 					vpu_service_cores[core].work_buf->pa);
 	/* pointer to property buffer */
-	vpu_write_field(core, FLD_XTENSA_INFO14, request->sett_ptr);
+	vpu_write_field(core, FLD_XTENSA_INFO14, request->sett.sett_ptr);
 	/* size of property buffer */
-	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett_length);
+	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett.sett_lens);
 
 	/* 2. trigger interrupt */
 	#ifdef ENABLE_PMQOS
@@ -5521,9 +5477,9 @@ int vpu_hw_processing_request(int core, struct vpu_request *request)
 	vpu_write_field(core, FLD_XTENSA_INFO13,
 				vpu_service_cores[core].work_buf->pa);
 	/* pointer to property buffer */
-	vpu_write_field(core, FLD_XTENSA_INFO14, request->sett_ptr);
+	vpu_write_field(core, FLD_XTENSA_INFO14, request->sett.sett_ptr);
 	/* size of property buffer */
-	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett_length);
+	vpu_write_field(core, FLD_XTENSA_INFO15, request->sett.sett_lens);
 
 	/* 2. trigger interrupt */
 #ifdef ENABLE_PMQOS
@@ -5965,7 +5921,8 @@ int vpu_dump_buffer_mva(struct vpu_request *request)
 	int i, j;
 
 	LOG_INF("dump request - setting: 0x%x, length: %d\n",
-			(uint32_t) request->sett_ptr, request->sett_length);
+			(uint32_t) request->sett.sett_ptr,
+			request->sett.sett_lens);
 
 	for (i = 0; i < request->buffer_count; i++) {
 		buf = &request->buffers[i];
@@ -6809,18 +6766,14 @@ int vpu_dump_vpu(struct seq_file *s)
 			"Queue#", "Waiting");
 	vpu_print_seq(s, LINE_BAR);
 
-	mutex_lock(&vpu_dev->commonpool_mutex);
 	vpu_print_seq(s, "  |%-12s|%-34d|\n",
 			      "Common",
-			      vpu_dev->commonpool_list_size);
-	mutex_unlock(&vpu_dev->commonpool_mutex);
+			      vpu_pool_size(&vpu_dev->pool_common));
 
 	for (core = 0 ; core < MTK_VPU_CORE; core++) {
-		mutex_lock(&vpu_dev->servicepool_mutex[core]);
 		vpu_print_seq(s, "  |Core %-7d|%-34d|\n",
 				      core,
-				      vpu_dev->servicepool_list_size[core]);
-		mutex_unlock(&vpu_dev->servicepool_mutex[core]);
+				      vpu_pool_size(&vpu_dev->pool[core]));
 	}
 	vpu_print_seq(s, "\n");
 

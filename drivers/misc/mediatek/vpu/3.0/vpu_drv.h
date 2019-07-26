@@ -21,7 +21,17 @@
 #define VPU_MAX_NUM_PROPS 32
 #define VPU_MAX_NUM_CORES 3
 
+/** Request core values
+ *  b0..b15: Core Bit Mask and Trylock
+ *    1. Bitmask: b0..b15, represents core0 ~ core15
+ *    2. 0xFFFF:  Common Pool
+ *    3. 0x87:    Trylock
+ *  b16..b32: Function Masks
+ *    b16: Multi-Core Processing
+ */
 #define VPU_TRYLOCK_CORENUM 0x87
+#define VPU_CORE_MULTIPROC  0x10000
+#define VPU_CORE_COMMON     0x0FFFF
 
 extern unsigned int efuse_data;
 extern struct ion_client *my_ion_client;
@@ -92,7 +102,7 @@ typedef uint8_t vpu_id_t;
  *     strncpy(algo_n->name, "algo_name", sizeof(algo_n->name));
  *     ioctl(fd, VPU_IOCTL_GET_ALGO_INFO, algo);
  *
- * - VPU_IOCTL_ENQUE_REQUEST: enque a request to user?s own queue.
+ * - VPU_IOCTL_ENQUE_REQUEST: enque a request to user's own queue.
  *
  *     struct vpu_request req;
  *     struct vpu_buffer *buf;
@@ -321,6 +331,11 @@ struct vpu_buffer {
 	struct vpu_plane planes[3];
 };
 
+struct vpu_sett {
+	uint32_t sett_lens;
+	uint64_t sett_ptr;		/* pointer to the request setting */
+	uint64_t sett_ion_fd;	/* ion fd of sett */
+};
 
 enum vpu_req_status {
 	VPU_REQ_STATUS_SUCCESS,
@@ -350,8 +365,7 @@ struct vpu_request {
 	int frame_magic; /* mapping for user space/kernel space */
 	uint8_t status;
 	uint8_t buffer_count;
-	uint32_t sett_length;
-	uint64_t sett_ptr;       /* pointer to the request setting */
+	struct vpu_sett sett;
 	uint64_t priv;           /* reserved for user */
 	struct vpu_buffer buffers[VPU_MAX_NUM_PORTS];
 	/* driver usage only, fd in user space / ion handle in kernel */
@@ -360,6 +374,7 @@ struct vpu_request {
 	uint64_t busy_time;
 	uint32_t bandwidth;
 	uint8_t priority;
+	uint64_t next_req_id;  /* multi-processing: next dependency request */
 };
 
 struct vpu_status {
