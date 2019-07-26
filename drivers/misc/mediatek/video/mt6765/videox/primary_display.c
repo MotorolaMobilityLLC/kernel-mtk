@@ -8393,7 +8393,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 	disp_ion_get_mva(ion_display_client, ion_display_handle,
 		&mva, DISP_M4U_PORT_DISP_WDMA0);
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
-		ION_CACHE_FLUSH_ALL);
+			     ION_CACHE_FLUSH_BY_RANGE);
 
 	tmp = disp_helper_get_option(DISP_OPT_SCREEN_CAP_FROM_DITHER);
 	if (tmp == 0)
@@ -8405,7 +8405,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 		_screen_cap_by_cpu((unsigned int)mva, ufmt, after_eng);
 
 	disp_ion_cache_flush(ion_display_client, ion_display_handle,
-		ION_CACHE_INVALID_BY_RANGE);
+		ION_CACHE_FLUSH_BY_RANGE);
 
 out:
 	if (ion_display_client)
@@ -8479,7 +8479,7 @@ int primary_display_capture_framebuffer_ovl(unsigned long pbuf,
 		_screen_cap_by_cpu(mva, ufmt, after_eng);
 
 	ret = m4u_cache_sync(m4uClient, DISP_M4U_PORT_DISP_WDMA0, pbuf,
-			     buffer_size, mva, M4U_CACHE_INVALID_BY_RANGE);
+			     buffer_size, mva, M4U_CACHE_FLUSH_BY_RANGE);
 
 out:
 	if (mva > 0)
