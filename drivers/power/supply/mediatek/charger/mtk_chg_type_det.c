@@ -73,7 +73,6 @@ struct chg_type_info {
 	struct workqueue_struct *chg_in_wq;
 	struct work_struct chg_in_work;
 	bool ignore_usb;
-	atomic_t hreset;
 };
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -117,16 +116,6 @@ static void dump_charger_name(enum charger_type type)
 			type);
 		break;
 	}
-}
-
-static void plug_in_out_handler(struct chg_type_info *cti, bool en, bool ignore)
-{
-	mutex_lock(&cti->chgdet_lock);
-	cti->chgdet_en = en;
-	cti->ignore_usb = ignore;
-	atomic_inc(&cti->chgdet_cnt);
-	wake_up_interruptible(&cti->waitq);
-	mutex_unlock(&cti->chgdet_lock);
 }
 
 /* Power Supply */
@@ -192,7 +181,6 @@ static int mt_charger_set_property(struct power_supply *psy,
 {
 	struct mt_charger *mtk_chg = power_supply_get_drvdata(psy);
 	struct chg_type_info *cti;
-	int retry_cnt = 20;
 
 	pr_info("%s\n", __func__);
 
@@ -214,19 +202,8 @@ static int mt_charger_set_property(struct power_supply *psy,
 	}
 
 	dump_charger_name(mtk_chg->chg_type);
+
 	cti = mtk_chg->cti;
-
-	if (atomic_read(&cti->hreset) && mtk_chg->chg_type != CHARGER_UNKNOWN) {
-		while (atomic_read(&cti->hreset) && retry_cnt > 0) {
-			pr_info("%s: hardreset, sleep and retry:%d\n",
-				__func__, retry_cnt);
-			msleep(100);
-			retry_cnt--;
-		}
-		plug_in_out_handler(cti, true, false);
-		return 0;
-	}
-
 	if (!cti->ignore_usb) {
 		/* usb */
 		if ((mtk_chg->chg_type == STANDARD_HOST) ||
@@ -320,6 +297,16 @@ static void charger_in_work_handler(struct work_struct *work)
 	fg_charger_in_handler();
 }
 
+static void plug_in_out_handler(struct chg_type_info *cti, bool en, bool ignore)
+{
+	mutex_lock(&cti->chgdet_lock);
+	cti->chgdet_en = en;
+	cti->ignore_usb = ignore;
+	atomic_inc(&cti->chgdet_cnt);
+	wake_up_interruptible(&cti->waitq);
+	mutex_unlock(&cti->chgdet_lock);
+}
+
 static int pd_tcp_notifier_call(struct notifier_block *pnb,
 				unsigned long event, void *data)
 {
@@ -360,15 +347,6 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			pr_info("%s Sink_to_Source\n", __func__);
 			plug_in_out_handler(cti, false, true);
-		}
-		break;
-	case TCP_NOTIFY_HARD_RESET_STATE:
-		if (noti->hreset_state.state == TCP_HRESET_RESULT_DONE ||
-			noti->hreset_state.state == TCP_HRESET_RESULT_FAIL) {
-			atomic_set(&cti->hreset, 0);
-		} else if (noti->hreset_state.state == TCP_HRESET_SIGNAL_SEND ||
-			noti->hreset_state.state == TCP_HRESET_SIGNAL_RECV) {
-			atomic_set(&cti->hreset, 1);
 		}
 		break;
 	}
@@ -519,7 +497,6 @@ static int mt_charger_probe(struct platform_device *pdev)
 	/* Init Charger Detection */
 	mutex_init(&cti->chgdet_lock);
 	atomic_set(&cti->chgdet_cnt, 0);
-	atomic_set(&cti->hreset, 0);
 
 	init_waitqueue_head(&cti->waitq);
 	cti->chgdet_task = kthread_run(
