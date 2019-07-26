@@ -411,7 +411,7 @@ void thread_group_cputime(struct task_struct *tsk, struct task_cputime *times)
 static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
 					 struct rq *rq, int ticks)
 {
-	u64 cputime = TICK_NSEC * ticks;
+	u64 cputime = (__force u64) cputime_one_jiffy * ticks;
 	cputime_t scaled, other;
 
 	/*
@@ -535,7 +535,7 @@ void account_process_tick(struct task_struct *p, int user_tick)
 		return;
 	}
 
-	cputime = TICK_NSEC;
+	cputime = cputime_one_jiffy;
 	steal = steal_account_process_time(ULONG_MAX);
 
 	if (steal >= cputime)
@@ -565,7 +565,7 @@ void account_idle_ticks(unsigned long ticks)
 		return;
 	}
 
-	cputime = ticks * TICK_NSEC;
+	cputime = jiffies_to_cputime(ticks);
 	steal = steal_account_process_time(ULONG_MAX);
 
 	if (steal >= cputime)
@@ -741,7 +741,7 @@ static cputime_t vtime_delta(struct task_struct *tsk)
 	if (time_before(now, (unsigned long)tsk->vtime_snap))
 		return 0;
 
-	return (now - tsk->vtime_snap) * TICK_NSEC;
+	return jiffies_to_cputime(now - tsk->vtime_snap);
 }
 
 static cputime_t get_vtime_delta(struct task_struct *tsk)
@@ -756,7 +756,7 @@ static cputime_t get_vtime_delta(struct task_struct *tsk)
 	 * elapsed time. Limit account_other_time to prevent rounding
 	 * errors from causing elapsed vtime to go negative.
 	 */
-	delta = (now - tsk->vtime_snap) * TICK_NSEC;
+	delta = jiffies_to_cputime(now - tsk->vtime_snap);
 	other = account_other_time(delta);
 	WARN_ON_ONCE(tsk->vtime_snap_whence == VTIME_INACTIVE);
 	tsk->vtime_snap = now;
