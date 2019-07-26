@@ -458,12 +458,15 @@ static unsigned int mtk_dpidle_output_log(
 	if (!(idle_flag & MTK_IDLE_LOG_REDUCE)) {
 		print_log = true;
 	} else {
-		if (wakesta->is_abort != 0 || wakesta->r12 == 0)
+		if (wakesta->is_abort != 0 || wakesta->r12 == 0) {
 			print_log = true;
-		else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA)
+		} else if (check_print_log_duration()) {
 			print_log = true;
-		else if (check_print_log_duration())
+		} else if (wakesta->timer_out <= IDLE_TIMER_OUT_CRITERIA) {
 			print_log = true;
+			if (wakesta->r12 == R12_AP2AP_PEER_WAKEUP_EVENT)
+				print_log = false;
+		}
 	}
 
 	if (print_log) {

@@ -58,7 +58,7 @@ unsigned int __attribute__((weak))
 	return 0;
 }
 
-#define IDLE_LOG_BUF_LEN 512
+#define IDLE_LOG_BUF_LEN 4096
 struct mtk_idle_buf {
 	char buf[IDLE_LOG_BUF_LEN];
 	char *p_idx;
