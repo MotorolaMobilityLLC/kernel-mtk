@@ -2195,6 +2195,12 @@ static int _DC_switch_to_DL_fast(int block)
 	/* copy ovl config from DC handle to DL handle */
 	memcpy(data_config_dl->ovl_config, data_config_dc->ovl_config,
 		sizeof(data_config_dl->ovl_config));
+	memcpy(&data_config_dl->rsz_enable, &data_config_dc->rsz_enable,
+		sizeof(data_config_dc->rsz_enable));
+	memcpy(&data_config_dl->rsz_src_roi, &data_config_dc->rsz_src_roi,
+		sizeof(data_config_dc->rsz_src_roi));
+	memcpy(&data_config_dl->rsz_dst_roi, &data_config_dc->rsz_dst_roi,
+		sizeof(data_config_dc->rsz_dst_roi));
 	/* before power off, we should wait wdma0_eof first!!! */
 	_cmdq_flush_config_handle_mira(pgc->cmdq_handle_ovl1to2_config, 1);
 	cmdqRecReset(pgc->cmdq_handle_ovl1to2_config);
