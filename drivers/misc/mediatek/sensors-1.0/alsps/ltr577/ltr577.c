@@ -70,11 +70,15 @@ static unsigned int cureent_color_ratio = 0;
 #define PS_READ_PROINIF_VALUE
 
   #ifdef PS_READ_PROINIF_VALUE
-	#define PROINFO_CALI_DATA_OFFSET        210
+	#define PROINFO_CALI_DATA_OFFSET        2684
 	#define PS_BUF_SIZE    256
 	#define PS_CALI_DATA_LEN  6
 	//static char backup_file_path[PS_BUF_SIZE] ="/dev/block/mmcblk0p13";  ///"/dev/block/platform/bootdevice/by-name/proinfo";
 	static char backup_file_path[PS_BUF_SIZE] ="/dev/block/platform/bootdevice/by-name/proinfo";
+//add by fanxzh for ps dynamic cali begin
+	static unsigned int ps_cali_factor = 68;
+	static unsigned int ps_cali_per = 100;
+//add by fanxzh for ps dynamic cali end
 	static mm_segment_t oldfs;
 	static unsigned int ps_nvraw_none_value = 0;
 	static unsigned int ps_nvraw_40mm_value = 0;
@@ -682,9 +686,12 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 
 	closeFile(fd_file);
 	set_fs(oldfs);
+//add by fanxzh for dynamic cali begin
 	mRaw   = (int)(((int)buf[0])<<8|(0xFF&(int)buf[1]));
-	mRaw40 = (int)(((int)buf[2])<<8|(0xFF&(int)buf[3]));
+	//mRaw40 = (int)(((int)buf[2])<<8|(0xFF&(int)buf[3]));
 	mRaw25 = (int)(((int)buf[4])<<8|(0xFF&(int)buf[5]));
+	mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
+//add by fanxzh for dynamic cali end
 
 	if(mRaw + 8 <mRaw40 && mRaw40 + 8 <mRaw25){
 	ps_nvraw_none_value = mRaw;
@@ -778,8 +785,8 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		threshold_value = default_none_value;
 #endif
 		min_proximity = ltr577_obj->hw->ps_threshold_low;
-		ps_threshold_l = min_proximity- pwave_value -1;
-		ps_threshold_h = min_proximity- pwave_value ;
+		ps_threshold_l = ps_nvraw_25mm_value -1;
+		ps_threshold_h = ps_nvraw_25mm_value;
 
 		ps_thd_val_low_set = ps_threshold_l;
 		ps_thd_val_hlgh_set = ps_threshold_h;
@@ -1785,7 +1792,12 @@ static void ltr577_eint_work(struct work_struct *work)
 
 	APS_DBG("%s:let up distance=%d\n",__func__,distance);
 
+//add by fanxzh begin
+	ltr577_read_cali_file(obj->client);	
+	ps_thd_val_low_set = ps_nvraw_40mm_value;
+	ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
 	ltr577_ps_set_thres();
+//add by fanxzh end
 
 	//let up layer to know
 	res = ps_report_interrupt_data(distance);
