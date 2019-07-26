@@ -192,23 +192,29 @@ do {if (1) mmprofile_log_ex(args); } while (0);	\
 #endif
 
 /* CMDQ FTRACE */
-#define __CMDQ_SYSTRACE_BEGIN(pid, fmt, args...) do { \
+#define CMDQ_TRACE_FORCE_BEGIN(fmt, args...) do { \
+	preempt_disable(); \
+	event_trace_printk(cmdq_get_tracing_mark(), \
+		"B|%d|"fmt, current->tgid, ##args); \
+	preempt_enable();\
+} while (0)
+
+#define CMDQ_TRACE_FORCE_END() do { \
+	preempt_disable(); \
+	event_trace_printk(cmdq_get_tracing_mark(), "E\n"); \
+	preempt_enable(); \
+} while (0)
+
+
+#define CMDQ_SYSTRACE_BEGIN(fmt, args...) do { \
 	if (cmdq_core_ftrace_enabled()) { \
-		preempt_disable(); \
-		event_trace_printk(cmdq_get_tracing_mark(), \
-			"B|%d|"fmt, pid, ##args); \
-		preempt_enable();\
+		CMDQ_TRACE_FORCE_BEGIN(fmt, ##args); \
 	} \
 } while (0)
 
-#define CMDQ_SYSTRACE_BEGIN(fmt, args...) \
-	__CMDQ_SYSTRACE_BEGIN(current->tgid, fmt, ##args)
-
 #define CMDQ_SYSTRACE_END() do { \
 	if (cmdq_core_ftrace_enabled()) { \
-		preempt_disable(); \
-		event_trace_printk(cmdq_get_tracing_mark(), "E\n"); \
-		preempt_enable(); \
+		CMDQ_TRACE_FORCE_END(); \
 	} \
 } while (0)
 
@@ -572,6 +578,7 @@ struct ContextStruct {
 
 	/* Write Address management */
 	struct list_head writeAddrList;
+	atomic_t write_addr_cnt;
 
 	/* Basic information */
 	struct cmdq_core_thread thread[CMDQ_MAX_THREAD_COUNT];
@@ -717,6 +724,7 @@ struct cmdqRecStruct {
 	const struct cmdq_controller *ctrl;
 	cmdq_core_handle_cb prepare;
 	cmdq_core_handle_cb unprepare;
+	cmdq_core_handle_cb stop;
 
 	struct cmdq_timeout_info *timeout_info;
 
@@ -860,6 +868,7 @@ u32 cmdq_core_get_delay_start_cpr(void);
 s32 cmdq_delay_get_id_by_scenario(enum CMDQ_SCENARIO_ENUM scenario);
 int cmdqCoreAllocWriteAddress(u32 count, dma_addr_t *paStart);
 u32 cmdqCoreReadWriteAddress(dma_addr_t pa);
+void cmdqCoreReadWriteAddressBatch(u32 *addrs, u32 count, u32 *val_out);
 u32 cmdqCoreWriteWriteAddress(dma_addr_t pa, u32 value);
 int cmdqCoreFreeWriteAddress(dma_addr_t paStart);
 

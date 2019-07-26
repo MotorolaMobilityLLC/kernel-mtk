@@ -1501,6 +1501,9 @@ static void cmdq_sec_exec_task_async_impl(struct work_struct *work_item)
 		   handle->scenario, handle->engineFlag);
 	CMDQ_MSG("%s", long_msg);
 
+	if (!handle->secData.is_secure)
+		CMDQ_ERR("not secure %s", long_msg);
+
 	CMDQ_LOG("-->EXEC: task:0x%p on thread:%d begin va:0x%p scenario:%d\n",
 		   handle, thread_id, buf->va_base, handle->scenario);
 

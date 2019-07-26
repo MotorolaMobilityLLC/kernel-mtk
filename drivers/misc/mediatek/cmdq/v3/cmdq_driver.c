@@ -264,8 +264,6 @@ static void cmdq_driver_process_read_address_request(
 	/* create kernel-space buffer for working */
 	u32 *addrs = NULL;
 	u32 *values = NULL;
-	dma_addr_t pa = 0;
-	int i = 0;
 	void *dma_addr;
 	void *values_addr;
 
@@ -307,11 +305,7 @@ static void cmdq_driver_process_read_address_request(
 		}
 
 		/* actually read these PA write buffers */
-		for (i = 0; i < req_user->count; i++) {
-			pa = 0xFFFFFFFF & addrs[i];
-			CMDQ_MSG("[READ_PA] req read dma address 0x%pa\n", &pa);
-			values[i] = cmdqCoreReadWriteAddress(pa);
-		}
+		cmdqCoreReadWriteAddressBatch(addrs, req_user->count, values);
 
 		/* copy value to user */
 		if (copy_to_user(values_addr, values,
@@ -342,6 +336,10 @@ static long cmdq_driver_create_secure_medadata(
 #ifdef CMDQ_SECURE_PATH_SUPPORT
 	void *pAddrMetadatas = NULL;
 	u32 length;
+
+	if (pCommand->secData.is_secure &&
+		!pCommand->secData.addrMetadataCount)
+		CMDQ_LOG("[warn]secure task without secure handle\n");
 
 	if (pCommand->secData.addrMetadataCount >=
 		CMDQ_IWC_MAX_ADDR_LIST_LENGTH) {
@@ -625,8 +623,10 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 	u32 userRegCount;
 	s32 status;
 
-	if (copy_from_user(&job, (void *)param, sizeof(job)))
+	if (copy_from_user(&job, (void *)param, sizeof(job))) {
+		CMDQ_ERR("copy job from user fail\n");
 		return -EFAULT;
+	}
 
 	if (job.command.regRequest.count > CMDQ_MAX_DUMP_REG_COUNT ||
 		!job.command.blockSize ||
@@ -648,8 +648,10 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 
 	/* create kernel-space address buffer */
 	status = cmdq_driver_create_reg_address_buffer(&job.command);
-	if (status != 0)
+	if (status != 0) {
+		CMDQ_ERR("create reg buffer fail:%d\n", status);
 		return status;
+	}
 
 	/* avoid copy large string */
 	if (job.command.userDebugStrLen > CMDQ_MAX_DBG_STR_LEN)
@@ -660,8 +662,10 @@ static s32 cmdq_driver_ioctl_async_job_exec(struct file *pf,
 
 	/* allocate secure medatata */
 	status = cmdq_driver_create_secure_medadata(&job.command);
-	if (status != 0)
+	if (status != 0) {
+		CMDQ_ERR("create secure meta fail:%d\n", status);
 		return status;
+	}
 
 	status = cmdq_driver_copy_handle_prop_from_user(&job.command);
 	if (status < 0) {
@@ -713,6 +717,7 @@ static s32 cmdq_driver_ioctl_async_job_wait_and_close(unsigned long param)
 	u32 *userRegValue = NULL;
 	/* backup value after task release */
 	s32 status;
+	u64 exec_cost = sched_clock();
 
 	if (copy_from_user(&jobResult, (void *)param, sizeof(jobResult))) {
 		CMDQ_ERR("copy_from_user jobResult fail\n");
@@ -809,6 +814,11 @@ static s32 cmdq_driver_ioctl_async_job_wait_and_close(unsigned long param)
 
 	/* free kernel space result buffer */
 	kfree(CMDQ_U32_PTR(jobResult.regValue.regValues));
+
+	exec_cost = div_s64(sched_clock() - exec_cost, 1000);
+	if (exec_cost > 150000)
+		CMDQ_LOG("[warn]job wait and close cost:%lluus handle:0x%p\n",
+			exec_cost, handle);
 
 	/* task now can release */
 	cmdq_task_destroy(handle);
@@ -932,10 +942,14 @@ static long cmdq_ioctl(struct file *pf, unsigned int code,
 		status = cmdq_driver_ioctl_query_usage(pf, param);
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_EXEC:
+		CMDQ_SYSTRACE_BEGIN("%s_async_job_exec\n", __func__);
 		status = cmdq_driver_ioctl_async_job_exec(pf, param);
+		CMDQ_SYSTRACE_END();
 		break;
 	case CMDQ_IOCTL_ASYNC_JOB_WAIT_AND_CLOSE:
+		CMDQ_SYSTRACE_BEGIN("%s_async_job_wait_and_close\n", __func__);
 		status = cmdq_driver_ioctl_async_job_wait_and_close(param);
+		CMDQ_SYSTRACE_END();
 		break;
 	case CMDQ_IOCTL_ALLOC_WRITE_ADDRESS:
 		status = cmdq_driver_ioctl_alloc_write_address(param);

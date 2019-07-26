@@ -65,11 +65,10 @@
 
 #define CMDQ_INITIAL_CMD_BLOCK_SIZE     (PAGE_SIZE)
 /* instruction is 64-bit */
-#define CMDQ_DMA_POOL_COUNT		32
+#define CMDQ_DMA_POOL_COUNT		128
 
 #define CMDQ_MAX_LOOP_COUNT             (1000000)
 #define CMDQ_MAX_INST_CYCLE             (27)
-#define CMDQ_MIN_AGE_VALUE              (5)
 #define CMDQ_MAX_ERROR_SIZE             (8 * 1024)
 
 #define CMDQ_MAX_TASK_IN_SECURE_THREAD	(10)

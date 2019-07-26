@@ -597,8 +597,8 @@ static void testcase_async_request(void)
 
 static void testcase_multiple_async_request(void)
 {
-#define TEST_REQ_COUNT 24
-	struct cmdqRecStruct *hReq[TEST_REQ_COUNT] = { 0 };
+#define TEST_REQ_COUNT_ASYNC 9
+	struct cmdqRecStruct *hReq[TEST_REQ_COUNT_ASYNC] = { 0 };
 	s32 ret = 0;
 	int i;
 
@@ -613,7 +613,7 @@ static void testcase_multiple_async_request(void)
 	/* to test dynamic task allocation */
 	CMDQ_REG_SET32(CMDQ_SYNC_TOKEN_UPD, CMDQ_SYNC_TOKEN_USER_0);
 
-	for (i = 0; i < TEST_REQ_COUNT; i++) {
+	for (i = 0; i < TEST_REQ_COUNT_ASYNC; i++) {
 		ret = cmdq_task_create(CMDQ_SCENARIO_DEBUG, &hReq[i]);
 		if (ret < 0) {
 			CMDQ_ERR("%s cmdq_task_create failed:%d i:%d\n ",
@@ -642,7 +642,7 @@ static void testcase_multiple_async_request(void)
 	}
 
 	/* release token and wait them */
-	for (i = 0; i < TEST_REQ_COUNT; i++) {
+	for (i = 0; i < TEST_REQ_COUNT_ASYNC; i++) {
 
 		if (hReq[i] == NULL) {
 			CMDQ_ERR("%s handle[%d] is NULL\n", __func__, i);
