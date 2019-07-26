@@ -93,6 +93,12 @@ wfd_smem_alloc_saturation_test(struct ut_params *params)
 
 	BEGIN_UT_TEST;
 
+	/* Make sure region online/offline is okay for single item tests */
+	ASSERT_EQ(0, tmem_core_regmgr_online(TRUSTED_MEM_WFD),
+		  "regmgr region online");
+	ASSERT_EQ(0, tmem_core_regmgr_offline(TRUSTED_MEM_WFD),
+		  "regmgr region offline");
+
 	ASSERT_EQ(0, mem_handle_list_init(TRUSTED_MEM_WFD),
 		  "wfd_smem alloc handle list check");
 	ret = mem_alloc_saturation_test(TRUSTED_MEM_WFD, WFD_SMEM_UT_OWNER,
