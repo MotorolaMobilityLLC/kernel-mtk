@@ -1582,6 +1582,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		clocks = <&infracfg_ao INFRACFG_AO_AP_DMA_CG>;
 		clock-names = "apdma";
 		#dma-cells = <1>;
+		dma-bits = <34>;
 	};
 
 	apuart0: serial@11002000 {
