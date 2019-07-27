@@ -35,7 +35,7 @@
 
 &i2c3 {
 	abov_sar@20 {
-	   label = "AbovCapSense06";
+	   label = "AbovCapSense07";
 	 };
 };
 
