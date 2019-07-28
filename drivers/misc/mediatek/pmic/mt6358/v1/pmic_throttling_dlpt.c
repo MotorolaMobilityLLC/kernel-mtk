@@ -443,6 +443,8 @@ int g_battery_percent_level;
 int g_battery_percent_stop;
 
 #define BAT_PERCENT_LINIT 15
+#define BAT_TEMP_LIMIT 5
+#define BAT_TEMP_RECORY (BAT_TEMP_LIMIT + 3)
 
 struct battery_percent_callback_table {
 	void (*bpcb)(enum BATTERY_PERCENT_LEVEL_TAG);
@@ -518,6 +520,7 @@ int bat_percent_notify_handler(void *unused)
 {
 	ktime_t ktime;
 	int bat_per_val = 0;
+	int bat_temp;
 
 	do {
 		ktime = ktime_set(10, 0);
@@ -531,20 +534,24 @@ int bat_percent_notify_handler(void *unused)
 #if (CONFIG_MTK_GAUGE_VERSION == 30)
 		bat_per_val = battery_get_uisoc();
 #endif
-		if ((upmu_get_rgs_chrdet() == 0) &&
-		    (g_battery_percent_level == 0) &&
-		    (bat_per_val <= BAT_PERCENT_LINIT)) {
+		bat_temp = battery_get_bat_temperature();
+
+		if (upmu_get_rgs_chrdet() == 0
+		    && g_battery_percent_level == 0
+		    && bat_per_val <= BAT_PERCENT_LINIT
+		    && bat_temp <= BAT_TEMP_LIMIT) {
 			g_battery_percent_level = 1;
 			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_1);
-		} else if ((g_battery_percent_level == 1) &&
-			   (bat_per_val > BAT_PERCENT_LINIT)) {
+		} else if (g_battery_percent_level == 1
+			   && (bat_per_val > BAT_PERCENT_LINIT
+				|| bat_temp > BAT_TEMP_RECORY)) {
 			g_battery_percent_level = 0;
 			exec_battery_percent_callback(BATTERY_PERCENT_LEVEL_0);
 		}
 		bat_percent_notify_flag = false;
 
-		PMICLOG("bat_per_level=%d,bat_per_val=%d\n"
-			, g_battery_percent_level, bat_per_val);
+		PMICLOG("bat_per_level=%d,bat_per_val=%d,bat_temp=%d\n",
+			g_battery_percent_level, bat_per_val, bat_temp);
 
 		mutex_unlock(&bat_percent_notify_mutex);
 		__pm_relax(&bat_percent_notify_lock);
