@@ -31,6 +31,16 @@ config TCPC_RT1711H
 	  TypeC port Controller
 	  Driver
 
+config TCPC_RT1711
+	bool "Richtek RT1711 TypeC port Controller Driver"
+	depends on TCPC_CLASS
+	default n
+	help
+	  Say Y to enable
+	  Richtek RT1711
+	  TypeC port Controller
+	  Driver
+
 config TCPC_RT5081
 	bool "Richtek RT5081 TypeC port Controller Driver"
 	depends on TCPC_CLASS
