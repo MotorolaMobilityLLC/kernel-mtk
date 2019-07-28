@@ -17,8 +17,8 @@
 		reg = <0x53>;
 		status = "okay";
 
-		rt,intr_gpio_num = <42>; /* direct defined GPIO num */
-		rt,intr_gpio = <&pio 42 0x0>; /* GPIO */
+		rt,intr_gpio_num = <56>; /* direct defined GPIO num */
+		rt,intr_gpio = <&pio 56 0x0>; /* GPIO */
 		rt9471 {
 			/*
 			 * Charger name
@@ -30,13 +30,13 @@
 			rm-slave-addr = /bits/ 8 <0x53>;
 			rm-name = "rt9471";
 			interrupt-names = "wdt", "chg_mivr", "vbus_gd",
-					  "bc12_done", "detach", "vac_ov",
-					  "otg_fault";
-			ichg = <1000000>;		/* uA */
+					  "chg_rdy", "bc12_done", "detach",
+					  "vac_ov", "otg_fault";
+			ichg = <2000000>;		/* uA */
 			aicr = <500000>;		/* uA */
-			mivr = <4400000>;		/* uV */
-			cv = <4350000>;			/* uV */
-			ieoc = <200000>;		/* uA */
+			mivr = <4600000>;		/* uV */
+			cv = <4400000>;			/* uV */
+			ieoc = <150000>;		/* uA */
 			safe-tmr = <10>;		/* hour */
 			wdt = <40>;			/* sec */
 			/*
@@ -46,7 +46,7 @@
 			 * >= 3: MIVR = VBAT + 300mV
 			 */
 			mivr-track = <0>;
-			en-te;
+			/* en-te; */
 			/* en-jeita; */
 			/* ceb-invert; */
 			/* dis-i2c-tout; */
