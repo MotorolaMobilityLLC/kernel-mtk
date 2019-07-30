@@ -33,10 +33,20 @@
 #include "flashlight-dt.h"
 
 /* device tree should be defined in flashlight-dt.h */
+#ifndef AW3643_DTNAME
+#define AW3643_DTNAME "mediatek,flashlights_aw3643"
+#endif
+#ifndef AW3643_DTNAME_I2C
+#define AW3643_DTNAME_I2C "mediatek,flashlights_aw3643_i2c"
+#endif
 
-#define LOG_INF(format, args...)        pr_err( "(%d) " format, __LINE__, ##args)
 
-#define AW3643_NAME "flashlights_aw3643"
+
+
+#define FILE_NAME   "flashlights-aw3643.c"
+#define LOG_INF(format, args...)  pr_err( FILE_NAME"[%s](%d) " format, __FUNCTION__, __LINE__, ##args)
+
+#define AW3643_NAME "flashlights-aw3643"
 
 /* define registers */
 #define AW3643_REG_ENABLE (0x01)
