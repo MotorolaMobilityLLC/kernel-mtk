@@ -514,7 +514,7 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 	struct sched_param param = {.sched_priority = 87 };
 	int ret = 0;
 	int i = 0;
-	int esd_try_cnt = 5; /* 20; */
+	int esd_try_cnt = 1; /* 20; */
 	int recovery_done = 0;
 
 	DISPFUNC();
@@ -541,13 +541,16 @@ static int primary_display_check_recovery_worker_kthread(void *data)
 
 				DDPPR_ERR("[ESD]esd check fail, will do esd recovery. try=%d\n", i);
 				primary_display_esd_recovery();
+				if (pgc->plcm->drv->set_recovery_backlight) {
+					pgc->plcm->drv->set_recovery_backlight();
+				}
 				recovery_done = 1;
 			} while (++i < esd_try_cnt);
 
 			if (ret == 1) {
 				DDPPR_ERR("[ESD]after esd recovery %d times, still fail, disable esd check\n",
 					esd_try_cnt);
-				primary_display_esd_check_enable(0);
+				/*primary_display_esd_check_enable(0);*/
 			} else if (recovery_done == 1) {
 				DISPCHECK("[ESD]esd recovery success\n");
 				recovery_done = 0;
