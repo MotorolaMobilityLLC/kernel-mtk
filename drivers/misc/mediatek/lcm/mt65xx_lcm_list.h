@@ -307,6 +307,7 @@ extern LCM_DRIVER es6311_anx6585_zigzag_wxga_lcm_drv;
 extern LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv;
 extern LCM_DRIVER mipi_mot_vid_ilitek_720p_622_lcm_drv;
 extern LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv;
+extern LCM_DRIVER mipi_mot_vid_holi_720p_622_lcm_drv;
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
