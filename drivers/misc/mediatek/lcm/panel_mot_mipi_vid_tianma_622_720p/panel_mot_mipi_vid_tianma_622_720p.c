@@ -497,6 +497,11 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
+static void lcm_set_recovery_backlight(void)
+{
+	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
 static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
@@ -542,5 +547,5 @@ LCM_DRIVER mipi_mot_vid_tianma_720p_622_lcm_drv = {
 	.validate_roi = lcm_validate_roi,
 #endif
 	.set_lcm_cmd = set_lcm_cmd,
-
+	.set_recovery_backlight = lcm_set_recovery_backlight,
 };

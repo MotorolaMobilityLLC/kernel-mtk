@@ -488,6 +488,11 @@ static void lcm_setbacklight_cmdq(void *handle, unsigned int level)
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
 }
 
+static void lcm_set_recovery_backlight(void)
+{
+	push_table(NULL, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+}
+
 static void set_lcm_cmd(void *handle, unsigned int *lcm_cmd, unsigned int *lcm_count,
 		unsigned int *lcm_value)
 {
@@ -541,5 +546,5 @@ LCM_DRIVER mipi_mot_vid_djn_720p_622_lcm_drv = {
 #endif
 	.set_lcm_cmd = set_lcm_cmd,
 	.set_gpio_reset = lcm_set_reset,
-
+	.set_recovery_backlight = lcm_set_recovery_backlight,
 };
