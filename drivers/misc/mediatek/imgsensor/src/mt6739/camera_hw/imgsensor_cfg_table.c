@@ -299,6 +299,36 @@ struct IMGSENSOR_HW_POWER_SEQ sensor_power_sequence[] = {
 		},
 	},
 #endif
+#if defined(AR1337_MIPI_RAW)
+	{
+        SENSOR_DRVNAME_AR1337_MIPI_RAW,
+		{
+/* 			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 0},
+			{AVDD, Vol_2800, 0},
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1200, 0},
+			{PDN, Vol_High, 1},
+			{AFVDD, Vol_2800, 0} */
+//			{AF_EN, Vol_Low, 0},
+//			{AF_EN, Vol_High, 7}
+//			{RST, Vol_Low, 0},
+//			{RST, Vol_High, 0}
+
+			{DOVDD, Vol_1800, 0},
+			{DVDD, Vol_1200, 1},
+			{AVDD, Vol_2800, 1},
+ 			{SensorMCLK, Vol_High, 0},
+			{PDN, Vol_Low, 1},
+			{PDN, Vol_High, 1},
+			{AFVDD, Vol_2800, 0},
+			{RST, Vol_Low, 0},
+			{RST, Vol_High, 1}
+
+
+		},
+	},
+#endif
 #if defined(IMX398_MIPI_RAW)
 	{
 		SENSOR_DRVNAME_IMX398_MIPI_RAW,
