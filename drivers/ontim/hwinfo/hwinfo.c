@@ -832,12 +832,14 @@ EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
 {
 	unsigned int gpio_base = 343;
-	unsigned int pin0 = 121;
-	unsigned int pin1 = 54;
+	unsigned int pin0 = 11;
+	unsigned int pin1 = 5;
+	unsigned int pin2 = 53;
 	int pin_val = 0;
 
-	pin_val  = (gpio_get_value(gpio_base + pin0) & 0x01) << 3;
-	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 2;
+	pin_val  = (gpio_get_value(gpio_base + pin2) & 0x01) << 2;
+	pin_val |= (gpio_get_value(gpio_base + pin1) & 0x01) << 1;
+	pin_val |= (gpio_get_value(gpio_base + pin0) & 0x01) << 0;
 
 	printk(KERN_ERR "%s: hw_ver is %x ;\n", __func__, pin_val);
 
