@@ -113,7 +113,7 @@ static struct tee_shm *tee_shm_alloc_static(struct tee *tee, size_t size,
 	ret = sg_alloc_table_from_pages(&shm->resv.sgt, &page,
 					nr_pages, 0,
 					nr_pages * PAGE_SIZE, GFP_KERNEL);
-	if (IS_ERR_VALUE(ret)) {
+	if (ret) {
 		pr_err("sg_alloc_table_from_pages() failed\n");
 		tee->ops->free(shm);
 		shm = ERR_PTR(ret);
@@ -130,9 +130,6 @@ static struct tee_shm *tee_shm_alloc_ns(struct tee *tee, size_t size,
 	struct page **pages;
 
 	struct tee_shm *shm;
-
-	pr_debug("size: %zu flags: 0x%x\n",
-		size, flags);
 
 	if (size == 0) {
 		pr_warn("invalid size %zu flags 0x%x\n",
@@ -230,10 +227,6 @@ struct tee_shm *tee_shm_alloc(struct tee *tee, size_t size, uint32_t flags)
 		goto exit;
 
 	shm->tee = tee;
-
-	pr_debug("shm=%p, s=%d/%d app=\"%s\" pid=%d\n",
-		shm, (int) shm->size_req, (int) shm->size_alloc,
-		current->comm, current->pid);
 
 exit:
 	return shm;
@@ -386,13 +379,7 @@ static void __tee_shm_dma_buf_release(struct dma_buf *dmabuf)
 
 	ctx = shm->ctx;
 
-	pr_debug("shm=%p, paddr=%p,s=%d/%d app=\"%s\" pid=%d\n",
-		shm, (void *) (unsigned long) shm->resv.paddr,
-		(int)shm->size_req, (int) shm->size_alloc,
-		current->comm, current->pid);
-
 	tee_shm_free_io(shm);
-
 }
 
 static int __tee_shm_dma_buf_mmap(struct dma_buf *dmabuf,
@@ -420,10 +407,6 @@ static int __tee_shm_dma_buf_mmap(struct dma_buf *dmabuf,
 	if (!ret)
 		vma->vm_private_data = (void *)shm;
 
-	pr_debug("map the shm (p@=%p,s=%dKiB) => %x\n",
-		(void *)(unsigned long) shm->resv.paddr,
-		(int) size / 1024, (unsigned int) vma->vm_start);
-
 	return ret;
 }
 
@@ -437,9 +420,6 @@ static void *__tee_shm_dma_buf_kmap(struct dma_buf *db, unsigned long pgnum)
 {
 	struct tee_shm *shm = db->priv;
 
-	pr_debug("kmap the shm (p@=%p, v@=%p, s=%zdKiB)\n",
-		(void *)(unsigned long) shm->resv.paddr,
-		(void *) shm->resv.kaddr, shm->size_alloc / 1024);
 	/*
 	 * A this stage, a shm allocated by the tee
 	 * must be have a kernel address
@@ -511,8 +491,6 @@ static int __tee_ns_shm_vma_fault(struct vm_area_struct *vma,
 {
 	struct tee_shm *shm = (struct tee_shm *) vma->vm_private_data;
 	struct page *page;
-
-	pr_debug("pgoff: 0x%lx\n", vmf->pgoff);
 
 	if (vmf->pgoff >= shm->ns.nr_pages)
 		return VM_FAULT_ERROR;
@@ -609,9 +587,6 @@ out:
 void tee_shm_free_from_rpc(struct tee_shm *shm)
 {
 	struct tee *tee;
-
-	pr_debug("shm %p ctx: %p\n",
-		shm, shm ? shm->ctx : NULL);
 
 	if (shm == NULL)
 		return;
@@ -795,8 +770,6 @@ void tee_shm_free_io(struct tee_shm *shm)
 	struct tee *tee = ctx->tee;
 	struct device *dev = shm->dev;
 
-	pr_debug("free shm %p\n", shm);
-
 	mutex_lock(&ctx->tee->lock);
 	tee_dec_stats(&tee->stats[TEE_STATS_SHM_IDX]);
 	list_del(&shm->entry);
@@ -815,8 +788,6 @@ static int tee_shm_db_get(struct tee *tee, struct tee_shm *shm, int fd,
 	struct tee_shm_dma_buf *sdb;
 	struct dma_buf *dma_buf;
 	int ret = 0;
-
-	pr_debug(" > db_get fd=%d flags=%08x\n", fd, flags);
 
 	dma_buf = dma_buf_get(fd);
 	if (IS_ERR(dma_buf)) {
@@ -864,10 +835,6 @@ static int tee_shm_db_get(struct tee *tee, struct tee_shm *shm, int fd,
 
 	shm->flags |= TEEC_MEM_DMABUF;
 
-	pr_debug("fd=%d @p=%p is_tee=%d db=%p\n", fd,
-		(void *) (unsigned long) shm->resv.paddr,
-		sdb->tee_allocated, dma_buf);
-
 	goto exit;
 
 buf_unmap:
@@ -895,9 +862,6 @@ struct tee_shm *tee_shm_get(struct tee_context *ctx,
 			c_shm->flags);
 		return NULL;
 	}
-
-	pr_debug("> tee_shm_get fd=%d flags=%08x\n",
-		c_shm->d.fd, c_shm->flags);
 
 	mutex_lock(&tee->lock);
 	shm = kzalloc(sizeof(*shm), GFP_KERNEL);
@@ -931,8 +895,6 @@ struct tee_shm *tee_shm_get(struct tee_context *ctx,
 			goto err;
 		}
 
-		pr_debug("fd=%d @p=%p\n",
-			c_shm->d.fd, (void *)(unsigned long) shm->resv.paddr);
 	} else if (c_shm->d.fd) {
 		ret = tee_shm_db_get(tee, shm,
 			c_shm->d.fd, c_shm->flags, size, offset);
@@ -971,9 +933,6 @@ void tee_shm_put(struct tee_context *ctx, struct tee_shm *shm)
 	if (!shm)
 		return;
 
-	pr_debug("> shm=%p flags=%08x\n",
-		(void *) shm, shm->flags);
-
 	WARN_ON(!(shm->flags & TEE_SHM_MEMREF));
 
 	if (shm_test_nonsecure(shm->flags)) {
@@ -989,8 +948,6 @@ void tee_shm_put(struct tee_context *ctx, struct tee_shm *shm)
 
 		sdb = shm->resv.sdb;
 		dma_buf = sdb->attach->dmabuf;
-
-		pr_debug("db=%p\n", (void *) dma_buf);
 
 		dma_buf_unmap_attachment(sdb->attach, sdb->sgt, DMA_NONE);
 		dma_buf_detach(dma_buf, sdb->attach);

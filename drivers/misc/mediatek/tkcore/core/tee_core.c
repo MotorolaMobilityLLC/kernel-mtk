@@ -76,6 +76,12 @@ void *tee_map_cached_shm(unsigned long pa, size_t len)
 }
 EXPORT_SYMBOL(tee_map_cached_shm);
 
+void tee_unmap_cached_shm(void *va)
+{
+	iounmap(va);
+}
+EXPORT_SYMBOL(tee_unmap_cached_shm);
+
 #define _TEE_CORE_FW_VER "1:0.1"
 
 static char *_tee_supp_app_name = "teed";
@@ -186,7 +192,6 @@ int tee_get(struct tee *tee)
 	} else {
 		int count = (int) atomic_read(&tee->refcount);
 
-		pr_debug("refcount=%d\n", count);
 		if (count > tee->max_refcount)
 			tee->max_refcount = count;
 	}
@@ -215,16 +220,12 @@ int tee_put(struct tee *tee)
 	}
 
 	count = (int)atomic_read(&tee->refcount);
-	pr_debug("refcount=%d\n", count);
 	return ret;
 }
 
 static int tee_supp_open(struct tee *tee)
 {
 	int ret = 0;
-
-	pr_debug("appclient=\"%s\" pid=%d\n",
-		current->comm, current->pid);
 
 	WARN_ON(!tee->rpc);
 
@@ -242,9 +243,6 @@ static int tee_supp_open(struct tee *tee)
 
 static void tee_supp_release(struct tee *tee)
 {
-	pr_debug("appclient=\"%s\" pid=%d\n",
-		current->comm, current->pid);
-
 	WARN_ON(!tee->rpc);
 
 	if ((atomic_read(&tee->rpc->used) == 1) &&
@@ -263,7 +261,6 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 
 	WARN_ON(!tee);
 	WARN_ON(tee->miscdev.minor != iminor(inode));
-	pr_debug("> name=\"%s\"\n", tee->name);
 
 	ret = tee_supp_open(tee);
 	if (ret)
@@ -275,7 +272,6 @@ static int tee_ctx_open(struct inode *inode, struct file *filp)
 
 	ctx->usr_client = 1;
 	filp->private_data = ctx;
-	pr_debug("< ctx=%p is created\n", (void *) ctx);
 
 	return 0;
 }
@@ -292,12 +288,9 @@ static int tee_ctx_release(struct inode *inode, struct file *filp)
 	tee = ctx->tee;
 	WARN_ON(tee->miscdev.minor != iminor(inode));
 
-	pr_debug("> ctx=%p\n", ctx);
-
 	tee_context_destroy(ctx);
 	tee_supp_release(tee);
 
-	pr_debug("< ctx=%p is destroyed\n", ctx);
 	return 0;
 }
 
@@ -338,8 +331,6 @@ static int tee_do_create_session(struct tee_context *ctx,
 	put_user(k_cmd.fd_sess, &u_cmd->fd_sess);
 
 exit:
-	pr_debug("< ret=%d, sessfd=%d\n", ret,
-		k_cmd.fd_sess);
 	return ret;
 }
 
@@ -366,8 +357,6 @@ static int tee_do_shm_alloc_perm(struct tee_context *ctx,
 	put_user(k_shm.flags, &u_shm->flags);
 
 exit:
-	pr_debug("< ret=%d, shmfd=%d\n", ret,
-		k_shm.fd_shm);
 	return ret;
 }
 
@@ -407,7 +396,6 @@ static int tee_do_shm_alloc(struct tee_context *ctx,
 	put_user(k_shm.flags, &u_shm->flags);
 
 exit:
-	pr_debug("< ret=%d, shmfd=%d\n", ret, k_shm.fd_shm);
 	return ret;
 }
 
@@ -454,7 +442,6 @@ static int tee_do_get_fd_for_rpc_shm(struct tee_context *ctx,
 
 exit:
 
-	pr_debug("< ret=%d, shmfd=%d\n", ret, k_shm.fd_shm);
 	return ret;
 }
 
@@ -641,7 +628,7 @@ const struct file_operations tee_fops = {
 
 static void tee_plt_device_release(struct device *dev)
 {
-	pr_debug("(dev=%p)....\n", dev);
+    (void) dev;
 }
 
 static spinlock_t tee_idr_lock;

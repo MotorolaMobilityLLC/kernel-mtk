@@ -96,8 +96,8 @@ void TEEC_FinalizeContext(struct TEEC_Context *context)
 
 	if (!context || !context->fd) {
 		pr_err("can't release context %p:[%s]\n",
-			context, (context /*&& context->devname*/) ?
-			context->devname : "");
+			context, strnlen(context->devname, 256) < 256 ?
+			context->devname : "[invalid]");
 		return;
 	}
 
@@ -321,9 +321,6 @@ TEEC_Result TEEC_AllocateSharedMemory(struct TEEC_Context *context,
 	shm = (struct tee_shm *)(long)shm_io.fd_shm;
 	shared_memory->buffer = shm->resv.kaddr;
 
-	pr_debug("(%d) => fd=%d, kaddr=%p\n",
-		 shm_io.size, shm_io.fd_shm, (void *)shared_memory->buffer);
-
 	return TEEC_SUCCESS;
 }
 EXPORT_SYMBOL(TEEC_AllocateSharedMemory);
@@ -334,8 +331,6 @@ void TEEC_ReleaseSharedMemory(struct TEEC_SharedMemory *shared_memory)
 
 	if (!shared_memory || shared_memory->registered)
 		return;
-
-	pr_debug("(vaddr = %p)\n", shared_memory->buffer);
 
 	shm = (struct tee_shm *)(long)shared_memory->d.fd;
 	tee_shm_free_io(shm);

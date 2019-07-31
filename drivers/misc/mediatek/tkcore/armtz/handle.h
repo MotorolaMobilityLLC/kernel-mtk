@@ -17,7 +17,7 @@
 
 struct handle_db {
 	void **ptrs;
-	unsigned max_ptrs;
+	unsigned int max_ptrs;
 };
 
 #define HANDLE_DB_INITIALIZER { NULL, 0 }

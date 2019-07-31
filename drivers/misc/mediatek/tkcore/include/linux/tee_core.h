@@ -198,10 +198,11 @@ struct tee_cmd {
 };
 
 void *tee_map_cached_shm(unsigned long pa, size_t len);
+void tee_unmap_cached_shm(void *va);
 
 struct tee_shm *tee_shm_alloc_from_rpc(struct tee *tee,
 	size_t size, uint32_t extra_flags);
-void tee_shm_free_from_rpc(struct tee_shm *);
+void tee_shm_free_from_rpc(struct tee_shm *shm);
 
 int tee_core_add(struct tee *tee);
 int tee_core_del(struct tee *tee);

@@ -31,6 +31,7 @@ int tee_install_sp_ta(struct tee_context *ctx,
 				void __user *__tee_spta_inst_desc)
 {
 	struct tee *tee;
+
 	struct tee_shm *shm_in = NULL;
 	struct tee_shm *shm_out = NULL;
 

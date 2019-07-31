@@ -31,7 +31,7 @@ struct tee_rpmb_dev_info {
 	uint8_t ret_code;
 };
 
-int tkcore_emmc_rpmb_execute(struct tkcore_rpmb_request *);
+int tkcore_emmc_rpmb_execute(struct tkcore_rpmb_request *req);
 
 #define TEE_RPMB_GET_DEV_INFO		0x10
 #define TEE_RPMB_PROGRAM_KEY		0x11
