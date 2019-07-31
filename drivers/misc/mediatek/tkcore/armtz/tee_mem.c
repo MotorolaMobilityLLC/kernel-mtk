@@ -146,9 +146,6 @@ struct shm_pool *tee_shm_pool_create(struct device *dev, size_t shm_size,
 	if (WARN_ON(!dev))
 		goto alloc_failed;
 
-	pr_debug("> vaddr=0x%p, paddr=0x%p, size=%zuKiB\n",
-		shm_vaddr, (void *)shm_paddr, shm_size / 1024);
-
 	/* Alloc and initialize the shm_pool structure */
 	pool = _KMALLOC(sizeof(struct shm_pool), GFP_KERNEL);
 	if (!pool) {
@@ -181,9 +178,6 @@ struct shm_pool *tee_shm_pool_create(struct device *dev, size_t shm_size,
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 0)
 	tee_shm_pool_dump(dev, pool, true);
 #endif
-
-	pr_debug("< poolH(0x%p) chunkH=0x%p\n",
-		(void *) pool, (void *) chunk);
 
 	mutex_unlock(&pool->lock);
 	return pool;
@@ -229,8 +223,6 @@ void tee_shm_pool_destroy(struct device *dev, struct shm_pool *pool)
 	if (WARN_ON(!dev || !pool))
 		return;
 
-	pr_debug("> poolH(0x%p)\n", (void *) pool);
-
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 0)
 	tee_shm_pool_dump(dev, pool, true);
 #endif
@@ -238,7 +230,7 @@ void tee_shm_pool_destroy(struct device *dev, struct shm_pool *pool)
 	tee_shm_pool_reset(dev, pool);
 
 	chunk = list_first_entry(&pool->mchunks, struct mem_chunk, node);
-	pr_debug("free chunkH=0x%p\n", (void *) chunk);
+
 	_KFREE(chunk);
 	_KFREE(pool);
 
@@ -378,10 +370,6 @@ unsigned long tee_shm_pool_alloc(struct device *dev,
 	if (WARN_ON(!dev || !pool))
 		return 0UL;
 
-	pr_debug("> poolH(%p:%p:%x) size=0x%zx align=0x%zx\n",
-		pool, (void *)pool->paddr, (unsigned int)pool->size, size,
-		alignment);
-
 	/* Align on cache line of the target */
 	/* \todo(jmd) Should be defined by a global target specific parameter */
 	/*  size = (size + (32-1)) & ~(32-1) */
@@ -446,11 +434,6 @@ unsigned long tee_shm_pool_alloc(struct device *dev,
 			betterchunk->paddr = begAddr;
 			betterchunk->size -= prev_chunk->size;
 
-			pr_debug(
-				"create p_chunkH=0x%p paddr=0x%p (s=%zu)\n",
-				(void *) prev_chunk,
-				(void *) prev_chunk->paddr, prev_chunk->size);
-
 			list_add_tail(&(prev_chunk->node),
 				&(betterchunk->node));
 			prev_chunk = NULL;
@@ -464,11 +447,6 @@ unsigned long tee_shm_pool_alloc(struct device *dev,
 			next_chunk->counter = 0;
 			next_chunk->paddr = endAddr;
 			next_chunk->size = betterchunk->size - size;
-
-			pr_debug(
-				"create n_chunkH=0x%p paddr=0x%p (s=%zu)\n",
-				(void *) next_chunk,
-				(void *) next_chunk->paddr, next_chunk->size);
 
 			betterchunk->size = size;
 
@@ -485,12 +463,6 @@ unsigned long tee_shm_pool_alloc(struct device *dev,
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 1)
 		tee_shm_pool_dump(dev, pool, false);
 #endif
-
-		pr_debug(
-			"< chunkH=0x%p paddr=%p (s=%zu) align=0x%zx\n",
-			(void *) betterchunk,
-			(void *) betterchunk->paddr,
-			betterchunk->size, alignment);
 
 		return betterchunk->paddr;
 	}
@@ -533,9 +505,6 @@ int tee_shm_pool_free(struct device *dev, struct shm_pool *pool,
 	if (WARN_ON(!dev || !pool))
 		return -EINVAL;
 
-	pr_debug("> Try to free ... poolH(0x%p) paddr=0x%p\n",
-		(void *)pool, (void *)paddr);
-
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 1)
 	tee_shm_pool_dump(dev, pool, false);
 #endif
@@ -556,7 +525,6 @@ int tee_shm_pool_free(struct device *dev, struct shm_pool *pool,
 					 (void *) paddr);
 				return -EINVAL;
 			} else if (--chunk->counter == 0) {
-				pr_debug("paddr=%p\n", (void *) paddr);
 
 				pool->used -= chunk->size;
 
@@ -566,10 +534,6 @@ int tee_shm_pool_free(struct device *dev, struct shm_pool *pool,
 						list_entry(chunk->node.prev,
 							struct mem_chunk, node);
 					if (prev->counter == 0) {
-						pr_debug(
-							"chunkH=0x%p paddr=0x%p free ok\n",
-							(void *) chunk,
-							(void *) paddr);
 						prev->size += chunk->size;
 						list_del(&chunk->node);
 						_KFREE(chunk);
@@ -582,12 +546,6 @@ int tee_shm_pool_free(struct device *dev, struct shm_pool *pool,
 						list_entry(chunk->node.next,
 							struct mem_chunk, node);
 					if (next->counter == 0) {
-
-						pr_debug(
-							"chunkH=0x%p paddr=0x%p free ok\n",
-							(void *)chunk,
-							(void *)paddr);
-
 						chunk->size += next->size;
 						list_del(&next->node);
 						_KFREE(next);
@@ -598,14 +556,10 @@ int tee_shm_pool_free(struct device *dev, struct shm_pool *pool,
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 1)
 				tee_shm_pool_dump(dev, pool, false);
 #endif
-				pr_debug("< freed\n");
 				return 0;
 
 			} else {
 				mutex_unlock(&pool->lock);
-				pr_debug(
-					"< paddr=0x%p  (--) refcounter is decremented ret=1\n",
-					(void *) paddr);
 				return 1;
 			}
 		}
@@ -649,9 +603,6 @@ bool tee_shm_pool_incref(struct device *dev, struct shm_pool *pool,
 
 	list_for_each_entry(chunk, &pool->mchunks, node) {
 		if (chunk->paddr == paddr) {
-			pr_debug(
-				"pAddr=%p (++) refcounter is incremented\n",
-				(void *) paddr);
 			chunk->counter++;
 
 #if defined(_DUMP_INFO_ALLOCATOR) && (_DUMP_INFO_ALLOCATOR > 0)

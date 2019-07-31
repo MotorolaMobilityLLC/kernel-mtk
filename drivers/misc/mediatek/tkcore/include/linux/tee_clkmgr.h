@@ -27,7 +27,7 @@
 
 int tee_clkmgr_register(const char *clkname, int master_id,
 			void *enable_fn, void *disable_fn,
-			void *, void *, void *, size_t argnum);
+			void *p1, void *p2, void *p3, size_t argnum);
 
 #define tee_clkmgr_register0(clkname, id, e, d) \
 	tee_clkmgr_register((clkname), (id), \

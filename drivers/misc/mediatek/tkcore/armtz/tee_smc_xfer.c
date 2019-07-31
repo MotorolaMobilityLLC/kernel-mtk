@@ -188,12 +188,19 @@ static void xfer_dequeue_waiters(struct tee_smc_xfer_ctl *ctl)
 
 void __call_tee(struct smc_param *p)
 {
+#ifdef ARM64
+	uint64_t orig_a0 = p->a0;
+#else
+	uint32_t orig_a0 = p->a0;
+#endif
+
 	/* NOTE!!! we remove the e_lock_teez(ptee) here !!!! */
 	for (;;) {
 		__smc_xfer(&tee_smc_xfer_ctl, p);
-		if (p->a0 == TEESMC_RETURN_ETHREAD_LIMIT)
+		if (p->a0 == TEESMC_RETURN_ETHREAD_LIMIT) {
 			xfer_enqueue_waiters(&tee_smc_xfer_ctl);
-		else {
+			p->a0 = orig_a0;
+		} else {
 			if (!TEESMC_RETURN_IS_RPC(p->a0))
 				xfer_dequeue_waiters(&tee_smc_xfer_ctl);
 			break;
