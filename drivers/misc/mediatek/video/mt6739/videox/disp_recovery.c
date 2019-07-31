@@ -682,6 +682,7 @@ int primary_display_esd_recovery(void)
 	DISPDBG("[ESD]lcm force init[begin]\n");
 	disp_lcm_init(primary_get_lcm(), 1);
 	DISPCHECK("[ESD]lcm force init[end]\n");
+	DISPERR("[ESD]lcm esd recovery backlight = %d\n",esd_recovery_level);
 	disp_lcm_set_backlight(primary_get_lcm(),NULL,esd_recovery_level);
 	mmprofile_log_ex(ddp_mmp_get_events()->esd_recovery_t, MMPROFILE_FLAG_PULSE, 0, 8);
 

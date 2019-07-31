@@ -67,7 +67,7 @@
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
 #else
-#define LCM_LOGI(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
+#define LCM_LOGI(fmt, args...)  pr_info("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #endif
 
@@ -488,6 +488,8 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
 	params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
+	params->dsi.lcm_esd_check_table[1].cmd = 0x54;
+	params->dsi.lcm_esd_check_table[1].count = 1;
 
 }
 
@@ -703,13 +705,14 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 #endif
 }
 
+
 static void lcm_setbacklight(void *handle, unsigned int level)
 { 
 	LCM_LOGI("%s,ili9881c holitek backlight: level = %d\n", __func__, level);
 	if (level > 255)
 		level = 255;
-	if (level < 2 && level !=0)
-		level = 2;
+	if (level < 3)
+		level = 3;
 #if 0
 	bl_level[0].para_list[0] = level;
 #else
