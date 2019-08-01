@@ -101,7 +101,7 @@ static void _disable_all_charging(struct charger_manager *info)
 	}
 
 }
-
+extern unsigned int ontim_get_mtbt_enable(void);
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
 	struct charger_data *pdata;
@@ -187,9 +187,17 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 			pdata->charging_current_limit = pdata->input_current_limit;
 		} else {
-			pdata->input_current_limit = info->data.usb_charger_current;
-			pdata->charging_current_limit = info->data.usb_charger_current;	/* it can be larger */
-		}
+                        if((ontim_get_mtbt_enable()>500)&&(ontim_get_mtbt_enable()<=1000))
+                        {
+                            pdata->input_current_limit = ontim_get_mtbt_enable()*1000;
+                            pdata->charging_current_limit = ontim_get_mtbt_enable()*1000;;	/* it can be larger */
+                        }
+                        else
+                        {
+                             pdata->input_current_limit = info->data.usb_charger_current;
+                             pdata->charging_current_limit = info->data.usb_charger_current;	/* it can be larger */
+                        }
+               }
 	} else if (info->chr_type == NONSTANDARD_CHARGER) {
 		pdata->input_current_limit = info->data.non_std_ac_charger_current;
 		pdata->charging_current_limit = info->data.non_std_ac_charger_current;

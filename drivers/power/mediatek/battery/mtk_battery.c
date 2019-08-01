@@ -69,6 +69,9 @@
 #include <pmic_lbat_service.h>
 
 
+static unsigned int mtbt_enable;
+module_param(mtbt_enable, uint, 0644);
+MODULE_PARM_DESC(mtbt_enable, "ontim mtbt test");
 
 /* ============================================================ */
 /* define */
@@ -301,7 +304,10 @@ bool fg_interrupt_check(void)
 	}
 	return true;
 }
-
+unsigned int ontim_get_mtbt_enable(void)
+{
+      return mtbt_enable;
+}
 signed int battery_meter_get_tempR(signed int dwVolt)
 {
 
