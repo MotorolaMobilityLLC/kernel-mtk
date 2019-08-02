@@ -49,6 +49,7 @@ static DEFINE_SPINLOCK(mu3phy_clock_lock);
 bool sib_mode;
 static struct regulator *reg_vusb;
 static struct regulator *reg_va09;
+static u32 phy_driver_capacity;
 
 enum VA09_OP {
 	VA09_OP_OFF = 0,
@@ -1112,16 +1113,24 @@ void usb_phy_recover(unsigned int clk_on)
 	/* EFUSE related sequence */
 	{
 		u32 evalue;
-
-		/* [4:0] => RG_USB20_INTR_CAL[4:0] */
-		evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
-		if (evalue) {
-			os_printk(K_INFO, "apply efuse setting, RG_USB20_INTR_CAL=0x%x\n", evalue);
+		if (phy_driver_capacity > 0 && mt_usb_is_device()) {
 			U3PhyWriteField32((phys_addr_t) (uintptr_t) U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
-					RG_USB20_INTR_CAL, evalue);
-		} else
-			os_printk(K_DEBUG, "!evalue\n");
-
+					RG_USB20_INTR_CAL, phy_driver_capacity);
+			os_printk(K_INFO, "Use custom value, RG_USB20_INTR_CAL=0x%x\n",
+				phy_driver_capacity);
+		} else {
+		/* [4:0] => RG_USB20_INTR_CAL[4:0] */
+			evalue = (get_devinfo_with_index(108) & (0x1f<<0)) >> 0;
+			if (evalue) {
+				os_printk(K_INFO,
+				"apply efuse setting, RG_USB20_INTR_CAL=0x%x\n",
+				evalue);
+				U3PhyWriteField32((phys_addr_t) (uintptr_t)
+				U3D_USBPHYACR1, RG_USB20_INTR_CAL_OFST,
+				RG_USB20_INTR_CAL, evalue);
+			} else
+				os_printk(K_DEBUG, "!evalue\n");
+		}
 		/* [21:16] (BGR_code) => RG_SSUSB_IEXT_INTR_CTRL[5:0] */
 		evalue = (get_devinfo_with_index(107) & (0x3f << 16)) >> 16;
 		if (evalue) {
@@ -1312,6 +1321,19 @@ void Charger_Detect_Release(void)
 static int mt_usb_dts_probe(struct platform_device *pdev)
 {
 	int retval = 0;
+	u32 val;
+	struct device *dev = &pdev->dev;
+	struct device_node *parent_np = dev->of_node;
+
+	if (parent_np) {
+		if (of_property_read_u32(parent_np,
+			"phy-driver-cap", &val) >= 0)
+			phy_driver_capacity = val;
+		else
+			phy_driver_capacity = 0;
+		pr_notice("%s phy drv cap= %d\n",
+			__func__, phy_driver_capacity);
+	}
 
 	/* POWER */
 	reg_vusb = regulator_get(&pdev->dev, "vusb");
