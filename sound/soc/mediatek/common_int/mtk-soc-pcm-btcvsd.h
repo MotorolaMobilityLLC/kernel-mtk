@@ -242,6 +242,7 @@ struct btsco_tx {
 	kal_uint32 u4BufferSize; /* TX packetbuf size */
 	struct btcvsd_tx_buffer_info buffer_info;
 	bool mute;
+	bool trigger_start;
 };
 
 struct btsco {
@@ -296,6 +297,7 @@ bool btcvsd_rx_irq_received(void);
 bool btcvsd_rx_timeout(void);
 void btcvsd_rx_reset_timeout(void);
 
+bool btcvsd_tx_irq_received(void);
 bool btcvsd_tx_timeout(void);
 void btcvsd_tx_reset_timeout(void);
 

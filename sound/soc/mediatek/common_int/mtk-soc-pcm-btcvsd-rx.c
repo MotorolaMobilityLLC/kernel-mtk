@@ -541,6 +541,24 @@ static int btcvsd_rx_timestamp_set(struct snd_kcontrol *kcontrol, const unsigned
 	return 0;
 }
 
+static int btcvsd_tx_irq_received_get(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	ucontrol->value.integer.value[0] = btcvsd_tx_irq_received();
+	return 0;
+}
+
+static int btcvsd_tx_irq_received_set(struct snd_kcontrol *kcontrol,
+				      struct snd_ctl_elem_value *ucontrol)
+{
+	if (ucontrol->value.enumerated.item[0] > ARRAY_SIZE(irq_received_str)) {
+		pr_warn("%s return -EINVAL\n", __func__);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int btcvsd_tx_timeout_get(struct snd_kcontrol *kcontrol,
 				      struct snd_ctl_elem_value *ucontrol)
 {
@@ -577,6 +595,8 @@ static const struct snd_kcontrol_new btcvsd_controls[] = {
 		     btcvsd_enum[3],
 		     btcvsd_rx_timeout_get,
 		     btcvsd_rx_timeout_set),
+	SOC_ENUM_EXT("btcvsd_tx_irq_received", btcvsd_enum[2],
+		     btcvsd_tx_irq_received_get, btcvsd_tx_irq_received_set),
 	SND_SOC_BYTES_TLV("btcvsd_rx_timestamp",
 			  sizeof(struct time_buffer_info),
 			  btcvsd_rx_timestamp_get,

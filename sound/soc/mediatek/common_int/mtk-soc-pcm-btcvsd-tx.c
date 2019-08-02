@@ -134,6 +134,7 @@ static const struct snd_kcontrol_new mtk_btcvsd_loopback_controls[] = {
 static int mtk_pcm_btcvsd_tx_stop(struct snd_pcm_substream *substream)
 {
 	pr_warn("%s\n", __func__);
+	btsco.pTX->trigger_start = false;
 	Set_BTCVSD_State(BT_SCO_TXSTATE_ENDING);
 	return 0;
 }
@@ -302,6 +303,8 @@ static int mtk_pcm_btcvsd_tx_start(struct snd_pcm_substream *substream)
 
 	prev_frame = 0;
 	prev_iPacket_r = btsco.pTX->iPacket_r;
+
+	btsco.pTX->trigger_start = true;
 
 	return 0;
 }
