@@ -17,6 +17,94 @@ static struct situation_context *situation_context_obj;
 
 static struct situation_init_info *situation_init_list[max_situation_support] = {0};
 
+//add for SAR by Ontim
+static void sar_work_func(struct work_struct *work)
+{
+	struct situation_context *cxt = NULL;
+	int value, status;
+	int64_t  nt;
+	struct timespec time;
+	int err = 0;
+
+	printk(KERN_ERR "%s enter, line:%d\n", __func__, __LINE__);
+	cxt  = situation_context_obj;
+	if (cxt->ctl_context[sar].situation_data.get_data == NULL) {
+		SITUATION_PR_ERR("SAR driver not register data path\n");
+		return;
+	}
+
+	time.tv_sec = time.tv_nsec = 0;
+	time = get_monotonic_coarse();
+	nt = time.tv_sec*1000000000LL+time.tv_nsec;
+
+	/* add wake lock to make sure data can be read before system suspend */
+	err = cxt->ctl_context[sar].situation_data.get_data(&value, &status);
+	if (err) {
+		SITUATION_PR_ERR("get SAR data fails!!\n");
+		goto sar_loop;
+	} else {
+		cxt->drv_data.sar_data.values[0] = value;
+		cxt->drv_data.sar_data.status = status;
+		cxt->drv_data.sar_data.time = nt;
+	}
+
+	if (true ==  cxt->is_sar_first_data_after_enable) {
+		cxt->is_sar_first_data_after_enable = false;
+		/* filter -1 value */
+		if (cxt->drv_data.sar_data.values[0] == SITUATION_INVALID_VALUE) {
+			SITUATION_LOG(" read invalid data\n");
+			goto sar_loop;
+		}
+	}
+
+	if (cxt->is_get_valid_sar_data_after_enable == false) {
+		if (cxt->drv_data.sar_data.values[0] != SITUATION_INVALID_VALUE)
+			cxt->is_get_valid_sar_data_after_enable = true;
+	}
+
+	//sar_data_report(cxt->drv_data.sar_data.values[0], cxt->drv_data.sar_data.status);
+	situation_data_report(ID_SAR,cxt->drv_data.sar_data.values[0]);
+
+sar_loop:
+	if (true == cxt->is_sar_polling_run) {
+		if (cxt->ctl_context[sar].situation_ctl.is_polling_mode || (cxt->is_get_valid_sar_data_after_enable == false))
+			mod_timer(&cxt->timer_sar, jiffies + atomic_read(&cxt->delay_sar)/(1000/HZ));
+	}
+}
+
+static void sar_poll(unsigned long data)
+{
+	struct situation_context *obj = (struct situation_context *)data;
+	printk(KERN_ERR "%s enter, line:%d\n", __func__, __LINE__);
+	if (obj != NULL)
+		schedule_work(&obj->report_sar);
+}
+
+int sar_report_interrupt_data(int value)
+{
+	struct situation_context *cxt = NULL;
+	/* int err =0; */
+	cxt = situation_context_obj;
+
+	pr_notice("[SAR] [%s]:value=%d\n", __func__, value);
+	if (cxt->is_get_valid_sar_data_after_enable == false) {
+		if (value != SITUATION_INVALID_VALUE) {
+			cxt->is_get_valid_sar_data_after_enable = true;
+			smp_mb();/*for memory barriier*/
+			del_timer_sync(&cxt->timer_sar);
+			smp_mb();/*for memory barriier*/
+			cancel_work_sync(&cxt->report_sar);
+		}
+	}
+
+	if (cxt->is_sar_batch_enable == false)
+		situation_data_report(ID_SAR,value);
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(sar_report_interrupt_data);
+//end, Ontim
+
 static struct situation_context *situation_context_alloc_object(void)
 {
 	struct situation_context *obj = kzalloc(sizeof(*obj), GFP_KERNEL);
@@ -27,6 +115,21 @@ static struct situation_context *situation_context_alloc_object(void)
 		SITUATION_PR_ERR("Alloc situ object error!\n");
 		return NULL;
 	}
+
+	//add for SAR by Ontim
+	atomic_set(&obj->delay_sar, 200); /* 5Hz,  set work queue delay time 200ms */
+	init_timer(&obj->timer_sar);
+	INIT_WORK(&obj->report_sar, sar_work_func);
+
+	obj->timer_sar.expires	= jiffies + atomic_read(&obj->delay_sar)/(1000/HZ);
+	obj->timer_sar.function	= sar_poll;
+	obj->timer_sar.data	= (unsigned long)obj;
+
+	obj->is_sar_first_data_after_enable = false;
+	obj->is_sar_polling_run = false;
+	obj->is_sar_batch_enable = false;/* for batch mode init */
+	//end,Ontim
+
 	mutex_init(&obj->situation_op_mutex);
 	for (index = inpocket; index < max_situation_support; ++index) {
 		obj->ctl_context[index].power = 0;
@@ -73,6 +176,9 @@ static int handle_to_index(int handle)
 		break;
 	case ID_FLAT:
 		index = flat;
+		break;
+	case ID_SAR:
+		index = sar;
 		break;
 	default:
 		index = -1;
@@ -316,7 +422,9 @@ static ssize_t situation_store_batch(struct device *dev, struct device_attribute
 	err = situation_enable_and_batch(index);
 #endif
 
+#ifdef CONFIG_NANOHUB
 err_out:
+#endif
 	mutex_unlock(&situation_context_obj->situation_op_mutex);
 	pr_info(SITUATION_TAG "%s done\n", __func__);
 	return err;
@@ -378,7 +486,7 @@ static int situation_real_driver_init(void)
 {
 	int err = -1, i = 0;
 
-	SITUATION_LOG(" situation_real_driver_init +\n");
+	SITUATION_LOG(" situation_real_driver_init + max_situation_support = %d\n", max_situation_support);
 
 	for (i = 0; i < max_situation_support; i++) {
 		if (situation_init_list[i] != NULL) {
@@ -519,6 +627,7 @@ int situation_register_control_path(struct situation_control_path *ctl, int hand
 	cxt->ctl_context[index].situation_ctl.flush = ctl->flush;
 	cxt->ctl_context[index].situation_ctl.is_support_wake_lock = ctl->is_support_wake_lock;
 	cxt->ctl_context[index].situation_ctl.is_support_batch = ctl->is_support_batch;
+	cxt->ctl_context[index].situation_ctl.is_polling_mode = ctl->is_polling_mode;
 
 	cxt->wake_lock_name[index] = kzalloc(64, GFP_KERNEL);
 	if (!cxt->wake_lock_name[index]) {
