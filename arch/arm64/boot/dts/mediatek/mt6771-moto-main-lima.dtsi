@@ -20,6 +20,8 @@
 	moto_chg_tcmd: moto_chg_tcmd {
 		compatible = "mmi,moto-chg-tcmd";
 	};
+	usb3_phy: usb3_phy {
+	};
 };
 
 &lk_charger {

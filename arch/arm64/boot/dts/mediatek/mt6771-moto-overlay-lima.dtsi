@@ -150,9 +150,9 @@
 
 	devices_phy_tuning: devices_phy_tuning {
 		compatible = "mediatek,devices_phy_tuning";
-		u2_vrt_ref = <5>;
-		u2_term_ref = <5>;
-		u2_enhance = <2>;
+		u2_vrt_ref = <3>;
+		u2_term_ref = <3>;
+		u2_enhance = <1>;
 	};
 
 	host_phy_tuning: host_phy_tuning {
@@ -396,4 +396,8 @@
 
 	#include "bat_setting/batterytable_kg40_atl_4000mah_ext.dtsi"
 	#include "bat_setting/batterytable_kg40_scud_4000mah_ext.dtsi"
+};
+
+&usb3_phy {
+	phy-driver-cap = <31>;
 };
