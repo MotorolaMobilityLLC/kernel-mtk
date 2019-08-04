@@ -3922,7 +3922,7 @@ static int xhci_queue_isoc_tx(struct xhci_hcd *xhci, gfp_t mem_flags,
 	giveback_first_trb(xhci, slot_id, ep_index, urb->stream_id,
 			start_cycle, start_trb);
 
-#ifdef CONFIG_MTK_UAC_POWER_SAVING
+#if 0 /* #ifdef CONFIG_MTK_UAC_POWER_SAVING */
 	if (!list_empty(&ep_ring->td_list) &&
 		!(xhci->quirks & XHCI_DEV_WITH_SYNC_EP)) {
 		unsigned int idle_ms = 0;
