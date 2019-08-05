@@ -85,7 +85,7 @@ int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3400, 3400, 3400, 3400};
 /* 0~0.5V for battery 0, 0.5~1V for battery 1*/
 /* 1~1.5V for battery 2, -1 for the last one (battery 3) */
 int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
-	500000, 1000000, 1500000, -1};
+	640000, 1500000, -1, -1};
 
 int battery_total_number=1;
 char g_battery_id_vendor_name[TOTAL_BATTERY_NUMBER][32]={

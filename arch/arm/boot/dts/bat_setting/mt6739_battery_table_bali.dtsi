@@ -62,7 +62,7 @@
 {
 	battery_total_number =<2>;
 	battery0_name ="KS40-Sunwoda-2820mAh";
-	battery1_name ="KS40-Ningde-2820mAh";
+	battery1_name ="KS40-ATL-2820mAh";
 	
 	battery0_profile_t0_num = <100>;
 	battery0_profile_t0 =

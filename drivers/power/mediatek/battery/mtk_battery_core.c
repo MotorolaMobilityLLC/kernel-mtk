@@ -343,7 +343,8 @@ void fgauge_get_profile_id(void)
 			gm.battery_id = id;
 			break;
 		} else if (g_battery_id_voltage[id] == -1) {
-			gm.battery_id = TOTAL_BATTERY_NUMBER - 1;
+			gm.battery_id = id - 1;
+			break;
 		}
 	}
 	
