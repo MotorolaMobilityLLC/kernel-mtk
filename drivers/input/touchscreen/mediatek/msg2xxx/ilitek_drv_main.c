@@ -46,14 +46,14 @@
 #include <ontim/ontim_dev_dgb.h>
 static char version[64]="1.0";
 static char vendor_name[64]="msg2xxx";
-static char lcdname[64]="Ili8991C-boe";
+static char lcdname[64]="Unknown";
 DEV_ATTR_DECLARE(touch_screen)
 DEV_ATTR_DEFINE("version",version)
 DEV_ATTR_DEFINE("vendor",vendor_name)
 DEV_ATTR_DEFINE("lcdvendor",lcdname)
 DEV_ATTR_DECLARE_END;
 ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
-
+extern char *mtkfb_find_lcm_driver(void);
 /*=============================================================*/
 // VARIABLE DECLARATION
 /*=============================================================*/
@@ -14576,6 +14576,9 @@ s32 /*__devinit*/ MsDrvInterfaceTouchDeviceProbe(struct i2c_client *pClient, con
 	device_init_wakeup(&g_I2cClient->dev, 1);
 #endif //CONFIG_ENABLE_GESTURE_WAKEUP
     memcpy(version,  _gFwVersion,  63);
+    snprintf(lcdname, 63, "%s", mtkfb_find_lcm_driver());
+    printk("firefly LCD name:%s\n", lcdname);
+
     REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 
     DBG(&g_I2cClient->dev, "*** ILITEK/MStar touch driver registered ***\n");
