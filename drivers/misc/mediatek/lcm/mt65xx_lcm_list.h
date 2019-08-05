@@ -308,6 +308,7 @@ extern LCM_DRIVER ft8006u_dsi_cmd_lcm_drv;
 extern LCM_DRIVER ontim_ILI9881C_lcm_drv_hc_hlt;
 extern LCM_DRIVER ontim_ILI9881C_lcm_drv_boe_hlt;
 extern LCM_DRIVER ontim_ft8006u_lcm_drv_txd;
+extern LCM_DRIVER ontim_R61350_lcm_drv_hc_truly;
 extern LCM_DRIVER HX83102_dsi_cmd_lcm_drv;
 extern LCM_DRIVER ft8006u_dsi_cmd_lcm_drv_holitech;
 extern LCM_DRIVER gc9305_dbi_c_4wire_lcm_drv;

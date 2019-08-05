@@ -129,7 +129,7 @@ CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT=y
 CONFIG_MTK_IMGSENSOR=y
 CONFIG_MTK_JPEG=y
 CONFIG_MTK_LCM=y
-CONFIG_CUSTOM_KERNEL_LCM="ontim_ft8006u_dt ontim_HX83102_boyi ontim_ft8006u_dt_holitech ontim_ft8006u_txd ontim_ILI9881C_boe_hlt ontim_ILI9881C_hc_hlt"
+CONFIG_CUSTOM_KERNEL_LCM="ontim_ft8006u_dt ontim_HX83102_boyi ontim_ft8006u_dt_holitech ontim_ft8006u_txd ontim_ILI9881C_boe_hlt ontim_ILI9881C_hc_hlt ontim_r61350_hc_truly"
 CONFIG_MTK_LENS=y
 # CONFIG_MMPROFILE is not set
 CONFIG_MTK_SYNC=y
