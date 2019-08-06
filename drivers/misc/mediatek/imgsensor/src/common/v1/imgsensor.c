@@ -1554,6 +1554,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SINGLE_FOCUS_MODE:
 	case SENSOR_FEATURE_CANCEL_AF:
 	case SENSOR_FEATURE_CONSTANT_AF:
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
 	default:
 		break;
 	}
@@ -1608,6 +1610,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_GET_SENSOR_N3D_STREAM_TO_VSYNC_TIME:
 	case SENSOR_FEATURE_GET_PERIOD:
 	case SENSOR_FEATURE_GET_PIXEL_CLOCK_FREQ:
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
 	{
 		ret = imgsensor_sensor_feature_control(
 		    psensor,
@@ -2196,6 +2200,8 @@ static inline int adopt_CAMERA_HW_FeatureControl(void *pBuf)
 	case SENSOR_FEATURE_SET_PDAF:
 	case SENSOR_FEATURE_SET_SHUTTER_FRAME_TIME:
 	case SENSOR_FEATURE_SET_PDFOCUS_AREA:
+	case SENSOR_FEATURE_GET_AE_EFFECTIVE_FRAME_FOR_LE:
+	case SENSOR_FEATURE_GET_AE_FRAME_MODE_FOR_LE:
 		if (copy_to_user(
 		    (void __user *) pFeatureCtrl->pFeaturePara,
 		    (void *)pFeaturePara,
