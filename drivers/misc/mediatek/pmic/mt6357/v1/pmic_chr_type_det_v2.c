@@ -393,8 +393,12 @@ void chrdet_int_handler(void)
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_info("[chrdet_int_handler] Unplug Charger/USB\n");
+
 #ifndef CONFIG_TCPC_CLASS
-			orderly_poweroff(true);
+			pr_info("%s: system_state=%d\n", __func__,
+				system_state);
+			if (system_state != SYSTEM_POWER_OFF)
+				kernel_power_off();
 #else
 			return;
 #endif
