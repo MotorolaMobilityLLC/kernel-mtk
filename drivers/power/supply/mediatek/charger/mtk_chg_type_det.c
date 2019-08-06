@@ -363,10 +363,10 @@ static int chgdet_task_threadfn(void *data)
 	bool attach = false;
 	int ret = 0;
 	int i = 0;
-	int max_wait_cnt = 40;
+	int max_wait_cnt = 200;
 
 	for (i = 0; i < max_wait_cnt; i++) {
-		msleep(500);
+		msleep(100);
 
 		cti->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
 		if (!cti->tcpc_dev) {
