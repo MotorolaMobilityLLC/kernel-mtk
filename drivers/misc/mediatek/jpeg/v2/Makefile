@@ -33,6 +33,12 @@ ifeq ($(CONFIG_MACH_MT6761),y)
   ccflags-y += -DQOS_MT6761_SUPPORT
 endif
 
+ifeq ($(CONFIG_MACH_MT6779),y)
+  ccflags-y += -DSMI_CG_SUPPORT
+  ccflags-y += -DQOS_MT6779_SUPPORT
+  ccflags-y += -DPLATFORM_MT6779
+endif
+
 ifeq ($(CONFIG_MACH_MT8163),y)
   ccflags-y += -DJPEG_PM_DOMAIN_ENABLE
 endif
