@@ -1571,7 +1571,10 @@ static void kpoc_power_off_check(struct charger_manager *info)
 			__func__, vbus, boot_mode);
 		if (vbus < 2500 && info->enable_kpoc_shdn) {
 			chr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
-			kernel_power_off();
+			chr_err("%s: system_state=%d\n", __func__,
+				system_state);
+			if (system_state != SYSTEM_POWER_OFF)
+				kernel_power_off();
 		}
 	}
 }
