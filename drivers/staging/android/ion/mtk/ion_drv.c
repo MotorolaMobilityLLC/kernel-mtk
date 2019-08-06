@@ -50,6 +50,10 @@
 struct ion_device *g_ion_device;
 EXPORT_SYMBOL(g_ion_device);
 
+#ifndef __inval_dcache_user_area
+#define __inval_dcache_user_area(...)
+#endif
+
 #ifndef dmac_map_area
 #define dmac_map_area __dma_map_area
 #endif
