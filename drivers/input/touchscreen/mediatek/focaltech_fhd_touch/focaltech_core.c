@@ -914,6 +914,8 @@ static int fts_power_source_ctrl(struct fts_ts_data *ts_data, int enable)
 			}
 			ts_data->power_disabled = false;
 		}
+		msleep(20);
+		tpd_gpio_output(ts_data->pdata->reset_gpio, 1);
 	} else {
 		if (!ts_data->power_disabled) {
 			FTS_DEBUG("regulator disable !");
@@ -955,10 +957,11 @@ static int fts_power_source_init(struct fts_ts_data *ts_data)
 	}
 
 	ts_data->power_disabled = true;
+#if 0
 	ret = fts_power_source_ctrl(ts_data, ENABLE);
 	if (ret)
 		FTS_ERROR("fail to enable power(regulator)");
-
+#endif
 
 	FTS_FUNC_EXIT();
 	return ret;
