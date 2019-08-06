@@ -60,31 +60,6 @@ EXPORT_SYMBOL(g_ion_device);
 #ifndef dmac_flush_range
 #define dmac_flush_range __dma_flush_range
 #endif
-
-#ifndef __clean_dcache_user_area
-#define __clean_dcache_user_area(...)
-#endif
-
-#ifndef __clean_dcache_area_poc
-#define __clean_dcache_area_poc(...)
-#endif
-
-#ifndef __flush_dcache_area
-#define __flush_dcache_area(...)
-#endif
-
-#ifndef __flush_dcache_user_area
-#define __flush_dcache_user_area(...)
-#endif
-
-#ifndef __inval_dcache_user_area
-#define __inval_dcache_user_area(...)
-#endif
-
-#ifndef __inval_dcache_area
-#define __inval_dcache_area(...)
-#endif
-
 //#define ION_CACHE_SYNC_ALL_REDIRECTION_SUPPORT
 
 static void __ion_cache_mmp_start(enum ION_CACHE_SYNC_TYPE sync_type,
@@ -229,7 +204,7 @@ static int __cache_sync_by_range(struct ion_client *client,
 			 (unsigned int)current->pid,
 			 size, start);
 		IONMSG("%s %s\n", __func__, ion_name);
-		//aee_kernel_warning(ion_name, "[ION]");
+		aee_kernel_warning(ion_name, "[ION]: Wrong Address Range");
 		return -EFAULT;
 	}
 
