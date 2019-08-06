@@ -1052,6 +1052,9 @@ s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 	if (inst->op == CMDQ_CODE_JUMP)
 		inst = (struct cmdq_instruction *)cmdq_pkt_get_va_by_offset(
 			pkt, end_addr_mark + CMDQ_INST_SIZE);
+	if (!inst)
+		return -EINVAL;
+
 	shift_pa = CMDQ_REG_SHIFT_ADDR(cmd_pa);
 	inst->arg_b = CMDQ_GET_ARG_B(shift_pa);
 	inst->arg_c = CMDQ_GET_ARG_C(shift_pa);
