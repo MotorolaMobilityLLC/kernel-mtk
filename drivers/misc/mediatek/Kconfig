@@ -32,6 +32,16 @@ config MTK_LM_MODE
 	  more than 4GB DRAM mapping.
 	  If you are not sure about this, set n
 
+config DMAUSER_PAGES
+	bool "allocate highuser movable pages from dma zone"
+	depends on MTK_LM_MODE && !MTK_MEMORY_LOWPOWER
+	help
+	  An internal debug kernel config for testing large memory mode.
+	  To test if kernel drivers are fully compatible to large
+	  memorys, we replace all GFP_HIGHUSER_MOVABLE/GFP_USER pages by
+	  DMA (<= 4GB) pages. It makes all drivers have more chances
+	  to allocate >= 4GB physical memory.
+
 config MTK_DTBO_FEATURE
 	bool "Support Device Tree Overlay"
 	default y
@@ -457,28 +467,6 @@ config MTK_ENABLE_GMO
 	  Do not use this options in Kernel directly
 	  this is a group kernel setting of GMO
 	  must set CONFIG_LOG_BUF_SHIFT=17 manually
-
-config DMAUSER_PAGES
-	bool "allocate highuser movable pages from dma zone"
-	default n
-	depends on MTK_LM_MODE && !MTK_MEMORY_LOWPOWER
-	help
-	  An internal debug kernel config for testing large memory mode.
-	  To test if kernel drivers are fully compatible to large
-	  memorys, we replace all GFP_HIGHUSER_MOVABLE/GFP_USER pages by
-	  DMA (<= 4GB) pages. It makes all drivers have more chances
-	  to allocate >= 4GB physical memory.
-
-config NORMALKERNEL_PAGES
-	bool "allocate kernel pages from normal zone"
-	default n
-	depends on MTK_LM_MODE && !MTK_MEMORY_LOWPOWER && DMAUSER_PAGES
-	help
-	  An internal debug kernel config for testing large memory mode.
-	  To test if kernel drivers are fully compatible to large
-	  memorys, we replace all GFP_DMA pages by
-	  normal (> 4GB) pages. It makes all drivers have more chances
-	  to allocate >= 4GB physical memory.
 
 config MTK_ENABLE_AGO
 	bool "Enable/Disable A-Go related feautre"
