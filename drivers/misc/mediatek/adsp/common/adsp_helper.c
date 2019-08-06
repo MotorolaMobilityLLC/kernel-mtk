@@ -373,7 +373,7 @@ uint32_t adsp_power_on(uint32_t enable)
 	if (enable) {
 		adsp_enable_clock();
 		adsp_sw_reset();
-		adsp_set_clock_freq(CLK_DEFAULT_INIT_CK);
+		adsp_set_clock_freq(CLK_DEFAULT_ACTIVE_CK);
 		adsp_A_send_spm_request(true);
 	} else {
 		adsp_set_clock_freq(CLK_DEFAULT_26M_CK);
@@ -755,6 +755,8 @@ static int adsp_device_probe(struct platform_device *pdev)
 #endif
 	adsp_dts_mapping();
 
+	adsp_get_devinfo();
+
 	return 0;
 ERROR:
 	return -ENODEV;
@@ -832,6 +834,7 @@ static int __init adsp_module_init(void)
 
 	/* adsp initialize */
 	adsp_power_on(true);
+	writel(adspreg.segment, ADSP_SEGMENT_CON);
 	adsp_update_memory_protect_info();
 	adsp_awake_init();
 

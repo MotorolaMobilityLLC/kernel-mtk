@@ -20,6 +20,7 @@
 #include "adsp_feature_define.h"
 #include "adsp_reserved_mem.h"
 #include "adsp_ipi.h"
+#include "adsp_clk.h"
 
 #define ADSP_SLEEP_ENABLE               (1)
 
@@ -60,6 +61,11 @@ struct adsp_mpu_info_t {
 	u32 data_size;
 	u32 data_non_cache_addr;
 	u32 data_non_cache_size;
+};
+
+enum ADSP_SEGMENT_TYPE {
+	ADSP_SEGMENT_P90 = 1,
+	ADSP_SEGMENT_P95 = 2,
 };
 
 /* adsp notify event */
@@ -117,6 +123,9 @@ struct adsp_regs {
 	size_t total_tcmsize;
 	size_t sysram_size;
 	size_t shared_size;
+
+	unsigned int segment;
+	enum adsp_clk active_clksrc;
 };
 
 /* adsp work struct definition*/
@@ -163,6 +172,7 @@ void set_adsp_mpu(phys_addr_t phys_addr, size_t size);
 int adsp_dts_mapping(void);
 void adsp_bus_sleep_protect(uint32_t enable);
 void adsp_way_en_ctrl(uint32_t enable);
+void adsp_get_devinfo(void);
 
 extern void adsp_send_reset_wq(enum ADSP_RESET_TYPE type,
 			       enum adsp_core_id core_id);
