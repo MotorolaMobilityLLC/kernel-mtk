@@ -1894,24 +1894,30 @@ out:
 
 #endif
 /* ------------------------------------------------------------- */
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
+	!defined(CONFIG_MTK_TEE_GP_SUPPORT)
 #include "mobicore_driver_api.h"
 
 static const struct mc_uuid_t m4u_drv_uuid = M4U_DRV_UUID;
 static struct mc_session_handle m4u_dci_session;
 static struct m4u_msg *m4u_dci_msg;
+#endif
 
 int m4u_sec_init(void)
 {
 	int ret;
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
+	!defined(CONFIG_MTK_TEE_GP_SUPPORT)
 	enum mc_result mcRet;
-
+#endif
 	M4UINFO("call m4u_sec_init in normal m4u driver\n");
 
 	if (m4u_tee_en) {
 		M4UMSG("warning: m4u secure has been inited, %d\n", m4u_tee_en);
 		goto m4u_sec_reinit;
 	}
-
+#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT) && \
+		!defined(CONFIG_MTK_TEE_GP_SUPPORT)
 	/* Allocating WSM for DCI */
 	mcRet = mc_malloc_wsm(MC_DEVICE_ID_DEFAULT, 0,
 		sizeof(struct m4u_msg), (uint8_t **) &m4u_dci_msg, 0);
@@ -1932,7 +1938,7 @@ int m4u_sec_init(void)
 	}
 
 	M4UINFO("tz_m4u: open DCI session returned: %d\n", mcRet);
-
+#endif
 	{
 		/* volatile */
 		int i, j = 0;
