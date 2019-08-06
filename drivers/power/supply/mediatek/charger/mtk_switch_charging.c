@@ -191,7 +191,7 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 
 		ret = mtk_pdc_get_setting(info, &vbus, &cur, &idx);
 		if (ret != -1 && idx != -1) {
-		pdata->input_current_limit = cur * 1000;
+			pdata->input_current_limit = cur * 1000;
 			pdata->charging_current_limit =
 				info->data.pd_charger_current;
 			mtk_pdc_setup(info, idx);

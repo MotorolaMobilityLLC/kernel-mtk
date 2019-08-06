@@ -82,6 +82,9 @@ static bool dual_swchg_check_pd_leave(struct charger_manager *info)
 	if (pd->pd_cap_max_watt < 10000000)
 		return true;
 
+	if (info->enable_hv_charging == false)
+		return true;
+
 	ichg = battery_get_bat_current() * 100;
 	if (battery_get_soc() >= info->data.pd_stop_battery_soc ||
 		battery_get_uisoc() == -1)
@@ -98,8 +101,10 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 	u32 ichg1_min = 0, ichg2_min = 0, aicr1_min = 0, aicr2_min = 0;
 	int ret = 0;
 	bool chg2_chip_enabled = false;
+	bool chg2_enabled = false;
 
 	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
+	charger_dev_is_enabled(info->chg2_dev, &chg2_enabled);
 
 	pdata = &info->chg1_data;
 	pdata2 = &info->chg2_data;
@@ -210,7 +215,7 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 
 		ret = mtk_pdc_get_setting(info, &vbus, &cur, &idx);
 		if (ret != -1 && idx != -1) {
-		pdata->input_current_limit = cur * 1000;
+			pdata->input_current_limit = cur * 1000;
 			pdata->charging_current_limit =
 				info->data.pd_charger_current;
 			mtk_pdc_setup(info, idx);
@@ -223,8 +228,7 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 
 		if (!dual_swchg_check_pd_leave(info)) {
 			/* Slave charger may not have input current control */
-			pdata2->input_current_limit
-					= info->data.ac_charger_input_current;
+			pdata2->input_current_limit = cur * 1000;
 
 			switch (swchgalg->state) {
 			case CHR_CC:
@@ -402,18 +406,25 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 	if (mtk_pe40_get_is_connect(info)) {
 		if (info->pe4.pe4_input_current_limit != -1 &&
 		    info->pe4.pe4_input_current_limit <
-		    pdata->input_current_limit)
+		    pdata->input_current_limit) {
 			pdata->input_current_limit =
 				info->pe4.pe4_input_current_limit;
+			if (info->data.parallel_vbus)
+				pdata2->input_current_limit =
+				info->pe4.pe4_input_current_limit;
+		}
 
 		info->pe4.input_current_limit = pdata->input_current_limit;
 
 		if (info->pe4.pe4_input_current_limit_setting != -1 &&
 		    info->pe4.pe4_input_current_limit_setting <
-		    pdata->input_current_limit)
+		    pdata->input_current_limit) {
 			pdata->input_current_limit =
 				info->pe4.pe4_input_current_limit_setting;
-
+			if (info->data.parallel_vbus)
+				pdata2->input_current_limit =
+				info->pe4.pe4_input_current_limit_setting;
+		}
 	}
 
 	if (pdata->input_current_limit_by_aicl != -1 &&
@@ -426,6 +437,11 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 	}
 
 done:
+	if (info->data.parallel_vbus) {
+		pdata->input_current_limit = pdata->input_current_limit / 2;
+		pdata2->input_current_limit = pdata2->input_current_limit / 2;
+	}
+
 	pr_notice("force:%d %d thermal:(%d %d,%d %d)(%d %d %d)setting:(%d %d)(%d %d)",
 		_uA_to_mA(pdata->force_charging_current),
 		_uA_to_mA(pdata2->force_charging_current),
@@ -441,11 +457,11 @@ done:
 		_uA_to_mA(pdata2->input_current_limit),
 		_uA_to_mA(pdata2->charging_current_limit));
 
-	pr_notice("type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
+	pr_notice("type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d parallel:%d\n",
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
 		_uA_to_mA(pdata->input_current_limit_by_aicl),
-		info->atm_enabled);
+		info->atm_enabled, info->data.parallel_vbus);
 
 	charger_dev_set_input_current(info->chg1_dev,
 					pdata->input_current_limit);
@@ -589,7 +605,7 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 			    swchgalg->state != CHR_PE40_POSTCC) {
 				charger_dev_enable(info->chg2_dev, true);
 				charger_dev_set_eoc_current(info->chg1_dev,
-								450000);
+						info->data.dual_polling_ieoc);
 				charger_dev_enable_termination(info->chg1_dev,
 								false);
 			} else {
@@ -631,6 +647,13 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 
 	charger_dev_is_enabled(info->chg2_dev, &chg2_enable);
 	charger_dev_is_chip_enabled(info->chg2_dev, &chg2_chip_enabled);
+
+	if (info->data.parallel_vbus) {
+		if (!chg2_enable) {
+			charger_dev_set_input_current(info->chg1_dev,
+				info->chg1_data.input_current_limit * 2);
+		}
+	}
 
 	chr_err("chg1:%d chg2:%d chg2_chip_en:%d\n", chg1_enable, chg2_enable,
 		chg2_chip_enabled);
@@ -702,7 +725,8 @@ static int mtk_dual_switch_chr_pe40_cc(struct charger_manager *info)
 		&& chg2_en
 	    && (pdata->thermal_charging_current_limit > 500000 ||
 		pdata->thermal_charging_current_limit ==  -1)) {
-		charger_dev_safety_check(info->chg1_dev);
+		charger_dev_safety_check(info->chg1_dev,
+					 info->data.dual_polling_ieoc);
 	}
 
 	return mtk_pe40_cc_state(info);
@@ -744,7 +768,8 @@ static int mtk_dual_switch_chr_cc(struct charger_manager *info)
 	    && chg2_en
 	    && (pdata->thermal_charging_current_limit > 500000 ||
 		pdata->thermal_charging_current_limit ==  -1)) {
-		charger_dev_safety_check(info->chg1_dev);
+		charger_dev_safety_check(info->chg1_dev,
+					 info->data.dual_polling_ieoc);
 	}
 
 	if (info->enable_sw_jeita) {

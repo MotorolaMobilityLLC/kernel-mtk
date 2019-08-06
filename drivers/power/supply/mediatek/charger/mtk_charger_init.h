@@ -78,6 +78,8 @@
 #define TA_AC_SLAVE_CHARGING_CURRENT 1500000
 #define SLAVE_MIVR_DIFF 100000
 
+/* slave charger */
+#define CHG2_EFF 90
 
 /* cable measurement impedance */
 #define CABLE_IMP_THRESHOLD 699

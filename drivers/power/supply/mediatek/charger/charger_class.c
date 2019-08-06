@@ -195,6 +195,16 @@ int charger_dev_get_ibus(struct charger_device *chg_dev, u32 *ibus)
 }
 EXPORT_SYMBOL(charger_dev_get_ibus);
 
+int charger_dev_get_ibat(struct charger_device *chg_dev, u32 *ibat)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL &&
+	    chg_dev->ops->get_ibat_adc)
+		return chg_dev->ops->get_ibat_adc(chg_dev, ibat);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_get_ibat);
+
 int charger_dev_get_temperature(struct charger_device *chg_dev, int *tchg_min,
 		int *tchg_max)
 {
@@ -550,11 +560,11 @@ int charger_dev_reset_eoc_state(struct charger_device *chg_dev)
 }
 EXPORT_SYMBOL(charger_dev_reset_eoc_state);
 
-int charger_dev_safety_check(struct charger_device *chg_dev)
+int charger_dev_safety_check(struct charger_device *chg_dev, u32 polling_ieoc)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&
 	    chg_dev->ops->safety_check)
-		return chg_dev->ops->safety_check(chg_dev);
+		return chg_dev->ops->safety_check(chg_dev, polling_ieoc);
 
 	return -ENOTSUPP;
 }
