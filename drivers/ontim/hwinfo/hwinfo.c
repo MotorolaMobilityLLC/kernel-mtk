@@ -600,7 +600,7 @@ static void get_charger_ic(void)
 	if (likely(buf[strlen(buf) - 1] == '\n')) {
 		buf[strlen(buf) - 1] = '\0';
 	}
-	strcpy(hwinfo[CHARGER_IC_MFR].hwinfo_buf, "mt6739");
+	strcpy(hwinfo[CHARGER_IC_MFR].hwinfo_buf, buf);
 	pr_err("charge_ic:%s .\n", hwinfo[CHARGER_IC_MFR].hwinfo_buf);
 }
 //add end
