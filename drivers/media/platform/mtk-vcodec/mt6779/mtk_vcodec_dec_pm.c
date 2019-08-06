@@ -38,7 +38,7 @@ static struct codec_job *vdec_jobs;
 #endif
 
 #ifdef DEC_EMI_BW
-#include <mtk_smi.h>
+#include <mt-plat/mtk_smi.h>
 static unsigned int h264_frm_scale[4] = {12, 24, 40, 12};
 static unsigned int h265_frm_scale[4] = {12, 24, 40, 12};
 static unsigned int vp9_frm_scale[4] = {12, 24, 40, 12};

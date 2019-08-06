@@ -199,22 +199,6 @@ int vcu_dec_ipi_handler(void *data, unsigned int len, void *priv)
 				(t_e.tv_usec - t_s.tv_usec));
 			ret = 1;
 			break;
-		case VCU_IPIMSG_DEC_CLOCK_ON:
-			/* TEST: need to remove v4l2 code to do experiment.
-			 * It may be removed later
-			 */
-			mtk_vcodec_dec_clock_on(&vcu->ctx->dev->pm);
-			enable_irq(vcu->ctx->dev->dec_irq);
-			ret = 1;
-			break;
-		case VCU_IPIMSG_DEC_CLOCK_OFF:
-			/* TEST: need to remove v4l2 code to do experiment.
-			 * It may be removed later
-			 */
-			disable_irq(vcu->ctx->dev->dec_irq);
-			mtk_vcodec_dec_clock_off(&vcu->ctx->dev->pm);
-			ret = 1;
-			break;
 		case VCU_IPIMSG_DEC_GET_FRAME_BUFFER:
 			/* TODO: return til it can get available frame buffer */
 			ret = 1;

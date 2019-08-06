@@ -68,6 +68,7 @@ obj-$(CONFIG_VIDEO_MEDIATEK_VPU)	+= mtk-vpu/
 obj-$(CONFIG_VIDEO_MEDIATEK_VCU)	+= mtk-vcu/
 
 obj-$(CONFIG_VIDEO_MEDIATEK_VCODEC)	+= mtk-vcodec/
+obj-$(CONFIG_VB2_MEDIATEK_DMA_CONTIG)	+= mtk-videobuf/
 
 obj-$(CONFIG_VIDEO_MEDIATEK_JPEG)	+= mtk-jpeg/
 

@@ -52,4 +52,4 @@ ccflags-y += -I$(srctree)/drivers/media/platform/mtk-videobuf
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi/variant
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/qos/$(MTK_PLATFORM)
-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
