@@ -525,6 +525,7 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	/* type.I */
 	if (!mt_cpufreq_get_sched_enable())
 		goto out;
+	cpu_max_freq = arch_scale_get_max_freq(cpu);
 #else
 	policy = cpufreq_cpu_get(cpu);
 
@@ -534,8 +535,8 @@ static void update_fdomain_capacity_request(int cpu, int type)
 	if (policy->governor != &cpufreq_gov_sched ||
 		 !policy->governor_data)
 		goto out;
-#endif
 	cpu_max_freq = policy->cpuinfo.max_freq;
+#endif
 	arch_get_cluster_cpus(&cls_cpus, cid);
 
 	/* find max capacity requested by cpus in this policy */
