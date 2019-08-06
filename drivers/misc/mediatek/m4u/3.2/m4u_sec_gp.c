@@ -25,7 +25,8 @@
 unsigned int M4U_SEC_SESSION;
 
 static struct m4u_sec_gp_context m4u_gp_ta_ctx = {
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT) || \
+			defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
 		.uuid = (struct TEEC_UUID)M4U_TA_UUID,
 #else
 		.uuid = (TEEC_UUID)M4U_TA_UUID,
@@ -56,12 +57,10 @@ static int m4u_exec_session(struct m4u_sec_context *ctx)
 
 	memset(&m4u_operation, 0, sizeof(struct TEEC_Operation));
 
-#if defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
-	m4u_operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
-			TEEC_NONE, TEEC_NONE, TEEC_NONE);
-#else
-	m4u_operation.param_types = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
-			TEEC_NONE, TEEC_NONE, TEEC_NONE);
+#if defined(CONFIG_MICROTRUST_TEE_SUPPORT) || \
+	defined(CONFIG_TRUSTONIC_TEE_SUPPORT)
+	m4u_operation.paramTypes = TEEC_PARAM_TYPES(TEEC_MEMREF_PARTIAL_INPUT,
+				TEEC_NONE, TEEC_NONE, TEEC_NONE);
 #endif
 
 	m4u_operation.params[0].memref.parent = &gp_ctx->shared_mem;
