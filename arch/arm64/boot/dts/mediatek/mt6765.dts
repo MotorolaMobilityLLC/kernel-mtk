@@ -2764,6 +2764,7 @@
 		compatible = "mediatek,lk_charger";
 		enable_anime;
 		enable_pe_plus;
+		enable_pd20_reset;
 		power_path_support;
 		max_charger_voltage = <6500000>;
 		fast_charge_voltage = <3000000>;
@@ -2883,6 +2884,7 @@
 		chg1_ta_ac_charger_current = <1500000>;
 		chg2_ta_ac_charger_current = <1500000>;
 		slave_mivr_diff = <100000>;
+		dual_polling_ieoc = <450000>;
 
 		/* cable measurement impedance */
 		cable_imp_threshold = <699>;

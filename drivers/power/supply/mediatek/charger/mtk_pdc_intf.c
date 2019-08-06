@@ -184,6 +184,13 @@ int mtk_pdc_get_idx(struct charger_manager *info, int selected_idx,
 	cap = &pd->cap;
 	idx = selected_idx;
 
+	if (idx < 0) {
+		chr_err("[%s] invalid idx:%d\n", __func__, idx);
+		*boost_idx = 0;
+		*buck_idx = 0;
+		return -1;
+	}
+
 	/* get boost_idx */
 	for (i = 0; i < cap->nr; i++) {
 
@@ -296,7 +303,14 @@ int mtk_pdc_setup(struct charger_manager *info, int idx)
 
 		charger_dev_get_input_current(info->chg1_dev, &oldmA);
 		oldmA = oldmA / 1000;
-		if (oldmA > pd->cap.ma[idx])
+
+		if (info->data.parallel_vbus && (oldmA * 2 > pd->cap.ma[idx])) {
+			charger_dev_set_input_current(info->chg1_dev,
+					pd->cap.ma[idx] * 1000 / 2);
+			charger_dev_set_input_current(info->chg2_dev,
+					pd->cap.ma[idx] * 1000 / 2);
+		} else if (info->data.parallel_vbus == false &&
+			(oldmA > pd->cap.ma[idx]))
 			charger_dev_set_input_current(info->chg1_dev,
 						pd->cap.ma[idx] * 1000);
 
@@ -304,7 +318,14 @@ int mtk_pdc_setup(struct charger_manager *info, int idx)
 			pd->cap.max_mv[idx], pd->cap.ma[idx]);
 
 		if (ret == MTK_ADAPTER_OK) {
-			if (oldmA < pd->cap.ma[idx])
+			if (info->data.parallel_vbus &&
+				(oldmA * 2 < pd->cap.ma[idx])) {
+				charger_dev_set_input_current(info->chg1_dev,
+						pd->cap.ma[idx] * 1000 / 2);
+				charger_dev_set_input_current(info->chg2_dev,
+						pd->cap.ma[idx] * 1000 / 2);
+			} else if (info->data.parallel_vbus == false &&
+				(oldmA < pd->cap.ma[idx]))
 				charger_dev_set_input_current(info->chg1_dev,
 						pd->cap.ma[idx] * 1000);
 
@@ -315,7 +336,14 @@ int mtk_pdc_setup(struct charger_manager *info, int idx)
 
 			mtk_pdc_set_mivr(info, mivr * 1000);
 		} else {
-			if (oldmA > pd->cap.ma[idx])
+			if (info->data.parallel_vbus &&
+				(oldmA * 2 > pd->cap.ma[idx])) {
+				charger_dev_set_input_current(info->chg1_dev,
+						oldmA * 1000 / 2);
+				charger_dev_set_input_current(info->chg2_dev,
+						oldmA * 1000 / 2);
+			} else if (info->data.parallel_vbus == false &&
+				(oldmA > pd->cap.ma[idx]))
 				charger_dev_set_input_current(info->chg1_dev,
 					oldmA * 1000);
 
@@ -377,7 +405,7 @@ void mtk_pdc_get_reset_idx(struct charger_manager *info)
 				cap->max_mv[i] < pd->vbus_l ||
 				cap->min_mv[i] > pd->vbus_l ||
 				cap->max_mv[i] > pd->vbus_l) {
-			continue;
+				continue;
 			}
 			idx = i;
 		}
@@ -392,8 +420,10 @@ void mtk_pdc_reset(struct charger_manager *info)
 	struct mtk_pdc *pd = &info->pdc;
 
 	chr_err("%s: reset to default profile\n", __func__);
+	mtk_pdc_init_table(info);
+	mtk_pdc_get_reset_idx(info);
 	mtk_pdc_setup(info, pd->pd_reset_idx);
-		}
+}
 
 int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 			int *newidx)
@@ -403,8 +433,12 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 	unsigned int pd_max_watt, pd_min_watt, now_max_watt;
 	struct mtk_pdc *pd = &info->pdc;
 	int ibus = 0, vbus;
+	int ibat = 0, chg1_ibat = 0, chg2_ibat = 0;
+	int chg2_watt = 0;
 	bool boost = false, buck = false;
 	struct adapter_power_cap *cap;
+	unsigned int mivr1 = 0;
+	unsigned int mivr2 = 0;
 	bool chg1_mivr = false;
 	bool chg2_mivr = false;
 	bool chg2_enable = false;
@@ -418,30 +452,53 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 	if (cap->nr == 0)
 		return -1;
 
-	if (info->enable_hv_charging == false) {
-		mtk_pdc_reset(info);
-		*newidx = pd->pd_reset_idx;
-		*newvbus = cap->max_mv[*newidx];
-		*newcur = cap->ma[*newidx];
-		return 0;
-			}
+	if (info->enable_hv_charging == false)
+		goto reset;
 
 	ret = charger_dev_get_ibus(info->chg1_dev, &ibus);
 	if (ret < 0) {
 		chr_err("[%s] get ibus fail, keep default voltage\n", __func__);
 		return -1;
-			}
+	}
+
+	if (info->data.parallel_vbus) {
+		ret = charger_dev_get_ibat(info->chg1_dev, &chg1_ibat);
+		if (ret < 0)
+			chr_err("[%s] get ibat fail\n", __func__);
+
+		ret = charger_dev_get_ibat(info->chg2_dev, &chg2_ibat);
+		if (ret < 0) {
+			ibat = battery_get_bat_current();
+			chg2_ibat = ibat * 100 - chg1_ibat;
+		}
+
+		if (ibat < 0 || chg2_ibat < 0)
+			chg2_watt = 0;
+		else
+			chg2_watt = chg2_ibat / 1000 * battery_get_bat_voltage()
+					/ info->data.chg2_eff * 100;
+
+		chr_err("[%s] chg2_watt:%d ibat2:%d ibat1:%d ibat:%d\n",
+			__func__, chg2_watt, chg2_ibat, chg1_ibat, ibat * 100);
+	}
 
 	charger_dev_get_mivr_state(info->chg1_dev, &chg1_mivr);
+	charger_dev_get_mivr(info->chg1_dev, &mivr1);
 
 	if (is_dual_charger_supported(info)) {
 		charger_dev_is_enabled(info->chg2_dev, &chg2_enable);
-		if (chg2_enable)
+		if (chg2_enable) {
 			charger_dev_get_mivr_state(info->chg2_dev, &chg2_mivr);
+			charger_dev_get_mivr(info->chg2_dev, &mivr2);
 		}
+	}
 
 	vbus = battery_get_vbus();
 	ibus = ibus / 1000;
+
+	if ((chg1_mivr && (vbus < mivr1 / 1000 - 500)) ||
+	    (chg2_mivr && (vbus < mivr2 / 1000 - 500)))
+		goto reset;
 
 	selected_idx = cap->selected_cap_idx;
 	idx = selected_idx;
@@ -451,7 +508,7 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 
 	pd_max_watt = cap->max_mv[idx] * (cap->ma[idx]
 			/ 100 * (100 - info->data.ibus_err) - 100);
-	now_max_watt = cap->max_mv[idx] * ibus;
+	now_max_watt = cap->max_mv[idx] * ibus + chg2_watt;
 	pd_min_watt = cap->max_mv[pd->pd_buck_idx] * cap->ma[pd->pd_buck_idx]
 			/ 100 * (100 - info->data.ibus_err)
 			- info->data.vsys_watt;
@@ -459,8 +516,7 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 	if (pd_min_watt <= 5000000)
 		pd_min_watt = 5000000;
 
-	if ((now_max_watt >= pd_max_watt) ||
-		((chg1_mivr || chg2_mivr) && vbus <= 5000)) {
+	if ((now_max_watt >= pd_max_watt) || chg1_mivr || chg2_mivr) {
 		*newidx = pd->pd_boost_idx;
 		boost = true;
 	} else if (now_max_watt <= pd_min_watt) {
@@ -475,15 +531,23 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 	*newvbus = cap->max_mv[*newidx];
 	*newcur = cap->ma[*newidx];
 
-	chr_err("[%s]watt:%d,%d,%d up:%d,%d vbus:%d ibus:%d\n",
+	chr_err("[%s]watt:%d,%d,%d up:%d,%d vbus:%d ibus:%d, mivr:%d,%d\n",
 		__func__,
 		pd_max_watt, now_max_watt, pd_min_watt,
 		boost, buck,
-		vbus, ibus);
+		vbus, ibus, chg1_mivr, chg2_mivr);
 
 	chr_err("[%s]vbus:%d:%d:%d current:%d idx:%d default_idx:%d\n",
 		__func__, pd->vbus_h, pd->vbus_l, *newvbus,
 		*newcur, *newidx, selected_idx);
+
+	return 0;
+
+reset:
+	mtk_pdc_reset(info);
+	*newidx = pd->pd_reset_idx;
+	*newvbus = cap->max_mv[*newidx];
+	*newcur = cap->ma[*newidx];
 
 	return 0;
 }

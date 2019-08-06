@@ -66,13 +66,13 @@ struct chg_type_info {
 	bool chgdet_en;
 	atomic_t chgdet_cnt;
 	wait_queue_head_t waitq;
-	struct kthread_work chgdet_task_threadfn;
 	struct task_struct *chgdet_task;
 	struct workqueue_struct *pwr_off_wq;
 	struct work_struct pwr_off_work;
 	struct workqueue_struct *chg_in_wq;
 	struct work_struct chg_in_work;
 	bool ignore_usb;
+	bool plugin;
 };
 
 #ifdef CONFIG_FPGA_EARLY_PORTING
@@ -305,6 +305,7 @@ static void plug_in_out_handler(struct chg_type_info *cti, bool en, bool ignore)
 	mutex_lock(&cti->chgdet_lock);
 	cti->chgdet_en = en;
 	cti->ignore_usb = ignore;
+	cti->plugin = en;
 	atomic_inc(&cti->chgdet_cnt);
 	wake_up_interruptible(&cti->waitq);
 	mutex_unlock(&cti->chgdet_lock);
@@ -421,7 +422,6 @@ static int chgdet_task_threadfn(void *data)
 	pr_info("%s: --\n", __func__);
 	return 0;
 }
-
 
 static int mt_charger_probe(struct platform_device *pdev)
 {
@@ -620,9 +620,26 @@ enum charger_type mt_get_charger_type(void)
 	if (!psy) {
 		pr_info("%s: get power supply failed\n", __func__);
 		return -EINVAL;
-}
+	}
 	mtk_chg = power_supply_get_drvdata(psy);
 	return mtk_chg->chg_type;
+}
+
+bool mt_charger_plugin(void)
+{
+	struct mt_charger *mtk_chg;
+	struct power_supply *psy = power_supply_get_by_name("charger");
+	struct chg_type_info *cti;
+
+	if (!psy) {
+		pr_info("%s: get power supply failed\n", __func__);
+		return -EINVAL;
+	}
+	mtk_chg = power_supply_get_drvdata(psy);
+	cti = mtk_chg->cti;
+	pr_info("%s plugin:%d\n", __func__, cti->plugin);
+
+	return cti->plugin;
 }
 
 static s32 __init mt_charger_det_init(void)

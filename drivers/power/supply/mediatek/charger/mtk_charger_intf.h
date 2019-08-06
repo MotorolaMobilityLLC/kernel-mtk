@@ -28,10 +28,7 @@
 
 #include <mtk_gauge_time_service.h>
 
-#include "charger_class.h"
-
-/* PD */
-#include <tcpm.h>
+#include <mt-plat/charger_class.h>
 
 struct charger_manager;
 #include "mtk_pe_intf.h"
@@ -232,6 +229,11 @@ struct charger_custom_data {
 	u32 chg1_ta_ac_charger_current;
 	u32 chg2_ta_ac_charger_current;
 	int slave_mivr_diff;
+	u32 dual_polling_ieoc;
+
+	/* slave charger */
+	int chg2_eff;
+	bool parallel_vbus;
 
 	/* cable measurement impedance */
 	int cable_imp_threshold;
@@ -383,7 +385,7 @@ struct charger_manager {
 	bool charger_thread_polling;
 
 	/* kpoc */
-	bool enable_kpoc_shdn;
+	atomic_t enable_kpoc_shdn;
 
 	/* ATM */
 	bool atm_enabled;

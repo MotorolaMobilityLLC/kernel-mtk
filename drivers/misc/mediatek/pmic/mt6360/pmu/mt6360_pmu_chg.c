@@ -1492,6 +1492,14 @@ static int mt6360_get_ibus(struct charger_device *chg_dev, u32 *ibus)
 	return mt6360_get_adc(chg_dev, ADC_CHANNEL_IBUS, ibus, ibus);
 }
 
+static int mt6360_get_ibat(struct charger_device *chg_dev, u32 *ibat)
+{
+	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
+
+	mt_dbg(mpci->dev, "%s\n", __func__);
+	return mt6360_get_adc(chg_dev, ADC_CHANNEL_IBAT, ibat, ibat);
+}
+
 static int mt6360_get_tchg(struct charger_device *chg_dev,
 				   int *tchg_min, int *tchg_max)
 {
@@ -1528,7 +1536,7 @@ static int mt6360_kick_wdt(struct charger_device *chg_dev)
 	return mt6360_pmu_reg_read(mpci->mpi, MT6360_PMU_CHG_CTRL1);
 }
 
-static int mt6360_safety_check(struct charger_device *chg_dev)
+static int mt6360_safety_check(struct charger_device *chg_dev, u32 polling_ieoc)
 {
 	struct mt6360_pmu_chg_info *mpci = charger_get_data(chg_dev);
 	int ret, ibat = 0;
@@ -1540,13 +1548,14 @@ static int mt6360_safety_check(struct charger_device *chg_dev)
 	if (ret < 0)
 		dev_err(mpci->dev, "%s: failed, ret = %d\n", __func__, ret);
 
-	if (ibat <= 300000)
+	if (ibat <= polling_ieoc)
 		eoc_cnt++;
 	else
 		eoc_cnt = 0;
-	/* If ibat is less than 300mA for 3 times, trigger EOC event */
+	/* If ibat is less than polling_ieoc for 3 times, trigger EOC event */
 	if (eoc_cnt == 3) {
-		dev_info(mpci->dev, "%s: ibat = %d\n", __func__, ibat);
+		dev_info(mpci->dev, "%s: polling_ieoc = %d, ibat = %d\n",
+			 __func__, polling_ieoc, ibat);
 		charger_dev_notify(mpci->chg_dev, CHARGER_DEV_NOTIFY_EOC);
 		eoc_cnt = 0;
 	}
@@ -1827,6 +1836,7 @@ static const struct charger_ops mt6360_chg_ops = {
 	.get_adc = mt6360_get_adc,
 	.get_vbus_adc = mt6360_get_vbus,
 	.get_ibus_adc = mt6360_get_ibus,
+	.get_ibat_adc = mt6360_get_ibat,
 	.get_tchg_adc = mt6360_get_tchg,
 	/* kick wdt */
 	.kick_wdt = mt6360_kick_wdt,

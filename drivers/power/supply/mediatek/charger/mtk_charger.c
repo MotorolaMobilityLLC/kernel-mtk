@@ -395,14 +395,24 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	if (info != NULL) {
 		struct charger_data *pdata;
 
-		if (idx == MAIN_CHARGER)
-			pdata = &info->chg1_data;
-		else if (idx == SLAVE_CHARGER)
-			pdata = &info->chg2_data;
-		else
-			return -ENOTSUPP;
+		if (info->data.parallel_vbus) {
+			if (idx == TOTAL_CHARGER) {
+				info->chg1_data.thermal_input_current_limit =
+					input_current;
+				info->chg2_data.thermal_input_current_limit =
+					input_current;
+			} else
+				return -ENOTSUPP;
+		} else {
+			if (idx == MAIN_CHARGER)
+				pdata = &info->chg1_data;
+			else if (idx == SLAVE_CHARGER)
+				pdata = &info->chg2_data;
+			else
+				return -ENOTSUPP;
+			pdata->thermal_input_current_limit = input_current;
+		}
 
-		pdata->thermal_input_current_limit = input_current;
 		chr_err("%s: dev:%s idx:%d en:%d\n", __func__,
 			dev_name(consumer->dev), idx, input_current);
 		_mtk_charger_change_current_setting(info);
@@ -573,7 +583,7 @@ int register_charger_manager_notifier(struct charger_consumer *consumer,
 
 	mutex_lock(&consumer_mutex);
 	if (info != NULL)
-	ret = srcu_notifier_chain_register(&info->evt_nh, nb);
+		ret = srcu_notifier_chain_register(&info->evt_nh, nb);
 	else
 		consumer->pnb = nb;
 	mutex_unlock(&consumer_mutex);
@@ -801,8 +811,10 @@ int charger_get_vbus(void)
 	if (pinfo == NULL)
 		return 0;
 	ret = charger_dev_get_vbus(pinfo->chg1_dev, &vchr);
-	if (ret < 0)
-		return 0;
+	if (ret < 0) {
+		chr_err("%s: get vbus failed: %d\n", __func__, ret);
+		return ret;
+	}
 
 	vchr = vchr / 1000;
 	return vchr;
@@ -1563,18 +1575,19 @@ stop_charging:
 static void kpoc_power_off_check(struct charger_manager *info)
 {
 	unsigned int boot_mode = get_boot_mode();
-	int vbus = battery_get_vbus();
+	int vbus = 0;
 
 	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-		pr_debug("[%s] vchr=%d, boot_mode=%d\n",
-			__func__, vbus, boot_mode);
-		if (vbus < 2500 && info->enable_kpoc_shdn) {
-			chr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
-			chr_err("%s: system_state=%d\n", __func__,
-				system_state);
-			if (system_state != SYSTEM_POWER_OFF)
-				kernel_power_off();
+		if (atomic_read(&info->enable_kpoc_shdn)) {
+			vbus = battery_get_vbus();
+			if (vbus >= 0 && vbus < 2500 && !mt_charger_plugin()) {
+				chr_err("Unplug Charger/USB in KPOC mode, shutdown\n");
+				chr_err("%s: system_state=%d\n", __func__,
+					system_state);
+				if (system_state != SYSTEM_POWER_OFF)
+					kernel_power_off();
+			}
 		}
 	}
 }
@@ -1617,7 +1630,6 @@ static struct notifier_block charger_pm_notifier_func = {
 };
 #endif /* CONFIG_PM */
 
-
 static enum alarmtimer_restart
 	mtk_charger_alarm_timer_func(struct alarm *alarm, ktime_t now)
 {
@@ -1628,7 +1640,7 @@ static enum alarmtimer_restart
 
 	if (info->is_suspend == false) {
 		chr_err("%s: not suspend, wake up charger\n", __func__);
-	_wake_up_charger(info);
+		_wake_up_charger(info);
 	}
 	return ALARMTIMER_NORESTART;
 }
@@ -2242,6 +2254,13 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 		info->data.pe40_dual_charger_chg2_current = 2000;
 	}
 
+	if (of_property_read_u32(np, "dual_polling_ieoc", &val) >= 0)
+		info->data.dual_polling_ieoc = val;
+	else {
+		chr_err("use default dual_polling_ieoc :%d\n", 750000);
+		info->data.dual_polling_ieoc = 750000;
+	}
+
 	if (of_property_read_u32(np, "pe40_stop_battery_soc", &val) >= 0)
 		info->data.pe40_stop_battery_soc = val;
 	else {
@@ -2359,6 +2378,16 @@ static int mtk_charger_parse_dt(struct charger_manager *info,
 		chr_err("use default SLAVE_MIVR_DIFF:%d\n", SLAVE_MIVR_DIFF);
 		info->data.slave_mivr_diff = SLAVE_MIVR_DIFF;
 	}
+
+	/* slave charger */
+	if (of_property_read_u32(np, "chg2_eff", &val) >= 0)
+		info->data.chg2_eff = val;
+	else {
+		chr_err("use default CHG2_EFF:%d\n", CHG2_EFF);
+		info->data.chg2_eff = CHG2_EFF;
+	}
+
+	info->data.parallel_vbus = of_property_read_bool(np, "parallel_vbus");
 
 	/* cable measurement impedance */
 	if (of_property_read_u32(np, "cable_imp_threshold", &val) >= 0)
@@ -2488,6 +2517,8 @@ static ssize_t store_input_current(struct device *dev,
 		pr_debug("[Battery] buf is %s and size is %zu\n", buf, size);
 		ret = kstrtouint(buf, 16, &reg);
 		pinfo->chg1_data.thermal_input_current_limit = reg;
+		if (pinfo->data.parallel_vbus)
+			pinfo->chg2_data.thermal_input_current_limit = reg;
 		pr_debug("[Battery] %s: %x\n",
 			__func__, pinfo->chg1_data.thermal_input_current_limit);
 	}
@@ -2618,8 +2649,8 @@ static ssize_t show_ADC_Charger_Voltage(struct device *dev,
 {
 	int vbus = battery_get_vbus();
 
-	if (!pinfo->enable_kpoc_shdn) {
-		chr_err("HardReset, vbus:%d:5000\n", vbus);
+	if (!atomic_read(&pinfo->enable_kpoc_shdn) || vbus < 0) {
+		chr_err("HardReset or get vbus failed, vbus:%d:5000\n", vbus);
 		vbus = 5000;
 	}
 
@@ -2905,7 +2936,10 @@ void notify_adapter_event(enum adapter_type type, enum adapter_event evt,
 		case MTK_TYPEC_HRESET_STATUS:
 			chr_err("hreset status = %d\n", *(bool *)val);
 			mutex_lock(&pinfo->charger_pd_lock);
-			pinfo->enable_kpoc_shdn = *(bool *)val;
+			if (*(bool *)val)
+				atomic_set(&pinfo->enable_kpoc_shdn, 1);
+			else
+				atomic_set(&pinfo->enable_kpoc_shdn, 0);
 			mutex_unlock(&pinfo->charger_pd_lock);
 			break;
 		};
@@ -3024,7 +3058,7 @@ static ssize_t proc_write(
 static int proc_dump_log_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, proc_dump_log_show, NULL);
-		}
+}
 
 static const struct file_operations charger_dump_log_proc_fops = {
 	.open = proc_dump_log_open,
@@ -3070,6 +3104,7 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	mutex_init(&info->charger_lock);
 	mutex_init(&info->charger_pd_lock);
 	mutex_init(&info->cable_out_lock);
+	atomic_set(&info->enable_kpoc_shdn, 1);
 	wakeup_source_init(&info->charger_wakelock, "charger suspend wakelock");
 	spin_lock_init(&info->slock);
 
@@ -3077,7 +3112,6 @@ static int mtk_charger_probe(struct platform_device *pdev)
 	init_waitqueue_head(&info->wait_que);
 	info->polling_interval = CHARGING_INTERVAL;
 	info->enable_dynamic_cv = true;
-	info->enable_kpoc_shdn = true;
 
 	info->chg1_data.thermal_charging_current_limit = -1;
 	info->chg1_data.thermal_input_current_limit = -1;

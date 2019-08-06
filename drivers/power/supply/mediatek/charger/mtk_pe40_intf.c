@@ -58,16 +58,30 @@ int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 	unsigned int oldmA;
 	int ret;
 	int mivr;
+	bool chg2_enable = false;
 
-	chr_err("pe40_pd_req:vbus:%d ibus:%d input_current:%d\n",
-		adapter_mv, adapter_ma, ma);
+	if (is_dual_charger_supported(pinfo))
+		charger_dev_is_enabled(pinfo->chg2_dev, &chg2_enable);
 
 	mivr = pinfo->data.min_charger_voltage / 1000;
 	mtk_pe40_set_mivr(pinfo, pinfo->data.min_charger_voltage);
 
 	charger_dev_get_input_current(pinfo->chg1_dev, &oldmA);
 	oldmA = oldmA / 1000;
-	if (oldmA > ma)
+
+	chr_err("pe40_pd_req:vbus:%d ibus:%d input_current:%d %d\n",
+		adapter_mv, adapter_ma, ma, oldmA);
+
+	if (pinfo->data.parallel_vbus && (oldmA * 2 > ma)) {
+		if (chg2_enable) {
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000 / 2);
+			charger_dev_set_input_current(pinfo->chg2_dev,
+				ma * 1000 / 2);
+		} else
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000);
+	} else if (pinfo->data.parallel_vbus == false && (oldmA > ma))
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
 	ret = adapter_dev_set_cap(pinfo->pd_adapter, MTK_PD_APDO_START,
@@ -75,7 +89,16 @@ int mtk_pe40_pd_1st_request(struct charger_manager *pinfo,
 	//ret = tcpm_set_apdo_charging_policy(pinfo->tcpc,
 	//		DPM_CHARGING_POLICY_PPS, adapter_mv, adapter_ma, NULL);
 
-	if (oldmA < ma)
+	if (pinfo->data.parallel_vbus && (oldmA * 2 < ma)) {
+		if (chg2_enable) {
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000 / 2);
+			charger_dev_set_input_current(pinfo->chg2_dev,
+				ma * 1000 / 2);
+		} else
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000);
+	} else if (pinfo->data.parallel_vbus == false && (oldmA < ma))
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
 	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > mivr)
@@ -96,6 +119,10 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 	int mivr;
 	int adapter_mv, adapter_ma;
 	struct mtk_pe40 *pe40;
+	bool chg2_enable = false;
+
+	if (is_dual_charger_supported(pinfo))
+		charger_dev_is_enabled(pinfo->chg2_dev, &chg2_enable);
 
 	pe40 = &pinfo->pe4;
 	adapter_mv = *adapter_vbus;
@@ -108,7 +135,17 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 
 	charger_dev_get_input_current(pinfo->chg1_dev, &oldmA);
 	oldmA = oldmA / 1000;
-	if (oldmA > ma)
+
+	if (pinfo->data.parallel_vbus && (oldmA * 2 > ma)) {
+		if (chg2_enable) {
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000 / 2);
+			charger_dev_set_input_current(pinfo->chg2_dev,
+				ma * 1000 / 2);
+		} else
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000);
+	} else if (pinfo->data.parallel_vbus == false && (oldmA > ma))
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
 	ret = adapter_dev_set_cap(pinfo->pd_adapter, MTK_PD_APDO,
@@ -137,10 +174,19 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 			if (ret == MTK_ADAPTER_REJECT)
 				goto err;
 		} else
-		goto err;
+			goto err;
 	}
 
-	if (oldmA < ma)
+	if (pinfo->data.parallel_vbus && (oldmA * 2 < ma)) {
+		if (chg2_enable) {
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000 / 2);
+			charger_dev_set_input_current(pinfo->chg2_dev,
+				ma * 1000 / 2);
+		} else
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000);
+	} else if (pinfo->data.parallel_vbus == false && (oldmA < ma))
 		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
 
 	if ((adapter_mv - PE40_VBUS_IR_DROP_THRESHOLD) > mivr)
@@ -152,8 +198,18 @@ int mtk_pe40_pd_request(struct charger_manager *pinfo,
 	return ret;
 
 err:
-	if (oldmA > ma)
-		charger_dev_set_input_current(pinfo->chg1_dev, oldmA * 1000);
+	if (pinfo->data.parallel_vbus && (oldmA * 2 > ma)) {
+		if (chg2_enable) {
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000 / 2);
+			charger_dev_set_input_current(pinfo->chg2_dev,
+				ma * 1000 / 2);
+		} else
+			charger_dev_set_input_current(pinfo->chg1_dev,
+				ma * 1000);
+	} else if (pinfo->data.parallel_vbus == false && (oldmA > ma))
+		charger_dev_set_input_current(pinfo->chg1_dev, ma * 1000);
+
 	mtk_pe40_set_mivr(pinfo, oldmivr);
 	return ret;
 }
@@ -204,7 +260,6 @@ void mtk_pe40_end(struct charger_manager *pinfo, int type, bool retry)
 		chr_err("%s:%d retry:%d\n", __func__, type, retry);
 	}
 }
-
 
 bool mtk_is_TA_support_pd_pps(struct charger_manager *pinfo)
 {
@@ -377,6 +432,54 @@ bool mtk_pe40_get_is_enable(struct charger_manager *pinfo)
 	return pinfo->pe4.is_enabled;
 }
 
+int mtk_pe40_get_ibus(struct charger_manager *pinfo, u32 *ibus)
+{
+	int ret = 0;
+	unsigned int chg1_ibus = 0;
+	unsigned int chg2_ibus = 0;
+	int ibat = 0;
+	int chg1_ibat = 0;
+	int chg2_ibat = 0;
+	int chg2_watt = 0;
+	bool is_enable = false;
+
+	if (is_dual_charger_supported(pinfo) == true)
+		charger_dev_is_enabled(pinfo->chg2_dev, &is_enable);
+
+	if (pinfo->data.parallel_vbus) {
+		ret = charger_dev_get_ibus(pinfo->chg1_dev, &chg1_ibus);
+
+		if (is_enable) {
+			ret = charger_dev_get_ibat(pinfo->chg1_dev, &chg1_ibat);
+			if (ret < 0)
+				chr_err("[%s] get ibat fail\n", __func__);
+
+			ret = charger_dev_get_ibat(pinfo->chg2_dev, &chg2_ibat);
+			if (ret < 0) {
+				ibat = battery_get_bat_current();
+				chg2_ibat = ibat * 100 - chg1_ibat;
+			}
+
+			if (ibat < 0 || chg2_ibat < 0)
+				chg2_watt = 0;
+			else
+				chg2_watt = chg2_ibat / 1000 *
+					battery_get_bat_voltage();
+
+			chg2_ibus = chg2_watt / battery_get_vbus() * 1000;
+		}
+		*ibus = chg1_ibus + chg2_ibus;
+
+		chr_err("[%s] chg2_watt:%d ibat2:%d ibat1:%d ibat:%d ibus1:%d ibus2:%d ibus:%d\n",
+			__func__, chg2_watt, chg2_ibat, chg1_ibat, ibat * 100,
+			chg1_ibus, chg2_ibus, *ibus);
+	} else {
+		ret = charger_dev_get_ibus(pinfo->chg1_dev, ibus);
+	}
+
+	return 0;
+}
+
 bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 {
 	struct charger_data *pdata;
@@ -387,7 +490,8 @@ bool mtk_pe40_is_ready(struct charger_manager *pinfo)
 	tmp = battery_get_bat_temperature();
 	pdata = &pinfo->chg1_data;
 
-	ret = charger_dev_get_ibus(pinfo->chg1_dev, &ibus);
+	ret = mtk_pe40_get_ibus(pinfo, &ibus);
+
 	chr_err("pe40_ready:%d hv:%d thermal:%d,%d tmp:%d,%d,%d pps:%d en:%d ibus:%d %d\n",
 		pinfo->enable_pe_4,
 		pinfo->enable_hv_charging,
@@ -475,7 +579,7 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 		msleep(100);
 	}
 
-	charger_dev_get_ibus(pinfo->chg1_dev, &ibus1);
+	mtk_pe40_get_ibus(pinfo, &ibus1);
 	vbus1 = battery_get_vbus();
 	ibus1 = ibus1 / 1000;
 	vbat1 = battery_get_bat_voltage();
@@ -496,7 +600,7 @@ int mtk_pe40_get_init_watt(struct charger_manager *pinfo)
 		}
 
 		msleep(100);
-		charger_dev_get_ibus(pinfo->chg1_dev, &ibus2);
+		mtk_pe40_get_ibus(pinfo, &ibus2);
 		vbus2 = battery_get_vbus();
 		ibus2 = ibus2 / 1000;
 		vbat2 = battery_get_bat_voltage();
@@ -606,10 +710,10 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 			charger_dev_enable_chip(pinfo->chg2_dev, true);
 		charger_dev_enable(pinfo->chg2_dev, true);
 
-	charger_dev_set_input_current(pinfo->chg2_dev,
-		pdata2->input_current_limit);
-	charger_dev_set_charging_current(pinfo->chg2_dev,
-		pdata2->charging_current_limit);
+		charger_dev_set_input_current(pinfo->chg2_dev,
+			pdata2->input_current_limit);
+		charger_dev_set_charging_current(pinfo->chg2_dev,
+			pdata2->charging_current_limit);
 	}
 	msleep(100);
 
@@ -635,10 +739,9 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 			msleep(250);
 			vbus1 = battery_get_vbus();
 			vbat1 = battery_get_bat_voltage();
-			charger_dev_get_ibus(pinfo->chg1_dev, &ibus1);
+			mtk_pe40_get_ibus(pinfo, &ibus1);
 			ibus1 = ibus1 / 1000;
-			ret = pe40_get_output(pinfo,
-								&cap1);
+			ret = pe40_get_output(pinfo, &cap1);
 			if (ret != 0) {
 				chr_err("[pe40_i0] err:4 %d\n", ret);
 				goto err;
@@ -670,10 +773,9 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 			msleep(250);
 			vbus2 = battery_get_vbus();
 			vbat2 = battery_get_bat_voltage();
-			charger_dev_get_ibus(pinfo->chg1_dev, &ibus2);
+			mtk_pe40_get_ibus(pinfo, &ibus2);
 			ibus2 = ibus2 / 1000;
-			ret = pe40_get_output(pinfo,
-								&cap2);
+			ret = pe40_get_output(pinfo, &cap2);
 			if (ret != 0)
 				goto err;
 
@@ -714,8 +816,8 @@ int mtk_pe40_init_state(struct charger_manager *pinfo)
 		chr_err("[pe40_i2]r_sw:%d r_cable:%d r_cable_1:%d r_cable_2:%d pe4_icl:%d\n",
 			pe40->r_sw, pe40->r_cable, pe40->r_cable_1,
 			pe40->r_cable_2, pe40->pe4_input_current_limit);
-	} else
-		chr_err("TA does not support query\n");
+		} else
+			chr_err("TA does not support query\n");
 
 	watt = mtk_pe40_get_init_watt(pinfo);
 	voltage = 0;
@@ -823,9 +925,7 @@ int mtk_pe40_safety_check(struct charger_manager *pinfo)
 	if (ret == MTK_ADAPTER_NOT_SUPPORT)
 		chr_err("[pe40]TA adapter_dev_get_status not support\n");
 	else {
-		if (TAstatus.ocp ||
-			TAstatus.otp ||
-			TAstatus.ovp) {
+		if (TAstatus.ocp || TAstatus.otp || TAstatus.ovp) {
 
 			chr_err("[pe40_err]TA protect: ocp:%d otp:%d ovp:%d\n",
 				TAstatus.ocp,
@@ -859,11 +959,12 @@ err:
 
 int mtk_pe40_cc_state(struct charger_manager *pinfo)
 {
-	int ibus = 0, vbat, ibat, vbus;
+	int ibus = 0, vbat, ibat, vbus, compare_ibus;
 	int icl, ccl, ccl2, cv, max_icl;
 	struct mtk_pe40 *pe40;
 	int ret;
 	int oldavbus = 0;
+	int oldibus = 0;
 	int watt;
 	int max_watt;
 	struct charger_data *pdata;
@@ -872,7 +973,12 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 	int adapter_ibus = 0;
 	int input_current = 0;
 	int icl_threshold;
-	bool mivr_loop;
+	unsigned int mivr1 = 0;
+	unsigned int mivr2 = 0;
+	bool chg1_mivr = false;
+	bool chg2_mivr = false;
+	bool chg2_enable = false;
+	bool thermal_skip = false;
 
 	if (pinfo->enable_hv_charging == false)
 		goto disable_hv;
@@ -883,47 +989,88 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 	vbat = battery_get_bat_voltage();
 	ibat = battery_get_bat_current_mA();
 
-	charger_dev_get_mivr_state(pinfo->chg1_dev, &mivr_loop);
-	charger_dev_get_ibus(pinfo->chg1_dev, &ibus);
-	vbus = battery_get_vbus();
+	mtk_pe40_get_ibus(pinfo, &ibus);
 	ibus = ibus / 1000;
-	icl = pinfo->chg1_data.input_current_limit / 1000 *
-		(100 - pinfo->data.ibus_err) / 100;
+	oldibus = ibus;
+	charger_dev_get_mivr_state(pinfo->chg1_dev, &chg1_mivr);
+	charger_dev_get_mivr(pinfo->chg1_dev, &mivr1);
+
+	if (is_dual_charger_supported(pinfo)) {
+		charger_dev_is_enabled(pinfo->chg2_dev, &chg2_enable);
+		if (chg2_enable) {
+			charger_dev_get_mivr_state(pinfo->chg2_dev, &chg2_mivr);
+			charger_dev_get_mivr(pinfo->chg2_dev, &mivr2);
+		}
+	}
+
+	vbus = battery_get_vbus();
 	ccl = pinfo->chg1_data.charging_current_limit / 1000;
 	ccl2 = pinfo->chg2_data.charging_current_limit / 1000;
 	cv = pinfo->data.battery_cv / 1000;
 	watt = pe40->avbus * ibus;
 
-	if (icl > pe40->max_charger_ibus)
-		max_icl = pe40->max_charger_ibus;
-	else
-		max_icl = icl;
+	icl = pinfo->chg1_data.input_current_limit / 1000 *
+		(100 - pinfo->data.ibus_err) / 100;
+
+	if (pinfo->data.parallel_vbus) {
+		charger_dev_get_ibus(pinfo->chg1_dev, &compare_ibus);
+		compare_ibus = compare_ibus / 1000;
+
+
+		if (icl > pe40->max_charger_ibus / 2)
+			max_icl = pe40->max_charger_ibus / 2;
+		else
+			max_icl = icl;
+	} else {
+		compare_ibus = ibus;
+
+		if (icl > pe40->max_charger_ibus)
+			max_icl = pe40->max_charger_ibus;
+		else
+			max_icl = icl;
+	}
 
 	icl_threshold = 100;
-
 	max_watt = pe40->avbus * max_icl;
 
-	chr_err("[pe40_cc]vbus:%d:%d,ibus:%d,ibat:%d icl:%d:%d,ccl:%d,%d,vbat:%d,maxIbus:%d\n",
+	chr_err("[pe40_cc]vbus:%d:%d,ibus:%d,cibus:%d,ibat:%d icl:%d:%d,ccl:%d,%d,vbat:%d,maxIbus:%d,mivr:%d,%d\n",
 		pe40->avbus, vbus,
 		ibus,
+		compare_ibus,
 		ibat,
 		icl, max_icl,
 		ccl, ccl2,
-		vbat, pe40->max_charger_ibus);
+		vbat, pe40->max_charger_ibus,
+		chg1_mivr, chg2_mivr);
 
-	if ((mivr_loop && vbus <= 5000) ||
-	    (ibus >= (max_icl - icl_threshold)) ||
-	    (ibus <= (max_icl - icl_threshold * 2))) {
+	if ((chg1_mivr && (vbus < mivr1 / 1000 - 500)) ||
+	    (chg2_mivr && (vbus < mivr2 / 1000 - 500))) {
+		mtk_pe40_end(pinfo, 1, true);
+		return 0;
+	}
+
+	if (pinfo->data.parallel_vbus) {
+		if (pinfo->chg1_data.thermal_input_current_limit != -1 ||
+		    pinfo->chg2_data.thermal_input_current_limit != -1)
+			thermal_skip = true;
+	}
+
+	if (((chg1_mivr || chg2_mivr) && !thermal_skip) ||
+	    ((compare_ibus >= (max_icl - icl_threshold)) && !thermal_skip) ||
+	    (compare_ibus <= (max_icl - icl_threshold * 2))) {
 
 		oldavbus = pe40->avbus;
 
-		if (mivr_loop && vbus <= 5000) {
+		if (chg1_mivr || chg2_mivr) {
 			pe40->avbus = pe40->avbus + 50;
-			new_watt = (pe40->avbus + 50) * icl;
-		} else if (ibus >= (max_icl - icl_threshold)) {
+			if (pinfo->data.parallel_vbus)
+				new_watt = (pe40->avbus + 50) * icl * 2;
+			else
+				new_watt = (pe40->avbus + 50) * icl;
+		} else if (compare_ibus >= (max_icl - icl_threshold)) {
 			pe40->avbus = pe40->avbus + 50;
 			new_watt = (pe40->avbus + 50) * ibus;
-		} else if (ibus <= (max_icl - icl_threshold * 2)) {
+		} else if (compare_ibus <= (max_icl - icl_threshold * 2)) {
 			new_watt = pe40->avbus * pe40->ibus - 500000;
 			pe40->avbus = pe40->avbus - 50;
 		}
@@ -949,7 +1096,7 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 
 		vbat = battery_get_bat_voltage();
 		ibat = battery_get_bat_current_mA();
-		charger_dev_get_ibus(pinfo->chg1_dev, &ibus);
+		mtk_pe40_get_ibus(pinfo, &ibus);
 		vbus = battery_get_vbus();
 		ibus = ibus / 1000;
 		icl = pinfo->chg1_data.input_current_limit / 1000;
@@ -967,7 +1114,7 @@ int mtk_pe40_cc_state(struct charger_manager *pinfo)
 	if (ret == 1)
 		goto disable_hv;
 
-	if (pe40->avbus * ibus <= PE40_MIN_WATT) {
+	if (pe40->avbus * oldibus <= PE40_MIN_WATT) {
 		if (pinfo->enable_hv_charging == false ||
 			pdata->thermal_charging_current_limit != -1 ||
 			pdata->thermal_input_current_limit != -1)
