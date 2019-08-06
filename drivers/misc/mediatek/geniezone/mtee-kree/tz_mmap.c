@@ -58,7 +58,7 @@ long _map_user_pages(struct MTIOMMU_PIN_RANGE_T *pinRange, unsigned long uaddr,
 		/*diff with kernel-4.9(Linux modified)*/
 		res = get_user_pages_remote(current, current->mm, uaddr,
 					    nr_pages, write ? FOLL_WRITE : 0,
-					    pages, NULL, NULL);
+					    pages, NULL);
 	} else {
 		/* pfn mapped memory, don't touch page struct.
 		 * the buffer manager (possibly ion) should make sure
