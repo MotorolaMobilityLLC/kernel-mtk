@@ -536,13 +536,18 @@ static long cmdq_driver_process_command_request(
 	}
 
 	/* create kernel-space value buffer */
-	pCommand->regValue.regValues = (cmdqU32Ptr_t) (unsigned long)
-	    kzalloc(pCommand->regRequest.count * sizeof(u32), GFP_KERNEL);
-	pCommand->regValue.count = pCommand->regRequest.count;
-	if (CMDQ_U32_PTR(pCommand->regValue.regValues) == NULL) {
-		kfree(CMDQ_U32_PTR(pCommand->regRequest.regAddresses));
-		return -ENOMEM;
+	if (pCommand->regRequest.count) {
+		pCommand->regValue.regValues = (cmdqU32Ptr_t) (unsigned long)
+			kzalloc(pCommand->regRequest.count * sizeof(u32),
+			GFP_KERNEL);
+		if (CMDQ_U32_PTR(pCommand->regValue.regValues) == NULL) {
+			kfree(CMDQ_U32_PTR(pCommand->regRequest.regAddresses));
+			return -ENOMEM;
+		}
+	} else {
+		pCommand->regValue.regValues = 0;
 	}
+	pCommand->regValue.count = pCommand->regRequest.count;
 
 	/* scenario id fixup */
 	cmdq_mdp_fix_command_scenario_for_user_space(pCommand);
