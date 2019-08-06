@@ -3815,25 +3815,6 @@ __alloc_pages_nodemask(gfp_t gfp_mask, unsigned int order,
 		.migratetype = gfpflags_to_migratetype(gfp_mask),
 	};
 
-#ifdef CONFIG_DMAUSER_PAGES
-	/*
-	 * in this test mode: (extend DMA zone to 8GB)
-	 * 1. allocate user pages from DMA zone (<4GB)
-	 * 2. allocate non-user pages from NORMAL zone to test if all h/w &
-	 * drivers work well with >4GB addresses
-	 */
-	if ((gfp_mask & GFP_HIGHUSER) == GFP_HIGHUSER)
-		gfp_mask |= GFP_DMA;
-#ifdef CONFIG_NORMALKERNEL_PAGES
-	else
-		gfp_mask &= ~GFP_DMA;
-#endif
-
-	ac.high_zoneidx = gfp_zone(gfp_mask);
-	ac.migratetype = gfpflags_to_migratetype(gfp_mask);
-	alloc_mask = gfp_mask;
-#endif
-
 #ifdef CONFIG_ZONE_MOVABLE_CMA
 	/* No fast allocation gets into ZONE_MOVABLE */
 	if (ac.high_zoneidx == ZONE_MOVABLE)
