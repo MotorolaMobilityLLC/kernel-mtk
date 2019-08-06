@@ -477,4 +477,5 @@
 /* CONSYS end */
 
 #include <k79v1_64/cust.dtsi>
+#include "cust_mt6779_camera.dtsi"
 /*End of this file, DO NOT ADD ANYTHING HERE*/
