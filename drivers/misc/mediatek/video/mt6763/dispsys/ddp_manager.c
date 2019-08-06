@@ -422,7 +422,7 @@ int dpmgr_path_set_video_mode(disp_path_handle dp_handle, int is_vdo_mode)
 {
 	struct ddp_path_handle *handle = NULL;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	if (!dp_handle)
 		return 0;
 
@@ -574,7 +574,7 @@ int dpmgr_modify_path(disp_path_handle dp_handle,
 	struct ddp_path_handle *handle;
 	enum DDP_SCENARIO_ENUM old_scenario;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	old_scenario = handle->scenario;
 	handle->cmdqhandle = cmdq_handle;
@@ -632,7 +632,7 @@ int dpmgr_destroy_path_handle(disp_path_handle dp_handle)
 	int module_num;
 	struct DDP_MANAGER_CONTEXT *content;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -680,7 +680,7 @@ int dpmgr_path_add_memout(disp_path_handle dp_handle,
 	enum DISP_MODULE_ENUM wdma;
 	struct DDP_MANAGER_CONTEXT *context;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP ||
 	       handle->scenario == DDP_SCENARIO_SUB_DISP ||
@@ -728,7 +728,7 @@ int dpmgr_path_remove_memout(disp_path_handle dp_handle, void *cmdq_handle)
 	enum DISP_MODULE_ENUM wdma;
 	struct DDP_MANAGER_CONTEXT *context;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT(handle->scenario == DDP_SCENARIO_PRIMARY_DISP ||
 	       handle->scenario == DDP_SCENARIO_PRIMARY_ALL ||
@@ -782,7 +782,7 @@ int dpmgr_path_set_dst_module(disp_path_handle dp_handle,
 {
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
 	DDPDBG("set dst module on scenario %s, module %s\n",
@@ -795,7 +795,7 @@ int dpmgr_path_get_mutex(disp_path_handle dp_handle)
 {
 	struct ddp_path_handle *handle = NULL;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	return handle->hwmutexid;
 }
@@ -805,7 +805,7 @@ enum DISP_MODULE_ENUM dpmgr_path_get_dst_module(disp_path_handle dp_handle)
 	struct ddp_path_handle *handle;
 	enum DISP_MODULE_ENUM dst_module;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	ASSERT((handle->scenario >= 0 && handle->scenario < DDP_SCENARIO_MAX));
 	dst_module = ddp_get_dst_module(handle->scenario);
@@ -832,7 +832,7 @@ int dpmgr_path_connect(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -849,7 +849,7 @@ int dpmgr_path_disconnect(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -870,7 +870,7 @@ int dpmgr_path_init_with_cmdq(disp_path_handle dp_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -911,7 +911,7 @@ int dpmgr_path_init(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -927,7 +927,7 @@ int dpmgr_path_deinit(disp_path_handle dp_handle, int encmdq)
 	struct cmdqRecStruct *cmdqHandle;
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -966,7 +966,7 @@ int dpmgr_path_start_with_cmdq(disp_path_handle dp_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -990,7 +990,7 @@ int dpmgr_path_start(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 
@@ -1007,7 +1007,7 @@ int dpmgr_path_stop(disp_path_handle dp_handle, int encmdq)
 	int module_num;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1036,7 +1036,7 @@ int dpmgr_path_ioctl(disp_path_handle dp_handle, void *cmdq_handle,
 	int module_num;
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1067,7 +1067,7 @@ int dpmgr_path_enable_irq(disp_path_handle dp_handle, void *cmdq_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1106,7 +1106,7 @@ int dpmgr_path_reset(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1166,7 +1166,7 @@ int dpmgr_path_config(disp_path_handle dp_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1203,7 +1203,7 @@ dpmgr_path_get_last_config_notclear(disp_path_handle dp_handle)
 {
 	struct ddp_path_handle *handle = (struct ddp_path_handle *)dp_handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	return &handle->last_config;
 }
 
@@ -1212,7 +1212,7 @@ dpmgr_path_get_last_config(disp_path_handle dp_handle)
 {
 	struct ddp_path_handle *handle = (struct ddp_path_handle *)dp_handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle->last_config.ovl_dirty = 0;
 	handle->last_config.rdma_dirty = 0;
 	handle->last_config.wdma_dirty = 0;
@@ -1247,7 +1247,7 @@ int dpmgr_path_build_cmdq(disp_path_handle dp_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1287,7 +1287,7 @@ int dpmgr_path_trigger(disp_path_handle dp_handle, void *trigger_loop_handle,
 	int i;
 	int module_name;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	DISP_LOG_I("%s on scenario %s\n",
 		   __func__, ddp_get_scenario_name(handle->scenario));
@@ -1314,7 +1314,7 @@ int dpmgr_path_flush(disp_path_handle dp_handle, int encmdq)
 	struct ddp_path_handle *handle;
 	struct cmdqRecStruct *cmdqHandle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	cmdqHandle = encmdq ? handle->cmdqhandle : NULL;
 	DDPDBG("path flush on scenario %s\n",
@@ -1331,7 +1331,7 @@ int dpmgr_path_power_off(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1360,7 +1360,7 @@ int dpmgr_path_power_on(disp_path_handle dp_handle, enum CMDQ_SWITCH encmdq)
 	int module_num;
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1391,7 +1391,7 @@ int dpmgr_path_power_off_bypass_pwm(disp_path_handle dp_handle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1427,7 +1427,7 @@ int dpmgr_path_power_on_bypass_pwm(disp_path_handle dp_handle,
 	int module_num;
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1473,7 +1473,7 @@ int dpmgr_path_user_cmd(disp_path_handle dp_handle, unsigned int msg,
 	int ret = -1;
 	struct ddp_path_handle *handle = NULL;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	/* DISP_LOG_W("dpmgr_path_user_cmd msg 0x%08x\n",msg); */
 	switch (msg) {
@@ -1558,7 +1558,7 @@ int dpmgr_path_get_parameter(disp_path_handle dp_handle, int io_evnet,
 
 int dpmgr_path_is_idle(disp_path_handle dp_handle)
 {
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	return !dpmgr_path_is_busy(dp_handle);
 }
 
@@ -1570,7 +1570,7 @@ int dpmgr_path_is_busy(disp_path_handle dp_handle)
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1602,7 +1602,7 @@ int dpmgr_set_lcm_utils(disp_path_handle dp_handle, void *lcm_drv)
 	int module_num;
 	struct ddp_path_handle *handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1629,7 +1629,7 @@ int dpmgr_enable_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event)
 	struct ddp_path_handle *handle;
 	struct DPMGR_WQ_HANDLE *wq_handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &handle->wq_list[event];
 
@@ -1652,7 +1652,7 @@ int dpmgr_map_event_to_irq(disp_path_handle dp_handle,
 	struct ddp_path_handle *handle;
 	struct DDP_IRQ_EVENT_MAPPING *irq_table;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	irq_table = handle->irq_event_map;
 
@@ -1674,7 +1674,7 @@ int dpmgr_disable_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event)
 	struct ddp_path_handle *handle;
 	struct DPMGR_WQ_HANDLE *wq_handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 
 	DDPDBG("disable event %s on scenario %s\n", path_event_name(event),
@@ -1727,7 +1727,7 @@ int dpmgr_check_status(disp_path_handle dp_handle)
 	struct ddp_path_handle *handle;
 	struct DDP_MANAGER_CONTEXT *context = _get_context();
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);
@@ -1796,7 +1796,7 @@ int dpmgr_wait_event_timeout(disp_path_handle dp_handle,
 	struct DPMGR_WQ_HANDLE *wq_handle;
 	unsigned long long cur_time;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &handle->wq_list[event];
 
@@ -1841,7 +1841,7 @@ int _dpmgr_wait_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event,
 	struct DPMGR_WQ_HANDLE *wq_handle;
 	unsigned long long cur_time;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &handle->wq_list[event];
 
@@ -1888,7 +1888,7 @@ int dpmgr_signal_event(disp_path_handle dp_handle, enum DISP_PATH_EVENT event)
 	struct ddp_path_handle *handle;
 	struct DPMGR_WQ_HANDLE *wq_handle;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	wq_handle = &handle->wq_list[event];
 
@@ -1999,7 +1999,7 @@ int switch_module_to_nonsec(disp_path_handle dp_handle, void *cmdqhandle,
 	int *modules;
 	int module_num;
 
-	ASSERT(dp_handle != NULL);
+	ASSERT(dp_handle);
 	handle = (struct ddp_path_handle *)dp_handle;
 	modules = ddp_get_scenario_list(handle->scenario);
 	module_num = ddp_get_module_num(handle->scenario);

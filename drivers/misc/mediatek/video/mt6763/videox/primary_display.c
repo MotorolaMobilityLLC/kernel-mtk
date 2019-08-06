@@ -5663,7 +5663,7 @@ static int config_wdma_output(disp_path_handle disp_handle,
 {
 	struct disp_ddp_path_config *pconfig = NULL;
 
-	ASSERT(output != NULL);
+	ASSERT(output);
 	pconfig = dpmgr_path_get_last_config(disp_handle);
 	pconfig->wdma_config.dstAddress = (unsigned long)output->pa;
 	pconfig->wdma_config.srcHeight =
