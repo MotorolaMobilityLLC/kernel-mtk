@@ -833,6 +833,7 @@ static int __init adsp_module_init(void)
 		return PTR_ERR(adsp_debugfs);
 
 	/* adsp initialize */
+	adsp_dvfs_init();
 	adsp_power_on(true);
 	writel(adspreg.segment, ADSP_SEGMENT_CON);
 	adsp_update_memory_protect_info();
