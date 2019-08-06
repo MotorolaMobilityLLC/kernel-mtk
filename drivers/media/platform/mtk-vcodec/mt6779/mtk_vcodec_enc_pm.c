@@ -40,7 +40,7 @@ static struct codec_job *venc_jobs;
 #endif
 
 #ifdef ENC_EMI_BW
-#include <mtk_smi.h>
+#include <mt-plat/mtk_smi.h>
 #include <mtk_qos_bound.h>
 #include "vcodec_bw.h"
 static long long venc_start_time;

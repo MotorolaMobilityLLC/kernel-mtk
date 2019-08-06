@@ -1,5 +1,4 @@
 subdir-ccflags-y += -Werror
-ccflags-y += -Wno-maybe-uninitialized
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi
 
 mtk-vcu-y += mtk_vcu.o \

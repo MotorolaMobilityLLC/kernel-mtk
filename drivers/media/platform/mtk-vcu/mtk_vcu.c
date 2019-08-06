@@ -1152,6 +1152,7 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 	long ret = -1;
 	void *mem_priv;
 	unsigned char *user_data_addr = NULL;
+	dma_addr_t temp_pa;
 	struct mtk_vcu *vcu_dev;
 	struct device *dev;
 	struct share_obj share_buff_data;
@@ -1206,8 +1207,9 @@ static long mtk_vcu_unlocked_ioctl(struct file *file, unsigned int cmd,
 			mem_buff_data.pa = 0;
 		} else {
 			mem_priv =
-				cmdq_mbox_buf_alloc(dev, &mem_buff_data.pa);
-			mem_buff_data.va = (uint64_t)mem_priv;
+				cmdq_mbox_buf_alloc(dev, &temp_pa);
+			mem_buff_data.va = (unsigned long)mem_priv;
+			mem_buff_data.pa = (unsigned long)temp_pa;
 			mem_buff_data.iova = 0;
 			tmp = kmalloc(sizeof(struct vcu_pa_pages), GFP_KERNEL);
 			if (!tmp)
