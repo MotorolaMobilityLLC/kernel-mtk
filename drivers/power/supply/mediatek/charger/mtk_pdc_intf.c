@@ -447,7 +447,7 @@ int mtk_pdc_get_setting(struct charger_manager *info, int *newvbus, int *newcur,
 	idx = selected_idx;
 
 	if (idx < 0 || idx >= ADAPTER_CAP_MAX_NR)
-		idx = 0;
+		idx = selected_idx = 0;
 
 	pd_max_watt = cap->max_mv[idx] * (cap->ma[idx]
 			/ 100 * (100 - info->data.ibus_err) - 100);
