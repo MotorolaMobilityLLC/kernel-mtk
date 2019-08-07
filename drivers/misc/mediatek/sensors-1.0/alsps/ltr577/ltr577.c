@@ -1777,6 +1777,7 @@ static void ltr577_eint_work(struct work_struct *work)
 {
 	struct ltr577_priv *obj = (struct ltr577_priv *)container_of(work, struct ltr577_priv, eint_work);
 	int res = 0;
+	int err;
 	
 	int distance =-1;
 
@@ -1793,9 +1794,11 @@ static void ltr577_eint_work(struct work_struct *work)
 	APS_DBG("%s:let up distance=%d\n",__func__,distance);
 
 //add by fanxzh begin
-	ltr577_read_cali_file(obj->client);	
-	ps_thd_val_low_set = ps_nvraw_40mm_value;
-	ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
+	err = ltr577_read_cali_file(obj->client);
+	if(0 == err) {
+		ps_thd_val_low_set = ps_nvraw_40mm_value;
+		ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
+	}
 	ltr577_ps_set_thres();
 //add by fanxzh end
 
