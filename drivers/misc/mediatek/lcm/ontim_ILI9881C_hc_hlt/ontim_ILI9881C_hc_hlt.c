@@ -708,7 +708,7 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 	LCM_LOGI("%s,ili9881c holitek backlight: level = %d\n", __func__, level);
 	if (level > 255)
 		level = 255;
-	if (level < 3 )
+	if (level < 3 && level !=0)
 		level = 3;
 #if 0
 	bl_level[0].para_list[0] = level;
