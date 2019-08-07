@@ -346,7 +346,7 @@ int fts_ex_mode_init(struct i2c_client *client)
 
     g_fts_mode_flag.fts_glove_mode_flag = false;
     g_fts_mode_flag.fts_cover_mode_flag = false;
-    g_fts_mode_flag.fts_charger_mode_flag = false;
+    g_fts_mode_flag.fts_charger_mode_flag = true;
 
     err = sysfs_create_group(&client->dev.kobj, &fts_touch_mode_group);
     if (0 != err) {
