@@ -210,7 +210,7 @@ static const unsigned char aw3643_torch_level[AW3643_LEVEL_NUM] = {
 };
 
 static const unsigned char aw3643_flash_level[AW3643_LEVEL_NUM] = {
-	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0F, 0x12, 0x14,
+	0x01, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x10, 0x12, 0x14,
 	0x17, 0x1A, 0x1E, 0x21, 0x24, 0x27, 0x2B, 0x2F, 0x33, 0x37,
 	0x3B, 0x3F, 0x43, 0x47, 0x4B, 0x4F, 0x53, 0x57, 0x5B, 0x5F,
 	0x63, 0x67, 0x6B, 0x6F, 0x73, 0x77, 0x7B, 0x7F, 0x83
@@ -411,6 +411,7 @@ static int aw3643_set_level_ch1(int level)
 	/* set flash brightness level */
 	reg = AW3643_REG_FLASH_LEVEL_LED1;
 	val = aw3643_flash_level[level];
+    if(level == 11)val = 0x5d;// 1100mA
         //level = 7-11
         //val: 0x0F, 0x11, 0x13,	0x15, 0x17,
         //i = val * 11.72 + 11.35 
@@ -486,6 +487,7 @@ static int sy7806_set_level_ch1(int level)
 	/* set flash brightness level */
 	reg = AW3643_REG_FLASH_LEVEL_LED1;
 	val = aw3643_flash_level[level];
+    if(level == 11)val = 0x5d;// 1100mA
         //level = 7-11
         //val: 0x0F, 0x11, 0x13,	0x15, 0x17,
         //i = (val +1)*11.725mA 
@@ -578,7 +580,7 @@ int aw3643_init(void)
 	/* get silicon revision */
 	is_aw3643tt = aw3643_read_reg(aw3643_i2c_client, AW3643_REG_DEVICE_ID);
 	LOG_INF("AW3643(TT) revision(%d).\n", is_aw3643tt);
-        if(is_aw3643tt == SY7806_CHIP_ID )
+        if(is_aw3643tt == SY7806_CHIP_ID )// 24
             {
             LOG_INF("ontim flashlight CHIP:SY7806");
             is_SY7806 = 1;
