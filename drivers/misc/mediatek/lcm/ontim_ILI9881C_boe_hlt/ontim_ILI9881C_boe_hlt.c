@@ -381,7 +381,7 @@ static struct LCM_setting_table init_setting[] = {
 	{ 0x55, 0x01, {0x01} },
 	{ 0x35, 0x01, {0x00} },
 	{ 0x11, 0x01, {0x00} },
-	{REGFLAG_DELAY, 65, {} },
+	{REGFLAG_DELAY, 120, {} },
 	{ 0x29, 0x01, {0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -466,18 +466,18 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.packet_size = 256;
 	/* video mode timing */
 	params->dsi.PS = LCM_PACKED_PS_24BIT_RGB888;
-	params->dsi.vertical_sync_active = 6; //old is 2,now is 4
-	params->dsi.vertical_backporch = 15; //old is 8,now is 100
-	params->dsi.vertical_frontporch = 16; //old is 15,now is 24
+	params->dsi.vertical_sync_active = 4; //old is 2,now is 4
+	params->dsi.vertical_backporch = 20; //old is 8,now is 100
+	params->dsi.vertical_frontporch = 12; //old is 15,now is 24
 	params->dsi.vertical_active_line = FRAME_HEIGHT;
-	params->dsi.horizontal_sync_active = 8;
-	params->dsi.horizontal_backporch = 48;
-	params->dsi.horizontal_frontporch = 52;
+	params->dsi.horizontal_sync_active = 40;
+	params->dsi.horizontal_backporch = 72;
+	params->dsi.horizontal_frontporch = 72;
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.ssc_disable = 0;
 	params->dsi.ssc_range = 3;
 	//params->dsi.HS_TRAIL = 15;
-	params->dsi.PLL_CLOCK = 300;    /* this value must be in MTK suggested table */
+	params->dsi.PLL_CLOCK = 336;    /* this value must be in MTK suggested table */
 	params->dsi.PLL_CK_CMD = 300;    
 	params->dsi.PLL_CK_VDO = 300;     
 	params->dsi.CLK_HS_POST = 36;
