@@ -15,6 +15,8 @@
 
 #include <linux/fs.h>
 #include <asm/system_misc.h>
+#include <mt-plat/mtk_boot_common.h>
+
 
 //#include <linux/qpnp/qpnp-adc.h>
 //#include "board_id_adc.h"
@@ -1079,10 +1081,21 @@ static void get_emmc_mfr(void)
 	strncpy(hwinfo[emmc_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 	strncpy(hwinfo[lpddr_mfr].hwinfo_buf, emmc_mid_name, strlen(emmc_mid_name));
 }
+extern int  meta_camera_info(void);
+extern unsigned int get_boot_mode(void);
 
 static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, char * buf)
 {
 	int i = 0;
+	static int flag = 0;
+	int boot_mode ;
+	boot_mode = (int)get_boot_mode();
+	if (boot_mode == META_BOOT) {
+			if(0==flag)
+			meta_camera_info();
+		flag=1;
+	}
+
 	printk(KERN_INFO "hwinfo sys node %s \n", attr->attr.name);
 
 	for (; i < HWINFO_MAX && strcmp(hwinfo[i].hwinfo_name, attr->attr.name) && ++i;);

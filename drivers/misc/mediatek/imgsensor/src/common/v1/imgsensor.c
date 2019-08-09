@@ -1037,6 +1037,27 @@ static inline int adopt_CAMERA_HW_Control(void *pBuf)
 	return ret;
 } /* adopt_CAMERA_HW_Control */
 
+int  meta_camera_info(void)
+{
+		struct IMGSENSOR_SENSOR *psensor;
+		int ret;
+		psensor = imgsensor_sensor_get_inst(0);
+		if (psensor == NULL) {
+			PK_DBG("[adopt_CAMERA_HW_FeatureControl] NULL psensor.\n");
+			return -EFAULT;
+		}
+		psensor->inst.sensor_idx = 0;
+		ret=imgsensor_set_driver(psensor);
+		psensor = imgsensor_sensor_get_inst(1);
+		if (psensor == NULL) {
+			PK_DBG("[adopt_CAMERA_HW_FeatureControl] NULL psensor.\n");
+			return -EFAULT;
+		}
+		psensor->inst.sensor_idx = 1;
+		ret=imgsensor_set_driver(psensor);
+		return ret;
+}
+
 /*******************************************************************************
 * adopt_CAMERA_HW_FeatureControl
 ********************************************************************************/
