@@ -136,7 +136,7 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define FT8006U_DELAY_BACK 6 
 #endif
 
-static unsigned int ontim_resume = 0;
+//static unsigned int ontim_resume = 0;
 struct LCM_setting_table {
 	unsigned int cmd;
 	unsigned char count;
@@ -381,7 +381,7 @@ static struct LCM_setting_table init_setting[] = {
 	{ 0x55, 0x01, {0x01} },
 	{ 0x35, 0x01, {0x00} },
 	{ 0x11, 0x01, {0x00} },
-	{REGFLAG_DELAY, 120, {} },
+	{REGFLAG_DELAY, 65, {} },
 	{ 0x29, 0x01, {0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
@@ -527,6 +527,7 @@ static int NT50358A_write_byte(kal_uint8 addr, kal_uint8 value)
 static void lcm_reset(void)
 {
 	//printf("[uboot]:lcm reset start.\n");
+#if 0
 	if(ontim_resume){
 		ontim_resume = 0;
 		//        if(tpd_gpio_output != NULL)
@@ -535,6 +536,7 @@ static void lcm_reset(void)
 		MDELAY(10);
 		tpd_gpio_output(CTP_RST_GPIO_PINCTRL_ONTIM,1);
 	}
+#endif
 #ifdef GPIO_LCD_RST_PIN
 	mt_set_gpio_mode(GPIO_LCD_RST_PIN, GPIO_MODE_00);
 	mt_set_gpio_dir(GPIO_LCD_RST_PIN, GPIO_DIR_OUT);
@@ -546,11 +548,9 @@ static void lcm_reset(void)
 	MDELAY(50);
 #else
 	SET_RESET_PIN(1);
-	MDELAY(1);
 	SET_RESET_PIN(0);
-	MDELAY(10);
 	SET_RESET_PIN(1);
-	MDELAY(50);
+	MDELAY(10);
 
 #endif
 	LCM_LOGI("lcm reset end.\n");
@@ -602,6 +602,19 @@ static void lcm_init(void)
 	int ret = 0;
 	LCM_LOGI("%s: ontim_ILI9881C\n",__func__);
 
+	ret = NT50358A_write_byte(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
+	cmd = 0x01;
+	data = 0x0F;
+	ret = NT50358A_write_byte(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
+
 #if defined(GPIO_LCD_BIAS_ENN_PIN)||defined(GPIO_LCD_BIAS_ENP_PIN)
 #ifdef GPIO_LCD_BIAS_ENP_PIN 
 	mt_set_gpio_mode(GPIO_LCD_BIAS_ENP_PIN, GPIO_MODE_00);
@@ -626,22 +639,11 @@ static void lcm_init(void)
 #endif
 #else
 	set_gpio_lcd_enp(1);
-	MDELAY(5);
+	MDELAY(1);
 	set_gpio_lcd_enn(1);
+	MDELAY(5);
 
 #endif
-	ret = NT50358A_write_byte(cmd, data);
-	if (ret < 0)
-		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
-	else
-		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
-	cmd = 0x01;
-	data = 0x0F;
-	ret = NT50358A_write_byte(cmd, data);
-	if (ret < 0)
-		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
-	else
-		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
 	lcm_reset();
 
 	push_table(NULL, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
@@ -683,7 +685,7 @@ static void lcm_suspend(void)
 static void lcm_resume(void)
 {
 	LCM_LOGI("%s: ontim_ILI9881C\n",__func__);
-	ontim_resume = 1;
+	//ontim_resume = 1;
 	lcm_init();
 }
 
