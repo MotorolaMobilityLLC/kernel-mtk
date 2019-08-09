@@ -41,7 +41,8 @@
 #define APS_FUN(f)              printk(KERN_INFO 	APS_TAG"%s\n", __FUNCTION__)
 #define APS_ERR(fmt, args...)   printk(KERN_ERR  	APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
 #define APS_LOG(fmt, args...)   printk(KERN_NOTICE	APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)   printk(KERN_ERR 	APS_TAG fmt, ##args)
+//#define APS_DBG(fmt, args...)   printk(KERN_DEBUG 	APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)   ontim_dev_dbg(7, APS_TAG fmt, ##args)
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id ltr577_i2c_id[] = {{LTR577_DEV_NAME,0},{}};
@@ -1274,7 +1275,7 @@ static int ltr577_get_als_value(struct ltr577_priv *obj, u16 als)
 		//if(als < obj->hw->als_level[idx])
 		if(als < als_level[current_tp][current_color_temp][idx])
 		{
-			APS_ERR("als=%d ,als_level = %d\n",als,als_level[current_tp][current_color_temp][idx]);
+			APS_DBG("als=%d ,als_level = %d\n",als,als_level[current_tp][current_color_temp][idx]);
 			break;
 		}
 	}
@@ -1305,7 +1306,7 @@ static int ltr577_get_als_value(struct ltr577_priv *obj, u16 als)
                         (als_level[current_tp][current_color_temp][idx]-als_level[current_tp][current_color_temp][idx-1]);
                 lum += als_value[idx-1];
 
-	APS_ERR("%s, lum =%d \n",__func__,lum);
+	APS_DBG("%s, lum =%d \n",__func__,lum);
 		return lum;
 		//return obj->hw->als_value[idx];
 	}
@@ -2571,7 +2572,7 @@ static int als_flush(void)
 static int als_get_data(int* value, int* status)
 {
 	int err = 0;
-			APS_ERR("%s !!\n",__func__);
+			APS_DBG("%s !!\n",__func__);
 	if(!ltr577_obj)
 	{
 		APS_ERR("ltr577_obj is null!!\n");
