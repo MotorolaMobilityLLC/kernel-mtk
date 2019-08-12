@@ -760,6 +760,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
     const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
     const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
+    const char * str_ar1337_path  = "/data/vendor/camera_dump/huaian_ar1337.data";
     const char * str_dump_path = NULL;
     
 	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
@@ -816,6 +817,20 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             pu1Params = p_buf;
             u4Length = Length;
             str_dump_path = str_hi556_path;
+            break;
+        }
+
+        case AR1337_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_ar1337_path;
             break;
         }
         
