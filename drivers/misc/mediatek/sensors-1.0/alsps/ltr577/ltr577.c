@@ -98,13 +98,14 @@ static unsigned int cureent_color_ratio = 0;
 	static unsigned int ps_detection = -1;
 	static unsigned int ps_thd_val_hlgh_set = 0;
 	static unsigned int ps_thd_val_low_set = 0;
-
+	static unsigned int ps_thd_val_hlgh_set_temp = 0;
+	static unsigned int ps_thd_val_low_set_temp = 0;
 
 	#define MAX_ADC_PROX_VALUE 2047
 	#define FAR_THRESHOLD(x) (min_proximity<(x)?(x):min_proximity)
 	#define NRAR_THRESHOLD(x) ((FAR_THRESHOLD(x)+pwindows_value-1)>MAX_ADC_PROX_VALUE ? MAX_ADC_PROX_VALUE:(FAR_THRESHOLD(x)+pwindows_value-1))
 #endif
-///add by xi'an end 
+///add by xi'an end
 
 /*----------------------------------------------------------------------------*/
 static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id); 
@@ -197,6 +198,7 @@ static struct i2c_client *ltr577_i2c_client = NULL;
 
 static DEFINE_MUTEX(ltr577_mutex);
 static DEFINE_MUTEX(ltr577_i2c_mutex);
+static DEFINE_MUTEX(ltr577_work_mutex);
 
 static int ltr577_local_init(void);
 static int ltr577_remove(void);
@@ -789,15 +791,15 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		ps_threshold_l = ps_nvraw_25mm_value -1;
 		ps_threshold_h = ps_nvraw_25mm_value;
 
-		ps_thd_val_low_set = ps_threshold_l;
-		ps_thd_val_hlgh_set = ps_threshold_h;
+		ps_thd_val_low_set_temp = ps_thd_val_low_set = ps_threshold_l;
+		ps_thd_val_hlgh_set_temp = ps_thd_val_hlgh_set = ps_threshold_h;
 		ltr577_ps_set_thres();
 		ps_enabled = 1;
 	}
 	else if (0 == ltr577_obj->hw->polling_mode_ps && enable == 0)
 	{
 		//cancel_work_sync(&ltr577_obj->eint_work);
-		ps_enabled = 0;		
+		ps_enabled = 0;
 	}
 
 	if ((irq_enabled == 1) && (enable != 0))
@@ -1778,9 +1780,10 @@ static void ltr577_eint_work(struct work_struct *work)
 {
 	struct ltr577_priv *obj = (struct ltr577_priv *)container_of(work, struct ltr577_priv, eint_work);
 	int res = 0;
-	int err;
-	
+
 	int distance =-1;
+
+	mutex_lock(&ltr577_work_mutex);
 
 	//get raw data
 	obj->ps = ltr577_ps_read(obj->client, &obj->ps);
@@ -1788,29 +1791,27 @@ static void ltr577_eint_work(struct work_struct *work)
 	{
 		goto EXIT_INTR;
 	}
-				
+
 	APS_DBG("ltr577_eint_work: rawdata ps=%d!\n",obj->ps);
 	distance = ltr577_get_ps_value(obj, obj->ps);
 
 	APS_DBG("%s:let up distance=%d\n",__func__,distance);
 
 //add by fanxzh begin
-	err = ltr577_read_cali_file(obj->client);
-	if(0 == err) {
-		ps_thd_val_low_set = ps_nvraw_40mm_value;
-		ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
-	}
+	ps_thd_val_low_set = ps_thd_val_low_set_temp;
+	ps_thd_val_hlgh_set = ps_thd_val_hlgh_set_temp;
 	ltr577_ps_set_thres();
 //add by fanxzh end
 
 	//let up layer to know
 	res = ps_report_interrupt_data(distance);
 
-EXIT_INTR:	
+EXIT_INTR:
 #ifdef CONFIG_OF
 	enable_irq_wake(obj->irq);
 	enable_irq(obj->irq);
 #endif
+	mutex_unlock(&ltr577_work_mutex);
 }
 
 #else
