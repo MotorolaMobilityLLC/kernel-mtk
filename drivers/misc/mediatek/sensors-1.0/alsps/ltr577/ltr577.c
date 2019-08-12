@@ -98,8 +98,6 @@ static unsigned int cureent_color_ratio = 0;
 	static unsigned int ps_detection = -1;
 	static unsigned int ps_thd_val_hlgh_set = 0;
 	static unsigned int ps_thd_val_low_set = 0;
-	static unsigned int ps_thd_val_hlgh_set_temp = 0;
-	static unsigned int ps_thd_val_low_set_temp = 0;
 
 	#define MAX_ADC_PROX_VALUE 2047
 	#define FAR_THRESHOLD(x) (min_proximity<(x)?(x):min_proximity)
@@ -791,8 +789,8 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		ps_threshold_l = ps_nvraw_25mm_value -1;
 		ps_threshold_h = ps_nvraw_25mm_value;
 
-		ps_thd_val_low_set_temp = ps_thd_val_low_set = ps_threshold_l;
-		ps_thd_val_hlgh_set_temp = ps_thd_val_hlgh_set = ps_threshold_h;
+		ps_thd_val_low_set = ps_threshold_l;
+		ps_thd_val_hlgh_set = ps_threshold_h;
 		ltr577_ps_set_thres();
 		ps_enabled = 1;
 	}
@@ -1797,11 +1795,7 @@ static void ltr577_eint_work(struct work_struct *work)
 
 	APS_DBG("%s:let up distance=%d\n",__func__,distance);
 
-//add by fanxzh begin
-	ps_thd_val_low_set = ps_thd_val_low_set_temp;
-	ps_thd_val_hlgh_set = ps_thd_val_hlgh_set_temp;
 	ltr577_ps_set_thres();
-//add by fanxzh end
 
 	//let up layer to know
 	res = ps_report_interrupt_data(distance);
