@@ -53,8 +53,8 @@
 #define I2C_REGISTER_ID            0x27
 #endif
 
-#define PLATFORM_DRIVER_NAME "lens_actuator_sub_af"
-#define AF_DRIVER_CLASS_NAME "actuatordrv_sub_af"
+#define PLATFORM_DRIVER_NAME "lens_actuator_sub2_af"
+#define AF_DRIVER_CLASS_NAME "actuatordrv_sub2_af"
 
 
 #if I2C_CONFIG_SETTING == 1
