@@ -108,7 +108,7 @@
 };
 
 &spi2{
-	mediatek,pad-select = <0>,<1>;
+	mediatek,pad-select = <0>,<1>,<2>;
 	#address-cells = <0x1>;
 	#size-cells = <0x0>;
 
@@ -136,6 +136,14 @@
 		novatek,swrst-n8-addr = <0x03F0FE>;
 		novatek,spi-rd-fast-addr = <0x03F310>;
 		novatek,usb_charger;
+	};
+
+	focaltech@2{
+		compatible= "focaltech,fts";
+		spi-max-frequency = <12000000>;
+		reg = <0x2>;
+		status = "okay";
+		focaltech,usb_charger;
 	};
 };
 
