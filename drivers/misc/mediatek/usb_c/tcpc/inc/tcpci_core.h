@@ -47,7 +47,7 @@
 #define DPM_DBG_ENABLE		0
 #define PD_ERR_ENABLE		1
 #define PE_DBG_ENABLE		0
-#define TYPEC_DBG_ENABLE	0
+#define TYPEC_DBG_ENABLE	1
 
 
 #define DP_INFO_ENABLE		1

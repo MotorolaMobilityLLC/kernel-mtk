@@ -45,17 +45,9 @@
 #include "typec.h"
 #endif
 
-static DEFINE_MUTEX(param_lock);
-
 static struct tcpc_device *tcpc_dev;
 static struct notifier_block pd_nb;
-static int pd_sink_voltage_new;
-static int pd_sink_voltage_old;
-static int pd_sink_current_new;
-static int pd_sink_current_old;
-static unsigned char pd_sink_type;
 static bool tcpc_kpoc = false;
-static unsigned char bc12_chr_type;
 #if 0 /* vconn is from vsys on mt6763 */
 /* vconn boost gpio pin */
 static int vconn_gpio;
@@ -66,15 +58,6 @@ static unsigned char vconn_on;
 static struct charger_device *primary_charger;
 static struct charger_consumer *chg_consumer;
 #endif
-
-static void tcpc_mt_power_off(void)
-{
-#ifdef MTK_BASE
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	kernel_power_off();
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
-#endif
-}
 
 #if CONFIG_MTK_GAUGE_VERSION == 20
 #ifdef CONFIG_MTK_PUMP_EXPRESS_PLUS_30_SUPPORT
@@ -188,13 +171,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 					unsigned long event, void *data)
 {
 	struct tcp_notify *noti = data;
-	u32 vbus = 0;
-	int ret = 0;
-#ifdef MTK_BASE
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-	int boot_mode = 0;
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
-#endif
 
 	switch (event) {
 	case TCP_NOTIFY_SOURCE_VCONN:
@@ -215,62 +191,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #endif
 		break;
 	case TCP_NOTIFY_SINK_VBUS:
-		mutex_lock(&param_lock);
-		pd_sink_voltage_new = noti->vbus_state.mv;
-		pd_sink_current_new = noti->vbus_state.ma;
-
-		if (noti->vbus_state.type & TCP_VBUS_CTRL_PD_DETECT)
-			pd_sink_type = SINK_TYPE_PD_CONNECTED;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REMOVE)
-			pd_sink_type = SINK_TYPE_REMOVE;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_TYPEC)
-			pd_sink_type = SINK_TYPE_TYPEC;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_PD)
-			pd_sink_type = SINK_TYPE_PD_TRY;
-		else if (noti->vbus_state.type == TCP_VBUS_CTRL_REQUEST)
-			pd_sink_type = SINK_TYPE_REQUEST;
-		pr_info("%s sink vbus %dmv %dma type(%d)\n", __func__,
-			pd_sink_voltage_new, pd_sink_current_new, pd_sink_type);
-		mutex_unlock(&param_lock);
-
-		if ((pd_sink_voltage_new != pd_sink_voltage_old) ||
-		    (pd_sink_current_new != pd_sink_current_old)) {
-			if (pd_sink_voltage_new) {
-				/* enable charger */
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, true);
-#else
-				mtk_chr_pd_enable_power_path(1);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			} else if (pd_sink_type == SINK_TYPE_REMOVE) {
-				if (tcpc_kpoc)
-					break;
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, false);
-#else
-				mtk_chr_pd_enable_power_path(0);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			} else {
-				bc12_chr_type = mt_get_charger_type();
-				if (bc12_chr_type >= STANDARD_HOST &&
-				    bc12_chr_type <= STANDARD_CHARGER)
-					break;
-				if (tcpc_kpoc)
-					break;
-				/* disable charge */
-#if CONFIG_MTK_GAUGE_VERSION == 30
-				charger_manager_enable_power_path(chg_consumer, MAIN_CHARGER, false);
-#else
-				mtk_chr_pd_enable_power_path(0);
-#endif
-				pd_sink_voltage_old = pd_sink_voltage_new;
-				pd_sink_current_old = pd_sink_current_new;
-			}
-		}
 		break;
 	case TCP_NOTIFY_TYPEC_STATE:
 		if (noti->typec_state.old_state == TYPEC_UNATTACHED &&
@@ -278,15 +198,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			noti->typec_state.new_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.new_state == TYPEC_ATTACHED_NORP_SRC)) {
 			charger_ignore_usb(false);
-#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
-#if CONFIG_MTK_GAUGE_VERSION == 30
-			charger_dev_enable_chg_type_det(primary_charger, true);
-#else
-			mtk_chr_enable_chr_type_det(true);
-#endif
-#else
-			mtk_pmic_enable_chr_type_det(true);
-#endif
 			pr_info("%s USB Plug in, pol = %d\n", __func__,
 					noti->typec_state.polarity);
 #ifdef CONFIG_USB_C_SWITCH_U3_MUX
@@ -310,13 +221,6 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 			noti->typec_state.old_state == TYPEC_ATTACHED_CUSTOM_SRC ||
 			noti->typec_state.old_state == TYPEC_ATTACHED_NORP_SRC)
 			&& noti->typec_state.new_state == TYPEC_UNATTACHED) {
-			if (tcpc_kpoc) {
-				vbus = battery_meter_get_charger_voltage();
-				pr_info("%s KPOC Plug out, vbus = %d\n",
-					__func__, vbus);
-				tcpc_mt_power_off();
-				break;
-			}
 			pr_info("%s USB Plug out\n", __func__);
 			charger_ignore_usb(false);
 #if CONFIG_MTK_GAUGE_VERSION == 20
@@ -332,48 +236,16 @@ static int pd_tcp_notifier_call(struct notifier_block *nb,
 #ifdef CONFIG_USB_C_SWITCH_U3_MUX
 			usb3_switch_dps_en(true);
 #endif
-#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
-#if CONFIG_MTK_GAUGE_VERSION == 30
-			ret = charger_dev_enable_chg_type_det(primary_charger, false);
-#else
-			ret = mtk_chr_enable_chr_type_det(false);
-#endif
-#else
-			mtk_pmic_enable_chr_type_det(false);
-#endif
-
-#ifdef MTK_BASE
-#ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
-			boot_mode = get_boot_mode();
-			if (ret < 0) {
-				if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
-					|| boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-					pr_err("%s: notify chg detach fail, power off\n", __func__);
-					kernel_power_off();
-				}
-			}
-#endif /* CONFIG_MTK_KERNEL_POWER_OFF_CHARGING */
-#endif
 		} else if (noti->typec_state.old_state == TYPEC_ATTACHED_SRC &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SNK) {
 			/* source to sink */
 			pr_info("%s: Source_to_Sink\n", __func__);
 			charger_ignore_usb(true);
-#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
-			charger_dev_enable_chg_type_det(primary_charger, true);
-#else
-			mtk_pmic_enable_chr_type_det(true);
-#endif
 		}  else if (noti->typec_state.old_state == TYPEC_ATTACHED_SNK &&
 			noti->typec_state.new_state == TYPEC_ATTACHED_SRC) {
 			/* sink to source */
 			pr_info("%s: Sink_to_Source\n", __func__);
 			charger_ignore_usb(true);
-#ifdef CONFIG_MTK_EXTERNAL_CHARGER_TYPE_DETECT
-			charger_dev_enable_chg_type_det(primary_charger, false);
-#else
-			mtk_pmic_enable_chr_type_det(false);
-#endif
 		}
 		break;
 	case TCP_NOTIFY_PD_STATE:

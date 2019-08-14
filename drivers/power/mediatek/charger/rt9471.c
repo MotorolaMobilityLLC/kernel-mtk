@@ -35,7 +35,9 @@
 
 #include "mtk_charger_intf.h"
 #include "rt9471.h"
-#define RT9471_DRV_VERSION	"1.0.5_MTK"
+#define RT9471_DRV_VERSION	"1.0.6_MTK"
+
+#undef CONFIG_TCPC_CLASS
 
 enum rt9471_stat_idx {
 	RT9471_STATIDX_STAT0 = 0,
@@ -1126,7 +1128,7 @@ static int rt9471_bc12_postprocess(struct rt9471_chip *chip)
 	if (chip->attach == attach) {
 		dev_info(chip->dev, "%s attach(%d) is the same\n",
 				    __func__, attach);
-		inform_psy = false;
+		inform_psy = !attach;
 		goto out;
 	}
 	chip->attach = attach;
@@ -1818,10 +1820,6 @@ static int rt9471_init_setting(struct rt9471_chip *chip)
 	ret = __rt9471_set_dcdt(chip, desc->dcdt);
 	if (ret < 0)
 		dev_notice(chip->dev, "%s set dcdt fail(%d)\n",__func__, ret);
-
-	ret = __rt9471_set_wdt(chip, desc->wdt);
-	if (ret < 0)
-		dev_notice(chip->dev, "%s set wdt fail(%d)\n", __func__, ret);
 
 	ret = __rt9471_set_mivrtrack(chip, desc->mivr_track);
 	if (ret < 0)
@@ -2619,6 +2617,10 @@ MODULE_DESCRIPTION("RT9471 Charger Driver");
 MODULE_VERSION(RT9471_DRV_VERSION);
 /*
  * Release Note
+ * 1.0.6
+ * (1) Always inform psy changed if cable unattach
+ * (2) Disable WDT at init setting
+ *
  * 1.0.5
  * (1) Add suspend_lock
  * (2) Use IRQ to wait chg_rdy
