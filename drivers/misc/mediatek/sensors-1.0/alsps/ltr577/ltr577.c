@@ -77,7 +77,10 @@ static unsigned int cureent_color_ratio = 0;
 	//static char backup_file_path[PS_BUF_SIZE] ="/dev/block/mmcblk0p13";  ///"/dev/block/platform/bootdevice/by-name/proinfo";
 	static char backup_file_path[PS_BUF_SIZE] ="/dev/block/platform/bootdevice/by-name/proinfo";
 //add by fanxzh for ps dynamic cali begin
-	static unsigned int ps_cali_factor = 68;
+	//static unsigned int ps_cali_factor = 68;
+	static unsigned int ps_cali_factor_30 = 43;
+	static unsigned int ps_cali_factor_45 = 74;
+
 	static unsigned int ps_cali_per = 100;
 //add by fanxzh for ps dynamic cali end
 	static mm_segment_t oldfs;
@@ -98,6 +101,10 @@ static unsigned int cureent_color_ratio = 0;
 	static unsigned int ps_detection = -1;
 	static unsigned int ps_thd_val_hlgh_set = 0;
 	static unsigned int ps_thd_val_low_set = 0;
+	static unsigned int ps_threshold_h_tmp = 0;
+	static unsigned int ps_threshold_l_tmp = 0;
+	static unsigned char get_calib_flag = 0;
+
 
 	#define MAX_ADC_PROX_VALUE 2047
 	#define FAR_THRESHOLD(x) (min_proximity<(x)?(x):min_proximity)
@@ -196,7 +203,6 @@ static struct i2c_client *ltr577_i2c_client = NULL;
 
 static DEFINE_MUTEX(ltr577_mutex);
 static DEFINE_MUTEX(ltr577_i2c_mutex);
-static DEFINE_MUTEX(ltr577_work_mutex);
 
 static int ltr577_local_init(void);
 static int ltr577_remove(void);
@@ -651,8 +657,9 @@ static void initKernelEnv(void)
 static int ltr577_read_cali_file(struct i2c_client *client)
 {
 	int mRaw =0;
-	int mRaw40 = 0;
-	int mRaw25 = 0;
+	int mRaw45 = 0;
+	int mRaw30 = 0;
+	int mRaw22 = 0;
 	int err = 0;
 	char buf[PS_CALI_DATA_LEN] = { 0 };  ///PS_CALI_DATA_LEN = 6
 
@@ -690,14 +697,17 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 //add by fanxzh for dynamic cali begin
 	mRaw   = (int)(((int)buf[0])<<8|(0xFF&(int)buf[1]));
 	//mRaw40 = (int)(((int)buf[2])<<8|(0xFF&(int)buf[3]));
-	mRaw25 = (int)(((int)buf[4])<<8|(0xFF&(int)buf[5]));
-	mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
+	mRaw22 = (int)(((int)buf[4])<<8|(0xFF&(int)buf[5]));
+	//mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
+	mRaw30 = mRaw22 - ((ps_cali_factor_30 * (mRaw22 - mRaw)) / ps_cali_per);
+	mRaw45 = mRaw22 - ((ps_cali_factor_45 * (mRaw22 - mRaw)) / ps_cali_per);
 //add by fanxzh for dynamic cali end
 
-	if(mRaw + 8 <mRaw40 && mRaw40 + 8 <mRaw25){
-	ps_nvraw_none_value = mRaw;
-	ps_nvraw_40mm_value = mRaw40;
-	ps_nvraw_25mm_value = mRaw25;
+	if(((mRaw + 8) < mRaw45) && ((mRaw45 + 8) < mRaw30)){
+		ps_nvraw_none_value = mRaw;
+		ps_threshold_l_tmp = ps_nvraw_40mm_value = mRaw45;
+		ps_threshold_h_tmp = ps_nvraw_25mm_value = mRaw30;
+
 	}else{
 		ps_nvraw_none_value = default_none_value;
 		ps_nvraw_40mm_value = between_40mm_none_value;
@@ -772,13 +782,15 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		cali_err = ltr577_read_cali_file(client);
 		if (cali_err < 0)
 		{
+			get_calib_flag = 0;
 			pwindows_value = between_25mm_none_value - between_40mm_none_value;
 			pwave_value = between_40mm_none_value - default_none_value;
 			threshold_value = default_none_value;
 		}else{
-		pwindows_value =ps_nvraw_25mm_value - ps_nvraw_40mm_value;
-		pwave_value = ps_nvraw_40mm_value - ps_nvraw_none_value;
-		threshold_value = ps_nvraw_none_value;
+			get_calib_flag = 1;
+			pwindows_value =ps_nvraw_25mm_value - ps_nvraw_40mm_value;
+			pwave_value = ps_nvraw_40mm_value - ps_nvraw_none_value;
+			threshold_value = ps_nvraw_none_value;
 		}
 #else
 		pwindows_value = between_25mm_none_value - between_40mm_none_value;
@@ -1162,10 +1174,18 @@ static int ltr577_get_ps_value(struct ltr577_priv *obj, u16 ps)
 	if(((ps_data+pwave_value)<min_proximity)&&(ps_data>0))
 	{
 		min_proximity = ps_data+pwave_value;
-		ps_threshold_l = FAR_THRESHOLD(threshold_value);
-		ps_threshold_h = NRAR_THRESHOLD(threshold_value);
+
+		if (get_calib_flag) {
+			ps_threshold_l = ps_threshold_l_tmp;
+			ps_threshold_h = ps_threshold_h_tmp;
+		} else {
+			ps_threshold_l = FAR_THRESHOLD(threshold_value);
+			ps_threshold_h = NRAR_THRESHOLD(threshold_value);
+		}
+
 		ps_thd_val_low_set = ps_threshold_l;
 		ps_thd_val_hlgh_set = ps_threshold_h;
+		APS_DBG("ps_data= %d, min_proximity=%d  threshold_value=%d th_l =%d,th_h =%d\n", ps_data, min_proximity, threshold_value, ps_thd_val_low_set,ps_thd_val_hlgh_set);
 	}
 	if (ps_data >= ps_threshold_h){
 		ps_detection = 0;
@@ -1781,8 +1801,6 @@ static void ltr577_eint_work(struct work_struct *work)
 
 	int distance =-1;
 
-	mutex_lock(&ltr577_work_mutex);
-
 	//get raw data
 	obj->ps = ltr577_ps_read(obj->client, &obj->ps);
 	if (obj->ps < 0)
@@ -1805,7 +1823,6 @@ EXIT_INTR:
 	enable_irq_wake(obj->irq);
 	enable_irq(obj->irq);
 #endif
-	mutex_unlock(&ltr577_work_mutex);
 }
 
 #else
