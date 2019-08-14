@@ -1561,7 +1561,9 @@ void sw_check_bat_plugout(void)
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_UNKNOWN;
 			wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 			battery_update(&battery_main);
+#ifndef SMT_MODE
 			kernel_power_off();
+#endif
 		}
 	}
 }
@@ -2056,7 +2058,12 @@ void fg_bat_plugout_int_handler(void)
 		wakeup_fg_algo(FG_INTR_BAT_PLUGOUT);
 		battery_update(&battery_main);
 		fg_int_event(gm.gdev, EVT_INT_BAT_PLUGOUT);
+#ifndef SMT_MODE
+		bm_err("[%s]is_bat %d miss:%d;poweroff;\n",
+			__func__,
+			is_bat_exist, gm.plug_miss_count);
 		kernel_power_off();
+#endif
 	}
 }
 
@@ -2074,7 +2081,10 @@ void fg_bat_plugout_int_handler_gm25(void)
 		gauge_dev_set_info(gm.gdev, GAUGE_BAT_PLUG_STATUS, 0);
 		en_intr_VBATON_UNDET(0);
 		battery_notifier(EVENT_BATTERY_PLUG_OUT);
+#ifndef SMT_MODE
+		pr_err("%s: bat_exist: %d;poweroff;\n", __func__, is_bat_exist);
 		kernel_power_off();
+#endif
 	}
 }
 
