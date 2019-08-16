@@ -281,6 +281,7 @@ static uint8_t max_vcore_opp;
 static uint8_t max_vvpu_opp;
 static uint8_t max_dsp_freq;
 static struct mutex power_lock_mutex;
+static struct mutex set_power_mutex;
 
 
 /* dvfs */
@@ -3552,6 +3553,7 @@ int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
 	uint8_t vvpu_opp_index = 0xFF;
 	uint8_t dsp_freq_index = 0xFF;
 	int i = 0, core = -1;
+	mutex_lock(&set_power_mutex);
 
 	for (i = 0 ; i < MTK_VPU_CORE ; i++) {
 		/*LOG_DBG("debug i(%d), (0x1 << i) (0x%x)", i, (0x1 << i));*/
@@ -3565,6 +3567,7 @@ int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
 		LOG_ERR("wrong core index (0x%x/%d/%d)",
 				power->core, core, MTK_VPU_CORE);
 		ret = -1;
+		mutex_unlock(&set_power_mutex);
 		return ret;
 	}
 
@@ -3586,13 +3589,16 @@ int vpu_set_power(struct vpu_user *user, struct vpu_power *power)
 		} else {
 			LOG_ERR("wrong opp step (%d)", power->opp_step);
 			ret = -1;
+			mutex_unlock(&set_power_mutex);
 			return ret;
 		}
 	}
+
 	vpu_opp_check(core, vvpu_opp_index, dsp_freq_index);
 	user->power_opp = power->opp_step;
 
 	ret = vpu_get_power(core, false);
+	mutex_unlock(&set_power_mutex);
 	mutex_lock(&(vpu_service_cores[core].state_mutex));
 	vpu_service_cores[core].state = VCT_IDLE;
 	mutex_unlock(&(vpu_service_cores[core].state_mutex));
@@ -3801,6 +3807,7 @@ int vpu_init_hw(int core, struct vpu_device *device)
 		init_waitqueue_head(&lock_wait);
 		mutex_init(&opp_mutex);
 		mutex_init(&power_lock_mutex);
+		mutex_init(&set_power_mutex);
 		init_waitqueue_head(&waitq_change_vcore);
 		init_waitqueue_head(&waitq_do_core_executing);
 		is_locked = false;
