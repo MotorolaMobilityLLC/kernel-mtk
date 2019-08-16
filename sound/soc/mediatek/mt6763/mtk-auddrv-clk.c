@@ -329,7 +329,7 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		goto EXIT;
 	}
 
-	pr_debug("+%s, parentidx = %d\n", __func__, parentidx);
+	/* pr_debug("+%s, parentidx = %d\n", __func__, parentidx); */
 	if (parentidx == 1) {
 		ret = clk_set_parent(aud_clks[CLOCK_MUX_AUDIOINTBUS].clock,
 				     aud_clks[CLOCK_TOP_SYSPLL1_D4].clock);
@@ -350,7 +350,8 @@ void AudDrv_AUDINTBUS_Sel(int parentidx)
 		}
 	}
 EXIT:
-	pr_debug("-%s()\n", __func__);
+	/* pr_debug("-%s()\n", __func__); */
+	return;
 }
 
 static int apll1_mux_setting(bool enable)
@@ -571,8 +572,9 @@ void AudDrv_Clk_On(void)
 	}
 EXIT:
 	mutex_unlock(&auddrv_clk_mutex);
-	pr_debug("-%s, Aud_AFE_Clk_cntr:%d\n",
-		       __func__, Aud_AFE_Clk_cntr);
+	/* pr_debug("-%s, Aud_AFE_Clk_cntr:%d\n",
+	 * __func__, Aud_AFE_Clk_cntr);
+	 */
 }
 EXPORT_SYMBOL(AudDrv_Clk_On);
 
@@ -625,8 +627,9 @@ void AudDrv_Clk_Off(void)
 		Aud_AFE_Clk_cntr = 0;
 	}
 	mutex_unlock(&auddrv_clk_mutex);
-	pr_debug("-!! %s, Aud_AFE_Clk_cntr:%d\n",
-		       __func__, Aud_AFE_Clk_cntr);
+	/* pr_debug("-!! %s, Aud_AFE_Clk_cntr:%d\n",
+	 * __func__, Aud_AFE_Clk_cntr);
+	 */
 }
 EXPORT_SYMBOL(AudDrv_Clk_Off);
 
@@ -785,7 +788,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/* pr_debug("+%s counter = %d\n", __func__, Aud_APLL22M_Clk_cntr); */
 
 	if (Aud_APLL22M_Clk_cntr == 0) {
 		if (aud_clks[CLOCK_APLL22M].clk_prepare) {
@@ -803,7 +806,7 @@ void AudDrv_APLL22M_Clk_On(void)
 	}
 	Aud_APLL22M_Clk_cntr++;
 EXIT:
-	pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/* pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr); */
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -812,7 +815,7 @@ void AudDrv_APLL22M_Clk_Off(void)
 	unsigned long flags = 0;
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
-	pr_debug("+%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/* pr_debug("+%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr); */
 
 	Aud_APLL22M_Clk_cntr--;
 
@@ -832,7 +835,7 @@ EXIT:
 		Aud_APLL22M_Clk_cntr = 0;
 	}
 
-	pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr);
+	/* pr_debug("-%s: counter = %d\n", __func__, Aud_APLL22M_Clk_cntr); */
 	spin_unlock_irqrestore(&auddrv_Clk_lock, flags);
 }
 
@@ -851,7 +854,7 @@ void AudDrv_APLL24M_Clk_On(void)
 	int ret = 0;
 	unsigned long flags = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	/* pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr); */
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
@@ -878,7 +881,7 @@ void AudDrv_APLL24M_Clk_Off(void)
 {
 	unsigned long flags = 0;
 
-	pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr);
+	/* pr_debug("+%s counter = %d\n", __func__, Aud_APLL24M_Clk_cntr); */
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 
@@ -1005,8 +1008,9 @@ void AudDrv_APLL1Tuner_Clk_On(void)
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_APLL1_Tuner_cntr == 0) {
-		pr_debug("+%s, Aud_APLL1_Tuner_cntr:%d\n", __func__,
-			       Aud_APLL1_Tuner_cntr);
+		/* pr_debug("+%s, Aud_APLL1_Tuner_cntr:%d\n", __func__,
+		 * Aud_APLL1_Tuner_cntr);
+		 */
 		if (aud_clks[CLOCK_APLL1_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL1_TUNER].clock);
 			if (ret) {
@@ -1053,8 +1057,9 @@ void AudDrv_APLL2Tuner_Clk_On(void)
 
 	spin_lock_irqsave(&auddrv_Clk_lock, flags);
 	if (Aud_APLL2_Tuner_cntr == 0) {
-		pr_debug("+%s, Aud_APLL2_Tuner_cntr:%d\n", __func__,
-			       Aud_APLL2_Tuner_cntr);
+		/* pr_debug("+%s, Aud_APLL2_Tuner_cntr:%d\n", __func__,
+		 * Aud_APLL2_Tuner_cntr);
+		 */
 
 		if (aud_clks[CLOCK_APLL2_TUNER].clk_prepare) {
 			ret = clk_enable(aud_clks[CLOCK_APLL2_TUNER].clock);
@@ -1107,8 +1112,9 @@ void AudDrv_APLL2Tuner_Clk_Off(void)
 
 void AudDrv_HDMI_Clk_On(void)
 {
-	pr_debug("+%s, Aud_I2S_Clk_cntr:%d\n", __func__,
-		       Aud_HDMI_Clk_cntr);
+	/* pr_debug("+%s, Aud_I2S_Clk_cntr:%d\n", __func__,
+	 * Aud_HDMI_Clk_cntr);
+	 */
 	if (Aud_HDMI_Clk_cntr == 0) {
 		AudDrv_ANA_Clk_On();
 		AudDrv_Clk_On();
@@ -1118,8 +1124,9 @@ void AudDrv_HDMI_Clk_On(void)
 
 void AudDrv_HDMI_Clk_Off(void)
 {
-	pr_debug("+%s, Aud_I2S_Clk_cntr:%d\n", __func__,
-		       Aud_HDMI_Clk_cntr);
+	/* pr_debug("+%s, Aud_I2S_Clk_cntr:%d\n", __func__,
+	 * Aud_HDMI_Clk_cntr);
+	 */
 	Aud_HDMI_Clk_cntr--;
 	if (Aud_HDMI_Clk_cntr == 0) {
 		AudDrv_ANA_Clk_Off();
@@ -1129,8 +1136,9 @@ void AudDrv_HDMI_Clk_Off(void)
 			Aud_HDMI_Clk_cntr);
 		Aud_HDMI_Clk_cntr = 0;
 	}
-	pr_debug("-AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr:%d\n",
-		       Aud_HDMI_Clk_cntr);
+	/* pr_debug("-AudDrv_I2S_Clk_Off, Aud_I2S_Clk_cntr:%d\n",
+	 * Aud_HDMI_Clk_cntr);
+	 */
 }
 
 void AudDrv_Emi_Clk_On(void)
