@@ -154,6 +154,7 @@ static struct LCM_setting_table init_setting[] = {
 	{ 0x36, 0x01, {0x03} },
 	{ 0x53, 0x01, {0x24} },
 	{ 0x55, 0x01, {0x00} },
+	{ 0x35, 0x01, {0x00} },
 	{ 0x11, 0x01, {0x00} },
 	{REGFLAG_DELAY, 65, {} },
 	{ 0x29, 0x01, {0x00} },
@@ -253,7 +254,7 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.CLK_HS_POST = 36;
 
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
+	params->dsi.esd_check_enable = 1;
 	params->dsi.customization_esd_check_enable = 0;
 	params->dsi.lcm_esd_check_table[0].cmd = 0x0A;
 	params->dsi.lcm_esd_check_table[0].count = 1;
