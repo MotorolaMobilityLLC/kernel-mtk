@@ -2211,10 +2211,11 @@ out:
 	LOG_DBG("disable vvpu ret:%d\n", ret1);
 	vvpu_vmdla_vcore_checker();
 	is_power_on[core] = false;
-	if (!is_power_debug_lock)
+	if (!is_power_debug_lock) {
 		opps.dspcore[core].index = 15;
-	opps.dsp.index = 9;
-	opps.ipu_if.index = 9;
+		opps.dsp.index = 9;
+		opps.ipu_if.index = 9;
+	}
 if (g_vpu_log_level > Log_STATE_MACHINE)
 	LOG_INF("[vpu_%d] dis_rc -\n", core);
 	return ret;
