@@ -20,6 +20,7 @@
 /*>>>>> Information get from imgsensor driver*/
 static int32_t g_ccu_sensor_current_fps[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {-1};
 #define SENSOR_NAME_MAX_LEN 50
+
 static struct ccu_sensor_info
 	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAX_NUM] = {0};
 static char g_ccu_sensor_name
@@ -60,12 +61,14 @@ void ccu_set_sensor_info(int32_t sensorType, struct ccu_sensor_info *info)
 			g_ccu_sensor_info[sensorType].sensor_name_string =
 			g_ccu_sensor_name[sensorType];
 		}
+
 		LOG_DBG_MUST("ccu catch sensor %d i2c slave address : 0x%x\n",
 		sensorType, info->slave_addr);
 		LOG_DBG_MUST("ccu catch sensor %d name : %s\n",
 		sensorType, g_ccu_sensor_info[sensorType].sensor_name_string);
 		LOG_DBG_MUST("ccu catch sensor %d i2c_id : %d\n",
 		sensorType, g_ccu_sensor_info[sensorType].i2c_id);
+
 	} else {
 		LOG_DBG_MUST("ccu catch sensor i2c slave address fail!\n");
 	}
@@ -79,6 +82,10 @@ void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr)
 		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB].slave_addr;
 	sensorI2cSlaveAddr[2] =
 		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN2].slave_addr;
+	sensorI2cSlaveAddr[3] =
+		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN3].slave_addr;
+	sensorI2cSlaveAddr[4] =
+		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB2].slave_addr;
 }
 
 void ccu_get_sensor_name(char **sensor_name)
@@ -89,4 +96,8 @@ void ccu_get_sensor_name(char **sensor_name)
 	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB].sensor_name_string;
 	sensor_name[2] =
 	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN2].sensor_name_string;
+	sensor_name[3] =
+	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN3].sensor_name_string;
+	sensor_name[4] =
+	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB2].sensor_name_string;
 }

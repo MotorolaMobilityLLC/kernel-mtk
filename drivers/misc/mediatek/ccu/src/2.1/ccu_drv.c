@@ -857,30 +857,28 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 
 		ret = copy_to_user((void *)arg, &current_fps_list,
 				   sizeof(int32_t) * IMGSENSOR_SENSOR_IDX_MAX_NUM);
-
-		break;
+			break;
 	}
-	case CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR: {
-		int32_t sensorI2cSlaveAddr[3];
+	case CCU_IOCTL_GET_SENSOR_I2C_SLAVE_ADDR:
+		{
+			int32_t sensorI2cSlaveAddr[5];
 
 		ccu_get_sensor_i2c_slave_addr(&sensorI2cSlaveAddr[0]);
-
-		ret = copy_to_user((void *)arg, &sensorI2cSlaveAddr,
-				   sizeof(int32_t) * 3);
+		ret = copy_to_user((void *)arg,
+				&sensorI2cSlaveAddr, sizeof(int32_t) * 5);
 
 		break;
 	}
 
-	case CCU_IOCTL_GET_SENSOR_NAME: {
-#define SENSOR_NAME_MAX_LEN 32
-
-		char *sensor_names[3];
+	case CCU_IOCTL_GET_SENSOR_NAME:
+	{
+		#define SENSOR_NAME_MAX_LEN 32
+		char *sensor_names[5];
 
 		ccu_get_sensor_name(sensor_names);
-
 		if (sensor_names[0] != NULL) {
-			ret = copy_to_user((char *)arg, sensor_names[0],
-					   strlen(sensor_names[0]) + 1);
+			ret = copy_to_user((char *)arg,
+				sensor_names[0], strlen(sensor_names[0])+1);
 			if (ret != 0) {
 				LOG_ERR("copy_to_user 1 failed: %d\n", ret);
 				break;
@@ -888,8 +886,8 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		}
 
 		if (sensor_names[1] != NULL) {
-			ret = copy_to_user(((char *)arg + SENSOR_NAME_MAX_LEN),
-					   sensor_names[1], strlen(sensor_names[1]) + 1);
+			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN),
+				sensor_names[1], strlen(sensor_names[1])+1);
 			if (ret != 0) {
 				LOG_ERR("copy_to_user 2 failed: %d\n", ret);
 				break;
@@ -897,15 +895,32 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		}
 
 		if (sensor_names[2] != NULL) {
-			ret = copy_to_user(((char *)arg + SENSOR_NAME_MAX_LEN * 2),
-					   sensor_names[2], strlen(sensor_names[2]) + 1);
+			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*2),
+				sensor_names[2], strlen(sensor_names[2])+1);
 			if (ret != 0) {
 				LOG_ERR("copy_to_user 3 failed: %d\n", ret);
 				break;
 			}
 		}
 
-#undef SENSOR_NAME_MAX_LEN
+		if (sensor_names[3] != NULL) {
+			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*3),
+				sensor_names[3], strlen(sensor_names[3])+1);
+			if (ret != 0) {
+				LOG_ERR("copy_to_user 4 failed: %d\n", ret);
+				break;
+			}
+		}
+
+		if (sensor_names[4] != NULL) {
+			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*4),
+				sensor_names[4], strlen(sensor_names[4])+1);
+			if (ret != 0) {
+				LOG_ERR("copy_to_user 4 failed: %d\n", ret);
+				break;
+			}
+		}
+		#undef SENSOR_NAME_MAX_LEN
 		break;
 	}
 
