@@ -29,9 +29,9 @@ obj-$(CONFIG_THERMAL) += mtk_tc.o
 obj-$(CONFIG_THERMAL) += mtk_tc_wrapper.o
 #obj-$(CONFIG_THERMAL) += mtk_thermal_ipi.o
 obj-$(CONFIG_THERMAL) += mtk_pmic_efuse.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6359vcore.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6359vproc.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6359vgpu.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6359tsx.o
-obj-$(CONFIG_THERMAL) += mtk_ts_6359dcxo.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6359vcore.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6359vproc.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6359vgpu.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6359tsx.o
+#obj-$(CONFIG_THERMAL) += mtk_ts_6359dcxo.o
 
