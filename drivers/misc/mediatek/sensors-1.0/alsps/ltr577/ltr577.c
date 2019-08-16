@@ -262,7 +262,7 @@ static struct i2c_driver ltr577_i2c_driver = {
 #ifdef ontim_debug_info
 #include <ontim/ontim_dev_dgb.h>
 static char ltr577_prox_version[]="ltr577_mtk_1.0";
-static char ltr577_prox_vendor_name[20]="LITE-ON-ltr577";
+static char ltr577_prox_vendor_name[20] = {0};
 	DEV_ATTR_DECLARE(als_prox)
 	DEV_ATTR_DEFINE("version",ltr577_prox_version)
 	DEV_ATTR_DEFINE("vendor",ltr577_prox_vendor_name)
@@ -532,11 +532,8 @@ static int ltr577_ps_set_thres(void)
 {
 	int res;
 	u8 databuf[2];
-	
 	struct i2c_client *client = ltr577_obj->client;
 	//struct ltr577_priv *obj = ltr577_obj;
-
-	APS_FUN();
 
 	APS_DBG("ps_thd_val_low_set=%d,ps_thd_val_hlgh_set=%d\n", ps_thd_val_low_set,ps_thd_val_hlgh_set);
 
@@ -570,11 +567,12 @@ static int ltr577_ps_set_thres(void)
 	}
 	
 	res = 0;
-		APS_ERR("%s:set thres: %d  end !!\n",__func__,res);
+	APS_DBG("%s:set thres: %d  end !!\n",__func__,res);
+
 	return res;
 	
 EXIT_ERR:
-	APS_ERR("%s:set thres: %d\n",__func__,res);
+	APS_ERR("%s:set thres failed, ret:%d\n",__func__,res);
 	res = LTR577_ERR_I2C;
 	return res;
 }
@@ -1793,6 +1791,20 @@ static void ltr577_cali_ps_work(struct work_struct *work)
 #endif
 /*----------------------------------------------------------------------------*/
 #ifdef HW_dynamic_cali
+static void ltr577_clear_intr(struct i2c_client *client)
+{
+	int ret = 0;
+	u8 regdata = 0;
+
+	ret = ltr577_master_recv(client, LTR577_MAIN_STATUS, &regdata, 0x01);
+	if (ret < 0)
+	{
+		APS_ERR("clear PS interrupt failed, ret = %d\n", ret);
+	}
+	APS_DBG("clear PS interrupt, reg:0x%x\n", regdata);
+
+	return;
+}
 
 static void ltr577_eint_work(struct work_struct *work)
 {
@@ -1800,6 +1812,9 @@ static void ltr577_eint_work(struct work_struct *work)
 	int res = 0;
 
 	int distance =-1;
+
+	//clear interrupt for ltr578 by zhuhui,20190816
+	ltr577_clear_intr(obj->client);
 
 	//get raw data
 	obj->ps = ltr577_ps_read(obj->client, &obj->ps);
@@ -2392,6 +2407,19 @@ static struct miscdevice ltr577_device = {
 };
 
 /*--------------------------------------------------------------------------------*/
+static u8 ltr577_get_chip_id(struct i2c_client *client )
+{
+	int ret = -1;
+	u8 regdata = 0;
+
+	ret = ltr577_master_recv(client, LTR577_PART_ID, &regdata, 0x01);
+	if (ret < 0) {
+		APS_ERR("get part id failed, ret:%d\n", ret);
+	}
+
+	return regdata;
+}
+
 static int ltr577_init_client(void)
 {
 	int res;
@@ -2688,6 +2716,7 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	struct ps_control_path ps_ctl={0};
 	struct ps_data_path ps_data={0};
 	int err = 0;
+	u8 part_id = 0;
 
 	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
         {
@@ -2764,7 +2793,6 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	memcpy(als_value, obj->hw->als_value, sizeof(als_value));
 	atomic_set(&obj->i2c_retry, 3);
 
-
 #ifdef SENSOR_DEFAULT_ENABLED
 	set_bit(CMC_BIT_ALS, &obj->enable);
 	set_bit(CMC_BIT_PS, &obj->enable);
@@ -2772,6 +2800,20 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	clear_bit(CMC_BIT_ALS, &obj->enable);
 	clear_bit(CMC_BIT_PS, &obj->enable);
 #endif
+
+	//get part id
+	part_id = ltr577_get_chip_id(client);
+	if (part_id == 0xB1)
+	{
+		APS_LOG("The chip is LTR578, pard_id:0x%x.\n", part_id);
+		sprintf(&ltr577_prox_vendor_name[0], "LITE-ON-ltr578");
+	}
+	else
+	{
+		APS_LOG("The chip is LTR577, pard_id:0x%x.\n", part_id);
+		sprintf(&ltr577_prox_vendor_name[0], "LITE-ON-ltr577");
+	}
+
 
 	APS_LOG("ltr577_init_client() start...!\n");
 	ltr577_i2c_client = client;
