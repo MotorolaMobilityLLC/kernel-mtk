@@ -427,6 +427,10 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (handle == NULL) {
+		DISPERR(" NULL pointer!!!\n");
+		return;
+	}
 	cmdqRecReset(handle);
 
 	/* 2.wait eof */
@@ -506,6 +510,10 @@ int _switch_mmsys_clk(int mmsys_clk_old, int mmsys_clk_new)
 
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (handle == NULL) {
+		DISPERR(" NULL pointer!!!\n");
+		return -1;
+	}
 	cmdqRecReset(handle);
 
 	if (mmsys_clk_old == MMSYS_CLK_HIGH &&
