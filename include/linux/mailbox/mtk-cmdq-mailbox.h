@@ -123,6 +123,7 @@ struct cmdq_pkt {
 	void			*priv;
 	struct device		*dev;
 	bool			loop;
+	void			*buf_pool;
 };
 
 struct cmdq_thread {
