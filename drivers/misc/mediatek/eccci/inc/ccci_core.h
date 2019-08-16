@@ -482,10 +482,16 @@ typedef enum {
 	CCCI_BIP_TX			= 176,
 	CCCI_UDC_RX			= 177,
 	CCCI_UDC_TX			= 178,
+
 	CCCI_TCHE_RX			= 181,
 	CCCI_TCHE_TX			= 182,
 	CCCI_DISP_RX			= 183,
 	CCCI_DISP_TX			= 184,
+	CCCI_WIFI_RX			= 187,
+	CCCI_WIFI_TX			= 188,
+	CCCI_VTS_RX			= 189,
+	CCCI_VTS_TX			= 190,
+
 
 	CCCI_C2K_PPP_DATA, /* data ch for c2k */
 

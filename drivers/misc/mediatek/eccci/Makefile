@@ -23,7 +23,11 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/scp/$(MTK_PLATFORM)
 
 # common services
+ifeq ($(CONFIG_MTK_MT6295_TMP_TEST), y)
+ccci-y := ccci_core.o ccci_bm.o ccci_modem_tmp.o modem_sys1.o ccci_aee_handle.o
+else
 ccci-y := ccci_core.o ccci_bm.o ccci_modem.o modem_sys1.o ccci_aee_handle.o
+endif
 
 # sub modules
 obj-y += fsm/
