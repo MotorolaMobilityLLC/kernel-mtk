@@ -54,6 +54,11 @@ static void __iomem *GIC_REDIST_BASE;
 void __iomem *MCUSYS_BASE;
 static u32 reg_len_pol0;
 
+__weak unsigned int irq_mask_mode_support(void)
+{
+	return 1;
+}
+
 #ifndef readq
 /* for some kernel config, readq might not be defined, ex aarch32 */
 static inline u64 readq(const void __iomem *addr)
@@ -383,8 +388,9 @@ void mt_irq_unmask_for_sleep_ex(unsigned int virq)
 
 
 #ifndef CONFIG_MTK_INDIRECT_ACCESS
-	if (INT_MSK_CTL0 && hwirq >= 32)
-		writel(~mask, INT_MSK_CTL0 + hwirq / 32 * 4);
+	if (irq_mask_mode_support())
+		if (INT_MSK_CTL0 && hwirq >= 32)
+			writel(~mask, INT_MSK_CTL0 + hwirq / 32 * 4);
 #else
 	if (INDIRECT_ACCESS_BASE && hwirq >= 32) {
 		/* set unmask */
@@ -422,9 +428,11 @@ void mt_irq_unmask_for_sleep(unsigned int hwirq)
 	writel(mask, dist_base + GIC_DIST_ENABLE_SET + hwirq / 32 * 4);
 
 #ifndef CONFIG_MTK_INDIRECT_ACCESS
-	if (INT_MSK_CTL0 && hwirq >= 32) {
-		value = ~mask & readl(INT_MSK_CTL0 + hwirq / 32 * 4);
-		writel(value, INT_MSK_CTL0 + hwirq / 32 * 4);
+	if (irq_mask_mode_support()) {
+		if (INT_MSK_CTL0 && hwirq >= 32) {
+			value = ~mask & readl(INT_MSK_CTL0 + hwirq / 32 * 4);
+			writel(value, INT_MSK_CTL0 + hwirq / 32 * 4);
+		}
 	}
 #else
 	if (INDIRECT_ACCESS_BASE && hwirq >= 32) {
@@ -463,9 +471,11 @@ void mt_irq_mask_for_sleep(unsigned int irq)
 	writel(mask, dist_base + GIC_DIST_ENABLE_CLEAR + irq / 32 * 4);
 
 #ifndef CONFIG_MTK_INDIRECT_ACCESS
-	if (INT_MSK_CTL0 && irq >= 32) {
-		value = mask | readl(INT_MSK_CTL0 + irq / 32 * 4);
-		writel(value, INT_MSK_CTL0 + irq / 32 * 4);
+	if (irq_mask_mode_support()) {
+		if (INT_MSK_CTL0 && irq >= 32) {
+			value = mask | readl(INT_MSK_CTL0 + irq / 32 * 4);
+			writel(value, INT_MSK_CTL0 + irq / 32 * 4);
+		}
 	}
 #else
 	if (INDIRECT_ACCESS_BASE && irq >= 32) {
@@ -756,6 +766,11 @@ int __init mt_gic_ext_init(void)
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mcucfg");
 	MCUSYS_BASE = of_iomap(node, 0);
 
+
+	spin_lock_init(&domain_lock);
+	gic_sched_pm_init();
+	gic_sched_hoplug_init();
+
 	/* XXX */
 	node = of_find_compatible_node(NULL, NULL, "mediatek,mt6577-sysirq");
 	if (!node)
@@ -811,11 +826,6 @@ int __init mt_gic_ext_init(void)
 	}
 
 #endif
-
-	spin_lock_init(&domain_lock);
-	gic_sched_pm_init();
-	gic_sched_hoplug_init();
-
 	pr_notice("### gic-v3 init done. ###\n");
 
 	return 0;
