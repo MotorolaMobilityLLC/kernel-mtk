@@ -960,8 +960,8 @@ int mtk_paris_pinctrl_probe(struct platform_device *pdev,
 #endif
 
 	hw->pctrl = devm_pinctrl_register(&pdev->dev, &mtk_desc, hw);
-	if (err)
-		return err;
+	if (!hw->pctrl)
+		return -ENOMEM;
 
 	err = mtk_build_eint(hw, pdev);
 	if (err)
