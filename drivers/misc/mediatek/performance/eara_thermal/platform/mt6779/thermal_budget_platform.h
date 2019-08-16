@@ -17,16 +17,6 @@
 #ifndef EARA_THRM_PB_PLAT_H
 #define EARA_THRM_PB_PLAT_H
 
-#ifdef MAX
-#undef MAX
-#endif
-#ifdef MIN
-#undef MIN
-#endif
-
-#include <../../../thermal/mt6779/inc/tscpu_settings.h>
-
-#define ENLARGE_GPU_OPP	3
 #define GPU_OPP_RANGE	5
 #define CPU_OPP_NUM	16
 #define KEEP_L_CORE	1
@@ -34,5 +24,7 @@
 #define CLUSTER_B	1
 #define CLUSTER_L	0
 #define CPU_CORE_NUM	8
+
+extern struct mt_gpufreq_power_table_info *pass_gpu_table_to_eara(void);
 
 #endif
