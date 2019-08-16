@@ -15,3 +15,8 @@ unsigned int irq_sw_mode_support(void)
 {
 	return 1;
 }
+
+unsigned int irq_mask_mode_support(void)
+{
+	return 0;
+}
