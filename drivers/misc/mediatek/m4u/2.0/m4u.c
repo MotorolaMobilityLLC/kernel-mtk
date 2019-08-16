@@ -721,7 +721,7 @@ int m4u_alloc_mva(struct m4u_client_t *client, M4U_PORT_ID port,
 #ifdef M4U_PROFILE
 	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_ALLOC_MVA],
 			 MMPROFILE_FLAG_START, va,
-			 size);
+			 current->pid);
 #endif
 
 	if (va && sg_table) {
@@ -956,7 +956,7 @@ int m4u_dealloc_mva(struct m4u_client_t *client, M4U_PORT_ID port,
 #ifdef M4U_PROFILE
 	mmprofile_log_ex(M4U_MMP_Events[M4U_MMP_DEALLOC_MVA],
 			 MMPROFILE_FLAG_START,
-			 port, mva);
+			 (current->pid), mva);
 #endif
 
 	pMvaInfo = m4u_client_find_buf(client, mva, 1);
