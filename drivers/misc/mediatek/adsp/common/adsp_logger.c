@@ -501,7 +501,7 @@ int adsp_logger_init(void)
 	last_ofs += ADSP_A_log_ctl->buff_size;
 
 	if (last_ofs > size) {
-		pr_warn("[ADSP]:%s() initial fail, last_ofs=%u, size=%llu\n",
+		pr_warn("[ADSP]:%s() initial fail, last_ofs=%u, size=%zu\n",
 		       __func__, last_ofs, size);
 		goto error;
 	}
