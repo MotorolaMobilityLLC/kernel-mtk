@@ -353,6 +353,16 @@ static void mtk_vdec_queue_stop_play_event(struct mtk_vcodec_ctx *ctx)
 	v4l2_event_queue_fh(&ctx->fh, &ev_eos);
 }
 
+static void mtk_vdec_queue_noseqheader_event(struct mtk_vcodec_ctx *ctx)
+{
+	static const struct v4l2_event ev_eos = {
+		.type = V4L2_EVENT_MTK_VDEC_NOHEADER,
+	};
+
+	mtk_v4l2_debug(1, "[%d]", ctx->id);
+	v4l2_event_queue_fh(&ctx->fh, &ev_eos);
+}
+
 static void mtk_vdec_queue_error_event(struct mtk_vcodec_ctx *ctx)
 {
 	static const struct v4l2_event ev_error = {
@@ -1788,7 +1798,7 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 	unsigned int src_chg = 0;
 	bool res_chg = false;
 	bool mtk_vcodec_unsupport = false;
-	bool wait_seq_header = false;
+	bool need_seq_header = false;
 	int ret = 0;
 	unsigned long frame_size[2];
 	unsigned int i = 0;
@@ -1880,9 +1890,9 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 	res_chg = ((src_chg & VDEC_RES_CHANGE) != 0U) ? true : false;
 	mtk_vcodec_unsupport = ((src_chg & VDEC_HW_NOT_SUPPORT) != 0) ?
 						   true : false;
-	wait_seq_header = ((src_chg & VDEC_NEED_SEQ_HEADER) != 0U) ?
+	need_seq_header = ((src_chg & VDEC_NEED_SEQ_HEADER) != 0U) ?
 					  true : false;
-	if (ret || !res_chg || mtk_vcodec_unsupport || wait_seq_header) {
+	if (ret || !res_chg || mtk_vcodec_unsupport || need_seq_header) {
 		/*
 		 * fb == NULL menas to parse SPS/PPS header or
 		 * resolution info in src_mem. Decode can fail
@@ -1903,7 +1913,11 @@ static void vb2ops_vdec_buf_queue(struct vb2_buffer *vb)
 			mtk_vcodec_unsupport);
 
 		/* If not support the source, eg: w/h, bitdepth, level, we need to stop to play it */
-		if (mtk_vcodec_unsupport || last_frame_type != NON_EOS) {
+		if (need_seq_header) {
+			mtk_v4l2_err("[%d]Error!! Need seq header!",
+						 ctx->id);
+			mtk_vdec_queue_noseqheader_event(ctx);
+		} else if (mtk_vcodec_unsupport || last_frame_type != NON_EOS) {
 			mtk_v4l2_err("[%d]Error!! Codec driver not support the file!",
 						 ctx->id);
 			mtk_vdec_queue_error_event(ctx);
