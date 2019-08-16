@@ -3,7 +3,13 @@
 #
 
 ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
-
+ifeq ($(CONFIG_TRUSTONIC_TEE_SUPPORT),y)
+	include $(srctree)/drivers/misc/mediatek/gud/Makefile.include
+	subdir-ccflags-y += -I$(srctree)/drivers/spi/trustzone/spi/Tlspi/inc
+	subdir-ccflags-y += -I$(srctree)/drivers/spi/trustzone/spi/drspi/public
+endif
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 # small core, mostly translating board-specific
 # config declarations into driver model code
 obj-$(CONFIG_SPI_MASTER)		+= spi.o
