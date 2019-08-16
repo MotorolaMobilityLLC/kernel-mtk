@@ -30,6 +30,7 @@ void mtk_prepare_venc_dvfs(void);
 void mtk_unprepare_venc_dvfs(void);
 void mtk_prepare_venc_emi_bw(void);
 void mtk_unprepare_venc_emi_bw(void);
+void mtk_release_pmqos(struct mtk_vcodec_ctx *ctx);
 
 void mtk_venc_pmqos_prelock(struct mtk_vcodec_ctx *ctx);
 void mtk_venc_pmqos_begin_frame(struct mtk_vcodec_ctx *ctx);

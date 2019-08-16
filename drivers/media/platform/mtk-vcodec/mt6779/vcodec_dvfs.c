@@ -21,7 +21,7 @@
 #include <linux/slab.h>
 #include "vcodec_dvfs.h"
 
-#define MAX_SUBMIT (33*1000)
+#define MAX_SUBMIT 33333
 #define SHOW_ALGO_INFO 0
 
 long long div_64(long long a, long long b)
@@ -207,6 +207,25 @@ struct codec_history *find_hist(void *handle, struct codec_history *head)
 	return head;
 }
 
+
+/**
+ * free_hist_by_handle = free the history specified by the handle
+ *
+ * Returns 0 if history is found and freed
+ *         -1 if there is nothing to free
+ */
+int free_hist_by_handle(void *handle, struct codec_history **head)
+{
+	struct codec_history *target = 0;
+
+	target = find_hist(handle, *head);
+	if (target == 0)
+		return -1;
+
+	return free_hist_(head, target);
+}
+
+
 /**
  * find_calc_idx - helper function to find the starting (first_idx) and
  *                 previous (prev_idx) index of current history
@@ -286,8 +305,23 @@ long long est_next_submit(struct codec_history *hist)
  */
 int est_new_kcy(struct codec_history *hist)
 {
+	long long tot_time = 0;
+	int i = 0;
 	if (hist == 0)
 		return 0;
+
+	/* Special SW/HW separation case for single 60FPS */
+	if (hist->sw_time[0] != 0) {
+		tot_time = 0;
+		for (i = 0; i < MAX_HISTORY; i++) {
+			/* Sum SW time*/
+			tot_time += hist->sw_time[i];
+		}
+		tot_time = tot_time / MAX_HISTORY;
+
+		return (hist->tot_kcy / hist->cur_cnt) +
+			((tot_time * 364LL) / 1000LL);
+	}
 
 	return (hist->tot_kcy / hist->cur_cnt);
 }
@@ -328,6 +362,14 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 	} else {
 		*kcy += est_new_kcy(hist);
 		deadline = est_next_submit(hist);
+		if (head->next == 0 &&
+			((hist->submit_interval < 17000LL &&
+			hist->submit_interval > 16000LL) ||
+			(hist->submit_interval < 34000LL &&
+			hist->submit_interval > 33000LL))) {
+			/* single instance 4K30 / 60fps */
+			deadline = now_us + hist->submit_interval;
+		}
 		if (deadline == 0)
 			*t_us = now_us;
 		else {
@@ -335,6 +377,7 @@ int est_next_job(long long now_us, long long *t_us, int *kcy, int *min_mhz,
 				exec_dur = deadline - now_us;
 				exec_dur = (exec_dur > (MAX_SUBMIT * 2)) ?
 						(MAX_SUBMIT * 2) : exec_dur;
+
 				new_mhz = div_64((*kcy) * 1000LL, exec_dur);
 				if (new_mhz > *min_mhz)
 					*min_mhz = (int)new_mhz;
@@ -392,9 +435,11 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 	hist_idx = hist->cur_idx;
 	prev_idx = (hist_idx == 0) ? (MAX_HISTORY-1) : (hist_idx-1);
 
-	/* Previous history is too far away, restart */
-	if (hist->cur_cnt > 1 &&
-		(job->submit - hist->submit[prev_idx]) > MAX_SUBMIT_GAP) {
+	/* Previous history is too far away or instance count change, restart */
+	if ((hist->cur_cnt > 1 &&
+		(job->submit - hist->submit[prev_idx]) > MAX_SUBMIT_GAP)
+		|| (job->hw_kcy > 0 && hist->sw_time[prev_idx] == 0)
+		|| (job->hw_kcy == 0 && hist->sw_time[prev_idx] > 0)) {
 #if SHOW_ALGO_INFO
 		pr_info("%s %p, gap (%lld), reset hist\n", __func__,
 			hist->handle, (job->submit-hist->submit[prev_idx]));
@@ -403,12 +448,34 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 		memset(hist->submit, 0, sizeof(long long)*MAX_HISTORY);
 		memset(hist->start, 0, sizeof(long long)*MAX_HISTORY);
 		memset(hist->end, 0, sizeof(long long)*MAX_HISTORY);
+		memset(hist->sw_time, 0, sizeof(long long)*MAX_HISTORY);
 
-		hist->kcy[0] = (int)div_64(job->mhz * (job->end - job->start),
-					1000LL);
+		if (job->hw_kcy > 0) {
+			hist->kcy[hist_idx] = job->hw_kcy;
+		} else {
+			hist->kcy[0] =
+				(int)div_64(job->mhz * (job->end - job->start),
+				1000LL);
+		}
 		hist->submit[0] = job->submit;
 		hist->start[0] = job->start;
 		hist->end[0] = job->end;
+		if (job->hw_kcy > 0) {
+			hist->sw_time[0] = job->end - job->start -
+						(job->hw_kcy * 1000 / job->mhz);
+			if (hist->sw_time[hist_idx] < 500) {
+				/* If HW is running at higher clock than
+				 * requested
+				 */
+				hist->sw_time[hist_idx] = 1300;
+			}
+#if SHOW_ALGO_INFO
+			pr_info("st0 e %lld,s %lld,mhz %d,hw %lld,sw %lld\n",
+				job->end, job->start, job->mhz,
+				(job->hw_kcy * 1000 / job->mhz),
+				hist->sw_time[0]);
+#endif
+		}
 		hist->cur_idx = 1; /* cur_idx = 0 + 1 (updated for next) */
 		hist->cur_cnt = 1;
 		hist->tot_kcy = hist->kcy[0];
@@ -419,8 +486,13 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 
 	/* Update history */
 	if (hist->cur_cnt == MAX_HISTORY) {
-		hist->tot_kcy = hist->tot_kcy - hist->kcy[hist_idx] +
+		if (job->hw_kcy != 0) {
+			hist->tot_kcy = hist->tot_kcy - hist->kcy[hist_idx] +
+					job->hw_kcy;
+		} else {
+			hist->tot_kcy = hist->tot_kcy - hist->kcy[hist_idx] +
 			(int)div_64(job->mhz * (job->end - job->start), 1000);
+		}
 		hist->tot_time = hist->tot_time -
 				(hist->end[hist_idx] - hist->start[hist_idx]) +
 				(job->end - job->start);
@@ -430,8 +502,13 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 #endif
 	} else {
 		hist->cur_cnt++;
-		hist->tot_kcy = hist->tot_kcy +
+		if (job->hw_kcy != 0) {
+			hist->tot_kcy = hist->tot_kcy - hist->kcy[hist_idx] +
+					job->hw_kcy;
+		} else {
+			hist->tot_kcy = hist->tot_kcy +
 			(int)div_64(job->mhz * (job->end - job->start), 1000);
+		}
 		hist->tot_time = hist->tot_time + (job->end - job->start);
 #if SHOW_ALGO_INFO
 		pr_info("%s 2 kcy %d, time %llu, cnt %d\n", __func__,
@@ -439,12 +516,31 @@ int update_hist_item(struct codec_job *job, struct codec_history *hist)
 #endif
 	}
 
-	hist->kcy[hist_idx] = (int)div_64(job->mhz * (job->end - job->start),
-					1000LL);
+	if (job->hw_kcy != 0) {
+		hist->kcy[hist_idx] = job->hw_kcy;
+	} else {
+		hist->kcy[hist_idx] =
+			(int)div_64(job->mhz * (job->end - job->start), 1000LL);
+	}
 	hist->submit[hist_idx] = job->submit;
 	hist->start[hist_idx] = job->start;
 	hist->end[hist_idx] = job->end;
-
+	if (job->hw_kcy != 0) {
+		hist->sw_time[hist_idx] = job->end - job->start -
+						(job->hw_kcy * 1000 / job->mhz);
+		if (hist->sw_time[hist_idx] < 500) {
+			/* If HW is running at higher clock than requested */
+			hist->sw_time[hist_idx] = 1300;
+		}
+#if SHOW_ALGO_INFO
+		pr_info("st e %lld,s %lld,mhz %d,hw %lld,sw %lld\n",
+			job->end, job->start, job->mhz,
+			(job->hw_kcy * 1000 / job->mhz),
+			hist->sw_time[hist_idx]);
+#endif
+	} else {
+		hist->sw_time[hist_idx] = 0;
+	}
 #if SHOW_ALGO_INFO
 	pr_info("%s %p, mhz %d, sub %lld, start %lld, end %lld\n", __func__,
 		hist->handle, job->mhz, job->submit, job->start, job->end);
