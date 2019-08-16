@@ -276,6 +276,21 @@ static int init_cpu_info(void)
 }
 late_initcall_sync(init_cpu_info)
 
+void set_sched_turn_point_cap(void)
+{
+	int turn_point_idx;
+	struct hmp_domain *domain;
+	int cpu;
+	const struct sched_group_energy *sge_core;
+
+	domain = list_entry(hmp_domains.prev, struct hmp_domain, hmp_domains);
+	cpu = cpumask_first(&domain->possible_cpus);
+	sge_core = cpu_core_energy(cpu);
+
+	turn_point_idx = max(upower_get_turn_point() - 1, 0);
+	cpu_eff_tp = sge_core->cap_states[turn_point_idx].cap;
+}
+
 static int __init parse_dt_eas(void)
 {
 	struct device_node *cn;
