@@ -11,7 +11,6 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-#include <generated/autoconf.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/module.h>
@@ -34,13 +33,11 @@
 #include <linux/time.h>
 #include <linux/uaccess.h>
 
-#include <mt-plat/mtk_battery.h>
+#include <mt-plat/charger_type.h>
+#include <mt-plat/mtk_boot.h>
 #include <mt-plat/upmu_common.h>
 #include <mach/upmu_sw.h>
 #include <mach/upmu_hw.h>
-#include <mt-plat/mtk_boot.h>
-#include <mt-plat/charger_type.h>
-#include <mt-plat/mtk_boot.h>
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 #include <mt-plat/mtk_usb2jtag.h>
@@ -55,14 +52,13 @@ static enum charger_type g_chr_type;
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static struct work_struct chr_work;
 #endif
-
 static DEFINE_MUTEX(chrdet_lock);
+static struct power_supply *chrdet_psy;
 
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
 static bool first_connect = true;
 #endif
 
-static struct power_supply *chrdet_psy;
 static int chrdet_inform_psy_changed(enum charger_type chg_type,
 				     bool chg_online)
 {
@@ -70,30 +66,30 @@ static int chrdet_inform_psy_changed(enum charger_type chg_type,
 	union power_supply_propval propval;
 
 	pr_debug("charger type: %s: online = %d, type = %d\n", __func__,
-	       chg_online, chg_type);
+		 chg_online, chg_type);
 
 	/* Inform chg det power supply */
 	if (chg_online) {
 		propval.intval = chg_online;
-		ret = power_supply_set_property(
-		    chrdet_psy, POWER_SUPPLY_PROP_ONLINE, &propval);
+		ret = power_supply_set_property(chrdet_psy,
+				POWER_SUPPLY_PROP_ONLINE, &propval);
 		if (ret < 0)
-			pr_debug("%s: psy online failed, ret = %d\n", __func__,
-			       ret);
+			pr_debug("%s: psy online failed, ret = %d\n",
+				__func__, ret);
 
 		propval.intval = chg_type;
-		ret = power_supply_set_property(
-		    chrdet_psy, POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
+		ret = power_supply_set_property(chrdet_psy,
+				POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 		if (ret < 0)
-			pr_debug("%s: psy type failed, ret = %d\n", __func__,
-			       ret);
+			pr_debug("%s: psy type failed, ret = %d\n",
+				__func__, ret);
 
 		return ret;
 	}
 
 	propval.intval = chg_type;
-	ret = power_supply_set_property(
-	    chrdet_psy, POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
+	ret = power_supply_set_property(chrdet_psy,
+				POWER_SUPPLY_PROP_CHARGE_TYPE, &propval);
 	if (ret < 0)
 		pr_debug("%s: psy type failed, ret(%d)\n", __func__, ret);
 
@@ -106,40 +102,37 @@ static int chrdet_inform_psy_changed(enum charger_type chg_type,
 }
 
 #if defined(CONFIG_FPGA_EARLY_PORTING)
-/*****************************************************************************
- * FPGA
- ******************************************************************************/
+/* FPGA */
 int hw_charging_get_charger_type(void)
 {
+	/* Force Standard USB Host */
 	g_chr_type = STANDARD_HOST;
 	chrdet_inform_psy_changed(g_chr_type, 1);
 	return g_chr_type;
 }
 
 #else
-/*****************************************************************************
- * EVB / Phone
- ******************************************************************************/
+/* EVB / Phone */
 static void hw_bc11_init(void)
 {
-	int timeout = 20;
+	int timeout = 200;
 
 	msleep(200);
 
 	if (first_connect == true) {
 		/* add make sure USB Ready */
 		if (is_usb_rdy() == false) {
-			pr_debug("CDP, block\n");
+			pr_info("CDP, block\n");
 			while (is_usb_rdy() == false && timeout > 0) {
 				msleep(100);
 				timeout--;
 			}
 			if (timeout == 0)
-				pr_debug("CDP, timeout\n");
+				pr_info("CDP, timeout\n");
 			else
-				pr_debug("CDP, free\n");
+				pr_info("CDP, free\n");
 		} else
-			pr_debug("CDP, PASS\n");
+			pr_info("CDP, PASS\n");
 		first_connect = false;
 	}
 
@@ -256,8 +249,7 @@ static unsigned int hw_bc11_stepB2(void)
 	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x0);
 	if (wChargerAvail == 1) {
 		bc11_set_register_value(PMIC_RG_BC11_VSRC_EN, 0x2);
-		pr_debug(
-		    "charger type: DCP, keep DM voltage source in stepB2\n");
+		pr_debug("charger type: DCP, keep DM voltage source in stepB2\n");
 	}
 	return wChargerAvail;
 }
@@ -318,8 +310,7 @@ int hw_charging_get_charger_type(void)
 
 #ifdef CONFIG_MTK_USB2JTAG_SUPPORT
 	if (usb2jtag_mode()) {
-		pr_debug(
-		    "[USB2JTAG] in usb2jtag mode, skip charger detection\n");
+		pr_debug("[USB2JTAG] in usb2jtag mode, skip charger detection\n");
 		return STANDARD_HOST;
 	}
 #endif
@@ -356,16 +347,12 @@ int hw_charging_get_charger_type(void)
 	return CHR_Type_num;
 }
 
-/*****************************************************************************
- * Charger Detection
- ******************************************************************************/
 void mtk_pmic_enable_chr_type_det(bool en)
 {
 #ifndef CONFIG_TCPC_CLASS
 	if (!mt_usb_is_device()) {
 		g_chr_type = CHARGER_UNKNOWN;
-		pr_info(
-			"charger type: UNKNOWN, Now is usb host mode. Skip  detection\n");
+		pr_info("charger type: UNKNOWN, Now is usb host mode. Skip detection\n");
 		return;
 	}
 #endif
@@ -375,8 +362,7 @@ void mtk_pmic_enable_chr_type_det(bool en)
 	if (en) {
 		if (is_meta_mode()) {
 			/* Skip charger type detection to speed up meta boot */
-			pr_notice(
-			    "charger type: force Standard USB Host in meta\n");
+			pr_notice("charger type: force Standard USB Host in meta\n");
 			g_chr_type = STANDARD_HOST;
 			chrdet_inform_psy_changed(g_chr_type, 1);
 		} else {
@@ -402,24 +388,23 @@ void do_charger_detect(void)
 		mtk_pmic_enable_chr_type_det(false);
 }
 
-/*****************************************************************************
- * PMIC Int Handler
- ******************************************************************************/
+/* PMIC Int Handler */
 void chrdet_int_handler(void)
 {
-/*
- * pr_debug("[chrdet_int_handler]CHRDET status = %d....\n",
- *	pmic_get_register_value(PMIC_RGS_CHRDET));
- */
+	/*
+	 * pr_debug("[chrdet_int_handler]CHRDET status = %d....\n",
+	 *	pmic_get_register_value(PMIC_RGS_CHRDET));
+	 */
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
 	if (!pmic_get_register_value(PMIC_RGS_CHRDET)) {
 		int boot_mode = 0;
 
+		hw_bc11_done();
 		boot_mode = get_boot_mode();
 
-		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT ||
-		    boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
-			pr_debug("[%s] Unplug Charger/USB\n", __func__);
+		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+		    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
+			pr_info("[%s] Unplug Charger/USB\n", __func__);
 #ifndef CONFIG_TCPC_CLASS
 			mt_power_off();
 #else
@@ -431,9 +416,7 @@ void chrdet_int_handler(void)
 	do_charger_detect();
 }
 
-/************************************************/
-/* Charger Probe Related
- *************************************************/
+/* Charger Probe Related */
 #ifdef __SW_CHRDET_IN_PROBE_PHASE__
 static void do_charger_detection_work(struct work_struct *data)
 {
@@ -447,7 +430,7 @@ static int __init pmic_chrdet_init(void)
 	mutex_init(&chrdet_lock);
 	chrdet_psy = power_supply_get_by_name("charger");
 	if (!chrdet_psy) {
-		pr_debug("%s: get power supply failed\n", __func__);
+		pr_notice("%s: get power supply failed\n", __func__);
 		return -EINVAL;
 	}
 
@@ -467,4 +450,4 @@ static int __init pmic_chrdet_init(void)
 
 late_initcall(pmic_chrdet_init);
 
-#endif
+#endif /* CONFIG_FPGA_EARLY_PORTING */
