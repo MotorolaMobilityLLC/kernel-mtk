@@ -973,11 +973,11 @@ static void get_segment_from_efuse(void)
 	segment = get_devinfo_with_index(7) & 0xFF;
 	switch (segment) {
 	case 0x7://segment p90M 5mode
-		segment_max_opp = 5;
+		segment_max_opp = 0;
 		segment_index = SEGMENT_90M;
 		break;
 	case 0xE0://segment p90M 6mode 525M
-		segment_max_opp = 5;
+		segment_max_opp = 0;
 		segment_index = SEGMENT_90M;
 		break;
 	case 0x20://p95
