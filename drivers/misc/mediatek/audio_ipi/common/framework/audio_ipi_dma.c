@@ -305,7 +305,7 @@ int init_audio_ipi_dma(const uint8_t task)
 		goto IPI_DMA_INIT_EXIT;
 	}
 	pr_info(
-		"opendsp_id %u, dma %p, phy %p/0x%lx, vir %p/0x%lx, sz 0x%x, checksum %u, offset %u, cache align mask %u"
+		"opendsp_id %u, dma %p, phy %p/0x%llx, vir %p/0x%llx, sz 0x%x, checksum %u, offset %u, cache align mask %u"
 		, opendsp_id,
 		dma,
 		dma->base_phy.addr,
@@ -457,7 +457,7 @@ int audio_ipi_dma_alloc(
 		return -ENOMEM;
 	}
 	if (phy_addr == NULL || virt_addr == NULL || size == 0) {
-		pr_info("arg err, %p, %u", phy_addr, virt_addr, size);
+		pr_info("arg err, %p, %p, %u", phy_addr, virt_addr, size);
 		return -EINVAL;
 	}
 	if (g_dsp_init_flag[opendsp_id] == false) {
@@ -498,7 +498,7 @@ int audio_ipi_dma_free(const uint8_t task,
 		return -ENOMEM;
 	}
 	if (phy_addr == 0 || size == 0) {
-		pr_info("arg err, %u, %u", phy_addr, size);
+		pr_info("arg err, %llu, %u", phy_addr, size);
 		return -EINVAL;
 	}
 
