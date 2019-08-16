@@ -3056,6 +3056,9 @@ out:
 				cnt++;
 			}
 		}
+		vpu_hw_ion_free_handle(my_ion_client,
+			(struct ion_handle *)
+			   ((uintptr_t)(req->sett.sett_ion_fd)));
 
 		/* if req is null, we should not do anything of
 		 * following codes
