@@ -940,6 +940,14 @@ static void ram_console_update(void)
 		print_once = false;
 		k = 0;
 
+		if (DBG_ID == DBG_ID_MD1) {
+			if (DBG_STEP == 1 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Release bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_CLR,
+					MD1_PROT_STEP1_0_MASK);
+			}
+		}
+
 		if (DBG_ID == DBG_ID_CONN) {
 			if (DBG_STEP == 0 && DBG_STA == STA_POWER_DOWN) {
 				/* TINFO="Release bus protect - step1 : 0" */
@@ -985,6 +993,19 @@ static void ram_console_update(void)
 		list_for_each_entry_reverse(pgcb, &pgcb_list, list) {
 			if (pgcb->debug_dump)
 				pgcb->debug_dump(DBG_ID);
+		}
+
+		if (DBG_ID == DBG_ID_MD1) {
+			if (DBG_STEP == 1 && DBG_STA == STA_POWER_DOWN) {
+				/* TINFO="Set bus protect - step1 : 0" */
+				spm_write(INFRA_TOPAXI_PROTECTEN_SET,
+					MD1_PROT_STEP1_0_MASK);
+
+				while ((spm_read(INFRA_TOPAXI_PROTECTEN_STA1)
+					& MD1_PROT_STEP1_0_ACK_MASK)
+					!= MD1_PROT_STEP1_0_ACK_MASK)
+					;
+			}
 		}
 
 		if (DBG_ID == DBG_ID_CONN) {
