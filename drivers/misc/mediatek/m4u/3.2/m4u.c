@@ -1781,7 +1781,9 @@ static int __m4u_sec_init(void)
 		goto out;
 	}
 
-	ret = ctx->m4u_msg->rsp;
+	M4ULOG_HIGH("%s ret:0x%x, rsp:0x%x\n",
+		__func__, ret, ctx->m4u_msg->rsp);
+	/* ret = ctx->m4u_msg->rsp; */
 out:
 #ifdef CONFIG_MACH_MT6779
 	for (i = 0; i < SMI_LARB_NR; i++)
