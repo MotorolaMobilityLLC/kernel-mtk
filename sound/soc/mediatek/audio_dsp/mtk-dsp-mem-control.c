@@ -834,7 +834,7 @@ int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp)
 
 		ret = mtk_scp_ipi_send(
 			get_dspscene_by_dspdaiid(task_id), AUDIO_IPI_PAYLOAD,
-			AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_MSGA2DSHAREMEM,
+			AUDIO_IPI_MSG_BYPASS_ACK, AUDIO_DSP_TASK_MSGA2DSHAREMEM,
 			sizeof(struct audio_dsp_dram), 0,
 			(char *)dsp->dsp_mem[task_id].ipi_payload_buf);
 
@@ -850,7 +850,7 @@ int mtk_init_adsp_audio_share_mem(struct mtk_base_dsp *dsp)
 		}
 		ret = mtk_scp_ipi_send(
 			get_dspscene_by_dspdaiid(task_id), AUDIO_IPI_PAYLOAD,
-			AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_MSGD2ASHAREMEM,
+			AUDIO_IPI_MSG_BYPASS_ACK, AUDIO_DSP_TASK_MSGD2ASHAREMEM,
 			sizeof(struct audio_dsp_dram), 0,
 			(char *)dsp->dsp_mem[task_id].ipi_payload_buf);
 	}
