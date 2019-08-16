@@ -18,6 +18,9 @@
 #include <asm/siginfo.h>
 #include <linux/rcupdate.h>
 #include <linux/sched.h>
+#include <linux/regulator/driver.h>
+#include "../../../../../../../../../../drivers/regulator/internal.h"
+#include "kd_imgsensor.h"
 
 static const int regulator_voltage[] = {
 	REGULATOR_VOLTAGE_0,
@@ -26,6 +29,12 @@ static const int regulator_voltage[] = {
 	REGULATOR_VOLTAGE_1200,
 	REGULATOR_VOLTAGE_1210,
 	REGULATOR_VOLTAGE_1220,
+	REGULATOR_VOLTAGE_1250,
+	REGULATOR_VOLTAGE_1260,
+	REGULATOR_VOLTAGE_1270,
+	REGULATOR_VOLTAGE_1280,
+	REGULATOR_VOLTAGE_1290,
+	REGULATOR_VOLTAGE_1300,
 	REGULATOR_VOLTAGE_1500,
 	REGULATOR_VOLTAGE_1800,
 	REGULATOR_VOLTAGE_2500,
@@ -263,6 +272,9 @@ static enum IMGSENSOR_RETURN regulator_set(
 	if (pregulator) {
 		if (pin_state != IMGSENSOR_HW_PIN_STATE_LEVEL_0) {
 
+			unsigned int voltage = regulator_voltage[
+				pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0];
+
 			if (regulator_set_voltage(
 				pregulator,
 				regulator_voltage[
@@ -275,6 +287,41 @@ static enum IMGSENSOR_RETURN regulator_set(
 				    pin,
 				    regulator_voltage[
 				   pin_state - IMGSENSOR_HW_PIN_STATE_LEVEL_0]);
+			}
+			if ((voltage >= REGULATOR_VOLTAGE_1200)
+			   && (voltage < REGULATOR_VOLTAGE_1300)) {
+				if (strcmp(pregulator->rdev->desc->name,
+					"vdram") == 0) {
+					unsigned int regcode =
+						((voltage -
+						REGULATOR_VOLTAGE_1200)
+						/1000)/10;
+
+					pr_info("set vdram to %dmV with pmic\n",
+						voltage/1000);
+					mt6357_upmu_set_tma_key(40104);
+					if (mt6357_upmu_set_rg_vdram_vosel_1
+						(2))
+						pr_debug("[regulator]fail to mt6357_upmu_set_rg_vdram_vosel.\n");
+					if (mt6357_upmu_set_rg_vdram_vocal_1
+						(regcode))
+						pr_debug("[regulator]fail to mt6357_upmu_set_rg_vdram_vocal.\n");
+					pr_info("set vdram ok for gc8034!\n");
+
+				} else if (strcmp(pregulator->rdev->desc->name,
+					"vcamd") == 0) {
+					unsigned int regcode =
+						((voltage -
+						REGULATOR_VOLTAGE_1200)
+						/1000)/10;
+
+					pr_info("set vcamd to %dmV with pmic\n",
+						voltage/1000);
+					if (regcode &&
+						mt6357_upmu_set_rg_vcamd_vocal
+						(regcode))
+						pr_debug("[regulator]fail to mt6357_upmu_set_rg_vcamd_vocal.\n");
+				}
 			}
 			if (regulator_enable(pregulator)) {
 				pr_debug(
@@ -289,7 +336,17 @@ static enum IMGSENSOR_RETURN regulator_set(
 		} else {
 			if (regulator_is_enabled(pregulator)) {
 				/*pr_debug("[regulator]%d is enabled\n", pin);*/
-
+				if (strcmp(pregulator->rdev->desc->name,
+					"vdram") == 0) {
+					pr_info("set vdram cal to clear\n");
+					if (mt6357_upmu_set_rg_ldo_vdram_en(0))
+						pr_debug("[regulator]fail to mt6357_upmu_set_rg_ldo_vdram_en.\n");
+				} else if (strcmp(pregulator->rdev->desc->name,
+				"vcamd") == 0) {
+					pr_info("set vcamd cal to clear\n");
+					if (mt6357_upmu_set_rg_vcamd_vocal(0))
+						pr_debug("[regulator]fail to mt6357_upmu_set_rg_vcamd_vocal.\n");
+				}
 				if (regulator_disable(pregulator)) {
 					pr_debug(
 					    "[regulator]fail to regulator_disable, powertype: %d\n",

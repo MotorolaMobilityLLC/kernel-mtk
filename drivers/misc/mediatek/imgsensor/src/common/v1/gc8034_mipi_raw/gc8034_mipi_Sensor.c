@@ -1607,7 +1607,7 @@ static kal_uint32 open(void)
 static kal_uint32 close(void)
 {
 	LOG_INF("E\n");
-	/*No Need to implement this function*/
+	streaming_control(0);
 	return ERROR_NONE;
 }
 
