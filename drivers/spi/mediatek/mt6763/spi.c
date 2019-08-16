@@ -327,7 +327,7 @@ static struct mc_session_handle secspi_session = {0};
 
 static u32 secspi_session_ref;
 static u32 secspi_devid = MC_DEVICE_ID_DEFAULT;
-static tciSpiMessage_t *secspi_tci;
+static struct tciSpiMessage_t *secspi_tci;
 
 static DEFINE_MUTEX(secspi_lock);
 
@@ -360,8 +360,9 @@ int secspi_session_open(u32 spinum)
 
 		/* allocating WSM for DCI */
 		mc_ret =
-		    mc_malloc_wsm(secspi_devid, 0, sizeof(tciSpiMessage_t),
-				  (uint8_t **)&secspi_tci, 0);
+		    mc_malloc_wsm(secspi_devid, 0,
+				sizeof(struct tciSpiMessage_t),
+				(uint8_t **)&secspi_tci, 0);
 		if (mc_ret != MC_DRV_OK) {
 			pr_debug("mc_malloc_wsm failed: %d\n", mc_ret);
 			mc_close_device(secspi_devid);
@@ -374,11 +375,11 @@ int secspi_session_open(u32 spinum)
 		 *	mc_open_session(&secspi_session, &secspi_uuid, (uint8_t
 		 **)
 		 *secspi_tci,
-		 *			sizeof(tciSpiMessage_t));
+		 *			sizeof(struct tciSpiMessage_t));
 		 */
 		mc_ret = mc_open_session(
 		    &secspi_session, (struct mc_uuid_t *)&spi_uuid[spinum][0],
-		    (uint8_t *)secspi_tci, sizeof(tciSpiMessage_t));
+		    (uint8_t *)secspi_tci, sizeof(struct tciSpiMessage_t));
 
 		if (mc_ret != MC_DRV_OK) {
 			pr_debug("%s fail: %d\n", __func__, mc_ret);
@@ -423,7 +424,7 @@ void secspi_enable_clk(struct spi_device *spidev)
 	enable_clk(ms);
 }
 
-int secspi_execute(u32 cmd, tciSpiMessage_t *param)
+int secspi_execute(u32 cmd, struct tciSpiMessage_t *param)
 {
 	enum mc_result mc_ret;
 
