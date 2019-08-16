@@ -267,7 +267,7 @@ EXPORT_SYMBOL_GPL(mtk_idle_notifier_unregister);
 
 void mtk_idle_notifier_call_chain(unsigned long val)
 {
-	raw_notifier_call_chain(&mtk_idle_notifier, val, NULL);
+	RCU_NONIDLE(raw_notifier_call_chain(&mtk_idle_notifier, val, NULL));
 }
 EXPORT_SYMBOL_GPL(mtk_idle_notifier_call_chain);
 
@@ -926,7 +926,7 @@ unsigned int soidle_pre_handler(void)
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
-	mtkTTimer_cancel_timer();
+	RCU_NONIDLE(mtkTTimer_cancel_timer());
 #endif
 
 	if (is_sodi3_enter) {
@@ -974,7 +974,7 @@ static unsigned int dpidle_pre_process(int cpu)
 
 #ifdef CONFIG_THERMAL
 	/* cancel thermal hrtimer for power saving */
-	mtkTTimer_cancel_timer();
+	RCU_NONIDLE(mtkTTimer_cancel_timer());
 #endif
 #endif
 
