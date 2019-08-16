@@ -50,6 +50,7 @@ extern "C" {
 /* #define UPOWER_PROFILE_API_TIME */
 #define UPOWER_RCU_LOCK
 #define UPOWER_LOG (0)
+#define DISABLE_TP
 
 /* for unified power driver internal use */
 #define UPOWER_OPP_NUM 16

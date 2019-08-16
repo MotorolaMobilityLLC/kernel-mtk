@@ -63,6 +63,7 @@ struct upower_tbl_row {
 	unsigned long long cap;
 	unsigned int volt; /* 10uv */
 	unsigned int dyn_pwr; /* uw */
+	unsigned int pwr_efficiency; /* uw */
 	unsigned int lkg_pwr[NR_UPOWER_DEGREE]; /* uw */
 };
 
@@ -72,6 +73,8 @@ struct upower_tbl {
 	struct upower_tbl_row row[UPOWER_OPP_NUM];
 	unsigned int lkg_idx;
 	unsigned int row_num;
+	unsigned int max_efficiency;
+	unsigned int min_efficiency;
 	struct idle_state idle_states[NR_UPOWER_DEGREE][NR_UPOWER_CSTATES];
 	unsigned int nr_idle_states;
 	int turn_point;
@@ -102,6 +105,7 @@ extern unsigned int upower_get_power(enum upower_bank bank, unsigned int opp,
 	enum upower_dtype type);
 /* EAS */
 extern struct upower_tbl_info **upower_get_tbl(void);
+extern int upower_get_turn_point(void);
 extern struct upower_tbl *upower_get_core_tbl(unsigned int cpu);
 /* EEM */
 
