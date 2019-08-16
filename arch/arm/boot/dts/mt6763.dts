@@ -107,6 +107,12 @@
 		interrupts = <GIC_SPI 123 IRQ_TYPE_EDGE_RISING>;
 	};
 
+	/* AMMS SW IRQ number GIC:311 DTS:279*/
+	amms_control {
+		compatible = "mediatek,amms";
+		interrupts = <GIC_SPI 279 IRQ_TYPE_EDGE_RISING>;
+	};
+
 	/* Microtrust SW IRQ number 272(304) ~ 378(310) */
 	utos {
 		compatible = "microtrust,utos";
