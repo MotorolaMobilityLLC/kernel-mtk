@@ -172,6 +172,13 @@ void mtk_unprepare_venc_dvfs(void)
 #endif
 }
 
+void mtk_release_pmqos(struct mtk_vcodec_ctx *ctx)
+{
+#ifdef ENC_DVFS
+	free_hist_by_handle(&ctx->id, &venc_hists);
+#endif
+}
+
 void mtk_prepare_venc_emi_bw(void)
 {
 #ifdef ENC_EMI_BW
@@ -213,6 +220,10 @@ void mtk_venc_dvfs_begin(struct mtk_vcodec_ctx *ctx)
 					venc_hists);
 		target_freq_64 = match_freq(target_freq, &venc_freq_steps[0],
 					venc_freq_step_size);
+
+		if (ctx->slowmotion == 1)
+			target_freq_64 = 450;
+
 		if (target_freq > 0) {
 			venc_freq = target_freq;
 			if (venc_freq > target_freq_64)
@@ -230,6 +241,12 @@ void mtk_venc_dvfs_begin(struct mtk_vcodec_ctx *ctx)
 #endif
 }
 
+static int mtk_venc_get_exec_cnt(struct mtk_vcodec_ctx *ctx)
+{
+	return (int)((readl(ctx->dev->enc_reg_base[VENC_SYS] + 0x17C) &
+			0x7FFFFFFF) / 1000);
+}
+
 void mtk_venc_dvfs_end(struct mtk_vcodec_ctx *ctx)
 {
 #ifdef ENC_DVFS
@@ -242,11 +259,35 @@ void mtk_venc_dvfs_end(struct mtk_vcodec_ctx *ctx)
 	venc_cur_job = venc_jobs;
 	if (venc_cur_job != 0 && (venc_cur_job->handle == &ctx->id)) {
 		venc_cur_job->end = get_time_us();
+
 		if (ctx->slowmotion == 0) {
-			update_hist(venc_cur_job, &venc_hists, 0);
+			if ((ctx->enc_params.operationrate == 60 ||
+				(ctx->q_data[MTK_Q_DATA_SRC].visible_width
+					== 3840 &&
+				ctx->q_data[MTK_Q_DATA_SRC].visible_height
+					== 2160))) {
+				/* Set allowed time for 60fps/4K recording */
+				/* Use clock cycle if single instance */
+				if (venc_hists != 0 && venc_hists->next == 0) {
+					venc_cur_job->hw_kcy =
+						mtk_venc_get_exec_cnt(ctx);
+				}
+				if (ctx->enc_params.operationrate > 0) {
+					interval = (long long)(1000 * 1000 /
+					(int)ctx->enc_params.operationrate);
+				} else {
+					interval = (long long)(1000 * 1000 /
+					(int)(ctx->enc_params.framerate_num /
+					ctx->enc_params.framerate_denom));
+				}
+				update_hist(venc_cur_job, &venc_hists,
+					interval);
+			} else {
+				update_hist(venc_cur_job, &venc_hists, 0);
+			}
 		} else {
 			/* Set allowed time for slowmotion 4 buffer pack */
-			interval = (long long)(1000 * 4 /
+			interval = (long long)(1000 * 1000 * 4 /
 					(int)ctx->enc_params.operationrate);
 			update_hist(venc_cur_job, &venc_hists, interval);
 		}
@@ -284,8 +325,12 @@ void mtk_venc_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 
 	if (ctx->slowmotion == 1 ||
 		ctx->q_data[MTK_Q_DATA_DST].fmt->fourcc == V4L2_PIX_FMT_H265 ||
-		ctx->q_data[MTK_Q_DATA_DST].fmt->fourcc == V4L2_PIX_FMT_HEIF) {
+		ctx->q_data[MTK_Q_DATA_DST].fmt->fourcc == V4L2_PIX_FMT_HEIF ||
+		(ctx->q_data[MTK_Q_DATA_SRC].visible_width == 3840 &&
+		ctx->q_data[MTK_Q_DATA_SRC].visible_height == 2160)) {
 		boost_perc = 100;
+	} else if (ctx->enc_params.operationrate == 60) {
+		boost_perc = 30;
 	}
 
 	/* Input BW scaling to venc_freq & config */
@@ -329,6 +374,24 @@ void mtk_venc_emi_bw_begin(struct mtk_vcodec_ctx *ctx)
 	if (1) { /* UFO */
 		ref_chroma_bw += ref_luma_bw;
 		ref_luma_bw = 0;
+	}
+
+	if (ctx->enc_params.operationrate == 60 ||
+		ctx->slowmotion == 1 ||
+		(ctx->q_data[MTK_Q_DATA_SRC].visible_width == 3840 &&
+		ctx->q_data[MTK_Q_DATA_SRC].visible_height == 2160)) {
+		/* 60fps / 4K30 / SMVR  recording use theoretical max BW */
+		cur_luma_bw = STD_LUMA_BW * venc_freq * (100 + boost_perc)
+				/ STD_VENC_FREQ / 100;
+		cur_chroma_bw = STD_CHROMA_BW * venc_freq * (100 + boost_perc)
+				/ STD_VENC_FREQ / 100;
+		rec_bw = cur_luma_bw + cur_chroma_bw;
+		ref_luma_bw = cur_luma_bw * 4;
+		ref_chroma_bw = cur_chroma_bw * 4;
+		if (1) { /* UFO */
+			ref_chroma_bw += ref_luma_bw;
+			ref_luma_bw = 0;
+		}
 	}
 	mm_qos_set_request(&venc_rcpu, rcpu_bw, 0, BW_COMP_NONE);
 	mm_qos_set_request(&venc_bsdma, bsdma_bw, 0, BW_COMP_NONE);
