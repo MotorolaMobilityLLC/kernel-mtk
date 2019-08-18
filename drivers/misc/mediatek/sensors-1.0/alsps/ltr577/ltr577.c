@@ -1791,6 +1791,7 @@ static void ltr577_cali_ps_work(struct work_struct *work)
 #endif
 /*----------------------------------------------------------------------------*/
 #ifdef HW_dynamic_cali
+#ifndef SMT_MODE
 static void ltr577_clear_intr(struct i2c_client *client)
 {
 	int ret = 0;
@@ -1805,6 +1806,7 @@ static void ltr577_clear_intr(struct i2c_client *client)
 
 	return;
 }
+#endif //SMT_MODE
 
 static void ltr577_eint_work(struct work_struct *work)
 {
@@ -1814,7 +1816,9 @@ static void ltr577_eint_work(struct work_struct *work)
 	int distance =-1;
 
 	//clear interrupt for ltr578 by zhuhui,20190816
+#ifndef SMT_MODE
 	ltr577_clear_intr(obj->client);
+#endif
 
 	//get raw data
 	obj->ps = ltr577_ps_read(obj->client, &obj->ps);
@@ -1827,6 +1831,11 @@ static void ltr577_eint_work(struct work_struct *work)
 	distance = ltr577_get_ps_value(obj, obj->ps);
 
 	APS_DBG("%s:let up distance=%d\n",__func__,distance);
+
+#ifdef SMT_MODE
+	ps_thd_val_low_set = ps_nvraw_40mm_value;
+	ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
+#endif
 
 	ltr577_ps_set_thres();
 
