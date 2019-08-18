@@ -11,6 +11,10 @@
 # GNU General Public License for more details.
 #
 
+ifeq ($(BUILD_SMT), YES)
+ccflags-y +=-DSMT_MODE
+endif
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/alsps/inc
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/hwmon/include
 obj-y	:=  ltr577.o
