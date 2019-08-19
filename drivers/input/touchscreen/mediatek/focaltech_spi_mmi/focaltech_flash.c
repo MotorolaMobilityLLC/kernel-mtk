@@ -604,8 +604,30 @@ int fts_enter_test_environment(bool test_state)
     return 0;
 }
 
+static void fts_load_fw_work(struct work_struct *work)
+{
+    int ret = 0;
+    struct fts_upgrade *upg = fwupgrade;
+
+    FTS_INFO("fts load firmware");
+
+    if (fts_data->fw_loading) {
+        FTS_INFO("fw is loading, not download again");
+        return;
+    }
+
+    ret = fts_fw_download(upg->fw, upg->fw_length, true);
+
+    if (ret < 0) {
+        FTS_ERROR("fw(app2) download fail");
+        return;
+    }
+}
+
 int fts_load_fw_init(struct fts_ts_data *ts_data)
 {
+    static int init_flag = 1;
+
     FTS_INFO("fw load fw init");
 
     if (!ts_data || !ts_data->ts_workqueue) {
@@ -613,8 +635,12 @@ int fts_load_fw_init(struct fts_ts_data *ts_data)
         return -EINVAL;
     }
 
-    INIT_WORK(&ts_data->fwload_work, fts_fwupg_work);
-    queue_work(ts_data->ts_workqueue, &ts_data->fwload_work);
+    if (init_flag) {
+        init_flag = 0;
+        INIT_WORK(&ts_data->fwload_work, fts_load_fw_work);
+    }
+    else
+        queue_work(ts_data->ts_workqueue, &ts_data->fwload_work);
 
     return 0;
 }
