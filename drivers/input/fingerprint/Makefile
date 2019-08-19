@@ -7,3 +7,4 @@ obj-$(CONFIG_FPC_FINGERPRINT) += fpc/
 obj-$(CONFIG_CHIPSAILING_FINGERPRINT) += chips_tee/
 obj-$(CONFIG_FPSENSOR_FINGERPRINT) += fpsensor_tee/
 obj-$(CONFIG_FOCALTECH_FINGERPRINT) += focaltech/
+obj-$(CONFIG_BETTERLIFE_FINGERPRINT) += betterlife_tee/

@@ -19,6 +19,7 @@ config MTK_FINGERPRINT_SELECT
 
 source drivers/input/fingerprint/fpsensor_tee/Kconfig
 source drivers/input/fingerprint/focaltech/Kconfig
+source drivers/input/fingerprint/betterlife_tee/Kconfig
 
 #########################################################
 #########################################################

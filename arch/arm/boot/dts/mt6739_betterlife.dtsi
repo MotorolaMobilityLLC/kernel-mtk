@@ -1,0 +1,105 @@
+//blestech add
+/{
+betterlife_platform: betterlife-fingerprint@ {
+	compatible = "betterlife,platform";
+	fpreset-gpio = <&pio 52 0>;
+	fpint-gpio = <&pio 0 0>;
+	/*fppower-gpio = <&pio 64 0>;
+	fppower-gpio1v8 = <&pio 12 0>;*/
+	/*some platform need use irq_of_parse_and_map func to get irq num,dts need add like below*/
+	/*check *.dws interrupts should need change to EINT mode then change interrupt-parent to eintc*/
+	/*interrupt-parent = <&eintc>;*/
+	/*interrupt-parent = <&pio>;
+	interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;
+	debounce = <11 0>;*/
+	status = "okay";
+	};
+};
+
+&pio{
+	betterlife_spi_default:fp_spi{
+
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO31__FUNC_SPI0_A_CSB>;
+			input-enable;
+		};
+		pins_cmd2_dat {
+			pins = <PINMUX_GPIO31__FUNC_SPI0_A_CSB>;
+			input-enable;
+		};
+		pins_cmd3_dat {
+			pins = <PINMUX_GPIO33__FUNC_SPI0_A_MI>;
+			input-enable;
+		};
+		pins_cmd4_dat {
+			pins = <PINMUX_GPIO33__FUNC_SPI0_A_MI>;
+			input-enable;
+		};
+	};
+	betterlife_reset_output_high:fp_rst_high{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO52__FUNC_GPIO52>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	betterlife_reset_output_low:fp_rst_low{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO52__FUNC_GPIO52>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	/*betterlife_power_2v8_high:fp_power_2v8_high{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	betterlife_power_2v8_low:fp_power_2v8_low{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO64__FUNC_GPIO64>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};	
+	betterlife_power_1v8_high:fp_power_1v8_high{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	betterlife_power_1v8_low:fp_power_1v8_low{
+		pins_cmd_dat {
+			pins = <PINMUX_GPIO12__FUNC_GPIO12>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};*/
+	betterlife_int_default:fp_int_def{
+		pins_cmd_dat {
+			/*pins = <PINMUX_GPIO86__FUNC_EINT9> check *.dws should need chang to EINT mode*/
+			pins = <PINMUX_GPIO0__FUNC_GPIO0>;
+			slew-rate = <0>;
+			bias-pull-down = <00>;
+		};
+	};
+};
+
+&betterlife_platform{
+	pinctrl-names = "spi_default", "reset-output-high", "reset-output-low", "int_default";
+	/* "power_2v8_high", "power_2v8_low" , "power_1v8_high", "power_1v8_low";*/
+	pinctrl-0 = <&betterlife_spi_default>;
+	pinctrl-1 = <&betterlife_reset_output_high>;
+	pinctrl-2 = <&betterlife_reset_output_low>;
+	pinctrl-3 = <&betterlife_int_default>;
+	/*pinctrl-4 = <&betterlife_power_2v8_high>;
+	pinctrl-5 = <&betterlife_power_2v8_low>;	
+	pinctrl-6 = <&betterlife_power_1v8_high>;
+	pinctrl-7 = <&betterlife_power_1v8_low>;*/
+	status = "okay";
+};
+//blestech end
