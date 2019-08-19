@@ -204,6 +204,8 @@ struct rt9471_chip {
 	struct work_struct init_work;
 #endif
 	struct task_struct *bc12_en_kthread;
+	char bc12_en_name[16];
+	struct wakeup_source bc12_en_ws;
 	int bc12_en_buf[2];
 	int bc12_en_buf_idx;
 	struct completion bc12_en_req;
@@ -606,12 +608,13 @@ static int rt9471_bc12_en_kthread(void *data)
 {
 	int ret = 0, i = 0, en = 0;
 	struct rt9471_chip *chip = data;
-	const int max_wait_cnt = 200;
+	const int max_wait_cnt = 270;
 
 	dev_info(chip->dev, "%s\n", __func__);
 wait:
 	wait_for_completion(&chip->bc12_en_req);
 
+	__pm_stay_awake(&chip->bc12_en_ws);
 	mutex_lock(&chip->bc12_en_lock);
 	en = chip->bc12_en_buf[chip->bc12_en_buf_idx];
 	chip->bc12_en_buf[chip->bc12_en_buf_idx] = -1;
@@ -624,7 +627,7 @@ wait:
 
 	dev_info(chip->dev, "%s en = %d\n", __func__, en);
 	if (en == -1)
-		goto wait;
+		goto relax_and_wait;
 
 	if (en) {
 		/* Workaround for CDP port */
@@ -634,7 +637,7 @@ wait:
 			dev_dbg(chip->dev, "%s CDP block\n", __func__);
 			if (!atomic_read(&chip->vbus_gd)) {
 				dev_info(chip->dev, "%s plug out\n", __func__);
-				goto wait;
+				goto relax_and_wait;
 			}
 			msleep(100);
 		}
@@ -649,6 +652,8 @@ wait:
 	if (ret < 0)
 		dev_notice(chip->dev, "%s en = %d fail(%d)\n",
 				      __func__, en, ret);
+relax_and_wait:
+	__pm_relax(&chip->bc12_en_ws);
 	goto wait;
 
 	return 0;
@@ -2421,12 +2426,15 @@ static int rt9471_probe(struct i2c_client *client,
 	}
 
 	if (chip->dev_id == RT9471D_DEVID) {
+		snprintf(chip->bc12_en_name, sizeof(chip->bc12_en_name),
+			 "rt9471.%s", dev_name(chip->dev));
+		wakeup_source_init(&chip->bc12_en_ws, chip->bc12_en_name);
 		chip->bc12_en_buf[0] = chip->bc12_en_buf[1] = -1;
 		chip->bc12_en_buf_idx = 0;
 		init_completion(&chip->bc12_en_req);
 		chip->bc12_en_kthread =
 			kthread_run(rt9471_bc12_en_kthread, chip,
-				    "rt9471.%s", dev_name(chip->dev));
+				    chip->bc12_en_name);
 		if (IS_ERR_OR_NULL(chip->bc12_en_kthread)) {
 			ret = PTR_ERR(chip->bc12_en_kthread);
 			dev_notice(chip->dev, "%s kthread run fail(%d)\n",
