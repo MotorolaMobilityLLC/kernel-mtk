@@ -319,20 +319,19 @@ static void lcm_init(void)
 	else
 		LCM_LOGI("ft8006s----ocp2131----cmd=%0x--i2c write success----\n", cmd);
 
+	SET_RESET_PIN(1);
+	MDELAY(1);
 	tpd_gpio_output(0, 1);
 	MDELAY(1);
 	tpd_gpio_output(0, 0);
-	MDELAY(5);
+	MDELAY(6);
+	SET_RESET_PIN(0);
+	MDELAY(6);
 	tpd_gpio_output(0, 1);
 	MDELAY(1);
-
-	SET_RESET_PIN(1);
-	MDELAY(1);
-	SET_RESET_PIN(0);
-	MDELAY(5);
 	SET_RESET_PIN(1);
 	SET_BACKLIGHT_OUT(1);
-	MDELAY(10);
+	MDELAY(35);
 
 	fts_lcm_update_firmware_work();
 
