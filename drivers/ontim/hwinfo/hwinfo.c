@@ -746,6 +746,7 @@ static void get_card_present(void)
 
 	memset(card_holder_present, '\0', BUF_SIZE);
 	strncpy(card_holder_present, "truly", 5);
+	printk("fanxzh gpio(343+15) value = %d\n", gpio_get_value(343+15));
 	if (gpio_get_value(343+15) == 0)
 	{
 		memset(card_holder_present, '\0', BUF_SIZE);
