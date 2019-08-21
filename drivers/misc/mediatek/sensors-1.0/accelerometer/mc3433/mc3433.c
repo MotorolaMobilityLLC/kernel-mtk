@@ -37,7 +37,7 @@
 //+add by hzb for ontim debug
 #include <ontim/ontim_dev_dgb.h>
 static char mc3433_prox_version[]="MC3433-P-1.0";
-static char mc3433_prox_vendor_name[20]="MC3433-P-Mcube";
+static char mc3433_prox_vendor_name[20]= {0};
     DEV_ATTR_DECLARE(gsensor)
     DEV_ATTR_DEFINE("version",mc3433_prox_version)
     DEV_ATTR_DEFINE("vendor",mc3433_prox_vendor_name)
@@ -322,6 +322,8 @@ static void mc3xxx_mutex_unlock(void)
 
 #define IS_MCFM12()	((s_bHWID >= 0xC0) && (s_bHWID <= 0xCF))
 #define IS_MCFM3X()	((s_bHWID == 0x20) || ((s_bHWID >= 0x22) && (s_bHWID <= 0x2F)))
+
+#define IS_MESA()	((s_bHWID >= 0xA0) && (s_bHWID <= 0xAF))
 
 /*****************************************************************************
  *** TODO
@@ -886,33 +888,17 @@ static int MC3XXX_ValidateSensorIC(unsigned char *pbPCode, unsigned char *pbHwID
 {
 	ACC_LOG("[%s] *pbPCode: 0x%02X, *pbHwID: 0x%02X\n", __func__, *pbPCode, *pbHwID);
 
-	if ((*pbHwID == 0x01) || (*pbHwID == 0x03)
-		|| ((*pbHwID >= 0x04) && (*pbHwID <= 0x0F))) {
-		if ((*pbPCode == MC3XXX_PCODE_3210) || (*pbPCode == MC3XXX_PCODE_3230)
-			|| (*pbPCode == MC3XXX_PCODE_3250))
+	if ((*pbHwID >= 0xA0) && (*pbHwID <= 0xAF)) 	//mc3416
+	{
+		*pbPCode = (*pbPCode & 0xF1);
+		if (*pbPCode == MC3XXX_PCODE_3416)
 			return MC3XXX_RETCODE_SUCCESS;
-	} else if ((*pbHwID == 0x02) || (*pbHwID == 0x21)
-		 || ((*pbHwID >= 0x10) && (*pbHwID <= 0x1F))) {
-		if ((*pbPCode == MC3XXX_PCODE_3210) || (*pbPCode == MC3XXX_PCODE_3230)
-			|| (*pbPCode == MC3XXX_PCODE_3250)
-				|| (*pbPCode == MC3XXX_PCODE_3410) || (*pbPCode == MC3XXX_PCODE_3410N)
-					|| (*pbPCode == MC3XXX_PCODE_3430) || (*pbPCode == MC3XXX_PCODE_3430N)) {
-			return MC3XXX_RETCODE_SUCCESS;
-		}
-	} else if ((*pbHwID >= 0xC0) && (*pbHwID <= 0xCF)) {
-		*pbPCode = (*pbPCode & 0x71);
-
-	if ((*pbPCode == MC3XXX_PCODE_3510) || (*pbPCode == MC3XXX_PCODE_3530))
-		return MC3XXX_RETCODE_SUCCESS;
-	} else if ((*pbHwID == 0x20) || ((*pbHwID >= 0x22) && (*pbHwID <= 0x2F))) {
+	}
+	else if ((*pbHwID == 0x20) || ((*pbHwID >= 0x22) && (*pbHwID <= 0x2F))) 	//mc3433
+	{
 		*pbPCode = (*pbPCode & 0xF1);
 
-		if ((*pbPCode == MC3XXX_PCODE_3210) || (*pbPCode == MC3XXX_PCODE_3216)
-			|| (*pbPCode == MC3XXX_PCODE_3236) || (*pbPCode == MC3XXX_PCODE_RESERVE_1)
-			|| (*pbPCode == MC3XXX_PCODE_RESERVE_2) || (*pbPCode == MC3XXX_PCODE_RESERVE_3)
-			|| (*pbPCode == MC3XXX_PCODE_RESERVE_4) || (*pbPCode == MC3XXX_PCODE_RESERVE_5)
-			|| (*pbPCode == MC3XXX_PCODE_RESERVE_6) || (*pbPCode == MC3XXX_PCODE_RESERVE_7)
-			|| (*pbPCode == MC3XXX_PCODE_RESERVE_8) || (*pbPCode == MC3XXX_PCODE_RESERVE_9))
+		if((*pbPCode == MC3XXX_PCODE_3210) || (*pbPCode == MC3XXX_PCODE_3216) || (*pbPCode == MC3XXX_PCODE_3236))
 			return MC3XXX_RETCODE_SUCCESS;
 
 	}
@@ -1604,9 +1590,10 @@ static void MC3XXX_SetResolution(void)
 	case MC3XXX_PCODE_3410N:
 	case MC3XXX_PCODE_3510:
 	case MC3XXX_PCODE_3216:
+	case MC3XXX_PCODE_3416:
 		s_bResolution = MC3XXX_RESOLUTION_HIGH;
 		break;
-
+#if 0
 	case MC3XXX_PCODE_RESERVE_10:
 		ACC_PR_ERR("RESERVED ONLINE!\n");
 	 /* TODO: should have a default configuration... */
@@ -1628,7 +1615,7 @@ static void MC3XXX_SetResolution(void)
 		ACC_PR_ERR("RESERVED ONLINE!\n");
 		s_bResolution = MC3XXX_RESOLUTION_HIGH;
 		break;
-
+#endif
 	default:
 		ACC_PR_ERR("ERR: no resolution assigned!\n");
 	}
@@ -1675,7 +1662,12 @@ static void MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
 			ACC_PR_ERR("[%s] no chance to get here... check code!\n", __func__);
 			break;
 		}
-	} else
+	}
+	else if(IS_MESA())
+	{
+		_baDataBuf[0] = 0x05;
+	}
+	else
 		_baDataBuf[0] = 0x00;
 
 	MC3XXX_i2c_write_block(pt_i2c_client, MC3XXX_REG_SAMPLE_RATE, _baDataBuf, 1);
@@ -1702,6 +1694,11 @@ static void MC3XXX_ConfigRegRange(struct i2c_client *pt_i2c_client)
 		else
 			_baDataBuf[0] = 0x25;
 	}
+	else if(IS_MESA())
+	{
+		_baDataBuf[0] = 0x29;
+	}
+
 	res = MC3XXX_i2c_write_block(pt_i2c_client, MC3XXX_REG_RANGE_CONTROL, _baDataBuf, 1);
 	if (res < 0)
 		ACC_PR_ERR("MC3XXX_ConfigRegRange fail\n");
@@ -1722,6 +1719,11 @@ static void MC3XXX_SetGain(void)
 		if (IS_MCFM12() || IS_MCFM3X())
 			gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = 64;
 
+	}
+
+	if(IS_MESA())
+	{
+		gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = 4096;
 	}
 
 	ACC_LOG("[%s] gain: %d / %d / %d\n", __func__, gsensor_gain.x, gsensor_gain.y, gsensor_gain.z);
@@ -2903,6 +2905,16 @@ _I2C_AUTO_PROBE_RECHECK_:
 			s_bPCODE = _baData1Buf[0];
 			s_bHWID  = _baData2Buf[0];
 			MC3XXX_SaveDefaultOffset(client);
+
+			if (s_bPCODE == MC3XXX_PCODE_3416) {
+				ACC_LOG("The chip is 3416, pard_id:0x%x.\n", s_bPCODE);
+				sprintf(&mc3433_prox_vendor_name[0], "MC3416-P-Mcube");
+			}
+			else
+			{
+				ACC_LOG("The chip is 3433, pard_id:0x%x.\n", s_bPCODE);
+				sprintf(&mc3433_prox_vendor_name[0], "MC3433-P-Mcube");
+			}
 
 			return MC3XXX_RETCODE_SUCCESS;
 		}
