@@ -5709,6 +5709,9 @@ int primary_display_resume(void)
 			DSI_ForceConfig(1);
 	}
 
+	if (pgc->plcm->drv->set_gpio_reset)
+		pgc->plcm->drv->set_gpio_reset();
+
 	DISPDBG("dpmanager path power on[begin]\n");
 	dpmgr_path_power_on(pgc->dpmgr_handle, CMDQ_DISABLE);
 	if (disp_helper_get_option(DISP_OPT_MET_LOG))
@@ -7723,6 +7726,8 @@ int primary_display_frame_cfg(struct disp_frame_cfg_t *cfg)
 
 int primary_display_user_cmd(unsigned int cmd, unsigned long arg)
 {
+return 0;
+#if 0
 	int ret = 0;
 	struct cmdqRecStruct *handle = NULL;
 	int cmdqsize = 0;
@@ -7815,6 +7820,7 @@ user_cmd_unlock:
 			 MMPROFILE_FLAG_END, cmdqsize, 0);
 
 	return ret;
+	#endif
 }
 
 int do_primary_display_switch_mode(int sess_mode, unsigned int session,
