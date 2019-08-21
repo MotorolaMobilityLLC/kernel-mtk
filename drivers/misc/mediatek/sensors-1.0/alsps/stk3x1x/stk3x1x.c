@@ -4101,6 +4101,9 @@ APS_DBG("current_tp = %d \n",current_tp);
                         (als_level[current_tp][current_color_temp][idx]-als_level[current_tp][current_color_temp][idx-1]);
 		lum += als_value[idx-1];
 
+		//add for accuracy by zhuhui
+		lum = (lum * 263) / 100;
+
 		APS_DBG("ALS: %05d => %05d\n", als, lum);//obj->hw->als_value[idx]);
 	
 		return lum;
