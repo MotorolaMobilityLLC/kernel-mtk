@@ -3332,12 +3332,28 @@ static void lcm_set_reset_pin(UINT32 value)
 #endif
 }
 
+static void lcm_set_backlight_out(UINT32 value)
+{
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_BL_ENABLE);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_BL_DISABLE);
+}
+
 static void lcm1_set_reset_pin(UINT32 value)
 {
 	if (value)
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT1);
 	else
 		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM1_RST_OUT0);
+}
+
+static void lcm_set_reset_pin_gpio(UINT32 value)
+{
+	if (value)
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT1);
+	else
+		disp_dts_gpio_select_state(DTS_GPIO_STATE_LCM_RST_OUT0);
 }
 
 static void lcm1_set_te_pin(void)
@@ -3508,6 +3524,8 @@ int ddp_dsi_set_lcm_utils(enum DISP_MODULE_ENUM module,
 	}
 
 	utils->set_reset_pin = lcm_set_reset_pin;
+	utils->set_reset_pin_gpio = lcm_set_reset_pin_gpio;
+	utils->set_backlight_out = lcm_set_backlight_out;
 	utils->udelay = lcm_udelay;
 	utils->mdelay = lcm_mdelay;
 	utils->set_te_pin = NULL;
@@ -5373,6 +5391,7 @@ struct DDP_MODULE_DRIVER ddp_driver_dsidual = {
 
 const struct LCM_UTIL_FUNCS PM_lcm_utils_dsi0 = {
 	.set_reset_pin = lcm_set_reset_pin,
+	.set_backlight_out = lcm_set_backlight_out,
 	.udelay = lcm_udelay,
 	.mdelay = lcm_mdelay,
 	.dsi_set_cmdq = DSI_set_cmdq_wrapper_DSI0,

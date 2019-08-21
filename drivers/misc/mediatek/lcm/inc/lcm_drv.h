@@ -838,6 +838,8 @@ struct dsi_cmd_desc {
 
 struct LCM_UTIL_FUNCS {
 	void (*set_reset_pin)(unsigned int value);
+	void (*set_reset_pin_gpio)(unsigned int value);
+	void (*set_backlight_out)(unsigned int value);
 	void (*set_chip_select)(unsigned int value);
 	int (*set_gpio_out)(unsigned int gpio, unsigned int value);
 	void (*set_te_pin)(void);
@@ -898,6 +900,8 @@ struct LCM_DRIVER {
 	void (*init)(void);
 	void (*suspend)(void);
 	void (*resume)(void);
+
+	void (*set_gpio_reset)(void);
 
 	/* for power-on sequence refinement */
 	void (*init_power)(void);
