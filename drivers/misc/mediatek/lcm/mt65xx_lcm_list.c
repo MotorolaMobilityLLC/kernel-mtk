@@ -28,6 +28,18 @@ enum LCM_DSI_MODE_CON lcm_dsi_mode;
 #define LCD_HW_ID_STATUS_ERROR  0x03
 
 struct LCM_DRIVER *lcm_driver_list[] = {
+
+#if defined(PANEL_MOT_MIPI_VID_TIANMA_622_720P)
+	&mipi_mot_vid_tianma_720p_622_lcm_drv,
+#endif
+
+#if defined(PANEL_MOT_MIPI_VID_ILITEK_622_720P)
+	&mipi_mot_vid_ilitek_720p_622_lcm_drv,
+#endif
+
+#if defined(PANEL_MOT_MIPI_VID_DJN_622_720P)
+	&mipi_mot_vid_djn_720p_622_lcm_drv,
+#endif
 #if defined(ES6311_ANX6585_ZIGZAG_WXGA)
 	&es6311_anx6585_zigzag_wxga_lcm_drv,
 #endif
