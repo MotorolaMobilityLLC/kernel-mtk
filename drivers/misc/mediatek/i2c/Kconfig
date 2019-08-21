@@ -1,0 +1,7 @@
+config MTK_LCM_BIAS_OCP2131
+	bool "Enble OCP2131 driver"
+	help
+	  define OCP2131 driver config to enable OCP2131 driver.
+	  To set LOCP2131 driver which you choose avoid cannot driver OCP2131.
+	  Please make sure CONFIG_MTK_LCM_BIAS_OCP2131 in xxxxxx_defconfig.mk.
+	  And also make sure true on in ProjectConfig.mk
