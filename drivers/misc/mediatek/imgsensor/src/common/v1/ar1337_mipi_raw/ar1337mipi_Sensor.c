@@ -1147,7 +1147,7 @@ static void sensor_init(void)
 	mdelay(50);
 	
 	write_cmos_sensor_16bit(0x3042, 0x500C);  // DARK_CONTROL2
-	write_cmos_sensor_16bit(0x3044, 0x0500);  // DARK_CONTROL
+	write_cmos_sensor_16bit(0x3044, 0x2580);  // DARK_CONTROL
 	write_cmos_sensor_16bit(0x30EE, 0x5133);  // DARK_CONTROL3
 	write_cmos_sensor_16bit(0x30D2, 0x0000);  // CRM_CONTROL
 	write_cmos_sensor_16bit(0x3C50, 0x0001);  // BPC_SETUP
