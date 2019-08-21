@@ -13,4 +13,6 @@
 
 obj-$(CONFIG_MTK_LEDS) := mtk_leds.o
 
+obj-$(CONFIG_BACKLIGHT_SUPPORT_SM5306) += sm5306_driver.o
+
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/video/include
