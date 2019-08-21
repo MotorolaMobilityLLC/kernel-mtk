@@ -22,6 +22,9 @@
 * 2. This file should be the same as mediatek\custom\common\hal\imgsensor\src\sensorlist.cpp
 */
 struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
+#if defined(AR1337_MIPI_RAW)
+        {AR1337_SENSOR_ID, SENSOR_DRVNAME_AR1337_MIPI_RAW, AR1337_MIPI_RAW_SensorInit},
+#endif
 #if defined(OV13855_MIPI_RAW)
 	{OV13855_SENSOR_ID, SENSOR_DRVNAME_OV13855_MIPI_RAW, OV13855_MIPI_RAW_SensorInit},
 #endif
@@ -411,9 +414,6 @@ struct IMGSENSOR_INIT_FUNC_LIST kdSensorList[MAX_NUM_OF_SUPPORT_SENSOR] = {
 	/*AR*/
 #if defined(AR0833_MIPI_RAW)
 	{AR0833_SENSOR_ID, SENSOR_DRVNAME_AR0833_MIPI_RAW, AR0833_MIPI_RAW_SensorInit},
-#endif
-#if defined(AR1337_MIPI_RAW)
-	{AR1337_SENSOR_ID, SENSOR_DRVNAME_AR1337_MIPI_RAW, AR1337_MIPI_RAW_SensorInit},
 #endif
 	/*SIV*/
 #if defined(SIV120B_YUV)
