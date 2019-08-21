@@ -42,7 +42,7 @@ ccflags-y += -DMTK_ANDROID_L
 ccflags-y += -DREGISTER_DEVICE
 include $(srctree)/drivers/misc/mediatek/Makefile.custom
 else
-ccflags-y += -DBF_PINCTL
+#ccflags-y += -DBF_PINCTL
 endif
 
 ifndef CONFIG_MTK_PLATFORM
@@ -58,15 +58,15 @@ ccflags-y += -DUSE_ENABLE_CLOCK
 endif
 ifneq (,$(filter "mt676%" "mt677%",$(CONFIG_MTK_PLATFORM)))
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
-BL_PLATFORM := PLATFORM_MTK 
+BL_PLATFORM := PLATFORM_MTK
 else
-BL_PLATFORM := PLATFORM_MT676x 
+BL_PLATFORM := PLATFORM_MT676x
 endif
 endif
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6797")
 #for mt6797  Rx_DMA address range error in 4G mode,dma:0
 ifeq ($(strip $(TEE_PLATFORM)), REE)
-ccflags-y += -DUSE_SPI1_4GB_TEST  
+ccflags-y += -DUSE_SPI1_4GB_TEST
 endif
 endif
 endif
