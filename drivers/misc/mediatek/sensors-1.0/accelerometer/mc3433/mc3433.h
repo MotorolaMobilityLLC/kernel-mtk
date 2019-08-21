@@ -91,7 +91,9 @@
 #define MC3XXX_PCODE_3530     0x30
 #define MC3XXX_PCODE_3216     0x10
 #define MC3XXX_PCODE_3236     0x60
+#define MC3XXX_PCODE_3416     0x20
 
+/*
 #define MC3XXX_PCODE_RESERVE_1    0x20
 #define MC3XXX_PCODE_RESERVE_2    0x11
 #define MC3XXX_PCODE_RESERVE_3    0x21
@@ -101,8 +103,8 @@
 #define MC3XXX_PCODE_RESERVE_7    0x91
 #define MC3XXX_PCODE_RESERVE_8    0xA1
 #define MC3XXX_PCODE_RESERVE_9    0xE1
-
 #define MC3XXX_PCODE_RESERVE_10    0x99
+*/
 
 /* fix me: batch register
 * #define MC3410_ACCEL_ODR_400HZ          0x0A
