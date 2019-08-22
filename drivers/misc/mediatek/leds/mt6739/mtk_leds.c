@@ -797,7 +797,6 @@ unsigned int mt_show_pwm_register(unsigned int addr)
 	return 0;
 }
 
-int leds_on_flag = -1;
 int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 {
 	static bool first_time = true;
@@ -811,26 +810,16 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		LEDS_DEBUG("PMIC llssyy charger#%d:%d\n", pmic_type, level);
 			if (level)
 			{
-				leds_on_flag = 1;
 				pmic_config_interface(0x1f12,0x3f,0xffff,0x00);
 				pmic_config_interface(0x1f0a,level,0xffff,0x00);
 			}
 			else
 			{
-				if (leds_on_flag == 1)
-				{
 				pmic_config_interface(0x1f0a,0x00,0xffff,0x00);
 				pmic_config_interface(0x1f10,0x00,0xffff,0x00);
 				pmic_config_interface(0x1f12,0x08,0xffff,0x00);
-				}
-				else if (leds_on_flag == 0)
-				{
 					led_gpio_set(0);
 				}
-				else
-				{
-				}
-		}
 
 		}
 		else
@@ -838,32 +827,20 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 		LEDS_DEBUG("PMIC llssyy no charger#%d:%d\n", pmic_type, level);
 		if (level)
 			{
-				leds_on_flag = 0;
 				led_gpio_set(1);
 			}
 			else
 			{
-				if (leds_on_flag == 0)
 				led_gpio_set(0);
-				else if (leds_on_flag == 1)
-				{
 					pmic_config_interface(0x1f0a,0x00,0xffff,0x00);
                                 	pmic_config_interface(0x1f10,0x00,0xffff,0x00);
                                 	pmic_config_interface(0x1f12,0x08,0xffff,0x00);
 				}
-		else
-				{
-				}
-			}
 		}
 
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
 #endif
-		if (level)
-			pinctrl_select_state(pinctrled, red_led_output_high);
-		else
-			pinctrl_select_state(pinctrled, red_led_output_low);
 	} else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK1) {
 		/* button flag ==0, means this ISINK is not for button backlight */
 		if ((button_flag_isink1 == 0) && (first_time == true)) {
