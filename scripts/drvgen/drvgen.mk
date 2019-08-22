@@ -35,7 +35,9 @@ MAIN_DTB_FILES := $(addprefix $(objtree)/arch/$(SRCARCH)/boot/dts/, $(MAIN_DTB_N
 PROJ_DTB_FILES := $(addprefix $(objtree)/arch/$(SRCARCH)/boot/dts/, $(PROJ_DTB_NAMES))
 PROJ_DTS_FILES := $(addsuffix .dts,$(addprefix $(srctree)/arch/$(SRCARCH)/boot/dts/, $(PROJ_DT_NAMES)))
 ABS_DTB_FILES := $(abspath $(addsuffix .dtb,$(addprefix $(objtree)/arch/$(SRCARCH)/boot/dts/,$(PROJ_DT_NAMES))))
+ifeq ($(strip $(MTK_DTB_CHECK)), yes)
 ABS_DTB2_FILES := $(abspath $(addprefix $(objtree)/arch/$(SRCARCH)/boot/dts/,$(MAIN_DTB_NAMES)))
+endif
 
 export PROJ_DTB_FILES
 export PROJ_DTS_FILES
@@ -83,6 +85,7 @@ echo " id=$(my_dtbo_id)" >>$(2);\
 $(eval my_dtbo_id:=$(shell echo $$(($(my_dtbo_id)+1))))
 endef
 
+ifeq ($(strip $(MTK_DTB_CHECK)), yes)
 my_dtb_id := 0
 define mk_dtbimg_cfg
 echo $(1) >>$(2);\
@@ -90,7 +93,11 @@ echo " id=$(my_dtb_id)" >>$(2);\
 $(eval my_dtb_id:=$(shell echo $$(($(my_dtb_id)+1))))
 endef
 
-dtbs: $(objtree)/dtboimg.cfg $(objtree)/dtbimg.cfg
+dtbs: $(objtree)/dtbimg.cfg
+dtbos: $(objtree)/dtboimg.cfg
+else
+dtbs: $(objtree)/dtboimg.cfg
+endif
 $(objtree)/dtboimg.cfg: FORCE
 	rm -f $@.tmp
 	$(foreach f,$(ABS_DTB_FILES),$(call mk_dtboimg_cfg,$(f),$@.tmp))
@@ -100,6 +107,7 @@ $(objtree)/dtboimg.cfg: FORCE
 		rm $@.tmp; \
 	fi
 
+ifeq ($(strip $(MTK_DTB_CHECK)), yes)
 $(objtree)/dtbimg.cfg: FORCE
 	rm -f $@.tmp
 	$(foreach f,$(ABS_DTB2_FILES),$(call mk_dtbimg_cfg,$(f),$@.tmp))
@@ -108,6 +116,6 @@ $(objtree)/dtbimg.cfg: FORCE
 	else \
 		rm $@.tmp; \
 	fi
-
+endif
 
 endif#MTK_PLATFORM

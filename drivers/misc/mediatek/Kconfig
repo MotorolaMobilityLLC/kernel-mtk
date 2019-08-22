@@ -11,6 +11,9 @@ if MEDIATEK_SOLUTION
 config MTK_PLATFORM
 	string "MTK platform name"
 
+config MTK_DTB_CHECK
+	string "MTK dtb check"
+
 config ARCH_MTK_PROJECT
 	string "MTK project name"
 
