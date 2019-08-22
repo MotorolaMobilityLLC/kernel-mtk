@@ -306,6 +306,7 @@ extern LCM_DRIVER ili9881c_hd_dsi_vdo_holitek_lcm_drv;
 extern LCM_DRIVER ili9881c_hd_dsi_vdo_txd_lcm_drv;
 extern LCM_DRIVER ft8006u_dsi_cmd_lcm_drv;
 extern LCM_DRIVER ontim_ILI9881C_lcm_drv_hc_hlt;
+extern LCM_DRIVER ontim_ILI9881P_lcm_drv_xm_txd;
 extern LCM_DRIVER ontim_ILI9881C_lcm_drv_boe_hlt;
 extern LCM_DRIVER ontim_ft8006u_lcm_drv_txd;
 extern LCM_DRIVER ontim_R61350_lcm_drv_hc_truly;

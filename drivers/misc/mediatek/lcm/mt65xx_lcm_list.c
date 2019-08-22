@@ -49,6 +49,10 @@ LCM_DRIVER *lcm_driver_list[] = {
       &ontim_ILI9881C_lcm_drv_boe_hlt,
 #endif 
 
+#if defined(ONTIM_ILI9881P_XM_TXD)
+      &ontim_ILI9881P_lcm_drv_xm_txd,
+#endif
+
 #if defined(ONTIM_R61350_HC_TRULY)
       &ontim_R61350_lcm_drv_hc_truly,
 #endif 
