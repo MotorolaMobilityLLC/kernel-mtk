@@ -3616,13 +3616,13 @@ void DrvEsdCheck(struct work_struct *pWork)
     {
         return;
     }
-
+#if 0
     if (_gInterruptFlag == 0) // Skip ESD check while finger touch
     {
         DBG(&g_I2cClient->dev, "Not allow to do ESD check while finger touch.\n");
         goto EsdCheckEnd;
     }
-    	
+#endif
     if (g_IsUpdateFirmware != 0) // Check whether update frimware is finished
     {
         DBG(&g_I2cClient->dev, "Not allow to do ESD check while update firmware is proceeding.\n");
@@ -4901,6 +4901,8 @@ static s32 _DrvMutualReadFingerTouchData(u8 *pPacket, u16 nReportPacketLength)
             if (rc < 0)
             {
                 DBG(&g_I2cClient->dev, "I2C read packet data failed, rc = %d\n", rc);
+                DrvTouchDeviceHwReset();
+                mdelay(200);
                 return -1;
             }
         }
@@ -12066,6 +12068,10 @@ static s32 _DrvMutualParsePacket(u8 *pPacket, u16 nLength, MutualTouchInfo_t *pI
     u32 i;
     u8 nCheckSum = 0;
     u32 nX = 0, nY = 0;
+#ifdef CONFIG_ENABLE_ESD_EXTRA_SAFEGAURD 
+    static u8 ncheckcounter=0;
+    DBG(&g_I2cClient->dev, "ESD_EXTRA_SAFEGAURD  ENABLE %s \n", __func__);
+#endif
 
     DBG(&g_I2cClient->dev, "*** %s() ***\n", __func__);
 
@@ -12132,6 +12138,32 @@ static s32 _DrvMutualParsePacket(u8 *pPacket, u16 nLength, MutualTouchInfo_t *pI
 
     nCheckSum = _DrvCalculateCheckSum(&pPacket[0], (nLength-1));
     DBG(&g_I2cClient->dev, "checksum : [%x] == [%x]? \n", pPacket[nLength-1], nCheckSum);
+	
+#ifdef CONFIG_ENABLE_ESD_EXTRA_SAFEGAURD 
+
+    {
+	    if( (pPacket[0] != 0x5a && (pPacket[nLength-1] != nCheckSum))|| 
+			    (pPacket[0] == 0x00 && pPacket[nLength-1]== 0x00 && nCheckSum== 0x00 )
+	      )
+	    {
+		    ncheckcounter++;
+	    }
+	    else
+	    {
+		    ncheckcounter=0;
+	    }
+    }
+	
+    DBG(&g_I2cClient->dev, "ncheckcounter=%d\n",ncheckcounter);
+
+    if( ncheckcounter >= ESD_EXTRA_SAFEGAURD_COUNTER)
+    {
+	    ncheckcounter=0;
+	    DrvTouchDeviceHwReset();
+	    mdelay(200);
+    }
+
+#endif
 
     if (pPacket[nLength-1] != nCheckSum)
     {

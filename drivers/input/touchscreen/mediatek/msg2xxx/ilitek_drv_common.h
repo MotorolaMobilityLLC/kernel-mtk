@@ -315,6 +315,11 @@
  */
 //#define CONFIG_ENABLE_CHARGER_DETECTION
 
+#define CONFIG_ENABLE_ESD_EXTRA_SAFEGAURD
+// ------------------- #ifdef CONFIG_ENABLE_ESD_EXTRA_SAFEGAURD ------------------- //
+#ifdef CONFIG_ENABLE_ESD_EXTRA_SAFEGAURD
+#define ESD_EXTRA_SAFEGAURD_COUNTER 	(3)
+#endif
 
 /*
  * Note.
