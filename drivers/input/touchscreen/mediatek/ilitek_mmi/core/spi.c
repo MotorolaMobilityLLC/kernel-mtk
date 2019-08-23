@@ -125,7 +125,7 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 				xferlen = DMA_TRANSFER_MAX_SIZE;
 
 			xfer[xfercnt+1].len = xferlen;
-			xfer[xfercnt+1].tx_buf = temp2;
+			/*xfer[xfercnt+1].tx_buf = temp2;*/
 			xfer[xfercnt+1].rx_buf = dma_rxbuf + xfercnt * DMA_TRANSFER_MAX_SIZE;
 			spi_message_add_tail(&xfer[xfercnt+1], &message);
 
