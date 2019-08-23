@@ -4391,7 +4391,7 @@ static signed int ISP_WriteReg(struct ISP_REG_IO_STRUCT *pRegIo)
 		Ret = -EFAULT;
 		goto EXIT;
 	}
-	if (pRegIo->Count > 0xFFFFFFFF) {
+	if ((pRegIo->Count > 0xFFFFFFFF) || (pRegIo->Count == 0)) {
 		pr_err("pRegIo->Count error");
 		Ret = -EFAULT;
 		goto EXIT;
