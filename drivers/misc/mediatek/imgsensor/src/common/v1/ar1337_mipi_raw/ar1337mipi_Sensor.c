@@ -95,7 +95,7 @@ static int cit_orig = 0;
 
 static DEFINE_SPINLOCK(imgsensor_drv_lock);
 
-//#define AR1337_USE_OTP
+#define AR1337_USE_OTP
 #ifdef AR1337_USE_OTP
 extern void otp_cali(unsigned char writeid);
 u16 Sunny_AR1337_OTP_Data[8] = {0};
@@ -109,15 +109,15 @@ u16 Sunny_AR1337_OTP_Data[8] = {0};
 #define EEPROM_I2C_ADDR         0xA0
 
 #define LSC_START     		0x0836
-#define SC_START      		0x0772
-#define TOLERANCE_START 	0x07fe
+#define SC_START      		0x0776
+#define TOLERANCE_START 	0x0802
 
 //#define WB_GOLDEN_R
 //#define WB_GOLDEN_GR
 //#define WB_GOLDEN_GB
 //#define WB_GOLDEN_B
 
-
+#if 0
 static kal_uint16 read_cmos_sensor16(kal_uint32 addr)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
@@ -127,6 +127,8 @@ static kal_uint16 read_cmos_sensor16(kal_uint32 addr)
 
     return ((get_byte<<8)&0xff00)|((get_byte>>8)&0x00ff);
 }
+#endif
+
 static kal_uint16 read_cmos_sensor(kal_uint32 addr)
 {
 	char pu_send_cmd[2] = {(char)(addr >> 8), (char)(addr & 0xFF) };
@@ -154,6 +156,7 @@ static kal_uint16 read_eeprom(kal_uint32 addr)
 
   return get_byte;
 }
+#if 0
 void ar1337_eeprom_lsc(void)
 {
 #ifdef _GSL_CHECKSUM_
@@ -276,7 +279,7 @@ void ar1337_eeprom_wb_af(void)
         AR1337_otp_Struct.bg_ratio = bg_ratio;
         AR1337_otp_Struct.gg_ratio = gg_ratio;
         LOG_INF("[AR1337_OTP] ");       
-    }
+    }AR1337_USE_OTP
 #endif
    AR1337_otp_Struct.rg_ratio = rg_ratio;
         AR1337_otp_Struct.bg_ratio = bg_ratio;
@@ -335,7 +338,7 @@ void ar1337_eeprom_wb_af(void)
         LOG_INF("[AR1337_OTP] read af flag fail!");
         return 0;
     }
-    else{
+    else{AR1337_USE_OTP
          inf=  read_eeprom(0x76c)<<8 |read_eeprom(0x76d) ;
         macro     = read_eeprom(0x76e)<<8 |read_eeprom(0x76f) ;    
     }
@@ -366,6 +369,8 @@ void ar1337_eeprom_wb_af(void)
    #endif
   // return 1;
 }
+#endif
+
 #if 0
 void ar1337_eeprom_wb_af(void)
 {
@@ -459,7 +464,7 @@ void ar1337_eeprom_sc(void)
 		iCheckSum += iData[j]+iData[j+1];
 #endif
 
-		write_cmos_sensor_2byte(0x3232+i,iData[j]<<8|iData[j+1]);
+		write_cmos_sensor_2byte(0x3232+i,iData[j+1]<<8|iData[j]);
 		j=0;
 	}
 	iData[0]=read_eeprom(SC_START+136);
@@ -469,7 +474,7 @@ void ar1337_eeprom_sc(void)
 	iCheckSum = iData[0]+iData[1];
 #endif
 
-	write_cmos_sensor_2byte(0x3c92,iData[0]<<8|iData[1]);
+	write_cmos_sensor_2byte(0x3c92,iData[1]<<8|iData[0]);
 	
 #ifdef _GSL_CHECKSUM_	
 	for(i=0; i<138; i++)
@@ -501,7 +506,7 @@ void ar1337_eeprom_tolerance(void)
 	{
 		iData[j] = read_eeprom(TOLERANCE_START+i);
 		iData[j+1] = read_eeprom(TOLERANCE_START+i+1);
-		write_cmos_sensor_2byte(0x3ca8 + i,iData[j]<<8|iData[j+1]);
+		write_cmos_sensor_2byte(0x3ca8 + i,iData[j+1]<<8|iData[j]);
 	//	iCheckSum += iData[j]+iData[j+1];
 		
 		j = 0;
@@ -515,11 +520,41 @@ void ar1337_eeprom_load(void)
 {
 	//ar1337_eeprom_lsc();
 	//ar1337_eeprom_wb_af();
-	//ar1337_eeprom_sc();
-	//ar1337_eeprom_tolerance();
+	ar1337_eeprom_sc();
+	ar1337_eeprom_tolerance();
 }
 
 
+#endif
+
+
+#ifdef otp_debug
+void ar1337_read_eeprom(void)
+{
+  int i = 0;
+  for(i = 0; i < 164; i++)
+  {
+	LOG_INF("guozy address = 0x%x  , data = 0x%x\n", i,read_eeprom(0x0776 + i));  
+  }
+
+}
+
+
+void ar1337_read_sensor_infor(void)
+{
+  int i = 0;
+  for(i = 0; i < 136; i++)
+  {
+	LOG_INF("guozy LSC: 0x%x=0x%x \n",0x3232+i,read_cmos_sensor(0x3232+i));
+  }
+	LOG_INF("guozy LSC: 0x3C92=0x%x \n",read_cmos_sensor(0x3C92));
+	LOG_INF("guozy LSC: 0x3C93=0x%x \n",read_cmos_sensor(0x3C93));
+
+  for(i = 0; i < 24; i++)
+  {
+	LOG_INF("guozy tolerance: 0x%x=0x%x \n",0x3CA8+i,read_cmos_sensor(0x3CA8+i));
+  }
+}
 #endif
 
 
@@ -527,7 +562,6 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_id = AR1337_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
     .checksum_value = 0xbde6b5f8,//0xf86cfdf4,        //checksum value for Camera Auto Test
-
     .pre = {
         .pclk = 451200000,                //record different mode's pclk
         .linelength = 4792,                //record different mode's linelength
@@ -999,13 +1033,13 @@ static kal_uint16 set_gain(kal_uint16 gain)
 {
 	kal_uint16 reg_gain;
 	//kal_uint16 gain_value02;//Gain305E;
-	//kal_uint16 digital_gain = 64;
-	//kal_uint16 analog_coarse_gain =2;
-	//kal_uint16 analog_fine_gain = 0;
+	kal_uint16 digital_gain = 64;
+	kal_uint16 analog_coarse_gain =2;
+	kal_uint16 analog_fine_gain = 0;
 	/* 0x350A[0:1], 0x350B[0:7] AGC real gain */
 	LOG_INF("chenxing log-- gain = %d , \n ", gain);
 	
-	#if 1
+	#if 0
 	if (gain < BASEGAIN || gain >  775*BASEGAIN/100) 
 	{
 		LOG_INF("Error gain setting");
@@ -1068,9 +1102,9 @@ static kal_uint16 set_gain(kal_uint16 gain)
 	}
 
 	reg_gain= ((digital_gain & 0x1ff) << 7 )|((analog_coarse_gain & 0x7) << 4) | (analog_fine_gain & 0xf);
-	//write_cmos_sensor(0x0104, 0x01);
+	write_cmos_sensor(0x0104, 0x01);
 	write_cmos_sensor_2byte(0x305E, reg_gain);
-	//write_cmos_sensor(0x0104, 0x00);
+	write_cmos_sensor(0x0104, 0x00);
 	#endif
 	spin_lock(&imgsensor_drv_lock);
 	imgsensor.gain = reg_gain;
@@ -3820,7 +3854,7 @@ write_cmos_sensor_16bit(0x3F3C, 0x0003);
 	//LOG_CORN("[Corn]PE 16BIT \n");	
 #endif
 
-#if 1// no use pd line 
+#if 0// no use pd line 
 	write_cmos_sensor_16bit(0x3232, 0x0620);
 	write_cmos_sensor_16bit(0x3234, 0x0840);
 	write_cmos_sensor_16bit(0x3236, 0xA458);
@@ -3906,7 +3940,7 @@ write_cmos_sensor_16bit(0x3F3C, 0x0003);
 	write_cmos_sensor_16bit(0x3CBE, 0x0604);
 #endif
 
-mdelay(70);
+//mdelay(70);
 
 #if 0
     //temp = Read_cmos_sensor_2byte(0x020E)&0x00ff;
@@ -4258,6 +4292,7 @@ static kal_uint32 open(void)
         
     /* initail sequence write in  */
     sensor_init();
+	mdelay(5);
 #ifdef AR1337_USE_OTP
 	ar1337_eeprom_load();
 	  //for OTP
@@ -4345,6 +4380,10 @@ static kal_uint32 preview(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
     imgsensor.autoflicker_en = KAL_FALSE;
     spin_unlock(&imgsensor_drv_lock);
     preview_setting();
+#ifdef otp_debug
+    ar1337_read_eeprom();
+    ar1337_read_sensor_infor();
+#endif
     //set_mirror_flip(imgsensor.mirror);
 	//write_cmos_sensor(0x0101, 0x00);  // direction
 	//set_mirror_flip(sensor_config_data->SensorImageMirror);
