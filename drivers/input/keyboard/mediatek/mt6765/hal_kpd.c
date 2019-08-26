@@ -105,6 +105,12 @@ void long_press_reboot_function_setting(void)
 		pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
 #endif
 	}
+
+#ifdef DUAL_85_VERSION 
+	kpd_info("disable other mode LPRST\n");
+	pmic_set_register_value(PMIC_RG_PWRKEY_RST_EN, 0x00);
+	pmic_set_register_value(PMIC_RG_HOMEKEY_RST_EN, 0x00);
+#endif
 #endif
 }
 

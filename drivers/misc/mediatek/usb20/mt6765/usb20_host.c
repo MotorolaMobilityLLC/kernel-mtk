@@ -182,6 +182,7 @@ static void _set_vbus(int is_on)
 	}
 }
 
+#ifdef CONFIG_MTK_USB_TYPEC
 static void do_vbus_work(struct work_struct *data)
 {
 	struct mt_usb_work *work =
@@ -217,7 +218,6 @@ static void issue_vbus_work(int ops, int delay)
 	queue_delayed_work(mtk_musb->st_wq,
 				&work->dwork, msecs_to_jiffies(delay));
 }
-
 static void mt_usb_vbus_on(int delay)
 {
 	DBG(0, "vbus_on\n");
@@ -230,6 +230,7 @@ static void mt_usb_vbus_off(int delay)
 	issue_vbus_work(VBUS_OPS_OFF, delay);
 }
 
+#endif
 void mt_usb_set_vbus(struct musb *musb, int is_on)
 {
 #ifndef FPGA_PLATFORM
@@ -719,6 +720,7 @@ static int otg_iddig_probe(struct platform_device *pdev)
 			iddig_eint_num, ret);
 		return ret;
 	}
+	enable_irq_wake(iddig_eint_num);
 
 	return 0;
 }

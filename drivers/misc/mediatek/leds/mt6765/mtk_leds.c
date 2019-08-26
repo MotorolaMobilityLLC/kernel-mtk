@@ -88,6 +88,8 @@ static unsigned int bl_frequency_hal = 32000;
 static int button_flag_isink1;
 
 struct wakeup_source leds_suspend_lock;
+extern struct pinctrl *pinctrled;
+extern struct pinctrl_state *red_led_output_low, *red_led_output_high;
 
 char *leds_name[MT65XX_LED_TYPE_TOTAL] = {
 	"red",
@@ -792,6 +794,13 @@ int mt_brightness_set_pmic(enum mt65xx_led_pmic pmic_type, u32 level, u32 div)
 #endif
 		mutex_unlock(&leds_pmic_mutex);
 		return 0;
+	}
+	else if (pmic_type == MT65XX_LED_PMIC_NLED_ISINK0)
+	{
+		if (level)
+			pinctrl_select_state(pinctrled, red_led_output_high);
+		else
+			pinctrl_select_state(pinctrled, red_led_output_low);
 	}
 	mutex_unlock(&leds_pmic_mutex);
 	return -1;

@@ -46,7 +46,7 @@ struct charger_ops {
 	/* cable plug in/out */
 	int (*plug_in)(struct charger_device *);
 	int (*plug_out)(struct charger_device *);
-
+	int (*hw_init)(struct charger_device *);
 	/* enable/disable charger */
 	int (*enable)(struct charger_device *, bool en);
 
@@ -166,6 +166,8 @@ static inline void *charger_get_data(struct charger_device *chg_dev)
 
 extern int charger_dev_enable(struct charger_device *chg_dev, bool en);
 extern int charger_dev_is_enabled(struct charger_device *chg_dev, bool *en);
+extern int charger_dev_hw_init(struct charger_device *chg_dev);
+
 extern int charger_dev_plug_in(struct charger_device *chg_dev);
 extern int charger_dev_plug_out(struct charger_device *chg_dev);
 extern int charger_dev_set_charging_current(struct charger_device *chg_dev,

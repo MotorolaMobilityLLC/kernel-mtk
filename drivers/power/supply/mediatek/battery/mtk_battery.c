@@ -125,6 +125,13 @@ static enum power_supply_property battery_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 };
 
+#include <ontim/ontim_dev_dgb.h>
+char battery_vendor_name[50]="MLP395976 2920mAh";
+DEV_ATTR_DECLARE(battery)
+DEV_ATTR_DEFINE("vendor",battery_vendor_name)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(battery,battery,8);
+
 /* weak function */
 int __attribute__ ((weak))
 	do_ptim_gauge(
@@ -1324,6 +1331,12 @@ int force_get_tbat(bool update)
 	}
 
 	gm.ntc_disable_nafg = false;
+#ifdef DUAL_85_VERSION
+	if (bat_temperature_val > 48)
+		bat_temperature_val = 48;
+	if (bat_temperature_val < 10)
+		bat_temperature_val = 10;
+#endif
 	return bat_temperature_val;
 #endif
 }
@@ -3462,6 +3475,12 @@ static int __init battery_probe(struct platform_device *dev)
 	char boot_voltage_tmp[10];
 	int boot_voltage_len = 0;
 
+//+add by hzb for ontim debug
+	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+	{
+		return -EIO;
+	}
+//-add by hzb for ontim debug
 	wakeup_source_init(&battery_lock, "battery wakelock");
 	__pm_stay_awake(&battery_lock);
 
@@ -3618,6 +3637,9 @@ static int __init battery_probe(struct platform_device *dev)
 
 	gm.is_probe_done = true;
 
+//+add by hzb for ontim debug
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+//-add by hzb for ontim debug
 	return 0;
 }
 
