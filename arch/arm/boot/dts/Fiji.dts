@@ -61,9 +61,9 @@
 	};
 	led6:led@6 {
 		compatible = "mediatek,lcd-backlight";
-		led_mode = <5>;
+		led_mode = <4>;
 		data = <1>;
-		pwm_config = <0 3 0 0 0>;
+		pwm_config = <0 2 0 0 0>;
 	};
 	vibrator0:vibrator@0 {
 		compatible = "mediatek,vibrator";
@@ -112,7 +112,7 @@
 
 /* TOUCH start */
 &touch {
-	tpd-resolution = <1080 1920>;
+	tpd-resolution = <720 1280>;
 	use-tpd-button = <0>;
 	tpd-key-num = <3>;
 	tpd-key-local= <139 172 158 0>;
@@ -120,7 +120,7 @@
 				 883 100 40 370 883 100 40 0 0 0 0>;
 	tpd-max-touch-num = <5>;
 	tpd-filter-enable = <1>;
-	tpd-filter-pixel-density = <146>;
+	tpd-filter-pixel-density = <106>;
 	tpd-filter-custom-prameters = <0 0 0 0 0 0 0 0 0 0 0 0>;
 	tpd-filter-custom-speed = <0 0 0>;
 	pinctrl-names = "default", "state_eint_as_int", "state_eint_output0",
@@ -173,6 +173,82 @@
 	};
 };
 /* TOUCH end */
+/* DISPSYS GPIO standardization */
+&pio {
+	mtkfb_pins_mode_te_gpio: mode_te_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_mode_te_te: mode_te_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+};
+
+&mtkfb {
+	pinctrl-names = "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
+		"lcm_rst_out1_gpio","lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio", "lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
+	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
+	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-4 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-8 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-9 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-10 = <&mtkfb_pins_lcd_bias_enn1>;
+	status = "okay";
+};
+/* DISPSYS GPIO standardization end */
 &accdet {
 	accdet-mic-vol = <6>;
 	headset-mode-setting = <0x500 0x500 1 0x1f0 0x800 0x800 0x20 0x44>;

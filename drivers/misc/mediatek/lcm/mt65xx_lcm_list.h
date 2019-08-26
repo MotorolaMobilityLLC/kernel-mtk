@@ -295,6 +295,11 @@ extern struct LCM_DRIVER nt36672_fhdp_dsi_vdo_auo_laneswap_lcm_drv;
 extern struct LCM_DRIVER ili9881h_hdp_dsi_vdo_ilitek_rt5081_19_9_lcm_drv;
 extern struct LCM_DRIVER hx83112b_fhdp_dsi_cmd_auo_rt5081_lcm_drv;
 
+extern struct LCM_DRIVER nt35521z_hd_dsi_vdo_truly_lcm_drv;
+extern struct LCM_DRIVER ili9881c_hd_dsi_vdo_holitek_lcm_drv;
+extern struct LCM_DRIVER ili9881c_hd_dsi_vdo_hjc_lcm_drv;
+extern struct LCM_DRIVER ili9881c_hd_dsi_vdo_txd_lcm_drv;
+
 #ifdef BUILD_LK
 extern void mdelay(unsigned long msec);
 #endif
