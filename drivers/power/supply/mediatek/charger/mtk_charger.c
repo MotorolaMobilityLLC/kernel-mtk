@@ -392,6 +392,9 @@ int charger_manager_enable_charging(struct charger_consumer *consumer,
 int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 	int idx, int input_current)
 {
+#ifdef DUAL_85_VERSION
+	return 0;
+#else
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
@@ -412,11 +415,15 @@ int charger_manager_set_input_current_limit(struct charger_consumer *consumer,
 		return 0;
 	}
 	return -EBUSY;
+#endif
 }
 
 int charger_manager_set_charging_current_limit(
 	struct charger_consumer *consumer, int idx, int charging_current)
 {
+#ifdef DUAL_85_VERSION
+	return 0;
+#else
 	struct charger_manager *info = consumer->cm;
 
 	if (info != NULL) {
@@ -437,6 +444,7 @@ int charger_manager_set_charging_current_limit(
 		return 0;
 	}
 	return -EBUSY;
+#endif
 }
 
 int charger_manager_get_charger_temperature(struct charger_consumer *consumer,

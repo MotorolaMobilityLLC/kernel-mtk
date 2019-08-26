@@ -86,6 +86,7 @@
 /* global variable */
 /* ============================================================ */
 struct mtk_battery gm;
+extern char battery_vendor_name[50];
 
 /* ============================================================ */
 /* gauge hal interface */
@@ -344,6 +345,8 @@ void fgauge_get_profile_id(void)
 			gm.battery_id = TOTAL_BATTERY_NUMBER - 1;
 		}
 	}
+	gm.battery_id = 0;
+	strncpy(battery_vendor_name,g_battery_id_vendor_name[gm.battery_id],20);
 
 	bm_debug("[%s]Battery id (%d)\n",
 		__func__,
@@ -4009,8 +4012,8 @@ void mtk_battery_init(struct platform_device *dev)
 			fg_iavg_int_lt_handler);
 
 		/* init BAT PLUGOUT INT */
-		pmic_register_interrupt_callback(FG_BAT_PLUGOUT_NO,
-		fg_bat_plugout_int_handler);
+		//pmic_register_interrupt_callback(FG_BAT_PLUGOUT_NO,
+		//fg_bat_plugout_int_handler);
 
 		/* TEMPRATURE INT */
 		pmic_register_interrupt_callback(FG_RG_INT_EN_BAT_TEMP_H,

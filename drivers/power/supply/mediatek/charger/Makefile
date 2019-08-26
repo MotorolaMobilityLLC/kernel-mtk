@@ -33,3 +33,12 @@ obj-$(CONFIG_MTK_DUAL_CHARGER_SUPPORT) += mtk_dual_switch_charging.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT) += mtk_pe_intf.o
 obj-$(CONFIG_MTK_PUMP_EXPRESS_PLUS_20_SUPPORT) += mtk_pe20_intf.o
 obj-$(CONFIG_CHARGER_RT9465) += rt9465.o
+obj-$(CONFIG_CHARGER_HL7005) += hl7005.o
+
+ifeq ($(BUILD_SMT),true)
+  subdir-ccflags-y += -DSMT_VERSION
+endif
+
+ifeq ($(BUILD_DUAL_85),true)
+  subdir-ccflags-y += -DDUAL_85_VERSION
+endif

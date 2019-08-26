@@ -96,6 +96,10 @@ enum audio_system_gpio_type {
 	GPIO_HPDEPOP_LOW,
 	GPIO_AUD_CLK_MOSI_HIGH,
 	GPIO_AUD_CLK_MOSI_LOW,
+	GPIO_AUD_SWITCH_EN_HIGH,
+	GPIO_AUD_SWITCH_EN_LOW,
+	GPIO_AUD_RCV_EN_HIGH,
+	GPIO_AUD_RCV_EN_LOW,
 	GPIO_NUM
 };
 
@@ -147,6 +151,10 @@ static struct audio_gpio_attr aud_gpios[GPIO_NUM] = {
 					    NULL},
 		[GPIO_AUD_CLK_MOSI_LOW] = {"aud_clk_mosi_pull_low", false,
 					   NULL},
+		[GPIO_AUD_SWITCH_EN_HIGH] = {"aud_switch_en_high", false, NULL},
+		[GPIO_AUD_SWITCH_EN_LOW] = {"aud_switch_en_low", false, NULL},
+		[GPIO_AUD_RCV_EN_HIGH] = {"aud_rcv_en_high", false, NULL},
+		[GPIO_AUD_RCV_EN_LOW] = {"aud_rcv_en_low", false, NULL},
 };
 #endif
 
@@ -193,7 +201,7 @@ void AudDrv_GPIO_probe(void *dev)
 			pinctrl_lookup_state(pinctrlaud, aud_gpios[i].name);
 		if (IS_ERR(aud_gpios[i].gpioctrl)) {
 			ret = PTR_ERR(aud_gpios[i].gpioctrl);
-			pr_err("%s pinctrl_lookup_state %s fail %d\n", __func__,
+			pr_err("%s 	 %s fail %d\n", __func__,
 			       aud_gpios[i].name, ret);
 		} else {
 			aud_gpios[i].gpio_prepare = true;
@@ -245,6 +253,25 @@ static bool AudDrv_GPIO_IsValid(enum audio_system_gpio_type _type)
 }
 
 
+void Switch_Apply(int mode)
+{
+	switch(mode) {
+		case SWITCH_MODE_SPK:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_HIGH);
+			AudDrv_GPIO_Select(GPIO_AUD_RCV_EN_LOW);
+			break;
+		case SWITCH_MODE_SUPREV:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_HIGH);
+			AudDrv_GPIO_Select(GPIO_AUD_RCV_EN_HIGH);
+			break;
+		case SWITCH_MODE_REV:
+			AudDrv_GPIO_Select(GPIO_AUD_SWITCH_EN_LOW);
+			break;
+		default:
+			pr_err("%s,switch mode error !\n",__func__);
+	break;
+	}
+}
 static int set_aud_clk_mosi(bool _enable)
 {
 /*

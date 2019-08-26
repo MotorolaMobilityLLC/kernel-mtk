@@ -135,6 +135,15 @@ int charger_dev_get_min_charging_current(struct charger_device *chg_dev,
 }
 EXPORT_SYMBOL(charger_dev_get_min_charging_current);
 
+int charger_dev_hw_init(struct charger_device *chg_dev)
+{
+	if (chg_dev != NULL && chg_dev->ops != NULL && chg_dev->ops->hw_init)
+		return chg_dev->ops->hw_init(chg_dev);
+
+	return -ENOTSUPP;
+}
+EXPORT_SYMBOL(charger_dev_hw_init);
+
 int charger_dev_enable_chip(struct charger_device *chg_dev, bool en)
 {
 	if (chg_dev != NULL && chg_dev->ops != NULL &&

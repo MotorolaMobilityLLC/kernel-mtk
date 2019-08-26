@@ -21,7 +21,7 @@ struct dev_arrt
 };
 struct ontim_debug
 {
-     char  *dev_name;
+     const unsigned char *dev_name;
      struct dev_arrt *dev_attr_array;
      u8     dev_attr_array_len;
      unsigned int dbg_trace_level;     
@@ -70,14 +70,8 @@ struct ontim_debug
 	ontim_dev_printk(level , format , ## arg)
 
 
- int ontim_dev_debug_file_exist(struct ontim_debug *ontim_debug)
-{
-	return 0;
-}
- int regester_and_init_ontim_debug(struct ontim_debug *ontim_debug)
- {
-	return 0;
- }
+extern int ontim_dev_debug_file_exist(struct ontim_debug *ontim_debug);
+extern int regester_and_init_ontim_debug(struct ontim_debug *ontim_debug);
 #define CHECK_THIS_DEV_DEBUG_AREADY_EXIT() \
          ontim_dev_debug_file_exist(ontim_debug_for_everyone)
 #define REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV()\

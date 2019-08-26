@@ -95,7 +95,10 @@ static void _disable_all_charging(struct charger_manager *info)
 			mtk_pe40_end(info, 3, true);
 	}
 }
-
+static void swchg_hw_init(struct charger_manager *info)
+{
+	charger_dev_hw_init(info->chg1_dev);
+}
 static void swchg_select_charging_current_limit(struct charger_manager *info)
 {
 	struct charger_data *pdata;
@@ -381,7 +384,7 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 	} else {
 		mtk_pe20_start_algorithm(info);
 		mtk_pe_start_algorithm(info);
-
+		swchg_hw_init(info);
 		swchg_select_charging_current_limit(info);
 		if (info->chg1_data.input_current_limit == 0
 		    || info->chg1_data.charging_current_limit == 0) {

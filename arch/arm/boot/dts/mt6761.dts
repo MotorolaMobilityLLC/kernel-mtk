@@ -424,6 +424,11 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 	tcpc_pd: tcpc_pd {
 
 	};
+    
+
+   dt_ext_md_wk_up_usb: dt_ext_md_wk_up_usb{
+
+   };
 
 	md1_sim1_hot_plug_eint: md1_sim1_hot_plug_eint {
 
@@ -631,6 +636,10 @@ maxcpus=8 firmware_class.path=/vendor/firmware loop.max_part=7";
 
 	accdet: accdet {
 		compatible = "mediatek,pmic-accdet";
+	};
+
+	goodix_fp: fingerprint {
+		compatible = "mediatek,goodix-fp";
 	};
 
 	mt6357_gauge {
@@ -2102,8 +2111,19 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		gpio-irq-std = <&pio 10 0x0>;
 	};
 
+ 	als: als_ps@0 {
+		compatible = "mediatek,als_ps";
+	};
 	irq_nfc: irq_nfc {
 		compatible = "mediatek,irq_nfc-eint";
+	};
+
+	eint_alps:eint_alps{
+		compatible = "mediatek,als-eint";
+	};
+	eint_acc:eint_acc{
+	};
+	int_sar_sensor:int_sar_sensor{
 	};
 
 	disp_mutex0: disp_mutex0@14001000 {
@@ -2519,7 +2539,9 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 	flashlight_core: flashlight_core {
 		compatible = "mediatek,flashlight_core";
 	};
-
+	flashlights_aw3643: flashlights_aw3643 {
+		compatible = "mediatek,flashlights_aw3643";
+	};
 	flashlights_mt6370: flashlights_mt6370 {
 		compatible = "mediatek,flashlights_mt6370";
 		decouple = <0>;
@@ -2600,14 +2622,6 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		/* reserved for overlay by odm */
 	};
 
-	radio_md_cfg: radio_md_cfg {
-		compatible = "mediatek,radio_md_cfg";
-	};
-
-	dynamic_options: dynamic_options {
-		compatible = "mediatek,dynamic_options";
-	};
-
 	audio_snd_card {
 		compatible = "mediatek,audio_snd_card";
 	};
@@ -2686,6 +2700,13 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 
 	mt_soc_voice_md2 {
 		compatible = "mediatek,mt_soc_pcm_voice_md2";
+	};
+
+	mt_soc_pcm_dl1_scp_spk {
+		compatible = "mediatek,mt_soc_pcm_dl1_scp_spk";
+	};
+	mt_soc_pcm_voice_scp {
+		compatible = "mediatek,mt_soc_pcm_voice_scp";
 	};
 
 	mt_soc_routing_pcm {
@@ -2856,7 +2877,9 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 			};
 		};
 	};
-
+	led_simple: led_simple {
+		compatible = "leds-mt65xx";
+	};
 	mt_charger: mt_charger {
 		compatible = "mediatek,mt-charger";
 	};
@@ -2888,15 +2911,15 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
 		/* enable_sw_jeita; */
-		enable_pe_plus;
+		/*enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
 		enable_type_c;
-		power_path_support;
+		power_path_support;*/
 
 		/* common */
-		battery_cv = <4350000>;
+		battery_cv = <4400000>;
 		max_charger_voltage = <6500000>;
 		min_charger_voltage = <4600000>;
 
@@ -2905,21 +2928,21 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
-		ac_charger_input_current = <3200000>;
-		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <1500000>;
+		ac_charger_current = <1450000>;
+		ac_charger_input_current = <1450000>;
+		non_std_ac_charger_current = <1450000>;
+		charging_host_charger_current = <1450000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv = <4240000>;
-		jeita_temp_t3_to_t4_cv = <4240000>;
-		jeita_temp_t2_to_t3_cv = <4340000>;
-		jeita_temp_t1_to_t2_cv = <4240000>;
-		jeita_temp_t0_to_t1_cv = <4040000>;
-		jeita_temp_below_t0_cv = <4040000>;
+		jeita_temp_above_t4_cv = <4100000>;
+		jeita_temp_t3_to_t4_cv = <4100000>;
+		jeita_temp_t2_to_t3_cv = <4400000>;
+		jeita_temp_t1_to_t2_cv = <4400000>;
+		jeita_temp_t0_to_t1_cv = <4100000>;
+		jeita_temp_below_t0_cv = <4100000>;
 		temp_t4_thres = <50>;
 		temp_t4_thres_minus_x_degree = <47>;
 		temp_t3_thres = <45>;
@@ -2938,7 +2961,7 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		min_charge_temp_plus_x_degree = <6>;
 		max_charge_temp = <50>;
 		max_charge_temp_minus_x_degree = <47>;
-
+#if 0
 		/* PE */
 		ta_12v_support;
 		ta_9v_support;
@@ -2963,14 +2986,14 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		pe40_stop_battery_soc = <80>;
 
 		/* PE 4.0 cable impedance (mohm) */
-		pe40_r_cable_1a_lower = <530>;
-		pe40_r_cable_2a_lower = <390>;
-		pe40_r_cable_3a_lower = <252>;
+		pe40_r_cable_1a_lower = <553>;
+		pe40_r_cable_2a_lower = <415>;
+		pe40_r_cable_3a_lower = <275>;
 
 		/* dual charger */
 		chg1_ta_ac_charger_current = <1500000>;
 		chg2_ta_ac_charger_current = <1500000>;
-
+#endif
 		/* cable measurement impedance */
 		cable_imp_threshold = <699>;
 		vbat_cable_imp_threshold = <3900000>; /* uV */
@@ -2979,6 +3002,9 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		bif_threshold1 = <4250000>;
 		bif_threshold2 = <4300000>;
 		bif_cv_under_threshold2 = <4450000>;
+	};
+
+	chr_stat: chr_stat {
 	};
 
 	rt9465_slave_chr: rt9465_slave_chr {
@@ -3030,6 +3056,14 @@ mipi_rx_ana_csi0b: mipi_rx_ana_csi0b@11c11000 {
 		iommus = <&iommu M4U_PORT_CAM_IMGO>,
 			 <&iommu M4U_PORT_CAM_RRZO>;
 	};
+	radio_md_cfg: radio_md_cfg {
+		compatible = "mediatek,radio_md_cfg";
+	};
+
+	dynamic_options: dynamic_options {
+		compatible = "mediatek,dynamic_options";
+	};
+
 };
 
 #include "cust_mt6761_msdc.dtsi"

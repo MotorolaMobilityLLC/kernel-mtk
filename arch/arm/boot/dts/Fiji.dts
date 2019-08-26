@@ -25,14 +25,14 @@
 &odm {
 	led0:led@0 {
 		compatible = "mediatek,red";
-		led_mode = <0>;
+		led_mode = <3>;
 		data = <1>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led1:led@1 {
 		compatible = "mediatek,green";
-		led_mode = <0>;
-		data = <1>;
+		led_mode = <3>;
+		data = <2>;
 		pwm_config = <0 0 0 0 0>;
 	};
 	led2:led@2 {
@@ -71,8 +71,183 @@
 		vib_limit = <9>;
 		vib_vol= <9>;
 	};
+	memory_ssmr_features: memory-ssmr-features {
+		compatible = "mediatek,memory-ssmr-features";
+		svp-size = <0 0>;
+		iris-recognition-size = <0 0>;
+		2d_fr-size = <0 0>;
+		tui-size = <0 0>;
+		wfd-size = <0 0>;
+		prot-sharedmem-size = <0 0>;
+	};
 };
 
+&i2c1 {
+/*  start sensor */
+
+	gsensor_m:gsensor_mc34XX@4c {
+		compatible = "mediatek,gsensor_MC34XX-ontim";
+		i2c_num	= <1>;
+		i2c_addr = <0x4c 0 0 0>;
+		direction = <2>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+		status = "okay";
+	};
+
+  	gsensor_k:gsensor_kxtj2@0e {
+		compatible = "mediatek,gsensor_kxtj2";
+		reg = <0x0e>;
+		status = "okay";
+		
+		i2c_num	= <1>;
+		i2c_addr = <0x0e 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	};
+	gsensor_kx126:gsensor_kx126_1063@0f {
+		compatible = "mediatek,gsensor_kx126_1063";
+		reg = <0x0f>;
+		status = "okay";
+		
+		i2c_num	= <1>;
+		i2c_addr = <0x0f 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	};
+	gsensor_bma4xy:gsensor_bma4xy@18 {
+		compatible = "mediatek,gsensor_bma4xy";
+		reg = <0x18>;
+		status = "okay";
+		
+		i2c_num	= <1>;
+		i2c_addr = <0x18 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	}; 
+/*
+	
+	alsps@53 {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&alsps_intpin_default>;
+		pinctrl-1 = <&alsps_intpin_cfg>;
+		status = "okay";
+		 //customization 
+
+                //compatible                              = "mediatek,ltr578";//
+		i2c_num = <1>;
+              i2c_addr                                = <0x53 0 0 0>;
+		polling_mode_ps = <0>;
+		polling_mode_als = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+                als_level = <
+                                        0  119  275  455  896  1507  2116    2661
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  85  194  320  630  1059  1667    2210
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                         >;
+                als_value = < 0  133  304  502   1004  2005  3058   4000 >;
+                ps_threshold_high               =  <1000>;
+                ps_threshold_low                =  <800>;
+		is_batch_supported_ps = <0>;
+		is_batch_supported_als = <0>;
+		//
+		als_calib_enable = <1>;
+                als_ch0_expect               =  <1000>;
+                als_ch1_expect                =  <800>;
+		//
+	};*/
+
+
+	alsps@53 {
+		compatible = "mediatek,alsps_ltr577";
+		
+		pinctrl-names = "pin_default", "pin_cfg";
+                pinctrl-0 = <&alsps_intpin_default>;
+                pinctrl-1 = <&alsps_intpin_cfg>;
+
+		i2c_num = <1>;
+		i2c_addr= <0x53 0 0 0>;
+		polling_mode_ps = <0>;
+		polling_mode_als = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+                als_level = <
+                                        0  133  304  502   1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  133  304  502   1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                        0  133  304   502  1004  2005  3058 4000
+                                         >;
+                als_value = < 0  133  304  502   1004  2005  3058   4000 >;
+                ps_threshold_high               =  <700>;
+                ps_threshold_low                =  <600>;
+		is_batch_supported_ps = <0>;
+		is_batch_supported_als = <0>;
+
+               };
+
+
+	alsps@48 {
+		compatible				= "mediatek,alps_stk3x1x";
+		reg = <0x48>;
+		status = "okay";
+
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&alsps_intpin_default>;
+		pinctrl-1 = <&alsps_intpin_cfg>;
+
+		interrupt-parent = <&pio>;
+		interrupts = <1 IRQ_TYPE_LEVEL_LOW 1 0>;
+
+		i2c_num				= <1>;
+		i2c_addr				= <0x48 0 0 0>;
+		polling_mode_ps			= <0>;
+		polling_mode_als		= <1>;
+		power_id				= <0xffff>;
+		power_vol				= <0>;
+		als_level = < 
+					0  39   91    150    290    505     736    943
+					0  82   174   299    582    1319    2940  3333
+					0  123   264   399    627    1444   2144   2800
+					0  63   144    237    445    724     991    1231
+					0  72   163   258    560    1576   2400   3152
+					0  112   240   475    746    1719   2552   3333
+					  >;
+		als_value = < 0  133  304  502   1004  2005  3058   4000 >;
+		state_val		=  <0>;
+		psctrl_val		=  <0x31>;
+		alsctrl_val	= <0x38>;
+		ledctrl_val	= <0xFF>;
+		wait_val		= <0xF>;
+		ps_threshold_high		=  <1700>;
+		ps_threshold_low		=  <1500>;
+		is_batch_supported_ps	= <0>;
+		is_batch_supported_als	= <0>;
+		//
+                als_calib_enable = <1>;
+                als_ch0_expect               =  <1000>;
+                als_ch1_expect                =  <800>;
+               // 
+		};  
+
+/* end sensor */
+};
 &i2c2 {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -100,13 +275,73 @@
 		vsel_pin = <1>;
 	};
 };
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
 
+	externel-charger@6a{
+		compatible = "halo,hl7005";
+		reg = <0x6a>;
+		status = "okay";
+	};
+};
 &i2c6 {
 	ext_buck_vgpu@55 {
 		regulator-name ="ext_buck_vgpu";
 		regulator-min-microvolt = <300000>;
 		regulator-max-microvolt = <1300000>;
 		vsel_pin = <2>;
+	};
+	flashlight@63 {
+		reg = <0x63>;
+		status = "okay";
+	};
+};
+&led_simple {
+	pinctrl-names = "default", "red_led_output0", "red_led_output1";
+	pinctrl-0 = <&red_led_default>;
+	pinctrl-1 = <&red_led_pull_down>;
+	pinctrl-2 = <&red_led_pull_up>;
+	status = "okay";
+};
+&pio {
+	red_led_default: led_default {
+	};
+	red_led_pull_down: led_output0 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	red_led_pull_up: led_output1 {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO159__FUNC_GPIO159>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+};
+
+&als {
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&alsps_intpin_default>;
+		pinctrl-1 = <&alsps_intpin_cfg>;
+};
+
+&pio {
+	alsps_intpin_cfg: alspspincfg {
+
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+			slew-rate = <0>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+		};
+	};
+
+	alsps_intpin_default: alspsdefaultcfg {
+
 	};
 };
 
@@ -205,14 +440,14 @@
 
 	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO152__FUNC_GPIO152>;
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -220,14 +455,14 @@
 
 	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
 			slew-rate = <1>;
 			output-low;
 		};
 	};
 	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
 			slew-rate = <1>;
 			output-high;
 		};
@@ -279,13 +514,13 @@
 	mt6370,intr_gpio_num = <11>; /* direct defined GPIO num */
 	mt6370,intr_gpio = <&pio 11 0x0>;
 };
-
+#if 0
 &charger {
 	algorithm_name = "DualSwitchCharging";
 	chg1_ta_ac_charger_current = <2000000>;
 	chg2_ta_ac_charger_current = <2000000>;
 };
-
+#endif
 &i2c3 {
 	rt9465@4b {
 		compatible = "richtek,rt9465";
@@ -361,7 +596,13 @@
 			"aud_dat_miso_off",
 			"aud_dat_miso_on",
 			"aud_smartpa_off",
-			"aud_smartpa_on";
+			"aud_smartpa_on",
+			"extamp-pullhigh",
+			"extamp-pulllow",
+			"aud_switch_en_high",
+			"aud_switch_en_low",
+			"aud_rcv_en_high",
+			"aud_rcv_en_low";
 	pinctrl-0 = <&aud_clk_mosi_off>;
 	pinctrl-1 = <&aud_clk_mosi_on>;
 	pinctrl-2 = <&aud_clk_miso_off>;
@@ -372,6 +613,12 @@
 	pinctrl-7 = <&aud_dat_miso_on>;
 	pinctrl-8 = <&aud_pins_smartpa_off>;
 	pinctrl-9 = <&aud_pins_smartpa_on>;
+	pinctrl-10 = <&aud_pins_extamp_high>;
+	pinctrl-11 = <&aud_pins_extamp_low>;
+	pinctrl-12 = <&aud_switch_en_high>;
+	pinctrl-13 = <&aud_switch_en_low>;
+	pinctrl-14 = <&aud_rcv_en_high>;
+	pinctrl-15 = <&aud_rcv_en_low>;
 	status = "okay";
 };
 
@@ -477,6 +724,53 @@
 			pinmux = <PINMUX_GPIO20__FUNC_I2S3_DO>;
 		};
 	};
+	aud_pins_extamp_high: aud_pins_extamp_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	aud_pins_extamp_low: aud_pins_extamp_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO153__FUNC_GPIO153>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	aud_switch_en_high: aud_switch_en_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	aud_switch_en_low: aud_switch_en_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO170__FUNC_GPIO170>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	aud_rcv_en_high: aud_rcv_en_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	aud_rcv_en_low: aud_rcv_en_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO171__FUNC_GPIO171>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
 };
 /* AUDIO end */
 
@@ -493,12 +787,12 @@
 	};
 	camera_pins_cam1_mclk_on: camera_pins_cam1_mclk_on {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO100__FUNC_CMMCLK1>;
+			pinmux = <PINMUX_GPIO99__FUNC_CMMCLK0>;
 		};
 	};
 	camera_pins_cam1_mclk_off: camera_pins_cam1_mclk_off {
 		pins_cmd_dat {
-			pinmux = <PINMUX_GPIO100__FUNC_GPIO100>;
+			pinmux = <PINMUX_GPIO99__FUNC_GPIO99>;
 		};
 	};
 	camera_pins_cam2_mclk_on: camera_pins_cam2_mclk_on {
@@ -716,5 +1010,62 @@
 
 };
 
+/* flashlight begin */
+
+&pio{
+    	flashlights_aw3643_pins_default: default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlights_aw3643_pins_hwen_high: hwen_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlights_aw3643_pins_hwen_low: hwen_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	flashlights_aw3643_pins_strobe_high: strobe_high {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+	flashlights_aw3643_pins_strobe_low: strobe_low {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+};
+
+&flashlights_aw3643{
+    pinctrl-names = "default",
+			"hwen_high",
+			"hwen_low",
+			"strobe_high",
+			"strobe_low";
+
+    	pinctrl-0 = <&flashlights_aw3643_pins_default>;
+	pinctrl-1 = <&flashlights_aw3643_pins_hwen_high>;
+	pinctrl-2 = <&flashlights_aw3643_pins_hwen_low>;
+	pinctrl-3 = <&flashlights_aw3643_pins_strobe_high>;
+	pinctrl-4 = <&flashlights_aw3643_pins_strobe_low>;
+    status = "okay";
+};
+
+/* flashlight end */
 #include <Fiji/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
