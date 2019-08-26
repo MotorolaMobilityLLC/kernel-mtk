@@ -32,7 +32,7 @@
 #endif
 
 /*----------------------------------------------------------------------------*/
-#define DEBUG 1
+#define DEBUG 0
 /*----------------------------------------------------------------------------*/
 //#define CONFIG_KXTJ2_1009_LOWPASS   /*apply low pass filter on output*/       
 #define SW_CALIBRATION

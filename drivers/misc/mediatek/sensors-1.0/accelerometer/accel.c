@@ -245,7 +245,7 @@ static int acc_enable_and_batch(void)
 	}
 	/* rate change */
 	if (cxt->power == 1 && cxt->delay_ns >= 0) {
-		ACC_LOG("ACC set batch\n");
+		//ACC_LOG("ACC set batch\n");
 		/* set ODR, fifo timeout latency */
 		if (cxt->acc_ctl.is_support_batch)
 			err = cxt->acc_ctl.batch(0, cxt->delay_ns, cxt->latency_ns);
@@ -255,7 +255,7 @@ static int acc_enable_and_batch(void)
 			ACC_PR_ERR("acc set batch(ODR) err %d\n", err);
 			return -1;
 		}
-		ACC_LOG("acc set ODR, fifo latency done\n");
+		//ACC_LOG("acc set ODR, fifo latency done\n");
 		/* start polling, if needed */
 		if (cxt->is_active_data == true
 			&& cxt->acc_ctl.is_report_input_direct == false) {
@@ -269,9 +269,9 @@ static int acc_enable_and_batch(void)
 				cxt->is_first_data_after_enable = true;
 				startTimer(&cxt->hrTimer, atomic_read(&cxt->delay), true);
 			}
-			ACC_LOG("acc set polling delay %d ms\n", atomic_read(&cxt->delay));
+			//ACC_LOG("acc set polling delay %d ms\n", atomic_read(&cxt->delay));
 		}
-		ACC_LOG("ACC batch done\n");
+		//ACC_LOG("ACC batch done\n");
 	}
 	return 0;
 }
@@ -387,7 +387,7 @@ static ssize_t acc_store_batch(struct device *dev, struct device_attribute *attr
 	struct acc_context *cxt = acc_context_obj;
 	int handle = 0, flag = 0, err = 0;
 
-	ACC_LOG(" acc_store_batch %s\n", buf);
+	//ACC_LOG(" acc_store_batch %s\n", buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 		&cxt->delay_ns, &cxt->latency_ns);
 	if (err != 4) {
@@ -429,7 +429,7 @@ static ssize_t acc_store_flush(struct device *dev, struct device_attribute *attr
 	if (err != 0)
 		ACC_PR_ERR("acc_store_flush param error: err = %d\n", err);
 
-	ACC_LOG("acc_store_flush param: handle %d\n", handle);
+	//ACC_LOG("acc_store_flush param: handle %d\n", handle);
 
 	mutex_lock(&acc_context_obj->acc_op_mutex);
 	cxt = acc_context_obj;
@@ -749,7 +749,7 @@ int acc_flush_report(void)
 
 	memset(&event, 0, sizeof(struct sensor_event));
 
-	ACC_LOG("flush\n");
+	//ACC_LOG("flush\n");
 	event.flush_action = FLUSH_ACTION;
 	err = sensor_input_event(acc_context_obj->mdev.minor, &event);
 	if (err < 0)

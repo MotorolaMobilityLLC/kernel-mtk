@@ -38,11 +38,10 @@
 
 /*----------------------------------------------------------------------------*/
 #define APS_TAG					"[ALS/PS] "
-#define APS_FUN(f)              printk(KERN_INFO 	APS_TAG"%s\n", __FUNCTION__)
-#define APS_ERR(fmt, args...)   printk(KERN_ERR  	APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)   printk(KERN_NOTICE	APS_TAG fmt, ##args)
-//#define APS_DBG(fmt, args...)   printk(KERN_DEBUG 	APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)   ontim_dev_dbg(7, APS_TAG fmt, ##args)
+#define APS_FUN(f)              pr_err(APS_TAG"%s\n", __FUNCTION__)
+#define APS_ERR(fmt, args...)	pr_err(APS_TAG"[ERROR][%s][%d]: "fmt, __FUNCTION__, __LINE__, ##args)
+#define APS_LOG(fmt, args...)	pr_err(APS_TAG"[INFO][%s][%d]:  "fmt, __FUNCTION__, __LINE__, ##args)
+#define APS_DBG(fmt, args...)	ontim_dev_dbg(7, APS_TAG fmt, ##args)
 
 /*----------------------------------------------------------------------------*/
 static const struct i2c_device_id ltr577_i2c_id[] = {{LTR577_DEV_NAME,0},{}};
@@ -303,14 +302,14 @@ static int ltr577_i2c_read_block(struct i2c_client *client, u8 addr, u8 *data, u
 	}
 	else if (len > C_I2C_FIFO_SIZE) {
 		mutex_unlock(&ltr577_i2c_mutex);
-		APS_LOG(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
+		APS_ERR(" length %d exceeds %d\n", len, C_I2C_FIFO_SIZE);
 		return -EINVAL;
 	}
 
 	err = i2c_transfer(client->adapter, msgs, sizeof(msgs) / sizeof(msgs[0]));
 	mutex_unlock(&ltr577_i2c_mutex);
 	if (err != 2) {
-		APS_LOG("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
+		APS_ERR("i2c_transfer error: (%d %p %d) %d\n", addr, data, len, err);
 		err = -EIO;
 	}
 	else {
@@ -647,7 +646,7 @@ static void initKernelEnv(void)
 {
 	oldfs = get_fs();
 	set_fs(KERNEL_DS);
-	APS_LOG("initKernelEnv\n");
+	APS_DBG("initKernelEnv\n");
 }
 /*****************************************
  *** ltr577_read_cali_file
@@ -663,29 +662,25 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 
 	struct file *fd_file = NULL;
 
-	APS_ERR("[%s]\n", __func__);
-
-
 	initKernelEnv();
 
 	fd_file = openFile(backup_file_path, O_RDONLY, 0);
 
 	if (fd_file == NULL) {
-		APS_ERR("%s:fail to open proinfo file: %s\n", __func__, backup_file_path);
+		APS_ERR("fail to open proinfo file: %s\n", backup_file_path);
 		set_fs(oldfs);
 		return (-1);
 	}
-	APS_ERR("Open proinfo file successfully: %s\n", backup_file_path);
 	if (seekFile(fd_file, PROINFO_CALI_DATA_OFFSET, SEEK_SET) < 0) {
-		APS_ERR("%s:fail to seek proinfo file: %s;\n", __func__, backup_file_path);
+		APS_ERR("fail to seek proinfo file: %s;\n", backup_file_path);
 		goto read_error;
 	} 
 
 	memset(buf, 0, sizeof(buf));
 	err = readFile(fd_file, buf, sizeof(buf));
-	if (err > 0)
-		APS_ERR("cali_file: buf:%s\n", buf);
-	else {
+	if (err > 0) {
+		APS_DBG("cali_file: buf:%s\n", buf);
+	} else {
 		APS_ERR("read file error %d\n", err);
 		goto read_error;
 	}
@@ -732,17 +727,16 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 #ifdef PS_READ_PROINIF_VALUE
 	int cali_err;
 #endif
-	APS_LOG("ltr577_ps_enable() ...start!\n");
 
 	if (enable != 0 && ps_enabled == 1)
 	{
-		APS_LOG("PS: Already enabled \n");
+		APS_DBG("PS: Already enabled \n");
 		return 0;
 	}
 
 	if (enable == 0 && ps_enabled == 0)
 	{
-		APS_LOG("PS: Already disabled \n");
+		APS_DBG("PS: Already disabled \n");
 		return 0;
 	}
 
@@ -754,11 +748,11 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 	regdata &= 0xEF;	// Clear reset bit
 	
 	if (enable != 0) {
-		APS_LOG("PS: enable ps only \n");
+		APS_DBG("PS: enable ps only \n");
 		regdata |= 0x01;
 	}
 	else {
-		APS_LOG("PS: disable ps only \n");
+		APS_DBG("PS: disable ps only \n");
 		regdata &= 0xFE;
 	}
 
@@ -823,33 +817,31 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 	u8 regdata;
 	int err;
 
-	APS_LOG("ltr577_ps_enable() ...start!\n");
-
 	if (enable != 0 && ps_enabled == 1)
 	{
-		APS_LOG("PS: Already enabled \n");
+		APS_DBG("PS: Already enabled \n");
 		return 0;
 	}
 
 	if (enable == 0 && ps_enabled == 0)
 	{
-		APS_LOG("PS: Already disabled \n");
+		APS_DBG("PS: Already disabled \n");
 		return 0;
 	}
 
 	err = ltr577_master_recv(client, LTR577_MAIN_CTRL, &regdata, 0x01);
 	if (err < 0) {
-		APS_DBG("i2c error: %d\n", err);
+		APS_ERR("i2c error: %d\n", err);
 	}
 
 	regdata &= 0xEF;	// Clear reset bit
 	
 	if (enable != 0) {
-		APS_LOG("PS: enable ps only \n");
+		APS_DBG("PS: enable ps only \n");
 		regdata |= 0x01;
 	}
 	else {
-		APS_LOG("PS: disable ps only \n");
+		APS_DBG("PS: disable ps only \n");
 		regdata &= 0xFE;
 	}
 
@@ -862,7 +854,7 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 	mdelay(WAKEUP_DELAY);
 	err = ltr577_master_recv(client, LTR577_MAIN_CTRL, &regdata, 0x01);
 	if (err < 0) {
-		APS_DBG("i2c error: %d\n", err);
+		APS_ERR("i2c error: %d\n", err);
 	}
 	
 	if (0 == ltr577_obj->hw->polling_mode_ps && enable != 0)
@@ -872,7 +864,7 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		err = ltr577_dynamic_calibrate();
 		if (err < 0)
 		{
-			APS_LOG("ltr577_dynamic_calibrate() failed\n");
+			APS_ERR("ltr577_dynamic_calibrate() failed\n");
 		}
 #endif
 		ltr577_ps_set_thres();
@@ -994,9 +986,9 @@ static int ltr577_dynamic_calibrate(void)
     ps_cali.far_away = ps_thd_val_low;
     ps_cali.close = ps_thd_val_high;
 	
-	APS_LOG("%s:noise = %d\n", __func__, noise);
-	APS_LOG("%s:obj->ps_thd_val_high = %d\n", __func__, ps_thd_val_high);
-	APS_LOG("%s:obj->ps_thd_val_low = %d\n", __func__, ps_thd_val_low);
+	APS_DBG("%s:noise = %d\n", __func__, noise);
+	APS_DBG("%s:obj->ps_thd_val_high = %d\n", __func__, ps_thd_val_high);
+	APS_DBG("%s:obj->ps_thd_val_low = %d\n", __func__, ps_thd_val_low);
 
 	return 0;
 }
@@ -1016,19 +1008,19 @@ static int ltr577_als_enable(struct i2c_client *client, int enable)
 
 	if (enable != 0 && als_enabled == 1)
 	{
-		APS_LOG("ALS: Already enabled \n");
+		APS_DBG("ALS: Already enabled \n");
 		return 0;
 	}
 
 	if (enable == 0 && als_enabled == 0)
 	{
-		APS_LOG("ALS: Already disabled \n");
+		APS_DBG("ALS: Already disabled \n");
 		return 0;
 	}
 #ifdef NO_ALS_CTRL_WHEN_PS_ENABLED
 	if (ps_enabled == 1)
 	{
-		APS_LOG("ALS: PS enabled, do nothing \n");
+		APS_DBG("ALS: PS enabled, do nothing \n");
 		return 0;
 	}
 #endif
@@ -1040,11 +1032,11 @@ static int ltr577_als_enable(struct i2c_client *client, int enable)
 	regdata &= 0xEF;	// Clear reset bit
 	
 	if (enable != 0) {
-		APS_LOG("ALS(1): enable als only \n");
+		APS_DBG("ALS(1): enable als only \n");
 		regdata |= 0x02;
 	}
 	else {
-		APS_LOG("ALS(1): disable als only \n");
+		APS_DBG("ALS(1): disable als only \n");
 		regdata &= 0xFD;
 	}
 
@@ -1122,7 +1114,7 @@ static int ltr577_als_read(struct i2c_client *client, u16* data)
 als_defalut:
 	ret = ltr577_master_recv(client, LTR577_ALS_DATA_0, buf, 0x03);
 	if (ret < 0) {
-		APS_DBG("i2c error: %d\n", ret);
+		APS_ERR("i2c error: %d\n", ret);
 	}
 
 	alsval = (buf[2] * 256 * 256) + (buf[1] * 256) + buf[0];
@@ -1130,7 +1122,7 @@ als_defalut:
 
 	ret = ltr577_master_recv(client, LTR577_CLEAR_DATA_0, buf, 0x03);
 	if (ret < 0) {
-		APS_DBG("i2c error: %d\n", ret);
+		APS_ERR("i2c error: %d\n", ret);
 	}
 
 	clearval = (buf[2] * 256 * 256) + (buf[1] * 256) + buf[0];
@@ -1215,7 +1207,7 @@ static int ltr577_get_ps_value(struct ltr577_priv *obj, u16 ps)
 
 	ret = ltr577_master_recv(ltr577_obj->client, LTR577_MAIN_STATUS, &buffer, 0x01);
 	if (ret < 0) {
-		APS_DBG("i2c error: %d\n", ret);
+		APS_ERR("i2c error: %d\n", ret);
 		return -1;
 	}	
 
@@ -1783,7 +1775,7 @@ static void ltr577_cali_ps_work(struct work_struct *work)
 	err = ltr577_dynamic_calibrate();
 	if (err < 0)
 	{
-		APS_LOG("ltr577_dynamic_calibrate() failed\n");
+		APS_ERR("ltr577_dynamic_calibrate() failed\n");
 	}
 #endif		
 	ltr577_ps_set_thres();
@@ -2023,8 +2015,6 @@ int ltr577_setup_eint(struct i2c_client *client)
 //	struct ltr577_priv *obj = i2c_get_clientdata(client);
 
 
-	APS_FUN();
-
 if (ps_irq_use_old){
 
 	alspsPltFmDev = get_alsps_platformdev();
@@ -2064,7 +2054,7 @@ if (ps_irq_use_old){
 		gpio_set_debounce(ints[0], ints[1]);
 
 		pinctrl_select_state(pinctrl, pins_cfg);
-		APS_LOG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
+		APS_DBG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
 		ltr577_obj->irq = irq_of_parse_and_map(ltr577_obj->irq_node, 0);
 
@@ -2072,9 +2062,7 @@ if (ps_irq_use_old){
 
 		if (!ltr577_obj->irq) {
 			APS_ERR("irq_of_parse_and_map fail!!\n");
-
 			return -EINVAL;
-
 		}
 		if (request_irq(ltr577_obj->irq, ltr577_eint_handler, IRQF_TRIGGER_LOW, "ALS-eint", NULL)) {
 			APS_ERR("IRQ LINE NOT AVAILABLE!!\n");
@@ -2101,7 +2089,6 @@ if (ps_irq_use_old){
 	if (IS_ERR(pins_default)) {
 		ret = PTR_ERR(pins_default);
 		APS_ERR("Cannot find alsps pinctrl default!\n");
-
 	}
 
 	pins_cfg = pinctrl_lookup_state(pinctrl, "pin_cfg");
@@ -2109,7 +2096,6 @@ if (ps_irq_use_old){
 		ret = PTR_ERR(pins_cfg);
 		APS_ERR("Cannot find alsps pinctrl pin_cfg!\n");
 		return ret;
-
 	}
 	pinctrl_select_state(pinctrl, pins_cfg);	
 	
@@ -2122,7 +2108,7 @@ if (ps_irq_use_old){
 
 		}
 		gpio_set_debounce(ints[0], ints[1]);
-		APS_ERR("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
+		APS_DBG("ints[0] = %d, ints[1] = %d!!\n", ints[0], ints[1]);
 
 		ltr577_obj->irq = irq_of_parse_and_map(ltr577_obj->irq_node, 0);
 		APS_ERR("ltr577_obj->irq = %d\n", ltr577_obj->irq);
@@ -2416,17 +2402,16 @@ static struct miscdevice ltr577_device = {
 };
 
 /*--------------------------------------------------------------------------------*/
-static u8 ltr577_get_chip_id(struct i2c_client *client )
+static int ltr577_get_chip_id(struct i2c_client *client , u8 *regdata)
 {
 	int ret = -1;
-	u8 regdata = 0;
 
-	ret = ltr577_master_recv(client, LTR577_PART_ID, &regdata, 0x01);
+	ret = ltr577_master_recv(client, LTR577_PART_ID, regdata, 0x01);
 	if (ret < 0) {
 		APS_ERR("get part id failed, ret:%d\n", ret);
 	}
 
-	return regdata;
+	return ret;
 }
 
 static int ltr577_init_client(void)
@@ -2451,7 +2436,7 @@ static int ltr577_init_client(void)
 	res = ltr577_master_send(client, LTR577_PS_PULSES, (char *)&buf, 1);	
 	if (res<0)
 	{
-		APS_LOG("ltr577_init_client() PS Pulses error...\n");
+		APS_ERR("ltr577_init_client() PS Pulses error...\n");
 		goto EXIT_ERR;
 	}
 
@@ -2459,7 +2444,7 @@ static int ltr577_init_client(void)
 	res = ltr577_master_send(client, LTR577_PS_LED, (char *)&buf, 1);	
 	if (res<0)
 	{
-		APS_LOG("ltr577_init_client() PS LED error...\n");
+		APS_ERR("ltr577_init_client() PS LED error...\n");
 		goto EXIT_ERR;
 	}
 
@@ -2467,7 +2452,7 @@ static int ltr577_init_client(void)
 	res = ltr577_master_send(client, LTR577_PS_MEAS_RATE, (char *)&buf, 1);
 	if (res<0)
 	{
-		APS_LOG("ltr577_init_client() PS time error...\n");
+		APS_ERR("ltr577_init_client() PS time error...\n");
 		goto EXIT_ERR;
 	}
 
@@ -2501,7 +2486,7 @@ static int ltr577_init_client(void)
 	// Enable ALS to Full Range at startup
 	init_als_gain = ALS_RANGE_9;
 	als_gainrange = init_als_gain;//Set global variable
-	APS_ERR("ALS sensor gainrange %d!\n", init_als_gain);
+	APS_DBG("ALS sensor gainrange %d!\n", init_als_gain);
 
 	switch (als_gainrange)
 	{
@@ -2538,7 +2523,7 @@ static int ltr577_init_client(void)
 
 	buf = ALS_RESO_MEAS;	// 18 bit & 100ms measurement rate
 	res = ltr577_master_send(client, LTR577_ALS_MEAS_RATE, (char *)&buf, 1);
-	APS_ERR("ALS sensor resolution & measurement rate: %d!\n", ALS_RESO_MEAS);
+	APS_DBG("ALS sensor resolution & measurement rate: %d!\n", ALS_RESO_MEAS);
 #ifdef SENSOR_DEFAULT_ENABLED
 	res = ltr577_als_enable(client, 1);
 	if (res < 0)
@@ -2573,7 +2558,7 @@ static int als_open_report_data(int open)
 static int als_enable_nodata(int en)
 {
 	int res = 0;
-	APS_LOG("ltr577_obj als enable value = %d\n", en);
+	APS_DBG("ltr577_obj als enable value = %d\n", en);
 
 	if(!ltr577_obj)
 	{
@@ -2621,7 +2606,7 @@ static int als_flush(void)
 static int als_get_data(int* value, int* status)
 {
 	int err = 0;
-			APS_DBG("%s !!\n",__func__);
+
 	if(!ltr577_obj)
 	{
 		APS_ERR("ltr577_obj is null!!\n");
@@ -2652,7 +2637,7 @@ static int ps_open_report_data(int open)
 static int ps_enable_nodata(int en)
 {
 	int res = 0;
-	APS_LOG("ltr577_obj ps enable value = %d\n", en);
+	APS_DBG("ltr577_obj ps enable value = %d\n", en);
 
 	if(!ltr577_obj)
 	{
@@ -2727,18 +2712,20 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	int err = 0;
 	u8 part_id = 0;
 
+	APS_FUN();
+
 	if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
         {
             return -EIO;
         }
-	APS_FUN();
+
 	/* get customization and power on */
 	err = get_alsps_dts_func(client->dev.of_node, hw);
 	if (err < 0) {
 		APS_ERR("get customization info from dts failed\n");
 		return -EFAULT;
 	}
-	APS_ERR("%s:get hw->i2c_num =%d  \n",__func__,hw->i2c_num);
+	APS_DBG("%s:get hw->i2c_num =%d  \n",__func__,hw->i2c_num);
 	
 	if(!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
 	{
@@ -2811,7 +2798,10 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 #endif
 
 	//get part id
-	part_id = ltr577_get_chip_id(client);
+	err = ltr577_get_chip_id(client, &part_id);
+	if (err < 0)
+		goto exit_init_failed;
+
 	if (part_id == 0xB1)
 	{
 		APS_LOG("The chip is LTR578, pard_id:0x%x.\n", part_id);
@@ -2823,15 +2813,13 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		sprintf(&ltr577_prox_vendor_name[0], "LITE-ON-ltr577");
 	}
 
-
-	APS_LOG("ltr577_init_client() start...!\n");
 	ltr577_i2c_client = client;
 	err = ltr577_init_client();
 	if(err)
 	{
 		goto exit_init_failed;
 	}
-	APS_LOG("ltr577_init_client() OK!\n");
+	APS_DBG("ltr577_init_client() OK!\n");
 	
 	err = misc_register(&ltr577_device);
 	if(err)
@@ -2906,7 +2894,7 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 #endif
 
 	ltr577_init_flag =0;
-	APS_LOG("%s: OK\n", __func__);
+	APS_LOG("probe successful.\n");
 	return 0;
 
 exit_create_attr_failed:
@@ -2917,7 +2905,7 @@ exit_init_failed:
 	kfree(obj);
 exit:
 	ltr577_i2c_client = NULL;           
-	APS_ERR("%s: err = %d\n", __func__, err);
+	APS_ERR("err = %d\n", err);
 	ltr577_init_flag =-1;
 	return err;
 }
@@ -3039,8 +3027,6 @@ static int ltr577_remove(void)
 /*----------------------------------------------------------------------------*/
 static int  ltr577_local_init(void)
 {
-	APS_FUN();
-
 	ltr577_power(hw, 1);
 	
 	if(i2c_add_driver(&ltr577_i2c_driver))
@@ -3078,7 +3064,7 @@ APS_ERR("%s:get hw->i2c_num =%d  \n",__func__,hw->i2c_num);
 //////////liuixnyuan add end ------////////////////
 #endif
 	alsps_driver_add(&ltr577_init_info);
-	APS_ERR("ltr577_init done\n");
+
 	return 0;
 }
 /*----------------------------------------------------------------------------*/
