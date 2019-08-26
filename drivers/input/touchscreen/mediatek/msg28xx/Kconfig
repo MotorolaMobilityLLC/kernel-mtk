@@ -1,0 +1,19 @@
+#
+# Touchscreen driver configuration
+#
+config TOUCHSCREEN_MTK_MSG28XX_TS
+    bool "Mstar G28XX Ts for Mediatek"
+    depends on I2C
+    default n
+    help
+      Say Y here if you have Mstar touch panel.
+      If unsure, say N.
+      
+
+config TOUCHSCREEN_MTK_MSG28XX_TS_TEST
+    bool "Mstar G28XX Ts Self Test for Mediatek"
+    depends on TOUCHSCREEN_MTK_MSG28XX_TS
+    default y
+    help
+      Say Y here if you need to enable self test for Mstar touch panel.
+      If unsure, say N.
