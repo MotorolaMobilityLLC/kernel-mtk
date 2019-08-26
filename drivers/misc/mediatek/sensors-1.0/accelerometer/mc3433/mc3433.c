@@ -886,7 +886,7 @@ static int MC3XXX_ReadData_RBM(struct i2c_client *client, int data[MC3XXX_AXES_N
  *****************************************/
 static int MC3XXX_ValidateSensorIC(unsigned char *pbPCode, unsigned char *pbHwID)
 {
-	ACC_LOG("[%s] *pbPCode: 0x%02X, *pbHwID: 0x%02X\n", __func__, *pbPCode, *pbHwID);
+	//ACC_LOG("[%s] *pbPCode: 0x%02X, *pbHwID: 0x%02X\n", __func__, *pbPCode, *pbHwID);
 
 	if ((*pbHwID >= 0xA0) && (*pbHwID <= 0xAF)) 	//mc3416
 	{
@@ -963,14 +963,13 @@ static int MC3XXX_Read_Reg_Map(struct i2c_client *p_i2c_client, u8 *pbUserBuf)
  *****************************************/
 static void MC3XXX_SaveDefaultOffset(struct i2c_client *p_i2c_client)
 {
-	ACC_LOG("[%s]\n", __func__);
-
 	MC3XXX_i2c_read_block(p_i2c_client, 0x21, &s_baOTP_OffsetData[0], 3);
 	MC3XXX_i2c_read_block(p_i2c_client, 0x24, &s_baOTP_OffsetData[3], 3);
-
+/*
 	ACC_LOG("s_baOTP_OffsetData: 0x%02X - 0x%02X - 0x%02X - 0x%02X - 0x%02X - 0x%02X\n",
 		s_baOTP_OffsetData[0], s_baOTP_OffsetData[1], s_baOTP_OffsetData[2],
 		s_baOTP_OffsetData[3], s_baOTP_OffsetData[4], s_baOTP_OffsetData[5]);
+*/
 }
 
 /*****************************************
@@ -1407,7 +1406,7 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 	s32 dwRangePosLimit  = 0x1FFF;
 	s32 dwRangeNegLimit  = -0x2000;
 
-	ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", dat[MC3XXX_AXIS_X], dat[MC3XXX_AXIS_Y], dat[MC3XXX_AXIS_Z]);
+	//ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", dat[MC3XXX_AXIS_X], dat[MC3XXX_AXIS_Y], dat[MC3XXX_AXIS_Z]);
 
 	cali[MC3XXX_AXIS_X] = obj->cvt.sign[MC3XXX_AXIS_X]*(dat[obj->cvt.map[MC3XXX_AXIS_X]]);
 	cali[MC3XXX_AXIS_Y] = obj->cvt.sign[MC3XXX_AXIS_Y]*(dat[obj->cvt.map[MC3XXX_AXIS_Y]]);
@@ -1417,16 +1416,16 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 		_nTemp = cali[MC3XXX_AXIS_X];
 		cali[MC3XXX_AXIS_X] = -cali[MC3XXX_AXIS_Y];
 		cali[MC3XXX_AXIS_Y] = _nTemp;
-		ACC_LOG("[%s] 3250 write remap\n", __func__);
+		//ACC_LOG("[%s] 3250 write remap\n", __func__);
 	} else {
 		if (s_bMPOL & 0x01)
 			cali[MC3XXX_AXIS_X] = -cali[MC3XXX_AXIS_X];
 		if (s_bMPOL & 0x02)
 			cali[MC3XXX_AXIS_Y] = -cali[MC3XXX_AXIS_Y];
-		ACC_LOG("[%s] 35X0 remap [s_bMPOL: %d]\n", __func__, s_bMPOL);
+		//ACC_LOG("[%s] 35X0 remap [s_bMPOL: %d]\n", __func__, s_bMPOL);
 	}
 
-	ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", cali[MC3XXX_AXIS_X], cali[MC3XXX_AXIS_Y], cali[MC3XXX_AXIS_Z]);
+	//ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", cali[MC3XXX_AXIS_X], cali[MC3XXX_AXIS_Y], cali[MC3XXX_AXIS_Z]);
 
 	/* read registers 0x21~0x29 */
 	err = MC3XXX_i2c_read_block(client, 0x21, buf, 3);
@@ -1544,7 +1543,7 @@ static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable)
 		return MC3XXX_RETCODE_ERROR_I2C;
 	}
 
-	ACC_LOG("set power read MC3XXX_REG_MODE_FEATURE =%x\n", databuf[0]);
+	//ACC_LOG("set power read MC3XXX_REG_MODE_FEATURE =%x\n", databuf[0]);
 
 	if (enable) {
 		databuf[0] = 0x41;
@@ -1573,7 +1572,7 @@ static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable)
  *****************************************/
 static void MC3XXX_SetResolution(void)
 {
-	ACC_LOG("[%s]\n", __func__);
+	//ACC_LOG("[%s]\n", __func__);
 
 	switch (s_bPCODE) {
 	case MC3XXX_PCODE_3230:
@@ -1620,7 +1619,7 @@ static void MC3XXX_SetResolution(void)
 		ACC_PR_ERR("ERR: no resolution assigned!\n");
 	}
 
-	ACC_LOG("[%s] s_bResolution: %d\n", __func__, s_bResolution);
+	//ACC_LOG("[%s] s_bResolution: %d\n", __func__, s_bResolution);
 }
 
 /*****************************************
@@ -1630,7 +1629,7 @@ static void MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
 {
 	unsigned char	_baDataBuf[2] = { 0 };
 
-	ACC_LOG("[%s]\n", __func__);
+	//ACC_LOG("[%s]\n", __func__);
 
 	_baDataBuf[0] = MC3XXX_REG_SAMPLE_RATE;
 	_baDataBuf[1] = 0x00;
@@ -1641,7 +1640,7 @@ static void MC3XXX_SetSampleRate(struct i2c_client *pt_i2c_client)
 		_baData2Buf[0] = 0x2A;
 		MC3XXX_i2c_read_block(pt_i2c_client, 0x2A, _baData2Buf, 1);
 
-		ACC_LOG("[%s] REG(0x2A) = 0x%02X\n", __func__, _baData2Buf[0]);
+		//ACC_LOG("[%s] REG(0x2A) = 0x%02X\n", __func__, _baData2Buf[0]);
 
 		_baData2Buf[0] = (_baData2Buf[0] & 0xC0);
 
@@ -1703,7 +1702,7 @@ static void MC3XXX_ConfigRegRange(struct i2c_client *pt_i2c_client)
 	if (res < 0)
 		ACC_PR_ERR("MC3XXX_ConfigRegRange fail\n");
 
-	ACC_LOG("[%s] set 0x%X\n", __func__, _baDataBuf[1]);
+	//ACC_LOG("[%s] set 0x%X\n", __func__, _baDataBuf[1]);
 }
 
 /*****************************************
@@ -1726,7 +1725,7 @@ static void MC3XXX_SetGain(void)
 		gsensor_gain.x = gsensor_gain.y = gsensor_gain.z = 4096;
 	}
 
-	ACC_LOG("[%s] gain: %d / %d / %d\n", __func__, gsensor_gain.x, gsensor_gain.y, gsensor_gain.z);
+	//ACC_LOG("[%s] gain: %d / %d / %d\n", __func__, gsensor_gain.x, gsensor_gain.y, gsensor_gain.z);
 }
 
 /*****************************************
@@ -1736,7 +1735,7 @@ static int MC3XXX_Init(struct i2c_client *client, int reset_cali)
 {
 	unsigned char	_baDataBuf[2] = { 0 };
 
-	ACC_LOG("[%s]\n", __func__);
+	//ACC_LOG("[%s]\n", __func__);
 
 	#ifdef _MC3XXX_SUPPORT_POWER_SAVING_SHUTDOWN_POWER_
 	if (_mc3xxx_i2c_auto_probe(client) != MC3XXX_RETCODE_SUCCESS)
@@ -1783,7 +1782,7 @@ static int MC3XXX_Init(struct i2c_client *client, int reset_cali)
 	init_waitqueue_head(&wq_mc3xxx_open_status);
 	#endif
 
-	ACC_LOG("[%s] init ok.\n", __func__);
+	//ACC_LOG("[%s] init ok.\n", __func__);
 
 	return MC3XXX_RETCODE_SUCCESS;
 }
@@ -2907,12 +2906,12 @@ _I2C_AUTO_PROBE_RECHECK_:
 			MC3XXX_SaveDefaultOffset(client);
 
 			if (s_bPCODE == MC3XXX_PCODE_3416) {
-				ACC_LOG("The chip is 3416, pard_id:0x%x.\n", s_bPCODE);
+				//ACC_LOG("The chip is 3416, pard_id:0x%x.\n", s_bPCODE);
 				sprintf(&mc3433_prox_vendor_name[0], "MC3416-P-Mcube");
 			}
 			else
 			{
-				ACC_LOG("The chip is 3433, pard_id:0x%x.\n", s_bPCODE);
+				//ACC_LOG("The chip is 3433, pard_id:0x%x.\n", s_bPCODE);
 				sprintf(&mc3433_prox_vendor_name[0], "MC3433-P-Mcube");
 			}
 
@@ -3009,7 +3008,7 @@ static int mc3xxx_batch(int flag, int64_t samplingPeriodNs, int64_t maxBatchRepo
 *	}
 *	ACC_LOG("mc3xxx_batch acc set delay = (%d) ok.\n", value);
 */
-	ACC_LOG("mc3xxx_batch (%d), chip only use 1024HZ\n", value);
+	//ACC_LOG("mc3xxx_batch (%d), chip only use 1024HZ\n", value);
 	return 0;
 }
 
@@ -3137,7 +3136,7 @@ static int mc3xxx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 		ACC_PR_ERR("get cust_baro dts info fail\n");
 		goto exit;
 	}
-	ACC_PR_ERR("i2c_num=0x%x,I2C_ADDRS=0x%x;0x%x;\n",hw->i2c_num,hw->i2c_addr[0],client->addr);
+	//ACC_PR_ERR("i2c_num=0x%x,I2C_ADDRS=0x%x;0x%x;\n",hw->i2c_num,hw->i2c_addr[0],client->addr);
 
 	if (_mc3xxx_i2c_auto_probe(client) != MC3XXX_RETCODE_SUCCESS)
 		{

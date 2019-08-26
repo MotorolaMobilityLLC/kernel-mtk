@@ -135,7 +135,7 @@ int ps_data_report(int value, int status)
 	memset(&event, 0, sizeof(struct sensor_event));
 
 	__pm_wakeup_event(&alsps_context_obj->ps_wake_lock, msecs_to_jiffies(100));
-	pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);
+	//pr_notice("[ALS/PS]ps_data_report! %d, %d\n", value, status);
 	event.flush_action = DATA_ACTION;
 	event.word[0] = value + 1;
 	atomic_set(&prox_state, value);
@@ -371,20 +371,20 @@ static int als_enable_and_batch(void)
 	}
 	/* als_power off -> power on */
 	if (cxt->als_power == 0 && cxt->als_enable == 1) {
-		ALSPS_LOG("ALSPS als_power on\n");
+		//ALSPS_LOG("ALSPS als_power on\n");
 		err = cxt->als_ctl.enable_nodata(1);
 		if (err) {
 			ALSPS_PR_ERR("als turn on als_power err = %d\n", err);
 			return -1;
 		}
-		ALSPS_LOG("als turn on als_power done\n");
+		//ALSPS_LOG("als turn on als_power done\n");
 
 		cxt->als_power = 1;
-		ALSPS_LOG("ALSPS als_power on done\n");
+		//ALSPS_LOG("ALSPS als_power on done\n");
 	}
 	/* rate change */
 	if (cxt->als_power == 1 && cxt->als_delay_ns >= 0) {
-		ALSPS_LOG("ALSPS set batch\n");
+		//ALSPS_LOG("ALSPS set batch\n");
 		/* set ODR, fifo timeout latency */
 		if (cxt->als_ctl.is_support_batch)
 			err = cxt->als_ctl.batch(0, cxt->als_delay_ns, cxt->als_latency_ns);
@@ -394,7 +394,7 @@ static int als_enable_and_batch(void)
 			ALSPS_PR_ERR("als set batch(ODR) err %d\n", err);
 			return -1;
 		}
-		ALSPS_LOG("als set ODR, fifo latency done\n");
+		//ALSPS_LOG("als set ODR, fifo latency done\n");
 		/* start polling, if needed */
 		if (cxt->als_ctl.is_report_input_direct == false) {
 			int mdelay = cxt->als_delay_ns;
@@ -410,9 +410,9 @@ static int als_enable_and_batch(void)
 				cxt->is_als_polling_run = true;
 				cxt->is_als_first_data_after_enable = true;
 			}
-			ALSPS_LOG("als set polling delay %d ms\n", atomic_read(&cxt->delay_als));
+			//ALSPS_LOG("als set polling delay %d ms\n", atomic_read(&cxt->delay_als));
 		}
-		ALSPS_LOG("ALSPS batch done\n");
+		//ALSPS_LOG("ALSPS batch done\n");
 	}
 	return 0;
 }
@@ -430,7 +430,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 		return err;
 	}
 
-	ALSPS_LOG("als_store_active buf=%s\n", buf);
+	//ALSPS_LOG("als_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 	if (handle == ID_LIGHT) {
 		if (en) {
@@ -489,7 +489,7 @@ static ssize_t als_store_active(struct device *dev, struct device_attribute *att
 
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	ALSPS_LOG(" als_store_active done\n");
+	//ALSPS_LOG(" als_store_active done\n");
 	if (err)
 		return err;
 	else
@@ -516,7 +516,7 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 	int64_t delay_ns = 0;
 	int64_t latency_ns = 0;
 
-	ALSPS_LOG("als_store_batch %s\n", buf);
+	//ALSPS_LOG("als_store_batch %s\n", buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&delay_ns, &latency_ns);
 	if (err != 4) {
@@ -547,7 +547,7 @@ static ssize_t als_store_batch(struct device *dev, struct device_attribute *attr
 #endif
 	}
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	ALSPS_LOG("als_store_batch done\n");
+	//ALSPS_LOG("als_store_batch done\n");
 	if (err)
 		return err;
 	else
@@ -667,20 +667,20 @@ static int ps_enable_and_batch(void)
 	}
 	/* ps_power off -> power on */
 	if (cxt->ps_power == 0 && cxt->ps_enable == 1) {
-		ALSPS_LOG("PS ps_power on\n");
+		//ALSPS_LOG("PS ps_power on\n");
 		err = cxt->ps_ctl.enable_nodata(1);
 		if (err) {
 			ALSPS_PR_ERR("ps turn on ps_power err = %d\n", err);
 			return -1;
 		}
-		ALSPS_LOG("ps turn on ps_power done\n");
+		//ALSPS_LOG("ps turn on ps_power done\n");
 
 		cxt->ps_power = 1;
-		ALSPS_LOG("PS ps_power on done\n");
+		//ALSPS_LOG("PS ps_power on done\n");
 	}
 	/* rate change */
 	if (cxt->ps_power == 1 && cxt->ps_delay_ns >= 0) {
-		ALSPS_LOG("PS set batch\n");
+		//ALSPS_LOG("PS set batch\n");
 		/* set ODR, fifo timeout latency */
 		if (cxt->ps_ctl.is_support_batch)
 			err = cxt->ps_ctl.batch(0, cxt->ps_delay_ns, cxt->ps_latency_ns);
@@ -690,7 +690,7 @@ static int ps_enable_and_batch(void)
 			ALSPS_PR_ERR("ps set batch(ODR) err %d\n", err);
 			return -1;
 		}
-		ALSPS_LOG("ps set ODR, fifo latency done\n");
+		//ALSPS_LOG("ps set ODR, fifo latency done\n");
 		/* start polling, if needed */
 #if 0
 		if (cxt->ps_ctl.is_report_input_direct == false) {
@@ -710,7 +710,7 @@ static int ps_enable_and_batch(void)
 			ps_data_report(1, 3);
 		}
 #endif
-		ALSPS_LOG("PS batch done\n");
+		//ALSPS_LOG("PS batch done\n");
 	}
 	return 0;
 }
@@ -721,7 +721,7 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 	struct alsps_context *cxt = alsps_context_obj;
 	int err = 0;
 
-	ALSPS_LOG("ps_store_active buf=%s\n", buf);
+	//ALSPS_LOG("ps_store_active buf=%s\n", buf);
 	mutex_lock(&alsps_context_obj->alsps_op_mutex);
 
 	if (!strncmp(buf, "1", 1))
@@ -741,7 +741,7 @@ static ssize_t ps_store_active(struct device *dev, struct device_attribute *attr
 	atomic_set(&prox_state, PROX_STATE_FAR);
 err_out:
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	ALSPS_LOG(" ps_store_active done\n");
+	//ALSPS_LOG(" ps_store_active done\n");
 	if (err)
 		return err;
 	else
@@ -766,7 +766,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	struct alsps_context *cxt = alsps_context_obj;
 	int handle = 0, flag = 0, err = 0;
 
-	ALSPS_LOG("ps_store_batch %s\n", buf);
+	//ALSPS_LOG("ps_store_batch %s\n", buf);
 	err = sscanf(buf, "%d,%d,%lld,%lld", &handle, &flag,
 			&cxt->ps_delay_ns, &cxt->ps_latency_ns);
 	if (err != 4) {
@@ -787,7 +787,7 @@ static ssize_t ps_store_batch(struct device *dev, struct device_attribute *attr,
 	pr_debug("prox_state:%d\n", atomic_read(&prox_state));
 	ps_data_report(atomic_read(&prox_state), SENSOR_STATUS_ACCURACY_HIGH);
 	mutex_unlock(&alsps_context_obj->alsps_op_mutex);
-	ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
+	//ALSPS_LOG("ps_store_batch done: %d\n", cxt->is_ps_batch_enable);
 	if (err)
 		return err;
 	else
