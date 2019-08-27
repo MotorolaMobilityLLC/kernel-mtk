@@ -48,8 +48,8 @@
 #include "kd_imgsensor_errcode.h"
 #include "ov13855mipiraw_Sensor.h"
 
-#define PFX "ov13855mipiraw_Sensor.c"
-#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
+#define PFX "ov13855mipiraw_Sensor.c"// pr_debug
+#define LOG_INF(fmt, args...)   pr_debug(PFX "[%s](%d) " fmt "\n", __FUNCTION__,__LINE__, ##args)
 //#define LOG_INF(fmt, args...)   pr_err(PFX "[%s](%d) " fmt, __FUNCTION__,__LINE__, ##args)
 
 
@@ -186,17 +186,22 @@ static imgsensor_struct imgsensor = {
 };
 
 /* Sensor output window information */
-static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] =
-{
-	{ 4256, 3168, 0,   8, 4256, 3144, 2128, 1572,  8,	2,	 2112, 1568, 0,   0,   2112, 1568}, // Preview 
-	{ 4256, 3168, 0,   8, 4256, 3152, 4256, 3152,  16,	8,	 4224, 3136, 0,   0,   4224, 3136},//capture
-	{ 4256, 3168, 0,   8, 4256, 3152, 4256, 3152,  16,	8,	 4224, 3136, 0,   0,   4224, 3136},//normal-video
-#if 0
-	{ 4256, 3168, 64, 64, 4128, 3104, 1032,  776,  4,	4,	 1024,	768, 0,   0,   1024,  768},//hs-video
-#else
-	{ 4256, 3168, 64, 64, 4128, 3104, 1032,  776,  4,	4,	 640,	480, 0,   0,    640,  480},//hs-video
-#endif
-	{ 4256, 3168, 64, 64, 4128, 3104, 1032,  776,  4,	4,	 1024,	768, 0,   0,   1024,  768},//slim-video
+static  SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[10] = {
+// Preview
+	{ 4256, 3168,    0,    8, 4256, 3152, 2128, 1576,
+	     8,    4, 2112, 1568,    0,    0, 2112, 1568},
+//capture
+	{ 4256, 3168,    0,    8, 4256, 3152, 4256, 3152,
+	    16,    8, 4224, 3136,    0,    0, 4224, 3136},
+//normal-video
+	{ 4256, 3168,    0,    8, 4256, 3152, 4256, 3152,
+	    16,    8, 4224, 3136,    0,    0, 4224, 3136},
+//hs-video
+	{ 4256, 3168,   64,   64, 4128, 3104, 1032,  776,
+	   196,  148,  640,  480,    0,    0,  640,  480},
+//slim-video
+	{ 4256, 3168,   64,   64, 4128, 3104, 1032,  776,
+	     4,    4, 1024,  768,    0,    0, 1024,  768},
 };
 
 /*PD information update*/
@@ -732,7 +737,7 @@ if(currefps == 150){
 
 static void normal_video_setting(kal_uint16 currefps)
 {
-	LOG_INF("normal_video_setting RES_4224x3136_zsl_30fps\n");
+	LOG_INF(" RES_4224x3136_zsl_30fps  currefps=%d\n", currefps);
 	write_cmos_sensor(0x0100,0x00);
 	mdelay(1);
  	write_cmos_sensor(0x0302, 0x5c);
@@ -1199,7 +1204,7 @@ static kal_uint32 get_info(MSDK_SCENARIO_ID_ENUM scenario_id,
 
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-
+            LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
             sensor_info->SensorGrabStartX = imgsensor_info.normal_video.startx;
             sensor_info->SensorGrabStartY = imgsensor_info.normal_video.starty;
 
@@ -1247,6 +1252,8 @@ static kal_uint32 control(MSDK_SCENARIO_ID_ENUM scenario_id, MSDK_SENSOR_EXPOSUR
             capture(image_window, sensor_config_data);
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+            LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW=%d ", MSDK_SCENARIO_ID_VIDEO_PREVIEW);
+            //dump_stack();
             normal_video(image_window, sensor_config_data);
             break;
         case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -1322,6 +1329,7 @@ static kal_uint32 set_max_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenario_i
             set_dummy();
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+            LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
             if(framerate == 0)
                 return ERROR_NONE;
             frameHeight = imgsensor_info.normal_video.pclk / framerate * 10 / imgsensor_info.normal_video.linelength;
@@ -1386,6 +1394,7 @@ static kal_uint32 get_default_framerate_by_scenario(MSDK_SCENARIO_ID_ENUM scenar
             *framerate = imgsensor_info.pre.max_framerate;
             break;
         case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+            LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
             *framerate = imgsensor_info.normal_video.max_framerate;
             break;
         case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
@@ -1520,6 +1529,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[1],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
                 case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+                    LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
                     memcpy((void *)wininfo,(void *)&imgsensor_winsize_info[2],sizeof(SENSOR_WINSIZE_INFO_STRUCT));
                     break;
                 case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -1546,6 +1556,7 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 			switch (*feature_data) {
 				case MSDK_SCENARIO_ID_CAMERA_CAPTURE_JPEG:
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
+                    LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
 					 memcpy((void *)PDAFinfo,(void *)&imgsensor_pd_info,sizeof(SET_PD_BLOCK_INFO_T));
 					 break;					
 				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
@@ -1564,7 +1575,8 @@ static kal_uint32 feature_control(MSDK_SENSOR_FEATURE_ENUM feature_id,
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;
 					break;
 				case MSDK_SCENARIO_ID_VIDEO_PREVIEW:
-					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 1;// xxx is not supported
+                    LOG_INF("case MSDK_SCENARIO_ID_VIDEO_PREVIEW ");
+					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;// xxx is not supported
 					break;
 				case MSDK_SCENARIO_ID_HIGH_SPEED_VIDEO:
 					*(MUINT32 *)(uintptr_t)(*(feature_data+1)) = 0;
