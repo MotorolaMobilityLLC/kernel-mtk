@@ -11,7 +11,7 @@
  * See http://www.gnu.org/licenses/gpl-2.0.html for more details.
  */
 
-&i2c7 {
+&i2c5 {
 	rt-swchg@53 {
 		compatible = "richtek,swchg";
 		reg = <0x53>;
