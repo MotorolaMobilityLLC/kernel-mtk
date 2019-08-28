@@ -52,6 +52,11 @@
 
 #define MAX_CHOOSE_G_NUM 5
 #define ACC_AXES_NUM 3
+
+#define ACC_TAG						"<ACCELEROMETER> "
+#define ACC_PR_ERR(fmt, args...)		pr_err(ACC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define ACC_LOG(fmt, args...)		pr_err(ACC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
+#define ACC_VER(fmt, args...)		pr_err(ACC_TAG"%s %d : "fmt, __func__, __LINE__, ##args)
 struct acc_control_path {
 	int (*open_report_data)(int open);
 	int (*enable_nodata)(int en);

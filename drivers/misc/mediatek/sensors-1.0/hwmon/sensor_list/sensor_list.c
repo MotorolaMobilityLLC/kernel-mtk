@@ -20,9 +20,11 @@
 #include <linux/atomic.h>
 #include <linux/spinlock.h>
 #include <linux/uaccess.h>
-
+#ifdef CONFIG_CUSTOM_KERNEL_SENSORHUB
 #include "SCP_sensorHub.h"
+#else
 #include "sensor_list.h"
+#endif
 #include "SCP_power_monitor.h"
 #include "hwmsensor.h"
 
