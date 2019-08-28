@@ -1548,8 +1548,6 @@ static int aw8624_vibrator_get_time(struct timed_output_dev *dev)
 static void aw8624_vibrator_enable( struct timed_output_dev *dev, int value)
 {
     struct aw8624 *aw8624 = container_of(dev, struct aw8624, to_dev);
-    if(value == 0)
-	return ;
 
     mutex_lock(&aw8624->lock);
     hrtimer_cancel(&aw8624->timer);
