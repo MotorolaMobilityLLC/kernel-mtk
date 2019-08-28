@@ -101,7 +101,7 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 	u32 power_vol[] = {0};
 	u32 polling_mode_ps[] = {0};
 	u32 polling_mode_als[] = {0};
-	u32 als_level[C_CUST_ALS_LEVEL - 1] = {0};
+	u32 als_level[TP_COUNT*TEMP_COUNT*C_CUST_ALS_LEVEL] = {0};
 	u32 als_value[C_CUST_ALS_LEVEL] = {0};
 	u32 ps_threshold_high[] = {0};
 	u32 ps_threshold_low[] = {0};
@@ -139,8 +139,9 @@ int get_alsps_dts_func(struct device_node *node, struct alsps_hw *hw)
 		ret = of_property_read_u32_array(node, "als_level", als_level,
 						 ARRAY_SIZE(als_level));
 		if (ret == 0) {
-			for (i = 0; i < ARRAY_SIZE(als_level); i++)
-				hw->als_level[i] = als_level[i];
+			memcpy(hw->als_level,als_level,sizeof(als_level));
+			//for (i = 0; i < ARRAY_SIZE(als_level); i++)
+			//	hw->als_level[i] = als_level[i];
 		}
 
 		ret = of_property_read_u32_array(node, "als_value", als_value,
