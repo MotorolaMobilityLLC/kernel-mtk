@@ -139,9 +139,9 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 	.margin = 6,
 	.min_shutter = 2,
-	.max_frame_length = 0xffff-5,
+	.max_frame_length = 0xFFFF,      //0xffff-5
 	.ae_shut_delay_frame = 0,
-	.ae_sensor_gain_delay_frame = 1,
+	.ae_sensor_gain_delay_frame = 0,   //1
 	.ae_ispGain_delay_frame = 2,
 	.ihdr_support = 0,	  //1, support; 0,not support
 	.ihdr_le_firstline = 0,  //1,le first ; 0, se first
