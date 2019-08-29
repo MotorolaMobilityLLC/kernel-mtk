@@ -1,6 +1,8 @@
 # In case the platform does NOT support this type of sensors
 
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/hwmon/include
+#moto add
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/sensors-1.0/sensorHub/inc_v1
 
 obj-y	+= situation.o
 obj-$(CONFIG_MTK_INPKHUB)	+=	inpocket/
@@ -14,3 +16,4 @@ obj-$(CONFIG_MTK_MOTION_DETECT_HUB)			+=	motion_detect/
 obj-$(CONFIG_MTK_TILTDETECTHUB)				+=	tilt_detector/
 obj-$(CONFIG_MTK_FLAT_HUB)				+=	flat/
 obj-$(CONFIG_MTK_SAR_HUB)				+=	sar/
+obj-$(CONFIG_MOTO_ALGO)				+=	mot/
