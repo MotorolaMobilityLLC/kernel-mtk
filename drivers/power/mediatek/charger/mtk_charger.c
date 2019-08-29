@@ -1406,7 +1406,10 @@ static void charger_check_status(struct charger_manager *info)
 	if (info->vbusov_stat)
 		charging = false;
 	if(ontim_charge_onoff_control  !=  1)	
+	{
+	    chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
 		charging = false;
+	}
 
 stop_charging:
 	mtk_battery_notify_check(info);
@@ -2224,7 +2227,10 @@ static ssize_t show_charge_onoff_ctrl(struct device *dev,struct device_attribute
 }
 static ssize_t store_charge_onoff_ctrl(struct device *dev,struct device_attribute *attr, const char *buf, size_t size)
 {
+	struct charger_manager *pinfo = dev->driver_data;
+       chr_err("%s;onoff=%d;\n",__func__,ontim_charge_onoff_control);
 	sscanf(buf, "%d", &ontim_charge_onoff_control);
+	_wake_up_charger(pinfo);
 	return size;
 }
 static DEVICE_ATTR(charge_onoff_ctrl, 0664, show_charge_onoff_ctrl, store_charge_onoff_ctrl);
