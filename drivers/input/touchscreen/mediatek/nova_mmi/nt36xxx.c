@@ -302,15 +302,17 @@ static inline int32_t spi_read_write(struct spi_device *client, uint8_t *buf, si
 		.len    = len,
 	};
 
+	memcpy(ts->xbuf, buf, len + DUMMY_BYTES);
+
 	switch (rw) {
 		case NVTREAD:
-			t.tx_buf = &buf[0];
+			t.tx_buf = ts->xbuf;
 			t.rx_buf = ts->rbuf;
-			t.len    = (len + DUMMY_BYTES);
+			t.len = (len + DUMMY_BYTES);
 			break;
 
 		case NVTWRITE:
-			t.tx_buf = buf;
+			t.tx_buf = ts->xbuf;
 			break;
 	}
 
@@ -1556,6 +1558,16 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	ts = kmalloc(sizeof(struct nvt_ts_data), GFP_KERNEL);
 	if (ts == NULL) {
 		NVT_ERR("failed to allocated memory for nvt ts data\n");
+		return -ENOMEM;
+	}
+
+	ts->xbuf = (uint8_t *)kzalloc((NVT_TRANSFER_LEN + 1), GFP_KERNEL);
+	if (ts->xbuf == NULL) {
+		NVT_ERR("kzalloc for xbuf failed!\n");
+		if (ts) {
+			kfree(ts);
+			ts = NULL;
+		}
 		return -ENOMEM;
 	}
 

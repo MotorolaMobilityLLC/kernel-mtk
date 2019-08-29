@@ -144,6 +144,7 @@ struct nvt_ts_data {
 	uint8_t hw_crc;
 	uint16_t nvt_pid;
 	uint8_t rbuf[1025];
+	uint8_t *xbuf;
 	struct mutex xbuf_lock;
 	bool irq_enabled;
 	struct completion *load_fw_completion;
