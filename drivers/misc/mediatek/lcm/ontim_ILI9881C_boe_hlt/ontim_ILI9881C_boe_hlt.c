@@ -713,8 +713,8 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight(void *handle, unsigned int level)
 { 
 	LCM_LOGI("%s,ili9881c holitek backlight: level = %d\n", __func__, level);
-	if (level > 255)
-		level = 255;
+	if (level > 244)
+		level = 243;
 	if (level < 3 && level !=0)
 		level = 3;
 #if 0
