@@ -86,10 +86,12 @@ static int tpd_i2c_detect(struct i2c_client *client, struct i2c_board_info *info
 static int tpd_remove(struct i2c_client *client);
 static void tpd_resume(struct device *h);
 static void tpd_suspend(struct device *h);
+#ifdef USELCD_TP_ALL_IN
 //+ add by fxz
 extern long lcd_enp_bias_setting(unsigned int value);
 extern long lcd_enn_bias_setting(unsigned int value);
 //- add by fxz
+#endif
 void fts_release_all_finger(void);
 
 /*****************************************************************************
@@ -228,7 +230,10 @@ static int fts_get_ic_information(struct fts_ts_data *ts_data)
             FTS_ERROR("start cmd write fail");
             return ret;
         }
-        id_cmd[0] = FTS_CMD_READ_ID;
+	
+        msleep(10);
+
+	id_cmd[0] = FTS_CMD_READ_ID;
         id_cmd[1] = id_cmd[2] = id_cmd[3] = 0x00;
         ret = fts_i2c_read(client, id_cmd, 4, chip_id, 2);
         if ((ret < 0) || (0x0 == chip_id[0]) || (0x0 == chip_id[1])) {
@@ -1039,11 +1044,13 @@ err_irq_req:
 err_input_init:
 #if FTS_POWER_SOURCE_CUST_EN
     fts_power_suspend();
+#ifdef USELCD_TP_ALL_IN
 //+ add by fxz
     regulator_put(tpd->reg);
     lcd_enp_bias_setting(0);
     lcd_enn_bias_setting(0);
 //- add by fxz
+#endif
 #endif
     if (ts_data->ts_workqueue)
         destroy_workqueue(ts_data->ts_workqueue);
@@ -1129,12 +1136,14 @@ static int tpd_remove(struct i2c_client *client)
 static int tpd_local_init(void)
 {
     FTS_FUNC_ENTER();
+#ifdef USELCD_TP_ALL_IN
 //+add by fxz
 #if FTS_POWER_SOURCE_CUST_EN
     lcd_enp_bias_setting(1);
     lcd_enn_bias_setting(1);
 #endif
 //-add by fxz
+#endif
 
 #if FTS_POWER_SOURCE_CUST_EN
     if (fts_power_init() != 0)
@@ -1232,10 +1241,12 @@ static void tpd_suspend(struct device *h)
     }
 #if FTS_POWER_SOURCE_CUST_EN
     fts_power_suspend();
+#ifdef USELCD_TP_ALL_IN
 //+ add by fxz
     lcd_enp_bias_setting(0);
     lcd_enn_bias_setting(0);
 //- add by fxz
+#endif
 #endif
 
     tpd_gpio_output(tpd_rst_gpio_number, 1);
@@ -1281,6 +1292,7 @@ static void tpd_resume(struct device *h)
     fts_release_all_finger();
 
 #if FTS_POWER_SOURCE_CUST_EN
+#ifdef USELCD_TP_ALL_IN
 //+add by fxz
     if (fts_gesture_data.mode == DISABLE) {
         lcd_enp_bias_setting(1);
@@ -1288,6 +1300,7 @@ static void tpd_resume(struct device *h)
         fts_power_resume();
     }
 //-add by fxz
+#endif
 #endif
 
     if (!ts_data->ic_info.is_incell) {

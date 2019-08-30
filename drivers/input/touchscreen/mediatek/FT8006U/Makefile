@@ -14,9 +14,10 @@ else ifneq ($(filter L18%, $(TARGET_PRODUCT)),)
   EXTRA_CFLAGS += -DLENOVO_PRJ
 else ifneq ($(filter G55%, $(TARGET_PRODUCT)),)
   EXTRA_CFLAGS += -DCROSS_PRJ
+else ifneq ($(filter BALI%, $(TARGET_PRODUCT)),)
+  EXTRA_CFLAGS += -DBALI_PRJ
 else
-  EXTRA_CFLAGS += -DTPLINK_PRJ
-# unknown project for FT8006U ic
+  EXTRA_CFLAGS += -DBALI_PRJ
 endif
 
 obj-$(CONFIG_TOUCHSCREEN_FT8006U)    +=  focaltech_ex_fun.o

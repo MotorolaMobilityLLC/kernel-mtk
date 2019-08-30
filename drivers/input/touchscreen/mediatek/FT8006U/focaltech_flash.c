@@ -43,7 +43,24 @@
 * Global variable or extern global variabls/functions
 *****************************************************************************/
 /* Upgrade FW/PRAMBOOT/LCD CFG */
-#ifdef TPLINK_PRJ
+#ifdef BALI_PRJ
+#define FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT                      "include/firmware/Otim_FT5436_moto_3901_HLT0x82_Ver0x08_20190823_app.i"
+#define FTS_UPGRADE_FW2_FILE_R16530_MTD_TRULY                     "include/firmware/Otim_FT5436_moto_3901_Truly0x5a_Ver0x10_20190823_app.i"
+#define FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD                      "include/firmware/fw_sample.i"
+
+u8 fw_file[] = {
+#include FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT
+};
+
+u8 fw_file2[] = {
+#include FTS_UPGRADE_FW2_FILE_R16530_MTD_TRULY
+};
+
+u8 fw_file3[] = {
+#include FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD
+};
+
+#elif defined(TPLINK_PRJ)
 #define FTS_UPGRADE_FW_FILE_TPK_TXD                      "include/firmware/Ontim_M3901TP_FT8006U_VID0x7C_Ver0x0C_L0x06_20180426_all.i"
 #define FTS_UPGRADE_FW2_FILE_TPK_HLT                     "include/firmware/Ontim_M3901TP_FT8006U_VID0x82_Ver0x0D_L0x06_20180802_all.i"
 
@@ -79,6 +96,7 @@ u8 fw_file2[] = {
 struct upgrade_fw fw_list[] = {
     {FTS_VENDOR_ID, fw_file, sizeof(fw_file)},
     {FTS_VENDOR_ID2, fw_file2, sizeof(fw_file2)},
+    {FTS_VENDOR_ID3, fw_file3, sizeof(fw_file3)},
 };
 extern char *mtkfb_find_lcm_driver(void);
 
@@ -1641,7 +1659,20 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
     }
 #endif
 sprintf(s, "%s",mtkfb_find_lcm_driver());
-#ifdef TPLINK_PRJ
+#ifdef BALI_PRJ
+FTS_ERROR("firefly--------BALI------name=%s--------",s);
+ if(!strcmp(s,"ontim_ILI9881C_hc_hlt")){
+	fw = &fw_list[0];
+	FTS_ERROR("firelfy--------HLT--------fw_list[0]------");
+   }
+ else if(!strcmp(s,"ontim_R61350_hc_truly")){
+	fw = &fw_list[1];
+	FTS_ERROR("wuyx--------TRULY--------fw_list[1]------");
+ }else if(!strcmp(s,"oontim_ILI9881P_xm_txd")){
+	fw = &fw_list[2];
+	FTS_ERROR("wuyx--------TTXD--------fw_list[2]------");
+ }
+#elif defined(TPLINK_PRJ)
 FTS_ERROR("wuyx--------TPK------name=%s--------",s);
  if(!strcmp(s,"ontim_ft8006u")){
 	fw = &fw_list[0];
