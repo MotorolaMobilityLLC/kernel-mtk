@@ -159,7 +159,7 @@ static struct LCM_setting_table init_setting[] = {
 			      0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 			      0x00, 0x00, 0x00, 0x00, 0x00} },
 	{ 0x36, 0x01, {0x03} },
-	{ 0x53, 0x01, {0x24} },
+	{ 0x53, 0x01, {0x2C} },
 	{ 0x55, 0x01, {0x00} },
 	{ 0x35, 0x01, {0x00} },
 	{ 0x11, 0x01, {0x00} },
@@ -459,8 +459,8 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 static void lcm_setbacklight(void *handle, unsigned int level)
 { 
 	LCM_LOGI("%s,backlight: level = %d\n", __func__, level);
-	if (level > 255)
-		level = 255;
+	if (level > 232)
+		level = 231;
 	if (level < 3 && level !=0)
 		level = 3;
 	bl_level[0].para_list[0] = level;
