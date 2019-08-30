@@ -83,6 +83,15 @@ int fts_usb_detect_flag = 0;
 #define RTPM_PRIO_TPD                       0x04
 #endif
 
+#ifdef CONFIG_SPI_MT65XX
+const struct mtk_chip_config fts_spi_ctrdata = {
+    .rx_mlsb = 1,
+    .tx_mlsb = 1,
+    .cs_pol = 0,
+    .cs_setuptime = 125,
+};
+#endif
+
 /*****************************************************************************
 * Global variable or extern global variabls/functions
 *****************************************************************************/
@@ -1216,6 +1225,11 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
         FTS_ERROR("init fw upgrade fail");
     }
 
+#ifdef CONFIG_SPI_MT65XX
+	/* new usage of MTK spi API */
+	memcpy(&ts_data->spi_ctrl, &fts_spi_ctrdata, sizeof(struct mtk_chip_config));
+	ts_data->spi->controller_data = (void *)&ts_data->spi_ctrl;
+#endif
 	ts_data->charger_detection = NULL;
 
 	if (ts_data->charger_detection_enable){

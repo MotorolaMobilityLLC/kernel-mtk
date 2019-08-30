@@ -63,6 +63,9 @@
 #include <linux/dma-mapping.h>
 #include "focaltech_common.h"
 #include <linux/sysfs.h>
+#ifdef CONFIG_SPI_MT65XX
+#include <linux/platform_data/spi-mt65xx.h>
+#endif
 
 /*****************************************************************************
 * Private constant and macro definitions using #define
@@ -194,6 +197,9 @@ struct fts_ts_data {
     int touch_point;
     int point_num;
     struct regulator *vdd;
+#ifdef CONFIG_SPI_MT65XX
+    struct mtk_chip_config spi_ctrl;
+#endif
     struct pinctrl          *pinctrl;
     struct pinctrl_state    *spi_default;
     struct pinctrl_state    *spi_active;
