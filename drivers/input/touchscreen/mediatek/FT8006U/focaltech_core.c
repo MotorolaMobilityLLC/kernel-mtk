@@ -1301,6 +1301,7 @@ static void tpd_resume(struct device *h)
     }
 //-add by fxz
 #endif
+        fts_power_resume();
 #endif
 
     if (!ts_data->ic_info.is_incell) {
