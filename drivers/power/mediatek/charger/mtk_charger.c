@@ -1156,6 +1156,8 @@ static int mtk_charger_plug_out(struct charger_manager *info)
 	info->chr_type = CHARGER_UNKNOWN;
 	info->charger_thread_polling = false;
 
+	info->notify_code = 0x0000;
+
 	pdata1->disable_charging_count = 0;
 	pdata1->input_current_limit_by_aicl = -1;
 	pdata2->disable_charging_count = 0;
