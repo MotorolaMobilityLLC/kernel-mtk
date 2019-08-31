@@ -152,7 +152,7 @@ int upower_bank_to_spower_bank(int upower_bank)
 static void upower_scale_l_cap(void)
 {
 	unsigned int ratio;
-	unsigned int temp;
+	unsigned long long temp;
 	unsigned int max_cap = 1024;
 	int i, j;
 	struct upower_tbl *tbl;
