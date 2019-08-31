@@ -947,7 +947,7 @@ void soidle_post_handler(void)
 
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
-	mtkTTimer_start_timer();
+	RCU_NONIDLE(mtkTTimer_start_timer());
 #endif
 
 	ufs_cb_after_xxidle();
