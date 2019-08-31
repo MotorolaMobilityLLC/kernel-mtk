@@ -912,6 +912,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	xhci_mtk_phy_exit(mtk);
 	device_init_wakeup(&dev->dev, false);
 
+	mtk_xhci_wakelock_unlock(mtk);
 	xhci_mtk_dbg_exit(mtk);
 	usb_remove_hcd(hcd);
 	usb_put_hcd(xhci->shared_hcd);
@@ -921,7 +922,6 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	xhci_mtk_ldos_disable(mtk);
 	pm_runtime_put_sync(&dev->dev);
 	pm_runtime_disable(&dev->dev);
-	mtk_xhci_wakelock_unlock(mtk);
 	return 0;
 }
 
