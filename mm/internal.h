@@ -500,4 +500,6 @@ extern const struct trace_print_flags gfpflag_names[];
 #define IS_ZONE_MOVABLE_CMA_ZONE(z) IS_ZONE_MOVABLE_CMA_ZONE_IDX(\
 					zone_idx(z))
 
+ssize_t print_max_page_owner(void);
+
 #endif	/* __MM_INTERNAL_H */
