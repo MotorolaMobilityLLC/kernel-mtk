@@ -371,7 +371,7 @@ void venc_power_on(void)
 #endif
 #endif
 
-	pr_debug("[VENC] %s -\n", __func__);
+	/* pr_debug("[VENC] %s -\n", __func__); */
 }
 
 void venc_power_off(void)
@@ -1078,7 +1078,7 @@ static long vcodec_lockhw(unsigned long arg)
 					    &grVcodecHWLock.rLockedTime,
 					    sizeof(struct VAL_TIME_T));
 
-				pr_debug("VENC_LOCKHW, free to use HW\n");
+				/* pr_debug("VENC_LOCKHW, free to use HW\n"); */
 
 					MODULE_MFV_PR_DEBUG(
 					    "VCODEC_LOCKHW, handle = 0x%lx\n",
@@ -1261,8 +1261,9 @@ static long vcodec_unlockhw(unsigned long arg)
 		return -EFAULT;
 	}
 
-	pr_debug("[VCODEC] LOCKHW eDriverType = %d\n",
-			rHWLock.eDriverType);
+	/* pr_debug("[VCODEC] LOCKHW eDriverType = %d\n",
+	 *		rHWLock.eDriverType);
+	 */
 	eValRet = VAL_RESULT_INVALID_ISR;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
 	    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
@@ -1473,7 +1474,7 @@ static long vcodec_waitisr(unsigned long arg)
 		return -EFAULT;
 	}
 
-	pr_debug("VCODEC_WAITISR - tid = %d\n", current->pid);
+	/* pr_debug("VCODEC_WAITISR - tid = %d\n", current->pid); */
 
 	return 0;
 }
