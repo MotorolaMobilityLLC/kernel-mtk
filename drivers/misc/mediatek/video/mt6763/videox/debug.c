@@ -1433,7 +1433,8 @@ static void process_dbg_opt(const char *opt)
 		}
 		idle_check_interval =
 		    idle_check_interval < 17 ? 17 : idle_check_interval;
-		DISPMSG("change idle interval to %dms\n", idle_check_interval);
+		DISPMSG("change idle interval to %llums\n",
+			idle_check_interval);
 	} else if (strncmp(opt, "layer_statistic:", 16) == 0) {
 		ret = sscanf(opt, "layer_statistic:%d\n",
 			     &layer_statistic_enable);
