@@ -1613,6 +1613,7 @@ static int charger_pm_event(struct notifier_block *notifier,
 			pinfo->endtime.tv_nsec != 0) {
 			chr_err("%s: alarm timeout, wake up charger\n",
 				__func__);
+			__pm_relax(&pinfo->charger_wakelock);
 			pinfo->endtime.tv_sec = 0;
 			pinfo->endtime.tv_nsec = 0;
 			_wake_up_charger(pinfo);
@@ -1636,12 +1637,14 @@ static enum alarmtimer_restart
 	struct charger_manager *info =
 	container_of(alarm, struct charger_manager, charger_timer);
 
-	chr_err("%s: alarm timer timeout\n", __func__);
-
 	if (info->is_suspend == false) {
 		chr_err("%s: not suspend, wake up charger\n", __func__);
 		_wake_up_charger(info);
+	} else {
+		chr_err("%s: alarm timer timeout\n", __func__);
+		__pm_stay_awake(&info->charger_wakelock);
 	}
+
 	return ALARMTIMER_NORESTART;
 }
 
@@ -1657,7 +1660,8 @@ static void mtk_charger_start_timer(struct charger_manager *info)
 
 	ktime = ktime_set(info->endtime.tv_sec, info->endtime.tv_nsec);
 
-	chr_debug("%s: alarm timer start\n", __func__);
+	chr_err("%s: alarm timer start:%ld %ld\n", __func__,
+		info->endtime.tv_sec, info->endtime.tv_nsec);
 	alarm_start(&pinfo->charger_timer, ktime);
 }
 
