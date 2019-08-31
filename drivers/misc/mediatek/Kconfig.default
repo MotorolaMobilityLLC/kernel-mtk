@@ -22,8 +22,12 @@ config ANDROID_DEFAULT_SETTING
 	select CP15_BARRIER_EMULATION
 	select CRYPTO_AES
 	select CRYPTO_CBC
+	select CRYPTO_XCBC
+	select CRYPTO_CMAC
 	select CRYPTO_ECB
 	select CRYPTO_GCM
+	select CRYPTO_CCM
+	select CRYPTO_BLOWFISH
 	select CRYPTO_HMAC
 	select CRYPTO_MD5
 	select CRYPTO_NULL
@@ -46,16 +50,20 @@ config ANDROID_DEFAULT_SETTING
 	select IKCONFIG
 	select IKCONFIG_PROC
 	select INET
+	select INET_AH
+	select INET_DIAG_DESTROY
+	select INET_ESP
+	select INET_IPCOMP
+	select INET_UDP_DIAG
+	select INET_XFRM_TUNNEL
+	select INET_XFRM_MODE_TRANSPORT
+	select INET_XFRM_MODE_TUNNEL
 	select INET6_AH
 	select INET6_ESP
 	select INET6_IPCOMP
+	select INET6_XFRM_MODE_ROUTEOPTIMIZATION
 	select INET6_XFRM_MODE_TRANSPORT
 	select INET6_XFRM_MODE_TUNNEL
-	select INET_DIAG_DESTROY
-	select INET_ESP
-	select INET_UDP_DIAG
-	select INET_XFRM_MODE_TRANSPORT
-	select INET_XFRM_MODE_TUNNEL
 	select IP6_NF_FILTER
 	select IP6_NF_IPTABLES
 	select IP6_NF_MANGLE
@@ -213,9 +221,11 @@ config ANDROID_DEFAULT_SETTING
 	select USB_RTL8152
 	select USB_SUPPORT
 	select XFRM_INTERFACE
+        select XFRM_SUB_POLICY
 	select XFRM_STATISTICS
 	select XFRM_USER
 	select MTK_MIX_DEVICES
+
 	help
 	  Select the android base and recommended config by default
 	  to avoid missing basic or common setting
