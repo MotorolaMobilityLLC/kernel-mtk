@@ -11,6 +11,7 @@
  * GNU General Public License for more details.
  */
 
+#include <linux/hie.h>
 #ifdef CONFIG_MTK_HW_FDE
 #include "mtk_secure_api.h"
 #endif
@@ -34,15 +35,19 @@ enum {
 };
 
 static void msdc_crypto_switch_config(struct msdc_host *host,
-		u32 block_address, u32 dir)
+	struct request *req,
+	u32 block_address, u32 dir)
 {
 	void __iomem *base = host->base;
 	u32 aes_mode_current = 0, aes_sw_reg = 0;
 	u32 ctr[4] = {0};
 	unsigned long polling_tmo = 0;
+	u64 hw_hie_iv_num = 0;
 
 	/* 1. set ctr */
 	aes_sw_reg = MSDC_READ32(EMMC52_AES_EN);
+
+	hw_hie_iv_num = hie_get_iv(req);
 
 	if (aes_sw_reg & EMMC52_AES_SWITCH_VALID0) {
 		MSDC_GET_FIELD(EMMC52_AES_CFG_GP0,
@@ -60,14 +65,28 @@ static void msdc_crypto_switch_config(struct msdc_host *host,
 	case MSDC_CRYPTO_XTS_AES:
 	case MSDC_CRYPTO_AES_CBC_ESSIV:
 	case MSDC_CRYPTO_BITLOCKER:
+	{
+		if (hw_hie_iv_num) {
+			ctr[0] = hw_hie_iv_num & 0xffffffff;
+			ctr[1] = (hw_hie_iv_num >> 32) & 0xffffffff;
+		} else {
 		ctr[0] = block_address;
+		}
 		break;
+	}
 	case MSDC_CRYPTO_AES_ECB:
 	case MSDC_CRYPTO_AES_CBC:
 		break;
 	case MSDC_CRYPTO_AES_CTR:
+	{
+		if (hw_hie_iv_num) {
+			ctr[0] = hw_hie_iv_num & 0xffffffff;
+			ctr[1] = (hw_hie_iv_num >> 32) & 0xffffffff;
+		} else {
 		ctr[0] = block_address;
+		}
 		break;
+	}
 	case MSDC_CRYPTO_AES_CBC_MAC:
 		break;
 	default:
@@ -218,7 +237,7 @@ check_hw_crypto:
 		/* Check data addressw with 16bytes alignment */
 		WARN_ON((host->dma.gpd_addr & 0xf) ||
 		(host->dma.bd_addr & 0xf));
-		msdc_crypto_switch_config(host, blk_addr, dir);
+		msdc_crypto_switch_config(host, mq_rq->req, blk_addr, dir);
 	}
 }
 
