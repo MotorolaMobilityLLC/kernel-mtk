@@ -485,7 +485,6 @@ config MTK_ENABLE_AGO
 	select F2FS_FS_ENCRYPTION
 	select DM_VERITY_FEC
 	select DM_ANDROID_VERITY_AT_MOST_ONCE_DEFAULT_ENABLED
-	select PROCESS_RECLAIM
 	help
 	  Enable/Disable GMO related feautre
 	  Do not use this options in Kernel directly
