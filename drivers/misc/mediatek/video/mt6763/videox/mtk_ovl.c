@@ -779,8 +779,8 @@ int ovl2mem_deinit(void)
 		loop_cnt++;
 	}
 	if (loop_cnt >= 10)
-		DISPMSG("%s loop_cnt >= 10, g_trigger_ticket=%d, ",
-			__func__, "g_release_ticket=%d\n",
+		DISPMSG("%s loop_cnt >= 10, g_trigger_ticket=%d, g_release_ticket=%d\n",
+			__func__,
 			atomic_read(&g_trigger_ticket),
 			atomic_read(&g_release_ticket));
 
