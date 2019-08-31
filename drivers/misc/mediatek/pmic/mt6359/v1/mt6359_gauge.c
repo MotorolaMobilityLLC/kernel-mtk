@@ -2072,7 +2072,7 @@ static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 	if (en == 0) {
 		pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
 		pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
-		mdelay(100);
+		mdelay(10);
 	}
 	if (en == 1) {
 		pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
