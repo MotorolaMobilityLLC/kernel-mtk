@@ -564,7 +564,7 @@ void mcdi_heart_beat_log_dump(void)
 	bool dump_log = false;
 	unsigned long mcdi_cnt;
 	unsigned long any_core_info = 0;
-	unsigned long ac_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO];
+	unsigned long ac_cpu_cond_info[NF_ANY_CORE_CPU_COND_INFO] = {0};
 	unsigned int cpu_mask = 0;
 	unsigned int cluster_mask = 0;
 	struct mcdi_feature_status feature_stat;
