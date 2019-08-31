@@ -816,8 +816,14 @@ static s32 cmdq_mdp_check_engine_waiting_unlock(struct cmdqRecStruct *handle)
 			continue;
 		/* same secure path, can be dispatch */
 		if (mdp_ctx.thread[i].task_count &&
-			handle->secData.is_secure != mdp_ctx.thread[i].secure)
+			handle->secData.is_secure !=
+			mdp_ctx.thread[i].secure) {
+			CMDQ_LOG(
+				"secure path engine busy thd:%u flag:%#llx task flag:%#llx",
+				i, mdp_ctx.thread[i].engine_flag,
+				handle->engineFlag);
 			return -EBUSY;
+		}
 	}
 
 	/* same engine does not exist in working threads */
@@ -1327,8 +1333,9 @@ s32 cmdq_mdp_wait(struct cmdqRecStruct *handle,
 
 	/* we have to wait handle has valid thread first */
 	if (handle->thread == CMDQ_INVALID_THREAD) {
-		CMDQ_LOG("pid:%d handle:0x%p wait for valid thread first\n",
-			current->pid, handle);
+		CMDQ_LOG(
+			"pid:%d handle:0x%p wait for valid thread first engine:%#llx\n",
+			current->pid, handle, handle->engineFlag);
 
 		/* wait for acquire thread
 		 * (this is done by cmdq_mdp_consume_handle
