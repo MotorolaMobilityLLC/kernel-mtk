@@ -2698,6 +2698,9 @@ int dpmaif_start(unsigned char hif_id)
 	struct dpmaif_tx_queue *txq;
 	int i, ret = 0;
 
+	if (dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_PWRON)
+		return 0;
+
 	if (dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_MIN)
 		dpmaif_late_init(hif_id);
 #ifdef DPMAIF_DEBUG_LOG
@@ -3094,6 +3097,10 @@ void dpmaif_hw_reset(unsigned char md_id)
 
 int dpmaif_stop(unsigned char hif_id)
 {
+	if (dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_PWROFF ||
+		dpmaif_ctrl->dpmaif_state == HIFDPMAIF_STATE_MIN)
+		return 0;
+
 #ifdef DPMAIF_DEBUG_LOG
 	CCCI_HISTORY_LOG(-1, TAG, "dpmaif:stop\n");
 #else
