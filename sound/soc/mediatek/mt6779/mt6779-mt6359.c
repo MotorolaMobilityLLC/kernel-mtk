@@ -970,6 +970,7 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
+/*
 	{
 		.name = "DSP_Playback_A2DP",
 		.stream_name = "DSP_Playback_A2DP",
@@ -986,6 +987,7 @@ static struct snd_soc_dai_link mt6779_mt6359_dai_links[] = {
 		.codec_name = "snd-soc-dummy",
 		.codec_dai_name = "snd-soc-dummy-dai",
 	},
+*/
 	{
 		.name = "DSP_Call_Final",
 		.stream_name = "DSP_Call_Final",
