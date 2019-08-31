@@ -3354,7 +3354,7 @@ static void testcase_poll_monitor_delay_continue(struct work_struct *workItem)
 
 static s32 testcase_poll_monitor_callback(unsigned long data)
 {
-	u32 pollTime;
+	u32 pollTime = 0;
 
 	if (!gPollMonitor.status)
 		return 0;
@@ -3699,7 +3699,7 @@ static void testcase_specific_bus_MMSYS(void)
 	u32 mmsys_register;
 	struct cmdqRecStruct *handle = NULL;
 	cmdqBackupSlotHandle slot_handle = 0;
-	u32 start_time, end_time, duration_time;
+	u32 start_time = 0, end_time = 0, duration_time = 0;
 
 	CMDQ_LOG("%s\n", __func__);
 
