@@ -20,7 +20,9 @@
 extern unsigned int sysctl_sched_migration_cost;
 extern unsigned int sysctl_sched_sync_hint_enable;
 
+#if defined(CONFIG_CPU_FREQ_GOV_SCHEDPLUS)
 extern void schedplus_set_down_throttle_nsec(unsigned long val);
 extern unsigned long schedplus_show_down_throttle_nsec(int cpu);
+#endif
 
 #endif /* _EAS_CTRL_PLAT_H_ */
