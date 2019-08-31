@@ -1554,8 +1554,17 @@ static void fgauge_set_zcv_intr_internal(
 
 static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 {
-	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
-	pmic_enable_interrupt(FG_ZCV_NO, en, "GM30");
+	if (en == 0) {
+		pmic_enable_interrupt(FG_ZCV_NO, en, "GM30");
+		pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+		mdelay(10);
+	}
+
+	if (en == 1) {
+		pmic_enable_interrupt(FG_ZCV_NO, en, "GM30");
+		pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+	}
+
 	return 0;
 }
 

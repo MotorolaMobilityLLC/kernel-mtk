@@ -1922,10 +1922,17 @@ static void fgauge_set_zcv_intr_internal(
 
 static int fgauge_enable_zcv_interrupt(struct gauge_device *gauge_dev, int en)
 {
-	if (en != 0)
-		en = 1;
-	pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
-	pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
+
+	if (en == 0) {
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
+		pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+		mdelay(100);
+	}
+	if (en == 1) {
+		pmic_set_register_value(PMIC_RG_INT_EN_FG_ZCV, en);
+		pmic_set_register_value(PMIC_FG_ZCV_DET_EN, en);
+	}
+
 	bm_debug("[FG_ZCV_INT][fg_set_zcv_intr_en] En %d\n", en);
 
 	return 0;
