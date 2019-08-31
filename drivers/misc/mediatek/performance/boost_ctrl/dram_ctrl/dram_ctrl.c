@@ -129,7 +129,7 @@ static ssize_t perfmgr_vcore_proc_write(struct file *filp, const char *ubuf,
 		pr_debug("vcore_write ret < 0\n");
 		return ret;
 	}
-	if (val < -1 || val > 4) {
+	if (val < OPP_UNREQ || val >= NUM_OPP) {
 		pr_debug("UNREQ\n");
 		return -1;
 	}
@@ -174,7 +174,7 @@ static ssize_t perfmgr_vcore_lp3_proc_write(struct file *filp, const char *ubuf,
 		pr_debug("vcore_write ret < 0\n");
 		return ret;
 	}
-	if (val < -1 || val > 4) {
+	if (val < OPP_UNREQ || val >= NUM_OPP) {
 		pr_debug("UNREQ\n");
 		return -1;
 	}
