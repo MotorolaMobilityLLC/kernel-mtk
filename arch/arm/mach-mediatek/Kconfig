@@ -62,6 +62,7 @@ config MACH_MT6763
 	select MTK_EIC
 	select MTK_BOUNCING_CHECK
 	select HIE
+	select MTK_IO_BOOST
 	select MTK_PLAT_SRAM_FLAG
 	select MTK_L2C_PARITY_CHECK
 	select MTK_SYSTRACKER_V2
