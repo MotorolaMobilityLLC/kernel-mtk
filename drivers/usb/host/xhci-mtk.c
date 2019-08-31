@@ -550,7 +550,6 @@ static int usb_wakeup_of_property_parse(struct xhci_hcd_mtk *mtk,
 		dev_err(dev, "fail to get pericfg regs\n");
 		return PTR_ERR(mtk->pericfg);
 	}
-
 	return 0;
 }
 
@@ -690,6 +689,8 @@ static int xhci_mtk_setup(struct usb_hcd *hcd)
 			return ret;
 	}
 
+	/* set runtime pm available */
+	pm_runtime_put_noidle(mtk->dev);
 	return ret;
 }
 
@@ -765,7 +766,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 		mtk->num_phys = 0;
 	}
 	pm_runtime_enable(dev);
-	pm_runtime_get_sync(dev);
+	pm_runtime_get_noresume(dev);
 	device_enable_async_suspend(dev);
 
 	ret = xhci_mtk_ldos_enable(mtk);
@@ -867,6 +868,10 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 
 	xhci_mtk_dbg_init(mtk);
 
+#if IS_ENABLED(CONFIG_USB_XHCI_MTK_SUSPEND)
+	device_set_wakeup_enable(&hcd->self.root_hub->dev, 1);
+	device_set_wakeup_enable(&xhci->shared_hcd->self.root_hub->dev, 1);
+#endif
 	mtk_xhci_wakelock_lock(mtk);
 	return 0;
 
@@ -894,7 +899,7 @@ disable_ldos:
 	xhci_mtk_ldos_disable(mtk);
 
 disable_pm:
-	pm_runtime_put_sync(dev);
+	pm_runtime_put_noidle(dev);
 	pm_runtime_disable(dev);
 	return ret;
 }
@@ -920,8 +925,34 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	xhci_mtk_sch_exit(mtk);
 	xhci_mtk_clks_disable(mtk);
 	xhci_mtk_ldos_disable(mtk);
-	pm_runtime_put_sync(&dev->dev);
+	pm_runtime_put_noidle(&dev->dev);
 	pm_runtime_disable(&dev->dev);
+	return 0;
+}
+
+static int __maybe_unused xhci_mtk_runtime_suspend(struct device *dev)
+{
+	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
+	struct xhci_hcd *xhci = hcd_to_xhci(mtk->hcd);
+
+	xhci_info(xhci, "%s\n", __func__);
+	xhci_mtk_host_disable(mtk);
+#if IS_ENABLED(CONFIG_MTK_UAC_POWER_SAVING)
+	xhci_mtk_set_sleep(true);
+#endif
+	return 0;
+}
+
+static int __maybe_unused xhci_mtk_runtime_resume(struct device *dev)
+{
+	struct xhci_hcd_mtk *mtk = dev_get_drvdata(dev);
+	struct xhci_hcd *xhci = hcd_to_xhci(mtk->hcd);
+
+	xhci_info(xhci, "%s\n", __func__);
+	xhci_mtk_host_enable(mtk);
+#if IS_ENABLED(CONFIG_MTK_UAC_POWER_SAVING)
+	xhci_mtk_set_sleep(false);
+#endif
 	return 0;
 }
 
@@ -938,6 +969,7 @@ static int __maybe_unused xhci_mtk_suspend(struct device *dev)
 	struct usb_hcd *hcd = mtk->hcd;
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
+	xhci_info(xhci, "%s\n", __func__);
 	xhci_dbg(xhci, "%s: stop port polling\n", __func__);
 	clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
 	del_timer_sync(&hcd->rh_timer);
@@ -957,6 +989,7 @@ static int __maybe_unused xhci_mtk_resume(struct device *dev)
 	struct usb_hcd *hcd = mtk->hcd;
 	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 
+	xhci_info(xhci, "%s\n", __func__);
 	usb_wakeup_disable(mtk);
 	xhci_mtk_clks_enable(mtk);
 	xhci_mtk_phy_power_on(mtk);
@@ -977,6 +1010,8 @@ static const struct dev_pm_ops xhci_mtk_pm_ops = {
 
 static const struct dev_pm_ops xhci_mtk_phone_pm_ops = {
 	SET_NOIRQ_SYSTEM_SLEEP_PM_OPS(xhci_mtk_suspend, xhci_mtk_resume)
+	SET_RUNTIME_PM_OPS(xhci_mtk_runtime_suspend,
+			xhci_mtk_runtime_resume, NULL)
 };
 #define DEV_PHONE_PM_OPS (IS_ENABLED(CONFIG_PM) ? &xhci_mtk_phone_pm_ops : NULL)
 
