@@ -118,6 +118,9 @@ int venc_if_set_param(struct mtk_vcodec_ctx *ctx,
 {
 	int ret = 0;
 
+	if (ctx->drv_handle == 0)
+		return -EIO;
+
 	if (ctx->oal_vcodec == 0) {
 		mtk_venc_lock(ctx);
 		mtk_vcodec_enc_clock_on(&ctx->dev->pm);
@@ -167,6 +170,9 @@ int venc_if_encode(struct mtk_vcodec_ctx *ctx,
 	int ret = 0;
 	unsigned long flags;
 
+	if (ctx->drv_handle == 0)
+		return -EIO;
+
 	if (ctx->oal_vcodec == 0 && ctx->slowmotion == 0)
 		venc_encode_prepare(ctx, &flags);
 
@@ -185,7 +191,7 @@ int venc_if_deinit(struct mtk_vcodec_ctx *ctx)
 	unsigned long flags;
 
 	if (ctx->drv_handle == 0)
-		return 0;
+		return -EIO;
 
 	if (ctx->oal_vcodec == 0 && ctx->slowmotion == 0)
 		venc_encode_prepare(ctx, &flags);
