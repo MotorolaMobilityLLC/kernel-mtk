@@ -202,6 +202,11 @@ static long ged_dispatch(struct file *pFile, GED_BRIDGE_PACKAGE *psBridgePackage
 				ged_bridge_gpu_hint_to_cpu,
 				GPU_HINT_TO_CPU);
 			break;
+		case GED_BRIDGE_COMMAND_HINT_FORCE_MDP:
+			SET_FUNC_AND_CHECK_FOR_NO_TYPEDEF(
+				ged_bridge_hint_force_mdp,
+				HINT_FORCE_MDP);
+			break;
 		case GED_BRIDGE_COMMAND_GE_ALLOC:
 			SET_FUNC_AND_CHECK(ged_bridge_ge_alloc, GE_ALLOC);
 			break;
