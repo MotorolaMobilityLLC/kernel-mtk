@@ -29,6 +29,9 @@ inline void mmdvfs_update_limit_config(enum mmdvfs_limit_source source,
 void mmdvfs_update_plat_ostd(u32 larb, u32 hrt_port, u32 *ostd)
 { return; }
 
+bool is_disp_larb(u32 larb)
+{ return false; }
+
 bool mmdvfs_log_larb_mmp(s32 common_port_id, s32 larb_id)
 { return false; }
 

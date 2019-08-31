@@ -126,6 +126,13 @@ void mmdvfs_update_plat_ostd(u32 larb, u32 hrt_port, u32 *ostd)
 		*ostd = MAX_OSTD_VALUE;
 }
 
+bool is_disp_larb(u32 larb)
+{
+	if (larb <= LARB_MDP_ID)
+		return true;
+	return false;
+}
+
 /* Return port number of CCU on SMI common */
 inline u32 mmdvfs_get_ccu_smi_common_port(void)
 {
