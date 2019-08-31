@@ -491,19 +491,18 @@ static void swpm_pmu_set_enable_all(unsigned int enable)
 {
 	int i;
 
-	if (enable) {
 #ifdef CONFIG_MTK_CACHE_CONTROL
+	if (enable)
 		ca_force_stop_set_in_kernel(1);
 #endif
-		for (i = 0; i < num_possible_cpus(); i++)
-			swpm_pmu_set_enable(i, enable);
-	} else {
-		for (i = 0; i < num_possible_cpus(); i++)
-			swpm_pmu_set_enable(i, enable);
+
+	for (i = 0; i < num_possible_cpus(); i++)
+		swpm_pmu_set_enable(i, enable);
+
 #ifdef CONFIG_MTK_CACHE_CONTROL
+	if (!enable)
 		ca_force_stop_set_in_kernel(0);
 #endif
-	}
 }
 
 static void swpm_mdla_pmu_set_enable(unsigned int enable)
