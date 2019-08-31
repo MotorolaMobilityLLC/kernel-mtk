@@ -12034,7 +12034,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 		break;
 	case ISP_GET_ISPCLK:
 		{
-			uint64_t freq_steps[ISP_CLK_LEVEL_CNT];
+			uint64_t freq_steps[ISP_CLK_LEVEL_CNT] = {0};
 			unsigned int lv = 0;
 			int result = 0;
 			struct ISP_GET_SUPPORTED_ISP_CLK Ispclks;
