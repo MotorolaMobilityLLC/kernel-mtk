@@ -157,7 +157,7 @@ read_page_owner_slim(struct file *file, char __user *buf, size_t count,
 		if (entry->allocations > 0) {
 			depot_fetch_stack(entry->handle, &trace);
 				ret += snprintf(kbuf, count,
-						"%8zu %ps %p %p %p %p %p\n",
+						"%8zu %pS %pS %pS %pS %pS %pS\n",
 						entry->allocations,
 						(void *) trace.entries[3],
 						(void *) trace.entries[3],
