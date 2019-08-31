@@ -2904,9 +2904,9 @@ static __always_inline int
 __update_load_avg(u64 now, int cpu, struct sched_avg *sa,
 		  unsigned long weight, int running, struct cfs_rq *cfs_rq)
 {
-	u64 delta, scaled_delta, periods;
-	u32 contrib;
-	unsigned int delta_w, scaled_delta_w, decayed = 0;
+	u64 delta = 0, scaled_delta = 0, periods = 0;
+	u32 contrib = 0;
+	unsigned int delta_w = 0, scaled_delta_w = 0, decayed = 0;
 	unsigned long scale_freq, scale_cpu;
 
 	delta = now - sa->last_update_time;
