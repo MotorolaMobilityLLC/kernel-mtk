@@ -1660,6 +1660,7 @@ int xhci_endpoint_init(struct xhci_hcd *xhci,
 				 ep_index, ring_type, in, usage);
 
 		if (usage == USB_ENDPOINT_USAGE_FEEDBACK) {
+			xhci->quirks |= XHCI_DEV_WITH_SYNC_EP;
 			/* FIXME feedback ep force use dram */
 		} else {
 		if (in)
