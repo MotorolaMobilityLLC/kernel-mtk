@@ -341,7 +341,7 @@ void venc_power_on(void)
 	mutex_unlock(&VencPWRLock);
 	ret = 0;
 
-	pr_debug("[VCODEC] %s +\n", __func__);
+	/* pr_debug("[VCODEC] %s +\n", __func__); */
 #ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 	enable_clock(MT_CG_DISP0_SMI_COMMON, "VENC");
@@ -386,7 +386,7 @@ void venc_power_off(void)
 		pr_debug("[VENC] gu4VencPWRCounter = 0\n");
 	} else {
 		gu4VencPWRCounter--;
-		pr_debug("[VENC] %s +\n", __func__);
+		/* pr_debug("[VENC] %s +\n", __func__); */
 #ifndef VCODEC_FPGAPORTING
 #ifdef CONFIG_MTK_CLKMGR
 		disable_clock(MT_CG_VENC_VENC, "VENC");
@@ -402,7 +402,7 @@ void venc_power_off(void)
 #endif
 #endif
 #endif
-		pr_debug("[VENC] %s -\n", __func__);
+		/* pr_debug("[VENC] %s -\n", __func__); */
 	}
 	mutex_unlock(&VencPWRLock);
 }
@@ -789,8 +789,9 @@ static long vcodec_lockhw(unsigned long arg)
 		return -EFAULT;
 	}
 
-	MODULE_MFV_PR_DEBUG("[VCODEC] LOCKHW eDriverType = %d\n",
-			    rHWLock.eDriverType);
+	/* MODULE_MFV_PR_DEBUG("[VCODEC] LOCKHW eDriverType = %d\n",
+	 *		    rHWLock.eDriverType);
+	 */
 	eValRet = VAL_RESULT_INVALID_ISR;
 	if (rHWLock.eDriverType == VAL_DRIVER_TYPE_MP4_DEC ||
 	    rHWLock.eDriverType == VAL_DRIVER_TYPE_HEVC_DEC ||
@@ -890,7 +891,7 @@ static long vcodec_lockhw(unsigned long arg)
 				eVideoGetTimeOfDay(&grVcodecHWLock.rLockedTime,
 						   sizeof(struct VAL_TIME_T));
 
-			pr_debug("VDEC_LOCKHW, free to use HW\n");
+			/* pr_debug("VDEC_LOCKHW, free to use HW\n"); */
 				MODULE_MFV_PR_DEBUG(
 				    "LockInstance = 0x%lx CurrentTID = %d,rLockedTime(s, us) = %d, %d\n",
 				    (VAL_ULONG_T)grVcodecHWLock.pvHandle,
@@ -1367,7 +1368,7 @@ static long vcodec_waitisr(unsigned long arg)
 	VAL_UINT32_T u4TimeoutMs = 0;
 	VAL_UINT32_T u4CheckIntervalMs = 5;
 
-	MODULE_MFV_PR_DEBUG("VCODEC_WAITISR + tid = %d\n", current->pid);
+	/* MODULE_MFV_PR_DEBUG("VCODEC_WAITISR + tid = %d\n", current->pid); */
 
 	user_data_addr = (VAL_UINT8_T *)arg;
 	ret =
