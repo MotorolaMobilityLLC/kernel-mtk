@@ -332,8 +332,9 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 	/*write clear mode*/
 	LOG_DBG("write clear mode\n");
 	ccu_write_reg(ccu_base, EINTC_CLR, 0xFF);
-	LOG_DBG("read clear mode\n");
-	ccu_read_reg(ccu_base, EINTC_ST);
+	LOG_DBG("read clear mode %d\n",
+		ccu_read_reg(ccu_base, EINTC_ST));
+
 	/**/
 
 	isr_sp_task();
