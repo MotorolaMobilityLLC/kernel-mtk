@@ -62,6 +62,23 @@ config MTK_AB_OTA_UPDATER
 	  Y means this kernel enabled OTA A/B system updates feature.
 	  If you are not sure about this, set n
 
+config MTK_OTA_DEVICE
+	bool "OTA device"
+	help
+	  This is an option for OTA devices configuration
+	  It support legacy flow when it declares ota devices.
+	  Internal project will disable it to support full functionality.
+	  If you are not sure about this, do not set it to y.
+
+config NETFILTER_XT_MATCH_QTAGUID
+	bool "fake config"
+	depends on MTK_OTA_DEVICE
+	help
+	  This is an oboslete kernel config for OTA devices.
+	  The config is remvoed in this tree but
+	  still nedded for OTA devices.
+          If you are not sure about this, do not set it to y.
+
 config SYSTEM_AS_ROOT
 	bool "Support system-as-root"
 	default y
