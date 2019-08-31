@@ -27,11 +27,11 @@
 #if 0 /* set 1 to output log to mobilelog */
 #define DISP_LOG_D(fmt, args...) pr_debug("[DDP/" LOG_TAG "]" fmt, ##args)
 #define DISP_LOG_I(fmt, args...) pr_debug("[DDP/" LOG_TAG "]" fmt, ##args)
-#define DISP_LOG_W(fmt, args...) pr_info("[DDP/" LOG_TAG "]" fmt, ##args)
+#define DISP_LOG_W(fmt, args...) pr_debug("[DDP/" LOG_TAG "]" fmt, ##args)
 
 #define DISP_LOG_E(fmt, args...)                                               \
 	do {                                                                   \
-		pr_info("[DDP/" LOG_TAG "]error:" fmt, ##args);               \
+		pr_debug("[DDP/" LOG_TAG "]error:" fmt, ##args);               \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);              \
 	} while (0)
 
@@ -60,7 +60,7 @@
 		if (ddp_debug_analysis_to_buffer())                            \
 			dprec_logger_vdump(fmt, ##args);                       \
 		else                                                           \
-			pr_info("[DDP/" LOG_TAG "]" fmt, ##args);             \
+			pr_debug("[DDP/" LOG_TAG "]" fmt, ##args);             \
 	} while (0)
 
 #ifndef ASSERT
@@ -68,7 +68,7 @@
 	do {                                                                   \
 		if (expr)                                                      \
 			break;                                                 \
-		pr_info("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__);    \
+		pr_debug("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__);    \
 		WARN_ON(1);                                                    \
 	} while (0)
 #endif
@@ -81,7 +81,7 @@
 				       DB_OPT_DEFAULT |                        \
 					   DB_OPT_MMPROFILE_BUFFER,            \
 				       str, string, ##args);                   \
-		pr_info("[DDP Error]" string, ##args);                        \
+		pr_debug("[DDP Error]" string, ##args);                        \
 	} while (0)
 #else
 
@@ -89,7 +89,7 @@
 	do {                                                                   \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);              \
 		if (g_mobilelog)                                               \
-			pr_info("[DDP/" LOG_TAG "]" fmt, ##args);             \
+			pr_debug("[DDP/" LOG_TAG "]" fmt, ##args);             \
 	} while (0)
 
 #define DISP_LOG_V(fmt, args...)                                               \
@@ -109,13 +109,13 @@
 #define DISP_LOG_W(fmt, args...)                                               \
 	do {                                                                   \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args);              \
-		pr_info("[DDP/" LOG_TAG "]warn:" fmt, ##args);                \
+		pr_debug("[DDP/" LOG_TAG "]warn:" fmt, ##args);                \
 	} while (0)
 
 #define DISP_LOG_E(fmt, args...)                                               \
 	do {                                                                   \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, fmt, ##args);              \
-		pr_info("[DDP/" LOG_TAG "]error:" fmt, ##args);               \
+		pr_debug("[DDP/" LOG_TAG "]error:" fmt, ##args);               \
 	} while (0)
 
 #define DDPIRQ(fmt, args...)                                                   \
@@ -142,7 +142,7 @@
 		} else {                                                       \
 			dprec_logger_pr(DPREC_LOGGER_DUMP, fmt,                \
 					##__VA_ARGS__);                        \
-			pr_info("[DDP/" LOG_TAG "]" fmt, ##__VA_ARGS__);      \
+			pr_debug("[DDP/" LOG_TAG "]" fmt, ##__VA_ARGS__);      \
 		}                                                              \
 	} while (0)
 
@@ -151,7 +151,7 @@
 	do {                                                                   \
 		if (expr)                                                      \
 			break;                                                 \
-		pr_info("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__);    \
+		pr_debug("DDP ASSERT FAILED %s, %d\n", __FILE__, __LINE__);    \
 		WARN_ON(1);                                                    \
 	} while (0)
 #endif
@@ -164,7 +164,7 @@
 				       DB_OPT_DEFAULT |                        \
 					   DB_OPT_MMPROFILE_BUFFER,            \
 				       str, string, ##args);                   \
-		pr_info("[DDP Error]" string, ##args);                        \
+		pr_debug("[DDP Error]" string, ##args);                        \
 	} while (0)
 #endif
 

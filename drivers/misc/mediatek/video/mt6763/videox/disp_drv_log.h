@@ -21,44 +21,44 @@
 #define DISP_LOG_PRINT(level, sub_module, fmt, args...)                       \
 	dprec_logger_pr(DPREC_LOGGER_DEBUG, fmt, ##args)
 
-#define DISPINFO(string, args...)                                              \
-	do {                                                                   \
-		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);           \
-		if (g_mobilelog)                                               \
-			pr_info("[DISP]" string, ##args);                      \
+#define DISPINFO(string, args...)                                             \
+	do {                                                                  \
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);          \
+		if (g_mobilelog)                                              \
+			pr_debug("[DISP]" string, ##args);                    \
 	} while (0)
 
-#define DISPMSG(string, args...)                                               \
-	do {                                                                   \
-		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);           \
-		pr_info("[DISP]" string, ##args);                              \
+#define DISPMSG(string, args...)                                              \
+	do {                                                                  \
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);          \
+		pr_debug("[DISP]" string, ##args);                            \
 	} while (0)
 
-#define DISPCHECK(string, args...)                                             \
-	do {                                                                   \
-		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);           \
-		pr_info("[DISP]" string, ##args);                              \
+#define DISPCHECK(string, args...)                                            \
+	do {                                                                  \
+		dprec_logger_pr(DPREC_LOGGER_DEBUG, string, ##args);          \
+		pr_debug("[DISP]" string, ##args);                            \
 	} while (0)
 
 #define DISPERR(string, args...)                                             \
 	do {                                                                  \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);          \
-		pr_info("[DISP][%s #%d]ERROR:" string,                         \
-			__func__, __LINE__, ##args);                           \
+		pr_debug("[DISP][%s #%d]warn:" string, __func__, __LINE__,    \
+			 ##args);                                             \
 	} while (0)
 
 #define DISPWARN(string, args...)                                             \
 	do {                                                                  \
 		dprec_logger_pr(DPREC_LOGGER_ERROR, string, ##args);          \
-		pr_info("[DISP][%s #%d]warn:" string,                          \
-			__func__, __LINE__, ##args);                           \
+		pr_debug("[DISP][%s #%d]warn:" string, __func__, __LINE__,    \
+			 ##args);                                             \
 	} while (0)
 
 #define DISPPR_FENCE(string, args...)                                         \
 	do {                                                                  \
 		dprec_logger_pr(DPREC_LOGGER_FENCE, string, ##args);          \
 		if (g_mobilelog)                                              \
-			pr_info("fence/" string, ##args);                    \
+			pr_debug("fence/" string, ##args);                    \
 	} while (0)
 
 #define DISPDBG(string, args...)                                              \
@@ -72,7 +72,7 @@
 	do {                                                                  \
 		dprec_logger_pr(DPREC_LOGGER_DEBUG, "func|%s\n", __func__);   \
 		if (g_mobilelog)                                              \
-			pr_info("[DISP]func|%s\n", __func__);                \
+			pr_debug("[DISP]func|%s\n", __func__);                \
 	} while (0)
 
 #define DISPDBGFUNC() DISPFUNC()
@@ -89,7 +89,7 @@
 		snprintf(disp_name, 100, "[DISP]" string, ##args);            \
 		aee_kernel_warning_api(__FILE__, __LINE__, flag, disp_name,   \
 				       "[DISP] error" string, ##args);        \
-		pr_info("DISP error: " string, ##args);                      \
+		pr_debug("DISP error: " string, ##args);                      \
 	} while (0)
 
 #define disp_aee_print(string, args...)                                       \
@@ -100,7 +100,7 @@
 
 #define disp_aee_db_print(string, args...)                                    \
 	do {                                                                  \
-		pr_info("DISP error:" string, ##args);                       \
+		pr_debug("DISP error:" string, ##args);                       \
 		aee_kernel_exception("DISP", "[DISP]error:%s, %d\n",          \
 				     __FILE__, __LINE__);                     \
 	} while (0)
