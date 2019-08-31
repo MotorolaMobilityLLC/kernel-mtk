@@ -61,7 +61,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 85,
-		.mipi_pixel_rate = 435200000,
+		.mipi_pixel_rate = 454700000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -75,7 +75,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 435200000,
+		.mipi_pixel_rate = 454700000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
@@ -89,7 +89,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4160,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 435200000,
+		.mipi_pixel_rate = 454700000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 150,
 	},
@@ -102,7 +102,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_width  = 4208,
 		.grabwindow_height = 3120,
 		.mipi_data_lp2hs_settle_dc = 21,
-		.mipi_pixel_rate = 435200000,
+		.mipi_pixel_rate = 449700000,
 		/*	 following for GetDefaultFramerateByScenario()	*/
 		.max_framerate = 300,
 	},
