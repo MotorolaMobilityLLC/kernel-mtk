@@ -507,7 +507,7 @@ int ufs_mtk_pltfrm_bootrom_deputy(struct ufs_hba *hba)
 int ufs_mtk_pltfrm_deepidle_check_h8(void)
 {
 	int ret = 0;
-	u32 tmp;
+	u32 tmp = 0;
 
 	/**
 	 * If current device is not active, it means it is after
