@@ -1063,7 +1063,7 @@ void mm_qos_update_all_request(struct plist_head *owner_list)
 	s32 cam_bw;
 	u32 larb_count = 0, larb_id = 0, larb_port_id = 0, larb_port_bw = 0;
 	u32 port_id = 0;
-	s32 smi_srt_clk, smi_hrt_clk;
+	s32 smi_srt_clk = 0, smi_hrt_clk = 0;
 	s32 max_ch_srt_bw = 0, max_ch_hrt_bw = 0;
 	s32 final_chn_hrt_bw[MAX_CH_COUNT];
 
@@ -1165,8 +1165,10 @@ void mm_qos_update_all_request(struct plist_head *owner_list)
 		max_ch_srt_bw = max_t(s32, channel_bw[i], max_ch_srt_bw);
 		max_ch_hrt_bw = max_t(s32, final_chn_hrt_bw[i], max_ch_hrt_bw);
 	}
-	smi_srt_clk = SHIFT_ROUND(max_ch_srt_bw, 4);
-	smi_hrt_clk = SHIFT_ROUND(max_ch_hrt_bw, 4);
+	if (max_ch_srt_bw)
+		smi_srt_clk = SHIFT_ROUND(max_ch_srt_bw, 4);
+	if (max_ch_hrt_bw)
+		smi_hrt_clk = SHIFT_ROUND(max_ch_hrt_bw, 4);
 	pm_qos_update_request(&smi_freq_request,
 		max_t(s32, smi_srt_clk, smi_hrt_clk));
 
