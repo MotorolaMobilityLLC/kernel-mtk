@@ -2424,7 +2424,8 @@ static int handle_tx_event(struct xhci_hcd *xhci,
 		break;
 	case COMP_SPLIT_ERR:
 	case COMP_TX_ERR:
-		xhci_dbg(xhci, "Transfer error on endpoint\n");
+		xhci_warn_ratelimited(xhci, "Transfer error on endpoint %d\n",
+				ep_index);
 		status = -EPROTO;
 		break;
 	case COMP_BABBLE:
@@ -2449,7 +2450,7 @@ static int handle_tx_event(struct xhci_hcd *xhci,
 		 */
 		xhci_dbg(xhci, "underrun event on endpoint\n");
 		if (!list_empty(&ep_ring->td_list))
-			xhci_dbg(xhci, "Underrun Event for slot %d ep %d "
+			xhci_warn_ratelimited(xhci, "Underrun Event for slot %d ep %d "
 					"still with TDs queued?\n",
 				 TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
 				 ep_index);
@@ -2457,7 +2458,7 @@ static int handle_tx_event(struct xhci_hcd *xhci,
 	case COMP_OVERRUN:
 		xhci_dbg(xhci, "overrun event on endpoint\n");
 		if (!list_empty(&ep_ring->td_list))
-			xhci_dbg(xhci, "Overrun Event for slot %d ep %d "
+			xhci_warn_ratelimited(xhci, "Overrun Event for slot %d ep %d "
 					"still with TDs queued?\n",
 				 TRB_TO_SLOT_ID(le32_to_cpu(event->flags)),
 				 ep_index);
