@@ -1829,7 +1829,7 @@ static int eem_init1stress_thread_handler(void *data)
 	unsigned int curtime = 0;
 	unsigned int i;
 	unsigned int err_flag = 0;
-	u32 ct_flag;
+	u32 ct_flag = 0;
 	int ret;
 
 	start = ktime_get();
