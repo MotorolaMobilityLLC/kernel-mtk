@@ -3301,6 +3301,9 @@ static signed int DPE_probe(struct platform_device *pDev)
 
 	LOG_INF("- E. DPE driver probe.\n");
 
+	max_dpe_freq = 0;
+	mid_dpe_freq = 0;
+
 	/* Check platform_device parameters */
 #ifdef CONFIG_OF
 

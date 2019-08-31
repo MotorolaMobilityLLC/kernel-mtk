@@ -4187,6 +4187,8 @@ static signed int MFB_probe(struct platform_device *pDev)
 
 	log_inf("- E. MFB driver probe.\n");
 
+	max_img_freq = 0;
+
 	/* Check platform_device parameters */
 #ifdef CONFIG_OF
 
