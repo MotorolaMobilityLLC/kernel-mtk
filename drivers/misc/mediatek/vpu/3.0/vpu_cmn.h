@@ -570,8 +570,8 @@ bool vpu_is_idle(int core);
 	do { if (g_vpu_log_level > Log_STATE_MACHINE) \
 		pr_info(VPU_TAG " " format, ##args); \
 	} while (0)
-#define LOG_INF(format, args...)    pr_info(VPU_TAG " " format, ##args)
-#define LOG_WRN(format, args...)    pr_info(VPU_TAG "[warn] " format, ##args)
+#define LOG_INF(format, args...)    pr_debug(VPU_TAG " " format, ##args)
+#define LOG_WRN(format, args...)    pr_debug(VPU_TAG "[warn] " format, ##args)
 #define LOG_ERR(format, args...)    pr_info(VPU_TAG "[error] " format, ##args)
 
 #define PRINT_LINE() pr_info(VPU_TAG " %s (%s:%d)\n", \
