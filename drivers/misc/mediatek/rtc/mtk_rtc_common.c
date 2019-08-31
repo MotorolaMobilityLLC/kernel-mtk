@@ -430,8 +430,8 @@ void rtc_bbpu_power_down(void)
 {
 	unsigned long flags;
 	bool charger_status = false;
-	struct rtc_time rtc_time_now;
-	struct rtc_time rtc_time_alarm;
+	struct rtc_time rtc_time_now = {0};
+	struct rtc_time rtc_time_alarm = {0};
 	ktime_t ktime_now;
 	ktime_t ktime_alarm;
 	bool is_pwron_alarm;
