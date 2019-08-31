@@ -103,7 +103,6 @@ const unsigned int BOOST_CURRENT_LIMIT[] = {
 
 struct bq25601_info {
 	struct charger_device *chg_dev;
-	struct power_supply *psy;
 	struct charger_properties chg_props;
 	struct device *dev;
 	const char *chg_dev_name;
@@ -1307,12 +1306,6 @@ static int bq25601_driver_probe(struct i2c_client *client,
 		pr_info("%s: register charger device  failed\n", __func__);
 		ret = PTR_ERR(info->chg_dev);
 		return ret;
-	}
-
-	info->psy = power_supply_get_by_name("charger");
-	if (!info->psy) {
-		pr_info("%s: get power supply failed\n", __func__);
-		return -EINVAL;
 	}
 
 	bq25601_dump_register(info->chg_dev);

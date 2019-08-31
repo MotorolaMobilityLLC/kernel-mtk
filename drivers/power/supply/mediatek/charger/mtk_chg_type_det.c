@@ -362,37 +362,6 @@ static int chgdet_task_threadfn(void *data)
 	struct chg_type_info *cti = data;
 	bool attach = false;
 	int ret = 0;
-	int i = 0;
-	int max_wait_cnt = 200;
-
-	for (i = 0; i < max_wait_cnt; i++) {
-		msleep(100);
-
-		cti->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
-		if (!cti->tcpc_dev) {
-			pr_info("%s get tcpc device type_c_port0 fail\n",
-				__func__);
-			continue;
-		} else {
-			cti->pd_nb.notifier_call = pd_tcp_notifier_call;
-			ret = register_tcp_dev_notifier(cti->tcpc_dev,
-				&cti->pd_nb, TCP_NOTIFY_TYPE_ALL);
-			if (ret < 0) {
-				pr_info("%s: register tcpc notifer fail\n",
-					__func__);
-			}
-		}
-
-		cti->chg_consumer = charger_manager_get_by_name(cti->dev,
-			"charger_port1");
-		if (!cti->chg_consumer) {
-			pr_info("%s: get charger consumer device failed\n",
-				__func__);
-		}
-
-		pr_info("%s: get tcpc and charger consumer done\n", __func__);
-		break;
-	}
 
 	pr_info("%s: ++\n", __func__);
 	while (!kthread_should_stop()) {
@@ -428,6 +397,8 @@ static int mt_charger_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct chg_type_info *cti = NULL;
 	struct mt_charger *mt_chg = NULL;
+
+	pr_info("%s\n", __func__);
 
 	mt_chg = devm_kzalloc(&pdev->dev, sizeof(*mt_chg), GFP_KERNEL);
 	if (!mt_chg)
@@ -487,9 +458,34 @@ static int mt_charger_probe(struct platform_device *pdev)
 	}
 
 	cti = devm_kzalloc(&pdev->dev, sizeof(*cti), GFP_KERNEL);
-	if (!cti)
-		return -ENOMEM;
+	if (!cti) {
+		ret = -ENOMEM;
+		goto err_no_mem;
+	}
 	cti->dev = &pdev->dev;
+
+	cti->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
+	if (cti->tcpc_dev == NULL) {
+		pr_info("%s: tcpc device not ready, defer\n", __func__);
+		ret = -EPROBE_DEFER;
+		goto err_get_tcpc_dev;
+	}
+	cti->pd_nb.notifier_call = pd_tcp_notifier_call;
+	ret = register_tcp_dev_notifier(cti->tcpc_dev,
+		&cti->pd_nb, TCP_NOTIFY_TYPE_ALL);
+	if (ret < 0) {
+		pr_info("%s: register tcpc notifer fail\n", __func__);
+		ret = -EINVAL;
+		goto err_get_tcpc_dev;
+	}
+
+	cti->chg_consumer = charger_manager_get_by_name(cti->dev,
+							"charger_port1");
+	if (!cti->chg_consumer) {
+		pr_info("%s: get charger consumer device failed\n", __func__);
+		ret = -EINVAL;
+		goto err_get_tcpc_dev;
+	}
 
 	ret = get_boot_mode();
 	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
@@ -521,9 +517,13 @@ static int mt_charger_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mt_chg);
 	device_init_wakeup(&pdev->dev, true);
 
-	pr_info("%s\n", __func__);
+	pr_info("%s done\n", __func__);
 	return 0;
 
+err_get_tcpc_dev:
+	devm_kfree(&pdev->dev, cti);
+err_no_mem:
+	power_supply_unregister(mt_chg->usb_psy);
 err_usb_psy:
 	power_supply_unregister(mt_chg->ac_psy);
 err_ac_psy:
