@@ -1751,7 +1751,7 @@ static int apu_dvfs_probe(struct platform_device *pdev)
 	struct resource *res;
 	struct device_node *ipu_conn_node = NULL;
 	struct device_node *ct_node = NULL;
-	u32 ct_flag;
+	u32 ct_flag = 0;
 
 	dvfs = devm_kzalloc(&pdev->dev, sizeof(*dvfs), GFP_KERNEL);
 	if (!dvfs)
