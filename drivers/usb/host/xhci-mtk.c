@@ -210,6 +210,32 @@ static int xhci_mtk_dbg_exit(struct xhci_hcd_mtk *mtk)
 	return 0;
 }
 
+int mtk_xhci_wakelock_lock(struct xhci_hcd_mtk *mtk)
+{
+	struct device_node *of_node = mtk->dev->of_node;
+	struct xhci_hcd *xhci = hcd_to_xhci(mtk->hcd);
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+		pm_stay_awake(mtk->dev);
+		xhci_info(xhci, "wakelock_lock\n");
+	}
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mtk_xhci_wakelock_lock);
+
+int mtk_xhci_wakelock_unlock(struct xhci_hcd_mtk *mtk)
+{
+	struct device_node *of_node = mtk->dev->of_node;
+	struct xhci_hcd *xhci = hcd_to_xhci(mtk->hcd);
+
+	if (of_device_is_compatible(of_node, "mediatek,mt67xx-xhci")) {
+		pm_relax(mtk->dev);
+		xhci_info(xhci, "wakelock_unlock\n");
+	}
+	return 0;
+}
+EXPORT_SYMBOL_GPL(mtk_xhci_wakelock_unlock);
+
 enum ssusb_wakeup_src {
 	SSUSB_WK_IP_SLEEP = 1,
 	SSUSB_WK_LINE_STATE = 2,
@@ -841,6 +867,7 @@ static int xhci_mtk_probe(struct platform_device *pdev)
 
 	xhci_mtk_dbg_init(mtk);
 
+	mtk_xhci_wakelock_lock(mtk);
 	return 0;
 
 dealloc_usb2_hcd:
@@ -894,6 +921,7 @@ static int xhci_mtk_remove(struct platform_device *dev)
 	xhci_mtk_ldos_disable(mtk);
 	pm_runtime_put_sync(&dev->dev);
 	pm_runtime_disable(&dev->dev);
+	mtk_xhci_wakelock_unlock(mtk);
 	return 0;
 }
 
