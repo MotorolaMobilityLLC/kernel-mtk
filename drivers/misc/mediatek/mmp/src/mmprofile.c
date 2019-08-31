@@ -816,7 +816,7 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 	 */
 	if (unlikely(event < 2))
 		return;
-	index = (atomic_inc_return((atomic_t *)
+	index = ((unsigned int)atomic_inc_return((atomic_t *)
 			&(mmprofile_globals.write_pointer)) - 1)
 	    % (mmprofile_globals.buffer_size_record);
 	/*check vmalloc address is valid or not*/
@@ -829,7 +829,7 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 			mmprofile_globals.new_buffer_size_record);
 		return;
 	}
-	lock = atomic_inc_return((atomic_t *)
+	lock = (unsigned int)atomic_inc_return((atomic_t *)
 		&(p_mmprofile_ring_buffer[index].lock));
 	/*atomic_t is INT, write_pointer is UINT, avoid convert error*/
 	if (mmprofile_globals.write_pointer ==
@@ -841,7 +841,7 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 		 */
 		while (1) {
 			index =
-				(atomic_inc_return((atomic_t *)
+				((unsigned int)atomic_inc_return((atomic_t *)
 				&(mmprofile_globals.write_pointer)) - 1) %
 				(mmprofile_globals.buffer_size_record);
 			if (!pfn_valid(vmalloc_to_pfn
@@ -856,7 +856,7 @@ static void mmprofile_log_int(mmp_event event, enum mmp_log_type type,
 				return;
 			}
 			lock =
-			    atomic_inc_return((atomic_t *) &
+			    (unsigned int)atomic_inc_return((atomic_t *) &
 					(p_mmprofile_ring_buffer[index].lock));
 			/*avoid convert error*/
 			if (mmprofile_globals.write_pointer ==
