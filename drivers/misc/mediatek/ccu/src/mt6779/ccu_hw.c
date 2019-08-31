@@ -126,9 +126,19 @@ irqreturn_t ccu_isr_handler(int irq, void *dev_id)
 {
 	int n;
 	enum mb_result mailboxRet;
+	struct clk *cam_clk;
 
 	LOG_DBG("+++:%s\n", __func__);
 
+	cam_clk = __clk_lookup("pg_cam"); /* check cam power */
+
+	if (__clk_get_enable_count(cam_clk) == 0) {
+		LOG_DBG_MUST("current cam power is [%-17s: %3d]\n",
+			__clk_get_name(cam_clk),
+			__clk_get_enable_count(cam_clk));
+		LOG_DBG_MUST("CCU pwr down, skip irq\n");
+		goto ISR_EXIT;
+	}
 	/*write clear mode*/
 	LOG_DBG("write clear mode\n");
 	ccu_write_reg(ccu_base, EINTC_CLR, 0xFF);
