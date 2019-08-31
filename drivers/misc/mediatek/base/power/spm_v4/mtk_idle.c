@@ -1000,7 +1000,7 @@ static void dpidle_post_process(int cpu)
 
 #ifdef CONFIG_THERMAL
 	/* restart thermal hrtimer for update temp info */
-	mtkTTimer_start_timer();
+	RCU_NONIDLE(mtkTTimer_start_timer());
 #endif
 #endif
 
