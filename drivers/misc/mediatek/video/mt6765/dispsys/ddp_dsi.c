@@ -4429,6 +4429,11 @@ int ddp_dsi_switch_mode(enum DISP_MODULE_ENUM module, void *cmdq_handle,
 	int mode = (int)(lcm_cmd.mode);
 	int wait_count = 100;
 
+	if (!cmdq_handle) {
+		ASSERT(0);
+		return -1;
+	}
+
 	if (dsi_currect_mode == mode) {
 		DDPMSG("[%s] no switch mode, current mode = %d, switch to %d\n",
 		       __func__, dsi_currect_mode, mode);
