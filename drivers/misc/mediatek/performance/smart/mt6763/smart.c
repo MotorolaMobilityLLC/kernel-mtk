@@ -623,7 +623,7 @@ void mt_smart_update_sysinfo(unsigned int cur_loads, unsigned int cur_tlp,
 	char event_act_down[9] = "ACTION=0"; /* down */
 	char *envp_up[3] = {event_running, event_act_up, NULL};
 	char *envp_down[3] = {event_running, event_act_down, NULL};
-	unsigned long ll_util, ll_cap;
+	unsigned long ll_util = 0, ll_cap = 0;
 
 	if (!uevent_enable)
 		return;
