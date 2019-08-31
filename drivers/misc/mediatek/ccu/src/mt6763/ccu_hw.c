@@ -1158,13 +1158,7 @@ int ccu_flushLog(int argc, int *argv)
 
 	bWaitCond = true;
 
-	LOG_DBG(
-	    "accuiring APTaskMutex, wakeup WaitQueueHead & unlock mutex\n");
-	mutex_lock(&ap_task_manage.ApTaskMutex);
-	LOG_DBG("got APTaskMutex, wakeup WaitQueueHead & unlock mutex\n");
 	wake_up_interruptible(&ccuInfo.WaitQueueHead);
-	mutex_unlock(&ap_task_manage.ApTaskMutex);
-	LOG_DBG("unlock ApTaskMutex\n");
 
 	LOG_DBG("bWaitCond(%d)\n", bWaitCond);
 	return 0;
