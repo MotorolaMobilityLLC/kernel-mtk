@@ -162,7 +162,11 @@ int disp_mva_map_kernel(enum DISP_MODULE_ENUM module, unsigned int mva,
 	else
 		pr_info("disp_mva_map_kernel is null\n");
 #elif defined(CONFIG_MTK_M4U)
-	m4u_mva_map_kernel(mva, size, map_va, map_size);
+	if (m4u_mva_map_kernel(mva, size, map_va, map_size) != 0) {
+		DDPERR("error to map kernel va: mva=0x%x, size=%d\n",
+			mva, size);
+		return -1;
+	}
 #endif
 
 	return 0;
