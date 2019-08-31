@@ -3155,9 +3155,7 @@ int mmc_blk_cmdq_issue_flush_rq(struct mmc_queue *mq, struct request *req)
 	struct mmc_cmdq_req *cmdq_req;
 	struct mmc_cmdq_context_info *ctx_info;
 
-	WARN_ON(!card); /*bug*/
 	host = card->host;
-	WARN_ON(!host); /*bug*/
 	WARN_ON(req->tag > card->ext_csd.cmdq_depth); /*bug*/
 	WARN_ON(test_and_set_bit(req->tag,
 		&host->cmdq_ctx.active_reqs)); /*bug*/
@@ -3295,13 +3293,17 @@ static bool is_cmdq_dcmd_req(struct request_queue *q, int tag)
 	struct mmc_cmdq_req *cmdq_req;
 
 	req = blk_queue_find_tag(q, tag);
-	if (WARN_ON(!req))
+	if (!req) {
+		WARN_ON(1);
 		goto out;
+	}
 	mq_rq = req->special;
-	if (WARN_ON(!mq_rq))
+	if (!mq_rq) {
+		WARN_ON(1);
 		goto out;
+	}
 	cmdq_req = &(mq_rq->cmdq_req);
-	return (cmdq_req->cmdq_req_flags & DCMD);
+	return (cmdq_req && cmdq_req->cmdq_req_flags & DCMD);
 out:
 	return -ENOENT;
 }
@@ -3314,13 +3316,18 @@ static struct request *cmdq_dcmd_req(struct request_queue *q,
 	struct mmc_cmdq_req *cmdq_req;
 
 	req = blk_queue_find_tag(q, tag);
-	if (WARN_ON(!req))
+	if (!req) {
+		WARN_ON(1);
 		goto out;
+	}
 	mq_rq = req->special;
-	if (WARN_ON(!mq_rq))
+	if (!mq_rq) {
+		WARN_ON(1);
 		goto out;
+	}
 	cmdq_req = &(mq_rq->cmdq_req);
-	if (cmdq_req->cmdq_req_flags & DCMD)
+	if (cmdq_req &&
+		cmdq_req->cmdq_req_flags & DCMD)
 		return req;
 out:
 	return NULL;
