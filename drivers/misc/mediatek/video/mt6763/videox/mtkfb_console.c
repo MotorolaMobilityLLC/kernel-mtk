@@ -571,32 +571,6 @@ void screen_logger_add_message(char *obj, enum message_mode mode,
 	}
 }
 
-void screen_add_message(char *obj, enum message_mode mode, char *message)
-{
-#define STRING_LEN 16
-	char disp_tmp[STRING_LEN];
-	char *p = disp_tmp;
-	int i, mes_num = 0;
-
-	if (!message) {
-		screen_logger_add_message(obj, mode, message);
-		return;
-	}
-
-	mes_num = strlen(message);
-	memset(disp_tmp, 0, sizeof(disp_tmp));
-	strncpy(p, message, sizeof(disp_tmp) - 1);
-	p += mes_num;
-
-	for (i = 0; i < (STRING_LEN - mes_num - 1); i++) {
-		snprintf(p, sizeof(disp_tmp), "%c", ' ');
-		p++;
-	}
-
-	screen_logger_add_message(obj, mode, disp_tmp);
-}
-EXPORT_SYMBOL(screen_add_message);
-
 void screen_logger_remove_message(char *obj)
 {
 	struct screen_logger *p;
