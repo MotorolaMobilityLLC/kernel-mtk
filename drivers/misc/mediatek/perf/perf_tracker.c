@@ -23,6 +23,8 @@
 #include <linux/jiffies.h>
 #ifdef CONFIG_MTK_QOS_FRAMEWORK
 #include <mtk_qos_sram.h>
+#else
+#include <helio-dvfsrc.h>
 #endif
 #include <mt-plat/perf_tracker.h>
 #include <linux/topology.h>
@@ -144,12 +146,10 @@ void __perf_tracker(u64 wallclock,
 	dram_rate = get_dram_data_rate();
 
 	/* emi */
-#ifdef CONFIG_MTK_QOS_FRAMEWORK
 	bw_c  = qos_sram_read(QOS_DEBUG_1);
 	bw_g  = qos_sram_read(QOS_DEBUG_2);
 	bw_mm = qos_sram_read(QOS_DEBUG_3);
 	bw_total = qos_sram_read(QOS_DEBUG_0);
-#endif
 
 	/* sched: cpu freq */
 	for (cid = 0; cid < cluster_nr; cid++)
