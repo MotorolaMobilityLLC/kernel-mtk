@@ -1007,7 +1007,7 @@ static int ext_disp_init_hdmi(unsigned int session)
 	pgc->ovl_req_state = EXTD_OVL_NO_REQ;
 done:
 
-	EXTDMSG("%S done\n", __func__);
+	EXTDMSG("%s done\n", __func__);
 	return ret;
 }
 
