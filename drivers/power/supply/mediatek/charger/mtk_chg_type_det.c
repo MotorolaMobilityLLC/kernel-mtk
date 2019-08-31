@@ -300,6 +300,7 @@ static void charger_in_work_handler(struct work_struct *work)
 	fg_charger_in_handler();
 }
 
+#ifdef CONFIG_TCPC_CLASS
 static void plug_in_out_handler(struct chg_type_info *cti, bool en, bool ignore)
 {
 	mutex_lock(&cti->chgdet_lock);
@@ -356,6 +357,7 @@ static int pd_tcp_notifier_call(struct notifier_block *pnb,
 	}
 	return NOTIFY_OK;
 }
+#endif
 
 static int chgdet_task_threadfn(void *data)
 {
@@ -464,6 +466,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 	}
 	cti->dev = &pdev->dev;
 
+#ifdef CONFIG_TCPC_CLASS
 	cti->tcpc_dev = tcpc_dev_get_by_name("type_c_port0");
 	if (cti->tcpc_dev == NULL) {
 		pr_info("%s: tcpc device not ready, defer\n", __func__);
@@ -478,6 +481,7 @@ static int mt_charger_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_get_tcpc_dev;
 	}
+#endif
 
 	cti->chg_consumer = charger_manager_get_by_name(cti->dev,
 							"charger_port1");
