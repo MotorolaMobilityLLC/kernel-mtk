@@ -79,7 +79,7 @@ static long usip_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 	case GET_USIP_EMI_SIZE:
 		if (usip.addr_phy == 0) {
 			pr_info("no phy addr from ccci");
-			ret = -1;
+			ret = -ENODEV;
 		} else if (copy_to_user((void __user *)arg, &size_for_spe,
 			sizeof(size_for_spe))) {
 			pr_warn("Fail copy to user Ptr:%p, r_sz:%zu",
@@ -293,6 +293,7 @@ static int __init usip_init(void)
 	if (ret) {
 		pr_err("%s(), cannot register miscdev on minor %d, ret %d\n",
 		       __func__, usip_miscdevice.minor, ret);
+		ret = -ENODEV;
 	}
 
 	get_md_resv_mem_info(MD_SYS1, &r_rw_base, &r_rw_size,
@@ -300,7 +301,7 @@ static int __init usip_init(void)
 #else
 	phys_addr = 0;
 	size_o = 0;
-	ret = 0;
+	ret = -ENODEV;
 	r_rw_base = 0;
 	r_rw_size = 0;
 	srw_base = 0;
