@@ -68,6 +68,9 @@
 #include "helio-dvfsrc-opp.h"
 #include <linux/string.h>
 
+#define MT_GPUFREQ_TABLE_SEGMENT2_PTS 6
+#define MT_GPUFREQ_DEFAULT_PTS 6
+
 /**
  * ===============================================
  * SECTION : Local functions declaration
@@ -875,9 +878,10 @@ mt_gpufreq_update_volt(unsigned int pmic_volt[], unsigned int array_size)
 
 			if (g_ptpod_opp_idx_table
 				== g_ptpod_opp_idx_table_segment2)
-				idx_for_2_itp_pts = 6;
+				idx_for_2_itp_pts
+					= MT_GPUFREQ_TABLE_SEGMENT2_PTS;
 			else
-				idx_for_2_itp_pts = 6;
+				idx_for_2_itp_pts = MT_GPUFREQ_DEFAULT_PTS;
 
 			if (target_idx == idx_for_2_itp_pts) {
 				/* After opp 6, 2 opps need intepolation */
