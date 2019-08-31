@@ -1058,6 +1058,10 @@ int m4u_config_prog_dist(int port,
 	struct M4U_PROG_DIST_T *pProgPfh;
 
 	larb = m4u_port_2_larbid(port);
+	if (unlikely(larb >= SMI_LARB_NR)) {
+		M4UMSG("%s err port[%d]\n", __func__, port);
+		return -1;
+	}
 	larb_port = m4u_port_2_larb_port(port);
 	larb_base = gLarbBaseAddr[larb];
 
@@ -1324,6 +1328,12 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 		int mmu_en = 0;
 
 		larb = m4u_port_2_larbid(port);
+		if (unlikely(larb >= SMI_LARB_NR)) {
+			M4UMSG("%s %d err port[%d]\n",
+				__func__, __LINE__, port);
+			spin_unlock(&gM4u_reg_lock[m4u_index]);
+			return -1;
+		}
 		larb_port = m4u_port_2_larb_port(port);
 		larb_base = gLarbBaseAddr[larb];
 		m4uHw_set_field_by_mask(larb_base,
@@ -1477,6 +1487,10 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			unsigned int value;
 
 			larb = m4u_port_2_larbid(port);
+			if (larb >= SMI_LARB_NR) {
+				M4UMSG("larb %d is overflow1\n", larb);
+				return -1;
+			}
 			larb_port = m4u_port_2_larb_port(port);
 			config_larb[larb] |= (1 << larb_port);
 			regNew[larb][larb_port] = value =
@@ -1535,6 +1549,10 @@ int m4u_config_port_array(struct m4u_port_array *port_array)
 			unsigned int orig_value;
 
 			larb = m4u_port_2_larbid(port);
+			if (larb >= SMI_LARB_NR) {
+				M4UMSG("larb %d is overflow2\n", larb);
+				return -1;
+			}
 			larb_port = m4u_port_2_larb_port(port);
 
 			orig_value =
@@ -1907,6 +1925,10 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 		m4u_index = m4u_port_2_m4u_id(port);
 		if (m4u_index == 0) {
 			larb = m4u_port_2_larbid(port);
+			if (larb >= SMI_LARB_NR) {
+				M4U_PRINT_SEQ(seq, "port_info err %d\n", larb);
+				return;
+			}
 			larb_port = m4u_port_2_larb_port(port);
 			larb_base = gLarbBaseAddr[larb];
 
