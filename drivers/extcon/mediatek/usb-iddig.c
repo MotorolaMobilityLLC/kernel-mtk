@@ -75,8 +75,8 @@ static void iddig_mode_switch(struct work_struct *work)
 
 	if (mtk_idpin_cur_stat == IDPIN_OUT) {
 		mtk_idpin_cur_stat = IDPIN_IN_HOST;
-		mt_vbus_on();
 		mt_usbhost_connect();
+		mt_vbus_on();
 		mtk_set_iddig_out_detect(info);
 	} else {
 		mtk_idpin_cur_stat = IDPIN_OUT;
@@ -107,6 +107,9 @@ static int otg_iddig_probe(struct platform_device *pdev)
 	u32 ints[2] = {0, 0};
 
 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
+	if (!info)
+		return -ENOMEM;
+
 	info->dev = dev;
 
 	info->id_irq = irq_of_parse_and_map(node, 0);
@@ -115,7 +118,7 @@ static int otg_iddig_probe(struct platform_device *pdev)
 
 	pinctrl = devm_pinctrl_get(dev);
 	if (IS_ERR(pinctrl)) {
-		dev_err(&pdev->dev, "No find id pinctrl!\n");
+		dev_info(&pdev->dev, "No find id pinctrl!\n");
 		return -1;
 	}
 
@@ -123,16 +126,16 @@ static int otg_iddig_probe(struct platform_device *pdev)
 
 	info->id_init = pinctrl_lookup_state(pinctrl, "id_init");
 	if (IS_ERR(info->id_init))
-		dev_err(&pdev->dev, "No find pinctrl id_init\n");
+		dev_info(&pdev->dev, "No find pinctrl id_init\n");
 	else
 		pinctrl_select_state(info->pinctrl, info->id_init);
 
 	info->id_enable = pinctrl_lookup_state(pinctrl, "id_enable");
 	info->id_disable = pinctrl_lookup_state(pinctrl, "id_disable");
 	if (IS_ERR(info->id_enable))
-		dev_err(&pdev->dev, "No find pinctrl iddig_enable\n");
+		dev_info(&pdev->dev, "No find pinctrl iddig_enable\n");
 	if (IS_ERR(info->id_disable))
-		dev_err(&pdev->dev, "No find pinctrl iddig_disable\n");
+		dev_info(&pdev->dev, "No find pinctrl iddig_disable\n");
 
 	ret = of_property_read_u32_array(node, "debounce",
 		ints, ARRAY_SIZE(ints));
@@ -146,7 +149,7 @@ static int otg_iddig_probe(struct platform_device *pdev)
 	ret = devm_request_irq(dev, info->id_irq, iddig_eint_isr,
 					0, pdev->name, info);
 	if (ret < 0) {
-		dev_err(dev, "failed to request handler for ID IRQ\n");
+		dev_info(dev, "failed to request handler for ID IRQ\n");
 		return ret;
 	}
 

@@ -16,4 +16,5 @@ extern void mt_usbhost_disconnect(void);
 extern void mt_vbus_on(void);
 extern void mt_vbus_off(void);
 extern int usb_otg_set_vbus(int is_on);
-
+extern void mt_usb_connect(void);
+extern void mt_usb_disconnect(void);
