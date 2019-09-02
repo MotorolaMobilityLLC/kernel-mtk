@@ -2177,7 +2177,10 @@ static void mmi_charger_check_status(struct charger_manager *info)
 		update_charging_limit_modes(info, batt_soc);
 
 	mmi_find_temp_zone(info, batt_temp);
-	zone = &mmi->temp_zones[mmi->pres_temp_zone];
+	if (mmi->pres_temp_zone >= info->mmi.num_temp_zones)
+		zone = &mmi->temp_zones[0];
+	else
+		zone = &mmi->temp_zones[mmi->pres_temp_zone];
 
 	if (mmi->base_fv_mv == 0) {
 		mmi->base_fv_mv = info->data.battery_cv / 1000;
