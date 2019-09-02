@@ -1284,7 +1284,11 @@ int force_get_tbat_internal(bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
+//BEGIN,ontim,shabei,2019.09.02,mask warning for D85 version to avoid to much stack dump
+#ifndef CONFIG_ONTIM_DUAL_85_TEST
 				WARN_ON(1);
+#endif
+//ENDIF
 			}
 
 			pre_bat_temperature_volt_temp =
