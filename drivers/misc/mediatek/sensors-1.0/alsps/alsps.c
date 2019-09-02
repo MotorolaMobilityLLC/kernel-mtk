@@ -16,6 +16,7 @@
 struct alsps_context *alsps_context_obj/* = NULL*/;
 struct platform_device *pltfm_dev;
 int last_als_report_data = -1;
+static int g_update_cali  = 0;
 
 /* AAL default delay timer(nano seconds)*/
 #define AAL_DELAY	200000000
@@ -837,7 +838,12 @@ static ssize_t ps_show_devnum(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
-static ssize_t ps_update_cali(struct device *dev, struct device_attribute *attr,
+static ssize_t ps_show_update(struct device *dev,
+				 struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", g_update_cali);
+}
+static ssize_t ps_store_update(struct device *dev, struct device_attribute *attr,
 			     const char *buf, size_t count)
 {
 	int err = -1;
@@ -849,6 +855,7 @@ static ssize_t ps_update_cali(struct device *dev, struct device_attribute *attr,
 				ALSPS_PR_ERR("update cali params, i=%d, name=%s, err=%d\n", i, alsps_init_list[i]->name, err);
 			}
 		}
+		g_update_cali = 1;
 	}
 	return count;
 }
@@ -1003,8 +1010,8 @@ DEVICE_ATTR(psactive,		S_IWUSR | S_IRUGO, ps_show_active, ps_store_active);
 DEVICE_ATTR(psbatch,		S_IWUSR | S_IRUGO, ps_show_batch, ps_store_batch);
 DEVICE_ATTR(psflush,		S_IWUSR | S_IRUGO, ps_show_flush,  ps_store_flush);
 DEVICE_ATTR(psdevnum,		S_IWUSR | S_IRUGO, ps_show_devnum,  NULL);
-DEVICE_ATTR(pscali,		S_IWUSR | S_IRUGO, NULL, ps_store_cali);
-DEVICE_ATTR(psupdate,		S_IWUSR | S_IRUGO, NULL, ps_update_cali);
+DEVICE_ATTR(pscali,			S_IWUSR | S_IRUGO, NULL, ps_store_cali);
+DEVICE_ATTR(psupdate,		S_IWUSR | S_IRUGO, ps_show_update, ps_store_update);
 
 static struct attribute *als_attributes[] = {
 	&dev_attr_alsactive.attr,
