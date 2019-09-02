@@ -47,7 +47,7 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 
 	int	status = -1;
 	int xfercnt = 0, xferlen = 0, xferloop = 0;
-	uint8_t cmd, temp1[1] = {0}, temp2[1] = {0};
+	uint8_t cmd, temp1[1] = {0};
 	struct spi_message	message;
 	struct spi_transfer	xfer[DMA_TRANSFER_MAX_TIMES + 1];
 	uint8_t *dma_txbuf = NULL;
@@ -125,7 +125,6 @@ static int core_mtk_spi_write_then_read(struct spi_device *spi,
 				xferlen = DMA_TRANSFER_MAX_SIZE;
 
 			xfer[xfercnt+1].len = xferlen;
-			/*xfer[xfercnt+1].tx_buf = temp2;*/
 			xfer[xfercnt+1].rx_buf = dma_rxbuf + xfercnt * DMA_TRANSFER_MAX_SIZE;
 			spi_message_add_tail(&xfer[xfercnt+1], &message);
 
