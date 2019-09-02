@@ -205,7 +205,9 @@ static DEFINE_MUTEX(ltr577_i2c_mutex);
 
 static int ltr577_local_init(void);
 static int ltr577_remove(void);
+static int ltr577_update(void);
 static int ltr577_init_flag =-1; // 0<==>OK -1 <==> fail
+static int ltr577_read_cali_file(struct i2c_client *client);
 
 static int ps_enabled = 0;
 static int als_enabled = 0;
@@ -216,6 +218,7 @@ static struct alsps_init_info ltr577_init_info = {
 		.name = "ltr577",
 		.init = ltr577_local_init,
 		.uninit = ltr577_remove,	
+		.update = ltr577_update,
 };
 
 #ifdef CONFIG_OF
@@ -651,6 +654,16 @@ static void initKernelEnv(void)
 /*****************************************
  *** ltr577_read_cali_file
  *****************************************/
+
+static int ltr577_update()
+{
+	int ret = -1;
+	ret = ltr577_read_cali_file(NULL);
+	if( 0 != ret ) {
+		APS_ERR("ltr577_update, refresh califile failed, ret=%d\n", ret);
+	}
+	return ret;
+}
 static int ltr577_read_cali_file(struct i2c_client *client)
 {
 	int mRaw =0;

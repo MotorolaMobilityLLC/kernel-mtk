@@ -837,6 +837,21 @@ static ssize_t ps_show_devnum(struct device *dev,
 	return snprintf(buf, PAGE_SIZE, "%d\n", 0);
 }
 
+static ssize_t ps_update_cali(struct device *dev, struct device_attribute *attr,
+			     const char *buf, size_t count)
+{
+	int err = -1;
+	int i = 0;
+	if (!strncmp(buf, "1", 1)) {
+		for (i = 0; i < MAX_CHOOSE_ALSPS_NUM; i++) {
+			if (alsps_init_list[i] != 0 && alsps_init_list[i]->update) {
+				err = alsps_init_list[i]->update();
+				ALSPS_PR_ERR("update cali params, i=%d, name=%s, err=%d\n", i, alsps_init_list[i]->name, err);
+			}
+		}
+	}
+	return count;
+}
 static ssize_t ps_store_cali(struct device *dev, struct device_attribute *attr,
 			     const char *buf, size_t count)
 {
@@ -989,6 +1004,7 @@ DEVICE_ATTR(psbatch,		S_IWUSR | S_IRUGO, ps_show_batch, ps_store_batch);
 DEVICE_ATTR(psflush,		S_IWUSR | S_IRUGO, ps_show_flush,  ps_store_flush);
 DEVICE_ATTR(psdevnum,		S_IWUSR | S_IRUGO, ps_show_devnum,  NULL);
 DEVICE_ATTR(pscali,		S_IWUSR | S_IRUGO, NULL, ps_store_cali);
+DEVICE_ATTR(psupdate,		S_IWUSR | S_IRUGO, NULL, ps_update_cali);
 
 static struct attribute *als_attributes[] = {
 	&dev_attr_alsactive.attr,
@@ -1005,6 +1021,7 @@ static struct attribute *ps_attributes[] = {
 	&dev_attr_psflush.attr,
 	&dev_attr_psdevnum.attr,
 	&dev_attr_pscali.attr,
+	&dev_attr_psupdate.attr,
 	NULL
 };
 
