@@ -46,7 +46,7 @@
 #ifdef BALI_PRJ
 #define FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT                      "include/firmware/Otim_FT5436_moto_3901_HLT0x82_Ver0x08_20190823_app.i"
 #define FTS_UPGRADE_FW2_FILE_R16530_MTD_TRULY                     "include/firmware/Otim_FT5436_moto_3901_Truly0x5a_Ver0x10_20190823_app.i"
-#define FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD                      "include/firmware/fw_sample.i"
+#define FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD                      "include/firmware/Otim_FT5446_moto_3901_TXD0x80_Ver0x09_20190902_app.i"
 
 u8 fw_file[] = {
 #include FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT
@@ -1629,7 +1629,7 @@ int fts_fwupg_get_vendorid(struct fts_ts_data *ts_data, u16 *vid)
  */
 static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
 {
-    struct upgrade_fw *fw = &fw_list[0];
+    struct upgrade_fw *fw = NULL;
     struct fts_upgrade *upg = fwupgrade;
     char  s[64]={0};
 
@@ -1645,7 +1645,6 @@ static int fts_fwupg_get_fw_file(struct fts_ts_data *ts_data)
         return ret;
     }
     FTS_INFO("success to read vendor id:%04x", vendor_id);
-
     for (i = 0; i < FTS_GET_VENDOR_ID_NUM; i++) {
         fw = &fw_list[i];
         if (vendor_id == fw->vendor_id) {
@@ -1668,9 +1667,9 @@ FTS_ERROR("firefly--------BALI------name=%s--------",s);
  else if(!strcmp(s,"ontim_R61350_hc_truly")){
 	fw = &fw_list[1];
 	FTS_ERROR("wuyx--------TRULY--------fw_list[1]------");
- }else if(!strcmp(s,"oontim_ILI9881P_xm_txd")){
+ }else if(!strcmp(s,"ontim_ILI9881P_xm_txd")){
 	fw = &fw_list[2];
-	FTS_ERROR("wuyx--------TTXD--------fw_list[2]------");
+	FTS_ERROR("wuyx--------TXD--------fw_list[2]------");
  }
 #elif defined(TPLINK_PRJ)
 FTS_ERROR("wuyx--------TPK------name=%s--------",s);
@@ -1705,7 +1704,7 @@ FTS_ERROR("wuyx--------cross------name=%s--------",s);
 #else
 project reject
 #endif
-    if (upg) {
+    if (upg && fw) {
         upg->fw = fw->fw_file;
         upg->fw_length = fw->fw_len;
         upg->lic = fw->fw_file;
@@ -1717,6 +1716,9 @@ project reject
             FTS_ERROR("fw file len(%x) fail", upg->fw_length);
             return -ENODATA;
         }
+    }else{
+            FTS_ERROR("fw is NULL, NO fw file found!!!!");
+            return -ENODATA;
     }
     return 0;
 }
