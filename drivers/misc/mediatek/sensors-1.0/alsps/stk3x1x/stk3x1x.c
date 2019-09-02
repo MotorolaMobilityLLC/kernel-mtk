@@ -162,12 +162,14 @@ static struct stk3x1x_priv *g_stk3x1x_ptr = NULL;
 static int	stk3x1x_init_flag = -1;	// 0<==>OK -1 <==> fail
 static int  stk3x1x_local_init(void);
 static int  stk3x1x_local_uninit(void);
-
+static int stk3x1x_local_update(void);
+static int stk3x1x_read_cali_file(struct i2c_client *client);
 
 #define HW_dynamic_cali
 
 
 #ifdef HW_dynamic_cali
+
 #define PS_READ_PROINIF_VALUE
 
   #ifdef PS_READ_PROINIF_VALUE
@@ -215,7 +217,7 @@ static struct alsps_init_info stk3x1x_init_info = {
 		.name = "stk3x1x",
 		.init = stk3x1x_local_init,
 		.uninit = stk3x1x_local_uninit,
-
+		.update = stk3x1x_local_update,
 };
 /*----------------------------------------------------------------------------*/
 typedef enum {
@@ -1867,7 +1869,7 @@ static int stk3x1x_read_cali_file(struct i2c_client *client)
 	if (seekFile(fd_file, PROINFO_CALI_DATA_OFFSET, SEEK_SET) < 0) {
 		APS_ERR("fail to seek proinfo file: %s;\n", backup_file_path);
 		goto read_error;
-	} 
+	}
 
 	memset(buf, 0, sizeof(buf));
 	err = readFile(fd_file, buf, sizeof(buf));
@@ -1908,8 +1910,22 @@ read_error:
 	set_fs(oldfs);
 	return (-1);
 }
+
+static int stk3x1x_local_update(void)
+{
+	int ret = -1;
+
+	ret = stk3x1x_read_cali_file(NULL);
+	if( 0 != ret ) {
+		APS_ERR("stk3x1x_read_cali_file, refresh califile failed, ret=%d\n", ret);
+	}
+
+	return ret;
+
+}
 #endif
 /*****************************************/
+
 
 static int stk3x1x_enable_ps(struct i2c_client *client, int enable, int validate_reg)
 {
@@ -2792,18 +2808,18 @@ static void stk3x1x_eint_work(struct work_struct *work)
 			APS_ERR("stk3x1x get ps value: %d\n", err);
 			return;
 		}
-		
+
 #ifdef SMT_MODE
 		ps_thd_val_low_set = ps_nvraw_40mm_value;
 		ps_thd_val_hlgh_set = ps_nvraw_25mm_value;
 #endif
 		if ((err = stk3x1x_write_ps_high_thd(obj->client, ps_thd_val_hlgh_set)))
-		{ 
+		{
         		APS_ERR("write high thd error: %d\n", err);
         		return ;
 		}
 		if ((err = stk3x1x_write_ps_low_thd(obj->client, ps_thd_val_low_set)))
-		{ 
+		{
         		APS_ERR("write low thd error: %d\n", err);
         		return ;
 		}
@@ -4058,7 +4074,7 @@ static int stk3x1x_get_als_value(struct stk3x1x_priv *obj, u16 als)
                         set_fs(orgfs);
                 }
         }
-	APS_DBG("current_tp = %d \n",current_tp); 
+	APS_DBG("current_tp = %d \n",current_tp);
 	for(idx = 0; idx < C_CUST_ALS_LEVEL/*obj->als_level_num*/; idx++)
 	{
 		//if(als < obj->hw->als_level[idx])
@@ -4099,7 +4115,7 @@ static int stk3x1x_get_als_value(struct stk3x1x_priv *obj, u16 als)
 		lum = (lum * 263) / 100;
 
 		APS_DBG("ALS: %05d => %05d\n", als, lum);//obj->hw->als_value[idx]);
-	
+
 		return lum;
 		//return obj->hw->als_value[idx];
 	}
@@ -5493,7 +5509,7 @@ static int stk3x1x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	obj->ps_tune0_delay = ns_to_ktime(60 * NSEC_PER_MSEC);
 	obj->ps_tune0_timer.function = stk_ps_tune0_timer_func;
 #endif
-	
+
 	if((err = stk3x1x_init_client(client)))
 	{
 		goto exit_init_failed;
@@ -5684,6 +5700,7 @@ static int stk3x1x_i2c_remove(struct i2c_client *client)
 
 	return 0;
 }
+
 
 static int stk3x1x_local_uninit(void)
 {

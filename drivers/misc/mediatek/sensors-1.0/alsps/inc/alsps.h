@@ -116,6 +116,7 @@ struct alsps_init_info {
 	char *name;
 	int (*init)(void);
 	int (*uninit)(void);
+	int  (*update)(void); /*SMT校准完成后，设置sys节点，驱动更新参数*/
 	struct platform_driver *platform_diver_addr;
 };
 
