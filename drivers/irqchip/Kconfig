@@ -143,6 +143,11 @@ config IRQ_MIPS_CPU
 	select IRQ_DOMAIN_HIERARCHY if GENERIC_IRQ_IPI
 	select GENERIC_IRQ_EFFECTIVE_AFF_MASK
 
+config MADERA_IRQ
+	tristate
+	select REGMAP
+	select REGMAP_IRQ
+
 config CLPS711X_IRQCHIP
 	bool
 	depends on ARCH_CLPS711X

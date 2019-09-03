@@ -1,0 +1,29 @@
+Cirrus Logic Madera class audio codecs gpio driver
+
+These codecs have a set of configurable GPIO pins. The bindings here configure
+the driver that provides access to these GPIOs.
+
+See also
+- the core bindings for the parent MFD driver:
+    See Documentation/devicetree/bindings/mfd/madera.txt
+- the pinctrl bindings for these codecs
+    See Documentation/devicetree/bindings/pinctrl/cirrus,madera-pinctrl.txt
+
+Required properties:
+  - compatible : must be "cirrus,madera-gpio"
+  - gpio-controller : Indicates this device is a GPIO controller.
+  - #gpio-cells : Must be 2. The first cell is the pin number. The second cell
+    is reserved for future use and must be zero
+
+Optional properties:
+  - gpio-line-names : as described in bindings/gpio/gpio.txt
+
+Example:
+
+cs47l85@0 {
+	compatible = "cirrus,cs47l85";
+
+	gpio-controller;
+	#gpio-cells = <2>;
+};
+
