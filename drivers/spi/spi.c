@@ -3254,8 +3254,15 @@ int spi_bus_unlock(struct spi_controller *ctlr)
 }
 EXPORT_SYMBOL_GPL(spi_bus_unlock);
 
+/* mtk SPI_DMA requests 4 bytes align */
+#ifdef CONFIG_SND_SOC_CS35L41
+/* portable code must never pass more than 32 bytes */
+#define	SPI_BUFSIZ	min(32, SMP_CACHE_BYTES)
+#define RX_TWO_BYTES_OFFSET 2
+#else
 /* portable code must never pass more than 32 bytes */
 #define	SPI_BUFSIZ	max(32, SMP_CACHE_BYTES)
+#endif
 
 static u8	*buf;
 
@@ -3297,8 +3304,13 @@ int spi_write_then_read(struct spi_device *spi,
 	 * using the pre-allocated buffer or the transfer is too large.
 	 */
 	if ((n_tx + n_rx) > SPI_BUFSIZ || !mutex_trylock(&lock)) {
+#ifdef CONFIG_SND_SOC_CS35L41
+		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx + RX_TWO_BYTES_OFFSET),
+				    GFP_KERNEL | GFP_DMA);
+#else
 		local_buf = kmalloc(max((unsigned)SPI_BUFSIZ, n_tx + n_rx),
 				    GFP_KERNEL | GFP_DMA);
+#endif
 		if (!local_buf)
 			return -ENOMEM;
 	} else {
@@ -3318,6 +3330,11 @@ int spi_write_then_read(struct spi_device *spi,
 
 	memcpy(local_buf, txbuf, n_tx);
 	x[0].tx_buf = local_buf;
+#ifdef CONFIG_SND_SOC_CS35L41
+	if ((n_tx + n_rx) > SPI_BUFSIZ )
+		x[1].rx_buf = local_buf + n_tx + RX_TWO_BYTES_OFFSET;
+    else
+#endif
 	x[1].rx_buf = local_buf + n_tx;
 
 	/* do the i/o */
