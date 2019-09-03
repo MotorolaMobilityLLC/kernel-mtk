@@ -90,6 +90,7 @@ ifneq  ($(MTK_CODEC),)
 obj-y += codec/$(MTK_CODEC)/
 endif
 obj-y += common_int/
+obj-y += vendor/
 
 
 obj-y += $(AUDIO_PLATFORM)/
