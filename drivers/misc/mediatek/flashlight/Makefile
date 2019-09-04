@@ -2,6 +2,13 @@
 # Makefile for the kernel flashlight device drivers.
 #
 
+
+ifeq ($(BUILD_SMT), YES)
+#ccflags-$(CONFIG_COMPILE_SMT_YZM)        += -DCONFIG_COMPILE_SMT_YZM
+ccflags-y       += -DCONFIG_COMPILE_SMT_YZM
+endif
+
+
 flashlight-y := flashlight-core.o
 flashlight-y += flashlight-device.o
 
@@ -37,3 +44,8 @@ subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/pmic/include \
 	-I$(MTK_CUSTOM_PATH)/pmic
 
+
+
+    
+    
+    
