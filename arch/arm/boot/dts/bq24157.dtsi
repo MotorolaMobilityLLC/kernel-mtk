@@ -23,7 +23,7 @@
 		 * Slave charger: secondary_chg
 		 */
 		charger_name = "primary_chg";
-		ichg = <1050000>; /* uA */
+		ichg = <1150000>; /* uA */
 		aicr = <500000>;  /* uA */
 		mivr = <4500000>; /* uV */
 		ieoc = <200000>;  /* uA */
