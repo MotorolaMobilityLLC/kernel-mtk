@@ -36,12 +36,21 @@
 #include <linux/compat.h>
 #endif
 
+
+#include <linux/fs.h>
+#include <linux/compat.h>
+
+
+
 #include "flashlight-core.h"
 #include "mach/upmu_sw.h" /* PT */
 
 #ifdef CONFIG_MTK_FLASHLIGHT_DLPT
 #include "mtk_pbm.h" /* DLPT */
 #endif
+
+#define  FILE_NAME  "flashlight-core.c"
+#define MY_LOG(fmt, args...)   pr_info(FILE_NAME"[%s](%d) " fmt "\n",  __FUNCTION__,__LINE__, ##args)
 
 
 /******************************************************************************
@@ -86,7 +95,7 @@ static int fl_set_level(struct flashlight_dev *fdev, int level)
 	if (pt_is_low(pt_low_vol, pt_low_bat, pt_over_cur))
 		if (fdev->low_pt_level >= 0 && level > fdev->low_pt_level) {
 			level = fdev->low_pt_level;
-			pr_info("Set level to (%d) since pt(%d,%d,%d), pt strict(%d)\n",
+			MY_LOG("  yzm_fh  Set level to (%d) since pt(%d,%d,%d), pt strict(%d)\n",
 					level, pt_low_vol, pt_low_bat,
 					pt_over_cur, pt_strict);
 		}
@@ -124,7 +133,7 @@ static int fl_enable(struct flashlight_dev *fdev, int enable)
 	if (pt_is_low(pt_low_vol, pt_low_bat, pt_over_cur) == 2)
 		if (enable) {
 			enable = 0;
-			pr_info("Failed to enable since pt(%d,%d,%d), pt strict(%d)\n",
+			MY_LOG("  yzm_fh  Failed to enable since pt(%d,%d,%d), pt strict(%d)\n",
 					pt_low_vol, pt_low_bat,
 					pt_over_cur, pt_strict);
 		}
@@ -560,10 +569,62 @@ static int pt_is_low(int pt_low_vol, int pt_low_bat, int pt_over_cur)
 {
 	int is_low = 0;
 
+    // ------------------------  get bat level %  -----------------------
+    
+#ifdef CONFIG_COMPILE_SMT_YZM
+#define BAT_LEVEL_PERCENT 10
+#else
+#define BAT_LEVEL_PERCENT 15 
+#endif
+    const char * str_bat_path  = "/sys/devices/platform/battery/power_supply/battery/capacity";
+	static mm_segment_t oldfs;
+	struct file *fp;
+	loff_t pos;
+    u8 pu1Params[5] = {0};
+    unsigned  int current_bat_level = 0;
+    int ret;
+    
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    fp = filp_open(str_bat_path, O_RDONLY, 0644);
+    if (IS_ERR(fp))
+    {
+        pr_err("flashlight-core.c[%s](%d)file open %s error",
+         __FUNCTION__, __LINE__, str_bat_path);
+    }
+    else
+    {
+        pos = 0;
+        vfs_read(fp, pu1Params, 5, &pos);
+        filp_close(fp, NULL);
+    }
+    set_fs(oldfs);
+    
+/*     pr_err("flashlight-core.c[%s](%d) yzm_fh11  pu1Params=%s ",
+    __FUNCTION__, __LINE__, pu1Params);
+    
+    pr_err("flashlight-core.c[%s](%d) yzm_fh11  pu1Params[0, 1, 2, 3]=%c %c %c %c %c",
+    __FUNCTION__, __LINE__, pu1Params[0], pu1Params[1], pu1Params[2], pu1Params[3], pu1Params[4]);
+     */
+    ret = kstrtouint(pu1Params, 10, &current_bat_level);
+    
+    pr_err("flashlight-core.c[%s](%d) ret=%d 0=ok  current_bat_level=%d   LEVEL_PERCENT=%d ",
+    __FUNCTION__, __LINE__, ret, current_bat_level, BAT_LEVEL_PERCENT);
+    
+    if(current_bat_level <= BAT_LEVEL_PERCENT)
+    {
+        is_low = 2;
+    }
+
+    return is_low;
+    // ------------------------  get bat level %  end  -----------------------
+    
 	if (pt_low_bat != BATTERY_PERCENT_LEVEL_0
 			|| pt_low_vol != LOW_BATTERY_LEVEL_0
-			|| pt_over_cur != BATTERY_OC_LEVEL_0) {
+			|| pt_over_cur != BATTERY_OC_LEVEL_0) 
+	{
 		is_low = 1;
+		
 		if (pt_strict)
 			is_low = 2;
 	}
@@ -589,11 +650,11 @@ static int pt_trigger(void)
 			fdev->ops->flashlight_open();
 			fdev->ops->flashlight_set_driver(1);
 			if (pt_strict) {
-				pr_info("PT trigger(%d,%d,%d) disable flashlight\n",
+				MY_LOG(" yzm_fh1 PT trigger(%d,%d,%d) disable flashlight\n",
 					pt_low_vol, pt_low_bat, pt_over_cur);
 				fl_enable(fdev, 0);
 			} else {
-				pr_info("PT trigger(%d,%d,%d) decrease duty: %d\n",
+				MY_LOG(" yzm_fh1 PT trigger(%d,%d,%d) decrease duty: %d\n",
 					pt_low_vol, pt_low_bat,
 					pt_over_cur, fdev->low_pt_level);
 				fl_set_level(fdev, fdev->low_pt_level);
@@ -626,8 +687,10 @@ static void pt_low_bat_callback(BATTERY_PERCENT_LEVEL level)
 {
 	if (level == BATTERY_PERCENT_LEVEL_0) {
 		pt_low_bat = BATTERY_PERCENT_LEVEL_0;
+        MY_LOG(" yzm_fh1   bat %d  ",  pt_low_bat);
 	} else if (level == BATTERY_PERCENT_LEVEL_1) {
 		pt_low_bat = BATTERY_PERCENT_LEVEL_1;
+        MY_LOG(" yzm_fh1 level=%d  bat=%d  ", level,  pt_low_bat);// get this
 		pt_trigger();
 	} else {
 		/* unlimited cpu and gpu*/
@@ -699,9 +762,10 @@ static long _flashlight_ioctl(
 	case FLASH_IOC_IS_LOW_POWER:
 		fl_arg.arg = 0;
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
-		fl_arg.arg = pt_is_low(pt_low_vol, pt_low_bat, pt_over_cur);
+
+		fl_arg.arg = pt_is_low(pt_low_vol, pt_low_bat, pt_over_cur);// go this
 		if (fl_arg.arg)
-			pr_debug("Pt status: (%d,%d,%d)\n",
+			MY_LOG(" yzm_fh   Pt status: (%d,%d,%d)\n",
 					pt_low_vol, pt_low_bat, pt_over_cur);
 #endif
 		if (copy_to_user((void __user *)arg, (void *)&fl_arg,
@@ -1007,6 +1071,8 @@ static ssize_t flashlight_pt_show(struct device *dev,
 {
 	pr_debug("Power throttling show\n");
 
+    
+
 #ifdef CONFIG_MTK_FLASHLIGHT_PT
 	return scnprintf(buf, PAGE_SIZE,
 			"[LOW_VOLTAGE] [LOW_BATTERY] [OVER_CURRENT] [PT_STRICT]\n%d %d %d %d\n",
@@ -1031,7 +1097,9 @@ static ssize_t flashlight_pt_store(struct device *dev,
 	int ret;
 
 	pr_debug("Power throttling store\n");
+    
 
+    
 	while (cur) {
 		token = strsep(&cur, delim);
 		ret = kstrtou32(token, 10, &num);
@@ -1040,6 +1108,7 @@ static ssize_t flashlight_pt_store(struct device *dev,
 			goto unlock;
 		}
 
+        
 		if (count == PT_NOTIFY_LOW_VOL)
 			low_vol = (int)num;
 		else if (count == PT_NOTIFY_LOW_BAT)
@@ -1072,6 +1141,7 @@ static ssize_t flashlight_pt_store(struct device *dev,
 	}
 	pr_debug("PT status (%d, %d, %d) with strict(%d)\n",
 			low_vol, low_bat, over_cur, strict);
+            
 
 	/* call callback function */
 	pt_strict = strict;
