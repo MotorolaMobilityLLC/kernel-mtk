@@ -760,7 +760,8 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
     const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
     const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
-    const char * str_ar1337_path  = "/data/vendor/camera_dump/huaian_ar1337.data";
+    const char * str_ar1337_path  = "/data/vendor/camera_dump/TXD_ar1337.data";
+    const char * str_gc5025_path  = "/data/vendor/camera_dump/shine_gc5025.data";
     const char * str_dump_path = NULL;
     
 	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
@@ -772,7 +773,6 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
 	static mm_segment_t oldfs;
 	struct file *fp;
 	loff_t pos;
-    
     
     switch(sensorid)
     {
@@ -820,7 +820,7 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             break;
         }
 
-        case AR1337_SENSOR_ID:
+        case GC5025AW_SENSOR_ID:
         {
             if((p_buf == NULL)|| (Length == 0))
             {
@@ -830,6 +830,14 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
             }
             pu1Params = p_buf;
             u4Length = Length;
+            str_dump_path = str_gc5025_path;
+            break;
+        }
+
+        case AR1337_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
             str_dump_path = str_ar1337_path;
             break;
         }
@@ -845,47 +853,47 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     }
     
     
-    
     if((sensorid == OV13855_SENSOR_ID) ||
-       (sensorid == S5K3L6_SENSOR_ID))
+       (sensorid == S5K3L6_SENSOR_ID) ||
+       (sensorid == AR1337_SENSOR_ID))
    {
-		pu1Params = kmalloc(u4Length, GFP_KERNEL);
-		if (pu1Params == NULL) 
+	pu1Params = kmalloc(u4Length, GFP_KERNEL);
+	if (pu1Params == NULL) 
         {
             pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
             __FUNCTION__, __LINE__);
             return -1;
         }
         
-		pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
-		if (pcmdInf != NULL && g_lastDevID != 1)
+	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
+	if (pcmdInf != NULL && g_lastDevID != 1)
         {
-			if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
-            {
-				pr_debug("deviceID Error!\n");
-				kfree(pu1Params);
-				return -1;
-			}
-			g_lastDevID = 1;
+		if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+		{
+			pr_debug("deviceID Error!\n");
+			kfree(pu1Params);
+			return -1;
 		}
+		g_lastDevID = 1;
+	}
 
-		if (pcmdInf != NULL) 
+	if (pcmdInf != NULL)
         {
-			if (pcmdInf->readCMDFunc != NULL)
+	    if (pcmdInf->readCMDFunc != NULL)
             {
                 i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
                 u4Offset,
                 pu1Params,
                 u4Length);
+
                 pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
                 __FUNCTION__, __LINE__, i4RetValue);
-                
                 pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
-                __FUNCTION__, __LINE__, 
+                __FUNCTION__, __LINE__,
                 *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
 
             }
-			else
+	    else
             {
                 pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",
                 __FUNCTION__, __LINE__);
@@ -913,7 +921,6 @@ int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
     set_fs(oldfs);
     
     kfree(pu1Params);
-    
     
     
     return 0;
