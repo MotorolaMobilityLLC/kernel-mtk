@@ -28,6 +28,13 @@
 #include <linux/spi/spi.h>
 #include <linux/dma-mapping.h>
 
+#ifdef CONFIG_TRUSTKERNEL_TEE_FP_SUPPORT
+#define SPI_TRUSTKERNEL_TEE_SUPPORT
+#endif
+#ifdef SPI_TRUSTKERNEL_TEE_SUPPORT
+#include <linux/tee_clkmgr.h>
+#include <linux/tee_fp.h>
+#endif
 
 #define SPI_CFG0_REG                      0x0000
 #define SPI_CFG1_REG                      0x0004
@@ -880,6 +887,10 @@ static int mtk_spi_probe(struct platform_device *pdev)
 
 	clk_disable_unprepare(mdata->spi_clk);
 
+#ifdef SPI_TRUSTKERNEL_TEE_SUPPORT
+	    tee_clkmgr_register1("spi", ((1 << 15) - 2) - master->bus_num, 
+	        clk_prepare_enable, clk_disable_unprepare, mdata->spi_clk);
+#endif
 	if (mdata->dev_comp->need_pad_sel) {
 		if (mdata->pad_num != master->num_chipselect) {
 			dev_err(&pdev->dev,
