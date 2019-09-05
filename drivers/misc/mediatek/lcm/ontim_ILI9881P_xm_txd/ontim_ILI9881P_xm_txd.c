@@ -568,7 +568,9 @@ static void lcm_reset(void)
 	MDELAY(50);
 #else
 	SET_RESET_PIN(1);
+	MDELAY(10);
 	SET_RESET_PIN(0);
+	MDELAY(10);
 	SET_RESET_PIN(1);
 	MDELAY(10);
 
@@ -661,7 +663,7 @@ static void lcm_init(void)
 	set_gpio_lcd_enp(1);
 	MDELAY(1);
 	set_gpio_lcd_enn(1);
-	MDELAY(5);
+	MDELAY(1);
 
 #endif
 	lcm_reset();
@@ -689,17 +691,18 @@ static void lcm_suspend(void)
 	mt_set_gpio_out(GPIO_LCD_BIAS_ENP_PIN, GPIO_OUT_ZERO);
 #endif    
 #else
+	/*SET_RESET_PIN(0);
+	MDELAY(2);*/
 	//+ add by fxz
-	set_gpio_lcd_enp(0);
 	set_gpio_lcd_enn(0);
+	MDELAY(1);
+	set_gpio_lcd_enp(0);
 	//- add by fxz
 #endif
 
 #endif
 	LCM_LOGI("%s,lcm_suspend\n", __func__);
 
-	/* SET_RESET_PIN(0);
-	   MDELAY(10); */
 }
 
 static void lcm_resume(void)
