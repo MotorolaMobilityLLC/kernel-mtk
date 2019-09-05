@@ -62,6 +62,7 @@ static unsigned int  als_value[C_CUST_ALS_LEVEL] = {0};
 static int ps_irq_use_old = 0;
 static int *coeff_als_for_tp = coeff_boyi;
 static unsigned int cureent_color_ratio = 0;
+#define PS_PULSES 16
 
 #define HW_dynamic_cali
 
@@ -117,6 +118,7 @@ static int ltr577_i2c_remove(struct i2c_client *client);
 static int ltr577_i2c_detect(struct i2c_client *client, struct i2c_board_info *info);
 static int ltr577_i2c_suspend(struct device *dev);
 static int ltr577_i2c_resume(struct device *dev);
+static int ltr577_check_for_esd(void);
 
 #ifdef LTR577_DEBUG
 static int ltr577_dump_reg(void);
@@ -205,20 +207,17 @@ static DEFINE_MUTEX(ltr577_i2c_mutex);
 
 static int ltr577_local_init(void);
 static int ltr577_remove(void);
-static int ltr577_update(void);
 static int ltr577_init_flag =-1; // 0<==>OK -1 <==> fail
-static int ltr577_read_cali_file(struct i2c_client *client);
 
 static int ps_enabled = 0;
 static int als_enabled = 0;
 
-static int irq_enabled = 0;
+//static int irq_enabled = 0;
 
 static struct alsps_init_info ltr577_init_info = {
 		.name = "ltr577",
 		.init = ltr577_local_init,
 		.uninit = ltr577_remove,	
-		.update = ltr577_update,
 };
 
 #ifdef CONFIG_OF
@@ -654,16 +653,6 @@ static void initKernelEnv(void)
 /*****************************************
  *** ltr577_read_cali_file
  *****************************************/
-
-static int ltr577_update()
-{
-	int ret = -1;
-	ret = ltr577_read_cali_file(NULL);
-	if( 0 != ret ) {
-		APS_ERR("ltr577_update, refresh califile failed, ret=%d\n", ret);
-	}
-	return ret;
-}
 static int ltr577_read_cali_file(struct i2c_client *client)
 {
 	int mRaw =0;
@@ -692,7 +681,7 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 	memset(buf, 0, sizeof(buf));
 	err = readFile(fd_file, buf, sizeof(buf));
 	if (err > 0) {
-		APS_DBG("cali_file: buf:%s\n", buf);
+		APS_LOG("cali_file: buf:%s\n", buf);
 	} else {
 		APS_ERR("read file error %d\n", err);
 		goto read_error;
@@ -740,6 +729,8 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 #ifdef PS_READ_PROINIF_VALUE
 	int cali_err;
 #endif
+
+	ltr577_check_for_esd();
 
 	if (enable != 0 && ps_enabled == 1)
 	{
@@ -816,12 +807,12 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		//cancel_work_sync(&ltr577_obj->eint_work);
 		ps_enabled = 0;
 	}
-
+/*
 	if ((irq_enabled == 1) && (enable != 0))
 	{
 		irq_enabled = 2;
 	}
-
+*/
 	return err;
 }
 #else
@@ -895,12 +886,12 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		ps_enabled = 1;
 	else
 		ps_enabled = 0;
-
+/*
 	if ((irq_enabled == 1) && (enable != 0))
 	{
 		irq_enabled = 2;
 	}
-
+*/
 	return err;
 }
 #endif
@@ -1022,7 +1013,7 @@ static int ltr577_als_enable(struct i2c_client *client, int enable)
 	if (enable != 0 && als_enabled == 1)
 	{
 		APS_DBG("ALS: Already enabled \n");
-		return 0;
+		//return 0;
 	}
 
 	if (enable == 0 && als_enabled == 0)
@@ -1031,7 +1022,7 @@ static int ltr577_als_enable(struct i2c_client *client, int enable)
 		return 0;
 	}
 #ifdef NO_ALS_CTRL_WHEN_PS_ENABLED
-	if (ps_enabled == 1)
+	if ((ps_enabled == 1)&&(enable == 0))
 	{
 		APS_DBG("ALS: PS enabled, do nothing \n");
 		return 0;
@@ -1077,6 +1068,9 @@ static int ltr577_als_read(struct i2c_client *client, u16* data)
 	u8 buf[3];
 	int ret;
 	int ratio= 0;
+
+	ltr577_check_for_esd();
+
 	if(current_color_temp_first == 0)
         {
                 mm_segment_t orgfs = 0;
@@ -1847,6 +1841,10 @@ static void ltr577_eint_work(struct work_struct *work)
 	//let up layer to know
 	res = ps_report_interrupt_data(distance);
 
+#ifdef SMT_MODE
+	mdelay(300);
+#endif
+
 EXIT_INTR:
 #ifdef CONFIG_OF
 	enable_irq_wake(obj->irq);
@@ -2003,7 +2001,7 @@ static void ltr577_eint_func(void)
 #ifdef CONFIG_OF
 static irqreturn_t ltr577_eint_handler(int irq, void *desc)
 {	
-	if (irq_enabled == 2)
+	//if (irq_enabled == 2)
 	{
 		disable_irq_nosync(ltr577_obj->irq);
 		disable_irq_wake(ltr577_obj->irq);
@@ -2083,7 +2081,7 @@ if (ps_irq_use_old){
 		}
 		enable_irq_wake(ltr577_obj->irq);
 		//enable_irq(ltr577_obj->irq);
-		irq_enabled = 1;
+		//irq_enabled = 1;
 	}
 	else {
 		APS_ERR("null irq node!!\n");
@@ -2135,7 +2133,7 @@ if (ps_irq_use_old){
 		}
 		enable_irq_wake(ltr577_obj->irq);
 		//enable_irq(ltr577_obj->irq);
-		irq_enabled = 1;
+		//irq_enabled = 1;
 	//	disable_irq(ltr577_obj->irq);
 	} else {
 		APS_ERR("null irq node!!\n");
@@ -2445,7 +2443,7 @@ static int ltr577_init_client(void)
 	* Other settings like timing and threshold to be set here, if required.
 	* Not set and kept as device default for now.
 	*/
-	buf = 16; // 16 pulses	
+	buf = PS_PULSES; // 16 pulses
 	res = ltr577_master_send(client, LTR577_PS_PULSES, (char *)&buf, 1);	
 	if (res<0)
 	{
@@ -2453,8 +2451,8 @@ static int ltr577_init_client(void)
 		goto EXIT_ERR;
 	}
 
-	buf = 0x36;	// 60khz & 100mA 
-	res = ltr577_master_send(client, LTR577_PS_LED, (char *)&buf, 1);	
+	buf = 0x36;	// 60khz & 100mA
+	res = ltr577_master_send(client, LTR577_PS_LED, (char *)&buf, 1);
 	if (res<0)
 	{
 		APS_ERR("ltr577_init_client() PS LED error...\n");
@@ -2558,6 +2556,156 @@ EXIT_ERR:
 	return 1;
 }
 /*--------------------------------------------------------------------------------*/
+static int ltr577_check_for_esd(void)
+{
+	int res;
+	int init_als_gain;
+	u8 buf;
+	u8 ps_pulse_data = 0;
+	u8 ps_interrupt_data = 0;
+	u8 regdata = 0;
+
+	struct i2c_client *client = ltr577_obj->client;
+	struct ltr577_priv *obj = ltr577_obj;
+
+	mdelay(PON_DELAY);
+
+	/*check whether sensor is reset or not */
+
+	res = ltr577_master_recv(client, LTR577_PS_PULSES, &ps_pulse_data, 0x01);
+	if (res < 0)
+	{
+		APS_ERR("clear PS interrupt failed, res = %d\n", res);
+	}
+	APS_DBG(" PS pulse , reg:0x%x\n", ps_pulse_data);
+
+	res = ltr577_master_recv(client, LTR577_INT_CFG, &ps_interrupt_data, 0x01);
+	if (res < 0)
+	{
+		APS_ERR("clear PS interrupt failed, res = %d\n", res);
+	}
+	APS_DBG("clear PS interrupt, reg:0x%x\n", ps_interrupt_data);
+
+	if((ps_pulse_data == PS_PULSES) && (ps_interrupt_data == 0x01)){
+		APS_DBG("ltr578 or ltr577 is not reset \n");
+		return 0;
+	}
+
+	buf = PS_PULSES; // 16 pulses
+	res = ltr577_master_send(client, LTR577_PS_PULSES, (char *)&buf, 1);
+	if (res<0)
+	{
+		APS_ERR("ltr577_init_client() PS Pulses error...\n");
+		goto EXIT_ERR;
+	}
+
+	buf = 0x36;	// 60khz & 100mA
+	res = ltr577_master_send(client, LTR577_PS_LED, (char *)&buf, 1);
+	if (res<0)
+	{
+		APS_ERR("ltr577_init_client() PS LED error...\n");
+		goto EXIT_ERR;
+	}
+
+	buf = 0x5C;	// 11bits & 50ms time
+	res = ltr577_master_send(client, LTR577_PS_MEAS_RATE, (char *)&buf, 1);
+	if (res<0)
+	{
+		APS_ERR("ltr577_init_client() PS time error...\n");
+		goto EXIT_ERR;
+	}
+
+	/*for interrup work mode support */
+	if (0 == obj->hw->polling_mode_ps)
+	{
+		ltr577_ps_set_thres();
+
+		buf = 0x01;
+		res = ltr577_master_send(client, LTR577_INT_CFG, (char *)&buf, 1);
+		if (res < 0)
+		{
+			goto EXIT_ERR;
+		}
+
+		buf = 0x02;
+		res = ltr577_master_send(client, LTR577_INT_PST, (char *)&buf, 1);
+		if (res < 0)
+		{
+			goto EXIT_ERR;
+		}
+	}
+
+	// Enable ALS to Full Range at startup
+	init_als_gain = ALS_RANGE_9;
+	als_gainrange = init_als_gain;//Set global variable
+	APS_LOG("ALS sensor gainrange %d!\n", init_als_gain);
+
+	switch (als_gainrange)
+	{
+	case ALS_RANGE_1:
+		buf = MODE_ALS_Range1;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+
+	case ALS_RANGE_3:
+		buf = MODE_ALS_Range3;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+
+	case ALS_RANGE_6:
+		buf = MODE_ALS_Range6;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+
+	case ALS_RANGE_9:
+		buf = MODE_ALS_Range9;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+
+	case ALS_RANGE_18:
+		buf = MODE_ALS_Range18;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+
+	default:
+		buf = MODE_ALS_Range3;
+		res = ltr577_master_send(client, LTR577_ALS_GAIN, (char *)&buf, 1);
+		break;
+	}
+
+	buf = ALS_RESO_MEAS;	// 18 bit & 100ms measurement rate
+	res = ltr577_master_send(client, LTR577_ALS_MEAS_RATE, (char *)&buf, 1);
+	APS_LOG("ALS sensor resolution & measurement rate: %d!\n", ALS_RESO_MEAS);
+
+	if(ps_enabled ==1){
+		res = ltr577_master_recv(client, LTR577_MAIN_CTRL, &regdata, 0x01);
+		if (res < 0) {
+			APS_DBG("i2c error: %d\n", res);
+		}
+		regdata &= 0xEF;	// Clear reset bit
+		regdata |= 0x01;
+		res = ltr577_master_send(client, LTR577_MAIN_CTRL, (char *)&regdata, 1);
+		if (res < 0)
+		{
+			APS_ERR("PS: enable ps err: %d\n",res);
+			return res;
+		}
+	}
+
+	if(als_enabled){
+		res = ltr577_als_enable(client, 1);
+		if (res < 0)
+		{
+			APS_ERR("PS: enable ALS err: %d\n",res);
+			return res;
+		}
+	}
+	return 0;
+
+EXIT_ERR:
+	APS_ERR("init esd dev: %d\n", res);
+	return 1;
+}
 
 /*--------------------------------------------------------------------------------*/
 // if use  this typ of enable , Gsensor should report inputEvent(x, y, z ,stats, div) to HAL
