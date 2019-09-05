@@ -1321,6 +1321,9 @@ static int MC3XXX_ResetCalibration(struct i2c_client *client)
 	s16 wSignBitMask	 = 0x2000;
 	s16 wSignPaddingBits = 0xC000;
 
+	if(IS_MESA())
+		return 0;
+
 	buf[0] = 0x43;
 	err = MC3XXX_i2c_write_block(client, 0x07, buf, 1);
 	if (err)
@@ -1405,6 +1408,9 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 	s16 wSignPaddingBits = 0xC000;
 	s32 dwRangePosLimit  = 0x1FFF;
 	s32 dwRangeNegLimit  = -0x2000;
+
+	if(IS_MESA())
+		return 0;
 
 	//ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", dat[MC3XXX_AXIS_X], dat[MC3XXX_AXIS_Y], dat[MC3XXX_AXIS_Z]);
 
