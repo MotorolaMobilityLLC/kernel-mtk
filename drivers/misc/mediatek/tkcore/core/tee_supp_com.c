@@ -37,8 +37,6 @@ enum teec_rpc_result tee_supp_cmd(struct tee *tee,
 
 	(void) task;
 
-	pr_debug("> tgid:[%d] id:[0x%08x]\n", task->tgid, id);
-
 	if (id == TEE_RPC_ICMD_INVOKE) {
 		if (atomic_read(&rpc->used) == 0) {
 			pr_err("teed not ready. id=0x%x\n", id);
@@ -92,16 +90,9 @@ enum teec_rpc_result tee_supp_cmd(struct tee *tee,
 			memcpy(&rpc->commToUser, data, datalen);
 			mutex_unlock(&rpc->outsync);
 
-			pr_debug("TEED Cmd: %x. Give hand to teed\n",
-				rpc->commToUser.cmd);
-
 			up(&rpc->datatouser);
 
 			down(&rpc->datafromuser);
-
-			pr_debug(
-				"TEED Cmd: %x. Give hand to fw\n",
-				rpc->commToUser.cmd);
 
 			mutex_lock(&rpc->insync);
 			memcpy(data, &rpc->commFromUser, datalen);
@@ -118,7 +109,6 @@ enum teec_rpc_result tee_supp_cmd(struct tee *tee,
 	}
 
 out:
-	pr_debug("< res: [%d]\n", res);
 
 	return res;
 }
@@ -145,8 +135,6 @@ ssize_t tee_supp_read(struct file *filp, char __user *buffer,
 
 	tee = ctx->tee;
 
-	pr_debug("> ctx %p\n", ctx);
-
 	rpc = tee->rpc;
 
 	if (atomic_read(&rpc->used) == 0) {
@@ -157,8 +145,6 @@ ssize_t tee_supp_read(struct file *filp, char __user *buffer,
 
 	if (down_interruptible(&rpc->datatouser))
 		return -ERESTARTSYS;
-
-	pr_debug("> tgid:[%d]\n", task->tgid);
 
 	mutex_lock(&rpc->outsync);
 
@@ -177,7 +163,6 @@ ssize_t tee_supp_read(struct file *filp, char __user *buffer,
 	mutex_unlock(&rpc->outsync);
 
 out:
-	pr_debug("< [%d]\n", ret);
 	return ret;
 }
 
@@ -199,8 +184,6 @@ ssize_t tee_supp_write(struct file *filp, const char __user *buffer,
 
 	tee = ctx->tee;
 	rpc = tee->rpc;
-
-	pr_debug("> tgid:[%d:%d]\n", task->tgid, task->pid);
 
 	if (atomic_read(&rpc->used) == 0) {
 		pr_err("teed not ready\n");
@@ -271,7 +254,6 @@ ssize_t tee_supp_write(struct file *filp, const char __user *buffer,
 	}
 
 out:
-	pr_debug("< [%d]\n", ret);
 	return ret;
 }
 

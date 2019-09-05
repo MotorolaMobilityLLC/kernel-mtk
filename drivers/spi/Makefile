@@ -4,6 +4,9 @@
 
 ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
 
+ifeq ($(CONFIG_TRUSTKERNEL_TEE_FP_SUPPORT),y)
+ccflags-y += -I$(srctree)/drivers/misc/mediatek/tkcore/include
+endif
 # small core, mostly translating board-specific
 # config declarations into driver model code
 obj-$(CONFIG_SPI_MASTER)		+= spi.o
