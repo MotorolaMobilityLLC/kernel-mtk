@@ -28,3 +28,10 @@ config MTK_SERIAL_MODEM_TEST
 	  After enabling this option, UART4 will be switched to modem side.
 	  Hence, the command line parameter should be also modified.
 	  This is for test purpose only.
+
+config MTK_DISABLE_UART_LOG
+	bool "Support uart log"
+	depends on MTK_SERIAL=y
+	default n
+	---help---
+		Say Y here to disable uart log
