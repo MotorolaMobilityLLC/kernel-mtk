@@ -1389,10 +1389,9 @@ int stk3x1x_read_ps(struct i2c_client *client, u16 *data)
 		*data = (buf[0] << 8) | (buf[1]);
 	}
 
-	//if(atomic_read(&obj->trace) & STK_TRC_ALS_DATA)
-	{
-		APS_DBG("PS: 0x%04X\n", (u32)(*data));
-	}
+#ifndef SMT_MODE
+	APS_LOG("rawdata:%d\n", (u32)(*data));
+#endif
 
 	return 0;
 }
@@ -1889,6 +1888,7 @@ static int stk3x1x_read_cali_file(struct i2c_client *client)
 	//mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
 	mRaw30 = mRaw22 - ((ps_cali_factor_30 * (mRaw22 - mRaw)) / ps_cali_per);
 	mRaw45 = mRaw22 - ((ps_cali_factor_45 * (mRaw22 - mRaw)) / ps_cali_per);
+	APS_LOG("mRaw:%d   mRaw22:%d  mRaw30:%d  mRaw45:%d\n", mRaw, mRaw22, mRaw30, mRaw45);
 //add by fanxzh for dynamic cali end
 
 	if(((mRaw + 8) < mRaw45) && ((mRaw45 + 8) < mRaw30)){
@@ -2047,9 +2047,6 @@ static int stk3x1x_enable_ps(struct i2c_client *client, int enable, int validate
 
 	if(enable)
 	{
-
-		APS_LOG("%s: HT=%d, LT=%d\n", __func__, ps_thd_val_hlgh_set, ps_thd_val_low_set);
-
 		if ((err = stk3x1x_write_ps_high_thd(obj->client, ps_thd_val_hlgh_set)))
 		{
 			APS_ERR("write high thd error: %d\n", err);

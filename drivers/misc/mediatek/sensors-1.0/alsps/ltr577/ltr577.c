@@ -681,7 +681,7 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 	memset(buf, 0, sizeof(buf));
 	err = readFile(fd_file, buf, sizeof(buf));
 	if (err > 0) {
-		APS_LOG("cali_file: buf:%s\n", buf);
+		APS_DBG("cali_file: buf:%s\n", buf);
 	} else {
 		APS_ERR("read file error %d\n", err);
 		goto read_error;
@@ -696,6 +696,7 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 	//mRaw40 = mRaw25 - ((ps_cali_factor * (mRaw25 - mRaw)) / ps_cali_per);
 	mRaw30 = mRaw22 - ((ps_cali_factor_30 * (mRaw22 - mRaw)) / ps_cali_per);
 	mRaw45 = mRaw22 - ((ps_cali_factor_45 * (mRaw22 - mRaw)) / ps_cali_per);
+	APS_LOG("mRaw:%d   mRaw22:%d  mRaw30:%d  mRaw45:%d\n", mRaw, mRaw22, mRaw30, mRaw45);
 //add by fanxzh for dynamic cali end
 
 	if(((mRaw + 8) < mRaw45) && ((mRaw45 + 8) < mRaw30)){
@@ -911,8 +912,9 @@ static int ltr577_ps_read(struct i2c_client *client, u16 *data)
 	
 	psdata = ((buf[1] & 0x07) << 8) | (buf[0]);
 	*data = psdata;
-    APS_DBG("ltr577_ps_read: ps_rawdata = %d\n", psdata);
-	
+#ifndef SMT_MODE
+    APS_LOG("ps_rawdata = %d\n", psdata);
+#endif
 	final_prox_val = psdata;	
 	return psdata;
 }
