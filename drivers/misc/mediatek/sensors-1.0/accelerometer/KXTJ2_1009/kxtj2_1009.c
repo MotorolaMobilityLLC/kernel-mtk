@@ -102,6 +102,9 @@ struct data_filter {
     int idx;
 };
 /*----------------------------------------------------------------------------*/
+
+static s16 store_cali_sw[KXTJ2_1009_AXES_NUM+1] = {0};
+
 struct kxtj2_1009_i2c_data {
     struct i2c_client *client;
     struct acc_hw *hw;
@@ -2259,10 +2262,15 @@ static int kxtj2_1009_factory_set_cali(int32_t data[3])
 	int err = 0;
 	int cali[3] = { 0 };
     GSE_ERR("data0 = %d,data1 = %d,data2 = %d\n",data[0],data[1], data[2]); 
-
+#if 0
 	//obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
 	//obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
 	//obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Z] = data[2] * gsensor_gain.z / GRAVITY_EARTH_1000;
+#else
+	store_cali_sw[KXTJ2_1009_AXIS_X] = data[0];
+	store_cali_sw[KXTJ2_1009_AXIS_Y] = data[1];
+	store_cali_sw[KXTJ2_1009_AXIS_Z] = data[2];
+#endif
 
 	cali[KXTJ2_1009_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
 	cali[KXTJ2_1009_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
@@ -2276,10 +2284,16 @@ static int kxtj2_1009_factory_set_cali(int32_t data[3])
 }
 static int kxtj2_1009_factory_get_cali(int32_t data[3])
 {
-    GSE_ERR("data0 = %d,data1 = %d,data2 = %d\n",data[0],data[1], data[2]);
+	GSE_ERR("data0 = %d,data1 = %d,data2 = %d\n",data[0],data[1], data[2]);
+#if 0
 	data[0] = obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_X] * GRAVITY_EARTH_1000 / GRAVITY_EARTH_1000;
 	data[1] = obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Y] * GRAVITY_EARTH_1000 / GRAVITY_EARTH_1000;
 	data[2] = obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Z] * GRAVITY_EARTH_1000 / GRAVITY_EARTH_1000;
+#else
+	data[0] = store_cali_sw[KXTJ2_1009_AXIS_X];
+	data[1] = store_cali_sw[KXTJ2_1009_AXIS_Y];
+	data[2] = store_cali_sw[KXTJ2_1009_AXIS_Z];
+#endif
 	return 0;
 }
 static int kxtj2_1009_factory_do_self_test(void)
