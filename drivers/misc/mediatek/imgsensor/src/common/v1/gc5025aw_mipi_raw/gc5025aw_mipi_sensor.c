@@ -25,6 +25,7 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 /*#include <asm/atomic.h>*/
+#include <linux/slab.h>
 
 #include "kd_camera_typedef.h"
 #include "kd_imgsensor.h"
@@ -566,6 +567,8 @@ static void gc5025aw_gcore_read_otp_info(void)
 	LOG_INF("GC5025AW_OTP_INFO:data=%d-%d-%d\n",gc5025aw_otp_info.year,gc5025aw_otp_info.month,gc5025aw_otp_info.day);
 	LOG_INF("GC5025AW_OTP_WB:r/g=0x%x\n",gc5025aw_otp_info.rg_gain);
 	LOG_INF("GC5025AW_OTP_WB:b/g=0x%x\n",gc5025aw_otp_info.bg_gain);
+	LOG_INF("GC5025AW_OTP_WB:wb_flag=0x%x\n",gc5025aw_otp_info.wb_flag);
+	LOG_INF("GC5025AW_OTP_WB:golden_flag=0x%x\n",gc5025aw_otp_info.golden_flag);
 	LOG_INF("GC5025AW_OTP_GOLDEN:golden_rg=0x%x\n",gc5025aw_otp_info.golden_rg);
 	LOG_INF("GC5025AW_OTP_GOLDEN:golden_bg=0x%x\n",gc5025aw_otp_info.golden_bg);	
 #endif
@@ -1262,6 +1265,20 @@ static kal_uint32 set_test_pattern_mode(kal_bool enable)
     return ERROR_NONE;
 }
 
+static u8 * ontim_read_otp(void)
+{
+    u8 * pu1Params = NULL;
+
+    pu1Params = kmalloc(sizeof(gc5025aw_otp), GFP_KERNEL);
+    if (pu1Params == NULL)
+    {
+        pr_err(PFX"[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+        __FUNCTION__, __LINE__);
+        return NULL;
+    }
+    memcpy( pu1Params,&gc5025aw_otp_info, sizeof(gc5025aw_otp));
+    return pu1Params;
+}
 
 /*************************************************************************
 * FUNCTION
@@ -1284,6 +1301,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
     kal_uint8 i = 0;
     kal_uint8 retry = 2;
+    u8 * p_buf = NULL;
     
     	while (imgsensor_info.i2c_addr_table[i] != 0xff) {
         	spin_lock(&imgsensor_drv_lock);
@@ -1295,9 +1313,12 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
                 {
                     memset(front_cam_name, 0x00, sizeof(front_cam_name));
                     memcpy(front_cam_name, "1_gc5025", 64);
+                    gc5025aw_gcore_identify_otp();
+                    p_buf = ontim_read_otp();
+                    ontim_get_otp_data(*sensor_id, p_buf, sizeof(gc5025aw_otp));
                     pr_err("gc5025aw_mipi_sensor.c[%s](%d)    match  ok    i2c write id: 0x%x,      read sensor id: 0x%x    need id: 0x%x \n", 
                     __FUNCTION__,__LINE__, imgsensor.i2c_write_id,  *sensor_id, imgsensor_info.sensor_id);
-                	return ERROR_NONE;
+                    return ERROR_NONE;
             	}
             	LOG_INF("Read sensor id fail, write id: 0x%x, id: 0x%x\n", imgsensor.i2c_write_id,*sensor_id);
             	retry--;
