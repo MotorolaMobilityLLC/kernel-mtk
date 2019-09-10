@@ -182,6 +182,9 @@ static int mc3xxx_remove(void);
 static int MC3XXX_SetPowerMode(struct i2c_client *client, bool enable);
 static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXES_NUM]);
 static void MC3XXX_SetGain(void);
+int accel_read_cali_file( int32_t data[3]);
+static int mc3xxx_factory_clear_cali(void);
+static int mc3xxx_factory_set_cali(int32_t data[3]);
 
 /*****************************************************************************
  *** STATIC VARIBLE & CONTROL BLOCK DECLARATION
@@ -2961,6 +2964,25 @@ static int mc3xxx_enable_nodata(int en)
 		ACC_LOG("MC3XXX_SetPowerMode fail!\n");
 		return -1;
 	}
+#if 1
+	{
+		int32_t data[3] = {0};
+		if ( 0 != accel_read_cali_file(data)) {
+			ACC_LOG("accel read cali filed\n");
+		} else {
+			if( 0 != mc3xxx_factory_clear_cali()) {
+				ACC_LOG("accel reset cali filed\n");
+			} else {
+				if( 0 != mc3xxx_factory_set_cali(data)) {
+					ACC_LOG("accel read cali filed\n");
+				} else {
+					ACC_LOG("accel factory cali success\n");
+				}
+			}
+		}
+	}
+#endif
+
 	ACC_LOG("mc3xxx_enable_nodata OK!\n");
 	return 0;
 }
