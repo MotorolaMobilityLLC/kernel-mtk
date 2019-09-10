@@ -31,6 +31,7 @@
 #include "kxtj2_1009.h"
 #endif
 
+
 /*----------------------------------------------------------------------------*/
 #define DEBUG 0
 /*----------------------------------------------------------------------------*/
@@ -73,6 +74,9 @@ static int kxtj2_1009_resume(struct device *dev);
 
 static int kxtj2_1009_local_init(void);
 static int kxtj2_1009_remove(void);
+static int kxtj2_1009_factory_set_cali(int32_t data[3]);
+static int kxtj2_1009_factory_clear_cali(void);
+int accel_read_cali_file( int32_t data[3]);
 
 /*----------------------------------------------------------------------------*/
 typedef enum {
@@ -2106,6 +2110,26 @@ static int kxtj2_1009_enable_nodata(int en)
 			GSE_LOG("Gsensor in suspend and can not enable or disable!enable_status = %d\n",enable_status);
 		}
 	}
+#if 1
+	{
+		int32_t data[3] = {0};
+		if ( 0 != accel_read_cali_file(data)) {
+			GSE_LOG("accel read cali filed\n");
+		} else {
+			if( 0 != kxtj2_1009_factory_clear_cali()) {
+				GSE_LOG("accel reset cali filed\n");
+			} else {
+				if( 0 != kxtj2_1009_factory_set_cali(data)) {
+					GSE_LOG("accel read cali filed\n");
+				} else {
+					GSE_LOG("accel factory cali success\n");
+				}
+			}
+		}
+	}
+#endif
+
+
 	mutex_unlock(&kxtj2_1009_mutex);
 
 	if(err != KXTJ2_1009_SUCCESS)
@@ -2249,7 +2273,7 @@ static int kxtj2_1009_factory_enable_calibration(void)
 static int kxtj2_1009_factory_clear_cali(void)
 {
 	int err = 0;
-GSE_ERR();
+	GSE_ERR();
 	err = KXTJ2_1009_ResetCalibration(kxtj2_1009_i2c_client);
 	if (err) {
 		GSE_ERR("kxtj2_1009_ResetCalibration failed!\n");
@@ -2261,7 +2285,7 @@ static int kxtj2_1009_factory_set_cali(int32_t data[3])
 {
 	int err = 0;
 	int cali[3] = { 0 };
-    GSE_ERR("data0 = %d,data1 = %d,data2 = %d\n",data[0],data[1], data[2]); 
+    printk("%s +%d, data0 = %d,data1 = %d,data2 = %d\n", __func__, __LINE__, data[0],data[1], data[2]);
 #if 0
 	//obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
 	//obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
@@ -2284,7 +2308,7 @@ static int kxtj2_1009_factory_set_cali(int32_t data[3])
 }
 static int kxtj2_1009_factory_get_cali(int32_t data[3])
 {
-	GSE_ERR("data0 = %d,data1 = %d,data2 = %d\n",data[0],data[1], data[2]);
+    printk("%s +%d, data0 = %d,data1 = %d,data2 = %d\n", __func__, __LINE__, data[0],data[1], data[2]);
 #if 0
 	data[0] = obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_X] * GRAVITY_EARTH_1000 / GRAVITY_EARTH_1000;
 	data[1] = obj_i2c_data->cali_sw[KXTJ2_1009_AXIS_Y] * GRAVITY_EARTH_1000 / GRAVITY_EARTH_1000;

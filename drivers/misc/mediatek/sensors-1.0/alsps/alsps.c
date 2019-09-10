@@ -853,9 +853,11 @@ static ssize_t ps_store_update(struct device *dev, struct device_attribute *attr
 			if (alsps_init_list[i] != 0 && alsps_init_list[i]->update) {
 				err = alsps_init_list[i]->update();
 				ALSPS_PR_ERR("update cali params, i=%d, name=%s, err=%d\n", i, alsps_init_list[i]->name, err);
+				if( 0 == err) {
+					g_update_cali = 1;
+				}
 			}
 		}
-		g_update_cali = 1;
 	}
 	return count;
 }
