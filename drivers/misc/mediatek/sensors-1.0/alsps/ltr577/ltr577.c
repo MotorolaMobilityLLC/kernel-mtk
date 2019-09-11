@@ -89,8 +89,8 @@ static unsigned int cureent_color_ratio = 0;
 	static unsigned int ps_nvraw_25mm_value = 0;
   #endif
 	static unsigned int default_none_value = 50;
-	static unsigned int between_40mm_none_value = 100;
-	static unsigned int between_25mm_none_value = 150;
+	static unsigned int between_40mm_none_value = 150;
+	static unsigned int between_25mm_none_value = 200;
 
 	static unsigned int pwindows_value = 0;
 	static unsigned int pwave_value = 0;
@@ -706,8 +706,8 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 
 	}else{
 		ps_nvraw_none_value = default_none_value;
-		ps_nvraw_40mm_value = between_40mm_none_value;
-		ps_nvraw_25mm_value = between_25mm_none_value;
+		ps_threshold_l_tmp = ps_nvraw_40mm_value = between_40mm_none_value;
+		ps_threshold_h_tmp = ps_nvraw_25mm_value = between_25mm_none_value;
 
 		APS_ERR("none_value =  %d  \n", mRaw);
 	}
