@@ -1061,7 +1061,7 @@ static unsigned int g_DmaErr_p1[nDMA_ERR] = { 0 };
 		do_div(sec,     1000);   \
 		usec = do_div(sec, 1000000);\
 	}
-#if     1
+#if     0
 /* snprintf: avaLen, 1 for null termination*/
 #define IRQ_LOG_KEEPER(irq,     ppb, logT, fmt, ...) do {\
 		char *ptr;\
