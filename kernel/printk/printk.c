@@ -68,10 +68,14 @@ static u64 overflow_gap;
  * 1: uart printk disable
  * 2: uart printk always enable
  */
+
+#ifdef DISABLE_UART_LOG
+int printk_disable_uart = 1;
+#else
 int printk_disable_uart;
 
 module_param_named(disable_uart, printk_disable_uart, int, 0644);
-
+#endif
 bool mt_get_uartlog_status(void)
 {
 	if (printk_disable_uart == 1)
