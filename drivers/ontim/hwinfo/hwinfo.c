@@ -830,6 +830,24 @@ static int get_band_id(void)
 	return 0;
 }
 
+static int get_diplexer_id(void)
+{
+	unsigned int gpio_base = 343;
+
+	unsigned int pin = 121;
+	int pin_val = 0;
+
+	pin_val  = (gpio_get_value(gpio_base + pin) & 0x01);
+
+	printk(KERN_ERR "%s: diplexer_id_ver is %x ;\n", __func__, pin_val);
+
+	if (pin_val == 0)
+		strcpy(hwinfo[diplexer_id].hwinfo_buf, "MURATA");
+	else
+		strcpy(hwinfo[diplexer_id].hwinfo_buf, "Taiyo");
+	return 0;
+}
+
 unsigned int platform_board_id = 0;
 EXPORT_SYMBOL(platform_board_id);
 static int get_version_id(void)
@@ -1135,6 +1153,9 @@ static ssize_t hwinfo_show(struct kobject *kobj, struct kobj_attribute *attr, ch
 		break;
 	case band_id:
 		get_band_id();
+		break;
+	case diplexer_id:
+		get_diplexer_id();
 		break;
 	case board_id:
 		get_version_id();
