@@ -925,7 +925,7 @@ static int mt_spi_next_xfer(struct mt_spi_t *ms, struct spi_message *msg)
 	if (unlikely(!ms)) {
 		dev_err(&msg->spi->dev, "master wrapper is invalid\n");
 		ret = -EINVAL;
-		goto fail;
+		return ret;
 	}
 	if (unlikely(!msg)) {
 		dev_err(&msg->spi->dev, "msg is invalid\n");
@@ -1166,7 +1166,8 @@ static int mt_spi_transfer(struct spi_device *spidev, struct spi_message *msg)
 
 	if (unlikely(!msg)) {
 		dev_err(&spidev->dev, "msg is NULL pointer.\n");
-		msg->status = -EINVAL;
+		//No need to dereference msg when it is NULL
+		//msg->status = -EINVAL;
 		goto out;
 	}
 	if (unlikely(list_empty(&msg->transfers))) {
