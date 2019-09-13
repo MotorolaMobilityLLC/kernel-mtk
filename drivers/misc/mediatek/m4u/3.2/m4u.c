@@ -2874,15 +2874,18 @@ static int m4u_remove(struct platform_device *pdev)
 static int m4u_suspend(struct platform_device *pdev, pm_message_t mesg)
 {
 	m4u_reg_backup();
-	M4UINFO("M4U backup in suspend\n");
+	M4UINFO("M4U backup in suspend dev:%d\n", pdev->id);
 
 	return 0;
 }
 
 static int m4u_resume(struct platform_device *pdev)
 {
+#ifdef M4U_TEE_SERVICE_ENABLE
+	m4u_late_resume();
+#endif
 	m4u_reg_restore();
-	M4UINFO("M4U restore in resume\n");
+	M4UINFO("M4U restore in resume dev:%d\n", pdev->id);
 	return 0;
 }
 
