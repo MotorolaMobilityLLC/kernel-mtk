@@ -25,12 +25,14 @@
 #include "usb20.h"
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
+#include <linux/of_gpio.h>
+#include <linux/workqueue.h>
+#include <linux/mutex.h>
+
 #ifdef CONFIG_MTK_USB_TYPEC
 #include <typec.h>
 #ifdef CONFIG_TCPC_CLASS
 #include "tcpm.h"
-#include <linux/workqueue.h>
-#include <linux/mutex.h>
 static struct notifier_block otg_nb;
 static struct tcpc_device *otg_tcpc_dev;
 static struct delayed_work register_otg_work;
@@ -80,6 +82,7 @@ static struct charger_device *primary_charger;
 struct device_node *usb_node;
 static int iddig_eint_num;
 static ktime_t ktime_start, ktime_end;
+static struct delayed_work register_iddig_work;
 
 static struct musb_fifo_cfg fifo_cfg_host[] = {
 	{.hw_ep_num = 1,
@@ -722,15 +725,13 @@ static struct platform_driver otg_iddig_driver = {
 	},
 };
 
-static int iddig_int_init(void)
+static void iddig_int_init_work(struct work_struct *data)
 {
-	int ret = 0;
+	int	ret = 0;
 
 	ret = platform_driver_register(&otg_iddig_driver);
 	if (ret)
 		DBG(0, "ret:%d\n", ret);
-
-	return 0;
 }
 
 void mt_usb_otg_init(struct musb *musb)
@@ -758,7 +759,9 @@ void mt_usb_otg_init(struct musb *musb)
 #endif
 #else
 	DBG(0, "host controlled by IDDIG\n");
-	iddig_int_init();
+	INIT_DELAYED_WORK(&register_iddig_work, iddig_int_init_work);
+	queue_delayed_work(mtk_musb->st_wq, &register_iddig_work,
+					   msecs_to_jiffies(1000));
 	vbus_control = 1;
 #endif
 
@@ -844,7 +847,9 @@ static int set_option(const char *val, const struct kernel_param *kp)
 	switch (local_option) {
 	case 0:
 		DBG(0, "case %d\n", local_option);
-		iddig_int_init();
+		INIT_DELAYED_WORK(&register_iddig_work, iddig_int_init_work);
+		queue_delayed_work(mtk_musb->st_wq,
+				&register_iddig_work, 0);
 		break;
 	case 1:
 		DBG(0, "case %d\n", local_option);
