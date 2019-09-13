@@ -60,7 +60,7 @@ static unsigned int pmic_read_device(unsigned int RegNum,
 
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
@@ -90,7 +90,7 @@ static unsigned int pmic_write_device(unsigned int RegNum,
 #if defined(CONFIG_PMIC_HW_ACCESS_EN)
 #ifndef IPIMB
 	unsigned int pmic_reg = 0;
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	return_value = pwrap_read((RegNum), &rdata);
 	pmic_reg = rdata;
