@@ -74,6 +74,10 @@ __weak void mtk_timer_clkevt_aee_dump(void)
 {
 }
 
+__weak void timer_list_aee_dump(int exclude_cpus)
+{
+}
+
 static int kwdt_thread(void *arg);
 static int start_kicker(void);
 
@@ -367,6 +371,7 @@ void dump_wdk_bind_info(void)
 #endif
 	mtk_timer_clkevt_aee_dump();
 	tick_broadcast_mtk_aee_dump();
+	timer_list_aee_dump(kick_bit);
 }
 
 void kicker_cpu_bind(int cpu)
@@ -607,8 +612,15 @@ static int kwdt_thread(void *arg)
 #endif
 					kwdt_process_kick(local_bit, cpu,
 						curInterval, msg_buf);
-				} else
+				} else {
+					snprintf(msg_buf, WK_MAX_MSG_SIZE,
+						"[wdk-s] cpu=%d,%d,%d,%lld,[%lld,%ld]\n",
+						cpu, lasthpg_cpu, lasthpg_act,
+						lasthpg_t, sched_clock(),
+						curInterval);
 					spin_unlock(&lock);
+					pr_info("%s", msg_buf);
+				}
 			} else
 				spin_unlock(&lock);
 		} else if (g_enable == 0) {
