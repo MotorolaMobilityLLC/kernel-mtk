@@ -834,14 +834,13 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			LOG_ERR("ccu_get_i2c_dma_buf_addr fail: %d\n", ret);
 			break;
 		}
-
 		ret = copy_to_user((void *)arg, &ioarg,
 				   sizeof(struct ccu_i2c_buf_mva_ioarg));
 
 		break;
 	}
 	case CCU_IOCTL_SET_I2C_MODE: {
-		ret = ccu_i2c_controller_init((enum CCU_I2C_CHANNEL)arg);
+		ret = ccu_i2c_controller_init((uint32_t)arg);
 
 		if (ret == -1) {
 			LOG_DBG("ccu_i2c_controller_init fail\n");
@@ -872,56 +871,24 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 
 	case CCU_IOCTL_GET_SENSOR_NAME:
 	{
-		#define SENSOR_NAME_MAX_LEN 32
-		char *sensor_names[5];
+	#define SENSOR_NAME_MAX_LEN 32
+	char *sensor_names[IMGSENSOR_SENSOR_IDX_MAX_NUM];
 
-		ccu_get_sensor_name(sensor_names);
-		if (sensor_names[0] != NULL) {
-			ret = copy_to_user((char *)arg,
-				sensor_names[0], strlen(sensor_names[0])+1);
+	ccu_get_sensor_name(sensor_names);
+	for (i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
+		i < IMGSENSOR_SENSOR_IDX_MAX_NUM ; i++){
+		if (sensor_names[i] != NULL) {
+			ret = copy_to_user(((char *)arg+
+				SENSOR_NAME_MAX_LEN*i),
+			sensor_names[i], strlen(sensor_names[i])+1);
 			if (ret != 0) {
-				LOG_ERR("copy_to_user 1 failed: %d\n", ret);
+				LOG_ERR("copy_to_user failed: %d\n", ret);
 				break;
 			}
 		}
-
-		if (sensor_names[1] != NULL) {
-			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN),
-				sensor_names[1], strlen(sensor_names[1])+1);
-			if (ret != 0) {
-				LOG_ERR("copy_to_user 2 failed: %d\n", ret);
-				break;
-			}
-		}
-
-		if (sensor_names[2] != NULL) {
-			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*2),
-				sensor_names[2], strlen(sensor_names[2])+1);
-			if (ret != 0) {
-				LOG_ERR("copy_to_user 3 failed: %d\n", ret);
-				break;
-			}
-		}
-
-		if (sensor_names[3] != NULL) {
-			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*3),
-				sensor_names[3], strlen(sensor_names[3])+1);
-			if (ret != 0) {
-				LOG_ERR("copy_to_user 4 failed: %d\n", ret);
-				break;
-			}
-		}
-
-		if (sensor_names[4] != NULL) {
-			ret = copy_to_user(((char *)arg+SENSOR_NAME_MAX_LEN*4),
-				sensor_names[4], strlen(sensor_names[4])+1);
-			if (ret != 0) {
-				LOG_ERR("copy_to_user 4 failed: %d\n", ret);
-				break;
-			}
-		}
-		#undef SENSOR_NAME_MAX_LEN
-		break;
+	}
+	#undef SENSOR_NAME_MAX_LEN
+	break;
 	}
 
 	case CCU_READ_REGISTER: {

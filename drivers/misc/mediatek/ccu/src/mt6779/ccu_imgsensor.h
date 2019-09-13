@@ -20,4 +20,6 @@ void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr);
 
 void ccu_get_sensor_name(char **sensor_name);
 
+uint32_t ccu_get_sensor_i2c_id(uint32_t sensor_idx);
+
 #endif
