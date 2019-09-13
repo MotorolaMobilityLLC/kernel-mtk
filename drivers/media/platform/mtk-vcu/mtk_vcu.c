@@ -548,7 +548,7 @@ static void vcu_gce_flush_callback(struct cmdq_cb_data data)
 	struct gce_cmds *cmds;
 
 	buff = (struct gce_callback_data *)data.data;
-	i = buff->cmdq_buff.codec_type ? VCU_VDEC : VCU_VENC;
+	i = (buff->cmdq_buff.codec_type == VCU_VDEC) ? VCU_VDEC : VCU_VENC;
 
 	vcu = buff->vcu_ptr;
 	atomic_inc(&vcu->gce_flush_done[i]);
@@ -604,7 +604,8 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu, unsigned long arg)
 				   (unsigned long)sizeof(struct gce_cmds));
 	buff->cmdq_buff.cmds_user_ptr = (u64)cmds;
 
-	cl = buff->cmdq_buff.codec_type ? vcu->clt_vdec : vcu->clt_venc;
+	cl = (buff->cmdq_buff.codec_type == VCU_VDEC) ?
+	 vcu->clt_vdec : vcu->clt_venc;
 	buff->vcu_ptr = vcu;
 
 	while (vcu_ptr->is_entering_suspend == 1) {
@@ -616,7 +617,7 @@ static int vcu_gce_cmd_flush(struct mtk_vcu *vcu, unsigned long arg)
 		usleep_range(10000, 20000);
 	}
 
-	i = buff->cmdq_buff.codec_type ? VCU_VDEC : VCU_VENC;
+	i = (buff->cmdq_buff.codec_type == VCU_VDEC) ? VCU_VDEC : VCU_VENC;
 
 	mutex_lock(&vcu->vcu_gce_mutex[i]);
 	if (atomic_read(&vcu->gce_job_cnt[i]) == 0 &&
@@ -670,7 +671,7 @@ static int vcu_wait_gce_callback(struct mtk_vcu *vcu, unsigned long arg)
 	ret = (long)copy_from_user(&obj, user_data_addr,
 				   (unsigned long)sizeof(struct gce_obj));
 
-	i = obj.codec_type ? VCU_VDEC : VCU_VENC;
+	i = (obj.codec_type == VCU_VDEC) ? VCU_VDEC : VCU_VENC;
 	pr_debug("[VCU] %s: type %d handle %llx\n",
 		__func__, obj.codec_type, obj.gce_handle);
 

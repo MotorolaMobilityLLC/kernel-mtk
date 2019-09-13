@@ -66,6 +66,7 @@ struct gce_cmdq_obj {
 	u64	gce_handle;
 	u32	flush_order;
 	u32	codec_type;
+	u32	core_id;
 };
 
 /**
