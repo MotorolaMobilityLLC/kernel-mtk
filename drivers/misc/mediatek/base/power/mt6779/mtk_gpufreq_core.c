@@ -93,6 +93,7 @@ static unsigned int __mt_gpufreq_get_cur_vmdla_volt(void);
 static unsigned int __mt_gpufreq_get_cur_vapu_volt(void);
 static unsigned int __mt_gpufreq_get_cur_vcore_volt(void);
 static int __mt_gpufreq_get_opp_idx_by_volt(unsigned int volt);
+static int __mt_gpufreq_get_opp_idx_by_freq(unsigned int target_freq);
 static unsigned int
 __mt_gpufreq_get_limited_freq_by_power(unsigned int limited_power);
 static enum g_post_divider_power_enum
@@ -134,6 +135,7 @@ static struct g_opp_table_info *g_opp_table_default;
 static struct g_pmic_info *g_pmic;
 static struct g_clk_info *g_clk;
 static unsigned int *g_ptpod_opp_idx_table;
+static unsigned int I_KNOW_WHAT_I_AM_DOING;
 static unsigned int g_ptpod_opp_idx_table_segment1[] = {
 #ifdef USE_FINE_GRAIN_OPP_TABLE
 	0, 2, 4, 6,
@@ -1676,6 +1678,10 @@ static ssize_t mt_gpufreq_fixed_freq_volt_proc_write(struct file *file,
 	int ret = -EFAULT;
 	unsigned int fixed_freq = 0;
 	unsigned int fixed_volt = 0;
+	int oppidx;
+	unsigned int ref_volt = 0;
+	unsigned int ref_freq = 0;
+	int bValid = 1;
 
 	len = (count < (sizeof(buf) - 1)) ? count : (sizeof(buf) - 1);
 
@@ -1699,12 +1705,35 @@ static ssize_t mt_gpufreq_fixed_freq_volt_proc_write(struct file *file,
 		} else {
 			g_cur_opp_freq = __mt_gpufreq_get_cur_freq();
 			fixed_volt = VOLT_NORMALIZATION(fixed_volt);
-			mt_gpufreq_voltage_enable_set(1);
-			g_fixed_freq = fixed_freq;
-			g_fixed_volt = fixed_volt;
-			g_fixed_freq_volt_state = true;
-			mt_gpufreq_target(0);
-			mt_gpufreq_voltage_enable_set(0);
+
+			oppidx = __mt_gpufreq_get_opp_idx_by_freq(fixed_freq);
+			ref_volt = mt_gpufreq_get_volt_by_idx(oppidx);
+			ref_freq = mt_gpufreq_get_freq_by_idx(oppidx);
+
+			/* check if want to do freq oc */
+			if (oppidx == 0 && fixed_freq > ref_freq)
+				bValid = 0;
+
+			/* check if doing voltage lvel oc */
+			if (fixed_volt < ref_volt)
+				bValid = 0;
+
+			if (I_KNOW_WHAT_I_AM_DOING == 0x55667788) {
+				bValid = 1;
+				gpufreq_perr("@%s: force mode on", __func__);
+			}
+
+			if (bValid) {
+				mt_gpufreq_voltage_enable_set(1);
+				g_fixed_freq = fixed_freq;
+				g_fixed_volt = fixed_volt;
+				g_fixed_freq_volt_state = true;
+				mt_gpufreq_target(0);
+				mt_gpufreq_voltage_enable_set(0);
+			} else {
+				gpufreq_perr("@%s: %d", __func__, fixed_freq);
+				gpufreq_perr("@%s: %d", __func__, fixed_volt);
+			}
 		}
 	}
 
@@ -2366,6 +2395,19 @@ EXIT:
 	return i+1;
 }
 
+static int __mt_gpufreq_get_opp_idx_by_freq(unsigned int target_freq)
+{
+	int i = g_opp_idx_num - 1;
+
+	while (i >= 0) {
+		if (g_opp_table[i--].gpufreq_khz >= target_freq)
+			goto TARGET_EXIT;
+	}
+
+TARGET_EXIT:
+	return i+1;
+}
+
 /*
  * get limited frequency by limited power (mW)
  */
@@ -2960,6 +3002,8 @@ static int __mt_gpufreq_pdrv_probe(struct platform_device *pdev)
 #endif
 	mt_gpufreq_voltage_enable_set(0);
 
+	I_KNOW_WHAT_I_AM_DOING = 0;
+
 	return 0;
 }
 
@@ -2999,6 +3043,8 @@ static void __exit __mt_gpufreq_exit(void)
 {
 	platform_driver_unregister(&g_gpufreq_pdrv);
 }
+
+module_param(I_KNOW_WHAT_I_AM_DOING, uint, 0644);
 
 /* since i2c driver maybe used and shalle be init before bulks are used */
 late_initcall(__mt_gpufreq_init);
