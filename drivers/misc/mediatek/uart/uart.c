@@ -1551,7 +1551,7 @@ static inline bool mtk_uart_enable_sysrq(struct mtk_uart *uart)
 static void mtk_uart_rx_chars(struct mtk_uart *uart)
 {
 	struct uart_port *port = &uart->port;
-	struct tty_struct *tty = uart->port.state->port.tty;
+	/*struct tty_struct *tty = uart->port.state->port.tty;*/
 	int max_count = UART_FIFO_SIZE;
 	unsigned int data_byte, status;
 	unsigned int flag;
@@ -1618,11 +1618,11 @@ static void mtk_uart_rx_chars(struct mtk_uart *uart)
 		}
 #endif
 
-		if (!tty_insert_flip_char(TTY_FLIP_ARG(tty),
+		if (!tty_insert_flip_char(&(port->state->port),
 					data_byte, flag))
 			MSG(ERR, "tty_insert_flip_char: no space");
 	}
-	tty_flip_buffer_push(TTY_FLIP_ARG(tty));
+	tty_flip_buffer_push(&(port->state->port));
 	update_history_time(0, uart->nport);
 	spin_unlock_irqrestore(&port->lock, flags);
 	MSG(FUC, "%s (%2d)\n", __func__, UART_FIFO_SIZE - max_count - 1);
