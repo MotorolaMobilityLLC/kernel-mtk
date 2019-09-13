@@ -194,6 +194,18 @@ void connectivity_export_clk_buf_show_status_info(void)
 #endif
 }
 EXPORT_SYMBOL(connectivity_export_clk_buf_show_status_info);
+
+int connectivity_export_clk_buf_get_xo_en_sta(/*enum xo_id id*/ int id)
+{
+#if defined(CONFIG_MACH_MT6765) || \
+	defined(CONFIG_MACH_MT6761) || \
+	defined(CONFIG_MACH_MT6779)
+	return clk_buf_get_xo_en_sta(id);
+#else
+	return KERNEL_CLK_BUF_CHIP_NOT_SUPPORT;
+#endif
+}
+EXPORT_SYMBOL(connectivity_export_clk_buf_get_xo_en_sta);
 #endif
 
 /*******************************************************************************
