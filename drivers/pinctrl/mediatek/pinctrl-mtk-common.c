@@ -148,7 +148,7 @@ int mtk_pinctrl_update_gpio_value(struct mtk_pinctrl *pctl, int pin,
 int mtk_pinctrl_get_gpio_value(struct mtk_pinctrl *pctl,
 	int pin, int size, const struct mtk_pin_info pin_info[])
 {
-	unsigned int reg_value, reg_get_addr;
+	unsigned int reg_value = 0, reg_get_addr;
 	const struct mtk_pin_info *spec_pin_info;
 	struct regmap *regmap;
 	unsigned char bit_width, reg_bit;
