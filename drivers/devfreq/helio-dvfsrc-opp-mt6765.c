@@ -158,6 +158,7 @@ void dvfsrc_opp_level_mapping(void)
 	switch (spm_get_spmfw_idx()) {
 	case SPMFW_LP4_2CH_3200:
 	case SPMFW_LP4_2CH_2400:
+	case SPMFW_LP4X_2CH_2400:
 		/* fall through*/
 	case SPMFW_LP4X_2CH_3200:
 		set_vcore_opp(VCORE_DVFS_OPP_0, VCORE_OPP_UNREQ);
