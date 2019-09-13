@@ -1761,14 +1761,11 @@ static void pwrap_int_test(void)
 	unsigned int rdata1 = 0;
 	unsigned int rdata2 = 0;
 
-	while (1) {
-		rdata1 = WRAP_RD32(PMIC_WRAP_EINT_STA);
-		pwrap_read(PMIC_CPU_INT_STA_ADDR, &rdata2);
-		pr_info("Pwrap INT status check\n");
-		pr_info("PMIC_WRAP_EINT_STA=0x%x\n", rdata1);
-		pr_info("INT_STA[0x01B4]=0x%x\n", rdata2);
-		msleep(500);
-	}
+	rdata1 = WRAP_RD32(PMIC_WRAP_EINT_STA);
+	pwrap_read(PMIC_CPU_INT_STA_ADDR, &rdata2);
+	pr_info("Pwrap INT status check\n");
+	pr_info("PMIC_WRAP_EINT_STA=0x%x\n", rdata1);
+	pr_info("INT_STA[0x01B4]=0x%x\n", rdata2);
 }
 
 /*---------------------------------------------------------------------------*/
