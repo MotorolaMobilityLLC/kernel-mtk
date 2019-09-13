@@ -1590,11 +1590,8 @@ static void pwrap_int_test(void)
 	unsigned int rdata1 = 0;
 	unsigned int rdata2 = 0;
 
-	while (1) {
-		rdata1 = WRAP_RD32(PMIC_WRAP_EINT_STA);
-		pwrap_read(PMIC_CPU_INT_STA_ADDR, &rdata2);
-		msleep(500);
-	}
+	rdata1 = WRAP_RD32(PMIC_WRAP_EINT_STA);
+	pwrap_read(PMIC_CPU_INT_STA_ADDR, &rdata2);
 }
 
 /*---------------------------------------------------------------------------*/
