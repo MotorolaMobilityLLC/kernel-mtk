@@ -222,7 +222,8 @@ static void upower_scale_l_cap(void)
 			tbl = upower_tbl_infos[i].p_upower_tbl;
 			for (j = 0; j < UPOWER_OPP_NUM; j++) {
 				temp = tbl->row[j].cap;
-				tbl->row[j].cap = temp * ratio / 1000;
+				tbl->row[j].cap = (unsigned long long)temp *
+					ratio / 1000;
 			}
 		}
 	}
