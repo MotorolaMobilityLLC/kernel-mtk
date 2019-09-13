@@ -97,7 +97,7 @@ uint32_t translatePort(uint32_t engineId)
 	}
 
 	if (engineId != CMDQ_ENG_MDP_CAMIN
-#ifdef CMDQ_ENG_MDP_CAMIN2
+#ifdef SUPPORT_MDP_CAMIN2
 		&& engineId != CMDQ_ENG_MDP_CAMIN2
 #endif
 		)
