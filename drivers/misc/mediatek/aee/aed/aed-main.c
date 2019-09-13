@@ -223,9 +223,10 @@ static struct aed_dev aed_dev;
 
 inline void msg_destroy(char **ppmsg)
 {
+	char *ppmsg_tmp = *ppmsg;
 	if (*ppmsg != NULL) {
-		vfree(*ppmsg);
 		*ppmsg = NULL;
+		vfree(ppmsg_tmp);
 	}
 }
 
