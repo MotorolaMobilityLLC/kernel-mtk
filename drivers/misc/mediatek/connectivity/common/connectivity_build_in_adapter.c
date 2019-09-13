@@ -184,6 +184,16 @@ void connectivity_export_clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 	clk_buf_ctrl(id, onoff);
 }
 EXPORT_SYMBOL(connectivity_export_clk_buf_ctrl);
+
+void connectivity_export_clk_buf_show_status_info(void)
+{
+#if defined(CONFIG_MACH_MT6765) || \
+	defined(CONFIG_MACH_MT6761) || \
+	defined(CONFIG_MACH_MT6779)
+	clk_buf_show_status_info();
+#endif
+}
+EXPORT_SYMBOL(connectivity_export_clk_buf_show_status_info);
 #endif
 
 /*******************************************************************************
