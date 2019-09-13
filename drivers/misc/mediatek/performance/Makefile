@@ -21,7 +21,7 @@ obj-y += base/
 obj-y += cpu_loading/
 obj-$(CONFIG_MTK_PERF_OBSERVER) += observer/
 
-#obj-$(CONFIG_MTK_FPSGO_V3) += resym/
+obj-$(CONFIG_MTK_RESYM) += resym/
 
 ifeq (,$(findstring mt8,$(CONFIG_MTK_PLATFORM)))
 	obj-$(CONFIG_MTK_BASE_POWER) += boost_ctrl/
