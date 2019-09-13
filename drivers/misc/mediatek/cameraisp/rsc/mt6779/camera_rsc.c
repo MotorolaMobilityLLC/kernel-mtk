@@ -1827,7 +1827,7 @@ static long RSC_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 						IrqInfo.UserKey = 0;
 				}
 
-				LOG_INF(
+				LOG_DBG(
 				"IRQ clear(%d), type(%d), userKey(%d), timeout(%d), status(%d)\n",
 					IrqInfo.Clear, IrqInfo.Type,
 					IrqInfo.UserKey, IrqInfo.Timeout,
