@@ -14,6 +14,8 @@
 #ifndef __CMDQ_ENGINE_H__
 #define __CMDQ_ENGINE_H__
 
+#define SUPPORT_MDP_CAMIN2
+
 enum CMDQ_ENG_ENUM {
 	/* ISP */
 	CMDQ_ENG_WPEI = 0,
