@@ -172,6 +172,7 @@ static unsigned int hw_bc11_DCD(void)
 	return wChargerAvail;
 }
 
+#if 0 /* If need to detect apple adapter, please enable this code section */
 static unsigned int hw_bc11_stepA1(void)
 {
 	unsigned int wChargerAvail = 0;
@@ -191,6 +192,7 @@ static unsigned int hw_bc11_stepA1(void)
 	bc11_set_register_value(PMIC_RG_BC11_CMP_EN, 0x0);
 	return wChargerAvail;
 }
+#endif
 
 static unsigned int hw_bc11_stepA2(void)
 {
@@ -306,10 +308,14 @@ int hw_charging_get_charger_type(void)
 	hw_bc11_init();
 
 	if (hw_bc11_DCD()) {
+#if 0 /* If need to detect apple adapter, please enable this code section */
 		if (hw_bc11_stepA1())
 			CHR_Type_num = APPLE_2_1A_CHARGER;
 		else
 			CHR_Type_num = NONSTANDARD_CHARGER;
+#else
+		CHR_Type_num = NONSTANDARD_CHARGER;
+#endif
 	} else {
 		if (hw_bc11_stepA2()) {
 			if (hw_bc11_stepB2())
