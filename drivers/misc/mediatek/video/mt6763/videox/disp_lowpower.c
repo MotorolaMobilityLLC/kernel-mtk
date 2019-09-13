@@ -435,6 +435,10 @@ void _release_wrot_resource_nolock(enum CMDQ_EVENT_ENUM resourceEvent)
 	}
 	/* 1.create and reset cmdq */
 	cmdqRecCreate(CMDQ_SCENARIO_PRIMARY_DISP, &handle);
+	if (handle == NULL) {
+		DISPERR("%s CMDQ handle is null\n", __func__);
+		return;
+	}
 
 	cmdqRecReset(handle);
 
