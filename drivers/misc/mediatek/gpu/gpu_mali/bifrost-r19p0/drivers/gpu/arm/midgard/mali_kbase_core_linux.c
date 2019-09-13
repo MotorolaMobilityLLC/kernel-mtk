@@ -3462,7 +3462,7 @@ static int power_control_init(struct platform_device *pdev)
 	 * operating with a partial initialization of clocks.
 	 */
 	for (i = 0; i < BASE_MAX_NR_CLOCKS_REGULATORS; i++) {
-		kbdev->clocks[i] = of_clk_get(kbdev->dev->of_node, i);
+		kbdev->clocks[i] = clk_get(kbdev->dev, "clk_mali");
 		if (IS_ERR_OR_NULL(kbdev->clocks[i])) {
 			err = PTR_ERR(kbdev->clocks[i]);
 			kbdev->clocks[i] = NULL;
