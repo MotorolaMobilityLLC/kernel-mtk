@@ -76,28 +76,36 @@ void ccu_set_sensor_info(int32_t sensorType, struct ccu_sensor_info *info)
 
 void ccu_get_sensor_i2c_slave_addr(int32_t *sensorI2cSlaveAddr)
 {
-	sensorI2cSlaveAddr[0] =
-		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN].slave_addr;
-	sensorI2cSlaveAddr[1] =
-		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB].slave_addr;
-	sensorI2cSlaveAddr[2] =
-		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN2].slave_addr;
-	sensorI2cSlaveAddr[3] =
-		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN3].slave_addr;
-	sensorI2cSlaveAddr[4] =
-		g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB2].slave_addr;
+	int32_t i;
+
+	for (i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
+		i < IMGSENSOR_SENSOR_IDX_MAX_NUM; ++i) {
+		sensorI2cSlaveAddr[i] =
+		g_ccu_sensor_info[i].slave_addr;
+	}
 }
 
 void ccu_get_sensor_name(char **sensor_name)
 {
-	sensor_name[0] =
-	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN].sensor_name_string;
-	sensor_name[1] =
-	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB].sensor_name_string;
-	sensor_name[2] =
-	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN2].sensor_name_string;
-	sensor_name[3] =
-	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_MAIN3].sensor_name_string;
-	sensor_name[4] =
-	g_ccu_sensor_info[IMGSENSOR_SENSOR_IDX_SUB2].sensor_name_string;
+	int32_t i;
+
+	for (i = IMGSENSOR_SENSOR_IDX_MIN_NUM;
+		i < IMGSENSOR_SENSOR_IDX_MAX_NUM; ++i) {
+		sensor_name[i] =
+		g_ccu_sensor_info[i].sensor_name_string;
+	}
+}
+
+uint32_t ccu_get_sensor_i2c_id(uint32_t sensor_idx)
+{
+	uint32_t i2c_id = 0;
+
+	if ((sensor_idx >= IMGSENSOR_SENSOR_IDX_MIN_NUM) &&
+		(sensor_idx < IMGSENSOR_SENSOR_IDX_MAX_NUM))
+		i2c_id = g_ccu_sensor_info[sensor_idx].i2c_id;
+
+	LOG_DBG_MUST("ccu get sensor %d i2c_id : %d\n",
+		sensor_idx, i2c_id);
+
+	return i2c_id;
 }
