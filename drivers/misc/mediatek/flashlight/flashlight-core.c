@@ -608,12 +608,11 @@ static int pt_is_low(int pt_low_vol, int pt_low_bat, int pt_over_cur)
      */
     ret = kstrtouint(pu1Params, 10, &current_bat_level);
     
-    pr_err("flashlight-core.c[%s](%d) ret=%d 0=ok  current_bat_level=%d   LEVEL_PERCENT=%d ",
-    __FUNCTION__, __LINE__, ret, current_bat_level, BAT_LEVEL_PERCENT);
-    
     if(current_bat_level <= BAT_LEVEL_PERCENT)
     {
         is_low = 2;
+        pr_err("flashlight-core.c[%s](%d) ret=%d 0=ok  current_bat_level=%d   LEVEL_PERCENT=%d ",
+          __FUNCTION__, __LINE__, ret, current_bat_level, BAT_LEVEL_PERCENT);
     }
 
     return is_low;
@@ -636,6 +635,7 @@ static int pt_trigger(void)
 {
 	struct flashlight_dev *fdev;
 	int is_flash_enable = 0;
+
 
 	mutex_lock(&fl_mutex);
 	list_for_each_entry(fdev, &flashlight_list, node) {
