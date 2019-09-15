@@ -101,6 +101,9 @@ static unsigned int cureent_color_ratio = 0;
 	static unsigned int ps_detection = -1;
 	static unsigned int ps_thd_val_hlgh_set = 0;
 	static unsigned int ps_thd_val_low_set = 0;
+	static unsigned int ps_threshold_h_tmp = 0;
+	static unsigned int ps_threshold_l_tmp = 0;
+	static unsigned char get_calib_flag = 0;
 
 
 	#define MAX_ADC_PROX_VALUE 2047
@@ -698,13 +701,13 @@ static int ltr577_read_cali_file(struct i2c_client *client)
 
 	if(((mRaw + 8) < mRaw45) && ((mRaw45 + 8) < mRaw30)){
 		ps_nvraw_none_value = mRaw;
-		ps_nvraw_40mm_value = mRaw45;
-		ps_nvraw_25mm_value = mRaw30;
+		ps_threshold_l_tmp = ps_nvraw_40mm_value = mRaw45;
+		ps_threshold_h_tmp = ps_nvraw_25mm_value = mRaw30;
 
 	}else{
 		ps_nvraw_none_value = default_none_value;
-		ps_nvraw_40mm_value = between_40mm_none_value;
-		ps_nvraw_25mm_value = between_25mm_none_value;
+		ps_threshold_l_tmp = ps_nvraw_40mm_value = between_40mm_none_value;
+		ps_threshold_h_tmp = ps_nvraw_25mm_value = between_25mm_none_value;
 
 		APS_ERR("none_value =  %d  \n", mRaw);
 	}
@@ -776,10 +779,12 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		cali_err = ltr577_read_cali_file(client);
 		if (cali_err < 0)
 		{
+			get_calib_flag = 0;
 			pwindows_value = between_25mm_none_value - between_40mm_none_value;
 			pwave_value = between_40mm_none_value - default_none_value;
 			threshold_value = default_none_value;
 		}else{
+			get_calib_flag = 1;
 			pwindows_value =ps_nvraw_25mm_value - ps_nvraw_40mm_value;
 			pwave_value = ps_nvraw_40mm_value - ps_nvraw_none_value;
 			threshold_value = ps_nvraw_none_value;
@@ -1169,8 +1174,13 @@ static int ltr577_get_ps_value(struct ltr577_priv *obj, u16 ps)
 	{
 		min_proximity = ps_data+pwave_value;
 
-		ps_threshold_l = FAR_THRESHOLD(threshold_value);
-		ps_threshold_h = NRAR_THRESHOLD(threshold_value);
+		if (get_calib_flag) {
+			ps_threshold_l = ps_threshold_l_tmp;
+			ps_threshold_h = ps_threshold_h_tmp;
+		} else {
+			ps_threshold_l = FAR_THRESHOLD(threshold_value);
+			ps_threshold_h = NRAR_THRESHOLD(threshold_value);
+		}
 
 		ps_thd_val_low_set = ps_threshold_l;
 		ps_thd_val_hlgh_set = ps_threshold_h;
