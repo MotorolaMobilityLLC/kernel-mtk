@@ -74,7 +74,7 @@ static imgsensor_info_struct imgsensor_info = {
 	},
 	.cap = {
 		.pclk = 108183240,
-		.linelength = 1122,
+		.linelength = 4302,//4302=0x10ce   1122=0x462
 		.framelength = 3214,
 		.startx = 0,
 		.starty = 0,
@@ -655,8 +655,12 @@ if(currefps == 150){
 	write_cmos_sensor(0x3809, 0x80);
 	write_cmos_sensor(0x380a, 0x0c);//0xC40
 	write_cmos_sensor(0x380b, 0x40);
-	write_cmos_sensor(0x380c, 0x04);
-	write_cmos_sensor(0x380d, 0x62);
+
+	write_cmos_sensor(0x380c, 0x10);// 4302=0x10ce
+	write_cmos_sensor(0x380d, 0xce);
+    
+/* write_cmos_sensor(0x380c, 0x04);//hts=1122=0x462
+	write_cmos_sensor(0x380d, 0x62); */
 	
 	/*write_cmos_sensor(0x380e, 0x0C);
 	write_cmos_sensor(0x380f, 0x8E);*/
@@ -710,8 +714,13 @@ if(currefps == 150){
 	write_cmos_sensor(0x380a, 0x0c);
 	write_cmos_sensor(0x380b, 0x40);//o_y=3136
 	
-	write_cmos_sensor(0x380c, 0x04);
-	write_cmos_sensor(0x380d, 0x62);//hts=1122
+	write_cmos_sensor(0x380c, 0x10);// 4302=0x10ce
+	write_cmos_sensor(0x380d, 0xce);
+    
+/* 
+   write_cmos_sensor(0x380c, 0x04);
+	write_cmos_sensor(0x380d, 0x62);//hts=1122=0x462
+ */
 
 	write_cmos_sensor(0x380e, 0x0C);
 	write_cmos_sensor(0x380f, 0x8E);//vts=3214
