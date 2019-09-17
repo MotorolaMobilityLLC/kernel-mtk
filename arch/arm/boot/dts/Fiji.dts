@@ -307,6 +307,13 @@
 		compatible = "halo,hl7005";
 		reg = <0x6a>;
 		status = "okay";
+		ichg = <1050000>; /* uA */
+	};
+	externel-charger@6b{
+		compatible = "halo,sy6923";
+		reg = <0x6b>;
+		status = "okay";
+		ichg = <1050000>; /* uA */
 	};
 };
 &i2c6 {
