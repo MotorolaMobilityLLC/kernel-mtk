@@ -84,7 +84,15 @@
 
 &i2c1 {
 /*  start sensor */
-
+	/*
+	memsic@0 {
+		compatible = “mediatek,mmc5603”;
+		i2c_num = <1>;
+		i2c_addr = <0x30 0 0 0>; 
+		direction - <1>;
+		is_batch_supported = <0>;
+	}
+	*/
 	gsensor_m:gsensor_mc34XX@4c {
 		compatible = "mediatek,gsensor_MC34XX";
 		reg = <0x4c>;
