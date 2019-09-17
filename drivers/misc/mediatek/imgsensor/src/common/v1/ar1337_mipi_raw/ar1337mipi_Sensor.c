@@ -568,6 +568,7 @@ static imgsensor_info_struct imgsensor_info = {
     .sensor_id = AR1337_SENSOR_ID,        //record sensor id defined in Kd_imgsensor.h
 
     .checksum_value = 0xbde6b5f8,//0xf86cfdf4,        //checksum value for Camera Auto Test
+
     .pre = {
         .pclk = 451200000,                //record different mode's pclk
         .linelength = 4792,                //record different mode's linelength
@@ -621,7 +622,7 @@ static imgsensor_info_struct imgsensor_info = {
         .max_framerate = 300,
     },
     .hs_video = {
-        .pclk = 451200000,                //record different mode's pclk
+        .pclk = 450000000,                //record different mode's pclk
         .linelength = 4800,                //record different mode's linelength
         .framelength = 3328,            //record different mode's framelength
         .startx = 0,                    //record different mode's startx of grabwindow
@@ -656,7 +657,7 @@ static imgsensor_info_struct imgsensor_info = {
     .ihdr_le_firstline = 0,  // 1,le first ; 0, se first
     .sensor_mode_num = 5,      //support sensor mode num
 
-    .cap_delay_frame = 3,        //enter capture delay frame num
+    .cap_delay_frame = 5,        //enter capture delay frame num
     .pre_delay_frame = 2,         //enter preview delay frame num
     .video_delay_frame = 2,        //enter video delay frame num
     .hs_video_delay_frame = 2,    //enter high speed video  delay frame num
@@ -691,28 +692,31 @@ static imgsensor_struct imgsensor = {
 
 /* Sensor output window information */
 static SENSOR_WINSIZE_INFO_STRUCT imgsensor_winsize_info[5] =
-{
-	{ 4000, 3000, 0, 0, 4000, 3000, 4000, 3000, 0, 0, 4000, 3000, 0, 0, 4000, 3000}, // Preview 
-	{ 4208, 3120, 0, 0, 4208, 3120, 4208, 3120, 0, 0, 4208, 3120, 0, 0, 4208, 3120}, // capture 
-	{ 4208, 3120, 0, 0, 4208, 3120, 4208, 3120, 0, 0, 4208, 3120, 0, 0, 4208, 3120}, // normal video 
-	{ 4208, 3120, 0, 0, 4208, 3120, 4208, 3120, 0, 0, 4208, 3120, 0, 0, 4208, 3120}, //hight speed video 
-	{ 4208, 3120, 0, 0, 4208, 3120, 4208, 3120, 0, 0, 4208, 3120, 0, 0, 4208, 3120}, 
+{{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 60, 60, 4000, 3000,      0,    0, 4000, 3000}, // Preview 
+	//{ 4208, 3120, 0, 0, 4208, 3120, 2104, 1560, 0, 0, 2104, 1560, 0, 0, 2096, 1552}, // Preview 
+	//{ 4208, 3120, 0, 0, 4208, 3120, 2104, 1560, 0, 0, 2104, 1560, 0, 0, 2096, 1552}, // Preview 
+
+ { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 0000, 0000, 4208, 3120,      0,    0, 4208, 3120}, // capture 
+  { 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 60, 60, 4000, 3000,      0,    0, 4000, 3000}, // video 
+{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 0000, 0000, 4208, 3120,      0,    0, 4208, 3120}, //hight speed video 
+// { 4208, 3120, 0, 0, 4208, 3120, 2104, 1560, 0, 0, 2104, 1560, 2, 2, 1280, 720}, // slim video 
+	{ 4208, 3120,    0,    0, 4208, 3120, 4208, 3120, 0000, 0000, 4208, 3120,      0,    0, 4208, 3120}, 
 };
 
 /*VC1 for HDR(DT=0X35) , VC2 for PDAF(DT=0X36), unit : 8bit*/
 static SENSOR_VC_INFO_STRUCT SENSOR_VC_INFO[3]=
 {/* Preview mode setting */
-  {0x05, 0x0a,	 0x00,	 0x00, 0x00, 0x00,
-	  0x00, 0x2b, 4000, 3000, 0x01, 0x0, 0, 0,
-	  0x00, 0x36, 1920, 15, 0x03, 0x00, 0x0000, 0x0000},
+  {0x05, 0x0a,   0x00,   0x00, 0x00, 0x00, 
+    0x00, 0x2b, 4208, 3120, 0x01, 0x0, 0, 0,
+    0x00, 0x36, 1920, 15, 0x03, 0x00, 0x0000, 0x0000},
   /* Capture mode setting */
   {0x05, 0x0a,	 0x00,	 0x00, 0x00, 0x00,
 	  0x00, 0x2b, 4208, 3120, 0x01, 0x0, 0, 0,
 	  0x00, 0x36, 1920, 15, 0x03, 0x00, 0x0000, 0x0000},
   /* Video mode setting */
-  {0x05, 0x0a,	 0x00,	 0x00, 0x00, 0x00,
-	  0x00, 0x2b, 4000, 3000, 0x01, 0x0, 0, 0,
-	  0x00, 0x36, 1920, 15, 0x03, 0x00, 0x0000, 0x0000},
+  {0x02, 0x0a,	 0x00,	 0x00, 0x00, 0x00,
+    0x00, 0x2b, 4208, 3120, 0x01, 0x00, 0x0000, 0x0000,
+    0x02, 0x00, 0x0000, 0x0000, 0x03, 0x00, 0x0000, 0x0000}
 };
 
 #define AR1337MIPI_MaxGainIndex (49)
@@ -1156,2707 +1160,2704 @@ static void night_mode(kal_bool enable)
 
 static void sensor_init(void)
 {
+  LOG_INF("E\n");
 	write_cmos_sensor(0x0103, 0x01);  // SOFTWARE_RESET
-	mdelay(10);
-	write_cmos_sensor_16bit(0x32D0, 0x6000);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x00AC);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x189E);
-	write_cmos_sensor_16bit(0x32D4, 0xA948);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x189F);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0E);
-	write_cmos_sensor_16bit(0x32D4, 0x188A);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0806);
-	write_cmos_sensor_16bit(0x32D4, 0x188A);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0806);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2828);
-	write_cmos_sensor_16bit(0x32D4, 0xFFFF);
-	write_cmos_sensor_16bit(0x32D4, 0x7FFF);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA948);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x189E);
-	write_cmos_sensor_16bit(0x32D4, 0xA948);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x189F);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0E);
-	write_cmos_sensor_16bit(0x32D4, 0x188A);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0806);
-	write_cmos_sensor_16bit(0x32D4, 0x188A);
-	write_cmos_sensor_16bit(0x32D4, 0x0A48);
-	write_cmos_sensor_16bit(0x32D4, 0x0806);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D18);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D98);
-	write_cmos_sensor_16bit(0x32D4, 0x401E);
-	write_cmos_sensor_16bit(0x32D4, 0x0002);
-	write_cmos_sensor_16bit(0x32D4, 0x2818);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x001F);
-	write_cmos_sensor_16bit(0x32D4, 0x16AC);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB6AC);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0B44);
-	write_cmos_sensor_16bit(0x32D4, 0x000C);
-	write_cmos_sensor_16bit(0x32D4, 0x000C);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B4);
-	write_cmos_sensor_16bit(0x32D4, 0x010D);
-	write_cmos_sensor_16bit(0x32D4, 0x020C);
-	write_cmos_sensor_16bit(0x32D4, 0x09B4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A4);
-	write_cmos_sensor_16bit(0x32D4, 0x000C);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x034D);
-	write_cmos_sensor_16bit(0x32D4, 0x021C);
-	write_cmos_sensor_16bit(0x32D4, 0xBA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0D);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x09BC);
-	write_cmos_sensor_16bit(0x32D4, 0x0150);
-	write_cmos_sensor_16bit(0x32D4, 0x081A);
-	write_cmos_sensor_16bit(0x32D4, 0x09B4);
-	write_cmos_sensor_16bit(0x32D4, 0x01AE);
-	write_cmos_sensor_16bit(0x32D4, 0x001A);
-	write_cmos_sensor_16bit(0x32D4, 0x16B4);
-	write_cmos_sensor_16bit(0x32D4, 0x01B2);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D08);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2828);
-	write_cmos_sensor_16bit(0x32D4, 0x019E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x001F);
-	write_cmos_sensor_16bit(0x32D4, 0x0082);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x018A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0xA082);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2820);
-	write_cmos_sensor_16bit(0x32D4, 0x00BE);
-	write_cmos_sensor_16bit(0x32D4, 0x0924);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x003F);
-	write_cmos_sensor_16bit(0x32D4, 0x00A4);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x00AE);
-	write_cmos_sensor_16bit(0x32D4, 0xA130);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x002C);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x002E);
-	write_cmos_sensor_16bit(0x32D4, 0xA130);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0xC000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2830);
-	write_cmos_sensor_16bit(0x32D4, 0x020D);
-	write_cmos_sensor_16bit(0x32D4, 0xA1C0);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x032E);
-	write_cmos_sensor_16bit(0x32D4, 0xA1B0);
-	write_cmos_sensor_16bit(0x32D4, 0x120F);
-	write_cmos_sensor_16bit(0x32D4, 0x00AE);
-	write_cmos_sensor_16bit(0x32D4, 0xA6B0);
-	write_cmos_sensor_16bit(0x32D4, 0x120F);
-	write_cmos_sensor_16bit(0x32D4, 0x003C);
-	write_cmos_sensor_16bit(0x32D4, 0x00B0);
-	write_cmos_sensor_16bit(0x32D4, 0x041A);
-	write_cmos_sensor_16bit(0x32D4, 0x006E);
-	write_cmos_sensor_16bit(0x32D4, 0xA1B0);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D98);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D18);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2828);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB36A);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0F6A);
-	write_cmos_sensor_16bit(0x32D4, 0x0200);
-	write_cmos_sensor_16bit(0x32D4, 0x0C1E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0010);
-	write_cmos_sensor_16bit(0x32D4, 0x2230);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0010);
-	write_cmos_sensor_16bit(0x32D4, 0x2438);
-	write_cmos_sensor_16bit(0x32D4, 0x019E);
-	write_cmos_sensor_16bit(0x32D4, 0x0924);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x819E);
-	write_cmos_sensor_16bit(0x32D4, 0xA495);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x819F);
-	write_cmos_sensor_16bit(0x32D4, 0xA495);
-	write_cmos_sensor_16bit(0x32D4, 0x1C1D);
-	write_cmos_sensor_16bit(0x32D4, 0x819E);
-	write_cmos_sensor_16bit(0x32D4, 0x0495);
-	write_cmos_sensor_16bit(0x32D4, 0x1C1C);
-	write_cmos_sensor_16bit(0x32D4, 0x819E);
-	write_cmos_sensor_16bit(0x32D4, 0x0495);
-	write_cmos_sensor_16bit(0x32D4, 0x1C1C);
-	write_cmos_sensor_16bit(0x32D4, 0x81DE);
-	write_cmos_sensor_16bit(0x32D4, 0x0495);
-	write_cmos_sensor_16bit(0x32D4, 0x1DBC);
-	write_cmos_sensor_16bit(0x32D4, 0x81FE);
-	write_cmos_sensor_16bit(0x32D4, 0xA495);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xBB34);
-	write_cmos_sensor_16bit(0x32D4, 0x03AF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xBB54);
-	write_cmos_sensor_16bit(0x32D4, 0x020F);
-	write_cmos_sensor_16bit(0x32D4, 0xFFF0);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D00);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4007);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2818);
-	write_cmos_sensor_16bit(0x32D4, 0x003E);
-	write_cmos_sensor_16bit(0x32D4, 0xAD8A);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x003F);
-	write_cmos_sensor_16bit(0x32D4, 0xAD8A);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x002E);
-	write_cmos_sensor_16bit(0x32D4, 0xAD8A);
-	write_cmos_sensor_16bit(0x32D4, 0x160F);
-	write_cmos_sensor_16bit(0x32D4, 0x002E);
-	write_cmos_sensor_16bit(0x32D4, 0xAD8A);
-	write_cmos_sensor_16bit(0x32D4, 0x160F);
-	write_cmos_sensor_16bit(0x32D4, 0x203E);
-	write_cmos_sensor_16bit(0x32D4, 0xAD8A);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x2820);
-	write_cmos_sensor_16bit(0x32D4, 0x00AE);
-	write_cmos_sensor_16bit(0x32D4, 0xAE0A);
-	write_cmos_sensor_16bit(0x32D4, 0x1811);
-	write_cmos_sensor_16bit(0x32D4, 0x002F);
-	write_cmos_sensor_16bit(0x32D4, 0xAE1A);
-	write_cmos_sensor_16bit(0x32D4, 0x1411);
-	write_cmos_sensor_16bit(0x32D4, 0x003C);
-	write_cmos_sensor_16bit(0x32D4, 0x0F0A);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x202A);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0A);
-	write_cmos_sensor_16bit(0x32D4, 0x1818);
-	write_cmos_sensor_16bit(0x32D4, 0x002A);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0C);
-	write_cmos_sensor_16bit(0x32D4, 0x1402);
-	write_cmos_sensor_16bit(0x32D4, 0x002A);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0C);
-	write_cmos_sensor_16bit(0x32D4, 0x15BE);
-	write_cmos_sensor_16bit(0x32D4, 0x00AA);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0C);
-	write_cmos_sensor_16bit(0x32D4, 0x15BE);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xAE1A);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x003E);
-	write_cmos_sensor_16bit(0x32D4, 0xA93C);
-	write_cmos_sensor_16bit(0x32D4, 0x11B1);
-	write_cmos_sensor_16bit(0x32D4, 0x7052);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xABA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0xFFC1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFFAA);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA120);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x02A0);
-	write_cmos_sensor_16bit(0x32D4, 0x01A2);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA2A0);
-	write_cmos_sensor_16bit(0x32D4, 0x00E3);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x011E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFF9F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA120);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x02A0);
-	write_cmos_sensor_16bit(0x32D4, 0x01A2);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA2A0);
-	write_cmos_sensor_16bit(0x32D4, 0x00E3);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x011E);
-	write_cmos_sensor_16bit(0x32D4, 0xA920);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA922);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FBA);
-	write_cmos_sensor_16bit(0x32D4, 0x0006);
-	write_cmos_sensor_16bit(0x32D4, 0xA024);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x0200);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA124);
-	write_cmos_sensor_16bit(0x32D4, 0x0BAF);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA124);
-	write_cmos_sensor_16bit(0x32D4, 0x0A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x805E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x011E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFF8B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x011E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFF86);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x3052);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2DD0);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x8000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2820);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x019E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x04C8);
-	write_cmos_sensor_16bit(0x32D4, 0x1010);
-	write_cmos_sensor_16bit(0x32D4, 0x019E);
-	write_cmos_sensor_16bit(0x32D4, 0xA948);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x801F);
-	write_cmos_sensor_16bit(0x32D4, 0xA4C8);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0018);
-	write_cmos_sensor_16bit(0x32D4, 0x0946);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x818A);
-	write_cmos_sensor_16bit(0x32D4, 0x0936);
-	write_cmos_sensor_16bit(0x32D4, 0x0200);
-	write_cmos_sensor_16bit(0x32D4, 0x4008);
-	write_cmos_sensor_16bit(0x32D4, 0x04C8);
-	write_cmos_sensor_16bit(0x32D4, 0x0FBA);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xC000);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x2820);
-	write_cmos_sensor_16bit(0x32D4, 0x011E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001F);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x014E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x800E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x140F);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x15AF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3800);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x30F4);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x7000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAABA);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAEA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2428);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2228);
-	write_cmos_sensor_16bit(0x32D4, 0xFFCE);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2620);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x0FA1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x0E01);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x700B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0A38);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x7002);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0xFFCF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x7800);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFFFE);
-	write_cmos_sensor_16bit(0x32D4, 0xFFFF);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x700C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A4);
-	write_cmos_sensor_16bit(0x32D4, 0x0DAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001C);
-	write_cmos_sensor_16bit(0x32D4, 0xADA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0C0F);
-	write_cmos_sensor_16bit(0x32D4, 0x085E);
-	write_cmos_sensor_16bit(0x32D4, 0xADA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0DAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0003);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x0040);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0xFF35);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0xFF31);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0xFF2D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0xFF29);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x7006);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAABA);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAEA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA93A);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA93A);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA93A);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA93A);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x3019);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x3026);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x7017);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FA1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0E01);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xADA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0E01);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xADA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0FA1);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2420);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFF3A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2220);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x704C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7017);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7018);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2628);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2630);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x09A8);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x7017);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0A38);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x7005);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0xFFB0);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7005);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B6);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B6);
-	write_cmos_sensor_16bit(0x32D4, 0x020F);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x3019);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x3026);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x3033);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x303F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB6);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB236);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB6B6);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x0800);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x704F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2228);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2420);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xB248);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0x10C8);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0E);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xB0C8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x010A);
-	write_cmos_sensor_16bit(0x32D4, 0xB242);
-	write_cmos_sensor_16bit(0x32D4, 0x040F);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x12C2);
-	write_cmos_sensor_16bit(0x32D4, 0x05A0);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x12CA);
-	write_cmos_sensor_16bit(0x32D4, 0x05A4);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x12CA);
-	write_cmos_sensor_16bit(0x32D4, 0x0A0A);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0xB2CA);
-	write_cmos_sensor_16bit(0x32D4, 0x17B7);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x12CA);
-	write_cmos_sensor_16bit(0x32D4, 0x1616);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x12CA);
-	write_cmos_sensor_16bit(0x32D4, 0x1616);
-	write_cmos_sensor_16bit(0x32D4, 0x000A);
-	write_cmos_sensor_16bit(0x32D4, 0x124A);
-	write_cmos_sensor_16bit(0x32D4, 0x1616);
-	write_cmos_sensor_16bit(0x32D4, 0x006A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x0017);
-	write_cmos_sensor_16bit(0x32D4, 0x004A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x04B7);
-	write_cmos_sensor_16bit(0x32D4, 0x802A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x05B7);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFE76);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x7050);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2638);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9C8);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A2);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x89A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A0);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x704F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x002A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x01B7);
-	write_cmos_sensor_16bit(0x32D4, 0x002A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x0017);
-	write_cmos_sensor_16bit(0x32D4, 0x002A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x04B7);
-	write_cmos_sensor_16bit(0x32D4, 0x802A);
-	write_cmos_sensor_16bit(0x32D4, 0xB24A);
-	write_cmos_sensor_16bit(0x32D4, 0x05B7);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFE5B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x704F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2638);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9C8);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A2);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x89A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A0);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D18);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB948);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBA28);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0xFF9E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7005);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFE29);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFE20);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB224);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2B8);
-	write_cmos_sensor_16bit(0x32D4, 0x1201);
-	write_cmos_sensor_16bit(0x32D4, 0x700F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D40);
-	write_cmos_sensor_16bit(0x32D4, 0x700C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7011);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x1201);
-	write_cmos_sensor_16bit(0x32D4, 0x201E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0xFE00);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x4010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x045E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D00);
-	write_cmos_sensor_16bit(0x32D4, 0xFDFB);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x6010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x105E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB8);
-	write_cmos_sensor_16bit(0x32D4, 0x13A1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D80);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2CA);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xBB4A);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xBB6C);
-	write_cmos_sensor_16bit(0x32D4, 0x021A);
-	write_cmos_sensor_16bit(0x32D4, 0x003A);
-	write_cmos_sensor_16bit(0x32D4, 0x12EC);
-	write_cmos_sensor_16bit(0x32D4, 0x03B6);
-	write_cmos_sensor_16bit(0x32D4, 0x1076);
-	write_cmos_sensor_16bit(0x32D4, 0xB26C);
-	write_cmos_sensor_16bit(0x32D4, 0x1A1A);
-	write_cmos_sensor_16bit(0x32D4, 0x003A);
-	write_cmos_sensor_16bit(0x32D4, 0x12CA);
-	write_cmos_sensor_16bit(0x32D4, 0x03B2);
-	write_cmos_sensor_16bit(0x32D4, 0x047E);
-	write_cmos_sensor_16bit(0x32D4, 0xB26C);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xBE5E);
-	write_cmos_sensor_16bit(0x32D4, 0x05A5);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x1E5E);
-	write_cmos_sensor_16bit(0x32D4, 0x0404);
-	write_cmos_sensor_16bit(0x32D4, 0x0002);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A4);
-	write_cmos_sensor_16bit(0x32D4, 0x060F);
-	write_cmos_sensor_16bit(0x32D4, 0xFF00);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0xFDF5);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x201E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9A4);
-	write_cmos_sensor_16bit(0x32D4, 0x05AF);
-	write_cmos_sensor_16bit(0x32D4, 0x0100);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x09AF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x080F);
-	write_cmos_sensor_16bit(0x32D4, 0x7010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB2A4);
-	write_cmos_sensor_16bit(0x32D4, 0x09AF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x3019);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x3026);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x3033);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2AC0);
-	write_cmos_sensor_16bit(0x32D4, 0x303F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xADB6);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB236);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xB6B6);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0E0F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA936);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7005);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B6);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B6);
-	write_cmos_sensor_16bit(0x32D4, 0x020F);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x3018);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x7003);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAAA4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAEA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2428);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA8A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x201E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2430);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA8A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x081E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D00);
-	write_cmos_sensor_16bit(0x32D4, 0x700F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2400);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2600);
-	write_cmos_sensor_16bit(0x32D4, 0xFDEB);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x704C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2428);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA8A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x201E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2430);
-	write_cmos_sensor_16bit(0x32D4, 0x009E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA8A4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x081E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7010);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D00);
-	write_cmos_sensor_16bit(0x32D4, 0x700F);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2400);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2600);
-	write_cmos_sensor_16bit(0x32D4, 0xFDC7);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x704B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704D);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x704E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2D18);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB948);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xB9A8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBA28);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x000F);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xBAA8);
-	write_cmos_sensor_16bit(0x32D4, 0x01AF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7004);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0A38);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7051);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0xFF8E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x03A1);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x3018);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x7000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x061E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAAA4);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAEA4);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA24);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x0006);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A80);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0A38);
-	write_cmos_sensor_16bit(0x32D4, 0x0002);
-	write_cmos_sensor_16bit(0x32D4, 0x0C1E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A3);
-	write_cmos_sensor_16bit(0x32D4, 0x7001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA0B0);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA030);
-	write_cmos_sensor_16bit(0x32D4, 0x1A0F);
-	write_cmos_sensor_16bit(0x32D4, 0x000E);
-	write_cmos_sensor_16bit(0x32D4, 0xA1A8);
-	write_cmos_sensor_16bit(0x32D4, 0x120F);
-	write_cmos_sensor_16bit(0x32D4, 0x200E);
-	write_cmos_sensor_16bit(0x32D4, 0xA1A8);
-	write_cmos_sensor_16bit(0x32D4, 0x03AF);
-	write_cmos_sensor_16bit(0x32D4, 0x700B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0xFD65);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x4000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2620);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7009);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x601E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x7008);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0x0A38);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x007E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0014);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x005E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x010E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x801E);
-	write_cmos_sensor_16bit(0x32D4, 0xA925);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x700A);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A40);
-	write_cmos_sensor_16bit(0x32D4, 0x7002);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2418);
-	write_cmos_sensor_16bit(0x32D4, 0x008E);
-	write_cmos_sensor_16bit(0x32D4, 0xA000);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x181E);
-	write_cmos_sensor_16bit(0x32D4, 0xA924);
-	write_cmos_sensor_16bit(0x32D4, 0x0FAF);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xAA38);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x0201);
-	write_cmos_sensor_16bit(0x32D4, 0xFFC9);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3040);
-	write_cmos_sensor_16bit(0x32D4, 0x001E);
-	write_cmos_sensor_16bit(0x32D4, 0xA9B8);
-	write_cmos_sensor_16bit(0x32D4, 0x01A1);
-	write_cmos_sensor_16bit(0x32D4, 0x00E7);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2A00);
-	write_cmos_sensor_16bit(0x32D4, 0x43FC);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2618);
-	write_cmos_sensor_16bit(0x32D4, 0xFDA2);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x3600);
-	write_cmos_sensor_16bit(0x32D4, 0x7018);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2218);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x2000);
-	write_cmos_sensor_16bit(0x32D0, 0x3000);
-	write_cmos_sensor_16bit(0x32D4, 0x004E);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0066);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x000B);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0048);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0068);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x000C);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0014);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	write_cmos_sensor_16bit(0x32D4, 0x0001);
-	write_cmos_sensor_16bit(0x32D4, 0x0000);
-	// PE end
-	write_cmos_sensor_16bit(0x3042, 0x500C);
-	write_cmos_sensor_16bit(0x3044, 0x2580);
-	write_cmos_sensor_16bit(0x30EE, 0x5133);
-	write_cmos_sensor_16bit(0x30D2, 0x0000);
-	write_cmos_sensor_16bit(0x3C50, 0x0001);
-	write_cmos_sensor_16bit(0x31E0, 0x0001);
-	write_cmos_sensor_16bit(0x3180, 0x9434);
-	write_cmos_sensor_16bit(0x3F2C, 0x2028);
-	write_cmos_sensor_16bit(0x3C58, 0x03FF);
-	write_cmos_sensor_16bit(0x3C5A, 0x00FD);
-	write_cmos_sensor_16bit(0x3C5C, 0x000A);
-	write_cmos_sensor_16bit(0x3C5E, 0x000A);
-	write_cmos_sensor_16bit(0x3C60, 0x0500);
-	write_cmos_sensor_16bit(0x3C62, 0xECA0);
-	write_cmos_sensor_16bit(0x3C64, 0x000F);
-	write_cmos_sensor_16bit(0x3C66, 0x002A);
-	write_cmos_sensor_16bit(0x3C68, 0x0000);
-	write_cmos_sensor_16bit(0x3C6A, 0x0006);
-	write_cmos_sensor_16bit(0x3C6C, 0x000A);
-	write_cmos_sensor_16bit(0x3C6E, 0x000E);
-	write_cmos_sensor_16bit(0x3C70, 0x0012);
-	write_cmos_sensor_16bit(0x3C72, 0x2010);
-	write_cmos_sensor_16bit(0x3C74, 0x0040);
-	write_cmos_sensor_16bit(0x3C78, 0x0000);
-	write_cmos_sensor_16bit(0x3C7A, 0x0210);
-	write_cmos_sensor_16bit(0x3C7C, 0x000A);
-	write_cmos_sensor_16bit(0x3C7E, 0x20FF);
-	write_cmos_sensor_16bit(0x3C80, 0x0810);
-	write_cmos_sensor_16bit(0x3C82, 0x20FF);
-	write_cmos_sensor_16bit(0x3C84, 0x0810);
-	write_cmos_sensor_16bit(0x3C86, 0x4210);
-	write_cmos_sensor_16bit(0x3C88, 0x0000);
-	write_cmos_sensor_16bit(0x3C8A, 0x0000);
-	write_cmos_sensor_16bit(0x3C8C, 0x0010);
-	write_cmos_sensor_16bit(0x3C8E, 0x03F5);
-	write_cmos_sensor_16bit(0x3C90, 0x0000);
-	write_cmos_sensor_16bit(0x3C94, 0x47E0);
-	write_cmos_sensor_16bit(0x3C96, 0x6000);
-	write_cmos_sensor_16bit(0x3CC0, 0x0000);
-	write_cmos_sensor_16bit(0x3CC2, 0x03E8);
-	write_cmos_sensor_16bit(0x3CC4, 0x07D0);
-	write_cmos_sensor_16bit(0x3CC6, 0x0BB8);
-	write_cmos_sensor_16bit(0x3222, 0xA0C0);
-	write_cmos_sensor_16bit(0x322E, 0x0000);
-	write_cmos_sensor_16bit(0x3230, 0x0FF0);
-	write_cmos_sensor_16bit(0x32BC, 0x0019);
-	write_cmos_sensor_16bit(0x32BE, 0x0013);
-	write_cmos_sensor_16bit(0x32C0, 0x0010);
-	write_cmos_sensor_16bit(0x3C98, 0x0000);
-	write_cmos_sensor_16bit(0x3C9A, 0x0000);
-	write_cmos_sensor_16bit(0x3C9C, 0x0000);
-	write_cmos_sensor_16bit(0x3C9E, 0x0000);
-	write_cmos_sensor_16bit(0x3CA0, 0x0000);
-	write_cmos_sensor_16bit(0x3CA2, 0x0000);
-	write_cmos_sensor_16bit(0x3CA4, 0x0000);
-	write_cmos_sensor_16bit(0x3CA6, 0x0000);
-	write_cmos_sensor_16bit(0x3D00, 0x0446);
-	write_cmos_sensor_16bit(0x3D02, 0x4C66);
-	write_cmos_sensor_16bit(0x3D04, 0xFFFF);
-	write_cmos_sensor_16bit(0x3D06, 0xFFFF);
-	write_cmos_sensor_16bit(0x3D08, 0x5E40);
-	write_cmos_sensor_16bit(0x3D0A, 0x1106);
-	write_cmos_sensor_16bit(0x3D0C, 0x8041);
-	write_cmos_sensor_16bit(0x3D0E, 0x4F83);
-	write_cmos_sensor_16bit(0x3D10, 0x4200);
-	write_cmos_sensor_16bit(0x3D12, 0xC055);
-	write_cmos_sensor_16bit(0x3D14, 0x805B);
-	write_cmos_sensor_16bit(0x3D16, 0x8360);
-	write_cmos_sensor_16bit(0x3D18, 0x845A);
-	write_cmos_sensor_16bit(0x3D1A, 0x8D00);
-	write_cmos_sensor_16bit(0x3D1C, 0xC083);
-	write_cmos_sensor_16bit(0x3D1E, 0x428F);
-	write_cmos_sensor_16bit(0x3D20, 0x5281);
-	write_cmos_sensor_16bit(0x3D22, 0x5A85);
-	write_cmos_sensor_16bit(0x3D24, 0x5364);
-	write_cmos_sensor_16bit(0x3D26, 0x1030);
-	write_cmos_sensor_16bit(0x3D28, 0x801C);
-	write_cmos_sensor_16bit(0x3D2A, 0x00C3);
-	write_cmos_sensor_16bit(0x3D2C, 0x5756);
-	write_cmos_sensor_16bit(0x3D2E, 0x9651);
-	write_cmos_sensor_16bit(0x3D30, 0x5080);
-	write_cmos_sensor_16bit(0x3D32, 0x4D43);
-	write_cmos_sensor_16bit(0x3D34, 0x8252);
-	write_cmos_sensor_16bit(0x3D36, 0x8058);
-	write_cmos_sensor_16bit(0x3D38, 0x58A4);
-	write_cmos_sensor_16bit(0x3D3A, 0x439A);
-	write_cmos_sensor_16bit(0x3D3C, 0x4592);
-	write_cmos_sensor_16bit(0x3D3E, 0x45A7);
-	write_cmos_sensor_16bit(0x3D40, 0x5294);
-	write_cmos_sensor_16bit(0x3D42, 0x51E6);
-	write_cmos_sensor_16bit(0x3D44, 0x5186);
-	write_cmos_sensor_16bit(0x3D46, 0x10C4);
-	write_cmos_sensor_16bit(0x3D48, 0x9C4F);
-	write_cmos_sensor_16bit(0x3D4A, 0x8659);
-	write_cmos_sensor_16bit(0x3D4C, 0x59E6);
-	write_cmos_sensor_16bit(0x3D4E, 0x4293);
-	write_cmos_sensor_16bit(0x3D50, 0x6182);
-	write_cmos_sensor_16bit(0x3D52, 0x6283);
-	write_cmos_sensor_16bit(0x3D54, 0x4281);
-	write_cmos_sensor_16bit(0x3D56, 0x4164);
-	write_cmos_sensor_16bit(0x3D58, 0xFFFF);
-	write_cmos_sensor_16bit(0x3D5A, 0xB740);
-	write_cmos_sensor_16bit(0x3D5C, 0x8140);
-	write_cmos_sensor_16bit(0x3D5E, 0x8041);
-	write_cmos_sensor_16bit(0x3D60, 0x8042);
-	write_cmos_sensor_16bit(0x3D62, 0x8043);
-	write_cmos_sensor_16bit(0x3D64, 0x8D44);
-	write_cmos_sensor_16bit(0x3D66, 0xBA44);
-	write_cmos_sensor_16bit(0x3D68, 0x8843);
-	write_cmos_sensor_16bit(0x3D6A, 0x8042);
-	write_cmos_sensor_16bit(0x3D6C, 0x4181);
-	write_cmos_sensor_16bit(0x3D6E, 0x4082);
-	write_cmos_sensor_16bit(0x3D70, 0x4080);
-	write_cmos_sensor_16bit(0x3D72, 0x4180);
-	write_cmos_sensor_16bit(0x3D74, 0x4280);
-	write_cmos_sensor_16bit(0x3D76, 0x438D);
-	write_cmos_sensor_16bit(0x3D78, 0x44BA);
-	write_cmos_sensor_16bit(0x3D7A, 0x4487);
-	write_cmos_sensor_16bit(0x3D7C, 0x5E43);
-	write_cmos_sensor_16bit(0x3D7E, 0x5442);
-	write_cmos_sensor_16bit(0x3D80, 0x4181);
-	write_cmos_sensor_16bit(0x3D82, 0x4081);
-	write_cmos_sensor_16bit(0x3D84, 0x5B81);
-	write_cmos_sensor_16bit(0x3D86, 0x6026);
-	write_cmos_sensor_16bit(0x3D88, 0x0055);
-	write_cmos_sensor_16bit(0x3D8A, 0x8070);
-	write_cmos_sensor_16bit(0x3D8C, 0x8040);
-	write_cmos_sensor_16bit(0x3D8E, 0x4C81);
-	write_cmos_sensor_16bit(0x3D90, 0x45C3);
-	write_cmos_sensor_16bit(0x3D92, 0x4581);
-	write_cmos_sensor_16bit(0x3D94, 0x4C40);
-	write_cmos_sensor_16bit(0x3D96, 0x8070);
-	write_cmos_sensor_16bit(0x3D98, 0x8040);
-	write_cmos_sensor_16bit(0x3D9A, 0x4C85);
-	write_cmos_sensor_16bit(0x3D9C, 0x6CA8);
-	write_cmos_sensor_16bit(0x3D9E, 0x6C8C);
-	write_cmos_sensor_16bit(0x3DA0, 0x000E);
-	write_cmos_sensor_16bit(0x3DA2, 0xBE44);
-	write_cmos_sensor_16bit(0x3DA4, 0x8844);
-	write_cmos_sensor_16bit(0x3DA6, 0xBC78);
-	write_cmos_sensor_16bit(0x3DA8, 0x0900);
-	write_cmos_sensor_16bit(0x3DAA, 0x8904);
-	write_cmos_sensor_16bit(0x3DAC, 0x8080);
-	write_cmos_sensor_16bit(0x3DAE, 0x0240);
-	write_cmos_sensor_16bit(0x3DB0, 0x8609);
-	write_cmos_sensor_16bit(0x3DB2, 0x008E);
-	write_cmos_sensor_16bit(0x3DB4, 0x0900);
-	write_cmos_sensor_16bit(0x3DB6, 0x8002);
-	write_cmos_sensor_16bit(0x3DB8, 0x4080);
-	write_cmos_sensor_16bit(0x3DBA, 0x0480);
-	write_cmos_sensor_16bit(0x3DBC, 0x887C);
-	write_cmos_sensor_16bit(0x3DBE, 0xAA86);
-	write_cmos_sensor_16bit(0x3DC0, 0x0900);
-	write_cmos_sensor_16bit(0x3DC2, 0x877A);
-	write_cmos_sensor_16bit(0x3DC4, 0x000E);
-	write_cmos_sensor_16bit(0x3DC6, 0xC379);
-	write_cmos_sensor_16bit(0x3DC8, 0x4C40);
-	write_cmos_sensor_16bit(0x3DCA, 0xBF70);
-	write_cmos_sensor_16bit(0x3DCC, 0x5E40);
-	write_cmos_sensor_16bit(0x3DCE, 0x114E);
-	write_cmos_sensor_16bit(0x3DD0, 0x5D41);
-	write_cmos_sensor_16bit(0x3DD2, 0x5383);
-	write_cmos_sensor_16bit(0x3DD4, 0x4200);
-	write_cmos_sensor_16bit(0x3DD6, 0xC055);
-	write_cmos_sensor_16bit(0x3DD8, 0xA400);
-	write_cmos_sensor_16bit(0x3DDA, 0xC083);
-	write_cmos_sensor_16bit(0x3DDC, 0x4288);
-	write_cmos_sensor_16bit(0x3DDE, 0x6083);
-	write_cmos_sensor_16bit(0x3DE0, 0x5B80);
-	write_cmos_sensor_16bit(0x3DE2, 0x5A64);
-	write_cmos_sensor_16bit(0x3DE4, 0x1030);
-	write_cmos_sensor_16bit(0x3DE6, 0x801C);
-	write_cmos_sensor_16bit(0x3DE8, 0x00A5);
-	write_cmos_sensor_16bit(0x3DEA, 0x5697);
-	write_cmos_sensor_16bit(0x3DEC, 0x57A5);
-	write_cmos_sensor_16bit(0x3DEE, 0x5180);
-	write_cmos_sensor_16bit(0x3DF0, 0x505A);
-	write_cmos_sensor_16bit(0x3DF2, 0x814D);
-	write_cmos_sensor_16bit(0x3DF4, 0x8358);
-	write_cmos_sensor_16bit(0x3DF6, 0x8058);
-	write_cmos_sensor_16bit(0x3DF8, 0xA943);
-	write_cmos_sensor_16bit(0x3DFA, 0x8345);
-	write_cmos_sensor_16bit(0x3DFC, 0xB045);
-	write_cmos_sensor_16bit(0x3DFE, 0x8343);
-	write_cmos_sensor_16bit(0x3E00, 0xA351);
-	write_cmos_sensor_16bit(0x3E02, 0xE251);
-	write_cmos_sensor_16bit(0x3E04, 0x8C59);
-	write_cmos_sensor_16bit(0x3E06, 0x8059);
-	write_cmos_sensor_16bit(0x3E08, 0x8A5F);
-	write_cmos_sensor_16bit(0x3E0A, 0xEC7C);
-	write_cmos_sensor_16bit(0x3E0C, 0xCC84);
-	write_cmos_sensor_16bit(0x3E0E, 0x6182);
-	write_cmos_sensor_16bit(0x3E10, 0x6283);
-	write_cmos_sensor_16bit(0x3E12, 0x4283);
-	write_cmos_sensor_16bit(0x3E14, 0x10CC);
-	write_cmos_sensor_16bit(0x3E16, 0x6496);
-	write_cmos_sensor_16bit(0x3E18, 0x4281);
-	write_cmos_sensor_16bit(0x3E1A, 0x41BB);
-	write_cmos_sensor_16bit(0x3E1C, 0x4082);
-	write_cmos_sensor_16bit(0x3E1E, 0x407E);
-	write_cmos_sensor_16bit(0x3E20, 0xCC41);
-	write_cmos_sensor_16bit(0x3E22, 0x8042);
-	write_cmos_sensor_16bit(0x3E24, 0x8043);
-	write_cmos_sensor_16bit(0x3E26, 0x8300);
-	write_cmos_sensor_16bit(0x3E28, 0xC088);
-	write_cmos_sensor_16bit(0x3E2A, 0x44BA);
-	write_cmos_sensor_16bit(0x3E2C, 0x4488);
-	write_cmos_sensor_16bit(0x3E2E, 0x00C8);
-	write_cmos_sensor_16bit(0x3E30, 0x8042);
-	write_cmos_sensor_16bit(0x3E32, 0x4181);
-	write_cmos_sensor_16bit(0x3E34, 0x4082);
-	write_cmos_sensor_16bit(0x3E36, 0x4080);
-	write_cmos_sensor_16bit(0x3E38, 0x4180);
-	write_cmos_sensor_16bit(0x3E3A, 0x4280);
-	write_cmos_sensor_16bit(0x3E3C, 0x4383);
-	write_cmos_sensor_16bit(0x3E3E, 0x00C0);
-	write_cmos_sensor_16bit(0x3E40, 0x8844);
-	write_cmos_sensor_16bit(0x3E42, 0xBA44);
-	write_cmos_sensor_16bit(0x3E44, 0x8800);
-	write_cmos_sensor_16bit(0x3E46, 0xC880);
-	write_cmos_sensor_16bit(0x3E48, 0x4241);
-	write_cmos_sensor_16bit(0x3E4A, 0x8240);
-	write_cmos_sensor_16bit(0x3E4C, 0x8140);
-	write_cmos_sensor_16bit(0x3E4E, 0x8041);
-	write_cmos_sensor_16bit(0x3E50, 0x8042);
-	write_cmos_sensor_16bit(0x3E52, 0x8043);
-	write_cmos_sensor_16bit(0x3E54, 0x8300);
-	write_cmos_sensor_16bit(0x3E56, 0xC088);
-	write_cmos_sensor_16bit(0x3E58, 0x44BA);
-	write_cmos_sensor_16bit(0x3E5A, 0x4488);
-	write_cmos_sensor_16bit(0x3E5C, 0x00C8);
-	write_cmos_sensor_16bit(0x3E5E, 0x8042);
-	write_cmos_sensor_16bit(0x3E60, 0x4181);
-	write_cmos_sensor_16bit(0x3E62, 0x4082);
-	write_cmos_sensor_16bit(0x3E64, 0x4080);
-	write_cmos_sensor_16bit(0x3E66, 0x4180);
-	write_cmos_sensor_16bit(0x3E68, 0x4280);
-	write_cmos_sensor_16bit(0x3E6A, 0x4383);
-	write_cmos_sensor_16bit(0x3E6C, 0x00C0);
-	write_cmos_sensor_16bit(0x3E6E, 0x8844);
-	write_cmos_sensor_16bit(0x3E70, 0xBA44);
-	write_cmos_sensor_16bit(0x3E72, 0x8800);
-	write_cmos_sensor_16bit(0x3E74, 0xC880);
-	write_cmos_sensor_16bit(0x3E76, 0x4241);
-	write_cmos_sensor_16bit(0x3E78, 0x8140);
-	write_cmos_sensor_16bit(0x3E7A, 0x9F5E);
-	write_cmos_sensor_16bit(0x3E7C, 0x8A54);
-	write_cmos_sensor_16bit(0x3E7E, 0x8620);
-	write_cmos_sensor_16bit(0x3E80, 0x2881);
-	write_cmos_sensor_16bit(0x3E82, 0x6026);
-	write_cmos_sensor_16bit(0x3E84, 0x8055);
-	write_cmos_sensor_16bit(0x3E86, 0x8070);
-	write_cmos_sensor_16bit(0x3E88, 0x0000);
-	write_cmos_sensor_16bit(0x3E8A, 0x0000);
-	write_cmos_sensor_16bit(0x3E8C, 0x0000);
-	write_cmos_sensor_16bit(0x3E8E, 0x0000);
-	write_cmos_sensor_16bit(0x3E90, 0x0000);
-	write_cmos_sensor_16bit(0x3E92, 0x0000);
-	write_cmos_sensor_16bit(0x3E94, 0x0000);
-	write_cmos_sensor_16bit(0x3E96, 0x0000);
-	write_cmos_sensor_16bit(0x3E98, 0x0000);
-	write_cmos_sensor_16bit(0x3E9A, 0x0000);
-	write_cmos_sensor_16bit(0x3E9C, 0x0000);
-	write_cmos_sensor_16bit(0x3E9E, 0x0000);
-	write_cmos_sensor_16bit(0x3EA0, 0x0000);
-	write_cmos_sensor_16bit(0x3EA2, 0x0000);
-	write_cmos_sensor_16bit(0x3EA4, 0x0000);
-	write_cmos_sensor_16bit(0x3EA6, 0x0000);
-	write_cmos_sensor_16bit(0x3EA8, 0x0000);
-	write_cmos_sensor_16bit(0x3EAA, 0x0000);
-	write_cmos_sensor_16bit(0x3EAC, 0x0000);
-	write_cmos_sensor_16bit(0x3EAE, 0x0000);
-	write_cmos_sensor_16bit(0x3EB0, 0x0000);
-	write_cmos_sensor_16bit(0x3EB2, 0x0000);
-	write_cmos_sensor_16bit(0x3EB4, 0x0000);
-	write_cmos_sensor_16bit(0x3EB6, 0x004D);
-	write_cmos_sensor_16bit(0x3EBC, 0xAA06);
-	write_cmos_sensor_16bit(0x3EC0, 0x1300);
-	write_cmos_sensor_16bit(0x3EC2, 0x7000);
-	write_cmos_sensor_16bit(0x3EC4, 0x1C08);
-	write_cmos_sensor_16bit(0x3EC6, 0xE244);
-	write_cmos_sensor_16bit(0x3EC8, 0x0F0F);
-	write_cmos_sensor_16bit(0x3ECA, 0x0F4A);
-	write_cmos_sensor_16bit(0x3ECC, 0x0706);
-	write_cmos_sensor_16bit(0x3ECE, 0x443B);
-	write_cmos_sensor_16bit(0x3ED0, 0x12F0);
-	write_cmos_sensor_16bit(0x3ED2, 0x0039);
-	write_cmos_sensor_16bit(0x3ED4, 0x862F);
-	write_cmos_sensor_16bit(0x3ED6, 0x4880);
-	write_cmos_sensor_16bit(0x3ED8, 0x0423);
-	write_cmos_sensor_16bit(0x3EDA, 0xF882);
-	write_cmos_sensor_16bit(0x3EDC, 0x8282);
-	write_cmos_sensor_16bit(0x3EDE, 0x8205);
-	write_cmos_sensor_16bit(0x316A, 0x8200);
-	write_cmos_sensor_16bit(0x316C, 0x8200);
-	write_cmos_sensor_16bit(0x316E, 0x8200);
-	write_cmos_sensor_16bit(0x3EF0, 0x5165);
-	write_cmos_sensor_16bit(0x3EF2, 0x0101);
-	write_cmos_sensor_16bit(0x3EF6, 0x030A);
-	write_cmos_sensor_16bit(0x3EFA, 0x0F0F);
-	write_cmos_sensor_16bit(0x3EFC, 0x070F);
-	write_cmos_sensor_16bit(0x3EFE, 0x0F0F);
-	write_cmos_sensor_16bit(0x3C50, 0x0001);
-	write_cmos_sensor_16bit(0x3780, 0x0000);
-	write_cmos_sensor_16bit(0x0304, 0x0303);
-	write_cmos_sensor_16bit(0x0306, 0x8D8D);
-	write_cmos_sensor_16bit(0x0302, 0x0001);
-	write_cmos_sensor_16bit(0x030A, 0x0001);
-	write_cmos_sensor_16bit(0x0300, 0x0005);
-	write_cmos_sensor_16bit(0x0308, 0x000A);
-	write_cmos_sensor_16bit(0x0112, 0x0A0A);
-	write_cmos_sensor_16bit(0x3016, 0x0101);
-	write_cmos_sensor_16bit(0x0342, 0x12B8);
-	write_cmos_sensor_16bit(0x3220, 0x0C13);
-	write_cmos_sensor_16bit(0x3040, 0x0041);
-	write_cmos_sensor_16bit(0x31B0, 0x0060);
-	write_cmos_sensor_16bit(0x31B2, 0x002E);
-	write_cmos_sensor_16bit(0x31B4, 0x33D4);
-	write_cmos_sensor_16bit(0x31B6, 0x344B);
-	write_cmos_sensor_16bit(0x31B8, 0x2413);
-	write_cmos_sensor_16bit(0x31BA, 0x2070);
-	write_cmos_sensor_16bit(0x31BC, 0x870B);
-	write_cmos_sensor_16bit(0x0304, 0x0303);
-	write_cmos_sensor_16bit(0x0306, 0x8d8d);
-	write_cmos_sensor_16bit(0x0302, 0x0001);
-	write_cmos_sensor_16bit(0x030A, 0x0001);
-	write_cmos_sensor_16bit(0x0300, 0x0005);
-	write_cmos_sensor_16bit(0x0308, 0x000A);
-	write_cmos_sensor_16bit(0x0112, 0x0A0A);
-	write_cmos_sensor_16bit(0x3016, 0x0101);
-	write_cmos_sensor_16bit(0x301a, 0xc018);
-	write_cmos_sensor(0x0100, 0x00);  // STREAM_off
-	LOG_INF("X\n");
+	mdelay(50);
+	//LOG_INF("E\n");
+	write_cmos_sensor_16bit(0x3042, 0x500C);  // DARK_CONTROL2
+	write_cmos_sensor_16bit(0x3044, 0x2500);  // DARK_CONTROL
+	write_cmos_sensor_16bit(0x30EE, 0x5133);  // DARK_CONTROL3
+	write_cmos_sensor_16bit(0x30D2, 0x0000);  // CRM_CONTROL
+	write_cmos_sensor_16bit(0x3C50, 0x0001);  // BPC_SETUP
+	write_cmos_sensor_16bit(0x31E0, 0x0001);  // PIX_DEF_ID
+	write_cmos_sensor_16bit(0x3180, 0x9434);  // FINEDIGCORR_CONTROL
+	write_cmos_sensor_16bit(0x3F2C, 0x2028);  // GTH_THRES_RTN
+	write_cmos_sensor_16bit(0x3C58, 0x03FF);  // BPC_BLOOM_TH
+	write_cmos_sensor_16bit(0x3C5A, 0x00FD);  // BPC_TAG_MODE
+	write_cmos_sensor_16bit(0x3C5C, 0x000A);  // BPC_QR_SETUP
+	write_cmos_sensor_16bit(0x3C5E, 0x000A);  // BPC_GP_NUM_OF
+	write_cmos_sensor_16bit(0x3C60, 0x0500);  // BPC_GP_SIGMA_SETUP
+	write_cmos_sensor_16bit(0x3C62, 0xECA0);  // BPC_PC_MASK
+	write_cmos_sensor_16bit(0x3C64, 0x000F);  // BPC_PC_SIGMA
+	write_cmos_sensor_16bit(0x3C66, 0x002A);  // BPC_NOISE_LIFT
+	write_cmos_sensor_16bit(0x3C68, 0x0000);  // BPC_BOISE_CEOF
+	write_cmos_sensor_16bit(0x3C6A, 0x0006);  // BPC_NOISE_FLOOR0
+	write_cmos_sensor_16bit(0x3C6C, 0x000A);  // BPC_NOISE_FLOOR1
+	write_cmos_sensor_16bit(0x3C6E, 0x000E);  // BPC_NOISE_FLOOR2
+	write_cmos_sensor_16bit(0x3C70, 0x0012);  // BPC_NOISE_FLOOR3
+	write_cmos_sensor_16bit(0x3C72, 0x2010);  // BPC_NOISE_GAIN_TH10
+	write_cmos_sensor_16bit(0x3C74, 0x0040);  // BPC_NOISE_GAIN_TH2
+	write_cmos_sensor_16bit(0x3C78, 0x0000);  // BPC_NOISE_ADD_GP
+	write_cmos_sensor_16bit(0x3C7A, 0x0210);  // BPC_DEFECT
+	write_cmos_sensor_16bit(0x3C7C, 0x000A);  // BPC_SF_SIGMA
+	write_cmos_sensor_16bit(0x3C7E, 0x20FF);  // BPC_DF_SIGMA10
+	write_cmos_sensor_16bit(0x3C80, 0x0810);  // BPC_DF_SIGMA32
+	write_cmos_sensor_16bit(0x3C82, 0x20FF);  // BPC_DC_SIGMA10
+	write_cmos_sensor_16bit(0x3C84, 0x0810);  // BPC_DC_SIGMA32
+	write_cmos_sensor_16bit(0x3C86, 0x4210);  // BPC_DC_F
+	write_cmos_sensor_16bit(0x3C88, 0x0000);  // BPC_DEN_EN10
+	write_cmos_sensor_16bit(0x3C8A, 0x0000);  // BPC_DEN_EN32
+	write_cmos_sensor_16bit(0x3C8C, 0x0010);  // BPC_DEN_SIGMA
+	write_cmos_sensor_16bit(0x3C8E, 0x03F5);  // BPC_DEN_DIS_TH
+	write_cmos_sensor_16bit(0x3C90, 0x0000);  // BPC_TRI_ABYP_SIGMA
+	write_cmos_sensor_16bit(0x3C94, 0x47E0);  // BPC_PDAF_REC_SETUP1
+	write_cmos_sensor_16bit(0x3C96, 0x6000);  // BPC_PDAF_TAG_GRAD_EN
+	write_cmos_sensor_16bit(0x3C98, 0x0000);  // BPC_PDAF_REC_TOL_ABS0
+	write_cmos_sensor_16bit(0x3C9A, 0x0000);  // BPC_PDAF_REC_TOL_ABS1
+	write_cmos_sensor_16bit(0x3C9C, 0x0000);  // BPC_PDAF_REC_TOL_ABS2
+	write_cmos_sensor_16bit(0x3C9E, 0x0000);  // BPC_PDAF_REC_TOL_ABS3
+	write_cmos_sensor_16bit(0x3CA0, 0x0000);  // BPC_PDAF_REC_TOL_ABS4
+	write_cmos_sensor_16bit(0x3CA2, 0x0000);  // BPC_PDAF_REC_TOL_ABS5
+	write_cmos_sensor_16bit(0x3CA4, 0x0000);  // BPC_PDAF_REC_TOL_ABS6
+	write_cmos_sensor_16bit(0x3CA6, 0x0000);  // BPC_PDAF_REC_TOL_ABS7
+	write_cmos_sensor_16bit(0x3CC0, 0x0000);  // BPC_PDAF_REC_TOL_DARK
+	write_cmos_sensor_16bit(0x3CC2, 0x03E8);  // BPC_BM_T0
+	write_cmos_sensor_16bit(0x3CC4, 0x07D0);  // BPC_BM_T1
+	write_cmos_sensor_16bit(0x3CC6, 0x0BB8);  // BPC_BM_T2
+	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF_ROW_CONTROL
+	write_cmos_sensor_16bit(0x322E, 0x0000);  // PDAF_PEDESTAL
+	write_cmos_sensor_16bit(0x3230, 0x0FF0);  // PDAF_SAT_TH
+	write_cmos_sensor_16bit(0x32BC, 0x0019);  // PDAF_DC_TH_ABS
+	write_cmos_sensor_16bit(0x32BE, 0x0013);  // PDAF_DC_TH_REL
+	write_cmos_sensor_16bit(0x32C0, 0x0010);  // PDAF_DC_DIFF_FACTOR
+	write_cmos_sensor_16bit(0x3D00, 0x0446);  // DYNAMIC_SEQRAM_00
+	write_cmos_sensor_16bit(0x3D02, 0x4C66);  // DYNAMIC_SEQRAM_02
+	write_cmos_sensor_16bit(0x3D04, 0xFFFF);  // DYNAMIC_SEQRAM_04
+	write_cmos_sensor_16bit(0x3D06, 0xFFFF);  // DYNAMIC_SEQRAM_06
+	write_cmos_sensor_16bit(0x3D08, 0x5E40);  // DYNAMIC_SEQRAM_08
+	write_cmos_sensor_16bit(0x3D0A, 0x1106);  // DYNAMIC_SEQRAM_0A
+	write_cmos_sensor_16bit(0x3D0C, 0x8041);  // DYNAMIC_SEQRAM_0C
+	write_cmos_sensor_16bit(0x3D0E, 0x4F83);  // DYNAMIC_SEQRAM_0E
+	write_cmos_sensor_16bit(0x3D10, 0x4200);  // DYNAMIC_SEQRAM_10
+	write_cmos_sensor_16bit(0x3D12, 0xC055);  // DYNAMIC_SEQRAM_12
+	write_cmos_sensor_16bit(0x3D14, 0x805B);  // DYNAMIC_SEQRAM_14
+	write_cmos_sensor_16bit(0x3D16, 0x8360);  // DYNAMIC_SEQRAM_16
+	write_cmos_sensor_16bit(0x3D18, 0x845A);  // DYNAMIC_SEQRAM_18
+	write_cmos_sensor_16bit(0x3D1A, 0x8D00);  // DYNAMIC_SEQRAM_1A
+	write_cmos_sensor_16bit(0x3D1C, 0xC083);  // DYNAMIC_SEQRAM_1C
+	write_cmos_sensor_16bit(0x3D1E, 0x428F);  // DYNAMIC_SEQRAM_1E
+	write_cmos_sensor_16bit(0x3D20, 0x5281);  // DYNAMIC_SEQRAM_20
+	write_cmos_sensor_16bit(0x3D22, 0x5A85);  // DYNAMIC_SEQRAM_22
+	write_cmos_sensor_16bit(0x3D24, 0x5364);  // DYNAMIC_SEQRAM_24
+	write_cmos_sensor_16bit(0x3D26, 0x1030);  // DYNAMIC_SEQRAM_26
+	write_cmos_sensor_16bit(0x3D28, 0x801C);  // DYNAMIC_SEQRAM_28
+	write_cmos_sensor_16bit(0x3D2A, 0x00C3);  // DYNAMIC_SEQRAM_2A
+	write_cmos_sensor_16bit(0x3D2C, 0x5756);  // DYNAMIC_SEQRAM_2C
+	write_cmos_sensor_16bit(0x3D2E, 0x9651);  // DYNAMIC_SEQRAM_2E
+	write_cmos_sensor_16bit(0x3D30, 0x5080);  // DYNAMIC_SEQRAM_30
+	write_cmos_sensor_16bit(0x3D32, 0x4D43);  // DYNAMIC_SEQRAM_32
+	write_cmos_sensor_16bit(0x3D34, 0x8252);  // DYNAMIC_SEQRAM_34
+	write_cmos_sensor_16bit(0x3D36, 0x8058);  // DYNAMIC_SEQRAM_36
+	write_cmos_sensor_16bit(0x3D38, 0x58A4);  // DYNAMIC_SEQRAM_38
+	write_cmos_sensor_16bit(0x3D3A, 0x439A);  // DYNAMIC_SEQRAM_3A
+	write_cmos_sensor_16bit(0x3D3C, 0x4592);  // DYNAMIC_SEQRAM_3C
+	write_cmos_sensor_16bit(0x3D3E, 0x45A7);  // DYNAMIC_SEQRAM_3E
+	write_cmos_sensor_16bit(0x3D40, 0x5294);  // DYNAMIC_SEQRAM_40
+	write_cmos_sensor_16bit(0x3D42, 0x51E6);  // DYNAMIC_SEQRAM_42
+	write_cmos_sensor_16bit(0x3D44, 0x5186);  // DYNAMIC_SEQRAM_44
+	write_cmos_sensor_16bit(0x3D46, 0x10C4);  // DYNAMIC_SEQRAM_46
+	write_cmos_sensor_16bit(0x3D48, 0x9C4F);  // DYNAMIC_SEQRAM_48
+	write_cmos_sensor_16bit(0x3D4A, 0x8659);  // DYNAMIC_SEQRAM_4A
+	write_cmos_sensor_16bit(0x3D4C, 0x59E6);  // DYNAMIC_SEQRAM_4C
+	write_cmos_sensor_16bit(0x3D4E, 0x4293);  // DYNAMIC_SEQRAM_4E
+	write_cmos_sensor_16bit(0x3D50, 0x6182);  // DYNAMIC_SEQRAM_50
+	write_cmos_sensor_16bit(0x3D52, 0x6283);  // DYNAMIC_SEQRAM_52
+	write_cmos_sensor_16bit(0x3D54, 0x4281);  // DYNAMIC_SEQRAM_54
+	write_cmos_sensor_16bit(0x3D56, 0x4164);  // DYNAMIC_SEQRAM_56
+	write_cmos_sensor_16bit(0x3D58, 0xFFFF);  // DYNAMIC_SEQRAM_58
+	write_cmos_sensor_16bit(0x3D5A, 0xB740);  // DYNAMIC_SEQRAM_5A
+	write_cmos_sensor_16bit(0x3D5C, 0x8140);  // DYNAMIC_SEQRAM_5C
+	write_cmos_sensor_16bit(0x3D5E, 0x8041);  // DYNAMIC_SEQRAM_5E
+	write_cmos_sensor_16bit(0x3D60, 0x8042);  // DYNAMIC_SEQRAM_60
+	write_cmos_sensor_16bit(0x3D62, 0x8043);  // DYNAMIC_SEQRAM_62
+	write_cmos_sensor_16bit(0x3D64, 0x8D44);  // DYNAMIC_SEQRAM_64
+	write_cmos_sensor_16bit(0x3D66, 0xBA44);  // DYNAMIC_SEQRAM_66
+	write_cmos_sensor_16bit(0x3D68, 0x8843);  // DYNAMIC_SEQRAM_68
+	write_cmos_sensor_16bit(0x3D6A, 0x8042);  // DYNAMIC_SEQRAM_6A
+	write_cmos_sensor_16bit(0x3D6C, 0x4181);  // DYNAMIC_SEQRAM_6C
+	write_cmos_sensor_16bit(0x3D6E, 0x4082);  // DYNAMIC_SEQRAM_6E
+	write_cmos_sensor_16bit(0x3D70, 0x4080);  // DYNAMIC_SEQRAM_70
+	write_cmos_sensor_16bit(0x3D72, 0x4180);  // DYNAMIC_SEQRAM_72
+	write_cmos_sensor_16bit(0x3D74, 0x4280);  // DYNAMIC_SEQRAM_74
+	write_cmos_sensor_16bit(0x3D76, 0x438D);  // DYNAMIC_SEQRAM_76
+	write_cmos_sensor_16bit(0x3D78, 0x44BA);  // DYNAMIC_SEQRAM_78
+	write_cmos_sensor_16bit(0x3D7A, 0x4487);  // DYNAMIC_SEQRAM_7A
+	write_cmos_sensor_16bit(0x3D7C, 0x5E43);  // DYNAMIC_SEQRAM_7C
+	write_cmos_sensor_16bit(0x3D7E, 0x5442);  // DYNAMIC_SEQRAM_7E
+	write_cmos_sensor_16bit(0x3D80, 0x4181);  // DYNAMIC_SEQRAM_80
+	write_cmos_sensor_16bit(0x3D82, 0x4081);  // DYNAMIC_SEQRAM_82
+	write_cmos_sensor_16bit(0x3D84, 0x5B81);  // DYNAMIC_SEQRAM_84
+	write_cmos_sensor_16bit(0x3D86, 0x6026);  // DYNAMIC_SEQRAM_86
+	write_cmos_sensor_16bit(0x3D88, 0x0055);  // DYNAMIC_SEQRAM_88
+	write_cmos_sensor_16bit(0x3D8A, 0x8070);  // DYNAMIC_SEQRAM_8A
+	write_cmos_sensor_16bit(0x3D8C, 0x8040);  // DYNAMIC_SEQRAM_8C
+	write_cmos_sensor_16bit(0x3D8E, 0x4C81);  // DYNAMIC_SEQRAM_8E
+	write_cmos_sensor_16bit(0x3D90, 0x45C3);  // DYNAMIC_SEQRAM_90
+	write_cmos_sensor_16bit(0x3D92, 0x4581);  // DYNAMIC_SEQRAM_92
+	write_cmos_sensor_16bit(0x3D94, 0x4C40);  // DYNAMIC_SEQRAM_94
+	write_cmos_sensor_16bit(0x3D96, 0x8070);  // DYNAMIC_SEQRAM_96
+	write_cmos_sensor_16bit(0x3D98, 0x8040);  // DYNAMIC_SEQRAM_98
+	write_cmos_sensor_16bit(0x3D9A, 0x4C85);  // DYNAMIC_SEQRAM_9A
+	write_cmos_sensor_16bit(0x3D9C, 0x6CA8);  // DYNAMIC_SEQRAM_9C
+	write_cmos_sensor_16bit(0x3D9E, 0x6C8C);  // DYNAMIC_SEQRAM_9E
+	write_cmos_sensor_16bit(0x3DA0, 0x000E);  // DYNAMIC_SEQRAM_A0
+	write_cmos_sensor_16bit(0x3DA2, 0xBE44);  // DYNAMIC_SEQRAM_A2
+	write_cmos_sensor_16bit(0x3DA4, 0x8844);  // DYNAMIC_SEQRAM_A4
+	write_cmos_sensor_16bit(0x3DA6, 0xBC78);  // DYNAMIC_SEQRAM_A6
+	write_cmos_sensor_16bit(0x3DA8, 0x0900);  // DYNAMIC_SEQRAM_A8
+	write_cmos_sensor_16bit(0x3DAA, 0x8904);  // DYNAMIC_SEQRAM_AA
+	write_cmos_sensor_16bit(0x3DAC, 0x8080);  // DYNAMIC_SEQRAM_AC
+	write_cmos_sensor_16bit(0x3DAE, 0x0240);  // DYNAMIC_SEQRAM_AE
+	write_cmos_sensor_16bit(0x3DB0, 0x8609);  // DYNAMIC_SEQRAM_B0
+	write_cmos_sensor_16bit(0x3DB2, 0x008E);  // DYNAMIC_SEQRAM_B2
+	write_cmos_sensor_16bit(0x3DB4, 0x0900);  // DYNAMIC_SEQRAM_B4
+	write_cmos_sensor_16bit(0x3DB6, 0x8002);  // DYNAMIC_SEQRAM_B6
+	write_cmos_sensor_16bit(0x3DB8, 0x4080);  // DYNAMIC_SEQRAM_B8
+	write_cmos_sensor_16bit(0x3DBA, 0x0480);  // DYNAMIC_SEQRAM_BA
+	write_cmos_sensor_16bit(0x3DBC, 0x887C);  // DYNAMIC_SEQRAM_BC
+	write_cmos_sensor_16bit(0x3DBE, 0xAA86);  // DYNAMIC_SEQRAM_BE
+	write_cmos_sensor_16bit(0x3DC0, 0x0900);  // DYNAMIC_SEQRAM_C0
+	write_cmos_sensor_16bit(0x3DC2, 0x877A);  // DYNAMIC_SEQRAM_C2
+	write_cmos_sensor_16bit(0x3DC4, 0x000E);  // DYNAMIC_SEQRAM_C4
+	write_cmos_sensor_16bit(0x3DC6, 0xC379);  // DYNAMIC_SEQRAM_C6
+	write_cmos_sensor_16bit(0x3DC8, 0x4C40);  // DYNAMIC_SEQRAM_C8
+	write_cmos_sensor_16bit(0x3DCA, 0xBF70);  // DYNAMIC_SEQRAM_CA
+	write_cmos_sensor_16bit(0x3DCC, 0x5E40);  // DYNAMIC_SEQRAM_CC
+	write_cmos_sensor_16bit(0x3DCE, 0x114E);  // DYNAMIC_SEQRAM_CE
+	write_cmos_sensor_16bit(0x3DD0, 0x5D41);  // DYNAMIC_SEQRAM_D0
+	write_cmos_sensor_16bit(0x3DD2, 0x5383);  // DYNAMIC_SEQRAM_D2
+	write_cmos_sensor_16bit(0x3DD4, 0x4200);  // DYNAMIC_SEQRAM_D4
+	write_cmos_sensor_16bit(0x3DD6, 0xC055);  // DYNAMIC_SEQRAM_D6
+	write_cmos_sensor_16bit(0x3DD8, 0xA400);  // DYNAMIC_SEQRAM_D8
+	write_cmos_sensor_16bit(0x3DDA, 0xC083);  // DYNAMIC_SEQRAM_DA
+	write_cmos_sensor_16bit(0x3DDC, 0x4288);  // DYNAMIC_SEQRAM_DC
+	write_cmos_sensor_16bit(0x3DDE, 0x6083);  // DYNAMIC_SEQRAM_DE
+	write_cmos_sensor_16bit(0x3DE0, 0x5B80);  // DYNAMIC_SEQRAM_E0
+	write_cmos_sensor_16bit(0x3DE2, 0x5A64);  // DYNAMIC_SEQRAM_E2
+	write_cmos_sensor_16bit(0x3DE4, 0x1030);  // DYNAMIC_SEQRAM_E4
+	write_cmos_sensor_16bit(0x3DE6, 0x801C);  // DYNAMIC_SEQRAM_E6
+	write_cmos_sensor_16bit(0x3DE8, 0x00A5);  // DYNAMIC_SEQRAM_E8
+	write_cmos_sensor_16bit(0x3DEA, 0x5697);  // DYNAMIC_SEQRAM_EA
+	write_cmos_sensor_16bit(0x3DEC, 0x57A5);  // DYNAMIC_SEQRAM_EC
+	write_cmos_sensor_16bit(0x3DEE, 0x5180);  // DYNAMIC_SEQRAM_EE
+	write_cmos_sensor_16bit(0x3DF0, 0x505A);  // DYNAMIC_SEQRAM_F0
+	write_cmos_sensor_16bit(0x3DF2, 0x814D);  // DYNAMIC_SEQRAM_F2
+	write_cmos_sensor_16bit(0x3DF4, 0x8358);  // DYNAMIC_SEQRAM_F4
+	write_cmos_sensor_16bit(0x3DF6, 0x8058);  // DYNAMIC_SEQRAM_F6
+	write_cmos_sensor_16bit(0x3DF8, 0xA943);  // DYNAMIC_SEQRAM_F8
+	write_cmos_sensor_16bit(0x3DFA, 0x8345);  // DYNAMIC_SEQRAM_FA
+	write_cmos_sensor_16bit(0x3DFC, 0xB045);  // DYNAMIC_SEQRAM_FC
+	write_cmos_sensor_16bit(0x3DFE, 0x8343);  // DYNAMIC_SEQRAM_FE
+	write_cmos_sensor_16bit(0x3E00, 0xA351);  // DYNAMIC_SEQRAM_100
+	write_cmos_sensor_16bit(0x3E02, 0xE251);  // DYNAMIC_SEQRAM_102
+	write_cmos_sensor_16bit(0x3E04, 0x8C59);  // DYNAMIC_SEQRAM_104
+	write_cmos_sensor_16bit(0x3E06, 0x8059);  // DYNAMIC_SEQRAM_106
+	write_cmos_sensor_16bit(0x3E08, 0x8A5F);  // DYNAMIC_SEQRAM_108
+	write_cmos_sensor_16bit(0x3E0A, 0xEC7C);  // DYNAMIC_SEQRAM_10A
+	write_cmos_sensor_16bit(0x3E0C, 0xCC84);  // DYNAMIC_SEQRAM_10C
+	write_cmos_sensor_16bit(0x3E0E, 0x6182);  // DYNAMIC_SEQRAM_10E
+	write_cmos_sensor_16bit(0x3E10, 0x6283);  // DYNAMIC_SEQRAM_110
+	write_cmos_sensor_16bit(0x3E12, 0x4283);  // DYNAMIC_SEQRAM_112
+	write_cmos_sensor_16bit(0x3E14, 0x10CC);  // DYNAMIC_SEQRAM_114
+	write_cmos_sensor_16bit(0x3E16, 0x6496);  // DYNAMIC_SEQRAM_116
+	write_cmos_sensor_16bit(0x3E18, 0x4281);  // DYNAMIC_SEQRAM_118
+	write_cmos_sensor_16bit(0x3E1A, 0x41BB);  // DYNAMIC_SEQRAM_11A
+	write_cmos_sensor_16bit(0x3E1C, 0x4082);  // DYNAMIC_SEQRAM_11C
+	write_cmos_sensor_16bit(0x3E1E, 0x407E);  // DYNAMIC_SEQRAM_11E
+	write_cmos_sensor_16bit(0x3E20, 0xCC41);  // DYNAMIC_SEQRAM_120
+	write_cmos_sensor_16bit(0x3E22, 0x8042);  // DYNAMIC_SEQRAM_122
+	write_cmos_sensor_16bit(0x3E24, 0x8043);  // DYNAMIC_SEQRAM_124
+	write_cmos_sensor_16bit(0x3E26, 0x8300);  // DYNAMIC_SEQRAM_126
+	write_cmos_sensor_16bit(0x3E28, 0xC088);  // DYNAMIC_SEQRAM_128
+	write_cmos_sensor_16bit(0x3E2A, 0x44BA);  // DYNAMIC_SEQRAM_12A
+	write_cmos_sensor_16bit(0x3E2C, 0x4488);  // DYNAMIC_SEQRAM_12C
+	write_cmos_sensor_16bit(0x3E2E, 0x00C8);  // DYNAMIC_SEQRAM_12E
+	write_cmos_sensor_16bit(0x3E30, 0x8042);  // DYNAMIC_SEQRAM_130
+	write_cmos_sensor_16bit(0x3E32, 0x4181);  // DYNAMIC_SEQRAM_132
+	write_cmos_sensor_16bit(0x3E34, 0x4082);  // DYNAMIC_SEQRAM_134
+	write_cmos_sensor_16bit(0x3E36, 0x4080);  // DYNAMIC_SEQRAM_136
+	write_cmos_sensor_16bit(0x3E38, 0x4180);  // DYNAMIC_SEQRAM_138
+	write_cmos_sensor_16bit(0x3E3A, 0x4280);  // DYNAMIC_SEQRAM_13A
+	write_cmos_sensor_16bit(0x3E3C, 0x4383);  // DYNAMIC_SEQRAM_13C
+	write_cmos_sensor_16bit(0x3E3E, 0x00C0);  // DYNAMIC_SEQRAM_13E
+	write_cmos_sensor_16bit(0x3E40, 0x8844);  // DYNAMIC_SEQRAM_140
+	write_cmos_sensor_16bit(0x3E42, 0xBA44);  // DYNAMIC_SEQRAM_142
+	write_cmos_sensor_16bit(0x3E44, 0x8800);  // DYNAMIC_SEQRAM_144
+	write_cmos_sensor_16bit(0x3E46, 0xC880);  // DYNAMIC_SEQRAM_146
+	write_cmos_sensor_16bit(0x3E48, 0x4241);  // DYNAMIC_SEQRAM_148
+	write_cmos_sensor_16bit(0x3E4A, 0x8240);  // DYNAMIC_SEQRAM_14A
+	write_cmos_sensor_16bit(0x3E4C, 0x8140);  // DYNAMIC_SEQRAM_14C
+	write_cmos_sensor_16bit(0x3E4E, 0x8041);  // DYNAMIC_SEQRAM_14E
+	write_cmos_sensor_16bit(0x3E50, 0x8042);  // DYNAMIC_SEQRAM_150
+	write_cmos_sensor_16bit(0x3E52, 0x8043);  // DYNAMIC_SEQRAM_152
+	write_cmos_sensor_16bit(0x3E54, 0x8300);  // DYNAMIC_SEQRAM_154
+	write_cmos_sensor_16bit(0x3E56, 0xC088);  // DYNAMIC_SEQRAM_156
+	write_cmos_sensor_16bit(0x3E58, 0x44BA);  // DYNAMIC_SEQRAM_158
+	write_cmos_sensor_16bit(0x3E5A, 0x4488);  // DYNAMIC_SEQRAM_15A
+	write_cmos_sensor_16bit(0x3E5C, 0x00C8);  // DYNAMIC_SEQRAM_15C
+	write_cmos_sensor_16bit(0x3E5E, 0x8042);  // DYNAMIC_SEQRAM_15E
+	write_cmos_sensor_16bit(0x3E60, 0x4181);  // DYNAMIC_SEQRAM_160
+	write_cmos_sensor_16bit(0x3E62, 0x4082);  // DYNAMIC_SEQRAM_162
+	write_cmos_sensor_16bit(0x3E64, 0x4080);  // DYNAMIC_SEQRAM_164
+	write_cmos_sensor_16bit(0x3E66, 0x4180);  // DYNAMIC_SEQRAM_166
+	write_cmos_sensor_16bit(0x3E68, 0x4280);  // DYNAMIC_SEQRAM_168
+	write_cmos_sensor_16bit(0x3E6A, 0x4383);  // DYNAMIC_SEQRAM_16A
+	write_cmos_sensor_16bit(0x3E6C, 0x00C0);  // DYNAMIC_SEQRAM_16C
+	write_cmos_sensor_16bit(0x3E6E, 0x8844);  // DYNAMIC_SEQRAM_16E
+	write_cmos_sensor_16bit(0x3E70, 0xBA44);  // DYNAMIC_SEQRAM_170
+	write_cmos_sensor_16bit(0x3E72, 0x8800);  // DYNAMIC_SEQRAM_172
+	write_cmos_sensor_16bit(0x3E74, 0xC880);  // DYNAMIC_SEQRAM_174
+	write_cmos_sensor_16bit(0x3E76, 0x4241);  // DYNAMIC_SEQRAM_176
+	write_cmos_sensor_16bit(0x3E78, 0x8140);  // DYNAMIC_SEQRAM_178
+	write_cmos_sensor_16bit(0x3E7A, 0x9F5E);  // DYNAMIC_SEQRAM_17A
+	write_cmos_sensor_16bit(0x3E7C, 0x8A54);  // DYNAMIC_SEQRAM_17C
+	write_cmos_sensor_16bit(0x3E7E, 0x8620);  // DYNAMIC_SEQRAM_17E
+	write_cmos_sensor_16bit(0x3E80, 0x2881);  // DYNAMIC_SEQRAM_180
+	write_cmos_sensor_16bit(0x3E82, 0x6026);  // DYNAMIC_SEQRAM_182
+	write_cmos_sensor_16bit(0x3E84, 0x8055);  // DYNAMIC_SEQRAM_184
+	write_cmos_sensor_16bit(0x3E86, 0x8070);  // DYNAMIC_SEQRAM_186
+	write_cmos_sensor_16bit(0x3E88, 0x0000);  // DYNAMIC_SEQRAM_188
+	write_cmos_sensor_16bit(0x3E8A, 0x0000);  // DYNAMIC_SEQRAM_18A
+	write_cmos_sensor_16bit(0x3E8C, 0x0000);  // DYNAMIC_SEQRAM_18C
+	write_cmos_sensor_16bit(0x3E8E, 0x0000);  // DYNAMIC_SEQRAM_18E
+	write_cmos_sensor_16bit(0x3E90, 0x0000);  // DYNAMIC_SEQRAM_190
+	write_cmos_sensor_16bit(0x3E92, 0x0000);  // DYNAMIC_SEQRAM_192
+	write_cmos_sensor_16bit(0x3E94, 0x0000);  // DYNAMIC_SEQRAM_194
+	write_cmos_sensor_16bit(0x3E96, 0x0000);  // DYNAMIC_SEQRAM_196
+	write_cmos_sensor_16bit(0x3E98, 0x0000);  // DYNAMIC_SEQRAM_198
+	write_cmos_sensor_16bit(0x3E9A, 0x0000);  // DYNAMIC_SEQRAM_19A
+	write_cmos_sensor_16bit(0x3E9C, 0x0000);  // DYNAMIC_SEQRAM_19C
+	write_cmos_sensor_16bit(0x3E9E, 0x0000);  // DYNAMIC_SEQRAM_19E
+	write_cmos_sensor_16bit(0x3EA0, 0x0000);  // DYNAMIC_SEQRAM_1A0
+	write_cmos_sensor_16bit(0x3EA2, 0x0000);  // DYNAMIC_SEQRAM_1A2
+	write_cmos_sensor_16bit(0x3EA4, 0x0000);  // DYNAMIC_SEQRAM_1A4
+	write_cmos_sensor_16bit(0x3EA6, 0x0000);  // DYNAMIC_SEQRAM_1A6
+	write_cmos_sensor_16bit(0x3EA8, 0x0000);  // DYNAMIC_SEQRAM_1A8
+	write_cmos_sensor_16bit(0x3EAA, 0x0000);  // DYNAMIC_SEQRAM_1AA
+	write_cmos_sensor_16bit(0x3EAC, 0x0000);  // DYNAMIC_SEQRAM_1AC
+	write_cmos_sensor_16bit(0x3EAE, 0x0000);  // DYNAMIC_SEQRAM_1AE
+	write_cmos_sensor_16bit(0x3EB0, 0x0000);  // DYNAMIC_SEQRAM_1B0
+	write_cmos_sensor_16bit(0x3EB2, 0x0000);  // DYNAMIC_SEQRAM_1B2
+	write_cmos_sensor_16bit(0x3EB4, 0x0000);  // DYNAMIC_SEQRAM_1B4
+	write_cmos_sensor_16bit(0x3EB6, 0x004D);  // DAC_LD_0_1
+	write_cmos_sensor_16bit(0x3EBA, 0x21AB);  // DAC_LD_4_5
+	write_cmos_sensor_16bit(0x3EBC, 0xAA06);  // DAC_LD_6_7
+	write_cmos_sensor_16bit(0x3EC0, 0x1300);  // DAC_LD_10_11
+	write_cmos_sensor_16bit(0x3EC2, 0x7000);  // DAC_LD_12_13
+	write_cmos_sensor_16bit(0x3EC4, 0x1C08);  // DAC_LD_14_15
+	write_cmos_sensor_16bit(0x3EC6, 0xE244);  // DAC_LD_16_17
+	write_cmos_sensor_16bit(0x3EC8, 0x0F0F);  // DAC_LD_18_19
+	write_cmos_sensor_16bit(0x3ECA, 0x0F4A);  // DAC_LD_20_21
+	write_cmos_sensor_16bit(0x3ECC, 0x0706);  // DAC_LD_22_23
+	write_cmos_sensor_16bit(0x3ECE, 0x443B);  // DAC_LD_24_25
+	write_cmos_sensor_16bit(0x3ED0, 0x12F0);  // DAC_LD_26_27
+	write_cmos_sensor_16bit(0x3ED2, 0x0039);  // DAC_LD_28_29
+	write_cmos_sensor_16bit(0x3ED4, 0x862F);  // DAC_LD_30_31
+	write_cmos_sensor_16bit(0x3ED6, 0x4880);  // DAC_LD_32_33
+	write_cmos_sensor_16bit(0x3ED8, 0x0423);  // DAC_LD_34_35
+	write_cmos_sensor_16bit(0x3EDA, 0xF882);  // DAC_LD_36_37
+	write_cmos_sensor_16bit(0x3EDC, 0x8282);  // DAC_LD_38_39
+	write_cmos_sensor_16bit(0x3EDE, 0x8205);  // DAC_LD_40_41
+	write_cmos_sensor_16bit(0x316A, 0x8200);  // DAC_RSTLO
+	write_cmos_sensor_16bit(0x316C, 0x8200);  // DAC_TXLO
+	write_cmos_sensor_16bit(0x316E, 0x8200);  // DAC_ECL
+	write_cmos_sensor_16bit(0x3EF0, 0x5165);  // DAC_LD_ECL
+	write_cmos_sensor_16bit(0x3EF2, 0x0101);  // DAC_LD_FSC
+	write_cmos_sensor_16bit(0x3EF6, 0x030A);  // DAC_LD_RSTD
+	write_cmos_sensor_16bit(0x3EFA, 0x0F0F);  // DAC_LD_TXLO
+	write_cmos_sensor_16bit(0x3EFC, 0x070F);  // DAC_LD_TXLO1
+	write_cmos_sensor_16bit(0x3EFE, 0x0F0F);  // DAC_LD_TXLO2
+	write_cmos_sensor_16bit(0x32D0, 0x6000); // PE_PARAM_ADDR
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00AC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x189E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x189F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x188A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0806); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x188A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0806); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2828); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFFF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7FFF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x189E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x189F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x188A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0806); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x188A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A48); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0806); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D18); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D98); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x401E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0002); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2818); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x16AC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB6AC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0B44); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x020C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09B4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x034D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x021C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09BC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0150); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x081A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09B4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x16B4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01B2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D08); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2828); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x019E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0082); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x018A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA082); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2820); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00BE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00AE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA130); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA130); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xC000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2830); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x020D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA1C0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x032E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA1B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x120F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00AE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA6B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x120F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x041A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x006E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA1B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D98); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D18); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2828); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB36A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0F6A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0200); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0C1E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2230); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2438); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x019E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x819E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x819F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1C1D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x819E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1C1C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x819E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1C1C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x81DE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1DBC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x81FE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA495); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBB34); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBB54); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x020F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFF0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4007); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2818); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAD8A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAD8A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAD8A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x160F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAD8A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x160F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x203E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAD8A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2820); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00AE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAE0A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1811); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAE1A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1411); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0F0A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x202A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1818); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1402); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x15BE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00AA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x15BE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAE1A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA93C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x11B1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7052); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xABA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFC1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFAA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA120); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x02A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA2A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00E3); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x011E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF9F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA120); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x02A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA2A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00E3); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x011E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA920); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA922); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FBA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0006); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA024); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0200); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA124); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0BAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA124); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x805E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x011E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF8B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x011E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF86); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3052); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2DD0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x8000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2820); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x019E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x04C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x019E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA4C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0018); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0946); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x818A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0200); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x04C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FBA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xC000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2820); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x011E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x014E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x800E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x140F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x15AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x30F4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAABA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAEA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2428); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2228); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFCE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2620); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FA1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E01); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7002); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFCF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFFE); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFFF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0DAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0C0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x085E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0DAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0003); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF35); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF31); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF2D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF29); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7006); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAABA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAEA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA93A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA93A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA93A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA93A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3019); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3026); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7017); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FA1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E01); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E01); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FA1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2420); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF3A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2220); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7017); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7018); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2628); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2630); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7017); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7005); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFB0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7005); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x020F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3019); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3026); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3033); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x303F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB236); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB6B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0800); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2228); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2420); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB248); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x10C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB0C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB242); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x040F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12C2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A0A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x17B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1616); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1616); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x124A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1616); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x006A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0017); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x04B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x802A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFE76); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7050); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2638); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x89A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0017); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x002A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x04B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x802A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB24A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05B7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFE5B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2638); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9C8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x89A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D18); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBA28); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF9E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7005); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFE29); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFE20); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB224); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7011); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x201E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFE00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x045E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFDFB); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x6010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x105E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x13A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBB4A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBB6C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x021A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12EC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1076); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB26C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A1A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x003A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x12CA); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03B2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x047E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB26C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBE5E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05A5); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1E5E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0404); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0002); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x060F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFDF5); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x201E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x05AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0100); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x080F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB2A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x09AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3019); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3026); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3033); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2AC0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x303F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xADB6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB236); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB6B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0E0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA936); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7005); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B6); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x020F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3018); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7003); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAAA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAEA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2428); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA8A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x201E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2430); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA8A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x081E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2400); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFDEB); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2428); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA8A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x201E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2430); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x009E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA8A4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x081E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7010); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2400); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFDC7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704D); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x704E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2D18); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB948); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xB9A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBA28); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xBAA8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7004); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7051); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFF8E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3018); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x061E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAAA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAEA4); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA24); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0006); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A80); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0002); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0C1E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A3); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA0B0); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA030); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x1A0F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA1A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x120F); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x200E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA1A8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x03AF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFD65); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x4000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2620); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7009); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x601E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7008); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0A38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x007E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0014); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x005E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x010E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x801E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA925); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x700A); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A40); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7002); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2418); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x008E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x181E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA924); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0FAF); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xAA38); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0201); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFFC9); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3040); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x001E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xA9B8); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x01A1); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x00E7); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2A00); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x43FC); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2618); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0xFDA2); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x3600); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x7018); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2218); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x2000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D0, 0x3000); // PE_PARAM_ADDR
+	write_cmos_sensor_16bit(0x32D4, 0x004E); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0066); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000B); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0048); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0068); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x000C); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0014); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0001); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x32D4, 0x0000); // PE_PARAM_VALUE
+	write_cmos_sensor_16bit(0x3220, 0x0C13);  // PDAF_CONTROL
+	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA //Corn
+	write_cmos_sensor_16bit(0x3780, 0x0000);  // poly_sc_enable //Corn
+	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
+	mdelay(70);
 
-}
+	LOG_INF("X\n");}
 	
 	
 static void preview_setting(void)
 {
-	LOG_INF("enter preview setting");
-
 	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
-	mdelay(15);
-	write_cmos_sensor_16bit(0x0344, 0x0070);
-	write_cmos_sensor_16bit(0x0348, 0x100F);
-	write_cmos_sensor_16bit(0x0346, 0x0044);
-	write_cmos_sensor_16bit(0x034A, 0x0BFB);
-	write_cmos_sensor_16bit(0x0340, 0x0041);
-	write_cmos_sensor_16bit(0x3172, 0x0206);
-	write_cmos_sensor_16bit(0x317A, 0x416E);
-	write_cmos_sensor_16bit(0x3F3C, 0x0003);
-	write_cmos_sensor_16bit(0x034C, 0x0FA0);	//x output
-	write_cmos_sensor_16bit(0x034E, 0x0BB8);	//y output
-	write_cmos_sensor_16bit(0x0400, 0x0000);
-	write_cmos_sensor_16bit(0x0404, 0x0010);
-	write_cmos_sensor_16bit(0x0342, 0x12B8);
-	write_cmos_sensor_16bit(0x0340, 0x0C42);
-	write_cmos_sensor_16bit(0x0202, 0x0C55);
-	write_cmos_sensor_16bit(0x3226, 0x00E0);
-	write_cmos_sensor_16bit(0x322A, 0x00C8);
-	write_cmos_sensor_16bit(0x322C, 0x0FB5);
-	write_cmos_sensor_16bit(0x3228, 0x0B60);
-	write_cmos_sensor_16bit(0x3222, 0xA0C0);
-	write_cmos_sensor_16bit(0x32BA, 0x0000);
-	write_cmos_sensor_16bit(0x32CA, 0x04AA);
-	write_cmos_sensor_16bit(0x30ec, 0xfb08);
-	write_cmos_sensor_16bit(0x3124, 0x01ba);
-	write_cmos_sensor_16bit(0x31e4, 0x2cad);
-	write_cmos_sensor_16bit(0x31d6, 0x3336);
-	write_cmos_sensor_16bit(0x32c2, 0x03FC);
-	write_cmos_sensor_16bit(0x32c4, 0x03c0);
-	write_cmos_sensor_16bit(0x32c6, 0x0f00);
-	write_cmos_sensor_16bit(0x32c8, 0x0890);
-	write_cmos_sensor_16bit(0x32d0, 0x0001);
-	write_cmos_sensor_16bit(0x32d4, 0x0000);
-	write_cmos_sensor_16bit(0x3220, 0x0c13);
+	mdelay(70);
+        //PLL CONFIG
+	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
+	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
+	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED
+
+        //MIPI CONFIG
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);  // MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
+	write_cmos_sensor_16bit(0x31BA, 0x2070);  // MIPI_TIMING_3
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
+
+        //RESOLUTION MODE CONFIG
+	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
+	write_cmos_sensor_16bit(0x0348, 0x1077);  // X_ADDR_END
+	write_cmos_sensor_16bit(0x0346, 0x0008);  // Y_ADDR_START
+	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
+	write_cmos_sensor_16bit(0x034C,   4208);  // X_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x034E,   3120);  // Y_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x3040, 0x0041);  // READ_MODE
+	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
+	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
+	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
+	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
+	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
+	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
+	write_cmos_sensor_16bit(0x32BA, 0x0000);  // PDAF SC VISUAL TAG 
+	write_cmos_sensor_16bit(0x32CA, 0x04AA);  // PDAF_ODP_LLENGTH
+
+        //PDAF VC
+	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA  //Corn
+	//write_cmos_sensor_16bit(0x3124, 0x01BA);	// TEMPSENS_DATA_REG
+	//write_cmos_sensor_16bit(0x31E4, 0x2CAD);	// PIX_DEF_ID_RAM_READ	
+	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
+	write_cmos_sensor_16bit(0x32C2, 0x03FC);  // PDAF_DMA_START
+	write_cmos_sensor_16bit(0x32C4, 0x3C0);  // PDAF_DMA_SIZE //0x0F30
+	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
+	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
+	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
+     
+        //PDAF specific to 13M
+	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
+        write_cmos_sensor_16bit(0x3023, 0x0001); //  0x3023 is 16bit reg
+         
 	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
 }	 /*    preview_setting	*/
 	
@@ -3866,81 +3867,123 @@ static void capture_setting(kal_uint16 currefps)
 	LOG_INF("enter capture setting");
 
 	write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
-	mdelay(15);
-	write_cmos_sensor_16bit(0x0344, 0x0008);
-	write_cmos_sensor_16bit(0x0348, 0x1077);
-	write_cmos_sensor_16bit(0x0346, 0x0008);
-	write_cmos_sensor_16bit(0x034A, 0x0C37);
-	write_cmos_sensor_16bit(0x0340, 0x0041);
-	write_cmos_sensor_16bit(0x3172, 0x0206);
-	write_cmos_sensor_16bit(0x317A, 0x416E);
-	write_cmos_sensor_16bit(0x3F3C, 0x0003);
-	write_cmos_sensor_16bit(0x034C, 0x1070);
-	write_cmos_sensor_16bit(0x034E, 0x0C3F);
-	write_cmos_sensor_16bit(0x0400, 0x0000);
-	write_cmos_sensor_16bit(0x0404, 0x0010);
-	write_cmos_sensor_16bit(0x0342, 0x12B8);
-	write_cmos_sensor_16bit(0x0340, 0x0C42);
-	write_cmos_sensor_16bit(0x0202, 0x0C55);
-	write_cmos_sensor_16bit(0x3226, 0x00E0);
-	write_cmos_sensor_16bit(0x322A, 0x00C8);
-	write_cmos_sensor_16bit(0x322C, 0x0FB5);
-	write_cmos_sensor_16bit(0x3228, 0x0B60);
-	write_cmos_sensor_16bit(0x3222, 0xA0C0);
-	write_cmos_sensor_16bit(0x32BA, 0x0000);
-	write_cmos_sensor_16bit(0x32CA, 0x04AA);
-	write_cmos_sensor_16bit(0x30ec, 0xfb08);
-	write_cmos_sensor_16bit(0x3124, 0x01ba);
-	write_cmos_sensor_16bit(0x31e4, 0x2cad);
-	write_cmos_sensor_16bit(0x31d6, 0x3336);
-	write_cmos_sensor_16bit(0x32c2, 0x03FC);
-	write_cmos_sensor_16bit(0x32c4, 0x03c0);
-	write_cmos_sensor_16bit(0x32c6, 0x0f00);
-	write_cmos_sensor_16bit(0x32c8, 0x0890);
-	write_cmos_sensor_16bit(0x32d0, 0x0001);
-	write_cmos_sensor_16bit(0x32d4, 0x0000);
-	write_cmos_sensor_16bit(0x3220, 0x0c13);
+	mdelay(70);
+        //PLL CONFIG
+	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
+	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
+	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED
+
+        //MIPI CONFIG
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);  // MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
+	write_cmos_sensor_16bit(0x31BA, 0x2070);  // MIPI_TIMING_3
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
+
+        //RESOLUTION MODE CONFIG
+	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
+	write_cmos_sensor_16bit(0x0348, 0x1077);  // X_ADDR_END
+	write_cmos_sensor_16bit(0x0346, 0x0008);  // Y_ADDR_START
+	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
+	write_cmos_sensor_16bit(0x034C,   4208);  // X_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x034E,   3120);  // Y_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x3040, 0x0041);  // READ_MODE
+	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
+	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
+	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
+	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
+	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
+	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
+	write_cmos_sensor_16bit(0x32BA, 0x0000);  // PDAF SC VISUAL TAG 
+	write_cmos_sensor_16bit(0x32CA, 0x04AA);  // PDAF_ODP_LLENGTH
+        
+        //PDAF VC
+	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA  //Corn
+	//write_cmos_sensor_16bit(0x3124, 0x01BA);	// TEMPSENS_DATA_REG
+	//write_cmos_sensor_16bit(0x31E4, 0x2CAD);	// PIX_DEF_ID_RAM_READ	
+	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
+	write_cmos_sensor_16bit(0x32C2, 0x03FC);  // PDAF_DMA_START
+	write_cmos_sensor_16bit(0x32C4, 0x3C0);  // PDAF_DMA_SIZE //0x0F30
+	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
+	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
+	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
+     
+        //PDAF specific to 13M
+	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
+        write_cmos_sensor_16bit(0x3023, 0x0001); //0x3023 is 16bit reg
 	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON
 }
 	
 	
 	static void normal_video_setting(kal_uint16 currefps)
 	{
-write_cmos_sensor(0x0100, 0x00);  // STREAM_OFF
-	mdelay(15);
-	write_cmos_sensor_16bit(0x0344, 0x0008);
-	write_cmos_sensor_16bit(0x0348, 0x1077);
-	write_cmos_sensor_16bit(0x0346, 0x0008);
-	write_cmos_sensor_16bit(0x034A, 0x0C37);
-	write_cmos_sensor_16bit(0x0340, 0x0041);
-	write_cmos_sensor_16bit(0x3172, 0x0206);
-	write_cmos_sensor_16bit(0x317A, 0x416E);
-	write_cmos_sensor_16bit(0x3F3C, 0x0003);
-	write_cmos_sensor_16bit(0x034C, 0x1070);
-	write_cmos_sensor_16bit(0x034E, 0x0C3F);
-	write_cmos_sensor_16bit(0x0400, 0x0000);
-	write_cmos_sensor_16bit(0x0404, 0x0010);
-	write_cmos_sensor_16bit(0x0342, 0x12B8);
-	write_cmos_sensor_16bit(0x0340, 0x0C42);
-	write_cmos_sensor_16bit(0x0202, 0x0C55);
-	write_cmos_sensor_16bit(0x3226, 0x00E0);
-	write_cmos_sensor_16bit(0x322A, 0x00C8);
-	write_cmos_sensor_16bit(0x322C, 0x0FB5);
-	write_cmos_sensor_16bit(0x3228, 0x0B60);
-	write_cmos_sensor_16bit(0x3222, 0xA0C0);
-	write_cmos_sensor_16bit(0x32BA, 0x0000);
-	write_cmos_sensor_16bit(0x32CA, 0x04AA);
-	write_cmos_sensor_16bit(0x30ec, 0xfb08);
-	write_cmos_sensor_16bit(0x3124, 0x01ba);
-	write_cmos_sensor_16bit(0x31e4, 0x2cad);
-	write_cmos_sensor_16bit(0x31d6, 0x3336);
-	write_cmos_sensor_16bit(0x32c2, 0x03FC);
-	write_cmos_sensor_16bit(0x32c4, 0x03c0);
-	write_cmos_sensor_16bit(0x32c6, 0x0f00);
-	write_cmos_sensor_16bit(0x32c8, 0x0890);
-	write_cmos_sensor_16bit(0x32d0, 0x0001);
-	write_cmos_sensor_16bit(0x32d4, 0x0000);
-	write_cmos_sensor_16bit(0x3220, 0x0c13);
+        //PLL CONFIG
+	write_cmos_sensor_16bit(0x0300, 0x0005);  // VT_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x0302, 0x0001);  // VT_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0304, 0x0303);  // PRE_PLL_CLK_DIV
+	write_cmos_sensor_16bit(0x0306, 0x8D8D);  // PLL_MULTIPLIER//0x8D8D
+	write_cmos_sensor_16bit(0x0308, 0x000A);  // OP_PIX_CLK_DIV
+	write_cmos_sensor_16bit(0x030A, 0x0001);  // OP_SYS_CLK_DIV
+	write_cmos_sensor_16bit(0x0112, 0x0A0A);  // CCP_DATA_FORMAT
+	write_cmos_sensor_16bit(0x3016, 0x0101);  // ROW_SPEED	
+
+        //MIPI CONFIG
+	write_cmos_sensor_16bit(0x31B0, 0x005C);  // FRAME_PREAMBLE
+	write_cmos_sensor_16bit(0x31B2, 0x002D);  // LINE_PREAMBLE
+	write_cmos_sensor_16bit(0x31B4, 0x3392);  // MIPI_TIMING_0
+	write_cmos_sensor_16bit(0x31B6, 0x242B);  // MIPI_TIMING_1
+	write_cmos_sensor_16bit(0x31B8, 0x2413);  // MIPI_TIMING_2
+	write_cmos_sensor_16bit(0x31BA, 0x2070);  // MIPI_TIMING_3
+	write_cmos_sensor_16bit(0x31BC, 0x868B);  // MIPI_TIMING_4
+
+        //RESOLUTION MODE CONFIG
+	write_cmos_sensor_16bit(0x0344, 0x0008);  // X_ADDR_START
+	write_cmos_sensor_16bit(0x0348, 0x1077);  // X_ADDR_END
+	write_cmos_sensor_16bit(0x0346, 0x0008);  // Y_ADDR_START
+	write_cmos_sensor_16bit(0x034A, 0x0C37);  // Y_ADDR_END
+	write_cmos_sensor_16bit(0x034C,  4208);  // X_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x034E,  3120);  // Y_OUTPUT_SIZE
+	write_cmos_sensor_16bit(0x3040, 0x0041);  // READ_MODE
+	write_cmos_sensor_16bit(0x3172, 0x0206);  // ANALOG_CONTROL2 //Corn
+	write_cmos_sensor_16bit(0x317A, 0x416E);  // ANALOG_CONTROL6
+	write_cmos_sensor_16bit(0x3F3C, 0x0003);  // ANALOG_CONTROL9
+	write_cmos_sensor_16bit(0x0342, 0x12B8);  // LINE_LENGTH_PCK
+	write_cmos_sensor_16bit(0x0340, 0x0C42);  // FRAME_LENGTH_LINES
+	write_cmos_sensor_16bit(0x0202, 0x0C3C);  // COARSE_INTEGRATION_TIME
+	write_cmos_sensor_16bit(0x3226, 0x00E0);  // PDAF ROW START 
+	write_cmos_sensor_16bit(0x3228, 0x0B60);  // PDAF ROW END
+	write_cmos_sensor_16bit(0x3222, 0xA0C0);  // PDAF ROW CONTROL 
+	write_cmos_sensor_16bit(0x32BA, 0x0000);  // PDAF SC VISUAL TAG 
+	write_cmos_sensor_16bit(0x32CA, 0x04AA);  // PDAF_ODP_LLENGTH
+        
+        //PDAF VC
+	write_cmos_sensor_16bit(0x30EC, 0xFB08);  // CTX_RD_DATA  //Corn
+	//write_cmos_sensor_16bit(0x3124, 0x01BA);	// TEMPSENS_DATA_REG
+	//write_cmos_sensor_16bit(0x31E4, 0x2CAD);	// PIX_DEF_ID_RAM_READ	
+	write_cmos_sensor_16bit(0x31D6, 0x3336);  // MIPI_JPEG_PN9_DATA_TYPE
+	write_cmos_sensor_16bit(0x32C2, 0x03FC);  // PDAF_DMA_START
+	write_cmos_sensor_16bit(0x32C4, 0x3C0);  // PDAF_DMA_SIZE //0x0F30
+	write_cmos_sensor_16bit(0x32C6, 0x0F00);  // PDAF_DMA_Y
+	write_cmos_sensor_16bit(0x32C8, 0x0890);  // PDAF_SEQ_START
+	write_cmos_sensor_16bit(0x32D0, 0x0001);  // PE_PARAM_ADDR
+	write_cmos_sensor_16bit(0x32D4, 0x0000);  // PE_PARAM_VALUE //Corn
+     
+        //PDAF specific to 13M
+	write_cmos_sensor_16bit(0x034E, 0x0C3F);  // Y_OUTPUT_SIZE	
+	write_cmos_sensor_16bit(0x32C8, 0x0840);  // PDAF_SEQ_START
+        write_cmos_sensor_16bit(0x3023, 0x0001); //0x3023 is 16bit reg
 	write_cmos_sensor(0x0100, 0x01);  // STREAM_ON		
 		
 			//	preview_setting();
@@ -4199,25 +4242,12 @@ static kal_uint32 capture(MSDK_SENSOR_EXPOSURE_WINDOW_STRUCT *image_window,
 	
     spin_lock(&imgsensor_drv_lock);
     imgsensor.sensor_mode = IMGSENSOR_MODE_CAPTURE;
-    if (imgsensor.current_fps == imgsensor_info.cap1.max_framerate) 
-	{//PIP capture: 24fps for less than 13M, 20fps for 16M,15fps for 20M
-        imgsensor.pclk = imgsensor_info.cap1.pclk;
-        imgsensor.line_length = imgsensor_info.cap1.linelength;
-        imgsensor.frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.min_frame_length = imgsensor_info.cap1.framelength;
-        imgsensor.autoflicker_en = KAL_FALSE;
-    } 
-	else 
-	{
-        if (imgsensor.current_fps != imgsensor_info.cap.max_framerate)
-            LOG_INF("Warning: current_fps %d fps is not support, so use cap's setting: %d fps!\n",
-			imgsensor.current_fps,imgsensor_info.cap.max_framerate/10);
         imgsensor.pclk = imgsensor_info.cap.pclk;
         imgsensor.line_length = imgsensor_info.cap.linelength;
         imgsensor.frame_length = imgsensor_info.cap.framelength;
         imgsensor.min_frame_length = imgsensor_info.cap.framelength;
         imgsensor.autoflicker_en = KAL_FALSE;
-    }
+
     spin_unlock(&imgsensor_drv_lock);
     capture_setting(imgsensor.current_fps);
     set_mirror_flip(imgsensor.mirror);
