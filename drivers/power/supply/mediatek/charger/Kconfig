@@ -99,6 +99,11 @@ config CHARGER_HL7005
 	  application.
 	  It depends on config MTK_CHARGER.
 
+config CHARGER_SY6923
+	bool "Charger Driver for SY6923 Charger IC"
+	default n
+	depends on MTK_CHARGER
+
 config MTK_CHARGER_UNLIMITED
 	bool "MediaTek Charger Unlimited"
 	default n
