@@ -1650,6 +1650,7 @@ static void tpd_suspend(struct device *dev)
 #endif
     }
 
+    fts_release_all_finger();
     ts_data->suspended = true;
     FTS_FUNC_EXIT();
 }
@@ -1736,7 +1737,7 @@ static int __init tpd_driver_init(void)
     tpd_get_dts_info();
     if (tpd_dts_data.touch_max_num < 2)
         tpd_dts_data.touch_max_num = 2;
-    else if (tpd_dts_data.touch_max_num > FTS_MAX_POINTS_SUPPORT)
+    else if (tpd_dts_data.touch_max_num != FTS_MAX_POINTS_SUPPORT)
         tpd_dts_data.touch_max_num = FTS_MAX_POINTS_SUPPORT;
     FTS_INFO("tpd max touch num:%d", tpd_dts_data.touch_max_num);
 
