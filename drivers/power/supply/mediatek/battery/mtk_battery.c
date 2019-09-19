@@ -375,6 +375,12 @@ static int battery_get_property(struct power_supply *psy,
 			val->intval = gm.fixed_uisoc;
 		else
 			val->intval = data->BAT_CAPACITY;
+#ifdef    DUAL_85_VERSION
+              if(data->BAT_CAPACITY<30)
+              {
+                   val->intval  = 30;    
+              }
+#endif
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		b_ischarging = gauge_get_current(&fgcurrent);
@@ -400,7 +406,25 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
+#ifdef    DUAL_85_VERSION
+              if(data->BAT_batt_temp>=44)
+              {
+                   val->intval  = 440;    
+              }
+		else
+		{
+              	if(data->BAT_batt_temp<=10)
+              	{
+                   		val->intval  = 100;    
+              	}
+			else
+			{
 		val->intval = data->BAT_batt_temp * 10;
+			}
+		}
+#else
+		val->intval = data->BAT_batt_temp * 10;
+#endif
 		break;
 
 	default:
@@ -1327,13 +1351,23 @@ int force_get_tbat(bool update)
 			bat_temperature_val,
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
+		if(bat_temperature_val == -40)
+		{
+		bm_err("[force_get_tbat] think ntc dnp ;%d;\n", bat_temperature_val);
+			battery_main.BAT_CAPACITY = 50;	
+			gm.ui_soc=50;
+			gm.soc=50;
+		strncpy(battery_vendor_name,"BATTERY NTC ERROR",20);
+			return 36;     //ntc dnp, so fix 36 degree
+		}
+
 		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	}
 
 	gm.ntc_disable_nafg = false;
 #ifdef DUAL_85_VERSION
-	if (bat_temperature_val > 48)
-		bat_temperature_val = 48;
+	if (bat_temperature_val > 59)
+		bat_temperature_val = 59
 	if (bat_temperature_val < 10)
 		bat_temperature_val = 10;
 #endif
@@ -1791,7 +1825,7 @@ void exec_BAT_EC(int cmd, int param)
 				bm_err(
 					"exe_BAT_EC cmd %d, param %d, enable\n",
 					cmd, param);
-				fg_custom_init_from_header();
+				//fg_custom_init_from_header();
 			}
 		}
 		break;
@@ -3056,6 +3090,24 @@ static DEVICE_ATTR(
 	Power_Off_Voltage, 0664,
 	show_Power_Off_Voltage, store_Power_Off_Voltage);
 
+static ssize_t show_FG_aging_factor(
+	struct device *dev, struct device_attribute *attr, char *buf)
+{
+	bm_trace("[FG] show FG disable : %d\n", gm.aging_factor);
+	return sprintf(buf, "%d\n", gm.aging_factor);
+}
+
+static ssize_t store_FG_aging_factor(
+	struct device *dev, struct device_attribute *attr,
+					const char *buf, size_t size)
+{
+	bm_err("[aging_factor]\n");
+	return size;
+}
+static DEVICE_ATTR(
+	FG_aging_factor, 0664,
+	show_FG_aging_factor, store_FG_aging_factor);
+
 
 static int battery_callback(
 	struct notifier_block *nb, unsigned long event, void *v)
@@ -3544,6 +3596,8 @@ static int __init battery_probe(struct platform_device *dev)
 		&dev_attr_shutdown_condition_enable);
 	ret_device_file = device_create_file(&(dev->dev),
 		&dev_attr_reset_battery_cycle);
+	ret_device_file = device_create_file(&(dev->dev),
+		&dev_attr_FG_aging_factor);
 
 	if (of_scan_flat_dt(fb_early_init_dt_get_chosen, NULL) > 0)
 		fg_swocv_v =

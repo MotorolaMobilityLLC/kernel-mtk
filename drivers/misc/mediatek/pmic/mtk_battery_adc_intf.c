@@ -133,7 +133,7 @@ int __attribute__ ((weak))
 	charger_get_rsense(void)
 {
 	pr_notice_once("%s: do not define r_sense\n", __func__);
-	return 56;
+	return 68;
 }
 
 

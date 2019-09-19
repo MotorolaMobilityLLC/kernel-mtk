@@ -100,6 +100,7 @@ signed int battery_get_soc(void)
 
 signed int battery_get_uisoc(void)
 {
+#if 0
 	int boot_mode = get_boot_mode();
 
 	if ((boot_mode == META_BOOT) ||
@@ -107,7 +108,7 @@ signed int battery_get_uisoc(void)
 		(boot_mode == FACTORY_BOOT) ||
 		(boot_mode == ATE_FACTORY_BOOT))
 		return 75;
-
+#endif
 	return get_mtk_battery()->ui_soc;
 }
 
