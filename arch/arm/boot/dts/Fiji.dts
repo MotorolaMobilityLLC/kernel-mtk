@@ -69,7 +69,7 @@
 		compatible = "mediatek,vibrator";
 		vib_timer = <25>;
 		vib_limit = <9>;
-		vib_vol= <9>;
+		vib_vol= <0x0b>;
 	};
 	memory_ssmr_features: memory-ssmr-features {
 		compatible = "mediatek,memory-ssmr-features";
@@ -535,7 +535,7 @@
 	accdet-plugout-debounce = <1>;
 	accdet-mic-mode = <1>;
 	headset-eint-level-pol = <8>;
-	headset-three-key-threshold = <0 80 220 400>;
+	headset-three-key-threshold = <0 80 175 400>;
 	headset-three-key-threshold-CDD = <0 121 192 600>;
 	headset-four-key-threshold = <0 58 121 192 400>;
 	pinctrl-names = "default", "state_eint_as_int";
@@ -1112,5 +1112,8 @@
 };
 
 /* flashlight end */
+
+#include "bat_setting/mt6761_battery_table_fiji.dtsi"
+
 #include <Fiji/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
