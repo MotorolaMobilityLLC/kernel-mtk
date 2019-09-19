@@ -87,6 +87,14 @@ int g_Q_MAX_SYS_VOLTAGE[TOTAL_BATTERY_NUMBER] = { 3400, 3400, 3400, 3400};
 int g_battery_id_voltage[TOTAL_BATTERY_NUMBER] = {
 	500000, 1000000, 1500000, -1};
 
+int battery_total_number=1;
+char g_battery_id_vendor_name[TOTAL_BATTERY_NUMBER][32]={
+	"MLP395976 2920mAh",
+	"YONGWEI-3750mAh",
+	"MLP395976 2920mAh",
+	"MLP395976 2920mAh",
+};
+
 int g_FG_PSEUDO1[MAX_TABLE][TOTAL_BATTERY_NUMBER] = {
 	/*bat1,   bat2,   bat3,    bat4*/
 	{ 5, 6, 7, 8},/*T0*/
