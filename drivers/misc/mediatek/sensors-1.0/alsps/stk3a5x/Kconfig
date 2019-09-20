@@ -1,0 +1,5 @@
+
+config MTK_STK3A5X
+        bool "stk3a5x_ontim for MediaTek package"
+        default n
+
