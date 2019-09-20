@@ -1324,8 +1324,12 @@ static int MC3XXX_ResetCalibration(struct i2c_client *client)
 	s16 wSignBitMask	 = 0x2000;
 	s16 wSignPaddingBits = 0xC000;
 
-	if(IS_MESA())
+	if(IS_MESA()) {
+		obj->cali_sw[0] = 0x00;
+		obj->cali_sw[1] = 0x00;
+		obj->cali_sw[2] = 0x00;
 		return 0;
+	}
 
 	buf[0] = 0x43;
 	err = MC3XXX_i2c_write_block(client, 0x07, buf, 1);
@@ -1377,6 +1381,13 @@ static int MC3XXX_ReadCalibration(struct i2c_client *client, int dat[MC3XXX_AXES
 	struct mc3xxx_i2c_data *obj = i2c_get_clientdata(client);
 	int err = 0;
 
+	if(IS_MESA()) {
+		dat[obj->cvt.map[MC3XXX_AXIS_X]] = obj->cvt.sign[MC3XXX_AXIS_X]*obj->cali_sw[MC3XXX_AXIS_X];
+		dat[obj->cvt.map[MC3XXX_AXIS_Y]] = obj->cvt.sign[MC3XXX_AXIS_Y]*obj->cali_sw[MC3XXX_AXIS_Y];
+		dat[obj->cvt.map[MC3XXX_AXIS_Z]] = obj->cvt.sign[MC3XXX_AXIS_Z]*obj->cali_sw[MC3XXX_AXIS_Z];
+		return 0;
+	}
+
 	err = MC3XXX_ReadOffset(client, obj->offset);
 	if (err) {
 		ACC_PR_ERR("read offset fail, %d\n", err);
@@ -1412,8 +1423,23 @@ static int MC3XXX_WriteCalibration(struct i2c_client *client, int dat[MC3XXX_AXE
 	s32 dwRangePosLimit  = 0x1FFF;
 	s32 dwRangeNegLimit  = -0x2000;
 
-	if(IS_MESA())
-		return 0;
+	if(IS_MESA()) {
+		ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", dat[MC3XXX_AXIS_X], dat[MC3XXX_AXIS_Y], dat[MC3XXX_AXIS_Z]);
+
+		cali[MC3XXX_AXIS_X] = dat[MC3XXX_AXIS_X];
+		cali[MC3XXX_AXIS_Y] = dat[MC3XXX_AXIS_Y];
+		cali[MC3XXX_AXIS_Z] = dat[MC3XXX_AXIS_Z];
+		ACC_LOG("MC34XX_WriteCalibration:cali %d %d %d \n",cali[MC3XXX_AXIS_X] ,cali[MC3XXX_AXIS_Y],cali[MC3XXX_AXIS_Z]);
+
+		obj->cali_sw[MC3XXX_AXIS_X] = obj->cvt.sign[MC3XXX_AXIS_X]*(cali[obj->cvt.map[MC3XXX_AXIS_X]]);
+		obj->cali_sw[MC3XXX_AXIS_Y] = obj->cvt.sign[MC3XXX_AXIS_Y]*(cali[obj->cvt.map[MC3XXX_AXIS_Y]]);
+		obj->cali_sw[MC3XXX_AXIS_Z] = obj->cvt.sign[MC3XXX_AXIS_Z]*(cali[obj->cvt.map[MC3XXX_AXIS_Z]]);
+
+		ACC_LOG("UPDATE dat:obj->cali_sw: (%3d %3d %3d)\n", obj->cali_sw[MC3XXX_AXIS_X], obj->cali_sw[MC3XXX_AXIS_Y], obj->cali_sw[MC3XXX_AXIS_Z]);
+		ACC_LOG("MC34XX_WriteCalibration:dat[map x,y,x] %d %d %d \n",dat[obj->cvt.map[MC3XXX_AXIS_X]] ,dat[obj->cvt.map[MC3XXX_AXIS_Y]],dat[obj->cvt.map[MC3XXX_AXIS_Z]]);
+
+		return err;
+	}
 
 	//ACC_LOG("UPDATE dat: (%+3d %+3d %+3d)\n", dat[MC3XXX_AXIS_X], dat[MC3XXX_AXIS_Y], dat[MC3XXX_AXIS_Z]);
 
@@ -1848,6 +1874,13 @@ static int MC3XXX_ReadSensorData(struct i2c_client *pt_i2c_client, char *pbBuf, 
 		ACC_PR_ERR("ERR: fail to read data!\n");
 
 		return MC3XXX_RETCODE_ERROR_I2C;
+	}
+
+	if(IS_MESA()) {
+		//add for sw cali
+		_pt_i2c_obj->data[MC3XXX_AXIS_X] += _pt_i2c_obj->cali_sw[MC3XXX_AXIS_X];
+		_pt_i2c_obj->data[MC3XXX_AXIS_Y] += _pt_i2c_obj->cali_sw[MC3XXX_AXIS_Y];
+		_pt_i2c_obj->data[MC3XXX_AXIS_Z] += _pt_i2c_obj->cali_sw[MC3XXX_AXIS_Z];
 	}
 
 	/* output format: mg */
@@ -2758,6 +2791,9 @@ static void MC3XXX_reset(struct i2c_client *client)
 {
 	unsigned char	_baBuf[2] = { 0 };
 
+	if(IS_MESA())
+		return;
+
 	_baBuf[0] = 0x43;
 
 	MC3XXX_i2c_write_block(client, MC3XXX_REG_MODE_FEATURE, _baBuf, 0x01);
@@ -3089,31 +3125,128 @@ static int mc3xxx_factory_clear_cali(void)
 	}
 	return 0;
 }
+
+/*********************************************************
+ *** MC34XX_CaliConvert
+ * 6 direction calibration
+ * xyz threshold:(-300mg ~ +300mg) can be calibrated
+ *********************************************************/
+static int  MC34XX_CaliConvert(struct SENSOR_DATA *cali_data)
+{
+	struct SENSOR_DATA local_data;
+	local_data.x = 0 - cali_data->x;
+	local_data.y = 0 - cali_data->y;
+	local_data.z = GRAVITY_EARTH_1000 - cali_data->z;
+	ACC_LOG("no convert data  %d %d %d \n",local_data.x,local_data.y,local_data.z);
+	if(((local_data.x >= 6807) && (local_data.x <= 12807)))
+	{
+		cali_data->x = GRAVITY_EARTH_1000 - local_data.x;
+		cali_data->y = 0 - local_data.y;
+		cali_data->z = 0 - local_data.z;
+	}else if(((0-local_data.x) > 6807) && (0-local_data.x) <= 12807)
+	{
+		cali_data->x = 0-(GRAVITY_EARTH_1000 + local_data.x);
+		cali_data->y = 0 - local_data.y;
+		cali_data->z = 0 - local_data.z;
+	}else if(((local_data.y >= 6807) && (local_data.y <= 12807)))
+	{
+		cali_data->x = 0 - local_data.x;
+		cali_data->y = GRAVITY_EARTH_1000 - local_data.y;
+		cali_data->z = 0 - local_data.z;
+	}else if(((0-local_data.y) > 6807) && (0-local_data.y) <= 12807)
+	{
+		cali_data->x = 0 - local_data.x;
+		cali_data->y = 0-(GRAVITY_EARTH_1000 + local_data.y);
+		cali_data->z = 0 - local_data.z;
+	}else if(((local_data.z >= 6807) && (local_data.z <= 12807)))
+	{
+		cali_data->x = 0 - local_data.x;
+		cali_data->y = 0 - local_data.y;
+		cali_data->z = GRAVITY_EARTH_1000 - local_data.z;
+	}else if(((0-local_data.z) > 6807) && (0-local_data.z) <= 12807)
+	{
+		cali_data->x = 0 - local_data.x;
+		cali_data->y = 0 - local_data.y;
+		cali_data->z = 0-(GRAVITY_EARTH_1000 + local_data.z);
+	}else{
+        ACC_LOG("the xyz threshold over:(-300mg ~ +300mg)\n");
+        return -EINVAL;
+    }
+	ACC_LOG("convert data  %d %d %d \n",cali_data->x,cali_data->y,cali_data->z);
+    return 0;
+}
 static int mc3xxx_factory_set_cali(int32_t data[3])
 {
 	int err = 0;
 	int cali[3] = { 0 };
+	struct SENSOR_DATA nvram_cali_data = {0};
 
-	/* obj */
-	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X] += data[0];
-	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y] += data[1];
-	mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z] += data[2];
+	printk("%s +%d, data[0]=%d, data[1]=%d, data[2]=%d\n", __func__, __LINE__,
+			data[0], data[1], data[2]);
 
-	cali[MC3XXX_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
-	cali[MC3XXX_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
-	cali[MC3XXX_AXIS_Z] = data[2] * gsensor_gain.z / GRAVITY_EARTH_1000;
-	err = MC3XXX_WriteCalibration(mc3xxx_i2c_client, cali);
-	if (err) {
-		ACC_PR_ERR("mc3xxx_WriteCalibration failed!\n");
-		return -1;
+	printk("%s +%d, sw_cali[x]=%d, sw_cali[y]=%d, sw_cali[z]=%d\n", __func__, __LINE__,
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X],
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y],
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z]);
+
+	if(IS_MESA()) {
+
+		nvram_cali_data.x = data[0];
+		nvram_cali_data.y = data[1];
+		nvram_cali_data.z = data[2];
+		err = MC34XX_CaliConvert(&nvram_cali_data);//6 directions calibration support
+		if(err != 0)
+			return -1;
+
+		cali[MC3XXX_AXIS_X] = nvram_cali_data.x * gsensor_gain.x / GRAVITY_EARTH_1000;
+		cali[MC3XXX_AXIS_Y] = nvram_cali_data.y * gsensor_gain.y / GRAVITY_EARTH_1000;
+		cali[MC3XXX_AXIS_Z] = nvram_cali_data.z * gsensor_gain.z / GRAVITY_EARTH_1000;
+		err = MC3XXX_WriteCalibration(mc3xxx_i2c_client, cali);
+		if (err) {
+			ACC_PR_ERR("mc3416_WriteCalibration failed!\n");
+			return -1;
+		}
+	} else {
+		/* obj */
+		mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X] += data[0];
+		mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y] += data[1];
+		mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z] += data[2];
+
+		cali[MC3XXX_AXIS_X] = data[0] * gsensor_gain.x / GRAVITY_EARTH_1000;
+		cali[MC3XXX_AXIS_Y] = data[1] * gsensor_gain.y / GRAVITY_EARTH_1000;
+		cali[MC3XXX_AXIS_Z] = data[2] * gsensor_gain.z / GRAVITY_EARTH_1000;
+		err = MC3XXX_WriteCalibration(mc3xxx_i2c_client, cali);
+		if (err) {
+			ACC_PR_ERR("mc3xxx_WriteCalibration failed!\n");
+			return -1;
+		}
 	}
 	return 0;
 }
 static int mc3xxx_factory_get_cali(int32_t data[3])
 {
-	data[0] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X];
-	data[1] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y];
-	data[2] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z];
+	int err = 0;
+	int cali[3] = { 0 };
+
+	if(IS_MESA()) {
+		if((err = MC3XXX_ReadCalibration(mc3xxx_i2c_client, cali)))
+			return err;
+
+		data[0] = cali[MC3XXX_AXIS_X] * GRAVITY_EARTH_1000 / gsensor_gain.x;
+		data[1] = cali[MC3XXX_AXIS_Y] * GRAVITY_EARTH_1000 / gsensor_gain.y;
+		data[2] = cali[MC3XXX_AXIS_Z] * GRAVITY_EARTH_1000 / gsensor_gain.z;
+	} else {
+		data[0] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X];
+		data[1] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y];
+		data[2] = mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z];
+	}
+	printk("%s +%d, data[0]=%d, data[1]=%d, data[2]=%d\n", __func__, __LINE__,
+			data[0], data[1], data[2]);
+
+	printk("%s +%d, sw_cali[x]=%d, sw_cali[y]=%d, sw_cali[z]=%d\n", __func__, __LINE__,
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_X],
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Y],
+			mc3xxx_obj_i2c_data->cali_sw[MC3XXX_AXIS_Z]);
 	return 0;
 }
 static int mc3xxx_factory_do_self_test(void)
