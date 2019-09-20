@@ -516,7 +516,7 @@ static int key_check(int b)
 	else if ((b < headset_dts_data.three_key.up_key)
 		&& (b >= headset_dts_data.three_key.mid_key))
 		return UP_KEY;
-	else if (b < headset_dts_data.three_key.mid_key)
+	else if (b < headset_dts_data.three_key.mid_key - 59)
 		return MD_KEY;
 
 	ACCDET_INFO("[3-key_check] Invalid key:%d mv\n", b);
