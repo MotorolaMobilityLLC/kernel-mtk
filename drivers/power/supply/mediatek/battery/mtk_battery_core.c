@@ -68,7 +68,7 @@
 #include <mtk_gauge_time_service.h>
 
 #include <mach/mtk_battery_property.h>
-#include <mach/mtk_battery_table.h>
+#include <mtk_battery_table.h>
 #else
 #include <string.h>
 
