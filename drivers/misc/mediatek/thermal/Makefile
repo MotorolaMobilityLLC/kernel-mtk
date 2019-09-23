@@ -48,3 +48,7 @@ obj-y += mt2701/
 else
 obj-y += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 endif
+
+ifeq ($(BUILD_DUAL_85),true)
+  subdir-ccflags-y += -DDUAL_85_VERSION
+endif
