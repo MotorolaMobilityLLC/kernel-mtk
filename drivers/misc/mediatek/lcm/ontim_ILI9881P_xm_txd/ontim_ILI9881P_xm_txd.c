@@ -397,6 +397,10 @@ static struct LCM_setting_table init_setting[] = {
 	{ 0x35, 0x01, {0x00} },
 	{ 0x11, 0x01, {0x00} },
 	{REGFLAG_DELAY, 65, {} },
+	{ 0xFF, 0x03, {0x98, 0x81, 0x02} },
+	{ 0x01, 0x01, {0x54} },
+	{REGFLAG_DELAY, 20, {} },
+	{ 0xFF, 0x03, {0x98, 0x81, 0x00} },
 	{ 0x29, 0x01, {0x00} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
     
@@ -510,7 +514,6 @@ static void lcm_get_params(LCM_PARAMS *params)
 	params->dsi.lcm_esd_check_table[0].para_list[2] = 0x06;
 	params->dsi.lcm_esd_check_table[1].cmd = 0x54;
 	params->dsi.lcm_esd_check_table[1].count = 1;
-
 }
 
 #ifdef BUILD_LK
