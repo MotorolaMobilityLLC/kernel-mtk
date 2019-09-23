@@ -46,7 +46,7 @@
 #ifdef BALI_PRJ
 #define FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT                      "include/firmware/Otim_FT5436_moto_3901_HLT0x82_Ver0x08_20190823_app.i"
 #define FTS_UPGRADE_FW2_FILE_R16530_MTD_TRULY                     "include/firmware/Otim_FT5436_moto_3901_Truly0x5a_Ver0x10_20190823_app.i"
-#define FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD                      "include/firmware/Otim_FT5446_moto_3901_TXD0x80_Ver0x09_20190902_app.i"
+#define FTS_UPGRADE_FW3_FILE_ILI9881P_XM_TXD                      "include/firmware/Otim_FT5446_moto_3901_TXD0x80_Ver0x0A_20190923_app.i"
 
 u8 fw_file[] = {
 #include FTS_UPGRADE_FW_FILE_ILI9881C_MTD_HLT
