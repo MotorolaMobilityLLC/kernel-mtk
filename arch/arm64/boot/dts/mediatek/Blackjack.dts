@@ -469,6 +469,17 @@
 	};
 };
 
+&i2c5 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	externel-charger@6c{
+		compatible = "halo,hl7007";
+		reg = <0x6c>;
+		status = "okay";
+	};
+};
 &pio {
 	camera_pins_cam0_mclk_on: camera_pins_cam0_mclk_on {
 		pins_cmd_dat {
