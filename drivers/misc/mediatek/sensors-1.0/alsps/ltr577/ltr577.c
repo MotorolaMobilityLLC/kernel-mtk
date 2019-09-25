@@ -126,6 +126,8 @@ static int als_gainrange;
 
 static int final_prox_val;
 static int final_lux_val;
+static u8 part_id = 0;
+static int ps_first_pkg;
 
 /*----------------------------------------------------------------------------*/
 typedef enum {
@@ -805,8 +807,19 @@ static int ltr577_ps_enable(struct i2c_client *client, int enable)
 		ps_threshold_l = ps_nvraw_25mm_value -1;
 		ps_threshold_h = ps_nvraw_25mm_value;
 
-		ps_thd_val_low_set = ps_threshold_l;
-		ps_thd_val_hlgh_set = ps_threshold_h;
+		if (part_id == 0xB1)
+		{
+			//set threshold to near to trigger an interrupt for ltr578
+			ps_thd_val_low_set = 0;
+			ps_thd_val_hlgh_set = 0;
+			ps_first_pkg = 1;
+		}
+		else
+		{
+			ps_thd_val_low_set = ps_threshold_l;
+			ps_thd_val_hlgh_set = ps_threshold_h;
+		}
+
 		ltr577_ps_set_thres();
 		ps_enabled = 1;
 	}
@@ -1173,7 +1186,6 @@ out:
 }
 /********************************************************************/
 #ifdef HW_dynamic_cali
-
 static int ltr577_get_ps_value(struct ltr577_priv *obj, u16 ps)
 {
 	int ps_data = ps;
@@ -1188,6 +1200,16 @@ static int ltr577_get_ps_value(struct ltr577_priv *obj, u16 ps)
 		ps_thd_val_hlgh_set = ps_threshold_h;
 		APS_DBG("ps_data= %d, min_proximity=%d  threshold_value=%d th_l =%d,th_h =%d\n", ps_data, min_proximity, threshold_value, ps_thd_val_low_set,ps_thd_val_hlgh_set);
 	}
+
+	//set threshold to far for first package of ltr578
+	if (part_id == 0xB1 && ps_first_pkg == 1)
+	{
+		ps_first_pkg = 0;
+		ps_thd_val_hlgh_set = MAX_ADC_PROX_VALUE;
+		ps_thd_val_low_set = ps_threshold_l;
+		return -1;
+	}
+
 	if (ps_data >= ps_threshold_h){
 		ps_detection = 0;
 		ps_thd_val_hlgh_set = MAX_ADC_PROX_VALUE;
@@ -2875,7 +2897,6 @@ static int ltr577_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	struct ps_control_path ps_ctl={0};
 	struct ps_data_path ps_data={0};
 	int err = 0;
-	u8 part_id = 0;
 
 	APS_FUN();
 
