@@ -54,7 +54,11 @@
 #include "../card/queue.h"
 
 /* If the device is not responding */
+#ifdef CONFIG_PROJECT_P161BN
+#define MMC_CORE_TIMEOUT_MS	(30 * 1000) /* optimize for boot time too long */
+#else
 #define MMC_CORE_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+#endif
 
 /*
  * Background operations can take a long time, depending on the housekeeping
