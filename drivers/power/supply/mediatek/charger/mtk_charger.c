@@ -1699,7 +1699,8 @@ int mmi_chrg_rate_check(void)
 	}
 
 	if (is_typec_adapter(pinfo)
-		&& tcpm_inquire_typec_remote_rp_curr(pinfo->tcpc) == 3000) {
+		&& adapter_dev_get_property(pinfo->pd_adapter, TYPEC_RP_LEVEL)
+			== 3000)) {
 			if (icl_c == -1 || icl_c > TURBO_CHRG_THRSH * 1000) {
 				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 				goto end_rate_check;

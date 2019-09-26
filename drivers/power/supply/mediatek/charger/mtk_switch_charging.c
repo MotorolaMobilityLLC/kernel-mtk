@@ -167,8 +167,6 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 			info->data.pe40_single_charger_input_current;
 		pdata->charging_current_limit =
 			info->data.pe40_single_charger_current;
-
-				TYPEC_RP_LEVEL));
 	} else if (mtk_pdc_check_charger(info)) {
 		int vbus = 0, cur = 0, idx = 0;
 
