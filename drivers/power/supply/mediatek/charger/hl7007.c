@@ -32,7 +32,7 @@
 #include <linux/sched.h>
 #include <linux/poll.h>
 #include <linux/power_supply.h>
-#include <linux/wakelock.h>
+//#include <linux/wakelock.h>
 #include <linux/time.h>
 #include <linux/mutex.h>
 #include <linux/kthread.h>
