@@ -1497,6 +1497,7 @@ static void mtk_chg_get_tchg(struct charger_manager *info)
 	}
 }
 
+int charging_enable_flag = 1;
 static void charger_check_status(struct charger_manager *info)
 {
 	bool charging = true;
@@ -1568,7 +1569,10 @@ static void charger_check_status(struct charger_manager *info)
 		charging = false;
 		goto stop_charging;
 	}
-
+	if (!charging_enable_flag) {
+		charging = false;
+		goto stop_charging;
+	}
 	if (info->cmd_discharging)
 		charging = false;
 	if (info->safety_timeout)
@@ -1700,7 +1704,7 @@ int mmi_chrg_rate_check(void)
 
 	if (is_typec_adapter(pinfo)
 		&& adapter_dev_get_property(pinfo->pd_adapter, TYPEC_RP_LEVEL)
-			== 3000)) {
+			== 3000) {
 			if (icl_c == -1 || icl_c > TURBO_CHRG_THRSH * 1000) {
 				chg_rate = POWER_SUPPLY_CHARGE_RATE_TURBO;
 				goto end_rate_check;
