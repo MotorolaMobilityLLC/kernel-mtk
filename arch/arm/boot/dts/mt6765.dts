@@ -2709,7 +2709,7 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	charger: charger {
 		compatible = "mediatek,charger";
 		algorithm_name = "SwitchCharging";
-		/* enable_sw_jeita; */
+		 enable_sw_jeita; 
 		enable_pe_plus;
 		enable_pe_2;
 		enable_pe_3;
@@ -2718,8 +2718,8 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		power_path_support;
 
 		/* common */
-		battery_cv = <4350000>;
-		max_charger_voltage = <6500000>;
+/*		battery_cv = <4440000>;*/
+		max_charger_voltage = <6100000>;
 		min_charger_voltage = <4600000>;
 
 		/* charging current */
@@ -2727,16 +2727,16 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		usb_charger_current_unconfigured = <70000>;
 		usb_charger_current_configured = <500000>;
 		usb_charger_current = <500000>;
-		ac_charger_current = <2050000>;
+		/*ac_charger_current = <2050000>;*/
 		ac_charger_input_current = <3200000>;
 		non_std_ac_charger_current = <500000>;
-		charging_host_charger_current = <1500000>;
+		charging_host_charger_current = <500000>;
 		apple_1_0a_charger_current = <650000>;
 		apple_2_1a_charger_current = <800000>;
 		ta_ac_charger_current = <3000000>;
 
 		/* sw jeita */
-		jeita_temp_above_t4_cv = <4240000>;
+/*		jeita_temp_above_t4_cv = <4240000>;
 		jeita_temp_t3_to_t4_cv = <4240000>;
 		jeita_temp_t2_to_t3_cv = <4340000>;
 		jeita_temp_t1_to_t2_cv = <4240000>;
@@ -2752,14 +2752,14 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		temp_t1_thres_plus_x_degree = <6>;
 		temp_t0_thres = <0>;
 		temp_t0_thres_plus_x_degree = <0>;
-		temp_neg_10_thres = <0>;
+		temp_neg_10_thres = <0>;*/
 
 		/* battery temperature protection */
-		enable_min_charge_temp;
+/*		enable_min_charge_temp;
 		min_charge_temp = <0>;
 		min_charge_temp_plus_x_degree = <6>;
 		max_charge_temp = <50>;
-		max_charge_temp_minus_x_degree = <47>;
+		max_charge_temp_minus_x_degree = <47>;*/
 
 		/* PE */
 		ta_12v_support;
