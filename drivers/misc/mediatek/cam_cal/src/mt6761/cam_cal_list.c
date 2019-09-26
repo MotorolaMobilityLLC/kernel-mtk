@@ -18,6 +18,8 @@
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	/*Below is commom sensor */
+	{OV13855_SENSOR_ID, 0xA0, Common_read_region},
+	{S5K5E9YX_SENSOR_ID, 0xA4, Common_read_region},
 	{IMX230_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K2T7SP_SENSOR_ID, 0xA4, Common_read_region},
 	{IMX338_SENSOR_ID, 0xA0, Common_read_region},
@@ -54,7 +56,6 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX214_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX486_SENSOR_ID, 0xA8, Common_read_region},
 	{OV12A10_SENSOR_ID, 0xA8, Common_read_region},
-	{OV13855_SENSOR_ID, 0xA0, Common_read_region},
 	{S5K3L8_SENSOR_ID, 0xA0, Common_read_region},
 	{HI556_SENSOR_ID, 0x51, Common_read_region},
 	{S5K5E8YX_SENSOR_ID, 0x5a, Common_read_region},
