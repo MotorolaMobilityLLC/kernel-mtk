@@ -205,7 +205,7 @@
 	accdet-plugout-debounce = <1>;
 	accdet-mic-mode = <1>;
 	headset-eint-level-pol = <8>;
-	headset-three-key-threshold = <0 80 220 400>;
+	headset-three-key-threshold = <0 80 175 400>;
 	headset-three-key-threshold-CDD = <0 121 192 600>;
 	headset-four-key-threshold = <0 58 121 192 400>;
 	pinctrl-names = "default", "state_eint_as_int";
