@@ -681,5 +681,7 @@
 
 };
 
+#include "bat_setting/mt6761_battery_table_blackjack32.dtsi"
+
 #include <Blackjack_32/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/
