@@ -23,6 +23,9 @@ obj-$(CONFIG_MACH_MT6765) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6761) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6779) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT6763) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
+obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
+
 endif
 obj-$(CONFIG_MACH_MT6758) += spm/
 obj-$(CONFIG_MACH_MT6765) += spm/
@@ -43,6 +46,7 @@ obj-$(CONFIG_MTK_UNIFY_POWER) += upower_v2/
 ifeq ($(CONFIG_MTK_UNIFY_POWER), y)
 obj-$(CONFIG_MACH_MT6758) += upower_v2/
 endif
+obj-$(CONFIG_MACH_MT6757) += pbm_v1/
 ifneq ($(CONFIG_FPGA_EARLY_PORTING), y)
 obj-$(CONFIG_MACH_MT6763) += pbm_v3/
 endif
@@ -51,8 +55,11 @@ obj-$(CONFIG_MACH_MT6761) += ppm_v3/
 obj-$(CONFIG_MACH_MT6758) += ppm_v3/
 obj-$(CONFIG_MACH_MT6765) += ppm_v3/
 obj-$(CONFIG_MACH_MT6779) += ppm_v3/
+obj-$(CONFIG_MACH_MT6757) += vcorefs_v1/
 obj-$(CONFIG_MACH_MT6763) += vcorefs_v3/
+obj-$(CONFIG_MACH_MT6757) += cpuidle_v2/
 obj-$(CONFIG_MACH_MT6763) += cpuidle_v2/
+
 obj-$(CONFIG_MACH_MT3967) += dcm_v1/
 obj-$(CONFIG_MACH_MT6758) += dcm_v1/
 obj-$(CONFIG_MACH_MT6761) += dcm_v1/
@@ -77,6 +84,7 @@ obj-$(CONFIG_MACH_MT6779) += mdpm_v2/
 endif
 obj-$(CONFIG_MACH_MT8163) += hps_v1/
 obj-$(CONFIG_MACH_MT8173) += hps_v1/
+obj-$(CONFIG_MACH_MT6757) += hps_v2/
 obj-$(CONFIG_MACH_MT6763) += hps_v3/
 obj-$(CONFIG_MACH_MT6758) += hps_v3/
 obj-$(CONFIG_MACH_MT6765) += hps_v3/
@@ -88,8 +96,11 @@ obj-$(CONFIG_MACH_MT6765) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6761) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT3967) += cpuidle_v3/
 obj-$(CONFIG_MACH_MT6779) += cpuidle_v3/
+obj-$(CONFIG_MACH_MT6757) += ppm_v2/
 obj-$(CONFIG_MACH_MT6763) += ppm_v3/
+obj-$(CONFIG_MACH_MT6757) += spm_v2/
 obj-$(CONFIG_MACH_MT6763) += spm_v4/
+obj-$(CONFIG_MACH_MT6757) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6763) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6758) += power_gs_v1/
 obj-$(CONFIG_MACH_MT6765) += power_gs_v1/

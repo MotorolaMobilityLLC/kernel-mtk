@@ -70,6 +70,12 @@ ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6765
 obj-$(CONFIG_MMC_MTK_PRO) += ComboA/
 endif
 
+ifeq ($(CONFIG_MTK_PLATFORM), "mt6757")
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757
+ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/mt6757/mt6757
+obj-$(CONFIG_MMC_MTK_PRO) += mt6757/
+endif
+
 ifeq ($(CONFIG_MTK_PLATFORM), "mt6763")
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA
 ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/ComboA/mt6763

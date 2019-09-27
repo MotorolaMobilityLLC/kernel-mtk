@@ -11,5 +11,6 @@
 # GNU General Public License for more details.
 #
 
+obj-$(CONFIG_MACH_MT6757) += $(subst ",,$(CONFIG_MTK_PLATFORM))/
 obj-$(CONFIG_MACH_MT8173) := mtk_emi_bm.o
 obj-$(CONFIG_MACH_MT8173) += mtk_mem_bw.o

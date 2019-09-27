@@ -27,6 +27,13 @@
 #include "mmdvfs_mgr.h"
 #include "mmdvfs_pmqos.h"
 
+#if defined(CONFIG_MACH_MT6757)
+#if defined(SMI_D1) || defined(SMI_D2) || defined(SMI_D3) \
+	|| defined(SMI_J) ||  defined(SMI_EV) || defined(SMI_OLY)
+#define MMDVFS_HOOK
+#endif
+#endif
+
 #if IS_ENABLED(CONFIG_COMPAT)
 #include <linux/compat.h>
 #endif
@@ -37,6 +44,9 @@
 #elif IS_ENABLED(CONFIG_MACH_MT6763)
 #include <clk-mt6763-pg.h>
 #include "smi_config_mt6763.h"
+#elif IS_ENABLED(CONFIG_MACH_MT6757)
+#include <clk-mt6757-pg.h>
+#include "smi_config_mt6757.h"
 #elif IS_ENABLED(CONFIG_MACH_MT6765)
 #include <clk-mt6765-pg.h>
 #include "smi_config_mt6765.h"
@@ -88,7 +98,7 @@ static struct smi_mmp_event_t smi_mmp_event;
 
 #define SMIDBG(string, args...) pr_debug(string, ##args)
 
-#if IS_ENABLED(CONFIG_MTK_CMDQ)
+#if IS_ENABLED(CONFIG_MTK_CMDQ) && !defined(CONFIG_MACH_MT6757)
 #include <cmdq_core.h>
 #define SMIWRN(cmdq, string, args...) \
 	do { \
@@ -478,6 +488,21 @@ static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 		return ((1 << 9) | (1 << 10) | (1 << 11));
 	default:
 		return 0;
+	}
+#elif IS_ENABLED(CONFIG_MACH_MT6757)
+	switch (sys) {
+	case SYS_DIS:
+		return (1 << 0) | (1 << 4) | (1 << SMI_LARB_NUM);
+	case SYS_VDE:
+		return (1 << 1);
+	case SYS_CAM:
+		return (1 << 2);
+	case SYS_VEN:
+		return (1 << 3);
+	case SYS_ISP:
+		return (1 << 5);
+	default:
+		return 0x0;
 	}
 #endif
 	return 0;
@@ -1039,8 +1064,13 @@ static long smi_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		else {
 			switch (config.type) {
 			case MTK_MMDVFS_QOS_CMD_TYPE_SET:
+#if !defined(CONFIG_MACH_MT6757)
 				mmdvfs_set_max_camera_hrt_bw(config.max_cam_bw);
 				config.ret = 0;
+#else
+				SMIWRN(0, "Not Support mmdvfs QOS cmd\n");
+				return -EINVAL;
+#endif
 				break;
 			default:
 				SMIWRN(0, "invalid mmdvfs QOS cmd\n");

@@ -983,7 +983,9 @@ static unsigned int get_booting_start_id(struct ccci_modem *md)
 static void config_ap_side_feature(struct ccci_modem *md,
 	struct md_query_ap_feature *ap_side_md_feature)
 {
+#if (MD_GENERATION >= 6293)
 	unsigned int udc_noncache_size = 0, udc_cache_size = 0;
+#endif
 	md->runtime_version = AP_MD_HS_V2;
 	ap_side_md_feature->feature_set[BOOT_INFO].support_mask
 		= CCCI_FEATURE_MUST_SUPPORT;

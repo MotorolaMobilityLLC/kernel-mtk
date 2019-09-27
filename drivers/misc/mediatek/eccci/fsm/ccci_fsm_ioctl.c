@@ -30,7 +30,9 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0, retry;
 	int data;
+#if (MD_GENERATION >= 6292)
 	char buffer[64];
+#endif
 	unsigned int sim_slot_cfg[4];
 	struct ccci_per_md *per_md_data = ccci_get_per_md_data(md_id);
 	struct ccci_per_md *other_per_md_data

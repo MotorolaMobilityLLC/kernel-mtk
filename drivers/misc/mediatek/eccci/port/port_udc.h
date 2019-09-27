@@ -13,6 +13,7 @@
 #ifndef __PORT_UDC__
 #define __PORT_UDC__
 #include "ccci_core.h"
+#if (MD_GENERATION >= 6293)
 #include "udc.h"
 #include "port_t.h"
 #include "udc_zlib.h"
@@ -158,5 +159,6 @@ struct ap_md_rw_index {
 	} ap_resp_ins1;
 } __packed;
 
+#endif
 #endif	/*__PORT_UDC__*/
 

@@ -34,7 +34,9 @@
 #include <ap_thermal_limit.h>
 #ifdef ATM_USES_PPM
 #include "mtk_ppm_api.h"
+#ifndef CONFIG_MACH_MT6757
 #include "mtk_ppm_platform.h"
+#endif
 #else
 #include "mt_cpufreq.h"
 #endif

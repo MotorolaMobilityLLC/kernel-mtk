@@ -22,6 +22,7 @@ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
 subdir-ccflags-y += -I$(srctree)/drivers/mmc/host/mediatek/$(MTK_PLATFORM)
 
 obj-$(CONFIG_MTK_EMI) += emi/
+obj-$(CONFIG_MTK_EMI_BWL) += emi_bwl/
 obj-y += emi_mbw/
 obj-$(CONFIG_MTK_EMI_MPU) += emi_mpu/
 obj-$(CONFIG_MTK_ICE_DEBUG) +=ice_debug/
@@ -76,8 +77,10 @@ obj-$(CONFIG_MTK_SECURITY_SW_SUPPORT) +=masp/
 obj-$(CONFIG_MTK_BLOCK_TAG) +=blocktag/
 obj-y += pidmap/
 obj-$(CONFIG_MTK_KEY_HINT) += keyhint/
+ifeq (,$(filter $(CONFIG_MACH_MT6757), y))
 obj-$(CONFIG_MTK_IMGSENSOR) += imgsensor/src/
 obj-$(CONFIG_MTK_CAM_CAL) += cam_cal/src/
+endif
 ifneq ($(wildcard $(srctree)/drivers/misc/mediatek/met_drv/),)
 obj-y += met_drv/
 endif
@@ -103,7 +106,9 @@ obj-$(CONFIG_MTK_USB_TYPEC) += typec/
 obj-$(CONFIG_MTK_GPU_SUPPORT) += gpu/
 obj-$(CONFIG_MTK_VPU_SUPPORT) += vpu/
 obj-$(CONFIG_MTK_MDLA_SUPPORT) += mdla/
+ifeq (,$(filter $(CONFIG_MACH_MT6757), y))
 obj-$(CONFIG_MTK_CCU)	+= ccu/src/
+endif
 obj-$(CONFIG_MTK_RTC)	+= rtc/
 obj-y += mtprintk/
 obj-$(CONFIG_MTK_XO)	+= xo/
@@ -112,7 +117,9 @@ obj-$(CONFIG_MTK_RAM_CONSOLE) += ram_console/
 obj-$(CONFIG_MTK_DRAM_LOG_STORE)    += log_store/
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= aee/
 obj-$(CONFIG_MTK_MLOG) += mlog/
+ifeq (,$(filter $(CONFIG_MACH_MT6757), y))
 obj-y += cameraisp/
+endif
 obj-$(CONFIG_MTK_CMDQ) += cmdq/
 obj-$(CONFIG_MTK_CMDQ_TAB) += cmdq/
 obj-$(CONFIG_MTK_CQDMA) += cqdma/

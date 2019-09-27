@@ -154,9 +154,8 @@ static int rx_queue_buffer_size[QUEUE_NUM] = { 10 * 1024, 100 * 1024,
 static int tx_queue_buffer_size[QUEUE_NUM] = { 10 * 1024, 100 * 1024,
 	50 * 1024, 50 * 1024, 50 * 1024, 10 * 1024, 10 * 1024, 10 * 1024,
 };
-#endif
 
-#if (MD_GENERATION >= 6295)
+#elif (MD_GENERATION >= 6295)
 static int rx_queue_buffer_size[QUEUE_NUM] = { 80 * 1024, 80 * 1024,
 	40 * 1024, 80 * 1024, 20 * 1024, 20 * 1024, 64 * 1024, 0 * 1024,
 	8 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 0 * 1024, 0 * 1024,

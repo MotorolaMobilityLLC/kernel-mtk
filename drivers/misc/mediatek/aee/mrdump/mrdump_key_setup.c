@@ -26,7 +26,7 @@
 #ifdef CONFIG_OF
 #include <linux/of.h>
 #endif
-#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#if defined(CONFIG_MTK_WATCHDOG_COMMON) || defined(CONFIG_MACH_MT6757)
 #include <mt-plat/mtk_wd_api.h>
 #ifdef CONFIG_MTK_PMIC_COMMON
 #include <mt-plat/upmu_common.h>
@@ -50,7 +50,7 @@ static const struct of_device_id mrdump_key_of_ids[] = {
 
 static int __init mrdump_key_probe(struct platform_device *pdev)
 {
-#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#if defined(CONFIG_MTK_WATCHDOG_COMMON) || defined(CONFIG_MACH_MT6757)
 	int res;
 	struct wd_api *wd_api = NULL;
 	const char *mode_str;
@@ -102,7 +102,7 @@ static int __init mrdump_key_probe(struct platform_device *pdev)
 
 
 
-#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#if defined(CONFIG_MTK_WATCHDOG_COMMON) || defined(CONFIG_MACH_MT6757)
 	if (!of_property_read_string(node, "mode", &mode_str)) {
 		if (strcmp(mode_str, "RST") == 0)
 			mode = WD_REQ_RST_MODE;
@@ -156,7 +156,7 @@ out:
 static void mrdump_key_shutdown(struct platform_device *pdev)
 {
 
-#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#if defined(CONFIG_MTK_WATCHDOG_COMMON) || defined(CONFIG_MACH_MT6757)
 	int res;
 	struct wd_api *wd_api = NULL;
 #endif
@@ -166,7 +166,7 @@ static void mrdump_key_shutdown(struct platform_device *pdev)
 	pmic_enable_smart_reset(0, 0);
 #endif
 
-#ifdef CONFIG_MTK_WATCHDOG_COMMON
+#if defined(CONFIG_MTK_WATCHDOG_COMMON) || defined(CONFIG_MACH_MT6757)
 	pr_notice("restore RGU to default value\n");
 	res = get_wd_api(&wd_api);
 	if (res < 0)

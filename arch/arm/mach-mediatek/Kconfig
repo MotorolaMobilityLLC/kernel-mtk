@@ -36,6 +36,57 @@ config MACH_MT8135
 
 endif
 
+config MACH_MT6757
+	bool "MediaTek MT6757"
+	select GENERIC_TIME
+	select GENERIC_CLOCKEVENTS
+	select ARCH_HAS_CPUFREQ
+	select ARM_AMBA
+	select CPU_V7
+	select HAVE_SMP
+	select IRQ_DOMAIN
+	select IRQ_DOMAIN_DEBUG
+	select GENERIC_SCHED_CLOCK
+	select MTK_SYS_CIRQ
+	select ARMV7_COMPAT
+	select ARMV7_COMPAT_CPUINFO
+	select CPU_IDLE
+	select KERNEL_MODE_NEON
+	select PINCTRL
+	select PINCTRL_MT6757
+	select MFD_SYSCON
+	select MTK_BASE_POWER
+	select MTK_POWER_GS
+	select MTK_SYSTRACKER_V2
+	select MTK_GIC_V3_EXT
+	select ARM_GIC_V3
+	select HIE
+	select MTK_PLAT_SRAM_FLAG
+	select MTK_L2C_PARITY_CHECK
+	select ARM_HAS_SG_CHAIN
+	select POWER_SUPPLY
+	select MTK_TIMER
+	select COMMON_CLK if !MTK_CLKMGR
+	select MTK_IRQ_NEW_DESIGN
+	select MTK_IRQ_NEW_DESIGN_DEBUG
+	select MTK_L2C_PARITY_CHECK
+	select MTK_LASTPC_V2
+	select ARM_ERRATA_855873
+	select MTK_SEC_DEINT_SUPPORT
+	select MTK_BOUNCING_CHECK
+	select ARM_CRYPTO
+	select CRYPTO_SHA2_ARM_CE
+	select CRYPTO_AES_ARM_CE
+	help
+	  This enables support for MediaTek Helio P20 - MT6757
+	  Highly power-efficient, performance-oriented 4G LTE processor
+	  for premium, thin-design smartphones. The MediaTek Helio P20
+	  is built on a 16nm process node and offers 25% better power
+	  efficiency, higher processing performance and our most advanced
+	  camera/video features to date. Helio P20 also offers significant
+	  multitasking and multimedia improvements thanks to its new
+	  LPDDR4X memory support.
+
 config MACH_MT6763
 	bool "MediaTek MT6763"
 	select GENERIC_TIME
@@ -85,8 +136,8 @@ config MACH_MT6763
 	help
 	  This enables support for MediaTek MT6763
 	  Highly power-efficient, performance-oriented processor for premium,
-	  thin-design smartphones. MT6763 also offers significant multitasking and
-	  multimedia improvements.
+	  thin-design smartphones. MT6763 also offers significant multitasking
+	  and multimedia improvements.
 
 config MACH_MT6765
 	bool "MediaTek MT6765"
@@ -131,9 +182,9 @@ config MACH_MT6765
 	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6765
-	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
-	  thin-design smartphones. MT6765 also offers significant multitasking and
-	  multimedia improvements.
+	  Highly power-efficient, performance-oriented 4G LTE processor
+	  for premium, thin-design smartphones. MT6765 also offers
+	  significant multitasking and multimedia improvements.
 
 config MACH_MT6761
 	bool "MediaTek MT6761"
@@ -185,8 +236,8 @@ config MACH_MT6761
 	select CRYPTO_AES_ARM_CE
 	help
 	  This enables support for MediaTek MT6761
-	  Highly power-efficient, performance-oriented 4G LTE processor for premium,
-	  thin-design smartphones. MT6761 also offers significant multitasking and
-	  multimedia improvements.
+	  Highly power-efficient, performance-oriented 4G LTE processor
+	  for premium, thin-design smartphones. MT6761 also offers significant
+	  multitasking and multimedia improvements.
 
 

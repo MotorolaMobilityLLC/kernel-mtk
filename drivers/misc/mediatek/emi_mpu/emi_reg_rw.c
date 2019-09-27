@@ -68,7 +68,11 @@ int mt_emi_mpu_set_region_protection(unsigned int start,
 unsigned int end, unsigned int region_permission)
 {
 #if defined(CONFIG_ARM_PSCI) || defined(CONFIG_MTK_PSCI)
+#ifdef CONFIG_ARM64
 		return emi_mpu_smc_set(start, end, region_permission);
+#else
+		return emi_mpu_smc_set(start, end, region_permission, 0);
+#endif
 #endif
 		return 0;
 }

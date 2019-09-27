@@ -14,7 +14,11 @@
 #ifndef __MTK_SPM_MISC_H___
 #define __MTK_SPM_MISC_H___
 
-#if defined(CONFIG_MACH_MT6763)
+#if defined(CONFIG_MACH_MT6757) || defined(CONFIG_MACH_KIBOPLUS)
+
+#include "spm_v2/mtk_spm_misc.h"
+
+#elif defined(CONFIG_MACH_MT6763)
 
 #include "spm_v4/mtk_spm_misc.h"
 

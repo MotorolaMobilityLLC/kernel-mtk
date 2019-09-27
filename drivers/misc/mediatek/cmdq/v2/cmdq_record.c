@@ -15,7 +15,7 @@
 #include <linux/memory.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#ifndef EARLY_PORTING_MIGRATION
+#if !defined(EARLY_PORTING_MIGRATION) && defined(CONFIG_MTK_CMDQ_TAB)
 #include <mt-plat/mt_lpae.h>
 #endif
 
