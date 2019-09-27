@@ -11,12 +11,17 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __CCU_I2C_HW_H__
-#define __CCU_I2C_HW_H__
+#ifndef __CCU_N3D_A_H__
+#define __CCU_N3D_A_H__
 
-/*---------------------------------------------------------------------------*/
-/*        i2c interface from ccu_i2c_hw.c */
-/*---------------------------------------------------------------------------*/
-extern int ccu_i2c_set_n3d_base(unsigned long n3d_base);
+enum N3DA_REGS_OFFSET {
+	OFFSET_CTL = 0x100,
+	OFFSET_TRIG = 0x108,
+	OFFSET_INT = 0x10C,
+};
+
+extern u32 n3d_a_readw(unsigned long n3d_a_base, u32 offset);
+extern void n3d_a_writew(u32 value, unsigned long n3d_a_base, u32 offset);
+
 
 #endif
