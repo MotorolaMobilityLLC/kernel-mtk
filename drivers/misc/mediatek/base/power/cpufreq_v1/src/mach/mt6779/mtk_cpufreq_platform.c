@@ -621,7 +621,7 @@ unsigned int _mt_cpufreq_get_cpu_level(void)
 
 	if ((val == 0x09) || (val == 0x90) || (val == 0x08) || (val == 0x10)
 	|| (val == 0x06) || (val == 0x60) || (val == 0x04) || (val == 0x20))
-		lv = CPU_LEVEL_4;
+		lv = CPU_LEVEL_0;
 	else if ((val == 0x07) || (val == 0xE0) || (val == 50) || (val == 0x0A))
 		lv = CPU_LEVEL_3;
 
