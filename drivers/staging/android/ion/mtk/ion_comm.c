@@ -39,6 +39,7 @@ atomic_t ion_comm_cache_event = ATOMIC_INIT(0);
 
 static int ion_comm_cache_pool(void *data)
 {
+	int ret;
 	int req_cache_size = 0;
 	int cached_size = 0;
 	int cache_buffer = 0;
@@ -58,8 +59,12 @@ static int ion_comm_cache_pool(void *data)
 			break;
 		}
 
-		wait_event_interruptible(ion_comm_wq,
-					 atomic_read(&ion_comm_event));
+		ret = wait_event_interruptible(ion_comm_wq,
+					       atomic_read(&ion_comm_event));
+		if (ret < 0) {
+			IONMSG("%s is waked up error", __func__);
+			continue;
+		}
 		req_cache_size = atomic_read(&ion_comm_event);
 		cache_buffer = atomic_read(&ion_comm_cache_event);
 		atomic_set(&ion_comm_event, 0);

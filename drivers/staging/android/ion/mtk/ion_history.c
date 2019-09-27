@@ -584,6 +584,7 @@ static int write_mm_page_pool(int high, int order, int cache, size_t size)
 
 static int ion_history_record(void *data)
 {
+	int ret;
 	struct ion_device *dev = g_ion_device;
 	struct rb_node *n;
 	size_t old_total_size = 0;
@@ -595,8 +596,12 @@ static int ion_history_record(void *data)
 			break;
 		}
 
-		wait_event_interruptible(ion_history_wq,
-					 atomic_read(&ion_history_event));
+		ret = wait_event_interruptible(ion_history_wq,
+					       atomic_read(&ion_history_event));
+		if (ret < 0) {
+			IONMSG("%s is waked up error", __func__);
+			continue;
+		}
 		msleep(500);
 		atomic_set(&ion_history_event, 0);
 
