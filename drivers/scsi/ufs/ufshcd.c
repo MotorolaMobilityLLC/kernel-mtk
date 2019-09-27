@@ -6064,7 +6064,7 @@ static int ufshcd_eh_host_reset_handler(struct scsi_cmnd *cmd)
 	int err;
 	unsigned long flags;
 	struct ufs_hba *hba;
-	unsigned long max_doorbells = (1UL << hba->nutrs) - 1;
+	unsigned long max_doorbells;
 
 	hba = shost_priv(cmd->device->host);
 
@@ -6095,6 +6095,7 @@ static int ufshcd_eh_host_reset_handler(struct scsi_cmnd *cmd)
 	 * If there is no slot empty at this moment then free up last
 	 * slot forcefully.
 	 */
+	max_doorbells = (1UL << hba->nutrs) - 1;
 	if (hba->outstanding_reqs == max_doorbells)
 		__ufshcd_transfer_req_compl(hba,
 					    (1UL << (hba->nutrs - 1)));
