@@ -800,13 +800,13 @@ static char met_log_info2[10][32] = {
 
 void sched_big_task_nr(int *L_nr, int *B_nr)
 {
-	int l_avg, b_avg;
-	int l_nr, b_nr;
+	unsigned int l_avg, b_avg;
+	unsigned int l_nr, b_nr;
 	int i;
-	int l_avg_time[MAX_CLUSTER_NR] = {0};
-	int h_avg_time[MAX_CLUSTER_NR] = {0};
-	int _l_nr[MAX_CLUSTER_NR] = {0};
-	int _h_nr[MAX_CLUSTER_NR] = {0};
+	unsigned int l_avg_time[MAX_CLUSTER_NR] = {0};
+	unsigned int h_avg_time[MAX_CLUSTER_NR] = {0};
+	unsigned int _l_nr[MAX_CLUSTER_NR] = {0};
+	unsigned int _h_nr[MAX_CLUSTER_NR] = {0};
 	int cluster_nr = arch_get_nr_clusters();
 
 	*B_nr = *L_nr = 0;
