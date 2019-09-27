@@ -6120,6 +6120,11 @@ static int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 		LOG_INF(TMP_STR1 TMP_STR2,
 			property, param.processID, param.callerID, idx);
 #endif
+		if (idx ==  -1) {
+			LOG_ERR("index is a negative value!");
+			ret =  -EFAULT;
+			return ret;
+		}
 		spin_lock(&(SpinLock_P2FrameList));
 		/* [2]check the buffer is dequeued or not */
 		if (P2_FramePackage_List[property][idx].dequedNum ==
