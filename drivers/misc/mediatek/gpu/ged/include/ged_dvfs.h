@@ -129,6 +129,11 @@ GED_ERROR  ged_dvfs_probe_signal(int signo);
 
 void ged_dvfs_gpu_clock_switch_notify(bool bSwitch);
 
+void ged_dvfs_reset_opp_cost(int oppsize);
+void ged_dvfs_update_opp_cost(unsigned int loading,
+	unsigned int TSDiff_us, unsigned long long cur_us, unsigned int idx);
+uint64_t *ged_dvfs_query_opp_cost(uint64_t reset_base_us, uint64_t curTs_us);
+
 GED_ERROR ged_dvfs_system_init(void);
 void ged_dvfs_system_exit(void);
 unsigned long ged_dvfs_get_last_commit_idx(void);

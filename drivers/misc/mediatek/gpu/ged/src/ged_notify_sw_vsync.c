@@ -64,7 +64,7 @@ extern void (*mtk_gpu_sodi_exit_fp)(void);
 static struct workqueue_struct* g_psNotifyWorkQueue = NULL;
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
 || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)\
-|| defined(CONFIG_MACH_MT6765)
+|| defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6779)
 static struct workqueue_struct *g_psDumpFW;
 #endif
 
@@ -81,7 +81,7 @@ typedef struct GED_NOTIFY_SW_SYNC_TAG
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
 || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)\
-|| defined(CONFIG_MACH_MT6765)
+|| defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6779)
 struct GED_DUMP_FW {
 	struct work_struct	sWork;
 };
@@ -156,7 +156,6 @@ static void ged_notify_sw_sync_work_handle(struct work_struct *psWork)
 #ifdef ENABLE_COMMON_DVFS	
 static unsigned long long hw_vsync_ts;
 #endif
-static unsigned long long g_ns_gpu_on_ts=0;
 
 static bool g_timer_on = false;
 static unsigned long long g_timer_on_ts=0;
@@ -576,7 +575,7 @@ void ged_sodi_stop(void)
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
 || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)\
-|| defined(CONFIG_MACH_MT6765)
+|| defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6779)
 static void ged_dump_fw_handle(struct work_struct *psWork)
 {
 	struct GED_DUMP_FW *psNotify
@@ -615,7 +614,7 @@ GED_ERROR ged_notify_sw_vsync_system_init(void)
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
 || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)\
-|| defined(CONFIG_MACH_MT6765)
+|| defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6779)
 	g_psDumpFW = NULL;
 	g_psDumpFW = create_workqueue("ged_dump_fw_log");
 
@@ -648,7 +647,7 @@ void ged_notify_sw_vsync_system_exit(void)
 
 #if defined(CONFIG_MACH_MT8167) || defined(CONFIG_MACH_MT8173)\
 || defined(CONFIG_MACH_MT6739) || defined(CONFIG_MACH_MT6761)\
-|| defined(CONFIG_MACH_MT6765)
+|| defined(CONFIG_MACH_MT6765) || defined(CONFIG_MACH_MT6779)
 	if (g_psDumpFW != NULL) {
 		flush_workqueue(g_psDumpFW);
 

@@ -59,6 +59,12 @@ ccflags-y += -DGED_ENABLE_TIMER_BASED_DVFS_MARGIN
 endif
 endif
 
+ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6779"))
+ifeq ($(CONFIG_MTK_GPU_COMMON_DVFS_SUPPORT),y)
+ccflags-y += -DGED_MODULE_LATE_INIT
+endif
+endif
+
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),)
 ifneq ($(strip $(TARGET_BUILD_VARIANT)),eng)
 VER:=user
