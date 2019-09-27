@@ -5767,6 +5767,7 @@ static int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 	int idx =  -1, idx2 =  -1;
 	int restTime = 0;
 	int property;
+	unsigned int p2_event = 0;
 
 	if (param.property >= ISP_P2_BUFQUE_PROPERTY_NUM) {
 		LOG_ERR("property err(%d)\n", param.property);
@@ -5986,23 +5987,28 @@ static int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 			return ret;
 		}
 		{
-			restTime = wait_event_interruptible_timeout(
+			p2_event = ISP_P2_BufQue_WaitEventState(param,
+				ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ, &idx);
+			if (!p2_event) {
+				restTime = wait_event_interruptible_timeout(
 				P2WaitQueueHead_WaitDeque,
-				ISP_P2_BufQue_WaitEventState(param,
-					ISP_P2_BUFQUE_MATCH_TYPE_WAITDQ, &idx),
+				p2_event,
 				ISP_UsToJiffies(15 * 1000000)); /* 15s */
 
-			if (restTime == 0) {
+				if (restTime == 0) {
 #define ERR_STR "Wait Deque fail, idx(%d), pty(%d), pID(0x%x),cID(0x%x)\n"
-				LOG_ERR(ERR_STR,
-					idx, param.property, param.processID,
-					param.callerID);
+					LOG_ERR(ERR_STR,
+						idx, param.property,
+						param.processID,
+						param.callerID);
 #undef ERR_STR
-				ret =  -EFAULT;
-			} else if (restTime == -512) {
-				LOG_ERR("be stopped, restime(%d)\n", restTime);
-				ret =  -EFAULT;
-				break;
+					ret =  -EFAULT;
+				} else if (restTime == -512) {
+					LOG_ERR("be stopped, restime(%d)\n",
+						restTime);
+					ret =  -EFAULT;
+					break;
+				}
 			}
 		}
 		break;
@@ -6092,28 +6098,32 @@ static int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 		 */
 
 		/* wait 15s to get paired frame */
-		restTime = wait_event_interruptible_timeout(
-			P2WaitQueueHead_WaitFrameEQDforDQ,
-			ISP_P2_BufQue_WaitEventState(param,
-				ISP_P2_BUFQUE_MATCH_TYPE_WAITFMEQD, &idx),
-			ISP_UsToJiffies(15 * 1000000));
+		p2_event = ISP_P2_BufQue_WaitEventState(param,
+			ISP_P2_BUFQUE_MATCH_TYPE_WAITFMEQD, &idx);
+		if (!p2_event) {
+			restTime = wait_event_interruptible_timeout(
+				P2WaitQueueHead_WaitFrameEQDforDQ,
+				p2_event,
+				ISP_UsToJiffies(15 * 1000000));
 
-		if (restTime == 0) {
+			if (restTime == 0) {
 #define ERR_STR1 "could not find match buffer restTime(%d),"
 #define ERR_STR2 " pty/pID/cID (%d/0x%x/0x%x), idx(%d)\n"
-			LOG_ERR(ERR_STR1 ERR_STR2,
-				restTime, property, param.processID,
-				param.callerID, idx);
+				LOG_ERR(ERR_STR1 ERR_STR2,
+					restTime,
+					property,
+					param.processID,
+					param.callerID, idx);
 #undef ERR_STR1
 #undef ERR_STR2
-			ret =  -EFAULT;
-			return ret;
-		} else if (restTime == -512) {
-			LOG_ERR("be stopped, restime(%d)\n", restTime);
-			ret =  -EFAULT;
-			return ret;
+				ret =  -EFAULT;
+				return ret;
+			} else if (restTime == -512) {
+				LOG_ERR("be stopped, restime(%d)\n", restTime);
+				ret =  -EFAULT;
+				return ret;
+			}
 		}
-
 #ifdef P2_DBG_LOG
 #define TMP_STR1 "ISP_P2_BUFQUE_CTRL_WAIT_FRAME, after pty/pID/cID,"
 #define TMP_STR2 " (%d/0x%x/0x%x), idx(%d)\n"
@@ -6151,26 +6161,32 @@ static int ISP_P2_BufQue_CTRL_FUNC(struct ISP_P2_BUFQUE_STRUCT param)
 				param.timeoutIns);
 
 		/* [3]if not, goto wait event and wait for a signal to check */
-		restTime = wait_event_interruptible_timeout(
-			P2WaitQueueHead_WaitFrame,
-			ISP_P2_BufQue_WaitEventState(param,
-				ISP_P2_BUFQUE_MATCH_TYPE_WAITFM, &idx),
-			ISP_UsToJiffies(param.timeoutIns * 1000000));
-		if (restTime == 0) {
+		p2_event = ISP_P2_BufQue_WaitEventState(param,
+			ISP_P2_BUFQUE_MATCH_TYPE_WAITFM, &idx);
+		if (!p2_event) {
+			restTime = wait_event_interruptible_timeout(
+				P2WaitQueueHead_WaitFrame,
+				p2_event,
+				ISP_UsToJiffies(param.timeoutIns * 1000000));
+			if (restTime == 0) {
 #define ERR_STR1 "Dequeue Buffer fail, rT(%d), idx(%d), pty(%d),"
 #define ERR_STR2 " pID(0x%x),cID(0x%x)\n"
-			LOG_ERR(ERR_STR1 ERR_STR2,
-				restTime, idx, property, param.processID,
-				param.callerID);
+				LOG_ERR(ERR_STR1 ERR_STR2,
+					restTime,
+					idx,
+					property,
+					param.processID,
+					param.callerID);
 #undef ERR_STR1
 #undef ERR_STR2
-			ret =  -EFAULT;
-			break;
-		}
-		if (restTime == -512) {
-			LOG_ERR("be stopped, restime(%d)", restTime);
-			ret =  -EFAULT;
-			break;
+				ret =  -EFAULT;
+				break;
+			}
+			if (restTime == -512) {
+				LOG_ERR("be stopped, restime(%d)", restTime);
+				ret =  -EFAULT;
+				break;
+			}
 		}
 #define TMP_STR1 "Dequeue Buffer ok, rT(%d), idx(%d), pty(%d),"
 #define TMP_STR2 " pID(0x%x), cID(0x%x)\n"
