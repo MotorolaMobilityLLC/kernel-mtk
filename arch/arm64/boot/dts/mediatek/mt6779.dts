@@ -1072,6 +1072,7 @@ firmware_class.path=/vendor/firmware";
 		reg = <0 0x10204000 0 0x1000>;
 		mediatek,cirq_num = <271>;
 		mediatek,spi_start_offset = <64>;
+		sw_reset = <1>;
 		interrupts = <GIC_SPI 335 IRQ_TYPE_LEVEL_LOW>;
 	};
 
