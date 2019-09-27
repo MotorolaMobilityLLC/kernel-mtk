@@ -9763,8 +9763,7 @@ irqreturn_t ISP_Irq_CAM(enum ISP_IRQ_TYPE_ENUM irq_module)
 		}
 	}
 
-	if ((IrqStatus & HW_PASS1_DON_ST) &&
-	    (IspInfo.DebugMask & ISP_DBG_HW_DON)) {
+	if (IrqStatus & HW_PASS1_DON_ST) {
 
 		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
 			       "CAM%c P1_HW_DON_%d\n",
@@ -10311,14 +10310,6 @@ LB_CAM_SOF_IGNORE:
 			[ISP_WAITQ_HEAD_IRQ_SW_P1_DONE]);
 	}
 	if (DmaStatus & AAO_DONE_ST) {
-		IRQ_LOG_KEEPER(module, m_CurrentPPB, _LOG_INF,
-			"CAM_%c AAO_DONE_%d_%d(aao_ctrl_1:0x%x,aao_ctrl_2:0x%x)\n",
-			'A'+cardinalNum, sof_count[module],
-			ISP_RD32_TG_CAMX_FRM_CNT(module, reg_module),
-			(unsigned int)(ISP_RD32(
-			CAM_REG_FBC_AAO_CTL1(reg_module))),
-			(unsigned int)(ISP_RD32(
-			CAM_REG_FBC_AAO_CTL2(reg_module))));
 		wake_up_interruptible(&IspInfo.WaitQHeadCam
 			[ISP_GetWaitQCamIndex(module)]
 			[ISP_WAITQ_HEAD_IRQ_AAO_DONE]);
