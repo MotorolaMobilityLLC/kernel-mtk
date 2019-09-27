@@ -8138,7 +8138,7 @@ static long ISP_ioctl(struct file *pFile, unsigned int Cmd, unsigned long Param)
 	case ISP_GET_SUPPORTED_ISP_CLOCKS:
 		{
 			int result = 0;
-			u64 freq_steps[ISP_CLK_LEVEL_CNT];
+			u64 freq_steps[ISP_CLK_LEVEL_CNT] = {0};
 
 			/* Call mmdvfs_qos_get_freq_steps
 			 * to get supported frequency
