@@ -1986,8 +1986,6 @@ GED_ERROR ged_dvfs_system_init(void)
 
 	ged_kpi_set_gpu_dvfs_hint_fp = ged_dvfs_last_and_target_cb;
 
-	ged_dvfs_init_opp_cost();
-
 #if (defined(GED_ENABLE_FB_DVFS) && defined(GED_ENABLE_DYNAMIC_DVFS_MARGIN))
 	mtk_dvfs_margin_value_fp = ged_dvfs_margin_value;
 	mtk_get_dvfs_margin_value_fp = ged_get_dvfs_margin_value;
@@ -2008,6 +2006,8 @@ GED_ERROR ged_dvfs_system_init(void)
 #else
 	gpu_dvfs_enable = 0;
 #endif /* ENABLE_COMMON_DVFS */
+
+	ged_dvfs_init_opp_cost();
 
 	return GED_OK;
 }
