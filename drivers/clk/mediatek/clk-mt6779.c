@@ -3566,10 +3566,6 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_clrl(MMPLL_CON0, PLL_EN);
 	clk_setl(MMPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(MMPLL_PWR_CON0, PLL_PWR_ON);
-/*MSDCPLL*/
-	clk_clrl(MSDCPLL_CON0, PLL_EN);
-	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
-	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
 /*MFGPLL*/
 	clk_clrl(MFGPLL_CON0, PLL_EN);
 	clk_setl(MFGPLL_PWR_CON0, PLL_ISO_EN);
@@ -3584,6 +3580,10 @@ static void __init mtk_apmixedsys_init(struct device_node *node)
 	clk_setl(TVDPLL_PWR_CON0, PLL_ISO_EN);
 	clk_clrl(TVDPLL_PWR_CON0, PLL_PWR_ON);
 #endif
+/*MSDCPLL*/
+	clk_clrl(MSDCPLL_CON0, PLL_EN);
+	clk_setl(MSDCPLL_PWR_CON0, PLL_ISO_EN);
+	clk_clrl(MSDCPLL_PWR_CON0, PLL_PWR_ON);
 /*APLL1*/
 	clk_clrl(APLL1_CON0, PLL_EN);
 	clk_setl(APLL1_PWR_CON0, PLL_ISO_EN);
