@@ -530,12 +530,12 @@
 		"lcm_rst_out1_gpio","lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio", "lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
 	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
 	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
-	pinctrl-3 = <&mtkfb_pins_lcm_reset0>;
-	pinctrl-4 = <&mtkfb_pins_lcm_reset1>;
-	pinctrl-7 = <&mtkfb_pins_lcd_bias_enp0>;
-	pinctrl-8 = <&mtkfb_pins_lcd_bias_enp1>;
-	pinctrl-9 = <&mtkfb_pins_lcd_bias_enn0>;
-	pinctrl-10 = <&mtkfb_pins_lcd_bias_enn1>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn1>;
 	status = "okay";
 };
 /* DISPSYS GPIO standardization end */
