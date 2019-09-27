@@ -3422,8 +3422,8 @@ static int __init vcodec_driver_init(void)
 
 	/* HWLockEvent part */
 	mutex_lock(&HWLockEventTimeoutLock);
-	HWLockEvent.pvHandle = "DECHWLOCK_EVENT";
-	HWLockEvent.u4HandleSize = sizeof("DECHWLOCK_EVENT")+1;
+	HWLockEvent.pvHandle = "VCODECHWLOCK_EVENT";
+	HWLockEvent.u4HandleSize = sizeof("VCODECHWLOCK_EVENT")+1;
 	HWLockEvent.u4TimeoutMs = 1;
 	mutex_unlock(&HWLockEventTimeoutLock);
 	eValHWLockRet = eVideoCreateEvent(&HWLockEvent,
@@ -3432,21 +3432,7 @@ static int __init vcodec_driver_init(void)
 		/* Add one line comment for avoid kernel coding style,
 		 * WARNING:BRACES:
 		 */
-		pr_info("[VCODEC][ERROR] create dec hwlock event error\n");
-	}
-
-	mutex_lock(&HWLockEventTimeoutLock);
-	HWLockEvent.pvHandle = "ENCHWLOCK_EVENT";
-	HWLockEvent.u4HandleSize = sizeof("ENCHWLOCK_EVENT")+1;
-	HWLockEvent.u4TimeoutMs = 1;
-	mutex_unlock(&HWLockEventTimeoutLock);
-	eValHWLockRet = eVideoCreateEvent(&HWLockEvent,
-					sizeof(struct VAL_EVENT_T));
-	if (eValHWLockRet != VAL_RESULT_NO_ERROR) {
-		/* Add one line comment for avoid kernel coding style,
-		 * WARNING:BRACES:
-		 */
-		pr_info("[VCODEC][ERROR] create enc hwlock event error\n");
+		pr_info("[VCODEC][ERROR] create vcodec hwlock event error\n");
 	}
 
 #ifdef VCODEC_DVFS_V2
