@@ -38,6 +38,7 @@
 #define CMDQ_SYNC_TOKEN_VAL		0x64
 #define CMDQ_SYNC_TOKEN_UPD		0x68
 #define CMDQ_PREFETCH_GSIZE		0xC0
+#define CMDQ_TPR_MASK			0xD0
 
 #define CMDQ_THR_BASE			0x100
 #define CMDQ_THR_SIZE			0x80
@@ -70,7 +71,7 @@
 #define CMDQ_THR_IRQ_EN			(CMDQ_THR_IRQ_ERROR | CMDQ_THR_IRQ_DONE)
 #define CMDQ_THR_IS_WAITING		BIT(31)
 #define CMDQ_THR_PRIORITY		0x7
-
+#define CMDQ_TPR_EN			BIT(31)
 
 #define CMDQ_JUMP_BY_OFFSET		0x10000000
 #define CMDQ_JUMP_BY_PA			0x10000001
@@ -160,6 +161,7 @@ static s32 cmdq_clk_enable(struct cmdq *cmdq)
 		if (cmdq->prefetch)
 			writel(cmdq->prefetch,
 				cmdq->base + CMDQ_PREFETCH_GSIZE);
+		writel(CMDQ_TPR_EN, cmdq->base + CMDQ_TPR_MASK);
 		/* make sure pm not suspend */
 		cmdq_lock_wake_lock(cmdq, true);
 	}

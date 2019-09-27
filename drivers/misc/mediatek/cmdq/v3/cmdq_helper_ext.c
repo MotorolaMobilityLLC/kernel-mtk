@@ -5231,6 +5231,28 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 		MMPROFILE_FLAG_PULSE, ((unsigned long)handle),
 		handle->wakedUp - handle->beginWait);
 
+#if IS_ENABLED(CONFIG_MACH_MT6779)
+	/* debug wpe hw not waiting issue */
+	if (handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS) {
+		u64 task_cost = handle->wakedUp - handle->trigger;
+		u32 *exec;
+		u64 diff;
+
+		do_div(task_cost, 1000);
+		if (task_cost <= 3000) {
+			exec = cmdq_pkt_get_perf_ret(handle->pkt);
+			diff = exec[1] > exec[0] ?
+				(exec[1] - exec[0]) : (~exec[1] + exec[0]);
+			do_div(diff, 26);
+
+			CMDQ_LOG(
+				"[warn]wpe task cost:%llu < 3ms hw begin:%u end:%u diff:%d\n",
+				task_cost, exec[0], exec[1], diff);
+		}
+	}
+#endif
+
+
 	CMDQ_SYSTRACE_BEGIN("%s_wait_release\n", __func__);
 	cmdq_core_track_handle_record(handle, handle->thread);
 	cmdq_pkt_release_handle(handle);

@@ -323,6 +323,10 @@ s32 cmdq_pkt_sleep(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 	u32 value, u32 addr, u32 mask, u16 count, u16 reg_gpr);
 
+void cmdq_pkt_perf_end(struct cmdq_pkt *pkt);
+void cmdq_pkt_perf_begin(struct cmdq_pkt *pkt);
+u32 *cmdq_pkt_get_perf_ret(struct cmdq_pkt *pkt);
+
 /**
  * cmdq_pkt_wfe() - append wait for event command to the CMDQ packet
  * @pkt:	the CMDQ packet
