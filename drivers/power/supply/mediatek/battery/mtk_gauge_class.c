@@ -294,6 +294,25 @@ int gauge_dev_get_zcv(
 	return ret;
 }
 
+int gauge_dev_notify_event(
+	struct gauge_device *gauge_dev, enum gauge_event evt, int value)
+{
+	int ret = -ENOTSUPP;
+
+	if (gauge_dev == NULL)
+		return ret;
+
+	gauge_lock(gauge_dev);
+	if (gauge_dev != NULL && gauge_dev->ops != NULL &&
+		gauge_dev->ops->gauge_notify_event)
+		ret =
+			gauge_dev->ops->gauge_notify_event(
+				gauge_dev, evt, value);
+	gauge_unlock(gauge_dev);
+
+	return ret;
+}
+
 int gauge_dev_is_gauge_initialized(
 	struct gauge_device *gauge_dev, int *init)
 {

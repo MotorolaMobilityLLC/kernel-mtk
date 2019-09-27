@@ -35,7 +35,6 @@ static wait_queue_head_t wait_que;
 static struct hrtimer gtimer_kthread_timer;
 static struct timespec gtimer_suspend_time;
 
-
 #define FTLOG_ERROR_LEVEL   1
 #define FTLOG_DEBUG_LEVEL   2
 #define FTLOG_TRACE_LEVEL   3
@@ -112,14 +111,16 @@ void wake_up_gtimer(void)
 
 	gtimer_thread_timeout = true;
 	wake_up(&wait_que);
-	ft_debug("wake_up_gtimer\n");
+	ft_debug("%s\n", __func__);
 }
 
 void gtimer_start_timer(int sec)
 {
 	ktime_t ktime = ktime_set(sec, 0);
 
-	ft_debug("gtimer_start_timer %d", sec);
+	ft_debug("%s %d",
+		__func__,
+		sec);
 	hrtimer_start(&gtimer_kthread_timer, ktime, HRTIMER_MODE_REL);
 }
 
@@ -151,12 +152,14 @@ void gtimer_start(struct gtimer *timer, int sec)
 
 	timer->endtime = timespec_add(time_now, time);
 
-	ft_debug("gtimer_start dev:%s name:%s %ld %ld %d\n",
+	ft_debug("%s dev:%s name:%s %ld %ld %d\n",
+		__func__,
 	dev_name(timer->dev), timer->name,
 	time_now.tv_sec, timer->endtime.tv_sec, sec);
 
 	if (list_empty(&timer->list) != true) {
-		ft_debug("gtimer_start dev:%s name:%s time:%ld %ld int:%d is not empty\n",
+		ft_debug("%s dev:%s name:%s time:%ld %ld int:%d is not empty\n",
+			__func__,
 		dev_name(timer->dev), timer->name,
 		time_now.tv_sec, timer->endtime.tv_sec, sec);
 		list_del_init(&timer->list);
@@ -210,14 +213,15 @@ static void gtimer_handler(void)
 
 	hrtimer_cancel(&gtimer_kthread_timer);
 
-	ft_info("gtimer_handler\n");
+	ft_info("%s\n", __func__);
 	for (pos = phead->next; pos != phead;) {
 		struct list_head *ptmp;
 
 		get_monotonic_boottime(&time);
 		ptr = container_of(pos, struct gtimer, list);
 
-		ft_info("gtimer_handler name:%s %ld %ld %d %d\n",
+		ft_info("%s name:%s %ld %ld %d %d\n",
+			__func__,
 		ptr->name, time.tv_sec,
 		ptr->endtime.tv_sec, ptr->interval,
 		timespec_compare(&time, &ptr->endtime));
@@ -226,7 +230,8 @@ static void gtimer_handler(void)
 			ptmp = pos;
 			pos = pos->next;
 			list_del_init(ptmp);
-			ft_debug("gtimer_handler name:%s %ld %d\n",
+			ft_debug("%s name:%s %ld %d\n",
+				__func__,
 			ptr->name,
 			ptr->endtime.tv_sec, ptr->interval);
 			if (ptr->callback) {
@@ -273,6 +278,8 @@ static int gtimer_thread(void *arg)
 		mutex_gtimer_unlock();
 		get_monotonic_boottime(&endtime);
 		duraction = timespec_sub(endtime, stime);
+		if (duraction.tv_sec == -56789)
+			return 0;
 	}
 
 	return 0;
@@ -281,7 +288,7 @@ static int gtimer_thread(void *arg)
 
 static void gtimer_suspend(void)
 {
-	ft_err("gtimer_suspend\n");
+	ft_err("%s\n", __func__);
 	hrtimer_cancel(&gtimer_kthread_timer);
 }
 
@@ -293,7 +300,9 @@ static void gtimer_resume(void)
 	int time_interval;
 
 	get_monotonic_boottime(&time);
-	ft_err("gtimer_resume %ld\n", time.tv_sec);
+	ft_err("%s %ld\n",
+		__func__,
+		time.tv_sec);
 	gtimer_dump_list();
 
 	pos = gtimer_head.next;
@@ -301,7 +310,8 @@ static void gtimer_resume(void)
 		ptr = container_of(pos, struct gtimer, list);
 
 		if (timespec_compare(&time, &ptr->endtime) >= 0) {
-			ft_err("gtimer_resume now:%ld expired:%s %ld\n",
+			ft_err("%s now:%ld expired:%s %ld\n",
+				__func__,
 				time.tv_sec,
 				ptr->name, ptr->endtime.tv_sec);
 			wake_up_gtimer();
@@ -373,10 +383,13 @@ signed int get_dynamic_period(
 		sec = duraction.tv_sec + 1;
 		if (sec <= 10)
 			sec = 10;
-		ft_err("get_dynamic_period time:now:%ld next:%ld diff:%d\n",
+		ft_err("%s time:now:%ld next:%ld diff:%d\n",
+			__func__,
 		gtimer_suspend_time.tv_sec, ptr->endtime.tv_sec, sec);
 	} else
-		ft_err("get_dynamic_period time:%d\n", sec);
+		ft_err("%s time:%d\n",
+		__func__,
+		sec);
 
 	return sec;
 }

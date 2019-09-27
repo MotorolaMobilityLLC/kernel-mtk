@@ -107,6 +107,8 @@
 #define AGING1_UPDATE_SOC 30
 #define AGING1_LOAD_SOC 70
 #define AGING_TEMP_DIFF 10
+#define AGING_TEMP_LOW_LIMIT 15
+#define AGING_TEMP_HIGH_LIMIT 50
 #define AGING_100_EN 1
 
 /* Aging Compensation 2*/
@@ -194,7 +196,7 @@
 #define SHUTDOWN_CAR_RATIO	1
 
 
-#define MULTI_TEMP_GAUGE0 0	/* different temp using different gauge 0% */
+#define MULTI_TEMP_GAUGE0 1	/* different temp using different gauge 0% */
 
 #define OVER_DISCHARGE_LEVEL -1500
 
@@ -247,6 +249,9 @@
 #define UI_LOW_LIMIT_VTH4 34000
 
 #define UI_LOW_LIMIT_TIME 99999
+
+#define MOVING_BATTEMP_EN 1
+#define MOVING_BATTEMP_THR 20
 
 
 #endif

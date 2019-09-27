@@ -19,6 +19,7 @@
 #include <linux/kthread.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
+#include <linux/alarmtimer.h>
 
 #include <mt-plat/charger_type.h>
 #include <mt-plat/mtk_battery.h>
@@ -41,8 +42,9 @@ struct shutdown_condition {
 };
 
 struct shutdown_controller {
-	struct gtimer kthread_fgtimer;
+	struct alarm kthread_fgtimer;
 	bool timeout;
+	bool overheat;
 	wait_queue_head_t  wait_que;
 	struct shutdown_condition shutdown_status;
 	struct timespec pre_time[SHUTDOWN_FACTOR_MAX];
@@ -63,6 +65,12 @@ static int shutdown_cond_flag;
 static void wake_up_power_misc(struct shutdown_controller *sdd)
 {
 	sdd->timeout = true;
+	wake_up(&sdd->wait_que);
+}
+
+static void wake_up_overheat(struct shutdown_controller *sdd)
+{
+	sdd->overheat = true;
 	wake_up(&sdd->wait_que);
 }
 
@@ -268,6 +276,7 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	int polling = 0;
 	static int ui_zero_time_flag;
 	static int down_to_low_bat;
+	int now_current = 0;
 	int current_ui_soc = battery_get_uisoc();
 	int current_soc = battery_get_soc();
 	int vbat = battery_get_bat_voltage();
@@ -308,6 +317,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 	}
 
 	if (sdd->shutdown_status.is_uisoc_one_percent) {
+		now_current = battery_get_bat_current();
+
 		if (current_ui_soc == 0) {
 			duraction =
 				timespec_sub(
@@ -318,6 +329,12 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 				kernel_power_off();
 				return next_waketime(polling);
 			}
+		} else if (now_current > 0 && current_soc > 0) {
+			polling = 0;
+			sdd->shutdown_status.is_uisoc_one_percent = 0;
+			bm_err("disable uisoc_one_percent shutdown cur:%d soc:%d\n",
+				now_current, current_soc);
+			return next_waketime(polling);
 		} else {
 			/* ui_soc is not zero, check it after 10s */
 			polling++;
@@ -328,8 +345,8 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 		duraction = timespec_sub(now, sdd->pre_time[DLPT_SHUTDOWN]);
 		polling++;
 		if (duraction.tv_sec >= SHUTDOWN_TIME) {
-			bm_err("dlpt shutdown\n");
-			kernel_power_off();
+			bm_err("dlpt shutdown count, %ld\n",
+				(long int)duraction.tv_sec);
 			return next_waketime(polling);
 		}
 	}
@@ -434,23 +451,36 @@ static int shutdown_event_handler(struct shutdown_controller *sdd)
 
 }
 
-static int power_misc_kthread_fgtimer_func(struct gtimer *data)
+static enum alarmtimer_restart power_misc_kthread_fgtimer_func(
+	struct alarm *alarm, ktime_t now)
 {
 	struct shutdown_controller *info =
-		container_of(data, struct shutdown_controller, kthread_fgtimer);
+		container_of(
+			alarm, struct shutdown_controller, kthread_fgtimer);
 
 	wake_up_power_misc(info);
-	return 0;
+	return ALARMTIMER_NORESTART;
 }
 
 void power_misc_handler(void *arg)
 {
 	struct shutdown_controller *sdd = arg;
-	int ret;
+	struct timespec time, time_now, end_time;
+	ktime_t ktime;
+	int secs = 0;
 
-	ret = shutdown_event_handler(sdd);
-	if (ret != 0 && is_fg_disabled() == false)
-		gtimer_start(&sdd->kthread_fgtimer, ret);
+	secs = shutdown_event_handler(sdd);
+	if (secs != 0 && is_fg_disabled() == false) {
+		get_monotonic_boottime(&time_now);
+		time.tv_sec = secs;
+		time.tv_nsec = 0;
+		end_time = timespec_add(time_now, time);
+		ktime = ktime_set(end_time.tv_sec, end_time.tv_nsec);
+
+		alarm_start(&sdd->kthread_fgtimer, ktime);
+		bm_err("%s:set new alarm timer:%ds\n",
+			__func__, secs);
+	}
 
 }
 
@@ -459,10 +489,19 @@ static int power_misc_routine_thread(void *arg)
 	struct shutdown_controller *sdd = arg;
 
 	while (1) {
-		wait_event(sdd->wait_que, (sdd->timeout == true));
+		wait_event(sdd->wait_que, (sdd->timeout == true)
+			|| (sdd->overheat == true));
+		if (sdd->timeout == true) {
 		sdd->timeout = false;
-
 		power_misc_handler(arg);
+	}
+		if (sdd->overheat == true) {
+			sdd->overheat = false;
+			bm_err("%s battery overheat~ power off\n",
+				__func__);
+			kernel_power_off();
+			return 1;
+		}
 	}
 
 	return 0;
@@ -485,7 +524,8 @@ int mtk_power_misc_psy_event(
 				bm_err(
 					"battery temperature >= %d,shutdown",
 					tmp);
-				kernel_power_off();
+
+				wake_up_overheat(&sdc);
 			}
 		}
 	}
@@ -496,13 +536,13 @@ int mtk_power_misc_psy_event(
 void mtk_power_misc_init(struct platform_device *pdev)
 {
 	mutex_init(&sdc.lock);
-	gtimer_init(&sdc.kthread_fgtimer, &pdev->dev, "power_misc");
-	sdc.kthread_fgtimer.callback = power_misc_kthread_fgtimer_func;
+	alarm_init(&sdc.kthread_fgtimer, ALARM_BOOTTIME,
+		power_misc_kthread_fgtimer_func);
 	init_waitqueue_head(&sdc.wait_que);
+
+	kthread_run(power_misc_routine_thread, &sdc, "power_misc_thread");
 
 	sdc.psy_nb.notifier_call = mtk_power_misc_psy_event;
 	power_supply_reg_notifier(&sdc.psy_nb);
-
-	kthread_run(power_misc_routine_thread, &sdc, "power_misc_thread");
 }
 
