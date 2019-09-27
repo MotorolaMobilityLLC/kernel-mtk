@@ -868,7 +868,7 @@ static void _pwrap_enable(void)
  ************************************************/
 static signed int _pwrap_init_sistrobe(int dual_si_sample_settings)
 {
-	unsigned int rdata;
+	unsigned int rdata = 0;
 	int si_en_sel, si_ck_sel, si_dly, si_sample_ctrl, clk_edge_no, i;
 	int found, result_faulty = 0;
 	int test_data[30] = {0x6996, 0x9669, 0x6996, 0x9669, 0x6996, 0x9669,
@@ -1104,7 +1104,7 @@ static signed int _pwrap_init_reg_clock(unsigned int regck_sel)
 
 static int _pwrap_wacs2_write_test(int pmic_no)
 {
-	unsigned int rdata;
+	unsigned int rdata = 0;
 
 	if (pmic_no == 0) {
 		pwrap_write_nochk(PMIC_DEW_WRITE_TEST_ADDR, 0xa55a);
