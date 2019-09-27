@@ -2869,8 +2869,8 @@ static int init_decouple_buffers(void)
 {
 	int i = 0;
 	enum UNIFIED_COLOR_FMT fmt = UFMT_RGB888;
-	int height = primary_display_get_height();
-	int width = primary_display_get_width();
+	int height = disp_helper_get_option(DISP_OPT_FAKE_LCM_HEIGHT);
+	int width = disp_helper_get_option(DISP_OPT_FAKE_LCM_WIDTH);
 	int Bpp = UFMT_GET_Bpp(fmt);
 
 	int buffer_size = width * height * Bpp;
