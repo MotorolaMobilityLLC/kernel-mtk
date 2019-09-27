@@ -50,19 +50,19 @@
 #define MEMSIC_DEBUG_ON 1
 #define MEMSIC_DEBUG_FUNC_ON 1
 /* Log define */
-#define MEMSIC_INFO(fmt, arg...) pr_err("<<-MMC5603NJ INFO->> " fmt "\n", ##arg)
-#define MEMSIC_ERR(fmt, arg...) pr_err("<<-MMC5603NJ ERROR->> [line=%d]" fmt "\n", __LINE__, ##arg)
+#define MEMSIC_INFO(fmt, arg...) pr_err("[MMC5603NJ][INFO]: "fmt, ##arg)
+#define MEMSIC_ERR(fmt, arg...) pr_err("[MMC5603NJ][ERROR][%d]: "fmt, __LINE__, ##arg)
 #define MEMSIC_DEBUG(fmt, arg...)                                           \
 	do                                                                      \
 	{                                                                       \
 		if (MEMSIC_DEBUG_ON)                                                \
-			pr_err("<<-MMC5603NJ DEBUG->> [%d]" fmt "\n", __LINE__, ##arg); \
+			pr_err("[MMC5603NJ][DEBUG][%d]: "fmt, __LINE__, ##arg); \
 	} while (0)
 #define MEMSIC_DEBUG_FUNC()                                                       \
 	do                                                                            \
 	{                                                                             \
 		if (MEMSIC_DEBUG_FUNC_ON)                                                 \
-			pr_err("<<-MMC5603NJ FUNC->> Func:%s@Line:%d\n", __func__, __LINE__); \
+			pr_err("[MMC5603NJ][FUNC]:  %s@Line:%d\n", __func__, __LINE__); \
 	} while (0)
 
 

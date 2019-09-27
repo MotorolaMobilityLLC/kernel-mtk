@@ -818,6 +818,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 {    
 	int i = 0;
 	int err = 0;
+	u8 val = 0;
 
 	psx93XX_t this = 0;
 	psx932x_t pDevice = 0;
@@ -841,7 +842,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	if (!pButtonInformationData) {
 		SX932X_ERR("Failed to allocate memory(totalButtonInformation)\n");
 		err = -ENOMEM;
-		return err;
+		goto exit_malloc_btn_data_failed;
 	}
 
 	pButtonInformationData->buttonSize = ARRAY_SIZE(psmtcButtons);
@@ -849,7 +850,8 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	pplatData = devm_kzalloc(&client->dev,sizeof(struct sx932x_platform_data), GFP_KERNEL);
 	if (!pplatData) {
 		SX932X_ERR("platform data is required!\n");
-		return -EINVAL;
+		err = -EINVAL;
+		goto exit_malloc_platform_data_failed;
 	}
 	pplatData->get_is_nirq_low = sx932x_get_nirq_state;
 	pplatData->pbuttonInformation = pButtonInformationData;
@@ -858,11 +860,20 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	err = sx932x_parse_dt(pplatData, &client->dev);
 	if (err) {
 		SX932X_ERR("could not setup pin\n");
-		return ENODEV;
+		err = -ENODEV;
+		goto exit_parse_dt_failed;
 	}
 
 	pplatData->init_platform_hw = sx932x_init_platform_hw;
 	SX932X_LOG("SX932x init_platform_hw done!\n");
+
+	//Check I2C Connection
+	err = read_register(this, SX932x_WHOAMI_REG, &val);
+	if(err < 0){
+		SX932X_ERR("check i2c connection failed.\n");
+		err = -ENODEV;
+		goto exit_check_device_failed;
+	}
 	
 	if (this){
 		/* In case we need to reinitialize data 
@@ -919,7 +930,8 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 			/* Create the input device */
 			input = input_allocate_device();
 			if (!input) {
-				return -ENOMEM;
+				err = -ENOMEM;
+				goto exit_init_failed;
 			}
 			/* Set all the keycodes */
 			__set_bit(EV_KEY, input->evbit);
@@ -934,7 +946,8 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 			input->name = "SX932x Cap Touch";
 			input->id.bustype = BUS_I2C;
 			if(input_register_device(input)){
-				return -ENOMEM;
+				err = -ENOMEM;
+				goto exit_init_failed;
 			}
 		}
 
@@ -947,7 +960,8 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 			this->init(this);
 		}else{
 			dev_err(this->pdev,"No init function!!!!\n");
-			return -ENOMEM;
+			err = -ENOMEM;
+			goto exit_init_failed;
 		}
 	}else{
 		return -1;
@@ -962,6 +976,17 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	SX932X_LOG("sx932x_probe() Done\n");
 
 	return 0;
+
+exit_init_failed:
+exit_check_device_failed:
+exit_parse_dt_failed:
+	devm_kfree(&client->dev, pplatData);
+exit_malloc_platform_data_failed:
+	devm_kfree(&client->dev, pButtonInformationData);
+exit_malloc_btn_data_failed:
+	devm_kfree(&client->dev, this);
+	SX932X_ERR(" probe failed, err = %d\n", err);
+	return err;
 }
 
 int sx93XX_remove(psx93XX_t this)

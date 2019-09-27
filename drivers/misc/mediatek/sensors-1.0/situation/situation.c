@@ -288,6 +288,10 @@ static int situation_enable_and_batch(int index)
 	if (cxt->ctl_context[index].power == 0 &&
 		cxt->ctl_context[index].enable == 1) {
 		pr_debug("SITUATION power on\n");
+		if (cxt->ctl_context[index].situation_ctl.open_report_data == NULL) {
+			pr_notice("open_report_data() is NULL, %d\n", index);
+			return -1;
+		}
 		err = cxt->ctl_context[index].situation_ctl.open_report_data(1);
 		if (err) {
 			pr_err("situation turn on power err = %d\n",
@@ -303,6 +307,10 @@ static int situation_enable_and_batch(int index)
 	if (cxt->ctl_context[index].power == 1 &&
 		cxt->ctl_context[index].delay_ns >= 0) {
 		pr_debug("SITUATION set batch\n");
+		if (cxt->ctl_context[index].situation_ctl.batch == NULL) {
+			pr_notice("batch() is NULL, %d\n", index);
+			return -1;
+		}
 		/* set ODR, fifo timeout latency */
 		if (cxt->ctl_context[index].situation_ctl.is_support_batch)
 			err = cxt->ctl_context[index].situation_ctl.batch(0,
