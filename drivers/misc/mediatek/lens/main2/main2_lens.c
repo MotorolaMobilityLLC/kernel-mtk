@@ -86,6 +86,8 @@ static struct stAF_DrvList g_stAF_DrvList[MAX_NUM_OF_LENS] = {
 	{1, AFDRV_LC898212XDAF_F, LC898212XDAF_F_SetI2Cclient,
 	 LC898212XDAF_F_Ioctl, LC898212XDAF_F_Release,
 	 LC898212XDAF_F_GetFileName, NULL},
+	{1, AFDRV_DW9714K, DW9714K_SetI2Cclient, DW9714K_Ioctl,
+	 DW9714K_Release, DW9714K_GetFileName, NULL},
 	{1, AFDRV_LC898217AF, LC898217AF_SetI2Cclient, LC898217AF_Ioctl,
 	 LC898217AF_Release, LC898217AF_GetFileName, NULL},
 	{1, AFDRV_LC898217AFA, LC898217AFA_SetI2Cclient, LC898217AFA_Ioctl,
@@ -136,8 +138,10 @@ void MAIN2AF_PowerDown(void)
 		int Ret1 = 0;
 
 		if (DrvPwrDn1) {
+/*
 			Ret1 = bu64748af_PowerDown_Main2(
 			g_pstAF_I2Cclient, &g_s4AF_Opened);
+*/
 		}
 
 		if (DrvPwrDn1) {
