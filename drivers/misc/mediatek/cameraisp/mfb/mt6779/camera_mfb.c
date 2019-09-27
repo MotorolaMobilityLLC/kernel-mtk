@@ -1009,7 +1009,7 @@ static inline unsigned int MFB_JiffiesToMs(unsigned int Jiffies)
 void MFBQOS_Init(void)
 {
 	s32 result = 0;
-	u64 img_freq_steps[MAX_FREQ_STEP];
+	u64 img_freq_steps[MAX_FREQ_STEP] = {0};
 	u32 step_size;
 
 	/* Call pm_qos_add_request when initialize module or driver prob */
@@ -4186,8 +4186,6 @@ static signed int MFB_probe(struct platform_device *pDev)
 #endif
 
 	log_inf("- E. MFB driver probe.\n");
-
-	max_img_freq = 0;
 
 	/* Check platform_device parameters */
 #ifdef CONFIG_OF
