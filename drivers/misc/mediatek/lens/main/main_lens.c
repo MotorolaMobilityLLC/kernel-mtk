@@ -345,13 +345,14 @@ static void ois_pos_polling(struct work_struct *data)
 	if (g_pstAF_CurDrv) {
 		if (g_pstAF_CurDrv->pAF_OisGetHallPos) {
 			int PosX = 0, PosY = 0;
-
 			g_pstAF_CurDrv->pAF_OisGetHallPos(&PosX, &PosY);
-			OisPosInfo.TimeStamp[g_OisPosIdx] = getCurNS();
-			OisPosInfo.i4OISHallPosX[g_OisPosIdx] = PosX;
-			OisPosInfo.i4OISHallPosY[g_OisPosIdx] = PosY;
-			g_OisPosIdx++;
-			g_OisPosIdx &= OIS_DATA_MASK;
+			if (g_OisPosIdx >= 0) {
+				OisPosInfo.TimeStamp[g_OisPosIdx] = getCurNS();
+				OisPosInfo.i4OISHallPosX[g_OisPosIdx] = PosX;
+				OisPosInfo.i4OISHallPosY[g_OisPosIdx] = PosY;
+				g_OisPosIdx++;
+				g_OisPosIdx &= OIS_DATA_MASK;
+			}
 		}
 	}
 	mutex_unlock(&ois_mutex);
