@@ -303,5 +303,8 @@ extern void ccci_set_mem_access_protection_second_stage(int md_id);
 #endif
 extern void mdee_set_ex_start_str(struct ccci_fsm_ee *ee_ctl,
 	unsigned int type, char *str);
+
+int get_mdinit_killed(void);
+
 #endif /* __CCCI_FSM_INTERNAL_H__ */
 

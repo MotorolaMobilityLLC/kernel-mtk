@@ -403,6 +403,20 @@ static int fsm_md_data_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+static long ccci_fsm_get_mdinit_killed(unsigned long arg)
+{
+	unsigned int mdinit_killed = 0;
+
+	mdinit_killed = (unsigned int)get_mdinit_killed();
+	if (put_user(mdinit_killed, (unsigned int __user *)arg)) {
+		CCCI_ERROR_LOG(-1, CHAR, "[%s] error: put_user fail!\n",
+			__func__);
+		return -EFAULT;
+	}
+
+	return 0;
+}
+
 long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 {
 	struct ccci_fsm_ctl *ctl = fsm_get_entity_by_md_id(md_id);
@@ -569,6 +583,11 @@ long ccci_fsm_ioctl(int md_id, unsigned int cmd, unsigned long arg)
 	case CCCI_IOC_RESET_MD1_MD3_PCCIF:
 		ccci_md_reset_pccif(md_id);
 		break;
+
+	case CCCI_IOC_GET_MDINIT_KILLED:
+		ret = ccci_fsm_get_mdinit_killed(arg);
+		break;
+
 	case CCCI_IOC_GET_MD_EX_TYPE:
 		ret = put_user((unsigned int)ctl->ee_ctl.ex_type,
 				(unsigned int __user *)arg);

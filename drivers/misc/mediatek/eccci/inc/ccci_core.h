@@ -274,6 +274,10 @@ extern struct ccci_ccb_config ccb_configs[];
 #define CCCI_IOC_CCB_CTRL_INFO			\
 	_IOWR(CCCI_IOC_MAGIC, 71, struct ccb_ctrl_info)
 
+/* for user space ccci mdinit user */
+#define CCCI_IOC_GET_MDINIT_KILLED      \
+	_IOR(CCCI_IOC_MAGIC, 72, unsigned int)
+
 #define CCCI_IOC_SET_HEADER			\
 	_IO(CCCI_IOC_MAGIC,  112) /* emcs_va */
 #define CCCI_IOC_CLR_HEADER			\
