@@ -8467,6 +8467,7 @@ static signed int ISP_ED_BufQue_CTRL_FUNC(struct ISP_ED_BUFQUE_STRUCT param)
 		if (param.p2burstQIdx == 0) {
 			if (P2_EDBUF_MList_FirstBufIdx ==
 				    P2_EDBUF_MList_LastBufIdx &&
+			    P2_EDBUF_MList_FirstBufIdx != -1 &&
 			    P2_EDBUF_MgrList[P2_EDBUF_MList_FirstBufIdx]
 					    .p2dupCQIdx == -1) {
 				/* all managed buffer node is empty */
