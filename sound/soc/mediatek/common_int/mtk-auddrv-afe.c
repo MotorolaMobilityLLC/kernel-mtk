@@ -251,6 +251,27 @@ void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask)
 	spin_unlock_irqrestore(&clksys_set_reg_lock, flags);
 #endif
 }
+void clksys_set_reg_val(unsigned int offset, unsigned int value)
+{
+#ifndef CONFIG_FPGA_EARLY_PORTING
+	long address = (long)((char *)CLKSYS_ADDRESS + offset);
+	unsigned int *val_addr = (unsigned int *)address;
+	unsigned long flags = 0;
+
+	if (CLKSYS_ADDRESS == NULL) {
+		pr_info("%s(), CLKSYS_ADDRESS is null\n", __func__);
+		return;
+	}
+#if defined(AUD_DEBUG_LOG)
+	pr_debug("%s(), offset = %x, value = %x\n", __func__, offset,
+	       value);
+#endif
+	spin_lock_irqsave(&clksys_set_reg_lock, flags);
+
+	mt_reg_sync_writel(value, val_addr);
+	spin_unlock_irqrestore(&clksys_set_reg_lock, flags);
+#endif
+}
 
 void Afe_Set_Reg(unsigned int offset, unsigned int value, unsigned int mask)
 {

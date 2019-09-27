@@ -464,6 +464,8 @@ void SetApmixedCfg(unsigned int offset, unsigned int value, unsigned int mask);
 /* function to get/set clksys register */
 unsigned int clksys_get_reg(unsigned int offset);
 void clksys_set_reg(unsigned int offset, unsigned int value, unsigned int mask);
+void clksys_set_reg_val(unsigned int offset, unsigned int value);
+
 
 /* for debug usage */
 void Afe_Log_Print(void);
