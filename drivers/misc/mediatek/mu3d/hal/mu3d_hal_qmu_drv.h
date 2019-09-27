@@ -210,7 +210,7 @@ struct qmu_desc_map {
 #define TGPD_GET_DATA_TX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd) |  (TGPD_GET_DATA_TXHI(_pd) << 32)))
 #define TGPD_GET_DATA_RX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd) |  (TGPD_GET_DATA_RXHI(_pd) << 32)))
 
-#else
+#else /* CONFIG_USB_MU3D_DRV_36BIT */
 #define TGPD_SET_NEXT(_pd, _next)	(((TGPD *)_pd)->pNext = (u32)_next)
 #define TGPD_GET_NEXT(_pd)		((TGPD *)(uintptr_t)((TGPD *)_pd)->pNext)
 
@@ -220,9 +220,9 @@ struct qmu_desc_map {
 #define TGPD_SET_DATA(_pd, _data)	(((TGPD *)_pd)->pBuf = (u32)_data)
 #define TGPD_GET_DATA(_pd)		((DEV_UINT8 *)(uintptr_t)((TGPD *)_pd)->pBuf)
 
-#endif
+#endif /* CONFIG_USB_MU3D_DRV_36BIT */
 
-#else
+#else /* CONFIG_ARM64 */
 
 #define TGPD_SET_NEXT(_pd, _next)	(((TGPD *)_pd)->pNext = (TGPD *)_next)
 #define TGPD_GET_NEXT(_pd)		((TGPD *)((TGPD *)_pd)->pNext)
@@ -232,6 +232,39 @@ struct qmu_desc_map {
 
 #define TGPD_SET_DATA(_pd, _data)	(((TGPD *)_pd)->pBuf = (DEV_UINT8 *)_data)
 #define TGPD_GET_DATA(_pd)		((DEV_UINT8 *)((TGPD *)_pd)->pBuf)
+
+#define TGPD_SET_NEXT_TXHI(_pd, _next)	\
+	do {	\
+		((TGPD *) _pd)->gpd_W1.tx_haddr.hiaddr &= 0x0F;	\
+		((TGPD *) _pd)->gpd_W1.tx_haddr.hiaddr |= ((u8)_next << 4); \
+	} while (0)
+
+#if defined(CONFIG_USB_MU3D_DRV_36BIT)
+
+#define TGPD_SET_DATA_TXHI(_pd, _next)	\
+	do {	\
+		((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr &= 0xF0; \
+		((TGPD *)_pd)->gpd_W1.tx_haddr.hiaddr |= ((u8)_next & 0x0F); \
+	} while (0)
+
+#define TGPD_SET_DATA_RXHI(_pd, _next)	\
+	do {	\
+		((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr &= 0xF0; \
+		((TGPD *)_pd)->gpd_B14.rx_haddr.hiaddr |= ((u8)_next & 0x0F); \
+	} while (0)
+
+#define TGPD_SET_NEXT_RXHI(_pd, _next)	\
+	do {	\
+		((TGPD *) _pd)->gpd_B14.rx_haddr.hiaddr &= 0x0F; \
+		((TGPD *) _pd)->gpd_B14.rx_haddr.hiaddr |= ((u8)_next << 4); \
+	} while (0)
+
+#define TGPD_GET_NEXT_TX(_pd)		((TGPD *)(TGPD_GET_NEXT(_pd)))
+#define TGPD_GET_NEXT_RX(_pd)		((TGPD *)(TGPD_GET_NEXT(_pd)))
+
+#define TGPD_GET_DATA_TX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd)))
+#define TGPD_GET_DATA_RX(_pd)		((TGPD *)(TGPD_GET_DATA(_pd)))
+#endif
 
 #endif
 
