@@ -511,7 +511,12 @@ ERROR:
 	return -EFAULT;
 }
 
+#ifdef GED_MODULE_LATE_INIT
+late_initcall(ged_init);
+
+#else
 module_init(ged_init);
+#endif
 module_exit(ged_exit);
 
 MODULE_LICENSE("GPL");
