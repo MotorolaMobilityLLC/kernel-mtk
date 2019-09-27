@@ -840,6 +840,8 @@ int pmic_thread_kthread(void *x)
 		set_current_state(TASK_INTERRUPTIBLE);
 		enable_irq(g_pmic_irq);
 		schedule();
+		if (g_pmic_irq < 0)
+			break;
 	}
 
 	return 0;
