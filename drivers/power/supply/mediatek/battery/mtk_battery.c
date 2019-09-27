@@ -177,6 +177,18 @@ int __attribute__ ((weak))
 	return 0;
 }
 
+void __attribute__ ((weak)) enable_bat_temp_det(bool en)
+{
+	pr_notice("[%s] not support!\n", __func__);
+}
+
+unsigned int __attribute__ ((weak)) mt6358_irq_get_virq(struct device *dev,
+							unsigned int hwirq)
+{
+	pr_notice_once("%s: API not ready!\n", __func__);
+	return 0;
+}
+
 /* weak function end */
 
 bool is_battery_init_done(void)
@@ -347,7 +359,7 @@ static int battery_get_property(struct power_supply *psy,
 		val->intval = data->BAT_batt_vol * 1000;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		val->intval = data->BAT_batt_temp * 10;
+		val->intval = gm.tbat_precise;
 		break;
 
 	default:
@@ -1195,12 +1207,12 @@ int BattThermistorConverTemp(int Res)
 {
 	int i = 0;
 	int RES1 = 0, RES2 = 0;
-	int TBatt_Value = -200, TMP1 = 0, TMP2 = 0;
+	int TBatt_Value = -2000, TMP1 = 0, TMP2 = 0;
 
 	if (Res >= Fg_Temperature_Table[0].TemperatureR) {
-		TBatt_Value = -40;
+		TBatt_Value = -400;
 	} else if (Res <= Fg_Temperature_Table[20].TemperatureR) {
-		TBatt_Value = 60;
+		TBatt_Value = 600;
 	} else {
 		RES1 = Fg_Temperature_Table[0].TemperatureR;
 		TMP1 = Fg_Temperature_Table[0].BatteryTemp;
@@ -1218,7 +1230,7 @@ int BattThermistorConverTemp(int Res)
 		}
 
 		TBatt_Value = (((Res - RES2) * TMP1) +
-			((RES1 - Res) * TMP2)) / (RES1 - RES2);
+			((RES1 - Res) * TMP2)) * 10 / (RES1 - RES2);
 	}
 	bm_trace(
 		"[%s] %d %d %d %d %d %d\n",
@@ -1365,14 +1377,20 @@ int force_get_tbat_internal(bool update)
 	static struct timespec pre_time;
 	struct timespec ctime, dtime;
 
-	if (is_battery_init_done() == false)
+	if (is_battery_init_done() == false) {
+		gm.tbat_precise = 250;
 		return 25;
+	}
 
-	if (gm.fixed_bat_tmp != 0xffff)
+	if (gm.fixed_bat_tmp != 0xffff) {
+		gm.tbat_precise = gm.fixed_bat_tmp * 10;
 		return gm.fixed_bat_tmp;
+	}
 
-	if (get_ec()->fixed_temp_en)
+	if (get_ec()->fixed_temp_en) {
+		gm.tbat_precise = get_ec()->fixed_temp_value * 10;
 		return get_ec()->fixed_temp_value;
+	}
 
 	if (update == true || pre_bat_temperature_val == -1) {
 		/* Get V_BAT_Temperature */
@@ -1445,8 +1463,8 @@ int force_get_tbat_internal(bool update)
 
 			if (((dtime.tv_sec <= 20) &&
 				(abs(pre_bat_temperature_val2 -
-				bat_temperature_val) >= 5)) ||
-				bat_temperature_val >= 58) {
+				bat_temperature_val) >= 50)) ||
+				bat_temperature_val >= 580) {
 				bm_err(
 				"[force_get_tbat][err] current:%d,%d,%d,%d,%d,%d pre:%d,%d,%d,%d,%d,%d\n",
 					bat_temperature_volt_temp,
@@ -1462,7 +1480,7 @@ int force_get_tbat_internal(bool update)
 					pre_fg_r_value,
 					pre_bat_temperature_val2);
 				/*pmic_auxadc_debug(1);*/
-				WARN_ON(1);
+				WARN_ON_ONCE(1);
 			}
 
 			pre_bat_temperature_volt_temp =
@@ -1487,7 +1505,9 @@ int force_get_tbat_internal(bool update)
 		bat_temperature_val = pre_bat_temperature_val;
 	}
 
-	return bat_temperature_val;
+	gm.tbat_precise = bat_temperature_val;
+
+	return bat_temperature_val / 10;
 }
 
 int force_get_tbat(bool update)
@@ -1498,12 +1518,13 @@ int force_get_tbat(bool update)
 	if (is_fg_disabled()) {
 		bm_debug("[%s] fixed TBAT=25 t\n",
 			__func__);
+		gm.tbat_precise = 250;
 		return 25;
 	}
 
 #if defined(FIXED_TBAT_25)
-	bm_debug("[%s] fixed TBAT=25 t\n",
-	__func__);
+	bm_debug("[%s] fixed TBAT=25 t\n", __func__);
+	gm.tbat_precise = 250;
 	return 25;
 #else
 
@@ -1543,17 +1564,21 @@ int force_get_tbat(bool update)
 			bat_temperature_val,
 			DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG);
 
+		gm.tbat_precise = DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG * 10;
 		return DEFAULT_BATTERY_TMP_WHEN_DISABLE_NAFG;
 	}
 
 	gm.ntc_disable_nafg = false;
+	bm_debug("[%s] t:%d precise:%d\n", __func__,
+		bat_temperature_val, gm.tbat_precise);
+
 	return bat_temperature_val;
 #endif
 }
 
 unsigned int battery_meter_get_fg_time(void)
 {
-	unsigned int time;
+	unsigned int time = 0;
 
 	gauge_dev_get_time(gm.gdev, &time);
 	return time;
@@ -1584,7 +1609,11 @@ static void nl_send_to_user(u32 pid, int seq, struct fgd_nl_msg_t *reply_msg)
 
 	reply_msg->identity = FGD_NL_MAGIC;
 
+	if (in_interrupt())
 	skb = alloc_skb(len, GFP_ATOMIC);
+	else
+		skb = alloc_skb(len, GFP_KERNEL);
+
 	if (!skb)
 		return;
 
@@ -1623,6 +1652,12 @@ static void nl_data_handler(struct sk_buff *skb)
 
 	fgd_msg = (struct fgd_nl_msg_t *)data;
 
+	if (IS_ENABLED(CONFIG_POWER_EXT) || gm.disable_mtkbattery ||
+		IS_ENABLED(CONFIG_MTK_DISABLE_GAUGE)) {
+		bm_err("GM3 disable, nl handler rev data\n");
+		return;
+	}
+
 	if (fgd_msg->identity != FGD_NL_MAGIC) {
 		bm_err("[FGERR]not correct MTKFG netlink packet!%d\n",
 			fgd_msg->identity);
@@ -1643,8 +1678,12 @@ static void nl_data_handler(struct sk_buff *skb)
 
 	if (size > (PAGE_SIZE << 1))
 		fgd_ret_msg = vmalloc(size);
+	else {
+		if (in_interrupt())
+			fgd_ret_msg = kmalloc(size, GFP_ATOMIC);
 	else
 		fgd_ret_msg = kmalloc(size, GFP_KERNEL);
+	}
 
 	if (fgd_ret_msg == NULL) {
 		if (size > PAGE_SIZE)
@@ -1684,8 +1723,12 @@ int wakeup_fg_algo(unsigned int flow_state)
 
 		if (size > (PAGE_SIZE << 1))
 			fgd_msg = vmalloc(size);
+		else {
+			if (in_interrupt())
+				fgd_msg = kmalloc(size, GFP_ATOMIC);
 		else
 			fgd_msg = kmalloc(size, GFP_KERNEL);
+		}
 
 		if (fgd_msg == NULL) {
 			if (size > PAGE_SIZE)
@@ -1734,8 +1777,13 @@ int wakeup_fg_algo_cmd(unsigned int flow_state, int cmd, int para1)
 
 		if (size > (PAGE_SIZE << 1))
 			fgd_msg = vmalloc(size);
+		else {
+			if (in_interrupt())
+				fgd_msg = kmalloc(size, GFP_ATOMIC);
 		else
 			fgd_msg = kmalloc(size, GFP_KERNEL);
+
+		}
 
 		if (fgd_msg == NULL) {
 			if (size > PAGE_SIZE)
@@ -1784,7 +1832,11 @@ int wakeup_fg_algo_atomic(unsigned int flow_state)
 		struct fgd_nl_msg_t *fgd_msg;
 		int size = FGD_NL_MSG_T_HDR_LEN + sizeof(flow_state);
 
+		if (in_interrupt())
 		fgd_msg = kmalloc(size, GFP_ATOMIC);
+		else
+			fgd_msg = kmalloc(size, GFP_KERNEL);
+
 		if (!fgd_msg) {
 /* bm_err("Error: wakeup_fg_algo() vmalloc fail!!!\n"); */
 			return -1;
@@ -2771,6 +2823,45 @@ void exec_BAT_EC(int cmd, int param)
 				cmd, param);
 		}
 		break;
+	case 792:
+		{
+			wakeup_fg_algo_cmd(
+				FG_INTR_KERNEL_CMD,
+				FG_KERNEL_CMD_BUILD_SEL_BATTEMP,
+				param);
+
+			bm_err(
+				"exe_BAT_EC cmd %d,req bat table temp =%d\n",
+				cmd, param);
+
+		}
+		break;
+	case 793:
+		{
+
+			wakeup_fg_algo_cmd(
+				FG_INTR_KERNEL_CMD,
+				FG_KERNEL_CMD_UPDATE_AVG_BATTEMP,
+				param);
+
+			bm_err(
+				"exe_BAT_EC cmd %d,update mavg temp\n",
+				cmd);
+
+		}
+		break;
+	case 794:
+		{
+			wakeup_fg_algo_cmd(
+				FG_INTR_KERNEL_CMD,
+				FG_KERNEL_CMD_SAVE_DEBUG_PARAM,
+				param);
+
+			bm_err(
+				"exe_BAT_EC cmd %d,FG_KERNEL_CMD_SAVE_DEBUG_PARAM\n",
+				cmd);
+		}
+		break;
 
 	default:
 		bm_err(
@@ -3047,13 +3138,10 @@ static ssize_t store_FG_daemon_log_level(
 			gm.d_log_level = val;
 			gm.log_level = val;
 		}
-		if (val >= 7) {
-			gtimer_set_log_level(3);
+		if (val >= 7)
 			gauge_coulomb_set_log_level(3);
-		} else {
-			gtimer_set_log_level(0);
+		else
 			gauge_coulomb_set_log_level(0);
-		}
 
 		bm_err(
 			"[FG_daemon_log_level]fg_cust_data.daemon_log_level=%d\n",
@@ -3268,7 +3356,7 @@ struct device *dev, struct device_attribute *attr,
 	int ret_value = 8888;
 
 	ret_value = battery_get_bat_avg_current();
-	bm_err("[EM] FG_Battery_CurrentConsumption : %d mA\n", ret_value);
+	bm_err("[EM] FG_Battery_CurrentConsumption : %d .1mA\n", ret_value);
 	return sprintf(buf, "%d\n", ret_value);
 }
 
@@ -3917,7 +4005,7 @@ void battery_shutdown(struct platform_device *dev)
 {
 	int fg_coulomb = 0;
 	int shut_car_diff = 0;
-	int verify_car;
+	int verify_car = 0;
 
 	fg_coulomb = gauge_get_coulomb();
 	if (gm.d_saved_car != 0) {
@@ -3931,6 +4019,7 @@ void battery_shutdown(struct platform_device *dev)
 		__func__,
 		gm.d_saved_car, fg_coulomb, shut_car_diff, verify_car);
 
+	gm.fix_coverity = 1;
 }
 
 static int battery_suspend(struct platform_device *dev, pm_message_t state)
