@@ -569,7 +569,7 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 	char *scp_aed_title;
 
 	mutex_lock(&scp_excep_mutex);
-
+	aed.detail = NULL;
 	/* get scp title and exception type*/
 	switch (type) {
 	case EXCEP_LOAD_FIRMWARE:
@@ -600,7 +600,6 @@ void scp_aed(enum scp_excep_id type, enum scp_core_id id)
 		scp_get_log(id);
 			break;
 	default:
-		scp_prepare_aed("scp unknown exception", &aed);
 		if (id == SCP_A_ID)
 			scp_aed_title = "SCP_A unknown exception";
 		else
