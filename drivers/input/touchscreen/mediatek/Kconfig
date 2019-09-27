@@ -112,6 +112,7 @@ config TOUCHSCREEN_ILI9881H
 
 source "drivers/input/touchscreen/mediatek/ili9881h/Kconfig"
 
+
 config TOUCHSCREEN_MTK_FOCALTECH_HD
 	bool "Focaltech Touchscreen"
 	depends on I2C
