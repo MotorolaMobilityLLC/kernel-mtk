@@ -880,7 +880,7 @@ static signed int DIP_DumpDIPReg(void)
 	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("thread state:0x%x : dip: 0x15022194(0x%x)\n",
 		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
-	cmdqdebugcmd = 0x1006;
+	cmdqdebugcmd = 0x10006;
 	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("cq state:0x%x : dip: 0x15022194(0x%x)\n",
 		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
@@ -904,7 +904,7 @@ static signed int DIP_DumpDIPReg(void)
 	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("thread state:0x%x : dip: 0x15022194(0x%x)\n",
 		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
-	cmdqdebugcmd = 0x1006;
+	cmdqdebugcmd = 0x10006;
 	DIP_WR32(DIP_A_BASE + 0x1190, cmdqdebugcmd);
 	CMDQ_ERR("cq state:0x%x : dip: 0x15022194(0x%x)\n",
 		cmdqdebugcmd, DIP_RD32(DIP_A_BASE + 0x1194));
