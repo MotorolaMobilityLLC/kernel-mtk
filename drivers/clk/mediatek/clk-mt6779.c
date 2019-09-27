@@ -156,6 +156,7 @@ void __iomem *apu_mdla_base;
 #define CAMSYS_CG_CON		(cam_base + 0x0000)
 #define CAMSYS_CG_SET		(cam_base + 0x0004)
 #define CAMSYS_CG_CLR		(cam_base + 0x0008)
+#define CAMSYS_SW_RST		(cam_base + 0x000C)
 
 #define IMG_CG_CON		(img_base + 0x0000)
 #define IMG_CG_SET		(img_base + 0x0004)
@@ -2874,7 +2875,7 @@ static const struct mtk_gate mm_clks[] __initconst = {
 	GATE_MM0(MMSYS_MDP_RDMA1, "mm_mdp_rdma1", "mm_sel", 13),
 	GATE_MM0(MMSYS_MDP_RSZ0, "mm_mdp_rsz0", "mm_sel", 14),
 	GATE_MM0(MMSYS_MDP_RSZ1, "mm_mdp_rsz1", "mm_sel", 15),
-	GATE_MM0_DUMP(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
+	GATE_MM0(MMSYS_MDP_TDSHP, "mm_mdp_tdshp", "mm_sel", 16),
 	GATE_MM0(MMSYS_MDP_WROT0, "mm_mdp_wrot0", "mm_sel", 17),
 	GATE_MM0(MMSYS_MDP_WROT1, "mm_mdp_wrot1", "mm_sel", 18),
 
@@ -4057,9 +4058,9 @@ unsigned int mt_get_ckgen_freq(unsigned int ID)
 
 	/* wait frequency meter finish */
 	while (clk_readl(CLK26CALI_0) & 0x10) {
-	mdelay(10);
+	udelay(10);
 	i++;
-	if (i > 10)
+	if (i > 20)
 		break;
 	}
 
@@ -4074,7 +4075,7 @@ unsigned int mt_get_ckgen_freq(unsigned int ID)
 
 	clk_writel(CLK26CALI_0, 0x0000);
 	/*print("ckgen meter[%d] = %d Khz\n", ID, output);*/
-	if (i > 10)
+	if (i > 20)
 		return 0;
 	else
 		return output;
@@ -4099,9 +4100,9 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 
 	/* wait frequency meter finish */
 	while (clk_readl(CLK26CALI_0) & 0x10) {
-		mdelay(10);
+		udelay(10);
 		i++;
-		if (i > 10)
+		if (i > 20)
 		break;
 	}
 
@@ -4115,7 +4116,7 @@ unsigned int mt_get_abist_freq(unsigned int ID)
 	/*clk_writel(CLK26CALI_1, clk26cali_1);*/
 	clk_writel(CLK26CALI_0, 0x0000);
 	/*pr_debug("%s = %d Khz\n", abist_array[ID-1], output);*/
-	if (i > 10)
+	if (i > 20)
 		return 0;
 	else
 		return (output * 2);
@@ -4443,10 +4444,21 @@ void check_ven_clk_sts(void)
 void check_cam_clk_sts(void)
 {
 	/* confirm mm0 clk */
+	pr_notice("CLK_CFG_0 = 0x%08x\n", clk_readl(CLK_CFG_0));
 	pr_notice("CLK_CFG_1 = 0x%08x\n", clk_readl(CLK_CFG_1));
+	pr_notice("CLK_CFG_2 = 0x%08x\n", clk_readl(CLK_CFG_2));
+	pr_notice("MMPLL_CON0 = 0x%08x\n", clk_readl(MMPLL_CON0));
+	pr_notice("MMPLL_CON1 = 0x%08x\n", clk_readl(MMPLL_CON1));
+	pr_notice("MMPLL_PWR_CON0 = 0x%08x\n", clk_readl(MMPLL_PWR_CON0));
+	mt_get_ckgen_freq(1);
+	pr_notice("mm freq = %d\n", mt_get_ckgen_freq(2));
+	mt_get_ckgen_freq(1);
 	pr_notice("cam freq = %d\n", mt_get_ckgen_freq(8));
+	mt_get_ckgen_freq(1);
+	pr_notice("ccu freq = %d\n", mt_get_ckgen_freq(9));
 	pr_notice("MM_CG_CON0 = 0x%08x\n", clk_readl(MM_CG_CON0));
 	pr_notice("CAMSYS_CG_CON = 0x%08x\n", clk_readl(CAMSYS_CG_CON));
+	pr_notice("CAMSYS_SW_RST = 0x%08x\n", clk_readl(CAMSYS_SW_RST));
 }
 #endif
 
