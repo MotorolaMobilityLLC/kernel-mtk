@@ -79,6 +79,22 @@ int __attribute__((weak)) mtk_btag_mictx_get_data(
 }
 #endif
 
+int perf_tracker_enable(int val)
+{
+	mutex_lock(&perf_ctl_mutex);
+
+	val = (val > 0) ? 1 : 0;
+
+	perf_tracker_on = val;
+#ifdef CONFIG_MTK_BLOCK_TAG
+	mtk_btag_mictx_enable(val);
+#endif
+
+	mutex_unlock(&perf_ctl_mutex);
+
+	return (perf_tracker_on == val) ? 0 : -1;
+}
+
 #ifdef CONFIG_MTK_GAUGE_VERSION
 static void fuel_gauge_handler(struct work_struct *work)
 {
@@ -284,18 +300,8 @@ static ssize_t store_perf_enable(struct kobject *kobj,
 {
 	int val = 0;
 
-	mutex_lock(&perf_ctl_mutex);
-
-	if (sscanf(buf, "%iu", &val) != 0) {
-		val = (val > 0) ? 1 : 0;
-
-		perf_tracker_on = val;
-#ifdef CONFIG_MTK_BLOCK_TAG
-		mtk_btag_mictx_enable(val);
-#endif
-	}
-
-	mutex_unlock(&perf_ctl_mutex);
+	if (sscanf(buf, "%iu", &val) != 0)
+		perf_tracker_enable(val);
 
 	return count;
 }
