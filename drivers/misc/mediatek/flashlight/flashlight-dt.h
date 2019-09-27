@@ -31,5 +31,6 @@
 #define RT5081_DTNAME     "mediatek,flashlights_rt5081"
 #define AW3643_DTNAME_I2C "mediatek,strobe_main"
 #define AW3643_DTNAME     "mediatek,flashlights_aw3643"
+#define SYWT78_DTNAME     "mediatek,flashlights_sywt78"
 
 #endif /* _FLASHLIGHT_DT_H */
