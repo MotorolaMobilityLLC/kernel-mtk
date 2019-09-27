@@ -1179,6 +1179,11 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	handle->pkt->priority = desc->priority;
 	cmdq_mdp_store_debug(desc, handle);
 
+#if IS_ENABLED(CONFIG_MACH_MT6779)
+	if (handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS)
+		cmdq_pkt_perf_begin(handle->pkt);
+#endif
+
 	if (desc->engineFlag & inorder_mask)
 		handle->force_inorder = true;
 
@@ -1238,6 +1243,11 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 		/* insert backup cookie cmd */
 		cmdq_sec_insert_backup_cookie_instr(handle, handle->thread);
 	}
+#endif
+
+#if IS_ENABLED(CONFIG_MACH_MT6779)
+	if (handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS)
+		cmdq_pkt_perf_end(handle->pkt);
 #endif
 
 	err = cmdq_mdp_copy_cmd_to_task(handle,

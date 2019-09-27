@@ -48,7 +48,8 @@
 	((operand)->reg ? (operand)->idx : (operand)->value)
 #define CMDQ_OPERAND_TYPE(operand) \
 	((operand)->reg ? CMDQ_REG_TYPE : CMDQ_IMMEDIATE_VALUE)
-
+#define CMDQ_DBG_PERFBEGIN		CMDQ_CMD_BUFFER_SIZE
+#define CMDQ_DBG_PERFEND		(CMDQ_DBG_PERFBEGIN + 4)
 
 struct client_priv {
 	struct dma_pool *buf_pool;
@@ -1093,6 +1094,47 @@ s32 cmdq_pkt_poll_timeout(struct cmdq_pkt *pkt, struct cmdq_base *clt_base,
 	return 0;
 }
 EXPORT_SYMBOL(cmdq_pkt_poll_timeout);
+
+void cmdq_pkt_perf_begin(struct cmdq_pkt *pkt)
+{
+	dma_addr_t pa;
+	struct cmdq_pkt_buffer *buf;
+
+	if (!pkt->buf_size)
+		cmdq_pkt_add_cmd_buffer(pkt);
+
+	pa = cmdq_pkt_get_pa_by_offset(pkt, 0) + CMDQ_DBG_PERFBEGIN;
+	cmdq_pkt_write_indriect(pkt, NULL, pa, CMDQ_TPR_ID, ~0);
+
+	buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+	*(u32 *)(buf->va_base + CMDQ_DBG_PERFBEGIN) = 0xdeaddead;
+}
+EXPORT_SYMBOL(cmdq_pkt_perf_begin);
+
+void cmdq_pkt_perf_end(struct cmdq_pkt *pkt)
+{
+	dma_addr_t pa;
+	struct cmdq_pkt_buffer *buf;
+
+	if (!pkt->buf_size)
+		cmdq_pkt_add_cmd_buffer(pkt);
+
+	pa = cmdq_pkt_get_pa_by_offset(pkt, 0) + CMDQ_DBG_PERFEND;
+	cmdq_pkt_write_indriect(pkt, NULL, pa, CMDQ_TPR_ID, ~0);
+
+	buf = list_last_entry(&pkt->buf, typeof(*buf), list_entry);
+	*(u32 *)(buf->va_base + CMDQ_DBG_PERFEND) = 0xdeaddead;
+}
+EXPORT_SYMBOL(cmdq_pkt_perf_end);
+
+u32 *cmdq_pkt_get_perf_ret(struct cmdq_pkt *pkt)
+{
+	struct cmdq_pkt_buffer *buf = list_first_entry(&pkt->buf, typeof(*buf),
+		list_entry);
+
+	return (u32 *)(buf->va_base + CMDQ_DBG_PERFBEGIN);
+}
+EXPORT_SYMBOL(cmdq_pkt_get_perf_ret);
 
 int cmdq_pkt_wfe(struct cmdq_pkt *pkt, u16 event)
 {
