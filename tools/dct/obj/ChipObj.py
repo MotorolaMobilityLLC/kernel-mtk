@@ -269,6 +269,7 @@ class MT6757_P25(ChipObj):
         ChipObj.init_objs(self)
         ChipObj.replace_obj(self, 'clk', ClkObj_Olympus())
         ChipObj.replace_obj(self, 'i2c', I2cObj_MT6759())
+        ChipObj.replace_obj(self, 'eint', EintObj_MT6739(ChipObj.get_gpioObj(self)))
 
     def parse(self):
         return ChipObj.parse(self)

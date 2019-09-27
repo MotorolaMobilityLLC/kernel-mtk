@@ -51,7 +51,7 @@
 #include <mach/mt_irq.h>
 #include <mach/mt_reg_base.h>
 #endif
-#ifndef EARLY_PORTING_MIGRATION
+#if !defined(EARLY_PORTING_MIGRATION) && defined(CONFIG_MTK_CMDQ_TAB)
 #include <mt-plat/mt_lpae.h>
 #endif
 
@@ -2013,7 +2013,7 @@ static int32_t cmdq_core_task_alloc_single_buffer_list(
 		return -ENOMEM;
 	}
 
-#ifndef EARLY_PORTING_MIGRATION
+#if !defined(EARLY_PORTING_MIGRATION) && defined(CONFIG_MTK_CMDQ_TAB)
 	buffer_entry->pVABase = cmdq_core_alloc_hw_buffer(
 		cmdq_dev_get(), CMDQ_CMD_BUFFER_SIZE, &buffer_entry->MVABase,
 		GFP_KERNEL | __GFP_NO_KSWAPD);
@@ -6528,7 +6528,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 				pThread, inner, TASK_STATE_DONE);
 #ifdef CMDQ_MDP_MET_STATUS
 			/* MET MMSYS: Thread done */
-			if (met_mmsys_event_gce_thread_end)
+			if (1  /*met_mmsys_event_gce_thread_end */)
 				met_mmsys_event_gce_thread_end(
 					thread, (uintptr_t)pTask,
 					pTask->engineFlag);
@@ -6545,7 +6545,7 @@ static void cmdq_core_handle_done_with_cookie_impl(int32_t thread,
 			(CMDQ_MAX_COOKIE_VALUE + 1); /* min cookie value is 0 */
 #ifdef CMDQ_MDP_MET_STATUS
 	/* MET MMSYS: GCE should trigger next waiting task */
-	if ((pThread->taskCount > 0) && met_mmsys_event_gce_thread_begin) {
+	if ((pThread->taskCount > 0) /* met_mmsys_event_gce_thread_begin */) {
 		count = pThread->nextCookie - pThread->waitCookie;
 		for (inner = (pThread->waitCookie % maxTaskNUM); count > 0;
 		     count--, inner++) {
@@ -7894,7 +7894,7 @@ static int32_t cmdq_core_exec_task_async_impl(struct TaskStruct *pTask,
 		CMDQ_REG_SET32(CMDQ_THR_ENABLE_TASK(thread), 0x01);
 #ifdef CMDQ_MDP_MET_STATUS
 		/* MET MMSYS : Primary Trigger start */
-		if (met_mmsys_event_gce_thread_begin) {
+		if (1 /* met_mmsys_event_gce_thread_begin */) {
 			cmdq_core_get_task_first_buffer(pTask, &pVABase,
 							&MVABase);
 			met_mmsys_event_gce_thread_begin(
@@ -9055,6 +9055,100 @@ void cmdq_core_dump_dts_setting(void)
 		CMDQ_LOG("	Engine=0x%016llx,, event=%d\n",
 			 pResource->engine, pResource->lockEvent);
 	}
+}
+
+int32_t cmdq_core_get_running_task_by_engine_unlock(uint64_t engineFlag,
+	uint32_t userDebugStrLen, struct TaskStruct *p_out_task)
+{
+	struct EngineStruct *pEngine;
+	struct ThreadStruct *pThread;
+	int32_t index;
+	int32_t thread = CMDQ_INVALID_THREAD;
+	int32_t status = -EFAULT;
+	struct TaskStruct *pTargetTask = NULL;
+
+	if (p_out_task == NULL)
+		return -EINVAL;
+
+	pEngine = gCmdqContext.engine;
+	pThread = gCmdqContext.thread;
+	for (index = 0; index < CMDQ_MAX_ENGINE_COUNT; index++) {
+		if (engineFlag & (1LL << index)) {
+			if (pEngine[index].userCount > 0) {
+				thread = pEngine[index].currOwner;
+				break;
+			}
+		}
+	}
+
+	if (thread != CMDQ_INVALID_THREAD) {
+		struct TaskStruct *pTask;
+		uint32_t insts[4];
+		uint32_t currPC =
+		  CMDQ_AREG_TO_PHYS(
+				CMDQ_REG_GET32(
+					CMDQ_THR_CURR_ADDR(thread)));
+
+		currPC =
+		  CMDQ_AREG_TO_PHYS(
+				CMDQ_REG_GET32(
+					CMDQ_THR_CURR_ADDR(thread)));
+		for (index = 0; index < cmdq_core_max_task_in_thread(thread);
+			index++) {
+			pTask = pThread[thread].pCurTask[index];
+			if (pTask == NULL
+				|| list_empty(&pTask->cmd_buffer_list))
+				continue;
+			if (cmdq_core_get_pc(pTask, thread, insts)) {
+				pTargetTask = pTask;
+				break;
+			}
+		}
+		if (!pTargetTask) {
+			uint32_t currPC =
+					CMDQ_AREG_TO_PHYS(
+					CMDQ_REG_GET32(
+					CMDQ_THR_CURR_ADDR(thread)));
+
+		CMDQ_LOG("cannot find pc (0x%08x) at thread (%d)\n"
+			, currPC, thread);
+			cmdq_core_dump_task_in_thread(thread,
+							false,
+							true,
+							false);
+		}
+	}
+
+	if (pTargetTask) {
+		uint32_t current_debug_str_len =
+					pTargetTask->userDebugStr ?
+			(uint32_t)strlen(pTargetTask->userDebugStr) : 0;
+		uint32_t debug_str_len =
+			userDebugStrLen < current_debug_str_len ?
+			userDebugStrLen : current_debug_str_len;
+		char *debug_str_buffer = p_out_task->userDebugStr;
+
+		/* copy content except pointers */
+		memcpy(p_out_task, pTargetTask,
+			sizeof(struct TaskStruct));
+		p_out_task->pCMDEnd = NULL;
+		p_out_task->regResults = NULL;
+		p_out_task->secStatus = NULL;
+		p_out_task->profileData = NULL;
+
+		if (debug_str_buffer) {
+			p_out_task->userDebugStr = debug_str_buffer;
+			if (debug_str_len)
+				strncpy(debug_str_buffer,
+					pTargetTask->userDebugStr,
+					debug_str_len);
+		}
+
+		/* mark success */
+		status = 0;
+	}
+
+	return status;
 }
 
 int32_t cmdq_core_get_running_task_by_engine(uint64_t engineFlag,

@@ -22,6 +22,7 @@ obj-$(CONFIG_COMMON_CLK_MT2712_VENCSYS) += clk-mt2712-venc.o
 obj-$(CONFIG_COMMON_CLK_MT3967) += clk-mt3967.o clk-mt3967-pg.o clk-mtk-v1.o clkchk-mt3967.o mt3967_clkmgr.o
 obj-$(CONFIG_COMMON_CLK_MT6758) += clk-mt6758.o clk-mt6758-pg.o clk-mtk-v1.o
 obj-$(CONFIG_COMMON_CLK_MT6765) += clk-mt6765.o clk-mt6765-pg.o clk-mtk-v1.o
+obj-$(CONFIG_COMMON_CLK_MT6757) += clk-mt6757.o clk-mt6757-pll.o clk-mt6757-pg.o clk-pll-v1.o clk-mtk-v1.o
 obj-$(CONFIG_COMMON_CLK_MT6763) += clk-mt6763.o clk-mt6763-pg.o mt6763_clkmgr.o clk-mtk-v1.o
 obj-$(CONFIG_COMMON_CLK_MT6761) += clk-mt6761.o clk-mt6761-pg.o clk-mtk-v1.o
 obj-$(CONFIG_COMMON_CLK_MT6779) += clk-mt6779.o clk-mt6779-pg.o clk-mtk-v1.o mt6779_clkmgr.o

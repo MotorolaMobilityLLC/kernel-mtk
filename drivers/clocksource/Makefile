@@ -1,4 +1,6 @@
-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include \
+-I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include \
+-I$(srctree)/drivers/misc/mediatek/include/mt-plat
 
 obj-$(CONFIG_CLKSRC_PROBE)	+= clksrc-probe.o
 obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
@@ -50,12 +52,15 @@ obj-$(CONFIG_CLKSRC_QCOM)	+= qcom-timer.o
 obj-$(CONFIG_MTK_TIMER)		+= mtk_timer.o
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mtk_apxgpt.o
 obj-$(CONFIG_MEDIATEK_SOLUTION)	+= mtk_systimer.o
+obj-$(CONFIG_MACH_MT6757)	+= mtk_cpuxgpt_mt6757.o mtk_timer_mt6757.o arm_arch_timer_mt6757.o
 obj-$(CONFIG_CLKSRC_PISTACHIO)	+= time-pistachio.o
 obj-$(CONFIG_CLKSRC_TI_32K)	+= timer-ti-32k.o
 obj-$(CONFIG_CLKSRC_NPS)	+= timer-nps.o
 obj-$(CONFIG_OXNAS_RPS_TIMER)	+= timer-oxnas-rps.o
 
+ifeq (,$(filter $(CONFIG_MACH_MT6757), y))
 obj-$(CONFIG_ARM_ARCH_TIMER)		+= arm_arch_timer.o
+endif
 obj-$(CONFIG_ARM_GLOBAL_TIMER)		+= arm_global_timer.o
 obj-$(CONFIG_ARMV7M_SYSTICK)		+= armv7m_systick.o
 obj-$(CONFIG_ARM_TIMER_SP804)		+= timer-sp804.o

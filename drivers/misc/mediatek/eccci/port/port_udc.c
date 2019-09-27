@@ -15,6 +15,7 @@
 #include "port_proxy.h"
 #include "port_udc.h"
 #include "ccci_config.h"
+#if (MD_GENERATION >= 6293)
 #include "port_smem.h"
 
 #define MAX_QUEUE_LENGTH 16
@@ -1098,4 +1099,4 @@ struct port_ops ccci_udc_port_ops = {
 	.init = &port_udc_init,
 	.recv_skb = &port_udc_recv_skb,
 };
-
+#endif

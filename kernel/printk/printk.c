@@ -2910,7 +2910,11 @@ skip:
 				(unsigned long)len_con_write_pstore,
 				(unsigned long)time_con_write_pstore,
 				rem_nsec_con_write_pstore/1000,
+#if !defined(CONFIG_MACH_MT6757)
 				mtk8250_uart_dump());
+#else
+				"NA");
+#endif
 			break;
 		}
 		/* print the uart status next time enter the console_unlock */

@@ -32,7 +32,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
-#ifndef EARLY_PORTING_MIGRATION
+#if !defined(EARLY_PORTING_MIGRATION) && defined(CONFIG_MTK_CMDQ_TAB)
 #include <mt-plat/mt_lpae.h>
 #endif
 
@@ -643,7 +643,7 @@ void cmdq_dev_init(struct platform_device *pDevice)
 			gCmdqDev.irqId, gCmdqDev.irqSecId);
 	} while (0);
 
-#ifdef EARLY_PORTING_MIGRATION
+#if defined(EARLY_PORTING_MIGRATION) || defined(CONFIG_MACH_MT6757)
 	if (1) {
 		/* Not special 4GB case, use dma_mask to restrict dma memory to
 		 * low 4GB address
