@@ -330,16 +330,15 @@ void AudDrv_Bus_Init(void)
 void AudDrv_AUDINTBUS_Sel(int parentidx)
 {
 #if !defined(CONFIG_FPGA_EARLY_PORTING)
-
-
 	if (!aud_clks[CLOCK_MUX_AUDIOINTBUS].clk_prepare ||
 	    !aud_clks[CLOCK_TOP_SYSPLL1_D4].clk_prepare ||
 	    !aud_clks[CLOCK_CLK26M].clk_prepare) {
 		pr_debug("%s(), clk_prepare = false\n", __func__);
 		goto EXIT;
 	}
-	clksys_set_reg(AUDIO_CLK_CFG_4_CLR, 0x3, 0x3);
-	clksys_set_reg(AUDIO_CLK_CFG_4_SET, parentidx, 0x3);
+
+	clksys_set_reg_val(AUDIO_CLK_CFG_4_CLR, 0x3);
+	clksys_set_reg_val(AUDIO_CLK_CFG_4_SET, parentidx);
 	pr_info("%s(), parentidx = %d, CLK_CFG_4 = 0x%08x\r\n",
 		__func__, parentidx, clksys_get_reg(AUDIO_CLK_CFG_4));
 EXIT:
