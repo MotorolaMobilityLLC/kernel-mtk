@@ -86,6 +86,7 @@ void __iomem *clk_apu_conn_base;
 #define MM_CG_SET0 (clk_mmsys_config_base + 0x104)
 #define IMG_CG_CLR	(clk_imgsys_base + 0x0008)
 #define CAM_CG_CLR	(clk_camsys_base + 0x0008)
+#define CAM_SW_RST	(clk_camsys_base + 0x000C)
 #define CAM_CG_CON	(clk_camsys_base + 0x0000)
 #define APU_VCORE_CG_CON	(clk_apu_vcore_base)
 #define APU_CONN_CG_CON	(clk_apu_conn_base)
@@ -444,6 +445,9 @@ static void __iomem *smi_common_base;
 					  |(0x1 << 5) \
 					  |(0x1 << 9) \
 					  |(0x1 << 13))
+#define CAM_PROT_STEP1_0_MASK2            ((0x1 << 4) \
+					  |(0x1 << 5) \
+					  |(0x1 << 13))
 #define CAM_PROT_STEP1_0_ACK_MASK        ((0x1 << 4) \
 					  |(0x1 << 5) \
 					  |(0x1 << 9) \
@@ -461,6 +465,8 @@ static void __iomem *smi_common_base;
 #define VPU_CONN_PROT_STEP1_1_MASK       ((0x1 << 8) \
 					  |(0x1 << 9) \
 					  |(0x1 << 12))
+#define VPU_CONN_PROT_STEP1_1_MASK2       ((0x1 << 8) \
+					  |(0x1 << 12))
 #define VPU_CONN_PROT_STEP1_1_ACK_MASK   ((0x1 << 8) \
 					  |(0x1 << 9) \
 					  |(0x1 << 12))
@@ -476,6 +482,7 @@ static void __iomem *smi_common_base;
 					  |(0x1 << 6))
 #define VPU_CONN_PROT_STEP2_1_MASK       ((0x1 << 10) \
 					  |(0x1 << 11))
+#define VPU_CONN_PROT_STEP2_1_MASK2      ((0x1 << 10))
 #define VPU_CONN_PROT_STEP2_1_ACK_MASK   ((0x1 << 10) \
 					  |(0x1 << 11))
 #define VPU_CONN_PROT_STEP3_0_MASK       ((0x1 << 11))
@@ -1650,11 +1657,14 @@ int spm_mtcmos_ctrl_isp(int state)
 		/* TINFO="Set bus protect - step2 : 0" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_MM_SET, ISP_PROT_STEP2_0_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
-		while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1)
-			& ISP_PROT_STEP2_0_ACK_MASK)
-			!= ISP_PROT_STEP2_0_ACK_MASK)
-			ram_console_update();
-		INCREASE_STEPS;
+		//check if vpu_conn is power on
+		if (spm_read(PWR_STATUS) & VPU_CONN_PWR_STA_MASK) {
+			while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1)
+				& ISP_PROT_STEP2_0_ACK_MASK)
+				!= ISP_PROT_STEP2_0_ACK_MASK)
+				ram_console_update();
+		}
+			INCREASE_STEPS;
 #endif
 		/* TINFO="Set bus protect - step2 : 1" */
 		spm_write(SMI_COMMON_SMI_CLAMP_SET, ISP_PROT_STEP2_1_MASK);
@@ -2484,10 +2494,13 @@ int spm_mtcmos_ctrl_cam(int state)
 		/* TINFO="Set bus protect - step2 : 1" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_MM_SET, CAM_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
-		while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1)
-			& CAM_PROT_STEP2_1_ACK_MASK)
-			!= CAM_PROT_STEP2_1_ACK_MASK)
-			ram_console_update();
+		//check if vpu_conn is power on
+		if (spm_read(PWR_STATUS) & VPU_CONN_PWR_STA_MASK) {
+			while ((spm_read(INFRA_TOPAXI_PROTECTEN_MM_STA1)
+				& CAM_PROT_STEP2_1_ACK_MASK)
+				!= CAM_PROT_STEP2_1_ACK_MASK)
+				ram_console_update();
+		}
 		INCREASE_STEPS;
 #endif
 		/* TINFO="Set bus protect - step2 : 2" */
@@ -2577,7 +2590,6 @@ int spm_mtcmos_ctrl_cam(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect - step2 : 1" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_MM_CLR, CAM_PROT_STEP2_1_MASK);
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect - step2 : 2" */
@@ -2585,7 +2597,8 @@ int spm_mtcmos_ctrl_cam(int state)
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect - step1 : 0" */
-		spm_write(INFRA_TOPAXI_PROTECTEN_MM_CLR, CAM_PROT_STEP1_0_MASK);
+		spm_write(INFRA_TOPAXI_PROTECTEN_MM_CLR,
+			CAM_PROT_STEP1_0_MASK2);
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Finish to turn on CAM" */
@@ -3178,7 +3191,7 @@ int spm_mtcmos_ctrl_vpu_conn_shut_down(int state)
 #endif
 		/* TINFO="Release bus protect - step2 : 1" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_MM_CLR,
-			VPU_CONN_PROT_STEP2_1_MASK);
+			VPU_CONN_PROT_STEP2_1_MASK2);
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect - step1 : 0" */
@@ -3188,7 +3201,7 @@ int spm_mtcmos_ctrl_vpu_conn_shut_down(int state)
 #endif
 		/* TINFO="Release bus protect - step1 : 1" */
 		spm_write(INFRA_TOPAXI_PROTECTEN_MM_CLR,
-			VPU_CONN_PROT_STEP1_1_MASK);
+			VPU_CONN_PROT_STEP1_1_MASK2);
 #ifndef IGNORE_MTCMOS_CHECK
 #endif
 		/* TINFO="Release bus protect - step1 : 2" */
