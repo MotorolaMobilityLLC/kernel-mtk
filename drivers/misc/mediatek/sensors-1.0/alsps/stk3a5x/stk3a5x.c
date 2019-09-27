@@ -251,8 +251,10 @@ struct stk3a5x_priv
 	u8          _align;
 	u16         als_level_num;
 	u16         als_value_num;
-	u32         als_level[C_CUST_ALS_LEVEL - 1];
-	u32         als_value[C_CUST_ALS_LEVEL];
+	//u32         als_level[C_CUST_ALS_LEVEL - 1];
+	//u32         als_value[C_CUST_ALS_LEVEL];
+	u32 		als_level[TP_COUNT][TEMP_COUNT][C_CUST_ALS_LEVEL];
+	u32			als_value[C_CUST_ALS_LEVEL];
 
 	u8 			wait_val;
 	u8		 	int_val;
@@ -321,7 +323,7 @@ struct stk3a5x_priv
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] =
 {
-	{.compatible = "mediatek,alsps"},
+	{.compatible = "mediatek,alps_stk3a5x"},
 	{.compatible = "sensortek,stk3a5x"},
 	{},
 };
