@@ -1766,12 +1766,17 @@ static int mt_i2c_probe(struct platform_device *pdev)
 	if (IS_ERR(i2c->pdmabase))
 		return PTR_ERR(i2c->pdmabase);
 
-	i2c->gpiobase = devm_ioremap(&pdev->dev, i2c->gpio_start, i2c->mem_len);
-	if (IS_ERR(i2c->gpiobase)) {
+	if (i2c->gpio_start == 0) {
 		i2c->gpiobase = NULL;
 		dev_info(&pdev->dev, "do not have gpio baseaddress node\n");
+	} else {
+		i2c->gpiobase = devm_ioremap(&pdev->dev, i2c->gpio_start,
+			i2c->mem_len);
+		if (IS_ERR(i2c->gpiobase)) {
+			i2c->gpiobase = NULL;
+			dev_info(&pdev->dev, "gpio baseaddress remap fail\n");
+		}
 	}
-
 	i2c->irqnr = platform_get_irq(pdev, 0);
 	if (i2c->irqnr <= 0)
 		return -EINVAL;
