@@ -1232,7 +1232,8 @@ static int mmc_blk_check_disk_range_wp(struct gendisk *disk,
 
 	card = md->queue.card;
 	if (!mmc_card_mmc(card) ||
-		md->part_type == EXT_CSD_PART_CONFIG_ACC_RPMB) {
+		md->part_type == EXT_CSD_PART_CONFIG_ACC_RPMB ||
+		card->quirks & MMC_QUIRK_SKIP_CHECK_WP) {
 		err = MMC_BLK_NO_WP;
 		goto out2;
 	}
@@ -4815,6 +4816,13 @@ static const struct mmc_fixup blk_fixups[] =
 		add_quirk_mmc, MMC_QUIRK_DISABLE_SNO),
 	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_SANDISK_EMMC, CID_OEMID_ANY,
 		add_quirk_mmc, MMC_QUIRK_DISABLE_SNO),
+
+	/*
+	 *  Some device many have issue query write protection status
+	 *  So just skip the wp check.
+	 */
+	MMC_FIXUP("HCG8a4", CID_MANFID_HYNIX, CID_OEMID_ANY, add_quirk_mmc,
+		MMC_QUIRK_SKIP_CHECK_WP),
 
 	END_FIXUP
 };
