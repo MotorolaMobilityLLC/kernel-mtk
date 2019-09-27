@@ -782,7 +782,6 @@ static void bq25601_dump_regs(struct bq25601 *bq)
 	int ret;
 
 	for (addr = 0x0; addr <= 0x0B; addr++) {
-		usleep(2000);
 		ret = bq25601_read_byte(bq, addr, &val);
 		if (!ret)
 			pr_info("Reg[%.2x] = 0x%.2x\n", addr, val);
@@ -802,7 +801,6 @@ static ssize_t bq25601_show_registers(struct device *dev,
 
 	idx = snprintf(buf, PAGE_SIZE, "%s:\n", "bq25601 Reg");
 	for (addr = 0x0; addr <= 0x0B; addr++) {
-		usleep(2000);
 		ret = bq25601_read_byte(bq, addr, &val);
 		if (ret == 0) {
 			len = snprintf(tmpbuf, PAGE_SIZE - idx,
