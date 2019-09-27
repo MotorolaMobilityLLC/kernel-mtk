@@ -2443,6 +2443,7 @@ static int parse_log_file(void)
 		return -ENOMEM;
 
 	log_count = 0;
+	memset(buff, 0, sizeof(buff));
 	while (log_seq < log_next_seq) {
 		msg = log_from_idx(log_index);
 		count = msg_print_text(msg, prev, true, buff, sizeof(buff));
