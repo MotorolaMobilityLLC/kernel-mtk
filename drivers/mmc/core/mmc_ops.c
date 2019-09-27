@@ -22,7 +22,11 @@
 #include "host.h"
 #include "mmc_ops.h"
 
+#ifdef CONFIG_PROJECT_P161BN
+#define MMC_OPS_TIMEOUT_MS	(30 * 1000) /* optimize for boot time too long */
+#else
 #define MMC_OPS_TIMEOUT_MS	(10 * 60 * 1000) /* 10 minute timeout */
+#endif
 
 static const u8 tuning_blk_pattern_4bit[] = {
 	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
