@@ -369,6 +369,17 @@ static unsigned int smi_clk_subsys_larbs(enum subsys_id sys)
 	return 0;
 }
 
+static void smi_config_set_mmsys(void)
+{
+#if IS_ENABLED(CONFIG_MACH_MT6765)
+	s32 i;
+
+	for (i = 0; i < SMI_MMSYS_CONFIG_NUM; i++)
+		writel(smi_mmsys_config_pair[i].value,
+			smi_mmsys->base + smi_mmsys_config_pair[i].offset);
+#endif
+}
+
 static void smi_clk_subsys_after_on(enum subsys_id sys)
 {
 	unsigned int subsys = smi_clk_subsys_larbs(sys);
@@ -378,6 +389,7 @@ static void smi_clk_subsys_after_on(enum subsys_id sys)
 	if (subsys & 1) { /* COMMON and LARB0 in SYS_MM0 or SYS_DIS */
 		smi_bus_prepare_enable(SMI_LARB_NUM, DEV_NAME, false);
 		mtk_smi_config_set(common, SMI_SCEN_NUM);
+		smi_config_set_mmsys();
 		mtk_smi_config_set(common, smi_scen);
 		smi_bus_disable_unprepare(SMI_LARB_NUM, DEV_NAME, false);
 	}

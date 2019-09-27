@@ -177,6 +177,11 @@ struct mtk_smi_pair **smi_scen_pair[SMI_LARB_NUM + 1] = {
 };
 
 /* config */
+#define SMI_MMSYS_CONFIG_NUM	1
+struct mtk_smi_pair smi_mmsys_config_pair[SMI_MMSYS_CONFIG_NUM] = {
+	{MMSYS_HW_DCM_1ST_DIS_SET0, 0x780000},
+};
+
 #define SMI_COMM_CONFIG_NUM	8
 struct mtk_smi_pair smi_comm_config_pair[SMI_COMM_CONFIG_NUM] = {
 	{SMI_L1LEN, 0xb}, {SMI_WRR_REG0, 0x30c30c}, {SMI_DCM, 0x4fd},
@@ -203,7 +208,7 @@ struct mtk_smi_pair smi_larb1_config_pair[SMI_LARB1_CONFIG_NUM] = {
 
 #define SMI_LARB2_CONFIG_NUM	3
 struct mtk_smi_pair smi_larb2_config_pair[SMI_LARB2_CONFIG_NUM] = {
-	{SMI_LARB_CMD_THRT_CON, 0x370223},
+	{SMI_LARB_CMD_THRT_CON, 0x300223},
 	{SMI_LARB_SW_FLAG, 0x1}, {SMI_LARB_SPM_ULTRA_MASK, 0xffffc000}
 };
 
@@ -325,10 +330,11 @@ unsigned int smi_larb_debug_offset[SMI_LARB_DEBUG_NUM] = {
 	SMI_LARB_SEC_CON(30), SMI_LARB_SEC_CON(31)
 };
 
-#define SMI_MMSYS_DEBUG_NUM	((SMI_LARB_NUM_MAX)*1+5)
+#define SMI_MMSYS_DEBUG_NUM	((SMI_LARB_NUM_MAX)*1+6)
 unsigned int smi_mmsys_debug_offset[SMI_MMSYS_DEBUG_NUM] = {
 	MMSYS_CG_CON0, MMSYS_CG_CON1,
-	MMSYS_HW_DCM_1ST_DIS0, MMSYS_HW_DCM_2ND_DIS0, MMSYS_SW0_RST_B,
+	MMSYS_HW_DCM_1ST_DIS0, MMSYS_HW_DCM_1ST_DIS_SET0,
+	MMSYS_HW_DCM_2ND_DIS0, MMSYS_SW0_RST_B,
 	MMSYS_GALS_DBG(0), MMSYS_GALS_DBG(1), MMSYS_GALS_DBG(2),
 	MMSYS_GALS_DBG(3), MMSYS_GALS_DBG(4), MMSYS_GALS_DBG(5),
 	MMSYS_GALS_DBG(6), MMSYS_GALS_DBG(7)
