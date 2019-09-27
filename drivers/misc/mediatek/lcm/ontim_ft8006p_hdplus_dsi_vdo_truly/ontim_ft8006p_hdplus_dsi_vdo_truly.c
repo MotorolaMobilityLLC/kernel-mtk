@@ -28,7 +28,7 @@
  * OR REFUND ANY SOFTWARE LICENSE FEES OR SERVICE CHARGE PAID BY RECEIVER TO
  * MEDIATEK FOR SUCH MEDIATEK SOFTWARE AT ISSUE.
  */
-#define LOG_TAG "LCM"
+#define LOG_TAG "LCM-ft8006p"
 
 #ifndef BUILD_LK
 #include <linux/string.h>
@@ -59,9 +59,8 @@
 
 static const unsigned int BL_MIN_LEVEL = 20;
 static struct LCM_UTIL_FUNCS lcm_util;
-#define LCM_ID 0x31
+#define LCM_ID 0x61
 #define SET_RESET_PIN(v)    (lcm_util.set_reset_pin((v)))
-//#define SET_RESET_PIN_TS(v)    (lcm_util.set_reset_pin_ts((v)))
 #define MDELAY(n)       (lcm_util.mdelay(n))
 #define UDELAY(n)       (lcm_util.udelay(n))
 
@@ -104,7 +103,7 @@ static struct LCM_UTIL_FUNCS lcm_util;
 static const unsigned char LCD_MODULE_ID = 0x01;
 #define LCM_DSI_CMD_MODE                                    0
 #define FRAME_WIDTH                                     (720)
-#define FRAME_HEIGHT                                    (1600)
+#define FRAME_HEIGHT                                    (1560)
 #define LCM_DENSITY		(320)
 
 #define LCM_PHYSICAL_WIDTH                  (67932)
@@ -114,7 +113,9 @@ static const unsigned char LCD_MODULE_ID = 0x01;
 #define REGFLAG_END_OF_TABLE    0xFFFD
 #define REGFLAG_RESET_LOW   0xFFFE
 #define REGFLAG_RESET_HIGH  0xFFFF
+#ifndef BUILD_LK
 extern int NT50358A_write_byte(unsigned char addr, unsigned char value);
+#endif
 //static struct LCM_DSI_MODE_SWITCH_CMD lcm_switch_mode_cmd;
 
 #ifndef TRUE
@@ -139,18 +140,17 @@ static struct LCM_setting_table lcm_suspend_setting[] = {
 };
 
 static struct LCM_setting_table init_setting[] = {
-
-	{0xFF, 0x03,{0x98,0x81,0x00}},//Page0
 	{0x53, 0x01,{0x2C}},
+	{0x55, 0x01,{0x00}},
 	{0x11, 0x01,{0x00}},
 	{REGFLAG_DELAY, 120,{}},
 	{0x29, 0x01,{0x00}},
-	{REGFLAG_DELAY, 20,{}},
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 
 };
 static struct LCM_setting_table bl_level[] = {
-	{0x51, 0x02, {0x3F,0xFF} },
+	{0x51,1,{0xFF}},
+	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -187,7 +187,7 @@ static void push_table(void *cmdq, struct LCM_setting_table *table,
 
 static void lcm_set_util_funcs(const struct LCM_UTIL_FUNCS *util)
 {
-	LCM_LOGI("%s: ili9881h\n",__func__);
+	LCM_LOGI("%s:ft8006p\n",__func__);
 	memcpy(&lcm_util, util, sizeof(struct LCM_UTIL_FUNCS));
 }
 
@@ -200,21 +200,14 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 	params->width = FRAME_WIDTH;
 	params->height = FRAME_HEIGHT;
-	params->physical_width = LCM_PHYSICAL_WIDTH/1000;
-	params->physical_height = LCM_PHYSICAL_HEIGHT/1000;
-	params->physical_width_um = LCM_PHYSICAL_WIDTH;
-	params->physical_height_um = LCM_PHYSICAL_HEIGHT;
-	params->density = LCM_DENSITY;
 
 
 #if (LCM_DSI_CMD_MODE)
 	params->dsi.mode = CMD_MODE;
 	params->dsi.switch_mode = SYNC_PULSE_VDO_MODE;
-	lcm_dsi_mode = CMD_MODE;
 #else
 	params->dsi.mode = SYNC_PULSE_VDO_MODE;
 	params->dsi.switch_mode = CMD_MODE;
-	lcm_dsi_mode = SYNC_PULSE_VDO_MODE;
 #endif
 	LCM_LOGI("lcm_get_params lcm_dsi_mode %d\n", lcm_dsi_mode);
 	params->dsi.switch_mode_enable = 0;
@@ -240,7 +233,7 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.horizontal_frontporch = 60;//old is 60,now is 16
 	params->dsi.horizontal_active_pixel = FRAME_WIDTH;
 	params->dsi.PLL_CLOCK = 270;    /* FrameRate = 60Hz */ /* this value must be in MTK suggested table */
-#if 1//ycx modify
+#if 1
 	params->dsi.HS_TRAIL = 7;
 	params->dsi.HS_ZERO = 12;
 	params->dsi.CLK_HS_PRPR = 6;
@@ -267,16 +260,10 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	SET_RESET_PIN(1);
-	MDELAY(10);
 	SET_RESET_PIN(0);
-	MDELAY(10);
-	//	SET_RESET_PIN_TS(1);
-	SET_RESET_PIN(1);	
+	SET_RESET_PIN(1);
 
-	MDELAY(60);
-
-	LCM_LOGI("ili9881h lcm reset end.\n");
+	LCM_LOGI("%s:ft8006p lcm reset done\n",__func__);
 }
 
 static void lcm_init_power(void)
@@ -296,7 +283,7 @@ static void lcm_init(void)
 	unsigned char cmd = 0x0;
 	unsigned char data = 0x0F;  //up to +/-5.5V
 	int ret = 0;
-	LCM_LOGI("%s: ili9881h\n",__func__);
+	LCM_LOGI("%s: ft8006P start\n",__func__);
 
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
@@ -307,49 +294,38 @@ static void lcm_init(void)
 	data = 0x0F;
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
-		LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
+		LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
 	else
 		LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
 
 	set_gpio_lcd_enp(1);
-	MDELAY(2);
 	set_gpio_lcd_enn(1);
-	MDELAY(2);;
-
 
 	lcm_reset();
 
 	push_table(NULL, init_setting,
 			sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
-
+	
+	LCM_LOGI("%s: ft8006P done\n",__func__);
 }
 
 static void lcm_suspend(void)
 {
 #ifndef MACH_FPGA
-
-
 	push_table(NULL, lcm_suspend_setting, sizeof(lcm_suspend_setting) / sizeof(struct LCM_setting_table), 1);
-	MDELAY(30);
-	//    SET_RESET_PIN(0);
-	//	SET_RESET_PIN_TS(0);
-	LCM_LOGI("%s,ili9881h lcm_suspend power shut start\n", __func__);
-	MDELAY(1);
+	LCM_LOGI("%s,ft8006P start\n", __func__);
+	MDELAY(10);
 	set_gpio_lcd_enn(0);
-	MDELAY(1);
-
 	set_gpio_lcd_enp(0);
 #endif
-	LCM_LOGI("%s,ili9881h lcm_suspend power shutted over\n", __func__);
-
-	//    MDELAY(10); 
+	LCM_LOGI("%s,ft8006p done\n", __func__);
 }
 
 static void lcm_resume(void)
 {
-	LCM_LOGI("%s start: ili9881h",__func__);
+	LCM_LOGI("%s,ft8006P  start\n",__func__);
 	lcm_init();
-	LCM_LOGI("%s end: ili9881h\n",__func__);
+	LCM_LOGI("%s,ft8006P  done\n",__func__);
 }
 
 
@@ -366,15 +342,14 @@ static unsigned int lcm_ata_check(unsigned char *buffer)
 }
 
 static void lcm_setbacklight(void *handle, unsigned int level)
-{ 
+{
 	if (level > 255)
 		level = 255;
-	if (level < 2 && level !=0)
-		level = 2;
-	bl_level[0].para_list[0] = (level & 0xF0)>>4;
-	bl_level[0].para_list[1] = (level & 0x0F)<<4;
-	LCM_LOGI("ycx%s,backlight: level = %d \n", __func__, level);
+
+	bl_level[0].para_list[0] = level;
+	LCM_LOGI("%s,backlight set level = %d \n", __func__, level);
 	push_table(handle, bl_level, sizeof(bl_level) / sizeof(struct LCM_setting_table), 1);
+
 }
 
 static unsigned int lcm_compare_id(void)
@@ -382,12 +357,6 @@ static unsigned int lcm_compare_id(void)
 	unsigned int id = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
-	struct LCM_setting_table switch_table_page1[] = {
-		{ 0xFF, 0x03, {0x98, 0x81, 0x01} }
-	};
-	struct LCM_setting_table switch_table_page0[] = {
-		{ 0xFF, 0x03, {0x98, 0x81, 0x00} }
-	};
 
 	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
@@ -396,16 +365,13 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 
-	push_table(NULL, switch_table_page1, sizeof(switch_table_page1) / sizeof(struct LCM_setting_table), 1);
-
 	array[0] = 0x00023700;  /* read id return two byte,version and id */
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0xDC, buffer, 1);
 	id = buffer[0];         /* we only need ID */
 
-	LCM_LOGI("%s,ili9881h_id=0x%08x\n", __func__, id);
-	push_table(NULL, switch_table_page0, sizeof(switch_table_page0) / sizeof(struct LCM_setting_table), 1);
+	LCM_LOGI("%s,ft8006P vendor id=0x%08x\n", __func__, id);
 
 	if (id == LCM_ID )
 		return 1;
@@ -415,8 +381,9 @@ static unsigned int lcm_compare_id(void)
 }
 
 
-struct LCM_DRIVER ontim_ili9881h_hdplus_dsi_vdo_truly_lcm_drv = {
-	.name = "ontim_ili9881h_hdplus_dsi_vdo_truly",
+
+struct LCM_DRIVER ontim_ft8006p_hdplus_dsi_vdo_truly_lcm_drv = {
+	.name = "ontim_ft8006p_hdplus_dsi_vdo_truly",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params = lcm_get_params,
 	.init = lcm_init,

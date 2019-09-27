@@ -3,6 +3,6 @@
 #
 
 ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek/
-obj-y += ontim_ili9881h_hdplus_dsi_vdo_truly.o
+obj-y += ontim_ili9881h_hdplus_dsi_vdo_skyworth.o
 
 ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
