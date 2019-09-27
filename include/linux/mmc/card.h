@@ -301,6 +301,8 @@ struct mmc_card {
 #define MMC_QUIRK_TRIM_BROKEN	(1<<12)		/* Skip trim */
 #define MMC_QUIRK_BROKEN_HPI	(1<<13)		/* Disable broken HPI support */
 #define MMC_QUIRK_DISABLE_SNO   (1<<22)
+#define MMC_QUIRK_SKIP_CHECK_WP    (1<<23) /* Skip query write protection */
+
 
 /* Make sure CMDQ is empty before queuing DCMD */
 #define MMC_QUIRK_CMDQ_EMPTY_BEFORE_DCMD (1 << 17)
