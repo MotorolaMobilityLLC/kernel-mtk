@@ -2815,6 +2815,10 @@ unsigned int btif_bbs_wr_direct(struct _btif_buf_str_ *p_bbs,
 
 	l = min(tail_len, buf_len);
 
+#ifdef CONFIG_ARM64
+	__dma_unmap_area((void *)p_buf, buf_len, DMA_FROM_DEVICE);
+#endif
+
 	memcpy((p_bbs->p_buf) + (tmp_wr_idx & BBS_MASK(p_bbs)), p_buf, l);
 	memcpy(p_bbs->p_buf, p_buf + l, buf_len - l);
 
