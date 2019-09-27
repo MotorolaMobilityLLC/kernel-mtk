@@ -141,6 +141,10 @@ int ufs_mtk_di_cmp(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 	char *buffer;
 	int i, len;
 	struct scatterlist *sg;
+#if defined(CONFIG_ARM) && !defined(CONFIG_ARM64)
+	struct page *page;
+	char *virtual_address;
+#endif
 	u32 lba, blk_cnt, end_lba;
 	u16 crc_temp = 0;
 
@@ -160,7 +164,14 @@ int ufs_mtk_di_cmp(struct ufs_hba *hba, struct scsi_cmnd *cmd)
 		&& (ufshcd_scsi_to_upiu_lun(cmd->device->lun) == 0x2)) {
 		if (scsi_sg_count(cmd)) {
 			for (i = 0; i < scsi_sg_count(cmd); i++) {
+#if defined(CONFIG_ARM) && !defined(CONFIG_ARM64)
+				page = sg_page(sg);
+				virtual_address = (char *) kmap_atomic(page)
+				buffer = virtual_address + sg->offset;
+#else
 				buffer = (char *)sg_virt(sg);
+#endif
+
 
 for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 	/*
@@ -214,7 +225,7 @@ for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 #ifdef CONFIG_MTK_UFS_LBA_CRC16_BUG_ON
 					BUG_ON(1);
 #endif
-					return -EIO;
+					goto eio;
 				}
 			}
 
@@ -236,7 +247,7 @@ for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 #ifdef CONFIG_MTK_UFS_LBA_CRC16_BUG_ON
 						BUG_ON(1);
 #endif
-						return -EIO;
+						goto eio;
 					}
 				}
 			} else {
@@ -255,7 +266,7 @@ for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 #ifdef CONFIG_MTK_UFS_LBA_CRC16_BUG_ON
 						BUG_ON(1);
 #endif
-						return -EIO;
+						goto eio;
 					}
 				}
 			}
@@ -263,6 +274,9 @@ for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 	}
 
 }
+#if defined(CONFIG_ARM) && !defined(CONFIG_ARM64)
+				kunmap_atomic(virtual_address);
+#endif
 				sg = sg_next(sg);
 			}
 			/*
@@ -281,6 +295,11 @@ for (len = 0; len < sg->length; len = len + 0x1000, lba++) {
 	}
 
 	return 0;
+eio:
+#if defined(CONFIG_ARM) && !defined(CONFIG_ARM64)
+		kunmap_atomic(virtual_address);
+#endif
+	return -EIO;
 }
 
 int ufs_mtk_di_inspect(struct ufs_hba *hba, struct scsi_cmnd *cmd)
