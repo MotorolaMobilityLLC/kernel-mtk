@@ -883,7 +883,7 @@ static int dbg_cm_mgr_proc_show(struct seq_file *m, void *v)
 #define CPU_FW_FILE "cpu_data.bin"
 #include <linux/firmware.h>
 static struct device cm_mgr_device = {
-	.init_name = "cm_mgr_device ",
+	.init_name = "cm_mgr_device",
 };
 
 static ssize_t dbg_cm_mgr_proc_write(struct file *file,
