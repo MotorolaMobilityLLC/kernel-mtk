@@ -68,6 +68,8 @@ enum clk_buf_id;
 void connectivity_export_clk_buf_ctrl(enum clk_buf_id id, bool onoff);
 void connectivity_export_clk_buf_show_status_info(void);
 int connectivity_export_clk_buf_get_xo_en_sta(/*enum xo_id id*/ int id);
+#define KERNEL_is_clk_buf_from_pmic connectivity_export_is_clk_buf_from_pmic
+bool connectivity_export_is_clk_buf_from_pmic(void);
 #endif
 
 /*******************************************************************************
