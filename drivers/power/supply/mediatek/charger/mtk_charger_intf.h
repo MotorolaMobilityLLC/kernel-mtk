@@ -510,7 +510,6 @@ bool __attribute__((weak)) is_usb_rdy(void)
 }
 
 extern void aee_kernel_RT_Monitor_api_factory(void);
-extern void mtk_charger_stop_timer(struct charger_manager *info);
 
 /* procfs */
 #define PROC_FOPS_RW(name)						\

@@ -2235,7 +2235,7 @@ static int chg_reboot(struct notifier_block *nb,
 		switch (event) {
 		case SYS_POWER_OFF:
 			aee_kernel_RT_Monitor_api_factory();
-			mtk_charger_stop_timer(info);
+			pinfo->is_suspend = true;
 			/* Disable Factory Kill */
 			info->disable_charger = true;
 			info->chg_tcmd_client.factory_kill_disable = true;
