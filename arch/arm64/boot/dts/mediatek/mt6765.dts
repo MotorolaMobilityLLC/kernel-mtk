@@ -2777,8 +2777,9 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 		enable_pe_2;
 		enable_pe_3;
 		enable_pe_4;
-		enable_type_c;
-		power_path_support;
+		/*disable usb type C*/
+		/*enable_type_c;
+		power_path_support;*/
 
 		/* common */
 /*		battery_cv = <4440000>;*/
