@@ -1,0 +1,92 @@
+* v2.0.2.0
+[New features]
+1. Add parsing gesture coordinate.
+2. Remove pre command before getting cdcd data if core ver is 1.4.3
+above.
+
+[Improvements]
+1. Add reading pc latch in pc counter.
+
+[Bus fixed]
+1. Add back short test and doez p2p test
+2. Fix error of getting panel info from hex.
+3. Fix kernel panic while mp test failed in timeout of int.
+4. Correct the address of esd gesture with iram.
+
+* v2.0.1.4
+[New features]
+
+[Improvements]
+1. Chech size and crc while parsing ILI file.
+2. Allocated larger buffers at probe in advance
+3. Optimized the handle of exepction erros with fw upgrade.
+3. Add duplex in spi split.
+
+[Bus fixed]
+1. Fix compling error with qcom.
+2. Fix error of loading gesture code in last version.
+
+* v2.0.1.3
+[New features]
+1.  ilitek_fw.c 拆分成 ilitek_flash.c 和 ilitek_hostdl.c
+
+[Improvements]
+1. FW更新後，從HEX讀取 TP info (SPI/I2C預設打開)
+2. 優化proximity判斷
+3. 沒有golden時，在做完MP後會產出”mp_warning”的csv
+4. 更新 open sp測試的公式
+5. 調整top half裡判斷順序
+6. SPI要load gesture code時，加入判斷是否動態load code
+7. 減少解析ini的時間
+8. SPI esd gesture位址從0x25FF8，改成0x40054
+
+[Bus fixed]
+1. 重新加入gesture debug
+2. 修正在debug mode下，Android系統未出現小白點的問題
+3. 在做 esd gesture時，load 完 ap code 會 sleep 50ms (搭配info_from_hex和core ver 1.4.1)
+4. 修正 checkpatch.pl 錯誤
+5. 修正讀取報點時，若出現錯誤(非 recovery)會沒有返回的問題
+
+* v2.0.1.2
+1.	在MP測試裡，增加錯誤返回值
+2.	修正open test c 測試異常
+3.	修正DeltaC Record修正，合入OPPO功能需求驗證完成
+4.	在喚醒SPI PLL Clock時，若SPI為15Mhz，需寫10 bytes來符合Timing，所以9 bytes 改為10 bytes
+5.	修正會誤啟動gesture recovery動作
+6.	重新改寫 dump iram data function
+7.	優化SPI通信時間  #67  (需開啟SPI_DMA_TRANSFER_SPLIT，但X20是需要切割，故只驗報點功能)
+8.	重新加入pm_stay_awake，某次改動被拿掉了。
+
+* v2.0.1.1
+1.	加入OPPO需求功能 (gesture failure reason, demo debug …etc) (驗證中)
+2.	加入 wake up (dummy) command，用來在暗屏時，喚醒SPI PLL Clock
+3.	優化TP/FW Mode state machine 寫法
+	* TP mode只會有3種模式 : AP, Gesture, MP
+	* 其餘像是Debug/Demo Debug等等，皆為不同的資料格式
+	* 一個AP mode會有多種不同資格上報格式
+	* 資料格式長度、算法集中放在ilitek_set_tp_data_len處理
+4.	加入高通的DRM_MSM休眠/喚醒事件機制
+5.	加入讓客戶可以從DDI直接調用TP喚醒的callback function
+6.	加入保存Hex資料機制，避免系統獲取不到system的partition導致固件版本回退
+7.	修正copy_to_user和copy_from_user的返回判斷值
+8.	修改sprint-->snprintf , strcmp-->strncmp
+9.	加入mp.ini沒有benchmark的話，會產出warning檔名的csv file
+10.	加入PM stay awake/relax，避免系統(或PM)進了深層睡眠導致手勢失敗
+11.	修正MP的CSV格式 (Test Studio可直接取Golden)
+12.	修正Whole Chip Reset的資料和地址錯誤
+13.	修正Cove version取4 bytes的錯誤 (只需取3 bytes)
+14.	加入SPI R/W調試的echo (不進入spi ice)
+15.	加入在手勢模式下，可直接收取Debug資料
+16.	修正做host download時，資料長度不足2k時會計算錯誤的問題
+17.	SPI Recovery / Gesture Recovery 改成直接調用方式，不再透過workqueue來排程
+18.	新增MP的PIN測項
+19.	加入所有function的返回值判斷，避免被Coverity tool找到錯誤
+
+* v2.0.1.0
+- Optimise software structure of TP driver based on v1.x.
+- SPI Transfer 64k once (on x20).
+- Device node with dumping iram/flash data.
+- Update compat_ioctl.
+- Delay review * adjustment
+- Add mutex_lock in ioctl
+- Clear dma settings while doing overlay.
