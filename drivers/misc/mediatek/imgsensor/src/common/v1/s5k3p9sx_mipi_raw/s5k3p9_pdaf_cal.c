@@ -96,7 +96,7 @@ static bool s5k3p9_selective_read_eeprom(kal_uint16 addr, BYTE *data)
 }
 
 
-static bool s5k3p9_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
+bool s5k3p9_read_eeprom(kal_uint16 addr, BYTE *data, kal_uint32 size)
 {
 	int i = 0;
 	/* int offset = addr; */
