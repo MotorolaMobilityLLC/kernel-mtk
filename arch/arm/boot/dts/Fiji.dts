@@ -72,6 +72,49 @@
 	};
 };
 
+&i2c1 {
+	alsps@46 {
+                compatible = "mediatek,alps_stk3a5x";
+                reg = <0x46>;
+                status = "okay";
+
+                pinctrl-names = "pin_default", "pin_cfg", "v3v_enable", "v3v_disable";
+                pinctrl-0 = <&alsps_intpin_default>;
+                pinctrl-1 = <&alsps_intpin_cfg>;
+                pinctrl-2 = <&alsps_v3v_enable>;
+                pinctrl-3 = <&alsps_v3v_disable>;
+
+                i2c_num                         = <1>;
+                i2c_addr                                = <0x46 0 0 0>;
+                polling_mode_ps                 = <0>;
+                polling_mode_als                = <1>;
+                power_id                                = <0xffff>;
+                power_vol                               = <0>;
+                als_level = < 
+                                        0  39   91    150    290    505     736    943
+                                        0  82   174   299    582    1319    2940  3333
+                                        0  123   264   399    627    1444   2144   2800
+                                        0  63   144    237    445    724     991    1231
+                                        0  72   163   258    560    1576   2400   3152
+                                        0  112   240   475    746    1719   2552   3333
+                                          >;
+                als_value = < 0  133  304  502   1004  2005  3058   4000 >;
+                state_val               =  <0>;
+                psctrl_val              =  <0x31>;
+                alsctrl_val     = <0x38>;
+                ledctrl_val     = <0xFF>;
+                wait_val                = <0xF>;
+                ps_threshold_high               =  <1700>;
+                ps_threshold_low                =  <1500>;
+                is_batch_supported_ps   = <0>;
+                is_batch_supported_als  = <0>;
+                //
+                als_calib_enable = <1>;
+                als_ch0_expect               =  <1000>;
+                als_ch1_expect                =  <800>;
+                // 
+        };
+};
 &i2c3 {
 	ext_buck_lp4@57 {
 		regulator-name ="ext_buck_vdd2";
@@ -681,6 +724,43 @@
 
 };
 
+&als {
+		pinctrl-names = "pin_default", "pin_cfg", "v3v_enable", "v3v_disable";
+                pinctrl-0 = <&alsps_intpin_default>;
+                pinctrl-1 = <&alsps_intpin_cfg>;
+                pinctrl-2 = <&alsps_v3v_enable>;
+                pinctrl-3 = <&alsps_v3v_disable>;
+};
+
+&pio {
+        alsps_intpin_cfg: alspspincfg {
+
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO6__FUNC_GPIO6>;
+                        slew-rate = <0>;
+                        bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+                };
+        };
+
+        alsps_intpin_default: alspsdefaultcfg {
+
+        };
+
+        alsps_v3v_enable: v3venable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-high;
+                };
+        };
+        alsps_v3v_disable: v3vdisable {
+                pins_cmd_dat {
+                        pinmux = <PINMUX_GPIO154__FUNC_GPIO154>;
+                        slew-rate = <1>;
+                        output-low;
+                };
+        };
+};
 #include "bat_setting/mt6765_battery_table_Fiji.dtsi"
 
 #include <Fiji/cust.dtsi>
