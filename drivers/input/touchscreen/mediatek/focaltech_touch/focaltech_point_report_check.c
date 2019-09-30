@@ -2,7 +2,7 @@
  *
  * FocalTech TouchScreen driver.
  *
- * Copyright (c) 2010-2017, FocalTech Systems, Ltd., all rights reserved.
+ * Copyright (c) 2012-2019, FocalTech Systems, Ltd., all rights reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -14,21 +14,21 @@
  * GNU General Public License for more details.
  *
  */
+
 /*****************************************************************************
 *
 * File Name: focaltech_point_report_check.c
 *
-*    Author: WangTao
+* Author: Focaltech Driver Team
 *
-*   Created: 2016-11-16
+* Created: 2016-11-16
 *
-*  Abstract: point report check function
+* Abstract: point report check function
 *
-*   Version: v1.0
+* Version: v1.0
 *
 * Revision History:
-*        v1.0:
-*            First release. By WangTao 2016-11-16
+*
 *****************************************************************************/
 
 /*****************************************************************************
@@ -57,16 +57,16 @@ static void fts_prc_func(struct work_struct *work)
     struct fts_ts_data *ts_data = container_of(work,
                                   struct fts_ts_data, prc_work.work);
     struct input_dev *input_dev = ts_data->input_dev;
-
 #if FTS_MT_PROTOCOL_B_EN
-    unsigned int finger_count = 0;
+    u32 finger_count = 0;
+    u32 max_touches = fts_data->pdata->max_touch_number;
 #endif
 
     FTS_FUNC_ENTER();
     mutex_lock(&ts_data->report_mutex);
 
 #if FTS_MT_PROTOCOL_B_EN
-    for (finger_count = 0; finger_count < ts_data->pdata->max_touch_number; finger_count++) {
+    for (finger_count = 0; finger_count < max_touches; finger_count++) {
         input_mt_slot(input_dev, finger_count);
         input_mt_report_slot_state(input_dev, MT_TOOL_FINGER, false);
     }
@@ -90,7 +90,7 @@ static void fts_prc_func(struct work_struct *work)
 *****************************************************************************/
 void fts_prc_queue_work(struct fts_ts_data *ts_data)
 {
-    cancel_delayed_work(&ts_data->prc_work);
+    cancel_delayed_work_sync(&ts_data->prc_work);
     queue_delayed_work(ts_data->ts_workqueue, &ts_data->prc_work,
                        msecs_to_jiffies(POINT_REPORT_CHECK_WAIT_TIME));
 }
