@@ -1,0 +1,12 @@
+config TOUCHSCREEN_ILI9881H
+    bool "ilitek Touchscreen"
+    default n
+    help
+      Say Y here if you have Focaltech touch panel.
+      If unsure, say N.
+      
+config TOUCHSCREEN_ILI9881H_DEBUG
+    bool "ilitek touch is or not debug "
+    default n
+    depends on TOUCHSCREEN_ILI9881H
+    
