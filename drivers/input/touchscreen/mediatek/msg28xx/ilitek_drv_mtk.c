@@ -177,7 +177,7 @@ MODULE_DEVICE_TABLE(i2c, tpd_device_id);
 
 #ifdef CONFIG_PLATFORM_USE_ANDROID_SDK_6_UPWARD
 const struct of_device_id touch_dt_match_table[] = {
-    { .compatible = "mediatek,cap_touch",},
+    { .compatible = "mediatek,ilitek_touch",},
     {},
 };
 
