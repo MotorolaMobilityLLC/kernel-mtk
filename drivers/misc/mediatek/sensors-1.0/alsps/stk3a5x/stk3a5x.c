@@ -371,6 +371,10 @@ static int stk_ps_tune_zero_func_fae(struct stk3a5x_priv *obj);
 static int stk3a5x_init_client(struct i2c_client *client);
 //struct wake_lock mps_lock;
 static DEFINE_MUTEX(run_cali_mutex);
+
+struct pinctrl *pinctrl;
+struct pinctrl_state *pins_v3venable;
+struct pinctrl_state *pins_v3vdisable;
 /*----------------------------------------------------------------------------*/
 int stk3a5x_get_addr(struct stk3a5x_i2c_addr *addr)
 {
@@ -1386,12 +1390,14 @@ static int stk3a5x_enable_ps(struct i2c_client *client, int enable, int validate
 #endif
 			}
 		}
+		pinctrl_select_state(pinctrl, pins_v3venable);
 	}
 	else
 	{
 #ifdef CTTRACKING
 		hrtimer_cancel(&obj->ps_tune0_timer);
 #endif
+		pinctrl_select_state(pinctrl, pins_v3vdisable);
 	}
 
 	if (trc & STK_TRC_DEBUG)
@@ -2266,7 +2272,7 @@ static irqreturn_t stk3a5x_eint_handler(int irq, void *desc)
 int stk3a5x_setup_eint(struct i2c_client *client)
 {
 	int ret;
-	struct pinctrl *pinctrl;
+	//struct pinctrl *pinctrl;
 	struct pinctrl_state *pins_default;
 	struct pinctrl_state *pins_cfg;
 	u32 ints[2] = { 0, 0 };
@@ -2296,6 +2302,22 @@ int stk3a5x_setup_eint(struct i2c_client *client)
 		ret = PTR_ERR(pins_cfg);
 		APS_ERR("Cannot find alsps pinctrl pin_cfg!\n");
 	}
+	
+	pins_v3venable = pinctrl_lookup_state(pinctrl, "v3v_enable");
+
+        if (IS_ERR(pins_v3venable))
+        {
+                ret = PTR_ERR(pins_v3venable);
+                APS_ERR("Cannot find alsps pinctrl pin_v3venable!\n");
+        }
+
+	pins_v3vdisable = pinctrl_lookup_state(pinctrl, "v3v_disable");
+
+        if (IS_ERR(pins_v3vdisable))
+        {
+                ret = PTR_ERR(pins_v3vdisable);
+                APS_ERR("Cannot find alsps pinctrl pin_v3vdisable!\n");
+        }
 
 	/* eint request */
 	if (stk3a5x_obj->irq_node)
