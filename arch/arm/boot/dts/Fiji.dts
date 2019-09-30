@@ -724,14 +724,6 @@
 
 };
 
-&als {
-		pinctrl-names = "pin_default", "pin_cfg", "v3v_enable", "v3v_disable";
-                pinctrl-0 = <&alsps_intpin_default>;
-                pinctrl-1 = <&alsps_intpin_cfg>;
-                pinctrl-2 = <&alsps_v3v_enable>;
-                pinctrl-3 = <&alsps_v3v_disable>;
-};
-
 &pio {
         alsps_intpin_cfg: alspspincfg {
 
