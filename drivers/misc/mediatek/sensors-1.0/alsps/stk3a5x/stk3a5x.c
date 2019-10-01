@@ -323,7 +323,7 @@ struct stk3a5x_priv
 #ifdef CONFIG_OF
 static const struct of_device_id alsps_of_match[] =
 {
-	{.compatible = "mediatek,alps_stk3a5x"},
+	{.compatible = "mediatek,alsps"},
 	{.compatible = "sensortek,stk3a5x"},
 	{},
 };
@@ -2319,6 +2319,8 @@ int stk3a5x_setup_eint(struct i2c_client *client)
                 APS_ERR("Cannot find alsps pinctrl pin_v3vdisable!\n");
         }
 
+	//stk3a5x_obj->irq_node = client->dev.of_node;
+		
 	/* eint request */
 	if (stk3a5x_obj->irq_node)
 	{
@@ -4012,9 +4014,7 @@ static int stk3a5x_init_reg(struct i2c_client *client)
 	uint8_t i2c_config_reg = 0;
 
 	obj = stk3a5x_obj;
-	printk("client->addr======%x\n", client->addr);
-	client->addr = 0x67;
-	printk("client->addr======%x\n", client->addr);
+
 	obj->client = client;
 	i2c_set_clientdata(client, obj);
 	atomic_set(&obj->als_debounce, 55);//reference IT
@@ -4028,7 +4028,7 @@ static int stk3a5x_init_reg(struct i2c_client *client)
 	atomic_set(&obj->als_suspend, 0);
 	atomic_set(&obj->init_done, 0);
 	//obj->irq_node = of_find_matching_node(obj->irq_node, alsps_of_match);
-	// obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek, ALS-eint");
+	//obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek, ALS-eint");
 	//obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek,als_ps");
 	obj->irq_node = client->dev.of_node;
 	atomic_set(&obj->state_val, 0);
@@ -4058,6 +4058,7 @@ static int stk3a5x_init_reg(struct i2c_client *client)
 
 	return 0;
 }
+
 /*----------------------------------------------------------------------------*/
 static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
@@ -4085,6 +4086,7 @@ static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		APS_ERR("get customization info from dts failed\n");
 		goto exit_init_failed;
 	}
+
 	stk3a5x_obj = obj;
 	obj->hw = hw;
 	stk3a5x_get_addr(&obj->addr);
@@ -4127,8 +4129,6 @@ static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 		obj->int_val |= STK_INT_ALS;
 		APS_LOG("%s: enable ALS interrupt\n", __FUNCTION__);
 	}
-	
-	obj->irq_node = of_find_compatible_node(NULL, NULL, "mediatek, ALS-eint");
 
 	obj->enable = 0;
 	obj->pending_intr = 0;

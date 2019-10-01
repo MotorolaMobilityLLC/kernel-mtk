@@ -229,12 +229,14 @@ static int sx932x_Hardware_Check(psx93XX_t this)
 	if(ret < 0){
 		this->failStatusCode = SX932x_I2C_ERROR;
 	}
+
+	SX932X_LOG("failcode = 0x%x\n",failcode);
 		
 	if(failcode!= SX932x_WHOAMI_VALUE){
 		this->failStatusCode = SX932x_ID_ERROR;
 	}
 	
-	SX932X_LOG("failcode = 0x%x\n",this->failStatusCode);
+	SX932X_LOG("failStatusCode = 0x%x\n",this->failStatusCode);
 	return (int)this->failStatusCode;
 }
 
@@ -818,7 +820,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 {    
 	int i = 0;
 	int err = 0;
-	u8 val = 0;
+	//u8 val = 0;
 
 	psx93XX_t this = 0;
 	psx932x_t pDevice = 0;
@@ -866,7 +868,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	pplatData->init_platform_hw = sx932x_init_platform_hw;
 	SX932X_LOG("SX932x init_platform_hw done!\n");
-
+/*
 	//Check I2C Connection
 	err = read_register(this, SX932x_WHOAMI_REG, &val);
 	if(err < 0){
@@ -874,7 +876,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 		err = -ENODEV;
 		goto exit_check_device_failed;
 	}
-	
+*/	
 	if (this){
 		/* In case we need to reinitialize data 
 		* (e.q. if suspend reset device) */
@@ -978,7 +980,7 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	return 0;
 
 exit_init_failed:
-exit_check_device_failed:
+//exit_check_device_failed:
 exit_parse_dt_failed:
 	devm_kfree(&client->dev, pplatData);
 exit_malloc_platform_data_failed:
