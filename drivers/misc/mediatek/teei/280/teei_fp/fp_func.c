@@ -27,7 +27,6 @@
 #include <asm/cacheflush.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
-#include <linux/vmalloc.h>
 #include "fp_func.h"
 #include "../tz_driver/include/teei_fp.h"
 #include "../tz_driver/include/teei_id.h"
@@ -41,6 +40,7 @@
 
 struct fp_dev {
 	struct cdev cdev;
+	unsigned char mem[MICROTRUST_FP_SIZE];
 	struct semaphore sem;
 };
 
@@ -196,9 +196,7 @@ static const struct file_operations fp_fops = {
 	.read = fp_read,
 	.write = fp_write,
 	.unlocked_ioctl = fp_ioctl,
-#ifdef CONFIG_COMPAT
 	.compat_ioctl = fp_ioctl,
-#endif
 	.open = fp_open,
 	.release = fp_release,
 };
@@ -242,7 +240,7 @@ int fp_init(void)
 		goto class_destroy;
 	}
 	fp_devp = NULL;
-	fp_devp = vmalloc(sizeof(struct fp_dev));
+	fp_devp = kmalloc(sizeof(struct fp_dev), GFP_KERNEL);
 	if (fp_devp == NULL) {
 		result = -ENOMEM;
 		goto class_device_destroy;
@@ -272,7 +270,7 @@ void fp_exit(void)
 	device_destroy(driver_class, devno);
 	class_destroy(driver_class);
 	cdev_del(&fp_devp->cdev);
-	vfree(fp_devp);
+	kfree(fp_devp);
 	unregister_chrdev_region(MKDEV(fp_major, 0), 1);
 }
 

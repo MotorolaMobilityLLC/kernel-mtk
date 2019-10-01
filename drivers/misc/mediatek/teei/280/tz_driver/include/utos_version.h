@@ -14,5 +14,5 @@
 
 #ifndef __UTOS_VERSION_H__
 #define __UTOS_VERSION_H__
-#define UTOS_VERSION  "stable_2.8.0 for Android P_20190403_stage3"
+#define UTOS_VERSION  "tag.base.dbg.2.5.3"
 #endif

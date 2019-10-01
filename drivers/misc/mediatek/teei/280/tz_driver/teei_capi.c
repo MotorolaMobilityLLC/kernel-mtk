@@ -2091,7 +2091,6 @@ int __teei_client_decode_array_space(unsigned long dev_file_id,
 	unsigned long pmem;
 	unsigned long addr;
 	char *mem = NULL;
-	u32 dpos;
 
 	retVal = teei_client_prepare_decode(
 			(void *)dev_file_id, dec, &dec_context);
@@ -2099,21 +2098,23 @@ int __teei_client_decode_array_space(unsigned long dev_file_id,
 	if (retVal != 0)
 		goto return_func;
 
-	dpos = dec_context->dec_res_pos;
-
-	if ((dpos <= dec_context->enc_res_pos) &&
-			(dec_context->meta[dpos].type
+	if ((dec_context->dec_res_pos <= dec_context->enc_res_pos) &&
+			(dec_context->meta[dec_context->dec_res_pos].type
 			 == TEEI_ENC_ARRAY)) {
-		if (dec_context->meta[dpos].len >=
-			dec_context->meta[dpos].ret_len) {
-			if (dec_context->meta[dpos].usr_addr)
-				dec->data = dec_context->meta[dpos].usr_addr;
+		if (dec_context->meta[dec_context->dec_res_pos].len >=
+			dec_context->meta[dec_context->dec_res_pos].ret_len) {
+			if (dec_context->
+				meta[dec_context->dec_res_pos].usr_addr)
+
+				dec->data = dec_context->
+					meta[dec_context->dec_res_pos].usr_addr;
 
 			if (kernel_range == 0) {
 				if (copy_to_user((void __user *)dec->data,
 					(char *)dec_context->ker_res_data_addr
 					+ dec_context->dec_offset,
-					dec_context->meta[dpos].ret_len)) {
+					dec_context->meta
+					[dec_context->dec_res_pos].ret_len)) {
 
 					IMSG_ERROR("failed to copy_to_user!\n");
 					retVal = -EFAULT;
@@ -2123,33 +2124,40 @@ int __teei_client_decode_array_space(unsigned long dev_file_id,
 				memcpy((void *)dec->data,
 					(char *)dec_context->ker_res_data_addr
 					+ dec_context->dec_offset,
-					dec_context->meta[dpos].ret_len);
+					dec_context->
+					meta[dec_context->dec_res_pos]
+					.ret_len);
 		} else {
 
 			IMSG_ERROR("buffer length is small!\n");
 			IMSG_ERROR("required %x supplied length %x,pos %x.\n",
-				dec_context->meta[dpos].ret_len,
-				dec_context->meta[dpos].len,
-				dpos);
+				dec_context->meta[dec_context->dec_res_pos]
+						.ret_len,
+				dec_context->meta[dec_context->dec_res_pos].len,
+				dec_context->dec_res_pos);
 
 			retVal = -EFAULT;
-			dec->len = dec_context->meta[dpos].ret_len;
+			dec->len =
+				dec_context->meta[dec_context->dec_res_pos]
+						.ret_len;
 			goto return_func;
 		}
 
-		dec->len = dec_context->meta[dpos].ret_len;
+		dec->len = dec_context->meta[dec_context->dec_res_pos].ret_len;
 
 		dec_context->dec_offset +=
-				dec_context->meta[dpos].len;
+				dec_context->meta[dec_context->dec_res_pos].len;
 
-		dec_context->dec_res_pos = ++dpos;
-	} else if ((dpos <= dec_context->enc_res_pos) &&
-			(dec_context->meta[dpos].type == TEEI_MEM_REF)) {
+		dec_context->dec_res_pos++;
+	} else if ((dec_context->dec_res_pos <= dec_context->enc_res_pos) &&
+			(dec_context->meta[dec_context->dec_res_pos].type
+				== TEEI_MEM_REF)) {
 
-		if (dec_context->meta[dpos].len >=
-				dec_context->meta[dpos].ret_len) {
+		if (dec_context->meta[dec_context->dec_res_pos].len >=
+			dec_context->meta[dec_context->dec_res_pos].ret_len) {
 
-			dec->data = dec_context->meta[dpos].usr_addr;
+			dec->data = dec_context->
+				meta[dec_context->dec_res_pos].usr_addr;
 
 			pmem = (u64)(dec_context->ker_res_data_addr)
 				+ dec_context->dec_offset;
@@ -2158,18 +2166,19 @@ int __teei_client_decode_array_space(unsigned long dev_file_id,
 			mem = (char *)addr;
 			Invalidate_Dcache_By_Area((unsigned long)mem,
 				(unsigned long)mem +
-				dec_context->meta[dpos].ret_len);
+				dec_context->
+				meta[dec_context->dec_res_pos].ret_len);
 		} else {
 
 			IMSG_ERROR("Length required %x supplied length %x\n",
-			dec_context->meta[dpos].ret_len,
-			dec_context->meta[dpos].len);
+			dec_context->meta[dec_context->dec_res_pos].ret_len,
+			dec_context->meta[dec_context->dec_res_pos].len);
 
 		}
 
-		dec->len = dec_context->meta[dpos].ret_len;
+		dec->len = dec_context->meta[dec_context->dec_res_pos].ret_len;
 		dec_context->dec_offset += sizeof(u64);
-		dec_context->dec_res_pos = ++dpos;
+		dec_context->dec_res_pos++;
 	}
 
 	else {
@@ -2234,8 +2243,8 @@ int __teei_client_get_decode_type(unsigned long dev_file_id,
 		return retVal;
 
 	if (dec_context->dec_res_pos <= dec_context->enc_res_pos)
-		dec->data =
-		(unsigned long)dec_context->meta[dec_context->dec_res_pos].type;
+		dec->data = (unsigned long)dec_context->
+				meta[dec_context->dec_res_pos].type;
 	else
 		return -EINVAL;
 

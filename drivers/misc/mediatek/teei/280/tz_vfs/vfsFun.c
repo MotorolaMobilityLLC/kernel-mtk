@@ -26,7 +26,6 @@
 #include <linux/uaccess.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
-#include <linux/vmalloc.h>
 #include <teei_ioc.h>
 #include "TEEI.h"
 #include "teei_id.h"
@@ -59,6 +58,7 @@ static dev_t devno;
 
 struct vfs_dev {
 	struct cdev cdev;
+	unsigned char mem[VFS_SIZE];
 	struct semaphore sem;
 };
 
@@ -179,10 +179,14 @@ static ssize_t tz_vfs_read(struct file *filp, char __user *buf,
 
 	vfs_p = (struct TEEI_vfs_command *)daulOS_VFS_share_mem;
 
+#if 1
+
 	if (vfs_p->cmd_size > size)
 		length = size;
 	else
 		length = vfs_p->cmd_size;
+
+#endif
 
 	length = size;
 
@@ -321,7 +325,7 @@ int vfs_init(void)
 		goto class_destroy;
 	}
 
-	vfs_devp = vmalloc(sizeof(struct vfs_dev));
+	vfs_devp = kmalloc(sizeof(struct vfs_dev), GFP_KERNEL);
 
 	if (vfs_devp == NULL) {
 		result = -ENOMEM;
@@ -353,7 +357,7 @@ void vfs_exit(void)
 	device_destroy(driver_class, devno);
 	class_destroy(driver_class);
 	cdev_del(&vfs_devp->cdev);
-	vfree(vfs_devp);
+	kfree(vfs_devp);
 	unregister_chrdev_region(MKDEV(vfs_major, 0), 1);
 }
 
