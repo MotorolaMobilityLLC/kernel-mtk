@@ -126,7 +126,7 @@ static int create_fdrv(struct teei_fdrv *fdrv)
 		free_pages(temp_addr,
 			get_order(ROUND_UP(fdrv->buff_size, SZ_4K)));
 
-		IMSG_ERROR("%s failed (%ld)\n", __func__, retVal);
+		IMSG_ERROR("create_fdrv failed (%ld)\n", retVal);
 	}
 
 	return retVal;

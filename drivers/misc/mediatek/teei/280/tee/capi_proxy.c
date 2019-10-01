@@ -98,8 +98,8 @@ static int capi_params_to_op(struct capi_proxy_param *params,
 			op_param->tmpref.size = memref->size;
 
 			ret = copy_from_user(
-				(void *)(unsigned long)
-				(op_param->tmpref.buffer),
+				(void *)(unsigned long)(op_param->
+					tmpref.buffer),
 				(void *)(unsigned long)(memref->buffer),
 				memref->size);
 			if (ret) {
@@ -186,8 +186,8 @@ static void capi_op_to_params(struct capi_proxy_param *params,
 
 			ret = copy_to_user(
 				(void *)(unsigned long)(memref->buffer),
-				(void *)(unsigned long)
-				(op_param->tmpref.buffer),
+				(void *)(unsigned long)(op_param->
+					tmpref.buffer),
 				memref->size);
 			if (ret)
 				IMSG_ERROR("failed to copy to user\n");

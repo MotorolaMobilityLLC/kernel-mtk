@@ -129,13 +129,7 @@ do {\
 } while (0)
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
-/* microtrust add start */
-#ifdef CONFIG_MTK_UFS_SUPPORT
-#define RPMB_DATA_BUFF_SIZE (1024 * 36)
-#else
 #define RPMB_DATA_BUFF_SIZE (1024 * 24)
-#endif
-/* microtrust add end */
 #define RPMB_ONE_FRAME_SIZE (512)
 static unsigned char *rpmb_buffer;
 #endif
