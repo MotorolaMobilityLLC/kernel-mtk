@@ -25,6 +25,7 @@
 #include <linux/kthread.h>
 #include <linux/errno.h>
 #include <linux/string.h>
+#include <linux/signal.h>
 
 #include "tz_dcih.h"
 #include "tz_dcih_test.h"

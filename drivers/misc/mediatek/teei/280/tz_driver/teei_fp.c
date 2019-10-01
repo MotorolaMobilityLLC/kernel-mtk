@@ -16,6 +16,7 @@
 #include "teei_client_transfer_data.h"
 #define IMSG_TAG "[tz_driver]"
 #include <imsg_log.h>
+#include <linux/vmalloc.h>
 
 unsigned long fp_buff_addr;
 
@@ -27,7 +28,7 @@ unsigned long create_fp_fdrv(int buff_size)
 		IMSG_ERROR("Wrong buffer size %d:", buff_size);
 		return 0;
 	}
-	addr = (unsigned long) kmalloc(buff_size, GFP_KERNEL);
+	addr = (unsigned long) vmalloc(buff_size);
 	if (addr == 0) {
 		IMSG_ERROR("kmalloc buffer failed");
 		return 0;
@@ -43,7 +44,7 @@ struct TEEC_UUID uuid_fp = { 0x7778c03f, 0xc30c, 0x4dd0,
 int send_fp_command(void *buffer, unsigned long size)
 {
 	int ret = 0;
-
+	IMSG_INFO("TEEI start %s\n", __func__);
 	if (buffer == NULL || size < 1)
 		return -1;
 
@@ -68,5 +69,6 @@ release_2:
 		context_initialized = 0;
 	}
 release_1:
+	IMSG_INFO("TEEI end of %s\n", __func__);
 	return ret;
 }
