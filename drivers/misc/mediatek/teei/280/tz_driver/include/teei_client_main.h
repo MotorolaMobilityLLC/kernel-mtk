@@ -28,7 +28,6 @@
 #define TEEI_CONFIG_DEV			"teei_config"
 #define MIN_BC_NUM			(4)
 #define MAX_LC_NUM			(3)
-#define TEEI_CPU_0
 
 extern struct teei_context *teei_create_context(int dev_count);
 extern struct teei_session *teei_create_session(struct teei_context *cont);

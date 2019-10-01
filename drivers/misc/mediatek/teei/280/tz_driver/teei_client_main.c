@@ -12,9 +12,6 @@
  * GNU General Public License for more details.
  */
 
-/* #define TEEI_SWITCH_BIG_CORE */
-#define TZ_PREFER_BIND_CORE (4)
-
 #define IMSG_TAG "[tz_driver]"
 #include <imsg_log.h>
 
@@ -175,8 +172,8 @@ unsigned long message_buff;
 unsigned long bdrv_message_buff;
 unsigned long fdrv_message_buff;
 static int current_cpu_id;
-#if !defined(CONFIG_ARCH_MT6580) && !defined(CONFIG_ARCH_MT6570) && \
-		!defined(CONFIG_MACH_MT6768)
+
+#if !defined(CONFIG_ARCH_MT6580) && !defined(CONFIG_ARCH_MT6570)
 static int tz_driver_cpu_callback(struct notifier_block *nfb,
 		unsigned long action, void *hcpu);
 static struct notifier_block tz_driver_cpu_notifer = {
@@ -444,6 +441,7 @@ static void boot_stage1(unsigned long vfs_addr, unsigned long tlog_addr)
 	rmb();
 }
 
+#define TZ_PREFER_BIND_CORE (4)
 static bool is_prefer_core(int cpu)
 {
 	/* bind to a specific core */
@@ -567,51 +565,6 @@ int tz_move_core(uint32_t cpu_id)
 	return 0;
 }
 
-static int nq_cpu_up_prep(unsigned int cpu)
-{
-#ifdef TEEI_SWITCH_BIG_CORE
-       int retVal = 0;
-       unsigned int sched_cpu = get_current_cpuid();
-
-       IMSG_DEBUG("current_cpu_id = %d power on %d\n",
-                               sched_cpu, cpu);
-
-       if (cpu == TZ_PREFER_BIND_CORE) {
-               IMSG_DEBUG("cpu up: prepare for changing %d to %d\n",
-                       sched_cpu, cpu);
-
-               retVal = add_work_entry(SWITCH_CORE,
-                       (unsigned long)(unsigned long)sched_cpu);
-       }
-       return retVal;
-#else
-       return 0;
-#endif
-}
-
-static int nq_cpu_down_prep(unsigned int cpu)
-{
-	int retVal = 0;
-	unsigned int sched_cpu = get_current_cpuid();
-
-	if (cpu == sched_cpu) {
-		IMSG_DEBUG("cpu down prepare for %d.\n", cpu);
-		retVal = add_work_entry(SWITCH_CORE,
-				(unsigned long)(unsigned long)cpu);
-	} else if (is_prefer_core(cpu))
-		IMSG_DEBUG("cpu down prepare for prefer %d.\n", cpu);
-	else if (!is_prefer_core_binded()
-			&& is_prefer_core_onlined()) {
-		IMSG_DEBUG("cpu down prepare for changing %d %d.\n",
-							sched_cpu, cpu);
-		retVal = add_work_entry(SWITCH_CORE,
-			(unsigned long)(unsigned long)sched_cpu);
-	}
-	return retVal;
-}
-
-#if !defined(CONFIG_ARCH_MT6580) && !defined(CONFIG_ARCH_MT6570) && \
-		!defined(CONFIG_MACH_MT6768)
 static int tz_driver_cpu_callback(struct notifier_block *self,
 		unsigned long action, void *hcpu)
 {
@@ -635,25 +588,11 @@ static int tz_driver_cpu_callback(struct notifier_block *self,
 				(unsigned long)(unsigned long)sched_cpu);
 		}
 		break;
-
-#ifdef TEEI_SWITCH_BIG_CORE
-	case CPU_ONLINE:
-		if (cpu == TZ_PREFER_BIND_CORE) {
-			IMSG_DEBUG("cpu up: prepare for changing %d to %d.\n",
-					sched_cpu, cpu);
-			add_work_entry(SWITCH_CORE,
-				(unsigned long)(unsigned long)sched_cpu);
-		}
-
-		break;
-#endif
-
 	default:
 		break;
 	}
 	return NOTIFY_OK;
 }
-#endif
 
 struct init_cmdbuf_struct {
 	unsigned long phy_addr;
@@ -1020,9 +959,7 @@ static int init_teei_framework(void)
 
 	teei_config_flag = 1;
 	complete(&global_down_lock);
-#ifdef CONFIG_MICROTRUST_FP_DRIVER
 	wake_up(&__fp_open_wq);
-#endif
 	TEEI_BOOT_FOOTPRINT("TEEI BOOT All Completed");
 
 	return TEEI_BOOT_OK;
@@ -1057,14 +994,6 @@ static long teei_config_ioctl(struct file *file,
 			long res;
 			int i;
 
-#ifdef TEEI_SWITCH_BIG_CORE
-                       unsigned int sched_cpu = get_current_cpuid();
-
-                       IMSG_DEBUG("cpu prefer %d\n", TZ_PREFER_BIND_CORE);
-                       retVal = add_work_entry(SWITCH_CORE,
-                               (unsigned long)(unsigned long)sched_cpu);
-#endif
-
 			res = copy_from_user(&param, (void *)arg,
 					sizeof(struct init_param));
 			if (res) {
@@ -1080,14 +1009,10 @@ static long teei_config_ioctl(struct file *file,
 
 			teei_flags = 1;
 
-			TEEI_BOOT_FOOTPRINT("TEEI start to load driver TAs");
-
 			for (i = 0; i < param.uuid_count; i++)
 				tz_load_drv_by_str(param.uuids[i]);
 
 			param.flag = teei_flags;
-
-			TEEI_BOOT_FOOTPRINT("TEEI end of load driver TAs");
 
 			res = copy_to_user((void *)arg, &param,
 					sizeof(struct init_param));
@@ -1923,7 +1848,7 @@ void show_utdriver_lock_status(void)
 		up(&api_lock);
 	}
 
-#ifdef CONFIG_MICROTRUST_FP_DRIVER
+
 	retVal = down_trylock(&fp_api_lock);
 	if (retVal == 1)
 		IMSG_PRINTK("[%s][%d] fp_api_lock is down\n",
@@ -1933,7 +1858,6 @@ void show_utdriver_lock_status(void)
 							__func__, __LINE__);
 		up(&fp_api_lock);
 	}
-#endif
 
 	retVal = down_trylock(&keymaster_api_lock);
 	if (retVal == 1)
@@ -1985,13 +1909,15 @@ void show_utdriver_lock_status(void)
 static ssize_t teei_client_dump(struct file *filp,
 				char __user *buf, size_t size, loff_t *ppos)
 {
-	IMSG_PRINTK("[%s][%d] begin.....\n", __func__, __LINE__);
+	IMSG_PRINTK("[%s][%d] teei_client_dump begin.....\n",
+							__func__, __LINE__);
 
 	show_utdriver_lock_status();
 
 	add_work_entry(NT_DUMP_T, 0);
 
-	IMSG_PRINTK("[%s][%d] finished.....\n", __func__, __LINE__);
+	IMSG_PRINTK("[%s][%d] teei_client_dump finished.....\n",
+							__func__, __LINE__);
 
 	return 0;
 }
@@ -2065,9 +1991,7 @@ static const struct file_operations teei_client_fops = {
 #else
 	.unlocked_ioctl = teei_client_ioctl,
 #endif
-#ifdef CONFIG_COMPAT
 	.compat_ioctl = teei_client_ioctl,
-#endif
 	.open = teei_client_open,
 	.mmap = teei_client_mmap,
 	.read = teei_client_dump,
@@ -2233,9 +2157,7 @@ static int teei_client_init(void)
 		IMSG_DEBUG("init stage : current_cpu_id = %d\n",
 							current_cpu_id);
 		/* break when first active cpu has been selected */
-#ifdef TEEI_CPU_0
 		break;
-#endif
 	}
 
 	if (read_cpuid_mpidr() & MPIDR_MT_BITMASK)
@@ -2264,10 +2186,6 @@ static int teei_client_init(void)
 
 #if defined(CONFIG_ARCH_MT6580) || defined(CONFIG_ARCH_MT6570)
 	/* Core migration not supported */
-#elif defined(CONFIG_MACH_MT6768)
-	cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN,
-				"tee/teei:online",
-				nq_cpu_up_prep, nq_cpu_down_prep);
 #else
 	register_cpu_notifier(&tz_driver_cpu_notifer);
 
@@ -2335,3 +2253,4 @@ MODULE_VERSION("1.00");
 module_init(teei_client_init);
 
 module_exit(teei_client_exit);
+
