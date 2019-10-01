@@ -73,8 +73,53 @@
 };
 
 &i2c1 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* magnetometer sensor */
+	memsic@30 {
+		compatible = "mediatek,mmc5603";
+		reg = <0x30>;
+		status = "okay";
+
+		i2c_num = <1>;
+		i2c_addr = <0x30 0 0 0>;
+		direction = <1>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		is_batch_supported = <0>;
+	};
+
+	gsensor_m:gsensor_mc34XX@4c {
+		compatible = "mediatek,gsensor_MC34XX";
+		reg = <0x4c>;
+		status = "okay";
+
+		i2c_num	= <1>;
+		i2c_addr = <0x4c 0 0 0>;
+		direction = <2>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	};
+
+	gsensor_k:gsensor_kxtj2@0e {
+		compatible = "mediatek,gsensor_kxtj2";
+		reg = <0x0e>;
+		status = "okay";
+
+		i2c_num	= <1>;
+		i2c_addr = <0x0e 0 0 0>;
+		direction = <6>;
+		power_id = <0xffff>;
+		power_vol = <0>;
+		firlen = <16>;
+		is_batch_supported = <1>;
+	};
+
 	alsps@46 {
-                compatible = "mediatek,alps_stk3a5x";
+                compatible = "mediatek,alsps";
                 reg = <0x46>;
                 status = "okay";
 
@@ -114,7 +159,82 @@
                 als_ch1_expect                =  <800>;
                 // 
         };
+
+	sar@28 {
+		compatible = "mediatek,sar";
+		reg = <0x28>;
+
+		pinctrl-names = "pin_default", "pin_cfg";
+		pinctrl-0 = <&sar_intpin_default>;
+		pinctrl-1 = <&sar_intpin_cfg>;
+
+		Semtech,reg-num = <46>; /* total registers number to initialize*/
+		Semtech,reg-init  = /bits/ 8 < 0x10 0x16
+						0x20 0x00
+						0x23 0x00
+						0x24 0x44
+						0x26 0x01
+						0x27 0x44
+						0x28 0x01 /*PH0 to CS0 input*/
+						0x29 0x10
+						0x2A 0x19 /*PH2 CS2-input,CS1-dync,CS0-HZ*/
+						0x2B 0x00
+						0x2C 0x12
+						0x2D 0x08
+						0x30 0x09
+						0x31 0x09
+						0x32 0x08
+						0x33 0x20
+						0x34 0x0C
+						0x35 0x00
+						0x36 0x1B
+						0x37 0x1B
+						0x40 0x00
+						0x41 0x00
+						0x42 0x00
+						0x43 0x00
+						0x44 0x00
+						0x45 0x05
+						0x46 0x00
+						0x47 0x00
+						0x48 0x00
+						0x49 0x80
+						0x4A 0x00
+						0x4B 0x00
+						0x4C 0x00
+						0x4D 0x00
+						0x4E 0x80
+						0x4F 0x0C
+						0x50 0x00
+						0x51 0x70
+						0x52 0x20
+						0x53 0xE1
+						0x54 0xF0
+						0x05 0x70
+						0x06 0x00
+						0x07 0x00
+						0x08 0x00
+						0x11 0x24>;
+	};
 };
+
+
+&pio {
+	sar_intpin_cfg: sarpincfg {
+
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <0>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_01>;
+		};
+	};
+
+	sar_intpin_default: sardefaultcfg {
+
+	};
+};
+
+
 &i2c3 {
 	ext_buck_lp4@57 {
 		regulator-name ="ext_buck_vdd2";
@@ -369,11 +489,13 @@
 	accdet_pins_default: accdetdefault {
 	};
 	accdet_pins_eint_as_int: accdeteint@0 {
+#if 0
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <0>;
 			bias-disable;
 		};
+#endif
 	};
 };
 /* accdet end */
