@@ -33,4 +33,6 @@ int get_dcih_notify_test_result(void);
 void start_dcih_wait_notify_test(uint32_t driver_id);
 int get_dcih_wait_notify_test_result(void);
 
+extern int send_sig(int sig, struct task_struct *p, int priv);
+
 #endif
