@@ -36,6 +36,8 @@
 #endif
 
 #include "lcm_drv.h"
+#include "tpd.h"
+
 #ifdef BUILD_LK
 #include <platform/upmu_common.h>
 #include <platform/mt_gpio.h>
@@ -47,6 +49,7 @@
 #else
 #include "disp_dts_gpio.h"
 #endif
+
 
 #ifdef BUILD_LK
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
@@ -260,9 +263,18 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	SET_RESET_PIN(0);
-	SET_RESET_PIN(1);
+	tpd_gpio_output(0, 1);
+	MDELAY(5);
+	tpd_gpio_output(0, 0);
+    MDELAY(5);
+    tpd_gpio_output(0, 1);
+	MDELAY(5);
 
+	SET_RESET_PIN(0);
+	MDELAY(20);
+	SET_RESET_PIN(1);
+	MDELAY(20);
+//#endif
 	LCM_LOGI("%s:ft8006p lcm reset done\n",__func__);
 }
 
