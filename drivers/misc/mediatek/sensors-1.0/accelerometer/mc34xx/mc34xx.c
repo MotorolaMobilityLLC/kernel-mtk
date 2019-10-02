@@ -54,7 +54,7 @@
 #define ontim_debug_info
 #ifdef ontim_debug_info
 #include <ontim/ontim_dev_dgb.h>
-static char mc34xx_prox_version[]="MC3433-P-1.0";
+static char mc34xx_prox_version[]="MC3433-P";
 static char mc34xx_prox_vendor_name[20]= {0}; 
 DEV_ATTR_DECLARE(gsensor)
 	DEV_ATTR_DEFINE("version",mc34xx_prox_version)
@@ -1959,15 +1959,15 @@ _I2C_AUTO_PROBE_RECHECK_:
 			GSE_LOG("[%s] s_bHWID=%02X,s_bPCODE=%02X\n", __func__, s_bHWID, s_bPCODE);
 #ifdef ontim_debug_info
 			if (s_bPCODE == MC34XX_PCODE_3416) {
-				sprintf(&mc34xx_prox_vendor_name[0], "1-Mcube-MC3416-P");
+				sprintf(&mc34xx_prox_vendor_name[0], "MC3416-P");
 			} else if (s_bPCODE == MC34XX_PCODE_3436) {
-				sprintf(&mc34xx_prox_vendor_name[0], "1-Mcube-MC3436-P");
+				sprintf(&mc34xx_prox_vendor_name[0], "MC3436-P");
 			} else if (s_bPCODE == MC34XX_PCODE_3413) {
-				sprintf(&mc34xx_prox_vendor_name[0], "1-Mcube-MC3413-P");
+				sprintf(&mc34xx_prox_vendor_name[0], "MC3413-P");
 			} else if (s_bPCODE == MC34XX_PCODE_3433) {
-				sprintf(&mc34xx_prox_vendor_name[0], "1-Mcube-MC3433-P");
+				sprintf(&mc34xx_prox_vendor_name[0], "MC3433-P");
 			} else {
-				sprintf(&mc34xx_prox_vendor_name[0], "1-Mcube-Other");
+				sprintf(&mc34xx_prox_vendor_name[0], "Mcube-Other");
 			}
 			GSE_LOG("chip=0x%x, vendor=%s\n", s_bPCODE, mc34xx_prox_vendor_name);
 #endif
@@ -2168,6 +2168,11 @@ static int mc34xx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 
 	GSE_LOG("mc34xx_i2c_probe\n");
 
+#ifdef ontim_debug_info
+	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+#endif
+
+
 	if (MC34XX_RETCODE_SUCCESS != mc34xx_i2c_auto_probe(client))
 		goto exit;
 
@@ -2256,7 +2261,6 @@ static int mc34xx_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	s_nInitFlag = MC34XX_INIT_SUCC;
 
 #ifdef ontim_debug_info
-	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
 	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
 #endif
 	return 0;
