@@ -886,6 +886,53 @@
 	status = "okay";
 
 };
+ /* flashlight begin */
+ 
+&pio{
+     flashlight_pin_default: default{};
+ 
+     flashlight_pin_hwen_high: hwen_high{
+         pins_cmd_dat {
+             pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+             slew-rate = <1>;
+             output-high;
+         };
+    };
+ 
+     flashlight_pin_hwen_low: hwen_low{
+         pins_cmd_dat{
+             pinmux = <PINMUX_GPIO151__FUNC_GPIO151>;
+             slew-rate = <1>;
+            output-low;
+         };
+     };
+     flashlight_pin_strobe_high: strobe_high{
+         pins_cmd_dat {
+             pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+             slew-rate = <1>;
+             output-high;
+         };
+     };
+ 
+     flashlight_pin_strobe_low: strobe_low{
+         pins_cmd_dat{
+             pinmux = <PINMUX_GPIO150__FUNC_GPIO150>;
+             slew-rate = <1>;
+             output-low;
+         };
+     };
+};
+ 
+&flashlights_aw3643{
+     pinctrl-names = "default", "hwen_high", "hwen_low", "strobe_high", "strobe_low";
+     pinctrl-0 = <&flashlight_pin_default>;
+     pinctrl-1 = <&flashlight_pin_hwen_high>;
+     pinctrl-2 = <&flashlight_pin_hwen_low>;
+     pinctrl-3 = <&flashlight_pin_strobe_high>;
+     pinctrl-4 = <&flashlight_pin_strobe_low>;
+     status = "okay";
+};
+
 
 &pio {
         alsps_intpin_cfg: alspspincfg {
