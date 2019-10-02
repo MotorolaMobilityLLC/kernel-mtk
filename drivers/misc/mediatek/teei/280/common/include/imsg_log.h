@@ -20,7 +20,7 @@
 #endif
 
 enum {
-	IMSG_LV_DISBLE = 0,
+	IMSG_LV_DISABLE = 0,
 	IMSG_LV_ERROR,
 	IMSG_LV_WARN,
 	IMSG_LV_INFO,

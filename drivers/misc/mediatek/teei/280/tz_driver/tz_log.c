@@ -103,7 +103,7 @@ static void tz_driver_dump_logs(struct tz_log_state *s)
 		 */
 
 		if (likely(is_teei_ready()))
-			IMSG_PRINTK_DEBUG("[TZ_LOG] %s", s->line_buffer);
+			IMSG_PRINTK("[TZ_LOG] %s", s->line_buffer);
 		else
 			IMSG_PRINTK("[TZ_LOG] %s", s->line_buffer);
 
