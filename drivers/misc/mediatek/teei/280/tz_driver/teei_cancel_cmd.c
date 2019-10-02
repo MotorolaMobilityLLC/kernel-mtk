@@ -83,7 +83,7 @@ int send_cancel_command(unsigned long share_memory_size)
 	down(&fdrv_lock);
 	/*ut_pm_mutex_lock(&pm_mutex);*/
 	down(&smc_lock);
-	IMSG_DEBUG("send_cancel_command start\n");
+	IMSG_DEBUG("%s start\n", __func__);
 
 	if (teei_config_flag == 1)
 		complete(&global_down_lock);
@@ -105,7 +105,7 @@ int send_cancel_command(unsigned long share_memory_size)
 	}
 
 	down(&fdrv_sema);
-	IMSG_DEBUG("send_cancel_command end\n");
+	IMSG_DEBUG("%s end\n", __func__);
 
 	Invalidate_Dcache_By_Area((unsigned long)cancel_message_buff,
 				cancel_message_buff + CANCEL_MESSAGE_SIZE);
