@@ -96,17 +96,23 @@ static int tee_open(struct inode *inode, struct file *filp)
 {
 	struct tee_context *ctx;
 
+	/* IMSG_INFO("TEEI start tee_open.\n"); */
+
 	ctx = teedev_open(container_of(inode->i_cdev, struct tee_device, cdev));
 	if (IS_ERR(ctx))
 		return PTR_ERR(ctx);
 
 	filp->private_data = ctx;
+
 	return 0;
 }
 
 static int tee_release(struct inode *inode, struct file *filp)
 {
+	/* IMSG_INFO("TEEI start tee_release.\n"); */
+
 	teedev_close_context(filp->private_data);
+
 	return 0;
 }
 
@@ -666,35 +672,59 @@ static long tee_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct tee_context *ctx = filp->private_data;
 	void __user *uarg = (void __user *)arg;
+	long retVal = 0;
+	/* char comm[TASK_COMM_LEN]; */
+
+	/*
+	 *IMSG_INFO("TEEI %s start tee_ioctl cmd = %u.\n",
+	 *			get_task_comm(comm, current), cmd);
+	 */
 
 	switch (cmd) {
 	case TEE_IOC_VERSION:
-		return tee_ioctl_version(ctx, uarg);
+		retVal = tee_ioctl_version(ctx, uarg);
+		break;
 	case TEE_IOC_SHM_ALLOC:
-		return tee_ioctl_shm_alloc(ctx, uarg);
+		retVal = tee_ioctl_shm_alloc(ctx, uarg);
+		break;
 #ifdef CONFIG_MICROTRUST_TEST_DRIVERS
 	case TEE_IOC_SHM_KERN_OP:
-		return tee_ioctl_shm_kern_op(ctx, uarg);
+		retVal = tee_ioctl_shm_kern_op(ctx, uarg);
+		break;
 	case TEE_IOC_CAPI_PROXY:
-		return tee_ioctl_capi_proxy(ctx, uarg);
+		retVal = tee_ioctl_capi_proxy(ctx, uarg);
+		break;
 #endif
 	case TEE_IOC_OPEN_SESSION:
-		return tee_ioctl_open_session(ctx, uarg);
+		retVal = tee_ioctl_open_session(ctx, uarg);
+		break;
 	case TEE_IOC_INVOKE:
-		return tee_ioctl_invoke(ctx, uarg);
+		retVal = tee_ioctl_invoke(ctx, uarg);
+		break;
 	case TEE_IOC_CANCEL:
-		return tee_ioctl_cancel(ctx, uarg);
+		retVal = tee_ioctl_cancel(ctx, uarg);
+		break;
 	case TEE_IOC_CLOSE_SESSION:
-		return tee_ioctl_close_session(ctx, uarg);
+		retVal = tee_ioctl_close_session(ctx, uarg);
+		break;
 	case TEE_IOC_SUPPL_RECV:
-		return tee_ioctl_supp_recv(ctx, uarg);
+		retVal = tee_ioctl_supp_recv(ctx, uarg);
+		break;
 	case TEE_IOC_SUPPL_SEND:
-		return tee_ioctl_supp_send(ctx, uarg);
+		retVal = tee_ioctl_supp_send(ctx, uarg);
+		break;
 	case TEE_IOC_SET_HOSTNAME:
-		return tee_ioctl_set_hostname(ctx, uarg);
+		retVal = tee_ioctl_set_hostname(ctx, uarg);
+		break;
 	default:
-		return -EINVAL;
+		retVal = -EINVAL;
 	}
+
+	/*
+	 *IMSG_INFO("TEEI %s end of tee_ioctl cmd = %u.\n",
+	 *			get_task_comm(comm, current), cmd);
+	 */
+	return retVal;
 }
 
 static const struct file_operations tee_fops = {
@@ -702,7 +732,9 @@ static const struct file_operations tee_fops = {
 	.open = tee_open,
 	.release = tee_release,
 	.unlocked_ioctl = tee_ioctl,
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = tee_ioctl,
+#endif
 };
 
 static void tee_release_device(struct device *dev)
@@ -959,7 +991,7 @@ EXPORT_SYMBOL_GPL(tee_get_drvdata);
 struct match_dev_data {
 	struct tee_ioctl_version_data *vers;
 	const void *data;
-	int (*match)(struct tee_ioctl_version_data *, const void *);
+	int (*match)(struct tee_ioctl_version_data *vars, const void *data);
 };
 
 static int match_dev(struct device *dev, const void *data)

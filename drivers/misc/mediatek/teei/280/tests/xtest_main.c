@@ -138,7 +138,7 @@ int kernel_ca_test(struct tzdrv_test_data *param)
 	TEEC_InitializeContext(BTA_LOADER_HOSTNAME, &xtest_isee_ctx_1000);
 	ret = my_run_case(cmd - 1000);
 	TEEC_FinalizeContext(&xtest_isee_ctx_1000);
-	IMSG_INFO("kernel_ca_test(%d)=(0x%x)\n", cmd, ret);
+	IMSG_INFO("%s (%d)=(0x%x)\n", __func__, cmd, ret);
 	return ret;
 }
 
@@ -150,6 +150,6 @@ int secure_drv_test(struct tzdrv_test_data *param)
 	TEEC_InitializeContext(BTA_LOADER_HOSTNAME, &xtest_isee_ctx_3000);
 	ret = my_run_case(cmd);
 	TEEC_FinalizeContext(&xtest_isee_ctx_3000);
-	IMSG_INFO("secure_drv_test(%d)=(0x%x)\n", cmd, ret);
+	IMSG_INFO("%s (%d)=(0x%x)\n", __func__, cmd, ret);
 	return ret;
 }
