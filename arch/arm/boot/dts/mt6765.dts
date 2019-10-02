@@ -667,6 +667,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 	goodix_fp: fingerprint {
 		compatible = "mediatek,goodix-fp";
 	};
+	fingerprint_fpsensor: fingerprint_fpsensor {
+        compatible = "mediatek,fpsensor_pinctrl";
+		//interrupt-parent = <&gic>;
+		//interrupts = <GIC_SPI 174 IRQ_TYPE_LEVEL_LOW>;
+		interrupts = <GIC_SPI 5 IRQ_TYPE_LEVEL_LOW>;
+		debounce = <2 0>;
+	};
 
 	mt6357_gauge {
 		compatible = "mediatek,mt6357_gauge";
@@ -1808,6 +1815,13 @@ firmware_class.path=/vendor/firmware loop.max_part=7";
 				<&topckgen CLK_TOP_SPI_SEL>,
 				<&infracfg_ao CLK_IFR_SPI1>;
 		clock-names = "parent-clk", "sel-clk", "spi-clk";
+
+        spidev@0 {
+			compatible = "mediatek,fpsensor";
+			spi-max-frequency = <500000>;
+			reg = <0>;
+			status = "ok";
+		};
 	};
 
 	spi2: spi@11012000 {
