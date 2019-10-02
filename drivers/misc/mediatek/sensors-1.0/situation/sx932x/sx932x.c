@@ -35,6 +35,21 @@
 
 #include "sx932x.h" 	/* main struct, interrupt,init,pointers */
 
+/*****************************************************************************
+ *** ontim gsensor hwinfo
+ *****************************************************************************/
+ #define ontim_debug_info
+#ifdef ontim_debug_info
+#include <ontim/ontim_dev_dgb.h>
+static char sx932x_version[]="sx932x";
+static char sx932x_vendor_name[20]="sx932x";
+    DEV_ATTR_DECLARE(sar_sensor)
+    DEV_ATTR_DEFINE("version",sx932x_version)
+    DEV_ATTR_DEFINE("vendor",sx932x_vendor_name)
+    DEV_ATTR_DECLARE_END;
+    ONTIM_DEBUG_DECLARE_AND_INIT(sar_sensor,sar_sensor,8);
+#endif
+
 
 #define IDLE			0
 #define ACTIVE			1
@@ -831,6 +846,10 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 
 	SX932X_FUN();
 
+#ifdef ontim_debug_info
+	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+#endif
+
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_READ_WORD_DATA)) {
 		SX932X_ERR("Check i2c functionality.Fail!\n");
 		err = -EIO;
@@ -975,6 +994,11 @@ static int sx932x_probe(struct i2c_client *client, const struct i2c_device_id *i
 	disable_irq(this->irq);
 	sx932x_situation_init();
 	sx932x_init_flag = 0;
+
+#ifdef ontim_debug_info
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+#endif
+
 	SX932X_LOG("sx932x_probe() Done\n");
 
 	return 0;
