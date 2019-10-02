@@ -15,7 +15,7 @@ config CUSTOM_KERNEL_ACCELEROMETER
 	  If the platform is supported for acceleometer, this
 	  configuration should be configured, and the acceleometer
 	  driver configuration should be configured as well.
-
+#open accelhub for sensorhub
 #source "drivers/misc/mediatek/sensors-1.0/accelerometer/accelhub/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/accelerometer/bmi160-i2c/Kconfig"
 source "drivers/misc/mediatek/sensors-1.0/accelerometer/mpu6050g/Kconfig"
