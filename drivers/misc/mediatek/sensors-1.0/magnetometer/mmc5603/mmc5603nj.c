@@ -40,6 +40,22 @@
 
 #include "mag.h"
 
+/*****************************************************************************
+ *** ontim gsensor hwinfo
+ *****************************************************************************/
+#define ontim_debug_info
+#ifdef ontim_debug_info
+#include <ontim/ontim_dev_dgb.h>
+static char mc34xx_prox_version[]="mmc5603nj";
+static char mc34xx_prox_vendor_name[20]= "mmc5603nj"; 
+DEV_ATTR_DECLARE(msensor)
+	DEV_ATTR_DEFINE("version",mc34xx_prox_version)
+	DEV_ATTR_DEFINE("vendor",mc34xx_prox_vendor_name)
+	DEV_ATTR_DECLARE_END;
+	ONTIM_DEBUG_DECLARE_AND_INIT(msensor,msensor,8);
+#endif
+
+
 /*-------------------------MT6516&MT6573 define-------------------------------*/
 #define POWER_NONE_MACRO MT65XX_POWER_NONE
 
@@ -1173,6 +1189,10 @@ static int mmc5603nj_i2c_probe(struct i2c_client *client, const struct i2c_devic
 
 	MEMSIC_INFO("%s: enter probe,driver version=%s\n", __func__, DRIVER_VERSION);
 
+#ifdef ontim_debug_info
+	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+#endif
+
 	client->addr = 0x30;
 	data = kmalloc(sizeof(struct mmc5603nj_i2c_data), GFP_KERNEL);
 	if (!data)
@@ -1270,6 +1290,10 @@ static int mmc5603nj_i2c_probe(struct i2c_client *client, const struct i2c_devic
 		MEMSIC_ERR("attach fail = %d\n", err);
 		goto exit_kfree;
 	}
+
+#ifdef ontim_debug_info
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+#endif
 
 	MEMSIC_INFO("mmc5603NJ IIC probe successful !");
 
