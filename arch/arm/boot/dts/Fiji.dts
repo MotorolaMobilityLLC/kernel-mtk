@@ -216,7 +216,6 @@
 
 &pio {
 	sar_intpin_cfg: sarpincfg {
-
 		pins_cmd_dat {
 			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
 			slew-rate = <0>;
@@ -225,7 +224,11 @@
 	};
 
 	sar_intpin_default: sardefaultcfg {
-
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO9__FUNC_GPIO9>;
+			slew-rate = <0>;
+			output-high;
+		};
 	};
 };
 

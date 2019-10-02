@@ -375,6 +375,14 @@ static DEFINE_MUTEX(run_cali_mutex);
 struct pinctrl *pinctrl;
 struct pinctrl_state *pins_v3venable;
 struct pinctrl_state *pins_v3vdisable;
+
+static unsigned int current_tp = 0;
+static unsigned int current_color_temp=CWF_TEMP;
+//static unsigned int current_color_temp_first = 0;
+static unsigned int als_level[TP_COUNT][TEMP_COUNT][C_CUST_ALS_LEVEL];
+static unsigned int als_value[C_CUST_ALS_LEVEL] = {0};
+
+
 /*----------------------------------------------------------------------------*/
 int stk3a5x_get_addr(struct stk3a5x_i2c_addr *addr)
 {
@@ -611,7 +619,6 @@ int stk3a5x_read_als(struct i2c_client *client, u16 *data)
 	}
 
 	ret = stk3a5x_master_recv(client, obj->addr.data1_als, buf, 0x2);
-
 	if (ret < 0)
 	{
 		APS_DBG("error: %d\n", ret);
@@ -1203,7 +1210,7 @@ static int stk3a5x_enable_als(struct i2c_client *client, int enable)
 		APS_LOG("enable als (%d)\n", enable);
 	}
 
-#if 1
+#if 0
 	APS_LOG("%s:show all reg\n", __FUNCTION__);
 	show_allreg(); //for debug
 #endif
@@ -2380,7 +2387,7 @@ static int stk3a5x_init_client(struct i2c_client *client)
 	struct stk3a5x_priv *obj = i2c_get_clientdata(client);
 	int err;
 	int ps_ctrl;
-	uint8_t buffer = 0x0;
+	//uint8_t buffer = 0x0;
 	//u8 int_status;
 	APS_LOG("%s: In\n", __FUNCTION__);
 
@@ -2455,6 +2462,9 @@ static int stk3a5x_init_client(struct i2c_client *client)
 		APS_ERR("write wait error: %d\n", err);
 		return err;
 	}
+
+	//disable by zhuhui, 20191002
+#if 0
 	//INTEL PEERS
 	stk3a5x_master_send(client, STK_INTELLI_WAIT_PS_REG, &obj->intell_val, 1);
 
@@ -2483,7 +2493,7 @@ static int stk3a5x_init_client(struct i2c_client *client)
 
 	buffer = 0x82;
 	stk3a5x_master_send(client, 0xF6, &buffer, 1);
-	
+#endif
 #ifndef STK_TUNE0
 
 	if ((err = stk3a5x_write_ps_high_thd(client, atomic_read(&obj->ps_high_thd_val))))
@@ -2987,7 +2997,7 @@ static ssize_t stk3a5x_show_alslv(struct device_driver *ddri, char *buf)
 		return 0;
 	}
 
-	for (idx = 0; idx < stk3a5x_obj->als_level_num; idx++)
+	for (idx = 0; idx < C_CUST_ALS_LEVEL/*stk3a5x_obj->als_level_num*/; idx++)
 	{
 		//len += scnprintf(buf + len, PAGE_SIZE - len, "%d ", stk3a5x_obj->hw->als_level[idx]);
 		len += scnprintf(buf + len, PAGE_SIZE - len, "%d ", stk3a5x_obj->hw->als_level[ALS_LEVEL_TEMP_DEFAULT][ALS_LEVEL_TEMP_DEFAULT][idx]);
@@ -3004,6 +3014,7 @@ static ssize_t stk3a5x_store_alslv(struct device_driver *ddri, const char *buf, 
 		APS_ERR("stk3a5x_obj is null!!\n");
 		return 0;
 	}
+/*
 	else if (!strcmp(buf, "def"))
 	{
 		memcpy(stk3a5x_obj->als_level, stk3a5x_obj->hw->als_level, sizeof(stk3a5x_obj->als_level));
@@ -3013,7 +3024,7 @@ static ssize_t stk3a5x_store_alslv(struct device_driver *ddri, const char *buf, 
 	{
 		APS_ERR("invalid format: '%s'\n", buf);
 	}
-
+*/
 	return count;
 }
 /*----------------------------------------------------------------------------*/
@@ -3339,7 +3350,9 @@ static int stk3a5x_get_als_value(struct stk3a5x_priv *obj, u16 als)
 {
 	int idx;
 	int invalid = 0;
+	unsigned int lum;
 
+#if 0
 	for (idx = 0; idx < obj->als_level_num; idx++)
 	{
 		if (als < obj->hw->als_level[ALS_LEVEL_TEMP_DEFAULT][ALS_LEVEL_TEMP_DEFAULT][idx])
@@ -3387,6 +3400,55 @@ static int stk3a5x_get_als_value(struct stk3a5x_priv *obj, u16 als)
 
 		return -1;
 	}
+#else
+	for(idx = 0; idx < C_CUST_ALS_LEVEL; idx++)
+	{
+		if(als < als_level[current_tp][current_color_temp][idx])
+		{
+			//APS_DBG("als=%d ,als_level = %d\n",als,als_level[current_tp][current_color_temp][idx]);
+			break;
+		}
+	}
+
+	if(idx >= C_CUST_ALS_LEVEL)
+	{
+		APS_ERR("exceed range  idx =%d\n",idx);
+		idx = C_CUST_ALS_LEVEL - 1;
+	}
+
+	if(1 == atomic_read(&obj->als_deb_on))
+	{
+		unsigned long endt = atomic_read(&obj->als_deb_end);
+		if(time_after(jiffies, endt))
+		{
+			atomic_set(&obj->als_deb_on, 0);
+		}
+
+		if(1 == atomic_read(&obj->als_deb_on))
+		{
+			invalid = 1;
+		}
+	}
+
+	if(!invalid)
+	{
+		lum=(als_value[idx]-als_value[idx-1])*(als-als_level[current_tp][current_color_temp][idx-1])/
+                        (als_level[current_tp][current_color_temp][idx]-als_level[current_tp][current_color_temp][idx-1]);
+		lum += als_value[idx-1];
+
+		//APS_DBG("ALS: %05d => %05d\n", als, lum);
+
+		return lum;
+	}
+	else
+	{
+		if(atomic_read(&obj->trace) & STK_TRC_CVT_ALS)
+		{
+			APS_ERR("ALS: %05d => %05d (-1)\n", als, als_value[idx]);//obj->hw->als_value[idx]
+		}
+		return -1;
+	}
+#endif
 }
 /*----------------------------------------------------------------------------*/
 static int stk3a5x_get_ps_value_only(struct stk3a5x_priv *obj, u16 ps)
@@ -4036,10 +4098,10 @@ static int stk3a5x_init_reg(struct i2c_client *client)
 	i2c_config_reg = STK_PS_PRS2 | STK_PS_GAIN8 | STK_PS_IT100;
 	atomic_set(&obj->psctrl_val, i2c_config_reg);
 
-	i2c_config_reg = STK_ALS_PRS1 | STK_ALS_GAIN64 | STK_ALS_IT100;
+	i2c_config_reg = STK_ALS_PRS1 | STK_ALS_GAIN4 | STK_ALS_IT50;
 	atomic_set(&obj->alsctrl_val, i2c_config_reg);
 
-	i2c_config_reg = STK_ALSC_GAIN16;
+	i2c_config_reg = STK_ALSC_GAIN4;
 	atomic_set(&obj->alsctrl2_val, i2c_config_reg);
 
 	obj->ledctrl_val = STK_LED_100mA; // 0x60 = 100mA
@@ -4132,12 +4194,19 @@ static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 
 	obj->enable = 0;
 	obj->pending_intr = 0;
+/*	
 	obj->als_level_num = sizeof(obj->hw->als_level) / sizeof(obj->hw->als_level[0]);
 	obj->als_value_num = sizeof(obj->hw->als_value) / sizeof(obj->hw->als_value[0]);
 	BUG_ON(sizeof(obj->als_level) != sizeof(obj->hw->als_level));
 	memcpy(obj->als_level, obj->hw->als_level, sizeof(obj->als_level));
 	BUG_ON(sizeof(obj->als_value) != sizeof(obj->hw->als_value));
 	memcpy(obj->als_value, obj->hw->als_value, sizeof(obj->als_value));
+*/
+	BUG_ON(sizeof(als_level) != sizeof(obj->hw->als_level));
+	memcpy(als_level, obj->hw->als_level, sizeof(als_level));
+	BUG_ON(sizeof(als_value) != sizeof(obj->hw->als_value));
+	memcpy(als_value, obj->hw->als_value, sizeof(als_value));
+	
 	atomic_set(&obj->i2c_retry, 3);
 
 	if (atomic_read(&obj->state_val) & STK_STATE_EN_ALS_MASK)
