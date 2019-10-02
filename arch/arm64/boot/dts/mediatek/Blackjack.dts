@@ -160,6 +160,94 @@
 };
 /* TOUCH end */
 
+&i2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	lcd_i2c_bias_enn_enp@3e{
+		compatible = "mediatek,I2C_LCD_BIAS";
+		reg = <0x3e>;
+		status = "okay";
+	};
+};
+
+/* DISPSYS GPIO standardization */
+&pio {
+	mtkfb_pins_mode_te_gpio: mode_te_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_mode_te_te: mode_te_te {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO44__FUNC_DSI_TE>;
+		};
+	};
+
+	mtkfb_pins_lcm_reset0: lcm_rst_out0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+
+	mtkfb_pins_lcm_reset1: lcm_rst_out1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO45__FUNC_GPIO45>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enp0: lcd_bias_enp0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enp1: lcd_bias_enp1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO172__FUNC_GPIO172>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+	mtkfb_pins_lcd_bias_enn0: lcd_bias_enn0_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-low;
+		};
+	};
+	mtkfb_pins_lcd_bias_enn1: lcd_bias_enn1_gpio {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO173__FUNC_GPIO173>;
+			slew-rate = <1>;
+			output-high;
+		};
+	};
+
+};
+
+&mtkfb {
+	pinctrl-names = "mode_te_gpio", "mode_te_te", "lcm_rst_out0_gpio",
+		"lcm_rst_out1_gpio","lcd_bias_enp0_gpio", "lcd_bias_enp1_gpio", "lcd_bias_enn0_gpio", "lcd_bias_enn1_gpio";
+	pinctrl-0 = <&mtkfb_pins_mode_te_gpio>;
+	pinctrl-1 = <&mtkfb_pins_mode_te_te>;
+	pinctrl-2 = <&mtkfb_pins_lcm_reset0>;
+	pinctrl-3 = <&mtkfb_pins_lcm_reset1>;
+	pinctrl-4 = <&mtkfb_pins_lcd_bias_enp0>;
+	pinctrl-5 = <&mtkfb_pins_lcd_bias_enp1>;
+	pinctrl-6 = <&mtkfb_pins_lcd_bias_enn0>;
+	pinctrl-7 = <&mtkfb_pins_lcd_bias_enn1>;
+	status = "okay";
+};
+/* DISPSYS GPIO standardization end */
 /* CONSYS GPIO standardization */
 &pio {
 	consys_pins_default: consys_default {
