@@ -81,6 +81,22 @@
 
 #define STK3A5X_DRIVER_VERSION          "v3 20190912 for android9.x"
 
+/*****************************************************************************
+ *** ontim gsensor hwinfo
+ *****************************************************************************/
+#define ontim_debug_info
+#ifdef ontim_debug_info
+#include <ontim/ontim_dev_dgb.h>
+static char stk3x1x_prox_version[]="stk33562";
+static char stk3x1x_prox_vendor_name[20]="stk33562";
+    DEV_ATTR_DECLARE(als_prox)
+    DEV_ATTR_DEFINE("version",stk3x1x_prox_version)
+    DEV_ATTR_DEFINE("vendor",stk3x1x_prox_vendor_name)
+    DEV_ATTR_DECLARE_END;
+    ONTIM_DEBUG_DECLARE_AND_INIT(als_prox,als_prox,8);
+#endif
+
+
 #define STK_PS_POLLING_LOG
 #define STK_PS_DEBUG
 #define STK_TUNE0
@@ -4132,6 +4148,9 @@ static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	struct ps_data_path ps_data = { 0 };
 	APS_LOG("%s: driver version: %s\n", __FUNCTION__, STK3A5X_DRIVER_VERSION);
 
+#ifdef ontim_debug_info
+	CHECK_THIS_DEV_DEBUG_AREADY_EXIT();
+#endif
 
 
 	if (!(obj = kzalloc(sizeof(*obj), GFP_KERNEL)))
@@ -4334,6 +4353,11 @@ static int stk3a5x_i2c_probe(struct i2c_client *client, const struct i2c_device_
 	}
 
 	stk3a5x_init_flag = 0;
+
+#ifdef ontim_debug_info
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
+#endif
+
 	APS_LOG("%s: state_val=0x%x, psctrl_val=0x%x, alsctrl_val=0x%x, ledctrl_val=0x%x, wait_val=0x%x, int_val=0x%x\n",
 		__FUNCTION__, atomic_read(&obj->state_val), atomic_read(&obj->psctrl_val), atomic_read(&obj->alsctrl_val),
 		obj->ledctrl_val, obj->wait_val, obj->int_val);
