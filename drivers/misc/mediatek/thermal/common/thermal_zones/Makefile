@@ -67,6 +67,7 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6580"))
 #obj-$(CONFIG_THERMAL) += mtk_ts_abb.o
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
+obj-$(CONFIG_THERMAL) += mtk_ts_board.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
 #obj-$(CONFIG_THERMAL) += mtk_ts_buck.o
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu.o
@@ -295,6 +296,7 @@ ifneq (,$(filter $(CONFIG_MTK_PLATFORM), "mt6765"))
 obj-$(CONFIG_THERMAL) += mtk_ts_battery.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_bts.o
+obj-$(CONFIG_THERMAL) += mtk_ts_board.o
 obj-$(CONFIG_THERMAL) += mtk_ts_btsmdpa.o
 
 obj-$(CONFIG_THERMAL) += mtk_ts_cpu_noBank.o
