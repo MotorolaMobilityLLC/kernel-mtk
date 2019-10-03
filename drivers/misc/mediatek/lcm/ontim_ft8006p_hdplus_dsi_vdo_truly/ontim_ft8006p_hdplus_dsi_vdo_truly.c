@@ -55,7 +55,7 @@
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
 #else
-#define LCM_LOGI(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
+#define LCM_LOGI(fmt, args...)  pr_info("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #endif
 
@@ -263,18 +263,16 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 
 static void lcm_reset(void)
 {
-	tpd_gpio_output(0, 1);
-	MDELAY(5);
 	tpd_gpio_output(0, 0);
-    MDELAY(5);
-    tpd_gpio_output(0, 1);
+	SET_RESET_PIN(0);
+        
 	MDELAY(5);
 
-	SET_RESET_PIN(0);
-	MDELAY(20);
+        tpd_gpio_output(0, 1);
 	SET_RESET_PIN(1);
-	MDELAY(20);
-//#endif
+	
+	MDELAY(50);
+	
 	LCM_LOGI("%s:ft8006p lcm reset done\n",__func__);
 }
 
@@ -293,9 +291,12 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0F;  //up to +/-5.5V
+	unsigned char data = 0x12;  //up to +/-5.8V
 	int ret = 0;
 	LCM_LOGI("%s: ft8006P start\n",__func__);
+
+        set_gpio_lcd_enp(1);
+	set_gpio_lcd_enn(1);
 
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
@@ -303,16 +304,14 @@ static void lcm_init(void)
 	else
 		LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
 	cmd = 0x01;
-	data = 0x0F;
+	data = 0x12;
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
 		LCM_LOGI("--cmd=%0x--i2c write error----\n", cmd);
 	else
 		LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
 
-	set_gpio_lcd_enp(1);
-	set_gpio_lcd_enn(1);
-
+	
 	lcm_reset();
 
 	push_table(NULL, init_setting,
@@ -339,14 +338,6 @@ static void lcm_resume(void)
 	lcm_init();
 	LCM_LOGI("%s,ft8006P  done\n",__func__);
 }
-
-
-//static struct LCM_setting_table read_id[] = {
-//    {0xFF, 3, {0x98,0x81,0x01} },
-//    {REGFLAG_END_OF_TABLE, 0x00, {} }
-//};
-
-
 
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
