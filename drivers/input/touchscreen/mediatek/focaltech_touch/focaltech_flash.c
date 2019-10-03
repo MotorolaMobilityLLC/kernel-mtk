@@ -1206,6 +1206,7 @@ static int fts_lic_get_vid_in_host(struct fts_upgrade *upg, u16 *vid)
     return 0;
 }
 
+extern u8 ft_fw;
 static int fts_lic_get_ver_in_tp(u8 *ver)
 {
     int ret = 0;
@@ -1220,7 +1221,7 @@ static int fts_lic_get_ver_in_tp(u8 *ver)
         FTS_ERROR("read lcd initcode ver from tp fail");
         return ret;
     }
-
+    ft_fw = *ver;
     return 0;
 }
 

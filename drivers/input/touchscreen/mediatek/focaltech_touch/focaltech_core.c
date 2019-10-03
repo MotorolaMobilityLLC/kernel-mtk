@@ -47,6 +47,22 @@
 #include "focaltech_core.h"
 #include "tpd.h"
 
+/* BEGIN, Ontim,  wzx, 19/10/2, St-result :PASS,LCD and TP Device information */
+extern char lcd_info_pr[256];
+u8 ft_fw=0;
+#include <ontim/ontim_dev_dgb.h>
+static char version[40]="0x00";
+static char vendor_name[50]="Truly_focaltech";
+static char lcdname[50]="FT8006P";
+DEV_ATTR_DECLARE(touch_screen)
+DEV_ATTR_DEFINE("version",version)
+DEV_ATTR_DEFINE("vendor",vendor_name)
+DEV_ATTR_DEFINE("lcdvendor",lcdname)
+DEV_ATTR_DECLARE_END;
+ONTIM_DEBUG_DECLARE_AND_INIT(touch_screen,touch_screen,8);
+
+/* END */
+
 /*****************************************************************************
 * Private constant and macro definitions using #define
 *****************************************************************************/
@@ -1020,6 +1036,12 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     int pdata_size = sizeof(struct fts_ts_platform_data);
 
     FTS_FUNC_ENTER();
+    /* BEGIN, Ontim,  wzx, 19/04/19, St-result :PASS,LCD and TP Device information */
+    if(CHECK_THIS_DEV_DEBUG_AREADY_EXIT()==0)
+    {
+    	return -EIO;
+    }
+    /* END */
     FTS_INFO("%s", FTS_DRIVER_VERSION);
     ts_data->pdata = kzalloc(pdata_size, GFP_KERNEL);
     if (!ts_data->pdata) {
@@ -1139,6 +1161,17 @@ static int fts_ts_probe_entry(struct fts_ts_data *ts_data)
     }
 
     tpd_load_status = 1;
+    /* BEGIN, Ontim,  wzx, 19/04/19, St-result :PASS,LCD and TP Device information */
+    if(strstr(lcd_info_pr,"ft8006p")){
+	   snprintf(lcdname, sizeof(lcdname),"%s ","Ft8006p" );
+	   snprintf(version, sizeof(version),"0x%x ",ft_fw );
+	   snprintf(vendor_name, sizeof(vendor_name),"Truly_focaltech" );
+    }
+	
+	FTS_FUNC_EXIT();
+      /* END */
+	
+	REGISTER_AND_INIT_ONTIM_DEBUG_FOR_THIS_DEV();
     FTS_FUNC_EXIT();
     return 0;
 
