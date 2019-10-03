@@ -394,6 +394,18 @@ static void lcm_init(void)
 	MDELAY(5);
 
 #endif
+	ret = NT50358A_write_byte(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
+	cmd = 0x01;
+	data = 0x0F;
+	ret = NT50358A_write_byte(cmd, data);
+	if (ret < 0)
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write error----\n", cmd);
+	else
+		LCM_LOGI("ILI9881C----nt50358a----cmd=%0x--i2c write success----\n", cmd);
 	lcm_reset();
 
 	push_table(NULL, init_setting, sizeof(init_setting) / sizeof(struct LCM_setting_table), 1);
