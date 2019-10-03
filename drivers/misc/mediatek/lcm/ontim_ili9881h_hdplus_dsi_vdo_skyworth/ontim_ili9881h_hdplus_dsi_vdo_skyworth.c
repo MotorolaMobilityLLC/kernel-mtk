@@ -52,7 +52,7 @@
 #define LCM_LOGI(string, args...)  dprintf(0, "[LK/"LOG_TAG"]"string, ##args)
 #define LCM_LOGD(string, args...)  dprintf(1, "[LK/"LOG_TAG"]"string, ##args)
 #else
-#define LCM_LOGI(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
+#define LCM_LOGI(fmt, args...)  pr_info("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #define LCM_LOGD(fmt, args...)  pr_debug("[KERNEL/"LOG_TAG"]"fmt, ##args)
 #endif
 
@@ -385,6 +385,7 @@ static struct LCM_setting_table init_setting[] = {
 #endif
 static struct LCM_setting_table bl_level[] = {
 	{0x51, 0x02, {0x3F,0xFF} },
+	{REGFLAG_DELAY, 1, {} },
 	{REGFLAG_END_OF_TABLE, 0x00, {} }
 };
 
@@ -520,9 +521,12 @@ static void lcm_resume_power(void)
 static void lcm_init(void)
 {
 	unsigned char cmd = 0x0;
-	unsigned char data = 0x0F;  //up to +/-5.5V
+	unsigned char data = 0x0E;  //up to +/-5.4V
 	int ret = 0;
 	LCM_LOGI("%s: ili9881h start init\n",__func__);
+    
+	set_gpio_lcd_enp(1);
+	set_gpio_lcd_enn(1);
 
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
@@ -530,15 +534,14 @@ static void lcm_init(void)
 	else
 		LCM_LOGI("---cmd=%0x--i2c write success----\n", cmd);
 	cmd = 0x01;
-	data = 0x0F;
+	data = 0x0E;
 	ret = NT50358A_write_byte(cmd, data);
 	if (ret < 0)
 		LCM_LOGI("---cmd=%0x--i2c write error----\n", cmd);
 	else
 		LCM_LOGI("----cmd=%0x--i2c write success----\n", cmd);
 
-	set_gpio_lcd_enp(1);
-	set_gpio_lcd_enn(1);
+
 
 
 	lcm_reset();
@@ -572,13 +575,6 @@ static void lcm_resume(void)
 }
 
 
-//static struct LCM_setting_table read_id[] = {
-//    {0xFF, 3, {0x98,0x81,0x01} },
-//    {REGFLAG_END_OF_TABLE, 0x00, {} }
-//};
-
-
-
 static unsigned int lcm_ata_check(unsigned char *buffer)
 {
 	return 0;
@@ -600,15 +596,12 @@ static void lcm_setbacklight(void *handle, unsigned int level)
 
 static unsigned int lcm_compare_id(void)
 {
+#if 0
+	return 1;
+#else
 	unsigned int id = 0;
 	unsigned char buffer[2];
 	unsigned int array[16];
-	struct LCM_setting_table switch_table_page1[] = {
-		{ 0xFF, 0x03, {0x98, 0x81, 0x01} }
-	};
-	struct LCM_setting_table switch_table_page0[] = {
-		{ 0xFF, 0x03, {0x98, 0x81, 0x00} }
-	};
 
 	SET_RESET_PIN(1);
 	SET_RESET_PIN(0);
@@ -617,22 +610,20 @@ static unsigned int lcm_compare_id(void)
 	SET_RESET_PIN(1);
 	MDELAY(20);
 
-	push_table(NULL, switch_table_page1, sizeof(switch_table_page1) / sizeof(struct LCM_setting_table), 1);
-
 	array[0] = 0x00023700;  /* read id return two byte,version and id */
 	dsi_set_cmdq(array, 1, 1);
 
 	read_reg_v2(0xDC, buffer, 1);
 	id = buffer[0];         /* we only need ID */
 
-	LCM_LOGI("%s,ili9881h_id=0x%08x\n", __func__, id);
-	push_table(NULL, switch_table_page0, sizeof(switch_table_page0) / sizeof(struct LCM_setting_table), 1);
+	LCM_LOGI("%s,ili9881h vendor id=0x%08x\n", __func__, id);
+
 
 	if (id == LCM_ID )
 		return 1;
 	else
 		return 0;
-
+#endif
 }
 
 

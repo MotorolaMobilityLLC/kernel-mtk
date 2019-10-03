@@ -354,6 +354,19 @@
 	};
 };
 /* TOUCH end */
+
+&i2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+
+	lcd_i2c_bias_enn_enp@3e{
+		compatible = "mediatek,I2C_LCD_BIAS";
+		reg = <0x3e>;
+		status = "okay";
+	};
+};
+
 /* DISPSYS GPIO standardization */
 &pio {
 	mtkfb_pins_mode_te_gpio: mode_te_gpio {
