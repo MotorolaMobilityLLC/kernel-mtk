@@ -1597,6 +1597,7 @@ static kal_uint32 return_sensor_id(void)
 		(read_cmos_sensor(0x300b) << 8) | read_cmos_sensor(0x300c));
 }
 extern char back_cam_name[64];
+extern u32 dual_main_sensorid;
 
 static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 {
@@ -1614,6 +1615,7 @@ static kal_uint32 get_imgsensor_id(UINT32 *sensor_id)
 			imgsensor.i2c_write_id, *sensor_id);
 		memset(back_cam_name, 0x00, sizeof(back_cam_name));
 		memcpy(back_cam_name, "0_ov13855", 64);
+		dual_main_sensorid = *sensor_id;
 		return ERROR_NONE;
 	}
 		retry--;

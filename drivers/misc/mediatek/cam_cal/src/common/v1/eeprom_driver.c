@@ -28,6 +28,7 @@
 #include "cam_cal_define.h"
 #include "cam_cal_list.h"
 #include "eeprom_i2c_dev.h"
+#include "eeprom_i2c_common_driver.h"
 #include <linux/dma-mapping.h>
 #ifdef CONFIG_COMPAT
 /* 64 bit */
@@ -35,7 +36,7 @@
 #include <linux/compat.h>
 #endif
 
-
+#include "kd_imgsensor.h"
 
 #define CAM_CAL_DRV_NAME "CAM_CAL_DRV"
 #define CAM_CAL_DEV_MAJOR_NUMBER 226
@@ -52,6 +53,8 @@ static struct cdev *g_charDrv;
 static struct class *g_drvClass;
 static unsigned int g_drvOpened;
 static struct i2c_client *g_pstI2Cclients[I2C_DEV_IDX_MAX] = { NULL };
+static struct class *ontim_dual_cam_otp_class;
+u32 dual_main_sensorid = 0;
 
 
 static DEFINE_SPINLOCK(g_spinLock);	/*for SMP */
@@ -85,6 +88,9 @@ struct stCAM_CAL_CMD_INFO_STRUCT {
 };
 
 static struct stCAM_CAL_CMD_INFO_STRUCT g_camCalDrvInfo[CAM_CAL_SENSOR_IDX_MAX];
+
+static int ontim_write_dual_cam_otp_data(void);
+int ontim_check_otp_data(u32  sensorid, u8 * p_buf, u32 Length);
 
 /********************************************************************
  * EEPROM_set_i2c_bus()
@@ -377,12 +383,41 @@ struct i2c_driver EEPROM_HW_i2c_driver3 = {
 	.id_table = EEPROM_HW_i2c_id3,
 };
 
+static ssize_t ontim_dual_cam_otp_show_node(struct class *class,
+  		struct class_attribute *attr, char *buf)
+{
+    pr_info("enter, node: %s\n", attr->attr.name);
+    ontim_check_otp_data(dual_main_sensorid,NULL,0);
+    return sprintf(buf, "%s: %s\n", attr->attr.name, "ontim_dual_cam_otp");
+}
+
+static ssize_t ontim_dual_cam_otp_store_node(struct class *class,
+  		struct class_attribute *attr, const char *buf, size_t count)
+{
+    pr_info("enter, node: %s\n", attr->attr.name);
+
+    ontim_write_dual_cam_otp_data();
+
+    return count;
+}
+
+static CLASS_ATTR(ontim_dual_cam_otp, S_IRUSR|S_IWUSR, ontim_dual_cam_otp_show_node, ontim_dual_cam_otp_store_node);
 
 /*******************************************************
  * EEPROM_HW_probe
  *******************************************************/
 static int EEPROM_HW_probe(struct platform_device *pdev)
 {
+	int ret = 0;
+
+	ontim_dual_cam_otp_class = class_create(THIS_MODULE, "dual_cam_otp");
+	ret = class_create_file(ontim_dual_cam_otp_class,&class_attr_ontim_dual_cam_otp);
+	if (ret < 0)
+	{
+		class_destroy(ontim_dual_cam_otp_class);
+  		ontim_dual_cam_otp_class = NULL;
+  		pr_info("Creat ontim_dual_cam_otp_class fail\n");
+	}
 	i2c_add_driver(&EEPROM_HW_i2c_driver2);
 	i2c_add_driver(&EEPROM_HW_i2c_driver3);
 	return i2c_add_driver(&EEPROM_HW_i2c_driver);
@@ -751,6 +786,388 @@ static int EEPROM_drv_release(struct inode *a_pstInode, struct file *a_pstFile)
 
 	return 0;
 }
+
+
+int ontim_get_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
+{
+
+    //const char * str_ov13855_path = "/data/vendor/camera_dump/sunwin_ov13855.data";
+    //const char * str_s5k3l6_path  = "/data/vendor/camera_dump/qtech_s5k3l6.data";
+    //const char * str_s5k5e9_path  = "/data/vendor/camera_dump/sunrise_s5k5e9.data";
+    //const char * str_hi556_path   = "/data/vendor/camera_dump/seasons_hi556.data";
+    const char * str_ar1337_path  = "/data/vendor/camera_dump/TXD_ar1337.data";
+    //const char * str_gc5025_path  = "/data/vendor/camera_dump/shine_gc5025.data";
+    const char * str_dump_path = NULL;
+    
+	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+	u32 u4Offset;
+	u32 u4Length;
+	u8 *pu1Params = NULL;
+	int i4RetValue = 0;
+    
+	static mm_segment_t oldfs;
+	struct file *fp;
+	loff_t pos;
+        pr_debug("ontim_get_otp_data sensorid= %x  p_buf=%p  Length=%d\n", sensorid, p_buf, Length);
+    
+    switch(sensorid)
+    {
+/*
+        case OV13855_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
+            str_dump_path = str_ov13855_path;
+            break;
+        }
+        
+        case S5K3L6_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
+            str_dump_path = str_s5k3l6_path;
+            break;
+        }
+        
+        case S5K5E9YX_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_s5k5e9_path;
+            break;
+        }    
+        
+        case HI556_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_hi556_path;
+            break;
+        }
+
+        case GC5025AW_SENSOR_ID:
+        {
+            if((p_buf == NULL)|| (Length == 0))
+            {
+                pr_err("eeprom_driver.c[%s](%d)  error  p_buf=%p  Length=%d\n",
+                __FUNCTION__, __LINE__, p_buf, Length);
+                return -1;
+            }
+            pu1Params = p_buf;
+            u4Length = Length;
+            str_dump_path = str_gc5025_path;
+            break;
+        }
+*/
+        case AR1337_SENSOR_ID:
+        {
+            u4Offset = 0;
+            u4Length = 0xcee;
+            str_dump_path = str_ar1337_path;
+            break;
+        }
+        
+        default:
+            pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
+            __FUNCTION__, __LINE__,  sensorid);
+            if(p_buf != NULL)
+            {
+				kfree(p_buf);
+            }
+            return -1;
+    }
+    
+    
+    //if((sensorid == OV13855_SENSOR_ID) ||
+       //(sensorid == S5K3L6_SENSOR_ID) ||
+       if(sensorid == AR1337_SENSOR_ID)
+   {
+	pu1Params = kmalloc(u4Length, GFP_KERNEL);
+	if (pu1Params == NULL) 
+        {
+            pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+            __FUNCTION__, __LINE__);
+            return -1;
+        }
+        
+	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
+	if (pcmdInf != NULL && g_lastDevID != 1)
+        {
+		if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+		{
+			pr_debug("deviceID Error!\n");
+			kfree(pu1Params);
+			return -1;
+		}
+		g_lastDevID = 1;
+	}
+
+	if (pcmdInf != NULL)
+        {
+	    if (pcmdInf->readCMDFunc != NULL)
+            {
+                i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
+                u4Offset,
+                pu1Params,
+                u4Length);
+
+                pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
+                __FUNCTION__, __LINE__, i4RetValue);
+                pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
+                __FUNCTION__, __LINE__,
+                *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
+
+            }
+	    else
+            {
+                pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",
+                __FUNCTION__, __LINE__);
+				kfree(pu1Params);
+				return -1;
+			}
+		}
+   }
+    
+    
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+    if (IS_ERR(fp))
+    {
+        pr_err("eeprom_driver.c[%s](%d)file open %s error",
+         __FUNCTION__, __LINE__, str_dump_path);
+    }
+    else
+    {
+        pos = 0;
+        vfs_write(fp, pu1Params, u4Length, &pos);
+        filp_close(fp, NULL);
+    }
+    set_fs(oldfs);
+    
+    kfree(pu1Params);
+    
+    
+    return 0;
+}
+
+int ontim_check_otp_data(u32  sensorid, u8 * p_buf, u32 Length)
+{
+
+    const char * str_hi556_path   = "/data/vendor/camera_dump/dual_cam_otp_dump.data";
+    const char * str_dump_path = NULL;
+    
+	struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+	u32 u4Offset;
+	u32 u4Length;
+	u8 *pu1Params = NULL;
+	int i4RetValue = 0;
+    
+	static mm_segment_t oldfs;
+	struct file *fp;
+	loff_t pos;
+        pr_debug("ontim_get_otp_data sensorid= %x  p_buf=%p  Length=%d\n", sensorid, p_buf, Length);
+    
+    switch(sensorid)
+    {
+        case AR1337_SENSOR_ID:
+        {
+            u4Offset = 0x0776;
+            u4Length = 130;
+            str_dump_path = str_hi556_path;
+            break;
+        }
+        case OV13855_SENSOR_ID:
+        {
+            u4Offset = 0x0776;
+            u4Length = 130;
+            str_dump_path = str_hi556_path;
+            break;
+        }
+        
+        default:
+            pr_err("eeprom_driver.c[%s](%d)  sensorid=0x%x \n",
+            __FUNCTION__, __LINE__,  sensorid);
+            if(p_buf != NULL)
+            {
+				kfree(p_buf);
+            }
+            return -1;
+    }
+    
+    
+       if((sensorid == OV13855_SENSOR_ID) ||
+       (sensorid == AR1337_SENSOR_ID))
+   {
+	pu1Params = kmalloc(u4Length, GFP_KERNEL);
+	if (pu1Params == NULL) 
+        {
+            pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+            __FUNCTION__, __LINE__);
+            return -1;
+        }
+        
+	pcmdInf = EEPROM_get_cmd_info_ex(sensorid, 1);
+	if (pcmdInf != NULL && g_lastDevID != 1)
+        {
+		if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+		{
+			pr_debug("deviceID Error!\n");
+			kfree(pu1Params);
+			return -1;
+		}
+		g_lastDevID = 1;
+	}
+
+	if (pcmdInf != NULL)
+        {
+	    if (pcmdInf->readCMDFunc != NULL)
+            {
+                i4RetValue = pcmdInf->readCMDFunc(pcmdInf->client,
+                u4Offset,
+                pu1Params,
+                u4Length);
+
+                pr_err("eeprom_driver.c[%s](%d)  readCMDFunc   i4RetValue=0x%x \n",
+                __FUNCTION__, __LINE__, i4RetValue);
+                pr_err("eeprom_driver.c[%s](%d)  0x%x  0x%x ... 0x%x 0x%x \n",
+                __FUNCTION__, __LINE__,
+                *pu1Params, *(pu1Params+1), *(pu1Params+u4Length - 2), *(pu1Params+u4Length - 1));
+
+            }
+	    else
+            {
+                pr_err("eeprom_driver.c[%s](%d)  pcmdInf->readCMDFunc == NULL \n",
+                __FUNCTION__, __LINE__);
+				kfree(pu1Params);
+				return -1;
+			}
+		}
+   }
+    
+    
+    oldfs = get_fs();
+    set_fs(KERNEL_DS);
+    fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+    if (IS_ERR(fp))
+    {
+        pr_err("eeprom_driver.c[%s](%d)file open %s error",
+         __FUNCTION__, __LINE__, str_dump_path);
+    }
+    else
+    {
+        pos = 0;
+        vfs_write(fp, pu1Params, u4Length, &pos);
+        filp_close(fp, NULL);
+    }
+    set_fs(oldfs);
+    
+    kfree(pu1Params);
+    
+    
+    return 0;
+}
+static int ontim_write_dual_cam_otp_data(void)
+{
+    const char * str_ar1337_path  = "/data/vendor/camera_dump/TXD_ar1337_dual_otp.data";
+    const char * str_ov13855_path  = "/data/vendor/camera_dump/seasons_13855_dual_otp.data";
+    const char * str_dump_path = NULL;
+    
+    struct stCAM_CAL_CMD_INFO_STRUCT *pcmdInf = NULL;
+    u32 u4Offset;
+    u32 u4Length;
+    u8 *pu1Params = NULL;
+    int i4RetValue = 0;
+
+    static mm_segment_t oldfs;
+    struct file *fp;
+    loff_t pos;
+    pr_err("eeprom_driver.c[%s](%d)ontim_write_dual_cam_otp_data enter\n",
+	__FUNCTION__, __LINE__);
+
+    switch(dual_main_sensorid)
+    {
+        case AR1337_SENSOR_ID:
+        {
+            u4Offset = 0x0776;
+            u4Length = 130;
+            str_dump_path = str_ar1337_path;
+            break;
+        }
+        
+       case OV13855_SENSOR_ID:
+        {
+            u4Offset = 0x0776;
+            u4Length = 130;
+            str_dump_path = str_ov13855_path;
+            break;
+        }
+
+        default:
+            pr_err("eeprom_driver.c[%s](%d)  dual_main_sensorid=0x%x \n",
+            __FUNCTION__, __LINE__,  dual_main_sensorid);
+            return -1;
+    }
+
+    if((dual_main_sensorid == AR1337_SENSOR_ID) || (dual_main_sensorid == AR1337_SENSOR_ID))
+    {
+        pu1Params = kmalloc(u4Length, GFP_KERNEL);
+        if (pu1Params == NULL)
+        {
+            pr_err("eeprom_driver.c[%s](%d)  kmalloc error   pu1Params == NULL  \n",
+            __FUNCTION__, __LINE__);
+            return -1;
+        }
+
+	oldfs = get_fs();
+	set_fs(KERNEL_DS);
+	fp = filp_open(str_dump_path, O_RDWR | O_CREAT, 0644);
+	if (IS_ERR(fp))
+	{
+		pr_err("eeprom_driver.c[%s](%d)file open %s error",
+		 __FUNCTION__, __LINE__, str_dump_path);
+	}
+	else
+	{
+		pos = 0;
+		vfs_read(fp, pu1Params, u4Length, &pos);
+		filp_close(fp, NULL);
+	}
+	set_fs(oldfs);
+
+	pcmdInf = EEPROM_get_cmd_info_ex(dual_main_sensorid, 1);
+        if (EEPROM_set_i2c_bus(1, pcmdInf) != 0) 
+        {
+                pr_debug("deviceID Error!\n");
+                kfree(pu1Params);
+                return -1;
+        }
+        i4RetValue = Common_write_region(pcmdInf->client,
+        u4Offset,
+        pu1Params,
+        u4Length);
+
+        pr_err("eeprom_driver.c[%s](%d)  writeCMDFunc   i4RetValue=0x%x \n",
+        __FUNCTION__, __LINE__, i4RetValue);
+    }
+
+    kfree(pu1Params);
+
+    return 0;
+}
+
 
 static const struct file_operations g_stCAM_CAL_fops1 = {
 	.owner = THIS_MODULE,
