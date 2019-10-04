@@ -254,9 +254,15 @@ static void lcm_get_params(struct LCM_PARAMS *params)
 	params->dsi.noncont_clock = TRUE; /* Add noncont_clock setting for ESD */
 	params->dsi.noncont_clock_period = 1; /* Add noncont_clock setting for ESD */
 
+	//params->dsi.clk_lp_per_line_enable = 0;
+	//params->dsi.esd_check_enable = 0;
+	//params->dsi.customization_esd_check_enable = 1;
 	params->dsi.clk_lp_per_line_enable = 0;
-	params->dsi.esd_check_enable = 0;
-	params->dsi.customization_esd_check_enable = 1;
+	params->dsi.esd_check_enable = 1;
+	params->dsi.customization_esd_check_enable = 0;
+	params->dsi.lcm_esd_check_table[0].cmd = 0x0a;
+    params->dsi.lcm_esd_check_table[0].count = 1;
+    params->dsi.lcm_esd_check_table[0].para_list[0] = 0x9C;
 }
 
 
