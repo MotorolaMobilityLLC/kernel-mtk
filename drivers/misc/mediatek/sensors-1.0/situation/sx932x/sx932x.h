@@ -364,7 +364,7 @@ static struct smtc_reg_data sx932x_i2c_reg_setup[] = {
 	//--------Sensor enable
 	{
 		.reg = SX932x_CTRL1_REG,    //0x11
-		.val = 0x24,       //enable PH2
+		.val = 0x20,       //enable PH2 0x24
 	},
 };
 
