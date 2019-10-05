@@ -4380,28 +4380,34 @@ firmware_class.path=/vendor/firmware";
 	};
 	aud_clk_mosi_on: aud_clk_mosi_on {
 		pins_cmd0_dat {
-			pinmux = <PINMUX_GPIO189__FUNC_AUD_CLK_MOSI>,
-				 <PINMUX_GPIO190__FUNC_AUD_SYNC_MOSI>;
+			pinmux = <PINMUX_GPIO189__FUNC_AUD_CLK_MOSI>;
+			input-schmitt-enable;
+		};
+		pins_cmd1_dat {
+			pinmux = <PINMUX_GPIO190__FUNC_AUD_SYNC_MOSI>;
+			input-schmitt-enable;
 		};
 	};
 	aud_dat_mosi_off: aud_dat_mosi_off {
 		pins_cmd1_dat {
 			pinmux = <PINMUX_GPIO191__FUNC_GPIO191>;
 			input-enable;
-			slew-rate = <0>;
 			bias-disable;
 		};
 		pins_cmd2_dat {
 			pinmux = <PINMUX_GPIO192__FUNC_GPIO192>;
 			input-enable;
-			slew-rate = <0>;
 			bias-disable;
 		};
 	};
 	aud_dat_mosi_on: aud_dat_mosi_on {
 		pins_cmd1_dat {
-			pinmux = <PINMUX_GPIO191__FUNC_AUD_DAT_MOSI0>,
-				 <PINMUX_GPIO192__FUNC_AUD_DAT_MOSI1>;
+			pinmux = <PINMUX_GPIO191__FUNC_AUD_DAT_MOSI0>;
+			input-schmitt-enable;
+		};
+		pins_cmd2_dat {
+			pinmux = <PINMUX_GPIO192__FUNC_AUD_DAT_MOSI1>;
+			input-schmitt-enable;
 		};
 	};
 	aud_dat_mosi_ch34_off: aud_dat_mosi_ch34_off {
@@ -4415,19 +4421,18 @@ firmware_class.path=/vendor/firmware";
 	aud_dat_mosi_ch34_on: aud_dat_mosi_ch34_on {
 		pins_cmd1_dat {
 			pinmux = <PINMUX_GPIO143__FUNC_AUD_DAT_MOSI2>;
+			input-schmitt-enable;
 		};
 	};
 	aud_dat_miso_off: aud_dat_miso_off {
 		pins_cmd1_dat {
 			pinmux = <PINMUX_GPIO193__FUNC_GPIO193>;
 			input-enable;
-			slew-rate = <0>;
 			bias-disable;
 		};
 		pins_cmd2_dat {
 			pinmux = <PINMUX_GPIO194__FUNC_GPIO194>;
 			input-enable;
-			slew-rate = <0>;
 			bias-disable;
 		};
 	};
@@ -4445,7 +4450,6 @@ firmware_class.path=/vendor/firmware";
 		pins_cmd1_dat {
 			pinmux = <PINMUX_GPIO146__FUNC_GPIO146>;
 			input-enable;
-			slew-rate = <0>;
 			bias-disable;
 		};
 	};
