@@ -34,8 +34,9 @@
 #ifdef CONFIG_MTK_TIMER_AEE_DUMP
 #ifdef CONFIG_MTK_RAM_CONSOLE
 #include <mt-plat/mtk_ram_console.h>
-
+#if !defined(CONFIG_MACH_MT6757)
 static char gpt_clkevt_aee_dump_buf[128];
+#endif
 #endif
 #endif
 
@@ -89,7 +90,9 @@ static uint64_t gpt_clkevt_last_setting_next_event_time;
 
 void mtk_timer_clkevt_aee_dump(void)
 {
-#if defined(CONFIG_MTK_RAM_CONSOLE) && defined(CONFIG_MTK_TIMER_AEE_DUMP)
+#if defined(CONFIG_MTK_RAM_CONSOLE) \
+	&& defined(CONFIG_MTK_TIMER_AEE_DUMP) \
+	&& !defined(CONFIG_MACH_MT6757)
 
 	/*
 	 * Notice: printk cannot be used during AEE flow to avoid lock issues.
