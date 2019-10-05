@@ -5233,7 +5233,8 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 
 #if IS_ENABLED(CONFIG_MACH_MT6779)
 	/* debug wpe hw not waiting issue */
-	if (handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS) {
+	if ((handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS) ||
+		(handle->engineFlag & CMDQ_ENG_ISP_GROUP_BITS)) {
 		u64 task_cost = handle->wakedUp - handle->trigger;
 		u32 *exec;
 		u64 diff;
@@ -5246,7 +5247,7 @@ s32 cmdq_pkt_wait_flush_ex_result(struct cmdqRecStruct *handle)
 			do_div(diff, 26);
 
 			CMDQ_LOG(
-				"[warn]wpe task cost:%llu < 3ms hw begin:%u end:%u diff:%d\n",
+				"[warn]isp task cost:%llu < 3ms hw begin:%u end:%u diff:%llu\n",
 				task_cost, exec[0], exec[1], diff);
 		}
 	}
