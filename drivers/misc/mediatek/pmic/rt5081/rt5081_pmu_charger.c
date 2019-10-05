@@ -659,8 +659,10 @@ out:
 static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 	bool en)
 {
-	int ret = 0;
-	int i = 0, vbus = 0;
+	int i, ret = 0;
+#ifndef CONFIG_TCPC_CLASS
+	int vbus = 0;
+#endif /* !CONFIG_TCPC_CLASS */
 	const int max_wait_cnt = 200;
 	enum rt5081_usbsw_state usbsw =
 		en ? RT5081_USBSW_CHG : RT5081_USBSW_USB;
@@ -671,6 +673,7 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 			if (is_usb_rdy())
 				break;
 			dev_info(chg_data->dev, "%s: CDP block\n", __func__);
+#ifndef CONFIG_TCPC_CLASS
 			ret = rt5081_get_adc(chg_data, RT5081_ADC_VBUS_DIV5,
 				&vbus);
 			if (ret >= 0 && vbus < 4300000) {
@@ -679,6 +682,13 @@ static int rt5081_enable_chgdet_flow(struct rt5081_pmu_charger_data *chg_data,
 					__func__, vbus / 1000);
 				return 0;
 			}
+#else
+			if (!atomic_read(&chg_data->tcpc_usb_connected)) {
+				dev_info(chg_data->dev,
+					 "%s: plug out\n", __func__);
+				return 0;
+			}
+#endif /* !CONFIG_TCPC_CLASS */
 			msleep(100);
 		}
 		if (i == max_wait_cnt)
