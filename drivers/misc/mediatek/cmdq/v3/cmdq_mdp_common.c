@@ -1180,8 +1180,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 	cmdq_mdp_store_debug(desc, handle);
 
 #if IS_ENABLED(CONFIG_MACH_MT6779)
-	if ((handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS) ||
-		(handle->engineFlag & CMDQ_ENG_ISP_GROUP_BITS))
+	if (CMDQ_ENG_ISP_PERF_FLAG(handle->engineFlag))
 		cmdq_pkt_perf_begin(handle->pkt);
 #endif
 
@@ -1247,8 +1246,7 @@ s32 cmdq_mdp_flush_async(struct cmdqCommandStruct *desc, bool user_space,
 #endif
 
 #if IS_ENABLED(CONFIG_MACH_MT6779)
-	if ((handle->engineFlag & CMDQ_ENG_WPE_GROUP_BITS) ||
-		(handle->engineFlag & CMDQ_ENG_ISP_GROUP_BITS))
+	if (CMDQ_ENG_ISP_PERF_FLAG(handle->engineFlag))
 		cmdq_pkt_perf_end(handle->pkt);
 #endif
 
