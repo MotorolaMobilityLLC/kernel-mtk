@@ -1687,8 +1687,8 @@ TARGET_EXIT:
 #ifndef MTK_SSPM
 static unsigned int _calculate_vproc_sfchg_rate(bool isRising)
 {
-	unsigned int sfchg_rate_reg;
-	unsigned int sfchg_rate_vproc;
+	unsigned int sfchg_rate_reg = 0;
+	unsigned int sfchg_rate_vproc = 0;
 
 	/* [MT6763] RG_LDO_VSRAM_PROC_SFCHG_RRATE (rising rate) and
 	 * RG_LDO_VSRAM_PROC_SFCHG_FRATE (falling rate)
@@ -1719,8 +1719,8 @@ static unsigned int _calculate_vproc_sfchg_rate(bool isRising)
 }
 static unsigned int _calculate_vsram_sfchg_rate(bool isRising)
 {
-	unsigned int sfchg_rate_reg;
-	unsigned int sfchg_rate_vsram;
+	unsigned int sfchg_rate_reg = 0;
+	unsigned int sfchg_rate_vsram = 0;
 
 	/*[MT6763] RG_LDO_VSRAM_GPU_SFCHG_RRATE and RG_LDO_VSRAM_GPU_SFCHG_FRATE
 	 *	4:	0.19us
