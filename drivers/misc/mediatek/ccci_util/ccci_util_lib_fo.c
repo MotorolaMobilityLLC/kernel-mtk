@@ -471,7 +471,7 @@ static void ccci_dump_opt_tbl(void)
 static void parse_option_setting_from_lk(void)
 {
 	int i = 0;
-	int val;
+	int val = 0;
 	char *name;
 	int using_default = 1;
 	int using_lk_setting;
@@ -670,7 +670,8 @@ static unsigned int md_mtee_support;
 
 static void nc_smem_info_parsing(void)
 {
-	unsigned int size, num, i;
+	unsigned int size, i;
+	unsigned int num = 0;
 
 	if (find_ccci_tag_inf("nc_smem_info_ext_num", (char *)&num,
 		sizeof(unsigned int)) != sizeof(unsigned int)) {
@@ -920,7 +921,7 @@ static void md_mem_info_parsing(void)
 {
 	struct _modem_info md_inf[4];
 	struct _modem_info *curr;
-	int md_num;
+	int md_num = 0;
 	int md_id;
 
 	if (find_ccci_tag_inf("hdr_count",
