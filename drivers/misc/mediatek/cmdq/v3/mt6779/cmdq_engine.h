@@ -167,6 +167,11 @@ enum CMDQ_ENG_ENUM {
 #define CMDQ_ENG_EAF_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_EAF_GROUP_BITS))
 #define CMDQ_ENG_FDVT_GROUP_FLAG(flag)	((flag) & (CMDQ_ENG_FDVT_GROUP_BITS))
 
+#define CMDQ_ENG_ISP_PERF_FLAG(flag)	((flag) & (CMDQ_ENG_WPE_GROUP_BITS | \
+					CMDQ_ENG_ISP_GROUP_BITS | \
+					(1LL << CMDQ_ENG_ISP_VIPI) | \
+					(1LL << CMDQ_ENG_ISP_IMG3O)))
+
 #define CMDQ_FOREACH_GROUP(ACTION_struct)\
 	ACTION_struct(CMDQ_GROUP_ISP, ISP)	\
 	ACTION_struct(CMDQ_GROUP_MDP, MDP)	\
