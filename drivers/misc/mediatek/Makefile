@@ -59,7 +59,9 @@ obj-$(CONFIG_MTK_LEDS)	+= leds/
 obj-$(CONFIG_MTK_BOOT) += boot/
 obj-$(CONFIG_MTK_BOOT_REASON) += boot_reason/
 obj-$(CONFIG_MTK_CHIP) += chip/
+ifneq ($(wildcard $(srctree)/../vendor/mediatek/internal/selinux_warning_enable),)
 obj-$(CONFIG_MTK_SELINUX_AEE_WARNING)	+= selinux_warning/
+endif
 obj-y += power/
 obj-$(CONFIG_MTK_PMIC_NEW_ARCH)	+= pmic/
 obj-$(CONFIG_MTK_AUDIODSP_SUPPORT) += adsp/
